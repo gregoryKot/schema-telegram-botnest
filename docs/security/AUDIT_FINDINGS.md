@@ -259,6 +259,17 @@ plaintext в очереди уведомлений. Нумерация: букв
   `/api/auth/google?link_token=…`: Google жертвы привязывается к аккаунту
   атакующего (или чеканится merge-токен жертва→атакующий).
 - **Фикс:** только httpOnly-cookie; query-fallback удалён.
+- **Путь установщиков (аудит 2026-10-11, security#6) ✅ закрыт.** Тот же класс
+  через другой вход: `POST /api/auth/telegram/webapp`, `max/webapp` и
+  `ticket/poll` ставили refresh-куку по подписи/коду из тела без `requireCsrf`,
+  а глобальный `urlencoded` пускал HTML-форму с чужого сайта (simple request,
+  preflight не нужен): жертве уезжала кука сессии атакующего с его настоящей
+  initData. Фикс: `requireCsrf` на трёх ручках; `urlencoded` сужен до
+  `/api/payment/result` (`src/infra/body-parsers.ts`, форму шлёт Robokassa);
+  трипваер `csrf.invariants.spec.ts` теперь смотрит и на установщиков куки
+  (хендлер с `setRefreshCookie` обязан звать `requireCsrf` либо
+  `assertOAuthStateMatches`, писатели вне контроллеров — заявленные хелперы);
+  e2e `test/login-csrf.e2e-spec.ts` — форма на все три ручки отбита без куки.
 
 #### B-3 · Анонимное подтверждение слияния ✅ Закрыто
 - **Severity:** High (в паре с B-2). `confirmMerge` принимал анонима с

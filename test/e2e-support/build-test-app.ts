@@ -14,7 +14,6 @@
 // фейк расходился с реальностью.
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
-import { json, urlencoded } from 'express';
 import { AppModule } from '../../src/app.module';
 import { PrismaService } from '../../src/prisma/prisma.service';
 import { TELEGRAF_BOT } from '../../src/telegram/telegram.constants';
@@ -23,7 +22,7 @@ import {
   PrismaExceptionFilter,
 } from '../../src/prisma/prisma-exception.filter';
 import { installBigIntJson } from '../../src/utils/bigint-json';
-import { BODY_LIMIT } from '../../src/infra/body-limit';
+import { installBodyParsers } from '../../src/infra/body-parsers';
 import { makeFakePrisma, FakePrisma } from './fake-prisma';
 import { makeFakeBot } from './fake-bot';
 import { buildRealDbTestApp } from './build-real-db-test-app';
@@ -84,8 +83,7 @@ export async function buildTestApp(): Promise<TestApp> {
     new PrismaExceptionFilter(),
   );
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
-  app.use(json({ limit: BODY_LIMIT }));
-  app.use(urlencoded({ limit: BODY_LIMIT, extended: true }));
+  installBodyParsers(app);
   // ─────────────────────────────────────────────────────────────────────────
 
   await app.init();

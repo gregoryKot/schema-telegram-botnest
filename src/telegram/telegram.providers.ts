@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { Telegraf } from 'telegraf';
 import { TELEGRAF_BOT } from './telegram.constants';
 import { telegramAgent } from './telegram-agent';
-import { installPrivateChatOnly } from './private-chat-only';
+import { installUpdateGuards } from './telegram.stale-updates';
 
 const logger = new Logger('TelegramProviders');
 
@@ -20,8 +20,8 @@ export const TELEGRAM_PROVIDERS: Provider[] = [
       const bot = new Telegraf(token, {
         telegram: { agent: telegramAgent() },
       });
-      // Первым, до любых хендлеров: группы и каналы бот не обслуживает.
-      installPrivateChatOnly(bot);
+      // До любых хендлеров: группы не обслуживаем, хвост очереди после деплоя режем.
+      installUpdateGuards(bot);
       try {
         const me = await bot.telegram.getMe();
         logger.log(`Bot authorized: @${me.username ?? me.id}`);
