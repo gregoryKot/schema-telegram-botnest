@@ -15,7 +15,11 @@ import { SecurityLogService } from '../auth/security-log.service';
 import { AnalyticsService } from '../analytics/analytics.service';
 import { rejectInitData } from './initdata-alert';
 import { reportAuthSuccess } from './auth-success.report';
-import { verifyTelegramInitDataSignature } from '../auth/telegram-init-data';
+import {
+  readTelegramUser,
+  verifyTelegramInitDataSignature,
+  type TelegramInitDataUser,
+} from '../auth/telegram-init-data';
 
 export async function applyTelegramInitData(
   req: Request,
@@ -35,33 +39,29 @@ export async function applyTelegramInitData(
   const skipAuth =
     process.env.NODE_ENV !== 'production' &&
     config.get<string>('SKIP_AUTH') === 'true';
+  let params: URLSearchParams;
   if (skipAuth) {
     logger.warn('SKIP_AUTH=true (DEV ONLY) — validation skipped');
+    params = new URLSearchParams(initData);
   } else {
     try {
-      verifyTelegramInitDataSignature(initData, botToken);
+      ({ params } = verifyTelegramInitDataSignature(initData, botToken));
     } catch (err) {
       rejectInitData(err, req.ip, logger, securityLog);
     }
   }
 
-  const params = new URLSearchParams(initData);
-  const userStr = params.get('user');
-  if (!userStr) throw new UnauthorizedException('Missing user');
-  let rawTelegramId: number;
-  let firstName: string | undefined;
+  // Отсутствие user — отдельный ответ; сам разбор (JSON, безопасное целое > 0)
+  // живёт в общем верификаторе, второй реализации здесь нет.
+  if (!params.get('user')) throw new UnauthorizedException('Missing user');
+  let user: TelegramInitDataUser;
   try {
-    const user = JSON.parse(userStr) as {
-      id?: unknown;
-      first_name?: unknown;
-    };
-    if (typeof user.id !== 'number') throw new Error('Invalid user.id');
-    rawTelegramId = user.id;
-    firstName =
-      typeof user.first_name === 'string' ? user.first_name : undefined;
+    user = readTelegramUser(params);
   } catch {
     throw new UnauthorizedException('Invalid user data');
   }
+  const rawTelegramId = user.id;
+  const firstName = user.first_name;
 
   // Resolve canonical userId via AuthProvider so that merged accounts
   // (Telegram merged → Google) still land on the correct userId instead

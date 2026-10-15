@@ -129,10 +129,7 @@
   },
   "src/infra/s3-list-objects.ts": {
     "status": "recorded",
-    "fixtures": [
-      "s3-list-objects-v2-truncated.xml",
-      "s3-list-objects-v2-prefix.xml"
-    ],
+    "fixtures": ["s3-list-objects-v2-truncated.xml", "s3-list-objects-v2-prefix.xml"],
     "spec": "src/infra/s3-list-objects.spec.ts"
   },
   "src/infra/s3-sigv4.ts": {

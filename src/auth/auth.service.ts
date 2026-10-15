@@ -68,9 +68,8 @@ export class AuthService {
       const { user } = verifyTelegramInitData(initData, botToken);
       return { id: user.id, firstName: user.first_name ?? '' };
     } catch (err) {
-      throw new UnauthorizedException(
-        err instanceof Error ? err.message : 'Invalid initData',
-      );
+      // Верификатор бросает только Error (см. шапку telegram-init-data.ts).
+      throw new UnauthorizedException((err as Error).message);
     }
   }
 
