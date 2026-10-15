@@ -13,9 +13,16 @@
 // cleanup чистит список контейнеров ТОЛЬКО своего экземпляра RTL. Общий файл
 // из shared/ чистил бы экземпляр shared, а тесты фронтенда рендерят через свой
 // — механизм молча ничего бы не делал. Три копии держит пин-тест рядом.
-import { afterEach } from 'vitest';
+import { afterAll, afterEach, vi } from 'vitest';
 import { cleanup } from '@testing-library/react';
+import { settleUnmountTimers } from '../../../shared/src/test-support/settleUnmountTimers';
 
 afterEach(() => {
   cleanup();
 });
+
+// Последний тест файла: afterEach выше размонтировал компонент, а снос jsdom
+// идёт сразу за хуками. Отложенное уничтожение редактора tiptap срабатывало
+// уже без window — «ReferenceError: window is not defined» (CI 2026-10-15,
+// ArticleEditor.test.tsx, сразу после того, как здесь появился cleanup).
+afterAll(() => settleUnmountTimers(() => vi.isFakeTimers()));
