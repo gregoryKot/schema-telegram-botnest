@@ -13,7 +13,8 @@ import { NotificationService } from '../notification/notification.service';
 import { TelegramScheduleService } from './telegram.schedule.service';
 import { tzOffsetAt } from '../notification/notification.time';
 import { normalizeAddressForm, t } from '../notification/address-form';
-import { TIMEZONES, pad, buildSettingsView } from './telegram.settings.view';
+import { TIMEZONES, buildSettingsView } from './telegram.settings.view';
+import { REMINDER_HOURS, buildHourRows } from './telegram.reminder-hours';
 
 // Сборка экрана переехала в telegram.settings.view.ts (правило №10 — лимит
 // размера файла). Ре-экспорт оставлен ради соседей и спек, которые берут
@@ -111,19 +112,7 @@ export class TelegramSettingsService implements OnModuleInit {
         const userId = await this.accountService.canonicalUserId(rawId);
         const s = await this.botService.getUserSettings(userId);
         const form = normalizeAddressForm(s?.addressForm);
-        const hours = [
-          8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
-        ];
-        const rows: ReturnType<typeof Markup.button.callback>[][] = [];
-        for (let i = 0; i < hours.length; i += 4) {
-          rows.push(
-            hours
-              .slice(i, i + 4)
-              .map((h) =>
-                Markup.button.callback(`${pad(h)}:00`, `settings:hour:${h}`),
-              ),
-          );
-        }
+        const rows = buildHourRows();
         rows.push([Markup.button.callback('⬅️ Назад', 'settings:back')]);
         await ctx.editMessageText(
           t(
@@ -146,6 +135,8 @@ export class TelegramSettingsService implements OnModuleInit {
         if (!rawId) return;
         const userId = await this.accountService.canonicalUserId(rawId);
         const localHour = Number((ctx.match as RegExpMatchArray)[1]);
+        // allow-list = кнопки pick_hour (telegram.reminder-hours.ts)
+        if (!REMINDER_HOURS.includes(localHour)) return;
         await this.botService.updateUserSettings(userId, {
           notifyLocalHour: localHour,
         });

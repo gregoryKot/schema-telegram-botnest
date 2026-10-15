@@ -1267,7 +1267,7 @@
   "src/telegram/telegram.schedule-queue.ts": 123,
   "src/telegram/telegram.schedule.service.ts": 202,
   "src/telegram/telegram.service.ts": 533,
-  "src/telegram/telegram.settings.service.ts": 233,
+  "src/telegram/telegram.settings.service.ts": 224,
   "src/telegram/telegram.settings.view.ts": 93,
   "src/telegram/telegram.start-welcome.ts": 54,
   "src/telegram/ticket-actions.ts": 83,
