@@ -13,8 +13,10 @@ vi.mock('../api', () => ({
     subscribe: vi.fn(),
     cancelSubscription: vi.fn(),
   },
+  reportClientError: vi.fn(),
 }));
-import { api } from '../api';
+import { api, reportClientError } from '../api';
+import { ApiError } from '../apiClient';
 const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
 
 const OPTIONS = {
@@ -178,5 +180,85 @@ describe('SubscribePage — Вебвизор не пишет ввод', () => {
     const email = (await screen.findByPlaceholderText('Email для чека (необязательно)')) as HTMLInputElement;
     expect(email.type).toBe('email');
     expect(email.className).toContain('ym-disable-keys');
+  });
+});
+
+describe('SubscribePage — отмена подписки (отказ не глотается, аудит 2026-10-11 frontends#0)', () => {
+  const ACTIVE = { status: 'active', period: 'month', amount: 299, nextChargeAt: '2026-11-01T00:00:00Z' };
+
+  async function openManage() {
+    mockApi.getSubscriptionByToken.mockResolvedValue(ACTIVE);
+    window.history.pushState({}, '', '/subscribe?token=tok1');
+    render(<SubscribePage />);
+    await screen.findByText(/Следующее списание/);
+  }
+  const cancelBtn = () => screen.getByRole('button', { name: /Отменить подписку|Отменяю/ }) as HTMLButtonElement;
+
+  it('контроль: успешная отмена показывает «Подписка отменена»', async () => {
+    mockApi.cancelSubscription.mockResolvedValue({ ok: true });
+    await openManage();
+    fireEvent.click(cancelBtn());
+    await screen.findByText('Подписка отменена');
+    expect(mockApi.cancelSubscription).toHaveBeenCalledWith('tok1');
+    expect(reportClientError).not.toHaveBeenCalled();
+  });
+
+  it('отказ сервера: текст ошибки виден, «Подписка отменена» нет, кнопка снова активна, отчёт наверх', async () => {
+    mockApi.cancelSubscription.mockRejectedValue(new ApiError(500, 'Internal server error'));
+    await openManage();
+    fireEvent.click(cancelBtn());
+
+    const alert = await screen.findByRole('alert');
+    expect(alert.textContent).toMatch(/Не получилось отменить подписку/);
+    expect(alert.textContent).toMatch(/списания не остановлены/);
+    expect(alert.querySelector('a')?.getAttribute('href')).toBe('https://t.me/kotlarewski');
+    expect(screen.queryByText('Подписка отменена')).toBeNull();
+    expect(cancelBtn().disabled).toBe(false);
+    expect(cancelBtn().textContent).toBe('Отменить подписку');
+    expect(reportClientError).toHaveBeenCalledWith({ message: 'subscription cancel failed: HTTP 500', section: 'subscription' });
+  });
+
+  it('в отчёт не попадает токен ссылки', async () => {
+    mockApi.cancelSubscription.mockRejectedValue(new ApiError(429, 'tok1 too many'));
+    await openManage();
+    fireEvent.click(cancelBtn());
+    await screen.findByRole('alert');
+    expect(JSON.stringify(vi.mocked(reportClientError).mock.calls)).not.toContain('tok1');
+  });
+
+  it('404: «ссылка устарела», без отчёта наверх (ожидаемый исход)', async () => {
+    mockApi.cancelSubscription.mockRejectedValue(new ApiError(404, 'Subscription not found'));
+    await openManage();
+    fireEvent.click(cancelBtn());
+
+    const alert = await screen.findByRole('alert');
+    expect(alert.textContent).toMatch(/Ссылка устарела/);
+    expect(alert.textContent).not.toMatch(/Не получилось/);
+    expect(screen.queryByText('Подписка отменена')).toBeNull();
+    expect(reportClientError).not.toHaveBeenCalled();
+  });
+
+  it('пока запрос в полёте, кнопка заблокирована, второй клик не шлёт второй POST', async () => {
+    let finish!: (v: { ok: true }) => void;
+    mockApi.cancelSubscription.mockReturnValue(new Promise((r) => { finish = r; }));
+    await openManage();
+    fireEvent.click(cancelBtn());
+    expect(cancelBtn().disabled).toBe(true);
+    expect(cancelBtn().textContent).toBe('Отменяю…');
+    fireEvent.click(cancelBtn());
+    expect(mockApi.cancelSubscription).toHaveBeenCalledTimes(1);
+
+    await act(async () => { finish({ ok: true }); });
+    await screen.findByText('Подписка отменена');
+  });
+
+  it('повторная попытка после отказа убирает старый текст ошибки', async () => {
+    mockApi.cancelSubscription.mockRejectedValueOnce(new ApiError(500, 'x')).mockResolvedValueOnce({ ok: true });
+    await openManage();
+    fireEvent.click(cancelBtn());
+    await screen.findByRole('alert');
+    fireEvent.click(cancelBtn());
+    await screen.findByText('Подписка отменена');
+    expect(screen.queryByRole('alert')).toBeNull();
   });
 });

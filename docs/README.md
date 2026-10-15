@@ -565,15 +565,13 @@ CLAUDE.md. Не удалять, но и не считать списком за�
   клиента (так обещает текст диалога), а `tasks/client/:id` фильтрует по
   `assignedBy`. Осознанно не трогали: задание принадлежит клиенту. Тот же e2e,
   сценарий 2.
-- `webapp/src/pages/SubscribePage.tsx:59` `catch { /* ignore */ }` — отмена подписки
-  глотает отказ (500, 429, maintenance-HTML, обрыв сети — ни текста, ни
-  `role=alert`, ни отчёта наверх; воспроизведено на шве). Гейт
-  `check-silent-catch.mjs` его **ловит** (`stripComments` с #293, `--verbose`
-  показывает `SubscribePage.tsx L59`) — экземпляр два месяца заморожен в
-  `scripts/silent-catch-baseline.json:43`. Класс — денежный долг в бейслайне
-  (правило №15 п.4): спек «для путей `subscription|donat|booking|payment` бейслайн
-  тихих catch пуст». Шапка скрипта `:28-31` про «слепую зону» тоже неверна.
-  Подписку включать нельзя, пока не починено ([AUDIT_2026-10, «Деньги и заявки»](AUDIT_2026-10_FINDINGS.md#деньги-и-заявки)).
+- Секция `subscription` отчёта об ошибке отмены подписки
+  (`webapp/src/pages/subscribe/useSubscriptionCancel.ts`) в
+  `src/api/client-error-section.ts` не заведена и оседает в бакете `other`
+  отчёта `/stats` об ошибках экранов: отдельной строки для подписки там нет.
+  Завести бакет (`CLIENT_ERROR_SECTIONS`, `KNOWN`, `client-error-metrics.*`),
+  когда подписку включат. Сознательно не сделано в починке отмены: правка
+  метрик — отдельный PR (правило №20).
 - Отчёты фронта об ошибках несут только имя источника, без причины:
   `webapp/src/components/appShell/useBootstrapLoad.ts` шлёт
   `appshell bootstrap fail: <имена>`, `shared/src/auth/useLoginTicket.ts` —
