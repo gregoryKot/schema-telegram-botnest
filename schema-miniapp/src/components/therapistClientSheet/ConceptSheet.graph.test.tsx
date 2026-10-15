@@ -287,10 +287,16 @@ describe('ConceptSheet: связи режима — правка → «гряз�
     );
   });
 
+  // Лист рисуется после асинхронной загрузки — вне act(), поэтому эффект
+  // графа (он и шлёт событие) может отработать позже, чем findByText увидит
+  // заголовок: на холодном раннере проверка «сразу» ловила []. Ждём событие,
+  // а не момент отрисовки.
   it('открытие схемы шлёт concept_graph_open', async () => {
     await openSheet(concept());
-    expect(mockApi.trackEvent.mock.calls.map((c) => c[0])).toEqual([
-      'concept_graph_open',
-    ]);
+    await waitFor(() =>
+      expect(mockApi.trackEvent.mock.calls.map((c) => c[0])).toEqual([
+        'concept_graph_open',
+      ]),
+    );
   });
 });
