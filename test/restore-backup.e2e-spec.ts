@@ -1,21 +1,16 @@
-// Сквозная связка плана Б (docs/MIGRATION_VPS.md): настоящий backup-to-b2.sh
-// снимает дамп живой базы и грузит его в (поддельный) B2 → fetch-latest-b2.sh
+// Сквозная связка плана Б (docs/MIGRATION_VPS.md): настоящий backup-upload.sh
+// снимает дамп живой базы и грузит его в (поддельный) S3 → backup-fetch-latest.sh
 // скачивает самый свежий файл → restore-backup.sh заливает его в ПУСТУЮ базу
 // настоящим psql → числа сходятся с источником. Мок не заменит ни pg_dump, ни
 // psql, ни формат файла между тремя скриптами (правило №18, №23: «тесты стояли
-// по обе стороны шва, но не на шве»); юнит-спек fetch-latest-b2.spec.ts
+// по обе стороны шва, но не на шве»); юнит-спек backup-fetch-latest.spec.ts
 // проверяет только скачивание. Источник — настоящая схема приложения
 // (migrate deploy). Гоняется в CI-джобе `migrations` (Postgres 16 + клиент).
 import { spawn, spawnSync } from 'child_process';
 import { existsSync, mkdtempSync, rmSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
-import {
-  FAKE_B2_APP_KEY,
-  FAKE_B2_BUCKET,
-  FAKE_B2_KEY_ID,
-  FakeB2,
-} from '../src/test-support/fake-b2';
+import { FAKE_S3_SECRET, FakeS3 } from '../src/test-support/fake-s3';
 
 const SCRIPTS = join(process.cwd(), 'scripts');
 const { pgEnvFromUrl } = jest.requireActual<{
@@ -28,14 +23,17 @@ const BASE = new URL(
   process.env.DATABASE_URL ?? 'postgresql://postgres:ci@localhost:5432/ci',
 );
 const SUFFIX = `${process.pid}`;
-const DB = { src: `restoreb2_src_${SUFFIX}`, dst: `restoreb2_dst_${SUFFIX}` };
+const DB = {
+  src: `restorebk_src_${SUFFIX}`,
+  dst: `restorebk_dst_${SUFFIX}`,
+};
 const urlOf = (db: string) => {
   const u = new URL(BASE.toString());
   u.pathname = `/${db}`;
   u.search = '?sslmode=disable';
   return u.toString();
 };
-const BACKUP_KEY = 'restore-b2-spec-key-' + 'k'.repeat(24);
+const BACKUP_KEY = 'restore-backup-spec-key-' + 'k'.repeat(24);
 const MARKER = 'план-б-маркер-Ёж';
 
 function psql(db: string, sql: string): string {
@@ -48,7 +46,7 @@ function psql(db: string, sql: string): string {
   return res.stdout.trim();
 }
 
-// Скрипты ходят в поддельный B2 внутри этого же процесса — spawnSync заблокировал бы сервер.
+// Скрипты ходят в поддельный S3 внутри этого же процесса — spawnSync заблокировал бы сервер.
 function bash(
   script: string,
   args: string[],
@@ -65,15 +63,9 @@ function bash(
   });
 }
 
-describe('план Б: backup-to-b2.sh → B2 → fetch-latest-b2.sh → restore-backup.sh на реальном Postgres', () => {
-  let fake: FakeB2;
+describe('план Б: backup-upload.sh → S3 → backup-fetch-latest.sh → restore-backup.sh на реальном Postgres', () => {
+  let fake: FakeS3;
   let dir: string;
-  const b2Env = () => ({
-    B2_KEY_ID: FAKE_B2_KEY_ID,
-    B2_APP_KEY: FAKE_B2_APP_KEY,
-    B2_BUCKET: FAKE_B2_BUCKET,
-    B2_AUTH_URL: fake.authUrl,
-  });
 
   beforeAll(async () => {
     for (const db of Object.values(DB))
@@ -89,10 +81,10 @@ describe('план Б: backup-to-b2.sh → B2 → fetch-latest-b2.sh → restore
     psql(DB.src, `INSERT INTO "User" (id) VALUES (201), (202), (203), (204)`);
     psql(
       DB.src,
-      `INSERT INTO "HealthyAdultPost" (text, source) VALUES ('${MARKER}', 'restore-b2-spec')`,
+      `INSERT INTO "HealthyAdultPost" (text, source) VALUES ('${MARKER}', 'restore-backup-spec')`,
     );
-    fake = await new FakeB2().start();
-    dir = mkdtempSync(join(tmpdir(), 'restore-b2-'));
+    fake = await new FakeS3().start();
+    dir = mkdtempSync(join(tmpdir(), 'restore-backup-'));
   });
 
   afterAll(async () => {
@@ -107,8 +99,8 @@ describe('план Б: backup-to-b2.sh → B2 → fetch-latest-b2.sh → restore
     fake.add('schemehappens-2020-01-01.sql.gz.enc', 'старый мусор');
     fake.add('schemehappens-2020-01-01.sql.gz.enc.sha256', 'x  y');
 
-    const backup = await bash('backup-to-b2.sh', [], {
-      ...b2Env(),
+    const backup = await bash('backup-upload.sh', [], {
+      ...fake.env(),
       DATABASE_URL: urlOf(DB.src),
       BACKUP_ENCRYPTION_KEY: BACKUP_KEY,
       ENCRYPTION_KEY: '',
@@ -116,20 +108,20 @@ describe('план Б: backup-to-b2.sh → B2 → fetch-latest-b2.sh → restore
     expect(backup.code).toBe(0);
 
     const fetched = await bash(
-      'fetch-latest-b2.sh',
+      'backup-fetch-latest.sh',
       [join(dir, 'dl')],
-      b2Env(),
+      fake.env(),
     );
     expect(fetched.code).toBe(0);
     const today = new Date().toISOString().slice(0, 10);
     expect(fetched.out).toMatch(
       new RegExp(
-        `\\[fetch-b2\\] ok schemehappens-${today}\\.sql\\.gz\\.enc размер \\d+ байт, дата ${today}`,
+        `\\[fetch-backup\\] ok schemehappens-${today}\\.sql\\.gz\\.enc размер \\d+ байт, дата ${today}`,
       ),
     );
-    expect(fetched.out).not.toContain(FAKE_B2_APP_KEY);
+    expect(fetched.out).not.toContain(FAKE_S3_SECRET);
 
-    // База-приёмник пуста до заливки (как op=restore-b2 проверяет в ops.sh).
+    // База-приёмник пуста до заливки (как op=restore-backup проверяет в ops.sh).
     expect(
       psql(
         DB.dst,
