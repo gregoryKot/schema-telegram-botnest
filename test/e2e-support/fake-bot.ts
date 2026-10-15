@@ -17,7 +17,7 @@ export function makeFakeBot(): any {
     hears: jest.fn(chain),
     use: jest.fn(chain),
     catch: jest.fn(chain),
-    launch: jest.fn(() => Promise.resolve(undefined)),
+    launch: jest.fn(() => new Promise<void>(() => undefined)),
     stop: jest.fn(),
     telegram: {
       getMe: jest.fn(() =>

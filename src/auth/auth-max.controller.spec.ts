@@ -44,9 +44,11 @@ function makeSecurityLog(): { log: jest.Mock } {
   return { log: jest.fn() };
 }
 
-function makeReq(): Request {
+function makeReq(
+  headers: Record<string, string> = { 'x-requested-with': 'miniapp' },
+): Request {
   return {
-    headers: {},
+    headers,
     ip: '198.51.100.1',
   } as unknown as Request;
 }
@@ -71,6 +73,47 @@ function makeController() {
 }
 
 describe('AuthMaxController.maxWebApp', () => {
+  // Login-CSRF (security#6): форма с чужого сайта несёт настоящую initData
+  // атакующего. Подпись верна, значит отбить её может только проверка
+  // заголовка — и до проверки подписи, и до выдачи куки.
+  it('без CSRF-заголовка (форма с чужого сайта) → 401, ни подписи, ни куки', async () => {
+    const { controller, auth, maxProvider, securityLog } = makeController();
+    const res = makeRes();
+    await expect(
+      controller.maxWebApp(
+        { initData: 'attacker-signed' },
+        makeReq({ 'content-type': 'application/x-www-form-urlencoded' }),
+        res,
+      ),
+    ).rejects.toThrow(UnauthorizedException);
+    expect(securityLog.log).toHaveBeenCalledWith(
+      'csrf_blocked',
+      expect.objectContaining({ endpoint: 'max/webapp' }),
+    );
+    expect(maxProvider.verifyInitData).not.toHaveBeenCalled();
+    expect(auth.issueTokens).not.toHaveBeenCalled();
+    expect(res.cookie).not.toHaveBeenCalled();
+  });
+
+  it('JSON без x-requested-with допускается (форма JSON выставить не может)', async () => {
+    const { controller, maxProvider } = makeController();
+    maxProvider.verifyInitData.mockReturnValue({
+      providerId: '777',
+      displayName: 'E2E MAX',
+    });
+    const res = makeRes();
+    await controller.maxWebApp(
+      { initData: 'signed' },
+      makeReq({ 'content-type': 'application/json' }),
+      res,
+    );
+    expect(res.cookie).toHaveBeenCalledWith(
+      REFRESH_COOKIE,
+      FAKE_TOKENS.refreshToken,
+      expect.objectContaining({ httpOnly: true }),
+    );
+  });
+
   it('пустой initData → BadRequestException, подпись не проверяется', async () => {
     const { controller, maxProvider } = makeController();
     await expect(
