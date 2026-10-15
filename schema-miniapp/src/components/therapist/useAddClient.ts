@@ -4,7 +4,7 @@ import { api } from '../../api';
 import { useCopyToClipboard } from '../../../../shared/src/utils/useCopyToClipboard';
 import type { TherapyClientSummary } from '../../api';
 
-export type AddMode = null | 'invite' | 'telegram' | 'virtual';
+export type AddMode = null | 'invite' | 'virtual';
 
 interface Params {
   setClients: React.Dispatch<React.SetStateAction<TherapyClientSummary[]>>;
@@ -51,40 +51,6 @@ export function useAddClient({ setClients }: Params) {
     if (!ok) inviteInputRef.current?.select();
   }
 
-  async function addByTelegramId() {
-    const id = parseInt(addInput.trim(), 10);
-    if (!id || isNaN(id)) {
-      setAddError(
-        tr('Введи числовой Telegram ID', 'Введите числовой Telegram ID'),
-      );
-      return;
-    }
-    setAddLoading(true);
-    setAddError('');
-    try {
-      const updated = await api.addClientManually(id);
-      setClients(updated);
-      openAddMode(null);
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : '';
-      if (msg.toLowerCase().includes('not found'))
-        setAddError(
-          'Пользователь не найден. Должен открыть приложение хотя бы раз.',
-        );
-      else if (msg.toLowerCase().includes('already'))
-        setAddError('Клиент уже подключён');
-      else
-        setAddError(
-          tr(
-            'Не нашёлся клиент с таким ID. Проверь код и попробуй ещё раз.',
-            'Не нашёлся клиент с таким ID. Проверьте код и попробуйте ещё раз.',
-          ),
-        );
-    } finally {
-      setAddLoading(false);
-    }
-  }
-
   async function addVirtualClient() {
     const name = addInput.trim();
     if (!name) {
@@ -123,7 +89,6 @@ export function useAddClient({ setClients }: Params) {
     openAddMode,
     createInvite,
     copyInvite,
-    addByTelegramId,
     addVirtualClient,
   };
 }

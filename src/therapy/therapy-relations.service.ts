@@ -170,33 +170,6 @@ export class TherapyRelationsService {
     return this.getClients(therapistId);
   }
 
-  async addClientManually(therapistId: bigint, clientTelegramId: bigint) {
-    const tid = therapistId;
-    const cid = clientTelegramId;
-
-    // Check client user exists
-    const clientUser = await this.prisma.user.findUnique({
-      where: { id: cid },
-      select: { id: true, firstName: true },
-    });
-    if (!clientUser) throw new Error('User not found');
-
-    // Check no existing active relation
-    const existing = await this.prisma.therapyRelation.findFirst({
-      where: { therapistId: tid, clientId: cid, status: 'active' },
-    });
-    if (existing) throw new Error('Already connected');
-
-    // Create active relation directly (no invite code needed — use random code)
-    const code = randomBytes(5).toString('hex').toUpperCase();
-    await this.prisma.therapyRelation.create({
-      data: { code, therapistId: tid, clientId: cid, status: 'active' },
-    });
-
-    // Return updated client list
-    return this.getClients(therapistId);
-  }
-
   // ─── Access boundary ────────────────────────────────────────────────────────
 
   // Public wrapper for other therapy services/controller — same semantics as

@@ -98,7 +98,6 @@ OJWT = `OptionalJwtGuard` · — = без гварда (валидация вн�
 | GET clients | TAG +role | Medium | ⬜ |
 | DELETE clients/:clientId | TAG +role | High | ⬜ |
 | POST clients/virtual | TAG +role | Medium | ⬜ |
-| POST clients/add | TAG +role | Low (410) | ⬜ |
 | POST become-therapist | TAG | Low (410) | ⬜ |
 | POST request · GET request | TAG | High / Low | ⬜ |
 | POST tasks | TAG +role | **High** | ⬜ |
