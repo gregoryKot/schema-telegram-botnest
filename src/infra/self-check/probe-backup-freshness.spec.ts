@@ -39,6 +39,34 @@ describe('backupFreshnessProbe', () => {
     expect(s3.requests).toHaveLength(0);
   });
 
+  it('DEPLOY_TARGET=vps и бэкапы не настроены — авария: единственная копия базы на диске сервера', async () => {
+    const res = await run({ DEPLOY_TARGET: 'vps' });
+    expect(res.ok).toBe(false);
+    expect(res.detail).toContain('единственная копия базы');
+    expect(res.detail).toContain('BACKUP_S3_ENDPOINT');
+    expect(s3.requests).toHaveLength(0);
+  });
+
+  it('DEPLOY_TARGET=amvera (и пустой) — «выключено» остаётся штатным', async () => {
+    expect(await run({ DEPLOY_TARGET: 'amvera' })).toEqual({
+      ok: true,
+      detail: 'выключено',
+    });
+    expect(await run({ DEPLOY_TARGET: '' })).toEqual({
+      ok: true,
+      detail: 'выключено',
+    });
+    expect(s3.requests).toHaveLength(0);
+  });
+
+  it('на VPS с полным набором — идёт в хранилище (настоящая подпись) и проверяет свежесть, а не краснеет', async () => {
+    add('2026-10-03', 5);
+    const res = await run(env({ DEPLOY_TARGET: 'vps' }));
+    expect(res.ok).toBe(true);
+    expect(res.detail).toContain('последний бэкап');
+    expect(s3.requests.length).toBeGreaterThan(0);
+  });
+
   it('настроено не до конца — авария с именами недостающих переменных', async () => {
     const res = await run({
       BACKUP_S3_BUCKET: 'b',
