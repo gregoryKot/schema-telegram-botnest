@@ -22,6 +22,8 @@ import { DONATION_INVID_BASE } from '../src/donation/donation.service';
 import { SUBSCRIPTION_INVID_BASE } from '../src/subscription/subscription.service';
 import { BookingService } from '../src/booking/booking.service';
 import { BookingNotifyService } from '../src/booking/booking-notify.service';
+import { BookingConfirmRetryService } from '../src/booking/booking-confirm-retry.service';
+import { MeetingService } from '../src/booking/meeting.service';
 import { CronLeaderService } from '../src/infra/cron-leader.service';
 import { TelegramService } from '../src/telegram/telegram.service';
 import { EmailService } from '../src/auth/email.service';
@@ -44,10 +46,17 @@ const BOOKING_CANCEL_TOKENS = [
   'bk-ct-7',
   'bk-ct-8',
   'bk-ct-9',
+  'bk-ct-10',
+  'bk-ct-11',
+  'bk-ct-12',
 ];
 const SUBSCRIPTION_CANCEL_TOKENS = ['sub-ct-1', 'sub-ct-2', 'sub-ct-3'];
 const DONATION_MARKER = 'e2e-payment-webhook-test';
 const TEST_CLIENT_CONTACT = 't@e.co';
+// Свой контакт у сценариев «эффекты подтверждения»: по нему из писем и DM
+// отбираются сообщения именно этих броней (в карточке брони id нет), а чистка
+// заодно убирает их ClientMeeting.
+const EFFECTS_CLIENT_CONTACT = 'effects-21@e.co';
 // Цена сессии 50 минут — из конфига, не литералом: на фейке PricingService
 // отдаёт дефолт, а на реальном Postgres — строку BookingSetting
 // price:SESSION_50, которую заводит миграция 20261001090000_session_price_3000
@@ -69,7 +78,7 @@ describe('e2e smoke: платёжный контур Robokassa по HTTP', () =>
       bookingCancelTokens: BOOKING_CANCEL_TOKENS,
       subscriptionCancelTokens: SUBSCRIPTION_CANCEL_TOKENS,
       donationMarker: DONATION_MARKER,
-      clientContacts: [TEST_CLIENT_CONTACT],
+      clientContacts: [TEST_CLIENT_CONTACT, EFFECTS_CLIENT_CONTACT],
     });
   });
 
@@ -211,7 +220,16 @@ describe('e2e smoke: платёжный контур Robokassa по HTTP', () =>
       tg = jest.spyOn(app.get(TelegramService), 'notifyAdmin');
       mail = jest.spyOn(app.get(EmailService), 'sendAdminNotification');
       // Побочные эффекты брони (Zoom/CalDAV) наружу не ходят; считаем вызовы.
-      onConfirmed = jest.spyOn(notify, 'onConfirmed').mockResolvedValue();
+      // Как настоящий onConfirmed, довёл до конца — ставит флаг эффектов
+      // (security#21): иначе повтор вебхука справедливо доделывал бы заново.
+      onConfirmed = jest
+        .spyOn(notify, 'onConfirmed')
+        .mockImplementation(async (b) => {
+          await prisma.booking.update({
+            where: { id: b.id },
+            data: { confirmEffectsDoneAt: new Date() },
+          });
+        });
       onCancelled = jest.spyOn(notify, 'onCancelled').mockResolvedValue();
       notifyExpired = jest.spyOn(notify, 'notifyExpired');
     });
@@ -363,6 +381,191 @@ describe('e2e smoke: платёжный контур Robokassa по HTTP', () =>
       // повторная отмена позже — тоже no-op
       await expect(bookingSvc.cancel('bk-ct-9')).resolves.toEqual({ ok: true });
       expect(onCancelled).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  // ─── Побочные эффекты подтверждения доделываются (security#21) ────────────
+  // CAS HELD→CONFIRMED прошёл, а эффекты (ссылка на встречу, календарь, DM)
+  // упали — раньше бронь оставалась CONFIRMED без ссылки навсегда, а повтор
+  // вебхука отвечал OK без эффектов. Здесь настоящий onConfirmed и настоящая
+  // БД: падение вставляется на границе MeetingService.createMeeting (туда
+  // уходят обрывы БД и Zoom), всё остальное — код прода. Фейк предикат
+  // `confirmEffectsDoneAt: null` в updateMany не проверил бы так, как Postgres.
+
+  describe('эффекты подтверждения: падение после CAS → повтор и крон доделывают', () => {
+    let meetingSvc: MeetingService;
+    let retry: BookingConfirmRetryService;
+    let createMeeting: jest.SpyInstance;
+    let tg: jest.SpyInstance;
+    let mail: jest.SpyInstance;
+    const pauseThrottle = () => new Promise((r) => setTimeout(r, 1100));
+
+    beforeAll(async () => {
+      await pauseThrottle();
+      meetingSvc = app.get(MeetingService);
+      retry = app.get(BookingConfirmRetryService);
+      jest
+        .spyOn(app.get(CronLeaderService), 'claimRun')
+        .mockResolvedValue(true);
+      tg = jest.spyOn(app.get(TelegramService), 'notifyAdmin');
+      mail = jest.spyOn(app.get(EmailService), 'sendAdminNotification');
+      // По умолчанию вызывает настоящий createMeeting (Jitsi + ClientMeeting).
+      createMeeting = jest.spyOn(meetingSvc, 'createMeeting');
+    });
+    beforeEach(() => {
+      tg.mockReset().mockResolvedValue(true);
+      mail.mockReset().mockResolvedValue(undefined);
+      createMeeting.mockClear();
+    });
+    afterAll(async () => {
+      jest.restoreAllMocks();
+      await pauseThrottle();
+    });
+
+    const row = (id: number) => prisma.booking.findUnique({ where: { id } });
+    const texts = () => [
+      ...tg.mock.calls.map((c) => String(c[0])),
+      ...mail.mock.calls.map((c) => `${c[0]} | ${c[1]}`),
+    ];
+    // Только сообщения этих сценариев: по контакту клиента.
+    const confirmedDms = () =>
+      tg.mock.calls
+        .map((c) => String(c[0]))
+        .filter(
+          (t) =>
+            t.includes('Запись подтверждена') &&
+            t.includes(EFFECTS_CLIENT_CONTACT),
+        );
+    const alerts = (id: number) =>
+      tg.mock.calls
+        .map((c) => String(c[0]))
+        .filter((t) => t.includes(`#${id}`));
+    const pay = (id: number) =>
+      postResult(
+        SESSION_OUT_SUM,
+        String(id),
+        resultSig(SESSION_OUT_SUM, String(id)),
+      );
+    function held(token: string) {
+      return prisma.booking.create({
+        data: {
+          startsAt: new Date(Date.now() + 72 * 3_600_000),
+          durationMin: 50,
+          type: 'SESSION_50',
+          status: 'HELD',
+          heldUntil: new Date(Date.now() + 10 * 60_000),
+          clientName: 'Клиент',
+          clientContact: EFFECTS_CLIENT_CONTACT,
+          cancelToken: token,
+        },
+      });
+    }
+
+    it('эффект упал после CAS → FAIL и честный алерт; повтор ResultURL: OK, ссылка и флаг есть, DM «подтверждена» ровно один', async () => {
+      const b = await held('bk-ct-10');
+      createMeeting.mockRejectedValueOnce(new Error("Can't reach database"));
+
+      const first = await pay(b.id);
+
+      expect(first.text).toBe(`FAIL${b.id}`); // Robokassa повторит
+      const afterFirst = await row(b.id);
+      expect(afterFirst?.status).toBe('CONFIRMED'); // CAS прошёл
+      expect(afterFirst?.meetingUrl ?? null).toBeNull();
+      expect(afterFirst?.confirmEffectsDoneAt ?? null).toBeNull();
+      expect(afterFirst?.paidAt).toBeInstanceOf(Date);
+      expect(confirmedDms()).toEqual([]);
+      const alert = alerts(b.id).join('\n');
+      expect(alert).toContain('оплачена и подтверждена');
+      expect(alert).not.toContain('не подтвердилась'); // старая ложь
+      await pauseThrottle();
+
+      // Свежая строка: первый проход мог ещё идти — ретрай его не перебивает
+      // (иначе вторая Zoom-встреча); OK отдаётся, доделает крон.
+      createMeeting.mockClear();
+      expect((await pay(b.id)).text).toBe(`OK${b.id}`);
+      expect(createMeeting.mock.calls).toHaveLength(0);
+      expect((await row(b.id))?.confirmEffectsDoneAt ?? null).toBeNull();
+      await pauseThrottle();
+
+      await prisma.booking.update({
+        where: { id: b.id },
+        data: { updatedAt: new Date(Date.now() - 5 * 60_000) },
+      });
+      const second = await pay(b.id); // ретрай Robokassa спустя время
+
+      expect(second.text).toBe(`OK${b.id}`);
+      const afterSecond = await row(b.id);
+      expect(afterSecond?.status).toBe('CONFIRMED');
+      expect(afterSecond?.meetingUrl).toBeTruthy();
+      expect(afterSecond?.confirmEffectsDoneAt).toBeInstanceOf(Date);
+      expect(confirmedDms()).toHaveLength(1);
+      expect(
+        mail.mock.calls
+          .map((c) => String(c[1]))
+          .filter((t) => t.includes(EFFECTS_CLIENT_CONTACT)),
+      ).toHaveLength(1);
+      // read-after-write: то, что видит клиент на странице «Оплачено».
+      await pauseThrottle();
+      const pub = await request(app.getHttpServer()).get(
+        '/api/booking/by-token/bk-ct-10',
+      );
+      expect(pub.status).toBe(200);
+      expect(pub.body.meetingUrl).toMatch(/^https:\/\//);
+    });
+
+    it('контроль: повтор по полностью подтверждённой брони — OK, ничего не шлёт и встречу заново не создаёт', async () => {
+      await pauseThrottle();
+      const b = await held('bk-ct-11');
+      expect((await pay(b.id)).text).toBe(`OK${b.id}`);
+      const done = await row(b.id);
+      expect(done?.confirmEffectsDoneAt).toBeInstanceOf(Date);
+      expect(confirmedDms()).toHaveLength(1);
+      tg.mockClear();
+      mail.mockClear();
+      createMeeting.mockClear();
+
+      expect((await pay(b.id)).text).toBe(`OK${b.id}`);
+
+      expect(texts()).toEqual([]);
+      expect(createMeeting.mock.calls).toHaveLength(0);
+      const again = await row(b.id);
+      expect(again?.confirmEffectsDoneAt?.getTime()).toBe(
+        done?.confirmEffectsDoneAt?.getTime(),
+      );
+      expect(again?.meetingUrl).toBe(done?.meetingUrl);
+    });
+
+    it('гибель процесса: ретрая вебхука нет — крон-добор доделывает зависшую бронь, свежую не трогает', async () => {
+      await pauseThrottle();
+      const b = await held('bk-ct-12');
+      createMeeting.mockRejectedValueOnce(new Error('SIGTERM'));
+      expect((await pay(b.id)).text).toBe(`FAIL${b.id}`);
+      createMeeting.mockClear();
+
+      await retry.retryStalled(); // строка только что писана — ещё не «зависла»
+
+      expect(createMeeting.mock.calls).toHaveLength(0);
+      expect((await row(b.id))?.meetingUrl ?? null).toBeNull();
+
+      await prisma.booking.update({
+        where: { id: b.id },
+        data: { updatedAt: new Date(Date.now() - 10 * 60_000) },
+      });
+      await retry.retryStalled();
+
+      const done = await row(b.id);
+      expect(done?.meetingUrl).toBeTruthy();
+      expect(done?.confirmEffectsDoneAt).toBeInstanceOf(Date);
+      expect(confirmedDms()).toHaveLength(1);
+
+      tg.mockClear();
+      mail.mockClear();
+      await retry.retryStalled(); // второй тик: доделанное не берётся
+      expect(
+        tg.mock.calls.filter((c) =>
+          String(c[0]).includes(EFFECTS_CLIENT_CONTACT),
+        ),
+      ).toEqual([]);
     });
   });
 
