@@ -1,7 +1,7 @@
 import { Logger, type OnApplicationShutdown } from '@nestjs/common';
 import type { ThrottlerStorage } from '@nestjs/throttler';
-import { ThrottlerStorageService } from '@nestjs/throttler';
 import { PrismaService } from '../prisma/prisma.service';
+import { MemoryThrottleStorage } from './memory-throttle-storage';
 import { PostgresThrottleStorage } from './postgres-throttle-storage';
 import type { ThrottleStorageRecord } from './throttle-storage-record';
 
@@ -11,9 +11,9 @@ const DB_PREFIX = 'db:';
  * Маршрутизация по префиксу ключа (сам префикс ставит
  * UserThrottlerGuard.generateKey по метке `@PersistentThrottle()`):
  * `db:`-ключи — денежные/заявочные ручки — считает Postgres, счётчик общий
- * на оба инстанса Amvera; остальные — штатное хранилище библиотеки в памяти
- * процесса, как было. Так не грузим БД лишней записью на КАЖДЫЙ запрос
- * сайта — только на горстку ручек, где дубль обхода стоит денег/спама.
+ * на оба инстанса Amvera; остальные — `MemoryThrottleStorage` в памяти
+ * процесса (почему не штатное — в её шапке). Так не грузим БД записью на
+ * КАЖДЫЙ запрос сайта, только на ручки, где дубль обхода стоит денег/спама.
  *
  * Деградация: Postgres недоступен → ЭТА ОДНА проверка на время запроса
  * считается в памяти (лучше временно ослабленный на два инстанса лимит, чем
@@ -21,16 +21,15 @@ const DB_PREFIX = 'db:';
  * будил админа DM на каждый запрос, пока авария БД не починится — сама
  * авария уже алертится отдельно (DbOutageMonitorService).
  *
- * Остановка: штатное хранилище чистит таймеры истечения (до часа на
- * маршрутах с ttl 3_600_000) в onApplicationShutdown. Обёртка обязана
- * пробросить хук — иначе после app.close() таймеры живут дальше, и jest в
- * джобе migrations ждал их час (первый прогон CI PR #492 повис на 47 минут).
+ * Остановка: таймеров у памяти нет, после app.close() ничто не держит jest
+ * (штатное ставило часовые, PR #492 повис на 47 минут). Хук onApplicationShutdown
+ * остаётся пробросом, шов DI — hybrid-throttle-storage.shutdown.spec.ts.
  */
 export class HybridThrottleStorage
   implements ThrottlerStorage, OnApplicationShutdown
 {
   private readonly logger = new Logger(HybridThrottleStorage.name);
-  private readonly memory = new ThrottlerStorageService();
+  private readonly memory = new MemoryThrottleStorage();
   private readonly postgres: PostgresThrottleStorage;
 
   constructor(prisma: PrismaService) {
