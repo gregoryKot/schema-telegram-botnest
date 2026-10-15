@@ -64,6 +64,7 @@ export async function completeCheckout(
     startsAt: Date;
     type: SessionType;
     clientContact: string;
+    adminNote?: string; // пометка админу в «ожидает оплаты», клиенту не видна
   },
 ): Promise<BookingResult> {
   const { isFree, cancelToken, heldUntil } = opts;
@@ -90,10 +91,9 @@ export async function completeCheckout(
     successUrl: `${deps.siteUrl}/api/payment/success`,
     failUrl: `${deps.siteUrl}/api/payment/fail`,
   });
-  // Tell the admin a slot is reserved & awaiting payment — so even if the
-  // client's payment fails (or Robokassa is misconfigured), the request and
-  // contact are never lost.
-  await deps.notify.onAwaitingPayment(decryptRecord(booking, deps.schema));
+  // Admin hears "awaiting payment": the lead survives a failed payment.
+  const plain = decryptRecord(booking, deps.schema);
+  await deps.notify.onAwaitingPayment(plain, opts.adminNote);
 
   return {
     id: booking.id,

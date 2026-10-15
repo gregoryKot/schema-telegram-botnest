@@ -4,6 +4,7 @@ import { BookingCalendarAdminController } from './booking-calendar-admin.control
 import { PaymentController } from './payment.controller';
 import { BookingService } from './booking.service';
 import { BookingNotifyService } from './booking-notify.service';
+import { BookingConfirmRetryService } from './booking-confirm-retry.service';
 import { BookingRetentionService } from './booking-retention.service';
 import { SlotService } from './slot.service';
 import { AvailabilityService } from './availability.service';
@@ -18,9 +19,7 @@ import { DonationService } from '../donation/donation.service';
 import { SubscriptionController } from '../subscription/subscription.controller';
 import { SubscriptionService } from '../subscription/subscription.service';
 
-// Реестр controllers/providers BookingModule — вынесен из booking.module.ts
-// (бейслайн 43 строки, правило №10) отдельно от imports/exports модуля,
-// которые остаются в самом модуле.
+// Реестр controllers/providers BookingModule (вынесен из booking.module.ts, правило №10).
 export const BOOKING_CONTROLLERS = [
   BookingController,
   BookingAdminController,
@@ -33,6 +32,7 @@ export const BOOKING_CONTROLLERS = [
 export const BOOKING_PROVIDERS = [
   BookingService,
   BookingNotifyService,
+  BookingConfirmRetryService,
   BookingRetentionService,
   SlotService,
   AvailabilityService,

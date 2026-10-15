@@ -4,7 +4,7 @@
 // приложение поднялось — front проксирует на него. Гоняем реальным процессом,
 // подсовывая фейковые команды через env (RECOVER_CMD/MIGRATE_CMD/APP_CMD).
 import { spawn, ChildProcess } from 'child_process';
-import { createServer } from 'net';
+import { createServer, Server } from 'net';
 import { join } from 'path';
 import { existsSync, unlinkSync } from 'fs';
 import { tmpdir } from 'os';
@@ -193,6 +193,78 @@ describe('entrypoint (супервизор старта)', () => {
     const text = await poll(`http://127.0.0.1:${port}/`, /технические работы/);
     expect(text).toContain('технические работы');
   }, 10000);
+
+  // Аудит 2026-10-11 (infra#13): после лимита перезапусков супервизор парковался
+  // НАВСЕГДА (процесс жив, restart-policy не срабатывает), и сбой, прошедший
+  // сам, чинился только руками. Теперь — пауза и новая серия, front всё это
+  // время отдаёт техработы. Короткая пауза через env, бюджет — waitLog.
+  it('лимит исчерпан → процесс жив, front на техработах, после паузы идёт новая серия', async () => {
+    const { proc, frontPort, log } = launch({
+      RECOVER_CMD: 'true',
+      MIGRATE_CMD: 'true',
+      APP_CMD: 'echo APP-START >&2; exit 1',
+      APP_PORT: String(await freePort()),
+      STARTUP_MAX_FAILS: '2',
+      STARTUP_BACKOFF_MS: '10',
+      STARTUP_COOLDOWN_MS: '200',
+      STARTUP_COOLDOWN_MAX_MS: '200',
+    });
+    alive.push(proc);
+    const port = await frontPort;
+    const first = await waitLog(log, (l) => /следующая серия через/.test(l));
+    expect(first).toMatch(
+      /лимит перезапусков исчерпан — техработы, следующая серия через 200 мс/,
+    );
+    expect(proc.exitCode).toBeNull();
+    const out = await waitLog(log, (l) => count(l, /APP-START/g) >= 4);
+    expect(count(out, /лимит перезапусков исчерпан/g)).toBeGreaterThanOrEqual(
+      1,
+    );
+    expect(proc.exitCode).toBeNull();
+    const text = await poll(`http://127.0.0.1:${port}/`, /технические работы/);
+    expect(text).toContain('технические работы');
+  }, 30000);
+
+  it('БД не поднялась за отведённое время → повтор ожидания, а когда БД ожила — старт идёт дальше', async () => {
+    const dbPort = await freePort();
+    const marker = join(
+      tmpdir(),
+      `entrypoint-db-retry-marker-${process.pid}-${Date.now()}`,
+    );
+    if (existsSync(marker)) unlinkSync(marker);
+    let db: Server | undefined;
+    try {
+      const { proc, frontPort, log } = launch({
+        DATABASE_URL: `postgresql://u:p@127.0.0.1:${dbPort}/db`,
+        DB_WAIT_TIMEOUT_MS: '150',
+        DB_WAIT_INTERVAL_MS: '50',
+        DB_WAIT_CONNECT_MS: '50',
+        STARTUP_COOLDOWN_MS: '200',
+        STARTUP_COOLDOWN_MAX_MS: '200',
+        RECOVER_CMD: `node -e "require('fs').writeFileSync('${marker}','x')"`,
+        MIGRATE_CMD: 'true',
+        APP_CMD: 'echo APP-START >&2; exec sleep 30',
+        APP_PORT: String(await freePort()),
+      });
+      alive.push(proc);
+      await frontPort;
+      await waitLog(log, (l) =>
+        /БД не поднялась в отведённое время — техработы, следующая серия через/.test(
+          l,
+        ),
+      );
+      expect(existsSync(marker)).toBe(false);
+      expect(proc.exitCode).toBeNull();
+      // БД «ожила»: следующая серия обязана дойти до recover и приложения.
+      db = createServer((c) => c.destroy());
+      await new Promise<void>((r) => db?.listen(dbPort, '127.0.0.1', r));
+      await waitLog(log, (l) => /APP-START/.test(l));
+      expect(existsSync(marker)).toBe(true);
+    } finally {
+      db?.close();
+      if (existsSync(marker)) unlinkSync(marker);
+    }
+  }, 30000);
 
   it('приложение подняло APP_PORT → front проксирует на него (не техработы)', async () => {
     const APP_PORT = String(await freePort());

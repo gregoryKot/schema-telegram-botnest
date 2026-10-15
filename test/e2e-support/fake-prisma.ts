@@ -14,6 +14,7 @@
 
 import { makeFakeExecuteRaw } from './fake-cron-lease';
 import { makeTable, withUserJoin, withDefaults } from './fake-prisma-engine';
+import { withUpdatedAt } from './fake-updated-at';
 
 /** Собирает фейковый PrismaService, готовый к .overrideProvider(PrismaService). */
 export function makeFakePrisma() {
@@ -106,10 +107,9 @@ export function makeFakePrisma() {
     // TherapyTasksService.scheduleTaskNotification (POST /api/therapy/tasks
     // с clientId вызывает notificationService.schedule).
     scheduledNotification: makeTable(),
-    // Платёжный контур (test/payment-webhooks.e2e-spec.ts): общий Robokassa
-    // Result-вебхук маршрутизирует по InvId между booking/donation/subscriptionCharge;
-    // BookingNotifyService.onConfirmed на confirm() ещё трогает clientMeeting.
-    booking: makeTable(),
+    // Платёжный контур (payment-webhooks.e2e-spec.ts): Result-вебхук маршрутизирует
+    // по InvId между booking/donation/subscriptionCharge; onConfirmed трогает clientMeeting.
+    booking: withUpdatedAt(makeTable()),
     clientMeeting: makeTable(),
     donation: makeTable(),
     subscription: makeTable(),

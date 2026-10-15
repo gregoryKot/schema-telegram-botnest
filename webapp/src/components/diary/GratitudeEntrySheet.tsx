@@ -7,6 +7,8 @@ import { CrisisCard } from '../CrisisCard';
 import { fmtDateLong, todayStr } from '../../utils/format';
 import { haptic } from '../../haptic';
 import { SaveEntryButton } from './SaveEntryButton';
+import { LimitedTextarea } from '../../../../shared/src/components/LimitedTextarea';
+import { DIARY_FIELD_MAX } from '../../../../shared/src/limits/textLimits';
 
 interface Props {
   onClose: () => void;
@@ -88,14 +90,11 @@ export function GratitudeEntrySheet({ onClose, date, existingItems, onSave }: Pr
         {items.map((item, i) => (
           <div key={i} className={'grat-row ' + (item.trim() ? 'is-filled' : '')}>
             <span className="grat-num-big">{String(i + 1).padStart(2, '0')}</span>
-            <textarea
-              ref={i === 0 ? firstItemRef : undefined}
-              value={item}
-              onChange={e => update(i, e.target.value)}
-              placeholder={PLACEHOLDERS[i] ?? PLACEHOLDERS[PLACEHOLDERS.length - 1]}
-              aria-label={`Пункт ${i + 1}: ${PLACEHOLDERS[i] ?? PLACEHOLDERS[PLACEHOLDERS.length - 1]}`}
-              rows={1}
-            />
+            <div>
+              <LimitedTextarea max={DIARY_FIELD_MAX} ref={i === 0 ? firstItemRef : undefined} value={item} onChange={e => update(i, e.target.value)} rows={1}
+                placeholder={PLACEHOLDERS[i] ?? PLACEHOLDERS[PLACEHOLDERS.length - 1]}
+                aria-label={`Пункт ${i + 1}: ${PLACEHOLDERS[i] ?? PLACEHOLDERS[PLACEHOLDERS.length - 1]}`} />
+            </div>
           </div>
         ))}
         {detectCrisisAny(...items) && <CrisisCard surface="gratitude" />}

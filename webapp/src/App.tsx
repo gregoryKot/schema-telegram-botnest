@@ -31,9 +31,9 @@ import { ReviewsPage } from './pages/ReviewsPage';
 // Lazy: pulls in the TipTap WYSIWYG editor, which shouldn't bloat the main bundle every visitor downloads just for the public site.
 const AdminPage = lazy(() => import('./pages/AdminPage').then(m => ({ default: m.AdminPage })));
 import { DonatePage } from './pages/DonatePage';
-import { BookingPaidPage } from './pages/BookingPaidPage';
+import { BookingPaidRoute } from './components/booking/BookingPaidRoute';
 const BookingLinkPage = lazy(() => import('./pages/BookingLinkPage').then(m => ({ default: m.BookingLinkPage }))); // не в главном чанке: страница по ссылке
-import { SubscribePage } from './pages/SubscribePage';
+const SubscribePage = lazy(() => import('./pages/SubscribePage').then(m => ({ default: m.SubscribePage }))); // не в главном чанке: редкая страница по ссылке
 
 // Apply saved theme before first render
 if (localStorage.getItem('app_theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
@@ -85,12 +85,12 @@ const personalRoutes = [
   { path: '/booking-admin',  element: <Navigate to="/admin" replace /> },
   { path: '/articles-admin', element: <Navigate to="/admin" replace /> },
   { path: '/book',           element: <Suspense fallback={null}><BookingLinkPage /></Suspense> }, // ссылка для клиентов: расписание сразу
-  { path: '/booking/paid',   element: <BookingPaidPage /> },
+  { path: '/booking/paid',   element: <BookingPaidRoute /> },
   // Ссылка управления записью (BookingSaveBlock/.ics URL:) — тот же компонент,
   // что у /booking/paid: путь переименовывать нельзя, туда редиректит
   // Робокасса, а новая capability-ссылка ведёт на другой путь.
-  { path: '/booking/manage', element: <BookingPaidPage /> },
-  { path: '/subscribe',      element: <SubscribePage /> },
+  { path: '/booking/manage', element: <BookingPaidRoute /> },
+  { path: '/subscribe',      element: <Suspense fallback={null}><SubscribePage /></Suspense> },
   { path: '/donate',         element: <DonatePage /> },
   { path: '/privacy',        element: <PrivacyPage /> },
   { path: '/offer',          element: <OfferPage /> },
@@ -104,7 +104,7 @@ const appRoutes = [
   // Мини-тесты — публичный лид-магнит, регистрация не нужна.
   { path: '/tests',          element: <TestsPage /> },
   { path: '/tests/:quizId',  element: <QuizPage /> },
-  { path: '/subscribe',      element: <SubscribePage /> },
+  { path: '/subscribe',      element: <Suspense fallback={null}><SubscribePage /></Suspense> },
   { path: '/donate',         element: <DonatePage /> },
   // Admin panel is gated by its own key (not the app login), so it's reachable
   // on the app domain too — otherwise /admin here falls through to the login/app.

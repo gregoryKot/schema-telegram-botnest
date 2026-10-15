@@ -6,20 +6,18 @@ import {
   IsString,
   MaxLength,
 } from 'class-validator';
+import { DIARY_FIELD_MAX } from '../../utils/text-limits';
 
 /**
  * DTO для дневников (схема/режим/благодарность) в diary.controller.ts —
- * аудит 2026-07, 2г / правило №6 CLAUDE.md. Свободный текст обрезается
- * контроллером до 2000/500 символов без отказа — здесь щедрый потолок
- * 10000 против abuse (правило CLAUDE.md про свободный текст), сама
- * обрезка в контроллере не убрана. `emotions` — массив {id, intensity},
- * контроллер сам не проверяет форму элементов — оставляем как есть,
- * только ограничение количества.
+ * аудит 2026-07, 2г / правило №6 CLAUDE.md. Лимит свободного текста один,
+ * здесь: превышение — 400, а не обрезка в контроллере (backend#29).
+ * `emotions` — массив {id, intensity}, контроллер форму элементов не
+ * проверяет — оставляем как есть, только ограничение количества.
  */
-const FREE_TEXT_MAX = 10000;
-
 export class SchemaDiaryDto {
   @IsString()
+  @MaxLength(DIARY_FIELD_MAX)
   trigger!: string;
 
   @IsArray()
@@ -28,17 +26,17 @@ export class SchemaDiaryDto {
 
   @IsOptional()
   @IsString()
-  @MaxLength(FREE_TEXT_MAX)
+  @MaxLength(DIARY_FIELD_MAX)
   thoughts?: string;
 
   @IsOptional()
   @IsString()
-  @MaxLength(FREE_TEXT_MAX)
+  @MaxLength(DIARY_FIELD_MAX)
   bodyFeelings?: string;
 
   @IsOptional()
   @IsString()
-  @MaxLength(FREE_TEXT_MAX)
+  @MaxLength(DIARY_FIELD_MAX)
   actualBehavior?: string;
 
   @IsArray()
@@ -48,27 +46,27 @@ export class SchemaDiaryDto {
 
   @IsOptional()
   @IsString()
-  @MaxLength(FREE_TEXT_MAX)
+  @MaxLength(DIARY_FIELD_MAX)
   schemaOrigin?: string;
 
   @IsOptional()
   @IsString()
-  @MaxLength(FREE_TEXT_MAX)
+  @MaxLength(DIARY_FIELD_MAX)
   healthyView?: string;
 
   @IsOptional()
   @IsString()
-  @MaxLength(FREE_TEXT_MAX)
+  @MaxLength(DIARY_FIELD_MAX)
   realProblems?: string;
 
   @IsOptional()
   @IsString()
-  @MaxLength(FREE_TEXT_MAX)
+  @MaxLength(DIARY_FIELD_MAX)
   excessiveReactions?: string;
 
   @IsOptional()
   @IsString()
-  @MaxLength(FREE_TEXT_MAX)
+  @MaxLength(DIARY_FIELD_MAX)
   healthyBehavior?: string;
 }
 
@@ -77,42 +75,43 @@ export class ModeDiaryDto {
   modeId!: string;
 
   @IsString()
+  @MaxLength(DIARY_FIELD_MAX)
   situation!: string;
 
   @IsOptional()
   @IsString()
-  @MaxLength(FREE_TEXT_MAX)
+  @MaxLength(DIARY_FIELD_MAX)
   thoughts?: string;
 
   @IsOptional()
   @IsString()
-  @MaxLength(FREE_TEXT_MAX)
+  @MaxLength(DIARY_FIELD_MAX)
   feelings?: string;
 
   @IsOptional()
   @IsString()
-  @MaxLength(FREE_TEXT_MAX)
+  @MaxLength(DIARY_FIELD_MAX)
   bodyFeelings?: string;
 
   @IsOptional()
   @IsString()
-  @MaxLength(FREE_TEXT_MAX)
+  @MaxLength(DIARY_FIELD_MAX)
   actions?: string;
 
   @IsOptional()
   @IsString()
-  @MaxLength(FREE_TEXT_MAX)
+  @MaxLength(DIARY_FIELD_MAX)
   actualNeed?: string;
 
   @IsOptional()
   @IsString()
-  @MaxLength(FREE_TEXT_MAX)
+  @MaxLength(DIARY_FIELD_MAX)
   childhoodMemories?: string;
 
   // Что бы сказал Здоровый Взрослый — свободный текст, пишет клиент сам.
   @IsOptional()
   @IsString()
-  @MaxLength(FREE_TEXT_MAX)
+  @MaxLength(DIARY_FIELD_MAX)
   healthyResponse?: string;
 }
 
@@ -124,6 +123,6 @@ export class GratitudeDiaryDto {
   @ArrayMinSize(1)
   @ArrayMaxSize(20)
   @IsString({ each: true })
-  @MaxLength(FREE_TEXT_MAX, { each: true })
+  @MaxLength(DIARY_FIELD_MAX, { each: true })
   items!: string[];
 }

@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 // Компонентные тесты BookingPicker (webapp) — денежный путь записи к
 // терапевту: выбор слота, обязательное согласие с офертой, сабмит,
-// платный/бесплатный формат, занятый слот (CLIENT_NOT_FOUND / общая ошибка).
+// платный/бесплатный формат, занятый слот / общая ошибка.
 // Образец сетапа: DonatePage.test.tsx, SubscribePage.test.tsx (мок '../api').
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, act, cleanup, within } from '@testing-library/react';
@@ -304,6 +304,7 @@ const TWO_OPTIONS = [
   { type: 'SESSION_50', label: 'Сессия', durationMin: 50, price: 0, note: '' },
 ];
 const RETURNING_BOX = /повторная встреча/;
+const OK_BOOKING = { id: 1, cancelToken: 't', heldUntil: null, status: 'confirmed', paymentUrl: null, meetingUrl: null };
 
 describe('BookingPicker — галочка «повторная встреча»', () => {
   const OK = { id: 1, cancelToken: 't', heldUntil: null, status: 'confirmed', paymentUrl: null, meetingUrl: null };
@@ -344,15 +345,19 @@ describe('BookingPicker — галочка «повторная встреча»
 });
 
 describe('BookingPicker — занятый слот и ошибки API', () => {
-  it('ошибка CLIENT_NOT_FOUND (не найден контакт «повторной» записи) показывает объяснение, а не общую ошибку', async () => {
-    mockApi.bookSlot.mockRejectedValue(new Error('CLIENT_NOT_FOUND'));
+  // security#19 (аудит 2026-10): сервер не различает «клиент / не клиент», поэтому
+  // «повторная» запись с любым контактом проходит тем же путём, что и обычная, а
+  // экрана «Не нашёл вас по этому контакту» в форме больше нет.
+  it('«повторная» запись с контактом, которого нет среди клиентов, проходит как обычная и не показывает «не нашёл вас»', async () => {
+    mockApi.bookSlot.mockResolvedValue(OK_BOOKING);
     mockApi.getBookingOptions.mockResolvedValue(TWO_OPTIONS);
     await fillAndSelectSlot();
     fireEvent.click(screen.getByRole('button', { name: /Сессия/ }));
     fireEvent.click(screen.getByRole('checkbox', { name: /повторная встреча/ }));
     fireEvent.click(screen.getByRole('button', { name: /Записаться на/ }));
 
-    await screen.findByText(/Не нашёл вас по этому контакту/);
+    await screen.findByText('Время забронировано');
+    expect(screen.queryByText(/Не нашёл вас/)).toBeNull();
   });
 
   it('слот, который заняли параллельно (409), показывает «выберите другое» и не роняет форму', async () => {

@@ -6,6 +6,8 @@ import { detectCrisisAny } from '../../utils/crisisMarkers';
 import { CrisisCard } from '../CrisisCard';
 import { DiaryWizardFoot } from './DiaryWizardFoot';
 import { ModeDoubtButton } from './ModeDoubtButton';
+import { LimitedTextarea } from '../../../../shared/src/components/LimitedTextarea';
+import { DIARY_FIELD_MAX } from '../../../../shared/src/limits/textLimits';
 import { buildModeDiarySteps } from '../../../../shared/src/mode/modeDiarySteps';
 import { healthyAdultHint } from '../../../../shared/src/mode/healthyAdultHints';
 import { buildModeDiaryExplainer } from '../../../../shared/src/mode/modeFlowExplainers';
@@ -119,9 +121,7 @@ export function ModeEntryForm({ selectedMode, modeId, values, set, healthyRespon
               <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--c-moss)', marginBottom: 6 }}>Например, можно сказать себе:</div>
               <div style={{ fontSize: 14, fontStyle: 'italic', color: 'var(--text-sub)', lineHeight: 1.55 }}>«{hint}»</div>
             </div>
-            <textarea
-              ref={areaRef}
-              className={'paper-area ' + (curFilled ? 'is-filled' : '')}
+            <LimitedTextarea max={DIARY_FIELD_MAX} ref={areaRef} className={'paper-area ' + (curFilled ? 'is-filled' : '')}
               rows={4}
               value={healthyResponse}
               onChange={e => setHealthyResponse(e.target.value)}
@@ -133,9 +133,7 @@ export function ModeEntryForm({ selectedMode, modeId, values, set, healthyRespon
           <>
             <div id="mode-entry-question" className="flash-q">{cur!.title}</div>
             <div className="flash-hint">{cur!.hint}</div>
-            <textarea
-              ref={areaRef}
-              className={'paper-area ' + (curFilled ? 'is-filled' : '')}
+            <LimitedTextarea max={DIARY_FIELD_MAX} ref={areaRef} className={'paper-area ' + (curFilled ? 'is-filled' : '')}
               rows={cur!.rows ?? 3}
               value={curValue}
               onChange={e => set(cur!.key, e.target.value)}
