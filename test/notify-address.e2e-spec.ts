@@ -46,7 +46,11 @@ describeOnRealDb('e2e: адресация уведомлений после сл
 
   beforeEach(async () => {
     await cleanupOwnershipFixtures(prisma, [TG, WEB, WEB_ONLY]);
-    (app.get(TELEGRAF_BOT).telegram.sendMessage as jest.Mock).mockClear();
+    // Очередь шлёт через callApi, а BotLauncher оборачивает его наблюдателем
+    // поллинга, поэтому штатный jest.fn стаба уже подменён: ставим свежий.
+    app.get(TELEGRAF_BOT).telegram.callApi = jest.fn(() =>
+      Promise.resolve({ message_id: 1 }),
+    );
   });
 
   async function seedTelegramUser(userId: bigint, telegramId: bigint) {
@@ -86,15 +90,15 @@ describeOnRealDb('e2e: адресация уведомлений после сл
 
     await app.get(TelegramScheduleService).processQueue();
 
-    const sendMessage = app.get(TELEGRAF_BOT).telegram.sendMessage as jest.Mock;
-    expect(sendMessage).toHaveBeenCalledWith(
-      Number(TG),
-      'итог дня',
+    const callApi = app.get(TELEGRAF_BOT).telegram.callApi as jest.Mock;
+    expect(callApi).toHaveBeenCalledWith(
+      'sendMessage',
+      expect.objectContaining({ chat_id: Number(TG), text: 'итог дня' }),
       expect.anything(),
     );
-    expect(sendMessage).not.toHaveBeenCalledWith(
-      Number(WEB),
-      expect.anything(),
+    expect(callApi).not.toHaveBeenCalledWith(
+      'sendMessage',
+      expect.objectContaining({ chat_id: Number(WEB) }),
       expect.anything(),
     );
   });
