@@ -2,11 +2,7 @@
 // (аудит 2026-07, 2г / правило №6 CLAUDE.md).
 import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
-import {
-  JoinTherapyDto,
-  VirtualClientDto,
-  AddClientDto,
-} from './connection.dto';
+import { JoinTherapyDto, VirtualClientDto } from './connection.dto';
 
 async function errorsFor(
   cls: new () => object,
@@ -41,19 +37,5 @@ describe('VirtualClientDto', () => {
     await expect(errorsFor(VirtualClientDto, { name: 42 })).resolves.toContain(
       'name',
     );
-  });
-});
-
-describe('AddClientDto', () => {
-  it('clientTelegramId не число — отказ', async () => {
-    await expect(
-      errorsFor(AddClientDto, { clientTelegramId: 'not-a-number' }),
-    ).resolves.toContain('clientTelegramId');
-  });
-
-  it('валидный id проходит', async () => {
-    await expect(
-      errorsFor(AddClientDto, { clientTelegramId: 123 }),
-    ).resolves.toEqual([]);
   });
 });

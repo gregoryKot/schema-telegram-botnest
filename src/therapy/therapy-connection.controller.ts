@@ -26,7 +26,6 @@ import { AccountService } from '../bot/account.service';
 import {
   JoinTherapyDto,
   VirtualClientDto,
-  AddClientDto,
   TherapistViewDto,
 } from './dto/connection.dto';
 import { RenameClientDto } from './dto/client-data.dto';
@@ -120,23 +119,6 @@ export class TherapyConnectionController {
     if (role !== 'THERAPIST') throw new ForbiddenException('Therapist only');
     if (!body.name?.trim()) throw new BadRequestException('name required');
     return this.relationsService.addVirtualClient(uid(req), body.name);
-  }
-
-  @Post('clients/add')
-  addClientManually(@Req() req: AuthRequest, @Body() body: AddClientDto) {
-    // SECURITY: silently attaching a therapist to a real user's account (and
-    // gaining read access to their schema/mode notes, ratings, etc) without
-    // the client's consent is unacceptable for a therapy app. Manual add is
-    // now restricted to VIRTUAL clients (offline patients, those without
-    // Telegram). Real clients must use the invite-code flow (`joinAsClient`).
-    throw new ForbiddenException(
-      'Manual add of real Telegram users is disabled. Use the invite code flow: ' +
-        'generate a code via /api/therapy/invite, share it with the client, ' +
-        'they POST /api/therapy/join.',
-    );
-    // Defensive: silence "unused" lint by referencing args.
-    void req;
-    void body;
   }
 
   @Post('rename-client/:clientId')
