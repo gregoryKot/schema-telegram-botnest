@@ -1,4 +1,4 @@
-// Сборка отчёта /stats без DI-контейнера: двадцать сервисов метрик, каждый с
+// Сборка отчёта /stats без DI-контейнера: сервисы метрик, каждый с
 // одной зависимостью — PrismaService.
 //
 // Почему вынесено сюда, а не живёт в спеке. Потребителей у этой цепочки два:
@@ -27,6 +27,7 @@ import { WebBannerMetricsService } from '../../src/bot/web-banner-metrics.servic
 import { SiteInstallMetricsService } from '../../src/bot/site-install-metrics.service';
 import { ScreenMetricsService } from '../../src/bot/screen-metrics.service';
 import { ProfilePatternMetricsService } from '../../src/bot/profile-pattern-metrics.service';
+import { ConceptGraphMetricsService } from '../../src/bot/concept-graph-metrics.service';
 import { AuthHealthMetricsService } from '../../src/bot/auth-health-metrics.service';
 import { LoginTicketMetricsService } from '../../src/bot/login-ticket-metrics.service';
 import { ClientErrorMetricsService } from '../../src/bot/client-error-metrics.service';
@@ -59,6 +60,7 @@ export function buildStatsReport(prisma: PrismaService): StatsReportService {
     new SiteInstallMetricsService(prisma),
     new ScreenMetricsService(prisma),
     new ProfilePatternMetricsService(prisma),
+    new ConceptGraphMetricsService(prisma),
     new AuthHealthMetricsService(prisma),
     new LoginTicketMetricsService(prisma),
     new ClientErrorMetricsService(prisma),

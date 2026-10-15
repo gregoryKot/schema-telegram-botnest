@@ -17,6 +17,7 @@ import type { UiPrefsPatch } from './utils/uiPrefsSync';
 // Типы вынесены в ./apiTypes и ре-экспортируются здесь — импорты потребителей не меняются.
 export * from './apiTypes';
 import type { ClientConceptualization } from './apiTypes';
+import type { ConceptSaveBody } from '../../shared/src/therapy/conceptGraph/conceptSaveBody';
 import type { UserSettings, UserId } from './apiTypes';
 
 // Единственная копия — shared/src/api/clientErrorReport.ts (правило №3).
@@ -59,20 +60,7 @@ export const api = {
     get<ClientConceptualization | null>(
       `/api/therapy/conceptualization/${clientId}`,
     ),
-  saveConceptualization: (
-    clientId: UserId,
-    body: {
-      schemaIds?: string[];
-      modeIds?: string[];
-      earlyExperience?: string;
-      unmetNeeds?: string;
-      triggers?: string;
-      copingStyles?: string;
-      goals?: string;
-      currentProblems?: string;
-      modeTransitions?: string;
-    },
-  ) =>
+  saveConceptualization: (clientId: UserId, body: Partial<ConceptSaveBody>) =>
     postJson<ClientConceptualization>(
       `/api/therapy/conceptualization/${clientId}`,
       body,

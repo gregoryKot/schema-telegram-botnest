@@ -11,7 +11,9 @@
 //     короткий служебный getUpdates (sync offset: `limit: 1`, без `timeout`)
 //     принимает — так Telegraf делает в `finally` после любого сбоя цикла;
 //   * deleteWebhook с drop_pending_updates=true стирает очередь (документация
-//     Bot API: «Pass True to drop all pending updates»).
+//     Bot API: «Pass True to drop all pending updates»);
+//   * ответ deleteWebhook можно придержать — окно «попытка запуска в полёте»
+//     (getMe/deleteWebhook уже ушли, поллинга ещё нет).
 // Записанного ответа площадки на 409 в test/fixtures/recorded нет — текст
 // взят из документации и из логов Telegraf (см. docs/README.md, «Что осталось
 // открытым»).
@@ -36,6 +38,8 @@ export interface FakeTelegramApi {
   enqueue(update: Update): void;
   /** Сценарий ответов на getUpdates; после конца — последний шаг повторяется. */
   setScript(script: GetUpdatesStep[]): void;
+  /** Дальше ответы deleteWebhook ждут; вызов результата отвечает ждущим. */
+  holdDeleteWebhook(): () => void;
   close(): Promise<void>;
 }
 
@@ -52,6 +56,7 @@ export async function startFakeTelegramApi(
   let queue: Update[] = [];
   let steps = script;
   let getUpdatesCalls = 0;
+  let held: Array<() => void> | null = null;
 
   const server: Server = createServer((req, res) => {
     const method = (req.url ?? '').split('/').pop() ?? '';
@@ -72,6 +77,7 @@ export async function startFakeTelegramApi(
       if (method === 'deleteWebhook') {
         deleteWebhookBodies.push(body);
         if (body.drop_pending_updates === true) queue = [];
+        if (held) return void held.push(() => reply(true));
         return reply(true);
       }
       if (method === 'getUpdates') {
@@ -117,6 +123,10 @@ export async function startFakeTelegramApi(
     setScript: (s) => {
       steps = s;
       getUpdatesCalls = 0;
+    },
+    holdDeleteWebhook: () => {
+      held ??= [];
+      return () => held?.splice(0).forEach((answer) => answer());
     },
     close: () =>
       new Promise<void>((r) => {

@@ -74,11 +74,17 @@ const NON_THERAPEUTIC_ALLOWLIST: Record<string, string> = {
   // свободный текст клиента о своём состоянии.
   'webapp/src/components/therapist/ClientSessionsTab.tsx':
     'заметки терапевта о сессии клиента',
-  'webapp/src/components/therapist/ClientConceptTab.tsx':
+  // Вид «Поля» уехал из ClientConceptTab/ConceptSheet в отдельные файлы
+  // (правило №10): запись переехала за <textarea>, а не добавилась. Поля
+  // связей режимов графической концептуализации — ConceptTextField (shared,
+  // общий для обоих фронтендов): тот же класс «концептуализация терапевта».
+  'webapp/src/components/therapist/ClientConceptFields.tsx':
     'концептуализация терапевта, не текст клиента',
+  'shared/src/therapy/conceptGraph/ConceptTextField.tsx':
+    'концептуализация терапевта (связи режимов), не текст клиента',
   'schema-miniapp/src/components/therapistClientSheet/NotesSheet.tsx':
     'заметки терапевта о клиенте',
-  'schema-miniapp/src/components/therapistClientSheet/ConceptSheet.tsx':
+  'schema-miniapp/src/components/therapistClientSheet/conceptSheet/ConceptFieldsView.tsx':
     'концептуализация терапевта, не текст клиента',
   'schema-miniapp/src/components/settingsSheet/BecomeTherapistSection.tsx':
     'заявка «стать терапевтом» — анкета, не дневник',
@@ -167,8 +173,12 @@ describe('трипваер: кризисная детекция для своб�
     // контрол-обёртка `<textarea>` с `maxLength` и счётчиком, тот же класс
     // «дочерний контрол», что DiaryTextArea/CaseSceneScreen; вызывающие файлы
     // скан ловит по `<LimitedTextarea`.
+    // 19 → 20 (2026-10, графическая концептуализация): shared/ConceptTextField —
+    // поля «Откуда режим / Как проявляется / Что делаем в терапии» в кабинете
+    // терапевта, тот же класс, что соседние ClientConceptFields/ConceptFieldsView
+    // (их записи переехали за <textarea>, не добавились).
     expect(Object.keys(NON_THERAPEUTIC_ALLOWLIST).length).toBeLessThanOrEqual(
-      19,
+      20,
     );
   });
 

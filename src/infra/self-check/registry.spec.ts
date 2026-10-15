@@ -10,6 +10,7 @@ describe('buildProbes', () => {
         'alerts',
         'backupFreshness',
         'caldav',
+        'clinicalLabels',
         'ciRuns',
         'clientIp',
         'cronLeases',

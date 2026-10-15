@@ -127,6 +127,9 @@
         "lines": 24
       }
     },
-    "testEnvironment": "node"
+    "testEnvironment": "node",
+    "setupFilesAfterEnv": [
+      "<rootDir>/test-support/exit-code-leak.setup.ts"
+    ]
   }
 }
