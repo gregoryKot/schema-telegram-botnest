@@ -137,14 +137,28 @@ describe('approve — подтверждение привязки', () => {
     expect(rows).toHaveLength(0);
   });
 
-  it('второе подтверждение того же кода — отказ', async () => {
-    const { links, tickets } = makeDeps();
+  it('второе подтверждение ТЕМ ЖЕ человеком — повтор: без второго переноса и второго аудита', async () => {
+    const { links, tickets, merge, securityLog } = makeDeps();
     const { userCode } = await startLink(tickets);
 
     await links.approve(userCode, WEB_USER);
-    await expect(links.approve(userCode, WEB_USER)).rejects.toThrow(
-      BadRequestException,
+    await expect(links.approve(userCode, WEB_USER)).resolves.toEqual({
+      merged: false,
+      repeat: true,
+    });
+    expect(merge.merge).toHaveBeenCalledTimes(1);
+    expect(securityLog.log).toHaveBeenCalledTimes(1);
+  });
+
+  it('второе подтверждение ЧУЖИМ человеком — по-прежнему отказ', async () => {
+    const { links, tickets, merge } = makeDeps();
+    const { userCode } = await startLink(tickets);
+
+    await links.approve(userCode, WEB_USER);
+    await expect(links.approve(userCode, 777n)).rejects.toThrow(
+      'Код уже подтверждён',
     );
+    expect(merge.merge).toHaveBeenCalledTimes(1);
   });
 
   it('билетом ВХОДА привязку не подтвердить — намерения не подменяются', async () => {

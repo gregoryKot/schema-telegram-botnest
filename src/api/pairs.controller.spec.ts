@@ -10,6 +10,13 @@ import type { BotService } from '../bot/bot.service';
 import type { AccountService } from '../bot/account.service';
 import type { BotAnalyticsService } from '../bot/bot.analytics.service';
 
+// Имя бота без дефолта (telegram.constants.ts): для ссылки-приглашения задаём его
+// явно, как это делает env прода.
+jest.mock('../telegram/telegram.constants', () => ({
+  ...jest.requireActual('../telegram/telegram.constants'),
+  BOT_USERNAME: 'SchemeHappensBot',
+}));
+
 function makeReq(userId = 1n) {
   return { webUser: { userId } } as any;
 }
@@ -169,7 +176,9 @@ describe('PairsController.createPairInvite', () => {
     const res = await controller.createPairInvite(makeReq(9n));
     expect(pairsService.createPairInvite).toHaveBeenCalledWith(9n);
     expect(res.code).toBe('ABCDE');
-    expect(res.url).toContain('ABCDE');
+    expect(res.url).toBe(
+      'https://t.me/SchemeHappensBot/diary?startapp=pair_ABCDE',
+    );
   });
 });
 

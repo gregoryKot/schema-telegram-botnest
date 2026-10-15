@@ -15,6 +15,7 @@ import { AuthService } from '../auth.service';
 import { MergeService } from '../merge.service';
 import { SecurityLogService } from '../security-log.service';
 import { LoginTicketService } from './login-ticket.service';
+import { claimApproval, loadForApproval } from './ticket-approval';
 import type { LinkPreview } from './login-ticket.types';
 import * as authPii from '../../utils/auth-provider-crypto';
 
@@ -60,41 +61,39 @@ export class TicketLinkService {
     };
   }
 
-  /** Человек подтвердил. Здесь и происходит перенос. */
+  /** Человек подтвердил: здесь перенос. `repeat` — он уже подтверждал. */
   async approve(
     userCode: string,
     targetUserId: bigint,
     ip?: string,
     viaTelegramId?: bigint,
-  ): Promise<{ merged: boolean }> {
-    const row = await this.tickets.liveByUserCode(userCode, viaTelegramId);
-    if (row.intent !== 'link') {
-      throw new BadRequestException('Этот код не для привязки');
-    }
-    if (row.approvedUserId)
-      throw new BadRequestException('Код уже подтверждён');
-    // Источник запоминаем до записи: дальше хозяин строки меняется.
+  ): Promise<{ merged: boolean; repeat?: true }> {
+    const row = await loadForApproval(
+      { prisma: this.prisma, tickets: this.tickets },
+      userCode,
+      { userId: targetUserId, intent: 'link', via: viaTelegramId },
+    );
+    if (!row) return { merged: false, repeat: true };
+    // Источник запоминаем до записи: дальше хозяин строки меняется. Тот же
+    // аккаунт (sameAccount) — переносить нечего.
     const sourceUserId = row.userId;
-
-    const approved = { approvedUserId: targetUserId, approvedAt: new Date() };
-    if (sourceUserId === null || sourceUserId === targetUserId) {
-      // Подтвердили под тем же аккаунтом — переносить нечего.
-      await this.prisma.loginTicket.update({
-        where: { id: row.id },
-        data: approved,
-      });
-      return { merged: false };
-    }
-
-    const source = await this.prisma.authProvider.findFirst({
-      where: { userId: sourceUserId, provider: row.provider },
-    });
+    const sameAccount = sourceUserId === null || sourceUserId === targetUserId;
 
     // Хозяина строки меняем ДО merge: иначе merge снесёт её вместе с
     // исчезающим аккаунтом (SECURITY_SENSITIVE_TABLES) — «код не найден».
-    await this.prisma.loginTicket.update({
-      where: { id: row.id },
-      data: { userId: targetUserId, ...approved },
+    // Захват атомарный: повтор или параллельный тап возвращается здесь, до
+    // merge, — второй раз переносить уже нечего (источник удалён).
+    const claim = await claimApproval(
+      this.prisma,
+      row,
+      targetUserId,
+      sameAccount ? {} : { userId: targetUserId },
+    );
+    if (claim === 'repeat') return { merged: false, repeat: true };
+    if (sameAccount) return { merged: false };
+
+    const source = await this.prisma.authProvider.findFirst({
+      where: { userId: sourceUserId, provider: row.provider },
     });
 
     try {

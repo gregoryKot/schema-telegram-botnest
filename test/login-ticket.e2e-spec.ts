@@ -513,6 +513,57 @@ describeOnRealDb('объединение, подтверждённое в бот
     expect(linked.body.accessToken).toBeTruthy();
   });
 
+  // Двойной тап «Это я» (аудит 2026-10, backend#22). Атомарность захвата —
+  // `UPDATE … WHERE approvedUserId IS NULL` — свойство Postgres: поддельная
+  // Prisma из юнит-спеков выполняет вызовы по одному и гонки не воспроизводит.
+  const startFromSite = () =>
+    app.get(LoginTicketService).start({
+      intent: 'link',
+      provider: 'google',
+      requesterUserId: SITE,
+      hostId: 'web',
+      deviceLabel: 'Chrome · Windows',
+    });
+
+  it('два тапа одновременно: слияние один раз, оба без ошибки, у билета один хозяин', async () => {
+    await prisma.rating.create({
+      data: { userId: SITE, needId: 'safety', value: 5, date: '2026-08-30' },
+    });
+    const started = await startFromSite();
+    const links = app.get(TicketLinkService);
+
+    const results = await Promise.all([
+      links.approve(started.userCode, TG),
+      links.approve(started.userCode, TG),
+    ]);
+
+    expect(results).toContainEqual({ merged: true });
+    expect(results).toContainEqual({ merged: false, repeat: true });
+    expect(
+      await prisma.rating.findMany({ where: { userId: TG } }),
+    ).toHaveLength(1);
+    const row = await prisma.loginTicket.findUnique({
+      where: {
+        userCodeHash: app.get(LoginTicketService).hash(started.userCode),
+      },
+    });
+    expect(row?.approvedUserId).toBe(TG);
+    expect(row?.userId).toBe(TG);
+  });
+
+  it('тап после того, как сайт забрал сессию: повтор, а не «код не найден»', async () => {
+    const started = await startFromSite();
+    const links = app.get(TicketLinkService);
+    await links.approve(started.userCode, TG);
+    const polled = await app.get(LoginTicketService).poll(started.deviceCode);
+    expect(polled.status).toBe('linked');
+
+    await expect(links.approve(started.userCode, TG)).resolves.toEqual({
+      merged: false,
+      repeat: true,
+    });
+  });
+
   it('код объединения не годится для входа — approveLogin его отвергает', async () => {
     const started = await app.get(LoginTicketService).start({
       intent: 'link',

@@ -1,13 +1,12 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { api } from '../../api';
-import { bookingContactLine } from './bookingContactLine';
-import type { AvailabilityRule, AdminBooking, SessionOption, AdminBookingStatus } from '../../api';
+import type { AvailabilityRule, SessionOption, AdminBookingStatus } from '../../api';
 import { useAsyncData } from '../../hooks/useAsyncData';
-import { card, btn, btnGhost, input } from './shared';
+import { card, btn, input } from './shared';
+import { useSaveFeedback } from './useSaveFeedback';
+import { BookingsManager } from './BookingsManager';
 import { ScheduleSection } from './ScheduleSection';
 import { ClientBookingLink } from './ClientBookingLink';
-
-const fmtTime = new Intl.DateTimeFormat('ru-RU', { timeZone: 'Europe/Moscow', weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
 
 /** Booking admin tab: integrations status, prices, schedule, bookings list. */
 export function BookingSection({ adminKey }: { adminKey: string }) {
@@ -81,29 +80,6 @@ function IntegrationStatus({ adminKey }: { adminKey: string }) {
   );
 }
 
-// Сохранить + показать успех/ошибку (было без try/catch — провал молча тонул).
-function useSaveFeedback() {
-  const [saved, setSaved] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  // Таймер сброса «✓» чистится при анмаунте: без этого setState стрелял по
-  // снятому компоненту (в CI это роняло vitest: «window is not defined»).
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  useEffect(() => () => { if (timer.current) clearTimeout(timer.current); }, []);
-  const guard = async (fn: () => Promise<void>) => {
-    setError(null);
-    try {
-      await fn(); setSaved(true);
-      if (timer.current) clearTimeout(timer.current);
-      timer.current = setTimeout(() => setSaved(false), 1500);
-    }
-    catch (e) { setError(e instanceof Error ? e.message : 'Не удалось сохранить цену'); }
-  };
-  const feedback = error
-    ? <p style={{ fontSize: 13, color: 'var(--accent-red)', margin: '8px 0 0' }}>{error}</p>
-    : saved ? <p style={{ fontSize: 13, color: '#4a6335', margin: '8px 0 0' }}>Цена сохранена ✓</p> : null;
-  return { guard, feedback };
-}
-
 function PricesManager({ adminKey }: { adminKey: string }) {
   const [opts, setOpts] = useState<SessionOption[]>([]);
   const [draft, setDraft] = useState<Record<string, number>>({});
@@ -168,63 +144,3 @@ function SubPricesManager({ adminKey }: { adminKey: string }) {
     </section>
   );
 }
-
-// ── Bookings ───────────────────────────────────────────────────────────────
-
-type Filter = 'upcoming' | 'cancelled' | 'past' | 'all';
-const FILTERS: { id: Filter; label: string }[] = [
-  { id: 'upcoming', label: 'Будущие' },
-  { id: 'cancelled', label: 'Отменённые' },
-  { id: 'past', label: 'Прошедшие' },
-  { id: 'all', label: 'Все' },
-];
-
-function BookingsManager({ adminKey }: { adminKey: string }) {
-  const [filter, setFilter] = useState<Filter>('upcoming');
-  const [bookings, setBookings] = useState<AdminBooking[]>([]);
-  // Сбой ≠ пусто: «Записей нет.» на отказе запроса читается как «записей
-  // правда нет», хотя запрос мог отвалиться из-за неверного ключа или сети.
-  const [bookingsFailed, setBookingsFailed] = useState(false);
-
-  const load = useCallback(() => {
-    setBookingsFailed(false);
-    api.adminListBookings(adminKey, filter).then(setBookings).catch(() => setBookingsFailed(true));
-  }, [adminKey, filter]);
-  // eslint-disable-next-line react-hooks/set-state-in-effect -- намеренно: загрузка/сброс состояния при монтировании или смене зависимости (fetch-эффект); рефактор на key/data-layer — отдельная задача
-  useEffect(() => { load(); }, [load]);
-
-  return (
-    <section style={card}>
-      <h2 style={{ fontFamily: 'var(--serif)', fontSize: 26, fontWeight: 400, letterSpacing: '-0.01em', color: 'var(--text)', marginTop: 0, marginBottom: 14 }}>Записи</h2>
-      <div style={{ display: 'flex', gap: 6, marginBottom: 16, flexWrap: 'wrap' }}>
-        {FILTERS.map(f => (
-          <button key={f.id} onClick={() => setFilter(f.id)} style={{
-            padding: '6px 14px', fontSize: 13, fontWeight: 600, fontFamily: 'inherit', cursor: 'pointer', borderRadius: 100,
-            background: filter === f.id ? 'var(--accent)' : 'transparent', color: filter === f.id ? '#fff' : 'var(--text-sub)',
-            border: `1.5px solid ${filter === f.id ? 'var(--accent)' : 'var(--line-strong)'}`,
-          }}>{f.label}</button>
-        ))}
-      </div>
-      {/* Сбой ≠ пусто: «Записей нет.» — только на реально пустом ответе. */}
-      {bookingsFailed && <p role="alert" style={{ color: 'var(--accent-red)', fontSize: 14 }}>Не удалось загрузить записи — возможно, неверный админ-ключ или нет соединения.</p>}
-      {!bookingsFailed && bookings.length === 0 && <p className="u-faint14">Записей нет.</p>}
-      {bookings.map(b => (
-        <div key={b.id} style={{ padding: '12px 0', borderBottom: '1px solid var(--line)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-10)', flexWrap: 'wrap' }}>
-            <strong style={{ color: 'var(--text)', fontSize: 14 }}>{fmtTime.format(new Date(b.startsAt))} МСК</strong>
-            <span style={{ fontSize: 12, padding: '2px 8px', borderRadius: 100, background: statusBg(b.status), color: '#fff' }}>{statusLabel(b.status)}</span>
-            <span className="u-flex1" />
-            {b.status === 'HELD' && <button style={{ ...btn, padding: '5px 12px', fontSize: 13 }} onClick={() => api.adminConfirm(adminKey, b.id).then(load)}>Подтвердить</button>}
-            {b.status !== 'CANCELLED' && b.status !== 'COMPLETED' && <button style={{ ...btnGhost, padding: '5px 12px', fontSize: 13, color: 'var(--accent-red)' }} onClick={() => api.cancelBooking(b.cancelToken).then(load)}>Отменить</button>}
-          </div>
-          <div style={{ fontSize: 14, color: 'var(--text-sub)', marginTop: 6 }}>
-            {bookingContactLine(b)}
-          </div>
-        </div>
-      ))}
-    </section>
-  );
-}
-
-function statusLabel(s: string) { return { HELD: 'Ожидает', CONFIRMED: 'Подтверждена', CANCELLED: 'Отменена', COMPLETED: 'Завершена' }[s] ?? s; }
-function statusBg(s: string) { return { HELD: '#b8860b', CONFIRMED: 'var(--accent)', CANCELLED: '#999', COMPLETED: '#4a6335' }[s] ?? '#999'; }

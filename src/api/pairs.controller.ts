@@ -16,7 +16,7 @@ import { AccountService } from '../bot/account.service';
 import { BotAnalyticsService } from '../bot/bot.analytics.service';
 import { TelegramAuthGuard } from './telegram-auth.guard';
 import { PairCodeDto } from './dto/pairs.dto';
-import { MINIAPP_TGLINK } from '../telegram/telegram.constants';
+import { miniappStartLink } from '../telegram/miniapp-link';
 
 interface AuthRequest extends Request {
   webUser: { userId: bigint };
@@ -92,7 +92,7 @@ export class PairsController {
   @Post('pair/invite')
   async createPairInvite(@Req() req: AuthRequest) {
     const code = await this.pairsService.createPairInvite(uid(req));
-    const url = `${MINIAPP_TGLINK}?startapp=pair_${code}`;
+    const url = miniappStartLink(`pair_${code}`);
     return { code, url };
   }
 

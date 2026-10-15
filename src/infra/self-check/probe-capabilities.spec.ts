@@ -1,27 +1,4 @@
-import {
-  emailProbe,
-  alertsProbe,
-  oauthRedirectsProbe,
-} from './probe-capabilities';
-
-describe('emailProbe', () => {
-  it('RESEND_API_KEY + ADMIN_EMAIL заданы — ok, «настроено»', async () => {
-    const res = await emailProbe({
-      RESEND_API_KEY: 'key',
-      ADMIN_EMAIL: 'a@b.ru',
-    }).run();
-    expect(res).toEqual({
-      ok: true,
-      detail: expect.stringContaining('настроено'),
-    });
-  });
-
-  it('не заданы — всё равно ok (резервный канал, это не авария сама по себе)', async () => {
-    const res = await emailProbe({}).run();
-    expect(res.ok).toBe(true);
-    expect(res.detail).toContain('не настроено');
-  });
-});
+import { alertsProbe, oauthRedirectsProbe } from './probe-capabilities';
 
 describe('alertsProbe', () => {
   it('хотя бы один канал (Telegram) настроен — ok', async () => {

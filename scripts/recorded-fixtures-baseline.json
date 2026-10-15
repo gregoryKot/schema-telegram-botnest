@@ -131,6 +131,16 @@
     "status": "exempt",
     "reason": "Форма ошибки VK («200 OK, error в теле», error_code/error_msg) в спеке — авторская, по документации VK API wall.post, не захваченный с прода ответ."
   },
+  "src/infra/s3-list-objects.ts": {
+    "status": "recorded",
+    "fixtures": ["s3-list-objects-v2-truncated.xml", "s3-list-objects-v2-prefix.xml"],
+    "spec": "src/infra/s3-list-objects.spec.ts"
+  },
+  "src/infra/s3-sigv4.ts": {
+    "status": "recorded",
+    "fixtures": ["aws-sigv4-test-suite.json"],
+    "spec": "src/infra/s3-sigv4.spec.ts"
+  },
   "src/infra/self-check/ci-runs-github.ts": {
     "status": "recorded",
     "fixtures": ["github-workflow-runs.json"],

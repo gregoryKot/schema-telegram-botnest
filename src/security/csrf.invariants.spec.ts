@@ -10,7 +10,7 @@
 // REFRESH_COOKIE) вынесены в auth-http.util.ts. Трипваер читает util для
 // определений примитивов и ВСЕ auth*.controller.ts для блоков-хендлеров.
 import { readFileSync, readdirSync } from 'fs';
-import { join } from 'path';
+import { join, relative, sep } from 'path';
 import { cookieOptions } from '../auth/auth-http.util';
 import { collectSourceFiles } from './collect-source-files';
 import { EMBEDDERS } from './embedders';
@@ -303,9 +303,8 @@ describe('CSRF-трипваер auth-контроллеры', () => {
 
   function srcFilesWithWriters(): string[] {
     const root = join(__dirname, '..');
-    return (readdirSync(root, { recursive: true }) as string[])
-      .filter((f) => /\.ts$/.test(f) && !/\.(spec|test)\.ts$/.test(f))
-      .map((f) => f.split('\\').join('/'))
+    return collectSourceFiles(root)
+      .map((p) => relative(root, p).split(sep).join('/'))
       .filter((f) => !/\.controller\.ts$/.test(f))
       .filter((f) => f !== 'auth/auth-http.util.ts')
       .filter((f) =>
