@@ -1328,7 +1328,7 @@
   "src/infra/self-check/probe-telegram.ts": 45,
   "src/infra/self-check/probe-telegram.username.ts": 29,
   "src/infra/self-check/probe-throttle-storage.ts": 33,
-  "src/infra/self-check/registry.config.ts": 20,
+  "src/infra/self-check/registry.config.ts": 22,
   "src/infra/self-check/registry.db.ts": 17,
   "src/infra/self-check/registry.live.ts": 22,
   "src/infra/self-check/registry.ts": 16,
