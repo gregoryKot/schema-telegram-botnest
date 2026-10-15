@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 // Пин механизма rtlCleanup.ts: тест НЕ вызывает cleanup сам — он проверяет,
 // что afterEach из setupFiles отработал между it. Без setupFiles в конфиге
-// второй и третий it краснеют. Порядок it внутри файла детерминирован.
+// второй и четвёртый it краснеют. Порядок it внутри файла детерминирован.
 import { describe, it, expect } from 'vitest';
 import { render, renderHook } from '@testing-library/react';
 import { useEffect } from 'react';
