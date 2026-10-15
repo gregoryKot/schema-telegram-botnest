@@ -417,4 +417,24 @@ describe('e2e: терапевт удаляет клиента (все сцена
       expect(await data(F, vf)).toEqual(FULL);
     });
   });
+
+  describe('POST /api/therapy/clients/add — ручного добавления реального пользователя нет', () => {
+    // Аудит 2026-10: роут был заглушкой с вечным 403, а метод сервиса под ним
+    // создавал активную связь без согласия клиента. Роут и метод удалены:
+    // реальный клиент подключается только по приглашению (invite/join).
+    it('терапевт получает 404 (не 403) и связь с пользователем не создаётся', async () => {
+      const before = await prisma.therapyRelation.count({
+        where: { therapistId: F, clientId: E },
+      });
+      const res = await act(F).post('/api/therapy/clients/add', {
+        clientTelegramId: ID(E),
+      });
+      expect(res.status).toBe(404);
+      expect(
+        await prisma.therapyRelation.count({
+          where: { therapistId: F, clientId: E },
+        }),
+      ).toBe(before);
+    });
+  });
 });

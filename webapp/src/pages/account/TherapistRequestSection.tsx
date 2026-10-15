@@ -66,7 +66,7 @@ export function TherapistRequestSection({ accessToken }: { accessToken: string |
       <div className="eyebrow u-mb8">Роль психолога</div>
       {req?.status === 'pending' ? (
         <div className="card-elevated" style={{ padding: 16, fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.5 }}>
-          {tr('Твоя заявка на рассмотрении. Решение появится здесь, а ещё придёт в Telegram или на почту.', 'Ваша заявка на рассмотрении. Решение появится здесь, а ещё придёт в Telegram или на почту.')}
+          {tr('Твоя заявка на рассмотрении. Решение появится здесь.', 'Ваша заявка на рассмотрении. Решение появится здесь.')}
         </div>
       ) : req?.status === 'approved' ? (
         <div className="card-elevated" style={{ padding: 16, fontSize: 13, color: 'var(--accent-green)' }}>

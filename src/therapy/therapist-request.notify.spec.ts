@@ -14,6 +14,7 @@
 // формы обращения — пользователь с формой «вы» видел «ты».
 import { TherapistRequestNotifyService } from './therapist-request.notify';
 import { Logger } from '@nestjs/common';
+import { isTelegramUserId } from '../auth/user-id-range';
 import * as adminAlert from '../utils/admin-alert';
 
 jest.mock('../utils/admin-alert', () => ({
@@ -64,7 +65,7 @@ function makeService(
       const hit = fx.tgIds?.[id.toString()];
       if (hit !== undefined) m.set(id.toString(), hit);
       // Тот же фолбэк, что у AccountService: телеграмный номер — сам себе адрес.
-      else if (id < 1_000_000_000_000_000n) m.set(id.toString(), id);
+      else if (isTelegramUserId(id)) m.set(id.toString(), id);
     }
     return Promise.resolve(m);
   });

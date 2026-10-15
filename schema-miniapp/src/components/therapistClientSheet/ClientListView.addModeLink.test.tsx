@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 // ClientListView — часть 2/3 (правило №10 — файл ≤300 строк): режимы
-// добавления клиента «Ссылка» и «Telegram ID». Общий контейнер и режим
+// добавления клиента «Ссылка». Общий контейнер и режим
 // «Оффлайн»/ошибки — в ClientListView.test.tsx и
 // ClientListView.addModeOffline.test.tsx. Дочерние карточки/статы/баннеры
 // покрыты своими тестами — мокаем.
@@ -62,7 +62,6 @@ function makeAddClient(overrides: Partial<AddClient> = {}): AddClient {
     openAddMode: vi.fn(),
     createInvite: vi.fn(),
     copyInvite: vi.fn(),
-    addByTelegramId: vi.fn(),
     addVirtualClient: vi.fn(),
     addLoading: false,
     ...overrides,
@@ -86,7 +85,6 @@ function baseProps(
     safeTop: 0,
     animKey: 0,
     onClose: vi.fn(),
-    telegramInputRef: createRef<HTMLInputElement>(),
     virtualInputRef: createRef<HTMLInputElement>(),
     detail: makeDetail(),
     addClient: makeAddClient(),
@@ -214,53 +212,5 @@ describe('ClientListView — режим «Ссылка»', () => {
 
     await screen.findByText(/Не удалось скопировать/);
     expect(screen.queryByText('✓ Скопировано')).toBeNull();
-  });
-});
-
-describe('ClientListView — режим «Telegram ID»', () => {
-  it('пустой ввод — кнопка «Добавить» disabled', () => {
-    render(
-      <ClientListView
-        {...baseProps({
-          addClient: makeAddClient({ addMode: 'telegram', addInput: '' }),
-        })}
-      />,
-    );
-    const btn = screen.getByText('Добавить');
-    expect(btn.disabled).toBe(true);
-  });
-
-  it('ввод введён — кнопка активна, клик зовёт addByTelegramId', () => {
-    const addByTelegramId = vi.fn();
-    render(
-      <ClientListView
-        {...baseProps({
-          addClient: makeAddClient({
-            addMode: 'telegram',
-            addInput: '12345',
-            addByTelegramId,
-          }),
-        })}
-      />,
-    );
-    const btn = screen.getByText('Добавить');
-    expect(btn.disabled).toBe(false);
-    fireEvent.click(btn);
-    expect(addByTelegramId).toHaveBeenCalled();
-  });
-
-  it('Enter в поле зовёт addByTelegramId', () => {
-    const addByTelegramId = vi.fn();
-    render(
-      <ClientListView
-        {...baseProps({
-          addClient: makeAddClient({ addMode: 'telegram', addByTelegramId }),
-        })}
-      />,
-    );
-    fireEvent.keyDown(screen.getByPlaceholderText('Telegram ID клиента'), {
-      key: 'Enter',
-    });
-    expect(addByTelegramId).toHaveBeenCalled();
   });
 });

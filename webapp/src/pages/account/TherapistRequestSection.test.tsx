@@ -47,7 +47,7 @@ describe('TherapistRequestSection — статусы существующей з
     expect(screen.queryByText('ФИО')).toBeNull();
     // Решение приходит не только в бота: заявку подают и с сайта (аудит 2026-10).
     expect(note.textContent).toContain('появится здесь');
-    expect(note.textContent).toContain('Telegram или на почту');
+    expect(note.textContent).toContain('Решение появится здесь');
     expect(note.textContent).not.toContain('в боте');
   });
 

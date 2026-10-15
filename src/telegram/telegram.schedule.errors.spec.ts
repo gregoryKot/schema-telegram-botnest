@@ -36,7 +36,7 @@ function makeService(
   const cronLeader: any = { claimRun: jest.fn().mockResolvedValue(true) };
   const bot =
     opts.bot === undefined
-      ? { telegram: { sendMessage: jest.fn().mockResolvedValue(undefined) } }
+      ? { telegram: { callApi: jest.fn().mockResolvedValue(undefined) } }
       : opts.bot;
   const service = new TelegramScheduleService(
     bot,

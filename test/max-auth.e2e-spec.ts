@@ -18,6 +18,7 @@ import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import * as crypto from 'crypto';
 import { buildTestApp, TestApp } from './e2e-support/build-test-app';
+import { cleanupOwnershipFixtures } from './e2e-support/cleanup-fixtures';
 
 /** Диапазон web-only идентификаторов из AuthService (WEB_USER_ID_MIN/MAX). */
 const WEB_USER_ID_MIN = 1_000_000_000_000_000n;
@@ -74,6 +75,31 @@ describe('e2e smoke: вход из мини-приложения MAX (max-auth)'
 
   const maxBotToken = () => process.env.MAX_BOT_TOKEN as string;
 
+  /** Строки AuthProvider этих двух пользователей MAX. Читается через
+   * настоящий делегат (findMany), а не через `_rows` фейка — спек обязан
+   * проходить и на живом Postgres (джоба migrations, E2E_REAL_DB=1). */
+  const maxProviders = () =>
+    prisma.authProvider.findMany({
+      where: {
+        provider: 'max',
+        providerId: { in: [String(MAX_USER_A), String(MAX_USER_B)] },
+      },
+    }) as Promise<{ userId: bigint; providerId: string }[]>;
+
+  /** userId MAX-пользователей создаёт сам вход (случайный из веб-диапазона),
+   * поэтому уборка идёт через найденные провайдеры: следом за ними уходят
+   * заметки и сами User-строки, иначе повторный прогон на одной БД видит
+   * чужую карточку. */
+  const cleanupMaxUsers = async () => {
+    const rows = await maxProviders();
+    if (rows.length === 0) return;
+    const ids = rows.map((r) => r.userId);
+    await cleanupOwnershipFixtures(prisma, ids);
+    await prisma.authProvider.deleteMany({
+      where: { userId: { in: ids } },
+    });
+  };
+
   const exchange = (initData: string) =>
     request(app.getHttpServer())
       .post('/api/auth/max/webapp')
@@ -82,6 +108,7 @@ describe('e2e smoke: вход из мини-приложения MAX (max-auth)'
 
   beforeAll(async () => {
     ({ app, prisma } = await buildTestApp());
+    await cleanupMaxUsers();
 
     const resA = await exchange(buildMaxInitData(MAX_USER_A, maxBotToken()));
     expect(resA.status).toBe(200);
@@ -93,6 +120,7 @@ describe('e2e smoke: вход из мини-приложения MAX (max-auth)'
   });
 
   afterAll(async () => {
+    await cleanupMaxUsers();
     await app.close();
   });
 
@@ -102,21 +130,16 @@ describe('e2e smoke: вход из мини-приложения MAX (max-auth)'
     expect(tokenA).not.toBe(tokenB);
   });
 
-  it('провайдер записан как max, а не telegram', () => {
-    const rows = prisma.authProvider._rows.filter(
-      (r: { provider: string }) => r.provider === 'max',
-    );
+  it('провайдер записан как max, а не telegram', async () => {
+    const rows = await maxProviders();
     expect(rows).toHaveLength(2);
-    expect(
-      rows.map((r: { providerId: string }) => r.providerId).sort(),
-    ).toEqual(['777', '778']);
+    expect(rows.map((r) => r.providerId).sort()).toEqual(['777', '778']);
   });
 
-  it('userId берётся из веб-диапазона, а не равен id пользователя в MAX', () => {
-    const rows = prisma.authProvider._rows.filter(
-      (r: { provider: string }) => r.provider === 'max',
-    );
-    for (const row of rows as { userId: bigint; providerId: string }[]) {
+  it('userId берётся из веб-диапазона, а не равен id пользователя в MAX', async () => {
+    const rows = await maxProviders();
+    expect(rows).toHaveLength(2);
+    for (const row of rows) {
       // Ключевая проверка: id 777 в MAX НЕ становится userId 777 — иначе
       // аккаунт сел бы на данные телеграмного пользователя с тем же числом.
       expect(row.userId).not.toBe(BigInt(row.providerId));

@@ -4,6 +4,8 @@ import { api } from '../api';
 import { BottomSheet } from './BottomSheet';
 import { SectionLabel } from './SectionLabel';
 import { CrisisGate } from './CrisisGate';
+import { LimitedTextarea } from '../../../shared/src/components/LimitedTextarea';
+import { DAY_NOTE_MAX } from '../../../shared/src/limits/textLimits';
 
 const TAGS = [
   { id: 'work', label: 'Работа', emoji: '💼' },
@@ -121,11 +123,12 @@ export function NoteSheet({ date, onClose }: Props) {
           })}
         </div>
 
-        <textarea
+        <LimitedTextarea
+          max={DAY_NOTE_MAX}
+          alwaysCount
           value={text}
           onChange={(e) => setText(e.target.value)}
           placeholder="Что происходило сегодня? Любая мысль..."
-          maxLength={500}
           style={{
             width: '100%',
             minHeight: 100,
@@ -142,17 +145,6 @@ export function NoteSheet({ date, onClose }: Props) {
             fontFamily: 'inherit',
           }}
         />
-        <div
-          style={{
-            fontSize: 11,
-            color: 'var(--text-faint)',
-            textAlign: 'right',
-            marginTop: 4,
-            marginBottom: 16,
-          }}
-        >
-          {text.length}/500
-        </div>
         <CrisisGate texts={[text]} surface="note" />
 
         {error && (

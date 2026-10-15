@@ -50,7 +50,7 @@ export function BecomeTherapistSection() {
       <div style={{ padding: '16px 0', borderBottom: '1px solid rgba(var(--fg-rgb),0.06)' }}>
         {therapistReq?.status === 'pending' ? (
           <div className="u-sub13-lh16">
-            Заявка на рассмотрении. Решение появится здесь, а ещё придёт в Telegram или на почту.
+            Заявка на рассмотрении. Решение появится здесь.
           </div>
         ) : therapistReq?.status === 'approved' ? (
           <div style={{ fontSize: 13, color: 'var(--accent-green)', lineHeight: 1.6 }}>

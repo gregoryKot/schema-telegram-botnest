@@ -40,7 +40,7 @@ describe('BecomeTherapistSection — статусы заявки', () => {
     mockApi.getTherapistRequest.mockResolvedValue({ status: 'pending', rejectReason: null });
     renderWithForm();
     const note = await screen.findByText('Заявка на рассмотрении.', { exact: false });
-    expect(note.textContent).toContain('Telegram или на почту');
+    expect(note.textContent).toContain('Решение появится здесь');
   });
 
   it('status=approved — сообщение об одобрении', async () => {

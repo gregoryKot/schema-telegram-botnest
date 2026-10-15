@@ -66,6 +66,8 @@ export async function deliverDecision(
       d.logger.warn(`notifyApplicant: письмо не ушло: ${errMsg(e)}`);
     }
   }
+  // Дубль с error из EmailService (Resend упал) намеренный: тот не знает номера
+  // заявки, а владельцу нужно понять, кому писать. AlertLogger троттлит ключи.
   d.logger.error(
     `Решение по заявке #${requestId} (${decision}) не доставлено: ` +
       `${chatId === undefined ? 'нет Telegram' : 'Telegram отказал'}, ` +

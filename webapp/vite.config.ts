@@ -1,9 +1,10 @@
 /// <reference types="vitest/config" />
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import { requireBotUsernamePlugin } from '../shared/src/build/requireBotUsername.ts';
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), requireBotUsernamePlugin()],
   // shared/ импортирует react: без dedupe он резолвится в КОРНЕВОЙ
   // node_modules → два инстанса React (hooks dispatcher = null).
   resolve: { dedupe: ['react', 'react-dom'] },
@@ -12,16 +13,13 @@ export default defineConfig({
     fs: { allow: ['..'] },
     port: 5174,
     proxy: {
-      '/api': {
-        target: 'http://localhost:3000',
-        changeOrigin: true,
-      },
+      '/api': { target: 'http://localhost:3000', changeOrigin: true },
     },
   },
-  // Тестовое окружение (environment/globals) НЕ задаётся здесь глобально —
-  // каждый *.test.ts(x) сам объявляет `// @vitest-environment jsdom` пер-файл
-  // (см. CLAUDE.md / существующие тесты). Настраиваем только coverage.
+  // environment/globals НЕ глобально: каждый *.test.ts(x) сам ставит `// @vitest-environment jsdom`.
+  // Очистка DOM после теста — setupFiles (test-support/rtlCleanup.ts), не память автора.
   test: {
+    setupFiles: ['./src/test-support/rtlCleanup.ts'],
     // Запас на медленный раннер (самый долгий тест локально — 1.6с). Прежние
     // 15000 стояли ради `findByText(…, {timeout: 8000})` — их больше нет.
     testTimeout: 10000,
