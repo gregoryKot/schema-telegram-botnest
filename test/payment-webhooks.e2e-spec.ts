@@ -21,6 +21,8 @@ import { cleanupPaymentFixtures } from './e2e-support/cleanup-fixtures';
 import { DONATION_INVID_BASE } from '../src/donation/donation.service';
 import { SUBSCRIPTION_INVID_BASE } from '../src/subscription/subscription.service';
 import { markChargeFailed } from '../src/subscription/subscription.charge-failed';
+import { chargeDue } from '../src/subscription/subscription.charges';
+import { RobokassaService } from '../src/booking/robokassa.service';
 import { BookingService } from '../src/booking/booking.service';
 import { BookingNotifyService } from '../src/booking/booking-notify.service';
 import { BookingConfirmRetryService } from '../src/booking/booking-confirm-retry.service';
@@ -65,6 +67,7 @@ const SUBSCRIPTION_CANCEL_TOKENS = [
   'sub-ct-5',
   'sub-ct-6',
   'sub-ct-7',
+  'sub-ct-8',
 ];
 const DONATION_MARKER = 'e2e-payment-webhook-test';
 const TEST_CLIENT_CONTACT = 't@e.co';
@@ -936,6 +939,58 @@ describe('e2e smoke: платёжный контур Robokassa по HTTP', () =>
         expect(after?.failedAttempts).toBe(0);
         expect(after?.nextChargeAt).toEqual(before?.nextChargeAt);
       });
+
+      // Тот же шов, но через настоящий chargeDue: граница подменена только на
+      // chargeRecurring (Robokassa) — пока «банк» отвечает отказом, приходит
+      // настоящий вебхук оплаты этого же charge. Прямой вызов markChargeFailed
+      // выше не заметит, если chargeDue вернёт старую batch-транзакцию.
+      // chargeDue берёт захват подписки сырым SQL — фейк его не эмулирует.
+      (process.env.E2E_REAL_DB === '1' ? it : it.skip)(
+        'chargeDue: вебхук оплатил charge, пока Robokassa отвечала отказом → сбой не засчитан, nextChargeAt от вебхука цел, алерта нет',
+        async () => {
+          const sub = await prisma.subscription.create({
+            data: {
+              status: 'active',
+              period: 'month',
+              amount: 500,
+              cancelToken: 'sub-ct-8',
+              firstInvId: 900001,
+              nextChargeAt: new Date(Date.now() - 60_000),
+            },
+          });
+          const robokassa = {
+            enabled: true,
+            chargeRecurring: async ({ invId }: { invId: number }) => {
+              const inv = String(invId);
+              expect((await payInv(inv)).text).toBe(`OK${inv}`);
+              return { ok: false, body: 'bank declined' };
+            },
+          } as unknown as RobokassaService;
+
+          await chargeDue({
+            prisma,
+            robokassa,
+            notify: app.get(BookingNotifyService),
+            logger: new Logger('test'),
+            enabled: true,
+          });
+
+          const charge = await prisma.subscriptionCharge.findFirst({
+            where: { subscriptionId: sub.id },
+          });
+          expect(charge?.status).toBe('paid');
+          const row = await subRow(sub.id);
+          expect(row?.failedAttempts).toBe(0);
+          expect(row?.status).toBe('active');
+          // Вебхук поставил nextChargeAt на период вперёд; ретрай «через
+          // сутки» затёр бы его и дал второе списание.
+          expect(row?.nextChargeAt?.getTime()).toBeGreaterThan(
+            Date.now() + 20 * 86_400_000,
+          );
+          const texts = tg.mock.calls.map((c) => String(c[0])).join('\n');
+          expect(texts).not.toContain('Не удалось списать');
+        },
+      );
 
       it('КОНТРОЛЬ: charge ещё pending → сбой засчитан, charge failed, ретрай через сутки', async () => {
         const { sub, charge } = await seed('active', 'sub-ct-7');
