@@ -291,26 +291,26 @@ cmd_transfer_check() {
   q 'SELECT migration_name FROM _prisma_migrations ORDER BY started_at DESC LIMIT 3'
 }
 
-# Скрипт для контейнера app: скачать свежий бэкап из B2 и залить в базу. Ошибки
+# Скрипт для контейнера app: скачать свежий бэкап из R2 и залить в базу. Ошибки
 # psql фильтруются до строк с ERROR/FATAL (CONTEXT/DETAIL несут значения из
 # таблиц, а логи Actions публичны); весь остальной вывод заливки уходит в файл.
 # shellcheck disable=SC2016  # переменные раскрывает bash внутри контейнера, не здесь
-RESTORE_B2_INNER='set -Eeuo pipefail
+RESTORE_BACKUP_INNER='set -Eeuo pipefail
 d=$(mktemp -d)
-bash scripts/fetch-latest-b2.sh "$d"
+bash scripts/backup-fetch-latest.sh "$d"
 f=$(ls "$d"/*.sql.gz.enc)
 if ! bash scripts/restore-backup.sh "$f" "$DATABASE_URL" > "$d/out" 2> "$d/err"; then
   grep -hE "ERROR|FATAL" "$d/err" | cut -c1-200 | head -5 >&2 || true
-  echo "[restore-b2] заливка не прошла" >&2
+  echo "[restore-backup] заливка не прошла" >&2
   exit 1
 fi
 grep -hE "^\[restore\] (контрольная|готово)" "$d/out" || true
-echo "[restore-b2] восстановлен файл: $(basename "$f")"'
+echo "[restore-backup] восстановлен файл: $(basename "$f")"'
 
 # План Б (docs/MIGRATION_VPS.md): основная база недоступна, поднимаем из
-# ночного бэкапа в B2. Только в пустую базу и только пока приложение держит
+# ночного бэкапа в R2. Только в пустую базу и только пока приложение держит
 # HOLD_APP; после успеха флаг остаётся (приложение поднимает release-hold).
-cmd_restore_b2() {
+cmd_restore_backup() {
   lock
   require_ready
   [ -e HOLD_APP ] || die "нужен HOLD_APP (op=transfer-open или свежий bootstrap): восстанавливать можно только при остановленном приложении"
@@ -321,14 +321,14 @@ cmd_restore_b2() {
   tables=$(dc exec -T db psql -U postgres -d schemehappens -X -q -t -A -c "SELECT count(*) FROM information_schema.tables WHERE table_type = 'BASE TABLE' AND table_schema NOT IN ('pg_catalog', 'information_schema')") \
     || die "не прочитать список таблиц в базе"
   [ "$tables" = "0" ] || die "ОТКАЗ: в базе уже есть таблицы (всего $tables), заливку не начинаю, ничего не изменено"
-  log "база пуста, качаю свежий бэкап из B2 и заливаю"
+  log "база пуста, качаю свежий бэкап из R2 и заливаю"
   # -T: у ssh из Actions нет tty; --entrypoint обходит CMD образа (entrypoint.mjs
   # поднял бы приложение); --no-deps: db уже поднята и проверена.
-  if ! dc run --rm --no-deps -T --entrypoint bash app -c "$RESTORE_B2_INNER"; then
+  if ! dc run --rm --no-deps -T --entrypoint bash app -c "$RESTORE_BACKUP_INNER"; then
     # Приёмник до заливки был пуст (проверено выше): убираем только свой огрызок.
     dc exec -T db psql -U postgres -d schemehappens -X -q -c 'DROP SCHEMA public CASCADE; CREATE SCHEMA public' > /dev/null 2>&1 \
       || log "не удалось сбросить неполную заливку: очистите базу вручную перед повтором"
-    die "восстановление из B2 не удалось, неполная заливка сброшена; причина в строках выше"
+    die "восстановление из бэкапа не удалось, неполная заливка сброшена; причина в строках выше"
   fi
   print_counts
   local migs
@@ -401,7 +401,7 @@ case "${1:-}" in
   transfer-open) cmd_transfer_open ;;
   transfer-close) cmd_transfer_close ;;
   transfer-check) cmd_transfer_check ;;
-  restore-b2) cmd_restore_b2 ;;
+  restore-backup) cmd_restore_backup ;;
   external-db-check) cmd_external_db_check ;;
   release-hold) cmd_release_hold ;;
   *) die "неизвестная операция" ;;

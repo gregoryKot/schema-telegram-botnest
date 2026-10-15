@@ -13,7 +13,7 @@
 //      стартуем (не гоним крашлуп по битой схеме);
 //   4. node dist/main на APP_PORT — с ограниченным числом перезапусков
 //      (транзиентный краш восстанавливается сам); исчерпали лимит → техработы.
-//   5. после миграций — планировщик бэкапов в B2 (backup-scheduler.cjs).
+//   5. после миграций — планировщик бэкапов в R2 (backup-scheduler.cjs).
 //
 // Graceful shutdown: Node как PID 1 ловит SIGTERM/SIGINT, пробрасывает их
 // приложению (bot.stop, prisma disconnect), затем закрывает front и выходит.
@@ -52,7 +52,7 @@ const front = startFront({ port: PORT, appPort: APP_PORT });
 let current = null;
 let shuttingDown = false;
 let cleanExit = false;
-let backup = null; // планировщик бэкапов в B2 (deploy/backup-scheduler.cjs)
+let backup = null; // планировщик бэкапов в R2 (deploy/backup-scheduler.cjs)
 
 function finish() {
   // Front держит event loop живым. Выходим только при чистом выходе приложения

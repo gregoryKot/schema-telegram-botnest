@@ -38,7 +38,7 @@ export interface MoneyMetrics {
 
 const times = (n: number): string => `${n} ${plural(n, 'раз', 'раза', 'раз')}`;
 
-function windowIsEmpty(w: MoneyWindow): boolean {
+export function windowIsEmpty(w: MoneyWindow): boolean {
   return (
     w.donations.paidCount === 0 &&
     w.donations.pendingCount === 0 &&

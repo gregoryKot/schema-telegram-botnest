@@ -5,8 +5,8 @@ import {
   MoneyMetrics,
   MoneySourceStats,
   MoneyWindow,
-  formatMoneyMetrics,
 } from './money-metrics.format';
+import { renderMoneyBlock } from './money-metrics.without-link';
 
 type StatusCountSum = {
   status: string;
@@ -23,7 +23,7 @@ export class MoneyMetricsService {
 
   /** Готовый текстовый блок для /stats. */
   async render(): Promise<string> {
-    return formatMoneyMetrics(await this.getMetrics());
+    return renderMoneyBlock(this.prisma, await this.getMetrics());
   }
 
   async getMetrics(): Promise<MoneyMetrics> {

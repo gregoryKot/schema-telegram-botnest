@@ -1550,7 +1550,7 @@ cd webapp && node_modules/.bin/vite build
   `node deploy/entrypoint.mjs`, он зовёт `migrate deploy` до старта приложения
   (`start:prod` из package.json контейнер не запускает).
 - **Дампы и бэкапы БД никогда не кладутся в репозиторий** — он публичный.
-  Бэкапы — только через `scripts/backup-to-b2.sh` во внешнее хранилище.
+  Бэкапы — только через `scripts/backup-upload.sh` во внешнее хранилище (Cloudflare R2).
 
 ## Миграции БД (ОБЯЗАТЕЛЬНО — по итогам инцидента 2026-07-16)
 
