@@ -557,8 +557,17 @@ CLAUDE.md. Не удалять, но и не считать списком за�
   хотя аноним проходит** (`telegram/widget`, `telegram/redirect`, `merge`,
   `ticket/start`, `google`, `vk`, `telegram-oidc` в `src/auth/*.controller.ts`):
   гвард в `route-method-auth.ts` засчитывается по имени, классификации
-  «optional-auth» нет. Не расширяли при починке разбора по методу (правило №20);
-  причина безопасности — каждый из них сам проверяет подпись/state/nonce.
+  «optional-auth» нет. Не расширяли при починке разбора по методу (правило №20).
+  Что каждый делает на самом деле: `google`, `vk`, `telegram-oidc` — стартовые
+  GET, ничего не проверяют: подписывают state (с `linkUserId`, если сессия
+  есть), кладут его в куку и отвечают 302 на провайдера; state сверяют колбэки
+  (они в `ANONYMOUS_BY_DESIGN`). `telegram/redirect` — то же: кука
+  `tg_link_user` с подписанным `linkUserId` (если сессия есть) и 302 на
+  oauth.telegram.org.
+  `telegram/widget`: CSRF-заголовок и HMAC-подпись Telegram-payload. `merge`:
+  CSRF-заголовок, подписанный merge-токен, вызывающий обязан быть целевым
+  аккаунтом (`assertMergeCaller`), TOTP поглощаемого. `ticket/start`: только
+  троттлинг и 401 для `intent: 'link'` без сессии; выдаёт device-код.
 - **Зависимость `@tma.js/init-data-node` без потребителей.** После единого
   верификатора `src/auth/telegram-init-data.ts` пакет не импортируют ни рабочий
   код, ни тесты (`grep -rn tma.js src test` пуст; инвариант (б) в

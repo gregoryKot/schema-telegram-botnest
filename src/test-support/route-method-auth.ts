@@ -7,14 +7,27 @@
 import * as ts from 'typescript';
 
 const ROUTE_DECORATORS = new Set(['Get', 'Post', 'Patch', 'Delete', 'Put']);
-const GUARD_NAMES = new Set([
+
+// Единственный список гвардов: по нему идёт и разбор по методу (hasGuard), и
+// файловый GUARD_RE ниже, которым пользуются classify() и трипваер «контроллер
+// классифицирован». Второй копии списка нет (правило №4).
+export const GUARD_NAMES = [
   'TelegramAuthGuard',
   'JwtAuthGuard',
   'OptionalJwtGuard',
-]);
+] as const;
+const GUARD_SET = new Set<string>(GUARD_NAMES);
+
+export const GUARD_RE = new RegExp(
+  `@UseGuards\\(\\s*[^)]*(${GUARD_NAMES.join('|')})`,
+);
 
 export interface RouteMethod {
-  /** `auth/auth.controller.ts:refresh` */
+  /**
+   * `auth/auth.controller.ts:refresh`. Без имени класса: два @Controller в
+   * одном файле с методами одного имени делили бы ключ — это ловит
+   * `duplicateKeys` на реальном дереве (route-auth.invariants.spec.ts).
+   */
   key: string;
   /** где стоит @UseGuards с одним из GUARD_NAMES */
   guard: 'class' | 'method' | null;
@@ -36,7 +49,7 @@ function hasGuard(node: ts.HasDecorators): boolean {
   return (ts.getDecorators(node) ?? []).some((d) => {
     if (decoratorName(d) !== 'UseGuards') return false;
     return (decoratorCall(d)?.arguments ?? []).some(
-      (a) => ts.isIdentifier(a) && GUARD_NAMES.has(a.text),
+      (a) => ts.isIdentifier(a) && GUARD_SET.has(a.text),
     );
   });
 }
@@ -79,4 +92,12 @@ export function routeMethods(rel: string, src: string): RouteMethod[] {
     }
   }
   return out;
+}
+
+/** Ключи, встретившиеся дважды: ANONYMOUS_BY_DESIGN не различил бы такие методы. */
+export function duplicateKeys(methods: RouteMethod[]): string[] {
+  const seen = new Set<string>();
+  const dup = new Set<string>();
+  for (const { key } of methods) (seen.has(key) ? dup : seen).add(key);
+  return [...dup];
 }

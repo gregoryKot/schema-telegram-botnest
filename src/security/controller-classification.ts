@@ -6,6 +6,7 @@ export { ANONYMOUS_BY_DESIGN } from './anonymous-routes';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import { collectSourceFiles } from './collect-source-files';
+import { GUARD_RE } from '../test-support/route-method-auth';
 
 export const SRC = join(__dirname, '..');
 
@@ -62,10 +63,6 @@ export const ADMIN_KEY_GATED = new Set([
   'telegram/healthy-adult-admin.controller.ts',
   'booking/booking-calendar-admin.controller.ts', // тот же x-admin-key, что booking-admin
 ]);
-
-export const GUARD_RE =
-  /@UseGuards\(\s*[^)]*(TelegramAuthGuard|JwtAuthGuard|OptionalJwtGuard)/;
-export const ROUTE_RE = /@(Get|Post|Patch|Delete|Put)\(/g;
 
 export type Classification = 'guarded' | 'admin' | 'public' | 'unknown';
 

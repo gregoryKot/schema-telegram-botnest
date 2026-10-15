@@ -1,7 +1,7 @@
 // Образцы для разбора роутов по методу (route-method-auth.ts): оба исхода
 // и контрольные. Сценарий находки аудита 2026-10 — гвард на одном методе не
 // должен делать защищённым соседний `@Post` с многострочным `@Throttle`.
-import { routeMethods } from './route-method-auth';
+import { duplicateKeys, routeMethods } from './route-method-auth';
 
 const REL = 'x/x.controller.ts';
 const guards = (src: string) =>
@@ -90,5 +90,21 @@ describe('routeMethods: assertAdminKey по телу метода', () => {
       [`${REL}:b`]: false,
       [`${REL}:c`]: false,
     });
+  });
+});
+
+describe('duplicateKeys: коллизия ключа без имени класса', () => {
+  it('одноимённые методы двух @Controller в одном файле дают общий ключ', () => {
+    const src = `
+      @Controller('a') export class A { @Get('x') open() {} }
+      @Controller('b') export class B { @Post('y') open() {} }`;
+    expect(duplicateKeys(routeMethods(REL, src))).toEqual([`${REL}:open`]);
+  });
+
+  it('контроль: разные имена методов — коллизии нет', () => {
+    const src = `
+      @Controller('a') export class A { @Get('x') one() {} }
+      @Controller('b') export class B { @Post('y') two() {} }`;
+    expect(duplicateKeys(routeMethods(REL, src))).toEqual([]);
   });
 });

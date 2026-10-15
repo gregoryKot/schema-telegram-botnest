@@ -14,10 +14,11 @@
 // либо под гвардом (класс или метод), либо назван в ANONYMOUS_BY_DESIGN с
 // причиной. Разбор — src/test-support/route-method-auth.ts (AST).
 //
-// Классификация (стены PUBLIC_BY_DESIGN/ADMIN_KEY_GATED/GUARD_RE) живёт в
+// Классификация (стены PUBLIC_BY_DESIGN/ADMIN_KEY_GATED) живёт в
 // controller-classification.ts — общий источник с e2e-route-coverage.
 // invariants.spec.ts (правило №4 CLAUDE.md: денормализованные копии без
-// сверки запрещены).
+// сверки запрещены). Список гвардов (GUARD_NAMES и собранный из него GUARD_RE)
+// — один, в route-method-auth.ts: по нему считают и файл, и метод.
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import {
@@ -26,10 +27,15 @@ import {
   PUBLIC_BY_DESIGN,
   ADMIN_KEY_GATED,
   ANONYMOUS_BY_DESIGN,
-  GUARD_RE,
 } from './controller-classification';
-import { routeMethods } from '../test-support/route-method-auth';
+import {
+  GUARD_NAMES,
+  GUARD_RE,
+  duplicateKeys,
+  routeMethods,
+} from '../test-support/route-method-auth';
 
+const REL = 'x/x.controller.ts';
 const methodsOf = (rel: string) =>
   routeMethods(rel, readFileSync(join(SRC, rel), 'utf8'));
 
@@ -89,6 +95,24 @@ describe('трипваер: каждый контроллер защищён (gu
     for (const [key, reason] of Object.entries(ANONYMOUS_BY_DESIGN)) {
       expect({ key, ok: reason.length >= 20 }).toEqual({ key, ok: true });
     }
+  });
+
+  it('ключи роут-методов уникальны на реальном дереве (ключ без имени класса)', () => {
+    // Два @Controller в одном файле с методами одного имени делили бы ключ
+    // `файл:метод`, и запись ANONYMOUS_BY_DESIGN покрыла бы оба сразу.
+    expect(duplicateKeys(CONTROLLERS.flatMap(methodsOf))).toEqual([]);
+  });
+
+  it('файловый GUARD_RE и разбор по методу знают одни и те же гварды', () => {
+    for (const name of GUARD_NAMES) {
+      const src = `@Controller('x') export class C { @Get('a') @UseGuards(${name}) a() {} }`;
+      expect({ name, re: GUARD_RE.test(src) }).toEqual({ name, re: true });
+      expect(routeMethods(REL, src).map((m) => m.guard)).toEqual(['method']);
+    }
+    // Контроль: чужой гвард не засчитывается ни тем, ни другим.
+    const other = `@Controller('x') export class C { @Get('a') @UseGuards(SomeOtherGuard) a() {} }`;
+    expect(GUARD_RE.test(other)).toBe(false);
+    expect(routeMethods(REL, other).map((m) => m.guard)).toEqual([null]);
   });
 
   it('нет контроллеров вне классификации (новый = защити или внеси в allowlist)', () => {
