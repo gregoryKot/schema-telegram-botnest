@@ -256,8 +256,8 @@ describeOnRealDb('e2e: адресация уведомлений после сл
         BIG,
       );
       expect(send.mock.calls[0][0]).toBe('big@example.com');
-      expect(send.mock.calls[0][2]).toBe(
-        'Ваша заявка на роль терапевта отклонена.\n\nПричина: нужен диплом',
+      expect(send.mock.calls[0][2]).toMatch(
+        /^Ваша заявка на роль терапевта отклонена\.\n\nПричина: нужен диплом\n\nПодать заявку заново /,
       );
       expect(tgChats()).toEqual([]);
     });

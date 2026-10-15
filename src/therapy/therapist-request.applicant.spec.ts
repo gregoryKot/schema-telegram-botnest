@@ -1,3 +1,6 @@
+import { readFileSync } from 'fs';
+import { join } from 'path';
+
 // Адресат решения по заявке терапевта: текст (ты/вы, без рода, оба канала) и
 // выбор почты аккаунта. AuthProvider.email лежит в базе шифротекстом
 // (encryption-policy.ts) — читать его сырым нельзя, поэтому тест пишет строку
@@ -44,15 +47,47 @@ describe('decisionMessage', () => {
     const tg = mod.decisionMessage('ty', 'rejected', reason, 'tg').text;
     const mail = mod.decisionMessage('ty', 'rejected', reason, 'email');
     expect(tg).toBe(
-      '❌ Твоя заявка на роль терапевта отклонена.\n\nПричина: нужен &lt;диплом&gt;',
+      '❌ Твоя заявка на роль терапевта отклонена.\n\nПричина: нужен &lt;диплом&gt;\n\n' +
+        'Подать заявку заново можно в настройках приложения: кнопка «Я психолог — подать заявку».',
     );
     expect(mail.text).toBe(
-      'Твоя заявка на роль терапевта отклонена.\n\nПричина: нужен <диплом>',
+      'Твоя заявка на роль терапевта отклонена.\n\nПричина: нужен <диплом>\n\n' +
+        'Подать заявку заново можно на https://schemehappens.ru/account: кнопка «Я психолог — подать заявку».',
     );
     expect(mail.subject).toBe('Заявка на роль терапевта отклонена');
-    expect(mod.decisionMessage('vy', 'rejected', undefined, 'email').text).toBe(
-      'Ваша заявка на роль терапевта отклонена.',
+  });
+
+  it('отказ без причины: следующий шаг есть в обоих каналах и формах, одобрение его не несёт', () => {
+    const vyMail = mod.decisionMessage('vy', 'rejected', undefined, 'email');
+    expect(vyMail.text).toBe(
+      'Ваша заявка на роль терапевта отклонена.\n\n' +
+        'Подать заявку заново можно на https://schemehappens.ru/account: кнопка «Я психолог — подать заявку».',
     );
+    const tyTg = mod.decisionMessage('ty', 'rejected', undefined, 'tg').text;
+    expect(tyTg).toMatch(
+      /^❌ Твоя заявка[^\n]*отклонена\.\n\nПодать заявку заново/,
+    );
+    expect(tyTg).not.toContain('Причина');
+    // Обращения в хвосте нет: ни «ты», ни «вы» не просочиваются мимо t().
+    expect(vyMail.text.split('\n\n')[1]).not.toMatch(
+      /(^|[^а-яё])(ты|вы)([^а-яё]|$)/i,
+    );
+    const ok = mod.decisionMessage('ty', 'approved', undefined, 'tg').text;
+    expect(ok).not.toContain('заново');
+  });
+
+  // Подпись кнопки живёт в двух фронтендах (правило №3) и в письме — три места,
+  // обязанные совпадать (правило №4): переименуют кнопку — письмо поведёт «не туда».
+  it('подпись кнопки из письма есть в настройках сайта и мини-аппа', () => {
+    const root = join(__dirname, '..', '..');
+    for (const file of [
+      'webapp/src/pages/account/TherapistRequestSection.tsx',
+      'schema-miniapp/src/components/settingsSheet/BecomeTherapistSection.tsx',
+    ]) {
+      expect(readFileSync(join(root, file), 'utf8')).toContain(
+        mod.APPLY_BUTTON,
+      );
+    }
   });
 });
 

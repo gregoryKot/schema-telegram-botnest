@@ -17,6 +17,9 @@ import { escapeHtml } from '../utils/escape-html';
 // и chat_id не является (инцидент класса #456). Поэтому адрес в Telegram берётся
 // из привязки (AccountService.telegramIdsFor), а запасной канал — почта аккаунта.
 
+// Подпись кнопки подачи заявки в настройках сайта и мини-аппа.
+export const APPLY_BUTTON = 'Я психолог — подать заявку';
+
 export type Decision = 'approved' | 'rejected';
 export type Channel = 'tg' | 'email';
 
@@ -59,9 +62,15 @@ export function decisionMessage(
     'Твоя заявка на роль терапевта отклонена.',
     'Ваша заявка на роль терапевта отклонена.',
   );
+  // Отказ не тупик: заявку можно подать заново (service.submit пускает при
+  // status = rejected). Кнопка — та же, что в настройках обоих фронтендов;
+  // подпись пинится спеком по исходникам. Обращения здесь нет — форм две не надо.
+  const again = tg
+    ? `Подать заявку заново можно в настройках приложения: кнопка «${APPLY_BUTTON}».`
+    : `Подать заявку заново можно на https://${CANONICAL_HOST}/account: кнопка «${APPLY_BUTTON}».`;
   return {
     subject: 'Заявка на роль терапевта отклонена',
-    text: `${tg ? '❌ ' : ''}${head}${why}`,
+    text: `${tg ? '❌ ' : ''}${head}${why}\n\n${again}`,
   };
 }
 
