@@ -13,7 +13,24 @@
 //      которую больше никто не передаёт.
 import { readdirSync, readFileSync } from 'fs';
 import { join, relative } from 'path';
-import { LOGGABLE_FIELDS, redactSecurityLogData } from './security-log-redact';
+
+type RedactModule = typeof import('./security-log-redact');
+let LOGGABLE_FIELDS: RedactModule['LOGGABLE_FIELDS'];
+let redactSecurityLogData: RedactModule['redactSecurityLogData'];
+
+// Модуль грузится ЗАНОВО на каждый тест, внутри теста: белый список —
+// код уровня модуля, и при статическом импорте Stryker считает его мутантов
+// «статическими» и не засчитывает спеку (ignoreStatic), а судит их чужой
+// спек, который грузит файл внутри теста (nightly golden-auth, issue #614:
+// security-log.service 95.74% → 65.71%). Образец — loadCrypto в crypto.spec.ts.
+beforeEach(() => {
+  jest.isolateModules(() => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const mod = require('./security-log-redact') as RedactModule;
+    LOGGABLE_FIELDS = mod.LOGGABLE_FIELDS;
+    redactSecurityLogData = mod.redactSecurityLogData;
+  });
+});
 
 describe('redactSecurityLogData — секрет под любым именем не проходит', () => {
   // Имена, под которыми секрет приезжает в реальности. Старый чёрный список
@@ -59,6 +76,19 @@ describe('redactSecurityLogData — секрет под любым именем 
       detail: [{ token: 'LEAKED-VALUE-42' }],
     });
     expect(JSON.stringify(out)).not.toContain('LEAKED-VALUE-42');
+    // …а сам массив и его элементы на месте: вычищается секрет, а не
+    // структура (иначе в DM вместо списка приезжали бы пустоты).
+    expect(out.detail).toEqual([{ token: '[redacted]' }]);
+  });
+
+  it('вложенные массивы упираются в потолок глубины и глушатся на границе', () => {
+    // Глубина растёт и при спуске по массивам: без этого `detail: [[[[…]]]]`
+    // (или массив, ссылающийся на себя) спускался бы бесконечно.
+    const out = redactSecurityLogData({ detail: [[[['LEAKED-VALUE-42']]]] });
+    expect(out.detail).toEqual([[['[redacted]']]]);
+    const cyclic: unknown[] = [];
+    cyclic.push(cyclic);
+    expect(() => redactSecurityLogData({ detail: cyclic })).not.toThrow();
   });
 
   it('глубоко вложенное значение глушится целиком, без бесконечного спуска', () => {
@@ -234,6 +264,21 @@ function scanObject(
   return { keys, end };
 }
 
+// Под Stryker спек читает ИНСТРУМЕНТИРОВАННЫЕ исходники песочницы: литерал
+// `'event'` и объект данных там обёрнуты в
+// `stryMutAct_x("n") ? "" : (stryCov_x("n"), 'event')` (и `? {} : (…, {…})`).
+// Сверка тогда не находила call sites и красила «протухшие записи» уже в
+// пробном прогоне — а как только redact попал в `mutate`, этот спек стал
+// «связанным» с мутируемым файлом и начал в нём бежать (nightly golden-auth,
+// #614). Снимаем только эти две обёртки: у объекта остаётся лишняя закрывающая `)` после
+// `}`, скану она не мешает.
+const STRYKER_STRING =
+  /stryMutAct_\w+\("\d+"\) \? "" : \(stryCov_\w+\("\d+"\), ('(?:[^'\\]|\\.)*')\)/g;
+const STRYKER_OBJECT =
+  /stryMutAct_\w+\("\d+"\) \? \{\} : \(stryCov_\w+\("\d+"\), /g;
+const withoutInstrumentation = (src: string): string =>
+  src.replace(STRYKER_STRING, '$1').replace(STRYKER_OBJECT, '');
+
 /** Все `securityLog.log('event', { … })` в бэкенде, с ключами объекта. */
 function callSiteKeys(): { keys: Map<string, string[]>; broken: string[] } {
   const keys = new Map<string, string[]>();
@@ -241,7 +286,7 @@ function callSiteKeys(): { keys: Map<string, string[]>; broken: string[] } {
   // Приёмник всегда назван `securityLog` (this./deps./sinks./необязательный).
   const CALL = /securityLog\s*\??\.\s*log\(\s*'([a-z_]+)'\s*,\s*/g;
   for (const file of tsFiles(SRC)) {
-    const src = readFileSync(file, 'utf8');
+    const src = withoutInstrumentation(readFileSync(file, 'utf8'));
     const where = relative(SRC, file);
     let m: RegExpExecArray | null;
     CALL.lastIndex = 0;
@@ -261,6 +306,28 @@ function callSiteKeys(): { keys: Map<string, string[]>; broken: string[] } {
   }
   return { keys, broken };
 }
+
+describe('сверка call sites под инструментацией Stryker', () => {
+  // Строка записана из песочницы Stryker (.stryker-tmp, merge.service.ts):
+  // это настоящий вид call site в ночном прогоне, а не вымышленный.
+  const INSTRUMENTED =
+    'this.securityLog.log(stryMutAct_9fa48("551") ? "" : (stryCov_9fa48("551"), ' +
+    '\'merge_subscription_conflict\'), stryMutAct_9fa48("552") ? {} : ' +
+    '(stryCov_9fa48("552"), { target, detail: x }));';
+
+  it('обёртки литерала и объекта снимаются — call site снова распознаётся', () => {
+    const plain = withoutInstrumentation(INSTRUMENTED);
+    expect(plain).toBe(
+      "this.securityLog.log('merge_subscription_conflict', { target, detail: x }));",
+    );
+    expect(plain).toMatch(/securityLog\s*\??\.\s*log\(\s*'([a-z_]+)'\s*,\s*\{/);
+  });
+
+  it('контроль: обычный (не инструментированный) код остаётся как был', () => {
+    const src = "this.securityLog.log('csrf_blocked', { ip });";
+    expect(withoutInstrumentation(src)).toBe(src);
+  });
+});
 
 describe('LOGGABLE_FIELDS сверен с call sites', () => {
   const { keys, broken } = callSiteKeys();
