@@ -1378,7 +1378,7 @@
   "webapp/src/components/booking/WriteInsteadNote.tsx": 10,
   "webapp/src/components/BookingErrorNote.tsx": 14,
   "webapp/src/components/bookingFailure.ts": 28,
-  "webapp/src/components/BookingPicker.tsx": 278,
+  "webapp/src/components/BookingPicker.tsx": 277,
   "webapp/src/components/BottomSheetShell.tsx": 52,
   "webapp/src/components/caseFlow/CaseBodyScreen.tsx": 71,
   "webapp/src/components/caseFlow/CaseChipGrid.tsx": 61,

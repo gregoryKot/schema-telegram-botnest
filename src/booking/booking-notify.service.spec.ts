@@ -11,6 +11,7 @@ import { Logger } from '@nestjs/common';
 import { BookingStatus, SessionType } from '@prisma/client';
 import { BookingNotifyService } from './booking-notify.service';
 import { LEASE_WINDOW } from '../infra/cron-leader.service';
+import { RETURNING_NOT_FOUND_NOTE } from './booking-admin-note';
 
 function makeService(
   opts: {
@@ -330,6 +331,19 @@ describe('BookingNotifyService — прочие уведомления жизн�
       expect.stringContaining('Бронь ожидает оплаты'),
       expect.any(String),
     );
+  });
+
+  it('onAwaitingPayment с пометкой кладёт её в Telegram и в письмо; без пометки строки нет', async () => {
+    const { service, telegram, email } = makeService();
+    await service.onAwaitingPayment(booking(), RETURNING_NOT_FOUND_NOTE);
+    expect(telegram.notifyAdmin.mock.calls[0][0]).toContain(
+      `⚠️ ${RETURNING_NOT_FOUND_NOTE}`,
+    );
+    expect(email.sendAdminNotification.mock.calls[0][1]).toContain(
+      RETURNING_NOT_FOUND_NOTE,
+    );
+    await service.onAwaitingPayment(booking());
+    expect(telegram.notifyAdmin.mock.calls[1][0]).not.toContain('⚠️');
   });
 
   it('notifyExpired шлёт по одному сообщению на каждую истёкшую бронь, в ОБА канала', async () => {

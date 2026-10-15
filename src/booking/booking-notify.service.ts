@@ -8,6 +8,7 @@ import { MeetingService } from './meeting.service';
 import { EmailService } from '../auth/email.service';
 import { decryptRecord } from '../utils/crypto';
 import { BOOKING_SCHEMA } from './booking.schema';
+import { awaitingPaymentTitle } from './booking-admin-note';
 import { bookingCardText, subjectFromTitle } from './booking-notify.format';
 import { BookingStatus, SessionType } from '@prisma/client';
 import { CronLeaderService, LEASE_WINDOW } from '../infra/cron-leader.service';
@@ -74,11 +75,8 @@ export class BookingNotifyService {
   }
 
   /** Notify admin a paid slot is reserved and awaiting payment (so a failed/abandoned payment isn't lost). */
-  async onAwaitingPayment(b: PlainBooking): Promise<void> {
-    await this.sendAdmin(
-      '⏳ <b>Бронь ожидает оплаты</b> (слот зарезервирован на 15 мин)',
-      b,
-    );
+  async onAwaitingPayment(b: PlainBooking, note?: string): Promise<void> {
+    await this.sendAdmin(awaitingPaymentTitle(note), b);
   }
 
   /** Notify admin that HELD bookings expired without payment (so they're not lost silently). */
