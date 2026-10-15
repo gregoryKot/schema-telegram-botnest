@@ -5,6 +5,7 @@ import { BotAnalyticsService } from '../bot/bot.analytics.service';
 import { NotificationService } from '../notification/notification.service';
 import { TherapyRelationsService } from './therapy-relations.service';
 import { removeTherapistClient } from './remove-client';
+import { requestYsq } from './ysq-request';
 import { activeRelationWhere } from './relation-where';
 import { decrypt, decryptJson, decryptRecord } from '../utils/crypto';
 import { computeActiveSchemas, computeYsqScores } from '../utils/ysq';
@@ -237,20 +238,15 @@ export class TherapyClientDataService {
     return rows.map((r) => decryptRecord(r, MODE_NOTE_SCHEMA));
   }
 
-  async requestYsq(therapistId: bigint, clientId: bigint): Promise<void> {
-    await this.relationsService.assertHasClient(therapistId, clientId);
-    if (clientId < 0n) return; // Virtual client — no Telegram account, cannot send notification
-    const therapist = await this.prisma.user.findUnique({
-      where: { id: therapistId },
-      select: { firstName: true },
-    });
-    await this.notificationService.schedule(
-      clientId,
-      'ysq_requested',
-      new Date(),
+  requestYsq(therapistId: bigint, clientId: bigint): Promise<void> {
+    return requestYsq(
       {
-        therapistName: therapist?.firstName ?? null,
+        prisma: this.prisma,
+        notifications: this.notificationService,
+        relations: this.relationsService,
       },
+      therapistId,
+      clientId,
     );
   }
 

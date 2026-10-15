@@ -5,6 +5,7 @@ import { sameId } from '../../../../shared/src/utils/sameId';
 import { fmtDate, momentDayKey, todayStr } from '../../utils/format';
 import { SCHEMA_DOMAINS, MODE_GROUPS } from '../../schemaTherapyData';
 import { useCopyToClipboard } from '../../../../shared/src/utils/useCopyToClipboard';
+import { useYsqRequest } from '../../../../shared/src/therapy/useYsqRequest';
 import { useTr } from '../../utils/addressForm';
 import { conceptSaveBody } from '../../../../shared/src/therapy/conceptGraph/conceptSaveBody';
 import { formatModeLinksExport } from '../../../../shared/src/therapy/conceptGraph/modeLinksExport';
@@ -81,8 +82,8 @@ export function useClientDetail({ onOpenClient, switchView, setClients }: Params
   const [aliasError, setAliasError] = useState('');
 
   // YSQ / Export
-  const [ysqRequested, setYsqRequested] = useState(false);
-  const [ysqError, setYsqError] = useState('');
+  const { ysqRequested, ysqError, resetYsq, handleRequestYsq } = useYsqRequest(
+    selectedClient?.telegramId, (id) => api.requestYsq(id));
   const { copied: exportCopied, copy: copyExport } = useCopyToClipboard({
     onError: () => reportClientError({ message: 'client detail export clipboard write failed', section: 'therapist.clientDetail' }),
   });
@@ -121,8 +122,7 @@ export function useClientDetail({ onOpenClient, switchView, setClients }: Params
     setLocalConceptSynced({});
     setConceptError('');
     setExpandedSnapshot(null);
-    setYsqRequested(false);
-    setYsqError('');
+    resetYsq();
     setRenamingAlias(false);
     setAliasError('');
     setDeleteError('');
@@ -260,17 +260,6 @@ export function useClientDetail({ onOpenClient, switchView, setClients }: Params
       setSelectedClient(updated); setClients(prev => prev.map(c => sameId(c.telegramId, selectedClient.telegramId) ? updated : c));
       return true;
     } catch { setSessionInfoError('Не удалось сохранить дату'); return false; } finally { setSessionInfoSaving(false); }
-  }
-
-  // ── YSQ ───────────────────────────────────────────────────────────────────────
-  async function handleRequestYsq() {
-    if (!selectedClient) return;
-    setYsqError('');
-    try {
-      await api.requestYsq(selectedClient.telegramId);
-      setYsqRequested(true);
-      setTimeout(() => setYsqRequested(false), 3000);
-    } catch { setYsqError('Не удалось отправить запрос'); }
   }
 
   // ── Export ─────────────────────────────────────────────────────────────────────

@@ -178,6 +178,27 @@ describe('ConceptSheet — запрос теста YSQ', () => {
     expect(screen.getByText('✓ Запрос отправлен')).toBeTruthy();
   });
 
+  it('кнопка запроса заблокирована, пока показано «✓ Запрос отправлен» (без дублей клиенту)', () => {
+    const handleRequestYsq = vi.fn();
+    render(
+      <ConceptSheet
+        selectedClient={makeClient()}
+        detail={makeDetail({ ysqRequested: true, handleRequestYsq })}
+      />,
+    );
+    const btn = screen.getByText('✓ Запрос отправлен');
+    expect(btn.disabled).toBe(true);
+    fireEvent.click(btn);
+    expect(handleRequestYsq).not.toHaveBeenCalled();
+  });
+
+  it('до отправки кнопка запроса активна', () => {
+    render(
+      <ConceptSheet selectedClient={makeClient()} detail={makeDetail()} />,
+    );
+    expect(screen.getByText('Запросить тест на схемы').disabled).toBe(false);
+  });
+
   it('ysqError задан — текст ошибки виден', () => {
     render(
       <ConceptSheet

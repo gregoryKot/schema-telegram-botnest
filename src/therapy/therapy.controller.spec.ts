@@ -170,3 +170,13 @@ describe('TherapyController.getClientData', () => {
     );
   });
 });
+
+describe('TherapyController.requestYsq — троттлинг', () => {
+  // Лимит на терапевта: второй рубеж против рассылки клиенту (аудит 2026-10).
+  // Метаданные читаем напрямую — как в donation.controller.spec.ts.
+  it('декорирован @Throttle: 30 запросов в час в бакете "long"', () => {
+    const proto = TherapyController.prototype.requestYsq;
+    expect(Reflect.getMetadata('THROTTLER:LIMITlong', proto)).toBe(30);
+    expect(Reflect.getMetadata('THROTTLER:TTLlong', proto)).toBe(3_600_000);
+  });
+});

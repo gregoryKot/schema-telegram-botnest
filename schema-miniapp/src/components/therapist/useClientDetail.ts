@@ -9,6 +9,7 @@ import type {
 } from '../../api';
 import { todayStr } from '../../utils/format';
 import { useCopyToClipboard } from '../../../../shared/src/utils/useCopyToClipboard';
+import { useYsqRequest } from '../../../../shared/src/therapy/useYsqRequest';
 import { removeClientConfirmCopy } from '../../../../shared/src/therapy/removeClientConfirm';
 import {
   fetchClientDetail,
@@ -65,8 +66,13 @@ export function useClientDetail({ switchView, setClients }: Params) {
   });
 
   // YSQ / Export
-  const [ysqRequested, setYsqRequested] = useState(false);
-  const [ysqError, setYsqError] = useState('');
+  const {
+    ysqRequested,
+    ysqError,
+    setYsqRequested,
+    resetYsq,
+    handleRequestYsq,
+  } = useYsqRequest(selectedClient?.telegramId, (id) => api.requestYsq(id));
   const { copied: exportCopied, copy: copyExport } = useCopyToClipboard({
     onError: () =>
       reportClientError({
@@ -100,8 +106,7 @@ export function useClientDetail({ switchView, setClients }: Params) {
     setClientData(null);
     setClientLoadError(false);
     conceptEditing.resetConcept();
-    setYsqRequested(false);
-    setYsqError('');
+    resetYsq();
     setDeleteError('');
     sessionAlias.resetSessionAlias(client);
     switchView('client');
@@ -167,19 +172,6 @@ export function useClientDetail({ switchView, setClients }: Params) {
       setNotes((prev) => prev.filter((n) => n.id !== noteId));
     } catch {
       setNoteError('Не удалось удалить заметку');
-    }
-  }
-
-  // ── YSQ ───────────────────────────────────────────────────────────────────────
-  async function handleRequestYsq() {
-    if (!selectedClient) return;
-    setYsqError('');
-    try {
-      await api.requestYsq(selectedClient.telegramId);
-      setYsqRequested(true);
-      setTimeout(() => setYsqRequested(false), 3000);
-    } catch {
-      setYsqError('Не удалось отправить запрос');
     }
   }
 
