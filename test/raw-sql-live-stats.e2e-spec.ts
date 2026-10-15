@@ -11,6 +11,7 @@
 import { PrismaService } from '../src/prisma/prisma.service';
 import { BotAdminStatsService } from '../src/bot/bot.admin-stats.service';
 import { StatsReportService } from '../src/bot/stats-report.service';
+import { BLOCK_FAILED_MARK } from '../src/bot/stats-settle';
 import { buildStatsReport } from './e2e-support/stats-report.factory';
 
 const USER_ID = 999_000_000_010n;
@@ -22,6 +23,10 @@ const MARK = 'raw-sql-live';
 function expectSaneReport(text: string): void {
   expect(text.length).toBeGreaterThan(50);
   expect(text).not.toMatch(/NaN|undefined|\[object Object\]|null/);
+  // /stats переживает упавший блок (stats-settle.ts), подставляя заглушку, —
+  // поэтому битый SQL больше не бросает из render() и без этой проверки
+  // живой спек позеленел бы на сломанном запросе (правило №18).
+  expect(text).not.toContain(BLOCK_FAILED_MARK);
 }
 
 // События с userId — по одному на каждую ветку метрик пользователя; meta —
