@@ -260,7 +260,9 @@ backup, caldav, oauth×2, telegram) с классификацией по пло�
   сверки. Механизм: дефолт `${APP_URL}/app/`, `BOT_USERNAME` обязателен с
   форматом Telegram, кросс-проверка хоста с `canonical-host.ts`, проба
   `telegram` сверяет `getMe().username` с `BOT_USERNAME`, гейт-сверка трёх
-  источников имени.
+  источников имени. Закрыто: код в PR `fix-miniapp-url-defaults` (дефолтов
+  нет, `BOT_USERNAME` обязателен, кросс-проверка, сверка пробой и тестом
+  `bot-username-sources.spec.ts`); остаток — за владельцем, см. `docs/README.md`.
 - **Google One Tap выключен молча.** `webapp/src/hooks/useGoogleOneTap.ts:16`
   читает `VITE_GOOGLE_CLIENT_ID`, которого не задаёт ни `Dockerfile:53`, ни
   `deploy-vps.yml` — One Tap не видит никто, а бэкенд и CSP под него живут.

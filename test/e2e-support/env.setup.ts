@@ -1,12 +1,12 @@
 // Jest setupFiles (test/jest-e2e.json) — выполняется ДО импорта тестовых
 // файлов, а значит и до первого require('../../src/app.module'). Критично:
 // ConfigService.getOrThrow('JWT_SECRET'/'BOT_TOKEN') читается в конструкторах
-// нескольких провайдеров (см. TelegramOidcProvider) на этапе сборки
-// TestingModule — если выставить эти переменные внутри спека ПОСЛЕ import,
-// будет поздно.
+// провайдеров (TelegramOidcProvider) при сборке TestingModule — если выставить
+// переменные внутри спека ПОСЛЕ import, будет поздно (BOT_USERNAME — тем более).
 process.env.NODE_ENV = 'test';
 process.env.JWT_SECRET = 'e2e-smoke-test-secret';
 process.env.BOT_TOKEN = '12345:E2E_SMOKE_TEST_TOKEN';
+process.env.BOT_USERNAME = 'E2eTestBot'; // нет дефолта: без него приглашения 503
 // Токен бота MAX — свой, не телеграмный: подпись мини-аппа MAX считается по
 // нему (src/auth/max-init-data.ts). Значение условное, бота не существует.
 process.env.MAX_BOT_TOKEN = 'e2e-smoke-max-bot-token';

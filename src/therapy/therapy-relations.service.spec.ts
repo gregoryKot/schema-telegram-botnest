@@ -14,8 +14,14 @@
 // спека).
 import { TherapyRelationsService } from './therapy-relations.service';
 import { Rel, makeRelationPrismaMock } from './therapy.test-helpers';
-import { MINIAPP_TGLINK } from '../telegram/telegram.constants';
 import { randomBytes as mockableRandomBytes } from 'crypto';
+
+// Имя бота без дефолта (telegram.constants.ts): для ссылки-приглашения задаём его
+// явно, как это делает env прода.
+jest.mock('../telegram/telegram.constants', () => ({
+  ...jest.requireActual('../telegram/telegram.constants'),
+  BOT_USERNAME: 'SchemeHappensBot',
+}));
 
 // Ключ шифрования не задан (дев-режим crypto.ts) — encrypt() возвращает
 // plaintext, что для этих тестов и нужно.
@@ -310,7 +316,7 @@ describe('createInvite — генерация кода приглашения', 
     const result = await service.createInvite(T1);
     expect(result.code).toHaveLength(12);
     expect(result.url).toBe(
-      `${MINIAPP_TGLINK}?startapp=therapy_${result.code}`,
+      `https://t.me/SchemeHappensBot/diary?startapp=therapy_${result.code}`,
     );
     expect(rels).toHaveLength(1);
     expect(rels[0].therapistId).toBe(T1);
