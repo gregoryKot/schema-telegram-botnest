@@ -93,6 +93,11 @@ export function AppOverlays({
   section,
   setSection,
 }: Props) {
+  // Три экрана ведут к оценке потребностей: лист закрывается функцией реестра.
+  const openTrackerAfter = (close: () => void) => () => {
+    close();
+    sheets.open('trackerOverlay', { trackerNeedId: null });
+  };
   return (
     <>
       {/* ── TrackerOverlay (NeedDial, per-need) ── */}
@@ -128,10 +133,7 @@ export function AppOverlays({
         >
           <DiarySection
             onClose={closers.diaries}
-            onOpenTracker={() => {
-              closers.diaries();
-              sheets.open('trackerOverlay', { trackerNeedId: null });
-            }}
+            onOpenTracker={openTrackerAfter(closers.diaries)}
           />
         </div>
       )}
@@ -169,9 +171,13 @@ export function AppOverlays({
         />
       )}
 
-      {sheets.caseFlow && <CaseFlowOverlay sheets={sheets} />}
+      {sheets.caseFlow && (
+        <CaseFlowOverlay sheets={sheets} onClose={closers.caseFlow} />
+      )}
 
-      {sheets.selfMap && <SelfMapOverlay sheets={sheets} />}
+      {sheets.selfMap && (
+        <SelfMapOverlay sheets={sheets} onClose={closers.selfMap} />
+      )}
 
       {sheets.childhoodWheel && (
         <ChildhoodWheelSheet
@@ -229,19 +235,13 @@ export function AppOverlays({
       {sheets.practices && (
         <PracticesScreen
           onClose={closers.practices}
-          onOpenTracker={() => {
-            closers.practices();
-            sheets.open('trackerOverlay', { trackerNeedId: null });
-          }}
+          onOpenTracker={openTrackerAfter(closers.practices)}
         />
       )}
       {sheets.plans && (
         <PlansScreen
           onClose={closers.plans}
-          onOpenTracker={() => {
-            closers.plans();
-            sheets.open('trackerOverlay', { trackerNeedId: null });
-          }}
+          onOpenTracker={openTrackerAfter(closers.plans)}
         />
       )}
       {sheets.schemaInfo && (

@@ -15,6 +15,7 @@ import {
 } from '@testing-library/react';
 import { TrackerHistoryOverlay } from './TrackerHistoryOverlay';
 import { useSheets } from '../hooks/useSheets';
+import { buildOverlayClosers } from '../hooks/overlayClosers';
 import { api } from '../api';
 import type { Need } from '../api';
 
@@ -64,9 +65,25 @@ const need: Need = {
   chartLabel: 'Привязанность',
 };
 
-function baseProps(sheets: ReturnType<typeof useSheets>) {
+// Реестр закрытия на настоящем useSheets: «‹ Назад» шапки ведёт туда же,
+// куда «Назад» хоста (hooks/overlayClosers).
+function registryCloser(sheets: ReturnType<typeof useSheets>) {
+  return buildOverlayClosers({
+    sheets,
+    childhoodWheelPending: false,
+    setChildhoodWheelPending: vi.fn(),
+    onAddressPickerDone: vi.fn(),
+    setPairData: vi.fn(),
+  }).tracker;
+}
+
+function baseProps(
+  sheets: ReturnType<typeof useSheets>,
+  onClose: () => void = registryCloser(sheets),
+) {
   return {
     sheets,
+    onClose,
     safeTop: 0,
     needs: [need],
     history: [],
@@ -117,6 +134,56 @@ describe('TrackerHistoryOverlay — навигация шапки', () => {
     fireEvent.click(screen.getByText('go-today'));
     expect(result.current.tracker).toBe(false);
     expect(result.current.trackerOverlay).toBe(true);
+  });
+});
+
+// Закрытие листа определяет реестр (hooks/overlayClosers): все выходы из
+// истории зовут onClose, а не свой sheets.close('tracker', …) — иначе правка
+// закрытия снова придётся вносить в двух местах (ревью PR #696).
+describe('TrackerHistoryOverlay — закрытие идёт через onClose из реестра', () => {
+  function mountWithSpies() {
+    const { result } = renderHook(() => useSheets());
+    act(() => result.current.open('tracker'));
+    const sheets = { ...result.current, close: vi.fn(), open: vi.fn() };
+    const onClose = vi.fn();
+    render(<TrackerHistoryOverlay {...baseProps(sheets, onClose)} />);
+    return { sheets, onClose };
+  }
+
+  it('«‹ Назад» зовёт onClose и не трогает sheets.close', () => {
+    const { sheets, onClose } = mountWithSpies();
+    fireEvent.click(screen.getByText('‹ Назад'));
+    expect(onClose).toHaveBeenCalledTimes(1);
+    expect(sheets.close).not.toHaveBeenCalled();
+  });
+
+  it('«Оценить →» закрывает через onClose и открывает оценку потребностей', () => {
+    const { sheets, onClose } = mountWithSpies();
+    fireEvent.click(screen.getByText('Оценить →'));
+    expect(onClose).toHaveBeenCalledTimes(1);
+    expect(sheets.close).not.toHaveBeenCalled();
+    expect(sheets.open).toHaveBeenCalledWith('trackerOverlay', {
+      trackerNeedId: null,
+    });
+  });
+
+  it('HistoryView.onGoToToday закрывает через onClose и открывает оценку', () => {
+    const { sheets, onClose } = mountWithSpies();
+    fireEvent.click(screen.getByText('go-today'));
+    expect(onClose).toHaveBeenCalledTimes(1);
+    expect(sheets.close).not.toHaveBeenCalled();
+    expect(sheets.open).toHaveBeenCalledWith('trackerOverlay', {
+      trackerNeedId: null,
+    });
+  });
+
+  it('после onGoToToday вкладка сброшена на «today» — как у крестика', () => {
+    const { result } = renderHook(() => useSheets());
+    act(() => result.current.open('tracker', { trackerTab: 'history' }));
+    render(<TrackerHistoryOverlay {...baseProps(result.current)} />);
+    fireEvent.click(screen.getByText('go-today'));
+    expect(result.current.tracker).toBe(false);
+    expect(result.current.trackerTab).toBe('today');
   });
 });
 

@@ -82,8 +82,7 @@ export default function App() {
   // не перезапускает. Та же идея для ДАННЫХ чужих вкладок — prefetchSectionData.ts.
   useEffect(() => {
     preloadOtherSections(section);
-    // Только при маунте: начальная секция за жизнь компонента не меняется,
-    // повторный запуск плана на каждую смену вкладки не нужен.
+    // Только при маунте: начальная секция за жизнь компонента не меняется.
   }, []);
   // Сессия умерла посреди работы (initData протухла, перевыпуск не удался) —
   // экран обязан сказать об этом, а не молча проглатывать 401 (правило
@@ -608,6 +607,7 @@ export default function App() {
       {/* ── История потребностей ── */}
       <TrackerHistoryOverlay
         sheets={sheets}
+        onClose={closers.tracker}
         safeTop={safeTop}
         needs={needs}
         history={history}

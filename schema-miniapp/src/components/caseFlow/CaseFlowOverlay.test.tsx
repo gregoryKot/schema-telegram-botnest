@@ -33,7 +33,7 @@ const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
 const SCENE_TEXT = 'Мама позвонила и стала расспрашивать про работу';
 
 function makeSheets() {
-  return { close: vi.fn(), open: vi.fn() };
+  return { open: vi.fn() };
 }
 
 beforeEach(() => {
@@ -46,8 +46,10 @@ afterEach(cleanup);
 describe('CaseFlowOverlay — счётчик разборов приезжает из API', () => {
   it('дожидается api.getModeDiary и показывает реальный поток (не заглушку)', async () => {
     mockApi.getModeDiary.mockResolvedValue([{ id: 1 }, { id: 2 }]);
-    render(<CaseFlowOverlay sheets={makeSheets()} />);
-    await screen.findByText('Разобрать свой случай');
+    render(<CaseFlowOverlay sheets={makeSheets()} onClose={vi.fn()} />);
+    // Первый тест файла платит за холодную загрузку ленивого чанка; на
+    // загруженной машине это дольше секунды (findBy по умолчанию).
+    await screen.findByText('Разобрать свой случай', {}, { timeout: 5000 });
     expect(mockApi.getModeDiary).toHaveBeenCalledTimes(1);
   });
 });
@@ -56,11 +58,12 @@ describe('CaseFlowOverlay — «Сегодня ровный день»', () => {
   it('закрывает разбор и открывает трекер настроения', async () => {
     mockApi.getModeDiary.mockResolvedValue([]);
     const sheets = makeSheets();
-    render(<CaseFlowOverlay sheets={sheets} />);
+    const onClose = vi.fn();
+    render(<CaseFlowOverlay sheets={sheets} onClose={onClose} />);
     await screen.findByText('Сегодня ровный день →');
 
     fireEvent.click(screen.getByText('Сегодня ровный день →'));
-    expect(sheets.close).toHaveBeenCalledWith('caseFlow');
+    expect(onClose).toHaveBeenCalled();
     expect(sheets.open).toHaveBeenCalledWith('trackerOverlay');
   });
 });
@@ -72,12 +75,13 @@ describe('CaseFlowOverlay — «Тяжело прямо сейчас» на вх
   it('показывает карточку с телефоном доверия и НЕ закрывает разбор', async () => {
     mockApi.getModeDiary.mockResolvedValue([]);
     const sheets = makeSheets();
-    render(<CaseFlowOverlay sheets={sheets} />);
+    const onClose = vi.fn();
+    render(<CaseFlowOverlay sheets={sheets} onClose={onClose} />);
     await screen.findByText('Тяжело прямо сейчас →');
 
     fireEvent.click(screen.getByText('Тяжело прямо сейчас →'));
     expect(screen.getByText(CRISIS_HOTLINE_DISPLAY)).toBeTruthy();
-    expect(sheets.close).not.toHaveBeenCalled();
+    expect(onClose).not.toHaveBeenCalled();
     expect(sheets.open).not.toHaveBeenCalled();
 
     fireEvent.click(screen.getByText('Вернуться к разбору ▲'));
@@ -90,7 +94,8 @@ describe('CaseFlowOverlay — полный проход доезжает до р
   it('onSave/onSaveCard зовут api.createModeDiary/saveModeNote, «Открыть карту» открывает карту', async () => {
     mockApi.getModeDiary.mockResolvedValue([]);
     const sheets = makeSheets();
-    render(<CaseFlowOverlay sheets={sheets} />);
+    const onClose = vi.fn();
+    render(<CaseFlowOverlay sheets={sheets} onClose={onClose} />);
     await screen.findByText('Разобрать свой случай');
 
     fireEvent.click(screen.getByText('Разобрать свой случай'));
@@ -130,7 +135,31 @@ describe('CaseFlowOverlay — полный проход доезжает до р
 
     await screen.findByText('Открыть карту');
     fireEvent.click(screen.getByText('Открыть карту'));
-    expect(sheets.close).toHaveBeenCalledWith('caseFlow');
+    expect(onClose).toHaveBeenCalled();
     expect(sheets.open).toHaveBeenCalledWith('selfMap');
+  });
+});
+
+// Закрытие листа определяет реестр (hooks/overlayClosers): крестик и «Назад»
+// хоста обязаны звать ОДНУ функцию. Своё sheets.close('caseFlow') внутри
+// компонента снова развело бы два места закрытия (ревью PR #696) — у
+// компонента теперь нет даже метода close, звать нечем.
+describe('CaseFlowOverlay — закрытие идёт через onClose из реестра', () => {
+  it('ручка, подложка и «Дописать потом» зовут onClose, а не sheets.close', async () => {
+    mockApi.getModeDiary.mockResolvedValue([]);
+    const sheets = { ...makeSheets(), close: vi.fn() };
+    const onClose = vi.fn();
+    render(<CaseFlowOverlay sheets={sheets} onClose={onClose} />);
+    await screen.findByText('Разобрать свой случай');
+
+    // Ручка листа и подложка — два элемента «Закрыть»; зовут одно и то же.
+    const dismiss = screen.getAllByRole('button', { name: 'Закрыть' });
+    dismiss.forEach((el) => fireEvent.click(el));
+    expect(onClose).toHaveBeenCalledTimes(dismiss.length);
+
+    fireEvent.click(screen.getByText('Разобрать свой случай'));
+    fireEvent.click(screen.getByText('Дописать потом'));
+    expect(onClose).toHaveBeenCalledTimes(dismiss.length + 1);
+    expect(sheets.close).not.toHaveBeenCalled();
   });
 });

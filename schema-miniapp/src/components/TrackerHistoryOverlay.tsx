@@ -23,6 +23,7 @@ function formatHeaderDate(): string {
 
 interface Props {
   sheets: UseSheetsReturn;
+  onClose: () => void; // closers.tracker: реестр закрытия, как у «Назад» хоста
   safeTop: number;
   needs: Need[];
   history: DayHistory[];
@@ -44,6 +45,7 @@ interface Props {
 // Перенесено из App.tsx как есть (этап 3 REMEDIATION_PLAN) — без смены поведения.
 export function TrackerHistoryOverlay({
   sheets,
+  onClose,
   safeTop,
   needs,
   history,
@@ -60,6 +62,10 @@ export function TrackerHistoryOverlay({
   backfillDate,
   setBackfillDate,
 }: Props) {
+  const closeAndRate = () => {
+    onClose();
+    sheets.open('trackerOverlay', { trackerNeedId: null });
+  };
   if (!sheets.tracker) return null;
 
   return (
@@ -78,7 +84,7 @@ export function TrackerHistoryOverlay({
       >
         <div className="u-between-mb10">
           <button
-            onClick={() => sheets.close('tracker', { trackerTab: 'today' })}
+            onClick={onClose}
             style={{
               background: 'none',
               border: 'none',
@@ -95,10 +101,7 @@ export function TrackerHistoryOverlay({
           </button>
           <span className="u-sub13">{formatHeaderDate()}</span>
           <button
-            onClick={() => {
-              sheets.close('tracker', { trackerTab: 'today' });
-              sheets.open('trackerOverlay', { trackerNeedId: null });
-            }}
+            onClick={closeAndRate}
             style={{
               background:
                 'color-mix(in srgb, var(--accent) 10%, var(--surface-2))',
@@ -149,10 +152,7 @@ export function TrackerHistoryOverlay({
           childhoodRatings={childhoodRatings}
           onOpenSchemas={() => sheets.open('schemaInfo')}
           onOpenChildhoodWheel={() => sheets.open('childhoodWheel')}
-          onGoToToday={() => {
-            sheets.close('tracker');
-            sheets.open('trackerOverlay', { trackerNeedId: null });
-          }}
+          onGoToToday={closeAndRate}
           onBackfill={(date) => setBackfillDate(date)}
         />
       )}

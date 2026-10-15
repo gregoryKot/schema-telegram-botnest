@@ -8,9 +8,8 @@
 // Моки api/session/useUserFlags — в соседнем App.test-fixtures.ts (иначе файл
 // пробивает потолок 300 строк, правило №10).
 //
-// ВАЖНО (как в webapp-хелпере): vi.mock — на верхнем уровне модуля, не внутри
-// функции, иначе он не попадёт под hoisting и сработает позже статических
-// импортов ниже.
+// ВАЖНО (как в webapp-хелпере): vi.mock — только на верхнем уровне модуля
+// (hoisting), не внутри функции.
 import { vi } from 'vitest';
 import type { ComponentProps } from 'react';
 import { render } from '@testing-library/react';
@@ -249,8 +248,9 @@ vi.mock('../components/LazyTherapistClientSheet', () => ({
 
 vi.mock('../components/TrackerHistoryOverlay', () => ({
   TrackerHistoryOverlay: (p: ComponentProps<typeof TrackerHistoryOverlayT>) => (
-    <div
+    <button
       data-testid="tracker-history-overlay"
+      onClick={p.onClose}
       data-tracker={String(p.sheets.tracker)}
       data-history-loading={String(p.historyLoading)}
       data-history-count={p.history.length}
