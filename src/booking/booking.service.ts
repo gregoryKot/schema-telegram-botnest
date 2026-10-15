@@ -34,6 +34,7 @@ import {
   expireHeldBookings,
   paymentAfterCancel,
 } from './booking.transitions';
+import { finishConfirmEffects, rerunEffects } from './booking.confirm-effects';
 import type { CreateBookingDto } from './booking.types';
 
 export type { CreateBookingDto };
@@ -149,8 +150,7 @@ export class BookingService {
   async confirm(id: number, paidAmount?: number) {
     const booking = await this.prisma.booking.findUnique({ where: { id } });
     if (!booking) throw new NotFoundException('Booking not found');
-    // P-4 (аудит 2026-07): расхождение суммы БЛОКИРУЕТ авто-подтверждение:
-    // бронь остаётся HELD, админ разбирается вручную (рассинхрон прайса).
+    // P-4 (аудит 2026-07): расхождение суммы блокирует авто-подтверждение (HELD).
     if (paidAmount != null) {
       const expected = await this.pricing.getPrice(booking.type);
       if (Math.round(paidAmount) !== expected) {
@@ -162,9 +162,8 @@ export class BookingService {
     }
 
     // P-2: атомарный CAS вместо check-then-act — параллельные ретраи webhook
-    // Robokassa не задваивают side-effects (уведомление, meeting-линк):
-    // updateMany выигрывает ровно один вызов. paidAt — только при оплате
-    // вебхуком (paidAmount); ручное подтверждение админом — не оплата.
+    // не задваивают side-effects: updateMany выигрывает ровно один вызов.
+    // paidAt — только при оплате вебхуком; ручное подтверждение — не оплата.
     const claimed = await this.prisma.booking.updateMany({
       where: { id, status: BookingStatus.HELD },
       data: {
@@ -174,12 +173,13 @@ export class BookingService {
       },
     });
     if (claimed.count === 0) {
-      const now = await this.prisma.booking.findUnique({
-        where: { id },
-        select: { status: true },
-      });
-      // Повторный webhook по уже подтверждённой броне — идемпотентный успех.
-      if (now?.status === BookingStatus.CONFIRMED) return { ok: true };
+      const now = await this.prisma.booking.findUnique({ where: { id } });
+      // Повтор webhook / ручное подтверждение: эффекты доделываем, если флаг
+      // пуст и проход не идёт прямо сейчас (security#21), иначе просто успех.
+      if (now?.status === BookingStatus.CONFIRMED) {
+        await rerunEffects(this.notify, now);
+        return { ok: true };
+      }
       // Деньги пришли, а бронь CANCELLED: факт оплаты в БД, затем сигнал.
       if (now?.status === BookingStatus.CANCELLED && paidAmount != null) {
         throw await paymentAfterCancel(
@@ -193,7 +193,7 @@ export class BookingService {
       );
     }
 
-    await this.notify.onConfirmed(decryptRecord(booking, BOOKING_SCHEMA));
+    await finishConfirmEffects(this.notify, booking);
     this.logger.log(`Booking ${id} CONFIRMED`);
     return { ok: true };
   }

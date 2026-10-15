@@ -20,7 +20,11 @@ export const PARSER_PATH_PATTERNS = [
   // - channel-http.ts: общий fetch/JSON-клиент адаптеров канала — вызов
   //   пробрасывается через переменную (`const send = ...; send(url, ...)`),
   //   поэтому литерал `fetch(` не совпадает с ним напрямую.
+  // - s3-list-objects.ts: XML ListObjectsV2 хранилища бэкапов разбирается
+  //   регэкспом, а не .json()/DOMParser, и fetch приходит параметром
+  //   (`fetchFn(`) — оба сигнала содержимого мимо.
   /^src\/booking\/robokassa\.service\.ts$/,
   /^src\/channel\/channel-http\.ts$/,
+  /^src\/infra\/s3-list-objects\.ts$/,
 ];
 

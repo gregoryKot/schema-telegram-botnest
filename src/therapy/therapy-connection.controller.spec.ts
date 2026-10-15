@@ -246,15 +246,6 @@ describe('TherapyConnectionController.addVirtualClient', () => {
   });
 });
 
-describe('TherapyConnectionController.addClientManually', () => {
-  it('всегда → ForbiddenException (ручное добавление реальных клиентов отключено)', () => {
-    const { controller } = makeController();
-    expect(() =>
-      controller.addClientManually(makeReq(3n), { clientTelegramId: 123 }),
-    ).toThrow(ForbiddenException);
-  });
-});
-
 describe('TherapyConnectionController.renameClient', () => {
   it('терапевт → делегирует renameClient(therapistId, clientId, alias)', async () => {
     const { controller, relations } = makeController();

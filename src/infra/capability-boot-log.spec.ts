@@ -20,9 +20,10 @@ const ALL_CONFIGURED = {
   ENCRYPTION_KEY: 'k'.repeat(64),
   HEALTHY_ADULT_THREADS_TOKEN: 'tok',
   JWT_SECRET: 'jwt-secret',
-  B2_KEY_ID: 'k',
-  B2_APP_KEY: 'a',
-  B2_BUCKET: 'b',
+  BACKUP_S3_ENDPOINT: 'https://acc.r2.cloudflarestorage.com',
+  BACKUP_S3_BUCKET: 'b',
+  BACKUP_S3_ACCESS_KEY_ID: 'k',
+  BACKUP_S3_SECRET_ACCESS_KEY: 'a',
   BACKUP_ENCRYPTION_KEY: 'x'.repeat(40),
   // Приём оплаты (аудит 2026-10-11) — тоже «настроено».
   ROBOKASSA_MERCHANT_LOGIN: 'shop',

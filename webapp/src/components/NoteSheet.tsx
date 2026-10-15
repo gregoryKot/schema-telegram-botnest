@@ -6,6 +6,8 @@ import { useHistorySheet } from '../hooks/useHistorySheet';
 import { detectCrisisAny } from '../utils/crisisMarkers';
 import { CrisisCard } from './CrisisCard';
 import { NoteTagsPicker } from './NoteTagsPicker';
+import { LimitedTextarea } from '../../../shared/src/components/LimitedTextarea';
+import { DAY_NOTE_MAX } from '../../../shared/src/limits/textLimits';
 
 interface Props {
   date: string;
@@ -83,17 +85,15 @@ export function NoteSheet({ date, onClose }: Props) {
         <div className="prompt-num">·</div>
         <div className="u-w100">
           <div className="prompt-label">Запись</div>
-          <textarea
+          <LimitedTextarea
+            max={DAY_NOTE_MAX}
+            alwaysCount
             value={text}
             onChange={e => setText(e.target.value)}
             placeholder="Что происходило сегодня? Любая мысль..."
-            maxLength={500}
             rows={5}
             className={'paper-input ' + (text.trim() ? 'is-filled' : '')}
           />
-          <div style={{ fontSize: 11, color: 'var(--text-faint)', textAlign: 'right', marginTop: 4 }}>
-            {text.length}/500
-          </div>
         </div>
       </div>
 

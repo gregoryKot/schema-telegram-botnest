@@ -327,14 +327,14 @@ describe('TrackerController.saveNote', () => {
     ).rejects.toThrow(BadRequestException);
   });
 
-  it('обрезает текст до 500 символов перед сохранением', async () => {
+  it('текст доходит до сохранения целиком: лимит один, в DTO (backend#29)', async () => {
     const { controller, botService } = makeController();
     await controller.saveNote(makeReq(), {
       date: '2026-07-17',
       text: 'x'.repeat(600),
     });
     const savedText = botService.saveNote.mock.calls[0][2];
-    expect(savedText.length).toBe(500);
+    expect(savedText).toBe('x'.repeat(600));
   });
 });
 

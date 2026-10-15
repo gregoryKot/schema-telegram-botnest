@@ -7,10 +7,10 @@ import react from '@vitejs/plugin-react';
 // транзитивно через тесты webapp/schema-miniapp, своих тестов не было.
 export default defineConfig({
   plugins: [react()],
-  // Тестовое окружение (environment/globals) НЕ задаётся здесь глобально —
-  // каждый *.test.ts(x) сам объявляет `// @vitest-environment jsdom` пер-файл
-  // (см. CLAUDE.md / webapp/vite.config.ts). Настраиваем только coverage.
+  // environment/globals НЕ глобально: каждый *.test.ts(x) сам ставит `// @vitest-environment jsdom`.
+  // Очистка DOM после теста — setupFiles (test-support/rtlCleanup.ts), не память автора.
   test: {
+    setupFiles: ['./src/test-support/rtlCleanup.ts'],
     coverage: {
       provider: 'v8',
       // json-summary — обязателен: его читает

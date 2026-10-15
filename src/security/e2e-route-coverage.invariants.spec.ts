@@ -190,7 +190,6 @@ const NOT_YET_COVERED: Array<{ route: string; reason: string }> = [
   { route: 'GET /api/therapy/relation', reason: REASON.THERAPY },
   { route: 'DELETE /api/therapy/clients/:param', reason: REASON.THERAPY },
   { route: 'POST /api/therapy/clients/virtual', reason: REASON.THERAPY },
-  { route: 'POST /api/therapy/clients/add', reason: REASON.THERAPY },
   { route: 'POST /api/therapy/rename-client/:param', reason: REASON.THERAPY },
   { route: 'POST /api/therapy/become-therapist', reason: REASON.THERAPY },
   { route: 'POST /api/therapy/request', reason: REASON.THERAPY },

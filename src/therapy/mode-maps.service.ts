@@ -174,8 +174,8 @@ export class ModeMapsService {
       data: {
         therapistId,
         nodeType,
-        emoji: (body.emoji ?? '⬡').slice(0, 8),
-        ...encryptRecord({ name: body.name.slice(0, 80) }, CUSTOM_MODE_SCHEMA),
+        emoji: body.emoji ?? '⬡',
+        ...encryptRecord({ name: body.name }, CUSTOM_MODE_SCHEMA),
       },
     });
     return decryptRecord(row, CUSTOM_MODE_SCHEMA);

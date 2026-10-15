@@ -1,6 +1,6 @@
 import { randomBytes } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
-import { MINIAPP_TGLINK } from '../telegram/telegram.constants';
+import { miniappStartLink } from '../telegram/miniapp-link';
 
 // Срок жизни кода-приглашения (аудит 2026-10, T5): колонки expiresAt нет, а
 // миграции ради этого не нужны — возраст считается по createdAt.
@@ -11,8 +11,7 @@ export const ALREADY_CONNECTED_ERROR = 'Already connected to another therapist';
 
 const randomCode = (): string => randomBytes(6).toString('hex').toUpperCase();
 
-const inviteUrl = (code: string): string =>
-  `${MINIAPP_TGLINK}?startapp=therapy_${code}`;
+const inviteUrl = (code: string): string => miniappStartLink(`therapy_${code}`);
 
 export async function createTherapyInvite(
   prisma: PrismaService,

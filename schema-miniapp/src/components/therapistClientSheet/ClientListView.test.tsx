@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 // ClientListView — часть 1/3 (правило №10 — файл ≤300 строк): контейнер
 // (загрузка/пустой список/список клиентов) + кнопка «+» + переключение
-// режимов добавления. Режимы «Ссылка»/«Telegram ID» —
+// режимов добавления. Режим «Ссылка» —
 // ClientListView.addModeLink.test.tsx, «Оффлайн»/ошибка/выход —
 // ClientListView.addModeOffline.test.tsx. Переключение стейтом addMode
 // обязано сбрасывать addInput/addError, иначе ошибка/ввод одного режима
@@ -79,7 +79,6 @@ function makeAddClient(overrides: Partial<AddClient> = {}): AddClient {
     openAddMode: vi.fn(),
     createInvite: vi.fn(),
     copyInvite: vi.fn(),
-    addByTelegramId: vi.fn(),
     addVirtualClient: vi.fn(),
     addLoading: false,
     ...overrides,
@@ -104,7 +103,6 @@ function baseProps(
     safeTop: 0,
     animKey: 0,
     onClose: vi.fn(),
-    telegramInputRef: createRef<HTMLInputElement>(),
     virtualInputRef: createRef<HTMLInputElement>(),
     detail: makeDetail(),
     addClient: makeAddClient(),
@@ -227,7 +225,7 @@ describe('ClientListView — кнопка «+» (открыть форму до�
 });
 
 describe('ClientListView — переключение режимов добавления', () => {
-  it('клик по «Telegram ID» сбрасывает addInput/addError и переключает режим', () => {
+  it('клик по «Оффлайн» сбрасывает addInput/addError и переключает режим', () => {
     const setAddMode = vi.fn();
     const setAddInput = vi.fn();
     const setAddError = vi.fn();
@@ -243,9 +241,24 @@ describe('ClientListView — переключение режимов добав�
         })}
       />,
     );
-    fireEvent.click(screen.getByText(/Telegram ID/));
-    expect(setAddMode).toHaveBeenCalledWith('telegram');
+    fireEvent.click(screen.getByText('Оффлайн'));
+    expect(setAddMode).toHaveBeenCalledWith('virtual');
     expect(setAddInput).toHaveBeenCalledWith('');
     expect(setAddError).toHaveBeenCalledWith('');
+  });
+
+  // Аудит 2026-10: вкладка «Telegram ID» била в роут-заглушку (403) и снята;
+  // реальный клиент подключается только по ссылке.
+  it('в открытой панели ровно два способа: «Ссылка» и «Оффлайн»', () => {
+    render(
+      <ClientListView
+        {...baseProps({
+          addClient: makeAddClient({ addMode: 'invite' }),
+        })}
+      />,
+    );
+    expect(screen.getByText('Ссылка')).toBeTruthy();
+    expect(screen.getByText('Оффлайн')).toBeTruthy();
+    expect(screen.queryByText('Telegram ID')).toBeNull();
   });
 });

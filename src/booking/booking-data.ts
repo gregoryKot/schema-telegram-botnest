@@ -26,7 +26,7 @@ export function buildBookingData(
       heldUntil: opts.heldUntil,
       cancelToken: opts.cancelToken,
       acceptedOfferAt: new Date(),
-      source: dto.source?.slice(0, 200) ?? null,
+      source: dto.source ?? null,
       clientTimeZone:
         dto.clientTimeZone && isValidTimeZone(dto.clientTimeZone)
           ? dto.clientTimeZone

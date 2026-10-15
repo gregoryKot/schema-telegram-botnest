@@ -16,9 +16,10 @@ const ALL_CONFIGURED = {
   ENCRYPTION_KEY: 'k'.repeat(64),
   HEALTHY_ADULT_THREADS_TOKEN: 'tok',
   JWT_SECRET: 'jwt-secret',
-  B2_KEY_ID: 'k',
-  B2_APP_KEY: 'a',
-  B2_BUCKET: 'b',
+  BACKUP_S3_ENDPOINT: 'https://acc.r2.cloudflarestorage.com',
+  BACKUP_S3_BUCKET: 'b',
+  BACKUP_S3_ACCESS_KEY_ID: 'k',
+  BACKUP_S3_SECRET_ACCESS_KEY: 'a',
   BACKUP_ENCRYPTION_KEY: 'x'.repeat(40),
   // Приём оплаты (аудит 2026-10-11) — тоже «настроено».
   ROBOKASSA_MERCHANT_LOGIN: 'shop',
@@ -104,23 +105,24 @@ describe('buildCapabilityReport', () => {
     expect(cap.on).toBe(false);
     expect(cap.critical).toBe(false);
   });
-  // Аудит D-2: бэкапы в B2 включает только полный набор переменных.
-  it('b2Backups: нет переменных — off, причина называет их, не критично', () => {
-    const cap = buildCapabilityReport({}).find((c) => c.id === 'b2Backups')!;
+  // Аудит D-2: бэкапы в R2 включает только полный набор переменных.
+  it('dbBackups: нет переменных — off, причина называет их, не критично', () => {
+    const cap = buildCapabilityReport({}).find((c) => c.id === 'dbBackups')!;
     expect(cap.on).toBe(false);
     expect(cap.critical).toBe(false);
-    expect(cap.offReason).toContain('B2_KEY_ID');
+    expect(cap.offReason).toContain('BACKUP_S3_ACCESS_KEY_ID');
     expect(cap.offReason).toContain('BACKUP_ENCRYPTION_KEY');
   });
 
-  it('b2Backups: не хватает одной переменной — off и называет именно её', () => {
+  it('dbBackups: не хватает одной переменной — off и называет именно её', () => {
     const cap = buildCapabilityReport({
-      B2_KEY_ID: 'k',
-      B2_APP_KEY: 'a',
-      B2_BUCKET: 'b',
-    }).find((c) => c.id === 'b2Backups')!;
+      BACKUP_S3_ENDPOINT: 'https://acc.r2.cloudflarestorage.com',
+      BACKUP_S3_BUCKET: 'b',
+      BACKUP_S3_ACCESS_KEY_ID: 'k',
+      BACKUP_S3_SECRET_ACCESS_KEY: 'a',
+    }).find((c) => c.id === 'dbBackups')!;
     expect(cap.on).toBe(false);
     expect(cap.offReason).toContain('BACKUP_ENCRYPTION_KEY');
-    expect(cap.offReason).not.toContain('B2_BUCKET');
+    expect(cap.offReason).not.toContain('BACKUP_S3_BUCKET');
   });
 });
