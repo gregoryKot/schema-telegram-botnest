@@ -66,10 +66,11 @@ start_app() {
 # (сверяет src/infra/vps-ops.spec.ts), включая защиту: пока Prisma держит свой
 # advisory-lock, миграция идёт, а не застряла, и запись не трогается.
 # Печатает ТОЛЬКО имена: логи Actions публичны, а logs несёт значения из таблиц.
+RESOLVE_STUCK_COUNT_SQL='SELECT count(*) FROM "_prisma_migrations" WHERE finished_at IS NULL AND rolled_back_at IS NULL'
 RESOLVE_FAILED_SQL='DELETE FROM "_prisma_migrations" WHERE finished_at IS NULL AND rolled_back_at IS NULL AND pg_try_advisory_xact_lock(72707369) RETURNING migration_name'
 
 resolve_failed_migrations() {
-  local out name count=0 other=0
+  local out name stuck count=0 other=0
   out=$(dc exec -T db psql -U postgres -d schemehappens -X -q -t -A -c "$RESOLVE_FAILED_SQL" 2> /dev/null) || {
     log "не удалось обратиться к _prisma_migrations (база не отвечает или таблицы нет)"
     return 1
@@ -84,7 +85,16 @@ resolve_failed_migrations() {
     fi
   done <<< "$out"
   [ "$other" -eq 0 ] || log "снято записей с нестандартным именем: $other"
-  [ $((count + other)) -gt 0 ] || log "застрявших записей миграций нет"
+  [ $((count + other)) -eq 0 ] || return 0
+  # 0 снятых строк — не всегда «всё чисто»: запись есть, но замок Prisma занят.
+  # Так бывает, когда `dc stop app` оборвал клиента посреди долгого оператора
+  # (CREATE INDEX), а бэкенд Postgres продолжает его выполнять и держит замок.
+  stuck=$(dc exec -T db psql -U postgres -d schemehappens -X -q -t -A -c "$RESOLVE_STUCK_COUNT_SQL" 2> /dev/null | tr -dc '0-9') || stuck=""
+  if [ -n "$stuck" ] && [ "$stuck" -gt 0 ]; then
+    log "миграция ещё выполняется (замок Prisma занят), повторите позже: op=migrate-resolve-failed"
+    return 1
+  fi
+  log "застрявших записей миграций нет"
 }
 
 # Возвращает release.prev. Новый релиз мог умереть посреди миграции, а запись о
@@ -102,7 +112,11 @@ rollback_release() {
   dc stop app > /dev/null 2>&1 || true
   resolve_failed_migrations || true
   cat release.prev > release
-  log "ОТКАТ: $(echo "$bad" | short) -> $(short < release)"
+  if [ "$bad" = "$(cat release)" ]; then
+    log "повторный подъём предыдущего релиза: $(short < release)"
+  else
+    log "ОТКАТ: $(echo "$bad" | short) -> $(short < release)"
+  fi
   dc up -d app || { log "образ предыдущего релиза не поднялся (нет на диске?); release.prev оставлен"; return 1; }
   if health_wait 180; then
     rm -f release.prev

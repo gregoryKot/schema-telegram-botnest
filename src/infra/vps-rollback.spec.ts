@@ -47,8 +47,14 @@ case "$*" in
     if [ ! -e "$FAKE_STATE/stuck" ] && [[ " $FAKE_HEALTHY " == *" $(cat release 2>/dev/null) "* ]]; then
       echo '{"status":"ok","db":"up"}'
     fi ;;
+  *" exec -T db psql"*"SELECT count"*)
+    [ "\${FAKE_PSQL_EXIT:-0}" = "0" ] || exit "$FAKE_PSQL_EXIT"
+    if [ -e "$FAKE_STATE/stuck" ]; then echo 1; else echo 0; fi ;;
   *" exec -T db psql"*"DELETE FROM"*)
     [ "\${FAKE_PSQL_EXIT:-0}" = "0" ] || exit "$FAKE_PSQL_EXIT"
+    # Замок Prisma занят (оборванный клиент, бэкенд ещё пишет индекс): DELETE
+    # ничего не снимает, запись остаётся.
+    [ -z "\${FAKE_LOCK_HELD:-}" ] || exit 0
     if [ -e "$FAKE_STATE/stuck" ]; then cat "$FAKE_STATE/stuck"; echo; rm -f "$FAKE_STATE/stuck"; fi ;;
   "images "*) ;;
 esac
@@ -167,6 +173,8 @@ describe('deploy/vps/ops.sh: откат поверх упавшей миграц
 
       expect(second.status).toBe(0);
       expect(second.stdout).toContain('приложение здорово');
+      expect(second.stdout).toContain('повторный подъём предыдущего релиза');
+      expect(second.stdout).not.toMatch(/ОТКАТ: a{12} -> a{12}/);
       expect(read('release')).toBe(OLD);
       expect(existsSync(join(base(), 'release.prev'))).toBe(false);
       expect(ops(['rollback'], { FAKE_HEALTHY: OLD }).stdout).toContain(
@@ -244,6 +252,18 @@ describe('deploy/vps/ops.sh: откат поверх упавшей миграц
       expect(res.stdout).toContain('застрявших записей миграций нет');
     });
 
+    it('запись есть, но замок Prisma занят → не «всё чисто», а «ещё выполняется», код 1', () => {
+      writeFileSync(join(state(), 'stuck'), BROKEN_MIGRATION);
+
+      const res = ops(['migrate-resolve-failed'], { FAKE_LOCK_HELD: '1' });
+
+      expect(res.status).toBe(1);
+      expect(res.stdout).toContain('миграция ещё выполняется');
+      expect(res.stdout).not.toContain('застрявших записей миграций нет');
+      expect(res.stdout).not.toContain(BROKEN_MIGRATION);
+      expect(stuckLeft()).toBe(true);
+    });
+
     it('база не отвечает → код 1, а не молчаливый успех', () => {
       const res = ops(['migrate-resolve-failed'], { FAKE_PSQL_EXIT: '1' });
 
@@ -294,7 +314,14 @@ describe('deploy/vps/ops.sh: откат поверх упавшей миграц
       expect(psql.some((l) => /DELETE FROM "_prisma_migrations"/.test(l))).toBe(
         true,
       );
-      expect(psql.every((l) => /DELETE FROM|pg_isready/.test(l))).toBe(true);
+      // Второй запрос — только чтение (SELECT count(*) для «замок занят»).
+      expect(
+        psql.every((l) =>
+          /DELETE FROM|SELECT count\(\*\) FROM "_prisma_migrations" WHERE/.test(
+            l,
+          ),
+        ),
+      ).toBe(true);
     });
   });
 
