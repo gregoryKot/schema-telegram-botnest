@@ -164,6 +164,7 @@ describe('Booking.meetingUrl: запись и каждый читатель', ()
       booking: {
         update: jest.fn(() => Promise.resolve({})),
         updateMany: jest.fn(() => Promise.resolve({ count: 1 })),
+        findUnique: jest.fn(() => Promise.resolve({ status: 'CONFIRMED' })),
       },
     };
     const calDav = {

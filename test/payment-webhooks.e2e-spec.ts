@@ -479,7 +479,19 @@ describe('e2e smoke: платёжный контур Robokassa по HTTP', () =>
       expect(alert).not.toContain('не подтвердилась'); // старая ложь
       await pauseThrottle();
 
-      const second = await pay(b.id); // ретрай Robokassa
+      // Свежая строка: первый проход мог ещё идти — ретрай его не перебивает
+      // (иначе вторая Zoom-встреча); OK отдаётся, доделает крон.
+      createMeeting.mockClear();
+      expect((await pay(b.id)).text).toBe(`OK${b.id}`);
+      expect(createMeeting.mock.calls).toHaveLength(0);
+      expect((await row(b.id))?.confirmEffectsDoneAt ?? null).toBeNull();
+      await pauseThrottle();
+
+      await prisma.booking.update({
+        where: { id: b.id },
+        data: { updatedAt: new Date(Date.now() - 5 * 60_000) },
+      });
+      const second = await pay(b.id); // ретрай Robokassa спустя время
 
       expect(second.text).toBe(`OK${b.id}`);
       const afterSecond = await row(b.id);

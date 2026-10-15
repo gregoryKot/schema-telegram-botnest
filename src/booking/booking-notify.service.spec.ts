@@ -19,6 +19,8 @@ function makeService(
     claimRun?: boolean;
     /** Сколько строк вернёт CAS флага эффектов (0 — параллельный проход успел). */
     flagClaimCount?: number;
+    /** Статус, который вернёт перечитывание брони перед CalDAV (по умолчанию CONFIRMED). */
+    freshStatus?: BookingStatus;
   } = {},
 ) {
   const prisma: any = {
@@ -30,6 +32,11 @@ function makeService(
         Promise.resolve({ count: opts.flagClaimCount ?? 1 }),
       ),
       findMany: jest.fn(() => Promise.resolve(opts.dueReminders ?? [])),
+      findUnique: jest.fn(() =>
+        Promise.resolve({
+          status: opts.freshStatus ?? BookingStatus.CONFIRMED,
+        }),
+      ),
     },
   };
   const telegram = { notifyAdmin: jest.fn(() => Promise.resolve(true)) };
@@ -206,7 +213,11 @@ describe('BookingNotifyService.onConfirmed — идемпотентность п
     expect(calDav.pushEvent).not.toHaveBeenCalled();
     expect(prisma.booking.update).not.toHaveBeenCalled();
     expect(prisma.booking.updateMany).toHaveBeenCalledWith({
-      where: { id: 42, confirmEffectsDoneAt: null },
+      where: {
+        id: 42,
+        status: BookingStatus.CONFIRMED,
+        confirmEffectsDoneAt: null,
+      },
       data: { confirmEffectsDoneAt: expect.any(Date) },
     });
     expect(telegram.notifyAdmin).toHaveBeenCalledTimes(1);
@@ -258,6 +269,36 @@ describe('BookingNotifyService.onConfirmed — идемпотентность п
     await expect(service.onConfirmed(booking())).resolves.toBeUndefined();
     expect(telegram.notifyAdmin).not.toHaveBeenCalled();
     expect(email.sendAdminNotification).not.toHaveBeenCalled();
+  });
+});
+
+// Ревью security#21: отмена, пришедшая пока шёл проход, не должна давать
+// событие в календаре и «Запись подтверждена» по отменённой брони.
+describe('BookingNotifyService.onConfirmed — отмена во время прохода', () => {
+  it('бронь уже CANCELLED на перечитывании: ни события, ни флага, ни DM', async () => {
+    const { service, prisma, calDav, telegram, email } = makeService({
+      freshStatus: BookingStatus.CANCELLED,
+    });
+    await expect(
+      service.onConfirmed(booking({ meetingUrl: 'https://x' })),
+    ).resolves.toBeUndefined();
+    expect(prisma.booking.findUnique).toHaveBeenCalledWith({
+      where: { id: 42 },
+      select: { status: true },
+    });
+    expect(calDav.pushEvent.mock.calls).toHaveLength(0);
+    expect(prisma.booking.updateMany.mock.calls).toHaveLength(0);
+    expect(telegram.notifyAdmin.mock.calls).toHaveLength(0);
+    expect(email.sendAdminNotification.mock.calls).toHaveLength(0);
+  });
+
+  it('отмена между перечитыванием и флагом: CAS по CONFIRMED даёт 0 строк — DM не уходит', async () => {
+    const { service, prisma, telegram } = makeService({ flagClaimCount: 0 });
+    await service.onConfirmed(booking({ meetingUrl: 'https://x' }));
+    expect(prisma.booking.updateMany.mock.calls[0][0].where).toMatchObject({
+      status: BookingStatus.CONFIRMED,
+    });
+    expect(telegram.notifyAdmin.mock.calls).toHaveLength(0);
   });
 });
 

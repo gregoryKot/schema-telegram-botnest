@@ -25,7 +25,7 @@ function makeService(bookingRow: any) {
           return { count: 0 };
         if ('paidAt' in where && (state.row.paidAt ?? null) !== where.paidAt)
           return { count: 0 };
-        Object.assign(state.row, data);
+        Object.assign(state.row, data, { updatedAt: new Date() }); // как @updatedAt
         return { count: 1 };
       }),
     },
@@ -86,6 +86,11 @@ describe('BookingService.confirm — идемпотентность и свер�
     expect(state.row.status).toBe(BookingStatus.CONFIRMED);
     expect(state.row.confirmEffectsDoneAt).toBeUndefined();
 
+    // Свежая строка: первый проход мог ещё идти — повтор его не перебивает.
+    await expect(service.confirm(7, 4000)).resolves.toEqual({ ok: true });
+    expect(notify.onConfirmed).toHaveBeenCalledTimes(1);
+    state.row.updatedAt = new Date(Date.now() - 120_000); // проход давно кончился
+
     await expect(service.confirm(7, 4000)).resolves.toEqual({ ok: true });
     expect(notify.onConfirmed).toHaveBeenCalledTimes(2);
     const retried = notify.onConfirmed.mock.calls[1][0] as any;
@@ -101,11 +106,24 @@ describe('BookingService.confirm — идемпотентность и свер�
     const { service, notify, state } = makeService({
       ...held(),
       status: BookingStatus.CONFIRMED,
+      updatedAt: new Date(Date.now() - 120_000),
     });
     await expect(service.confirm(7)).resolves.toEqual({ ok: true });
     expect(notify.onConfirmed).toHaveBeenCalledTimes(1);
     expect(state.row.paidAt).toBeUndefined(); // это не оплата
     expect(state.row.confirmEffectsDoneAt).toBeInstanceOf(Date);
+  });
+
+  it('CONFIRMED без флага, но строку писали только что (проход идёт): повтор вебхука и двойной клик админа эффекты не запускают', async () => {
+    const { service, notify } = makeService({
+      ...held(),
+      status: BookingStatus.CONFIRMED,
+      updatedAt: new Date(Date.now() - 5_000),
+    });
+    await expect(service.confirm(7, 4000)).resolves.toEqual({ ok: true });
+    await expect(service.confirm(7)).resolves.toEqual({ ok: true });
+    // иначе второй проход создал бы вторую Zoom-встречу (сирота) и упал на ClientMeeting
+    expect(notify.onConfirmed.mock.calls).toHaveLength(0);
   });
 
   it('расхождение суммы блокирует подтверждение (бронь остаётся HELD) и алертит', async () => {

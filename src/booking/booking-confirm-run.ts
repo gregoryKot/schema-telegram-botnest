@@ -1,3 +1,4 @@
+import { BookingStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CalDavService } from './caldav.service';
 import { MeetingService } from './meeting.service';
@@ -41,6 +42,13 @@ export async function runConfirmEffects(
       data: { meetingUrl: encrypt(b.meetingUrl) },
     });
   }
+  // Отмена могла прийти, пока шла ссылка: событие в календаре и «Запись
+  // подтверждена» для отменённой брони — ложь владельцу (ревью security#21).
+  const fresh = await d.prisma.booking.findUnique({
+    where: { id: b.id },
+    select: { status: true },
+  });
+  if (fresh?.status !== BookingStatus.CONFIRMED) return;
   let uid = b.calDavUid ?? null;
   if (!uid) {
     uid = await d.calDav.pushEvent({
@@ -61,10 +69,15 @@ export async function runConfirmEffects(
     }
   }
   const claimed = await d.prisma.booking.updateMany({
-    where: { id: b.id, confirmEffectsDoneAt: null },
+    where: {
+      id: b.id,
+      status: BookingStatus.CONFIRMED,
+      confirmEffectsDoneAt: null,
+    },
     data: { confirmEffectsDoneAt: new Date() },
   });
-  if (claimed.count === 0) return; // параллельный проход уже довёл и уведомил
+  // 0 строк: параллельный проход уже довёл и уведомил, либо бронь отменена.
+  if (claimed.count === 0) return;
   await d.sendAdmin('✅ <b>Запись подтверждена</b>', b);
   // CalDAV настроен, но запись не удалась — тоже событие брони: оба канала.
   if (d.calDav.enabled && !uid) {

@@ -35,12 +35,32 @@ export class ConfirmEffectsFailedError extends InternalServerErrorException {
 export async function finishConfirmEffects(
   notify: BookingNotifyService,
   row: Booking,
+  /**
+   * Не трогать строку, писанную моложе этого (мс): её проход, скорее всего,
+   * ещё идёт (каждая запись прохода двигает updatedAt). Без этого повтор
+   * вебхука или двойной клик админа создали бы вторую Zoom-встречу, и
+   * clientMeeting.create упал бы на @id clientKey.
+   */
+  minAgeMs = 0,
 ): Promise<boolean> {
   if (row.confirmEffectsDoneAt) return false;
+  if (minAgeMs > 0 && row.updatedAt.getTime() > Date.now() - minAgeMs)
+    return false;
   try {
     await notify.onConfirmed(decryptRecord(row, BOOKING_SCHEMA));
   } catch (e) {
     throw new ConfirmEffectsFailedError(row.id, e);
   }
   return true;
+}
+
+/** Возраст строки, моложе которого повтор в confirm() её не трогает. */
+const RERUN_AFTER_MS = 60_000;
+
+/** Повтор из confirm() (вебхук, ручное подтверждение): не перебивает идущий проход. */
+export function rerunEffects(
+  notify: BookingNotifyService,
+  row: Booking,
+): Promise<boolean> {
+  return finishConfirmEffects(notify, row, RERUN_AFTER_MS);
 }

@@ -1,4 +1,4 @@
-// Строка «подтверждённых без ссылки на встречу» в блоке «Деньги» (правило №8):
+// Строка «подтверждённых где ещё не готовы ссылка или календарь» в блоке «Деньги» (правило №8):
 // форматтер, включая пустое состояние, и запрос count.
 import {
   countConfirmedWithoutLink,
@@ -24,25 +24,33 @@ describe('formatWithoutLink', () => {
 
   it('деньги есть, застрявших нет: «нет», а не «0»', () => {
     const out = formatWithoutLink(0, false).join('\n');
-    expect(out).toBe('Подтверждённых записей без ссылки на встречу: нет.');
+    expect(out).toBe(
+      'Подтверждённых записей, где ещё не готовы ссылка или календарь: нет.',
+    );
   });
 
   it('есть застрявшие: число и что делать, простым языком', () => {
     const out = formatWithoutLink(3, false).join('\n');
-    expect(out).toContain('⚠️ Подтверждённых записей без ссылки на встречу: 3');
+    expect(out).toContain(
+      '⚠️ Подтверждённых записей, где ещё не готовы ссылка или календарь: 3',
+    );
     expect(out).toContain('каждые 5 минут');
+    expect(out).toContain(
+      'клиенту нужно отправить ссылку вручную, а календарь проверить',
+    );
+    expect(out).not.toContain('в админке'); // кнопки «доделать» там нет
     expect(out).not.toMatch(/meetingUrl|CONFIRMED|cron|крон|NaN|undefined/i);
   });
 
   it('никто не платил, но бесплатная запись зависла: строка всё равно видна', () => {
     expect(formatWithoutLink(1, true).join('\n')).toContain(
-      'без ссылки на встречу: 1',
+      'где ещё не готовы ссылка или календарь: 1',
     );
   });
 });
 
 describe('countConfirmedWithoutLink', () => {
-  it('считает CONFIRMED с пустой ссылкой и началом впереди, без сырого SQL', async () => {
+  it('считает CONFIRMED с пустым флагом доделанности и началом впереди, без сырого SQL', async () => {
     const prisma = prismaWith(2);
     await expect(countConfirmedWithoutLink(prisma)).resolves.toBe(2);
     expect(
@@ -50,7 +58,7 @@ describe('countConfirmedWithoutLink', () => {
     ).toHaveBeenCalledWith({
       where: {
         status: 'CONFIRMED',
-        meetingUrl: null,
+        confirmEffectsDoneAt: null,
         startsAt: { gt: expect.any(Date) },
       },
     });
@@ -69,14 +77,14 @@ describe('renderMoneyBlock', () => {
     const out = await renderMoneyBlock(prismaWith(0), metrics(paid));
     expect(out).toContain('Оплатили сессию: 2 раза');
     expect(out).toMatch(
-      /\n\nПодтверждённых записей без ссылки на встречу: нет\.$/,
+      /\n\nПодтверждённых записей, где ещё не готовы ссылка или календарь: нет\.$/,
     );
   });
 
   it('застряло: предупреждение с числом в конце блока', async () => {
     const out = await renderMoneyBlock(prismaWith(4), metrics(paid));
     expect(out).toMatch(
-      /\n\n⚠️ Подтверждённых записей без ссылки на встречу: 4\n/,
+      /\n\n⚠️ Подтверждённых записей, где ещё не готовы ссылка или календарь: 4\n/,
     );
   });
 });

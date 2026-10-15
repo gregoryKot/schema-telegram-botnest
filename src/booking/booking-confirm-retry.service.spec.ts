@@ -24,7 +24,12 @@ const stalled = (id: number) => ({
 });
 
 function make(rows: unknown[], claim = true) {
-  const prisma = { booking: { findMany: jest.fn(async () => rows) } };
+  const prisma = {
+    booking: {
+      findMany: jest.fn(async () => rows),
+      update: jest.fn(async () => ({})),
+    },
+  };
   const notify = { onConfirmed: jest.fn(async () => undefined) };
   const claimRun = jest.fn().mockResolvedValue(claim);
   const service = new BookingConfirmRetryService(
@@ -68,7 +73,7 @@ describe('BookingConfirmRetryService.retryStalled', () => {
     expect(args.where.startsAt.gt.getTime()).toBeGreaterThanOrEqual(t0);
     const cutoff = args.where.updatedAt.lt.getTime();
     expect(t0 - cutoff).toBeGreaterThanOrEqual(STALLED_AFTER_MIN * 60_000 - 50);
-    expect(args.orderBy).toEqual({ startsAt: 'asc' });
+    expect(args.orderBy).toEqual({ updatedAt: 'asc' });
   });
 
   it('доделывает каждую найденную бронь и пишет итог в log', async () => {
@@ -95,6 +100,31 @@ describe('BookingConfirmRetryService.retryStalled', () => {
     expect(String(warn.mock.calls[0][0])).toContain('#1');
     expect(String(warn.mock.calls[0][0])).toContain('db down');
     expect(error).not.toHaveBeenCalled(); // error ушёл бы владельцу DM каждый тик
+  });
+
+  it('упавшая бронь освежается (updatedAt) и уходит в хвост очереди; успешная не трогается', async () => {
+    const { service, prisma, notify } = make([stalled(1), stalled(2)]);
+    notify.onConfirmed.mockRejectedValueOnce(new Error('zoom down'));
+    jest.spyOn(Logger.prototype, 'warn').mockImplementation();
+
+    await service.retryStalled();
+
+    expect(prisma.booking.update.mock.calls).toHaveLength(1);
+    expect(prisma.booking.update).toHaveBeenCalledWith({
+      where: { id: 1 },
+      data: { updatedAt: expect.any(Date) },
+    });
+  });
+
+  it('сбой освежения сам не роняет тик: остальные брони доделываются', async () => {
+    const { service, prisma, notify } = make([stalled(1), stalled(2)]);
+    notify.onConfirmed.mockRejectedValueOnce(new Error('db down'));
+    prisma.booking.update.mockRejectedValue(new Error('db down'));
+    jest.spyOn(Logger.prototype, 'warn').mockImplementation();
+
+    await expect(service.retryStalled()).resolves.toBeUndefined();
+
+    expect(notify.onConfirmed.mock.calls).toHaveLength(2);
   });
 
   it('повторные падения подряд — warn не чаще раза в 30 минут, не спам', async () => {

@@ -47,6 +47,34 @@ describe('finishConfirmEffects', () => {
     expect(notify.onConfirmed.mock.calls).toHaveLength(0);
   });
 
+  it('minAgeMs: строка моложе порога (проход идёт) — эффекты не зовутся, false', async () => {
+    const notify = { onConfirmed: jest.fn(async () => undefined) };
+    const fresh = row({ updatedAt: new Date(Date.now() - 5_000) });
+
+    await expect(
+      finishConfirmEffects(notify as never, fresh, 60_000),
+    ).resolves.toBe(false);
+
+    expect(notify.onConfirmed.mock.calls).toHaveLength(0);
+  });
+
+  it('minAgeMs: строка старше порога — доделываем; без порога возраст не смотрим', async () => {
+    const notify = { onConfirmed: jest.fn(async () => undefined) };
+
+    await expect(
+      finishConfirmEffects(
+        notify as never,
+        row({ updatedAt: new Date(Date.now() - 120_000) }),
+        60_000,
+      ),
+    ).resolves.toBe(true);
+    await expect(
+      finishConfirmEffects(notify as never, row({ updatedAt: new Date() })),
+    ).resolves.toBe(true);
+
+    expect(notify.onConfirmed.mock.calls).toHaveLength(2);
+  });
+
   it('исключение эффектов заворачивается в ConfirmEffectsFailedError с id брони и причиной', async () => {
     const boom = new Error("Can't reach database server");
     const notify = {

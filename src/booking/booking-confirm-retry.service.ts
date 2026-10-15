@@ -49,7 +49,8 @@ export class BookingConfirmRetryService {
         startsAt: { gt: new Date(now) },
         updatedAt: { lt: new Date(now - STALLED_AFTER_MIN * 60_000) },
       },
-      orderBy: { startsAt: 'asc' },
+      // Давно не тронутые первыми; упавшая бронь «освежается» ниже и уходит в хвост.
+      orderBy: { updatedAt: 'asc' },
       take: BATCH,
     });
     let done = 0;
@@ -61,6 +62,19 @@ export class BookingConfirmRetryService {
       } catch (e) {
         failed++;
         lastError = `#${row.id}: ${(e as Error).message}`;
+        // Отодвигаем упавшую в хвост очереди: двадцать вечно падающих броней
+        // иначе занимали бы весь BATCH и не пускали остальных.
+        try {
+          await this.prisma.booking.update({
+            where: { id: row.id },
+            data: { updatedAt: new Date() },
+          });
+        } catch (touchErr) {
+          // База недоступна — основной сбой уже в lastError и warn ниже.
+          this.logger.debug(
+            `Booking confirm retry: не удалось отодвинуть #${row.id}: ${(touchErr as Error).message}`,
+          );
+        }
       }
     }
     if (done) this.logger.log(`Booking confirm retry: finished ${done}`);

@@ -158,7 +158,7 @@ describe('MoneyMetricsService.getMetrics', () => {
     );
   });
 
-  it('render() подклеивает строку про подтверждённые записи без ссылки на встречу', async () => {
+  it('render() подклеивает строку про подтверждённые записи, где ещё не готовы ссылка или календарь', async () => {
     const { service, bookingCount } = build(
       {
         donation7: EMPTY,
@@ -172,7 +172,7 @@ describe('MoneyMetricsService.getMetrics', () => {
     );
 
     await expect(service.render()).resolves.toContain(
-      'Подтверждённых записей без ссылки на встречу: 2',
+      'Подтверждённых записей, где ещё не готовы ссылка или календарь: 2',
     );
     expect(bookingCount).toHaveBeenCalledTimes(1);
   });

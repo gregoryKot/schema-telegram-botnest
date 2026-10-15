@@ -32,7 +32,7 @@ import {
   expireHeldBookings,
   paymentAfterCancel,
 } from './booking.transitions';
-import { finishConfirmEffects } from './booking.confirm-effects';
+import { finishConfirmEffects, rerunEffects } from './booking.confirm-effects';
 import type { CreateBookingDto } from './booking.types';
 
 export type { CreateBookingDto };
@@ -191,9 +191,9 @@ export class BookingService {
     if (claimed.count === 0) {
       const now = await this.prisma.booking.findUnique({ where: { id } });
       // Повтор webhook / ручное подтверждение: эффекты доделываем, если флаг
-      // пуст (security#21), иначе идемпотентный успех.
+      // пуст и проход не идёт прямо сейчас (security#21), иначе просто успех.
       if (now?.status === BookingStatus.CONFIRMED) {
-        await finishConfirmEffects(this.notify, now);
+        await rerunEffects(this.notify, now);
         return { ok: true };
       }
       // Деньги пришли, а бронь CANCELLED: факт оплаты в БД, затем сигнал.
