@@ -1,29 +1,22 @@
-import { ArrayMaxSize, IsArray, IsOptional, IsString } from 'class-validator';
+import {
+  ArrayMaxSize,
+  IsArray,
+  IsOptional,
+  IsString,
+  MaxLength,
+} from 'class-validator';
+import { MODE_MAP_TITLE_MAX } from '../../utils/text-limits';
 
 /**
- * DTO для карт режимов и кастомных режимов терапевта (аудит 2026-07, 2г /
- * правило №6 CLAUDE.md). `nodeType`/`kind` — сервис сам подставляет
- * дефолт при неизвестном значении (не отклоняет запрос), поэтому здесь
- * оставлены слабой строкой, а не `@IsIn(...)`, чтобы не менять поведение
- * с «тихого фолбэка» на «400».
+ * DTO карт режимов терапевта (аудит 2026-07, 2г / правило №6 CLAUDE.md).
+ * `kind` — сервис сам подставляет дефолт при неизвестном значении (не
+ * отклоняет запрос), поэтому слабая строка, а не `@IsIn(...)`. Длина `title` —
+ * 400, а не молчаливая обрезка в контроллере (находка аудита 2026-10-11).
  */
-export class CustomModeDto {
-  @IsOptional()
-  @IsString()
-  name?: string;
-
-  @IsOptional()
-  @IsString()
-  emoji?: string;
-
-  @IsOptional()
-  @IsString()
-  nodeType?: string;
-}
-
 export class CreateModeMapDto {
   @IsOptional()
   @IsString()
+  @MaxLength(MODE_MAP_TITLE_MAX)
   title?: string;
 
   @IsOptional()
@@ -34,6 +27,7 @@ export class CreateModeMapDto {
 export class UpdateModeMapDto {
   @IsOptional()
   @IsString()
+  @MaxLength(MODE_MAP_TITLE_MAX)
   title?: string;
 
   @IsOptional()

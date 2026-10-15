@@ -2,11 +2,8 @@
 // (аудит 2026-07, 2г / правило №6 CLAUDE.md).
 import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
-import {
-  CustomModeDto,
-  CreateModeMapDto,
-  UpdateModeMapDto,
-} from './mode-maps.dto';
+import { CustomModeDto } from './custom-mode.dto';
+import { CreateModeMapDto, UpdateModeMapDto } from './mode-maps.dto';
 
 async function errorsFor(
   cls: new () => object,

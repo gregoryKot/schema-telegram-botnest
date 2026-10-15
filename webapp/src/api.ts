@@ -181,7 +181,7 @@ export const api = {
   },
   bookSlot:             (body: { startsAt: string; durationMin?: number; type?: 'INTRO_15' | 'SESSION_50'; clientName: string; clientContact: string; message?: string; returning?: boolean; acceptedOffer?: boolean; website?: string; source?: string; clientTimeZone?: string; clientChannel?: ContactChannel }) =>
     postJson<{ id: number; cancelToken: string; heldUntil: string | null; status: string; paymentUrl?: string | null; meetingUrl?: string | null }>('/api/booking/book', body),
-  getBookingByToken:    (token: string) => get<{ status: string; type: 'INTRO_15' | 'SESSION_50'; startsAt: string; endsAt: string; durationMin: number; meetingUrl: string | null }>(`/api/booking/by-token/${token}`),
+  getBookingByToken:    (token: string) => get<{ status: string; paid: boolean; type: 'INTRO_15' | 'SESSION_50'; startsAt: string; endsAt: string; durationMin: number; meetingUrl: string | null }>(`/api/booking/by-token/${token}`),
   cancelBooking:        (token: string) => postJson<{ ok: true }>(`/api/booking/cancel/${token}`, {}),
   donate:               (body: { amount: number; source?: 'app' | 'game'; email?: string; comment?: string; website?: string }) =>
     postJson<{ id: number; paymentUrl: string | null }>('/api/donation', body),
@@ -201,9 +201,9 @@ export const api = {
   adminCreateRule:   (key: string, rule: NewAvailabilityRule) => adminReq<AvailabilityRule>('POST', '/api/booking/admin/rules', key, rule),
   adminToggleRule:   (key: string, id: number, isActive: boolean) => adminReq<AvailabilityRule>('PATCH', `/api/booking/admin/rules/${id}`, key, { isActive }),
   adminDeleteRule:   (key: string, id: number) => adminReq<void>('DELETE', `/api/booking/admin/rules/${id}`, key),
-  adminListBookings: (key: string, filter: 'upcoming' | 'past' | 'cancelled' | 'all' = 'upcoming') =>
-    adminReq<AdminBooking[]>('GET', `/api/booking/admin/list?filter=${filter}`, key),
+  adminListBookings: (key: string, filter: 'upcoming' | 'past' | 'cancelled' | 'all' = 'upcoming') => adminReq<AdminBooking[]>('GET', `/api/booking/admin/list?filter=${filter}`, key),
   adminConfirm:      (key: string, id: number) => adminReq<{ ok: true }>('POST', `/api/booking/admin/confirm/${id}`, key),
+  adminCancel:       (key: string, id: number) => adminReq<{ ok: true }>('POST', `/api/booking/admin/cancel/${id}`, key), // в любой срок, без 24 ч клиента
   adminCalendar:     (key: string, from: string, to: string) => adminReq<AdminCalendar>('GET', `/api/booking/admin/calendar?from=${from}&to=${to}`, key),
   adminSetOverrides: (key: string, patch: SlotOverridePatch) => adminReq<{ ok: true }>('POST', '/api/booking/admin/calendar/overrides', key, patch),
   // Articles

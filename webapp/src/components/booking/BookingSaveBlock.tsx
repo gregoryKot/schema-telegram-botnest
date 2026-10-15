@@ -56,7 +56,7 @@ export function BookingSaveBlock({ cancelToken, startsAt, durationMin, type, mee
   };
 
   return (
-    <div style={{ margin: '18px auto 0', maxWidth: 420, textAlign: 'left' }}>
+    <div className="ym-hide-content" style={{ margin: '18px auto 0', maxWidth: 420, textAlign: 'left' }}>
       <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase', color: 'var(--text-faint)', margin: 0 }}>
         Сохраните запись
       </p>
