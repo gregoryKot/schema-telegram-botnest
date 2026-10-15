@@ -215,7 +215,7 @@ backup, caldav, oauth×2, telegram) с классификацией по пло�
   уточнил: `amvera.yml` пока живой (прод на Amvera), удалять его — отдельным
   PR после DNS. Механизм: секция VPS-шва в гейте с тестом на оба исхода,
   `PORT` в реестре, `health_wait` через Caddy.
-- **Закрыто (PR «write-env: ручки супервизора и NODE_ENV»): `write-env` пропускает в контейнер супервизорные ручки и `NODE_ENV`.** Остаток (откат поднимает прежний образ с `.env` нового релиза) уже записан в `docs/README.md`, «Что осталось открытым», строка про `cmd_write_env` без `.env.prev`, и ниже в этом документе («Auto-rollback restores the image but not .env»).
+- **Закрыто (#694): `write-env` пропускает в контейнер супервизорные ручки и `NODE_ENV`.** Остаток (откат поднимает прежний образ с `.env` нового релиза) уже записан в `docs/README.md`, «Что осталось открытым», строка про `cmd_write_env` без `.env.prev`, и ниже в этом документе («Auto-rollback restores the image but not .env»).
   После второй линзы — P2 со сроком «до первого деплоя на VPS», размер M.
   `deploy/vps/ops.sh:142` отбрасывает три имени; `NODE_ENV`, `PORT`,
   `APP_CMD`, `MIGRATE_CMD`, `STARTUP_*` проходят, и `env_file` сильнее `ENV
@@ -260,7 +260,7 @@ backup, caldav, oauth×2, telegram) с классификацией по пло�
   сверки. Механизм: дефолт `${APP_URL}/app/`, `BOT_USERNAME` обязателен с
   форматом Telegram, кросс-проверка хоста с `canonical-host.ts`, проба
   `telegram` сверяет `getMe().username` с `BOT_USERNAME`, гейт-сверка трёх
-  источников имени. Закрыто: код в PR `fix-miniapp-url-defaults` (дефолтов
+  источников имени. Закрыто: код в #690 (дефолтов
   нет, `BOT_USERNAME` обязателен, кросс-проверка, сверка пробой и тестом
   `bot-username-sources.spec.ts`); остаток — за владельцем, см. `docs/README.md`.
 - **Google One Tap выключен молча.** `webapp/src/hooks/useGoogleOneTap.ts:16`
