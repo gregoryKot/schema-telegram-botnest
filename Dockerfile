@@ -71,8 +71,8 @@ RUN npm prune --production
 FROM node:22-slim
 COPY deploy/install-openssl.sh /tmp/
 RUN sh /tmp/install-openssl.sh && rm /tmp/install-openssl.sh
-# pg_dump/psql 16 и curl — для зашифрованных бэкапов в B2 (deploy/backup-scheduler.cjs
-# → scripts/backup-to-b2.sh). Только в runtime: в build-стадии они не нужны.
+# pg_dump/psql 16 и curl — для зашифрованных бэкапов в R2 (deploy/backup-scheduler.cjs
+# → scripts/backup-upload.sh). Только в runtime: в build-стадии они не нужны.
 COPY deploy/install-pg-client.sh /tmp/
 RUN sh /tmp/install-pg-client.sh && rm /tmp/install-pg-client.sh
 WORKDIR /app
@@ -94,11 +94,11 @@ COPY --from=build --chown=node:node /app/BUILD_INFO ./
 # запускается через RECOVER_CMD, docs/MIGRATION_VPS.md), и deploy/vps/ (серверу он
 # в образе не нужен, но лишним не мешает).
 COPY --from=build --chown=node:node /app/deploy ./deploy
-# Скрипты бэкапа/восстановления: планировщик в deploy/ запускает backup-to-b2.sh,
+# Скрипты бэкапа/восстановления: планировщик в deploy/ запускает backup-upload.sh,
 # restore-backup.sh нужен владельцу при аварии (оба читают deploy/pg-url-env.cjs).
-# fetch-latest-b2.sh скачивает свежий бэкап из B2 (op=restore-b2, docs/MIGRATION_VPS.md);
-# b2-api.sh — общий вход в B2, его подключают backup-to-b2.sh и fetch-latest-b2.sh.
-COPY --from=build --chown=node:node /app/scripts/backup-to-b2.sh /app/scripts/restore-backup.sh /app/scripts/fetch-latest-b2.sh /app/scripts/b2-api.sh ./scripts/
+# backup-fetch-latest.sh скачивает свежий бэкап из R2 (op=restore-backup, docs/MIGRATION_VPS.md);
+# s3-api.sh — общий вход в хранилище (подпись SigV4 curl-ом), его подключают оба.
+COPY --from=build --chown=node:node /app/scripts/backup-upload.sh /app/scripts/restore-backup.sh /app/scripts/backup-fetch-latest.sh /app/scripts/s3-api.sh ./scripts/
 
 # Непривилегированный пользователь (в node-образе уже есть `node`)
 USER node
