@@ -10,11 +10,11 @@ import {
   Min,
   ValidateIf,
 } from 'class-validator';
+import { SESSION_NOTE_MAX } from '../../utils/text-limits';
 
 /**
  * DTO для работы терапевта с клиентскими данными (аудит 2026-07, 2г /
- * правило №6 CLAUDE.md). Формат `date` (YYYY-MM-DD) проверяется вручную
- * в контроллере — regex не дублируем.
+ * правило №6 CLAUDE.md). Формат `date` (YYYY-MM-DD) проверяется в контроллере.
  */
 export class RenameClientDto {
   @IsString()
@@ -27,7 +27,7 @@ export class CreateSessionNoteDto {
   date!: string;
 
   @IsString()
-  @MaxLength(10000)
+  @MaxLength(SESSION_NOTE_MAX)
   text!: string;
 }
 
