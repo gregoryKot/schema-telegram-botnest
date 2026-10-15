@@ -88,7 +88,7 @@ jobs:
           test/app-auth test/app-ownership test/app-ownership-sweep
           test/auth-flows test/public-quizzes test/phrase-check-ownership
           test/scheduler-teardown test/login-ticket test/refresh-rotation
-          test/slot-override test/therapy-remove-client
+          test/slot-override test/therapy-remove-client test/therapy-resign
           test/body-limit test/login-csrf test/payment-webhook-practice-host
       # Security-гейт (этап 1.4): high/critical уязвимости в prod-зависимостях
       # блокируют мерж. dev-зависимости не гейтим — шум.
@@ -178,6 +178,11 @@ jobs:
       # CI. Флага --update нет: это решение человека, не счётчик долга.
       - run: node scripts/check-cron-leader.mjs
       - run: node scripts/check-raw-sql-live.mjs
+      # Файл, выделенный из файла мутационной зоны, не выпадает из `mutate`
+      # молча (nightly golden-auth, #614: redact() ушёл из security-log.service
+      # в security-log-redact.ts и перестал измеряться). Классификация в
+      # scripts/mutation-zone-baseline.json; флага --update нет.
+      - run: node scripts/check-mutation-zone.mjs
       # Браузерный код вне src/ (public/*.js, инлайн-скрипты index.html) обязан
       # быть под тестом. Инцидент 2026-08-08: загрузчик моста MAX ловил чужой
       # параметр `tgWebAppData` подстрокой и ломал вход ВСЕМ пользователям
@@ -409,6 +414,11 @@ jobs:
       # миграцией (booking_pii_retention).
       - name: e2e обезличивание броней по сроку на реальном Postgres
         run: npx jest --config ./test/jest-e2e.json --runInBand test/booking-pii-retention.e2e-spec.ts
+      # security#19 (аудит 2026-10): POST /api/booking/book с returning=true
+      # отвечает клиенту и не-клиенту одинаково — ClientMeeting ищется по clientKey
+      # в настоящей БД, поэтому на шве, а не на моке.
+      - name: e2e запись не выдаёт, клиент ли контакт, на реальном Postgres
+        run: npx jest --config ./test/jest-e2e.json --runInBand test/booking-returning-oracle.e2e-spec.ts
       # Правило №18: каждый файл с сырым SQL исполняется на живом Postgres —
       # весь отчёт /stats (20 сервисов), /health, зонд аварии БД, VACUUM после
       # удаления аккаунта, захват списания подписки. Состав держит гейт
@@ -445,6 +455,7 @@ jobs:
           test/merge-my-lists.e2e-spec.ts
           test/account-export-ownership.e2e-spec.ts
           test/therapy-remove-client.e2e-spec.ts
+          test/therapy-resign.e2e-spec.ts
         env:
           E2E_REAL_DB: '1'
       # Перенос БД на VPS (deploy/transfer-db.sh, docs/MIGRATION_VPS.md): настоящие
@@ -455,6 +466,16 @@ jobs:
         run: |
           command -v pg_dump >/dev/null || sudo apt-get install -y --no-install-recommends postgresql-client-16
           npx jest --config ./test/jest-e2e.json --runInBand test/transfer-db.e2e-spec.ts
+      # Откат образа поверх упавшей миграции (аудит 2026-10-11, infra#8): N+1 с
+      # битой миграцией оставляет в _prisma_migrations запись, на которой образ N
+      # падает с P3009. Настоящие prisma migrate deploy, prisma db execute и
+      # deploy/entrypoint.mjs: recover-p3009.sql обязан снять запись, а образ N
+      # поднять приложение. Мок не проверяет, что Prisma оставляет огрызок и что
+      # DELETE его запись снимает (правило №18).
+      - name: e2e откат образа поверх упавшей миграции на реальном Postgres
+        run: |
+          command -v psql >/dev/null || sudo apt-get install -y --no-install-recommends postgresql-client-16
+          npx jest --config ./test/jest-e2e.json --runInBand test/migrate-stuck-record.e2e-spec.ts
       # План Б (docs/MIGRATION_VPS.md): настоящая цепочка backup-upload.sh →
       # (поддельный) S3 → backup-fetch-latest.sh → restore-backup.sh на живом
       # Postgres: восстановленная база обязана совпасть с источником.

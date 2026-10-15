@@ -23,6 +23,7 @@ import { createHash } from 'crypto';
 import { PaymentController } from './payment.controller';
 import { PaymentAmountMismatchError } from './booking.service';
 import { PaymentAfterCancelError } from './booking.transitions';
+import { ConfirmEffectsFailedError } from './booking.confirm-effects';
 import { RobokassaService } from './robokassa.service';
 import { DONATION_INVID_BASE } from '../donation/donation.service';
 import { SUBSCRIPTION_INVID_BASE } from '../subscription/subscription.service';
@@ -251,6 +252,36 @@ describe('PaymentController.handleResult — booking (обычный InvId-ди�
     expect(res).toBe('FAIL7');
     expect(notify.alertAdmin).toHaveBeenCalledTimes(1);
     expect(notify.alertAdmin.mock.calls[0][0]).toContain('#7');
+  });
+
+  // security#21: CAS прошёл — бронь CONFIRMED, не доехали ссылка и календарь.
+  // Алерт «не подтвердилась» был ложью, а ответ обязан остаться FAIL: повтор
+  // вебхука доделает эффекты.
+  it('бронь подтверждена, но эффекты не доехали → "FAIL" и честный алерт «повтор доделает», не «не подтвердилась»; warn, не error', async () => {
+    const { controller, booking, notify } = makeController();
+    booking.confirm.mockRejectedValueOnce(
+      new ConfirmEffectsFailedError(7, new Error('ECONNRESET')),
+    );
+    const warn = jest.spyOn(Logger.prototype, 'warn').mockImplementation();
+    const error = jest.spyOn(Logger.prototype, 'error').mockImplementation();
+    const outSum = '4000.00';
+    const sig = md5(`${outSum}:7:${PASS2}`);
+
+    const res = await controller.handleResult(outSum, '7', sig);
+
+    expect(res).toBe('FAIL7');
+    expect(notify.alertAdmin).toHaveBeenCalledTimes(1);
+    const text = String(notify.alertAdmin.mock.calls[0][0]);
+    expect(text).toContain('#7');
+    expect(text).toContain('оплачена и подтверждена');
+    expect(text).toContain('доделает');
+    expect(text).not.toContain('не подтвердилась');
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining('effects pending'),
+    );
+    expect(error).not.toHaveBeenCalled(); // error ушёл бы владельцу вторым DM
+    warn.mockRestore();
+    error.mockRestore();
   });
 });
 

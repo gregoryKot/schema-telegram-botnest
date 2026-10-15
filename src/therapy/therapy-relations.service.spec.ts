@@ -420,9 +420,10 @@ describe('getRelation — статус связи для терапевта и �
           createdAt: new Date(),
         },
       ],
-      [{ id: T1, firstName: 'Терапевт Т' }],
+      [{ id: T1, firstName: 'Терапевт Т', role: 'THERAPIST' }],
     );
     const spy = jest.spyOn(prisma.therapyRelation, 'findFirst');
+    const spyMany = jest.spyOn(prisma.therapyRelation, 'findMany');
     const info = await service.getRelation(CLIENT);
     expect(info).toEqual({
       role: 'client',
@@ -433,11 +434,15 @@ describe('getRelation — статус связи для терапевта и �
       nextSession: '2026-08-01',
     });
     // CLIENT терапевтом не выступает — связи со стороны терапевта не ищутся
-    // вовсе (A-3), единственный findFirst — клиентская сторона.
-    expect(spy).toHaveBeenCalledTimes(1);
-    expect(spy).toHaveBeenCalledWith({
+    // вовсе (A-3): findFirst не зовётся, единственный запрос — findMany по
+    // клиентской стороне, с ролью партнёра для сверки (backend#33).
+    expect(spy).not.toHaveBeenCalled();
+    expect(spyMany).toHaveBeenCalledTimes(1);
+    expect(spyMany).toHaveBeenCalledWith({
       where: { clientId: CLIENT, status: 'active' },
-      include: { therapist: { select: { id: true, firstName: true } } },
+      include: {
+        therapist: { select: { id: true, firstName: true, role: true } },
+      },
     });
   });
 
@@ -466,8 +471,8 @@ describe('getRelation — статус связи для терапевта и �
         },
       ],
       [
-        { id: T1, firstName: 'Мой терапевт' },
-        { id: T2, firstName: 'Чужой терапевт' },
+        { id: T1, firstName: 'Мой терапевт', role: 'THERAPIST' },
+        { id: T2, firstName: 'Чужой терапевт', role: 'THERAPIST' },
       ],
     );
     const info = await service.getRelation(CLIENT);
@@ -555,21 +560,89 @@ describe('getRelation — статус связи для терапевта и �
     expect((await service.getRelation(T1))?.role).toBe('therapist');
   });
 
-  it('роль клиента: терапевт не резолвится (FK-запись без пользователя) — партнёр пуст, nextSession null по умолчанию', async () => {
-    const { service } = makeFullService([
-      {
-        id: 1,
-        therapistId: T1,
-        clientId: CLIENT,
-        status: 'active',
-        code: 'AAA111',
-        createdAt: new Date(),
-      },
-    ]); // терапевта нет в users — include вернёт null
+  it('роль клиента: у терапевта нет имени — партнёр пуст, nextSession null по умолчанию', async () => {
+    const { service } = makeFullService(
+      [
+        {
+          id: 1,
+          therapistId: T1,
+          clientId: CLIENT,
+          status: 'active',
+          code: 'AAA111',
+          createdAt: new Date(),
+        },
+      ],
+      [{ id: T1, firstName: null, role: 'THERAPIST' }],
+    );
     const info = await service.getRelation(CLIENT);
     expect(info?.partnerName).toBeNull();
-    expect(info?.partnerId).toBeNull();
+    expect(info?.partnerId).toBe(T1);
     expect(info?.nextSession).toBeNull();
+  });
+
+  // backend#33: строка, осиротевшая до статуса `ended` (терапевт вышел из
+  // роли, связь осталась active), не показывает бывшего терапевта клиенту.
+  it('партнёр уже не терапевт (role CLIENT) — «Мой терапевт» пуст', async () => {
+    const { service } = makeFullService(
+      [
+        {
+          id: 1,
+          therapistId: T1,
+          clientId: CLIENT,
+          status: 'active',
+          code: 'ORPHAN',
+          createdAt: new Date(),
+        },
+      ],
+      [{ id: T1, firstName: 'Бывший терапевт', role: 'CLIENT' }],
+    );
+    await expect(service.getRelation(CLIENT)).resolves.toBeNull();
+  });
+
+  it('осиротевшая связь не заслоняет живую: клиент видит действующего терапевта', async () => {
+    const { service } = makeFullService(
+      [
+        {
+          id: 1,
+          therapistId: T1,
+          clientId: CLIENT,
+          status: 'active',
+          code: 'ORPHAN',
+          createdAt: new Date(),
+        },
+        {
+          id: 2,
+          therapistId: T2,
+          clientId: CLIENT,
+          status: 'active',
+          code: 'LIVE22',
+          createdAt: new Date(),
+        },
+      ],
+      [
+        { id: T1, firstName: 'Бывший терапевт', role: 'CLIENT' },
+        { id: T2, firstName: 'Действующий', role: 'THERAPIST' },
+      ],
+    );
+    const info = await service.getRelation(CLIENT);
+    expect(info).toMatchObject({ partnerId: T2, code: 'LIVE22' });
+  });
+
+  it('завершённая связь (ended) клиенту не показывается', async () => {
+    const { service } = makeFullService(
+      [
+        {
+          id: 1,
+          therapistId: T1,
+          clientId: CLIENT,
+          status: 'ended',
+          code: 'ENDED1',
+          createdAt: new Date(),
+        },
+      ],
+      [{ id: T1, firstName: 'Терапевт', role: 'THERAPIST' }],
+    );
+    await expect(service.getRelation(CLIENT)).resolves.toBeNull();
   });
 });
 

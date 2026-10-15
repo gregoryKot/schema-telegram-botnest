@@ -5,7 +5,7 @@
 // строит сам сервис (ротация + recover), а не руками вписанные строки.
 // Плюс регрессия R2: logout закрывает всю family, а не одну строку.
 import { createHash } from 'crypto';
-import { UnauthorizedException } from '@nestjs/common';
+import { Logger, UnauthorizedException } from '@nestjs/common';
 import {
   createFakeTable,
   createFakeTransaction,
@@ -101,6 +101,56 @@ describe('refresh: бюджет восстановлений (чередующе
     const again = await svc.rotateRefreshToken(r2);
     expect(again.rotated).toBe(true); // не кража
     expect(securityLog.log).not.toHaveBeenCalled();
+  });
+});
+
+// Вердикт разбора повтора токена и «эхо» мёртвой семьи обязаны попадать в лог
+// сервиса: по ним владелец отличает потерянный ответ от кражи, а AlertLogger
+// берёт ключ из стабильного текста эха (nightly golden-auth, #614: мутанты
+// onWarn/onEcho в auth.service.ts выживали — ни один тест не читал лог).
+describe('refresh: лог вердиктов повтора', () => {
+  beforeEach(() => {
+    jest.useFakeTimers({ now: new Date('2026-10-03T12:00:00.000Z') });
+  });
+  afterEach(() => {
+    jest.useRealTimers();
+    jest.restoreAllMocks();
+  });
+
+  it('потерянный ответ: вердикт уходит в logger.warn, а не молча', async () => {
+    const warn = jest.spyOn(Logger.prototype, 'warn').mockImplementation();
+    const { svc } = makeService();
+    const r0 = (await svc.issueTokens(1n)).refreshToken;
+    await svc.rotateRefreshToken(r0);
+    expect(warn).not.toHaveBeenCalled();
+    await svc.rotateRefreshToken(r0);
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(warn).toHaveBeenCalledWith(
+      'Refresh rotation response was lost — re-issuing (userId 1)',
+    );
+  });
+
+  it('кража: вердикт в warn, DM один; токен уже мёртвой семьи — эхо в warn без второго DM', async () => {
+    const warn = jest.spyOn(Logger.prototype, 'warn').mockImplementation();
+    const { svc, securityLog } = makeService();
+    const r0 = (await svc.issueTokens(1n)).refreshToken;
+    const r1 = (await svc.rotateRefreshToken(r0)).refreshToken;
+    const r2 = (await svc.rotateRefreshToken(r0)).refreshToken;
+    await svc.rotateRefreshToken(r1);
+    warn.mockClear();
+
+    await reject(svc, r2); // третье восстановление за сутки — кража
+    expect(securityLog.log).toHaveBeenCalledTimes(1);
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining('третье восстановление за сутки'),
+    );
+
+    warn.mockClear();
+    await reject(svc, r2); // тот же токен после отзыва семьи — эхо мёртвой куки
+    expect(securityLog.log).toHaveBeenCalledTimes(1);
+    expect(warn).toHaveBeenCalledWith(
+      'Refresh token reuse on an already-revoked family — echo of a dead cookie, not a new theft',
+    );
   });
 });
 

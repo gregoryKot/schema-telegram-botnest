@@ -18,6 +18,7 @@
     "src/booking/booking.service.ts",
     "src/subscription/subscription.service.ts",
     "src/booking/slot.service.ts",
+    "src/booking/slot-window.ts",
     "src/booking/pricing.service.ts",
     "src/booking/payment.controller.ts",
     "src/booking/payment.booking-webhook.ts",
