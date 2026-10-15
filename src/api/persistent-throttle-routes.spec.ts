@@ -107,6 +107,41 @@ const DB_ROUTES: Route[] = [
     3,
     10,
   ],
+  [
+    'POST /api/auth/2fa/enable',
+    Auth2faController,
+    Auth2faController.prototype.totpEnable,
+    5,
+    20,
+  ],
+  [
+    'POST /api/auth/2fa/disable',
+    Auth2faController,
+    Auth2faController.prototype.totpDisable,
+    5,
+    20,
+  ],
+  [
+    'POST /api/auth/2fa/recovery-codes',
+    Auth2faController,
+    Auth2faController.prototype.totpRegenerateRecovery,
+    5,
+    20,
+  ],
+  [
+    'POST /api/auth/2fa/challenge',
+    Auth2faController,
+    Auth2faController.prototype.totpChallenge,
+    5,
+    20,
+  ],
+  [
+    'POST /api/auth/recovery/confirm',
+    Auth2faController,
+    Auth2faController.prototype.recoveryConfirm,
+    5,
+    20,
+  ],
 ];
 
 describe('кодовые и заявочные ручки считают попытки в Postgres', () => {

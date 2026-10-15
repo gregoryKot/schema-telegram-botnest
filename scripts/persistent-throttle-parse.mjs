@@ -14,7 +14,20 @@ const MARKERS = new Set(['PersistentThrottle', 'PersistentThrottleLimit', 'Admin
 const THROTTLES = new Set(['Throttle', 'PersistentThrottleLimit']);
 // Тело хендлера, которое проверяет код или создаёт заявку, нуждается в
 // классификации, даже если `@Throttle(` забыли поставить вовсе.
-const TRIGGERS = /\bverifyCode\(|\bassertSourceTotp\(|\.approve\(|\bapproveLogin|\.deny\(|\.submit\(/;
+const TRIGGERS = new RegExp(
+  [
+    '\\bverifyCode\\(', // проверка TOTP-кода (challenge)
+    '\\bassertSourceTotp\\(', // TOTP исходного аккаунта (merge)
+    '\\bconfirmSetup\\(', // подтверждение настройки 2FA кодом (2fa/enable)
+    '\\bregenerateRecoveryCodes\\(', // код TOTP за новые резервные коды
+    '\\btotp\\.disable\\(', // код TOTP за отключение 2FA (2fa/disable)
+    '\\bconsumeToken\\(', // погашение токена из письма (перебираемая строка)
+    '\\.approve\\(',
+    '\\bapproveLogin',
+    '\\.deny\\(',
+    '\\.submit\\(',
+  ].join('|'),
+);
 
 /** Убирает комментарии, сохраняя переводы строк и строковые литералы. */
 export function stripComments(text) {

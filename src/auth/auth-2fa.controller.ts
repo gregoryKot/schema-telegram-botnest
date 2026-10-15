@@ -11,7 +11,6 @@ import {
   UseGuards,
   HttpCode,
 } from '@nestjs/common';
-import { Throttle } from '@nestjs/throttler';
 import { ConfigService } from '@nestjs/config';
 import { AuthService } from './auth.service';
 import { JwtAuthGuard, WebUser } from './jwt.guard';
@@ -22,7 +21,6 @@ import { EmailBodyDto, TokenBodyDto } from './dto/auth-scalar.dto';
 import { EmailService } from './email.service';
 import type { Request, Response } from 'express';
 import { requireCsrf, setRefreshCookie } from './auth-http.util';
-import { PersistentThrottle } from '../api/persistent-throttle.decorator';
 import { PersistentThrottleLimit } from '../api/persistent-throttle-limit';
 import { CODE_THROTTLE, DAILY_MAIL_THROTTLE } from './auth-throttles';
 
@@ -59,8 +57,7 @@ export class Auth2faController {
 
   @Post('2fa/enable')
   @UseGuards(JwtAuthGuard)
-  @Throttle(CODE_THROTTLE)
-  @PersistentThrottle()
+  @PersistentThrottleLimit(CODE_THROTTLE)
   @HttpCode(200)
   async totpEnable(
     @Req() req: Request,
@@ -83,8 +80,7 @@ export class Auth2faController {
 
   @Post('2fa/disable')
   @UseGuards(JwtAuthGuard)
-  @Throttle(CODE_THROTTLE)
-  @PersistentThrottle()
+  @PersistentThrottleLimit(CODE_THROTTLE)
   @HttpCode(200)
   async totpDisable(
     @Req() req: Request,
@@ -104,8 +100,7 @@ export class Auth2faController {
 
   @Post('2fa/recovery-codes')
   @UseGuards(JwtAuthGuard)
-  @Throttle(CODE_THROTTLE)
-  @PersistentThrottle()
+  @PersistentThrottleLimit(CODE_THROTTLE)
   @HttpCode(200)
   async totpRegenerateRecovery(
     @Req() req: Request,
@@ -162,8 +157,7 @@ export class Auth2faController {
   // Confirm a recovery magic link → issue a session for that user. They land
   // on /account and can link a new provider before the original token expires.
   @Post('recovery/confirm')
-  @Throttle(CODE_THROTTLE)
-  @PersistentThrottle()
+  @PersistentThrottleLimit(CODE_THROTTLE)
   @HttpCode(200)
   async recoveryConfirm(
     @Req() req: Request,
@@ -191,8 +185,7 @@ export class Auth2faController {
   // Verify a TOTP code in exchange for a real access token. Called by the
   // /auth/2fa frontend page after primary login returned a challengeToken.
   @Post('2fa/challenge')
-  @Throttle(CODE_THROTTLE)
-  @PersistentThrottle()
+  @PersistentThrottleLimit(CODE_THROTTLE)
   @HttpCode(200)
   async totpChallenge(
     @Req() req: Request,

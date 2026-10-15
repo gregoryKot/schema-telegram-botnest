@@ -911,7 +911,7 @@
   "src/articles/articles.module.ts": 11,
   "src/articles/articles.seed.ts": 564,
   "src/articles/articles.service.ts": 130,
-  "src/auth/auth-2fa.controller.ts": 245,
+  "src/auth/auth-2fa.controller.ts": 238,
   "src/auth/auth-account.controller.ts": 290,
   "src/auth/auth-flow.service.ts": 292,
   "src/auth/auth-http.util.ts": 104,

@@ -51,7 +51,7 @@ CLAUDE.md. Не удалять, но и не считать списком за�
 
 Хвосты закрытых планов — то, что не сделано осознанно, а не забыто:
 
-**Счётчик попыток в Postgres** (`scripts/check-persistent-throttle.mjs`, #NNN):
+**Счётчик попыток в Postgres** (`scripts/check-persistent-throttle.mjs`, #708):
 - **`therapy/join` и `pair/join` без собственного `@Throttle`** — считаются только
   глобальным лимитом в памяти. Не переведены в Postgres осознанно: код приглашения —
   40–48 бит (`randomBytes(5|6)`, `therapy-relations.service.ts`, `pairs.service.ts`),

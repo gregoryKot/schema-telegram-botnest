@@ -188,8 +188,9 @@ describe('e2e HTTP: лимит кодовых ручек переживает р
       request(a.getHttpServer()).post('/api/therapy/request').send({});
     const statuses: number[] = [];
     for (let i = 0; i < 3; i++) statuses.push((await post(first)).status);
-    expect(statuses.slice(0, 2)).not.toContain(429);
-    expect(statuses[2]).toBe(429);
+    // Без Bearer ручка отвечает 401, а лимит 2 в окне 24 ч срабатывает на
+    // третьей попытке: гард троттлинга стоит раньше авторизации.
+    expect(statuses).toEqual([401, 401, 429]);
 
     await first.close();
     const second = await boot(false);

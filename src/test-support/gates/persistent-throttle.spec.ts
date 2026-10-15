@@ -24,7 +24,7 @@ const REASON = 'токен 256 бит, перебор нереален, лими
 const exempt = (extra = {}) => ({
   status: 'exempt',
   reason: REASON,
-  since: 'e58911c4',
+  since: '#708',
   ...extra,
 });
 
@@ -114,21 +114,62 @@ describe('check-persistent-throttle.mjs', () => {
     expect(res.stderr).not.toContain('POST /api/x/one');
   });
 
-  it.each([
+  // Вызовы, после которых ручка проверяет код человека или гасит токен.
+  const TRIGGER_CALLS: [string, string][] = [
     ['verifyCode(', 'await this.totp.verifyCode(uid, dto.code);'],
     ['assertSourceTotp(', 'await assertSourceTotp(this.totp, s, c);'],
+    ['confirmSetup(', 'return this.totp.confirmSetup(uid, dto.code);'],
+    [
+      'regenerateRecoveryCodes(',
+      'return this.totp.regenerateRecoveryCodes(uid, dto.code);',
+    ],
+    ['totp.disable(', 'await this.totp.disable(uid, dto.code);'],
+    ['consumeToken(', "await this.email.consumeToken(dto.token, 'recovery');"],
     ['.approve(', 'return this.links.approve(code, uid);'],
     ['approveLogin', 'await this.t.approveLoginIfPossible(c, u);'],
     ['.deny(', 'await this.t.deny(code);'],
     ['.submit(', 'return this.svc.submit(uid, body);'],
-  ])('хендлер без @Throttle, но с %s в теле — красное', (_n, call) => {
+  ];
+
+  it.each(TRIGGER_CALLS)(
+    'хендлер без @Throttle, но с %s в теле — красное',
+    (_n, call) => {
+      const res = gate({
+        'src/a.controller.ts': controller(
+          `  @Post('act')\n  async act() { ${call} }`,
+        ),
+      });
+      expect(res.status).toBe(1);
+      expect(res.stderr).toContain('POST /api/x/act');
+    },
+  );
+
+  // Обратный исход: тот же хендлер с меткой — зелёный (иначе красный выше мог
+  // бы краснеть на любое тело, а не на вызов).
+  it.each(TRIGGER_CALLS)(
+    'хендлер с %s в теле и составной меткой — зелёное',
+    (_n, call) => {
+      const res = gate({
+        'src/a.controller.ts': controller(
+          `  @PersistentThrottleLimit({ long: { limit: 5, ttl: 60_000 } })\n  @Post('act')\n  async act() { ${call} }`,
+        ),
+      });
+      expect(res.status).toBe(0);
+    },
+  );
+
+  // Контроль: вызовы с похожими именами (не из списка) ручку не затрагивают.
+  it.each([
+    'return this.totp.verifyCodeSilently(uid);',
+    'return this.totp.enable(uid);',
+    'return this.cache.consume(token);',
+  ])('контроль: хендлер с «%s» без лимита не требует решения', (call) => {
     const res = gate({
       'src/a.controller.ts': controller(
         `  @Post('act')\n  async act() { ${call} }`,
       ),
     });
-    expect(res.status).toBe(1);
-    expect(res.stderr).toContain('POST /api/x/act');
+    expect(res.status).toBe(0);
   });
 
   it('контроль: @Throttle( и verifyCode( в комментариях не считаются ручкой', () => {
@@ -277,6 +318,44 @@ describe('check-persistent-throttle.mjs', () => {
     expect(res.stderr).toContain('POST /api/auth/merge');
     expect(res.stderr).not.toContain('POST /api/auth/email/link');
   });
+
+  // Шаг, ради которого расширен TRIGGERS: снять и лимит, и метку с ручки,
+  // что проверяет TOTP-код, — гейт обязан покраснеть сам, а не промолчать,
+  // оставив хендлер на глобальных 200 в минуту в памяти.
+  it.each([
+    ['2fa/enable', 'totpEnable', 'POST /api/auth/2fa/enable'],
+    ['2fa/disable', 'totpDisable', 'POST /api/auth/2fa/disable'],
+    [
+      '2fa/recovery-codes',
+      'totpRegenerateRecovery',
+      'POST /api/auth/2fa/recovery-codes',
+    ],
+  ])(
+    'настоящий auth-2fa.controller: без лимита и метки на %s — красное, с меткой — зелёное',
+    (_route, method, key) => {
+      const real = readFileSync(
+        join(ROOT, 'src', 'auth', 'auth-2fa.controller.ts'),
+        'utf8',
+      );
+      const baseline = {
+        'GET /api/auth/recovery-email/verify':
+          REAL_BASELINE['GET /api/auth/recovery-email/verify'],
+      };
+      expect(gate({ 'src/auth/a.controller.ts': real }, baseline).status).toBe(
+        0,
+      );
+
+      const mark = '  @PersistentThrottleLimit(CODE_THROTTLE)\n';
+      const at = real.indexOf(`async ${method}(`);
+      const idx = real.lastIndexOf(mark, at);
+      expect(at).toBeGreaterThan(0);
+      expect(idx).toBeGreaterThan(real.lastIndexOf('@Post(', at));
+      const stripped = real.slice(0, idx) + real.slice(idx + mark.length);
+      const res = gate({ 'src/auth/a.controller.ts': stripped }, baseline);
+      expect(res.status).toBe(1);
+      expect(res.stderr).toContain(key);
+    },
+  );
 });
 
 // Модуль разбора (persistent-throttle-parse.mjs) проверяется и напрямую: гейт
