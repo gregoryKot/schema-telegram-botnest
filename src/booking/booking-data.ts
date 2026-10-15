@@ -11,7 +11,13 @@ import type { CreateBookingDto } from './booking.types';
  */
 export function buildBookingData(
   dto: CreateBookingDto,
-  opts: { isFree: boolean; heldUntil: Date | null; cancelToken: string },
+  opts: {
+    isFree: boolean;
+    heldUntil: Date | null;
+    cancelToken: string;
+    /** Сумма счёта, рубли; null у бесплатного знакомства. */
+    amount: number | null;
+  },
 ) {
   return encryptRecord(
     {
@@ -24,6 +30,7 @@ export function buildBookingData(
       message: dto.message ?? null,
       status: opts.isFree ? BookingStatus.CONFIRMED : BookingStatus.HELD,
       heldUntil: opts.heldUntil,
+      amount: opts.amount,
       cancelToken: opts.cancelToken,
       acceptedOfferAt: new Date(),
       source: dto.source ?? null,

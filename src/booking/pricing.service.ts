@@ -6,6 +6,7 @@ import {
   SessionOption,
 } from './booking.config';
 import { SessionType } from '@prisma/client';
+import { parsePrice, validPrice } from './price-rules';
 
 const KEY = (type: SessionType) => `price:${type}`;
 
@@ -19,13 +20,12 @@ export class PricingService {
     const row = await this.prisma.bookingSetting.findUnique({
       where: { key: KEY(type) },
     });
-    const n = row ? parseInt(row.value, 10) : NaN;
-    return Number.isFinite(n) && n >= 0 ? n : SESSION_DEFAULT_PRICE[type];
+    return parsePrice(type, row?.value) ?? SESSION_DEFAULT_PRICE[type];
   }
 
   /** Set the price for a session type (rubles). */
   async setPrice(type: SessionType, amount: number): Promise<void> {
-    const value = String(Math.max(0, Math.round(amount)));
+    const value = String(validPrice(type, amount));
     await this.prisma.bookingSetting.upsert({
       where: { key: KEY(type) },
       create: { key: KEY(type), value },

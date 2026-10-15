@@ -57,6 +57,8 @@ describe('e2e: платёжный контур Robokassa на хосте виз�
         clientName: 'Клиент',
         clientContact: CONTACT,
         cancelToken,
+        // Сумма счёта, как её кладёт book(): completeCheckout платит по ней.
+        amount: SESSION_DEFAULT_PRICE[SessionType.SESSION_50],
       },
     });
   const statusOf = async (id: number) =>
@@ -138,9 +140,6 @@ describe('e2e: платёжный контур Robokassa на хосте виз�
       robokassa,
       // Хост берём как в проде по умолчанию (SITE_URL не задан).
       siteUrl: `https://${PRACTICE}`,
-      pricing: {
-        getPrice: async () => SESSION_DEFAULT_PRICE[SessionType.SESSION_50],
-      },
       notify: { onAwaitingPayment: async () => undefined },
       schema: { strings: [] },
     } as never;
@@ -149,7 +148,6 @@ describe('e2e: платёжный контур Robokassa на хосте виз�
       cancelToken: 'ph-ct-5',
       heldUntil: b.heldUntil,
       startsAt: b.startsAt,
-      type: SessionType.SESSION_50,
       clientContact: CONTACT,
     });
     const url = new URL(r.paymentUrl as string);
