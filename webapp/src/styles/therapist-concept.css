@@ -1,0 +1,118 @@
+/* Вкладка «Концептуализация» кабинета терапевта (префикс tcp-). */
+.tcp-fields { display: flex; flex-direction: column; gap: 52px; min-width: 0; max-width: 880px; }
+
+/* ── Прогресс и якоря ── */
+.tcp-progress { display: flex; flex-direction: column; gap: 12px; }
+.tcp-count { font-family: var(--serif); font-size: 30px; line-height: 1.2; margin-top: -8px; }
+.tcp-count span { font-size: 18px; color: var(--text-faint); }
+.tcp-bars { display: flex; gap: 3px; }
+.tcp-bars i { flex: 1; height: 5px; border-radius: 3px; background: var(--line-strong); }
+.tcp-bars i.is-on { background: var(--accent); }
+.tcp-anchors { display: flex; flex-wrap: wrap; gap: 4px; }
+.tcp-anchor {
+  display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 6px 10px;
+  background: var(--paper-sunk); border: none; border-radius: 8px; cursor: pointer;
+  font: 13px var(--sans); color: var(--text-sub); white-space: nowrap;
+}
+.tcp-anchor span { font-family: var(--serif); color: var(--accent); }
+.tcp-anchor:hover { background: var(--line); }
+
+/* ── Раздел ── */
+.tcp-sec { display: flex; flex-direction: column; gap: 16px; scroll-margin-top: 16px; min-width: 0; }
+.tcp-sec-head { display: flex; gap: 18px; align-items: baseline; }
+.tcp-sec-n { font-family: var(--serif); font-size: 44px; line-height: 1; color: var(--accent); }
+.tcp-sec-title { margin: 0; font-family: var(--serif); font-weight: 400; font-size: 28px; line-height: 1.2; }
+.tcp-sec-hint { font-size: 14px; color: var(--text-muted); margin-top: 4px; }
+.tcp-stack { display: flex; flex-direction: column; gap: 14px; }
+.tcp-sec .ds-textarea { resize: vertical; }
+.tcp-pickers { display: flex; flex-direction: column; gap: 28px; }
+.tcp-domain { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; font-weight: 600; margin-bottom: 10px; }
+.tcp-schema-btn {
+  min-height: 36px; padding: 6px 12px; border-radius: 8px; font: 12.5px var(--sans);
+  background: var(--paper-tint); color: var(--text-muted); border: 1px solid var(--line);
+  cursor: pointer; white-space: nowrap;
+}
+.tcp-schema-btn.is-on { font-weight: 600; color: #fff; border-color: transparent; }
+
+/* ── Таймлайн раннего опыта ── */
+.tcp-timeline { display: grid; grid-template-columns: repeat(3, 1fr); position: relative; margin-bottom: 14px; }
+.tcp-timeline::before { content: ''; position: absolute; left: 0; right: 0; top: 9px; height: 2px; background: var(--line-strong); }
+.tcp-period { position: relative; display: flex; flex-direction: column; gap: 2px; padding-right: 12px; font-size: 13px; }
+.tcp-period b { margin-top: 10px; }
+.tcp-period span { font-size: 12px; color: var(--text-faint); }
+.tcp-ring { width: 20px; height: 20px; border-radius: 50%; box-sizing: border-box; background: var(--bg); border: 2px solid var(--accent); }
+
+/* ── Потребности ── */
+.tcp-needs { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
+.tcp-need {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 8px; min-height: 64px;
+  padding: 12px 14px; border-radius: 14px; cursor: pointer; text-align: left;
+  border: 1.5px solid transparent; font: 14px/1.3 var(--sans);
+}
+.tcp-need:not(.is-on) { background: var(--surface); color: var(--text-sub); border-color: var(--line); }
+
+/* ── Триггеры ── */
+.tcp-trig { display: flex; flex-direction: column; gap: 12px; padding: 16px; border-radius: 16px; }
+.tcp-tags { display: flex; flex-wrap: wrap; gap: 8px; }
+.tcp-tag {
+  min-height: 36px; padding: 0 14px; border-radius: 18px; cursor: pointer; white-space: nowrap;
+  font: 600 13px var(--sans); background: var(--paper-sunk); color: var(--text-sub); border: 1px solid transparent;
+}
+.tcp-tag.is-on { background: var(--accent); color: #fff; }
+.tcp-bare {
+  resize: vertical; border: none; border-top: 1px solid var(--paper-sunk); background: transparent;
+  padding: 12px 2px 0; font: 14px/1.5 var(--sans); color: var(--text); width: 100%; box-sizing: border-box;
+}
+.tcp-bare:focus, .tcp-dark:focus, .tcp-quote-ta:focus { outline: none; }
+.tcp-bare::placeholder, .tcp-quote-ta::placeholder { color: var(--text-ghost); }
+
+/* ── Совладание ── */
+.tcp-coping { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 14px; }
+.tcp-cop { display: flex; align-items: center; gap: 10px; padding: 16px 18px; border-radius: 16px; }
+.tcp-cop b { display: block; font-size: 15px; }
+.tcp-cop div span { font-size: 12px; color: var(--text-sub); }
+.tcp-cop-ic {
+  width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0; color: #fff; font-size: 16px;
+  display: flex; align-items: center; justify-content: center;
+}
+
+/* ── Режимы (тёмный блок) ── */
+.tcp-ink { border-radius: 18px; padding: 22px; display: flex; flex-direction: column; gap: 16px; }
+.tcp-chain { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+.tcp-chain-item { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.tcp-arrow { color: var(--on-ink-faint); font-size: 20px; width: 20px; text-align: center; flex-shrink: 0; }
+.tcp-chain-item:first-child .tcp-node { margin-left: 0; }
+.tcp-node { flex: 1; min-width: 0; background: var(--ink-2); border-radius: 12px; padding: 14px; border-top: 3px solid oklch(0.72 0.12 var(--h)); }
+.tcp-node span { display: block; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; font-weight: 700; color: oklch(0.72 0.12 var(--h)); }
+.tcp-node b { display: block; font-family: var(--serif); font-weight: 400; font-size: 18px; color: var(--on-ink); margin-top: 4px; }
+.tcp-dark {
+  resize: vertical; border: 1px solid var(--ink-line); border-radius: 12px; background: var(--ink-2);
+  color: var(--on-ink); padding: 12px 14px; font: 14px/1.5 var(--sans); width: 100%; box-sizing: border-box;
+}
+.tcp-dark:focus { border-color: var(--accent-hot); }
+.tcp-dark::placeholder { color: var(--on-ink-faint); }
+
+/* ── Проблемы (цитата) ── */
+.tcp-quote { display: grid; grid-template-columns: 44px 1fr; gap: 8px; padding: 20px 22px; border-radius: 16px; }
+.tcp-quote-mark { font-family: var(--serif); font-size: 60px; line-height: .8; color: var(--accent-hot); }
+.tcp-quote-ta { resize: vertical; border: none; background: transparent; padding: 0; width: 100%; box-sizing: border-box; color: var(--text); font: italic 19px/1.5 var(--serif); }
+
+@media (max-width: 767px) {
+  .tcp-fields { gap: 40px; }
+  .tcp-sec-n { font-size: 36px; }
+  .tcp-sec-title { font-size: 24px; }
+  .tcp-sec-head { gap: 12px; }
+  .tcp-timeline { grid-template-columns: 1fr; gap: 10px; }
+  .tcp-timeline::before { display: none; }
+  .tcp-period { flex-direction: row; align-items: center; gap: 10px; }
+  .tcp-period b { margin-top: 0; }
+  .tcp-chain-item { flex-direction: column; align-items: stretch; }
+  .tcp-arrow { transform: rotate(90deg); align-self: center; }
+  .tcp-quote { grid-template-columns: 1fr; }
+  .tcp-quote-mark { height: 32px; }
+}
+
+/* ── Шапка вкладки ── */
+.tcp-head { align-items: flex-end; margin-bottom: 28px; }
+.tcp-head-actions { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.tcp-save { font-size: 12px; color: var(--text-faint); min-width: 110px; text-align: right; }

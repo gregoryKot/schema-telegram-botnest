@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type { TherapyClientSummary } from '../../api';
-import { filterRoster, sortRoster, meetingLabel, clientSubline } from './rosterModel';
+import { SCHEMA_DOMAINS } from '../../schemaTherapyData';
+import { filterRoster, sortRoster, meetingLabel, clientCaption, clientStatus, domainBar, schemaChips, rosterName, rosterInitials } from './rosterModel';
 
 const TODAY = '2026-10-03';
 
@@ -131,7 +132,7 @@ describe('meetingLabel', () => {
   });
 });
 
-describe('clientSubline', () => {
+describe('clientCaption', () => {
   beforeEach(() => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-10-03T06:00:00Z'));
@@ -139,44 +140,80 @@ describe('clientSubline', () => {
   afterEach(() => vi.useRealTimers());
 
   it('Telegram-клиент: активен сегодня', () => {
-    expect(clientSubline(client({ lastActiveDate: TODAY }), TODAY)).toBe('активен сегодня');
+    expect(clientCaption(client({ lastActiveDate: TODAY }), TODAY)).toBe('активен сегодня');
   });
 
   it('Telegram-клиент: был недавно + стрик', () => {
-    expect(clientSubline(client({ lastActiveDate: '2026-10-01', streak: 4 }), TODAY)).toBe(
+    expect(clientCaption(client({ lastActiveDate: '2026-10-01', streak: 4 }), TODAY)).toBe(
       'был недавно · стрик 4 дн.',
     );
   });
 
   it('Telegram-клиент: не активен, без стрика', () => {
-    expect(clientSubline(client({}), TODAY)).toBe('не активен');
+    expect(clientCaption(client({}), TODAY)).toBe('не активен');
   });
 
-  it('офлайн без даты начала — просто «оффлайн»', () => {
-    expect(clientSubline(offline(), TODAY)).toBe('оффлайн');
+  it('офлайн без даты начала — подписи нет', () => {
+    expect(clientCaption(offline(), TODAY)).toBeNull();
   });
 
-  it('офлайн: срок работы', () => {
-    expect(clientSubline(offline({ therapyStartDate: '2026-07-03' }), TODAY)).toBe(
-      'оффлайн · в работе 3 месяца',
-    );
-    expect(clientSubline(offline({ therapyStartDate: '2026-10-01' }), TODAY)).toBe(
-      'оффлайн · в работе 2 дня',
-    );
+  it('срок работы', () => {
+    expect(clientCaption(offline({ therapyStartDate: '2026-07-03' }), TODAY)).toBe('в работе 3 месяца');
+    expect(clientCaption(offline({ therapyStartDate: '2026-10-01' }), TODAY)).toBe('в работе 2 дня');
   });
 
-  it('офлайн, начали сегодня', () => {
-    expect(clientSubline(offline({ therapyStartDate: TODAY }), TODAY)).toBe(
-      'оффлайн · с сегодняшнего дня',
-    );
+  it('начали сегодня', () => {
+    expect(clientCaption(offline({ therapyStartDate: TODAY }), TODAY)).toBe('с сегодняшнего дня');
   });
 
   it('офлайн: стрик и активность не показываются, даже если поля заполнены', () => {
-    const c = offline({ streak: 5, lastActiveDate: TODAY });
-    expect(clientSubline(c, TODAY)).toBe('оффлайн');
+    expect(clientCaption(offline({ streak: 5, lastActiveDate: TODAY }), TODAY)).toBeNull();
   });
 
-  it('офлайн с непарсящейся датой начала — просто «оффлайн»', () => {
-    expect(clientSubline(offline({ therapyStartDate: 'мусор' }), TODAY)).toBe('оффлайн');
+  it('офлайн с непарсящейся датой начала — подписи нет', () => {
+    expect(clientCaption(offline({ therapyStartDate: 'мусор' }), TODAY)).toBeNull();
+  });
+});
+
+describe('clientStatus', () => {
+  it('Telegram-клиент — в боте', () => {
+    expect(clientStatus(client({}))).toEqual({ label: 'в боте', inBot: true });
+  });
+  it('офлайн по отрицательному id, а не по name', () => {
+    expect(clientStatus(offline())).toEqual({ label: 'оффлайн', inBot: false });
+  });
+});
+
+describe('domainBar / schemaChips', () => {
+  const [d1, d2] = SCHEMA_DOMAINS;
+  const ids = [d2.schemas[0].id, d1.schemas[0].id, d1.schemas[1].id, 'unknown'];
+
+  it('сегменты в порядке доменов, count = число схем клиента в домене', () => {
+    expect(domainBar(ids)).toEqual([
+      { domainId: d1.id, count: 2 },
+      { domainId: d2.id, count: 1 },
+    ]);
+  });
+
+  it('нет схем — нет сегментов', () => {
+    expect(domainBar([])).toEqual([]);
+  });
+
+  it('чипы: все известные схемы по доменам, неизвестные id пропущены', () => {
+    const chips = schemaChips(ids);
+    expect(chips.map((c) => c.id)).toEqual([d1.schemas[0].id, d1.schemas[1].id, d2.schemas[0].id]);
+    expect(chips[0]).toEqual({ id: d1.schemas[0].id, name: d1.schemas[0].name, domainId: d1.id });
+  });
+});
+
+describe('rosterName / rosterInitials', () => {
+  it('алиас важнее имени, без обоих — ID', () => {
+    expect(rosterName(client({ clientAlias: 'А.К.', name: 'Аня' }))).toBe('А.К.');
+    expect(rosterName(client({ name: null }))).toBe('ID 1');
+  });
+  it('инициалы: две буквы, пустое имя — «?»', () => {
+    expect(rosterInitials('анна к.')).toBe('АК');
+    expect(rosterInitials('Борис')).toBe('Б');
+    expect(rosterInitials('  ')).toBe('?');
   });
 });
