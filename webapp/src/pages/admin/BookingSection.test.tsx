@@ -158,6 +158,31 @@ describe('BookingSection — цены сессий', () => {
     expect(mockApi.adminSetPrice).toHaveBeenCalledWith('k', 'SESSION_50', 3500);
   });
 
+  // Аудит 2026-10-11: очищенное поле превращалось в Math.max(0, Math.round(Number('')))
+  // = 0 и уходило на сервер — платная сессия за 0 ₽.
+  it.each(['', '0', '-5', '1e22'])('поле цены сессии = "%s": «Сохранить» неактивна, adminSetPrice не вызывается', async (typed) => {
+    render(<BookingSection adminKey="k" />);
+    fireEvent.change(await screen.findByDisplayValue('3000'), { target: { value: typed } });
+    const save = within(section('Цены')).getByRole('button', { name: 'Сохранить' }) as HTMLButtonElement;
+    expect(save.disabled).toBe(true);
+    fireEvent.click(save);
+    expect(mockApi.adminSetPrice).not.toHaveBeenCalled();
+    expect(within(section('Цены')).getByText(/Сумма — целое число от 1 до/)).toBeTruthy();
+  });
+
+  it('контроль: после исправления поля кнопка снова работает и шлёт введённую сумму', async () => {
+    mockApi.adminSetPrice.mockResolvedValue({ ok: true });
+    render(<BookingSection adminKey="k" />);
+    const field = await screen.findByDisplayValue('3000');
+    fireEvent.change(field, { target: { value: '' } });
+    fireEvent.change(field, { target: { value: '1' } });
+    const save = within(section('Цены')).getByRole('button', { name: 'Сохранить' }) as HTMLButtonElement;
+    expect(save.disabled).toBe(false);
+    fireEvent.click(save);
+    await screen.findByText('Цена сохранена ✓');
+    expect(mockApi.adminSetPrice).toHaveBeenCalledWith('k', 'SESSION_50', 1);
+  });
+
   it('таймер сброса «✓» чистится при анмаунте (регресс: setState после снятия компонента ронял CI «window is not defined»)', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     try {
@@ -194,6 +219,25 @@ describe('BookingSection — цены подписки', () => {
     render(<BookingSection adminKey="k" />);
     await screen.findByDisplayValue('5000');
     expect(screen.getByDisplayValue('50000')).toBeTruthy();
+  });
+
+  // Раньше из пустого поля подписка сохранялась за 1 ₽ (Math.max(1, …)).
+  it.each(['', '0', '1e22'])('поле цены подписки = "%s": «Сохранить» неактивна, adminSetSubPrice не вызывается', async (typed) => {
+    render(<BookingSection adminKey="k" />);
+    fireEvent.change(await screen.findByDisplayValue('5000'), { target: { value: typed } });
+    const [save] = within(section('Подписка')).getAllByRole('button', { name: 'Сохранить' }) as HTMLButtonElement[];
+    expect(save.disabled).toBe(true);
+    fireEvent.click(save);
+    expect(mockApi.adminSetSubPrice).not.toHaveBeenCalled();
+  });
+
+  it('контроль: корректная сумма подписки уходит как есть', async () => {
+    mockApi.adminSetSubPrice.mockResolvedValue({ ok: true });
+    render(<BookingSection adminKey="k" />);
+    fireEvent.change(await screen.findByDisplayValue('5000'), { target: { value: '600' } });
+    fireEvent.click(within(section('Подписка')).getAllByRole('button', { name: 'Сохранить' })[0]);
+    await screen.findByText('Цена сохранена ✓');
+    expect(mockApi.adminSetSubPrice).toHaveBeenCalledWith('k', 'month', 600);
   });
 
   it('ошибка сохранения подписки — видна, «сохранена» не показывается (регресс: раньше save() был без try/catch — необработанный промис, ноль обратной связи)', async () => {
