@@ -54,17 +54,17 @@ health_wait() {
 
 # Имена переменных бэкапов — те же, что в src/infra/backup-config.ts
 # (BACKUP_REQUIRED_ENV_VARS); сверка — src/infra/vps-ops.spec.ts. На VPS
-# `pgdata` — единственная копия базы, поэтому приложение без бэкапов в B2 не
+# `pgdata` — единственная копия базы, поэтому приложение без бэкапов в R2 не
 # стартует (аудит 2026-10, infra#11). Смотрим только имена: значения в вывод
 # не попадают, логи Actions публичны.
-BACKUP_ENV_NAMES=(B2_KEY_ID B2_APP_KEY B2_BUCKET BACKUP_ENCRYPTION_KEY)
+BACKUP_ENV_NAMES=(BACKUP_S3_ENDPOINT BACKUP_S3_BUCKET BACKUP_S3_ACCESS_KEY_ID BACKUP_S3_SECRET_ACCESS_KEY BACKUP_ENCRYPTION_KEY)
 
 require_backup_env() {
   local name missing=""
   for name in "${BACKUP_ENV_NAMES[@]}"; do
     grep -Eq "^${name}=[[:space:]]*[^[:space:]]" .env || missing="$missing $name"
   done
-  [ -z "$missing" ] || die "в .env (секрет PROD_ENV) не заданы:$missing. На VPS база лежит только на диске сервера, без бэкапов в B2 приложение не запускается. Заведите бакет и ключи (docs/MIGRATION_VPS.md, шаг до переключения DNS), обновите PROD_ENV и повторите"
+  [ -z "$missing" ] || die "в .env (секрет PROD_ENV) не заданы:$missing. На VPS база лежит только на диске сервера, без бэкапов в R2 приложение не запускается. Заведите бакет и API-токен Cloudflare R2 (docs/MIGRATION_VPS.md, шаг до переключения DNS), обновите PROD_ENV и повторите"
 }
 
 start_app() {

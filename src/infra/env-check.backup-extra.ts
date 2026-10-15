@@ -16,7 +16,7 @@ export const BACKUP_EXTRA_CROSS_CHECKS: CrossCheck[] = [
       const missing = missingBackupVars(env);
       return missing.length === 0
         ? null
-        : 'на VPS (DEPLOY_TARGET=vps) бэкапы в B2 обязательны — единственная ' +
+        : 'на VPS (DEPLOY_TARGET=vps) бэкапы в R2 обязательны — единственная ' +
             `копия базы лежит на диске сервера; не задано: ${missing.join(', ')}`;
     },
   },

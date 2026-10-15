@@ -4,6 +4,7 @@
 // этом сообщить — см. env-check-boot-log.spec.ts), неверный формат,
 // кросс-проверки.
 import { checkEnv } from './env-check';
+import { BACKUP_REQUIRED_ENV_VARS } from './backup-config';
 
 // Минимальный набор, закрывающий все requiredInProd:true записи реестра —
 // иначе checkEnv(ALL_VALID) сообщал бы о «missing» не из-за теста, а из-за
@@ -164,19 +165,25 @@ describe('checkEnv', () => {
         checkEnv({ ...ALL_VALID, ...env }, mode).crossCheckIssues.map(
           (i) => i.id,
         );
-      const FULL_B2 = {
-        B2_BUCKET: 'bkt',
-        B2_KEY_ID: 'k',
-        B2_APP_KEY: 'a',
+      // Значения валидны по формату реестра; имена — из единственного
+      // источника, а не литералами.
+      const FORMAT_OK: Record<string, string> = {
+        BACKUP_S3_ENDPOINT: 'https://acc.r2.cloudflarestorage.com',
+        BACKUP_S3_BUCKET: 'bkt',
+        BACKUP_S3_ACCESS_KEY_ID: 'k',
+        BACKUP_S3_SECRET_ACCESS_KEY: 'a',
         BACKUP_ENCRYPTION_KEY: 'Zq8vK3mR7tYw2LpX9cB4nH6jD1sFgA5e',
       };
+      const FULL_BACKUP: Record<string, string> = Object.fromEntries(
+        BACKUP_REQUIRED_ENV_VARS.map((n) => [n, FORMAT_OK[n]]),
+      );
 
-      it('DEPLOY_TARGET=vps в production без B2_* — проблема с именами всех четырёх', () => {
+      it('DEPLOY_TARGET=vps в production без бэкапов — проблема с именами всех пяти', () => {
         const issue = checkEnv(
           { ...ALL_VALID, DEPLOY_TARGET: 'vps' },
           'production',
         ).crossCheckIssues.find((i) => i.id === 'vpsRequiresBackups');
-        for (const name of Object.keys(FULL_B2)) {
+        for (const name of BACKUP_REQUIRED_ENV_VARS) {
           expect(issue?.problem).toContain(name);
         }
       });
@@ -185,18 +192,18 @@ describe('checkEnv', () => {
         const issue = checkEnv(
           {
             ...ALL_VALID,
-            ...FULL_B2,
+            ...FULL_BACKUP,
             DEPLOY_TARGET: 'vps',
-            B2_APP_KEY: undefined,
+            BACKUP_S3_SECRET_ACCESS_KEY: undefined,
           },
           'production',
         ).crossCheckIssues.find((i) => i.id === 'vpsRequiresBackups');
-        expect(issue?.problem).toContain('B2_APP_KEY');
-        expect(issue?.problem).not.toContain('B2_BUCKET');
+        expect(issue?.problem).toContain('BACKUP_S3_SECRET_ACCESS_KEY');
+        expect(issue?.problem).not.toContain('BACKUP_S3_BUCKET');
       });
 
-      it('контроль: vps с полным набором, Amvera без B2, vps вне production — без проблемы', () => {
-        expect(ids({ DEPLOY_TARGET: 'vps', ...FULL_B2 })).not.toContain(
+      it('контроль: vps с полным набором, Amvera без бэкапов, vps вне production — без проблемы', () => {
+        expect(ids({ DEPLOY_TARGET: 'vps', ...FULL_BACKUP })).not.toContain(
           'vpsRequiresBackups',
         );
         expect(ids({})).not.toContain('vpsRequiresBackups');

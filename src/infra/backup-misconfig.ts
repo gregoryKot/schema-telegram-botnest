@@ -7,7 +7,7 @@ import { isVpsTarget } from './deploy-target';
 
 type Env = Record<string, string | undefined>;
 
-/** null — настроены полностью, можно идти в B2. */
+/** null — настроены полностью, можно идти в R2. */
 export function backupMisconfigResult(
   env: Env,
 ): { ok: boolean; detail: string } | null {

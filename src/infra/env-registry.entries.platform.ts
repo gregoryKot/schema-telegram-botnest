@@ -9,8 +9,8 @@ export const PLATFORM_ENV_ENTRIES: EnvVarSpec[] = [
     name: 'DEPLOY_TARGET',
     purpose:
       'Площадка: «vps» (задаёт deploy/vps/docker-compose.yml) — там pgdata ' +
-      'единственная копия базы, и бэкапы в B2 обязательны; не задана или ' +
-      '«amvera» — бэкапы платформы, B2 по желанию.',
+      'единственная копия базы, и бэкапы в R2 обязательны; не задана или ' +
+      '«amvera» — бэкапы платформы, R2 по желанию.',
     requiredInProd: false,
     format: formats.oneOf([...DEPLOY_TARGETS]),
     group: 'infra',

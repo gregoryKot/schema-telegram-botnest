@@ -50,7 +50,7 @@ services:
       - path: .env
         format: raw
     environment:
-      # Признак площадки: на VPS бэкапы в B2 обязательны (src/infra/deploy-target.ts).
+      # Признак площадки: на VPS бэкапы в R2 обязательны (src/infra/deploy-target.ts).
       DEPLOY_TARGET: vps
       # Адрес базы здесь, а не в PROD_ENV: там лежит прежний адрес Amvera, и
       # молча брать его нельзя. environment сильнее env_file.

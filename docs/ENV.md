@@ -114,14 +114,15 @@
 | `BACKUP_S3_REGION` | опциональна | nonEmpty | Регион в подписи запросов к хранилищу — по умолчанию auto (так требует R2); менять только при переезде на другое S3-хранилище. |
 | `BACKUP_S3_SECRET_ACCESS_KEY` | опциональна | accessKey | Secret Access Key API-токена R2 — вместе с BACKUP_S3_ACCESS_KEY_ID, BACKUP_S3_ENDPOINT, BACKUP_S3_BUCKET и BACKUP_ENCRYPTION_KEY включает бэкапы БД. |
 | `DATABASE_URL` | **обязательна** | nonEmpty | Строка подключения к Postgres — без неё Prisma не подключается, приложение не работает. |
-| `DEPLOY_TARGET` | опциональна | oneOf(amvera, vps) | Площадка: «vps» (задаёт deploy/vps/docker-compose.yml) — там pgdata единственная копия базы, и бэкапы в B2 обязательны; не задана или «amvera» — бэкапы платформы, B2 по желанию. |
+| `DEPLOY_TARGET` | опциональна | oneOf(amvera, vps) | Площадка: «vps» (задаёт deploy/vps/docker-compose.yml) — там pgdata единственная копия базы, и бэкапы в R2 обязательны; не задана или «amvera» — бэкапы платформы, R2 по желанию. |
 | `SITE_URL` | опциональна | url | Адрес сайта для ссылок в уведомлениях о записи — дефолт kotlarewski.gr. |
 | `SUBSCRIPTION_ENABLED` | опциональна | oneOf(true, false) | «true» включает автосписание подписки — выключено, пока автосписание не готово. |
 | `WEBAPP_URL` | **обязательна** | httpsUrl | Публичный адрес сайта (schemehappens.ru) — на нём строится колбэк OAuth и фронтенд-редиректы; без него вход через сайт не работает. |
 
-**На VPS четыре переменные бэкапов обязательны.** `B2_KEY_ID`, `B2_APP_KEY`,
-`B2_BUCKET`, `BACKUP_ENCRYPTION_KEY` в таблице «опциональна», потому что на Amvera
-копии делает платформа. Когда `DEPLOY_TARGET=vps`, их отсутствие: `ops.sh`
+**На VPS пять переменных бэкапов обязательны.** `BACKUP_S3_ENDPOINT`,
+`BACKUP_S3_BUCKET`, `BACKUP_S3_ACCESS_KEY_ID`, `BACKUP_S3_SECRET_ACCESS_KEY`,
+`BACKUP_ENCRYPTION_KEY` в таблице «опциональна», потому что на Amvera копии делает
+платформа. `BACKUP_S3_REGION` и `BACKUP_RETENTION_DAYS` необязательны и на VPS. Когда `DEPLOY_TARGET=vps`, их отсутствие: `ops.sh`
 (`deploy`, `release-hold`) отказывается запускать приложение и называет недостающие
 имена; `checkEnv` в production даёт `error` владельцу в DM и строку в блоке
 «Переменные» `/stats`; проба `backupFreshness` отвечает `ok: false`. `DEPLOY_TARGET`
