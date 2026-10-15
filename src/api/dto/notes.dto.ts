@@ -5,19 +5,19 @@ import {
   IsString,
   MaxLength,
 } from 'class-validator';
+import { DAY_NOTE_MAX } from '../../utils/text-limits';
 
 /**
  * DTO для POST /api/note, /api/schema-notes, /api/mode-notes
- * (аудит 2026-07, 2г / правило №6 CLAUDE.md). Формат `date`
- * (YYYY-MM-DD) и `schemaId`/`modeId` (`[a-z_]{1,64}`) уже проверяются
- * вручную в контроллере — regex не дублируем.
+ * (аудит 2026-07, 2г / правило №6 CLAUDE.md). `date` (YYYY-MM-DD) и
+ * `schemaId`/`modeId` (`[a-z_]{1,64}`) проверяются в контроллере вручную.
  */
 export class SaveNoteDto {
   @IsString()
   date!: string;
 
   @IsString()
-  @MaxLength(10000)
+  @MaxLength(DAY_NOTE_MAX)
   text!: string;
 
   @IsOptional()

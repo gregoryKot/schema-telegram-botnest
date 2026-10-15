@@ -36,10 +36,10 @@ export class BookingController {
       return { ok: true }; // silent — validation on frontend
     }
 
-    const n = escapeHtml(name.slice(0, 100).trim());
-    const c = escapeHtml(contact.slice(0, 100).trim());
-    const m = message?.trim() ? escapeHtml(message.slice(0, 500).trim()) : null;
-    const src = source?.trim() ? source.trim().slice(0, 200) : null;
+    const n = escapeHtml(name.trim());
+    const c = escapeHtml(contact.trim());
+    const m = message?.trim() ? escapeHtml(message.trim()) : null;
+    const src = source?.trim() ? source.trim() : null;
     const label = contactLabelOr(channel, 'Контакт');
 
     const tgText = [

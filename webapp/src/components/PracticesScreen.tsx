@@ -1,4 +1,5 @@
 import { buildPracticesIntro } from '../../../shared/src/onboarding/onboardingExplainers';
+import { PRACTICE_TEXT_MAX } from '../../../shared/src/limits/textLimits';
 import { useState, useEffect, useCallback } from 'react';
 import { api } from '../api';
 import type { UserPractice } from '../api';
@@ -11,7 +12,6 @@ import { useNeedData } from '../needData';
 import { pressable } from '../utils/a11y';
 import { detectCrisisAny } from '../utils/crisisMarkers';
 import { CrisisCard } from './CrisisCard';
-
 const NEED_IDS = ['attachment', 'autonomy', 'expression', 'play', 'limits'];
 const NEED_NAMES: Record<string, string> = {
   attachment: 'Привязанность', autonomy: 'Автономия',
@@ -178,7 +178,7 @@ export function PracticesScreen({ onClose, onOpenTracker }: Props) {
               onChange={e => setInput(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter') handleAdd(); }}
               placeholder="Добавить практику..."
-              maxLength={200}
+              maxLength={PRACTICE_TEXT_MAX}
               className="input"
               style={{ flex: 1 }}
             />

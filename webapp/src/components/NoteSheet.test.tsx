@@ -5,6 +5,7 @@ import { render, screen, fireEvent, act, cleanup, waitFor } from '@testing-libra
 import { MemoryRouter } from 'react-router-dom';
 import { NoteSheet } from './NoteSheet';
 import { CRISIS_HOTLINE_DISPLAY } from '../utils/crisisMarkers';
+import { DAY_NOTE_MAX } from '../../../shared/src/limits/textLimits';
 
 vi.mock('../api', () => ({
   api: {
@@ -101,5 +102,18 @@ describe('NoteSheet — сохранение', () => {
     await screen.findByText('Не удалось сохранить. Попробуй ещё раз.');
     // Лист не закрылся — текст всё ещё в textarea.
     expect((screen.getByPlaceholderText('Что происходило сегодня? Любая мысль...') as HTMLTextAreaElement).value).toBe('заметка');
+  });
+});
+
+// backend#29: предел заметки дня один (DAY_NOTE_MAX = @MaxLength в DTO) — поле
+// его знает и показывает «N/предел», а не молча отдаёт серверу лишнее.
+describe('NoteSheet — предел длины', () => {
+  it('textarea.maxLength = предел из shared, счётчик «N/предел» виден с первого знака', async () => {
+    await act(async () => { renderSheet(); });
+    const textarea = screen.getByPlaceholderText('Что происходило сегодня? Любая мысль...') as HTMLTextAreaElement;
+    expect(textarea.maxLength).toBe(DAY_NOTE_MAX);
+    expect(screen.getByText(`0/${DAY_NOTE_MAX}`)).toBeTruthy();
+    fireEvent.change(textarea, { target: { value: 'три' } });
+    expect(screen.getByText(`3/${DAY_NOTE_MAX}`)).toBeTruthy();
   });
 });
