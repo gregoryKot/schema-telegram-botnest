@@ -129,7 +129,6 @@ const REGISTRY: Record<string, string> = {
   'components/booking/BookingCancelControl.tsx': 'токен только в вызове API, в DOM нет — тест выше',
   'pages/BookingPaidPage.tsx': 'рендерит — тест выше',
   'components/BookingPicker.tsx': 'держит секреты в state и отдаёт экранам выше; сам их не рисует',
-  'pages/admin/BookingSection.tsx': 'админка: корень AdminPage несёт ym-hide-content (AdminPage.test.tsx)',
   'pages/DonatePage.tsx': 'paymentUrl только для window.location.href, в DOM нет',
   'pages/SubscribePage.tsx': 'paymentUrl только для window.location.href, в DOM нет',
   'api.ts': 'клиент API: типы и запросы, DOM нет',
