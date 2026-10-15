@@ -11,6 +11,7 @@ import { SlotsLoadingNote } from './booking/SlotsLoadingNote';
 import { IntroConfirmNotice } from './booking/IntroConfirmNotice';
 import { ReturningVisitField } from './booking/ReturningVisitField';
 import { RequestField } from './booking/RequestField';
+import { BOOKING_SLOT_MESSAGE_MAX } from '../../../shared/src/limits/textLimits';
 import { FIELD_HINTS, type InvalidField } from './booking/fieldHints';
 import { ContactChannelField } from './booking/ContactChannelField';
 import type { ContactChannel } from '../../../shared/src/booking/contactChannel';
@@ -20,7 +21,6 @@ import { localDayLabel, localTimeLabel, submitTimeSuffix } from '../../../shared
 
 const dayKeyFmt = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Moscow', year: 'numeric', month: '2-digit', day: '2-digit' });
 const dayKey = (iso: string) => dayKeyFmt.format(new Date(iso));
-
 const field: React.CSSProperties = {
   width: '100%', padding: '14px 16px', fontSize: 15, background: 'rgba(var(--fg-rgb),0.04)', border: '1.5px solid var(--line)',
   borderRadius: 'var(--r-12)', color: 'var(--text)', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box',
@@ -102,12 +102,12 @@ export function BookingPicker({ fallback, onWriteInstead, lockedType, compact = 
     return <>{fallback}</>;
   }
 
-  if (status === 'await_payment') return <AwaitPaymentScreen resultRef={resultRef} slot={slot} tz={tz} chosen={chosen} payUrl={payUrl} />;
+  if (status === 'await_payment') return <AwaitPaymentScreen resultRef={resultRef} slot={slot} tz={tz} chosen={chosen} payUrl={payUrl} message={message} />;
   if (status === 'payment_fail') return <PaymentFailScreen resultRef={resultRef} onRetry={() => setStatus('idle')} />;
   if (status === 'done') return (
     <DoneScreen
       resultRef={resultRef} slot={slot} tz={tz} cancelled={cancelled} meetingUrl={meetingUrl} cancelToken={cancelToken}
-      sessionType={sessionType} onCancelled={() => setCancelled(true)}
+      sessionType={sessionType} onCancelled={() => setCancelled(true)} message={message}
     />
   );
 
@@ -232,7 +232,7 @@ export function BookingPicker({ fallback, onWriteInstead, lockedType, compact = 
           {sessionType === 'SESSION_50' && !compact && (
             <ReturningVisitField returning={returning} onChange={(v) => { setReturning(v); if (status === 'not_found') setStatus('idle'); }} />
           )}
-          {!compact && <RequestField value={message} onChange={setMessage} labelStyle={labelSt} fieldStyle={field} />}
+          {!compact && <RequestField value={message} onChange={setMessage} labelStyle={labelSt} fieldStyle={field} max={BOOKING_SLOT_MESSAGE_MAX} />}
           <label style={{ display: 'flex', alignItems: 'flex-start', gap: 'var(--space-10)', cursor: 'pointer' }}>
             <input
               type="checkbox" ref={consentRef} checked={consent}

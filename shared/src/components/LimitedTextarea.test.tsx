@@ -71,4 +71,31 @@ describe('LimitedTextarea', () => {
     render(<LimitedTextarea ref={ref} max={50} value="" onChange={() => {}} />);
     expect(ref.current?.tagName).toBe('TEXTAREA');
   });
+
+  it('aria-describedby ведёт на счётчик, пока он виден, и сохраняет чужой describedby', () => {
+    const { container, rerender } = render(
+      <LimitedTextarea
+        id="f"
+        aria-describedby="hint"
+        max={200}
+        value="абв"
+        onChange={() => {}}
+      />,
+    );
+    const area = container.querySelector('textarea')!;
+    expect(area.getAttribute('aria-describedby')).toBe('hint');
+    rerender(
+      <LimitedTextarea
+        id="f"
+        aria-describedby="hint"
+        max={200}
+        value={'а'.repeat(190)}
+        onChange={() => {}}
+      />,
+    );
+    expect(area.getAttribute('aria-describedby')).toBe('hint f-limit');
+    expect(container.querySelector('#f-limit')?.textContent).toContain(
+      'Осталось знаков: 10',
+    );
+  });
 });

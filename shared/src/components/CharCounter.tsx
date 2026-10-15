@@ -14,17 +14,21 @@ export function CharCounter({
   max,
   marginTop = 6,
   always = false,
+  id,
 }: {
   length: number;
   max: number;
   marginTop?: number;
   /** Показывать «N/предел» с первого знака — для коротких полей. */
   always?: boolean;
+  /** id блока — на него ссылается `aria-describedby` поля. */
+  id?: string;
 }) {
   const state = charCounterState(length, max, always);
   if (!state) return null;
   return (
     <div
+      id={id}
       aria-live={state.atLimit ? 'polite' : 'off'}
       style={{
         fontSize: 12,

@@ -22,3 +22,4 @@ export const BOOKING_NAME_MAX = 100; // заявка с сайта: имя
 export const BOOKING_CONTACT_MAX = 100; // заявка с сайта: контакт
 export const BOOKING_MESSAGE_MAX = 500; // заявка с сайта: запрос
 export const BOOKING_SOURCE_MAX = 200; // заявка с сайта: откуда (leadSource())
+export const BOOKING_SLOT_MESSAGE_MAX = 2000; // запись на слот (/api/booking/book): запрос

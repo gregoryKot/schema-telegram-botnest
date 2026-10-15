@@ -11,6 +11,7 @@ export const SESSION_NOTE_MAX = 10000; // заметка терапевта по
 export const DAY_NOTE_MAX = 500; // заметка к дню в трекере (счётчик «N/500» в обоих фронтах)
 export const DIARY_FIELD_MAX = 10000; // поле записи дневника / пункт благодарности
 export const PRACTICE_TEXT_MAX = 200; // своя практика в плане
+export const BOOKING_SLOT_MESSAGE_MAX = 2000; // запись на слот (/api/booking/book): запрос
 export const MODE_MAP_TITLE_MAX = 120; // название карты режимов
 export const CUSTOM_MODE_NAME_MAX = 80; // название своего режима на карте
 export const CUSTOM_MODE_EMOJI_MAX = 8; // значок своего режима

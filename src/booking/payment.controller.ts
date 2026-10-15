@@ -11,9 +11,9 @@ import {
 } from '@nestjs/common';
 import type { Response } from 'express';
 import { ConfigService } from '@nestjs/config';
-import { ConflictException } from '@nestjs/common';
 import { RobokassaService } from './robokassa.service';
-import { BookingService, PaymentAmountMismatchError } from './booking.service';
+import { BookingService } from './booking.service';
+import { bookingWebhookReply } from './payment.booking-webhook';
 import { BookingNotifyService } from './booking-notify.service';
 import { DonationService } from '../donation/donation.service';
 import { SubscriptionService } from '../subscription/subscription.service';
@@ -110,34 +110,12 @@ export class PaymentController {
       return `OK${invId}`;
     }
 
-    try {
-      await this.booking.confirm(id, paid);
-    } catch (e) {
-      // Amount mismatch is NOT a benign repeat — do not ack money we didn't
-      // verify as correct. BookingService.confirm already alerted the admin;
-      // FAIL keeps Robokassa retrying/visible instead of silently swallowing
-      // a potential fraud/misconfig case (see CLAUDE.md «Аудит-события»).
-      if (e instanceof PaymentAmountMismatchError) {
-        this.logger.warn(`Confirm booking ${id}: ${(e as Error).message}`);
-        return `FAIL${invId}`;
-      }
-      // Already confirmed/cancelled → benign double-delivery, ack so Robokassa stops.
-      if (e instanceof ConflictException) {
-        this.logger.warn(`Confirm booking ${id}: ${(e as Error).message}`);
-        return `OK${invId}`;
-      }
-      // Real failure: the client PAID but the booking didn't confirm. Alert loudly
-      // and return FAIL so Robokassa retries later.
-      this.logger.error(
-        `PAID but confirm failed for booking ${id}: ${(e as Error).message}`,
-      );
-      await this.notify.alertAdmin(
-        `🚨 <b>Оплата прошла, но бронь #${id} не подтвердилась</b>\n${(e as Error).message}\nПроверьте вручную в админке.`,
-      );
-      return `FAIL${invId}`;
-    }
-
-    return `OK${invId}`;
+    return bookingWebhookReply(
+      { booking: this.booking, notify: this.notify, logger: this.logger },
+      id,
+      invId,
+      paid,
+    );
   }
 
   /**

@@ -218,14 +218,6 @@ export class BotService {
     >;
   }
 
-  async cancelAllPreReminders(): Promise<number> {
-    const result = await this.prisma.scheduledNotification.updateMany({
-      where: { type: 'pre_reminder', sentAt: null, cancelledAt: null },
-      data: { cancelledAt: new Date() },
-    });
-    return result.count;
-  }
-
   async getChildhoodRatings(
     userId: bigint,
   ): Promise<Partial<Record<string, number>>> {
