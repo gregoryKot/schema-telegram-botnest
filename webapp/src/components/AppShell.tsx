@@ -47,10 +47,6 @@ const NAV_ITEMS: { id: Section; label: string }[] = [
 // Desktop sidebar omits Profile — it's accessible via the footer account link
 const SIDEBAR_NAV_ITEMS = NAV_ITEMS.filter(i => i.id !== 'profile');
 
-const SECTION_LABELS: Record<Section, string> = {
-  today: 'Сегодня', diary: 'Дневник', schemas: 'Паттерны', profile: 'Профиль', practice: 'Практика',
-};
-
 export function AppShell() {
   const { logout } = useAuth();
   // Запуск установленного приложения на компьютере приходит сюда (?from=app).
@@ -130,13 +126,6 @@ export function AppShell() {
 
   // Therapist cabinet navigation helpers (URL-based)
   const therapistBackHandlerRef = useRef<() => void>(() => navigate('/cabinet'));
-
-  // Breadcrumbs
-  const breadcrumbs = useMemo(() => {
-    if (therapistMode) return ['Кабинет'];
-    return [SECTION_LABELS[section]];
-  }, [therapistMode, section]);
-
 
   // Global ⌘K + ⌘1–5 section shortcuts
   useEffect(() => {
@@ -239,7 +228,7 @@ export function AppShell() {
   }
 
   return (
-    <div className={`app-shell${therapistMode ? ' light-lock' : ''}`}>
+    <div className="app-shell light-lock">
       {/* ── Sidebar ──────────────────────────────────────────────────────────── */}
       <aside className="sidebar">
         <div className="sb-brand">
@@ -353,19 +342,11 @@ export function AppShell() {
       <div className={`main${therapistMode ? ' main--cabinet' : ''}`}>
         {/* Topbar – shown in all modes */}
         <div className="topbar">
-          {!therapistMode && (
-            <div className="crumbs">
-              {breadcrumbs.map((c, i) => (
-                <span key={i}>
-                  {i > 0 && <span className="sep" style={{ margin: '0 4px' }}>›</span>}
-                  <span className={i === breadcrumbs.length - 1 ? 'now' : ''}>{c}</span>
-                </span>
-              ))}
-            </div>
-          )}
           <div className="t-spacer" />
-          {isOffline && (
-            <span style={{ fontSize: 12, color: 'var(--c-rose)', fontWeight: 500 }}>офлайн</span>
+          {isOffline && <span className="topbar-offline">офлайн</span>}
+          {!therapistMode && (
+            <button className="topbar-sos tone-tint" style={hueStyle(28)}
+                    onClick={() => navigate('/practice', { state: { openFlashcard: true } })}>Мне плохо</button>
           )}
           <button className="search-pill" onClick={() => ov.setCmdOpen(true)}>
             <span>Перейти к…</span>
