@@ -66,7 +66,7 @@
      data-theme на <html>: редизайн кабинетов 2026-10 нарисован только в
      светлой (решение владельца: «тёмная — пока нет»). Ставится на корень
      AppShell (см. AppShell.tsx). Пара в shared/src/theme/tokens.css. */
-  /* ── Backgrounds (палитра редизайна 2026-10, docs/design/README) ─────── */
+  /* ── Backgrounds (палитра редизайна 2026-10, docs/design/REDESIGN_2026-10.md) ─────── */
   --bg:            #f6f2eb;
   --bg-rail:       #efebe1;
   --bg-elev:       #fffdf9;

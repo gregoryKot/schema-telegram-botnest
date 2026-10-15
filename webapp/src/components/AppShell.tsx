@@ -488,7 +488,7 @@ export function AppShell() {
       </div>{/* end main */}
 
       {/* ── Mobile bottom nav ──────────────────────────────────────────────── */}
-      <MobileNav items={NAV_ITEMS} />
+      <MobileNav items={NAV_ITEMS} therapist={therapistMode} onSearch={() => ov.setCmdOpen(true)} />
 
       {/* ── Command palette ─────────────────────────────────────────────────── */}
       {ov.cmdOpen && (
