@@ -50,7 +50,7 @@ export function BecomeTherapistSection() {
       <div style={{ padding: '16px 0', borderBottom: '1px solid rgba(var(--fg-rgb),0.06)' }}>
         {therapistReq?.status === 'pending' ? (
           <div className="u-sub13-lh16">
-            Заявка на рассмотрении. Когда администратор одобрит — придёт уведомление в Telegram.
+            Заявка на рассмотрении. Решение появится здесь.
           </div>
         ) : therapistReq?.status === 'approved' ? (
           <div style={{ fontSize: 13, color: 'var(--accent-green)', lineHeight: 1.6 }}>
@@ -68,7 +68,7 @@ export function BecomeTherapistSection() {
             </p>
             <button onClick={() => setShowReqForm(true)}
               style={{ background: 'none', border: '1px solid rgba(var(--fg-rgb),0.15)', borderRadius: 7, padding: '7px 14px', color: 'var(--text-sub)', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>
-              Подать заявку
+              Я психолог — подать заявку
             </button>
           </div>
         ) : (

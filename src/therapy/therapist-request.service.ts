@@ -164,8 +164,7 @@ export class TherapistRequestService {
     if (!req) throw new NotFoundException('Request not found');
     if (req.status !== 'pending')
       throw new ConflictException(`Request is ${req.status}`);
-    // Явный каст в одном месте — вместо `any`-member-access на каждое
-    // обращение к req.userId ниже (eslint-храповик, правило 9).
+    // bigint как есть: в notifyApplicant он не должен проходить через Number().
     const reqUserId = req.userId;
 
     await this.prisma.$transaction(async (tx) => {
@@ -193,7 +192,7 @@ export class TherapistRequestService {
       requestId,
     });
     this.notify
-      .notifyApplicant(Number(reqUserId), 'approved')
+      .notifyApplicant({ requestId, userId: reqUserId, decision: 'approved' })
       .catch((e: unknown) => this.logger.error('notifyApplicant failed', e));
     this.logger.log(
       `Therapist request ${requestId} approved by admin ${adminId} → user ${reqUserId}`,
@@ -218,8 +217,9 @@ export class TherapistRequestService {
         rejectReason: reason?.slice(0, 500) || null,
       },
     });
+    const { userId } = req;
     this.notify
-      .notifyApplicant(Number(req.userId), 'rejected', reason)
+      .notifyApplicant({ requestId, userId, decision: 'rejected', reason })
       .catch((e: unknown) => this.logger.error('notifyApplicant failed', e));
     this.logger.log(
       `Therapist request ${requestId} rejected by admin ${adminId}`,

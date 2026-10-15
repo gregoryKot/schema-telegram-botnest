@@ -63,6 +63,16 @@ describe('BecomeTherapistSection — статусы заявки', () => {
       />,
     );
     expect(screen.getByText('Заявка отправлена')).toBeTruthy();
+    // Мини-апп бывает и в MAX, где бота Telegram нет, и после отказа не рисует
+    // статус `rejected` (снова кнопка подачи): ни «в боте», ни «появится здесь»
+    // обещать нельзя. Решение приходит сообщением — Telegram, почта или контакты.
+    expect(
+      screen.getByText(
+        'Сообщим о решении в Telegram, на почту или по контактам из заявки.',
+      ),
+    ).toBeTruthy();
+    expect(screen.queryByText(/в боте/)).toBeNull();
+    expect(screen.queryByText(/появится здесь/)).toBeNull();
   });
 
   it('therapistReq.status=approved — показывает «Заявка одобрена»', () => {
