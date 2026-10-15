@@ -5,6 +5,14 @@ import { MMIcon } from './modeMapIcons';
 import { getSchemaById } from '../schemaTherapyData';
 import { TYPE_COLORS } from './modeMapData';
 import { IdentityDot } from '../../../shared/src/components/IdentityDot';
+import {
+  BEHAVIOR_PATH,
+  CRITIC_PATH,
+  PENTA_PATH,
+  SHIELD_PATH,
+  TRIGGER_PATH,
+  scalePath,
+} from '../../../shared/src/modeMap/modeShapes';
 import { useTr } from '../utils/addressForm';
 
 export interface ModeNodeData {
@@ -204,12 +212,6 @@ function NodeLabel({ id, data, light }: { id?: string; data: ModeNodeData; light
 // ── SVG-based shape node — content-hug: the box sizes to the TEXT, the shape (SVG)
 // fills it, so the label is always inside. non-scaling-stroke keeps the border even
 // on any aspect. No fixed size / resizer → text can never overflow the figure.
-// Scale a path string (coords in a base viewBox) to pixel coords (x,y alternating).
-function scalePath(d: string, sx: number, sy: number): string {
-  let i = 0;
-  return d.replace(/-?\d+(\.\d+)?/g, n => (parseFloat(n) * (i++ % 2 === 0 ? sx : sy)).toFixed(2));
-}
-
 function SvgShapeNode({ id, data, selected, color, svgPath, viewBox = '0 0 100 100', textPadding, minW = 116, minH = 64, maxW = 210 }: {
   id: string; data: ModeNodeData; selected?: boolean; color: string;
   svgPath: string; viewBox?: string;
@@ -279,13 +281,6 @@ function makeRectNode(defaultColor: string, radius = 10) {
     );
   };
 }
-
-// ── Named SVG paths (viewBox 0 0 100 100 unless noted) ────────────────────────
-const CRITIC_PATH   = 'M29.3,0 L70.7,0 L100,29.3 L100,70.7 L70.7,100 L29.3,100 L0,70.7 L0,29.3 Z';
-const PENTA_PATH    = 'M50,2 L97.6,36.6 L79.4,92.4 L20.6,92.4 L2.4,36.6 Z';
-const SHIELD_PATH   = 'M4,4 L96,4 L96,62 Q96,78 50,96 Q4,78 4,62 Z';
-const BEHAVIOR_PATH = 'M2,2 L80,2 L98,50 L80,98 L2,98 Z';  // right-pointing tag — outcome
-const TRIGGER_PATH  = 'M18,52 Q4,52 4,40 Q4,30 13,28 Q11,18 21,16 Q23,7 33,8 Q38,3 46,6 Q52,1 60,5 Q70,2 76,10 Q88,9 92,20 Q100,22 100,33 Q100,45 90,47 Q92,52 82,52 Z';
 
 // ── Exported nodes ────────────────────────────────────────────────────────────
 export const CriticModeNode = function CriticModeNode({ id, data, selected }: NodeProps) {

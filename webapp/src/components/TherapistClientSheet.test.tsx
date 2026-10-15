@@ -36,6 +36,7 @@ vi.mock('../api', () => ({
     renameClient: vi.fn(),
     removeClient: vi.fn(),
     createTask: vi.fn(),
+    trackEvent: vi.fn(),
   },
   reportClientError: vi.fn(),
 }));

@@ -37,6 +37,7 @@ import { AuthHealthMetricsService } from './auth-health-metrics.service';
 import { LoginTicketMetricsService } from './login-ticket-metrics.service';
 import { ClientErrorMetricsService } from './client-error-metrics.service';
 import { MoneyMetricsService } from './money-metrics.service';
+import { ConceptGraphMetricsService } from './concept-graph-metrics.service';
 import { NotesService } from './notes.service';
 import { HealthyAdultService } from './healthy-adult.service';
 import { JourneyService } from './journey.service';
@@ -86,6 +87,7 @@ const INTERNAL_PROVIDERS = [
   SiteInstallMetricsService,
   ScreenMetricsService,
   ProfilePatternMetricsService,
+  ConceptGraphMetricsService,
   AuthHealthMetricsService,
   LoginTicketMetricsService,
   ClientErrorMetricsService,

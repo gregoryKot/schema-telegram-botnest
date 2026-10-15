@@ -51,6 +51,31 @@ CLAUDE.md. Не удалять, но и не считать списком за�
 
 Хвосты закрытых планов — то, что не сделано осознанно, а не забыто:
 
+**Графическая концептуализация** (кабинет терапевта, `shared/src/therapy/conceptGraph/`):
+- **Картинкой схема скачивается только на сайте.** В мини-аппе скачивание
+  файла из WebView Telegram ненадёжно, там остаётся текстовый экспорт (связи
+  режимов в него входят). Решили не делать, пока нет способа отдать файл из
+  Telegram без потери.
+- **Предельная концептуализация упрётся в потолок тела запроса.** 40 связей
+  режимов по три поля в 1000 знаков кириллицей плюс семь полей по 5000 дают
+  ~330 КБ при `BODY_LIMIT` 256 КБ (`src/infra/body-limit.ts`) — сохранение
+  ответит 413. Реальная карта (10 режимов) — около 135 КБ. Тот же класс, что
+  край карты режимов там же; лечится не подъёмом общего потолка, а
+  частичным сохранением (слать изменённую связь, а не весь массив).
+- **Склейка `цвет + 'NN'` при рендере — 48 мест, гейт её не видит.** Тот же
+  класс, что «Hex-суффикс альфы к var()» в CLAUDE.md, но
+  `scripts/check-var-alpha-suffix.mjs` ловит только литерал `var(--x)NN`, а
+  `domainColor + '40'` собирается в рантайме. Где цвет приходит из
+  `SCHEMA_DOMAINS`/`MODE_GROUPS` (`var(--accent-*)`), значение невалидно и
+  подложка с рамкой пропадают: `webapp/src/components/SchemaDetailSheet.tsx:91`
+  (`domainEntry.color` из `SCHEMA_DOMAINS`), `webapp/src/components/diary/SchemaChipsStep.tsx:54`,
+  в мини-аппе — `schema-miniapp/src/components/therapistClientSheet/conceptSheet/ConceptHistoryPanel.tsx:116,149`
+  (чипы истории концептуализации).
+  Список: `grep -rnE "\.color \+ '[0-9a-fA-F]{2}'|Color \+ '[0-9a-fA-F]{2}'|\}[0-9a-fA-F]{2}\`" webapp/src schema-miniapp/src shared/src`.
+  В коде концептуализации исправлено вместе с графической концептуализацией.
+  Механизм: расширить гейт на склейку в style-объектах и перевести места на
+  `color-mix`; где цвет — hex, склейка работает, их гейт должен отличать.
+
 **Видимость в ответах нейросетей** ([GEO.md](GEO.md), раздел «Открытое»):
 - **Главная для робота пуста**: `webapp/index.html` отдаёт `<div id="root"></div>`,
   текст лендинга (услуги, цены, FAQ) есть только в JS и JSON-LD. Статьи и
@@ -135,7 +160,7 @@ CLAUDE.md. Не удалять, но и не считать списком за�
   пишет в `test/.jest-cache`). Каждый прогон в CI холодный, шаг «Кэш ts-jest»
   сохраняет пустоту. Чинить: абсолютный путь, `JEST_CACHE_DIR: ${{ github.workspace }}/.jest-cache`;
   после этого устареет комментарий про `src/.jest-cache` в `src/security/collect-source-files.ts:12`.
-  Не сделано в PR про `test/.jest-cache`: правило №20, один PR — одна починка.
+  Не сделано в #680 (снятие `test/.jest-cache` с учёта): правило №20, один PR — одна починка.
 - **Dependabot: доводка бот-PR (процедура и решения владельца).** Конфиг
   `.github/dependabot.yml` теперь покрывает все пять lock-файлов (сверка —
   `src/test-support/gates/dependabot-coverage.spec.ts`), мажоры идут семейными
@@ -768,6 +793,16 @@ CLAUDE.md. Не удалять, но и не считать списком за�
   Завести бакет (`CLIENT_ERROR_SECTIONS`, `KNOWN`, `client-error-metrics.*`),
   когда подписку включат. Сознательно не сделано в починке отмены: правка
   метрик — отдельный PR (правило №20).
+- **Экран управления подпиской открывается только по `?token=…`, а страница
+  обещает прислать ссылку.** `SubscribePage.tsx` пишет «по ссылке, которую мы
+  пришлём, или в настройках». Токен отмены попадает в адрес только из
+  `successUrl` (`src/subscription/subscription.service.ts`), а
+  `src/booking/payment.controller.ts` на редиректе `/subscribe?sub=ok` его не
+  добавляет; письма со ссылкой нет. Есть ли управление подпиской «в
+  настройках», не проверяли. Починить текстом (убрать обещание) либо письмом со
+  ссылкой; решить до включения `SUBSCRIPTION_ENABLED`.
+  [Находка](AUDIT_2026-10_FINDINGS.md#деньги-и-заявки): «Отмена подписки на
+  сайте глотает отказ».
 - Отчёты фронта об ошибках несут только имя источника, без причины:
   `webapp/src/components/appShell/useBootstrapLoad.ts` шлёт
   `appshell bootstrap fail: <имена>`, `shared/src/auth/useLoginTicket.ts` —
@@ -822,7 +857,7 @@ CLAUDE.md. Не удалять, но и не считать списком за�
   (`scripts/mutation-zone-baseline.json`: `refresh-issue`/`refresh-reuse`/
   `magic-link`/`unlink-provider` из `auth.service`, `merge-*` из `merge.service`,
   `booking.{create,checkout,queries}`, `subscription.charges`, `account.delete`
-  и другие). Гейт `check-mutation-zone.mjs` (#614) не даёт выпасть новому,
+  и другие). Гейт `check-mutation-zone.mjs` (#657) не даёт выпасть новому,
   а этим двадцати одному ничего не мешает остаться за кадром: включать их в
   `mutate` по одному вместе с прогоном и полом в бейслайне храповика (прогон
   волны А — десятки минут, поэтому не пачкой). Первыми — `refresh-*` и
@@ -857,6 +892,32 @@ CLAUDE.md. Не удалять, но и не считать списком за�
   --mutate src/therapy/therapy-relations.service.ts`, выжившие — в
   `reports/mutation/golden-auth.html`, вкладка Survived. Пол не снижали
   (правило №15) и не поднимали.
+- **У прод-бота нет `bot.catch`** (`src/telegram/telegram.providers.ts`).
+  Ошибка, вылетевшая из middleware или хендлера мимо его try/catch, уходит в
+  обработчик Telegraf по умолчанию (`node_modules/telegraf/lib/telegraf.js`,
+  `handleError`): он ставит `process.exitCode = 1` и пробрасывает ошибку —
+  цикл поллинга рвётся, `BotLauncher` поднимает его через 5 с с warn, а
+  апдейт с ошибкой не повторяется (offset Telegraf уже сдвинул). Нашлось при
+  разборе ci-alarm #672: тот же обработчик в `telegram.stale-updates.spec.ts`
+  ронял код выхода jest. Не чинилось: нужен решённый ответ, что делать с
+  ошибкой апдейта (лог + алерт, без обрыва поллинга).
+- **PR-CI не ловит тест, оставивший живой хендл.** Джоба `backend` в `ci.yml`
+  гоняет jest воркерами, и утечка там видна только строкой «A worker process
+  has failed to exit gracefully» при зелёном шаге — так поллинг из
+  `telegram.polling.seam.spec.ts` (#649) уехал в `main` и повесил nightly
+  (ci-alarm #672). Ловит её только ночной `backend-flaky` через
+  `scripts/jest-exit-guard.mjs`. Сторож в PR-CI осознанно не поставлен:
+  утечка от гонки проявляется не в каждом прогоне и роняла бы чужие PR как
+  флак. Вернуться, когда `backend-flaky` неделю подряд зелёный (видно по
+  `nightly.yml` в Actions): тогда такая строка в PR-CI укажет на утечку,
+  принесённую самим изменением.
+- **Проверка «спек оставил `process.exitCode`» не подключена к e2e.**
+  `src/test-support/exit-code-leak.setup.ts` стоит в `jest.setupFilesAfterEnv`
+  юнит-спеков, а `test/jest-e2e.json` его не подключает. Проверить подключение
+  можно только прогоном обоих режимов e2e (фейк и живой Postgres, джоба
+  `migrations`): локальный прогон без живой базы краснеет на десятке спеков и
+  ничего не доказывает. Пока e2e с утёкшим кодом выхода краснеет шагом CI без
+  объяснения. Подключить отдельным PR после прогона `live-e2e.py`.
 - `src/infra/vps-ops.spec.ts` флакает под нагрузкой машины: при load average
   15+ на чистом `origin/main` (25233de) один-два теста из 29 падают примерно
   в одном прогоне из трёх («релиз записан, предыдущий сохранён…», «первый
