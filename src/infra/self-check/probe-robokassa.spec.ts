@@ -98,7 +98,7 @@ describe('paymentWebhooksProbe', () => {
     ).run();
     expect(res.ok).toBe(true);
     expect(res.detail).toContain('неподтверждённых попыток нет');
-    expect(res.detail).toContain('с начала учёта оплат не было');
+    expect(res.detail).toContain('с начала учёта 15.10 оплат не было');
     expect(res.detail).not.toMatch(/null|NaN|undefined/);
   });
 
@@ -179,17 +179,48 @@ describe('paymentWebhooksProbe', () => {
     });
   });
 
-  it('попытки до начала учёта paidAt не считаются: старые отменённые брони не красят пробу', async () => {
-    // Фейк отдаёт «пять» только на запросе, чья нижняя граница не позже начала
-    // учёта; как это решает настоящая БД, доказывает e2e на живом Postgres.
-    const prisma = fakePrisma({}, {});
-    (prisma.booking.count as jest.Mock).mockImplementation(
-      ({ where }: { where: { createdAt: { gt: Date } } }) =>
-        Promise.resolve(where.createdAt.gt < PAID_AT_TRACKED_SINCE ? 9 : 0),
-    );
-    const res = await paymentWebhooksProbe(prisma, PROD, () => NOW).run();
-    expect(res.ok).toBe(true);
-    expect(res.detail).toContain('неподтверждённых попыток нет');
+  it.each([
+    ['оплат не было вовсе', {}],
+    [
+      'последняя оплата старше начала учёта',
+      { donation: new Date('2026-06-30T09:00:00Z') },
+    ],
+  ])(
+    'попытки до начала учёта paidAt не считаются (%s): старые отменённые брони не красят пробу',
+    async (_name, paid) => {
+      // Фейк отдаёт «девять» на запросе без нижней границы по createdAt или с
+      // границей раньше начала учёта — то есть там, где настоящая БД вернула бы
+      // всю историю. Границу ровно в начале учёта (и позже) считает пустой. Как
+      // это решает настоящий Postgres, проверяет e2e
+      // (payment-unconfigured-prod.e2e-spec.ts, «проба paymentWebhooks на живой БД»).
+      const prisma = fakePrisma(paid, {});
+      (prisma.booking.count as jest.Mock).mockImplementation(
+        ({ where }: { where: { createdAt?: { gt?: unknown } } }) => {
+          const gt = where.createdAt?.gt;
+          const wholeHistory =
+            !(gt instanceof Date) || gt < PAID_AT_TRACKED_SINCE;
+          return Promise.resolve(wholeHistory ? 9 : 0);
+        },
+      );
+      const res = await paymentWebhooksProbe(prisma, PROD, () => NOW).run();
+      expect(res.ok).toBe(true);
+      expect(res.detail).toContain('неподтверждённых попыток нет');
+    },
+  );
+
+  it('красная проба при оплате старше начала учёта называет начало учёта, а не дату старой оплаты', async () => {
+    const res = await paymentWebhooksProbe(
+      fakePrisma(
+        { donation: new Date('2026-06-30T09:00:00Z') },
+        { booking: SILENT_ATTEMPTS_LIMIT },
+      ),
+      PROD,
+      () => NOW,
+    ).run();
+    expect(res.ok).toBe(false);
+    expect(res.detail).toContain('с начала учёта 15.10 оплат не было');
+    expect(res.detail).not.toContain('30.06');
+    expect(res.detail).not.toContain('последняя оплата');
   });
 
   it('контроль: пять попыток после начала учёта и без оплат — красная', async () => {

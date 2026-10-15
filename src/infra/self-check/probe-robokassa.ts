@@ -106,8 +106,12 @@ export function paymentWebhooksProbe(
         const last = stamps.length
           ? new Date(Math.max(...stamps.map((t) => t.getTime())))
           : null;
-        const from =
-          last && last > PAID_AT_TRACKED_SINCE ? last : PAID_AT_TRACKED_SINCE;
+        // Оплата до начала учёта границу не двигает и в тексте не называется:
+        // счёт идёт с PAID_AT_TRACKED_SINCE, и дата старой оплаты вводила бы
+        // в заблуждение («последняя оплата 30.06», а попытки считаны с 15.10).
+        const paidInTrackedPeriod =
+          last !== null && last > PAID_AT_TRACKED_SINCE;
+        const from = paidInTrackedPeriod ? last : PAID_AT_TRACKED_SINCE;
         const createdAt = { gt: from, lt: new Date(now() - ATTEMPT_GRACE_MS) };
         const [nb, nd, nc] = await Promise.all([
           prisma.booking.count({
@@ -131,9 +135,9 @@ export function paymentWebhooksProbe(
           }),
         ]);
         const attempts = nb + nd + nc;
-        const since = last
+        const since = paidInTrackedPeriod
           ? `последняя оплата ${ddmm(last)}`
-          : 'с начала учёта оплат не было';
+          : `с начала учёта ${ddmm(PAID_AT_TRACKED_SINCE)} оплат не было`;
         if (attempts >= SILENT_ATTEMPTS_LIMIT) {
           return {
             ok: false,

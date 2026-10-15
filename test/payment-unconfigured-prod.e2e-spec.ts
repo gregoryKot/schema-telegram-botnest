@@ -16,10 +16,12 @@ delete process.env.ROBOKASSA_PASSWORD1;
 delete process.env.ROBOKASSA_PASSWORD2;
 
 import { INestApplication, Logger } from '@nestjs/common';
+import type { Prisma } from '@prisma/client';
 import request from 'supertest';
 import { PrismaService } from '../src/prisma/prisma.service';
 import { TELEGRAF_BOT } from '../src/telegram/telegram.constants';
 import {
+  PAID_AT_TRACKED_SINCE,
   paymentWebhooksProbe,
   SILENT_ATTEMPTS_LIMIT,
 } from '../src/infra/self-check/probe-robokassa';
@@ -169,8 +171,12 @@ describe('e2e: проба paymentWebhooks на живой БД', () => {
   const NOW = day(10).getTime();
   const PROBE_SLOT = day(20); // по нему фикстуры находит чистка: контакт шифруется
 
-  const seedBooking = (createdAt: Date, paidAt: Date | null = null) =>
-    prisma.booking.create({
+  const seedBooking = (
+    createdAt: Date,
+    paidAt: Date | null = null,
+    db: Pick<Prisma.TransactionClient, 'booking'> = prisma,
+  ) =>
+    db.booking.create({
       data: {
         startsAt: PROBE_SLOT,
         durationMin: 50,
@@ -225,4 +231,87 @@ describe('e2e: проба paymentWebhooks на живой БД', () => {
     expect(res.ok).toBe(true);
     expect(res.detail).toContain('неподтверждённых попыток нет');
   });
+
+  // Граница учёта paidAt (PAID_AT_TRACKED_SINCE): Booking.paidAt появился в
+  // миграции, у старых броней он NULL даже там, где деньги пришли. Без нижней
+  // границы по createdAt проба считала бы за серию всю историю брошенных холдов
+  // и отменённых оплат. Проба берёт максимум paidAt по ВСЕЙ таблице, поэтому
+  // оплаты соседних спеков и тестов выше сдвинули бы границу вперёд и спрятали
+  // дефект: мир проверки собирается в транзакции с откатом. Внутри ни одной
+  // оплаты, снаружи ничего не тронуто (чужие строки тоже).
+  class Rollback extends Error {}
+  const inCleanWorld = async (
+    body: (tx: Prisma.TransactionClient) => Promise<void>,
+  ) => {
+    await prisma
+      .$transaction(
+        async (tx) => {
+          const unpaid = {
+            where: { paidAt: { not: null } },
+            data: { paidAt: null },
+          };
+          await tx.booking.updateMany(unpaid);
+          await tx.donation.updateMany(unpaid);
+          await tx.subscriptionCharge.updateMany(unpaid);
+          await body(tx);
+          throw new Rollback();
+        },
+        { timeout: 30_000 },
+      )
+      .catch((e: unknown) => {
+        if (!(e instanceof Rollback)) throw e;
+      });
+  };
+  const OLD = new Date(PAID_AT_TRACKED_SINCE.getTime() - 14 * 86_400_000);
+  // Окно попыток кончается за 15 минут до now: первые 45 минут после начала
+  // учёта — самое раннее окно, в него не попадают строки чужих прогонов.
+  const EARLY_NOW = PAID_AT_TRACKED_SINCE.getTime() + 60 * 60_000;
+  const minutes = (from: Date, n: number) =>
+    new Date(from.getTime() + n * 60_000);
+
+  it.each([
+    ['оплат не было вовсе', null],
+    ['последняя оплата старше начала учёта', new Date('2026-06-30T09:00:00Z')],
+  ])(
+    'брошенные оплаты до начала учёта не считаются (%s), после начала — считаются',
+    async (_name, oldPaidAt) => {
+      await inCleanWorld(async (tx) => {
+        for (let i = 0; i < SILENT_ATTEMPTS_LIMIT - 1; i += 1) {
+          await seedBooking(minutes(OLD, i), null, tx);
+        }
+        for (let i = 0; i < 3; i += 1) {
+          await tx.donation.create({
+            data: {
+              amount: PROBE_DONATION_AMOUNT,
+              status: 'pending',
+              createdAt: minutes(OLD, 10 + i),
+            },
+          });
+        }
+        if (oldPaidAt) await seedBooking(oldPaidAt, oldPaidAt, tx);
+        const probe = () =>
+          paymentWebhooksProbe(
+            tx as unknown as PrismaService,
+            PROD_ENV,
+            () => EARLY_NOW,
+          ).run();
+
+        const quiet = await probe();
+        expect(quiet.ok).toBe(true);
+        expect(quiet.detail).toContain('неподтверждённых попыток нет');
+
+        // Контроль: те же запросы считают попытки после начала учёта.
+        for (let i = 1; i <= SILENT_ATTEMPTS_LIMIT; i += 1) {
+          await seedBooking(minutes(PAID_AT_TRACKED_SINCE, i), null, tx);
+        }
+        const loud = await probe();
+        expect(loud.ok).toBe(false);
+        expect(loud.detail).toMatch(
+          new RegExp(`^${SILENT_ATTEMPTS_LIMIT} попыток`),
+        );
+        expect(loud.detail).toContain('с начала учёта 15.10 оплат не было');
+        expect(loud.detail).not.toContain('30.06');
+      });
+    },
+  );
 });
