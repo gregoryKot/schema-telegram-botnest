@@ -45,7 +45,7 @@ export function BookingPicker({ fallback, onWriteInstead, lockedType, compact = 
   const [consent, setConsent] = useState(false);
   const [confirmNotice, setConfirmNotice] = useState(false); // переживает переключение формата: ответ на тот же текст
   const [returning, setReturning] = useState(false);
-  const [status, setStatus] = useState<'idle' | 'loading' | 'done' | 'error' | 'taken' | 'not_found' | 'payment_fail' | 'await_payment'>(() => {
+  const [status, setStatus] = useState<'idle' | 'loading' | 'done' | 'error' | 'taken' | 'payment_fail' | 'await_payment'>(() => {
     // Начальный статус выводится из ?payment= на маунте (lazy-init), а не через
     // setState в эффекте (react-hooks/set-state-in-effect). Чистка URL —
     // в эффекте ниже (побочный эффект).
@@ -171,7 +171,7 @@ export function BookingPicker({ fallback, onWriteInstead, lockedType, compact = 
               return (
                 <button key={o.type} type="button" aria-pressed={active} onClick={() => {
                   setSessionType(o.type);
-                  if (o.type === 'INTRO_15') { setReturning(false); if (status === 'not_found') setStatus('idle'); } // знакомство — всегда первая встреча
+                  if (o.type === 'INTRO_15') { setReturning(false); } // знакомство — всегда первая встреча
                   trackGoalOnce('booking_format', { format: o.type === 'SESSION_50' ? 'session' : 'intro' });
                 }} style={{
                   flex: '1 1 180px', textAlign: 'left', padding: '14px 16px', cursor: 'pointer',
@@ -230,7 +230,7 @@ export function BookingPicker({ fallback, onWriteInstead, lockedType, compact = 
           <input type="text" name="website" tabIndex={-1} autoComplete="off" value={website} onChange={(e) => setWebsite(e.target.value)}
             aria-hidden="true" style={{ position: 'absolute', left: '-9999px', width: 1, height: 1, opacity: 0 }} />
           {sessionType === 'SESSION_50' && !compact && (
-            <ReturningVisitField returning={returning} onChange={(v) => { setReturning(v); if (status === 'not_found') setStatus('idle'); }} />
+            <ReturningVisitField returning={returning} onChange={setReturning} />
           )}
           {!compact && <RequestField value={message} onChange={setMessage} labelStyle={labelSt} fieldStyle={field} max={BOOKING_SLOT_MESSAGE_MAX} />}
           <label style={{ display: 'flex', alignItems: 'flex-start', gap: 'var(--space-10)', cursor: 'pointer' }}>
@@ -246,7 +246,6 @@ export function BookingPicker({ fallback, onWriteInstead, lockedType, compact = 
             </span>
           </label>
           {invalidField === 'consent' && <p id="bp-consent-hint" style={{ ...hintSt, margin: '-8px 0 0' }}>{FIELD_HINTS.consent}</p>}
-          {sessionType === 'SESSION_50' && status === 'not_found' && <p style={{ color: 'var(--accent-red)', fontSize: 13, margin: 0, lineHeight: 1.6 }}>Не нашёл вас по этому контакту. Проверьте, что ввели тот же Telegram или телефон, что и в прошлый раз. Если занимаетесь впервые — снимите галочку «повторная встреча».</p>}
           {(status === 'error' || status === 'taken') && <BookingErrorNote kind={status} />}
           {chosen && chosen.price > 0 && (
             <p style={{ fontSize: 12, color: 'var(--text-faint)', margin: '-8px 0 0' }}>

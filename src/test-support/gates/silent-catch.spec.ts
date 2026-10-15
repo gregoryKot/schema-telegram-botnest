@@ -11,7 +11,9 @@ import {
   loadRegexList,
   loadStringList,
 } from './pattern-loader';
-import { runGate } from './gate-sandbox';
+import { readFileSync } from 'fs';
+import { join } from 'path';
+import { REAL_SCRIPTS_DIR, runGate } from './gate-sandbox';
 
 describe('check-silent-catch.mjs', () => {
   it('новый файл с .catch(() => {}) — exit 1, допустимо 0', () => {
@@ -534,4 +536,109 @@ describe('правила гейта: каждый паттерн со своим
       expect(res.stdout).toContain('✓ Храповик тихих catch: 0 (без роста)');
     },
   );
+});
+
+// Денежные пути (аудит 2026-10-11, frontends#0): отмена подписки глотала
+// отказ и два месяца числилась в бейслайне как «долг». Для файлов с
+// subscri|donat|booking|payment в пути бейслайн не применяется: тихий catch
+// там красный всегда, а запись в бейслайне — тоже. Правило №15: исключение
+// (MONEY_ALLOW) — с образцом, который оно гасит, И контрольным образцом,
+// который по-прежнему красный.
+describe('денежные пути: бейслайна для тихих catch нет', () => {
+  const MONEY_ALLOW = loadStringList('silent-catch-money.mjs', 'MONEY_ALLOW');
+  const SILENT = 'try { await api.cancel(t); } catch { /* ignore */ }\n';
+
+  it('тихий catch в файле подписки красный, даже если файл записан в бейслайн', () => {
+    const res = runGate('check-silent-catch.mjs', {
+      'scripts/silent-catch-baseline.json': JSON.stringify({
+        'webapp/src/pages/SubscribePage.tsx': 1,
+      }),
+      'webapp/src/pages/SubscribePage.tsx': SILENT,
+    });
+    expect(res.status).toBe(1);
+    expect(res.stderr).toContain(
+      'webapp/src/pages/SubscribePage.tsx: 1 тихих catch на денежном пути',
+    );
+  });
+
+  it.each([
+    ['webapp/src/pages/DonatePage.tsx'],
+    ['src/booking/booking.create.ts'],
+    ['src/payment/payment.service.ts'],
+    ['shared/src/subscription/useSubscription.ts'],
+  ])('то же для %s', (file) => {
+    const res = runGate('check-silent-catch.mjs', {
+      'scripts/silent-catch-baseline.json': JSON.stringify({ [file]: 1 }),
+      [file]: SILENT,
+    });
+    expect(res.status).toBe(1);
+    expect(res.stderr).toContain('на денежном пути');
+  });
+
+  it('запись денежного файла в бейслайне красная и без самого catch', () => {
+    const res = runGate('check-silent-catch.mjs', {
+      'scripts/silent-catch-baseline.json': JSON.stringify({
+        'webapp/src/pages/SubscribePage.tsx': 1,
+      }),
+      'webapp/src/pages/SubscribePage.tsx': 'export const x = 1;\n',
+    });
+    expect(res.status).toBe(1);
+    expect(res.stderr).toContain('запись бейслайна на денежном пути');
+  });
+
+  it('контроль: тот же catch вне денежного пути по-прежнему держится храповиком', () => {
+    const res = runGate('check-silent-catch.mjs', {
+      'scripts/silent-catch-baseline.json': JSON.stringify({
+        'webapp/src/pages/MergePage.tsx': 1,
+      }),
+      'webapp/src/pages/MergePage.tsx': SILENT,
+    });
+    expect(res.status).toBe(0);
+    expect(res.stdout).toContain('✓ Храповик тихих catch: 1 (без роста)');
+  });
+
+  it('чистый денежный файл — зелёный', () => {
+    const res = runGate('check-silent-catch.mjs', {
+      'scripts/silent-catch-baseline.json': JSON.stringify({}),
+      'webapp/src/pages/SubscribePage.tsx':
+        'try { await api.cancel(t); } catch (e) { report(e); }\n',
+    });
+    expect(res.status).toBe(0);
+  });
+
+  it('MONEY_ALLOW перечислен поимённо: разбор TZID чужого календаря', () => {
+    expect(MONEY_ALLOW).toEqual(['src/booking/caldav-busy.ts']);
+  });
+
+  it('образец MONEY_ALLOW гасится, соседний файл того же пути — нет', () => {
+    const allowed = runGate('check-silent-catch.mjs', {
+      'scripts/silent-catch-baseline.json': JSON.stringify({
+        'src/booking/caldav-busy.ts': 1,
+      }),
+      'src/booking/caldav-busy.ts': SILENT,
+    });
+    expect(allowed.status).toBe(0);
+    const neighbour = runGate('check-silent-catch.mjs', {
+      'scripts/silent-catch-baseline.json': JSON.stringify({
+        'src/booking/booking.service.ts': 1,
+      }),
+      'src/booking/booking.service.ts': SILENT,
+    });
+    expect(neighbour.status).toBe(1);
+    expect(neighbour.stderr).toContain('на денежном пути');
+  });
+
+  it('реальный бейслайн: ни одной денежной записи вне MONEY_ALLOW', () => {
+    const baseline = JSON.parse(
+      readFileSync(
+        join(REAL_SCRIPTS_DIR, 'silent-catch-baseline.json'),
+        'utf8',
+      ),
+    ) as Record<string, number>;
+    const money = Object.keys(baseline).filter(
+      (f) =>
+        /(subscri|donat|booking|payment)/i.test(f) && !MONEY_ALLOW.includes(f),
+    );
+    expect(money).toEqual([]);
+  });
 });

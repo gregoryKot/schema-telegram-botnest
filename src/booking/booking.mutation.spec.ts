@@ -247,13 +247,7 @@ describe('BookingService.confirm — сообщения об ошибках и o
     const state = { row };
     const prisma: any = {
       booking: {
-        findUnique: jest.fn(async ({ select }: any = {}) =>
-          select
-            ? state.row
-              ? { status: state.row.status }
-              : null
-            : state.row,
-        ),
+        findUnique: jest.fn(async () => state.row),
         updateMany: jest.fn(async () => ({ count: 0 })), // никогда не забираем CAS
       },
     };
@@ -282,9 +276,9 @@ describe('BookingService.confirm — сообщения об ошибках и o
     let calls = 0;
     const prisma: any = {
       booking: {
-        findUnique: jest.fn(async ({ select }: any = {}) => {
+        findUnique: jest.fn(async () => {
           calls++;
-          if (select) return null; // второй запрос "не нашёл" статус
+          if (calls > 1) return null; // второй запрос "не нашёл" строку
           return { id: 1, status: 'HELD' };
         }),
         updateMany: jest.fn(async () => ({ count: 0 })),

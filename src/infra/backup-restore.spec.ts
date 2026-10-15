@@ -1,6 +1,6 @@
 // Репетиция restore бэкапа (аудит тестовых практик 2026-08, CLAUDE.md
 // «раздел БД»): «бэкап без проверенного restore — не бэкап». До этого файла
-// restore существовал только как комментарий в хвосте backup-to-b2.sh — и он
+// restore существовал только как комментарий в хвосте скрипта бэкапа — и он
 // был НЕВЕРЕН: encrypt-сторона кладёт IV как 16 СЫРЫХ байт (`xxd -r -p`), а
 // комментарий читал первые 32 БАЙТА файла как «32 hex-символа» (`head -c 32`)
 // и резал `tail -c +33` — по такой инструкции восстановление отдало бы мусор
@@ -9,8 +9,8 @@
 // пробы (щит обязан уметь падать, не только зеленеть, правило №15).
 // Формат бэкапа (аудит D-2): стандартный `openssl enc -aes-256-cbc -pbkdf2
 // -iter 200000 -salt -pass env:BACKUP_ENCRYPTION_KEY` — ключ не в командной
-// строке, отдельный от ENCRYPTION_KEY, рядом лежит .sha256. Загрузка в B2 и
-// хранение — backup-b2-upload.spec.ts.
+// строке, отдельный от ENCRYPTION_KEY, рядом лежит .sha256. Загрузка в R2 и
+// хранение — backup-upload.spec.ts.
 // Реальный Postgres end-to-end (миграции → маркер → бэкап → restore во
 // вторую БД → сверка схемы) — nightly.yml, джоба backup-restore.
 import { spawnSync } from 'child_process';
@@ -31,7 +31,7 @@ const RESTORE = join(process.cwd(), 'scripts', 'restore-backup.sh');
 // Каждый прогон скрипта — три PBKDF2 по 200 000 итераций; под нагрузкой параллельного jest 5 с мало.
 jest.setTimeout(90_000);
 
-const BACKUP = join(process.cwd(), 'scripts', 'backup-to-b2.sh');
+const BACKUP = join(process.cwd(), 'scripts', 'backup-upload.sh');
 
 function runRestore(args: string[], env: Record<string, string>) {
   return spawnSync('bash', [RESTORE, ...args], {
@@ -40,7 +40,7 @@ function runRestore(args: string[], env: Record<string, string>) {
   });
 }
 
-// Зашифрованная фикстура ТЕМ ЖЕ форматом, что кладёт backup-to-b2.sh:
+// Зашифрованная фикстура ТЕМ ЖЕ форматом, что кладёт backup-upload.sh:
 // «Salted__» + соль + AES-256-CBC(gzip(plain)), ключ через -pass env:.
 function encryptFixture(dir: string, plain: string, key: string): string {
   const dumpFile = join(dir, 'fixture.sql');
@@ -131,11 +131,11 @@ describe('scripts/restore-backup.sh (репетиция restore)', () => {
   });
 
   // Связка сохранение→восстановление через ОБА скрипта разом (правило
-  // «read-after-write» CLAUDE.md): backup-to-b2.sh шифрует реальным
+  // «read-after-write» CLAUDE.md): backup-upload.sh шифрует реальным
   // пайплайном (SKIP_UPLOAD=1, pg_dump подменён фикстурой — настоящий
   // Postgres проверяет nightly.yml), restore-backup.sh обязан прочитать то,
   // что бэкап действительно записал, а не то, что мы думаем, что он пишет.
-  it('backup-to-b2.sh (SKIP_UPLOAD=1) → restore-backup.sh: то, что зашифровал бэкап, восстанавливается обратно', () => {
+  it('backup-upload.sh (SKIP_UPLOAD=1) → restore-backup.sh: то, что зашифровал бэкап, восстанавливается обратно', () => {
     const fakeBinDir = join(dir, 'fakebin');
     mkdirSync(fakeBinDir);
     const dumpMarker = 'restore-rehearsal-fixture-marker';
@@ -205,8 +205,8 @@ describe('scripts/restore-backup.sh (репетиция restore)', () => {
   });
 });
 
-// Контракты backup-to-b2.sh, не связанные с B2: ключ, формат, утечки в argv.
-describe('scripts/backup-to-b2.sh (SKIP_UPLOAD=1)', () => {
+// Контракты backup-upload.sh, не связанные с хранилищем: ключ, формат, утечки в argv.
+describe('scripts/backup-upload.sh (SKIP_UPLOAD=1)', () => {
   let dir: string;
   let fakeBin: string;
   let argvLog: string;
@@ -356,9 +356,9 @@ describe('scripts/backup-to-b2.sh (SKIP_UPLOAD=1)', () => {
     expect(res.stderr).toMatch(/дамп пустой/);
   });
 
-  it('без SKIP_UPLOAD нужны B2_*: не заданы — FAILED с именем переменной', () => {
+  it('без SKIP_UPLOAD нужны BACKUP_S3_*: не заданы — FAILED с именем переменной', () => {
     const res = backup({ SKIP_UPLOAD: '0' });
     expect(res.status).not.toBe(0);
-    expect(res.stderr).toMatch(/B2_KEY_ID/);
+    expect(res.stderr).toMatch(/BACKUP_S3_ENDPOINT/);
   });
 });

@@ -75,6 +75,9 @@ jest `rootDir`. См. `src/booking/caldav-discovery.spec.ts` и
 | `icloud-propfind-calendars.xml` | iCloud CalDAV, PROPFIND Depth 1 шаг 3 (список календарей) | Корень первым, без `<calendar/>` (инцидент #491) + календарь тегом `<C:calendar xmlns:C="…"/>` С АТРИБУТАМИ (инцидент/регресс #494) — та самая форма, на которой дважды ловили баг |
 | `github-workflow-runs.json` | GitHub REST, `GET /repos/{owner}/{repo}/actions/workflows/{file}/runs?status=completed&per_page=1` | Форма ответа для пробы `ciRuns` (`src/infra/self-check/probe-ci-runs.ts`) — наблюдатель за CI переехал в приложение, т.к. GitHub-джоба `alarm` не может слать DM без секретов, заведённых только на Amvera |
 
+| `s3-list-objects-v2-truncated.xml`, `s3-list-objects-v2-prefix.xml` | S3 API, `GET /<бакет>?list-type=2` (ListObjectsV2) — Cloudflare R2 отвечает в том же формате | Примеры ответа из документации AWS (обрезанная страница с курсором и последняя страница с XML-прологом); ими проверяются оба разбора — `src/infra/s3-list-objects.ts` (проба `backupFreshness`) и `S3_LIST_JS` в `scripts/s3-api.sh` (скрипты бэкапа) |
+| `aws-sigv4-test-suite.json` | AWS Signature Version 4 Test Suite (запрос → ожидаемый `Authorization`) | Опубликованные AWS эталоны подписи; ими сверена `src/infra/s3-sigv4.ts`, а через поддельный S3 (`fake-s3.ts`) — и подпись `curl --aws-sigv4` в скриптах бэкапа |
+
 Новый парсер внешнего формата → см. `scripts/check-recorded-fixtures.mjs`
 (требует записи в `scripts/recorded-fixtures-baseline.json`) прежде, чем PR
 пройдёт CI.

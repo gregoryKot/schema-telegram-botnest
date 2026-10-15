@@ -25,6 +25,7 @@ vi.mock('../../api', () => ({
     adminSetOverrides: vi.fn(),
     adminListBookings: vi.fn(),
     adminConfirm: vi.fn(),
+    adminCancel: vi.fn(),
     cancelBooking: vi.fn(),
   },
 }));
@@ -264,18 +265,56 @@ describe('BookingSection — записи', () => {
     await screen.findByText(/Борис/);
     fireEvent.click(screen.getByRole('button', { name: 'Подтвердить' }));
     expect(mockApi.adminConfirm).toHaveBeenCalledWith('k', 5);
+    await screen.findByText('Готово ✓');
   });
 
-  it('«Отменить» доступна для активной записи и вызывает cancelBooking по токену', async () => {
-    mockApi.adminListBookings.mockResolvedValue([
-      { id: 6, startsAt: '2026-08-10T10:00:00Z', status: 'CONFIRMED', clientName: 'Вера', clientContact: 'vera@x.ru', message: 'Первая встреча', cancelToken: 'tok6' },
-    ]);
-    mockApi.cancelBooking.mockResolvedValue({ ok: true });
+  // security#22: админка жала публичный cancel/:token с клиентским cutoff 24 ч
+  // и без catch — за сутки до встречи ответ 400 уходил в unhandledRejection.
+  it('«Отменить» зовёт админский adminCancel по id (не публичный cancelBooking) и обновляет строку', async () => {
+    const row = { id: 6, startsAt: '2026-08-10T10:00:00Z', status: 'CONFIRMED', clientName: 'Вера', clientContact: 'vera@x.ru', message: 'Первая встреча', cancelToken: 'tok6' };
+    mockApi.adminListBookings.mockResolvedValueOnce([row]).mockResolvedValue([{ ...row, status: 'CANCELLED' }]);
+    mockApi.adminCancel.mockResolvedValue({ ok: true });
     render(<BookingSection adminKey="k" />);
     await screen.findByText(/Вера/);
     expect(screen.getByText(/«Первая встреча»/)).toBeTruthy();
+    expect(screen.getByText('Подтверждена')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Отменить' }));
-    expect(mockApi.cancelBooking).toHaveBeenCalledWith('tok6');
+    await screen.findByText('Отменена');
+    expect(mockApi.adminCancel).toHaveBeenCalledWith('k', 6);
+    expect(mockApi.cancelBooking).not.toHaveBeenCalled();
+    expect(screen.queryByRole('button', { name: 'Отменить' })).toBeNull();
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
+  it('отказ сервера при «Отменить» виден текстом, строка не меняется, список не перезапрашивается', async () => {
+    mockApi.adminListBookings.mockResolvedValue([
+      { id: 6, startsAt: '2026-08-10T10:00:00Z', status: 'CONFIRMED', clientName: 'Вера', clientContact: 'vera@x.ru', message: null, cancelToken: 'tok6' },
+    ]);
+    mockApi.adminCancel.mockRejectedValue(new Error('Cannot cancel completed session'));
+    render(<BookingSection adminKey="k" />);
+    await screen.findByText(/Вера/);
+    const loads = mockApi.adminListBookings.mock.calls.length;
+    fireEvent.click(screen.getByRole('button', { name: 'Отменить' }));
+    const alert = await screen.findByRole('alert');
+    expect(alert.textContent).toBe('Не удалось отменить запись: Cannot cancel completed session');
+    expect(screen.getByText('Подтверждена')).toBeTruthy();
+    expect(mockApi.adminListBookings.mock.calls.length).toBe(loads);
+  });
+
+  it('отказ при «Подтвердить» виден текстом, а следующее удачное действие его убирает', async () => {
+    const row = { id: 5, startsAt: '2026-08-10T10:00:00Z', status: 'HELD', clientName: 'Борис', clientContact: 'boris@x.ru', message: null, cancelToken: 'tok5' };
+    mockApi.adminListBookings.mockResolvedValue([row]);
+    mockApi.adminConfirm.mockRejectedValueOnce(new Error('Cannot confirm booking in status CANCELLED'));
+    render(<BookingSection adminKey="k" />);
+    await screen.findByText(/Борис/);
+    fireEvent.click(screen.getByRole('button', { name: 'Подтвердить' }));
+    const alert = await screen.findByRole('alert');
+    expect(alert.textContent).toBe('Не удалось подтвердить запись: Cannot confirm booking in status CANCELLED');
+
+    mockApi.adminConfirm.mockResolvedValueOnce({ ok: true });
+    fireEvent.click(screen.getByRole('button', { name: 'Подтвердить' }));
+    await screen.findByText('Готово ✓');
+    expect(screen.queryByRole('alert')).toBeNull();
   });
 
   it('завершённая запись не предлагает «Отменить»', async () => {

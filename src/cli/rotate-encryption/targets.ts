@@ -1,20 +1,20 @@
 // Список колонок, которые ротация ENCRYPTION_KEY перешифровывает общим циклом
-// (rotate-encryption-key.ts). Вынесен в отдельный файл (правило №10: скрипт
-// упирался в потолок размера).
+// (rotate-all.ts). Пары (модель, поле) сверяет с реестром шифрования и со
+// schema.prisma спек encryption-rotation-coverage.spec.ts (правило №4).
 //
-// Поле `pk` — имя ключевой колонки, если оно не `id` (ClientMeeting живёт под
-// строковым clientKey).
+// `pk` — колонка(и) первичного ключа, если это не `id`. Составной ключ
+// (@@id([userId, type])) задаётся массивом: ротация обновляет строку через
+// updateMany с условием по всем колонкам ключа, поэтому от того, как Prisma
+// называет составной аргумент (`userId_type`), она не зависит.
 export interface RotationTarget {
   name: string;
   fields: string[];
-  pk?: string;
+  pk?: string | string[];
 }
 
-// (table prismaName, fields to rotate)
-// ПОЛНОТА этого списка проверяется тестом
-// src/utils/encryption-rotation-coverage.spec.ts — он падает, если в src/
-// появилось зашифрованное поле, которого тут нет (иначе ротация оставит его
-// под старым ключом → потеря данных при удалении ENCRYPTION_KEY_OLD).
+// (имя делегата Prisma, поля). Полноту проверяет спек по реестру FIELD_POLICY:
+// зашифрованное поле, которого тут нет, осталось бы под старым ключом →
+// потеря данных при удалении ENCRYPTION_KEY_OLD.
 export const TARGETS: RotationTarget[] = [
   { name: 'note', fields: ['text', 'tags'] },
   {
@@ -41,6 +41,8 @@ export const TARGETS: RotationTarget[] = [
       'needsMet',
       'alias',
       'fear',
+      'origins',
+      'healthyView',
     ],
   },
   {
@@ -49,7 +51,7 @@ export const TARGETS: RotationTarget[] = [
   },
   { name: 'userPhraseCheck', fields: ['phrase', 'rewrite'] },
   { name: 'userLetter', fields: ['text'] },
-  { name: 'userSafePlace', fields: ['description'] },
+  { name: 'userSafePlace', fields: ['description'], pk: 'userId' },
   { name: 'userFlashcard', fields: ['reflection', 'action'] },
   { name: 'userPractice', fields: ['text'] },
   { name: 'practicePlan', fields: ['practiceText'] },
@@ -84,10 +86,9 @@ export const TARGETS: RotationTarget[] = [
     ],
   },
   { name: 'gratitudeDiaryEntry', fields: ['items'] },
-  // DiaryDraft.data — черновик дневника (тот же клинический текст, что запись),
-  // шифруется encryptJson в api.controller. Присваивание `const data = …`, а не
-  // свойство объекта, поэтому авто-сверка его не видит (см. spec).
-  { name: 'diaryDraft', fields: ['data'] },
+  // DiaryDraft.data — черновик дневника (тот же клинический текст, что запись).
+  // Ключ составной: один черновик на тип дневника у пользователя.
+  { name: 'diaryDraft', fields: ['data'], pk: ['userId', 'type'] },
   { name: 'userTask', fields: ['text'] },
   { name: 'therapistNote', fields: ['text'] },
   {
@@ -135,4 +136,18 @@ export const TARGETS: RotationTarget[] = [
   // а decryptPayload молча вернул бы null → «нечего слать». Старые строки с
   // объектом в payload общий цикл пропускает (typeof !== 'string').
   { name: 'scheduledNotification', fields: ['payload'] },
+  // ── Добавлено ротацией 2026-10 (r2-0#2): эти поля шифровались, но в списке
+  //    их не было. Ответы теста схем — Json-колонка, в которой лежит строка
+  //    шифротекста (encryptJson), поэтому общий строковый цикл их покрывает.
+  { name: 'ysqProgress', fields: ['answers'], pk: 'userId' },
+  { name: 'ysqResult', fields: ['answers'], pk: 'userId' },
+  { name: 'ysqResultHistory', fields: ['answers'] },
+  { name: 'emailToken', fields: ['email'] },
+  // User: клинические ярлыки (mySchemaIds/myModeIds) и 2FA-секреты. Раньше жили
+  // отдельным блоком скрипта, который общий цикл дублировал; теперь это обычная
+  // запись (H4, аудит 2026-07-20: без неё 2FA осталась бы под старым ключом).
+  {
+    name: 'user',
+    fields: ['mySchemaIds', 'myModeIds', 'totpSecret', 'totpRecoveryCodes'],
+  },
 ];
