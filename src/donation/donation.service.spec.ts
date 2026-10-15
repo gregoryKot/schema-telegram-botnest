@@ -2,6 +2,7 @@
 // InvId не должны задваивать алерт админу / повторно списывать статус paid.
 // Стиль — как booking.payment.spec.ts / subscription.payment.spec.ts: CAS
 // эмулируется через updateMany, привязанный к текущему статусу строки.
+import { Logger, ServiceUnavailableException } from '@nestjs/common';
 import { DonationService, DONATION_INVID_BASE } from './donation.service';
 
 function makeService(row: any) {
@@ -172,5 +173,77 @@ describe('DonationService.markPaidByInvId — экранирование HTML в
     expect(text).not.toContain('<a href');
     expect(text).toContain('&lt;a href="https://evil/"&gt;x&lt;/a&gt;');
     expect(text).toContain('<b>Донат 300 ₽</b>');
+  });
+});
+
+describe('DonationService.create — Robokassa не настроена', () => {
+  const was = process.env.NODE_ENV;
+  function make(robokassaEnabled: boolean) {
+    const rows: any[] = [];
+    const prisma: any = {
+      donation: {
+        create: jest.fn(async ({ data }: any) => {
+          const row = { id: 77, ...data };
+          rows.push(row);
+          return row;
+        }),
+        findUnique: jest.fn(
+          async ({ where }: any) => rows.find((r) => r.id === where.id) ?? null,
+        ),
+        updateMany: jest.fn(async ({ data }: any) => {
+          Object.assign(rows[0], data);
+          return { count: 1 };
+        }),
+      },
+    };
+    const notify = { alertAdmin: jest.fn(async () => undefined) };
+    const robokassa = {
+      enabled: robokassaEnabled,
+      buildPaymentUrl: jest.fn(() => 'https://robokassa.test/pay'),
+    };
+    const service = new DonationService(
+      prisma,
+      robokassa as any,
+      notify as any,
+      { get: () => undefined } as any,
+    );
+    return { service, prisma, notify, rows };
+  }
+  afterEach(() => {
+    process.env.NODE_ENV = was;
+    jest.restoreAllMocks();
+  });
+
+  it('прод: 503 до INSERT, строки pending нет, «💛 Донат» владельцу не уходит', async () => {
+    process.env.NODE_ENV = 'production';
+    jest.spyOn(Logger.prototype, 'error').mockImplementation();
+    const { service, prisma, notify, rows } = make(false);
+    await expect(service.create({ amount: 500 })).rejects.toThrow(
+      ServiceUnavailableException,
+    );
+    expect(prisma.donation.create).not.toHaveBeenCalled();
+    expect(rows).toHaveLength(0);
+    expect(notify.alertAdmin).not.toHaveBeenCalled();
+  });
+
+  it('контроль, не прод: донат помечается оплаченным сразу (dev-режим)', async () => {
+    process.env.NODE_ENV = 'test';
+    const { service, rows, notify } = make(false);
+    await expect(service.create({ amount: 500 })).resolves.toEqual({
+      id: 77,
+      paymentUrl: null,
+    });
+    expect(rows[0].status).toBe('paid');
+    expect(notify.alertAdmin).toHaveBeenCalledTimes(1);
+  });
+
+  it('контроль, прод с настроенной Robokassa: ссылка на оплату, донат pending', async () => {
+    process.env.NODE_ENV = 'production';
+    const { service, rows } = make(true);
+    await expect(service.create({ amount: 500 })).resolves.toEqual({
+      id: 77,
+      paymentUrl: 'https://robokassa.test/pay',
+    });
+    expect(rows[0].status).toBe('pending');
   });
 });

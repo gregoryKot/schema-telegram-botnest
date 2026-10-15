@@ -16,6 +16,8 @@
     "src/utils/tz.ts",
     "src/booking/robokassa.service.ts",
     "src/booking/booking.service.ts",
+    "src/booking/payment-guard.ts",
+    "src/booking/booking-data.ts",
     "src/subscription/subscription.service.ts",
     "src/booking/slot.service.ts",
     "src/booking/slot-window.ts",

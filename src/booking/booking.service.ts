@@ -11,7 +11,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { BookingNotifyService } from './booking-notify.service';
 import { MeetingService } from './meeting.service';
 import { RobokassaService } from './robokassa.service';
-import { encryptRecord, decryptRecord } from '../utils/crypto';
+import { decryptRecord } from '../utils/crypto';
 import { PricingService } from './pricing.service';
 import { MIN_BOOK_LEAD_HOURS, MIN_CANCEL_LEAD_HOURS } from './booking.config';
 import { BookingStatus, SessionType } from '@prisma/client';
@@ -19,9 +19,10 @@ import { randomUUID } from 'crypto';
 import { assertWithinAvailability } from './booking.availability';
 import { completeCheckout } from './booking.checkout';
 import { createBookingGuarded } from './booking.create';
+import { buildBookingData } from './booking-data';
+import { assertBookingPayable } from './payment-guard';
 import { BOOKING_SCHEMA } from './booking.schema';
 import { RETURNING_NOT_FOUND_NOTE } from './booking-admin-note';
-import { isValidTimeZone } from './client-timezone';
 import {
   listBookings,
   getBookingById,
@@ -73,8 +74,9 @@ export class BookingService {
    * INTRO_15 (free): confirmed immediately, admin + CalDAV notified.
    * SESSION_50 (paid): created as HELD for 15 min. If Robokassa is configured,
    * returns a paymentUrl the client must visit to complete payment. On webhook,
-   * PaymentController calls confirm(). If Robokassa is not configured, also
-   * confirms immediately (useful for dev / manual-payment flow).
+   * PaymentController calls confirm(). Robokassa not configured: in production
+   * a paid booking is refused (503) before the INSERT, otherwise (dev) it is
+   * confirmed immediately — see payment-guard.ts.
    */
   async book(dto: CreateBookingDto) {
     if (!dto.clientName || !dto.clientContact) {
@@ -100,32 +102,14 @@ export class BookingService {
     // слотов — прямой POST мог забронировать 3 часа ночи любой длительности.
     await assertWithinAvailability(this.prisma, dto.startsAt, dto.durationMin);
     const isFree = dto.type === SessionType.INTRO_15;
+    // Прод без Robokassa: отказ ДО INSERT (иначе HELD держит слот 15 минут).
+    await assertBookingPayable(this.robokassa, this.notify, dto);
     const heldUntil = isFree
       ? null
       : new Date(Date.now() + HOLD_MINUTES * 60_000);
     const cancelToken = randomUUID();
 
-    const data = encryptRecord(
-      {
-        startsAt: dto.startsAt,
-        durationMin: dto.durationMin,
-        type: dto.type,
-        clientName: dto.clientName,
-        clientContact: dto.clientContact,
-        clientChannel: dto.clientChannel ?? null,
-        message: dto.message ?? null,
-        status: isFree ? BookingStatus.CONFIRMED : BookingStatus.HELD,
-        heldUntil,
-        cancelToken,
-        acceptedOfferAt: new Date(),
-        source: dto.source ?? null,
-        clientTimeZone:
-          dto.clientTimeZone && isValidTimeZone(dto.clientTimeZone)
-            ? dto.clientTimeZone
-            : null,
-      },
-      BOOKING_SCHEMA,
-    );
+    const data = buildBookingData(dto, { isFree, heldUntil, cancelToken });
 
     // Лок + проверка занятости + INSERT в одной транзакции, с резервом на
     // случай падения (лид уходит админу) — см. booking.create.ts.

@@ -176,6 +176,35 @@ describe('BookingService.book — денормализованные ?? null п�
     expect(created.source).toBe(longSource);
   });
 
+  const bookIntro = async (extra: Record<string, unknown>) => {
+    const { service, tx } = makeService();
+    await service.book({
+      ...BASE_DTO,
+      ...extra,
+      startsAt: INSIDE_WINDOW,
+      durationMin: 15,
+      type: SessionType.INTRO_15,
+    });
+    return tx.booking.create.mock.calls[0][0].data;
+  };
+
+  it('clientChannel передан → сохраняется как есть, не передан → null', async () => {
+    expect((await bookIntro({ clientChannel: 'telegram' })).clientChannel).toBe(
+      'telegram',
+    );
+    expect((await bookIntro({})).clientChannel).toBeNull();
+  });
+
+  it('clientTimeZone: валидный пояс сохраняется, невалидный и пустой → null', async () => {
+    expect(
+      (await bookIntro({ clientTimeZone: 'Europe/Moscow' })).clientTimeZone,
+    ).toBe('Europe/Moscow');
+    expect(
+      (await bookIntro({ clientTimeZone: 'Mars/Olympus' })).clientTimeZone,
+    ).toBeNull();
+    expect((await bookIntro({})).clientTimeZone).toBeNull();
+  });
+
   it('source не передан → null, а не undefined-строка', async () => {
     const { service, tx } = makeService();
     await service.book({

@@ -5,10 +5,11 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, act, cleanup } from '@testing-library/react';
 import { DonatePage } from './DonatePage';
 
-vi.mock('../api', () => ({
-  api: { donate: vi.fn() },
-}));
-import { api } from '../api';
+vi.mock('../api', async () => {
+  const { ApiError } = await vi.importActual<typeof import('../apiClient')>('../apiClient');
+  return { api: { donate: vi.fn() }, ApiError };
+});
+import { api, ApiError } from '../api';
 const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
 
 function resetLocation() {
@@ -110,6 +111,26 @@ describe('DonatePage — ошибка API', () => {
     fireEvent.click(screen.getByRole('button', { name: /Поддержать/ }));
 
     await screen.findByText('Не получилось. Попробовать ещё раз.');
+  });
+});
+
+describe('DonatePage — оплата не настроена на сервере (503)', () => {
+  it('503 показывает «недоступна», а не призыв повторить', async () => {
+    mockApi.donate.mockRejectedValue(new ApiError(503, 'PAYMENT_UNAVAILABLE'));
+    render(<DonatePage />);
+    fireEvent.click(screen.getByRole('button', { name: /Поддержать/ }));
+
+    await screen.findByText(/Оплата сейчас недоступна/);
+    expect(screen.queryByText('Не получилось. Попробовать ещё раз.')).toBeNull();
+  });
+
+  it('другая ошибка API (500) по-прежнему просит попробовать ещё раз', async () => {
+    mockApi.donate.mockRejectedValue(new ApiError(500, 'boom'));
+    render(<DonatePage />);
+    fireEvent.click(screen.getByRole('button', { name: /Поддержать/ }));
+
+    await screen.findByText('Не получилось. Попробовать ещё раз.');
+    expect(screen.queryByText(/Оплата сейчас недоступна/)).toBeNull();
   });
 });
 

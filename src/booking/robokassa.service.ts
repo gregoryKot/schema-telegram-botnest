@@ -27,9 +27,9 @@ export class RobokassaService {
   private readonly fiscal: boolean;
 
   constructor(config: ConfigService) {
-    this.login = config.get<string>('ROBOKASSA_MERCHANT_LOGIN') ?? '';
-    this.pass1 = config.get<string>('ROBOKASSA_PASSWORD1') ?? '';
-    this.pass2 = config.get<string>('ROBOKASSA_PASSWORD2') ?? '';
+    this.login = (config.get<string>('ROBOKASSA_MERCHANT_LOGIN') ?? '').trim();
+    this.pass1 = (config.get<string>('ROBOKASSA_PASSWORD1') ?? '').trim();
+    this.pass2 = (config.get<string>('ROBOKASSA_PASSWORD2') ?? '').trim();
     this.isTest = config.get<string>('ROBOKASSA_IS_TEST') === 'true';
     this.fiscal = config.get<string>('ROBOKASSA_FISCAL') !== 'false'; // default ON
   }
