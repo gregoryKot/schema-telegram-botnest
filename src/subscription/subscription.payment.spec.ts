@@ -28,6 +28,7 @@ function makeService(opts: { pendingCharge?: any; chargeRow?: any }) {
       findMany: jest.fn(async () => [SUB]),
       findUnique: jest.fn(async () => SUB),
       update: jest.fn(async () => SUB),
+      updateMany: jest.fn(async () => ({ count: 1 })),
     },
     // 1 = подписку захватил этот обработчик (атомарный UPDATE
     // nextChargeAt). 0 вернул бы «уже забрал другой инстанс».
@@ -124,10 +125,10 @@ describe('SubscriptionService.markChargePaidByInvId — идемпотентно
     });
     await service.markChargePaidByInvId(SUBSCRIPTION_INVID_BASE + 55, 300);
     const alertsAfterFirst = calls.alerts.length;
-    expect(prisma.subscription.update).toHaveBeenCalledTimes(1);
+    expect(prisma.subscription.updateMany).toHaveBeenCalledTimes(1);
 
     await service.markChargePaidByInvId(SUBSCRIPTION_INVID_BASE + 55, 300);
-    expect(prisma.subscription.update).toHaveBeenCalledTimes(1); // не задвоилось
+    expect(prisma.subscription.updateMany).toHaveBeenCalledTimes(1); // не задвоилось
     expect(calls.alerts.length).toBe(alertsAfterFirst);
   });
 });
