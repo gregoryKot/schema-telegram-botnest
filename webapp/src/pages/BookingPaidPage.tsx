@@ -66,7 +66,7 @@ export function BookingPaidPage() {
 
   return (
     <div style={page}>
-      <div style={inner}>
+      <div className="ym-hide-content" style={inner}>
         {body}
         <a href="/" style={backLink}>← На главную</a>
       </div>

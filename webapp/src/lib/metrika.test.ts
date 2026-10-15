@@ -62,6 +62,19 @@ describe('shouldRecordSession', () => {
     expect(shouldRecordSession('kotlarewski.gr', '/articles/some-slug')).toBe(true);
   });
 
+  it.each(['/articles', '/articles/', '/reviews'])('визитка + %s → true', (p) => {
+    expect(shouldRecordSession('kotlarewski.gr', p)).toBe(true);
+  });
+
+  // security#26/#27: экраны с секретами клиента (ссылка встречи, токен в href,
+  // поля email) — не в allow-list, запись по стартовому пути выключена.
+  it.each([
+    '/book', '/booking/paid', '/booking/manage', '/subscribe', '/donate',
+    '/privacy', '/offer', '/tests', '/articles-admin', '/unknown',
+  ])('визитка + %s → false (вне allow-list)', (p) => {
+    expect(shouldRecordSession('kotlarewski.gr', p)).toBe(false);
+  });
+
   it('визитка + "/admin" → false', () => {
     expect(shouldRecordSession('kotlarewski.gr', '/admin')).toBe(false);
   });
