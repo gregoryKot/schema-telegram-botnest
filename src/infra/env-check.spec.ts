@@ -12,6 +12,7 @@ const ALL_VALID = {
   ADMIN_BOOKING_KEY: 'super-secret-key-0123456789-abcdefghij',
   ADMIN_ID: '123456789',
   BOT_TOKEN: `123456789:${'A'.repeat(35)}`,
+  BOT_USERNAME: 'SchemeHappensBot',
   DATABASE_URL: 'postgres://localhost/db',
   ENCRYPTION_KEY: 'a'.repeat(64),
   JWT_SECRET: 'Zr8k2VqLx9Tn4Wc7Hb3Yd6Fm1Pj5Ug0aKs',
@@ -260,6 +261,71 @@ describe('checkEnv', () => {
         expect(issue(undefined)).toBeUndefined();
         expect(issue('')).toBeUndefined();
       });
+    });
+  });
+});
+
+// Аудит 2026-10 (infra#18): дефолты MINIAPP_URL/BOT_USERNAME вели на старый
+// деплой и старого бота, а прод это не показывал.
+describe('checkEnv — имя бота и адрес мини-аппа', () => {
+  it('BOT_USERNAME обязателен в проде: пустой env его требует', () => {
+    expect(checkEnv({}, 'production').missing).toContain('BOT_USERNAME');
+  });
+
+  it('BOT_USERNAME с пробелом и «!» — формат неверен', () => {
+    const result = checkEnv(
+      { ...ALL_VALID, BOT_USERNAME: 'bad name!' },
+      'production',
+    );
+    expect(result.invalid.map((i) => i.name)).toContain('BOT_USERNAME');
+  });
+
+  it('BOT_USERNAME с @ — формат неверен (в env имя без @)', () => {
+    const result = checkEnv(
+      { ...ALL_VALID, BOT_USERNAME: '@SchemeHappensBot' },
+      'production',
+    );
+    expect(result.invalid.map((i) => i.name)).toContain('BOT_USERNAME');
+  });
+
+  describe('miniappUrlCanonicalHost', () => {
+    const issue = (url: string | undefined, mode: string) =>
+      checkEnv({ ...ALL_VALID, MINIAPP_URL: url }, mode).crossCheckIssues.find(
+        (i) => i.id === 'miniappUrlCanonicalHost',
+      );
+
+    it('старый vercel-деплой в проде — проблема с названием хоста', () => {
+      expect(
+        issue('https://schema-miniapp.vercel.app', 'production')?.problem,
+      ).toContain('schema-miniapp.vercel.app');
+    });
+
+    it('www. редиректится сам — проблема', () => {
+      expect(
+        issue('https://www.schemehappens.ru/app/', 'production'),
+      ).toBeDefined();
+    });
+
+    it('канонический хост без /app/ — проблема про путь', () => {
+      expect(
+        issue('https://schemehappens.ru/', 'production')?.problem,
+      ).toContain('/app/');
+    });
+
+    it('контрольный: https://schemehappens.ru/app/ — чисто', () => {
+      expect(
+        issue('https://schemehappens.ru/app/', 'production'),
+      ).toBeUndefined();
+    });
+
+    it('не в проде чужой хост законен (localhost, staging)', () => {
+      expect(
+        issue('https://schema-miniapp.vercel.app', 'development'),
+      ).toBeUndefined();
+    });
+
+    it('MINIAPP_URL не задан — дефолт из APP_URL, проверять нечего', () => {
+      expect(issue(undefined, 'production')).toBeUndefined();
     });
   });
 });

@@ -1,6 +1,6 @@
-// Записи реестра env-переменных (см. env-registry.ts) — группа telegram:
-// сам бот и мини-апп (не канал «Здоровый Взрослый» — тот в entries.channel.ts).
+// Записи реестра env (см. env-registry.ts), группа telegram: бот и мини-апп; канал — в entries.channel.ts.
 import { EnvVarSpec, formats } from './env-registry';
+import { checkTelegramUsername } from './env-registry.username';
 
 export const TELEGRAM_ENV_ENTRIES: EnvVarSpec[] = [
   {
@@ -31,10 +31,9 @@ export const TELEGRAM_ENV_ENTRIES: EnvVarSpec[] = [
   },
   {
     name: 'BOT_USERNAME',
-    purpose:
-      'Имя бота для ссылок t.me/<username> — дефолт SchemaLabBot, если не задано.',
-    requiredInProd: false,
-    format: formats.nonEmpty,
+    purpose: 'Имя бота без @ для t.me-ссылок; без него приглашения отдают 503.',
+    requiredInProd: true,
+    format: checkTelegramUsername,
     group: 'telegram',
   },
   {
@@ -47,10 +46,9 @@ export const TELEGRAM_ENV_ENTRIES: EnvVarSpec[] = [
   },
   {
     name: 'MINIAPP_URL',
-    purpose:
-      'Базовый адрес для webApp-кнопок бота — дефолт vercel-адрес, если не задано.',
+    purpose: 'Адрес мини-аппа для webApp-кнопок; по умолчанию APP_URL + /app/.',
     requiredInProd: false,
-    format: formats.url,
+    format: formats.httpsUrl,
     group: 'telegram',
   },
   {

@@ -1,15 +1,16 @@
 /// <reference types="vitest/config" />
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import { requireBotUsernamePlugin } from '../shared/src/build/requireBotUsername.ts';
 import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig({
-  // Времени сборки в define здесь НЕ будет: dist закоммичен, и CI-джоба
-  // miniapp пересобирает его для сверки байт-в-байт — любой new Date()
-  // в бандле роняет её (поймано на PR #431). Метка версии для BuildInfoLine
-  // берётся в рантайме из document.lastModified (HTTP Last-Modified).
+  // Времени сборки в define здесь НЕ будет: dist закоммичен, и CI-джоба miniapp пересобирает его
+  // для сверки байт-в-байт — любой new Date() в бандле роняет её (поймано на PR #431). Метка
+  // версии для BuildInfoLine берётся в рантайме из document.lastModified (HTTP Last-Modified).
   plugins: [
     react(),
+    requireBotUsernamePlugin(),
     // PWA-каркас (docs/PWA_PLAN.md фаза 1, docs/MULTI_HOST_PLAN.md шаг 3).
     // injectManifest, не generateSW — фаза 4 добавит свой push-handler в
     // sw.ts, переезд стратегии посреди пути был бы лишней переделкой.
@@ -96,10 +97,9 @@ export default defineConfig({
   resolve: { dedupe: ['react', 'react-dom'] },
   // dev-сервер должен читать ../shared (реэкспорты выходят за root)
   server: { fs: { allow: ['..'] } },
-  // Тестовое окружение (environment/globals) НЕ задаётся здесь глобально —
-  // каждый *.test.ts(x) сам объявляет `// @vitest-environment jsdom` пер-файл
-  // (см. CLAUDE.md / существующие тесты). Настраиваем только coverage —
-  // по образцу webapp/vite.config.ts (фронтенд-coverage-храповик).
+  // Тестовое окружение (environment/globals) НЕ задаётся здесь глобально — каждый *.test.ts(x)
+  // сам объявляет `// @vitest-environment jsdom` пер-файл (см. CLAUDE.md / существующие тесты).
+  // Настраиваем только coverage — по образцу webapp/vite.config.ts (фронтенд-coverage-храповик).
   test: {
     coverage: {
       provider: 'v8',

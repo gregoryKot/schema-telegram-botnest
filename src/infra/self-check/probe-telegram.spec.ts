@@ -24,7 +24,10 @@ describe('telegramProbe', () => {
         result: { username: 'schemehappens_bot' },
       }),
     }) as never;
-    const res = await telegramProbe({ BOT_TOKEN: 'abc' }).run();
+    const res = await telegramProbe({
+      BOT_TOKEN: 'abc',
+      BOT_USERNAME: 'schemehappens_bot',
+    }).run();
     expect(res.ok).toBe(true);
     expect(res.detail).toContain('schemehappens_bot');
   });
@@ -47,5 +50,55 @@ describe('telegramProbe', () => {
     const res = await telegramProbe({ BOT_TOKEN: 'abc' }).run();
     expect(res.ok).toBe(false);
     expect(res.detail).toContain('network unreachable');
+  });
+});
+
+// Аудит 2026-10 (infra#18): BOT_USERNAME строит ссылки-приглашения, но с
+// токеном нигде не сверялся — env прода мог вести в чужого бота.
+describe('telegramProbe — сверка BOT_USERNAME с токеном', () => {
+  const answerWith = (username: string) => {
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({ ok: true, result: { username } }),
+    }) as never;
+  };
+
+  it('имена расходятся — не ok, в detail оба имени', async () => {
+    answerWith('SchemeHappensBot');
+    const res = await telegramProbe({
+      BOT_TOKEN: 'abc',
+      BOT_USERNAME: 'SchemaLabBot',
+    }).run();
+    expect(res.ok).toBe(false);
+    expect(res.detail).toContain('SchemaLabBot');
+    expect(res.detail).toContain('SchemeHappensBot');
+  });
+
+  it('совпадение без учёта регистра и с @ — ok', async () => {
+    answerWith('SchemeHappensBot');
+    const res = await telegramProbe({
+      BOT_TOKEN: 'abc',
+      BOT_USERNAME: '@schemehappensbot',
+    }).run();
+    expect(res.ok).toBe(true);
+  });
+
+  it('токен есть, BOT_USERNAME пуст — не ok, detail называет бота', async () => {
+    answerWith('SchemeHappensBot');
+    const res = await telegramProbe({ BOT_TOKEN: 'abc' }).run();
+    expect(res.ok).toBe(false);
+    expect(res.detail).toContain('BOT_USERNAME не задан');
+    expect(res.detail).toContain('SchemeHappensBot');
+  });
+
+  it('режим переезда (BOT_REDIRECT_USERNAME) — сверки нет', async () => {
+    answerWith('SchemeHappensBot');
+    const res = await telegramProbe({
+      BOT_TOKEN: 'abc',
+      BOT_USERNAME: 'SchemaLabBot',
+      BOT_REDIRECT_USERNAME: 'new_schema_bot',
+    }).run();
+    expect(res.ok).toBe(true);
   });
 });

@@ -2,6 +2,10 @@
 // Матрица целиком под тестом — часть веток наступает только через неделю,
 // вживую их не прощёлкать.
 import { describe, it, expect, vi } from 'vitest';
+
+// Имя бота без дефолта (botConfig.ts): задаём до загрузки модулей, как это делает
+// .env.production на сборке.
+vi.hoisted(() => vi.stubEnv('VITE_BOT_USERNAME', 'SchemeHappensBot'));
 import {
   ADD_ICON_HOP_URL,
   addToHomeScreenUrl,
@@ -121,7 +125,9 @@ describe('shouldOfferHomeScreen', () => {
 describe('triggerAddToHomeScreen', () => {
   it('ссылка — ровно как у нативного клиента (startapp&addToHomeScreen)', () => {
     const url = addToHomeScreenUrl();
-    expect(url).toMatch(/^https:\/\/t\.me\/.+\/.+\?startapp&addToHomeScreen$/);
+    expect(url).toBe(
+      'https://t.me/SchemeHappensBot/diary?startapp&addToHomeScreen',
+    );
   });
 
   it('кнопка есть на обеих мобильных платформах, но не на десктопе', () => {

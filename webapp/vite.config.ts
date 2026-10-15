@@ -1,9 +1,10 @@
 /// <reference types="vitest/config" />
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import { requireBotUsernamePlugin } from '../shared/src/build/requireBotUsername.ts';
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), requireBotUsernamePlugin()],
   // shared/ импортирует react: без dedupe он резолвится в КОРНЕВОЙ
   // node_modules → два инстанса React (hooks dispatcher = null).
   resolve: { dedupe: ['react', 'react-dom'] },
@@ -12,10 +13,7 @@ export default defineConfig({
     fs: { allow: ['..'] },
     port: 5174,
     proxy: {
-      '/api': {
-        target: 'http://localhost:3000',
-        changeOrigin: true,
-      },
+      '/api': { target: 'http://localhost:3000', changeOrigin: true },
     },
   },
   // Тестовое окружение (environment/globals) НЕ задаётся здесь глобально —

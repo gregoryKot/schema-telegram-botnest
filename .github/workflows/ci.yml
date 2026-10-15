@@ -568,7 +568,12 @@ jobs:
           cache: npm
           cache-dependency-path: webapp/package-lock.json
       - run: npm ci --prefix webapp
+      # Без VITE_BOT_USERNAME production-сборка падает (shared/src/build/
+      # requireBotUsername.ts); значение то же, что в Dockerfile — их равенство
+      # держит bot-username-sources.spec.ts.
       - run: npm run build --prefix webapp
+        env:
+          VITE_BOT_USERNAME: SchemeHappensBot
       # Байт-храповик размера бандлов (аудит 2026-07, пункт №5): сборка выше
       # печатает «chunks larger than 400 kB» и это молча игнорировалось —
       # гейт меряет байты webapp/dist (свежесобран шагом выше) и уже
