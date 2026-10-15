@@ -3,6 +3,8 @@
 // настоящую обёртку в настоящую пробу. Модули грузятся в одном
 // jest.isolateModules: crypto читает ключи при загрузке, а холдер состояния —
 // синглтон, и миграция с пробой обязаны видеть один и тот же экземпляр.
+import { readFileSync } from 'fs';
+import { join } from 'path';
 import type { PrismaService } from '../../prisma/prisma.service';
 
 type Status = typeof import('./clinical-labels-status');
@@ -128,5 +130,72 @@ describe('runClinicalLabelMigration → clinicalLabelsProbe', () => {
     await status.runClinicalLabelMigration(db, { error: jest.fn() });
     expect(seen).toBe('running');
     expect(status.clinicalLabelsStatus.get().state).toBe('done');
+  });
+});
+
+describe('зависшая миграция → красная проба (шов на настоящих модулях)', () => {
+  it('findMany не возвращается: в пределах порога зелёная, за порогом красная', async () => {
+    quiet();
+    const { status, probe } = load(KEY_A);
+    const db = dbWith([]);
+    (db.note.findMany as jest.Mock).mockReturnValue(new Promise(() => {}));
+    void status.runClinicalLabelMigration(db, { error: jest.fn() });
+
+    const since = status.clinicalLabelsStatus.get().since;
+    const at = (ms: number) => () => since + ms;
+    const p = (ms: number) =>
+      probe.clinicalLabelsProbe({ ENCRYPTION_KEY: KEY_A }, at(ms)).run();
+
+    expect(status.clinicalLabelsStatus.get().state).toBe('running');
+    expect((await p(probe.CLINICAL_LABELS_STUCK_MS - 1)).ok).toBe(true);
+    const stuck = await p(probe.CLINICAL_LABELS_STUCK_MS);
+    expect(stuck.ok).toBe(false);
+    expect(stuck.detail).toContain('идёт уже 15 мин');
+  });
+});
+
+describe('since: момент последней смены состояния (по нему проба ловит зависание)', () => {
+  const EMPTY = { encrypted: {}, failures: 0, unknownKey: {} };
+
+  it('reset(now) → idle с since = now', () => {
+    const { status } = load(KEY_A);
+    status.clinicalLabelsStatus.reset(1000);
+    expect(status.clinicalLabelsStatus.get()).toMatchObject({
+      state: 'idle',
+      since: 1000,
+    });
+  });
+
+  it('start → running, finish → done, fail → failed: since берётся из момента смены', () => {
+    const { status } = load(KEY_A);
+    const h = status.clinicalLabelsStatus;
+    h.start(2000);
+    expect(h.get()).toMatchObject({ state: 'running', since: 2000 });
+    h.finish(EMPTY, 3000);
+    expect(h.get()).toMatchObject({ state: 'done', since: 3000 });
+    h.fail('boom', 4000);
+    expect(h.get()).toMatchObject({ state: 'failed', since: 4000 });
+  });
+});
+
+// Шов «main.ts → холдер» (правило №14): без вызова runClinicalLabelMigration
+// холдер вечно idle, а проба без таймера вечно рапортовала бы «ещё идёт».
+// Таймер в пробе поймает пропажу вызова на проде; этот пин ловит её в CI.
+describe('main.ts запускает миграцию клинических меток', () => {
+  const code = readFileSync(join(__dirname, '..', '..', 'main.ts'), 'utf8')
+    .split('\n')
+    .filter((line) => !line.trim().startsWith('//'))
+    .join('\n');
+
+  it('runClinicalLabelMigration импортирован из холдера пробы', () => {
+    expect(code).toMatch(
+      /import \{[^}]*\brunClinicalLabelMigration\b[^}]*\} from '\.\/infra\/self-check\/clinical-labels-status'/,
+    );
+  });
+
+  it('и вызывается с PrismaService из приложения', () => {
+    expect(code).toMatch(
+      /\brunClinicalLabelMigration\(\s*app\.get\(PrismaService\)/,
+    );
   });
 });

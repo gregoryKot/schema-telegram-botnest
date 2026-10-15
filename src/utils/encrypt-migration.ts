@@ -2,7 +2,15 @@ import { Logger } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { encrypt, encryptJson } from './crypto';
-import { classify, safeUpdate, warnUnknownKey } from './encrypt-migration.rows';
+import {
+  classify,
+  conceptJsonValues,
+  countUnknownKeyJson,
+  encryptArrayFields,
+  safeUpdate,
+  warnUnknownKey,
+} from './encrypt-migration.rows';
+import { describeClinicalProblems } from './encrypt-migration.report';
 
 const logger = new Logger('EncryptMigration');
 
@@ -16,6 +24,7 @@ const logger = new Logger('EncryptMigration');
 //   SchemaDiaryEntry.schemaIds
 //   ModeDiaryEntry.modeId
 //   ClientConceptualization.schemaIds, modeIds, history[].schemaIds, modeIds
+// JSON-поле со строкой под потерянным ключом не пишется, но идёт в unknownKey.
 export interface ClinicalMigrationResult {
   /** Сколько строк зашифровано за этот прогон, по таблицам. */
   encrypted: Record<string, number>;
@@ -73,15 +82,11 @@ export async function migrateClinicalLabels(
     select: { id: true, mySchemaIds: true, myModeIds: true },
   });
   for (const u of users) {
-    const patch: Prisma.UserUpdateInput = {};
-    if (Array.isArray(u.mySchemaIds)) {
-      const enc = encryptJson(u.mySchemaIds);
-      if (enc) patch.mySchemaIds = enc;
-    }
-    if (Array.isArray(u.myModeIds)) {
-      const enc = encryptJson(u.myModeIds);
-      if (enc) patch.myModeIds = enc;
-    }
+    countUnknownKeyJson('User', [u.mySchemaIds, u.myModeIds], unknownKey);
+    const patch: Prisma.UserUpdateInput = encryptArrayFields(u, [
+      'mySchemaIds',
+      'myModeIds',
+    ]);
     if (Object.keys(patch).length > 0) {
       const ok = await safeUpdate(
         'User',
@@ -98,7 +103,11 @@ export async function migrateClinicalLabels(
     select: { id: true, schemaIds: true },
   });
   for (const e of schemaEntries) {
-    if (!Array.isArray(e.schemaIds)) continue; // string → already encrypted
+    if (!Array.isArray(e.schemaIds)) {
+      // string → already encrypted (или под потерянным ключом → в остаток)
+      countUnknownKeyJson('SchemaDiaryEntry', [e.schemaIds], unknownKey);
+      continue;
+    }
     const enc = encryptJson(e.schemaIds);
     if (!enc) continue;
     const ok = await safeUpdate(
@@ -145,35 +154,32 @@ export async function migrateClinicalLabels(
     select: { id: true, schemaIds: true, modeIds: true, history: true },
   });
   for (const c of concepts) {
-    const cid = c.id; // единственный доступ к c.id — переиспользуем ниже
-    const patch: Prisma.ClientConceptualizationUpdateInput = {};
-    if (Array.isArray(c.schemaIds)) {
-      const enc = encryptJson(c.schemaIds);
-      if (enc) patch.schemaIds = enc;
-    }
-    if (Array.isArray(c.modeIds)) {
-      const enc = encryptJson(c.modeIds);
-      if (enc) patch.modeIds = enc;
-    }
+    countUnknownKeyJson(
+      'ClientConceptualization',
+      conceptJsonValues(c),
+      unknownKey,
+    );
+    const patch: Prisma.ClientConceptualizationUpdateInput = encryptArrayFields(
+      c,
+      ['schemaIds', 'modeIds'],
+    );
     // History — array of snapshots, each with its own schemaIds/modeIds
     if (Array.isArray(c.history)) {
       const newHistory = c.history.map((snap) => {
         const s = { ...(snap as Record<string, unknown>) };
-        if (Array.isArray(s.schemaIds)) s.schemaIds = encryptJson(s.schemaIds);
-        if (Array.isArray(s.modeIds)) s.modeIds = encryptJson(s.modeIds);
-        return s;
+        return { ...s, ...encryptArrayFields(s, ['schemaIds', 'modeIds']) };
       });
       // Only patch history if something actually changed
       if (JSON.stringify(newHistory) !== JSON.stringify(c.history))
-        patch.history = newHistory as unknown as Prisma.InputJsonValue;
+        patch.history = newHistory;
     }
     if (Object.keys(patch).length > 0) {
       const ok = await safeUpdate(
         'ClientConceptualization',
-        cid,
+        c.id,
         () =>
           prisma.clientConceptualization.update({
-            where: { id: cid },
+            where: { id: c.id },
             data: patch,
           }),
         failures,
@@ -184,22 +190,15 @@ export async function migrateClinicalLabels(
 
   const total = Object.values(totals).reduce((a, b) => a + b, 0);
   const ms = Date.now() - startedAt;
-  const skipped = Object.values(unknownKey).reduce((x, y) => x + y, 0);
-  if (failures.count > 0 || skipped > 0) {
+  const problems = describeClinicalProblems({
+    unknownKey,
+    failures: failures.count,
+  });
+  if (problems.length > 0) {
     // Один error за старт — через AlertLogger уходит владельцу в DM. Только
     // счётчики и имена таблиц: метки клинические, содержимое в лог не идёт.
-    const parts: string[] = [];
-    if (skipped > 0)
-      parts.push(
-        `${skipped} строк не прочитаны текущим ключом ` +
-          `(${JSON.stringify(unknownKey)}) — возможна неполная ротация ENCRYPTION_KEY`,
-      );
-    if (failures.count > 0)
-      parts.push(
-        `${failures.count} строк не записаны — см. предупреждения выше`,
-      );
     logger.error(
-      `Clinical-label migration finished with problems: ${parts.join('; ')} (${ms}ms)`,
+      `Clinical-label migration finished with problems: ${problems.join('; ')} (${ms}ms)`,
     );
   }
   if (total > 0) {

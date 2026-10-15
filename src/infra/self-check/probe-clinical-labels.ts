@@ -1,8 +1,18 @@
 import { Probe, ProbeResult } from './types';
 import { clinicalLabelsStatus } from './clinical-labels-status';
+import { describeClinicalProblems } from '../../utils/encrypt-migration.report';
 
-const sum = (m: Record<string, number>): number =>
-  Object.values(m).reduce((a, b) => a + b, 0);
+/**
+ * Сколько миграции дают на «ещё не началась» (idle после старта процесса) и на
+ * «ещё идёт» (running после старта миграции). Один прогон — пять findMany и по
+ * update на нужную строку: на проде секунды. 15 минут — на порядок больше
+ * реального прогона, медленный старт не будит; и заметно меньше часа между
+ * прогонами самопроверки (раз в час под claimRun), поэтому зависшая или не
+ * вызванная миграция краснеет не позже ближайшего часового прогона. Без
+ * этого предела idle/running были бы зелёными вечно: main.ts перестал бы
+ * вызывать runClinicalLabelMigration, а проба всё так же рапортовала бы «идёт».
+ */
+export const CLINICAL_LABELS_STUCK_MS = 15 * 60_000;
 
 /**
  * Дошифровка клинических меток дошла до конца без остатка. Остаток бывает
@@ -19,6 +29,7 @@ const sum = (m: Record<string, number>): number =>
  */
 export function clinicalLabelsProbe(
   env: NodeJS.ProcessEnv = process.env,
+  now: () => number = Date.now,
 ): Probe {
   return {
     id: 'clinicalLabels',
@@ -32,7 +43,18 @@ export function clinicalLabelsProbe(
     if (!env.ENCRYPTION_KEY?.trim()) return { ok: true, detail: 'выключено' };
     const s = clinicalLabelsStatus.get();
     if (s.state === 'idle' || s.state === 'running') {
-      return { ok: true, detail: 'проверка при старте ещё идёт' };
+      const waitedMs = now() - s.since;
+      if (waitedMs < CLINICAL_LABELS_STUCK_MS) {
+        return { ok: true, detail: 'проверка при старте ещё идёт' };
+      }
+      const min = Math.floor(waitedMs / 60_000);
+      return {
+        ok: false,
+        detail:
+          s.state === 'idle'
+            ? `дошифровка меток так и не запустилась: прошло ${min} мин после старта`
+            : `дошифровка меток идёт уже ${min} мин и не закончилась, возможно завис запрос к базе`,
+      };
     }
     if (s.state === 'failed') {
       return {
@@ -44,20 +66,9 @@ export function clinicalLabelsProbe(
           ),
       };
     }
-    const skipped = sum(s.unknownKey);
-    if (skipped === 0 && s.failures === 0) {
+    const parts = describeClinicalProblems(s);
+    if (parts.length === 0)
       return { ok: true, detail: 'все метки зашифрованы' };
-    }
-    const parts: string[] = [];
-    if (skipped > 0) {
-      const tables = Object.entries(s.unknownKey)
-        .map(([t, n]) => `${t}: ${n}`)
-        .join(', ');
-      parts.push(
-        `${skipped} строк не читаются текущим ключом (${tables}), возможна неполная ротация ENCRYPTION_KEY`,
-      );
-    }
-    if (s.failures > 0) parts.push(`${s.failures} строк не удалось записать`);
     return { ok: false, detail: parts.join('; ').slice(0, 300) };
   }
 }

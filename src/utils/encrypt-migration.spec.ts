@@ -10,6 +10,9 @@
 // старым ключом (см. describe про смену ENCRYPTION_KEY, включая найденный
 // баг двойного шифрования).
 //
+// Остаток: строки под потерянным ключом считаются в unknownKey и в JSON-полях
+// (describe «остаток в JSON-полях» ниже), а не только в Note.tags/ModeDiaryEntry.
+//
 // Ключи читаются один раз при загрузке модуля — каждый сценарий грузит
 // свежую пару crypto.ts/encrypt-migration.ts через jest.isolateModules
 // (паттерн из src/utils/crypto.spec.ts).
@@ -211,7 +214,7 @@ describe('migrateClinicalLabels — плейнтекст → шифротекс�
 });
 
 describe('поведение при уже проведённой смене ENCRYPTION_KEY (это НЕ ротация)', () => {
-  it('JSON-поле под старым ключом миграция не трогает вообще (эвристика — только Array.isArray)', async () => {
+  it('JSON-поле под старым ключом миграция не пишет (эвристика — только Array.isArray), но считает в остаток', async () => {
     const oldMods = load({ key: KEY_A });
     const oldBlob = oldMods.crypto.encryptJson(['abandon'])!;
 
@@ -219,11 +222,14 @@ describe('поведение при уже проведённой смене ENC
     const { migrateClinicalLabels } = load({ key: KEY_B });
     const entryRows = [{ id: 1, schemaIds: oldBlob }];
     const db = makeDb({ schemaDiaryEntries: entryRows }) as any;
-    await migrateClinicalLabels(db);
+    jest.spyOn(process.stderr, 'write').mockImplementation(() => true);
+    const result = await migrateClinicalLabels(db);
 
-    // Поле — строка (не массив), поэтому эвристика считает его «уже
+    // Поле — строка (не массив), поэтому на запись эвристика считает его «уже
     // зашифрованным» и не трогает вообще — независимо от того, каким именно
-    // ключом оно реально зашифровано. Строка остаётся нечитаемой без старого ключа.
+    // ключом оно реально зашифровано. Строка остаётся нечитаемой без старого
+    // ключа, и именно поэтому попадает в остаток (подробности — describe ниже).
+    expect(result.unknownKey).toEqual({ SchemaDiaryEntry: 1 });
     expect(db.schemaDiaryEntry.findMany).toHaveBeenCalledTimes(1);
     expect(db.schemaDiaryEntry.update).not.toHaveBeenCalled();
     // Значение в «БД» не тронуто вообще — тот же blob, что записали в фикстуру.
@@ -284,8 +290,8 @@ describe('поведение при уже проведённой смене ENC
       .map((c) => String(c[0]))
       .filter((l) => l.includes('[EncryptMigration]'));
     expect(errored).toHaveLength(1);
-    expect(errored[0]).toContain('1 строк не прочитаны текущим ключом');
-    expect(errored[0]).toContain('"Note":1');
+    expect(errored[0]).toContain('строк под нечитаемым ключом: 1 (Note: 1)');
+    expect(errored[0]).toContain('старый ключ шифрования убран раньше');
     expect(errored[0]).not.toContain(oldBlob);
 
     // Блоб остался нетронутым и всё ещё читается старым ключом.
@@ -335,7 +341,7 @@ describe('устойчивость к ошибкам при записи (изо
     expect(logged).toEqual(expect.stringContaining('update failed, skipping'));
     // Сводка — error (alert), а не warn: иначе до владельца не доходит.
     const errored = stderrWrite.mock.calls.map((c) => String(c[0])).join('\n');
-    expect(errored).toContain('1 строк не записаны');
+    expect(errored).toContain('не удалось записать строк: 1');
     stdoutWrite.mockRestore();
     stderrWrite.mockRestore();
   });
@@ -354,6 +360,107 @@ describe('устойчивость к ошибкам при записи (изо
       unknownKey: {},
     });
     expect(stderrWrite).not.toHaveBeenCalled();
+  });
+});
+
+// Остаток в JSON-полях: строка под потерянным ключом — тот же остаток, что у
+// Note.tags. Раньше её молча считали «уже зашифрованной», и проба рапортовала
+// «все метки зашифрованы» при нечитаемых данных. Считаем, но не пишем.
+describe('остаток в JSON-полях (строка под потерянным ключом)', () => {
+  const lostBlob = () => load({ key: KEY_A }).crypto.encryptJson(['abandon'])!;
+
+  const quietLogs = () => {
+    jest.spyOn(process.stdout, 'write').mockImplementation(() => true);
+    jest.spyOn(process.stderr, 'write').mockImplementation(() => true);
+  };
+
+  it('User: обе колонки под потерянным ключом — одна строка таблицы, не пишется', async () => {
+    const blob = lostBlob();
+    const { migrateClinicalLabels } = load({ key: KEY_B });
+    quietLogs();
+    const db = makeDb({
+      users: [
+        { id: 1, mySchemaIds: blob, myModeIds: blob },
+        { id: 2, mySchemaIds: blob, myModeIds: [] }, // массив пишется, строка считается
+      ],
+    }) as any;
+    const result = await migrateClinicalLabels(db);
+
+    expect(result.unknownKey).toEqual({ User: 2 });
+    expect(db.user.update).toHaveBeenCalledTimes(1); // только myModeIds: [] у id=2
+    expect(db.user.update.mock.calls[0][0].data).not.toHaveProperty(
+      'mySchemaIds',
+    );
+  });
+
+  it('ClientConceptualization: верхний уровень и снапшот истории — одна строка таблицы', async () => {
+    const blob = lostBlob();
+    const { migrateClinicalLabels } = load({ key: KEY_B });
+    quietLogs();
+    const db = makeDb({
+      conceptualizations: [
+        { id: 1, schemaIds: blob, modeIds: blob, history: [] },
+        {
+          id: 2,
+          schemaIds: [],
+          modeIds: [],
+          history: [{ modeIds: blob }, null],
+        },
+      ],
+    }) as any;
+    const result = await migrateClinicalLabels(db);
+
+    expect(result.unknownKey).toEqual({ ClientConceptualization: 2 });
+  });
+
+  it('строка под текущим ключом и пустое значение в остаток не идут; итог без error', async () => {
+    const { migrateClinicalLabels, crypto } = load({ key: KEY_B });
+    jest.spyOn(process.stdout, 'write').mockImplementation(() => true);
+    const stderr = jest
+      .spyOn(process.stderr, 'write')
+      .mockImplementation(() => true);
+    const ok = crypto.encryptJson(['abandon'])!;
+    const db = makeDb({
+      users: [{ id: 1, mySchemaIds: ok, myModeIds: '' }],
+      schemaDiaryEntries: [{ id: 2, schemaIds: ok }],
+      conceptualizations: [
+        { id: 3, schemaIds: ok, modeIds: ok, history: [{ schemaIds: ok }] },
+      ],
+    }) as any;
+    const result = await migrateClinicalLabels(db);
+
+    expect(result.unknownKey).toEqual({});
+    expect(stderr).not.toHaveBeenCalled();
+  });
+
+  it('под ENCRYPTION_KEY_OLD строка читается — не остаток', async () => {
+    const blob = lostBlob();
+    const { migrateClinicalLabels } = load({ key: KEY_B, old: KEY_A });
+    quietLogs();
+    const db = makeDb({ schemaDiaryEntries: [{ id: 1, schemaIds: blob }] });
+    const result = await migrateClinicalLabels(db);
+
+    expect(result.unknownKey).toEqual({});
+  });
+
+  it('остаток из JSON-поля попадает в error-сводку с именем таблицы, без шифроблока', async () => {
+    const blob = lostBlob();
+    const { migrateClinicalLabels } = load({ key: KEY_B });
+    jest.spyOn(process.stdout, 'write').mockImplementation(() => true);
+    const stderr = jest
+      .spyOn(process.stderr, 'write')
+      .mockImplementation(() => true);
+    const db = makeDb({
+      schemaDiaryEntries: [{ id: 7, schemaIds: blob }],
+    });
+    await migrateClinicalLabels(db);
+
+    const errored = stderr.mock.calls
+      .map((c) => String(c[0]))
+      .filter((l) => l.includes('[EncryptMigration]'));
+    expect(errored).toHaveLength(1);
+    expect(errored[0]).toContain('(SchemaDiaryEntry: 1)');
+    expect(errored[0]).not.toContain(blob);
   });
 });
 

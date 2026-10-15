@@ -24,22 +24,29 @@ export interface ClinicalLabelsSnapshot {
   /** Сообщение исключения (без содержимого строк). */
   lastError: string | null;
   finishedAt: number | null;
+  /**
+   * Unix ms последней СМЕНЫ состояния: для idle — момент загрузки модуля (то
+   * есть старт процесса, main.ts импортирует холдер сразу), для running —
+   * старт миграции. По нему проба отличает «ещё идёт» от «завис / не вызвана».
+   */
+  since: number;
 }
 
-const initial = (): ClinicalLabelsSnapshot => ({
+const initial = (now: number = Date.now()): ClinicalLabelsSnapshot => ({
   state: 'idle',
   unknownKey: {},
   failures: 0,
   encrypted: 0,
   lastError: null,
   finishedAt: null,
+  since: now,
 });
 
 class ClinicalLabelsStatusHolder {
   private snapshot = initial();
 
-  start(): void {
-    this.snapshot = { ...initial(), state: 'running' };
+  start(now: number = Date.now()): void {
+    this.snapshot = { ...initial(now), state: 'running' };
   }
 
   finish(result: ClinicalMigrationResult, now: number = Date.now()): void {
@@ -50,12 +57,13 @@ class ClinicalLabelsStatusHolder {
       encrypted: Object.values(result.encrypted).reduce((a, b) => a + b, 0),
       lastError: null,
       finishedAt: now,
+      since: now,
     };
   }
 
   fail(message: string, now: number = Date.now()): void {
     this.snapshot = {
-      ...initial(),
+      ...initial(now),
       state: 'failed',
       lastError: message,
       finishedAt: now,
@@ -67,8 +75,8 @@ class ClinicalLabelsStatusHolder {
   }
 
   /** Сброс между тестами. */
-  reset(): void {
-    this.snapshot = initial();
+  reset(now: number = Date.now()): void {
+    this.snapshot = initial(now);
   }
 }
 

@@ -1,5 +1,5 @@
 import { Logger } from '@nestjs/common';
-import { decrypt, looksLikeCiphertext } from './crypto';
+import { decrypt, encryptJson, looksLikeCiphertext } from './crypto';
 
 const logger = new Logger('EncryptMigration');
 
@@ -27,6 +27,60 @@ export function classify(v: string): PlaintextCheck {
   if (decrypt(v) !== v) return 'encrypted';
   if (looksLikeCiphertext(v)) return 'unknown-key';
   return 'plaintext';
+}
+
+/**
+ * Легаси-массивы в JSON-полях → шифротекст-строки (патч для update). Поле, где
+ * уже строка, в патч не попадает — его не трогаем.
+ */
+export function encryptArrayFields<K extends string>(
+  row: Partial<Record<K, unknown>>,
+  fields: K[],
+): Partial<Record<K, string>> {
+  const patch: Partial<Record<K, string>> = {};
+  for (const f of fields) {
+    if (!Array.isArray(row[f])) continue;
+    const enc = encryptJson(row[f]);
+    if (enc) patch[f] = enc;
+  }
+  return patch;
+}
+
+/**
+ * JSON-поля (User.mySchemaIds/myModeIds, SchemaDiaryEntry.schemaIds,
+ * ClientConceptualization.*) хранят либо легаси-массив, либо шифротекст-строку;
+ * миграция строку не трогает и не должна. Но строка под потерянным ключом —
+ * такой же остаток, как Note.tags: считаем её в `unknownKey` (строка таблицы —
+ * один раз, сколько бы полей ни было), иначе проба рапортует «все метки
+ * зашифрованы» при нечитаемых данных. Только счётчик, без warn на строку: в
+ * User их тысячи, а потерянный ключ — одна авария, её сигнал — итоговый error.
+ * Ничего не пишет.
+ */
+export function countUnknownKeyJson(
+  table: string,
+  values: unknown[],
+  unknownKey: Record<string, number>,
+): void {
+  const lost = values.some(
+    (v) => typeof v === 'string' && classify(v) === 'unknown-key',
+  );
+  if (lost) unknownKey[table] = (unknownKey[table] ?? 0) + 1;
+}
+
+/** Все JSON-значения клинических меток ClientConceptualization, включая снапшоты истории. */
+export function conceptJsonValues(c: {
+  schemaIds: unknown;
+  modeIds: unknown;
+  history: unknown;
+}): unknown[] {
+  const snaps = Array.isArray(c.history)
+    ? (c.history as Array<Record<string, unknown> | null>)
+    : [];
+  return [
+    c.schemaIds,
+    c.modeIds,
+    ...snaps.flatMap((s) => [s?.schemaIds, s?.modeIds]),
+  ];
 }
 
 /**
