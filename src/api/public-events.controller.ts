@@ -8,22 +8,20 @@ import {
   sanitizeGameMeta,
 } from '../analytics/game-events.constants';
 import { PublicEventDto } from './dto/public-event.dto';
+import { sanitizePublicCrisisMeta } from './public-crisis.sanitize';
 import { isQuizId, quizResultIdSet } from '../quiz/quiz-registry';
 
-// Анонимному лендингу (userId = null, правило №5/№14) разрешаем ТОЛЬКО
-// 'add'/'added' — то, что реально шлёт AppInstallSection.tsx.
-// 'shown'/'later'/'never' — состояния воронки, аноним их писать не должен
-// (не обязан быть честным, а later/never несут действие внутри мини-аппа).
-// Расширять список — сознательное решение, не копия авторизованного пути.
+// Анонимному лендингу (правило №5/№14) — ТОЛЬКО 'add'/'added', их шлёт
+// AppInstallSection.tsx. 'shown'/'later'/'never' — состояния воронки, аноним
+// не обязан быть честным. Расширять — сознательное решение, не копия auth-пути.
 const PUBLIC_HOME_SCREEN_ACTIONS: ReadonlySet<string> = new Set([
   'add',
   'added',
 ]);
 
-// Анонимная аналитика (правило №8): мини-тест, клик по ссылке на сайт
-// практики, блок установки на лендинге и вся игра (game/, правило №5/№14 —
-// она вообще не авторизует) — событие пишется с userId = null. Идентичность
-// не верифицирована, троттлинг-бакет по IP (UserThrottlerGuard), лимит жёстче.
+// Анонимная аналитика (правило №8): мини-тест, клик на сайт практики, блок
+// установки, игра (game/, правило №5/№14), кризисная карточка записи — событие
+// пишется с userId = null. Идентичность не верифицирована: бакет по IP, лимит жёстче.
 @Controller('api')
 export class PublicEventsController {
   private readonly validResults = quizResultIdSet();
@@ -70,12 +68,14 @@ export class PublicEventsController {
         ? { place }
         : null;
     }
+    if (name === 'crisis_card_shown' || name === 'crisis_hotline_tapped') {
+      return sanitizePublicCrisisMeta(meta);
+    }
     if (name === 'home_screen_offer') {
       const action = meta?.action;
       const surface = meta?.surface;
-      // Публичный путь принимает ТОЛЬКО лендинг (site_landing) — остальные
-      // поверхности (в т.ч. site_banner в кабинете) авторизованы и идут
-      // через POST /api/event, там своя валидация по HOME_SCREEN_SURFACE_SET.
+      // Публичный путь принимает ТОЛЬКО лендинг (site_landing): остальные
+      // поверхности авторизованы — POST /api/event (HOME_SCREEN_SURFACE_SET).
       return typeof action === 'string' &&
         PUBLIC_HOME_SCREEN_ACTIONS.has(action) &&
         surface === 'site_landing'

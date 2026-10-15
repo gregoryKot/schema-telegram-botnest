@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { formatProductMetrics, ProductMetrics } from './product-metrics.format';
+import { countCrisis } from './crisis-metrics';
 import { formatQuizMetrics } from './quiz-metrics.format';
 import { QuizMetricsService } from './quiz-metrics.service';
 import { formatPracticeLinkMetrics } from './practice-link-metrics.format';
@@ -73,8 +74,7 @@ export class ProductMetricsService {
       themeLight,
       themeDark,
       themeSystem,
-      crisisShown,
-      crisisTapped,
+      crisis,
       shareRows,
       outboxRows,
       shareCard7,
@@ -130,8 +130,7 @@ export class ProductMetricsService {
       this.prisma.user.count({ where: { ...activeUser, themePref: 'light' } }),
       this.prisma.user.count({ where: { ...activeUser, themePref: 'dark' } }),
       this.prisma.user.count({ where: { ...activeUser, themePref: null } }),
-      ev('crisis_card_shown'),
-      ev('crisis_hotline_tapped'),
+      countCrisis(this.prisma, since30),
       this.prisma.$queryRaw<Array<{ ok: string | null; c: bigint }>>`
         SELECT "meta"->>'ok' AS ok, count(*)::bigint AS c FROM "AnalyticsEvent"
         WHERE "name" = 'share_result' AND "createdAt" >= ${since30}
@@ -250,7 +249,7 @@ export class ProductMetricsService {
           count: Number(r.c),
         })),
       },
-      crisis: { shown: crisisShown, hotlineTapped: crisisTapped },
+      crisis,
       shareResult: { ok: shareOk, fallback: shareFallback },
       outbox: {
         flushes: Number(outboxRows[0]?.flushes ?? 0n),

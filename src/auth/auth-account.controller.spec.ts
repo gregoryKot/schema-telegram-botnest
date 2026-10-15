@@ -452,6 +452,28 @@ describe('AuthAccountController.emailLinkToAccount', () => {
 });
 
 describe('AuthAccountController.telegramWebApp', () => {
+  // Login-CSRF (security#6): см. auth-max.controller.spec.ts.
+  it('без CSRF-заголовка (форма с чужого сайта) → 401, ни подписи, ни куки', async () => {
+    const { controller, auth } = makeController();
+    const res = makeRes();
+    await expect(
+      controller.telegramWebApp(
+        { initData: 'attacker-signed' },
+        makeReq({
+          csrf: false,
+          headers: {
+            'content-type': 'application/x-www-form-urlencoded',
+            'sec-fetch-site': 'cross-site',
+          },
+        }),
+        res,
+      ),
+    ).rejects.toThrow(UnauthorizedException);
+    expect(auth.verifyTelegramWebAppData).not.toHaveBeenCalled();
+    expect(auth.issueTokens).not.toHaveBeenCalled();
+    expect(res.cookie).not.toHaveBeenCalled();
+  });
+
   it('без initData → BadRequestException, подпись не проверяется', async () => {
     const { controller, auth } = makeController();
     await expect(
