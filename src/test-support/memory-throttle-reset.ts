@@ -17,44 +17,48 @@
 // Таймер, сработавший уже ПОСЛЕ нового хита, не падал, но молча вычитал
 // единицу из новой записи.
 //
-// В проде записи из хранилища никто не удаляет (ни библиотека, ни
-// HybridThrottleStorage), так что дефект жил только в тестовом сбросе.
-//
-// Сброс здесь повторяет остановку приложения: сперва отменить таймеры
+// С разбора прод ушёл со штатного хранилища на MemoryThrottleStorage
+// (src/api/memory-throttle-storage.ts): таймеров у него нет, и сброс — просто
+// стереть Map. Для голого ThrottlerStorageService (сборка без гибрида, контроль
+// в спеках) прежний путь остаётся: сперва отменить таймеры
 // (onApplicationShutdown — публичный метод хранилища, ровно это и делает),
-// потом стереть записи. После него хранилище в том же состоянии, что свежее.
+// потом стереть записи. После сброса хранилище в том же состоянии, что свежее.
 import type { ThrottlerStorageService } from '@nestjs/throttler';
+import type { MemoryThrottleStorage } from '../api/memory-throttle-storage';
 
-type MemoryThrottle = Pick<
+type Library = Pick<
   ThrottlerStorageService,
   'storage' | 'onApplicationShutdown'
 >;
+type Own = Pick<MemoryThrottleStorage, 'reset'>;
 
 /**
- * Штатное хранилище в памяти: вложенное `.memory` у HybridThrottleStorage
+ * Хранилище в памяти: вложенное `.memory` у HybridThrottleStorage
  * (src/api/hybrid-throttle-storage.ts — немаркированные ключи, в том числе
- * `/api/auth/refresh`) или сам ThrottlerStorageService. Другая форма —
- * громкая ошибка: тихий no-op вернул бы утечку лимита между сценариями, и
- * тест падал бы на 429 вместо того, чтобы назвать причину.
+ * `/api/auth/refresh`), MemoryThrottleStorage само или ThrottlerStorageService.
+ * Другая форма — громкая ошибка: тихий no-op вернул бы утечку лимита между
+ * сценариями, и тест падал бы на 429 вместо того, чтобы назвать причину.
  */
-function memoryOf(storage: object): MemoryThrottle {
-  const candidate = ('memory' in storage ? storage.memory : storage) as
-    Partial<MemoryThrottle> | undefined;
-  if (
-    typeof candidate?.storage?.clear !== 'function' ||
-    typeof candidate.onApplicationShutdown !== 'function'
-  ) {
-    throw new Error(
-      'resetMemoryThrottle: не найдено in-memory хранилище троттлера ' +
-        '(ни `.memory` у HybridThrottleStorage, ни ThrottlerStorageService)',
-    );
-  }
-  return candidate as MemoryThrottle;
+function memoryOf(storage: object): Partial<Own & Library> {
+  return ('memory' in storage ? storage.memory : storage) as Partial<
+    Own & Library
+  >;
 }
 
 /** Обнуляет счётчики в памяти, не оставляя таймеров без записей. */
 export function resetMemoryThrottle(storage: object): void {
   const memory = memoryOf(storage);
+  if (typeof memory?.reset === 'function') return memory.reset();
+  if (
+    typeof memory?.storage?.clear !== 'function' ||
+    typeof memory.onApplicationShutdown !== 'function'
+  ) {
+    throw new Error(
+      'resetMemoryThrottle: не найдено in-memory хранилище троттлера ' +
+        '(ни `.memory` у HybridThrottleStorage, ни MemoryThrottleStorage, ' +
+        'ни ThrottlerStorageService)',
+    );
+  }
   memory.onApplicationShutdown();
   memory.storage.clear();
 }
