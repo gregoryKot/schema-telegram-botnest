@@ -23,15 +23,8 @@ import { EmailService } from './email.service';
 import type { Request, Response } from 'express';
 import { requireCsrf, setRefreshCookie } from './auth-http.util';
 import { PersistentThrottle } from '../api/persistent-throttle.decorator';
-
-// H1 аудита 2026-10: шестизначный код без собственного лимита подбирается за
-// сутки при штатных 200 запросов/мин. Любая ручка, проверяющая код 2FA, получает
-// 5/мин и 20/час, а счётчик — в Postgres (@PersistentThrottle, правило №5):
-// in-memory лимит обходится сменой инстанса.
-const CODE_THROTTLE = {
-  short: { limit: 5, ttl: 60_000 },
-  long: { limit: 20, ttl: 3_600_000 },
-};
+import { PersistentThrottleLimit } from '../api/persistent-throttle-limit';
+import { CODE_THROTTLE, DAILY_MAIL_THROTTLE } from './auth-throttles';
 
 @Controller('api/auth')
 export class Auth2faController {
@@ -129,10 +122,7 @@ export class Auth2faController {
 
   @Post('recovery-email/start')
   @UseGuards(JwtAuthGuard)
-  @Throttle({
-    short: { limit: 3, ttl: 60_000 },
-    long: { limit: 10, ttl: 24 * 3_600_000 },
-  })
+  @PersistentThrottleLimit(DAILY_MAIL_THROTTLE)
   @HttpCode(200)
   async recoveryEmailStart(
     @Req() req: Request,
@@ -163,10 +153,7 @@ export class Auth2faController {
   // Public — anyone can request a recovery link by email. We silently
   // succeed regardless to avoid leaking which emails are registered.
   @Post('recovery/request')
-  @Throttle({
-    short: { limit: 3, ttl: 60_000 },
-    long: { limit: 10, ttl: 24 * 3_600_000 },
-  })
+  @PersistentThrottleLimit(DAILY_MAIL_THROTTLE)
   @HttpCode(200)
   async recoveryRequest(@Body() dto: EmailBodyDto): Promise<{ ok: true }> {
     return this.emailSvc.sendRecoveryLink(dto.email);

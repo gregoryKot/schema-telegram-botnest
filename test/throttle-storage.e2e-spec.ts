@@ -142,3 +142,57 @@ describe('e2e HTTP: троттлинг booking/book через Postgres (мод�
     expect(rows).toBe(0);
   });
 });
+
+// Находка аудита 2026-10: кодовые и заявочные ручки (merge с TOTP, билеты,
+// confirm-login, заявка терапевта) считали попытки в памяти процесса — деплой
+// обнулял окно, и 8-символьный код человека перебирался окнами «20 в час»,
+// склеенными рестартами. Шов — второй app над той же БД: модель деплоя и
+// второго инстанса Amvera. Мок $queryRaw этого не доказывает (правило №18).
+describe('e2e HTTP: лимит кодовых ручек переживает рестарт приложения', () => {
+  let prisma: PrismaService;
+  const apps: INestApplication[] = [];
+
+  afterAll(async () => {
+    await prisma?.throttleHit.deleteMany({});
+    await Promise.all(apps.map((a) => a.close()));
+  });
+
+  async function boot(fresh: boolean): Promise<INestApplication> {
+    const built = await buildRealDbTestApp();
+    apps.push(built.app);
+    prisma = built.prisma;
+    // Второй app над той же БД счётчики не трогает — это и есть рестарт.
+    if (fresh) await prisma.throttleHit.deleteMany({});
+    return built.app;
+  }
+
+  it('POST /api/auth/merge: три попытки — 400, четвёртая — 429, после рестарта сразу 429', async () => {
+    const first = await boot(true);
+    const post = (a: INestApplication) =>
+      request(a.getHttpServer()).post('/api/auth/merge').send({});
+    const statuses: number[] = [];
+    for (let i = 0; i < 4; i++) statuses.push((await post(first)).status);
+    expect(statuses).toEqual([400, 400, 400, 429]);
+
+    await first.close();
+    const second = await boot(false);
+    expect((await post(second)).status).toBe(429);
+    expect(await prisma.throttleHit.count()).toBeGreaterThan(0);
+  });
+
+  it('POST /api/therapy/request (окно 24 ч): второй app видит то же окно', async () => {
+    // Идентичность для бакета — IP (Bearer нет): гард троттлинга срабатывает
+    // раньше авторизации, как и у booking/book выше.
+    const first = await boot(true);
+    const post = (a: INestApplication) =>
+      request(a.getHttpServer()).post('/api/therapy/request').send({});
+    const statuses: number[] = [];
+    for (let i = 0; i < 3; i++) statuses.push((await post(first)).status);
+    expect(statuses.slice(0, 2)).not.toContain(429);
+    expect(statuses[2]).toBe(429);
+
+    await first.close();
+    const second = await boot(false);
+    expect((await post(second)).status).toBe(429);
+  });
+});

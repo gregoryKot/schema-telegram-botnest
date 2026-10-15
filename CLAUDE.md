@@ -56,7 +56,8 @@ shared, а не по образцу старого дубля.
 у каждого свой счётчик. Инцидент 2026-09-13: на `POST /api/booking/book`
 стоял `@Throttle({ long: { limit: 6, ttl: 3_600_000 } })`, семь запросов за
 3 минуты — и ни один не получил 429, потому что запросы разошлись по разным
-инстансам. Счётчик денежных/заявочных ручек (booking/donation/subscription)
+инстансам. Счётчик денежных/заявочных и кодовых ручек (booking/donation/subscription,
+2FA, merge, билеты входа/привязки, заявка терапевта, письма на произвольный адрес)
 переехал в Postgres — модель `ThrottleHit`, `HybridThrottleStorage` маршрутизирует
 по ключу (`src/api/hybrid-throttle-storage.ts` + `postgres-throttle-storage.ts`):
 маршрут, помеченный `@PersistentThrottle()` (`src/api/persistent-throttle.decorator.ts`),
@@ -67,6 +68,18 @@ Postgres общим на все инстансы счётчиком; остал�
 (`test/throttle-storage.e2e-spec.ts`, правило №18), мок `$queryRaw` её не
 проверяет. При недоступной БД — деградация в память на этот один вызов
 (`warn`, не `error`: авария БД алертится отдельно).
+
+Механизм принуждения — классификация, не поиск признака: **`scripts/check-persistent-throttle.mjs`**
+(CI, джоба `checks`) требует решения о КАЖДОЙ ручке контроллера, у которой есть
+`@Throttle(` либо в теле `verifyCode(`/`assertSourceTotp(`/`.approve(`/`.deny(`/`.submit(`:
+метка (`@PersistentThrottle()`, составной `@PersistentThrottleLimit(...)` из
+`src/api/persistent-throttle-limit.ts`, `AdminThrottle()` на классе) либо запись
+`exempt` с причиной ≥20 символов и `since` в `scripts/persistent-throttle-baseline.json`.
+Протухшая запись (маршрута нет или метка уже стоит) тоже красная. Флага
+`--update` нет намеренно. Лимиты кодовых ручек — `src/auth/auth-throttles.ts`.
+Инцидент-образец: аудит 2026-10 — 8-символьный код человека (`confirm-login`)
+перебирался окнами «20 в час», склеенными рестартами. Живые e2e между спеками
+сбрасывают счётчики (`test/e2e-support/throttle-reset.setup.ts`).
 
 ### 6. Новый эндпоинт = DTO с class-validator
 Inline-интерфейсы в `@Body()` дают только compile-time иллюзию. Рантайм

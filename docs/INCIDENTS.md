@@ -24,7 +24,9 @@
    код молча деградирует. Держит: `src/infra/env-registry*` +
    `scripts/check-env-registry.mjs`, реестр возможностей.
 3. **Инстанс один** — состояние в памяти процесса при втором поде расходится.
-   Держит: `CronLeaderService`, Postgres-троттлер; класс закрыт не целиком
+   Держит: `CronLeaderService`, Postgres-троттлер и
+   `scripts/check-persistent-throttle.mjs` (каждая ручка с лимитом или кодом в
+   теле — в Postgres либо `exempt` с причиной); класс закрыт не целиком
    (см. docs/SHIELD_PROMPT.md, «Известные дыры»).
 4. **Мок ≠ реальность** — фейковая Prisma или мок драйвера отвечает то, чего
    живая база не умеет. Держит: `scripts/check-raw-sql-live.mjs`, джоба
