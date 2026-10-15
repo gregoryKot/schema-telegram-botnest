@@ -63,6 +63,10 @@ const ANON_EVENTS: Array<{ name: string; meta: Record<string, unknown> }> = [
   { name: 'client_error', meta: { section: 'booking', source: 'webapp' } },
   { name: 'client_error', meta: { section: 'auth', source: 'miniapp' } },
   { name: 'signup_source', meta: { src: 'web' } },
+  // Кризисная карточка формы записи на визитке (аудит 2026-10, frontends#5):
+  // пишется анонимно, строка отчёта считает её отдельно по meta.surface.
+  { name: 'crisis_card_shown', meta: { surface: 'booking' } },
+  { name: 'crisis_hotline_tapped', meta: { surface: 'booking' } },
 ];
 
 describe('/stats на реальном Postgres: каждый сырой запрос исполняется драйвером', () => {
@@ -127,6 +131,11 @@ describe('/stats на реальном Postgres: каждый сырой зап�
     // Секция 'booking' события client_error (инцидент 2026-09-13) считается
     // отдельным FILTER'ом в сыром SQL — на живой базе он обязан дать ≥1.
     expect(product).toContain('Запись на консультацию');
+    // JSON-фильтр по meta.surface (countCrisis) исполнен драйвером и увидел
+    // анонимные строки: обе цифры «из них в форме записи» не меньше 1.
+    expect(product).toMatch(
+      /в форме записи на консультацию: показали [1-9]\d*, позвонили [1-9]\d*\)/,
+    );
   });
 
   it('повторный прогон на той же базе — идемпотентен (фикстуры вычищены)', async () => {

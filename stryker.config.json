@@ -27,6 +27,7 @@
     "src/booking/pricing.service.ts",
     "src/booking/payment.controller.ts",
     "src/auth/security-log.service.ts",
+    "src/auth/security-log-redact.ts",
     "src/donation/donation.service.ts"
   ],
   "reporters": [

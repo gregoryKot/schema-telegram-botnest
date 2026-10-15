@@ -9,9 +9,8 @@
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import cookieParser from 'cookie-parser';
-import { json, urlencoded } from 'express';
 import { AppModule } from '../../src/app.module';
-import { BODY_LIMIT } from '../../src/infra/body-limit';
+import { installBodyParsers } from '../../src/infra/body-parsers';
 import { PrismaService } from '../../src/prisma/prisma.service';
 import { TELEGRAF_BOT } from '../../src/telegram/telegram.constants';
 import { installBigIntJson } from '../../src/utils/bigint-json';
@@ -47,8 +46,7 @@ export async function buildRealDbTestApp(): Promise<RealDbTestApp> {
   // Nest в 100 КБ: тело на 150 КБ проходило в фейковом прогоне и падало в
   // настоящем. Ровно тот класс расхождения фейка с реальностью, ради которого
   // второй прогон и заведён.
-  app.use(json({ limit: BODY_LIMIT }));
-  app.use(urlencoded({ limit: BODY_LIMIT, extended: true }));
+  installBodyParsers(app);
   await app.init();
   return { app, prisma: app.get(PrismaService) };
 }

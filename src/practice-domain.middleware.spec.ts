@@ -181,6 +181,17 @@ describe('practiceDomainMiddleware', () => {
       expect(nextCalled).toBe(false);
     });
 
+    // Правило №15: контрольные образцы к '/api/payment' — похожие, но
+    // незаконные пути обязаны по-прежнему краснеть.
+    it.each(['/api/paymentx', '/api/payments', '/api/payment-admin'])(
+      '%s → 301 (похожий, но незаконный префикс — не подстрока)',
+      (path) => {
+        const { sent, nextCalled } = run('kotlarewski.gr', path);
+        expect(sent.redirect).toEqual([301, `https://schemehappens.ru${path}`]);
+        expect(nextCalled).toBe(false);
+      },
+    );
+
     it('/api/client-errorsx → 301 (похожий, но незаконный префикс — не подстрока)', () => {
       const { sent, nextCalled } = run('kotlarewski.gr', '/api/client-errorsx');
       expect(sent.redirect).toEqual([
@@ -279,6 +290,21 @@ describe('practiceDomainMiddleware', () => {
       expect(sent.redirect).toBeUndefined();
       expect(nextCalled).toBe(true);
     });
+
+    // ResultURL Robokassa (аудит 2026-10, security#16): POST формой с алиаса
+    // обязан дойти до контроллера, а не получить 301 без тела.
+    it.each([
+      ['POST', '/api/payment/result'],
+      ['GET', '/api/payment/success'],
+      ['GET', '/api/payment/fail'],
+    ])(
+      '%s %s на kotlarewski.gr → проходит (вебхук/возврат Robokassa)',
+      (method, path) => {
+        const { sent, nextCalled } = run('kotlarewski.gr', path, path, method);
+        expect(sent.redirect).toBeUndefined();
+        expect(nextCalled).toBe(true);
+      },
+    );
 
     it.each(['DELETE', 'PATCH', 'PUT'])(
       '%s /api/therapy/x на алиасе → 301',
