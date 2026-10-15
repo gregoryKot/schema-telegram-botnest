@@ -1225,7 +1225,7 @@
   "src/quiz/quiz-voice.data.ts": 232,
   "src/quiz/quiz.types.ts": 44,
   "src/security/collect-source-files.ts": 69,
-  "src/security/controller-classification.ts": 84,
+  "src/security/controller-classification.ts": 80,
   "src/site-content/site-content-admin.controller.ts": 69,
   "src/site-content/site-content-admin.dto.ts": 35,
   "src/site-content/site-content.controller.ts": 13,
