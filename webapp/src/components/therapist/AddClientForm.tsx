@@ -1,5 +1,6 @@
 import { useTr } from '../../utils/addressForm';
 import { TherapistInviteShare } from '../../share/TherapistInviteShare';
+import { CLIENT_NAME_MAX } from '../../../../shared/src/limits/textLimits';
 import { CopyFailedHint } from '../../../../shared/src/components/CopyFailedHint';
 import type { useAddClient } from './useAddClient';
 
@@ -11,8 +12,7 @@ export function AddClientForm({ addClient }: Props) {
     name: addName, setName: setAddName,
     withInvite, setWithInvite,
     created: addCreated, submitting: addSubmitting, error: addError, copied: addCopied, copyFailed: addCopyFailed, valid: addValid,
-    inputRef: addInputRef,
-    submit: submitAddClient, reset: resetAddClient, copyInvite: copyAddInvite,
+    inputRef: addInputRef, submit: submitAddClient, reset: resetAddClient, copyInvite: copyAddInvite,
   } = addClient;
 
   return (
@@ -82,7 +82,7 @@ export function AddClientForm({ addClient }: Props) {
               onChange={e => setAddName(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && submitAddClient()}
               placeholder="Например, Анна К."
-              autoComplete="off"
+              autoComplete="off" maxLength={CLIENT_NAME_MAX}
             />
             <button
               onClick={submitAddClient}

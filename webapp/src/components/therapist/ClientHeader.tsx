@@ -4,13 +4,10 @@ import { todayCalendarDate } from '../../../../shared/src/utils/calendarDate';
 import { calcTherapyDuration, nextSessionLabel } from './clientSheetHelpers';
 import type { ClientDetail, ClientTab } from './clientSheetTypes';
 import { ConfirmDialog } from '../ConfirmDialog';
+import { CLIENT_NAME_MAX } from '../../../../shared/src/limits/textLimits';
 import { removeClientConfirmCopy } from '../../../../shared/src/therapy/removeClientConfirm';
 
-interface Props {
-  selectedClient: TherapyClientSummary;
-  detail: ClientDetail;
-  switchView: (v: 'list' | 'client') => void;
-}
+interface Props { selectedClient: TherapyClientSummary; detail: ClientDetail; switchView: (v: 'list' | 'client') => void }
 
 export function ClientHeader({ selectedClient, detail, switchView }: Props) {
   const {
@@ -40,7 +37,7 @@ export function ClientHeader({ selectedClient, detail, switchView }: Props) {
         {/* Name / inline edit */}
         {renamingAlias ? (
           <>
-            <input ref={aliasInputRef} value={aliasInput} onChange={e => setAliasInput(e.target.value)}
+            <input ref={aliasInputRef} value={aliasInput} onChange={e => setAliasInput(e.target.value)} maxLength={CLIENT_NAME_MAX}
               onKeyDown={e => { if (e.key === 'Enter') saveAlias(); if (e.key === 'Escape') setRenamingAlias(false); }}
               style={{ fontFamily: 'var(--serif)', fontSize: 24, fontWeight: 400, letterSpacing: '-0.015em', background: 'transparent', border: 'none', borderBottom: '2px solid var(--accent)', outline: 'none', width: 220, padding: '1px 0', color: 'var(--text)' }} />
             <button onClick={saveAlias} disabled={aliasSaving} style={{ padding: '3px 10px', borderRadius: 5, border: 'none', background: 'var(--text)', color: 'var(--bg)', fontSize: 12, cursor: 'pointer' }}>

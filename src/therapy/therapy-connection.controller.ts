@@ -23,11 +23,8 @@ import { ALREADY_CONNECTED_ERROR } from './therapy-invite';
 import { TherapyClientDataService } from './therapy-client-data.service';
 import { TherapistRequestService } from './therapist-request.service';
 import { AccountService } from '../bot/account.service';
-import {
-  JoinTherapyDto,
-  VirtualClientDto,
-  TherapistViewDto,
-} from './dto/connection.dto';
+import { JoinTherapyDto, TherapistViewDto } from './dto/connection.dto';
+import { VirtualClientDto } from './dto/virtual-client.dto';
 import { RenameClientDto } from './dto/client-data.dto';
 
 interface AuthRequest extends Request {

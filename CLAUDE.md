@@ -71,6 +71,9 @@ Postgres общим на все инстансы счётчиком; остал�
 ### 6. Новый эндпоинт = DTO с class-validator
 Inline-интерфейсы в `@Body()` дают только compile-time иллюзию. Рантайм
 валидируется декораторами DTO + глобальным `ValidationPipe({ whitelist: true })`.
+Строковое поле DTO — с верхней границей (`@MaxLength`/`@Length` или формат): тело
+принимается до 256 КБ. Гейт `scripts/check-dto-string-bounds.mjs` (CI, джоба `checks`),
+исключения — в `scripts/dto-string-bounds-baseline.json` с причиной.
 
 ### 7. Свободный текст от юзера = кризисный путь
 Любая новая фича, принимающая свободный текст (дневник, заметка, письмо),

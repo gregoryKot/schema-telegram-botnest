@@ -21,6 +21,7 @@ scripts/weak-assert-baseline.json         merge=ratchet-min
 scripts/jscpd-baseline.json               merge=ratchet-min
 scripts/dead-files-baseline.json          merge=ratchet-min
 scripts/body-truncation-baseline.json     merge=ratchet-min
+scripts/dto-string-bounds-baseline.json   merge=ratchet-min
 scripts/public-scripts-baseline.json      merge=ratchet-min
 scripts/silent-catch-baseline.json        merge=ratchet-min
 scripts/tiny-fonts-baseline.json          merge=ratchet-min
