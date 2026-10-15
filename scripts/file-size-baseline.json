@@ -1116,7 +1116,7 @@
   "src/bot/signup-source-metrics.service.ts": 60,
   "src/bot/site-install-metrics.format.ts": 63,
   "src/bot/site-install-metrics.service.ts": 70,
-  "src/bot/stats-report.service.ts": 91,
+  "src/bot/stats-report.service.ts": 90,
   "src/bot/user-data-tables.ts": 46,
   "src/bot/user-tz.ts": 14,
   "src/bot/warm-words-metrics.format.ts": 23,
