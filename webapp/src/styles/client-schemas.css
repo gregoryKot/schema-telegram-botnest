@@ -1,0 +1,79 @@
+/* Экран «Мои паттерны» кабинета клиента. Префикс cs-. */
+.cs-page { max-width: 1100px; gap: 40px; }
+.cs-head { align-items: flex-end; gap: 24px; }
+.cs-head-sub { font-size: 14px; margin-top: 8px; }
+.ds-h1 i { font-style: italic; }
+.cs-top { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); gap: 16px; }
+.cs-expressed { display: flex; flex-direction: column; gap: 14px; }
+.cs-expressed-list { display: flex; flex-direction: column; gap: 4px; }
+.cs-empty { margin: 0; font-size: 14px; color: var(--text-muted); line-height: 1.5; }
+.cs-bar-row {
+  display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) 48px; gap: 14px; align-items: center;
+  min-height: 44px; padding: 0; border: none; background: none; cursor: pointer;
+  font: inherit; text-align: left; color: var(--text);
+}
+.cs-bar-name { display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 600; min-width: 0; overflow-wrap: anywhere; }
+.cs-bar-mark { width: 4px; height: 20px; border-radius: 2px; flex-shrink: 0; }
+.cs-bar-track { height: 8px; border-radius: 4px; background: var(--paper-tint); overflow: hidden; }
+.cs-bar-fill { display: block; height: 100%; border-radius: 4px; }
+.cs-bar-val { text-align: right; font-weight: 700; font-size: 14px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+.cs-test { display: flex; flex-direction: column; justify-content: space-between; gap: 16px; }
+.cs-test-label { color: var(--on-ink-faint); }
+.cs-test-text { margin: 8px 0 0; font-family: var(--serif); font-size: 22px; line-height: 1.3; }
+.cs-test-btn { align-self: flex-start; background: var(--bg); color: var(--ink); }
+.cs-test-btn:hover { background: var(--surface); }
+
+.cs-block, .cs-map { display: flex; flex-direction: column; gap: 16px; }
+.cs-map { gap: 22px; }
+.cs-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.cs-chip {
+  display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 6px 14px;
+  border-radius: 18px; border: 1.5px solid; font: 600 13px var(--sans); cursor: pointer;
+}
+.cs-domain { display: flex; flex-direction: column; gap: 10px; }
+.cs-domain-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.cs-domain-line { width: 24px; height: 3px; flex-shrink: 0; }
+.cs-domain-name { font-size: 14px; font-weight: 700; }
+.cs-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr)); gap: 8px; }
+.cs-tiles--modes { grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr)); }
+.cs-tile {
+  display: flex; flex-direction: column; gap: 4px; text-align: left; min-height: 44px;
+  padding: 12px 14px; border-radius: 14px; border: 1.5px solid var(--line);
+  background: var(--surface); color: var(--text-sub); font: inherit; cursor: pointer;
+}
+.cs-tile:hover { border-color: var(--line-hover); }
+.cs-tile-name { font-size: 14px; font-weight: 600; line-height: 1.25; color: var(--text); }
+.cs-tile-desc { font-size: 12px; line-height: 1.4; opacity: .8; }
+.cs-tile.is-mine .cs-tile-desc { opacity: .75; }
+
+.cs-banner {
+  display: flex; align-items: center; gap: 16px; width: 100%; text-align: left; cursor: pointer;
+  border: none; border-radius: 20px; padding: 20px 24px; min-height: 44px; font: inherit; box-sizing: border-box;
+}
+.cs-banner-text { flex: 1; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.cs-banner-sub { font-size: 13px; color: var(--text-sub); }
+.cs-banner-arrow { font-size: 20px; flex-shrink: 0; }
+
+.cs-need { width: 100%; box-sizing: border-box; border-top: none; border-left: none; border-right: none; background: none; font: inherit; text-align: left; color: var(--text); grid-template-columns: 36px minmax(0, 1fr) auto; min-height: 44px; }
+.cs-need-icon { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; }
+.cs-need-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.cs-need-name { font-size: 14px; font-weight: 600; }
+.cs-need-hint { font-size: 12px; color: var(--text-sub); }
+.cs-need-arrow { color: var(--text-faint); font-size: 16px; }
+.cs-need-score { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+.cs-need-score b { font-size: 22px; }
+.cs-need-score small { font-size: 10px; color: var(--text-faint); letter-spacing: .04em; }
+
+.cs-sheet { position: fixed; inset: 0; z-index: 90; background: var(--bg); display: flex; flex-direction: column; }
+.cs-sheet-head { display: flex; align-items: center; gap: 12px; padding: 12px 16px; flex-shrink: 0; border-bottom: 1px solid var(--line); }
+.cs-sheet-back { background: none; border: none; cursor: pointer; padding: 4px; display: flex; color: var(--text); min-width: 44px; min-height: 44px; align-items: center; justify-content: center; }
+.cs-sheet-body { flex: 1; min-height: 0; }
+
+@media (max-width: 767px) {
+  .cs-page { gap: 28px; }
+  .cs-head { align-items: flex-start; gap: 12px; }
+  .cs-bar-row { grid-template-columns: minmax(0, 1fr) 48px; gap: 6px 10px; padding: 6px 0; }
+  .cs-bar-track { grid-column: 1 / -1; grid-row: 2; height: 6px; }
+  .cs-test-text { font-size: 19px; }
+}

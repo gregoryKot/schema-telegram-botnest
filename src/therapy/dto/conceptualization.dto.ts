@@ -10,60 +10,9 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import {
-  CONCEPT_MODE_ALIAS_MAX,
-  CONCEPT_MODE_TEXT_MAX,
-} from '../../utils/text-limits';
+import { ConceptModeLinkDto, ConceptSchemaLinkDto } from './concept-links.dto';
 
 const TEXT_MAX = 5000;
-
-/**
- * Связи одного режима в графической концептуализации (контракт —
- * `ConceptModeLink` в shared/src/apiTypes.ts). Свободный текст (alias,
- * origin, manifest, strategy) — клиническая запись терапевта, шифруется
- * вместе со всем массивом в `therapy-notes.service.ts`. Вложенный объект:
- * без @ValidateNested + @Type whitelist его не тронул бы (лишние поля
- * внутри связи прошли бы насквозь).
- */
-export class ConceptModeLinkDto {
-  @IsString()
-  @MaxLength(64)
-  modeId!: string;
-
-  @IsOptional()
-  @IsString()
-  @MaxLength(CONCEPT_MODE_ALIAS_MAX)
-  alias?: string;
-
-  @IsOptional()
-  @IsArray()
-  @ArrayMaxSize(20)
-  @IsString({ each: true })
-  @MaxLength(64, { each: true })
-  schemaIds?: string[];
-
-  @IsOptional()
-  @IsArray()
-  @ArrayMaxSize(20)
-  @IsString({ each: true })
-  @MaxLength(64, { each: true })
-  needIds?: string[];
-
-  @IsOptional()
-  @IsString()
-  @MaxLength(CONCEPT_MODE_TEXT_MAX)
-  origin?: string;
-
-  @IsOptional()
-  @IsString()
-  @MaxLength(CONCEPT_MODE_TEXT_MAX)
-  manifest?: string;
-
-  @IsOptional()
-  @IsString()
-  @MaxLength(CONCEPT_MODE_TEXT_MAX)
-  strategy?: string;
-}
 
 /**
  * DTO для карты концептуализации терапевта (аудит 2026-07, 2г / правило
@@ -137,4 +86,12 @@ export class ConceptualizationDto {
   @ValidateNested({ each: true })
   @Type(() => ConceptModeLinkDto)
   modeLinks?: ConceptModeLinkDto[];
+
+  /** Тексты схем графической концептуализации (схем в форме Янга 18, запас до 20). */
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(20)
+  @ValidateNested({ each: true })
+  @Type(() => ConceptSchemaLinkDto)
+  schemaLinks?: ConceptSchemaLinkDto[];
 }

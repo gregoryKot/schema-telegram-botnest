@@ -60,6 +60,8 @@ const USER_EVENTS: Array<{ name: string; meta?: Record<string, unknown> }> = [
   // (не сырой SQL), но исполняется драйвером тем же прогоном.
   { name: 'concept_graph_open' },
   { name: 'concept_mode_linked' },
+  { name: 'concept_schema_linked' },
+  { name: 'concept_canvas_open' },
   { name: 'data_export' },
   { name: 'home_screen_offer', meta: { via: 'banner' } },
   { name: 'entry_deleted', meta: { type: 'belief_check' } },
@@ -143,6 +145,7 @@ describe('/stats на реальном Postgres: каждый сырой зап�
     // groupBy по userId (distinct-терапевты) исполнен драйвером и увидел фикстуры.
     expect(product).toMatch(/Открывали [1-9]\d* раз, терапевтов: [1-9]\d*/);
     expect(product).toMatch(/Связи режимов заполняли [1-9]\d* раз/);
+    expect(product).toMatch(/Убеждения и опыт схем записывали [1-9]\d* раз/);
     // JSON-фильтр по meta.surface (countCrisis) исполнен драйвером и увидел
     // анонимные строки: обе цифры «из них в форме записи» не меньше 1.
     expect(product).toMatch(

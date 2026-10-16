@@ -8,6 +8,7 @@ import { ConceptTextField } from './ConceptTextField';
 import { ConceptAliasField } from './ConceptAliasField';
 import { ConceptNeedField } from './ConceptNeedField';
 import { boxStyle } from './graphStyles';
+import { MANIFEST_FIELD } from './modeLanes';
 
 const gap = {
   display: 'flex',
@@ -16,10 +17,12 @@ const gap = {
 } as const;
 
 /**
- * Редактор связей одного режима: открывается инлайн под клеткой по тапу на
- * карточку (не оверлей — ему не нужна ни история браузера, ни реестр «Назад»).
- * Каждое изменение сразу уходит в onChangeLink; связь режима, убранного с
- * карты, остаётся в данных.
+ * Редактор одного режима: открывается инлайн под схемой по тапу на фигуру (не
+ * оверлей — ему не нужна ни история браузера, ни реестр «Назад»). Каждое
+ * изменение сразу уходит в onChangeLink; связь режима, убранного с карты,
+ * остаётся в данных. Что писать в текст режима, зависит от группы, а сам текст
+ * виден на фигуре. Потребности (✓ на схеме) выбираются только у здоровых
+ * режимов, схемы (⇄) — только у остальных.
  */
 export function ConceptModeEditor({
   card,
@@ -40,8 +43,10 @@ export function ConceptModeEditor({
 }) {
   const set = (patch: Partial<ConceptModeLink>) =>
     onChangeLink({ ...link, ...patch });
-  // На телефоне клетки ряда стоят друг под другом, и редактор детского режима
-  // открывается ниже клетки критика — за краем экрана. Подвозим его к глазам.
+  const healthy = card.lane === 'healthy';
+  const manifestField = MANIFEST_FIELD[card.lane];
+  // Редактор открывается под диаграммой, а фигура может стоять высоко над ним.
+  // Подвозим редактор к глазам.
   const ref = useRef<HTMLElement>(null);
   useEffect(() => {
     ref.current?.scrollIntoView?.({ block: 'start', behavior: 'smooth' });
@@ -89,27 +94,33 @@ export function ConceptModeEditor({
           value={link.alias}
           onChange={(alias) => set({ alias })}
         />
-        <ConceptSchemaField
-          linkSchemaIds={link.schemaIds}
-          conceptSchemaIds={conceptSchemaIds}
-          onChange={(schemaIds) => set({ schemaIds })}
-          onAddSchema={onAddSchema}
-        />
-        <ConceptNeedField
-          needIds={link.needIds}
-          onChange={(needIds) => set({ needIds })}
+        {!healthy && (
+          <ConceptSchemaField
+            linkSchemaIds={link.schemaIds}
+            conceptSchemaIds={conceptSchemaIds}
+            onChange={(schemaIds) => set({ schemaIds })}
+            onAddSchema={onAddSchema}
+          />
+        )}
+        {healthy && (
+          <ConceptNeedField
+            label="О каких потребностях уже умеет заботиться"
+            needIds={link.needIds}
+            onChange={(needIds) => set({ needIds })}
+          />
+        )}
+        <ConceptTextField
+          label={manifestField.label}
+          placeholder={manifestField.placeholder}
+          hint="Этот текст виден на схеме"
+          value={link.manifest}
+          onChange={(manifest) => set({ manifest })}
         />
         <ConceptTextField
           label="Откуда режим"
           placeholder="Ранний опыт: что происходило, чей это голос"
           value={link.origin}
           onChange={(origin) => set({ origin })}
-        />
-        <ConceptTextField
-          label="Как проявляется сейчас"
-          placeholder="Что человек делает и чувствует в этом режиме, к каким проблемам это ведёт"
-          value={link.manifest}
-          onChange={(manifest) => set({ manifest })}
         />
         <ConceptStrategy
           card={card}

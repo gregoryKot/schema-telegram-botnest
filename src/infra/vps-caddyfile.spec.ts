@@ -7,6 +7,7 @@
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import { CANONICAL_HOST, isRedirectedHost } from './canonical-host';
+import { TRUSTED_PROXY_HOPS } from './trust-proxy';
 import {
   PRACTICE_ALIAS_HOSTS,
   practiceDomainMiddleware,
@@ -91,5 +92,79 @@ describe('deploy/vps/Caddyfile ↔ хосты приложения', () => {
       PRACTICE_ALIAS_HOSTS.has(stranger) ||
       practiceRedirect(stranger) !== null;
     expect(known).toBe(false);
+  });
+});
+
+// Число хопов `trust proxy` и Caddyfile обязаны совпадать (правило №4).
+// Caddy без `trusted_proxies` отдаёт приложению ровно один хоп: сам Caddy.
+// `trusted_proxies` значит, что перед Caddy стоит ещё один прокси (CDN) и
+// приложению нужно доверять двум хопам, иначе все IP-бакеты (правило №5)
+// схлопнутся в адрес CDN.
+function expectedHops(caddyText: string): number {
+  const code = caddyText
+    .split('\n')
+    .filter((l) => !l.trim().startsWith('#'))
+    .join('\n');
+  return 1 + (/\btrusted_proxies\b/.test(code) ? 1 : 0);
+}
+
+/** Порты, опубликованные наружу сервисом compose (`ports:`), а не `expose:`. */
+function publishedPorts(composeText: string, service: string): string[] {
+  const lines = composeText.split('\n');
+  const start = lines.findIndex((l) => l === `  ${service}:`);
+  if (start < 0) throw new Error(`сервис ${service} не найден`);
+  const rest = lines.slice(start + 1);
+  const end = rest.findIndex((l) => /^ {2}\S/.test(l));
+  const body = (end < 0 ? rest : rest.slice(0, end)).filter(
+    (l) => !l.trim().startsWith('#'),
+  );
+  const at = body.findIndex((l) => /^ {4}ports:/.test(l));
+  if (at < 0) return [];
+  const items: string[] = [];
+  for (const l of body.slice(at + 1)) {
+    const m = /^ {6}- (.+)$/.exec(l);
+    if (!m) break;
+    items.push(m[1]);
+  }
+  return items.length ? items : ['(inline)'];
+}
+
+describe('доверие к прокси: Caddyfile ↔ trust proxy', () => {
+  const compose = readFileSync(
+    join(process.cwd(), 'deploy', 'vps', 'docker-compose.yml'),
+    'utf8',
+  );
+  const mainTs = readFileSync(join(process.cwd(), 'src', 'main.ts'), 'utf8');
+
+  it('число хопов в коде = число хопов по Caddyfile', () => {
+    expect(TRUSTED_PROXY_HOPS).toBe(expectedHops(caddyfile));
+  });
+
+  it('контроль: trusted_proxies в Caddyfile требует двух хопов, а комментарий не считается', () => {
+    const withCdn = `${caddyfile}\n{\n\tservers {\n\t\ttrusted_proxies static private_ranges\n\t}\n}\n`;
+    expect(expectedHops(withCdn)).toBe(2);
+    expect(expectedHops(withCdn)).not.toBe(TRUSTED_PROXY_HOPS);
+    expect(expectedHops('# trusted_proxies тут только в комментарии\n')).toBe(
+      1,
+    );
+  });
+
+  it('app наружу не опубликован: только expose, без ports', () => {
+    expect(publishedPorts(compose, 'app')).toEqual([]);
+    expect(publishedPorts(compose, 'caddy')).toContain("'443:443'");
+  });
+
+  it('контроль: опубликованный порт app обнаруживается', () => {
+    const leaky = compose.replace(
+      "    expose:\n      - '3000'",
+      "    ports:\n      - '3000:3000'",
+    );
+    expect(leaky).not.toBe(compose);
+    expect(publishedPorts(leaky, 'app')).toEqual(["'3000:3000'"]);
+  });
+
+  it('main.ts берёт хопы из константы, литерала нет', () => {
+    expect(mainTs).toContain("app.set('trust proxy', TRUSTED_PROXY_HOPS)");
+    expect(mainTs).not.toMatch(/set\(\s*'trust proxy',\s*(true|\d)/);
   });
 });

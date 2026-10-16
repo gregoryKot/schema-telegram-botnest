@@ -2,7 +2,10 @@
 // (аудит 2026-07, 2г / правило №6 CLAUDE.md).
 import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
-import { JoinTherapyDto, VirtualClientDto } from './connection.dto';
+import { CLIENT_NAME_MAX } from '../../utils/text-limits';
+import { RenameClientDto } from './client-data.dto';
+import { JoinTherapyDto } from './connection.dto';
+import { VirtualClientDto } from './virtual-client.dto';
 
 async function errorsFor(
   cls: new () => object,
@@ -37,5 +40,25 @@ describe('VirtualClientDto', () => {
     await expect(errorsFor(VirtualClientDto, { name: 42 })).resolves.toContain(
       'name',
     );
+  });
+
+  // Аудит 2026-10-11: имя было `@IsString()` без границы, тело — до 256 КБ.
+  it('имя длиннее CLIENT_NAME_MAX — отказ, ровно по пределу проходит', async () => {
+    await expect(
+      errorsFor(VirtualClientDto, { name: 'A'.repeat(CLIENT_NAME_MAX + 1) }),
+    ).resolves.toContain('name');
+    await expect(
+      errorsFor(VirtualClientDto, { name: 'A'.repeat(CLIENT_NAME_MAX) }),
+    ).resolves.toEqual([]);
+  });
+
+  it('предел имени офлайн-клиента совпадает с пределом переименования', async () => {
+    const tooLong = 'A'.repeat(CLIENT_NAME_MAX + 1);
+    await expect(
+      errorsFor(RenameClientDto, { alias: tooLong }),
+    ).resolves.toContain('alias');
+    await expect(
+      errorsFor(RenameClientDto, { alias: 'A'.repeat(CLIENT_NAME_MAX) }),
+    ).resolves.toEqual([]);
   });
 });

@@ -1,0 +1,107 @@
+/* Клиент · Сегодня (sections/TodaySection.tsx, sections/today/*). Префикс ct-.
+   Сетка: основная колонка + сайдбар; на узком сайдбар уходит вниз, а на
+   мобильном (<768px) карточки индекса и встречи поднимаются наверх (экран c1). */
+.ct-grid {
+  display: grid; gap: 32px; align-items: start;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
+}
+@media (min-width: 1000px) { .ct-grid { grid-template-columns: minmax(0, 1fr) 340px; } }
+.ct-main, .ct-aside { display: flex; flex-direction: column; gap: 32px; min-width: 0; }
+.ct-aside { gap: 14px; }
+.ct-top { display: flex; flex-direction: column; gap: 14px; }
+.ct-section { min-width: 0; }
+.ct-block { display: flex; flex-direction: column; gap: 12px; }
+.ct-needs { display: flex; flex-direction: column; gap: 16px; }
+.ct-head-aside { display: inline-flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
+.ct-empty { line-height: 1.7; padding: 8px 0; }
+.ct-alert { font-size: 13px; color: var(--err); }
+.ct-more { align-self: flex-start; }
+.ct-add-goal {
+  align-self: flex-start; background: none; border: none; padding: 0; cursor: pointer;
+  font: 500 12px var(--sans); color: var(--text-faint);
+}
+.ct-therapist-link { display: flex; align-items: center; gap: 14px; cursor: pointer; }
+
+/* Потребности */
+.ct-need-row {
+  display: grid; gap: 14px; align-items: center;
+  grid-template-columns: minmax(110px, 150px) minmax(0, 1fr) 56px;
+}
+.ct-need-name {
+  display: flex; align-items: center; gap: 8px; cursor: pointer;
+  font-size: 14px; font-weight: 600; min-width: 0;
+}
+.ct-need-value { text-align: right; font-size: 20px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.ct-need-value.is-empty { color: var(--text-ghost); }
+.ct-delta { font: 700 11px var(--sans); margin-left: 3px; }
+.ct-delta.is-up { color: var(--ok); }
+.ct-delta.is-down { color: var(--err); }
+
+/* Практики, черновики, записи */
+.ct-task { display: flex; align-items: center; gap: 14px; min-height: 44px; }
+.ct-task.is-done .ct-task-text { text-decoration: line-through; opacity: .55; }
+.ct-task-box {
+  width: 22px; height: 22px; border-radius: 7px; flex-shrink: 0; box-sizing: border-box;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 700; color: #fff; border: 2px solid var(--accent);
+}
+.ct-task.is-done .ct-task-box { background: var(--ink); border-color: var(--ink); }
+.ct-task-body { flex: 1; min-width: 0; }
+.ct-task-text { font-size: 15px; font-weight: 600; }
+.ct-from-therapist { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); font-weight: 700; margin-top: 4px; }
+.ct-task-cta { font-size: 13px; font-weight: 700; color: var(--accent); white-space: nowrap; }
+.ct-draft { display: flex; align-items: center; gap: 14px; min-height: 44px; border-style: dashed; }
+.ct-draft-mark { width: 3px; height: 28px; border-radius: 3px; flex-shrink: 0; }
+.ct-entry { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 14px; align-items: center; min-height: 44px; }
+.ct-entry-label { font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ct-entry-date { white-space: nowrap; font-size: 12px; color: var(--text-faint); }
+
+/* Сайдбар: индекс (тёмная), встреча (акцентная), стрик */
+.ct-on-ink { color: var(--on-ink-faint); }
+.ct-index { cursor: default; }
+.ct-index[role='button'] { cursor: pointer; }
+.ct-index-row { display: flex; align-items: baseline; gap: 10px; margin-top: 8px; flex-wrap: wrap; }
+.ct-index-num { font-size: 60px; }
+.ct-index-delta { font-size: 13px; font-weight: 700; color: var(--on-ink-sub); }
+.ct-index-delta.is-up { color: oklch(0.78 0.12 145); }
+.ct-index-delta.is-down { color: oklch(0.78 0.12 28); }
+.ct-spark { height: 48px; gap: 3px; margin-top: 16px; }
+.ct-index .ds-spark > i { background: var(--ink-3); }
+.ct-index .ds-spark > i.is-ok { background: var(--ok); }
+.ct-index .ds-spark > i.is-warn { background: var(--warn); }
+.ct-index .ds-spark > i.is-err { background: var(--err); }
+.ct-spark-cap { font-size: 11px; color: var(--on-ink-faint); margin-top: 6px; }
+.ct-meeting { display: flex; flex-direction: column; gap: 4px; padding: 20px 22px; }
+.ct-on-accent { opacity: .75; color: inherit; }
+.ct-meeting-title { font-size: 26px; line-height: 1.15; color: #fff; }
+.ct-meeting-name { font-size: 13px; opacity: .85; }
+.ct-write {
+  margin-top: 12px; height: 44px; border-radius: 22px; background: rgba(255, 255, 255, .14);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; font-weight: 700; color: #fff; text-decoration: none;
+}
+.ct-write:hover { background: rgba(255, 255, 255, .22); }
+.ct-streak { display: flex; align-items: center; gap: 16px; padding: 20px 22px; }
+.ct-streak-num { font-size: 52px; color: var(--accent-hot); }
+.ct-streak-num.is-zero { color: var(--text-ghost); }
+.ct-streak-label { font-size: 15px; font-weight: 700; }
+
+/* Мобильный (c1): индекс и встреча — парой сверху, потребности компактнее */
+@media (max-width: 767px) {
+  .ct-grid { display: flex; flex-direction: column; gap: 24px; }
+  .ct-main, .ct-aside { display: contents; }
+  .ct-top { order: -1; display: grid; grid-template-columns: 1.2fr 1fr; gap: 8px; }
+  .ct-top:has(.ct-index:only-child) { grid-template-columns: 1fr; }
+  .ct-index, .ct-meeting { padding: 14px; border-radius: 16px; }
+  .ct-index-num { font-size: 40px; }
+  .ct-index .ct-spark { height: 24px; margin-top: 8px; gap: 2px; }
+  .ct-meeting-title { font-size: 22px; }
+  .ct-meeting-name { margin-top: auto; }
+  .ct-write { margin-top: 8px; }
+  .ct-need-row { grid-template-columns: 96px minmax(0, 1fr) 28px; gap: 10px; }
+  .ct-need-name { font-size: 13px; }
+  .ct-need-value { font-size: 16px; }
+  .ct-delta, .ct-hint { display: none; }
+  .ct-needs { padding: 14px 16px; gap: 10px; border-radius: 18px; }
+  .ct-streak { order: 5; }
+}

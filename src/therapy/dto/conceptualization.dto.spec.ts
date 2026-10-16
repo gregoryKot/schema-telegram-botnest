@@ -3,7 +3,10 @@
 import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
 import { ConceptualizationDto } from './conceptualization.dto';
-import { CONCEPT_MODE_TEXT_MAX } from '../../utils/text-limits';
+import {
+  CONCEPT_MODE_TEXT_MAX,
+  CONCEPT_SCHEMA_TEXT_MAX,
+} from '../../utils/text-limits';
 
 async function errorsFor(body: Record<string, unknown>): Promise<string[]> {
   const dto = plainToInstance(ConceptualizationDto, body);
@@ -143,6 +146,95 @@ describe('ConceptualizationDto', () => {
       expect(kept).not.toHaveProperty('clientId');
       expect(kept).not.toHaveProperty('note');
       expect(kept.alias).toBe('Судья');
+    });
+  });
+
+  describe('schemaLinks (тексты схем графической концептуализации)', () => {
+    const link = (over: Record<string, unknown> = {}) => ({
+      schemaId: 'defectiveness',
+      belief: 'Со мной что-то не так',
+      origin: 'Мать сравнивала с сестрой',
+      needIds: ['safety', 'autonomy'],
+      ...over,
+    });
+
+    it('валидная связь проходит', async () => {
+      await expect(errorsFor({ schemaLinks: [link()] })).resolves.toEqual([]);
+    });
+
+    it('связь только со schemaId проходит (остальное опционально)', async () => {
+      await expect(
+        errorsFor({ schemaLinks: [{ schemaId: 'abandonment' }] }),
+      ).resolves.toEqual([]);
+    });
+
+    it('ровно 20 связей проходят, 21 — отказ', async () => {
+      const many = (n: number) =>
+        Array.from({ length: n }, (_, i) => link({ schemaId: `s${i}` }));
+      await expect(errorsFor({ schemaLinks: many(20) })).resolves.toEqual([]);
+      await expect(errorsFor({ schemaLinks: many(21) })).resolves.toContain(
+        'schemaLinks',
+      );
+    });
+
+    it.each(['belief', 'origin'])(
+      `текст %s длиннее ${CONCEPT_SCHEMA_TEXT_MAX} — отказ, ровно ${CONCEPT_SCHEMA_TEXT_MAX} — проходит`,
+      async (field) => {
+        const at = 'x'.repeat(CONCEPT_SCHEMA_TEXT_MAX);
+        await expect(
+          errorsFor({ schemaLinks: [link({ [field]: at })] }),
+        ).resolves.toEqual([]);
+        await expect(
+          errorsFor({ schemaLinks: [link({ [field]: `${at}x` })] }),
+        ).resolves.toContain('schemaLinks');
+      },
+    );
+
+    it('needIds: ровно 5 проходят, 6 — отказ, id длиннее 64 — отказ', async () => {
+      const ids = (n: number) => Array.from({ length: n }, (_, i) => `n${i}`);
+      await expect(
+        errorsFor({ schemaLinks: [link({ needIds: ids(5) })] }),
+      ).resolves.toEqual([]);
+      await expect(
+        errorsFor({ schemaLinks: [link({ needIds: ids(6) })] }),
+      ).resolves.toContain('schemaLinks');
+      await expect(
+        errorsFor({ schemaLinks: [link({ needIds: ['x'.repeat(65)] })] }),
+      ).resolves.toContain('schemaLinks');
+    });
+
+    it('связь без schemaId — отказ', async () => {
+      const { schemaId: _omit, ...noId } = link();
+      await expect(errorsFor({ schemaLinks: [noId] })).resolves.toContain(
+        'schemaLinks',
+      );
+    });
+
+    it('schemaId длиннее 64 — отказ', async () => {
+      await expect(
+        errorsFor({ schemaLinks: [link({ schemaId: 'x'.repeat(65) })] }),
+      ).resolves.toContain('schemaLinks');
+    });
+
+    it('schemaLinks не массив / элемент не объект — отказ', async () => {
+      await expect(errorsFor({ schemaLinks: 'x' })).resolves.toContain(
+        'schemaLinks',
+      );
+      await expect(errorsFor({ schemaLinks: ['x'] })).resolves.toContain(
+        'schemaLinks',
+      );
+    });
+
+    it('лишнее поле внутри связи вырезается whitelist-ом', async () => {
+      const dto = plainToInstance(ConceptualizationDto, {
+        schemaLinks: [link({ clientId: '555', note: 'лишнее' })],
+      });
+      const errs = await validate(dto, { whitelist: true });
+      expect(errs).toEqual([]);
+      const kept = dto.schemaLinks![0] as unknown as Record<string, unknown>;
+      expect(kept).not.toHaveProperty('clientId');
+      expect(kept).not.toHaveProperty('note');
+      expect(kept.belief).toBe('Со мной что-то не так');
     });
   });
 });

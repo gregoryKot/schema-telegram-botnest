@@ -1,11 +1,10 @@
 import { useState } from 'react';
-import { SCHEMA_DOMAINS } from '../../schemaTherapy/schemaTherapyData';
-import { ConceptToggleChip } from './ConceptToggleChip';
+import { ConceptSchemaPicker } from './ConceptSchemaPicker';
 import { hintStyle, labelStyle } from './graphStyles';
 
 /**
- * «Какие схемы питают режим»: чипы схем концептуализации + переключатель «Все
- * схемы». Схема, которой в концептуализации нет, добавляется и туда
+ * «Какие схемы включают режим»: чипы схем концептуализации + переключатель
+ * «Все схемы». Схема, которой в концептуализации нет, добавляется и туда
  * (onAddSchema) — связь не должна ссылаться на схему, которой нет в плане.
  */
 export function ConceptSchemaField({
@@ -38,9 +37,9 @@ export function ConceptSchemaField({
   };
 
   return (
-    <div role="group" aria-label="Какие схемы питают режим">
+    <div role="group" aria-label="Какие схемы включают режим">
       <div style={{ ...labelStyle, marginBottom: 6 }}>
-        Какие схемы питают режим
+        Какие схемы включают режим
       </div>
       {noneAtOpen && (
         <div style={{ ...hintStyle, marginBottom: 6 }}>
@@ -48,38 +47,12 @@ export function ConceptSchemaField({
           туда.
         </div>
       )}
-      {SCHEMA_DOMAINS.map((domain) => {
-        const schemas = domain.schemas.filter(
-          (s) => showAll || visible.has(s.id),
-        );
-        if (schemas.length === 0) return null;
-        return (
-          <div key={domain.id} style={{ marginBottom: 'var(--space-6)' }}>
-            {showAll && (
-              <div style={{ ...hintStyle, marginBottom: 4 }}>
-                {domain.domain}
-              </div>
-            )}
-            <div
-              style={{
-                display: 'flex',
-                flexWrap: 'wrap',
-                gap: 'var(--space-6)',
-              }}
-            >
-              {schemas.map((s) => (
-                <ConceptToggleChip
-                  key={s.id}
-                  label={s.name}
-                  color={domain.color}
-                  active={linkSchemaIds.includes(s.id)}
-                  onClick={() => toggle(s.id)}
-                />
-              ))}
-            </div>
-          </div>
-        );
-      })}
+      <ConceptSchemaPicker
+        activeIds={linkSchemaIds}
+        onToggle={toggle}
+        onlyIds={showAll ? undefined : visible}
+        domainTitles={showAll}
+      />
       <button
         type="button"
         aria-pressed={showAll}

@@ -27,6 +27,7 @@ const concept = (
   currentProblems: null,
   modeTransitions: null,
   modeLinks: [],
+  schemaLinks: [],
   history: [],
   updatedAt: '2026-10-01T00:00:00.000Z',
   ...patch,
@@ -72,7 +73,8 @@ describe('buildConceptExport: связи режимов', () => {
     );
     expect(text).toContain('Карающий Критик («Судья»)');
     expect(text).toContain('  Схемы: Неуспешность');
-    expect(text).toContain('  Потребности: Границы');
+    // потребности обычного режима в редакторе не правятся — в экспорт не идут
+    expect(text).not.toContain('Потребности: Границы');
     expect(text).toContain('  В терапии: спорить с голосом');
     expect(text).not.toContain('Как проявляется');
   });
@@ -92,5 +94,41 @@ describe('buildConceptExport: связи режимов', () => {
       ],
     });
     expect(text).toContain('Карающий Критик («Черновик»)');
+  });
+});
+
+describe('buildConceptExport: тексты схем', () => {
+  const failure = {
+    schemaId: 'failure',
+    belief: 'Я хуже других',
+    origin: 'строгий отец',
+    needIds: ['autonomy'],
+  };
+
+  it('нет текстов — блока нет', () => {
+    const text = exportOf(concept({ schemaIds: ['failure'] }));
+    expect(text).not.toContain('СХЕМЫ: УБЕЖДЕНИЯ И ОПЫТ');
+  });
+
+  it('есть тексты отмеченной схемы — блок идёт после карты режимов и до раннего опыта', () => {
+    const text = exportOf(
+      concept({ schemaIds: ['failure'], schemaLinks: [failure] }),
+    );
+    expect(text.indexOf('КАРТА РЕЖИМОВ')).toBeLessThan(
+      text.indexOf('СХЕМЫ: УБЕЖДЕНИЯ И ОПЫТ'),
+    );
+    expect(text.indexOf('СХЕМЫ: УБЕЖДЕНИЯ И ОПЫТ')).toBeLessThan(
+      text.indexOf('РАННИЙ ДИСФУНКЦИОНАЛЬНЫЙ ОПЫТ'),
+    );
+    expect(text).toContain('  Убеждение: Я хуже других');
+    expect(text).toContain('  Как нарушалась потребность: строгий отец');
+    expect(text).toContain('  Блокирует потребности: Автономия');
+  });
+
+  it('несохранённая правка (localConcept) важнее ответа сервера', () => {
+    const text = exportOf(concept({ schemaIds: ['failure'] }), {
+      schemaLinks: [{ ...failure, belief: 'Черновик убеждения' }],
+    });
+    expect(text).toContain('  Убеждение: Черновик убеждения');
   });
 });

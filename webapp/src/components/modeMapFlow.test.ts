@@ -86,6 +86,19 @@ describe('toFlowNodes / fromFlowNodes', () => {
     expect(toFlowNodes([])).toEqual([]);
     expect(fromFlowNodes([])).toEqual([]);
   });
+
+  it('круг потребностей лежит под своими потребностями: zIndex -1 только у него', () => {
+    const hub = apiNode({ id: 'h', type: 'needs', data: { label: 'Круг', diameter: 340 } });
+    const flows = toFlowNodes([hub, apiNode({ id: 'p', type: 'need', data: { label: 'Автономия', needId: 'autonomy' } }), apiNode()]);
+    expect(flows[0].zIndex).toBe(-1);
+    expect(flows[1]).not.toHaveProperty('zIndex');
+    expect(flows[2]).not.toHaveProperty('zIndex');
+  });
+
+  it('zIndex в API-форму не просачивается: круг после round-trip равен исходному', () => {
+    const hub = apiNode({ id: 'h', type: 'needs', data: { label: 'Круг', diameter: 340 } });
+    expect(fromFlowNodes(toFlowNodes([hub]))).toEqual([hub]);
+  });
 });
 
 describe('toFlowEdges', () => {

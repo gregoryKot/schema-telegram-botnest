@@ -7,7 +7,10 @@
 # src/infra/canonical-host.ts и src/practice-domain.middleware.ts. Caddy их не
 # дублирует: две реализации редиректа рано или поздно разойдутся (инцидент
 # 2026-09-16 про петлю редиректов). Приложение доверяет ровно одному прокси
-# (`trust proxy` 1), Caddy передаёт X-Forwarded-For/Proto/Host.
+# (`trust proxy` 1), Caddy передаёт X-Forwarded-For/Proto/Host. Число хопов и
+# причина — src/infra/trust-proxy.ts; без `trusted_proxies` Caddy сам пишет в
+# XFF адрес пира. Появится CDN перед Caddy — здесь нужны `trusted_proxies`, а в
+# коде 2 хопа (сверяет vps-caddyfile.spec.ts, живой трафик — проба clientIp).
 #
 # Сертификат Caddy выпускает для хоста, чей DNS уже указывает на этот сервер.
 # Хост без A-записи не мешает остальным: для него выпуск просто повторяется.
