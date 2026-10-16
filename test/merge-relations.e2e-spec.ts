@@ -18,6 +18,8 @@ import { MergeService } from '../src/auth/merge.service';
 import { PairsService } from '../src/bot/pairs.service';
 import { TherapyRelationsService } from '../src/therapy/therapy-relations.service';
 import { isUniqueViolation } from '../src/prisma/unique-violation';
+import { PrismaService } from '../src/prisma/prisma.service';
+import { claimTherapyInvite } from '../src/therapy/therapy-invite-claim';
 
 const REAL_DB = process.env.E2E_REAL_DB === '1';
 const describeOnRealDb = REAL_DB ? describe : describe.skip;
@@ -98,11 +100,12 @@ describeOnRealDb(
           clientAlias: 'Алиса',
           therapyStartDate: '2026-01-05',
           nextSession: '2026-11-01',
+          meetingDays: [1, 4],
         });
         await rel(TH, T, { nextSession: '2026-12-01' });
         // Терапевтская сторона: и S, и T ведут клиента Y; у S есть ещё Z.
-        await rel(S, Y, { clientAlias: 'Из S' });
-        await rel(T, Y);
+        await rel(S, Y, { clientAlias: 'Из S', meetingDays: [2] });
+        await rel(T, Y, { meetingDays: [5] });
         await rel(S, Z);
         // Офлайн-клиенты не дубли друг друга (clientId NULL).
         await rel(S, null, { virtualClientName: 'Офлайн S' });
@@ -124,6 +127,8 @@ describeOnRealDb(
         expect(row.clientAlias).toBe('Алиса'); // у target пусто → из source
         expect(row.therapyStartDate).toBe('2026-01-05');
         expect(row.nextSession).toBe('2026-12-01'); // у target занято → target wins
+        // meetingDays NOT NULL, «пусто» у target — это [] по дефолту.
+        expect(row.meetingDays).toEqual([1, 4]);
 
         const ofT = await clientsOf(T);
         expect(ofT.filter((id) => id === String(Y))).toHaveLength(1);
@@ -140,6 +145,7 @@ describeOnRealDb(
           where: { therapistId: T, clientId: Y },
         });
         expect(alias.clientAlias).toBe('Из S');
+        expect(alias.meetingDays).toEqual([5]); // у target заданы → target wins
         expect(
           await prisma.therapyRelation.count({
             where: { OR: [{ therapistId: S }, { clientId: S }] },
@@ -264,6 +270,50 @@ describeOnRealDb(
         expect(await activeRels(TH, X)).toBe(1);
         expect(await clientsOf(TH)).toEqual([String(X)]);
       });
+
+      // Promise.all выше гонку не гарантирует: второй findFirst часто уже видит
+      // первую активацию и отвечает «уже подключён» до UPDATE. Ниже ветка
+      // проигравшего детерминирована — UPDATE идёт в частичный индекс мимо
+      // предварительной проверки, и ошибку настоящего драйвера разбирает catch.
+      it('проигравший гонку за код терапевта: 23505 от настоящего драйвера → true, второй код остаётся pending', async () => {
+        const a = await rel(TH, null, { status: 'pending' });
+        const b = await rel(TH, null, { status: 'pending' });
+        expect(
+          await app.get(TherapyRelationsService).joinAsClient(X, a.code),
+        ).toBe(true);
+
+        expect(
+          await claimTherapyInvite(app.get(PrismaService), b.code, X),
+        ).toBe(true);
+
+        expect(await activeRels(TH, X)).toBe(1);
+        const left = await prisma.therapyRelation.findUniqueOrThrow({
+          where: { id: b.id },
+        });
+        expect(left.status).toBe('pending');
+      });
+
+      it('проигравший гонку встречных кодов пары: 23505 от настоящего драйвера → true, одна активная пара', async () => {
+        const pairs = app.get(PairsService);
+        const codeA = await pairs.createPairInvite(S);
+        expect(await pairs.joinPair(X, codeA)).toBe(true);
+        const codeB = await pairs.createPairInvite(X);
+        // Встречный joinPair уже прошёл проверку «уже в паре» — её ответ «нет».
+        const db = app.get(PrismaService);
+        const spy = jest
+          .spyOn(db.pair, 'findFirst')
+          .mockResolvedValueOnce(null);
+
+        try {
+          expect(await pairs.joinPair(S, codeB)).toBe(true);
+          expect(spy).toHaveBeenCalledTimes(1);
+        } finally {
+          spy.mockRestore();
+        }
+
+        expect(await partnersOf(S)).toEqual([String(X)]);
+        expect(await partnersOf(X)).toEqual([String(S)]);
+      });
     });
 
     describe('дедуп миграции на засеянных дублях', () => {
@@ -283,7 +333,7 @@ describeOnRealDb(
         .filter(Boolean);
       const ROLLBACK = new Error('rollback');
 
-      it('лишние активные связи завершаются, лишние пары удаляются, индексы встают; офлайн-клиенты и pending целы', async () => {
+      it('лишние активные связи завершаются, их имя/даты/дни доливаются в остающуюся, лишние пары удаляются; офлайн-клиенты и pending целы', async () => {
         let seen: Record<string, unknown> = {};
         await prisma
           .$transaction(async (tx) => {
@@ -295,6 +345,7 @@ describeOnRealDb(
               therapistId: bigint,
               clientId: bigint | null,
               status = 'active',
+              extra: Record<string, unknown> = {},
             ) =>
               tx.therapyRelation.create({
                 data: {
@@ -302,11 +353,24 @@ describeOnRealDb(
                   therapistId,
                   clientId,
                   status: status as 'active',
+                  ...extra,
                 },
               });
-            const first = await mk(TH, X);
-            const dup = await mk(TH, X);
-            const dup2 = await mk(TH, X);
+            // Остающаяся строка (min id) без имени и дней встреч: их данные
+            // лежат в дублях и обязаны доехать до неё, а не уйти в ended.
+            const first = await mk(TH, X, 'active', {
+              nextSession: '2026-12-01',
+            });
+            const dup = await mk(TH, X, 'active', {
+              clientAlias: 'Из дубля',
+              therapyStartDate: '2026-01-05',
+              meetingDays: [2],
+            });
+            const dup2 = await mk(TH, X, 'active', {
+              clientAlias: 'Второй дубль',
+              nextSession: '2026-11-01',
+              meetingDays: [3],
+            });
             await mk(TH, X, 'pending');
             await mk(TH, null);
             await mk(TH, null);
@@ -334,8 +398,16 @@ describeOnRealDb(
             const statusOf = async (id: number) =>
               (await tx.therapyRelation.findUniqueOrThrow({ where: { id } }))
                 .status;
-            seen = {
+            const snapshot = async () => ({
               first: await statusOf(first.id),
+              kept: await tx.therapyRelation
+                .findUniqueOrThrow({ where: { id: first.id } })
+                .then((r) => ({
+                  alias: r.clientAlias,
+                  start: r.therapyStartDate,
+                  next: r.nextSession,
+                  days: r.meetingDays,
+                })),
               dup: await statusOf(dup.id),
               dup2: await statusOf(dup2.id),
               activeX: await tx.therapyRelation.count({
@@ -355,9 +427,11 @@ describeOnRealDb(
               pendingPairs: await tx.pair.count({
                 where: { userId1: S, status: 'pending' },
               }),
-            };
+            });
+            seen = await snapshot();
             // Идемпотентность: второй прогон не падает и ничего не меняет.
             for (const sql of statements) await tx.$executeRawUnsafe(sql);
+            expect(await snapshot()).toEqual(seen);
             throw ROLLBACK;
           })
           .catch((e: unknown) => {
@@ -366,6 +440,13 @@ describeOnRealDb(
 
         expect(seen).toEqual({
           first: 'active',
+          // Непустое своё побеждает, пустое — из самого раннего дубля.
+          kept: {
+            alias: 'Из дубля',
+            start: '2026-01-05',
+            next: '2026-12-01',
+            days: [2],
+          },
           dup: 'ended',
           dup2: 'ended',
           activeX: 1,

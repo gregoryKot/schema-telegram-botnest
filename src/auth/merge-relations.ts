@@ -19,7 +19,8 @@ const col = (c: string) => Prisma.raw(`"${c}"`);
 
 /**
  * Активная связь терапевт↔клиент есть у обоих: данные source (имя клиента,
- * даты) доливаются в строку target там, где у target пусто, строка source
+ * даты, дни встреч) доливаются в строку target там, где у target пусто
+ * (у meetingDays «пусто» — это `[]`: колонка NOT NULL), строка source
  * дропается. `side` — какую роль играет сливаемый аккаунт в дублях.
  * Сравнение `=` по второй колонке не матчит NULL: офлайн-клиенты
  * (clientId IS NULL) дублями друг друга не считаются и переезжают.
@@ -36,7 +37,9 @@ async function dedupeTherapyRelations(
     UPDATE "TherapyRelation" t SET
       "clientAlias" = COALESCE(t."clientAlias", s."clientAlias"),
       "therapyStartDate" = COALESCE(t."therapyStartDate", s."therapyStartDate"),
-      "nextSession" = COALESCE(t."nextSession", s."nextSession")
+      "nextSession" = COALESCE(t."nextSession", s."nextSession"),
+      "meetingDays" = CASE WHEN t."meetingDays" = '[]'::jsonb
+        THEN s."meetingDays" ELSE t."meetingDays" END
     FROM "TherapyRelation" s
     WHERE s."status" = 'active' AND t."status" = 'active'
       AND s.${mine} = ${sourceId} AND t.${mine} = ${targetId}

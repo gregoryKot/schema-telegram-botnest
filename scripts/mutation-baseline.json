@@ -3,6 +3,7 @@
   "files": {
     "src/auth/auth.service.ts": 91.61,
     "src/auth/merge.service.ts": 94.57,
+    "src/auth/merge-relations.ts": 100,
     "src/booking/robokassa.service.ts": 92.52,
     "src/therapy/therapy-relations.service.ts": 97.95,
     "src/utils/crypto.ts": 89.86,

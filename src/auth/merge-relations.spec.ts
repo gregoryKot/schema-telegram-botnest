@@ -70,6 +70,10 @@ describe('remapRelations', () => {
     for (const c of merges) {
       for (const f of ['clientAlias', 'therapyStartDate', 'nextSession'])
         expect(c.sql).toContain(`"${f}" = COALESCE(t."${f}", s."${f}")`);
+      // meetingDays NOT NULL с дефолтом [] — COALESCE не долил бы его никогда.
+      expect(c.sql).toContain(
+        `"meetingDays" = CASE WHEN t."meetingDays" = '[]'::jsonb THEN s."meetingDays" ELSE t."meetingDays" END`,
+      );
       expect(c.sql).toContain(
         'WHERE s."status" = \'active\' AND t."status" = \'active\'',
       );
