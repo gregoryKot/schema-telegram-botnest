@@ -1,9 +1,8 @@
 // Общие методы API обоих фронтендов (webapp ↔ schema-miniapp, правило №3).
-// До 2026-08 список эндпоинтов жил копией в двух api.ts — новый метод
-// дописывали в оба, и фиксы доезжали до одного. Теперь метод описан ОДИН раз
-// здесь; фронт отличается только транспортом (webapp — JWT Bearer, мини-апп —
-// initData) и платформенными методами в своём api.ts (booking/статьи/админка —
-// сайт; exercises, saveRating с outbox-датой, conceptualization — локально).
+// До 2026-08 эндпоинты жили копией в двух api.ts, и фиксы доезжали до одного;
+// теперь метод описан ОДИН раз здесь. Фронт отличается только транспортом (webapp —
+// JWT Bearer, мини-апп — initData) и платформенными методами своего api.ts (booking/
+// статьи/админка — сайт; exercises, saveRating с outbox-датой, conceptualization — локально).
 import type {
   Need,
   UserProfile,
@@ -36,6 +35,7 @@ import type {
   SaveModeNoteBody,
 } from '../notes/types';
 import type { JourneyData } from '../journey/journeyMeta';
+import type { TherapistNotesPage } from '../therapy/notesPage';
 
 /** Транспорт фронтенда: auth-заголовки, BASE и обработка ошибок — внутри. */
 export interface ApiTransport {
@@ -204,7 +204,7 @@ export const buildSharedApi = (t: ApiTransport) => ({
   getTherapyTasksForClient: (clientId: UserId) =>
     t.get<UserTask[]>(`/api/therapy/tasks/client/${clientId}`),
   getTherapistNotes: (clientId: UserId) =>
-    t.get<TherapistNote[]>(`/api/therapy/notes/${clientId}`),
+    t.get<TherapistNotesPage>(`/api/therapy/notes/${clientId}`),
   createTherapistNote: (clientId: UserId, date: string, text: string) =>
     t.postJson<TherapistNote>(`/api/therapy/notes/${clientId}`, { date, text }),
   deleteTherapistNote: (noteId: number) =>

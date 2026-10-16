@@ -49,7 +49,7 @@ async function openedHook(clientOverrides: Partial<Record<string, unknown>> = {}
 beforeEach(() => {
   vi.clearAllMocks();
   mockApi.getTherapyTasksForClient.mockResolvedValue([]);
-  mockApi.getTherapistNotes.mockResolvedValue([]);
+  mockApi.getTherapistNotes.mockResolvedValue({ notes: [], total: 0 });
   mockApi.getConceptualization.mockResolvedValue(null);
   mockApi.getTherapyClientData.mockResolvedValue(null);
   mockApi.getClientSchemaNotes.mockResolvedValue([]);
@@ -225,11 +225,20 @@ describe('addNote / removeNote', () => {
     expect(result.current.noteError).toBe('Не удалось удалить заметку');
   });
   it('removeNote удаляет заметку из списка по id', async () => {
-    mockApi.getTherapistNotes.mockResolvedValue([{ id: 1, date: '2026-01-01' }, { id: 2, date: '2026-01-02' }]);
+    mockApi.getTherapistNotes.mockResolvedValue({ notes: [{ id: 1, date: '2026-01-01' }, { id: 2, date: '2026-01-02' }], total: 2 });
     mockApi.deleteTherapistNote.mockResolvedValue(undefined);
     const { result } = await openedHook();
     await act(async () => { await result.current.removeNote(1); });
     expect(mockApi.deleteTherapistNote).toHaveBeenCalledWith(1);
     expect(result.current.notes.map(n => n.id)).toEqual([2]);
+    expect(result.current.notesPage.total).toBe(1);
+  });
+  it('total приходит от сервера и не равен длине среза: удаление уменьшает именно его', async () => {
+    mockApi.getTherapistNotes.mockResolvedValue({ notes: [{ id: 1, date: '2026-01-01' }], total: 105 });
+    mockApi.deleteTherapistNote.mockResolvedValue(undefined);
+    const { result } = await openedHook();
+    expect(result.current.notesPage.total).toBe(105);
+    await act(async () => { await result.current.removeNote(1); });
+    expect(result.current.notesPage.total).toBe(104);
   });
 });

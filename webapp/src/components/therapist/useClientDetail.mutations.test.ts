@@ -46,7 +46,7 @@ async function openedHook(clientOverrides: Partial<Record<string, unknown>> = {}
 beforeEach(() => {
   vi.clearAllMocks();
   mockApi.getTherapyTasksForClient.mockResolvedValue([]);
-  mockApi.getTherapistNotes.mockResolvedValue([]);
+  mockApi.getTherapistNotes.mockResolvedValue({ notes: [], total: 0 });
   mockApi.getConceptualization.mockResolvedValue(null);
   mockApi.getTherapyClientData.mockResolvedValue(null);
   mockApi.getClientSchemaNotes.mockResolvedValue([]);

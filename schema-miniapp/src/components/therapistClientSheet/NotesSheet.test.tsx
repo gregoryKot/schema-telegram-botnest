@@ -17,8 +17,10 @@ afterEach(() => {
 });
 
 function makeDetail(overrides: Partial<ClientDetail> = {}): ClientDetail {
+  const notes = overrides.notes ?? [];
   return {
-    notes: [],
+    notes,
+    notesPage: { notes, total: notes.length },
     removeNote: vi.fn(),
     newNoteText: '',
     setNewNoteText: vi.fn(),
@@ -159,5 +161,34 @@ describe('NotesSheet — предел длины заметки', () => {
       />,
     );
     expect(screen.getByText(/Достигнут предел/)).toBeTruthy();
+  });
+});
+
+describe('NotesSheet — срез на сервере (признак «есть ещё»)', () => {
+  const rows = (n: number) =>
+    Array.from({ length: n }, (_, i) => ({
+      id: i + 1,
+      date: '2026-08-01',
+      text: `t${i}`,
+    })) as unknown as ClientDetail['notes'];
+
+  it('заметок больше, чем показано: строка называет оба числа', () => {
+    const notes = rows(100);
+    render(
+      <NotesSheet
+        detail={makeDetail({
+          notes,
+          notesPage: { notes, total: 105 },
+        })}
+      />,
+    );
+    expect(screen.getByRole('note').textContent).toContain(
+      'Показаны последние 100 из 105',
+    );
+  });
+
+  it('показано всё: строки нет', () => {
+    render(<NotesSheet detail={makeDetail({ notes: rows(2) })} />);
+    expect(screen.queryByRole('note')).toBeNull();
   });
 });

@@ -79,7 +79,9 @@ describe('e2e: лимиты текста — один в DTO, превышени
       expect(created.status).toBe(201);
       expect(created.body.text).toBe(text);
       const list = await agentAs(T).get(url);
-      expect(list.body.map((n: { text: string }) => n.text)).toContain(text);
+      expect(list.body.notes.map((n: { text: string }) => n.text)).toContain(
+        text,
+      );
     });
 
     it('ровно на пределе — сохранено целиком; на символ больше — 400 и записи нет', async () => {
@@ -91,14 +93,14 @@ describe('e2e: лимиты текста — один в DTO, превышени
       expect(ok.status).toBe(201);
       expect(ok.body.text).toHaveLength(SESSION_NOTE_MAX);
 
-      const before = (await agentAs(T).get(url)).body.length;
+      const before = (await agentAs(T).get(url)).body.total;
       const over = await agentAs(T).post(url, {
         date: '2026-10-13',
         text: ofLen(SESSION_NOTE_MAX + 1),
       });
       expect(over.status).toBe(400);
       expect(JSON.stringify(over.body)).toContain('text');
-      expect((await agentAs(T).get(url)).body).toHaveLength(before);
+      expect((await agentAs(T).get(url)).body.total).toBe(before);
     });
   });
 
