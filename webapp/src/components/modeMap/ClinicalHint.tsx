@@ -1,14 +1,11 @@
 import type { ModeMapNode } from '../../api';
 import { MMIcon } from '../modeMapIcons';
 import { useTr } from '../../utils/addressForm';
+import { conceptQuestions } from './conceptQuestions';
 
-// Клинические вопросы по типу ноды + блок «Спросить себя».
-// Вынесено из ModeMapNodeEditor.tsx (правило №10).
-
+// Клинические вопросы по типу ноды + блок «Спросить себя» (вынесено из ModeMapNodeEditor.tsx, правило №10).
 type Question = { text: string; target: 'note' | 'need' | 'healthy' };
-
-// Type-specific clinical questions. `target` says which field the question
-// guides — clicking it focuses that field.
+// Type-specific clinical questions. `target` says which field the question guides — clicking it focuses that field.
 function clinicalQuestions(node: ModeMapNode): Question[] {
   const sub = node.data.copingSubtype;
   const note = (text: string): Question => ({ text, target: 'note' });
@@ -29,8 +26,10 @@ function clinicalQuestions(node: ModeMapNode): Question[] {
       return [note('Кого защищает?'), note('Кому ставит границы?'), need('Какие потребности удовлетворяет?')];
     case 'behavior':
       return [note('Что конкретно делает клиент?'), note('К каким последствиям это ведёт?')];
-    default:
-      return [note('Как этот режим проявляется?'), note('Что он делает в поведении?')];
+    default: {
+      const own = conceptQuestions(node.type);
+      return (own ?? ['Как этот режим проявляется?', 'Что он делает в поведении?']).map(note);
+    }
   }
 }
 

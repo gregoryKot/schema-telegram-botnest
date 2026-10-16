@@ -7,6 +7,7 @@ import { decryptRecord, EncryptSchema } from '../utils/crypto';
 import { SUBSCRIPTION_INVID_BASE } from './subscription.constants';
 import { escapeHtml } from '../utils/escape-html';
 import { activatePaidCharge } from './subscription.charge-activate';
+import { markChargeFailed } from './subscription.charge-failed';
 import { reportPaidAfterCancel } from './subscription-paid-after-cancel';
 
 // Списания по подписке: подтверждение оплаченного charge из вебхука и
@@ -148,24 +149,19 @@ export async function chargeDue(deps: ChargeDeps) {
       );
     } else {
       const fails = sub.failedAttempts + 1;
-      await deps.prisma.$transaction([
-        deps.prisma.subscriptionCharge.update({
-          where: { id: charge.id },
-          data: { status: 'failed' },
-        }),
-        // Отмена между захватом и ответом Robokassa не откатывается:
-        // updateMany с предикатом статуса вместо update по id.
-        deps.prisma.subscription.updateMany({
-          where: { id: sub.id, status: { in: ['active', 'past_due'] } },
-          data: {
-            failedAttempts: fails,
-            status: fails >= MAX_FAILS ? 'past_due' : sub.status,
-            // Retry in a day unless we've given up.
-            nextChargeAt:
-              fails >= MAX_FAILS ? null : new Date(Date.now() + 24 * 3_600_000),
-          },
-        }),
-      ]);
+      const counted = await markChargeFailed(deps.prisma, {
+        chargeId: charge.id,
+        subId: sub.id,
+        status: sub.status,
+        fails,
+        maxFails: MAX_FAILS,
+      });
+      if (!counted) {
+        deps.logger.log(
+          `Subscription ${sub.id}: charge ${charge.id} уже оплачен вебхуком — сбой не засчитан`,
+        );
+        continue;
+      }
       await deps.notify.alertAdmin(
         `⚠️ <b>Не удалось списать подписку #${sub.id}</b> (${fails}/${MAX_FAILS})\n${res.body.slice(0, 150)}`,
       );

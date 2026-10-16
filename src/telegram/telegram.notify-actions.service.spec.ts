@@ -3,6 +3,7 @@
 // через фейковые cadenceService/botService, не форму вызова.
 import { Logger } from '@nestjs/common';
 import { TelegramNotifyActionsService } from './telegram.notify-actions.service';
+import { ERROR_RETRY } from './telegram.constants';
 import { makeFakeBot, runAction } from './telegram.test-helpers.spec';
 
 function makeBotService(overrides: Record<string, any> = {}) {
@@ -151,7 +152,7 @@ describe('TelegramNotifyActionsService — реже / скип', () => {
 });
 
 describe('TelegramNotifyActionsService — ошибки не роняют хендлер', () => {
-  it('cadenceService.pause падает — answerCbQuery уже отдан, ошибка залогирована', async () => {
+  it('cadenceService.pause падает — answerCbQuery отдан один раз, человеку — сообщение об ошибке', async () => {
     jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
     const botService = makeBotService();
     const { service, fakeBot } = makeService(botService, {
@@ -160,8 +161,7 @@ describe('TelegramNotifyActionsService — ошибки не роняют хен
     service.onModuleInit();
     const ctx = await runAction(fakeBot, 'notify:pause:7');
     expect(ctx.answerCbQuery).toHaveBeenCalledWith('⏸ Пауза включена');
-    expect(ctx.answerCbQuery).toHaveBeenCalledWith(
-      expect.stringContaining('Не получилось'),
-    );
+    expect(ctx.answerCbQuery).toHaveBeenCalledTimes(1);
+    expect(ctx.reply).toHaveBeenCalledWith(ERROR_RETRY);
   });
 });
