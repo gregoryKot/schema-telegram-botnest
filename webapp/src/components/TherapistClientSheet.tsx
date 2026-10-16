@@ -42,6 +42,7 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
   // на отказе запроса (см. ClientListView.loadAllTasks).
   const [allTasksFailed, setAllTasksFailed] = useState(false);
   const [animKey, setAnimKey] = useState(0);
+  const [canvasMapId, setCanvasMapId] = useState<number | null>(null); // карта, созданная кнопкой «Открыть на холсте»
 
   function switchView(v: 'list' | 'client') {
     setAnimKey(k => k + 1);
@@ -151,13 +152,13 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
 
             {/* ── CONCEPT ──────────────────────────────────────────────────────── */}
             {clientTab === 'concept' && (
-              <ClientConceptTab detail={detail} />
+              <ClientConceptTab detail={detail} onOpenCanvas={(id) => { setCanvasMapId(id); detail.setClientTab('mode_map'); }} />
             )}
 
             {/* ── MODE MAP — keep mounted to preserve React Flow state across tab switches */}
             {selectedClient != null && clientTab === 'mode_map' && (
               <div style={{ height: '100%', minHeight: 0, display: 'flex', flexDirection: 'column' }}>
-                <ModeMapSelector key={selectedClient.telegramId} clientId={selectedClient.telegramId} />
+                <ModeMapSelector key={`${selectedClient.telegramId}-${canvasMapId}`} clientId={selectedClient.telegramId} initialMapId={canvasMapId ?? undefined} />
               </div>
             )}
 
@@ -196,7 +197,6 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
             )}
 
             </> /* end tabLoading ternary */}
-
 
           </div>
         </div>

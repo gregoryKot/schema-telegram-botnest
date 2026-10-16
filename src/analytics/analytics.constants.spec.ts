@@ -24,6 +24,7 @@ import {
   SIGNUP_SOURCES,
   PROFILE_PATTERN_KINDS,
 } from './analytics.constants';
+import { CONCEPT_EVENTS } from './concept-events.constants';
 import { CRISIS_SURFACES as CRISIS_SURFACES_DIRECT } from './crisis-surfaces.constants';
 import {
   PUBLIC_CRISIS_EVENTS,
@@ -60,6 +61,7 @@ const REGISTRIES: Record<string, readonly string[]> = {
   GAME_CHAPTERS,
   GAME_CTA_PLACES,
   GAME_ENTRY_SOURCES,
+  CONCEPT_EVENTS,
 };
 
 describe('реестры analytics.constants: без дублей и пустых значений', () => {
@@ -86,6 +88,21 @@ describe('реестры analytics.constants: без дублей и пусты�
       for (const v of values) expect(v).toMatch(/^[a-z][a-z0-9_]*$/);
     },
   );
+});
+
+describe('CONCEPT_EVENTS ⊆ ANALYTICS_EVENTS', () => {
+  it('каждое событие схемы случая есть в общем allow-list и не открыто анонимно', () => {
+    // Терапевт всегда авторизован: анонимный путь (POST /api/public-event) для
+    // клинических событий закрыт — иначе их можно накрутить без входа.
+    for (const name of CONCEPT_EVENTS) {
+      expect(ANALYTICS_EVENTS).toContain(name);
+      expect(PUBLIC_ANALYTICS_EVENTS).not.toContain(name);
+    }
+  });
+
+  it('перенос на холст — событие реестра (concept_canvas_open)', () => {
+    expect(CONCEPT_EVENTS).toContain('concept_canvas_open');
+  });
 });
 
 describe('PUBLIC_ANALYTICS_EVENTS ⊆ ANALYTICS_EVENTS', () => {

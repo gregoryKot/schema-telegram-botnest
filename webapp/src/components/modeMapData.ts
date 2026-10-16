@@ -1,11 +1,9 @@
-// Pure data for the mode-map (no component imports) — split out of the node/
-// palette/edge components so those files export only components (react-refresh).
+// Pure data for the mode-map (no component imports): node/palette/edge files export only components.
 import type { ModeMapNode } from '../api';
 
 export type NodeType = ModeMapNode['type'];
 
-// Node colours from the site's earthy palette tokens (index.css --c-*): coping
-// subtypes share ONE colour (clay) and are told apart by SHAPE, not hue.
+// Colours are palette tokens (index.css); coping subtypes share ONE colour (clay), told apart by SHAPE.
 export const TYPE_COLORS: Record<string, string> = {
   trigger:  'var(--c-slate)',
   child:    'var(--c-teal)',
@@ -14,6 +12,8 @@ export const TYPE_COLORS: Record<string, string> = {
   healthy:  'var(--c-moss)',
   custom:   'var(--c-plum)',
   behavior: 'var(--c-ochre)',
+  schema:   'var(--accent-red)', origin: 'var(--accent-blue)',  // схема случая на холсте (conceptToModeMap):
+  need:     'var(--c-amber)',    needs:  'var(--c-amber)',      // схема, опыт, потребность, круг потребностей
 };
 
 export const NODE_DEFAULT_SIZES: Partial<Record<string, { width: number; height: number }>> = {};
