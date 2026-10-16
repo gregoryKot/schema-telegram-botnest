@@ -1126,6 +1126,19 @@ CLAUDE.md. Не удалять, но и не считать списком за�
   полный прогон vitest webapp) читает фолбэк вместо `data:image/jpeg;base64,REAL`.
   Поодиночке зелёный. Лечится `await waitFor(() => expect(img.src)…)`; найден
   попутно при починке Вебвизора, не чинился (правило №20).
+- **e2e на `AppModule` живут с настоящими `@Cron`** (`ScheduleModule.forRoot()`
+  тикает после `app.init()`). `test/payment-webhooks.e2e-spec.ts` с 2026-10-16
+  гасит их `stopCronJobs(app)` (`test/e2e-support/stop-cron-jobs.ts`): тик
+  `BookingNotifyService.sendReminders` (`*/5`) на границе пятиминутки слал
+  напоминания по броням из общей БД джобы `migrations`, и счётчик
+  `expect(tg).toHaveBeenCalledTimes(1)` видел 4 (CI PR #722, 03:35 UTC).
+  Остальным спекам расписание вредит, только если они считают вызовы шпионов на
+  уведомления админу. Проверено чтением: `notify-address.e2e-spec.ts` безопасен
+  (`ADMIN_EMAIL` в e2e не задан, `sendAdminNotification` выходит до `send`);
+  `body-limit.e2e-spec.ts:115` (`Logger.error` не вызван) упал бы только от
+  тика, завершившегося ошибкой — не воспроизводилось, не трогал. Новый e2e,
+  считающий `notifyAdmin`/почту при живом `AppModule`, обязан звать
+  `stopCronJobs`; механизма принуждения нет, держится ревью.
 
 **Цвет и токены — открыто, гейта пока нет** (подробности и порядок —
 [DESIGN_AUDIT_2026-08.md](DESIGN_AUDIT_2026-08.md), раздел «Что по цвету
