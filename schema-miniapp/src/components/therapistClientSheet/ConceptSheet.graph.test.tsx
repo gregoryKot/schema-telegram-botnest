@@ -83,6 +83,7 @@ const concept = (patch: Record<string, unknown> = {}) => ({
   currentProblems: null,
   modeTransitions: null,
   modeLinks: [],
+  schemaLinks: [],
   history: [],
   updatedAt: '2026-10-01T00:00:00.000Z',
   ...patch,
@@ -117,7 +118,7 @@ const card = (name: string) =>
 beforeEach(() => {
   vi.clearAllMocks();
   mockApi.getTherapyTasksForClient.mockResolvedValue([]);
-  mockApi.getTherapistNotes.mockResolvedValue([]);
+  mockApi.getTherapistNotes.mockResolvedValue({ notes: [], total: 0 });
   mockApi.getTherapyClientData.mockResolvedValue(null);
   mockApi.getClientSchemaNotes.mockResolvedValue([]);
   mockApi.getClientModeNotes.mockResolvedValue([]);
@@ -140,14 +141,18 @@ describe('ConceptSheet: «Схема · Поля»', () => {
         .getByRole('button', { name: 'Схема' })
         .getAttribute('aria-pressed'),
     ).toBe('true');
-    expect(screen.getByText(/Схема случая по модели режимов/)).toBeTruthy();
+    expect(
+      screen.getByText(/Схема случая: в центре базовые потребности/),
+    ).toBeTruthy();
     expect(screen.queryByText('Актуальные схемы (ЭДС)')).toBeNull();
   });
 
   it('переключение на «Схему»: карточка режима, без кнопки скачивания картинки', async () => {
     await openSheet(concept({ modeIds: [] }));
     fireEvent.click(screen.getByRole('button', { name: 'Схема' }));
-    expect(screen.getByText(/Схема случая по модели режимов/)).toBeTruthy();
+    expect(
+      screen.getByText(/Схема случая: в центре базовые потребности/),
+    ).toBeTruthy();
     expect(
       screen.queryByRole('button', { name: /Скачать картинкой/ }),
     ).toBeNull();
@@ -222,7 +227,7 @@ describe('ConceptSheet: связи режима — правка → «гряз�
     await openSheet(concept());
     fireEvent.click(card('Карающий Критик'));
     const schemas = within(
-      screen.getByRole('group', { name: 'Какие схемы питают режим' }),
+      screen.getByRole('group', { name: 'Какие схемы включают режим' }),
     );
     fireEvent.click(schemas.getByRole('button', { name: 'Все схемы' }));
     fireEvent.click(schemas.getByRole('button', { name: /Покинутость/ }));
@@ -297,6 +302,108 @@ describe('ConceptSheet: связи режима — правка → «гряз�
       expect(mockApi.trackEvent.mock.calls.map((c) => c[0])).toEqual([
         'concept_graph_open',
       ]),
+    );
+  });
+});
+
+describe('ConceptSheet: тексты схем — правка → «грязный» лист → сохранение → отображение', () => {
+  const schemaButton = () =>
+    screen.getByRole('button', {
+      name: 'Схема Неуспешность: убеждение и опыт',
+    });
+
+  it('убеждение, опыт и потребность схемы уходят в schemaLinks кнопкой «Сохранить», ответ сервера рисуется на схеме', async () => {
+    await openSheet(concept());
+    expect(
+      screen.queryByRole('button', { name: 'Сохранить концептуализацию' }),
+    ).toBeNull();
+    fireEvent.click(schemaButton());
+    fireEvent.change(screen.getByLabelText('Во что человек верит'), {
+      target: { value: 'Я не справлюсь' },
+    });
+    fireEvent.change(screen.getByLabelText('Как нарушалась потребность'), {
+      target: { value: 'Критика за каждую ошибку' },
+    });
+    fireEvent.click(
+      within(
+        screen.getByRole('group', { name: 'Какие потребности блокирует' }),
+      ).getByRole('button', { name: /Автономия/ }),
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Готово' }));
+    expect(mockApi.saveConceptualization).not.toHaveBeenCalled();
+    await act(async () => {
+      fireEvent.click(
+        screen.getByRole('button', { name: 'Сохранить концептуализацию' }),
+      );
+    });
+    await waitFor(() =>
+      expect(mockApi.saveConceptualization).toHaveBeenCalledTimes(1),
+    );
+    expect(mockApi.saveConceptualization.mock.calls[0][1].schemaLinks).toEqual([
+      {
+        schemaId: 'failure',
+        belief: 'Я не справлюсь',
+        origin: 'Критика за каждую ошибку',
+        needIds: ['autonomy'],
+      },
+    ]);
+    await waitFor(() =>
+      expect(
+        screen.queryByRole('button', { name: 'Сохранить концептуализацию' }),
+      ).toBeNull(),
+    );
+    expect(within(schemaButton()).getByText('Я не справлюсь')).toBeTruthy();
+    expect(document.querySelectorAll('[data-badge="block"]')).toHaveLength(1);
+  });
+
+  it('«+ схема» добавляет схему в schemaIds тела сохранения', async () => {
+    await openSheet(concept());
+    fireEvent.click(
+      within(screen.getByRole('group', { name: 'Схемы' })).getByRole('button', {
+        name: '+ схема',
+      }),
+    );
+    fireEvent.click(screen.getByRole('button', { name: /Покинутость/ }));
+    await act(async () => {
+      fireEvent.click(
+        screen.getByRole('button', { name: 'Сохранить концептуализацию' }),
+      );
+    });
+    expect(mockApi.saveConceptualization.mock.calls[0][1].schemaIds).toEqual([
+      'failure',
+      'abandonment',
+    ]);
+  });
+
+  it('легаси-ответ без schemaLinks не роняет лист, сохранение шлёт schemaLinks: []', async () => {
+    const legacy = concept();
+    delete (legacy as Partial<typeof legacy>).schemaLinks;
+    await openSheet(legacy);
+    expect(within(schemaButton()).getByText('связи не заполнены')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Поля' }));
+    fireEvent.click(screen.getByRole('button', { name: /Уязвимый Ребёнок/ }));
+    await act(async () => {
+      fireEvent.click(
+        screen.getByRole('button', { name: 'Сохранить концептуализацию' }),
+      );
+    });
+    expect(mockApi.saveConceptualization.mock.calls[0][1].schemaLinks).toEqual(
+      [],
+    );
+  });
+
+  it('событие concept_schema_linked шлётся один раз на схему', async () => {
+    await openSheet(concept());
+    fireEvent.click(schemaButton());
+    const belief = () => screen.getByLabelText('Во что человек верит');
+    fireEvent.change(belief(), { target: { value: 'я' } });
+    fireEvent.change(belief(), { target: { value: 'я не' } });
+    await waitFor(() =>
+      expect(
+        mockApi.trackEvent.mock.calls
+          .map((c) => c[0])
+          .filter((n) => n === 'concept_schema_linked'),
+      ).toHaveLength(1),
     );
   });
 });

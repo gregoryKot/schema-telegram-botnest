@@ -3,6 +3,7 @@
 // on parse issues we fail open with fewer/no intervals (slots still show).
 
 import { zonedWallClockToUtc } from '../utils/tz';
+import { eventEnd } from './caldav-event-end';
 import { readSummary } from './caldav-summary';
 
 export interface Interval {
@@ -25,7 +26,7 @@ export function busyQueryXml(from: Date, to: Date): string {
 </c:calendar-query>`;
 }
 
-/** Parse VEVENT DTSTART/DTEND pairs out of a CalDAV multistatus response. */
+/** Parse VEVENT DTSTART + DTEND/DURATION (RFC 5545 §3.6.1) from a multistatus. */
 export function parseBusy(xml: string): Interval[] {
   const out: Interval[] = [];
   // Unfold iCal line continuations (RFC 5545: lines wrapped with CRLF + space).
@@ -37,9 +38,8 @@ export function parseBusy(xml: string): Interval[] {
   for (const ev of events) {
     if (/\nRRULE[:;]/.test(ev) || /^RRULE[:;]/.test(ev)) continue; // skip recurring (MVP)
     const start = findDate(ev, 'DTSTART');
-    let end = findDate(ev, 'DTEND');
     if (!start) continue;
-    if (!end) end = new Date(start.getTime() + 60 * 60_000); // default 1h
+    const end = eventEnd(ev, start, findDate(ev, 'DTEND'));
     const summary = readSummary(ev);
     out.push({ start, end, ...(summary ? { summary } : {}) });
   }

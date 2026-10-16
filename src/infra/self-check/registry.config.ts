@@ -1,7 +1,9 @@
 import { Probe } from './types';
 import { oauthRedirectsProbe, alertsProbe } from './probe-capabilities';
+import { clinicalLabelsProbe } from './probe-clinical-labels';
 import { emailProbe } from './probe-email';
 import { runtimeModeProbe } from './probe-runtime-mode';
+import { clientIpProbe } from './probe-client-ip';
 
 /**
  * Пробы конфигурации и режима процесса (без живых запросов на площадки).
@@ -14,5 +16,7 @@ export function configProbes(): Probe[] {
     emailProbe(),
     alertsProbe(),
     runtimeModeProbe(),
+    clientIpProbe(),
+    clinicalLabelsProbe(),
   ];
 }

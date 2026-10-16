@@ -15,6 +15,16 @@ on:
   # запускает воркфлоу сам (gh/API workflow_dispatch) и ждёт результата.
   workflow_dispatch:
 
+# Новый пуш в PR отменяет устаревший прогон того же PR (2026-10-16: из 12
+# прогонов в очереди раннеров 4 были для уже заменённых коммитов). Прогон
+# main отменять нельзя — каждый коммит main это деплой. Поэтому вне PR группа
+# своя у каждого прогона (run_id): с общей группой на ветку GitHub держит один
+# идущий и один ожидающий прогон, а следующий ожидающий молча сбрасывает.
+# Гейт: src/test-support/gates/ci-concurrency.spec.ts.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 # Токен раннера по умолчанию — только чтение (аудит 2026-10, I5): ни одной
 # джобе ниже не нужна запись в репозиторий/PR/issues. Нужна запись — выдавай
 # её на уровне конкретной джобы (`permissions:` внутри job), а не здесь.
@@ -90,7 +100,7 @@ jobs:
           test/scheduler-teardown test/login-ticket test/refresh-rotation
           test/slot-override test/therapy-remove-client test/therapy-resign
           test/body-limit test/login-csrf test/payment-webhook-practice-host
-          test/text-limits
+          test/text-limits test/therapy-ownership.e2e-spec.ts
           test/booking-admin-cancel test/exercise-delete-ownership test/max-auth
       # Security-гейт (этап 1.4): high/critical уязвимости в prod-зависимостях
       # блокируют мерж. dev-зависимости не гейтим — шум.
@@ -133,6 +143,10 @@ jobs:
   # живут в джобе webapp.
   checks:
     runs-on: ubuntu-latest
+    # Потолок на джобу — страховка от зависшего шага (правило №24): без него
+    # GitHub держит джобу до 360 минут. Значения — примерно втрое от замера
+    # (пять зелёных прогонов main 2026-10-15). Гейт — job-timeouts.spec.ts.
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -157,6 +171,13 @@ jobs:
       # Лимит один и стоит в DTO — превышение даёт 400. Исключения (дата из
       # ISO-момента) — в scripts/body-truncation-baseline.json с причиной.
       - run: node scripts/check-body-truncation.mjs
+      # У строкового поля DTO есть верхняя граница (находка аудита 2026-10-11):
+      # `VirtualClientDto.name` был одним `@IsString()`, тело принимается до
+      # 256 КБ — имя на четверть мегабайта ложилось в БД и в каждый ответ
+      # `GET /clients`. check-body-dto.mjs смотрит, что у @Body() стоит класс,
+      # а не что внутри класса. Исключения (формат проверяется позже, honeypot,
+      # админские тексты) — в scripts/dto-string-bounds-baseline.json с причиной.
+      - run: node scripts/check-dto-string-bounds.mjs
       # Старое имя продукта «СхемаЛаб»/«Схема-лаб» не возвращается (переехали
       # на «Всё по схеме»); первый проход искал только латиницей и кириллицу
       # упустил.
@@ -185,6 +206,11 @@ jobs:
       # теле, exempt — только с внятной причиной); протухшая запись тоже красит
       # CI. Флага --update нет: это решение человека, не счётчик долга.
       - run: node scripts/check-cron-leader.mjs
+      # Счётчик попыток в памяти процесса обнуляется деплоем и не общий между
+      # инстансами (правило №5). Каждая ручка с лимитом или с проверкой кода /
+      # заявкой несёт @PersistentThrottle (счёт в Postgres) либо запись exempt с
+      # причиной в scripts/persistent-throttle-baseline.json. Флага --update нет.
+      - run: node scripts/check-persistent-throttle.mjs
       - run: node scripts/check-raw-sql-live.mjs
       # Каждый test/**/*.e2e-spec.ts гоняется хотя бы одним шагом jest-e2e
       # (аудит 2026-10-11: два спека лежали в test/ без единого прогона), и
@@ -353,6 +379,7 @@ jobs:
   # «Миграции БД»: рукописный SQL не мержится, пока не прошёл migrate deploy.
   migrations:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     services:
       postgres:
         # Docker Hub режет анонимные pull с общих IP раннеров (429, 2026-10-09):
@@ -406,6 +433,12 @@ jobs:
       # Путь реагирования на утечку ключа обязан работать ДО того, как понадобится.
       - name: e2e ротация ENCRYPTION_KEY на реальном Postgres
         run: npx jest --config ./test/jest-e2e.json --runInBand test/key-rotation.e2e-spec.ts
+      # Провал расшифровки (аудит 2026-10, D-8): Json-колонка с шифротекстом чужого
+      # ключа читается как [] с маркером, а не base64-строкой — как драйвер Prisma 7
+      # отдаёт такую колонку, знает только живая база; проба encryptionReadable
+      # на тех же строках красная под чужим ключом и зелёная под своим.
+      - name: e2e нечитаемые данные (маркер и проба) на реальном Postgres
+        run: npx jest --config ./test/jest-e2e.json --runInBand test/encryption-readable.e2e-spec.ts
       # Аренда прогона бэкапа в R2 (deploy/backup-scheduler.cjs, аудит D-2): тот же
       # атомарный INSERT … ON CONFLICT, но через настоящий psql — драйвер и
       # квотирование :'переменных' проверяет только живая база. psql есть в образе
@@ -436,6 +469,13 @@ jobs:
       # book берёт advisory-lock через $executeRaw — фейковая Prisma не годится.
       - name: e2e экран после оплаты на реальном Postgres (success без вебхука)
         run: npx jest --config ./test/jest-e2e.json --runInBand test/booking-paid-page.e2e-spec.ts
+      # Аудит 2026-10-11: бронь хранит сумму счёта (Booking.amount), а платная
+      # сессия не бывает за 0. Шов целиком: book пишет колонку → админ меняет цену
+      # → вебхук сверяется со счётом, а не с новой ценой; PATCH 0/1e22 → 400;
+      # мусор в BookingSetting не становится ценой. book берёт advisory-lock через
+      # $executeRaw — фейковая Prisma не годится.
+      - name: e2e сумма счёта брони и цена платной сессии на реальном Postgres
+        run: npx jest --config ./test/jest-e2e.json --runInBand test/booking-amount.e2e-spec.ts
       # L3 аудита 2026-07-20 (решение владельца 2026-10-08): крон стирает имя,
       # контакт и текст запроса у броней старше 12 месяцев. Запись plaintext ''
       # в шифрованную колонку и обратное чтение через драйвер и decryptRecord —
@@ -495,6 +535,7 @@ jobs:
           test/refresh-rotation.e2e-spec.ts
           test/notify-address.e2e-spec.ts
           test/merge-my-lists.e2e-spec.ts
+          test/merge-unique-rules.e2e-spec.ts
           test/account-export-ownership.e2e-spec.ts
           test/therapy-remove-client.e2e-spec.ts
           test/text-limits.e2e-spec.ts
@@ -612,6 +653,7 @@ jobs:
 
   webapp:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -717,6 +759,7 @@ jobs:
   # check-frontend-coverage-ratchet.mjs (--package shared).
   shared:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -745,6 +788,7 @@ jobs:
   # everything-as-any и счётчики уезжают. game/ исключён (заморожен).
   eslint:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -772,6 +816,7 @@ jobs:
 
   miniapp:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7

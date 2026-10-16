@@ -72,14 +72,28 @@ export function encrypt(text: string | null | undefined): string | null {
   return Buffer.concat([iv, tag, enc]).toString('base64');
 }
 
-export function decrypt(value: string | null | undefined): string | null {
-  if (!value || ALL_KEYS.length === 0) return value ?? null;
+/**
+ * Итог попытки расшифровать значение. `looksCipher` при провале: значение
+ * ПОХОЖЕ на наш шифротекст (строгий base64 ≥29 байт), но ни один ключ не
+ * подошёл — порча, подделка либо недокатившаяся ротация. Обычный текст
+ * (легаси plaintext, кириллица, пробелы) даёт `looksCipher: false`.
+ */
+export type DecryptAttempt =
+  { ok: true; text: string } | { ok: false; looksCipher: boolean };
+
+/**
+ * Расшифровка без побочных эффектов: ничего не логирует и не подменяет
+ * провал самим значением. Вызывающий решает, что значит «не вышло» (массив →
+ * [] с маркером, строка → сырое значение, проба самопроверки → счётчик).
+ */
+export function tryDecrypt(value: string | null | undefined): DecryptAttempt {
+  if (!value || ALL_KEYS.length === 0) return { ok: false, looksCipher: false };
   let buf: Buffer;
   try {
     buf = Buffer.from(value, 'base64');
-    if (buf.length < 29) return value; // not encrypted format
+    if (buf.length < 29) return { ok: false, looksCipher: false }; // not encrypted format
   } catch {
-    return value;
+    return { ok: false, looksCipher: false };
   }
   const iv = buf.subarray(0, 12);
   const tag = buf.subarray(12, 28);
@@ -94,18 +108,28 @@ export function decrypt(value: string | null | undefined): string | null {
         authTagLength: 16,
       });
       decipher.setAuthTag(tag);
-      return decipher.update(data).toString('utf8') + decipher.final('utf8');
+      const text =
+        decipher.update(data).toString('utf8') + decipher.final('utf8');
+      return { ok: true, text };
     } catch {
       /* wrong key, try next */
     }
   }
-  // Ни один ключ не подошёл. Если blob ПОХОЖ на наш шифротекст (строгий base64
-  // — другого вида он быть не может) — это порча/подделка (провал GCM) или
-  // недокатившаяся ротация: молчать нельзя (аудит 2026-07, S-3), алерт уровня
-  // error (D-8, аудит 2026-10 — AlertLogger шлёт DM владельцу). Обычный текст
-  // с пробелами/кириллицей/«@» base64 не является — это легаси plaintext, он
-  // читается тихо, иначе каждая старая строка была бы ложной тревогой.
-  if (looksLikeCiphertext(value)) logDecryptFailure();
+  return { ok: false, looksCipher: looksLikeCiphertext(value) };
+}
+
+export function decrypt(value: string | null | undefined): string | null {
+  if (!value) return value ?? null;
+  const r = tryDecrypt(value);
+  if (r.ok) return r.text;
+  // Ни один ключ не подошёл. Если blob ПОХОЖ на наш шифротекст — это порча/
+  // подделка (провал GCM) или недокатившаяся ротация: молчать нельзя (аудит
+  // 2026-07, S-3), алерт уровня error (D-8, аудит 2026-10 — AlertLogger шлёт
+  // DM владельцу). Обычный текст с пробелами/кириллицей/«@» base64 не
+  // является — это легаси plaintext, он читается тихо, иначе каждая старая
+  // строка была бы ложной тревогой. Контракт «при провале вернуть value» —
+  // на нём стоят encrypt-if-plain, волны дошифровки и ротация.
+  if (r.looksCipher) logDecryptFailure();
   return value; // legacy plaintext (или мусор) — возвращаем как есть
 }
 
@@ -113,7 +137,7 @@ export function decrypt(value: string | null | undefined): string | null {
 // ≥1 байт данных). Строже проверки внутри decrypt() (она мягкая, по длине).
 // GCM-тэг не проверяется: отличить шифротекст от plaintext, случайно
 // похожего на base64, нельзя — вызывающий трактует «похоже + decrypt не
-// сработал» как «неизвестно, не трогать» (см. encrypt-migration.ts).
+// сработал» как «неизвестно, не трогать» (см. classify в encrypt-migration.rows.ts).
 const STRICT_BASE64_RE = /^[A-Za-z0-9+/]*={0,2}$/;
 
 export function looksLikeCiphertext(value: string | null | undefined): boolean {
@@ -168,51 +192,12 @@ export function decryptJson<T>(val: string | null | undefined): T | null {
   }
 }
 
-// ── Record-level encryption ──────────────────────────────────────────────────
-// Declare a schema once, use it for both write (encryptRecord) and read (decryptRecord).
-// This ensures every field is always encrypted/decrypted consistently.
-//
-// Usage:
-//   const MY_SCHEMA: EncryptSchema = { strings: ['text', 'reframe'], jsonArrays: ['items'] };
-//   const row = await prisma.myModel.create({ data: encryptRecord(data, MY_SCHEMA) });
-//   return decryptRecord(row, MY_SCHEMA);
-
-export interface EncryptSchema {
-  strings?: string[]; // fields to encrypt/decrypt as plain strings
-  jsonArrays?: string[]; // fields to encrypt/decrypt as JSON-encoded arrays
-}
-
-export function encryptRecord<T extends Record<string, unknown>>(
-  data: T,
-  schema: EncryptSchema,
-): T {
-  const out: Record<string, unknown> = { ...data };
-  for (const f of schema.strings ?? []) {
-    if (out[f] != null) out[f] = encrypt(out[f] as string);
-  }
-  for (const f of schema.jsonArrays ?? []) {
-    if (out[f] != null) out[f] = encryptJson(out[f]) ?? JSON.stringify(out[f]);
-  }
-  return out as T;
-}
-
-export function decryptRecord<T extends Record<string, unknown>>(
-  row: T,
-  schema: EncryptSchema,
-): T {
-  const out: Record<string, unknown> = { ...row };
-  for (const f of schema.strings ?? []) {
-    if (out[f] != null) out[f] = decrypt(out[f] as string);
-  }
-  for (const f of schema.jsonArrays ?? []) {
-    const v = out[f];
-    if (v == null) continue;
-    // Forward-compat: if Prisma already deserialised the JSON column into an
-    // array/object (legacy plaintext rows), return as-is. Only attempt
-    // decrypt+parse when the column comes back as a string (new encrypted form).
-    if (typeof v === 'string') {
-      out[f] = decryptJson(v) ?? v;
-    }
-  }
-  return out as T;
-}
+// Схема записи (encryptRecord/decryptRecord) живёт в crypto-record.ts; здесь —
+// ре-экспорт, чтобы импортёры не менялись. Цикл crypto ↔ crypto-record
+// безопасен: crypto-record берёт tryDecrypt/encrypt только при вызове.
+export type { EncryptSchema } from './crypto-record';
+export {
+  decryptRecord,
+  encryptRecord,
+  unreadableFields,
+} from './crypto-record';

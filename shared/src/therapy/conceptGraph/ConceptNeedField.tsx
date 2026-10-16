@@ -3,11 +3,16 @@ import { needColor } from '../../needs/needColors';
 import { ConceptToggleChip } from './ConceptToggleChip';
 import { labelStyle } from './graphStyles';
 
-/** «Какая потребность не встретила ответа»: пять базовых потребностей. */
+/**
+ * Пять базовых потребностей чипами. Подпись говорит, что значит выбор: у схемы
+ * это ✗ («блокирует»), у Здорового Взрослого — ✓ («уже умеет заботиться»).
+ */
 export function ConceptNeedField({
+  label,
   needIds,
   onChange,
 }: {
+  label: string;
   needIds: string[];
   onChange: (needIds: string[]) => void;
 }) {
@@ -17,10 +22,8 @@ export function ConceptNeedField({
       needIds.includes(id) ? needIds.filter((x) => x !== id) : [...needIds, id],
     );
   return (
-    <div role="group" aria-label="Какая потребность не встретила ответа">
-      <div style={{ ...labelStyle, marginBottom: 6 }}>
-        Какая потребность не встретила ответа
-      </div>
+    <div role="group" aria-label={label}>
+      <div style={{ ...labelStyle, marginBottom: 6 }}>{label}</div>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-6)' }}>
         {NEED_ORDER.map((id) => (
           <ConceptToggleChip

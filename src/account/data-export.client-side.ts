@@ -1,7 +1,7 @@
 // Часть выгрузки «данные обо мне на стороне терапевта» (A-10, аудит 2026-10):
 // модели, ключ которых clientId. Решения — в export-policy.client.ts.
 import { Prisma } from '@prisma/client';
-import { decryptRecord } from '../utils/crypto';
+import { decryptExport } from './export-decrypt';
 import {
   assertClientExportSynced,
   CLIENT_EXPORT_POLICY,
@@ -44,7 +44,7 @@ export async function exportClientSide(
       select: decision.select,
     });
     const schema = decision.schema;
-    data[model] = schema ? rows.map((r) => decryptRecord(r, schema)) : rows;
+    data[model] = schema ? rows.map((r) => decryptExport(r, schema)) : rows;
   }
   return {
     data,

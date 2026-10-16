@@ -10,6 +10,7 @@ import { createRef } from 'react';
 import { ClientNameHeader } from './ClientNameHeader';
 import type { ClientDetail } from './types';
 import type { TherapyClientSummary } from '../../api';
+import { CLIENT_NAME_MAX } from '../../../../shared/src/limits/textLimits';
 
 afterEach(() => {
   cleanup();
@@ -143,6 +144,18 @@ describe('ClientNameHeader — режим переименования', () => {
     );
     const input = screen.getByDisplayValue('Новое имя');
     expect(input).toBeTruthy();
+  });
+
+  it('поле переименования не принимает больше CLIENT_NAME_MAX знаков', () => {
+    render(
+      <ClientNameHeader
+        selectedClient={makeClient()}
+        detail={makeDetail({ renamingAlias: true })}
+        aliasInputRef={createRef()}
+      />,
+    );
+    const input = screen.getByRole('textbox');
+    expect(input.maxLength).toBe(CLIENT_NAME_MAX);
   });
 
   it('ввод текста зовёт setAliasInput', () => {

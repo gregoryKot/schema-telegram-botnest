@@ -134,15 +134,16 @@ export type AccountLinkFailReason = 'expired' | 'error';
 export const PROFILE_PATTERN_OPEN_EVENT = 'profile_pattern_open';
 export type ProfilePatternKind = 'schema' | 'mode';
 
-// Графическая концептуализация в кабинете терапевта (оба фронтенда): открыл
-// схему случая по модели режимов и заполнил связи режима (схемы, потребности,
-// истоки). Без меты — свободного текста и id клиента в событии нет (правило
-// №7). Шлёт их литералами общий хук useConceptGraphTracking (так их видит
-// трипваер analytics-sync), константы сверяет с литералами тест хука. Парный
-// allow-list — src/analytics/analytics.constants.ts, блок в /stats —
-// src/bot/concept-graph-metrics.*.
+// Графическая концептуализация в кабинете терапевта (оба фронтенда): открыл схему
+// случая, заполнил связи режима (схемы, потребности, истоки) или записал убеждение /
+// опыт схемы. Без меты (правило №7: текста и id клиента в событии нет). Шлёт их
+// литералами общий хук useConceptGraphTracking (так их видит трипваер analytics-sync),
+// константы сверяет с литералами тест хука. Allow-list — src/analytics/concept-events.constants.ts.
 export const CONCEPT_GRAPH_OPEN_EVENT = 'concept_graph_open';
 export const CONCEPT_MODE_LINKED_EVENT = 'concept_mode_linked';
+export const CONCEPT_SCHEMA_LINKED_EVENT = 'concept_schema_linked';
+// Перенёс схему случая на холст (создана карта режимов) — только сайт, шлёт useOpenConceptCanvas.
+export const CONCEPT_CANVAS_OPEN_EVENT = 'concept_canvas_open';
 
 // ── Разбор случая («Что это было») ─────────────────────────────────────────
 // Новая точка входа: человек за три минуты разбирает один случай и получает

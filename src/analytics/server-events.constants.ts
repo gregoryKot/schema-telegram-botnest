@@ -18,10 +18,10 @@
 //                   мессенджере»: падение входа не всегда выглядит ростом
 //                   отказов, иногда клиент просто перестаёт доезжать до
 //                   сервера — тогда виден провал именно этого счётчика.
-//   client_error  — посчитанная поломка фронтенда, meta.source + meta.section
-//                   (бакет, см. client-error-section.ts). Пишет только
-//                   ClientErrorsController, userId = null, троттлинг по
-//                   source+section+ip — счётчик, не лог.
+//   client_error  — поломка фронтенда, meta.source + meta.section (бакет, см.
+//                   client-error-section.ts). Пишет ClientErrorsController,
+//                   userId = null; строка на source+section+ip за 5 мин, плюс
+//                   числа meta.suppressed/unlogged (client-error-log-gate.ts).
 //   signup_source — атрибуция посева, meta.src — слаг из SIGNUP_SOURCES. Пишет
 //                   только бот в /start, когда payload — deep-link `src_<slug>`
 //                   (parseSourceSlug, src/telegram/start-source.ts), и ровно

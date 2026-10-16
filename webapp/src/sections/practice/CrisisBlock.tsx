@@ -9,15 +9,15 @@ import { CrisisCard } from '../../components/CrisisCard';
 
 export function CrisisBlock() {
   return (
-    <div className="section">
-      <div className="section-head">
-        <h3>Помощь рядом</h3>
+    <>
+      <div className="ds-head-row">
+        <h3 className="ds-h2">Помощь рядом</h3>
       </div>
       <CrisisCard standing />
-      <p className="text-sm muted" style={{ lineHeight: 1.6, marginTop: 4 }}>
+      <p className="ds-sub" style={{ lineHeight: 1.6 }}>
         Если есть угроза жизни — 112. Разговор с близким человеком тоже
         считается: иногда одно сообщение «мне плохо» — уже первый шаг.
       </p>
-    </div>
+    </>
   );
 }

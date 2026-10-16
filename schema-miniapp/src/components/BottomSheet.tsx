@@ -27,21 +27,15 @@ export function BottomSheet({
   dismissable = true,
 }: Props) {
   const tr = useTr();
-  const dialogProps = useDialogA11y();
   const canDismiss = dismissable && !!onClose;
+  // Escape — через общий стек диалогов: закрывает только верхний шит, а
+  // несворачиваемый поверх нижние не трогает (useDialogA11y).
+  const dialogProps = useDialogA11y({
+    onEscape: canDismiss ? onClose : undefined,
+  });
   const [showHint, setShowHint] = useState(
     () => canDismiss && !localStorage.getItem(HINT_KEY),
   );
-
-  // Close on Escape — только у отключаемых шитов.
-  useEffect(() => {
-    if (!canDismiss) return;
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose?.();
-    };
-    document.addEventListener('keydown', handler);
-    return () => document.removeEventListener('keydown', handler);
-  }, [canDismiss, onClose]);
 
   useEffect(() => {
     if (!showHint) return;

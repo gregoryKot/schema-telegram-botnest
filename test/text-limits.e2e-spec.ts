@@ -24,7 +24,12 @@ import {
   MODE_MAP_TITLE_MAX,
   PRACTICE_TEXT_MAX,
   SESSION_NOTE_MAX,
+  THERAPIST_REQUEST_CONTACTS_MAX,
+  THERAPIST_REQUEST_MESSAGE_MAX,
+  THERAPIST_REQUEST_NAME_MAX,
+  THERAPIST_REQUEST_QUAL_MAX,
 } from '../src/utils/text-limits';
+import { TherapistRequestService } from '../src/therapy/therapist-request.service';
 
 describe('e2e: лимиты текста — один в DTO, превышение → 400, хвост не теряется', () => {
   let app: INestApplication;
@@ -33,8 +38,14 @@ describe('e2e: лимиты текста — один в DTO, превышени
   const T = 4_200_000_000_000_001n; // терапевт
   const C = 4_200_000_000_000_002n; // его клиент
   const U = 4_200_000_000_000_003n; // обычный пользователь
+  // Подают заявку «Я психолог»: по одному на каждый случай, потому что
+  // у POST /api/therapy/request свой троттлинг (2 в минуту на человека).
+  const APPLICANTS = [10n, 11n, 12n, 13n, 14n].map(
+    (n) => 4_200_000_000_000_000n + n,
+  );
+  const ADMIN = 4_200_000_000_000_005n;
   const C_ID = Number(C);
-  const ALL = [T, C, U];
+  const ALL = [T, C, U, ADMIN, ...APPLICANTS];
 
   function agentAs(userId: bigint) {
     const token = signAccessToken(userId, process.env.JWT_SECRET as string);
@@ -57,6 +68,8 @@ describe('e2e: лимиты текста — один в DTO, превышени
     await prisma.user.create({ data: { id: T, role: 'THERAPIST' } });
     await prisma.user.create({ data: { id: C, role: 'CLIENT' } });
     await prisma.user.create({ data: { id: U } });
+    for (const id of APPLICANTS) await prisma.user.create({ data: { id } });
+    process.env.ADMIN_ID = ADMIN.toString();
     const invite = await agentAs(T).post('/api/therapy/invite');
     expect(invite.status).toBeLessThan(300);
     const join = await agentAs(C).post('/api/therapy/join', {
@@ -66,6 +79,9 @@ describe('e2e: лимиты текста — один в DTO, превышени
   });
 
   afterAll(async () => {
+    await prisma.therapistRequest.deleteMany({
+      where: { userId: { in: ALL } },
+    });
     await cleanupOwnershipFixtures(prisma, ALL);
     await app.close();
   });
@@ -79,7 +95,9 @@ describe('e2e: лимиты текста — один в DTO, превышени
       expect(created.status).toBe(201);
       expect(created.body.text).toBe(text);
       const list = await agentAs(T).get(url);
-      expect(list.body.map((n: { text: string }) => n.text)).toContain(text);
+      expect(list.body.notes.map((n: { text: string }) => n.text)).toContain(
+        text,
+      );
     });
 
     it('ровно на пределе — сохранено целиком; на символ больше — 400 и записи нет', async () => {
@@ -91,14 +109,14 @@ describe('e2e: лимиты текста — один в DTO, превышени
       expect(ok.status).toBe(201);
       expect(ok.body.text).toHaveLength(SESSION_NOTE_MAX);
 
-      const before = (await agentAs(T).get(url)).body.length;
+      const before = (await agentAs(T).get(url)).body.total;
       const over = await agentAs(T).post(url, {
         date: '2026-10-13',
         text: ofLen(SESSION_NOTE_MAX + 1),
       });
       expect(over.status).toBe(400);
       expect(JSON.stringify(over.body)).toContain('text');
-      expect((await agentAs(T).get(url)).body).toHaveLength(before);
+      expect((await agentAs(T).get(url)).body.total).toBe(before);
     });
   });
 
@@ -276,5 +294,67 @@ describe('e2e: лимиты текста — один в DTO, превышени
         expect(res.status).toBe(400);
       },
     );
+  });
+
+  // Лимиты сервиса (100/500/200/1000) и DTO (200/1000/300/2000) разошлись:
+  // квалификация на 700 знаков проходила DTO и падала в сервисе английским
+  // «Invalid qualification». Теперь длину держит только DTO, а сервис её не
+  // проверяет, — граница предела обязана быть 201, а не 400 из сервиса.
+  describe('заявка «Я психолог» (POST /api/therapy/request)', () => {
+    const FIELDS = [
+      ['fullName', THERAPIST_REQUEST_NAME_MAX],
+      ['qualification', THERAPIST_REQUEST_QUAL_MAX],
+      ['contacts', THERAPIST_REQUEST_CONTACTS_MAX],
+      ['message', THERAPIST_REQUEST_MESSAGE_MAX],
+    ] as const;
+    const url = '/api/therapy/request';
+    const body = (over: Record<string, string> = {}) => ({
+      fullName: 'Имя Фамилия',
+      qualification: 'МИСТ',
+      contacts: '@c',
+      ...over,
+    });
+
+    FIELDS.forEach(([field, max], i) => {
+      it(`${field} на символ длиннее предела ${max} — 400, заявки нет`, async () => {
+        const who = APPLICANTS[i];
+        const res = await agentAs(who).post(
+          url,
+          body({ [field]: ofLen(max + 1) }),
+        );
+        expect(res.status).toBe(400);
+        // Отказ обязан прийти от ValidationPipe (массив сообщений
+        // class-validator с пределом), а не из сервиса: сервис отвечает
+        // строкой 'Invalid …' / 'Message too long'. Только так тест краснеет,
+        // если длину снова начнут резать в сервисе.
+        expect(res.body.message).toEqual(
+          expect.arrayContaining([
+            expect.stringContaining(
+              `${field} must be shorter than or equal to ${max}`,
+            ),
+          ]),
+        );
+        expect(
+          await prisma.therapistRequest.count({ where: { userId: who } }),
+        ).toBe(0);
+      });
+    });
+
+    // Класс «DTO шире сервиса» этот кейс не ловит: прежние пределы сервиса
+    // равны новым. Его держит проверка источника отказа выше (ValidationPipe,
+    // а не сервис); здесь — что граница не режется молча и доезжает до админа.
+    it('все четыре поля ровно на пределе — 201, и админ видит их целиком', async () => {
+      const who = APPLICANTS[4];
+      const sent = Object.fromEntries(
+        FIELDS.map(([f, max]) => [f, ofLen(max)]),
+      );
+      const res = await agentAs(who).post(url, sent);
+      expect(res.status).toBe(201);
+      const pending = await app
+        .get(TherapistRequestService)
+        .listPending(Number(ADMIN));
+      const mine = pending.find((r) => r.userId === who);
+      expect(mine).toMatchObject(sent);
+    });
   });
 });

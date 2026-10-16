@@ -68,7 +68,7 @@ async function openedHook(
 beforeEach(() => {
   vi.clearAllMocks();
   mockApi.getTherapyTasksForClient.mockResolvedValue([]);
-  mockApi.getTherapistNotes.mockResolvedValue([]);
+  mockApi.getTherapistNotes.mockResolvedValue({ notes: [], total: 0 });
   mockApi.getConceptualization.mockResolvedValue(null);
   mockApi.getTherapyClientData.mockResolvedValue(null);
   mockApi.getClientSchemaNotes.mockResolvedValue([]);
@@ -167,6 +167,7 @@ describe('saveConcept', () => {
       currentProblems: '',
       modeTransitions: '',
       modeLinks: [],
+      schemaLinks: [],
     });
   });
 

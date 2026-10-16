@@ -3,6 +3,7 @@ import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { TherapyRelationsService } from './therapy-relations.service';
 import { encrypt, decrypt, encryptJson, decryptJson } from '../utils/crypto';
+import { findSessionNotesPage } from './session-notes-page';
 
 const CONCEPT_TEXT_FIELDS = [
   'earlyExperience',
@@ -14,9 +15,9 @@ const CONCEPT_TEXT_FIELDS = [
   'modeTransitions',
 ] as const;
 
-// JSON-массивы: метки схем/режимов, карта режимов (узлы и рёбра) и связи
-// режимов (alias, истоки, проявления, работа в терапии) — клинические данные,
-// шифруются целиком. Новое поле такого рода = строка здесь (и в
+// JSON-массивы: метки схем/режимов, карта режимов (узлы и рёбра), связи
+// режимов (alias, истоки, проявления, работа в терапии) и схем (убеждение,
+// детский опыт) — клинические данные, шифруются целиком. Новое поле такого рода = строка здесь (и в
 // encryption-policy / rotate-encryption/targets).
 const CONCEPT_JSON_ARRAY_FIELDS = [
   'schemaIds',
@@ -24,6 +25,7 @@ const CONCEPT_JSON_ARRAY_FIELDS = [
   'modeMapNodes',
   'modeMapEdges',
   'modeLinks',
+  'schemaLinks',
 ] as const;
 
 function encryptConceptFields(
@@ -81,14 +83,7 @@ export class TherapyNotesService {
 
   async getNotes(therapistId: bigint, clientId: bigint) {
     await this.relationsService.assertHasClient(therapistId, clientId);
-    const tid = therapistId;
-    const cid = clientId;
-    const rows = await this.prisma.therapistNote.findMany({
-      where: { therapistId: tid, clientId: cid },
-      orderBy: { createdAt: 'desc' },
-      take: 100,
-    });
-    return rows.map((r) => ({ ...r, text: decrypt(r.text) ?? r.text }));
+    return findSessionNotesPage(this.prisma, therapistId, clientId);
   }
 
   async createNote(
@@ -146,6 +141,7 @@ export class TherapyNotesService {
       modeMapNodes?: unknown[];
       modeMapEdges?: unknown[];
       modeLinks?: unknown[];
+      schemaLinks?: unknown[];
     },
   ) {
     await this.relationsService.assertHasClient(therapistId, clientId);
@@ -180,6 +176,7 @@ export class TherapyNotesService {
           currentProblems: existing.currentProblems,
           modeTransitions: existing.modeTransitions ?? null,
           modeLinks: existing.modeLinks,
+          schemaLinks: existing.schemaLinks,
         };
         hist = [snapshot, ...hist].slice(0, 20);
       }
@@ -213,6 +210,7 @@ export class TherapyNotesService {
           modeMapNodes: enc.modeMapNodes ?? [],
           modeMapEdges: enc.modeMapEdges ?? [],
           modeLinks: enc.modeLinks ?? [],
+          schemaLinks: enc.schemaLinks ?? [],
           history: [],
         },
         update,

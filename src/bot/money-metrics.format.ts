@@ -23,7 +23,7 @@ export interface MoneySourceStats {
 export interface MoneyWindow {
   donations: MoneySourceStats;
   subscriptions: MoneySourceStats;
-  /** Платных сессий подтверждено (сумму по ним отдельно не храним). */
+  /** Оплачено по вебхуку (paidAt); знакомства и ручное подтверждение не в счёте. */
   paidSessions: number;
   /** Платных сессий забронировано, но оплата ещё не пришла. */
   pendingSessions: number;

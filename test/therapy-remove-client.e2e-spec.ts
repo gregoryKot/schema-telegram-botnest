@@ -244,7 +244,9 @@ describe('e2e: терапевт удаляет клиента (все сцена
       expect(await data(B, C)).toEqual(FULL);
       expect(await clientIds(B)).toContain(ID(C));
       const b = act(B);
-      expect((await b.get(`/api/therapy/notes/${ID(C)}`)).body).toHaveLength(1);
+      const bn = (await b.get(`/api/therapy/notes/${ID(C)}`)).body;
+      expect(bn.notes).toHaveLength(1);
+      expect(bn.total).toBe(1);
       expect(
         (await b.get(`/api/therapy/conceptualization/${ID(C)}`)).body
           .earlyExperience,
@@ -271,7 +273,10 @@ describe('e2e: терапевт удаляет клиента (все сцена
       expect(await relCount(A, C)).toBe(1);
       expect(await data(A, C)).toMatchObject({ notes: 0, concept: 0, maps: 0 });
       const a = act(A);
-      expect((await a.get(`/api/therapy/notes/${ID(C)}`)).body).toEqual([]);
+      expect((await a.get(`/api/therapy/notes/${ID(C)}`)).body).toEqual({
+        notes: [],
+        total: 0,
+      });
       expect((await a.get(`/api/therapy/mode-maps/${ID(C)}`)).body).toEqual([]);
       const concept = await a.get(`/api/therapy/conceptualization/${ID(C)}`);
       expect([concept.status, concept.body.earlyExperience]).toEqual([
@@ -304,9 +309,9 @@ describe('e2e: терапевт удаляет клиента (все сцена
     it('V2 у A цел целиком, включая задания', async () => {
       expect(await relCount(A, vid.V2)).toBe(1);
       expect(await data(A, vid.V2)).toEqual(FULL);
-      expect(
-        (await act(A).get(`/api/therapy/notes/${ID(vid.V2)}`)).body,
-      ).toHaveLength(1);
+      const v2 = (await act(A).get(`/api/therapy/notes/${ID(vid.V2)}`)).body;
+      expect(v2.notes).toHaveLength(1);
+      expect(v2.total).toBe(1);
       expect(await clientIds(A)).toContain(ID(vid.V2));
     });
     it('V3 у B цел целиком', async () => {
@@ -435,6 +440,43 @@ describe('e2e: терапевт удаляет клиента (все сцена
           where: { therapistId: F, clientId: E },
         }),
       ).toBe(before);
+    });
+  });
+
+  describe('POST /api/therapy/clients/virtual — предел длины имени (аудит 2026-10-11)', () => {
+    // Раньше у `VirtualClientDto.name` было только `@IsString()`: тело до 256 КБ
+    // ложилось в `virtualClientName` и приезжало в каждый ответ GET /clients.
+    // Шов целиком: настоящий AppModule, глобальный ValidationPipe, сохранение →
+    // отображение (read-after-write), а не DTO в отрыве от HTTP.
+    const limit = 100; // CLIENT_NAME_MAX; литерал — чтобы тест не повторял константу кода
+    const rows = (t: bigint) =>
+      prisma.therapyRelation.count({
+        where: { therapistId: t, clientId: null },
+      });
+
+    it('имя на 101 знак — 400, связь не создаётся и в списке клиентов имени нет', async () => {
+      const before = await rows(F);
+      const tooLong = 'Д'.repeat(limit + 1);
+      const res = await act(F).post('/api/therapy/clients/virtual', {
+        name: tooLong,
+      });
+      expect(res.status).toBe(400);
+      expect(await rows(F)).toBe(before);
+      const list = await act(F).get('/api/therapy/clients');
+      expect(list.body.map((c: { name: string }) => c.name)).not.toContain(
+        tooLong,
+      );
+    });
+
+    it('имя ровно на 100 знаков — 201 и оно есть в списке клиентов', async () => {
+      const name = 'Ж'.repeat(limit);
+      const res = await act(F).post('/api/therapy/clients/virtual', { name });
+      expect(res.status).toBe(201);
+      const created = res.body.find((c: { name: string }) => c.name === name);
+      expect(created).toBeDefined();
+      virtualIds.push(BigInt(created.telegramId));
+      const list = await act(F).get('/api/therapy/clients');
+      expect(list.body.map((c: { name: string }) => c.name)).toContain(name);
     });
   });
 });

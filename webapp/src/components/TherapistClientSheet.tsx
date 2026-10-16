@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { api, reportClientError } from '../api';
 import type { TherapyClientSummary, UserTask, UserId } from '../api';
 import { TaskCreateSheet } from './TaskCreateSheet';
+import { SkeletonCard } from './Skeleton';
 import { ClientNotesTab } from './therapist/ClientNotesTab';
 import { ClientYSQTab } from './therapist/ClientYSQTab';
 import { useClientDetail } from './therapist/useClientDetail';
@@ -41,6 +42,7 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
   // на отказе запроса (см. ClientListView.loadAllTasks).
   const [allTasksFailed, setAllTasksFailed] = useState(false);
   const [animKey, setAnimKey] = useState(0);
+  const [canvasMapId, setCanvasMapId] = useState<number | null>(null); // карта, созданная кнопкой «Открыть на холсте»
 
   function switchView(v: 'list' | 'client') {
     setAnimKey(k => k + 1);
@@ -104,7 +106,7 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
   // ─── Render ───────────────────────────────────────────────────────────────────
 
   return (
-    <div className="therapist-sheet" style={{ background: 'var(--bg)' }}>
+    <div className="therapist-sheet tk-sheet">
 
       {/* ── LIST VIEW ──────────────────────────────────────────────────────────── */}
       {view === 'list' && (
@@ -134,17 +136,13 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
       {view === 'client' && selectedClient && (
         <div className="therapist-scroll therapist-scroll--client" key={`client-${animKey}`} style={{ animation: 'fade-in 0.22s ease' }}>
 
-          {/* Client header — moderately compact */}
           <ClientHeader selectedClient={selectedClient} detail={detail} switchView={switchView} />
 
           {/* Tab content */}
-          <div className="therapist-scroll therapist-scroll--tabs" key={clientTab}>
+          <div className="therapist-scroll therapist-scroll--tabs tk-tabs-body" key={clientTab}>
 
-            {/* Loading state */}
             {tabLoading ? (
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 240 }}>
-                <div className="spinner" />
-              </div>
+              <div className="tk-load" aria-hidden><SkeletonCard height={96} /><SkeletonCard /></div>
             ) : <>
 
             {/* ── OVERVIEW ─────────────────────────────────────────────────────── */}
@@ -154,13 +152,13 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
 
             {/* ── CONCEPT ──────────────────────────────────────────────────────── */}
             {clientTab === 'concept' && (
-              <ClientConceptTab detail={detail} />
+              <ClientConceptTab detail={detail} onOpenCanvas={(id) => { setCanvasMapId(id); detail.setClientTab('mode_map'); }} />
             )}
 
             {/* ── MODE MAP — keep mounted to preserve React Flow state across tab switches */}
             {selectedClient != null && clientTab === 'mode_map' && (
               <div style={{ height: '100%', minHeight: 0, display: 'flex', flexDirection: 'column' }}>
-                <ModeMapSelector key={selectedClient.telegramId} clientId={selectedClient.telegramId} />
+                <ModeMapSelector key={`${selectedClient.telegramId}-${canvasMapId}`} clientId={selectedClient.telegramId} initialMapId={canvasMapId ?? undefined} />
               </div>
             )}
 
@@ -189,8 +187,6 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
               />
             )}
 
-            {/* ── OLD YSQ BODY (replaced) – keep tombstone so edit finds it */}
-
             {/* ── CLIENT NOTES ─────────────────────────────────────────────────── */}
             {clientTab === 'client_notes' && (
               <ClientNotesTab
@@ -201,7 +197,6 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
             )}
 
             </> /* end tabLoading ternary */}
-
 
           </div>
         </div>

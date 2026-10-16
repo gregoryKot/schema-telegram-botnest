@@ -2,6 +2,7 @@ import { BadRequestException, ConflictException } from '@nestjs/common';
 import { Booking, BookingStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import type { PlainBooking } from './booking-notify.service';
+import { bookingEventUid } from './booking-confirm-run';
 
 // Переходы статуса брони. Правило одно: каждый переход — CAS, то есть
 // `updateMany` с предикатом на ТЕКУЩИЙ статус в WHERE, а побочные эффекты
@@ -74,16 +75,19 @@ export async function expireHeldBookings(
 /**
  * Захватить отмену по токену: HELD/CONFIRMED → CANCELLED. Возвращает свежую
  * строку (calDavUid берётся ПОСЛЕ перехода — подтверждение, выигравшее гонку,
- * успело записать событие в календарь) либо null, если отменять нечего:
- * уже CANCELLED (повторный или параллельный вызов — идемпотентный успех, без
- * повторных DM/писем/DELETE). COMPLETED — отказ. `snapshot` — строка, прочитанная
- * вызывающим для проверок; в запись она не идёт, только запасной ответ.
+ * успело записать событие в календарь) и uid события к снятию
+ * (`cancelEventUid`) либо null, если отменять нечего: уже CANCELLED (повторный
+ * или параллельный вызов — идемпотентный успех, без повторных DM/писем/DELETE).
+ * COMPLETED — отказ. `snapshot` — строка, прочитанная вызывающим для проверок;
+ * в запись она не идёт, только запасной ответ и статус «до».
  */
 export async function claimCancel(
   prisma: PrismaService,
   cancelToken: string,
   snapshot: Booking,
-): Promise<Booking | null> {
+): Promise<{ row: Booking; eventUid: string | null } | null> {
+  // Статус читаем ДО записи: объект снимка могут делить с хранилищем (кэш, фейк).
+  const before = { status: snapshot.status };
   const claimed = await prisma.booking.updateMany({
     where: {
       cancelToken,
@@ -98,5 +102,23 @@ export async function claimCancel(
     }
     return null;
   }
-  return now ?? snapshot;
+  const row = now ?? snapshot;
+  return { row, eventUid: cancelEventUid(before, row) };
+}
+
+/**
+ * Какое событие календаря снять после отмены. Записанный uid — как есть. Нет
+ * записи, а до отмены бронь была CONFIRMED: под мог умереть между PUT в CalDAV
+ * и записью uid — снимаем по детерминированному. У HELD события не бывает:
+ * DELETE по нему — лишний сетевой вызов и ложный алерт при сетевой ошибке.
+ * `before` — снимок до claimCancel, `fresh` — строка после.
+ */
+export function cancelEventUid(
+  before: Pick<Booking, 'status'>,
+  fresh: Pick<Booking, 'id' | 'calDavUid'>,
+): string | null {
+  if (fresh.calDavUid) return fresh.calDavUid;
+  return before.status === BookingStatus.CONFIRMED
+    ? bookingEventUid(fresh.id)
+    : null;
 }
