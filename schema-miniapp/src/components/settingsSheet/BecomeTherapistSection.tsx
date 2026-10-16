@@ -1,5 +1,13 @@
 import { api } from '../../api';
 import { useTr } from '../../utils/addressForm';
+import { FIELD_STYLE } from './fieldStyle';
+import { LimitedTextarea } from '../../../../shared/src/components/LimitedTextarea';
+import {
+  THERAPIST_REQUEST_CONTACTS_MAX,
+  THERAPIST_REQUEST_MESSAGE_MAX,
+  THERAPIST_REQUEST_NAME_MAX,
+  THERAPIST_REQUEST_QUAL_MAX,
+} from '../../../../shared/src/limits/textLimits';
 
 type TherapistReq = {
   id: number;
@@ -156,20 +164,23 @@ export function BecomeTherapistSection({
               val: reqFullName,
               set: setReqFullName,
               placeholder: 'Мария Иванова',
+              max: THERAPIST_REQUEST_NAME_MAX,
             },
             {
               label: 'Квалификация',
               val: reqQual,
               set: setReqQual,
               placeholder: 'Психолог, схема-терапия и КПТ, 5 лет практики',
+              max: THERAPIST_REQUEST_QUAL_MAX,
             },
             {
               label: 'Контакты',
               val: reqContacts,
               set: setReqContacts,
               placeholder: '@telegram или email',
+              max: THERAPIST_REQUEST_CONTACTS_MAX,
             },
-          ].map(({ label, val, set, placeholder }) => (
+          ].map(({ label, val, set, placeholder, max }) => (
             <div key={label} className="u-mb10">
               <div
                 style={{
@@ -184,17 +195,8 @@ export function BecomeTherapistSection({
                 value={val}
                 onChange={(e) => set(e.target.value)}
                 placeholder={placeholder}
-                style={{
-                  width: '100%',
-                  background: 'rgba(var(--fg-rgb),0.06)',
-                  border: '1px solid rgba(var(--fg-rgb),0.12)',
-                  borderRadius: 10,
-                  padding: '9px 12px',
-                  color: 'var(--text)',
-                  fontSize: 13,
-                  outline: 'none',
-                  boxSizing: 'border-box',
-                }}
+                maxLength={max}
+                style={FIELD_STYLE}
               />
             </div>
           ))}
@@ -208,7 +210,8 @@ export function BecomeTherapistSection({
             >
               Сообщение (необязательно)
             </div>
-            <textarea
+            <LimitedTextarea
+              max={THERAPIST_REQUEST_MESSAGE_MAX}
               value={reqMsg}
               onChange={(e) => setReqMsg(e.target.value)}
               placeholder={tr(
@@ -216,19 +219,7 @@ export function BecomeTherapistSection({
                 'Расскажите о себе или своём подходе',
               )}
               rows={3}
-              style={{
-                width: '100%',
-                background: 'rgba(var(--fg-rgb),0.06)',
-                border: '1px solid rgba(var(--fg-rgb),0.12)',
-                borderRadius: 10,
-                padding: '9px 12px',
-                color: 'var(--text)',
-                fontSize: 13,
-                outline: 'none',
-                resize: 'none',
-                fontFamily: 'inherit',
-                boxSizing: 'border-box',
-              }}
+              style={{ ...FIELD_STYLE, resize: 'none', fontFamily: 'inherit' }}
             />
           </div>
           {reqError && (

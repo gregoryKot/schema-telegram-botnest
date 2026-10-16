@@ -21,6 +21,10 @@ export const BOOKING_NAME_MAX = 100; // заявка с сайта: имя
 export const BOOKING_CONTACT_MAX = 100; // заявка с сайта: контакт
 export const BOOKING_MESSAGE_MAX = 500; // заявка с сайта: запрос
 export const BOOKING_SOURCE_MAX = 200; // заявка с сайта: откуда (leadSource())
+export const THERAPIST_REQUEST_NAME_MAX = 100; // заявка «Я психолог»: ФИО
+export const THERAPIST_REQUEST_QUAL_MAX = 500; // заявка «Я психолог»: квалификация
+export const THERAPIST_REQUEST_CONTACTS_MAX = 200; // заявка «Я психолог»: контакты
+export const THERAPIST_REQUEST_MESSAGE_MAX = 1000; // заявка «Я психолог»: сообщение админу
 
 /** С какой доли заполнения показывать остаток: до этого счётчик — шум. */
 export const COUNTER_FROM_RATIO = 0.8;

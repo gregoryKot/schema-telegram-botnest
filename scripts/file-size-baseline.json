@@ -242,7 +242,7 @@
   "schema-miniapp/src/components/settingsSheet/AboutSection.tsx": 119,
   "schema-miniapp/src/components/settingsSheet/AddressFormSection.tsx": 62,
   "schema-miniapp/src/components/settingsSheet/AppearanceSection.tsx": 280,
-  "schema-miniapp/src/components/settingsSheet/BecomeTherapistSection.tsx": 295,
+  "schema-miniapp/src/components/settingsSheet/BecomeTherapistSection.tsx": 286,
   "schema-miniapp/src/components/settingsSheet/BuildInfoLine.tsx": 79,
   "schema-miniapp/src/components/settingsSheet/constants.ts": 3,
   "schema-miniapp/src/components/settingsSheet/DataOverlays.tsx": 290,
