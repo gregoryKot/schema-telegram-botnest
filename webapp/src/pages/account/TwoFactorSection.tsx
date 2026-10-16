@@ -109,9 +109,9 @@ export function TwoFactorSection({
         <h2 className="ds-h3" id="aa-tfa-title">Двухфакторная защита</h2>
         <button
           type="button" role="switch" aria-checked={totp.enabled} aria-labelledby="aa-tfa-title"
-          className="aa-switch" disabled={busy} onClick={onToggle}
+          className="ds-switch" disabled={busy} onClick={onToggle}
         >
-          <span className="aa-switch-knob" />
+          <span className="ds-switch-knob" />
         </button>
       </div>
       <TwoFactorScopeNote />

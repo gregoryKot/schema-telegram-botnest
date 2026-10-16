@@ -33,9 +33,7 @@ const HistorySheet   = lazy(() => import('./HistorySheet').then(m => ({ default:
 import type { StreakData } from '../api';
 import { parseRouteUserId } from '../../../shared/src/utils/sameId';
 
-// Apply saved theme immediately before first render
-// Кабинет — только светлая тема (решение владельца 2026-10-15), тумблера в
-// настройках больше нет; выбор темы живёт только на лендинге.
+// Кабинет — только светлая тема (решение владельца 2026-10-15); тумблер темы живёт на лендинге.
 applyCabinetLightTheme();
 syncMotionAttr();
 

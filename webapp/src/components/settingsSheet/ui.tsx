@@ -40,8 +40,8 @@ function Switch({ on, onClick, small }: { on: boolean; onClick: () => void; smal
   return (
     <div onClick={onClick} role="switch" aria-checked={on} tabIndex={0}
       onKeyDown={onKeyActivate(onClick)}
-      className={`st-switch${small ? ' st-switch--sm' : ''}`}>
-      <div className="st-switch-knob" />
+      className={`ds-switch${small ? ' ds-switch--sm' : ''}`}>
+      <div className="ds-switch-knob" />
     </div>
   );
 }
