@@ -13,6 +13,7 @@ import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { PrismaService } from '../src/prisma/prisma.service';
 import { PostgresThrottleStorage } from '../src/api/postgres-throttle-storage';
+import { ThrottleHitCleanupService } from '../src/api/throttle-hit.cleanup';
 import { buildRealDbTestApp } from './e2e-support/build-real-db-test-app';
 
 async function wipe(prisma: PrismaService) {
@@ -140,5 +141,62 @@ describe('e2e HTTP: троттлинг booking/book через Postgres (мод�
     await request(app.getHttpServer()).get('/api/booking/options');
     const rows = await prisma.throttleHit.count();
     expect(rows).toBe(0);
+  });
+});
+
+describe('ThrottleHitCleanupService на реальном Postgres', () => {
+  // Аудит 2026-10: крон уборки не имел ни одного теста. Перевод
+  // `{ blockedUntil: null }` в IS NULL и сравнение timestamp(3) с JS Date
+  // проверяет драйвер, а не фейк. Запас везде в часах: часы JS и Postgres
+  // расходятся, а границу «ровно сутки» держит юнит-спек уборки.
+  const H = 60 * 60 * 1000;
+  const at = (offsetMs: number) => new Date(Date.now() + offsetMs);
+  let prisma: PrismaService;
+
+  beforeAll(async () => {
+    prisma = new PrismaService();
+    await prisma.$connect();
+  });
+
+  beforeEach(() => wipe(prisma));
+  afterAll(async () => {
+    await wipe(prisma);
+    await prisma.$disconnect();
+  });
+
+  it('убирает давно истёкшие строки и оставляет живые, недавние и заблокированные', async () => {
+    await prisma.throttleHit.createMany({
+      data: [
+        { key: 'live', hits: 1, expiresAt: at(H), blockedUntil: null },
+        { key: 'expired-2h', hits: 1, expiresAt: at(-2 * H) },
+        { key: 'expired-2d', hits: 1, expiresAt: at(-48 * H) },
+        {
+          key: 'expired-2d-block-lifted',
+          hits: 9,
+          expiresAt: at(-48 * H),
+          blockedUntil: at(-2 * H),
+        },
+        {
+          // Окно давно истекло, но блок ещё действует: его держит только OR.
+          key: 'expired-2d-block-active',
+          hits: 9,
+          expiresAt: at(-48 * H),
+          blockedUntil: at(H),
+        },
+      ],
+    });
+    // Строка, записанная настоящим increment (ключ и формат — как в проде).
+    const storage = new PostgresThrottleStorage(prisma);
+    await storage.increment('real-key', 60_000, 6, 60_000);
+
+    await new ThrottleHitCleanupService(prisma).cleanup();
+
+    const left = await prisma.throttleHit.findMany({ select: { key: true } });
+    expect(left.map((r) => r.key).sort()).toEqual([
+      'expired-2d-block-active',
+      'expired-2h',
+      'live',
+      'real-key',
+    ]);
   });
 });
