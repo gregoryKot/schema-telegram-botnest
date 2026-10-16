@@ -200,3 +200,6 @@
 .mm2-body { flex: 1; overflow: hidden; }
 .mm2-loading { display: flex; align-items: center; justify-content: center; height: 100%; color: var(--text-faint); }
 .mm2-arrow { font-size: 16px; line-height: 1; }
+
+/* Подсказка под полем редактора узла (#743): текст не уходит в концептуализацию. */
+.mm2-field-hint { margin-top: 4px; line-height: 1.4; }
