@@ -4,7 +4,9 @@
 import { stripComments } from './gate-strip-comments.mjs';
 
 const FIXED_RE = /\bposition\s*:\s*['"]?fixed\b/g;
-const INSET_ZERO_RE = /\binset\s*:\s*['"]?0(?:px)?\b/;
+// `inset: 0` целиком, а не первое значение из нескольких (`'0 0 auto 0'` —
+// полоса сверху, не весь экран): после нуля — конец значения.
+const INSET_ZERO_RE = /\binset\s*:\s*['"]?0(?:px)?\s*(?:['"]|[,;}]|$)/m;
 const SIDES_ZERO_RE = (side) => new RegExp(`\\b${side}\\s*:\\s*['"]?0(?:px)?\\b`);
 const SIDES = ['top', 'left', 'right', 'bottom'];
 

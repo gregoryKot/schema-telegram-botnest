@@ -10,6 +10,7 @@
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import { runGate } from './gate-sandbox';
+import { callExport } from './pattern-loader';
 
 const GATE = 'check-history-sheet.mjs';
 const REAL_BASELINE = JSON.parse(
@@ -283,5 +284,52 @@ describe('scripts/history-sheet-baseline.json — форма записей', ()
     for (const file of Object.keys(REAL_BASELINE)) {
       expect(file).toMatch(/^(webapp|shared)\/src\/.+\.tsx$/);
     }
+  });
+});
+
+// Распознавание вынесено в scripts/history-sheet-detect.mjs (правило №10:
+// движок не растёт вместе с правилами). Его чистые функции пинятся здесь
+// напрямую — сломанный детектор молча не видел бы ни одного оверлея, и гейт
+// зеленел бы на всём.
+describe('history-sheet-detect.mjs — чистые функции', () => {
+  const call = (fn: string, input: string): unknown =>
+    callExport('history-sheet-detect.mjs', fn, input);
+
+  it('coversViewport: inset: 0 или четыре стороны в нуле', () => {
+    expect(
+      call('coversViewport', "position: 'fixed', inset: 0, zIndex: 9"),
+    ).toBe(true);
+    expect(call('coversViewport', 'position: fixed; inset: 0px;')).toBe(true);
+    expect(
+      call('coversViewport', 'top: 0; left: 0; right: 0; bottom: 0;'),
+    ).toBe(true);
+  });
+
+  it('контроль coversViewport: три стороны, ненулевой inset и многозначный inset (полоса) — не весь экран', () => {
+    expect(call('coversViewport', 'top: 0; left: 0; right: 0;')).toBe(false);
+    expect(call('coversViewport', 'inset: 12px;')).toBe(false);
+    expect(call('coversViewport', "inset: '0 0 auto 0'")).toBe(false);
+    expect(call('coversViewport', 'inset: 0 0 auto 0;')).toBe(false);
+  });
+
+  it('callsHistorySheet: вызов в коде — да; в комментарии и голый импорт — нет', () => {
+    expect(
+      call('callsHistorySheet', 'const goBack = useHistorySheet(onClose);'),
+    ).toBe(true);
+    expect(
+      call('callsHistorySheet', '// useHistorySheet(onClose)\nconst a = 1;'),
+    ).toBe(false);
+    expect(
+      call(
+        'callsHistorySheet',
+        "import { useHistorySheet } from '../hooks/useHistorySheet';",
+      ),
+    ).toBe(false);
+  });
+
+  it('inlineOverlays: строка находки указывает на position: fixed', () => {
+    const hits = call('inlineOverlays', INLINE_NO_HOOK) as { line: number }[];
+    expect(hits).toHaveLength(1);
+    expect(hits[0].line).toBe(3);
   });
 });
