@@ -485,6 +485,24 @@ CLAUDE.md. Не удалять, но и не считать списком за�
   (`settleBlocks` в `src/bot/stats-settle.ts`), остальные части отчёта доезжают. Не
   дробится на независимые блоки осознанно: правило №20 (один класс — один PR), а
   каскад между сообщениями снят. [Находка infra#28](AUDIT_2026-10_FINDINGS.md#наблюдатели-и-ci).
+- **Часть кнопок бота при сбое только пишет в лог, человек не видит ничего.**
+  Три хендлера квиза (`src/telegram/telegram.quiz.service.ts:59-98`) и
+  `notify:pause:cancel` (`src/telegram/telegram.notify-actions.service.ts`, catch
+  после «Ок, без паузы»): единственный `answerCbQuery` в try, в catch только
+  `logger.error`. Соседний класс «catch без исхода», не тот, что закрыл
+  `callback-failure.ts` (повтор `answerCbQuery`); по правилу №20 в тот PR не
+  вошёл. Починка — `failCallback` на те же четыре места и расширение инварианта в
+  `telegram.invariants.spec.ts` до «в catch есть исход».
+- **Тост «⏸ Пауза включена» уходит до записи паузы.** В
+  `notify:pause:7|30` `answerCbQuery('⏸ Пауза включена')` стоит до `cadenceService.pause`
+  (так требует инвариант порядка), при сбое человек видит тост об успехе, следом
+  приходит `ERROR_RETRY` сообщением. Лечится нейтральным тостом без текста: итог
+  человеку и так показывает `editMessageText` с датой.
+- **Записи ответа Telegram на повторный `answerCbQuery` и на «message is not
+  modified» нет.** Починка от неё не зависит (повторный ответ убран целиком, а
+  «не изменено» узнаётся по `description`), но строки в
+  `src/telegram/callback-failure*.spec.ts` авторские. Нужен лог прода (Amvera,
+  `BOT_TOKEN` только у владельца), по правилу №23 положить в `test/fixtures/recorded`.
 
 **Переезд на VPS** ([MIGRATION_VPS.md](MIGRATION_VPS.md)):
 - **Слово «Amvera» стоит в 14 файлах** (RUNBOOKS ×25, CLAUDE.md ×17, этот README ×12,

@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { Telegraf, Context, Markup } from 'telegraf';
 import { TELEGRAF_BOT, ERROR_RETRY } from './telegram.constants';
+import { failSettings } from './callback-failure';
 import { BotService } from '../bot/bot.service';
 import { AccountService } from '../bot/account.service';
 import { NotificationService } from '../notification/notification.service';
@@ -75,8 +76,7 @@ export class TelegramSettingsService implements OnModuleInit {
         );
         await ctx.editMessageText(text, keyboard);
       } catch (err) {
-        this.logger.error('settings:toggle failed', err);
-        await ctx.answerCbQuery(ERROR_RETRY).catch(() => null);
+        await failSettings(this.logger, ctx, 'settings:toggle', err);
       }
     });
 
@@ -98,8 +98,7 @@ export class TelegramSettingsService implements OnModuleInit {
         );
         await ctx.editMessageText(text, keyboard);
       } catch (err) {
-        this.logger.error('settings:toggle_gamified failed', err);
-        await ctx.answerCbQuery(ERROR_RETRY).catch(() => null);
+        await failSettings(this.logger, ctx, 'settings:toggle_gamified', err);
       }
     });
 
@@ -134,8 +133,7 @@ export class TelegramSettingsService implements OnModuleInit {
           Markup.inlineKeyboard(rows),
         );
       } catch (err) {
-        this.logger.error('settings:pick_hour failed', err);
-        await ctx.answerCbQuery(ERROR_RETRY).catch(() => null);
+        await failSettings(this.logger, ctx, 'settings:pick_hour', err);
       }
     });
 
@@ -156,8 +154,7 @@ export class TelegramSettingsService implements OnModuleInit {
         );
         await ctx.editMessageText(text, keyboard);
       } catch (err) {
-        this.logger.error('settings:hour failed', err);
-        await ctx.answerCbQuery(ERROR_RETRY).catch(() => null);
+        await failSettings(this.logger, ctx, 'settings:hour', err);
       }
     });
 
@@ -185,8 +182,7 @@ export class TelegramSettingsService implements OnModuleInit {
           Markup.inlineKeyboard(buttons),
         );
       } catch (err) {
-        this.logger.error('settings:pick_tz failed', err);
-        await ctx.answerCbQuery(ERROR_RETRY).catch(() => null);
+        await failSettings(this.logger, ctx, 'settings:pick_tz', err);
       }
     });
 
@@ -208,8 +204,7 @@ export class TelegramSettingsService implements OnModuleInit {
         );
         await ctx.editMessageText(text, keyboard);
       } catch (err) {
-        this.logger.error('settings:tz failed', err);
-        await ctx.answerCbQuery(ERROR_RETRY).catch(() => null);
+        await failSettings(this.logger, ctx, 'settings:tz', err);
       }
     });
 
@@ -225,8 +220,7 @@ export class TelegramSettingsService implements OnModuleInit {
         );
         await ctx.editMessageText(text, keyboard);
       } catch (err) {
-        this.logger.error('settings:back failed', err);
-        await ctx.answerCbQuery(ERROR_RETRY).catch(() => null);
+        await failSettings(this.logger, ctx, 'settings:back', err);
       }
     });
   }
