@@ -326,13 +326,16 @@ describe('useHistorySheet — вложенность (лист поверх ли
   interface Handles {
     openInner: (() => void) | null;
     innerGoBack: (() => void) | null;
+    outerGoBack: (() => void) | null;
+    /** Убрать внутренний лист из дерева напрямую, мимо его goBack (сохранение). */
+    dropInner: (() => void) | null;
   }
 
   // Компоненты создаются внутри renderNested и пишут в `handles` — замыкание
   // теста, а не проп (react-hooks/immutability).
-  function renderNested(opts: { openInnerAtMount?: boolean } = {}) {
+  function renderNested(opts: { openInnerAtMount?: boolean; innerClosesOuter?: boolean } = {}) {
     const closeLog: string[] = [];
-    const handles: Handles = { openInner: null, innerGoBack: null };
+    const handles: Handles = { openInner: null, innerGoBack: null, outerGoBack: null, dropInner: null };
     const snap = makeSnapshot();
     const NavSpy = makeNavSpy(snap);
 
@@ -343,13 +346,21 @@ describe('useHistorySheet — вложенность (лист поверх ли
     }
 
     function Outer({ onClose }: { onClose: () => void }) {
-      useHistorySheet(onClose);
+      const goBack = useHistorySheet(onClose);
       const [showInner, setShowInner] = useState(opts.openInnerAtMount ?? false);
-      useEffect(() => { handles.openInner = () => setShowInner(true); });
+      useEffect(() => {
+        handles.openInner = () => setShowInner(true);
+        handles.dropInner = () => setShowInner(false);
+        handles.outerGoBack = goBack;
+      });
       return (
         <div data-testid="outer">
           {showInner && (
-            <Inner onClose={() => { closeLog.push('inner'); setShowInner(false); }} />
+            <Inner onClose={() => {
+              closeLog.push('inner');
+              setShowInner(false);
+              if (opts.innerClosesOuter) goBack();
+            }} />
           )}
         </div>
       );
@@ -419,6 +430,63 @@ describe('useHistorySheet — вложенность (лист поверх ли
     // Остались на записи внешнего листа: в стеке только он.
     expect(sheetState(snap.loc!)?.__sheetStack).toHaveLength(1);
     expect(sheetState(snap.loc!)?.__sheetId).toBe(sheetState(snap.loc!)?.__sheetStack?.[0]);
+  });
+
+  // goBack() закрывает СВОЙ лист, а не верхнюю запись истории (находка ревью
+  // 2026-10). С `navigate(-1)` нижний лист при записи сверху оставался открытым:
+  // NeedTodaySheet → PlanSheet, onSaved = setShowPlan(false) + goBack() — план
+  // сохранён, а лист потребности висит, запись плана брошена.
+  it('goBack() нижнего листа при открытом верхнем закрывает оба одним шагом', () => {
+    const { snap, queryByTestId, closeLog, handles } = renderNested();
+    act(() => { handles.openInner!(); });
+
+    act(() => { handles.outerGoBack!(); });
+
+    expect(closeLog).toContain('outer');
+    expect(queryByTestId('outer')).toBeNull();
+    expect(queryByTestId('inner')).toBeNull();
+    // Сняты обе записи: под листами — страница, лишней записи не осталось.
+    expect(snap.loc!.pathname).toBe('/page');
+    expect(sheetState(snap.loc!)?.__sheetStack).toBeUndefined();
+  });
+
+  it('ребёнок убран напрямую, мимо своего goBack, — goBack родителя снимает и его брошенную запись', () => {
+    const { snap, queryByTestId, closeLog, handles } = renderNested();
+    act(() => { handles.openInner!(); });
+
+    act(() => { handles.dropInner!(); handles.outerGoBack!(); });
+
+    expect(closeLog).toEqual(['outer']);
+    expect(queryByTestId('outer')).toBeNull();
+    expect(snap.loc!.pathname).toBe('/page');
+    expect(sheetState(snap.loc!)?.__sheetStack).toBeUndefined();
+  });
+
+  it('Escape над брошенной записью ребёнка закрывает лист с первого нажатия', () => {
+    const { snap, queryByTestId, closeLog, handles } = renderNested();
+    act(() => { handles.openInner!(); });
+    act(() => { handles.dropInner!(); });
+
+    fireEscape();
+
+    expect(closeLog).toEqual(['outer']);
+    expect(queryByTestId('outer')).toBeNull();
+    expect(sheetState(snap.loc!)?.__sheetStack).toBeUndefined();
+  });
+
+  // goBack, вызванный из эффекта ребёнка в том же коммите (onClose ребёнка
+  // закрывает и родителя), обязан видеть запись ПОСЛЕ «Назад», а не до: иначе
+  // он считает ребёнка ещё лежащим сверху и снимает лишнюю запись — уводит со
+  // страницы.
+  it('onClose ребёнка зовёт goBack родителя: «Назад» закрывает обоих и не уходит дальше страницы', () => {
+    const { snap, queryByTestId, closeLog, handles } = renderNested({ innerClosesOuter: true });
+    act(() => { handles.openInner!(); });
+
+    act(() => { snap.nav!(-1); });
+
+    expect(closeLog).toEqual(['inner', 'outer']);
+    expect(queryByTestId('outer')).toBeNull();
+    expect(snap.loc!.pathname).toBe('/page');
   });
 
   it('запись истории несёт стек: id внешнего, затем внутреннего; __sheetId — верхний', () => {

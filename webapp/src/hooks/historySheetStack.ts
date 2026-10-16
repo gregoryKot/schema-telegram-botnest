@@ -26,3 +26,17 @@ export function pushSheetState(state: unknown, id: string) {
     __sheetStack: [...sheetStackOf(state), id],
   };
 }
+
+/** Метка жизни страницы — префикс id листа. Счётчик useId после перезагрузки
+ * начинается заново, а запись истории со стеком её переживает: без метки лист
+ * новой жизни получал id из стека прошлой и не закрывался первым «Назад». */
+export const PAGE_LIFE = Math.random().toString(36).slice(2, 8);
+
+/** Сколько записей снять, чтобы закрыть лист `id`: его запись и всё, что легло
+ * сверху (запись ребёнка, в том числе брошенная без goBack). Листа в стеке нет
+ * — одна запись, как раньше. */
+export function backDepth(state: unknown, id: string): number {
+  const stack = sheetStackOf(state);
+  const i = stack.lastIndexOf(id);
+  return i === -1 ? 1 : stack.length - i;
+}
