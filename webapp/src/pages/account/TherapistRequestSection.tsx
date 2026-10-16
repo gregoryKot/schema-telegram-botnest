@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { API_BASE } from '../../utils/apiBase'; import { useTr } from '../../utils/addressForm';
+import { LimitedTextarea } from '../../../../shared/src/components/LimitedTextarea';
+import * as LIM from '../../../../shared/src/limits/textLimits';
 
 // Секция «Роль психолога» (заявка терапевта). Вынесено из AccountPage.tsx
 // (правило №10).
@@ -86,11 +88,11 @@ export function TherapistRequestSection({ accessToken }: { accessToken: string |
               Прошлая заявка отклонена{req.rejectReason ? `: ${req.rejectReason}` : ''}. {tr('Можешь подать новую.', 'Можете подать новую.')}
             </div>
           )}
-          <input value={fullName} onChange={e => setFullName(e.target.value)} placeholder="ФИО" className="ds-input" />
-          <textarea value={qualification} onChange={e => setQualification(e.target.value)} rows={3}
+          <input value={fullName} onChange={e => setFullName(e.target.value)} placeholder="ФИО" maxLength={LIM.THERAPIST_REQUEST_NAME_MAX} className="ds-input" />
+          <LimitedTextarea max={LIM.THERAPIST_REQUEST_QUAL_MAX} value={qualification} onChange={e => setQualification(e.target.value)} rows={3}
             placeholder="Квалификация: образование, направление, опыт, сертификаты" className="ds-textarea" />
-          <input value={contacts} onChange={e => setContacts(e.target.value)} placeholder="Контакты: сайт, @telegram, b17 и т.д." className="ds-input" />
-          <textarea value={message} onChange={e => setMessage(e.target.value)} rows={2}
+          <input value={contacts} onChange={e => setContacts(e.target.value)} placeholder="Контакты: сайт, @telegram, b17 и т.д." maxLength={LIM.THERAPIST_REQUEST_CONTACTS_MAX} className="ds-input" />
+          <LimitedTextarea max={LIM.THERAPIST_REQUEST_MESSAGE_MAX} value={message} onChange={e => setMessage(e.target.value)} rows={2}
             placeholder="Сообщение админу (необязательно)" className="ds-textarea" />
           <div className="aa-actions">
             <button disabled={busy} onClick={() => setOpen(false)} className="ds-btn ds-btn--secondary">Отмена</button>

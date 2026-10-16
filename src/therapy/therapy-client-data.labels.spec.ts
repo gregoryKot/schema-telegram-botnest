@@ -6,6 +6,7 @@
 process.env.ENCRYPTION_KEY = 'cd'.repeat(32);
 
 import { TherapyClientDataService } from './therapy-client-data.service';
+import { Logger } from '@nestjs/common';
 import { encryptJson } from '../utils/crypto';
 
 function makeService(userRow: Record<string, unknown> | null) {
@@ -53,5 +54,27 @@ describe('getClientData — расшифровка ярлыков профиля
     const res = await svc.getClientData(1n, 555);
     expect(res.mySchemaIds).toEqual([]);
     expect(res.myModeIds).toEqual([]);
+  });
+});
+
+describe('getClientData — нечитаемые ярлыки (D-8, аудит 2026-10)', () => {
+  // Шифротекст нашего формата, ключ которого процессу неизвестен: раньше
+  // терапевт получал base64-строку под видом string[], а `.includes('ab')` во
+  // фронтенде искал подстроку.
+  const foreign = Buffer.alloc(48, 7).toString('base64');
+
+  it('mySchemaIds/myModeIds приходят пустыми массивами, а не строкой', async () => {
+    const err = jest.spyOn(Logger.prototype, 'error').mockImplementation();
+    const svc = makeService({
+      firstName: 'Аня',
+      mySchemaIds: foreign,
+      myModeIds: foreign,
+      therapistShareProfile: true,
+    });
+    const res = await svc.getClientData(1n, 555);
+    expect(res.mySchemaIds).toEqual([]);
+    expect(res.myModeIds).toEqual([]);
+    expect(Array.isArray(res.mySchemaIds)).toBe(true);
+    err.mockRestore();
   });
 });

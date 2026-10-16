@@ -75,7 +75,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   vi.spyOn(window, 'confirm').mockReturnValue(true);
   mockApi.getTherapyTasksForClient.mockResolvedValue([]);
-  mockApi.getTherapistNotes.mockResolvedValue([]);
+  mockApi.getTherapistNotes.mockResolvedValue({ notes: [], total: 0 });
   mockApi.getConceptualization.mockResolvedValue(null);
   mockApi.getTherapyClientData.mockResolvedValue(null);
   mockApi.getClientSchemaNotes.mockResolvedValue([]);
@@ -108,9 +108,10 @@ describe('openClient', () => {
 
   it('раскладывает ответы api по состояниям после загрузки', async () => {
     mockApi.getTherapyTasksForClient.mockResolvedValue([{ id: 1 }]);
-    mockApi.getTherapistNotes.mockResolvedValue([
-      { id: 5, date: '2026-01-01' },
-    ]);
+    mockApi.getTherapistNotes.mockResolvedValue({
+      notes: [{ id: 5, date: '2026-01-01' }],
+      total: 1,
+    });
     mockApi.getConceptualization.mockResolvedValue({
       id: 3,
       schemaIds: ['abandonment'],
@@ -332,6 +333,7 @@ describe('addNote / removeNote', () => {
       'привет',
     );
     expect(result.current.notes[0]).toEqual(newNote);
+    expect(result.current.notesPage.total).toBe(1);
     expect(result.current.newNoteText).toBe('');
   });
 
@@ -349,10 +351,13 @@ describe('addNote / removeNote', () => {
   });
 
   it('removeNote удаляет заметку из списка по id', async () => {
-    mockApi.getTherapistNotes.mockResolvedValue([
-      { id: 1, date: '2026-01-01' },
-      { id: 2, date: '2026-01-02' },
-    ]);
+    mockApi.getTherapistNotes.mockResolvedValue({
+      notes: [
+        { id: 1, date: '2026-01-01' },
+        { id: 2, date: '2026-01-02' },
+      ],
+      total: 2,
+    });
     mockApi.deleteTherapistNote.mockResolvedValue(undefined);
     const { result } = await openedHook();
     await act(async () => {
@@ -363,9 +368,10 @@ describe('addNote / removeNote', () => {
   });
 
   it('removeNote выставляет noteError при ошибке api', async () => {
-    mockApi.getTherapistNotes.mockResolvedValue([
-      { id: 1, date: '2026-01-01' },
-    ]);
+    mockApi.getTherapistNotes.mockResolvedValue({
+      notes: [{ id: 1, date: '2026-01-01' }],
+      total: 1,
+    });
     mockApi.deleteTherapistNote.mockRejectedValue(new Error('fail'));
     const { result } = await openedHook();
     await act(async () => {
