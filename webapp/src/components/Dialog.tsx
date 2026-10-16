@@ -5,10 +5,9 @@
 // и aria-modal — useDialogA11y.
 //
 // onClose — клик по бэкдропу. Не задан — окно закрывается только своими
-// кнопками (выбор «ты/вы», операция «в процессе»). Escape слушаем только по
-// closeOnEscape: окна на useHistorySheet закрывает Escape самого хука, второй
-// слушатель закрыл бы их дважды.
-import { useEffect } from 'react';
+// кнопками (выбор «ты/вы», операция «в процессе»). Escape — через общий стек
+// диалогов (useDialogA11y) и только по closeOnEscape: закрывается верхнее
+// окно, а useHistorySheet под ним такое событие пропускает.
 import type { ReactNode } from 'react';
 import { useDialogA11y } from '../../../shared/src/utils/dialogA11y';
 
@@ -35,16 +34,9 @@ export function Dialog({
   underlay,
   children,
 }: Props) {
-  const dialogA11y = useDialogA11y();
-
-  useEffect(() => {
-    if (!closeOnEscape || !onClose) return;
-    function onKeyDown(e: KeyboardEvent) {
-      if (e.key === 'Escape') onClose?.();
-    }
-    document.addEventListener('keydown', onKeyDown);
-    return () => document.removeEventListener('keydown', onKeyDown);
-  }, [closeOnEscape, onClose]);
+  const dialogA11y = useDialogA11y({
+    onEscape: closeOnEscape ? onClose : undefined,
+  });
 
   return (
     <div

@@ -25,7 +25,6 @@ import { EmailService } from './email.service';
 import { AuthProviderRegistry } from './providers/registry';
 import { GoogleProvider } from './providers/google.provider';
 import { TelegramProvider } from './providers/telegram.provider';
-import { TelegramOidcProvider } from './providers/telegram-oidc.provider';
 import { VkProvider } from './providers/vk.provider';
 import { MaxProvider } from './providers/max.provider';
 import { PrismaModule } from '../prisma/prisma.module';
@@ -51,7 +50,6 @@ import { AnalyticsModule } from '../analytics/analytics.module';
     EmailService,
     GoogleProvider,
     TelegramProvider,
-    TelegramOidcProvider,
     VkProvider,
     MaxProvider,
     AuthProviderRegistry,

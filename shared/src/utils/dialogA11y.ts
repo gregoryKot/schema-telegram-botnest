@@ -1,19 +1,12 @@
 import { useEffect, useRef } from 'react';
+import { useDialogLayer, type LayerOpts } from './dialogStack';
 
-// Диалоговая семантика модалок (К4 дизайн-аудита 2026-08): ни один из ~70
-// шитов не был размечен как диалог для скринридера — `role="dialog"` не
-// хватало нигде, фокус после открытия оставался на кнопке под шитом, Tab
-// уходил на фон, закрытие не возвращало фокус туда, откуда открыли. Один хук
-// в базовом BottomSheet чинит все 31 места разом (правило «одна механика —
-// один компонент»).
-//
-// Что делает при монтировании:
-// 1. запоминает activeElement (куда вернуть фокус при закрытии);
-// 2. переносит фокус внутрь диалога — на первый фокусируемый элемент,
-//    иначе на сам контейнер (tabIndex=-1 делает его программно фокусируемым);
-// 3. держит Tab/Shift+Tab внутри контейнера (фокус-трап) — не даёт уйти на
-//    фон под шитом.
-// При размонтировании возвращает фокус туда, где он был.
+// Диалоговая семантика модалок (К4 дизайн-аудита 2026-08): один хук в
+// базовом шите чинит все места разом. При монтировании запоминает
+// activeElement, переносит фокус внутрь (на первый фокусируемый элемент,
+// иначе на контейнер), держит Tab внутри (трап), при размонтировании
+// возвращает фокус. Трап и Escape работают только у верхнего диалога —
+// стек в dialogStack.ts; onEscape не задан — Escape диалог не закрывает.
 export interface DialogA11yProps {
   ref: React.RefObject<HTMLDivElement | null>;
   role: 'dialog';
@@ -36,16 +29,14 @@ function focusableIn(container: HTMLElement): HTMLElement[] {
   ).filter((el) => !el.hasAttribute('disabled'));
 }
 
-export function useDialogA11y(): DialogA11yProps {
+export function useDialogA11y(opts: LayerOpts = {}): DialogA11yProps {
   const ref = useRef<HTMLDivElement>(null);
+  const layer = useDialogLayer(opts);
 
   useEffect(() => {
     if (!ref.current) return;
-    // Захват в отдельный const с точным типом (не `HTMLElement | null`):
-    // вложенная функция ниже не наследует TS-сужение от внешнего `if`, а
-    // повторная рантайм-проверка внутри trapTab была бы недостижимой веткой
-    // (container — это ref.current на момент эффекта, не читается заново) —
-    // без пользы для рантайма, но с недостижимой веткой для coverage-храповика.
+    // Отдельный const с точным типом: TS не переносит сужение во вложенную
+    // функцию, а повторная проверка внутри trapTab была бы недостижимой веткой.
     const container: HTMLElement = ref.current;
     const previouslyFocused = document.activeElement as HTMLElement | null;
 
@@ -53,7 +44,7 @@ export function useDialogA11y(): DialogA11yProps {
     (first ?? container).focus();
 
     function trapTab(e: KeyboardEvent) {
-      if (e.key !== 'Tab') return;
+      if (e.key !== 'Tab' || !layer.isTop()) return;
       const items = focusableIn(container);
       if (items.length === 0) {
         e.preventDefault();
@@ -74,15 +65,17 @@ export function useDialogA11y(): DialogA11yProps {
         firstItem.focus();
       }
     }
+    const leave = layer.join();
     document.addEventListener('keydown', trapTab);
 
     return () => {
       document.removeEventListener('keydown', trapTab);
+      leave();
       // Диалог мог закрыться из-за размонтирования всего дерева (переход
       // экрана) — элемент, куда возвращаем фокус, может уже быть не в DOM.
       if (previouslyFocused?.isConnected) previouslyFocused.focus();
     };
-  }, []);
+  }, [layer]);
 
   return { ref, role: 'dialog', 'aria-modal': true, tabIndex: -1 };
 }
