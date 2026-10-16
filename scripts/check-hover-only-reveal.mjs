@@ -1,0 +1,114 @@
+#!/usr/bin/env node
+// Элемент, спрятанный через opacity: 0 и раскрываемый ТОЛЬКО по :hover.
+//
+// На телефоне hover нет: тап по строке не делает :hover «навсегда», а
+// кнопка, которую раскрывает только он, для пальца не существует. Находка
+// аудита 2026-10: `.evi-x { opacity: 0 }` + `.evi-row:hover .evi-x
+// { opacity: 1 }` — кнопка удаления доказательства в «Проверке убеждения».
+// Строка выглядела неудаляемой, а с клавиатуры кнопка оставалась
+// фокусируемой: Tab уходил в пустое место (WCAG 2.4.7).
+//
+// Правило: если у элемента есть правило сокрытия (`opacity: 0` или
+// `visibility: hidden`) и хотя бы одно правило раскрытия, то хотя бы одно
+// раскрытие обязано обходиться без :hover — `:focus-within`/`:focus-visible`,
+// класс состояния (`.selected`, `.ready`) или блок `@media (hover: none)` /
+// `(pointer: coarse)`. Правила внутри @keyframes не считаются (анимация).
+//
+// Гейт АБСОЛЮТНЫЙ, без бейслайна и без списка исключений: класс вычищен в
+// том же PR, замораживать нечему (правило №15 CLAUDE.md). Образец по
+// устройству — check-var-alpha-suffix.mjs.
+import { readFileSync, readdirSync } from 'fs';
+import { join, resolve } from 'path';
+import { fileURLToPath } from 'url';
+import { stripComments } from './gate-strip-comments.mjs';
+import { parseCssRules, splitSelectorList } from './css-rules-parse.mjs';
+
+const ROOT = join(import.meta.dirname, '..');
+const SCAN_DIRS = ['webapp/src', 'schema-miniapp/src', 'shared/src'];
+
+const cssFiles = (dir) =>
+  readdirSync(join(ROOT, dir), { recursive: true, withFileTypes: true })
+    .filter((e) => e.isFile() && e.name.endsWith('.css'))
+    .filter((e) => !(e.parentPath ?? e.path).includes('node_modules'))
+    .map((e) => join(e.parentPath ?? e.path, e.name).slice(ROOT.length + 1));
+
+// Последний составной селектор без псевдо-классов/элементов → набор простых
+// селекторов (`.a`, `#b`, `[c]`, `tag`), по которому правила «про один и тот
+// же элемент» сопоставляются.
+function subject(selector) {
+  const last = selector.split(/\s*[>+~]\s*|\s+/).pop() ?? '';
+  const bare = last.replace(/::?[\w-]+(\([^)]*\))?/g, '');
+  return new Set(bare.match(/\.[\w-]+|#[\w-]+|\[[^\]]*\]|^[\w-]+|\*/g) ?? []);
+}
+const covers = (outer, inner) =>
+  inner.size > 0 && [...inner].every((t) => outer.has(t));
+
+const isHidden = (d) =>
+  /^0(\.0+)?$/.test(d.opacity ?? '-') || d.visibility === 'hidden';
+const isShown = (d) =>
+  (d.opacity !== undefined && !/^0(\.0+)?$/.test(d.opacity)) ||
+  d.visibility === 'visible';
+
+// Раскрытие не зависит от hover: нет :hover в селекторе и нет контекста
+// `(hover: hover)`, либо контекст прямо про устройства без hover.
+function touchSafe(sel, ctx) {
+  const media = ctx.join(' ');
+  if (/\((hover:\s*none|pointer:\s*coarse|any-hover:\s*none)\)/.test(media))
+    return true;
+  return !/:hover(?![\w-])/.test(sel) && !/\(hover:\s*hover\)/.test(media);
+}
+
+export function findHoverOnly(css) {
+  const rules = parseCssRules(stripComments(css, true)).flatMap((r) =>
+    splitSelectorList(r.selector).map((sel) => ({ ...r, sel })),
+  );
+  const found = [];
+  for (const h of rules.filter(
+    (r) => isHidden(r.decls) && !r.sel.includes(':hover'),
+  )) {
+    const key = subject(h.sel);
+    const shown = rules.filter(
+      (r) => isShown(r.decls) && covers(subject(r.sel), key),
+    );
+    if (shown.length && !shown.some((r) => touchSafe(r.sel, r.ctx))) {
+      found.push({ ln: h.line, sel: h.sel, shown });
+    }
+  }
+  return found;
+}
+
+function main() {
+  const found = [];
+  for (const file of SCAN_DIRS.flatMap((d) => {
+    try {
+      return cssFiles(d);
+    } catch {
+      return [];
+    }
+  })) {
+    const src = readFileSync(join(ROOT, file), 'utf8');
+    for (const f of findHoverOnly(src)) found.push({ file, ...f });
+  }
+
+  if (found.length) {
+    console.error(
+      `❌ Раскрытие только по :hover: ${found.length} элементов.\n`,
+    );
+    for (const f of found) {
+      console.error(`  ${f.file}:${f.ln} «${f.sel}» спрятан, раскрывается:`);
+      for (const r of f.shown)
+        console.error(`    ${r.sel}  (строка ${r.line})`);
+    }
+    console.error(
+      '\nНа телефоне hover нет, а с клавиатуры кнопка остаётся фокусируемой, но\n' +
+        'невидимой. Добавь раскрытие без :hover:\n' +
+        '  .row:focus-within .x, .x:focus-visible { opacity: 1 }\n' +
+        '  @media (hover: none) { .x { opacity: 1 } }\n' +
+        'или раскрывай классом состояния (.selected, .ready).',
+    );
+    process.exit(1);
+  }
+  console.log('✓ раскрытие только по :hover: ни одного');
+}
+
+if (resolve(process.argv[1] ?? '') === fileURLToPath(import.meta.url)) main();
