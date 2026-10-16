@@ -3,6 +3,7 @@ import { flushSync } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/authContext';
 import { parseTelegramAuthResult } from './telegramAuthResult';
+import { ServiceLoading } from './service/ServiceLoading';
 
 const API_BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? '';
 
@@ -111,8 +112,6 @@ export function TelegramWidgetCallback() {
   }, [navigate, setAccessToken]);
 
   return (
-    <div className="loader-center">
-      <div className="spinner" />
-    </div>
+    <ServiceLoading />
   );
 }

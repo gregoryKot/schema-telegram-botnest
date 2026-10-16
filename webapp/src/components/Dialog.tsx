@@ -1,8 +1,7 @@
 // Единый центрированный диалог сайта (бэкдроп + окно) — единственная копия
 // (правило «одна механика — один компонент»). Вид задают классы .dialog-* из
-// index.css; содержимое собирается из .dialog-title / .dialog-text /
-// .dialog-actions + .btn-primary / .btn-outline. Фокус-ловушка, role="dialog"
-// и aria-modal — useDialogA11y.
+// sheet-tasks.css (ds-card r20); содержимое — .dialog-title / .dialog-text /
+// .dialog-actions + ds-btn. Фокус-ловушка, role="dialog", aria-modal — useDialogA11y.
 //
 // onClose — клик по бэкдропу. Не задан — окно закрывается только своими
 // кнопками (выбор «ты/вы», операция «в процессе»). Escape — через общий стек
@@ -10,6 +9,7 @@
 // окно, а useHistorySheet под ним такое событие пропускает.
 import type { ReactNode } from 'react';
 import { useDialogA11y } from '../../../shared/src/utils/dialogA11y';
+import '../styles/sheet-tasks.css';
 
 interface Props {
   /** Подпись окна для скринридера. */
@@ -41,7 +41,7 @@ export function Dialog({
   return (
     <div
       role="presentation"
-      className="dialog-backdrop"
+      className="sk-dialog-backdrop"
       style={zIndex ? { zIndex } : undefined}
       onClick={onClose}
     >
@@ -53,7 +53,7 @@ export function Dialog({
       <div
         {...dialogA11y}
         aria-label={label}
-        className={center ? 'dialog-box dialog-box--center' : 'dialog-box'}
+        className={center ? 'ds-card sk-dialog-box sk-dialog-box--center' : 'ds-card sk-dialog-box'}
         style={maxWidth ? { maxWidth } : undefined}
         onClick={(e) => e.stopPropagation()}
       >

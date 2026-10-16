@@ -4,7 +4,7 @@ import { isOwnChipId } from '../../../../shared/src/case/useCaseOwnSync';
 /**
  * Шаги body/impulse: поле «своё» + чипы-варианты (правило «одна механика —
  * один компонент»). Twin по смыслу с schema-miniapp CaseChipGrid.tsx,
- * разметка — webapp chip-row/chip-pill (тот же класс, что SchemaChipsStep).
+ * разметка — ds-input + ex2-chip (ds-chip с зоной нажатия 44px).
  *
  * Поле рендерится ВСЕГДА и ПЕРВЫМ (фидбек владельца 2026-08-31: «по
  * умолчанию поле ввода, а снизу варианты»), чипы `*_own` («Своё…») не
@@ -36,10 +36,9 @@ export function CaseChipGrid({
         placeholder={ownPlaceholder}
         aria-label={ownPlaceholder}
         maxLength={60}
-        className="field-input"
-        style={{ marginBottom: 12 }}
+        className="ds-input ex2-gap-b"
       />
-      <div className="chip-row">
+      <div className="ex2-chips">
         {chips
           .filter((chip) => !isOwnChipId(chip.id))
           .map((chip) => {
@@ -48,7 +47,7 @@ export function CaseChipGrid({
               <button
                 key={chip.id}
                 type="button"
-                className={'chip-pill ' + (sel ? 'is-selected' : '')}
+                className={'ds-chip ex2-chip' + (sel ? ' is-selected' : '')}
                 onClick={() => onToggle(chip.id)}
               >
                 {chip.label}

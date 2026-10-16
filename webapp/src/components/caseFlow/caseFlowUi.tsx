@@ -5,7 +5,7 @@ import { CaseSupportBlock } from './CaseSupportFoot';
  * панель (Дописать потом / Дальше) + карточка поддержки со строкой «Тяжело
  * прямо сейчас» — на каждом экране потока (правило №7 CLAUDE.md), не только
  * там, где стоит текстовое поле. Twin по смыслу с schema-miniapp
- * CaseHeader/CaseSupportFoot, разметка — webapp-идиома (ex-btn/ex-foot).
+ * CaseHeader/CaseSupportFoot, разметка — webapp-идиома (ds-btn/ex2-foot).
  * TertiaryLink переехала в caseLinks.tsx (иначе цикл модулей с
  * CaseSupportFoot); реэкспорт сохраняет прежний импорт для экранов.
  */
@@ -39,21 +39,21 @@ export function CaseFlowFoot({
   return (
     <>
       {(onLater || primaryLabel) && (
-        <div className="ex-foot">
+        <div className="ex2-foot">
           {onLater && (
             <button
               type="button"
-              className="ex-btn ex-btn-ghost"
+              className="ds-btn ex2-ghost"
               onClick={onLater}
             >
               Дописать потом
             </button>
           )}
-          <span className="spacer" />
+          <span className="ex2-spacer" />
           {primaryLabel && onPrimary && (
             <button
               type="button"
-              className="ex-btn ex-btn-primary"
+              className="ds-btn"
               disabled={primaryDisabled}
               onClick={onPrimary}
             >

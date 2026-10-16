@@ -2,7 +2,7 @@
 // Тест переключения темы (theme.ts): детекция системной темы через
 // matchMedia, персист в localStorage, применение к document.documentElement.
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { getTheme, applyTheme, toggleTheme, resetToSystemTheme } from './theme';
+import { getTheme, applyTheme, toggleTheme, resetToSystemTheme, applyCabinetLightTheme } from './theme';
 
 function mockMatchMedia(prefersDark: boolean) {
   window.matchMedia = vi.fn().mockImplementation((query: string) => ({
@@ -92,6 +92,18 @@ describe('resetToSystemTheme', () => {
     applyTheme('light');
     mockMatchMedia(true);
     resetToSystemTheme();
+    expect(getTheme()).toBe('dark');
+  });
+});
+
+describe('applyCabinetLightTheme', () => {
+  it('переводит документ в светлую схему, не трогая сохранённый выбор пользователя', () => {
+    localStorage.setItem('app_theme', 'dark');
+    document.documentElement.setAttribute('data-theme', 'dark');
+    applyCabinetLightTheme();
+    expect(document.documentElement.getAttribute('data-theme')).toBe('light');
+    expect(document.documentElement.style.colorScheme).toBe('light');
+    expect(localStorage.getItem('app_theme')).toBe('dark');
     expect(getTheme()).toBe('dark');
   });
 });

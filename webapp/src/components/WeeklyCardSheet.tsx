@@ -20,6 +20,7 @@ import {
 import { useCopyToClipboard } from '../../../shared/src/utils/useCopyToClipboard';
 import { botShortUrl } from '../utils/botConfig';
 import { useTr } from '../utils/addressForm';
+import '../styles/sheet-diary.css';
 
 interface Props {
   needs: Need[];
@@ -82,7 +83,6 @@ export function WeeklyCardSheet({ needs, history, onClose }: Props) {
       onBack={goBack}
       backLabel="Назад к истории"
       eyebrow="Итоги недели"
-      eyebrowColor="var(--accent)"
       title={
         <>
           Карточка
@@ -93,42 +93,19 @@ export function WeeklyCardSheet({ needs, history, onClose }: Props) {
       lede={tr('Сводка потребностей за неделю в виде карточки – сохрани или отправь терапевту.', 'Сводка потребностей за неделю в виде карточки – сохраните или отправьте терапевту.')}
     >
       {history.length === 0 ? (
-        <div
-          style={{
-            textAlign: 'center',
-            color: 'var(--text-sub)',
-            padding: '48px 0',
-            fontSize: 15,
-          }}
-        >
-          Нет данных за неделю
-        </div>
+        <div className="sd-weekly-empty">Нет данных за неделю</div>
       ) : (
         <>
-          <div
-            style={{
-              borderRadius: 'var(--r-16)',
-              overflow: 'hidden',
-              border: '1px solid var(--line)',
-              marginBottom: 24,
-            }}
-          >
-            <canvas
-              ref={canvasRef}
-              style={{ display: 'block', width: '100%', height: 'auto' }}
-            />
+          <div className="ds-card ds-card--flush sd-canvas">
+            <canvas ref={canvasRef} className="sd-canvas-el" />
           </div>
 
-          <div className="ex-foot">
-            <span className="spacer" />
+          <div className="sd-foot">
+            <span className="sd-spacer" />
             <button
               onClick={handleShare}
               disabled={sharing}
-              className="ex-btn ex-btn-primary"
-              style={copied ? {
-                background: 'color-mix(in srgb, var(--c-moss) 20%, transparent)',
-                color: 'var(--c-moss)',
-              } : undefined}
+              className={'ds-btn' + (copied ? ' sd-btn-ok' : '')}
             >
               {copied
                 ? '✓ Скопировано'
@@ -150,52 +127,14 @@ export function WeeklyCardSheet({ needs, history, onClose }: Props) {
 
       {fallbackText && (
         <BottomSheetShell goBack={() => setFallbackText(null)} zIndex={300}>
-            <div
-              style={{
-                fontSize: 16,
-                fontWeight: 600,
-                color: 'var(--text)',
-                marginBottom: 12,
-              }}
-            >
-              Поделиться текстом
-            </div>
-            <pre
-              style={{
-                fontSize: 12,
-                color: 'var(--text-sub)',
-                lineHeight: 1.6,
-                background: 'var(--surface-2)',
-                borderRadius: 'var(--r-12)',
-                padding: '12px 14px',
-                overflowX: 'auto',
-                whiteSpace: 'pre-wrap',
-                wordBreak: 'break-word',
-                marginBottom: 14,
-                userSelect: 'all',
-                fontFamily: 'inherit',
-              }}
-            >
-              {fallbackText}
-            </pre>
-            <button
-              onClick={() => void copyFallback(fallbackText)}
-              style={{
-                width: '100%',
-                padding: '13px 0',
-                border: 'none',
-                borderRadius: 'var(--r-12)',
-                background: fallbackCopied
-                  ? 'color-mix(in srgb, var(--c-moss) 20%, transparent)'
-                  : 'var(--surface-2)',
-                color: fallbackCopied ? 'var(--c-moss)' : 'var(--text-sub)',
-                fontSize: 14,
-                fontWeight: 600,
-                cursor: 'pointer',
-              }}
-            >
-              {fallbackCopied ? '✓ Скопировано' : 'Скопировать'}
-            </button>
+          <h2 className="ds-h3 sd-share-title">Поделиться текстом</h2>
+          <pre className="sd-pre">{fallbackText}</pre>
+          <button
+            onClick={() => void copyFallback(fallbackText)}
+            className={'ds-btn ds-btn--secondary sd-wide' + (fallbackCopied ? ' is-ok' : '')}
+          >
+            {fallbackCopied ? '✓ Скопировано' : 'Скопировать'}
+          </button>
         </BottomSheetShell>
       )}
     </ExScreen>

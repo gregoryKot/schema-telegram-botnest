@@ -1,9 +1,12 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Navigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../auth/authContext';
-import { tableLabel, totalItems as sumItems } from '../utils/mergeLabels';
+import { totalItems as sumItems } from '../utils/mergeLabels';
 import { api } from '../api';
 import { useTr } from '../utils/addressForm';
+import { ServicePage } from './service/ServicePage';
+import { ServiceRows } from './service/ServiceRows';
+import { Skeleton } from '../components/Skeleton';
 import { TwoFactorLossNote } from '../components/TwoFactorLossNote';
 import { AddressFormProvider } from '../utils/AddressFormProvider';
 import {
@@ -108,63 +111,57 @@ function LinkDeviceContent({ code }: { code: string }) {
   const total = preview ? sumItems(preview.summary) : 0;
 
   return (
-    <div className="page-inner-wide" style={{ paddingTop: 80, paddingBottom: 80, maxWidth: 640, margin: '0 auto' }}>
-      <div className="eyebrow u-mb14">Аккаунт</div>
-      <h1 style={{ fontSize: 34, fontWeight: 600, letterSpacing: '-0.03em', lineHeight: 1.15, marginBottom: 18 }}>
-        {done ? 'Готово' : 'Привязать приложение'}
-      </h1>
+    <ServicePage>
+      <div className="as-body">
+        <div className="ds-eyebrow">Аккаунт</div>
+        <h1 className="ds-h2">{done ? 'Готово' : 'Привязать приложение'}</h1>
 
-      {done && (
-        <p className="text-sm" style={{ lineHeight: 1.7 }}>
-          {tr('Вернись в приложение', 'Вернитесь в приложение')} — оно уже работает с этим аккаунтом.
-        </p>
-      )}
-
-      {!done && error && (
-        <p className="text-sm" style={{ color: 'var(--c-rose)', lineHeight: 1.7 }}>{error}</p>
-      )}
-
-      {!done && !error && !preview && (
-        <div className="loader-center"><div className="spinner" /></div>
-      )}
-
-      {!done && preview && (
-        <>
-          <p className="text-sm" style={{ lineHeight: 1.7, marginBottom: 14 }}>
-            Приложение в {messenger}
-            {preview.displayName ? ` (${preview.displayName})` : ''} хочет войти в этот аккаунт — {tr('твой', 'ваш')}.
-            После подтверждения оно сможет открывать его и видеть, менять и удалять все {tr('твои', 'ваши')} данные.
-            {preview.sameAccount
-              ? ` ${tr('Это тот же аккаунт, ты уже в нём', 'Это тот же аккаунт, вы уже в нём')} — переносить нечего.`
-              : ` Данные приложения (ниже) при этом переедут к ${tr('тебе', 'вам')}, а его прежний аккаунт исчезнет.`}
+        {done && (
+          <p className="as-lead">
+            {tr('Вернись в приложение', 'Вернитесь в приложение')} — оно уже работает с этим аккаунтом.
           </p>
+        )}
 
-          <p className="text-sm" style={{ lineHeight: 1.7, marginBottom: 18, color: 'var(--c-amber)' }}>
-            {tr('Подтверждай, только если код запрошен тобой в этом приложении.', 'Подтверждайте, только если код запрошен вами в этом приложении.')}{' '}
-            {tr('Если код прислали со стороны — закрой эту страницу: так отдают доступ к аккаунту чужому.', 'Если код прислали со стороны — закройте эту страницу: так отдают доступ к аккаунту чужому.')}
-          </p>
+        {!done && error && <div className="ds-card as-err">{error}</div>}
 
-          {!preview.sameAccount && total > 0 && (
-            <>
-              <div className="hint u-mb8">Что переедет из приложения:</div>
-              <div className="card" style={{ padding: 16, borderRadius: 'var(--r-14)', marginBottom: 18 }}>
-                {Object.entries(preview.summary).map(([table, n]) => (
-                  <div key={table} style={{ display: 'flex', gap: 'var(--space-10)', padding: '4px 0' }}>
-                    <span className="text-sm u-flex1">{tableLabel(table)}</span>
-                    <span className="hint">{n}</span>
-                  </div>
-                ))}
-              </div>
-            </>
-          )}
+        {!done && !error && !preview && (
+          <>
+            <Skeleton height={14} />
+            <Skeleton height={14} width="85%" />
+          </>
+        )}
 
-          {preview.twoFactorLost && <TwoFactorLossNote />}
+        {!done && preview && (
+          <>
+            <p className="as-lead">
+              Приложение в {messenger}
+              {preview.displayName ? ` (${preview.displayName})` : ''} хочет войти в этот аккаунт — {tr('твой', 'ваш')}.
+              После подтверждения оно сможет открывать его и видеть, менять и удалять все {tr('твои', 'ваши')} данные.
+              {preview.sameAccount
+                ? ` ${tr('Это тот же аккаунт, ты уже в нём', 'Это тот же аккаунт, вы уже в нём')} — переносить нечего.`
+                : ` Данные приложения (ниже) при этом переедут к ${tr('тебе', 'вам')}, а его прежний аккаунт исчезнет.`}
+            </p>
 
-          <button className="btn" onClick={() => void approve()} disabled={busy} style={{ minHeight: 44 }}>
-            {busy ? 'Привязываю…' : 'Разрешить доступ'}
-          </button>
-        </>
-      )}
-    </div>
+            <p className="as-warn">
+              {tr('Подтверждай, только если код запрошен тобой в этом приложении.', 'Подтверждайте, только если код запрошен вами в этом приложении.')}{' '}
+              {tr('Если код прислали со стороны — закрой эту страницу: так отдают доступ к аккаунту чужому.', 'Если код прислали со стороны — закройте эту страницу: так отдают доступ к аккаунту чужому.')}
+            </p>
+
+            {!preview.sameAccount && total > 0 && (
+              <>
+                <div className="ds-label">Что переедет из приложения:</div>
+                <ServiceRows summary={preview.summary} />
+              </>
+            )}
+
+            {preview.twoFactorLost && <TwoFactorLossNote />}
+
+            <button className="ds-btn" onClick={() => void approve()} disabled={busy}>
+              {busy ? 'Привязываю…' : 'Разрешить доступ'}
+            </button>
+          </>
+        )}
+      </div>
+    </ServicePage>
   );
 }

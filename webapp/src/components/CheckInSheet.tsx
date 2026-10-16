@@ -2,7 +2,9 @@ import { useState } from 'react';
 import { api, type PracticePlan } from '../api';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { useTr } from '../utils/addressForm';
-import { IdentityDot } from '../../../shared/src/components/IdentityDot';
+import { NEED_HUE, hueStyle } from '../lib/tone';
+import type { NeedId } from '../../../shared/src/needs/types';
+import '../styles/sheet-tracker.css';
 import { BottomSheetShell } from './BottomSheetShell';
 
 interface Props {
@@ -13,7 +15,8 @@ interface Props {
   onDone: () => void;
 }
 
-export function CheckInSheet({ plan, needColor, needLabel, color, onDone }: Props) {
+export function CheckInSheet({ plan, needLabel, onDone }: Props) {
+  const hue = NEED_HUE[plan.needId as NeedId];
   const tr = useTr();
   const goBack = useHistorySheet(onDone);
   const [saving, setSaving] = useState(false);
@@ -36,72 +39,42 @@ export function CheckInSheet({ plan, needColor, needLabel, color, onDone }: Prop
   return (
     // Клик по фону = «Пропустить»; пока идёт сохранение — не закрываем.
     <BottomSheetShell goBack={() => { if (!saving) goBack(); }} zIndex={250}>
-        <div style={{ marginBottom: 24 }}>
-          <div style={{ fontFamily: 'var(--serif)', fontSize: 26, fontWeight: 400, color: 'var(--text)', lineHeight: 1.3 }}>
+        <div className="tk2-ci-q" style={hueStyle(hue)}>
+          <div className="ds-h2">
             {tr('Вчера в планах было', 'Вчера вы планировали')}
           </div>
-          <div style={{ fontSize: 13, color: 'var(--text-sub)', marginTop: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
-            <IdentityDot color={needColor} /> {needLabel}
+          <div className="tk2-ci-need">
+            <span className="ds-dot tone-fill" /> {needLabel}
           </div>
         </div>
 
-        <div style={{
-          border: '1px solid var(--line)', // цвет потребности — полоской слева, не заливкой
-          borderLeft: `3px solid ${color}`,
-          borderRadius: 'var(--r-8)', padding: '14px 16px',
-          marginBottom: 28,
-          fontSize: 16, color: 'var(--text)', lineHeight: 1.55,
-        }}>
+        <div className="ds-card ds-card--row tk2-ci-plan" style={hueStyle(hue)}>
           {plan.practiceText}
         </div>
 
-        <div style={{ fontSize: 14, color: 'var(--text-sub)', marginBottom: 16 }}>
+        <div className="tk2-ci-ask">
           Получилось?
         </div>
 
-        <div className="u-row10">
-          <button
-            onClick={() => checkin(false)}
-            disabled={saving}
-            style={{
-              flex: 1, padding: '13px 0', borderRadius: 'var(--r-8)',
-              border: '1px solid var(--line-strong)',
-              background: 'transparent',
-              color: 'var(--text-sub)', fontSize: 15, cursor: 'pointer',
-            }}
-          >
+        <div className="tk2-ci-btns">
+          <button onClick={() => checkin(false)} disabled={saving} className="ds-btn ds-btn--secondary">
             Не вышло
           </button>
-          <button
-            onClick={() => checkin(true)}
-            disabled={saving}
-            style={{
-              flex: 2, padding: '13px 0', borderRadius: 'var(--r-8)', border: 'none',
-              background: 'var(--text)',
-              color: 'var(--bg)', fontSize: 15, fontWeight: 600, cursor: saving ? 'default' : 'pointer',
-              opacity: saving ? 0.5 : 1,
-            }}
-          >
+          <button onClick={() => checkin(true)} disabled={saving} className="ds-btn">
             {saving ? 'Сохранение...' : 'Да, получилось ✓'}
           </button>
         </div>
         {error && (
-          <div style={{ marginTop: 12, fontSize: 13, color: 'var(--accent-red)' }}>
+          <div className="tk2-ci-err">
             {tr(
               'Не удалось сохранить – попробуй ещё раз',
               'Не удалось сохранить – попробуйте ещё раз',
             )}
           </div>
         )}
-        <div style={{ marginTop: 14 }}>
-          <button
-            onClick={goBack}
-            disabled={saving}
-            style={{ background: 'none', border: 'none', fontSize: 13, color: 'var(--text-faint)', cursor: 'pointer', padding: '4px 0' }}
-          >
-            Пропустить
-          </button>
-        </div>
+        <button onClick={goBack} disabled={saving} className="ds-link tk2-ci-skip">
+          Пропустить
+        </button>
     </BottomSheetShell>
   );
 }

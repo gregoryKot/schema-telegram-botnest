@@ -5,6 +5,8 @@ import { saveDraft, loadDraft, clearDraft } from '../../utils/drafts';
 import { detectCrisisAny } from '../../utils/crisisMarkers';
 import { CrisisCard } from '../CrisisCard';
 import { fmtDateLong, todayStr } from '../../utils/format';
+import { DIARY_HUE, hueStyle } from '../../lib/tone';
+import { DiaryAside } from './DiaryStepCard';
 import { haptic } from '../../haptic';
 import { SaveEntryButton } from './SaveEntryButton';
 import { LimitedTextarea } from '../../../../shared/src/components/LimitedTextarea';
@@ -75,23 +77,20 @@ export function GratitudeEntrySheet({ onClose, date, existingItems, onSave }: Pr
       onBack={goBack}
       backLabel="Назад к дневнику"
       eyebrow={`Дневник благодарности · ${dateLabel}`}
-      eyebrowColor="var(--c-moss)"
       title={<>Три вещи,<br /><span className="it">за которые сегодня – спасибо</span></>}
       lede="Даже самое маленькое. Особенно самое маленькое. Запоминается то, что удалось назвать. Хватит и одной строки."
       aside={
-        <div className="aside-card" style={{ borderColor: 'color-mix(in srgb, var(--c-moss) 25%, transparent)', background: 'color-mix(in srgb, var(--c-moss) 3%, transparent)', position: 'sticky', top: 40 }}>
-          <div className="aside-card-eyebrow" style={{ color: 'var(--c-moss)' }}>Почему это работает</div>
-          <h3>Мозг учится замечать</h3>
-          <p className="body">Психика устроена так, чтобы запоминать опасное. Регулярная практика благодарности – не «позитивное мышление», а тренировка нервной системы замечать тёплое наряду с тревожным.</p>
-        </div>
+        <DiaryAside hue={DIARY_HUE.gratitude} eyebrow="Почему это работает" title="Мозг учится замечать">
+          <p className="ds-sub">Психика устроена так, чтобы запоминать опасное. Регулярная практика благодарности – не «позитивное мышление», а тренировка нервной системы замечать тёплое наряду с тревожным.</p>
+        </DiaryAside>
       }
     >
-      <div className="u-mt8">
+      <div className="sd-grat" style={hueStyle(DIARY_HUE.gratitude)}>
         {items.map((item, i) => (
-          <div key={i} className={'grat-row ' + (item.trim() ? 'is-filled' : '')}>
-            <span className="grat-num-big">{String(i + 1).padStart(2, '0')}</span>
-            <div>
-              <LimitedTextarea max={DIARY_FIELD_MAX} ref={i === 0 ? firstItemRef : undefined} value={item} onChange={e => update(i, e.target.value)} rows={1}
+          <div key={i} className={'ds-card ds-card--row sd-grat-row' + (item.trim() ? ' is-filled' : '')}>
+            <span className="ds-num sd-grat-num">{String(i + 1).padStart(2, '0')}</span>
+            <div className="sd-grat-field">
+              <LimitedTextarea max={DIARY_FIELD_MAX} ref={i === 0 ? firstItemRef : undefined} value={item} onChange={e => update(i, e.target.value)} rows={1} className="ds-textarea"
                 placeholder={PLACEHOLDERS[i] ?? PLACEHOLDERS[PLACEHOLDERS.length - 1]}
                 aria-label={`Пункт ${i + 1}: ${PLACEHOLDERS[i] ?? PLACEHOLDERS[PLACEHOLDERS.length - 1]}`} />
             </div>
@@ -99,29 +98,21 @@ export function GratitudeEntrySheet({ onClose, date, existingItems, onSave }: Pr
         ))}
         {detectCrisisAny(...items) && <CrisisCard surface="gratitude" />}
         {items.length < 5 && (
-          <button className="add-row-btn" onClick={addItem}>
+          <button className="ds-btn ds-btn--secondary ds-btn--sm" onClick={addItem}>
             <GlyphPlus />
-            <span style={{ marginLeft: 8 }}>Добавить ещё пункт</span>
+            <span>Добавить ещё пункт</span>
           </button>
         )}
       </div>
 
-      <div className="ex-foot">
-        <span className="u-faint12">
+      <div className="sd-foot">
+        <span className="ds-sub">
           {filled.length} / {items.length} заполнено
         </span>
-        <span className="spacer" />
+        <span className="sd-spacer" />
         <SaveEntryButton canSave={canSave} saving={saving} onSave={handleSave} />
         {saveError && (
-          <div
-            role="status"
-            style={{
-              marginTop: 10,
-              fontSize: 13,
-              lineHeight: 1.5,
-              color: 'var(--accent-red)',
-            }}
-          >
+          <div role="status" className="sd-save-error">
             Не удалось сохранить. Текст остался черновиком — можно повторить
           </div>
         )}

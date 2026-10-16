@@ -37,7 +37,6 @@ export function CaseBodyScreen({
     <ExScreen
       onBack={onBack}
       eyebrow="Разбор случая · Шаг 3 из 5"
-      eyebrowColor="var(--accent-indigo)"
       title="Где это отозвалось в теле?"
       lede={tr(
         'Самое раннее, что успеваешь заметить, — до всяких мыслей.',
@@ -45,7 +44,7 @@ export function CaseBodyScreen({
       )}
     >
       {selectedIds.length > 0 && (
-        <div style={{ fontSize: 13, color: 'var(--accent)', marginBottom: 14 }}>
+        <div className="ex2-verdict">
           {buildBodyPayoff(tr)}
         </div>
       )}

@@ -4,6 +4,9 @@ import { useNeedData } from '../needData';
 import { SCHEMA_DOMAINS } from '../schemaTherapyData';
 import { IdentityDot, needColor } from '../../../shared/src/components/IdentityDot';
 import { useTr } from '../utils/addressForm';
+import { NEED_HUE, hueStyle } from '../lib/tone';
+import type { NeedId } from '../../../shared/src/needs/types';
+import '../styles/sheet-tracker.css';
 
 const NEED_DOMAIN_MAP: Record<string, string[]> = {
   attachment: ['rejection'],
@@ -26,6 +29,7 @@ export function NeedDetailSheet({ needId, childhoodRating, activeSchemaIds, onCl
   const NEED_DATA = useNeedData();
   const need = NEED_DATA[needId];
   const color = needColor(needId);
+  const hue = NEED_HUE[needId as NeedId];
 
   if (!need) return null;
 
@@ -53,64 +57,44 @@ export function NeedDetailSheet({ needId, childhoodRating, activeSchemaIds, onCl
       lede={need.explanation}
       aside={
         childhoodRating !== undefined ? (
-          <div className="aside-card" style={{ borderColor: `${color}40`, background: `${color}08`, position: 'sticky', top: 40 }}>
-            <div className="aside-card-eyebrow" style={{ color }}>{tr('Твой балл в детстве', 'Ваш балл в детстве')}</div>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: 'var(--space-8)', marginBottom: 12 }}>
-              <span style={{ fontFamily: 'var(--serif)', fontSize: 56, lineHeight: 1, color }}>{childhoodRating}</span>
-              <span style={{ fontSize: 14, color: 'var(--text-faint)' }}>из 10</span>
+          <div className="ds-card tk2-aside" style={hueStyle(hue)}>
+            <div className="ds-eyebrow tone-text">{tr('Твой балл в детстве', 'Ваш балл в детстве')}</div>
+            <div className="tk2-aside-nums">
+              <span className="ds-num tone-text">{childhoodRating}</span>
+              <span className="tk2-aside-unit">из 10</span>
             </div>
-            {rangeDesc && (
-              <p style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.65 }}>{rangeDesc}</p>
-            )}
-            <div style={{ marginTop: 14, paddingTop: 14, borderTop: `1px solid ${color}22` }}>
-              <div style={{ display: 'flex', gap: 3 }}>
-                {[...Array(10)].map((_, i) => (
-                  <div key={i} style={{ flex: 1, height: 4, borderRadius: 'var(--r-2)', background: i < childhoodRating ? color : `${color}20` }} />
-                ))}
-              </div>
+            {rangeDesc && <p className="ds-sub" style={{ lineHeight: 1.65 }}>{rangeDesc}</p>}
+            <div className="tk2-bars">
+              {Array.from({ length: 10 }, (_, i) => (
+                <i key={i} className={i < childhoodRating ? 'is-on' : ''} />
+              ))}
             </div>
           </div>
         ) : undefined
       }
     >
-      {/* Related schemas */}
-      {relatedSchemas.length > 0 && (
-        <div className="prompt">
-          <div className="prompt-num">·</div>
-          <div className="u-w100">
-            <div className="prompt-label">Связанные схемы</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-8)', marginTop: 8 }}>
+      <div className="tk2-opts" style={hueStyle(hue)}>
+        {relatedSchemas.length > 0 && (
+          <div className="ds-card ds-card--row">
+            <div className="ds-label">Связанные схемы</div>
+            <div className="tk2-opts">
               {relatedSchemas.map(s => (
-                <div key={s.id} className="mode-card" style={{ '--mode-color': color } as React.CSSProperties}>
-                  <span className="mode-card-stripe" />
-                  <div>
-                    <div className="mode-card-name u-ac6"><IdentityDot color={s.domainColor} size={8} />{s.name}</div>
-                    <div className="mode-card-short">{s.desc}</div>
-                  </div>
+                <div key={s.id} className="ds-card ds-card--row">
+                  <div className="ds-h3 u-ac6"><IdentityDot color={s.domainColor} size={8} />{s.name}</div>
+                  <div className="ds-sub">{s.desc}</div>
                 </div>
               ))}
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Tips */}
-      <div className="prompt">
-        <div className="prompt-num">·</div>
-        <div>
-          <div className="prompt-label">{level === 'low' ? 'Что поможет сейчас' : 'Практика'}</div>
-          <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <div className="ds-card">
+          <div className="ds-label">{level === 'low' ? 'Что поможет сейчас' : 'Практика'}</div>
+          <div className="tk2-tips">
             {tips.map((tip, i) => (
-              <div key={i} style={{ display: 'flex', gap: 16 }}>
-                <div style={{
-                  width: 28, height: 28, borderRadius: 'var(--r-8)', flexShrink: 0,
-                  background: `${color}18`, border: `1px solid ${color}30`,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontFamily: 'var(--serif)', fontSize: 15, color,
-                }}>
-                  {i + 1}
-                </div>
-                <p style={{ fontSize: 15, color: 'var(--text-sub)', lineHeight: 1.65, paddingTop: 3 }}>{tip}</p>
+              <div key={i} className="tk2-tip">
+                <div className="tk2-tip-n tone-tint">{i + 1}</div>
+                <p>{tip}</p>
               </div>
             ))}
           </div>

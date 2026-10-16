@@ -4,6 +4,7 @@ import type { TherapyClientSummary, UserId } from '../api';
 import { todayCalendarDate } from '../../../shared/src/utils/calendarDate';
 import { pressable } from '../utils/a11y';
 import { useDialogA11y } from '../../../shared/src/utils/dialogA11y';
+import '../styles/sheet-tasks.css';
 
 type Section = 'today' | 'diary' | 'schemas' | 'profile' | 'practice';
 
@@ -130,53 +131,52 @@ export function CommandPalette({ onNavigate, onClose, userRole, therapistMode, o
   }, [rows, sel, onClose]);
 
   return (
-    <div className="cmd-bg" onClick={onClose} role="button" tabIndex={0} aria-label="Закрыть"
+    <div className="sk-cmd-bg" onClick={onClose} role="button" tabIndex={0} aria-label="Закрыть"
       onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClose(); } }}>
-      {/* onClick/onKeyDown — не интерактив, а stopPropagation: не дать клику
-          или Enter/Space (печатая в поиске) всплыть до onClick/onKeyDown
-          бэкдропа выше и закрыть палитру на пробеле в запросе.
-          role="dialog" (К4) не входит в список «интерактивных» ролей
-          jsx-a11y — ложное срабатывание. */}
+      {/* onClick/onKeyDown — stopPropagation: клик или Enter/Space (печатая в
+          поиске) не должны всплыть до бэкдропа и закрыть палитру. role="dialog"
+          не входит в «интерактивные» роли jsx-a11y — ложное срабатывание. */}
       {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions */}
       <div
         {...dialogA11y}
-        className="cmd-panel"
+        className="ds-card ds-card--flush sk-cmd-panel"
         onClick={e => e.stopPropagation()}
         onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); } }}
       >
-        <div className="cmd-search">
-          <svg viewBox="0 0 24 24" width={16} height={16} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--text-faint)', flexShrink: 0 }}>
+        <div className="sk-cmd-search">
+          <svg viewBox="0 0 24 24" width={16} height={16} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="sk-cmd-ic">
             <path d="M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16zM21 21l-4.35-4.35" />
           </svg>
           <input
             ref={inputRef}
+            className="ds-input sk-cmd-input"
             value={q}
             onChange={e => setQ(e.target.value)}
             placeholder="Найти клиента, страницу или действие…"
           />
           <span className="kbd">Esc</span>
         </div>
-        <div className="cmd-list">
-          {rows.length === 0 && <div style={{ padding: '24px 20px', color: 'var(--text-faint)', fontSize: 13 }}>Ничего не найдено</div>}
+        <div className="sk-cmd-list">
+          {rows.length === 0 && <div className="ds-list-row sk-cmd-empty ds-sub">Ничего не найдено</div>}
           {rows.map((row, i) => (
             <div
               key={i}
-              className={`cmd-row${i === sel ? ' is-sel' : ''}`}
+              className={`ds-list-row ds-list-row--hover sk-cmd-row${i === sel ? ' is-sel' : ''}`}
               onMouseEnter={() => setSel(i)}
               {...pressable(() => { row.action(); onClose(); })}
             >
-              <span style={{ color: 'var(--text-faint)', flexShrink: 0, display: 'flex', alignItems: 'center' }}>
+              <span className="sk-cmd-ic">
                 {row.type === 'client' ? <IconPerson /> : row.type === 'nav' ? <IconArrow /> : <IconBolt />}
               </span>
-              <span className="u-fill">
-                <span className="u-fg">{row.label}</span>
+              <span className="sk-cmd-main">
+                <span className="sk-cmd-label">{row.label}</span>
                 {row.sub && (
-                  <span style={{ marginLeft: 8, fontSize: 11, color: row.sub === 'Активен сегодня' ? 'var(--c-moss)' : 'var(--text-faint)' }}>
+                  <span className={'sk-cmd-sub' + (row.sub === 'Активен сегодня' ? ' is-ok' : '')}>
                     {row.sub}
                   </span>
                 )}
               </span>
-              {row.hint && <span className="hint" style={{ fontSize: 11 }}>{row.hint}</span>}
+              {row.hint && <span className="kbd">{row.hint}</span>}
             </div>
           ))}
         </div>

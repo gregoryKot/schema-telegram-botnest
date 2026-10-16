@@ -6,6 +6,7 @@ import { useTr } from '../../utils/addressForm';
 import { fmtAgo } from '../../utils/format';
 import { detectCrisisAny } from '../../utils/crisisMarkers';
 import { CrisisCard } from '../CrisisCard';
+import { hueStyle, NEED_HUE } from '../../lib/tone';
 
 export function LetterEx({
   onBack,
@@ -60,8 +61,7 @@ export function LetterEx({
       <ExScreen
         onBack={goBack}
         eyebrow="Письмо · сохранено"
-        eyebrowColor="var(--c-moss)"
-        title={
+          title={
           <>
             Письмо
             <br />
@@ -71,14 +71,14 @@ export function LetterEx({
         lede={tr('Письмо — тоже работа, и порой самая важная. Вернись к нему через неделю и перечитай вслух.', 'Письмо — тоже работа, и порой самая важная. Вернитесь к нему через неделю и перечитайте вслух.')}
         aside={
           others.length > 0 ? (
-            <div className="aside-card">
-              <div className="aside-card-eyebrow">
+            <div className="ds-card ex2-note">
+              <div className="ds-label">
                 Прошлые письма · {pastLetters.length}
               </div>
               {others.slice(0, 2).map((l, i) => (
-                <div key={i} className="history-row">
-                  <span className="history-date">{fmtAgo(l.createdAt)}</span>
-                  <span className="history-snippet">
+                <div key={i} className="ex2-hist-row">
+                  <span className="ex2-hist-date">{fmtAgo(l.createdAt)}</span>
+                  <span className="ex2-hist-snip">
                     «{l.text.slice(0, 120)}…»
                   </span>
                 </div>
@@ -87,20 +87,10 @@ export function LetterEx({
           ) : undefined
         }
       >
-        <div className="letter-paper">
-          <div className="letter-salutation">Здравствуй,</div>
-          <div
-            style={{
-              fontFamily: 'var(--serif)',
-              fontSize: 19,
-              lineHeight: '32px',
-              color: 'var(--text)',
-              whiteSpace: 'pre-wrap',
-            }}
-          >
-            {text}
-          </div>
-          <div className="letter-meta">
+        <div className="ds-card ex2-letter">
+          <div className="ex2-letter-hi">Здравствуй,</div>
+          <div className="ex2-letter-text">{text}</div>
+          <div className="ex2-meta">
             <span>
               {new Date().toLocaleDateString('ru-RU', {
                 day: 'numeric',
@@ -111,15 +101,15 @@ export function LetterEx({
             <span>{text.split(/\s+/).filter(Boolean).length} слов</span>
           </div>
         </div>
-        <div className="ex-foot">
+        <div className="ex2-foot">
           <button
-            className="ex-btn ex-btn-outline"
+            className="ds-btn ds-btn--secondary"
             onClick={() => setDone(false)}
           >
             Изменить
           </button>
-          <span className="spacer" />
-          <button className="ex-btn ex-btn-primary" onClick={goBack}>
+          <span className="ex2-spacer" />
+          <button className="ds-btn" onClick={goBack}>
             Закрыть
           </button>
         </div>
@@ -131,7 +121,6 @@ export function LetterEx({
     <ExScreen
       onBack={goBack}
       eyebrow="№ 04 · Эмоциональная работа"
-      eyebrowColor="var(--c-amber)"
       title={
         <>
           Письмо
@@ -145,21 +134,10 @@ export function LetterEx({
       )}
       aside={
         <>
-          <div
-            className="aside-card"
-            style={{
-              borderColor: 'color-mix(in srgb, var(--c-amber) 25%, transparent)',
-              background: 'color-mix(in srgb, var(--c-amber) 3%, transparent)',
-            }}
-          >
-            <div
-              className="aside-card-eyebrow"
-              style={{ color: 'var(--c-amber)' }}
-            >
-              С чего начать
-            </div>
-            <h3>Три вопроса перед тем как писать</h3>
-            <ul className="u-mt14">
+          <div className="ds-card ex2-note ex2-tint" style={hueStyle(NEED_HUE.limits)}>
+            <div className="ds-label">С чего начать</div>
+            <h3 className="ex2-note-h">Три вопроса перед тем как писать</h3>
+            <ul className="ex2-note-list">
               <li>Какой момент из детства – самый трудный?</li>
               <li>
                 {tr(
@@ -170,9 +148,9 @@ export function LetterEx({
               <li>Что он должен был услышать – но не услышал?</li>
             </ul>
           </div>
-          <div className="aside-card">
-            <div className="aside-card-eyebrow">Подсказка</div>
-            <p className="body">
+          <div className="ds-card ex2-note">
+            <div className="ds-label">Подсказка</div>
+            <p className="ex2-note-body">
               {tr('Не редактируй, пиши как идёт. Если становится слишком тяжело — остановись и просто посиди.',
                 'Не редактируйте, пишите как идёт. Если становится слишком тяжело — остановитесь и просто посидите.')}
             </p>
@@ -180,8 +158,8 @@ export function LetterEx({
         </>
       }
     >
-      <div className="letter-paper">
-        <div className="letter-salutation">Здравствуй,</div>
+      <div className="ds-card ex2-letter">
+        <div className="ex2-letter-hi">Здравствуй,</div>
         <textarea
           ref={textRef}
           value={text}
@@ -189,32 +167,23 @@ export function LetterEx({
           placeholder="…"
         />
       </div>
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          fontSize: 11.5,
-          color: 'var(--text-faint)',
-          marginTop: 12,
-          marginBottom: 24,
-        }}
-      >
+      <div className="ex2-meta">
         <span>Сохраняется в дневнике</span>
         <span>{text.split(/\s+/).filter(Boolean).length} слов</span>
       </div>
       {detectCrisisAny(text) && <CrisisCard surface="letter" />}
       {sealError && (
-        <div role="alert" style={{ fontSize: 13, color: 'var(--c-rose)', marginBottom: 12 }}>
+        <div role="alert" className="ex2-err">
           {tr(
             'Не удалось сохранить письмо — текст на месте. Проверь соединение и попробуй ещё раз.',
             'Не удалось сохранить письмо — текст на месте. Проверьте соединение и попробуйте ещё раз.',
           )}
         </div>
       )}
-      <div className="ex-foot">
-        <span className="spacer" />
+      <div className="ex2-foot">
+        <span className="ex2-spacer" />
         <button
-          className="ex-btn ex-btn-primary"
+          className="ds-btn"
           disabled={!text.trim() || sealing}
           onClick={seal}
         >

@@ -1,3 +1,4 @@
+import '../styles/sheet-modemap.css';
 import { TYPE_COLORS } from './modeMapData';
 import { MMIcon } from './modeMapIcons';
 import { BLOB_PATH } from './modeMap/shapeOptions';
@@ -36,15 +37,14 @@ function Glyph({ shape, color }: { shape: string; color: string }) {
 
 export function ModeMapLegend({ onClose }: { onClose: () => void }) {
   return (
-    <div style={{ background: 'var(--bg-elev)', border: '1px solid var(--line)', borderRadius: 'var(--r-12)',
-      padding: '11px 13px', boxShadow: 'var(--shadow-2)', fontSize: 12, minWidth: 188 }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-        <span style={{ fontSize: 10.5, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--text-faint)' }}>Легенда</span>
-        <button onClick={onClose} title="Скрыть" aria-label="Скрыть" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-faint)', padding: 0, display: 'flex' }}><MMIcon name="close" size={14} /></button>
+    <div className="ds-card mm2-legend">
+      <div className="mm2-legend-head">
+        <span className="ds-label">Легенда</span>
+        <button onClick={onClose} title="Скрыть" aria-label="Скрыть" className="mm2-x"><MMIcon name="close" size={14} /></button>
       </div>
-      <div className="u-col6">
+      <div className="mm2-legend-list">
         {ITEMS.map(it => (
-          <div key={it.label} className="u-ac8"><Glyph shape={it.shape} color={it.color} /><span className="u-sub">{it.label}</span></div>
+          <div key={it.label} className="mm2-legend-chip"><Glyph shape={it.shape} color={it.color} /><span>{it.label}</span></div>
         ))}
       </div>
     </div>

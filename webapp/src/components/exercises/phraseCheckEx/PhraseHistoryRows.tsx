@@ -19,12 +19,12 @@ export function PhraseHistoryRows({
       {entries.map((h) => (
         <div
           key={h.id}
-          className="history-row"
+          className="ex2-hist-row"
           {...pressable(() => onOpen(h.id))}
           aria-label={`Открыть разбор: ${h.phrase}`}
         >
-          <span className="history-date">{fmtAgo(h.createdAt)}</span>
-          <span className="history-snippet">
+          <span className="ex2-hist-date">{fmtAgo(h.createdAt)}</span>
+          <span className="ex2-hist-snip">
             «{h.phrase}»{showRewrite && h.rewrite ? ` → «${h.rewrite}»` : ''}
           </span>
         </div>

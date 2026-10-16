@@ -10,6 +10,8 @@ import { api } from '../api';
 import { NODE_TYPES, EDGE_TYPES } from './modeMapRegistry';
 import { NODE_DEFAULT_SIZES, DRAG_TYPE } from './modeMapData';
 import { getSchemaById } from '../schemaTherapyData';
+import { hueStyle, DOMAIN_HUE } from '../lib/tone';
+import '../styles/sheet-modemap.css';
 import { ModeMapContextMenu, type MenuItem } from './ModeMapContextMenu';
 import { ModeMapLegend } from './ModeMapLegend';
 import { ModeMapGuide } from './ModeMapGuide';
@@ -298,19 +300,16 @@ export function ModeMapCanvas({ clientId, mapId, kind, nodes, edges, setNodes, s
   }, [nodeActions, duplicateNode, removeNode]);
 
   return (
-    <div style={{ flex: 1, position: 'relative', background: 'var(--bg-elev)' }}>
-      <div style={{ position: 'absolute', top: 12, right: 12, zIndex: 10, fontSize: 12, color: 'var(--text-faint)', pointerEvents: 'none' }}>
-        {fromConcept.failed ? <span role="alert" style={{ color: 'var(--accent-red)' }}>Не получилось собрать схему из концептуализации</span>
+    <div style={{ flex: 1, position: 'relative', background: 'var(--surface)' }}>
+      <div className="mm2-status">
+        {fromConcept.failed ? <span role="alert" className="is-err">Не получилось собрать схему из концептуализации</span>
           : saveStatus === 'saving' ? 'сохраняю…' : saveStatus === 'saved' ? '✓ сохранено' : ''}
       </div>
       {nodes.length === 0 && (
-        <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none', zIndex: 5 }}>
-          <div style={{ width: 52, height: 52, borderRadius: 'var(--r-12)', background: 'var(--surface-2)', border: '1px solid var(--line)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-faint)', marginBottom: 14 }}>
-            <MMIcon name="map" size={26} />
-          </div>
-          <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>Карта режимов пуста</div>
-          <div style={{ fontSize: 13, color: 'var(--text-sub)', marginTop: 6, textAlign: 'center', maxWidth: 260 }}>
+        <div className="mm2-canvas-empty">
+          <div className="mm2-empty-ico"><MMIcon name="map" size={26} /></div>
+          <div className="mm2-empty-title">Карта режимов пуста</div>
+          <div className="mm2-empty-sub">
             Кликай по режиму в панели слева или перетащи его на холст
           </div>
         </div>
@@ -340,9 +339,7 @@ export function ModeMapCanvas({ clientId, mapId, kind, nodes, edges, setNodes, s
 
         {/* Toolbar — icon-only with hover tooltips */}
         <Panel position="top-left">
-          <div style={{ display: 'flex', gap: 2, padding: 4, borderRadius: 9, alignItems: 'center', flexWrap: 'nowrap',
-            background: 'var(--bg-elev)', border: '1px solid var(--line)',
-            boxShadow: 'var(--shadow-2)' }}>
+          <div className="ds-card mm2-toolbar">
             {/* History */}
             <TbBtn label="Отменить (⌘Z)" disabled={!canUndo} onClick={onUndo}><MMIcon name="undo" size={17} /></TbBtn>
             <TbBtn label="Вернуть (⌘⇧Z)" disabled={!canRedo} onClick={onRedo}><MMIcon name="redo" size={17} /></TbBtn>
@@ -356,40 +353,40 @@ export function ModeMapCanvas({ clientId, mapId, kind, nodes, edges, setNodes, s
             <TbBtn label="Разложить автоматически" onClick={onAutoLayout} disabled={nodes.length === 0}><MMIcon name="auto" size={17} /></TbBtn>
             <TbBtn label="Привязка к сетке" onClick={() => setSnap(s => !s)} active={snap}><MMIcon name="grid" size={17} /></TbBtn>
             <TbBtn label="Зоны: Здоровый Взрослый / копинги / детские и критики" onClick={toggleZones} active={showZones}><MMIcon name="zones" size={17} /></TbBtn>
-            <div ref={tplWrapRef} style={{ position: 'relative' }}>
+            <div ref={tplWrapRef} className="mm2-tb">
               <TbBtn label="Шаблоны и генерация" onClick={() => { setTplOpen(o => !o); setDlOpen(false); }} active={tplOpen} caret><MMIcon name="layers" size={17} /></TbBtn>
               {tplOpen && (
                 <Dropdown anchorRef={tplWrapRef} onClose={() => setTplOpen(false)}>
-                  <div style={dropHeadStyle}>Шаблоны</div>
+                  <div className="mm2-drop-head">Шаблоны</div>
                   {TEMPLATES.map(t => (
                     <button key={t.id} onClick={() => { const g = templateToGraph(t); insertGraph(g.nodes, g.edges); setTplOpen(false); }}
-                      style={menuItemStyle}>{t.name}</button>
+                      className="mm2-item">{t.name}</button>
                   ))}
-                  <div style={{ height: 1, background: 'var(--line)', margin: '4px 0' }} />
-                  <button onClick={() => { void fromConcept.generate(); setTplOpen(false); }} style={menuItemStyle}>
+                  <div className="mm2-drop-sep" />
+                  <button onClick={() => { void fromConcept.generate(); setTplOpen(false); }} className="mm2-item">
                     Из концептуализации клиента
                   </button>
                 </Dropdown>
               )}
             </div>
-            <div ref={schemasWrapRef} style={{ position: 'relative' }}>
+            <div ref={schemasWrapRef} className="mm2-tb">
               <TbBtn label="Схемы клиента — привязать к выбранному режиму" onClick={openSchemas} active={schemasOpen} caret><MMIcon name="target" size={17} /></TbBtn>
               {schemasOpen && (
                 <Dropdown anchorRef={schemasWrapRef} onClose={() => setSchemasOpen(false)}>
-                  <div style={dropHeadStyle}>Схемы клиента</div>
-                  <div style={{ padding: '0 10px 6px', fontSize: 11, color: 'var(--text-faint)', lineHeight: 1.35 }}>
+                  <div className="mm2-drop-head">Схемы клиента</div>
+                  <div className="mm2-drop-note">
                     {selectedNodeId ? tr('Нажми, чтобы привязать к выбранному режиму', 'Нажмите, чтобы привязать к выбранному режиму') : tr('Сначала выбери режим на холсте', 'Сначала выберите режим на холсте')}
                   </div>
-                  {clientSchemaIds === null && <div style={{ padding: '6px 10px', fontSize: 12, color: 'var(--text-faint)' }}>Загрузка…</div>}
-                  {clientSchemaIds === 'failed' ? <div style={{ padding: '6px 10px', fontSize: 12, color: 'var(--accent-red)' }}>Не удалось загрузить схемы клиента</div> : clientSchemaIds?.length === 0 && <div style={{ padding: '6px 10px', fontSize: 12, color: 'var(--text-faint)' }}>У клиента пока нет отмеченных схем</div>}
+                  {clientSchemaIds === null && <div className="mm2-drop-note">Загрузка…</div>}
+                  {clientSchemaIds === 'failed' ? <div className="mm2-drop-note is-err">Не удалось загрузить схемы клиента</div> : clientSchemaIds?.length === 0 && <div className="mm2-drop-note">У клиента пока нет отмеченных схем</div>}
                   {Array.isArray(clientSchemaIds) && clientSchemaIds.map(sid => {
                     const s = getSchemaById(sid);
                     if (!s) return null;
                     return (
                       <button key={sid} disabled={!selectedNodeId}
                         onClick={() => { if (selectedNodeId) { patchNodeData(selectedNodeId, { schemaId: sid }); setSchemasOpen(false); } }}
-                        style={{ ...menuItemStyle, display: 'flex', alignItems: 'center', gap: 'var(--space-8)', opacity: selectedNodeId ? 1 : 0.55 }}>
-                        <span style={{ width: 7, height: 7, borderRadius: '50%', background: s.domainColor, flexShrink: 0 }} />
+                        className="mm2-item" style={hueStyle(DOMAIN_HUE[s.domainId])}>
+                        <i className="ds-dot tone-fill" />
                         <span>{s.name}</span>
                       </button>
                     );
@@ -404,11 +401,11 @@ export function ModeMapCanvas({ clientId, mapId, kind, nodes, edges, setNodes, s
               onToggle={() => { setDlOpen(o => !o); setTplOpen(false); }}
               onClose={() => setDlOpen(false)} />
             {isDesktop && (
-              <div ref={keysWrapRef} style={{ position: 'relative' }}>
+              <div ref={keysWrapRef} className="mm2-tb">
                 <TbBtn label="Горячие клавиши" onClick={() => setKeysOpen(o => !o)} active={keysOpen}><MMIcon name="keyboard" size={17} /></TbBtn>
                 {keysOpen && (
                   <Dropdown anchorRef={keysWrapRef} onClose={() => setKeysOpen(false)}>
-                    <div style={dropHeadStyle}>Горячие клавиши</div>
+                    <div className="mm2-drop-head">Горячие клавиши</div>
                     {([
                       ['⌘Z / Ctrl+Z', 'Отменить'],
                       ['⌘⇧Z / Ctrl+Y', 'Вернуть'],
@@ -418,9 +415,9 @@ export function ModeMapCanvas({ clientId, mapId, kind, nodes, edges, setNodes, s
                       ['Двойной клик', 'Переименовать'],
                       ['Esc', 'Снять выделение'],
                     ] as [string, string][]).map(([k, v]) => (
-                      <div key={k} style={{ display: 'flex', justifyContent: 'space-between', gap: 'var(--space-14)', padding: '5px 10px', fontSize: 12 }}>
-                        <span className="u-sub">{v}</span>
-                        <kbd style={{ color: 'var(--text)', fontFamily: 'inherit', fontSize: 11.5, background: 'var(--surface-2)', padding: '1px 6px', borderRadius: 'var(--r-4)', whiteSpace: 'nowrap' }}>{k}</kbd>
+                      <div key={k} className="mm2-kbd-row">
+                        <span>{v}</span>
+                        <kbd className="mm2-kbd">{k}</kbd>
                       </div>
                     ))}
                   </Dropdown>
@@ -447,15 +444,3 @@ export function ModeMapCanvas({ clientId, mapId, kind, nodes, edges, setNodes, s
     </div>
   );
 }
-
-const menuItemStyle: React.CSSProperties = {
-  display: 'block', width: '100%', textAlign: 'left', padding: '7px 10px',
-  borderRadius: 5, fontSize: 12.5, cursor: 'pointer', background: 'none', border: 'none', color: 'var(--text)',
-};
-
-// Icon-only toolbar button with a custom hover tooltip (no cramped text labels)
-
-
-const dropHeadStyle: React.CSSProperties = {
-  padding: '4px 8px', fontSize: 10, fontWeight: 600, color: 'var(--text-faint)', textTransform: 'uppercase',
-};

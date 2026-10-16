@@ -28,18 +28,18 @@ export function DiaryWizardFoot({
   onNext: () => void;
 }) {
   return (
-    <div className="ex-foot">
+    <div className="sd-foot">
       <button
-        className="ex-btn ex-btn-ghost u-ac8"
+        className="ds-btn ds-btn--secondary"
         disabled={backDisabled}
         onClick={onBack}
       >
         <GlyphArrowLeft /> {backLabel}
       </button>
-      <span className="spacer" />
+      <span className="sd-spacer" />
       {canSave && !isLast && (
         <button
-          className="ex-btn ex-btn-ghost u-ac8"
+          className="ds-btn ds-btn--secondary"
           disabled={saving}
           onClick={onSave}
         >
@@ -48,7 +48,7 @@ export function DiaryWizardFoot({
       )}
       {isLast ? (
         <button
-          className="ex-btn ex-btn-primary u-ac8"
+          className="ds-btn"
           disabled={!canSave || saving}
           onClick={onSave}
         >
@@ -56,7 +56,7 @@ export function DiaryWizardFoot({
         </button>
       ) : (
         <button
-          className="ex-btn ex-btn-primary u-ac8"
+          className="ds-btn"
           disabled={curRequired && !curFilled}
           onClick={onNext}
         >

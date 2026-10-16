@@ -1,3 +1,5 @@
+import '../styles/sheet-modemap.css';
+
 export interface MenuItem {
   label: string;
   onClick: () => void;
@@ -17,24 +19,11 @@ export function ModeMapContextMenu({ x, y, items, onClose }: Props) {
       <div role="button" tabIndex={0} aria-label="Закрыть" onClick={onClose}
         onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClose(); } }}
         onContextMenu={e => { e.preventDefault(); onClose(); }}
-        style={{ position: 'fixed', inset: 0, zIndex: 999 }} />
-      <div style={{
-        position: 'fixed', left: x, top: y, zIndex: 1000,
-        background: 'var(--bg-elev)', border: '1px solid var(--line)',
-        borderRadius: 'var(--r-8)', padding: 4, minWidth: 170,
-        boxShadow: 'var(--shadow-2)',
-      }}>
+        className="mm2-ctx-back" />
+      <div className="ds-card mm2-ctx" style={{ left: x, top: y }}>
         {items.map((it, i) => (
-          <button key={i}
-            onClick={() => { it.onClick(); onClose(); }}
-            style={{
-              display: 'block', width: '100%', textAlign: 'left',
-              padding: '7px 10px', borderRadius: 5, fontSize: 12.5, cursor: 'pointer',
-              background: 'none', border: 'none',
-              color: it.danger ? 'var(--accent-red)' : 'var(--text)',
-            }}
-            onMouseEnter={e => { e.currentTarget.style.background = 'var(--surface-2)'; }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}>
+          <button key={i} className={`mm2-item${it.danger ? ' is-danger' : ''}`}
+            onClick={() => { it.onClick(); onClose(); }}>
             {it.label}
           </button>
         ))}

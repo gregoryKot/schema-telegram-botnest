@@ -666,10 +666,12 @@ describe('SettingsSheet — переключатель формы обращен
   });
 
   it('текущая форма подсвечена активной кнопкой', async () => {
+    mockApi.getSettings.mockResolvedValue({ ...SETTINGS, addressForm: 'vy' });
     await renderSheetWithForm('vy');
     const vyBtn = screen.getByText('На «вы»');
     const tyBtn = screen.getByText('На «ты»');
-    expect(vyBtn.style.background).not.toBe(tyBtn.style.background);
+    expect(vyBtn.className).toContain('is-active');
+    expect(tyBtn.className).not.toContain('is-active');
   });
 });
 
@@ -710,27 +712,6 @@ describe('SettingsSheet — переключение подвидов «Част
     fireEvent.click(moscow);
     await waitFor(() => expect(mockApi.updateSettings).toHaveBeenCalled());
     await screen.findByText('Настройки');
-  });
-});
-
-// ── Тема: тумблер тёмная/светлая и «Авто (по системе)» ────────────────────────
-describe('SettingsSheet — тема оформления', () => {
-  it('тумблер темы переключает заголовок строки (Тёмная ⇄ Светлая)', async () => {
-    localStorage.setItem('app_theme', 'light');
-    await renderSheet();
-    expect(screen.getByText('Светлая тема')).toBeTruthy();
-    const row = screen.getByText('Светлая тема').parentElement!.parentElement!;
-    fireEvent.click(within(row).getByRole('switch'));
-    await waitFor(() => expect(screen.getByText('Тёмная тема')).toBeTruthy());
-    localStorage.removeItem('app_theme');
-  });
-
-  it('«Авто (по системе)» клавиатурой (Enter) не падает и не открывает соседний тумблер', async () => {
-    await renderSheet();
-    const autoLink = screen.getByText('Авто (по системе) →');
-    fireEvent.keyDown(autoLink, { key: 'Enter' });
-    // Экран остался на месте (не упал, не ушёл на подвид).
-    expect(screen.getByText('Настройки')).toBeTruthy();
   });
 });
 

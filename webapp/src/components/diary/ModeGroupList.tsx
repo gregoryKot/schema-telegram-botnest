@@ -1,6 +1,8 @@
 import { GlyphCheck } from '../exercises/ExScreen';
 import { MODE_GROUPS } from '../../schemaTherapyData';
 import { pressable } from '../../utils/a11y';
+import { MODE_GROUP_HUE, hueStyle } from '../../lib/tone';
+import '../../styles/sheet-diary.css';
 
 /**
  * Полный список режимов по группам MODE_GROUPS — третичный путь для тех, кто
@@ -17,26 +19,22 @@ export function ModeGroupList({
   return (
     <>
       {MODE_GROUPS.map((g) => (
-        <div key={g.id} className="u-mb28">
-          <div className="chip-section-eyebrow" style={{ color: g.color }}>
-            <span className="dot" style={{ background: g.color }} />
+        <div key={g.id} className="sd-group" style={hueStyle(MODE_GROUP_HUE[g.id])}>
+          <div className="ds-label sd-group-label">
+            <i className="ds-dot tone-fill" />
             {g.group}
           </div>
           {g.items.map((m) => (
             <div
               key={m.id}
-              className={
-                'mode-card ' + (modeId === m.id ? 'is-selected' : '')
-              }
-              style={{ '--mode-color': g.color } as React.CSSProperties}
+              className={'ds-card ds-card--row ds-card--hover sd-mode-card' + (modeId === m.id ? ' is-selected' : '')}
               {...pressable(() => onPick(m.id))}
             >
-              <span className="mode-card-stripe" />
-              <div>
-                <div className="mode-card-name">{m.name}</div>
-                <div className="mode-card-short">{m.short}</div>
+              <div className="sd-mode-body">
+                <div className="sd-mode-name">{m.name}</div>
+                <div className="ds-sub">{m.short}</div>
               </div>
-              <span className="mode-check">
+              <span className="sd-mode-check tone-text">
                 <GlyphCheck />
               </span>
             </div>
