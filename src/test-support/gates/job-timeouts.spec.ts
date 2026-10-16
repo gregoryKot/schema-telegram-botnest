@@ -4,7 +4,7 @@
 // на образцах (с контрольными) и прогон по настоящим файлам .github/workflows.
 import { readdirSync, readFileSync } from 'fs';
 import { join } from 'path';
-import { jobBlocks } from './deploy-needs-ci';
+import { jobBlocks } from './workflow-yaml';
 import { jobTimeoutViolations } from './job-timeouts';
 
 const DIR = join(process.cwd(), '.github', 'workflows');

@@ -11,10 +11,10 @@
 //    держит один идущий и один ожидающий прогон, а следующий ожидающий молча
 //    сбрасывает, даже при `cancel-in-progress: false`.
 // yaml-парсера в зависимостях нет: блок плоский, разбирается строками, как в
-// deploy-needs-ci.ts.
+// workflow-yaml.ts.
 import { readdirSync, readFileSync } from 'fs';
 import { join } from 'path';
-import { stripComments, triggerBlocks } from './deploy-needs-ci';
+import { stripComments, triggerBlocks } from './workflow-yaml';
 
 const DIR = join(process.cwd(), '.github', 'workflows');
 const PR_EVENTS = ['pull_request', 'pull_request_target'];

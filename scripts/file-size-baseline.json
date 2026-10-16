@@ -1437,7 +1437,7 @@
   "src/test-support/fake-s3.ts": 232,
   "src/test-support/fake-telegram-api.ts": 137,
   "src/test-support/gates/dependabot-coverage.ts": 137,
-  "src/test-support/gates/deploy-needs-ci.ts": 168,
+  "src/test-support/gates/deploy-needs-ci.ts": 126,
   "src/test-support/gates/gate-sandbox.ts": 184,
   "src/test-support/gates/pattern-loader.ts": 109,
   "src/test-support/load-with-keys.ts": 24,
