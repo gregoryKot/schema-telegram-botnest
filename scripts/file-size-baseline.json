@@ -1842,7 +1842,7 @@
   "webapp/src/pages/AuthConfirmPage.tsx": 198,
   "webapp/src/pages/AuthErrorPage.tsx": 48,
   "webapp/src/pages/BookingLinkPage.tsx": 53,
-  "webapp/src/pages/BookingPaidPage.tsx": 77,
+  "webapp/src/pages/BookingPaidPage.tsx": 73,
   "webapp/src/pages/DonatePage.tsx": 78,
   "webapp/src/pages/landing/AppInstallSection.tsx": 97,
   "webapp/src/pages/landing/AppPreview.tsx": 64,
