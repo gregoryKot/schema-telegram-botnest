@@ -5,7 +5,7 @@
 // же графом → правка тем же обработчиком → «Свернуть» → правка видна в потоке.
 import { useEffect, useRef } from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, useLocation, useNavigate } from 'react-router-dom';
 import { AddressFormContext } from '../../utils/addressForm';
 
@@ -91,7 +91,15 @@ async function openTab(withHandler = true) {
     </MemoryRouter>,
   );
   await screen.findByText('Концептуализация');
+  await flushEffects();
 }
+
+/**
+ * findBy/waitFor отпускают тест, как только узел появился в DOM, а useEffect графа
+ * (concept_graph_open) React запускает отдельной задачей планировщика. Под нагрузкой
+ * полного прогона счётчик читался раньше эффекта и был 0. act() дожидается эффектов.
+ */
+const flushEffects = () => act(async () => {});
 
 const expandBtn = () => screen.getByRole('button', { name: /На весь экран/ });
 const sheet = () => screen.queryByRole('dialog', { name: 'Схема случая' });
@@ -227,6 +235,7 @@ describe('«На весь экран»: аналитика', () => {
     fireEvent.click(expandBtn());
     fireEvent.click(within(sheet()!).getByRole('button', { name: 'Свернуть' }));
     await waitFor(() => expect(sheet()).toBeNull());
+    await flushEffects(); // эффект заново смонтированного графа в потоке уже отработал
     expect(trackedCount('concept_graph_open')).toBe(1);
   });
 
