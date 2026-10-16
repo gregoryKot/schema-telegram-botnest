@@ -1,7 +1,7 @@
 // orderBy/take для findMany фейковой Prisma. Раньше фейк их игнорировал, и e2e
 // на срез («take: 100») на фейке не могло краснеть — срез проверялся только на
 // живом Postgres. Сравнение устойчивое: строки без поля (фейк не заполняет
-// createdAt/updatedAt сам) сохраняют порядок вставки.
+// createdAt/updatedAt сам) между собой сохраняют порядок вставки.
 type Row = Record<string, any>;
 type OrderTerm = Record<string, 'asc' | 'desc'>;
 
@@ -13,7 +13,11 @@ function compareBy(terms: OrderTerm[]) {
       const [key, dir] = Object.entries(term)[0];
       const x = norm(a[key]);
       const y = norm(b[key]);
-      if (x == null || y == null || x === y) continue;
+      if (x === y || (x == null && y == null)) continue;
+      // Как Postgres по умолчанию: NULLS LAST при ASC, NULLS FIRST при DESC —
+      // иначе на смешанной выборке компаратор нетранзитивен.
+      if (x == null) return dir === 'desc' ? -1 : 1;
+      if (y == null) return dir === 'desc' ? 1 : -1;
       const sign = (x as number | string) < (y as number | string) ? -1 : 1;
       return dir === 'desc' ? -sign : sign;
     }

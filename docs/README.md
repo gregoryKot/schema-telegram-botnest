@@ -230,6 +230,15 @@ CLAUDE.md. Не удалять, но и не считать списком за�
   `date desc, createdAt desc, id desc` не покрыт индексом
   (`@@index([therapistId, clientId, createdAt])` сужает до одного клиента, сортировка
   идёт в памяти по сотням строк). Осознанно: на реальных объёмах это не узкое место.
+- **Заметка задним числом при срезе получает неверный номер до перезагрузки.**
+  Если `total > notes.length`, а терапевт добавляет заметку с датой раньше
+  самой ранней показанной, `addNoteToPage` (`shared/src/therapy/notesPage.ts`)
+  ставит её в конец показанного списка, и `sessionNumbers`
+  (`webapp/src/components/therapist/sessionNumbers.ts`) даёт ей номер
+  «offset + 1», хотя её место среди скрытых. После перезагрузки номер верный
+  (сервер режет по `date desc`). Лечится так: не показывать такую заметку в
+  срезе (она старше среза) и увеличивать `total`; тест на `addNoteToPage` с
+  датой раньше среза.
 
 **Границы строковых полей DTO** (гейт `scripts/check-dto-string-bounds.mjs`, исключения —
 `scripts/dto-string-bounds-baseline.json`, у каждого причина):
