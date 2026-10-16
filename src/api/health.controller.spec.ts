@@ -20,6 +20,13 @@ describe('HealthController', () => {
   beforeEach(() => {
     selfCheckState.reset();
     mockBuiltAt.mockReturnValue(null);
+    // uptime jest-процесса не должен влиять на stale при ranAt: null.
+    jest.spyOn(process, 'uptime').mockReturnValue(30);
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+    jest.useRealTimers();
   });
 
   it('БД отвечает + есть метка сборки → 200 с { status: ok, db: up, builtAt: ISO }', async () => {
@@ -33,7 +40,7 @@ describe('HealthController', () => {
       status: 'ok',
       db: 'up',
       builtAt: '2026-09-16T10:08:00.000Z',
-      selfCheck: { ranAt: null, failed: [] },
+      selfCheck: { ranAt: null, stale: false, failed: [] },
     });
   });
 
@@ -52,7 +59,7 @@ describe('HealthController', () => {
       status: 'ok',
       db: 'up',
       builtAt: null,
-      selfCheck: { ranAt: null, failed: [] },
+      selfCheck: { ranAt: null, stale: false, failed: [] },
     });
   });
 
@@ -119,6 +126,43 @@ describe('HealthController', () => {
     const controller = new HealthController(prisma as unknown as PrismaService);
     const res = await controller.check();
     expect(res.selfCheck.failed).toEqual([]);
+  });
+
+  // Смок прода (prod-smoke.yml) красит себя по selfCheck.stale: остановившийся
+  // часовой крон самопроверки иначе оставлял бы снимок «всё в порядке» зелёным.
+  describe('selfCheck.stale', () => {
+    const NOW = Date.parse('2026-10-16T12:00:00.000Z');
+    const prisma = {
+      $queryRaw: jest.fn().mockResolvedValue([{ '?column?': 1 }]),
+    };
+    const check = () =>
+      new HealthController(prisma as unknown as PrismaService).check();
+
+    beforeEach(() => {
+      jest.useFakeTimers().setSystemTime(NOW);
+    });
+
+    it('снимок 30 минут назад → stale: false', async () => {
+      selfCheckState.set([], NOW - 30 * 60_000);
+      expect((await check()).selfCheck.stale).toBe(false);
+    });
+
+    it('снимок 3 часа назад → stale: true, а status остаётся ok', async () => {
+      selfCheckState.set([], NOW - 3 * 3_600_000);
+      const res = await check();
+      expect(res.selfCheck.stale).toBe(true);
+      expect(res.status).toBe('ok');
+    });
+
+    it('снимка нет, процесс стартовал только что → stale: false', async () => {
+      jest.spyOn(process, 'uptime').mockReturnValue(60);
+      expect((await check()).selfCheck.stale).toBe(false);
+    });
+
+    it('снимка нет, а процесс живёт дольше грейса → stale: true', async () => {
+      jest.spyOn(process, 'uptime').mockReturnValue(3_600);
+      expect((await check()).selfCheck.stale).toBe(true);
+    });
   });
 
   it('БД недоступна → 503, а не 200 и не голый throw соединения', async () => {

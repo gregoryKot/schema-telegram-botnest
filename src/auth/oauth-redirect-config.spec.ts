@@ -41,7 +41,7 @@ describe('findMisconfiguredOauthRedirects', () => {
     ]);
   });
 
-  it('WEBAPP_URL на legacy-хосте — находит проблему (им пользуется telegram-oidc)', () => {
+  it('WEBAPP_URL на legacy-хосте — находит проблему (от него строятся редиректы колбэков Google/VK)', () => {
     const issues = findMisconfiguredOauthRedirects({
       WEBAPP_URL: 'https://www.schemalab.ru',
     });

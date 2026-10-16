@@ -1,8 +1,8 @@
-// Покрытие AuthOauthController (был 0%): маршруты google/vk/telegram-oidc.
+// Покрытие AuthOauthController (был 0%): маршруты google/vk.
 // Контроллер инстанцируется напрямую с typed test doubles (без TestingModule)
 // — стиль auth.service.spec.ts. google-роуты — тонкие делегаты в
-// AuthFlowService (проверяем сам факт и аргументы делегирования), vk и
-// telegram-oidc содержат собственную PKCE/state-логику — она тестируется
+// AuthFlowService (проверяем сам факт и аргументы делегирования), vk содержит
+// собственную PKCE/state-логику — она тестируется
 // по существу (state → cookie → provider exchange → signInOrLinkOrMerge →
 // finishOAuthRedirect), плюс основная guard-ветка (state mismatch/деним).
 //
@@ -20,7 +20,6 @@ import type { AuthProviderRegistry } from './providers/registry';
 import type { AuthFlowService, SignInOutcome } from './auth-flow.service';
 import { VkProvider } from './providers/vk.provider';
 import { toVkState } from './providers/vk-state';
-import type { TelegramOidcProvider } from './providers/telegram-oidc.provider';
 import type { ProviderIdentity } from './providers/types';
 
 const WEBAPP_URL = 'https://schemehappens.ru';
@@ -113,32 +112,6 @@ function makeVkProvider(): { vk: VkProvider; mocks: VkProviderMocks } {
     callbackOrigin: jest.fn().mockReturnValue(WEBAPP_URL),
   };
   return { vk: mocks as unknown as VkProvider, mocks };
-}
-
-interface TgOidcProviderMocks {
-  generatePkce: jest.Mock;
-  buildAuthUrl: jest.Mock;
-  exchangeCodePkce: jest.Mock;
-  callbackOrigin: jest.Mock;
-}
-
-function makeTgOidcProvider(): {
-  provider: TelegramOidcProvider;
-  mocks: TgOidcProviderMocks;
-} {
-  const mocks: TgOidcProviderMocks = {
-    generatePkce: jest
-      .fn()
-      .mockReturnValue({ verifier: 'verifier-1', challenge: 'challenge-1' }),
-    buildAuthUrl: jest.fn(
-      (state: string, challenge?: string) =>
-        `https://oauth.telegram.org/auth?state=${state}&challenge=${String(challenge)}`,
-    ),
-    exchangeCodePkce: jest.fn(),
-    // callbackOrigin — origin WEBAPP_URL (2026-09-08), см. комментарий в makeVkProvider.
-    callbackOrigin: jest.fn().mockReturnValue(WEBAPP_URL),
-  };
-  return { provider: mocks as unknown as TelegramOidcProvider, mocks };
 }
 
 const TOKENS_OUTCOME: SignInOutcome = {
@@ -342,171 +315,6 @@ describe('AuthOauthController.vkCallback', () => {
 
     expect(exchange).toHaveBeenCalledWith('code-1', 'device-1', jwtLike);
     expect(mocks.finishOAuthRedirect).toHaveBeenCalled();
-  });
-});
-
-describe('AuthOauthController.telegramOidcRedirect', () => {
-  it('без webUser: state строит flow.buildLinkState(null), обе cookie ставятся, редирект на buildAuthUrl(state, challenge)', () => {
-    const { flow, mocks: flowMocks } = makeFlow();
-    const { provider, mocks: tgMocks } = makeTgOidcProvider();
-    const controller = makeController(
-      makeProviders({ 'telegram-oidc': provider }),
-      flow,
-    );
-    const req = makeReq();
-    const { res, mocks: resMocks } = makeRes();
-
-    controller.telegramOidcRedirect(req, res);
-
-    expect(tgMocks.generatePkce).toHaveBeenCalled();
-    // Подписанный state (C1): аноним → buildLinkState(null); значение куки —
-    // ровно то, что вернул buildLinkState, а не самодельный base64url JSON.
-    expect(flowMocks.buildLinkState).toHaveBeenCalledWith(null);
-    expect(resMocks.cookie).toHaveBeenCalledWith(
-      'oauth_state',
-      'signed-oauth-state',
-      expect.objectContaining({ httpOnly: true }),
-    );
-    expect(resMocks.cookie).toHaveBeenCalledWith(
-      'tg_pkce_verifier',
-      'verifier-1',
-      expect.objectContaining({ httpOnly: true }),
-    );
-    expect(tgMocks.buildAuthUrl).toHaveBeenCalledWith(
-      'signed-oauth-state',
-      'challenge-1',
-    );
-    expect(resMocks.redirect).toHaveBeenCalledWith(
-      'https://oauth.telegram.org/auth?state=signed-oauth-state&challenge=challenge-1',
-    );
-  });
-
-  it('с webUser: linkUserId уходит в flow.buildLinkState (подписанный state, не сырой id)', () => {
-    const { flow, mocks: flowMocks } = makeFlow();
-    const { provider } = makeTgOidcProvider();
-    const controller = makeController(
-      makeProviders({ 'telegram-oidc': provider }),
-      flow,
-    );
-    const req = makeReq({ webUser: { userId: 42n } } as Partial<Request>);
-    const { res, mocks: resMocks } = makeRes();
-
-    controller.telegramOidcRedirect(req, res);
-
-    expect(flowMocks.buildLinkState).toHaveBeenCalledWith(42n);
-    expect(resMocks.cookie).toHaveBeenCalledWith(
-      'oauth_state',
-      'signed-oauth-state',
-      expect.objectContaining({ httpOnly: true }),
-    );
-  });
-
-  // РЕГРЕССИЯ 2026-09-08: сайт обслуживается и с домена-алиаса — колбэк
-  // всегда приходит на канонический хост, кука на алиасе там не увидится.
-  it('анонимный вход с алиас-домена → 302 на хост колбэка, ни одна cookie не ставится, PKCE не генерируется', () => {
-    const { flow, mocks: flowMocks } = makeFlow();
-    const { provider, mocks: tgMocks } = makeTgOidcProvider();
-    const controller = makeController(
-      makeProviders({ 'telegram-oidc': provider }),
-      flow,
-    );
-    const req = makeReq({
-      headers: { host: 'kotlarewski.gr' },
-      originalUrl: '/api/auth/telegram-oidc',
-    } as Partial<Request>);
-    const { res, mocks: resMocks } = makeRes();
-
-    controller.telegramOidcRedirect(req, res);
-
-    expect(resMocks.redirect).toHaveBeenCalledWith(
-      302,
-      `${WEBAPP_URL}/api/auth/telegram-oidc?_oh=1`,
-    );
-    expect(resMocks.cookie).not.toHaveBeenCalled();
-    expect(tgMocks.generatePkce).not.toHaveBeenCalled();
-    expect(flowMocks.buildLinkState).not.toHaveBeenCalled();
-  });
-});
-
-describe('AuthOauthController.telegramOidcCallback', () => {
-  it('успешный обмен: exchangeCodePkce → signInOrLinkOrMerge → finishOAuthRedirect, обе cookie очищаются', async () => {
-    const { flow, mocks } = makeFlow();
-    const { provider, mocks: tgMocks } = makeTgOidcProvider();
-    const identity: ProviderIdentity = {
-      providerId: 'tg-1',
-      displayName: 'Tg User',
-    };
-    tgMocks.exchangeCodePkce.mockResolvedValue(identity);
-    mocks.signInOrLinkOrMerge.mockResolvedValue(TOKENS_OUTCOME);
-
-    const controller = makeController(
-      makeProviders({ 'telegram-oidc': provider }),
-      flow,
-    );
-    const req = makeReq({
-      cookies: { oauth_state: 'state-1', tg_pkce_verifier: 'verifier-1' },
-    } as Partial<Request>);
-    const { res, mocks: resMocks } = makeRes();
-
-    await controller.telegramOidcCallback('code-1', 'state-1', '', req, res);
-
-    expect(tgMocks.exchangeCodePkce).toHaveBeenCalledWith(
-      'code-1',
-      'verifier-1',
-    );
-    expect(resMocks.clearCookie).toHaveBeenCalledWith('oauth_state', {
-      path: '/api/auth',
-    });
-    expect(resMocks.clearCookie).toHaveBeenCalledWith('tg_pkce_verifier', {
-      path: '/api/auth',
-    });
-    expect(mocks.finishOAuthRedirect).toHaveBeenCalledWith(
-      TOKENS_OUTCOME,
-      'telegram-oidc',
-      res,
-      WEBAPP_URL,
-      null,
-    );
-  });
-
-  it('нет cookie tg_pkce_verifier → UnauthorizedException внутри, редирект на /auth/error, exchangeCodePkce не вызывается', async () => {
-    const { flow } = makeFlow();
-    const { provider, mocks: tgMocks } = makeTgOidcProvider();
-    const controller = makeController(
-      makeProviders({ 'telegram-oidc': provider }),
-      flow,
-    );
-    const req = makeReq({
-      cookies: { oauth_state: 'state-1' },
-    } as Partial<Request>);
-    const { res, mocks: resMocks } = makeRes();
-
-    await controller.telegramOidcCallback('code-1', 'state-1', '', req, res);
-
-    expect(tgMocks.exchangeCodePkce).not.toHaveBeenCalled();
-    expect(resMocks.redirect).toHaveBeenCalledWith(
-      `${WEBAPP_URL}/auth/error?reason=telegram_oidc_failed`,
-    );
-  });
-
-  it('state mismatch → редирект на /auth/error без обмена кода', async () => {
-    const { flow } = makeFlow();
-    const { provider, mocks: tgMocks } = makeTgOidcProvider();
-    const controller = makeController(
-      makeProviders({ 'telegram-oidc': provider }),
-      flow,
-    );
-    const req = makeReq({
-      cookies: { oauth_state: 'other-state', tg_pkce_verifier: 'verifier-1' },
-    } as Partial<Request>);
-    const { res, mocks: resMocks } = makeRes();
-
-    await controller.telegramOidcCallback('code-1', 'state-1', '', req, res);
-
-    expect(tgMocks.exchangeCodePkce).not.toHaveBeenCalled();
-    expect(resMocks.redirect).toHaveBeenCalledWith(
-      `${WEBAPP_URL}/auth/error?reason=telegram_oidc_failed`,
-    );
   });
 });
 

@@ -1,19 +1,18 @@
+import { type ClientErrorFlood, floodLines } from './client-error-flood.format';
+
 // Блок «Поломки на клиенте» для /stats (правило №8: метрика, которой нет в
 // отчёте, — невидима). Чистый форматтер, покрыт тестом, включая пустую БД.
 //
-// Волна 9 щита покрытия (docs/SHIELD_PROMPT.md): раньше отчёт клиента о
-// своей поломке (POST /api/client-errors) только логировался — а разные
-// поломки схлопывались в один DM (AlertLogger троттлит по НОРМАЛИЗОВАННОМУ
-// тексту первого аргумента, а он у нас постоянен по замыслу, см. хедер
-// client-errors.controller.ts). Теперь каждый отчёт ещё и считается
-// (событие client_error), и число видно здесь.
+// Волна 9 щита покрытия (docs/SHIELD_PROMPT.md): отчёт клиента о поломке
+// (POST /api/client-errors) только логировался, а разные поломки схлопывались
+// в один DM (хедер client-errors.controller.ts). Теперь он ещё и считается
+// (событие client_error), число видно здесь; повторы — в client-error-flood.format.ts.
 //
 // Раздел auth — отдельная явная строка, а не просто пункт списка по разделам:
 // это единственный клиентский свидетель для «вход сломан ДО того, как запрос
 // вообще дошёл до guard'а» (инцидент 2026-08-08, см. блок «Вход в
-// мессенджере» — auth-health-metrics.format.ts). Если этот блок молчит про
-// рост auth-поломок, авария снова спрячется среди остального списка.
-export interface ClientErrorMetrics {
+// мессенджере» — auth-health-metrics.format.ts): иначе авария тонет в списке.
+export interface ClientErrorMetrics extends ClientErrorFlood {
   totalDay: number;
   totalWeek: number;
   authDay: number;
@@ -95,5 +94,6 @@ export function formatClientErrorMetrics(m: ClientErrorMetrics): string {
     lines.push(`Откуда: ${sourceParts.join(', ')}.`);
   }
 
+  lines.push(...floodLines(m));
   return lines.join('\n');
 }
