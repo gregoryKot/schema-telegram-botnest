@@ -219,6 +219,35 @@ describe('BotAdminStatsService.getRetentionStats', () => {
       filledOnce30: 25,
     });
   });
+
+  // Аудит 2026-10: createdAt — timestamp без зоны, `now()` в SQL зависел от
+  // TimeZone сессии Postgres (под Sydney когорта D1 уезжала). Границы — Date
+  // из Node; доказательство на живой базе — test/raw-sql-live-stats.e2e-spec.ts.
+  it('границы когорты идут Date-параметрами из Node, а не now() из SQL', async () => {
+    const queryRaw = makeQueryRawMock();
+    const prisma = makePrisma({
+      user: { count: jest.fn().mockResolvedValue(0) },
+      $queryRaw: queryRaw,
+    });
+    await new BotAdminStatsService(prisma).getRetentionStats();
+    const day = 86_400_000;
+    const cohortCalls = queryRaw.mock.calls.filter(([strings]) =>
+      (strings as TemplateStringsArray).join('|').includes('AS cohort'),
+    );
+    expect(cohortCalls).toHaveLength(3);
+    for (const [strings, n, from, to] of cohortCalls as unknown as Array<
+      [TemplateStringsArray, number, Date, Date]
+    >) {
+      expect(strings.join('|')).not.toMatch(/now\(\)/i);
+      expect(from).toBeInstanceOf(Date);
+      expect(to).toBeInstanceOf(Date);
+      expect(from.getTime()).toBe(FIXED_DATE.getTime() - (n + 7) * day);
+      expect(to.getTime()).toBe(FIXED_DATE.getTime() - n * day);
+    }
+    expect(
+      cohortCalls.map((c) => c[1]).sort((a, b) => Number(a) - Number(b)),
+    ).toEqual([1, 7, 30]);
+  });
 });
 
 describe('BotAdminStatsService.getAdminStats — отчёт целиком', () => {

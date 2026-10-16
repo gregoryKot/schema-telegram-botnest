@@ -25,6 +25,7 @@ import {
   MergeService,
   USER_OWNED_TABLES,
   SECURITY_SENSITIVE_TABLES,
+  UNIQUE_RULES,
 } from './merge.service';
 
 type FakePrisma = ConstructorParameters<typeof MergeService>[0];
@@ -106,24 +107,9 @@ function makeMergePrisma(
   };
 }
 
-// ── Реестр-зеркало UNIQUE_RULES (сама константа в merge.service.ts не
-// экспортирована — прод-код не трогаем). Если ряд в источнике поменяется,
-// findDedupeCall() перестанет находить SQL для строки реестра здесь и тест
-// упадёт — это и есть сверка. ─────────────────────────────────────────────
-const EXPECTED_UNIQUE_RULES: Array<{ table: string; cols: string[] }> = [
-  { table: 'Rating', cols: ['date', 'needId'] },
-  { table: 'Note', cols: ['date'] },
-  { table: 'GratitudeDiaryEntry', cols: ['date'] },
-  { table: 'AppActivity', cols: ['date'] },
-  { table: 'YsqProgress', cols: [] },
-  { table: 'YsqResult', cols: [] },
-  { table: 'UserSchemaNote', cols: ['schemaId'] },
-  { table: 'UserModeNote', cols: ['modeId'] },
-  { table: 'UserSafePlace', cols: [] },
-  { table: 'ChildhoodRating', cols: ['needId'] },
-  { table: 'DiaryDraft', cols: ['type'] },
-  { table: 'TherapistRequest', cols: [] },
-];
+// UNIQUE_RULES импортируется из продакшен-кода; сверка «правило = констрейнт
+// schema.prisma» живёт в unique-rules-registry.spec.ts, а живое исполнение
+// DELETE…EXISTS — в test/merge-unique-rules.e2e-spec.ts.
 
 function findDedupeCall(calls: RawCall[], table: string): RawCall | undefined {
   return calls.find(
@@ -285,7 +271,7 @@ describe('MergeService — реестры таблиц и SQL-инвариант
   });
 
   describe('UNIQUE_RULES: конфликтующая по ключу строка дропается, несвязанная выживает, чужая не трогается', () => {
-    it.each(EXPECTED_UNIQUE_RULES)('$table', ({ table, cols }) => {
+    it.each(UNIQUE_RULES)('$table', ({ table, cols }) => {
       const call = findDedupeCall(execCalls, table);
       expect(call).toBeDefined();
       expect(extractConflictCols(call!.sql)).toEqual(cols);

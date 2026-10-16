@@ -60,7 +60,8 @@ export function CommandPalette({ onNavigate, onClose, userRole, therapistMode, o
   const [sel, setSel] = useState(0);
   const [clients, setClients] = useState<TherapyClientSummary[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
-  const dialogA11y = useDialogA11y();
+  // Escape — через стек диалогов: поверх палитры он закроет только верхнее окно.
+  const dialogA11y = useDialogA11y({ onEscape: onClose });
 
   // Reset the highlighted row to the top whenever the query changes. Adjusting
   // state during render (not in an effect) is the documented pattern for
@@ -120,7 +121,6 @@ export function CommandPalette({ onNavigate, onClose, userRole, therapistMode, o
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') { onClose(); return; }
       if (e.key === 'ArrowDown') { e.preventDefault(); setSel(s => Math.min(rows.length - 1, s + 1)); }
       if (e.key === 'ArrowUp')   { e.preventDefault(); setSel(s => Math.max(0, s - 1)); }
       if (e.key === 'Enter')     { e.preventDefault(); rows[sel]?.action(); onClose(); }

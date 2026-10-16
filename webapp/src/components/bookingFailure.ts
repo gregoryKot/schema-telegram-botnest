@@ -1,5 +1,6 @@
 import { ApiError } from '../apiClient';
 import { reportClientError } from '../api';
+import { failureDetail } from './failureDetail';
 
 // Исход неудачной отправки формы записи. Инцидент 2026-09-13: сервер падал на
 // каждой попытке, а под формой висело «возможно, время только что заняли.
@@ -21,8 +22,7 @@ export function classifyBookingFailure(err: unknown): BookingFailure {
 export function handleBookingFailure(err: unknown): BookingFailure {
   const kind = classifyBookingFailure(err);
   if (kind === 'error') {
-    const detail = err instanceof ApiError ? `HTTP ${err.status}` : err instanceof Error ? err.message : String(err);
-    reportClientError({ message: `booking submit failed: ${detail}`, section: 'booking' });
+    reportClientError({ message: `booking submit failed: ${failureDetail(err)}`, section: 'booking' });
   }
   return kind;
 }

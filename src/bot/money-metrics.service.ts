@@ -6,6 +6,7 @@ import {
   MoneySourceStats,
   MoneyWindow,
 } from './money-metrics.format';
+import { countPaidSessions } from './money-metrics.paid-sessions';
 import { renderMoneyBlock } from './money-metrics.without-link';
 
 type StatusCountSum = {
@@ -37,32 +38,31 @@ export class MoneyMetricsService {
 
   private async window(since?: Date): Promise<MoneyWindow> {
     const where = since ? { createdAt: { gte: since } } : undefined;
-    const [donationRows, chargeRows, bookingRows] = await Promise.all([
-      this.prisma.donation.groupBy({
-        by: ['status'],
-        where,
-        _count: { _all: true },
-        _sum: { amount: true },
-      }),
-      this.prisma.subscriptionCharge.groupBy({
-        by: ['status'],
-        where,
-        _count: { _all: true },
-        _sum: { amount: true },
-      }),
-      this.prisma.booking.groupBy({
-        by: ['status'],
-        where,
-        _count: { _all: true },
-      }),
-    ]);
+    const [donationRows, chargeRows, bookingRows, paidSessions] =
+      await Promise.all([
+        this.prisma.donation.groupBy({
+          by: ['status'],
+          where,
+          _count: { _all: true },
+          _sum: { amount: true },
+        }),
+        this.prisma.subscriptionCharge.groupBy({
+          by: ['status'],
+          where,
+          _count: { _all: true },
+          _sum: { amount: true },
+        }),
+        this.prisma.booking.groupBy({
+          by: ['status'],
+          where,
+          _count: { _all: true },
+        }),
+        countPaidSessions(this.prisma, since),
+      ]);
     return {
       donations: sourceStats(donationRows),
       subscriptions: sourceStats(chargeRows),
-      paidSessions: sessionCount(bookingRows, [
-        BookingStatus.CONFIRMED,
-        BookingStatus.COMPLETED,
-      ]),
+      paidSessions,
       pendingSessions: sessionCount(bookingRows, [BookingStatus.HELD]),
     };
   }

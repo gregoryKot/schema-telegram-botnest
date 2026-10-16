@@ -17,9 +17,8 @@ import type { ModeMapKind } from '../api';
 
 export const getConceptualization = vi.fn();
 vi.mock('../api', () => ({
-  api: {
-    getConceptualization: (...a: unknown[]) => getConceptualization(...a),
-  },
+  api: { getConceptualization: (...a: unknown[]) => getConceptualization(...a) },
+  reportClientError: vi.fn(),
 }));
 
 interface HarnessProps {

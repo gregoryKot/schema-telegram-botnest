@@ -22,16 +22,17 @@ export class BotAdminStatsService {
 
   /**
    * Когортный retention + воронка онбординга (аудит 2026-07, этап 4.6 /
-   * правило №8 CLAUDE.md: гипотезы про онбординг проверяются D1/D7/D30,
-   * а не ощущениями). Всё выводится из существующих данных — User.createdAt,
-   * AppActivity, Rating, disclaimerAccepted; событийной таблицы не требуется.
+   * правило №8: гипотезы про онбординг проверяются D1/D7/D30, а не ощущениями).
+   * Данные существующие: User.createdAt, AppActivity, Rating, disclaimerAccepted.
    */
   async getRetentionStats(): Promise<RetentionStats> {
-    // DN: юзеры, зарегистрированные [N, N+7) дней назад (когорта недели);
-    // retained = есть AppActivity ровно в день createdAt + N дней.
-    // AppActivity.date — локальная дата юзера, createdAt — UTC: для
-    // админ-метрики допустимо (±1 день на границах таймзон).
+    // DN: созданные [N, N+7) дней назад; retained = есть AppActivity в день
+    // createdAt + N. Границы — Date из Node: createdAt это timestamp без зоны,
+    // now() в SQL зависел бы от TimeZone сессии.
+    const nowMs = Date.now();
     const point = async (n: number): Promise<RetentionPoint> => {
+      const from = new Date(nowMs - (n + 7) * 86_400_000);
+      const to = new Date(nowMs - n * 86_400_000);
       const rows = await this.prisma.$queryRaw<
         Array<{ cohort: bigint; retained: bigint }>
       >`
@@ -44,15 +45,14 @@ export class BotAdminStatsService {
                  )
                )::bigint AS retained
         FROM "User" u
-        WHERE u."createdAt" >= now() - make_interval(days => ${n + 7})
-          AND u."createdAt" <  now() - make_interval(days => ${n})
+        WHERE u."createdAt" >= ${from} AND u."createdAt" < ${to}
       `;
       return {
         cohort: Number(rows[0]?.cohort ?? 0),
         retained: Number(rows[0]?.retained ?? 0),
       };
     };
-    const since30 = new Date(Date.now() - 30 * 86_400_000);
+    const since30 = new Date(nowMs - 30 * 86_400_000);
     const [d1, d7, d30, registered30, consented30, filledRows] =
       await Promise.all([
         point(1),
