@@ -8,6 +8,7 @@ import { SCHEMA_DOMAINS } from '../schemaTherapyData';
 import { ClinicalHint } from './modeMap/ClinicalHint';
 import { ShapePreview } from './modeMap/ShapePreview';
 import { SHAPE_OPTIONS, type ShapeOption } from './modeMap/shapeOptions';
+import { nodeTexts } from './modeMap/nodeTexts';
 import {
   panelStyle, labelStyle, inputStyle, deleteBtnStyle, closeBtnStyle,
   colorPresetLabel, COLOR_PRESETS,
@@ -37,11 +38,9 @@ export function ModeMapNodeEditor({ node, onChange, onDelete, onClose, coupleMod
 
   const patchData = (d: Partial<ModeMapNode['data']>) =>
     onChange({ ...node, data: { ...node.data, ...d } });
-  const patchShape = (opt: ShapeOption) => onChange({
-    ...node,
-    type: opt.type,
-    data: { ...node.data, copingSubtype: opt.copingSubtype },
-  });
+  const patchShape = (opt: ShapeOption) =>
+    onChange({ ...node, type: opt.type, data: { ...node.data, copingSubtype: opt.copingSubtype } });
+  const texts = nodeTexts(node.type);
   const currentColor = node.data.customColor ?? TYPE_COLORS[node.type] ?? TYPE_COLORS.custom;
 
   // Double-click on a node → focus the name field for quick rename
@@ -61,7 +60,7 @@ export function ModeMapNodeEditor({ node, onChange, onDelete, onClose, coupleMod
   return (
     <div style={panelStyle}>
       <div style={{ display: 'flex', alignItems: 'center', marginBottom: 14 }}>
-        <div style={{ fontSize: 13, fontWeight: 600, flex: 1 }}>Режим</div>
+        <div style={{ fontSize: 13, fontWeight: 600, flex: 1 }}>{texts.title}</div>
         <button onClick={onClose} title="Закрыть" aria-label="Закрыть" style={closeBtnStyle}><MMIcon name="close" size={15} /></button>
       </div>
 
@@ -217,10 +216,10 @@ export function ModeMapNodeEditor({ node, onChange, onDelete, onClose, coupleMod
         onPickNeed={() => { needRef.current?.focus(); }}
         onPickHealthy={() => { healthyRef.current?.focus(); healthyRef.current?.scrollIntoView({ block: 'nearest' }); }} />
 
-      <label style={labelStyle} htmlFor="mm-node-note">Заметка</label>
+      <label style={labelStyle} htmlFor="mm-node-note">{texts.note}</label>
       <textarea id="mm-node-note" ref={noteRef} style={{ ...inputStyle, resize: 'vertical', minHeight: 56 }} rows={3}
         value={node.data.note ?? ''} onChange={e => patchData({ note: e.target.value || undefined })}
-        placeholder="Как этот режим проявляется у клиента" />
+        placeholder={texts.notePlaceholder} />
 
       <label style={labelStyle} htmlFor="mm-node-schema">Связанная схема</label>
       <select id="mm-node-schema" value={node.data.schemaId ?? ''} onChange={e => patchData({ schemaId: e.target.value || undefined })}

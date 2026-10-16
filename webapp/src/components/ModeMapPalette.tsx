@@ -8,17 +8,9 @@ import { IdentityDot } from '../../../shared/src/components/IdentityDot';
 import { scrollIntoViewSafe } from '../../../shared/src/utils/scrollIntoView';
 import { useTr } from '../utils/addressForm';
 import { ShapePicker } from './modeMap/ShapePicker';
-
-// Maps a mode id → which palette group/type it belongs to (for client modes)
-function findModeMeta(modeId: string): { type: NodeType; copingSubtype?: 'over' | 'avoid' | 'surr'; color: string; name: string } | null {
-  for (const group of MODE_GROUPS) {
-    const meta = GROUP_TO_TYPE[group.id];
-    if (!meta) continue;
-    const item = group.items.find(i => i.id === modeId);
-    if (item) return { type: meta.type, copingSubtype: meta.copingSubtype, color: meta.color, name: item.name };
-  }
-  return null;
-}
+import { ConceptPaletteItems } from './modeMap/ConceptPaletteItems';
+import { findModeMeta } from './modeMap/modeNodeMeta';
+import { paletteItemStyle as itemStyle } from './modeMap/paletteStyle';
 
 // Clinical display order: child → critic → coping(×3) → healthy
 const GROUP_ORDER = ['child', 'critic', 'coping_overcompensation', 'coping_avoidance', 'coping_surrender', 'healthy'];
@@ -180,6 +172,8 @@ export function ModeMapPalette({ onAdd, onAddMany, clientId }: Props) {
           </button>
         )}
 
+        {!q && <ConceptPaletteItems onAdd={onAdd} onDragStart={onDragStart} />}
+
         {/* Standard mode groups — child → critic → coping → healthy (clinical order) */}
         {[...MODE_GROUPS].sort((a, b) => GROUP_ORDER.indexOf(a.id) - GROUP_ORDER.indexOf(b.id)).map(group => {
           const meta = GROUP_TO_TYPE[group.id];
@@ -293,13 +287,6 @@ function GroupDot({ type, color }: { type: NodeType; color: string }) {
   if (type === 'coping') return <div style={{ width: 10, height: 10, background: color, clipPath: 'polygon(50% 0%,100% 38%,82% 100%,18% 100%,0% 38%)', flexShrink: 0 }} />;
   return <div style={{ width: 10, height: 10, borderRadius: 'var(--r-2)', background: color, flexShrink: 0 }} />;
 }
-
-const itemStyle: React.CSSProperties = {
-  display: 'flex', alignItems: 'center', gap: 'var(--space-8)',
-  width: '100%', padding: '6px 14px',
-  background: 'none', border: 'none', cursor: 'pointer',
-  color: 'var(--text)', textAlign: 'left', outline: 'none',
-};
 
 const miniInputStyle: React.CSSProperties = {
   padding: '5px 8px', borderRadius: 5, fontSize: 12.5,

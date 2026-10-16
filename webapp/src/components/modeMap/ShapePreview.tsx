@@ -1,5 +1,5 @@
 import type { ShapeOption } from './shapeOptions';
-import { previewFill } from './shapeOptions';
+import { BLOB_PATH, previewFill } from './shapeOptions';
 
 // Превью формы ноды в палитре редактора (вынесено из ModeMapNodeEditor.tsx,
 // правило №10; react-refresh требует файл только с компонентами).
@@ -12,10 +12,10 @@ export function ShapePreview({ opt, active }: { opt: ShapeOption; active: boolea
     critic: 'M4,1 L20,1 L23,4 L23,20 L20,23 L4,23 L1,20 L1,4 Z',     // octagon
     over:   'M12,1 L23,9 L19,23 L5,23 L1,9 Z',                        // pentagon
     avoid:  'M2,2 L22,2 L22,16 L12,23 L2,16 Z',                       // shield
+    origin: BLOB_PATH,
   };
-  const key = opt.copingSubtype === 'over' ? 'over'
-    : opt.copingSubtype === 'avoid' ? 'avoid'
-    : opt.type === 'critic' ? 'critic' : null;
+  const key = opt.copingSubtype === 'over' ? 'over' : opt.copingSubtype === 'avoid' ? 'avoid'
+    : opt.type === 'critic' || opt.type === 'origin' ? opt.type : null;
 
   return (
     <svg width={22} height={22} viewBox="0 0 24 24" style={{ flexShrink: 0 }}>
@@ -24,7 +24,7 @@ export function ShapePreview({ opt, active }: { opt: ShapeOption; active: boolea
           fill={fill} stroke={stroke} strokeWidth={sw} />
       ) : opt.isCircle ? (
         <circle cx={12} cy={12} r={10.5} fill={fill} stroke={stroke} strokeWidth={sw} />
-      ) : opt.copingSubtype === 'surr' ? (
+      ) : opt.copingSubtype === 'surr' || opt.type === 'need' ? (
         <rect x={1} y={6} width={22} height={12} rx={6} fill={fill} stroke={stroke} strokeWidth={sw} />
       ) : opt.type === 'behavior' ? (
         <path d="M2,4 L18,4 L22,12 L18,20 L2,20 Z" fill={fill} stroke={stroke} strokeWidth={sw} />
