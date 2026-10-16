@@ -164,8 +164,6 @@
 
 /* ── Заметка, кризисная карточка, шаринг, «Мой путь» ──────────────────── */
 .sd-note-field { display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px; }
-.sd-crisis { margin: 12px 0; border-color: var(--err); }
-.sd-crisis > [role="status"] { background: none !important; border: none !important; padding: 0 !important; margin: 0 !important; }
 .sd-canvas { margin-bottom: 18px; }
 .sd-canvas-el { display: block; width: 100%; height: auto; }
 .sd-share-title { margin-bottom: 4px; }

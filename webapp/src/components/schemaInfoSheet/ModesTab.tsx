@@ -7,25 +7,20 @@ import { ModeCheckinOverlay } from './ModeCheckinOverlay';
 
 /** Группы справочника → ключ MODE_GROUP_HUE (копинги в палитре все одного тона). */
 const GROUP_HUE_KEY: Record<string, string> = {
-  'Детские режимы': 'child',
-  'Дисфункциональные копинги': 'coping_surrender',
-  'Критикующие режимы': 'critic',
-  'Здоровые режимы': 'healthy',
+  'Детские режимы': 'child', 'Дисфункциональные копинги': 'coping_surrender',
+  'Критикующие режимы': 'critic', 'Здоровые режимы': 'healthy',
 };
 
-// Вкладка «режимы» справочника схем: карточки режимов + чек-ин.
-// Вынесено из SchemaInfoSheet.tsx (правило №10).
+// Вкладка «режимы» справочника схем: карточки режимов + чек-ин (вынесено из SchemaInfoSheet, правило №10).
 export function ModesTab() {
   const tr = useTr();
-  const MODES = buildModes(tr);
   const [showCheckin, setShowCheckin] = useState(false);
-
+  const open = () => setShowCheckin(true);
   return (
     <div className="ss-pane">
       <div
-        onClick={() => setShowCheckin(true)}
-        role="button" tabIndex={0}
-        onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setShowCheckin(true); } }}
+        onClick={open} role="button" tabIndex={0}
+        onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); } }}
         className="ds-card ds-card--hover ss-cta"
       >
         <div className="ss-cta-text">
@@ -33,16 +28,11 @@ export function ModesTab() {
           <div className="ss-need-title">{tr('Как ты себя чувствуешь? →', 'Как вы себя чувствуете? →')}</div>
         </div>
       </div>
-
-      <p className="ss-body">
-        Режим – это актуальное состояние психики прямо сейчас. Цель – расширить доступ к Здоровому Взрослому.
-      </p>
-
-      {MODES.map((g) => (
+      <p className="ss-body">Режим – это актуальное состояние психики прямо сейчас. Цель – расширить доступ к Здоровому Взрослому.</p>
+      {buildModes(tr).map((g) => (
         <div key={g.group} className="ss-pane" style={hueStyle(MODE_GROUP_HUE[GROUP_HUE_KEY[g.group]])}>
           <span className="ds-chip tone-tint" style={{ alignSelf: 'flex-start' }}>
-            <span className="ds-dot tone-fill" />
-            {g.group}
+            <span className="ds-dot tone-fill" />{g.group}
           </span>
           {g.items.map((m) => (
             <div key={m.name} className="ds-card ss-mode">
@@ -58,7 +48,6 @@ export function ModesTab() {
           ))}
         </div>
       ))}
-
       {showCheckin && <ModeCheckinOverlay onClose={() => setShowCheckin(false)} />}
     </div>
   );

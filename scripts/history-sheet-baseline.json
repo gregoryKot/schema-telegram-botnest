@@ -27,6 +27,10 @@
     "reason": "Невидимая подложка под выпадающим выбором вида карты (поповер у кнопки): ловит клик снаружи. Это не лист, запись истории ему не нужна.",
     "since": "docs/AUDIT_2026-10_FINDINGS.md"
   },
+  "webapp/src/components/OverlayFrame.tsx": {
+    "reason": "Рамка оверлеев «Все задания» и «Все цели» (класс sk-overlay): goBack приходит пропом, хук вызывают потребители — sections/today/AllTasksOverlay.tsx и sections/practice/AllGoalsOverlay.tsx, по одному разу на лист. Хук в рамке дал бы вторую запись истории.",
+    "since": "#746"
+  },
   "webapp/src/components/appShell/AppOverlays.tsx": {
     "reason": "Класс u-sheet здесь — обёртка вокруг ChildhoodWheelEx, который сам вызывает useHistorySheet (ChildhoodWheelEx.tsx:195); обёртка только позиционирует.",
     "since": "docs/AUDIT_2026-10_FINDINGS.md"
@@ -35,13 +39,17 @@
     "reason": "Рамка экрана упражнения: хук вызывает каждое упражнение-потребитель (useHistorySheet(onBack)), а сценарий caseFlow — CaseFlowScreen. Хук в рамке дал бы вторую запись истории.",
     "since": "docs/AUDIT_2026-10_FINDINGS.md"
   },
-  "webapp/src/components/flashcard/FlashcardDoneScreen.tsx": {
-    "reason": "Экран «Сохранено» внутри SchemaFlashcard: goBack приходит пропом из SchemaFlashcard, где хук вызван один раз на весь поток.",
-    "since": "docs/AUDIT_2026-10_FINDINGS.md"
+  "webapp/src/components/flashcard/FlashcardFrame.tsx": {
+    "reason": "Рамка экранов «Мне плохо» (класс u-sheet-grid; заменила отдельный экран FlashcardDoneScreen из прежней записи): goBack приходит пропом из SchemaFlashcard.tsx, где хук вызван один раз на весь поток шагов.",
+    "since": "#746"
   },
   "webapp/src/components/modeMap/ToolbarControls.tsx": {
     "reason": "Невидимая подложка под выпадающим меню панели инструментов карты (поповер у кнопки): ловит клик снаружи. Это не лист.",
     "since": "docs/AUDIT_2026-10_FINDINGS.md"
+  },
+  "webapp/src/components/schemaSheets/SsSheet.tsx": {
+    "reason": "Оболочка листов схем и режимов (класс ss-sheet): onBack приходит пропом, хук вызывает каждый лист-потребитель один раз — SchemaInfoSheet, SchemaDetailSheet, SchemaPickerSheet, ModePickerSheet, YSQTestSheet (его экраны YsqIntro/YsqResult получают goBack пропом), ModeCheckinOverlay. Хук в оболочке дал бы вторую запись истории на один лист.",
+    "since": "#746"
   },
   "webapp/src/components/settingsSheet/ui.tsx": {
     "reason": "InfoModal — мини-модалка поверх листа настроек с тёмным фоном: у неё свой локальный onClose, хук вызывает сам лист настроек (CLAUDE.md, раздел про fullscreen-лист: внутренние мини-модалки исключены).",
@@ -58,6 +66,10 @@
   "webapp/src/components/trackerOverlay/MobileLayout.tsx": {
     "reason": "Часть TrackerOverlay: раскладка для телефона, хук вызван в родителе (TrackerOverlay.tsx:35) и приходит сюда пропом.",
     "since": "docs/AUDIT_2026-10_FINDINGS.md"
+  },
+  "webapp/src/components/ysq/YsqQuestion.tsx": {
+    "reason": "Экран вопроса теста YSQ (класс ss-test): один из экранов потока YSQTestSheet.tsx, где хук вызван один раз на весь тест; «Назад» приходит пропом goBack.",
+    "since": "#746"
   },
   "webapp/src/pages/LandingPage.tsx": {
     "reason": "Фиксированный слой «зерно» поверх страницы с pointer-events: none: декор лендинга, не оверлей и не лист.",
