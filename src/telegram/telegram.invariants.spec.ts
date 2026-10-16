@@ -184,8 +184,8 @@ describe('Telegram-хендлеры ↔ правило CLAUDE.md «Обрабо�
   });
 
   it('callback-failure.ts не зовёт answerCbQuery (иначе повтор спрятался бы в хелпере от инварианта)', () => {
+    expect(sources['callback-failure.ts']).toBeDefined();
     const code = sources['callback-failure.ts'].replace(/\/\/.*$/gm, '');
-    expect(code).toBeDefined();
     expect(code).not.toContain('answerCbQuery');
   });
 
