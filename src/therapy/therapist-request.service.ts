@@ -12,11 +12,6 @@ import { SecurityLogService } from '../auth/security-log.service';
 import { TherapistRequestNotifyService } from './therapist-request.notify';
 import { encryptRecord, decryptRecord, EncryptSchema } from '../utils/crypto';
 
-const MAX_NAME = 100;
-const MAX_QUAL = 500;
-const MAX_CONTACTS = 200;
-const MAX_MSG = 1000;
-
 // ФИО, квалификация, контакты и сопроводительное письмо — PII в свободном
 // тексте, шифруются как и остальной пользовательский текст (правило
 // «Шифрование» из чеклиста новых таблиц). Легаси plaintext-строки читаются
@@ -61,14 +56,11 @@ export class TherapistRequestService {
     const qualification = (input.qualification ?? '').trim();
     const contacts = (input.contacts ?? '').trim();
     const message = (input.message ?? '').trim() || null;
-    if (!fullName || fullName.length > MAX_NAME)
-      throw new BadRequestException('Invalid fullName');
-    if (!qualification || qualification.length > MAX_QUAL)
-      throw new BadRequestException('Invalid qualification');
-    if (!contacts || contacts.length > MAX_CONTACTS)
-      throw new BadRequestException('Invalid contacts');
-    if (message && message.length > MAX_MSG)
-      throw new BadRequestException('Message too long');
+    // Длину проверяет DTO (`text-limits.ts`); здесь — только «пусто после
+    // trim»: Length(2) пропускает '  '.
+    if (!fullName) throw new BadRequestException('Invalid fullName');
+    if (!qualification) throw new BadRequestException('Invalid qualification');
+    if (!contacts) throw new BadRequestException('Invalid contacts');
 
     const existing = await this.prisma.therapistRequest.findUnique({
       where: { userId },

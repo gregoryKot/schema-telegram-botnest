@@ -215,10 +215,8 @@ describe('TherapistRequestService.submit', () => {
     ['fullName отсутствует', { ...INPUT, fullName: undefined }],
     ['qualification пустая', { ...INPUT, qualification: '  ' }],
     ['qualification отсутствует', { ...INPUT, qualification: undefined }],
-    ['qualification длиннее 500', { ...INPUT, qualification: 'x'.repeat(501) }],
     ['contacts пустой', { ...INPUT, contacts: '' }],
     ['contacts отсутствует', { ...INPUT, contacts: undefined }],
-    ['message длиннее 1000', { ...INPUT, message: 'x'.repeat(1001) }],
   ])('невалидное поле (%s) → BadRequestException', async (_name, bad) => {
     const { svc, users, requests } = makeService();
     users.push({ id: 3n, role: 'CLIENT' });
