@@ -21,6 +21,8 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
+import { PersistentThrottleLimit } from '../api/persistent-throttle-limit';
+import { CODE_THROTTLE } from './auth-throttles';
 import type { Request, Response } from 'express';
 import { JwtAuthGuard, OptionalJwtGuard } from './jwt.guard';
 import { LoginTicketService } from './login-ticket/login-ticket.service';
@@ -87,7 +89,7 @@ export class AuthTicketController {
   // ─── Шаг 2: подтверждающий смотрит, что произойдёт ────────────────────────
   @Post('preview')
   @UseGuards(JwtAuthGuard)
-  @Throttle({
+  @PersistentThrottleLimit({
     short: { limit: 10, ttl: 60_000 },
     long: { limit: 60, ttl: 3_600_000 },
   })
@@ -105,10 +107,7 @@ export class AuthTicketController {
   // не существует, и это намеренно.
   @Post('approve')
   @UseGuards(JwtAuthGuard)
-  @Throttle({
-    short: { limit: 5, ttl: 60_000 },
-    long: { limit: 20, ttl: 3_600_000 },
-  })
+  @PersistentThrottleLimit(CODE_THROTTLE)
   @HttpCode(200)
   async approve(
     @Body() body: UserCodeDto,

@@ -25,7 +25,8 @@ import {
   Req,
   UseGuards,
 } from '@nestjs/common';
-import { Throttle } from '@nestjs/throttler';
+import { PersistentThrottleLimit } from '../api/persistent-throttle-limit';
+import { CODE_THROTTLE } from './auth-throttles';
 import type { Request } from 'express';
 import { JwtAuthGuard } from './jwt.guard';
 import { LoginTicketService } from './login-ticket/login-ticket.service';
@@ -44,10 +45,7 @@ export class AuthLoginConfirmController {
   // становится сессия, которая жмёт кнопку, — не тот, кто выписал билет.
   @Post('confirm-login')
   @UseGuards(JwtAuthGuard)
-  @Throttle({
-    short: { limit: 5, ttl: 60_000 },
-    long: { limit: 20, ttl: 3_600_000 },
-  })
+  @PersistentThrottleLimit(CODE_THROTTLE)
   @HttpCode(200)
   async confirmLogin(
     @Body() body: UserCodeDto,
@@ -67,10 +65,7 @@ export class AuthLoginConfirmController {
   // ждущий опросом контейнер получил отказ, а не завис до истечения.
   @Post('deny-login')
   @UseGuards(JwtAuthGuard)
-  @Throttle({
-    short: { limit: 5, ttl: 60_000 },
-    long: { limit: 20, ttl: 3_600_000 },
-  })
+  @PersistentThrottleLimit(CODE_THROTTLE)
   @HttpCode(200)
   async denyLogin(
     @Body() body: UserCodeDto,

@@ -1,92 +1,75 @@
-import { useState, type ReactNode } from 'react';
-import { useTr } from '../../utils/addressForm';
-import type { ConceptModeLink } from '../../apiTypes';
+import { useState } from 'react';
+import type { ConceptModeLink, ConceptSchemaLink } from '../../apiTypes';
 import { buildConceptGraph } from './conceptGraphModel';
 import type { ConceptGraphSource } from './conceptGraphTypes';
-import { laneOfMode, type ConceptLane } from './modeLanes';
 import { findModeLink } from './modeLinks';
+import { findSchemaLink } from './schemaLinks';
 import { useConceptGraphTracking } from './useConceptGraphTracking';
-import { ConceptLaneCell } from './ConceptLaneCell';
-import { ConceptModeEditor } from './ConceptModeEditor';
+import { ConceptDiagram } from './diagram/ConceptDiagram';
+import { ConceptAddPanel } from './ConceptAddPanel';
+import type { AddSection } from './diagram/diagramTypes';
+import { ConceptGaps } from './ConceptGaps';
 import { ConceptGraphIntro } from './ConceptGraphIntro';
-import {
-  ConceptArrow,
-  ConceptGaps,
-  ConceptTextBlock,
-} from './ConceptGraphBlocks';
-import { ConceptRoots } from './ConceptRoots';
+import { ConceptModeEditor } from './ConceptModeEditor';
+import { ConceptSchemaEditor } from './ConceptSchemaEditor';
+import { hintStyle } from './graphStyles';
+import { useTr } from '../../utils/addressForm';
 
-const ROW = {
-  display: 'grid',
-  gap: 'var(--space-12)',
-  gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
-} as const;
+type Open = { kind: 'mode' | 'schema'; id: string } | null;
 
 /**
- * Схема случая по модели режимов (шаблон Редигера, ISST). Наверху триггер и
- * здоровые режимы, в середине детские и критик, ниже копинги, цена копингов и
- * корни. Пустая клетка — часть картины, а не пробел.
+ * Схема случая: диаграмма с кругом базовых потребностей в центре (схемы с
+ * убеждением и опытом слева, режимы ещё левее, Здоровый Взрослый справа), под
+ * ней редактор открытой фигуры, порядок смены режимов и мягкие подсказки
+ * «чего не хватает». Пустая секция — часть картины, а не пробел.
  */
 export function ConceptGraph({
   source,
   onToggleMode,
   onChangeLink,
+  onChangeSchemaLink,
+  onToggleSchema,
   onAddSchema,
   track,
 }: {
   source: ConceptGraphSource;
   onToggleMode: (modeId: string) => void;
   onChangeLink: (link: ConceptModeLink) => void;
+  onChangeSchemaLink: (link: ConceptSchemaLink) => void;
+  onToggleSchema: (schemaId: string) => void;
   onAddSchema: (schemaId: string) => void;
   track: (name: string, meta?: Record<string, unknown>) => void;
 }) {
   const tr = useTr();
-  const [openModeId, setOpenModeId] = useState<string | null>(null);
-  const { markLinked } = useConceptGraphTracking(track);
+  const [open, setOpen] = useState<Open>(null);
+  const [add, setAdd] = useState<AddSection | null>(null);
+  const { markLinked, markSchemaLinked } = useConceptGraphTracking(track);
   const graph = buildConceptGraph(source, tr);
 
-  const openCard = Object.values(graph.lanes)
-    .flat()
-    .find((c) => c.modeId === openModeId);
-  const openLane = openCard ? laneOfMode(openCard.modeId) : null;
-  const toggleOpen = (modeId: string) =>
-    setOpenModeId((cur) => (cur === modeId ? null : modeId));
+  const modeCard =
+    open?.kind === 'mode'
+      ? Object.values(graph.lanes)
+          .flat()
+          .find((c) => c.modeId === open.id)
+      : undefined;
+  const schemaCard =
+    open?.kind === 'schema'
+      ? graph.schemas.find((s) => s.id === open.id)
+      : undefined;
+  const toggleOpen = (kind: 'mode' | 'schema', id: string) =>
+    setOpen((cur) =>
+      cur?.kind === kind && cur.id === id ? null : { kind, id },
+    );
   // Режим, снятый с карты, не должен «воскреснуть» открытым редактором при
   // повторном добавлении.
   const toggleMode = (modeId: string) => {
-    if (openModeId === modeId) setOpenModeId(null);
+    if (open?.kind === 'mode' && open.id === modeId) setOpen(null);
     onToggleMode(modeId);
   };
-
-  const cell = (lane: ConceptLane, footer?: ReactNode) => (
-    <ConceptLaneCell
-      lane={lane}
-      cards={graph.lanes[lane]}
-      allModeIds={source.modeIds}
-      openModeId={openModeId}
-      onOpenCard={toggleOpen}
-      onToggleMode={toggleMode}
-      footer={footer}
-    />
-  );
-  // Редактор встаёт сразу под рядом, в котором лежит карточка: на всю ширину,
-  // а не втиснутым в половину ряда.
-  const editorUnder = (lanes: ConceptLane[]) =>
-    openCard && openLane && lanes.includes(openLane) ? (
-      <ConceptModeEditor
-        key={openCard.modeId}
-        card={openCard}
-        link={findModeLink(source.modeLinks, openCard.modeId)}
-        conceptSchemaIds={source.schemaIds}
-        onChangeLink={(link) => {
-          markLinked(link.modeId);
-          onChangeLink(link);
-        }}
-        onAddSchema={onAddSchema}
-        onToggleMode={toggleMode}
-        onClose={() => setOpenModeId(null)}
-      />
-    ) : null;
+  const toggleSchema = (schemaId: string) => {
+    if (open?.kind === 'schema' && open.id === schemaId) setOpen(null);
+    onToggleSchema(schemaId);
+  };
 
   return (
     <div
@@ -97,53 +80,60 @@ export function ConceptGraph({
       }}
     >
       <ConceptGraphIntro />
-      <div style={ROW}>
-        <ConceptTextBlock
-          title="Триггер"
-          hint="Что запускает цикл сейчас"
-          value={graph.trigger}
-          emptyText="Триггеры пока не описаны"
-        />
-        {cell(
-          'healthy',
-          graph.goals && (
-            <div style={{ marginTop: 'var(--space-10)' }}>
-              <div style={{ fontSize: 13, fontWeight: 700 }}>Цели терапии</div>
-              <div
-                style={{
-                  fontSize: 13,
-                  lineHeight: 1.55,
-                  whiteSpace: 'pre-wrap',
-                }}
-              >
-                {graph.goals}
-              </div>
-            </div>
-          ),
-        )}
-      </div>
-      {editorUnder(['healthy'])}
-      <div style={ROW}>
-        {cell('child')}
-        {cell('critic')}
-      </div>
-      {editorUnder(['child', 'critic'])}
-      <ConceptArrow label="напряжение снимает копинг" />
-      {cell('coping')}
-      {editorUnder(['coping'])}
-      <ConceptArrow label="цена" />
-      <ConceptTextBlock
-        title="Проблемы сейчас"
-        hint="Цена копингов в жизни"
-        value={graph.problems}
-        emptyText="Проблемы пока не описаны"
+      <ConceptDiagram
+        graph={graph}
+        openId={
+          open && (modeCard || schemaCard) ? `${open.kind}:${open.id}` : null
+        }
+        addOpen={add}
+        panel={
+          add && (
+            <ConceptAddPanel
+              section={add}
+              modeIds={source.modeIds}
+              schemaIds={graph.schemas.map((s) => s.id)}
+              onToggleMode={toggleMode}
+              onToggleSchema={toggleSchema}
+              onClose={() => setAdd(null)}
+            />
+          )
+        }
+        onOpenMode={(id) => toggleOpen('mode', id)}
+        onOpenSchema={(id) => toggleOpen('schema', id)}
+        onAdd={(section) => setAdd((cur) => (cur === section ? null : section))}
       />
-      <ConceptRoots roots={graph.roots} />
-      {graph.sequence && (
-        <ConceptTextBlock
-          title="Как режимы сменяют друг друга"
-          value={graph.sequence}
+      {modeCard && (
+        <ConceptModeEditor
+          key={modeCard.modeId}
+          card={modeCard}
+          link={findModeLink(source.modeLinks, modeCard.modeId)}
+          conceptSchemaIds={source.schemaIds}
+          onChangeLink={(link) => {
+            markLinked(link.modeId);
+            onChangeLink(link);
+          }}
+          onAddSchema={onAddSchema}
+          onToggleMode={toggleMode}
+          onClose={() => setOpen(null)}
         />
+      )}
+      {schemaCard && (
+        <ConceptSchemaEditor
+          key={schemaCard.id}
+          card={schemaCard}
+          link={findSchemaLink(source.schemaLinks, schemaCard.id)}
+          onChangeLink={(link) => {
+            markSchemaLinked(link.schemaId);
+            onChangeSchemaLink(link);
+          }}
+          onRemove={toggleSchema}
+          onClose={() => setOpen(null)}
+        />
+      )}
+      {graph.sequence && (
+        <p style={{ ...hintStyle, margin: 0 }}>
+          <b>Как режимы сменяют друг друга:</b> <span>{graph.sequence}</span>
+        </p>
       )}
       <ConceptGaps gaps={graph.gaps} />
     </div>

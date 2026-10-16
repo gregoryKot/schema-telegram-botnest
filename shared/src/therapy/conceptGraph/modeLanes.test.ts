@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { MODE_GROUPS } from '../../schemaTherapy/schemaTherapyData';
 import {
   COPING_KIND_LABEL,
-  LANE_META,
+  MANIFEST_FIELD,
   STRATEGY_HINTS,
   copingKindOf,
   groupIdsOfLane,
@@ -84,11 +84,15 @@ describe('strategyGroupOf', () => {
 });
 
 describe('тексты клеток', () => {
-  it('у каждой клетки есть заголовок, подпись и текст пустого состояния', () => {
-    for (const lane of ['healthy', 'child', 'critic', 'coping'] as const) {
-      expect(LANE_META[lane].title).toBeTruthy();
-      expect(LANE_META[lane].subtitle).toBeTruthy();
-      expect(LANE_META[lane].empty).toMatch(/^Пусто/);
+  it('подпись поля «текст режима» зависит от клетки, у каждой есть подсказка', () => {
+    expect(MANIFEST_FIELD.critic.label).toBe('Что говорит');
+    expect(MANIFEST_FIELD.child.label).toBe('Что чувствует и чего хочет');
+    expect(MANIFEST_FIELD.coping.label).toBe('Что делает и как это выглядит');
+    expect(MANIFEST_FIELD.healthy.label).toBe('На что опирается');
+    const labels = Object.values(MANIFEST_FIELD).map((f) => f.label);
+    expect(new Set(labels).size).toBe(4);
+    for (const lane of ['critic', 'child', 'coping', 'healthy'] as const) {
+      expect(MANIFEST_FIELD[lane].placeholder.length).toBeGreaterThan(10);
     }
   });
 

@@ -21,14 +21,10 @@ import { CalDavService } from './caldav.service';
 import { buildCalendarStatus } from './booking-admin.calendar';
 import { buildAdminStatus } from './booking-admin.status';
 import { PricingService } from './pricing.service';
+import { SetPriceDto, SetSubPriceDto } from './booking-price.dto';
 import { SubscriptionService } from '../subscription/subscription.service';
 import { AdminThrottle, assertAdminKey } from './admin-key.util';
-import {
-  CreateRuleDto,
-  SetPriceDto,
-  SetSubPriceDto,
-  ToggleRuleDto,
-} from './booking-admin.dto';
+import { CreateRuleDto, ToggleRuleDto } from './booking-admin.dto';
 
 /**
  * Admin booking endpoints, guarded by ADMIN_BOOKING_KEY. The key is passed in

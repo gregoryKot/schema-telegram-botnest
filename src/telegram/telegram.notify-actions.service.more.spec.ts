@@ -31,7 +31,7 @@ afterEach(() => {
 });
 
 describe('TelegramNotifyActionsService — catch-блоки', () => {
-  it('addr:ty: падение записи формы — answerCbQuery-фолбэк, ошибка залогирована', async () => {
+  it('addr:ty: падение записи формы — сообщение об ошибке, ошибка залогирована', async () => {
     jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
     const botService = {
       updateUserSettings: jest.fn().mockRejectedValue(new Error('db down')),
@@ -39,19 +39,19 @@ describe('TelegramNotifyActionsService — catch-блоки', () => {
     const { service, fakeBot } = makeService(botService);
     service.onModuleInit();
     const ctx = await runAction(fakeBot, 'addr:ty');
-    expect(ctx.answerCbQuery).toHaveBeenLastCalledWith(ERROR_RETRY);
+    expect(ctx.answerCbQuery).toHaveBeenCalledTimes(1);
+    expect(ctx.reply).toHaveBeenCalledWith(ERROR_RETRY);
   });
 
-  it('notify:pause: editMessageReplyMarkup падает — answerCbQuery-фолбэк', async () => {
+  it('notify:pause: editMessageReplyMarkup падает — сообщение об ошибке', async () => {
     jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
     const { service, fakeBot } = makeService({});
     service.onModuleInit();
     const ctx = await runAction(fakeBot, 'notify:pause', {
       editMessageReplyMarkup: jest.fn().mockRejectedValue(new Error('too old')),
     });
-    expect(ctx.answerCbQuery).toHaveBeenLastCalledWith(
-      expect.stringContaining('Не получилось'),
-    );
+    expect(ctx.answerCbQuery).toHaveBeenCalledTimes(1);
+    expect(ctx.reply).toHaveBeenCalledWith(ERROR_RETRY);
   });
 
   it('notify:pause:cancel: answerCbQuery сам падает — ошибка залогирована, не бросает наружу', async () => {
@@ -65,7 +65,7 @@ describe('TelegramNotifyActionsService — catch-блоки', () => {
     ).resolves.toBeDefined();
   });
 
-  it('notify:slower: cadenceService.slower падает — answerCbQuery-фолбэк', async () => {
+  it('notify:slower: cadenceService.slower падает — сообщение об ошибке', async () => {
     jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
     const botService = { getUserSettings: jest.fn().mockResolvedValue(null) };
     const { service, fakeBot } = makeService(botService, {
@@ -73,12 +73,11 @@ describe('TelegramNotifyActionsService — catch-блоки', () => {
     });
     service.onModuleInit();
     const ctx = await runAction(fakeBot, 'notify:slower');
-    expect(ctx.answerCbQuery).toHaveBeenLastCalledWith(
-      expect.stringContaining('Не получилось сохранить'),
-    );
+    expect(ctx.answerCbQuery).toHaveBeenCalledTimes(1);
+    expect(ctx.reply).toHaveBeenCalledWith(ERROR_RETRY);
   });
 
-  it('notify:skip: cadenceService.skipToday падает — answerCbQuery-фолбэк', async () => {
+  it('notify:skip: cadenceService.skipToday падает — сообщение об ошибке', async () => {
     jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
     const botService = { getUserSettings: jest.fn().mockResolvedValue(null) };
     const { service, fakeBot } = makeService(botService, {
@@ -86,8 +85,7 @@ describe('TelegramNotifyActionsService — catch-блоки', () => {
     });
     service.onModuleInit();
     const ctx = await runAction(fakeBot, 'notify:skip');
-    expect(ctx.answerCbQuery).toHaveBeenLastCalledWith(
-      expect.stringContaining('Не получилось'),
-    );
+    expect(ctx.answerCbQuery).toHaveBeenCalledTimes(1);
+    expect(ctx.reply).toHaveBeenCalledWith(ERROR_RETRY);
   });
 });
