@@ -1,7 +1,6 @@
 // @vitest-environment jsdom
-import { describe, it, expect, afterEach } from 'vitest';
+import { describe, it, expect, afterEach, vi } from 'vitest';
 import { render, cleanup, fireEvent } from '@testing-library/react';
-import { vi } from 'vitest';
 import { useDialogA11y } from './dialogA11y';
 
 afterEach(cleanup);

@@ -94,12 +94,22 @@ describe('BottomSheet — Escape при нескольких шитах', () => 
     expect(lower).toHaveBeenCalledTimes(1);
   });
 
-  it('шит без onClose Escape не слушает', () => {
+  // Другая ветка canDismiss, чем у dismissable={false}: шит поднят без
+  // onClose вовсе. Верхний слой без обработчика обязан гасить Escape, а не
+  // пропускать его вниз.
+  it('Escape над шитом без onClose не закрывает шит под ним', () => {
+    const lower = vi.fn();
     render(
-      <BottomSheet>
-        <div>контент</div>
-      </BottomSheet>,
+      <>
+        <BottomSheet onClose={lower}>
+          <div>нижний</div>
+        </BottomSheet>
+        <BottomSheet zIndex={300}>
+          <div>верхний без onClose</div>
+        </BottomSheet>
+      </>,
     );
-    expect(() => escape()).not.toThrow();
+    escape();
+    expect(lower).not.toHaveBeenCalled();
   });
 });
