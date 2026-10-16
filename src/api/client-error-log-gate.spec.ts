@@ -36,9 +36,10 @@ describe('ClientErrorLogGate', () => {
     gate.take('k', T0);
     gate.take('k', T0 + 1);
     for (let i = 0; i < 19; i += 1) gate.take(`other${i}`, T0 + 2);
-    // Бюджет 20 исчерпан (k + 19 других); k после окна — повтор с хвостом 1.
-    expect(gate.take('k', T0 + 5 * 60_000 - 1)).toEqual({ kind: 'repeat' });
+    // Бюджет 20 исчерпан (k + 19 других): новый ключ в ту же минуту — unlogged.
     expect(gate.take('late', T0 + 3)).toEqual({ kind: 'unlogged', repeats: 0 });
+    // k ещё в своём окне — повтор; после окна — подробный, хвост 2 не потерян.
+    expect(gate.take('k', T0 + 5 * 60_000 - 1)).toEqual({ kind: 'repeat' });
     expect(gate.take('k', T0 + 5 * 60_000)).toEqual({
       kind: 'full',
       repeats: 2,

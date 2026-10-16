@@ -1169,7 +1169,7 @@
   "src/bot/case-metrics.format.ts": 80,
   "src/bot/case-metrics.service.ts": 85,
   "src/bot/client-error-metrics.format.ts": 99,
-  "src/bot/client-error-metrics.service.ts": 87,
+  "src/bot/client-error-metrics.service.ts": 85,
   "src/bot/concept-graph-metrics.format.ts": 33,
   "src/bot/concept-graph-metrics.service.ts": 55,
   "src/bot/crisis-metrics.ts": 44,

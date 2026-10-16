@@ -4,6 +4,7 @@ import {
   ClientErrorMetrics,
   formatClientErrorMetrics,
 } from './client-error-metrics.format';
+import type { ClientErrorMetricsRow } from './client-error-metrics.row';
 
 // Счётчики поломок клиента для /stats (волна 9 щита покрытия,
 // docs/SHIELD_PROMPT.md): событие client_error пишет только
@@ -29,11 +30,8 @@ export class ClientErrorMetricsService {
     // ограниченный список (CLIENT_ERROR_SECTIONS), раскладывать который по
     // строкам дороже и сложнее тестировать, чем по колонкам (тот же приём,
     // что у account-link-metrics.service.ts).
-    // Тип строки — словарь: колонок больше двадцати, ключи сверяет спек
-    // сервиса и живой спек /stats (test/raw-sql-live-stats.e2e-spec.ts).
-    const [row] = await this.prisma.$queryRaw<
-      Array<Record<string, bigint | undefined>>
-    >`
+    // Тип строки — client-error-metrics.row.ts: опечатка в ключе ломает tsc.
+    const [row] = await this.prisma.$queryRaw<ClientErrorMetricsRow[]>`
       SELECT
         count(*) FILTER (WHERE "createdAt" >= ${since1})::bigint AS total_day,
         count(*)::bigint AS total_week,
