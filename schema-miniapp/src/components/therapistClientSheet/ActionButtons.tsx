@@ -59,7 +59,7 @@ function ActionRow({
 export function ActionButtons({ detail }: ActionButtonsProps) {
   const {
     clientTasks,
-    notes,
+    notesPage,
     concept,
     clientSchemaNotesData,
     clientModeNotesData,
@@ -83,7 +83,7 @@ export function ActionButtons({ detail }: ActionButtonsProps) {
       />
       <ActionRow
         label="Заметки сессий"
-        sub={notes.length > 0 ? `${notes.length} заметок` : undefined}
+        sub={notesPage.total > 0 ? `${notesPage.total} заметок` : undefined}
         onClick={() => setShowNotesSheet(true)}
       />
       <ActionRow

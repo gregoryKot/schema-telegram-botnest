@@ -7,7 +7,7 @@ import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { AnalyticsService } from '../analytics/analytics.service';
 import { SecurityLogService } from '../auth/security-log.service';
-import { decryptRecord } from '../utils/crypto';
+import { decryptExport } from './export-decrypt';
 import { decryptAuthProviderRow } from '../utils/auth-provider-crypto';
 import {
   EXPORT_POLICY,
@@ -107,7 +107,7 @@ export class DataExportService {
       )[delegateName];
       const rows = await delegate.findMany({ where: { userId } });
       const schema = decision.schema;
-      data[model] = schema ? rows.map((r) => decryptRecord(r, schema)) : rows;
+      data[model] = schema ? rows.map((r) => decryptExport(r, schema)) : rows;
     }
 
     // A-10: данные обо мне на стороне терапевта (ключ clientId, не userId).
@@ -148,7 +148,7 @@ export class DataExportService {
     if (!row) return null;
     // mySchemaIds/myModeIds — зашифрованный JSON-массив (FIELD_POLICY, User),
     // тот же decrypt-приём, что и в bot.service.ts getUserSettings.
-    return decryptRecord(row as Row, {
+    return decryptExport(row, {
       jsonArrays: ['mySchemaIds', 'myModeIds'],
     });
   }
