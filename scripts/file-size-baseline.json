@@ -30,7 +30,7 @@
   "schema-miniapp/src/components/BeliefCheck.tsx": 243,
   "schema-miniapp/src/components/beliefCheck/BeliefStep.tsx": 90,
   "schema-miniapp/src/components/beliefCheck/DoneScreen.tsx": 170,
-  "schema-miniapp/src/components/beliefCheck/EvidenceList.tsx": 101,
+  "schema-miniapp/src/components/beliefCheck/EvidenceList.tsx": 99,
   "schema-miniapp/src/components/beliefCheck/EvidenceStep.tsx": 81,
   "schema-miniapp/src/components/beliefCheck/HistoryList.tsx": 53,
   "schema-miniapp/src/components/beliefCheck/ReframeStep.tsx": 97,
