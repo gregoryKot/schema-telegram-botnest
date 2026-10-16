@@ -1,0 +1,92 @@
+// Чистые вычисления экрана «Сегодня» кабинета терапевта: счётчики, статус
+// активности клиента, точки спарклайна. Всё считается только из
+// TherapyClientSummary, который экран уже получает.
+import type { TherapyClientSummary } from '../api';
+import { todayCalendarDate } from '../../../shared/src/utils/calendarDate';
+import { indexLevel, type IndexLevel } from '../lib/tone';
+
+const DAY_MS = 86400000;
+/** С какого числа дней без активности клиент попадает в «Требуют внимания». */
+export const ATTENTION_DAYS = 3;
+
+export const clientName = (c: TherapyClientSummary): string =>
+  c.clientAlias ?? c.name ?? `#${c.telegramId}`;
+
+/** Инициалы для аватара: до двух первых букв слов имени; «#123» -> «#». */
+export function initials(name: string): string {
+  const words = name.trim().split(/\s+/).filter(Boolean);
+  const letters = words.slice(0, 2).map(w => Array.from(w)[0]?.toUpperCase() ?? '');
+  return letters.join('') || '?';
+}
+
+/** Целых дней с lastActiveDate до now; null — активности не было. */
+export function daysSinceActive(c: TherapyClientSummary, now: number): number | null {
+  if (!c.lastActiveDate) return null;
+  return Math.max(0, Math.floor((now - new Date(c.lastActiveDate).getTime()) / DAY_MS));
+}
+
+/** Есть ли у клиента сессия сегодня: явный nextSession важнее meetingDays. */
+export function hasSessionToday(c: TherapyClientSummary): boolean {
+  if (c.nextSession) return c.nextSession.slice(0, 10) === todayCalendarDate();
+  return c.meetingDays.includes(new Date().getDay());
+}
+
+/** HH:MM из nextSession, если сессия сегодня; иначе пустая строка. */
+export function sessionTime(c: TherapyClientSummary): string {
+  if (!c.nextSession || c.nextSession.slice(0, 10) !== todayCalendarDate()) return '';
+  return c.nextSession.includes('T') ? c.nextSession.split('T')[1].slice(0, 5) : '';
+}
+
+/** Сессии сегодня по времени; без времени — в конце. */
+export function sessionsTodaySorted(clients: TherapyClientSummary[]): TherapyClientSummary[] {
+  return clients
+    .filter(hasSessionToday)
+    .sort((a, b) => (sessionTime(a) || '99:99').localeCompare(sessionTime(b) || '99:99'));
+}
+
+/** Не заполнили сегодня и молчат 3+ дня (или записей не было вовсе). */
+export function needsAttention(c: TherapyClientSummary, now: number): boolean {
+  if (c.todayIndex != null) return false;
+  const days = daysSinceActive(c, now);
+  return days == null || days >= ATTENTION_DAYS;
+}
+
+export interface TodayCounts { active: number; total: number; sessions: number; attention: number }
+
+export function todayCounts(clients: TherapyClientSummary[], now: number): TodayCounts {
+  return {
+    active: clients.filter(c => c.todayIndex != null).length,
+    total: clients.length,
+    sessions: clients.filter(hasSessionToday).length,
+    attention: clients.filter(c => needsAttention(c, now)).length,
+  };
+}
+
+export interface ActivityStatus { text: string; tone: 'ok' | 'warn' | 'none' }
+
+export function activityStatus(c: TherapyClientSummary, now: number): ActivityStatus {
+  if (c.todayIndex != null) return { text: 'активен сегодня', tone: 'ok' };
+  const days = daysSinceActive(c, now);
+  if (days == null) return { text: 'нет данных', tone: 'warn' };
+  if (days === 0) return { text: 'активность сегодня', tone: 'ok' };
+  if (days === 1) return { text: 'был вчера', tone: 'none' };
+  if (days < ATTENTION_DAYS) return { text: `был ${days} дн. назад`, tone: 'none' };
+  return { text: `нет активности ${days} дн.`, tone: 'warn' };
+}
+
+export interface SparkPoint { height: number; level: IndexLevel }
+
+/** 14 точек от старой к новой (recentIndexHistory: index 0 = сегодня). Высота — % от 10. */
+export function sparkPoints(history: (number | null)[]): SparkPoint[] {
+  const pts = history.slice(0, 14).map((v): SparkPoint => ({
+    height: v == null ? 0 : Math.max(8, Math.min(100, Math.round(v * 10))),
+    level: indexLevel(v),
+  }));
+  return pts.reverse();
+}
+
+/** Последний известный индекс: сегодняшний, иначе самый свежий из истории. */
+export function latestIndex(c: TherapyClientSummary): number | null {
+  if (c.todayIndex != null) return c.todayIndex;
+  return c.recentIndexHistory.find(v => v != null) ?? null;
+}

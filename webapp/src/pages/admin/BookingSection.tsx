@@ -2,7 +2,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { api } from '../../api';
 import type { AvailabilityRule, SessionOption, AdminBookingStatus } from '../../api';
 import { useAsyncData } from '../../hooks/useAsyncData';
-import { card, btn, input } from './shared';
+import { card } from './shared';
+import { PriceRow } from './PriceRow';
 import { useSaveFeedback } from './useSaveFeedback';
 import { BookingsManager } from './BookingsManager';
 import { ScheduleSection } from './ScheduleSection';
@@ -82,30 +83,24 @@ function IntegrationStatus({ adminKey }: { adminKey: string }) {
 
 function PricesManager({ adminKey }: { adminKey: string }) {
   const [opts, setOpts] = useState<SessionOption[]>([]);
-  const [draft, setDraft] = useState<Record<string, number>>({});
+  const [draft, setDraft] = useState<Record<string, string>>({});
   const { guard, feedback } = useSaveFeedback();
   const load = useCallback(() => {
     api.adminGetPrices(adminKey).then((o) => {
       setOpts(o);
-      setDraft(Object.fromEntries(o.map((x) => [x.type, x.price])));
+      setDraft(Object.fromEntries(o.map((x) => [x.type, String(x.price)])));
     }).catch(() => setOpts([]));
   }, [adminKey]);
   useEffect(() => { load(); }, [load]);
   const paid = opts.filter((o) => o.type !== 'INTRO_15'); // знакомство бесплатно, не редактируется
-  const save = (type: string) =>
-    guard(() => api.adminSetPrice(adminKey, type as 'SESSION_50', draft[type] ?? 0).then(() => load()));
+  const save = (type: string, price: number) =>
+    guard(() => api.adminSetPrice(adminKey, type as 'SESSION_50', price).then(() => load()));
   return (
     <section style={card}>
       <h2 style={{ fontFamily: 'var(--serif)', fontSize: 26, fontWeight: 400, letterSpacing: '-0.01em', color: 'var(--text)', marginTop: 0, marginBottom: 14 }}>Цены</h2>
-      {paid.map((o) => (
-        <div key={o.type} style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-10)', padding: '6px 0', flexWrap: 'wrap' }}>
-          <span style={{ flex: 1, color: 'var(--text)', fontSize: 14 }}>{o.label} · {o.durationMin} мин</span>
-          <input type="number" min={0} value={draft[o.type] ?? 0}
-            onChange={(e) => setDraft({ ...draft, [o.type]: Math.max(0, Math.round(Number(e.target.value))) })}
-            style={{ ...input, width: 110 }} />
-          <span className="u-faint">₽</span>
-          <button style={btn} onClick={() => save(o.type)}>Сохранить</button>
-        </div>
+      {paid.map((o) => ( // платная сессия — от 1 ₽: цены 0 у неё не бывает
+        <PriceRow key={o.type} label={`${o.label} · ${o.durationMin} мин`} value={draft[o.type] ?? ''} min={1}
+          onChange={(raw) => setDraft({ ...draft, [o.type]: raw })} onSave={(price) => save(o.type, price)} />
       ))}
       {feedback}
       <p style={{ fontSize: 12, color: 'var(--text-faint)', marginTop: 10 }}>Знакомство всегда бесплатное. Цена применяется к новым записям сразу.</p>
@@ -115,29 +110,23 @@ function PricesManager({ adminKey }: { adminKey: string }) {
 
 function SubPricesManager({ adminKey }: { adminKey: string }) {
   const [opts, setOpts] = useState<{ period: 'month' | 'year'; price: number }[]>([]);
-  const [draft, setDraft] = useState<Record<string, number>>({});
+  const [draft, setDraft] = useState<Record<string, string>>({});
   const { guard, feedback } = useSaveFeedback();
   const load = useCallback(() => {
     api.adminGetSubPrices(adminKey).then((o) => {
       setOpts(o);
-      setDraft(Object.fromEntries(o.map((x) => [x.period, x.price])));
+      setDraft(Object.fromEntries(o.map((x) => [x.period, String(x.price)])));
     }).catch(() => setOpts([]));
   }, [adminKey]);
   useEffect(() => { load(); }, [load]);
-  const save = (period: 'month' | 'year') =>
-    guard(() => api.adminSetSubPrice(adminKey, period, draft[period] ?? 0).then(() => load()));
+  const save = (period: 'month' | 'year', price: number) =>
+    guard(() => api.adminSetSubPrice(adminKey, period, price).then(() => load()));
   return (
     <section style={card}>
       <h2 style={{ fontFamily: 'var(--serif)', fontSize: 26, fontWeight: 400, letterSpacing: '-0.01em', color: 'var(--text)', marginTop: 0, marginBottom: 14 }}>Подписка</h2>
       {opts.map((o) => (
-        <div key={o.period} style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-10)', padding: '6px 0', flexWrap: 'wrap' }}>
-          <span style={{ flex: 1, color: 'var(--text)', fontSize: 14 }}>{o.period === 'year' ? 'Год' : 'Месяц'}</span>
-          <input type="number" min={1} value={draft[o.period] ?? 0}
-            onChange={(e) => setDraft({ ...draft, [o.period]: Math.max(1, Math.round(Number(e.target.value))) })}
-            style={{ ...input, width: 110 }} />
-          <span className="u-faint">₽</span>
-          <button style={btn} onClick={() => save(o.period)}>Сохранить</button>
-        </div>
+        <PriceRow key={o.period} label={o.period === 'year' ? 'Год' : 'Месяц'} value={draft[o.period] ?? ''} min={1}
+          onChange={(raw) => setDraft({ ...draft, [o.period]: raw })} onSave={(price) => save(o.period, price)} />
       ))}
       {feedback}
       <p style={{ fontSize: 12, color: 'var(--text-faint)', marginTop: 10 }}>Авто-списание раз в период. Требует подключения услуги рекуррентных платежей у Robokassa.</p>

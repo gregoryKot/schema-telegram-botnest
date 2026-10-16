@@ -210,7 +210,7 @@ describe('TelegramSettingsService — settings:back', () => {
 });
 
 describe('TelegramSettingsService — ошибки', () => {
-  it('падение при чтении настроек не роняет хендлер, answerCbQuery с подсказкой', async () => {
+  it('падение при чтении настроек не роняет хендлер, сообщение об ошибке с кнопкой «К настройкам»', async () => {
     jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
     const botService = {
       getUserSettings: jest.fn().mockRejectedValue(new Error('db down')),
@@ -219,6 +219,10 @@ describe('TelegramSettingsService — ошибки', () => {
     const { service, fakeBot } = makeService(botService);
     service.onModuleInit();
     const ctx = await runAction(fakeBot, 'settings:toggle');
-    expect(ctx.answerCbQuery).toHaveBeenCalledWith(ERROR_RETRY);
+    expect(ctx.answerCbQuery).toHaveBeenCalledTimes(1);
+    expect(ctx.editMessageText).toHaveBeenLastCalledWith(
+      ERROR_RETRY,
+      expect.anything(),
+    );
   });
 });

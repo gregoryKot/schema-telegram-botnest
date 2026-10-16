@@ -1,8 +1,7 @@
-import { Booking, BookingStatus, SessionType } from '@prisma/client';
+import { Booking, BookingStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { BookingNotifyService } from './booking-notify.service';
 import { RobokassaService } from './robokassa.service';
-import { PricingService } from './pricing.service';
 import { decryptRecord, EncryptSchema } from '../utils/crypto';
 import { assertPaymentAvailable } from './payment-guard';
 
@@ -19,7 +18,6 @@ export interface CheckoutDeps {
   prisma: PrismaService;
   notify: BookingNotifyService;
   robokassa: RobokassaService;
-  pricing: PricingService;
   siteUrl: string;
   schema: EncryptSchema;
 }
@@ -60,7 +58,6 @@ export async function completeCheckout(
     cancelToken: string;
     heldUntil: Date | null;
     startsAt: Date;
-    type: SessionType;
     clientContact: string;
     adminNote?: string; // пометка админу в «ожидает оплаты», клиенту не видна
   },
@@ -70,20 +67,23 @@ export async function completeCheckout(
 
   // Вторая линия обороны: book() отказывает раньше, до INSERT (payment-guard).
   assertPaymentAvailable(deps.robokassa, 'booking');
-  // Robokassa not configured (dev, не прод): auto-confirm, слот не виснет в HELD.
+  // Dev без Robokassa: auto-confirm; count не читаем — строку создал этот запрос, токен ещё не отдан.
   if (!deps.robokassa.enabled) {
-    await deps.prisma.booking.update({
-      where: { id: booking.id },
+    await deps.prisma.booking.updateMany({
+      where: { id: booking.id, status: BookingStatus.HELD },
       data: { status: BookingStatus.CONFIRMED, heldUntil: null },
     });
     return confirmNow(deps, booking, cancelToken);
   }
 
-  // Paid session — build Robokassa payment URL.
-  const price = await deps.pricing.getPrice(opts.type);
+  // Paid session — build Robokassa payment URL по сумме счёта, сохранённой в
+  // брони при записи (не по второму чтению цены: она могла смениться).
+  if (booking.amount == null) {
+    throw new Error(`Booking ${booking.id} has no invoiced amount`);
+  }
   const paymentUrl = deps.robokassa.buildPaymentUrl({
     invId: booking.id,
-    amount: price,
+    amount: booking.amount,
     desc: `Психологическая сессия ${new Intl.DateTimeFormat('ru-RU', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Moscow' }).format(opts.startsAt)} МСК`,
     // Pass the client's e-mail so Robokassa / «Мой налог» can send the cheque.
     // Only when the contact actually is an e-mail (could be a phone / @handle).

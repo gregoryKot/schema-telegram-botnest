@@ -29,6 +29,7 @@ export class CreatePlanDto {
 
   @IsString()
   @IsNotEmpty()
+  @MaxLength(PRACTICE_TEXT_MAX)
   practiceText!: string;
 
   @IsOptional()

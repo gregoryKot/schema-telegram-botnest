@@ -14,9 +14,9 @@ const CONCEPT_TEXT_FIELDS = [
   'modeTransitions',
 ] as const;
 
-// JSON-массивы: метки схем/режимов, карта режимов (узлы и рёбра) и связи
-// режимов (alias, истоки, проявления, работа в терапии) — клинические данные,
-// шифруются целиком. Новое поле такого рода = строка здесь (и в
+// JSON-массивы: метки схем/режимов, карта режимов (узлы и рёбра), связи
+// режимов (alias, истоки, проявления, работа в терапии) и схем (убеждение,
+// детский опыт) — клинические данные, шифруются целиком. Новое поле такого рода = строка здесь (и в
 // encryption-policy / rotate-encryption/targets).
 const CONCEPT_JSON_ARRAY_FIELDS = [
   'schemaIds',
@@ -24,6 +24,7 @@ const CONCEPT_JSON_ARRAY_FIELDS = [
   'modeMapNodes',
   'modeMapEdges',
   'modeLinks',
+  'schemaLinks',
 ] as const;
 
 function encryptConceptFields(
@@ -146,6 +147,7 @@ export class TherapyNotesService {
       modeMapNodes?: unknown[];
       modeMapEdges?: unknown[];
       modeLinks?: unknown[];
+      schemaLinks?: unknown[];
     },
   ) {
     await this.relationsService.assertHasClient(therapistId, clientId);
@@ -180,6 +182,7 @@ export class TherapyNotesService {
           currentProblems: existing.currentProblems,
           modeTransitions: existing.modeTransitions ?? null,
           modeLinks: existing.modeLinks,
+          schemaLinks: existing.schemaLinks,
         };
         hist = [snapshot, ...hist].slice(0, 20);
       }
@@ -213,6 +216,7 @@ export class TherapyNotesService {
           modeMapNodes: enc.modeMapNodes ?? [],
           modeMapEdges: enc.modeMapEdges ?? [],
           modeLinks: enc.modeLinks ?? [],
+          schemaLinks: enc.schemaLinks ?? [],
           history: [],
         },
         update,

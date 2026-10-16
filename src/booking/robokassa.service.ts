@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { createHash, timingSafeEqual } from 'crypto';
+import { payableAmount } from './price-rules';
 
 /**
  * Robokassa payment integration.
@@ -41,11 +42,10 @@ export class RobokassaService {
   /**
    * Build a Robokassa payment URL.
    * @param invId   booking.id — used as Robokassa InvId (must be unique per merchant)
-   * @param amount  amount in rubles (e.g. 3500)
+   * @param amount  amount in rubles (e.g. 3500); must be > 0, otherwise throws
    * @param desc    payment description shown to the client
    * @param email   client e-mail for the receipt (optional)
-   * @param successUrl  where to redirect after success
-   * @param failUrl     where to redirect after failure/cancel
+   * @param successUrl, failUrl  where to redirect after success / failure
    */
   buildPaymentUrl(params: {
     invId: number;
@@ -59,7 +59,7 @@ export class RobokassaService {
   }): string {
     const { invId, amount, desc, email, successUrl, failUrl, recurring } =
       params;
-    const outSum = amount.toFixed(2);
+    const outSum = payableAmount(amount).toFixed(2);
 
     // Optional ОФД fiscalization. Per Robokassa docs, when a Receipt is sent it
     // MUST be part of the signature between InvId and Password1:

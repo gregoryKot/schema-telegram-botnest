@@ -1,6 +1,8 @@
 // Щит, волна 8: класс «ветка, зависящая от конфигурации, деградирует
 // МОЛЧА». Реестр — чистая функция от env, проверяем оба состояния каждой
 // возможности и критичность мёртвой сигнализации.
+import { existsSync } from 'fs';
+import { join } from 'path';
 import { buildCapabilityReport, isAlertChannelDead } from './capability-report';
 
 const ALL_CONFIGURED = {
@@ -85,6 +87,33 @@ describe('buildCapabilityReport', () => {
       expect(c.offReason.length).toBeGreaterThan(10);
       expect(c.files.length).toBeGreaterThan(0);
     }
+  });
+
+  it('каждый путь из files существует в репозитории (протухший путь делает запись декорацией)', () => {
+    const root = join(__dirname, '..', '..');
+    const missing = buildCapabilityReport({}).flatMap((c) =>
+      c.files.filter((f) => !existsSync(join(root, f))),
+    );
+    expect(missing).toEqual([]);
+  });
+
+  it('legacyEncryptionMigration: включается ENCRYPTION_KEY, files — миграция, классификатор строк и итог для пробы', () => {
+    const off = buildCapabilityReport({}).find(
+      (c) => c.id === 'legacyEncryptionMigration',
+    )!;
+    expect(off.on).toBe(false);
+    expect(off.critical).toBe(false);
+    const on = buildCapabilityReport({ ENCRYPTION_KEY: 'k'.repeat(64) }).find(
+      (c) => c.id === 'legacyEncryptionMigration',
+    )!;
+    expect(on.on).toBe(true);
+    expect(on.files).toEqual(
+      expect.arrayContaining([
+        'src/utils/encrypt-migration.ts',
+        'src/utils/encrypt-migration.rows.ts',
+        'src/infra/self-check/clinical-labels-status.ts',
+      ]),
+    );
   });
 
   // 2026-09-16: GOOGLE_REDIRECT_URI/VK_REDIRECT_URI на legacy/www-хосте

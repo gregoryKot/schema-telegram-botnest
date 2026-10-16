@@ -1,0 +1,127 @@
+/* ─────────────────────────────────────────────────────────────────────────
+   Карточка клиента терапевта: шапка, вкладки, «Обзор». Префикс tk-.
+   Примитивы (ds-*) и тона — styles/cabinet.css; здесь только раскладка.
+   ───────────────────────────────────────────────────────────────────────── */
+
+/* ── Обёртка карточки ────────────────────────────────────────────────────── */
+.tk-sheet { background: var(--bg); }
+.tk-tabs-body { padding: 0; }
+.tk-load { padding: 40px clamp(20px, 4vw, 48px); display: flex; flex-direction: column; gap: 16px; max-width: 1240px; }
+
+/* ── Шапка ───────────────────────────────────────────────────────────────── */
+.tk-head {
+  background: var(--paper-tint); border-bottom: 1px solid var(--line);
+  padding: 28px clamp(20px, 4vw, 48px) 0; flex-shrink: 0;
+  display: flex; flex-direction: column; gap: 22px;
+}
+.tk-back { align-self: flex-start; background: none; border: none; padding: 0; cursor: pointer; font-family: inherit; white-space: nowrap; margin-bottom: -8px; }
+.tk-back:hover { color: var(--text); }
+.tk-head-row { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
+.tk-avatar { width: 56px; height: 56px; font-size: 21px; }
+.tk-ident { flex: 1; min-width: 260px; }
+.tk-name-row { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.tk-name {
+  font-family: var(--serif); font-weight: 400; font-size: 34px; line-height: 1.1; color: var(--text);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;
+}
+.tk-edit { background: none; border: none; cursor: pointer; color: var(--text-faint); font-size: 14px; padding: 6px; min-width: 32px; min-height: 32px; }
+.tk-edit:hover { color: var(--text); }
+.tk-alias-form { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.tk-alias-input {
+  font: 400 28px/1.2 var(--serif); color: var(--text); background: transparent;
+  border: none; border-bottom: 2px solid var(--accent); outline: none; width: 260px; max-width: 100%; padding: 1px 0;
+}
+.tk-error { font-size: 12px; color: var(--err); }
+.tk-badges { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; white-space: nowrap; }
+.tk-actions { display: flex; gap: 8px; align-items: center; white-space: nowrap; }
+.tk-actions-main { display: flex; gap: 8px; }
+.tk-head .ds-tabs { margin: 0 calc(-1 * clamp(20px, 4vw, 48px)); padding: 0 clamp(20px, 4vw, 48px); }
+
+/* ── Обзор ───────────────────────────────────────────────────────────────── */
+.tk-ov {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+  gap: 40px; padding: 40px clamp(20px, 4vw, 48px) 64px; max-width: 1240px; box-sizing: border-box;
+}
+.tk-col { display: flex; flex-direction: column; gap: 44px; min-width: 0; }
+.tk-block { display: flex; flex-direction: column; gap: 18px; }
+.tk-block--tight { gap: 14px; }
+.tk-goal { border-radius: 20px; padding: 28px 32px; display: grid; grid-template-columns: 44px 1fr; gap: 6px; }
+.tk-quote { font: 64px/.8 var(--serif); color: var(--accent-hot); }
+.tk-goal-text { font: 24px/1.4 var(--serif); color: var(--text); overflow-wrap: anywhere; }
+.tk-goal .ds-link { display: inline-block; margin-top: 14px; }
+.tk-goal .ds-label { margin-bottom: 10px; }
+.tk-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr)); gap: 12px; }
+.tk-tile { border-radius: 14px; padding: 16px 18px; display: flex; flex-direction: column; gap: 10px; }
+.tk-tile-title { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; font-weight: 700; }
+.tk-tile-item { font-size: 14px; font-weight: 500; display: flex; gap: 8px; align-items: center; }
+.tk-tile-item .ds-dot { width: 7px; height: 7px; border-radius: 2px; }
+.tk-modes { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+.tk-mode-col { border-top: 3px solid; padding-top: 12px; display: flex; flex-direction: column; gap: 6px; }
+.tk-mode-col > div { font-size: 14px; }
+.tk-mode-col .tk-tile-title { font-size: 11px; }
+.tk-empty { font-size: 13px; color: var(--text-ghost); }
+.tk-entry {
+  display: grid; grid-template-columns: auto 1fr auto; gap: 14px; align-items: center;
+  padding: 14px 16px; border-radius: 14px; background: var(--surface); border: 1px solid var(--line);
+}
+.tk-entry-body { min-width: 0; }
+.tk-entry-title { font-size: 14px; font-weight: 600; }
+.tk-entry-excerpt { font-size: 13px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tk-entry-date { font-size: 12px; color: var(--text-faint); white-space: nowrap; }
+.tk-note-text { font-size: 14px; line-height: 1.7; color: var(--text-sub); max-width: 720px; white-space: pre-wrap; }
+.tk-hint { font-size: 13px; color: var(--text-faint); }
+
+/* ── Сайдбар Обзора ──────────────────────────────────────────────────────── */
+.tk-side { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.tk-side .ds-card { border-radius: 18px; padding: 20px 22px; }
+.tk-card-label { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--text-faint); }
+.ds-card--accent .tk-card-label { color: var(--on-ink); opacity: .75; }
+.tk-next { font: 26px/1.2 var(--serif); color: #fff; margin-top: 6px; overflow-wrap: anywhere; }
+.tk-next-sub { font-size: 13px; opacity: .85; margin-top: 2px; }
+.tk-next-edit { margin-top: 12px; background: none; border: none; padding: 0; color: #fff; font: 600 13px var(--sans); cursor: pointer; min-height: 24px; }
+.tk-edit-form { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+.tk-edit-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.tk-index { display: flex; align-items: baseline; gap: 10px; margin-top: 8px; }
+.tk-index .ds-num { font-size: 52px; }
+.tk-side .ds-spark { height: 44px; gap: 3px; margin-top: 14px; }
+.tk-needs { display: flex; flex-direction: column; gap: 12px; }
+.tk-need { display: grid; grid-template-columns: 1fr 80px 18px; gap: 10px; align-items: center; font-size: 13px; }
+.tk-need-bar { height: 6px; border-radius: 3px; background: var(--paper-sunk); overflow: hidden; }
+.tk-need-bar > div { height: 100%; border-radius: 3px; }
+.tk-need b { text-align: right; }
+.tk-need b.is-low { color: var(--err); }
+.tk-actions-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 12px !important; }
+.tk-action {
+  padding: 12px; border-radius: 12px; background: var(--bg); border: none; text-align: left;
+  font: 600 13px var(--sans); color: var(--text); cursor: pointer; min-height: 44px;
+}
+.tk-action:hover { background: var(--paper-sunk); }
+.tk-start { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+
+/* ── Мобильный (<768): компактная шапка + закреплённая нижняя панель ─────── */
+@media (max-width: 767px) {
+  .tk-head { padding: 6px 16px 0; gap: 12px; }
+  .tk-head .ds-tabs { margin: 0 -16px; padding: 0 16px; gap: 20px; }
+  .tk-back { min-height: 44px; display: flex; align-items: center; margin-bottom: 0; font-size: 14px; }
+  .tk-head-row { gap: 12px; flex-wrap: nowrap; }
+  .tk-avatar { width: 52px; height: 52px; font-size: 19px; }
+  .tk-ident { min-width: 0; }
+  .tk-name { font-size: 26px; }
+  .tk-badges { gap: 6px; flex-wrap: wrap; }
+  .tk-actions-main {
+    position: fixed; left: 0; right: 0; bottom: calc(76px + var(--safe-bottom)); z-index: 48;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 12px 20px;
+    background: var(--bg); border-top: 1px solid var(--line);
+  }
+  .tk-actions-main .ds-btn { height: 48px; border-radius: 24px; font-weight: 700; }
+  .tk-tabs-body { padding-bottom: 96px; }
+  .tk-ov { padding: 20px 16px 24px; gap: 24px; }
+  .tk-col { gap: 28px; }
+  .tk-goal { padding: 18px 20px; grid-template-columns: 30px 1fr; }
+  .tk-quote { font-size: 40px; }
+  .tk-goal-text { font-size: 18px; }
+  .tk-alias-input { font-size: 22px; width: 100%; }
+}
+.tk-delta { font-size: 12px; font-weight: 700; }
+.tk-needs { margin-top: 12px; }
+.tk-side .tk-hint { font-size: 11px; margin-top: 6px; }

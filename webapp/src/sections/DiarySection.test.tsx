@@ -117,8 +117,8 @@ describe('DiarySection — сбой загрузки (сбой ≠ пусто)',
     renderSection();
     const alert = await screen.findByRole('alert');
     expect(alert.textContent).toMatch(/Не удалось загрузить записи дневника/);
-    // Баннер не блокирует остальной UI — кнопка новой записи доступна.
-    expect(screen.getByText('+ Новая запись')).toBeTruthy();
+    // Баннер не блокирует остальной UI — карточки новой записи доступны.
+    expect(screen.getByText('Записать момент')).toBeTruthy();
   });
 
   it('«Обновить» перезапрашивает записи и убирает баннер при успехе', async () => {
@@ -213,11 +213,11 @@ describe('DiarySection — удаление записи (с подтвержд�
 });
 
 describe('DiarySection — новая запись', () => {
-  it('клик "+ Новая запись" открывает лист схемы (SchemaEntrySheet)', async () => {
+  it('карточка "Записать момент" открывает лист схемы (SchemaEntrySheet)', async () => {
     renderSection();
     await waitFor(() => expect(mockApi.getSchemaDiary).toHaveBeenCalled());
 
-    fireEvent.click(screen.getByText('+ Новая запись'));
+    fireEvent.click(screen.getByText('Записать момент'));
     await screen.findByTestId('schema-entry-sheet');
   });
 
@@ -234,7 +234,7 @@ describe('DiarySection — новая запись', () => {
     renderSection();
     await waitFor(() => expect(mockApi.getSchemaDiary).toHaveBeenCalled());
 
-    fireEvent.click(screen.getByText('+ Новая запись'));
+    fireEvent.click(screen.getByText('Записать момент'));
     fireEvent.click(await screen.findByText('Сохранить схему'));
 
     await waitFor(() => expect(screen.queryByTestId('schema-entry-sheet')).toBeNull());
@@ -281,7 +281,7 @@ describe('DiarySection — новая запись', () => {
     renderSection();
     await waitFor(() => expect(mockApi.getSchemaDiary).toHaveBeenCalled());
 
-    fireEvent.click(screen.getByText('+ Новая запись'));
+    fireEvent.click(screen.getByText('Записать момент'));
     fireEvent.click(await screen.findByText('Закрыть лист схемы'));
 
     await waitFor(() => expect(screen.queryByTestId('schema-entry-sheet')).toBeNull());
@@ -362,7 +362,7 @@ describe('DiarySection — группировка по дате', () => {
     // «сегодня · понедельник» рендерится как два соседних текстовых узла —
     // ищем по содержимому родителя, а не по одному узлу.
     await waitFor(() => {
-      const rel = document.querySelector('.date-group-rel');
+      const rel = document.querySelector('.cd-day-rel');
       expect(rel?.textContent).toContain('сегодня');
     });
   });
