@@ -2,7 +2,7 @@ import { getHost } from '../../../../shared/src/host';
 import { fmtDate, momentDayKey, todayStr } from '../../utils/format';
 import { getModeById, getSchemaById } from '../../schemaTherapyData';
 import type { TherapyClientSummary, ClientConceptualization } from '../../api';
-import { formatModeLinksExport } from '../../../../shared/src/therapy/conceptGraph/modeLinksExport';
+import { formatConceptLinksExport } from '../../../../shared/src/therapy/conceptGraph/conceptLinksExport';
 
 // Текст экспорта краткой концептуализации (share/clipboard). Чистая функция,
 // вынесена из useClientDetail.ts (правило №10).
@@ -36,7 +36,7 @@ export function buildConceptExport({
   const row = (label: string, value: string | null | undefined) =>
     `${label}\n${value?.trim() || '—'}\n`;
   const div = '─'.repeat(44);
-  const links = formatModeLinksExport(activeModeIds, c.modeLinks ?? []);
+  const links = formatConceptLinksExport(activeSchemaIds, activeModeIds, c);
   return [
     `Терапевт: ${therapistName}   Клиент: ${clientName}   Дата: ${date}`,
     '',

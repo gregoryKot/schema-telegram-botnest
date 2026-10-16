@@ -7,11 +7,9 @@ import {
 } from '@xyflow/react';
 import type { ModeMapNode, ModeMapEdge, ModeMapKind, UserId } from '../api';
 import { api } from '../api';
-import { NODE_TYPES } from './modeMapRegistry';
-import { NODE_DEFAULT_SIZES } from './modeMapData';
-import { EDGE_TYPES } from './modeMapRegistry';
-import { DRAG_TYPE, GROUP_TO_TYPE } from './modeMapData';
-import { MODE_GROUPS, getModeById, getSchemaById } from '../schemaTherapyData';
+import { NODE_TYPES, EDGE_TYPES } from './modeMapRegistry';
+import { NODE_DEFAULT_SIZES, DRAG_TYPE } from './modeMapData';
+import { getSchemaById } from '../schemaTherapyData';
 import { ModeMapContextMenu, type MenuItem } from './ModeMapContextMenu';
 import { ModeMapLegend } from './ModeMapLegend';
 import { ModeMapGuide } from './ModeMapGuide';
@@ -31,6 +29,8 @@ import {
   Dropdown,
 } from './modeMap/ToolbarControls';
 import { DownloadMenu } from './modeMap/DownloadMenu';
+import { useHubDrag } from './modeMap/useHubDrag';
+import { useGenerateFromConcept } from './modeMap/useGenerateFromConcept';
 
 export interface CanvasProps {
   clientId: UserId; mapId: number; kind: ModeMapKind;
@@ -265,7 +265,7 @@ export function ModeMapCanvas({ clientId, mapId, kind, nodes, edges, setNodes, s
   }), [duplicateNode, removeNode, renameNode, patchNodeData, setSelectedNodeId, setSelectedEdgeId]);
 
   // ── Templates & generate from conceptualization ──────────────────────────────
-  const insertGraph = useCallback((ns: ModeMapNode[], es: { id: string; source: string; target: string; label?: string; data: { edgeType: string } }[]) => {
+  const insertGraph = useCallback((ns: ModeMapNode[], es: { id: string; source: string; target: string; label?: string; data?: object }[]) => {
     pushHistory();
     const flowNs = toFlowNodes(ns);
     const flowEs = toFlowEdges(es as unknown as ModeMapEdge[]);
@@ -276,31 +276,8 @@ export function ModeMapCanvas({ clientId, mapId, kind, nodes, edges, setNodes, s
     setTimeout(() => fitView({ padding: 0.2, duration: 400, maxZoom: 1 }), 50);
   }, [setNodes, setEdges, scheduleSave, pushHistory, nodesRef, edgesRef, fitView]);
 
-  const onGenerateFromConcept = useCallback(async () => {
-    try {
-      const c = await api.getConceptualization(clientId);
-      const ids: string[] = Array.isArray(c?.modeIds) ? c.modeIds : [];
-      if (ids.length === 0) return;
-      const existing = new Set(nodesRef.current.map(n => (n.data as { modeId?: string }).modeId).filter(Boolean));
-      const ns: ModeMapNode[] = ids.filter(mid => !existing.has(mid)).map((mid, i) => {
-        let type: ModeMapNode['type'] = 'custom';
-        let sub: 'over' | 'avoid' | 'surr' | undefined;
-        for (const g of MODE_GROUPS) {
-          const meta = GROUP_TO_TYPE[g.id];
-          if (meta && g.items.some(it => it.id === mid)) { type = meta.type; sub = meta.copingSubtype; break; }
-        }
-        const lib = getModeById(mid);
-        const size = NODE_DEFAULT_SIZES[type] ?? {};
-        return { id: `gen_${mid}_${Date.now()}_${i}`, type, position: { x: (i % 4) * 220, y: Math.floor(i / 4) * 200 },
-          data: { modeId: mid, label: lib?.name ?? mid, ...(sub ? { copingSubtype: sub } : {}) }, ...size };
-      });
-      if (ns.length === 0) return;
-      pushHistory();
-      const merged = [...nodesRef.current, ...toFlowNodes(ns)];
-      setNodes(merged); scheduleSave(merged, edgesRef.current);
-      setTimeout(() => { const laid = autoLayout(nodesRef.current, edgesRef.current); setNodes(laid); fitView({ padding: 0.2, duration: 400, maxZoom: 1 }); }, 60);
-    } catch { /* ignore */ }
-  }, [clientId, setNodes, scheduleSave, pushHistory, nodesRef, edgesRef, fitView]);
+  const fromConcept = useGenerateFromConcept({ clientId, nodesRef, edgesRef, insert: insertGraph });
+  const hubDrag = useHubDrag({ nodesRef, setNodes });
 
   // ── Context menus ─────────────────────────────────────────────────────────────
   const onPaneContextMenu = useCallback((e: React.MouseEvent | MouseEvent) => {
@@ -323,7 +300,8 @@ export function ModeMapCanvas({ clientId, mapId, kind, nodes, edges, setNodes, s
   return (
     <div style={{ flex: 1, position: 'relative', background: 'var(--bg-elev)' }}>
       <div style={{ position: 'absolute', top: 12, right: 12, zIndex: 10, fontSize: 12, color: 'var(--text-faint)', pointerEvents: 'none' }}>
-        {saveStatus === 'saving' ? 'сохраняю…' : saveStatus === 'saved' ? '✓ сохранено' : ''}
+        {fromConcept.failed ? <span role="alert" style={{ color: 'var(--accent-red)' }}>Не получилось собрать схему из концептуализации</span>
+          : saveStatus === 'saving' ? 'сохраняю…' : saveStatus === 'saved' ? '✓ сохранено' : ''}
       </div>
       {nodes.length === 0 && (
         <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none', zIndex: 5 }}>
@@ -341,6 +319,7 @@ export function ModeMapCanvas({ clientId, mapId, kind, nodes, edges, setNodes, s
       <ReactFlow nodes={nodes} edges={edges} nodeTypes={NODE_TYPES as NodeTypes} edgeTypes={EDGE_TYPES}
         onNodesChange={onNodesChangeWithSave} onEdgesChange={onEdgesChange}
         onConnect={onConnect} onDrop={onDrop} onDragOver={onDragOver}
+        onNodeDragStart={hubDrag.onNodeDragStart} onNodeDrag={hubDrag.onNodeDrag}
         isValidConnection={isValidConnection}
         connectionMode={ConnectionMode.Loose}
         connectionRadius={110}
@@ -387,7 +366,7 @@ export function ModeMapCanvas({ clientId, mapId, kind, nodes, edges, setNodes, s
                       style={menuItemStyle}>{t.name}</button>
                   ))}
                   <div style={{ height: 1, background: 'var(--line)', margin: '4px 0' }} />
-                  <button onClick={() => { onGenerateFromConcept(); setTplOpen(false); }} style={menuItemStyle}>
+                  <button onClick={() => { void fromConcept.generate(); setTplOpen(false); }} style={menuItemStyle}>
                     Из концептуализации клиента
                   </button>
                 </Dropdown>

@@ -4,6 +4,7 @@ import {
   ClientErrorMetrics,
   formatClientErrorMetrics,
 } from './client-error-metrics.format';
+import type { ClientErrorMetricsRow } from './client-error-metrics.row';
 
 // Счётчики поломок клиента для /stats (волна 9 щита покрытия,
 // docs/SHIELD_PROMPT.md): событие client_error пишет только
@@ -29,26 +30,8 @@ export class ClientErrorMetricsService {
     // ограниченный список (CLIENT_ERROR_SECTIONS), раскладывать который по
     // строкам дороже и сложнее тестировать, чем по колонкам (тот же приём,
     // что у account-link-metrics.service.ts).
-    const [row] = await this.prisma.$queryRaw<
-      Array<{
-        total_day: bigint;
-        total_week: bigint;
-        auth_day: bigint;
-        auth_week: bigint;
-        login_week: bigint;
-        today_week: bigint;
-        diary_week: bigint;
-        schemas_week: bigint;
-        practice_week: bigint;
-        profile_week: bigint;
-        help_week: bigint;
-        cabinet_week: bigint;
-        booking_week: bigint;
-        other_week: bigint;
-        webapp_week: bigint;
-        miniapp_week: bigint;
-      }>
-    >`
+    // Тип строки — client-error-metrics.row.ts: опечатка в ключе ломает tsc.
+    const [row] = await this.prisma.$queryRaw<ClientErrorMetricsRow[]>`
       SELECT
         count(*) FILTER (WHERE "createdAt" >= ${since1})::bigint AS total_day,
         count(*)::bigint AS total_week,
@@ -66,7 +49,9 @@ export class ClientErrorMetricsService {
         count(*) FILTER (WHERE meta->>'section' = 'booking')::bigint AS booking_week,
         count(*) FILTER (WHERE meta->>'section' = 'other')::bigint AS other_week,
         count(*) FILTER (WHERE meta->>'source' = 'webapp')::bigint AS webapp_week,
-        count(*) FILTER (WHERE meta->>'source' = 'miniapp')::bigint AS miniapp_week
+        count(*) FILTER (WHERE meta->>'source' = 'miniapp')::bigint AS miniapp_week,
+        COALESCE(sum((meta->>'suppressed')::int), 0)::bigint AS repeats_week,
+        count(*) FILTER (WHERE meta->>'unlogged' = 'true')::bigint AS unlogged_week
       FROM "AnalyticsEvent"
       WHERE "userId" IS NULL
         AND "name" = 'client_error'
@@ -93,6 +78,8 @@ export class ClientErrorMetricsService {
         webapp: n(row?.webapp_week),
         miniapp: n(row?.miniapp_week),
       },
+      repeatsWeek: n(row?.repeats_week),
+      unloggedWeek: n(row?.unlogged_week),
     };
   }
 }

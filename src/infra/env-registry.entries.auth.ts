@@ -1,5 +1,5 @@
 // Записи реестра env-переменных (см. env-registry.ts) — группа auth:
-// вход (Google/VK/MAX/Telegram OIDC), JWT, шифрование хранимых данных.
+// вход (Google/VK/MAX/Telegram), JWT, шифрование хранимых данных.
 import { EnvVarSpec, formats } from './env-registry';
 
 export const AUTH_ENV_ENTRIES: EnvVarSpec[] = [

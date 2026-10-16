@@ -10,6 +10,7 @@ import {
 } from '@nestjs/common';
 import { Telegraf, Context } from 'telegraf';
 import { TELEGRAF_BOT } from './telegram.constants';
+import { failCallback } from './callback-failure';
 import { classifySendFailure } from './telegram-error';
 import { replyLong } from './send-long-text';
 import { renderTemplate } from '../notification/notification.templates';
@@ -148,8 +149,7 @@ export class TelegramAdminService implements OnModuleInit {
           await ctx.reply(`Заявка #${reqId} отклонена`);
         }
       } catch (err) {
-        this.logger.error(`treq action failed: ${(err as Error).message}`);
-        await ctx.answerCbQuery('Ошибка').catch(() => null);
+        await failCallback(this.logger, ctx, 'treq action', err);
       }
     });
 

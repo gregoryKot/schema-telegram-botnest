@@ -1,4 +1,5 @@
 import { AddClient } from '../types';
+import { AddSubmitButton } from './AddSubmitButton';
 
 // Панель добавления клиента одним полем: ввод + кнопка + подпись.
 // Общая для «Telegram ID» и «оффлайн-клиента» — механика одна, различаются
@@ -13,6 +14,7 @@ export function AddInputPanel({
   hint,
   accent = false,
   inputMode,
+  maxLength,
 }: {
   addClient: AddClient;
   inputRef: React.RefObject<HTMLInputElement | null>;
@@ -22,6 +24,8 @@ export function AddInputPanel({
   hint: string;
   accent?: boolean;
   inputMode?: 'numeric';
+  /** Предел длины поля (имя офлайн-клиента); у Telegram ID не задаётся. */
+  maxLength?: number;
 }) {
   const { addInput, setAddInput, addError, setAddError, addLoading } =
     addClient;
@@ -38,6 +42,7 @@ export function AddInputPanel({
           onKeyDown={(e) => e.key === 'Enter' && onSubmit()}
           placeholder={placeholder}
           inputMode={inputMode}
+          maxLength={maxLength}
           ref={inputRef}
           style={{
             flex: 1,
@@ -50,31 +55,13 @@ export function AddInputPanel({
             fontSize: 14,
           }}
         />
-        <button
+        <AddSubmitButton
           onClick={onSubmit}
           disabled={addLoading || !filled}
-          style={{
-            padding: '9px 16px',
-            borderRadius: 'var(--r-10)',
-            border: 'none',
-            background: filled
-              ? accent
-                ? 'var(--accent)'
-                : 'rgba(var(--fg-rgb),0.12)'
-              : 'rgba(var(--fg-rgb),0.05)',
-            color: filled
-              ? accent
-                ? '#fff'
-                : 'var(--text)'
-              : 'rgba(var(--fg-rgb),0.3)',
-            fontSize: 13,
-            fontWeight: 600,
-            cursor: filled ? 'pointer' : 'default',
-            flexShrink: 0,
-          }}
-        >
-          {addLoading ? '...' : submitLabel}
-        </button>
+          filled={filled}
+          accent={accent}
+          label={addLoading ? '...' : submitLabel}
+        />
       </div>
       <div style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 6 }}>
         {hint}

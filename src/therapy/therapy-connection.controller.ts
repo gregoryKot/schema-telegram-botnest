@@ -12,7 +12,7 @@ import {
   Req,
   UseGuards,
 } from '@nestjs/common';
-import { Throttle } from '@nestjs/throttler';
+import { PersistentThrottleLimit } from '../api/persistent-throttle-limit';
 import { Request } from 'express';
 import { uid } from '../api/request-utils';
 import { parseClientId } from '../api/parse-user-id';
@@ -23,11 +23,8 @@ import { ALREADY_CONNECTED_ERROR } from './therapy-invite';
 import { TherapyClientDataService } from './therapy-client-data.service';
 import { TherapistRequestService } from './therapist-request.service';
 import { AccountService } from '../bot/account.service';
-import {
-  JoinTherapyDto,
-  VirtualClientDto,
-  TherapistViewDto,
-} from './dto/connection.dto';
+import { JoinTherapyDto, TherapistViewDto } from './dto/connection.dto';
+import { VirtualClientDto } from './dto/virtual-client.dto';
 import { RenameClientDto } from './dto/client-data.dto';
 
 interface AuthRequest extends Request {
@@ -151,7 +148,7 @@ export class TherapyConnectionController {
   // ─── Therapist role request (admin-approved) ────────────────────────────
 
   @Post('request')
-  @Throttle({
+  @PersistentThrottleLimit({
     short: { limit: 2, ttl: 60_000 },
     long: { limit: 5, ttl: 24 * 3_600_000 },
   })

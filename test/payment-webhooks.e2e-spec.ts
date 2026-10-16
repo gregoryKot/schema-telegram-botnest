@@ -18,12 +18,18 @@ import { SessionType } from '@prisma/client';
 import { SESSION_DEFAULT_PRICE } from '../src/booking/booking.config';
 import { buildTestApp, TestApp } from './e2e-support/build-test-app';
 import { cleanupPaymentFixtures } from './e2e-support/cleanup-fixtures';
+import { activeCronJobs, stopCronJobs } from './e2e-support/stop-cron-jobs';
 import { DONATION_INVID_BASE } from '../src/donation/donation.service';
 import { SUBSCRIPTION_INVID_BASE } from '../src/subscription/subscription.service';
+import { markChargeFailed } from '../src/subscription/subscription.charge-failed';
+import { chargeDue } from '../src/subscription/subscription.charges';
+import { RobokassaService } from '../src/booking/robokassa.service';
 import { BookingService } from '../src/booking/booking.service';
 import { BookingNotifyService } from '../src/booking/booking-notify.service';
 import { BookingConfirmRetryService } from '../src/booking/booking-confirm-retry.service';
 import { MeetingService } from '../src/booking/meeting.service';
+import { CalDavService } from '../src/booking/caldav.service';
+import { bookingEventUid } from '../src/booking/booking-confirm-run';
 import { CronLeaderService } from '../src/infra/cron-leader.service';
 import { TelegramService } from '../src/telegram/telegram.service';
 import { EmailService } from '../src/auth/email.service';
@@ -49,6 +55,10 @@ const BOOKING_CANCEL_TOKENS = [
   'bk-ct-10',
   'bk-ct-11',
   'bk-ct-12',
+  'bk-ct-13',
+  'bk-ct-14',
+  'bk-ct-15',
+  'bk-ct-16',
 ];
 const SUBSCRIPTION_CANCEL_TOKENS = [
   'sub-ct-1',
@@ -56,6 +66,9 @@ const SUBSCRIPTION_CANCEL_TOKENS = [
   'sub-ct-3',
   'sub-ct-4',
   'sub-ct-5',
+  'sub-ct-6',
+  'sub-ct-7',
+  'sub-ct-8',
 ];
 const DONATION_MARKER = 'e2e-payment-webhook-test';
 const TEST_CLIENT_CONTACT = 't@e.co';
@@ -77,6 +90,13 @@ describe('e2e smoke: платёжный контур Robokassa по HTTP', () =>
 
   beforeAll(async () => {
     ({ app, prisma } = await buildTestApp());
+    // Настоящие @Cron после app.init() тикают посреди теста. Спек зовёт
+    // крон-методы напрямую, а шпионы на notifyAdmin/почту считают вызовы
+    // «ровно N»: тик sendReminders (*/5) на границе пятиминутки слал по броням
+    // из общей БД джобы свои напоминания, и счётчик видел 4 вместо 1 (инцидент
+    // CI 2026-10-16 03:35 UTC, PR #722). Останавливаем на весь файл — шпионы
+    // стоят в нескольких describe.
+    await stopCronJobs(app);
     // Чистый старт — на фейке no-op (свежий in-memory прогон), на реальном
     // Postgres вычищает фикстуры прошлого прогона этого же спека (см. комментарий
     // выше и cleanupPaymentFixtures в e2e-support/cleanup-fixtures.ts).
@@ -137,6 +157,10 @@ describe('e2e smoke: платёжный контур Robokassa по HTTP', () =>
       },
     });
   }
+
+  it('настоящие кроны остановлены: вызовы шпионов считают только то, что зовёт сам тест', () => {
+    expect(activeCronJobs(app)).toEqual([]);
+  });
 
   // ─── Бронь: обычный InvId-диапазон ────────────────────────────────────────
 
@@ -575,6 +599,138 @@ describe('e2e smoke: платёжный контур Robokassa по HTTP', () =>
     });
   });
 
+  // ─── Календарь: событие не переживает отмену (аудит 2026-10-11, booking-cas) ─
+  // Граница подмены — CalDavService (PUT/DELETE в iCloud): фейковый календарь —
+  // множество uid. Всё выше (HTTP ResultURL с MD5-подписью, runConfirmEffects,
+  // claimCancel, onCancelled) — код прода на настоящей БД. Гонка confirm ‖ cancel
+  // — свойство Postgres (CAS по строке), мок count её не доказал бы (правило №18).
+
+  describe('календарь: confirm ‖ cancel и гибель пода между PUT и записью uid', () => {
+    let bookingSvc: BookingService;
+    let tg: jest.SpyInstance;
+    let mail: jest.SpyInstance;
+    let push: jest.SpyInstance;
+    let remove: jest.SpyInstance;
+    let calendar: Set<string>;
+    let onPush: ((uid: string) => Promise<void>) | null;
+    const pauseThrottle = () => new Promise((r) => setTimeout(r, 1100));
+
+    beforeAll(async () => {
+      await pauseThrottle();
+      bookingSvc = app.get(BookingService);
+      jest
+        .spyOn(app.get(CronLeaderService), 'claimRun')
+        .mockResolvedValue(true);
+      tg = jest.spyOn(app.get(TelegramService), 'notifyAdmin');
+      mail = jest.spyOn(app.get(EmailService), 'sendAdminNotification');
+      const cal = app.get(CalDavService);
+      push = jest.spyOn(cal, 'pushEvent');
+      remove = jest.spyOn(cal, 'removeEvent');
+    });
+    beforeEach(() => {
+      calendar = new Set();
+      onPush = null;
+      tg.mockReset().mockResolvedValue(true);
+      mail.mockReset().mockResolvedValue(undefined);
+      push.mockReset().mockImplementation(async (ev: { uid: string }) => {
+        // Отмена приходит, пока идёт PUT: она раньше события в календаре.
+        if (onPush) await onPush(ev.uid);
+        calendar.add(ev.uid);
+        return ev.uid;
+      });
+      remove.mockReset().mockImplementation(async (uid: string) => {
+        calendar.delete(uid);
+      });
+    });
+    afterAll(async () => {
+      jest.restoreAllMocks();
+      await pauseThrottle();
+    });
+
+    const row = (id: number) => prisma.booking.findUnique({ where: { id } });
+    const dms = (title: string) =>
+      tg.mock.calls
+        .map((c) => String(c[0]))
+        .filter((t) => t.includes(title) && t.includes(EFFECTS_CLIENT_CONTACT));
+    function create(token: string, status: 'HELD' | 'CONFIRMED') {
+      return prisma.booking.create({
+        data: {
+          startsAt: new Date(Date.now() + 72 * 3_600_000),
+          durationMin: 50,
+          type: 'SESSION_50',
+          status,
+          heldUntil: status === 'HELD' ? new Date(Date.now() + 600_000) : null,
+          clientName: 'Клиент',
+          clientContact: EFFECTS_CLIENT_CONTACT,
+          cancelToken: token,
+        },
+      });
+    }
+    const pay = (id: number) =>
+      postResult(
+        SESSION_OUT_SUM,
+        String(id),
+        resultSig(SESSION_OUT_SUM, String(id)),
+      );
+
+    it('отмена во время PUT: события в календаре не остаётся, «Запись подтверждена» не уходит', async () => {
+      await pauseThrottle();
+      const b = await create('bk-ct-13', 'HELD');
+      onPush = async () => {
+        await bookingSvc.cancel('bk-ct-13');
+      };
+
+      const res = await pay(b.id);
+
+      expect(res.text).toBe(`OK${b.id}`);
+      expect((await row(b.id))?.status).toBe('CANCELLED');
+      expect([...calendar]).toEqual([]); // DELETE отмены обогнал PUT, добил confirm
+      expect(remove).toHaveBeenCalledWith(bookingEventUid(b.id));
+      expect(dms('Запись подтверждена')).toEqual([]);
+      expect(dms('Запись отменена')).toHaveLength(1);
+      expect((await row(b.id))?.confirmEffectsDoneAt ?? null).toBeNull();
+    });
+
+    it('под умер между PUT и записью uid: CONFIRMED без calDavUid, событие уже в календаре — отмена его снимает', async () => {
+      const b = await create('bk-ct-14', 'CONFIRMED');
+      calendar.add(bookingEventUid(b.id)); // PUT прошёл, uid в строку не записан
+      expect((await row(b.id))?.calDavUid ?? null).toBeNull();
+
+      await expect(bookingSvc.cancel('bk-ct-14')).resolves.toEqual({
+        ok: true,
+      });
+
+      expect([...calendar]).toEqual([]);
+      expect(dms('Запись отменена')).toHaveLength(1);
+    });
+
+    it('отмена HELD-брони: события не было, DELETE в календарь не уходит, админ уведомлён', async () => {
+      const b = await create('bk-ct-16', 'HELD');
+
+      await bookingSvc.cancel('bk-ct-16');
+
+      expect((await row(b.id))?.status).toBe('CANCELLED');
+      expect(remove).not.toHaveBeenCalled();
+      expect(dms('Запись отменена')).toHaveLength(1);
+    });
+
+    it('контроль: обычный порядок (оплата завершилась, потом отмена) — DELETE по записанному uid', async () => {
+      await pauseThrottle();
+      const b = await create('bk-ct-15', 'HELD');
+      expect((await pay(b.id)).text).toBe(`OK${b.id}`);
+      const saved = (await row(b.id))?.calDavUid;
+      expect(saved).toBe(bookingEventUid(b.id));
+      expect([...calendar]).toEqual([saved]);
+      expect(dms('Запись подтверждена')).toHaveLength(1);
+
+      await bookingSvc.cancel('bk-ct-15');
+
+      expect([...calendar]).toEqual([]);
+      expect(remove).toHaveBeenCalledWith(saved);
+      expect(dms('Запись отменена')).toHaveLength(1);
+    });
+  });
+
   // ─── Донаты ────────────────────────────────────────────────────────────────
 
   describe('donation webhook', () => {
@@ -771,6 +927,100 @@ describe('e2e smoke: платёжный контур Robokassa по HTTP', () =>
         expect(await chargeStatus(charge.id)).toBe('paid');
         const texts = tg.mock.calls.map((c) => String(c[0])).join('\n');
         expect(texts).not.toContain('Верните деньги');
+      });
+
+      // Сбой списания против вебхука оплаты: транзакция на живом Postgres решает
+      // по count пометки charge. Оплата пришла раньше — подписку не трогаем
+      // (nextChargeAt от вебхука), иначе ретрай через сутки = второе списание.
+      it('вебхук оплатил charge раньше сбоя: markChargeFailed не засчитывает сбой, подписка не тронута', async () => {
+        const { sub, charge, invId } = await seed('active', 'sub-ct-6');
+        expect((await payInv(invId)).text).toBe(`OK${invId}`);
+        const before = await subRow(sub.id);
+
+        const counted = await markChargeFailed(prisma, {
+          chargeId: charge.id,
+          subId: sub.id,
+          status: 'active',
+          fails: 1,
+          maxFails: 3,
+        });
+
+        expect(counted).toBe(false);
+        expect(await chargeStatus(charge.id)).toBe('paid');
+        const after = await subRow(sub.id);
+        expect(after?.failedAttempts).toBe(0);
+        expect(after?.nextChargeAt).toEqual(before?.nextChargeAt);
+      });
+
+      // Тот же шов, но через настоящий chargeDue: граница подменена только на
+      // chargeRecurring (Robokassa) — пока «банк» отвечает отказом, приходит
+      // настоящий вебхук оплаты этого же charge. Прямой вызов markChargeFailed
+      // выше не заметит, если chargeDue вернёт старую batch-транзакцию.
+      // chargeDue берёт захват подписки сырым SQL — фейк его не эмулирует.
+      (process.env.E2E_REAL_DB === '1' ? it : it.skip)(
+        'chargeDue: вебхук оплатил charge, пока Robokassa отвечала отказом → сбой не засчитан, nextChargeAt от вебхука цел, алерта нет',
+        async () => {
+          const sub = await prisma.subscription.create({
+            data: {
+              status: 'active',
+              period: 'month',
+              amount: 500,
+              cancelToken: 'sub-ct-8',
+              firstInvId: 900001,
+              nextChargeAt: new Date(Date.now() - 60_000),
+            },
+          });
+          const robokassa = {
+            enabled: true,
+            chargeRecurring: async ({ invId }: { invId: number }) => {
+              const inv = String(invId);
+              expect((await payInv(inv)).text).toBe(`OK${inv}`);
+              return { ok: false, body: 'bank declined' };
+            },
+          } as unknown as RobokassaService;
+
+          await chargeDue({
+            prisma,
+            robokassa,
+            notify: app.get(BookingNotifyService),
+            logger: new Logger('test'),
+            enabled: true,
+          });
+
+          const charge = await prisma.subscriptionCharge.findFirst({
+            where: { subscriptionId: sub.id },
+          });
+          expect(charge?.status).toBe('paid');
+          const row = await subRow(sub.id);
+          expect(row?.failedAttempts).toBe(0);
+          expect(row?.status).toBe('active');
+          // Вебхук поставил nextChargeAt на период вперёд; ретрай «через
+          // сутки» затёр бы его и дал второе списание.
+          expect(row?.nextChargeAt?.getTime()).toBeGreaterThan(
+            Date.now() + 20 * 86_400_000,
+          );
+          const texts = tg.mock.calls.map((c) => String(c[0])).join('\n');
+          expect(texts).not.toContain('Не удалось списать');
+        },
+      );
+
+      it('КОНТРОЛЬ: charge ещё pending → сбой засчитан, charge failed, ретрай через сутки', async () => {
+        const { sub, charge } = await seed('active', 'sub-ct-7');
+
+        const counted = await markChargeFailed(prisma, {
+          chargeId: charge.id,
+          subId: sub.id,
+          status: 'active',
+          fails: 1,
+          maxFails: 3,
+        });
+
+        expect(counted).toBe(true);
+        expect(await chargeStatus(charge.id)).toBe('failed');
+        const row = await subRow(sub.id);
+        expect(row?.failedAttempts).toBe(1);
+        expect(row?.status).toBe('active');
+        expect(row?.nextChargeAt?.getTime()).toBeGreaterThan(Date.now());
       });
     });
 

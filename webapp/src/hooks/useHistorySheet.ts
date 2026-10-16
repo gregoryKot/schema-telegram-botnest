@@ -65,7 +65,7 @@ export function useHistorySheet(onClose: () => void) {
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if (e.key !== 'Escape') return;
+      if (e.key !== 'Escape' || e.defaultPrevented) return; // диалог поверх уже закрылся (dialogStack)
       // Не верхний из наложенных листов — Escape его не касается.
       if (openSheetIds[openSheetIds.length - 1] !== id) return;
       navigate(-1);

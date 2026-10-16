@@ -4,6 +4,7 @@
 // покрытия src/telegram (аудит 2026-08).
 import { Logger } from '@nestjs/common';
 import { TelegramNotifySettingsService } from './telegram.notify-settings.service';
+import { ERROR_RETRY } from './telegram.constants';
 import { makeFakeBot, runAction } from './telegram.test-helpers.spec';
 
 function makeService(botService: any) {
@@ -53,45 +54,50 @@ describe('TelegramNotifySettingsService — catch-блоки', () => {
     updateUserSettings: jest.fn().mockRejectedValue(new Error('db down')),
   });
 
-  it('settings:pick_freq: editMessageText падает — answerCbQuery-фолбэк', async () => {
+  it('settings:pick_freq: editMessageText падает — сообщение об ошибке', async () => {
     jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
     const { service, fakeBot } = makeService({ getUserSettings: jest.fn() });
     service.onModuleInit();
     const ctx = await runAction(fakeBot, 'settings:pick_freq', {
       editMessageText: jest.fn().mockRejectedValue(new Error('too old')),
     });
-    expect(ctx.answerCbQuery).toHaveBeenLastCalledWith(
-      expect.stringContaining('Не получилось'),
-    );
+    expect(ctx.answerCbQuery).toHaveBeenCalledTimes(1);
+    expect(ctx.reply).toHaveBeenCalledWith(ERROR_RETRY);
   });
 
-  it('settings:freq:2: падение записи в БД — answerCbQuery-фолбэк', async () => {
+  it('settings:freq:2: падение записи в БД — сообщение об ошибке', async () => {
     jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
     const { service, fakeBot } = makeService(failingBotService());
     service.onModuleInit();
     const ctx = await runAction(fakeBot, 'settings:freq:2');
-    expect(ctx.answerCbQuery).toHaveBeenLastCalledWith(
-      expect.stringContaining('Не удалось'),
+    expect(ctx.answerCbQuery).toHaveBeenCalledTimes(1);
+    expect(ctx.editMessageText).toHaveBeenLastCalledWith(
+      ERROR_RETRY,
+      expect.anything(),
     );
   });
 
-  it('settings:quiet:22:8: падение записи в БД — answerCbQuery-фолбэк', async () => {
+  it('settings:quiet:22:8: падение записи в БД — сообщение об ошибке', async () => {
     jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
     const { service, fakeBot } = makeService(failingBotService());
     service.onModuleInit();
     const ctx = await runAction(fakeBot, 'settings:quiet:22:8');
-    expect(ctx.answerCbQuery).toHaveBeenLastCalledWith(
-      expect.stringContaining('Не удалось'),
+    expect(ctx.answerCbQuery).toHaveBeenCalledTimes(1);
+    expect(ctx.editMessageText).toHaveBeenLastCalledWith(
+      ERROR_RETRY,
+      expect.anything(),
     );
   });
 
-  it('settings:addr:vy: падение записи в БД — answerCbQuery-фолбэк', async () => {
+  it('settings:addr:vy: падение записи в БД — сообщение об ошибке', async () => {
     jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
     const { service, fakeBot } = makeService(failingBotService());
     service.onModuleInit();
     const ctx = await runAction(fakeBot, 'settings:addr:vy');
-    expect(ctx.answerCbQuery).toHaveBeenLastCalledWith(
-      expect.stringContaining('Не удалось'),
+    expect(ctx.answerCbQuery).toHaveBeenCalledTimes(1);
+    expect(ctx.editMessageText).toHaveBeenLastCalledWith(
+      ERROR_RETRY,
+      expect.anything(),
     );
   });
 });

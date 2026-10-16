@@ -179,8 +179,6 @@ const NOT_YET_COVERED: Array<{ route: string; reason: string }> = [
   { route: 'GET /api/auth/google/callback', reason: REASON.AUTH_LOGIN },
   { route: 'GET /api/auth/vk', reason: REASON.AUTH_LOGIN },
   { route: 'GET /api/auth/vk/callback', reason: REASON.AUTH_LOGIN },
-  { route: 'GET /api/auth/telegram-oidc', reason: REASON.AUTH_LOGIN },
-  { route: 'GET /api/auth/telegram-oidc/callback', reason: REASON.AUTH_LOGIN },
   { route: 'GET /api/auth/telegram/redirect', reason: REASON.AUTH_LOGIN },
   { route: 'GET /api/auth/me', reason: REASON.AUTH_LOGIN },
   { route: 'GET /api/auth/link-token', reason: REASON.AUTH_LOGIN },
@@ -189,7 +187,6 @@ const NOT_YET_COVERED: Array<{ route: string; reason: string }> = [
   { route: 'GET /api/therapy/my-mode-maps/:param', reason: REASON.THERAPY },
   { route: 'GET /api/therapy/relation', reason: REASON.THERAPY },
   { route: 'DELETE /api/therapy/clients/:param', reason: REASON.THERAPY },
-  { route: 'POST /api/therapy/clients/virtual', reason: REASON.THERAPY },
   { route: 'POST /api/therapy/rename-client/:param', reason: REASON.THERAPY },
   { route: 'POST /api/therapy/become-therapist', reason: REASON.THERAPY },
   { route: 'POST /api/therapy/request', reason: REASON.THERAPY },
@@ -250,7 +247,7 @@ describe('трипваер: каждый guarded-маршрут вызван х�
     expect(stale).toEqual([]);
   });
 
-  it('ратчет: allowlist может только сокращаться (сейчас ≤62)', () => {
-    expect(NOT_YET_COVERED.length).toBeLessThanOrEqual(62);
+  it('ратчет: allowlist может только сокращаться (сейчас ≤61)', () => {
+    expect(NOT_YET_COVERED.length).toBeLessThanOrEqual(61);
   });
 });
