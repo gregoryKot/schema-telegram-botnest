@@ -91,8 +91,9 @@ describe('e2e: терапия и пары с веб-клиентом (выдум
 
       const notes = await t.get(`/api/therapy/notes/${WEB_STR}`);
       expect(notes.status).toBe(200);
-      expect(notes.body).toHaveLength(1);
-      expect(notes.body[0].text).toBe('веб-клиент: первая сессия');
+      expect(notes.body.notes).toHaveLength(1);
+      expect(notes.body.total).toBe(1);
+      expect(notes.body.notes[0].text).toBe('веб-клиент: первая сессия');
 
       const data = await t.get(`/api/therapy/client-data/${WEB_STR}`);
       expect(data.status).toBe(200);

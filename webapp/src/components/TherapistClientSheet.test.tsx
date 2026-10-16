@@ -66,7 +66,7 @@ function client(overrides: Partial<TherapyClientSummary>): TherapyClientSummary 
 // концептуализации, дневника. Переопределяется per-test через mockImplementation.
 function emptyClientDetailMocks() {
   mockApi.getTherapyTasksForClient.mockResolvedValue([]);
-  mockApi.getTherapistNotes.mockResolvedValue([]);
+  mockApi.getTherapistNotes.mockResolvedValue({ notes: [], total: 0 });
   mockApi.getConceptualization.mockResolvedValue(null);
   mockApi.getTherapyClientData.mockResolvedValue({
     name: null, mySchemaIds: [], myModeIds: [], ysqCompletedAt: null, ysqActiveSchemaIds: [], ysqHistory: [],
@@ -530,9 +530,9 @@ describe('TherapistClientSheet — насыщенная карточка кли�
         { id: 1, completedAt: '2026-06-01T00:00:00.000Z', scores: [{ id: 'abandonment', pct5plus: 50 }, { id: 'emotional_deprivation', pct5plus: 30 }] },
       ],
     });
-    mockApi.getTherapistNotes.mockResolvedValue([
+    mockApi.getTherapistNotes.mockResolvedValue({ notes: [
       { id: 5, therapistId: 1, clientId: 7, date: '2026-07-20', text: 'Заметка последней сессии', createdAt: '2026-07-20T00:00:00.000Z' },
-    ]);
+    ], total: 1 });
     mockApi.getClientDiary.mockResolvedValue([
       { type: 'schema' as const, date: '2026-07-19', schemaIds: ['abandonment'], excerpt: 'Триггернуло на встрече' },
     ]);

@@ -21,7 +21,7 @@ describe('ClientHeader — предел длины псевдонима', () => 
       clientSchemaNotesData: [],
       clientModeNotesData: [],
       clientTasks: [],
-      notes: [],
+      notesPage: { notes: [], total: 0 },
       clientData: null,
       clientDiary: [],
       setShowAssign: vi.fn(),
