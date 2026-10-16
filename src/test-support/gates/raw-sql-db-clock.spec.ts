@@ -11,6 +11,11 @@
 // $queryRaw / $executeRaw / Prisma.sql и строковые аргументы *Unsafe). JS-вызов
 // `this.now()` в probe-*.ts или слово now() в комментарии — не SQL (правило
 // №15: ложно-красный гейт отключают). Рождается с нулём нарушений, без ALLOW.
+//
+// Предел: пин видит SQL только прямо в вызове — шаблон за тегом и литерал в
+// *Unsafe. Строку в константе (`$queryRawUnsafe(SQL)`), `Prisma.raw(str)` и
+// `pg.Client.query` он не читает. Часов БД там сегодня нет (grep по src: raw —
+// только имена таблиц, `pg` не импортируется); появятся — расширять обход.
 import { readFileSync } from 'fs';
 import { join, relative, sep } from 'path';
 import * as ts from 'typescript';

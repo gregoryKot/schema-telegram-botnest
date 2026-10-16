@@ -17,8 +17,10 @@ import { BLOCK_FAILED_MARK } from '../src/bot/stats-settle';
 import { buildStatsReport } from './e2e-support/stats-report.factory';
 
 const USER_ID = 999_000_000_010n;
-// Пользователи у границ когорт D1 (±5 ч): резерв id рядом с USER_ID.
-const EDGE_IDS = [11n, 12n, 13n, 14n, 15n].map((i) => 999_000_000_000n + i);
+// Пользователи у границ когорт D1 (±5 ч). Диапазон 21..25 свободен: 011 занят
+// USER_ID соседнего raw-sql-live-infra (оба спека идут одним шагом джобы
+// migrations, общая база), 001/002 — read-after-write.
+const EDGE_IDS = [21n, 22n, 23n, 24n, 25n].map((i) => 999_000_000_000n + i);
 const HOUR = 3_600_000;
 const DAY = 24 * HOUR;
 // Маркер в meta анонимных событий (userId = null) — по нему спек чистит за
