@@ -1,8 +1,8 @@
 // Две пробы приёма оплаты (аудит 2026-10-11). Площадку не вызывают: проверяют
 // конфигурацию и следы настоящих вебхуков в нашей БД.
 import { SessionType } from '@prisma/client';
+import { PAID_AT_TRACKED_SINCE } from '../../booking/booking-paid-at';
 import {
-  PAID_AT_TRACKED_SINCE,
   type PaymentWebhooksDb,
   paymentWebhooksProbe,
   robokassaConfigProbe,
