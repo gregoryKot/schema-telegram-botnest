@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { TherapyRelationsService } from './therapy-relations.service';
 import { encryptRecord, decryptRecord, EncryptSchema } from '../utils/crypto';
+import { guardOverwrite } from '../utils/crypto-record';
 
 // Declarative encryption schemas — single source of truth, so a newly added
 // free-text field can't silently end up in plaintext (just add it here).
@@ -12,9 +13,8 @@ const MODE_MAP_SCHEMA: EncryptSchema = {
 const CUSTOM_MODE_SCHEMA: EncryptSchema = { strings: ['name'] };
 const MODE_MAP_KINDS = ['personality', 'problem', 'couple'] as const;
 
-// Карты режимов (mode maps) терапевта для клиента + кастомные режимы
-// терапевта. Доступ к чужому клиенту закрыт через
-// TherapyRelationsService.assertHasClient.
+// Карты режимов (mode maps) терапевта для клиента + кастомные режимы терапевта.
+// Доступ к чужому клиенту закрыт через TherapyRelationsService.assertHasClient.
 @Injectable()
 export class ModeMapsService {
   constructor(
@@ -93,8 +93,7 @@ export class ModeMapsService {
     });
     if (!existing || existing.therapistId.toString() !== therapistId.toString())
       throw new Error('Not found');
-    // См. комментарий в getModeMap — та же догоняющая проверка активности
-    // связи, симметрично для записи.
+    // См. getModeMap: догоняющая проверка связи, симметрично для записи.
     await this.relationsService.assertHasClient(
       therapistId,
       (existing as { clientId: bigint }).clientId,
@@ -103,6 +102,8 @@ export class ModeMapsService {
     if (body.title !== undefined) fields.title = body.title;
     if (body.nodes !== undefined) fields.nodes = body.nodes;
     if (body.edges !== undefined) fields.edges = body.edges;
+    // Нечитаемые nodes/edges ушли клиенту как [] — запись поверх стёрла бы их.
+    guardOverwrite(existing, MODE_MAP_SCHEMA, fields, `modeMap#${mapId}`);
     const row = await this.prisma.modeMap.update({
       where: { id: mapId },
       data: encryptRecord(fields, MODE_MAP_SCHEMA),
@@ -116,8 +117,7 @@ export class ModeMapsService {
     });
     if (!existing || existing.therapistId.toString() !== therapistId.toString())
       throw new Error('Not found');
-    // См. комментарий в getModeMap — та же догоняющая проверка активности
-    // связи, симметрично для удаления.
+    // См. getModeMap: догоняющая проверка связи, симметрично для удаления.
     await this.relationsService.assertHasClient(
       therapistId,
       (existing as { clientId: bigint }).clientId,

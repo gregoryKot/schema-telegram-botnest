@@ -3,6 +3,8 @@ import { api } from '../../api';
 import { useTr } from '../../utils/addressForm';
 import { SHead } from './ui';
 import { inputStyle } from './inputStyle';
+import { LimitedTextarea } from '../../../../shared/src/components/LimitedTextarea';
+import * as LIM from '../../../../shared/src/limits/textLimits';
 
 // Раздел «Стать специалистом» — вынесен из SettingsSheet.tsx (правило №10,
 // файл-должник, пофайловый храповик размера). Состояние заявки полностью
@@ -73,13 +75,11 @@ export function BecomeTherapistSection() {
           </div>
         ) : (
           <div className="u-col10">
-            <input value={reqFullName} onChange={e => setReqFullName(e.target.value)} placeholder="ФИО" style={inputStyle} />
-            <textarea value={reqQual} onChange={e => setReqQual(e.target.value)} rows={3}
-              placeholder="Квалификация: образование, направление, опыт, сертификаты"
+            <input value={reqFullName} onChange={e => setReqFullName(e.target.value)} placeholder="ФИО" maxLength={LIM.THERAPIST_REQUEST_NAME_MAX} style={inputStyle} />
+            <LimitedTextarea max={LIM.THERAPIST_REQUEST_QUAL_MAX} value={reqQual} onChange={e => setReqQual(e.target.value)} rows={3} placeholder="Квалификация: образование, направление, опыт, сертификаты"
               style={{ ...inputStyle, resize: 'vertical', fontFamily: 'inherit' }} />
-            <input value={reqContacts} onChange={e => setReqContacts(e.target.value)} placeholder="Контакты: сайт, @telegram, b17 и т.д." style={inputStyle} />
-            <textarea value={reqMsg} onChange={e => setReqMsg(e.target.value)} rows={2}
-              placeholder="Сообщение (необязательно)"
+            <input value={reqContacts} onChange={e => setReqContacts(e.target.value)} placeholder="Контакты: сайт, @telegram, b17 и т.д." maxLength={LIM.THERAPIST_REQUEST_CONTACTS_MAX} style={inputStyle} />
+            <LimitedTextarea max={LIM.THERAPIST_REQUEST_MESSAGE_MAX} value={reqMsg} onChange={e => setReqMsg(e.target.value)} rows={2} placeholder="Сообщение (необязательно)"
               style={{ ...inputStyle, resize: 'vertical', fontFamily: 'inherit' }} />
             {reqError && <div style={{ fontSize: 12, color: 'var(--accent-red)' }}>{reqError}</div>}
             <div className="u-row8">

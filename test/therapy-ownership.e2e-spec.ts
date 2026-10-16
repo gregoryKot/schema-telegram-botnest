@@ -92,8 +92,9 @@ describe('e2e smoke: therapy ownership isolation (therapist ↔ client)', () => 
 
     const notes = await t1.get(`/api/therapy/notes/${C1_ID}`);
     expect(notes.status).toBe(200);
-    expect(notes.body).toHaveLength(1);
-    expect(notes.body[0].text).toBe('первая сессия: тревога, избегание');
+    expect(notes.body.notes).toHaveLength(1);
+    expect(notes.body.total).toBe(1);
+    expect(notes.body.notes[0].text).toBe('первая сессия: тревога, избегание');
 
     const savedConcept = await t1.post(
       `/api/therapy/conceptualization/${C1_ID}`,
@@ -222,7 +223,7 @@ describe('e2e smoke: therapy ownership isolation (therapist ↔ client)', () => 
     const t1 = agentAs(T1);
     const notes = await t1.get(`/api/therapy/notes/${C1_ID}`);
     expect(
-      notes.body.some(
+      notes.body.notes.some(
         (n: { text: string }) => n.text === 'заметка от чужого терапевта',
       ),
     ).toBe(false);
@@ -312,5 +313,34 @@ describe('e2e smoke: therapy ownership isolation (therapist ↔ client)', () => 
     expect(pendingInvite?.therapistId).toBe(T1);
     // Заметки по-прежнему доступны: связь жива.
     expect((await t1.get(`/api/therapy/notes/${C1_ID}`)).status).toBe(200);
+  });
+
+  // Находка аудита 2026-10: take: 100 без признака «есть ещё». Шов — ответ
+  // уходит через HTTP: контроллер + сервис + Prisma (фейк и живой Postgres в
+  // джобе migrations) вместе отдают срез и общий счётчик.
+  it('101 заметка → GET отдаёт 100 и total (признак «есть ещё»), срез — самые поздние по дате', async () => {
+    const t1 = agentAs(T1);
+    const existing = (await t1.get(`/api/therapy/notes/${C1_ID}`)).body.total;
+    const base = Date.UTC(2026, 0, 1);
+    for (let i = 0; i < 101; i++) {
+      await prisma.therapistNote.create({
+        data: {
+          therapistId: T1,
+          clientId: C1,
+          date: new Date(base + i * 86_400_000).toISOString().slice(0, 10),
+          text: `срез-${i}`,
+        },
+      });
+    }
+    const res = await t1.get(`/api/therapy/notes/${C1_ID}`);
+    expect(res.status).toBe(200);
+    expect(res.body.notes).toHaveLength(100);
+    expect(res.body.total).toBe(existing + 101);
+    const dates = res.body.notes.map((n: { date: string }) => n.date);
+    expect([...dates].sort().reverse()).toEqual(dates);
+    // самая ранняя из 101 (2026-01-01) не пережила срез
+    expect(
+      res.body.notes.some((n: { text: string }) => n.text === 'срез-0'),
+    ).toBe(false);
   });
 });

@@ -89,3 +89,42 @@ describe('Dialog — закрытие', () => {
     expect(screen.getByRole('dialog')).toBeTruthy();
   });
 });
+
+// Аудит 2026-10: у каждого Dialog был свой document-слушатель Escape, без
+// стека — одно нажатие закрывало все окна с closeOnEscape разом.
+describe('Dialog — несколько окон', () => {
+  it('Escape закрывает только верхнее окно с closeOnEscape', () => {
+    const lower = vi.fn();
+    const upper = vi.fn();
+    render(
+      <>
+        <Dialog label="Нижнее" closeOnEscape onClose={lower}>
+          <button>a</button>
+        </Dialog>
+        <Dialog label="Верхнее" closeOnEscape onClose={upper}>
+          <button>b</button>
+        </Dialog>
+      </>,
+    );
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(upper).toHaveBeenCalledTimes(1);
+    expect(lower).not.toHaveBeenCalled();
+  });
+
+  it('верхнее окно без closeOnEscape: Escape не закрывает нижнее', () => {
+    const lower = vi.fn();
+    render(
+      <>
+        <Dialog label="Нижнее" closeOnEscape onClose={lower}>
+          <button>a</button>
+        </Dialog>
+        <Dialog label="Верхнее">
+          <button>b</button>
+        </Dialog>
+      </>,
+    );
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(lower).not.toHaveBeenCalled();
+  });
+});
+

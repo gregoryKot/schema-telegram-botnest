@@ -35,7 +35,9 @@ type AccountMock = Pick<AccountService, 'getUserRole'> & {
 
 function makeNotes(): NotesMock {
   return {
-    getNotes: jest.fn().mockResolvedValue([{ id: 1, text: 'заметка' }]),
+    getNotes: jest
+      .fn()
+      .mockResolvedValue({ notes: [{ id: 1, text: 'заметка' }], total: 7 }),
     createNote: jest
       .fn()
       .mockResolvedValue({ id: 2, date: '2026-07-01', text: 'новая' }),
@@ -84,7 +86,7 @@ describe('TherapyNotesController.getNotes', () => {
     const { controller, notes } = makeController();
     const res = await controller.getNotes(makeReq(3n), '5');
     expect(notes.getNotes).toHaveBeenCalledWith(3n, 5n);
-    expect(res).toEqual([{ id: 1, text: 'заметка' }]);
+    expect(res).toEqual({ notes: [{ id: 1, text: 'заметка' }], total: 7 });
   });
 
   it('No active relation → ForbiddenException', async () => {

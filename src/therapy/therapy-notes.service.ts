@@ -3,6 +3,7 @@ import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { TherapyRelationsService } from './therapy-relations.service';
 import { encrypt, decrypt, encryptJson, decryptJson } from '../utils/crypto';
+import { findSessionNotesPage } from './session-notes-page';
 
 const CONCEPT_TEXT_FIELDS = [
   'earlyExperience',
@@ -82,14 +83,7 @@ export class TherapyNotesService {
 
   async getNotes(therapistId: bigint, clientId: bigint) {
     await this.relationsService.assertHasClient(therapistId, clientId);
-    const tid = therapistId;
-    const cid = clientId;
-    const rows = await this.prisma.therapistNote.findMany({
-      where: { therapistId: tid, clientId: cid },
-      orderBy: { createdAt: 'desc' },
-      take: 100,
-    });
-    return rows.map((r) => ({ ...r, text: decrypt(r.text) ?? r.text }));
+    return findSessionNotesPage(this.prisma, therapistId, clientId);
   }
 
   async createNote(

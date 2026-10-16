@@ -1,8 +1,8 @@
 import type { TherapistNote } from '../../api';
+import { compareNotesAsc } from '../../../../shared/src/therapy/notesPage';
 
-/** Порядковый номер сессии для каждой заметки: по дате (старее — меньше), при равной дате — по времени создания и id. */
-export function sessionNumbers(notes: Pick<TherapistNote, 'id' | 'date' | 'createdAt'>[]): Map<number, number> {
-  const sorted = notes.slice().sort((a, b) =>
-    a.date.localeCompare(b.date) || a.createdAt.localeCompare(b.createdAt) || a.id - b.id);
-  return new Map(sorted.map((n, i) => [n.id, i + 1]));
+/** Номер сессии каждой заметки (порядок — compareNotesAsc). `total` — сколько заметок на сервере: показаны только последние, ранние номера заняты скрытыми. */
+export function sessionNumbers(notes: Pick<TherapistNote, 'id' | 'date' | 'createdAt'>[], total = notes.length): Map<number, number> {
+  const offset = Math.max(0, total - notes.length);
+  return new Map(notes.slice().sort(compareNotesAsc).map((n, i) => [n.id, offset + i + 1]));
 }

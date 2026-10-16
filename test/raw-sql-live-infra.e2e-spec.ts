@@ -44,7 +44,9 @@ describe('сырой SQL инфраструктуры на реальном Post
       builtAt: null,
       // Самопроверка (src/infra/self-check) в этом спеке не запускалась —
       // снимок пустой, упавших проб нет.
-      selfCheck: { ranAt: null, failed: [] },
+      // stale не пинится: джоба `migrations` живёт дольше грейса старта, и
+      // process.uptime() законно даст true (форму поля держит health.controller.spec).
+      selfCheck: { ranAt: null, stale: expect.any(Boolean), failed: [] },
     });
   });
 

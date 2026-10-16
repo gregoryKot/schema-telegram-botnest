@@ -168,6 +168,62 @@ describe('ModeMapNodeEditor — условные поля по типу ноды
   });
 });
 
+describe('ModeMapNodeEditor — фигуры схемы случая', () => {
+  it('схема: заметка называется «Во что человек верит», заголовок — «Схема»', () => {
+    renderEditor(baseNode({ type: 'schema', data: { label: 'Схема Покинутость', note: 'Меня оставят' } }));
+    expect((screen.getByLabelText('Во что человек верит') as HTMLTextAreaElement).value).toBe('Меня оставят');
+    expect(screen.queryByLabelText('Заметка')).toBeNull();
+    expect(screen.getByText('Схема', { selector: 'div' })).toBeTruthy();
+  });
+
+  it('опыт: заметка называется «Как нарушалась потребность»', () => {
+    renderEditor(baseNode({ type: 'origin', data: { label: 'Как нарушалась потребность' } }));
+    expect(screen.getByLabelText('Как нарушалась потребность')).toBeTruthy();
+    expect(screen.getByText('Опыт детства', { selector: 'div' })).toBeTruthy();
+  });
+
+  it('текст из такого поля пишется в note, как у обычной заметки', () => {
+    const { onChange } = renderEditor(baseNode({ type: 'schema', data: { label: 'С' } }));
+    fireEvent.change(screen.getByLabelText('Во что человек верит'), { target: { value: 'Я один' } });
+    expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ note: 'Я один' }) }));
+  });
+
+  it.each(['schema', 'origin', 'need', 'needs'] as const)('%s: поле потребности режима и ответ Здорового Взрослого не показываются', (type) => {
+    renderEditor(baseNode({ type, data: { label: 'x' } }));
+    expect(screen.queryByLabelText('Неудовлетворённая потребность')).toBeNull();
+    expect(screen.queryByLabelText(/Что сказал бы Здоровый Взрослый/)).toBeNull();
+  });
+
+  it('режим сохраняет прежние тексты: «Режим» и «Заметка»', () => {
+    renderEditor(baseNode({ type: 'critic' }));
+    expect(screen.getByText('Режим', { selector: 'div' })).toBeTruthy();
+    expect(screen.getByLabelText('Заметка')).toBeTruthy();
+  });
+
+  it('в выборе формы есть «Схема», «Опыт», «Потребн.», а круга потребностей нет', () => {
+    const { onChange } = renderEditor(baseNode());
+    expect(screen.getByTitle('Схема')).toBeTruthy();
+    expect(screen.getByTitle('Потребн.')).toBeTruthy();
+    expect(screen.queryByTitle(/Круг/)).toBeNull();
+    fireEvent.click(screen.getByTitle('Опыт'));
+    expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ type: 'origin' }));
+  });
+
+  it('вопросы «Спросить себя» у схемы свои, у режима прежние', () => {
+    renderEditor(baseNode({ type: 'schema', data: { label: 'x' } }));
+    expect(screen.getByText('В каких ситуациях схема включается?')).toBeTruthy();
+    expect(screen.queryByText('Как этот режим проявляется?')).toBeNull();
+    cleanup();
+    renderEditor(baseNode({ type: 'custom', data: { label: 'x' } }));
+    expect(screen.getByText('Как этот режим проявляется?')).toBeTruthy();
+  });
+
+  it('выбранная фигура схемы случая подсвечена в выборе формы', () => {
+    renderEditor(baseNode({ type: 'need', data: { label: 'x' } }));
+    expect(screen.getByTitle('Потребн.').style.border).toContain('var(--accent)');
+  });
+});
+
 describe('ModeMapNodeEditor — карта пары: выбор партнёра', () => {
   it('coupleMode=true показывает переключатель «Партнёр А / Б», клик пишет side', () => {
     const { onChange } = renderEditor(baseNode(), { coupleMode: true });

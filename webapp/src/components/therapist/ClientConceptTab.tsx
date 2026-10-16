@@ -6,11 +6,9 @@ import { ClientConceptGraph } from './ClientConceptGraph';
 import '../../styles/therapist-concept.css';
 import { ConceptViewSwitch, useConceptView } from '../../../../shared/src/therapy/conceptGraph/ConceptViewSwitch';
 
-interface Props {
-  detail: ClientDetail;
-}
+interface Props { detail: ClientDetail; onOpenCanvas?: (mapId: number) => void }
 
-export function ClientConceptTab({ detail }: Props) {
+export function ClientConceptTab({ detail, onOpenCanvas }: Props) {
   const {
     saveStatus, exportCopied, handleExport, conceptError,
     concept,
@@ -45,7 +43,7 @@ export function ClientConceptTab({ detail }: Props) {
 
       <div className="doc-grid" style={view === 'graph' ? { gridTemplateColumns: 'minmax(0, 1fr)' } : undefined}>
         {view === 'graph' ? (
-          <ClientConceptGraph detail={detail} />
+          <ClientConceptGraph detail={detail} onOpenCanvas={onOpenCanvas} />
         ) : (
           <ClientConceptFields detail={detail} />
         )}

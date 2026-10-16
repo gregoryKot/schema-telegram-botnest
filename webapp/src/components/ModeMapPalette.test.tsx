@@ -46,6 +46,43 @@ function renderPalette(onAdd = vi.fn(), onAddMany = vi.fn(), form: 'ty' | 'vy' =
   return { onAdd, onAddMany };
 }
 
+describe('ModeMapPalette — секция «Схема случая»', () => {
+  const ITEMS: [string, string][] = [
+    ['Схема', 'schema'],
+    ['Опыт детства', 'origin'],
+    ['Потребность', 'need'],
+    ['Круг потребностей', 'needs'],
+  ];
+
+  it.each(ITEMS)('клик по «%s» добавляет ноду типа %s', (name, type) => {
+    const { onAdd } = renderPalette();
+    fireEvent.click(screen.getByText(name));
+    expect(onAdd).toHaveBeenCalledWith(expect.objectContaining({ type, data: expect.objectContaining({ label: expect.any(String) }) }));
+  });
+
+  it('круг потребностей кладётся с диаметром, потребность — без чужих полей', () => {
+    const { onAdd } = renderPalette();
+    fireEvent.click(screen.getByText('Круг потребностей'));
+    fireEvent.click(screen.getByText('Потребность'));
+    expect(onAdd.mock.calls[0][0].data).toMatchObject({ label: 'Базовые эмоциональные потребности', diameter: 340 });
+    expect(onAdd.mock.calls[1][0].data).toEqual({ label: 'Потребность' });
+  });
+
+  it('перетаскивание кладёт заготовку в dataTransfer под тем же ключом, что читает холст', () => {
+    renderPalette();
+    const setData = vi.fn();
+    fireEvent.dragStart(screen.getByText('Опыт детства'), { dataTransfer: { setData, effectAllowed: '' } });
+    expect(setData).toHaveBeenCalledWith('application/modemap-node', expect.stringContaining('"type":"origin"'));
+  });
+
+  it('поиск режима прячет секцию, чтобы «Режим не найден» не спорил с ней', () => {
+    renderPalette();
+    fireEvent.change(screen.getByPlaceholderText('Поиск режима…'), { target: { value: 'Упрямый' } });
+    expect(screen.queryByText('Схема случая')).toBeNull();
+    expect(screen.queryByText('Круг потребностей')).toBeNull();
+  });
+});
+
 describe('ModeMapPalette — поиск и добавление стандартных режимов', () => {
   it('клик по «Триггер / Ситуация» добавляет узел типа trigger', () => {
     const { onAdd } = renderPalette();

@@ -29,10 +29,28 @@ scripts/scale-drift-baseline.json         merge=ratchet-min
 scripts/bundle-size-baseline.json         merge=ratchet-min
 scripts/render-poison-baseline.json       merge=ratchet-min
 scripts/tap-targets-baseline.json         merge=ratchet-min
+scripts/color-drift-baseline.json         merge=ratchet-min
+scripts/second-person-baseline.json       merge=ratchet-min
 # Планки планов запросов: страницы и потолки времени — чем меньше, тем лучше,
 # поэтому та же семантика min (scripts/check-query-plans.mjs).
 scripts/query-plan-baseline.json          merge=ratchet-min
 e2e-browser/a11y-baseline.json            merge=ratchet-min
+
+# Реестры-классификации (ключ → {status, reason, …}, листья — строки).
+# Ratchet-драйвер тут не про числа, а про трёхстороннее слияние по ключам:
+# соседние вставки двух PR в отсортированный реестр текстово конфликтуют по
+# построению, а драйвер сводит их обоих; если обе стороны переписали ОДНУ
+# причину по-разному — выход 1, обычный конфликт человеку (выдумывать нечего).
+scripts/alert-throttle-baseline.json      merge=ratchet-min
+scripts/body-dto-baseline.json            merge=ratchet-min
+scripts/capability-registry-baseline.json merge=ratchet-min
+scripts/cron-leader-baseline.json         merge=ratchet-min
+scripts/feature-parity-baseline.json      merge=ratchet-min
+scripts/mutation-zone-baseline.json       merge=ratchet-min
+scripts/persistent-throttle-baseline.json merge=ratchet-min
+scripts/raw-sql-live-baseline.json        merge=ratchet-min
+scripts/recorded-fixtures-baseline.json   merge=ratchet-min
+scripts/unwatched-code-baseline.json      merge=ratchet-min
 
 # больше — лучше
 scripts/coverage-baseline.json            merge=ratchet-max
@@ -42,6 +60,10 @@ scripts/mutation-crisis-baseline.json     merge=ratchet-max
 scripts/mutation-outbox-baseline.json     merge=ratchet-max
 scripts/mutation-golden-auth-baseline.json     merge=ratchet-max
 scripts/mutation-golden-payments-baseline.json merge=ratchet-max
+
+# Новый `*-baseline.json` без строки выше краснит `setup-merge-drivers.mjs
+# --check` (CI, джоба checks): catch-all тут нельзя, забытый «больше — лучше»
+# бейслайн получил бы min. Выбирай направление явно.
 
 # ── Сборка мини-аппа ─────────────────────────────────────────────────────────
 # dist коммитится в git (Dockerfile его только копирует), поэтому конфликтует
