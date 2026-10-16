@@ -1,5 +1,6 @@
 import { useEffect, useRef, useId } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { pushSheetState, sheetStackOf } from './historySheetStack';
 
 /**
  * Pushes a history entry via React Router when a sheet mounts so the
@@ -38,7 +39,7 @@ export function useHistorySheet(onClose: () => void) {
   useEffect(() => {
     navigate(location.pathname + location.search + location.hash, {
       replace: false,
-      state: { ...(location.state ?? {}), __sheetId: id },
+      state: pushSheetState(location.state, id),
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -46,13 +47,11 @@ export function useHistorySheet(onClose: () => void) {
   useEffect(() => {
     if (!ready.current) {
       // Wait until our navigate has committed
-      if ((location.state as { __sheetId?: string } | null)?.__sheetId === id) ready.current = true;
+      if (sheetStackOf(location.state).includes(id)) ready.current = true;
       return;
     }
     // Our entry is gone from history (user pressed back) – close the sheet
-    if ((location.state as { __sheetId?: string } | null)?.__sheetId !== id) {
-      ref.current();
-    }
+    if (!sheetStackOf(location.state).includes(id)) ref.current();
   }, [location, id]);
 
   useEffect(() => {
