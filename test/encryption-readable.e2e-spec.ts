@@ -7,7 +7,8 @@
 //    base64-строка в роли списка;
 //  - текстовая Note.text остаётся сырым значением (fail-open), но в маркере;
 //  - проба encryptionReadable на тех же строках красная и называет обе колонки,
-//    под правильными ключами — зелёная.
+//    под правильными ключами — зелёная;
+//  - та же проба по всему TARGETS читает каждую таблицу без ошибки драйвера.
 // Гоняется в CI-джобе `migrations`.
 import { PrismaService } from '../src/prisma/prisma.service';
 import { loadWithKeys } from '../src/test-support/load-with-keys';
@@ -146,5 +147,15 @@ describe('нечитаемые данные на реальном Postgres', () 
       .run();
     expect(green.ok).toBe(true);
     expect(green.detail).toContain('проверено значений 2');
+  });
+
+  it('по всему TARGETS: каждая таблица читается драйвером (select/orderBy по pk сходятся со схемой)', async () => {
+    // Юнит гоняет пробу на фейке, который примет любой select; ошибочный pk
+    // или колонка в TARGETS всплыли бы только на проде. Красный ok здесь
+    // допустим (в базе джобы строки других спеков), ошибок чтения — нет.
+    const res = await probeUnder(KEY_E2E, KEY_A)
+      .encryptionReadableProbe(prisma, { ENCRYPTION_KEY: KEY_E2E })
+      .run();
+    expect(res.detail).not.toContain('не удалось прочитать таблицы');
   });
 });

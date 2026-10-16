@@ -1,4 +1,4 @@
-import { Logger } from '@nestjs/common';
+import { ConflictException, Logger } from '@nestjs/common';
 import { encrypt, encryptJson, tryDecrypt } from './crypto';
 
 // ── Record-level encryption ──────────────────────────────────────────────────
@@ -48,6 +48,10 @@ type Parsed = { ok: true; value: unknown } | { ok: false };
 // jsonArrays-поле, пришедшее строкой: шифротекст либо легаси-JSON-текст.
 // Массив из строки-блоба нельзя сделать никак — поэтому провал отдельный исход,
 // а не «вернуть строку»: строка в роли списка даёт подстрочные `.includes`.
+// `[]` подставляется и там, где в поле лежал объект (DiaryDraft.data,
+// YsqProgress/YsqResult.answers, ScheduledNotification.payload): по форме
+// «не прочиталось» от «пусто» не отличить, видно только по маркеру
+// (`unreadableFields`, в выгрузке — `_unreadableFields`).
 function parseJsonField(v: string): Parsed {
   const r = tryDecrypt(v);
   if (!r.ok && r.looksCipher) return { ok: false };
@@ -120,4 +124,39 @@ function reportUnreadable(model: string | undefined, fields: string[]): void {
       'ключ не подошёл, возможна порча данных или неполная ротация ENCRYPTION_KEY; ' +
       'масштаб по таблицам — проба encryptionReadable в /stats',
   );
+}
+
+// ── Запись поверх нечитаемого ────────────────────────────────────────────────
+// Нечитаемое поле приходит в API как `[]` (или сырой строкой), и клиент, не
+// знающий об этом, присылает своё значение целиком. Запись затёрла бы живой, но
+// сейчас нечитаемый шифротекст: ключ починят, а данных уже не будет. Место
+// записи, которое перезаписывает поле целиком, обязано пропустить строку через
+// decryptRecord и вызвать эту проверку с именами полей, которые собирается
+// писать. Содержимого в логе и в тексте ответа нет.
+const UNWRITABLE_MESSAGE =
+  'Правка не сохранена: записанные данные сейчас не читаются, и новая запись ' +
+  'стёрла бы их. Нужна помощь владельца проекта.';
+
+export function assertWritable(
+  row: object,
+  fields: readonly string[],
+  where: string,
+): void {
+  const bad = unreadableFields(row).filter((f) => fields.includes(f));
+  if (bad.length === 0) return;
+  logger.warn(
+    `[crypto] запись отклонена (409): ${where}, не читаются: ${bad.join(', ')}; ` +
+      'запись затёрла бы нечитаемый шифротекст',
+  );
+  throw new ConflictException(UNWRITABLE_MESSAGE);
+}
+
+/** decryptRecord + assertWritable: строка, поля которой сейчас перезапишут. */
+export function guardOverwrite(
+  row: Record<string, unknown>,
+  schema: EncryptSchema,
+  fields: object,
+  where: string,
+): void {
+  assertWritable(decryptRecord(row, schema), Object.keys(fields), where);
 }

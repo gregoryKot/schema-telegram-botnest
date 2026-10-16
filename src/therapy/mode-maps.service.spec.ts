@@ -2,7 +2,7 @@
 // терапевта. Access-control по mapId (getModeMap/updateModeMap/
 // deleteModeMap + клиентский read-only доступ) — в mode-maps.access.spec.ts
 // (файл разделён из-за лимита ~300 строк/файл, CLAUDE.md).
-import { Logger } from '@nestjs/common';
+import { ConflictException, Logger } from '@nestjs/common';
 import { ModeMapsService } from './mode-maps.service';
 import { TherapyRelationsService } from './therapy-relations.service';
 import { Rel, makeRelationPrismaMock } from './therapy.test-helpers';
@@ -248,5 +248,61 @@ describe('ModeMapsService — нечитаемая карта (D-8, аудит 2
     expect(map.nodes).toEqual([]);
     expect(map.edges).toEqual([]);
     jest.restoreAllMocks();
+  });
+
+  // Редактор получил [] вместо нечитаемых nodes и первой же правкой прислал бы
+  // свой список целиком — живой шифротекст был бы стёрт. Запись отказывает 409.
+  const mapWith = (nodes: unknown) => ({
+    id: 9,
+    therapistId: T1,
+    clientId: CLIENT_A,
+    title: 'Карта',
+    kind: 'problem',
+    nodes,
+    edges: [],
+  });
+  const withUpdate = (db: any) =>
+    (db.modeMap.update = jest.fn(({ data }: any) =>
+      Promise.resolve({ ...mapWith([]), ...data }),
+    ));
+
+  it('updateModeMap поверх нечитаемых nodes — 409, update не вызван', async () => {
+    jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
+    const warn = jest
+      .spyOn(Logger.prototype, 'warn')
+      .mockImplementation(() => undefined);
+    const foreign = Buffer.alloc(48, 7).toString('base64');
+    const { service, db } = makeService([relA], [mapWith(foreign)]);
+    const update = withUpdate(db);
+    await expect(
+      service.updateModeMap(T1, 9, { nodes: [{ id: 'n1' }] }),
+    ).rejects.toBeInstanceOf(ConflictException);
+    expect(update).not.toHaveBeenCalled();
+    expect(String(warn.mock.calls[0]?.[0])).toContain('modeMap#9');
+    jest.restoreAllMocks();
+  });
+
+  it('контроль: правка только title не трогает нечитаемые nodes — пишет', async () => {
+    jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
+    const foreign = Buffer.alloc(48, 7).toString('base64');
+    const { service, db } = makeService([relA], [mapWith(foreign)]);
+    const update = withUpdate(db);
+    await service.updateModeMap(T1, 9, { title: 'Новое' });
+    expect(update).toHaveBeenCalledWith({
+      where: { id: 9 },
+      data: { title: 'Новое' },
+    });
+    jest.restoreAllMocks();
+  });
+
+  it('контроль: читаемая карта — правка nodes пишется', async () => {
+    const { service, db } = makeService([relA], [mapWith([])]);
+    const update = withUpdate(db);
+    const res = await service.updateModeMap(T1, 9, { nodes: [{ id: 'n1' }] });
+    expect(update).toHaveBeenCalledWith({
+      where: { id: 9 },
+      data: { nodes: expect.any(String) },
+    });
+    expect(res.nodes).toEqual([{ id: 'n1' }]);
   });
 });
