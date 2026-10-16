@@ -55,8 +55,8 @@ export function triggerBlocks(text: string): Record<string, string> {
   return blocks;
 }
 
-/** Job-level `if:` каждой джобы (многострочный `>-` склеивается). */
-export function jobConditions(text: string): Record<string, string> {
+/** Тексты джоб воркфлоу без комментариев: { id: 'всё, что под ключом' }. */
+export function jobBlocks(text: string): Record<string, string> {
   const src = stripComments(text);
   const at = src.search(/^jobs:\s*$/m);
   if (at < 0) return {};
@@ -65,7 +65,15 @@ export function jobConditions(text: string): Record<string, string> {
     .slice(at)
     .split(/^ {2}(?=[\w-]+:\s*$)/m)
     .slice(1)) {
-    const id = part.slice(0, part.indexOf(':'));
+    out[part.slice(0, part.indexOf(':'))] = part;
+  }
+  return out;
+}
+
+/** Job-level `if:` каждой джобы (многострочный `>-` склеивается). */
+export function jobConditions(text: string): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const [id, part] of Object.entries(jobBlocks(text))) {
     const cond = /^ {4}if:[ \t]*(.*(?:\n {5,}.*)*)/m.exec(part);
     out[id] = cond ? cond[1].replace(/\s+/g, ' ').trim() : '';
   }

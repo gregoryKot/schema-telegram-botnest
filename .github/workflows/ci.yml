@@ -133,6 +133,10 @@ jobs:
   # живут в джобе webapp.
   checks:
     runs-on: ubuntu-latest
+    # Потолок на джобу — страховка от зависшего шага (правило №24): без него
+    # GitHub держит джобу до 360 минут. Значения — примерно втрое от замера
+    # (пять зелёных прогонов main 2026-10-15). Гейт — job-timeouts.spec.ts.
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -353,6 +357,7 @@ jobs:
   # «Миграции БД»: рукописный SQL не мержится, пока не прошёл migrate deploy.
   migrations:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     services:
       postgres:
         # Docker Hub режет анонимные pull с общих IP раннеров (429, 2026-10-09):
@@ -612,6 +617,7 @@ jobs:
 
   webapp:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -712,6 +718,7 @@ jobs:
   # check-frontend-coverage-ratchet.mjs (--package shared).
   shared:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -740,6 +747,7 @@ jobs:
   # everything-as-any и счётчики уезжают. game/ исключён (заморожен).
   eslint:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -767,6 +775,7 @@ jobs:
 
   miniapp:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
