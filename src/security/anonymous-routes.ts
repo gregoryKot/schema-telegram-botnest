@@ -37,9 +37,6 @@ export const ANONYMOUS_BY_DESIGN: Record<string, string> = {
   'auth/auth-oauth.controller.ts:vkCallback':
     'возврат с VK: тот же state и кука, что у Google, плюс PKCE; ' +
     'сессии до колбэка нет',
-  'auth/auth-oauth.controller.ts:telegramOidcCallback':
-    'возврат с Telegram OIDC: подписанный state, обмен кода и проверка ' +
-    'id_token на сервере; сессии до колбэка нет',
   'auth/auth-ticket.controller.ts:poll':
     'контейнер забирает сессию по длинному device-коду (RFC 8628): код и ' +
     'есть доказательство, CSRF-заголовок, троттлинг по IP',

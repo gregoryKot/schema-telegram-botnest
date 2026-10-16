@@ -24,10 +24,6 @@
     "status": "exempt",
     "reason": "Тонкая обёртка над verifyMaxInitData (max-init-data.ts) — сам разбор формата не делает, делегирует. Классифицирован отдельно, т.к. подпадает под явный путь providers/*.ts."
   },
-  "src/auth/providers/telegram-oidc.provider.ts": {
-    "status": "exempt",
-    "reason": "Ответы oauth.telegram.org/token и /userinfo в спеке — форма по официальной документации Telegram Login (OIDC), не захваченный с прода вызов площадки."
-  },
   "src/auth/providers/telegram.provider.ts": {
     "status": "exempt",
     "reason": "Старый Telegram Login Widget hash — тест сам подписывает data-check-string фейковым BOT_TOKEN; реальных данных от виджета на живом домене не записывалось."

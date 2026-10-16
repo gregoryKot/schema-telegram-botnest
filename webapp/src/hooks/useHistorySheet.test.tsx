@@ -8,6 +8,7 @@ import { act, render, renderHook } from '@testing-library/react';
 import { MemoryRouter, useNavigate, useLocation, type NavigateFunction, type Location } from 'react-router-dom';
 import type { ReactNode } from 'react';
 import { useHistorySheet } from './useHistorySheet';
+import { Dialog } from '../components/Dialog';
 
 interface SheetState { __sheetId?: string }
 
@@ -309,3 +310,53 @@ describe('useHistorySheet — Escape', () => {
     expect(onCloseOuter).toHaveBeenCalledTimes(1);
   });
 });
+
+// Аудит 2026-10: ConfirmDialog (Dialog с closeOnEscape) поверх history-листа —
+// Escape закрывал и диалог, и лист под ним. Теперь диалог закрывается сам и
+// гасит событие (preventDefault), лист такое событие пропускает.
+describe('useHistorySheet — Escape над диалогом', () => {
+  function SheetWithDialog({
+    onCloseSheet,
+    onCloseDialog,
+    showDialog,
+  }: {
+    onCloseSheet: () => void;
+    onCloseDialog: () => void;
+    showDialog: boolean;
+  }) {
+    useHistorySheet(onCloseSheet);
+    return showDialog ? (
+      <Dialog label="Подтверждение" closeOnEscape onClose={onCloseDialog}>
+        <button>ок</button>
+      </Dialog>
+    ) : null;
+  }
+  const escape = () =>
+    act(() => {
+      document.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }),
+      );
+    });
+
+  it('Escape закрывает только диалог, лист под ним остаётся', () => {
+    const wrapper = makeWrapper(makeSnapshot(), ['/hub', '/sheet'], 1);
+    const onCloseSheet = vi.fn();
+    const onCloseDialog = vi.fn();
+    const { rerender } = render(
+      <SheetWithDialog onCloseSheet={onCloseSheet} onCloseDialog={onCloseDialog} showDialog />,
+      { wrapper },
+    );
+
+    escape();
+    expect(onCloseDialog).toHaveBeenCalledTimes(1);
+    expect(onCloseSheet).not.toHaveBeenCalled();
+
+    // Диалог закрыт — следующий Escape закрывает лист.
+    rerender(
+      <SheetWithDialog onCloseSheet={onCloseSheet} onCloseDialog={onCloseDialog} showDialog={false} />,
+    );
+    escape();
+    expect(onCloseSheet).toHaveBeenCalledTimes(1);
+  });
+});
+

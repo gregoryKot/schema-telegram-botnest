@@ -129,7 +129,7 @@ export class AuthFlowService {
     };
   }
 
-  // Общий обработчик OAuth-редирект-колбэков (Google/VK/Telegram-OIDC) — ведёт
+  // Общий обработчик OAuth-редирект-колбэков (Google/VK) — ведёт
   // на нужный экран по исходу. Синхронный: молчаливого одобрения билета здесь
   // больше нет (device-code phishing, разбор 2026-08-31) — одобрение уехало
   // на экран сверки /auth/confirm.
@@ -166,7 +166,7 @@ export class AuthFlowService {
       );
       return;
     }
-    // crossSite:false — OAuth-редирект (Google/VK/Telegram-OIDC) приходит
+    // crossSite:false — OAuth-редирект (Google/VK) приходит
     // top-level навигацией на наш домен, не iframe (setRefreshCookie заодно
     // чистит метку refresh_cross от возможной прежней MAX-сессии, правило №5).
     setRefreshCookie(res, outcome.tokens.refreshToken, 30 * 24 * 3600, false);
