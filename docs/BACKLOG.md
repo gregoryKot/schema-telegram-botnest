@@ -32,8 +32,8 @@
   [design/REDESIGN_2026-10.md](design/REDESIGN_2026-10.md). Только сайт, только
   светлая тема (решение владельца 2026-10-15). Части: ✅ кабинет терапевта —
   [#711](https://github.com/gregoryKot/schema-telegram-botnest/pull/711); ✅ кабинет
-  клиента (Сегодня, Дневник, Паттерны, Практика, Профиль) — [#714](https://github.com/gregoryKot/schema-telegram-botnest/pull/714); ⬜ вход,
-  2FA, аккаунт, подписка, донат.
+  клиента (Сегодня, Дневник, Паттерны, Практика, Профиль) — [#714](https://github.com/gregoryKot/schema-telegram-botnest/pull/714); 🔧 вход,
+  2FA, аккаунт, подписка, донат — #AUTH_PR.
 
 ## Следующее
 

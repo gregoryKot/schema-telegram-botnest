@@ -63,7 +63,7 @@ export function EmailLinkRow({
   };
 
   return (
-    <div style={{ padding: '14px 0' }}>
+    <div className="aa-row-wrap">
       <ProviderRow
         icon={<EmailIcon />}
         title="Email"
@@ -81,47 +81,24 @@ export function EmailLinkRow({
       {showForm &&
         !linked &&
         (sent ? (
-          <div
-            style={{
-              marginTop: 12,
-              padding: '12px 14px',
-              background: 'rgba(var(--fg-rgb),0.04)',
-              borderRadius: 'var(--r-10)',
-              fontSize: 13,
-              color: 'var(--text-sub)',
-              lineHeight: 1.5,
-            }}
-          >
+          <div className="aa-email-sent">
             Если адрес свободен, письмо придёт в течение минуты на <b>{value}</b>.{' '}
             {tr(
               'Перейди по ссылке в письме — она привяжет email к аккаунту.',
               'Перейдите по ссылке в письме — она привяжет email к аккаунту.',
             )}
             <button
+              className="aa-email-again"
               onClick={() => {
                 setSent(false);
                 setValue('');
-              }}
-              style={{
-                display: 'block',
-                marginTop: 8,
-                background: 'none',
-                border: 'none',
-                color: 'var(--text-faint)',
-                fontSize: 12,
-                cursor: 'pointer',
-                textDecoration: 'underline',
-                padding: 0,
               }}
             >
               Ввести другой email
             </button>
           </div>
         ) : (
-          <form
-            onSubmit={send}
-            style={{ marginTop: 12, display: 'flex', gap: 'var(--space-8)' }}
-          >
+          <form onSubmit={send} className="aa-email-form">
             <input
               type="email"
               required
@@ -129,34 +106,9 @@ export function EmailLinkRow({
               placeholder="your@email.com"
               value={value}
               onChange={(e) => setValue(e.target.value)}
-              style={{
-                flex: 1,
-                padding: '9px 12px',
-                fontSize: 13,
-                border: '1.5px solid var(--line)',
-                borderRadius: 'var(--r-8)',
-                background: 'rgba(var(--fg-rgb),0.04)',
-                color: 'var(--text)',
-                fontFamily: 'inherit',
-                outline: 'none',
-              }}
+              className="ds-input"
             />
-            <button
-              type="submit"
-              disabled={sending}
-              style={{
-                padding: '9px 14px',
-                fontSize: 12,
-                fontWeight: 600,
-                background: 'var(--accent)',
-                color: '#fff',
-                border: 'none',
-                borderRadius: 'var(--r-8)',
-                cursor: sending ? 'default' : 'pointer',
-                opacity: sending ? 0.7 : 1,
-                whiteSpace: 'nowrap',
-              }}
-            >
+            <button type="submit" disabled={sending} className="ds-btn ds-btn--sm">
               {sending ? '…' : 'Отправить'}
             </button>
           </form>
