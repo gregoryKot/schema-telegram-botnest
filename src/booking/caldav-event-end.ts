@@ -24,9 +24,20 @@ function isAllDay(ev: string): boolean {
   return /(?:^|\n)DTSTART[^:\n]*:\s*\d{8}\s*(?:\r|\n|$)/.test(ev);
 }
 
+// Вложенные компоненты (VALARM с REPEAT обязан нести свой DURATION, RFC 5545
+// §3.6.6) — не свойства события: их DURATION — пауза между напоминаниями.
+function ownProps(ev: string): string {
+  return ev.replace(/BEGIN:VALARM[\s\S]*?END:VALARM/g, '');
+}
+
 /** Конец события: DTEND, иначе DTSTART + DURATION, иначе сутки (дата) или час. */
 export function eventEnd(ev: string, start: Date, dtend: Date | null): Date {
   if (dtend) return dtend;
-  const ms = readDurationMs(ev) ?? (isAllDay(ev) ? DAY_MS : HOUR_MS);
-  return new Date(start.getTime() + ms);
+  const own = ownProps(ev);
+  const fallback = isAllDay(own) ? DAY_MS : HOUR_MS;
+  const end = new Date(start.getTime() + (readDurationMs(own) ?? fallback));
+  // P99999999999999999999W конечно в мс, но не помещается в Date: не теряем событие.
+  return Number.isFinite(end.getTime())
+    ? end
+    : new Date(start.getTime() + fallback);
 }

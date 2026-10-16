@@ -347,6 +347,13 @@ describe('parseBusy — конец события по RFC 5545 §3.6.1', () => 
     ['P', 'DTSTART:20261017T100000Z', '2026-10-17T11:00:00.000Z'],
     ['abc', 'DTSTART;VALUE=DATE:20261017', '2026-10-18T00:00:00.000Z'],
     ['-P1D', 'DTSTART;VALUE=DATE:20261017', '2026-10-18T00:00:00.000Z'],
+    // Не помещается в Date (Invalid Date) — не теряем событие, а откатываемся.
+    [
+      'P99999999999999999999W',
+      'DTSTART:20261017T100000Z',
+      '2026-10-17T11:00:00.000Z',
+    ],
+    ['P100000000D', 'DTSTART;VALUE=DATE:20261017', '2026-10-18T00:00:00.000Z'],
   ])(
     'мусорный DURATION:%s у %s — откат к умолчанию, событие не теряется',
     (dur, start, end) => {
@@ -372,6 +379,34 @@ describe('parseBusy — конец события по RFC 5545 §3.6.1', () => 
     expect(parseBusy(xml)[0].end.toISOString()).toBe(
       '2026-10-17T12:00:00.000Z',
     );
+  });
+
+  // DURATION у VALARM (RFC 5545 §3.6.6: с REPEAT обязателен) — пауза между
+  // напоминаниями, а не длительность события.
+  describe('DURATION вложенного VALARM не считается длительностью события', () => {
+    const alarm =
+      'BEGIN:VALARM\nTRIGGER:-PT15M\nREPEAT:2\nDURATION:PT5M\nACTION:DISPLAY\nEND:VALARM';
+
+    it('DATE без DTEND + VALARM с DURATION — сутки', () => {
+      expect(endOf(`DTSTART;VALUE=DATE:20261017\n${alarm}`)).toBe(
+        '2026-10-18T00:00:00.000Z',
+      );
+    });
+
+    it('время без DTEND + VALARM с DURATION — час', () => {
+      expect(endOf(`DTSTART:20261017T100000Z\n${alarm}`)).toBe(
+        '2026-10-17T11:00:00.000Z',
+      );
+    });
+
+    it('собственный DURATION события берётся, а не VALARM (до и после)', () => {
+      expect(endOf(`${alarm}\nDTSTART:20261017T100000Z\nDURATION:PT2H`)).toBe(
+        '2026-10-17T12:00:00.000Z',
+      );
+      expect(endOf(`DTSTART:20261017T100000Z\nDURATION:PT2H\n${alarm}`)).toBe(
+        '2026-10-17T12:00:00.000Z',
+      );
+    });
   });
 
   it('DTSTART-дата в середине файла не путается с DTSTART другого поля', () => {
