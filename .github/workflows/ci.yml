@@ -535,6 +535,7 @@ jobs:
           test/refresh-rotation.e2e-spec.ts
           test/notify-address.e2e-spec.ts
           test/merge-my-lists.e2e-spec.ts
+          test/merge-relations.e2e-spec.ts
           test/merge-unique-rules.e2e-spec.ts
           test/account-export-ownership.e2e-spec.ts
           test/therapy-remove-client.e2e-spec.ts
