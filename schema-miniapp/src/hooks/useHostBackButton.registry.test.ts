@@ -9,6 +9,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { act, renderHook } from '@testing-library/react';
 import { useHostBackButton } from './useHostBackButton';
+import { pushBackLayer } from './backLayers';
 import { ADDRESS_FORM_ASKED_KEY } from '../../../shared/src/settings/addressFormPrompt';
 import { OVERLAY_SHEET_KEYS } from './anyOverlayOpen';
 import type { OverlaySheetKey } from './sheetsStack';
@@ -238,5 +239,63 @@ describe('«Назад» повторяет побочные эффекты кр
     pressBack();
     expect(result.current.pairSheet).toBe(false);
     await vi.waitFor(() => expect(setPairData).toHaveBeenCalled());
+  });
+});
+
+// Локальные слои «Назад» (backLayers.ts): чек-ин внутри справочника схем — не
+// лист реестра, но «Назад» обязан закрыть его раньше справочника под ним.
+describe('«Назад» хоста и локальные слои', () => {
+  it('открыт schemaInfo + активный слой: «Назад» зовёт close слоя, а не closers.schemaInfo', () => {
+    const sheets = fixture('schemaInfo');
+    const layerClose = vi.fn();
+    renderHook(() => useHostBackButton(args(sheets)));
+    let drop = () => {};
+    act(() => {
+      drop = pushBackLayer(layerClose);
+    });
+
+    pressBack();
+
+    expect(layerClose).toHaveBeenCalledTimes(1);
+    expect(sheets.close).not.toHaveBeenCalled();
+    act(() => drop());
+  });
+
+  it('слой снят — «Назад» снова закрывает лист (как до слоёв)', () => {
+    const sheets = fixture('schemaInfo');
+    renderHook(() => useHostBackButton(args(sheets)));
+    let drop = () => {};
+    act(() => {
+      drop = pushBackLayer(vi.fn());
+    });
+    act(() => drop());
+
+    pressBack();
+
+    expect(sheets.close).toHaveBeenCalledTimes(1);
+    expect((sheets.close as ReturnType<typeof vi.fn>).mock.calls[0][0]).toBe(
+      'schemaInfo',
+    );
+  });
+
+  it('слой без листа показывает кнопку хоста и закрывается ею; после снятия кнопка скрыта', () => {
+    renderHook(() =>
+      useHostBackButton(
+        args({ ...initialState, open: vi.fn(), close: vi.fn() }),
+      ),
+    );
+    const layerClose = vi.fn();
+    let drop = () => {};
+    act(() => {
+      drop = pushBackLayer(layerClose);
+    });
+    expect(getBB().show).toHaveBeenCalled();
+
+    pressBack();
+    expect(layerClose).toHaveBeenCalledTimes(1);
+
+    getBB().hide.mockClear();
+    act(() => drop());
+    expect(getBB().hide).toHaveBeenCalled();
   });
 });

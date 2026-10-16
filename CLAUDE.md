@@ -1543,6 +1543,15 @@ export function MySheet({ onClose }: { onClose: () => void }) {
 - Если лист закрывается после сохранения (`await api.save(); goBack()`), тоже `goBack()`.
 - Исключение: внутренние мини-модалки поверх листа (тёмный backdrop для подтверждения) — у них свой локальный `onClose`, хук там не нужен.
 
+Механизм принуждения: **`scripts/check-history-sheet.mjs`** (CI, джоба `webapp`)
+— `.tsx` в `webapp/src` и `shared/src` с оверлеем на весь экран (инлайн
+`position: fixed` + `inset: 0` в одном объекте стиля либо className с CSS-классом
+того же свойства) обязан вызывать `useHistorySheet(` или стоять в
+`scripts/history-sheet-baseline.json` с причиной. Флага `--update` нет:
+это классификация, а не счётчик. Вложенные листы (лист поверх листа) хук
+поддерживает — запись истории несёт стек. Мини-апп гейтом не покрыт: там
+«Назад» через реестр closers и локальные слои `hooks/backLayers.ts`.
+
 **Важно — не использовать `history.pushState` или `window.addEventListener('popstate')` напрямую.**
 Хук работает через `useNavigate`/`useLocation` из react-router-dom. Прямой вызов `history.pushState` конфликтует с React Router: при нажатии «Назад» срабатывают оба обработчика одновременно — лист закрывается И роутер уходит на предыдущий раздел.
 
