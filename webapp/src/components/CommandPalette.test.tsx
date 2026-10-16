@@ -7,6 +7,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { CommandPalette } from './CommandPalette';
+import { Dialog } from './Dialog';
 import type { TherapyClientSummary } from '../api';
 import { todayCalendarDate } from '../../../shared/src/utils/calendarDate';
 import { forEachTimeZone } from '../../../shared/src/utils/timeZone.test-helpers';
@@ -84,6 +85,22 @@ describe('CommandPalette — клавиатура', () => {
     renderPalette({ onClose });
     fireEvent.keyDown(window, { key: 'Escape' });
     expect(onClose).toHaveBeenCalled();
+  });
+
+  it('Escape над диалогом поверх палитры закрывает только диалог', () => {
+    const onClose = vi.fn();
+    const onCloseDialog = vi.fn();
+    render(
+      <>
+        <CommandPalette onNavigate={vi.fn()} onClose={onClose} />
+        <Dialog label="Подтверждение" closeOnEscape onClose={onCloseDialog}>
+          <button>ок</button>
+        </Dialog>
+      </>,
+    );
+    fireEvent.keyDown(window, { key: 'Escape' });
+    expect(onCloseDialog).toHaveBeenCalledTimes(1);
+    expect(onClose).not.toHaveBeenCalled();
   });
 
   it('Enter выполняет действие выбранной (по умолчанию первой) строки', () => {

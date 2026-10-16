@@ -321,13 +321,26 @@ describe('e2e: лимиты текста — один в DTO, превышени
           body({ [field]: ofLen(max + 1) }),
         );
         expect(res.status).toBe(400);
-        expect(JSON.stringify(res.body)).toContain(field);
+        // Отказ обязан прийти от ValidationPipe (массив сообщений
+        // class-validator с пределом), а не из сервиса: сервис отвечает
+        // строкой 'Invalid …' / 'Message too long'. Только так тест краснеет,
+        // если длину снова начнут резать в сервисе.
+        expect(res.body.message).toEqual(
+          expect.arrayContaining([
+            expect.stringContaining(
+              `${field} must be shorter than or equal to ${max}`,
+            ),
+          ]),
+        );
         expect(
           await prisma.therapistRequest.count({ where: { userId: who } }),
         ).toBe(0);
       });
     });
 
+    // Класс «DTO шире сервиса» этот кейс не ловит: прежние пределы сервиса
+    // равны новым. Его держит проверка источника отказа выше (ValidationPipe,
+    // а не сервис); здесь — что граница не режется молча и доезжает до админа.
     it('все четыре поля ровно на пределе — 201, и админ видит их целиком', async () => {
       const who = APPLICANTS[4];
       const sent = Object.fromEntries(

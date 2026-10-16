@@ -56,7 +56,8 @@ shared, а не по образцу старого дубля.
 у каждого свой счётчик. Инцидент 2026-09-13: на `POST /api/booking/book`
 стоял `@Throttle({ long: { limit: 6, ttl: 3_600_000 } })`, семь запросов за
 3 минуты — и ни один не получил 429, потому что запросы разошлись по разным
-инстансам. Счётчик денежных/заявочных ручек (booking/donation/subscription)
+инстансам. Счётчик денежных/заявочных и кодовых ручек (booking/donation/subscription,
+2FA, merge, билеты входа/привязки, заявка терапевта, письма на произвольный адрес)
 переехал в Postgres — модель `ThrottleHit`, `HybridThrottleStorage` маршрутизирует
 по ключу (`src/api/hybrid-throttle-storage.ts` + `postgres-throttle-storage.ts`):
 маршрут, помеченный `@PersistentThrottle()` (`src/api/persistent-throttle.decorator.ts`),
@@ -68,9 +69,24 @@ Postgres общим на все инстансы счётчиком; остал�
 проверяет. При недоступной БД — деградация в память на этот один вызов
 (`warn`, не `error`: авария БД алертится отдельно).
 
+Механизм принуждения — классификация, не поиск признака: **`scripts/check-persistent-throttle.mjs`**
+(CI, джоба `checks`) требует решения о КАЖДОЙ ручке контроллера, у которой есть
+`@Throttle(` либо в теле `verifyCode(`/`assertSourceTotp(`/`confirmSetup(`/`regenerateRecoveryCodes(`/`totp.disable(`/`consumeToken(`/`.approve(`/`.deny(`/`.submit(`:
+метка (`@PersistentThrottle()`, составной `@PersistentThrottleLimit(...)` из
+`src/api/persistent-throttle-limit.ts`, `AdminThrottle()` на классе) либо запись
+`exempt` с причиной ≥20 символов и `since` в `scripts/persistent-throttle-baseline.json`.
+Протухшая запись (маршрута нет или метка уже стоит) тоже красная. Флага
+`--update` нет намеренно. Лимиты кодовых ручек — `src/auth/auth-throttles.ts`.
+Инцидент-образец: аудит 2026-10 — 8-символьный код человека (`confirm-login`)
+перебирался окнами «20 в час», склеенными рестартами. Живые e2e между спеками
+сбрасывают счётчики (`test/e2e-support/throttle-reset.setup.ts`).
+
 ### 6. Новый эндпоинт = DTO с class-validator
 Inline-интерфейсы в `@Body()` дают только compile-time иллюзию. Рантайм
 валидируется декораторами DTO + глобальным `ValidationPipe({ whitelist: true })`.
+Строковое поле DTO — с верхней границей (`@MaxLength`/`@Length` или формат): тело
+принимается до 256 КБ. Гейт `scripts/check-dto-string-bounds.mjs` (CI, джоба `checks`),
+исключения — в `scripts/dto-string-bounds-baseline.json` с причиной.
 
 ### 7. Свободный текст от юзера = кризисный путь
 Любая новая фича, принимающая свободный текст (дневник, заметка, письмо),
@@ -272,8 +288,19 @@ PR. За 300 коммитов `scripts/file-size-baseline.json` менялся 4
   conflicts» в вебе GitHub про драйверы не знает: `git fetch origin main &&
   git merge origin/main`, потом пуш.
 - **Новый бейслайн приезжает со строкой в `.gitattributes`.** Атрибут без
-  драйвера молча деградирует до текстового слияния — сверка
-  `node scripts/setup-merge-drivers.mjs --check` в джобе `checks` это ловит.
+  драйвера молча деградирует до текстового слияния, а бейслайн без атрибута
+  сводится текстово с самого начала (до 2026-10 так жили 12 из 37, включая
+  `color-drift`). Сверка `node scripts/setup-merge-drivers.mjs --check` в джобе
+  `checks` (логика — `scripts/merge-drivers-check.mjs`) краснеет на обоих: на
+  `merge=` без драйвера, на каждом `*-baseline.json` из `scripts/` и
+  `e2e-browser/` без явной строки с точным путём и на протухшей строке про
+  файл, которого нет. Catch-all-маски нет намеренно: направление выбирается
+  явно (`ratchet-min` — меньше лучше, `ratchet-max` — покрытие и mutation),
+  иначе забытый max-бейслайн получил бы min. Реестры-классификации со
+  строками-причинами (`cron-leader`, `raw-sql-live`, `feature-parity` и др.)
+  сводятся тем же `ratchet-min`: ключи сливаются трёхсторонне, соседние
+  вставки двух PR сохраняются оба, а одна причина, переписанная обеими
+  сторонами по-разному, остаётся конфликтом для человека.
 - **Файлы-реестры, где порядок не значим, держим отсортированными** —
   сортировка разводит вставки по файлу вместо общей точки в хвосте.
   Исключение: `USER_OWNED_TABLES` / `USER_DATA_TABLES` сортировать **нельзя**,
@@ -644,12 +671,14 @@ Telegram, Resend, Google). Ни один наблюдатель не спраш�
 Механизм — `src/infra/self-check/`: реестр проб (БД через настоящий драйвер,
 `getMe` бота, обнаружение календарей, адреса возврата OAuth, вход Google/VK глазами
 площадки (первый ответ authorize на ссылку, построенную кодом прода), почта,
-сигнализация, Postgres-троттлер, свежесть аренд кронов). Прогон через минуту
+сигнализация, Postgres-троттлер, свежесть аренд кронов, реальный адрес
+посетителя за прокси). Прогон через минуту
 после старта (то есть после каждого деплоя) и раз в час под `claimRun`.
 Алерт владельцу — по смене состояния, напоминание раз в 6 ч. Наружу:
-`/health` отдаёт `builtAt` и `selfCheck.failed` (только id проб), `/stats` —
+`/health` отдаёт `builtAt`, `selfCheck.failed` (только id проб) и
+`selfCheck.stale` (снимок старше двух часов — часовой крон остановился), `/stats` —
 блок «Самопроверка» с деталями. `prod-smoke.yml` роняется, если
-`selfCheck.failed` не пуст или `builtAt` отстаёт от последнего коммита `main`
+`selfCheck.failed` не пуст, `selfCheck.stale` истинно или `builtAt` отстаёт от последнего коммита `main`
 дольше, чем живёт деплой.
 
 Что из этого следует для работы:

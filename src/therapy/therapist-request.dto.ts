@@ -2,7 +2,9 @@ import { IsOptional, IsString, Length, MaxLength } from 'class-validator';
 import * as L from '../utils/text-limits';
 
 /**
- * Заявка на роль терапевта (аудит 2026-07, 2г): текст уходит в DM админу, валидация обязательна (правило №6). Пределы длины — только в `utils/text-limits.ts`: сервис длину не проверяет.
+ * Заявка на роль терапевта (аудит 2026-07, 2г): текст уходит в DM админу,
+ * валидация обязательна (правило №6). Пределы длины — только в
+ * `utils/text-limits.ts`: сервис длину не проверяет.
  */
 export class SubmitTherapistRequestDto {
   @IsString()

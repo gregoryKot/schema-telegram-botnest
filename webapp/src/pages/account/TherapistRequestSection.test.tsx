@@ -142,6 +142,6 @@ describe('TherapistRequestSection — пределы длины (один ист
       screen.getByPlaceholderText('Квалификация: образование, направление, опыт, сертификаты'),
       { target: { value: 'x'.repeat(LIM.THERAPIST_REQUEST_QUAL_MAX - 10) } },
     );
-    expect(screen.getByText(/10/)).toBeTruthy();
+    expect(screen.getByText('Осталось знаков: 10')).toBeTruthy();
   });
 });

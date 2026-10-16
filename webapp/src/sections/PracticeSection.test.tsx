@@ -428,7 +428,20 @@ describe('PracticeSection — открытие карточки схемы по 
       </AddressFormContext.Provider>,
     );
     // Экран сразу в режиме упражнения — библиотека (заголовок раздела) не видна.
-    await waitFor(() => expect(screen.queryByText('Библиотека · 8 упражнений')).toBeNull());
+    await waitFor(() => expect(screen.queryByText('Библиотека')).toBeNull());
+  });
+});
+
+describe('PracticeSection — флешкарта «Мне плохо» по навигационному state (кнопка топбара)', () => {
+  it('location.state.openFlashcard открывает SchemaFlashcard сразу', async () => {
+    render(
+      <AddressFormContext.Provider value={{ form: 'ty', setForm: vi.fn() }}>
+        <MemoryRouter initialEntries={[{ pathname: '/practice', state: { openFlashcard: true } }]}>
+          <PracticeSection {...noopProps} />
+        </MemoryRouter>
+      </AddressFormContext.Provider>,
+    );
+    await screen.findByText('Стало чуть лучше – разобраться →');
   });
 });
 
@@ -455,7 +468,7 @@ describe('PracticeSection — задания терапевта: остальн�
     renderSection();
     await screen.findByText('От терапевта');
     fireEvent.click(screen.getAllByText('начать →')[0]);
-    await waitFor(() => expect(screen.queryByText('Библиотека · 8 упражнений')).toBeNull());
+    await waitFor(() => expect(screen.queryByText('Библиотека')).toBeNull());
   });
 
   it('letter_to_self → открывает «Письмо уязвимому ребёнку»', async () => {
@@ -463,7 +476,7 @@ describe('PracticeSection — задания терапевта: остальн�
     renderSection();
     await screen.findByText('От терапевта');
     fireEvent.click(screen.getAllByText('начать →')[0]);
-    await waitFor(() => expect(screen.queryByText('Библиотека · 8 упражнений')).toBeNull());
+    await waitFor(() => expect(screen.queryByText('Библиотека')).toBeNull());
   });
 
   it('childhood_wheel → onOpenChildhoodWheel', async () => {
@@ -490,7 +503,7 @@ describe('PracticeSection — задания терапевта: остальн�
     renderSection();
     await screen.findByText('От терапевта');
     fireEvent.click(screen.getAllByText('начать →')[0]);
-    await waitFor(() => expect(screen.queryByText('Библиотека · 8 упражнений')).toBeNull());
+    await waitFor(() => expect(screen.queryByText('Библиотека')).toBeNull());
   });
 
   it('mode_intro с текстом-id режима → открывает карточку режима с этим id', async () => {
@@ -498,7 +511,7 @@ describe('PracticeSection — задания терапевта: остальн�
     renderSection();
     await screen.findByText('От терапевта');
     fireEvent.click(screen.getAllByText('начать →')[0]);
-    await waitFor(() => expect(screen.queryByText('Библиотека · 8 упражнений')).toBeNull());
+    await waitFor(() => expect(screen.queryByText('Библиотека')).toBeNull());
   });
 
   it('неизвестный тип задания с текстом = id известной схемы — фолбэк на карточку схемы', async () => {
@@ -506,7 +519,7 @@ describe('PracticeSection — задания терапевта: остальн�
     renderSection();
     await screen.findByText('От терапевта');
     fireEvent.click(screen.getAllByText('начать →')[0]);
-    await waitFor(() => expect(screen.queryByText('Библиотека · 8 упражнений')).toBeNull());
+    await waitFor(() => expect(screen.queryByText('Библиотека')).toBeNull());
   });
 });
 
@@ -576,7 +589,7 @@ describe('PracticeSection — создание цели обновляет сп�
 
     fireEvent.click(within(overlay).getByText('Цель 1'));
     await waitFor(() => expect(screen.queryByText('Все цели')).toBeNull());
-    await waitFor(() => expect(screen.queryByText('Библиотека · 8 упражнений')).toBeNull());
+    await waitFor(() => expect(screen.queryByText('Библиотека')).toBeNull());
   });
 
   it('«+ Поставить цель» внутри AllGoalsOverlay открывает TaskCreateSheet поверх', async () => {

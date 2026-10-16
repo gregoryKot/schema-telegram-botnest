@@ -5,6 +5,7 @@
 import {
   BadRequestException,
   ConflictException,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { BookingStatus, SessionType } from '@prisma/client';
@@ -65,10 +66,16 @@ function makeService(
     slotOverride: { findMany: jest.fn(async () => []) },
     $transaction: jest.fn(async (fn: any) => fn(tx)),
     booking: {
-      update: jest.fn(async ({ where, data }: any) => {
-        const row = bookingRows.find((b) => b.id === where.id);
+      // CAS как в Postgres: WHERE на id и статус решает, обновится ли строка.
+      updateMany: jest.fn(async ({ where, data }: any) => {
+        const row = bookingRows.find(
+          (b) =>
+            b.id === where.id &&
+            (where.status === undefined || b.status === where.status),
+        );
+        if (!row) return { count: 0 };
         Object.assign(row, data);
-        return row;
+        return { count: 1 };
       }),
     },
   };
@@ -341,6 +348,72 @@ describe('BookingService.book — создание и side-effects', () => {
     expect(notify.onConfirmed).not.toHaveBeenCalled();
   });
 
+  // Аудит 2026-10-11: сумма счёта нигде не сохранялась, а checkout читал цену
+  // второй раз, отдельно от INSERT. Теперь книга читает цену один раз, кладёт её
+  // в строку, и в Robokassa уходит именно сохранённая сумма.
+  it('SESSION_50: цена читается один раз, пишется в строку (amount) и уходит в Robokassa как есть', async () => {
+    const { service, tx, robokassa, pricing } = makeService({
+      rules: [],
+      robokassaEnabled: true,
+    });
+    pricing.getPrice.mockResolvedValueOnce(4200).mockResolvedValue(9999);
+    await service.book({
+      ...BASE_DTO,
+      startsAt: INSIDE_WINDOW,
+      durationMin: 50,
+      type: SessionType.SESSION_50,
+    });
+    expect(pricing.getPrice).toHaveBeenCalledTimes(1);
+    expect(tx.booking.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ amount: 4200 }),
+    });
+    expect(robokassa.buildPaymentUrl).toHaveBeenCalledWith(
+      expect.objectContaining({ amount: 4200 }),
+    );
+  });
+
+  it('INTRO_15: сумма не выставляется — amount null, цена не читается', async () => {
+    const { service, tx, pricing } = makeService();
+    await service.book({
+      ...BASE_DTO,
+      startsAt: INSIDE_WINDOW,
+      durationMin: 15,
+      type: SessionType.INTRO_15,
+    });
+    expect(tx.booking.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ amount: null }),
+    });
+    expect(pricing.getPrice).not.toHaveBeenCalled();
+  });
+
+  it.each([0, -5])(
+    'платная сессия с ценой %p: 503 и лид владельцу ДО INSERT, слот не держится',
+    async (price) => {
+      const { service, tx, notify, prisma, pricing } = makeService({
+        rules: [],
+        robokassaEnabled: true,
+      });
+      const lead = jest.fn(async () => undefined);
+      Object.assign(notify, { notifyAdminBoth: lead });
+      const errorSpy = jest
+        .spyOn(Logger.prototype, 'error')
+        .mockImplementation();
+      pricing.getPrice.mockResolvedValue(price);
+      await expect(
+        service.book({
+          ...BASE_DTO,
+          startsAt: INSIDE_WINDOW,
+          durationMin: 50,
+          type: SessionType.SESSION_50,
+        }),
+      ).rejects.toThrow('PAYMENT_UNAVAILABLE');
+      errorSpy.mockRestore();
+      expect(lead).toHaveBeenCalledTimes(1);
+      expect(tx.booking.create).not.toHaveBeenCalled();
+      expect(prisma.$transaction).not.toHaveBeenCalled();
+    },
+  );
+
   it('SESSION_50 + Robokassa выключена (dev) — авто-подтверждение, notify.onConfirmed вызван', async () => {
     const { service, notify, prisma } = makeService({
       rules: [],
@@ -353,11 +426,12 @@ describe('BookingService.book — создание и side-effects', () => {
       type: SessionType.SESSION_50,
     });
     expect(res.status).toBe(BookingStatus.CONFIRMED);
-    expect(prisma.booking.update).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({ status: BookingStatus.CONFIRMED }),
-      }),
-    );
+    // Аудит 2026-10-11 (booking-cas): переход HELD→CONFIRMED только с
+    // предикатом статуса, иначе dev-ветка перекрасила бы чужой переход.
+    expect(prisma.booking.updateMany).toHaveBeenCalledWith({
+      where: { id: 100, status: BookingStatus.HELD },
+      data: { status: BookingStatus.CONFIRMED, heldUntil: null },
+    });
     expect(notify.onConfirmed).toHaveBeenCalledTimes(1);
   });
 });
@@ -508,6 +582,22 @@ describe('BookingService.cancel', () => {
       'cal-42',
     );
   });
+
+  // Событие календаря: у CONFIRMED без записанного uid (под умер между PUT и
+  // записью) DELETE идёт по детерминированному uid, у HELD события не бывает.
+  it.each([
+    [BookingStatus.CONFIRMED, 'booking-5@schemehappens.ru'],
+    [BookingStatus.HELD, null],
+  ])(
+    'без calDavUid: бронь %s → onCancelled получает uid %s',
+    async (status, uid) => {
+      const { service, notify } = makeSimpleService({
+        bookingRow: activeBooking({ status, calDavUid: null }),
+      });
+      await service.cancel('tok');
+      expect(notify.onCancelled).toHaveBeenCalledWith(expect.anything(), uid);
+    },
+  );
 
   // Аудит 2026-10-11, r2-1#1: find→update без предиката статуса — N параллельных
   // отмен давали N× DM+письмо+DELETE, а отмена поверх подтверждения брала

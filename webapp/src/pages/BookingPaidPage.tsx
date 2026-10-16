@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { BookingConfirmedView } from '../components/booking/BookingConfirmedView';
 import { BookingPaidPending } from '../components/booking/BookingPaidPending';
+import { BookingPaidAccepted, BookingPaidLoadFailed } from '../components/booking/BookingPaidOutcomes';
 import { BookingPaidSkeleton } from '../components/booking/BookingPaidSkeleton';
 import { BookingCancelledView, BookingCompletedView } from '../components/booking/BookingEndedViews';
 import { useBookingByToken } from '../components/booking/useBookingByToken';
@@ -19,7 +20,7 @@ export function BookingPaidPage() {
   const [token] = useState<string | null>(() => new URLSearchParams(window.location.search).get('token'));
   const [failed] = useState<boolean>(() => new URLSearchParams(window.location.search).get('fail') === '1');
 
-  const { booking, loaded, timedOut, reload } = useBookingByToken(token);
+  const { booking, loaded, timedOut, loadError, reload } = useBookingByToken(token);
   const [cancelledByClient, setCancelledByClient] = useState(false);
 
   // The token is a capability (view + cancel). Drop it from the visible URL so
@@ -53,15 +54,10 @@ export function BookingPaidPage() {
     body = <BookingPaidPending booking={booking} timedOut={timedOut} onRetry={reload} />;
   } else if (booking && phase === 'completed') {
     body = <BookingCompletedView booking={booking} />;
+  } else if (loadError) {
+    body = <BookingPaidLoadFailed kind={loadError} onRetry={reload} />;
   } else {
-    body = (
-      <>
-        <div style={icon}>✓</div>
-        <h1 style={h1}>Оплата принята</h1>
-        <p style={sub}>Спасибо! Я свяжусь с вами и пришлю ссылку на встречу.</p>
-        <a href="/" style={primaryBtn}>На главную</a>
-      </>
-    );
+    body = <BookingPaidAccepted />;
   }
 
   return (

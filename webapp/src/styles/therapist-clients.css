@@ -1,0 +1,82 @@
+/* Экран «Все клиенты» кабинета терапевта (префикс tc-). Цвета — токены. */
+.tc-count { font-size: 36px; color: var(--text-ghost); }
+.tc-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.tc-search {
+  width: 240px; max-width: 100%; height: 36px; border-radius: 18px; padding: 0 16px;
+  border: 1px solid var(--line-input); background: var(--surface);
+  font: 14px var(--sans); color: var(--text); box-sizing: border-box;
+}
+.tc-search:focus { outline: none; border-color: var(--accent); }
+.tc-search::placeholder { color: var(--text-ghost); }
+.tc-modes { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+
+/* ── Форма «Новый клиент» ────────────────────────────────────────────────── */
+.tc-add {
+  background: var(--surface); border: 1px solid var(--line); border-radius: 16px;
+  padding: 24px 28px; box-sizing: border-box;
+  display: grid; grid-template-columns: 1fr auto; gap: 16px 24px; align-items: center;
+}
+.tc-add-name {
+  font: 26px var(--serif); color: var(--text); min-width: 0; width: 100%;
+  border: none; border-bottom: 1.5px solid var(--line-input); background: transparent; padding: 6px 0;
+}
+.tc-add-name:focus { outline: none; border-bottom-color: var(--accent); }
+.tc-add-name::placeholder { color: var(--text-ghost); }
+.tc-add-check { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--text-sub); min-height: 44px; cursor: pointer; }
+.tc-add-check input { width: 18px; height: 18px; accent-color: var(--accent); }
+.tc-add-note { grid-column: 1 / -1; margin: 0; font-size: 12px; color: var(--text-faint); }
+.tc-add-err { grid-column: 1 / -1; font-size: 13px; color: var(--err); }
+.tc-add-done { grid-column: 1 / -1; display: flex; flex-direction: column; gap: 16px; }
+.tc-add-done-name { margin: 0; font: 400 clamp(28px, 5vw, 44px)/1.1 var(--serif); }
+.tc-invite { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.tc-invite code {
+  flex: 1; min-width: 200px; font: 12.5px monospace; color: var(--text-sub);
+  background: var(--paper-sunk); padding: 9px 13px; border-radius: 8px; word-break: break-all;
+}
+.tc-actions { display: flex; gap: 12px; flex-wrap: wrap; }
+
+/* ── Сетка карточек ──────────────────────────────────────────────────────── */
+.tc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr)); gap: 18px; }
+.tc-card { display: flex; flex-direction: column; }
+.tc-bar { display: flex; height: 6px; gap: 2px; background: var(--paper-sunk); }
+.tc-bar > i { display: block; }
+.tc-body { padding: 22px 24px; display: flex; flex-direction: column; gap: 18px; flex: 1; }
+.tc-top { display: flex; align-items: flex-start; gap: 14px; }
+.tc-avatar { width: 48px; height: 48px; font-size: 18px; }
+.tc-who { flex: 1; min-width: 0; }
+.tc-name { font: 23px/1.15 var(--serif); overflow-wrap: anywhere; }
+.tc-meta { display: flex; gap: 8px; align-items: center; margin-top: 6px; font-size: 12px; color: var(--text-sub); flex-wrap: wrap; }
+.tc-meeting {
+  display: flex; justify-content: space-between; align-items: center; gap: 12px;
+  background: var(--bg); border-radius: 12px; padding: 10px 14px;
+}
+.tc-meeting-val { font-size: 14px; font-weight: 600; white-space: nowrap; color: var(--accent); }
+.tc-meeting-val--none { color: var(--text-ghost); font-weight: 500; }
+.tc-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.tc-foot {
+  margin-top: auto; padding-top: 14px; border-top: 1px dashed var(--line-input);
+  display: flex; justify-content: flex-end; min-height: 20px;
+}
+.tc-empty { padding: 24px 0; font-size: 14px; color: var(--text-faint); }
+.tc-error { padding: 24px 0; font-size: 14px; color: var(--err); }
+
+/* ── Задания (канбан) ────────────────────────────────────────────────────── */
+.tc-kanban { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap: 20px; align-items: start; }
+.tc-kcol-head { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
+.tc-kcol { display: flex; flex-direction: column; gap: 8px; }
+.tc-task { padding: 12px 14px; border-radius: 12px; }
+.tc-task-client { font-size: 11px; font-weight: 600; margin-bottom: 6px; color: var(--accent); }
+.tc-task-client--ok { color: var(--ok-ink); }
+.tc-task-client--err { color: var(--err); }
+.tc-alert { padding: 24px 0; }
+.tc-alert p { margin: 0 0 12px; font-size: 14px; color: var(--err); }
+.tc-task-text { font-size: 14px; line-height: 1.5; color: var(--text); }
+.tc-task-due { font-size: 11px; color: var(--text-faint); margin-top: 6px; }
+.tc-dash { padding: 20px 0; text-align: center; color: var(--text-faint); font-size: 13px; }
+
+@media (max-width: 767px) {
+  .tc-count { font-size: 24px; }
+  .tc-add { grid-template-columns: 1fr; padding: 20px; }
+  .tc-search { width: 100%; height: 44px; border-radius: 22px; }
+  .tc-toolbar > .ds-seg { width: 100%; }
+}

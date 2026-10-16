@@ -196,6 +196,6 @@ describe('BecomeTherapistSection — пределы длины (один ист�
     expect(max('Расскажи о себе или своём подходе')).toBe(
       LIM.THERAPIST_REQUEST_MESSAGE_MAX,
     );
-    expect(screen.getByText(/5/)).toBeTruthy();
+    expect(screen.getByText('Осталось знаков: 5')).toBeTruthy();
   });
 });

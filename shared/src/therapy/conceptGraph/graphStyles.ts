@@ -25,38 +25,3 @@ export const boxStyle: CSSProperties = {
   border: '1px solid rgba(var(--fg-rgb),0.1)',
   background: 'var(--surface)',
 };
-
-/** Пустая клетка — информация о дефиците, поэтому плашка заметная. */
-export const dashedStyle: CSSProperties = {
-  padding: 'var(--space-10) var(--space-12)',
-  borderRadius: 'var(--r-12)',
-  border: '1px dashed rgba(var(--fg-rgb),0.25)',
-  fontSize: 13,
-  lineHeight: 1.5,
-  color: 'var(--text-sub)',
-};
-
-export const chipRowStyle: CSSProperties = {
-  display: 'flex',
-  flexWrap: 'wrap',
-  gap: 'var(--space-4)',
-};
-
-export const miniChipStyle: CSSProperties = {
-  display: 'inline-flex',
-  alignItems: 'center',
-  gap: 'var(--space-4)',
-  padding: '2px 8px',
-  borderRadius: 'var(--r-20)',
-  background: 'rgba(var(--fg-rgb),0.06)',
-  color: 'var(--text-sub)',
-  fontSize: 11,
-  lineHeight: 1.4,
-};
-
-export const clamp2: CSSProperties = {
-  display: '-webkit-box',
-  WebkitLineClamp: 2,
-  WebkitBoxOrient: 'vertical',
-  overflow: 'hidden',
-};

@@ -179,6 +179,7 @@ export const FIELD_POLICY: Record<string, Record<string, Policy>> = {
     modeMapNodes: enc(`${TH}/therapy-notes.service.ts`),
     modeMapEdges: enc(`${TH}/therapy-notes.service.ts`),
     modeLinks: enc(`${TH}/therapy-notes.service.ts`),
+    schemaLinks: enc(`${TH}/therapy-notes.service.ts`),
     history: plain(
       'контейнер снапшотов; чувствительные поля каждого снапшота ' +
         'шифруются попольно (encryptConceptFields)',
