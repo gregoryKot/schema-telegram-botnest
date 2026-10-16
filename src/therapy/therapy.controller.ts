@@ -7,8 +7,8 @@ import {
   Req,
   UseGuards,
 } from '@nestjs/common';
-import { Throttle } from '@nestjs/throttler';
 import { Request } from 'express';
+import { PersistentThrottleLimit } from '../api/persistent-throttle-limit';
 import { uid } from '../api/request-utils';
 import { parseClientId } from '../api/parse-user-id';
 import { TelegramAuthGuard } from '../api/telegram-auth.guard';
@@ -49,8 +49,8 @@ export class TherapyController {
     }
   }
 
-  // Лимит на терапевта; от дублей защищает дедуп в ysq-request.ts.
-  @Throttle({ long: { limit: 30, ttl: 3_600_000 } })
+  // Дубли держит дедуп в ysq-request.ts; лимит — в Postgres, общий на инстансы.
+  @PersistentThrottleLimit({ long: { limit: 30, ttl: 3_600_000 } })
   @Post('request-ysq/:clientId')
   async requestYsq(
     @Req() req: AuthRequest,
