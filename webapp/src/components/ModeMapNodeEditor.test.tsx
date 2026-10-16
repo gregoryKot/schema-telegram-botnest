@@ -182,6 +182,16 @@ describe('ModeMapNodeEditor — фигуры схемы случая', () => {
     expect(screen.getByText('Опыт детства', { selector: 'div' })).toBeTruthy();
   });
 
+  it.each(['schema', 'origin'] as const)('%s: под полем сказано, что текст не уходит в концептуализацию', (type) => {
+    renderEditor(baseNode({ type, data: { label: 'x' } }));
+    expect(screen.getByText(/концептуализацию клиента правят в виде «Схема»/)).toBeTruthy();
+  });
+
+  it('контроль: у режима этой подсказки нет', () => {
+    renderEditor(baseNode());
+    expect(screen.queryByText(/концептуализацию клиента правят/)).toBeNull();
+  });
+
   it('текст из такого поля пишется в note, как у обычной заметки', () => {
     const { onChange } = renderEditor(baseNode({ type: 'schema', data: { label: 'С' } }));
     fireEvent.change(screen.getByLabelText('Во что человек верит'), { target: { value: 'Я один' } });

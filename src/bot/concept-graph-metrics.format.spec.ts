@@ -8,6 +8,7 @@ describe('formatConceptGraphMetrics', () => {
       linked30: 0,
       schemaLinked30: 0,
       canvasOpen30: 0,
+      fullscreen30: 0,
     });
     expect(text).toContain('🧩 <b>Графическая концептуализация</b> (за месяц)');
     expect(text).toContain(
@@ -23,11 +24,13 @@ describe('formatConceptGraphMetrics', () => {
       linked30: 9,
       schemaLinked30: 6,
       canvasOpen30: 2,
+      fullscreen30: 8,
     });
     expect(text).toContain('Открывали 14 раз, терапевтов: 3');
     expect(text).toContain('Связи режимов заполняли 9 раз');
     expect(text).toContain('Убеждения и опыт схем записывали 6 раз');
     expect(text).toContain('Переносили схему случая на холст 2 раз');
+    expect(text).toContain('Разворачивали схему на весь экран 8 раз');
     expect(text).not.toContain('Пока никто');
     expect(text).not.toMatch(/NaN|undefined/);
   });
@@ -39,6 +42,7 @@ describe('formatConceptGraphMetrics', () => {
       linked30: 0,
       schemaLinked30: 0,
       canvasOpen30: 0,
+      fullscreen30: 0,
     });
     expect(text).toContain('Открывали 5 раз, терапевтов: 2');
     expect(text).toContain('Связи режимов пока не заполняли');
@@ -47,6 +51,8 @@ describe('formatConceptGraphMetrics', () => {
     expect(text).not.toContain('Убеждения и опыт схем');
     // Так же с холстом: нет переносов — нет строки, а не «переносили 0 раз».
     expect(text).not.toContain('холст');
+    // И с полным экраном: не разворачивали — строки нет, а не «разворачивали 0 раз».
+    expect(text).not.toContain('весь экран');
   });
 
   it('связи заполняли, а открытий в окне нет — блок не пустой и не теряет связи', () => {
@@ -56,6 +62,7 @@ describe('formatConceptGraphMetrics', () => {
       linked30: 2,
       schemaLinked30: 0,
       canvasOpen30: 0,
+      fullscreen30: 0,
     });
     expect(text).not.toContain('Пока никто');
     expect(text).toContain('Связи режимов заполняли 2 раз');
@@ -68,6 +75,7 @@ describe('formatConceptGraphMetrics', () => {
       linked30: 0,
       schemaLinked30: 4,
       canvasOpen30: 0,
+      fullscreen30: 0,
     });
     expect(text).not.toContain('Пока никто');
     expect(text).toContain('Убеждения и опыт схем записывали 4 раз');
@@ -81,6 +89,7 @@ describe('formatConceptGraphMetrics', () => {
       linked30: 0,
       schemaLinked30: 0,
       canvasOpen30: 0,
+      fullscreen30: 0,
     });
     expect(text).not.toContain('Убеждения и опыт схем');
   });
@@ -92,6 +101,7 @@ describe('formatConceptGraphMetrics', () => {
       linked30: 0,
       schemaLinked30: 0,
       canvasOpen30: 5,
+      fullscreen30: 0,
     });
     expect(text).not.toContain('Пока никто');
     expect(text).toContain('Переносили схему случая на холст 5 раз');
@@ -105,7 +115,34 @@ describe('formatConceptGraphMetrics', () => {
       linked30: 0,
       schemaLinked30: 0,
       canvasOpen30: 0,
+      fullscreen30: 0,
     });
     expect(text).not.toContain('холст');
+  });
+
+  it('только разворот на весь экран: блок не пустой, строка про него стоит, мусора нет', () => {
+    const text = formatConceptGraphMetrics({
+      opens30: 0,
+      therapists30: 0,
+      linked30: 0,
+      schemaLinked30: 0,
+      canvasOpen30: 0,
+      fullscreen30: 3,
+    });
+    expect(text).not.toContain('Пока никто');
+    expect(text).toContain('Разворачивали схему на весь экран 3 раз');
+    expect(text).not.toMatch(/NaN|undefined|null/);
+  });
+
+  it('пустая БД не упоминает полный экран', () => {
+    const text = formatConceptGraphMetrics({
+      opens30: 0,
+      therapists30: 0,
+      linked30: 0,
+      schemaLinked30: 0,
+      canvasOpen30: 0,
+      fullscreen30: 0,
+    });
+    expect(text).not.toContain('весь экран');
   });
 });

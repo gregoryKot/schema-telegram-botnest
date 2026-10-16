@@ -146,7 +146,6 @@ export function ModeMapNodeEditor({ node, onChange, onDelete, onClose, coupleMod
         onPick: () => patchData({ display: opt.v }),
       }))} />
 
-      {/* Clinical questions — click a question to jump to the field it guides */}
       <ClinicalHint node={node}
         onPickNote={() => { noteRef.current?.focus(); }}
         onPickNeed={() => { needRef.current?.focus(); }}
@@ -156,6 +155,7 @@ export function ModeMapNodeEditor({ node, onChange, onDelete, onClose, coupleMod
       <textarea id="mm-node-note" ref={noteRef} className="ds-textarea" style={{ minHeight: 56 }} rows={3}
         value={node.data.note ?? ''} onChange={e => patchData({ note: e.target.value || undefined })}
         placeholder={texts.notePlaceholder} />
+      {texts.hint && <div className="ds-sub mm2-hint">{texts.hint}</div>}
 
       <label className="ds-label" htmlFor="mm-node-schema">Связанная схема</label>
       <select id="mm-node-schema" value={node.data.schemaId ?? ''} onChange={e => patchData({ schemaId: e.target.value || undefined })}

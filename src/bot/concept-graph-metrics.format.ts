@@ -1,17 +1,11 @@
 // Блок «Графическая концептуализация» для /stats (правило №8: событие, которого нет в
 // отчёте, невидимо). Чистый форматтер, покрыт тестом, включая пустую БД; язык простой.
-export interface ConceptGraphMetrics {
-  opens30: number; // за месяц: сколько раз терапевты открыли схему случая по режимам
-  therapists30: number; // за месяц: сколько разных терапевтов её открывало
-  linked30: number; // за месяц: сколько раз заполнили связи режима (схемы, потребности, истоки)
-  schemaLinked30: number; // за месяц: сколько раз записали убеждение / детский опыт / потребности схемы
-  canvasOpen30: number; // за месяц: сколько раз схему случая перенесли на холст (создана карта режимов)
-}
+import type { ConceptGraphMetrics } from './concept-graph-metrics.types';
 
 /** Текстовый блок для /stats. Чистая функция. */
 export function formatConceptGraphMetrics(m: ConceptGraphMetrics): string {
   const lines = [`🧩 <b>Графическая концептуализация</b> (за месяц)`];
-  if (m.opens30 + m.linked30 + m.schemaLinked30 + m.canvasOpen30 === 0) {
+  if (Object.values(m).every((n) => n === 0)) {
     lines.push('Пока никто из терапевтов не открывал схему случая по режимам.');
     return lines.join('\n');
   }
@@ -26,6 +20,9 @@ export function formatConceptGraphMetrics(m: ConceptGraphMetrics): string {
   }
   if (m.canvasOpen30 > 0) {
     lines.push(`Переносили схему случая на холст ${m.canvasOpen30} раз`);
+  }
+  if (m.fullscreen30 > 0) {
+    lines.push(`Разворачивали схему на весь экран ${m.fullscreen30} раз`);
   }
   return lines.join('\n');
 }

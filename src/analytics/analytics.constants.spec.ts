@@ -103,6 +103,10 @@ describe('CONCEPT_EVENTS ⊆ ANALYTICS_EVENTS', () => {
   it('перенос на холст — событие реестра (concept_canvas_open)', () => {
     expect(CONCEPT_EVENTS).toContain('concept_canvas_open');
   });
+
+  it('разворот на весь экран — событие реестра (concept_graph_fullscreen)', () => {
+    expect(CONCEPT_EVENTS).toContain('concept_graph_fullscreen');
+  });
 });
 
 describe('PUBLIC_ANALYTICS_EVENTS ⊆ ANALYTICS_EVENTS', () => {
