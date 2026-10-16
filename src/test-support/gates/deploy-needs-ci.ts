@@ -58,12 +58,13 @@ export function triggerBlocks(text: string): Record<string, string> {
 /** Тексты джоб воркфлоу без комментариев: { id: 'всё, что под ключом' }. */
 export function jobBlocks(text: string): Record<string, string> {
   const src = stripComments(text);
-  const at = src.search(/^jobs:\s*$/m);
+  const at = src.search(/^jobs:[ \t]*(?:#.*)?$/m);
   if (at < 0) return {};
   const out: Record<string, string> = {};
   for (const part of src
     .slice(at)
-    .split(/^ {2}(?=[\w-]+:\s*$)/m)
+    // Ключ джобы может нести хвостовой комментарий (`  build: # …`).
+    .split(/^ {2}(?=[\w-]+:[ \t]*(?:#.*)?$)/m)
     .slice(1)) {
     out[part.slice(0, part.indexOf(':'))] = part;
   }

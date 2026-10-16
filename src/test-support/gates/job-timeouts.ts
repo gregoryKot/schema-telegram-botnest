@@ -18,7 +18,9 @@ export function jobTimeoutViolations(text: string): string[] {
   const bad: string[] = [];
   for (const [id, block] of Object.entries(jobBlocks(text))) {
     if (/^ {4}uses:/m.test(block)) continue;
-    const m = /^ {4}timeout-minutes:[ \t]*(\S+)(?:[ \t]+#.*)?[ \t]*$/m.exec(
+    // Значение берётся целиком (`${{ vars.X }}` содержит пробелы): выражение —
+    // это «вне 1…359» с исходным текстом, а не «таймаута нет».
+    const m = /^ {4}timeout-minutes:[ \t]*(.*?)(?:[ \t]+#.*)?[ \t]*$/m.exec(
       block,
     );
     if (!m) {

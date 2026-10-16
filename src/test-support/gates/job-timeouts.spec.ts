@@ -54,6 +54,25 @@ describe('джоба без потолка — красная', () => {
     },
   );
 
+  it('выражение с пробелами: сообщение показывает значение, а не «нет таймаута»', () => {
+    const text = wf(
+      '  build:\n    runs-on: ubuntu-latest\n    timeout-minutes: ${{ vars.LIMIT }}\n    steps:\n      - run: true\n',
+    );
+    expect(jobTimeoutViolations(text)).toEqual([
+      'build: timeout-minutes: ${{ vars.LIMIT }} вне 1…359',
+    ]);
+  });
+
+  it('ключ джобы с хвостовым комментарием остаётся отдельной джобой', () => {
+    const text = wf(
+      `${WITH_TIMEOUT}  lint: # проверки\n    runs-on: ubuntu-latest\n    steps:\n      - run: true\n`,
+    );
+    expect(Object.keys(jobBlocks(text))).toEqual(['build', 'lint']);
+    expect(jobTimeoutViolations(text)).toEqual([
+      'lint: нет timeout-minutes на уровне джобы',
+    ]);
+  });
+
   it('нарушает только одна джоба из двух', () => {
     const text = wf(
       `${WITH_TIMEOUT}  lint:\n    runs-on: ubuntu-latest\n    steps:\n      - run: true\n`,
