@@ -11,6 +11,10 @@ import type { PlainBooking } from './booking-notify.service';
 // Вынесено из booking-notify.service.ts (правило №10: файл под храповиком не
 // растёт). Глобальный аудит 2026-10-11, security#21.
 
+/** Детерминированный UID события брони: по нему событие снимается и без записанного calDavUid. */
+export const bookingEventUid = (id: number): string =>
+  `booking-${id}@schemehappens.ru`;
+
 export interface ConfirmRunDeps {
   prisma: PrismaService;
   meeting: MeetingService;
@@ -28,6 +32,11 @@ export interface ConfirmRunDeps {
  * конца одновременно, уведомят один раз. Цена — смерть пода в миллисекундах
  * между флагом и DM теряет «Запись подтверждена»; сама бронь при этом
  * полностью доделана и видна в админке. Мутирует b.meetingUrl.
+ *
+ * Запись uid — CAS по статусу CONFIRMED. Если отмену обогнал PUT, это событие
+ * снимает тот проход, что его создал (линеаризация по строке: uid записан до
+ * claimCancel — DELETE сделает отмена, после — confirm). Смерть пода между PUT
+ * и записью uid закрывает onCancelled: DELETE по `bookingEventUid`.
  */
 export async function runConfirmEffects(
   d: ConfirmRunDeps,
@@ -52,7 +61,7 @@ export async function runConfirmEffects(
   let uid = b.calDavUid ?? null;
   if (!uid) {
     uid = await d.calDav.pushEvent({
-      uid: `booking-${b.id}@schemehappens.ru`,
+      uid: bookingEventUid(b.id),
       startsAt: b.startsAt,
       durationMin: b.durationMin,
       summary: `${sessionLabel(b.type)} — ${b.clientName}`,
@@ -62,10 +71,17 @@ export async function runConfirmEffects(
       location: b.meetingUrl ?? undefined,
     });
     if (uid) {
-      await d.prisma.booking.update({
-        where: { id: b.id },
+      // CAS по статусу: отмена могла прийти, пока шёл PUT. claimCancel тогда
+      // перечитал строку без uid и DELETE не послал — событие снимаем сами,
+      // иначе оно висит в календаре владельца отменённой брони.
+      const saved = await d.prisma.booking.updateMany({
+        where: { id: b.id, status: BookingStatus.CONFIRMED },
         data: { calDavUid: uid },
       });
+      if (saved.count === 0) {
+        await d.calDav.removeEvent(uid);
+        return;
+      }
     }
   }
   const claimed = await d.prisma.booking.updateMany({
