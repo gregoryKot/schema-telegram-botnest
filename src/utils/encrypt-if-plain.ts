@@ -3,7 +3,7 @@ import { decrypt, encrypt, looksLikeCiphertext } from './crypto';
 /**
  * Строка уже зашифрована или ПОХОЖА на шифротекст (тогда ключ, которым она
  * зашифрована, мог быть убран из конфигурации — трогать нельзя: повторное
- * шифрование сделало бы оригинал нечитаемым, см. encrypt-migration.ts).
+ * шифрование сделало бы оригинал нечитаемым, см. classify в encrypt-migration.rows.ts).
  */
 export function isEncryptedOrUnknown(v: string): boolean {
   return decrypt(v) !== v || looksLikeCiphertext(v);

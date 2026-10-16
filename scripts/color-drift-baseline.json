@@ -60,6 +60,5 @@
   "webapp/src/pages/ProductLandingPage.tsx": 5,
   "webapp/src/pages/tests/QuizPage.tsx": 2,
   "webapp/src/pages/tests/testsKit.tsx": 1,
-  "webapp/src/sections/TodaySection.tsx": 3,
   "webapp/src/utils/theme.ts": 2
 }

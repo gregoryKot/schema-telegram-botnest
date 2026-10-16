@@ -6,7 +6,8 @@ import {
   Logger,
 } from '@nestjs/common';
 import { Telegraf, Context, Markup } from 'telegraf';
-import { TELEGRAF_BOT, ERROR_RETRY } from './telegram.constants';
+import { TELEGRAF_BOT } from './telegram.constants';
+import { failCallback } from './callback-failure';
 import { BotService } from '../bot/bot.service';
 import { AccountService } from '../bot/account.service';
 import {
@@ -123,8 +124,7 @@ export class TelegramNotifyActionsService implements OnModuleInit {
           buildWelcomeKeyboard(),
         );
       } catch (err) {
-        this.logger.error('addr action failed', err);
-        await ctx.answerCbQuery(ERROR_RETRY).catch(() => null);
+        await failCallback(this.logger, ctx, 'addr action', err);
       }
     });
 
@@ -142,8 +142,7 @@ export class TelegramNotifyActionsService implements OnModuleInit {
           ]).reply_markup,
         );
       } catch (err) {
-        this.logger.error('notify:pause failed', err);
-        await ctx.answerCbQuery(ERROR_RETRY).catch(() => null);
+        await failCallback(this.logger, ctx, 'notify:pause', err);
       }
     });
 
@@ -162,10 +161,7 @@ export class TelegramNotifyActionsService implements OnModuleInit {
           .editMessageText(pauseConfirmText(days, formatDay(until, tz), form))
           .catch(() => null);
       } catch (err) {
-        this.logger.error('notify:pause:days failed', err);
-        await ctx
-          .answerCbQuery('Не получилось поставить паузу.')
-          .catch(() => null);
+        await failCallback(this.logger, ctx, 'notify:pause:days', err);
       }
     });
 
@@ -198,8 +194,7 @@ export class TelegramNotifyActionsService implements OnModuleInit {
           )
           .catch(() => null);
       } catch (err) {
-        this.logger.error('notify:slower failed', err);
-        await ctx.answerCbQuery('Не получилось сохранить.').catch(() => null);
+        await failCallback(this.logger, ctx, 'notify:slower', err);
       }
     });
 
@@ -218,8 +213,7 @@ export class TelegramNotifyActionsService implements OnModuleInit {
           )
           .catch(() => null);
       } catch (err) {
-        this.logger.error('notify:skip failed', err);
-        await ctx.answerCbQuery('Не получилось.').catch(() => null);
+        await failCallback(this.logger, ctx, 'notify:skip', err);
       }
     });
   }

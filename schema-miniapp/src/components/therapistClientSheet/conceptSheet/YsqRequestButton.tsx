@@ -31,7 +31,7 @@ export function YsqRequestButton({
             : cm('var(--accent-blue)', 80),
           fontSize: 13,
           fontWeight: 500,
-          cursor: 'pointer',
+          cursor: ysqRequested ? 'default' : 'pointer',
         }}
       >
         {ysqRequested ? '✓ Запрос отправлен' : 'Запросить тест на схемы'}

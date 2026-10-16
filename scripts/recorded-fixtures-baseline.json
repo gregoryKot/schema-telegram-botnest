@@ -3,14 +3,6 @@
     "status": "exempt",
     "reason": "Троттлинг-идентичность по Telegram/MAX WebAppData — HMAC пересчитывается с фейковым BOT_TOKEN и синтетическим initData в спеке; настоящей строки initData от клиента мессенджера в логах не сохранялось."
   },
-  "src/api/throttler-init-data.ts": {
-    "status": "exempt",
-    "reason": "Проверка подписи initData Telegram для бакета лимита (вынесено из throttler-identity.ts) — тот же класс: HMAC пересчитывается с фейковым BOT_TOKEN и синтетическим initData в спеке; настоящей строки initData от клиента мессенджера в логах не сохранялось."
-  },
-  "src/auth/auth.service.ts": {
-    "status": "exempt",
-    "reason": "Верификация Telegram WebAppData (WebApp initData) — тот же класс, что throttler-identity.ts: HMAC в тесте самоподписан фейковым токеном, реальной строки initData от Telegram-клиента не записано."
-  },
   "src/auth/max-init-data.ts": {
     "status": "exempt",
     "reason": "MAX initData проверяется тем же HMAC-алгоритмом, что и Telegram, но с токеном бота MAX — тест подписывает данные сам, реального initData от MAX-клиента в логах прода не сохранялось."
@@ -48,6 +40,10 @@
   "src/auth/providers/vk.provider.ts": {
     "status": "exempt",
     "reason": "Ответы VK ID OAuth (token/userинфо) в спеке — авторская форма по документации VK ID, не захваченный с прода вызов; тестового VK-приложения с логами нет."
+  },
+  "src/auth/telegram-init-data.ts": {
+    "status": "exempt",
+    "reason": "Единый верификатор подписи initData Telegram (бывшие копии в auth.service.ts и throttler-init-data.ts) — HMAC в спеках самоподписан фейковым BOT_TOKEN и синтетическим initData; настоящей строки initData от клиента Telegram в логах не сохранялось (docs/SHIELD_PROMPT.md: записать при следующем реальном логине)."
   },
   "src/booking/caldav-busy-read.ts": {
     "status": "exempt",

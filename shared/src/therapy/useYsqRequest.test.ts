@@ -95,4 +95,57 @@ describe('useYsqRequest', () => {
     unmount();
     expect(vi.getTimerCount()).toBe(0);
   });
+
+  it('смена клиента при запросе в полёте: тап на новом уходит, поздний ответ прежнего игнорируется', async () => {
+    const resolvers: Array<() => void> = [];
+    const send = vi.fn(
+      () => new Promise<void>((r) => resolvers.push(r)),
+    );
+    const { result, rerender } = renderHook(
+      ({ id }: { id: number }) => useYsqRequest(id, send),
+      { initialProps: { id: 1 } },
+    );
+    let first!: Promise<void>;
+    act(() => {
+      first = result.current.handleRequestYsq();
+    });
+    rerender({ id: 2 });
+    let second!: Promise<void>;
+    act(() => {
+      second = result.current.handleRequestYsq();
+    });
+    expect(send).toHaveBeenCalledTimes(2);
+    expect(send).toHaveBeenLastCalledWith(2);
+    await act(async () => {
+      resolvers[0]();
+      await first;
+    });
+    expect(result.current.ysqRequested).toBe(false);
+    await act(async () => {
+      resolvers[1]();
+      await second;
+    });
+    expect(result.current.ysqRequested).toBe(true);
+  });
+
+  it('смена клиента: ошибка прежнего запроса не показывается на новом', async () => {
+    let reject!: (e: Error) => void;
+    const send = vi.fn(
+      () => new Promise<void>((_, rej) => (reject = rej)),
+    );
+    const { result, rerender } = renderHook(
+      ({ id }: { id: number }) => useYsqRequest(id, send),
+      { initialProps: { id: 1 } },
+    );
+    let pending!: Promise<void>;
+    act(() => {
+      pending = result.current.handleRequestYsq();
+    });
+    rerender({ id: 2 });
+    await act(async () => {
+      reject(new Error('fail'));
+      await pending;
+    });
+    expect(result.current.ysqError).toBe('');
+  });
 });

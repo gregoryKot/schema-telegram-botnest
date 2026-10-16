@@ -119,6 +119,22 @@ describe('RobokassaService.buildPaymentUrl — подпись исходящег
     failUrl: 'https://schemehappens.ru/api/payment/fail',
   };
 
+  // Аудит 2026-10-11: HELD-бронь получала счёт OutSum=0.00. Последняя линия
+  // для всех трёх вызывающих (бронь, донат, подписка): счёт без суммы не строим.
+  it.each([0, -1, NaN, Infinity])(
+    'сумма %p — бросок, ссылка на оплату не строится',
+    (amount) => {
+      expect(() => makeService().buildPaymentUrl({ ...base, amount })).toThrow(
+        'Invalid payment amount',
+      );
+    },
+  );
+
+  it('минимальная положительная сумма (1 ₽) строится как раньше', () => {
+    const url = new URL(makeService().buildPaymentUrl({ ...base, amount: 1 }));
+    expect(url.searchParams.get('OutSum')).toBe('1.00');
+  });
+
   it('fiscal ON (по умолчанию): подпись = MD5(login:sum:invId:Receipt:pass1)', () => {
     const svc = makeService();
     const url = new URL(svc.buildPaymentUrl(base));

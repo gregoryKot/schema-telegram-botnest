@@ -89,22 +89,6 @@ export function buildCapabilityReport(
       critical: false,
     },
     {
-      id: 'legacyEncryptionMigration',
-      title: 'Дошифровка старых записей при старте',
-      on: has(env, 'ENCRYPTION_KEY'),
-      envVars: ['ENCRYPTION_KEY'],
-      offReason:
-        'Дошифровка старых записей пропущена: нет ENCRYPTION_KEY (в проде ' +
-        'без него процесс вообще не стартует — см. src/utils/crypto.ts, ' +
-        'здесь это только dev/CI).',
-      files: [
-        'src/prisma/encryption-wave2.service.ts',
-        'src/prisma/encryption-wave3.service.ts',
-        'src/utils/encrypt-migration.ts',
-      ],
-      critical: false,
-    },
-    {
       // Не «фича выключена», а деградация в более строгую сторону: без
       // секретов подпись проверить нечем, и лимит запросов считается по
       // адресу. Обход этим не открывается — наоборот, закрывается; цену

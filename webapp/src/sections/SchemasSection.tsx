@@ -1,48 +1,19 @@
-import { useEffect, useState, lazy, Suspense } from 'react';
-import { useHistorySheet } from '../hooks/useHistorySheet';
-import { api, reportClientError } from '../api';
-import { fmtDate, momentDayKey } from '../utils/format';
-import { SCHEMA_DOMAINS, MODE_GROUPS, ALL_MODES } from '../schemaTherapyData';
-import { useNeedData, NEED_ORDER } from '../needData';
+import { useState, lazy, Suspense } from 'react';
 import { SchemaPickerSheet } from '../components/SchemaPickerSheet';
 import { ModePickerSheet } from '../components/ModePickerSheet';
-import { useTr } from '../utils/addressForm';
 import { SchemaDetailSheet } from '../components/SchemaDetailSheet';
 import { NeedDetailSheet } from '../components/NeedDetailSheet';
-import { IdentityDot } from '../../../shared/src/components/IdentityDot';
-import { MY_SCHEMA_IDS_KEY, MY_MODE_IDS_KEY } from '../utils/storageKeys';
-import { GlyphArrowLeft } from '../components/exercises/ExScreen';
-import { Skeleton } from '../components/Skeleton';
-import { pressable } from '../utils/a11y';
-import { needColor } from '../../../shared/src/needs/needColors';
+import '../styles/client-schemas.css';
+import { useSchemasData } from './schemas/useSchemasData';
+import { ExpressedCard } from './schemas/ExpressedCard';
+import { YsqTestCard } from './schemas/YsqTestCard';
+import { MySchemasBlock } from './schemas/MySchemasBlock';
+import { SchemaMap } from './schemas/SchemaMap';
+import { ModesBlocks } from './schemas/ModesBlocks';
+import { ModeMapBanner, MyModeMapSheet } from './schemas/ModeMapBanner';
+import { NeedsBlock } from './schemas/NeedsBlock';
 
 const ModeEx = lazy(() => import('../components/exercises/FlashcardEx').then(m => ({ default: m.ModeEx })));
-const ModeMapViewer = lazy(() => import('../components/ModeMapViewer').then(m => ({ default: m.ModeMapViewer })));
-
-/** color-mix: works with CSS vars AND hex. Replaces the old hex-alpha hack. */
-function cm(color: string, pct: number) {
-  return `color-mix(in srgb, ${color} ${pct}%, transparent)`;
-}
-function readLocalIds(key: string): string[] {
-  try {
-    const parsed = JSON.parse(localStorage.getItem(key) ?? '[]');
-    return Array.isArray(parsed) ? parsed.filter(x => typeof x === 'string') : [];
-  } catch { return []; }
-}
-
-function shortName(name: string): string {
-  const part = name.split(' / ')[0];
-  return part
-    .replace('Эмоциональная ', 'Эмоц. ')
-    .replace('Социальная ', 'Соц. ')
-    .replace('Недостаточность ', 'Недост. ');
-}
-
-function needScoreColor(v: number) {
-  if (v <= 3) return 'var(--accent-red)';
-  if (v <= 6) return 'var(--accent-yellow)';
-  return 'var(--accent-green)';
-}
 
 interface Props {
   onOpenSchema: (opts?: { startTest?: boolean; tab?: 'needs'|'schemas'|'modes'; highlight?: string }) => void;
@@ -51,436 +22,60 @@ interface Props {
 }
 
 export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChildhoodWheel }: Props) {
-  const NEED_DATA = useNeedData();
-  const tr = useTr();
-  const [manualSchemaIds, setManualSchemaIds] = useState<string[]>(() => readLocalIds(MY_SCHEMA_IDS_KEY));
-  const [myModeIds, setMyModeIds]         = useState<string[]>(() => readLocalIds(MY_MODE_IDS_KEY));
-  const [ysqSchemaIds, setYsqSchemaIds]   = useState<string[]>([]);
-  const [ysqScores, setYsqScores]         = useState<Record<string, { pct5plus: number; avg: number }>>({});
-  const [ysqProgressAnswered, setYsqProgressAnswered] = useState<number | null>(null);
-  const [profileLoading, setProfileLoading] = useState(true);
+  const d = useSchemasData();
   const [showSchemaPicker, setShowSchemaPicker] = useState(false);
-  const [showModePicker, setShowModePicker]     = useState(false);
-  const [introModeId, setIntroModeId]     = useState<string | null>(null);
+  const [showModePicker, setShowModePicker] = useState(false);
+  const [introModeId, setIntroModeId] = useState<string | null>(null);
   const [detailSchemaId, setDetailSchemaId] = useState<string | null>(null);
-  const [detailNeedId, setDetailNeedId]   = useState<string | null>(null);
-  const [ysqCompletedAt, setYsqCompletedAt] = useState<string | null>(null);
-  const [myMapCount, setMyMapCount]       = useState(0);
-  const [showMyMap, setShowMyMap]         = useState(false);
+  const [detailNeedId, setDetailNeedId] = useState<string | null>(null);
+  const [showMyMap, setShowMyMap] = useState(false);
 
-  useEffect(() => {
-    Promise.all([
-      api.getProfile(),
-      api.getYsqHistory(),
-      api.getYsqProgress().catch(() => null),
-    ]).then(([p, history, progress]) => {
-      setYsqProgressAnswered(
-        Array.isArray(progress?.answers)
-          ? progress.answers.filter(a => a > 0).length
-          : null,
-      );
-      const serverSchemas = Array.isArray(p?.mySchemaIds) ? p.mySchemaIds : [];
-      const serverModes   = Array.isArray(p?.myModeIds)   ? p.myModeIds   : [];
-      setManualSchemaIds(serverSchemas);
-      if (serverSchemas.length > 0) localStorage.setItem(MY_SCHEMA_IDS_KEY, JSON.stringify(serverSchemas));
-      setMyModeIds(serverModes);
-      if (serverModes.length > 0) localStorage.setItem(MY_MODE_IDS_KEY, JSON.stringify(serverModes));
-      setYsqSchemaIds(Array.isArray(p?.ysq?.activeSchemaIds) ? p.ysq.activeSchemaIds : []);
-      setYsqCompletedAt(p?.ysq?.completedAt ?? null);
-      // Build scores map from latest YSQ history entry
-      if (Array.isArray(history) && history.length > 0) {
-        const latest = history[0];
-        const map: Record<string, { pct5plus: number; avg: number }> = {};
-        if (Array.isArray(latest.scores)) {
-          for (const s of latest.scores)
-            map[s.id] = { pct5plus: Math.round(s.pct5plus), avg: s.avg ?? 0 };
-        }
-        setYsqScores(map);
-      }
-      setProfileLoading(false);
-    }).catch(() => setProfileLoading(false));
-    api.listMyModeMaps().then(list => setMyMapCount(list.length)).catch(() => reportClientError({ message: 'schemas mode-map count load failed', section: 'schemas' }));
-  }, []);
-
-  const allSchemaIds = [...new Set([...ysqSchemaIds, ...manualSchemaIds])];
-  const myModes = myModeIds
-    .map(id => ALL_MODES.find(m => m.id === id))
-    .filter(Boolean) as typeof ALL_MODES;
-
-  function saveSchemas(ids: string[]) {
-    localStorage.setItem(MY_SCHEMA_IDS_KEY, JSON.stringify(ids));
-    setManualSchemaIds(ids);
-    api.updateSettings({ mySchemaIds: ids }).catch(() => reportClientError({ message: 'schemas save mySchemaIds failed', section: 'schemas' }));
-  }
-
-  const hasChildhood = Object.keys(childhoodRatings).length > 0;
+  const allSchemaIds = [...new Set([...d.ysqSchemaIds, ...d.manualSchemaIds])];
 
   return (
-    <div className="page-inner-wide">
-
-      {/* ── Header ── */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 36 }}>
+    <div className="ds-page cs-page">
+      <div className="ds-head-row cs-head">
         <div>
-          <div className="eyebrow u-mb8">
-            Схема-терапия
-          </div>
-          <h1 className="hub-title u-mb8">
-            Мои<br /><span className="it">паттерны</span>
-          </h1>
-          <p className="hub-sub" style={{ margin: 0 }}>Схемы, режимы, потребности</p>
+          <div className="ds-eyebrow">Схема-терапия</div>
+          <h1 className="ds-h1">Мои <i>паттерны</i></h1>
+          <div className="ds-sub cs-head-sub">Схемы, режимы, потребности</div>
         </div>
-        <button onClick={() => onOpenSchema()} className="btn btn-secondary" style={{ marginTop: 14 }}>
-          Библиотека
-        </button>
+        <button onClick={() => onOpenSchema()} className="ds-btn ds-btn--secondary">Библиотека</button>
       </div>
 
-      <div>
-
-        {/* ══════════ ТВОИ ВЫРАЖЕННЫЕ СХЕМЫ (YSQ) ══════════ */}
-        {!profileLoading && ysqSchemaIds.length > 0 && (
-          <div className="section">
-            <div className="section-head">
-              <h3>{tr('Твои выраженные схемы', 'Ваши выраженные схемы')}</h3>
-              {ysqCompletedAt && (
-                <span className="u-sub12">
-                  Тест от {fmtDate(momentDayKey(ysqCompletedAt))}
-                </span>
-              )}
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
-              {ysqSchemaIds.map(sid => {
-                const domain = SCHEMA_DOMAINS.find(d => d.schemas.some(s => s.id === sid));
-                const schema = domain?.schemas.find(s => s.id === sid);
-                if (!schema || !domain) return null;
-                const c = domain.color;
-                const score = ysqScores[sid];
-                // Классика может быть честным нулём (схема активна по среднему
-                // баллу) — бар и цифра рисуются по среднему баллу.
-                const barPct = score ? Math.max(0, Math.round(((score.avg - 1) / 5) * 100)) : 0;
-                return (
-                  <div
-                    key={sid}
-                    {...pressable(() => setDetailSchemaId(sid))}
-                    style={{
-                      display: 'grid', gridTemplateColumns: '1.5fr 1fr 52px',
-                      gap: 24, alignItems: 'center',
-                      padding: '14px 0', borderBottom: '1px solid var(--line)', cursor: 'pointer',
-                    }}
-                  >
-                    <div className="u-ac10">
-                      <span style={{ width: 4, height: 22, background: c, borderRadius: 'var(--r-2)', flexShrink: 0 }} />
-                      <span className="u-h14">{schema.name}</span>
-                    </div>
-                    <div style={{ height: 4, background: 'rgba(var(--fg-rgb),0.08)', borderRadius: 'var(--r-4)', overflow: 'hidden' }}>
-                      <div style={{ width: `${barPct}%`, height: '100%', background: c, borderRadius: 'var(--r-4)' }} />
-                    </div>
-                    <span style={{ fontSize: 14, fontWeight: 500, color: c, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
-                      {score && score.avg > 0 ? `${score.avg}/6` : score && score.pct5plus > 0 ? `${score.pct5plus}%` : '–'}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* ══════════ Тест на схемы ══════════ */}
-        <div className="section">
-          <div className="section-head">
-            <h3>Тест на схемы</h3>
-            {/* Незаконченный прогресс приоритетнее результата: кнопка ведёт
-                в тест на сохранённый вопрос (autoResume), поэтому и подпись —
-                «продолжить», иначе «Результаты» открывали бы сам тест. */}
-            <button onClick={() => onOpenSchema({ startTest: true })} className="link">
-              {ysqProgressAnswered !== null
-                ? `продолжить (${ysqProgressAnswered} из 116) →`
-                : ysqCompletedAt
-                  ? `пройден ${fmtDate(momentDayKey(ysqCompletedAt))} · результаты →`
-                  : 'Начать →'}
-            </button>
-          </div>
-          <div className="u-sub13">
-            {ysqProgressAnswered !== null
-              ? 'Тест начат – прогресс сохранён, можно продолжить с того же места'
-              : ysqCompletedAt
-                ? 'Результаты, история прохождений и «поделиться» – внутри'
-                : tr('Определи схемы автоматически – 116 вопросов, 10 минут', 'Определите схемы автоматически – 116 вопросов, 10 минут')}
-          </div>
-        </div>
-
-        {/* ══════════ МОИ СХЕМЫ ══════════ */}
-        <div className="section">
-          <div className="section-head">
-            <h3>Мои схемы</h3>
-            <button onClick={() => setShowSchemaPicker(true)} className="link">+ Добавить</button>
-          </div>
-          {profileLoading ? (
-            <div style={{ display: 'flex', gap: 'var(--space-8)', flexWrap: 'wrap' }}>
-              {[80, 100, 90, 110].map((w, i) => (
-                <Skeleton key={i} height={32} width={w} radius={20} />
-              ))}
-            </div>
-          ) : allSchemaIds.length === 0 ? (
-            <div className="u-sub13">
-              {tr('Пройди тест на схемы или добавь вручную', 'Пройдите тест на схемы или добавьте вручную')}
-            </div>
-          ) : (
-            <div className="u-wrap8">
-              {allSchemaIds.map(id => {
-                const domain = SCHEMA_DOMAINS.find(d => d.schemas.some(s => s.id === id));
-                const schema = domain?.schemas.find(s => s.id === id);
-                if (!schema || !domain) return null;
-                const c = domain.color;
-                return (
-                  <button key={id} onClick={() => setDetailSchemaId(id)} style={{
-                    padding: '6px 13px', borderRadius: 'var(--r-20)',
-                    border: `1.5px solid ${cm(c, 35)}`,
-                    background: cm(c, 9),
-                    color: c, fontSize: 13, fontWeight: 600,
-                    cursor: 'pointer', fontFamily: 'inherit',
-                    WebkitTapHighlightColor: 'transparent',
-                  }}>
-                    {shortName(schema.name)}
-                  </button>
-                );
-              })}
-            </div>
-          )}
-        </div>
-
-        {/* ══════════ ПОЛНАЯ КАРТА ══════════ */}
-        <div className="section">
-          <div className="section-head">
-            <h3>Полная карта · 20 схем</h3>
-            <span className="u-sub12">5 доменов</span>
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 36 }}>
-            {SCHEMA_DOMAINS.map(domain => {
-              const c = domain.color;
-              const activeCount = domain.schemas.filter(s => allSchemaIds.includes(s.id)).length;
-              return (
-                <div key={domain.id}>
-                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 'var(--space-10)', marginBottom: 16 }}>
-                    <span style={{ width: 24, height: 3, background: c, flexShrink: 0, alignSelf: 'center' }} />
-                    <span style={{ fontSize: 14, fontWeight: 600, color: c }}>{domain.domain}</span>
-                    <span className="u-sub12">
-                      {activeCount > 0 ? `${activeCount} из ${domain.schemas.length} активны` : `${domain.schemas.length} схем`}
-                    </span>
-                  </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 'var(--space-8)' }}>
-                    {domain.schemas.map(s => {
-                      const isMine = allSchemaIds.includes(s.id);
-                      return (
-                        <div key={s.id} {...pressable(() => setDetailSchemaId(s.id))} style={{
-                          cursor: 'pointer', borderRadius: 'var(--r-10)',
-                          background: isMine ? cm(c, 7) : 'var(--surface-2)',
-                          border: `1px solid ${isMine ? cm(c, 22) : 'var(--line)'}`,
-                          borderLeft: `3px solid ${isMine ? c : 'var(--line)'}`,
-                          padding: '10px 14px',
-                          transition: 'all 0.15s',
-                        }}>
-                          <div style={{ fontSize: 13, fontWeight: isMine ? 600 : 500, color: isMine ? 'var(--text)' : 'var(--text-sub)', lineHeight: 1.25 }}>
-                            {s.name}
-                          </div>
-                          <div style={{ fontSize: 11, color: 'var(--text-sub)', marginTop: 4, lineHeight: 1.45 }}>{s.desc}</div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* ══════════ МОИ РЕЖИМЫ ══════════ */}
-        <div className="section">
-          <div className="section-head">
-            <h3>Мои режимы</h3>
-            <button onClick={() => setShowModePicker(true)} className="link">+ Добавить</button>
-          </div>
-          {profileLoading ? (
-            <div style={{ display: 'flex', gap: 'var(--space-8)', flexWrap: 'wrap' }}>
-              {[90, 110, 80].map((w, i) => (
-                <Skeleton key={i} height={32} width={w} radius={20} />
-              ))}
-            </div>
-          ) : myModes.length === 0 ? (
-            <div className="u-sub13">{tr('Добавь режимы которые узнаёшь у себя', 'Добавьте режимы которые узнаёте у себя')}</div>
-          ) : (
-            <div className="u-wrap8">
-              {myModes.map(m => {
-                const c = m.groupColor;
-                return (
-                  <button key={m.id} onClick={() => setIntroModeId(m.id)} style={{
-                    padding: '6px 13px', borderRadius: 'var(--r-20)',
-                    border: `1.5px solid ${cm(c, 35)}`,
-                    background: cm(c, 9),
-                    color: c, fontSize: 13, fontWeight: 600,
-                    cursor: 'pointer', fontFamily: 'inherit',
-                    WebkitTapHighlightColor: 'transparent',
-                    display: 'flex', alignItems: 'center', gap: 5,
-                  }}>
-                    <IdentityDot color={c} />
-                    {m.name}
-                  </button>
-                );
-              })}
-            </div>
-          )}
-        </div>
-
-        {/* ══════════ КАРТА РЕЖИМОВ ОТ ТЕРАПЕВТА ══════════ */}
-        {myMapCount > 0 && (
-          <div className="section">
-            <button onClick={() => setShowMyMap(true)} style={{
-              width: '100%', textAlign: 'left', cursor: 'pointer', fontFamily: 'inherit',
-              display: 'flex', alignItems: 'center', gap: 'var(--space-14)', padding: '16px 18px', borderRadius: 'var(--r-14)',
-              border: '1px solid rgba(var(--fg-rgb),0.1)', background: 'rgba(var(--fg-rgb),0.04)',
-              WebkitTapHighlightColor: 'transparent',
-            }}>
-              <span className="u-flex1">
-                <span style={{ display: 'block', fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>
-                  Карта режимов с терапевтом
-                </span>
-                <span style={{ display: 'block', fontSize: 13, color: 'var(--text-sub)', marginTop: 2 }}>
-                  {myMapCount === 1 ? 'Схема того, как режимы развиваются на триггер' : `${myMapCount} карты · как режимы развиваются на триггер`}
-                </span>
-              </span>
-              <span style={{ fontSize: 18, color: 'var(--text-faint)', flexShrink: 0 }}>→</span>
-            </button>
-          </div>
-        )}
-
-        {/* ══════════ ВСЕ РЕЖИМЫ (карта) ══════════ */}
-        <div className="section">
-          <div className="section-head">
-            <h3>Карта режимов</h3>
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
-            {MODE_GROUPS.map(group => {
-              const c = group.color;
-              return (
-                <div key={group.id}>
-                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 'var(--space-10)', marginBottom: 12 }}>
-                    <span style={{ width: 20, height: 3, background: c, flexShrink: 0, alignSelf: 'center' }} />
-                    <span style={{ fontSize: 13, fontWeight: 600, color: c }}>{group.group}</span>
-                  </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 'var(--space-8)' }}>
-                    {group.items.map(m => {
-                      const active = myModeIds.includes(m.id);
-                      return (
-                        <div key={m.id} {...pressable(() => setIntroModeId(m.id))} style={{
-                          padding: '12px 14px', borderRadius: 'var(--r-12)', cursor: 'pointer',
-                          background: active ? cm(c, 8) : 'var(--surface-2)',
-                          border: `1px solid ${active ? cm(c, 28) : 'var(--line)'}`,
-                          display: 'flex', alignItems: 'flex-start', gap: 'var(--space-10)',
-                          transition: 'all 0.15s',
-                        }}>
-                          <div style={{
-                            width: 36, height: 36, borderRadius: 'var(--r-10)', flexShrink: 0,
-                            background: active ? cm(c, 22) : cm(c, 14),
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            fontSize: 20,
-                          }}><IdentityDot color={c} size={14} /></div>
-                          <div style={{ paddingTop: 1 }}>
-                            <div style={{ fontSize: 13, fontWeight: active ? 600 : 500, color: active ? c : 'var(--text)', lineHeight: 1.25 }}>{m.name}</div>
-                            <div style={{ fontSize: 11, color: 'var(--text-sub)', marginTop: 3, lineHeight: 1.4 }}>{m.short}</div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* ══════════ ПОТРЕБНОСТИ ══════════ */}
-        <div className="section">
-          <div className="section-head">
-            <h3>Базовые потребности</h3>
-            {hasChildhood ? (
-              <button className="link" onClick={() => onOpenChildhoodWheel?.()}>Изменить детство →</button>
-            ) : (
-              <button className="link" onClick={() => onOpenChildhoodWheel?.()}>Пройти колесо детства →</button>
-            )}
-          </div>
-
-          {!hasChildhood && (
-            <div {...pressable(() => onOpenChildhoodWheel?.())} className="list-line" style={{ cursor: 'pointer', marginBottom: 8 }}>
-              <div className="u-flex1">
-                <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--accent)' }}>Колесо детства</div>
-                <div style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 1 }}>Как потребности удовлетворялись в детстве?</div>
-              </div>
-              <span className="u-faint14">›</span>
-            </div>
-          )}
-
-          {NEED_ORDER.map((id) => {
-            const color = needColor(id);
-            const d = NEED_DATA[id];
-            if (!d) return null;
-            const childScore = childhoodRatings[id];
-            return (
-              <div key={id} {...pressable(() => setDetailNeedId(id))} className="list-line" style={{ cursor: 'pointer' }}>
-                <div style={{
-                  width: 36, height: 36, borderRadius: 9, flexShrink: 0,
-                  background: `${color}18`, border: `1px solid ${color}30`,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18,
-                }}>
-                  <IdentityDot id={id} size={14} />
-                </div>
-                <div className="u-fill">
-                  <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', lineHeight: 1.25 }}>{d.name}</div>
-                  <div style={{ fontSize: 11, color: 'var(--text-sub)', marginTop: 2 }}>{d.hint}</div>
-                </div>
-                {childScore !== undefined ? (
-                  <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                    <div style={{ fontSize: 16, fontWeight: 700, color: needScoreColor(childScore), lineHeight: 1 }}>{childScore}</div>
-                    <div style={{ fontSize: 9, color: 'var(--text-faint)', letterSpacing: '0.04em', marginTop: 2 }}>детство</div>
-                  </div>
-                ) : (
-                  <span style={{ color: 'var(--text-faint)', fontSize: 14, flexShrink: 0 }}>›</span>
-                )}
-              </div>
-            );
-          })}
-        </div>
-
+      <div className="cs-top">
+        <ExpressedCard
+          loading={d.loading}
+          ysqSchemaIds={d.ysqSchemaIds}
+          ysqScores={d.ysqScores}
+          completedAt={d.ysqCompletedAt}
+          onOpenSchema={setDetailSchemaId}
+        />
+        <YsqTestCard
+          progressAnswered={d.ysqProgressAnswered}
+          completedAt={d.ysqCompletedAt}
+          onStart={() => onOpenSchema({ startTest: true })}
+        />
       </div>
 
-      {/* ── Modals ── */}
+      <MySchemasBlock loading={d.loading} ids={allSchemaIds} onAdd={() => setShowSchemaPicker(true)} onOpenSchema={setDetailSchemaId} />
+      <SchemaMap mineIds={allSchemaIds} onOpenSchema={setDetailSchemaId} />
+      <ModesBlocks loading={d.loading} myModeIds={d.myModeIds} onAdd={() => setShowModePicker(true)} onOpenMode={setIntroModeId} />
+      {d.myMapCount > 0 && <ModeMapBanner count={d.myMapCount} onOpen={() => setShowMyMap(true)} />}
+      <NeedsBlock childhoodRatings={childhoodRatings} onOpenChildhoodWheel={onOpenChildhoodWheel} onOpenNeed={setDetailNeedId} />
+
       {showSchemaPicker && (
-        <SchemaPickerSheet
-          selected={manualSchemaIds}
-          onSave={saveSchemas}
-          onClose={() => setShowSchemaPicker(false)}
-        />
+        <SchemaPickerSheet selected={d.manualSchemaIds} onSave={d.saveSchemas} onClose={() => setShowSchemaPicker(false)} />
       )}
-
       {showModePicker && (
-        <ModePickerSheet
-          selected={myModeIds}
-          onSave={ids => { localStorage.setItem(MY_MODE_IDS_KEY, JSON.stringify(ids)); setMyModeIds(ids); api.updateSettings({ myModeIds: ids }).catch(() => reportClientError({ message: 'schemas save myModeIds failed', section: 'schemas' })); }}
-          onClose={() => setShowModePicker(false)}
-        />
+        <ModePickerSheet selected={d.myModeIds} onSave={d.saveModes} onClose={() => setShowModePicker(false)} />
       )}
-
       {introModeId && (
         <div className="u-sheet">
           <Suspense fallback={null}><ModeEx onBack={() => setIntroModeId(null)} initialModeId={introModeId} /></Suspense>
         </div>
       )}
-
-      {detailSchemaId && (
-        <SchemaDetailSheet
-          schemaId={detailSchemaId}
-          onClose={() => setDetailSchemaId(null)}
-        />
-      )}
-
+      {detailSchemaId && <SchemaDetailSheet schemaId={detailSchemaId} onClose={() => setDetailSchemaId(null)} />}
       {detailNeedId && (
         <NeedDetailSheet
           needId={detailNeedId}
@@ -489,26 +84,7 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
           onClose={() => setDetailNeedId(null)}
         />
       )}
-
       {showMyMap && <MyModeMapSheet onClose={() => setShowMyMap(false)} />}
-    </div>
-  );
-}
-
-function MyModeMapSheet({ onClose }: { onClose: () => void }) {
-  const goBack = useHistorySheet(onClose);
-  return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 90, background: 'var(--bg)', display: 'flex', flexDirection: 'column' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-12)', padding: '12px 16px', flexShrink: 0,
-        borderBottom: '1px solid rgba(var(--fg-rgb),0.07)' }}>
-        <button onClick={goBack} aria-label="Назад" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, display: 'flex', color: 'var(--text)' }}>
-          <GlyphArrowLeft />
-        </button>
-        <span className="u-h16">Карта режимов</span>
-      </div>
-      <div style={{ flex: 1, minHeight: 0 }}>
-        <Suspense fallback={null}><ModeMapViewer /></Suspense>
-      </div>
     </div>
   );
 }
