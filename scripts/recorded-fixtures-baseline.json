@@ -51,7 +51,7 @@
   },
   "src/booking/caldav-busy.ts": {
     "status": "exempt",
-    "reason": "REPORT calendar-query (занятость) с прода не записывался — parseBusy покрыт исчерпывающей ТАБЛИЦЕЙ синтетических VEVENT по RFC 5545 (TZID, VALUE=DATE, RRULE, unfolding), но ни один кейс не сверен с живым ответом iCloud."
+    "reason": "REPORT calendar-query (занятость) с прода не записывался — parseBusy покрыт исчерпывающей ТАБЛИЦЕЙ синтетических VEVENT по RFC 5545 (TZID, VALUE=DATE, DURATION, RRULE, unfolding), но ни один кейс не сверен с живым ответом iCloud."
   },
   "src/booking/caldav-discovery.ts": {
     "status": "recorded",
@@ -65,6 +65,10 @@
   "src/booking/caldav-empty-guard.ts": {
     "status": "exempt",
     "reason": "Не парсит XML — реагирует на уже посчитанный пустой список календарей (guard/алерт поверх caldav-discovery.ts). Классифицирован отдельно, т.к. подпадает под явный путь caldav-*.ts."
+  },
+  "src/booking/caldav-event-end.ts": {
+    "status": "exempt",
+    "reason": "Конец VEVENT (DTEND / DURATION / сутки для VALUE=DATE) выделен из caldav-busy.ts; сверен с RFC 5545 §3.6.1 и §3.8.2.5, записи REPORT с прода нет — тот же долг, что у caldav-busy.ts (docs/README.md, «Что осталось открытым»)."
   },
   "src/booking/caldav-event.util.ts": {
     "status": "exempt",
@@ -129,7 +133,10 @@
   },
   "src/infra/s3-list-objects.ts": {
     "status": "recorded",
-    "fixtures": ["s3-list-objects-v2-truncated.xml", "s3-list-objects-v2-prefix.xml"],
+    "fixtures": [
+      "s3-list-objects-v2-truncated.xml",
+      "s3-list-objects-v2-prefix.xml"
+    ],
     "spec": "src/infra/s3-list-objects.spec.ts"
   },
   "src/infra/s3-sigv4.ts": {
