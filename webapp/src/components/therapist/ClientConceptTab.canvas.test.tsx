@@ -80,7 +80,7 @@ const canvasBtn = () => screen.getByRole('button', { name: /холсте|на х
 beforeEach(() => {
   vi.clearAllMocks();
   mockApi.getTherapyTasksForClient.mockResolvedValue([]);
-  mockApi.getTherapistNotes.mockResolvedValue([]);
+  mockApi.getTherapistNotes.mockResolvedValue({ notes: [], total: 0 });
   mockApi.getTherapyClientData.mockResolvedValue(null);
   mockApi.getClientSchemaNotes.mockResolvedValue([]);
   mockApi.getClientModeNotes.mockResolvedValue([]);
