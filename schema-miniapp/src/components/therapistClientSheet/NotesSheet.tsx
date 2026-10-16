@@ -1,10 +1,11 @@
 import { BottomSheet } from '../BottomSheet';
-import { fmtDate } from '../../utils/format';
 import { ClientDetail } from './types';
 import { useTr } from '../../utils/addressForm';
 import { LimitedTextarea } from '../../../../shared/src/components/LimitedTextarea';
 import { SESSION_NOTE_MAX } from '../../../../shared/src/limits/textLimits';
 import { NOTE_FIELD_STYLE } from './noteFieldStyle';
+import { NoteCard } from './NoteCard';
+import { NotesTruncationHint } from '../../../../shared/src/therapy/NotesTruncationHint';
 
 interface NotesSheetProps {
   detail: ClientDetail;
@@ -14,6 +15,7 @@ export function NotesSheet({ detail }: NotesSheetProps) {
   const tr = useTr();
   const {
     notes,
+    notesPage,
     removeNote,
     newNoteText,
     setNewNoteText,
@@ -37,6 +39,7 @@ export function NotesSheet({ detail }: NotesSheetProps) {
         >
           Заметки сессий
         </div>
+        <NotesTruncationHint page={notesPage} />
         {notes.length === 0 ? (
           <div
             style={{
@@ -53,54 +56,7 @@ export function NotesSheet({ detail }: NotesSheetProps) {
           </div>
         ) : (
           notes.map((note) => (
-            <div
-              key={note.id}
-              style={{
-                background: 'rgba(var(--fg-rgb),0.03)',
-                border: '1px solid rgba(var(--fg-rgb),0.06)',
-                borderRadius: 'var(--r-14)',
-                padding: '12px 14px',
-                marginBottom: 8,
-              }}
-            >
-              <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'flex-start',
-                  marginBottom: 6,
-                }}
-              >
-                <span style={{ fontSize: 11, color: 'var(--text-sub)' }}>
-                  {fmtDate(note.date)}
-                </span>
-                <button
-                  onClick={() => removeNote(note.id)}
-                  aria-label="Удалить заметку"
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    color: 'var(--accent-red)',
-                    fontSize: 18,
-                    cursor: 'pointer',
-                    padding: '0 2px',
-                    lineHeight: 1,
-                  }}
-                >
-                  ×
-                </button>
-              </div>
-              <div
-                style={{
-                  fontSize: 13,
-                  color: 'rgba(var(--fg-rgb),0.75)',
-                  lineHeight: 1.6,
-                  whiteSpace: 'pre-wrap',
-                }}
-              >
-                {note.text}
-              </div>
-            </div>
+            <NoteCard key={note.id} note={note} onRemove={removeNote} />
           ))
         )}
         <div

@@ -10,7 +10,7 @@ interface Props {
 }
 
 export function ClientSessionsTab({ detail }: Props) {
-  const { newNoteDate, setNewNoteDate, newNoteText, setNewNoteText, addNote, noteSaving, noteError, notes, removeNote } = detail;
+  const { newNoteDate, setNewNoteDate, newNoteText, setNewNoteText, addNote, noteSaving, noteError, notesPage, removeNote } = detail;
   const canSave = !!newNoteText.trim() && !noteSaving;
   const save = () => { if (canSave) addNote(); };
 
@@ -44,7 +44,7 @@ export function ClientSessionsTab({ detail }: Props) {
         {noteError && <div className="tb-error">{noteError}</div>}
       </div>
 
-      <SessionArchive notes={notes} removeNote={removeNote} />
+      <SessionArchive page={notesPage} removeNote={removeNote} />
     </div>
   );
 }

@@ -21,4 +21,20 @@ describe('sessionNumbers', () => {
   it('пустой список', () => {
     expect(sessionNumbers([]).size).toBe(0);
   });
+  it('показаны последние 100 из 105 → ранняя показанная — Сессия 6, последняя — 105', () => {
+    const notes = Array.from({ length: 100 }, (_, i) => ({
+      id: i + 6,
+      date: `2026-01-${String((i % 28) + 1).padStart(2, '0')}`,
+      createdAt: `2026-01-01T00:${String(i % 60).padStart(2, '0')}:00Z`,
+    }));
+    // даты возрастают с id: делаем строго по id, чтобы порядок был однозначным
+    const ordered = notes.map((n, i) => ({ ...n, date: new Date(Date.UTC(2026, 0, 1 + i)).toISOString().slice(0, 10) }));
+    const m = sessionNumbers(ordered, 105);
+    expect(m.get(6)).toBe(6);
+    expect(m.get(105)).toBe(105);
+  });
+  it('total меньше длины списка не даёт отрицательного сдвига', () => {
+    const m = sessionNumbers([{ id: 1, date: '2026-01-01', createdAt: '2026-01-01T00:00:00Z' }], 0);
+    expect(m.get(1)).toBe(1);
+  });
 });

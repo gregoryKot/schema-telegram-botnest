@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
-import { api, reportClientError } from '../../api';
-import type { TherapyClientSummary, UserTask, TherapistNote, ClientConceptualization, ClientData, UserId } from '../../api';
+import { api, reportClientError, type TherapyClientSummary, type UserTask, type ClientConceptualization, type ClientData, type UserId } from '../../api';
+import { EMPTY_NOTES_PAGE, addNoteToPage, removeNoteFromPage, type TherapistNotesPage } from '../../../../shared/src/therapy/notesPage';
 import { sameId } from '../../../../shared/src/utils/sameId';
 import { fmtDate, momentDayKey, todayStr } from '../../utils/format';
 import { SCHEMA_DOMAINS, MODE_GROUPS } from '../../schemaTherapyData';
@@ -38,7 +38,7 @@ export function useClientDetail({ onOpenClient, switchView, setClients }: Params
     modeFunction: string; needsMet: string;
   }>>([]);
   const [clientTasks, setClientTasks] = useState<UserTask[]>([]);
-  const [notes, setNotes] = useState<TherapistNote[]>([]);
+  const [notesPage, setNotesPage] = useState<TherapistNotesPage>(EMPTY_NOTES_PAGE);
   const [noteError, setNoteError] = useState('');
   const [concept, setConcept] = useState<ClientConceptualization | null>(null);
   const [clientData, setClientData] = useState<ClientData | null>(null);
@@ -112,7 +112,7 @@ export function useClientDetail({ onOpenClient, switchView, setClients }: Params
     setClientSchemaNotesData([]);
     setClientModeNotesData([]);
     setClientTasks([]);
-    setNotes([]);
+    setNotesPage(EMPTY_NOTES_PAGE);
     setNoteError('');
     setConcept(null);
     setClientData(null);
@@ -137,7 +137,7 @@ export function useClientDetail({ onOpenClient, switchView, setClients }: Params
     // Ловим каждый источник отдельно (тест «не роняя остальные»); фолбэк [] неотличим от «данных нет» — копим упавшие, шлём одним отчётом.
     const failed: string[] = []; const [tasks, fetchedNotes, fetchedConcept, fetchedData, sn, mn, hist, diary] = await Promise.all([
       api.getTherapyTasksForClient(clientId).catch(() => { failed.push('задачи'); return []; }),
-      api.getTherapistNotes(clientId).catch(() => { failed.push('заметки'); return []; }),
+      api.getTherapistNotes(clientId).catch(() => { failed.push('заметки'); return EMPTY_NOTES_PAGE; }),
       api.getConceptualization(clientId).catch(() => { failed.push('концептуализация'); return null; }),
       api.getTherapyClientData(clientId).catch(() => { failed.push('данные клиента'); return null; }),
       api.getClientSchemaNotes(clientId).catch(() => { failed.push('карточки схем'); return []; }),
@@ -150,7 +150,7 @@ export function useClientDetail({ onOpenClient, switchView, setClients }: Params
 
     setTabLoading(false);
     setClientTasks(tasks);
-    setNotes(fetchedNotes);
+    setNotesPage(fetchedNotes);
     setConcept(fetchedConcept);
     setClientData(fetchedData);
     setClientSchemaNotesData(sn);
@@ -190,7 +190,7 @@ export function useClientDetail({ onOpenClient, switchView, setClients }: Params
     try {
       const date = newNoteDate || todayStr();
       const note = await api.createTherapistNote(selectedClient.telegramId, date, newNoteText.trim());
-      setNotes(prev => [note, ...prev].sort((a, b) => b.date.localeCompare(a.date)));
+      setNotesPage(prev => addNoteToPage(prev, note));
       setNewNoteText('');
       setNewNoteDate('');
     } catch { setNoteError('Не удалось сохранить заметку'); } finally { setNoteSaving(false); }
@@ -199,7 +199,7 @@ export function useClientDetail({ onOpenClient, switchView, setClients }: Params
   async function removeNote(noteId: number) {
     try {
       await api.deleteTherapistNote(noteId);
-      setNotes(prev => prev.filter(n => n.id !== noteId));
+      setNotesPage(prev => removeNoteFromPage(prev, noteId));
     } catch { setNoteError('Не удалось удалить заметку'); }
   }
 
@@ -321,7 +321,7 @@ export function useClientDetail({ onOpenClient, switchView, setClients }: Params
     selectedClient, setSelectedClient,
     clientSchemaNotesData, clientModeNotesData,
     clientTasks, setClientTasks,
-    notes, noteError,
+    notes: notesPage.notes, notesPage, noteError,
     concept, clientData, clientHistory, clientDiary,
     localConcept, conceptError, expandedSnapshot, setExpandedSnapshot,
     saveStatus,
