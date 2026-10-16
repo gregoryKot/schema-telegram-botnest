@@ -1,5 +1,8 @@
-import { pressable } from '../../utils/a11y';
+import { hitboxStyle } from '../../utils/hitbox';
 import { CrisisGate } from '../CrisisGate';
+
+// Крестик 16×16 в зоне 44×44; padding строки 14px вмещает выступ зоны.
+const x = hitboxStyle(16, 16);
 
 // Список доказательств (за/против) в проверке убеждения: строки с
 // удалением + поле добавления + кризисный гейт. Общий для обеих сторон —
@@ -32,7 +35,7 @@ export function EvidenceList({
                 display: 'flex',
                 alignItems: 'center',
                 gap: 'var(--space-8)',
-                padding: '7px 0',
+                padding: '14px 0',
                 borderBottom: '1px solid rgba(var(--fg-rgb),0.05)',
               }}
             >
@@ -45,19 +48,14 @@ export function EvidenceList({
               >
                 • {f}
               </span>
-              <span
-                {...pressable(() =>
-                  setItems((l) => l.filter((_, j) => j !== i)),
-                )}
-                style={{
-                  fontSize: 16,
-                  color: 'var(--text-faint)',
-                  cursor: 'pointer',
-                  padding: '0 4px',
-                }}
+              <button
+                type="button"
+                aria-label="Удалить"
+                onClick={() => setItems((l) => l.filter((_, j) => j !== i))}
+                style={{ ...x.outer, color: 'var(--text-faint)', fontSize: 16 }}
               >
-                ×
-              </span>
+                <span style={x.inner}>×</span>
+              </button>
             </div>
           ))}
         </div>

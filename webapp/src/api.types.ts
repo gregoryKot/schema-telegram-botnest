@@ -87,7 +87,7 @@ export interface TherapistCustomMode {
 
 export interface ModeMapNode {
   id: string;
-  type: 'trigger' | 'child' | 'critic' | 'coping' | 'healthy' | 'custom' | 'behavior';
+  type: 'trigger' | 'child' | 'critic' | 'coping' | 'healthy' | 'custom' | 'behavior' | 'schema' | 'origin' | 'need' | 'needs';
   position: { x: number; y: number };
   data: {
     modeId?: string;
@@ -104,9 +104,9 @@ export interface ModeMapNode {
     fontSize?: 'sm' | 'md' | 'lg';        // размер текста в фигуре
     side?: 'A' | 'B';                      // чей режим на карте пары (Партнёр А / Б)
     schemaId?: string;                     // связанная схема (из списка схем клиента)
+    needId?: string; diameter?: number;    // потребность таблетки; диаметр круга потребностей
   };
-  width?: number;
-  height?: number;
+  width?: number; height?: number;
 }
 
 export type EdgeType = 'activates' | 'protects' | 'suppresses' | 'leads_to';

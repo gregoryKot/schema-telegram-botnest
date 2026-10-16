@@ -14,6 +14,7 @@ import {
   installFlowTestPolyfills,
   clickToolbarButton,
 } from '../test-support/renderWithFlow';
+import { RICH } from '../../../shared/src/therapy/conceptGraph/diagram/diagram.test-helpers';
 
 beforeEach(() => {
   installFlowTestPolyfills();
@@ -59,21 +60,38 @@ describe('ModeMapCanvas — добавление узла из подсказо�
 });
 
 describe('ModeMapCanvas — генерация из концептуализации клиента', () => {
-  // Клик и ожидание результата разведены намеренно: `onGenerateFromConcept`
-  // асинхронный (await api.getConceptualization), и обновление состояния
-  // прилетает уже из-под await — то есть вне act. Раньше тест ждал появления
-  // текста опросом (`findByText`, timeout 8000) и в CI один раз честно
-  // прождал все 8 секунд впустую: опрос идёт внутри своего act, а обновление
-  // лежит в act-очереди — слив очереди и опрос могут разойтись. Поэтому
-  // ждём не «когда-нибудь появится», а ровно то, чего ждём: `act(async)`
-  // дожидается промиса api и сливает очередь. После него состояние финальное,
-  // и ассерт синхронный — гонке негде поместиться.
+  // Клик и ожидание результата разведены намеренно: `generate` асинхронный
+  // (await api.getConceptualization), и обновление состояния прилетает уже
+  // из-под await — то есть вне act. Раньше тест ждал появления текста опросом
+  // (`findByText`, timeout 8000) и в CI один раз честно прождал все 8 секунд
+  // впустую: опрос идёт внутри своего act, а обновление лежит в act-очереди —
+  // слив очереди и опрос могут разойтись. Поэтому ждём не «когда-нибудь
+  // появится», а ровно то, чего ждём: `act(async)` дожидается промиса api и
+  // сливает очередь. После него состояние финальное, и ассерт синхронный —
+  // гонке негде поместиться.
   const clickGenerate = () =>
     act(async () => {
       fireEvent.click(screen.getByText('Из концептуализации клиента'));
     });
+  // insertGraph планирует setTimeout(50) на подгон масштаба — дожидаемся его
+  // здесь же, чтобы он не выстрелил уже в другом тестовом файле.
+  const settle = () =>
+    act(async () => {
+      await new Promise((r) => setTimeout(r, 90));
+    });
+  const types = (c: HTMLElement) => readModel(c).nodes.map((n) => n.type);
+  const modeIds = (c: HTMLElement) =>
+    readModel(c)
+      .nodes.map((n) => n.data?.modeId)
+      .filter(Boolean);
+  const FULL = {
+    modeIds: RICH.modeIds,
+    schemaIds: RICH.schemaIds,
+    modeLinks: RICH.modeLinks,
+    schemaLinks: RICH.schemaLinks,
+  };
 
-  it('добавляет узлы для режимов клиента, которых ещё нет на карте', async () => {
+  it('добавляет режимы клиента и вместе с ними круг потребностей', async () => {
     getConceptualization.mockResolvedValue({ modeIds: ['vulnerable_child'] });
     const { container } = renderCanvas({ initialNodes: [] });
     clickToolbarButton(container, 'Шаблоны и генерация');
@@ -83,19 +101,29 @@ describe('ModeMapCanvas — генерация из концептуализац
       'Уязвимый Ребёнок',
     );
     expect(screen.getByText('Уязвимый Ребёнок')).toBeTruthy();
-    // После добавления узла код планирует setTimeout(60) для повторного авто-layout —
-    // дожидаемся его здесь же, чтобы он не выстрелил уже в другом тестовом файле.
-    await act(async () => {
-      await new Promise((r) => setTimeout(r, 90));
-    });
+    expect(types(container).filter((t) => t === 'needs')).toHaveLength(1);
+    expect(types(container).filter((t) => t === 'need')).toHaveLength(5);
+    await settle();
+  });
+
+  it('схемы, опыт, потребности и линии ✗ / ✓ едут на карту, а не только режимы', async () => {
+    getConceptualization.mockResolvedValue(FULL);
+    const { container } = renderCanvas({ initialNodes: [] });
+    clickToolbarButton(container, 'Шаблоны и генерация');
+    await clickGenerate();
+
+    const t = types(container);
+    expect(t.filter((x) => x === 'schema')).toHaveLength(2);
+    expect(t.filter((x) => x === 'origin')).toHaveLength(2);
+    expect(t.filter((x) => x === 'healthy')).toHaveLength(1);
+    // 4 связи режим⇄схема + 2 опыта + 4 ✗ + 3 ✓
+    expect(readModel(container).edges).toHaveLength(13);
+    await settle();
   });
 
   it('режим, уже вынесенный на карту, не дублируется — остальные добавляются', async () => {
-    // Раньше тест брал один режим, уже лежащий на карте, ждал `Promise.resolve()`
-    // и проверял «узлов по-прежнему один». Такой ассерт проходит и когда
-    // генерация вообще не отработала — то есть о дедупликации не говорит ничего.
-    // Теперь в концептуализации два режима: один на карте, второй нет. Дубля
-    // не появилось И второй доехал — только вместе это про дедупликацию.
+    // Два режима в концептуализации: один на карте, второй нет. Дубля не
+    // появилось И второй доехал — только вместе это про дедупликацию.
     getConceptualization.mockResolvedValue({
       modeIds: ['vulnerable_child', 'detached_protector'],
     });
@@ -110,11 +138,38 @@ describe('ModeMapCanvas — генерация из концептуализац
     clickToolbarButton(container, 'Шаблоны и генерация');
     await clickGenerate();
 
-    const labels = readModel(container).nodes.map((n) => n.label);
-    expect(labels).toEqual(['Уязвимый Ребёнок', 'Отстранённый Защитник']);
-    await act(async () => {
-      await new Promise((r) => setTimeout(r, 90));
-    });
+    expect(modeIds(container)).toEqual([
+      'vulnerable_child',
+      'detached_protector',
+    ]);
+    await settle();
+  });
+
+  it('второй запуск подряд ничего не дублирует: ни нод, ни рёбер', async () => {
+    getConceptualization.mockResolvedValue(FULL);
+    const { container } = renderCanvas({ initialNodes: [] });
+    clickToolbarButton(container, 'Шаблоны и генерация');
+    await clickGenerate();
+    const first = readModel(container);
+    clickToolbarButton(container, 'Шаблоны и генерация');
+    await clickGenerate();
+    const second = readModel(container);
+
+    expect(second.nodes).toHaveLength(first.nodes.length);
+    expect(second.edges).toHaveLength(first.edges.length);
+    await settle();
+  });
+
+  it('отказ загрузки виден терапевту и ничего не добавляет', async () => {
+    getConceptualization.mockRejectedValue(new Error('offline'));
+    const { container } = renderCanvas({ initialNodes: [] });
+    clickToolbarButton(container, 'Шаблоны и генерация');
+    await clickGenerate();
+
+    expect(screen.getByRole('alert').textContent).toContain(
+      'Не получилось собрать схему из концептуализации',
+    );
+    expect(readModel(container).nodes).toHaveLength(0);
   });
 });
 

@@ -285,7 +285,7 @@ describe('CSRF-трипваер auth-контроллеры', () => {
       file: 'auth/auth-flow.service.ts',
       caller: /\bfinishOAuthRedirect\(/,
       guard: /\bassertOAuthStateMatches\(/,
-      why: 'OAuth-колбэки Google/VK/Telegram-OIDC: state-кука сверяется до обмена кода',
+      why: 'OAuth-колбэки Google/VK: state-кука сверяется до обмена кода',
     },
     {
       file: 'auth/google-one-tap.service.ts',

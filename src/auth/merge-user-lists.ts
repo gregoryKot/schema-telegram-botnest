@@ -1,5 +1,10 @@
 import { Prisma } from '@prisma/client';
-import { EncryptSchema, decryptRecord, encryptRecord } from '../utils/crypto';
+import {
+  EncryptSchema,
+  decryptRecord,
+  encryptRecord,
+  unreadableFields,
+} from '../utils/crypto';
 import { FIELD_POLICY } from '../utils/encryption-policy';
 import {
   MERGED_USER_FIELDS,
@@ -7,13 +12,8 @@ import {
   mergedValue,
 } from './merge-user-rules';
 
-// Инцидент 2026-10 (аудит, backend#0): слияние читало `User.mySchemaIds` /
-// `myModeIds` сырым значением. По FIELD_POLICY.User оба поля `enc`: в Json-
-// колонке лежит base64-СТРОКА шифротекста, а правило `union` понимает только
-// массивы. Две строки вместо двух массивов давали `[] ∪ [] → undefined`, список
-// target не менялся, а список source исчезал вместе с удаляемой строкой —
-// «Привязать Telegram» молча стирала выбранные схемы и режимы. Юнит был зелёным,
-// потому что фикстуры были plaintext-массивами, которых в колонке не бывает.
+// Инцидент 2026-10 (backend#0): слияние читало `mySchemaIds`/`myModeIds` сырым
+// шифротекстом, а `union` понимает массивы — привязка Telegram стирала схемы.
 
 /**
  * Схема шифрования для слияния — ВЫВОДИТСЯ из FIELD_POLICY.User, а не
@@ -30,13 +30,12 @@ export function mergeEncryptSchema(): EncryptSchema {
     if (!policy[f] || !('enc' in policy[f])) continue;
     (USER_MERGE_RULES[f].kind === 'union' ? jsonArrays : strings).push(f);
   }
-  return { jsonArrays, strings };
+  return { jsonArrays, strings, model: 'user' };
 }
 
 /**
- * Поле осталось строкой после decryptRecord → прочитать его нечем (ключ не
- * подошёл). Писать поверх такого значения нельзя: union из «пусто + список
- * source» затёр бы нечитаемый, но живой список target.
+ * decryptRecord пометил список нечитаемым (ключ не подошёл, пришёл `[]`).
+ * Писать поверх нельзя: union «пусто + source» затёр бы живой список target.
  */
 export function isUnreadable(
   schema: EncryptSchema,
@@ -44,7 +43,8 @@ export function isUnreadable(
   field: string,
 ): boolean {
   return (
-    (schema.jsonArrays ?? []).includes(field) && typeof row[field] === 'string'
+    (schema.jsonArrays ?? []).includes(field) &&
+    unreadableFields(row).includes(field)
   );
 }
 

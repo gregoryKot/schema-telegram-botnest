@@ -21,7 +21,7 @@ function renderTab(newNoteText: string) {
     addNote: vi.fn(),
     noteSaving: false,
     noteError: '',
-    notes: [],
+    notesPage: { notes: [], total: 0 },
     removeNote: vi.fn(),
   } as unknown as ClientDetail;
   render(<ClientSessionsTab detail={detail} />);
@@ -52,7 +52,8 @@ describe('ClientSessionsTab — композер и таймлайн', () => {
   function make(over: Record<string, unknown>) {
     const detail = {
       newNoteDate: '2026-10-11', setNewNoteDate: vi.fn(), newNoteText: 'текст', setNewNoteText: vi.fn(),
-      addNote: vi.fn(), noteSaving: false, noteError: '', notes: [], removeNote: vi.fn(), ...over,
+      addNote: vi.fn(), noteSaving: false, noteError: '', removeNote: vi.fn(),
+      notesPage: { notes: [], total: 0 }, ...over,
     };
     render(<ClientSessionsTab detail={detail as unknown as ClientDetail} />);
     return detail;
@@ -72,10 +73,13 @@ describe('ClientSessionsTab — композер и таймлайн', () => {
 
   it('номера сессий — по дате, а не по позиции в списке', () => {
     make({
-      notes: [
-        { id: 2, date: '2026-10-10', text: 'новая', createdAt: '2026-10-10T10:00:00Z' },
-        { id: 1, date: '2026-09-01', text: 'старая', createdAt: '2026-09-01T10:00:00Z' },
-      ],
+      notesPage: {
+        notes: [
+          { id: 2, date: '2026-10-10', text: 'новая', createdAt: '2026-10-10T10:00:00Z' },
+          { id: 1, date: '2026-09-01', text: 'старая', createdAt: '2026-09-01T10:00:00Z' },
+        ],
+        total: 2,
+      },
     });
     expect(screen.getByText('Архив · 2 заметок')).toBeTruthy();
     expect(screen.getByText('Сессия 2')).toBeTruthy();

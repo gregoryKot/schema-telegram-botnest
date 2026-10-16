@@ -15,6 +15,16 @@ on:
   # запускает воркфлоу сам (gh/API workflow_dispatch) и ждёт результата.
   workflow_dispatch:
 
+# Новый пуш в PR отменяет устаревший прогон того же PR (2026-10-16: из 12
+# прогонов в очереди раннеров 4 были для уже заменённых коммитов). Прогон
+# main отменять нельзя — каждый коммит main это деплой. Поэтому вне PR группа
+# своя у каждого прогона (run_id): с общей группой на ветку GitHub держит один
+# идущий и один ожидающий прогон, а следующий ожидающий молча сбрасывает.
+# Гейт: src/test-support/gates/ci-concurrency.spec.ts.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 # Токен раннера по умолчанию — только чтение (аудит 2026-10, I5): ни одной
 # джобе ниже не нужна запись в репозиторий/PR/issues. Нужна запись — выдавай
 # её на уровне конкретной джобы (`permissions:` внутри job), а не здесь.
@@ -90,7 +100,7 @@ jobs:
           test/scheduler-teardown test/login-ticket test/refresh-rotation
           test/slot-override test/therapy-remove-client test/therapy-resign
           test/body-limit test/login-csrf test/payment-webhook-practice-host
-          test/text-limits
+          test/text-limits test/therapy-ownership.e2e-spec.ts
           test/booking-admin-cancel test/exercise-delete-ownership test/max-auth
       # Security-гейт (этап 1.4): high/critical уязвимости в prod-зависимостях
       # блокируют мерж. dev-зависимости не гейтим — шум.
@@ -133,6 +143,10 @@ jobs:
   # живут в джобе webapp.
   checks:
     runs-on: ubuntu-latest
+    # Потолок на джобу — страховка от зависшего шага (правило №24): без него
+    # GitHub держит джобу до 360 минут. Значения — примерно втрое от замера
+    # (пять зелёных прогонов main 2026-10-15). Гейт — job-timeouts.spec.ts.
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -365,6 +379,7 @@ jobs:
   # «Миграции БД»: рукописный SQL не мержится, пока не прошёл migrate deploy.
   migrations:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     services:
       postgres:
         # Docker Hub режет анонимные pull с общих IP раннеров (429, 2026-10-09):
@@ -418,6 +433,12 @@ jobs:
       # Путь реагирования на утечку ключа обязан работать ДО того, как понадобится.
       - name: e2e ротация ENCRYPTION_KEY на реальном Postgres
         run: npx jest --config ./test/jest-e2e.json --runInBand test/key-rotation.e2e-spec.ts
+      # Провал расшифровки (аудит 2026-10, D-8): Json-колонка с шифротекстом чужого
+      # ключа читается как [] с маркером, а не base64-строкой — как драйвер Prisma 7
+      # отдаёт такую колонку, знает только живая база; проба encryptionReadable
+      # на тех же строках красная под чужим ключом и зелёная под своим.
+      - name: e2e нечитаемые данные (маркер и проба) на реальном Postgres
+        run: npx jest --config ./test/jest-e2e.json --runInBand test/encryption-readable.e2e-spec.ts
       # Аренда прогона бэкапа в R2 (deploy/backup-scheduler.cjs, аудит D-2): тот же
       # атомарный INSERT … ON CONFLICT, но через настоящий psql — драйвер и
       # квотирование :'переменных' проверяет только живая база. psql есть в образе
@@ -514,6 +535,8 @@ jobs:
           test/refresh-rotation.e2e-spec.ts
           test/notify-address.e2e-spec.ts
           test/merge-my-lists.e2e-spec.ts
+          test/merge-relations.e2e-spec.ts
+          test/merge-unique-rules.e2e-spec.ts
           test/account-export-ownership.e2e-spec.ts
           test/therapy-remove-client.e2e-spec.ts
           test/text-limits.e2e-spec.ts
@@ -631,6 +654,7 @@ jobs:
 
   webapp:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -711,6 +735,11 @@ jobs:
       # ошибки в консоли). Абсолютный, без бейслайна: #520 вычистил класс
       # полностью, замораживать нечему. Смотрит и в .css.
       - run: node scripts/check-var-alpha-suffix.mjs
+      # Спрятанное через opacity: 0 и раскрываемое только по :hover (находка
+      # аудита 2026-10: кнопка удаления доказательства на телефоне). Нужны
+      # два пути без hover: для пальца @media (hover: none), для клавиатуры
+      # :focus-within; класс состояния закрывает оба. Абсолютный, без бейслайна.
+      - run: node scripts/check-hover-only-reveal.mjs
       # Храповик мелких тап-целей (дизайн-аудит 2026-08, К3): правило «цель
       # ≥ 44×44» из CLAUDE.md чинили в #397 без гейта, и класс вернулся.
       # Считает квадратные интерактивные элементы с inline width И height
@@ -737,6 +766,7 @@ jobs:
   # check-frontend-coverage-ratchet.mjs (--package shared).
   shared:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -765,6 +795,7 @@ jobs:
   # everything-as-any и счётчики уезжают. game/ исключён (заморожен).
   eslint:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -792,6 +823,7 @@ jobs:
 
   miniapp:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7

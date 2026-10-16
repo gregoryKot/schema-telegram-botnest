@@ -6,7 +6,7 @@ import { useTr } from '../utils/addressForm';
 import { ConfirmDialog } from './ConfirmDialog';
 import { MODE_MAP_TITLE_MAX } from '../../../shared/src/limits/textLimits';
 
-interface Props { clientId: UserId }
+interface Props { clientId: UserId; initialMapId?: number }  // initialMapId: карта, которую открыть первой (иначе первая в списке)
 
 const KIND_META: Record<ModeMapKind, { label: string; hint: string }> = {
   personality: { label: 'Карта личности',  hint: 'Все основные режимы человека на одной странице — для общей ориентации' },
@@ -15,7 +15,7 @@ const KIND_META: Record<ModeMapKind, { label: string; hint: string }> = {
 };
 const KINDS: ModeMapKind[] = ['personality', 'problem', 'couple'];
 
-export function ModeMapSelector({ clientId }: Props) {
+export function ModeMapSelector({ clientId, initialMapId }: Props) {
   const tr = useTr();
   const [maps, setMaps] = useState<ModeMapMeta[]>([]);
   const [activeId, setActiveId] = useState<number | null>(null);
@@ -41,27 +41,27 @@ export function ModeMapSelector({ clientId }: Props) {
   const [seenClient, setSeenClient] = useState(clientId);
   if (clientId !== seenClient) { setSeenClient(clientId); setLoading(true); }
 
-  // Load the client's maps on mount / client change, then auto-open the first.
-  // The whole load lives inside the effect (setState only after `await`, guarded
-  // by `alive`), so deps are complete ([clientId]) and nothing sets state
-  // synchronously in the effect body.
+  // Load the client's maps on mount / client change, then auto-open initialMapId (if it is in the list) or the first.
+  // The whole load lives inside the effect (setState only after `await`, guarded by `alive`),
+  // so deps are complete and nothing sets state synchronously in the effect body.
   useEffect(() => {
     let alive = true;
     api.listModeMaps(clientId)
       .then(async (list) => {
         if (!alive) return;
         setMaps(list);
-        if (list.length > 0) {
-          const full = await api.getModeMap(list[0].id);
+        const first = list.find(m => m.id === initialMapId) ?? list[0];
+        if (first) {
+          const full = await api.getModeMap(first.id);
           if (!alive) return;
-          setActiveId(list[0].id);
+          setActiveId(first.id);
           setActiveMap(full);
         }
         setLoading(false);
       })
       .catch(() => { if (alive) setLoading(false); });
     return () => { alive = false; };
-  }, [clientId]);
+  }, [clientId, initialMapId]);
 
   async function selectMap(id: number) {
     if (activeId === id) return;

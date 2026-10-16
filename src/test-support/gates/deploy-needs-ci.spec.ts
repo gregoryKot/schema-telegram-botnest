@@ -9,8 +9,8 @@ import {
   deployViolations,
   isDeployWorkflow,
   jobConditions,
-  triggerBlocks,
 } from './deploy-needs-ci';
+import { triggerBlocks } from './workflow-yaml';
 
 const DIR = join(process.cwd(), '.github', 'workflows');
 const files = readdirSync(DIR).filter((f) => f.endsWith('.yml'));

@@ -7,13 +7,15 @@ import {
 } from '@nestjs/common';
 import { Telegraf, Context, Markup } from 'telegraf';
 import { TELEGRAF_BOT, ERROR_RETRY } from './telegram.constants';
+import { failSettings } from './callback-failure';
 import { BotService } from '../bot/bot.service';
 import { AccountService } from '../bot/account.service';
 import { NotificationService } from '../notification/notification.service';
 import { TelegramScheduleService } from './telegram.schedule.service';
 import { tzOffsetAt } from '../notification/notification.time';
 import { normalizeAddressForm, t } from '../notification/address-form';
-import { TIMEZONES, pad, buildSettingsView } from './telegram.settings.view';
+import { TIMEZONES, buildSettingsView } from './telegram.settings.view';
+import { REMINDER_HOURS, buildHourRows } from './telegram.reminder-hours';
 
 // Сборка экрана переехала в telegram.settings.view.ts (правило №10 — лимит
 // размера файла). Ре-экспорт оставлен ради соседей и спек, которые берут
@@ -75,8 +77,7 @@ export class TelegramSettingsService implements OnModuleInit {
         );
         await ctx.editMessageText(text, keyboard);
       } catch (err) {
-        this.logger.error('settings:toggle failed', err);
-        await ctx.answerCbQuery(ERROR_RETRY).catch(() => null);
+        await failSettings(this.logger, ctx, 'settings:toggle', err);
       }
     });
 
@@ -98,8 +99,7 @@ export class TelegramSettingsService implements OnModuleInit {
         );
         await ctx.editMessageText(text, keyboard);
       } catch (err) {
-        this.logger.error('settings:toggle_gamified failed', err);
-        await ctx.answerCbQuery(ERROR_RETRY).catch(() => null);
+        await failSettings(this.logger, ctx, 'settings:toggle_gamified', err);
       }
     });
 
@@ -111,19 +111,7 @@ export class TelegramSettingsService implements OnModuleInit {
         const userId = await this.accountService.canonicalUserId(rawId);
         const s = await this.botService.getUserSettings(userId);
         const form = normalizeAddressForm(s?.addressForm);
-        const hours = [
-          8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
-        ];
-        const rows: ReturnType<typeof Markup.button.callback>[][] = [];
-        for (let i = 0; i < hours.length; i += 4) {
-          rows.push(
-            hours
-              .slice(i, i + 4)
-              .map((h) =>
-                Markup.button.callback(`${pad(h)}:00`, `settings:hour:${h}`),
-              ),
-          );
-        }
+        const rows = buildHourRows();
         rows.push([Markup.button.callback('⬅️ Назад', 'settings:back')]);
         await ctx.editMessageText(
           t(
@@ -134,8 +122,7 @@ export class TelegramSettingsService implements OnModuleInit {
           Markup.inlineKeyboard(rows),
         );
       } catch (err) {
-        this.logger.error('settings:pick_hour failed', err);
-        await ctx.answerCbQuery(ERROR_RETRY).catch(() => null);
+        await failSettings(this.logger, ctx, 'settings:pick_hour', err);
       }
     });
 
@@ -146,6 +133,8 @@ export class TelegramSettingsService implements OnModuleInit {
         if (!rawId) return;
         const userId = await this.accountService.canonicalUserId(rawId);
         const localHour = Number((ctx.match as RegExpMatchArray)[1]);
+        // allow-list = кнопки pick_hour (telegram.reminder-hours.ts)
+        if (!REMINDER_HOURS.includes(localHour)) return;
         await this.botService.updateUserSettings(userId, {
           notifyLocalHour: localHour,
         });
@@ -156,8 +145,7 @@ export class TelegramSettingsService implements OnModuleInit {
         );
         await ctx.editMessageText(text, keyboard);
       } catch (err) {
-        this.logger.error('settings:hour failed', err);
-        await ctx.answerCbQuery(ERROR_RETRY).catch(() => null);
+        await failSettings(this.logger, ctx, 'settings:hour', err);
       }
     });
 
@@ -185,8 +173,7 @@ export class TelegramSettingsService implements OnModuleInit {
           Markup.inlineKeyboard(buttons),
         );
       } catch (err) {
-        this.logger.error('settings:pick_tz failed', err);
-        await ctx.answerCbQuery(ERROR_RETRY).catch(() => null);
+        await failSettings(this.logger, ctx, 'settings:pick_tz', err);
       }
     });
 
@@ -208,8 +195,7 @@ export class TelegramSettingsService implements OnModuleInit {
         );
         await ctx.editMessageText(text, keyboard);
       } catch (err) {
-        this.logger.error('settings:tz failed', err);
-        await ctx.answerCbQuery(ERROR_RETRY).catch(() => null);
+        await failSettings(this.logger, ctx, 'settings:tz', err);
       }
     });
 
@@ -225,8 +211,7 @@ export class TelegramSettingsService implements OnModuleInit {
         );
         await ctx.editMessageText(text, keyboard);
       } catch (err) {
-        this.logger.error('settings:back failed', err);
-        await ctx.answerCbQuery(ERROR_RETRY).catch(() => null);
+        await failSettings(this.logger, ctx, 'settings:back', err);
       }
     });
   }

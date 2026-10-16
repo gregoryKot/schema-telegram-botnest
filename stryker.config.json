@@ -14,10 +14,12 @@
   },
   "mutate": [
     "src/utils/crypto.ts",
+    "src/utils/crypto-record.ts",
     "src/auth/auth.service.ts",
     "src/booking/robokassa.service.ts",
     "src/utils/tz.ts",
     "src/auth/merge.service.ts",
+    "src/auth/merge-relations.ts",
     "src/therapy/therapy-relations.service.ts",
     "src/api/telegram-auth.guard.ts",
     "src/notification/notification.planner.service.ts",

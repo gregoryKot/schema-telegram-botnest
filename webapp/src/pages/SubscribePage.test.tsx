@@ -97,7 +97,7 @@ describe('SubscribePage — сабмит подписки', () => {
   it('переключение на «Год» передаёт period: year и годовую цену в тексте кнопки', async () => {
     mockApi.subscribe.mockResolvedValue({ paymentUrl: null });
     await renderLoaded();
-    fireEvent.click(screen.getByRole('button', { name: /Год/ }));
+    fireEvent.click(screen.getByRole('radio', { name: /Год/ }));
     expect(screen.getByRole('button', { name: /Оформить за 2\s990/ })).toBeTruthy();
   });
 });
