@@ -8,9 +8,10 @@ import { act, render, renderHook } from '@testing-library/react';
 import { MemoryRouter, useNavigate, useLocation, type NavigateFunction, type Location } from 'react-router-dom';
 import type { ReactNode } from 'react';
 import { useHistorySheet } from './useHistorySheet';
+import { sheetStackOf } from './historySheetStack';
 import { Dialog } from '../components/Dialog';
 
-interface SheetState { __sheetId?: string }
+interface SheetState { __sheetId?: string; __sheetStack?: string[] }
 
 function sheetState(location: Location): SheetState | undefined {
   return location.state as SheetState | undefined;
@@ -308,6 +309,224 @@ describe('useHistorySheet — Escape', () => {
     rerender(<TwoSheets showInner={false} />);
     fireEscape();
     expect(onCloseOuter).toHaveBeenCalledTimes(1);
+  });
+});
+
+// Вложенность (находка аудита 2026-10): лист поверх листа раньше перезаписывал
+// `__sheetId` в записи истории, и нижний лист видел «моей записи больше нет» —
+// закрывался сам в момент открытия верхнего. Тесты ниже ставят ОБА листа в
+// реалистичную связку: хост реально размонтирует лист по onClose, верхний
+// открывается позже нижнего и лежит внутри него (не сиблингом).
+describe('useHistorySheet — вложенность (лист поверх листа)', () => {
+  function fireEscape() {
+    act(() => {
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    });
+  }
+
+  interface Handles {
+    openInner: (() => void) | null;
+    innerGoBack: (() => void) | null;
+    outerGoBack: (() => void) | null;
+    /** Убрать внутренний лист из дерева напрямую, мимо его goBack (сохранение). */
+    dropInner: (() => void) | null;
+  }
+
+  // Компоненты создаются внутри renderNested и пишут в `handles` — замыкание
+  // теста, а не проп (react-hooks/immutability).
+  function renderNested(opts: { openInnerAtMount?: boolean; innerClosesOuter?: boolean } = {}) {
+    const closeLog: string[] = [];
+    const handles: Handles = { openInner: null, innerGoBack: null, outerGoBack: null, dropInner: null };
+    const snap = makeSnapshot();
+    const NavSpy = makeNavSpy(snap);
+
+    function Inner({ onClose }: { onClose: () => void }) {
+      const goBack = useHistorySheet(onClose);
+      useEffect(() => { handles.innerGoBack = goBack; });
+      return <div data-testid="inner" />;
+    }
+
+    function Outer({ onClose }: { onClose: () => void }) {
+      const goBack = useHistorySheet(onClose);
+      const [showInner, setShowInner] = useState(opts.openInnerAtMount ?? false);
+      useEffect(() => {
+        handles.openInner = () => setShowInner(true);
+        handles.dropInner = () => setShowInner(false);
+        handles.outerGoBack = goBack;
+      });
+      return (
+        <div data-testid="outer">
+          {showInner && (
+            <Inner onClose={() => {
+              closeLog.push('inner');
+              setShowInner(false);
+              if (opts.innerClosesOuter) goBack();
+            }} />
+          )}
+        </div>
+      );
+    }
+
+    // Хост убирает внешний лист из дерева по его onClose — как App/AppOverlays.
+    function Host() {
+      const [show, setShow] = useState(true);
+      return show ? <Outer onClose={() => { closeLog.push('outer'); setShow(false); }} /> : null;
+    }
+
+    const utils = render(
+      <MemoryRouter initialEntries={['/hub', '/page']} initialIndex={1}>
+        <NavSpy />
+        <Host />
+      </MemoryRouter>,
+    );
+    return { snap, closeLog, handles, ...utils };
+  }
+
+  it('внутренний лист открылся позже — внешний НЕ закрывается в момент открытия', () => {
+    const { queryByTestId, closeLog, handles } = renderNested();
+
+    act(() => { handles.openInner!(); });
+
+    expect(queryByTestId('inner')).not.toBeNull();
+    expect(queryByTestId('outer')).not.toBeNull();
+    expect(closeLog).toEqual([]);
+  });
+
+  it('первое «Назад» закрывает только внутренний, второе — внешний', () => {
+    const { snap, queryByTestId, closeLog, handles } = renderNested();
+    act(() => { handles.openInner!(); });
+
+    act(() => { snap.nav!(-1); });
+    expect(closeLog).toEqual(['inner']);
+    expect(queryByTestId('inner')).toBeNull();
+    expect(queryByTestId('outer')).not.toBeNull();
+
+    act(() => { snap.nav!(-1); });
+    expect(closeLog).toEqual(['inner', 'outer']);
+    expect(queryByTestId('outer')).toBeNull();
+    // Обе записи листов сняты: вернулись на страницу под ними.
+    expect(snap.loc!.pathname).toBe('/page');
+    expect(sheetState(snap.loc!)?.__sheetStack).toBeUndefined();
+  });
+
+  it('Escape закрывает сначала внутренний лист, потом внешний', () => {
+    const { queryByTestId, closeLog, handles } = renderNested();
+    act(() => { handles.openInner!(); });
+
+    fireEscape();
+    expect(closeLog).toEqual(['inner']);
+    expect(queryByTestId('outer')).not.toBeNull();
+
+    fireEscape();
+    expect(closeLog).toEqual(['inner', 'outer']);
+  });
+
+  it('goBack() внутреннего листа не закрывает внешний и снимает свою запись истории', () => {
+    const { snap, closeLog, handles } = renderNested();
+    act(() => { handles.openInner!(); });
+
+    act(() => { handles.innerGoBack!(); });
+
+    expect(closeLog).toEqual(['inner']);
+    // Остались на записи внешнего листа: в стеке только он.
+    expect(sheetState(snap.loc!)?.__sheetStack).toHaveLength(1);
+    expect(sheetState(snap.loc!)?.__sheetId).toBe(sheetState(snap.loc!)?.__sheetStack?.[0]);
+  });
+
+  // goBack() закрывает СВОЙ лист, а не верхнюю запись истории (находка ревью
+  // 2026-10). С `navigate(-1)` нижний лист при записи сверху оставался открытым:
+  // NeedTodaySheet → PlanSheet, onSaved = setShowPlan(false) + goBack() — план
+  // сохранён, а лист потребности висит, запись плана брошена.
+  it('goBack() нижнего листа при открытом верхнем закрывает оба одним шагом', () => {
+    const { snap, queryByTestId, closeLog, handles } = renderNested();
+    act(() => { handles.openInner!(); });
+
+    act(() => { handles.outerGoBack!(); });
+
+    expect(closeLog).toContain('outer');
+    expect(queryByTestId('outer')).toBeNull();
+    expect(queryByTestId('inner')).toBeNull();
+    // Сняты обе записи: под листами — страница, лишней записи не осталось.
+    expect(snap.loc!.pathname).toBe('/page');
+    expect(sheetState(snap.loc!)?.__sheetStack).toBeUndefined();
+  });
+
+  it('ребёнок убран напрямую, мимо своего goBack, — goBack родителя снимает и его брошенную запись', () => {
+    const { snap, queryByTestId, closeLog, handles } = renderNested();
+    act(() => { handles.openInner!(); });
+
+    act(() => { handles.dropInner!(); handles.outerGoBack!(); });
+
+    expect(closeLog).toEqual(['outer']);
+    expect(queryByTestId('outer')).toBeNull();
+    expect(snap.loc!.pathname).toBe('/page');
+    expect(sheetState(snap.loc!)?.__sheetStack).toBeUndefined();
+  });
+
+  it('Escape над брошенной записью ребёнка закрывает лист с первого нажатия', () => {
+    const { snap, queryByTestId, closeLog, handles } = renderNested();
+    act(() => { handles.openInner!(); });
+    act(() => { handles.dropInner!(); });
+
+    fireEscape();
+
+    expect(closeLog).toEqual(['outer']);
+    expect(queryByTestId('outer')).toBeNull();
+    expect(sheetState(snap.loc!)?.__sheetStack).toBeUndefined();
+  });
+
+  // goBack, вызванный из эффекта ребёнка в том же коммите (onClose ребёнка
+  // закрывает и родителя), обязан видеть запись ПОСЛЕ «Назад», а не до: иначе
+  // он считает ребёнка ещё лежащим сверху и снимает лишнюю запись — уводит со
+  // страницы.
+  it('onClose ребёнка зовёт goBack родителя: «Назад» закрывает обоих и не уходит дальше страницы', () => {
+    const { snap, queryByTestId, closeLog, handles } = renderNested({ innerClosesOuter: true });
+    act(() => { handles.openInner!(); });
+
+    act(() => { snap.nav!(-1); });
+
+    expect(closeLog).toEqual(['inner', 'outer']);
+    expect(queryByTestId('outer')).toBeNull();
+    expect(snap.loc!.pathname).toBe('/page');
+  });
+
+  it('запись истории несёт стек: id внешнего, затем внутреннего; __sheetId — верхний', () => {
+    const { snap, handles } = renderNested();
+    const outerStack = sheetState(snap.loc!)?.__sheetStack;
+
+    act(() => { handles.openInner!(); });
+    const stack = sheetState(snap.loc!)?.__sheetStack;
+
+    expect(stack).toHaveLength(2);
+    expect(stack![0]).toBe(outerStack![0]);
+    expect(sheetState(snap.loc!)?.__sheetId).toBe(stack![1]);
+  });
+
+  it('запись, открытая прошлой версией (только __sheetId, без стека), закрывает лист как раньше', () => {
+    const snap = makeSnapshot();
+    const onClose = vi.fn();
+    renderHook(() => useHistorySheet(onClose), { wrapper: makeWrapper(snap, ['/page'], 0) });
+    expect(sheetStackOf({ __sheetId: 'legacy' })).toEqual(['legacy']);
+    expect(sheetStackOf(null)).toEqual([]);
+    expect(sheetStackOf({})).toEqual([]);
+    act(() => { snap.nav!(-1); });
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('оба листа смонтированы в одном коммите (автооткрытие): «Назад» закрывает их без орфанов и без двойного закрытия', () => {
+    // Известное ограничение (README, «Что осталось открытым»): эффект ребёнка
+    // идёт раньше родительского, поэтому в одном коммите родитель не успевает
+    // стать «ниже» ребёнка в стеке. Фиксируем, что это не хуже прежнего:
+    // закрытие родителя уносит и ребёнка, onClose родителя — один раз.
+    const { snap, queryByTestId, closeLog } = renderNested({ openInnerAtMount: true });
+    expect(queryByTestId('inner')).not.toBeNull();
+    expect(closeLog).toEqual([]);
+
+    act(() => { snap.nav!(-1); });
+
+    expect(closeLog.filter((c) => c === 'outer')).toHaveLength(1);
+    expect(queryByTestId('outer')).toBeNull();
+    expect(queryByTestId('inner')).toBeNull();
   });
 });
 

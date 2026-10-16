@@ -746,6 +746,12 @@ jobs:
       # меньше 44 мимо `hitboxStyle`; промах по одной стороне не считается.
       # fs-only, тот же принцип, что у check-tiny-fonts.mjs выше.
       - run: node scripts/check-tap-targets.mjs
+      # Оверлей на весь экран обязан жить в истории браузера (находка аудита
+      # 2026-10: чек-ин в ModesTab закрывал справочник целиком). `.tsx` с
+      # position: fixed + inset: 0 — инлайном или через CSS-класс — вызывает
+      # useHistorySheet либо стоит в scripts/history-sheet-baseline.json с
+      # причиной. Классификация, флага --update нет; мини-апп не покрыт.
+      - run: node scripts/check-history-sheet.mjs
       # Вебвизор визитки (аудит 2026-10, security#27): политика обещает «поля
       # ввода не записываются», а Вебвизор пишет клавиши везде, кроме полей с
       # ym-disable-keys. Текстовое поле на странице из personalRoutes без метки
