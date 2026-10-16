@@ -1,5 +1,6 @@
 import { BookingStatus, SessionType } from '@prisma/client';
 import type { PrismaService } from '../../prisma/prisma.service';
+import { PAID_AT_TRACKED_SINCE } from '../../booking/booking-paid-at';
 import { missingRobokassaVars } from '../../booking/robokassa-capability';
 import { Probe, ProbeResult } from './types';
 
@@ -33,12 +34,6 @@ type Env = Record<string, string | undefined>;
 
 /** Столько истёкших попыток подряд без единой оплаты — уже серия. */
 export const SILENT_ATTEMPTS_LIMIT = 5;
-/**
- * С этого момента Booking.paidAt заполняется вебхуком. Миграция влита в main
- * 2026-10-14 22:04 UTC (#650), деплой — после; берём ближайшую полночь, чтобы
- * не засчитать оплаченные в окне деплоя брони (paidAt у них ещё не писался).
- */
-export const PAID_AT_TRACKED_SINCE = new Date('2026-10-15T00:00:00Z');
 /** Холд брони живёт 15 минут: раньше попытка ещё может завершиться оплатой. */
 const ATTEMPT_GRACE_MS = 15 * 60_000;
 

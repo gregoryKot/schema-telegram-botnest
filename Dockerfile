@@ -26,8 +26,10 @@ ENV npm_config_audit=false \
 # запускает его на каждом install, и без файла `npm ci` падает с ENOENT —
 # ровно так деплой молча стоял с #256 по #258 (инцидент 2026-08-04). Внутри
 # образа скрипт сам выходит нулём («не git-репозиторий, пропускаю»).
+# merge-drivers-check.mjs — его статический импорт (логика `--check`): без
+# него скрипт падает с ERR_MODULE_NOT_FOUND ещё до разбора аргументов.
 COPY package*.json ./
-COPY scripts/setup-merge-drivers.mjs scripts/
+COPY scripts/setup-merge-drivers.mjs scripts/merge-drivers-check.mjs scripts/
 RUN npm ci
 
 # Webapp dependencies

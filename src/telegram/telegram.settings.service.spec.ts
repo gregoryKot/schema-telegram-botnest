@@ -158,6 +158,43 @@ describe('TelegramSettingsService — час напоминания', () => {
     expect(ctx.editMessageText).toHaveBeenCalled();
   });
 
+  // Аудит 2026-10: Number(match[1]) шёл в БД без сверки; 24 сохранялся как
+  // «24:00», 25+ давали Invalid Date при планировании уже после записи.
+  // 0 и 7 — контрольные образцы: сайт их принимает, но бот таких кнопок не рисует.
+  it.each(['24', '25', '99', '100', '7', '0'])(
+    'settings:hour:%s не пишет настройку и не перепланирует',
+    async (hour) => {
+      const botService = makeBotService();
+      const { service, fakeBot, scheduleService } = makeService(botService);
+      service.onModuleInit();
+      const ctx = await runAction(fakeBot, `settings:hour:${hour}`);
+      expect(ctx.answerCbQuery).toHaveBeenCalled();
+      expect(botService.updateUserSettings).not.toHaveBeenCalled();
+      expect(scheduleService.rescheduleForUser).not.toHaveBeenCalled();
+      expect(botService._get().notifyLocalHour).toBe(21);
+    },
+  );
+
+  // Шов: кнопки настоящего pick_hour -> настоящий обработчик hour на одном
+  // боте. Падает, если клавиатуру расширили, а allow-list нет (или наоборот).
+  it('каждая кнопка pick_hour принимается обработчиком и пишет свой час', async () => {
+    const botService = makeBotService();
+    const { service, fakeBot } = makeService(botService);
+    service.onModuleInit();
+    const pick = await runAction(fakeBot, 'settings:pick_hour');
+    const markup = pick.editMessageText.mock.calls[0][1];
+    const hourData: string[] = markup.reply_markup.inline_keyboard
+      .flat()
+      .map((b: { callback_data: string }) => b.callback_data)
+      .filter((d: string) => d.startsWith('settings:hour:'));
+    expect(hourData).toHaveLength(16);
+    for (const data of hourData) {
+      const expected = Number(data.split(':')[2]);
+      await runAction(fakeBot, data);
+      expect(botService._get().notifyLocalHour).toBe(expected);
+    }
+  });
+
   it('settings:pick_hour показывает клавиатуру часов, не трогает БД', async () => {
     const botService = makeBotService();
     const { service, fakeBot } = makeService(botService);
@@ -210,7 +247,7 @@ describe('TelegramSettingsService — settings:back', () => {
 });
 
 describe('TelegramSettingsService — ошибки', () => {
-  it('падение при чтении настроек не роняет хендлер, answerCbQuery с подсказкой', async () => {
+  it('падение при чтении настроек не роняет хендлер, сообщение об ошибке с кнопкой «К настройкам»', async () => {
     jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
     const botService = {
       getUserSettings: jest.fn().mockRejectedValue(new Error('db down')),
@@ -219,6 +256,10 @@ describe('TelegramSettingsService — ошибки', () => {
     const { service, fakeBot } = makeService(botService);
     service.onModuleInit();
     const ctx = await runAction(fakeBot, 'settings:toggle');
-    expect(ctx.answerCbQuery).toHaveBeenCalledWith(ERROR_RETRY);
+    expect(ctx.answerCbQuery).toHaveBeenCalledTimes(1);
+    expect(ctx.editMessageText).toHaveBeenLastCalledWith(
+      ERROR_RETRY,
+      expect.anything(),
+    );
   });
 });

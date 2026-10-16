@@ -14,7 +14,7 @@ export const OAUTH_COOKIE_PATH = '/api/auth';
 
 const logger = new Logger('OAuthHost');
 
-/** Единые опции куки шага OAuth-редиректа (oauth_state, tg_pkce_verifier). */
+/** Единые опции куки шага OAuth-редиректа (oauth_state). */
 export function setOAuthCookie(
   res: Response,
   name: string,

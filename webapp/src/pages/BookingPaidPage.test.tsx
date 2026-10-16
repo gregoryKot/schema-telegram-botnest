@@ -1,11 +1,12 @@
 // @vitest-environment jsdom
 // BookingPaidPage — экран возврата с Robokassa (0% покрытия). Проверяем все
-// пять веток body: fail=1, без токена, с токеном (успех/без ссылки/ошибка
-// загрузки), отмену записи (успех и «поздно отменять» отдельным текстом —
+// ветки body: fail=1, без токена, с токеном (успех/без ссылки/404 по токену;
+// остальные отказы загрузки — в BookingPaidPage.loadFail.test.tsx), отмену записи (успех и «поздно отменять» отдельным текстом —
 // правило «провал не выглядит как успех»).
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { BookingPaidPage } from './BookingPaidPage';
+import { ApiError } from '../apiClient';
 
 const getBookingByToken = vi.fn();
 const cancelBooking = vi.fn();
@@ -84,11 +85,12 @@ describe('BookingPaidPage — с токеном', () => {
     expect(screen.queryByText('Подключиться к встрече')).toBeNull();
   });
 
-  it('провал загрузки брони по токену показывает «Оплата принята» без деталей, не мусор', async () => {
+  it('токен, которого сервер не знает (404), — «запись не найдена», а не «Оплата принята»', async () => {
     setUrl('?token=bad');
-    getBookingByToken.mockRejectedValue(new Error('404'));
+    getBookingByToken.mockRejectedValue(new ApiError(404, 'Not Found'));
     render(<BookingPaidPage />);
-    expect(await screen.findByText('Оплата принята')).toBeTruthy();
+    expect(await screen.findByText('Запись по этой ссылке не найдена')).toBeTruthy();
+    expect(screen.queryByText('Оплата принята')).toBeNull();
   });
 
   it('токен убирается из адресной строки после загрузки (не утекает в Referer)', async () => {

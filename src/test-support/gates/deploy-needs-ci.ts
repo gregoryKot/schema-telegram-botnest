@@ -1,7 +1,7 @@
 // Правила гейта «деплой ждёт CI» (аудит 2026-10, quality#35). Чистые функции
-// над текстом воркфлоу: yaml-парсера в зависимостях нет, а нужные места
-// (`on:`, job-level `if:`) в репозитории плоские и однотипные. Прогон по
-// настоящим файлам и контрольные образцы — deploy-needs-ci.spec.ts.
+// над текстом воркфлоу; сам разбор текста (`on:`, джобы, комментарии) — в
+// workflow-yaml.ts, общий с соседними гейтами. Прогон по настоящим файлам и
+// контрольные образцы — deploy-needs-ci.spec.ts.
 //
 // Что гейт считает деплоем: ssh/scp, ops.sh, ssh-setup.sh и сторонние
 // ssh-экшены (`uses: …ssh…`). Чего НЕ видит: `docker push` прямо в боевой
@@ -9,63 +9,21 @@
 // «ssh». Новый способ доставки на сервер добавляется в DEPLOY_MARKS в том же
 // PR, иначе воркфлоу с ним останется вне гейта молча.
 
+import { jobBlocks, stripComments, triggerBlocks } from './workflow-yaml';
+
 const DEPLOY_MARKS =
   /\b(?:ops\.sh|ssh-setup\.sh|scp|ssh vps)\b|uses:\s*\S*ssh/i;
 /** Единственные триггеры воркфлоу, который ходит на боевой сервер. */
 const SAFE_EVENTS = ['workflow_run', 'workflow_dispatch'];
 
-export const stripComments = (text: string): string =>
-  text
-    .split('\n')
-    .filter((l) => !/^\s*#/.test(l))
-    .join('\n');
-
 /** Воркфлоу ходит на сервер: ssh/scp или фиксированные операции ops.sh. */
 export const isDeployWorkflow = (text: string): boolean =>
   DEPLOY_MARKS.test(stripComments(text));
 
-/** Блок `on:` по событиям: { push: '…строки под ключом…', … }. */
-export function triggerBlocks(text: string): Record<string, string> {
-  const lines = stripComments(text).split('\n');
-  const start = lines.findIndex((l) => /^["']?on["']?:/.test(l));
-  if (start < 0) return {};
-  const inline = lines[start].replace(/^["']?on["']?:\s*/, '').trim();
-  if (inline) {
-    const names = inline.replace(/[[\]]/g, '').split(',');
-    return Object.fromEntries(
-      names.map((n) => [n.trim(), '']).filter(([n]) => n),
-    );
-  }
-  const body: string[] = [];
-  for (const l of lines.slice(start + 1)) {
-    if (l.trim() && !/^\s/.test(l)) break;
-    body.push(l);
-  }
-  const blocks: Record<string, string> = {};
-  let key = '';
-  for (const l of body) {
-    const m = /^ {2}([\w-]+):(.*)$/.exec(l);
-    if (m) {
-      key = m[1];
-      blocks[key] = m[2];
-    } else if (key) {
-      blocks[key] += '\n' + l;
-    }
-  }
-  return blocks;
-}
-
 /** Job-level `if:` каждой джобы (многострочный `>-` склеивается). */
 export function jobConditions(text: string): Record<string, string> {
-  const src = stripComments(text);
-  const at = src.search(/^jobs:\s*$/m);
-  if (at < 0) return {};
   const out: Record<string, string> = {};
-  for (const part of src
-    .slice(at)
-    .split(/^ {2}(?=[\w-]+:\s*$)/m)
-    .slice(1)) {
-    const id = part.slice(0, part.indexOf(':'));
+  for (const [id, part] of Object.entries(jobBlocks(text))) {
     const cond = /^ {4}if:[ \t]*(.*(?:\n {5,}.*)*)/m.exec(part);
     out[id] = cond ? cond[1].replace(/\s+/g, ' ').trim() : '';
   }
