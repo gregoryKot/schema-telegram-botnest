@@ -1468,7 +1468,7 @@
   "src/therapy/therapy-connection.controller.ts": 191,
   "src/therapy/therapy-invite.ts": 85,
   "src/therapy/therapy-notes.controller.ts": 156,
-  "src/therapy/therapy-notes.service.ts": 229,
+  "src/therapy/therapy-notes.service.ts": 215,
   "src/therapy/therapy-relation-info.ts": 50,
   "src/therapy/therapy-relations.service.ts": 202,
   "src/therapy/therapy-tasks-view.service.ts": 171,
