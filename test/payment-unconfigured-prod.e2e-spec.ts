@@ -20,8 +20,8 @@ import type { Prisma } from '@prisma/client';
 import request from 'supertest';
 import { PrismaService } from '../src/prisma/prisma.service';
 import { TELEGRAF_BOT } from '../src/telegram/telegram.constants';
+import { PAID_AT_TRACKED_SINCE } from '../src/booking/booking-paid-at';
 import {
-  PAID_AT_TRACKED_SINCE,
   paymentWebhooksProbe,
   SILENT_ATTEMPTS_LIMIT,
 } from '../src/infra/self-check/probe-robokassa';
