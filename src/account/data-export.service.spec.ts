@@ -180,6 +180,33 @@ describe('DataExportService.buildExport', () => {
     expect(result.providers[0]).toMatchObject({ provider: 'telegram' });
   });
 
+  it('нечитаемое поле не прячется в пустой список: рядом имена не прочитавшихся полей (D-8)', async () => {
+    const { DataExportService, encrypt, encryptJson } = load();
+    const crypto = { encrypt, encryptJson } as CryptoModule;
+    const prisma = makeFakePrisma(crypto);
+    // Ответы теста лежат под чужим ключом: шифротекст нашего формата, ключ неизвестен.
+    const foreign = Buffer.alloc(48, 7).toString('base64');
+    (prisma as any).ysqResult = {
+      findMany: jest.fn(async () => [
+        { userId: 1n, answers: foreign, completedAt: new Date('2026-01-02') },
+      ]),
+    };
+    const svc = new DataExportService(
+      prisma as any,
+      { track: jest.fn(async () => undefined) } as any,
+      { log: jest.fn() } as any,
+    );
+
+    const result = await svc.buildExport(1n);
+
+    expect(result.data.YsqResult[0]).toMatchObject({
+      answers: [],
+      _unreadableFields: ['answers'],
+    });
+    // читаемые строки соседних таблиц помечены не были
+    expect(result.data.Note[0]).not.toHaveProperty('_unreadableFields');
+  });
+
   it('НИКОГДА не отдаёт секреты входа — второй фактор и withheld-таблицы не запрошены и не в ответе', async () => {
     const { DataExportService, encrypt, encryptJson } = load();
     const crypto = { encrypt, encryptJson } as CryptoModule;

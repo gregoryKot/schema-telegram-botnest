@@ -418,6 +418,12 @@ jobs:
       # Путь реагирования на утечку ключа обязан работать ДО того, как понадобится.
       - name: e2e ротация ENCRYPTION_KEY на реальном Postgres
         run: npx jest --config ./test/jest-e2e.json --runInBand test/key-rotation.e2e-spec.ts
+      # Провал расшифровки (аудит 2026-10, D-8): Json-колонка с шифротекстом чужого
+      # ключа читается как [] с маркером, а не base64-строкой — как драйвер Prisma 7
+      # отдаёт такую колонку, знает только живая база; проба encryptionReadable
+      # на тех же строках красная под чужим ключом и зелёная под своим.
+      - name: e2e нечитаемые данные (маркер и проба) на реальном Postgres
+        run: npx jest --config ./test/jest-e2e.json --runInBand test/encryption-readable.e2e-spec.ts
       # Аренда прогона бэкапа в R2 (deploy/backup-scheduler.cjs, аудит D-2): тот же
       # атомарный INSERT … ON CONFLICT, но через настоящий psql — драйвер и
       # квотирование :'переменных' проверяет только живая база. psql есть в образе

@@ -2,6 +2,7 @@
 // терапевта. Access-control по mapId (getModeMap/updateModeMap/
 // deleteModeMap + клиентский read-only доступ) — в mode-maps.access.spec.ts
 // (файл разделён из-за лимита ~300 строк/файл, CLAUDE.md).
+import { Logger } from '@nestjs/common';
 import { ModeMapsService } from './mode-maps.service';
 import { TherapyRelationsService } from './therapy-relations.service';
 import { Rel, makeRelationPrismaMock } from './therapy.test-helpers';
@@ -222,5 +223,30 @@ describe('ModeMapsService — кастомные режимы терапевта
 
     await service.deleteCustomMode(T1, 5);
     expect(customModes).toHaveLength(0);
+  });
+});
+
+describe('ModeMapsService — нечитаемая карта (D-8, аудит 2026-10)', () => {
+  it('nodes/edges под чужим ключом приходят пустыми массивами, а не строкой-блобом', async () => {
+    const foreign = Buffer.alloc(48, 7).toString('base64');
+    jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
+    const { service } = makeService(
+      [relA],
+      [
+        {
+          id: 9,
+          therapistId: T1,
+          clientId: CLIENT_A,
+          title: 'Карта',
+          kind: 'problem',
+          nodes: foreign,
+          edges: foreign,
+        },
+      ],
+    );
+    const map = await service.getModeMap(T1, 9);
+    expect(map.nodes).toEqual([]);
+    expect(map.edges).toEqual([]);
+    jest.restoreAllMocks();
   });
 });
