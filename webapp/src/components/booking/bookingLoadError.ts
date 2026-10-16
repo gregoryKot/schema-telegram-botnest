@@ -1,14 +1,10 @@
 import { ApiError } from '../../apiClient';
 import { reportClientError } from '../../api';
+import { failureDetail } from '../failureDetail';
 import { POLL_LIMIT_MS } from './paidPageModel';
 
 /** Почему бронь не загрузилась: сервер её не знает (404) или проверить не вышло. */
 export type BookingLoadError = 'notFound' | 'failed';
-
-/** Короткая причина для отчёта наверх: статус сервера или текст ошибки (без токенов и тел ответа). */
-export function failureDetail(err: unknown): string {
-  return err instanceof ApiError ? `HTTP ${err.status}` : err instanceof Error ? err.message : String(err);
-}
 
 /** 404 — ссылка не ведёт ни на какую бронь; всё прочее (5xx, 429, сеть, HTML вместо JSON) — сбой. */
 export function classifyLoadError(err: unknown): BookingLoadError {

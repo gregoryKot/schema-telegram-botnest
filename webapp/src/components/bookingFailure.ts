@@ -1,6 +1,6 @@
 import { ApiError } from '../apiClient';
 import { reportClientError } from '../api';
-import { failureDetail } from './booking/bookingLoadError';
+import { failureDetail } from './failureDetail';
 
 // Исход неудачной отправки формы записи. Инцидент 2026-09-13: сервер падал на
 // каждой попытке, а под формой висело «возможно, время только что заняли.
