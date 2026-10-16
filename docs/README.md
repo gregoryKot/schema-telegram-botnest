@@ -944,8 +944,11 @@ CLAUDE.md. Не удалять, но и не считать списком за�
   удаляющий из общего счётчика денежных ручек, — пока аудит 2026-10 не нашёл
   его глазами. Нужен пофайловый гейт с бейслайном существующих нулей (по
   образцу `check-file-size-ratchet.mjs`: новый файл рождается с покрытием,
-  нулевой остаётся только записанным). Сколько таких файлов сегодня, неизвестно:
-  нужен полный прогон `npx jest --coverage` с разбором `coverage-final.json`.
+  нулевой остаётся только записанным). Полный прогон coverage 2026-10-16 нашёл 14
+  файлов с 0% строк; большинство — Nest-модули и бутстрап (`app.module.ts`,
+  `main.ts`, `*.module.ts`), с логикой — `src/booking/booking.registry.ts` (22
+  строки), `src/articles/article-seo.routes.ts` (6),
+  `src/api/throttler-module-options.ts` (3), `src/cli/rotate-encryption-key.ts` (8).
 - **21 файл, выделенный из файлов мутационных зон, не измеряется мутациями**
   (`scripts/mutation-zone-baseline.json`: `refresh-issue`/`refresh-reuse`/
   `magic-link`/`unlink-provider` из `auth.service`, `merge-*` из `merge.service`,
