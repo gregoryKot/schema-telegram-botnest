@@ -10,15 +10,12 @@
 import type { PrismaClient } from '@prisma/client';
 import { rotateConceptHistory } from './rotate-history';
 import { StepResult, rotateValue } from './rotate-value';
+import { Delegate, delegateOf, pkColumns } from './delegates';
 import { RotationTarget, TARGETS } from './targets';
 
+export { pkColumns };
+
 type Row = Record<string, unknown>;
-// Минимальный структурный вид делегата Prisma: ротация обходит модели по имени
-// из списка, конкретные сгенерированные типы тут недоступны.
-export interface Delegate {
-  findMany(args: { select: Record<string, true> }): Promise<Row[]>;
-  updateMany(args: { where: Row; data: Row }): Promise<{ count: number }>;
-}
 export type RotationLog = (line: string) => void;
 export interface RotationReport {
   rows: number;
@@ -27,16 +24,6 @@ export interface RotationReport {
 export interface RotationOptions {
   log?: RotationLog;
   targets?: RotationTarget[];
-}
-
-export const pkColumns = (t: RotationTarget): string[] =>
-  t.pk === undefined ? ['id'] : [t.pk].flat();
-
-function delegateOf(prisma: PrismaClient, name: string): Delegate {
-  const d = (prisma as unknown as Record<string, Delegate | undefined>)[name];
-  if (!d?.findMany || !d.updateMany)
-    throw new Error(`в клиенте Prisma нет модели ${name}`);
-  return d;
 }
 
 // Условие обновления несёт СТАРОЕ значение каждой перешифровываемой колонки.
