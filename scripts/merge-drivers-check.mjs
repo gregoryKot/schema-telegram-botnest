@@ -18,6 +18,11 @@
 // проверки (3): забытый «больше — лучше» бейслайн получил бы min, и планка
 // покрытия молча опустилась бы. Классификация явная, как у cron-leader и
 // raw-sql-live; списка исключений нет, `--update` нет.
+//
+// Предел: сверка читает точные строки путей, а не то, что git выберет для
+// файла. `/scripts/x-baseline.json merge=…` прочтётся как протухшая, поздний
+// `scripts/*.json -merge` пройдёт, бейслайны вне scripts/ и e2e-browser/ (и в
+// подкаталогах) ей не видны. Таких случаев нет; появятся — `git check-attr`.
 import { existsSync, readdirSync, readFileSync } from 'fs';
 import { join } from 'path';
 
