@@ -1423,7 +1423,7 @@
   "src/telegram/telegram.schedule.service.ts": 202,
   "src/telegram/telegram.send-bounded.ts": 89,
   "src/telegram/telegram.service.ts": 533,
-  "src/telegram/telegram.settings.service.ts": 227,
+  "src/telegram/telegram.settings.service.ts": 224,
   "src/telegram/telegram.settings.view.ts": 93,
   "src/telegram/telegram.stale-updates.ts": 89,
   "src/telegram/telegram.start-welcome.ts": 54,
