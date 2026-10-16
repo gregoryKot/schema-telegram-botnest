@@ -112,7 +112,7 @@
 | Успех входа не считался (виден только рост отказов, не провал успехов) | `src/api/auth-success.report.ts` (событие `auth_success`, троттлинг per userId+host) + расширенный блок «Вход в мессенджере» (`auth-health-metrics.service.ts`/`.format.ts`) |
 | Экран-тупик без отчёта наверх | `useAuthFailureReport` (`shared/`, оба фронта) |
 | Обвал сборки из-за чужой сети | `deploy/install-openssl.sh`, `deploy/install-pg-client.sh` (клиент Postgres 16: ретраи + зеркала, проверка версии) |
-| Молчаливая деградация merge-драйверов | `setup-merge-drivers.mjs --check` |
+| Молчаливая деградация merge-драйверов; бейслайн без атрибута в `.gitattributes` (до 2026-10 12 из 37 сводились текстово, `--check` смотрел только «атрибут → драйвер») | `setup-merge-drivers.mjs --check` (`scripts/merge-drivers-check.mjs`): драйвер у каждого `merge=`, строка у каждого `*-baseline.json`, протухшая строка красная; тест на реальном `.gitattributes` и настоящем `git merge` — `src/test-support/gates/merge-drivers.spec.ts` |
 | Сломанный гейт, который молча всё пропускает | тесты в `src/test-support/gates/` |
 | Тело запроса без class-validator DTO (правило №6) | `scripts/check-body-dto.mjs` |
 | Исполняемый код вне `src/` и вне `public/` (`deploy/**`, `scripts/**`) | `scripts/check-unwatched-code.mjs` |

@@ -9,7 +9,9 @@
   },
   "src/auth/providers/google-auth-url.ts": {
     "status": "recorded",
-    "fixtures": ["oauth-authorize-responses.json"],
+    "fixtures": [
+      "oauth-authorize-responses.json"
+    ],
     "spec": "src/infra/self-check/probe-oauth-providers.spec.ts"
   },
   "src/auth/providers/google-id-token.ts": {
@@ -34,7 +36,9 @@
   },
   "src/auth/providers/vk-state.ts": {
     "status": "recorded",
-    "fixtures": ["vk-id-authorize-state.json"],
+    "fixtures": [
+      "vk-id-authorize-state.json"
+    ],
     "spec": "src/auth/providers/vk-state.spec.ts"
   },
   "src/auth/providers/vk.provider.ts": {
@@ -76,7 +80,9 @@
   },
   "src/booking/caldav-resourcetype.ts": {
     "status": "recorded",
-    "fixtures": ["icloud-propfind-calendars.xml"],
+    "fixtures": [
+      "icloud-propfind-calendars.xml"
+    ],
     "spec": "src/booking/caldav-resourcetype.spec.ts"
   },
   "src/booking/caldav-summary.ts": {
@@ -129,17 +135,24 @@
   },
   "src/infra/s3-list-objects.ts": {
     "status": "recorded",
-    "fixtures": ["s3-list-objects-v2-truncated.xml", "s3-list-objects-v2-prefix.xml"],
+    "fixtures": [
+      "s3-list-objects-v2-truncated.xml",
+      "s3-list-objects-v2-prefix.xml"
+    ],
     "spec": "src/infra/s3-list-objects.spec.ts"
   },
   "src/infra/s3-sigv4.ts": {
     "status": "recorded",
-    "fixtures": ["aws-sigv4-test-suite.json"],
+    "fixtures": [
+      "aws-sigv4-test-suite.json"
+    ],
     "spec": "src/infra/s3-sigv4.spec.ts"
   },
   "src/infra/self-check/ci-runs-github.ts": {
     "status": "recorded",
-    "fixtures": ["github-workflow-runs.json"],
+    "fixtures": [
+      "github-workflow-runs.json"
+    ],
     "spec": "src/infra/self-check/probe-ci-runs.spec.ts"
   },
   "src/infra/self-check/probe-telegram.ts": {

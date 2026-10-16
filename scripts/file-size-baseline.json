@@ -563,7 +563,7 @@
   "scripts/schema-terms-rules.mjs": 206,
   "scripts/second-person-blanking.mjs": 140,
   "scripts/second-person-patterns.mjs": 254,
-  "scripts/setup-merge-drivers.mjs": 146,
+  "scripts/setup-merge-drivers.mjs": 129,
   "scripts/silent-catch-money.mjs": 45,
   "scripts/silent-catch-rules.mjs": 123,
   "scripts/stryker/covering-test-files.cjs": 135,
