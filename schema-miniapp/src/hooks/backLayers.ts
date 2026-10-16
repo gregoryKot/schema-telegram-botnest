@@ -40,6 +40,12 @@ const subscribe = (listener: () => void) => {
   };
 };
 const getTop = (): Layer | null => stack[stack.length - 1] ?? null;
+const getCount = () => stack.length;
+
+/** Сколько слоёв стоит сейчас: web-хост держит по записи истории на каждый. */
+export function useBackLayerCount(): number {
+  return useSyncExternalStore(subscribe, getCount, getCount);
+}
 
 /**
  * Закрыть верхний слой. Для «Назад» хоста: функция закрытия верхнего слоя или

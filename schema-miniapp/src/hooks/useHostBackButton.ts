@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { getHost } from '../../../shared/src/host';
 import type { PairsData } from '../api';
-import { useTopBackLayerClose } from './backLayers';
+import { useBackLayerCount, useTopBackLayerClose } from './backLayers';
 import { buildOverlayClosers } from './overlayClosers';
 import { topOverlayKey } from './sheetsStack';
 import { useHostHistoryBack } from './useHostHistoryBack';
@@ -25,7 +25,6 @@ interface Args {
 // что и крестик листа; closers возвращаются наружу — AppOverlays берёт их же.
 // Изначально был Telegram BackButton (см. историю файла как
 // useTelegramBackButton.ts — переименован: имя врало, кнопка есть и у MAX).
-//
 // У web-хоста своей кнопки нет — её роль играет история браузера, см.
 // useHostHistoryBack.ts. Локальные оверлеи внутри листов (чек-ин) ставят слой
 // через useBackLayer (backLayers.ts): «Назад» закрывает его раньше листа.
@@ -63,12 +62,13 @@ export function useHostBackButton({
   // Верхний лист — последний открытый (sheetsStack), а не первый по лесенке.
   const top = topOverlayKey(sheets);
   const inClientCabinet = therapistMode && cabinetView === 'client';
-  // Локальный слой (чек-ин внутри справочника схем) стоит поверх любого листа:
-  // «Назад» закрывает сначала его. Слой живёт, пока смонтирован его оверлей,
-  // поэтому «слой есть, а листа нет» не бывает.
+  // Локальный слой (чек-ин в справочнике схем) стоит поверх любого листа:
+  // «Назад» закрывает сначала его. Глубина — ступени «Назад»: лист (запись
+  // дневника, кабинет клиента) — одна, каждый слой над ним — ещё одна.
   const layerClose = useTopBackLayerClose();
-  const anyOpen =
-    !!newDiaryEntry || top !== null || inClientCabinet || layerClose !== null;
+  const base = !!newDiaryEntry || top !== null || inClientCabinet ? 1 : 0;
+  const depth = base + useBackLayerCount();
+  const anyOpen = depth > 0;
 
   useEffect(() => {
     backHandlerRef.current = layerClose
@@ -88,6 +88,6 @@ export function useHostBackButton({
     [],
   );
 
-  useHostHistoryBack(anyOpen, backHandlerRef);
+  useHostHistoryBack(depth, backHandlerRef);
   return closers;
 }

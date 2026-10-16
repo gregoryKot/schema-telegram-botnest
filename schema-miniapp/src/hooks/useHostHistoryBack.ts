@@ -10,8 +10,10 @@ import { getHost } from '../../../shared/src/host';
 // history.pushState/popstate здесь не нарушает запрет из CLAUDE.md: тот запрет —
 // про webapp, где react-router слушает те же события и конфликтует с прямым
 // вызовом.
+// depth — сколько ступеней «Назад» сейчас открыто (лист + слои над ним, см.
+// useHostBackButton): на каждую держим свою запись истории.
 export function useHostHistoryBack(
-  anyOpen: boolean,
+  depth: number,
   backHandlerRef: { current: () => void },
 ) {
   // Два флага, а не один: наш собственный history.back() (уборка после
@@ -21,9 +23,9 @@ export function useHostHistoryBack(
   // ушедшим через «Назад», лишняя запись оставалась, и одно нажатие «Назад»
   // срабатывало вхолостую.
   //   selfBackRef — popstate вызвали мы сами, обработчик звать не надо;
-  //   heldRef     — держим ли мы сейчас запись истории.
+  //   heldRef     — сколько записей истории мы сейчас держим.
   const selfBackRef = useRef(false);
-  const heldRef = useRef(false);
+  const heldRef = useRef(0);
   useEffect(() => {
     if (getHost().capabilities.backButton) return;
     const onPopState = () => {
@@ -32,34 +34,34 @@ export function useHostHistoryBack(
         return;
       }
       // Запись сняли не мы — значит пользователь нажал «Назад».
-      heldRef.current = false;
+      heldRef.current = Math.max(0, heldRef.current - 1);
       backHandlerRef.current();
     };
     window.addEventListener('popstate', onPopState);
     return () => window.removeEventListener('popstate', onPopState);
   }, [backHandlerRef]);
 
-  const wasOpenRef = useRef(false);
   useEffect(() => {
     if (getHost().capabilities.backButton) return;
-    const wasOpen = wasOpenRef.current;
-    wasOpenRef.current = anyOpen;
-    if (!wasOpen && anyOpen) {
-      // Лист открылся — заводим запись истории, чтобы «Назад» его закрыл.
-      window.history.pushState({ __miniappSheetOpen: true }, '');
-      heldRef.current = true;
-    } else if (wasOpen && !anyOpen && heldRef.current) {
-      // Закрылось не через «Назад» (крестик, сохранение) — снимаем свою
-      // запись сами, иначе она копится. Через «Назад» сюда не попадаем:
-      // там браузер уже снял запись и heldRef погашен.
-      heldRef.current = false;
+    const held = heldRef.current;
+    if (depth > held) {
+      // Открылась ступень — заводим запись истории, чтобы «Назад» её закрыл.
+      for (let i = held; i < depth; i += 1) {
+        window.history.pushState({ __miniappSheetOpen: true }, '');
+      }
+      heldRef.current = depth;
+    } else if (depth < held) {
+      // Закрылось не через «Назад» (крестик, сохранение) — снимаем свои
+      // записи сами, иначе они копятся. Через «Назад» сюда не попадаем:
+      // там браузер уже снял запись, и heldRef уменьшен.
+      const n = held - depth;
+      heldRef.current = depth;
       selfBackRef.current = true;
-      window.history.back();
+      if (n === 1) window.history.back();
+      else window.history.go(-n);
     }
-  }, [anyOpen]);
-  // Известное ограничение: запись одна на «есть хоть один открытый лист», а не
-  // на каждый. У вложенных листов (trackerOverlay → trackerGoal) первое «Назад»
-  // закроет верхний, а второе уйдёт со страницы. Это всё равно лучше прежнего
-  // поведения, где «Назад» уводил со страницы сразу; на стек записей перейдём,
-  // когда вложенность станет обычным делом, а не парой экранов.
+  }, [depth]);
+  // Известное ограничение: листы реестра считаются одной ступенью, а не каждый.
+  // У вложенных листов (trackerOverlay → trackerGoal) первое «Назад» закроет
+  // верхний, а второе уйдёт со страницы. Слои (backLayers) — отдельные ступени.
 }
