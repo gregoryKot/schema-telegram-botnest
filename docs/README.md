@@ -970,6 +970,18 @@ CLAUDE.md. Не удалять, но и не считать списком за�
   спиннером в 28 местах при нуле в мини-аппе ([AUDIT_2026-10, «Фронтенды и UX»](AUDIT_2026-10_FINDINGS.md#фронтенды-и-ux)).
 
 **Тесты и даты — открыто:**
+- **Файл `src/**` с логикой и 0% строк не краснит ни один гейт.**
+  `scripts/check-coverage-ratchet.mjs` проверяет сумму и полы по каталогам, а
+  отдельные файлы не смотрит: десять непокрытых строк пол каталога `src/api`
+  не роняют. Так жил `src/api/throttle-hit.cleanup.ts` — единственный код,
+  удаляющий из общего счётчика денежных ручек, — пока аудит 2026-10 не нашёл
+  его глазами. Нужен пофайловый гейт с бейслайном существующих нулей (по
+  образцу `check-file-size-ratchet.mjs`: новый файл рождается с покрытием,
+  нулевой остаётся только записанным). Полный прогон coverage 2026-10-16 нашёл 14
+  файлов с 0% строк; большинство — Nest-модули и бутстрап (`app.module.ts`,
+  `main.ts`, `*.module.ts`), с логикой — `src/booking/booking.registry.ts` (22
+  строки), `src/articles/article-seo.routes.ts` (6),
+  `src/api/throttler-module-options.ts` (3), `src/cli/rotate-encryption-key.ts` (8).
 - **21 файл, выделенный из файлов мутационных зон, не измеряется мутациями**
   (`scripts/mutation-zone-baseline.json`: `refresh-issue`/`refresh-reuse`/
   `magic-link`/`unlink-provider` из `auth.service`, `merge-*` из `merge.service`,
