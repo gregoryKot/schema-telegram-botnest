@@ -8,6 +8,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { Request } from 'express';
+import { PersistentThrottleLimit } from '../api/persistent-throttle-limit';
 import { uid } from '../api/request-utils';
 import { parseClientId } from '../api/parse-user-id';
 import { TelegramAuthGuard } from '../api/telegram-auth.guard';
@@ -20,10 +21,8 @@ interface AuthRequest extends Request {
   webUser: { userId: bigint };
 }
 
-// Остаток после распила therapy.controller.ts (642 → доменные контроллеры,
-// см. therapy-connection/therapy-tasks/therapy-notes/mode-maps.controller.ts):
-// read-only срезы клиентских данных для терапевта, не попавшие в другие
-// домены — YSQ-запрос, дневник, заметки по схемам/режимам, общая история.
+// Остаток после распила (642 строки → therapy-*.controller.ts): срезы данных
+// клиента для терапевта — YSQ-запрос, дневник, заметки по схемам/режимам, история.
 @Controller('api/therapy')
 @UseGuards(TelegramAuthGuard)
 export class TherapyController {
@@ -32,9 +31,8 @@ export class TherapyController {
     private readonly accountService: AccountService,
   ) {}
 
-  // Все ручки одинаково: проверяем роль THERAPIST и мапим единственную
-  // доменную ошибку доступа ('No active relation') в 403 — раньше это был
-  // шестикратный копипаст try/catch с `e: any`.
+  // Все ручки одинаково: роль THERAPIST, ошибка доступа ('No active relation')
+  // → 403 — раньше это был шестикратный копипаст try/catch с `e: any`.
   private async asTherapist<T>(
     req: AuthRequest,
     work: (therapistId: bigint) => Promise<T>,
@@ -51,6 +49,8 @@ export class TherapyController {
     }
   }
 
+  // Дубли держит дедуп в ysq-request.ts; лимит — в Postgres, общий на инстансы.
+  @PersistentThrottleLimit({ long: { limit: 30, ttl: 3_600_000 } })
   @Post('request-ysq/:clientId')
   async requestYsq(
     @Req() req: AuthRequest,

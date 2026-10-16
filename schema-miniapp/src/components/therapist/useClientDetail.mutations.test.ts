@@ -68,7 +68,7 @@ async function openedHook(
 beforeEach(() => {
   vi.clearAllMocks();
   mockApi.getTherapyTasksForClient.mockResolvedValue([]);
-  mockApi.getTherapistNotes.mockResolvedValue([]);
+  mockApi.getTherapistNotes.mockResolvedValue({ notes: [], total: 0 });
   mockApi.getConceptualization.mockResolvedValue(null);
   mockApi.getTherapyClientData.mockResolvedValue(null);
   mockApi.getClientSchemaNotes.mockResolvedValue([]);
@@ -329,6 +329,27 @@ describe('handleRequestYsq', () => {
       await vi.advanceTimersByTimeAsync(3000);
     });
     expect(result.current.ysqRequested).toBe(false);
+  });
+
+  it('второй тап, пока первый запрос в полёте → api.requestYsq вызван один раз', async () => {
+    let resolve!: () => void;
+    mockApi.requestYsq.mockReturnValue(
+      new Promise<void>((r) => {
+        resolve = r;
+      }),
+    );
+    const { result } = await openedHook({ telegramId: 4 });
+    let first!: Promise<void>;
+    act(() => {
+      first = result.current.handleRequestYsq();
+      void result.current.handleRequestYsq();
+    });
+    expect(mockApi.requestYsq).toHaveBeenCalledTimes(1);
+    await act(async () => {
+      resolve();
+      await first;
+    });
+    expect(result.current.ysqRequested).toBe(true);
   });
 
   it('при ошибке выставляет ysqError, не трогая ysqRequested', async () => {

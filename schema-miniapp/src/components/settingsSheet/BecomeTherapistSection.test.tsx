@@ -7,6 +7,7 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { BecomeTherapistSection } from './BecomeTherapistSection';
+import * as LIM from '../../../../shared/src/limits/textLimits';
 
 // Часть 1/2 не зовёт api (статусы приходят пропом, форма ещё не отправляется)
 // — реальный api не нужен, но мокаем на случай побочного импорта модуля.
@@ -172,5 +173,29 @@ describe('BecomeTherapistSection — форма заявки', () => {
       />,
     );
     expect(screen.getByText('Заявка уже отправлена')).toBeTruthy();
+  });
+});
+
+describe('BecomeTherapistSection — пределы длины (один источник с DTO сервера)', () => {
+  it('поля держат maxLength из shared; у сообщения есть счётчик остатка', () => {
+    render(
+      <BecomeTherapistSection
+        {...baseProps({
+          showReqForm: true,
+          reqMsg: 'x'.repeat(LIM.THERAPIST_REQUEST_MESSAGE_MAX - 5),
+        })}
+      />,
+    );
+    const max = (placeholder: string) =>
+      screen.getByPlaceholderText<HTMLInputElement>(placeholder).maxLength;
+    expect(max('Мария Иванова')).toBe(LIM.THERAPIST_REQUEST_NAME_MAX);
+    expect(max('Психолог, схема-терапия и КПТ, 5 лет практики')).toBe(
+      LIM.THERAPIST_REQUEST_QUAL_MAX,
+    );
+    expect(max('@telegram или email')).toBe(LIM.THERAPIST_REQUEST_CONTACTS_MAX);
+    expect(max('Расскажи о себе или своём подходе')).toBe(
+      LIM.THERAPIST_REQUEST_MESSAGE_MAX,
+    );
+    expect(screen.getByText('Осталось знаков: 5')).toBeTruthy();
   });
 });

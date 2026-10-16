@@ -4,6 +4,7 @@
     "src/utils/crypto.ts": 90.58,
     "src/auth/auth.service.ts": 94.29,
     "src/auth/merge.service.ts": 94.57,
+    "src/auth/merge-relations.ts": 100,
     "src/api/telegram-auth.guard.ts": 92.5,
     "src/auth/security-log.service.ts": 100,
     "src/therapy/therapy-relations.service.ts": 97.95,

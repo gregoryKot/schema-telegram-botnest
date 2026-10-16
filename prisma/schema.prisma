@@ -348,6 +348,9 @@ model Note {
   @@unique([userId, date])
 }
 
+// Инвариант «одна активная пара на двоих в любой ориентации» держит частичный
+// unique-индекс Pair_active_users_key (миграция 20261016100000_active_relation_unique):
+// выражение LEAST/GREATEST и WHERE в PSL не выражаются, `migrate diff` его не видит.
 model Pair {
   id        Int      @id @default(autoincrement())
   code      String   @unique
@@ -506,6 +509,9 @@ model AnalyticsEvent {
   @@index([name, createdAt])
 }
 
+// Инвариант «одна активная связь на (therapistId, clientId)» держит частичный
+// unique-индекс TherapyRelation_active_pair_key (миграция
+// 20261016100000_active_relation_unique); у офлайн-клиентов clientId NULL, они не дубли.
 model TherapyRelation {
   id          Int      @id @default(autoincrement())
   code        String   @unique

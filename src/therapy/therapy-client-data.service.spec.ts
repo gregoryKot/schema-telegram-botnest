@@ -11,6 +11,7 @@ import { TherapyClientDataService } from './therapy-client-data.service';
 import { TherapyRelationsService } from './therapy-relations.service';
 import { Rel, makeRelationPrismaMock } from './therapy.test-helpers';
 import { encrypt, encryptJson } from '../utils/crypto';
+import { NotificationService } from '../notification/notification.service';
 
 const blank = { triggers: '', feelings: '', thoughts: '', behavior: '' };
 const blankSchemaNote = { ...blank, origins: '', reality: '', healthyView: '' };
@@ -149,6 +150,7 @@ function makeService(rels: Rel[]) {
   } as any;
   const notificationService = {
     schedule: jest.fn(() => Promise.resolve(undefined)),
+    hasPending: jest.fn(() => Promise.resolve(false)),
   } as any;
   const svc = new TherapyClientDataService(
     t.db,
@@ -526,6 +528,27 @@ describe('TherapyClientDataService — getClientHistory с данными', () =
 });
 
 describe('TherapyClientDataService — requestYsq для реального клиента', () => {
+  it('уже есть неотправленный запрос → ничего не планируется, имя терапевта не читается', async () => {
+    const { svc, db, notificationService } = makeService([relA]);
+    notificationService.hasPending.mockResolvedValue(true);
+    const findUser = jest.spyOn(db.user, 'findUnique');
+    await svc.requestYsq(T1, CID_A);
+    expect(notificationService.hasPending).toHaveBeenCalledWith(
+      CLIENT_A,
+      'ysq_requested',
+    );
+    expect(notificationService.schedule).not.toHaveBeenCalled();
+    expect(findUser).not.toHaveBeenCalled();
+  });
+
+  it('чужой терапевт без связи → отказ ДО проверки очереди', async () => {
+    const { svc, notificationService } = makeService([relA]);
+    await expect(svc.requestYsq(T2, CID_A)).rejects.toThrow(
+      'No active relation',
+    );
+    expect(notificationService.hasPending).not.toHaveBeenCalled();
+  });
+
   it('клиент с id>=0: подтягивает имя терапевта и планирует уведомление ysq_requested', async () => {
     const { svc, users, notificationService } = makeService([relA]);
     users.push(mkUser(T1, 'Доктор Иванова', []));
@@ -547,6 +570,101 @@ describe('TherapyClientDataService — requestYsq для реального кл
       expect.any(Date),
       { therapistName: null },
     );
+  });
+});
+
+// Шов «запрос → очередь»: аудит 2026-10 — каждый тап создавал новую строку
+// ScheduledNotification, клиент получал пять одинаковых DM. Здесь НАСТОЯЩИЙ
+// NotificationService поверх фейкового делегата: проверяется реальное where у
+// hasPending (sentAt/cancelledAt/type/userId), а не «вызвали мок».
+describe('TherapyClientDataService — requestYsq: дедуп очереди (шов с NotificationService)', () => {
+  type Row = {
+    userId: bigint;
+    type: string;
+    sentAt: Date | null;
+    cancelledAt: Date | null;
+  };
+  function makeSeam() {
+    const { db, users } = makeService([relA]);
+    const queue: Row[] = [];
+    const scheduledNotification = {
+      create: jest.fn(({ data }: { data: Row }) => {
+        queue.push({ sentAt: null, cancelledAt: null, ...data });
+        return Promise.resolve(undefined);
+      }),
+      count: jest.fn(({ where }: { where: Partial<Row> }) =>
+        Promise.resolve(
+          queue.filter(
+            (r) =>
+              r.userId === where.userId &&
+              r.type === where.type &&
+              (where.sentAt === null ? r.sentAt === null : true) &&
+              (where.cancelledAt === null ? r.cancelledAt === null : true),
+          ).length,
+        ),
+      ),
+    };
+    const notifications = new NotificationService({
+      scheduledNotification,
+    } as any);
+    const svc = new TherapyClientDataService(
+      db,
+      {} as any,
+      notifications,
+      new TherapyRelationsService(db, {} as any),
+    );
+    users.push(mkUser(T1, 'Доктор Иванова', []));
+    const ysqRows = () => queue.filter((r) => r.type === 'ysq_requested');
+    return { svc, queue, ysqRows };
+  }
+
+  it('два запроса подряд, пока первый в очереди → одна строка', async () => {
+    const { svc, ysqRows } = makeSeam();
+    await svc.requestYsq(T1, CID_A);
+    await svc.requestYsq(T1, CID_A);
+    await svc.requestYsq(T1, CID_A);
+    expect(ysqRows()).toHaveLength(1);
+    expect(ysqRows()[0].userId).toBe(CLIENT_A);
+  });
+
+  it('после отправки (sentAt) повтор снова ставится в очередь', async () => {
+    const { svc, ysqRows } = makeSeam();
+    await svc.requestYsq(T1, CID_A);
+    ysqRows()[0].sentAt = new Date();
+    await svc.requestYsq(T1, CID_A);
+    expect(ysqRows()).toHaveLength(2);
+  });
+
+  it('отменённая строка (клиент без Telegram) не блокирует повтор', async () => {
+    const { svc, ysqRows } = makeSeam();
+    await svc.requestYsq(T1, CID_A);
+    ysqRows()[0].cancelledAt = new Date();
+    await svc.requestYsq(T1, CID_A);
+    expect(ysqRows()).toHaveLength(2);
+  });
+
+  it('чужой тип в очереди (task_assigned) не блокирует ysq_requested', async () => {
+    const { svc, queue, ysqRows } = makeSeam();
+    queue.push({
+      userId: CLIENT_A,
+      type: 'task_assigned',
+      sentAt: null,
+      cancelledAt: null,
+    });
+    await svc.requestYsq(T1, CID_A);
+    expect(ysqRows()).toHaveLength(1);
+  });
+
+  it('очередь другого клиента не блокирует этого', async () => {
+    const { svc, queue, ysqRows } = makeSeam();
+    queue.push({
+      userId: CLIENT_B,
+      type: 'ysq_requested',
+      sentAt: null,
+      cancelledAt: null,
+    });
+    await svc.requestYsq(T1, CID_A);
+    expect(ysqRows().filter((r) => r.userId === CLIENT_A)).toHaveLength(1);
   });
 });
 

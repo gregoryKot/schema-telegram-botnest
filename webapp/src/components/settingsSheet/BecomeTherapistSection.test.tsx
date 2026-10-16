@@ -7,6 +7,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup, waitFor } from '@testing-library/react';
 import { BecomeTherapistSection } from './BecomeTherapistSection';
 import { withAddressForm, fillTherapistRequestForm } from './SettingsSheet.test-helpers';
+import * as LIM from '../../../../shared/src/limits/textLimits';
 
 vi.mock('../../api', () => ({
   api: {
@@ -135,5 +136,19 @@ describe('BecomeTherapistSection — отправка заявки', () => {
     fireEvent.click(screen.getByText('Отмена'));
     expect(screen.getByText('Я психолог — подать заявку')).toBeTruthy();
     expect(screen.queryByText('Заполни ФИО, квалификацию и контакты')).toBeNull();
+  });
+});
+
+describe('BecomeTherapistSection — пределы длины (один источник с DTO сервера)', () => {
+  it('поля держат maxLength из shared', async () => {
+    mockApi.getTherapistRequest.mockResolvedValue(null);
+    renderWithForm();
+    fireEvent.click(await screen.findByText('Я психолог — подать заявку'));
+    const max = (placeholder: string) =>
+      screen.getByPlaceholderText<HTMLInputElement>(placeholder).maxLength;
+    expect(max('ФИО')).toBe(LIM.THERAPIST_REQUEST_NAME_MAX);
+    expect(max('Квалификация: образование, направление, опыт, сертификаты')).toBe(LIM.THERAPIST_REQUEST_QUAL_MAX);
+    expect(max('Контакты: сайт, @telegram, b17 и т.д.')).toBe(LIM.THERAPIST_REQUEST_CONTACTS_MAX);
+    expect(max('Сообщение (необязательно)')).toBe(LIM.THERAPIST_REQUEST_MESSAGE_MAX);
   });
 });

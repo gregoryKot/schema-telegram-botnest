@@ -1,14 +1,11 @@
 import { useRef, useState } from 'react';
 import { api, reportClientError, type UserId } from '../../api';
 import { sameId } from '../../../../shared/src/utils/sameId';
-import type {
-  TherapyClientSummary,
-  UserTask,
-  TherapistNote,
-  ClientData,
-} from '../../api';
+import type { TherapyClientSummary, UserTask, ClientData } from '../../api';
+import { useNotesPage } from '../../../../shared/src/therapy/useNotesPage';
 import { todayStr } from '../../utils/format';
 import { useCopyToClipboard } from '../../../../shared/src/utils/useCopyToClipboard';
+import { useYsqRequest } from '../../../../shared/src/therapy/useYsqRequest';
 import { removeClientConfirmCopy } from '../../../../shared/src/therapy/removeClientConfirm';
 import {
   fetchClientDetail,
@@ -44,7 +41,7 @@ export function useClientDetail({ switchView, setClients }: Params) {
     ClientModeNoteRow[]
   >([]);
   const [clientTasks, setClientTasks] = useState<UserTask[]>([]);
-  const [notes, setNotes] = useState<TherapistNote[]>([]);
+  const np = useNotesPage();
   const [noteError, setNoteError] = useState('');
   const [clientData, setClientData] = useState<ClientData | null>(null);
   // Хотя бы один из шести запросов карточки клиента упал (см.
@@ -65,8 +62,13 @@ export function useClientDetail({ switchView, setClients }: Params) {
   });
 
   // YSQ / Export
-  const [ysqRequested, setYsqRequested] = useState(false);
-  const [ysqError, setYsqError] = useState('');
+  const {
+    ysqRequested,
+    ysqError,
+    setYsqRequested,
+    resetYsq,
+    handleRequestYsq,
+  } = useYsqRequest(selectedClient?.telegramId, (id) => api.requestYsq(id));
   const { copied: exportCopied, copy: copyExport } = useCopyToClipboard({
     onError: () =>
       reportClientError({
@@ -95,13 +97,12 @@ export function useClientDetail({ switchView, setClients }: Params) {
     setClientSchemaNotesData([]);
     setClientModeNotesData([]);
     setClientTasks([]);
-    setNotes([]);
+    np.resetNotesPage();
     setNoteError('');
     setClientData(null);
     setClientLoadError(false);
     conceptEditing.resetConcept();
-    setYsqRequested(false);
-    setYsqError('');
+    resetYsq();
     setDeleteError('');
     sessionAlias.resetSessionAlias(client);
     switchView('client');
@@ -112,7 +113,7 @@ export function useClientDetail({ switchView, setClients }: Params) {
     if (!sameId(openClientIdRef.current, clientId)) return;
 
     setClientTasks(fetched.tasks);
-    setNotes(fetched.notes);
+    np.setNotesPage(fetched.notesPage);
     conceptEditing.setConcept(fetched.concept);
     setClientData(fetched.clientData);
     setClientSchemaNotesData(fetched.schemaNotes);
@@ -152,7 +153,7 @@ export function useClientDetail({ switchView, setClients }: Params) {
         todayStr(),
         newNoteText.trim(),
       );
-      setNotes((prev) => [note, ...prev]);
+      np.onNoteSaved(note);
       setNewNoteText('');
     } catch {
       setNoteError('Не удалось сохранить заметку');
@@ -164,22 +165,9 @@ export function useClientDetail({ switchView, setClients }: Params) {
   async function removeNote(noteId: number) {
     try {
       await api.deleteTherapistNote(noteId);
-      setNotes((prev) => prev.filter((n) => n.id !== noteId));
+      np.onNoteDeleted(noteId);
     } catch {
       setNoteError('Не удалось удалить заметку');
-    }
-  }
-
-  // ── YSQ ───────────────────────────────────────────────────────────────────────
-  async function handleRequestYsq() {
-    if (!selectedClient) return;
-    setYsqError('');
-    try {
-      await api.requestYsq(selectedClient.telegramId);
-      setYsqRequested(true);
-      setTimeout(() => setYsqRequested(false), 3000);
-    } catch {
-      setYsqError('Не удалось отправить запрос');
     }
   }
 
@@ -221,7 +209,8 @@ export function useClientDetail({ switchView, setClients }: Params) {
     clientModeNotesData,
     clientTasks,
     setClientTasks,
-    notes,
+    notes: np.notesPage.notes,
+    notesPage: np.notesPage,
     noteError,
     setNoteError,
     concept: conceptEditing.concept,

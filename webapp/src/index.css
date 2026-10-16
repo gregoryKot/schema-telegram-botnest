@@ -1531,7 +1531,15 @@ html[data-theme="dark"] .dialog-box { box-shadow: 0 24px 64px -16px rgba(0,0,0,0
 .evi-num { font-family: var(--serif); font-style: italic; font-size: 18px; color: var(--text-ghost); }
 .evi-text { font-size: 15px; line-height: 1.55; color: var(--text); }
 .evi-x { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; color: var(--text-faint); opacity: 0; transition: opacity .12s, background .12s; cursor: pointer; background: none; border: none; }
-.evi-row:hover .evi-x { opacity: 1; }
+.evi-row:hover .evi-x,
+.evi-row:focus-within .evi-x,
+.evi-x:focus-visible { opacity: 1; }
+/* На телефоне hover нет — кнопка видна всегда. Зона нажатия 44×44 при
+   видимых 22×22: псевдоэлемент выступает на 11px в каждую сторону (CSS-аналог
+   hitboxStyle); по вертикали помещается в padding строки. */
+@media (hover: none), (pointer: coarse) { .evi-x { opacity: 1; } }
+.evi-x { position: relative; }
+.evi-x::before { content: ''; position: absolute; inset: -11px; }
 .evi-x:hover { background: var(--surface-3); color: var(--text); }
 .evi-add { display: grid; grid-template-columns: 28px 1fr auto; gap: var(--space-12); align-items: center; padding: 8px 0 16px; }
 .evi-add-plus { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; color: var(--text-faint); font-size: 16px; }

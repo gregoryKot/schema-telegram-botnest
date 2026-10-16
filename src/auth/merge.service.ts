@@ -14,6 +14,7 @@ import {
 import { SecurityLogService } from './security-log.service';
 import { twoFactorWillBeLost } from './merge-two-factor';
 import { remapAssignerRefs } from './merge-assigner-refs';
+import { remapRelations } from './merge-relations';
 import type { MergeSummary } from './merge-summary.types';
 
 // Tables we DELETE rather than move during merge — moving them would carry
@@ -184,38 +185,8 @@ export class MergeService {
         `);
       }
 
-      // 3. Pair table has two refs — both can point at source.
-      await tx.$executeRaw(Prisma.sql`
-        UPDATE "Pair" SET "userId1" = ${targetId}
-        WHERE "userId1" = ${sourceId} AND ("userId2" IS NULL OR "userId2" <> ${targetId})
-      `);
-      await tx.$executeRaw(Prisma.sql`
-        UPDATE "Pair" SET "userId2" = ${targetId}
-        WHERE "userId2" = ${sourceId} AND "userId1" <> ${targetId}
-      `);
-      // Anything left points at source on either side AND the other side is
-      // already target → would create a self-pair; just drop.
-      await tx.$executeRaw(Prisma.sql`
-        DELETE FROM "Pair" WHERE "userId1" = ${sourceId} OR "userId2" = ${sourceId}
-      `);
-
-      // 4. TherapyRelation (therapistId / clientId).
-      // NOTE: use IS DISTINCT FROM instead of <> so that NULL clientId
-      // (virtual / offline clients) is handled correctly. With plain <>,
-      // NULL <> targetId evaluates to NULL, skipping the UPDATE; those rows
-      // then get caught by the DELETE below and are lost permanently.
-      await tx.$executeRaw(Prisma.sql`
-        UPDATE "TherapyRelation" SET "therapistId" = ${targetId}
-        WHERE "therapistId" = ${sourceId}
-          AND "clientId" IS DISTINCT FROM ${targetId}
-      `);
-      await tx.$executeRaw(Prisma.sql`
-        UPDATE "TherapyRelation" SET "clientId" = ${targetId}
-        WHERE "clientId" = ${sourceId} AND "therapistId" <> ${targetId}
-      `);
-      await tx.$executeRaw(Prisma.sql`
-        DELETE FROM "TherapyRelation" WHERE "therapistId" = ${sourceId} OR "clientId" = ${sourceId}
-      `);
+      // 3-4. Pair и TherapyRelation: дедуп активных связей и ремап (см. merge-relations.ts).
+      await remapRelations(tx, sourceId, targetId);
 
       // 4b. TherapistNote (therapistId, clientId — no FK, no unique).
       // Same IS DISTINCT FROM fix for virtual-client notes (clientId can be NULL
