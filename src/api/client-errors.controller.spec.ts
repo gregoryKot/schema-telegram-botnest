@@ -20,15 +20,18 @@ import type { AnalyticsService } from '../analytics/analytics.service';
 //
 // Волна 9 щита покрытия (docs/SHIELD_PROMPT.md): раньше отчёт только
 // логировался (де-факто невидим — разные ошибки схлопываются в один DM за
-// счёт постоянного первого аргумента у AlertLogger). Теперь каждый отчёт ещё
-// и СЧИТАЕТСЯ (событие client_error, meta.source + meta.section), отдельным
-// троттлингом от лога — тесты ниже проверяют оба канала раздельно.
+// счёт постоянного первого аргумента у AlertLogger). Теперь он ещё и СЧИТАЕТСЯ
+// (событие client_error, meta.source + meta.section).
 //
-// REPORT_THROTTLE в client-errors.controller.ts — модульная константа
-// (общая для всех вызовов процесса, не поле класса — так же, как
-// EVENT_THROTTLE в auth-failure.report.ts). Поэтому каждый вызов report() в
-// этом файле получает СВОЙ IP (nextIp()) — иначе тесты внутри одного файла
-// делили бы окно троттлинга друг с другом и ловили бы чужой allow=false.
+// Находка аудита 2026-10-11: полный detail (до ~5 КБ) писался в stdout на
+// КАЖДЫЙ анонимный запрос и вытеснял ротацией логи настоящей аварии. Лог и
+// счётчик теперь решает один вердикт ClientErrorLogGate: подробно — раз на
+// source+section+ip за 5 минут и не больше K в минуту на всех. Тесты ниже
+// проверяют оба слоя; время — фейковые таймеры (окна считаются по Date.now).
+//
+// Состояние троттлов — поле экземпляра контроллера, поэтому каждый тест
+// получает чистый бюджет. По умолчанию каждый вызов report() — ДРУГОЕ
+// устройство (nextIp()): тесты про один и тот же IP передают его явно.
 describe('ClientErrorsController', () => {
   let controller: ClientErrorsController;
   let errorSpy: jest.SpyInstance;
@@ -38,6 +41,7 @@ describe('ClientErrorsController', () => {
   const req = (ip: string = nextIp()): Request => ({ ip }) as Request;
 
   beforeEach(() => {
+    jest.useFakeTimers({ now: new Date('2026-10-16T12:00:00Z') });
     track = jest.fn().mockResolvedValue(undefined);
     const analytics = { track } as unknown as AnalyticsService;
     controller = new ClientErrorsController(analytics);
@@ -46,7 +50,10 @@ describe('ClientErrorsController', () => {
       .mockImplementation(() => undefined);
   });
 
-  afterEach(() => errorSpy.mockRestore());
+  afterEach(() => {
+    errorSpy.mockRestore();
+    jest.useRealTimers();
+  });
 
   const call = () => errorSpy.mock.calls[0] as [string, string];
   const report = (dto: ClientErrorDto, ip?: string) =>
@@ -178,7 +185,7 @@ describe('ClientErrorsController', () => {
       });
     });
 
-    it('шквал одинаковых отчётов (тот же source+section+ip) — ОДНА строка в аналитике', () => {
+    it('шквал одинаковых отчётов (тот же source+section+ip) — ОДНА строка в аналитике и ОДНА в логе', () => {
       const ip = nextIp();
       for (let i = 0; i < 20; i += 1) {
         report(
@@ -186,9 +193,12 @@ describe('ClientErrorsController', () => {
           ip,
         );
       }
-      // Лог не троттлится — он должен сработать все 20 раз.
-      expect(errorSpy).toHaveBeenCalledTimes(20);
-      // А счётчик — ровно один раз, несмотря на разный текст message.
+      // Находка аудита 2026-10-11: раньше лог не троттлился и срабатывал все 20 раз.
+      expect(errorSpy).toHaveBeenCalledTimes(1);
+      expect((errorSpy.mock.calls[0] as [string, string])[1]).toContain(
+        'boom 0',
+      );
+      // Счётчик — ровно один раз, несмотря на разный текст message.
       expect(track).toHaveBeenCalledTimes(1);
       expect(track).toHaveBeenCalledWith(null, 'client_error', {
         source: 'miniapp',
@@ -233,6 +243,114 @@ describe('ClientErrorsController', () => {
         [null, 'client_error', { source: 'webapp', section: 'auth' }],
         [null, 'client_error', { source: 'webapp', section: 'auth' }],
       ]);
+    });
+  });
+
+  // ─── Шквал: защита логов (находка аудита 2026-10-11) ─────────────────────
+  describe('шквал отчётов', () => {
+    const dto = (message = 'boom'): ClientErrorDto => ({
+      message,
+      section: 'Профиль',
+      source: 'miniapp',
+    });
+
+    it('после окна 5 мин следующий отчёт пишет detail с числом проглоченных и шлёт meta.suppressed', () => {
+      const ip = nextIp();
+      for (let i = 0; i < 20; i += 1) report(dto(`boom ${i}`), ip);
+      expect(errorSpy).toHaveBeenCalledTimes(1);
+
+      jest.setSystemTime(Date.now() + 5 * 60_000);
+      report(dto('boom again'), ip);
+
+      expect(errorSpy).toHaveBeenCalledTimes(2);
+      const [msg, detail] = errorSpy.mock.calls[1] as [string, string];
+      expect(detail).toContain('boom again');
+      expect(detail).toContain(
+        'повторов с этого устройства за прошлое окно: 19',
+      );
+      // Число — только во втором аргументе (stdout), первый по-прежнему постоянный.
+      expect(msg).not.toMatch(/\b19\b/);
+      expect(track).toHaveBeenLastCalledWith(null, 'client_error', {
+        source: 'miniapp',
+        section: 'profile',
+        suppressed: 19,
+      });
+    });
+
+    it('внутри окна у первого отчёта нет ни suppressed, ни unlogged', () => {
+      report(dto(), nextIp());
+      expect(errorSpy).toHaveBeenCalledTimes(1);
+      expect((errorSpy.mock.calls[0] as [string, string])[1]).not.toContain(
+        'повторов',
+      );
+      expect(track.mock.calls[0][2]).toEqual({
+        source: 'miniapp',
+        section: 'profile',
+      });
+    });
+
+    it('общий бюджет: 25 отчётов с РАЗНЫХ IP за минуту — подробно ровно 20, считаются все 25', () => {
+      for (let i = 0; i < 25; i += 1) report(dto(`boom ${i}`));
+      expect(errorSpy).toHaveBeenCalledTimes(20);
+      expect(track).toHaveBeenCalledTimes(25);
+      const unlogged = track.mock.calls.filter(
+        (c) => (c[2] as { unlogged?: boolean }).unlogged === true,
+      );
+      expect(unlogged).toHaveLength(5);
+      // Первые 20 — без пометки: бюджет тратится по порядку прихода.
+      expect(track.mock.calls[19][2]).not.toHaveProperty('unlogged');
+      expect(track.mock.calls[20][2]).toEqual({
+        source: 'miniapp',
+        section: 'profile',
+        unlogged: true,
+      });
+    });
+
+    it('бюджет обновляется через минуту: следующий отчёт снова пишется подробно', () => {
+      for (let i = 0; i < 21; i += 1) report(dto());
+      expect(errorSpy).toHaveBeenCalledTimes(20);
+      jest.setSystemTime(Date.now() + 60_000);
+      report(dto());
+      expect(errorSpy).toHaveBeenCalledTimes(21);
+      expect((errorSpy.mock.calls[20] as [string, string])[0]).toContain(
+        '[client:miniapp/profile]',
+      );
+    });
+
+    it('перебор IP снимает per-device слой (>500 ключей), но потолок логов держит', () => {
+      // 600 разных IP × 1 отчёт: AlertThrottle сбрасывается при >500 ключах и
+      // пускает всё, глобальный бюджет — нет.
+      for (let i = 0; i < 600; i += 1)
+        report(dto(), `172.16.${i >> 8}.${i % 256}`);
+      expect(errorSpy).toHaveBeenCalledTimes(20);
+      expect(track).toHaveBeenCalledTimes(600);
+      const unlogged = track.mock.calls.filter(
+        (c) => (c[2] as { unlogged?: boolean }).unlogged === true,
+      );
+      expect(unlogged).toHaveLength(580);
+    });
+
+    it('контроль: до потолка разные IP и разные секции пишутся каждый раз', () => {
+      const ip = nextIp();
+      report({ message: 'a', section: 'Дневник', source: 'webapp' }, ip);
+      report({ message: 'b', section: 'Паттерны', source: 'webapp' }, ip);
+      report({ message: 'c', section: 'Дневник', source: 'miniapp' }, ip);
+      report({ message: 'd', section: 'Дневник', source: 'webapp' });
+      expect(errorSpy).toHaveBeenCalledTimes(4);
+      expect(
+        track.mock.calls.map((c) => (c[2] as { section: string }).section),
+      ).toEqual(['diary', 'schemas', 'diary', 'diary']);
+    });
+
+    it('detail по-прежнему чистится от секретов и при повторе после окна', () => {
+      const ip = nextIp();
+      report(dto(), ip);
+      jest.setSystemTime(Date.now() + 5 * 60_000);
+      report(
+        { ...dto(), url: 'https://schemehappens.ru/app/#tgWebAppData=SECRET' },
+        ip,
+      );
+      expect(JSON.stringify(errorSpy.mock.calls)).not.toContain('SECRET');
     });
   });
 
