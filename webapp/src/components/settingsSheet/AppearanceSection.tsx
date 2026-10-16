@@ -1,7 +1,5 @@
 import { useState } from 'react';
 import { useTr } from '../../utils/addressForm';
-import { getTheme, toggleTheme, resetToSystemTheme } from '../../utils/theme';
-import type { Theme } from '../../utils/theme';
 import { useReducedMotionPref } from '../../hooks/useReducedMotionPref';
 import { SHead, SRow, Toggle } from './ui';
 
@@ -13,14 +11,14 @@ interface Props {
   onSaved: () => void;
 }
 
-// Раздел «Оформление» — вынесен из SettingsSheet.tsx (правило №10). Тема и
-// подтверждение снятия роли специалиста больше нигде в родителе не
-// используются, поэтому живут внутри секции; «Сохранено ✓» после переключения
+// Раздел «Оформление» — вынесен из SettingsSheet.tsx (правило №10). Тумблера
+// темы здесь больше нет: кабинет только светлый (редизайн 2026-10), тема
+// переключается только на лендинге. Подтверждение снятия роли специалиста
+// живёт внутри секции; «Сохранено ✓» после переключения
 // «Меньше движения» — общий тост в шапке родителя, поэтому единственное, что
 // секция отдаёт наружу, — колбэк onSaved.
 export function AppearanceSection({ userRole, therapistMode, onToggleTherapistMode, onResignTherapist, onSaved }: Props) {
   const tr = useTr();
-  const [theme, setTheme] = useState<Theme>(getTheme);
   const motion = useReducedMotionPref(onSaved);
   const [resignConfirm, setResignConfirm] = useState(false);
   const [resignBusy, setResignBusy] = useState(false);
@@ -28,14 +26,6 @@ export function AppearanceSection({ userRole, therapistMode, onToggleTherapistMo
   return (
     <>
       <SHead id="s-appearance" label="Оформление" />
-      <SRow
-        title={theme === 'dark' ? 'Тёмная тема' : 'Светлая тема'}
-        sub={<span onClick={e => { e.stopPropagation(); setTheme(resetToSystemTheme()); }}
-          role="button" tabIndex={0}
-          onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); e.preventDefault(); setTheme(resetToSystemTheme()); } }}
-          style={{ color: 'var(--accent)', cursor: 'pointer' }}>Авто (по системе) →</span>}
-        right={<Toggle on={theme === 'dark'} onClick={() => setTheme(toggleTheme())} />}
-      />
       {/* Нейроинклюзивность: сниженная анимация (WCAG 2.3.3) */}
       <SRow
         title="Меньше движения"

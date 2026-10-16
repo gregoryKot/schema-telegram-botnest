@@ -22,6 +22,19 @@ export function applyTheme(theme: Theme) {
   localStorage.setItem(KEY, theme);
 }
 
+/** Кабинет (AppShell) нарисован только в светлой теме (редизайн 2026-10,
+ *  решение владельца): документ переводится в светлую схему БЕЗ записи в
+ *  localStorage — выбор для публичных страниц (лендинг со своим тумблером)
+ *  остаётся за пользователем, а тёмные фон/скроллбары не просачиваются в
+ *  кабинет через color-scheme. */
+export function applyCabinetLightTheme() {
+  document.documentElement.setAttribute('data-theme', 'light');
+  document.documentElement.style.background = THEME_BG.light;
+  document.documentElement.style.colorScheme = 'light';
+  const meta = document.getElementById('theme-color-meta') as HTMLMetaElement | null;
+  if (meta) meta.content = THEME_BG.light;
+}
+
 export function toggleTheme(): Theme {
   const next = getTheme() === 'dark' ? 'light' : 'dark';
   applyTheme(next);

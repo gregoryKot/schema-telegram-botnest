@@ -713,27 +713,6 @@ describe('SettingsSheet — переключение подвидов «Част
   });
 });
 
-// ── Тема: тумблер тёмная/светлая и «Авто (по системе)» ────────────────────────
-describe('SettingsSheet — тема оформления', () => {
-  it('тумблер темы переключает заголовок строки (Тёмная ⇄ Светлая)', async () => {
-    localStorage.setItem('app_theme', 'light');
-    await renderSheet();
-    expect(screen.getByText('Светлая тема')).toBeTruthy();
-    const row = screen.getByText('Светлая тема').parentElement!.parentElement!;
-    fireEvent.click(within(row).getByRole('switch'));
-    await waitFor(() => expect(screen.getByText('Тёмная тема')).toBeTruthy());
-    localStorage.removeItem('app_theme');
-  });
-
-  it('«Авто (по системе)» клавиатурой (Enter) не падает и не открывает соседний тумблер', async () => {
-    await renderSheet();
-    const autoLink = screen.getByText('Авто (по системе) →');
-    fireEvent.keyDown(autoLink, { key: 'Enter' });
-    // Экран остался на месте (не упал, не ушёл на подвид).
-    expect(screen.getByText('Настройки')).toBeTruthy();
-  });
-});
-
 describe('SettingsSheet — «Меньше движения»: тумблер показывает подтверждение сохранения', () => {
   it('клик по тумблеру показывает «Сохранено ✓»', async () => {
     await renderSheet();
