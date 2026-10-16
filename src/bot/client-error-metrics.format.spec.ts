@@ -22,6 +22,8 @@ const empty: ClientErrorMetrics = {
     other: 0,
   },
   bySource: { webapp: 0, miniapp: 0 },
+  repeatsWeek: 0,
+  unloggedWeek: 0,
 };
 
 describe('formatClientErrorMetrics', () => {
@@ -55,6 +57,8 @@ describe('formatClientErrorMetrics', () => {
       authWeek: 80,
       bySection: { ...empty.bySection, other: 10 },
       bySource: { webapp: 0, miniapp: 90 },
+      repeatsWeek: 0,
+      unloggedWeek: 0,
     });
     expect(text).toContain(
       'Вход не срабатывал на телефоне у пользователя: 35 раз за сутки, 80 за неделю',
@@ -106,5 +110,43 @@ describe('formatClientErrorMetrics', () => {
       bySection: { ...empty.bySection, other: 3 },
     });
     expect(text).not.toMatch(/client_error|meta\.|event/i);
+  });
+  describe('шквал отчётов (повторы и общий потолок)', () => {
+    const withReports = { ...empty, totalDay: 3, totalWeek: 3 };
+
+    it('без повторов и потолка этих строк в отчёте нет', () => {
+      const text = formatClientErrorMetrics(withReports);
+      expect(text).not.toContain('Повторные отчёты');
+      expect(text).not.toContain('общего потолка');
+    });
+
+    it('повторы с одного устройства — отдельная строка простыми словами', () => {
+      const text = formatClientErrorMetrics({
+        ...withReports,
+        repeatsWeek: 19,
+      });
+      expect(text).toContain(
+        'Повторные отчёты с одного устройства: 19 за неделю — ' +
+          'подробности записаны один раз, остальные только посчитаны.',
+      );
+      expect(text).not.toContain('общего потолка');
+    });
+
+    it('подробности не записаны из-за потолка — строка «похоже на залив»', () => {
+      const text = formatClientErrorMetrics({
+        ...withReports,
+        unloggedWeek: 5,
+      });
+      expect(text).toContain(
+        'Подробности не записаны из-за общего потолка: 5 — похоже на залив.',
+      );
+      expect(text).not.toContain('Повторные отчёты');
+    });
+
+    it('чистая БД: строк про шквал нет, NaN/undefined не появляются', () => {
+      const text = formatClientErrorMetrics(empty);
+      expect(text).not.toMatch(/NaN|undefined/);
+      expect(text).not.toContain('Повторные отчёты');
+    });
   });
 });

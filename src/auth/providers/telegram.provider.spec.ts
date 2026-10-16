@@ -176,7 +176,6 @@ describe('AuthProviderRegistry', () => {
     const registry = new AuthProviderRegistry(
       google as never,
       telegram as never,
-      fakeProvider('telegram-oidc') as never,
       fakeProvider('vk') as never,
       fakeProvider('max') as never,
     );
@@ -188,7 +187,6 @@ describe('AuthProviderRegistry', () => {
     const registry = new AuthProviderRegistry(
       fakeProvider('google') as never,
       fakeProvider('telegram') as never,
-      fakeProvider('telegram-oidc') as never,
       fakeProvider('vk') as never,
       fakeProvider('max') as never,
     );
@@ -199,7 +197,6 @@ describe('AuthProviderRegistry', () => {
     const registry = new AuthProviderRegistry(
       fakeProvider('google') as never,
       fakeProvider('telegram') as never,
-      fakeProvider('telegram-oidc') as never,
       fakeProvider('vk') as never,
       fakeProvider('max') as never,
     );
@@ -208,6 +205,6 @@ describe('AuthProviderRegistry', () => {
         .list()
         .map((p) => p.id)
         .sort(),
-    ).toEqual(['google', 'max', 'telegram', 'telegram-oidc', 'vk']);
+    ).toEqual(['google', 'max', 'telegram', 'vk']);
   });
 });

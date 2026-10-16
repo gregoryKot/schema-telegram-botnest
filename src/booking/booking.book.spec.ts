@@ -66,10 +66,16 @@ function makeService(
     slotOverride: { findMany: jest.fn(async () => []) },
     $transaction: jest.fn(async (fn: any) => fn(tx)),
     booking: {
-      update: jest.fn(async ({ where, data }: any) => {
-        const row = bookingRows.find((b) => b.id === where.id);
+      // CAS как в Postgres: WHERE на id и статус решает, обновится ли строка.
+      updateMany: jest.fn(async ({ where, data }: any) => {
+        const row = bookingRows.find(
+          (b) =>
+            b.id === where.id &&
+            (where.status === undefined || b.status === where.status),
+        );
+        if (!row) return { count: 0 };
         Object.assign(row, data);
-        return row;
+        return { count: 1 };
       }),
     },
   };
@@ -420,11 +426,12 @@ describe('BookingService.book — создание и side-effects', () => {
       type: SessionType.SESSION_50,
     });
     expect(res.status).toBe(BookingStatus.CONFIRMED);
-    expect(prisma.booking.update).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({ status: BookingStatus.CONFIRMED }),
-      }),
-    );
+    // Аудит 2026-10-11 (booking-cas): переход HELD→CONFIRMED только с
+    // предикатом статуса, иначе dev-ветка перекрасила бы чужой переход.
+    expect(prisma.booking.updateMany).toHaveBeenCalledWith({
+      where: { id: 100, status: BookingStatus.HELD },
+      data: { status: BookingStatus.CONFIRMED, heldUntil: null },
+    });
     expect(notify.onConfirmed).toHaveBeenCalledTimes(1);
   });
 });
@@ -575,6 +582,22 @@ describe('BookingService.cancel', () => {
       'cal-42',
     );
   });
+
+  // Событие календаря: у CONFIRMED без записанного uid (под умер между PUT и
+  // записью) DELETE идёт по детерминированному uid, у HELD события не бывает.
+  it.each([
+    [BookingStatus.CONFIRMED, 'booking-5@schemehappens.ru'],
+    [BookingStatus.HELD, null],
+  ])(
+    'без calDavUid: бронь %s → onCancelled получает uid %s',
+    async (status, uid) => {
+      const { service, notify } = makeSimpleService({
+        bookingRow: activeBooking({ status, calDavUid: null }),
+      });
+      await service.cancel('tok');
+      expect(notify.onCancelled).toHaveBeenCalledWith(expect.anything(), uid);
+    },
+  );
 
   // Аудит 2026-10-11, r2-1#1: find→update без предиката статуса — N параллельных
   // отмен давали N× DM+письмо+DELETE, а отмена поверх подтверждения брала
