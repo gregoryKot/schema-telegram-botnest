@@ -46,8 +46,8 @@ export class SelfCheckService
   }
 
   // Без аренды второй инстанс (масштабирование/деплой) тикает тем же часом и
-  // шлёт дубль DM при сбое — leader-election (правило №17 CLAUDE.md,
-  // scripts/cron-leader-baseline.json).
+  // шлёт дубль DM при сбое — leader-election (правило №17, cron-leader-baseline).
+  // Литерал сверяется с SELF_CHECK_CRON (freshness.ts) тестом.
   @Cron('43 * * * *', { name: 'selfCheckHourly' })
   async hourly(): Promise<void> {
     if (
