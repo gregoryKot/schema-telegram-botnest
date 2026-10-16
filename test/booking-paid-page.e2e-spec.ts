@@ -13,7 +13,9 @@
 // бесплатное знакомство и бронь, подтверждённая руками админа, оплатой не
 // считаются, платёж по подписанному вебхуку — считается. Дельта до/после через
 // настоящие пути создания и подтверждения брони, а не вставка строки: БД
-// общая для джобы, абсолютные нули тут ненадёжны.
+// общая для джобы, абсолютные нули тут ненадёжны. Исключение — историческая
+// ветка (брони до PAID_AT_TRACKED_SINCE, где paidAt пуст даже у оплаченных):
+// createdAt через HTTP не задать, поэтому там строки вставляются напрямую.
 //
 // Только живой Postgres (джоба `migrations`), как booking-slot-lock.e2e-spec.ts:
 // POST /api/booking/book берёт advisory-lock через $executeRaw, а фейковая
@@ -23,8 +25,9 @@ process.env.ADMIN_BOOKING_KEY = 'e2e-paid-page-admin-key-0123456789abcdef';
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { createHash } from 'crypto';
-import { SessionType } from '@prisma/client';
+import { BookingStatus, SessionType } from '@prisma/client';
 import { SESSION_DEFAULT_PRICE } from '../src/booking/booking.config';
+import { PAID_AT_TRACKED_SINCE } from '../src/booking/booking-paid-at';
 import { MoneyMetricsService } from '../src/bot/money-metrics.service';
 import { BookingNotifyService } from '../src/booking/booking-notify.service';
 import {
@@ -204,6 +207,39 @@ describe('e2e: экран после оплаты — success-redirect без в
       after.week.paidSessions - before.week.paidSessions,
       after.allTime.paidSessions - before.allTime.paidSessions,
     ]).toEqual([1, 1]);
+  });
+
+  it('«Оплатили сессию» за всё время, история до учёта paidAt: обычная бронь в счёте, знакомство нет', async () => {
+    const metrics = app.get(MoneyMetricsService, { strict: false });
+    // До PAID_AT_TRACKED_SINCE paidAt пуст даже у оплаченных броней, и счёт
+    // «только по paidAt» обнулил бы строку «За всё время» (money-metrics.paid-
+    // sessions.ts): для них действует прежнее правило CONFIRMED/COMPLETED, но
+    // без знакомств. createdAt через HTTP не задать — вставка напрямую; слот
+    // в DAY, чтобы wipe() подчистил строки вместе с остальными.
+    const created = new Date(PAID_AT_TRACKED_SINCE.getTime() - 86_400_000);
+    const historical = (type: SessionType, hour: number, durationMin: number) =>
+      prisma.booking.create({
+        data: {
+          startsAt: new Date(`${DATE}T${hour}:00:00.000Z`),
+          durationMin,
+          type,
+          status: BookingStatus.CONFIRMED,
+          clientName: 'E2E Тест',
+          clientContact: CONTACT,
+          cancelToken: `e2e-paid-page-historical-${type}`,
+          createdAt: created,
+        },
+      });
+    const before = await metrics.getMetrics();
+
+    await historical(SessionType.SESSION_50, 17, 50);
+    await historical(SessionType.INTRO_15, 18, 15);
+
+    const after = await metrics.getMetrics();
+    // Ровно +1: платная в счёте, знакомство нет (+2 — знакомство просочилось,
+    // 0 — историческая ветка пропала). Окно «за неделю» не проверяем: createdAt
+    // в прошлом, и от часов теста зависело бы, попала ли строка в окно.
+    expect(after.allTime.paidSessions - before.allTime.paidSessions).toBe(1);
   });
 
   it('контроль: by-token по чужому/неверному токену — 404, а не пустая «успешная» бронь', async () => {
