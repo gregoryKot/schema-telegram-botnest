@@ -3,6 +3,7 @@
 import { buildOauthRedirectCapability } from '../auth/oauth-redirect-config';
 import { buildRobokassaCapability } from '../booking/robokassa-capability';
 import { buildBackupCapability } from './backup-capability';
+import { buildEncryptionMigrationCapability } from './encryption-migration-capability';
 import type { CapabilityStatus } from './capability-report';
 
 export function buildIntegrationCapabilities(
@@ -13,5 +14,6 @@ export function buildIntegrationCapabilities(
     buildOauthRedirectCapability(env),
     buildBackupCapability(env),
     buildRobokassaCapability(env),
+    buildEncryptionMigrationCapability(env),
   ];
 }

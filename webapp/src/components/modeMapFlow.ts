@@ -49,12 +49,12 @@ export function toFlowEdges(edges: ModeMapEdge[]): FlowEdge[] {
   });
 }
 
-// Nodes auto-size to their content (no fixed width/height) → text never overflows
-// the shape. Old saved width/height are intentionally ignored.
+// Nodes auto-size to their content, so text never overflows (saved width/height are ignored on purpose).
+// The needs circle sits UNDER its pills (zIndex -1); fromFlowNodes keeps no zIndex — it follows the type.
 export function toFlowNodes(nodes: ModeMapNode[]): FlowNode[] {
   return nodes.map(n => ({
     id: n.id, type: n.type, position: n.position,
-    data: n.data as Record<string, unknown>,
+    data: n.data as Record<string, unknown>, ...(n.type === 'needs' ? { zIndex: -1 } : {}),
   }));
 }
 

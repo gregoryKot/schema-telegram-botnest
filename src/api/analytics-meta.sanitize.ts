@@ -280,6 +280,6 @@ export function sanitizeMeta(
     return sanitizeCaseMeta(name, meta);
   }
   // breath_start / stop_start / journey_open / ysq_help_open / plus_open /
-  // concept_graph_open / concept_mode_linked — без meta; поля отбрасываются.
+  // CONCEPT_EVENTS (concept_graph_open … concept_canvas_open) — без meta.
   return undefined;
 }

@@ -4,6 +4,7 @@ import { renderHook } from '@testing-library/react';
 import {
   CONCEPT_GRAPH_OPEN_EVENT,
   CONCEPT_MODE_LINKED_EVENT,
+  CONCEPT_SCHEMA_LINKED_EVENT,
 } from '../../share/analytics';
 import { useConceptGraphTracking } from './useConceptGraphTracking';
 
@@ -12,9 +13,11 @@ describe('useConceptGraphTracking', () => {
     const track = vi.fn();
     const { result } = renderHook(() => useConceptGraphTracking(track));
     result.current.markLinked('m');
+    result.current.markSchemaLinked('failure');
     expect(track.mock.calls.map((c) => c[0])).toEqual([
       CONCEPT_GRAPH_OPEN_EVENT,
       CONCEPT_MODE_LINKED_EVENT,
+      CONCEPT_SCHEMA_LINKED_EVENT,
     ]);
   });
 
@@ -39,6 +42,23 @@ describe('useConceptGraphTracking', () => {
     for (const call of track.mock.calls) {
       expect(call).toEqual([CONCEPT_MODE_LINKED_EVENT]);
     }
+  });
+
+  it('concept_schema_linked — один раз на схему за монтирование, без меты; режимы и схемы считаются раздельно', () => {
+    const track = vi.fn();
+    const { result } = renderHook(() => useConceptGraphTracking(track));
+    track.mockClear();
+    result.current.markSchemaLinked('failure');
+    result.current.markSchemaLinked('failure');
+    result.current.markSchemaLinked('mistrust');
+    result.current.markSchemaLinked('failure');
+    // тот же id у режима — отдельное событие, не «уже было»
+    result.current.markLinked('failure');
+    expect(track.mock.calls).toEqual([
+      [CONCEPT_SCHEMA_LINKED_EVENT],
+      [CONCEPT_SCHEMA_LINKED_EVENT],
+      [CONCEPT_MODE_LINKED_EVENT],
+    ]);
   });
 
   it('новое монтирование считает заново', () => {

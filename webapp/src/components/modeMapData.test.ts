@@ -8,18 +8,28 @@ import { TYPE_COLORS, NODE_DEFAULT_SIZES, DRAG_TYPE, GROUP_TO_TYPE, type NodeTyp
 
 // Держим руками синхронизированный список — если кто-то добавит тип узла в
 // api.types.ts и забудет завести цвет здесь, этот тест покажет расхождение.
-const KNOWN_NODE_TYPES: NodeType[] = ['trigger', 'child', 'critic', 'coping', 'healthy', 'custom', 'behavior'];
+const KNOWN_NODE_TYPES: NodeType[] = [
+  'trigger', 'child', 'critic', 'coping', 'healthy', 'custom', 'behavior',
+  'schema', 'origin', 'need', 'needs',   // схема случая на холсте
+];
 
 describe('TYPE_COLORS', () => {
   it('содержит цвет ровно для каждого известного типа узла — не больше, не меньше', () => {
     expect(new Set(Object.keys(TYPE_COLORS))).toEqual(new Set(KNOWN_NODE_TYPES));
   });
 
-  it('каждый цвет — непустая CSS var() ссылка на палитру сайта', () => {
+  it('каждый цвет — непустая CSS var() ссылка на палитру сайта (--c-* или смысловой --accent-*)', () => {
     for (const [type, color] of Object.entries(TYPE_COLORS)) {
       expect(color.length, type).toBeGreaterThan(0);
-      expect(color, type).toMatch(/^var\(--c-[\w-]+\)$/);
+      expect(color, type).toMatch(/^var\(--(c|accent)-[\w-]+\)$/);
     }
+  });
+
+  it('схема случая: схема красная, опыт синий, потребность и круг потребностей янтарные', () => {
+    expect(TYPE_COLORS.schema).toBe('var(--accent-red)');
+    expect(TYPE_COLORS.origin).toBe('var(--accent-blue)');
+    expect(TYPE_COLORS.need).toBe('var(--c-amber)');
+    expect(TYPE_COLORS.needs).toBe('var(--c-amber)');
   });
 
   it('copingSubtype-варианты (гипер/избегание/капитуляция) делят один цвет — их различает форма, не цвет', () => {
