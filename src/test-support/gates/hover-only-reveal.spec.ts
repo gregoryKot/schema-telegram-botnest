@@ -95,6 +95,37 @@ describe('check-hover-only-reveal.mjs — красные образцы', () => 
     expect(res.stderr).not.toContain('нет пути для пальца');
   });
 
+  it('сокрытие под @media (hover: hover) без :focus-* — путь для пальца есть, для клавиатуры нет, exit 1', () => {
+    const res = run(
+      'webapp/src/a.css',
+      css(
+        '@media (hover: hover) { .x { opacity: 0; } }',
+        '.row:hover .x { opacity: 1; }',
+      ),
+    );
+    expect(res.status).toBe(1);
+    expect(res.stderr).toContain('нет пути для клавиатуры');
+    expect(res.stderr).not.toContain('нет пути для пальца');
+  });
+
+  it('контроль к исключению «сокрытие только для мыши»: запятая (или), not и не-hover запрос прячут и на телефоне, exit 1', () => {
+    for (const q of [
+      '(hover: hover), (max-width: 600px)',
+      'not all and (hover: hover)',
+      '(max-width: 600px)',
+    ]) {
+      const res = run(
+        'webapp/src/a.css',
+        css(
+          `@media ${q} { .x { opacity: 0; } }`,
+          '.row:hover .x, .row:focus-within .x { opacity: 1; }',
+        ),
+      );
+      expect(res.status).toBe(1);
+      expect(res.stderr).toContain('нет пути для пальца');
+    }
+  });
+
   it('список селекторов: hover-раскрытие в одной ветке запятой не спасает, если вторая тоже hover', () => {
     const res = run(
       'webapp/src/a.css',
@@ -186,6 +217,34 @@ describe('check-hover-only-reveal.mjs — зелёные контрольные 
         '  100% { opacity: 1; }',
         '}',
       ),
+    );
+    expect(res.status).toBe(0);
+    expect(res.stdout).toContain(OK);
+  });
+
+  it('сокрытие только для мыши (@media (hover: hover) / (pointer: fine)) + :focus-within — на телефоне виден, exit 0', () => {
+    for (const q of [
+      '(hover: hover)',
+      '(pointer: fine)',
+      'screen and (hover: hover)',
+    ]) {
+      const res = run(
+        'webapp/src/a.css',
+        css(
+          `@media ${q} { .x { opacity: 0; } }`,
+          '.row:hover .x, .row:focus-within .x { opacity: 1; }',
+        ),
+      );
+      expect(res.status).toBe(0);
+    }
+  });
+
+  it('раскрытие без :hover вовсе (ссылка «к содержимому» по :focus) — не этот класс, exit 0', () => {
+    // Контроль: тот же элемент, раскрываемый ещё и по :hover, без пути для
+    // пальца краснеет — образец «hover + :focus-within без блока для пальца».
+    const res = run(
+      'webapp/src/a.css',
+      css('.skip-link { opacity: 0; }', '.skip-link:focus { opacity: 1; }'),
     );
     expect(res.status).toBe(0);
     expect(res.stdout).toContain(OK);

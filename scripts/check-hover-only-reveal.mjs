@@ -9,11 +9,13 @@
 // фокусируемой: Tab уходил в пустое место (WCAG 2.4.7).
 //
 // Правило: если у элемента есть правило сокрытия (`opacity: 0` или
-// `visibility: hidden`) и хотя бы одно правило раскрытия, то хотя бы одно
-// раскрытие обязано обходиться без :hover, и путей нужно два: для пальца
-// (`@media (hover: none)` / `(pointer: coarse)`) и для клавиатуры
-// (`:focus-within` / `:focus-visible`); класс состояния (`.selected`,
-// `.ready`) закрывает оба. Правила внутри @keyframes не считаются.
+// `visibility: hidden`) и его раскрывает :hover, то путей без hover нужно
+// два: для пальца (`@media (hover: none)` / `(pointer: coarse)`) и для
+// клавиатуры (`:focus-within` / `:focus-visible`); класс состояния
+// (`.selected`, `.ready`) закрывает оба. Сокрытие внутри `@media (hover:
+// hover)` / `(pointer: fine)` на телефоне не действует — путь для пальца ему
+// не нужен. Раскрытие без :hover вовсе (ссылка «к содержимому» по :focus) —
+// не этот класс. Правила внутри @keyframes не считаются.
 //
 // Гейт АБСОЛЮТНЫЙ, без бейслайна и без списка исключений: класс вычищен в
 // том же PR, замораживать нечему (правило №15 CLAUDE.md). Образец по
@@ -73,6 +75,16 @@ const paths = (shown) => {
     keyboard: k.has('focus') || k.has('state'),
   };
 };
+// Сокрытие только на устройствах с мышью: на телефоне элемент и так виден.
+// Запятая в @media — «или»: `(hover: hover), (max-width: 600px)` прячет и на
+// телефоне; `not` переворачивает условие — оба случая не в счёт.
+const mouseOnly = (ctx) => {
+  const media = ctx.join(' ');
+  return (
+    !/,|\bnot\b/.test(media) &&
+    /\((hover:\s*hover|pointer:\s*fine)\)/.test(media)
+  );
+};
 
 export function findHoverOnly(css) {
   const rules = parseCssRules(stripComments(css, true)).flatMap((r) =>
@@ -87,7 +99,9 @@ export function findHoverOnly(css) {
       (r) => isShown(r.decls) && covers(subject(r.sel), key),
     );
     const p = paths(shown);
-    if (shown.length && !(p.touch && p.keyboard)) {
+    if (mouseOnly(h.ctx)) p.touch = true;
+    const viaHover = shown.some((r) => kind(r.sel, r.ctx) === 'hover');
+    if (viaHover && !(p.touch && p.keyboard)) {
       found.push({ ln: h.line, sel: h.sel, shown, ...p });
     }
   }
