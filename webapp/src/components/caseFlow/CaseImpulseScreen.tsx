@@ -29,7 +29,6 @@ export function CaseImpulseScreen({
     <ExScreen
       onBack={onBack}
       eyebrow="Разбор случая · Шаг 4 из 5"
-      eyebrowColor="var(--accent-indigo)"
       title="Что потянуло сделать?"
       lede="Не что вышло в итоге — куда тянуло."
     >

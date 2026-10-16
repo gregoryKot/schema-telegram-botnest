@@ -3,6 +3,7 @@ import { api, type ModeMapMeta, type ModeMapFull, type ModeMapKind, type UserId 
 import { ModeMapEditor } from './ModeMapEditor';
 import { MMIcon } from './modeMapIcons';
 import { useTr } from '../utils/addressForm';
+import '../styles/sheet-modemap.css';
 import { ConfirmDialog } from './ConfirmDialog';
 import { MODE_MAP_TITLE_MAX } from '../../../shared/src/limits/textLimits';
 
@@ -114,16 +115,11 @@ export function ModeMapSelector({ clientId, initialMapId }: Props) {
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+    <div className="mm2-fill">
       {/* Map selector bar — pill-style tabs */}
-      <div style={{
-        display: 'flex', alignItems: 'center', gap: 'var(--space-4)',
-        padding: '8px 12px',
-        borderBottom: '1px solid var(--line)',
-        overflowX: 'auto', flexShrink: 0, minHeight: 42,
-      }}>
+      <div className="mm2-bar">
         {maps.map(m => (
-          <div key={m.id} style={{ display: 'flex', alignItems: 'center', flexShrink: 0, gap: 0 }}>
+          <div key={m.id} className="mm2-tb">
             {editingId === m.id ? (
               <input
                 ref={titleRef} maxLength={MODE_MAP_TITLE_MAX}
@@ -131,40 +127,20 @@ export function ModeMapSelector({ clientId, initialMapId }: Props) {
                 onChange={e => setEditTitle(e.target.value)}
                 onBlur={() => renameMap(m.id, editTitle)}
                 onKeyDown={e => { if (e.key === 'Enter') renameMap(m.id, editTitle); if (e.key === 'Escape') setEditingId(null); }}
-                style={{
-                  fontSize: 13, fontWeight: 500, padding: '4px 8px', borderRadius: 'var(--r-6)',
-                  border: '1.5px solid var(--accent)', background: 'var(--bg-elev)',
-                  color: 'var(--text)', outline: 'none', width: 120,
-                }}
+                className="ds-input mm2-rename"
               />
             ) : (
-              <div style={{
-                display: 'flex', alignItems: 'center',
-                borderRadius: 7, overflow: 'hidden',
-                background: activeId === m.id ? 'var(--surface-3)' : 'none',
-                border: activeId === m.id ? '1px solid var(--line)' : '1px solid transparent',
-              }}>
+              <div className={`ds-card mm2-map${activeId === m.id ? ' is-active' : ''}`}>
                 <button
                   onClick={() => selectMap(m.id)}
                   onDoubleClick={() => startEdit(m)}
                   title={`${KIND_META[m.kind]?.label ?? ''} · двойной клик — переименовать`}
-                  style={{
-                    padding: maps.length > 1 && activeId === m.id ? '4px 6px 4px 12px' : '4px 12px',
-                    fontSize: 13, fontWeight: activeId === m.id ? 600 : 400,
-                    cursor: 'pointer', whiteSpace: 'nowrap', background: 'none',
-                    border: 'none', color: activeId === m.id ? 'var(--text)' : 'var(--text-sub)',
-                    display: 'flex', alignItems: 'center', gap: 5,
-                  }}
+                  className={`mm2-map-btn${maps.length > 1 && activeId === m.id ? ' has-x' : ''}`}
                 >
                   {m.title}
                 </button>
                 {maps.length > 1 && activeId === m.id && (
-                  <button onClick={() => setDeleteTargetId(m.id)} title="Удалить карту" aria-label="Удалить карту"
-                    style={{
-                      background: 'none', border: 'none', cursor: 'pointer',
-                      color: 'var(--text-faint)', fontSize: 11, padding: '4px 8px 4px 2px',
-                      lineHeight: 1, display: 'flex', alignItems: 'center',
-                    }}>
+                  <button onClick={() => setDeleteTargetId(m.id)} title="Удалить карту" aria-label="Удалить карту" className="mm2-map-x">
                     <MMIcon name="close" size={12} />
                   </button>
                 )}
@@ -173,14 +149,10 @@ export function ModeMapSelector({ clientId, initialMapId }: Props) {
           </div>
         ))}
         <button ref={newBtnRef} onClick={openKindPicker} disabled={creating}
-          style={{
-            padding: '4px 10px', borderRadius: 7, fontSize: 12.5, cursor: 'pointer', flexShrink: 0,
-            border: '1px dashed var(--line-strong)', background: pickKind ? 'var(--accent-soft)' : 'none',
-            color: pickKind ? 'var(--accent)' : 'var(--text-faint)', whiteSpace: 'nowrap', marginLeft: 2,
-          }}>
+          className={`ds-btn ds-btn--secondary mm2-new${pickKind ? ' is-active' : ''}`}>
           {creating ? '…' : (
-            <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-              <MMIcon name="plus" size={13} />Новая карта<MMIcon name="caret" size={11} style={{ opacity: 0.6 }} />
+            <span>
+              <MMIcon name="plus" size={13} />Новая карта<MMIcon name="caret" size={11} className="mm2-tb-caret" />
             </span>
           )}
         </button>
@@ -192,22 +164,12 @@ export function ModeMapSelector({ clientId, initialMapId }: Props) {
           <div role="button" tabIndex={0} aria-label="Закрыть"
             onClick={() => setPickKind(false)}
             onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setPickKind(false); } }}
-            style={{ position: 'fixed', inset: 0, zIndex: 60 }} />
-          <div style={{
-            position: 'fixed', left: menuPos.x, top: menuPos.y, zIndex: 61, width: 280,
-            background: 'var(--bg-elev)', border: '1px solid var(--line)', borderRadius: 'var(--r-8)',
-            padding: 5, boxShadow: 'var(--shadow-2)',
-          }}>
+            className="mm2-backdrop" style={{ zIndex: 60 }} />
+          <div className="ds-card mm2-kind-menu" style={{ left: menuPos.x, top: menuPos.y }}>
             {KINDS.map(k => (
-              <button key={k} onClick={() => createMap(k)}
-                style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 10px',
-                  borderRadius: 'var(--r-6)', cursor: 'pointer', background: 'none', border: 'none' }}
-                onMouseEnter={e => { e.currentTarget.style.background = 'var(--surface-2)'; }}
-                onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}>
-                <div className="u-h13">
-                  {KIND_META[k].label}
-                </div>
-                <div style={{ fontSize: 11.5, color: 'var(--text-sub)', marginTop: 3, lineHeight: 1.35 }}>{KIND_META[k].hint}</div>
+              <button key={k} onClick={() => createMap(k)} className="mm2-item">
+                <div className="mm2-kind-name">{KIND_META[k].label}</div>
+                <div className="mm2-kind-hint">{KIND_META[k].hint}</div>
               </button>
             ))}
           </div>
@@ -215,26 +177,20 @@ export function ModeMapSelector({ clientId, initialMapId }: Props) {
       )}
 
       {/* Editor area */}
-      <div style={{ flex: 1, overflow: 'hidden' }}>
-        {loading && (
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--text-faint)' }}>
-            Загрузка…
-          </div>
-        )}
+      <div className="mm2-body">
+        {loading && <div className="mm2-loading">Загрузка…</div>}
         {!loading && maps.length === 0 && (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 'var(--space-12)' }}>
-            <div style={{ width: 52, height: 52, borderRadius: 'var(--r-12)', background: 'var(--surface-2)', border: '1px solid var(--line)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-faint)' }}><MMIcon name="map" size={26} /></div>
-            <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>Нет карт режимов</div>
-            <div style={{ fontSize: 13, color: 'var(--text-sub)', maxWidth: 360, textAlign: 'center', lineHeight: 1.45 }}>
+          <div className="mm2-center">
+            <div className="mm2-empty-ico"><MMIcon name="map" size={26} /></div>
+            <div className="mm2-empty-title">Нет карт режимов</div>
+            <div className="mm2-empty-sub">
               {tr('Выбери тип первой карты', 'Выберите тип первой карты')}
             </div>
-            <div style={{ display: 'flex', gap: 'var(--space-12)', marginTop: 4, flexWrap: 'wrap', justifyContent: 'center' }}>
+            <div className="mm2-kinds">
               {KINDS.map(k => (
-                <button key={k} onClick={() => createMap(k)} disabled={creating}
-                  style={{ width: 200, padding: '14px 16px', borderRadius: 'var(--r-10)', cursor: 'pointer', textAlign: 'left',
-                    background: 'var(--bg-elev)', border: '1px solid var(--line)' }}>
-                  <div className="u-h14">{KIND_META[k].label}</div>
-                  <div style={{ fontSize: 12, color: 'var(--text-sub)', marginTop: 5, lineHeight: 1.4 }}>{KIND_META[k].hint}</div>
+                <button key={k} onClick={() => createMap(k)} disabled={creating} className="ds-card ds-card--hover mm2-kind-card">
+                  <div className="mm2-kind-name">{KIND_META[k].label}</div>
+                  <div className="mm2-kind-hint">{KIND_META[k].hint}</div>
                 </button>
               ))}
             </div>

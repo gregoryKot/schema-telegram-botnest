@@ -666,10 +666,12 @@ describe('SettingsSheet — переключатель формы обращен
   });
 
   it('текущая форма подсвечена активной кнопкой', async () => {
+    mockApi.getSettings.mockResolvedValue({ ...SETTINGS, addressForm: 'vy' });
     await renderSheetWithForm('vy');
     const vyBtn = screen.getByText('На «вы»');
     const tyBtn = screen.getByText('На «ты»');
-    expect(vyBtn.style.background).not.toBe(tyBtn.style.background);
+    expect(vyBtn.className).toContain('is-active');
+    expect(tyBtn.className).not.toContain('is-active');
   });
 });
 

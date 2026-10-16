@@ -23,14 +23,14 @@ describe('Dialog — разметка', () => {
     const dialog = screen.getByRole('dialog');
     expect(dialog.getAttribute('aria-modal')).toBe('true');
     expect(dialog.getAttribute('aria-label')).toBe('Подтверждение');
-    expect(dialog.className).toContain('dialog-box');
-    expect(dialog.className).not.toContain('dialog-box--center');
+    expect(dialog.className).toContain('sk-dialog-box');
+    expect(dialog.className).not.toContain('sk-dialog-box--center');
   });
 
   it('center, maxWidth и zIndex доезжают до разметки', () => {
     renderDialog({ center: true, maxWidth: 360, zIndex: 450 });
     const dialog = screen.getByRole('dialog');
-    expect(dialog.className).toContain('dialog-box--center');
+    expect(dialog.className).toContain('sk-dialog-box--center');
     expect(dialog.style.maxWidth).toBe('360px');
     expect((dialog.parentElement as HTMLElement).style.zIndex).toBe('450');
   });

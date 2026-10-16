@@ -37,7 +37,7 @@ afterEach(() => {
 describe('ChildhoodWheelEx — стартовое состояние (не выдумка, дефолт-старт слайдера)', () => {
   it('все пять потребностей начинаются с середины шкалы (5/10)', () => {
     renderEx();
-    const values = screen.getAllByText('5', { selector: '.cw-row-value' });
+    const values = screen.getAllByText('5', { selector: '.ex2-cw-value' });
     expect(values.length).toBe(5);
   });
 });
@@ -128,7 +128,7 @@ describe('ChildhoodWheelEx — ты/вы: подсказка «Связать с
 describe('ChildhoodWheelEx — низкие зоны меняют подсказку и итоговый текст', () => {
   it('перетаскивание ползунка ниже 4 показывает текст «дефицита» под вопросом', () => {
     renderEx();
-    const tracks = document.querySelectorAll('.cw-track');
+    const tracks = document.querySelectorAll('.ex2-cw-track');
     const track = tracks[0] as HTMLDivElement;
     vi.spyOn(track, 'getBoundingClientRect').mockReturnValue({
       left: 0, right: 200, width: 200, top: 0, bottom: 0, height: 0, x: 0, y: 0, toJSON() {},
@@ -143,7 +143,7 @@ describe('ChildhoodWheelEx — низкие зоны меняют подсказ
 
   it('низкая зона доезжает до итогового экрана: «N зон ниже 5»', async () => {
     renderEx();
-    const track = document.querySelectorAll('.cw-track')[0] as HTMLDivElement;
+    const track = document.querySelectorAll('.ex2-cw-track')[0] as HTMLDivElement;
     vi.spyOn(track, 'getBoundingClientRect').mockReturnValue({
       left: 0, right: 200, width: 200, top: 0, bottom: 0, height: 0, x: 0, y: 0, toJSON() {},
     } as DOMRect);

@@ -1,0 +1,202 @@
+/* Обрамление карты режимов (префикс mm2-): тулбар, палитра, редакторы узла и
+   связи, меню, гид, легенда, селектор карт. Фигуры узлов, их геометрия,
+   рёбра и раскладка сюда не входят — они живут в nodeParts/ModeMapNodes. */
+
+/* ── Тулбар и выпадающие меню ── */
+.ds-card.mm2-toolbar { display: flex; flex-wrap: nowrap; align-items: center; gap: 4px; padding: 4px; border-radius: 12px; }
+.mm2-tb { position: relative; display: flex; }
+.ds-btn.mm2-tb-btn { width: auto; min-width: 36px; height: 36px; gap: 3px; border-radius: 10px; border-color: transparent; }
+.ds-btn.mm2-tb-btn.is-active { background: var(--paper-sunk); color: var(--accent); }
+.ds-btn.mm2-tb-btn:disabled { color: var(--text-ghost); background: transparent; cursor: default; }
+.mm2-tb-caret { opacity: .65; margin-left: 1px; }
+.mm2-tb-sep { width: 1px; background: var(--line); margin: 4px 2px; }
+.mm2-tip {
+  position: absolute; top: 42px; left: 50%; transform: translateX(-50%); z-index: 40;
+  background: var(--ink); color: var(--on-ink); font-size: 11px; padding: 3px 8px; border-radius: 6px;
+  white-space: nowrap; pointer-events: none;
+}
+.mm2-backdrop { position: fixed; inset: 0; }
+.ds-card.mm2-drop { position: fixed; z-index: 40; width: 220px; padding: 4px; border-radius: 12px; box-shadow: 0 12px 30px -18px rgba(60, 40, 20, .4); }
+.mm2-drop-head { padding: 6px 10px 4px; font-size: 10.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--text-faint); }
+.mm2-drop-note { padding: 0 10px 6px; font-size: 11px; line-height: 1.35; color: var(--text-faint); }
+.mm2-drop-note.is-err { color: var(--err); }
+.mm2-drop-sep { height: 1px; background: var(--line); margin: 4px 0; }
+.mm2-kbd-row { display: flex; justify-content: space-between; gap: 14px; padding: 5px 10px; font-size: 12px; color: var(--text-sub); }
+.mm2-kbd { font-family: inherit; font-size: 11.5px; color: var(--text); background: var(--paper-sunk); padding: 1px 6px; border-radius: 4px; white-space: nowrap; }
+
+/* ── Строка меню (дропдауны, контекстное меню, выбор типа карты) ── */
+.mm2-item {
+  display: flex; align-items: center; gap: 8px; width: 100%; min-height: 36px; padding: 7px 10px;
+  border: none; border-radius: 8px; background: none; text-align: left; cursor: pointer;
+  font: 12.5px var(--sans); color: var(--text);
+}
+.mm2-item:hover:not(:disabled) { background: color-mix(in srgb, var(--paper-tint) 60%, var(--surface)); }
+.mm2-item:disabled { opacity: .55; cursor: default; }
+.mm2-item.is-danger { color: var(--err); }
+.ds-card.mm2-ctx { position: fixed; z-index: 1000; min-width: 170px; padding: 4px; border-radius: 12px; }
+.mm2-ctx-back { position: fixed; inset: 0; z-index: 999; }
+
+/* ── Палитра режимов ── */
+.ds-card.mm2-pal { width: 220px; flex-shrink: 0; display: flex; flex-direction: column; border-radius: 0; border-width: 0 1px 0 0; padding: 0; background: var(--surface); }
+.mm2-pal-search { padding: 10px; border-bottom: 1px solid var(--line); flex-shrink: 0; }
+.mm2-pal-search .ds-input { padding: 8px 12px; font-size: 12.5px; border-radius: 10px; }
+.mm2-pal-scroll { flex: 1; overflow-y: auto; }
+.mm2-pal-head {
+  display: flex; align-items: center; gap: 8px; width: 100%; min-height: 40px; padding: 6px 12px;
+  border: none; border-top: 1px solid var(--line); background: none; cursor: pointer; text-align: left;
+}
+.mm2-pal-head.is-static { cursor: default; }
+.mm2-pal-head-name { flex: 1; font-size: 11.5px; font-weight: 700; color: var(--text-sub); }
+.mm2-pal-head-n { font-size: 10px; color: var(--text-faint); }
+.mm2-client { background: var(--paper-tint); padding-bottom: 0; }
+.mm2-client.is-open { padding-bottom: 4px; }
+.mm2-client-row { display: flex; align-items: center; padding: 4px 12px 4px 0; }
+.mm2-client-row .mm2-pal-head { border-top: none; flex: 1; }
+.mm2-client-row .mm2-pal-head-name { color: var(--accent); }
+.mm2-pal-item {
+  display: flex; align-items: center; gap: 8px; width: 100%; min-height: 34px; padding: 6px 14px;
+  border: none; background: none; cursor: pointer; text-align: left; color: var(--text); font: 12px/1.3 var(--sans);
+}
+.mm2-pal-item:hover { background: color-mix(in srgb, var(--paper-tint) 60%, var(--surface)); }
+.mm2-pal-item.is-lg { font-size: 12.5px; }
+.mm2-pal-item.is-tone { background: oklch(0.97 0.02 var(--h)); }
+.mm2-pal-item-name { flex: 1; }
+.ds-btn.mm2-pal-add { flex-shrink: 0; white-space: nowrap; height: 32px; padding: 0 12px; font-size: 11px; gap: 3px; }
+.mm2-pal-sub { padding: 4px 12px 10px; font-size: 11.5px; line-height: 1.4; color: var(--text-faint); }
+.mm2-pal-sub.is-err { color: var(--err); }
+.mm2-pal-empty { padding: 20px 14px; font-size: 12.5px; color: var(--text-faint); text-align: center; }
+.mm2-mine { border-top: 1px solid var(--line); margin-top: 4px; }
+.mm2-mine-head { display: flex; align-items: center; padding: 6px 12px; }
+.mm2-mine-head .mm2-pal-head-name { font-size: 11.5px; }
+.mm2-mine-plus { width: 36px; height: 36px; border: none; background: none; color: var(--accent); cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.mm2-mine-row { display: flex; align-items: center; }
+.mm2-mine-row .mm2-pal-item { flex: 1; }
+.mm2-mine-del { width: 40px; height: 40px; flex-shrink: 0; border: none; background: none; color: var(--text-faint); cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.mm2-add-form { padding: 6px 10px 16px; display: flex; flex-direction: column; gap: 6px; }
+.mm2-add-row { display: flex; gap: 6px; }
+.mm2-add-form .ds-input { padding: 7px 10px; font-size: 12.5px; border-radius: 10px; }
+.mm2-add-emoji { width: 44px; flex: none; text-align: center; font-size: 15px; padding: 7px 4px; }
+.mm2-add-form .ds-btn { height: 40px; padding: 0 14px; font-size: 12.5px; flex: 1; }
+.mm2-add-form .ds-btn--icon { flex: none; width: 40px; padding: 0; }
+
+/* ── Выбор формы нового режима и ряды выбора в редакторах ── */
+.mm2-shapes { display: flex; flex-wrap: wrap; gap: 4px; }
+.mm2-pick {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+  min-height: 44px; padding: 4px 6px; border-radius: 10px; cursor: pointer; font: 9px var(--sans);
+  border: 1.5px solid var(--line-strong); background: var(--surface); color: var(--text-faint);
+}
+.mm2-pick.is-active { border-color: var(--accent); background: var(--paper-tint); color: var(--accent); }
+.mm2-mini { width: 16px; height: 16px; flex-shrink: 0; border: 1.5px solid var(--text-faint); box-sizing: border-box; }
+.mm2-mini-svg { stroke: var(--text-faint); }
+
+/* ── Редакторы узла и связи ── */
+.ds-card.mm2-panel { width: 250px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; border-radius: 0; border-width: 0 0 0 1px; padding: 16px 14px; background: var(--surface); }
+.mm2-panel-head { display: flex; align-items: center; margin-bottom: 14px; }
+.mm2-panel-title { flex: 1; margin: 0; font: 400 17px/1.25 var(--serif); }
+.mm2-x { width: 40px; height: 40px; margin: -10px -10px -10px 0; border: none; background: none; color: var(--text-faint); cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.mm2-x:hover { color: var(--text); }
+.mm2-panel .ds-label { display: block; margin-bottom: 6px; }
+.mm2-panel .ds-label.is-ok { color: var(--ok); }
+.mm2-panel .ds-input, .mm2-panel .ds-textarea, .mm2-panel select.ds-input { padding: 8px 10px; font-size: 13px; border-radius: 10px; margin-bottom: 14px; }
+.mm2-panel .ds-textarea { resize: vertical; }
+.mm2-panel .ds-textarea.is-ok { border-color: color-mix(in srgb, var(--ok) 45%, transparent); }
+.mm2-panel select.ds-input { cursor: pointer; }
+.mm2-seg { display: flex; margin-bottom: 14px; width: 100%; }
+.mm2-seg .ds-seg-btn { flex: 1; padding: 6px 4px; font-size: 11.5px; min-height: 32px; }
+.mm2-seg .ds-seg-btn.is-icon { display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 9px; padding: 7px 2px; border-radius: 14px; }
+.mm2-seg .ds-seg-btn.is-icon.is-active i { background: var(--on-ink); }
+.mm2-seg .ds-seg-btn i { display: block; width: 26px; border-radius: 4px; background: var(--text-sub); }
+.mm2-shape-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-bottom: 14px; }
+.mm2-shape-grid .mm2-pick { height: 50px; }
+.mm2-swatches { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 14px; }
+.mm2-swatch { width: 28px; height: 28px; border-radius: 50%; padding: 0; cursor: pointer; border: 3px solid var(--surface); box-sizing: border-box; }
+.mm2-swatch.is-active { box-shadow: 0 0 0 2px var(--text); }
+.mm2-swatch.is-reset { background: none; border: 2px dashed var(--line-strong); color: var(--text-faint); display: flex; align-items: center; justify-content: center; }
+.mm2-partners { display: flex; gap: 6px; margin-bottom: 14px; }
+.mm2-partner { flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; min-height: 36px; padding: 6px 4px; border-radius: 10px; font: 12px var(--sans); cursor: pointer; border: 1.5px solid var(--line-strong); background: var(--surface); color: var(--text-sub); }
+.mm2-partner i { width: 8px; height: 8px; border-radius: 50%; background: var(--pc); }
+.mm2-partner.is-active { border-color: var(--pc); color: var(--pc); font-weight: 600; background: color-mix(in srgb, var(--pc) 12%, var(--surface)); }
+.mm2-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.mm2-chips.is-tight { gap: 5px; margin: 0; }
+.mm2-chip { min-height: 32px; padding: 5px 11px; border-radius: 16px; font: 12px var(--sans); cursor: pointer; border: 1px solid var(--line-strong); background: var(--surface); color: var(--text-sub); }
+.mm2-chip.is-active { border-color: var(--accent); background: var(--paper-tint); color: var(--accent); }
+.mm2-chip.is-sm { font-size: 11.5px; padding: 4px 9px; min-height: 30px; }
+.mm2-sugg { margin-bottom: 14px; padding: 8px 9px; border-radius: 12px; border: 1px solid var(--line); background: var(--paper-tint); }
+.mm2-sugg-head { display: flex; align-items: center; margin-bottom: 7px; }
+.mm2-sugg-head .ds-label { margin: 0; flex: 1; }
+.mm2-sugg-head button { width: 32px; height: 32px; margin: -8px -6px -8px 0; border: none; background: none; color: var(--text-faint); font-size: 14px; cursor: pointer; }
+.ds-btn.mm2-del { margin-top: auto; height: 40px; font-size: 12.5px; color: var(--err); }
+
+/* ── Подсказка «Спросить себя» ── */
+.mm2-hint { background: var(--paper-tint); border: 1px solid var(--line); border-radius: 12px; padding: 8px 10px; margin-bottom: 14px; }
+.mm2-hint .ds-label { display: flex; align-items: center; gap: 5px; color: var(--accent); margin-bottom: 6px; }
+.mm2-hint-q { display: flex; gap: 6px; width: 100%; min-height: 32px; padding: 4px; border: none; border-radius: 8px; background: none; cursor: pointer; text-align: left; font: 11.5px/1.35 var(--sans); color: var(--text-sub); }
+.mm2-hint-q:hover { background: var(--surface); }
+.mm2-hint-q span { color: var(--accent); flex-shrink: 0; }
+
+/* ── Гид, легенда ── */
+.ds-card.mm2-guide { width: 270px; max-height: calc(100vh - 300px); overflow-y: auto; padding: 14px; border-radius: 16px; font-size: 12.5px; }
+.mm2-guide-head, .mm2-legend-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+.mm2-guide-lead { font-size: 11px; line-height: 1.4; color: var(--text-faint); margin-bottom: 10px; }
+.mm2-step { display: flex; gap: 8px; align-items: flex-start; width: 100%; min-height: 40px; padding: 6px 5px; border: none; border-radius: 10px; background: none; text-align: left; cursor: default; }
+.mm2-step.is-click { cursor: pointer; }
+.mm2-step.is-click:hover { background: color-mix(in srgb, var(--paper-tint) 60%, var(--surface)); }
+.mm2-step-n { flex-shrink: 0; width: 20px; height: 20px; margin-top: 1px; border-radius: 50%; font-size: 10.5px; font-weight: 700; display: flex; align-items: center; justify-content: center; background: var(--paper-sunk); color: var(--text-faint); }
+.mm2-step-n.is-done { background: var(--ok); color: #fff; }
+.mm2-step-n.is-click { background: var(--paper-tint); color: var(--accent); border: 1px solid var(--accent); }
+.mm2-step-t { display: block; font-size: 12.5px; font-weight: 600; color: var(--text-sub); }
+.mm2-step-t.is-done { color: var(--text); }
+.mm2-step-d { display: block; font-size: 11px; line-height: 1.35; color: var(--text-faint); margin-top: 1px; }
+.mm2-alerts { margin-top: 10px; display: flex; flex-direction: column; gap: 6px; }
+.mm2-alert { display: flex; gap: 7px; font-size: 11.5px; line-height: 1.4; color: var(--text); padding: 7px 9px; border-radius: 10px; background: var(--ok-bg); }
+.mm2-alert.is-warn { background: var(--warn-bg); color: var(--warn-ink); }
+.mm2-alert b { flex-shrink: 0; }
+.mm2-tips { border-top: 1px solid var(--line); margin-top: 10px; padding-top: 10px; }
+.mm2-tips-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 7px; }
+.mm2-tips-head button { width: 32px; height: 32px; margin: -8px -6px -8px 0; border: none; background: none; color: var(--text-faint); font-size: 14px; cursor: pointer; }
+.mm2-tip-row { display: flex; gap: 8px; font-size: 11.5px; line-height: 1.4; color: var(--text-sub); margin-bottom: 8px; }
+.mm2-tip-row i { flex-shrink: 0; width: 5px; height: 5px; border-radius: 50%; background: var(--accent); margin-top: 6px; }
+.ds-card.mm2-legend { padding: 11px 13px; border-radius: 16px; min-width: 190px; font-size: 12px; }
+.mm2-legend-list { display: flex; flex-direction: column; gap: 6px; }
+.mm2-legend-chip { display: inline-flex; align-items: center; gap: 8px; width: fit-content; padding: 3px 9px 3px 5px; border-radius: 8px; font-size: 12px; background: var(--paper-tint); color: var(--text-sub); }
+
+/* ── Селектор карт и вьюер ── */
+.mm2-bar { display: flex; align-items: center; gap: 6px; padding: 8px 12px; border-bottom: 1px solid var(--line); overflow-x: auto; flex-shrink: 0; min-height: 56px; }
+.ds-card.mm2-map { display: flex; align-items: center; flex-shrink: 0; padding: 0; min-height: 40px; border-radius: 12px; overflow: hidden; }
+.mm2-map.is-active { border-color: var(--accent); }
+.mm2-map-btn { border: none; background: none; cursor: pointer; white-space: nowrap; padding: 8px 14px; min-height: 40px; font: 600 13px var(--sans); color: var(--text-sub); }
+.mm2-map.is-active .mm2-map-btn { color: var(--text); }
+.mm2-map-btn.has-x { padding-right: 6px; }
+.mm2-map-x { width: 36px; height: 40px; border: none; background: none; color: var(--text-faint); cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0 4px 0 0; }
+.mm2-rename { width: 140px; flex-shrink: 0; padding: 8px 12px; font-size: 13px; border-radius: 12px; }
+.ds-btn.mm2-new { flex-shrink: 0; white-space: nowrap; height: 40px; padding: 0 14px; font-size: 12.5px; border-style: dashed; margin-left: 2px; }
+.mm2-new > span { display: flex; align-items: center; gap: 5px; }
+.ds-btn.mm2-new.is-active { color: var(--accent); background: var(--paper-tint); }
+.ds-card.mm2-kind-menu { position: fixed; z-index: 61; width: 290px; padding: 6px; border-radius: 16px; }
+.mm2-kind-menu .mm2-item { flex-direction: column; align-items: flex-start; gap: 3px; padding: 10px 12px; border-radius: 12px; }
+.mm2-kind-name { font: 700 13px var(--sans); }
+.mm2-kind-hint { font-size: 11.5px; line-height: 1.35; color: var(--text-sub); }
+.mm2-center { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; gap: 12px; color: var(--text-sub); text-align: center; }
+.mm2-empty-ico { width: 52px; height: 52px; border-radius: 16px; background: var(--paper-tint); border: 1px solid var(--line); display: flex; align-items: center; justify-content: center; color: var(--text-faint); }
+.mm2-empty-title { font: 400 18px var(--serif); color: var(--text); }
+.mm2-empty-sub { font-size: 13px; line-height: 1.5; max-width: 360px; }
+.mm2-kinds { display: flex; gap: 12px; margin-top: 4px; flex-wrap: wrap; justify-content: center; }
+.ds-card.mm2-kind-card { width: 200px; padding: 14px 16px; text-align: left; font-family: inherit; }
+.mm2-kind-card:disabled { opacity: .5; cursor: default; }
+.mm2-status { position: absolute; top: 12px; right: 12px; z-index: 10; font-size: 12px; color: var(--text-faint); pointer-events: none; }
+.mm2-status .is-err { color: var(--err); }
+.mm2-canvas-empty { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none; z-index: 5; }
+
+/* ── Пара: подписи партнёров ── */
+.mm2-lane-bar { position: absolute; top: 10px; left: 0; right: 0; display: flex; justify-content: center; z-index: 4; pointer-events: none; }
+.mm2-lane-chips { display: flex; gap: 10px; align-items: center; pointer-events: all; }
+.mm2-lane-chip { display: flex; align-items: center; gap: 6px; min-height: 36px; padding: 5px 14px; border-radius: 999px; cursor: text; font: 600 12.5px var(--sans); color: var(--pc); background: color-mix(in srgb, var(--pc) 12%, var(--surface)); border: 1px solid color-mix(in srgb, var(--pc) 40%, transparent); }
+.mm2-lane-chip i { width: 7px; height: 7px; border-radius: 50%; background: var(--pc); }
+.mm2-lane-input { width: 140px; text-align: center; border-radius: 999px; padding: 6px 10px; font-size: 12.5px; font-weight: 600; border-color: var(--pc); }
+.mm2-lane-sep { font-size: 12px; color: var(--text-faint); }
+.ds-card.mm2-map.mm2-map-btn { padding: 8px 14px; flex-shrink: 0; }
+.mm2-fill { display: flex; flex-direction: column; height: 100%; }
+.mm2-body { flex: 1; overflow: hidden; }
+.mm2-loading { display: flex; align-items: center; justify-content: center; height: 100%; color: var(--text-faint); }
+.mm2-arrow { font-size: 16px; line-height: 1; }

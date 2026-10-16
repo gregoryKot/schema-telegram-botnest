@@ -220,7 +220,7 @@ describe('ModeMapNodeEditor — фигуры схемы случая', () => {
 
   it('выбранная фигура схемы случая подсвечена в выборе формы', () => {
     renderEditor(baseNode({ type: 'need', data: { label: 'x' } }));
-    expect(screen.getByTitle('Потребн.').style.border).toContain('var(--accent)');
+    expect(screen.getByTitle('Потребн.').className).toContain('is-active');
   });
 });
 

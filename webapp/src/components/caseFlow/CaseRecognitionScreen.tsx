@@ -4,18 +4,9 @@ import type { RecognitionView } from '../../../../shared/src/case/caseRecognitio
 
 function ChainRow({ label, text }: { label: string; text: string }) {
   return (
-    <div className="u-mb10">
-      <div
-        style={{
-          fontSize: 11,
-          color: 'var(--text-faint)',
-          textTransform: 'uppercase',
-          letterSpacing: '0.06em',
-        }}
-      >
-        {label}
-      </div>
-      <div style={{ fontSize: 15, color: 'var(--text)', lineHeight: 1.4 }}>{text}</div>
+    <div className="ex2-trait">
+      <div className="ds-label">{label}</div>
+      <div className="ex2-trait-text">{text}</div>
     </div>
   );
 }
@@ -49,35 +40,23 @@ export function CaseRecognitionScreen({
   ].filter((r) => r.text);
 
   return (
-    <ExScreen onBack={onLater} backLabel="Закрыть" eyebrow="Разбор случая" eyebrowColor="var(--accent-indigo)" title="Вот что произошло">
-      <div className="aside-card" style={{ margin: '0 0 20px' }}>
+    <ExScreen onBack={onLater} backLabel="Закрыть" eyebrow="Разбор случая" title="Вот что произошло">
+      <div className="ds-card ds-card--ink ex2-chain">
         {rows.map((r) => (
           <ChainRow key={r.label} label={r.label} text={r.text} />
         ))}
       </div>
 
-      {termParagraph && (
-        <p style={{ fontSize: 14, color: 'var(--text)', lineHeight: 1.6, marginBottom: 16 }}>
-          {termParagraph}
-        </p>
-      )}
+      {termParagraph && <p className="ex2-body-text ex2-gap-b">{termParagraph}</p>}
 
-      <div style={{ fontSize: 14, color: 'var(--accent)', lineHeight: 1.5, marginBottom: 12 }}>
-        {verdictReply}
-      </div>
+      <div className="ex2-verdict">{verdictReply}</div>
 
-      {secondDoorNote && (
-        <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.5, marginBottom: 12 }}>
-          {secondDoorNote}
-        </div>
-      )}
+      {secondDoorNote && <div className="ds-sub ex2-gap-b">{secondDoorNote}</div>}
 
-      <div style={{ fontSize: 12, color: 'var(--text-faint)', marginBottom: 8 }}>
-        {clinicalName}
-      </div>
+      <div className="ds-label ex2-gap-b">{clinicalName}</div>
 
       <CaseFlowFoot primaryLabel="Дальше" onPrimary={onNext} onLater={onLater} crisis={crisis} onHardNow={onHardNow} />
-      <button type="button" className="ex-btn ex-btn-ghost u-mt8" onClick={onDoubt}>
+      <button type="button" className="ds-btn ex2-ghost" onClick={onDoubt}>
         У меня было иначе →
       </button>
     </ExScreen>

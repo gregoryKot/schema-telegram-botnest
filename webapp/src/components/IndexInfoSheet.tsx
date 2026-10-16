@@ -1,7 +1,7 @@
 import { DAY_INDEX_DEFINITION } from '../../../shared/src/onboarding/onboardingExplainers';
 import { ExScreen } from './exercises/ExScreen';
 import { useHistorySheet } from '../hooks/useHistorySheet';
-
+import '../styles/sheet-tracker.css';
 const PARAGRAPHS = [
   DAY_INDEX_DEFINITION,
   'Индекс не ставит цели: нет задачи достичь 10 или не опускаться ниже 7.',
@@ -20,9 +20,9 @@ export function IndexInfoSheet({ onClose }: { onClose: () => void }) {
       lede="Что означают цифры и как ими пользоваться."
     >
       {PARAGRAPHS.map((p, i) => (
-        <div key={i} className="prompt">
-          <div className="prompt-num">{i + 1}.</div>
-          <p style={{ fontSize: 16, color: 'var(--text-sub)', lineHeight: 1.75, margin: 0 }}>{p}</p>
+        <div key={i} className="ds-card ds-card--row tk2-info">
+          <span className="ds-num tk2-info-n">{i + 1}.</span>
+          <p className="tk2-para">{p}</p>
         </div>
       ))}
     </ExScreen>

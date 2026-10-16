@@ -1,4 +1,5 @@
 import type { ModeMapNode } from '../../api';
+import '../../styles/sheet-modemap.css';
 import { MMIcon } from '../modeMapIcons';
 import { useTr } from '../../utils/addressForm';
 import { conceptQuestions } from './conceptQuestions';
@@ -39,23 +40,17 @@ export function ClinicalHint({ node, onPickNote, onPickNeed, onPickHealthy }: {
   const tr = useTr();
   const qs = clinicalQuestions(node);
   return (
-    <div style={{
-      background: 'var(--accent-soft)', borderRadius: 7, padding: '8px 10px', marginBottom: 14,
-      border: '1px solid var(--accent-line)',
-    }}>
-      <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 5 }}>
+    <div className="mm2-hint">
+      <div className="ds-label">
         <MMIcon name="bulb" size={13} /> Спросить себя
       </div>
-      <div className="u-col2">
+      <div>
         {qs.map((q, i) => (
           <button key={i}
             onClick={() => (q.target === 'need' ? onPickNeed() : q.target === 'healthy' ? onPickHealthy() : onPickNote())}
             title={tr('Нажми, чтобы заполнить поле', 'Нажмите, чтобы заполнить поле')}
-            style={{ display: 'flex', gap: 6, textAlign: 'left', background: 'none', border: 'none', cursor: 'pointer',
-              padding: '3px 4px', borderRadius: 5, fontSize: 11.5, color: 'var(--text-sub)', lineHeight: 1.35 }}
-            onMouseEnter={e => { e.currentTarget.style.background = 'var(--surface-2)'; }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}>
-            <span style={{ color: 'var(--accent)', flexShrink: 0 }}>→</span>{q.text}
+            className="mm2-hint-q">
+            <span>→</span>{q.text}
           </button>
         ))}
       </div>

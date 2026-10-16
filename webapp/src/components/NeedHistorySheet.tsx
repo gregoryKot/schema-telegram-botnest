@@ -7,6 +7,9 @@ import { useNeedData } from '../needData';
 import { ExScreen } from './exercises/ExScreen';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { NeedAdviceModal } from './NeedAdviceModal';
+import { NEED_HUE, hueStyle } from '../lib/tone';
+import type { NeedId } from '../../../shared/src/needs/types';
+import '../styles/sheet-tracker.css';
 
 interface Props {
   need: Need;
@@ -28,6 +31,7 @@ export function NeedHistorySheet({ need, value, history, childhoodValue, onClose
   const data = NEED_DATA[need.id];
   if (!data) return null;
   const color = COLORS[need.id] ?? '#888';
+  const hue = NEED_HUE[need.id as NeedId];
 
   const scores = history.map(d => d.ratings[need.id] ?? 0);
   const n = scores.length;
@@ -35,7 +39,7 @@ export function NeedHistorySheet({ need, value, history, childhoodValue, onClose
   const olderAvg  = n > 0 ? scores.slice(-Math.min(3, n)).reduce((s, v) => s + v, 0) / Math.min(3, n) : 0;
   const trendDiff = recentAvg - olderAvg;
   const trendLabel = trendDiff > 0.5 ? '↑ Растёт' : trendDiff < -0.5 ? '↓ Падает' : '→ Стабильно';
-  const trendColor = trendDiff > 0.5 ? 'var(--c-moss)' : trendDiff < -0.5 ? 'var(--c-rose)' : 'var(--text-sub)';
+  const trendTone = trendDiff > 0.5 ? ' is-up' : trendDiff < -0.5 ? ' is-down' : '';
   const trendSign = trendDiff >= 0 ? '+' : '';
 
   const tipKey = value <= 3 ? 'low' : value <= 6 ? 'medium' : 'high';
@@ -62,45 +66,39 @@ export function NeedHistorySheet({ need, value, history, childhoodValue, onClose
       title={<>Динамика<br /><span className="it">потребности</span></>}
       lede={data.explanation}
       aside={
-        <div className="aside-card" style={{ borderColor: `${color}40`, background: `${color}08`, position: 'sticky', top: 40 }}>
-          <div className="aside-card-eyebrow" style={{ color }}>За 7 дней</div>
-          <div style={{ fontFamily: 'var(--serif)', fontSize: 32, fontWeight: 400, letterSpacing: '-0.01em', color, marginBottom: 2 }}>{trendLabel}</div>
-          <div style={{ fontSize: 13, color: trendColor, marginBottom: 16 }}>
+        <div className="ds-card tk2-aside" style={hueStyle(hue)}>
+          <div className="ds-eyebrow tone-text">За 7 дней</div>
+          <div className="tk2-trend tone-text">{trendLabel}</div>
+          <div className={'tk2-trend-sub' + trendTone}>
             {trendSign}{trendDiff.toFixed(1)} к предыдущей неделе
           </div>
           {reversed.length > 1 && (
-            <svg width="100%" height={H} viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="u-mb16">
-              <defs>
-                <linearGradient id={`sh-area-${need.id}`} x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor={color} stopOpacity={0.35} />
-                  <stop offset="100%" stopColor={color} stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <path d={areaPath} fill={`url(#sh-area-${need.id})`} />
-              <path d={linePath} fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
-              {lastPt && <circle cx={lastPt.x} cy={lastPt.y} r={3} fill={color} />}
+            <svg width="100%" height={H} viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="tk2-chart">
+              <path d={areaPath} className="tk2-area" />
+              <path d={linePath} className="tk2-line" />
+              {lastPt && <circle cx={lastPt.x} cy={lastPt.y} r={3} className="tk2-dot-pt" />}
               {childhoodValue !== undefined && (() => {
                 const cy = yFor(childhoodValue);
                 return <>
-                  <line x1={0} y1={cy} x2={W} y2={cy} stroke={color} strokeWidth={1} strokeDasharray="4 3" strokeOpacity={0.45} />
-                  <text x={W - 2} y={cy - 3} textAnchor="end" fontSize={8} fill={color} fillOpacity={0.6}>детство {childhoodValue}</text>
+                  <line x1={0} y1={cy} x2={W} y2={cy} className="tk2-ref" strokeWidth={1} />
+                  <text x={W - 2} y={cy - 3} textAnchor="end" className="tk2-ref-t">детство {childhoodValue}</text>
                 </>;
               })()}
             </svg>
           )}
           {childhoodValue !== undefined && (
-            <div style={{ paddingTop: 14, borderTop: `1px solid ${color}22` }}>
-              <div className="aside-card-eyebrow">В детстве</div>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
-                <span style={{ fontFamily: 'var(--serif)', fontSize: 36, color }}>{childhoodValue}</span>
+            <div className="tk2-child">
+              <div className="ds-label">В детстве</div>
+              <div className="tk2-aside-nums">
+                <span className="ds-num tone-text" style={{ fontSize: 36 }}>{childhoodValue}</span>
                 <span className="u-faint13">/10</span>
                 {recentAvg > 0 && (
-                  <span style={{ fontSize: 13, color: 'var(--text-sub)', marginLeft: 4 }}>
+                  <span className="ds-sub">
                     → сейчас {recentAvg.toFixed(1)} {recentAvg > childhoodValue ? '↑' : recentAvg < childhoodValue ? '↓' : ''}
                   </span>
                 )}
               </div>
-              <p style={{ fontSize: 12, color: 'var(--text-sub)', lineHeight: 1.55, marginTop: 6 }}>
+              <p className="ds-sub" style={{ lineHeight: 1.55, margin: '6px 0 0' }}>
                 {childhoodValue <= 4
                   ? 'Давняя чувствительная зона – вероятно паттерн, а не ситуация'
                   : 'В детстве удовлетворялась. Если сейчас низко – скорее истощение'}
@@ -110,37 +108,32 @@ export function NeedHistorySheet({ need, value, history, childhoodValue, onClose
         </div>
       }
     >
-      {/* Tags */}
-      {data.tags.length > 0 && (
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 36 }}>
-          {data.tags.map(tag => (
-            <span key={tag} style={{ fontSize: 12, padding: '4px 12px', borderRadius: 999, background: `${color}18`, color, fontWeight: 500 }}>
-              {tag}
-            </span>
-          ))}
-        </div>
-      )}
+      <div className="tk2-opts" style={hueStyle(hue)}>
+        {data.tags.length > 0 && (
+          <div className="tk2-tags">
+            {data.tags.map(tag => (
+              <span key={tag} className="ds-chip tone-tint">{tag}</span>
+            ))}
+          </div>
+        )}
 
-      {/* Tip */}
-      <div className="prompt">
-        <div className="prompt-num">·</div>
-        <div>
-          <div className="prompt-label">{tr('Попробуй сегодня', 'Попробуйте сегодня')}</div>
-          <p style={{ fontSize: 15, color: 'var(--text-sub)', lineHeight: 1.65 }}>
+        <div className="ds-card">
+          <div className="ds-label">{tr('Попробуй сегодня', 'Попробуйте сегодня')}</div>
+          <p className="tk2-para" style={{ marginTop: 8, fontSize: 15, lineHeight: 1.65 }}>
             {tip}
-            {/* Зона 44×44 вокруг видимых 16×16; inline-flex и marginLeft −8 (= 6 зазор − 14 растяжки) оставляют «?» в строке текста. */}
+            {/* Зона 44×44 вокруг видимых 16×16; marginLeft −8 (= 6 зазор − 14 растяжки) оставляют «?» в строке текста. */}
             <button
               onClick={() => setShowDisclaimer(true)}
               aria-label="Пояснение"
-              style={{ ...hitboxStyle(16, 16, 44).outer, display: 'inline-flex', marginLeft: -8, verticalAlign: 'middle' }}
+              className="tk2-help"
+              style={hitboxStyle(16, 16, 44).outer}
             >
-              <span style={{ ...hitboxStyle(16, 16, 44).inner, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%', background: 'var(--surface-2)', color: 'var(--text-faint)', fontSize: 10, fontWeight: 700 }}>?</span>
+              <span className="tk2-help-in" style={hitboxStyle(16, 16, 44).inner}>?</span>
             </button>
           </p>
         </div>
       </div>
 
-      {/* Disclaimer modal */}
       {showDisclaimer && <NeedAdviceModal onClose={() => setShowDisclaimer(false)} />}
     </ExScreen>
   );

@@ -57,7 +57,7 @@ export function CaseSupportBlock({
   return (
     <>
       {(crisis || hardNow) && (
-        <div ref={revealRef} className="u-mt20">
+        <div ref={revealRef} className="ex2-support">
           {hardNow && (
             <TertiaryLink
               label="Вернуться к разбору ▲"

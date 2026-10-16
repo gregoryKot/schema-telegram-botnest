@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
 import { ExScreen, GlyphArrowLeft } from '../exercises/ExScreen';
 import { useTr } from '../../utils/addressForm';
-import { pressable } from '../../utils/a11y';
+import { MODE_GROUP_HUE, hueStyle } from '../../lib/tone';
+import { DiaryAside, DiaryStepCard, DiaryStepQ, DiaryTicks } from './DiaryStepCard';
 import { detectCrisisAny } from '../../utils/crisisMarkers';
 import { CrisisCard } from '../CrisisCard';
 import { DiaryWizardFoot } from './DiaryWizardFoot';
@@ -25,7 +26,7 @@ export interface ModeFormFields {
 type FieldKey = keyof ModeFormFields;
 
 interface Props {
-  selectedMode: { name: string; short: string; color: string; groupName: string } | null;
+  selectedMode: { name: string; short: string; hue: number | undefined; groupName: string } | null;
   modeId: string;
   values: ModeFormFields;
   set: (key: FieldKey, value: string) => void;
@@ -41,7 +42,7 @@ interface Props {
 export function ModeEntryForm({ selectedMode, modeId, values, set, healthyResponse, setHealthyResponse, saving, saveError, canSave, onSave, onBack, onChangeMode, onSwitchMode }: Props) {
   const tr = useTr();
   const steps = buildModeDiarySteps(tr);
-  const modeColor = selectedMode?.color ?? 'var(--c-slate)';
+  const hue = selectedMode?.hue;
   const v = values;
 
   // Финальный шаг после полей — слова Здорового Взрослого (клиент пишет сам,
@@ -74,54 +75,36 @@ export function ModeEntryForm({ selectedMode, modeId, values, set, healthyRespon
       onBack={onBack}
       backLabel="Назад к дневнику"
       eyebrow={selectedMode?.groupName ?? 'Режим'}
-      eyebrowColor={modeColor}
       title={selectedMode?.name ?? ''}
       lede={selectedMode?.short ?? ''}
       aside={
         <>
-          <div className="aside-card" style={{ borderColor: modeColor + '40', background: modeColor + '08', position: 'sticky', top: 40 }}>
-            <div className="aside-card-eyebrow" style={{ color: modeColor }}>Подсказка</div>
-            <h3>{tr('Говори от лица режима', 'Говорите от лица режима')}</h3>
-            <p className="body">«Этот режим говорит мне…», «Он чувствует…». Так легче увидеть его как часть, а не отождествлять себя с ним целиком.</p>
-          </div>
-          <button className="ex-btn ex-btn-ghost" onClick={onChangeMode} style={{ padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 'var(--space-8)' }}>
+          <DiaryAside hue={hue} eyebrow="Подсказка" title={tr('Говори от лица режима', 'Говорите от лица режима')}>
+            <p className="ds-sub">«Этот режим говорит мне…», «Он чувствует…». Так легче увидеть его как часть, а не отождествлять себя с ним целиком.</p>
+          </DiaryAside>
+          <button className="ds-btn ds-btn--secondary ds-btn--sm" onClick={onChangeMode}>
             <GlyphArrowLeft /> Сменить режим
           </button>
           <ModeDoubtButton modeId={modeId} onSwitch={onSwitchMode} />
         </>
       }
     >
-      <p style={{ fontSize: 13, color: 'var(--text-faint)', lineHeight: 1.5, marginBottom: 20 }}>{buildModeDiaryExplainer(tr)}</p>
+      <p className="ds-sub sd-explainer">{buildModeDiaryExplainer(tr)}</p>
 
       {/* Прогресс: сегменты по числу шагов + «шаг N из M» */}
-      <div className="tick-strip">
-        {tickFilled.map((filled, i) => (
-          <div
-            key={i}
-            className={'tick ' + (filled ? 'is-filled ' : '') + (i === stepIdx ? 'is-active' : '')}
-            style={{ '--accent': modeColor } as React.CSSProperties}
-            {...pressable(() => setStepIdx(i))}
-          />
-        ))}
-      </div>
+      <DiaryTicks filled={tickFilled} active={stepIdx} hue={hue} onJump={setStepIdx} />
 
-      <div className="flash" style={{ borderColor: curFilled ? modeColor + '55' : 'var(--line)' }}>
-        <div className="flash-eyebrow" style={{ color: modeColor }}>
-          <span style={{ width: 6, height: 6, borderRadius: 3, background: 'currentColor' }} />
-          Шаг {stepIdx + 1} из {totalSteps}
-          {curRequired ? <span style={{ marginLeft: 6, fontWeight: 600, color: 'var(--c-rose)' }}>· обязательно</span> : <span style={{ marginLeft: 6, fontWeight: 400, textTransform: 'none', letterSpacing: 0, color: 'var(--text-faint)' }}>· можно пропустить</span>}
-          <span className="flash-counter">{filledCount} / {totalSteps} заполнено</span>
-        </div>
+      <DiaryStepCard hue={hue} stepIdx={stepIdx} total={totalSteps} required={curRequired} filled={curFilled} filledCount={filledCount}>
         {isHealthyStep ? (
           <>
-            <div id="mode-entry-question" className="flash-q">{tr('Что бы сказал твой Здоровый Взрослый?', 'Что бы сказал ваш Здоровый Взрослый?')}</div>
-            <div className="flash-hint">{tr('Не готовый ответ — а твои слова этому режиму. Пример рядом только как ориентир.', 'Не готовый ответ — а ваши слова этому режиму. Пример рядом только как ориентир.')}</div>
+            <DiaryStepQ id="mode-entry-question" title={tr('Что бы сказал твой Здоровый Взрослый?', 'Что бы сказал ваш Здоровый Взрослый?')}
+              hint={tr('Не готовый ответ — а твои слова этому режиму. Пример рядом только как ориентир.', 'Не готовый ответ — а ваши слова этому режиму. Пример рядом только как ориентир.')} />
             {/* Пример-ориентир голоса Здорового Взрослого — зелёная плашка, явно «пример», не ответ. */}
-            <div style={{ margin: '4px 0 12px', padding: '12px 14px', borderRadius: 'var(--r-12)', background: 'color-mix(in srgb, var(--c-moss) 6%, transparent)', border: '1px solid color-mix(in srgb, var(--c-moss) 20%, transparent)' }}>
-              <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--c-moss)', marginBottom: 6 }}>Например, можно сказать себе:</div>
-              <div style={{ fontSize: 14, fontStyle: 'italic', color: 'var(--text-sub)', lineHeight: 1.55 }}>«{hint}»</div>
+            <div className="ds-card ds-card--row tone-soft sd-example" style={hueStyle(MODE_GROUP_HUE.healthy)}>
+              <div className="ds-label tone-ink">Например, можно сказать себе:</div>
+              <div className="sd-example-text">«{hint}»</div>
             </div>
-            <LimitedTextarea max={DIARY_FIELD_MAX} ref={areaRef} className={'paper-area ' + (curFilled ? 'is-filled' : '')}
+            <LimitedTextarea max={DIARY_FIELD_MAX} ref={areaRef} className="ds-textarea"
               rows={4}
               value={healthyResponse}
               onChange={e => setHealthyResponse(e.target.value)}
@@ -131,9 +114,8 @@ export function ModeEntryForm({ selectedMode, modeId, values, set, healthyRespon
           </>
         ) : (
           <>
-            <div id="mode-entry-question" className="flash-q">{cur!.title}</div>
-            <div className="flash-hint">{cur!.hint}</div>
-            <LimitedTextarea max={DIARY_FIELD_MAX} ref={areaRef} className={'paper-area ' + (curFilled ? 'is-filled' : '')}
+            <DiaryStepQ id="mode-entry-question" title={cur!.title} hint={cur!.hint} />
+            <LimitedTextarea max={DIARY_FIELD_MAX} ref={areaRef} className="ds-textarea"
               rows={cur!.rows ?? 3}
               value={curValue}
               onChange={e => set(cur!.key, e.target.value)}
@@ -142,7 +124,7 @@ export function ModeEntryForm({ selectedMode, modeId, values, set, healthyRespon
             />
           </>
         )}
-      </div>
+      </DiaryStepCard>
 
       {detectCrisisAny(v.situation, v.thoughts, v.feelings, v.bodyFeelings, v.actions, v.actualNeed, v.childhoodMemories, healthyResponse) && <CrisisCard surface="mode" />}
 
@@ -158,7 +140,7 @@ export function ModeEntryForm({ selectedMode, modeId, values, set, healthyRespon
         onNext={goNext}
       />
       {saveError && (
-        <div role="status" style={{ marginTop: 10, fontSize: 13, lineHeight: 1.5, color: 'var(--accent-red)' }}>{tr('Не удалось сохранить. Черновик остался — попробуй ещё раз.', 'Не удалось сохранить. Черновик остался — попробуйте ещё раз.')}</div>
+        <div role="status" className="sd-save-error">{tr('Не удалось сохранить. Черновик остался — попробуй ещё раз.', 'Не удалось сохранить. Черновик остался — попробуйте ещё раз.')}</div>
       )}
     </ExScreen>
   );

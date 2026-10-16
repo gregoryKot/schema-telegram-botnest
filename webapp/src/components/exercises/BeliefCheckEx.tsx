@@ -14,6 +14,8 @@ import { BeliefDoneScreen } from './beliefCheck/BeliefDoneScreen';
 import { useTr } from '../../utils/addressForm';
 import { detectCrisisAny } from '../../utils/crisisMarkers';
 import { CrisisCard } from '../CrisisCard';
+import { hueStyle } from '../../lib/tone';
+import { HUE_STRAIN, HUE_CARE } from './exHue';
 
 const STEPS = [
   'Убеждение',
@@ -117,7 +119,6 @@ export function BeliefCheckEx({
     <ExScreen
       onBack={goBack}
       eyebrow="№ 01 · Когнитивная работа"
-      eyebrowColor="var(--c-slate)"
       title={
         <>
           Проверка
@@ -130,11 +131,11 @@ export function BeliefCheckEx({
         'Поставьте одну мысль перед судом фактов. Что её подтверждает, что опровергает, и как сформулировать точнее.',
       )}
       aside={
-        <div className="aside-card">
-          <div className="aside-card-eyebrow">Шаг {step + 1} из 4</div>
-          <h3>{hint.title}</h3>
-          <p className="body">{hint.body}</p>
-          <ul>
+        <div className="ds-card ex2-note">
+          <div className="ds-label">Шаг {step + 1} из 4</div>
+          <h3 className="ex2-note-h">{hint.title}</h3>
+          <p className="ex2-note-body">{hint.body}</p>
+          <ul className="ex2-note-list">
             {hint.list.map((x, i) => (
               <li key={i}>{x}</li>
             ))}
@@ -151,22 +152,22 @@ export function BeliefCheckEx({
 
       {step === 0 && (
         <>
-          <div className="ex-prompt">
-            <div className="ex-prompt-num">1.</div>
+          <div className="ex2-prompt">
+            <div className="ex2-prompt-num">1.</div>
             <div>
-              <div className="ex-prompt-label">
+              <div className="ex2-prompt-label">
                 {tr(
                   'Запиши мысль, которую хочешь проверить',
                   'Запишите мысль, которую хотите проверить',
                 )}
               </div>
-              <p className="ex-prompt-hint">
+              <p className="ex2-prompt-hint">
                 Одно убеждение за раз. Та самая фраза, которая повторяется в
                 голове.
               </p>
               <textarea
                 ref={beliefRef}
-                className={'paper-input ' + (belief.trim() ? 'is-filled' : '')}
+                className="ds-textarea"
                 rows={3}
                 value={belief}
                 onChange={(e) => setBelief(e.target.value)}
@@ -175,10 +176,10 @@ export function BeliefCheckEx({
             </div>
           </div>
           {detectCrisisAny(belief) && <CrisisCard surface="belief_check" />}
-          <div className="ex-foot">
-            <span className="spacer" />
+          <div className="ex2-foot">
+            <span className="ex2-spacer" />
             <button
-              className="ex-btn ex-btn-primary"
+              className="ds-btn"
               disabled={!belief.trim()}
               onClick={() => setStep(1)}
             >
@@ -190,14 +191,14 @@ export function BeliefCheckEx({
 
       {step === 1 && (
         <>
-          <div className="ex-prompt">
-            <div className="ex-prompt-num">2.</div>
+          <div className="ex2-prompt">
+            <div className="ex2-prompt-num">2.</div>
             <div>
-              <div className="ex-prompt-label">
+              <div className="ex2-prompt-label">
                 Что подтверждает «
-                <span style={{ color: 'var(--c-rose)' }}>{belief}</span>»?
+                <span className="tone-ink" style={hueStyle(HUE_STRAIN)}>{belief}</span>»?
               </div>
-              <p className="ex-prompt-hint">
+              <p className="ex2-prompt-hint">
                 {tr('Записывай честно. Не убеждай себя, что мысль не имеет оснований — она их имеет.',
                   'Записывайте честно. Не убеждайте себя, что мысль не имеет оснований — она их имеет.')}
               </p>
@@ -212,13 +213,13 @@ export function BeliefCheckEx({
             placeholder="Добавить доказательство…"
           />
           {detectCrisisAny(forInput, ...forList) && <CrisisCard surface="belief_check" />}
-          <div className="ex-foot">
-            <button className="ex-btn ex-btn-ghost" onClick={() => setStep(0)}>
+          <div className="ex2-foot">
+            <button className="ds-btn ex2-ghost" onClick={() => setStep(0)}>
               <GlyphArrowLeft /> Назад
             </button>
-            <span className="spacer" />
+            <span className="ex2-spacer" />
             <button
-              className="ex-btn ex-btn-primary"
+              className="ds-btn"
               disabled={forList.length === 0}
               onClick={() => setStep(2)}
             >
@@ -230,14 +231,14 @@ export function BeliefCheckEx({
 
       {step === 2 && (
         <>
-          <div className="ex-prompt">
-            <div className="ex-prompt-num">3.</div>
+          <div className="ex2-prompt">
+            <div className="ex2-prompt-num">3.</div>
             <div>
-              <div className="ex-prompt-label">
+              <div className="ex2-prompt-label">
                 Что опровергает «
-                <span style={{ color: 'var(--c-moss)' }}>{belief}</span>»?
+                <span className="tone-ink" style={hueStyle(HUE_CARE)}>{belief}</span>»?
               </div>
-              <p className="ex-prompt-hint">
+              <p className="ex2-prompt-hint">
                 {tr(
                   'Вспомни факты, исключения, другие точки зрения. Что сказал бы хороший друг?',
                   'Вспомните факты, исключения, другие точки зрения. Что сказал бы хороший друг?',
@@ -254,13 +255,13 @@ export function BeliefCheckEx({
             placeholder="Добавить контр-доказательство…"
           />
           {detectCrisisAny(againstInput, ...againstList) && <CrisisCard surface="belief_check" />}
-          <div className="ex-foot">
-            <button className="ex-btn ex-btn-ghost" onClick={() => setStep(1)}>
+          <div className="ex2-foot">
+            <button className="ds-btn ex2-ghost" onClick={() => setStep(1)}>
               <GlyphArrowLeft /> Назад
             </button>
-            <span className="spacer" />
+            <span className="ex2-spacer" />
             <button
-              className="ex-btn ex-btn-primary"
+              className="ds-btn"
               disabled={againstList.length === 0}
               onClick={() => setStep(3)}
             >
@@ -272,13 +273,13 @@ export function BeliefCheckEx({
 
       {step === 3 && (
         <>
-          <div className="ex-prompt">
-            <div className="ex-prompt-num">4.</div>
+          <div className="ex2-prompt">
+            <div className="ex2-prompt-num">4.</div>
             <div>
-              <div className="ex-prompt-label">
+              <div className="ex2-prompt-label">
                 Как можно сформулировать точнее?
               </div>
-              <p className="ex-prompt-hint">
+              <p className="ex2-prompt-hint">
                 {tr(
                   'Не «всё хорошо». А: что из мысли правда, что преувеличено, и что ты на самом деле сейчас знаешь.',
                   'Не «всё хорошо». А: что из мысли правда, что преувеличено, и что вы на самом деле сейчас знаете.',
@@ -286,77 +287,37 @@ export function BeliefCheckEx({
               </p>
             </div>
           </div>
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: '1fr 1fr',
-              gap: 24,
-              marginBottom: 28,
-              padding: '18px 0',
-              borderTop: '1px solid var(--line)',
-              borderBottom: '1px solid var(--line)',
-            }}
-          >
-            <div>
-              <div
-                className="eyebrow"
-                style={{ color: 'var(--c-rose)', marginBottom: 8 }}
-              >
-                За · {forList.length}
-              </div>
+          <div className="ds-card ex2-recap">
+            <div style={hueStyle(HUE_STRAIN)}>
+              <div className="ds-label tone-ink">За · {forList.length}</div>
               {forList.slice(0, 3).map((f, i) => (
-                <div
-                  key={i}
-                  style={{
-                    fontSize: 13,
-                    color: 'var(--text-sub)',
-                    lineHeight: 1.5,
-                    padding: '4px 0',
-                  }}
-                >
-                  · {f}
-                </div>
+                <div key={i} className="ex2-recap-row">· {f}</div>
               ))}
             </div>
-            <div>
-              <div
-                className="eyebrow"
-                style={{ color: 'var(--c-moss)', marginBottom: 8 }}
-              >
-                Против · {againstList.length}
-              </div>
+            <div style={hueStyle(HUE_CARE)}>
+              <div className="ds-label tone-ink">Против · {againstList.length}</div>
               {againstList.slice(0, 3).map((a, i) => (
-                <div
-                  key={i}
-                  style={{
-                    fontSize: 13,
-                    color: 'var(--text-sub)',
-                    lineHeight: 1.5,
-                    padding: '4px 0',
-                  }}
-                >
-                  · {a}
-                </div>
+                <div key={i} className="ex2-recap-row">· {a}</div>
               ))}
             </div>
           </div>
           <textarea
             ref={reframeRef}
-            className="paper-area"
+            className="ds-textarea"
             value={reframe}
             onChange={(e) => setReframe(e.target.value)}
             placeholder="Иногда я действительно ошибаюсь, но это не значит что я всегда всё порчу…"
             rows={6}
           />
           {detectCrisisAny(reframe) && <CrisisCard surface="belief_check" />}
-          {saveError && <div role="alert" style={{ color: 'var(--accent-red)', fontSize: 13, marginBottom: 10 }}>{tr('Не удалось сохранить. Проверь связь и попробуй ещё раз', 'Не удалось сохранить. Проверьте связь и попробуйте ещё раз')}</div>}
-          <div className="ex-foot">
-            <button className="ex-btn ex-btn-ghost" onClick={() => setStep(2)}>
+          {saveError && <div role="alert" className="ex2-err">{tr('Не удалось сохранить. Проверь связь и попробуй ещё раз', 'Не удалось сохранить. Проверьте связь и попробуйте ещё раз')}</div>}
+          <div className="ex2-foot">
+            <button className="ds-btn ex2-ghost" onClick={() => setStep(2)}>
               <GlyphArrowLeft /> Назад
             </button>
-            <span className="spacer" />
+            <span className="ex2-spacer" />
             <button
-              className="ex-btn ex-btn-primary"
+              className="ds-btn"
               disabled={!reframe.trim() || saving}
               onClick={saveAll}
             >

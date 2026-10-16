@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { UserProfile } from '../../types';
 import { pressable } from '../../utils/a11y';
+import '../../styles/sheet-tasks.css';
 
 // Онбординг-виджет «С чего начать» (чеклист первых шагов). Вынесено из
 // TodaySection.tsx (правило №10).
@@ -77,13 +78,13 @@ export function OnboardingWidget({ profile, hasSchemas, onOpenSchema, onOpenAdva
 
   if (allDone) {
     return (
-      <div className="section" style={{ borderTop: '1px solid var(--line)', paddingTop: 24 }}>
-        <div className="eyebrow" style={{ marginBottom: 8, color: 'var(--c-moss)' }}>Старт пройден</div>
-        <div className="text-md" style={{ maxWidth: 540, lineHeight: 1.55 }}>
+      <div className="ds-card sk-onb">
+        <div className="ds-eyebrow sk-onb-ok">Старт пройден</div>
+        <div className="sk-onb-done-text">
           Все инструменты изучены – теперь начинается настоящая работа.
         </div>
-        <div className="u-mt14">
-          <button className="link" style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontFamily: 'inherit' }}
+        <div>
+          <button className="ds-link"
                   onClick={() => { localStorage.setItem(ONBOARDING_DONE_KEY, '1'); setDone(true); }}>
             скрыть →
           </button>
@@ -116,10 +117,10 @@ export function OnboardingWidget({ profile, hasSchemas, onOpenSchema, onOpenAdva
   if (!visibleStep && skipped.length === 0) return null;
 
   return (
-    <div className="section" style={{ borderTop: '1px solid var(--line)', paddingTop: 24 }}>
-      <div className="section-head">
-        <h3>С чего начать</h3>
-        <span className="hint">{doneCount} из {STEPS.length} · {pendingSteps.length} впереди</span>
+    <div className="ds-card sk-onb">
+      <div className="ds-head-row">
+        <h3 className="ds-h3">С чего начать</h3>
+        <span className="ds-sub">{doneCount} из {STEPS.length} · {pendingSteps.length} впереди</span>
       </div>
 
       {/* Calm checklist – all steps as document lines */}
@@ -134,36 +135,28 @@ export function OnboardingWidget({ profile, hasSchemas, onOpenSchema, onOpenAdva
           // вход в шаг даёт заголовок-кнопка ниже; клик по всей строке остаётся
           // для мыши/тапа.
           // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions
-          <div key={s.id} className="list-line" style={{ cursor: 'pointer', opacity: isSkipped ? 0.5 : 1 }}
+          <div key={s.id} className={'sk-onb-row' + (isSkipped ? ' is-skipped' : '')}
                onClick={() => setSelectedId(s.id)}>
-            <span style={{
-              width: 14, height: 14, borderRadius: 'var(--r-4)',
-              border: `1.5px solid ${isDone ? 'var(--c-moss)' : isCurrent ? 'var(--accent)' : 'var(--line-strong)'}`,
-              background: isDone ? 'var(--c-moss)' : 'transparent',
-              flexShrink: 0, marginTop: 4,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 9, color: '#fff',
-            }}>{isDone ? '✓' : ''}</span>
-            <div className="u-fill">
+            <span className={'sk-onb-box' + (isDone ? ' is-done' : isCurrent ? ' is-current' : '')}>{isDone ? '✓' : ''}</span>
+            <div className="sk-onb-main">
               {/* Заголовок — единственный таб-стоп строки (см. комментарий у
                   контейнера). Приглушение выполненного шага — цветом, а не
                   opacity: 0.6 давала 4.41:1 при норме 4.5 (axe, WCAG 1.4.3). */}
               <div
-                className="text-md"
+                className={'sk-onb-title' + (isDone ? ' is-done' : '')}
                 role="button"
                 tabIndex={0}
                 onClick={e => { e.stopPropagation(); setSelectedId(s.id); }}
                 onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedId(s.id); } }}
-                style={{ fontWeight: 600, cursor: 'pointer', color: isDone ? 'var(--text-sub)' : undefined }}
               >{s.title}</div>
               {isCurrent && !isDone && (
-                <div className="text-sm muted" style={{ marginTop: 4, lineHeight: 1.55 }}>{s.description}</div>
+                <div className="ds-sub sk-onb-desc">{s.description}</div>
               )}
             </div>
             {isCurrent && !isDone ? (
-              <div style={{ display: 'flex', gap: 'var(--space-14)', alignItems: 'center', flexShrink: 0 }}>
+              <div className="sk-onb-actions">
                 <span
-                  className="link u-pointer"
+                  className="ds-link"
                   role="button"
                   tabIndex={0}
                   onClick={e => { e.stopPropagation(); handleSkip(s); }}
@@ -172,7 +165,7 @@ export function OnboardingWidget({ profile, hasSchemas, onOpenSchema, onOpenAdva
                   отложить
                 </span>
                 <span
-                  className="link"
+                  className="ds-link"
                   role="button"
                   tabIndex={0}
                   onClick={e => { e.stopPropagation(); handleAction(s); }}
@@ -182,17 +175,17 @@ export function OnboardingWidget({ profile, hasSchemas, onOpenSchema, onOpenAdva
                 </span>
               </div>
             ) : isSkipped ? (
-              <span className="text-xs faint">отложено</span>
+              <span className="ds-sub">отложено</span>
             ) : !isDone ? (
-              <span className="text-xs faint">в очереди</span>
+              <span className="ds-sub">в очереди</span>
             ) : null}
           </div>
         );
       })}
 
       {pendingSteps.length === 0 && skipped.length > 0 && (
-        <div className="u-mt14">
-          <span className="link u-pointer"
+        <div>
+          <span className="ds-link"
                 {...pressable(() => { setSkipped([]); localStorage.removeItem(ONBOARDING_SKIPPED_KEY); })}>
             вернуть отложенные →
           </span>
