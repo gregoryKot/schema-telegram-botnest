@@ -7,12 +7,14 @@ function makeService(opts: {
   opens?: number;
   linked?: number;
   schemaLinked?: number;
+  canvas?: number;
   groups?: Array<{ userId: bigint | null }>;
 }) {
   const byName: Record<string, number> = {
     concept_graph_open: opts.opens ?? 0,
     concept_mode_linked: opts.linked ?? 0,
     concept_schema_linked: opts.schemaLinked ?? 0,
+    concept_canvas_open: opts.canvas ?? 0,
   };
   const count = jest.fn(({ where }: { where: { name: string } }) =>
     Promise.resolve(byName[where.name]),
@@ -37,6 +39,7 @@ describe('ConceptGraphMetricsService', () => {
       opens: 14,
       linked: 9,
       schemaLinked: 6,
+      canvas: 4,
       groups: [{ userId: 1n }, { userId: 2n }, { userId: 3n }],
     });
     await expect(service.getMetrics()).resolves.toEqual({
@@ -44,6 +47,7 @@ describe('ConceptGraphMetricsService', () => {
       therapists30: 3,
       linked30: 9,
       schemaLinked30: 6,
+      canvasOpen30: 4,
     });
   });
 
@@ -60,7 +64,24 @@ describe('ConceptGraphMetricsService', () => {
     expect(count).toHaveBeenCalledWith({
       where: { name: 'concept_schema_linked', createdAt: { gte: SINCE } },
     });
+    expect(count).toHaveBeenCalledWith({
+      where: { name: 'concept_canvas_open', createdAt: { gte: SINCE } },
+    });
     expect(groupBy).toHaveBeenCalledTimes(1);
+  });
+
+  it('переносы на холст считаются отдельно: чужие события в их счёт не попадают', async () => {
+    const { service } = makeService({ canvas: 7 });
+    await expect(service.getMetrics()).resolves.toEqual({
+      opens30: 0,
+      therapists30: 0,
+      linked30: 0,
+      schemaLinked30: 0,
+      canvasOpen30: 7,
+    });
+    await expect(service.render()).resolves.toContain(
+      'Переносили схему случая на холст 7 раз',
+    );
   });
 
   it('терапевты — distinct по userId, анонимная строка (null) не в счёт', async () => {
@@ -88,6 +109,7 @@ describe('ConceptGraphMetricsService', () => {
       therapists30: 0,
       linked30: 0,
       schemaLinked30: 0,
+      canvasOpen30: 0,
     });
     const text = await service.render();
     expect(text).toContain('Пока никто из терапевтов не открывал');
@@ -99,9 +121,11 @@ describe('ConceptGraphMetricsService', () => {
       opens: 6,
       linked: 2,
       schemaLinked: 3,
+      canvas: 5,
       groups: [{ userId: 1n }, { userId: 2n }],
     });
     const text = await service.render();
+    expect(text).toContain('Переносили схему случая на холст 5 раз');
     expect(text).toContain('Открывали 6 раз, терапевтов: 2');
     expect(text).toContain('Связи режимов заполняли 2 раз');
     expect(text).toContain('Убеждения и опыт схем записывали 3 раз');

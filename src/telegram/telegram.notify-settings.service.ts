@@ -6,7 +6,8 @@ import {
   Logger,
 } from '@nestjs/common';
 import { Telegraf, Context, Markup } from 'telegraf';
-import { TELEGRAF_BOT, ERROR_RETRY } from './telegram.constants';
+import { TELEGRAF_BOT } from './telegram.constants';
+import { failSettings } from './callback-failure';
 import { BotService } from '../bot/bot.service';
 import { AccountService } from '../bot/account.service';
 import { TelegramScheduleService } from './telegram.schedule.service';
@@ -62,8 +63,7 @@ export class TelegramNotifySettingsService implements OnModuleInit {
           Markup.inlineKeyboard(rows),
         );
       } catch (err) {
-        this.logger.error('settings:pick_freq failed', err);
-        await ctx.answerCbQuery(ERROR_RETRY).catch(() => null);
+        await failSettings(this.logger, ctx, 'settings:pick_freq', err);
       }
     });
 
@@ -82,8 +82,7 @@ export class TelegramNotifySettingsService implements OnModuleInit {
         await this.scheduleService.rescheduleForUser(userId);
         await this.backToSettings(ctx, userId);
       } catch (err) {
-        this.logger.error('settings:freq failed', err);
-        await ctx.answerCbQuery('Не удалось сохранить.').catch(() => null);
+        await failSettings(this.logger, ctx, 'settings:freq', err);
       }
     });
 
@@ -99,8 +98,7 @@ export class TelegramNotifySettingsService implements OnModuleInit {
           Markup.inlineKeyboard(rows),
         );
       } catch (err) {
-        this.logger.error('settings:pick_quiet failed', err);
-        await ctx.answerCbQuery(ERROR_RETRY).catch(() => null);
+        await failSettings(this.logger, ctx, 'settings:pick_quiet', err);
       }
     });
 
@@ -121,8 +119,7 @@ export class TelegramNotifySettingsService implements OnModuleInit {
         });
         await this.backToSettings(ctx, userId);
       } catch (err) {
-        this.logger.error('settings:quiet failed', err);
-        await ctx.answerCbQuery('Не удалось сохранить.').catch(() => null);
+        await failSettings(this.logger, ctx, 'settings:quiet', err);
       }
     });
 
@@ -136,8 +133,7 @@ export class TelegramNotifySettingsService implements OnModuleInit {
         await this.botService.updateUserSettings(userId, { addressForm: form });
         await this.backToSettings(ctx, userId);
       } catch (err) {
-        this.logger.error('settings:addr failed', err);
-        await ctx.answerCbQuery('Не удалось сохранить.').catch(() => null);
+        await failSettings(this.logger, ctx, 'settings:addr', err);
       }
     });
   }

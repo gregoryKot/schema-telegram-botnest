@@ -488,6 +488,31 @@ describe('SubscriptionService.cancel', () => {
     expect(row.nextChargeAt).toBeNull();
   });
 
+  // Аудит 2026-10-11 (booking-cas): update по id без предиката статуса затирал
+  // бы переход, сделанный между findUnique и записью (cancelled — финал).
+  it('запись отмены несёт предикат статуса: уже cancelled строку не трогает', async () => {
+    const { service, prisma } = makeService();
+    const sub = await prisma.subscription.create({
+      data: {
+        status: 'active',
+        cancelToken: 'tok-3',
+        period: 'month',
+        amount: 300,
+      },
+    });
+    await service.cancel('tok-3');
+    expect(prisma.subscription.updateMany).toHaveBeenCalledWith({
+      where: { id: sub.id, status: { not: 'cancelled' } },
+      data: { status: 'cancelled', nextChargeAt: null },
+    });
+    // Фейк считает count как Postgres: вторая запись по тому же предикату — 0 строк.
+    const again = await prisma.subscription.updateMany({
+      where: { id: sub.id, status: { not: 'cancelled' } },
+      data: { status: 'cancelled', nextChargeAt: null },
+    });
+    expect(again).toEqual({ count: 0 });
+  });
+
   it('идемпотентна: повторная отмена уже отменённой не бьёт по БД update повторно', async () => {
     const { service, prisma } = makeService();
     await prisma.subscription.create({
@@ -498,8 +523,9 @@ describe('SubscriptionService.cancel', () => {
         amount: 300,
       },
     });
+    prisma.subscription.updateMany.mockClear();
     await service.cancel('tok-2');
-    expect(prisma.subscription.update).not.toHaveBeenCalled();
+    expect(prisma.subscription.updateMany).not.toHaveBeenCalled();
     expect(prisma.subscription.findUnique).toHaveBeenCalledWith(
       expect.objectContaining({ where: { cancelToken: 'tok-2' } }),
     );
@@ -645,6 +671,27 @@ describe('SubscriptionService.chargeDue — неудачное списание 
     expect(row.status).toBe('past_due');
     expect(row.failedAttempts).toBe(3);
     expect(row.nextChargeAt).toBeNull();
+  });
+
+  // Вебхук оплаты пришёл, пока chargeRecurring возвращал сбой: charge уже paid,
+  // nextChargeAt выставил вебхук. Сбой не засчитывается и ретрай через сутки не
+  // ставится — иначе второе реальное списание за оплаченный период.
+  it('вебхук оплатил charge раньше сбоя: подписка не тронута, алерта нет', async () => {
+    const { service, prisma, robokassa, calls } = makeService();
+    const paidUntil = new Date(Date.now() + 30 * 24 * 3_600_000);
+    robokassa.chargeRecurring.mockImplementation(() => {
+      const [charge] = [...prisma.charges.values()];
+      charge.status = 'paid';
+      prisma.subs.get(1).nextChargeAt = paidUntil;
+      return { ok: false, body: 'timeout' };
+    });
+    const sub = await makeDueSub(prisma, 0);
+    await service.chargeDue();
+    const row = prisma.subs.get(sub.id);
+    expect(row.failedAttempts).toBe(0);
+    expect(row.nextChargeAt).toBe(paidUntil);
+    expect([...prisma.charges.values()][0].status).toBe('paid');
+    expect(calls.alerts).toHaveLength(0);
   });
 
   it('charge помечается failed в БД (не остаётся pending)', async () => {
