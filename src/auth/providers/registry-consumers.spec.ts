@@ -9,8 +9,8 @@
 // слепая зона, поэтому класс закрыт здесь.
 //
 // Потребитель — НЕ-тестовый файл фронта (webapp/src, schema-miniapp/src,
-// shared/src), в котором есть вызов `/api/auth/<id>` вне комментария. Спек
-// в потребители не годится (правило №11).
+// shared/src), в котором есть вызов `/api/auth/<id>` вне комментария (блочного,
+// JSX-шного или хвостового `//`). Спек в потребители не годится (правило №11).
 import { readdirSync, readFileSync } from 'fs';
 import { join } from 'path';
 import { collectSourceFiles } from '../../security/collect-source-files';
@@ -30,19 +30,27 @@ export function providerIdsOf(source: string): string[] {
   return [...source.matchAll(/readonly id = '([^']+)'/g)].map((m) => m[1]);
 }
 
-/** Строки кода без полностроковых комментариев (`//`, `/*`, ` *`). */
-function stripCommentLines(source: string): string {
-  return source
-    .split('\n')
-    .filter((l) => !/^\s*(\/\/|\/\*|\*)/.test(l))
-    .join('\n');
+// Строка в любой из трёх кавычек ИЛИ комментарий. Альтернативы пробуются слева
+// направо с каждой позиции, поэтому оба направления работают сами: `//` внутри
+// строки комментарием не становится ('https://host/api/auth/x' — адрес), а
+// кавычка внутри комментария его не открывает. Одинокий апостроф в тексте JSX
+// парной кавычки до конца строки не находит и строкой не считается.
+// `(?<!:)` — запас на `https://` вне кавычек (текст внутри JSX-тега).
+const STRING_OR_COMMENT =
+  /('(?:\\.|[^'\\\n])*'|"(?:\\.|[^"\\\n])*"|`(?:\\.|[^`\\])*`)|\/\*[\s\S]*?\*\/|(?<!:)\/\/[^\n]*/g;
+
+// Код без комментариев: блочных (в том числе многострочных и JSX-шных
+// `{/* … */}`) и `//` — и полностроковых, и хвостовых. Содержимое строк
+// остаётся: в нём и живёт путь вызова.
+function stripComments(source: string): string {
+  return source.replace(STRING_OR_COMMENT, (_m, str?: string) => str ?? ' ');
 }
 
 /** Есть ли в тексте вызов `/api/auth/<id>` — id целиком, не префикс другого. */
 export function callsAuthRoute(source: string, id: string): boolean {
   const escaped = id.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   return new RegExp(`/api/auth/${escaped}(?=[/'"\`?])`).test(
-    stripCommentLines(source),
+    stripComments(source),
   );
 }
 
@@ -123,8 +131,44 @@ describe('сверка потребителей — контрольные об�
 
   it('упоминание только в комментарии не засчитывается', () => {
     const text =
-      "// ушли с /api/auth/telegram/redirect\n * ещё /api/auth/telegram'";
+      "// ушли с /api/auth/telegram/redirect\n/**\n * ещё /api/auth/telegram'\n */";
     expect(callsAuthRoute(text, 'telegram')).toBe(false);
+  });
+
+  it('id только в JSX-комментарии не засчитывается', () => {
+    const text = "<div>{/* fetch('/api/auth/x/start') */}</div>";
+    expect(callsAuthRoute(text, 'x')).toBe(false);
+  });
+
+  it('id только в многострочном блочном комментарии не засчитывается', () => {
+    const text = "const a = 1; /* раньше:\n  fetch('/api/auth/x/start')\n*/";
+    expect(callsAuthRoute(text, 'x')).toBe(false);
+  });
+
+  it('id только в хвостовом // комментарии не засчитывается', () => {
+    expect(callsAuthRoute("foo(); // '/api/auth/x/start'", 'x')).toBe(false);
+    expect(callsAuthRoute('foo(); // see /api/auth/x/start', 'x')).toBe(false);
+  });
+
+  it('вызов в строке засчитывается, хвостовой комментарий его не съедает', () => {
+    expect(
+      callsAuthRoute('fetch(`${base}/api/auth/x/start`) // комментарий', 'x'),
+    ).toBe(true);
+    expect(callsAuthRoute("go('https://host/api/auth/x/start')", 'x')).toBe(
+      true,
+    );
+    expect(
+      callsAuthRoute(
+        "go('https://host/api/auth/x/start'); // /api/auth/y/start",
+        'x',
+      ),
+    ).toBe(true);
+  });
+
+  it('комментарий рядом с вызовом другого id не засчитывает свой', () => {
+    const text = "go('https://host/api/auth/y/start'); // /api/auth/x/start";
+    expect(callsAuthRoute(text, 'x')).toBe(false);
+    expect(callsAuthRoute(text, 'y')).toBe(true);
   });
 
   it("'telegram' не засчитывается за 'telegram-oidc' и наоборот", () => {
