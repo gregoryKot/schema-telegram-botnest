@@ -280,6 +280,6 @@ export function sanitizeMeta(
     return sanitizeCaseMeta(name, meta);
   }
   // breath_start / stop_start / journey_open / ysq_help_open / plus_open /
-  // CONCEPT_EVENTS (concept_graph_open … concept_canvas_open) — без meta.
+  // CONCEPT_EVENTS (concept_graph_open … concept_graph_fullscreen) — без meta.
   return undefined;
 }

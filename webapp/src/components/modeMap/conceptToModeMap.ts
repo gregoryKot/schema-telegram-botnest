@@ -85,6 +85,7 @@ export function conceptToModeMap(
     if (old) { idOf.set(key, old); return; }
     const [kind, entity] = key.split(/:(.*)/);
     const node = make(`cc_${kind}_${slug(entity)}_${stamp}`);
+    node.data.settle = true; // useSettleFresh раздвинет колонки по реальной высоте и снимет флаг
     idOf.set(key, node.id);
     fresh.push(node);
   };

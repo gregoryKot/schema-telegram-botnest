@@ -95,8 +95,7 @@ export interface ModeMapNode {
     note?: string;
     unmetNeed?: string;
     customColor?: string;
-    filled?: boolean;
-    fillFull?: boolean;
+    filled?: boolean; fillFull?: boolean;
     copingSubtype?: 'over' | 'avoid' | 'surr';
     display?: 'name' | 'note' | 'full';   // что показывать на фигуре
     healthyResponse?: string;             // что сказал бы Здоровый Взрослый
@@ -105,6 +104,7 @@ export interface ModeMapNode {
     side?: 'A' | 'B';                      // чей режим на карте пары (Партнёр А / Б)
     schemaId?: string;                     // связанная схема (из списка схем клиента)
     needId?: string; diameter?: number;    // потребность таблетки; диаметр круга потребностей
+    settle?: boolean;                      // свежая схема случая: после замера колонки раздвинутся по высоте (useSettleFresh), флаг снимется
   };
   width?: number; height?: number;
 }
