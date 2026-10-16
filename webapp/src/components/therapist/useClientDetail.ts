@@ -7,7 +7,7 @@ import { SCHEMA_DOMAINS, MODE_GROUPS } from '../../schemaTherapyData';
 import { useCopyToClipboard } from '../../../../shared/src/utils/useCopyToClipboard';
 import { useTr } from '../../utils/addressForm';
 import { conceptSaveBody } from '../../../../shared/src/therapy/conceptGraph/conceptSaveBody';
-import { formatModeLinksExport } from '../../../../shared/src/therapy/conceptGraph/modeLinksExport';
+import { formatConceptLinksExport } from '../../../../shared/src/therapy/conceptGraph/conceptLinksExport';
 type ClientTab = 'overview' | 'concept' | 'mode_map' | 'sessions' | 'tasks' | 'ysq' | 'client_notes';
 
 interface Params {
@@ -289,7 +289,7 @@ export function useClientDetail({ onOpenClient, switchView, setClients }: Params
     });
     const row = (label: string, value: string | null | undefined) => `${label}\n${value?.trim() || '–'}\n`;
     const div = '─'.repeat(44);
-    const links = formatModeLinksExport(activeModeIds, c.modeLinks ?? []);
+    const links = formatConceptLinksExport(activeSchemaIds, activeModeIds, c);
     return [
       `Клиент: ${clientName}   Дата: ${date}`,
       '', '══════ КРАТКАЯ КОНЦЕПТУАЛИЗАЦИЯ ══════', '',

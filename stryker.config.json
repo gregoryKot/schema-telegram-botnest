@@ -27,6 +27,8 @@
     "src/subscription/subscription.service.ts",
     "src/booking/slot.service.ts",
     "src/booking/pricing.service.ts",
+    "src/booking/price-rules.ts",
+    "src/booking/booking-amount.ts",
     "src/booking/payment.controller.ts",
     "src/auth/security-log.service.ts",
     "src/auth/security-log-redact.ts",

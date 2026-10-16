@@ -1,31 +1,10 @@
-import Dagre from '@dagrejs/dagre';
-import type { Node, Edge } from '@xyflow/react';
+import type { Node } from '@xyflow/react';
 import type { ModeMapNode } from '../api';
 import { NODE_DEFAULT_SIZES } from './modeMapData';
 
 type FlowNode = Node<Record<string, unknown>>;
-type FlowEdge = Edge<Record<string, unknown>>;
 
-// ── Auto-layout via dagre ─────────────────────────────────────────────────────
-export function autoLayout(nodes: FlowNode[], edges: FlowEdge[]): FlowNode[] {
-  const g = new Dagre.graphlib.Graph().setDefaultEdgeLabel(() => ({}));
-  g.setGraph({ rankdir: 'LR', nodesep: 70, ranksep: 110, marginx: 40, marginy: 40 });
-
-  nodes.forEach(n => {
-    const w = (n.width as number) ?? NODE_DEFAULT_SIZES[n.type ?? '']?.width ?? 150;
-    const h = (n.height as number) ?? NODE_DEFAULT_SIZES[n.type ?? '']?.height ?? 70;
-    g.setNode(n.id, { width: w, height: h });
-  });
-  edges.forEach(e => g.setEdge(e.source, e.target));
-
-  Dagre.layout(g);
-
-  return nodes.map(n => {
-    const p = g.node(n.id);
-    if (!p) return n;
-    return { ...n, position: { x: p.x - p.width / 2, y: p.y - p.height / 2 } };
-  });
-}
+export { autoLayout } from './modeMap/autoLayout';
 
 // ── Layout by zones (mirror ModeMapZones bands) ───────────────────────────────
 // Band index per node type, and vertical centre of each band (flow coords).

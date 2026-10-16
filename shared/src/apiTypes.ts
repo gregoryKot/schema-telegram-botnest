@@ -117,10 +117,27 @@ export interface ConceptModeLink {
   needIds: string[];
   /** Откуда режим: ранний опыт, чей это голос. */
   origin: string;
-  /** Как проявляется сейчас, к каким проблемам ведёт. */
+  /** Текст на фигуре режима: что говорит критик, чего хочет ребёнок, что делает копинг, на что опирается здоровый режим. */
   manifest: string;
   /** Что делаем с режимом в терапии. */
   strategy: string;
+}
+
+/**
+ * Схема в графической концептуализации: во что человек верит (убеждение
+ * своими словами), как нарушалась потребность (детский опыт, из которого
+ * схема выросла) и какие базовые потребности она блокирует (✗ на схеме
+ * случая). Хранится массивом в ClientConceptualization.schemaLinks (шифруется
+ * целиком, как modeLinks). Связь схемы, убранной из schemaIds, не стирается.
+ */
+export interface ConceptSchemaLink {
+  schemaId: string;
+  /** Убеждение схемы: «я верю, что…». */
+  belief: string;
+  /** Как нарушалась потребность: детский опыт, из которого выросла схема. */
+  origin: string;
+  /** Какие потребности схема блокирует. NeedId из shared/src/needs/types.ts. */
+  needIds: string[];
 }
 
 export interface ConceptSnapshot {
@@ -136,6 +153,7 @@ export interface ConceptSnapshot {
   modeTransitions?: string | null;
   /** Снапшоты до графической концептуализации этого поля не несут. */
   modeLinks?: ConceptModeLink[];
+  schemaLinks?: ConceptSchemaLink[];
 }
 
 export interface YsqHistoryEntry {

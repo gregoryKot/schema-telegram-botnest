@@ -39,7 +39,7 @@ function makeService(robokassaEnabled: boolean) {
     availabilityRule: { findMany: jest.fn(async () => []) },
     slotOverride: { findMany: jest.fn(async () => []) },
     $transaction: jest.fn(async (fn: TxFn) => fn(tx)),
-    booking: { update: jest.fn(async () => ({})) },
+    booking: { updateMany: jest.fn(async () => ({ count: 1 })) },
   };
   const notify = {
     onConfirmed: jest.fn(async () => undefined),

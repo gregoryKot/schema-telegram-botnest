@@ -160,8 +160,8 @@ export class SubscriptionService {
     });
     if (!sub) throw new NotFoundException('Subscription not found');
     if (sub.status !== 'cancelled') {
-      await this.prisma.subscription.update({
-        where: { id: sub.id },
+      await this.prisma.subscription.updateMany({
+        where: { id: sub.id, status: { not: 'cancelled' } },
         data: { status: 'cancelled', nextChargeAt: null },
       });
       this.logger.log(`Subscription ${sub.id} CANCELLED`);

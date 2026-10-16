@@ -437,4 +437,41 @@ describe('e2e: терапевт удаляет клиента (все сцена
       ).toBe(before);
     });
   });
+
+  describe('POST /api/therapy/clients/virtual — предел длины имени (аудит 2026-10-11)', () => {
+    // Раньше у `VirtualClientDto.name` было только `@IsString()`: тело до 256 КБ
+    // ложилось в `virtualClientName` и приезжало в каждый ответ GET /clients.
+    // Шов целиком: настоящий AppModule, глобальный ValidationPipe, сохранение →
+    // отображение (read-after-write), а не DTO в отрыве от HTTP.
+    const limit = 100; // CLIENT_NAME_MAX; литерал — чтобы тест не повторял константу кода
+    const rows = (t: bigint) =>
+      prisma.therapyRelation.count({
+        where: { therapistId: t, clientId: null },
+      });
+
+    it('имя на 101 знак — 400, связь не создаётся и в списке клиентов имени нет', async () => {
+      const before = await rows(F);
+      const tooLong = 'Д'.repeat(limit + 1);
+      const res = await act(F).post('/api/therapy/clients/virtual', {
+        name: tooLong,
+      });
+      expect(res.status).toBe(400);
+      expect(await rows(F)).toBe(before);
+      const list = await act(F).get('/api/therapy/clients');
+      expect(list.body.map((c: { name: string }) => c.name)).not.toContain(
+        tooLong,
+      );
+    });
+
+    it('имя ровно на 100 знаков — 201 и оно есть в списке клиентов', async () => {
+      const name = 'Ж'.repeat(limit);
+      const res = await act(F).post('/api/therapy/clients/virtual', { name });
+      expect(res.status).toBe(201);
+      const created = res.body.find((c: { name: string }) => c.name === name);
+      expect(created).toBeDefined();
+      virtualIds.push(BigInt(created.telegramId));
+      const list = await act(F).get('/api/therapy/clients');
+      expect(list.body.map((c: { name: string }) => c.name)).toContain(name);
+    });
+  });
 });
