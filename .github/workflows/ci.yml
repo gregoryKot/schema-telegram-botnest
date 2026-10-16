@@ -15,6 +15,16 @@ on:
   # запускает воркфлоу сам (gh/API workflow_dispatch) и ждёт результата.
   workflow_dispatch:
 
+# Новый пуш в PR отменяет устаревший прогон того же PR (2026-10-16: из 12
+# прогонов в очереди раннеров 4 были для уже заменённых коммитов). Прогон
+# main отменять нельзя — каждый коммит main это деплой. Поэтому вне PR группа
+# своя у каждого прогона (run_id): с общей группой на ветку GitHub держит один
+# идущий и один ожидающий прогон, а следующий ожидающий молча сбрасывает.
+# Гейт: src/test-support/gates/ci-concurrency.spec.ts.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 # Токен раннера по умолчанию — только чтение (аудит 2026-10, I5): ни одной
 # джобе ниже не нужна запись в репозиторий/PR/issues. Нужна запись — выдавай
 # её на уровне конкретной джобы (`permissions:` внутри job), а не здесь.
@@ -133,6 +143,10 @@ jobs:
   # живут в джобе webapp.
   checks:
     runs-on: ubuntu-latest
+    # Потолок на джобу — страховка от зависшего шага (правило №24): без него
+    # GitHub держит джобу до 360 минут. Значения — примерно втрое от замера
+    # (пять зелёных прогонов main 2026-10-15). Гейт — job-timeouts.spec.ts.
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -365,6 +379,7 @@ jobs:
   # «Миграции БД»: рукописный SQL не мержится, пока не прошёл migrate deploy.
   migrations:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     services:
       postgres:
         # Docker Hub режет анонимные pull с общих IP раннеров (429, 2026-10-09):
@@ -514,6 +529,7 @@ jobs:
           test/refresh-rotation.e2e-spec.ts
           test/notify-address.e2e-spec.ts
           test/merge-my-lists.e2e-spec.ts
+          test/merge-unique-rules.e2e-spec.ts
           test/account-export-ownership.e2e-spec.ts
           test/therapy-remove-client.e2e-spec.ts
           test/text-limits.e2e-spec.ts
@@ -631,6 +647,7 @@ jobs:
 
   webapp:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -731,6 +748,7 @@ jobs:
   # check-frontend-coverage-ratchet.mjs (--package shared).
   shared:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -759,6 +777,7 @@ jobs:
   # everything-as-any и счётчики уезжают. game/ исключён (заморожен).
   eslint:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -786,6 +805,7 @@ jobs:
 
   miniapp:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7

@@ -1,10 +1,10 @@
 import { Body, Controller, HttpCode, Logger, Post, Req } from '@nestjs/common';
 import type { Request } from 'express';
 import { ClientErrorDto } from './dto/client-error.dto';
-import { stripUrlSecrets, stripUrlSecretsInText } from './telemetry-url.util';
+import { buildClientErrorDetail } from './client-error-detail';
+import { ClientErrorLogGate } from './client-error-log-gate';
 import { AnalyticsService } from '../analytics/analytics.service';
 import { classifyClientErrorSection } from './client-error-section';
-import { AlertThrottle } from '../utils/alert-throttle';
 
 // Приём ошибок фронтендов (best-practice «видимость прода», 2026-07).
 // БЕЗ auth-гарда: краш возможен и до/во время авторизации, тогда токена нет.
@@ -30,58 +30,47 @@ import { AlertThrottle } from '../utils/alert-throttle';
 // ─── Волна 9 щита покрытия (docs/SHIELD_PROMPT.md) ─────────────────────────
 // До этой волны логировался только текст (в логах хостинга — де-факто
 // невидим, «AlertLogger сжимает разные ошибки в один DM за счёт постоянного
-// первого аргумента»). Теперь КАЖДЫЙ отчёт также СЧИТАЕТСЯ — событие
+// первого аргумента»). Теперь отчёт ещё и СЧИТАЕТСЯ — событие
 // 'client_error' в AnalyticsEvent (userId = null, тот же приём, что у
-// auth_rejected/auth_success), видно в /stats. meta — только source +
-// канонический бакет section (правило №7: никакого свободного текста).
-// Троттлинг счётчика — ОТДЕЛЬНЫЙ от троттлинга лога: один сломанный экран
-// шлёт отчёт при КАЖДОМ ремаунте (ErrorBoundary может ловить один и тот же
-// краш десятки раз за минуту), а считать нужно вспышки, а не запросы.
-// 5 минут — то же окно, что у EVENT_THROTTLE в auth-failure.report.ts,
-// умышленно: блок /stats считает оба счётчика в сопоставимых окнах.
-const REPORT_THROTTLE = new AlertThrottle(5 * 60_000);
+// auth_rejected/auth_success), видно в /stats. meta — source, канонический
+// бакет section и числа suppressed/unlogged (правило №7: свободного текста нет).
+// Лог и счётчик решает ОДИН вердикт ClientErrorLogGate (client-error-log-gate.ts):
+// подробный detail пишется раз в 5 мин на `source|section|ip` и не чаще общего
+// бюджета в минуту, остальное только считается — шквал не вытесняет логи аварии.
+// Один сломанный экран шлёт отчёт при КАЖДОМ ремаунте, считать нужно вспышки.
 
 @Controller('api')
 export class ClientErrorsController {
   private readonly logger = new Logger('ClientError');
+  private readonly gate = new ClientErrorLogGate();
 
   constructor(private readonly analytics: AnalyticsService) {}
 
   @Post('client-errors')
   @HttpCode(204)
   report(@Body() body: ClientErrorDto, @Req() req: Request): void {
-    const safeUrl = stripUrlSecrets(body.url);
-    // M8 (аудит 2026-10): url чистился, а message/stack — нет, хотя в стек
-    // попадает location.href с живой подписью initData/JWT во фрагменте.
-    const detail = [
-      stripUrlSecretsInText(`${body.section}: ${body.message}`),
-      safeUrl ? `url=${safeUrl}` : null,
-      stripUrlSecretsInText(body.stack ?? body.componentStack ?? undefined) ??
-        null,
-    ]
-      .filter(Boolean)
-      .join('\n');
-
     // body.source (enum DTO) и section (канонический бакет из allow-list
     // classifyClientErrorSection, НЕ свободный текст body.section) —
     // единственное влияние клиента на первый аргумент, и оба из белого
-    // списка (инвариант H0/H6 выше не нарушен). Бакет поднят сюда, чтобы
-    // DM админу сразу отличал «упал экран входа» от «упал дневник», не
-    // заставляя лезть в лог за деталями ради этого.
-    // Лог НЕ троттлится здесь — это отдельный, уже существующий канал
-    // (AlertLogger троттлит DM сам, по нормализованному тексту).
+    // списка (инвариант H0/H6 выше не нарушен): DM сразу отличает «упал вход»
+    // от «упал дневник».
     const section = classifyClientErrorSection(body.section);
-    this.logger.error(
-      `[client:${body.source}/${section}] ошибка фронтенда (детали в логах)`,
-      detail,
+    const verdict = this.gate.take(
+      `${body.source}|${section}|${req.ip ?? 'no-ip'}`,
     );
-
-    const key = `${body.source}|${section}|${req.ip ?? 'no-ip'}`;
-    if (REPORT_THROTTLE.take(key).allow) {
-      void this.analytics.track(null, 'client_error', {
-        source: body.source,
-        section,
-      });
+    if (verdict.kind === 'repeat') return;
+    const { repeats } = verdict;
+    if (verdict.kind === 'full') {
+      this.logger.error(
+        `[client:${body.source}/${section}] ошибка фронтенда (детали в логах)`,
+        buildClientErrorDetail(body, repeats),
+      );
     }
+    void this.analytics.track(null, 'client_error', {
+      source: body.source,
+      section,
+      ...(repeats > 0 && { suppressed: repeats }),
+      ...(verdict.kind === 'unlogged' && { unlogged: true }),
+    });
   }
 }

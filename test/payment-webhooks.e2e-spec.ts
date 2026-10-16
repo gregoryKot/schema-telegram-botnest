@@ -18,6 +18,7 @@ import { SessionType } from '@prisma/client';
 import { SESSION_DEFAULT_PRICE } from '../src/booking/booking.config';
 import { buildTestApp, TestApp } from './e2e-support/build-test-app';
 import { cleanupPaymentFixtures } from './e2e-support/cleanup-fixtures';
+import { activeCronJobs, stopCronJobs } from './e2e-support/stop-cron-jobs';
 import { DONATION_INVID_BASE } from '../src/donation/donation.service';
 import { SUBSCRIPTION_INVID_BASE } from '../src/subscription/subscription.service';
 import { markChargeFailed } from '../src/subscription/subscription.charge-failed';
@@ -89,6 +90,13 @@ describe('e2e smoke: платёжный контур Robokassa по HTTP', () =>
 
   beforeAll(async () => {
     ({ app, prisma } = await buildTestApp());
+    // Настоящие @Cron после app.init() тикают посреди теста. Спек зовёт
+    // крон-методы напрямую, а шпионы на notifyAdmin/почту считают вызовы
+    // «ровно N»: тик sendReminders (*/5) на границе пятиминутки слал по броням
+    // из общей БД джобы свои напоминания, и счётчик видел 4 вместо 1 (инцидент
+    // CI 2026-10-16 03:35 UTC, PR #722). Останавливаем на весь файл — шпионы
+    // стоят в нескольких describe.
+    await stopCronJobs(app);
     // Чистый старт — на фейке no-op (свежий in-memory прогон), на реальном
     // Postgres вычищает фикстуры прошлого прогона этого же спека (см. комментарий
     // выше и cleanupPaymentFixtures в e2e-support/cleanup-fixtures.ts).
@@ -149,6 +157,10 @@ describe('e2e smoke: платёжный контур Robokassa по HTTP', () =>
       },
     });
   }
+
+  it('настоящие кроны остановлены: вызовы шпионов считают только то, что зовёт сам тест', () => {
+    expect(activeCronJobs(app)).toEqual([]);
+  });
 
   // ─── Бронь: обычный InvId-диапазон ────────────────────────────────────────
 
