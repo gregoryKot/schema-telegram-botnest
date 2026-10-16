@@ -45,6 +45,7 @@ export function useYsqRequest<Id>(
       await send(clientId);
       if (mine !== generation.current) return;
       setYsqRequested(true);
+      clearTimeout(timer.current);
       timer.current = setTimeout(() => setYsqRequested(false), SENT_MS);
     } catch {
       if (mine === generation.current) setYsqError(YSQ_REQUEST_ERROR);

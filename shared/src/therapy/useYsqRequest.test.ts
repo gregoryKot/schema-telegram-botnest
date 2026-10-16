@@ -50,6 +50,24 @@ describe('useYsqRequest', () => {
     expect(result.current.ysqError).toBe('');
   });
 
+  it('второй успех подряд: таймер первого не гасит «отправлено» раньше срока', async () => {
+    const send = vi.fn().mockResolvedValue(undefined);
+    const { result } = renderHook(() => useYsqRequest(7, send));
+    await act(() => result.current.handleRequestYsq());
+    act(() => {
+      vi.advanceTimersByTime(2000);
+    });
+    await act(() => result.current.handleRequestYsq());
+    act(() => {
+      vi.advanceTimersByTime(1500);
+    });
+    expect(result.current.ysqRequested).toBe(true);
+    act(() => {
+      vi.advanceTimersByTime(1500);
+    });
+    expect(result.current.ysqRequested).toBe(false);
+  });
+
   it('ysqRequested гаснет через 3 с', async () => {
     const send = vi.fn().mockResolvedValue(undefined);
     const { result } = renderHook(() => useYsqRequest(7, send));

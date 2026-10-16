@@ -186,7 +186,7 @@ describe('ConceptSheet — запрос теста YSQ', () => {
         detail={makeDetail({ ysqRequested: true, handleRequestYsq })}
       />,
     );
-    const btn = screen.getByText('✓ Запрос отправлен');
+    const btn = screen.getByText('✓ Запрос отправлен') as HTMLButtonElement;
     expect(btn.disabled).toBe(true);
     fireEvent.click(btn);
     expect(handleRequestYsq).not.toHaveBeenCalled();
@@ -196,7 +196,10 @@ describe('ConceptSheet — запрос теста YSQ', () => {
     render(
       <ConceptSheet selectedClient={makeClient()} detail={makeDetail()} />,
     );
-    expect(screen.getByText('Запросить тест на схемы').disabled).toBe(false);
+    expect(
+      (screen.getByText('Запросить тест на схемы') as HTMLButtonElement)
+        .disabled,
+    ).toBe(false);
   });
 
   it('ysqError задан — текст ошибки виден', () => {
