@@ -10,7 +10,7 @@ import {
   Min,
   ValidateIf,
 } from 'class-validator';
-import { SESSION_NOTE_MAX } from '../../utils/text-limits';
+import { CLIENT_NAME_MAX, SESSION_NOTE_MAX } from '../../utils/text-limits';
 
 /**
  * DTO для работы терапевта с клиентскими данными (аудит 2026-07, 2г /
@@ -18,7 +18,7 @@ import { SESSION_NOTE_MAX } from '../../utils/text-limits';
  */
 export class RenameClientDto {
   @IsString()
-  @MaxLength(100)
+  @MaxLength(CLIENT_NAME_MAX)
   alias!: string;
 }
 

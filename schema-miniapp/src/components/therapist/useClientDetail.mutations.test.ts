@@ -167,6 +167,7 @@ describe('saveConcept', () => {
       currentProblems: '',
       modeTransitions: '',
       modeLinks: [],
+      schemaLinks: [],
     });
   });
 

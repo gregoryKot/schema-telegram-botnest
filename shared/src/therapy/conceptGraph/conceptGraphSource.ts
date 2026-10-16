@@ -1,17 +1,14 @@
-import type { ConceptModeLink } from '../../apiTypes';
+import type { ConceptModeLink, ConceptSchemaLink } from '../../apiTypes';
 import type { ConceptGraphSource } from './conceptGraphTypes';
 import { normalizeModeLinks } from './modeLinks';
+import { normalizeSchemaLinks } from './schemaLinks';
 
 /** Поля концептуализации, из которых строится схема (обе площадки). */
 export interface ConceptGraphFields {
   schemaIds?: string[];
   modeIds?: string[];
   modeLinks?: ConceptModeLink[];
-  earlyExperience?: string | null;
-  unmetNeeds?: string | null;
-  triggers?: string | null;
-  currentProblems?: string | null;
-  goals?: string | null;
+  schemaLinks?: ConceptSchemaLink[];
   modeTransitions?: string | null;
 }
 
@@ -21,11 +18,7 @@ export function conceptGraphSource(c: ConceptGraphFields): ConceptGraphSource {
     modeIds: c.modeIds ?? [],
     schemaIds: c.schemaIds ?? [],
     modeLinks: normalizeModeLinks(c.modeLinks),
-    earlyExperience: c.earlyExperience,
-    unmetNeeds: c.unmetNeeds,
-    triggers: c.triggers,
-    currentProblems: c.currentProblems,
-    goals: c.goals,
+    schemaLinks: normalizeSchemaLinks(c.schemaLinks),
     modeTransitions: c.modeTransitions,
   };
 }

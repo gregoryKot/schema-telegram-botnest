@@ -487,7 +487,7 @@ describe('encryptJson / decryptJson', () => {
   });
 });
 
-describe('looksLikeCiphertext (используется encrypt-migration.ts для защиты от двойного шифрования)', () => {
+describe('looksLikeCiphertext (используется classify в encrypt-migration.rows.ts для защиты от двойного шифрования)', () => {
   it('настоящий шифроблок распознаётся как «похоже на шифротекст»', () => {
     const { encrypt, looksLikeCiphertext } = loadCrypto({ key: KEY_A });
     const blob = encrypt('данные')!;

@@ -16,7 +16,7 @@ const SRC = join(__dirname, '..');
 const SECRET_COMPARE_SITES = [
   'booking/admin-key.util.ts',
   'booking/robokassa.service.ts',
-  'auth/auth.service.ts',
+  'auth/telegram-init-data.ts', // единый верификатор initData Telegram (был auth.service.ts)
   'auth/providers/telegram.provider.ts',
 ];
 

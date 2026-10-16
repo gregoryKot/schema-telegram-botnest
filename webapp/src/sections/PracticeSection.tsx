@@ -4,20 +4,23 @@ import { api } from '../api';
 import { Loader } from '../components/Loader';
 import { SchemaFlashcard } from '../components/SchemaFlashcard';
 import { TaskCreateSheet } from '../components/TaskCreateSheet';
-import { getTaskDisplayText } from '../components/taskDisplayText';
-import { GlyphArrowLeft } from '../components/exercises/ExScreen';
 import { CHILDHOOD_DONE_KEY } from '../utils/storageKeys';
 import { ALL_SCHEMAS, ALL_MODES } from '../schemaTherapyData';
-import { fmtDate } from '../utils/format';
 import type { UserTask, TherapyRelationInfo } from '../api';
-import { useHistorySheet } from '../hooks/useHistorySheet';
 import { pressable } from '../utils/a11y';
 import { useTr } from '../utils/addressForm';
 import { useTaskActions } from './today/useTaskActions';
 import { CrisisBlock } from './practice/CrisisBlock';
 import { HereAndNowBlock } from './practice/HereAndNowBlock';
+import { PracticeTopRow, HERE_BLOCK_ID, HELP_BLOCK_ID } from './practice/PracticeTopRow';
+import { ExerciseLibrary } from './practice/ExerciseLibrary';
+import { TaskRow } from './practice/TaskRow';
+import { AllGoalsOverlay } from './practice/AllGoalsOverlay';
+import { useExerciseStats } from './practice/useExerciseStats';
+import type { ExId } from './practice/exerciseLibrary';
 import { pluralRu as plural } from '../../../shared/src/utils/pluralRu';
 import { todayCalendarDate } from '../../../shared/src/utils/calendarDate';
+import '../styles/client-practice.css';
 
 const BeliefCheckEx    = lazy(() => import('../components/exercises/BeliefCheckEx').then(m => ({ default: m.BeliefCheckEx })));
 const SchemaEx         = lazy(() => import('../components/exercises/FlashcardEx').then(m => ({ default: m.SchemaEx })));
@@ -27,91 +30,6 @@ const SafePlaceEx      = lazy(() => import('../components/exercises/SafePlaceEx'
 const ChildhoodWheelEx = lazy(() => import('../components/exercises/ChildhoodWheelEx').then(m => ({ default: m.ChildhoodWheelEx })));
 const WarmWordsEx      = lazy(() => import('../components/exercises/WarmWordsEx').then(m => ({ default: m.WarmWordsEx })));
 const PhraseCheckEx    = lazy(() => import('../components/exercises/PhraseCheckEx').then(m => ({ default: m.PhraseCheckEx })));
-
-type ExId = 'belief' | 'schema' | 'mode' | 'letter' | 'safe' | 'wheel' | 'warm' | 'phrase';
-interface ExStats { count: number; lastDone: string | null; }
-
-const EXERCISES = [
-  { id: 'belief' as ExId, num: '01', eyebrow: 'Когнитивная работа',   title: 'Проверка убеждения',       desc: 'Поставить мысль перед судом фактов.',     time: '8–12 мин', color: 'var(--c-slate)' },
-  { id: 'schema' as ExId, num: '02', eyebrow: 'Знакомство',            title: 'Карточка схемы',            desc: 'Семь вопросов про одну схему: триггеры, тело, истоки, здоровый взгляд.', time: '10–15 мин', color: 'var(--c-plum)' },
-  { id: 'mode'   as ExId, num: '03', eyebrow: 'Знакомство',            title: 'Карточка режима',           desc: 'Пять вопросов: когда активируется, что чувствует, что хочет.',         time: '7–10 мин', color: 'var(--c-clay)' },
-  { id: 'letter' as ExId, num: '04', eyebrow: 'Эмоциональная работа', title: 'Письмо Уязвимому Ребёнку', desc: 'Сказать себе в детстве то, что тогда важно было услышать.',               time: '15–25 мин', color: 'var(--c-amber)' },
-  { id: 'safe'   as ExId, num: '05', eyebrow: 'Ресурс',                title: 'Безопасное место',          desc: 'Описать место, в которое можно мысленно возвращаться в тревогу.',      time: '5–10 мин', color: 'var(--c-moss)' },
-  { id: 'wheel'  as ExId, num: '06', eyebrow: 'Истоки',                title: 'Колесо детства',            desc: 'Оценить базовые потребности в детстве. Найти связь с паттернами сегодня.', time: '8–12 мин', color: 'var(--accent-indigo)' },
-  { id: 'warm'   as ExId, num: '07', eyebrow: 'Ресурс',                title: 'Тёплые слова',               desc: 'Слова поддержки — перечитать, когда трудно.',                            time: '2–5 мин',  color: 'var(--accent-yellow)' },
-  { id: 'phrase' as ExId, num: '08', eyebrow: 'Внутренний голос',      title: 'Критик или забота?',         desc: 'Разобрать фразу внутреннего голоса по девяти приметам, переписать её.', time: '6–10 мин', color: 'var(--c-teal)' },
-];
-
-function fmtAgo(d: string | null): string {
-  if (!d) return 'пройдено';
-  const days = Math.floor((Date.now() - new Date(d).getTime()) / 86400000);
-  if (days === 0) return 'сегодня';
-  if (days === 1) return 'вчера';
-  if (days < 7) return `${days} дн. назад`;
-  return new Date(d).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
-}
-function fmtCount(n: number): string {
-  if (n === 1) return `1 запись`;
-  if (n < 5) return `${n} записи`;
-  return `${n} записей`;
-}
-function resolveText(task: UserTask) {
-  const text = getTaskDisplayText(task.type, task.text);
-  if (text === task.text) {
-    const s = ALL_SCHEMAS.find(s => s.id === task.text); if (s) return s.name;
-    const m = ALL_MODES.find(m => m.id === task.text);   if (m) return m.name;
-  }
-  return text;
-}
-function ExGlyph({ id }: { id: ExId }) {
-  const s = { fill: 'none', stroke: 'currentColor', strokeWidth: 1.4, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const };
-  if (id === 'belief') return <svg viewBox="0 0 28 28" {...s}><path d="M14 4v20"/><path d="M6 7l-3 6h6l-3-6z"/><path d="M22 7l-3 6h6l-3-6z"/><path d="M5 24h18"/></svg>;
-  if (id === 'schema') return <svg viewBox="0 0 28 28" {...s}><rect x="4" y="6" width="20" height="16" rx="2"/><path d="M4 12h20"/><path d="M9 18h6"/></svg>;
-  if (id === 'mode')   return <svg viewBox="0 0 28 28" {...s}><circle cx="14" cy="14" r="9"/><circle cx="14" cy="14" r="4"/><path d="M14 5v3M14 20v3M5 14h3M20 14h3"/></svg>;
-  if (id === 'letter') return <svg viewBox="0 0 28 28" {...s}><path d="M6 8h16v12a2 2 0 01-2 2H8a2 2 0 01-2-2V8z"/><path d="M6 8l8 7 8-7"/></svg>;
-  if (id === 'safe')   return <svg viewBox="0 0 28 28" {...s}><path d="M5 13l9-7 9 7v9a1 1 0 01-1 1h-5v-7h-6v7H6a1 1 0 01-1-1v-9z"/></svg>;
-  if (id === 'warm')   return <svg viewBox="0 0 28 28" {...s}><path d="M14 23s-9-5.5-9-12a5.5 5.5 0 019-4.2A5.5 5.5 0 0123 11c0 6.5-9 12-9 12z"/></svg>;
-  if (id === 'phrase') return <svg viewBox="0 0 28 28" {...s}><path d="M4 6h16v11H12l-4 4v-4H4V6z"/><circle cx="20" cy="20" r="4"/><path d="M23 23l3 3"/></svg>;
-  return <svg viewBox="0 0 28 28" {...s}><circle cx="14" cy="14" r="9"/><path d="M14 5v18M5 14h18M7.5 7.5l13 13M20.5 7.5l-13 13"/></svg>;
-}
-
-function AllGoalsOverlay({ tasks, taskHistory, onClose, onOpen, onAdd }: {
-  tasks: UserTask[]; taskHistory: UserTask[];
-  onClose: () => void; onOpen: (t: UserTask) => void; onAdd: () => void;
-}) {
-  const goBack = useHistorySheet(onClose);
-  return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'var(--bg)', display: 'grid', gridTemplateRows: 'auto 1fr', overflow: 'hidden' }}>
-      <div className="ex-topbar"><button className="ex-back" onClick={goBack}><GlyphArrowLeft /> Назад</button></div>
-      <div style={{ overflowY: 'auto', padding: '32px 24px 80px', maxWidth: 560, margin: '0 auto', width: '100%' }}>
-        <h1 style={{ fontFamily: 'var(--serif)', fontSize: 28, fontWeight: 400, marginBottom: 24 }}>Все цели</h1>
-        {tasks.map(t => (
-          <div key={t.id} className="list-line u-pointer" {...pressable(() => onOpen(t))}>
-            <div className="u-fill">
-              <div className="text-md" style={{ fontWeight: 500 }}>{resolveText(t)}</div>
-              {t.dueDate && <div style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 2 }}>до {fmtDate(t.dueDate)}</div>}
-            </div>
-            <span className="link">открыть →</span>
-          </div>
-        ))}
-        {taskHistory.length > 0 && (
-          <>
-            <div className="eyebrow" style={{ marginTop: 20, marginBottom: 8 }}>Выполнено</div>
-            {taskHistory.map(t => (
-              <div key={t.id} className="list-line" style={{ opacity: 0.5 }}>
-                <div className="u-flex1"><div className="text-sm">{resolveText(t)}</div></div>
-                <span className="text-xs faint">{t.done === true ? 'готово' : 'отменено'}</span>
-              </div>
-            ))}
-          </>
-        )}
-        <button className="ex-btn ex-btn-primary" style={{ marginTop: 24, width: '100%' }} onClick={onAdd}>
-          + Поставить цель
-        </button>
-      </div>
-    </div>
-  );
-}
 
 interface Props {
   onOpenChildhoodWheel: () => void;
@@ -131,7 +49,7 @@ export function PracticeSection({ onOpenChildhoodWheel, onOpenPractices, onOpenP
 
   const [openEx,         setOpenEx]         = useState<ExId | null>(null);
   const [schemaInitialId, setSchemaInitialId] = useState<string | undefined>(undefined);
-  const [stats,          setStats]          = useState<Partial<Record<ExId, ExStats>>>({});
+  const stats = useExerciseStats();
   const [showFlashcard,  setShowFlashcard]  = useState(false);
   const [_introSchemaId, _setIntroSchemaId] = useState<string | null>(null);
   const [introModeId,    setIntroModeId]    = useState<string | null>(null);
@@ -143,9 +61,13 @@ export function PracticeSection({ onOpenChildhoodWheel, onOpenPractices, onOpenP
 
   // Detect openSchemaEx state from navigation
   useEffect(() => {
-    const state = location.state as { openSchemaEx?: string } | null;
-    if (state?.openSchemaEx) {
+    const state = location.state as { openSchemaEx?: string; openFlashcard?: boolean } | null;
+    if (state?.openFlashcard === true) {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- намеренно: загрузка/сброс состояния при монтировании или смене зависимости (fetch-эффект); рефактор на key/data-layer — отдельная задача
+      setShowFlashcard(true);
+      window.history.replaceState({}, '', '/practice');
+    }
+    if (state?.openSchemaEx) {
       setOpenEx('schema');
       setSchemaInitialId(state.openSchemaEx);
       window.history.replaceState({}, '', '/practice');
@@ -158,23 +80,6 @@ export function PracticeSection({ onOpenChildhoodWheel, onOpenPractices, onOpenP
     api.getTherapyRelation().then(r => { if (!ignore) setRelation(r); }).catch(() => { if (!ignore) setRelation(null); });
     return () => { ignore = true; };
   }, [refreshKey]);
-
-  useEffect(() => {
-    Promise.allSettled([
-      api.getBeliefChecks(), api.getSchemaNotes(), api.getModeNotes(),
-      api.getLetters(), api.getSafePlace(), api.getChildhoodRatings(), api.getPhraseChecks(),
-    ]).then(([beliefs, schemas, modes, letters, safe, wheel, phrases]) => {
-      const upd: Partial<Record<ExId, ExStats>> = {};
-      if (beliefs.status === 'fulfilled') { const b = beliefs.value; if (b.length) upd.belief = { count: b.length, lastDone: b[0]?.createdAt ?? null }; }
-      if (schemas.status === 'fulfilled') { const s = schemas.value; if (s.length) { const sr = [...s].sort((a, b) => b.updatedAt > a.updatedAt ? 1 : -1); upd.schema = { count: s.length, lastDone: sr[0]?.updatedAt ?? null }; } }
-      if (modes.status === 'fulfilled')   { const m = modes.value;   if (m.length) { const mr = [...m].sort((a, b) => b.updatedAt > a.updatedAt ? 1 : -1); upd.mode   = { count: m.length, lastDone: mr[0]?.updatedAt ?? null }; } }
-      if (letters.status === 'fulfilled') { const l = letters.value; if (l.length) upd.letter = { count: l.length, lastDone: l[0]?.createdAt ?? null }; }
-      if (safe.status === 'fulfilled' && safe.value) upd.safe = { count: 1, lastDone: safe.value.updatedAt ?? null };
-      if (wheel.status === 'fulfilled' && Object.keys(wheel.value as object).length > 0) upd.wheel = { count: 1, lastDone: null };
-      if (phrases.status === 'fulfilled') { const p = phrases.value; if (p.length) upd.phrase = { count: p.length, lastDone: p[0]?.createdAt ?? null }; }
-      setStats(upd);
-    });
-  }, []);
 
   function handleTaskComplete() {
     if (activeTaskId === null) return;
@@ -234,149 +139,107 @@ export function PracticeSection({ onOpenChildhoodWheel, onOpenPractices, onOpenP
   const myGoals        = tasks.filter(t => t.assignedBy === null  && !t.doneToday);
 
   return (
-    <div className="page-inner-wide">
+    <div className="ds-page cp-page animate-fade">
 
-      {/* Header */}
-      <div className="eyebrow u-mb8">
-        <span className="u-accent">● </span>Практика
+      <div>
+        <div className="ds-eyebrow">Практика</div>
+        <h1 className="ds-h1">Упражнения <i>и задания</i></h1>
+        <p className="ds-sub" style={{ fontSize: 15, marginTop: 12 }}>
+          {tr('Восемь практик схема-терапии плюс твои личные цели.', 'Восемь практик схема-терапии плюс ваши личные цели.')}
+        </p>
+        {sessionBanner && (
+          <div className="ds-sub" style={{ marginTop: 8, color: sessionBanner.isToday ? 'var(--ok-ink)' : undefined }}>
+            {sessionBanner.isToday ? '● Сегодня встреча' : `Следующая встреча: ${sessionBanner.label}`}
+            {sessionBanner.partnerName && <span> · с {sessionBanner.partnerName}</span>}
+          </div>
+        )}
       </div>
-      <h1 className="hub-title u-mb8">
-        Упражнения<br /><span className="it">и задания</span>
-      </h1>
-      <p className="hub-sub" style={{ marginBottom: sessionBanner ? 12 : 40 }}>
-        {tr('Восемь практик схема-терапии плюс твои личные цели.', 'Восемь практик схема-терапии плюс ваши личные цели.')}
-      </p>
-      {sessionBanner && (
-        <div className="text-sm" style={{ marginBottom: 40, color: sessionBanner.isToday ? 'var(--c-moss)' : 'var(--text-sub)' }}>
-          {sessionBanner.isToday ? '● Сегодня встреча' : `Следующая встреча: ${sessionBanner.label}`}
-          {sessionBanner.partnerName && <span className="u-faint"> · с {sessionBanner.partnerName}</span>}
-        </div>
-      )}
 
-      <HereAndNowBlock />
+      <PracticeTopRow onCrisis={() => setShowFlashcard(true)} />
 
-      <CrisisBlock />
+      <div id={HERE_BLOCK_ID} className="cp-block"><HereAndNowBlock /></div>
 
-      {/* Tasks from therapist */}
+      <div id={HELP_BLOCK_ID} className="cp-block"><CrisisBlock /></div>
+
       {(therapistTasks.length > 0 || taskError) && (
-        <div className="section">
-          <div className="section-head">
-            <h3>От терапевта</h3>
-            {therapistTasks.length > 0 && <span className="hint">{therapistTasks.length} {plural(therapistTasks.length, 'задание', 'задания', 'заданий')}</span>}
+        <section className="cp-block">
+          <div className="ds-head-row">
+            <h3 className="ds-h2">От терапевта</h3>
+            {therapistTasks.length > 0 && <span className="ds-sub">{therapistTasks.length} {plural(therapistTasks.length, 'задание', 'задания', 'заданий')}</span>}
           </div>
           {taskError && (
-            <div role="alert" style={{ fontSize: 13, color: 'var(--c-rose)', marginBottom: 10 }}>
+            <div role="alert" className="cp-alert">
               {tr('Не удалось сохранить изменение задания. Проверь соединение и попробуй ещё раз', 'Не удалось сохранить изменение задания. Проверьте соединение и попробуйте ещё раз')}
             </div>
           )}
-          {therapistTasks.map(task => (
-            <div key={task.id} className="list-line u-pointer" {...pressable(() => openTask(task))}>
-              <div className="u-fill">
-                <div className="eyebrow" style={{ color: 'var(--accent)', marginBottom: 4 }}>от терапевта</div>
-                <div className="text-md" style={{ fontWeight: 500 }}>{resolveText(task)}</div>
-                {task.dueDate && <div style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 2 }}>до {fmtDate(task.dueDate)}</div>}
-              </div>
-              <span className="link">начать →</span>
-            </div>
-          ))}
-        </div>
+          <div className="cp-tasks">
+            {therapistTasks.map(task => (
+              <TaskRow key={task.id} task={task} mark cta="начать →" onOpen={() => openTask(task)} />
+            ))}
+          </div>
+        </section>
       )}
 
-      {/* Exercise library */}
-      <div className="section">
-        <div className="eyebrow u-mb20">Библиотека · {EXERCISES.length} упражнений</div>
-        <div className="ex-grid">
-          {EXERCISES.map(ex => {
-            const s = stats[ex.id];
-            return (
-              <div key={ex.id} className="ex-card" {...pressable(() => { setSchemaInitialId(undefined); setOpenEx(ex.id); })}>
-                <div className="ex-card-glyph" style={{ color: ex.color }}><ExGlyph id={ex.id} /></div>
-                <div className="ex-card-body">
-                  <div className="ex-card-eyebrow" style={{ color: ex.color }}>№ {ex.num} · {ex.eyebrow}</div>
-                  <h3 className="ex-card-title">{ex.title}</h3>
-                  <p className="ex-card-desc">{ex.desc}</p>
-                  <div className="ex-card-meta">
-                    <span>{ex.time}</span><span>·</span>
-                    {s ? (
-                      <span className="done">
-                        <span style={{ width: 6, height: 6, borderRadius: 3, background: 'var(--c-moss)', display: 'inline-block' }} />
-                        {fmtCount(s.count)} · {fmtAgo(s.lastDone)}
-                      </span>
-                    ) : <span>не начато</span>}
-                  </div>
-                </div>
-                <span className="ex-card-cta">›</span>
-              </div>
-            );
-          })}
-        </div>
-      </div>
+      <ExerciseLibrary stats={stats} onOpen={id => { setSchemaInitialId(undefined); setOpenEx(id); }} />
 
-      {/* Crisis / quick tools */}
-      <div className="section">
-        <div className="section-head"><h3>В трудный момент</h3></div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 32 }}>
+      <section className="cp-block">
+        <div className="ds-head-row"><h3 className="ds-h2">В трудный момент</h3></div>
+        <div className="cp-tools">
           {[
-            { label: 'Мне плохо',       sub: 'Пять шагов: разобраться что происходит, успокоиться', color: 'var(--c-rose)',  onClick: () => setShowFlashcard(true) },
-            { label: 'Тест на схемы',   sub: tr('116 вопросов, 20 шкал схем – узнай свои паттерны', '116 вопросов, 20 шкал схем – узнайте свои паттерны'),   color: 'var(--accent)',  onClick: () => onOpenSchema?.({ startTest: true }) },
-            { label: 'Карта режимов',   sub: tr('Найди Уязвимого Ребёнка, Критика, Защитника', 'Найдите Уязвимого Ребёнка, Критика, Защитника'),         color: 'var(--c-slate)', onClick: () => onOpenSchema?.({ tab: 'modes' }) },
-            { label: 'Колесо детства',  sub: 'Как удовлетворялись потребности в детстве',           color: 'var(--accent-indigo)', onClick: onOpenChildhoodWheel, done: childhoodDone },
+            { label: 'Тест на схемы',   sub: tr('116 вопросов, 20 шкал схем – узнай свои паттерны', '116 вопросов, 20 шкал схем – узнайте свои паттерны'),   onClick: () => onOpenSchema?.({ startTest: true }) },
+            { label: 'Карта режимов',   sub: tr('Найди Уязвимого Ребёнка, Критика, Защитника', 'Найдите Уязвимого Ребёнка, Критика, Защитника'),         onClick: () => onOpenSchema?.({ tab: 'modes' }) },
+            { label: 'Колесо детства',  sub: 'Как удовлетворялись потребности в детстве',           onClick: onOpenChildhoodWheel, done: childhoodDone },
           ].map(item => (
-            <div key={item.label} {...pressable(item.onClick)}
-                 style={{ cursor: 'pointer', padding: '20px 0', borderTop: `2px solid ${item.color}` }}>
-              <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 8 }}>{item.label}</div>
-              <div className="text-sm muted" style={{ lineHeight: 1.55 }}>{item.sub}</div>
-              <span className="link" style={{ marginTop: 14, display: 'inline-block' }}>{'done' in item && item.done ? 'открыть →' : 'начать →'}</span>
+            <div key={item.label} className="ds-card ds-card--hover cp-tool" {...pressable(item.onClick)}>
+              <div className="cp-tool-title">{item.label}</div>
+              <div className="cp-tool-sub">{item.sub}</div>
+              <span className="ds-link">{'done' in item && item.done ? 'открыть →' : 'начать →'}</span>
             </div>
           ))}
         </div>
-      </div>
+      </section>
 
-      {/* My goals */}
-      <div className="section">
-        <div className="section-head">
-          <h3>Мои цели</h3>
-          <span className="hint">{myGoals.length === 0 ? 'нет активных' : `${myGoals.length} активных`}</span>
+      <section className="cp-block">
+        <div className="ds-head-row">
+          <h3 className="ds-h2">Мои цели</h3>
+          <span className="ds-sub">{myGoals.length === 0 ? 'нет активных' : `${myGoals.length} активных`}</span>
         </div>
         {myGoals.length === 0 ? (
-          <div className="text-sm muted" style={{ lineHeight: 1.55 }}>
+          <div className="cp-empty">
             {tr('Поставь цель и иди к ней маленькими шагами.', 'Поставьте цель и идите к ней маленькими шагами.')}
           </div>
         ) : (
-          myGoals.slice(0, 4).map(task => (
-            <div key={task.id} className="list-line u-pointer" {...pressable(() => openTask(task))}>
-              <div className="u-fill">
-                <div className="text-md" style={{ fontWeight: 500 }}>{resolveText(task)}</div>
-                {task.dueDate && <div style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 2 }}>до {fmtDate(task.dueDate)}</div>}
-              </div>
-              <span className="link">открыть →</span>
-            </div>
-          ))
+          <div className="cp-tasks">
+            {myGoals.slice(0, 4).map(task => (
+              <TaskRow key={task.id} task={task} cta="открыть →" onOpen={() => openTask(task)} />
+            ))}
+          </div>
         )}
-        <div style={{ display: 'flex', gap: 18, marginTop: 16, alignItems: 'center' }}>
-          <button className="btn btn-secondary" onClick={() => setShowTaskCreate(true)}>+ Поставить цель</button>
+        <div className="cp-actions">
+          <button className="ds-btn ds-btn--sm ds-btn--secondary" onClick={() => setShowTaskCreate(true)}>+ Поставить цель</button>
           {(myGoals.length > 4 || taskHistory.length > 0) && (
-            <span className="link u-pointer" {...pressable(() => setShowAllGoals(true))}>все цели →</span>
+            <span className="ds-link" {...pressable(() => setShowAllGoals(true))}>все цели →</span>
           )}
         </div>
-      </div>
+      </section>
 
-      {/* Catalogs */}
-      <div className="section">
-        <div className="section-head"><h3>Каталоги</h3></div>
-        {[
-          { label: 'Практики',  sub: 'Рекомендованные упражнения по потребностям', onClick: onOpenPractices },
-          { label: 'Планы',     sub: 'Планы поддержки и кризисов',                  onClick: onOpenPlans },
-        ].map(item => (
-          <div key={item.label} className="list-line u-pointer" {...pressable(item.onClick)}>
-            <div className="u-fill">
-              <div className="text-md" style={{ fontWeight: 500 }}>{item.label}</div>
-              <div className="text-sm muted u-mt3">{item.sub}</div>
+      <section className="cp-block">
+        <div className="ds-head-row"><h3 className="ds-h2">Каталоги</h3></div>
+        <div className="cp-tasks">
+          {[
+            { label: 'Практики',  sub: 'Рекомендованные упражнения по потребностям', onClick: onOpenPractices },
+            { label: 'Планы',     sub: 'Планы поддержки и кризисов',                  onClick: onOpenPlans },
+          ].map(item => (
+            <div key={item.label} className="ds-card ds-card--row ds-card--hover cp-task" {...pressable(item.onClick)}>
+              <div className="cp-task-body">
+                <div className="cp-task-title">{item.label}</div>
+                <div className="ds-sub">{item.sub}</div>
+              </div>
+              <span className="ds-link">открыть →</span>
             </div>
-            <span className="link">открыть →</span>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      </section>
 
       {/* Overlays */}
       {showFlashcard && <SchemaFlashcard onClose={() => setShowFlashcard(false)} onOpenTracker={onOpenTracker} onComplete={handleTaskComplete} />}

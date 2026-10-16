@@ -1,7 +1,7 @@
 import { useId, type ReactNode } from 'react';
 import { LimitedTextarea } from '../../components/LimitedTextarea';
 import { CONCEPT_MODE_TEXT_MAX } from '../../limits/textLimits';
-import { labelStyle } from './graphStyles';
+import { hintStyle, labelStyle } from './graphStyles';
 
 const fieldStyle = {
   width: '100%',
@@ -17,19 +17,26 @@ const fieldStyle = {
   resize: 'vertical',
 } as const;
 
-/** Подпись + поле с пределом длины. `above` — плашка между подписью и полем. */
+/**
+ * Подпись + поле с пределом длины. `above` — плашка между подписью и полем,
+ * `hint` — мелкая строка под полем («Этот текст виден на схеме»).
+ */
 export function ConceptTextField({
   label,
   placeholder,
   value,
   onChange,
   above,
+  hint,
+  max = CONCEPT_MODE_TEXT_MAX,
 }: {
   label: string;
   placeholder: string;
   value: string;
   onChange: (v: string) => void;
   above?: ReactNode;
+  hint?: string;
+  max?: number;
 }) {
   const id = useId();
   return (
@@ -43,13 +50,14 @@ export function ConceptTextField({
       {above}
       <LimitedTextarea
         id={id}
-        max={CONCEPT_MODE_TEXT_MAX}
+        max={max}
         rows={3}
         value={value}
         placeholder={placeholder}
         onChange={(e) => onChange(e.target.value)}
         style={fieldStyle}
       />
+      {hint && <div style={{ ...hintStyle, marginTop: 4 }}>{hint}</div>}
     </div>
   );
 }

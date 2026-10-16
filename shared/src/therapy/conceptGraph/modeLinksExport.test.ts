@@ -50,11 +50,10 @@ describe('formatModeLinksExport', () => {
         'РЕЖИМЫ: СВЯЗИ',
         'Уязвимый Ребёнок («Маленькая Аня»)',
         '  Схемы: Покинутость / Нестабильность · Неуспешность',
-        '  Потребности: Привязанность',
         '  Откуда: мама уезжала',
         '  В терапии: рескриптинг',
         'Карающий Критик',
-        '  Как проявляется: ругает за ошибки',
+        '  Что говорит: ругает за ошибки',
       ].join('\n'),
     );
   });
@@ -65,5 +64,37 @@ describe('formatModeLinksExport', () => {
       [{ ...emptyModeLink('vulnerable_child'), origin: 'раз\nдва' }],
     );
     expect(out).toContain('  Откуда: раз\n    два');
+  });
+
+  it('подпись текста зависит от группы, потребности — только у здорового режима, схемы — только у остальных', () => {
+    const out = formatModeLinksExport(
+      ['vulnerable_child', 'detached_protector', 'healthy_adult'],
+      [
+        {
+          ...emptyModeLink('vulnerable_child'),
+          manifest: 'боится остаться без поддержки',
+          needIds: ['limits'],
+        },
+        { ...emptyModeLink('detached_protector'), manifest: 'уходит в работу' },
+        {
+          ...emptyModeLink('healthy_adult'),
+          manifest: 'Я имею право на поддержку',
+          needIds: ['autonomy', 'play'],
+          schemaIds: ['failure'],
+        },
+      ],
+    );
+    expect(out).toContain(
+      '  Что чувствует и чего хочет: боится остаться без поддержки',
+    );
+    expect(out).toContain('  Что делает и как это выглядит: уходит в работу');
+    expect(out).toContain(
+      '  Заботится о потребностях: Автономия · Спонтанность',
+    );
+    expect(out).toContain('  На что опирается: Я имею право на поддержку');
+    // потребности обычного режима и схемы здорового в экспорт не идут: в редакторе их нет
+    expect(out).not.toContain('Границы');
+    expect(out).not.toContain('Неуспешность');
+    expect(out).not.toContain('Как проявляется');
   });
 });

@@ -16,6 +16,7 @@ import type { TherapyClientSummary, UserId } from '../../api';
 import type { Section } from './navigation';
 import type { useOverlays } from './useOverlays';
 
+import type { TodayRating } from '../../sections/TodaySection';
 const TodaySection    = lazy(() => import('../../sections/TodaySection').then(m => ({ default: m.TodaySection })));
 const DiarySection    = lazy(() => import('../../sections/DiarySection').then(m => ({ default: m.DiarySection })));
 const SchemasSection  = lazy(() => import('../../sections/SchemasSection').then(m => ({ default: m.SchemasSection })));
@@ -46,13 +47,15 @@ interface Props {
   childhoodRatings: Record<string, number>;
   helpTasksKey: number;
   setHelpTasksKey: (updater: (k: number) => number) => void;
+  /** Оценка потребности со шкалы «Сегодня» — те же обработчики, что у трекера. */
+  rating: TodayRating;
 }
 
 export function AppSections({
   inert, therapistMode, pathname, section, needs, ratings, yesterdayRatings,
   displayName, navigate, openClientId, switchTherapistMode, therapistBackHandlerRef,
   setTherapistClients, setSection, ov, todayRefreshKey, userRole, profileRefreshKey,
-  childhoodRatings, helpTasksKey, setHelpTasksKey,
+  childhoodRatings, helpTasksKey, setHelpTasksKey, rating,
 }: Props) {
   return (
     // display:contents — обёртка не участвует в flex-раскладке canvas
@@ -104,6 +107,7 @@ export function AppSections({
             refreshKey={todayRefreshKey}
             userRole={userRole}
             onOpenTherapistCabinet={() => { switchTherapistMode(true); }}
+            rating={rating}
           />
         )}
         {section === 'diary' && (

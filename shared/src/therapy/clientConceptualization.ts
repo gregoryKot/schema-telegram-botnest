@@ -1,4 +1,8 @@
-import type { ConceptModeLink, ConceptSnapshot } from '../apiTypes';
+import type {
+  ConceptModeLink,
+  ConceptSchemaLink,
+  ConceptSnapshot,
+} from '../apiTypes';
 import type { UserId } from '../userId';
 
 /**
@@ -22,6 +26,8 @@ export interface ClientConceptualizationBase {
   modeTransitions: string | null;
   /** Связи режимов графической концептуализации (legacy-строки — []). */
   modeLinks: ConceptModeLink[];
+  /** Тексты схем графической концептуализации (legacy-строки — []). */
+  schemaLinks: ConceptSchemaLink[];
   history: ConceptSnapshot[];
   updatedAt: string;
 }
