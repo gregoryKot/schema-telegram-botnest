@@ -84,6 +84,26 @@ describe('BookingPaidPage — отказ загрузки брони по вид
   });
 });
 
+describe('BookingPaidPage — ссылка управления записью (/booking/manage)', () => {
+  beforeEach(() => window.history.pushState({}, '', `/booking/manage?token=${TOKEN}`));
+
+  it('сбой говорит о записи, а не об оплате; «Обновить» есть', async () => {
+    getBookingByToken.mockRejectedValue(new ApiError(500, 'Internal'));
+    render(<BookingPaidPage />);
+    expect(await screen.findByText('Не удалось загрузить запись')).toBeTruthy();
+    expect(screen.queryByText(CHECK_FAILED)).toBeNull();
+    expect(screen.queryByText(/деньги/i)).toBeNull();
+    expect(screen.getByText('Обновить')).toBeTruthy();
+  });
+
+  it('404 — тот же экран «не найдена», что и на возврате с оплаты', async () => {
+    getBookingByToken.mockRejectedValue(new ApiError(404, 'Not Found'));
+    render(<BookingPaidPage />);
+    expect(await screen.findByText(NOT_FOUND)).toBeTruthy();
+    expect(screen.queryByText('Оплата принята')).toBeNull();
+  });
+});
+
 describe('BookingPaidPage — «Обновить» после отказа', () => {
   it('повторный запрос идёт в сеть и при успехе показывает бронь', async () => {
     getBookingByToken.mockRejectedValueOnce(new ApiError(500, 'Internal')).mockResolvedValue(booking());

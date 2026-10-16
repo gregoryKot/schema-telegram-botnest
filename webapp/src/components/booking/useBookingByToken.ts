@@ -1,27 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { api, reportClientError } from '../../api';
-import { ApiError } from '../../apiClient';
+import { api } from '../../api';
+import { handleLoadFailure, reportHeldTimeout, type BookingLoadError } from './bookingLoadError';
 import { paidPhase, POLL_INTERVAL_MS, POLL_LIMIT_MS } from './paidPageModel';
 
 export type PublicBooking = Awaited<ReturnType<typeof api.getBookingByToken>>;
 
-/** Почему бронь не загрузилась: сервер её не знает (404) или проверить не вышло. */
-export type BookingLoadError = 'notFound' | 'failed';
-
-/** 404 — ссылка не ведёт ни на какую бронь; всё прочее (5xx, 429, сеть, HTML вместо JSON) — сбой. */
-export function classifyLoadError(err: unknown): BookingLoadError {
-  return err instanceof ApiError && err.status === 404 ? 'notFound' : 'failed';
-}
-
 /**
- * Бронь по токену для экрана возврата с оплаты. Пока бронь HELD (вебхук оплаты
- * ещё не пришёл), переспрашивает сервер каждые POLL_INTERVAL_MS; смена статуса
- * подхватывается сама. Через POLL_LIMIT_MS ставит `timedOut` и шлёт отчёт
- * наверх (правило №14: экран-тупик без отчёта — невидимая авария).
- * Ошибка запроса не стирает уже полученную бронь (ни посреди ожидания, ни после
- * «Проверить ещё раз»). Пока брони нет, отказ первой загрузки отдаётся как
- * `loadError`, чтобы страница не рисовала «Оплата принята» без оснований, и
- * уходит наверх один раз за жизнь страницы (ручные «Обновить» не множат отчёты).
+ * Бронь по токену для экрана возврата с оплаты. Пока бронь HELD, переспрашивает
+ * сервер каждые POLL_INTERVAL_MS; через POLL_LIMIT_MS ставит `timedOut`. Отказ
+ * запроса не стирает уже полученную бронь; пока брони нет, отдаётся `loadError`.
  */
 export function useBookingByToken(token: string | null) {
   const [booking, setBooking] = useState<PublicBooking | null>(null);
@@ -50,26 +37,12 @@ export function useBookingByToken(token: string | null) {
           setBooking(b);
           setLoadError(null);
         })
-        .catch((err: unknown) => {
-          if (!alive || lastBooking.current) return;
-          setLoadError(classifyLoadError(err));
-          if (errorReported.current) return;
-          errorReported.current = true;
-          const detail = err instanceof ApiError ? `HTTP ${err.status}` : err instanceof Error ? err.message : String(err);
-          reportClientError({ message: `booking paid page: не удалось загрузить бронь по токену: ${detail}`, section: 'booking' });
-        })
+        .catch((err: unknown) => { if (alive && !lastBooking.current) setLoadError(handleLoadFailure(err, errorReported)); })
         .finally(() => {
           if (!alive) return;
           setLoaded(true);
           if (!pending) return;
-          if (Date.now() - startedAt >= POLL_LIMIT_MS) {
-            setTimedOut(true);
-            reportClientError({
-              message: `booking paid page: бронь осталась HELD через ${POLL_LIMIT_MS / 1000} с после возврата с оплаты`,
-              section: 'booking',
-            });
-            return;
-          }
+          if (Date.now() - startedAt >= POLL_LIMIT_MS) { setTimedOut(true); reportHeldTimeout(); return; }
           timer = setTimeout(load, POLL_INTERVAL_MS);
         });
     };
@@ -77,14 +50,8 @@ export function useBookingByToken(token: string | null) {
     return () => { alive = false; clearTimeout(timer); };
   }, [token, tick]);
 
-  /** Ручное «обновить»/«проверить ещё раз»: новый цикл ожидания. */
-  const reload = useCallback(() => {
-    setTimedOut(false);
-    setLoadError(null);
-    // Брони нет — вместо пустоты показываем скелетон, пока идёт повторный запрос.
-    if (!lastBooking.current) setLoaded(false);
-    setTick((t) => t + 1);
-  }, []);
+  /** «Обновить»/«проверить ещё раз»: новый цикл; без брони — скелетон, пока идёт повторный запрос. */
+  const reload = useCallback(() => { setTimedOut(false); setLoadError(null); if (!lastBooking.current) setLoaded(false); setTick((t) => t + 1); }, []);
 
   return { booking, loaded, timedOut, loadError, reload };
 }
