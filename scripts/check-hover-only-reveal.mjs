@@ -10,9 +10,10 @@
 //
 // Правило: если у элемента есть правило сокрытия (`opacity: 0` или
 // `visibility: hidden`) и хотя бы одно правило раскрытия, то хотя бы одно
-// раскрытие обязано обходиться без :hover — `:focus-within`/`:focus-visible`,
-// класс состояния (`.selected`, `.ready`) или блок `@media (hover: none)` /
-// `(pointer: coarse)`. Правила внутри @keyframes не считаются (анимация).
+// раскрытие обязано обходиться без :hover, и путей нужно два: для пальца
+// (`@media (hover: none)` / `(pointer: coarse)`) и для клавиатуры
+// (`:focus-within` / `:focus-visible`); класс состояния (`.selected`,
+// `.ready`) закрывает оба. Правила внутри @keyframes не считаются.
 //
 // Гейт АБСОЛЮТНЫЙ, без бейслайна и без списка исключений: класс вычищен в
 // том же PR, замораживать нечему (правило №15 CLAUDE.md). Образец по
@@ -49,14 +50,29 @@ const isShown = (d) =>
   (d.opacity !== undefined && !/^0(\.0+)?$/.test(d.opacity)) ||
   d.visibility === 'visible';
 
-// Раскрытие не зависит от hover: нет :hover в селекторе и нет контекста
-// `(hover: hover)`, либо контекст прямо про устройства без hover.
-function touchSafe(sel, ctx) {
+// Раскрытие бывает трёх видов. Для пальца и клавиатуры нужны РАЗНЫЕ пути:
+// тап на iOS Safari кнопку не фокусирует, поэтому одного :focus-within
+// телефону мало; а `@media (hover: none)` на десктопе не срабатывает, и
+// фокус с клавиатуры без :focus-* уходит в невидимую кнопку.
+//   - touch:  блок `(hover: none)` / `(pointer: coarse)`;
+//   - focus:  `:focus-within` / `:focus-visible` / `:focus`;
+//   - state:  всё остальное без :hover (класс `.selected`, `.ready`) — не
+//             зависит от устройства ввода, закрывает оба пути сразу.
+function kind(sel, ctx) {
   const media = ctx.join(' ');
   if (/\((hover:\s*none|pointer:\s*coarse|any-hover:\s*none)\)/.test(media))
-    return true;
-  return !/:hover(?![\w-])/.test(sel) && !/\(hover:\s*hover\)/.test(media);
+    return 'touch';
+  if (/:hover(?![\w-])/.test(sel) || /\(hover:\s*hover\)/.test(media))
+    return 'hover';
+  return /:focus(-within|-visible)?(?![\w-])/.test(sel) ? 'focus' : 'state';
 }
+const paths = (shown) => {
+  const k = new Set(shown.map((r) => kind(r.sel, r.ctx)));
+  return {
+    touch: k.has('touch') || k.has('state'),
+    keyboard: k.has('focus') || k.has('state'),
+  };
+};
 
 export function findHoverOnly(css) {
   const rules = parseCssRules(stripComments(css, true)).flatMap((r) =>
@@ -70,8 +86,9 @@ export function findHoverOnly(css) {
     const shown = rules.filter(
       (r) => isShown(r.decls) && covers(subject(r.sel), key),
     );
-    if (shown.length && !shown.some((r) => touchSafe(r.sel, r.ctx))) {
-      found.push({ ln: h.line, sel: h.sel, shown });
+    const p = paths(shown);
+    if (shown.length && !(p.touch && p.keyboard)) {
+      found.push({ ln: h.line, sel: h.sel, shown, ...p });
     }
   }
   return found;
@@ -98,13 +115,15 @@ function main() {
       console.error(`  ${f.file}:${f.ln} «${f.sel}» спрятан, раскрывается:`);
       for (const r of f.shown)
         console.error(`    ${r.sel}  (строка ${r.line})`);
+      if (!f.touch) console.error('    нет пути для пальца (hover: none)');
+      if (!f.keyboard) console.error('    нет пути для клавиатуры (:focus-*)');
     }
     console.error(
       '\nНа телефоне hover нет, а с клавиатуры кнопка остаётся фокусируемой, но\n' +
-        'невидимой. Добавь раскрытие без :hover:\n' +
+        'невидимой. Нужны ОБА пути (тап на iOS кнопку не фокусирует):\n' +
         '  .row:focus-within .x, .x:focus-visible { opacity: 1 }\n' +
-        '  @media (hover: none) { .x { opacity: 1 } }\n' +
-        'или раскрывай классом состояния (.selected, .ready).',
+        '  @media (hover: none), (pointer: coarse) { .x { opacity: 1 } }\n' +
+        'или раскрывай классом состояния (.selected, .ready) — он закрывает оба.',
     );
     process.exit(1);
   }

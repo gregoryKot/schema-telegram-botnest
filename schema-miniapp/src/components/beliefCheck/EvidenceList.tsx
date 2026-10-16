@@ -1,7 +1,7 @@
 import { hitboxStyle } from '../../utils/hitbox';
 import { CrisisGate } from '../CrisisGate';
 
-// Крестик 16×16 в зоне нажатия 44×44 (hitboxStyle), кнопка с именем «Удалить».
+// Крестик 16×16 в зоне 44×44; padding строки 14px вмещает выступ зоны.
 const x = hitboxStyle(16, 16);
 
 // Список доказательств (за/против) в проверке убеждения: строки с
@@ -35,7 +35,7 @@ export function EvidenceList({
                 display: 'flex',
                 alignItems: 'center',
                 gap: 'var(--space-8)',
-                padding: '7px 0',
+                padding: '14px 0',
                 borderBottom: '1px solid rgba(var(--fg-rgb),0.05)',
               }}
             >

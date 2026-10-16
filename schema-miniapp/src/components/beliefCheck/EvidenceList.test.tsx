@@ -96,6 +96,25 @@ describe('EvidenceList — добавление/удаление пунктов'
     expect(glyph.style.height).toBe('16px');
   });
 
+  it('зона нажатия не выходит за строку: padding строки не меньше выступа зоны', () => {
+    render(<Wrapper />);
+    const input = screen.getByPlaceholderText('Добавить...');
+    for (const v of ['первый', 'второй']) {
+      fireEvent.change(input, { target: { value: v } });
+      fireEvent.click(screen.getByText('+'));
+    }
+    const buttons = screen.getAllByRole('button', { name: 'Удалить' });
+    expect(buttons).toHaveLength(2);
+    for (const btn of buttons) {
+      const row = btn.parentElement as HTMLElement;
+      const reach = -parseFloat(btn.style.marginTop);
+      // Зона выступает над и под глифом на reach — строка обязана вместить её
+      // своим padding, иначе тап возле «×» попадёт в кнопку соседней строки.
+      expect(parseFloat(row.style.paddingTop)).toBeGreaterThanOrEqual(reach);
+      expect(parseFloat(row.style.paddingBottom)).toBeGreaterThanOrEqual(reach);
+    }
+  });
+
   it('Enter в поле ввода вызывает onAdd (пустой ввод не добавляет пункт — логика родителя)', () => {
     render(<Wrapper />);
     fireEvent.keyDown(screen.getByPlaceholderText('Добавить...'), {

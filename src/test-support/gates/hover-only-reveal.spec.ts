@@ -7,7 +7,11 @@
 // гейт обязан ронять; зелёные контрольные — законные паттерны проекта
 // (.mm-handle через .selected, .evi-add-go через .ready, .mode-check через
 // .is-selected), чтобы гейт не краснел на правильном коде (правило №15 п.2).
+import { readFileSync } from 'fs';
+import { join, resolve } from 'path';
 import { runGate } from './gate-sandbox';
+
+const REAL_ROOT = resolve(__dirname, '..', '..', '..');
 
 const SCRIPT = 'check-hover-only-reveal.mjs';
 const OK = '✓ раскрытие только по :hover: ни одного';
@@ -63,6 +67,34 @@ describe('check-hover-only-reveal.mjs — красные образцы', () => 
     expect(res.status).toBe(1);
   });
 
+  it('hover + :focus-within без блока для пальца — тап на iOS кнопку не фокусирует, exit 1', () => {
+    const res = run(
+      'webapp/src/a.css',
+      css(
+        '.x { opacity: 0; }',
+        '.row:hover .x,',
+        '.row:focus-within .x { opacity: 1; }',
+      ),
+    );
+    expect(res.status).toBe(1);
+    expect(res.stderr).toContain('нет пути для пальца');
+    expect(res.stderr).not.toContain('нет пути для клавиатуры');
+  });
+
+  it('hover + @media (hover: none) без :focus-* — фокус с клавиатуры уходит в невидимую кнопку, exit 1', () => {
+    const res = run(
+      'webapp/src/a.css',
+      css(
+        '.x { opacity: 0; }',
+        '.row:hover .x { opacity: 1; }',
+        '@media (hover: none) { .x { opacity: 1; } }',
+      ),
+    );
+    expect(res.status).toBe(1);
+    expect(res.stderr).toContain('нет пути для клавиатуры');
+    expect(res.stderr).not.toContain('нет пути для пальца');
+  });
+
   it('список селекторов: hover-раскрытие в одной ветке запятой не спасает, если вторая тоже hover', () => {
     const res = run(
       'webapp/src/a.css',
@@ -101,7 +133,7 @@ describe('check-hover-only-reveal.mjs — зелёные контрольные 
     expect(res.status).toBe(0);
   });
 
-  it(':focus-within и :focus-visible рядом с hover — exit 0', () => {
+  it(':focus-within + :focus-visible и блок для пальца вместе — оба пути, exit 0', () => {
     const res = run(
       'webapp/src/index.css',
       css(
@@ -109,12 +141,13 @@ describe('check-hover-only-reveal.mjs — зелёные контрольные 
         '.evi-row:hover .evi-x,',
         '.evi-row:focus-within .evi-x,',
         '.evi-x:focus-visible { opacity: 1; }',
+        '@media (hover: none), (pointer: coarse) { .evi-x { opacity: 1; } }',
       ),
     );
     expect(res.status).toBe(0);
   });
 
-  it('@media (hover: none) и (pointer: coarse) — exit 0', () => {
+  it('(hover: none) и (pointer: coarse) в паре с :focus-visible — exit 0', () => {
     for (const q of [
       '(hover: none)',
       '(pointer: coarse)',
@@ -125,11 +158,22 @@ describe('check-hover-only-reveal.mjs — зелёные контрольные 
         css(
           '.x { opacity: 0; }',
           '.row:hover .x { opacity: 1; }',
+          '.x:focus-visible { opacity: 1; }',
           `@media ${q} { .x { opacity: 1; } }`,
         ),
       );
       expect(res.status).toBe(0);
     }
+  });
+
+  it('настоящий webapp/src/index.css после починки — exit 0', () => {
+    const real = readFileSync(
+      join(REAL_ROOT, 'webapp', 'src', 'index.css'),
+      'utf8',
+    );
+    const res = run('webapp/src/index.css', real);
+    expect(res.status).toBe(0);
+    expect(res.stdout).toContain(OK);
   });
 
   it('@keyframes { from { opacity: 0 } } — анимация, а не сокрытие, exit 0', () => {
