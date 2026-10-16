@@ -10,6 +10,7 @@ import { createRef } from 'react';
 import { ClientListView } from './ClientListView';
 import type { ClientDetail, AddClient } from './types';
 import type { TherapyClientSummary } from '../../api';
+import { CLIENT_NAME_MAX } from '../../../../shared/src/limits/textLimits';
 
 vi.mock('./ClientCard', () => ({
   ClientCard: ({ client }: { client: TherapyClientSummary }) => (
@@ -105,6 +106,16 @@ describe('ClientListView — режим «Оффлайн» (виртуальны
     );
     fireEvent.click(screen.getByText('Создать'));
     expect(addVirtualClient).toHaveBeenCalled();
+  });
+
+  it('поле имени офлайн-клиента не принимает больше CLIENT_NAME_MAX знаков', () => {
+    render(
+      <ClientListView
+        {...baseProps({ addClient: makeAddClient({ addMode: 'virtual' }) })}
+      />,
+    );
+    const input = screen.getByPlaceholderText('Имя клиента');
+    expect(input.maxLength).toBe(CLIENT_NAME_MAX);
   });
 
   it('Enter в поле имени зовёт addVirtualClient', () => {

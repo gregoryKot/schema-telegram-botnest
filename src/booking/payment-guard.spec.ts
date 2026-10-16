@@ -116,7 +116,7 @@ describe('assertBookingPayable', () => {
   it('прод без Robokassa: платная запись → лид владельцу (имя, контакт) и 503', async () => {
     process.env.NODE_ENV = 'production';
     const notify = { notifyAdminBoth: jest.fn(async () => undefined) };
-    await expect(assertBookingPayable(off, notify, lead)).rejects.toThrow(
+    await expect(assertBookingPayable(off, notify, lead, 3000)).rejects.toThrow(
       ServiceUnavailableException,
     );
     expect(notify.notifyAdminBoth).toHaveBeenCalledTimes(1);
@@ -128,17 +128,78 @@ describe('assertBookingPayable', () => {
     expect(html).toContain('@maria');
     expect(html).toContain('оплата не настроена');
     expect(subject).toBe('🚨 Заявка на запись не сохранилась');
+    expect(errorSpy).toHaveBeenCalledWith(
+      'Robokassa not configured in production: booking refused',
+    );
+  });
+
+  // Аудит 2026-10-11: цена платной сессии 0 → HELD-бронь со счётом на 0,00 ₽.
+  // Отказ — до INSERT, как и «оплата не настроена»: слот не держится 15 минут.
+  it.each([0, -1, 0.5, NaN, null])(
+    'Robokassa настроена, но цена платной сессии %p: лид владельцу (имя, контакт, причина) и 503',
+    async (amount) => {
+      process.env.NODE_ENV = 'production';
+      const notify = { notifyAdminBoth: jest.fn(async () => undefined) };
+      await expect(
+        assertBookingPayable(on, notify, lead, amount),
+      ).rejects.toThrow(ServiceUnavailableException);
+      expect(notify.notifyAdminBoth).toHaveBeenCalledTimes(1);
+      const [html, subject] = notify.notifyAdminBoth.mock
+        .calls[0] as unknown as [string, string];
+      expect(html).toContain('Мария');
+      expect(html).toContain('@maria');
+      expect(html).toContain('цена сессии не задана');
+      expect(html).not.toContain('оплата не настроена');
+      // Лог — стабильный текст без id (AlertLogger троттлит по тексту), причина — цена.
+      expect(errorSpy).toHaveBeenCalledWith(
+        'Paid session price is not set: booking refused',
+      );
+      expect(subject).toBe('🚨 Заявка на запись не сохранилась');
+    },
+  );
+
+  it('цена не задана вне прода (dev) — тоже отказ: счёт на 0 ₽ не создаётся нигде', async () => {
+    process.env.NODE_ENV = 'test';
+    const notify = { notifyAdminBoth: jest.fn(async () => undefined) };
+    await expect(assertBookingPayable(off, notify, lead, 0)).rejects.toThrow(
+      ServiceUnavailableException,
+    );
+  });
+
+  it('граница: 1 ₽ — платная запись проходит', async () => {
+    const notify = { notifyAdminBoth: jest.fn(async () => undefined) };
+    await expect(
+      assertBookingPayable(on, notify, lead, 1),
+    ).resolves.toBeUndefined();
+    expect(notify.notifyAdminBoth).not.toHaveBeenCalled();
+  });
+
+  it('прод без Robokassa И цена не задана: причина — оплата (первая по порядку), лид один', async () => {
+    process.env.NODE_ENV = 'production';
+    const notify = { notifyAdminBoth: jest.fn(async () => undefined) };
+    await expect(assertBookingPayable(off, notify, lead, 0)).rejects.toThrow(
+      ServiceUnavailableException,
+    );
+    expect(notify.notifyAdminBoth).toHaveBeenCalledTimes(1);
+    expect(
+      (notify.notifyAdminBoth.mock.calls[0] as unknown as [string])[0],
+    ).toContain('оплата не настроена');
   });
 
   it('контроль: бесплатное знакомство в том же окружении не затрагивается', async () => {
     process.env.NODE_ENV = 'production';
     const notify = { notifyAdminBoth: jest.fn(async () => undefined) };
     await expect(
-      assertBookingPayable(off, notify, {
-        ...lead,
-        type: SessionType.INTRO_15,
-        durationMin: 15,
-      }),
+      assertBookingPayable(
+        off,
+        notify,
+        {
+          ...lead,
+          type: SessionType.INTRO_15,
+          durationMin: 15,
+        },
+        null,
+      ),
     ).resolves.toBeUndefined();
     expect(notify.notifyAdminBoth).not.toHaveBeenCalled();
   });
@@ -147,11 +208,11 @@ describe('assertBookingPayable', () => {
     const notify = { notifyAdminBoth: jest.fn(async () => undefined) };
     process.env.NODE_ENV = 'production';
     await expect(
-      assertBookingPayable(on, notify, lead),
+      assertBookingPayable(on, notify, lead, 3000),
     ).resolves.toBeUndefined();
     process.env.NODE_ENV = 'test';
     await expect(
-      assertBookingPayable(off, notify, lead),
+      assertBookingPayable(off, notify, lead, 3000),
     ).resolves.toBeUndefined();
     expect(notify.notifyAdminBoth).not.toHaveBeenCalled();
   });

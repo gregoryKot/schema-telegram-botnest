@@ -47,22 +47,32 @@ export function assertPaymentAvailable(
 }
 
 /**
- * Платная запись при ненастроенной оплате в проде: отказ ДО создания брони
- * (иначе HELD-строка держала бы слот 15 минут, а владельцу пришло бы
- * «бронь истекла без оплаты»). Имя и контакт человека не теряются: заявка
- * уходит владельцу лидом в оба канала (правило №18). Бесплатное знакомство
- * не затрагивается.
+ * Платная запись, которую нельзя принять, — отказ ДО создания брони (иначе
+ * HELD-строка держала бы слот 15 минут, а владельцу пришло бы «бронь истекла
+ * без оплаты»). Два случая: оплата не настроена в проде; цена платной сессии
+ * не задана (`amount` меньше рубля — счёт на 0 ₽ выставлять нельзя). Имя и
+ * контакт человека не теряются: заявка уходит владельцу лидом в оба канала
+ * (правило №18). Бесплатное знакомство не затрагивается.
+ *
+ * @param amount  сумма счёта, посчитанная book(); null — у бесплатного типа.
  */
 export async function assertBookingPayable(
   robokassa: Pick<RobokassaService, 'enabled'>,
   notify: Pick<BookingNotifyService, 'notifyAdminBoth'>,
   lead: LostLead,
+  amount: number | null,
 ): Promise<void> {
   if (lead.type === SessionType.INTRO_15) return;
-  if (paymentMode(robokassa) !== 'refuse') return;
+  const refuse = paymentMode(robokassa) === 'refuse';
+  if (!refuse && (amount ?? 0) >= 1) return;
   await notify.notifyAdminBoth(
-    lostLeadAlertText(lead, 'оплата не настроена'),
+    lostLeadAlertText(
+      lead,
+      refuse ? 'оплата не настроена' : 'цена сессии не задана',
+    ),
     '🚨 Заявка на запись не сохранилась',
   );
-  refusePayment('booking');
+  if (refuse) refusePayment('booking');
+  logger.error('Paid session price is not set: booking refused');
+  throw new ServiceUnavailableException('PAYMENT_UNAVAILABLE');
 }
