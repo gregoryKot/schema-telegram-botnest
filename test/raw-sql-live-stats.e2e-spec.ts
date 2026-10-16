@@ -69,6 +69,7 @@ const USER_EVENTS: Array<{ name: string; meta?: Record<string, unknown> }> = [
   { name: 'concept_graph_open' },
   { name: 'concept_mode_linked' },
   { name: 'concept_schema_linked' },
+  { name: 'concept_canvas_open' },
   { name: 'data_export' },
   { name: 'home_screen_offer', meta: { via: 'banner' } },
   { name: 'entry_deleted', meta: { type: 'belief_check' } },

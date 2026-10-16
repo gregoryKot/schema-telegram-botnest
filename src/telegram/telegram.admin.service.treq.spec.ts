@@ -6,6 +6,7 @@
 // /zayavki, /broadcast — telegram.admin.service.broadcast.spec.ts.
 import { Logger } from '@nestjs/common';
 import { TelegramAdminService } from './telegram.admin.service';
+import { ERROR_RETRY } from './telegram.constants';
 import { makeFakeBot, runAction } from './telegram.test-helpers.spec';
 
 const OLD_ADMIN_ID = process.env.ADMIN_ID;
@@ -99,7 +100,7 @@ describe('TelegramAdminService — treq:approve|reject (только админ)
 });
 
 describe('TelegramAdminService — treq action, ошибка approve/reject', () => {
-  it('approve падает — answerCbQuery("Ошибка"), ошибка залогирована, не бросает', async () => {
+  it('approve падает — сообщение ERROR_RETRY, ошибка залогирована, не бросает', async () => {
     jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
     const OLD = process.env.ADMIN_ID;
     process.env.ADMIN_ID = '999';
@@ -112,7 +113,8 @@ describe('TelegramAdminService — treq action, ошибка approve/reject', ()
     const ctx = await runAction(fakeBot, 'treq:approve:5', {
       from: { id: 999 },
     });
-    expect(ctx.answerCbQuery).toHaveBeenLastCalledWith('Ошибка');
+    expect(ctx.answerCbQuery).toHaveBeenCalledTimes(1);
+    expect(ctx.reply).toHaveBeenCalledWith(ERROR_RETRY);
     if (OLD === undefined) delete process.env.ADMIN_ID;
     else process.env.ADMIN_ID = OLD;
   });

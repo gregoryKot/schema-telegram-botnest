@@ -156,6 +156,14 @@ describe('ModeMapCanvas — легенда и подсказки', () => {
     expect(screen.queryByText('Легенда')).toBeNull();
   });
 
+  it('легенда называет и фигуры схемы случая', () => {
+    const { container } = renderCanvas({ initialNodes: [mmNode('n1', 'trigger')] });
+    clickToolbarButton(container, 'Легенда: формы и цвета');
+    for (const label of ['Схема (убеждение)', 'Опыт детства', 'Потребность']) {
+      expect(screen.getByText(label)).toBeTruthy();
+    }
+  });
+
   it('подсказки (гайд) показаны по умолчанию и скрываются по кнопке', () => {
     const { container } = renderCanvas({ initialNodes: [] });
     expect(screen.getByText('Советы')).toBeTruthy();
