@@ -17,6 +17,7 @@
     "src/utils/crypto-record.ts",
     "src/auth/auth.service.ts",
     "src/auth/merge.service.ts",
+    "src/auth/merge-relations.ts",
     "src/api/telegram-auth.guard.ts",
     "src/auth/security-log.service.ts",
     "src/auth/security-log-redact.ts",

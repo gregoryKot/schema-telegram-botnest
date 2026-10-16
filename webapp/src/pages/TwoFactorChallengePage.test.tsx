@@ -63,9 +63,9 @@ describe('TwoFactorChallengePage — без токена вызова', () => {
 });
 
 describe('TwoFactorChallengePage — ввод кода', () => {
-  it('кнопка «Войти» задизейблена, пока код пуст', () => {
+  it('кнопка «Подтвердить» задизейблена, пока код пуст', () => {
     renderAt('/auth/2fa?token=chal123');
-    expect((screen.getByRole('button', { name: /Войти/ }) as HTMLButtonElement).disabled).toBe(true);
+    expect((screen.getByRole('button', { name: /Подтвердить/ }) as HTMLButtonElement).disabled).toBe(true);
   });
 
   it('успешный код → accessToken сохранён, уход на /today (read-after-write)', async () => {
@@ -92,5 +92,18 @@ describe('TwoFactorChallengePage — ввод кода', () => {
     await screen.findByText('Неверный код');
     expect(screen.queryByText('today-page')).toBeNull();
     expect(input.value).toBe('');
+  });
+});
+
+describe('TwoFactorChallengePage — recovery-код', () => {
+  it('переключение на recovery-код принимает код не из шести цифр и отправляет как есть', async () => {
+    fetchMock.mockResolvedValue(jsonResponse(200, { accessToken: 't', expiresIn: 900 }));
+    const { container } = renderAt('/auth/2fa?token=chal123');
+    fireEvent.click(screen.getByRole('button', { name: /recovery-код/ }));
+    fireEvent.change(screen.getByLabelText('Recovery-код'), { target: { value: 'ab12-cd34-ef56' } });
+    fireEvent.submit(container.querySelector('form')!);
+    await screen.findByText('today-page');
+    const [, init] = fetchMock.mock.calls[0];
+    expect(JSON.parse((init as RequestInit).body as string).code).toBe('ab12-cd34-ef56');
   });
 });
