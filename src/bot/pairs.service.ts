@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { randomBytes } from 'crypto';
+import { activatePair } from './pair-activate';
 
 // M2 (аудит 2026-10): приглашение живёт 7 суток от createdAt. Раньше pending-код
 // жил вечно, а после выхода партнёра пара сбрасывалась в pending с ТЕМ ЖЕ кодом —
@@ -87,14 +88,7 @@ export class PairsService {
       !isInviteFresh(pair.createdAt)
     )
       return false;
-    // Conditional update — atomic at the DB level. If two users race to join
-    // the same code, only the one whose UPDATE still matches `pending` + empty
-    // slot wins; the loser gets count 0.
-    const res = await this.prisma.pair.updateMany({
-      where: { code, status: 'pending', userId2: null },
-      data: { userId2: uid, status: 'active' },
-    });
-    return res.count === 1;
+    return activatePair(this.prisma, uid, pair);
   }
 
   async leavePair(userId: bigint, code: string): Promise<void> {

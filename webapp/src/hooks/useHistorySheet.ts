@@ -1,5 +1,6 @@
-import { useEffect, useRef, useId } from 'react';
+import { useEffect, useLayoutEffect, useRef, useId } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { PAGE_LIFE, backDepth, pushSheetState, sheetStackOf } from './historySheetStack';
 
 /**
  * Pushes a history entry via React Router when a sheet mounts so the
@@ -13,32 +14,31 @@ import { useNavigate, useLocation } from 'react-router-dom';
  * the sheet so that history entries are never orphaned.
  */
 // Ж5 дизайн-аудита 2026-08: webapp не слушал Escape вовсе (miniapp — слушал).
-// Стек id смонтированных history-шитов — модульный, не state хука: нужен
-// только чтобы Escape с общего document-листенера закрывал ИМЕННО верхний
-// лист при нескольких наложенных (иначе сработали бы все разом). Пуш/поп
-// синхронны с mount/unmount эффектом ниже — верхушка стека всегда совпадает
-// с последним открытым листом.
+// Стек id смонтированных листов — модульный, не state хука: Escape с общего
+// document-листенера закрывает ИМЕННО верхний лист из наложенных (иначе
+// сработали бы все разом). Пуш/поп синхронны с mount/unmount эффектом ниже.
 const openSheetIds: string[] = [];
 
 export function useHistorySheet(onClose: () => void) {
   const navigate = useNavigate();
   const location = useLocation();
   const ref = useRef(onClose);
-  // Держим ref.current актуальным в эффекте, а не в рендере (react-hooks/refs):
-  // ref.current читается только из пост-коммит эффекта ниже, так что этого
-  // достаточно.
-  useEffect(() => {
+  const loc = useRef(location);
+  // Рефы — в эффекте, а не в рендере (react-hooks/refs); layout-эффект идёт до
+  // пассивных: goBack из эффекта ребёнка видит запись этого же коммита.
+  useLayoutEffect(() => {
     ref.current = onClose;
+    loc.current = location;
   });
-  // Стабильный уникальный ID инстанса (useId вместо Date.now/Math.random в
-  // рендере — react-hooks/purity), чтобы вложенные листы не пересекались.
-  const id = useId();
+  // Стабильный уникальный ID инстанса (useId — react-hooks/purity) с меткой
+  // жизни страницы: запись истории переживает перезагрузку, счётчик useId — нет.
+  const id = PAGE_LIFE + useId();
   const ready = useRef(false);
 
   useEffect(() => {
     navigate(location.pathname + location.search + location.hash, {
       replace: false,
-      state: { ...(location.state ?? {}), __sheetId: id },
+      state: pushSheetState(location.state, id),
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -46,13 +46,11 @@ export function useHistorySheet(onClose: () => void) {
   useEffect(() => {
     if (!ready.current) {
       // Wait until our navigate has committed
-      if ((location.state as { __sheetId?: string } | null)?.__sheetId === id) ready.current = true;
+      if (sheetStackOf(location.state).includes(id)) ready.current = true;
       return;
     }
     // Our entry is gone from history (user pressed back) – close the sheet
-    if ((location.state as { __sheetId?: string } | null)?.__sheetId !== id) {
-      ref.current();
-    }
+    if (!sheetStackOf(location.state).includes(id)) ref.current();
   }, [location, id]);
 
   useEffect(() => {
@@ -68,11 +66,13 @@ export function useHistorySheet(onClose: () => void) {
       if (e.key !== 'Escape' || e.defaultPrevented) return; // диалог поверх уже закрылся (dialogStack)
       // Не верхний из наложенных листов — Escape его не касается.
       if (openSheetIds[openSheetIds.length - 1] !== id) return;
-      navigate(-1);
+      navigate(-backDepth(loc.current.state, id));
     };
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
   }, [id, navigate]);
 
-  return () => navigate(-1);
+  // goBack закрывает СВОЙ лист: снимает его запись и всё, что легло сверху
+  // (запись ребёнка, в том числе брошенную без goBack), — не одну верхнюю.
+  return () => navigate(-backDepth(loc.current.state, id));
 }

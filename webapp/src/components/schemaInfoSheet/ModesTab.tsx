@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { useTr } from '../../utils/addressForm';
 import { MODE_GROUP_HUE, hueStyle } from '../../lib/tone';
 import { IdentityDot } from '../../../../shared/src/components/IdentityDot';
-import { buildModes, type ModeCheckinItem } from './data';
-import { ModeCheckin } from './ModeCheckin';
+import { buildModes } from './data';
+import { ModeCheckinOverlay } from './ModeCheckinOverlay';
 
 /** Группы справочника → ключ MODE_GROUP_HUE (копинги в палитре все одного тона). */
 const GROUP_HUE_KEY: Record<string, string> = {
@@ -18,9 +18,7 @@ const GROUP_HUE_KEY: Record<string, string> = {
 export function ModesTab() {
   const tr = useTr();
   const MODES = buildModes(tr);
-  const [checkinMode, setCheckinMode] = useState<ModeCheckinItem | null>(null);
   const [showCheckin, setShowCheckin] = useState(false);
-  const close = () => { setCheckinMode(null); setShowCheckin(false); };
 
   return (
     <div className="ss-pane">
@@ -61,9 +59,7 @@ export function ModesTab() {
         </div>
       ))}
 
-      {showCheckin && (
-        <ModeCheckin mode={checkinMode} onPick={setCheckinMode} onBack={() => setShowCheckin(false)} onDone={close} />
-      )}
+      {showCheckin && <ModeCheckinOverlay onClose={() => setShowCheckin(false)} />}
     </div>
   );
 }
