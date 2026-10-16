@@ -72,6 +72,16 @@ const ANON_EVENTS: Array<{ name: string; meta: Record<string, unknown> }> = [
   { name: 'login_ticket_step', meta: { step: 'issued' } },
   { name: 'client_error', meta: { section: 'booking', source: 'webapp' } },
   { name: 'client_error', meta: { section: 'auth', source: 'miniapp' } },
+  // Шквал (находка аудита 2026-10-11): meta.suppressed суммируется приведением
+  // ::int, meta.unlogged считается FILTER'ом — оба идут через драйвер.
+  {
+    name: 'client_error',
+    meta: { section: 'diary', source: 'webapp', suppressed: 3 },
+  },
+  {
+    name: 'client_error',
+    meta: { section: 'diary', source: 'webapp', unlogged: true },
+  },
   { name: 'signup_source', meta: { src: 'web' } },
   // Кризисная карточка формы записи на визитке (аудит 2026-10, frontends#5):
   // пишется анонимно, строка отчёта считает её отдельно по meta.surface.
@@ -113,6 +123,11 @@ describe('/stats на реальном Postgres: каждый сырой зап�
     ]);
     expectSaneReport(core);
     expectSaneReport(product);
+    // Пустое состояние (правило №8): без шквала строк про него нет.
+    expect(product).not.toContain('Повторные отчёты с одного устройства');
+    expect(product).not.toContain(
+      'Подробности не записаны из-за общего потолка',
+    );
   });
 
   it('после фикстур: ветки группировки по meta проходят через драйвер, новая секция booking видна в отчёте', async () => {
@@ -141,6 +156,14 @@ describe('/stats на реальном Postgres: каждый сырой зап�
     // Секция 'booking' события client_error (инцидент 2026-09-13) считается
     // отдельным FILTER'ом в сыром SQL — на живой базе он обязан дать ≥1.
     expect(product).toContain('Запись на консультацию');
+    // Сумма meta.suppressed и счёт meta.unlogged: сырой SQL приводит jsonb-текст
+    // к int на живой базе (мок $queryRaw этого не доказывает, правило №18).
+    expect(product).toMatch(
+      /Повторные отчёты с одного устройства: ([3-9]|\d{2,}) за неделю/,
+    );
+    expect(product).toMatch(
+      /Подробности не записаны из-за общего потолка: [1-9]\d* —/,
+    );
     // groupBy по userId (distinct-терапевты) исполнен драйвером и увидел фикстуры.
     expect(product).toMatch(/Открывали [1-9]\d* раз, терапевтов: [1-9]\d*/);
     expect(product).toMatch(/Связи режимов заполняли [1-9]\d* раз/);

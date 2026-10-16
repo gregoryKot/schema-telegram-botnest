@@ -29,6 +29,8 @@ describe('ClientErrorMetricsService.getMetrics', () => {
         other_week: 13n,
         webapp_week: 22n,
         miniapp_week: 18n,
+        repeats_week: 57n,
+        unlogged_week: 4n,
       },
     ]);
     await expect(service.getMetrics()).resolves.toEqual({
@@ -49,6 +51,8 @@ describe('ClientErrorMetricsService.getMetrics', () => {
         other: 13,
       },
       bySource: { webapp: 22, miniapp: 18 },
+      repeatsWeek: 57,
+      unloggedWeek: 4,
     });
   });
 
@@ -72,6 +76,8 @@ describe('ClientErrorMetricsService.getMetrics', () => {
         other: 0,
       },
       bySource: { webapp: 0, miniapp: 0 },
+      repeatsWeek: 0,
+      unloggedWeek: 0,
     });
   });
 
