@@ -10,9 +10,13 @@
 //   concept_canvas_open   — перенёс схему случая на холст: из неё создана новая
 //                           карта режимов. Только сайт — карты режимов в
 //                           мини-аппе нет, поэтому у события один фронтенд.
+//   concept_graph_fullscreen — развернул схему случая на весь экран («⤢ На весь
+//                           экран» над схемой). Одно событие на каждое разворачивание;
+//                           только сайт — у мини-аппа свой экран, разворачивать нечего.
 export const CONCEPT_EVENTS = [
   'concept_graph_open',
   'concept_mode_linked',
   'concept_schema_linked',
   'concept_canvas_open',
+  'concept_graph_fullscreen',
 ] as const;
