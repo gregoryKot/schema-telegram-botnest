@@ -8,7 +8,7 @@ import { ClientCard } from './ClientCard';
 import { StatCards } from './StatCards';
 import { ListEmptyState } from './ListEmptyState';
 import { InvitePanel } from './addPanels/InvitePanel';
-import { AddInputPanel } from './addPanels/AddInputPanel';
+import { VirtualClientPanel } from './addPanels/VirtualClientPanel';
 import { AddModeTabs } from './addPanels/AddModeTabs';
 
 interface ClientListViewProps {
@@ -192,14 +192,9 @@ export function ClientListView({
             {addMode === 'invite' && <InvitePanel addClient={addClient} />}
 
             {addMode === 'virtual' && (
-              <AddInputPanel
+              <VirtualClientPanel
                 addClient={addClient}
                 inputRef={virtualInputRef}
-                onSubmit={addClient.addVirtualClient}
-                placeholder="Имя клиента"
-                submitLabel="Создать"
-                accent
-                hint="Для работы без Telegram: заметки, концептуализация, задания"
               />
             )}
 

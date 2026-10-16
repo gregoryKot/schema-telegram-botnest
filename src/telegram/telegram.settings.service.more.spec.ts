@@ -85,15 +85,19 @@ describe('TelegramSettingsService — catch-блоки (ни один хендл
     expect(ctx.reply).toHaveBeenCalledWith(ERROR_RETRY);
   });
 
-  it('settings:toggle_gamified: падение — answerCbQuery с подсказкой повторить', async () => {
+  it('settings:toggle_gamified: падение — сообщение об ошибке, не второй answerCbQuery', async () => {
     jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
     const { service, fakeBot } = makeService(failingBotService());
     service.onModuleInit();
     const ctx = await runAction(fakeBot, 'settings:toggle_gamified');
-    expect(ctx.answerCbQuery).toHaveBeenLastCalledWith(ERROR_RETRY);
+    expect(ctx.answerCbQuery).toHaveBeenCalledTimes(1);
+    expect(ctx.editMessageText).toHaveBeenLastCalledWith(
+      ERROR_RETRY,
+      expect.anything(),
+    );
   });
 
-  it('settings:pick_hour: editMessageText падает — answerCbQuery-фолбэк, ошибка залогирована', async () => {
+  it('settings:pick_hour: editMessageText падает — сообщение об ошибке, ошибка залогирована', async () => {
     jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
     const botService = {
       getUserSettings: jest.fn(),
@@ -104,30 +108,43 @@ describe('TelegramSettingsService — catch-блоки (ни один хендл
     const ctx = await runAction(fakeBot, 'settings:pick_hour', {
       editMessageText: jest.fn().mockRejectedValue(new Error('too old')),
     });
-    expect(ctx.answerCbQuery).toHaveBeenLastCalledWith(ERROR_RETRY);
+    expect(ctx.answerCbQuery).toHaveBeenCalledTimes(1);
+    expect(ctx.reply).toHaveBeenCalledWith(ERROR_RETRY);
   });
 
-  it('settings:hour:9: падение записи в БД — answerCbQuery-фолбэк', async () => {
+  it('settings:hour:9: падение записи в БД — сообщение об ошибке', async () => {
     jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
     const { service, fakeBot } = makeService(failingBotService());
     service.onModuleInit();
     const ctx = await runAction(fakeBot, 'settings:hour:9');
-    expect(ctx.answerCbQuery).toHaveBeenLastCalledWith(ERROR_RETRY);
+    expect(ctx.answerCbQuery).toHaveBeenCalledTimes(1);
+    expect(ctx.editMessageText).toHaveBeenLastCalledWith(
+      ERROR_RETRY,
+      expect.anything(),
+    );
   });
 
-  it('settings:tz:Europe/Berlin: падение записи в БД — answerCbQuery-фолбэк', async () => {
+  it('settings:tz:Europe/Berlin: падение записи в БД — сообщение об ошибке', async () => {
     jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
     const { service, fakeBot } = makeService(failingBotService());
     service.onModuleInit();
     const ctx = await runAction(fakeBot, 'settings:tz:Europe/Berlin');
-    expect(ctx.answerCbQuery).toHaveBeenLastCalledWith(ERROR_RETRY);
+    expect(ctx.answerCbQuery).toHaveBeenCalledTimes(1);
+    expect(ctx.editMessageText).toHaveBeenLastCalledWith(
+      ERROR_RETRY,
+      expect.anything(),
+    );
   });
 
-  it('settings:back: падение чтения настроек — answerCbQuery-фолбэк', async () => {
+  it('settings:back: падение чтения настроек — сообщение об ошибке', async () => {
     jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
     const { service, fakeBot } = makeService(failingBotService());
     service.onModuleInit();
     const ctx = await runAction(fakeBot, 'settings:back');
-    expect(ctx.answerCbQuery).toHaveBeenLastCalledWith(ERROR_RETRY);
+    expect(ctx.answerCbQuery).toHaveBeenCalledTimes(1);
+    expect(ctx.editMessageText).toHaveBeenLastCalledWith(
+      ERROR_RETRY,
+      expect.anything(),
+    );
   });
 });

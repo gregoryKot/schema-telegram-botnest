@@ -2,8 +2,9 @@
 // (раньше собиралось дважды: autoSave в webapp и saveConcept в мини-аппе).
 // Принимает структурный тип, чтобы подходили оба локальных
 // ClientConceptualization (в webapp у него ещё поля карты режимов).
-import type { ConceptModeLink } from '../../apiTypes';
+import type { ConceptModeLink, ConceptSchemaLink } from '../../apiTypes';
 import { normalizeModeLinks } from './modeLinks';
+import { normalizeSchemaLinks } from './schemaLinks';
 
 export interface ConceptSaveSource {
   schemaIds?: string[];
@@ -16,6 +17,7 @@ export interface ConceptSaveSource {
   currentProblems?: string | null;
   modeTransitions?: string | null;
   modeLinks?: ConceptModeLink[];
+  schemaLinks?: ConceptSchemaLink[];
 }
 
 export interface ConceptSaveBody {
@@ -29,6 +31,7 @@ export interface ConceptSaveBody {
   currentProblems: string;
   modeTransitions: string;
   modeLinks: ConceptModeLink[];
+  schemaLinks: ConceptSchemaLink[];
 }
 
 export function conceptSaveBody(c: ConceptSaveSource): ConceptSaveBody {
@@ -43,5 +46,6 @@ export function conceptSaveBody(c: ConceptSaveSource): ConceptSaveBody {
     currentProblems: c.currentProblems ?? '',
     modeTransitions: c.modeTransitions ?? '',
     modeLinks: normalizeModeLinks(c.modeLinks),
+    schemaLinks: normalizeSchemaLinks(c.schemaLinks),
   };
 }

@@ -153,6 +153,38 @@ describe('ModeMapSelector — список карт и переключение'
   });
 });
 
+describe('ModeMapSelector — initialMapId («Открыть на холсте»)', () => {
+  it('открывает карту initialMapId, а не первую в списке', async () => {
+    listModeMaps.mockResolvedValue([meta(1, 'Карта А'), meta(7, 'Схема случая · 15 окт.', 'personality')]);
+    getModeMap.mockImplementation((id: number) => Promise.resolve(full(id, `Карта ${id}`)));
+    await act(async () => {
+      render(<ModeMapSelector clientId={5} initialMapId={7} />);
+    });
+    expect(getModeMap).toHaveBeenCalledTimes(1);
+    expect(getModeMap).toHaveBeenCalledWith(7);
+    expect(screen.getByTestId('mm-editor-stub').textContent).toBe('editor:7:problem');
+  });
+
+  it('карты с таким id в списке нет — открывается первая, как раньше', async () => {
+    listModeMaps.mockResolvedValue([meta(1, 'Карта А'), meta(2, 'Карта Б')]);
+    getModeMap.mockImplementation((id: number) => Promise.resolve(full(id, `Карта ${id}`)));
+    await act(async () => {
+      render(<ModeMapSelector clientId={5} initialMapId={99} />);
+    });
+    expect(getModeMap).toHaveBeenCalledWith(1);
+    expect(screen.getByTestId('mm-editor-stub').textContent).toBe('editor:1:problem');
+  });
+
+  it('без initialMapId поведение прежнее: первая карта', async () => {
+    listModeMaps.mockResolvedValue([meta(3, 'Карта В'), meta(4, 'Карта Г')]);
+    getModeMap.mockImplementation((id: number) => Promise.resolve(full(id, `Карта ${id}`)));
+    await act(async () => {
+      render(<ModeMapSelector clientId={5} />);
+    });
+    expect(getModeMap).toHaveBeenCalledWith(3);
+  });
+});
+
 describe('ModeMapSelector — создание новой карты через меню', () => {
   it('кнопка «Новая карта» открывает список типов, клик создаёт карту нужного вида', async () => {
     listModeMaps.mockResolvedValue([meta(1, 'Карта А')]);
