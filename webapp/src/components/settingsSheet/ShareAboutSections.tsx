@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { api } from '../../api';
+import { api, reportClientError } from '../../api';
 import { useTr } from '../../utils/addressForm';
 import { useCopyToClipboard } from '../../../../shared/src/utils/useCopyToClipboard';
 import { botShortUrl } from '../../utils/botConfig';
@@ -30,7 +30,10 @@ export function ShareSection() {
       return;
     }
     let shared = false;
-    try { if (navigator.share) { await navigator.share({ text }); shared = true; } } catch { /* best-effort: ошибку намеренно игнорируем */ }
+    try { if (navigator.share) { await navigator.share({ text }); shared = true; } }
+    catch (e) { // отказ от системного шаринга (AbortError) — штатный путь, текст ниже копируется сам
+      if (!(e instanceof Error && e.name === 'AbortError')) reportClientError({ message: `settings export share failed: ${String(e)}`, section: 'settings' });
+    }
     if (!shared) { await exportAutoCopy.copy(text); setExportText(text); }
   }
 
@@ -60,20 +63,12 @@ export function AboutSection() {
           Инструмент самопознания на основе схема-терапии: трекер потребностей, дневники схем и режимов, тесты, практики и пространство для работы с терапевтом.
         </p>
         <div className="st-links">
-          <a href="https://t.me/SchemeHappens" target="_blank" rel="noopener noreferrer">
-            Канал о схема-терапии → <b>@SchemeHappens</b>
-          </a>
-          <a href="https://t.me/kotlarewski" target="_blank" rel="noopener noreferrer">
-            Записаться на сессию → <b>@kotlarewski</b>
-          </a>
+          <a href="https://t.me/SchemeHappens" target="_blank" rel="noopener noreferrer">Канал о схема-терапии → <b>@SchemeHappens</b></a>
+          <a href="https://t.me/kotlarewski" target="_blank" rel="noopener noreferrer">Записаться на сессию → <b>@kotlarewski</b></a>
           {/* Подписка скрыта до подключения рекуррента у Robokassa — вернуть ссылку на /subscribe, когда заработает */}
-          <a href="/donate" target="_blank" rel="noopener noreferrer">
-            Поддержать проект → <b>разовый донат</b>
-          </a>
+          <a href="/donate" target="_blank" rel="noopener noreferrer">Поддержать проект → <b>разовый донат</b></a>
         </div>
-        <div className="st-fine">
-          Это образовательный инструмент — не медицинский и не психологический сервис.
-        </div>
+        <div className="st-fine">Это образовательный инструмент — не медицинский и не психологический сервис.</div>
       </div>
     </SSection>
   );

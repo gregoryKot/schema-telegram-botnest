@@ -1832,7 +1832,7 @@
   "webapp/src/components/settingsSheet/NotificationsSection.tsx": 43,
   "webapp/src/components/settingsSheet/PartnerSection.tsx": 81,
   "webapp/src/components/settingsSheet/SettingsSheet.test-helpers.tsx": 80,
-  "webapp/src/components/settingsSheet/ShareAboutSections.tsx": 80,
+  "webapp/src/components/settingsSheet/ShareAboutSections.tsx": 75,
   "webapp/src/components/settingsSheet/SubViews.tsx": 76,
   "webapp/src/components/settingsSheet/TherapistSections.tsx": 68,
   "webapp/src/components/settingsSheet/ui.tsx": 81,
