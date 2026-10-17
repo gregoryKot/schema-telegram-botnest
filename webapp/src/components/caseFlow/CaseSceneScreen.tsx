@@ -60,19 +60,18 @@ export function CaseSceneScreen({
     <ExScreen
       onBack={onBack}
       eyebrow="Разбор случая · Шаг 1 из 5"
-      eyebrowColor="var(--accent-indigo)"
       title="Что случилось?"
       lede={hint}
     >
       {chosenFrame && (
-        <div style={{ fontSize: 13, color: 'var(--accent)', marginBottom: 8 }}>
+        <div className="ex2-verdict">
           {buildFrameHint(tr)}
         </div>
       )}
 
       <textarea
         ref={areaRef}
-        className="paper-area"
+        className="ds-textarea"
         rows={4}
         value={value}
         onChange={(e) => onChange(e.target.value)}
@@ -82,21 +81,19 @@ export function CaseSceneScreen({
 
       <button
         type="button"
-        className="ex-btn ex-btn-ghost"
-        style={{ marginTop: 14, padding: '8px 4px' }}
+        className="ds-btn ex2-ghost ex2-gap"
         onClick={() => setShowFrames((v) => !v)}
       >
         {buildFramesToggle(showFrames)}
       </button>
 
       {showFrames && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-8)', marginTop: 8 }}>
+        <div className="ex2-stack">
           {CASE_FRAMES.map((frame) => (
             <button
               key={frame}
               type="button"
-              className="mode-test-row"
-              style={{ padding: '12px 4px' }}
+              className="ds-card ds-card--row ds-card--hover ex2-frame"
               onClick={() => {
                 onPickFrame(frame);
                 setShowFrames(false);

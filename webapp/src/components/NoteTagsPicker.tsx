@@ -1,5 +1,8 @@
 // Вынесено из NoteSheet.tsx (правило №10 CLAUDE.md — файл-храповик): чипы тем
 // дня — самостоятельный кусок разметки, без изменения поведения.
+import { DIARY_HUE, hueStyle } from '../lib/tone';
+import '../styles/sheet-diary.css';
+
 const TAGS = [
   { id: 'work',       label: 'Работа' },
   { id: 'relations',  label: 'Отношения' },
@@ -20,38 +23,20 @@ interface Props {
 
 export function NoteTagsPicker({ selectedTags, onToggle }: Props) {
   return (
-    <div className="prompt">
-      <div className="prompt-num">·</div>
-      <div className="u-w100">
-        <div className="prompt-label">Темы дня</div>
-        <div style={{ marginTop: 8, display: 'flex', flexWrap: 'wrap', gap: 7 }}>
-          {TAGS.map(t => {
-            const on = selectedTags.has(t.id);
-            return (
-              <div
-                key={t.id}
-                onClick={() => onToggle(t.id)}
-                role="button" tabIndex={0}
-                onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onToggle(t.id); } }}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 5,
-                  padding: '7px 14px', borderRadius: 'var(--r-20)', cursor: 'pointer',
-                  background: on
-                    ? 'color-mix(in srgb, var(--accent) 15%, transparent)'
-                    : 'rgba(var(--fg-rgb),0.05)',
-                  border: `1px solid ${on
-                    ? 'color-mix(in srgb, var(--accent) 40%, transparent)'
-                    : 'rgba(var(--fg-rgb),0.07)'}`,
-                  color: on ? 'var(--accent)' : 'var(--text-faint)',
-                  fontSize: 13, fontWeight: on ? 600 : 400,
-                  transition: 'all 0.15s',
-                }}
-              >
-                <span>{t.label}</span>
-              </div>
-            );
-          })}
-        </div>
+    <div className="ds-card sd-note-field" style={hueStyle(DIARY_HUE.schema)}>
+      <div className="ds-label">Темы дня</div>
+      <div className="sd-chips">
+        {TAGS.map(t => (
+          <button
+            key={t.id}
+            type="button"
+            onClick={() => onToggle(t.id)}
+            aria-pressed={selectedTags.has(t.id)}
+            className={'ds-chip sd-chip' + (selectedTags.has(t.id) ? ' is-selected tone-tint' : '')}
+          >
+            {t.label}
+          </button>
+        ))}
       </div>
     </div>
   );

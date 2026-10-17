@@ -5,38 +5,7 @@ import { NODE_DEFAULT_SIZES } from './modeMapData';
 type FlowNode = Node<Record<string, unknown>>;
 
 export { autoLayout } from './modeMap/autoLayout';
-
-// ── Layout by zones (mirror ModeMapZones bands) ───────────────────────────────
-// Band index per node type, and vertical centre of each band (flow coords).
-const BAND_OF: Record<string, 0 | 1 | 2> = {
-  healthy: 0,
-  coping: 1,
-  child: 2, critic: 2, trigger: 2, behavior: 2, custom: 2,
-};
-const BAND_CENTER_Y = [-200, 230, 690];   // matches BANDS in ModeMapZones.tsx
-const BAND_GAP = 60;
-
-/** Arrange nodes into the type-bands shown when «Зоны» is on — a horizontal row per band. */
-export function layoutByZones(nodes: FlowNode[]): FlowNode[] {
-  const bands: FlowNode[][] = [[], [], []];
-  nodes.forEach(n => bands[BAND_OF[n.type ?? 'custom'] ?? 2].push(n));
-  const out: FlowNode[] = [];
-  bands.forEach((list, band) => {
-    // total width to centre the row around x=0
-    const sized = list.slice().sort((a, b) => a.position.x - b.position.x).map(n => ({
-      n,
-      w: (n.width as number) ?? NODE_DEFAULT_SIZES[n.type ?? '']?.width ?? 150,
-      h: (n.height as number) ?? NODE_DEFAULT_SIZES[n.type ?? '']?.height ?? 70,
-    }));
-    const total = sized.reduce((s, x) => s + x.w, 0) + BAND_GAP * Math.max(0, sized.length - 1);
-    let x = -total / 2;
-    for (const { n, w, h } of sized) {
-      out.push({ ...n, position: { x, y: BAND_CENTER_Y[band] - h / 2 } });
-      x += w + BAND_GAP;
-    }
-  });
-  return out;
-}
+export { layoutByZones } from './modeMap/zonesLayout';
 
 // ── Couple "cycle clash" layout — Partner A column left, Partner B column right ─
 const ROLE_RANK: Record<string, number> = { trigger: 0, critic: 1, child: 2, coping: 3, behavior: 4, healthy: 5, custom: 3 };

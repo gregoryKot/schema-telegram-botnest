@@ -14,19 +14,7 @@ export function TertiaryLink({
   onClick: () => void;
 }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="link"
-      style={{
-        display: 'block',
-        background: 'none',
-        border: 'none',
-        cursor: 'pointer',
-        padding: '10px 0',
-        fontFamily: 'inherit',
-      }}
-    >
+    <button type="button" onClick={onClick} className="ds-link ex2-link-row">
       {label}
     </button>
   );

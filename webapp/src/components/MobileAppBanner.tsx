@@ -4,9 +4,9 @@ import { isStandalone, subscribeAppInstalled } from '../utils/pwaInstall';
 import { InstallAppGuide } from './installGuide/InstallAppGuide';
 
 // Баннер «есть приложение для телефона» — только на мобильной вёрстке сайта
-// (класс mobile-only). Ведёт в мини-апп /app/: по docs/PWA_PLAN.md база
-// устанавливаемого приложения — он, а не сайт; вход тот же, данные общие
-// (один userId). Кроме перехода — разворачиваемая инструкция «значок на
+// (класс mobile-only). Ведёт в кабинет /today: с 2026-10-17 база установки —
+// сам сайт (от приложения в Telegram отказываемся постепенно), вход и данные
+// те же. Кроме перехода — разворачиваемая инструкция «значок на
 // экран» (InstallAppGuide): просто ссылка значок не ставит, установка идёт
 // через нативный промпт браузера или шаги руками. Зеркальный случай к
 // WebBanner мини-аппа («полная версия — на сайте»), поэтому пары во втором
@@ -81,7 +81,7 @@ export function MobileAppBanner() {
       <div className="app-banner-actions">
         <a
           className="app-banner-cta"
-          href="/app/"
+          href="/today"
           onClick={() => api.trackEvent('web_banner_open', { banner: 'mobile_app' })}
         >
           Открыть приложение

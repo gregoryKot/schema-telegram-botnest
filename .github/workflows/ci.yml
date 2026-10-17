@@ -535,6 +535,7 @@ jobs:
           test/refresh-rotation.e2e-spec.ts
           test/notify-address.e2e-spec.ts
           test/merge-my-lists.e2e-spec.ts
+          test/merge-relations.e2e-spec.ts
           test/merge-unique-rules.e2e-spec.ts
           test/account-export-ownership.e2e-spec.ts
           test/therapy-remove-client.e2e-spec.ts
@@ -734,12 +735,23 @@ jobs:
       # ошибки в консоли). Абсолютный, без бейслайна: #520 вычистил класс
       # полностью, замораживать нечему. Смотрит и в .css.
       - run: node scripts/check-var-alpha-suffix.mjs
+      # Спрятанное через opacity: 0 и раскрываемое только по :hover (находка
+      # аудита 2026-10: кнопка удаления доказательства на телефоне). Нужны
+      # два пути без hover: для пальца @media (hover: none), для клавиатуры
+      # :focus-within; класс состояния закрывает оба. Абсолютный, без бейслайна.
+      - run: node scripts/check-hover-only-reveal.mjs
       # Храповик мелких тап-целей (дизайн-аудит 2026-08, К3): правило «цель
       # ≥ 44×44» из CLAUDE.md чинили в #397 без гейта, и класс вернулся.
       # Считает квадратные интерактивные элементы с inline width И height
       # меньше 44 мимо `hitboxStyle`; промах по одной стороне не считается.
       # fs-only, тот же принцип, что у check-tiny-fonts.mjs выше.
       - run: node scripts/check-tap-targets.mjs
+      # Оверлей на весь экран обязан жить в истории браузера (находка аудита
+      # 2026-10: чек-ин в ModesTab закрывал справочник целиком). `.tsx` с
+      # position: fixed + inset: 0 — инлайном или через CSS-класс — вызывает
+      # useHistorySheet либо стоит в scripts/history-sheet-baseline.json с
+      # причиной. Классификация, флага --update нет; мини-апп не покрыт.
+      - run: node scripts/check-history-sheet.mjs
       # Вебвизор визитки (аудит 2026-10, security#27): политика обещает «поля
       # ввода не записываются», а Вебвизор пишет клавиши везде, кроме полей с
       # ym-disable-keys. Текстовое поле на странице из personalRoutes без метки

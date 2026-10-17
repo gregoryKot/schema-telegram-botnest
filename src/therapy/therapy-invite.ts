@@ -1,5 +1,6 @@
 import { randomBytes } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
+import { claimTherapyInvite } from './therapy-invite-claim';
 import { miniappStartLink } from '../telegram/miniapp-link';
 
 // Срок жизни кода-приглашения (аудит 2026-10, T5): колонки expiresAt нет, а
@@ -69,17 +70,5 @@ export async function joinTherapyAsClient(
     },
   });
   if (otherTherapist) throw new Error(ALREADY_CONNECTED_ERROR);
-  // Атомарный захват кода: find→update пропускал двух клиентов подряд на один
-  // код (второй затирал первого). Условия — в самом UPDATE, выигрывает тот, у
-  // кого count === 1 (T5).
-  const claimed = await prisma.therapyRelation.updateMany({
-    where: {
-      code: rel.code,
-      status: 'pending',
-      clientId: null,
-      therapistId: { not: clientId },
-    },
-    data: { clientId, status: 'active' },
-  });
-  return claimed.count === 1;
+  return claimTherapyInvite(prisma, rel.code, clientId);
 }

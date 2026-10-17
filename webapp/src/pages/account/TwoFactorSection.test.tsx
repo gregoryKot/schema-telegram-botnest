@@ -31,10 +31,10 @@ function renderSection(totp = { enabled: false, recoveryCodesLeft: 0 }, onChange
 }
 
 describe('TwoFactorSection — выключена (пустое состояние)', () => {
-  it('показывает объяснение и кнопку «Включить 2FA», без recovery-кодов', () => {
+  it('показывает объяснение и переключатель (выключен), без recovery-кодов', () => {
     renderSection();
     expect(screen.getByText(/Дополнительный код из приложения/)).toBeTruthy();
-    expect(screen.getByText('Включить 2FA')).toBeTruthy();
+    expect(screen.getByRole('switch').getAttribute('aria-checked')).toBe('false');
   });
 });
 
@@ -51,7 +51,7 @@ describe('TwoFactorSection — настройка (setup)', () => {
     fetchMock.mockResolvedValue(jsonResponse(200, { qrDataUrl: 'data:image/png;base64,x', otpauthUrl: 'otpauth://totp/x' }));
     renderSection();
 
-    fireEvent.click(screen.getByText('Включить 2FA'));
+    fireEvent.click(screen.getByRole('switch'));
 
     await screen.findByAltText('TOTP QR');
     expect(fetchMock.mock.calls[0][0]).toContain('/api/auth/2fa/setup');
@@ -61,7 +61,7 @@ describe('TwoFactorSection — настройка (setup)', () => {
     fetchMock.mockResolvedValue(jsonResponse(500, { message: 'Сервис недоступен' }));
     renderSection();
 
-    fireEvent.click(screen.getByText('Включить 2FA'));
+    fireEvent.click(screen.getByRole('switch'));
 
     await screen.findByText('Сервис недоступен');
     expect(screen.queryByAltText('TOTP QR')).toBeNull();
@@ -73,7 +73,7 @@ describe('TwoFactorSection — настройка (setup)', () => {
       .mockResolvedValueOnce(jsonResponse(200, { recoveryCodes: ['AAAA-1111', 'BBBB-2222'] }));
     const { onChanged } = renderSection();
 
-    fireEvent.click(screen.getByText('Включить 2FA'));
+    fireEvent.click(screen.getByRole('switch'));
     await screen.findByAltText('TOTP QR');
     fireEvent.change(screen.getByPlaceholderText('123456'), { target: { value: '111111' } });
     fireEvent.click(screen.getByText('Подтвердить'));
@@ -92,7 +92,7 @@ describe('TwoFactorSection — настройка (setup)', () => {
       .mockResolvedValueOnce(jsonResponse(400, { message: 'Неверный код' }));
     renderSection();
 
-    fireEvent.click(screen.getByText('Включить 2FA'));
+    fireEvent.click(screen.getByRole('switch'));
     await screen.findByAltText('TOTP QR');
     fireEvent.change(screen.getByPlaceholderText('123456'), { target: { value: '000000' } });
     fireEvent.click(screen.getByText('Подтвердить'));
@@ -107,7 +107,7 @@ describe('TwoFactorSection — отключение', () => {
     fetchMock.mockResolvedValue(jsonResponse(200, {}));
     const { onChanged } = renderSection({ enabled: true, recoveryCodesLeft: 5 });
 
-    fireEvent.click(screen.getByText('Отключить 2FA'));
+    fireEvent.click(screen.getByRole('switch'));
     fireEvent.change(screen.getByPlaceholderText('123456'), { target: { value: '222222' } });
     fireEvent.click(screen.getByRole('button', { name: 'Отключить' }));
 
@@ -121,7 +121,7 @@ describe('TwoFactorSection — отключение', () => {
     fetchMock.mockResolvedValue(jsonResponse(400, { message: 'Неверный код' }));
     const { onChanged } = renderSection({ enabled: true, recoveryCodesLeft: 5 });
 
-    fireEvent.click(screen.getByText('Отключить 2FA'));
+    fireEvent.click(screen.getByRole('switch'));
     fireEvent.change(screen.getByPlaceholderText('123456'), { target: { value: '000000' } });
     fireEvent.click(screen.getByRole('button', { name: 'Отключить' }));
 
@@ -131,10 +131,28 @@ describe('TwoFactorSection — отключение', () => {
 
   it('«Отмена» в режиме отключения возвращает к обычному виду без вызова api', () => {
     renderSection({ enabled: true, recoveryCodesLeft: 5 });
-    fireEvent.click(screen.getByText('Отключить 2FA'));
+    fireEvent.click(screen.getByRole('switch'));
     fireEvent.click(screen.getByText('Отмена'));
 
-    expect(screen.getByText('Отключить 2FA')).toBeTruthy();
+    expect(screen.queryByPlaceholderText('123456')).toBeNull();
+    expect(screen.getByRole('switch').getAttribute('aria-checked')).toBe('true');
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('повторный клик по включённому переключателю в режиме отключения отменяет его', () => {
+    renderSection({ enabled: true, recoveryCodesLeft: 5 });
+    fireEvent.click(screen.getByRole('switch'));
+    expect(screen.getByPlaceholderText('123456')).toBeTruthy();
+    fireEvent.click(screen.getByRole('switch'));
+    expect(screen.queryByPlaceholderText('123456')).toBeNull();
+  });
+
+  it('клик по переключателю во время настройки отменяет её', async () => {
+    fetchMock.mockResolvedValue(jsonResponse(200, { qrDataUrl: 'data:image/png;base64,AAA', otpauthUrl: 'otpauth://x' }));
+    renderSection();
+    fireEvent.click(screen.getByRole('switch'));
+    await screen.findByAltText('TOTP QR');
+    fireEvent.click(screen.getByRole('switch'));
+    expect(screen.queryByAltText('TOTP QR')).toBeNull();
   });
 });

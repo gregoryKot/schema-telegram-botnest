@@ -1,6 +1,5 @@
 import { BottomSheet } from '../BottomSheet';
 import { TherapyClientSummary } from '../../api';
-import { isVirtualId } from '../../../../shared/src/utils/sameId';
 import { fmtDate, momentDayKey } from '../../utils/format';
 import { ALL_SCHEMAS } from '../../schemaTherapyData';
 import { IdentityDot } from '../../../../shared/src/components/IdentityDot';
@@ -13,6 +12,7 @@ import {
 } from '../../../../shared/src/therapy/conceptGraph/ConceptViewSwitch';
 import { ConceptHistoryPanel } from './conceptSheet/ConceptHistoryPanel';
 import { ConceptYsqHistory } from './conceptSheet/ConceptYsqHistory';
+import { YsqRequestButton } from './conceptSheet/YsqRequestButton';
 import { cm } from '../../sections/schemas/utils';
 interface ConceptSheetProps {
   selectedClient: TherapyClientSummary;
@@ -27,13 +27,10 @@ export function ConceptSheet({ selectedClient, detail }: ConceptSheetProps) {
     showHistory,
     setShowHistory,
     setShowConceptSheet,
-    ysqRequested,
-    ysqError,
     exportCopied,
     selfSchemaIds,
     activeModeIds,
     saveConcept,
-    handleRequestYsq,
     handleExport,
   } = detail;
   // Вид выбирается один раз при открытии листа (см. useConceptView).
@@ -79,38 +76,7 @@ export function ConceptSheet({ selectedClient, detail }: ConceptSheetProps) {
           )}
         </div>
         <ConceptHistoryPanel detail={detail} />
-        {!isVirtualId(selectedClient.telegramId) && (
-          <div className="u-mb12">
-            <button
-              onClick={handleRequestYsq}
-              style={{
-                width: '100%',
-                padding: '10px 16px',
-                borderRadius: 'var(--r-12)',
-                border: `1px solid ${cm('var(--accent-blue)', 20)}`,
-                background: cm('var(--accent-blue)', 6),
-                color: ysqRequested ? '#06d6a0' : cm('var(--accent-blue)', 80),
-                fontSize: 13,
-                fontWeight: 500,
-                cursor: 'pointer',
-              }}
-            >
-              {ysqRequested ? '✓ Запрос отправлен' : 'Запросить тест на схемы'}
-            </button>
-            {ysqError && (
-              <div
-                style={{
-                  fontSize: 12,
-                  color: 'var(--accent-red)',
-                  marginTop: 6,
-                  textAlign: 'center',
-                }}
-              >
-                {ysqError}
-              </div>
-            )}
-          </div>
-        )}
+        <YsqRequestButton selectedClient={selectedClient} detail={detail} />
         <ConceptYsqHistory detail={detail} />
         {selfSchemaIds.length > 0 && (
           <div

@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { tableLabel, totalItems as sumItems } from '../utils/mergeLabels';
+import { totalItems as sumItems } from '../utils/mergeLabels';
 import { useTr } from '../utils/addressForm';
 import { TwoFactorLossNote } from '../components/TwoFactorLossNote';
 import { useMergeConfirm } from './merge/useMergeConfirm';
+import { ServicePage } from './service/ServicePage';
+import { ServiceRows } from './service/ServiceRows';
 import { SourceTotpField } from './merge/SourceTotpField';
 
 export function MergePage() {
@@ -28,78 +30,53 @@ export function MergePage() {
   }, [token, navigate]);
 
   return (
-    <div className="page-inner-wide" style={{ paddingTop: 80, paddingBottom: 80, maxWidth: 720, margin: '0 auto' }}>
-      <div className="eyebrow u-mb14">Аккаунт</div>
-      <h1 style={{ fontSize: 36, fontWeight: 600, letterSpacing: '-0.03em', lineHeight: 1.1, marginBottom: 18 }}>
-        Объединить аккаунты?
-      </h1>
-      <div className="text-md muted" style={{ maxWidth: 600, lineHeight: 1.6, marginBottom: 36 }}>
-        Аккаунт <b>{providerName}</b>{otherName ? ` (${otherName})` : ''} уже существует со своими данными.{' '}{tr('Если объединить – все они переедут в твой текущий аккаунт.', 'Если объединить – все они переедут в ваш текущий аккаунт.')}
-      </div>
+    <ServicePage width={560}>
+      <div className="as-body">
+        <div className="ds-eyebrow">Аккаунт</div>
+        <h1 className="ds-h2">Объединить аккаунты?</h1>
+        <p className="as-lead">
+          Аккаунт <b>{providerName}</b>{otherName ? ` (${otherName})` : ''} уже существует со своими данными.{' '}{tr('Если объединить – все они переедут в твой текущий аккаунт.', 'Если объединить – все они переедут в ваш текущий аккаунт.')}
+        </p>
 
-      <div className="section">
-        <div className="section-head">
-          <h3>В переносимом аккаунте</h3>
-          {totalItems > 0 && <span className="hint">{totalItems} {totalItems === 1 ? 'запись' : totalItems < 5 ? 'записи' : 'записей'}</span>}
+        <div className="as-sec-head">
+          <div className="ds-label">В переносимом аккаунте</div>
+          {totalItems > 0 && <span className="ds-sub">{totalItems} {totalItems === 1 ? 'запись' : totalItems < 5 ? 'записи' : 'записей'}</span>}
         </div>
         {totalItems === 0 ? (
-          <div className="text-sm muted">Нет данных – объединение пройдёт без переноса.</div>
+          <p className="as-lead">Нет данных – объединение пройдёт без переноса.</p>
         ) : (
-          Object.entries(summary).map(([table, n]) => (
-            <div key={table} className="list-line">
-              <span className="text-sm u-flex1">{tableLabel(table)}</span>
-              <span className="num text-md" style={{ fontWeight: 500 }}>{n}</span>
-            </div>
-          ))
+          <ServiceRows summary={summary} />
         )}
-      </div>
 
-      <div className="section">
-        <div className="text-sm" style={{ color: 'var(--c-amber)', lineHeight: 1.6, maxWidth: 600 }}>
+        <p className="as-warn">
           Если в обоих аккаунтах есть пересекающиеся записи (одна и та же оценка за один день, например) – версия текущего аккаунта остаётся, дубль из второго удаляется. <b>Действие необратимо.</b>
+        </p>
+
+        {twoFactorLost && <TwoFactorLossNote />}
+
+        {needCode && <SourceTotpField code={code} onChange={setCode} disabled={busy} />}
+
+        {error && <div className="ds-card as-err">{error}</div>}
+
+        <label className="as-check">
+          <input
+            type="checkbox"
+            checked={acknowledged}
+            onChange={e => setAcknowledged(e.target.checked)}
+            disabled={busy}
+          />
+          <span>Я понимаю что данные второго аккаунта необратимо переедут, а сам тот аккаунт будет удалён.</span>
+        </label>
+
+        <div className="as-actions-row">
+          <button disabled={busy || !acknowledged || (needCode && code.trim().length < 6)} onClick={confirm} className="ds-btn">
+            {busy ? 'Объединяю…' : 'Объединить'}
+          </button>
+          <button disabled={busy} onClick={() => navigate('/account')} className="ds-btn ds-btn--secondary">
+            Отмена
+          </button>
         </div>
       </div>
-
-      {twoFactorLost && (
-        <div className="section">
-          <TwoFactorLossNote />
-        </div>
-      )}
-
-      {needCode && <SourceTotpField code={code} onChange={setCode} disabled={busy} />}
-
-      {error && (
-        <div style={{ marginTop: 8, marginBottom: 16, padding: '12px 14px', borderLeft: '3px solid var(--c-rose)', background: 'color-mix(in srgb, var(--c-rose) 6%, transparent)' }}>
-          <div className="text-sm" style={{ color: 'var(--c-rose)', fontWeight: 500 }}>{error}</div>
-        </div>
-      )}
-
-      <label style={{ display: 'flex', gap: 'var(--space-10)', alignItems: 'flex-start', marginTop: 24, cursor: busy ? 'default' : 'pointer', maxWidth: 600 }}>
-        <input
-          type="checkbox"
-          checked={acknowledged}
-          onChange={e => setAcknowledged(e.target.checked)}
-          disabled={busy}
-          style={{ marginTop: 3, width: 16, height: 16, accentColor: 'var(--accent)' }}
-        />
-        <span className="text-sm" style={{ lineHeight: 1.5 }}>
-          Я понимаю что данные второго аккаунта необратимо переедут, а сам тот аккаунт будет удалён.
-        </span>
-      </label>
-
-      <div style={{ display: 'flex', gap: 'var(--space-12)', marginTop: 20 }}>
-        <button disabled={busy || !acknowledged || (needCode && code.trim().length < 6)} onClick={confirm} className="btn btn-primary">
-          {busy ? (
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 'var(--space-8)' }}>
-              <span className="spinner" style={{ width: 14, height: 14, borderWidth: 2 }} />
-              Объединяю…
-            </span>
-          ) : 'Объединить'}
-        </button>
-        <button disabled={busy} onClick={() => navigate('/account')} className="btn btn-secondary">
-          Отмена
-        </button>
-      </div>
-    </div>
+    </ServicePage>
   );
 }

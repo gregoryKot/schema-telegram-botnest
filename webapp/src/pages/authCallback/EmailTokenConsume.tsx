@@ -3,6 +3,7 @@ import { flushSync } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../auth/authContext';
 import { consumeEmailToken, emailConsumeNextPath } from './consumeEmailToken';
+import { ServiceLoading } from '../service/ServiceLoading';
 
 const API_BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? '';
 
@@ -37,12 +38,5 @@ export function EmailTokenConsume({ token, ticket }: { token: string; ticket: st
     })();
   }, [token, ticket, navigate, setAccessToken]);
 
-  return (
-    <div className="loader-center" role="status" aria-live="polite">
-      <div className="spinner" />
-      <p style={{ marginTop: 16, color: 'var(--text-sub)', fontSize: 14 }}>
-        Входим…
-      </p>
-    </div>
-  );
+  return <ServiceLoading label="Входим…" />;
 }

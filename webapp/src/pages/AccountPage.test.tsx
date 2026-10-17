@@ -158,6 +158,16 @@ describe('AccountPage — загрузка', () => {
     expect(screen.getByText('не привязан')).toBeTruthy();
   });
 
+  it('заголовок способов входа считает реальные привязки: «N из M»', async () => {
+    renderPage();
+    await screen.findByText('0 из 4');
+    cleanup();
+    meProviders = [{ provider: 'google', email: 'user@gmail.com', displayName: null }];
+    renderPage();
+    await screen.findByText('1 из 4');
+    expect(screen.getByText('U')).toBeTruthy();
+  });
+
   it('ошибка /api/auth/me показывает сообщение об ошибке, а не тишину', async () => {
     meFails = true;
     renderPage();

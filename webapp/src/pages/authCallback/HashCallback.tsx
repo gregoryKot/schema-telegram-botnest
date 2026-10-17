@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { flushSync } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../auth/authContext';
+import { ServiceLoading } from '../service/ServiceLoading';
 
 // Приём сессии после OAuth (Google, VK, Telegram): бэкенд ведёт на
 // /auth/callback#access_token=...&expires_in=... Попап-ветки (токен в
@@ -41,8 +42,6 @@ export function HashCallback() {
   }, [navigate, setAccessToken]);
 
   return (
-    <div className="loader-center">
-      <div className="spinner" />
-    </div>
+    <ServiceLoading />
   );
 }

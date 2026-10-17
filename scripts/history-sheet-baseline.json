@@ -1,0 +1,98 @@
+{
+  "shared/src/components/Celebration.tsx": {
+    "reason": "ДОЛГ, ждёт решения владельца: праздничный экран закрывается тапом по фону и не имеет записи истории, «Назад» браузера уводит со страницы. Файл общий для двух площадок, а в мини-аппе «Назад» хоста устроен иначе (backLayers), поэтому хук в shared не добавлялся. Строка в docs/README.md, «Что осталось открытым».",
+    "since": "docs/AUDIT_2026-10_FINDINGS.md"
+  },
+  "webapp/src/components/BottomSheetShell.tsx": {
+    "reason": "Оболочка нижней шторки: «Назад» приходит пропом goBack, который вызывающий считает через useHistorySheet (шапка файла); хук в оболочке дал бы вторую запись истории на один лист. Соблюдение этого гейт у потребителей не проверяет: NeedAdviceModal передаёт локальный onClose (мини-модалка поверх листа, CLAUDE.md допускает) — слепая зона записана в docs/README.md, «Гейт оверлеев webapp».",
+    "since": "docs/AUDIT_2026-10_FINDINGS.md"
+  },
+  "webapp/src/components/CommandPalette.tsx": {
+    "reason": "ДОЛГ, ждёт решения: палитра открывается и с мобильной нижней панели (MobileNav, кнопка поиска), закрывается своим Escape (useDialogA11y) и тапом; записи истории нет, «Назад» браузера уводит со страницы. Помехи для хука после #723 нет: Escape, погашенный палитрой, useHistorySheet пропускает (e.defaultPrevented); не поставлен, чтобы не смешивать с этой починкой. Строка в docs/README.md, «Что осталось открытым».",
+    "since": "docs/AUDIT_2026-10_FINDINGS.md"
+  },
+  "webapp/src/components/Dialog.tsx": {
+    "reason": "Оболочка диалога: запись истории — забота потребителя (useHistorySheet и goBack как onClose). Так делают AchievementDetail и AddressFormPicker; AchievementsDialog, CelebrationDialog, DeleteAccountDialog и подтверждения в AccountPage/ClientHeader закрываются только своими кнопками и Escape, «Назад» браузера закрывает лист под ними. Потребителей рамки гейт не видит — слепая зона записана в docs/README.md, «Гейт оверлеев webapp».",
+    "since": "docs/AUDIT_2026-10_FINDINGS.md"
+  },
+  "webapp/src/components/Loader.tsx": {
+    "reason": "Спиннер на весь экран: не интерактивен и не листа, закрыть его нечем; запись истории ему не нужна.",
+    "since": "docs/AUDIT_2026-10_FINDINGS.md"
+  },
+  "webapp/src/components/ModeMapContextMenu.tsx": {
+    "reason": "Невидимая подложка под контекстным меню карты режимов (поповер у курсора): ловит клик снаружи, закрывает меню. Это не лист, «Назад» с поповером не связана.",
+    "since": "docs/AUDIT_2026-10_FINDINGS.md"
+  },
+  "webapp/src/components/ModeMapSelector.tsx": {
+    "reason": "Невидимая подложка под выпадающим выбором вида карты (поповер у кнопки): ловит клик снаружи. Это не лист, запись истории ему не нужна.",
+    "since": "docs/AUDIT_2026-10_FINDINGS.md"
+  },
+  "webapp/src/components/OverlayFrame.tsx": {
+    "reason": "Рамка оверлеев «Все задания» и «Все цели» (класс sk-overlay): goBack приходит пропом, хук вызывают потребители — sections/today/AllTasksOverlay.tsx и sections/practice/AllGoalsOverlay.tsx, по одному разу на лист. Хук в рамке дал бы вторую запись истории.",
+    "since": "#746"
+  },
+  "webapp/src/components/appShell/AppOverlays.tsx": {
+    "reason": "Класс u-sheet здесь — обёртка вокруг ChildhoodWheelEx, который сам вызывает useHistorySheet (ChildhoodWheelEx.tsx:195); обёртка только позиционирует.",
+    "since": "docs/AUDIT_2026-10_FINDINGS.md"
+  },
+  "webapp/src/components/exercises/ExScreen.tsx": {
+    "reason": "Рамка экрана упражнения: хук вызывает каждое упражнение-потребитель (useHistorySheet(onBack)), а сценарий caseFlow — CaseFlowScreen. Хук в рамке дал бы вторую запись истории.",
+    "since": "docs/AUDIT_2026-10_FINDINGS.md"
+  },
+  "webapp/src/components/flashcard/FlashcardFrame.tsx": {
+    "reason": "Рамка экранов «Мне плохо» (класс u-sheet-grid; заменила отдельный экран FlashcardDoneScreen из прежней записи): goBack приходит пропом из SchemaFlashcard.tsx, где хук вызван один раз на весь поток шагов.",
+    "since": "#746"
+  },
+  "webapp/src/components/modeMap/ToolbarControls.tsx": {
+    "reason": "Невидимая подложка под выпадающим меню панели инструментов карты (поповер у кнопки): ловит клик снаружи. Это не лист.",
+    "since": "docs/AUDIT_2026-10_FINDINGS.md"
+  },
+  "webapp/src/components/schemaSheets/SsSheet.tsx": {
+    "reason": "Оболочка листов схем и режимов (класс ss-sheet): onBack приходит пропом, хук вызывает каждый лист-потребитель один раз — SchemaInfoSheet, SchemaDetailSheet, SchemaPickerSheet, ModePickerSheet, YSQTestSheet (его экраны YsqIntro/YsqResult получают goBack пропом), ModeCheckinOverlay. Хук в оболочке дал бы вторую запись истории на один лист.",
+    "since": "#746"
+  },
+  "webapp/src/components/settingsSheet/ui.tsx": {
+    "reason": "InfoModal — мини-модалка поверх листа настроек с тёмным фоном: у неё свой локальный onClose, хук вызывает сам лист настроек (CLAUDE.md, раздел про fullscreen-лист: внутренние мини-модалки исключены).",
+    "since": "docs/AUDIT_2026-10_FINDINGS.md"
+  },
+  "webapp/src/components/trackerOverlay/CompletionScreen.tsx": {
+    "reason": "Часть TrackerOverlay: экран завершения рисуется внутри него, хук вызван в родителе (TrackerOverlay.tsx:35), «Назад» этого экрана — его goBack.",
+    "since": "docs/AUDIT_2026-10_FINDINGS.md"
+  },
+  "webapp/src/components/trackerOverlay/DesktopLayout.tsx": {
+    "reason": "Часть TrackerOverlay: раскладка для десктопа, хук вызван в родителе (TrackerOverlay.tsx:35) и приходит сюда пропом.",
+    "since": "docs/AUDIT_2026-10_FINDINGS.md"
+  },
+  "webapp/src/components/trackerOverlay/MobileLayout.tsx": {
+    "reason": "Часть TrackerOverlay: раскладка для телефона, хук вызван в родителе (TrackerOverlay.tsx:35) и приходит сюда пропом.",
+    "since": "docs/AUDIT_2026-10_FINDINGS.md"
+  },
+  "webapp/src/components/ysq/YsqQuestion.tsx": {
+    "reason": "Экран вопроса теста YSQ (класс ss-test): один из экранов потока YSQTestSheet.tsx, где хук вызван один раз на весь тест; «Назад» приходит пропом goBack.",
+    "since": "#746"
+  },
+  "webapp/src/pages/LandingPage.tsx": {
+    "reason": "Фиксированный слой «зерно» поверх страницы с pointer-events: none: декор лендинга, не оверлей и не лист.",
+    "since": "docs/AUDIT_2026-10_FINDINGS.md"
+  },
+  "webapp/src/pages/ProductLandingPage.tsx": {
+    "reason": "Фиксированный фон-аврора с pointer-events: none: декор лендинга, не оверлей и не лист.",
+    "since": "docs/AUDIT_2026-10_FINDINGS.md"
+  },
+  "webapp/src/pages/tests/testsKit.tsx": {
+    "reason": "Фиксированный фон-аврора с pointer-events: none: декор страницы мини-тестов, не оверлей и не лист.",
+    "since": "docs/AUDIT_2026-10_FINDINGS.md"
+  },
+  "webapp/src/sections/PracticeSection.tsx": {
+    "reason": "Класс u-sheet здесь — обёртка вокруг ModeEx, который сам вызывает useHistorySheet (FlashcardEx.tsx:148); обёртка только позиционирует.",
+    "since": "docs/AUDIT_2026-10_FINDINGS.md"
+  },
+  "webapp/src/sections/SchemasSection.tsx": {
+    "reason": "Класс u-sheet здесь — обёртка вокруг ModeEx, который сам вызывает useHistorySheet (FlashcardEx.tsx:148); обёртка только позиционирует.",
+    "since": "docs/AUDIT_2026-10_FINDINGS.md"
+  },
+  "webapp/src/sections/TodaySection.tsx": {
+    "reason": "Класс u-sheet здесь — обёртка вокруг ModeEx/SchemaEx, которые сами вызывают useHistorySheet (FlashcardEx.tsx:93, :148); обёртка только позиционирует.",
+    "since": "docs/AUDIT_2026-10_FINDINGS.md"
+  }
+}

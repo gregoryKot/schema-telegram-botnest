@@ -584,8 +584,8 @@ describe('TodaySection — оверлей «Все задания»: отмет�
     mockApi.getTasks.mockResolvedValue(Array.from({ length: 6 }, (_, i) => task({ id: i + 1, text: `Задача ${i + 1}` })));
     renderSection();
     fireEvent.click(await screen.findByText('Все задания (6) →'));
-    const overlay = await screen.findByText('Все задания');
-    fireEvent.click(overlay.parentElement!.parentElement!.querySelector('.ex-btn-primary')!);
+    await screen.findByText('Все задания');
+    fireEvent.click(document.querySelector('.sk-overlay .sk-wide-btn')!);
 
     await screen.findByText('Новое задание');
   });

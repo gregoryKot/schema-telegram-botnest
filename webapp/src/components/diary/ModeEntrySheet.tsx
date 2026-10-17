@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useHistorySheet } from '../../hooks/useHistorySheet';
 import { MODE_GROUPS } from '../../schemaTherapyData';
 import { saveDraft, loadDraft, clearDraft } from '../../utils/drafts';
+import { MODE_GROUP_HUE } from '../../lib/tone';
 import { haptic } from '../../haptic';
 import { api } from '../../api';
 import { ModeSelectScreen } from './ModeSelectScreen';
@@ -13,7 +14,6 @@ import {
   modeEntrySavedMeta,
 } from '../../../../shared/src/share/analytics';
 import { type ModeEntrySaveData } from '../../../../shared/src/mode/modeDiarySteps';
-
 interface Props {
   onClose: () => void;
   onSave: (data: ModeEntrySaveData) => Promise<void>;
@@ -83,7 +83,7 @@ export function ModeEntrySheet({ onClose, onSave }: Props) {
 
   const selectedMode = modeId
     ? MODE_GROUPS.flatMap((g) =>
-        g.items.map((m) => ({ ...m, color: g.color, groupName: g.group })),
+        g.items.map((m) => ({ ...m, hue: MODE_GROUP_HUE[g.id], groupName: g.group })),
       ).find((m) => m.id === modeId)
     : null;
 

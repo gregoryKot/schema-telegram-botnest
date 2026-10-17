@@ -1,6 +1,8 @@
 import { ExScreen, GlyphCheck } from '../ExScreen';
 import { fmtAgo } from '../../../utils/format';
 import type { api } from '../../../api';
+import { hueStyle } from '../../../lib/tone';
+import { HUE_STRAIN, HUE_CARE } from '../exHue';
 
 type BeliefCheckRow = Awaited<ReturnType<typeof api.getBeliefChecks>>[number];
 
@@ -30,7 +32,6 @@ export function BeliefDoneScreen({
   <ExScreen
     onBack={goBack}
     eyebrow="Проверка убеждения · сохранено"
-    eyebrowColor="var(--c-moss)"
     title={
       <>
         Готово.
@@ -41,23 +42,23 @@ export function BeliefDoneScreen({
     lede="Иногда достаточно увидеть доказательства, чтобы мысль потеряла силу. Сохранено в дневнике."
     aside={
       <>
-        <div className="aside-card">
-          <div className="aside-card-eyebrow">Что попробовать дальше</div>
-          <h3>Знакомство со схемой</h3>
-          <p className="body">
+        <div className="ds-card ex2-note">
+          <div className="ds-label">Что попробовать дальше</div>
+          <h3 className="ex2-note-h">Знакомство со схемой</h3>
+          <p className="ex2-note-body">
             Если эта мысль возвращается часто – стоит копнуть, какая схема
             за ней стоит.
           </p>
         </div>
         {pastChecks.length > 0 && (
-          <div className="aside-card">
-            <div className="aside-card-eyebrow">
+          <div className="ds-card ex2-note">
+            <div className="ds-label">
               Прошлые проверки · {history.length}
             </div>
             {pastChecks.map((h, i) => (
-              <div key={i} className="history-row">
-                <span className="history-date">{fmtAgo(h.createdAt)}</span>
-                <span className="history-snippet">«{h.belief}»</span>
+              <div key={i} className="ex2-hist-row">
+                <span className="ex2-hist-date">{fmtAgo(h.createdAt)}</span>
+                <span className="ex2-hist-snip">«{h.belief}»</span>
               </div>
             ))}
           </div>
@@ -65,32 +66,28 @@ export function BeliefDoneScreen({
       </>
     }
   >
-    <div className="done-card">
-      <div className="stamp">
+    <div className="ds-card ds-card--ink ex2-done">
+      <div className="ex2-stamp">
         <GlyphCheck /> Сохранено ·{' '}
         {new Date().toLocaleDateString('ru-RU', {
           day: 'numeric',
           month: 'long',
         })}
       </div>
-      <div className="dlabel">Убеждение</div>
-      <div className="belief-line">«{belief}»</div>
-      <div className="done-cols">
-        <div>
-          <div className="dlabel" style={{ color: 'var(--c-rose)' }}>
-            За · {forList.length}
-          </div>
-          <ul className="ev-col" style={{ margin: 0, padding: 0 }}>
+      <div className="ex2-dlabel">Убеждение</div>
+      <div className="ex2-quote ex2-quote--em">«{belief}»</div>
+      <div className="ex2-cols">
+        <div style={hueStyle(HUE_STRAIN)}>
+          <div className="ex2-dlabel is-tone">За · {forList.length}</div>
+          <ul className="ex2-ev">
             {forList.map((f, i) => (
               <li key={i}>{f}</li>
             ))}
           </ul>
         </div>
-        <div>
-          <div className="dlabel" style={{ color: 'var(--c-moss)' }}>
-            Против · {againstList.length}
-          </div>
-          <ul className="ev-col" style={{ margin: 0, padding: 0 }}>
+        <div style={hueStyle(HUE_CARE)}>
+          <div className="ex2-dlabel is-tone">Против · {againstList.length}</div>
+          <ul className="ex2-ev">
             {againstList.map((a, i) => (
               <li key={i}>{a}</li>
             ))}
@@ -99,22 +96,17 @@ export function BeliefDoneScreen({
       </div>
       {reframe.trim() && (
         <>
-          <div className="dlabel u-accent">
-            Точнее
-          </div>
-          <div className="reframe-line">«{reframe}»</div>
+          <div className="ex2-dlabel">Точнее</div>
+          <div className="ex2-quote">«{reframe}»</div>
         </>
       )}
     </div>
-    <div className="ex-foot">
-      <button
-        className="ex-btn ex-btn-outline"
-        onClick={onRestart}
-      >
+    <div className="ex2-foot">
+      <button className="ds-btn ds-btn--secondary" onClick={onRestart}>
         Проверить ещё одну
       </button>
-      <span className="spacer" />
-      <button className="ex-btn ex-btn-primary" onClick={goBack}>
+      <span className="ex2-spacer" />
+      <button className="ds-btn" onClick={goBack}>
         Закрыть
       </button>
     </div>

@@ -1,0 +1,222 @@
+/* Листы заданий, планов, практик, палитры, «Мне плохо» и мелкие оверлеи (префикс sk-). */
+.sk-sheet { position: fixed; inset: 0; z-index: 90; background: var(--bg); display: flex; flex-direction: column; overflow: hidden; }
+.sk-top { flex-shrink: 0; padding: 14px clamp(16px, 4vw, 56px); border-bottom: 1px solid var(--line); display: flex; align-items: center; justify-content: space-between; }
+.sk-back { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; }
+.sk-scroll { overflow-y: auto; overflow-x: hidden; flex: 1; }
+.sk-page { max-width: 760px; margin: 0 auto; padding: 32px clamp(16px, 4vw, 56px) 48px; display: flex; flex-direction: column; gap: 28px; box-sizing: border-box; }
+.sk-title { font-size: 34px; margin-top: 8px; }
+.sk-lead { margin: 8px 0 0; font-size: 14px; }
+.sk-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 10px; }
+.sk-tpl { display: flex; align-items: center; gap: 14px; padding: 14px 16px; border-radius: 16px; border: 1px solid transparent; cursor: pointer; min-width: 0; box-sizing: border-box; }
+.sk-tpl.is-selected { border-color: oklch(0.58 0.12 var(--h)); }
+.sk-tpl-body { flex: 1; min-width: 0; }
+.sk-tpl-label { font-size: 15px; font-weight: 600; line-height: 1.3; }
+.sk-tpl-sub { font-size: 13px; line-height: 1.4; margin-top: 2px; color: var(--text-sub); }
+.sk-tpl-side { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.sk-tpl-time { font-size: 11px; font-weight: 500; color: var(--text-muted); white-space: nowrap; }
+.sk-radio { width: 20px; height: 20px; border-radius: 50%; border: 2px solid var(--line-strong); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.sk-radio.is-on { background: var(--ink); border-color: var(--ink); color: var(--on-ink); }
+.sk-config { display: flex; flex-direction: column; gap: 24px; }
+.sk-field { display: flex; flex-direction: column; gap: 10px; }
+.sk-pick { grid-template-columns: 1fr auto; min-height: 44px; box-sizing: border-box; }
+.sk-pick-name { display: flex; align-items: center; gap: 10px; font-size: 14px; min-width: 0; }
+.sk-strong { font-weight: 600; }
+.sk-submit { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.sk-error { font-size: 13px; color: var(--err); }
+@media (max-width: 767px) {
+  .sk-title { font-size: 26px; }
+  .sk-page { padding-top: 20px; gap: 22px; }
+}
+.sk-it { font-style: italic; color: var(--accent); }
+
+/* ── Планы ── */
+.sk-page--wide { max-width: 900px; padding-top: 40px; padding-bottom: 80px; }
+.sk-head { align-items: flex-end; }
+.sk-bar { height: 6px; border-radius: 3px; background: var(--paper-sunk); overflow: hidden; }
+.sk-bar > i { display: block; height: 100%; background: var(--accent); border-radius: 3px; }
+.sk-alert { display: flex; flex-direction: column; gap: 14px; align-items: flex-start; }
+.sk-empty { padding-top: 24px; max-width: 420px; display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
+.sk-empty-text { font-size: 14px; line-height: 1.65; color: var(--text-sub); margin: 0 0 10px; }
+.sk-group { display: flex; flex-direction: column; gap: 12px; }
+.sk-list { display: flex; flex-direction: column; gap: 10px; }
+.sk-plan { display: flex; flex-direction: column; gap: 10px; }
+.sk-plan-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.sk-plan-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; min-width: 0; }
+.sk-plan-need { font-size: 12px; font-weight: 600; }
+.sk-plan-text { font-size: 14px; line-height: 1.55; color: var(--text); overflow-wrap: anywhere; }
+.sk-plan-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.sk-plan-actions .ds-btn { flex: 1; }
+.sk-status { font-size: 16px; color: var(--text-sub); }
+.sk-status.is-ok { color: var(--ok); }
+.sk-status.is-err { color: var(--err); }
+
+/* ── Лист плана ── */
+.sk-aside { display: flex; flex-direction: column; gap: 8px; position: sticky; top: 40px; }
+.sk-aside-title { display: flex; align-items: center; gap: 8px; }
+.sk-opt-row { display: flex; align-items: center; gap: 8px; }
+.sk-opt { flex: 1; font-size: 15px; line-height: 1.5; display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 44px; }
+.sk-opt.is-selected { border-width: 2px; }
+.sk-del { flex-shrink: 0; }
+.sk-hour { margin-left: 8px; }
+.sk-check { display: inline-flex; color: var(--accent); }
+.sk-chosen { padding: 14px 16px; border-radius: 16px; font-size: 15px; line-height: 1.5; }
+.sk-ics { width: 100%; }
+.sk-foot { display: flex; justify-content: flex-end; }
+.sk-center { text-align: center; }
+.sk-self-start { align-self: flex-start; }
+
+/* ── Практики ── */
+.sk-intro { max-width: 560px; line-height: 1.6; font-size: 14px; }
+.sk-head-actions { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.sk-ok { font-size: 13px; font-weight: 500; color: var(--ok); }
+.sk-hint { padding: 14px 16px; border-radius: 16px; font-size: 14px; line-height: 1.55; max-width: 600px; }
+.sk-practice { display: flex; align-items: center; gap: 12px; }
+.sk-practice-text { flex: 1; min-width: 0; font-size: 14px; line-height: 1.5; overflow-wrap: anywhere; }
+.sk-danger { color: var(--err); min-height: 44px; }
+.sk-danger:hover { color: var(--err); opacity: .8; }
+.sk-add { display: flex; gap: 8px; max-width: 600px; flex-wrap: wrap; }
+.sk-add .ds-input { flex: 1; min-width: 200px; }
+
+/* ── Палитра команд ── */
+.sk-cmd-bg { position: fixed; inset: 0; z-index: 200; background: color-mix(in srgb, var(--ink) 30%, transparent); display: grid; place-items: flex-start center; padding-top: 14vh; }
+.sk-cmd-panel { width: 600px; max-width: 90vw; border-radius: 20px; box-shadow: 0 24px 64px -16px rgba(0, 0, 0, .3); }
+.sk-cmd-search { padding: 12px 16px; border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 12px; }
+.sk-cmd-input { border: none; background: transparent; padding: 6px 0; font-size: 15px; flex: 1; min-width: 0; }
+.sk-cmd-input:focus { border: none; }
+.sk-cmd-ic { color: var(--text-faint); flex-shrink: 0; display: flex; align-items: center; }
+.sk-cmd-list { max-height: 50vh; overflow-y: auto; padding: 6px; }
+.sk-cmd-row { display: flex; gap: 10px; padding: 8px 12px; border-bottom: none; border-radius: 10px; font-size: 13px; color: var(--text-sub); min-height: 44px; box-sizing: border-box; }
+.sk-cmd-row.is-sel { background: var(--paper-tint); color: var(--text); }
+.sk-cmd-main { flex: 1; min-width: 0; }
+.sk-cmd-label { color: var(--text); }
+.sk-cmd-sub { margin-left: 8px; font-size: 11px; color: var(--text-faint); }
+.sk-cmd-sub.is-ok { color: var(--ok); }
+.sk-cmd-empty { padding: 24px 20px; border-bottom: none; font-size: 13px; }
+
+/* ── «Мне плохо» (кризисный путь: порядок шагов и тексты не менять) ── */
+.sk-fc-body { max-width: 560px; width: 100%; margin: 0 auto; padding: 40px 24px 80px; overflow-y: auto; box-sizing: border-box; display: flex; flex-direction: column; gap: 18px; }
+.sk-fc-body.is-center { text-align: center; padding-top: 56px; }
+.sk-fc-body.is-center .ds-card { text-align: left; }
+.sk-fc-hero { font-size: 40px; margin: 8px 0 0; }
+.sk-fc-h1-sm { font-size: 32px; margin: 0 0 6px; }
+.sk-fc-lead { font-size: 16px; line-height: 1.8; color: var(--text-sub); margin: 0 0 12px; }
+.sk-fc-breath { display: flex; flex-direction: column; gap: 12px; }
+.sk-fc-breath-title { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+.sk-fc-breath-row { display: flex; align-items: center; gap: 14px; }
+.sk-fc-dot { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; color: #fff; flex-shrink: 0; }
+.sk-fc-breath-text { font-size: 14px; color: var(--text-sub); }
+.sk-fc-feet { margin: 0; }
+.sk-fc-wide { width: 100%; }
+.sk-fc-quiet { align-self: center; min-height: 44px; color: var(--text-faint); font-weight: 500; }
+.sk-fc-head { display: flex; align-items: center; gap: 16px; }
+.sk-fc-headrow { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.sk-fc-num { font-size: 56px; color: var(--accent); min-width: 40px; text-align: center; }
+.sk-fc-title { margin-top: 4px; font-size: 28px; }
+.sk-fc-progress { display: flex; gap: 4px; }
+.sk-fc-progress > i { flex: 1; height: 3px; border-radius: 2px; background: var(--line); }
+.sk-fc-progress > i.is-past { background: var(--accent); }
+.sk-fc-progress > i.is-now { background: var(--text-faint); }
+.sk-fc-choice { display: flex; flex-direction: column; gap: 6px; text-align: left; width: 100%; font-family: inherit; color: var(--text); }
+.sk-fc-choice-top { display: flex; align-items: center; gap: 12px; }
+.sk-fc-choice-desc { font-size: 13px; color: var(--text-muted); padding-left: 22px; }
+.sk-fc-voice { display: flex; flex-direction: column; gap: 12px; }
+.sk-fc-voice-text { font-family: var(--serif); font-size: 18px; line-height: 1.7; margin: 0; color: var(--text); }
+.sk-fc-ask { font-size: 15px; line-height: 1.6; color: var(--text-sub); margin: 0; }
+.sk-fc-need { display: flex; align-items: center; gap: 12px; text-align: left; width: 100%; font-family: inherit; color: var(--text); min-height: 56px; }
+.sk-fc-need.is-selected { border-color: var(--accent); }
+.sk-fc-need-card { display: flex; align-items: center; gap: 14px; }
+.sk-fc-note { margin-top: 8px; }
+.sk-fc-empty { text-align: center; padding: 40px 0; font-size: 15px; }
+.sk-fc-hist { display: flex; flex-direction: column; gap: 6px; }
+.sk-fc-hist-title { font-size: 18px; line-height: 1.4; }
+.sk-fc-hist-action { font-size: 13px; color: var(--accent); overflow: hidden; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; }
+.sk-fc-date { margin-bottom: 2px; }
+.sk-fc-rows { display: flex; flex-direction: column; gap: 16px; }
+.sk-fc-row { display: flex; flex-direction: column; gap: 6px; padding-bottom: 16px; border-bottom: 1px solid var(--line); }
+.sk-fc-row:last-child { padding-bottom: 0; border-bottom: none; }
+.sk-fc-value { font-size: 15px; line-height: 1.55; white-space: pre-wrap; overflow-wrap: anywhere; }
+.sk-fc-pair { display: flex; gap: 10px; }
+.sk-fc-pair .ds-btn { flex: 1; }
+@media (max-width: 767px) {
+  .sk-fc-hero { font-size: 32px; }
+  .sk-fc-body { padding: 24px 16px 64px; }
+}
+
+/* ── Диалоги (Dialog / ConfirmDialog / Celebration) ── */
+.sk-dialog-backdrop { position: fixed; inset: 0; z-index: 300; background: color-mix(in srgb, var(--ink) 50%, transparent); display: flex; align-items: center; justify-content: center; padding: 24px; box-sizing: border-box; }
+.sk-dialog-box { position: relative; width: 100%; max-width: 440px; max-height: 90vh; overflow-y: auto; padding: 28px 24px; box-shadow: 0 24px 64px -16px rgba(0, 0, 0, .3); animation: modal-in .18s ease; }
+.sk-dialog-box--center { text-align: center; }
+.sk-dialog-title { margin: 0 0 10px; }
+.sk-dialog-text { font-size: 14px; line-height: 1.6; color: var(--text-sub); margin: 0 0 24px; }
+.sk-dialog-error { margin: 0 0 16px; }
+.sk-dialog-actions { display: flex; gap: 10px; }
+.sk-dialog-actions > .ds-btn { flex: 1; }
+.ds-btn.sk-btn-danger { background: var(--accent-red); color: var(--on-accent-red); }
+.ds-btn.sk-btn-danger:hover { background: var(--accent-red); opacity: .9; }
+.sk-celebr-num { font-size: 72px; letter-spacing: -.02em; color: var(--text); margin-bottom: 8px; }
+.sk-celebr-num[data-milestone='yes'] { color: var(--accent); }
+.sk-celebr-insight { padding-top: 12px; border-top: 1px solid var(--line); font-size: 13px; }
+.sk-dialog-link { display: block; width: 100%; min-height: 44px; margin-top: 6px; }
+.sk-dialog-box .ds-btn.sk-wide { width: 100%; }
+
+/* ── Загрузка, ErrorBoundary ── */
+.sk-loader { display: flex; align-items: center; justify-content: center; width: 100%; flex: 1; }
+.sk-loader--full { position: fixed; inset: 0; background: var(--bg); z-index: 9999; }
+.sk-crash { max-width: 760px; margin: 0 auto; padding: 48px clamp(16px, 4vw, 40px); box-sizing: border-box; }
+.sk-crash-card { display: flex; flex-direction: column; gap: 14px; align-items: flex-start; border-color: var(--err); }
+.sk-crash-text { margin: 0; max-width: 560px; font-size: 14px; line-height: 1.6; color: var(--text-sub); }
+.sk-crash-details { align-self: stretch; background: var(--paper-sunk); border-radius: 12px; padding: 14px 16px; font-family: ui-monospace, monospace; font-size: 12px; }
+.sk-crash-details summary { cursor: pointer; font-weight: 600; }
+.sk-crash-msg { color: var(--err); margin: 8px 0 12px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.sk-crash-stack { color: var(--text-sub); white-space: pre-wrap; max-height: 300px; overflow: auto; }
+.sk-celebr-canvas { position: absolute; inset: 0; pointer-events: none; }
+.sk-celebr-tight { margin-bottom: 12px; }
+
+/* ── Оверлеи «Все задания» / «Все цели» ── */
+.sk-overlay { position: fixed; inset: 0; z-index: 200; background: var(--bg); display: grid; grid-template-rows: auto 1fr; overflow: hidden; }
+.sk-overlay > .sk-scroll { min-height: 0; }
+.sk-page--narrow { max-width: 600px; }
+.sk-task { display: flex; align-items: center; gap: 12px; }
+.sk-task.is-past { opacity: .6; }
+.sk-task-mark { font-size: 18px; flex-shrink: 0; width: 22px; text-align: center; }
+.sk-task-main { flex: 1; min-width: 0; }
+.sk-task-text { font-size: 14px; font-weight: 500; line-height: 1.4; overflow-wrap: anywhere; }
+.sk-wide-btn { width: 100%; }
+
+/* ── Онбординг-виджет и «Что это было» ── */
+.sk-onb { display: flex; flex-direction: column; gap: 6px; }
+.sk-onb-ok { color: var(--ok); }
+.sk-onb-done-text { max-width: 540px; font-size: 14px; line-height: 1.55; margin-bottom: 8px; }
+.sk-onb-row { display: flex; align-items: flex-start; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--paper-sunk); cursor: pointer; min-height: 44px; box-sizing: border-box; }
+.sk-onb-row:last-of-type { border-bottom: none; }
+.sk-onb-row.is-skipped { opacity: .6; }
+.sk-onb-box { width: 16px; height: 16px; border-radius: 5px; border: 1.5px solid var(--line-strong); flex-shrink: 0; margin-top: 3px; display: flex; align-items: center; justify-content: center; font-size: 10px; color: var(--surface); box-sizing: border-box; }
+.sk-onb-box.is-current { border-color: var(--accent); }
+.sk-onb-box.is-done { border-color: var(--ok); background: var(--ok); }
+.sk-onb-main { flex: 1; min-width: 0; }
+.sk-onb-title { font-size: 14px; font-weight: 600; cursor: pointer; }
+.sk-onb-title.is-done { color: var(--text-sub); }
+.sk-onb-desc { margin-top: 4px; line-height: 1.55; }
+.sk-onb-actions { display: flex; gap: 14px; align-items: center; flex-shrink: 0; }
+.sk-case { display: flex; flex-direction: column; gap: 10px; margin-bottom: 32px; }
+.sk-case-text { margin: 0 0 10px; font-size: 14px; line-height: 1.6; color: var(--text-sub); }
+.sk-case-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.sk-case-map { align-self: flex-start; margin-top: 6px; min-height: 44px; }
+
+/* ── Поддержать проект, дисклеймер терапевта ── */
+.sk-nudge { display: flex; flex-direction: column; gap: 8px; }
+.sk-nudge-text { font-size: 15px; line-height: 1.6; color: var(--text-sub); margin: 0 0 14px; }
+.sk-nudge-link { text-decoration: none; box-sizing: border-box; }
+.sk-nudge-later { align-self: center; min-height: 44px; color: var(--text-faint); font-weight: 500; font-size: 14px; }
+.sk-priv { position: fixed; inset: 0; z-index: 260; background: var(--bg); overflow-y: auto; }
+.sk-priv-col { max-width: 540px; margin: 0 auto; padding: 56px 24px 40px; display: flex; flex-direction: column; gap: 18px; box-sizing: border-box; }
+.sk-priv-head { text-align: center; margin-bottom: 8px; }
+.sk-priv-title { font-size: 30px; margin-bottom: 14px; }
+.sk-priv-lead { font-size: 15px; line-height: 1.7; color: var(--text-sub); margin: 0; }
+.sk-priv-p { font-size: 15px; line-height: 1.75; margin: 0; }
+.sk-priv-p--sub { font-size: 14px; color: var(--text-sub); }
+.sk-priv-note { font-size: 13.5px; line-height: 1.7; color: var(--text-sub); }
+.sk-priv-em { color: var(--accent); font-weight: 600; }
+.sk-priv-list { display: flex; flex-direction: column; gap: 10px; }
+.sk-priv-item-title { font-size: 14.5px; font-weight: 600; margin-bottom: 2px; }
+.sk-priv-item-text { font-size: 13.5px; line-height: 1.65; color: var(--text-sub); }

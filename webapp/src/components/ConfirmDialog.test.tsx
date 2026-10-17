@@ -114,9 +114,9 @@ describe('ConfirmDialog — busy/error состояния', () => {
 
   it('danger=false — кнопка подтверждения не красная; по умолчанию — красная', () => {
     renderDialog({ danger: false });
-    expect(screen.getByText('Удалить').className).not.toContain('btn-primary--danger');
+    expect(screen.getByText('Удалить').className).not.toContain('sk-btn-danger');
     cleanup();
     renderDialog();
-    expect(screen.getByText('Удалить').className).toContain('btn-primary--danger');
+    expect(screen.getByText('Удалить').className).toContain('sk-btn-danger');
   });
 });

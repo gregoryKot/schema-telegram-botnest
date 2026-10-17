@@ -9,6 +9,10 @@
     "spec": "test/notify-address.e2e-spec.ts",
     "via": "src/auth/merge.service.ts"
   },
+  "src/auth/merge-relations.ts": {
+    "spec": "test/merge-relations.e2e-spec.ts",
+    "via": "src/auth/merge.service.ts"
+  },
   "src/auth/merge-subscriptions.ts": {
     "spec": "test/notify-address.e2e-spec.ts",
     "via": "src/auth/merge.service.ts"

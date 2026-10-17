@@ -127,7 +127,9 @@ const EXPECTED_CRISIS_FILES = [
   'schema-miniapp/src/components/schemaFlashcard/ResponseStep.tsx',
   'schema-miniapp/src/components/schemaFlashcard/ActionStep.tsx',
   'webapp/src/components/NoteSheet.tsx',
-  'webapp/src/components/SchemaFlashcard.tsx',
+  // «Мне плохо» (#746): шаги со свободным текстом и детекция переехали из
+  // SchemaFlashcard.tsx в FlashcardSteps.tsx, оркестратор остался без <textarea>.
+  'webapp/src/components/flashcard/FlashcardSteps.tsx',
   'webapp/src/components/exercises/LetterEx.tsx',
   'webapp/src/components/exercises/BeliefCheckEx.tsx',
   'webapp/src/components/exercises/FlashcardEx.tsx',
