@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-// Баннер «приложение для телефона»: ведёт в /app/, разворачивает инструкцию
+// Баннер «приложение для телефона»: ведёт в кабинет /today, разворачивает инструкцию
 // «значок на экран», скрывается навсегда через localStorage и не показывается
 // внутри уже установленного приложения. Аналитика: web_banner_open/dismiss
 // (banner: mobile_app) + home_screen_offer (surface: site_banner).
@@ -27,12 +27,12 @@ afterEach(() => {
 });
 
 describe('MobileAppBanner', () => {
-  it('показывается по умолчанию: иконка, имя, ссылка в /app/', () => {
+  it('показывается по умолчанию: иконка, имя, ссылка в /today', () => {
     render(<MobileAppBanner />);
     expect(screen.getByText('Всё по схеме')).toBeTruthy();
     expect(screen.getByText('приложение для телефона')).toBeTruthy();
     const cta = screen.getByText('Открыть приложение') as HTMLAnchorElement;
-    expect(cta.getAttribute('href')).toBe('/app/');
+    expect(cta.getAttribute('href')).toBe('/today');
   });
 
   it('клик по ссылке трекает web_banner_open с banner: mobile_app', () => {

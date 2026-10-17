@@ -11,7 +11,7 @@ export function getTheme(): Theme {
   return (localStorage.getItem(KEY) as Theme) ?? detectTheme();
 }
 
-const THEME_BG: Record<Theme, string> = { light: '#f5f2eb', dark: '#14141a' };
+const THEME_BG: Record<Theme, string> = { light: '#f6f2eb', dark: '#14141a' };
 
 export function applyTheme(theme: Theme) {
   document.documentElement.setAttribute('data-theme', theme);

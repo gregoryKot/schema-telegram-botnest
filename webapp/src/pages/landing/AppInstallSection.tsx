@@ -8,7 +8,7 @@ import { useInstallPrompt } from '../../hooks/useInstallPrompt';
 import { isStandalone, subscribeAppInstalled } from '../../utils/pwaInstall';
 
 // Секция «значок на экране» продуктового лендинга: сайт ставится как
-// приложение прямо из браузера (манифест у корня ведёт в /app/). Шаги — из
+// приложение прямо из браузера (манифест у корня ведёт в кабинет /today). Шаги — из
 // общего источника installSteps, те же, что в баннере кабинета (одна
 // механика — один источник текста). Аналитика анонимная: гость лендинга не
 // авторизован, событие уходит в POST /api/public-event (userId = null).
@@ -75,7 +75,7 @@ export function AppInstallSection() {
           })}
         </div>
         <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'center' }}>
-          <Cta href="/app/" size="lg">Открыть приложение</Cta>
+          <Cta href="/today" size="lg">Открыть приложение</Cta>
           {canPrompt && (
             <Cta
               href="#app"
