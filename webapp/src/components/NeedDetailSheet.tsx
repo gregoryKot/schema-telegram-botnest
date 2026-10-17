@@ -2,7 +2,7 @@ import { ExScreen } from './exercises/ExScreen';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { useNeedData } from '../needData';
 import { SCHEMA_DOMAINS } from '../schemaTherapyData';
-import { IdentityDot, needColor } from '../../../shared/src/components/IdentityDot';
+import { IdentityDot } from '../../../shared/src/components/IdentityDot';
 import { useTr } from '../utils/addressForm';
 import { NEED_HUE, hueStyle } from '../lib/tone';
 import type { NeedId } from '../../../shared/src/needs/types';
@@ -28,7 +28,6 @@ export function NeedDetailSheet({ needId, childhoodRating, activeSchemaIds, onCl
   const tr = useTr();
   const NEED_DATA = useNeedData();
   const need = NEED_DATA[needId];
-  const color = needColor(needId);
   const hue = NEED_HUE[needId as NeedId];
 
   if (!need) return null;
@@ -52,7 +51,6 @@ export function NeedDetailSheet({ needId, childhoodRating, activeSchemaIds, onCl
       onBack={goBack}
       backLabel="Назад"
       eyebrow="Потребность"
-      eyebrowColor={color}
       title={<>{need.name}<br /><span className="it">{need.subtitle}</span></>}
       lede={need.explanation}
       aside={

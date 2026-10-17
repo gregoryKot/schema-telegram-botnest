@@ -44,8 +44,6 @@ interface ExScreenProps {
   onBack: () => void;
   backLabel?: string;
   eyebrow: ReactNode;
-  /** Больше не используется: подпись над заголовком всегда акцентная (ds-eyebrow). */
-  eyebrowColor?: string;
   title: ReactNode;
   lede?: ReactNode;
   aside?: ReactNode;

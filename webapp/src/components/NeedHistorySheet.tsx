@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useTr } from '../utils/addressForm';
 import { hitboxStyle } from '../utils/hitbox';
-import { COLORS } from '../types';
 import type { Need, DayHistory } from '../types';
 import { useNeedData } from '../needData';
 import { ExScreen } from './exercises/ExScreen';
@@ -30,7 +29,6 @@ export function NeedHistorySheet({ need, value, history, childhoodValue, onClose
   const [tipRand] = useState(() => Math.random());
   const data = NEED_DATA[need.id];
   if (!data) return null;
-  const color = COLORS[need.id] ?? '#888';
   const hue = NEED_HUE[need.id as NeedId];
 
   const scores = history.map(d => d.ratings[need.id] ?? 0);
@@ -62,7 +60,6 @@ export function NeedHistorySheet({ need, value, history, childhoodValue, onClose
       onBack={goBack}
       backLabel="Назад"
       eyebrow={need.chartLabel}
-      eyebrowColor={color}
       title={<>Динамика<br /><span className="it">потребности</span></>}
       lede={data.explanation}
       aside={

@@ -14,14 +14,12 @@ import {
 
 interface Props {
   needId: string;
-  needColor: string;
   needLabel: string;
-  color: string;
   onClose: () => void;
   onSaved: () => void;
 }
 
-export function PlanSheet({ needId, needLabel, color, onClose, onSaved }: Props) {
+export function PlanSheet({ needId, needLabel, onClose, onSaved }: Props) {
   const tr = useTr();
   const goBack = useHistorySheet(onClose);
   const {
@@ -51,7 +49,6 @@ export function PlanSheet({ needId, needLabel, color, onClose, onSaved }: Props)
       onBack={phase === 'confirm' ? () => setPhase('pick') : goBack}
       backLabel={phase === 'confirm' ? '← Выбрать другое' : 'Назад'}
       eyebrow={needLabel}
-      eyebrowColor={color}
       title={phase === 'pick'
         ? <>{tr('Что сделаешь', 'Что сделаете')}<br /><span className="it">завтра?</span></>
         : <>Запланировать<br /><span className="it">{selectedText.length > 30 ? selectedText.slice(0, 30) + '…' : selectedText}</span></>
