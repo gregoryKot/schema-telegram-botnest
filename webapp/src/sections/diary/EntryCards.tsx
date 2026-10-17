@@ -101,7 +101,6 @@ export function ModeEntry({ entry, onDelete }: { entry: ModeDiaryEntry; onDelete
             healthyResponse={entry.healthyResponse}
             entry={entry}
             dateLabel={fmtDayMonth(fmtDateKey(entry.createdAt))}
-            color="var(--c-slate)"
           />
         </div>
       ) : entry.actualNeed && (

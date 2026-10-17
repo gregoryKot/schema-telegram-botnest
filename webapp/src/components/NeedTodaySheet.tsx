@@ -1,11 +1,10 @@
 import { useState } from 'react';
-import { COLORS, type Need } from '../types';
+import type { Need } from '../types';
 import { useNeedData } from '../needData';
 import { ExScreen, GlyphCheck } from './exercises/ExScreen';
 import { NeedAdviceModal } from './NeedAdviceModal';
 import { PlanSheet } from './PlanSheet';
 import { useHistorySheet } from '../hooks/useHistorySheet';
-import { needColor } from '../../../shared/src/needs/needColors';
 import { useTr } from '../utils/addressForm';
 import { NeedScale } from './NeedScale';
 import { NEED_HUE, hueStyle } from '../lib/tone';
@@ -32,7 +31,6 @@ export function NeedTodaySheet({ need, value, yesterdayValue, onChange, onClose,
 
   const data = NEED_DATA[need.id];
   if (!data) return null;
-  const color = COLORS[need.id] ?? '#888';
   const rangeIdx = value <= 3 ? 0 : value <= 6 ? 1 : 2;
   const RANGE_VALUES = [1, 4, 7];
 
@@ -44,7 +42,6 @@ export function NeedTodaySheet({ need, value, yesterdayValue, onChange, onClose,
       onBack={goBack}
       backLabel="Назад к дневнику"
       eyebrow="Оцени сейчас"
-      eyebrowColor={color}
       title={<>{need.chartLabel}</>}
       lede={data.question}
       aside={
@@ -171,9 +168,7 @@ export function NeedTodaySheet({ need, value, yesterdayValue, onChange, onClose,
       {showPlan && (
         <PlanSheet
           needId={need.id}
-          needColor={needColor(need.id)}
           needLabel={need.chartLabel}
-          color={color}
           onClose={() => setShowPlan(false)}
           onSaved={() => { setShowPlan(false); onPlanSaved?.(need.id); goBack(); }}
         />

@@ -26,8 +26,6 @@ export function ModeEntryShare({
   healthyResponse?: string | null;
   entry?: ModeEntryFullSource;
   dateLabel?: string;
-  /** Устарел: цвет кнопок теперь общий (ds-btn--secondary). */
-  color?: string;
 }) {
   const { share, setShare, hasHealthy, hasFull, shortProps, fullProps } =
     useModeEntryShare(mode, healthyResponse, entry, botShortUrl, dateLabel);

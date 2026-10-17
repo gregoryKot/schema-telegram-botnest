@@ -15,7 +15,7 @@ export function IndexInfoSheet({ onClose }: { onClose: () => void }) {
   return (
     <ExScreen
       onBack={goBack} backLabel="Назад"
-      eyebrow="Трекер" eyebrowColor="var(--accent)"
+      eyebrow="Трекер"
       title={<>Об индексе<br /><span className="it">дня</span></>}
       lede="Что означают цифры и как ими пользоваться."
     >
