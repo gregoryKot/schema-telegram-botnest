@@ -129,6 +129,17 @@
 .ds-avatar--serif { font-family: var(--serif); font-weight: 400; }
 .ds-dot { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
 
+/* ── Тумблер (role="switch") ─────────────────────────────────────────────── */
+.ds-switch { position: relative; flex-shrink: 0; width: 44px; height: 26px; border-radius: 13px; border: none; padding: 0; background: var(--line-strong); cursor: pointer; transition: background .15s; }
+.ds-switch::before { content: ''; position: absolute; inset: -9px -2px; }
+.ds-switch[aria-checked="true"] { background: var(--ok); }
+.ds-switch:disabled { opacity: .5; cursor: default; }
+.ds-switch-knob { position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: var(--surface); transition: left .15s; }
+.ds-switch[aria-checked="true"] .ds-switch-knob { left: 21px; }
+.ds-switch--sm { width: 38px; height: 22px; border-radius: 11px; }
+.ds-switch--sm .ds-switch-knob { top: 2px; left: 2px; width: 18px; height: 18px; }
+.ds-switch--sm[aria-checked="true"] .ds-switch-knob { left: 18px; }
+
 /* ── Поля ввода ──────────────────────────────────────────────────────────── */
 .ds-input, .ds-textarea {
   border: 1px solid var(--line-input); border-radius: 12px; background: var(--surface);

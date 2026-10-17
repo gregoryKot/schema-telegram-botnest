@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useViewport } from '@xyflow/react';
+import '../styles/sheet-modemap.css';
 
 // Couple "Mode Cycle Clash" lanes: Partner A on the left, Partner B on the right.
 // The tinted bands live in flow coordinates (pan/zoom with the canvas); the editable
@@ -33,15 +34,11 @@ export function ModeMapCoupleLanes({ mapId }: { mapId: number }) {
       <input ref={inputRef} defaultValue={val}
         onBlur={e => { save({ ...names, [side]: e.target.value.trim() || (side === 'a' ? 'Партнёр А' : 'Партнёр Б') }); setEditing(null); }}
         onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); if (e.key === 'Escape') setEditing(null); }}
-        style={{ width: 130, fontSize: 12.5, fontWeight: 600, textAlign: 'center', padding: '4px 8px', borderRadius: 999,
-          border: `1.5px solid ${color}`, background: 'var(--bg-elev)', color: 'var(--text)', outline: 'none' }} />
+        className="ds-input mm2-lane-input" style={{ '--pc': color } as React.CSSProperties} />
     ) : (
       <button onDoubleClick={() => setEditing(side)} onClick={() => setEditing(side)} title="Переименовать партнёра" aria-label="Переименовать партнёра"
-        style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 14px', borderRadius: 999, cursor: 'text',
-          fontSize: 12.5, fontWeight: 600, color,
-          background: `color-mix(in srgb, ${color} 12%, var(--bg-elev))`,
-          border: `1px solid color-mix(in srgb, ${color} 40%, transparent)` }}>
-        <span style={{ width: 7, height: 7, borderRadius: '50%', background: color }} />
+        className="mm2-lane-chip" style={{ '--pc': color } as React.CSSProperties}>
+        <i />
         {val}
       </button>
     );
@@ -61,10 +58,10 @@ export function ModeMapCoupleLanes({ mapId }: { mapId: number }) {
         </div>
       </div>
       {/* Editable partner chips — fixed top bar */}
-      <div style={{ position: 'absolute', top: 10, left: 0, right: 0, display: 'flex', justifyContent: 'center', gap: 'var(--space-10)', zIndex: 4, pointerEvents: 'none' }}>
-        <div style={{ display: 'flex', gap: 'var(--space-10)', pointerEvents: 'all' }}>
+      <div className="mm2-lane-bar">
+        <div className="mm2-lane-chips">
           {chip('a')}
-          <span style={{ alignSelf: 'center', fontSize: 12, color: 'var(--text-faint)' }}>⇄</span>
+          <span className="mm2-lane-sep">⇄</span>
           {chip('b')}
         </div>
       </div>

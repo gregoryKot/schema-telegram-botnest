@@ -1,14 +1,21 @@
-// ── Sub-components ────────────────────────────────────────────────────────────
-// Презентационные примитивы SettingsSheet — вынесены из SettingsSheet.tsx
-// (правило №10, файл превысил потолок 300 строк). Чистый перенос без
-// переименований/рестайлинга.
+import '../../styles/sheet-settings.css';
 
-export function SHead({ id, label, hint }: { id: string; label: string; hint?: string }) {
+// Примитивы SettingsSheet (правило №10): вид — st-* из sheet-settings.css + ds-*.
+
+const onKeyActivate = (fn: () => void) => (e: React.KeyboardEvent) => {
+  if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fn(); }
+};
+
+/** Раздел листа: карточка с заголовком-ярлыком; id нужен боковому оглавлению. */
+export function SSection({ id, label, hint, children }: { id: string; label: string; hint?: string; children: React.ReactNode }) {
   return (
-    <div id={id} style={{ paddingTop: 40, paddingBottom: 10, borderBottom: '1px solid var(--line)' }}>
-      <div className="eyebrow">{label}</div>
-      {hint && <div style={{ fontSize: 12, color: 'var(--text-faint)', marginTop: 4, lineHeight: 1.5 }}>{hint}</div>}
-    </div>
+    <section className="ds-card st-section">
+      <div id={id} className="st-sec-head">
+        <div className="ds-label">{label}</div>
+        {hint && <div className="st-hint">{hint}</div>}
+      </div>
+      {children}
+    </section>
   );
 }
 
@@ -16,49 +23,42 @@ export function SRow({ title, sub, right, onClick, danger }: {
   title: string; sub?: React.ReactNode; right?: React.ReactNode;
   onClick?: () => void; danger?: boolean;
 }) {
+  const cls = `st-row${onClick ? ' st-row--click' : ''}${danger ? ' st-row--danger' : ''}`;
   return (
-    <div onClick={onClick} role={onClick ? 'button' : undefined} tabIndex={onClick ? 0 : undefined}
-      onKeyDown={onClick ? (e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick(); } }) : undefined}
-      style={{
-      display: 'flex', alignItems: 'center', gap: 16,
-      padding: '13px 0',
-      borderBottom: '1px solid rgba(var(--fg-rgb),0.06)',
-      cursor: onClick ? 'pointer' : 'default',
-    }}>
-      <div className="u-fill">
-        <div style={{ fontSize: 14, color: danger ? 'var(--accent-red)' : 'var(--text)' }}>{title}</div>
-        {sub && <div style={{ fontSize: 12, color: 'var(--text-faint)', marginTop: 3, lineHeight: 1.4 }}>{sub}</div>}
+    <div className={cls} onClick={onClick} role={onClick ? 'button' : undefined} tabIndex={onClick ? 0 : undefined}
+      onKeyDown={onClick ? onKeyActivate(onClick) : undefined}>
+      <div>
+        <div className="st-row-title">{title}</div>
+        {sub && <div className="st-row-sub">{sub}</div>}
       </div>
-      {right ?? (onClick && <span style={{ color: 'var(--text-faint)', fontSize: 16, flexShrink: 0 }}>›</span>)}
+      {right ?? (onClick && <span className="st-chev-arrow">›</span>)}
+    </div>
+  );
+}
+
+function Switch({ on, onClick, small }: { on: boolean; onClick: () => void; small?: boolean }) {
+  return (
+    <div onClick={onClick} role="switch" aria-checked={on} tabIndex={0}
+      onKeyDown={onKeyActivate(onClick)}
+      className={`ds-switch${small ? ' ds-switch--sm' : ''}`}>
+      <div className="ds-switch-knob" />
     </div>
   );
 }
 
 export function Toggle({ on, onClick }: { on: boolean; onClick: () => void }) {
-  return (
-    <div onClick={onClick} role="switch" aria-checked={on} tabIndex={0}
-      onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick(); } }}
-      style={{ width: 44, height: 26, borderRadius: 13, flexShrink: 0, background: on ? 'var(--accent)' : 'rgba(var(--fg-rgb),0.12)', position: 'relative', transition: 'background 0.2s', cursor: 'pointer' }}>
-      <div style={{ position: 'absolute', top: 3, left: on ? 21 : 3, width: 20, height: 20, borderRadius: '50%', background: 'var(--bg)', transition: 'left 0.2s', boxShadow: '0 1px 4px rgba(0,0,0,0.25)' }} />
-    </div>
-  );
+  return <Switch on={on} onClick={onClick} />;
 }
 
 export function SmallToggle({ on, onClick }: { on: boolean; onClick: () => void }) {
-  return (
-    <div onClick={onClick} role="switch" aria-checked={on} tabIndex={0}
-      onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick(); } }}
-      style={{ width: 38, height: 22, borderRadius: 11, flexShrink: 0, background: on ? 'var(--accent)' : 'rgba(var(--fg-rgb),0.12)', position: 'relative', transition: 'background 0.2s', cursor: 'pointer' }}>
-      <div style={{ position: 'absolute', top: 2, left: on ? 18 : 2, width: 18, height: 18, borderRadius: '50%', background: 'var(--bg)', transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.2)' }} />
-    </div>
-  );
+  return <Switch on={on} onClick={onClick} small />;
 }
 
 export function ChevronVal({ text, small }: { text: string; small?: boolean }) {
   return (
-    <div className="u-ac6">
-      <span style={{ fontSize: small ? 12 : 14, color: 'var(--text-sub)', textAlign: 'right', maxWidth: 200 }}>{text}</span>
-      <span style={{ color: 'var(--text-faint)', fontSize: 16 }}>›</span>
+    <div className="st-row-right">
+      <span className={`st-chev${small ? ' st-chev--sm' : ''}`}>{text}</span>
+      <span className="st-chev-arrow">›</span>
     </div>
   );
 }
@@ -66,7 +66,7 @@ export function ChevronVal({ text, small }: { text: string; small?: boolean }) {
 export function InfoModal({ children, onClose }: { children: React.ReactNode; onClose: () => void }) {
   return (
     <div className="sheet-modal" onClick={onClose} role="button" tabIndex={0} aria-label="Закрыть"
-      onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClose(); } }}>
+      onKeyDown={onKeyActivate(onClose)}>
       <div
         role="presentation"
         className="sheet-modal-box"

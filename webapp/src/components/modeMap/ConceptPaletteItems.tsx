@@ -4,7 +4,6 @@ import { NEEDS_TITLE } from '../../../../shared/src/therapy/conceptGraph/diagram
 import { TYPE_COLORS } from '../modeMapData';
 import { HUB_DIAMETER } from './hubGeometry';
 import { nodeTexts } from './nodeTexts';
-import { paletteItemStyle } from './paletteStyle';
 
 type Draft = Omit<ModeMapNode, 'position'>;
 
@@ -33,16 +32,16 @@ const draft = ({ type }: Item): Draft => {
 /** Секция палитры «Схема случая»: фигуры, из которых собирается схема на холсте. */
 export function ConceptPaletteItems({ onAdd, onDragStart }: Props) {
   return (
-    <div style={{ borderTop: '1px solid var(--line)' }}>
-      <div style={{ padding: '6px 12px', fontSize: 11.5, fontWeight: 600, color: 'var(--text-sub)' }}>Схема случая</div>
+    <div className="mm2-mine">
+      <div className="mm2-mine-head"><span className="mm2-pal-head-name">Схема случая</span></div>
       {ITEMS.map((item) => {
         const hint = item.hint ?? nodeTexts(item.type).note;
         return (
           <button key={item.type} onClick={() => onAdd(draft(item))}
             draggable onDragStart={(e) => onDragStart(e, draft(item))}
-            style={paletteItemStyle} title={hint} aria-label={hint}>
+            className="mm2-pal-item" title={hint} aria-label={hint}>
             <IdentityDot color={TYPE_COLORS[item.type]} size={12} />
-            <span style={{ fontSize: 12, flex: 1, lineHeight: 1.3 }}>{nodeTexts(item.type).title}</span>
+            <span className="mm2-pal-item-name">{nodeTexts(item.type).title}</span>
           </button>
         );
       })}

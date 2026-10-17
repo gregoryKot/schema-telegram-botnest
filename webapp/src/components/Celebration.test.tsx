@@ -39,7 +39,7 @@ describe('Celebration — контент', () => {
     renderCelebration({ streak: 7 });
     const num = screen.getByText('7');
     expect(num.dataset.milestone).toBe('yes');
-    expect(num.style.color).toBe('var(--accent)');
+    expect(num.className).toContain('sk-celebr-num'); // акцент вехи задаёт css по data-milestone
     expect(screen.getByText('Неделя подряд. Это настоящий сдвиг')).toBeTruthy();
   });
 

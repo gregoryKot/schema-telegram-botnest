@@ -190,3 +190,50 @@ describe('PairsService — срок и перевыпуск кода пригл�
     expect(await svc.joinPair(2n, code)).toBe(true);
   });
 });
+
+describe('PairsService.joinPair — не плодит вторую активную пару', () => {
+  it('B вступил по коду A, затем A по коду B → true, второй активации нет', async () => {
+    const db = makeDb();
+    const svc = new PairsService(db);
+    await svc.joinPair(2n, await svc.createPairInvite(1n));
+    const codeB = await svc.createPairInvite(2n);
+    const spy = jest.spyOn(db.pair, 'updateMany');
+    spy.mockClear(); // таблица уже jest.fn: история прошлых вызовов не нужна
+
+    expect(await svc.joinPair(1n, codeB)).toBe(true);
+
+    expect(spy).not.toHaveBeenCalled();
+    expect(db._pairs.filter((p: any) => p.status === 'active')).toHaveLength(1);
+    expect((await svc.getUserPair(1n))?.partnerId).toBe(2n);
+  });
+
+  it('активная пара с ДРУГИМ человеком не мешает вступить', async () => {
+    const db = makeDb();
+    const svc = new PairsService(db);
+    await svc.joinPair(3n, await svc.createPairInvite(1n));
+
+    expect(await svc.joinPair(2n, await svc.createPairInvite(1n))).toBe(true);
+
+    expect(db._pairs.filter((p: any) => p.status === 'active')).toHaveLength(2);
+  });
+
+  it('гонка двух кодов: частичный unique (P2002) на updateMany → true, не 500', async () => {
+    const db = makeDb();
+    const svc = new PairsService(db);
+    const code = await svc.createPairInvite(1n);
+    jest
+      .spyOn(db.pair, 'updateMany')
+      .mockRejectedValue(Object.assign(new Error('dup'), { code: 'P2002' }));
+
+    expect(await svc.joinPair(2n, code)).toBe(true);
+  });
+
+  it('любая другая ошибка updateMany пробрасывается', async () => {
+    const db = makeDb();
+    const svc = new PairsService(db);
+    const code = await svc.createPairInvite(1n);
+    jest.spyOn(db.pair, 'updateMany').mockRejectedValue(new Error('db down'));
+
+    await expect(svc.joinPair(2n, code)).rejects.toThrow('db down');
+  });
+});

@@ -36,7 +36,6 @@ export function CaseModeScreen({
     <ExScreen
       onBack={onBack}
       eyebrow="Разбор случая · Шаг 2 из 5"
-      eyebrowColor="var(--accent-indigo)"
       title={
         <>
           Кто сейчас
@@ -49,7 +48,7 @@ export function CaseModeScreen({
         'Режим – состояние, которое сейчас «за рулём». Не знаете названия – определим по чувству, в пару тапов.',
       )}
     >
-      <div style={{ fontSize: 12.5, color: 'var(--text-faint)', margin: '0 0 10px' }}>
+      <div className="ex2-fine">
         {tr(
           'Что сейчас чувствуешь? Выбери самое близкое:',
           'Что сейчас чувствуете? Выберите самое близкое:',
@@ -59,7 +58,7 @@ export function CaseModeScreen({
 
       <button
         type="button"
-        className="ex-btn ex-btn-ghost mode-list-toggle"
+        className="ds-btn ex2-ghost ex2-gap"
         onClick={() => {
           haptic.tap();
           setListOpen((v) => !v);

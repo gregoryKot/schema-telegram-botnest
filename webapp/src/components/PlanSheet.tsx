@@ -2,7 +2,9 @@ import { api } from '../api';
 import { ExScreen, GlyphCheck } from './exercises/ExScreen';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { useTr } from '../utils/addressForm';
-import { IdentityDot } from '../../../shared/src/components/IdentityDot';
+import { NEED_HUE, hueStyle } from '../lib/tone';
+import type { NeedId } from '../../../shared/src/needs/types';
+import '../styles/sheet-tasks.css';
 import { detectCrisisAny } from '../utils/crisisMarkers';
 import { CrisisCard } from './CrisisCard';
 import {
@@ -12,14 +14,12 @@ import {
 
 interface Props {
   needId: string;
-  needColor: string;
   needLabel: string;
-  color: string;
   onClose: () => void;
   onSaved: () => void;
 }
 
-export function PlanSheet({ needId, needColor, needLabel, color, onClose, onSaved }: Props) {
+export function PlanSheet({ needId, needLabel, onClose, onSaved }: Props) {
   const tr = useTr();
   const goBack = useHistorySheet(onClose);
   const {
@@ -49,144 +49,123 @@ export function PlanSheet({ needId, needColor, needLabel, color, onClose, onSave
       onBack={phase === 'confirm' ? () => setPhase('pick') : goBack}
       backLabel={phase === 'confirm' ? '← Выбрать другое' : 'Назад'}
       eyebrow={needLabel}
-      eyebrowColor={color}
       title={phase === 'pick'
         ? <>{tr('Что сделаешь', 'Что сделаете')}<br /><span className="it">завтра?</span></>
         : <>Запланировать<br /><span className="it">{selectedText.length > 30 ? selectedText.slice(0, 30) + '…' : selectedText}</span></>
       }
       lede={phase === 'pick' ? 'Один маленький конкретный шаг – уже много.' : undefined}
       aside={
-        <div className="aside-card" style={{ borderColor: `${color}40`, background: `${color}08`, position: 'sticky', top: 40 }}>
-          <div className="aside-card-eyebrow" style={{ color }}>Потребность</div>
-          <h3 style={{ fontSize: 18, display: 'flex', alignItems: 'center', gap: 'var(--space-8)' }}><IdentityDot color={needColor} /> {needLabel}</h3>
-          <p className="body">Практика помогает восстановить потребность через конкретное действие</p>
+        <div className="ds-card sk-aside" style={hueStyle(NEED_HUE[needId as NeedId])}>
+          <div className="ds-label">Потребность</div>
+          <h3 className="ds-h3 sk-aside-title">
+            <span className="ds-dot tone-fill" /> {needLabel}
+          </h3>
+          <p className="ds-sub">Практика помогает восстановить потребность через конкретное действие</p>
         </div>
       }
     >
       {phase === 'pick' && (
         <>
           {practicesFailed && (
-            <div role="alert" style={{ fontSize: 13, color: 'var(--c-rose)', marginBottom: 12 }}>
+            <div role="alert" className="sk-error">
               {tr('Не удалось загрузить твои практики — ниже только готовые варианты', 'Не удалось загрузить ваши практики — ниже только готовые варианты')}
             </div>
           )}
           {allOptions.length > 0 && (
-            <div className="prompt">
-              <div className="prompt-num">·</div>
-              <div className="u-w100">
-                <div className="prompt-label">Готовые варианты</div>
-                <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
-                  {allOptions.map(({ text, isUser, id }) => (
-                    <div key={text} className="u-ac8">
-                      <div
-                        onClick={() => selectText(text)}
-                        role="button" tabIndex={0}
-                        onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectText(text); } }}
-                        className="mode-card"
-                        style={{ '--mode-color': isUser ? color : 'var(--text-ghost)', flex: 1 } as React.CSSProperties}
-                      >
-                        <span className="mode-card-stripe" />
-                        <div className="mode-card-name">{text}</div>
-                      </div>
-                      {isUser && id !== undefined && (
-                        <button
-                          onClick={() => handleDeletePractice(id)}
-                          style={{ width: 32, height: 32, borderRadius: 'var(--r-8)', flexShrink: 0, background: 'color-mix(in srgb, var(--c-rose) 10%, transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: deletingIds.has(id) ? 'default' : 'pointer', fontSize: 16, color: deletingIds.has(id) ? 'var(--text-ghost)' : 'var(--c-rose)', border: 'none' }}
-                          aria-label="Удалить"
-                        >×</button>
-                      )}
+            <div className="sk-field">
+              <div className="ds-label">Готовые варианты</div>
+              <div className="sk-list">
+                {allOptions.map(({ text, isUser, id }) => (
+                  <div key={text} className="sk-opt-row">
+                    <div
+                      onClick={() => selectText(text)}
+                      role="button" tabIndex={0}
+                      onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectText(text); } }}
+                      className={'ds-card ds-card--row ds-card--hover sk-opt' + (isUser ? ' tone-border' : '')}
+                      style={hueStyle(NEED_HUE[needId as NeedId])}
+                    >
+                      {text}
                     </div>
-                  ))}
-                </div>
+                    {isUser && id !== undefined && (
+                      <button
+                        onClick={() => handleDeletePractice(id)}
+                        disabled={deletingIds.has(id)}
+                        className="ds-btn ds-btn--icon sk-del"
+                        aria-label="Удалить"
+                      >×</button>
+                    )}
+                  </div>
+                ))}
               </div>
             </div>
           )}
 
-          <div className="prompt">
-            <div className="prompt-num">·</div>
-            <div className="u-w100">
-              <div className="prompt-label">{allOptions.length > 0 ? 'Или своё' : tr('Что планируешь?', 'Что планируете?')}</div>
-              <textarea
-                value={customText}
-                onChange={e => setCustomText(e.target.value)}
-                placeholder="Что-то конкретное, маленькое..."
-                maxLength={200}
-                rows={2}
-                className={'paper-input ' + (customText.trim() ? 'is-filled' : '')}
-              />{detectCrisisAny(customText) && <CrisisCard surface="plan" />}
-              {customText.trim() && (
-                <button onClick={handleCustomSubmit} className="ex-btn ex-btn-primary u-mt8">
-                  Продолжить →
-                </button>
-              )}
-            </div>
+          <div className="sk-field">
+            <div className="ds-label">{allOptions.length > 0 ? 'Или своё' : tr('Что планируешь?', 'Что планируете?')}</div>
+            <textarea
+              value={customText}
+              onChange={e => setCustomText(e.target.value)}
+              placeholder="Что-то конкретное, маленькое..."
+              maxLength={200}
+              rows={2}
+              className="ds-textarea"
+            />{detectCrisisAny(customText) && <CrisisCard surface="plan" />}
+            {customText.trim() && (
+              <button onClick={handleCustomSubmit} className="ds-btn sk-self-start">
+                Продолжить →
+              </button>
+            )}
           </div>
         </>
       )}
 
       {phase === 'confirm' && (
         <>
-          {/* Selected practice */}
-          <div className="prompt">
-            <div className="prompt-num">·</div>
-            <div className="u-w100">
-              <div className="prompt-label">Практика</div>
-              <div style={{ marginTop: 8, padding: '14px 16px', borderRadius: 'var(--r-12)', background: `${color}18`, border: `1px solid ${color}33`, fontSize: 15, color: 'var(--text)', lineHeight: 1.5 }}>
-                {selectedText}
-              </div>
+          <div className="sk-field">
+            <div className="ds-label">Практика</div>
+            <div className="sk-chosen tone-tint" style={hueStyle(NEED_HUE[needId as NeedId])}>
+              {selectedText}
             </div>
           </div>
 
-          {/* Reminder */}
-          <div className="prompt">
-            <div className="prompt-num">·</div>
-            <div className="u-w100">
-              <div className="prompt-label">Напомнить завтра</div>
-              <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
-                {REMINDER_OPTIONS.map((opt, i) => (
-                  <div
-                    key={i}
-                    onClick={() => setReminderIdx(i)}
-                    role="button" tabIndex={0}
-                    onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setReminderIdx(i); } }}
-                    className={'mode-card ' + (reminderIdx === i ? 'is-selected' : '')}
-                    style={{ '--mode-color': color } as React.CSSProperties}
-                  >
-                    <span className="mode-card-stripe" />
-                    <div>
-                      <div className="mode-card-name">
-                        {opt.label}
-                        {opt.localHour !== null && <span style={{ fontSize: 13, color: 'var(--text-faint)', marginLeft: 8 }}>{String(opt.localHour).padStart(2, '0')}:00</span>}
-                      </div>
-                    </div>
-                    {reminderIdx === i && <span className="mode-check"><GlyphCheck /></span>}
-                  </div>
-                ))}
-              </div>
+          <div className="sk-field">
+            <div className="ds-label">Напомнить завтра</div>
+            <div className="sk-list">
+              {REMINDER_OPTIONS.map((opt, i) => (
+                <div
+                  key={i}
+                  onClick={() => setReminderIdx(i)}
+                  role="button" tabIndex={0}
+                  onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setReminderIdx(i); } }}
+                  className={'ds-card ds-card--row ds-card--hover sk-opt' + (reminderIdx === i ? ' tone-border is-selected' : '')}
+                  style={hueStyle(NEED_HUE[needId as NeedId])}
+                >
+                  <span>
+                    {opt.label}
+                    {opt.localHour !== null && <span className="ds-sub sk-hour">{String(opt.localHour).padStart(2, '0')}:00</span>}
+                  </span>
+                  {reminderIdx === i && <span className="sk-check"><GlyphCheck /></span>}
+                </div>
+              ))}
             </div>
           </div>
 
           {/* ICS download — паритет с мини-аппом, правило №16 */}
-          <button
-            onClick={handleIcsDownload}
-            style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-8)', width: '100%', background: 'var(--surface-2)', border: '1px solid var(--line)', borderRadius: 'var(--r-12)', padding: '10px 14px', cursor: 'pointer', marginBottom: 16, fontFamily: 'inherit' }}
-          >
-            <span className="u-sub13">Добавить в календарь (.ics)</span>
+          <button onClick={handleIcsDownload} className="ds-btn ds-btn--secondary sk-ics">
+            Добавить в календарь (.ics)
           </button>
 
           {saveError && (
-            <div style={{ fontSize: 13, color: 'var(--c-rose)', textAlign: 'center', marginBottom: 12 }}>
+            <div className="sk-error sk-center">
               {tr('Не удалось сохранить. Попробуй ещё раз.', 'Не удалось сохранить. Попробуйте ещё раз.')}
             </div>
           )}
 
-          <div className="ex-foot">
-            <span className="spacer" />
+          <div className="sk-foot">
             <button
               onClick={() => { setSaveError(false); handleSave(); }}
               disabled={saving || savedOk}
-              className="ex-btn ex-btn-primary"
-              style={{ background: savedOk ? 'color-mix(in srgb, var(--c-moss) 20%, transparent)' : color, color: savedOk ? 'var(--c-moss)' : '#fff', transition: 'all 0.3s' }}
+              className={'ds-btn ' + (savedOk ? 'ds-btn--secondary' : 'ds-btn--accent')}
             >
               {savedOk ? <><GlyphCheck /> Запланировано</> : saving ? '…' : 'Сохранить план'}
             </button>

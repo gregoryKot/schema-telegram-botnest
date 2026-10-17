@@ -43,45 +43,30 @@ export function CelebrationDialog({
       underlay={
         <canvas
           ref={canvasRef}
-          style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}
+          className="sk-celebr-canvas"
         />
       }
     >
       <div
         data-milestone={isMilestone ? 'yes' : 'no'}
-        style={{
-          fontFamily: 'var(--serif)',
-          fontSize: 72,
-          fontWeight: 400,
-          letterSpacing: '-0.02em',
-          color: isMilestone ? 'var(--accent)' : 'var(--text)',
-          lineHeight: 1,
-          marginBottom: 8,
-        }}
+        className="ds-num sk-celebr-num"
       >
         {streak}
       </div>
-      <h2 className="dialog-title">{pluralDays(streak)} подряд</h2>
-      <p className="dialog-text" style={{ marginBottom: insight ? 12 : 24 }}>
+      <h2 className="ds-h2 sk-dialog-title">{pluralDays(streak)} подряд</h2>
+      <p className={'sk-dialog-text' + (insight ? ' sk-celebr-tight' : '')}>
         {getMilestoneText(streak)}
       </p>
       {insight && (
-        <p
-          className="dialog-text"
-          style={{
-            paddingTop: 12,
-            borderTop: '1px solid var(--line)',
-            fontSize: 13,
-          }}
-        >
+        <p className="sk-dialog-text sk-celebr-insight">
           {insight}
         </p>
       )}
-      <button className="btn-primary" onClick={share}>
+      <button className="ds-btn sk-wide" onClick={share}>
         {copied ? 'Скопировано!' : 'Поделиться'}
       </button>
       <CopyFailedHint show={failed} tr={tr} marginTop={10} />
-      <button className="dialog-link" onClick={onDone}>
+      <button className="ds-link sk-dialog-link" onClick={onDone}>
         Закрыть
       </button>
     </Dialog>

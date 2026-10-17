@@ -9,6 +9,7 @@ import { GlyphArrowLeft } from './exercises/ExScreen';
 import { needColor } from '../../../shared/src/needs/needColors';
 import { useDialogA11y } from '../../../shared/src/utils/dialogA11y';
 import { fillHistoryGaps } from './appShell/navigation';
+import '../styles/sheet-diary.css';
 
 const HistoryView   = lazy(() => import('./HistoryView').then(m => ({ default: m.HistoryView })));
 const TrackerOverlay = lazy(() => import('./TrackerOverlay').then(m => ({ default: m.TrackerOverlay })));
@@ -44,19 +45,19 @@ export function HistorySheet({
   return (
     <div {...dialogA11y} className="u-sheet-grid">
       {/* ExScreen-style topbar */}
-      <div className="ex-topbar" style={{ justifyContent: 'space-between' }}>
+      <div className="ex-topbar sd-topbar">
         <button className="ex-back" onClick={goBack}>
           <GlyphArrowLeft /> Назад к трекеру
         </button>
-        <button onClick={() => { onOpenTracker(); goBack(); }} className="btn btn-primary" style={{ fontSize: 13, padding: '7px 16px' }}>
+        <button onClick={() => { onOpenTracker(); goBack(); }} className="ds-btn ds-btn--sm">
           Оценить →
         </button>
       </div>
 
       <div className="page">
-        <div className="page-inner-wide" style={{ paddingTop: 48, paddingBottom: 24 }}>
-          <div className="eyebrow u-mb10">Трекер</div>
-          <h1 className="hub-title u-mb40">История<br /><span className="it">потребностей</span></h1>
+        <div className="sd-head">
+          <div className="ds-eyebrow">Трекер</div>
+          <h1 className="ds-h1">История<br /><span className="it">потребностей</span></h1>
         </div>
 
         {historyLoading
@@ -74,7 +75,6 @@ export function HistorySheet({
               />
             </Suspense>
         }
-        <div style={{ height: 80 }} />
       </div>
 
       {pendingPlans.length > 0 && needs.length > 0 && (() => {

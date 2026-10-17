@@ -3,7 +3,7 @@ import { api } from '../../api';
 import { authedFetch } from '../../apiClient';
 import { useTr } from '../../utils/addressForm';
 import { YSQ_PROGRESS_KEY, YSQ_RESULT_KEY } from '../../utils/storageKeys';
-import { SHead, SRow, InfoModal } from './ui';
+import { SSection, SRow, InfoModal } from './ui';
 import { privacyStorageText, PRIVACY_NO_SHARE_TEXT } from '../../../../shared/src/settings/privacyText';
 import { useDataExport } from '../../../../shared/src/account/useDataExport';
 import { DeleteAccountConfirm } from '../../../../shared/src/components/DeleteAccountConfirm';
@@ -22,7 +22,7 @@ export function DataSection() {
 
   return (
     <>
-      <SHead id="s-data" label="Данные" />
+      <SSection id="s-data" label="Данные">
       <SRow title="Конфиденциальность" sub="Что и как хранится" onClick={() => setShowPrivacy(true)} />
       <SRow
         title={dataExport.status === 'loading' ? 'Собираю…' : 'Скачать мои данные'}
@@ -33,33 +33,34 @@ export function DataSection() {
         onClick={dataExport.status === 'loading' ? undefined : () => void dataExport.exportData()}
       />
       {dataExport.status === 'done' && (
-        <div role="status" style={{ fontSize: 12, color: 'var(--text-faint)', margin: '-6px 0 10px', lineHeight: 1.5 }}>
+        <div role="status" className="st-text st-text--faint">
           {tr('Файл ушёл в загрузки. Если его там нет — открой schemehappens.ru в браузере и попробуй оттуда', 'Файл ушёл в загрузки. Если его там нет — откройте schemehappens.ru в браузере и попробуйте оттуда')}
         </div>
       )}
       {dataExport.status === 'error' && (
-        <div role="alert" style={{ fontSize: 12, color: 'var(--accent-red)', margin: '-6px 0 10px' }}>
+        <div role="alert" className="st-err">
           {tr('Не удалось скачать файл. Проверь связь и попробуй ещё раз', 'Не удалось скачать файл. Проверьте связь и попробуйте ещё раз')}
         </div>
       )}
       {dataExport.status === 'unsupported' && (
-        <div role="alert" style={{ fontSize: 12, color: 'var(--text-faint)', margin: '-6px 0 10px', lineHeight: 1.5 }}>
+        <div role="alert" className="st-text st-text--faint">
           {tr('Тут скачать не получится — открой schemehappens.ru в браузере и попробуй там', 'Тут скачать не получится — откройте schemehappens.ru в браузере и попробуйте там')}
         </div>
       )}
       <SRow title="Удалить все данные" danger onClick={() => { setDeleteConfirm(false); setDeleteError(false); setShowDeleteSheet(true); }} />
+      </SSection>
 
       {/* ── Privacy modal ── */}
       {showPrivacy && (
         <InfoModal onClose={() => setShowPrivacy(false)}>
-          <h2 className="dialog-title" style={{ marginBottom: 16 }}>Данные и конфиденциальность</h2>
+          <h2 className="dialog-title st-modal-title">Данные и конфиденциальность</h2>
           {[
             { title: 'Что хранится', text: privacyStorageText('аккаунту') },
             { title: 'Передача третьим лицам', text: PRIVACY_NO_SHARE_TEXT },
           ].map(b => (
-            <div key={b.title} style={{ marginBottom: 10, background: 'rgba(var(--fg-rgb),0.04)', borderRadius: 'var(--r-8)', padding: '12px 14px' }}>
-              <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 4 }}>{b.title}</div>
-              <div className="u-sub13-lh16">{b.text}</div>
+            <div key={b.title} className="st-info">
+              <b>{b.title}</b>
+              <div className="st-text">{b.text}</div>
             </div>
           ))}
           {(!!localStorage.getItem(YSQ_PROGRESS_KEY) || !!localStorage.getItem(YSQ_RESULT_KEY)) && (<>
@@ -67,35 +68,34 @@ export function DataSection() {
                 пользователь видел «удалено», хотя результаты теста оставались
                 на сервере (приватность). Теперь локально чистим только после
                 подтверждённого удаления. */}
-            <button disabled={ysqDeleting} onClick={async () => {
+            <button className="ds-btn ds-btn--secondary st-btn-danger st-block st-mb10" disabled={ysqDeleting} onClick={async () => {
               setYsqDeleting(true); setYsqDeleteError(false);
               try {
                 await api.deleteYsqResult();
                 localStorage.removeItem(YSQ_PROGRESS_KEY); localStorage.removeItem(YSQ_RESULT_KEY);
                 setShowPrivacy(false);
               } catch { setYsqDeleteError(true); } finally { setYsqDeleting(false); }
-            }}
-              style={{ width: '100%', padding: '12px 0', borderRadius: 'var(--r-8)', border: '1px solid color-mix(in srgb, var(--accent-red) 30%, transparent)', background: 'color-mix(in srgb, var(--accent-red) 8%, transparent)', color: 'var(--accent-red)', fontSize: 13, fontWeight: 500, cursor: ysqDeleting ? 'default' : 'pointer', marginBottom: 10, fontFamily: 'inherit' }}>
+            }}>
               {ysqDeleting ? 'Удаляю...' : 'Удалить результаты теста'}
             </button>
-            {ysqDeleteError && <div role="alert" style={{ fontSize: 12, color: 'var(--accent-red)', marginTop: -4, marginBottom: 10 }}>{tr('Не удалось удалить. Попробуй ещё раз', 'Не удалось удалить. Попробуйте ещё раз')}</div>}
+            {ysqDeleteError && <div role="alert" className="st-err">{tr('Не удалось удалить. Попробуй ещё раз', 'Не удалось удалить. Попробуйте ещё раз')}</div>}
           </>)}
-          <div style={{ fontSize: 11, color: 'var(--text-faint)', lineHeight: 1.6, textAlign: 'center' }}>Это образовательный инструмент.</div>
+          <div className="st-fine st-center">Это образовательный инструмент.</div>
         </InfoModal>
       )}
 
       {/* ── Delete modal ── */}
       {showDeleteSheet && (
         <InfoModal onClose={() => { setShowDeleteSheet(false); setDeleteConfirm(false); }}>
-          <h2 className="dialog-title" style={{ color: 'var(--accent-red)' }}>Удалить все данные</h2>
-          <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.6, marginBottom: 20 }}>
+          <h2 className="dialog-title st-modal-title--danger">Удалить все данные</h2>
+          <div className="st-text st-mb20">
             Дневники, оценки, практики, тесты, заметки, задания — всё удалится с сервера. Необратимо.
           </div>
-          {deleteError && !deleteConfirm && <div style={{ fontSize: 12, color: 'var(--accent-red)', textAlign: 'center', marginBottom: 12 }}>{tr('Не удалось удалить данные. Проверь связь и попробуй ещё раз', 'Не удалось удалить данные. Проверьте связь и попробуйте ещё раз')}</div>}
+          {deleteError && !deleteConfirm && <div className="st-err st-center st-mb10">{tr('Не удалось удалить данные. Проверь связь и попробуй ещё раз', 'Не удалось удалить данные. Проверьте связь и попробуйте ещё раз')}</div>}
           {!deleteConfirm ? (
-            <div className="u-row10">
-              <button onClick={() => setShowDeleteSheet(false)} style={{ flex: 1, padding: '12px 0', borderRadius: 'var(--r-10)', border: '1px solid rgba(var(--fg-rgb),0.1)', background: 'transparent', color: 'var(--text-sub)', fontSize: 14, cursor: 'pointer', fontFamily: 'inherit' }}>Отмена</button>
-              <button onClick={() => setDeleteConfirm(true)} style={{ flex: 1, padding: '12px 0', borderRadius: 'var(--r-10)', border: 'none', background: 'color-mix(in srgb, var(--accent-red) 12%, transparent)', color: 'var(--accent-red)', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>Удалить</button>
+            <div className="st-modal-actions">
+              <button className="ds-btn ds-btn--secondary" onClick={() => setShowDeleteSheet(false)}>Отмена</button>
+              <button className="ds-btn ds-btn--secondary st-btn-danger" onClick={() => setDeleteConfirm(true)}>Удалить</button>
             </div>
           ) : (
             <DeleteAccountConfirm tr={tr} deleting={deleting} setDeleting={setDeleting} deleteAllUserData={api.deleteAllUserData}

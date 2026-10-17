@@ -42,19 +42,19 @@ export function ConfirmDialog({
       onClose={busy ? undefined : onCancel}
       closeOnEscape
     >
-      <h2 className="dialog-title">{title}</h2>
-      <div className="dialog-text">{message}</div>
+      <h2 className="ds-h2 sk-dialog-title">{title}</h2>
+      <div className="sk-dialog-text">{message}</div>
       {error && (
-        <div role="alert" className="dialog-error">
+        <div role="alert" className="sk-error sk-dialog-error">
           {error}
         </div>
       )}
-      <div className="dialog-actions">
-        <button className="btn-outline" onClick={onCancel} disabled={busy}>
+      <div className="sk-dialog-actions">
+        <button className="ds-btn ds-btn--secondary" onClick={onCancel} disabled={busy}>
           {cancelLabel}
         </button>
         <button
-          className={danger ? 'btn-primary btn-primary--danger' : 'btn-primary'}
+          className={danger ? 'ds-btn sk-btn-danger' : 'ds-btn'}
           onClick={onConfirm}
           disabled={busy}
         >

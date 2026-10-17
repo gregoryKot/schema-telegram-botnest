@@ -55,7 +55,6 @@ export function SelfMapScreen({
       onBack={onBack}
       backLabel="Закрыть"
       eyebrow="Карта себя"
-      eyebrowColor="var(--accent-indigo)"
       title="Карта себя"
       lede={buildSelfMapIntro(tr)}
     >

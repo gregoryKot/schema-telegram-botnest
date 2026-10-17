@@ -1,4 +1,5 @@
 import { useViewport } from '@xyflow/react';
+import { ZONES_BOTTOM } from './modeMap/zonesLayout';
 
 // Clinical spatial grammar of a mode map (Schema Therapy with Couples, Roediger):
 //   Healthy Adult — hovers above the system
@@ -8,10 +9,9 @@ import { useViewport } from '@xyflow/react';
 const BANDS = [
   { y0: -460, y1: 60,  label: 'Здоровый Взрослый — над системой',            color: 'var(--c-moss)' },
   { y0: 60,   y1: 400, label: 'Копинги — на сцене (видимое поведение)',       color: 'var(--c-clay)' },
-  { y0: 400,  y1: 980, label: 'Детские и критикующие — за кулисами',          color: 'var(--c-slate)' },
+  { y0: 400,  y1: ZONES_BOTTOM, label: 'Детские и критикующие — за кулисами',          color: 'var(--c-slate)' },
 ];
-const LEFT = -3000;
-const WIDTH = 6000;
+const LEFT = -3000, WIDTH = 6000;
 
 export function ModeMapZones() {
   const { x, y, zoom } = useViewport();

@@ -7,19 +7,9 @@ import type { CaseTraits, Tr } from '../../../../shared/src/case/caseTypes';
  *  хардкод-заглушки — тело/порыв могли остаться пустыми). */
 function TraitRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="u-mb12">
-      <div
-        style={{
-          fontSize: 11,
-          color: 'var(--text-faint)',
-          textTransform: 'uppercase',
-          letterSpacing: '0.06em',
-          marginBottom: 2,
-        }}
-      >
-        {label}
-      </div>
-      <div style={{ fontSize: 14, color: 'var(--text)', lineHeight: 1.4 }}>{value || '—'}</div>
+    <div className="ex2-trait">
+      <div className="ds-label">{label}</div>
+      <div className="ex2-trait-text">{value || '—'}</div>
     </div>
   );
 }
@@ -45,29 +35,24 @@ export function CaseDoneScreen({
       onBack={onClose}
       backLabel="Закрыть"
       eyebrow="Разбор случая"
-      eyebrowColor="var(--accent-indigo)"
       title={modeDisplayName(modeId, alias)}
     >
-      <div className="aside-card" style={{ margin: '0 0 20px' }}>
+      <div className="ds-card ds-card--ink ex2-chain">
         <TraitRow label="Ранний сигнал" value={traits.body} />
         <TraitRow label="Приходит, когда" value={traits.trigger} />
         <TraitRow label="Тянет" value={traits.impulse} />
       </div>
 
-      <p style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.5, marginBottom: 24 }}>
-        {buildDiaryPayoff(tr)}
-      </p>
+      <p className="ds-sub ex2-gap-b">{buildDiaryPayoff(tr)}</p>
 
-      <button type="button" className="ex-btn ex-btn-primary" onClick={onOpenMap}>
-        Открыть карту
-      </button>
-      <button
-        type="button"
-        className="ex-btn ex-btn-ghost u-mt8"
-        onClick={onClose}
-      >
-        Готово
-      </button>
+      <div className="ex2-foot">
+        <button type="button" className="ds-btn" onClick={onOpenMap}>
+          Открыть карту
+        </button>
+        <button type="button" className="ds-btn ex2-ghost" onClick={onClose}>
+          Готово
+        </button>
+      </div>
     </ExScreen>
   );
 }

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { useTr } from '../utils/addressForm';
 import { BottomSheetShell } from './BottomSheetShell';
+import '../styles/sheet-tasks.css';
 
 // Periodic in-app donate nudge (like a soft onboarding reminder). Shows at most
 // once every ~30 days, never to a brand-new user (skips the very first session),
@@ -41,18 +42,17 @@ function DonateNudgeSheet({ onClose }: { onClose: () => void }) {
   const tr = useTr();
   const goBack = useHistorySheet(onClose);
   const close = () => { localStorage.setItem(SHOWN_KEY, String(Date.now())); goBack(); };
-
   return (
     <BottomSheetShell goBack={close} zIndex={200} maxWidth={440}>
-      <div>
-        <h2 style={{ fontFamily: 'var(--serif)', fontSize: 24, fontWeight: 400, color: 'var(--text)', margin: '0 0 8px' }}>Поддержать проект</h2>
-        <p style={{ fontSize: 15, color: 'var(--text-sub)', lineHeight: 1.6, margin: '0 0 22px' }}>
+      <div className="sk-nudge">
+        <h2 className="ds-h2">Поддержать проект</h2>
+        <p className="sk-nudge-text">
           {tr('«Всё по схеме» бесплатное и без рекламы. Если оно тебе помогает — поддержи развитие любой суммой. Это правда помогает.', '«Всё по схеме» бесплатное и без рекламы. Если оно вам помогает — поддержите развитие любой суммой. Это правда помогает.')}
         </p>
-        <a href="/donate" onClick={close} className="btn btn-primary" style={{ display: 'flex', justifyContent: 'center', width: '100%', boxSizing: 'border-box', padding: '13px', fontSize: 15, borderRadius: 'var(--r-8)', textDecoration: 'none', marginBottom: 10 }}>
+        <a href="/donate" onClick={close} className="ds-btn sk-wide-btn sk-nudge-link">
           Поддержать
         </a>
-        <button onClick={close} style={{ background: 'none', border: 'none', color: 'var(--text-faint)', fontSize: 14, fontFamily: 'inherit', cursor: 'pointer', padding: '6px 0' }}>
+        <button onClick={close} className="ds-link sk-nudge-later">
           Позже
         </button>
       </div>

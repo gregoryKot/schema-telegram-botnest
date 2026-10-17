@@ -157,6 +157,26 @@ describe('conceptToModeMap — богатый случай', () => {
   });
 });
 
+describe('conceptToModeMap — флаг осадки', () => {
+  // Раскладка диаграммы режет текст по BODY_LINES, а на холсте он виден целиком:
+  // каждая новая фигура просит раздвинуть колонки после замера (useSettleFresh).
+  it('каждая новая нода — режим, схема, опыт, потребность и круг — несёт data.settle', () => {
+    const { nodes } = conceptToModeMap(RICH_GRAPH, [], 9);
+    const types = new Set(nodes.map((n) => n.type));
+    for (const t of ['schema', 'origin', 'need', 'needs']) expect(types.has(t as ModeMapNode['type'])).toBe(true);
+    expect(nodes.some((n) => n.data.modeId)).toBe(true);
+    for (const n of nodes) expect(n.data.settle).toBe(true);
+  });
+
+  it('контроль: нода, уже стоявшая на карте, флага не получает и не возвращается', () => {
+    const old: ModeMapNode = { id: 'x', type: 'critic', position: { x: 0, y: 0 }, data: { label: 'Критик', modeId: 'guilt_critic' } };
+    const out = conceptToModeMap(RICH_GRAPH, [old], 10);
+    expect(out.nodes.some((n) => n.data.modeId === 'guilt_critic')).toBe(false);
+    expect(old.data.settle).toBeUndefined();
+    expect(out.nodes.every((n) => n.data.settle === true)).toBe(true);
+  });
+});
+
 describe('conceptToModeMap — id', () => {
   it('имеют вид cc_<вид>_<сущность>_<stamp> и не совпадают между двумя конвертациями', () => {
     const a = conceptToModeMap(RICH_GRAPH, [], 100);

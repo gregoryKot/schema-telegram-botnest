@@ -6,7 +6,11 @@
 // другая ошибка сервиса пробрасывается как есть (проверяем на одном хендлере,
 // поведение общее для всех — asTherapist единственная точка).
 import { ForbiddenException } from '@nestjs/common';
+import type { ExecutionContext } from '@nestjs/common';
+import { Reflector } from '@nestjs/core';
 import type { Request } from 'express';
+import { PERSISTENT_THROTTLE_KEY } from '../api/persistent-throttle.decorator';
+import { UserThrottlerGuard } from '../api/throttler.guard';
 import { TherapyController } from './therapy.controller';
 import { TherapyClientDataService } from './therapy-client-data.service';
 import { AccountService } from '../bot/account.service';
@@ -168,5 +172,41 @@ describe('TherapyController.getClientData', () => {
     await expect(controller.getClientData(makeReq(9n), '11')).rejects.toThrow(
       ForbiddenException,
     );
+  });
+});
+
+describe('TherapyController.requestYsq — троттлинг', () => {
+  // Лимит на терапевта: второй рубеж против рассылки клиенту (аудит 2026-10)
+  // и единственная серверная граница для гонки двух параллельных запросов.
+  // В памяти он умножался бы на число инстансов и обнулялся деплоем (правило
+  // №5, инцидент 2026-09-13), поэтому счётчик — в Postgres.
+  const handler = TherapyController.prototype.requestYsq;
+
+  it('30 запросов в час в бакете "long"', () => {
+    expect(Reflect.getMetadata('THROTTLER:LIMITlong', handler)).toBe(30);
+    expect(Reflect.getMetadata('THROTTLER:TTLlong', handler)).toBe(3_600_000);
+  });
+
+  it('@PersistentThrottle: ключ лимита с префиксом db: (счёт в Postgres)', () => {
+    const reflector = new Reflector();
+    expect(Reflect.getMetadata(PERSISTENT_THROTTLE_KEY, handler)).toBe(true);
+    const guard = new UserThrottlerGuard(
+      [],
+      { increment: jest.fn() },
+      reflector,
+    );
+    const key = (
+      guard as unknown as {
+        generateKey(c: ExecutionContext, s: string, n: string): string;
+      }
+    ).generateKey(
+      {
+        getHandler: () => handler,
+        getClass: () => TherapyController,
+      } as unknown as ExecutionContext,
+      'uid:42',
+      'long',
+    );
+    expect(key.startsWith('db:')).toBe(true);
   });
 });

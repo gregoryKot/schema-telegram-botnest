@@ -31,21 +31,21 @@ export function PhraseRewriteStep({
   const verdict = buildVerdict(marks);
   return (
     <>
-      <div className="aside-card u-mb20">
-        <div className="aside-card-eyebrow">Вердикт</div>
-        <h3>{verdict.title}</h3>
-        <p className="body">{verdict.text}</p>
+      <div className="ds-card ex2-note">
+        <div className="ds-label">Вердикт</div>
+        <h3 className="ex2-note-h">{verdict.title}</h3>
+        <p className="ex2-note-body">{verdict.text}</p>
       </div>
 
-      <div className="ex-prompt">
-        <div className="ex-prompt-num">11.</div>
+      <div className="ex2-prompt">
+        <div className="ex2-prompt-num">11.</div>
         <div>
-          <div className="ex-prompt-label" style={{ fontSize: 26 }}>
+          <div className="ex2-prompt-label ex2-prompt-label--sm">
             {verdict.suggestRewrite
               ? 'Как сказать то же самое иначе?'
               : 'Можно сохранить как есть'}
           </div>
-          <p className="ex-prompt-hint">
+          <p className="ex2-prompt-hint">
             {verdict.suggestRewrite
               ? tr(
                   'Скажи то же самое голосом, который помогает: что случилось (факт), на что это влияет, что делаешь дальше.',
@@ -57,7 +57,7 @@ export function PhraseRewriteStep({
       </div>
 
       <textarea
-        className="paper-area"
+        className="ds-textarea"
         value={rewrite}
         onChange={(e) => setRewrite(e.target.value)}
         placeholder="Например: отчёт ушёл с ошибкой в цифрах. Это неприятно, но поправимо — в следующий раз проверяю итоги дважды"
@@ -68,7 +68,7 @@ export function PhraseRewriteStep({
       <WarmWordsToggle rewrite={rewrite} checked={inWarmWords} onChange={setInWarmWords} />
 
       {saveError && (
-        <div role="alert" style={{ fontSize: 13, color: 'var(--c-rose)', marginBottom: 12 }}>
+        <div role="alert" className="ex2-err">
           {tr(
             'Не удалось сохранить разбор. Проверь связь и попробуй ещё раз',
             'Не удалось сохранить разбор. Проверьте связь и попробуйте ещё раз',
@@ -76,9 +76,9 @@ export function PhraseRewriteStep({
         </div>
       )}
 
-      <div className="ex-foot">
-        <span className="spacer" />
-        <button className="ex-btn ex-btn-primary" disabled={saving} onClick={onSave}>
+      <div className="ex2-foot">
+        <span className="ex2-spacer" />
+        <button className="ds-btn" disabled={saving} onClick={onSave}>
           {saving ? 'Сохраняю...' : <>Сохранить разбор <GlyphCheck /></>}
         </button>
       </div>
@@ -102,35 +102,19 @@ function WarmWordsToggle({
 }) {
   const hasRewrite = Boolean(rewrite.trim());
   return (
-    <div
-      style={{
-        display: 'flex',
-        alignItems: 'flex-start',
-        gap: 'var(--space-10)',
-        padding: '12px 14px',
-        borderRadius: 'var(--r-10)',
-        border: '1px solid var(--line)',
-        margin: '16px 0',
-        opacity: hasRewrite ? 1 : 0.5,
-      }}
-    >
+    <div className={'ex2-check' + (hasRewrite ? '' : ' is-off')}>
       <input
         id="phrase-check-warm-words"
         type="checkbox"
         checked={checked && hasRewrite}
         disabled={!hasRewrite}
         onChange={(e) => onChange(e.target.checked)}
-        style={{ width: 18, height: 18, marginTop: 1, flexShrink: 0, cursor: hasRewrite ? 'pointer' : 'default' }}
       />
-      <label
-        htmlFor="phrase-check-warm-words"
-        className="text-sm muted"
-        style={{ lineHeight: 1.5, cursor: hasRewrite ? 'pointer' : 'default' }}
-      >
+      <label htmlFor="phrase-check-warm-words">
         Добавить в «Тёплые слова»
-        <span style={{ display: 'block', fontSize: 11.5, color: 'var(--text-faint)', marginTop: 2 }}>
+        <small>
           Будет лежать вместе с другими словами поддержки — перечитать, когда снова накроет.
-        </span>
+        </small>
       </label>
     </div>
   );

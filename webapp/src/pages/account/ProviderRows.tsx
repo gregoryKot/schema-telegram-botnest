@@ -20,27 +20,6 @@ const iconBox = {
   justifyContent: 'center',
 } as const;
 
-const btnGhost = {
-  background: 'transparent',
-  border: '1px solid rgba(var(--fg-rgb),0.15)',
-  color: 'var(--text-sub)',
-  borderRadius: 'var(--r-8)',
-  padding: '6px 12px',
-  fontSize: 12,
-  cursor: 'pointer',
-} as const;
-
-const btnSolid = {
-  background: 'var(--text)',
-  border: 'none',
-  color: 'var(--bg)',
-  borderRadius: 'var(--r-6)',
-  padding: '7px 14px',
-  fontSize: 12,
-  fontWeight: 600,
-  cursor: 'pointer',
-} as const;
-
 export function ProviderRow({
   icon,
   title,
@@ -51,7 +30,6 @@ export function ProviderRow({
   onLink,
   onUnlink,
   note,
-  divider,
 }: {
   icon: ReactNode;
   title: string;
@@ -64,46 +42,27 @@ export function ProviderRow({
   onUnlink?: () => void;
   /** Текст вместо кнопки — когда привязать отсюда нельзя. */
   note?: string;
-  divider?: boolean;
 }) {
+  const sub = linked ? subtitle : emptySubtitle;
   return (
-    <div
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: '14px 0',
-        ...(divider
-          ? { borderBottom: '1px solid rgba(var(--fg-rgb),0.07)' }
-          : {}),
-      }}
-    >
-      <div className="u-ac12">
+    <div className="aa-row">
+      <div className="aa-row-main">
         {icon}
-        <div>
-          <div style={{ fontWeight: 600, fontSize: 14 }}>{title}</div>
-          {linked && subtitle && (
-            <div style={{ color: 'var(--text-sub)', fontSize: 12 }}>
-              {subtitle}
-            </div>
-          )}
-          {!linked && emptySubtitle && (
-            <div style={{ color: 'var(--text-faint)', fontSize: 12 }}>
-              {emptySubtitle}
-            </div>
-          )}
+        <div className="aa-row-text">
+          <div className="aa-row-title">{title}</div>
+          {sub && <div className="aa-row-sub">{sub}</div>}
         </div>
       </div>
       {linked && onUnlink ? (
-        <button disabled={busy} onClick={onUnlink} style={btnGhost}>
+        <button disabled={busy} onClick={onUnlink} className="ds-btn ds-btn--sm ds-btn--secondary">
           Отвязать
         </button>
       ) : onLink ? (
-        <button disabled={busy} onClick={onLink} style={btnSolid}>
+        <button disabled={busy} onClick={onLink} className="ds-btn ds-btn--sm">
           Привязать
         </button>
       ) : (
-        <span style={{ color: 'var(--text-faint)', fontSize: 12 }}>{note}</span>
+        <span className="aa-row-note">{note}</span>
       )}
     </div>
   );

@@ -6,6 +6,10 @@ import { useSavingAction } from '../../hooks/useSavingAction';
 import { useTr } from '../../utils/addressForm';
 import { detectCrisisAny } from '../../utils/crisisMarkers';
 import { CrisisCard } from '../CrisisCard';
+import { hueStyle, DIARY_HUE } from '../../lib/tone';
+
+// Безопасное место — ресурс, тон «здорового» (зелёный) как у благодарности.
+const SAFE_HUE = DIARY_HUE.gratitude;
 
 const SENSES = [
   {
@@ -80,8 +84,7 @@ export function SafePlaceEx({
       <ExScreen
         onBack={goBack}
         eyebrow="Безопасное место · сохранено"
-        eyebrowColor="var(--c-moss)"
-        title={
+          title={
           <>
             {tr('Твоё', 'Ваше')}
             <br />
@@ -93,46 +96,31 @@ export function SafePlaceEx({
           'Возвращайтесь сюда, когда станет тревожно. Закройте глаза. Прочтите. Побудьте.',
         )}
       >
-        <div className="sp-scene">
-          <div className="sp-scene-text">«{overview}»</div>
+        <div className="ds-card ds-card--ink ex2-done ex2-scene">
+          <div className="ex2-scene-text">«{overview}»</div>
         </div>
-        <div className="sp-sense-grid">
+        <div className="ex2-senses">
           {SENSES.map((s) =>
             senses[s.k].trim() ? (
-              <div key={s.k} className="sp-sense">
-                <div className="sp-sense-label">
-                  <span
-                    style={{
-                      width: 6,
-                      height: 6,
-                      borderRadius: 3,
-                      background: 'currentColor',
-                    }}
-                  />
+              <div key={s.k} className="ds-card ds-card--row">
+                <div className="ds-label ex2-sense-label">
+                  <span className="ds-dot tone-fill" style={hueStyle(SAFE_HUE)} />
                   {s.label}
                 </div>
-                <div
-                  style={{
-                    fontSize: 15,
-                    color: 'var(--text)',
-                    lineHeight: 1.6,
-                  }}
-                >
-                  {senses[s.k]}
-                </div>
+                <div className="ex2-body-text">{senses[s.k]}</div>
               </div>
             ) : null,
           )}
         </div>
-        <div className="ex-foot">
+        <div className="ex2-foot">
           <button
-            className="ex-btn ex-btn-outline"
+            className="ds-btn ds-btn--secondary"
             onClick={() => setDone(false)}
           >
             Изменить
           </button>
-          <span className="spacer" />
-          <button className="ex-btn ex-btn-primary" onClick={goBack}>
+          <span className="ex2-spacer" />
+          <button className="ds-btn" onClick={goBack}>
             Закрыть
           </button>
         </div>
@@ -144,7 +132,6 @@ export function SafePlaceEx({
     <ExScreen
       onBack={goBack}
       eyebrow="№ 05 · Ресурс"
-      eyebrowColor="var(--c-moss)"
       title={
         <>
           Безопасное
@@ -158,28 +145,17 @@ export function SafePlaceEx({
       )}
       aside={
         <>
-          <div
-            className="aside-card"
-            style={{
-              borderColor: 'color-mix(in srgb, var(--c-moss) 25%, transparent)',
-              background: 'color-mix(in srgb, var(--c-moss) 3%, transparent)',
-            }}
-          >
-            <div
-              className="aside-card-eyebrow"
-              style={{ color: 'var(--c-moss)' }}
-            >
-              Совет
-            </div>
-            <h3>Конкретика важнее красоты</h3>
-            <p className="body">
+          <div className="ds-card ex2-note ex2-tint" style={hueStyle(SAFE_HUE)}>
+            <div className="ds-label">Совет</div>
+            <h3 className="ex2-note-h">Конкретика важнее красоты</h3>
+            <p className="ex2-note-body">
               «Дача у бабушки, веранда, скрипящие половицы» работает лучше, чем
               «прекрасный лес». Чем больше деталей – тем легче вернуться.
             </p>
           </div>
-          <div className="aside-card">
-            <div className="aside-card-eyebrow">Можно</div>
-            <ul style={{ marginTop: 0 }}>
+          <div className="ds-card ex2-note">
+            <div className="ds-label">Можно</div>
+            <ul className="ex2-note-list">
               <li>Реальное место – комната, лес, пляж</li>
               <li>Воображаемое – придуманный мир</li>
               <li>Воспоминание – момент из жизни</li>
@@ -188,8 +164,8 @@ export function SafePlaceEx({
         </>
       }
     >
-      <div className="sp-scene">
-        <div className="sp-scene-text">
+      <div className="ds-card ex2-scene">
+        <div className="ex2-scene-text">
           {overview
             ? `«${overview}»`
             : tr(
@@ -198,47 +174,40 @@ export function SafePlaceEx({
               )}
         </div>
       </div>
-      <div className="ex-prompt" style={{ marginBottom: 32 }}>
-        <div className="ex-prompt-num">1.</div>
+      <div className="ex2-prompt">
+        <div className="ex2-prompt-num">1.</div>
         <div>
-          <div className="ex-prompt-label">Что это за место?</div>
-          <p className="ex-prompt-hint">
+          <div className="ex2-prompt-label">Что это за место?</div>
+          <p className="ex2-prompt-hint">
             Одно-два предложения. Общее впечатление.
           </p>
           <input
             ref={overviewRef}
-            className={'paper-input ' + (overview.trim() ? 'is-filled' : '')}
+            className="ds-input"
             value={overview}
             onChange={(e) => setOverview(e.target.value)}
             placeholder="Например: небольшая полянка в лесу, где было спокойно в детстве…"
           />
         </div>
       </div>
-      <div className="ex-prompt u-mb18">
-        <div className="ex-prompt-num">2.</div>
+      <div className="ex2-prompt">
+        <div className="ex2-prompt-num">2.</div>
         <div>
-          <div className="ex-prompt-label">Через все органы чувств</div>
-          <p className="ex-prompt-hint">
+          <div className="ex2-prompt-label">Через все органы чувств</div>
+          <p className="ex2-prompt-hint">
             Чем больше деталей, тем легче будет туда вернуться мысленно.
           </p>
         </div>
       </div>
-      <div className="sp-sense-grid">
+      <div className="ex2-senses">
         {SENSES.map((s) => (
-          <div key={s.k} className="sp-sense">
-            <div className="sp-sense-label">
-              <span
-                style={{
-                  width: 6,
-                  height: 6,
-                  borderRadius: 3,
-                  background: 'currentColor',
-                }}
-              />
+          <div key={s.k} className="ds-card ds-card--row">
+            <div className="ds-label ex2-sense-label">
+              <span className="ds-dot tone-fill" style={hueStyle(SAFE_HUE)} />
               {s.label}
             </div>
             <input
-              className="sp-sense-input"
+              className="ds-input"
               value={senses[s.k]}
               onChange={(e) => update(s.k, e.target.value)}
               placeholder={s.ph}
@@ -250,14 +219,14 @@ export function SafePlaceEx({
         <CrisisCard surface="safe_place" />
       )}
       {error && (
-        <div role="alert" style={{ color: 'var(--accent-red)', fontSize: 13, marginBottom: 10 }}>
+        <div role="alert" className="ex2-err">
           {tr('Не удалось сохранить. Проверь связь и попробуй ещё раз', 'Не удалось сохранить. Проверьте связь и попробуйте ещё раз')}
         </div>
       )}
-      <div className="ex-foot">
-        <span className="spacer" />
+      <div className="ex2-foot">
+        <span className="ex2-spacer" />
         <button
-          className="ex-btn ex-btn-primary"
+          className="ds-btn"
           disabled={!filled || saving}
           onClick={save}
         >

@@ -23,7 +23,6 @@ export interface Props {
 /** Общие пропсы обеих раскладок (desktop / mobile). */
 export interface LayoutProps {
   need: Need;
-  color: string;
   value: number;
   needName: string;
   extra: NeedExtra | undefined;
@@ -31,8 +30,7 @@ export interface LayoutProps {
   needsLength: number;
   handleChange: (needId: string, v: number) => void;
   setDetailNeed: (n: Need) => void;
-  topbar: ReactNode;
-  footer: ReactNode;
-  steps: ReactNode;
-  detailSheet: ReactNode;
+  yesterday?: number; // маркер на шкале (нет данных/бэкафилл — undefined)
+  delta?: { text: string; up: boolean } | null;
+  topbar: ReactNode; footer: ReactNode; steps: ReactNode; detailSheet: ReactNode;
 }

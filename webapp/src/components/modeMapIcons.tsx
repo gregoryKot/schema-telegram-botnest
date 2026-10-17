@@ -52,13 +52,13 @@ interface Props {
   name: IconName;
   size?: number;
   stroke?: number;
-  style?: CSSProperties;
+  style?: CSSProperties; className?: string;
 }
 
-export function MMIcon({ name, size = 18, stroke, style }: Props) {
+export function MMIcon({ name, size = 18, stroke, style, className }: Props) {
   const sw = stroke ?? THIN[name] ?? 1.7;
   return (
-    <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor"
+    <svg className={className} viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor"
       strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round"
       style={{ display: 'block', flexShrink: 0, ...style }} aria-hidden="true">
       <path d={PATHS[name]} />

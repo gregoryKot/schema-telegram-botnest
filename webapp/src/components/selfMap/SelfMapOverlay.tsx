@@ -32,7 +32,6 @@ export function SelfMapOverlay({
         onBack={goBack}
         backLabel="Закрыть"
         eyebrow="Карта себя"
-        eyebrowColor="var(--accent-indigo)"
         title="Карта себя"
       >
         <ScreenSkeleton />

@@ -4,7 +4,7 @@ import { useAuth } from '../auth/authContext';
 import { useTr } from '../utils/addressForm';
 import { api } from '../api';
 import type { DayHistory } from '../types';
-import { applyTheme, getTheme } from '../utils/theme';
+import { applyCabinetLightTheme } from '../utils/theme';
 import { syncMotionAttr } from '../utils/reducedMotion';
 import { shouldShowChildhoodWheel } from '../utils/storageKeys';
 import { CommandPalette } from './CommandPalette';
@@ -33,8 +33,8 @@ const HistorySheet   = lazy(() => import('./HistorySheet').then(m => ({ default:
 import type { StreakData } from '../api';
 import { parseRouteUserId } from '../../../shared/src/utils/sameId';
 
-// Apply saved theme immediately before first render
-applyTheme(getTheme());
+// Кабинет — только светлая тема (решение владельца 2026-10-15); тумблер темы живёт на лендинге.
+applyCabinetLightTheme();
 syncMotionAttr();
 
 const NAV_ITEMS: { id: Section; label: string }[] = [

@@ -5,10 +5,12 @@
 // (ModeEx в FlashcardEx.tsx), чтобы не тянуть сюда реестр modeCards напрямую.
 import { buildModePortraitSections } from '../../../../shared/src/mode/modePortraitSections';
 import type { ModeCard } from '../../../../shared/src/mode/modeCards';
+import { hueStyle } from '../../lib/tone';
 
 interface Props {
   card: ModeCard;
-  accentColor: string;
+  /** Оттенок группы режима (MODE_GROUP_HUE). */
+  hue: number;
   onStart: () => void;
   /** Текст кнопки — иначе первичное «Заполнить свою карточку →». При
    *  возврате к портрету с экрана вопросов передавай честную формулировку
@@ -16,29 +18,19 @@ interface Props {
   ctaLabel?: string;
 }
 
-export function ModePortrait({ card, accentColor, onStart, ctaLabel }: Props) {
+export function ModePortrait({ card, hue, onStart, ctaLabel }: Props) {
   const sections = buildModePortraitSections(card);
   return (
     <div>
-      {sections.map((s, i) => (
-        <div
-          key={s.key}
-          style={{
-            padding: '16px 0',
-            borderBottom: i < sections.length - 1 ? '1px solid var(--line)' : 'none',
-          }}
-        >
-          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: accentColor, marginBottom: 6 }}>
-            {s.label}
+      <div className="ds-card ex2-portrait" style={hueStyle(hue)}>
+        {sections.map((s) => (
+          <div key={s.key} className="ex2-portrait-row">
+            <div className="ds-label tone-ink">{s.label}</div>
+            <div className="ex2-body-text">{s.text}</div>
           </div>
-          <div style={{ fontSize: 15, color: 'var(--text)', lineHeight: 1.6 }}>{s.text}</div>
-        </div>
-      ))}
-      <button
-        className="ex-btn ex-btn-primary"
-        onClick={onStart}
-        style={{ marginTop: 22, width: '100%', minHeight: 48 }}
-      >
+        ))}
+      </div>
+      <button className="ds-btn ex2-portrait-cta" onClick={onStart}>
         {ctaLabel ?? 'Заполнить свою карточку →'}
       </button>
     </div>

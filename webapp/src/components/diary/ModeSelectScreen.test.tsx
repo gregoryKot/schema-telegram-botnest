@@ -58,11 +58,11 @@ describe('ModeSelectScreen', () => {
     fireEvent.click(screen.getByText('Знаю режим – выбрать из списка'));
     const selected = screen
       .getByText('Уязвимый Ребёнок')
-      .closest('.mode-card');
+      .closest('.sd-mode-card');
     expect(selected?.className).toContain('is-selected');
     // и остальные карточки такого класса не несут (ветка «не выбран»)
     const others = container.querySelectorAll(
-      '.mode-card:not(.is-selected)',
+      '.sd-mode-card:not(.is-selected)',
     );
     expect(others.length).toBeGreaterThan(0);
   });

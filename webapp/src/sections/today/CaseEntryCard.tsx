@@ -1,5 +1,6 @@
 import { useTr } from '../../utils/addressForm';
 import { pluralRu } from '../../../../shared/src/utils/pluralRu';
+import '../../styles/sheet-tasks.css';
 
 /**
  * Точка входа «Что это было» — единственное главное действие экрана /today.
@@ -26,9 +27,9 @@ export function CaseEntryCard({
   const started = caseCount > 0;
 
   return (
-    <div className="aside-card" style={{ margin: '0 0 32px' }}>
-      <h3 className="u-mb8">{started ? 'Что сегодня зацепило?' : 'Что это было'}</h3>
-      <p className="body u-mb20">
+    <div className="ds-card sk-case">
+      <h3 className="ds-h3">{started ? 'Что сегодня зацепило?' : 'Что это было'}</h3>
+      <p className="sk-case-text">
         {started
           ? 'Крупное необязательно — хватит мелочи: сообщение, взгляд, тишина в ответ.'
           : tr(
@@ -37,11 +38,11 @@ export function CaseEntryCard({
             )}
       </p>
 
-      <div style={{ display: 'flex', gap: 'var(--space-10)', flexWrap: 'wrap' }}>
-        <button type="button" className="ex-btn ex-btn-primary" onClick={onStart}>
+      <div className="sk-case-actions">
+        <button type="button" className="ds-btn" onClick={onStart}>
           Разобрать · ≈ 3 мин
         </button>
-        <button type="button" className="ex-btn ex-btn-outline" onClick={onSteadyDay}>
+        <button type="button" className="ds-btn ds-btn--secondary" onClick={onSteadyDay}>
           Ровный день
         </button>
       </div>
@@ -49,8 +50,7 @@ export function CaseEntryCard({
       {started && (
         <button
           type="button"
-          className="link"
-          style={{ display: 'block', background: 'none', border: 'none', cursor: 'pointer', padding: 0, marginTop: 16 }}
+          className="ds-link sk-case-map"
           onClick={onOpenMap}
         >
           {`Карта себя · ${caseCount} ${pluralRu(caseCount, 'разбор', 'разбора', 'разборов')} →`}

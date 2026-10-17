@@ -201,15 +201,15 @@ describe('App — страница ошибки входа (/auth/error)', () =>
     const App = await loadApp();
     render(<App />);
     await screen.findByText('telegram_mismatch');
-    expect(screen.getByText('Что-то')).toBeTruthy();
+    expect(screen.getByText('Что-то пошло не так')).toBeTruthy();
   });
 
   it('без причины — блок с текстом ошибки не рисуется вовсе', async () => {
     stubLocation({ pathname: '/auth/error', href: 'http://localhost/auth/error' });
     const App = await loadApp();
     const { container } = render(<App />);
-    await screen.findByText('Что-то');
-    expect(container.querySelector('[style*="monospace"]')).toBeNull();
+    await screen.findByText('Что-то пошло не так');
+    expect(container.querySelector('.as-reason')).toBeNull();
   });
 });
 
