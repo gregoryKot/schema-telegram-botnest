@@ -143,13 +143,28 @@ describe('weekPatternTop', () => {
   });
 
   it('режим чаще схемы — режим, при равенстве — схема', () => {
-    const modes = [m('2026-07-17T10:00:00', 'demanding_critic'), m('2026-07-16T10:00:00', 'demanding_critic')];
-    expect(weekPatternTop([s('2026-07-17T10:00:00', 'abandonment')], modes, NOW_)?.kind).toBe('mode');
-    const tie = [s('2026-07-17T10:00:00', 'abandonment'), s('2026-07-16T10:00:00', 'abandonment')];
-    expect(weekPatternTop(tie, modes, NOW_)).toMatchObject({ kind: 'schema', id: 'abandonment', days: 2 });
+    const modes = [
+      m('2026-07-17T10:00:00', 'demanding_critic'),
+      m('2026-07-16T10:00:00', 'demanding_critic'),
+    ];
+    expect(
+      weekPatternTop([s('2026-07-17T10:00:00', 'abandonment')], modes, NOW_)
+        ?.kind,
+    ).toBe('mode');
+    const tie = [
+      s('2026-07-17T10:00:00', 'abandonment'),
+      s('2026-07-16T10:00:00', 'abandonment'),
+    ];
+    expect(weekPatternTop(tie, modes, NOW_)).toMatchObject({
+      kind: 'schema',
+      id: 'abandonment',
+      days: 2,
+    });
   });
 
   it('записи старше недели не считаются', () => {
-    expect(weekPatternTop([s('2026-06-01T10:00:00', 'abandonment')], [], NOW_)).toBeNull();
+    expect(
+      weekPatternTop([s('2026-06-01T10:00:00', 'abandonment')], [], NOW_),
+    ).toBeNull();
   });
 });
