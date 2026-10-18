@@ -27,6 +27,8 @@ vi.mock('./schemas/MySchemasList', () => ({ MySchemasList: stub('my-list') }));
 vi.mock('./schemas/MySchemasBlock', () => ({ MySchemasBlock: stub('my-chips') }));
 vi.mock('./schemas/SchemaMap', () => ({ SchemaMap: stub('map') }));
 vi.mock('./schemas/ModesBlocks', () => ({ ModesBlocks: stub('modes') }));
+vi.mock('./schemas/MyModesList', () => ({ MyModesList: stub('my-modes') }));
+vi.mock('./schemas/ModeMap', () => ({ ModeMap: stub('modes-map') }));
 vi.mock('./schemas/ModeMapBanner', () => ({ ModeMapBanner: stub('mode-map'), MyModeMapSheet: stub('mode-map-sheet') }));
 vi.mock('./schemas/NeedsBlock', () => ({ NeedsBlock: stub('needs') }));
 vi.mock('../components/SchemaPickerSheet', () => ({ SchemaPickerSheet: stub('p1') }));
@@ -53,10 +55,17 @@ describe('SchemasSection: вкладки на телефоне', () => {
     fireEvent.click(screen.getByRole('button', { name: /^Все \d+ схем/ }));
     expect(screen.getByTestId('map')).toBeTruthy();
   });
-  it('«Режимы» — только режимы и карта режимов', () => {
+  it('«Режимы» — только мои режимы строками и баннер; полная карта свёрнута', () => {
     render(<SchemasSection onOpenSchema={vi.fn()} />);
     fireEvent.click(screen.getByRole('tab', { name: 'Режимы' }));
-    expect(ids()).toEqual(['modes', 'mode-map']);
+    expect(ids()).toEqual(['my-modes', 'mode-map']);
+    expect(screen.queryByTestId('modes-map')).toBeNull();
+  });
+  it('карта режимов раскрывается по «Все режимы»', () => {
+    render(<SchemasSection onOpenSchema={vi.fn()} />);
+    fireEvent.click(screen.getByRole('tab', { name: 'Режимы' }));
+    fireEvent.click(screen.getByRole('button', { name: /^Все режимы/ }));
+    expect(screen.getByTestId('modes-map')).toBeTruthy();
   });
   it('«Потребности» — только потребности, вкладка запоминается', () => {
     const { unmount } = render(<SchemasSection onOpenSchema={vi.fn()} />);
