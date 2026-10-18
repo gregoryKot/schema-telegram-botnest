@@ -2,7 +2,7 @@
 // Предложение «добавить значок на экран»: где показываем и когда возвращаем.
 // Матрица целиком под тестом — часть веток наступает только через неделю,
 // вживую их не прощёлкать.
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 import {
   ADD_ICON_HOP_URL,
@@ -150,5 +150,72 @@ describe('triggerAddToHomeScreen', () => {
     expect(addToHomeScreen).toHaveBeenCalledTimes(1); // не вызвался второй раз
 
     delete (globalThis as never as { Telegram?: unknown }).Telegram;
+  });
+});
+
+// ── Память в localStorage: чтение, запись, снуз, сброс, приватный режим ──────
+import {
+  getOfferMemory,
+  markHomeScreenAdded,
+  markHomeScreenNever,
+  snoozeHomeScreen,
+  resetHomeScreenOffer,
+  buildHomeScreenHint,
+} from './homeScreen';
+
+describe('память предложения в localStorage', () => {
+  beforeEach(() => localStorage.clear());
+
+  it('пусто → fresh; «добавил» и «никогда» читаются обратно', () => {
+    expect(getOfferMemory()).toEqual({ kind: 'fresh' });
+    markHomeScreenAdded();
+    expect(getOfferMemory()).toEqual({ kind: 'added' });
+    markHomeScreenNever();
+    expect(getOfferMemory()).toEqual({ kind: 'never' });
+  });
+
+  it('«позже» хранит срок на неделю вперёд от переданного момента', () => {
+    const now = 1_700_000_000_000;
+    snoozeHomeScreen(now);
+    const m = getOfferMemory();
+    expect(m.kind).toBe('snoozed');
+    if (m.kind === 'snoozed') expect(m.until).toBe(now + 7 * 24 * 60 * 60 * 1000);
+  });
+
+  it('сброс из настроек возвращает fresh даже после «никогда»', () => {
+    markHomeScreenNever();
+    resetHomeScreenOffer();
+    expect(getOfferMemory()).toEqual({ kind: 'fresh' });
+  });
+
+  it('приватный режим (localStorage бросает) — читается как fresh, запись и сброс не падают', () => {
+    const proto = Object.getPrototypeOf(localStorage) as Storage;
+    const boom = () => { throw new Error('QuotaExceeded'); };
+    const g = vi.spyOn(proto, 'getItem').mockImplementation(boom);
+    const s = vi.spyOn(proto, 'setItem').mockImplementation(boom);
+    const r = vi.spyOn(proto, 'removeItem').mockImplementation(boom);
+    try {
+      expect(getOfferMemory()).toEqual({ kind: 'fresh' });
+      expect(() => markHomeScreenAdded()).not.toThrow();
+      expect(() => snoozeHomeScreen()).not.toThrow();
+      expect(() => resetHomeScreenOffer()).not.toThrow();
+    } finally {
+      g.mockRestore(); s.mockRestore(); r.mockRestore();
+    }
+  });
+});
+
+describe('buildHomeScreenHint', () => {
+  const tr = (ty: string, vy: string) => `${ty}|${vy}`;
+  it('iOS — про страницу в браузере и запасной путь через «⋯»', () => {
+    const hint = buildHomeScreenHint('ios', tr);
+    expect(hint).toContain('Откроется страница в браузере');
+    expect(hint).toContain('следуй инструкции');
+    expect(hint).toContain('следуйте инструкции');
+  });
+  it('Android — про подтверждение Telegram, в обеих формах', () => {
+    const hint = buildHomeScreenHint('android', tr);
+    expect(hint).toContain('согласись');
+    expect(hint).toContain('согласитесь');
   });
 });
