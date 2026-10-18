@@ -16,6 +16,7 @@ import { ConceptGraphMetricsService } from './concept-graph-metrics.service';
 import { AuthHealthMetricsService } from './auth-health-metrics.service';
 import { LoginTicketMetricsService } from './login-ticket-metrics.service';
 import { ClientErrorMetricsService } from './client-error-metrics.service';
+import { NotifyQueueMetricsService } from './notify-queue-metrics.service';
 import { MoneyMetricsService } from './money-metrics.service';
 import { GameMetricsService } from './game-metrics.service';
 import { DataExportMetricsService } from './data-export-metrics.service';
@@ -24,10 +25,8 @@ import { IntroLeadMetricsService } from './intro-lead-metrics.service';
 import { infraBlocks } from './stats-infra-blocks';
 import { settleBlocks } from './stats-settle';
 
-// Единая склейка второго сообщения /stats (все блоки метрик + здоровье
-// системы). Отдельный модуль — правило №10: не раздувать ни
-// ProductMetricsService, ни telegram.service.ts. Блоки считаются независимо
-// (stats-settle.ts): упавший заменяется строкой, отчёт не гаснет целиком.
+// Склейка второго сообщения /stats: блоки метрик + здоровье системы (правило
+// №10). Блоки независимы (stats-settle.ts): упавший заменяется строкой.
 @Injectable()
 export class StatsReportService {
   private readonly logger = new Logger(StatsReportService.name);
@@ -55,10 +54,10 @@ export class StatsReportService {
     private readonly dataExport: DataExportMetricsService,
     private readonly bookingRetention: BookingRetentionMetricsService,
     private readonly introLeads: IntroLeadMetricsService,
+    private readonly notifyQueue: NotifyQueueMetricsService,
   ) {}
 
-  /** Готовый текстовый блок для второго сообщения /stats. Порядок блоков —
-   * порядок в отчёте, менять только осознанно (см. тест этого сервиса). */
+  /** Порядок блоков — порядок в отчёте; менять осознанно (см. тест). */
   async render(): Promise<string> {
     const blocks = [
       { name: 'Как пользуются продуктом', svc: this.product },
@@ -77,6 +76,7 @@ export class StatsReportService {
       { name: 'Вход в мессенджере', svc: this.authHealth },
       { name: 'Вход по коду', svc: this.loginTicket },
       { name: 'Поломки на клиенте', svc: this.clientErrors },
+      { name: 'Напоминания из бота', svc: this.notifyQueue },
       { name: 'Деньги', svc: this.money },
       { name: 'Откуда пришли новенькие', svc: this.signupSource },
       { name: 'Игра', svc: this.game },

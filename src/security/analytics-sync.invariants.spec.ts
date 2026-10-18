@@ -164,6 +164,11 @@ const BACKEND_ONLY: Record<string, string> = {
     'useJourneyDelete (shared/src/journey/journeyDelete.ts) зовёт ' +
     'api.trackEvent(ENTRY_DELETED_EVENT, { type }) сразу за успешным ' +
     'удалением записи; та же причина, что у share_card',
+  notify_queue_tick:
+    'серверное событие: пишет только крон очереди уведомлений бота ' +
+    '(src/telegram/telegram.schedule-queue.tally.ts), userId = null, meta — ' +
+    'только числа прогона. Клиентского действия за ним нет вовсе: это итог ' +
+    'отправки напоминаний, отчёт /stats считает строки с userId IS NULL',
 };
 
 describe('трипваер: имена событий фронта ⊆ allow-list бэкенда (правило №8)', () => {
@@ -213,7 +218,9 @@ describe('трипваер: имена событий фронта ⊆ allow-lis
     // выгрузку запускает сам HTTP-запрос к эндпоинту, кликать на фронте
     // нечего. 28 — entry_deleted (удаление своей записи в архиве «Мой
     // путь»): не серверное, а константное — фронт шлёт его из общего хука
-    // useJourneyDelete через ENTRY_DELETED_EVENT, как share_card.
-    expect(Object.keys(BACKEND_ONLY).length).toBeLessThanOrEqual(28);
+    // useJourneyDelete через ENTRY_DELETED_EVENT, как share_card. 29 —
+    // notify_queue_tick (аудит 2026-10, ответ 429): итог прогона очереди
+    // уведомлений, пишет крон — у фронта такого действия нет по устройству.
+    expect(Object.keys(BACKEND_ONLY).length).toBeLessThanOrEqual(29);
   });
 });

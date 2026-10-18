@@ -86,7 +86,7 @@
 //                         (meta.screen + meta.block + meta.dir: 'up'|'down').
 //                         Единственное из трёх screen_*-событий, которое
 //                         реально шлётся с meta.screen='today'.
-//   auth_rejected/auth_success/client_error/signup_source/data_export —
+//   auth_*/client_error/signup_source/data_export/notify_queue_tick —
 //                         СЕРВЕРНЫЕ события (пишет только бэкенд, не клиент)
 //                         — реестр и описания каждого в server-events.constants.ts
 //                         (правило №10, тот же приём, что у CASE_EVENTS ниже).

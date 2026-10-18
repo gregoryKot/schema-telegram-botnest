@@ -36,15 +36,14 @@ import { ProfilePatternMetricsService } from './profile-pattern-metrics.service'
 import { AuthHealthMetricsService } from './auth-health-metrics.service';
 import { LoginTicketMetricsService } from './login-ticket-metrics.service';
 import { ClientErrorMetricsService } from './client-error-metrics.service';
+import { NotifyQueueMetricsService } from './notify-queue-metrics.service';
 import { MoneyMetricsService } from './money-metrics.service';
 import { ConceptGraphMetricsService } from './concept-graph-metrics.service';
 import { NotesService } from './notes.service';
 import { HealthyAdultService } from './healthy-adult.service';
 import { JourneyService } from './journey.service';
 import { PracticeSessionsService } from './practice-sessions.service';
-
-// Сервисы для других модулей — один список сразу в providers и в exports
-// (правило №10: новый экспортируемый сервис стоит 1 строку, а не 2).
+// Один список и в providers, и в exports: новый сервис стоит 1 строку (№10).
 const EXPORTED_PROVIDERS = [
   BotService,
   BotAnalyticsService,
@@ -91,6 +90,7 @@ const INTERNAL_PROVIDERS = [
   AuthHealthMetricsService,
   LoginTicketMetricsService,
   ClientErrorMetricsService,
+  NotifyQueueMetricsService,
   MoneyMetricsService,
   GameMetricsService,
 ];

@@ -52,6 +52,25 @@ CLAUDE.md. Не удалять, но и не считать списком за�
 
 Хвосты закрытых планов — то, что не сделано осознанно, а не забыто:
 
+**Темп отправки в Telegram и ответ 429** (#NNN, `docs/AUDIT_2026-10_FINDINGS.md`, «Отправка без учёта 429»):
+- **Единичные отправки вне очереди 429 не слушают.** Пост канала
+  (`src/telegram/telegram-channel.target.ts`) и DM админу
+  (`src/utils/admin-alert.ts`, `src/telegram/telegram.service.ts`) шлют по
+  одному сообщению без `PacedSender`; экспозиция низкая, перевод — отдельным PR.
+- **Fake-bot спеков всегда отвечает `ok`** (`makeFakeBot` в
+  `src/telegram/telegram.test-helpers.spec.ts`): лимит площадки виден только в
+  `telegram-rate-limit.spec.ts`, `telegram.schedule-queue.pace.spec.ts` и
+  `telegram.broadcast.spec.ts`.
+- **Фикстура 429 собрана по документации Bot API, не записана с прода**
+  (`test/fixtures/recorded/telegram-429-too-many-requests.json.meta.json`). При
+  первой строке «Очередь: Telegram ответил 429» в логах — снять настоящий ответ
+  и заменить.
+- **`/broadcast` дольше 90 с упирается в `handlerTimeout` Telegraf** (по
+  умолчанию 90 000 мс, `node_modules/telegraf/lib/telegraf.js`): при 50 мс паузы
+  это ~1800 получателей. Рассылка продолжается, но Telegraf пишет ошибку
+  таймаута обработчика; так было и до починки, теперь ожидание по 429 делает
+  это вероятнее. Лечится запуском рассылки вне обработчика команды.
+
 **Единая версия, этап 2 — входы** (#758, `docs/ONE_FRONTEND_PLAN.md`):
 - **Перезагрузка внутри Telegram снова открывает экран согласия по `pair_*`/`therapy_*`.**
   `start_param` там приходит из подписанных данных запуска, а не из адреса, и
