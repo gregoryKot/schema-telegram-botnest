@@ -112,7 +112,7 @@ export function AppSections({
         )}
         {section === 'diary' && (
           <ErrorBoundary section="Дневник" key="diary-boundary">
-            <DiarySection />
+            <DiarySection onOpenTracker={() => { ov.setTrackerNeedId(null); ov.setShowTrackerOverlay(true); }} />
           </ErrorBoundary>
         )}
         {section === 'schemas' && (

@@ -142,3 +142,5 @@
 .st-pc-confirm { display: flex; gap: 8px; }
 .st-pc-confirm .ds-btn { flex: 1; min-height: 44px; height: auto; }
 .st-pc-leave { min-height: 44px; display: inline-flex; align-items: center; }
+.st-need { display: flex; flex-direction: column; gap: var(--space-4); }
+.st-need-name { font-size: 14px; font-weight: 600; color: var(--text); }

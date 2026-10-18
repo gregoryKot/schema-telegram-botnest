@@ -13,6 +13,7 @@ import { TODAY } from './diary/dateHelpers';
 import { DiaryDraft } from './diary/DiaryDraft';
 import { DiaryHeader } from './diary/DiaryHeader';
 import { DiaryQuickAdd } from './diary/DiaryQuickAdd';
+import { DiaryTrackerLink } from './diary/DiaryTrackerLink';
 import { DiaryTimeline, DiaryTimelineSkeleton } from './diary/DiaryTimeline';
 import {
   buildEntries, filterCounts, filterEntries, groupByDay, monthStats, streakDays,
@@ -27,7 +28,7 @@ const FILTERS: { id: DiaryFilter; label: string }[] = [
 ];
 const DRAFT_TYPES: DiaryType[] = ['schema', 'mode', 'gratitude'];
 
-export function DiarySection({ onClose: _onClose }: { onClose?: () => void } = {}) {
+export function DiarySection({ onClose: _onClose, onOpenTracker }: { onClose?: () => void; onOpenTracker?: () => void } = {}) {
   const [schemaEntries,    setSchemaEntries]    = useState<SchemaDiaryEntry[]>([]);
   const [modeEntries,      setModeEntries]      = useState<ModeDiaryEntry[]>([]);
   const [gratitudeEntries, setGratitudeEntries] = useState<GratitudeDiaryEntry[]>([]);
@@ -127,6 +128,8 @@ export function DiarySection({ onClose: _onClose }: { onClose?: () => void } = {
       <DiaryHeader total={totalCount} daysWithEntry={daysWithEntry} daysInMonth={daysInMonth} streak={streak} />
 
       <DiaryQuickAdd onOpen={setNewEntry} />
+
+      {onOpenTracker && <DiaryTrackerLink onOpen={onOpenTracker} />}
 
       <div className="cd-drafts">
         {DRAFT_TYPES.filter(t => loadDraft(t)).map(type => (

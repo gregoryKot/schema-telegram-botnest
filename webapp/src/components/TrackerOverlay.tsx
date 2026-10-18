@@ -14,6 +14,7 @@ import { useIsDesktop } from './trackerOverlay/useIsDesktop';
 import { CompletionScreen } from './trackerOverlay/CompletionScreen';
 import { DesktopLayout } from './trackerOverlay/DesktopLayout';
 import { MobileLayout } from './trackerOverlay/MobileLayout';
+import { TrackerOnboarding } from './trackerOverlay/TrackerOnboarding';
 import type { Need } from '../types';
 
 export function TrackerOverlay({
@@ -131,6 +132,7 @@ export function TrackerOverlay({
   const nameOf = (n: Need) => NEED_DATA[n.id]?.name ?? n.chartLabel;
   const steps = <TrackerSteps needs={needs} idx={idx} ratings={effectiveRatings} onPick={setIdx} />;
   const topbar = (
+    <>
     <TrackerTopbar
       isBackfill={isBackfill}
       isDesktop={isDesktop}
@@ -139,6 +141,8 @@ export function TrackerOverlay({
       onOpenNote={onOpenNote}
       onOpenHistory={onOpenHistory}
     />
+    <TrackerOnboarding eligible={!isBackfill && Object.keys(ratings).length === 0} />
+    </>
   );
   const footer = (
     <TrackerFooter
