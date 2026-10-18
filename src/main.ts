@@ -18,6 +18,7 @@ import { TRUSTED_PROXY_HOPS } from './infra/trust-proxy';
 import { installBodyParsers } from './infra/body-parsers';
 import { helmetOptions } from './security/helmet-config';
 import { registerUnhandledRejectionHandler } from './infra/unhandled-rejection';
+import { registerUncaughtExceptionHandler } from './infra/uncaught-exception';
 import {
   PrismaExceptionFilter,
   GenericExceptionFilter,
@@ -27,10 +28,9 @@ import {
 // (src/utils/bigint-json.ts, аудит 2026-10 X-1).
 installBigIntJson();
 
-// Аудит 2026-10 (I6): до создания приложения — отказ внутри bootstrap тоже
-// должен дойти до алерта. Logger статический: после NestFactory.create он
-// пишет через AlertLogger.
+// Аудит 2026-10 (I6): до create — отказ и throw тоже в алерт (Logger → AlertLogger).
 registerUnhandledRejectionHandler(new Logger('UnhandledRejection'));
+registerUncaughtExceptionHandler(new Logger('UncaughtException'));
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
