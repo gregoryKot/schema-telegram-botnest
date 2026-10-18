@@ -3,7 +3,7 @@ import type { Dispatch, SetStateAction } from 'react';
 import { PatternsHeroSection } from './PatternsHeroSection';
 import { SchemasSectionProps } from './types';
 import { SchemasPatternSection } from './SchemasPatternSection';
-import { WeekTopSummary } from '../../utils/patternsSummary';
+import { WeekTopSummary } from '../../../../shared/src/pattern/patternsSummary';
 import type { BlockVisibility } from './blockVisibility';
 import type { SchemaDiaryEntry } from '../../types';
 

@@ -14,7 +14,7 @@ import {
 import {
   weekSchemaFrequency,
   weekModeFrequency,
-} from '../../utils/patternsSummary';
+} from '../../../../shared/src/pattern/patternsSummary';
 import type { SchemaDiaryEntry, ModeDiaryEntry } from '../../types';
 import {
   collectWarmWords,

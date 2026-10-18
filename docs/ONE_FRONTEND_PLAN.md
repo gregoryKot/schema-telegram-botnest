@@ -89,9 +89,12 @@
 - [ ] «Мой портрет» в профиле (`sections/profile/PortraitCard`, `PortraitSheet`,
   `useAboutMe`); `buildPortrait` из `shared/src/portrait` на сайте используется
   только картой себя. M.
-- [ ] Недельная частота паттернов, «паттерн недели», вводные карточки новичка
+- [x] Недельная частота паттернов, «паттерн недели», вводные карточки новичка
   (`PatternFrequencyList`, `WeekTopCard`, `PatternsHero`, `ModesHero`,
-  `utils/patternsSummary.ts` → в `shared/`). M.
+  `utils/patternsSummary.ts` → в `shared/`). M. Сделано: логика и тексты —
+  `shared/src/pattern/{patternsSummary,weekPatternText}.ts`; сайт —
+  `webapp/src/sections/schemas/{FreqMark,WeekPatternCard,PatternsIntro}.tsx`;
+  мини-апп берёт то же из shared.
 - [x] Карточка партнёра в паре: цвет индекса, недельные бары, «Написать»,
   подтверждение выхода. Логика одна на оба фронтенда:
   `shared/src/pair/usePairMechanics.ts` (api инъекцией), `partnerCard.ts`

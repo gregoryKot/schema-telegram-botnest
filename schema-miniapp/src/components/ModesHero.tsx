@@ -2,14 +2,19 @@
 // очевидность»). Новичку — одно очевидное знакомство: Требовательный Критик,
 // самый узнаваемый режим. Опытному — сводка недели «Чаще всего включается»
 // из дневника режимов.
-import { ALL_MODES, MODE_GROUPS } from '../schemaTherapyData';
 import { useTr } from '../utils/addressForm';
 import { ToolRow } from './ToolRow';
 import { HeroCta } from './HeroCta';
 import { WeekTopCard } from './WeekTopCard';
-import { WeekTopSummary } from '../utils/patternsSummary';
+import { WeekTopSummary } from '../../../shared/src/pattern/patternsSummary';
+import {
+  INTRO_MODE_ID,
+  modeIntro,
+  weekTopText,
+  diaryIntro,
+} from '../../../shared/src/pattern/weekPatternText';
 
-export const INTRO_MODE_ID = 'demanding_critic';
+export { INTRO_MODE_ID };
 
 interface Props {
   hasModes: boolean;
@@ -33,16 +38,14 @@ export function ModesHero({
   const tr = useTr();
 
   if (!hasModes) {
+    const intro = modeIntro(tr);
     return (
       <div className="u-col12">
         <HeroCta
-          label="Знакомство"
-          chip="≈2 мин"
-          title="Встретить своего Критика"
-          sub={tr(
-            'Режим — состояние, которое включается в моменте; понятие из схема-терапии. Начни с самого узнаваемого — внутреннего голоса требований. Две минуты на чтение, карточку можно заполнить потом.',
-            'Режим — состояние, которое включается в моменте; понятие из схема-терапии. Начните с самого узнаваемого — внутреннего голоса требований. Две минуты на чтение, карточку можно заполнить потом.',
-          )}
+          label={intro.label}
+          chip={intro.chip}
+          title={intro.title}
+          sub={intro.sub}
           buttonLabel="Познакомиться"
           onClick={onMeetCritic}
         />
@@ -63,17 +66,14 @@ export function ModesHero({
   }
 
   if (summary) {
-    const mode = ALL_MODES.find((m) => m.id === summary.id);
-    const group = MODE_GROUPS.find((g) =>
-      g.items.some((m) => m.id === summary.id),
-    );
-    if (!mode || !group) return null;
+    const text = weekTopText('mode', summary);
+    if (!text) return null;
     return (
       <WeekTopCard
-        label="Чаще всего включается"
-        color={group.color}
-        title={mode.name}
-        sub={`${summary.days} из ${summary.windowDays} дней — по записям дневника. Заметить включение — уже полработы.`}
+        label={text.label}
+        color={text.color}
+        title={text.title}
+        sub={text.sub}
         onClick={() => onOpenModeDetail(summary.id)}
       />
     );
@@ -82,7 +82,7 @@ export function ModesHero({
   if (onOpenDiaries) {
     return (
       <ToolRow
-        label="Картина недели появится из дневника"
+        label={diaryIntro(tr).title}
         sub={tr(
           'замечай моменты, когда режим включился',
           'замечайте моменты, когда режим включился',

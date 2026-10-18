@@ -9,7 +9,8 @@ import { usePatternStatus } from '../../components/patternSheet/usePatternStatus
 import { modeEntryCounts } from '../../../../shared/src/pattern/patternStatus';
 import { PatternListSkeleton } from './CatalogParts';
 import { buildModeFreqGroups } from './modeGroups';
-import { WeekTopSummary } from '../../utils/patternsSummary';
+import { freqHint } from '../../../../shared/src/pattern/weekPatternText';
+import { WeekTopSummary } from '../../../../shared/src/pattern/patternsSummary';
 import type { ModeDiaryEntry } from '../../types';
 
 interface Props {
@@ -54,7 +55,7 @@ export function ModesPatternSection({
             addLabel="+ Добавить режим"
             onAdd={onShowModePicker}
             anyFreq={Object.values(modeFreq).some((v) => v > 0)}
-            hint="Полоска рядом с режимом — сколько дней за неделю он включался по дневнику. Это наблюдение, а не оценка."
+            hint={freqHint('mode')}
           />
         ))}
 

@@ -1,11 +1,13 @@
 import { MODE_GROUPS, ALL_MODES } from '../../schemaTherapyData';
 import { useTr } from '../../utils/addressForm';
 import { hueStyle, MODE_GROUP_HUE } from '../../lib/tone';
+import { FreqMark, FreqHint } from './FreqMark';
 import { Skeleton } from '../../components/Skeleton';
 
 interface Props {
   loading: boolean; myModeIds: string[]; onAdd: () => void;
   onOpenMode: (id: string) => void;
+  modeFreq?: Record<string, number>; // дней за неделю по дневнику; undefined — пока не загрузилось
   onOpenPattern: (id: string) => void; // чип «Мои режимы» → экран паттерна; плитки карты → onOpenMode
 }
 
@@ -14,7 +16,7 @@ const MODE_HUE: Record<string, number | undefined> = Object.fromEntries(
 );
 
 /** «Мои режимы» (чипы) и «Карта режимов» (все режимы по группам). */
-export function ModesBlocks({ loading, myModeIds, onAdd, onOpenMode, onOpenPattern }: Props) {
+export function ModesBlocks({ loading, myModeIds, onAdd, onOpenMode, onOpenPattern, modeFreq }: Props) {
   const tr = useTr();
   const myModes = myModeIds.map(id => ALL_MODES.find(m => m.id === id)).filter(Boolean) as typeof ALL_MODES;
   return (
@@ -31,14 +33,18 @@ export function ModesBlocks({ loading, myModeIds, onAdd, onOpenMode, onOpenPatte
         ) : myModes.length === 0 ? (
           <p className="cs-empty">{tr('Добавь режимы которые узнаёшь у себя', 'Добавьте режимы которые узнаёте у себя')}</p>
         ) : (
+          <>
+          {modeFreq && <FreqHint kind="mode" freq={modeFreq} />}
           <div className="cs-chips">
             {myModes.map(m => (
-              <button key={m.id} className="cs-chip tone-tint tone-border" style={hueStyle(MODE_HUE[m.id])} onClick={() => onOpenPattern(m.id)}>
+              <button key={m.id} className={`cs-chip tone-tint tone-border${modeFreq?.[m.id] ? ' cs-chip--stacked' : ''}`} style={hueStyle(MODE_HUE[m.id])} onClick={() => onOpenPattern(m.id)}>
                 <i className="ds-dot tone-fill" />
                 {m.name}
+                {modeFreq && <FreqMark freq={modeFreq[m.id] ?? 0} />}
               </button>
             ))}
           </div>
+          </>
         )}
       </section>
 
