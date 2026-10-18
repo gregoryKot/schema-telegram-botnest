@@ -22,7 +22,9 @@ describe('indexTone', () => {
 describe('partnerContextText', () => {
   it('день не заполнен — безличная фраза без мужского рода', () => {
     const t = partnerContextText('Оля', false, 0);
-    expect(t).toContain(PARTNER_EMPTY_TEXT);
+    expect(t).toContain('Оля');
+    expect(t).toContain('покажется здесь');
+    expect(t).not.toContain(PARTNER_EMPTY_TEXT); // плашка выше уже это сказала
     expect(t).not.toMatch(/заполнил/);
   });
   it('низкий / средний / высокий индекс — разные фразы с именем', () => {

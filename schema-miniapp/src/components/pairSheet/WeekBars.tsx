@@ -1,4 +1,7 @@
-import { weekBars, type BarTone } from '../../../../shared/src/pair/partnerCard';
+import {
+  weekBars,
+  type BarTone,
+} from '../../../../shared/src/pair/partnerCard';
 
 // Тон (логика и пороги — shared/src/pair/partnerCard.ts) → цвет палитры.
 export const TONE_COLOR: Record<BarTone, string> = {

@@ -28,7 +28,7 @@ async function ready(options = {}) {
   const hook = renderHook(
     (p: { reloadKey?: unknown }) =>
       usePairMechanics(api, { ...options, reloadKey: p.reloadKey }),
-    { initialProps: {} as { reloadKey?: unknown } },
+    { initialProps: {} },
   );
   await waitFor(() => expect(hook.result.current.data).toEqual(EMPTY));
   return hook;
