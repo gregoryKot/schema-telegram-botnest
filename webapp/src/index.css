@@ -942,6 +942,9 @@ a { color: inherit; text-decoration: none; }
     flex-direction: column;
     height: auto;
     min-height: 100vh;
+    /* Полноэкранный Telegram/MAX: плавающие кнопки поверх шапки. В браузере 0. */
+    padding-top: var(--safe-top, 0px);
+    box-sizing: border-box;
   }
   .sidebar { display: none; }
   .main {

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api } from '../api';
-import { isStandalone, subscribeAppInstalled } from '../utils/pwaInstall';
+import { hideInstallOffers, subscribeAppInstalled } from '../utils/pwaInstall';
 import { InstallAppGuide } from './installGuide/InstallAppGuide';
 
 // Баннер «есть приложение для телефона» — только на мобильной вёрстке сайта
@@ -24,7 +24,7 @@ function isDismissed(): boolean {
 
 export function MobileAppBanner() {
   // Открыто как установленное приложение — предлагать его же бессмысленно.
-  const [hidden, setHidden] = useState(() => isStandalone() || isDismissed());
+  const [hidden, setHidden] = useState(() => hideInstallOffers() || isDismissed());
   const [showGuide, setShowGuide] = useState(false);
 
   const onInstallClick = useCallback(() => {

@@ -16,6 +16,8 @@ import { AppSections } from './appShell/AppSections';
 import { type Section, sectionFromPath, fillHistoryGaps } from './appShell/navigation';
 import { MobileNav } from './appShell/MobileNav';
 import { useDesktopAppLaunch } from '../hooks/useDesktopAppLaunch';
+import { useHostShell } from '../hooks/useHostShell';
+import { useIsOffline } from '../hooks/useIsOffline';
 // – always-needed small helpers (no heavy data deps) –
 import { Celebration } from './Celebration';
 import { todayInsightPhrase } from '../utils/todayInsight';
@@ -51,6 +53,7 @@ export function AppShell() {
   const { logout } = useAuth();
   // Запуск установленного приложения на компьютере приходит сюда (?from=app).
   useDesktopAppLaunch();
+  useHostShell();
   const tr = useTr();
   const location = useLocation();
   const navigate = useNavigate();
@@ -102,7 +105,7 @@ export function AppShell() {
 
   const [history, setHistory] = useState<DayHistory[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
-  const [isOffline, setIsOffline] = useState(!navigator.onLine);
+  const isOffline = useIsOffline();
   const [helpTasksKey, setHelpTasksKey] = useState(0);
   const [celebrationStreak, setCelebrationStreak] = useState<number | null>(null);
   const [childhoodWheelPending, setChildhoodWheelPending] = useState(false);
@@ -141,14 +144,6 @@ export function AppShell() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- ov.setCmdOpen стабильный сеттер useState; ov как объект не нужен в deps (не хотим переустанавливать обработчик на каждый чужой оверлей)
   }, [therapistMode, setSection]);
 
-  // Online/offline
-  useEffect(() => {
-    const handleOffline = () => setIsOffline(true);
-    const handleOnline = () => setIsOffline(false);
-    window.addEventListener('offline', handleOffline);
-    window.addEventListener('online', handleOnline);
-    return () => { window.removeEventListener('offline', handleOffline); window.removeEventListener('online', handleOnline); };
-  }, []);
 
   // Show the history loading state the moment the history tab is opened.
   // Adjusting state during render (not in an effect) keeps this off

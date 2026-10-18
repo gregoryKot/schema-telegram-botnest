@@ -6,6 +6,8 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 
+import { installTelegram, removeTelegram } from '../host/tgStub.test-helpers';
+
 vi.mock('../api', () => ({ api: { trackEvent: vi.fn() } }));
 
 import { api } from '../api';
@@ -21,6 +23,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  removeTelegram();
   cleanup();
   vi.unstubAllGlobals();
   localStorage.clear();
@@ -95,5 +98,13 @@ describe('MobileAppBanner', () => {
     vi.stubGlobal('matchMedia', (q: string) => ({ matches: q.includes('standalone') }));
     const { container } = render(<MobileAppBanner />);
     expect(container.firstChild).toBeNull();
+  });
+});
+
+describe('MobileAppBanner внутри мессенджера', () => {
+  it('скрыт внутри Telegram', () => {
+    installTelegram();
+    render(<MobileAppBanner />);
+    expect(screen.queryByText('приложение для телефона')).toBeNull();
   });
 });

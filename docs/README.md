@@ -52,6 +52,21 @@ CLAUDE.md. Не удалять, но и не считать списком за�
 
 Хвосты закрытых планов — то, что не сделано осознанно, а не забыто:
 
+**Единая версия, этап 1 — хост-слой сайта** (#755, `docs/ONE_FRONTEND_PLAN.md`):
+- **Полноэкранные листы не учитывают `--safe-top`.** Отступ под плавающие кнопки
+  Telegram стоит только на `.app-shell` в мобильной раскладке
+  (`webapp/src/index.css`); у листов с `position: fixed; inset: 0` (экраны
+  упражнений `.ex2-screen`, `ss-sheet`, `sk-overlay` и соседи) шапка в
+  фуллскрине Telegram может уйти под кнопки. Проверить на устройстве и, если
+  так, добавить `padding-top: var(--safe-top, 0px)` в общий класс листов.
+- **Хост определяется после первого рендера.** `telegram-web-app.js` в
+  `webapp/index.html` грузится `async`; `initHost`, `useHostId` и `useSafeTop`
+  перечитывают хост по таймерам `LATE_HOST_READS_MS`, а `hideInstallOffers()`
+  в `MobileAppBanner`/`AppInstallSection` читает его один раз при рендере —
+  если SDK доедет позже баннера, тот успеет мигнуть. Список задержек
+  продублирован в `webapp/src/host/initHost.ts` и `shared/src/host/safezone.ts`
+  (правило №4: вынести одну константу в `shared/src/host`).
+
 **Редизайн кабинета — хвосты** (#746, `docs/design/REDESIGN_2026-10.md`):
 - **Лендинг, визитка (`kotlarewski.gr`), статьи и админка** намеренно в старом виде
   (решение владельца 2026-10-16) — токены старой палитры в `index.css` нужны им,
