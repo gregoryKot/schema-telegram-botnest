@@ -103,8 +103,19 @@ jobs:
           test/text-limits test/therapy-ownership.e2e-spec.ts
           test/booking-admin-cancel test/exercise-delete-ownership test/max-auth
       # Security-гейт (этап 1.4): high/critical уязвимости в prod-зависимостях
-      # блокируют мерж. dev-зависимости не гейтим — шум.
-      - run: npm audit --omit=dev --audit-level=high
+      # блокируют мерж. dev-зависимости не гейтим: сборочная цепочка
+      # исполняется на раннере, а не у пользователя, её несёт Dependabot.
+      # У КАЖДОГО package-lock.json свой шаг (аудит 2026-10: до этого гейт
+      # смотрел только корень, фронт проверял лишь аудитор глазами). Сверка
+      # «lock-файл ↔ шаг» — src/test-support/gates/lockfile-audit.spec.ts.
+      # npm audit читает lock-файл, node_modules пакету не нужны.
+      - name: npm audit — корень
+        timeout-minutes: 3
+        run: npm audit --omit=dev --audit-level=high
+      # Игра своей джобы не имеет, а в прод-образ собирается (Dockerfile).
+      - name: npm audit — game
+        timeout-minutes: 3
+        run: npm audit --omit=dev --audit-level=high --prefix game
       # Храповик копипасты: новая дублированная логика ≥70 токенов не проходит.
       # Требует npx jscpd из node_modules — не fs-only, остаётся здесь
       # (в отличие от route-collisions/legacy-name, см. джобу checks).
@@ -758,6 +769,12 @@ jobs:
       # красит CI. Абсолютный, без бейслайна. Секреты в DOM (ссылка встречи,
       # токен в href) держит webvisorSecrets.test.tsx в vitest этой же джобы.
       - run: node scripts/check-webvisor-fields.mjs
+      # Код webapp исполняется в браузере пользователя: high/critical в его
+      # prod-зависимостях блокирует мерж (см. шаг audit в джобе backend).
+      # Последним, чтобы красный audit не прятал сигнал тестов.
+      - name: npm audit — webapp
+        timeout-minutes: 3
+        run: npm audit --omit=dev --audit-level=high --prefix webapp
 
   # shared/ — общий пакет двух фронтендов (этап 2.2 TEST_IMPROVEMENT_PLAN.md):
   # до этой джобы 3431 строка shared-кода тестировалась только транзитивно
@@ -789,6 +806,10 @@ jobs:
         run: npm test --prefix shared
         env:
           TZ: Australia/Sydney
+      # См. шаг audit в джобе backend.
+      - name: npm audit — shared
+        timeout-minutes: 3
+        run: npm audit --omit=dev --audit-level=high --prefix shared
 
   # eslint-храповик (этап 2е, правило №9). Нужны node_modules всех трёх
   # пакетов + prisma generate: typed-линт без типов зависимостей видит
@@ -856,3 +877,7 @@ jobs:
             git status --short schema-miniapp/dist
             exit 1
           fi
+      # См. шаг audit в джобе backend.
+      - name: npm audit — schema-miniapp
+        timeout-minutes: 3
+        run: npm audit --omit=dev --audit-level=high --prefix schema-miniapp
