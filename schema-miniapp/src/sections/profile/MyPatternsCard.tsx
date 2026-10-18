@@ -16,10 +16,8 @@ import {
   schemaEntryCounts,
   modeEntryCounts,
 } from '../../../../shared/src/pattern/patternStatus';
-import {
-  patternMeta,
-  type PatternMeta,
-} from '../../../../shared/src/pattern/patternMeta';
+import type { PatternMeta } from '../../../../shared/src/pattern/patternMeta';
+import { buildMyPatternRows } from '../../../../shared/src/pattern/myPatternRows';
 import type { MyCardsKind } from '../../../../shared/src/pattern/useMyCards';
 import { shortName } from '../schemas/utils';
 import type { SchemaDiaryEntry, ModeDiaryEntry } from '../../types';
@@ -140,17 +138,7 @@ export function MyPatternsCard({
   if (ids.length === 0) return null;
 
   const filledIds = new Set(items.map((i) => i.id));
-  const rows = ids
-    .map((id) => ({ id, freq: weekFreq[id] ?? 0, meta: patternMeta(kind, id) }))
-    .filter((r): r is typeof r & { meta: PatternMeta } => !!r.meta)
-    .sort((a, b) => {
-      if (b.freq !== a.freq) return b.freq - a.freq;
-      const aFilled = filledIds.has(a.id);
-      const bFilled = filledIds.has(b.id);
-      if (aFilled !== bFilled) return aFilled ? -1 : 1;
-      return a.meta.name.localeCompare(b.meta.name, 'ru');
-    })
-    .slice(0, limit);
+  const rows = buildMyPatternRows(kind, ids, weekFreq, filledIds, limit);
 
   function openRow(id: string) {
     void api.trackEvent(PROFILE_PATTERN_OPEN_EVENT, { kind });

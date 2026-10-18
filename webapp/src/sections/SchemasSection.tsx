@@ -64,7 +64,7 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
         />
       </div>
 
-      <MySchemasBlock loading={d.loading} ids={allSchemaIds} onAdd={() => setShowSchemaPicker(true)} onOpenSchema={id => pat.openPattern('schema', id)} statusFor={pat.schemaStatusFor} freq={pat.entriesReady ? pat.schemaFreq : undefined} />
+      <MySchemasBlock loading={d.loading} ids={allSchemaIds} onAdd={() => setShowSchemaPicker(true)} onOpenSchema={id => pat.openPattern('schema', id)} statusFor={pat.statusOf('schema').statusFor} freq={pat.entriesReady ? pat.schemaFreq : undefined} />
       <SchemaMap mineIds={allSchemaIds} onOpenSchema={setDetailSchemaId} />
       <ModesBlocks loading={d.loading} myModeIds={d.myModeIds} onAdd={() => setShowModePicker(true)} onOpenMode={pat.openModeEx} onOpenPattern={id => pat.openPattern('mode', id)} modeFreq={pat.entriesReady ? pat.modeFreq : undefined} />
       {d.myMapCount > 0 && <ModeMapBanner count={d.myMapCount} onOpen={() => setShowMyMap(true)} />}

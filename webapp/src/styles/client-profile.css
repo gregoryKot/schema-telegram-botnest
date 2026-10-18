@@ -96,3 +96,33 @@
   .cpf-heat-months, .cpf-heat-grid { gap: 3px; }
   .cpf-heat { border-radius: 3px; }
 }
+
+/* Мой портрет / Тёплые слова / лист портрета */
+.cpf-hint { font-size: 12px; color: var(--text-faint); line-height: 1.4; }
+.cpf-bars { display: flex; flex-direction: column; gap: var(--space-10); }
+.cpf-bar { display: flex; align-items: center; gap: var(--space-10); flex: 1; min-width: 0; }
+.cpf-bar-name { width: 150px; flex-shrink: 0; display: flex; align-items: center; gap: var(--space-6); font-size: 13px; color: var(--text-sub); }
+.cpf-bar-track { flex: 1; height: 8px; border-radius: var(--r-4); background: var(--paper-sunk); overflow: hidden; }
+.cpf-bar-fill { height: 100%; border-radius: var(--r-4); transition: width .4s ease; }
+.cpf-bar-n { width: 16px; text-align: right; font-size: 12px; font-weight: 700; color: var(--text); }
+.cpf-bar-n.is-zero { color: var(--text-faint); }
+.cpf-foot { display: flex; align-items: center; justify-content: space-between; gap: var(--space-8); flex-wrap: wrap; padding-top: var(--space-12); border-top: 1px solid var(--line); }
+.cpf-delta { font-size: 12px; font-weight: 700; color: var(--text-sub); }
+.cpf-delta.is-better { color: var(--ok); }
+.cpf-foot-link { align-self: flex-start; min-height: 44px; }
+.cpf-warm-text { font-family: var(--serif); font-size: 17px; line-height: 1.45; color: var(--text); display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; }
+.cpf-needrows { display: flex; flex-direction: column; margin-bottom: var(--space-12); }
+.cpf-needrow { display: flex; align-items: center; gap: var(--space-8); width: 100%; min-height: 44px; padding: var(--space-6) var(--space-2); background: none; border: none; cursor: pointer; text-align: left; font: inherit; color: inherit; }
+.cpf-needrow-chev { font-size: 11px; color: var(--text-faint); flex-shrink: 0; }
+.cpf-needrow-text { margin: 0 0 var(--space-12); line-height: 1.6; }
+.cpf-sheet-empty { margin: 0 0 var(--space-16); line-height: 1.6; }
+.cpf-sheet-lists { display: flex; flex-direction: column; gap: var(--space-16); }
+.cpf-prows { display: flex; flex-direction: column; }
+.cpf-prow { display: flex; align-items: center; gap: var(--space-10); width: 100%; min-height: 56px; padding: var(--space-10) var(--space-2); background: none; border: none; border-top: 1px solid var(--line); cursor: pointer; text-align: left; font: inherit; color: inherit; }
+.cpf-prow-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: var(--space-2); }
+.cpf-prow-name { font-size: 14px; font-weight: 600; color: var(--text); }
+.cpf-prow-status { font-size: 12px; color: var(--text-faint); }
+.cpf-dlg-count { margin-right: auto; }
+@media (max-width: 767px) {
+  .cpf-bar-name { width: 118px; }
+}

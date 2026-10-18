@@ -11,15 +11,14 @@ import { usePatternStatus } from '../../../../shared/src/pattern/usePatternStatu
 import { schemaEntryCounts, modeEntryCounts } from '../../../../shared/src/pattern/patternStatus';
 import { weekSchemaFrequency, weekModeFrequency, weekPatternTop } from '../../../../shared/src/pattern/patternsSummary';
 import type { MyCardsKind } from '../../../../shared/src/pattern/useMyCards';
-
 export function usePatternLayer() {
   const [pattern, setPattern] = useState<{ kind: MyCardsKind; id: string } | null>(null);
   const [exModeId, setExModeId] = useState<string | null>(null);
   const entries = usePatternEntries();
   const schemaStatus = usePatternStatus('schema', schemaEntryCounts(entries.schemaEntries), api);
   const modeStatus = usePatternStatus('mode', modeEntryCounts(entries.modeEntries), api);
-  const open = pattern?.kind === 'mode' ? modeStatus : schemaStatus;
-
+  const pick = (kind?: MyCardsKind) => (kind === 'mode' ? modeStatus : schemaStatus);
+  const open = pick(pattern?.kind);
   const { schemaEntries, modeEntries, ready } = entries;
   // Недельная сводка считается по загруженным записям; до загрузки — пусто, не выдумка.
   const week = useMemo(() => {
@@ -31,6 +30,8 @@ export function usePatternLayer() {
     };
   }, [schemaEntries, modeEntries]);
 
+  // Пока заметки или записи не загрузились, «карточка пока пустая» была бы враньём.
+  const statusOf = (kind: MyCardsKind) => ({ filled: new Set(pick(kind).items.map((i) => i.id)), statusFor: ready && !pick(kind).loading ? pick(kind).statusFor : undefined });
   const layer: ReactNode = (
     <>
       {pattern && (
@@ -54,7 +55,6 @@ export function usePatternLayer() {
     ...week,
     entriesReady: ready,
     hasEntries: schemaEntries.length + modeEntries.length > 0,
-    // Пока заметки или записи не загрузились, «карточка пока пустая» была бы враньём.
-    schemaStatusFor: entries.ready && !schemaStatus.loading ? schemaStatus.statusFor : undefined,
+    statusOf,
   };
 }

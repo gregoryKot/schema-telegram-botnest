@@ -63,7 +63,6 @@ export function AppSections({
     // существует только как узел DOM для inert.
     <div style={{ display: 'contents' }} inert={inert}>
     <Suspense fallback={<ScreenSkeleton />}>
-
     {/* Therapist mode */}
     {therapistMode && pathname === '/cabinet/today' && (
       <ErrorBoundary section="Кабинет" key="cabinet-today-boundary">
@@ -130,6 +129,7 @@ export function AppSections({
             onOpenTracker={() => { ov.setTrackerNeedId(null); ov.setShowTrackerOverlay(true); }}
             refreshKey={profileRefreshKey}
             displayName={displayName}
+            onTakeTest={() => { ov.setSchemaAutoStartTest(true); ov.setSchemaInitialTab('needs'); ov.setShowSchemaInfo(true); }}
           />
         )}
         {section === 'practice' && (
