@@ -60,7 +60,7 @@
 - [x] Заглушка `/app/sw.js`, которая снимает себя и чистит кэши: у давно не
   открывавших мог остаться старый SW с прекэшем `/app/`. Отдаётся тем же
   middleware за флагом `UNIFIED_FRONTEND` (`src/unified-frontend.sw-stub.ts`).
-- [ ] Сайт читает `getHost().startParam()` (веб-адаптер уже умеет
+- [x] Сайт читает `getHost().startParam()` (веб-адаптер уже умеет
   `?startapp=`/`?start_param=`, `shared/src/host/web.ts:77`) и показывает экран
   согласия для `pair_*`/`therapy_*` (`JoinConfirmSheet`, `joinConfirmFailText`);
   `diaries`/`tracker` — переход в раздел.
@@ -68,7 +68,7 @@
   для приглашений пары и терапевта (код терапевта живёт 7 дней) — решить, куда
   ведёт ссылка после переключения; `MINIAPP_URL` по умолчанию `${APP_URL}/app/`
   (`telegram.constants.ts:19`) → кабинет.
-- [ ] Первый вход из Telegram: экран согласий («Приватность», «Не терапия») с
+- [x] Первый вход из Telegram: экран согласий («Приватность», «Не терапия») с
   уважением серверного флага `onboardingV2Done` — сейчас согласие молча
   проставляется в `appShell/useBootstrapLoad.ts:58` без дисклеймера.
 

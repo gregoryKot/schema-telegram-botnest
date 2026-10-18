@@ -1,8 +1,9 @@
-import { joinTherapyErrorText } from '../../../shared/src/therapy/joinErrorText';
+import { joinTherapyErrorText } from './joinErrorText';
 
-// Текст отказа экрана-согласия JoinConfirmSheet. Для терапевта 409
-// already_connected — свой текст (клиент уже подключён к другому: ссылка в
-// порядке, мешает действующее подключение), всё остальное — общий отказ.
+// Текст отказа экрана-согласия JoinConfirmSheet (оба фронтенда, правило №3).
+// Для терапевта 409 already_connected — свой текст (клиент уже подключён к
+// другому: ссылка в порядке, мешает действующее подключение), всё остальное —
+// общий отказ.
 export function joinConfirmFailText(
   err: unknown,
   isPair: boolean,
