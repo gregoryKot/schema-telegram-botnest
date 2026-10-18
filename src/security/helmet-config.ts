@@ -15,9 +15,9 @@ export function helmetOptions(): HelmetOptions {
         // st.max.ru — мост мини-приложения MAX (их документация требует
         // грузить его с этого CDN). Без него мост молча не загрузится, а
         // приложение внутри MAX решит, что открыто в обычном браузере.
+        // telegram.org не нужен: SDK отдаём сами, вход в Telegram — переходом.
         scriptSrc: [
           "'self'",
-          'https://telegram.org',
           'https://mc.yandex.ru',
           'https://st.max.ru',
           // Google Identity Services (One Tap) грузит свой клиент отсюда.

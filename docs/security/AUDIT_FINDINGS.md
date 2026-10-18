@@ -433,6 +433,17 @@ plaintext в очереди уведомлений. Нумерация: букв
 
 #### F-8 · `/health` отдаёт `builtAt` и id упавших проб ❌ Принято — нужно смоку, без env/версий.
 
+#### F-9 · Нет `Permissions-Policy`; мёртвый `telegram.org` в `script-src` ✅ Закрыто (Low, #NNN)
+- helmet 8 заголовка не ставит — теперь его ставит `src/security/permissions-policy.ts`
+  (запрет камеры, микрофона, геопозиции, платежей, датчиков, USB/HID/serial/
+  bluetooth/MIDI, захвата экрана). Используемое (`identity-credentials-get` для
+  One Tap, `web-share`, `clipboard-write`) не запрещено; сверку запретов с API,
+  которое зовут фронты, держит `permissions-policy.invariants.spec.ts`.
+- `https://telegram.org` убран из `script-src`: `telegram-web-app.js` отдаётся
+  со своего origin, вход через Telegram идёт переходом. У каждого источника
+  `script-src`/`connect-src` теперь обязан быть потребитель
+  (`csp-allowlist.invariants.spec.ts`); `img-src` — в «Что осталось открытым».
+
 ### Сквозное
 
 #### X-1 · Веб-номера `userId` и `Number` ✅ Закрыто (латентно: веб-id в [1e15, 9e15), ниже 2^53; пин в `user-id-range.spec.ts`)

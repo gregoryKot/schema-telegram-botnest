@@ -982,6 +982,15 @@ CLAUDE.md. Не удалять, но и не считать списком за�
   `npx stryker run stryker.golden-auth.config.json`, добавить файл в `mutate`
   `stryker.golden-auth.config.json` с полом по результату и сверить пол
   `auth.service.ts` (убавилось мутантов проверки — процент мог сдвинуться).
+- **`img-src` разрешает `https://cdn.jsdelivr.net`, а потребителя в коде нет.**
+  Сверка «у внешнего источника CSP есть потребитель»
+  (`src/security/csp-allowlist.invariants.spec.ts`) смотрит `script-src` и
+  `connect-src`; `img-src` в неё не взят, потому что эта запись по коду мёртвая
+  (ни одного упоминания ни в одном фронте, ни в игре), но картинки с jsdelivr
+  могут жить в HTML статей, вставленных через админку, — в репозитории этого не
+  видно. Проверить на проде (`SELECT … FROM "Article" WHERE content LIKE
+  '%cdn.jsdelivr.net%'`): пусто — убрать запись и добавить `img-src` в
+  `CHECKED` спека; не пусто — завести потребителя явно (запись с причиной).
 
 **Хвосты решения по PII записи** (находка L3 аудита 2026-07-20, решение
 владельца 2026-10-08 — ретенция 12 месяцев, `booking-retention.service.ts`;

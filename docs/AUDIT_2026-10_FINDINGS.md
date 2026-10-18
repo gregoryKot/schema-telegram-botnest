@@ -494,7 +494,7 @@ backup, caldav, oauth×2, telegram) с классификацией по пло�
 
 ### Мелочь
 
-- Нет `Permissions-Policy` (helmet 8 его не ставит), а `script-src` в `src/main.ts:83` разрешает `https://telegram.org`, хотя `telegram-web-app.js` отдаётся с собственного origin — пин в `hardening.invariants.spec.ts` и вердикт F-6/F-7 в `AUDIT_FINDINGS.md`.
+- **Закрыто (#NNN): заголовок ставит `src/security/permissions-policy.ts` (камера, микрофон, геопозиция, платежи, датчики и USB/HID/serial запрещены, One Tap, «Поделиться» и «Копировать» не тронуты), `telegram.org` убран из `script-src` в `src/security/helmet-config.ts`; тесты на шве через HTTP — `permissions-policy.invariants.spec.ts` (сверка запретов с API, которое зовут фронты) и `csp-allowlist.invariants.spec.ts` (у каждого источника `script-src`/`connect-src` есть потребитель); остаток — `img-src` с `cdn.jsdelivr.net`: `docs/README.md`, «Что осталось открытым».** Нет `Permissions-Policy` (helmet 8 его не ставит), а `script-src` в `src/main.ts:83` (теперь `src/security/helmet-config.ts`) разрешает `https://telegram.org`, хотя `telegram-web-app.js` отдаётся с собственного origin — пин в `hardening.invariants.spec.ts` и вердикт F-6/F-7 в `AUDIT_FINDINGS.md`.
 
 ## Деньги и заявки
 
