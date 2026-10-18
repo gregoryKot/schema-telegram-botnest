@@ -7,6 +7,7 @@ import { EMAIL_ENV_ENTRIES } from './env-registry.entries.email';
 import { BOOKING_ENV_ENTRIES } from './env-registry.entries.booking';
 import { INFRA_ENV_ENTRIES } from './env-registry.entries.infra';
 import { BACKUP_ENV_ENTRIES } from './env-registry.entries.backup';
+import { FRONTEND_ENV_ENTRIES } from './env-registry.entries.frontend';
 
 export const ENV_REGISTRY: EnvVarSpec[] = [
   ...AUTH_ENV_ENTRIES,
@@ -16,4 +17,5 @@ export const ENV_REGISTRY: EnvVarSpec[] = [
   ...BOOKING_ENV_ENTRIES,
   ...INFRA_ENV_ENTRIES,
   ...BACKUP_ENV_ENTRIES,
+  ...FRONTEND_ENV_ENTRIES,
 ].sort((a, b) => a.name.localeCompare(b.name));
