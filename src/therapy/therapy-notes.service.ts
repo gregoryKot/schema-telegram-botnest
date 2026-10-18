@@ -4,6 +4,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { TherapyRelationsService } from './therapy-relations.service';
 import { encrypt, decrypt, encryptJson, decryptJson } from '../utils/crypto';
 import { findSessionNotesPage } from './session-notes-page';
+import { nextConceptHistory } from './concept-history';
 
 const CONCEPT_TEXT_FIELDS = [
   'earlyExperience',
@@ -148,38 +149,23 @@ export class TherapyNotesService {
     const tid = therapistId;
     const cid = clientId;
     const enc = encryptConceptFields(body);
-    const now = new Date().toISOString();
+    const nowMs = Date.now();
 
     // Read-modify-write по history-массиву — в транзакции (аудит 2026-07,
     // 2.3): две вкладки/двойной клик гонялись за одним прочитанным history →
     // потерянный или задвоенный snapshot.
     const { saved, history } = await this.prisma.$transaction(async (tx) => {
-      // Fetch current state to push to history before overwriting
       const existing = await tx.clientConceptualization.findUnique({
         where: { therapistId_clientId: { therapistId: tid, clientId: cid } },
       });
 
-      let hist: unknown[] =
-        existing && Array.isArray(existing.history) ? existing.history : [];
-
-      if (existing) {
-        // Snapshot current state into history (max 20 snapshots)
-        const snapshot = {
-          savedAt: now,
-          schemaIds: existing.schemaIds,
-          modeIds: existing.modeIds,
-          earlyExperience: existing.earlyExperience,
-          unmetNeeds: existing.unmetNeeds,
-          triggers: existing.triggers,
-          copingStyles: existing.copingStyles,
-          goals: existing.goals,
-          currentProblems: existing.currentProblems,
-          modeTransitions: existing.modeTransitions ?? null,
-          modeLinks: existing.modeLinks,
-          schemaLinks: existing.schemaLinks,
-        };
-        hist = [snapshot, ...hist].slice(0, 20);
-      }
+      // Снимок прежнего состояния — один на сессию правки (окно склейки,
+      // concept-history.ts), иначе автосохранение сайта выжигает историю.
+      const hist = nextConceptHistory(
+        existing && Array.isArray(existing.history) ? existing.history : [],
+        existing,
+        nowMs,
+      );
 
       // Частичный апдейт: пишем только те поля, что реально пришли в body.
       const bodyMap = body as Record<string, unknown>;
