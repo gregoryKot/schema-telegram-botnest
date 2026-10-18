@@ -54,6 +54,7 @@
 | `MINIAPP_APP_NAME` | опциональна | nonEmpty | Slug мини-аппа в t.me/<bot>/<name> — дефолт «diary», если не задано. |
 | `MINIAPP_URL` | опциональна | httpsUrl | Адрес мини-аппа для webApp-кнопок; по умолчанию APP_URL + /app/. |
 | `TELEGRAM_PROXY_URL` | опциональна | nonEmpty | Исходящий прокси до api.telegram.org на случай, если маршрут с хостинга не работает напрямую — без него бот ходит напрямую. |
+| `UNIFIED_FRONTEND` | опциональна | oneOf(1, true, 0, false) | Единая версия: `/app/*` мини-аппа редиректится в кабинет `/today`, `/app/sw.js` отдаёт заглушку, снимающую старый service worker. Значения `1`/`true` включают, иначе выключено. Включается на этапе 5 плана docs/ONE_FRONTEND_PLAN.md. |
 
 ## Почта
 
