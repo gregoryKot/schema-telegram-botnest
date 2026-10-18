@@ -2,7 +2,8 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { AddressFormContext } from '../../utils/addressForm';
-import { TodayHeader, formatGreetingDate } from './TodayHeader';
+import { TodayHeader } from './TodayHeader';
+import { formatGreetingDate } from './greetingDate';
 
 afterEach(cleanup);
 
@@ -17,7 +18,9 @@ function renderHeader(form: 'ty' | 'vy', onOpenSettings = vi.fn()) {
 
 describe('formatGreetingDate', () => {
   it('«воскресенье, 18 октября» — строчными, как в мини-аппе', () => {
-    expect(formatGreetingDate(new Date(2026, 9, 18, 12))).toBe('воскресенье, 18 октября');
+    expect(formatGreetingDate(new Date(2026, 9, 18, 12))).toBe(
+      'воскресенье, 18 октября',
+    );
   });
 });
 

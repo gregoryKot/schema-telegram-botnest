@@ -13,13 +13,22 @@ describe('asArray', () => {
 
 describe('cleanHistoryDays', () => {
   it('строки без даты или без оценок пропускаются', () => {
-    const rows = [null, { date: '2026-01-01' }, { ratings: { a: 1 } }, { date: '2026-01-02', ratings: { a: 3 } }] as never;
-    expect(cleanHistoryDays(rows)).toEqual([{ date: '2026-01-02', ratings: { a: 3 } }]);
+    const rows = [
+      null,
+      { date: '2026-01-01' },
+      { ratings: { a: 1 } },
+      { date: '2026-01-02', ratings: { a: 3 } },
+    ] as never;
+    expect(cleanHistoryDays(rows)).toEqual([
+      { date: '2026-01-02', ratings: { a: 3 } },
+    ]);
   });
 
   it('`{}` вместо массива не роняет разбор истории («e is not iterable»)', () => {
     for (const bad of [{}, null, undefined, 'x']) {
-      expect(buildHistory(cleanHistoryDays(bad as never), { a: 4, b: 6 })).toEqual([5]);
+      expect(
+        buildHistory(cleanHistoryDays(bad as never), { a: 4, b: 6 }),
+      ).toEqual([5]);
     }
   });
 });

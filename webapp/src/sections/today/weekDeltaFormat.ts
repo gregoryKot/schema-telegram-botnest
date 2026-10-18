@@ -13,6 +13,11 @@ export function formatWeekDelta(delta: number | null): string {
 
 /** Направление для окраски: округлённая до нуля дельта — нейтральная. */
 export function weekDeltaTone(delta: number | null): 'up' | 'down' | 'flat' {
-  if (delta === null || !Number.isFinite(delta) || Number(Math.abs(delta).toFixed(1)) === 0) return 'flat';
+  if (
+    delta === null ||
+    !Number.isFinite(delta) ||
+    Number(Math.abs(delta).toFixed(1)) === 0
+  )
+    return 'flat';
   return delta > 0 ? 'up' : 'down';
 }
