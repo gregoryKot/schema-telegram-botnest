@@ -132,7 +132,7 @@
 .st-pc-bars { display: flex; gap: 4px; align-items: flex-end; height: 40px; }
 .st-pc-bar { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; }
 .st-pc-bar i { display: block; width: 100%; border-radius: 3px; background: var(--paper-sunk); }
-.st-pc-bar small { font-size: 9px; color: var(--text-sub); }
+.st-pc-bar small { font-size: 11px; color: var(--text-sub); }
 .st-pc-tone--good, .st-pc-bar i.st-pc-tone--good { color: var(--accent-green); }
 .st-pc-tone--mid { color: var(--accent-yellow); }
 .st-pc-tone--low { color: var(--accent-red); }

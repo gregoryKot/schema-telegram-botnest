@@ -46,7 +46,7 @@ export function WeekBars({ avgs }: { avgs: (number | null)[] }) {
             }}
           />
           {bar.today && (
-            <div style={{ fontSize: 9, color: 'var(--text-sub)' }}>сег</div>
+            <div style={{ fontSize: 11, color: 'var(--text-sub)' }}>сег</div>
           )}
         </div>
       ))}
