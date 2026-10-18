@@ -33,14 +33,14 @@ export function WeekBars({ avgs }: { avgs: (number | null)[] }) {
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
-            gap: 3,
+            gap: 'var(--space-4)',
           }}
         >
           <div
             style={{
               width: '100%',
               height: bar.px,
-              borderRadius: 3,
+              borderRadius: 'var(--r-4)',
               background: TONE_COLOR[bar.tone],
               transition: 'height 0.3s',
             }}
