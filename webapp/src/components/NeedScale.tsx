@@ -1,12 +1,12 @@
 import '../styles/need-scale.css';
 import { hueStyle } from '../lib/tone';
 import { NEED_SCALE_MAX, isSegmentFilled } from './needScaleModel';
+import { haptic } from '../haptic';
 
 // Единственный ввод оценки потребности 0–10: десять сегментов-кнопок.
 // Используется на «Сегодня» и в листе оценки потребности (NeedTodaySheet).
 // Каждый сегмент — нативная кнопка с aria-label «N из 10», так что шкала
 // доступна с клавиатуры и экранным читалкам без дополнительной обвязки.
-
 
 interface Props {
   value: number | undefined;
@@ -31,7 +31,7 @@ export function NeedScale({ value, hue, onChange, label, size = 'md', yesterday 
           aria-label={`${n} из 10`}
           aria-pressed={n === value}
           className={'ns-seg' + (isSegmentFilled(n, value) ? ' is-on tone-fill' : '') + (n === yesterday ? ' is-yesterday' : '')}
-          onClick={() => onChange(n)}
+          onClick={() => { haptic.tap(); onChange(n); }}
         />
       ))}
     </div>

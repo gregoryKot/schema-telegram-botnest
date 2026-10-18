@@ -14,6 +14,7 @@ import { HistoryEmpty } from './history/HistoryEmpty';
 import { HistoryDayView } from './history/HistoryDayView';
 import { HistoryWeekView } from './history/HistoryWeekView';
 import '../styles/sheet-diary.css';
+import { ExternalLink } from '../host/ExternalLink';
 
 interface Props {
   needs: Need[];
@@ -36,9 +37,7 @@ export function HistoryView({ needs, history, currentRatings, childhoodRatings =
   const tr = useTr();
   const contact = getTherapistContact();
   // Терапевту не предлагаем запись к самому себе (null); один элемент на оба блока.
-  const bookingLink = contact.isTherapist ? null : (
-    <a href={contact.bookingUrl} target="_blank" rel="noreferrer" className="ds-link">{BOOKING_CTA_LABEL}</a>
-  );
+  const bookingLink = contact.isTherapist ? null : <ExternalLink href={contact.bookingUrl} className="ds-link">{BOOKING_CTA_LABEL}</ExternalLink>;
   const [selectedIdx, setSelectedIdx] = useState(0);
   const [subView, setSubView] = useState<'day' | 'week'>('day');
   const dateBtnRefs = useRef<(HTMLButtonElement | null)[]>([]);

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { useTr } from '../utils/addressForm';
 import { BottomSheetShell } from './BottomSheetShell';
+import { ExternalLink } from '../host/ExternalLink';
 import '../styles/sheet-tasks.css';
 
 // Periodic in-app donate nudge (like a soft onboarding reminder). Shows at most
@@ -49,9 +50,8 @@ function DonateNudgeSheet({ onClose }: { onClose: () => void }) {
         <p className="sk-nudge-text">
           {tr('«Всё по схеме» бесплатное и без рекламы. Если оно тебе помогает — поддержи развитие любой суммой. Это правда помогает.', '«Всё по схеме» бесплатное и без рекламы. Если оно вам помогает — поддержите развитие любой суммой. Это правда помогает.')}
         </p>
-        <a href="/donate" onClick={close} className="ds-btn sk-wide-btn sk-nudge-link">
-          Поддержать
-        </a>
+        <ExternalLink href="/donate" onClick={close} className="ds-btn sk-wide-btn sk-nudge-link">
+          Поддержать</ExternalLink>
         <button onClick={close} className="ds-link sk-nudge-later">
           Позже
         </button>

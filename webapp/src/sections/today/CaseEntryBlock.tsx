@@ -3,21 +3,14 @@ import { api } from '../../api';
 import type { UserProfile } from '../../types';
 import { CaseEntryCard } from './CaseEntryCard';
 import { OnboardingWidget } from './OnboardingWidget';
+import { HomeScreenOfferCard } from '../../components/HomeScreenOfferCard';
 
 // Ленивые чанки (по образцу SchemaEx/ModeEx выше в TodaySection.tsx и
 // параллельного схлопывания в schema-miniapp, правило CLAUDE.md про
 // бандл-храповик): десять экранов потока и карта себя открываются по явному
 // тапу, а не при каждом заходе на /today — не должны утяжелять чанк раздела.
-const CaseFlowScreen = lazy(() =>
-  import('../../components/caseFlow/CaseFlowScreen').then((m) => ({
-    default: m.CaseFlowScreen,
-  })),
-);
-const SelfMapOverlay = lazy(() =>
-  import('../../components/selfMap/SelfMapOverlay').then((m) => ({
-    default: m.SelfMapOverlay,
-  })),
-);
+const CaseFlowScreen = lazy(() => import('../../components/caseFlow/CaseFlowScreen').then((m) => ({ default: m.CaseFlowScreen })));
+const SelfMapOverlay = lazy(() => import('../../components/selfMap/SelfMapOverlay').then((m) => ({ default: m.SelfMapOverlay })));
 
 /**
  * Точка входа в разбор случая на /today + условный показ онбординга
@@ -82,6 +75,8 @@ export function CaseEntryBlock({
           onOpenChildhoodWheel={onOpenChildhoodWheel}
         />
       )}
+
+      <HomeScreenOfferCard />
 
       {showFlow && (
         <Suspense fallback={null}>
