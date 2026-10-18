@@ -1349,7 +1349,7 @@
   "src/infra/env-registry.entries.infra.ts": 51,
   "src/infra/env-registry.entries.platform.ts": 26,
   "src/infra/env-registry.entries.telegram.ts": 63,
-  "src/infra/env-registry.entries.ts": 19,
+  "src/infra/env-registry.entries.ts": 21,
   "src/infra/env-registry.secret.ts": 34,
   "src/infra/env-registry.ts": 93,
   "src/infra/env-registry.username.ts": 9,

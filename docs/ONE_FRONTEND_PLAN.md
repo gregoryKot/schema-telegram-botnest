@@ -53,10 +53,13 @@
 
 ### Этап 2. Входы: ярлыки, ссылки-приглашения, бот
 
-- [ ] Серверный редирект `/app/*` → `/today` с переносом `?startapp=`,
-  `?section=`, `?from=` (ярлыки старых установок и `MINIAPP_URL`).
-- [ ] Заглушка `/app/sw.js`, которая снимает себя и чистит кэши: у давно не
-  открывавших мог остаться старый SW с прекэшем `/app/`.
+- [x] Серверный редирект `/app/*` → `/today` с переносом `?startapp=`,
+  `?section=`, `?from=` (ярлыки старых установок и `MINIAPP_URL`). Сделан за
+  env-флагом `UNIFIED_FRONTEND` (`src/unified-frontend.middleware.ts`, 302),
+  по умолчанию выключен; включается на этапе 5.
+- [x] Заглушка `/app/sw.js`, которая снимает себя и чистит кэши: у давно не
+  открывавших мог остаться старый SW с прекэшем `/app/`. Отдаётся тем же
+  middleware за флагом `UNIFIED_FRONTEND` (`src/unified-frontend.sw-stub.ts`).
 - [ ] Сайт читает `getHost().startParam()` (веб-адаптер уже умеет
   `?startapp=`/`?start_param=`, `shared/src/host/web.ts:77`) и показывает экран
   согласия для `pair_*`/`therapy_*` (`JoinConfirmSheet`, `joinConfirmFailText`);
@@ -108,6 +111,8 @@
 
 - [ ] URL Mini App у бота (BotFather) и у MAX → кабинет сайта; кнопки `web_app`
   бота → `MINIAPP_URL` указывает на кабинет.
+- [ ] Включить `UNIFIED_FRONTEND=1` в env прода (редирект `/app/*` → `/today`
+  и заглушка `/app/sw.js`).
 - [ ] Неделя-две наблюдения: блок «Вход в мессенджере» в `/stats`, события
   `auth_rejected`, отчёты `useAuthFailureReport`, `client-errors`.
 

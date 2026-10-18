@@ -34,6 +34,7 @@ import {
   practiceDomainMiddleware,
   PRACTICE_ALIAS_HOSTS,
 } from './practice-domain.middleware';
+import { configureUnifiedFrontend } from './unified-frontend.middleware';
 import { practiceIndexHtml } from './practice-index-html';
 import { SiteContentModule } from './site-content/site-content.module';
 import { DbOutageMonitorService } from './infra/db-outage.service';
@@ -95,16 +96,15 @@ export class AppModule implements NestModule {
     const indexPath = join(__dirname, '..', 'webapp', 'dist', 'index.html');
     const html = existsSync(indexPath) ? readFileSync(indexPath, 'utf8') : null;
 
-    // Первым: 301 kotlarewski.ru → .gr + домен-зависимые sitemap/robots
-    // практики (см. practice-domain.middleware.ts). Метод — ALL, не GET:
-    // правило №19 («визитка отдаёт только себя») касается и записи. До аудита
-    // 2026-10 стоял GET, и POST/PUT/PATCH/DELETE на kotlarewski.gr доходили до
-    // любой ручки, включая /api/auth/** (куки и CSRF-модель рассчитаны на один
-    // хост, алиас не должен принимать запись вне своего allow-list).
+    // Первым: 301 kotlarewski.ru → .gr + sitemap/robots практики. Метод ALL,
+    // не GET: правило №19 («визитка отдаёт только себя») касается и записи —
+    // до аудита 2026-10 POST/PUT/PATCH/DELETE на kotlarewski.gr доходили до
+    // любой ручки, включая /api/auth/** (CSRF-модель рассчитана на один хост).
     consumer
       .apply(practiceDomainMiddleware)
       .forRoutes({ path: '{*path}', method: RequestMethod.ALL });
 
+    configureUnifiedFrontend(consumer); // /app/* → /today за флагом
     consumer
       .apply((req: Request, res: Response, next: () => void) => {
         if (!html) return next();
