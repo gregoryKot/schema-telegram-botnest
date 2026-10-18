@@ -9,7 +9,6 @@
 import { lazy, Suspense, type MutableRefObject } from 'react';
 import type { NavigateFunction } from 'react-router-dom';
 import { ErrorBoundary } from '../ErrorBoundary';
-import { MobileAppBanner } from '../MobileAppBanner';
 import { ScreenSkeleton } from '../Skeleton';
 import type { Need } from '../../types';
 import type { TherapyClientSummary, UserId } from '../../api';
@@ -89,7 +88,6 @@ export function AppSections({
     {/* Regular sections */}
     {!therapistMode && (
       <div className="page animate-fade" key={section}>
-        <MobileAppBanner />
         {section === 'today' && (
           <TodaySection
             needs={needs}
