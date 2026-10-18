@@ -13,6 +13,9 @@ import { useTaskActions } from './today/useTaskActions';
 import { CrisisBlock } from './practice/CrisisBlock';
 import { HereAndNowBlock } from './practice/HereAndNowBlock';
 import { PracticeTopRow, HERE_BLOCK_ID, HELP_BLOCK_ID } from './practice/PracticeTopRow';
+import { PracticeHeader } from './practice/PracticeHeader';
+import { PhoneHelpRows } from './practice/PhoneHelpRows';
+import { useIsPhone } from '../hooks/useIsPhone';
 import { ExerciseLibrary } from './practice/ExerciseLibrary';
 import { TaskRow } from './practice/TaskRow';
 import { AllGoalsOverlay } from './practice/AllGoalsOverlay';
@@ -44,6 +47,7 @@ interface Props {
 
 export function PracticeSection({ onOpenChildhoodWheel, onOpenPractices, onOpenPlans, onOpenTracker, onOpenDiaries, onOpenSchema, refreshKey, onTasksChanged }: Props) {
   const tr = useTr();
+  const phone = useIsPhone();
   const location = useLocation();
   const childhoodDone = !!localStorage.getItem(CHILDHOOD_DONE_KEY);
 
@@ -139,27 +143,21 @@ export function PracticeSection({ onOpenChildhoodWheel, onOpenPractices, onOpenP
   const myGoals        = tasks.filter(t => t.assignedBy === null  && !t.doneToday);
 
   return (
-    <div className="ds-page cp-page animate-fade">
+    <div className={'ds-page cp-page animate-fade' + (phone ? ' cp-page--phone' : '')}>
 
-      <div>
-        <div className="ds-eyebrow">Практика</div>
-        <h1 className="ds-h1">Упражнения <i>и задания</i></h1>
-        <p className="ds-sub" style={{ fontSize: 15, marginTop: 12 }}>
-          {tr('Восемь практик схема-терапии плюс твои личные цели.', 'Восемь практик схема-терапии плюс ваши личные цели.')}
-        </p>
-        {sessionBanner && (
-          <div className="ds-sub" style={{ marginTop: 8, color: sessionBanner.isToday ? 'var(--ok-ink)' : undefined }}>
-            {sessionBanner.isToday ? '● Сегодня встреча' : `Следующая встреча: ${sessionBanner.label}`}
-            {sessionBanner.partnerName && <span> · с {sessionBanner.partnerName}</span>}
-          </div>
-        )}
-      </div>
+      <PracticeHeader phone={phone} banner={sessionBanner} />
 
-      <PracticeTopRow onCrisis={() => setShowFlashcard(true)} />
-
-      <div id={HERE_BLOCK_ID} className="cp-block"><HereAndNowBlock /></div>
-
-      <div id={HELP_BLOCK_ID} className="cp-block"><CrisisBlock /></div>
+      {phone ? (
+        <div id={HERE_BLOCK_ID} className="cp-block">
+          <HereAndNowBlock compact extraRows={<PhoneHelpRows onSteps={() => setShowFlashcard(true)} />} />
+        </div>
+      ) : (
+        <>
+          <PracticeTopRow onCrisis={() => setShowFlashcard(true)} />
+          <div id={HERE_BLOCK_ID} className="cp-block"><HereAndNowBlock /></div>
+          <div id={HELP_BLOCK_ID} className="cp-block"><CrisisBlock /></div>
+        </>
+      )}
 
       {(therapistTasks.length > 0 || taskError) && (
         <section className="cp-block">
@@ -180,7 +178,7 @@ export function PracticeSection({ onOpenChildhoodWheel, onOpenPractices, onOpenP
         </section>
       )}
 
-      <ExerciseLibrary stats={stats} onOpen={id => { setSchemaInitialId(undefined); setOpenEx(id); }} />
+      <ExerciseLibrary phone={phone} stats={stats} onOpen={id => { setSchemaInitialId(undefined); setOpenEx(id); }} />
 
       <section className="cp-block">
         <div className="ds-head-row"><h3 className="ds-h2">В трудный момент</h3></div>
