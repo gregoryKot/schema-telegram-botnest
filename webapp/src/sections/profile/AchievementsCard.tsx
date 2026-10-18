@@ -7,7 +7,6 @@ interface Props { achievements: Achievement[]; onOpen: () => void }
 
 export function AchievementsCard({ achievements, onOpen }: Props) {
   const earned = achievements.filter(a => a.earned).length;
-  const rest = achievements.filter(a => !a.earned && ACHIEVEMENT_META[a.id]).length;
   return (
     <section {...pressable(onOpen)} className="ds-card ds-card--hover cpf-card" style={hueStyle(PROFILE_HUE)}>
       <div className="ds-head-row">
@@ -26,8 +25,6 @@ export function AchievementsCard({ achievements, onOpen }: Props) {
             </div>
           );
         })}
-        {/* Телефон: неполученные свёрнуты в одну плитку (css), как в мини-аппе. */}
-        {rest > 0 && <div className="cpf-ach cpf-ach-more">ещё {rest}</div>}
       </div>
     </section>
   );

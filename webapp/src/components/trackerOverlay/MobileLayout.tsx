@@ -1,10 +1,9 @@
-import { MobileScale } from './MobileScale';
+import { NeedScalePanel } from './NeedScalePanel';
 import { NeedExamples } from './NeedExamples';
 import { hueStyle, NEED_HUE } from '../../lib/tone';
 import type { NeedId } from '../../../../shared/src/needs/types';
 import type { LayoutProps } from './types';
-import '../../styles/sheet-tracker-mobile.css';
-/** Трекер на телефоне: шкала и «Далее» в первом экране; вопрос дня и примеры — ниже шкалы. */
+
 export function MobileLayout({
   need,
   value,
@@ -17,7 +16,6 @@ export function MobileLayout({
   onTS,
   onTE,
   topbar,
-  onboarding,
   footer,
   steps,
   detailSheet,
@@ -30,40 +28,42 @@ export function MobileLayout({
     <div className="tk2-overlay" onTouchStart={onTS} onTouchEnd={onTE}>
       {topbar}
       <div className="tk2-body">
-        <div className="tkm-inner" style={hueStyle(hue)}>
-          {onboarding}
-          <p className="tkm-intro">
+        <div className="tk2-inner" style={hueStyle(hue)}>
+          <p className="ds-sub tk2-intro">
             Пять базовых эмоциональных потребностей — из схема-терапии. Через 3–5 дней оценки показывают, что питает,
             а что истощает.
           </p>
-          <div className="tkm-head">
-            {steps}
-            <button type="button" onClick={() => setDetailNeed(need)} className="tkm-pill">
-              <span className="tkm-pill-name">{needName}</span>
-              <span className="tkm-pill-i" aria-hidden="true">ⓘ</span>
-            </button>
-            <div className="tkm-sub tone-text">
+          <div className="ds-head-row">
+            <div className="ds-eyebrow tk2-sub tone-text">
               <span className="ds-dot tone-fill" />
               <span>{extra?.subtitle ?? ''}</span>
             </div>
-            {extra?.desc && <p className="tkm-desc">{extra.desc}</p>}
+            {steps}
           </div>
-          <MobileScale
-            value={value}
-            hue={hue}
-            label={needName}
-            yesterday={yesterday}
-            delta={delta}
-            onChange={(v) => handleChange(need.id, v)}
-          />
-          <section className="tkm-q">
+          <div>
+            <button onClick={() => setDetailNeed(need)} className="tk2-name">
+              {needName}
+            </button>
+            {extra?.desc && <p className="tk2-desc">{extra.desc}</p>}
+          </div>
+          <section className="ds-card">
             <div className="ds-label">вопрос дня</div>
-            <p className="tk2-question tkm-q-text">{extra?.question ?? ''}</p>
+            <p className="tk2-question">{extra?.question ?? ''}</p>
           </section>
-          <details className="tkm-ex">
-            <summary>Что считается</summary>
+          <section className="ds-card">
+            <NeedScalePanel
+              value={value}
+              hue={hue}
+              label={needName}
+              yesterday={yesterday}
+              delta={delta}
+              onChange={(v) => handleChange(need.id, v)}
+            />
+          </section>
+          <section className="ds-card">
+            <div className="ds-label">что считается</div>
             <NeedExamples examples={extra?.examples ?? []} />
-          </details>
+          </section>
         </div>
       </div>
       {footer}

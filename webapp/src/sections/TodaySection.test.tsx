@@ -376,28 +376,6 @@ describe('TodaySection — индекс дня: спарклайн из реал
   });
 });
 
-describe('TodaySection — сбой API отдал не массив (`{}`): экран не падает', () => {
-  it('history = {} — индекс и «—» за неделю вместо «e is not iterable»', async () => {
-    mockApi.history.mockResolvedValue({});
-    mockApi.getSchemaDiary.mockResolvedValue({});
-    mockApi.getTasks.mockResolvedValue({});
-    renderSection({ ratings: { attachment: 8, autonomy: 6, expression: 4, play: 10, limits: 2 } });
-    await screen.findByText('6.0');
-    expect(await screen.findByText('— за неделю')).toBeTruthy();
-    expect(screen.getByText('Индекс сегодня')).toBeTruthy();
-  });
-
-  it('дельта недели, округлённая до нуля, показывается без минуса', async () => {
-    const days = [
-      ...Array.from({ length: 7 }, (_, i) => ({ date: daysAgoStr(13 - i), ratings: { attachment: 5.04 } })),
-      ...Array.from({ length: 7 }, (_, i) => ({ date: daysAgoStr(6 - i), ratings: { attachment: 5 } })),
-    ];
-    mockApi.history.mockResolvedValue(days);
-    renderSection();
-    await screen.findByText('0.0 за неделю');
-  });
-});
-
 describe('TodaySection — терапевт: карточка «Встреча с терапевтом»', () => {
   it('встреча завтра — заголовок «Завтра · время», имя и кнопка «Написать» видны', async () => {
     const tomorrow = new Date(Date.now() + 24 * 3600 * 1000).toISOString();

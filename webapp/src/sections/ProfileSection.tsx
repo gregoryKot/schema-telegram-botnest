@@ -7,7 +7,7 @@ import { Skeleton } from '../components/Skeleton';
 import { useTr } from '../utils/addressForm';
 import { AchievementDetail } from '../components/AchievementDetail';
 import { pressable } from '../utils/a11y';
-import '../styles/client-profile.css'; import '../styles/client-profile-mobile.css';
+import '../styles/client-profile.css';
 import { DeleteAccountDialog } from './profile/DeleteAccountDialog';
 import { ProfileHeader } from './profile/ProfileHeader';
 import { ProfileCounters } from './profile/ProfileCounters';
@@ -88,7 +88,7 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
 
   return (
     <div className="ds-page cpf-page animate-fade">
-      <ProfileHeader displayName={displayName} totalDays={totalDays} onOpenSettings={onOpenSettings} />
+      <ProfileHeader displayName={displayName} totalDays={totalDays} />
 
       {!ready && (
         <div className="cpf-skeleton">
@@ -104,7 +104,7 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
 
       {ready && (
         <>
-          <section {...pressable(() => setJourneyOpen(true))} className="ds-card ds-card--hover cpf-card cpf-journey">
+          <section {...pressable(() => setJourneyOpen(true))} className="ds-card ds-card--hover cpf-card">
             <div className="ds-head-row">
               <h2 className="ds-h3">Мой путь</h2>
               <span className="ds-sub">→</span>

@@ -155,7 +155,7 @@ CLAUDE.md. Не удалять, но и не считать списком за�
 - **Хост определяется после первого рендера.** `telegram-web-app.js` в
   `webapp/index.html` грузится `async`; `initHost`, `useHostId` и `useSafeTop`
   перечитывают хост по таймерам `LATE_HOST_READS_MS`, а `hideInstallOffers()`
-  в `AppInstallSection` читает его один раз при рендере —
+  в `MobileAppBanner`/`AppInstallSection` читает его один раз при рендере —
   если SDK доедет позже баннера, тот успеет мигнуть. Список задержек
   продублирован в `webapp/src/host/initHost.ts` и `shared/src/host/safezone.ts`
   (правило №4: вынести одну константу в `shared/src/host`).

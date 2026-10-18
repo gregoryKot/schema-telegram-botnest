@@ -2,7 +2,7 @@
 // / web_banner_dismiss). 'cabinet_full' и 'mode_map' — баннеры «полная
 // версия на сайте» в мини-аппе (schema-miniapp/src/utils/webBanner.ts);
 // 'mobile_app' — баннер «Открыть приложение» на мобильной версии сайта
-// (убран из кабинета 2026-10, id остаётся для старых строк). При добавлении баннера
+// (webapp/src/components/MobileAppBanner.tsx). При добавлении баннера
 // синхронь список с соответствующим фронтом. Вынесено из
 // analytics.constants.ts отдельным файлом (правило №10, тот же приём, что у
 // signup-sources.constants.ts).

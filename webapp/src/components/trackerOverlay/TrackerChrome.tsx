@@ -3,8 +3,6 @@ import { hueStyle, NEED_HUE } from '../../lib/tone';
 import type { NeedId } from '../../../../shared/src/needs/types';
 import { hitboxStyle } from '../../utils/hitbox';
 import { GlyphArrowLeft } from '../exercises/ExScreen';
-import { savedLabel } from './savedLabel';
-import { TrackerActions } from './TrackerActions';
 
 const needHue = (id: string) => NEED_HUE[id as NeedId];
 
@@ -36,6 +34,19 @@ export function TrackerSteps({
   );
 }
 
+function IconBtn({ label, onClick, children }: { label: string; onClick: () => void; children: React.ReactNode }) {
+  const hb = hitboxStyle(30, 30, 44);
+  return (
+    <button onClick={onClick} aria-label={label} style={hb.outer}>
+      <span className="tk2-ico" style={hb.inner}>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          {children}
+        </svg>
+      </span>
+    </button>
+  );
+}
+
 export function TrackerTopbar({
   isBackfill,
   isDesktop,
@@ -60,7 +71,22 @@ export function TrackerTopbar({
         <div className="ds-label tk2-bar-title">{isBackfill ? `Оценки за ${date}` : 'Трекер потребностей'}</div>
       )}
       <div className="tk2-bar-actions">
-        <TrackerActions goBack={goBack} onOpenNote={onOpenNote} onOpenHistory={onOpenHistory} />
+        {onOpenNote && (
+          <IconBtn label="Заметка" onClick={onOpenNote}>
+            <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
+          </IconBtn>
+        )}
+        {onOpenHistory && (
+          <IconBtn
+            label="История"
+            onClick={() => {
+              onOpenHistory();
+              goBack();
+            }}
+          >
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+          </IconBtn>
+        )}
       </div>
     </div>
   );
@@ -98,7 +124,9 @@ export function TrackerFooter({
         </button>
       </div>
       <div className="ds-label tk2-foot-mid">
-        {savedLabel(lastSavedAt)}
+        {lastSavedAt
+          ? `сохранено ${lastSavedAt.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}`
+          : 'сохранено автоматически'}
       </div>
       <div className="tk2-foot-r">
         {allRated ? (

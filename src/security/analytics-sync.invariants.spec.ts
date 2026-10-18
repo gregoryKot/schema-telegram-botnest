@@ -164,14 +164,6 @@ const BACKEND_ONLY: Record<string, string> = {
     'useJourneyDelete (shared/src/journey/journeyDelete.ts) зовёт ' +
     'api.trackEvent(ENTRY_DELETED_EVENT, { type }) сразу за успешным ' +
     'удалением записи; та же причина, что у share_card',
-  home_screen_offer:
-    'шлётся не литералом trackEvent(...), а через колбэк track(...) общего ' +
-    'хука shared/src/host/useHomeScreenOffer.ts (мини-апп и карточка ' +
-    'HomeScreenOfferCard на «Сегодня» сайта, surface onboarding/today/' +
-    'settings; «Сегодня» сайта — today) и api.trackPublicEvent с лендинга ' +
-    '(AppInstallSection, surface site_landing) — та же причина, что у ' +
-    "crisis_card_shown. Единственный литерал trackEvent('home_screen_offer') " +
-    'жил в баннере кабинета MobileAppBanner, убранном 2026-10 (PR #771)',
 };
 
 describe('трипваер: имена событий фронта ⊆ allow-list бэкенда (правило №8)', () => {
@@ -222,8 +214,6 @@ describe('трипваер: имена событий фронта ⊆ allow-lis
     // нечего. 28 — entry_deleted (удаление своей записи в архиве «Мой
     // путь»): не серверное, а константное — фронт шлёт его из общего хука
     // useJourneyDelete через ENTRY_DELETED_EVENT, как share_card.
-    // 29 — home_screen_offer (2026-10): последний литерал trackEvent ушёл
-    // вместе с баннером кабинета, событие осталось на колбэке общего хука.
-    expect(Object.keys(BACKEND_ONLY).length).toBeLessThanOrEqual(29);
+    expect(Object.keys(BACKEND_ONLY).length).toBeLessThanOrEqual(28);
   });
 });

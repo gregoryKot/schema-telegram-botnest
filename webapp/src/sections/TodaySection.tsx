@@ -9,7 +9,7 @@ import { PhraseShareCard } from '../components/PhraseShareCard';
 import '../styles/client-today.css';
 const SchemaEx = lazy(() => import('../components/exercises/FlashcardEx').then(m => ({ default: m.SchemaEx })));
 const ModeEx   = lazy(() => import('../components/exercises/FlashcardEx').then(m => ({ default: m.ModeEx })));
-import { TodayHeader } from './today/TodayHeader';
+import { greeting, formatHeaderDate } from './today/helpers';
 import { dayIndex, buildHistory, weekDelta, sparkBars } from './today/model';
 import { AllTasksOverlay } from './today/AllTasksOverlay';
 import { CaseEntryBlock } from './today/CaseEntryBlock';
@@ -105,7 +105,14 @@ export function TodaySection({
   return (
     <div className="ds-page ct-page">
 
-      <TodayHeader streak={streak} firstName={firstName} onOpenSettings={onOpenAdvanced} />
+      <header>
+        <div className="ds-eyebrow">
+          {formatHeaderDate()}{streak > 0 ? ` · ${streak}-й день подряд` : ''}
+        </div>
+        <h1 className="ds-h1">
+          {greeting()}{firstName && <>, <i>{firstName}</i></>}
+        </h1>
+      </header>
 
       <div className="ct-grid">
 

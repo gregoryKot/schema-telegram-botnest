@@ -443,7 +443,7 @@ describe('LandingPage — цели Метрики', () => {
     const link = document.querySelector('a[href="https://t.me/kotlarewski"]') as HTMLAnchorElement;
     expect(link).toBeTruthy();
     // jsdom пытается «перейти» по реальной ссылке — гасим переход, тестируем
-    // только факт клика (как раньше в тесте баннера кабинета).
+    // только факт клика (как MobileAppBanner.test.tsx).
     link.addEventListener('click', (e) => e.preventDefault());
     fireEvent.click(link);
     expect(goalHits('tg_click').length).toBe(1);

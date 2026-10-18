@@ -9,14 +9,13 @@
 // что это и зачем, до первого действия — на самом пути, а не в спрятанном
 // «About». Счётчик прохождений — из реальных данных: пока он не приехал,
 // в подписи строки стоит её обычный текст, а не выдуманный ноль.
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useState } from 'react';
 import { api } from '../../api';
 import { BreathingCard } from '../../components/practice/BreathingCard';
 import { QuickPracticeSheet } from '../../components/practice/QuickPracticeSheet';
 import { practiceCountLabel } from '../../../../shared/src/practices/practiceCountLabel';
 import type { QuickPracticeId } from '../../../../shared/src/practices/quickPractices';
 import { pressable } from '../../utils/a11y';
-import { HereAndNowIntro } from './HereAndNowIntro';
 import '../../styles/client-practice.css';
 
 type Counts = Record<QuickPracticeId, number>;
@@ -34,8 +33,7 @@ const ROWS: { id: QuickPracticeId; label: string; sub: string }[] = [
   },
 ];
 
-/** compact — телефон: строки со шевроном, extraRows дописываются в список. */
-export function HereAndNowBlock({ compact = false, extraRows }: { compact?: boolean; extraRows?: ReactNode }) {
+export function HereAndNowBlock() {
   const [counts, setCounts] = useState<Counts | null>(null);
   const [active, setActive] = useState<QuickPracticeId | null>(null);
 
@@ -54,9 +52,18 @@ export function HereAndNowBlock({ compact = false, extraRows }: { compact?: bool
 
   return (
     <>
-      <HereAndNowIntro compact={compact} />
+      <div className="ds-head-row">
+        <h3 className="ds-h2">Здесь и сейчас</h3>
+      </div>
+      <p className="ds-sub" style={{ lineHeight: 1.6 }}>
+        Три коротких практики самопомощи из КПТ и ДБТ — на одну-три минуты,
+        для того момента, когда накрыло. Дыхание 4-4-6 успокаивает тело,
+        заземление по пяти чувствам возвращает в комнату, «Стоп» ставит паузу
+        между импульсом и действием. После нескольких заходов счётчик покажет,
+        какая практика выручает чаще.
+      </p>
 
-      {compact ? <div className="cp-breath"><BreathingCard /></div> : <BreathingCard />}
+      <BreathingCard />
 
       <div className="ds-label">Если нужно больше</div>
       {ROWS.map((row) => (
@@ -71,12 +78,9 @@ export function HereAndNowBlock({ compact = false, extraRows }: { compact?: bool
               {practiceCountLabel(counts?.[row.id] ?? null) ?? row.sub}
             </div>
           </div>
-          {compact
-            ? <span className="cp-chev" aria-hidden="true">›</span>
-            : <span className="ds-link">начать →</span>}
+          <span className="ds-link">начать →</span>
         </div>
       ))}
-      {extraRows}
 
       {active && (
         <QuickPracticeSheet id={active} onClose={() => setActive(null)} />

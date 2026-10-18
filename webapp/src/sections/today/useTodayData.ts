@@ -5,7 +5,8 @@ import type { UserProfile } from '../../types';
 import { MY_SCHEMA_IDS_KEY } from '../../utils/storageKeys';
 import { readLocalIds } from './helpers';
 import { useTodayDiaries } from './useTodayDiaries';
-import { cleanHistoryDays, type HistoryDays } from './safeData';
+
+type HistoryDays = Array<{ date: string; ratings: Record<string, number> }>;
 
 // Фоновые загрузки экрана «Сегодня»: профиль, три дневника, связь с терапевтом,
 // история оценок за 14 дней. Сбой источника экран не роняет — уходит в
@@ -40,7 +41,7 @@ export function useTodayData(refreshKey: number | undefined) {
     api.getTherapyRelation().then(r => { if (!ignore && r) setTherapyRelation(r); })
       .catch(() => reportClientError({ message: 'today therapy relation load failed', section: 'today' }));
 
-    api.history(14).then(days => { if (!ignore) setHistoryDays(cleanHistoryDays(days)); })
+    api.history(14).then(days => { if (!ignore) setHistoryDays(days); })
       .catch(() => reportClientError({ message: 'today history background load failed', section: 'today' }));
 
     return () => { ignore = true; };

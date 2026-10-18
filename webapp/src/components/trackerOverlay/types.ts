@@ -32,5 +32,5 @@ export interface LayoutProps {
   setDetailNeed: (n: Need) => void;
   yesterday?: number; // маркер на шкале (нет данных/бэкафилл — undefined)
   delta?: { text: string; up: boolean } | null;
-  topbar: ReactNode; footer: ReactNode; steps: ReactNode; detailSheet: ReactNode; onboarding?: ReactNode;
+  topbar: ReactNode; footer: ReactNode; steps: ReactNode; detailSheet: ReactNode;
 }

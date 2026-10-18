@@ -65,48 +65,15 @@
 .cd-grat-more { color: var(--text-faint); font-style: italic; }
 
 @media (max-width: 767px) {
-  /* Шапка как в мини-аппе: заголовок одной строкой, подпись, счётчики строкой */
-  .cd-page { gap: var(--space-16); padding-top: var(--space-16); }
-  .cd-head { flex-direction: column; align-items: stretch; gap: var(--space-8); }
-  .cd-head .ds-eyebrow { display: none; }
-  .cd-head h1 { margin: 0; font-size: 28px; line-height: 1.15; }
-  .cd-head-sub { margin-top: var(--space-4); }
-  .cd-stats { gap: var(--space-16); flex-wrap: wrap; }
-  .cd-stats > div { display: flex; align-items: baseline; gap: var(--space-6); }
-  .cd-stat { font-size: 20px; }
-  .cd-stat span { font-size: 14px; }
-  .cd-stat-label { margin-top: 0; font-size: 13px; color: var(--text-muted); }
-
-  /* Три кнопки «записать» в ряд по ширине экрана, ничего не обрезается */
-  .cd-quick { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-8); }
-  .cd-quick-card { min-height: 96px; padding: var(--space-12) var(--space-8); gap: var(--space-4); border-radius: var(--r-16); }
-  .cd-quick-eyebrow { font-size: 11px; letter-spacing: 0; text-transform: none; line-height: 1.2; overflow-wrap: break-word; }
-  .cd-quick-title { font-size: 16px; line-height: 1.15; overflow-wrap: anywhere; }
+  .cd-head h1 { font-size: 32px; }
+  .cd-stat { font-size: 30px; }
+  .cd-quick { display: flex; overflow-x: auto; scrollbar-width: none; margin: 0 -16px; padding: 0 16px; }
+  .cd-quick::-webkit-scrollbar { display: none; }
+  .cd-quick-card { flex: 0 0 150px; min-height: 124px; padding: 14px; gap: 6px; }
+  .cd-quick-title { font-size: 19px; line-height: 1.15; }
   .cd-quick-desc, .cd-quick-foot span { display: none; }
-  .cd-quick-foot { font-size: 13px; }
-
-  /* Чипы-фильтры: мягкий акцент вместо чёрной заливки, лента скроллится от края до края */
-  .cd-bar .ds-seg {
-    display: flex; flex: 0 0 auto; box-sizing: border-box; max-width: none;
-    width: calc(100% + 2 * var(--space-16)); margin: 0 calc(-1 * var(--space-16)); padding: 0 var(--space-16);
-    background: none; border-radius: 0; gap: var(--space-8);
-    scroll-snap-type: x proximity; scroll-padding: 0 var(--space-16);
-  }
-  .cd-bar .ds-seg-btn {
-    flex: 0 0 auto; scroll-snap-align: start; padding: 0 var(--space-12); border-radius: var(--r-20);
-    background: var(--surface-2); color: var(--text-sub);
-  }
-  .cd-bar .ds-seg-btn.is-active { background: color-mix(in srgb, var(--accent) 14%, transparent); color: var(--accent); }
-  .cd-bar .ds-count { margin-left: var(--space-4); padding: 0; background: none; font-size: 12px; color: inherit; opacity: .75; }
-
-  /* Записи: бейдж и время в одной строке, заголовок на всю ширину под ним */
-  .cd-entry-head { flex-wrap: wrap; row-gap: var(--space-4); }
-  .cd-entry-head .ds-chip { order: 1; }
-  .cd-entry-time { order: 2; margin-left: auto; }
-  .cd-entry-title { order: 3; flex: 0 0 100%; }
-
-  .cd-day { grid-template-columns: minmax(0, 1fr); gap: var(--space-8); }
-  .cd-day > div:first-child { display: flex; align-items: baseline; gap: var(--space-8); }
+  .cd-day { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+  .cd-day > div:first-child { display: flex; align-items: baseline; gap: 8px; }
   .cd-day-date { font-size: 22px; }
 }
 

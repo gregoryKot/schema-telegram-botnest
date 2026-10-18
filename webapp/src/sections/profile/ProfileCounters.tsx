@@ -8,7 +8,7 @@ export function ProfileCounters({ streak, totalDays, diaryCount, ysqCount }: Pro
     [ysqCount, 'прохождений теста'],
   ];
   return (
-    <section className="cpf-progress">
+    <section>
       <div className="ds-label cpf-label">Прогресс</div>
       <div className="cpf-counters">
         {items.map(([n, l], i) => (
