@@ -33,7 +33,7 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
   const pat = usePatternLayer();
   const mobile = useIsMobile();
   const [tab, setTab] = useState(readStoredTab);
-  useEffect(() => writeStoredTab(tab), [tab]);
+  useEffect(() => { writeStoredTab(tab); }, [tab]);
   const show = visibleBlocks(tab, mobile);
   const startTest = () => onOpenSchema({ startTest: true });
 

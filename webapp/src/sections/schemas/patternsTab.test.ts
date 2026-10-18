@@ -28,13 +28,13 @@ describe('запоминание вкладки', () => {
     expect(readStoredTab()).toBe('schemas');
   });
   it('записанное читается обратно', () => {
-    writeStoredTab('needs');
+    expect(writeStoredTab('needs')).toBe(true);
     expect(readStoredTab()).toBe('needs');
   });
   it('хранилище бросает — ни чтение, ни запись не падают', () => {
     vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => { throw new Error('blocked'); });
     vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => { throw new Error('blocked'); });
     expect(readStoredTab()).toBe('schemas');
-    expect(() => writeStoredTab('modes')).not.toThrow();
+    expect(writeStoredTab('modes')).toBe(false);
   });
 });

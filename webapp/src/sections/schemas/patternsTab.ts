@@ -32,6 +32,12 @@ export function readStoredTab(): PatternsTab {
   } catch { return 'schemas'; }
 }
 
-export function writeStoredTab(tab: PatternsTab): void {
-  try { localStorage.setItem(PATTERNS_LAST_TAB_KEY, tab); } catch { /* приватный режим — вкладка не запоминается */ }
+/** false — хранилище недоступно (приватный режим): вкладка просто не запомнится. */
+export function writeStoredTab(tab: PatternsTab): boolean {
+  try {
+    localStorage.setItem(PATTERNS_LAST_TAB_KEY, tab);
+    return true;
+  } catch {
+    return false;
+  }
 }
