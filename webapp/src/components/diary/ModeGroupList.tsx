@@ -1,3 +1,4 @@
+import { haptic } from '../../haptic';
 import { GlyphCheck } from '../exercises/ExScreen';
 import { MODE_GROUPS } from '../../schemaTherapyData';
 import { pressable } from '../../utils/a11y';
@@ -20,15 +21,12 @@ export function ModeGroupList({
     <>
       {MODE_GROUPS.map((g) => (
         <div key={g.id} className="sd-group" style={hueStyle(MODE_GROUP_HUE[g.id])}>
-          <div className="ds-label sd-group-label">
-            <i className="ds-dot tone-fill" />
-            {g.group}
-          </div>
+          <div className="ds-label sd-group-label"><i className="ds-dot tone-fill" />{g.group}</div>
           {g.items.map((m) => (
             <div
               key={m.id}
               className={'ds-card ds-card--row ds-card--hover sd-mode-card' + (modeId === m.id ? ' is-selected' : '')}
-              {...pressable(() => onPick(m.id))}
+              {...pressable(() => { haptic.select(); onPick(m.id); })}
             >
               <div className="sd-mode-body">
                 <div className="sd-mode-name">{m.name}</div>

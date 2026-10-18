@@ -7,6 +7,7 @@ import { ShareCardSheet } from '../../share/ShareCardSheet';
 import { appInviteShare } from '../../../../shared/src/share/cards/inviteShare';
 import { SSection, SRow } from './ui';
 import { ExportSummaryModal } from './ExportSummaryModal';
+import { ExternalLink } from '../../host/ExternalLink';
 
 // Раздел «Поделиться»: карточка-приглашение и сводка для терапевта.
 export function ShareSection() {
@@ -42,11 +43,7 @@ export function ShareSection() {
       <SSection id="s-share" label="Поделиться">
         <SRow title="Пригласить друга" sub="Карточка со ссылкой на бота" onClick={() => setAppInvite(true)} />
         <SRow title="Сводка для терапевта" sub="Данные за 30 дней" onClick={openExport} />
-        {exportError && (
-          <div className="st-err">
-            {tr('Не удалось собрать сводку. Проверь связь и попробуй ещё раз', 'Не удалось собрать сводку. Проверьте связь и попробуйте ещё раз')}
-          </div>
-        )}
+        {exportError && <div className="st-err">{tr('Не удалось собрать сводку. Проверь связь и попробуй ещё раз', 'Не удалось собрать сводку. Проверьте связь и попробуйте ещё раз')}</div>}
       </SSection>
       {appInvite && <ShareCardSheet {...appInviteShare(botShortUrl)} onClose={() => setAppInvite(false)} zIndex={400} />}
       {exportText && <ExportSummaryModal text={exportText} onClose={() => setExportText(null)} />}
@@ -63,10 +60,10 @@ export function AboutSection() {
           Инструмент самопознания на основе схема-терапии: трекер потребностей, дневники схем и режимов, тесты, практики и пространство для работы с терапевтом.
         </p>
         <div className="st-links">
-          <a href="https://t.me/SchemeHappens" target="_blank" rel="noopener noreferrer">Канал о схема-терапии → <b>@SchemeHappens</b></a>
-          <a href="https://t.me/kotlarewski" target="_blank" rel="noopener noreferrer">Записаться на сессию → <b>@kotlarewski</b></a>
+          <ExternalLink href="https://t.me/SchemeHappens">Канал о схема-терапии → <b>@SchemeHappens</b></ExternalLink>
+          <ExternalLink href="https://t.me/kotlarewski">Записаться на сессию → <b>@kotlarewski</b></ExternalLink>
           {/* Подписка скрыта до подключения рекуррента у Robokassa — вернуть ссылку на /subscribe, когда заработает */}
-          <a href="/donate" target="_blank" rel="noopener noreferrer">Поддержать проект → <b>разовый донат</b></a>
+          <ExternalLink href="/donate">Поддержать проект → <b>разовый донат</b></ExternalLink>
         </div>
         <div className="st-fine">Это образовательный инструмент — не медицинский и не психологический сервис.</div>
       </div>

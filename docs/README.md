@@ -85,6 +85,12 @@ CLAUDE.md. Не удалять, но и не считать списком за�
   если SDK доедет позже баннера, тот успеет мигнуть. Список задержек
   продублирован в `webapp/src/host/initHost.ts` и `shared/src/host/safezone.ts`
   (правило №4: вынести одну константу в `shared/src/host`).
+- **`ExternalLink` на iOS внутри Telegram не проверен на устройстве.** Компонент
+  (`webapp/src/host/ExternalLink.tsx`) зовёт `host.openLink`, а мини-апп в
+  `AddHomeScreenButton` отмечает, что на iOS `openLink` молча не срабатывает
+  (гейт `lastTouchTimestamp`). Проверить на живом iPhone t.me-ссылки и `/donate`
+  из настроек кабинета; если не открываются — запасной путь через якорь, как у
+  кнопки «Добавить значок».
 
 **Редизайн кабинета — хвосты** (#746, `docs/design/REDESIGN_2026-10.md`):
 - **Лендинг, визитка (`kotlarewski.gr`), статьи и админка** намеренно в старом виде

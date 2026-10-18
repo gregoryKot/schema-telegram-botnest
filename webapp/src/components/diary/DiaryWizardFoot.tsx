@@ -1,3 +1,4 @@
+import { haptic } from '../../haptic';
 import { GlyphArrowLeft, GlyphArrowRight, GlyphCheck } from '../exercises/ExScreen';
 
 // Подвал визарда дневника: Назад / ранний «Сохранить» (не проходя все шаги,
@@ -29,11 +30,7 @@ export function DiaryWizardFoot({
 }) {
   return (
     <div className="sd-foot">
-      <button
-        className="ds-btn ds-btn--secondary"
-        disabled={backDisabled}
-        onClick={onBack}
-      >
+      <button className="ds-btn ds-btn--secondary" disabled={backDisabled} onClick={() => { haptic.tap(); onBack(); }}>
         <GlyphArrowLeft /> {backLabel}
       </button>
       <span className="sd-spacer" />
@@ -55,11 +52,7 @@ export function DiaryWizardFoot({
           {saving ? 'Сохраняю…' : 'Сохранить запись'} {!saving && <GlyphCheck />}
         </button>
       ) : (
-        <button
-          className="ds-btn"
-          disabled={curRequired && !curFilled}
-          onClick={onNext}
-        >
+        <button className="ds-btn" disabled={curRequired && !curFilled} onClick={() => { haptic.tap(); onNext(); }}>
           {curFilled || curRequired ? 'Дальше' : 'Пропустить'} <GlyphArrowRight />
         </button>
       )}

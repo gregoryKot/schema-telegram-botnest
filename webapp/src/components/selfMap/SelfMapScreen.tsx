@@ -1,5 +1,6 @@
 import { buildSelfMapIntro } from '../../../../shared/src/onboarding/onboardingExplainers';
 import { useMemo } from 'react';
+import { haptic } from '../../haptic';
 import { ExScreen } from '../exercises/ExScreen';
 import { SelfMapLane } from './SelfMapLane';
 import { useTr } from '../../utils/addressForm';
@@ -77,11 +78,7 @@ export function SelfMapScreen({
       </div>
 
       <div className="eyebrow u-mb10">Что дальше</div>
-      <button
-        type="button"
-        className="ex-btn ex-btn-primary"
-        onClick={() => onNextStep(step.id)}
-      >
+      <button type="button" className="ex-btn ex-btn-primary" onClick={() => { haptic.tap(); onNextStep(step.id); }}>
         {step.time ? `${step.label} · ${step.time}` : step.label}
       </button>
       {step.hint && (
