@@ -10,7 +10,7 @@ import {
 } from '../../components/PatternFrequencyList';
 import { PatternSheet } from '../../components/patternSheet/PatternSheet';
 import { usePatternStatus } from '../../components/patternSheet/usePatternStatus';
-import { schemaEntryCounts } from '../../components/patternSheet/patternStatus';
+import { schemaEntryCounts } from '../../../../shared/src/pattern/patternStatus';
 import { PatternListSkeleton } from './CatalogParts';
 import { shortName } from './utils';
 import { WeekTopSummary } from '../../utils/patternsSummary';

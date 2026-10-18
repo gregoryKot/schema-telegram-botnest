@@ -6,7 +6,7 @@ import type { Dispatch, SetStateAction } from 'react';
 import { PatternFrequencyList } from '../../components/PatternFrequencyList';
 import { PatternSheet } from '../../components/patternSheet/PatternSheet';
 import { usePatternStatus } from '../../components/patternSheet/usePatternStatus';
-import { modeEntryCounts } from '../../components/patternSheet/patternStatus';
+import { modeEntryCounts } from '../../../../shared/src/pattern/patternStatus';
 import { PatternListSkeleton } from './CatalogParts';
 import { buildModeFreqGroups } from './modeGroups';
 import { WeekTopSummary } from '../../utils/patternsSummary';

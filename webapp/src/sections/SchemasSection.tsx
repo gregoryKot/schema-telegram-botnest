@@ -1,4 +1,4 @@
-import { useState, lazy, Suspense } from 'react';
+import { useState } from 'react';
 import { SchemaPickerSheet } from '../components/SchemaPickerSheet';
 import { ModePickerSheet } from '../components/ModePickerSheet';
 import { SchemaDetailSheet } from '../components/SchemaDetailSheet';
@@ -12,8 +12,7 @@ import { SchemaMap } from './schemas/SchemaMap';
 import { ModesBlocks } from './schemas/ModesBlocks';
 import { ModeMapBanner, MyModeMapSheet } from './schemas/ModeMapBanner';
 import { NeedsBlock } from './schemas/NeedsBlock';
-
-const ModeEx = lazy(() => import('../components/exercises/FlashcardEx').then(m => ({ default: m.ModeEx })));
+import { usePatternLayer } from './schemas/usePatternLayer';
 
 interface Props {
   onOpenSchema: (opts?: { startTest?: boolean; tab?: 'needs'|'schemas'|'modes'; highlight?: string }) => void;
@@ -25,10 +24,10 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
   const d = useSchemasData();
   const [showSchemaPicker, setShowSchemaPicker] = useState(false);
   const [showModePicker, setShowModePicker] = useState(false);
-  const [introModeId, setIntroModeId] = useState<string | null>(null);
   const [detailSchemaId, setDetailSchemaId] = useState<string | null>(null);
   const [detailNeedId, setDetailNeedId] = useState<string | null>(null);
   const [showMyMap, setShowMyMap] = useState(false);
+  const pat = usePatternLayer();
 
   const allSchemaIds = [...new Set([...d.ysqSchemaIds, ...d.manualSchemaIds])];
 
@@ -58,9 +57,9 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
         />
       </div>
 
-      <MySchemasBlock loading={d.loading} ids={allSchemaIds} onAdd={() => setShowSchemaPicker(true)} onOpenSchema={setDetailSchemaId} />
+      <MySchemasBlock loading={d.loading} ids={allSchemaIds} onAdd={() => setShowSchemaPicker(true)} onOpenSchema={id => pat.openPattern('schema', id)} statusFor={pat.schemaStatusFor} />
       <SchemaMap mineIds={allSchemaIds} onOpenSchema={setDetailSchemaId} />
-      <ModesBlocks loading={d.loading} myModeIds={d.myModeIds} onAdd={() => setShowModePicker(true)} onOpenMode={setIntroModeId} />
+      <ModesBlocks loading={d.loading} myModeIds={d.myModeIds} onAdd={() => setShowModePicker(true)} onOpenMode={pat.openModeEx} onOpenPattern={id => pat.openPattern('mode', id)} />
       {d.myMapCount > 0 && <ModeMapBanner count={d.myMapCount} onOpen={() => setShowMyMap(true)} />}
       <NeedsBlock childhoodRatings={childhoodRatings} onOpenChildhoodWheel={onOpenChildhoodWheel} onOpenNeed={setDetailNeedId} />
 
@@ -70,11 +69,7 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
       {showModePicker && (
         <ModePickerSheet selected={d.myModeIds} onSave={d.saveModes} onClose={() => setShowModePicker(false)} />
       )}
-      {introModeId && (
-        <div className="u-sheet">
-          <Suspense fallback={null}><ModeEx onBack={() => setIntroModeId(null)} initialModeId={introModeId} /></Suspense>
-        </div>
-      )}
+      {pat.layer}
       {detailSchemaId && <SchemaDetailSheet schemaId={detailSchemaId} onClose={() => setDetailSchemaId(null)} />}
       {detailNeedId && (
         <NeedDetailSheet

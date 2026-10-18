@@ -4,14 +4,11 @@
 // Здорового Взрослого и фолбэк-цепочка — shared/src/mode/healthyAdultHints.ts,
 // совет по схеме — ysqSchemasContent.ts (через ysqSchemas.ts), потребность —
 // shared/src/needs/needData.ts. Здесь только склейка уже выверенного контента.
-import { healthyAdultHint } from '../../../../shared/src/mode/healthyAdultHints';
-import { getModeCard } from '../../../../shared/src/mode/modeCards';
-import {
-  getYsqSchemas,
-  SCHEMA_NAME_TO_ID,
-} from '../../../../shared/src/hooks/ysqSchemas';
-import { getNeedData } from '../../../../shared/src/needs/needData';
-import type { AddressForm } from '../../../../shared/src/utils/addressForm';
+import { healthyAdultHint } from '../mode/healthyAdultHints';
+import { getModeCard } from '../mode/modeCards';
+import { getYsqSchemas, SCHEMA_NAME_TO_ID } from '../hooks/ysqSchemas';
+import { getNeedData } from '../needs/needData';
+import type { AddressForm } from '../utils/addressForm';
 
 // SCHEMA_NAME_TO_ID хранит name → id (нужен для дельты «изменилось с прошлого
 // прохождения»); PatternSheet приходит с id, поэтому здесь обратный поиск.

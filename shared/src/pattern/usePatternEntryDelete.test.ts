@@ -6,16 +6,14 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
 import { useState } from 'react';
 import { usePatternEntryDelete } from './usePatternEntryDelete';
-import type { SchemaDiaryEntry, ModeDiaryEntry } from '../../types';
+import type { SchemaDiaryEntry, ModeDiaryEntry } from '../types';
 
 const deleteSchemaDiary = vi.fn();
 const deleteModeDiary = vi.fn();
-vi.mock('../../api', () => ({
-  api: {
-    deleteSchemaDiary: (...a: unknown[]) => deleteSchemaDiary(...a),
-    deleteModeDiary: (...a: unknown[]) => deleteModeDiary(...a),
-  },
-}));
+const api = {
+  deleteSchemaDiary: (...a: unknown[]) => deleteSchemaDiary(...a),
+  deleteModeDiary: (...a: unknown[]) => deleteModeDiary(...a),
+};
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -37,6 +35,7 @@ function setup() {
   return renderHook(() => {
     const [schemaEntries, setSchemaEntries] = useState([ENTRY]);
     const deleteEntry = usePatternEntryDelete({
+      api,
       kind: 'schema',
       schemaEntries,
       setSchemaEntries,
@@ -61,6 +60,7 @@ function setupMode() {
   return renderHook(() => {
     const [modeEntries, setModeEntries] = useState([MODE_ENTRY]);
     const deleteEntry = usePatternEntryDelete({
+      api,
       kind: 'mode',
       schemaEntries: [],
       setSchemaEntries: undefined,

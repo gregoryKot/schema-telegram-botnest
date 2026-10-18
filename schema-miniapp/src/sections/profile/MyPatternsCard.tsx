@@ -15,12 +15,12 @@ import { usePatternStatus } from '../../components/patternSheet/usePatternStatus
 import {
   schemaEntryCounts,
   modeEntryCounts,
-} from '../../components/patternSheet/patternStatus';
+} from '../../../../shared/src/pattern/patternStatus';
 import {
   patternMeta,
   type PatternMeta,
-} from '../../components/patternSheet/patternMeta';
-import type { MyCardsKind } from '../../components/myCards/useMyCards';
+} from '../../../../shared/src/pattern/patternMeta';
+import type { MyCardsKind } from '../../../../shared/src/pattern/useMyCards';
 import { shortName } from '../schemas/utils';
 import type { SchemaDiaryEntry, ModeDiaryEntry } from '../../types';
 
