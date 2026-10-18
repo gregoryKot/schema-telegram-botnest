@@ -3,7 +3,7 @@ import { BottomSheet } from './BottomSheet';
 import { ShareCardSheet } from '../share/ShareCardSheet';
 import { pairInviteShare } from '../../../shared/src/share/cards/inviteShare';
 import { PairPanel } from './pairSheet/PairPanel';
-import { usePairMechanics } from './pairSheet/usePairMechanics';
+import { usePair } from './pairSheet/usePair';
 
 interface Props {
   onClose: () => void;
@@ -17,7 +17,7 @@ interface Props {
 // нативно, см. PartnerSection).
 export function PairSheet({ onClose }: Props) {
   const [showInviteShare, setShowInviteShare] = useState(false);
-  const pair = usePairMechanics(() => setShowInviteShare(true));
+  const pair = usePair(() => setShowInviteShare(true));
 
   return (
     <BottomSheet onClose={onClose}>

@@ -86,9 +86,12 @@
 - [ ] Недельная частота паттернов, «паттерн недели», вводные карточки новичка
   (`PatternFrequencyList`, `WeekTopCard`, `PatternsHero`, `ModesHero`,
   `utils/patternsSummary.ts` → в `shared/`). M.
-- [ ] Карточка партнёра в паре: цвет индекса, недельные бары, «Написать»,
-  подтверждение выхода (`pairSheet/PartnerCard`, `usePairMechanics`); на сайте
-  голая цифра и выход без подтверждения (`settingsSheet/PartnerSection`). M.
+- [x] Карточка партнёра в паре: цвет индекса, недельные бары, «Написать»,
+  подтверждение выхода. Логика одна на оба фронтенда:
+  `shared/src/pair/usePairMechanics.ts` (api инъекцией), `partnerCard.ts`
+  (тон индекса, фразы, столбики), `pairTexts.ts`; сайт —
+  `webapp/src/components/settingsSheet/PartnerCard.tsx` + `PartnerSection.tsx`
+  (старый `usePairSettings` удалён); мини-апп перешёл на shared. M.
 - [ ] S-пробелы: «Мои паттерны» и «Тёплые слова» на профиле; шаринг записи
   благодарности, «Критик или забота?» и всех достижений (хуки и карточки в
   `shared/` уже есть); прогресс стрик-цели `task.progress`; переход в трекер и

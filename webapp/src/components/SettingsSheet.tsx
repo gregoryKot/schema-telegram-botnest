@@ -9,7 +9,7 @@ import { useDialogA11y } from '../../../shared/src/utils/dialogA11y';
 import { ShareCardSheet } from '../share/ShareCardSheet';
 import { pairInviteShare } from '../../../shared/src/share/cards/inviteShare';
 import { TIMEZONES } from '../../../shared/src/settings/constants';
-import { usePairSettings } from './settingsSheet/usePairSettings';
+import { useSitePair } from './settingsSheet/useSitePair';
 import { useTherapyRelationSettings } from './settingsSheet/useTherapyRelationSettings';
 import { AppearanceSection } from './settingsSheet/AppearanceSection';
 import { BecomeTherapistSection } from './settingsSheet/BecomeTherapistSection';
@@ -49,9 +49,9 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
   const dialogA11y = useDialogA11y();
   const [subView, setSubView] = useState<SubView>('main');
   const [settings, setSettings] = useState<UserSettings | null>(null);
-  const pair = usePairSettings(userRole);
   const therapy = useTherapyRelationSettings(userRole);
   const [pairShare, setPairShare] = useState<{ code: string; url: string } | null>(null);
+  const pair = useSitePair(userRole, (code, url) => setPairShare({ code, url }));
   const [savedToast, flashSaved] = useTimedFlag(1800); const [saveError, flashSaveError] = useTimedFlag(2400); // «Сохранено» раньше шло даже при отказе api
   const [editName, setEditName] = useState(displayName ?? '');
 
@@ -146,7 +146,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                 {!isTherapist && <MyTherapistSection rel={therapy} settings={settings} patch={patch} />}
                 {!isTherapist && <BecomeTherapistSection />}
                 {isTherapist && <CabinetSection rel={therapy} onOpenTherapistCabinet={onOpenTherapistCabinet} />}
-                <PartnerSection pair={pair} onInviteCreated={setPairShare} />
+                <PartnerSection pair={pair} />
                 <ShareSection />
                 <AboutSection />
                 <DataSection />
