@@ -5,7 +5,10 @@
 // изменились (регресс на дословные label — их видит и правит настройка).
 import { describe, it, expect } from 'vitest';
 import { buildToolRows } from './toolRows';
-import { QUICK_ACTION_IDS, getQuickAction } from '../../utils/quickActions';
+import {
+  QUICK_ACTION_IDS,
+  getQuickAction,
+} from '../../../../shared/src/quickActions/quickActions';
 
 const BASE_PROPS = {
   tasksCount: 0,

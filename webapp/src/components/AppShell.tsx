@@ -16,6 +16,7 @@ import { EntryFlows } from './appShell/EntryFlows';
 import { AppSections } from './appShell/AppSections';
 import { type Section, sectionFromPath, fillHistoryGaps } from './appShell/navigation';
 import { MobileNav } from './appShell/MobileNav';
+import { QuickActions } from './quickActions/QuickActions';
 import { useDesktopAppLaunch } from '../hooks/useDesktopAppLaunch';
 import { useHostShell } from '../hooks/useHostShell';
 import { useIsOffline } from '../hooks/useIsOffline';
@@ -93,7 +94,6 @@ export function AppShell() {
   }, [navigate]);
 
   const historyDays = 30;
-
   // Bootstrap data — needs/ratings/profile/role/therapist clients/… fetched
   // on mount; see useBootstrapLoad for the fetch + silent-failure reporting.
   const {
@@ -147,7 +147,6 @@ export function AppShell() {
     return () => window.removeEventListener('keydown', onKey);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- ov.setCmdOpen стабильный сеттер useState; ov как объект не нужен в deps (не хотим переустанавливать обработчик на каждый чужой оверлей)
   }, [therapistMode, setSection]);
-
 
   // Show the history loading state the moment the history tab is opened.
   // Adjusting state during render (not in an effect) keeps this off
@@ -208,7 +207,7 @@ export function AppShell() {
   const anyOverlayOpen = ov.showTrackerOverlay || ov.showTracker || ov.showDiaries
     || ov.showSchemaInfo || ov.showSettings || ov.showPractices || ov.showPlans
     || ov.showChildhoodWheel || ov.showTodayNote || ov.showTrackerGoal
-    || ov.showTherapistDisclaimer || celebrationStreak !== null;
+    || ov.showTherapistDisclaimer || ov.quickAction !== null || celebrationStreak !== null;
 
   if (loading) {
     return <Loader minHeight="100vh" />;
@@ -469,6 +468,7 @@ export function AppShell() {
       {/* ── Mobile bottom nav ──────────────────────────────────────────────── */}
       <MobileNav items={NAV_ITEMS} therapist={therapistMode} onSearch={() => ov.setCmdOpen(true)} />
 
+      <QuickActions ov={ov} showButton={!therapistMode} />
       {/* ── Command palette ─────────────────────────────────────────────────── */}
       {ov.cmdOpen && (
         <CommandPalette
@@ -479,7 +479,7 @@ export function AppShell() {
           therapistMode={therapistMode}
           onToggleMode={() => switchTherapistMode(!therapistMode)}
           onOpenClient={(id) => { navigate('/cabinet/' + id); }}
-          onNewDiaryEntry={() => { navigate('/diary'); }}
+          onQuickAction={ov.runQuickAction}
         />
       )}
 

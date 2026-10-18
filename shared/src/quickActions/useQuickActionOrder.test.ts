@@ -3,7 +3,7 @@
 // СРЕДИ СОСЕДЕЙ СВОЕЙ ГРУППЫ (toIndex — локальный индекс внутри группы) и
 // возвращает netto-направление 'up'/'down' для аналитики (read-after-write —
 // новый рендер хука видит уже переставленный порядок).
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { act, renderHook } from '@testing-library/react';
 import { useQuickActionOrder } from './useQuickActionOrder';
 
@@ -90,5 +90,20 @@ describe('useQuickActionOrder', () => {
       { id: 'a' },
       { id: 'b' },
     ]);
+  });
+
+  it('onChanged зовётся после реальной перестановки и не зовётся при no-op', () => {
+    const onChanged = vi.fn();
+    const { result } = renderHook(() =>
+      useQuickActionOrder(KEY, [[{ id: 'a' }, { id: 'b' }]], onChanged),
+    );
+    act(() => {
+      result.current.onReorder('a', 0);
+    });
+    expect(onChanged).not.toHaveBeenCalled();
+    act(() => {
+      result.current.onReorder('a', 1);
+    });
+    expect(onChanged).toHaveBeenCalledTimes(1);
   });
 });

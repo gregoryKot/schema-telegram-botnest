@@ -4,7 +4,6 @@ import {
   applyReorderToIndex,
   getActionOrder,
 } from './quickActionOrder';
-import { notifyPrefsChanged } from './uiPrefsSync';
 
 // Общий хук для обеих поверхностей («Инструменты» — один список как
 // единственную группу). Диапазон драга считает вызывающий (withDragRange),
@@ -14,6 +13,7 @@ type ReorderDir = 'up' | 'down' | false;
 export function useQuickActionOrder<T extends { id: string }>(
   key: string,
   groups: T[][],
+  onChanged?: () => void,
 ): { ordered: T[][]; onReorder: (id: string, toIndex: number) => ReorderDir } {
   const [order, setOrder] = useState<string[]>(() => getActionOrder(key));
   const ordered = groups.map((g) => applyActionOrder(g, order));
@@ -26,7 +26,7 @@ export function useQuickActionOrder<T extends { id: string }>(
     const moved = applyReorderToIndex(key, siblingIds, id, toIndex);
     if (!moved) return false;
     setOrder(getActionOrder(key));
-    notifyPrefsChanged();
+    onChanged?.();
     return toIndex < fromIndex ? 'up' : 'down';
   }
 

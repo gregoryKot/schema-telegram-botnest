@@ -3,7 +3,7 @@
 // обязанные совпадать, фиксируются тестом-сверкой). Бэкенд валидирует
 // meta.action по allow-list QUICK_ACTION_IDS (src/analytics/quick-actions.constants.ts);
 // фронт заводит парную константу QUICK_ACTION_IDS в
-// schema-miniapp/src/utils/quickActions.ts. Расхождение молча роняет
+// shared/src/quickActions/quickActions.ts. Расхождение молча роняет
 // метрику (сервер отбросит meta.action) или ломает UI (фронт покажет пункт,
 // который бэк не признаёт валидным действием).
 //
@@ -15,7 +15,7 @@ import { join } from 'path';
 import { QUICK_ACTION_IDS } from '../analytics/quick-actions.constants';
 
 const ROOT = join(__dirname, '..', '..');
-const FRONTEND_REL = 'schema-miniapp/src/utils/quickActions.ts';
+const FRONTEND_REL = 'shared/src/quickActions/quickActions.ts';
 const FRONTEND_PATH = join(ROOT, FRONTEND_REL);
 
 // Вырезает блок `QUICK_ACTION_IDS = [ ... ]` и достаёт строковые литералы id.

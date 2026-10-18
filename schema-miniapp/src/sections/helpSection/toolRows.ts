@@ -1,4 +1,7 @@
-import { getQuickAction, type QuickActionId } from '../../utils/quickActions';
+import {
+  getQuickAction,
+  type QuickActionId,
+} from '../../../../shared/src/quickActions/quickActions';
 import { plural } from '../today/helpers';
 
 // Данные 10 строк блока «Инструменты» (ToolsList.tsx) — единственный источник

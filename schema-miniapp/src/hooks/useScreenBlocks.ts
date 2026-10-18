@@ -1,6 +1,9 @@
 import { useCallback, useState } from 'react';
 import { api } from '../api';
-import { readStringArray, writeStringArray } from '../utils/stringArrayStorage';
+import {
+  readStringArray,
+  writeStringArray,
+} from '../../../shared/src/utils/stringArrayStorage';
 import { useLongPress, LongPressProps } from './useLongPress';
 import { useScreenBlockOrder } from './useScreenBlockOrder';
 import {

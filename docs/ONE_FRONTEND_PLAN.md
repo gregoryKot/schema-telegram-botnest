@@ -138,9 +138,18 @@
   (ключи localStorage прежние), сайт — `webapp/src/sections/today/`
   (`TodayFocusBlock`, `TodayFocusCard`, `FocusPicker`, `FocusEntrySheet`,
   `useTodayFocusPrefs`); скрытие серии — `StreakSlot` в `TodayAside.tsx`.
-- [ ] Быстрые действия «+» на телефоне (`FloatingPill`, `plusMenu/*`,
-  `quickActionsRegistry.ts`): разбор случая, трекер, дневники, дыхание,
-  заземление, «Стоп». Палитра ⌘K сайта умеет только навигацию. M.
+- [x] Быстрые действия «+» на телефоне. Реестр, ключи настройки и порядок
+  переехали в `shared/src/quickActions/` (мини-апп берёт оттуда же; общее
+  состояние листа — `usePlusMenuState`). Сайт: кнопка и лист —
+  `webapp/src/components/quickActions/{PlusButton,PlusMenuSheet,QuickActions}.tsx`,
+  оверлеи действий — `QuickActionOverlays.tsx` (состояние в `useOverlays`:
+  `quickAction`, `runQuickAction`), разбор ⇄ карта — общий
+  `caseFlow/CaseFlowHost.tsx` (им же пользуется `CaseEntryBlock`), настройка
+  видимости — `QuickActionCustomizeSheet.tsx` (те же ключи localStorage).
+  Палитра ⌘K показывает те же действия строками. Аналитика — прежние
+  `plus_open`/`plus_action`/`quick_action_toggle`. Не сделано: перестановка
+  пунктов на сайте и синхронизация настройки с сервером — см.
+  `docs/README.md` → «Что осталось открытым».
 
 ### Этап 5. Переключение
 

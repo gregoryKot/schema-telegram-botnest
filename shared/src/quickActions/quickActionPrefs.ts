@@ -18,8 +18,8 @@ export {
   parseStringArray as parseHiddenActions,
   serializeStringArray as serializeHiddenActions,
   readStringArray as getHiddenActions,
-} from './stringArrayStorage';
-import { readStringArray, writeStringArray } from './stringArrayStorage';
+} from '../utils/stringArrayStorage';
+import { readStringArray, writeStringArray } from '../utils/stringArrayStorage';
 
 /** Скрывает/возвращает один пункт по id, сохраняя остальные скрытые как есть. */
 export function setActionHidden(

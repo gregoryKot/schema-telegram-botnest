@@ -15,7 +15,7 @@ import {
 } from './plusMenu/QuickActionOverlays';
 import { UseSheetsReturn } from '../hooks/useSheets';
 import { TODAY_DATE } from '../utils/todayConstants';
-import type { QuickActionId } from '../utils/quickActions';
+import type { QuickActionId } from '../../../shared/src/quickActions/quickActions';
 
 interface Props {
   sheets: UseSheetsReturn;

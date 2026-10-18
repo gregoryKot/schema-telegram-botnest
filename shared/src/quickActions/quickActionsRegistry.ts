@@ -14,8 +14,8 @@
 // экстренные практики, разбор случая), «Инструменты» — упражнения и
 // разделы, к которым возвращаются не в моменте острой необходимости, а
 // спокойно разобраться.
-import type { Tr } from '../../../shared/src/practices/quickPractices';
-import type { FocusPractice } from '../../../shared/src/today/todayFocus';
+import type { Tr } from '../practices/quickPractices';
+import type { FocusPractice } from '../today/todayFocus';
 import type { QuickActionId } from './quickActions';
 import type { QuickActionSurface } from './quickActionPrefs';
 

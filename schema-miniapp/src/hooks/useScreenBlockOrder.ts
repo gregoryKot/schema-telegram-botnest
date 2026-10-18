@@ -1,10 +1,10 @@
 import { useCallback, useState } from 'react';
 import { api } from '../api';
-import { readStringArray } from '../utils/stringArrayStorage';
+import { readStringArray } from '../../../shared/src/utils/stringArrayStorage';
 import {
   applyActionOrder,
   applyReorderToIndex,
-} from '../utils/quickActionOrder';
+} from '../../../shared/src/quickActions/quickActionOrder';
 import {
   SCREEN_BLOCK_ORDER,
   type CustomizableScreen,
