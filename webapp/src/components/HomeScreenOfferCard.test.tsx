@@ -25,7 +25,7 @@ describe('HomeScreenOfferCard', () => {
 
   it('в Telegram на Android: показ, нативный add() и снуз на неделю', () => {
     const addToHomeScreen = vi.fn();
-    installTelegram({ platform: 'android', addToHomeScreen });
+    installTelegram({ platform: 'android', addToHomeScreen, checkHomeScreenStatus: (cb: (s: string) => void) => cb('missed') });
     render(<HomeScreenOfferCard />);
     expect(api.trackEvent).toHaveBeenCalledWith('home_screen_offer', { action: 'shown', surface: 'today' });
 
@@ -37,7 +37,7 @@ describe('HomeScreenOfferCard', () => {
   });
 
   it('на iOS кнопка — настоящая ссылка на прыжковую страницу', () => {
-    installTelegram({ platform: 'ios', addToHomeScreen: vi.fn() });
+    installTelegram({ platform: 'ios', addToHomeScreen: vi.fn(), checkHomeScreenStatus: (cb: (s: string) => void) => cb('missed') });
     render(<HomeScreenOfferCard />);
     const a = screen.getByRole('link', { name: 'Добавить значок' });
     expect(a.getAttribute('href')).toMatch(/add-icon\.html$/);
@@ -45,7 +45,7 @@ describe('HomeScreenOfferCard', () => {
   });
 
   it('«Не предлагать» запоминается навсегда, «Позже» скрывает карточку', () => {
-    installTelegram({ platform: 'android', addToHomeScreen: vi.fn() });
+    installTelegram({ platform: 'android', addToHomeScreen: vi.fn(), checkHomeScreenStatus: (cb: (s: string) => void) => cb('missed') });
     const { unmount } = render(<HomeScreenOfferCard />);
     fireEvent.click(screen.getByRole('button', { name: 'Не предлагать' }));
     expect(localStorage.getItem(MEMORY_KEY)).toBe('never');

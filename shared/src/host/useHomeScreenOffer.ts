@@ -36,8 +36,11 @@ export function useHomeScreenOfferState<S extends string>(
     });
   }, [host, surface, track]);
 
+  // До ответа Telegram о статусе значка карточку не показываем: иначе она
+  // мигает (и шлёт shown) у тех, у кого значок уже стоит.
   const visible =
     !dismissed &&
+    status !== undefined &&
     shouldOfferHomeScreen({
       platform: host.platform,
       hasApi: host.capabilities.homeScreen,

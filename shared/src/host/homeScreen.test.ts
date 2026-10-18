@@ -179,7 +179,8 @@ describe('память предложения в localStorage', () => {
     snoozeHomeScreen(now);
     const m = getOfferMemory();
     expect(m.kind).toBe('snoozed');
-    if (m.kind === 'snoozed') expect(m.until).toBe(now + 7 * 24 * 60 * 60 * 1000);
+    if (m.kind === 'snoozed')
+      expect(m.until).toBe(now + 7 * 24 * 60 * 60 * 1000);
   });
 
   it('сброс из настроек возвращает fresh даже после «никогда»', () => {
@@ -190,7 +191,9 @@ describe('память предложения в localStorage', () => {
 
   it('приватный режим (localStorage бросает) — читается как fresh, запись и сброс не падают', () => {
     const proto = Object.getPrototypeOf(localStorage) as Storage;
-    const boom = () => { throw new Error('QuotaExceeded'); };
+    const boom = () => {
+      throw new Error('QuotaExceeded');
+    };
     const g = vi.spyOn(proto, 'getItem').mockImplementation(boom);
     const s = vi.spyOn(proto, 'setItem').mockImplementation(boom);
     const r = vi.spyOn(proto, 'removeItem').mockImplementation(boom);
@@ -200,7 +203,9 @@ describe('память предложения в localStorage', () => {
       expect(() => snoozeHomeScreen()).not.toThrow();
       expect(() => resetHomeScreenOffer()).not.toThrow();
     } finally {
-      g.mockRestore(); s.mockRestore(); r.mockRestore();
+      g.mockRestore();
+      s.mockRestore();
+      r.mockRestore();
     }
   });
 });
