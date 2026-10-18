@@ -544,7 +544,7 @@
   "scripts/check-raw-sql-live.mjs": 177,
   "scripts/check-recorded-fixtures.mjs": 190,
   "scripts/check-render-poison.mjs": 160,
-  "scripts/check-robot-phrases.mjs": 252,
+  "scripts/check-robot-phrases.mjs": 203,
   "scripts/check-route-collisions.mjs": 52,
   "scripts/check-scale-drift.mjs": 209,
   "scripts/check-schema-terms.mjs": 136,
