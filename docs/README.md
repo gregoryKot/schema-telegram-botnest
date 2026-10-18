@@ -73,11 +73,19 @@ CLAUDE.md. Не удалять, но и не считать списком за�
   вернуть `saveFailed: failed`, показать `<SaveErrorNote ty="Выбор сохранён только на этом устройстве — проверь связь и попробуй ещё раз" vy="…проверьте связь и попробуйте ещё раз" />`
   в `SchemasSection`. После подключения убрать запись из
   `scripts/dead-files-baseline.json`.
-- **Шаринг всех достижений на сайте не сделан.** Диалог достижений —
-  `webapp/src/sections/profile/AchievementsDialog.tsx` (профиль в параллельном PR);
-  образец — `schema-miniapp/src/sections/profile/AchievementsSheet.tsx`
-  (`drawAchievementsCard` + `achievementsShareText` + `eventKind` из
-  `shared/src/share`). Сделать вместе с «Мои паттерны» и «Тёплые слова».
+- **Профиль сайта читает дневники схем и режимов трижды.** `ProfileSection.tsx`
+  (счётчик записей), `useAboutMe` (`shared/src/portrait/useAboutMe.ts`: частоты и
+  «тёплые слова») и открытый лист `PortraitSheet` (`usePatternLayer` →
+  `usePatternEntries`) — три пары одинаковых GET `/api/diary/schema|mode`. Лишнюю
+  пару лист платит только при открытии, но две первые идут на каждом заходе в
+  профиль. Решение: отдать `ProfileSection` счётчик из `useAboutMe`
+  (`schemaEntries.length + modeEntries.length`) и не грузить дневники второй раз.
+  Не сделано сейчас: `ProfileSection.tsx` упирается в храповик размера (170 строк).
+- **«Настроить экран» (скрыть/переставить карточки) есть только в мини-аппе.**
+  Портрет и «Тёплые слова» на сайте стоят фиксированным местом (после тепловой
+  карты). Осознанно не переносили: на сайте нет листа настройки блоков, запроса
+  от пользователей не было. Появится — переносить вместе с `useScreenBlocks`
+  в `shared/`.
 - **Шаринг разбора из «Прошлых разборов» на сайте не сделан.** Шаринг есть на экране
   «Разобрано» (`PhraseDoneCard`), а в `PhraseHistoryCard` (мини-апп:
   `phraseCheck/HistoryCard.tsx`) — нет: файл упирается в храповик размера.

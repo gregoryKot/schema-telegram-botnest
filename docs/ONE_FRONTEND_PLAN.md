@@ -86,9 +86,14 @@
   инъекцией). Отдельный список «Мои карточки» не нужен: заполненность видна по
   статусу строки. «Дополнить» открывает `SchemaEx`/`ModeEx` с уже написанным
   (`initialData`).
-- [ ] «Мой портрет» в профиле (`sections/profile/PortraitCard`, `PortraitSheet`,
-  `useAboutMe`); `buildPortrait` из `shared/src/portrait` на сайте используется
-  только картой себя. M.
+- [x] «Мой портрет» в профиле. Сделано: данные — `shared/src/portrait/useAboutMe.ts`
+  (api инъекцией, сбои через `reportError`; мини-апп — тонкая обёртка
+  `sections/profile/useAboutMe.ts`), тексты и расчёт итога/дельты —
+  `shared/src/portrait/portraitTexts.ts`, порядок строк «Мои схемы/режимы» —
+  `shared/src/pattern/myPatternRows.ts` (мини-апп на нём же). Сайт:
+  `webapp/src/sections/profile/{PortraitCard,PortraitSheet,PortraitNeedRows,PortraitNeedBar,PortraitPatternRows,ProfileAboutBlock}.tsx`;
+  строка списка открывает `PatternSheet` через `usePatternLayer` (частоты и статусы
+  — оттуда же, `statusOf(kind)`). M.
 - [x] Недельная частота паттернов, «паттерн недели», вводные карточки новичка
   (`PatternFrequencyList`, `WeekTopCard`, `PatternsHero`, `ModesHero`,
   `utils/patternsSummary.ts` → в `shared/`). M. Сделано: логика и тексты —
@@ -102,10 +107,14 @@
   `webapp/src/components/settingsSheet/PartnerCard.tsx` + `PartnerSection.tsx`
   (старый `usePairSettings` удалён); мини-апп перешёл на shared. M.
 - [ ] S-пробелы (мелкие пробелы паритета):
-  - [ ] «Мои паттерны» и «Тёплые слова» на профиле — отдельный PR.
+  - [x] «Мои паттерны» и «Тёплые слова» на профиле: списки схем/режимов — в листе
+    «Мой портрет» (`PortraitPatternRows`), «Тёплые слова» —
+    `webapp/src/sections/profile/WarmWordsCard.tsx` (превью) → готовый экран
+    `WarmWordsEx`.
   - [x] шаринг записи благодарности (`GratitudeShare`) и «Критик или забота?»
-    (экран «Разобрано», `PhraseCheckShare`); [ ] всех достижений (диалог
-    достижений в профиле) и из «Прошлых разборов» — см. README.
+    (экран «Разобрано», `PhraseCheckShare`); [x] всех достижений
+    (`webapp/src/sections/profile/AchievementsShare.tsx` в `AchievementsDialog`);
+    [ ] из «Прошлых разборов» — см. README.
   - [x] прогресс стрик-цели `task.progress` (`TaskProgressBar`, расчёт —
     `shared/src/tasks/taskProgress.ts`, мини-апп на нём же).
   - [x] переход в трекер из хаба дневника (`DiaryTrackerLink`, текст —

@@ -6,7 +6,6 @@ import { JourneySheet } from '../components/JourneySheet';
 import { Skeleton } from '../components/Skeleton';
 import { useTr } from '../utils/addressForm';
 import { AchievementDetail } from '../components/AchievementDetail';
-import { Dialog } from '../components/Dialog';
 import { pressable } from '../utils/a11y';
 import '../styles/client-profile.css';
 import { DeleteAccountDialog } from './profile/DeleteAccountDialog';
@@ -19,6 +18,8 @@ import { AchievementsDialog } from './profile/AchievementsDialog';
 import { PatternsCard } from './profile/PatternsCard';
 import { TherapistCard } from './profile/TherapistCard';
 import { ProfileLinks } from './profile/ProfileLinks';
+import { ProfileAboutBlock } from './profile/ProfileAboutBlock';
+import { BestDayDialog } from './profile/BestDayDialog';
 import { ACHIEVEMENT_META } from './profile/profileMeta';
 import type { InsightsData, StreakData } from './profile/profileMeta';
 import { buildLevelMap } from './profile/profileModel';
@@ -30,9 +31,10 @@ interface Props {
   onOpenTracker?: () => void;
   refreshKey?: number;
   displayName?: string | null;
+  onTakeTest?: () => void;
 }
 
-export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, displayName }: Props) {
+export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, displayName, onTakeTest }: Props) {
   const tr = useTr();
 
   const [streak, setStreak]             = useState<StreakData | null>(null);
@@ -119,6 +121,8 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
           {streak !== null && <StreakCard streak={streak} onOpenTracker={onOpenTracker} />}
           {activeDates.size > 0 && <ActivityHeatmap levels={levels} activeDates={activeDates} totalDays={totalDays} />}
 
+          <ProfileAboutBlock refreshKey={refreshKey} onTakeTest={onTakeTest} />
+
           {(achievements || hasInsights) && (
             <div className="cpf-duo">
               {achievements && <AchievementsCard achievements={achievements} onOpen={() => setShowAchievements(true)} />}
@@ -154,13 +158,7 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
         />
       )}
 
-      {showBestDayInfo && (
-        <Dialog label="Лучший день" maxWidth={400} closeOnEscape onClose={() => setShowBestDayInfo(false)}>
-          <h2 className="dialog-title">Лучший день</h2>
-          <p className="dialog-text cpf-dlg-p">{tr('День недели, в который твои оценки в среднем выше всего.', 'День недели, в который ваши оценки в среднем выше всего.')}</p>
-          <p className="dialog-text cpf-dlg-p0">Становится точнее с каждой неделей.</p>
-        </Dialog>
-      )}
+      {showBestDayInfo && <BestDayDialog onClose={() => setShowBestDayInfo(false)} />}
 
       {journeyOpen && <JourneySheet onClose={() => setJourneyOpen(false)} />}
 
