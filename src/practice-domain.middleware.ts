@@ -5,6 +5,7 @@ import {
   PRACTICE_PAGES,
   PRACTICE_PAGE_PREFIXES,
 } from './practice-domain.surface';
+import { practiceRobots, practiceSitemap } from './practice-domain.seo';
 
 // Доменная стратегия (2026-09-08 / 2026-09-16): практика (kotlarewski.gr)
 // теперь отдаёт только визитку. Раньше алиас отдавал весь SPA и API: кука
@@ -24,29 +25,8 @@ const REDIRECT_HOSTS = new Set([
   'www.kotlarewski.gr',
 ]);
 
-const PRACTICE_SITEMAP = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url>
-    <loc>https://${PRACTICE_HOST}/</loc>
-    <changefreq>monthly</changefreq>
-    <priority>1.0</priority>
-  </url>
-</urlset>
-`;
-
-// Практике в индексе нужна только главная (брендовые запросы): статьи и
-// приложение канонично живут на schemehappens.ru, /book — ссылка для клиентов.
-const PRACTICE_ROBOTS = `User-agent: *
-Allow: /$
-Disallow: /articles
-Disallow: /privacy
-Disallow: /offer
-Disallow: /app
-Disallow: /api
-Disallow: /book
-
-Sitemap: https://${PRACTICE_HOST}/sitemap.xml
-`;
+const PRACTICE_SITEMAP = practiceSitemap(PRACTICE_HOST);
+const PRACTICE_ROBOTS = practiceRobots(PRACTICE_HOST);
 
 // Allow-list визитки живёт в соседнем модуле (правило №10), но по-прежнему
 // доступен отсюда: на него ссылаются спеки и комментарии.
