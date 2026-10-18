@@ -122,3 +122,23 @@
 .st-body-block > .ds-link { align-self: flex-start; }
 .st-section .ds-link, .st-pause .ds-link { min-height: 44px; display: inline-flex; align-items: center; }
 .ds-link.is-ok { color: var(--ok-ink); }
+
+/* Карточка партнёра в паре (PartnerCard.tsx): индекс дня, недельные бары.
+   Тон индекса (good/mid/low) приходит из shared/src/pair/partnerCard.ts. */
+.st-pc { background: var(--paper-tint); border-radius: 12px; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; }
+.st-pc-top { display: flex; align-items: center; gap: 12px; }
+.st-pc-top > div { flex: 1; min-width: 0; }
+.st-pc-write { flex-shrink: 0; min-height: 44px; display: inline-flex; align-items: center; text-decoration: none; }
+.st-pc-bars { display: flex; gap: 4px; align-items: flex-end; height: 40px; }
+.st-pc-bar { flex: 1; display: flex; flex-direction: column; align-items: center; gap: var(--space-4); }
+.st-pc-bar i { display: block; width: 100%; border-radius: var(--r-4); background: var(--paper-sunk); }
+.st-pc-bar small { font-size: 11px; color: var(--text-sub); }
+.st-pc-tone--good, .st-pc-bar i.st-pc-tone--good { color: var(--accent-green); }
+.st-pc-tone--mid { color: var(--accent-yellow); }
+.st-pc-tone--low { color: var(--accent-red); }
+.st-pc-bar i.st-pc-tone--good { background: var(--accent-green); }
+.st-pc-bar i.st-pc-tone--mid { background: var(--accent-yellow); }
+.st-pc-bar i.st-pc-tone--low { background: var(--accent-red); }
+.st-pc-confirm { display: flex; gap: 8px; }
+.st-pc-confirm .ds-btn { flex: 1; min-height: 44px; height: auto; }
+.st-pc-leave { min-height: 44px; display: inline-flex; align-items: center; }
