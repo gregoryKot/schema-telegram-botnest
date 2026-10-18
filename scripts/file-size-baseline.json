@@ -1266,7 +1266,7 @@
   "src/bot/practice-metrics.service.ts": 46,
   "src/bot/practice-sessions.service.ts": 41,
   "src/bot/practices.service.ts": 94,
-  "src/bot/product-metrics.format.ts": 207,
+  "src/bot/product-metrics.format.ts": 205,
   "src/bot/profile-pattern-metrics.format.ts": 23,
   "src/bot/profile-pattern-metrics.service.ts": 36,
   "src/bot/profile.service.ts": 116,

@@ -15,12 +15,19 @@ import { BotAdminStatsService } from '../src/bot/bot.admin-stats.service';
 import { StatsReportService } from '../src/bot/stats-report.service';
 import { BLOCK_FAILED_MARK } from '../src/bot/stats-settle';
 import { buildStatsReport } from './e2e-support/stats-report.factory';
+import { countYsqFunnel } from '../src/bot/ysq-funnel-metrics';
 
 const USER_ID = 999_000_000_010n;
 // Пользователи у границ когорт D1 (±5 ч). Диапазон 21..25 свободен: 011 занят
 // USER_ID соседнего raw-sql-live-infra (оба спека идут одним шагом джобы
 // migrations, общая база), 001/002 — read-after-write.
 const EDGE_IDS = [21n, 22n, 23n, 24n, 25n].map((i) => 999_000_000_000n + i);
+// Воронка теста схем: 026 и 027 прошли тест (клиент уже удалил прогресс),
+// 028 проходит повторно (handleRetake удалил YsqResult, история осталась).
+// Двое прошедших против одного прогресса — прежний счёт по YsqProgress дал бы
+// «Начали: 1 · дошли до конца: 2», и спек краснел бы на старом коде.
+const YSQ_DONE_IDS = [999_000_000_026n, 999_000_000_027n];
+const YSQ_RETAKE_ID = 999_000_000_028n;
 const HOUR = 3_600_000;
 const DAY = 24 * HOUR;
 // Маркер в meta анонимных событий (userId = null) — по нему спек чистит за
@@ -111,7 +118,9 @@ describe('/stats на реальном Postgres: каждый сырой зап�
       },
     });
     await prisma.user.deleteMany({
-      where: { id: { in: [USER_ID, ...EDGE_IDS] } },
+      where: {
+        id: { in: [USER_ID, ...EDGE_IDS, ...YSQ_DONE_IDS, YSQ_RETAKE_ID] },
+      },
     });
   }
 
@@ -185,6 +194,44 @@ describe('/stats на реальном Postgres: каждый сырой зап�
     expect(product).toMatch(
       /в форме записи на консультацию: показали [1-9]\d*, позвонили [1-9]\d*\)/,
     );
+  });
+
+  // Аудит 2026-10-11: «начали» считались по YsqProgress, а клиент удаляет
+  // прогресс при завершении — отчёт писал «Начали: 1 · дошли до конца: 3
+  // (300%)». Фикстуры повторяют состояние базы ПОСЛЕ клиентских удалений
+  // (шов «клиент → отчёт», правило №14); UNION трёх таблиц и чтение двух
+  // bigint из скалярных подзапросов — свойство драйвера (правило №18).
+  it('тест схем: прошедший без прогресса и проходящий повторно — оба в «начали» и «дошли»', async () => {
+    const before = await countYsqFunnel(prisma);
+    await prisma.user.createMany({
+      data: [...YSQ_DONE_IDS, YSQ_RETAKE_ID].map((id) => ({ id })),
+    });
+    const answers = '[]';
+    await prisma.ysqResult.createMany({
+      data: YSQ_DONE_IDS.map((userId) => ({ userId, answers })),
+    });
+    await prisma.ysqResultHistory.createMany({
+      data: [
+        ...YSQ_DONE_IDS.map((userId) => ({ userId, answers })),
+        { userId: YSQ_DONE_IDS[0], answers }, // два прохождения — один человек
+        { userId: YSQ_RETAKE_ID, answers },
+      ],
+    });
+    await prisma.ysqProgress.create({
+      data: { userId: YSQ_RETAKE_ID, answers, page: 2 },
+    });
+
+    const after = await countYsqFunnel(prisma);
+    expect(after.started - before.started).toBe(3);
+    expect(after.completed - before.completed).toBe(3);
+    expect(after.completed).toBeLessThanOrEqual(after.started);
+
+    const product = await report.render();
+    expectSaneReport(product);
+    const m = product.match(/Начали: (\d+) · дошли до конца: (\d+)/);
+    expect(m).not.toBeNull();
+    expect(Number(m?.[2])).toBeLessThanOrEqual(Number(m?.[1]));
+    expect(product).not.toContain('данные не сходятся');
   });
 
   // Аудит 2026-10: createdAt — timestamp без зоны, а `now()` в SQL когорт
