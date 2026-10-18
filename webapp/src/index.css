@@ -57,10 +57,10 @@
    Тёплая бумага · сдержанный индиго · много воздуха
    ───────────────────────────────────────────────────────────────────────── */
 
-/* Нижняя безопасная зона (парно с schema-miniapp/src/index.css — там ещё
-   страховка переменными Telegram; сайту в браузере достаточно env()). */
-/* Безопасные зоны: снизу — вырез iOS; сверху — плавающие кнопки Telegram/MAX в
-   полноэкранном Mini App (значение ставит useHostSafeTop на <html>, в браузере 0). */
+/* Безопасные зоны. Снизу — вырез iOS через env() (парно с
+   schema-miniapp/src/index.css, там ещё страховка переменными Telegram). Сверху —
+   плавающие кнопки Telegram/MAX в полноэкранном Mini App: значение ставит
+   useHostSafeTop на <html>, в браузере остаётся 0. */
 :root { --safe-bottom: env(safe-area-inset-bottom, 0px); --safe-top: 0px; }
 
 :root, html[data-theme="light"], .light-lock {
