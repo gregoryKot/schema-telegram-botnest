@@ -1534,7 +1534,7 @@
   "src/therapy/therapy-invite-claim.ts": 34,
   "src/therapy/therapy-invite.ts": 74,
   "src/therapy/therapy-notes.controller.ts": 156,
-  "src/therapy/therapy-notes.service.ts": 229,
+  "src/therapy/therapy-notes.service.ts": 215,
   "src/therapy/therapy-relation-info.ts": 50,
   "src/therapy/therapy-relations.service.ts": 202,
   "src/therapy/therapy-tasks-view.service.ts": 171,
