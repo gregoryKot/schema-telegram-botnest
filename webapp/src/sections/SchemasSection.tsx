@@ -5,6 +5,7 @@ import { SchemaDetailSheet } from '../components/SchemaDetailSheet';
 import { NeedDetailSheet } from '../components/NeedDetailSheet';
 import '../styles/client-schemas.css';
 import { useSchemasData } from './schemas/useSchemasData';
+import { SaveErrorNote } from '../components/SaveErrorNote';
 import { ExpressedCard } from './schemas/ExpressedCard';
 import { YsqTestCard } from './schemas/YsqTestCard';
 import { MySchemasBlock } from './schemas/MySchemasBlock';
@@ -42,6 +43,9 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
         </div>
         <button onClick={() => onOpenSchema()} className="ds-btn ds-btn--secondary">Библиотека</button>
       </div>
+      {d.saveFailed && (
+        <SaveErrorNote ty="Выбор сохранён только на этом устройстве — проверь связь и попробуй ещё раз" vy="Выбор сохранён только на этом устройстве — проверьте связь и попробуйте ещё раз" />
+      )}
 
       <PatternsTopCards
         ready={!d.loading && pat.entriesReady} hasSchemas={allSchemaIds.length > 0} hasModes={d.myModeIds.length > 0}
