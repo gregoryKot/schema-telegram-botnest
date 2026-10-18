@@ -82,7 +82,7 @@
   /* Сегмент «Схемы / Режимы / Потребности» во всю ширину. */
   .cs-seg { display: flex; width: 100%; box-sizing: border-box; padding: var(--space-4); border-radius: var(--r-16); }
   .cs-seg .ds-seg-btn { flex: 1; min-height: 44px; padding: 0 var(--space-8); font-size: 14px; border-radius: var(--r-12); border: 1px solid transparent; }
-  .cs-seg .ds-seg-btn.is-active { background: var(--surface); color: var(--text); border-color: var(--line); }
+  .cs-seg .ds-seg-btn.is-active { background: var(--ink); color: var(--on-ink); border-color: var(--ink); }
 
   .cs-bar-row { grid-template-columns: minmax(0, 1fr) 48px; gap: 6px 10px; padding: 6px 0; }
   .cs-bar-track { grid-column: 1 / -1; grid-row: 2; height: 6px; }
@@ -91,10 +91,8 @@
   .cs-expressed .ds-head-row { gap: var(--space-2) var(--space-12); }
   .cs-test-text { font-size: 19px; }
 
-  /* Вводная новичку без тёмной заливки. */
-  .cs-intro.ds-card--ink { background: var(--surface); border-color: var(--line); color: var(--text); padding: var(--space-16); }
-  .cs-intro .cs-test-label { color: var(--text-faint); }
-  .cs-intro .cs-test-btn { background: var(--accent); color: var(--on-accent); }
+  /* Вводная новичку: тёмная (ink) карточка, плотнее десктопной. */
+  .cs-intro.ds-card--ink { padding: var(--space-16); }
   .cs-intro-title { font-size: 20px; }
 
   .cs-block { gap: var(--space-12); }
@@ -102,18 +100,18 @@
   .cs-map { gap: var(--space-16); }
 }
 
-/* Строка про тест YSQ на телефоне: светлая, подпись слева, действие справа. */
-.cs-testrow { display: flex; align-items: center; justify-content: space-between; gap: var(--space-12); padding: var(--space-12) var(--space-16); border-radius: var(--r-20); }
+/* Строка про тест YSQ на телефоне: тёмная (ink), подпись слева, действие справа. */
+.cs-testrow.ds-card { background: var(--ink); border-color: var(--ink); color: var(--on-ink); display: flex; align-items: center; justify-content: space-between; gap: var(--space-12); padding: var(--space-12) var(--space-16); border-radius: var(--r-20); }
 .cs-testrow-text { min-width: 0; }
-.cs-testrow-title { font-size: 16px; font-weight: 600; color: var(--accent); }
-.cs-testrow-sub { margin-top: var(--space-2); font-size: 12px; line-height: 1.35; color: var(--text-sub); }
-.cs-testrow .ds-btn { flex-shrink: 0; padding: 0 var(--space-12); border-radius: var(--r-14); }
+.cs-testrow-title { font-size: 16px; font-weight: 600; color: var(--on-ink); }
+.cs-testrow-sub { margin-top: var(--space-2); font-size: 12px; line-height: 1.35; color: var(--on-ink-sub); }
+.cs-testrow .ds-btn { flex-shrink: 0; padding: 0 var(--space-12); border-radius: var(--r-14); background: var(--bg); color: var(--ink); border-color: var(--bg); }
 
 /* «Мои схемы» строками по доменам (телефон). */
 .cs-grp-wrap { display: flex; flex-direction: column; gap: var(--space-8); }
-.cs-grp-head { display: flex; justify-content: space-between; gap: var(--space-8); padding: 0 var(--space-4); font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--text-muted); }
-.cs-grp { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-20); overflow: hidden; }
-.cs-row { display: flex; align-items: center; justify-content: space-between; gap: var(--space-12); width: 100%; box-sizing: border-box; min-height: 64px; padding: var(--space-12) var(--space-16); border: none; border-bottom: 1px solid var(--paper-sunk); background: none; font: inherit; text-align: left; color: var(--text); cursor: pointer; }
+.cs-grp-head { display: flex; justify-content: space-between; gap: var(--space-8); padding: 0 var(--space-4); font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; }
+.cs-grp { border: 1px solid; border-radius: var(--r-20); overflow: hidden; } /* подложка и рамка — тон группы: tone-tint tone-border */
+.cs-row { display: flex; align-items: center; justify-content: space-between; gap: var(--space-12); width: 100%; box-sizing: border-box; min-height: 64px; padding: var(--space-12) var(--space-16); border: none; border-bottom: 1px solid var(--line); background: none; font: inherit; text-align: left; color: var(--text); cursor: pointer; }
 .cs-row:last-child { border-bottom: none; }
 .cs-row-text { display: flex; flex-direction: column; gap: var(--space-2); min-width: 0; }
 .cs-row-name { font-size: 16px; font-weight: 600; line-height: 1.25; }

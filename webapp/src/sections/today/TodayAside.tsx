@@ -10,7 +10,7 @@ interface IndexProps {
   onOpenHistory?: () => void;
 }
 
-// «Индекс сегодня»: тёмная карточка на десктопе, светлая на телефоне (client-today.css), число Literata 60 + столбики за 14 дней.
+// «Индекс сегодня»: тёмная карточка, число Literata 60 + столбики за 14 дней.
 export function IndexCard({ score, weekDelta, bars, onOpenHistory }: IndexProps) {
   return (
     <div className="ds-card ds-card--ink ct-index" {...(onOpenHistory ? pressable(onOpenHistory) : {})}>

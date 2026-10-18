@@ -12,7 +12,7 @@ export function PhoneHelpRows({ onSteps }: { onSteps: () => void }) {
   const [crisisOpen, setCrisisOpen] = useState(false);
   return (
     <>
-      <div className="ds-card ds-card--row ds-card--hover cp-task" {...pressable(onSteps)}>
+      <div className="ds-card ds-card--row ds-card--hover cp-task cp-task--crisis" {...pressable(onSteps)}>
         <div className="cp-task-body">
           <div className="cp-task-title">Мне плохо</div>
           <div className="ds-sub">пять шагов: разобраться и успокоиться</div>

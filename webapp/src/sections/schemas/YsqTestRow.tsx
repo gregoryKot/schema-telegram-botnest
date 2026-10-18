@@ -7,7 +7,7 @@ interface Props {
   onStart: () => void;
 }
 
-/** Светлая компактная строка про тест YSQ (телефон): подпись слева, действие справа. */
+/** Тёмная компактная строка про тест YSQ (телефон): подпись слева, действие справа. */
 export function YsqTestRow({ progressAnswered, completedAt, onStart }: Props) {
   const tr = useTr();
   const t = ysqRowText(progressAnswered, completedAt, tr);
