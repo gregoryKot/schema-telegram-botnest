@@ -15,7 +15,6 @@ import type { Need } from '../../types';
 import type { TherapyClientSummary, UserId } from '../../api';
 import type { Section } from './navigation';
 import type { useOverlays } from './useOverlays';
-
 import type { TodayRating } from '../../sections/TodaySection';
 const TodaySection    = lazy(() => import('../../sections/TodaySection').then(m => ({ default: m.TodaySection })));
 const DiarySection    = lazy(() => import('../../sections/DiarySection').then(m => ({ default: m.DiarySection })));
@@ -91,6 +90,7 @@ export function AppSections({
       <div className="page animate-fade" key={section}>
         <MobileAppBanner />
         {section === 'today' && (
+          <ErrorBoundary section="Сегодня" key="today-boundary">
           <TodaySection
             needs={needs}
             ratings={ratings}
@@ -108,6 +108,7 @@ export function AppSections({
             onOpenTherapistCabinet={() => { switchTherapistMode(true); }}
             rating={rating}
           />
+          </ErrorBoundary>
         )}
         {section === 'diary' && (
           <ErrorBoundary section="Дневник" key="diary-boundary">
@@ -148,7 +149,6 @@ export function AppSections({
         )}
       </div>
     )}
-
     </Suspense>
     </div>
   );
