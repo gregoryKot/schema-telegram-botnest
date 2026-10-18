@@ -59,7 +59,9 @@
 
 /* Нижняя безопасная зона (парно с schema-miniapp/src/index.css — там ещё
    страховка переменными Telegram; сайту в браузере достаточно env()). */
-:root { --safe-bottom: env(safe-area-inset-bottom, 0px); }
+/* Безопасные зоны: снизу — вырез iOS; сверху — плавающие кнопки Telegram/MAX в
+   полноэкранном Mini App (значение ставит useHostSafeTop на <html>, в браузере 0). */
+:root { --safe-bottom: env(safe-area-inset-bottom, 0px); --safe-top: 0px; }
 
 :root, html[data-theme="light"], .light-lock {
   /* .light-lock — поддерево, которое держит светлую тему при любом
@@ -943,7 +945,7 @@ a { color: inherit; text-decoration: none; }
     height: auto;
     min-height: 100vh;
     /* Полноэкранный Telegram/MAX: плавающие кнопки поверх шапки. В браузере 0. */
-    padding-top: var(--safe-top, 0px);
+    padding-top: var(--safe-top);
     box-sizing: border-box;
   }
   .sidebar { display: none; }
