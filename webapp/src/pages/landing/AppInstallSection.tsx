@@ -5,7 +5,7 @@ import { H2, EYEBROW } from './productContent';
 import { Cta } from './BrandKit';
 import { INSTALL_STEPS } from '../../components/installGuide/installSteps';
 import { useInstallPrompt } from '../../hooks/useInstallPrompt';
-import { isStandalone, subscribeAppInstalled } from '../../utils/pwaInstall';
+import { hideInstallOffers, subscribeAppInstalled } from '../../utils/pwaInstall';
 
 // Секция «значок на экране» продуктового лендинга: сайт ставится как
 // приложение прямо из браузера (манифест у корня ведёт в кабинет /today). Шаги — из
@@ -23,7 +23,7 @@ export function AppInstallSection() {
 
   // Лендинг в scope установленного приложения: открытый изнутри standalone,
   // он не должен предлагать поставить то, что уже стоит.
-  if (isStandalone()) return null;
+  if (hideInstallOffers()) return null;
 
   return (
     <section id="app" style={{ padding: '72px 24px', scrollMarginTop: 70 }}>

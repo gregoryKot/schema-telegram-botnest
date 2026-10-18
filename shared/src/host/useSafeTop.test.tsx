@@ -14,7 +14,7 @@
 // рендера, как в реальном клиенте.
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { render, screen, act, cleanup } from '@testing-library/react';
-import { setHost } from '../../../shared/src/host';
+import { setHost } from './index';
 import { useSafeTop } from './safezone';
 
 function Probe() {

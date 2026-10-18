@@ -161,3 +161,19 @@ describe('обычная вкладка браузера', () => {
     expect(detectHostId()).toBe('web');
   });
 });
+
+// Без тега в index.html загрузчик никто не запускает, и вход из MAX невозможен
+// (план одного фронтенда, этап 1). Тег обязан быть синхронным: загрузчик
+// дописывает мост через document.write, с async/defer это не работает.
+describe('index.html сайта подключает загрузчик моста MAX', () => {
+  const html = readFileSync(resolve(__dirname, '../index.html'), 'utf8');
+  const tag = html.match(/<script\b[^>]*\bsrc="\/max-bridge\.js"[^>]*>/);
+
+  it('тег есть', () => {
+    expect(tag).not.toBeNull();
+  });
+
+  it('тег синхронный', () => {
+    expect(tag?.[0]).not.toMatch(/\b(async|defer|type="module")/);
+  });
+});
