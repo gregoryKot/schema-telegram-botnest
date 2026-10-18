@@ -1,6 +1,7 @@
 import type { TherapyRelationInfo } from '../../api';
 import { pressable } from '../../utils/a11y';
 import { meetingTitle, type SparkBar } from './model';
+import { formatWeekDelta, weekDeltaTone } from './weekDeltaFormat';
 
 interface IndexProps {
   score: number | null;
@@ -16,11 +17,9 @@ export function IndexCard({ score, weekDelta, bars, onOpenHistory }: IndexProps)
       <div className="ds-label ct-on-ink">Индекс сегодня</div>
       <div className="ct-index-row">
         <span className="ds-num ct-index-num">{score !== null ? score.toFixed(1) : '–'}</span>
-        {weekDelta !== null && (
-          <span className={'ct-index-delta ' + (weekDelta > 0 ? 'is-up' : weekDelta < 0 ? 'is-down' : '')}>
-            {weekDelta > 0 ? '+' : ''}{weekDelta.toFixed(1)} за неделю
-          </span>
-        )}
+        <span className={'ct-index-delta is-' + weekDeltaTone(weekDelta)}>
+          {formatWeekDelta(weekDelta)} за неделю
+        </span>
       </div>
       {bars.length > 1 && (
         <>
