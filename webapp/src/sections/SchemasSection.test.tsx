@@ -195,6 +195,28 @@ describe('SchemasSection — мои схемы/режимы (ручной выб
     await waitFor(() => expect(mockReport).toHaveBeenCalledWith(
       expect.objectContaining({ section: 'schemas', message: expect.stringContaining('mySchemaIds') }),
     ));
+    // Отказ виден человеку, не только телеметрии (SaveErrorNote), и на «ты».
+    expect((await screen.findByRole('alert')).textContent).toMatch(/проверь связь и попробуй ещё раз/);
+  });
+
+  it('пока сохранение не падало — плашки «не удалось сохранить» нет; успех после отказа убирает её', async () => {
+    mockApi.updateSettings.mockRejectedValueOnce(new Error('network down')).mockResolvedValue({ ok: true });
+    renderSection({}, 'vy');
+    expect(screen.queryByRole('alert')).toBeNull();
+    const addButtons = await screen.findAllByText('+ Добавить');
+    fireEvent.click(addButtons[0]);
+    await screen.findByText(/Выберите схемы, которые вам близки/);
+    const options = screen.getAllByText('Покинутость / Нестабильность');
+    fireEvent.click(options[options.length - 1]);
+    fireEvent.click(screen.getByText('Готово'));
+    expect((await screen.findByRole('alert')).textContent).toMatch(/проверьте связь и попробуйте ещё раз/);
+
+    fireEvent.click((await screen.findAllByText('+ Добавить'))[0]);
+    await screen.findByText(/Выберите схемы, которые вам близки/);
+    const again = screen.getAllByText('Покинутость / Нестабильность');
+    fireEvent.click(again[again.length - 1]);
+    fireEvent.click(screen.getByText('Готово'));
+    await waitFor(() => expect(screen.queryByRole('alert')).toBeNull());
   });
 });
 

@@ -106,7 +106,7 @@
   (тон индекса, фразы, столбики), `pairTexts.ts`; сайт —
   `webapp/src/components/settingsSheet/PartnerCard.tsx` + `PartnerSection.tsx`
   (старый `usePairSettings` удалён); мини-апп перешёл на shared. M.
-- [ ] S-пробелы (мелкие пробелы паритета):
+- [x] S-пробелы (мелкие пробелы паритета):
   - [x] «Мои паттерны» и «Тёплые слова» на профиле: списки схем/режимов — в листе
     «Мой портрет» (`PortraitPatternRows`), «Тёплые слова» —
     `webapp/src/sections/profile/WarmWordsCard.tsx` (превью) → готовый экран
@@ -119,8 +119,8 @@
     `shared/src/tasks/taskProgress.ts`, мини-апп на нём же).
   - [x] переход в трекер из хаба дневника (`DiaryTrackerLink`, текст —
     `shared/src/diary/diaryTrackerLink.ts`); вводная пустого хаба на сайте уже была.
-  - [ ] `SaveErrorNote` при провале сохранения схем/режимов: компонент и хук
-    готовы, подключение к `useSchemasData` — после мержа PR `/schemas` (README).
+  - [x] `SaveErrorNote` при провале сохранения схем/режимов: `useSaveFailure` в
+    `useSchemasData`, плашка в `SchemasSection` (ты/вы).
   - [x] «Восстановить» версию концептуализации (`ConceptVersionHistory`, поля —
     `shared/src/therapy/conceptSnapshotRestore.ts`, мини-апп на нём же).
   - [x] офлайн-плашка на мобильной вёрстке (`OfflineBanner`) и повтор очереди
