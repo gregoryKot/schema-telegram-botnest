@@ -13,6 +13,7 @@ import { ModesBlocks } from './schemas/ModesBlocks';
 import { ModeMapBanner, MyModeMapSheet } from './schemas/ModeMapBanner';
 import { NeedsBlock } from './schemas/NeedsBlock';
 import { usePatternLayer } from './schemas/usePatternLayer';
+import { PatternsTopCards } from './schemas/PatternsTopCards';
 
 interface Props {
   onOpenSchema: (opts?: { startTest?: boolean; tab?: 'needs'|'schemas'|'modes'; highlight?: string }) => void;
@@ -42,6 +43,12 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
         <button onClick={() => onOpenSchema()} className="ds-btn ds-btn--secondary">Библиотека</button>
       </div>
 
+      <PatternsTopCards
+        ready={!d.loading && pat.entriesReady} hasSchemas={allSchemaIds.length > 0} hasModes={d.myModeIds.length > 0}
+        hasEntries={pat.hasEntries} top={pat.top} testProgress={d.ysqProgressAnswered}
+        onOpenPattern={pat.openPattern} onOpenModeEx={pat.openModeEx} onStartTest={() => onOpenSchema({ startTest: true })}
+      />
+
       <div className="cs-top">
         <ExpressedCard
           loading={d.loading}
@@ -57,9 +64,9 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
         />
       </div>
 
-      <MySchemasBlock loading={d.loading} ids={allSchemaIds} onAdd={() => setShowSchemaPicker(true)} onOpenSchema={id => pat.openPattern('schema', id)} statusFor={pat.schemaStatusFor} />
+      <MySchemasBlock loading={d.loading} ids={allSchemaIds} onAdd={() => setShowSchemaPicker(true)} onOpenSchema={id => pat.openPattern('schema', id)} statusFor={pat.schemaStatusFor} freq={pat.entriesReady ? pat.schemaFreq : undefined} />
       <SchemaMap mineIds={allSchemaIds} onOpenSchema={setDetailSchemaId} />
-      <ModesBlocks loading={d.loading} myModeIds={d.myModeIds} onAdd={() => setShowModePicker(true)} onOpenMode={pat.openModeEx} onOpenPattern={id => pat.openPattern('mode', id)} />
+      <ModesBlocks loading={d.loading} myModeIds={d.myModeIds} onAdd={() => setShowModePicker(true)} onOpenMode={pat.openModeEx} onOpenPattern={id => pat.openPattern('mode', id)} modeFreq={pat.entriesReady ? pat.modeFreq : undefined} />
       {d.myMapCount > 0 && <ModeMapBanner count={d.myMapCount} onOpen={() => setShowMyMap(true)} />}
       <NeedsBlock childhoodRatings={childhoodRatings} onOpenChildhoodWheel={onOpenChildhoodWheel} onOpenNeed={setDetailNeedId} />
 

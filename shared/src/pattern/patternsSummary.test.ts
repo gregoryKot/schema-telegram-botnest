@@ -4,8 +4,9 @@ import {
   weekSchemaSummary,
   weekModeSummary,
   weekSchemaFrequency,
+  weekPatternTop,
 } from './patternsSummary';
-import { forEachTimeZone } from '../../../shared/src/utils/timeZone.test-helpers';
+import { forEachTimeZone } from '../utils/timeZone.test-helpers';
 
 const NOW = new Date('2026-07-17T20:00:00');
 const entry = (iso: string, ids: string[]) => ({
@@ -129,5 +130,26 @@ describe('weekFrequency — дни считаются в зоне читател
     const seen = new Set<number>();
     forEachTimeZone(() => seen.add(localDays(PAIR)));
     expect([...seen].some((n) => n !== grinwich)).toBe(true);
+  });
+});
+
+describe('weekPatternTop', () => {
+  const NOW_ = new Date('2026-07-17T20:00:00');
+  const s = (iso: string, id: string) => ({ createdAt: iso, schemaIds: [id] });
+  const m = (iso: string, id: string) => ({ createdAt: iso, modeId: id });
+
+  it('нет записей — null', () => {
+    expect(weekPatternTop([], [], NOW_)).toBeNull();
+  });
+
+  it('режим чаще схемы — режим, при равенстве — схема', () => {
+    const modes = [m('2026-07-17T10:00:00', 'demanding_critic'), m('2026-07-16T10:00:00', 'demanding_critic')];
+    expect(weekPatternTop([s('2026-07-17T10:00:00', 'abandonment')], modes, NOW_)?.kind).toBe('mode');
+    const tie = [s('2026-07-17T10:00:00', 'abandonment'), s('2026-07-16T10:00:00', 'abandonment')];
+    expect(weekPatternTop(tie, modes, NOW_)).toMatchObject({ kind: 'schema', id: 'abandonment', days: 2 });
+  });
+
+  it('записи старше недели не считаются', () => {
+    expect(weekPatternTop([s('2026-06-01T10:00:00', 'abandonment')], [], NOW_)).toBeNull();
   });
 });

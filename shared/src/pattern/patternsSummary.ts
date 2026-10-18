@@ -3,8 +3,7 @@
 // от компонента — покрыта тестом (правило CLAUDE.md «Тесты»).
 // Обобщена на схемы (schemaIds: string[]) и режимы (modeId: string).
 
-import type { SchemaDiaryEntry, ModeDiaryEntry } from '../types';
-import { momentDayKey } from './format';
+import { momentDayKey } from '../utils/momentDate';
 
 export const SUMMARY_WINDOW_DAYS = 7;
 
@@ -13,6 +12,16 @@ export interface WeekTopSummary {
   /** В скольких РАЗНЫХ днях недели сущность встретилась в записях */
   days: number;
   windowDays: number;
+}
+
+export interface SchemaDatedEntry {
+  createdAt: string;
+  schemaIds: string[];
+}
+
+export interface ModeDatedEntry {
+  createdAt: string;
+  modeId: string;
 }
 
 interface DatedIds {
@@ -51,7 +60,7 @@ export function weekFrequencyMap(
 
 /** Частота по схемам: schemaId → дней/неделю. */
 export function weekSchemaFrequency(
-  entries: Pick<SchemaDiaryEntry, 'createdAt' | 'schemaIds'>[],
+  entries: SchemaDatedEntry[],
   now: Date = new Date(),
 ): Record<string, number> {
   return weekFrequencyMap(
@@ -76,7 +85,7 @@ export function weekTopSummary(
 }
 
 export function weekSchemaSummary(
-  entries: Pick<SchemaDiaryEntry, 'createdAt' | 'schemaIds'>[],
+  entries: SchemaDatedEntry[],
   now: Date = new Date(),
 ): WeekTopSummary | null {
   return weekTopSummary(
@@ -86,7 +95,7 @@ export function weekSchemaSummary(
 }
 
 export function weekModeFrequency(
-  entries: Pick<ModeDiaryEntry, 'createdAt' | 'modeId'>[],
+  entries: ModeDatedEntry[],
   now: Date = new Date(),
 ): Record<string, number> {
   return weekFrequencyMap(
@@ -96,11 +105,33 @@ export function weekModeFrequency(
 }
 
 export function weekModeSummary(
-  entries: Pick<ModeDiaryEntry, 'createdAt' | 'modeId'>[],
+  entries: ModeDatedEntry[],
   now: Date = new Date(),
 ): WeekTopSummary | null {
   return weekTopSummary(
     entries.map((e) => ({ createdAt: e.createdAt, ids: [e.modeId] })),
     now,
   );
+}
+
+export type WeekPatternKind = 'schema' | 'mode';
+
+export interface WeekPatternTop extends WeekTopSummary {
+  kind: WeekPatternKind;
+}
+
+/**
+ * Паттерн недели для экрана, где схемы и режимы рядом: больше дней — выше;
+ * при равенстве схема (основной предмет экрана). Записей за неделю нет — null.
+ */
+export function weekPatternTop(
+  schemaEntries: SchemaDatedEntry[],
+  modeEntries: ModeDatedEntry[],
+  now: Date = new Date(),
+): WeekPatternTop | null {
+  const s = weekSchemaSummary(schemaEntries, now);
+  const m = weekModeSummary(modeEntries, now);
+  if (s && (!m || s.days >= m.days)) return { ...s, kind: 'schema' };
+  if (m) return { ...m, kind: 'mode' };
+  return null;
 }
