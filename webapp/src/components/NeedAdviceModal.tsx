@@ -1,5 +1,6 @@
 import { getTherapistContact } from '../utils/therapistContact';
 import { BottomSheetShell } from './BottomSheetShell';
+import { ExternalLink } from '../host/ExternalLink';
 
 // Оверлей «О советах» под шитами потребности — общий для NeedHistorySheet и
 // NeedTodaySheet (правило №11: один и тот же блок жил дословно в обоих).
@@ -19,9 +20,8 @@ export function NeedAdviceModal({ onClose }: { onClose: () => void }) {
         ))}
         {/* Терапевту не предлагаем ссылку на самого себя. */}
         {!contact.isTherapist && (
-          <a href={contact.url} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-block', fontSize: 14, color: 'var(--accent)', textDecoration: 'none', fontWeight: 500 }}>
-            → Записаться на консультацию
-          </a>
+          <ExternalLink href={contact.url} style={{ display: 'inline-block', fontSize: 14, color: 'var(--accent)', textDecoration: 'none', fontWeight: 500 }}>
+            → Записаться на консультацию</ExternalLink>
         )}
         <button
           onClick={onClose}
