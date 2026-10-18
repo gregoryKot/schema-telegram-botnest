@@ -131,8 +131,11 @@
 
 ### Этап 4. Ежедневные точки входа
 
-- [ ] Фокус-карточка «Сегодня»: одна главная практика на выбор, «на сегодня
-  всё», «Поделиться днём» (`TodayFocusCard`, `HeroCta`, `utils/todayFocus.ts`). M.
+- [x] Фокус-карточка «Сегодня»: одна главная практика на выбор, «на сегодня
+  всё», «Поделиться днём». Логика и тексты — `shared/src/today/todayFocus.ts`
+  (ключи localStorage прежние), сайт — `webapp/src/sections/today/`
+  (`TodayFocusBlock`, `TodayFocusCard`, `FocusPicker`, `FocusEntrySheet`,
+  `useTodayFocusPrefs`); скрытие серии — `StreakSlot` в `TodayAside.tsx`.
 - [ ] Быстрые действия «+» на телефоне (`FloatingPill`, `plusMenu/*`,
   `quickActionsRegistry.ts`): разбор случая, трекер, дневники, дыхание,
   заземление, «Стоп». Палитра ⌘K сайта умеет только навигацию. M.

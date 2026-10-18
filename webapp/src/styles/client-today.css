@@ -105,3 +105,39 @@
   .ct-needs { padding: 14px 16px; gap: 10px; border-radius: 18px; }
   .ct-streak { order: 5; }
 }
+
+/* Фокус-карточка «Сегодня» */
+.ct-focus { display: flex; flex-direction: column; gap: var(--space-10); padding: 22px; }
+.ct-focus-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-12); }
+.ct-focus-chip { font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 99px; background: rgba(0, 0, 0, .24); color: #fff; }
+.ct-focus-title { color: inherit; font-size: 24px; }
+.ct-focus-sub { font-size: 14px; line-height: 1.45; }
+.ct-focus-cta {
+  margin-top: var(--space-6); min-height: 48px; border: none; border-radius: var(--r-14); cursor: pointer;
+  background: #fff; color: var(--accent-on-light); font: 800 15px var(--sans);
+  display: flex; align-items: center; justify-content: center; gap: var(--space-6);
+}
+.ct-focus-switch {
+  align-self: flex-start; min-height: 44px; padding: 0; border: none; background: none; cursor: pointer;
+  color: inherit; font: 600 13px var(--sans); text-decoration: underline; text-underline-offset: 3px;
+}
+.ct-focus.is-done .ct-focus-switch { color: var(--text-sub); }
+.ct-focus-done-row { display: flex; align-items: center; gap: var(--space-14); }
+.ct-focus-done-text { flex: 1; min-width: 0; }
+.ct-focus-check {
+  width: 44px; height: 44px; flex-shrink: 0; border-radius: var(--r-14); font-size: 22px;
+  display: flex; align-items: center; justify-content: center;
+  background: color-mix(in srgb, var(--accent-green) 12%, transparent);
+}
+.ct-focus-share { display: flex; }
+.ct-focus-picker { display: flex; flex-direction: column; gap: var(--space-6); }
+.ct-focus-opt {
+  display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-2); min-height: 48px;
+  padding: var(--space-10) var(--space-14); border-radius: var(--r-10); cursor: pointer; text-align: left;
+  border: 1px solid var(--line); background: transparent; color: var(--text); font-family: inherit;
+}
+.ct-focus-opt.is-on { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, transparent); }
+.ct-focus-opt-name { font-size: 14px; font-weight: 700; }
+.ct-focus-opt-sub { font-size: 12px; color: var(--text-sub); }
+.ct-streak-hide { margin-left: auto; align-self: center; min-width: 44px; min-height: 44px; padding: 0; border: none; background: none; cursor: pointer; color: var(--text-sub); font: 600 12px var(--sans); }
+@media (max-width: 767px) { .ct-focus { order: -2; } }
