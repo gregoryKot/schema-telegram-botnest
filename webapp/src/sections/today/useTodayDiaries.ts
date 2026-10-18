@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { api, reportClientError } from '../../api';
 import { momentIsToday } from '../../utils/format';
 import { mergeRecentEntries, type RecentEntry } from './model';
+import { asArray } from './safeData';
 
 export interface TodayDone { schema: boolean; mode: boolean; gratitude: boolean }
 const NOTHING_DONE: TodayDone = { schema: false, mode: false, gratitude: false };
@@ -27,8 +28,9 @@ export function useTodayDiaries(refreshKey: number | undefined) {
   useEffect(() => {
     let ignore = false;
     Promise.all([api.getSchemaDiary(), api.getModeDiary(), api.getGratitudeDiary()])
-      .then(([schema, mode, gratitude]) => {
+      .then(([rawSchema, rawMode, rawGratitude]) => {
         if (ignore) return;
+        const schema = asArray(rawSchema), mode = asArray(rawMode), gratitude = asArray(rawGratitude);
         setRecent(mergeRecentEntries({ schema, mode, gratitude }));
         setTodayDone({
           schema: schema.some(e => momentIsToday(e.createdAt)),
