@@ -367,3 +367,19 @@ describe('DiarySection — группировка по дате', () => {
     });
   });
 });
+
+describe('DiarySection — переход в трекер (паритет с мини-аппом)', () => {
+  it('с onOpenTracker показывает строку «Трекер потребностей» и вызывает переход', async () => {
+    const onOpenTracker = vi.fn();
+    render(<MemoryRouter><DiarySection onOpenTracker={onOpenTracker} /></MemoryRouter>);
+    await waitFor(() => expect(screen.getByText('Трекер потребностей')).toBeTruthy());
+    fireEvent.click(screen.getByText('Трекер потребностей'));
+    expect(onOpenTracker).toHaveBeenCalledTimes(1);
+  });
+
+  it('без onOpenTracker строки трекера нет', async () => {
+    renderSection();
+    await waitFor(() => expect(screen.getByText('Пока ни одной записи')).toBeTruthy());
+    expect(screen.queryByText('Трекер потребностей')).toBeNull();
+  });
+});

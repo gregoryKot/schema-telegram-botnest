@@ -34,7 +34,6 @@
   "schema-miniapp/src/components/NeedHistorySheet.tsx": 1,
   "schema-miniapp/src/components/NeedRatingBar.tsx": 1,
   "schema-miniapp/src/components/NoteSheet.tsx": 2,
-  "schema-miniapp/src/components/pairSheet/PartnerCard.tsx": 2,
   "schema-miniapp/src/components/PatternFrequencyList.tsx": 4,
   "schema-miniapp/src/components/patternSheet/PatternCardSection.tsx": 1,
   "schema-miniapp/src/components/patternSheet/PatternHelpSection.tsx": 1,

@@ -98,15 +98,24 @@
   (тон индекса, фразы, столбики), `pairTexts.ts`; сайт —
   `webapp/src/components/settingsSheet/PartnerCard.tsx` + `PartnerSection.tsx`
   (старый `usePairSettings` удалён); мини-апп перешёл на shared. M.
-- [ ] S-пробелы: «Мои паттерны» и «Тёплые слова» на профиле; шаринг записи
-  благодарности, «Критик или забота?» и всех достижений (хуки и карточки в
-  `shared/` уже есть); прогресс стрик-цели `task.progress`; переход в трекер и
-  вводная из хаба дневника; `SaveErrorNote` при провале сохранения выбора
-  схем/режимов (сейчас молча `reportClientError`); «Восстановить» версию
-  концептуализации (`ConceptHistoryPanel`); офлайн-плашка на мобильной вёрстке и
-  повтор очереди оценок по событию `online` (сейчас только при старте,
-  `useBootstrapLoad.ts:52`); онбординг трекера (3 карточки); развёрнутое
-  «О приложении» (`aboutData.ts`).
+- [ ] S-пробелы (мелкие пробелы паритета):
+  - [ ] «Мои паттерны» и «Тёплые слова» на профиле — отдельный PR.
+  - [x] шаринг записи благодарности (`GratitudeShare`) и «Критик или забота?»
+    (экран «Разобрано», `PhraseCheckShare`); [ ] всех достижений (диалог
+    достижений в профиле) и из «Прошлых разборов» — см. README.
+  - [x] прогресс стрик-цели `task.progress` (`TaskProgressBar`, расчёт —
+    `shared/src/tasks/taskProgress.ts`, мини-апп на нём же).
+  - [x] переход в трекер из хаба дневника (`DiaryTrackerLink`, текст —
+    `shared/src/diary/diaryTrackerLink.ts`); вводная пустого хаба на сайте уже была.
+  - [ ] `SaveErrorNote` при провале сохранения схем/режимов: компонент и хук
+    готовы, подключение к `useSchemasData` — после мержа PR `/schemas` (README).
+  - [x] «Восстановить» версию концептуализации (`ConceptVersionHistory`, поля —
+    `shared/src/therapy/conceptSnapshotRestore.ts`, мини-апп на нём же).
+  - [x] офлайн-плашка на мобильной вёрстке (`OfflineBanner`) и повтор очереди
+    оценок по `online` (`useOutboxFlushOnOnline`).
+  - [x] онбординг трекера, 3 карточки (`TrackerOnboarding`, контент —
+    `shared/src/needs/trackerOnboarding.ts`, мини-апп на нём же).
+  - [x] развёрнутое «О приложении» (`AboutWhy`, контент — `shared/src/about/aboutData.ts`).
 
 ### Этап 4. Ежедневные точки входа
 
