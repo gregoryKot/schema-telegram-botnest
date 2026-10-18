@@ -12,7 +12,7 @@ import {
   setTherapistBannerHidden,
   isPhraseHidden,
   setPhraseHidden,
-} from '../utils/todayFocus';
+} from '../../../shared/src/today/todayFocus';
 import { useLongPress } from './useLongPress';
 import { useScreenBlockOrder } from './useScreenBlockOrder';
 import type { CustomizeHighlight } from '../components/TodayCustomizeSheet';
