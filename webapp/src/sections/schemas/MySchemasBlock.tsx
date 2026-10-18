@@ -7,12 +7,12 @@ import { findSchema, shortName } from './schemasModel';
 interface Props {
   loading: boolean;
   ids: string[];
-  onAdd: () => void;
-  onOpenSchema: (id: string) => void;
+  onAdd: () => void; onOpenSchema: (id: string) => void;
+  statusFor?: (id: string) => string; // статус карточки словами; undefined — пока грузится
 }
 
-/** «Мои схемы»: чипы цвета домена (YSQ + ручной выбор) и добавление вручную. */
-export function MySchemasBlock({ loading, ids, onAdd, onOpenSchema }: Props) {
+/** «Мои схемы»: чипы цвета домена со статусом карточки и добавление вручную. */
+export function MySchemasBlock({ loading, ids, onAdd, onOpenSchema, statusFor }: Props) {
   const tr = useTr();
   return (
     <section className="cs-block">
@@ -32,8 +32,8 @@ export function MySchemasBlock({ loading, ids, onAdd, onOpenSchema }: Props) {
             const found = findSchema(SCHEMA_DOMAINS, id);
             if (!found) return null;
             return (
-              <button key={id} className="cs-chip tone-tint tone-border" style={hueStyle(DOMAIN_HUE[found.domain.id])} onClick={() => onOpenSchema(id)}>
-                {shortName(found.schema.name)}
+              <button key={id} className={`cs-chip tone-tint tone-border${statusFor ? ' cs-chip--stacked' : ''}`} style={hueStyle(DOMAIN_HUE[found.domain.id])} onClick={() => onOpenSchema(id)}>
+                {shortName(found.schema.name)}{statusFor && <span className="cs-chip-status">{statusFor(id)}</span>}
               </button>
             );
           })}

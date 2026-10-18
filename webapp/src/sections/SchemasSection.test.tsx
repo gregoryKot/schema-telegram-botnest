@@ -17,6 +17,10 @@ vi.mock('../api', () => ({
     listMyModeMaps: vi.fn(),
     updateSettings: vi.fn(),
     trackEvent: vi.fn(),
+    getSchemaDiary: vi.fn(),
+    getModeDiary: vi.fn(),
+    getSchemaNotes: vi.fn(),
+    getModeNotes: vi.fn(),
   },
   reportClientError: vi.fn(),
 }));
@@ -53,6 +57,10 @@ beforeEach(() => {
   mockApi.getYsqHistory.mockResolvedValue([]);
   mockApi.getYsqProgress.mockResolvedValue(null);
   mockApi.listMyModeMaps.mockResolvedValue([]);
+  mockApi.getSchemaDiary.mockResolvedValue([]);
+  mockApi.getModeDiary.mockResolvedValue([]);
+  mockApi.getSchemaNotes.mockResolvedValue([]);
+  mockApi.getModeNotes.mockResolvedValue([]);
 });
 
 afterEach(() => {
@@ -277,5 +285,48 @@ describe('SchemasSection — пикер режимов', () => {
     await waitFor(() => expect(mockReport).toHaveBeenCalledWith(
       expect.objectContaining({ section: 'schemas', message: expect.stringContaining('myModeIds') }),
     ));
+  });
+});
+
+describe('SchemasSection — экран паттерна (этап 3А плана единой версии)', () => {
+  const note = (over: Record<string, string> = {}) => ({
+    schemaId: 'abandonment', triggers: '', feelings: '', thoughts: '', origins: '',
+    reality: '', healthyView: '', behavior: '', updatedAt: '2026-01-01', ...over,
+  });
+  const entry = (id: number) => ({
+    id, createdAt: '2026-01-0' + id + 'T10:00:00.000Z', trigger: 'Т' + id, emotions: [], schemaIds: ['abandonment'],
+  });
+
+  it('строка «Мои схемы» показывает статус словами: заполнена и число записей', async () => {
+    mockApi.getProfile.mockResolvedValue(profile({ mySchemaIds: ['abandonment'] }));
+    mockApi.getSchemaNotes.mockResolvedValue([note({ triggers: 'Когда не отвечают' })]);
+    mockApi.getSchemaDiary.mockResolvedValue([entry(1), entry(2)]);
+    renderSection();
+    expect(await screen.findByText('карточка заполнена · 2 записи')).toBeTruthy();
+  });
+
+  it('без заметки статус — «карточка пока пустая» (не выдуманное «заполнена»)', async () => {
+    mockApi.getProfile.mockResolvedValue(profile({ mySchemaIds: ['abandonment'] }));
+    renderSection();
+    expect(await screen.findByText('карточка пока пустая')).toBeTruthy();
+  });
+
+  it('тап по схеме открывает экран паттерна с карточкой, а не справку', async () => {
+    mockApi.getProfile.mockResolvedValue(profile({ mySchemaIds: ['abandonment'] }));
+    mockApi.getSchemaNotes.mockResolvedValue([note({ triggers: 'Когда не отвечают' })]);
+    renderSection();
+    fireEvent.click(await screen.findByText(/карточка заполнена/));
+    expect(await screen.findByText('Когда не отвечают')).toBeTruthy();
+    expect(screen.getByText('Дополнить')).toBeTruthy();
+    expect(screen.queryByText('Познакомиться →')).toBeNull();
+  });
+
+  it('тап по чипу «Мои режимы» открывает экран паттерна, а не упражнение', async () => {
+    mockApi.getProfile.mockResolvedValue(profile({ myModeIds: ['vulnerable_child'] }));
+    renderSection();
+    await waitFor(() => expect(document.querySelector('.cs-chip')).toBeTruthy());
+    fireEvent.click(document.querySelector('.cs-chip')!);
+    expect(await screen.findByText('Заполнить карточку')).toBeTruthy();
+    expect(screen.getByText('О режиме →')).toBeTruthy();
   });
 });

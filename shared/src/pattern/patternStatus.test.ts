@@ -4,7 +4,7 @@ import {
   schemaEntryCounts,
   modeEntryCounts,
 } from './patternStatus';
-import type { SchemaDiaryEntry, ModeDiaryEntry } from '../../types';
+import type { SchemaDiaryEntry, ModeDiaryEntry } from '../types';
 
 describe('patternStatusText', () => {
   it('пустая карточка — приглашение заполнить, без счётчика записей', () => {

@@ -21,9 +21,9 @@ import { PickRow, PickGroupHead } from './PickRow';
 // Портрет режима показывается один раз на устройство — ключ в localStorage.
 const portraitSeenKey = (modeId: string) => `mode_portrait_seen_${modeId}`;
 
-function FlashcardFlow({ questions, hue, onSave, explainer }: { questions: Q[]; hue: number; onSave: (data: Record<string,string>) => Promise<void>; explainer?: string }) {
+function FlashcardFlow({ questions, hue, onSave, explainer, initial }: { questions: Q[]; hue: number; onSave: (data: Record<string,string>) => Promise<void>; explainer?: string; initial?: Record<string,string> }) {
   const tr = useTr();
-  const [data, setData] = useState<Record<string,string>>(() => Object.fromEntries(questions.map(q => [q.key, ''])));
+  const [data, setData] = useState<Record<string,string>>(() => ({ ...Object.fromEntries(questions.map(q => [q.key, ''])), ...initial }));
   const [step, setStep] = useState(0);
   const [done, setDone] = useState(false);
   const areaRef = useRef<HTMLTextAreaElement>(null);
@@ -90,7 +90,7 @@ function FlashcardFlow({ questions, hue, onSave, explainer }: { questions: Q[]; 
   </>);
 }
 
-export function SchemaEx({ onBack, initialSchemaId, onComplete }: { onBack: () => void; initialSchemaId?: string; onComplete?: () => void }) {
+export function SchemaEx({ onBack, initialSchemaId, onComplete, initialData }: { onBack: () => void; initialSchemaId?: string; onComplete?: () => void; initialData?: Record<string,string> }) {
   const tr = useTr();
   const goBack = useHistorySheet(onBack);
   const [picked, setPicked] = useState<{ id: string; name: string; desc: string; hue: number; domain: string } | null>(() => {
@@ -135,12 +135,12 @@ export function SchemaEx({ onBack, initialSchemaId, onComplete }: { onBack: () =
         <button className="ds-btn ds-btn--sm ex2-ghost" onClick={() => setPicked(null)}><GlyphArrowLeft /> Сменить схему</button>
       </>}
     >
-      <FlashcardFlow questions={SCHEMA_QUESTIONS} hue={picked.hue} onSave={async data => { await api.saveSchemaNote({ schemaId: picked.id, ...data }); onComplete?.(); }} explainer={buildSchemaIntroExplainer(tr)} />
+      <FlashcardFlow initial={initialData} questions={SCHEMA_QUESTIONS} hue={picked.hue} onSave={async data => { await api.saveSchemaNote({ schemaId: picked.id, ...data }); onComplete?.(); }} explainer={buildSchemaIntroExplainer(tr)} />
     </ExScreen>
   );
 }
 
-export function ModeEx({ onBack, initialModeId, onComplete }: { onBack: () => void; initialModeId?: string; onComplete?: () => void }) {
+export function ModeEx({ onBack, initialModeId, onComplete, initialData }: { onBack: () => void; initialModeId?: string; onComplete?: () => void; initialData?: Record<string,string> }) {
   const tr = useTr();
   const goBack = useHistorySheet(onBack);
   const [picked, setPicked] = useState<{ id: string; name: string; short: string; hue: number; group: string } | null>(() => {
@@ -187,7 +187,7 @@ export function ModeEx({ onBack, initialModeId, onComplete }: { onBack: () => vo
         <button className="ds-btn ds-btn--sm ex2-ghost" onClick={() => setPicked(null)}><GlyphArrowLeft /> Сменить режим</button>
       </>}
     >
-      {showPortrait && card ? <ModePortrait card={card} hue={picked.hue} ctaLabel={seen ? 'Назад к вопросам →' : undefined} onStart={() => { localStorage.setItem(portraitSeenKey(picked.id), '1'); setShowPortrait(false); }} /> : <FlashcardFlow questions={buildModeIntroQuestions(card)} hue={picked.hue} onSave={async data => { await api.saveModeNote({ modeId: picked.id, ...data }); api.trackEvent(MODE_CARD_SAVED_EVENT, { modeId: picked.id, filledFields: Object.values(data).filter(v => v.trim()).length }); onComplete?.(); }} explainer={buildModeIntroExplainer(tr)} />}
+      {showPortrait && card ? <ModePortrait card={card} hue={picked.hue} ctaLabel={seen ? 'Назад к вопросам →' : undefined} onStart={() => { localStorage.setItem(portraitSeenKey(picked.id), '1'); setShowPortrait(false); }} /> : <FlashcardFlow initial={initialData} questions={buildModeIntroQuestions(card)} hue={picked.hue} onSave={async data => { await api.saveModeNote({ modeId: picked.id, ...data }); api.trackEvent(MODE_CARD_SAVED_EVENT, { modeId: picked.id, filledFields: Object.values(data).filter(v => v.trim()).length }); onComplete?.(); }} explainer={buildModeIntroExplainer(tr)} />}
     </ExScreen>
   );
 }

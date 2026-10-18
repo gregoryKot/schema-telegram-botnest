@@ -75,10 +75,16 @@
 
 Самая заметная потеря при переходе: карточки и сводки, которых на сайте нет.
 
-- [ ] Лист паттерна (схема/режим): портрет-карточка, записи дневника с этим
-  паттерном, справка, шаринг; список «Мои карточки» (мини-апп:
-  `components/patternSheet/*`, `myCards/useMyCards.ts`). На сайте заполненные
-  карточки видны только внутри `FlashcardEx`. M.
+- [x] Лист паттерна (схема/режим): портрет-карточка, записи дневника с этим
+  паттерном, справка, шаринг. Сделано: `webapp/src/components/patternSheet/*`
+  (`PatternSheet`, секции карточки/помощи/записей, `ModeAboutSheet`), открывается
+  из `MySchemasBlock` (со статусом строки словами) и чипов «Мои режимы»
+  (`sections/SchemasSection.tsx`). Логика общая с мини-аппом: `shared/src/pattern/`
+  (`patternMeta`, `patternStatus`, `patternHelpContent`, `patternShare`,
+  `useMyCards`, `usePatternStatus`, `usePatternEntryDelete`; `api` приходит
+  инъекцией). Отдельный список «Мои карточки» не нужен: заполненность видна по
+  статусу строки. «Дополнить» открывает `SchemaEx`/`ModeEx` с уже написанным
+  (`initialData`).
 - [ ] «Мой портрет» в профиле (`sections/profile/PortraitCard`, `PortraitSheet`,
   `useAboutMe`); `buildPortrait` из `shared/src/portrait` на сайте используется
   только картой себя. M.

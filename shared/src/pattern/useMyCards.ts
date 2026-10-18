@@ -3,12 +3,8 @@
 // заполненного поля) не попадают в список вообще — «пусто = пусто», никаких
 // выдуманных карточек на чистом аккаунте.
 import { useEffect, useState } from 'react';
-import { api } from '../../api';
-import {
-  schemaMeta,
-  modeMeta,
-  type PatternMeta,
-} from '../patternSheet/patternMeta';
+import { schemaMeta, modeMeta, type PatternMeta } from './patternMeta';
+import type { UserSchemaNote, UserModeNote } from '../notes/types';
 import {
   noteCardFields,
   SCHEMA_NOTE_FIELD_ORDER,
@@ -16,9 +12,16 @@ import {
   type NoteFieldKey,
   type NoteFieldSource,
   type NoteCardField,
-} from '../../../../shared/src/share/cards/noteCard';
+} from '../share/cards/noteCard';
 
 export type MyCardsKind = 'schema' | 'mode';
+
+/** Срез api площадки, нужный списку карточек (транспорт у каждого фронтенда
+ * свой — инъекция, как у useQuickPractice). Ссылки обязаны быть стабильными. */
+export interface PatternNotesApi {
+  getSchemaNotes: () => Promise<UserSchemaNote[]>;
+  getModeNotes: () => Promise<UserModeNote[]>;
+}
 
 export interface MyCardItem {
   id: string;
@@ -29,6 +32,10 @@ export interface MyCardItem {
   excerpt: string;
   /** Все заполненные поля, уже готовые для drawNoteCard. */
   cardFields: NoteCardField[];
+  /** Сырые значения заполненных полей по ключам вопросов — чтобы «Дополнить»
+   *  открывало опросник с уже написанным, а не с пустыми полями (иначе
+   *  сохранение затёрло бы карточку пустыми строками). */
+  values: Record<string, string>;
 }
 
 function toItem(
@@ -40,10 +47,15 @@ function toItem(
   if (!meta) return null;
   const cardFields = noteCardFields(order, note);
   if (cardFields.length === 0) return null;
-  return { id, ...meta, excerpt: cardFields[0].text, cardFields };
+  const values: Record<string, string> = {};
+  for (const key of order) {
+    const text = note[key]?.trim();
+    if (text) values[key] = text;
+  }
+  return { id, ...meta, excerpt: cardFields[0].text, cardFields, values };
 }
 
-export function useMyCards(kind: MyCardsKind) {
+export function useMyCards(kind: MyCardsKind, api: PatternNotesApi) {
   const [loading, setLoading] = useState(true);
   const [items, setItems] = useState<MyCardItem[]>([]);
   // Счётчик перезагрузок: карточка правится в отдельном листе, и без этого
@@ -90,7 +102,7 @@ export function useMyCards(kind: MyCardsKind) {
     return () => {
       alive = false;
     };
-  }, [kind, reloadKey]);
+  }, [kind, reloadKey, api]);
 
   return { loading, items, reload: () => setReloadKey((k) => k + 1) };
 }

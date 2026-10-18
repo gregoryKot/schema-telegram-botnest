@@ -4,10 +4,9 @@ import { hueStyle, MODE_GROUP_HUE } from '../../lib/tone';
 import { Skeleton } from '../../components/Skeleton';
 
 interface Props {
-  loading: boolean;
-  myModeIds: string[];
-  onAdd: () => void;
+  loading: boolean; myModeIds: string[]; onAdd: () => void;
   onOpenMode: (id: string) => void;
+  onOpenPattern: (id: string) => void; // чип «Мои режимы» → экран паттерна; плитки карты → onOpenMode
 }
 
 const MODE_HUE: Record<string, number | undefined> = Object.fromEntries(
@@ -15,7 +14,7 @@ const MODE_HUE: Record<string, number | undefined> = Object.fromEntries(
 );
 
 /** «Мои режимы» (чипы) и «Карта режимов» (все режимы по группам). */
-export function ModesBlocks({ loading, myModeIds, onAdd, onOpenMode }: Props) {
+export function ModesBlocks({ loading, myModeIds, onAdd, onOpenMode, onOpenPattern }: Props) {
   const tr = useTr();
   const myModes = myModeIds.map(id => ALL_MODES.find(m => m.id === id)).filter(Boolean) as typeof ALL_MODES;
   return (
@@ -34,7 +33,7 @@ export function ModesBlocks({ loading, myModeIds, onAdd, onOpenMode }: Props) {
         ) : (
           <div className="cs-chips">
             {myModes.map(m => (
-              <button key={m.id} className="cs-chip tone-tint tone-border" style={hueStyle(MODE_HUE[m.id])} onClick={() => onOpenMode(m.id)}>
+              <button key={m.id} className="cs-chip tone-tint tone-border" style={hueStyle(MODE_HUE[m.id])} onClick={() => onOpenPattern(m.id)}>
                 <i className="ds-dot tone-fill" />
                 {m.name}
               </button>
