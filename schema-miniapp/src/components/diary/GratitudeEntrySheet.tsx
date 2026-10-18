@@ -1,15 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { BottomSheet } from '../BottomSheet';
-import { saveDraft, loadDraft, clearDraft } from '../../utils/drafts';
-import { detectCrisisAny } from '../../utils/crisisMarkers';
-import { CrisisCard } from '../CrisisCard';
+import { api } from '../../api';
+import { clearDraft } from '../../utils/drafts';
 import { fmtDateLong, todayStr } from '../../utils/format';
 import { haptic } from '../../haptic';
 import { useTr } from '../../utils/addressForm';
-import { DiaryPanel } from './diaryUi';
+import { GratitudeItemsPanel, GratitudeLoadState } from './GratitudeParts';
 import { PrimaryAction } from './diaryFlowUi';
-import { LimitedTextarea } from '../../../../shared/src/components/LimitedTextarea';
-import { DIARY_FIELD_MAX } from '../../../../shared/src/limits/textLimits';
+import { useGratitudeItems } from '../../../../shared/src/diary/useGratitudeItems';
 
 interface Props {
   onClose: () => void;
@@ -25,12 +23,15 @@ export function GratitudeEntrySheet({
   onSave,
 }: Props) {
   const tr = useTr();
-  const existing = !existingItems
-    ? loadDraft<{ items: string[] }>('gratitude')
-    : null;
-  const initItems = existingItems ?? existing?.data?.items ?? ['', '', ''];
-
-  const [items, setItems] = useState<string[]>(initItems);
+  // Форма сама поднимает сохранённый день: сервер заменяет пункты дня целиком,
+  // и вход без existingItems («плюс») иначе стирал бы прежнюю запись
+  // (инцидент 2026-10-18, docs/INCIDENTS.md).
+  const { items, setItems, status, retry } = useGratitudeItems({
+    date,
+    existingItems,
+    load: () => api.getGratitudeDiary(),
+  });
+  const ready = status === 'ready';
   const [saving, setSaving] = useState(false);
   // Отказ раньше сообщался лишь вибрацией, а лист закрывался: на десктопе
   // вибрации нет, и человек считал запись сохранённой.
@@ -39,11 +40,8 @@ export function GratitudeEntrySheet({
   const update = (i: number, v: string) =>
     setItems((prev) => prev.map((it, idx) => (idx === i ? v : it)));
 
-  useEffect(() => {
-    if (!existingItems) saveDraft('gratitude', { items });
-  }, [items, existingItems]);
-
-  const canSave = items.filter((it) => it.trim().length > 0).length >= 1;
+  const canSave =
+    ready && items.filter((it) => it.trim().length > 0).length >= 1;
 
   const handleSave = async () => {
     if (!canSave || saving) return;
@@ -67,14 +65,6 @@ export function GratitudeEntrySheet({
 
   const dateLabel = date === todayStr() ? 'сегодня' : fmtDateLong(date);
 
-  const PLACEHOLDERS = [
-    'Что-то хорошее, что произошло сегодня...',
-    'Кто-то, кто помог или поддержал...',
-    'Момент, который хочется запомнить...',
-    'Что-то простое, что согрело...',
-    'Что-то, что обычно ускользает...',
-  ];
-
   return (
     <BottomSheet onClose={onClose}>
       <div className="u-pt4">
@@ -93,45 +83,12 @@ export function GratitudeEntrySheet({
           Даже самое маленькое — оно считается. Хватит и одной строки.
         </div>
 
+        <GratitudeLoadState status={status} onRetry={retry} />
+
         {/* Строки в одном контейнере, границу держит волосяная линия. */}
-        <DiaryPanel>
-          {items.map((item, i) => (
-            <div
-              key={i}
-              style={{
-                padding: '4px 14px',
-                borderTop: i === 0 ? undefined : '1px solid var(--line)',
-              }}
-            >
-              <LimitedTextarea
-                max={DIARY_FIELD_MAX}
-                value={item}
-                onChange={(e) => update(i, e.target.value)}
-                placeholder={
-                  PLACEHOLDERS[i] ?? PLACEHOLDERS[PLACEHOLDERS.length - 1]
-                }
-                rows={2}
-                aria-label={`Благодарность ${i + 1}`}
-                style={{
-                  width: '100%',
-                  minHeight: 48,
-                  background: 'none',
-                  border: 'none',
-                  padding: '12px 0',
-                  color: 'var(--text)',
-                  fontSize: 15,
-                  lineHeight: 1.5,
-                  outline: 'none',
-                  resize: 'none',
-                }}
-              />
-            </div>
-          ))}
-        </DiaryPanel>
+        {ready && <GratitudeItemsPanel items={items} onChange={update} />}
 
-        {detectCrisisAny(...items) && <CrisisCard surface="gratitude" />}
-
-        {items.length < 5 && (
+        {ready && items.length < 5 && (
           <button
             onClick={() => setItems((prev) => [...prev, ''])}
             style={{
