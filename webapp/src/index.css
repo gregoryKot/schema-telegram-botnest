@@ -629,7 +629,7 @@ a { color: inherit; text-decoration: none; }
 /* В11 (аудит 2026-08): было rgba(107,129,86,…) и т.п. — хардкод одного (светлого)
    значения токена, из-за чего фон/рамка чипов не следовали за тёмной темой,
    хотя text-цвет уже брался из var(--c-*). color-mix с тем же токеном — фон
-   пересчитывается сам при смене темы, как в .sb-today-cta/.app-banner. */
+   пересчитывается сам при смене темы, как в .sb-today-cta. */
 .chip-success { background: color-mix(in srgb, var(--c-moss) 10%, transparent); color: var(--c-moss); border-color: color-mix(in srgb, var(--c-moss) 22%, transparent); }
 .dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; background: currentColor; }
 
@@ -830,7 +830,7 @@ a { color: inherit; text-decoration: none; }
   .tabs::-webkit-scrollbar { display: none; }
 }
 
-/* ─── Mobile – bottom nav — тёмный таб-бар (редизайн 2026-10) ────────────── */
+/* ─── Mobile – bottom nav — светлая панель, как в мини-аппе ──────────────── */
 .mobile-nav {
   position: fixed;
   bottom: 0; left: 0; right: 0;
@@ -838,106 +838,33 @@ a { color: inherit; text-decoration: none; }
      считает размытие программно, и каждый кадр экрана стоил ~1.4с —
      приложение вязло метрономом (замеры на устройстве владельца
      2026-08-26). Парная правка — schema-miniapp/src/components/BottomNav.tsx,
-     там уже снято. Фон сплошной --ink. */
-  background: var(--ink);
+     там уже снято. Фон сплошной --nav-bg (светлая тема — бумага, тёмная —
+     ночной фон: панель не белая и не чёрная полоса, а часть экрана). */
+  background: var(--nav-bg);
+  border-top: 1px solid var(--line);
   z-index: 49;
   display: flex;
-  padding: 8px 0 calc(10px + var(--safe-bottom));
-  min-height: 76px; box-sizing: border-box;
+  gap: var(--space-2);
+  padding: var(--space-6) var(--space-6) calc(var(--space-6) + var(--safe-bottom));
+  min-height: 64px; box-sizing: border-box;
 }
 .mobile-nav-item {
-  flex: 1; display: flex; flex-direction: column;
-  align-items: center; justify-content: center; gap: 4px;
-  min-height: 44px; position: relative;
-  color: var(--on-ink-faint); font-size: 11px; font-weight: 500;
-  cursor: pointer; transition: color .15s; border: none; background: none;
-  text-decoration: none;
+  flex: 1 1 0; min-width: 0; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: var(--space-4);
+  min-height: 52px; padding: var(--space-4) 0;
+  border: none; border-radius: var(--r-12);
+  color: var(--text-faint); font-family: inherit; font-size: 11px; font-weight: 500;
+  letter-spacing: 0.01em; white-space: nowrap;
+  cursor: pointer; transition: color .15s, background-color .15s;
+  background: none; text-decoration: none;
   -webkit-tap-highlight-color: transparent;
 }
-.mobile-nav-item.active { color: #fff; font-weight: 700; }
-.mobile-nav-item svg { transition: opacity .15s; }
-.mobile-nav-item:not(.active) svg { opacity: 0.6; }
-/* Точка над подписью активного пункта */
-.mobile-nav-item.active::after {
-  content: ''; position: absolute; top: -2px; left: 50%;
-  width: 5px; height: 5px; margin-left: -2.5px; border-radius: 50%;
-  background: var(--accent-hot);
-}
-
-/* ─── Mobile – баннер «Открыть приложение» (MobileAppBanner) ─────────────── */
-.app-banner {
-  background:
-    linear-gradient(135deg,
-      color-mix(in srgb, var(--accent) 10%, var(--surface)),
-      color-mix(in srgb, var(--accent) 3%, var(--surface)));
-  border: 1px solid color-mix(in srgb, var(--accent) 24%, transparent);
-  border-radius: 18px;
-  padding: 14px 14px 15px;
-  margin-bottom: var(--space-16);
-  box-shadow: 0 6px 24px color-mix(in srgb, var(--accent) 10%, transparent);
-}
-.app-banner-head { display: flex; gap: var(--space-12); align-items: center; }
-.app-banner-icon {
-  width: 44px; height: 44px;
-  border-radius: 11px;
-  flex-shrink: 0;
-  box-shadow: 0 3px 10px rgba(0, 0, 0, .18);
-}
-.app-banner-body { flex: 1; min-width: 0; }
-.app-banner-title { font-size: 15px; font-weight: 700; color: var(--text); }
-.app-banner-sub { font-size: 12px; color: var(--text-sub); margin-top: 1px; }
-.app-banner-text { font-size: 12.5px; color: var(--text-sub); line-height: 1.55; margin: 10px 0 12px; }
-.app-banner-actions { display: flex; gap: var(--space-8); flex-wrap: wrap; }
-.app-banner-cta {
-  display: inline-flex; align-items: center; justify-content: center;
-  min-height: 44px;
-  background: var(--accent);
-  border-radius: var(--r-12);
-  padding: 10px 16px;
-  color: var(--on-accent);
-  font-size: 13px; font-weight: 700;
-  text-decoration: none;
-}
-.app-banner-secondary {
-  display: inline-flex; align-items: center; justify-content: center;
-  min-height: 44px;
+/* Активный пункт — акцент и мягкая «таблетка» вокруг иконки и подписи
+   (12%: контраст --accent на плашке ≥4.5:1 в обеих темах). */
+.mobile-nav-item.active {
+  color: var(--accent); font-weight: 700;
   background: color-mix(in srgb, var(--accent) 12%, transparent);
-  border: none; border-radius: var(--r-12);
-  padding: 10px 14px;
-  color: var(--accent); font-size: 13px; font-weight: 600;
-  font-family: inherit; cursor: pointer;
 }
-.app-banner-close {
-  width: 44px; height: 44px;
-  margin: -14px -14px -8px 0;
-  flex-shrink: 0;
-  background: none; border: none;
-  color: var(--text-faint); font-size: 15px;
-  cursor: pointer;
-}
-
-/* Инструкция «значок на экран» (InstallAppGuide) — стили нейтральные:
-   компонент живёт в тёплой теме кабинета, цвета наследует от контекста. */
-.install-guide {
-  margin-top: var(--space-12);
-  padding-top: var(--space-12);
-  border-top: 1px dashed color-mix(in srgb, currentColor 20%, transparent);
-  font-size: 13px;
-  color: var(--text-sub);
-}
-.install-guide-native {
-  display: block; width: 100%;
-  min-height: 44px;
-  background: var(--accent);
-  border: none; border-radius: var(--r-12);
-  padding: 11px 16px; margin-bottom: var(--space-10);
-  color: var(--on-accent);
-  font-size: 13.5px; font-weight: 700;
-  font-family: inherit; cursor: pointer;
-}
-.install-guide-browser { font-weight: 600; color: var(--text); margin-bottom: var(--space-6); }
-.install-guide-steps { margin: 0 0 10px; padding-left: var(--space-20); display: grid; gap: 5px; line-height: 1.5; }
-.install-guide-note { font-size: 12px; color: var(--text-faint); line-height: 1.5; }
 
 /* ─── Responsive breakpoints ─────────────────────────────────────────────── */
 @media (max-width: 767px) {
@@ -962,7 +889,14 @@ a { color: inherit; text-decoration: none; }
   }
   .canvas {
     overflow: visible; display: block;
-    padding-bottom: calc(64px + var(--safe-bottom));
+    /* Высота панели .mobile-nav (64px) + safe-area: низ контента не под ней.
+       flex-shrink: 0 — иначе canvas сжимался до экрана, страница вылезала
+       за него, и этот отступ ничего не давал (последние 64px лежали под
+       панелью). */
+    flex-shrink: 0; min-height: auto;
+    /* + 72px — запас под плавающую «+» (56px + отступ): последняя строка
+       не прячется под кнопкой. */
+    padding-bottom: calc(64px + 72px + var(--safe-bottom));
   }
   .page { overflow: visible; height: auto; }
   /* Fixed fullscreen overlays (.ex-screen) need their own scroll — the global
