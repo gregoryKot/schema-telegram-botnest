@@ -3,7 +3,7 @@
 // денормализованный mySchemaIds → localStorage). Дочерние секции замоканы
 // (AppShell.test-helpers.tsx).
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { screen, waitFor, cleanup } from '@testing-library/react';
+import { screen, waitFor, cleanup, fireEvent } from '@testing-library/react';
 import { renderAppShell } from './AppShell.test-helpers';
 import { api } from '../api';
 import { MY_SCHEMA_IDS_KEY, YSQ_PROGRESS_KEY, CHILDHOOD_DONE_KEY } from '../utils/storageKeys';
@@ -27,17 +27,34 @@ afterEach(() => {
   cleanup();
 });
 
-describe('AppShell — дисклеймер: зеркалим согласие сайта в бэкенд для мини-аппа', () => {
-  it('если disclaimer ещё не accepted — вызывает acceptDisclaimer', async () => {
+describe('AppShell — согласия: молча не принимаем, нужен экран', () => {
+  it('accepted: false — показан экран согласий, acceptDisclaimer не зван до двух галочек', async () => {
+    mockApi.getDisclaimer.mockResolvedValueOnce({ accepted: false });
+    renderAppShell('/today');
+    await screen.findByText('Данные и конфиденциальность');
+    expect(mockApi.acceptDisclaimer).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('checkbox'));
+    fireEvent.click(screen.getByText('Далее'));
+    expect(mockApi.acceptDisclaimer).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('checkbox'));
+    fireEvent.click(screen.getByText('Начать'));
+    await waitFor(() => expect(mockApi.acceptDisclaimer).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(screen.queryByText('Важно знать')).toBeNull());
+  });
+
+  it('accepted: false, но экран входа сайта был показан — принимается без экрана', async () => {
+    localStorage.setItem('login_consent_shown', '1');
     mockApi.getDisclaimer.mockResolvedValueOnce({ accepted: false });
     renderAppShell('/today');
     await waitFor(() => expect(mockApi.acceptDisclaimer).toHaveBeenCalledTimes(1));
+    expect(screen.queryByText('Данные и конфиденциальность')).toBeNull();
   });
 
-  it('если уже accepted — acceptDisclaimer НЕ вызывается повторно', async () => {
+  it('accepted: true — экрана нет и вызова нет', async () => {
     mockApi.getDisclaimer.mockResolvedValueOnce({ accepted: true });
     renderAppShell('/today');
     await waitFor(() => expect(screen.getByTestId('today-section')).toBeTruthy());
+    expect(screen.queryByText('Данные и конфиденциальность')).toBeNull();
     expect(mockApi.acceptDisclaimer).not.toHaveBeenCalled();
   });
 });

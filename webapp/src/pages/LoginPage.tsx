@@ -10,6 +10,7 @@ import { LoginEmailForm } from './login/LoginEmailForm';
 import { TelegramRetry } from './login/TelegramRetry';
 import { hasAuthSeen } from '../../../shared/src/auth/authSeen';
 import { useTr } from '../utils/addressForm';
+import { useLoginConsentMark } from '../hooks/useLoginConsentMark';
 import '../styles/auth-login.css';
 
 const API_BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? '';
@@ -19,9 +20,8 @@ export function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const tr = useTr();
-  // В5 (аудит 2026-08): AuthCallback.tsx после провала OAuth уводит сюда с
-  // ?error=no_token — читаем query один раз при монтировании (ленивый
-  // инициализатор, react-hooks/set-state-in-effect).
+  useLoginConsentMark();
+  // В5: после провала OAuth AuthCallback уводит сюда с ?error=no_token (читаем один раз).
   const [error, setError] = useState<string | null>(() =>
     new URLSearchParams(location.search).get('error') === 'no_token'
       ? tr(

@@ -1,4 +1,5 @@
 import { useTr } from '../../utils/addressForm';
+import { haptic } from '../../haptic';
 import { pluralRu } from '../../../../shared/src/utils/pluralRu';
 import '../../styles/sheet-tasks.css';
 
@@ -39,20 +40,16 @@ export function CaseEntryCard({
       </p>
 
       <div className="sk-case-actions">
-        <button type="button" className="ds-btn" onClick={onStart}>
+        <button type="button" className="ds-btn" onClick={() => { haptic.tap(); onStart(); }}>
           Разобрать · ≈ 3 мин
         </button>
-        <button type="button" className="ds-btn ds-btn--secondary" onClick={onSteadyDay}>
+        <button type="button" className="ds-btn ds-btn--secondary" onClick={() => { haptic.tap(); onSteadyDay(); }}>
           Ровный день
         </button>
       </div>
 
       {started && (
-        <button
-          type="button"
-          className="ds-link sk-case-map"
-          onClick={onOpenMap}
-        >
+        <button type="button" className="ds-link sk-case-map" onClick={() => { haptic.tap(); onOpenMap(); }}>
           {`Карта себя · ${caseCount} ${pluralRu(caseCount, 'разбор', 'разбора', 'разборов')} →`}
         </button>
       )}

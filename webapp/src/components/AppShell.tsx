@@ -12,6 +12,7 @@ import { Loader } from './Loader';
 import { useBootstrapLoad, TODAY_DATE, TODAY_KEY } from './appShell/useBootstrapLoad';
 import { useOverlays } from './appShell/useOverlays';
 import { AppOverlays } from './appShell/AppOverlays';
+import { EntryFlows } from './appShell/EntryFlows';
 import { AppSections } from './appShell/AppSections';
 import { type Section, sectionFromPath, fillHistoryGaps } from './appShell/navigation';
 import { MobileNav } from './appShell/MobileNav';
@@ -435,11 +436,8 @@ export function AppShell() {
           </Suspense>
         )}
 
-        {/* ── Полноэкранные шторки (настройки/практики/планы/справочник схем/
-            колесо детства/заметка/цель/дисклеймер кабинета) — вынесены в
-            AppOverlays.tsx (правило №10), каждая со своей Suspense-границей
-            (fallback={null} — контент под ней уже смонтирован отдельно
-            выше, аудит 2026-08-22, находка №1). */}
+        {/* Согласия и ссылки-приглашения (EntryFlows), затем шторки (AppOverlays, правило №10) */}
+        <EntryFlows ov={ov} />
         <AppOverlays
           ov={ov}
           userRole={userRole}
