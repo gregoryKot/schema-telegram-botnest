@@ -1,8 +1,8 @@
 // Тест на computeTaskProgress — вычисление прогресса стрик-задачи, общее
 // для HelpSection и TodaySection (свип дублей 2026-07, «виджет задач»).
 import { describe, it, expect } from 'vitest';
-import { computeTaskProgress } from './TaskProgressBar';
-import { UserTask } from '../../api';
+import { computeTaskProgress } from './taskProgress';
+import type { UserTask } from '../apiTypes';
 
 function makeTask(overrides: Partial<UserTask> = {}): UserTask {
   return {

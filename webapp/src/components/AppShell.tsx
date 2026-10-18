@@ -19,6 +19,8 @@ import { MobileNav } from './appShell/MobileNav';
 import { useDesktopAppLaunch } from '../hooks/useDesktopAppLaunch';
 import { useHostShell } from '../hooks/useHostShell';
 import { useIsOffline } from '../hooks/useIsOffline';
+import { useOutboxFlushOnOnline } from '../hooks/useOutboxFlushOnOnline';
+import { OfflineBanner } from './OfflineBanner';
 // – always-needed small helpers (no heavy data deps) –
 import { Celebration } from './Celebration';
 import { todayInsightPhrase } from '../utils/todayInsight';
@@ -107,6 +109,7 @@ export function AppShell() {
   const [history, setHistory] = useState<DayHistory[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const isOffline = useIsOffline();
+  useOutboxFlushOnOnline();
   const [helpTasksKey, setHelpTasksKey] = useState(0);
   const [celebrationStreak, setCelebrationStreak] = useState<number | null>(null);
   const [childhoodWheelPending, setChildhoodWheelPending] = useState(false);
@@ -336,6 +339,7 @@ export function AppShell() {
 
       {/* ── Main ─────────────────────────────────────────────────────────────── */}
       <div className={`main${therapistMode ? ' main--cabinet' : ''}`}>
+        <OfflineBanner offline={isOffline} />
         {/* Topbar – shown in all modes */}
         <div className="topbar">
           <div className="t-spacer" />
@@ -432,7 +436,7 @@ export function AppShell() {
         {/* ── Diaries overlay ── */}
         {ov.showDiaries && (
           <Suspense fallback={null}>
-            <DiariesOverlay onClose={() => ov.setShowDiaries(false)} />
+            <DiariesOverlay onClose={() => ov.setShowDiaries(false)} onOpenTracker={() => { ov.setShowDiaries(false); ov.setTrackerNeedId(null); ov.setShowTrackerOverlay(true); }} />
           </Suspense>
         )}
 

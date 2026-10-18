@@ -3,6 +3,7 @@ import type { DiaryType, SchemaDiaryEntry, ModeDiaryEntry, GratitudeDiaryEntry, 
 import { pressable } from '../../utils/a11y';
 import { EMOTIONS, getModeById, getSchemaById } from '../../schemaTherapyData';
 import { ModeEntryShare } from '../../components/diary/ModeEntryShare';
+import { GratitudeShare } from '../../components/diary/GratitudeShare';
 import { DIARY_HUE, hueStyle } from '../../lib/tone';
 import { fmtTime, fmtDateKey, fmtDayMonth } from './dateHelpers';
 import '../../styles/client-diary.css';
@@ -129,6 +130,7 @@ export function GratitudeEntry({ entry, onDelete }: { entry: GratitudeDiaryEntry
           {open && (
             <div className="cd-entry-more" role="presentation" onClick={stop}>
               <DeleteBtn onClick={onDelete} />
+              <GratitudeShare items={entry.items} dateLabel={fmtDayMonth(entry.date)} />
             </div>
           )}
         </>

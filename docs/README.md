@@ -62,6 +62,45 @@ CLAUDE.md. Не удалять, но и не считать списком за�
   `ModeExOverlay` (тот же, что у плиток карты). Решили не городить второй лист до
   живого взгляда на онбординг (чеклист `ONBOARDING_AUDIT_2026-10.md`).
 
+**Единая версия, этап 3 — S-пробелы** (`docs/ONE_FRONTEND_PLAN.md`):
+- **Подключить `SaveErrorNote` к выбору схем/режимов.** Компонент
+  `webapp/src/components/SaveErrorNote.tsx` и хук `webapp/src/hooks/useSaveFailure.ts`
+  готовы, но не подключены: `saveSchemas`/`saveModes` в
+  `webapp/src/sections/schemas/useSchemasData.ts` по-прежнему только
+  `reportClientError` (файл правил параллельный PR экрана `/schemas`). Подключить:
+  `const { failed, track } = useSaveFailure()`, в обоих методах
+  `track(api.updateSettings(...), () => reportClientError(...))` вместо `.catch`,
+  вернуть `saveFailed: failed`, показать `<SaveErrorNote ty="Выбор сохранён только на этом устройстве — проверь связь и попробуй ещё раз" vy="…проверьте связь и попробуйте ещё раз" />`
+  в `SchemasSection`. После подключения убрать запись из
+  `scripts/dead-files-baseline.json`.
+- **Шаринг всех достижений на сайте не сделан.** Диалог достижений —
+  `webapp/src/sections/profile/AchievementsDialog.tsx` (профиль в параллельном PR);
+  образец — `schema-miniapp/src/sections/profile/AchievementsSheet.tsx`
+  (`drawAchievementsCard` + `achievementsShareText` + `eventKind` из
+  `shared/src/share`). Сделать вместе с «Мои паттерны» и «Тёплые слова».
+- **Шаринг разбора из «Прошлых разборов» на сайте не сделан.** Шаринг есть на экране
+  «Разобрано» (`PhraseDoneCard`), а в `PhraseHistoryCard` (мини-апп:
+  `phraseCheck/HistoryCard.tsx`) — нет: файл упирается в храповик размера.
+  Добавить `<PhraseCheckShare phrase marks rewrite />` при выносе части карточки.
+- **Хаб дневника на сайте: нет подписи «Последняя отметка · N дн. назад»** у строки
+  трекера (в мини-аппе `lastNeedsDate`). Нужна дата последней оценки из
+  `ratings`/истории в `DiarySection`; сейчас строка отдаёт только «что это и зачем».
+- **«Восстановить» версию на сайте сразу сохраняет** (автосохранение
+  `patchConcept`), в мини-аппе — только заполняет форму до «Сохранить». Это
+  осознанно: на сайте нет кнопки «Сохранить», а прежняя версия остаётся в истории
+  на сервере, поэтому откат обратим; вместо черновика — диалог подтверждения.
+
+**Единая версия, этап 3 — карточка партнёра** (`docs/ONE_FRONTEND_PLAN.md`):
+- **Ожидающее приглашение на сайте не видно.** Мини-апп в `PairPanel` показывает
+  «Ждём партнёра» со ссылкой `miniappDeepLink('pair_…')`; на сайте при
+  `pendingCode` есть только кнопка «Новая ссылка» (`webapp/src/components/settingsSheet/PartnerSection.tsx`),
+  старую ссылку не открыть. Ссылка собирается на фронте из кода, а бэк отдаёт URL
+  только при создании: нужен URL для `pendingCode` в `GET /api/pair` или общий
+  сборщик ссылки в `shared/`.
+- **У экрана-тупика «Ошибка загрузки» в мини-аппе нет «Повторить».**
+  `schema-miniapp/src/components/pairSheet/PairPanel.tsx` предлагает закрыть и
+  открыть заново; общий хук уже отдаёт `retryLoad`, на сайте он подключён.
+
 **Единая версия, этап 2 — входы** (#758, `docs/ONE_FRONTEND_PLAN.md`):
 - **Перезагрузка внутри Telegram снова открывает экран согласия по `pair_*`/`therapy_*`.**
   `start_param` там приходит из подписанных данных запуска, а не из адреса, и

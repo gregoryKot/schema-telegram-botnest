@@ -8,6 +8,7 @@ import { appInviteShare } from '../../../../shared/src/share/cards/inviteShare';
 import { SSection, SRow } from './ui';
 import { ExportSummaryModal } from './ExportSummaryModal';
 import { ExternalLink } from '../../host/ExternalLink';
+import { AboutWhy } from './AboutWhy';
 
 // Раздел «Поделиться»: карточка-приглашение и сводка для терапевта.
 export function ShareSection() {
@@ -55,6 +56,7 @@ export function ShareSection() {
 export function AboutSection() {
   return (
     <SSection id="s-about" label="О приложении">
+      <AboutWhy />
       <div className="st-body-block">
         <p className="st-text">
           Инструмент самопознания на основе схема-терапии: трекер потребностей, дневники схем и режимов, тесты, практики и пространство для работы с терапевтом.

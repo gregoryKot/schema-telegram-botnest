@@ -2,6 +2,7 @@ import type { UserTask } from '../../api';
 import { OverlayFrame } from '../../components/OverlayFrame';
 import { useHistorySheet } from '../../hooks/useHistorySheet';
 import { fmtDate, momentDayKey } from '../../utils/format';
+import { TaskProgressBar } from '../../components/TaskProgressBar';
 import { resolveTaskText, taskStatusMark } from './helpers';
 
 // Оверлей «Все задания» экрана «Сегодня». Вынесено из TodaySection.tsx
@@ -23,6 +24,7 @@ export function AllTasksOverlay({ tasks, taskHistory, onClose, onTaskDone, onAdd
             <div className="sk-task-main">
               {task.assignedBy !== null && <div className="ds-eyebrow">от терапевта</div>}
               <div className="sk-task-text">{resolveTaskText(task)}</div>
+              <TaskProgressBar task={task} />
               {task.dueDate && <div className="ds-sub">до {fmtDate(task.dueDate)}</div>}
             </div>
             {task.done === null && task.assignedBy !== null && task.type === 'custom' && (
