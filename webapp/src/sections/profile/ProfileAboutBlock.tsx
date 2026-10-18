@@ -15,18 +15,17 @@ interface Props {
 }
 
 export function ProfileAboutBlock({ refreshKey, onTakeTest }: Props) {
-  const aboutMe = useAboutMe(api, {
-    refreshKey,
-    reportError: (message) => reportClientError({ message, section: 'profile-about' }),
-  });
+  const aboutMe = useAboutMe(api, { refreshKey, reportError: (message) => reportClientError({ message, section: 'profile-about' }) });
   const [sheet, setSheet] = useState(false);
 
   return (
     <>
-      {aboutMe.portraitReady
-        ? <PortraitCard portrait={aboutMe.portrait} ysqCompletedAt={aboutMe.ysqCompletedAt} onOpenSheet={() => setSheet(true)} onTakeTest={onTakeTest} />
-        : <Skeleton height={220} radius={20} />}
-      {aboutMe.warmWordsReady ? <WarmWordsCard items={aboutMe.warmWordsItems} /> : <Skeleton height={110} radius={20} />}
+      <div className="cpf-slot cpf-slot--portrait">{/* слоты — flex-элементы страницы: на телефоне портрет выше (css order) */}
+        {aboutMe.portraitReady
+          ? <PortraitCard portrait={aboutMe.portrait} ysqCompletedAt={aboutMe.ysqCompletedAt} onOpenSheet={() => setSheet(true)} onTakeTest={onTakeTest} />
+          : <Skeleton height={220} radius={20} />}
+      </div>
+      <div className="cpf-slot cpf-slot--warm">{aboutMe.warmWordsReady ? <WarmWordsCard items={aboutMe.warmWordsItems} /> : <Skeleton height={110} radius={20} />}</div>
       {sheet && <PortraitSheet aboutMe={aboutMe} onClose={() => setSheet(false)} />}
     </>
   );

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
-import { api, reportClientError } from '../../api';
-import type { UserTask } from '../../api';
+import { api, reportClientError, type UserTask } from '../../api';
+import { asArray } from './safeData';
 
 // Загрузка + мутации «Практик на сегодня». Раньше completeTask/refetch после
 // создания задания глотали сбой молча: пользователь заканчивал упражнение
@@ -18,8 +18,8 @@ export function useTaskActions(refreshKey: number | undefined, section = 'today.
 
   const load = useCallback(
     () => Promise.all([api.getTasks(), api.getTaskHistory()]).then(([t, h]) => {
-      setTasks(t);
-      setTaskHistory(h);
+      setTasks(asArray(t));
+      setTaskHistory(asArray(h));
     }),
     [],
   );
