@@ -1,5 +1,7 @@
 import { Skeleton } from '../Skeleton';
 import { DiaryPanel } from './diaryUi';
+import { CrisisCard } from '../CrisisCard';
+import { detectCrisisAny } from '../../utils/crisisMarkers';
 import { LimitedTextarea } from '../../../../shared/src/components/LimitedTextarea';
 import { DIARY_FIELD_MAX } from '../../../../shared/src/limits/textLimits';
 import type { GratitudeLoadStatus } from '../../../../shared/src/diary/useGratitudeItems';
@@ -77,39 +79,43 @@ export function GratitudeItemsPanel({
   onChange: (i: number, v: string) => void;
 }) {
   return (
-    <DiaryPanel>
-      {items.map((item, i) => (
-        <div
-          key={i}
-          style={{
-            padding: '4px 14px',
-            borderTop: i === 0 ? undefined : '1px solid var(--line)',
-          }}
-        >
-          <LimitedTextarea
-            max={DIARY_FIELD_MAX}
-            value={item}
-            onChange={(e) => onChange(i, e.target.value)}
-            placeholder={
-              PLACEHOLDERS[i] ?? PLACEHOLDERS[PLACEHOLDERS.length - 1]
-            }
-            rows={2}
-            aria-label={`Благодарность ${i + 1}`}
+    <>
+      <DiaryPanel>
+        {items.map((item, i) => (
+          <div
+            key={i}
             style={{
-              width: '100%',
-              minHeight: 48,
-              background: 'none',
-              border: 'none',
-              padding: '12px 0',
-              color: 'var(--text)',
-              fontSize: 15,
-              lineHeight: 1.5,
-              outline: 'none',
-              resize: 'none',
+              padding: '4px 14px',
+              borderTop: i === 0 ? undefined : '1px solid var(--line)',
             }}
-          />
-        </div>
-      ))}
-    </DiaryPanel>
+          >
+            <LimitedTextarea
+              max={DIARY_FIELD_MAX}
+              value={item}
+              onChange={(e) => onChange(i, e.target.value)}
+              placeholder={
+                PLACEHOLDERS[i] ?? PLACEHOLDERS[PLACEHOLDERS.length - 1]
+              }
+              rows={2}
+              aria-label={`Благодарность ${i + 1}`}
+              style={{
+                width: '100%',
+                minHeight: 48,
+                background: 'none',
+                border: 'none',
+                padding: '12px 0',
+                color: 'var(--text)',
+                fontSize: 15,
+                lineHeight: 1.5,
+                outline: 'none',
+                resize: 'none',
+              }}
+            />
+          </div>
+        ))}
+      </DiaryPanel>
+      {/* Детекция живёт рядом с полями свободного текста (правило №7). */}
+      {detectCrisisAny(...items) && <CrisisCard surface="gratitude" />}
+    </>
   );
 }

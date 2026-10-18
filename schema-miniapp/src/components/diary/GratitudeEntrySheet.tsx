@@ -2,8 +2,6 @@ import { useState } from 'react';
 import { BottomSheet } from '../BottomSheet';
 import { api } from '../../api';
 import { clearDraft } from '../../utils/drafts';
-import { detectCrisisAny } from '../../utils/crisisMarkers';
-import { CrisisCard } from '../CrisisCard';
 import { fmtDateLong, todayStr } from '../../utils/format';
 import { haptic } from '../../haptic';
 import { useTr } from '../../utils/addressForm';
@@ -89,8 +87,6 @@ export function GratitudeEntrySheet({
 
         {/* Строки в одном контейнере, границу держит волосяная линия. */}
         {ready && <GratitudeItemsPanel items={items} onChange={update} />}
-
-        {detectCrisisAny(...items) && <CrisisCard surface="gratitude" />}
 
         {ready && items.length < 5 && (
           <button
