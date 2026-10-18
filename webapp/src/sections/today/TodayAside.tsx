@@ -1,6 +1,5 @@
 import type { TherapyRelationInfo } from '../../api';
 import { pressable } from '../../utils/a11y';
-import { useTr } from '../../utils/addressForm';
 import { meetingTitle, type SparkBar } from './model';
 
 interface IndexProps {
@@ -46,21 +45,6 @@ export function MeetingCard({ relation, now }: { relation: TherapyRelationInfo |
       {relation.nextSession && <div className="ds-num ct-meeting-title">{meetingTitle(relation.nextSession, now)}</div>}
       <div className="ct-meeting-name">{relation.partnerName}</div>
       <a className="ct-write" href={`tg://user?id=${relation.partnerId}`}>Написать</a>
-    </div>
-  );
-}
-
-// Стрик: цифра --accent-hot 52px.
-export function StreakCard({ streak }: { streak: number }) {
-  const tr = useTr();
-  return (
-    <div className="ds-card ct-streak">
-      <div className={'ds-num ct-streak-num' + (streak > 0 ? '' : ' is-zero')}>{streak}</div>
-      <div>
-        <div className="ct-streak-label">
-          {streak === 0 ? tr('Оцени потребности – начнётся стрик', 'Оцените потребности – начнётся стрик') : 'дней подряд'}
-        </div>
-      </div>
     </div>
   );
 }

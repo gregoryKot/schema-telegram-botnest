@@ -7,7 +7,10 @@
 // общих настройках.
 import { useState } from 'react';
 import { BottomSheet } from './BottomSheet';
-import { FOCUS_OPTIONS, FocusPractice } from '../utils/todayFocus';
+import {
+  FOCUS_OPTIONS,
+  FocusPractice,
+} from '../../../shared/src/today/todayFocus';
 import { getTheme, toggleTheme, Theme } from '../utils/theme';
 import { CustomizeRow } from './plusMenu/CustomizeRow';
 import { useDragReorder } from '../hooks/useDragReorder';

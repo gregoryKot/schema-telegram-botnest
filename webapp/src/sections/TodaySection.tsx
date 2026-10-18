@@ -5,7 +5,6 @@ import type { Section } from '../components/appShell/navigation';
 import { MY_SCHEMA_IDS_KEY, MY_MODE_IDS_KEY } from '../utils/storageKeys';
 import { TaskCreateSheet } from '../components/TaskCreateSheet';
 import { useTr } from '../utils/addressForm';
-import { pressable } from '../utils/a11y';
 import { PhraseShareCard } from '../components/PhraseShareCard';
 import '../styles/client-today.css';
 const SchemaEx = lazy(() => import('../components/exercises/FlashcardEx').then(m => ({ default: m.SchemaEx })));
@@ -21,7 +20,9 @@ import { NeedsCard } from './today/NeedsCard';
 import { PracticesBlock } from './today/PracticesBlock';
 import { DraftsBlock } from './today/DraftsBlock';
 import { RecentEntries } from './today/RecentEntries';
-import { IndexCard, MeetingCard, StreakCard } from './today/TodayAside';
+import { IndexCard, MeetingCard } from './today/TodayAside';
+import { StreakSlot, TherapistLink } from './today/TodayAsideExtras';
+import { TodayFocusBlock } from './today/TodayFocusBlock';
 
 export { MY_SCHEMA_IDS_KEY, MY_MODE_IDS_KEY };
 
@@ -63,7 +64,8 @@ export function TodaySection({
   refreshKey, userRole, onOpenTherapistCabinet, onTasksChanged, rating,
 }: Props) {
   const tr = useTr();
-  const { profile, manualSchemaIds, recent, diariesLoaded, therapyRelation, historyDays } = useTodayData(refreshKey);
+  const data = useTodayData(refreshKey);
+  const { profile, manualSchemaIds, recent, diariesLoaded, therapyRelation, historyDays } = data;
   const { tasks, taskHistory, taskError, completeTask, afterCreate } = useTaskActions(refreshKey);
   const [showDiaryTask,  setShowDiaryTask]  = useState(false);
   const [showAllTasks,   setShowAllTasks]   = useState(false);
@@ -115,16 +117,9 @@ export function TodaySection({
       <div className="ct-grid">
 
         <div className="ct-main">
-          {userRole === 'THERAPIST' && onOpenTherapistCabinet && (
-            <div {...pressable(onOpenTherapistCabinet)} className="ds-card ds-card--row ds-card--hover ct-therapist-link">
-              <div className="ct-task-body">
-                <div className="ds-label">Терапевт</div>
-                <div className="ct-task-text">Кабинет терапевта</div>
-                <div className="ds-sub">Клиенты · Задания · Концептуализация</div>
-              </div>
-              <span className="ds-link">открыть →</span>
-            </div>
-          )}
+          <TodayFocusBlock needs={needs} ratings={ratings} data={data} onOpenTracker={onOpenTracker} onOpenTrackerHistory={onOpenTrackerHistory} />
+
+          {userRole === 'THERAPIST' && onOpenTherapistCabinet && <TherapistLink onOpen={onOpenTherapistCabinet} />}
 
           {/* Точка входа «Что это было» + онбординг после первого разбора */}
           <CaseEntryBlock
@@ -165,7 +160,7 @@ export function TodaySection({
             <IndexCard score={score} weekDelta={weekDelta(history)} bars={sparkBars(history)} onOpenHistory={onOpenTrackerHistory} />
             <MeetingCard relation={therapyRelation} now={now} />
           </div>
-          <StreakCard streak={streak} />
+          <StreakSlot streak={streak} />
           <PhraseShareCard />
         </aside>
       </div>
