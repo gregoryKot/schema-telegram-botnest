@@ -12,9 +12,9 @@ export {
   parseStringArray as parseActionOrder,
   serializeStringArray as serializeActionOrder,
   readStringArray as getActionOrder,
-} from './stringArrayStorage';
-import { readStringArray, writeStringArray } from './stringArrayStorage';
-import { reorderedIds } from './dragReorder';
+} from '../utils/stringArrayStorage';
+import { readStringArray, writeStringArray } from '../utils/stringArrayStorage';
+import { reorderedIds } from '../utils/dragReorder';
 
 /** Элементы из order — первыми (в его порядке); остальные — следом, в порядке
  * items (stable). Группа «плюса»: order общий на поверхность, items — id

@@ -5,7 +5,7 @@ import type {
 } from 'react';
 import { haptic } from '../haptic';
 import { getHost } from '../../../shared/src/host';
-import { targetIndexFromOffset } from '../utils/dragReorder';
+import { targetIndexFromOffset } from '../../../shared/src/utils/dragReorder';
 
 // Перетаскивание строки листа настройки — ручка «≡» (замена MoveArrows,
 // правило №11): pointer-жест + клавиатура ArrowUp/ArrowDown, один хук на все

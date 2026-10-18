@@ -14,10 +14,13 @@
 // экстренные практики, разбор случая), «Инструменты» — упражнения и
 // разделы, к которым возвращаются не в моменте острой необходимости, а
 // спокойно разобраться.
-import type { Tr } from '../../../shared/src/practices/quickPractices';
-import type { FocusPractice } from './todayFocus';
+import type { Tr } from '../practices/quickPractices';
 import type { QuickActionId } from './quickActions';
 import type { QuickActionSurface } from './quickActionPrefs';
+
+// Главное дело дня мини-аппа (schema-miniapp/src/utils/todayFocus.ts) — сверка
+// с FOCUS_OPTIONS в schema-miniapp/src/utils/quickActions.test.ts (правило №4).
+export type FocusPractice = 'tracker' | 'schema' | 'mode' | 'gratitude';
 
 export type QuickActionGroupId = 'case' | 'capture' | 'rate' | 'calm';
 

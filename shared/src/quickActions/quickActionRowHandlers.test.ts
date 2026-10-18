@@ -5,9 +5,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { makeQuickActionRowHandlers } from './quickActionRowHandlers';
 
-vi.mock('../../api', () => ({ api: { trackEvent: vi.fn() } }));
-import { api } from '../../api';
-const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
+const trackEvent = vi.fn();
 
 beforeEach(() => vi.clearAllMocks());
 
@@ -18,9 +16,10 @@ describe('makeQuickActionRowHandlers', () => {
       'plus',
       onToggle,
       vi.fn(),
+      trackEvent,
     );
     handleToggle('warm_words', false);
-    expect(mockApi.trackEvent).toHaveBeenCalledWith('quick_action_toggle', {
+    expect(trackEvent).toHaveBeenCalledWith('quick_action_toggle', {
       action: 'warm_words',
       hidden: true,
       surface: 'plus',
@@ -34,9 +33,10 @@ describe('makeQuickActionRowHandlers', () => {
       'tools',
       onToggle,
       vi.fn(),
+      trackEvent,
     );
     handleToggle('warm_words', true);
-    expect(mockApi.trackEvent).toHaveBeenCalledWith('quick_action_toggle', {
+    expect(trackEvent).toHaveBeenCalledWith('quick_action_toggle', {
       action: 'warm_words',
       hidden: false,
       surface: 'tools',
@@ -49,10 +49,11 @@ describe('makeQuickActionRowHandlers', () => {
       'plus',
       vi.fn(),
       onReorder,
+      trackEvent,
     );
     handleReorder('tracker', 2);
     expect(onReorder).toHaveBeenCalledWith('tracker', 2);
-    expect(mockApi.trackEvent).toHaveBeenCalledWith('quick_action_move', {
+    expect(trackEvent).toHaveBeenCalledWith('quick_action_move', {
       action: 'tracker',
       surface: 'plus',
       dir: 'down',
@@ -65,9 +66,10 @@ describe('makeQuickActionRowHandlers', () => {
       'tools',
       vi.fn(),
       onReorder,
+      trackEvent,
     );
     handleReorder('tracker', 0);
-    expect(mockApi.trackEvent).toHaveBeenCalledWith('quick_action_move', {
+    expect(trackEvent).toHaveBeenCalledWith('quick_action_move', {
       action: 'tracker',
       surface: 'tools',
       dir: 'up',
@@ -80,8 +82,9 @@ describe('makeQuickActionRowHandlers', () => {
       'plus',
       vi.fn(),
       onReorder,
+      trackEvent,
     );
     handleReorder('tracker', 0);
-    expect(mockApi.trackEvent).not.toHaveBeenCalled();
+    expect(trackEvent).not.toHaveBeenCalled();
   });
 });
