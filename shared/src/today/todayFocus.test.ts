@@ -2,7 +2,11 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import {
   parseFocusPractice,
+  getFocusPractice,
+  setFocusPractice,
+  setStreakHidden,
   focusCardContent,
+  FOCUS_OPTIONS,
   isFocusDone,
   isSecondaryHidden,
   setSecondaryHidden,
@@ -100,5 +104,45 @@ describe('isFocusDone', () => {
   it('дневники — по сегодняшним записям', () => {
     expect(isFocusDone('schema', { allRated: false, todayDone })).toBe(true);
     expect(isFocusDone('mode', { allRated: true, todayDone })).toBe(false);
+  });
+});
+
+describe('главная практика и серия — хранение под ключами мини-аппа', () => {
+  it('практика: записал → прочитал; трекер стирает ключ', () => {
+    localStorage.clear();
+    expect(getFocusPractice()).toBe('tracker');
+    setFocusPractice('gratitude');
+    expect(localStorage.getItem('today_focus_practice')).toBe('gratitude');
+    expect(getFocusPractice()).toBe('gratitude');
+    setFocusPractice('tracker');
+    expect(localStorage.getItem('today_focus_practice')).toBe(null);
+    expect(getFocusPractice()).toBe('tracker');
+  });
+
+  it('серия: скрытие пишется в today_streak_hidden и снимается', () => {
+    localStorage.clear();
+    expect(isStreakHidden()).toBe(false);
+    setStreakHidden(true);
+    expect(localStorage.getItem('today_streak_hidden')).toBe('1');
+    expect(isStreakHidden()).toBe(true);
+    setStreakHidden(false);
+    expect(isStreakHidden()).toBe(false);
+  });
+
+  it('доп. практики: ровно четыре, id совпадают с FocusPractice', () => {
+    expect(FOCUS_OPTIONS.map((o) => o.id)).toEqual([
+      'tracker',
+      'schema',
+      'mode',
+      'gratitude',
+    ]);
+  });
+
+  it('сообщение завершённой практики у каждого дневника своё', () => {
+    expect(focusCardContent('mode', 0, 5).doneSub).toContain('режимов');
+    expect(focusCardContent('schema', 0, 5).doneSub).toContain('схем');
+    expect(focusCardContent('gratitude', 0, 5).doneSub).toContain(
+      'Благодарности',
+    );
   });
 });

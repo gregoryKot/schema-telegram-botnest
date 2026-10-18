@@ -302,7 +302,7 @@ export {
 } from './crisis-surfaces.constants';
 
 // Главная практика экрана «Сегодня» (meta.practice для today_focus_change) —
-// парно с FocusPractice на фронте (schema-miniapp/src/utils/todayFocus.ts).
+// парно с FocusPractice на фронте (shared/src/today/todayFocus.ts).
 export const TODAY_FOCUS_PRACTICES = [
   'tracker',
   'schema',

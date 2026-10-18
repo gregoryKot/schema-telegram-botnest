@@ -17,7 +17,7 @@ import {
 } from './quickActions';
 import { buildToolRows } from '../sections/helpSection/toolRows';
 import { QUICK_PRACTICE_IDS } from '../../../shared/src/practices/quickPractices';
-import { FOCUS_OPTIONS } from './todayFocus';
+import { FOCUS_OPTIONS } from '../../../shared/src/today/todayFocus';
 
 const tr = (ty: string) => ty;
 
