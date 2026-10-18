@@ -46,7 +46,9 @@ export const TELEGRAM_ENV_ENTRIES: EnvVarSpec[] = [
   },
   {
     name: 'MINIAPP_URL',
-    purpose: 'Адрес мини-аппа для webApp-кнопок; по умолчанию APP_URL + /app/.',
+    purpose:
+      'Адрес webApp-кнопок и меню бота; по умолчанию кабинет APP_URL + /today ' +
+      '(этап 5 единой версии), `APP_URL/app/` — откат на мини-апп.',
     requiredInProd: false,
     format: formats.httpsUrl,
     group: 'telegram',

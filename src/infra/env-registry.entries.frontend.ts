@@ -8,8 +8,8 @@ export const FRONTEND_ENV_ENTRIES: EnvVarSpec[] = [
     purpose:
       'Единая версия: `/app/*` мини-аппа редиректится в кабинет `/today`, ' +
       '`/app/sw.js` отдаёт заглушку, снимающую старый service worker. ' +
-      'Значения `1`/`true` включают, иначе выключено. Включается на этапе 5 ' +
-      'плана docs/ONE_FRONTEND_PLAN.md.',
+      'Включено по умолчанию (этап 5 плана docs/ONE_FRONTEND_PLAN.md); ' +
+      '`0`/`false` — откат, `/app/` снова отдаёт мини-апп.',
     requiredInProd: false,
     format: formats.oneOf(['1', 'true', '0', 'false']),
     group: 'infra',

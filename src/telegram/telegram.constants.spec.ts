@@ -34,13 +34,13 @@ function load(env: Record<string, string | undefined> = {}): {
 }
 
 describe('MINIAPP_URL', () => {
-  it('без env — канонический хост и /app/ со слэшем (vite base)', () => {
-    expect(load().constants.MINIAPP_URL).toBe('https://schemehappens.ru/app/');
+  it('без env — кабинет сайта на каноническом хосте (этап 5 единой версии)', () => {
+    expect(load().constants.MINIAPP_URL).toBe('https://schemehappens.ru/today');
   });
 
   it('выводится из APP_URL, а не зашит: staging получает свой хост', () => {
     expect(load({ APP_URL: 'staging.example' }).constants.MINIAPP_URL).toBe(
-      'https://staging.example/app/',
+      'https://staging.example/today',
     );
   });
 
@@ -53,7 +53,7 @@ describe('MINIAPP_URL', () => {
 
   it('пустая строка в env не отключает дефолт', () => {
     expect(load({ MINIAPP_URL: '  ' }).constants.MINIAPP_URL).toBe(
-      'https://schemehappens.ru/app/',
+      'https://schemehappens.ru/today',
     );
   });
 });

@@ -48,12 +48,17 @@ describe('unifiedFrontendMiddleware', () => {
     else process.env.UNIFIED_FRONTEND = prev;
   });
 
-  it('флаг выключен: /app/x и /app/sw.js проходят дальше', () => {
-    delete process.env.UNIFIED_FRONTEND;
+  it('явный откат 0/false: /app/x и /app/sw.js проходят дальше', () => {
+    process.env.UNIFIED_FRONTEND = '0';
     expect(run('/app/x').next).toBe(true);
     expect(run('/app/sw.js').next).toBe(true);
-    process.env.UNIFIED_FRONTEND = '0';
+    process.env.UNIFIED_FRONTEND = 'false';
     expect(run('/app/').next).toBe(true);
+  });
+
+  it('без env — включено (этап 5): /app/ уходит в кабинет', () => {
+    delete process.env.UNIFIED_FRONTEND;
+    expect(run('/app/').redirect).toEqual([302, '/today']);
   });
 
   describe('флаг включён', () => {
@@ -101,11 +106,13 @@ describe('unifiedFrontendMiddleware', () => {
     });
   });
 
-  it('isUnifiedFrontendOn: 1/true включают, остальное нет', () => {
+  it('isUnifiedFrontendOn: выключают только 0/false, по умолчанию включено', () => {
     expect(isUnifiedFrontendOn('true')).toBe(true);
     expect(isUnifiedFrontendOn(' 1 ')).toBe(true);
-    expect(isUnifiedFrontendOn('yes')).toBe(false);
-    expect(isUnifiedFrontendOn('')).toBe(false);
+    expect(isUnifiedFrontendOn(undefined)).toBe(true);
+    expect(isUnifiedFrontendOn('')).toBe(true);
+    expect(isUnifiedFrontendOn('0')).toBe(false);
+    expect(isUnifiedFrontendOn(' FALSE ')).toBe(false);
   });
 
   it('configureUnifiedFrontend вешает middleware на все маршруты', () => {
