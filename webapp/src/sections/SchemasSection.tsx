@@ -7,7 +7,7 @@ import { NeedDetailSheet } from '../components/NeedDetailSheet';
 import '../styles/client-schemas.css';
 import { useSchemasData } from './schemas/useSchemasData';
 import { SaveErrorNote } from '../components/SaveErrorNote';
-import { ModesBlocks } from './schemas/ModesBlocks';
+import { PatternsModesPane } from './schemas/PatternsModesPane';
 import { ModeMapBanner, MyModeMapSheet } from './schemas/ModeMapBanner';
 import { NeedsBlock } from './schemas/NeedsBlock';
 import { usePatternLayer } from './schemas/usePatternLayer';
@@ -62,10 +62,10 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
         />
       )}
       {show.modes && (
-        <>
-          <ModesBlocks loading={d.loading} myModeIds={d.myModeIds} onAdd={() => setShowModePicker(true)} onOpenMode={pat.openModeEx} onOpenPattern={id => pat.openPattern('mode', id)} modeFreq={pat.entriesReady ? pat.modeFreq : undefined} />
-          {d.myMapCount > 0 && <ModeMapBanner count={d.myMapCount} onOpen={() => setShowMyMap(true)} />}
-        </>
+        <PatternsModesPane
+          mobile={mobile} d={d} pat={pat} onAdd={() => setShowModePicker(true)}
+          banner={d.myMapCount > 0 ? <ModeMapBanner count={d.myMapCount} onOpen={() => setShowMyMap(true)} /> : undefined}
+        />
       )}
       {show.needs && <NeedsBlock childhoodRatings={childhoodRatings} onOpenChildhoodWheel={onOpenChildhoodWheel} onOpenNeed={setDetailNeedId} />}
 
