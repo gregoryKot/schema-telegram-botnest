@@ -71,12 +71,61 @@
 .cs-sheet-body { flex: 1; min-height: 0; }
 
 @media (max-width: 767px) {
-  .cs-page { gap: 28px; }
-  .cs-head { align-items: flex-start; gap: 12px; }
+  .cs-page { gap: var(--space-16); }
+  /* Шапка как в мини-аппе: заголовок ~28px и подпись слева, «Библиотека» справа в той же строке. */
+  .cs-head { flex-wrap: nowrap; align-items: center; gap: var(--space-12); }
+  .cs-head-text { min-width: 0; }
+  .cs-head .ds-h1 { margin: 0; font-size: 28px; line-height: 1.15; }
+  .cs-head-sub { margin-top: var(--space-4); font-size: 13px; color: var(--text-sub); }
+  .cs-head .ds-btn { flex-shrink: 0; padding: 0 var(--space-16); }
+
+  /* Сегмент «Схемы / Режимы / Потребности» во всю ширину. */
+  .cs-seg { display: flex; width: 100%; box-sizing: border-box; padding: var(--space-4); border-radius: var(--r-16); }
+  .cs-seg .ds-seg-btn { flex: 1; min-height: 44px; padding: 0 var(--space-8); font-size: 14px; border-radius: var(--r-12); border: 1px solid transparent; }
+  .cs-seg .ds-seg-btn.is-active { background: var(--surface); color: var(--text); border-color: var(--line); }
+
   .cs-bar-row { grid-template-columns: minmax(0, 1fr) 48px; gap: 6px 10px; padding: 6px 0; }
   .cs-bar-track { grid-column: 1 / -1; grid-row: 2; height: 6px; }
+  .cs-expressed { padding: var(--space-16); gap: var(--space-8); }
+  .cs-expressed .ds-h3 { font-size: 19px; }
+  .cs-expressed .ds-head-row { gap: var(--space-2) var(--space-12); }
   .cs-test-text { font-size: 19px; }
+
+  /* Вводная новичку без тёмной заливки. */
+  .cs-intro.ds-card--ink { background: var(--surface); border-color: var(--line); color: var(--text); padding: var(--space-16); }
+  .cs-intro .cs-test-label { color: var(--text-faint); }
+  .cs-intro .cs-test-btn { background: var(--accent); color: var(--on-accent); }
+  .cs-intro-title { font-size: 20px; }
+
+  .cs-block { gap: var(--space-12); }
+  .cs-block .ds-h3, .cs-map .ds-h2 { font-size: 20px; }
+  .cs-map { gap: var(--space-16); }
 }
+
+/* Строка про тест YSQ на телефоне: светлая, подпись слева, действие справа. */
+.cs-testrow { display: flex; align-items: center; justify-content: space-between; gap: var(--space-12); padding: var(--space-12) var(--space-16); border-radius: var(--r-20); }
+.cs-testrow-text { min-width: 0; }
+.cs-testrow-title { font-size: 16px; font-weight: 600; color: var(--accent); }
+.cs-testrow-sub { margin-top: var(--space-2); font-size: 12px; line-height: 1.35; color: var(--text-sub); }
+.cs-testrow .ds-btn { flex-shrink: 0; padding: 0 var(--space-12); border-radius: var(--r-14); }
+
+/* «Мои схемы» строками по доменам (телефон). */
+.cs-grp-wrap { display: flex; flex-direction: column; gap: var(--space-8); }
+.cs-grp-head { display: flex; justify-content: space-between; gap: var(--space-8); padding: 0 var(--space-4); font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--text-muted); }
+.cs-grp { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-20); overflow: hidden; }
+.cs-row { display: flex; align-items: center; justify-content: space-between; gap: var(--space-12); width: 100%; box-sizing: border-box; min-height: 64px; padding: var(--space-12) var(--space-16); border: none; border-bottom: 1px solid var(--paper-sunk); background: none; font: inherit; text-align: left; color: var(--text); cursor: pointer; }
+.cs-row:last-child { border-bottom: none; }
+.cs-row-text { display: flex; flex-direction: column; gap: var(--space-2); min-width: 0; }
+.cs-row-name { font-size: 16px; font-weight: 600; line-height: 1.25; }
+.cs-row-sub { font-size: 13px; color: var(--text-sub); }
+.cs-row .cs-freq { font-size: 13px; opacity: 1; color: var(--text-sub); flex-shrink: 0; }
+.cs-add { width: 100%; min-height: 56px; border: 1.5px dashed var(--line-strong); border-radius: var(--r-16); background: none; color: var(--text); font: 600 16px var(--sans); cursor: pointer; }
+
+/* «Все 20 схем ›» — свёрнуто по умолчанию. */
+.cs-fold { display: flex; flex-direction: column; gap: var(--space-16); }
+.cs-fold-btn { display: flex; align-items: center; justify-content: space-between; width: 100%; min-height: 52px; padding: 0 var(--space-16); box-sizing: border-box; border: 1px solid var(--line); border-radius: var(--r-16); background: var(--surface); color: var(--text); font: 600 15px var(--sans); cursor: pointer; }
+.cs-fold-chev { font-size: 22px; line-height: 1; color: var(--text-faint); transition: transform .15s; }
+.cs-fold-chev.is-open { transform: rotate(90deg); }
 
 /* Чип «Мои схемы» со статусом карточки второй строкой. */
 .cs-chip--stacked { flex-direction: column; align-items: flex-start; gap: 2px; border-radius: 14px; min-height: 44px; }
