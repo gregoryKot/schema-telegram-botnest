@@ -39,7 +39,7 @@ export function QuickActionCustomizeSheet({
     surface,
     onToggle,
     onReorder,
-    (name, meta) => api.trackEvent(name, meta),
+    api,
   );
   const { rowProps } = useQuickActionDragRows(actions, handlers.handleReorder);
   return (

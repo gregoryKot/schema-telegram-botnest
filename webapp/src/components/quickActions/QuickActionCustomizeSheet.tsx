@@ -21,7 +21,7 @@ export function QuickActionCustomizeSheet({ groups, hidden, onToggle, onClose }:
     'plus',
     onToggle,
     () => false,
-    (name, meta) => api.trackEvent(name, meta),
+    api,
   );
   return (
     <BottomSheetShell goBack={goBack} zIndex={260} label="Что показывать в плюсе">

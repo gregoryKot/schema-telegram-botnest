@@ -16,7 +16,7 @@ describe('makeQuickActionRowHandlers', () => {
       'plus',
       onToggle,
       vi.fn(),
-      trackEvent,
+      { trackEvent },
     );
     handleToggle('warm_words', false);
     expect(trackEvent).toHaveBeenCalledWith('quick_action_toggle', {
@@ -33,7 +33,7 @@ describe('makeQuickActionRowHandlers', () => {
       'tools',
       onToggle,
       vi.fn(),
-      trackEvent,
+      { trackEvent },
     );
     handleToggle('warm_words', true);
     expect(trackEvent).toHaveBeenCalledWith('quick_action_toggle', {
@@ -49,7 +49,7 @@ describe('makeQuickActionRowHandlers', () => {
       'plus',
       vi.fn(),
       onReorder,
-      trackEvent,
+      { trackEvent },
     );
     handleReorder('tracker', 2);
     expect(onReorder).toHaveBeenCalledWith('tracker', 2);
@@ -66,7 +66,7 @@ describe('makeQuickActionRowHandlers', () => {
       'tools',
       vi.fn(),
       onReorder,
-      trackEvent,
+      { trackEvent },
     );
     handleReorder('tracker', 0);
     expect(trackEvent).toHaveBeenCalledWith('quick_action_move', {
@@ -82,7 +82,7 @@ describe('makeQuickActionRowHandlers', () => {
       'plus',
       vi.fn(),
       onReorder,
-      trackEvent,
+      { trackEvent },
     );
     handleReorder('tracker', 0);
     expect(trackEvent).not.toHaveBeenCalled();
