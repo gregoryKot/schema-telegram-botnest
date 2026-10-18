@@ -765,7 +765,7 @@
   "shared/src/practices/useStepFlow.ts": 22,
   "shared/src/quickActions/quickActionOrder.ts": 90,
   "shared/src/quickActions/quickActionPrefs.ts": 41,
-  "shared/src/quickActions/quickActionRowHandlers.ts": 34,
+  "shared/src/quickActions/quickActionRowHandlers.ts": 39,
   "shared/src/quickActions/quickActions.ts": 43,
   "shared/src/quickActions/quickActionsRegistry.ts": 167,
   "shared/src/quickActions/useHiddenActions.ts": 22,
