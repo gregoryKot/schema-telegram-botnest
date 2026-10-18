@@ -73,16 +73,6 @@ CLAUDE.md. Не удалять, но и не считать списком за�
   живого взгляда на онбординг (чеклист `ONBOARDING_AUDIT_2026-10.md`).
 
 **Единая версия, этап 3 — S-пробелы** (`docs/ONE_FRONTEND_PLAN.md`):
-- **Подключить `SaveErrorNote` к выбору схем/режимов.** Компонент
-  `webapp/src/components/SaveErrorNote.tsx` и хук `webapp/src/hooks/useSaveFailure.ts`
-  готовы, но не подключены: `saveSchemas`/`saveModes` в
-  `webapp/src/sections/schemas/useSchemasData.ts` по-прежнему только
-  `reportClientError` (файл правил параллельный PR экрана `/schemas`). Подключить:
-  `const { failed, track } = useSaveFailure()`, в обоих методах
-  `track(api.updateSettings(...), () => reportClientError(...))` вместо `.catch`,
-  вернуть `saveFailed: failed`, показать `<SaveErrorNote ty="Выбор сохранён только на этом устройстве — проверь связь и попробуй ещё раз" vy="…проверьте связь и попробуйте ещё раз" />`
-  в `SchemasSection`. После подключения убрать запись из
-  `scripts/dead-files-baseline.json`.
 - **Профиль сайта читает дневники схем и режимов трижды.** `ProfileSection.tsx`
   (счётчик записей), `useAboutMe` (`shared/src/portrait/useAboutMe.ts`: частоты и
   «тёплые слова») и открытый лист `PortraitSheet` (`usePatternLayer` →
