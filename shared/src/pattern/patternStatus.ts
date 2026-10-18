@@ -2,8 +2,8 @@
 // и сколько записей дневника набралось (правило CLAUDE.md: статус словами,
 // не только цветом — иначе не читается при цветовой слепоте). Плюрализация —
 // готовый хелпер pluralEntries, а не своя копия (правило переиспользования).
-import { pluralEntries } from '../../../../shared/src/share/shareTexts';
-import type { SchemaDiaryEntry, ModeDiaryEntry } from '../../types';
+import { pluralEntries } from '../share/shareTexts';
+import type { SchemaDiaryEntry, ModeDiaryEntry } from '../types';
 
 export function patternStatusText(filled: boolean, entryCount: number): string {
   if (!filled) return 'карточка пока пустая';

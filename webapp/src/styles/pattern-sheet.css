@@ -1,0 +1,28 @@
+/* Экран паттерна (схема/режим) на сайте. Префикс ps-. Цвет — через --h и
+   tone-* (lib/tone.ts), подложки — color-mix от токенов, литералов цвета нет. */
+.ps-tag { align-self: flex-start; }
+.ps-block { display: flex; flex-direction: column; gap: 12px; }
+.ps-card { display: flex; flex-direction: column; gap: 16px; }
+.ps-field-label { font-size: 11px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--text-faint); margin-bottom: 4px; }
+.ps-field-text { font-size: 15px; line-height: 1.55; color: var(--text); white-space: pre-wrap; overflow-wrap: anywhere; }
+.ps-explainer { font-size: 14px; line-height: 1.6; color: var(--text-sub); }
+.ps-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.ps-actions .ds-btn { flex: 1 1 160px; }
+.ps-adult {
+  display: flex; flex-direction: column; gap: 4px; padding: 14px 16px; border-radius: 16px;
+  background: color-mix(in srgb, var(--accent-green) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent-green) 22%, transparent);
+}
+.ps-adult-title { font-size: 12px; font-weight: 700; color: var(--accent-green); }
+.ps-adult-text { font-size: 14px; line-height: 1.55; color: var(--text); }
+.ps-tip { margin: 0; font-size: 14px; line-height: 1.55; color: var(--text-sub); }
+.ps-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.ps-empty { margin: 0; font-size: 14px; line-height: 1.6; color: var(--text-sub); }
+.ps-entries { display: flex; flex-direction: column; gap: 12px; }
+.ps-entry-date { font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; }
+.ps-about { align-self: center; min-height: 44px; padding: 0 16px; color: var(--text-sub); }
+.ps-chips .ps-pill {
+  display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 8px 14px;
+  border-radius: 22px; border: 1px solid var(--line); background: var(--surface);
+  color: var(--text); font: 600 13px var(--sans); cursor: pointer;
+}

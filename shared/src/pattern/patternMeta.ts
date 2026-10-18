@@ -1,7 +1,10 @@
 // Метаданные паттерна (название/цвет/подпись) для схемы или режима — общая
 // точка резолва для useMyCards и PatternSheet (правило №11: не дублировать
 // логику поиска схемы/режима по id в нескольких местах).
-import { SCHEMA_DOMAINS, getModeById } from '../../schemaTherapyData';
+import {
+  SCHEMA_DOMAINS,
+  getModeById,
+} from '../schemaTherapy/schemaTherapyData';
 
 export interface PatternMeta {
   name: string;
