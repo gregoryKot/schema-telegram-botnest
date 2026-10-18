@@ -155,22 +155,15 @@
   .ct-aside > .ct-streak, .ct-aside > .ct-streak-hide { order: 4; }
   .ct-main > .sk-case, .ct-main > .ct-focus, .ct-main > .sk-onb { padding: var(--space-20); }
 
-  /* Главное действие: основная — заливка акцентом, вторичная — светлая с рамкой, обе во всю ширину */
+  /* Главное действие: основная — тёмная (ink) заливка, вторичная — светлая с рамкой, обе во всю ширину */
   .sk-case-actions { flex-direction: column; gap: var(--space-10); }
   .sk-case-actions .ds-btn { width: 100%; height: 52px; border-radius: 26px; font-size: 16px; }
-  .sk-case-actions .ds-btn:not(.ds-btn--secondary) { background: var(--accent); color: var(--on-accent); }
 
-  /* Индекс: светлая карточка на всю ширину */
+  /* Индекс: тёмная (ink) карточка на всю ширину */
   .ct-top { display: flex; flex-direction: column; gap: var(--space-12); }
   .ct-index, .ct-meeting { padding: var(--space-16); border-radius: var(--r-16); }
-  .ct-index.ds-card--ink { background: var(--surface); border-color: var(--line); color: var(--text); }
-  .ct-index .ct-on-ink, .ct-index .ct-spark-cap { color: var(--text-faint); }
   .ct-index-num { font-size: 40px; }
-  .ct-index-delta { color: var(--text-sub); }
-  .ct-index-delta.is-up { color: var(--ok-ink); }
-  .ct-index-delta.is-down { color: var(--err); }
   .ct-index .ct-spark { height: 28px; margin-top: var(--space-10); gap: var(--space-2); }
-  .ct-index .ds-spark > i { background: var(--line-strong); }
   .ct-meeting-title { font-size: 22px; }
   .ct-meeting-name { margin-top: auto; }
   .ct-write { margin-top: var(--space-8); }
@@ -182,9 +175,9 @@
   .ct-main .sk-onb-actions > [role='button'] {
     display: flex; align-items: center; justify-content: center; min-height: 44px;
     padding: 0 var(--space-16); border-radius: var(--r-14); font-size: 14px;
-    background: var(--paper-sunk); color: var(--text-sub);
+    background: var(--paper-sunk); color: var(--accent);
   }
-  .ct-main .sk-onb-actions > [role='button']:last-child { order: -1; flex: 1; background: var(--accent); color: var(--on-accent); }
+  .ct-main .sk-onb-actions > [role='button']:last-child { order: -1; flex: 1; background: var(--accent-soft); }
 
   /* Потребности: название и значение строкой, шкала под ними — ничего не обрезается */
   .ct-needs .ds-head-row { flex-wrap: nowrap; align-items: center; }

@@ -25,8 +25,8 @@ export function MineGroupsList({ kind, groups, nameOf, addLabel, onAdd, onOpen, 
       {freq && <FreqHint kind={kind} freq={freq} />}
       {groups.map(g => (
         <div key={g.id} className="cs-grp-wrap" style={hueStyle(g.hue)}>
-          <div className="cs-grp-head"><span>{g.title}</span><span>{g.ids.length}</span></div>
-          <div className="cs-grp">
+          <div className="cs-grp-head tone-ink"><span>{g.title}</span><span>{g.ids.length}</span></div>
+          <div className="cs-grp tone-tint tone-border">
             {g.ids.map(id => {
               const name = nameOf(id);
               if (!name) return null;

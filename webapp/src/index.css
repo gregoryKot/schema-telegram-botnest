@@ -830,7 +830,7 @@ a { color: inherit; text-decoration: none; }
   .tabs::-webkit-scrollbar { display: none; }
 }
 
-/* ─── Mobile – bottom nav — светлая панель, как в мини-аппе ──────────────── */
+/* ─── Mobile – bottom nav — тёмный таб-бар (редизайн 2026-10) ────────────── */
 .mobile-nav {
   position: fixed;
   bottom: 0; left: 0; right: 0;
@@ -838,10 +838,8 @@ a { color: inherit; text-decoration: none; }
      считает размытие программно, и каждый кадр экрана стоил ~1.4с —
      приложение вязло метрономом (замеры на устройстве владельца
      2026-08-26). Парная правка — schema-miniapp/src/components/BottomNav.tsx,
-     там уже снято. Фон сплошной --nav-bg (светлая тема — бумага, тёмная —
-     ночной фон: панель не белая и не чёрная полоса, а часть экрана). */
-  background: var(--nav-bg);
-  border-top: 1px solid var(--line);
+     там уже снято. Фон сплошной --ink. */
+  background: var(--ink);
   z-index: 49;
   display: flex;
   gap: var(--space-2);
@@ -853,17 +851,21 @@ a { color: inherit; text-decoration: none; }
   align-items: center; justify-content: center; gap: var(--space-4);
   min-height: 52px; padding: var(--space-4) 0;
   border: none; border-radius: var(--r-12);
-  color: var(--text-faint); font-family: inherit; font-size: 11px; font-weight: 500;
+  color: var(--on-ink-faint); font-family: inherit; font-size: 11px; font-weight: 500;
   letter-spacing: 0.01em; white-space: nowrap;
   cursor: pointer; transition: color .15s, background-color .15s;
   background: none; text-decoration: none;
   -webkit-tap-highlight-color: transparent;
 }
-/* Активный пункт — акцент и мягкая «таблетка» вокруг иконки и подписи
-   (12%: контраст --accent на плашке ≥4.5:1 в обеих темах). */
-.mobile-nav-item.active {
-  color: var(--accent); font-weight: 700;
-  background: color-mix(in srgb, var(--accent) 12%, transparent);
+/* Активный пункт — светлый текст и точка --accent-hot над подписью (без «таблетки»). */
+.mobile-nav-item { position: relative; }
+.mobile-nav-item.active { color: var(--on-ink); font-weight: 700; }
+.mobile-nav-item svg { transition: opacity .15s; }
+.mobile-nav-item:not(.active) svg { opacity: 0.6; }
+.mobile-nav-item.active::after {
+  content: ''; position: absolute; top: -2px; left: 50%;
+  width: 5px; height: 5px; margin-left: -2.5px; border-radius: 50%;
+  background: var(--accent-hot);
 }
 
 /* ─── Responsive breakpoints ─────────────────────────────────────────────── */

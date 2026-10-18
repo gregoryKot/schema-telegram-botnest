@@ -75,12 +75,12 @@
 .cpf-prog-val { font-size: 14px; white-space: nowrap; }
 .cpf-prog-val.is-up { color: var(--ok); }
 .cpf-prog-val.is-down { color: var(--err); }
-.cpf-prog-val.is-flat { color: var(--accent); }
+.cpf-prog-val.is-flat { color: var(--text-faint); }
 .cpf-prog-track { height: 6px; border-radius: var(--r-4); background: var(--paper-sunk); overflow: hidden; }
 .cpf-prog-fill { height: 100%; border-radius: var(--r-4); }
 .cpf-prog-fill.is-up { background: var(--ok); }
-.cpf-prog-fill.is-down { background: var(--err); }
-.cpf-prog-fill.is-flat { background: var(--accent); }
+.cpf-prog-fill.is-down { background: var(--accent-hot); }
+.cpf-prog-fill.is-flat { background: var(--text-faint); }
 .cpf-help { display: inline-flex; align-items: center; justify-content: center; background: none; border: none; padding: 0; cursor: pointer; margin: -13px; }
 .cpf-help-dot { display: flex; align-items: center; justify-content: center; border-radius: 50%; background: var(--paper-sunk); color: var(--text-sub); font-size: 11px; font-weight: 600; }
 
