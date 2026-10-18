@@ -15,7 +15,7 @@ import { HereAndNowBlock } from './practice/HereAndNowBlock';
 import { PracticeTopRow, HERE_BLOCK_ID, HELP_BLOCK_ID } from './practice/PracticeTopRow';
 import { PracticeHeader } from './practice/PracticeHeader';
 import { PhoneHelpRows } from './practice/PhoneHelpRows';
-import { useIsPhone } from '../hooks/useIsPhone';
+import { useIsMobile } from '../components/useIsMobile';
 import { ExerciseLibrary } from './practice/ExerciseLibrary';
 import { TaskRow } from './practice/TaskRow';
 import { AllGoalsOverlay } from './practice/AllGoalsOverlay';
@@ -47,7 +47,7 @@ interface Props {
 
 export function PracticeSection({ onOpenChildhoodWheel, onOpenPractices, onOpenPlans, onOpenTracker, onOpenDiaries, onOpenSchema, refreshKey, onTasksChanged }: Props) {
   const tr = useTr();
-  const phone = useIsPhone();
+  const phone = useIsMobile();
   const location = useLocation();
   const childhoodDone = !!localStorage.getItem(CHILDHOOD_DONE_KEY);
 

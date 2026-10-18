@@ -53,7 +53,7 @@
 .cp-ex-desc { font-size: 13px; line-height: 1.45; color: var(--text-sub); }
 .cp-ex-state { margin-top: auto; font-size: 12px; color: var(--text-sub); }
 
-/* ── Телефон (.cp-page--phone ставит PracticeSection по useIsPhone) ──────────
+/* ── Телефон (.cp-page--phone ставит PracticeSection по useIsMobile) ──────────
    Ориентир — экран «Помощь» мини-аппа: компактная шапка, дыхание первым,
    инструменты строками (название + одна строка подписи + шеврон), а не
    цветными плитками; заголовки блоков — малые подписи капсом. */

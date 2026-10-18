@@ -9,7 +9,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { AddressFormContext } from '../utils/addressForm';
 import { PracticeSection } from './PracticeSection';
 
-vi.mock('../hooks/useIsPhone', () => ({ useIsPhone: () => true }));
+vi.mock('../components/useIsMobile', () => ({ useIsMobile: () => true }));
 vi.mock('../api', () => ({
   api: {
     getTasks: vi.fn(), getTaskHistory: vi.fn(), getTherapyRelation: vi.fn(),
