@@ -1,6 +1,7 @@
 import { NavLink } from 'react-router-dom';
 import { MobileNavIcon, type MobileNavIconId } from './MobileNavIcon';
 import type { Section } from './navigation';
+import { useTextEntryFocus } from '../../hooks/useTextEntryFocus';
 
 // Нижняя навигация мобильной вёрстки AppShell — вынесена из AppShell.tsx
 // (правило №10: файл в храповике размера растёт только дроблением).
@@ -19,6 +20,9 @@ export function MobileNav({ items, therapist = false, onSearch }: {
   therapist?: boolean;
   onSearch?: () => void;
 }) {
+  // Над экранной клавиатурой панель не нужна и закрывает поле ввода.
+  const typing = useTextEntryFocus();
+  if (typing) return null;
   if (therapist) {
     const [today, clients, profile] = THERAPIST_ITEMS;
     const link = (i: typeof today) => (

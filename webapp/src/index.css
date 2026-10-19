@@ -4,6 +4,7 @@
 @import '../../shared/src/theme/tokens.css';
 /* Примитивы и тона редизайна кабинетов 2026-10 (ds-*, tone-*). */
 @import './styles/cabinet.css';
+@import './styles/touch-fixes.css';
 
 /* ── Instrument Serif — ТОЛЬКО для изолированной айдентики личного сайта
    терапевта (.landing-personal-brand ниже, домен kotlarewski). Продукт
@@ -733,8 +734,13 @@ a { color: inherit; text-decoration: none; }
 @keyframes cookie-in   { from { opacity: 0; transform: translateY(28px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes spin        { to { transform: rotate(360deg); } }
 
-.animate-fade  { animation: fade-in .18s ease both; }
-.animate-slide { animation: slide-up .22s ease both; }
+/* backwards, а не both: fill-mode forwards оставлял на обёртке раздела
+   «активную» анимацию навсегда, а она создаёт контекст наложения. Листы
+   (position: fixed, z-index 200–300) внутри него считались на уровне 0 и
+   уходили ПОД нижнюю панель (z 49) и «+» (z 48). Конечное состояние
+   анимаций совпадает с обычным, вид не меняется. */
+.animate-fade  { animation: fade-in .18s ease backwards; }
+.animate-slide { animation: slide-up .22s ease backwards; }
 
 /* ─── Cookie consent banner – editorial: сплошная бумага, тонкая рамка ───── */
 .cookie-banner {
