@@ -18,6 +18,7 @@ import { TwoFactorChallengePage } from './pages/TwoFactorChallengePage';
 import { RecoveryPage } from './pages/RecoveryPage';
 import { AppShell } from './components/AppShell';
 import { CookieBanner } from './components/CookieBanner';
+import { RouteErrorScreen } from './components/RouteErrorScreen';
 import { AddressFormPicker } from './components/AddressFormPicker';
 import { AddressFormProvider } from './utils/AddressFormProvider';
 import { LandingPage } from './pages/LandingPage';
@@ -147,6 +148,7 @@ const appRoutes = [
 const router = createBrowserRouter([
   {
     element: <Root />,
+    errorElement: <RouteErrorScreen />,
     children: isPersonalSite ? personalRoutes : appRoutes,
   },
 ]);
