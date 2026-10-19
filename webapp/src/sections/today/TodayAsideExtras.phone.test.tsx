@@ -4,7 +4,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { AddressFormContext } from '../../utils/addressForm';
 import { StreakSlot } from './TodayAsideExtras';
-import { streakDaysLabel } from './PhoneStreakCard';
+import { streakDaysLabel } from './streakLabel';
 
 vi.mock('../../components/useIsMobile', () => ({ useIsMobile: () => true }));
 vi.mock('../../api', () => ({ api: { trackEvent: vi.fn() } }));

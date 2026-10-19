@@ -1,10 +1,5 @@
 import { useTr } from '../../utils/addressForm';
-import { pluralRu } from '../../../../shared/src/utils/pluralRu';
-
-/** «5 дней подряд» — с согласованным словом: 1 день, 2 дня, 5 дней. */
-export function streakDaysLabel(streak: number): string {
-  return `${streak} ${pluralRu(streak, 'день', 'дня', 'дней')} подряд`;
-}
+import { streakDaysLabel } from './streakLabel';
 
 // Серия на телефоне: компактная строка как в мини-аппе — плитка с числом,
 // «N дней подряд», подпись без давления. Скрытие серии — ссылкой в «Что ещё
