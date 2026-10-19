@@ -1,5 +1,7 @@
 import { pressable } from '../../utils/a11y';
 import { useTr } from '../../utils/addressForm';
+import { useIsMobile } from '../../components/useIsMobile';
+import { PhoneStreakCard } from './PhoneStreakCard';
 import { useStreakHidden } from './useTodayFocusPrefs';
 
 // Стрик: цифра --accent-hot 52px.
@@ -21,6 +23,17 @@ function StreakCard({ streak, onHide }: { streak: number; onHide?: () => void })
 /** Карточка серии со скрытием; скрытую заменяет ссылка «Показать». Флаг общий с мини-аппом. */
 export function StreakSlot({ streak }: { streak: number }) {
   const { streakHidden, toggleStreak } = useStreakHidden();
+  const phone = useIsMobile();
+  if (phone) {
+    return (
+      <>
+        {!streakHidden && <PhoneStreakCard streak={streak} />}
+        <button type="button" className="ct-streak-toggle" onClick={toggleStreak}>
+          {streakHidden ? 'Показать серию дней' : 'Скрыть серию дней'}
+        </button>
+      </>
+    );
+  }
   return streakHidden
     ? <button type="button" className="ct-streak-hide" onClick={toggleStreak}>Показать серию дней</button>
     : <StreakCard streak={streak} onHide={toggleStreak} />;

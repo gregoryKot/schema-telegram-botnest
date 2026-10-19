@@ -59,7 +59,7 @@
 /* Шапка: на десктопе eyebrow + h1; строка с датой и шестерёнка — только на телефоне */
 .ct-head { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-12); }
 .ct-head-text { min-width: 0; }
-.ct-head-date, .ct-head-gear { display: none; }
+.ct-head-date, .ct-head-gear, .ct-more-toggle { display: none; }
 
 /* Сайдбар: индекс (тёмная), встреча (акцентная), стрик */
 .ct-on-ink { color: var(--on-ink-faint); }
@@ -126,11 +126,13 @@
 .ct-focus-opt-sub { font-size: 12px; color: var(--text-sub); }
 .ct-streak-hide { margin-left: auto; align-self: center; min-width: 44px; min-height: 44px; padding: 0; border: none; background: none; cursor: pointer; color: var(--text-sub); font: 600 12px var(--sans); }
 
-/* ── Телефон (≤767px): порядок и плотность как в мини-аппе ─────────────────
-   Порядок задаёт order, а не разметка: .ct-main/.ct-aside — display: contents,
-   их дети становятся элементами одной колонки. Сначала главное действие
-   («Что сегодня зацепило?», «Одно дело»), под ним потребности, затем индекс,
-   «С чего начать», серия, остальное. */
+/* ── Телефон (≤767px): порядок и состав как в мини-аппе ────────────────────
+   Порядок задаёт order, а не разметка: .ct-main/.ct-aside/.ct-top — display:
+   contents, их дети становятся элементами одной колонки. Сверху вниз:
+   «Что сегодня зацепило?» → «С чего начать» (одна карточка шага) → серия →
+   «Одно дело» → встреча/кабинет → фраза → практики и черновики → «Что ещё можно
+   сегодня ⌄» (под ним потребности, индекс, последние записи; свёрнуто, пока не
+   раскрыли). Цвета не меняются: ink-кнопки, ink-индекс, терракотовое «Одно дело». */
 @media (max-width: 767px) {
   .ds-page.ct-page { padding-top: var(--space-16); gap: var(--space-16); }
   .ct-head-eyebrow { display: none; }
@@ -144,23 +146,43 @@
   }
 
   .ct-grid { display: flex; flex-direction: column; align-items: stretch; gap: var(--space-12); }
-  .ct-main, .ct-aside { display: contents; }
-  .ct-main > *, .ct-aside > * { order: 6; }
-  .ct-main > .sk-case { order: -4; margin-bottom: 0; }
-  .ct-main > .ct-focus { order: -3; }
-  .ct-main > .ct-therapist-link { order: -2; }
-  .ct-main > .ct-needs { order: 1; }
-  .ct-aside > .ct-top { order: 2; }
-  .ct-main > .sk-onb { order: 3; }
-  .ct-aside > .ct-streak, .ct-aside > .ct-streak-hide { order: 4; }
-  .ct-main > .sk-case, .ct-main > .ct-focus, .ct-main > .sk-onb { padding: var(--space-20); }
+  .ct-main, .ct-aside, .ct-top { display: contents; }
+  .ct-main > *, .ct-aside > *, .ct-top > * { order: 20; }
+  .ct-main > .ct-case { order: 1; margin-bottom: 0; }
+  .ct-main > .sk-onb { order: 2; }
+  .ct-aside > .ct-streak { order: 3; }
+  .ct-main > .ct-focus { order: 4; }
+  .ct-main > .ct-therapist-link { order: 5; }
+  .ct-top > .ct-meeting { order: 6; }
+  .ct-aside > .ct-phrase { order: 7; }
+  .ct-main > .ct-block { order: 8; }
+  .ct-more-toggle { order: 10; }
+  .ct-main > .ct-needs { order: 11; }
+  .ct-top > .ct-index { order: 12; }
+  .ct-main > .ct-recent { order: 13; }
+  .ct-aside > .ct-streak-toggle { order: 15; }
+  .ct-main > .sk-case:not(.ct-case) { order: 14; }
+  /* «Что ещё можно сегодня»: свёрнуто — потребности, индекс и записи скрыты */
+  .ct-grid:not(.is-more-open) :is(.ct-needs, .ct-index, .ct-recent, .ct-streak-toggle) { display: none; }
+  .ct-main > .ct-case, .ct-main > .ct-focus, .ct-main > .sk-onb { padding: var(--space-20); }
+
+  .ct-more-toggle {
+    display: flex; align-items: center; justify-content: center; gap: var(--space-6);
+    min-height: 44px; padding: 0; border: none; background: none; cursor: pointer;
+    font: 600 13px var(--sans); color: var(--text-sub);
+  }
+  .ct-streak-toggle {
+    min-height: 44px; padding: 0; border: none; background: none; cursor: pointer;
+    font: 600 13px var(--sans); color: var(--text-sub);
+  }
+  .ct-more-chev { display: inline-block; transition: transform .2s; }
+  .ct-more-toggle[aria-expanded='true'] .ct-more-chev { transform: rotate(180deg); }
 
   /* Главное действие: основная — тёмная (ink) заливка, вторичная — светлая с рамкой, обе во всю ширину */
   .sk-case-actions { flex-direction: column; gap: var(--space-10); }
   .sk-case-actions .ds-btn { width: 100%; height: 52px; border-radius: 26px; font-size: 16px; }
 
   /* Индекс: тёмная (ink) карточка на всю ширину */
-  .ct-top { display: flex; flex-direction: column; gap: var(--space-12); }
   .ct-index, .ct-meeting { padding: var(--space-16); border-radius: var(--r-16); }
   .ct-index-num { font-size: 40px; }
   .ct-index .ct-spark { height: 28px; margin-top: var(--space-10); gap: var(--space-2); }
@@ -168,16 +190,36 @@
   .ct-meeting-name { margin-top: auto; }
   .ct-write { margin-top: var(--space-8); }
 
-  /* «С чего начать»: описание на всю ширину, действия отдельной строкой под ним */
-  .ct-main .sk-onb-row { flex-wrap: wrap; padding: var(--space-8) 0; }
-  .ct-main .sk-onb-row:has(.sk-onb-actions) .sk-onb-main { flex-basis: calc(100% - 28px); }
-  .ct-main .sk-onb-actions { flex: 1 1 100%; gap: var(--space-8); padding-left: 28px; }
-  .ct-main .sk-onb-actions > [role='button'] {
-    display: flex; align-items: center; justify-content: center; min-height: 44px;
-    padding: 0 var(--space-16); border-radius: var(--r-14); font-size: 14px;
-    background: var(--paper-sunk); color: var(--accent);
+  /* «С чего начать»: счётчик, одна карточка шага, кнопки и точки прогресса */
+  .ob-p { padding: var(--space-16); gap: 0; overflow: hidden; }
+  .ob-p-count { font-size: 11px; font-weight: 600; letter-spacing: .05em; color: var(--text-faint); margin-bottom: var(--space-14); }
+  .ob-p-step { display: flex; align-items: center; gap: var(--space-12); margin-bottom: var(--space-10); }
+  .ob-p-no {
+    width: 48px; height: 48px; flex-shrink: 0; box-sizing: border-box; border: 1.5px solid transparent;
+    border-radius: var(--r-14); display: flex; align-items: center; justify-content: center;
+    font: 400 24px var(--serif); color: var(--text);
   }
-  .ct-main .sk-onb-actions > [role='button']:last-child { order: -1; flex: 1; background: var(--accent-soft); }
+  .ob-p-head { flex: 1; min-width: 0; }
+  .ob-p-title { font-size: 15px; font-weight: 700; line-height: 1.3; margin-bottom: var(--space-2); }
+  .ob-p-detail { font-size: 11px; font-weight: 500; color: var(--text-faint); }
+  .ob-p-desc { margin: 0 0 var(--space-14); font-size: 13px; line-height: 1.6; color: var(--text-sub); }
+  .ob-p-actions { display: flex; gap: var(--space-8); margin-bottom: var(--space-14); }
+  .ob-p-main { flex: 1; height: 48px; border-radius: var(--r-14); font-size: 14px; }
+  .ob-p-later { height: 48px; border-radius: var(--r-14); padding: 0 var(--space-16); font-size: 13px; }
+  .ob-p-done {
+    flex: 1; min-height: 48px; display: flex; align-items: center; justify-content: center;
+    border-radius: var(--r-14); font-size: 13px; font-weight: 600; color: var(--ok);
+    background: color-mix(in srgb, var(--ok) 10%, transparent);
+    border: 1px solid color-mix(in srgb, var(--ok) 22%, transparent);
+  }
+  .ob-p-dots { display: flex; gap: var(--space-6); justify-content: center; }
+  .ob-p-dot { display: block; border-radius: var(--r-4); background: var(--line-strong); transition: all .25s ease; }
+  .ob-p-dot.is-done { background: color-mix(in srgb, var(--ok) 65%, transparent); }
+  .ob-p-dot.is-skipped { background: var(--line); }
+  .ob-p-resume { flex-direction: row; align-items: center; gap: var(--space-12); padding: var(--space-14) var(--space-16); }
+  .ob-p-resume-text { flex: 1; min-width: 0; }
+  .ob-p-resume-title { font-size: 13px; font-weight: 600; margin-bottom: var(--space-2); }
+  .ob-p-resume-btn { height: 44px; border-radius: var(--r-14); padding: 0 var(--space-16); font-size: 13px; }
 
   /* Потребности: название и значение строкой, шкала под ними — ничего не обрезается */
   .ct-needs .ds-head-row { flex-wrap: nowrap; align-items: center; }
@@ -193,6 +235,24 @@
   .ct-need-value { grid-area: value; font-size: 20px; }
   .ct-delta, .ct-hint { display: none; }
 
-  .ct-streak { padding: var(--space-14) var(--space-16); }
-  .ct-streak-num { font-size: 36px; }
+  /* Серия: компактная строка — плитка с числом, «N дней подряд», подпись */
+  .ct-streak--phone { gap: var(--space-12); padding: var(--space-12) var(--space-16); border-radius: var(--r-16); }
+  .ct-streak-tile {
+    width: 40px; height: 40px; flex-shrink: 0; border-radius: var(--r-12);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 17px; font-weight: 700; background: var(--accent-soft); color: var(--accent);
+  }
+  .ct-streak-tile.is-zero { color: var(--text-faint); background: var(--paper-sunk); }
+  .ct-streak-text { flex: 1; min-width: 0; }
+  .ct-streak--phone .ct-streak-label { font-size: 15px; }
+  .ct-streak-cap { margin-top: 1px; font-size: 12px; color: var(--text-sub); }
+
+  /* Фраза для себя: карточка, внизу подпись и «Другая ↻» */
+  .ct-phrase { padding: var(--space-16); border-radius: var(--r-16); }
+  .ct-phrase-foot { display: flex; align-items: center; justify-content: space-between; gap: var(--space-10); margin-top: var(--space-6); }
+  .ct-phrase-cap { font-size: 11px; color: var(--text-faint); }
+  .ct-phrase-more {
+    flex-shrink: 0; min-height: 44px; padding: 0 0 0 var(--space-10); border: none; background: none;
+    cursor: pointer; font: 600 12px var(--sans); color: var(--accent);
+  }
 }

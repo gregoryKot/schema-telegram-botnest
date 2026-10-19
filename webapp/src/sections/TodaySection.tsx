@@ -23,6 +23,8 @@ import { RecentEntries } from './today/RecentEntries';
 import { IndexCard, MeetingCard } from './today/TodayAside';
 import { StreakSlot, TherapistLink } from './today/TodayAsideExtras';
 import { TodayFocusBlock } from './today/TodayFocusBlock';
+import { TodayMoreToggle } from './today/TodayMoreToggle';
+import { useTodayMore } from './today/todayMore';
 
 export { MY_SCHEMA_IDS_KEY, MY_MODE_IDS_KEY };
 
@@ -64,6 +66,7 @@ export function TodaySection({
   refreshKey, userRole, onOpenTherapistCabinet, onTasksChanged, rating,
 }: Props) {
   const tr = useTr();
+  const more = useTodayMore();
   const data = useTodayData(refreshKey);
   const { profile, manualSchemaIds, recent, diariesLoaded, therapyRelation, historyDays } = data;
   const { tasks, taskHistory, taskError, completeTask, afterCreate } = useTaskActions(refreshKey);
@@ -107,7 +110,7 @@ export function TodaySection({
 
       <TodayHeader streak={streak} firstName={firstName} onOpenSettings={onOpenAdvanced} />
 
-      <div className="ct-grid">
+      <div className={'ct-grid' + (more.open ? ' is-more-open' : '')}>
 
         <div className="ct-main">
           <TodayFocusBlock needs={needs} ratings={ratings} data={data} onOpenTracker={onOpenTracker} onOpenTrackerHistory={onOpenTrackerHistory} />
@@ -156,6 +159,8 @@ export function TodaySection({
           <StreakSlot streak={streak} />
           <PhraseShareCard />
         </aside>
+
+        <TodayMoreToggle open={more.open} onToggle={more.toggle} />
       </div>
 
       {/* Overlays */}
