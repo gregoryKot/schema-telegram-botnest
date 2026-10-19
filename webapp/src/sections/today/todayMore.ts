@@ -16,15 +16,23 @@ export function initialMoreOpen(): boolean {
   }
 }
 
+/** Запоминает выбор; false — память недоступна, выбор живёт до перезагрузки. */
+export function writeMoreOpen(open: boolean): boolean {
+  try {
+    if (open) localStorage.setItem(TODAY_MORE_KEY, '1');
+    else localStorage.removeItem(TODAY_MORE_KEY);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export function useTodayMore() {
   const [open, setOpen] = useState(initialMoreOpen);
   const toggle = useCallback(() => {
-    setOpen(prev => {
+    setOpen((prev) => {
       const next = !prev;
-      try {
-        if (next) localStorage.setItem(TODAY_MORE_KEY, '1');
-        else localStorage.removeItem(TODAY_MORE_KEY);
-      } catch { /* память недоступна — выбор живёт до перезагрузки */ }
+      writeMoreOpen(next);
       return next;
     });
   }, []);
