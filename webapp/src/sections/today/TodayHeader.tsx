@@ -1,6 +1,7 @@
 import { useTr } from '../../utils/addressForm';
 import { GearIcon } from '../../../../shared/src/components/GearIcon';
-import { greeting, formatHeaderDate } from './helpers';
+import { useIsMobile } from '../../components/useIsMobile';
+import { greeting, formatHeaderDate, phoneGreeting } from './helpers';
 import { formatGreetingDate } from './greetingDate';
 
 interface Props {
@@ -13,6 +14,7 @@ interface Props {
 // client-today.css): eyebrow скрыт, под h1 — строка с датой, справа — шестерёнка настроек.
 export function TodayHeader({ streak, firstName, onOpenSettings }: Props) {
   const tr = useTr();
+  const phone = useIsMobile();
   return (
     <header className="ct-head">
       <div className="ct-head-text">
@@ -21,10 +23,14 @@ export function TodayHeader({ streak, firstName, onOpenSettings }: Props) {
           {streak > 0 ? ` · ${streak}-й день подряд` : ''}
         </div>
         <h1 className="ds-h1">
-          {greeting()}
-          {firstName && (
+          {phone ? phoneGreeting(firstName) : (
             <>
-              , <i>{firstName}</i>
+              {greeting()}
+              {firstName && (
+                <>
+                  , <i>{firstName}</i>
+                </>
+              )}
             </>
           )}
         </h1>

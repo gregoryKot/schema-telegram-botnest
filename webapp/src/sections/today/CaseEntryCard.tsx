@@ -28,7 +28,7 @@ export function CaseEntryCard({
   const started = caseCount > 0;
 
   return (
-    <div className="ds-card sk-case">
+    <div className="ds-card sk-case ct-case">
       <h3 className="ds-h3">{started ? 'Что сегодня зацепило?' : 'Что это было'}</h3>
       <p className="sk-case-text">
         {started
