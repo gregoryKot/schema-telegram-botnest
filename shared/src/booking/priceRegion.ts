@@ -66,7 +66,11 @@ export const RU_TIME_ZONES: readonly string[] = [
 ];
 
 /** Пояса Израиля (канонический и синонимы). */
-export const IL_TIME_ZONES: readonly string[] = ['Asia/Jerusalem', 'Asia/Tel_Aviv', 'Israel'];
+export const IL_TIME_ZONES: readonly string[] = [
+  'Asia/Jerusalem',
+  'Asia/Tel_Aviv',
+  'Israel',
+];
 
 /** Европа вне `Europe/*`: острова и устаревшие имена зон. */
 export const EU_EXTRA_TIME_ZONES: readonly string[] = [
@@ -89,9 +93,25 @@ export function regionFromTimeZone(tz: string | null | undefined): PriceRegion {
   if (RU_TIME_ZONES.includes(tz)) return 'RU';
   if (IL_TIME_ZONES.includes(tz)) return 'IL';
   if (tz.startsWith('Europe/') || EU_EXTRA_TIME_ZONES.includes(tz)) return 'EU';
-  if (tz.startsWith('Asia/') || tz.startsWith('America/') || tz.startsWith('Africa/')) return 'INTL';
-  if (tz.startsWith('Australia/') || tz.startsWith('Pacific/') || tz.startsWith('Indian/')) return 'INTL';
-  if (tz.startsWith('Atlantic/') || tz.startsWith('Antarctica/') || tz.startsWith('Etc/') || tz === 'UTC') return 'INTL';
+  if (
+    tz.startsWith('Asia/') ||
+    tz.startsWith('America/') ||
+    tz.startsWith('Africa/')
+  )
+    return 'INTL';
+  if (
+    tz.startsWith('Australia/') ||
+    tz.startsWith('Pacific/') ||
+    tz.startsWith('Indian/')
+  )
+    return 'INTL';
+  if (
+    tz.startsWith('Atlantic/') ||
+    tz.startsWith('Antarctica/') ||
+    tz.startsWith('Etc/') ||
+    tz === 'UTC'
+  )
+    return 'INTL';
   // Строка не похожа на IANA-пояс (мусор из запроса) — рубли, как у пустого.
   return 'RU';
 }
