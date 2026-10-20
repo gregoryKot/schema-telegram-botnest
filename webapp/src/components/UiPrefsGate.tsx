@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { loadSettingsShared } from '../utils/settingsRequest';
+import { api } from '../api';
 import {
   syncFromServer,
   resetUiPrefsSync,
@@ -14,7 +14,7 @@ import { useUiPrefsStartupSync } from '../utils/useUiPrefsStartupSync';
  */
 export function UiPrefsGate({ children }: { children: ReactNode }) {
   const settled = useUiPrefsStartupSync({
-    load: loadSettingsShared,
+    load: () => api.getSettings(),
     sync: syncFromServer,
     reset: resetUiPrefsSync,
   });
