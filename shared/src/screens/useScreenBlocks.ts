@@ -3,7 +3,7 @@ import {
   readStringArray,
   writeStringArray,
 } from '../utils/stringArrayStorage';
-import { useLongPress, LongPressProps } from '../hooks/useLongPress';
+import { useLongPress, type LongPressProps } from '../hooks/useLongPress';
 import { useBlockOrder } from '../utils/useBlockOrder';
 import {
   SCREEN_BLOCK_IDS,
