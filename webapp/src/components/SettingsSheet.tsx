@@ -20,6 +20,8 @@ import { NameSection, AddressSection } from './settingsSheet/NameAddressSections
 import { MyTherapistSection, CabinetSection } from './settingsSheet/TherapistSections';
 import { PartnerSection } from './settingsSheet/PartnerSection';
 import { ShareSection, AboutSection } from './settingsSheet/ShareAboutSections';
+import { HomeScreenSection } from './settingsSheet/HomeScreenSection';
+import { homeIconMode } from './settingsSheet/homeIconMode';
 
 // Дефолты на случай, если api.getSettings() отказал — экран не должен
 // зависнуть на Loader, показываем безопасные значения.
@@ -73,8 +75,10 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
   };
 
   const isTherapist = userRole === 'THERAPIST';
+  const homeMode = homeIconMode();
   const navItems = [
     { id: 's-appearance', label: 'Оформление' },
+    ...(homeMode ? [{ id: 's-home', label: 'Значок на экране' }] : []),
     { id: 's-name', label: 'Имя' },
     { id: 's-notifications', label: 'Уведомления' },
     ...(!isTherapist ? [
@@ -140,6 +144,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                   onResignTherapist={onResignTherapist}
                   onSaved={() => { flashSaved(); }}
                 />
+                {homeMode && <HomeScreenSection mode={homeMode} />}
                 <NameSection value={editName} onChange={setEditName} displayName={displayName} onNameChanged={onNameChanged} onSaved={flashSaved} />
                 <NotificationsSection settings={settings} tzLabel={tzLabel} patch={patch} openSubView={setSubView} />
                 <AddressSection settings={settings} patch={patch} />

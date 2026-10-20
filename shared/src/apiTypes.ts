@@ -55,6 +55,8 @@ export interface PartnerInfo {
 export interface PairsData {
   partners: PartnerInfo[];
   pendingCode: string | null;
+  /** Ссылка-приглашение ждущей пары (null — приглашения нет или бот не настроен). */
+  pendingUrl?: string | null;
 }
 
 export interface PracticePlan {

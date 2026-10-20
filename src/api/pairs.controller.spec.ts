@@ -73,6 +73,7 @@ describe('PairsController.getPair', () => {
     await expect(controller.getPair(makeReq())).resolves.toEqual({
       partners: [],
       pendingCode: null,
+      pendingUrl: null,
     });
   });
 
@@ -90,7 +91,12 @@ describe('PairsController.getPair', () => {
       },
     });
     const res = await controller.getPair(makeReq());
-    expect(res).toEqual({ partners: [], pendingCode: 'WAIT1' });
+    expect(res).toEqual({
+      partners: [],
+      pendingCode: 'WAIT1',
+      // Ссылка для повторной отправки — та же, что отдаёт createPairInvite.
+      pendingUrl: 'https://t.me/SchemeHappensBot/diary?startapp=pair_WAIT1',
+    });
   });
 
   it('партнёр оценил не все потребности сегодня → partnerTodayDone: false, partnerIndex: null', async () => {
