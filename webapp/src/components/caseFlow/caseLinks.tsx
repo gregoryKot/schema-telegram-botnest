@@ -3,9 +3,12 @@
  * «Пропустить →» и т.п.) — вынесена из caseFlowUi.tsx в файл без импортов из
  * соседей по каталогу: её берут и CaseFlowFoot (caseFlowUi), и
  * CaseSupportFoot, а импорт из caseFlowUi дал бы цикл модулей. Twin по
- * смыслу с schema-miniapp caseFlowUi TertiaryLink (там haptic внутри,
- * здесь — webapp-идиома «link»).
+ * смыслу с schema-miniapp caseFlowUi TertiaryLink: тактильный отклик
+ * внутри (haptic.tap), вызывающему экрану достаточно onClick; разметка —
+ * webapp-идиома «link».
  */
+import { haptic } from '../../haptic';
+
 export function TertiaryLink({
   label,
   onClick,
@@ -14,7 +17,7 @@ export function TertiaryLink({
   onClick: () => void;
 }) {
   return (
-    <button type="button" onClick={onClick} className="ds-link ex2-link-row">
+    <button type="button" onClick={() => { haptic.tap(); onClick(); }} className="ds-link ex2-link-row">
       {label}
     </button>
   );

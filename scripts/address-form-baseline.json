@@ -7,6 +7,7 @@
   "schema-miniapp/src/components/AddressFormPicker.tsx": 3,
   "schema-miniapp/src/components/childhoodWheelSheet/needMeta.ts": 1,
   "schema-miniapp/src/components/settingsSheet/AddressFormSection.tsx": 1,
+  "shared/src/childhoodWheel/childhoodExamples.ts": 1,
   "shared/src/practices/curated.ts": 1,
   "shared/src/utils/addressForm.ts": 2,
   "shared/src/utils/tyFormsSweep.ts": 11
