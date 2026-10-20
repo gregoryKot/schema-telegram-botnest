@@ -8,6 +8,8 @@ import { useTr } from '../utils/addressForm';
 import { PhraseShareCard } from '../components/PhraseShareCard';
 import '../styles/client-today.css';
 const SchemaEx = lazy(() => import('../components/exercises/FlashcardEx').then(m => ({ default: m.SchemaEx })));
+// Лист «Настроить экран» нужен по нажатию — в основной бандл не тянем (с перетаскиванием).
+const TodayCustomizeSheet = lazy(() => import('../components/customize/TodayCustomizeSheet').then(m => ({ default: m.TodayCustomizeSheet })));
 const ModeEx   = lazy(() => import('../components/exercises/FlashcardEx').then(m => ({ default: m.ModeEx })));
 import { TodayHeader } from './today/TodayHeader';
 import { dayIndex, buildHistory, weekDelta, sparkBars } from './today/model';
@@ -27,7 +29,6 @@ import { TodayMoreToggle } from './today/TodayMoreToggle';
 import { useTodayMore } from './today/todayMore';
 import { useTodayCustomization } from './today/useTodayCustomization';
 import { todayOrderStyle } from './today/todayOrder';
-import { TodayCustomizeSheet } from '../components/customize/TodayCustomizeSheet';
 
 export { MY_SCHEMA_IDS_KEY, MY_MODE_IDS_KEY };
 
@@ -171,11 +172,13 @@ export function TodaySection({
 
       {/* Overlays */}
       {today.sheet && (
-        <TodayCustomizeSheet
-          today={today}
-          showTherapistBlock={isTherapist && !!onOpenTherapistCabinet}
-          onOpenSettings={() => { today.closeSheet(); onOpenAdvanced(); }}
-        />
+        <Suspense fallback={null}>
+          <TodayCustomizeSheet
+            today={today}
+            showTherapistBlock={isTherapist && !!onOpenTherapistCabinet}
+            onOpenSettings={() => { today.closeSheet(); onOpenAdvanced(); }}
+          />
+        </Suspense>
       )}
       {showDiaryTask && <TaskCreateSheet defaultType="diary_streak" onCreated={() => setShowDiaryTask(false)} onClose={() => setShowDiaryTask(false)} />}
       {showTaskCreate && (
