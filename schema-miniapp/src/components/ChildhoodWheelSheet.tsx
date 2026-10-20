@@ -1,6 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useTr } from '../utils/addressForm';
 import { api } from '../api';
+import {
+  defaultChildhoodRatings,
+  readSavedRatings,
+} from '../../../shared/src/childhoodWheel/childhoodWheel';
 import { BottomSheet } from './BottomSheet';
 import {
   CHILDHOOD_DONE_KEY,
@@ -34,13 +38,7 @@ export function ChildhoodWheelSheet({
   const alreadyDone = !!localStorage.getItem(CHILDHOOD_DONE_KEY);
   const [phase, setPhase] = useState<Phase>(alreadyDone ? 'result' : 'intro');
   const [activeSchema, setActiveSchema] = useState<ActiveSchema | null>(null);
-  const [ratings, setRatings] = useState<Ratings>({
-    attachment: 5,
-    autonomy: 5,
-    expression: 5,
-    play: 5,
-    limits: 5,
-  });
+  const [ratings, setRatings] = useState<Ratings>(defaultChildhoodRatings);
   const [saving, setSaving] = useState(false);
   const [openExampleId, setOpenExampleId] = useState<NeedId | null>(null);
   const [openExampleIdx, setOpenExampleIdx] = useState<number | null>(null);
@@ -51,7 +49,7 @@ export function ChildhoodWheelSheet({
     api
       .getChildhoodRatings()
       .then((saved) => {
-        setRatings((prev) => ({ ...prev, ...(saved as Ratings) }));
+        setRatings(readSavedRatings(saved).ratings);
         setResult({ loaded: true, error: false });
       })
       .catch(() => setResult({ loaded: true, error: true }));
