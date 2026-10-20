@@ -7,12 +7,8 @@ import { ToolRow } from './ToolRow';
 import { HeroCta } from './HeroCta';
 import { WeekTopCard } from './WeekTopCard';
 import { WeekTopSummary } from '../../../shared/src/pattern/patternsSummary';
-import {
-  INTRO_MODE_ID,
-  modeIntro,
-  weekTopText,
-  diaryIntro,
-} from '../../../shared/src/pattern/weekPatternText';
+import { INTRO_MODE_ID } from '../../../shared/src/pattern/weekPatternText';
+import { modesHeroModel } from '../../../shared/src/pattern/modesHeroModel';
 
 export { INTRO_MODE_ID };
 
@@ -36,60 +32,36 @@ export function ModesHero({
   onOpenDiaries,
 }: Props) {
   const tr = useTr();
+  // Какое состояние и какие слова — решает общая модель (shared), здесь только вёрстка.
+  const m = modesHeroModel(tr, { hasModes, summary, canOpenDiary: !!onOpenDiaries });
 
-  if (!hasModes) {
-    const intro = modeIntro(tr);
+  if (m.kind === 'intro') {
     return (
       <div className="u-col12">
         <HeroCta
-          label={intro.label}
-          chip={intro.chip}
-          title={intro.title}
-          sub={intro.sub}
-          buttonLabel="Познакомиться"
+          label={m.intro.label}
+          chip={m.intro.chip}
+          title={m.intro.title}
+          sub={m.intro.sub}
+          buttonLabel={m.buttonLabel}
           onClick={onMeetCritic}
         />
-        <ToolRow
-          label="Что такое режимы"
-          sub="части, которые включаются по очереди"
-          index={1}
-          onClick={onOpenLibrary}
-        />
-        <ToolRow
-          label="Отметить свои"
-          sub={tr('если уже знаешь свои режимы', 'если уже знаете свои режимы')}
-          index={2}
-          onClick={onPickManually}
-        />
+        <ToolRow label={m.library.label} sub={m.library.sub} index={1} onClick={onOpenLibrary} />
+        <ToolRow label={m.manual.label} sub={m.manual.sub} index={2} onClick={onPickManually} />
       </div>
     );
   }
-
-  if (summary) {
-    const text = weekTopText('mode', summary);
-    if (!text) return null;
+  if (m.kind === 'week') {
     return (
       <WeekTopCard
-        label={text.label}
-        color={text.color}
-        title={text.title}
-        sub={text.sub}
-        onClick={() => onOpenModeDetail(summary.id)}
+        label={m.text.label}
+        color={m.text.color}
+        title={m.text.title}
+        sub={m.text.sub}
+        onClick={() => onOpenModeDetail(m.id)}
       />
     );
   }
-
-  if (onOpenDiaries) {
-    return (
-      <ToolRow
-        label={diaryIntro(tr).title}
-        sub={tr(
-          'замечай моменты, когда режим включился',
-          'замечайте моменты, когда режим включился',
-        )}
-        onClick={onOpenDiaries}
-      />
-    );
-  }
+  if (m.kind === 'diary' && onOpenDiaries) return <ToolRow label={m.row.label} sub={m.row.sub} onClick={onOpenDiaries} />;
   return null;
 }

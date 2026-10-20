@@ -9,7 +9,7 @@ import { ModeExOverlay } from './ModeExOverlay';
 import { usePatternEntries } from './usePatternEntries';
 import { usePatternStatus } from '../../../../shared/src/pattern/usePatternStatus';
 import { schemaEntryCounts, modeEntryCounts } from '../../../../shared/src/pattern/patternStatus';
-import { weekSchemaFrequency, weekModeFrequency, weekPatternTop } from '../../../../shared/src/pattern/patternsSummary';
+import { weekSchemaFrequency, weekModeFrequency, weekModeSummary, weekPatternTop } from '../../../../shared/src/pattern/patternsSummary';
 import type { MyCardsKind } from '../../../../shared/src/pattern/useMyCards';
 export function usePatternLayer() {
   const [pattern, setPattern] = useState<{ kind: MyCardsKind; id: string } | null>(null);
@@ -26,6 +26,7 @@ export function usePatternLayer() {
     return {
       schemaFreq: weekSchemaFrequency(schemaEntries, now),
       modeFreq: weekModeFrequency(modeEntries, now),
+      modeTop: weekModeSummary(modeEntries, now),
       top: weekPatternTop(schemaEntries, modeEntries, now),
     };
   }, [schemaEntries, modeEntries]);

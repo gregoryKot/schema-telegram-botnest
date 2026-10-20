@@ -13,6 +13,8 @@ import { NeedsBlock } from './schemas/NeedsBlock';
 import { usePatternLayer } from './schemas/usePatternLayer';
 import { PatternsTopCards } from './schemas/PatternsTopCards';
 import { PatternsTopStack } from './schemas/PatternsTopStack';
+import { ModesTopCards } from './schemas/ModesTopCards';
+import { INTRO_MODE_ID } from '../../../shared/src/pattern/weekPatternText';
 import { ScreenCustomizeHost } from '../components/customize/ScreenCustomizeHost';
 import { useScreenBlocks } from '../components/customize/useScreenBlocks';
 import { PatternsSchemasPane } from './schemas/PatternsSchemasPane';
@@ -68,6 +70,13 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
         <PatternsSchemasPane
           mobile={mobile} d={d} pat={pat} allSchemaIds={allSchemaIds}
           onStartTest={startTest} onAdd={() => setShowSchemaPicker(true)} onOpenDetail={setDetailSchemaId} blocks={blocks}
+        />
+      )}
+      {show.modesHero && (
+        <ModesTopCards
+          blocks={blocks} ready={!d.loading && pat.entriesReady} hasModes={d.myModeIds.length > 0} summary={pat.modeTop}
+          onMeetCritic={() => pat.openModeEx(INTRO_MODE_ID)} onOpenLibrary={() => onOpenSchema({ tab: 'modes' })}
+          onPickManually={() => setShowModePicker(true)} onOpenMode={(id) => pat.openPattern('mode', id)}
         />
       )}
       {show.modes && (
