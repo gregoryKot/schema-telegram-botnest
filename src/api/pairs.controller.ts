@@ -18,6 +18,18 @@ import { TelegramAuthGuard } from './telegram-auth.guard';
 import { PairCodeDto } from './dto/pairs.dto';
 import { miniappStartLink } from '../telegram/miniapp-link';
 
+// Ссылка ждущего приглашения — чтобы клиент мог отправить её повторно, не
+// создавая новый код. Бот не настроен (miniappStartLink бросает 503) — это не
+// повод ронять весь GET /api/pair: партнёры и индексы нужны и без ссылки.
+function pendingInviteUrl(code: string | null): string | null {
+  if (!code) return null;
+  try {
+    return miniappStartLink(`pair_${code}`);
+  } catch {
+    return null;
+  }
+}
+
 interface AuthRequest extends Request {
   webUser: { userId: bigint };
 }
@@ -86,7 +98,8 @@ export class PairsController {
       }),
     );
 
-    return { partners, pendingCode: pendingPair?.code ?? null };
+    const pendingCode = pendingPair?.code ?? null;
+    return { partners, pendingCode, pendingUrl: pendingInviteUrl(pendingCode) };
   }
 
   @Post('pair/invite')

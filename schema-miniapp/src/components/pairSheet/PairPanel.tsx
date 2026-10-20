@@ -18,7 +18,7 @@ export function PairPanel({
   pair: PairMechanics;
   compact?: boolean;
 }) {
-  const { tr, inviteText, copyLabel } = usePairTexts();
+  const { tr, inviteText, copyLabel, pendingLabel } = usePairTexts();
   const pendingCopy = useCopyToClipboard();
   const inviteCopy = useCopyToClipboard();
   const {
@@ -95,7 +95,7 @@ export function PairPanel({
       {data.pendingCode && (
         <div className="u-mb12">
           <InviteLinkBox
-            label="⏳ Ждём партнёра"
+            label={pendingLabel}
             url={pendingUrl}
             copied={pendingCopy.copied}
             failed={pendingCopy.failed}
