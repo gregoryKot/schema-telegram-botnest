@@ -60,12 +60,6 @@ Ubuntu 26) у трёх PR подряд падали `backend` → `check-coverag
 сервиса джобы. Переход — отдельный PR: сменить `runs-on`, прочитать логи, починить.
 Плавающую метку держит `src/test-support/gates/runner-pin.spec.ts`.
 
-**Единая версия, этап 4 — «Настроить экран» на сайте** (`docs/ONE_FRONTEND_PLAN.md`):
-- **«Профиль» и «Паттерны» на сайте не настраиваются.** Каркас готов и общий (`shared/src/screens/useScreenBlocks`,
-  реестр `shared/src/screens/screenBlocks`, лист `webapp/src/components/customize/ScreenCustomizeSheet`, пока без
-  потребителя — запись в `dead-files-baseline.json`); осталось подключить хук и лист к экранам сайта и вынести их
-  блоки под `order`/скрытие.
-
 **Единая версия, этап 3 — недельная частота** (`docs/ONE_FRONTEND_PLAN.md`):
 - **`tsc --noEmit -p .` в `schema-miniapp` красный на тестах** (`src/apiClient.test.ts:195`,
   `AppDiaryNav.test.tsx:102`, `AppOverlays.closers.test.tsx:45`: типы моков), хотя vitest
@@ -77,14 +71,12 @@ Ubuntu 26) у трёх PR подряд падали `backend` → `check-coverag
   живого взгляда на онбординг (чеклист `ONBOARDING_AUDIT_2026-10.md`).
 
 **Единая версия, этап 4 — быстрые действия «+» на сайте** (`docs/ONE_FRONTEND_PLAN.md`):
-- **Настройка «+» с сайта не уходит на сервер.** Синхронизатор `uiPrefs` общий
-  (`shared/src/prefs/uiPrefsSync.ts`, #793), сайт применяет серверные ключи до показа экранов,
-  но `webapp/src/components/quickActions/PlusMenuSheet.tsx` вызывает `usePlusMenuState(tr)` без
-  второго аргумента — запись «+» на сайте не зовёт `notifyPrefsChanged`.
-- **Порядок пунктов «+» на сайте читается, но не меняется.** Лист настройки «+» на сайте — только
-  тумблеры. Общий примитив перетаскивания уже в `shared/src/hooks/useDragReorder.ts`, строка с ручкой
-  для сайта — `webapp/src/components/customize/CustomizeRow.tsx`; осталось подключить их в
-  `QuickActionCustomizeSheet`. Поверхность «Инструменты» на сайте не настраивается.
+- **Поверхность «Инструменты» (быстрые действия в «Помощи» мини-аппа) на сайте не настраивается.**
+  Ключи `quick_actions_hidden_tools`/`quick_actions_order_tools` синхронизируются (#793), но на сайте
+  нет самой поверхности: нужно решение, чему она соответствует в разделе «Практика».
+- **Подсказка сверху на «Паттернах» сайта только на вкладке «Схемы»** (#792). В мини-аппе блок
+  `heroes` (`shared/src/screens/screenBlocks.ts`) есть и на «Режимах»; на сайте отдельной подсказки
+  у «Режимов» нет, скрытие блока действует только на «Схемах».
 - **Три копии лямбды открытия справочника схем в `appShell/AppSections.tsx`** (строки с
   `ov.setSchemaAutoStartTest(!!opts?.startTest)`; одна без `highlight`). Теперь есть
   `ov.openSchema` (`appShell/useOverlays.ts`) — заменить копии им. Не трогали: файл
