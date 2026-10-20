@@ -80,9 +80,6 @@ Ubuntu 26) у трёх PR подряд падали `backend` → `check-coverag
   живого взгляда на онбординг (чеклист `ONBOARDING_AUDIT_2026-10.md`).
 
 **Единая версия, этап 4 — быстрые действия «+» на сайте** (`docs/ONE_FRONTEND_PLAN.md`):
-- **Подсказка сверху на «Паттернах» сайта только на вкладке «Схемы»** (#792). В мини-аппе блок
-  `heroes` (`shared/src/screens/screenBlocks.ts`) есть и на «Режимах»; на сайте отдельной подсказки
-  у «Режимов» нет, скрытие блока действует только на «Схемах».
 - **Три копии лямбды открытия справочника схем в `appShell/AppSections.tsx`** (строки с
   `ov.setSchemaAutoStartTest(!!opts?.startTest)`; одна без `highlight`). Теперь есть
   `ov.openSchema` (`appShell/useOverlays.ts`) — заменить копии им. Не трогали: файл

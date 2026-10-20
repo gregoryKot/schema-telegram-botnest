@@ -11,8 +11,10 @@ export const PATTERNS_TABS: readonly { id: PatternsTab; label: string }[] = [
 ];
 
 export interface PatternsBlocks {
-  /** «Паттерн недели» / вводная новичку. */
+  /** «Паттерн недели» / вводная новичку (вкладка «Схемы» и десктоп). */
   hero: boolean;
+  /** Подсказка сверху вкладки «Режимы» — только на телефоне: на десктопе верх общий. */
+  modesHero: boolean;
   /** Выраженные схемы, тест YSQ, «Мои схемы», карта схем. */
   schemas: boolean;
   modes: boolean;
@@ -20,8 +22,8 @@ export interface PatternsBlocks {
 }
 
 export function visibleBlocks(tab: PatternsTab, mobile: boolean): PatternsBlocks {
-  if (!mobile) return { hero: true, schemas: true, modes: true, needs: true };
-  return { hero: tab === 'schemas', schemas: tab === 'schemas', modes: tab === 'modes', needs: tab === 'needs' };
+  if (!mobile) return { hero: true, modesHero: false, schemas: true, modes: true, needs: true };
+  return { hero: tab === 'schemas', modesHero: tab === 'modes', schemas: tab === 'schemas', modes: tab === 'modes', needs: tab === 'needs' };
 }
 
 /** Битое или недоступное хранилище — просто «Схемы». */
