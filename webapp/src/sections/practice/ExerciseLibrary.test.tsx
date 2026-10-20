@@ -5,6 +5,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, cleanup } from '@testing-library/react';
 import { ExerciseLibrary } from './ExerciseLibrary';
+import { EXERCISES } from './exerciseLibrary';
 
 afterEach(cleanup);
 
@@ -28,5 +29,18 @@ describe('ExerciseLibrary', () => {
     expect(screen.getByRole('heading', { name: 'Библиотека' })).toBeTruthy();
     rerender(<ExerciseLibrary phone stats={{}} onOpen={vi.fn()} />);
     expect(screen.getByRole('heading', { name: 'Инструменты' })).toBeTruthy();
+  });
+});
+
+describe('ExerciseLibrary — настроенный список', () => {
+  it('рисует переданные карточки и считает их, а не все восемь', () => {
+    render(<ExerciseLibrary stats={{}} onOpen={vi.fn()} items={EXERCISES.slice(0, 2)} />);
+    expect(screen.getAllByText('не начато')).toHaveLength(2);
+    expect(screen.getByText('2 упражнения')).toBeTruthy();
+  });
+
+  it('пустой список — раздел не рисуется (ни заголовка, ни счётчика)', () => {
+    const { container } = render(<ExerciseLibrary stats={{}} onOpen={vi.fn()} items={[]} />);
+    expect(container.textContent).toBe('');
   });
 });

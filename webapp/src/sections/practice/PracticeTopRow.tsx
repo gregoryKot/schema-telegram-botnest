@@ -8,15 +8,18 @@ function scrollToBlock(id: string) {
   document.getElementById(id)?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
 }
 
-/** Верхний ряд «Практики»: «Мне плохо» (флешкарта) и переходы к блокам помощи ниже. */
-export function PracticeTopRow({ onCrisis }: { onCrisis: () => void }) {
+/** Верхний ряд «Практики»: «Мне плохо» (флешкарта) и переходы к блокам помощи ниже.
+ * Без onCrisis (пункт «Схема включилась» скрыт в «Инструментах») карточки нет. */
+export function PracticeTopRow({ onCrisis }: { onCrisis?: () => void }) {
   return (
     <div className="cp-top">
-      <div className="cp-top-card cp-top-card--crisis" {...pressable(onCrisis)}>
-        <div className="cp-top-crisis-title">Мне плохо</div>
-        <div className="cp-top-crisis-sub">Пять шагов: разобраться что происходит, успокоиться</div>
-        <div className="cp-top-go">Начать →</div>
-      </div>
+      {onCrisis && (
+        <div className="cp-top-card cp-top-card--crisis" {...pressable(onCrisis)}>
+          <div className="cp-top-crisis-title">Мне плохо</div>
+          <div className="cp-top-crisis-sub">Пять шагов: разобраться что происходит, успокоиться</div>
+          <div className="cp-top-go">Начать →</div>
+        </div>
+      )}
       <div className="cp-top-card" {...pressable(() => scrollToBlock(HERE_BLOCK_ID))}>
         <div className="ds-label">Здесь и сейчас</div>
         <div className="cp-top-line">Дыхание 4-4-6</div>

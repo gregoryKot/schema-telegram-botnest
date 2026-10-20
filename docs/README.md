@@ -80,9 +80,6 @@ Ubuntu 26) у трёх PR подряд падали `backend` → `check-coverag
   живого взгляда на онбординг (чеклист `ONBOARDING_AUDIT_2026-10.md`).
 
 **Единая версия, этап 4 — быстрые действия «+» на сайте** (`docs/ONE_FRONTEND_PLAN.md`):
-- **Поверхность «Инструменты» (быстрые действия в «Помощи» мини-аппа) на сайте не настраивается.**
-  Ключи `quick_actions_hidden_tools`/`quick_actions_order_tools` синхронизируются (#793), но на сайте
-  нет самой поверхности: нужно решение, чему она соответствует в разделе «Практика».
 - **Три копии лямбды открытия справочника схем в `appShell/AppSections.tsx`** (строки с
   `ov.setSchemaAutoStartTest(!!opts?.startTest)`; одна без `highlight`). Теперь есть
   `ov.openSchema` (`appShell/useOverlays.ts`) — заменить копии им. Не трогали: файл

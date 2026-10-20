@@ -77,8 +77,16 @@ describe('UiPrefsGate + «Сегодня»', () => {
     );
     await waitFor(() => expect(screen.getByTestId('streak').textContent).toBe('hidden'));
 
-    fireEvent.click(screen.getByText('toggle'));
-    await waitFor(() => expect(updateSettings).toHaveBeenCalledTimes(1), { timeout: 4000 });
+    // Пуш идёт через debounce 1.5 с: на настоящих таймерах под нагрузкой CI
+    // (второй прогон под TZ=Australia/Sydney) окна waitFor не хватало — флак.
+    vi.useFakeTimers();
+    try {
+      fireEvent.click(screen.getByText('toggle'));
+      await act(() => vi.advanceTimersByTimeAsync(2000));
+    } finally {
+      vi.useRealTimers();
+    }
+    expect(updateSettings).toHaveBeenCalledTimes(1);
     expect(updateSettings).toHaveBeenCalledWith({
       uiPrefs: {
         today_streak_hidden: '1',

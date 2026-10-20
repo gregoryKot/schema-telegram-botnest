@@ -43,9 +43,11 @@ vi.mock('../api', () => ({
 // как BreathingCard в HelpSection.test.tsx мини-аппа: тесты экрана «Практика»
 // про библиотеку упражнений и задания, а не про быстрые практики.
 vi.mock('./practice/HereAndNowBlock', () => ({
-  HereAndNowBlock: () => <div data-testid="here-and-now-block" />,
+  HereAndNowBlock: ({ extraRows }: { extraRows?: React.ReactNode }) => <div data-testid="here-and-now-block">{extraRows}</div>,
 }));
 
+vi.mock('../utils/uiPrefsSync', () => ({ notifyPrefsChanged: vi.fn() }));
+import { notifyPrefsChanged } from '../utils/uiPrefsSync';
 import { api } from '../api';
 const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
 
@@ -378,23 +380,128 @@ describe('PracticeSection — баннер ближайшей сессии', () 
   });
 });
 
-describe('PracticeSection — колесо детства (localStorage)', () => {
-  it('без пройденного колеса детства кнопка "начать →"', async () => {
+describe('PracticeSection — колесо детства', () => {
+  it('одна точка входа — карточка в «Инструментах»; плитки в «В трудный момент» нет', async () => {
     renderSection();
     await waitFor(() => expect(mockApi.getTasks).toHaveBeenCalled());
-    // «Колесо детства» встречается и в библиотеке упражнений, и в карточках
-    // «В трудный момент» — берём карточку из второго блока (с описанием
-    // "Как удовлетворялись потребности").
-    const card = screen.getByText('Как удовлетворялись потребности в детстве').parentElement!;
-    expect(card.textContent).toContain('начать →');
+    expect(screen.queryByText('Как удовлетворялись потребности в детстве')).toBeNull();
+    expect(screen.getAllByText('Колесо детства')).toHaveLength(1);
   });
 
-  it('с пройденным колесом (localStorage-флаг) кнопка "открыть →"', async () => {
-    localStorage.setItem('childhood_wheel_done', '1');
-    renderSection();
+  it('карточка открывает колесо общим оверлеем приложения (onOpenChildhoodWheel), а не локальной копией', async () => {
+    const onOpenChildhoodWheel = vi.fn();
+    renderSection({ onOpenChildhoodWheel });
     await waitFor(() => expect(mockApi.getTasks).toHaveBeenCalled());
-    const card = screen.getByText('Как удовлетворялись потребности в детстве').parentElement!;
-    expect(card.textContent).toContain('открыть →');
+    fireEvent.click(screen.getByText('Колесо детства'));
+    expect(onOpenChildhoodWheel).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('PracticeSection — «Инструменты»: скрытие и порядок (ключи tools, как в мини-аппе)', () => {
+  const HIDDEN = 'quick_actions_hidden_tools';
+  const ORDER = 'quick_actions_order_tools';
+  const hide = (...ids: string[]) => localStorage.setItem(HIDDEN, JSON.stringify(ids));
+  const cardTitles = () => Array.from(document.querySelectorAll('.cp-ex-title')).map(e => e.textContent);
+  const setWidth = (w: number) => Object.defineProperty(window, 'innerWidth', { configurable: true, writable: true, value: w });
+  afterEach(() => setWidth(1024));
+
+  it('без настроек: все восемь карточек, «Мои цели» и оба каталога', () => {
+    renderSection();
+    expect(cardTitles()).toHaveLength(8);
+    expect(screen.getByText('8 упражнений')).toBeTruthy();
+    expect(screen.getByText('Мои цели')).toBeTruthy();
+    expect(screen.getByText('Практики')).toBeTruthy();
+    expect(screen.getByText('Планы')).toBeTruthy();
+  });
+
+  it('скрытая карточка (belief_check) исчезает, номера и счётчик идут по показанному', () => {
+    hide('belief_check');
+    renderSection();
+    expect(cardTitles()).not.toContain('Проверка убеждения');
+    expect(cardTitles()).toHaveLength(7);
+    expect(screen.getByText('7 упражнений')).toBeTruthy();
+    expect(Array.from(document.querySelectorAll('.cp-ex-num')).map(e => e.textContent)).toEqual(['01', '02', '03', '04', '05', '06', '07']);
+  });
+
+  it('карточки схемы и режима не скрываются, даже если все пункты реестра скрыты', () => {
+    hide('belief_check', 'phrase_check', 'safe_place', 'letter_to_self', 'warm_words', 'childhood_wheel');
+    renderSection();
+    expect(cardTitles()).toEqual(['Карточка схемы', 'Карточка режима']);
+  });
+
+  it('скрытые «Мои цели» убирают раздел целиком', () => {
+    hide('tasks');
+    renderSection();
+    expect(screen.queryByText('Мои цели')).toBeNull();
+    expect(screen.queryByText('+ Поставить цель')).toBeNull();
+  });
+
+  it('скрытая «Практики» убирает свою строку, «Планы» остаются', () => {
+    hide('practices');
+    renderSection();
+    expect(screen.queryByText('Практики')).toBeNull();
+    expect(screen.getByText('Планы')).toBeTruthy();
+    expect(screen.getByText('Каталоги')).toBeTruthy();
+  });
+
+  it('скрыты оба каталога — заголовок «Каталоги» не рисуется', () => {
+    hide('practices', 'plans');
+    renderSection();
+    expect(screen.queryByText('Каталоги')).toBeNull();
+  });
+
+  it('скрытая «Схема включилась» убирает «Мне плохо» на десктопе; контакты помощи остаются', () => {
+    hide('flashcard');
+    renderSection();
+    expect(screen.queryByText('Мне плохо')).toBeNull();
+    expect(screen.getAllByText('Помощь рядом').length).toBeGreaterThan(0);
+  });
+
+  it('скрытая «Схема включилась» убирает строку «Мне плохо» на телефоне, «Мне очень плохо» остаётся', () => {
+    setWidth(390);
+    hide('flashcard');
+    renderSection();
+    expect(screen.queryByText('Мне плохо')).toBeNull();
+    expect(screen.getByText('Мне очень плохо')).toBeTruthy();
+  });
+
+  it('сохранённый порядок переставляет карточки с пунктами; схема и режим стоят на своих местах', () => {
+    localStorage.setItem(ORDER, JSON.stringify(['warm_words', 'phrase_check']));
+    renderSection();
+    expect(cardTitles()).toEqual([
+      'Тёплые слова', 'Карточка схемы', 'Карточка режима', 'Критик или забота?',
+      'Проверка убеждения', 'Безопасное место', 'Письмо Уязвимому Ребёнку', 'Колесо детства',
+    ]);
+  });
+
+  it('шестерёнка (телефон) открывает лист со всеми десятью пунктами', async () => {
+    setWidth(390);
+    renderSection();
+    fireEvent.click(screen.getByRole('button', { name: 'Какие инструменты показывать' }));
+    expect(await screen.findByRole('heading', { name: 'Какие инструменты показывать' })).toBeTruthy();
+    expect(screen.getAllByRole('switch')).toHaveLength(10);
+  });
+
+  it('тумблер в листе: пишет ключ, шлёт quick_action_toggle (surface tools), зовёт notifyPrefsChanged и прячет карточку сразу', async () => {
+    renderSection();
+    fireEvent.click(screen.getByRole('button', { name: 'Настроить инструменты' }));
+    fireEvent.click(await screen.findByRole('switch', { name: 'Тёплые слова' }));
+    expect(JSON.parse(localStorage.getItem(HIDDEN)!)).toEqual(['warm_words']);
+    expect(mockApi.trackEvent).toHaveBeenCalledWith('quick_action_toggle', { action: 'warm_words', hidden: true, surface: 'tools' });
+    expect(notifyPrefsChanged).toHaveBeenCalledTimes(1);
+    expect(cardTitles()).not.toContain('Тёплые слова');
+    fireEvent.click(screen.getByRole('switch', { name: 'Тёплые слова' }));
+    expect(JSON.parse(localStorage.getItem(HIDDEN) ?? '[]')).toEqual([]);
+    expect(cardTitles()).toContain('Тёплые слова');
+  });
+
+  it('лист: ручки «≡» только у карточек; у разделов страницы — одни тумблеры', async () => {
+    setWidth(390);
+    renderSection();
+    fireEvent.click(screen.getByRole('button', { name: 'Какие инструменты показывать' }));
+    await screen.findByText('Разделы страницы');
+    expect(document.querySelectorAll('.cz-handle')).toHaveLength(6);
+    expect(screen.getByText('Разделы страницы')).toBeTruthy();
   });
 });
 
