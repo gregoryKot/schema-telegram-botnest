@@ -27,7 +27,7 @@ export function AllTasksOverlay({ tasks, taskHistory, onClose, onTaskDone, onAdd
               <TaskProgressBar task={task} />
               {task.dueDate && <div className="ds-sub">до {fmtDate(task.dueDate)}</div>}
             </div>
-            {task.done === null && task.assignedBy !== null && task.type === 'custom' && (
+            {task.done === null && task.type === 'custom' && (
               <button onClick={() => onTaskDone(task.id as number)} className="ds-btn ds-btn--sm ds-btn--secondary">
                 Готово
               </button>

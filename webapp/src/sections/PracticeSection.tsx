@@ -20,6 +20,7 @@ import { ExerciseLibrary } from './practice/ExerciseLibrary';
 import { TaskRow } from './practice/TaskRow';
 import { AllGoalsOverlay } from './practice/AllGoalsOverlay';
 import { useExerciseStats } from './practice/useExerciseStats';
+import { useCatalogCounts, catalogRowSub } from './practice/catalogCounts';
 import type { ExId } from './practice/exerciseLibrary';
 import { pluralRu as plural } from '../../../shared/src/utils/pluralRu';
 import { todayCalendarDate } from '../../../shared/src/utils/calendarDate';
@@ -54,6 +55,7 @@ export function PracticeSection({ onOpenChildhoodWheel, onOpenPractices, onOpenP
   const [openEx,         setOpenEx]         = useState<ExId | null>(null);
   const [schemaInitialId, setSchemaInitialId] = useState<string | undefined>(undefined);
   const stats = useExerciseStats();
+  const catalog = useCatalogCounts();
   const [showFlashcard,  setShowFlashcard]  = useState(false);
   const [_introSchemaId, _setIntroSchemaId] = useState<string | null>(null);
   const [introModeId,    setIntroModeId]    = useState<string | null>(null);
@@ -140,7 +142,8 @@ export function PracticeSection({ onOpenChildhoodWheel, onOpenPractices, onOpenP
   );
 
   const therapistTasks = tasks.filter(t => t.assignedBy !== null && !t.doneToday);
-  const myGoals        = tasks.filter(t => t.assignedBy === null  && !t.doneToday);
+  // Серия, сделанная сегодня, остаётся в списке серой (как в мини-аппе), а не пропадает до завтра.
+  const myGoals        = tasks.filter(t => t.assignedBy === null);
 
   return (
     <div className={'ds-page cp-page animate-fade' + (phone ? ' cp-page--phone' : '')}>
@@ -209,7 +212,7 @@ export function PracticeSection({ onOpenChildhoodWheel, onOpenPractices, onOpenP
         ) : (
           <div className="cp-tasks">
             {myGoals.slice(0, 4).map(task => (
-              <TaskRow key={task.id} task={task} cta="открыть →" onOpen={() => openTask(task)} />
+              <TaskRow key={task.id} task={task} cta="открыть →" onOpen={() => openTask(task)} onComplete={() => completeTask(task.id as number, onTasksChanged)} />
             ))}
           </div>
         )}
@@ -225,8 +228,8 @@ export function PracticeSection({ onOpenChildhoodWheel, onOpenPractices, onOpenP
         <div className="ds-head-row"><h3 className="ds-h2">Каталоги</h3></div>
         <div className="cp-tasks">
           {[
-            { label: 'Практики',  sub: 'Рекомендованные упражнения по потребностям', onClick: onOpenPractices },
-            { label: 'Планы',     sub: 'Планы поддержки и кризисов',                  onClick: onOpenPlans },
+            { label: 'Практики',  sub: catalogRowSub('practices', catalog.practices, 'Рекомендованные упражнения по потребностям'), onClick: onOpenPractices },
+            { label: 'Планы',     sub: catalogRowSub('plans', catalog.plans, 'Планы поддержки и кризисов'),                  onClick: onOpenPlans },
           ].map(item => (
             <div key={item.label} className="ds-card ds-card--row ds-card--hover cp-task" {...pressable(item.onClick)}>
               <div className="cp-task-body">
@@ -253,6 +256,7 @@ export function PracticeSection({ onOpenChildhoodWheel, onOpenPractices, onOpenP
           taskHistory={taskHistory}
           onClose={() => setShowAllGoals(false)}
           onOpen={t => { setShowAllGoals(false); openTask(t); }}
+          onComplete={t => completeTask(t.id as number, onTasksChanged)}
           onAdd={() => { setShowAllGoals(false); setShowTaskCreate(true); }}
         />
       )}

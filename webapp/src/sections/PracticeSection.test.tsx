@@ -33,6 +33,8 @@ vi.mock('../api', () => ({
     createFlashcard: vi.fn(),
     createLetter: vi.fn(),
     trackEvent: vi.fn(),
+    getPractices: vi.fn(),
+    getPlanHistory: vi.fn(),
   },
   reportClientError: vi.fn(),
 }));
@@ -94,6 +96,8 @@ beforeEach(() => {
   mockApi.getFlashcards.mockResolvedValue([]);
   mockApi.createFlashcard.mockResolvedValue(undefined);
   mockApi.createLetter.mockResolvedValue(undefined);
+  mockApi.getPractices.mockRejectedValue(new Error('offline'));
+  mockApi.getPlanHistory.mockRejectedValue(new Error('offline'));
 });
 
 afterEach(() => {
@@ -270,6 +274,46 @@ describe('PracticeSection — мои цели', () => {
     expect(screen.getByText('Цель 5')).toBeTruthy();
     expect(screen.getByText('Готовая цель')).toBeTruthy();
     expect(screen.getByText('готово')).toBeTruthy();
+  });
+});
+
+describe('PracticeSection — своя цель: «Готово» и серия за сегодня (паритет с мини-аппом)', () => {
+  it('у своей цели есть «Готово»: закрывает цель на сервере и обновляет список', async () => {
+    const onTasksChanged = vi.fn();
+    mockApi.getTasks.mockResolvedValue([task({ id: 7, text: 'Позвонить другу' })]);
+    renderSection({ onTasksChanged });
+    await screen.findByText('Позвонить другу');
+
+    mockApi.getTasks.mockResolvedValue([]);
+    fireEvent.click(screen.getByText('Готово'));
+    await waitFor(() => expect(mockApi.completeTask).toHaveBeenCalledWith(7, true));
+    await waitFor(() => expect(screen.queryByText('Позвонить другу')).toBeNull());
+    expect(onTasksChanged).toHaveBeenCalled();
+  });
+
+  it('серия, сделанная сегодня, остаётся в списке серой с подписью, без «Готово»', async () => {
+    mockApi.getTasks.mockResolvedValue([
+      task({ id: 8, type: 'diary_streak', text: '', doneToday: true }),
+    ]);
+    renderSection();
+    await screen.findByText('Сделано сегодня — завтра снова');
+    expect(screen.queryByText('Готово')).toBeNull();
+    expect(screen.getByText('1 активных')).toBeTruthy();
+  });
+});
+
+describe('PracticeSection — счётчики в «Каталогах»', () => {
+  it('число практик и планов берётся из данных; без данных — только пояснение', async () => {
+    renderSection();
+    await screen.findByText('Каталоги');
+    expect(screen.getByText('Рекомендованные упражнения по потребностям')).toBeTruthy();
+
+    cleanup();
+    mockApi.getPractices.mockResolvedValue([{ id: 1 }, { id: 2 }]);
+    mockApi.getPlanHistory.mockResolvedValue([{ id: 1 }]);
+    renderSection();
+    await screen.findByText('10 практик · Рекомендованные упражнения по потребностям');
+    expect(screen.getByText('1 план · Планы поддержки и кризисов')).toBeTruthy();
   });
 });
 
