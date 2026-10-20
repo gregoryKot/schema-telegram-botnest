@@ -24,6 +24,7 @@ import {
 } from '../../../../shared/src/schema/schemaDiarySteps';
 import {
   useSchemaDiaryDraftState,
+  hasSchemaDiaryDraft,
   type SchemaDiaryDraftData,
 } from '../../../../shared/src/schema/useSchemaDiaryDraftState';
 import { buildSchemaDiaryExplainer } from '../../../../shared/src/schema/schemaFlowExplainers';
@@ -126,7 +127,7 @@ export function SchemaEntrySheet({ activeSchemaIds, onClose, onSave }: Props) {
     <ExScreen
       onBack={goBack}
       backLabel="Назад к дневнику"
-      eyebrow="Дневник схем · новая запись"
+      eyebrow={hasSchemaDiaryDraft(d) ? 'Дневник схем · продолжаем с того места' : 'Дневник схем · с чего начнём?'}
       title={<>Записать<br /><span className="it">момент</span></>}
       lede={tr(
         'Что-то задело — приходи сюда. Обязательна только ситуация, остальное можно дополнить по шагам.',

@@ -15,4 +15,11 @@ describe('DiaryTrackerLink', () => {
     fireEvent.click(screen.getByText(DIARY_TRACKER_LINK.title));
     expect(onOpen).toHaveBeenCalledTimes(1);
   });
+
+  it('показывает строку «Последняя отметка», когда она передана; без неё — нет', () => {
+    const { rerender } = render(<DiaryTrackerLink onOpen={() => {}} meta="Последняя отметка · вчера" />);
+    expect(screen.getByText('Последняя отметка · вчера')).toBeTruthy();
+    rerender(<DiaryTrackerLink onOpen={() => {}} />);
+    expect(screen.queryByText(/Последняя отметка/)).toBeNull();
+  });
 });

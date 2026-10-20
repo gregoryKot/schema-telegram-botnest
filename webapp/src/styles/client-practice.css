@@ -26,6 +26,9 @@
 .cp-task-body { flex: 1; min-width: 0; }
 .cp-task-from { color: var(--accent); margin-bottom: 4px; }
 .cp-task-title { font-size: 15px; font-weight: 700; overflow-wrap: anywhere; }
+.cp-task--done { opacity: .6; }
+.cp-task-check { flex-shrink: 0; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; background: var(--ok-bg); color: var(--ok-ink); }
+.cp-task-note { margin-top: var(--space-4); font-size: 13px; color: var(--ok-ink); }
 .cp-empty { font-size: 14px; line-height: 1.55; color: var(--text-muted); }
 .cp-actions { display: flex; gap: 18px; align-items: center; flex-wrap: wrap; }
 .cp-alert { font-size: 13px; color: var(--err); }
