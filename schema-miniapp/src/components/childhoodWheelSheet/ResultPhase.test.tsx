@@ -121,6 +121,34 @@ describe('ResultPhase — низкие потребности → подсказ
     expect(setActiveSchema).toHaveBeenCalledTimes(1);
     const arg = setActiveSchema.mock.calls[0][0] as ActiveSchema;
     expect(arg.name).toBe('Покинутость / Нестабильность');
+    // Описание и цвет берутся из справочника схем (цвет домена), не пустые.
+    expect(arg.desc.length).toBeGreaterThan(10);
+    expect(arg.color).toMatch(/^(#|var\(|rgb)/);
+  });
+
+  it('каждая подсказанная схема кликабельна: описание открывается для всех потребностей', () => {
+    const setActiveSchema = vi.fn();
+    renderWithForm(
+      <ResultPhase
+        NEED_META={NEED_META}
+        ratings={ratings({
+          attachment: 1,
+          autonomy: 1,
+          expression: 1,
+          play: 1,
+          limits: 1,
+        })}
+        onEdit={() => {}}
+        onDone={() => {}}
+        onOpenSchemas={() => {}}
+        setActiveSchema={setActiveSchema}
+      />,
+    );
+    const chips = document.querySelectorAll('span[style*="dotted"]');
+    // 4 + 3 + 5 + 4 + 2 схемы по пяти потребностям
+    expect(chips).toHaveLength(18);
+    chips.forEach((c) => fireEvent.click(c));
+    expect(setActiveSchema).toHaveBeenCalledTimes(18);
   });
 
   it('«Подробнее о схемах» зовёт onDone и onOpenSchemas', () => {
