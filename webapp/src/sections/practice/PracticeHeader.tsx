@@ -1,4 +1,6 @@
 import { useTr } from '../../utils/addressForm';
+import { SelfHelpEntry } from './SelfHelpEntry';
+import '../../styles/practice-selfhelp.css';
 
 export interface SessionBannerInfo { label: string; isToday: boolean; partnerName?: string | null }
 
@@ -12,7 +14,10 @@ export function PracticeHeader({ phone, banner }: { phone: boolean; banner: Sess
     <div>
       {phone ? (
         <>
-          <h1 className="ds-h1">Здесь и сейчас</h1>
+          <div className="cp-head-row">
+            <h1 className="ds-h1">Здесь и сейчас</h1>
+            <SelfHelpEntry />
+          </div>
           <p className="ds-sub cp-phone-sub">
             {tr('Тяжёлый момент? Начни с одного вдоха', 'Тяжёлый момент? Начните с одного вдоха')}
           </p>
@@ -20,7 +25,10 @@ export function PracticeHeader({ phone, banner }: { phone: boolean; banner: Sess
       ) : (
         <>
           <div className="ds-eyebrow">Практика</div>
-          <h1 className="ds-h1">Упражнения <i>и задания</i></h1>
+          <div className="cp-head-row">
+            <h1 className="ds-h1">Упражнения <i>и задания</i></h1>
+            <SelfHelpEntry />
+          </div>
           <p className="ds-sub" style={{ fontSize: 15, marginTop: 12 }}>
             {tr('Восемь практик схема-терапии плюс твои личные цели.', 'Восемь практик схема-терапии плюс ваши личные цели.')}
           </p>

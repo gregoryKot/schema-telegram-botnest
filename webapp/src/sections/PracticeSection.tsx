@@ -129,7 +129,7 @@ export function PracticeSection({ onOpenChildhoodWheel, onOpenPractices, onOpenP
         {openEx === 'mode'   && <ModeEx onBack={onBack} onComplete={handleTaskComplete} />}
         {openEx === 'letter' && <LetterEx onBack={onBack} onComplete={handleTaskComplete} />}
         {openEx === 'safe'   && <SafePlaceEx onBack={onBack} onComplete={handleTaskComplete} />}
-        {openEx === 'wheel'  && <ChildhoodWheelEx onBack={onBack} />}
+        {openEx === 'wheel'  && <ChildhoodWheelEx onBack={onBack} onOpenSchemas={onOpenSchema ? () => { onBack(); onOpenSchema({ tab: 'schemas' }); } : undefined} />}
         {openEx === 'warm'   && <WarmWordsEx onBack={onBack} />}
         {openEx === 'phrase' && <PhraseCheckEx onBack={onBack} onComplete={handleTaskComplete} />}
       </Suspense>
