@@ -176,6 +176,7 @@ describe('BookingService.book — валидация до транзакции',
     // Цена — первой встречи: тип брони тот же, что у обычной записи на сессию.
     expect(stranger.pricing.getPrice).toHaveBeenCalledWith(
       SessionType.SESSION_50,
+      'RUB',
     );
     expect(stranger.notify.onAwaitingPayment).toHaveBeenCalledWith(
       expect.objectContaining({ clientContact: BASE_DTO.clientContact }),
@@ -342,7 +343,10 @@ describe('BookingService.book — создание и side-effects', () => {
     });
     expect(res.status).toBe(BookingStatus.HELD);
     expect(res.paymentUrl).toBeTruthy();
-    expect(pricing.getPrice).toHaveBeenCalledWith(SessionType.SESSION_50);
+    expect(pricing.getPrice).toHaveBeenCalledWith(
+      SessionType.SESSION_50,
+      'RUB',
+    );
     expect(robokassa.buildPaymentUrl).toHaveBeenCalledTimes(1);
     expect(notify.onAwaitingPayment).toHaveBeenCalledTimes(1);
     expect(notify.onConfirmed).not.toHaveBeenCalled();
@@ -855,5 +859,186 @@ describe('BookingService.expireHolds', () => {
     );
     expect(prisma.booking.findMany).not.toHaveBeenCalled();
     expect(notify.notifyExpired).not.toHaveBeenCalled();
+  });
+});
+
+// Цена и путь оплаты по стране посетителя (решение владельца 2026-10-20):
+// Россия — рубли и Robokassa; Израиль, Европа, остальной мир — валюта страны,
+// онлайн-оплаты нет, бронь платной сессии подтверждается сразу (manual), а
+// владелец получает цену в валюте и договаривается об оплате сам. Страна —
+// часовой пояс, который фронт шлёт в `clientTimeZone`.
+describe('BookingService.book — страна посетителя (валюта и путь оплаты)', () => {
+  beforeEach(() => {
+    jest.useFakeTimers();
+    jest.setSystemTime(FIXED_NOW);
+  });
+  afterEach(() => jest.useRealTimers());
+
+  const CURRENCY_DTO = {
+    clientName: 'Мария',
+    clientContact: '@maria',
+    acceptedOffer: true,
+    startsAt: INSIDE_WINDOW,
+    durationMin: 50,
+    type: SessionType.SESSION_50,
+  };
+
+  /** Цена по валюте, как отдаёт PricingService по умолчанию. */
+  const CURRENCY_PRICES: Record<string, number> = {
+    RUB: 4000,
+    ILS: 200,
+    EUR: 65,
+    USD: 70,
+  };
+
+  function setupCurrency(robokassaEnabled = true) {
+    const made = makeService({ rules: [], robokassaEnabled });
+    made.pricing.getPrice.mockImplementation(
+      async (_type: unknown, currency?: string) =>
+        CURRENCY_PRICES[currency ?? 'RUB'],
+    );
+    return made;
+  }
+
+  describe('BookingService.book — не в рублях: подтверждена сразу, без Robokassa', () => {
+    it.each([
+      ['Asia/Jerusalem', 'ILS', 200],
+      ['Europe/Berlin', 'EUR', 65],
+      ['America/New_York', 'USD', 70],
+      ['Asia/Bangkok', 'USD', 70],
+    ])(
+      '%s → %s %i: CONFIRMED, без paymentUrl и холда, Robokassa не вызвана',
+      async (tz, currency, amount) => {
+        const { service, tx, notify, robokassa, pricing } = setupCurrency();
+        const res = await service.book({ ...CURRENCY_DTO, clientTimeZone: tz });
+        expect(res.status).toBe(BookingStatus.CONFIRMED);
+        expect(res.paymentUrl).toBeNull();
+        expect(res.heldUntil).toBeNull();
+        expect(pricing.getPrice).toHaveBeenCalledWith(
+          SessionType.SESSION_50,
+          currency,
+        );
+        expect(tx.booking.create).toHaveBeenCalledWith({
+          data: expect.objectContaining({
+            status: BookingStatus.CONFIRMED,
+            heldUntil: null,
+            amount,
+            currency,
+            clientTimeZone: tz,
+          }),
+        });
+        expect(robokassa.buildPaymentUrl).not.toHaveBeenCalled();
+        expect(notify.onAwaitingPayment).not.toHaveBeenCalled();
+        expect(notify.onConfirmed).toHaveBeenCalledTimes(1);
+      },
+    );
+
+    it('карточка подтверждения несёт сумму и валюту (админ увидит цену)', async () => {
+      const { service, notify } = setupCurrency();
+      await service.book({ ...CURRENCY_DTO, clientTimeZone: 'Asia/Jerusalem' });
+      expect(notify.onConfirmed).toHaveBeenCalledWith(
+        expect.objectContaining({ amount: 200, currency: 'ILS' }),
+      );
+    });
+
+    it('цена вне рублей не задана (0): 503 и лид владельцу ДО INSERT, как у рублёвой', async () => {
+      const { service, tx, notify, pricing } = setupCurrency();
+      const lead = jest.fn(async () => undefined);
+      Object.assign(notify, { notifyAdminBoth: lead });
+      const errorSpy = jest
+        .spyOn(Logger.prototype, 'error')
+        .mockImplementation();
+      pricing.getPrice.mockResolvedValue(0);
+      await expect(
+        service.book({ ...CURRENCY_DTO, clientTimeZone: 'Asia/Jerusalem' }),
+      ).rejects.toThrow('PAYMENT_UNAVAILABLE');
+      errorSpy.mockRestore();
+      expect(lead).toHaveBeenCalledTimes(1);
+      expect(tx.booking.create).not.toHaveBeenCalled();
+    });
+
+    it('лог: «CONFIRMED, manual payment USD»', async () => {
+      const { service } = setupCurrency();
+      const log = jest.spyOn(Logger.prototype, 'log').mockImplementation();
+      await service.book({ ...CURRENCY_DTO, clientTimeZone: 'Asia/Bangkok' });
+      expect(log).toHaveBeenCalledWith(
+        expect.stringMatching(
+          /Booking \d+ created \(CONFIRMED, manual payment USD\)/,
+        ),
+      );
+      log.mockRestore();
+    });
+
+    it('знакомство из-за границы: бесплатно, amount null, цена не читается', async () => {
+      const { service, tx, pricing } = setupCurrency();
+      await service.book({
+        ...CURRENCY_DTO,
+        type: SessionType.INTRO_15,
+        durationMin: 15,
+        clientTimeZone: 'Asia/Jerusalem',
+      });
+      expect(pricing.getPrice).not.toHaveBeenCalled();
+      expect(tx.booking.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          amount: null,
+          status: BookingStatus.CONFIRMED,
+        }),
+      });
+    });
+  });
+
+  describe('BookingService.book — рубли: прежний путь', () => {
+    it.each([
+      ['Europe/Moscow'],
+      ['Asia/Yekaterinburg'],
+      [undefined],
+      ['мусор'],
+      ['Europe/Nonexistent'],
+    ])(
+      'пояс %p → рубли: HELD, paymentUrl, холд 15 минут, Robokassa вызвана',
+      async (tz) => {
+        const { service, tx, notify, robokassa, pricing } = setupCurrency();
+        const res = await service.book({ ...CURRENCY_DTO, clientTimeZone: tz });
+        expect(res.status).toBe(BookingStatus.HELD);
+        expect(res.paymentUrl).toBeTruthy();
+        expect(pricing.getPrice).toHaveBeenCalledWith(
+          SessionType.SESSION_50,
+          'RUB',
+        );
+        expect(tx.booking.create).toHaveBeenCalledWith({
+          data: expect.objectContaining({
+            status: BookingStatus.HELD,
+            amount: 4000,
+            currency: 'RUB',
+            heldUntil: new Date(FIXED_NOW.getTime() + 15 * 60_000),
+          }),
+        });
+        expect(robokassa.buildPaymentUrl).toHaveBeenCalledWith(
+          expect.objectContaining({ amount: 4000 }),
+        );
+        expect(notify.onAwaitingPayment).toHaveBeenCalledTimes(1);
+        expect(notify.onConfirmed).not.toHaveBeenCalled();
+      },
+    );
+
+    it('рубли без Robokassa в проде — по-прежнему отказ 503', async () => {
+      const was = process.env.NODE_ENV;
+      process.env.NODE_ENV = 'production';
+      const errorSpy = jest
+        .spyOn(Logger.prototype, 'error')
+        .mockImplementation();
+      try {
+        const { service, notify } = setupCurrency(false);
+        Object.assign(notify, {
+          notifyAdminBoth: jest.fn(async () => undefined),
+        });
+        await expect(
+          service.book({ ...CURRENCY_DTO, clientTimeZone: 'Europe/Moscow' }),
+        ).rejects.toThrow('PAYMENT_UNAVAILABLE');
+      } finally {
+        process.env.NODE_ENV = was;
+        errorSpy.mockRestore();
+      }
+    });
   });
 });
