@@ -1,0 +1,16 @@
+/* ── «Здесь и сейчас»: значок и лист «Важное о самопомощи» ────────────── */
+.cp-head-row { display: flex; align-items: center; gap: var(--space-8); }
+.cp-head-row .ds-h1 { min-width: 0; }
+.cp-selfhelp {
+  flex-shrink: 0; width: 44px; height: 44px; border: none; border-radius: 50%;
+  display: grid; place-items: center; cursor: pointer; color: var(--warn-ink);
+  background: color-mix(in srgb, var(--warn) 16%, transparent);
+  -webkit-tap-highlight-color: transparent;
+}
+.cp-selfhelp:hover { background: color-mix(in srgb, var(--warn) 26%, transparent); }
+
+.sh-title { margin: 0 0 var(--space-12); }
+.sh-text { margin: 0 0 var(--space-12); font-size: 14px; line-height: 1.65; color: var(--text-sub); }
+.sh-actions { display: flex; flex-wrap: wrap; gap: var(--space-8); margin-top: var(--space-16); }
+.sh-actions .ds-btn:last-child { flex: 1; }
+.sh-close { margin-top: var(--space-16); }
