@@ -25,7 +25,7 @@ jobs:
     # На воскресном запуске крутится только тяжёлый mutation-bot: гонять
     # ещё и ежедневные джобы вторым заходом незачем.
     if: github.event.schedule != '0 4 * * 0'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     # Установка (~1 мин) + сумма timeout-minutes шагов ниже: зависший шаг
     # падает сам, со своей причиной, раньше, чем джобу снимут целиком
     # (сверка — src/test-support/gates/nightly-jest-steps.spec.ts).
@@ -74,7 +74,7 @@ jobs:
     # На воскресном запуске крутится только тяжёлый mutation-bot: гонять
     # ещё и ежедневные джобы вторым заходом незачем.
     if: github.event.schedule != '0 4 * * 0'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
@@ -141,7 +141,7 @@ jobs:
     # На воскресном запуске крутится только тяжёлый mutation-bot: гонять
     # ещё и ежедневные джобы вторым заходом незачем.
     if: github.event.schedule != '0 4 * * 0'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     # Волна А (docs/TEST_TRUST_PLAN.md) — 6 файлов входа/шифрования/приватности
     # (crypto, auth.service, merge.service, telegram-auth.guard,
     # security-log.service, therapy-relations.service), ~1700 строк.
@@ -173,7 +173,7 @@ jobs:
 
   mutation-golden-payments:
     if: github.event.schedule != '0 4 * * 0'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     # Волна Б — 9 файлов денег/бронирования/напоминаний (tz, robokassa,
     # booking, subscription, slot, pricing, payment.controller, donation,
     # notification.planner), ~1650 строк — сопоставимо с волной А по объёму.
@@ -238,7 +238,7 @@ jobs:
     # На воскресном запуске крутится только тяжёлый mutation-bot: гонять
     # ещё и ежедневные джобы вторым заходом незачем.
     if: github.event.schedule != '0 4 * * 0'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     env:
       # Явный флаг — второй (запасной) способ включить WebKit-проект помимо
@@ -291,7 +291,7 @@ jobs:
   # файл/ключ и требуют, чтобы restore упал.
   backup-restore:
     if: github.event.schedule != '0 4 * * 0'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     services:
       postgres:
@@ -412,7 +412,7 @@ jobs:
   # и добавляем сюда шаг сверки (скрипт умеет --report/--baseline).
   mutation-bot:
     if: github.event_name == 'workflow_dispatch' || github.event.schedule == '0 4 * * 0'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 330
     steps:
       - uses: actions/checkout@v7
@@ -447,7 +447,7 @@ jobs:
       - backup-restore
       - mutation-bot
     if: always()
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
       issues: write
