@@ -65,10 +65,15 @@ test.describe('браузерный smoke: приложение открывае
     await openTracker.click();
 
     // Ни одна потребность ещё не оценена (fixture ratings пуст) — оверлей
-    // открывается на первой из STUB_NEEDS («Привязанность»). PickerRail —
-    // общий контрол шкалы 0–10 (правило «одна механика — один компонент»),
-    // рендерится и в desktop-, и в mobile-раскладке.
-    const rateSeven = page.getByRole('button', { name: '7', exact: true });
+    // открывается на первой из STUB_NEEDS («Привязанность»). Шкала —
+    // единственный контрол оценки NeedScale (правило «одна механика — один
+    // компонент»): десять кнопок без текста, имя каждой — aria-label
+    // «N из 10». Та же шкала стоит и на «Сегодня» под оверлеем, поэтому
+    // кнопку ищем внутри оверлея, иначе локатор совпал бы с шестью кнопками.
+    const overlay = page.locator('.tk2-overlay');
+    const rateSeven = overlay
+      .getByRole('group', { name: 'Привязанность' })
+      .getByRole('button', { name: '7 из 10', exact: true });
     await rateSeven.waitFor();
 
     const saved = page.waitForResponse(
@@ -80,9 +85,13 @@ test.describe('браузерный smoke: приложение открывае
 
     await page.reload();
 
-    // Возвращаемся на «Сегодня»: первая потребность в списке — та же самая
-    // («attachment»), значение должно прийти из фикстуры-стаба, куда его
-    // записал POST выше, а не отрисоваться заново с нуля.
-    await expect(page.locator('.need-row').first()).toContainText('7');
+    // Возвращаемся на «Сегодня»: оценка первой потребности («attachment»)
+    // должна прийти из фикстуры-стаба, куда её записал POST выше, а не
+    // отрисоваться заново с нуля — сегмент «7» нажат, рядом стоит число.
+    const todayScale = page.getByRole('group', { name: 'Привязанность' });
+    await expect(
+      todayScale.getByRole('button', { name: '7 из 10', exact: true }),
+    ).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.locator('.ct-need-row').first()).toContainText('7');
   });
 });
