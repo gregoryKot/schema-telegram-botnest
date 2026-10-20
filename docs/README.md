@@ -61,15 +61,6 @@ Ubuntu 26) у трёх PR подряд падали `backend` → `check-coverag
 Плавающую метку держит `src/test-support/gates/runner-pin.spec.ts`.
 
 **Единая версия, этап 4 — «Настроить экран» на сайте** (`docs/ONE_FRONTEND_PLAN.md`):
-- **Настройки экранов на сайте не синхронизируются между устройствами и с мини-аппом.** «Сегодня» на
-  сайте настраивается листом (`webapp/src/components/customize/`, логика и ключи — `shared/src/today`,
-  `shared/src/screens`), ключи localStorage те же, что у мини-аппа, но у сайта и мини-аппа разные origin,
-  а серверная синхронизация `uiPrefs` (`schema-miniapp/src/utils/uiPrefsSync.ts`) живёт только в мини-аппе.
-  Точка подключения на сайте готова: `webapp/src/utils/uiPrefsSync.ts` (`notifyPrefsChanged`, пока пустая)
-  уже вызывается при каждой записи настройки «Сегодня». Переезд синхронизатора в `shared/` — отдельный PR
-  (список `SYNCED_PREF_KEYS` сверяет бэкенд-спека `src/security/ui-prefs-sync.invariants.spec.ts`,
-  переезд — вместе с ней). Осторожно: сервер заменяет `uiPrefs` целиком, поэтому сайт не должен писать
-  до первого ответа сервера, иначе неполный набор ключей сотрёт чужие.
 - **«Профиль» и «Паттерны» на сайте не настраиваются.** Каркас готов и общий (`shared/src/screens/useScreenBlocks`,
   реестр `shared/src/screens/screenBlocks`, лист `webapp/src/components/customize/ScreenCustomizeSheet`, пока без
   потребителя — запись в `dead-files-baseline.json`); осталось подключить хук и лист к экранам сайта и вынести их
@@ -86,13 +77,10 @@ Ubuntu 26) у трёх PR подряд падали `backend` → `check-coverag
   живого взгляда на онбординг (чеклист `ONBOARDING_AUDIT_2026-10.md`).
 
 **Единая версия, этап 4 — быстрые действия «+» на сайте** (`docs/ONE_FRONTEND_PLAN.md`):
-- **Настройка «+» с сайта не доезжает до мини-аппа и обратно.** Ключи localStorage те же
-  (`quick_actions_hidden_plus`, `quick_actions_order_plus`), но у сайта и мини-аппа разные
-  origin, а серверная синхронизация `uiPrefs` (`schema-miniapp/src/utils/uiPrefsSync.ts`,
-  `notifyPrefsChanged`/`syncFromServer`) живёт только в мини-аппе: хуки в shared принимают
-  `onChanged`, сайт его не передаёт. Чтобы настройка ходила между площадками, `uiPrefsSync`
-  переезжает в `shared/` и подключается на сайте (список `SYNCED_PREF_KEYS` сверяется
-  с бэкендом спекой, переезд — вместе с ней).
+- **Настройка «+» с сайта не уходит на сервер.** Синхронизатор `uiPrefs` общий
+  (`shared/src/prefs/uiPrefsSync.ts`, #793), сайт применяет серверные ключи до показа экранов,
+  но `webapp/src/components/quickActions/PlusMenuSheet.tsx` вызывает `usePlusMenuState(tr)` без
+  второго аргумента — запись «+» на сайте не зовёт `notifyPrefsChanged`.
 - **Порядок пунктов «+» на сайте читается, но не меняется.** Лист настройки «+» на сайте — только
   тумблеры. Общий примитив перетаскивания уже в `shared/src/hooks/useDragReorder.ts`, строка с ручкой
   для сайта — `webapp/src/components/customize/CustomizeRow.tsx`; осталось подключить их в
