@@ -20,7 +20,7 @@ const useScreenBlockOrder = (screen: CustomizableScreen) =>
     screen,
     storageKey: SCREEN_ORDER_KEYS[screen],
     defaults: SCREEN_BLOCK_ORDER[screen],
-    track: trackEvent,
+    api: mockApi,
   });
 
 beforeEach(() => {

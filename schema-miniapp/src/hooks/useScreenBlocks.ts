@@ -3,11 +3,7 @@ import { useScreenBlocks as useSharedScreenBlocks } from '../../../shared/src/sc
 import type { CustomizableScreen } from '../../../shared/src/screens/screenBlocks';
 import { notifyPrefsChanged } from '../utils/uiPrefsSync';
 
-const deps = {
-  track: (name: string, meta?: Record<string, unknown>) =>
-    api.trackEvent(name, meta),
-  onChanged: notifyPrefsChanged,
-};
+const deps = { api, onChanged: notifyPrefsChanged };
 
 // Скрытие + порядок блоков экрана — логика общая с сайтом
 // (shared/screens/useScreenBlocks); здесь только транспорт мини-аппа:

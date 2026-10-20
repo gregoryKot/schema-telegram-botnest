@@ -4,9 +4,6 @@ import { notifyPrefsChanged } from '../../utils/uiPrefsSync';
 import { useTodayCustomization as useSharedTodayCustomization } from '../../../../shared/src/today/useTodayCustomization';
 import { useLongPress } from '../../../../shared/src/hooks/useLongPress';
 
-const track = (name: string, meta?: Record<string, unknown>) =>
-  api.trackEvent(name, meta);
-
 // Настройка экрана «Сегодня» — логика общая с мини-аппом
 // (shared/today/useTodayCustomization): ключи localStorage и события
 // аналитики те же, поэтому выбор один на обе площадки. Здесь транспорт сайта
@@ -14,7 +11,7 @@ const track = (name: string, meta?: Record<string, unknown>) =>
 // его строке в листе (как в мини-аппе). Жест только на телефоне: на десктопе он
 // гасил бы правый клик по карточкам, а «Настроить экран» там есть в шапке.
 export function useTodayCustomization() {
-  const today = useSharedTodayCustomization({ track, onChanged: notifyPrefsChanged });
+  const today = useSharedTodayCustomization({ api, onChanged: notifyPrefsChanged });
   const { openByHold } = today;
   const phone = useIsMobile();
   const focus = useLongPress(() => openByHold('practice'));

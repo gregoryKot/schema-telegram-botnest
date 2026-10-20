@@ -1,8 +1,5 @@
 import { useCallback, useState } from 'react';
-import {
-  readStringArray,
-  writeStringArray,
-} from '../utils/stringArrayStorage';
+import { readStringArray, writeStringArray } from '../utils/stringArrayStorage';
 import { useLongPress, type LongPressProps } from '../hooks/useLongPress';
 import { useBlockOrder } from '../utils/useBlockOrder';
 import {
@@ -13,7 +10,7 @@ import {
   type CustomizableScreen,
 } from './screenBlocks';
 
-type Track = (name: string, meta?: Record<string, unknown>) => void;
+import type { TrackApi } from '../quickActions/quickActionRowHandlers';
 
 /** Что лист «Настроить экран» берёт у useScreenBlocks (оба фронтенда). */
 export interface ScreenBlocksApi {
@@ -27,15 +24,15 @@ export interface ScreenBlocksApi {
 
 /**
  * Generic-скрытие + порядок блоков экрана («Профиль», «Паттерны»), одна
- * механика на оба фронтенда (правило №3). Площадка передаёт track
- * (api.trackEvent) и onChanged (синхронизация настроек между устройствами —
+ * механика на оба фронтенда (правило №3). Площадка передаёт api
+ * (с trackEvent) и onChanged (синхронизация настроек между устройствами —
  * у мини-аппа notifyPrefsChanged, у сайта пока нет). Лист настройки у
  * площадок свой, состояние — это.
  */
 export function useScreenBlocks(
   screen: CustomizableScreen,
   storageKey: string,
-  { track, onChanged }: { track: Track; onChanged?: () => void },
+  { api, onChanged }: { api: TrackApi; onChanged?: () => void },
 ) {
   const [hidden, setHidden] = useState<string[]>(() =>
     readStringArray(storageKey),
@@ -44,7 +41,7 @@ export function useScreenBlocks(
     screen,
     storageKey: SCREEN_ORDER_KEYS[screen],
     defaults: SCREEN_BLOCK_ORDER[screen],
-    track,
+    api,
     onChanged,
   });
   const [sheet, setSheet] = useState<ScreenBlockId | true | null>(null);
@@ -53,15 +50,15 @@ export function useScreenBlocks(
 
   const openByGear = useCallback(() => {
     setSheet(true);
-    track('screen_customize_open', { screen, via: 'gear' });
-  }, [screen, track]);
+    api.trackEvent('screen_customize_open', { screen, via: 'gear' });
+  }, [screen, api]);
 
   const openByHold = useCallback(
     (highlight: ScreenBlockId) => {
       setSheet(highlight);
-      track('screen_customize_open', { screen, via: 'longpress' });
+      api.trackEvent('screen_customize_open', { screen, via: 'longpress' });
     },
-    [screen, track],
+    [screen, api],
   );
 
   const closeSheet = useCallback(() => setSheet(null), []);
@@ -73,7 +70,7 @@ export function useScreenBlocks(
         const next = nextHidden ? [...prev, id] : prev.filter((x) => x !== id);
         writeStringArray(storageKey, next);
         onChanged?.();
-        track('screen_block_toggle', {
+        api.trackEvent('screen_block_toggle', {
           screen,
           block: id,
           hidden: nextHidden,
@@ -81,7 +78,7 @@ export function useScreenBlocks(
         return next;
       });
     },
-    [screen, storageKey, track, onChanged],
+    [screen, storageKey, api, onChanged],
   );
 
   // useLongPress — по разу на КАЖДЫЙ id реестра (фиксирован, стабильный порядок вызовов хука); holdProps ниже отдаёт только то, что нужно экрану.

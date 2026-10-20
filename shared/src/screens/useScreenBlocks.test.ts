@@ -11,7 +11,7 @@ import { useScreenBlocks } from './useScreenBlocks';
 const trackEvent = vi.fn();
 const onChanged = vi.fn();
 const mockApi = { trackEvent };
-const deps = { track: trackEvent, onChanged };
+const deps = { api: mockApi, onChanged };
 
 beforeEach(() => {
   vi.clearAllMocks();

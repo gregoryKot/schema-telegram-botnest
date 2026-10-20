@@ -3,9 +3,6 @@ import { useTodayCustomization as useSharedTodayCustomization } from '../../../s
 import { useLongPress } from '../../../shared/src/hooks/useLongPress';
 import { notifyPrefsChanged } from '../utils/uiPrefsSync';
 
-const track = (name: string, meta?: Record<string, unknown>) =>
-  api.trackEvent(name, meta);
-
 // Настройка экрана «Сегодня» — логика общая с сайтом
 // (shared/today/useTodayCustomization: что показано, какая практика главная,
 // порядок блоков). Здесь только транспорт мини-аппа (аналитика, синхронизация
@@ -13,7 +10,7 @@ const track = (name: string, meta?: Record<string, unknown>) =>
 // путь к его настройке (см. useLongPress).
 export function useTodayCustomization() {
   const today = useSharedTodayCustomization({
-    track,
+    api,
     onChanged: notifyPrefsChanged,
   });
   const { openByHold } = today;

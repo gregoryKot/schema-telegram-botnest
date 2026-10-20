@@ -5,7 +5,7 @@ import {
   applyReorderToIndex,
 } from '../quickActions/quickActionOrder';
 
-type Track = (name: string, meta?: Record<string, unknown>) => void;
+import type { TrackApi } from '../quickActions/quickActionRowHandlers';
 
 /**
  * Порядок блоков экрана (per-device localStorage, синхронизируется через
@@ -21,13 +21,13 @@ export function useBlockOrder<T extends string>({
   screen,
   storageKey,
   defaults,
-  track,
+  api,
   onChanged,
 }: {
   screen: string;
   storageKey: string;
   defaults: readonly T[];
-  track: Track;
+  api: TrackApi;
   onChanged?: () => void;
 }): {
   orderedIds: T[];
@@ -53,7 +53,7 @@ export function useBlockOrder<T extends string>({
     if (moved) {
       setOrder(readStringArray(storageKey));
       onChanged?.();
-      track('screen_block_move', {
+      api.trackEvent('screen_block_move', {
         screen,
         block: id,
         dir: toIndex < fromIndex ? 'up' : 'down',

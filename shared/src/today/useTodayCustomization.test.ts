@@ -8,7 +8,10 @@ import { useTodayCustomization } from './useTodayCustomization';
 
 const track = vi.fn();
 const onChanged = vi.fn();
-const setup = () => renderHook(() => useTodayCustomization({ track, onChanged }));
+const setup = () =>
+  renderHook(() =>
+    useTodayCustomization({ api: { trackEvent: track }, onChanged }),
+  );
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -45,7 +48,12 @@ describe('переключатели: сохранили → увидели в �
   it.each([
     ['toggleStreak', 'streakHidden', 'streak', false],
     ['togglePhrase', 'phraseHidden', 'phrase', false],
-    ['toggleTherapistBanner', 'therapistBannerHidden', 'therapist_banner', false],
+    [
+      'toggleTherapistBanner',
+      'therapistBannerHidden',
+      'therapist_banner',
+      false,
+    ],
     // «Что ещё можно сегодня» по умолчанию спрятано под сворачивание.
     ['toggleSecondary', 'secondaryHidden', 'secondary', true],
   ] as const)('%s', (action, flag, block, initial) => {
@@ -91,9 +99,9 @@ describe('порядок блоков (screen_order_today)', () => {
     const { result } = setup();
     act(() => void result.current.reorder('phrase', 0));
     expect(result.current.orderedIds[0]).toBe('phrase');
-    expect(JSON.parse(localStorage.getItem('screen_order_today') ?? '[]')[0]).toBe(
-      'phrase',
-    );
+    expect(
+      JSON.parse(localStorage.getItem('screen_order_today') ?? '[]')[0],
+    ).toBe('phrase');
     expect(track).toHaveBeenCalledWith('screen_block_move', {
       screen: 'today',
       block: 'phrase',

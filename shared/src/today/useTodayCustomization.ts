@@ -20,7 +20,7 @@ import {
 } from './todayBlocks';
 import { useBlockOrder } from '../utils/useBlockOrder';
 
-type Track = (name: string, meta?: Record<string, unknown>) => void;
+import type { TrackApi } from '../quickActions/quickActionRowHandlers';
 type HideableBlock = 'streak' | 'phrase' | 'secondary' | 'therapist_banner';
 
 /**
@@ -30,14 +30,14 @@ type HideableBlock = 'streak' | 'phrase' | 'secondary' | 'therapist_banner';
  * onChanged — точка синхронизации между устройствами (у мини-аппа
  * notifyPrefsChanged; у сайта подключается отдельным PR).
  *
- * Площадка передаёт track (api.trackEvent) и onChanged; долгое нажатие на
+ * Площадка передаёт api (с trackEvent: имя события — литерал в вызове, трипваер правила №8) и onChanged; долгое нажатие на
  * блок (useLongPress мини-аппа) строит поверх openByHold.
  */
 export function useTodayCustomization({
-  track,
+  api,
   onChanged,
 }: {
-  track: Track;
+  api: TrackApi;
   onChanged?: () => void;
 }) {
   const [practice, setPracticeState] =
@@ -56,21 +56,21 @@ export function useTodayCustomization({
     screen: 'today',
     storageKey: TODAY_ORDER_KEY,
     defaults: TODAY_BLOCK_ORDER,
-    track,
+    api,
     onChanged,
   });
 
   const openByGear = useCallback(() => {
     setSheet(true);
-    track('today_customize_open', { via: 'gear' });
-  }, [track]);
+    api.trackEvent('today_customize_open', { via: 'gear' });
+  }, [api]);
 
   const openByHold = useCallback(
     (highlight: CustomizeHighlight) => {
       setSheet(highlight);
-      track('today_customize_open', { via: 'longpress' });
+      api.trackEvent('today_customize_open', { via: 'longpress' });
     },
-    [track],
+    [api],
   );
 
   const toggle = useCallback(
@@ -84,9 +84,9 @@ export function useTodayCustomization({
       persist(next);
       setState(next);
       onChanged?.();
-      track('today_block_toggle', { block, hidden: next });
+      api.trackEvent('today_block_toggle', { block, hidden: next });
     },
-    [track, onChanged],
+    [api, onChanged],
   );
 
   return {
@@ -107,9 +107,9 @@ export function useTodayCustomization({
         setFocusPractice(p);
         setPracticeState(p);
         onChanged?.();
-        track('today_focus_change', { practice: p });
+        api.trackEvent('today_focus_change', { practice: p });
       },
-      [track, onChanged],
+      [api, onChanged],
     ),
     toggleStreak: useCallback(
       () =>
