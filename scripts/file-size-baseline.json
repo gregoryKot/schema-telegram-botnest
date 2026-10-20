@@ -2304,7 +2304,7 @@
   "webapp/src/utils/botConfig.ts": 16,
   "webapp/src/utils/chunkReload.ts": 49,
   "webapp/src/utils/crisisMarkers.ts": 2,
-  "webapp/src/utils/domainChrome.ts": 37,
+  "webapp/src/utils/domainChrome.ts": 35,
   "webapp/src/utils/drafts.ts": 2,
   "webapp/src/utils/format.ts": 3,
   "webapp/src/utils/hitbox.ts": 2,
