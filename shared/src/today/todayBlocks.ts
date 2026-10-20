@@ -33,7 +33,7 @@ export interface TodayBlockMeta {
   toggleable: boolean;
 }
 
-/** Подписи строк листа. Названия нейтральные — вилка ты/вы не нужна. */
+/** Подписи строк листа. Названия нейтральные: обращения к читателю в них нет. */
 export const TODAY_BLOCK_META: Record<TodayBlockId, TodayBlockMeta> = {
   streak: {
     title: 'Карточка серии',
