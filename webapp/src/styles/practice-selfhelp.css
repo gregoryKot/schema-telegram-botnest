@@ -1,6 +1,7 @@
 /* ── «Здесь и сейчас»: значок и лист «Важное о самопомощи» ────────────── */
 .cp-head-row { display: flex; align-items: center; gap: var(--space-8); }
 .cp-head-row .ds-h1 { min-width: 0; }
+.cp-head-end { margin-left: auto; display: flex; }
 .cp-selfhelp {
   flex-shrink: 0; width: 44px; height: 44px; border: none; border-radius: 50%;
   display: grid; place-items: center; cursor: pointer; color: var(--warn-ink);

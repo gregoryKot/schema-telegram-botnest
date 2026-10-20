@@ -10,11 +10,11 @@ export function CustomizeGear({ label, onClick }: { label: string; onClick: () =
   );
 }
 
-/** Ссылка «Настроить экран» в шапке (десктоп). */
-export function CustomizeLink({ onClick }: { onClick: () => void }) {
+/** Ссылка «Настроить экран» в шапке (десктоп); label — если лист про часть экрана. */
+export function CustomizeLink({ onClick, label = 'Настроить экран' }: { onClick: () => void; label?: string }) {
   return (
     <button type="button" className="ds-link cz-link" onClick={onClick}>
-      Настроить экран
+      {label}
     </button>
   );
 }

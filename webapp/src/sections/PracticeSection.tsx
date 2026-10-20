@@ -20,18 +20,20 @@ import { ExerciseLibrary } from './practice/ExerciseLibrary';
 import { TaskRow } from './practice/TaskRow';
 import { AllGoalsOverlay } from './practice/AllGoalsOverlay';
 import { useExerciseStats } from './practice/useExerciseStats';
-import { useCatalogCounts, catalogRowSub } from './practice/catalogCounts';
+import { useCatalogCounts } from './practice/catalogCounts';
+import { usePracticeTools } from './practice/usePracticeTools';
+import { CatalogsBlock } from './practice/CatalogsBlock';
 import type { ExId } from './practice/exerciseLibrary';
 import { pluralRu as plural } from '../../../shared/src/utils/pluralRu';
 import { todayCalendarDate } from '../../../shared/src/utils/calendarDate';
 import '../styles/client-practice.css';
 
+const ToolsCustomizeSheet = lazy(() => import('../components/quickActions/ToolsCustomizeSheet').then(m => ({ default: m.ToolsCustomizeSheet })));
 const BeliefCheckEx    = lazy(() => import('../components/exercises/BeliefCheckEx').then(m => ({ default: m.BeliefCheckEx })));
 const SchemaEx         = lazy(() => import('../components/exercises/FlashcardEx').then(m => ({ default: m.SchemaEx })));
 const ModeEx           = lazy(() => import('../components/exercises/FlashcardEx').then(m => ({ default: m.ModeEx })));
 const LetterEx         = lazy(() => import('../components/exercises/LetterEx').then(m => ({ default: m.LetterEx })));
 const SafePlaceEx      = lazy(() => import('../components/exercises/SafePlaceEx').then(m => ({ default: m.SafePlaceEx })));
-const ChildhoodWheelEx = lazy(() => import('../components/exercises/ChildhoodWheelEx').then(m => ({ default: m.ChildhoodWheelEx })));
 const WarmWordsEx      = lazy(() => import('../components/exercises/WarmWordsEx').then(m => ({ default: m.WarmWordsEx })));
 const PhraseCheckEx    = lazy(() => import('../components/exercises/PhraseCheckEx').then(m => ({ default: m.PhraseCheckEx })));
 
@@ -64,6 +66,10 @@ export function PracticeSection({ onOpenChildhoodWheel, onOpenPractices, onOpenP
   const [showAllGoals,   setShowAllGoals]   = useState(false);
   const { tasks, taskHistory, taskError, completeTask, afterCreate } = useTaskActions(refreshKey, 'practice.tasks');
   const [relation,       setRelation]       = useState<TherapyRelationInfo | null | undefined>(undefined);
+  const [showCustomize,  setShowCustomize]  = useState(false);
+  const { tools, cards, catalogRows } = usePracticeTools({
+    goalsCount: tasks.filter(t => t.assignedBy === null).length, catalog, childhoodDone, onOpenPractices, onOpenPlans,
+  });
 
   // Detect openSchemaEx state from navigation
   useEffect(() => {
@@ -129,7 +135,6 @@ export function PracticeSection({ onOpenChildhoodWheel, onOpenPractices, onOpenP
         {openEx === 'mode'   && <ModeEx onBack={onBack} onComplete={handleTaskComplete} />}
         {openEx === 'letter' && <LetterEx onBack={onBack} onComplete={handleTaskComplete} />}
         {openEx === 'safe'   && <SafePlaceEx onBack={onBack} onComplete={handleTaskComplete} />}
-        {openEx === 'wheel'  && <ChildhoodWheelEx onBack={onBack} onOpenSchemas={onOpenSchema ? () => { onBack(); onOpenSchema({ tab: 'schemas' }); } : undefined} />}
         {openEx === 'warm'   && <WarmWordsEx onBack={onBack} />}
         {openEx === 'phrase' && <PhraseCheckEx onBack={onBack} onComplete={handleTaskComplete} />}
       </Suspense>
@@ -148,15 +153,15 @@ export function PracticeSection({ onOpenChildhoodWheel, onOpenPractices, onOpenP
   return (
     <div className={'ds-page cp-page animate-fade' + (phone ? ' cp-page--phone' : '')}>
 
-      <PracticeHeader phone={phone} banner={sessionBanner} />
+      <PracticeHeader phone={phone} banner={sessionBanner} onCustomize={() => setShowCustomize(true)} />
 
       {phone ? (
         <div id={HERE_BLOCK_ID} className="cp-block">
-          <HereAndNowBlock compact extraRows={<PhoneHelpRows onSteps={() => setShowFlashcard(true)} />} />
+          <HereAndNowBlock compact extraRows={<PhoneHelpRows onSteps={tools.isShown('flashcard') ? () => setShowFlashcard(true) : undefined} />} />
         </div>
       ) : (
         <>
-          <PracticeTopRow onCrisis={() => setShowFlashcard(true)} />
+          <PracticeTopRow onCrisis={tools.isShown('flashcard') ? () => setShowFlashcard(true) : undefined} />
           <div id={HERE_BLOCK_ID} className="cp-block"><HereAndNowBlock /></div>
           <div id={HELP_BLOCK_ID} className="cp-block"><CrisisBlock /></div>
         </>
@@ -181,7 +186,12 @@ export function PracticeSection({ onOpenChildhoodWheel, onOpenPractices, onOpenP
         </section>
       )}
 
-      <ExerciseLibrary phone={phone} stats={stats} onOpen={id => { setSchemaInitialId(undefined); setOpenEx(id); }} />
+      <ExerciseLibrary
+        phone={phone}
+        stats={stats}
+        items={cards}
+        onOpen={id => { if (id === 'wheel') { onOpenChildhoodWheel(); return; } setSchemaInitialId(undefined); setOpenEx(id); }}
+      />
 
       <section className="cp-block">
         <div className="ds-head-row"><h3 className="ds-h2">В трудный момент</h3></div>
@@ -189,18 +199,17 @@ export function PracticeSection({ onOpenChildhoodWheel, onOpenPractices, onOpenP
           {[
             { label: 'Тест на схемы',   sub: tr('116 вопросов, 20 шкал схем – узнай свои паттерны', '116 вопросов, 20 шкал схем – узнайте свои паттерны'),   onClick: () => onOpenSchema?.({ startTest: true }) },
             { label: 'Карта режимов',   sub: tr('Найди Уязвимого Ребёнка, Критика, Защитника', 'Найдите Уязвимого Ребёнка, Критика, Защитника'),         onClick: () => onOpenSchema?.({ tab: 'modes' }) },
-            { label: 'Колесо детства',  sub: 'Как удовлетворялись потребности в детстве',           onClick: onOpenChildhoodWheel, done: childhoodDone },
           ].map(item => (
             <div key={item.label} className="ds-card ds-card--hover cp-tool" {...pressable(item.onClick)}>
               <div className="cp-tool-title">{item.label}</div>
               <div className="cp-tool-sub">{item.sub}</div>
-              <span className="ds-link">{'done' in item && item.done ? 'открыть →' : 'начать →'}</span>
+              <span className="ds-link">начать →</span>
             </div>
           ))}
         </div>
       </section>
 
-      <section className="cp-block">
+      {tools.isShown('tasks') && <section className="cp-block">
         <div className="ds-head-row">
           <h3 className="ds-h2">Мои цели</h3>
           <span className="ds-sub">{myGoals.length === 0 ? 'нет активных' : `${myGoals.length} активных`}</span>
@@ -222,27 +231,12 @@ export function PracticeSection({ onOpenChildhoodWheel, onOpenPractices, onOpenP
             <span className="ds-link" {...pressable(() => setShowAllGoals(true))}>все цели →</span>
           )}
         </div>
-      </section>
+      </section>}
 
-      <section className="cp-block">
-        <div className="ds-head-row"><h3 className="ds-h2">Каталоги</h3></div>
-        <div className="cp-tasks">
-          {[
-            { label: 'Практики',  sub: catalogRowSub('practices', catalog.practices, 'Рекомендованные упражнения по потребностям'), onClick: onOpenPractices },
-            { label: 'Планы',     sub: catalogRowSub('plans', catalog.plans, 'Планы поддержки и кризисов'),                  onClick: onOpenPlans },
-          ].map(item => (
-            <div key={item.label} className="ds-card ds-card--row ds-card--hover cp-task" {...pressable(item.onClick)}>
-              <div className="cp-task-body">
-                <div className="cp-task-title">{item.label}</div>
-                <div className="ds-sub">{item.sub}</div>
-              </div>
-              <span className="ds-link">открыть →</span>
-            </div>
-          ))}
-        </div>
-      </section>
+      <CatalogsBlock rows={catalogRows} />
 
       {/* Overlays */}
+      {showCustomize && <Suspense fallback={null}><ToolsCustomizeSheet tools={tools} onClose={() => setShowCustomize(false)} /></Suspense>}
       {showFlashcard && <SchemaFlashcard onClose={() => setShowFlashcard(false)} onOpenTracker={onOpenTracker} onComplete={handleTaskComplete} />}
       {showTaskCreate && (
         <TaskCreateSheet
