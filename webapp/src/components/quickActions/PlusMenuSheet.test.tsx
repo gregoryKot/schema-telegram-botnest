@@ -10,6 +10,8 @@ import { PLUS_ACTIONS_HIDDEN_KEY } from '../../../../shared/src/quickActions/qui
 import { PLUS_ACTIONS_ORDER_KEY } from '../../../../shared/src/quickActions/quickActionOrder';
 
 vi.mock('../../api', () => ({ api: { trackEvent: vi.fn() } }));
+vi.mock('../../utils/uiPrefsSync', () => ({ notifyPrefsChanged: vi.fn() }));
+import { notifyPrefsChanged } from '../../utils/uiPrefsSync';
 import { api } from '../../api';
 const trackEvent = api.trackEvent as unknown as ReturnType<typeof vi.fn>;
 
@@ -23,6 +25,8 @@ function renderSheet() {
   );
   return { onAction, onClose };
 }
+
+const rowLabels = () => screen.getAllByRole('button').filter((b) => b.className === 'qa-row').map((b) => b.textContent ?? '');
 
 beforeEach(() => {
   localStorage.clear();
@@ -83,7 +87,8 @@ describe('PlusMenuSheet — настройка видимости', () => {
     expect(localStorage.getItem(PLUS_ACTIONS_HIDDEN_KEY)).toBe('["stop"]');
     expect(screen.getByRole('switch', { name: 'Техника «Стоп»' }).getAttribute('aria-checked')).toBe('false');
     // основной лист уже без пункта (сохранение → отображение)
-    expect(screen.queryAllByRole('button', { name: /Техника «Стоп»/ })).toHaveLength(0);
+    expect(rowLabels().filter((l) => /Стоп/.test(l))).toHaveLength(0);
+    expect(notifyPrefsChanged).toHaveBeenCalledTimes(1);
   });
 
   it('скрытый пункт можно вернуть тем же тумблером', () => {
@@ -93,5 +98,29 @@ describe('PlusMenuSheet — настройка видимости', () => {
     fireEvent.click(screen.getByRole('switch', { name: 'Техника «Стоп»' }));
     expect(trackEvent).toHaveBeenCalledWith('quick_action_toggle', { action: 'stop', hidden: false, surface: 'plus' });
     expect(localStorage.getItem(PLUS_ACTIONS_HIDDEN_KEY)).toBeNull();
+  });
+});
+
+describe('PlusMenuSheet — порядок пунктов', () => {
+  const calmOrder = () => rowLabels().filter((l) => /Стоп|Дыхание|Заземление/.test(l));
+
+  it('ручка «≡» с клавиатуры двигает пункт: порядок сохраняется, событие и синхронизация, основной лист перерисован', () => {
+    renderSheet();
+    expect(calmOrder()[0]).toMatch(/Дыхание/);
+    fireEvent.click(screen.getByRole('button', { name: 'Настроить быстрые действия' }));
+    fireEvent.keyDown(screen.getByRole('button', { name: 'Переставить: Техника «Стоп»' }), { key: 'ArrowUp' });
+    expect(trackEvent).toHaveBeenCalledWith('quick_action_move', { action: 'stop', surface: 'plus', dir: 'up' });
+    expect(JSON.parse(localStorage.getItem(PLUS_ACTIONS_ORDER_KEY) ?? '[]')).toContain('stop');
+    expect(notifyPrefsChanged).toHaveBeenCalledTimes(1);
+    expect(calmOrder().map((l) => l.match(/Стоп|Дыхание|Заземление/)?.[0])).toEqual(['Дыхание', 'Стоп', 'Заземление']);
+  });
+
+  it('первый пункт группы вверх не двигается: ни записи, ни события', () => {
+    renderSheet();
+    fireEvent.click(screen.getByRole('button', { name: 'Настроить быстрые действия' }));
+    fireEvent.keyDown(screen.getByRole('button', { name: 'Переставить: Дыхание 4-4-6' }), { key: 'ArrowUp' });
+    expect(trackEvent).not.toHaveBeenCalledWith('quick_action_move', expect.anything());
+    expect(localStorage.getItem(PLUS_ACTIONS_ORDER_KEY)).toBeNull();
+    expect(notifyPrefsChanged).not.toHaveBeenCalled();
   });
 });

@@ -1,13 +1,17 @@
 import { useTr } from '../../utils/addressForm';
+import { useIsMobile } from '../../components/useIsMobile';
+import { CustomizeGear, CustomizeLink } from '../../components/customize/CustomizeGear';
 import { clientHue, hueStyle } from '../../lib/tone';
 import { avatarInitial, daysWord } from './profileModel';
 
-interface Props { displayName: string | null | undefined; totalDays: number; onOpenSettings?: () => void }
+interface Props { displayName: string | null | undefined; totalDays: number; onCustomize: () => void; onOpenSettings?: () => void }
 
 // Десктоп: «ПРОФИЛЬ / Мой путь / Аня · N дней с тобой в приложении».
-// Телефон (css, .cpf-head-desk прячется): «Аня / N дней в приложении» и справа «Настроить» — как в мини-аппе.
-export function ProfileHeader({ displayName, totalDays, onOpenSettings }: Props) {
+// Телефон (css, .cpf-head-desk прячется): «Аня / N дней в приложении», справа «Настроить»
+// (блоки экрана) и шестерёнка общих настроек — как в мини-аппе. Десктоп: ссылка «Настроить экран».
+export function ProfileHeader({ displayName, totalDays, onCustomize, onOpenSettings }: Props) {
   const tr = useTr();
+  const phone = useIsMobile();
   const name = displayName?.trim() ?? '';
   return (
     <div className="cpf-head">
@@ -32,8 +36,13 @@ export function ProfileHeader({ displayName, totalDays, onOpenSettings }: Props)
           </div>
         )}
       </div>
-      {onOpenSettings && (
-        <button type="button" className="cpf-head-settings" onClick={onOpenSettings}>Настроить</button>
+      {phone ? (
+        <div className="cpf-head-actions">
+          <button type="button" className="cpf-head-settings" aria-label="Настроить экран профиля" onClick={onCustomize}>Настроить</button>
+          {onOpenSettings && <CustomizeGear label="Настройки" onClick={onOpenSettings} />}
+        </div>
+      ) : (
+        <CustomizeLink onClick={onCustomize} />
       )}
     </div>
   );

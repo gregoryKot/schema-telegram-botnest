@@ -1,6 +1,5 @@
 // @vitest-environment jsdom
-// Общий лист «Настроить экран» для «Профиля» и «Паттернов» (задел под следующий
-// PR): строки из реестра блоков, тумблер, ручка, подсветка.
+// Общий лист «Настроить экран» для «Профиля» и «Паттернов»: строки из реестра блоков, тумблер, ручка, подсветка.
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';

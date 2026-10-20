@@ -19,6 +19,9 @@ import { PatternsCard } from './profile/PatternsCard';
 import { TherapistCard } from './profile/TherapistCard';
 import { ProfileLinks } from './profile/ProfileLinks';
 import { ProfileAboutBlock } from './profile/ProfileAboutBlock';
+import { ScreenBlock } from '../components/customize/ScreenBlock';
+import { ScreenCustomizeHost } from '../components/customize/ScreenCustomizeHost';
+import { useScreenBlocks } from '../components/customize/useScreenBlocks';
 import { BestDayDialog } from './profile/BestDayDialog';
 import { ACHIEVEMENT_META } from './profile/profileMeta';
 import type { InsightsData, StreakData } from './profile/profileMeta';
@@ -36,6 +39,7 @@ interface Props {
 
 export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, displayName, onTakeTest }: Props) {
   const tr = useTr();
+  const blocks = useScreenBlocks('profile');
 
   const [streak, setStreak]             = useState<StreakData | null>(null);
   const [achievements, setAchievements] = useState<Achievement[] | null>(null);
@@ -85,10 +89,12 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
   const currentStreak = streak?.currentStreak ?? 0;
   const totalDays     = streak?.totalDays ?? 0;
   const hasInsights   = insights && insights.weeklyStats.some(s => s.avg !== null);
+  const hasAchievementsCard = !!achievements && !blocks.isHidden('achievements');
+  const showInsights = !!hasInsights && !blocks.isHidden('insights');
 
   return (
     <div className="ds-page cpf-page animate-fade">
-      <ProfileHeader displayName={displayName} totalDays={totalDays} onOpenSettings={onOpenSettings} />
+      <ProfileHeader displayName={displayName} totalDays={totalDays} onCustomize={blocks.openByGear} onOpenSettings={onOpenSettings} />
 
       {!ready && (
         <div className="cpf-skeleton">
@@ -104,29 +110,43 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
 
       {ready && (
         <>
-          <section {...pressable(() => setJourneyOpen(true))} className="ds-card ds-card--hover cpf-card cpf-journey">
-            <div className="ds-head-row">
-              <h2 className="ds-h3">Мой путь</h2>
-              <span className="ds-sub">→</span>
-            </div>
-            <div className="ds-sub">
-              {tr(
-                'Вся твоя история в одном месте: трекер, дневники, практики и тесты — и красивая карточка, чтобы поделиться.',
-                'Вся ваша история в одном месте: трекер, дневники, практики и тесты — и красивая карточка, чтобы поделиться.',
-              )}
-            </div>
-          </section>
+          <ScreenBlock id="journey" blocks={blocks} className="cpf-blk">
+            <section {...pressable(() => setJourneyOpen(true))} className="ds-card ds-card--hover cpf-card cpf-journey">
+              <div className="ds-head-row">
+                <h2 className="ds-h3">Мой путь</h2>
+                <span className="ds-sub">→</span>
+              </div>
+              <div className="ds-sub">
+                {tr(
+                  'Вся твоя история в одном месте: трекер, дневники, практики и тесты — и красивая карточка, чтобы поделиться.',
+                  'Вся ваша история в одном месте: трекер, дневники, практики и тесты — и красивая карточка, чтобы поделиться.',
+                )}
+              </div>
+            </section>
+          </ScreenBlock>
 
           <ProfileCounters streak={currentStreak} totalDays={totalDays} diaryCount={diaryCount} ysqCount={ysqCount} />
-          {streak !== null && <StreakCard streak={streak} onOpenTracker={onOpenTracker} />}
-          {activeDates.size > 0 && <ActivityHeatmap levels={levels} activeDates={activeDates} totalDays={totalDays} />}
+          {streak !== null && <ScreenBlock id="streak" blocks={blocks} className="cpf-blk"><StreakCard streak={streak} onOpenTracker={onOpenTracker} /></ScreenBlock>}
+          {activeDates.size > 0 && (
+            <ScreenBlock id="heatmap" blocks={blocks} className="cpf-blk">
+              <ActivityHeatmap levels={levels} activeDates={activeDates} totalDays={totalDays} />
+            </ScreenBlock>
+          )}
 
-          <ProfileAboutBlock refreshKey={refreshKey} onTakeTest={onTakeTest} />
+          <ProfileAboutBlock refreshKey={refreshKey} onTakeTest={onTakeTest} blocks={blocks} />
 
-          {(achievements || hasInsights) && (
+          {(hasAchievementsCard || showInsights) && (
             <div className="cpf-duo">
-              {achievements && <AchievementsCard achievements={achievements} onOpen={() => setShowAchievements(true)} />}
-              {hasInsights && insights && <PatternsCard insights={insights} onBestDayInfo={() => setShowBestDayInfo(true)} />}
+              {hasAchievementsCard && achievements && (
+                <ScreenBlock id="achievements" blocks={blocks} className="cpf-blk">
+                  <AchievementsCard achievements={achievements} onOpen={() => setShowAchievements(true)} />
+                </ScreenBlock>
+              )}
+              {showInsights && insights && (
+                <ScreenBlock id="insights" blocks={blocks} className="cpf-blk">
+                  <PatternsCard insights={insights} onBestDayInfo={() => setShowBestDayInfo(true)} />
+                </ScreenBlock>
+              )}
             </div>
           )}
 
@@ -163,6 +183,8 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
       {journeyOpen && <JourneySheet onClose={() => setJourneyOpen(false)} />}
 
       {showDeleteConfirm && <DeleteAccountDialog onClose={() => setShowDeleteConfirm(false)} />}
+
+      <ScreenCustomizeHost blocks={blocks} />
     </div>
   );
 }

@@ -7,23 +7,39 @@ import { ProfileHeader } from './ProfileHeader';
 import { AchievementsCard } from './AchievementsCard';
 import { PatternsCard } from './PatternsCard';
 
-afterEach(cleanup);
+const phone = vi.hoisted(() => ({ value: true }));
+vi.mock('../../components/useIsMobile', () => ({ useIsMobile: () => phone.value }));
+
+afterEach(() => { cleanup(); phone.value = true; });
 
 describe('ProfileHeader', () => {
-  it('«Настроить» открывает настройки; без обработчика кнопки нет', () => {
+  it('телефон: «Настроить» открывает настройку экрана, шестерёнка — общие настройки; без обработчика шестерёнки нет', () => {
+    const onCustomize = vi.fn();
     const onOpen = vi.fn();
-    const { rerender } = render(<ProfileHeader displayName="Аня" totalDays={23} onOpenSettings={onOpen} />);
-    fireEvent.click(screen.getByRole('button', { name: 'Настроить' }));
+    const { rerender } = render(<ProfileHeader displayName="Аня" totalDays={23} onCustomize={onCustomize} onOpenSettings={onOpen} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Настроить экран профиля' }));
+    expect(onCustomize).toHaveBeenCalledTimes(1);
+    expect(onOpen).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'Настройки' }));
     expect(onOpen).toHaveBeenCalledTimes(1);
-    rerender(<ProfileHeader displayName="Аня" totalDays={23} />);
-    expect(screen.queryByRole('button', { name: 'Настроить' })).toBeNull();
+    rerender(<ProfileHeader displayName="Аня" totalDays={23} onCustomize={onCustomize} />);
+    expect(screen.queryByRole('button', { name: 'Настройки' })).toBeNull();
+  });
+
+  it('десктоп: вместо плашки и шестерёнки — ссылка «Настроить экран»', () => {
+    phone.value = false;
+    const onCustomize = vi.fn();
+    render(<ProfileHeader displayName="Аня" totalDays={23} onCustomize={onCustomize} onOpenSettings={vi.fn()} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Настроить экран' }));
+    expect(onCustomize).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole('button', { name: 'Настройки' })).toBeNull();
   });
 
   it('имя и число дней склоняются; без имени заголовок «Я», без дней подписи нет', () => {
-    const { container, rerender } = render(<ProfileHeader displayName="Аня" totalDays={21} />);
+    const { container, rerender } = render(<ProfileHeader displayName="Аня" totalDays={21} onCustomize={() => {}} />);
     expect(container.querySelector('.cpf-head-mob')?.textContent).toBe('Аня');
     expect(container.querySelector('.cpf-head-sub')?.textContent).toContain('21 день');
-    rerender(<ProfileHeader displayName={null} totalDays={0} />);
+    rerender(<ProfileHeader displayName={null} totalDays={0} onCustomize={() => {}} />);
     expect(container.querySelector('.cpf-head-mob')?.textContent).toBe('Я');
     expect(container.querySelector('.cpf-head-sub')).toBeNull();
   });

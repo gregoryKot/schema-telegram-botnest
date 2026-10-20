@@ -1,58 +1,64 @@
-// Лист «что показывать в плюсе»: тумблер на каждое действие. Хранение и
-// ключи — общие с мини-аппом (shared/src/quickActions/quickActionPrefs).
-// Порядок сайт читает из той же настройки, но менять пока не умеет.
-import { useHistorySheet } from '../../hooks/useHistorySheet';
+// Лист «что показывать в плюсе»: тумблер и ручка «≡» на каждое действие, как в
+// мини-аппе. Хранение, ключи и аналитика — общие (shared/src/quickActions),
+// строка листа — та же CustomizeRow, что у «Настроить экран».
 import { api } from '../../api';
-import { BottomSheetShell } from '../BottomSheetShell';
+import { useTr } from '../../utils/addressForm';
 import { makeQuickActionRowHandlers } from '../../../../shared/src/quickActions/quickActionRowHandlers';
+import { withDragRange } from '../../../../shared/src/quickActions/quickActionOrder';
+import { useQuickActionDragRows } from '../../../../shared/src/quickActions/useQuickActionDragRows';
 import type { QuickActionGroup } from '../../../../shared/src/quickActions/quickActions';
-import '../../styles/quick-actions.css';
+import { CustomizeRow } from '../customize/CustomizeRow';
+import { CustomizeSheetFrame } from '../customize/CustomizeSheetFrame';
+import { ReorderHint } from '../customize/ReorderHint';
 
 interface Props {
   groups: QuickActionGroup[];
   hidden: string[];
   onToggle: (id: string, hidden: boolean) => void;
+  onReorder: (id: string, toIndex: number) => 'up' | 'down' | false;
   onClose: () => void;
 }
 
-export function QuickActionCustomizeSheet({ groups, hidden, onToggle, onClose }: Props) {
-  const goBack = useHistorySheet(onClose);
-  const { handleToggle } = makeQuickActionRowHandlers(
-    'plus',
-    onToggle,
-    () => false,
-    api,
-  );
+export function QuickActionCustomizeSheet({ groups, hidden, onToggle, onReorder, onClose }: Props) {
+  const tr = useTr();
+  const handlers = makeQuickActionRowHandlers('plus', onToggle, onReorder, api);
+  const flat = withDragRange(groups.map((g) => g.actions));
+  const { rowProps } = useQuickActionDragRows(flat, handlers.handleReorder);
+  const sections = groups.map((g, i) => {
+    const start = groups.slice(0, i).reduce((n, prev) => n + prev.actions.length, 0);
+    return { id: g.id, title: g.title, items: flat.slice(start, start + g.actions.length) };
+  });
   return (
-    <BottomSheetShell goBack={goBack} zIndex={260} label="Что показывать в плюсе">
-      <div className="ds-h3">Что показывать в «+»</div>
-      <div className="ds-sub qa-empty">Скрытые пункты можно вернуть в любой момент</div>
-      {groups.map((g) => (
-        <div key={g.id} className="qa-group">
-          <div className="ds-label qa-group-title">{g.title}</div>
-          {g.actions.map((a) => {
-            const wasHidden = hidden.includes(a.id);
-            return (
-              <div key={a.id} className="qa-custom-row">
-                <span className="qa-custom-text">
-                  <span className="qa-row-label">{a.label}</span>
-                  <span className="qa-row-sub">{a.sub}</span>
-                </span>
-                <button
-                  type="button"
-                  role="switch"
-                  aria-checked={!wasHidden}
-                  aria-label={a.label}
-                  className="ds-switch"
-                  onClick={() => handleToggle(a.id, wasHidden)}
-                >
-                  <span className="ds-switch-knob" />
-                </button>
+    <CustomizeSheetFrame title="Что показывать в «+»" subtitle="Скрытые пункты можно вернуть в любой момент" onClose={onClose}>
+      {() => (
+        <>
+          <ReorderHint tr={tr} phone noun="пунктов" />
+          {sections.map((g) => (
+            <div key={g.id}>
+              <div className="ds-label cz-group">{g.title}</div>
+              <div className="cz-card">
+                {g.items.map((a) => {
+                  const wasHidden = hidden.includes(a.id);
+                  const { dragHandleProps, rowRef, drag } = rowProps(a);
+                  return (
+                    <CustomizeRow
+                      key={a.id}
+                      title={a.label}
+                      sub={a.sub}
+                      on={!wasHidden}
+                      onToggle={() => handlers.handleToggle(a.id, wasHidden)}
+                      handle={dragHandleProps}
+                      rowRef={rowRef}
+                      offsetY={drag.offsetY}
+                      lifted={drag.lifted}
+                    />
+                  );
+                })}
               </div>
-            );
-          })}
-        </div>
-      ))}
-    </BottomSheetShell>
+            </div>
+          ))}
+        </>
+      )}
+    </CustomizeSheetFrame>
   );
 }
