@@ -2,6 +2,7 @@
   "total": 94.46,
   "files": {
     "src/utils/crypto.ts": 90.58,
+    "src/utils/crypto-record.ts": 92.31,
     "src/auth/auth.service.ts": 94.29,
     "src/auth/merge.service.ts": 94.57,
     "src/auth/merge-relations.ts": 100,
