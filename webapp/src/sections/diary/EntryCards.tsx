@@ -6,6 +6,7 @@ import { ModeEntryShare } from '../../components/diary/ModeEntryShare';
 import { GratitudeShare } from '../../components/diary/GratitudeShare';
 import { DIARY_HUE, hueStyle } from '../../lib/tone';
 import { fmtTime, fmtDateKey, fmtDayMonth } from './dateHelpers';
+import { schemaEntryRows, modeEntryRows, type FieldRow } from './entryRows';
 import '../../styles/client-diary.css';
 
 // Карточки записей дневника (схема/режим/благодарность): бейдж типа в тоне
@@ -54,6 +55,12 @@ function EntryShell({ type, title, time, preview, children }: {
 
 const stop = (e: React.SyntheticEvent) => e.stopPropagation();
 
+function ExpandFields({ rows }: { rows: FieldRow[] }) {
+  return <>{rows.filter(([, text]) => text).map(([label, text, accent]) => (
+    <ExpandField key={label} label={label} text={text!} accent={accent} />
+  ))}</>;
+}
+
 export function SchemaEntry({ entry, onDelete }: { entry: SchemaDiaryEntry; onDelete: () => void }) {
   const schemas = entry.schemaIds.map(id => getSchemaById(id)).filter(Boolean);
   const emotions = EMOTIONS.filter(e => entry.emotions.some((em: EmotionEntry) => em.id === e.id));
@@ -69,10 +76,7 @@ export function SchemaEntry({ entry, onDelete }: { entry: SchemaDiaryEntry; onDe
     >
       {open => open && (
         <div className="cd-entry-more" role="presentation" onClick={stop}>
-          {entry.thoughts && <ExpandField label="Мысли" text={entry.thoughts} />}
-          {entry.bodyFeelings && <ExpandField label="Тело" text={entry.bodyFeelings} />}
-          {entry.actualBehavior && <ExpandField label="Реакция" text={entry.actualBehavior} />}
-          {entry.healthyView && <ExpandField label="Здоровый взгляд" text={entry.healthyView} accent />}
+          <ExpandFields rows={schemaEntryRows(entry)} />
           <DeleteBtn onClick={onDelete} />
         </div>
       )}
@@ -91,11 +95,7 @@ export function ModeEntry({ entry, onDelete }: { entry: ModeDiaryEntry; onDelete
     >
       {open => open ? (
         <div className="cd-entry-more" role="presentation" onClick={stop}>
-          {entry.thoughts && <ExpandField label="Мысли режима" text={entry.thoughts} />}
-          {entry.feelings && <ExpandField label="Чувства" text={entry.feelings} />}
-          {entry.actualNeed && <ExpandField label="Что было нужно" text={entry.actualNeed} accent />}
-          {entry.childhoodMemories && <ExpandField label="Откуда знакомо" text={entry.childhoodMemories} />}
-          {entry.healthyResponse && <ExpandField label="Здоровый Взрослый" text={entry.healthyResponse} />}
+          <ExpandFields rows={modeEntryRows(entry)} />
           <DeleteBtn onClick={onDelete} />
           <ModeEntryShare
             mode={mode}

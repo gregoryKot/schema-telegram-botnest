@@ -153,8 +153,28 @@ describe('PracticesScreen — удаление практики', () => {
     await screen.findByText('Медитация');
 
     fireEvent.click(screen.getByText('удалить'));
+    // Первый тап только спрашивает — практика на месте, запроса нет.
+    expect(screen.getByText('Медитация')).toBeTruthy();
+    expect(deletePractice).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByText('Точно удалить?'));
     expect(screen.queryByText('Медитация')).toBeNull();
     expect(deletePractice).toHaveBeenCalledWith(5);
+  });
+
+  it('тап по другой практике переносит вопрос на неё и ничего не стирает', async () => {
+    getPractices.mockResolvedValue([
+      { id: 5, needId: 'attachment', text: 'Медитация' },
+      { id: 6, needId: 'attachment', text: 'Прогулка' },
+    ]);
+    renderScreen();
+    await screen.findByText('Медитация');
+
+    const [first, second] = screen.getAllByText('удалить');
+    fireEvent.click(first);
+    fireEvent.click(second);
+    expect(deletePractice).not.toHaveBeenCalled();
+    expect(screen.getAllByText('Точно удалить?')).toHaveLength(1);
+    expect(screen.getByText('Медитация')).toBeTruthy();
   });
 
   // Регрессия: сбой удаления глушился `.catch(() => {})` — практика исчезала
@@ -168,8 +188,9 @@ describe('PracticesScreen — удаление практики', () => {
     renderScreen();
     await screen.findByText('Медитация');
 
+    fireEvent.click(screen.getByText('удалить'));
     await act(async () => {
-      fireEvent.click(screen.getByText('удалить'));
+      fireEvent.click(screen.getByText('Точно удалить?'));
     });
     expect(screen.getByText('Ошибка сохранения')).toBeTruthy();
     // Список перечитан с сервера — практика на месте, а не исчезла навсегда.
