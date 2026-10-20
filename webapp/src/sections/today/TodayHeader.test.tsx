@@ -7,13 +7,13 @@ import { formatGreetingDate } from './greetingDate';
 
 afterEach(cleanup);
 
-function renderHeader(form: 'ty' | 'vy', onOpenSettings = vi.fn()) {
+function renderHeader(form: 'ty' | 'vy', onCustomize = vi.fn()) {
   render(
     <AddressFormContext.Provider value={{ form, setForm: vi.fn() }}>
-      <TodayHeader streak={5} firstName="Аня" onOpenSettings={onOpenSettings} />
+      <TodayHeader streak={5} firstName="Аня" onCustomize={onCustomize} />
     </AddressFormContext.Provider>,
   );
-  return onOpenSettings;
+  return onCustomize;
 }
 
 describe('formatGreetingDate', () => {
@@ -33,9 +33,9 @@ describe('TodayHeader', () => {
     expect(screen.getByText(/· ваш темп$/)).toBeTruthy();
   });
 
-  it('шестерёнка открывает настройки', () => {
+  it('на десктопе — ссылка «Настроить экран» открывает лист настройки', () => {
     const open = renderHeader('ty');
-    fireEvent.click(screen.getByRole('button', { name: 'Настройки' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Настроить экран' }));
     expect(open).toHaveBeenCalledTimes(1);
   });
 

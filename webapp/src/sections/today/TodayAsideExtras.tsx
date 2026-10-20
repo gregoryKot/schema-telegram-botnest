@@ -1,14 +1,14 @@
 import { pressable } from '../../utils/a11y';
 import { useTr } from '../../utils/addressForm';
 import { useIsMobile } from '../../components/useIsMobile';
+import type { LongPressProps } from '../../../../shared/src/hooks/useLongPress';
 import { PhoneStreakCard } from './PhoneStreakCard';
-import { useStreakHidden } from './useTodayFocusPrefs';
 
 // Стрик: цифра --accent-hot 52px.
-function StreakCard({ streak, onHide }: { streak: number; onHide?: () => void }) {
+function StreakCard({ streak, onHide, hold }: { streak: number; onHide?: () => void; hold?: LongPressProps }) {
   const tr = useTr();
   return (
-    <div className="ds-card ct-streak">
+    <div {...hold} className="ds-card ct-streak">
       <div className={'ds-num ct-streak-num' + (streak > 0 ? '' : ' is-zero')}>{streak}</div>
       <div>
         <div className="ct-streak-label">
@@ -20,23 +20,18 @@ function StreakCard({ streak, onHide }: { streak: number; onHide?: () => void })
   );
 }
 
-/** Карточка серии со скрытием; скрытую заменяет ссылка «Показать». Флаг общий с мини-аппом. */
-export function StreakSlot({ streak }: { streak: number }) {
-  const { streakHidden, toggleStreak } = useStreakHidden();
+/**
+ * Карточка серии. Скрытие настраивается в листе «Настроить экран» (флаг общий
+ * с мини-аппом, shared/today). На телефоне скрытая серия исчезает целиком; на
+ * десктопе карточку можно скрыть прямо на ней, а скрытую заменяет ссылка
+ * «Показать серию дней».
+ */
+export function StreakSlot({ streak, hidden, onToggle, hold }: { streak: number; hidden: boolean; onToggle: () => void; hold?: LongPressProps }) {
   const phone = useIsMobile();
-  if (phone) {
-    return (
-      <>
-        {!streakHidden && <PhoneStreakCard streak={streak} />}
-        <button type="button" className="ct-streak-toggle" onClick={toggleStreak}>
-          {streakHidden ? 'Показать серию дней' : 'Скрыть серию дней'}
-        </button>
-      </>
-    );
-  }
-  return streakHidden
-    ? <button type="button" className="ct-streak-hide" onClick={toggleStreak}>Показать серию дней</button>
-    : <StreakCard streak={streak} onHide={toggleStreak} />;
+  if (phone) return hidden ? null : <PhoneStreakCard streak={streak} hold={hold} />;
+  return hidden
+    ? <button type="button" className="ct-streak-hide" onClick={onToggle}>Показать серию дней</button>
+    : <StreakCard streak={streak} onHide={onToggle} hold={hold} />;
 }
 
 /** Ссылка в кабинет терапевта (роль THERAPIST). */

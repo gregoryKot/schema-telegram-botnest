@@ -6,6 +6,7 @@
 import { useState, type ReactNode } from 'react';
 import { useTr } from '../../utils/addressForm';
 import { focusCardContent, type FocusPractice } from '../../../../shared/src/today/todayFocus';
+import type { LongPressProps } from '../../../../shared/src/hooks/useLongPress';
 import { FocusPicker } from './FocusPicker';
 
 interface Props {
@@ -22,10 +23,12 @@ interface Props {
   onPick: (p: FocusPractice) => void;
   /** «Поделиться днём» — показывается, когда день оценён */
   shareSlot?: ReactNode;
+  /** Долгое нажатие → «Настроить экран» (shared/hooks/useLongPress) */
+  hold?: LongPressProps;
 }
 
 export function TodayFocusCard({
-  practice, ratedCount, total, avgScore, practiceDoneToday, onAction, onOpenHistory, onPick, shareSlot,
+  practice, ratedCount, total, avgScore, practiceDoneToday, onAction, onOpenHistory, onPick, shareSlot, hold,
 }: Props) {
   const tr = useTr();
   const [picking, setPicking] = useState(false);
@@ -47,7 +50,7 @@ export function TodayFocusCard({
 
   if (done) {
     return (
-      <section className="ds-card ct-focus is-done" aria-label="Практика дня">
+      <section {...hold} className="ds-card ct-focus is-done" aria-label="Практика дня">
         <div className="ct-focus-done-row">
           <span className="ct-focus-check" aria-hidden>✓</span>
           <div className="ct-focus-done-text">
@@ -70,7 +73,7 @@ export function TodayFocusCard({
   }
 
   return (
-    <section className="ds-card ds-card--accent ct-focus" aria-label="Практика дня">
+    <section {...hold} className="ds-card ds-card--accent ct-focus" aria-label="Практика дня">
       <div className="ct-focus-head">
         <span className="ds-label ct-on-accent">Одно дело на сегодня</span>
         <span className="ct-focus-chip">{content.chip}</span>

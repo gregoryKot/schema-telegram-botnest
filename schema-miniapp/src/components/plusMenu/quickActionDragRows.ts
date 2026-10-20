@@ -1,4 +1,4 @@
-import { useDragReorder } from '../../hooks/useDragReorder';
+import { useDragReorder } from '../../../../shared/src/hooks/useDragReorder';
 
 // Обвязка useDragReorder для QuickActionCustomizeSheet: хук работает с
 // ПЛОСКИМ списком действий поверхности (высоты/индексы считаются по нему), а

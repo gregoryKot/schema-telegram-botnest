@@ -7,10 +7,10 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useDragReorder } from './useDragReorder';
 
-vi.mock('../haptic', () => ({
+vi.mock('../host/haptic', () => ({
   haptic: { tap: vi.fn(), select: vi.fn() },
 }));
-import { haptic } from '../haptic';
+import { haptic } from '../host/haptic';
 const mockHaptic = haptic as unknown as Record<
   string,
   ReturnType<typeof vi.fn>
@@ -19,7 +19,7 @@ const mockHaptic = haptic as unknown as Record<
 // Баг с живого устройства (Telegram iOS): драг строки за ручку «≡» сворачивал
 // всё мини-приложение — жест хоста, не остановленный touch-action: none.
 const mockSetVerticalSwipes = vi.hoisted(() => vi.fn());
-vi.mock('../../../shared/src/host', () => ({
+vi.mock('../host', () => ({
   getHost: () => ({ setVerticalSwipes: mockSetVerticalSwipes }),
 }));
 
