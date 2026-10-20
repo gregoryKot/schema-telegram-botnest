@@ -2,6 +2,8 @@
    Сетка: основная колонка + сайдбар; на узком сайдбар уходит вниз, а на
    мобильном (<768px) карточки индекса и встречи поднимаются наверх (экран c1). */
 .ct-grid {
+  /* Порядок блоков на телефоне по умолчанию; «Настроить экран» перекрывает inline (todayOrder.ts) */
+  --ct-o-therapist_banner: 10; --ct-o-streak: 20; --ct-o-focus: 30; --ct-o-phrase: 40; --ct-o-secondary: 50;
   display: grid; gap: 32px; align-items: start;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
 }
@@ -60,6 +62,7 @@
 .ct-head { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-12); }
 .ct-head-text { min-width: 0; }
 .ct-head-date, .ct-head-gear, .ct-more-toggle { display: none; }
+.ct-head-customize { align-self: flex-start; min-height: 44px; display: inline-flex; align-items: center; }
 
 /* Сайдбар: индекс (тёмная), встреча (акцентная), стрик */
 .ct-on-ink { color: var(--on-ink-faint); }
@@ -128,11 +131,14 @@
 
 /* ── Телефон (≤767px): порядок и состав как в мини-аппе ────────────────────
    Порядок задаёт order, а не разметка: .ct-main/.ct-aside/.ct-top — display:
-   contents, их дети становятся элементами одной колонки. Сверху вниз:
-   «Что сегодня зацепило?» → «С чего начать» (одна карточка шага) → серия →
-   «Одно дело» → встреча/кабинет → фраза → практики и черновики → «Что ещё можно
-   сегодня ⌄» (под ним потребности, индекс, последние записи; свёрнуто, пока не
-   раскрыли). Цвета не меняются: ink-кнопки, ink-индекс, терракотовое «Одно дело». */
+   contents, их дети становятся элементами одной колонки. Сверху всегда
+   «Что сегодня зацепило?» (order 1) и «С чего начать» (2), внизу — значок на
+   экран (90). Между ними — блоки из «Настроить экран»: у каждого свой order
+   из переменной --ct-o-<id> (inline на .ct-grid, sections/today/todayOrder.ts;
+   порядок по умолчанию объявлен на .ct-grid). Части блока идут вплотную:
+   фокус → встреча → практики; «Что ещё можно сегодня ⌄» → потребности →
+   индекс → последние записи (свёрнуто, пока не раскрыли). Цвета не меняются:
+   ink-кнопки, ink-индекс, терракотовое «Одно дело». */
 @media (max-width: 767px) {
   .ds-page.ct-page { padding-top: var(--space-16); gap: var(--space-16); }
   .ct-head-eyebrow { display: none; }
@@ -147,31 +153,26 @@
 
   .ct-grid { display: flex; flex-direction: column; align-items: stretch; gap: var(--space-12); }
   .ct-main, .ct-aside, .ct-top { display: contents; }
-  .ct-main > *, .ct-aside > *, .ct-top > * { order: 20; }
+  .ct-main > *, .ct-aside > *, .ct-top > * { order: 80; }
   .ct-main > .ct-case { order: 1; margin-bottom: 0; }
   .ct-main > .sk-onb { order: 2; }
-  .ct-aside > .ct-streak { order: 3; }
-  .ct-main > .ct-focus { order: 4; }
-  .ct-main > .ct-therapist-link { order: 5; }
-  .ct-top > .ct-meeting { order: 6; }
-  .ct-aside > .ct-phrase { order: 7; }
-  .ct-main > .ct-block { order: 8; }
-  .ct-more-toggle { order: 10; }
-  .ct-main > .ct-needs { order: 11; }
-  .ct-top > .ct-index { order: 12; }
-  .ct-main > .ct-recent { order: 13; }
-  .ct-aside > .ct-streak-toggle { order: 15; }
-  .ct-main > .sk-case:not(.ct-case) { order: 14; }
+  .ct-main > .ct-therapist-link { order: var(--ct-o-therapist_banner); }
+  .ct-aside > .ct-streak { order: var(--ct-o-streak); }
+  .ct-main > .ct-focus { order: var(--ct-o-focus); }
+  .ct-top > .ct-meeting { order: calc(var(--ct-o-focus) + 1); }
+  .ct-main > .ct-block { order: calc(var(--ct-o-focus) + 2); }
+  .ct-aside > .ct-phrase { order: var(--ct-o-phrase); }
+  .ct-more-toggle { order: var(--ct-o-secondary); }
+  .ct-main > .ct-needs { order: calc(var(--ct-o-secondary) + 1); }
+  .ct-top > .ct-index { order: calc(var(--ct-o-secondary) + 2); }
+  .ct-main > .ct-recent { order: calc(var(--ct-o-secondary) + 3); }
+  .ct-main > .sk-case:not(.ct-case) { order: 90; }
   /* «Что ещё можно сегодня»: свёрнуто — потребности, индекс и записи скрыты */
-  .ct-grid:not(.is-more-open) :is(.ct-needs, .ct-index, .ct-recent, .ct-streak-toggle) { display: none; }
+  .ct-grid:not(.is-more-open) :is(.ct-needs, .ct-index, .ct-recent) { display: none; }
   .ct-main > .ct-case, .ct-main > .ct-focus, .ct-main > .sk-onb { padding: var(--space-20); }
 
   .ct-more-toggle {
     display: flex; align-items: center; justify-content: center; gap: var(--space-6);
-    min-height: 44px; padding: 0; border: none; background: none; cursor: pointer;
-    font: 600 13px var(--sans); color: var(--text-sub);
-  }
-  .ct-streak-toggle {
     min-height: 44px; padding: 0; border: none; background: none; cursor: pointer;
     font: 600 13px var(--sans); color: var(--text-sub);
   }

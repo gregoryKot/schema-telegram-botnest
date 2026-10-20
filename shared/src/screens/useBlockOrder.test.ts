@@ -5,18 +5,30 @@
 // no-op (toIndex не меняет позицию) — без записи/события.
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { act, renderHook } from '@testing-library/react';
-import { useScreenBlockOrder } from './useScreenBlockOrder';
+import { useBlockOrder } from '../utils/useBlockOrder';
+import {
+  SCREEN_BLOCK_ORDER,
+  SCREEN_ORDER_KEYS,
+  type CustomizableScreen,
+} from './screenBlocks';
 
-vi.mock('../api', () => ({ api: { trackEvent: vi.fn() } }));
-import { api } from '../api';
-const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
+// Транспорт площадки (аналитика, синхронизация) приходит снаружи.
+const trackEvent = vi.fn();
+const mockApi = { trackEvent };
+const useScreenBlockOrder = (screen: CustomizableScreen) =>
+  useBlockOrder({
+    screen,
+    storageKey: SCREEN_ORDER_KEYS[screen],
+    defaults: SCREEN_BLOCK_ORDER[screen],
+    api: mockApi,
+  });
 
 beforeEach(() => {
   vi.clearAllMocks();
   localStorage.clear();
 });
 
-describe('useScreenBlockOrder', () => {
+describe('useBlockOrder (порядок блоков экранов)', () => {
   it('без сохранённого порядка — порядок реестра SCREEN_BLOCK_ORDER', () => {
     const { result } = renderHook(() => useScreenBlockOrder('profile'));
     expect(result.current.orderedIds).toEqual([

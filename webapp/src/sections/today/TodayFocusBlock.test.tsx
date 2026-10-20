@@ -9,6 +9,7 @@ import { AddressFormContext } from '../../utils/addressForm';
 import type { Need } from '../../types';
 import { TodayFocusBlock } from './TodayFocusBlock';
 import { StreakSlot } from './TodayAsideExtras';
+import { useTodayCustomization } from './useTodayCustomization';
 
 vi.mock('../../api', () => ({
   api: { trackEvent: vi.fn(), createSchemaDiary: vi.fn(), createModeDiary: vi.fn(), createGratitudeDiary: vi.fn() },
@@ -24,16 +25,27 @@ function data(over: Partial<{ todayDone: typeof NOTHING }> = {}) {
   return { todayDone: NOTHING, profile: null, gratitudeToday: undefined, reloadDiaries: vi.fn(), ...over } as never;
 }
 
+// Настройка «Сегодня» — настоящий общий хук (ключи localStorage, события), как в экране.
+function BlockHarness({ children }: { children: (t: ReturnType<typeof useTodayCustomization>) => React.ReactNode }) {
+  return <>{children(useTodayCustomization())}</>;
+}
+
 function renderBlock(opts: { ratings?: Record<string, number>; todayDone?: typeof NOTHING; form?: 'ty' | 'vy'; onOpenTracker?: () => void } = {}) {
   return render(
     <AddressFormContext.Provider value={{ form: opts.form ?? 'ty', setForm: vi.fn() }}>
       <MemoryRouter>
-        <TodayFocusBlock
-          needs={NEEDS}
-          ratings={opts.ratings ?? {}}
-          data={data(opts.todayDone ? { todayDone: opts.todayDone } : {})}
-          onOpenTracker={opts.onOpenTracker ?? vi.fn()}
-        />
+        <BlockHarness>
+          {today => (
+            <TodayFocusBlock
+              needs={NEEDS}
+              ratings={opts.ratings ?? {}}
+              data={data(opts.todayDone ? { todayDone: opts.todayDone } : {})}
+              onOpenTracker={opts.onOpenTracker ?? vi.fn()}
+              practice={today.practice}
+              onPickPractice={today.choosePractice}
+            />
+          )}
+        </BlockHarness>
       </MemoryRouter>
     </AddressFormContext.Provider>,
   );
@@ -111,7 +123,7 @@ describe('TodayFocusBlock — на сегодня всё', () => {
 
 describe('StreakSlot — скрытие серии', () => {
   it('скрывает карточку общим флагом, шлёт событие и даёт вернуть', () => {
-    render(<AddressFormContext.Provider value={{ form: 'ty', setForm: vi.fn() }}><StreakSlot streak={4} /></AddressFormContext.Provider>);
+    render(<AddressFormContext.Provider value={{ form: 'ty', setForm: vi.fn() }}><BlockHarness>{t => <StreakSlot streak={4} hidden={t.streakHidden} onToggle={t.toggleStreak} />}</BlockHarness></AddressFormContext.Provider>);
     expect(screen.getByText('дней подряд')).toBeTruthy();
     fireEvent.click(screen.getByText('Скрыть'));
     expect(localStorage.getItem('today_streak_hidden')).toBe('1');
@@ -124,7 +136,7 @@ describe('StreakSlot — скрытие серии', () => {
 
   it('уважает флаг, выставленный мини-аппом', () => {
     localStorage.setItem('today_streak_hidden', '1');
-    render(<AddressFormContext.Provider value={{ form: 'ty', setForm: vi.fn() }}><StreakSlot streak={4} /></AddressFormContext.Provider>);
+    render(<AddressFormContext.Provider value={{ form: 'ty', setForm: vi.fn() }}><BlockHarness>{t => <StreakSlot streak={4} hidden={t.streakHidden} onToggle={t.toggleStreak} />}</BlockHarness></AddressFormContext.Provider>);
     expect(screen.queryByText('дней подряд')).toBeNull();
   });
 });

@@ -8,6 +8,8 @@ import { useTr } from '../utils/addressForm';
 import { PhraseShareCard } from '../components/PhraseShareCard';
 import '../styles/client-today.css';
 const SchemaEx = lazy(() => import('../components/exercises/FlashcardEx').then(m => ({ default: m.SchemaEx })));
+// Лист «Настроить экран» нужен по нажатию — в основной бандл не тянем (с перетаскиванием).
+const TodayCustomizeSheet = lazy(() => import('../components/customize/TodayCustomizeSheet').then(m => ({ default: m.TodayCustomizeSheet })));
 const ModeEx   = lazy(() => import('../components/exercises/FlashcardEx').then(m => ({ default: m.ModeEx })));
 import { TodayHeader } from './today/TodayHeader';
 import { dayIndex, buildHistory, weekDelta, sparkBars } from './today/model';
@@ -25,6 +27,8 @@ import { StreakSlot, TherapistLink } from './today/TodayAsideExtras';
 import { TodayFocusBlock } from './today/TodayFocusBlock';
 import { TodayMoreToggle } from './today/TodayMoreToggle';
 import { useTodayMore } from './today/todayMore';
+import { useTodayCustomization } from './today/useTodayCustomization';
+import { todayOrderStyle } from './today/todayOrder';
 
 export { MY_SCHEMA_IDS_KEY, MY_MODE_IDS_KEY };
 
@@ -66,7 +70,8 @@ export function TodaySection({
   refreshKey, userRole, onOpenTherapistCabinet, onTasksChanged, rating,
 }: Props) {
   const tr = useTr();
-  const more = useTodayMore();
+  const today = useTodayCustomization();
+  const more = useTodayMore(today.secondaryHidden);
   const data = useTodayData(refreshKey);
   const { profile, manualSchemaIds, recent, diariesLoaded, therapyRelation, historyDays } = data;
   const { tasks, taskHistory, taskError, completeTask, afterCreate } = useTaskActions(refreshKey);
@@ -104,18 +109,20 @@ export function TodaySection({
   const score      = dayIndex(needs.map(n => n.id), ratings);
   const history    = useMemo(() => buildHistory(historyDays, ratings), [historyDays, ratings]);
   const showTasks  = tasks.length > 0 || taskError;
+  const isTherapist = userRole === 'THERAPIST';
+  const showTherapistBanner = isTherapist && !today.therapistBannerHidden;
 
   return (
     <div className="ds-page ct-page">
 
-      <TodayHeader streak={streak} firstName={firstName} onOpenSettings={onOpenAdvanced} />
+      <TodayHeader streak={streak} firstName={firstName} onCustomize={today.openByGear} />
 
-      <div className={'ct-grid' + (more.open ? ' is-more-open' : '')}>
+      <div className={'ct-grid' + (more.open ? ' is-more-open' : '')} style={todayOrderStyle(today.orderedIds)}>
 
         <div className="ct-main">
-          <TodayFocusBlock needs={needs} ratings={ratings} data={data} onOpenTracker={onOpenTracker} onOpenTrackerHistory={onOpenTrackerHistory} />
+          <TodayFocusBlock needs={needs} ratings={ratings} data={data} onOpenTracker={onOpenTracker} onOpenTrackerHistory={onOpenTrackerHistory} practice={today.practice} onPickPractice={today.choosePractice} hold={today.holdFocus} />
 
-          {userRole === 'THERAPIST' && onOpenTherapistCabinet && <TherapistLink onOpen={onOpenTherapistCabinet} />}
+          {showTherapistBanner && onOpenTherapistCabinet && <TherapistLink onOpen={onOpenTherapistCabinet} />}
 
           {/* Точка входа «Что это было» + онбординг после первого разбора */}
           <CaseEntryBlock
@@ -156,14 +163,23 @@ export function TodaySection({
             <IndexCard score={score} weekDelta={weekDelta(history)} bars={sparkBars(history)} onOpenHistory={onOpenTrackerHistory} />
             <MeetingCard relation={therapyRelation} now={now} />
           </div>
-          <StreakSlot streak={streak} />
-          <PhraseShareCard />
+          <StreakSlot streak={streak} hidden={today.streakHidden} onToggle={today.toggleStreak} hold={today.holdStreak} />
+          {!today.phraseHidden && <PhraseShareCard hold={today.holdPhrase} />}
         </aside>
 
-        <TodayMoreToggle open={more.open} onToggle={more.toggle} />
+        {more.collapsible && <TodayMoreToggle open={more.open} onToggle={more.toggle} />}
       </div>
 
       {/* Overlays */}
+      {today.sheet && (
+        <Suspense fallback={null}>
+          <TodayCustomizeSheet
+            today={today}
+            showTherapistBlock={isTherapist && !!onOpenTherapistCabinet}
+            onOpenSettings={() => { today.closeSheet(); onOpenAdvanced(); }}
+          />
+        </Suspense>
+      )}
       {showDiaryTask && <TaskCreateSheet defaultType="diary_streak" onCreated={() => setShowDiaryTask(false)} onClose={() => setShowDiaryTask(false)} />}
       {showTaskCreate && (
         <TaskCreateSheet

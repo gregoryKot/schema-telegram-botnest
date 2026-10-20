@@ -1,121 +1,23 @@
-import { useState, useCallback } from 'react';
 import { api } from '../api';
-import {
-  FocusPractice,
-  getFocusPractice,
-  setFocusPractice,
-  isStreakHidden,
-  setStreakHidden,
-  isSecondaryHidden,
-  setSecondaryHidden,
-  isTherapistBannerHidden,
-  setTherapistBannerHidden,
-  isPhraseHidden,
-  setPhraseHidden,
-} from '../../../shared/src/today/todayFocus';
-import { useLongPress } from './useLongPress';
-import { useScreenBlockOrder } from './useScreenBlockOrder';
-import type { CustomizeHighlight } from '../components/TodayCustomizeSheet';
+import { useTodayCustomization as useSharedTodayCustomization } from '../../../shared/src/today/useTodayCustomization';
+import { useLongPress } from '../../../shared/src/hooks/useLongPress';
 import { notifyPrefsChanged } from '../utils/uiPrefsSync';
 
-// Настройка экрана «Сегодня» (что показано, какая практика главная) — раньше
-// восемь useState в TodaySection (правило №10), теперь один хук. Хранится
-// per-device в localStorage, синхронизируется между устройствами через
-// uiPrefsSync (notifyPrefsChanged ниже).
+// Настройка экрана «Сегодня» — логика общая с сайтом
+// (shared/today/useTodayCustomization: что показано, какая практика главная,
+// порядок блоков). Здесь только транспорт мини-аппа (аналитика, синхронизация
+// между устройствами через uiPrefsSync) и долгое нажатие на блок — быстрый
+// путь к его настройке (см. useLongPress).
 export function useTodayCustomization() {
-  const [practice, setPracticeState] =
-    useState<FocusPractice>(getFocusPractice);
-  const [streakHidden, setStreakHiddenState] = useState(isStreakHidden);
-  const [phraseHidden, setPhraseHiddenState] = useState(isPhraseHidden);
-  const [secondaryHidden, setSecondaryHiddenState] =
-    useState(isSecondaryHidden);
-  const [therapistBannerHidden, setTherapistBannerHiddenState] = useState(
-    isTherapistBannerHidden,
-  );
-  // null — лист закрыт; true — открыт шестерёнкой; строка — открыт долгим
-  // нажатием на конкретный блок, его строку подсвечиваем.
-  const [sheet, setSheet] = useState<CustomizeHighlight | true | null>(null);
-  // Порядок блоков — тот же generic-механизм, что у «Профиля»/«Паттернов»
-  // (ключ screen_order_today, событие screen_block_move шлёт сам хук).
-  const order = useScreenBlockOrder('today');
-
-  const openByGear = useCallback(() => {
-    setSheet(true);
-    api.trackEvent('today_customize_open', { via: 'gear' });
-  }, []);
-
-  const openByHold = useCallback((highlight: CustomizeHighlight) => {
-    setSheet(highlight);
-    api.trackEvent('today_customize_open', { via: 'longpress' });
-  }, []);
-
-  const toggle = useCallback(
-    (
-      block: 'streak' | 'phrase' | 'secondary' | 'therapist_banner',
-      current: boolean,
-      persist: (v: boolean) => void,
-      setState: (v: boolean) => void,
-    ) => {
-      const next = !current;
-      persist(next);
-      setState(next);
-      notifyPrefsChanged();
-      api.trackEvent('today_block_toggle', { block, hidden: next });
-    },
-    [],
-  );
-
+  const today = useSharedTodayCustomization({
+    api,
+    onChanged: notifyPrefsChanged,
+  });
+  const { openByHold } = today;
   return {
-    practice,
-    streakHidden,
-    phraseHidden,
-    secondaryHidden,
-    therapistBannerHidden,
-    orderedIds: order.orderedIds,
-    reorder: order.reorder,
-    sheet,
-    highlight: sheet === true ? undefined : (sheet ?? undefined),
-    openByGear,
-    closeSheet: useCallback(() => setSheet(null), []),
-    // Долгое нажатие на блок — быстрый путь к его настройке (см. useLongPress).
+    ...today,
     holdFocus: useLongPress(() => openByHold('practice')),
     holdStreak: useLongPress(() => openByHold('streak')),
     holdPhrase: useLongPress(() => openByHold('phrase')),
-    choosePractice: useCallback((p: FocusPractice) => {
-      setFocusPractice(p);
-      setPracticeState(p);
-      notifyPrefsChanged();
-      api.trackEvent('today_focus_change', { practice: p });
-    }, []),
-    toggleStreak: useCallback(
-      () =>
-        toggle('streak', streakHidden, setStreakHidden, setStreakHiddenState),
-      [toggle, streakHidden],
-    ),
-    togglePhrase: useCallback(
-      () =>
-        toggle('phrase', phraseHidden, setPhraseHidden, setPhraseHiddenState),
-      [toggle, phraseHidden],
-    ),
-    toggleSecondary: useCallback(
-      () =>
-        toggle(
-          'secondary',
-          secondaryHidden,
-          setSecondaryHidden,
-          setSecondaryHiddenState,
-        ),
-      [toggle, secondaryHidden],
-    ),
-    toggleTherapistBanner: useCallback(
-      () =>
-        toggle(
-          'therapist_banner',
-          therapistBannerHidden,
-          setTherapistBannerHidden,
-          setTherapistBannerHiddenState,
-        ),
-      [toggle, therapistBannerHidden],
-    ),
   };
 }

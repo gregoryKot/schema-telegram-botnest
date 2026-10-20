@@ -1,6 +1,6 @@
 import { useRef, useCallback } from 'react';
 import type { PointerEvent as ReactPointerEvent, MouseEvent } from 'react';
-import { haptic } from '../haptic';
+import { haptic } from '../host/haptic';
 
 // Долгое нажатие на блок главного экрана → «Настроить экран». Быстрый путь
 // для тех, кто уже освоился; шестерёнка в шапке остаётся основным, видимым

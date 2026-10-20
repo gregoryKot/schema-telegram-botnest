@@ -7,6 +7,7 @@ import { Skeleton } from './Skeleton';
 import { useIsMobile } from './useIsMobile';
 import { ShareCardSheet } from '../share/ShareCardSheet';
 import { SharePillButton } from '../share/SharePillButton';
+import type { LongPressProps } from '../../../shared/src/hooks/useLongPress';
 import { usePhraseShareCard } from '../../../shared/src/share/usePhraseShareCard';
 import { phraseShareText } from '../../../shared/src/share/shareTexts';
 
@@ -30,7 +31,8 @@ function PhraseMore({ phone, onMore }: { phone: boolean; onMore: () => void }) {
   );
 }
 
-export function PhraseShareCard() {
+/** hold — долгое нажатие открывает «Настроить экран» (только «Сегодня»). */
+export function PhraseShareCard({ hold }: { hold?: LongPressProps } = {}) {
   const { phrase, loading, showShare, setShowShare, reload, draw } =
     usePhraseShareCard(api.getHealthyPhrase);
   const phone = useIsMobile();
@@ -40,7 +42,7 @@ export function PhraseShareCard() {
   return (
     <>
     {!phone && <hr className="hr-soft" style={{ margin: '28px 0' }} />}
-    <div className={phone ? 'ds-card ct-phrase' : undefined}>
+    <div {...hold} className={phone ? 'ds-card ct-phrase' : undefined}>
       <div className="u-between-mb10">
         <div className="eyebrow">Фраза для себя</div>
         {phrase && <SharePillButton onClick={() => setShowShare(true)} label="Поделиться фразой" />}

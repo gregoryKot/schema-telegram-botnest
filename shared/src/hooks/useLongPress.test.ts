@@ -84,4 +84,11 @@ describe('useLongPress', () => {
     result.current.onClickCapture(click as never);
     expect(click.preventDefault).toHaveBeenCalledTimes(1);
   });
+
+  it('контекстное меню на удержании гасится (иначе мобильный веб откроет системное)', () => {
+    const { result } = renderHook(() => useLongPress(vi.fn()));
+    const e = { preventDefault: vi.fn() };
+    result.current.onContextMenu(e as never);
+    expect(e.preventDefault).toHaveBeenCalledTimes(1);
+  });
 });

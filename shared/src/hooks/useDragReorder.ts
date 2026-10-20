@@ -3,13 +3,14 @@ import type {
   PointerEvent as ReactPointerEvent,
   KeyboardEvent as ReactKeyboardEvent,
 } from 'react';
-import { haptic } from '../haptic';
-import { getHost } from '../../../shared/src/host';
-import { targetIndexFromOffset } from '../../../shared/src/utils/dragReorder';
+import { haptic } from '../host/haptic';
+import { getHost } from '../host';
+import { targetIndexFromOffset } from '../utils/dragReorder';
 
 // Перетаскивание строки листа настройки — ручка «≡» (замена MoveArrows,
 // правило №11): pointer-жест + клавиатура ArrowUp/ArrowDown, один хук на все
-// 4 листа («одна механика»). Математика — utils/dragReorder.ts (без React/DOM).
+// листы настройки обоих фронтендов («одна механика», правило №3).
+// Математика — utils/dragReorder.ts (без React/DOM).
 const DEFAULT_ROW_HEIGHT = 56;
 
 // Живое устройство (Telegram iOS): свайп вниз за ручку сворачивает всё

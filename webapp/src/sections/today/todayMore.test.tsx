@@ -15,7 +15,7 @@ import {
 import { setSecondaryHidden } from '../../../../shared/src/today/todayFocus';
 import {
   TODAY_MORE_KEY,
-  initialMoreOpen,
+  readMoreOpen,
   useTodayMore,
   writeMoreOpen,
 } from './todayMore';
@@ -37,17 +37,12 @@ describe('todayMore', () => {
   });
 
   it('по умолчанию свёрнуто', () => {
-    expect(initialMoreOpen()).toBe(false);
+    expect(readMoreOpen()).toBe(false);
   });
 
   it('запомненное «раскрыто» уважается', () => {
     localStorage.setItem(TODAY_MORE_KEY, '1');
-    expect(initialMoreOpen()).toBe(true);
-  });
-
-  it('выключенное «прятать второстепенное» раскрывает блок', () => {
-    setSecondaryHidden(false);
-    expect(initialMoreOpen()).toBe(true);
+    expect(readMoreOpen()).toBe(true);
   });
 
   it('недоступная память не роняет переключение — writeMoreOpen сообщает false', () => {
@@ -63,7 +58,7 @@ describe('todayMore', () => {
   });
 
   it('переключение пишет и снимает память', () => {
-    const { result } = renderHook(() => useTodayMore());
+    const { result } = renderHook(() => useTodayMore(true));
     expect(result.current.open).toBe(false);
     act(() => result.current.toggle());
     expect(result.current.open).toBe(true);
@@ -71,6 +66,24 @@ describe('todayMore', () => {
     act(() => result.current.toggle());
     expect(result.current.open).toBe(false);
     expect(localStorage.getItem(TODAY_MORE_KEY)).toBeNull();
+  });
+
+  it('выключенное «прятать второстепенное» — блок раскрыт всегда, раскрывашки нет', () => {
+    setSecondaryHidden(false);
+    const { result } = renderHook(() => useTodayMore(false));
+    expect(result.current.open).toBe(true);
+    expect(result.current.collapsible).toBe(false);
+  });
+
+  it('настройку меняют, пока экран открыт: раскрытость и раскрывашка следуют за ней', () => {
+    const { result, rerender } = renderHook(({ hidden }) => useTodayMore(hidden), {
+      initialProps: { hidden: true },
+    });
+    expect(result.current).toMatchObject({ open: false, collapsible: true });
+    rerender({ hidden: false });
+    expect(result.current).toMatchObject({ open: true, collapsible: false });
+    rerender({ hidden: true });
+    expect(result.current).toMatchObject({ open: false, collapsible: true });
   });
 });
 

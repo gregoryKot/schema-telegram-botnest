@@ -7,12 +7,15 @@ import { formatGreetingDate } from './greetingDate';
 interface Props {
   streak: number;
   firstName: string;
-  onOpenSettings: () => void;
+  /** Открыть лист «Настроить экран» */
+  onCustomize: () => void;
 }
 
-// Шапка «Сегодня». Десктоп: eyebrow с датой и серией + h1. Телефон (≤767px,
-// client-today.css): eyebrow скрыт, под h1 — строка с датой, справа — шестерёнка настроек.
-export function TodayHeader({ streak, firstName, onOpenSettings }: Props) {
+// Шапка «Сегодня». Десктоп: eyebrow с датой и серией + h1, справа ссылка
+// «Настроить экран». Телефон (≤767px, client-today.css): eyebrow скрыт, под h1 —
+// строка с датой, справа — шестерёнка; обе открывают лист «Настроить экран»
+// (как в мини-аппе), общие настройки приложения — строкой внутри листа.
+export function TodayHeader({ streak, firstName, onCustomize }: Props) {
   const tr = useTr();
   const phone = useIsMobile();
   return (
@@ -38,14 +41,15 @@ export function TodayHeader({ streak, firstName, onOpenSettings }: Props) {
           {formatGreetingDate()} · {tr('твой темп', 'ваш темп')}
         </div>
       </div>
-      <button
-        type="button"
-        className="ct-head-gear"
-        aria-label="Настройки"
-        onClick={onOpenSettings}
-      >
-        <GearIcon />
-      </button>
+      {phone ? (
+        <button type="button" className="ct-head-gear" aria-label="Настроить экран" onClick={onCustomize}>
+          <GearIcon />
+        </button>
+      ) : (
+        <button type="button" className="ds-link ct-head-customize" onClick={onCustomize}>
+          Настроить экран
+        </button>
+      )}
     </header>
   );
 }
