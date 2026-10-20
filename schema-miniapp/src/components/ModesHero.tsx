@@ -33,7 +33,11 @@ export function ModesHero({
 }: Props) {
   const tr = useTr();
   // Какое состояние и какие слова — решает общая модель (shared), здесь только вёрстка.
-  const m = modesHeroModel(tr, { hasModes, summary, canOpenDiary: !!onOpenDiaries });
+  const m = modesHeroModel(tr, {
+    hasModes,
+    summary,
+    canOpenDiary: !!onOpenDiaries,
+  });
 
   if (m.kind === 'intro') {
     return (
@@ -46,8 +50,18 @@ export function ModesHero({
           buttonLabel={m.buttonLabel}
           onClick={onMeetCritic}
         />
-        <ToolRow label={m.library.label} sub={m.library.sub} index={1} onClick={onOpenLibrary} />
-        <ToolRow label={m.manual.label} sub={m.manual.sub} index={2} onClick={onPickManually} />
+        <ToolRow
+          label={m.library.label}
+          sub={m.library.sub}
+          index={1}
+          onClick={onOpenLibrary}
+        />
+        <ToolRow
+          label={m.manual.label}
+          sub={m.manual.sub}
+          index={2}
+          onClick={onPickManually}
+        />
       </div>
     );
   }
@@ -62,6 +76,9 @@ export function ModesHero({
       />
     );
   }
-  if (m.kind === 'diary' && onOpenDiaries) return <ToolRow label={m.row.label} sub={m.row.sub} onClick={onOpenDiaries} />;
+  if (m.kind === 'diary' && onOpenDiaries)
+    return (
+      <ToolRow label={m.row.label} sub={m.row.sub} onClick={onOpenDiaries} />
+    );
   return null;
 }

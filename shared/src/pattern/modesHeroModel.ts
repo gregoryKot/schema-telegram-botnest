@@ -40,13 +40,19 @@ interface Input {
   canOpenDiary: boolean;
 }
 
-export function modesHeroModel(tr: Tr, { hasModes, summary, canOpenDiary }: Input): ModesHeroModel {
+export function modesHeroModel(
+  tr: Tr,
+  { hasModes, summary, canOpenDiary }: Input,
+): ModesHeroModel {
   if (!hasModes) {
     return {
       kind: 'intro',
       intro: modeIntro(tr),
       buttonLabel: 'Познакомиться',
-      library: { label: 'Что такое режимы', sub: 'части, которые включаются по очереди' },
+      library: {
+        label: 'Что такое режимы',
+        sub: 'части, которые включаются по очереди',
+      },
       manual: {
         label: 'Отметить свои',
         sub: tr('если уже знаешь свои режимы', 'если уже знаете свои режимы'),

@@ -9,7 +9,11 @@ const summary = { id: INTRO_MODE_ID, days: 3, windowDays: 7 };
 
 describe('modesHeroModel', () => {
   it('режимов нет: знакомство с Критиком и два входа — даже если сводка есть', () => {
-    const m = modesHeroModel(ty, { hasModes: false, summary, canOpenDiary: true });
+    const m = modesHeroModel(ty, {
+      hasModes: false,
+      summary,
+      canOpenDiary: true,
+    });
     expect(m.kind).toBe('intro');
     if (m.kind !== 'intro') return;
     expect(m.intro.title).toBe('Встретить своего Критика');
@@ -18,24 +22,53 @@ describe('modesHeroModel', () => {
   });
 
   it('режимы есть и есть сводка: карточка недели с id режима', () => {
-    const m = modesHeroModel(ty, { hasModes: true, summary, canOpenDiary: false });
-    expect(m).toMatchObject({ kind: 'week', id: INTRO_MODE_ID, text: { label: 'Чаще всего включается' } });
+    const m = modesHeroModel(ty, {
+      hasModes: true,
+      summary,
+      canOpenDiary: false,
+    });
+    expect(m).toMatchObject({
+      kind: 'week',
+      id: INTRO_MODE_ID,
+      text: { label: 'Чаще всего включается' },
+    });
   });
 
   it('сводка про режим, которого нет в справочнике, — не показываем ничего', () => {
-    const m = modesHeroModel(ty, { hasModes: true, summary: { ...summary, id: 'nope' }, canOpenDiary: true });
+    const m = modesHeroModel(ty, {
+      hasModes: true,
+      summary: { ...summary, id: 'nope' },
+      canOpenDiary: true,
+    });
     expect(m).toEqual({ kind: 'none' });
   });
 
   it('режимы есть, записей за неделю нет: строка про дневник; без дневника — пусто', () => {
-    const m = modesHeroModel(ty, { hasModes: true, summary: null, canOpenDiary: true });
-    expect(m).toMatchObject({ kind: 'diary', row: { label: 'Картина недели появится из дневника' } });
-    expect(modesHeroModel(ty, { hasModes: true, summary: null, canOpenDiary: false })).toEqual({ kind: 'none' });
+    const m = modesHeroModel(ty, {
+      hasModes: true,
+      summary: null,
+      canOpenDiary: true,
+    });
+    expect(m).toMatchObject({
+      kind: 'diary',
+      row: { label: 'Картина недели появится из дневника' },
+    });
+    expect(
+      modesHeroModel(ty, {
+        hasModes: true,
+        summary: null,
+        canOpenDiary: false,
+      }),
+    ).toEqual({ kind: 'none' });
   });
 
   it('форма «вы»: ни одного «ты» ни в одном состоянии', () => {
     const states = [
-      modesHeroModel(vy, { hasModes: false, summary: null, canOpenDiary: true }),
+      modesHeroModel(vy, {
+        hasModes: false,
+        summary: null,
+        canOpenDiary: true,
+      }),
       modesHeroModel(vy, { hasModes: true, summary, canOpenDiary: true }),
       modesHeroModel(vy, { hasModes: true, summary: null, canOpenDiary: true }),
     ];
