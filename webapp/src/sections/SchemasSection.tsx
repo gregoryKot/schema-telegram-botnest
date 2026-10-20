@@ -12,6 +12,9 @@ import { ModeMapBanner, MyModeMapSheet } from './schemas/ModeMapBanner';
 import { NeedsBlock } from './schemas/NeedsBlock';
 import { usePatternLayer } from './schemas/usePatternLayer';
 import { PatternsTopCards } from './schemas/PatternsTopCards';
+import { PatternsTopStack } from './schemas/PatternsTopStack';
+import { ScreenCustomizeHost } from '../components/customize/ScreenCustomizeHost';
+import { useScreenBlocks } from '../components/customize/useScreenBlocks';
 import { PatternsSchemasPane } from './schemas/PatternsSchemasPane';
 import { PatternsHeader } from './schemas/PatternsHeader';
 import { PatternsTabsBar } from './schemas/PatternsTabsBar';
@@ -25,6 +28,7 @@ interface Props {
 
 export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChildhoodWheel }: Props) {
   const d = useSchemasData();
+  const blocks = useScreenBlocks('patterns');
   const [showSchemaPicker, setShowSchemaPicker] = useState(false);
   const [showModePicker, setShowModePicker] = useState(false);
   const [detailSchemaId, setDetailSchemaId] = useState<string | null>(null);
@@ -41,24 +45,29 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
 
   return (
     <div className="ds-page cs-page">
-      <PatternsHeader mobile={mobile} onOpenLibrary={() => onOpenSchema()} />
+      <PatternsHeader mobile={mobile} onOpenLibrary={() => onOpenSchema()} onCustomize={blocks.openByGear} />
       {mobile && <PatternsTabsBar tab={tab} onChange={setTab} />}
       {d.saveFailed && (
         <SaveErrorNote ty="Выбор сохранён только на этом устройстве — проверь связь и попробуй ещё раз" vy="Выбор сохранён только на этом устройстве — проверьте связь и попробуйте ещё раз" />
       )}
 
       {show.hero && (
-        <PatternsTopCards
-          ready={!d.loading && pat.entriesReady} hasSchemas={allSchemaIds.length > 0} hasModes={d.myModeIds.length > 0}
-          hasEntries={pat.hasEntries} top={pat.top} testProgress={d.ysqProgressAnswered}
-          onOpenPattern={pat.openPattern} onOpenModeEx={pat.openModeEx} onStartTest={startTest}
+        <PatternsTopStack
+          blocks={blocks} mobile={mobile} ysqProgressAnswered={d.ysqProgressAnswered} ysqCompletedAt={d.ysqCompletedAt} onStartTest={startTest}
+          hero={
+            <PatternsTopCards
+              blocks={blocks} ready={!d.loading && pat.entriesReady} hasSchemas={allSchemaIds.length > 0} hasModes={d.myModeIds.length > 0}
+              hasEntries={pat.hasEntries} top={pat.top} testProgress={d.ysqProgressAnswered}
+              onOpenPattern={pat.openPattern} onOpenModeEx={pat.openModeEx} onStartTest={startTest}
+            />
+          }
         />
       )}
 
       {show.schemas && (
         <PatternsSchemasPane
           mobile={mobile} d={d} pat={pat} allSchemaIds={allSchemaIds}
-          onStartTest={startTest} onAdd={() => setShowSchemaPicker(true)} onOpenDetail={setDetailSchemaId}
+          onStartTest={startTest} onAdd={() => setShowSchemaPicker(true)} onOpenDetail={setDetailSchemaId} blocks={blocks}
         />
       )}
       {show.modes && (
@@ -86,6 +95,7 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
         />
       )}
       {showMyMap && <MyModeMapSheet onClose={() => setShowMyMap(false)} />}
+      <ScreenCustomizeHost blocks={blocks} />
     </div>
   );
 }

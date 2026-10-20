@@ -6,26 +6,24 @@
 @media (max-width: 767px) {
   .cpf-page { gap: var(--space-16); }
 
-  /* Порядок: шапка → портрет → «Мой путь» → стрик → активность → достижения и паттерны → тёплые слова → остальное. */
+  /* Порядок: шапка → блоки из «Настроить экран» (по умолчанию: портрет, тёплые слова, «Мой путь», стрик,
+     активность, достижения, паттерны — как в мини-аппе) → остальное. Место блока — --blk-o на обёртке. */
   .cpf-page > * { order: 10; }
   .cpf-head, .cpf-skeleton, .cpf-error { order: 0; }
-  .cpf-slot--portrait { order: 1; }
-  .cpf-journey { order: 2; }
-  .cpf-streak-card { order: 3; }
-  .cpf-heat-card { order: 4; }
-  .cpf-duo { order: 5; }
-  .cpf-slot--warm { order: 6; }
+  .cpf-blk { --blk-o: 5; order: var(--blk-o); }
+  .cpf-duo { display: contents; }
 
   /* Плитки «Прогресс» дублируют карточку стрика. */
   .cpf-progress { display: none; }
 
-  /* Шапка: аватар, имя, «N дней в приложении», справа «Настроить». */
+  /* Шапка: аватар, имя, «N дней в приложении», справа «Настроить» и шестерёнка настроек. */
   .cpf-head { flex-wrap: nowrap; gap: var(--space-14); }
   .cpf-head-text { min-width: 0; }
   .cpf-head-desk { display: none; }
   .cpf-head-mob { display: inline; }
   .cpf-head .ds-h1 { margin: 0; font-size: 24px; line-height: 1.15; }
   .cpf-head-sub { font-size: 12px; margin-top: var(--space-2); }
+  .cpf-head-actions { display: flex; align-items: center; gap: var(--space-8); flex-shrink: 0; }
   .cpf-head-settings {
     display: inline-flex; align-items: center; flex-shrink: 0; min-height: 44px; padding: 0 var(--space-16);
     border: none; border-radius: 22px; background: var(--accent-soft); color: var(--accent);

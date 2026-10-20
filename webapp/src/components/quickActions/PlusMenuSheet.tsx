@@ -7,6 +7,7 @@ import { api } from '../../api';
 import { useTr } from '../../utils/addressForm';
 import { useHistorySheet } from '../../hooks/useHistorySheet';
 import { BottomSheetShell } from '../BottomSheetShell';
+import { notifyPrefsChanged } from '../../utils/uiPrefsSync';
 import { usePlusMenuState } from '../../../../shared/src/quickActions/usePlusMenuState';
 import type { QuickActionId } from '../../../../shared/src/quickActions/quickActions';
 import { QuickActionCustomizeSheet } from './QuickActionCustomizeSheet';
@@ -20,7 +21,7 @@ interface Props {
 export function PlusMenuSheet({ onAction, onClose }: Props) {
   const tr = useTr();
   const goBack = useHistorySheet(onClose);
-  const { orderedGroups, visibleGroups, hidden, toggle } = usePlusMenuState(tr);
+  const { orderedGroups, visibleGroups, hidden, toggle, onReorder } = usePlusMenuState(tr, notifyPrefsChanged);
   const [customize, setCustomize] = useState(false);
 
   function pick(id: QuickActionId) {
@@ -68,6 +69,7 @@ export function PlusMenuSheet({ onAction, onClose }: Props) {
           groups={orderedGroups}
           hidden={hidden}
           onToggle={toggle}
+          onReorder={onReorder}
           onClose={() => setCustomize(false)}
         />
       )}

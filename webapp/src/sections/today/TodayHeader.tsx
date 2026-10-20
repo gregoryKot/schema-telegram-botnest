@@ -1,5 +1,5 @@
 import { useTr } from '../../utils/addressForm';
-import { GearIcon } from '../../../../shared/src/components/GearIcon';
+import { CustomizeGear } from '../../components/customize/CustomizeGear';
 import { useIsMobile } from '../../components/useIsMobile';
 import { greeting, formatHeaderDate, phoneGreeting } from './helpers';
 import { formatGreetingDate } from './greetingDate';
@@ -42,9 +42,7 @@ export function TodayHeader({ streak, firstName, onCustomize }: Props) {
         </div>
       </div>
       {phone ? (
-        <button type="button" className="ct-head-gear" aria-label="Настроить экран" onClick={onCustomize}>
-          <GearIcon />
-        </button>
+        <CustomizeGear label="Настроить экран" onClick={onCustomize} />
       ) : (
         <button type="button" className="ds-link ct-head-customize" onClick={onCustomize}>
           Настроить экран
