@@ -17,6 +17,7 @@
 .cd-quick-eyebrow { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; font-weight: 700; }
 .cd-quick-title { font-family: var(--serif); font-size: 26px; line-height: 1.1; color: var(--text); }
 .cd-quick-desc { font-size: 13px; line-height: 1.45; color: var(--text-sub); }
+.cd-quick-meta { font-size: 13px; line-height: 1.35; color: var(--text-muted); }
 .cd-quick-foot { margin-top: auto; display: flex; justify-content: space-between; gap: 8px; font-size: 13px; }
 .cd-quick-foot b { font-weight: 700; white-space: nowrap; }
 .cd-quick-foot span { color: var(--text-muted); white-space: nowrap; }
@@ -83,6 +84,7 @@
   .cd-quick-eyebrow { font-size: 11px; letter-spacing: 0; text-transform: none; line-height: 1.2; overflow-wrap: break-word; }
   .cd-quick-title { font-size: 16px; line-height: 1.15; overflow-wrap: anywhere; }
   .cd-quick-desc, .cd-quick-foot span { display: none; }
+  .cd-quick-meta { font-size: 12px; overflow-wrap: anywhere; }
   .cd-quick-foot { font-size: 13px; }
 
   /* Чипы-фильтры: активный — тёмный (ink), лента скроллится от края до края */
@@ -115,3 +117,4 @@
 .cd-tracker-card { display: flex; align-items: center; gap: var(--space-16); min-height: 44px; }
 .cd-tracker-body { flex: 1; min-width: 0; }
 .cd-tracker-title { font-size: 15px; font-weight: 700; }
+.cd-tracker-meta { margin-top: var(--space-4); font-size: 13px; color: var(--text-muted); }
