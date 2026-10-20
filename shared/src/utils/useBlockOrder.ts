@@ -40,7 +40,7 @@ export function useBlockOrder<T extends string>({
   const orderedIds = applyActionOrder(
     defaults.map((id) => ({ id })),
     order,
-  ).map((x) => x.id) as T[];
+  ).map((x) => x.id);
 
   const reorder = (
     id: string,

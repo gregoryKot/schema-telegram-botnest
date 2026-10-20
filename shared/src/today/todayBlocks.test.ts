@@ -21,7 +21,9 @@ describe('реестр', () => {
       expect(TODAY_BLOCK_META[id].title.length).toBeGreaterThan(0);
       expect(TODAY_BLOCK_META[id].sub.length).toBeGreaterThan(0);
     }
-    const fixed = TODAY_BLOCK_IDS.filter((id) => !TODAY_BLOCK_META[id].toggleable);
+    const fixed = TODAY_BLOCK_IDS.filter(
+      (id) => !TODAY_BLOCK_META[id].toggleable,
+    );
     expect(fixed).toEqual(['focus']);
   });
 
