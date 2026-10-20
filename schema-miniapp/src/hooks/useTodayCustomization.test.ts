@@ -26,24 +26,27 @@ describe('useTodayCustomization — долгое нажатие на блок', 
     ['holdFocus', 'practice'],
     ['holdStreak', 'streak'],
     ['holdPhrase', 'phrase'],
-  ] as const)('%s: удержание открывает лист с подсветкой «%s»', (hold, highlight) => {
-    const { result } = renderHook(() => useTodayCustomization());
-    act(() => {
-      result.current[hold].onPointerDown({
-        button: 0,
-        isPrimary: true,
-        clientX: 0,
-        clientY: 0,
-      } as never);
-    });
-    act(() => {
-      vi.advanceTimersByTime(500);
-    });
-    expect(result.current.sheet).toBe(highlight);
-    expect(mockApi.trackEvent).toHaveBeenCalledWith('today_customize_open', {
-      via: 'longpress',
-    });
-  });
+  ] as const)(
+    '%s: удержание открывает лист с подсветкой «%s»',
+    (hold, highlight) => {
+      const { result } = renderHook(() => useTodayCustomization());
+      act(() => {
+        result.current[hold].onPointerDown({
+          button: 0,
+          isPrimary: true,
+          clientX: 0,
+          clientY: 0,
+        } as never);
+      });
+      act(() => {
+        vi.advanceTimersByTime(500);
+      });
+      expect(result.current.sheet).toBe(highlight);
+      expect(mockApi.trackEvent).toHaveBeenCalledWith('today_customize_open', {
+        via: 'longpress',
+      });
+    },
+  );
 });
 
 describe('useTodayCustomization — открытие листа настройки', () => {

@@ -12,13 +12,16 @@ describe('AboutSheet', () => {
   it('показывает «зачем» и все пять потребностей', () => {
     render(<AboutSheet onClose={vi.fn()} onOpenSchemaInfo={vi.fn()} />);
     expect(screen.getByText('Пять потребностей')).toBeTruthy();
-    for (const n of NEEDS_EXPLAINER) expect(screen.getByText(n.name)).toBeTruthy();
+    for (const n of NEEDS_EXPLAINER)
+      expect(screen.getByText(n.name)).toBeTruthy();
     expect(NEEDS_EXPLAINER).toHaveLength(5);
   });
 
   it('карточка «Схема-терапия» открывает справочник', () => {
     const onOpenSchemaInfo = vi.fn();
-    render(<AboutSheet onClose={vi.fn()} onOpenSchemaInfo={onOpenSchemaInfo} />);
+    render(
+      <AboutSheet onClose={vi.fn()} onOpenSchemaInfo={onOpenSchemaInfo} />,
+    );
     fireEvent.click(screen.getByText('Схема-терапия'));
     expect(onOpenSchemaInfo).toHaveBeenCalledTimes(1);
   });

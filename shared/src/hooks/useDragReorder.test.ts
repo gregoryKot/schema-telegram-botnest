@@ -483,7 +483,9 @@ describe('useDragReorder — touchmove и раздвигание строк', ()
   }
 
   it('во время драга документный touchmove гасится (preventDefault)', () => {
-    const { result } = renderHook(() => useDragReorder({ ids, onReorder: vi.fn() }));
+    const { result } = renderHook(() =>
+      useDragReorder({ ids, onReorder: vi.fn() }),
+    );
     startDrag(result, 'a', 0);
     const ev = new Event('touchmove', { cancelable: true });
     document.dispatchEvent(ev);
@@ -491,7 +493,9 @@ describe('useDragReorder — touchmove и раздвигание строк', ()
   });
 
   it('строки раздвигаются по реальным высотам: тянем «a» вниз через «b»', () => {
-    const { result } = renderHook(() => useDragReorder({ ids, onReorder: vi.fn() }));
+    const { result } = renderHook(() =>
+      useDragReorder({ ids, onReorder: vi.fn() }),
+    );
     act(() => {
       result.current.registerRow('a')(rowEl(40));
       result.current.registerRow('b')(rowEl(40));
@@ -505,7 +509,9 @@ describe('useDragReorder — touchmove и раздвигание строк', ()
   });
 
   it('тянем «c» вверх через «b»: «b» уезжает вниз на высоту строки', () => {
-    const { result } = renderHook(() => useDragReorder({ ids, onReorder: vi.fn() }));
+    const { result } = renderHook(() =>
+      useDragReorder({ ids, onReorder: vi.fn() }),
+    );
     startDrag(result, 'c', -60);
     expect(result.current.drag?.targetIndex).toBe(1);
     expect(result.current.offsetFor('b')).toBe(56);
@@ -513,7 +519,9 @@ describe('useDragReorder — touchmove и раздвигание строк', ()
   });
 
   it('без драга смещений нет; снятая строка забывается', () => {
-    const { result } = renderHook(() => useDragReorder({ ids, onReorder: vi.fn() }));
+    const { result } = renderHook(() =>
+      useDragReorder({ ids, onReorder: vi.fn() }),
+    );
     act(() => result.current.registerRow('a')(rowEl(40)));
     expect(result.current.offsetFor('a')).toBe(0);
     act(() => result.current.registerRow('a')(null));
