@@ -52,6 +52,14 @@ CLAUDE.md. Не удалять, но и не считать списком за�
 
 Хвосты закрытых планов — то, что не сделано осознанно, а не забыто:
 
+**CI на Ubuntu 26 не переведён** (#789, 2026-10-20). На `ubuntu-latest` (с 2026-10-19 —
+Ubuntu 26) у трёх PR подряд падали `backend` → `check-coverage-ratchet.mjs` и `migrations` →
+«e2e перенос БД на VPS» (`test/transfer-db.e2e-spec.ts`), на `ubuntu-24.04` те же коммиты
+зелёные. Причину по логам не разобрали: из песочницы агента логи Actions не скачиваются.
+Версия для переноса — `pg_dump` 17+ пишет `SET transaction_timeout`, которого нет в Postgres 16
+сервиса джобы. Переход — отдельный PR: сменить `runs-on`, прочитать логи, починить.
+Плавающую метку держит `src/test-support/gates/runner-pin.spec.ts`.
+
 **Единая версия, этап 4 — фокус-карточка «Сегодня»** (`docs/ONE_FRONTEND_PLAN.md`):
 - **Настройки «Сегодня» на сайте не синхронизируются между устройствами.** Мини-апп отправляет
   `today_focus_practice` и `today_streak_hidden` на бэкенд (`schema-miniapp/src/utils/uiPrefsSync.ts`,
