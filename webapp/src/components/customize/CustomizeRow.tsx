@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useId, type ReactNode } from 'react';
 import type { DragHandleProps } from '../../../../shared/src/hooks/useDragReorder';
 
 interface Props {
@@ -29,10 +29,11 @@ function Text({ title, sub }: { title: string; sub: string }) {
 // label тумблера, тап по тексту переключает) и ручка «≡» для перестановки.
 // Тумблер — тот же .ds-switch, что в настройках и в листе «+».
 export function CustomizeRow({ title, sub, on, onToggle, handle, rowRef, offsetY, lifted, highlighted }: Props) {
+  const switchId = useId();
   const body: ReactNode = onToggle ? (
-    <label className="cz-row cz-grow">
+    <label htmlFor={switchId} className="cz-row cz-grow">
       <Text title={title} sub={sub} />
-      <button type="button" role="switch" aria-checked={!!on} aria-label={title} className="ds-switch" onClick={onToggle}>
+      <button id={switchId} type="button" role="switch" aria-checked={!!on} aria-label={title} className="ds-switch" onClick={onToggle}>
         <span className="ds-switch-knob" />
       </button>
     </label>
