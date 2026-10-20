@@ -61,7 +61,7 @@
 /* Шапка: на десктопе eyebrow + h1; строка с датой и шестерёнка — только на телефоне */
 .ct-head { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-12); }
 .ct-head-text { min-width: 0; }
-.ct-head-date, .ct-head-gear, .ct-more-toggle { display: none; }
+.ct-head-date, .ct-more-toggle { display: none; }
 .ct-head-customize { align-self: flex-start; min-height: 44px; display: inline-flex; align-items: center; }
 
 /* Сайдбар: индекс (тёмная), встреча (акцентная), стрик */
@@ -144,12 +144,6 @@
   .ct-head-eyebrow { display: none; }
   .ct-head .ds-h1 { margin: 0; font-size: 28px; line-height: 1.15; }
   .ct-head-date { display: block; margin-top: var(--space-4); font-size: 13px; font-weight: 500; color: var(--text-sub); }
-  .ct-head-gear {
-    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
-    width: 44px; height: 44px; padding: 0; cursor: pointer;
-    border-radius: var(--r-14); border: 1px solid var(--line);
-    background: var(--surface); color: var(--text-sub);
-  }
 
   .ct-grid { display: flex; flex-direction: column; align-items: stretch; gap: var(--space-12); }
   .ct-main, .ct-aside, .ct-top { display: contents; }
