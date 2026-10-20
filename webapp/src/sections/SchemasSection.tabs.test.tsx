@@ -14,12 +14,13 @@ vi.mock('./schemas/useSchemasData', () => ({
 }));
 vi.mock('./schemas/usePatternLayer', () => ({
   usePatternLayer: () => ({
-    layer: null, openPattern: vi.fn(), openModeEx: vi.fn(), schemaFreq: {}, modeFreq: {}, top: null,
+    layer: null, openPattern: vi.fn(), openModeEx: vi.fn(), schemaFreq: {}, modeFreq: {}, top: null, modeTop: null,
     entriesReady: true, hasEntries: true, statusOf: () => ({ filled: new Set(), statusFor: undefined }),
   }),
 }));
 const stub = vi.hoisted(() => (name: string) => () => <div data-testid={name} />);
 vi.mock('./schemas/PatternsTopCards', () => ({ PatternsTopCards: stub('hero') }));
+vi.mock('./schemas/ModesTopCards', () => ({ ModesTopCards: stub('modes-hero') }));
 vi.mock('./schemas/ExpressedCard', () => ({ ExpressedCard: stub('expressed') }));
 vi.mock('./schemas/YsqTestRow', () => ({ YsqTestRow: stub('test-row') }));
 vi.mock('./schemas/YsqTestCard', () => ({ YsqTestCard: stub('test-card') }));
@@ -55,10 +56,10 @@ describe('SchemasSection: вкладки на телефоне', () => {
     fireEvent.click(screen.getByRole('button', { name: /^Все \d+ схем/ }));
     expect(screen.getByTestId('map')).toBeTruthy();
   });
-  it('«Режимы» — только мои режимы строками и баннер; полная карта свёрнута', () => {
+  it('«Режимы» — подсказка сверху, мои режимы строками и баннер; полная карта свёрнута', () => {
     render(<SchemasSection onOpenSchema={vi.fn()} />);
     fireEvent.click(screen.getByRole('tab', { name: 'Режимы' }));
-    expect(ids()).toEqual(['my-modes', 'mode-map']);
+    expect(ids()).toEqual(['modes-hero', 'my-modes', 'mode-map']);
     expect(screen.queryByTestId('modes-map')).toBeNull();
   });
   it('карта режимов раскрывается по «Все режимы»', () => {

@@ -144,3 +144,7 @@
 .cs-intro { display: flex; flex-direction: column; justify-content: space-between; gap: var(--space-16); }
 .cs-intro-title { margin: var(--space-8) 0 0; font-family: var(--serif); font-size: 22px; line-height: 1.3; font-weight: 400; }
 .cs-intro-text { margin: var(--space-8) 0 0; font-size: 14px; line-height: 1.5; opacity: .9; }
+
+/* Верх вкладки «Режимы» (телефон): карточка и строки-входы под ней. */
+.cs-hero-stack { display: flex; flex-direction: column; gap: var(--space-12); }
+.cs-tools { border: 1px solid var(--line); border-radius: var(--r-20); background: var(--surface); overflow: hidden; }
