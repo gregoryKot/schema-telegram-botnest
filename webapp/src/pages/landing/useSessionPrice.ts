@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { api } from '../../api';
+import { api, reportClientError } from '../../api';
 import type { SessionOption } from '../../api';
 import { resolveClientTimeZone } from '../../../../shared/src/booking/clientTimeZone';
 import { currencyFromTimeZone } from '../../../../shared/src/booking/priceRegion';
@@ -15,7 +15,8 @@ export function useSessionPrice(): OptionPrice {
   useEffect(() => {
     api.getBookingOptions()
       .then((o) => setOption(o.find((x) => x.type === 'SESSION_50') ?? null))
-      .catch(() => {});
+      // Сбой не прячем (правило №14): цена остаётся дефолтной, а отчёт уходит наверх.
+      .catch(() => reportClientError({ message: 'landing: цена сессии не загрузилась', section: 'landing' }));
   }, []);
   return option ? optionPrice(option, currency) : makePrice(DEFAULT_SESSION_PRICE[currency], currency);
 }
