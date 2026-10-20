@@ -19,6 +19,8 @@ import { LandingStyles } from './landing/LandingStyles';
 import { trackGoalOnce } from '../lib/metrika';
 import { useLandingGoals } from './landing/useLandingGoals';
 import { useHashJump } from './landing/useHashJump';
+import { useSessionPrice } from './landing/useSessionPrice';
+import { formatPrice } from '../../../shared/src/booking/priceRegion';
 import {
   WorkSection,
   EducationSection,
@@ -39,14 +41,8 @@ export function LandingPage() {
   const [menuOpen, setMenuOpen] = useState(false);
   useLandingGoals();
   useHashJump();
-  // Live session price (editable in admin) — keep the landing in sync with checkout.
-  const [sessionPrice, setSessionPrice] = useState(3000);
-  useEffect(() => {
-    api.getBookingOptions()
-      .then((o) => { const s = o.find((x) => x.type === 'SESSION_50'); if (s) setSessionPrice(s.price); })
-      .catch(() => {});
-  }, []);
-  const priceStr = sessionPrice.toLocaleString('ru-RU');
+  // Живая цена сессии в валюте посетителя (правится в админке) — лендинг совпадает с формой записи.
+  const sessionPrice = useSessionPrice();
   // Hero photo + marquee topics (editable in admin) — hardcoded defaults keep
   // the site looking the same until the therapist actually edits them.
   const [siteContent, setSiteContent] = useState<{ heroPhoto: string | null; marqueeTopicsA: typeof TOPICS_A; marqueeTopicsB: typeof TOPICS_B }>({
@@ -256,7 +252,7 @@ export function LandingPage() {
           <div style={{ background: 'var(--accent-soft)', border: '1.5px solid var(--accent-line)', borderRadius: 24, padding: '40px', display: 'flex', flexDirection: 'column', gap: 24 }}>
             <div>
               <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.12em', textTransform: 'uppercase', color: 'var(--accent)' }}>Знакомство</span>
-              <p style={{ fontFamily: 'var(--serif)', fontSize: 56, fontWeight: 400, color: 'var(--accent)', margin: '6px 0 0', letterSpacing: '-.03em', lineHeight: 1 }}>0 ₽</p>
+              <p style={{ fontFamily: 'var(--serif)', fontSize: 56, fontWeight: 400, color: 'var(--accent)', margin: '6px 0 0', letterSpacing: '-.03em', lineHeight: 1 }}>{formatPrice(0, sessionPrice.currency)}</p>
             </div>
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 10 }}>
               {['15 минут онлайн', 'Рассказываете о запросе', 'Я рассказываю о подходе', 'Никаких обязательств'].map(f => (
@@ -273,7 +269,7 @@ export function LandingPage() {
             <div style={{ position: 'absolute', top: 20, right: 20, background: 'rgba(255,255,255,.12)', padding: '4px 12px', borderRadius: 100, fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,.7)' }}>Основной</div>
             <div>
               <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.12em', textTransform: 'uppercase', color: 'rgba(236,234,229,.45)' }}>Сессия</span>
-              <p style={{ fontFamily: 'var(--serif)', fontSize: 56, fontWeight: 400, color: INK_ON_DARK, margin: '6px 0 0', letterSpacing: '-.03em', lineHeight: 1 }}>{priceStr} ₽</p>
+              <p style={{ fontFamily: 'var(--serif)', fontSize: 56, fontWeight: 400, color: INK_ON_DARK, margin: '6px 0 0', letterSpacing: '-.03em', lineHeight: 1 }}>{sessionPrice.text}</p>
             </div>
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 10 }}>
               {['50 минут онлайн (видео)', 'Индивидуальная работа', 'Схема-терапия и КПТ', 'Регулярные встречи'].map(f => (
@@ -309,7 +305,7 @@ export function LandingPage() {
         <h2 style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(28px, 4vw, 44px)', fontWeight: 400, color: 'var(--text)', margin: '0 0 48px', letterSpacing: '-.01em' }}>
           Что нужно знать
         </h2>
-        <FaqList price={priceStr} />
+        <FaqList price={sessionPrice.text} online={sessionPrice.online} />
       </section>
 
       {/* ── MARQUEE #4 ───────────────────────────────────────────────────── */}

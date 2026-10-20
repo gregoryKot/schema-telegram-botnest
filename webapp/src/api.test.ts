@@ -732,6 +732,14 @@ describe('adminReq — запрос с телом и обработка ошиб
     expect(JSON.parse(init.body)).toEqual({ type: 'INTRO_15', amount: 1500 });
   });
 
+  it('adminSetPrice с валютой: currency уходит в теле (цена сессии по стране посетителя)', async () => {
+    fetchMock.mockResolvedValue(jsonResponse(200, { ok: true }));
+    await api.adminSetPrice('key', 'SESSION_50', 70, 'USD');
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(String(url)).toContain('/api/booking/admin/price');
+    expect(JSON.parse(init.body)).toEqual({ type: 'SESSION_50', amount: 70, currency: 'USD' });
+  });
+
   it('ошибка с телом { message } пробрасывает именно это сообщение', async () => {
     fetchMock.mockResolvedValue(
       jsonResponse(403, { message: 'Неверный ключ администратора' }),

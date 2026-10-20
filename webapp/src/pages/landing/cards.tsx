@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useTilt } from '../../components/landing-kit-hooks';
 import { FAQ_ITEMS } from './constants';
-
+import { faqAnswer } from './faqAnswer';
 // ─── Approach cards ───────────────────────────────────────────────────────────
 export function BentoCard({ num, title, text, accent = false }: { num: string; title: string; text: string; accent?: boolean }) {
   const ref = useTilt();
@@ -23,7 +23,7 @@ export function BentoCard({ num, title, text, accent = false }: { num: string; t
 }
 
 // ─── FAQ accordion ────────────────────────────────────────────────────────────
-export function FaqList({ price }: { price: string }) {
+export function FaqList({ price, online = true }: { price: string; online?: boolean }) {
   const [open, setOpen] = useState<number | null>(null);
   return (
     <div style={{ display: 'flex', flexDirection: 'column' }}>
@@ -54,7 +54,7 @@ export function FaqList({ price }: { price: string }) {
             <div style={{ display: 'grid', gridTemplateRows: isOpen ? '1fr' : '0fr', transition: 'grid-template-rows .32s ease', overflow: 'hidden' }}>
               <div style={{ overflow: 'hidden' }}>
                 <p style={{ fontSize: 15, color: 'var(--text-sub)', lineHeight: 1.8, margin: '0 0 22px', maxWidth: 660 }}>
-                  {item.a.replace('{PRICE}', price)}
+                  {faqAnswer(item.a, price, online)}
                 </p>
               </div>
             </div>

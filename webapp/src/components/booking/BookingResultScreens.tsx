@@ -1,14 +1,13 @@
 import type { RefObject } from 'react';
-import type { BookingSlot, SessionOption } from '../../api';
+import type { BookingSlot } from '../../api';
 import { localDayLabel, localTimeLabel, submitTimeSuffix } from '../../../../shared/src/booking/clientTimeZone';
 import { BookingCancelControl } from './BookingCancelControl';
 import { BookingSaveBlock } from './BookingSaveBlock';
 import { BookingCrisisNote } from './BookingCrisisNote';
 
 /** Терминальные экраны BookingPicker (ожидание оплаты / провал / готово) — вынесены отдельно (правило №10). */
-export function AwaitPaymentScreen({ resultRef, slot, tz, chosen, payUrl, message }: {
-  resultRef: RefObject<HTMLDivElement | null>; slot: BookingSlot | null; tz: string;
-  chosen: SessionOption | undefined; payUrl: string | null; message: string;
+export function AwaitPaymentScreen({ resultRef, slot, tz, priceText, payUrl, message }: {
+  resultRef: RefObject<HTMLDivElement | null>; slot: BookingSlot | null; tz: string; priceText: string | null; payUrl: string | null; message: string;
 }) {
   return (
     <div ref={resultRef} className="ym-hide-content" style={{ textAlign: 'center', padding: '48px 0' }}>
@@ -20,7 +19,7 @@ export function AwaitPaymentScreen({ resultRef, slot, tz, chosen, payUrl, messag
         </p>
       )}
       <p style={{ color: 'var(--text-sub)', fontSize: 16, lineHeight: 1.7, margin: '0 0 20px' }}>
-        Для подтверждения нужна оплата{chosen && chosen.price > 0 ? ` ${chosen.price.toLocaleString('ru-RU')} ₽` : ''}.
+        Для подтверждения нужна оплата{priceText ? ` ${priceText}` : ''}.
       </p>
       <a href={payUrl ?? '#'} style={{ display: 'inline-block', padding: '15px 32px', fontSize: 16, fontWeight: 600, fontFamily: 'inherit', background: 'var(--accent)', color: '#fff', borderRadius: 'var(--r-12)', textDecoration: 'none' }}>Перейти к оплате →</a>
       <BookingCrisisNote text={message} />
@@ -43,9 +42,9 @@ export function PaymentFailScreen({ resultRef, onRetry }: { resultRef: RefObject
   );
 }
 
-export function DoneScreen({ resultRef, slot, tz, cancelled, meetingUrl, cancelToken, sessionType, onCancelled, message }: {
+export function DoneScreen({ resultRef, slot, tz, cancelled, meetingUrl, cancelToken, sessionType, onCancelled, message, costNote }: {
   resultRef: RefObject<HTMLDivElement | null>; slot: BookingSlot | null; tz: string; cancelled: boolean;
-  meetingUrl: string | null; cancelToken: string; sessionType: 'INTRO_15' | 'SESSION_50'; onCancelled: () => void; message: string;
+  meetingUrl: string | null; cancelToken: string; sessionType: 'INTRO_15' | 'SESSION_50'; onCancelled: () => void; message: string; costNote?: string | null;
 }) {
   return (
     <div ref={resultRef} className="ym-hide-content" style={{ textAlign: 'center', padding: '48px 0' }}>
@@ -69,6 +68,7 @@ export function DoneScreen({ resultRef, slot, tz, cancelled, meetingUrl, cancelT
           <a href={meetingUrl} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)', fontSize: 15, fontWeight: 600, textDecoration: 'none' }}>Открыть встречу</a>
         </div>
       )}
+      {!cancelled && costNote && <p style={{ color: 'var(--text-sub)', fontSize: 14, lineHeight: 1.6, margin: '0 0 8px' }}>{costNote}</p>}
       {!cancelled && !meetingUrl && <p style={{ color: 'var(--text-faint)', fontSize: 14, margin: '0 0 8px' }}>Пришлю ссылку на встречу до начала сессии.</p>}
       {!cancelled && <BookingCrisisNote text={message} />}
       {!cancelled && cancelToken && slot && (
