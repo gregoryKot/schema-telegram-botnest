@@ -6,6 +6,7 @@
 // КОПИЯ shared/src/booking/priceRegion.ts (бэкенд не импортирует shared/, см.
 // комментарий в client-timezone.ts); синхронность — price-region.sync.spec.ts
 // (правило №4 CLAUDE.md). Правишь здесь — правь там.
+/* eslint-disable prettier/prettier -- байт-в-байт копия shared (sync-спек): форматирование не трогать */
 export type PriceRegion = 'RU' | 'IL' | 'EU' | 'INTL';
 export type Currency = 'RUB' | 'ILS' | 'EUR' | 'USD';
 

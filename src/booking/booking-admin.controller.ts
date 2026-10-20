@@ -49,21 +49,21 @@ export class BookingAdminController {
     this.adminKey = config.get<string>('ADMIN_BOOKING_KEY') ?? '';
   }
 
-  /** GET /admin/prices — current session prices (for the admin form). */
+  /** GET /admin/prices — session prices in every currency (for the admin form). */
   @Get('prices')
   async prices(@Headers('x-admin-key') key: string) {
     assertAdminKey(key, this.adminKey);
     return this.pricing.getOptions();
   }
 
-  /** PATCH /admin/price — set a session price (rubles). */
+  /** PATCH /admin/price — set a session price (rubles unless `currency` is given). */
   @Patch('price')
   async setPrice(
     @Body() body: SetPriceDto,
     @Headers('x-admin-key') key: string,
   ) {
     assertAdminKey(key, this.adminKey);
-    await this.pricing.setPrice(body.type, Number(body.amount));
+    await this.pricing.setPrice(body.type, Number(body.amount), body.currency);
     return { ok: true };
   }
 

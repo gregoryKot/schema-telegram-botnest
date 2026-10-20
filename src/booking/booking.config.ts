@@ -1,12 +1,12 @@
 import { SessionType } from '@prisma/client';
 
-// Session catalogue. Prices are editable in the admin panel (stored in
-// BookingSetting); the values here are only the initial defaults / fallbacks.
+// Session catalogue. Prices are editable in the admin panel (BookingSetting);
+// values here are only the defaults (rubles; other currencies — price-currency.ts).
 // Labels, durations and notes are static metadata.
 
 export const SESSION_DEFAULT_PRICE: Record<SessionType, number> = {
   [SessionType.INTRO_15]: 0,
-  [SessionType.SESSION_50]: 3000,
+  [SessionType.SESSION_50]: 4000,
 };
 
 // Booking window rules.
@@ -45,7 +45,3 @@ export const SESSION_META: SessionMeta[] = [
     note: '50 минут',
   },
 ];
-
-export interface SessionOption extends SessionMeta {
-  price: number;
-}
