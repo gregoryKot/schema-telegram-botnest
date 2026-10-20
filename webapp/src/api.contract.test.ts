@@ -35,6 +35,8 @@ const MOCKED_API_METHODS = [
   'ratings', 'saveRating',
   // BookingPicker.test.tsx
   'getSlots', 'getBookingOptions', 'bookSlot', 'cancelBooking',
+  // pages/admin/PricesManager.test.tsx, BookingSection.test.tsx — цены сессии по валютам
+  'adminGetPrices', 'adminSetPrice',
   // utils/addressForm.test.tsx — уже покрыт getSettings выше
   // pages/DonatePage.test.tsx
   'donate',
