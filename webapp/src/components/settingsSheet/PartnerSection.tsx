@@ -1,26 +1,32 @@
 import { useTr } from '../../utils/addressForm';
-import { useCopyToClipboard } from '../../../../shared/src/utils/useCopyToClipboard';
 import { SSection } from './ui';
 import { pairTexts } from '../../../../shared/src/pair/pairTexts';
+import { pendingInviteUrl, canCreateInvite, inviteButtonLabel, freshInviteUrl } from '../../../../shared/src/pair/pairView';
 import type { PairMechanics } from '../../../../shared/src/pair/usePairMechanics';
 import { PartnerCard } from './PartnerCard';
+import { PartnerInviteLink } from './PartnerInviteLink';
+import { SettingsInfoHelp } from './SettingsInfoHelp';
 
 // Раздел «Партнёр» — вынесен из SettingsSheet.tsx (правило №10). Состояние
 // пары живёт в родителе (общий хук shared/src/pair/usePairMechanics), здесь
 // только отображение; карточка с кодом после создания приглашения открывается
 // через onInviteCreated хука (та же, что в мини-аппе, правило №3).
+// Как в мини-аппе (PairPanel): партнёров может быть несколько, поэтому
+// «Пригласить ещё друга» и ввод кода доступны и при подключённом партнёре,
+// а ждущее приглашение показывается ссылкой для повторной отправки.
 export function PartnerSection({ pair }: { pair: PairMechanics }) {
   const tr = useTr();
-  const copy = useCopyToClipboard();
   const {
     data, loading, loadError, retryLoad, inviteUrl, joinCode, setJoinCode, joinView, setJoinView,
     joinError, leaveError, createError, confirmLeaveCode, setConfirmLeaveCode,
     handleCreateInvite, handleJoin, handleLeave,
   } = pair;
-  const { copyLabel } = pairTexts(tr);
+  const { copyLabel, pendingLabel } = pairTexts(tr);
+  const pendingUrl = data ? pendingInviteUrl(data) : '';
+  const freshUrl = freshInviteUrl(inviteUrl, pendingUrl);
 
   return (
-    <SSection id="s-partner" label="Партнёр" hint="Видите индексы дня друг друга — просто число, без деталей">
+    <SSection id="s-partner" label="Партнёр" help={<SettingsInfoHelp infoKey="pair" />} hint="Видите индексы дня друг друга — просто число, без деталей">
       <div className="st-body-block">
         {!data && !loadError ? (
           <div className="st-text st-text--faint">Загрузка...</div>
@@ -31,30 +37,7 @@ export function PartnerSection({ pair }: { pair: PairMechanics }) {
             <div className="st-err">Не удалось загрузить данные о партнёре</div>
             <button className="ds-link" onClick={retryLoad}>Повторить</button>
           </div>
-        ) : data.partners.length > 0 ? (
-          data.partners.map(p => (
-            <PartnerCard key={p.code} partner={p} confirmLeaveCode={confirmLeaveCode}
-              setConfirmLeaveCode={setConfirmLeaveCode} onLeave={handleLeave} leaveError={leaveError} />
-          ))
-        ) : joinView === 'main' ? (
-          <>
-            <div className="st-actions">
-              <button className="ds-btn ds-btn--sm" onClick={handleCreateInvite} disabled={loading}>
-                {loading ? '...' : createError ? 'Не получилось — ещё раз' : data.pendingCode ? 'Новая ссылка' : 'Пригласить друга'}
-              </button>
-              <button className="ds-btn ds-btn--sm ds-btn--secondary" onClick={() => setJoinView('join')}>Ввести код</button>
-            </div>
-            {inviteUrl && (
-              <div>
-                <div className="st-text st-text--faint">{copyLabel}</div>
-                <div className="st-mono st-mb10">{inviteUrl}</div>
-                <button className={`ds-link${copy.copied ? ' is-ok' : copy.failed ? ' st-link-danger' : ''}`} onClick={() => void copy.copy(inviteUrl)}>
-                  {copy.copied ? '✓ Скопировано' : copy.failed ? 'Не скопировалось — ссылка выше' : 'Скопировать ссылку'}
-                </button>
-              </div>
-            )}
-          </>
-        ) : (
+        ) : joinView === 'join' ? (
           <div className="st-body-block">
             <button className="ds-link" onClick={() => setJoinView('main')}>← Назад</button>
             <div className="st-actions">
@@ -64,6 +47,23 @@ export function PartnerSection({ pair }: { pair: PairMechanics }) {
             </div>
             {joinError && <div className="st-err">Код не найден или уже использован</div>}
           </div>
+        ) : (
+          <>
+            {data.partners.map(p => (
+              <PartnerCard key={p.code} partner={p} confirmLeaveCode={confirmLeaveCode}
+                setConfirmLeaveCode={setConfirmLeaveCode} onLeave={handleLeave} leaveError={leaveError} />
+            ))}
+            {pendingUrl && <PartnerInviteLink label={pendingLabel} url={pendingUrl} />}
+            <div className="st-actions">
+              {canCreateInvite(data) && (
+                <button className="ds-btn ds-btn--sm" onClick={handleCreateInvite} disabled={loading}>
+                  {inviteButtonLabel({ loading, createError, hasPartners: data.partners.length > 0, hasPending: !!data.pendingCode })}
+                </button>
+              )}
+              <button className="ds-btn ds-btn--sm ds-btn--secondary" onClick={() => setJoinView('join')}>Ввести код</button>
+            </div>
+            {freshUrl && <PartnerInviteLink label={copyLabel} url={freshUrl} />}
+          </>
         )}
       </div>
     </SSection>
