@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
-// Серия на телефоне: компактная строка как в мини-аппе, скрытие — ссылкой.
+// Серия на телефоне: компактная строка как в мини-аппе; скрывается в листе «Настроить экран».
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, cleanup } from '@testing-library/react';
+import { render, screen, cleanup } from '@testing-library/react';
 import { AddressFormContext } from '../../utils/addressForm';
 import { StreakSlot } from './TodayAsideExtras';
 import { streakDaysLabel } from './streakLabel';
@@ -12,10 +12,11 @@ vi.mock('../../api', () => ({ api: { trackEvent: vi.fn() } }));
 beforeEach(() => localStorage.clear());
 afterEach(cleanup);
 
-const renderSlot = (streak: number, form: 'ty' | 'vy' = 'ty') =>
+const onToggle = vi.fn();
+const renderSlot = (streak: number, form: 'ty' | 'vy' = 'ty', hidden = false) =>
   render(
     <AddressFormContext.Provider value={{ form, setForm: vi.fn() }}>
-      <StreakSlot streak={streak} />
+      <StreakSlot streak={streak} hidden={hidden} onToggle={onToggle} />
     </AddressFormContext.Provider>,
   );
 
@@ -47,11 +48,12 @@ describe('StreakSlot на телефоне', () => {
     expect(screen.queryByText(/сбиться/)).toBeNull();
   });
 
-  it('скрыть и показать серию', () => {
-    renderSlot(5);
-    fireEvent.click(screen.getByRole('button', { name: 'Скрыть серию дней' }));
+  it('скрытая серия исчезает целиком, ссылок «скрыть/показать» на экране нет — они в листе настройки', () => {
+    renderSlot(5, 'ty', true);
     expect(screen.queryByText('5 дней подряд')).toBeNull();
-    fireEvent.click(screen.getByRole('button', { name: 'Показать серию дней' }));
-    expect(screen.getByText('5 дней подряд')).toBeTruthy();
+    expect(screen.queryByRole('button')).toBeNull();
+    cleanup();
+    renderSlot(5);
+    expect(screen.queryByRole('button')).toBeNull();
   });
 });

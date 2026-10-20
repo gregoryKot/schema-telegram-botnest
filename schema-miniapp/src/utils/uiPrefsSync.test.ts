@@ -155,3 +155,26 @@ describe('notifyPrefsChanged — debounce', () => {
     });
   });
 });
+
+describe('устойчивость к сбоям', () => {
+  beforeEach(() => vi.useFakeTimers());
+  afterEach(() => vi.useRealTimers());
+
+  it('синхронный отказ api не ломает UI: notifyPrefsChanged ничего не бросает', () => {
+    mockApi.updateSettings.mockImplementationOnce(() => {
+      throw new Error('sync boom');
+    });
+    notifyPrefsChanged();
+    expect(() => vi.advanceTimersByTime(1500)).not.toThrow();
+  });
+
+  it('серверные настройки отменяют ожидающий пуш (server wins, локальное не уходит обратно)', () => {
+    localStorage.setItem('ui_prefs_migrated', '1');
+    localStorage.setItem('today_streak_hidden', '1');
+    notifyPrefsChanged();
+    syncFromServer({ today_phrase_hidden: '1' });
+    vi.advanceTimersByTime(5000);
+    expect(mockApi.updateSettings).not.toHaveBeenCalled();
+    expect(localStorage.getItem('today_streak_hidden')).toBeNull();
+  });
+});

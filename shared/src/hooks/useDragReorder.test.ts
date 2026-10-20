@@ -7,10 +7,10 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useDragReorder } from './useDragReorder';
 
-vi.mock('../haptic', () => ({
+vi.mock('../host/haptic', () => ({
   haptic: { tap: vi.fn(), select: vi.fn() },
 }));
-import { haptic } from '../haptic';
+import { haptic } from '../host/haptic';
 const mockHaptic = haptic as unknown as Record<
   string,
   ReturnType<typeof vi.fn>
@@ -19,7 +19,7 @@ const mockHaptic = haptic as unknown as Record<
 // Баг с живого устройства (Telegram iOS): драг строки за ручку «≡» сворачивал
 // всё мини-приложение — жест хоста, не остановленный touch-action: none.
 const mockSetVerticalSwipes = vi.hoisted(() => vi.fn());
-vi.mock('../../../shared/src/host', () => ({
+vi.mock('../host', () => ({
   getHost: () => ({ setVerticalSwipes: mockSetVerticalSwipes }),
 }));
 
@@ -448,5 +448,83 @@ describe('useDragReorder — aria-label', () => {
     expect(props['aria-label']).toBe('Переставить: Трекер потребностей');
     expect(props.role).toBe('button');
     expect(props.tabIndex).toBe(0);
+  });
+});
+
+// Раньше эти ветки покрывали тесты листов мини-аппа; после переезда хука в
+// shared их держим здесь: жест гасит скролл документа, строки раздвигаются
+// по реальным высотам, смещение строки — 1:1 за пальцем.
+describe('useDragReorder — touchmove и раздвигание строк', () => {
+  const ids = ['a', 'b', 'c'];
+  const rowEl = (height: number) =>
+    ({ getBoundingClientRect: () => ({ height }) }) as unknown as HTMLElement;
+
+  function startDrag(
+    result: { current: ReturnType<typeof useDragReorder> },
+    id: string,
+    clientY: number,
+  ) {
+    act(() =>
+      result.current.handleProps(id, id, { min: 0, max: 2 }).onPointerDown({
+        clientY: 0,
+        pointerId: 1,
+        stopPropagation: vi.fn(),
+        currentTarget: fakeHandle(),
+      } as never),
+    );
+    act(() =>
+      result.current.handleProps(id, id, { min: 0, max: 2 }).onPointerMove({
+        clientY,
+        pointerId: 1,
+        buttons: 1,
+        stopPropagation: vi.fn(),
+      } as never),
+    );
+  }
+
+  it('во время драга документный touchmove гасится (preventDefault)', () => {
+    const { result } = renderHook(() =>
+      useDragReorder({ ids, onReorder: vi.fn() }),
+    );
+    startDrag(result, 'a', 0);
+    const ev = new Event('touchmove', { cancelable: true });
+    document.dispatchEvent(ev);
+    expect(ev.defaultPrevented).toBe(true);
+  });
+
+  it('строки раздвигаются по реальным высотам: тянем «a» вниз через «b»', () => {
+    const { result } = renderHook(() =>
+      useDragReorder({ ids, onReorder: vi.fn() }),
+    );
+    act(() => {
+      result.current.registerRow('a')(rowEl(40));
+      result.current.registerRow('b')(rowEl(40));
+      result.current.registerRow('c')(rowEl(40));
+    });
+    startDrag(result, 'a', 45);
+    expect(result.current.drag?.targetIndex).toBe(1);
+    expect(result.current.offsetFor('a')).toBe(45);
+    expect(result.current.offsetFor('b')).toBe(-40);
+    expect(result.current.offsetFor('c')).toBe(0);
+  });
+
+  it('тянем «c» вверх через «b»: «b» уезжает вниз на высоту строки', () => {
+    const { result } = renderHook(() =>
+      useDragReorder({ ids, onReorder: vi.fn() }),
+    );
+    startDrag(result, 'c', -60);
+    expect(result.current.drag?.targetIndex).toBe(1);
+    expect(result.current.offsetFor('b')).toBe(56);
+    expect(result.current.offsetFor('a')).toBe(0);
+  });
+
+  it('без драга смещений нет; снятая строка забывается', () => {
+    const { result } = renderHook(() =>
+      useDragReorder({ ids, onReorder: vi.fn() }),
+    );
+    act(() => result.current.registerRow('a')(rowEl(40)));
+    expect(result.current.offsetFor('a')).toBe(0);
+    act(() => result.current.registerRow('a')(null));
+    expect(result.current.offsetFor('b')).toBe(0);
   });
 });

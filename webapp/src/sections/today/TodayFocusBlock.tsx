@@ -4,7 +4,8 @@ import { DayShareButton } from '../../share/DayShareButton';
 import { FocusEntrySheet } from './FocusEntrySheet';
 import { TodayFocusCard } from './TodayFocusCard';
 import type { useTodayData } from './useTodayData';
-import { useFocusPractice } from './useTodayFocusPrefs';
+import type { LongPressProps } from '../../../../shared/src/hooks/useLongPress';
+import type { FocusPractice } from '../../../../shared/src/today/todayFocus';
 
 interface Props {
   needs: Need[];
@@ -13,12 +14,16 @@ interface Props {
   data: ReturnType<typeof useTodayData>;
   onOpenTracker: () => void;
   onOpenTrackerHistory?: () => void;
+  /** Главная практика дня и её смена — настройка «Сегодня», общая с мини-аппом. */
+  practice: FocusPractice;
+  onPickPractice: (p: FocusPractice) => void;
+  /** Долгое нажатие на карточку открывает «Настроить экран» с её строкой. */
+  hold?: LongPressProps;
 }
 
 // Фокус-карточка + лист записи выбранного дневника. Считает прогресс трекера из
 // живых оценок и собирает «Поделиться днём» (тот же DayShareButton, что в финале трекера).
-export function TodayFocusBlock({ needs, ratings, data, onOpenTracker, onOpenTrackerHistory }: Props) {
-  const { practice, pickPractice } = useFocusPractice();
+export function TodayFocusBlock({ needs, ratings, data, onOpenTracker, onOpenTrackerHistory, practice, onPickPractice, hold }: Props) {
   const { todayDone, profile, gratitudeToday, reloadDiaries } = data;
   const [entryOpen, setEntryOpen] = useState(false);
   const ratedCount = needs.filter(n => ratings[n.id] !== undefined).length;
@@ -29,13 +34,14 @@ export function TodayFocusBlock({ needs, ratings, data, onOpenTracker, onOpenTra
     <>
       <TodayFocusCard
         practice={practice}
+        hold={hold}
         ratedCount={ratedCount}
         total={needs.length}
         avgScore={avgScore}
         practiceDoneToday={practice !== 'tracker' && todayDone[practice]}
         onAction={() => (practice === 'tracker' ? onOpenTracker() : setEntryOpen(true))}
         onOpenHistory={onOpenTrackerHistory}
-        onPick={pickPractice}
+        onPick={onPickPractice}
         shareSlot={<DayShareButton needs={needs} ratings={ratings} />}
       />
       {entryOpen && practice !== 'tracker' && (

@@ -1,16 +1,16 @@
 import { useCallback, useState } from 'react';
-import { isSecondaryHidden } from '../../../../shared/src/today/todayFocus';
 
 // «Что ещё можно сегодня»: на телефоне потребности, индекс и последние записи
-// свёрнуты под ссылкой, как в мини-аппе. Ключ памяти — тот же, что у мини-аппа
+// свёрнуты под ссылкой, как в мини-аппе (если не выключено в «Настроить
+// экран»). Ключ памяти — тот же, что у мини-аппа
 // (schema-miniapp/src/sections/today/helpers.ts), чтобы выбор был один на оба
 // фронтенда; сверка ключей — todayMore.test.ts.
 export const TODAY_MORE_KEY = 'today_more_open';
 
-/** Раскрыт ли блок при заходе: запомнено «раскрыто» либо выключено «прятать второстепенное». */
-export function initialMoreOpen(): boolean {
+/** Запомнено ли «раскрыто» на этом устройстве. */
+export function readMoreOpen(): boolean {
   try {
-    return localStorage.getItem(TODAY_MORE_KEY) === '1' || !isSecondaryHidden();
+    return localStorage.getItem(TODAY_MORE_KEY) === '1';
   } catch {
     return false;
   }
@@ -27,14 +27,19 @@ export function writeMoreOpen(open: boolean): boolean {
   }
 }
 
-export function useTodayMore() {
-  const [open, setOpen] = useState(initialMoreOpen);
+/**
+ * secondaryHidden — настройка «Что ещё можно сегодня» под сворачиванием
+ * (лист «Настроить экран»). Выключена — блок раскрыт всегда и раскрывашки нет;
+ * включена — раскрытие по ссылке, с памятью на устройстве.
+ */
+export function useTodayMore(secondaryHidden: boolean) {
+  const [userOpen, setUserOpen] = useState(readMoreOpen);
   const toggle = useCallback(() => {
-    setOpen((prev) => {
+    setUserOpen((prev) => {
       const next = !prev;
       writeMoreOpen(next);
       return next;
     });
   }, []);
-  return { open, toggle };
+  return { open: !secondaryHidden || userOpen, collapsible: secondaryHidden, toggle };
 }

@@ -7,9 +7,11 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { act, renderHook } from '@testing-library/react';
 import { useScreenBlocks } from './useScreenBlocks';
 
-vi.mock('../api', () => ({ api: { trackEvent: vi.fn() } }));
-import { api } from '../api';
-const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
+// Транспорт площадки (аналитика, синхронизация) приходит снаружи.
+const trackEvent = vi.fn();
+const onChanged = vi.fn();
+const mockApi = { trackEvent };
+const deps = { api: mockApi, onChanged };
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -21,7 +23,7 @@ afterEach(() => vi.useRealTimers());
 describe('useScreenBlocks — открытие листа', () => {
   it('openByGear открывает лист без подсветки, шлёт via=gear', () => {
     const { result } = renderHook(() =>
-      useScreenBlocks('profile', 'screen_hidden_profile'),
+      useScreenBlocks('profile', 'screen_hidden_profile', deps),
     );
     act(() => result.current.openByGear());
     expect(result.current.sheet).toBe(true);
@@ -34,7 +36,7 @@ describe('useScreenBlocks — открытие листа', () => {
 
   it('openByHold(id) подсвечивает блок, шлёт via=longpress', () => {
     const { result } = renderHook(() =>
-      useScreenBlocks('profile', 'screen_hidden_profile'),
+      useScreenBlocks('profile', 'screen_hidden_profile', deps),
     );
     act(() => result.current.openByHold('streak'));
     expect(result.current.sheet).toBe('streak');
@@ -47,7 +49,7 @@ describe('useScreenBlocks — открытие листа', () => {
 
   it('closeSheet закрывает лист', () => {
     const { result } = renderHook(() =>
-      useScreenBlocks('profile', 'screen_hidden_profile'),
+      useScreenBlocks('profile', 'screen_hidden_profile', deps),
     );
     act(() => result.current.openByGear());
     act(() => result.current.closeSheet());
@@ -56,7 +58,7 @@ describe('useScreenBlocks — открытие листа', () => {
 
   it('долгое нажатие через holdProps(id) открывает лист именно с этим id', () => {
     const { result } = renderHook(() =>
-      useScreenBlocks('profile', 'screen_hidden_profile'),
+      useScreenBlocks('profile', 'screen_hidden_profile', deps),
     );
     act(() => {
       result.current.holdProps('achievements').onPointerDown({
@@ -78,7 +80,7 @@ describe('useScreenBlocks — открытие листа', () => {
 describe('useScreenBlocks — toggle (read-after-write)', () => {
   it('по умолчанию ничего не скрыто', () => {
     const { result } = renderHook(() =>
-      useScreenBlocks('profile', 'screen_hidden_profile'),
+      useScreenBlocks('profile', 'screen_hidden_profile', deps),
     );
     expect(result.current.hidden).toEqual([]);
     expect(result.current.isHidden('streak')).toBe(false);
@@ -86,7 +88,7 @@ describe('useScreenBlocks — toggle (read-after-write)', () => {
 
   it('toggle скрывает блок, пишет localStorage и шлёт screen_block_toggle', () => {
     const { result } = renderHook(() =>
-      useScreenBlocks('profile', 'screen_hidden_profile'),
+      useScreenBlocks('profile', 'screen_hidden_profile', deps),
     );
     act(() => result.current.toggle('streak'));
     expect(result.current.hidden).toEqual(['streak']);
@@ -101,7 +103,7 @@ describe('useScreenBlocks — toggle (read-after-write)', () => {
 
   it('повторный toggle возвращает блок обратно', () => {
     const { result } = renderHook(() =>
-      useScreenBlocks('profile', 'screen_hidden_profile'),
+      useScreenBlocks('profile', 'screen_hidden_profile', deps),
     );
     act(() => result.current.toggle('streak'));
     act(() => result.current.toggle('streak'));
@@ -115,23 +117,23 @@ describe('useScreenBlocks — toggle (read-after-write)', () => {
 
   it('новый рендер хука читает сохранённое (read-after-write)', () => {
     const { result, unmount } = renderHook(() =>
-      useScreenBlocks('profile', 'screen_hidden_profile'),
+      useScreenBlocks('profile', 'screen_hidden_profile', deps),
     );
     act(() => result.current.toggle('heatmap'));
     unmount();
     const { result: second } = renderHook(() =>
-      useScreenBlocks('profile', 'screen_hidden_profile'),
+      useScreenBlocks('profile', 'screen_hidden_profile', deps),
     );
     expect(second.current.hidden).toEqual(['heatmap']);
   });
 
   it('ключи разных экранов не задевают друг друга', () => {
     const { result: profile } = renderHook(() =>
-      useScreenBlocks('profile', 'screen_hidden_profile'),
+      useScreenBlocks('profile', 'screen_hidden_profile', deps),
     );
     act(() => profile.current.toggle('streak'));
     const { result: patterns } = renderHook(() =>
-      useScreenBlocks('patterns', 'screen_hidden_patterns'),
+      useScreenBlocks('patterns', 'screen_hidden_patterns', deps),
     );
     expect(patterns.current.hidden).toEqual([]);
   });
@@ -140,7 +142,7 @@ describe('useScreenBlocks — toggle (read-after-write)', () => {
 describe('useScreenBlocks — порядок (делегирует useScreenBlockOrder)', () => {
   it('orderedIds по умолчанию — порядок реестра экрана', () => {
     const { result } = renderHook(() =>
-      useScreenBlocks('profile', 'screen_hidden_profile'),
+      useScreenBlocks('profile', 'screen_hidden_profile', deps),
     );
     expect(result.current.orderedIds).toEqual([
       'portrait',
@@ -155,7 +157,7 @@ describe('useScreenBlocks — порядок (делегирует useScreenBloc
 
   it('reorder переставляет, персистит в screen_order_profile и шлёт screen_block_move (read-after-write)', () => {
     const { result } = renderHook(() =>
-      useScreenBlocks('profile', 'screen_hidden_profile'),
+      useScreenBlocks('profile', 'screen_hidden_profile', deps),
     );
     let moved = false;
     act(() => {
@@ -173,7 +175,7 @@ describe('useScreenBlocks — порядок (делегирует useScreenBloc
 
   it('reorder на месте (toIndex не меняет позицию) — false, без localStorage и без события', () => {
     const { result } = renderHook(() =>
-      useScreenBlocks('profile', 'screen_hidden_profile'),
+      useScreenBlocks('profile', 'screen_hidden_profile', deps),
     );
     let moved = true;
     act(() => {

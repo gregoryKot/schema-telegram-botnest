@@ -1,0 +1,46 @@
+/* Лист «Настроить экран» (любого экрана: «Сегодня», «Профиль», «Паттерны») (components/customize). Префикс cz-.
+   Сплошные цвета без blur; тумблер — общий .ds-switch, кнопка «Готово» — .ds-btn
+   (тёмная ink-заливка). Группы — карточки со строками, разделёнными линией. */
+.cz-lead { margin-top: var(--space-4); }
+.cz-group { margin: var(--space-20) var(--space-4) var(--space-8); }
+.cz-hint { margin: 0 var(--space-4) var(--space-8); font-size: 12px; line-height: 1.5; color: var(--text-faint); }
+.cz-card {
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-16);
+  overflow: hidden;
+}
+.cz-card.is-hl { background: color-mix(in srgb, var(--accent) 10%, var(--surface)); }
+.cz-card.cz-gap { margin-top: var(--space-16); }
+
+.cz-row {
+  display: flex; align-items: center; gap: var(--space-12);
+  min-height: 56px; padding: var(--space-10) var(--space-16); box-sizing: border-box;
+  color: var(--text); text-align: left; font-family: inherit;
+  -webkit-tap-highlight-color: transparent;
+}
+.cz-card > .cz-row, .cz-card > .cz-block { border-top: 1px solid var(--line); }
+.cz-card > :first-child { border-top: none; }
+.cz-pick {
+  width: 100%; border: none; background: none; cursor: pointer;
+}
+.cz-pick.is-on .cz-title { color: var(--accent); }
+label.cz-row { cursor: pointer; }
+.cz-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: var(--space-2); }
+.cz-title { font-size: 14px; font-weight: 600; line-height: 1.3; }
+.cz-sub { font-size: 12px; color: var(--text-faint); line-height: 1.4; }
+.cz-check { flex-shrink: 0; min-width: var(--space-16); text-align: center; font-size: 15px; font-weight: 800; color: var(--accent); }
+.cz-chev { flex-shrink: 0; margin-left: auto; font-size: 18px; color: var(--text-faint); }
+
+/* Строка блока: подпись + тумблер, справа ручка «≡» (только на телефоне) */
+.cz-block { display: flex; align-items: stretch; background: var(--surface); transition: transform 150ms ease; }
+.cz-block.is-lifted { transition: none; position: relative; z-index: 1; box-shadow: 0 8px 24px rgba(var(--fg-rgb), .18); }
+.cz-block.is-hl { background: color-mix(in srgb, var(--accent) 10%, var(--surface)); }
+.cz-grow { flex: 1; min-width: 0; }
+.cz-handle {
+  width: 44px; min-height: 44px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text-faint); cursor: grab; touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.cz-handle:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+.cz-done { width: 100%; height: 52px; margin-top: var(--space-20); border-radius: 26px; font-size: 16px; }
