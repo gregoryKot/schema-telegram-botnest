@@ -43,7 +43,7 @@ jobs:
   op:
     # Запуск с чужой ветки отсекаем: bootstrap исполняет скрипт из репозитория под root.
     if: github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
       DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
