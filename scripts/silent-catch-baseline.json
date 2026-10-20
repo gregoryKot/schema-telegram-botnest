@@ -5,7 +5,6 @@
   "schema-miniapp/src/useUserFlags.ts": 3,
   "schema-miniapp/src/utils/initDataShape.ts": 1,
   "schema-miniapp/src/utils/onboardingState.ts": 1,
-  "schema-miniapp/src/utils/uiPrefsSync.ts": 1,
   "schema-miniapp/src/utils/webBanner.ts": 1,
   "shared/src/hooks/useYsqTest.ts": 2,
   "shared/src/host/max.ts": 1,
