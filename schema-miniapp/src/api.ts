@@ -12,13 +12,12 @@ import { createRatingApi } from '../../shared/src/api/ratingApi';
 import { createPracticeSessionsApi } from '../../shared/src/api/practiceSessionsApi';
 import { createClientErrorReporter } from '../../shared/src/api/clientErrorReport';
 import { BASE, authedFetch, get, post, postJson, del } from './apiClient';
-import type { UiPrefsPatch } from './utils/uiPrefsSync';
 
 // Типы вынесены в ./apiTypes и ре-экспортируются здесь — импорты потребителей не меняются.
 export * from './apiTypes';
 import type { ClientConceptualization } from './apiTypes';
 import type { ConceptSaveBody } from '../../shared/src/therapy/conceptGraph/conceptSaveBody';
-import type { UserSettings, UserId } from './apiTypes';
+import type { UserId } from './apiTypes';
 
 // Единственная копия — shared/src/api/clientErrorReport.ts (правило №3).
 export const reportClientError = createClientErrorReporter(BASE, 'miniapp');
@@ -40,12 +39,6 @@ export const api = {
   ...ratingApi,
   // Быстрые практики «Здесь и сейчас» — тоже общие (правило №3).
   ...createPracticeSessionsApi(transport),
-
-  // uiPrefs — только мини-апп (utils/uiPrefsSync.ts), тип локальный поверх shared.
-  getSettings: () =>
-    get<UserSettings & { uiPrefs?: UiPrefsPatch | null }>('/api/settings'),
-  updateSettings: (body: Partial<UserSettings> & { uiPrefs?: UiPrefsPatch }) =>
-    post('/api/settings', body),
 
   // Способы входа аккаунта — по ним решается, предлагать ли объединение
   // (missingLinkTarget, shared/src/account/linkTarget.ts). Роут общий с сайтом.

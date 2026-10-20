@@ -6,7 +6,7 @@ import {
 
 // Реестр ключей кастомизации мини-аппа, синхронизируемых с сервером
 // (User.uiPrefs). Парная константа на фронте — SYNCED_PREF_KEYS в
-// schema-miniapp/src/utils/uiPrefsSync.ts (по одному ключу на строку);
+// shared/src/prefs/uiPrefsSync.ts (по одному ключу на строку);
 // сверку держит src/security/ui-prefs-sync.invariants.spec.ts (правило №4 —
 // денормализованный/дублированный реестр под тестом-сверкой).
 export const SYNCED_PREF_KEYS = [
