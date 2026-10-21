@@ -31,7 +31,7 @@ export function BookingForm() {
 
   const field: React.CSSProperties = {
     width: '100%', padding: '14px 16px', fontSize: 15, background: 'rgba(var(--fg-rgb),0.04)', border: '1.5px solid var(--line)',
-    borderRadius: 12, color: 'var(--text)', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box', transition: 'border-color .15s, box-shadow .15s',
+    borderRadius: 'var(--r-12)', color: 'var(--text)', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box', transition: 'border-color .15s, box-shadow .15s',
   };
   const labelSt: React.CSSProperties = { display: 'block', fontSize: 11, fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--text-faint)', marginBottom: 8 };
 

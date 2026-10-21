@@ -485,6 +485,86 @@ describe('setup-merge-drivers --check: атрибут без драйвера н
     );
     expect(res.status).toBe(0);
   });
+
+  // Встроенный union нужен файлам-журналам только на дозапись
+  // (docs/agent/NAV_LOG.md): обе стороны дописали по строке — остаются обе.
+  // Для бейслайна он по-прежнему не годится: нужна семантика храповика.
+  describe('встроенные драйверы git (union, text, binary)', () => {
+    const LOG = 'docs/agent/NAV_LOG.md';
+    const check = (attributes: string, files: Record<string, string> = {}) =>
+      runGate(
+        SETUP,
+        { '.gitattributes': attributes, ...STUBS, ...files },
+        { args: ['--check'] },
+      );
+
+    it.each(['union', 'text', 'binary'])(
+      'merge=%s на небейслайновом файле — без замечаний',
+      (driver) => {
+        const res = check(`${LOG}  merge=${driver}\n`);
+        expect(res.stderr).toBe('');
+        expect(res.status).toBe(0);
+      },
+    );
+
+    it('merge=union на небейслайне рядом с настоящим бейслайном — зелёное', () => {
+      const res = check(`${ATTR}${LOG}  merge=union\n`, {
+        'scripts/foo-baseline.json': '{}',
+      });
+      expect(res.stderr).toBe('');
+      expect(res.status).toBe(0);
+    });
+
+    it('контроль: merge=union на бейслайне по-прежнему красное', () => {
+      const res = check('scripts/foo-baseline.json  merge=union\n', {
+        'scripts/foo-baseline.json': '{}',
+      });
+      expect(res.status).toBe(1);
+      expect(res.stderr).toContain('scripts/foo-baseline.json');
+      expect(res.stderr).toContain('merge=union');
+      expect(res.stderr).toContain('не драйвер репозитория');
+    });
+
+    it('контроль: неизвестное merge=foo на небейслайне по-прежнему красное', () => {
+      const res = check(`${LOG}  merge=foo\n`);
+      expect(res.status).toBe(1);
+      expect(res.stderr).toContain('merge=foo');
+      expect(res.stderr).toContain('нет в scripts/setup-merge-drivers.mjs');
+    });
+
+    it('контроль: встроенное имя не освобождает от проверки соседней строки', () => {
+      const res = check(`${LOG}  merge=union\nsome/file.json  merge=foo\n`);
+      expect(res.status).toBe(1);
+      expect(res.stderr).toContain('merge=foo');
+      expect(res.stderr).not.toContain('merge=union');
+    });
+
+    // Git берёт последнюю подходящую строку: маска с union в конце файла
+    // молча перебила бы ratchet-min точной строки выше. Что именно накрывает
+    // маска, сверка не вычисляет — встроенный драйвер допускается только на
+    // точном пути, и это дешевле и надёжнее разбора глобов.
+    it.each([
+      'scripts/*.json',
+      'scripts/*-baseline.json',
+      '*.json',
+      'e2e-browser/**',
+      'docs/**/*.md',
+      'docs/?.log',
+      'docs/[ab].log',
+    ])('контроль: маска %s с merge=union — красное', (mask) => {
+      const res = check(`${ATTR}${mask}  merge=union\n`, {
+        'scripts/foo-baseline.json': '{}',
+      });
+      expect(res.status).toBe(1);
+      expect(res.stderr).toContain(`.gitattributes: ${mask} merge=union`);
+      expect(res.stderr).toContain('только на точном пути');
+    });
+
+    it('контроль: маска с ratchet-драйвером остаётся законной (catch-all запрещён отдельно)', () => {
+      const res = check('docs/*.json  merge=ratchet-min\n');
+      expect(res.stderr).not.toContain('только на точном пути');
+    });
+  });
 });
 
 describe('настоящее .gitattributes сводит бейслайны, у которых раньше не было атрибута', () => {
@@ -578,6 +658,72 @@ describe('настоящее .gitattributes сводит бейслайны, у 
   // Другая сторона тех же реестров: обе ветки переписали ОДНУ причину —
   // драйвер не выбирает «свою», а отдаёт конфликт человеку. Покрыто выше:
   // «НЕ сводит, когда обе стороны написали разные строки».
+});
+
+describe('настоящее .gitattributes: журнал на дозапись сводится встроенным union', () => {
+  // docs/agent/NAV_LOG.md: каждый PR дописывает строку в хвост, и две ветки от
+  // одного main конфликтуют по построению. Встроенный драйвер git не требует
+  // установки в .git/config — достаточно строки в .gitattributes. Шов — настоящий
+  // .gitattributes репозитория и настоящий git, как у бейслайнов выше.
+  const LOG = 'docs/agent/NAV_LOG.md';
+
+  function twoAppends(withAttributes: boolean) {
+    const tmp = mkdtempSync(join(tmpdir(), 'union-log-'));
+    try {
+      const git = (...args: string[]) =>
+        spawnSync('git', args, { cwd: tmp, encoding: 'utf8' });
+      git('init', '-q', '.');
+      git('config', 'user.email', 'test@example.com');
+      git('config', 'user.name', 'test');
+      mkdirSync(join(tmp, 'docs', 'agent'), { recursive: true });
+      writeFileSync(
+        join(tmp, '.gitattributes'),
+        withAttributes
+          ? readFileSync(join(REAL_SCRIPTS, '..', '.gitattributes'), 'utf8')
+          : '',
+      );
+      writeFileSync(join(tmp, LOG), '# Журнал\n- 2026-10-01 старая запись\n');
+      git('add', '-A');
+      git('commit', '-qm', 'base');
+      const base = git('rev-parse', '--abbrev-ref', 'HEAD').stdout.trim();
+
+      git('checkout', '-qb', 'agent-b');
+      writeFileSync(
+        join(tmp, LOG),
+        '# Журнал\n- 2026-10-01 старая запись\n- 2026-10-02 запись агента B\n',
+      );
+      git('commit', '-qam', 'агент B');
+
+      git('checkout', '-q', base);
+      writeFileSync(
+        join(tmp, LOG),
+        '# Журнал\n- 2026-10-01 старая запись\n- 2026-10-03 запись агента A\n',
+      );
+      git('commit', '-qam', 'агент A');
+
+      const merge = git('merge', 'agent-b', '-m', 'merge');
+      return {
+        status: merge.status,
+        log: readFileSync(join(tmp, LOG), 'utf8'),
+      };
+    } finally {
+      rmSync(tmp, { recursive: true, force: true });
+    }
+  }
+
+  it('с атрибутом: дописанные строки обеих веток остались, конфликта нет', () => {
+    const { status, log } = twoAppends(true);
+    expect(status).toBe(0);
+    expect(log).toContain('запись агента A');
+    expect(log).toContain('запись агента B');
+    expect(log).not.toContain('<<<<<<<');
+  });
+
+  it('контроль: без атрибута та же пара веток конфликтует', () => {
+    const { status, log } = twoAppends(false);
+    expect(status).not.toBe(0);
+    expect(log).toContain('<<<<<<<');
+  });
 });
 
 describe('merge-miniapp-dist: драйвер гасит конфликт, собирает post-merge', () => {
