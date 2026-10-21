@@ -119,6 +119,7 @@
 | Молчаливая деградация merge-драйверов; бейслайн без атрибута в `.gitattributes` (до 2026-10 12 из 37 сводились текстово, `--check` смотрел только «атрибут → драйвер») | `setup-merge-drivers.mjs --check` (`scripts/merge-drivers-check.mjs`): драйвер у каждого `merge=`, строка у каждого `*-baseline.json`, протухшая строка красная; тест на реальном `.gitattributes` и настоящем `git merge` — `src/test-support/gates/merge-drivers.spec.ts` |
 | Сломанный гейт, который молча всё пропускает | тесты в `src/test-support/gates/` |
 | Тело запроса без class-validator DTO (правило №6) | `scripts/check-body-dto.mjs` |
+| Заголовок или allowlist безопасности без сверки с тем, что код реально делает: `Permissions-Policy` не ставил никто, `script-src` пускал `telegram.org` без единого потребителя (аудит 2026-10-11) | `src/security/permissions-policy.ts` + `permissions-policy.invariants.spec.ts` (заголовок через HTTP; запрет функции, которую зовёт фронт, краснеет) и `csp-allowlist.invariants.spec.ts` (источник `script-src`/`connect-src` без потребителя краснеет); `img-src` — в «Что осталось открытым» |
 | Исполняемый код вне `src/` и вне `public/` (`deploy/**`, `scripts/**`) | `scripts/check-unwatched-code.mjs` |
 | Сигнализация без троттлинга (шквал DM = замьюченный чат = ноль алертов) | бюджет в `SecurityLogService` + `scripts/check-alert-throttle.mjs` |
 | Деньги пришли, запись не создалась, и все молчат | алерт во всех трёх диапазонах InvId + табличный тест по ним в `payment.controller.spec.ts` |

@@ -131,7 +131,7 @@ const tyAlt = TY_IMPERATIVES.map(([w]) => bothCase(w)).join('|');
 const vyAlt = TY_IMPERATIVES.map((p) => bothCase(vyForm(p))).join('|');
 
 // Экспорт ради second-person.spec.ts — пинит каждый паттерн живым образцом
-// (как PATTERNS в check-robot-phrases.mjs/check-gendered-forms.mjs).
+// (как PATTERNS в robot-phrases-patterns.mjs/gendered-forms-patterns.mjs).
 export const PATTERNS = [
   [
     'pronoun-ty',

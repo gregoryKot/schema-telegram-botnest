@@ -9,7 +9,8 @@
 //
 // Почему пин, а не гейт на весь `docs/`: просматриваются только ЖИВЫЕ
 // реестры — документы, по которым следующий агент начинает работу:
-// docs/INCIDENTS.md, docs/README.md («Что осталось открытым»),
+// docs/INCIDENTS.md, реестр «Что осталось открытым» (с 2026-10-21 разложен
+// по областям в docs/open/*.md, индекс — docs/README.md),
 // docs/AUDIT_2026-10.md и docs/AUDIT_2026-10_FINDINGS.md. Исторические
 // аудиты (docs/AUDIT_2026-08-12 и соседи, docs/archive/) — записи своего
 // времени: «в этом PR» в них описывает момент написания, и переписывать
@@ -26,10 +27,16 @@
 //
 // Правило №15: у каждого исключения здесь есть образец, который оно гасит, И
 // контрольный образец — похожий, но незаконный случай обязан краснеть.
-import { readFileSync } from 'fs';
+import { readdirSync, readFileSync } from 'fs';
 import { join, resolve } from 'path';
 
 const ROOT = resolve(__dirname, '..', '..', '..');
+
+/** Реестр «Что осталось открытым» по областям: каждый файл docs/open/*.md (правило №26). */
+const OPEN_REGISTRIES = readdirSync(join(ROOT, 'docs', 'open'))
+  .filter((f) => f.endsWith('.md'))
+  .sort()
+  .map((f) => [`docs/open/${f}`, 'Открытое:'] as const);
 
 /** Живые реестры: каждый файл обязан содержать якорь (проверка, что сканируем настоящий текст). */
 const LIVE_REGISTRIES: ReadonlyArray<readonly [file: string, anchor: string]> =
@@ -38,6 +45,7 @@ const LIVE_REGISTRIES: ReadonlyArray<readonly [file: string, anchor: string]> =
     ['docs/README.md', 'Что осталось открытым'],
     ['docs/AUDIT_2026-10.md', 'Глобальный аудит, 2026-10-11'],
     ['docs/AUDIT_2026-10_FINDINGS.md', 'находки по темам'],
+    ...OPEN_REGISTRIES,
   ];
 
 // Цитата внутри «…» — текст находки или чужая формулировка, не указатель.
@@ -74,6 +82,12 @@ function read(rel: string): string {
 }
 
 describe('живые реестры без мёртвых указателей на PR и ветки', () => {
+  // Контроль: пустой docs/open/ (переименовали каталог) молча убрал бы
+  // из скана весь реестр открытого.
+  it('реестр открытого найден: docs/open/*.md не пуст', () => {
+    expect(OPEN_REGISTRIES.length).toBeGreaterThan(0);
+  });
+
   it.each(LIVE_REGISTRIES)(
     '%s: нет «этот PR» без номера и имён веток claude/…',
     (file) => {
