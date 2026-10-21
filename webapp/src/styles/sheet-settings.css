@@ -32,6 +32,11 @@
 /* Раздел-карточка */
 .st-section { display: flex; flex-direction: column; scroll-margin-top: 16px; }
 .st-sec-head { padding-bottom: 8px; border-bottom: 1px solid var(--line); margin-bottom: 4px; }
+.st-sec-title { display: flex; align-items: center; gap: 6px; }
+.st-help-in {
+  display: inline-flex; align-items: center; justify-content: center; border-radius: 50%;
+  background: var(--paper-sunk); color: var(--text-faint); font-size: 11px; font-weight: 700;
+}
 .st-hint { font-size: 12px; color: var(--text-faint); margin-top: 4px; line-height: 1.5; }
 .st-body-block { padding: 12px 0; display: flex; flex-direction: column; gap: 12px; }
 .st-body-block + .st-row, .st-row + .st-body-block { border-top: 1px solid var(--paper-sunk); }
@@ -122,3 +127,28 @@
 .st-body-block > .ds-link { align-self: flex-start; }
 .st-section .ds-link, .st-pause .ds-link { min-height: 44px; display: inline-flex; align-items: center; }
 .ds-link.is-ok { color: var(--ok-ink); }
+
+/* Карточка партнёра в паре (PartnerCard.tsx): индекс дня, недельные бары.
+   Тон индекса (good/mid/low) приходит из shared/src/pair/partnerCard.ts. */
+.st-pc { background: var(--paper-tint); border-radius: 12px; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; }
+.st-pc-top { display: flex; align-items: center; gap: 12px; }
+.st-pc-top > div { flex: 1; min-width: 0; }
+.st-pc-write { flex-shrink: 0; min-height: 44px; display: inline-flex; align-items: center; text-decoration: none; }
+.st-pc-bars { display: flex; gap: 4px; align-items: flex-end; height: 40px; }
+.st-pc-bar { flex: 1; display: flex; flex-direction: column; align-items: center; gap: var(--space-4); }
+.st-pc-bar i { display: block; width: 100%; border-radius: var(--r-4); background: var(--paper-sunk); }
+.st-pc-bar small { font-size: 11px; color: var(--text-sub); }
+.st-pc-tone--good, .st-pc-bar i.st-pc-tone--good { color: var(--accent-green); }
+.st-pc-tone--mid { color: var(--accent-yellow); }
+.st-pc-tone--low { color: var(--accent-red); }
+.st-pc-bar i.st-pc-tone--good { background: var(--accent-green); }
+.st-pc-bar i.st-pc-tone--mid { background: var(--accent-yellow); }
+.st-pc-bar i.st-pc-tone--low { background: var(--accent-red); }
+.st-pc-confirm { display: flex; gap: 8px; }
+.st-pc-confirm .ds-btn { flex: 1; min-height: 44px; height: auto; }
+.st-pc-leave { min-height: 44px; display: inline-flex; align-items: center; }
+.st-need { display: flex; flex-direction: column; gap: var(--space-4); }
+.st-need-name { font-size: 14px; font-weight: 600; color: var(--text); }
+.st-done { width: 100%; height: 52px; margin-top: var(--space-20); border-radius: 26px; font-size: 16px; }
+.st-info-b { color: var(--text); font-weight: 600; }
+.st-steps { margin: 6px 0 0; padding: 0 0 0 20px; display: grid; gap: var(--space-6); font-size: 13px; line-height: 1.6; color: var(--text-sub); }

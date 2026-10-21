@@ -8,6 +8,7 @@
 // цель, которую ты «не выполнил». У тех, что были, — мягкая полоска и «N дн.»
 // как наблюдение, а не оценка. Что не звучало — уходит вниз списка тихо.
 import { pressable } from '../utils/a11y';
+import { dayWord } from '../../../shared/src/pattern/weekPatternText';
 
 export const FREQ_WINDOW = 7;
 
@@ -24,15 +25,6 @@ export interface FreqItem {
 export interface FreqGroup {
   title: string;
   items: FreqItem[];
-}
-
-function dayWord(n: number): string {
-  const m10 = n % 10,
-    m100 = n % 100;
-  if (m100 >= 11 && m100 <= 14) return 'дней';
-  if (m10 === 1) return 'день';
-  if (m10 >= 2 && m10 <= 4) return 'дня';
-  return 'дней';
 }
 
 /** Полоска недельной частоты — переиспользуется карточками «Мои схемы»/«Мои

@@ -4,12 +4,16 @@
 // setShowCheckin(false), а системная «Назад» и Escape закрывали весь справочник
 // вместе с чек-ином. Тест ставит оба листа в реальную связку: настоящий
 // SchemaInfoSheet под хостом, который размонтирует его по onClose.
-import { describe, it, expect, afterEach } from 'vitest';
+import { describe, it, expect, afterEach, vi } from 'vitest';
 import { useEffect, useState } from 'react';
 import { render, screen, fireEvent, cleanup, act } from '@testing-library/react';
 import { MemoryRouter, useNavigate } from 'react-router-dom';
 import { SchemaInfoSheet } from '../SchemaInfoSheet';
 import { AddressFormContext } from '../../utils/addressForm';
+
+// Canvas в jsdom нет — смотрим, с какими данными режим уходит в рисование карточки.
+const drawSchemaCard = vi.hoisted(() => vi.fn());
+vi.mock('../../../../shared/src/share/cards/schemaCard', () => ({ drawSchemaCard }));
 
 const nav: { back: () => void } = { back: () => {} };
 function BackSpy() {
@@ -134,5 +138,38 @@ describe('ModesTab — результат чек-ина', () => {
 
     fireEvent.click(screen.getByText('Давление / «надо больше»'));
     expect(screen.getByText(/Это не ваш голос/)).toBeTruthy();
+  });
+});
+
+describe('ModesTab — «Поделиться» у режима (паритет с мини-аппом)', () => {
+  function openModes() {
+    render(
+      <AddressFormContext.Provider value={{ form: 'ty', setForm: () => {} }}>
+        <MemoryRouter initialEntries={['/schemas']}>
+          <SchemaInfoSheet onClose={() => {}} />
+        </MemoryRouter>
+      </AddressFormContext.Provider>,
+    );
+    fireEvent.click(screen.getByText('Режимы'));
+  }
+
+  it('у каждого режима своя кнопка шаринга', () => {
+    openModes();
+    expect(screen.getAllByRole('button', { name: /^Поделиться режимом/ }).length).toBe(11);
+    expect(screen.getByRole('button', { name: 'Поделиться режимом «Карающий Критик»' })).toBeTruthy();
+  });
+
+  it('тап открывает лист «Карточка режима» и рисует карточку именно этого режима', () => {
+    openModes();
+    fireEvent.click(screen.getByRole('button', { name: 'Поделиться режимом «Карающий Критик»' }));
+    expect(screen.getByText('Карточка режима')).toBeTruthy();
+    expect(drawSchemaCard).toHaveBeenCalled();
+    const [, data] = drawSchemaCard.mock.calls[drawSchemaCard.mock.calls.length - 1];
+    expect(data).toMatchObject({
+      domain: 'Критикующие режимы',
+      name: 'Карающий Критик',
+      footerLabel: 'Режимы',
+    });
+    expect(data.belief).toMatch(/^Чувствуется как: стыд/);
   });
 });

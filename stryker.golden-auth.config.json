@@ -33,7 +33,7 @@
   "htmlReporter": {
     "fileName": "reports/mutation/golden-auth.html"
   },
-  "concurrency": 2,
+  "concurrency": 4,
   "coverageAnalysis": "perTest",
   "ignoreStatic": true,
   "thresholds": {

@@ -22,6 +22,20 @@
 `PerfHud`, `WebBanner`, устаревшие поля `UserFlags` (`themePref`,
 `onboardingV1Done`, `trackerOnboardingDone`, `schemaIntrosShown` и др.).
 
+## Дизайн на телефоне: правило владельца (2026-10-18)
+
+Мини-апп — образец **во всём, кроме цвета**: раскладка, состав и порядок
+блоков, шапки, строки списков, табы, «главное действие в первом экране»,
+трекер в один экран. Цвета — **только нового дизайна сайта**: тёмная (`--ink`)
+нижняя панель, тёмные кнопки и карточки, терракотовая «Одно дело», цветные
+подложки. Терракотовые или светлые замены тёмных элементов «как в мини-аппе»
+запрещены.
+
+Откуда правило: #771–#777 скопировали у мини-аппа и раскладку, и цвета
+(«туши свет» в отзыве владельца прочитано как «слишком тёмное», а значило
+«всё плохо»). Раскладка владельца устроила, цвета — нет; #779 вернул цвета
+нового дизайна поверх новой раскладки, #780 довёл «Сегодня» до мини-аппа.
+
 ## Этапы
 
 Каждый пункт — отдельный PR (правило №20: один инцидент — один PR, здесь тот
@@ -67,7 +81,9 @@
 - [ ] `src/telegram/miniapp-link.ts` строит `https://t.me/<bot>/<app>?startapp=…`
   для приглашений пары и терапевта (код терапевта живёт 7 дней) — решить, куда
   ведёт ссылка после переключения; `MINIAPP_URL` по умолчанию `${APP_URL}/app/`
-  (`telegram.constants.ts:19`) → кабинет.
+  (`telegram.constants.ts:19`) → кабинет. Предложение: ссылку не менять — после
+  шага 2 этапа 5 она открывает кабинет внутри Telegram, а параметр запуска сайт
+  уже разбирает (этап 2). Решение владельца.
 - [x] Первый вход из Telegram: экран согласий («Приватность», «Не терапия») с
   уважением серверного флага `onboardingV2Done` — сейчас согласие молча
   проставляется в `appShell/useBootstrapLoad.ts:58` без дисклеймера.
@@ -76,45 +92,111 @@
 
 Самая заметная потеря при переходе: карточки и сводки, которых на сайте нет.
 
-- [ ] Лист паттерна (схема/режим): портрет-карточка, записи дневника с этим
-  паттерном, справка, шаринг; список «Мои карточки» (мини-апп:
-  `components/patternSheet/*`, `myCards/useMyCards.ts`). На сайте заполненные
-  карточки видны только внутри `FlashcardEx`. M.
-- [ ] «Мой портрет» в профиле (`sections/profile/PortraitCard`, `PortraitSheet`,
-  `useAboutMe`); `buildPortrait` из `shared/src/portrait` на сайте используется
-  только картой себя. M.
-- [ ] Недельная частота паттернов, «паттерн недели», вводные карточки новичка
+- [x] Лист паттерна (схема/режим): портрет-карточка, записи дневника с этим
+  паттерном, справка, шаринг. Сделано: `webapp/src/components/patternSheet/*`
+  (`PatternSheet`, секции карточки/помощи/записей, `ModeAboutSheet`), открывается
+  из `MySchemasBlock` (со статусом строки словами) и чипов «Мои режимы»
+  (`sections/SchemasSection.tsx`). Логика общая с мини-аппом: `shared/src/pattern/`
+  (`patternMeta`, `patternStatus`, `patternHelpContent`, `patternShare`,
+  `useMyCards`, `usePatternStatus`, `usePatternEntryDelete`; `api` приходит
+  инъекцией). Отдельный список «Мои карточки» не нужен: заполненность видна по
+  статусу строки. «Дополнить» открывает `SchemaEx`/`ModeEx` с уже написанным
+  (`initialData`).
+- [x] «Мой портрет» в профиле. Сделано: данные — `shared/src/portrait/useAboutMe.ts`
+  (api инъекцией, сбои через `reportError`; мини-апп — тонкая обёртка
+  `sections/profile/useAboutMe.ts`), тексты и расчёт итога/дельты —
+  `shared/src/portrait/portraitTexts.ts`, порядок строк «Мои схемы/режимы» —
+  `shared/src/pattern/myPatternRows.ts` (мини-апп на нём же). Сайт:
+  `webapp/src/sections/profile/{PortraitCard,PortraitSheet,PortraitNeedRows,PortraitNeedBar,PortraitPatternRows,ProfileAboutBlock}.tsx`;
+  строка списка открывает `PatternSheet` через `usePatternLayer` (частоты и статусы
+  — оттуда же, `statusOf(kind)`). M.
+- [x] Недельная частота паттернов, «паттерн недели», вводные карточки новичка
   (`PatternFrequencyList`, `WeekTopCard`, `PatternsHero`, `ModesHero`,
-  `utils/patternsSummary.ts` → в `shared/`). M.
-- [ ] Карточка партнёра в паре: цвет индекса, недельные бары, «Написать»,
-  подтверждение выхода (`pairSheet/PartnerCard`, `usePairMechanics`); на сайте
-  голая цифра и выход без подтверждения (`settingsSheet/PartnerSection`). M.
-- [ ] S-пробелы: «Мои паттерны» и «Тёплые слова» на профиле; шаринг записи
-  благодарности, «Критик или забота?» и всех достижений (хуки и карточки в
-  `shared/` уже есть); прогресс стрик-цели `task.progress`; переход в трекер и
-  вводная из хаба дневника; `SaveErrorNote` при провале сохранения выбора
-  схем/режимов (сейчас молча `reportClientError`); «Восстановить» версию
-  концептуализации (`ConceptHistoryPanel`); офлайн-плашка на мобильной вёрстке и
-  повтор очереди оценок по событию `online` (сейчас только при старте,
-  `useBootstrapLoad.ts:52`); онбординг трекера (3 карточки); развёрнутое
-  «О приложении» (`aboutData.ts`).
+  `utils/patternsSummary.ts` → в `shared/`). M. Сделано: логика и тексты —
+  `shared/src/pattern/{patternsSummary,weekPatternText}.ts`; сайт —
+  `webapp/src/sections/schemas/{FreqMark,WeekPatternCard,PatternsIntro}.tsx`;
+  мини-апп берёт то же из shared.
+- [x] Карточка партнёра в паре: цвет индекса, недельные бары, «Написать»,
+  подтверждение выхода. Логика одна на оба фронтенда:
+  `shared/src/pair/usePairMechanics.ts` (api инъекцией), `partnerCard.ts`
+  (тон индекса, фразы, столбики), `pairTexts.ts`; сайт —
+  `webapp/src/components/settingsSheet/PartnerCard.tsx` + `PartnerSection.tsx`
+  (старый `usePairSettings` удалён); мини-апп перешёл на shared. M.
+- [x] S-пробелы (мелкие пробелы паритета):
+  - [x] «Мои паттерны» и «Тёплые слова» на профиле: списки схем/режимов — в листе
+    «Мой портрет» (`PortraitPatternRows`), «Тёплые слова» —
+    `webapp/src/sections/profile/WarmWordsCard.tsx` (превью) → готовый экран
+    `WarmWordsEx`.
+  - [x] шаринг записи благодарности (`GratitudeShare`) и «Критик или забота?»
+    (экран «Разобрано», `PhraseCheckShare`); [x] всех достижений
+    (`webapp/src/sections/profile/AchievementsShare.tsx` в `AchievementsDialog`);
+    [ ] из «Прошлых разборов» — см. README.
+  - [x] прогресс стрик-цели `task.progress` (`TaskProgressBar`, расчёт —
+    `shared/src/tasks/taskProgress.ts`, мини-апп на нём же).
+  - [x] переход в трекер из хаба дневника (`DiaryTrackerLink`, текст —
+    `shared/src/diary/diaryTrackerLink.ts`); вводная пустого хаба на сайте уже была.
+  - [x] `SaveErrorNote` при провале сохранения схем/режимов: `useSaveFailure` в
+    `useSchemasData`, плашка в `SchemasSection` (ты/вы).
+  - [x] «Восстановить» версию концептуализации (`ConceptVersionHistory`, поля —
+    `shared/src/therapy/conceptSnapshotRestore.ts`, мини-апп на нём же).
+  - [x] офлайн-плашка на мобильной вёрстке (`OfflineBanner`) и повтор очереди
+    оценок по `online` (`useOutboxFlushOnOnline`).
+  - [x] онбординг трекера, 3 карточки (`TrackerOnboarding`, контент —
+    `shared/src/needs/trackerOnboarding.ts`, мини-апп на нём же).
+  - [x] развёрнутое «О приложении» (`AboutWhy`, контент — `shared/src/about/aboutData.ts`).
 
 ### Этап 4. Ежедневные точки входа
 
-- [ ] Фокус-карточка «Сегодня»: одна главная практика на выбор, «на сегодня
-  всё», «Поделиться днём» (`TodayFocusCard`, `HeroCta`, `utils/todayFocus.ts`). M.
-- [ ] Быстрые действия «+» на телефоне (`FloatingPill`, `plusMenu/*`,
-  `quickActionsRegistry.ts`): разбор случая, трекер, дневники, дыхание,
-  заземление, «Стоп». Палитра ⌘K сайта умеет только навигацию. M.
+- [x] Фокус-карточка «Сегодня»: одна главная практика на выбор, «на сегодня
+  всё», «Поделиться днём». Логика и тексты — `shared/src/today/todayFocus.ts`
+  (ключи localStorage прежние), сайт — `webapp/src/sections/today/`
+  (`TodayFocusBlock`, `TodayFocusCard`, `FocusPicker`, `FocusEntrySheet`,
+  `useTodayFocusPrefs`); скрытие серии — `StreakSlot` в `TodayAside.tsx`.
+- [x] Быстрые действия «+» на телефоне. Реестр, ключи настройки и порядок
+  переехали в `shared/src/quickActions/` (мини-апп берёт оттуда же; общее
+  состояние листа — `usePlusMenuState`). Сайт: кнопка и лист —
+  `webapp/src/components/quickActions/{PlusButton,PlusMenuSheet,QuickActions}.tsx`,
+  оверлеи действий — `QuickActionOverlays.tsx` (состояние в `useOverlays`:
+  `quickAction`, `runQuickAction`), разбор ⇄ карта — общий
+  `caseFlow/CaseFlowHost.tsx` (им же пользуется `CaseEntryBlock`), настройка
+  видимости — `QuickActionCustomizeSheet.tsx` (те же ключи localStorage).
+  Палитра ⌘K показывает те же действия строками. Аналитика — прежние
+  `plus_open`/`plus_action`/`quick_action_toggle`. Не сделано: перестановка
+  пунктов на сайте и синхронизация настройки с сервером — см.
+  `docs/README.md` → «Что осталось открытым».
 
 ### Этап 5. Переключение
 
-- [ ] URL Mini App у бота (BotFather) и у MAX → кабинет сайта; кнопки `web_app`
-  бота → `MINIAPP_URL` указывает на кабинет.
-- [ ] Включить `UNIFIED_FRONTEND=1` в env прода (редирект `/app/*` → `/today`
-  и заглушка `/app/sw.js`).
-- [ ] Неделя-две наблюдения: блок «Вход в мессенджере» в `/stats`, события
-  `auth_rejected`, отчёты `useAuthFailureReport`, `client-errors`.
+Кода не нужно: все кнопки бота (`telegram.keyboards.ts`, `telegram.reply-helpers.ts`,
+`telegram.quiz.service.ts`) и кнопка меню (`setChatMenuButton` при старте,
+`telegram.service.ts`) берут адрес из `MINIAPP_URL`, а ссылки-приглашения
+`t.me/<бот>/<приложение>?startapp=…` (`miniapp-link.ts`) открывают то
+мини-приложение, адрес которого задан в BotFather. Шаги делает владелец в панелях,
+порядок важен: сначала прямые адреса, потом редирект.
+
+- [ ] **1. Amvera, env:** `MINIAPP_URL=https://schemehappens.ru/today`, перезапуск.
+  Кнопки и меню бота ведут прямо в кабинет, без лишнего перехода через `/app/`
+  (кнопка меню переставляется сама при старте). Проверка: в Telegram открыть бота →
+  кнопка меню → должен открыться кабинет и войти без экрана «не удалось войти».
+- [ ] **2. BotFather:** `/myapps` → приложение `MINIAPP_APP_NAME` (по умолчанию
+  `diary`) → Edit Web App URL → `https://schemehappens.ru/today`. Это адрес, который
+  открывают ссылки-приглашения пары и терапевта. Проверка: открыть свою же
+  ссылку-приглашение из «Пары» — должен показаться лист «Присоединиться» (этап 2,
+  `JoinConfirmSheet`), а не мини-апп.
+- [ ] **3. MAX:** в кабинете партнёра MAX тот же адрес мини-приложения
+  `https://schemehappens.ru/today`.
+- [ ] **4. Amvera, env:** `UNIFIED_FRONTEND=1`, перезапуск. Включает 302 `/app/*` →
+  `/today` и заглушку `/app/sw.js`: старые ярлыки на телефоне и кнопки в давних
+  сообщениях бота (адрес вшит в сообщение в момент отправки) попадают в кабинет.
+  Данные запуска Telegram едут во фрагменте `#tgWebAppData`, сервер его не видит,
+  и браузер переносит фрагмент через редирект сам — поэтому шаги 1–2 идут первыми:
+  основной поток входа вообще не проходит через редирект. Проверка: открыть кнопку
+  в старом сообщении бота и старый ярлык — кабинет, вход без ошибки.
+- [ ] **5. Неделя-две наблюдения:** блок «Вход в мессенджере» в `/stats`, события
+  `auth_rejected`, отчёты `useAuthFailureReport`, `client-errors`. Рост отказов
+  входа после шага 4 — сигнал, что фрагмент теряется на каком-то клиенте:
+  откат — `UNIFIED_FRONTEND=0` (302 браузеры не кэшируют), шаги 1–2 при этом
+  остаются в силе.
 
 ### Этап 6. Удаление мини-аппа
 

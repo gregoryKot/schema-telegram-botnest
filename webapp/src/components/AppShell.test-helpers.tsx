@@ -194,7 +194,7 @@ vi.mock('./CommandPalette', () => ({
       navigateDiary: () => p.onNavigate('diary'),
       toggleMode: () => p.onToggleMode?.(),
       openClient: () => p.onOpenClient?.(9),
-      newDiaryEntry: () => p.onNewDiaryEntry?.(),
+      quickTracker: () => p.onQuickAction?.('tracker'),
     }} />
   ),
 }));

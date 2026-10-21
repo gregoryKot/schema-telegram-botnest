@@ -4,6 +4,7 @@ import { haptic } from '../../haptic';
 import { pressable } from '../../utils/a11y';
 import { useTr } from '../../utils/addressForm';
 import { DiaryHubIntro } from './DiaryHubIntro';
+import { DIARY_TRACKER_LINK } from '../../../../shared/src/diary/diaryTrackerLink';
 import { CapsLabel, DiaryPanel, DiaryRow } from './diaryUi';
 import { diaryRowMeta } from './diaryMeta';
 import { plural } from '../../sections/today/helpers';
@@ -156,11 +157,11 @@ export function HomeView({
 
       {onOpenTracker && (
         <>
-          <CapsLabel>Оценить день</CapsLabel>
+          <CapsLabel>{DIARY_TRACKER_LINK.label}</CapsLabel>
           <DiaryPanel>
             <DiaryRow
-              title="Трекер потребностей"
-              desc="Пять базовых потребностей — что сегодня питает, что истощает"
+              title={DIARY_TRACKER_LINK.title}
+              desc={DIARY_TRACKER_LINK.desc}
               meta={
                 lastNeedsDate
                   ? `Последняя отметка · ${fmtAgo(lastNeedsDate)}`

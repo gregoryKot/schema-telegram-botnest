@@ -7,6 +7,7 @@
 // получает поднятый zIndex (см. MyPatternsCard.patternSheetZIndex).
 import { BottomSheet } from '../../components/BottomSheet';
 import { useTr } from '../../utils/addressForm';
+import { portraitTexts } from '../../../../shared/src/portrait/portraitTexts';
 import { MyPatternsCard } from './MyPatternsCard';
 import { PortraitNeedRows } from './PortraitNeedRows';
 import type { AboutMeState } from './useAboutMe';
@@ -50,10 +51,7 @@ export function PortraitSheet({ aboutMe, onOpenPatterns, onClose }: Props) {
               lineHeight: 1.6,
             }}
           >
-            {tr(
-              'Отметь схемы и режимы, которые узнаёшь у себя, — или пройди тест на схемы. Здесь появятся их карточки.',
-              'Отметьте схемы и режимы, которые узнаёте у себя, — или пройдите тест на схемы. Здесь появятся их карточки.',
-            )}
+            {portraitTexts(tr).emptySheet}
           </div>
         )}
 

@@ -5,6 +5,8 @@ import { BadRequestException } from '@nestjs/common';
 import { PricingService } from './pricing.service';
 import { PRICE_MAX } from './price-rules';
 import { SESSION_DEFAULT_PRICE, SESSION_META } from './booking.config';
+import { CURRENCIES, Currency } from './price-region';
+import { DEFAULT_PRICE, SessionOption } from './price-currency';
 
 function makeService(rows: Record<string, string> = {}) {
   const store = new Map(Object.entries(rows));
@@ -189,5 +191,91 @@ describe('PricingService.getOptions', () => {
     expect(s50?.price).toBe(4200);
     const intro = options.find((o) => o.type === SessionType.INTRO_15);
     expect(intro?.price).toBe(SESSION_DEFAULT_PRICE[SessionType.INTRO_15]);
+  });
+});
+
+// Цены по валютам (решение владельца 2026-10-20): RUB 4000, ILS 200, EUR 65,
+// USD 70; рубли — прежний ключ `price:SESSION_50`, прочие — с суффиксом валюты.
+describe('PricingService — цены по валютам', () => {
+  const FOREIGN: Array<[Currency, number]> = [
+    ['ILS', 200],
+    ['EUR', 65],
+    ['USD', 70],
+  ];
+
+  it('дефолты: рубли 4000, шекели 200, евро 65, доллары 70; знакомство бесплатно везде', async () => {
+    const { service } = makeService();
+    expect(await service.getPrice(SessionType.SESSION_50)).toBe(4000);
+    for (const [currency, price] of FOREIGN) {
+      expect(await service.getPrice(SessionType.SESSION_50, currency)).toBe(
+        price,
+      );
+    }
+    for (const c of CURRENCIES) {
+      expect(await service.getPrice(SessionType.INTRO_15, c)).toBe(0);
+      expect(DEFAULT_PRICE[c][SessionType.INTRO_15]).toBe(0);
+    }
+  });
+
+  it.each(FOREIGN)(
+    '%s: ключ с суффиксом валюты, override сильнее дефолта',
+    async (currency) => {
+      const { service, prisma } = makeService({
+        [`price:SESSION_50:${currency}`]: '999',
+      });
+      expect(await service.getPrice(SessionType.SESSION_50, currency)).toBe(
+        999,
+      );
+      expect(prisma.bookingSetting.findUnique).toHaveBeenCalledWith({
+        where: { key: `price:SESSION_50:${currency}` },
+      });
+    },
+  );
+
+  it('валюты не пересекаются: override евро не меняет доллары и рубли', async () => {
+    const { service } = makeService({ 'price:SESSION_50:EUR': '80' });
+    expect(await service.getPrice(SessionType.SESSION_50, 'EUR')).toBe(80);
+    expect(await service.getPrice(SessionType.SESSION_50, 'USD')).toBe(70);
+    expect(await service.getPrice(SessionType.SESSION_50)).toBe(4000);
+  });
+
+  it('мусор в ключе валюты — дефолт этой валюты, а не рублёвый', async () => {
+    const { service } = makeService({ 'price:SESSION_50:ILS': '1e+22' });
+    expect(await service.getPrice(SessionType.SESSION_50, 'ILS')).toBe(200);
+  });
+
+  it('setPrice пишет в ключ валюты; без валюты — в рублёвый ключ', async () => {
+    const { service, store } = makeService();
+    await service.setPrice(SessionType.SESSION_50, 75, 'USD');
+    await service.setPrice(SessionType.SESSION_50, 4500);
+    expect(store.get('price:SESSION_50:USD')).toBe('75');
+    expect(store.get('price:SESSION_50')).toBe('4500');
+    expect(store.has('price:SESSION_50:EUR')).toBe(false);
+  });
+
+  it('границы цены те же для всех валют: платная от 1, потолок PRICE_MAX', async () => {
+    const { service, prisma } = makeService();
+    for (const c of CURRENCIES) {
+      await expect(
+        service.setPrice(SessionType.SESSION_50, 0, c),
+      ).rejects.toThrow('INVALID_PRICE');
+      await expect(
+        service.setPrice(SessionType.SESSION_50, PRICE_MAX + 1, c),
+      ).rejects.toThrow('INVALID_PRICE');
+    }
+    expect(prisma.bookingSetting.upsert).not.toHaveBeenCalled();
+  });
+
+  it('getOptions: price — рубли (как раньше), prices — все валюты с override', async () => {
+    const { service } = makeService({
+      'price:SESSION_50': '4200',
+      'price:SESSION_50:ILS': '210',
+    });
+    const options: SessionOption[] = await service.getOptions();
+    const s50 = options.find((o) => o.type === SessionType.SESSION_50);
+    expect(s50?.price).toBe(4200);
+    expect(s50?.prices).toEqual({ RUB: 4200, ILS: 210, EUR: 65, USD: 70 });
+    const intro = options.find((o) => o.type === SessionType.INTRO_15);
+    expect(intro?.prices).toEqual({ RUB: 0, ILS: 0, EUR: 0, USD: 0 });
   });
 });

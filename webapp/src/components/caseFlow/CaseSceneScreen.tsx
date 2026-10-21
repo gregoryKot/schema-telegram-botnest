@@ -1,4 +1,5 @@
 import { useRef, useState, useEffect } from 'react';
+import { haptic } from '../../haptic';
 import { ExScreen } from '../exercises/ExScreen';
 import { CaseFlowFoot } from './caseFlowUi';
 import {
@@ -95,6 +96,7 @@ export function CaseSceneScreen({
               type="button"
               className="ds-card ds-card--row ds-card--hover ex2-frame"
               onClick={() => {
+                haptic.tap();
                 onPickFrame(frame);
                 setShowFrames(false);
               }}

@@ -18,8 +18,10 @@ import { TwoFactorChallengePage } from './pages/TwoFactorChallengePage';
 import { RecoveryPage } from './pages/RecoveryPage';
 import { AppShell } from './components/AppShell';
 import { CookieBanner } from './components/CookieBanner';
+import { RouteErrorScreen } from './components/RouteErrorScreen';
 import { AddressFormPicker } from './components/AddressFormPicker';
 import { AddressFormProvider } from './utils/AddressFormProvider';
+import { UiPrefsGate } from './components/UiPrefsGate';
 import { LandingPage } from './pages/LandingPage';
 import { ProductLandingPage } from './pages/ProductLandingPage';
 import { PrivacyPage } from './pages/PrivacyPage';
@@ -52,7 +54,7 @@ function RequireAuth() {
   return (
     <AddressFormProvider>
       <AddressFormPicker />
-      <Outlet />
+      <UiPrefsGate><Outlet /></UiPrefsGate>
     </AddressFormProvider>
   );
 }
@@ -147,6 +149,7 @@ const appRoutes = [
 const router = createBrowserRouter([
   {
     element: <Root />,
+    errorElement: <RouteErrorScreen />,
     children: isPersonalSite ? personalRoutes : appRoutes,
   },
 ]);

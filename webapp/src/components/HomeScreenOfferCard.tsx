@@ -1,5 +1,5 @@
-import { getHost } from '../../../shared/src/host';
-import { ADD_ICON_HOP_URL, buildHomeScreenHint } from '../../../shared/src/host/homeScreen';
+import { buildHomeScreenHint } from '../../../shared/src/host/homeScreen';
+import { AddHomeScreenButton } from '../../../shared/src/host/AddHomeScreenButton';
 import { useHomeScreenOffer } from '../hooks/useHomeScreenOffer';
 import { useTr } from '../utils/addressForm';
 import '../styles/sheet-tasks.css';
@@ -21,22 +21,9 @@ export function HomeScreenOfferCard() {
         {buildHomeScreenHint(offer.platform, tr)}
       </p>
       <div className="sk-case-actions">
-        {offer.platform === 'ios' ? (
-          // iOS: настоящая ссылка — openLink и нативный вызов там молча не срабатывают
-          // (подробности в мини-аппе, AddHomeScreenButton).
-          <a className="ds-btn" href={ADD_ICON_HOP_URL} target="_blank" rel="noopener noreferrer" onClick={offer.noteAddTriggered}>
-            Добавить значок
-          </a>
-        ) : (
-          <button
-            type="button"
-            className="ds-btn"
-            // Нативный вызов первым, в жесте; побочные действия после.
-            onClick={() => { getHost().homeScreen.add(); offer.noteAddTriggered(); }}
-          >
-            Добавить значок
-          </button>
-        )}
+        <AddHomeScreenButton className="ds-btn" onActivated={offer.noteAddTriggered}>
+          Добавить значок
+        </AddHomeScreenButton>
       </div>
       <div className="sk-case-actions">
         <button type="button" className="ds-link sk-case-map" onClick={offer.later}>Позже</button>

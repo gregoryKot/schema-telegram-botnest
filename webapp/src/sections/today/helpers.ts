@@ -13,6 +13,12 @@ export function greeting(): string {
   return 'Доброй ночи';
 }
 
+// Приветствие на телефоне — как в мини-аппе: «Привет» без времени суток
+// (одинаково звучит на «ты» и на «вы»).
+export function phoneGreeting(firstName: string): string {
+  return firstName ? `Привет, ${firstName}` : 'Добро пожаловать';
+}
+
 export function formatHeaderDate(): string {
   const now = new Date();
   const dow  = now.toLocaleDateString('ru-RU', { weekday: 'long' });

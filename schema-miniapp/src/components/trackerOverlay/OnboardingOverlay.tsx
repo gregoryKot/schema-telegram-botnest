@@ -1,4 +1,8 @@
 import { useTr } from '../../utils/addressForm';
+import {
+  buildTrackerOnboardingSteps,
+  TRACKER_ORIGIN_NOTE,
+} from '../../../../shared/src/needs/trackerOnboarding';
 
 // Онбординг-карточка трекера (3 шага). Вынесено из TrackerOverlay.tsx
 // (правило №10). Строки шагов с обращением — через tr().
@@ -9,25 +13,7 @@ import { useTr } from '../../utils/addressForm';
 // Поэтому строка происхождения стоит НАД тремя шагами, а не внутри одного:
 // человек прочтёт её, на каком бы шаге ни закрыл карточку. Формулировка
 // безличная — обе формы обращения звучат одинаково.
-export const buildOnboardingSteps = (
-  tr: (ty: string, vy: string) => string,
-) => [
-  {
-    emoji: '👆',
-    title: tr('Оценивай действия', 'Оценивайте действия'),
-    text: 'Не «я вроде чувствую», а конкретные моменты. Тап по дуге или +/−.',
-  },
-  {
-    emoji: '💡',
-    title: tr('Нажми на название', 'Нажмите на название'),
-    text: 'Там вопрос для рефлексии, примеры и диапазоны оценки.',
-  },
-  {
-    emoji: '📊',
-    title: 'Паттерн — через 3–5 дней',
-    text: 'Всё сохраняется. Динамика появится в разделе «История».',
-  },
-];
+export const buildOnboardingSteps = buildTrackerOnboardingSteps;
 
 export function OnboardingOverlay({
   onbStep,
@@ -59,8 +45,7 @@ export function OnboardingOverlay({
             marginBottom: 10,
           }}
         >
-          Пять базовых эмоциональных потребностей — из схема-терапии: считается,
-          что схемы формируются там, где их систематически не хватало.
+          {TRACKER_ORIGIN_NOTE}
         </div>
         <div style={{ display: 'flex', gap: 5, marginBottom: 10 }}>
           {onbSteps.map((_, i) => (

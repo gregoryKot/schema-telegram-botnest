@@ -21,6 +21,24 @@ describe('SetPriceDto', () => {
     ).resolves.toEqual([]);
   });
 
+  it.each(['RUB', 'ILS', 'EUR', 'USD'])(
+    'валюта %s проходит',
+    async (currency) => {
+      await expect(
+        errorsFor(SetPriceDto, { type: 'SESSION_50', amount: 70, currency }),
+      ).resolves.toEqual([]);
+    },
+  );
+
+  it.each(['GBP', 'usd', '', 70])(
+    'неизвестная валюта %p — отказ',
+    async (currency) => {
+      await expect(
+        errorsFor(SetPriceDto, { type: 'SESSION_50', amount: 70, currency }),
+      ).resolves.toContain('currency');
+    },
+  );
+
   it('неизвестный тип сессии — отказ', async () => {
     await expect(
       errorsFor(SetPriceDto, { type: 'FREE_FOREVER', amount: 0 }),

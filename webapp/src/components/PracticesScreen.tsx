@@ -6,6 +6,7 @@ import type { UserPractice } from '../api';
 import { useAsyncData } from '../hooks/useAsyncData';
 import { Loader } from './Loader';
 import { useHistorySheet } from '../hooks/useHistorySheet';
+import { useConfirmTap } from '../../../shared/src/hooks/useConfirmTap';
 import { useTr } from '../utils/addressForm';
 import { useNeedData } from '../needData';
 import { pressable } from '../utils/a11y';
@@ -79,6 +80,9 @@ export function PracticesScreen({ onClose, onOpenTracker }: Props) {
     });
   }
 
+  // Удаление двумя тапами (как в мини-аппе): первый — «Точно удалить?», второй стирает.
+  const { tap: tapDelete, isPending: deletePending } = useConfirmTap<number>(handleDelete);
+
   const needId = NEED_IDS[needIdx];
   const todayScore = ratings[needId];
   const isLow = todayScore !== undefined && todayScore <= 4;
@@ -145,8 +149,8 @@ export function PracticesScreen({ onClose, onOpenTracker }: Props) {
               {practices.map(p => (
                 <div key={p.id} className="ds-card ds-card--row sk-practice">
                   <div className="sk-practice-text">{p.text}</div>
-                  <button onClick={() => handleDelete(p.id as number)} className="ds-link sk-danger">
-                    удалить
+                  <button onClick={() => tapDelete(p.id as number)} className="ds-link sk-danger">
+                    {deletePending(p.id as number) ? 'Точно удалить?' : 'удалить'}
                   </button>
                 </div>
               ))}

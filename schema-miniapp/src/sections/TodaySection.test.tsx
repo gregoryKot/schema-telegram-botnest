@@ -17,7 +17,7 @@ import {
 import { setHost, createWebHost } from '../../../shared/src/host';
 import { TodaySection } from './TodaySection';
 import { TODAY_MORE_KEY } from './today/helpers';
-import { setSecondaryHidden } from '../utils/todayFocus';
+import { setSecondaryHidden } from '../../../shared/src/today/todayFocus';
 import { ONBOARDING_DONE_KEY } from './today/onboardingSteps';
 import { forEachTimeZoneAsync } from '../../../shared/src/utils/timeZone.test-helpers';
 

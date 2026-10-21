@@ -5,13 +5,12 @@ import { JoinCodeView } from './JoinCodeView';
 import { usePairTexts } from './inviteTexts';
 import { miniappDeepLink } from '../../utils/botConfig';
 import { useCopyToClipboard } from '../../../../shared/src/utils/useCopyToClipboard';
-import type { PairMechanics } from './usePairMechanics';
+import type { PairMechanics } from '../../../../shared/src/pair/usePairMechanics';
 
-// Единственная разметка механики «пара с другом» (правило №11 CLAUDE.md) —
-// раньше была написана дважды (PairSheet.tsx как отдельный экран,
-// PartnerSection.tsx как секция настроек). Логика/состояние приходят
-// пропом `pair` (usePairMechanics), сюда — только рендер. `compact` подстраивает
-// только размеры скелетона под тесную карточку настроек, остального не трогает.
+// Единственная разметка механики «пара с другом» (правило №11 CLAUDE.md):
+// раньше была написана дважды (PairSheet.tsx, PartnerSection.tsx). Логика
+// приходит пропом `pair` (shared usePairMechanics), сюда — только рендер.
+// `compact` меняет лишь размеры скелетона под тесную карточку настроек.
 export function PairPanel({
   pair,
   compact,
@@ -19,7 +18,7 @@ export function PairPanel({
   pair: PairMechanics;
   compact?: boolean;
 }) {
-  const { tr, inviteText, copyLabel } = usePairTexts();
+  const { tr, inviteText, copyLabel, pendingLabel } = usePairTexts();
   const pendingCopy = useCopyToClipboard();
   const inviteCopy = useCopyToClipboard();
   const {
@@ -89,13 +88,14 @@ export function PairPanel({
           confirmLeaveCode={confirmLeaveCode}
           setConfirmLeaveCode={setConfirmLeaveCode}
           onLeave={handleLeave}
+          leaveError={pair.leaveError}
         />
       ))}
 
       {data.pendingCode && (
         <div className="u-mb12">
           <InviteLinkBox
-            label="⏳ Ждём партнёра"
+            label={pendingLabel}
             url={pendingUrl}
             copied={pendingCopy.copied}
             failed={pendingCopy.failed}

@@ -13,21 +13,27 @@ import { useTaskActions } from './today/useTaskActions';
 import { CrisisBlock } from './practice/CrisisBlock';
 import { HereAndNowBlock } from './practice/HereAndNowBlock';
 import { PracticeTopRow, HERE_BLOCK_ID, HELP_BLOCK_ID } from './practice/PracticeTopRow';
+import { PracticeHeader } from './practice/PracticeHeader';
+import { PhoneHelpRows } from './practice/PhoneHelpRows';
+import { useIsMobile } from '../components/useIsMobile';
 import { ExerciseLibrary } from './practice/ExerciseLibrary';
 import { TaskRow } from './practice/TaskRow';
 import { AllGoalsOverlay } from './practice/AllGoalsOverlay';
 import { useExerciseStats } from './practice/useExerciseStats';
+import { useCatalogCounts } from './practice/catalogCounts';
+import { usePracticeTools } from './practice/usePracticeTools';
+import { CatalogsBlock } from './practice/CatalogsBlock';
 import type { ExId } from './practice/exerciseLibrary';
 import { pluralRu as plural } from '../../../shared/src/utils/pluralRu';
 import { todayCalendarDate } from '../../../shared/src/utils/calendarDate';
 import '../styles/client-practice.css';
 
+const ToolsCustomizeSheet = lazy(() => import('../components/quickActions/ToolsCustomizeSheet').then(m => ({ default: m.ToolsCustomizeSheet })));
 const BeliefCheckEx    = lazy(() => import('../components/exercises/BeliefCheckEx').then(m => ({ default: m.BeliefCheckEx })));
 const SchemaEx         = lazy(() => import('../components/exercises/FlashcardEx').then(m => ({ default: m.SchemaEx })));
 const ModeEx           = lazy(() => import('../components/exercises/FlashcardEx').then(m => ({ default: m.ModeEx })));
 const LetterEx         = lazy(() => import('../components/exercises/LetterEx').then(m => ({ default: m.LetterEx })));
 const SafePlaceEx      = lazy(() => import('../components/exercises/SafePlaceEx').then(m => ({ default: m.SafePlaceEx })));
-const ChildhoodWheelEx = lazy(() => import('../components/exercises/ChildhoodWheelEx').then(m => ({ default: m.ChildhoodWheelEx })));
 const WarmWordsEx      = lazy(() => import('../components/exercises/WarmWordsEx').then(m => ({ default: m.WarmWordsEx })));
 const PhraseCheckEx    = lazy(() => import('../components/exercises/PhraseCheckEx').then(m => ({ default: m.PhraseCheckEx })));
 
@@ -44,12 +50,14 @@ interface Props {
 
 export function PracticeSection({ onOpenChildhoodWheel, onOpenPractices, onOpenPlans, onOpenTracker, onOpenDiaries, onOpenSchema, refreshKey, onTasksChanged }: Props) {
   const tr = useTr();
+  const phone = useIsMobile();
   const location = useLocation();
   const childhoodDone = !!localStorage.getItem(CHILDHOOD_DONE_KEY);
 
   const [openEx,         setOpenEx]         = useState<ExId | null>(null);
   const [schemaInitialId, setSchemaInitialId] = useState<string | undefined>(undefined);
   const stats = useExerciseStats();
+  const catalog = useCatalogCounts();
   const [showFlashcard,  setShowFlashcard]  = useState(false);
   const [_introSchemaId, _setIntroSchemaId] = useState<string | null>(null);
   const [introModeId,    setIntroModeId]    = useState<string | null>(null);
@@ -58,6 +66,10 @@ export function PracticeSection({ onOpenChildhoodWheel, onOpenPractices, onOpenP
   const [showAllGoals,   setShowAllGoals]   = useState(false);
   const { tasks, taskHistory, taskError, completeTask, afterCreate } = useTaskActions(refreshKey, 'practice.tasks');
   const [relation,       setRelation]       = useState<TherapyRelationInfo | null | undefined>(undefined);
+  const [showCustomize,  setShowCustomize]  = useState(false);
+  const { tools, cards, catalogRows } = usePracticeTools({
+    goalsCount: tasks.filter(t => t.assignedBy === null).length, catalog, childhoodDone, onOpenPractices, onOpenPlans,
+  });
 
   // Detect openSchemaEx state from navigation
   useEffect(() => {
@@ -123,7 +135,6 @@ export function PracticeSection({ onOpenChildhoodWheel, onOpenPractices, onOpenP
         {openEx === 'mode'   && <ModeEx onBack={onBack} onComplete={handleTaskComplete} />}
         {openEx === 'letter' && <LetterEx onBack={onBack} onComplete={handleTaskComplete} />}
         {openEx === 'safe'   && <SafePlaceEx onBack={onBack} onComplete={handleTaskComplete} />}
-        {openEx === 'wheel'  && <ChildhoodWheelEx onBack={onBack} />}
         {openEx === 'warm'   && <WarmWordsEx onBack={onBack} />}
         {openEx === 'phrase' && <PhraseCheckEx onBack={onBack} onComplete={handleTaskComplete} />}
       </Suspense>
@@ -136,30 +147,25 @@ export function PracticeSection({ onOpenChildhoodWheel, onOpenPractices, onOpenP
   );
 
   const therapistTasks = tasks.filter(t => t.assignedBy !== null && !t.doneToday);
-  const myGoals        = tasks.filter(t => t.assignedBy === null  && !t.doneToday);
+  // Серия, сделанная сегодня, остаётся в списке серой (как в мини-аппе), а не пропадает до завтра.
+  const myGoals        = tasks.filter(t => t.assignedBy === null);
 
   return (
-    <div className="ds-page cp-page animate-fade">
+    <div className={'ds-page cp-page animate-fade' + (phone ? ' cp-page--phone' : '')}>
 
-      <div>
-        <div className="ds-eyebrow">Практика</div>
-        <h1 className="ds-h1">Упражнения <i>и задания</i></h1>
-        <p className="ds-sub" style={{ fontSize: 15, marginTop: 12 }}>
-          {tr('Восемь практик схема-терапии плюс твои личные цели.', 'Восемь практик схема-терапии плюс ваши личные цели.')}
-        </p>
-        {sessionBanner && (
-          <div className="ds-sub" style={{ marginTop: 8, color: sessionBanner.isToday ? 'var(--ok-ink)' : undefined }}>
-            {sessionBanner.isToday ? '● Сегодня встреча' : `Следующая встреча: ${sessionBanner.label}`}
-            {sessionBanner.partnerName && <span> · с {sessionBanner.partnerName}</span>}
-          </div>
-        )}
-      </div>
+      <PracticeHeader phone={phone} banner={sessionBanner} onCustomize={() => setShowCustomize(true)} />
 
-      <PracticeTopRow onCrisis={() => setShowFlashcard(true)} />
-
-      <div id={HERE_BLOCK_ID} className="cp-block"><HereAndNowBlock /></div>
-
-      <div id={HELP_BLOCK_ID} className="cp-block"><CrisisBlock /></div>
+      {phone ? (
+        <div id={HERE_BLOCK_ID} className="cp-block">
+          <HereAndNowBlock compact extraRows={<PhoneHelpRows onSteps={tools.isShown('flashcard') ? () => setShowFlashcard(true) : undefined} />} />
+        </div>
+      ) : (
+        <>
+          <PracticeTopRow onCrisis={tools.isShown('flashcard') ? () => setShowFlashcard(true) : undefined} />
+          <div id={HERE_BLOCK_ID} className="cp-block"><HereAndNowBlock /></div>
+          <div id={HELP_BLOCK_ID} className="cp-block"><CrisisBlock /></div>
+        </>
+      )}
 
       {(therapistTasks.length > 0 || taskError) && (
         <section className="cp-block">
@@ -180,7 +186,12 @@ export function PracticeSection({ onOpenChildhoodWheel, onOpenPractices, onOpenP
         </section>
       )}
 
-      <ExerciseLibrary stats={stats} onOpen={id => { setSchemaInitialId(undefined); setOpenEx(id); }} />
+      <ExerciseLibrary
+        phone={phone}
+        stats={stats}
+        items={cards}
+        onOpen={id => { if (id === 'wheel') { onOpenChildhoodWheel(); return; } setSchemaInitialId(undefined); setOpenEx(id); }}
+      />
 
       <section className="cp-block">
         <div className="ds-head-row"><h3 className="ds-h2">В трудный момент</h3></div>
@@ -188,18 +199,17 @@ export function PracticeSection({ onOpenChildhoodWheel, onOpenPractices, onOpenP
           {[
             { label: 'Тест на схемы',   sub: tr('116 вопросов, 20 шкал схем – узнай свои паттерны', '116 вопросов, 20 шкал схем – узнайте свои паттерны'),   onClick: () => onOpenSchema?.({ startTest: true }) },
             { label: 'Карта режимов',   sub: tr('Найди Уязвимого Ребёнка, Критика, Защитника', 'Найдите Уязвимого Ребёнка, Критика, Защитника'),         onClick: () => onOpenSchema?.({ tab: 'modes' }) },
-            { label: 'Колесо детства',  sub: 'Как удовлетворялись потребности в детстве',           onClick: onOpenChildhoodWheel, done: childhoodDone },
           ].map(item => (
             <div key={item.label} className="ds-card ds-card--hover cp-tool" {...pressable(item.onClick)}>
               <div className="cp-tool-title">{item.label}</div>
               <div className="cp-tool-sub">{item.sub}</div>
-              <span className="ds-link">{'done' in item && item.done ? 'открыть →' : 'начать →'}</span>
+              <span className="ds-link">начать →</span>
             </div>
           ))}
         </div>
       </section>
 
-      <section className="cp-block">
+      {tools.isShown('tasks') && <section className="cp-block">
         <div className="ds-head-row">
           <h3 className="ds-h2">Мои цели</h3>
           <span className="ds-sub">{myGoals.length === 0 ? 'нет активных' : `${myGoals.length} активных`}</span>
@@ -211,7 +221,7 @@ export function PracticeSection({ onOpenChildhoodWheel, onOpenPractices, onOpenP
         ) : (
           <div className="cp-tasks">
             {myGoals.slice(0, 4).map(task => (
-              <TaskRow key={task.id} task={task} cta="открыть →" onOpen={() => openTask(task)} />
+              <TaskRow key={task.id} task={task} cta="открыть →" onOpen={() => openTask(task)} onComplete={() => completeTask(task.id as number, onTasksChanged)} />
             ))}
           </div>
         )}
@@ -221,27 +231,12 @@ export function PracticeSection({ onOpenChildhoodWheel, onOpenPractices, onOpenP
             <span className="ds-link" {...pressable(() => setShowAllGoals(true))}>все цели →</span>
           )}
         </div>
-      </section>
+      </section>}
 
-      <section className="cp-block">
-        <div className="ds-head-row"><h3 className="ds-h2">Каталоги</h3></div>
-        <div className="cp-tasks">
-          {[
-            { label: 'Практики',  sub: 'Рекомендованные упражнения по потребностям', onClick: onOpenPractices },
-            { label: 'Планы',     sub: 'Планы поддержки и кризисов',                  onClick: onOpenPlans },
-          ].map(item => (
-            <div key={item.label} className="ds-card ds-card--row ds-card--hover cp-task" {...pressable(item.onClick)}>
-              <div className="cp-task-body">
-                <div className="cp-task-title">{item.label}</div>
-                <div className="ds-sub">{item.sub}</div>
-              </div>
-              <span className="ds-link">открыть →</span>
-            </div>
-          ))}
-        </div>
-      </section>
+      <CatalogsBlock rows={catalogRows} />
 
       {/* Overlays */}
+      {showCustomize && <Suspense fallback={null}><ToolsCustomizeSheet tools={tools} onClose={() => setShowCustomize(false)} /></Suspense>}
       {showFlashcard && <SchemaFlashcard onClose={() => setShowFlashcard(false)} onOpenTracker={onOpenTracker} onComplete={handleTaskComplete} />}
       {showTaskCreate && (
         <TaskCreateSheet
@@ -255,6 +250,7 @@ export function PracticeSection({ onOpenChildhoodWheel, onOpenPractices, onOpenP
           taskHistory={taskHistory}
           onClose={() => setShowAllGoals(false)}
           onOpen={t => { setShowAllGoals(false); openTask(t); }}
+          onComplete={t => completeTask(t.id as number, onTasksChanged)}
           onAdd={() => { setShowAllGoals(false); setShowTaskCreate(true); }}
         />
       )}

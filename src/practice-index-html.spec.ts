@@ -49,17 +49,17 @@ describe('главная визитки kotlarewski.gr', () => {
 
   it('og:image и twitter:image — с собственного домена, не с CDN', () => {
     expect(meta('property', 'og:image')).toBe(
-      'https://kotlarewski.gr/og-cover-v3.jpg',
+      'https://kotlarewski.gr/og-cover-v4.jpg',
     );
     expect(meta('name', 'twitter:image')).toBe(
-      'https://kotlarewski.gr/og-cover-v3.jpg',
+      'https://kotlarewski.gr/og-cover-v4.jpg',
     );
     expect(html).not.toContain('jsdelivr');
   });
 
   it('файл обложки лежит в public и его размер совпадает с og:image:width/height', () => {
     const size = jpegSize(
-      readFileSync(join(WEBAPP, 'public', 'og-cover-v3.jpg')),
+      readFileSync(join(WEBAPP, 'public', 'og-cover-v4.jpg')),
     );
     expect(size).toEqual({ width: 1200, height: 630 });
     expect(meta('property', 'og:image:width')).toBe(String(size.width));

@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useId } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { markSheetOpen } from './openSheets';
 import { PAGE_LIFE, backDepth, pushSheetState, sheetStackOf } from './historySheetStack';
 
 /**
@@ -55,7 +56,9 @@ export function useHistorySheet(onClose: () => void) {
 
   useEffect(() => {
     openSheetIds.push(id);
+    const unmark = markSheetOpen(id);
     return () => {
+      unmark();
       const idx = openSheetIds.lastIndexOf(id);
       if (idx !== -1) openSheetIds.splice(idx, 1);
     };

@@ -5,9 +5,30 @@
 // оказаться в values/emotions/schemaIds) и переключатели чипов.
 import { describe, it, expect, vi } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
-import { useSchemaDiaryDraftState } from './useSchemaDiaryDraftState';
+import {
+  useSchemaDiaryDraftState,
+  hasSchemaDiaryDraft,
+} from './useSchemaDiaryDraftState';
 
 const haptic = () => ({ select: vi.fn() });
+
+describe('hasSchemaDiaryDraft', () => {
+  it('нет черновика или он пустой/из пробелов — false', () => {
+    expect(hasSchemaDiaryDraft(null)).toBe(false);
+    expect(hasSchemaDiaryDraft(undefined)).toBe(false);
+    expect(
+      hasSchemaDiaryDraft({ trigger: '   ', emotions: [], schemaIds: [] }),
+    ).toBe(false);
+  });
+
+  it('текст, чувство или схема — true', () => {
+    expect(hasSchemaDiaryDraft({ trigger: 'Молчание' })).toBe(true);
+    expect(
+      hasSchemaDiaryDraft({ emotions: [{ id: 'fear', intensity: 3 }] }),
+    ).toBe(true);
+    expect(hasSchemaDiaryDraft({ schemaIds: ['abandonment'] })).toBe(true);
+  });
+});
 
 describe('useSchemaDiaryDraftState — инициализация', () => {
   it('без черновика — все поля пустые строки, emotions/schemaIds пустые', () => {

@@ -189,3 +189,26 @@ describe('CommandPalette — фон', () => {
     expect(onClose).toHaveBeenCalled();
   });
 });
+
+describe('CommandPalette — быстрые действия («+» на телефоне)', () => {
+  it('показывает действия общего реестра и зовёт onQuickAction с id', () => {
+    const onQuickAction = vi.fn();
+    const onClose = vi.fn();
+    renderPalette({ onQuickAction, onClose });
+    fireEvent.click(screen.getByText('Дыхание 4-4-6'));
+    expect(onQuickAction).toHaveBeenCalledWith('breathing');
+    expect(onClose).toHaveBeenCalled();
+  });
+
+  it('действия находятся поиском по названию группы и подписи', () => {
+    renderPalette();
+    fireEvent.change(screen.getByPlaceholderText('Найти клиента, страницу или действие…'), { target: { value: 'успокоиться' } });
+    expect(screen.getByText('Техника «Стоп»')).toBeTruthy();
+    expect(screen.queryByText('Трекер потребностей')).toBeNull();
+  });
+
+  it('в кабинете терапевта клиентских действий нет', () => {
+    renderPalette({ therapistMode: true });
+    expect(screen.queryByText('Дыхание 4-4-6')).toBeNull();
+  });
+});

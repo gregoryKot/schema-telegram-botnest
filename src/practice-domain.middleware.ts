@@ -56,7 +56,7 @@ export { PRACTICE_API_PREFIXES, PRACTICE_PAGES, PRACTICE_PAGE_PREFIXES };
 const stripTrailingSlash = (path: string): string =>
   path.length > 1 && path.endsWith('/') ? path.slice(0, -1) : path;
 
-// Бандл SPA и иконки визитки (`/assets/index.js`, `/favicon-personal-32.png`)
+// Бандл SPA и иконки визитки (`/assets/index.js`, `/favicon-personal-96.png`)
 // узнаются по точке в последнем сегменте пути.
 const isStaticAsset = (path: string): boolean =>
   path.slice(path.lastIndexOf('/') + 1).includes('.');

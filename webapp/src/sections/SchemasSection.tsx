@@ -1,19 +1,26 @@
-import { useState, lazy, Suspense } from 'react';
+import { useEffect, useState } from 'react';
+import { useIsMobile } from '../components/useIsMobile';
 import { SchemaPickerSheet } from '../components/SchemaPickerSheet';
 import { ModePickerSheet } from '../components/ModePickerSheet';
 import { SchemaDetailSheet } from '../components/SchemaDetailSheet';
 import { NeedDetailSheet } from '../components/NeedDetailSheet';
 import '../styles/client-schemas.css';
 import { useSchemasData } from './schemas/useSchemasData';
-import { ExpressedCard } from './schemas/ExpressedCard';
-import { YsqTestCard } from './schemas/YsqTestCard';
-import { MySchemasBlock } from './schemas/MySchemasBlock';
-import { SchemaMap } from './schemas/SchemaMap';
-import { ModesBlocks } from './schemas/ModesBlocks';
+import { SaveErrorNote } from '../components/SaveErrorNote';
+import { PatternsModesPane } from './schemas/PatternsModesPane';
 import { ModeMapBanner, MyModeMapSheet } from './schemas/ModeMapBanner';
 import { NeedsBlock } from './schemas/NeedsBlock';
-
-const ModeEx = lazy(() => import('../components/exercises/FlashcardEx').then(m => ({ default: m.ModeEx })));
+import { usePatternLayer } from './schemas/usePatternLayer';
+import { PatternsTopCards } from './schemas/PatternsTopCards';
+import { PatternsTopStack } from './schemas/PatternsTopStack';
+import { ModesTopCards } from './schemas/ModesTopCards';
+import { INTRO_MODE_ID } from '../../../shared/src/pattern/weekPatternText';
+import { ScreenCustomizeHost } from '../components/customize/ScreenCustomizeHost';
+import { useScreenBlocks } from '../components/customize/useScreenBlocks';
+import { PatternsSchemasPane } from './schemas/PatternsSchemasPane';
+import { PatternsHeader } from './schemas/PatternsHeader';
+import { PatternsTabsBar } from './schemas/PatternsTabsBar';
+import { readStoredTab, visibleBlocks, writeStoredTab } from './schemas/patternsTab';
 
 interface Props {
   onOpenSchema: (opts?: { startTest?: boolean; tab?: 'needs'|'schemas'|'modes'; highlight?: string }) => void;
@@ -23,46 +30,62 @@ interface Props {
 
 export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChildhoodWheel }: Props) {
   const d = useSchemasData();
+  const blocks = useScreenBlocks('patterns');
   const [showSchemaPicker, setShowSchemaPicker] = useState(false);
   const [showModePicker, setShowModePicker] = useState(false);
-  const [introModeId, setIntroModeId] = useState<string | null>(null);
   const [detailSchemaId, setDetailSchemaId] = useState<string | null>(null);
   const [detailNeedId, setDetailNeedId] = useState<string | null>(null);
   const [showMyMap, setShowMyMap] = useState(false);
+  const pat = usePatternLayer();
+  const mobile = useIsMobile();
+  const [tab, setTab] = useState(readStoredTab);
+  useEffect(() => { writeStoredTab(tab); }, [tab]);
+  const show = visibleBlocks(tab, mobile);
+  const startTest = () => onOpenSchema({ startTest: true });
 
   const allSchemaIds = [...new Set([...d.ysqSchemaIds, ...d.manualSchemaIds])];
 
   return (
     <div className="ds-page cs-page">
-      <div className="ds-head-row cs-head">
-        <div>
-          <div className="ds-eyebrow">Схема-терапия</div>
-          <h1 className="ds-h1">Мои <i>паттерны</i></h1>
-          <div className="ds-sub cs-head-sub">Схемы, режимы, потребности</div>
-        </div>
-        <button onClick={() => onOpenSchema()} className="ds-btn ds-btn--secondary">Библиотека</button>
-      </div>
+      <PatternsHeader mobile={mobile} onOpenLibrary={() => onOpenSchema()} onCustomize={blocks.openByGear} />
+      {mobile && <PatternsTabsBar tab={tab} onChange={setTab} />}
+      {d.saveFailed && (
+        <SaveErrorNote ty="Выбор сохранён только на этом устройстве — проверь связь и попробуй ещё раз" vy="Выбор сохранён только на этом устройстве — проверьте связь и попробуйте ещё раз" />
+      )}
 
-      <div className="cs-top">
-        <ExpressedCard
-          loading={d.loading}
-          ysqSchemaIds={d.ysqSchemaIds}
-          ysqScores={d.ysqScores}
-          completedAt={d.ysqCompletedAt}
-          onOpenSchema={setDetailSchemaId}
+      {show.hero && (
+        <PatternsTopStack
+          blocks={blocks} mobile={mobile} ysqProgressAnswered={d.ysqProgressAnswered} ysqCompletedAt={d.ysqCompletedAt} onStartTest={startTest}
+          hero={
+            <PatternsTopCards
+              blocks={blocks} ready={!d.loading && pat.entriesReady} hasSchemas={allSchemaIds.length > 0} hasModes={d.myModeIds.length > 0}
+              hasEntries={pat.hasEntries} top={pat.top} testProgress={d.ysqProgressAnswered}
+              onOpenPattern={pat.openPattern} onOpenModeEx={pat.openModeEx} onStartTest={startTest}
+            />
+          }
         />
-        <YsqTestCard
-          progressAnswered={d.ysqProgressAnswered}
-          completedAt={d.ysqCompletedAt}
-          onStart={() => onOpenSchema({ startTest: true })}
-        />
-      </div>
+      )}
 
-      <MySchemasBlock loading={d.loading} ids={allSchemaIds} onAdd={() => setShowSchemaPicker(true)} onOpenSchema={setDetailSchemaId} />
-      <SchemaMap mineIds={allSchemaIds} onOpenSchema={setDetailSchemaId} />
-      <ModesBlocks loading={d.loading} myModeIds={d.myModeIds} onAdd={() => setShowModePicker(true)} onOpenMode={setIntroModeId} />
-      {d.myMapCount > 0 && <ModeMapBanner count={d.myMapCount} onOpen={() => setShowMyMap(true)} />}
-      <NeedsBlock childhoodRatings={childhoodRatings} onOpenChildhoodWheel={onOpenChildhoodWheel} onOpenNeed={setDetailNeedId} />
+      {show.schemas && (
+        <PatternsSchemasPane
+          mobile={mobile} d={d} pat={pat} allSchemaIds={allSchemaIds}
+          onStartTest={startTest} onAdd={() => setShowSchemaPicker(true)} onOpenDetail={setDetailSchemaId} blocks={blocks}
+        />
+      )}
+      {show.modesHero && (
+        <ModesTopCards
+          blocks={blocks} ready={!d.loading && pat.entriesReady} hasModes={d.myModeIds.length > 0} summary={pat.modeTop}
+          onMeetCritic={() => pat.openModeEx(INTRO_MODE_ID)} onOpenLibrary={() => onOpenSchema({ tab: 'modes' })}
+          onPickManually={() => setShowModePicker(true)} onOpenMode={(id) => pat.openPattern('mode', id)}
+        />
+      )}
+      {show.modes && (
+        <PatternsModesPane
+          mobile={mobile} d={d} pat={pat} onAdd={() => setShowModePicker(true)}
+          banner={d.myMapCount > 0 ? <ModeMapBanner count={d.myMapCount} onOpen={() => setShowMyMap(true)} /> : undefined}
+        />
+      )}
+      {show.needs && <NeedsBlock childhoodRatings={childhoodRatings} onOpenChildhoodWheel={onOpenChildhoodWheel} onOpenNeed={setDetailNeedId} />}
 
       {showSchemaPicker && (
         <SchemaPickerSheet selected={d.manualSchemaIds} onSave={d.saveSchemas} onClose={() => setShowSchemaPicker(false)} />
@@ -70,11 +93,7 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
       {showModePicker && (
         <ModePickerSheet selected={d.myModeIds} onSave={d.saveModes} onClose={() => setShowModePicker(false)} />
       )}
-      {introModeId && (
-        <div className="u-sheet">
-          <Suspense fallback={null}><ModeEx onBack={() => setIntroModeId(null)} initialModeId={introModeId} /></Suspense>
-        </div>
-      )}
+      {pat.layer}
       {detailSchemaId && <SchemaDetailSheet schemaId={detailSchemaId} onClose={() => setDetailSchemaId(null)} />}
       {detailNeedId && (
         <NeedDetailSheet
@@ -85,6 +104,7 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
         />
       )}
       {showMyMap && <MyModeMapSheet onClose={() => setShowMyMap(false)} />}
+      <ScreenCustomizeHost blocks={blocks} />
     </div>
   );
 }
