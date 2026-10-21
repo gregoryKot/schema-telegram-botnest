@@ -544,6 +544,31 @@ describe('check-agent-docs.mjs: 7. индекс открытого', () => {
   it('контроль: без docs/open индекс не нужен', () => {
     expect(gate({ 'docs/README.md': '# Docs\n' }).status).toBe(0);
   });
+
+  // Ветка, начатая до разделения реестра, при слиянии вписывает запись в
+  // старое место — в раздел README. Индекс обязан остаться таблицей.
+  const INDEX =
+    '## Что осталось открытым\n\nРеестр по областям.\n\n| Файл |\n|---|\n| [open/backend.md](open/backend.md) |\n';
+  it.each([
+    ['жирная запись', '**Новая находка** (#900): что сломано.\n'],
+    ['пункт списка', '- **Флак** в `src/x.spec.ts`.\n'],
+  ])('запись в индексе краснеет: %s', (_label, entry) => {
+    const res = gate({
+      ...open,
+      'docs/README.md': `# Docs\n\n${INDEX}\n${entry}`,
+    });
+    expect(res.status).toBe(1);
+    expect(res.stderr).toContain('запись реестра в индексе');
+  });
+
+  it('контроль: записи в других разделах README законны', () => {
+    const res = gate({
+      ...open,
+      'docs/README.md': `# Docs\n\n## Актуальное\n\n- **ENV.md** — переменные.\n\n${INDEX}`,
+    });
+    expect(res.stderr).toBe('');
+    expect(res.status).toBe(0);
+  });
 });
 
 // Чистые функции движка: проверяются напрямую, без песочницы.
