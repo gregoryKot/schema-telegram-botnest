@@ -4,7 +4,10 @@
 // Выполнено — спокойное «на сегодня всё», без давления сделать больше.
 import { useTr } from '../utils/addressForm';
 import { HeroCta } from './HeroCta';
-import { FocusPractice, focusCardContent } from '../utils/todayFocus';
+import {
+  FocusPractice,
+  focusCardContent,
+} from '../../../shared/src/today/todayFocus';
 
 interface Props {
   practice: FocusPractice;

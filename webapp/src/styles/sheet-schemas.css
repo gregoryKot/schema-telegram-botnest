@@ -169,3 +169,4 @@
 @media (prefers-reduced-motion: reduce) {
   .ss-slide-r, .ss-slide-l { animation: none; }
 }
+.ss-mode-share { margin-left: auto; flex-shrink: 0; }

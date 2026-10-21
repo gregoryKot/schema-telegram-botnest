@@ -1,9 +1,12 @@
-import { useState } from 'react';
 import { BottomSheet } from './BottomSheet';
 import { api, PairsData } from '../api';
 import { useTr } from '../utils/addressForm';
 import { logErr } from '../utils/logErr';
-import { joinConfirmFailText } from './joinConfirmFailText';
+import { useJoinConfirm } from '../../../shared/src/therapy/useJoinConfirm';
+import {
+  joinConfirmExplain,
+  joinConfirmTitle,
+} from '../../../shared/src/therapy/joinConfirmCopy';
 
 interface Props {
   joinKind: 'pair' | 'therapy';
@@ -25,44 +28,26 @@ export function JoinConfirmSheet({
   onPairJoined,
 }: Props) {
   const tr = useTr();
-  const [busy, setBusy] = useState(false);
-  const [failMsg, setFailMsg] = useState('');
   const isPair = joinKind === 'pair';
 
-  // Заголовок и подписи кнопок нейтральны (без ты/вы) — не разводим.
-  const title = isPair ? 'Присоединиться к паре?' : 'Открыть доступ терапевту?';
+  // Заголовок и объяснение («откуда и зачем», честный объём) — shared, общие с сайтом.
+  const title = joinConfirmTitle(isPair);
+  const explain = joinConfirmExplain(isPair, tr);
 
-  // «Откуда и зачем» + ЧЕСТНЫЙ объём: существующая копия занижала («только
-  // число 0–10»), но партнёр видит ещё и неделю (PartnerCard). Для экрана
-  // согласия занижать нельзя.
-  const explain = isPair
-    ? tr(
-        'Пара — это взаимная видимость с другим человеком. Партнёр увидит твой индекс дня (число от 0 до 10) и как он менялся последнюю неделю. Ты увидишь его. Дневники, заметки и оценки по потребностям остаются только у тебя.',
-        'Пара — это взаимная видимость с другим человеком. Партнёр увидит ваш индекс дня (число от 0 до 10) и как он менялся последнюю неделю. Вы увидите его. Дневники, заметки и оценки по потребностям остаются только у вас.',
-      )
-    : tr(
-        'Код от терапевта — это согласие открыть ему доступ к твоим записям. Трекер потребностей и задания терапевт видит всегда; дневники, карточки схем и результаты опросников — по твоему выбору в настройках. Отключить терапевта можно в любой момент.',
-        'Код от терапевта — это согласие открыть ему доступ к вашим записям. Трекер потребностей и задания терапевт видит всегда; дневники, карточки схем и результаты опросников — по вашему выбору в настройках. Отключить терапевта можно в любой момент.',
-      );
-
-  async function confirm() {
-    setBusy(true);
-    setFailMsg('');
-    try {
+  const { busy, failMsg, confirm } = useJoinConfirm(
+    isPair,
+    tr,
+    async () => {
       if (isPair) {
         await api.joinPair(joinCode);
-        const data = await api.getPair();
-        onPairJoined(data);
+        onPairJoined(await api.getPair());
       } else {
         await api.joinTherapy(joinCode);
       }
-      onClose();
-    } catch (e) {
-      logErr('joinConfirm')(e);
-      setFailMsg(joinConfirmFailText(e, isPair, tr));
-      setBusy(false);
-    }
-  }
+    },
+    onClose,
+    logErr('joinConfirm'),
+  );
 
   return (
     <BottomSheet onClose={onClose} zIndex={300}>

@@ -2,7 +2,7 @@
 // Типы, общие с мини-аппом, живут в shared/src/apiTypes (правило №3) — здесь
 // только ре-экспорт. ClientConceptualization локальный: в webapp он расширяет
 // общую ClientConceptualizationBase полями mode-map.
-import type { UserId } from '../../shared/src/apiTypes';
+import type { UserId } from '../../shared/src/apiTypes'; import type { Currency } from '../../shared/src/booking/priceRegion';
 import type { ClientConceptualizationBase } from '../../shared/src/therapy/clientConceptualization';
 export type {
   UserId,
@@ -25,7 +25,7 @@ export type {
 // ─── Site-only types (booking, articles, mode-map) ───────────────────────────
 export type { AdminCalendar, AdminCalendarDay, AdminCalendarCell, AdminCalendarCellState, SlotOverrideKind, SlotOverrideItem, SlotOverridePatch } from './api.calendar.types';
 export interface BookingSlot { startsAt: string; endsAt: string; durationMin: number; }
-export interface SessionOption { type: 'INTRO_15' | 'SESSION_50'; label: string; durationMin: number; price: number; note: string; }
+export interface SessionOption { type: 'INTRO_15' | 'SESSION_50'; label: string; durationMin: number; price: number; prices?: Record<Currency, number>; note: string; } // price — рубли (старое поле), prices — по валютам; в старом ответе сервера prices нет — тогда рубли
 export interface AvailabilityRule {
   id: number; dayOfWeek: number; startHour: number; startMinute: number;
   endHour: number; endMinute: number; sessionDuration: number; bufferMin: number;

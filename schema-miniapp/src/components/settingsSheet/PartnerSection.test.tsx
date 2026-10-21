@@ -23,6 +23,7 @@ vi.mock('../../api', () => ({
     joinPair: vi.fn(),
     leavePair: vi.fn(),
   },
+  reportClientError: vi.fn(),
 }));
 import { api } from '../../api';
 const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;

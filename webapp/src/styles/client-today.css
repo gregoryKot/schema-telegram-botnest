@@ -2,6 +2,8 @@
    Сетка: основная колонка + сайдбар; на узком сайдбар уходит вниз, а на
    мобильном (<768px) карточки индекса и встречи поднимаются наверх (экран c1). */
 .ct-grid {
+  /* Порядок блоков на телефоне по умолчанию; «Настроить экран» перекрывает inline (todayOrder.ts) */
+  --ct-o-therapist_banner: 10; --ct-o-streak: 20; --ct-o-focus: 30; --ct-o-phrase: 40; --ct-o-secondary: 50;
   display: grid; gap: 32px; align-items: start;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
 }
@@ -56,6 +58,12 @@
 .ct-entry-label { font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ct-entry-date { white-space: nowrap; font-size: 12px; color: var(--text-faint); }
 
+/* Шапка: на десктопе eyebrow + h1; строка с датой и шестерёнка — только на телефоне */
+.ct-head { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-12); }
+.ct-head-text { min-width: 0; }
+.ct-head-date, .ct-more-toggle { display: none; }
+.ct-head-customize { align-self: flex-start; min-height: 44px; display: inline-flex; align-items: center; }
+
 /* Сайдбар: индекс (тёмная), встреча (акцентная), стрик */
 .ct-on-ink { color: var(--on-ink-faint); }
 .ct-index { cursor: default; }
@@ -86,22 +94,160 @@
 .ct-streak-num.is-zero { color: var(--text-ghost); }
 .ct-streak-label { font-size: 15px; font-weight: 700; }
 
-/* Мобильный (c1): индекс и встреча — парой сверху, потребности компактнее */
+/* Фокус-карточка «Сегодня» */
+.ct-focus { display: flex; flex-direction: column; gap: var(--space-10); padding: 22px; }
+.ct-focus-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-12); }
+.ct-focus-chip { font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 99px; background: rgba(0, 0, 0, .24); color: #fff; }
+.ct-focus-title { color: inherit; font-size: 24px; }
+.ct-focus-sub { font-size: 14px; line-height: 1.45; }
+.ct-focus-cta {
+  margin-top: var(--space-6); min-height: 48px; border: none; border-radius: var(--r-14); cursor: pointer;
+  background: #fff; color: var(--accent-on-light); font: 800 15px var(--sans);
+  display: flex; align-items: center; justify-content: center; gap: var(--space-6);
+}
+.ct-focus-switch {
+  align-self: flex-start; min-height: 44px; padding: 0; border: none; background: none; cursor: pointer;
+  color: inherit; font: 600 13px var(--sans); text-decoration: underline; text-underline-offset: 3px;
+}
+.ct-focus.is-done .ct-focus-switch { color: var(--text-sub); }
+.ct-focus-done-row { display: flex; align-items: center; gap: var(--space-14); }
+.ct-focus-done-text { flex: 1; min-width: 0; }
+.ct-focus-check {
+  width: 44px; height: 44px; flex-shrink: 0; border-radius: var(--r-14); font-size: 22px;
+  display: flex; align-items: center; justify-content: center;
+  background: color-mix(in srgb, var(--accent-green) 12%, transparent);
+}
+.ct-focus-share { display: flex; }
+.ct-focus-picker { display: flex; flex-direction: column; gap: var(--space-6); }
+.ct-focus-opt {
+  display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-2); min-height: 48px;
+  padding: var(--space-10) var(--space-14); border-radius: var(--r-10); cursor: pointer; text-align: left;
+  border: 1px solid var(--line); background: transparent; color: var(--text); font-family: inherit;
+}
+.ct-focus-opt.is-on { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, transparent); }
+.ct-focus-opt-name { font-size: 14px; font-weight: 700; }
+.ct-focus-opt-sub { font-size: 12px; color: var(--text-sub); }
+.ct-streak-hide { margin-left: auto; align-self: center; min-width: 44px; min-height: 44px; padding: 0; border: none; background: none; cursor: pointer; color: var(--text-sub); font: 600 12px var(--sans); }
+
+/* ── Телефон (≤767px): порядок и состав как в мини-аппе ────────────────────
+   Порядок задаёт order, а не разметка: .ct-main/.ct-aside/.ct-top — display:
+   contents, их дети становятся элементами одной колонки. Сверху всегда
+   «Что сегодня зацепило?» (order 1) и «С чего начать» (2), внизу — значок на
+   экран (90). Между ними — блоки из «Настроить экран»: у каждого свой order
+   из переменной --ct-o-<id> (inline на .ct-grid, sections/today/todayOrder.ts;
+   порядок по умолчанию объявлен на .ct-grid). Части блока идут вплотную:
+   фокус → встреча → практики; «Что ещё можно сегодня ⌄» → потребности →
+   индекс → последние записи (свёрнуто, пока не раскрыли). Цвета не меняются:
+   ink-кнопки, ink-индекс, терракотовое «Одно дело». */
 @media (max-width: 767px) {
-  .ct-grid { display: flex; flex-direction: column; gap: 24px; }
-  .ct-main, .ct-aside { display: contents; }
-  .ct-top { order: -1; display: grid; grid-template-columns: 1.2fr 1fr; gap: 8px; }
-  .ct-top:has(.ct-index:only-child) { grid-template-columns: 1fr; }
-  .ct-index, .ct-meeting { padding: 14px; border-radius: 16px; }
+  .ds-page.ct-page { padding-top: var(--space-16); gap: var(--space-16); }
+  .ct-head-eyebrow { display: none; }
+  .ct-head .ds-h1 { margin: 0; font-size: 28px; line-height: 1.15; }
+  .ct-head-date { display: block; margin-top: var(--space-4); font-size: 13px; font-weight: 500; color: var(--text-sub); }
+
+  .ct-grid { display: flex; flex-direction: column; align-items: stretch; gap: var(--space-12); }
+  .ct-main, .ct-aside, .ct-top { display: contents; }
+  .ct-main > *, .ct-aside > *, .ct-top > * { order: 80; }
+  .ct-main > .ct-case { order: 1; margin-bottom: 0; }
+  .ct-main > .sk-onb { order: 2; }
+  .ct-main > .ct-therapist-link { order: var(--ct-o-therapist_banner); }
+  .ct-aside > .ct-streak { order: var(--ct-o-streak); }
+  .ct-main > .ct-focus { order: var(--ct-o-focus); }
+  .ct-top > .ct-meeting { order: calc(var(--ct-o-focus) + 1); }
+  .ct-main > .ct-block { order: calc(var(--ct-o-focus) + 2); }
+  .ct-aside > .ct-phrase { order: var(--ct-o-phrase); }
+  .ct-more-toggle { order: var(--ct-o-secondary); }
+  .ct-main > .ct-needs { order: calc(var(--ct-o-secondary) + 1); }
+  .ct-top > .ct-index { order: calc(var(--ct-o-secondary) + 2); }
+  .ct-main > .ct-recent { order: calc(var(--ct-o-secondary) + 3); }
+  .ct-main > .sk-case:not(.ct-case) { order: 90; }
+  /* «Что ещё можно сегодня»: свёрнуто — потребности, индекс и записи скрыты */
+  .ct-grid:not(.is-more-open) :is(.ct-needs, .ct-index, .ct-recent) { display: none; }
+  .ct-main > .ct-case, .ct-main > .ct-focus, .ct-main > .sk-onb { padding: var(--space-20); }
+
+  .ct-more-toggle {
+    display: flex; align-items: center; justify-content: center; gap: var(--space-6);
+    min-height: 44px; padding: 0; border: none; background: none; cursor: pointer;
+    font: 600 13px var(--sans); color: var(--text-sub);
+  }
+  .ct-more-chev { display: inline-block; transition: transform .2s; }
+  .ct-more-toggle[aria-expanded='true'] .ct-more-chev { transform: rotate(180deg); }
+
+  /* Главное действие: основная — тёмная (ink) заливка, вторичная — светлая с рамкой, обе во всю ширину */
+  .sk-case-actions { flex-direction: column; gap: var(--space-10); }
+  .sk-case-actions .ds-btn { width: 100%; height: 52px; border-radius: 26px; font-size: 16px; }
+
+  /* Индекс: тёмная (ink) карточка на всю ширину */
+  .ct-index, .ct-meeting { padding: var(--space-16); border-radius: var(--r-16); }
   .ct-index-num { font-size: 40px; }
-  .ct-index .ct-spark { height: 24px; margin-top: 8px; gap: 2px; }
+  .ct-index .ct-spark { height: 28px; margin-top: var(--space-10); gap: var(--space-2); }
   .ct-meeting-title { font-size: 22px; }
   .ct-meeting-name { margin-top: auto; }
-  .ct-write { margin-top: 8px; }
-  .ct-need-row { grid-template-columns: 96px minmax(0, 1fr) 28px; gap: 10px; }
-  .ct-need-name { font-size: 13px; }
-  .ct-need-value { font-size: 16px; }
+  .ct-write { margin-top: var(--space-8); }
+
+  /* «С чего начать»: счётчик, одна карточка шага, кнопки и точки прогресса */
+  .ob-p { padding: var(--space-16); gap: 0; overflow: hidden; }
+  .ob-p-count { font-size: 11px; font-weight: 600; letter-spacing: .05em; color: var(--text-faint); margin-bottom: var(--space-14); }
+  .ob-p-step { display: flex; align-items: center; gap: var(--space-12); margin-bottom: var(--space-10); }
+  .ob-p-no {
+    width: 48px; height: 48px; flex-shrink: 0; box-sizing: border-box; border: 1.5px solid transparent;
+    border-radius: var(--r-14); display: flex; align-items: center; justify-content: center;
+    font: 400 24px var(--serif); color: var(--text);
+  }
+  .ob-p-head { flex: 1; min-width: 0; }
+  .ob-p-title { font-size: 15px; font-weight: 700; line-height: 1.3; margin-bottom: var(--space-2); }
+  .ob-p-detail { font-size: 11px; font-weight: 500; color: var(--text-faint); }
+  .ob-p-desc { margin: 0 0 var(--space-14); font-size: 13px; line-height: 1.6; color: var(--text-sub); }
+  .ob-p-actions { display: flex; gap: var(--space-8); margin-bottom: var(--space-14); }
+  .ob-p-main { flex: 1; height: 48px; border-radius: var(--r-14); font-size: 14px; }
+  .ob-p-later { height: 48px; border-radius: var(--r-14); padding: 0 var(--space-16); font-size: 13px; }
+  .ob-p-done {
+    flex: 1; min-height: 48px; display: flex; align-items: center; justify-content: center;
+    border-radius: var(--r-14); font-size: 13px; font-weight: 600; color: var(--ok);
+    background: color-mix(in srgb, var(--ok) 10%, transparent);
+    border: 1px solid color-mix(in srgb, var(--ok) 22%, transparent);
+  }
+  .ob-p-dots { display: flex; gap: var(--space-6); justify-content: center; }
+  .ob-p-dot { display: block; border-radius: var(--r-4); background: var(--line-strong); transition: all .25s ease; }
+  .ob-p-dot.is-done { background: color-mix(in srgb, var(--ok) 65%, transparent); }
+  .ob-p-dot.is-skipped { background: var(--line); }
+  .ob-p-resume { flex-direction: row; align-items: center; gap: var(--space-12); padding: var(--space-14) var(--space-16); }
+  .ob-p-resume-text { flex: 1; min-width: 0; }
+  .ob-p-resume-title { font-size: 13px; font-weight: 600; margin-bottom: var(--space-2); }
+  .ob-p-resume-btn { height: 44px; border-radius: var(--r-14); padding: 0 var(--space-16); font-size: 13px; }
+
+  /* Потребности: название и значение строкой, шкала под ними — ничего не обрезается */
+  .ct-needs .ds-head-row { flex-wrap: nowrap; align-items: center; }
+  .ct-needs .ds-h2 { font-size: 20px; }
+  .ct-needs { padding: var(--space-16); gap: var(--space-14); border-radius: var(--r-16); }
+  .ct-need-row {
+    grid-template-columns: minmax(0, 1fr) auto; gap: var(--space-6) var(--space-12);
+    grid-template-areas: 'name value' 'scale scale';
+  }
+  .ct-need-name { grid-area: name; font-size: 14px; }
+  .ct-need-row .ns-scale { grid-area: scale; }
+  .ct-need-row .ns-seg { height: 24px; border-radius: var(--r-6); }
+  .ct-need-value { grid-area: value; font-size: 20px; }
   .ct-delta, .ct-hint { display: none; }
-  .ct-needs { padding: 14px 16px; gap: 10px; border-radius: 18px; }
-  .ct-streak { order: 5; }
+
+  /* Серия: компактная строка — плитка с числом, «N дней подряд», подпись */
+  .ct-streak--phone { gap: var(--space-12); padding: var(--space-12) var(--space-16); border-radius: var(--r-16); }
+  .ct-streak-tile {
+    width: 40px; height: 40px; flex-shrink: 0; border-radius: var(--r-12);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 17px; font-weight: 700; background: var(--accent-soft); color: var(--accent);
+  }
+  .ct-streak-tile.is-zero { color: var(--text-faint); background: var(--paper-sunk); }
+  .ct-streak-text { flex: 1; min-width: 0; }
+  .ct-streak--phone .ct-streak-label { font-size: 15px; }
+  .ct-streak-cap { margin-top: 1px; font-size: 12px; color: var(--text-sub); }
+
+  /* Фраза для себя: карточка, внизу подпись и «Другая ↻» */
+  .ct-phrase { padding: var(--space-16); border-radius: var(--r-16); }
+  .ct-phrase-foot { display: flex; align-items: center; justify-content: space-between; gap: var(--space-10); margin-top: var(--space-6); }
+  .ct-phrase-cap { font-size: 11px; color: var(--text-faint); }
+  .ct-phrase-more {
+    flex-shrink: 0; min-height: 44px; padding: 0 0 0 var(--space-10); border: none; background: none;
+    cursor: pointer; font: 600 12px var(--sans); color: var(--accent);
+  }
 }

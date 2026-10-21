@@ -1,21 +1,21 @@
-// «Что поможет» — блок экрана паттерна между карточкой и записями дневника:
-// чем можно помочь себе прямо сейчас. Контент уже выверен в других местах
-// (голос Здорового Взрослого, совет по схеме, потребность) — здесь только
-// склейка (patternHelpContent.ts) и три чипа быстрых практик, которые
-// открывают тот же QuickPracticeSheet, что и «Помощь»/плюс-меню (правило
-// «одна механика — один компонент»: второго пути открыть практику не заводим).
+// «Что поможет» — блок экрана паттерна: склейка контента (shared/pattern/
+// patternHelpContent) и три чипа быстрых практик, которые открывают тот же
+// QuickPracticeSheet, что и «Помощь» (одна механика — один компонент).
 import { useState } from 'react';
 import type { CSSProperties } from 'react';
 import { SectionLabel } from '../SectionLabel';
 import { QuickPracticeSheet } from '../QuickPracticeSheet';
 import { useTr, useAddressForm } from '../../utils/addressForm';
-import { resolveModeHelp, resolveSchemaHelp } from './patternHelpContent';
+import {
+  resolveModeHelp,
+  resolveSchemaHelp,
+} from '../../../../shared/src/pattern/patternHelpContent';
 import {
   QUICK_PRACTICE_IDS,
   buildQuickPractice,
   type QuickPracticeId,
 } from '../../../../shared/src/practices/quickPractices';
-import type { MyCardsKind } from '../myCards/useMyCards';
+import type { MyCardsKind } from '../../../../shared/src/pattern/useMyCards';
 
 interface Props {
   kind: MyCardsKind;

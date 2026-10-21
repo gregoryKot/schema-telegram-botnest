@@ -3,6 +3,7 @@ import { botHandle } from '../../utils/botConfig';
 import { FREQ_LABELS, pad, quietLabel, hourInQuiet } from '../../../../shared/src/settings/constants';
 import { SSection, SRow, Toggle, ChevronVal } from './ui';
 import type { SubView } from './SubViews';
+import { SettingsInfoHelp } from './SettingsInfoHelp';
 
 interface Props {
   settings: UserSettings;
@@ -15,7 +16,8 @@ interface Props {
 export function NotificationsSection({ settings, tzLabel, patch, openSubView }: Props) {
   const localHour = settings.notifyLocalHour;
   return (
-    <SSection id="s-notifications" label="Уведомления" hint={`Приходят через Telegram — ${botHandle}`}>
+    <SSection id="s-notifications" label="Уведомления" hint={`Приходят через Telegram — ${botHandle}`}
+      help={<SettingsInfoHelp infoKey="notify" />}>
       {settings.notifyPausedUntil && new Date(settings.notifyPausedUntil) > new Date() && (
         <div className="st-pause">
           <span className="st-text">

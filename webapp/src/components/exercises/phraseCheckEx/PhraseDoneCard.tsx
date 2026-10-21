@@ -1,5 +1,7 @@
 import { hueStyle } from '../../../lib/tone';
 import { HUE_STRAIN, HUE_CARE } from '../exHue';
+import { PhraseCheckShare } from './PhraseCheckShare';
+import type { PhraseMarkId } from '../../../../../shared/src/phraseCheck/criteria';
 
 // Экран «готово»: было → стало, рядом дословно. Вёрстка — по образцу
 // ink-карточки BeliefDoneScreen (единый визуальный язык done-экранов упражнений
@@ -7,12 +9,15 @@ import { HUE_STRAIN, HUE_CARE } from '../exHue';
 export function PhraseDoneCard({
   phrase,
   rewrite,
+  marks,
 }: {
   phrase: string;
   rewrite: string;
+  marks: PhraseMarkId[];
 }) {
   const trimmedRewrite = rewrite.trim();
   return (
+    <>
     <div className="ds-card ds-card--ink ex2-done">
       <div className="ex2-dlabel is-tone" style={hueStyle(HUE_STRAIN)}>
         Было
@@ -25,5 +30,7 @@ export function PhraseDoneCard({
         </div>
       )}
     </div>
+    <PhraseCheckShare phrase={phrase} marks={marks} rewrite={trimmedRewrite || undefined} />
+    </>
   );
 }

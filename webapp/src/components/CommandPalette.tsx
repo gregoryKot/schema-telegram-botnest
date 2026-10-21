@@ -1,5 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { api } from '../api';
+import { useTr } from '../utils/addressForm';
+import { buildPlusActions, type QuickActionId } from '../../../shared/src/quickActions/quickActions';
 import type { TherapyClientSummary, UserId } from '../api';
 import { todayCalendarDate } from '../../../shared/src/utils/calendarDate';
 import { pressable } from '../utils/a11y';
@@ -16,7 +18,7 @@ interface Props {
   therapistMode?: boolean;
   onToggleMode?: () => void;
   onOpenClient?: (id: UserId) => void;
-  onNewDiaryEntry?: () => void;
+  onQuickAction?: (id: QuickActionId) => void;
 }
 
 const NAV_ITEMS: { id: Section; label: string; sub: string; hint: string }[] = [
@@ -56,7 +58,8 @@ function IconBolt() {
 
 // ── Component ──────────────────────────────────────────────────────────────────
 
-export function CommandPalette({ onNavigate, onClose, userRole, therapistMode, onToggleMode, onOpenClient, onNewDiaryEntry }: Props) {
+export function CommandPalette({ onNavigate, onClose, userRole, therapistMode, onToggleMode, onOpenClient, onQuickAction }: Props) {
+  const tr = useTr();
   const [q, setQ] = useState('');
   const [sel, setSel] = useState(0);
   const [clients, setClients] = useState<TherapyClientSummary[]>([]);
@@ -108,17 +111,19 @@ export function CommandPalette({ onNavigate, onClose, userRole, therapistMode, o
         sub: therapistMode ? 'Клиентский вид' : 'Кабинет',
         action: () => onToggleMode?.(),
       }] : []),
-      ...(!therapistMode ? [{
+      // Те же быстрые действия, что в «+» на телефоне (общий реестр).
+      ...(!therapistMode ? buildPlusActions(tr).flatMap(g => g.actions.map(a => ({ a, group: g.title }))).map(({ a, group }) => ({
         type: 'action' as const,
-        label: 'Новая запись в дневник',
-        action: () => { onNewDiaryEntry?.(); },
-      }] : []),
+        label: a.label,
+        sub: `${group} · ${a.sub}`,
+        action: () => onQuickAction?.(a.id),
+      })) : []),
     ];
 
     const all: Row[] = [...clientRows, ...navRows, ...actionRows];
     if (!term) return all;
     return all.filter(r => (r.label + ' ' + (r.sub ?? '')).toLowerCase().includes(term));
-  }, [q, clients, userRole, therapistMode, onNavigate, onOpenClient, onToggleMode, onNewDiaryEntry]);
+  }, [q, clients, userRole, therapistMode, onNavigate, onOpenClient, onToggleMode, onQuickAction, tr]);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {

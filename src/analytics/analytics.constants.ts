@@ -27,7 +27,7 @@
 //                         Поверхности мини-аппа (Telegram) шлют событие
 //                         авторизованно через POST /api/event. Сайт добавил
 //                         две свои: баннер «приложение для телефона» в
-//                         кабинете (webapp/src/components/MobileAppBanner.tsx)
+//                         кабинете (убран 2026-10, id для старых строк)
 //                         тоже идёт авторизованно через /api/event, а блок
 //                         установки на публичном лендинге
 //                         (webapp/src/pages/landing/AppInstallSection.tsx) —
@@ -242,7 +242,7 @@ export type AccountLinkFailReason = (typeof ACCOUNT_LINK_FAIL_REASONS)[number];
 
 // 'onboarding'/'today'/'settings' — мини-апп (Telegram). 'site_banner' —
 // баннер «приложение для телефона» в кабинете сайта
-// (webapp/src/components/MobileAppBanner.tsx), авторизованный путь.
+// (убран из кабинета 2026-10; id остаётся, пока в 30-дневных отчётах есть старые строки).
 // 'site_landing' — блок установки на публичном лендинге
 // (webapp/src/pages/landing/AppInstallSection.tsx); с лендинга событие идёт
 // анонимно через POST /api/public-event, и там принимается ТОЛЬКО эта
@@ -302,7 +302,7 @@ export {
 } from './crisis-surfaces.constants';
 
 // Главная практика экрана «Сегодня» (meta.practice для today_focus_change) —
-// парно с FocusPractice на фронте (schema-miniapp/src/utils/todayFocus.ts).
+// парно с FocusPractice на фронте (shared/src/today/todayFocus.ts).
 export const TODAY_FOCUS_PRACTICES = [
   'tracker',
   'schema',

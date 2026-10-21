@@ -7,7 +7,7 @@ import { ShareCardSheet } from '../../share/ShareCardSheet';
 import { appInviteShare } from '../../../../shared/src/share/cards/inviteShare';
 import { SSection, SRow } from './ui';
 import { ExportSummaryModal } from './ExportSummaryModal';
-import { ExternalLink } from '../../host/ExternalLink';
+import { AboutSheet } from './AboutSheet';
 
 // Раздел «Поделиться»: карточка-приглашение и сводка для терапевта.
 export function ShareSection() {
@@ -51,22 +51,16 @@ export function ShareSection() {
   );
 }
 
-// Раздел «О приложении».
+// Раздел «О приложении»: одна строка, как в мини-аппе. Длинный текст («зачем
+// это всё», пять потребностей, ссылки) — в отдельном листе по нажатию.
 export function AboutSection() {
+  const [open, setOpen] = useState(false);
   return (
-    <SSection id="s-about" label="О приложении">
-      <div className="st-body-block">
-        <p className="st-text">
-          Инструмент самопознания на основе схема-терапии: трекер потребностей, дневники схем и режимов, тесты, практики и пространство для работы с терапевтом.
-        </p>
-        <div className="st-links">
-          <ExternalLink href="https://t.me/SchemeHappens">Канал о схема-терапии → <b>@SchemeHappens</b></ExternalLink>
-          <ExternalLink href="https://t.me/kotlarewski">Записаться на сессию → <b>@kotlarewski</b></ExternalLink>
-          {/* Подписка скрыта до подключения рекуррента у Robokassa — вернуть ссылку на /subscribe, когда заработает */}
-          <ExternalLink href="/donate">Поддержать проект → <b>разовый донат</b></ExternalLink>
-        </div>
-        <div className="st-fine">Это образовательный инструмент — не медицинский и не психологический сервис.</div>
-      </div>
-    </SSection>
+    <>
+      <section id="s-about" className="ds-card st-section">
+        <SRow title="О приложении" sub="Зачем это всё, пять потребностей, об авторе" onClick={() => setOpen(true)} />
+      </section>
+      {open && <AboutSheet onClose={() => setOpen(false)} />}
+    </>
   );
 }

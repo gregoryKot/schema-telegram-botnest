@@ -2,6 +2,7 @@ import type { UserSettings } from '../../api';
 import { useTr } from '../../utils/addressForm';
 import { SSection, SRow, SmallToggle } from './ui';
 import type { useTherapyRelationSettings } from './useTherapyRelationSettings';
+import { SettingsInfoHelp } from './SettingsInfoHelp';
 
 type Relation = ReturnType<typeof useTherapyRelationSettings>;
 
@@ -12,7 +13,7 @@ export function MyTherapistSection({ rel, settings, patch }: {
   const tr = useTr();
   const { therapyRelation, therapyJoinCode, setTherapyJoinCode, therapyJoinError, leaveTherapyError, leaveTherapy, joinTherapy } = rel;
   return (
-    <SSection id="s-therapist" label="Мой терапевт" hint={tr('Терапевт видит трекер и задания. Остальное — на твоё усмотрение.', 'Терапевт видит трекер и задания. Остальное — на ваше усмотрение.')}>
+    <SSection id="s-therapist" label="Мой терапевт" help={<SettingsInfoHelp infoKey="therapist" />} hint={tr('Терапевт видит трекер и задания. Остальное — на твоё усмотрение.', 'Терапевт видит трекер и задания. Остальное — на ваше усмотрение.')}>
       {therapyRelation === undefined ? (
         <SRow title="Загрузка..." />
       ) : therapyRelation?.status === 'active' ? (

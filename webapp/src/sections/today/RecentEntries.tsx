@@ -12,7 +12,7 @@ interface Props {
 // «Последние записи»: строка = бейдж типа тона дневника, текст, дата · время.
 export function RecentEntries({ entries, loaded, onOpenDiaries }: Props) {
   return (
-    <section className="ct-section ct-block">
+    <section className="ct-section ct-block ct-recent">
       <div className="ds-head-row">
         <h3 className="ds-h2">Последние записи</h3>
         <button type="button" className="ds-link" onClick={onOpenDiaries}>Все →</button>

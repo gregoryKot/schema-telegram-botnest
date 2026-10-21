@@ -9,7 +9,7 @@ import { useDialogA11y } from '../../../shared/src/utils/dialogA11y';
 import { ShareCardSheet } from '../share/ShareCardSheet';
 import { pairInviteShare } from '../../../shared/src/share/cards/inviteShare';
 import { TIMEZONES } from '../../../shared/src/settings/constants';
-import { usePairSettings } from './settingsSheet/usePairSettings';
+import { useSitePair } from './settingsSheet/useSitePair';
 import { useTherapyRelationSettings } from './settingsSheet/useTherapyRelationSettings';
 import { AppearanceSection } from './settingsSheet/AppearanceSection';
 import { BecomeTherapistSection } from './settingsSheet/BecomeTherapistSection';
@@ -20,6 +20,8 @@ import { NameSection, AddressSection } from './settingsSheet/NameAddressSections
 import { MyTherapistSection, CabinetSection } from './settingsSheet/TherapistSections';
 import { PartnerSection } from './settingsSheet/PartnerSection';
 import { ShareSection, AboutSection } from './settingsSheet/ShareAboutSections';
+import { HomeScreenSection } from './settingsSheet/HomeScreenSection';
+import { homeIconMode } from './settingsSheet/homeIconMode';
 
 // Дефолты на случай, если api.getSettings() отказал — экран не должен
 // зависнуть на Loader, показываем безопасные значения.
@@ -49,9 +51,9 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
   const dialogA11y = useDialogA11y();
   const [subView, setSubView] = useState<SubView>('main');
   const [settings, setSettings] = useState<UserSettings | null>(null);
-  const pair = usePairSettings(userRole);
   const therapy = useTherapyRelationSettings(userRole);
   const [pairShare, setPairShare] = useState<{ code: string; url: string } | null>(null);
+  const pair = useSitePair(userRole, (code, url) => setPairShare({ code, url }));
   const [savedToast, flashSaved] = useTimedFlag(1800); const [saveError, flashSaveError] = useTimedFlag(2400); // «Сохранено» раньше шло даже при отказе api
   const [editName, setEditName] = useState(displayName ?? '');
 
@@ -73,8 +75,10 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
   };
 
   const isTherapist = userRole === 'THERAPIST';
+  const homeMode = homeIconMode();
   const navItems = [
     { id: 's-appearance', label: 'Оформление' },
+    ...(homeMode ? [{ id: 's-home', label: 'Значок на экране' }] : []),
     { id: 's-name', label: 'Имя' },
     { id: 's-notifications', label: 'Уведомления' },
     ...(!isTherapist ? [
@@ -140,13 +144,14 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                   onResignTherapist={onResignTherapist}
                   onSaved={() => { flashSaved(); }}
                 />
+                {homeMode && <HomeScreenSection mode={homeMode} />}
                 <NameSection value={editName} onChange={setEditName} displayName={displayName} onNameChanged={onNameChanged} onSaved={flashSaved} />
                 <NotificationsSection settings={settings} tzLabel={tzLabel} patch={patch} openSubView={setSubView} />
                 <AddressSection settings={settings} patch={patch} />
                 {!isTherapist && <MyTherapistSection rel={therapy} settings={settings} patch={patch} />}
                 {!isTherapist && <BecomeTherapistSection />}
                 {isTherapist && <CabinetSection rel={therapy} onOpenTherapistCabinet={onOpenTherapistCabinet} />}
-                <PartnerSection pair={pair} onInviteCreated={setPairShare} />
+                <PartnerSection pair={pair} />
                 <ShareSection />
                 <AboutSection />
                 <DataSection />
