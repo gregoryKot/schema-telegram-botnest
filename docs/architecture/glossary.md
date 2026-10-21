@@ -55,6 +55,7 @@
 | «Удалить аккаунт», «выгрузить данные» | удаление и экспорт | `src/bot/account.delete.ts`, `src/account/data-export.service.ts` | `webapp/src/sections/profile/DeleteAccountDialog.tsx`, `shared/src/account/useDataExport.ts` |
 | бот, команды | `/start` `/tests` `/settings` `/donate` `/about` | `src/telegram/telegram.service.ts` | — |
 | напоминания, уведомления | очередь, планировщик, тихие часы | `src/notification/notification.planner.service.ts`, `src/telegram/telegram.schedule.service.ts` | `webapp/src/components/settingsSheet/NotificationsSection.tsx`, `schema-miniapp/src/components/settingsSheet/NotificationsSection.tsx` |
+| «⏸ Пауза» уведомлений, отложить | кнопки под напоминанием бота; пауза 7/30 дней снимает проактивную очередь | `src/telegram/telegram.notify-actions.service.ts`, `src/notification/notification.cadence.service.ts` | баннер «Возобновить» — `webapp/src/components/settingsSheet/NotificationsSection.tsx`, `schema-miniapp/src/components/settingsSheet/NotificationsSection.tsx` |
 | «Здоровый Взрослый», «ЗВ», канал | пост из пула фраз дважды в день | `src/channel/channel-publisher.service.ts`, `src/bot/healthy-adult.service.ts` | `webapp/src/pages/admin/HealthyAdultSection.tsx` |
 | MAX | второй мессенджер: вход и канал | `src/auth/auth-max.controller.ts` | `shared/src/host/max.ts` |
 | **Запись и деньги** | | | |
