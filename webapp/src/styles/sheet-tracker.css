@@ -136,3 +136,11 @@
 .tk2-ci-skip { margin-top: 10px; min-height: 44px; }
 .tk2-info { display: grid; grid-template-columns: 28px 1fr; gap: 12px; margin-bottom: 12px; }
 .tk2-info-n { font-size: 20px; color: var(--accent); }
+
+/* Онбординг трекера */
+.tk2-onb { display: flex; flex-direction: column; gap: var(--space-12); margin: var(--space-12) 16px; }
+.tk2-onb-body { display: flex; align-items: flex-start; gap: var(--space-12); }
+.tk2-onb-emoji { font-size: 22px; flex-shrink: 0; }
+.tk2-onb-title { font-size: 14px; font-weight: 600; margin-bottom: var(--space-4); }
+.tk2-onb-foot { display: flex; align-items: center; justify-content: space-between; gap: var(--space-8); }
+.tk2-onb-count { font-size: 12px; color: var(--text-faint); }

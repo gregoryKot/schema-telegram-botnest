@@ -1,0 +1,8 @@
+/* Входы в кабинет из мессенджера: экран согласий и согласие на присоединение. */
+.ef-consent-text p { margin: 0 0 12px; }
+.ef-consent-text p:last-child { margin-bottom: 0; }
+.ef-check { display: flex; align-items: flex-start; gap: 12px; min-height: 44px; margin: 0 0 16px; cursor: pointer; font-size: 14px; line-height: 1.55; color: var(--text); }
+.ef-check input { flex-shrink: 0; width: 22px; height: 22px; margin: 1px 0 0; accent-color: var(--accent); cursor: pointer; }
+.ef-hint { margin: 0 0 16px; font-size: 13px; line-height: 1.5; color: var(--accent-orange); }
+.ef-error { margin: 0 0 16px; font-size: 14px; line-height: 1.55; color: var(--accent-red); }
+.ef-beta { display: inline-block; margin: 0 0 16px; padding: 3px 12px; border-radius: var(--r-20); font-size: 11px; font-weight: 700; letter-spacing: .1em; color: var(--warn-ink); background: color-mix(in srgb, var(--accent-yellow) 14%, transparent); }

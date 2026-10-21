@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import type { QuickActionId } from '../../../../shared/src/quickActions/quickActions';
+import { isOverlayQuickAction, type OverlayQuickActionId } from '../quickActions/quickActionRouting';
 
 type TrackerTab = 'today' | 'history';
 
@@ -25,6 +27,20 @@ export function useOverlays() {
   const [showTodayNote, setShowTodayNote] = useState(false);
   const [showTherapistDisclaimer, setShowTherapistDisclaimer] = useState(false);
   const [cmdOpen, setCmdOpen] = useState(false);
+  // Быстрое действие «+»/⌘K, открытое оверлеем (дневники, разбор, практики).
+  const [quickAction, setQuickAction] = useState<OverlayQuickActionId | null>(null);
+
+  // Один вход для «+» и палитры: трекер — своим флагом, остальное — оверлеем.
+  const runQuickAction = (id: QuickActionId) => {
+    if (id === 'tracker') { setTrackerNeedId(null); setShowTrackerOverlay(true); }
+    else if (isOverlayQuickAction(id)) setQuickAction(id);
+  };
+  const openSchema = (opts?: { startTest?: boolean; tab?: 'needs' | 'schemas' | 'modes'; highlight?: string }) => {
+    setSchemaAutoStartTest(!!opts?.startTest);
+    setSchemaInitialTab(opts?.tab ?? 'needs');
+    setSchemaHighlight(opts?.highlight);
+    setShowSchemaInfo(true);
+  };
 
   return {
     showSettings, setShowSettings,
@@ -44,5 +60,6 @@ export function useOverlays() {
     showTodayNote, setShowTodayNote,
     showTherapistDisclaimer, setShowTherapistDisclaimer,
     cmdOpen, setCmdOpen,
+    quickAction, setQuickAction, runQuickAction, openSchema,
   };
 }

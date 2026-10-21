@@ -89,7 +89,7 @@ describe('компоненты с секретами: DOM под ym-hide-content
 
   it('AwaitPaymentScreen: ссылка на оплату Робокассы — под скрытым узлом', () => {
     const { container } = render(
-      <AwaitPaymentScreen resultRef={createRef<HTMLDivElement>()} slot={slot} tz="Europe/Moscow" chosen={undefined} payUrl={PAY} />,
+      <AwaitPaymentScreen resultRef={createRef<HTMLDivElement>()} slot={slot} tz="Europe/Moscow" priceText={null} payUrl={PAY} />,
     );
     expect(carriers(container)).toHaveLength(1);
     expect(violations(container)).toEqual([]);

@@ -12,12 +12,16 @@ import { Loader } from './Loader';
 import { useBootstrapLoad, TODAY_DATE, TODAY_KEY } from './appShell/useBootstrapLoad';
 import { useOverlays } from './appShell/useOverlays';
 import { AppOverlays } from './appShell/AppOverlays';
+import { EntryFlows } from './appShell/EntryFlows';
 import { AppSections } from './appShell/AppSections';
 import { type Section, sectionFromPath, fillHistoryGaps } from './appShell/navigation';
 import { MobileNav } from './appShell/MobileNav';
+import { QuickActions } from './quickActions/QuickActions';
 import { useDesktopAppLaunch } from '../hooks/useDesktopAppLaunch';
 import { useHostShell } from '../hooks/useHostShell';
 import { useIsOffline } from '../hooks/useIsOffline';
+import { useOutboxFlushOnOnline } from '../hooks/useOutboxFlushOnOnline';
+import { OfflineBanner } from './OfflineBanner';
 // – always-needed small helpers (no heavy data deps) –
 import { Celebration } from './Celebration';
 import { todayInsightPhrase } from '../utils/todayInsight';
@@ -90,7 +94,6 @@ export function AppShell() {
   }, [navigate]);
 
   const historyDays = 30;
-
   // Bootstrap data — needs/ratings/profile/role/therapist clients/… fetched
   // on mount; see useBootstrapLoad for the fetch + silent-failure reporting.
   const {
@@ -106,6 +109,7 @@ export function AppShell() {
   const [history, setHistory] = useState<DayHistory[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const isOffline = useIsOffline();
+  useOutboxFlushOnOnline();
   const [helpTasksKey, setHelpTasksKey] = useState(0);
   const [celebrationStreak, setCelebrationStreak] = useState<number | null>(null);
   const [childhoodWheelPending, setChildhoodWheelPending] = useState(false);
@@ -143,7 +147,6 @@ export function AppShell() {
     return () => window.removeEventListener('keydown', onKey);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- ov.setCmdOpen стабильный сеттер useState; ov как объект не нужен в deps (не хотим переустанавливать обработчик на каждый чужой оверлей)
   }, [therapistMode, setSection]);
-
 
   // Show the history loading state the moment the history tab is opened.
   // Adjusting state during render (not in an effect) keeps this off
@@ -204,7 +207,7 @@ export function AppShell() {
   const anyOverlayOpen = ov.showTrackerOverlay || ov.showTracker || ov.showDiaries
     || ov.showSchemaInfo || ov.showSettings || ov.showPractices || ov.showPlans
     || ov.showChildhoodWheel || ov.showTodayNote || ov.showTrackerGoal
-    || ov.showTherapistDisclaimer || celebrationStreak !== null;
+    || ov.showTherapistDisclaimer || ov.quickAction !== null || celebrationStreak !== null;
 
   if (loading) {
     return <Loader minHeight="100vh" />;
@@ -335,6 +338,7 @@ export function AppShell() {
 
       {/* ── Main ─────────────────────────────────────────────────────────────── */}
       <div className={`main${therapistMode ? ' main--cabinet' : ''}`}>
+        <OfflineBanner offline={isOffline} />
         {/* Topbar – shown in all modes */}
         <div className="topbar">
           <div className="t-spacer" />
@@ -431,15 +435,12 @@ export function AppShell() {
         {/* ── Diaries overlay ── */}
         {ov.showDiaries && (
           <Suspense fallback={null}>
-            <DiariesOverlay onClose={() => ov.setShowDiaries(false)} />
+            <DiariesOverlay onClose={() => ov.setShowDiaries(false)} onOpenTracker={() => { ov.setShowDiaries(false); ov.setTrackerNeedId(null); ov.setShowTrackerOverlay(true); }} />
           </Suspense>
         )}
 
-        {/* ── Полноэкранные шторки (настройки/практики/планы/справочник схем/
-            колесо детства/заметка/цель/дисклеймер кабинета) — вынесены в
-            AppOverlays.tsx (правило №10), каждая со своей Suspense-границей
-            (fallback={null} — контент под ней уже смонтирован отдельно
-            выше, аудит 2026-08-22, находка №1). */}
+        {/* Согласия и ссылки-приглашения (EntryFlows), затем шторки (AppOverlays, правило №10) */}
+        <EntryFlows ov={ov} />
         <AppOverlays
           ov={ov}
           userRole={userRole}
@@ -467,6 +468,7 @@ export function AppShell() {
       {/* ── Mobile bottom nav ──────────────────────────────────────────────── */}
       <MobileNav items={NAV_ITEMS} therapist={therapistMode} onSearch={() => ov.setCmdOpen(true)} />
 
+      <QuickActions ov={ov} showButton={!therapistMode} />
       {/* ── Command palette ─────────────────────────────────────────────────── */}
       {ov.cmdOpen && (
         <CommandPalette
@@ -477,7 +479,7 @@ export function AppShell() {
           therapistMode={therapistMode}
           onToggleMode={() => switchTherapistMode(!therapistMode)}
           onOpenClient={(id) => { navigate('/cabinet/' + id); }}
-          onNewDiaryEntry={() => { navigate('/diary'); }}
+          onQuickAction={ov.runQuickAction}
         />
       )}
 

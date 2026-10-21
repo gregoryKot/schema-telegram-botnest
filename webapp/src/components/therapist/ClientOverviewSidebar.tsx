@@ -1,6 +1,7 @@
 import type { TherapyClientSummary } from '../../api';
 import { indexLevel, hueStyle } from '../../lib/tone';
 import { NextSessionCard, StartDateCard } from './ClientSessionInfoCards';
+import { MeetingDaysCard } from './MeetingDaysCard';
 import { indexSparkBars, needBars, weekDelta } from './clientOverviewModel';
 import type { ClientDetail } from './clientSheetTypes';
 
@@ -25,6 +26,7 @@ export function ClientOverviewSidebar({ selectedClient, detail }: Props) {
   return (
     <aside className="tk-side">
       <NextSessionCard selectedClient={selectedClient} detail={detail} />
+      <MeetingDaysCard key={String(selectedClient.telegramId)} selectedClient={selectedClient} detail={detail} />
       <StartDateCard selectedClient={selectedClient} detail={detail} />
 
       {todayIndex != null && (

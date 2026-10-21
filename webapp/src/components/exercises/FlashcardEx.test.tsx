@@ -163,3 +163,16 @@ describe('FlashcardEx (ModeEx) — портрет режима: первый п�
     expect(screen.getByRole('textbox')).toBeTruthy();
   });
 });
+
+// «Дополнить» из экрана паттерна: сохранение шлёт ВСЕ поля, поэтому форма
+// обязана стартовать с уже написанного — иначе карточка затирается пустыми.
+describe('FlashcardEx (SchemaEx) — initialData', () => {
+  it('поля стартуют с переданных значений, а не с пустых строк', async () => {
+    render(
+      <MemoryRouter>
+        <SchemaEx onBack={vi.fn()} initialSchemaId="emotional_deprivation" initialData={{ triggers: 'Когда молчат', feelings: 'Пусто' }} />
+      </MemoryRouter>,
+    );
+    expect((screen.getByRole('textbox') as HTMLTextAreaElement).value).toBe('Когда молчат');
+  });
+});

@@ -1,14 +1,11 @@
 // Сборка отчёта /stats без DI-контейнера: сервисы метрик, каждый с
 // одной зависимостью — PrismaService.
 //
-// Почему вынесено сюда, а не живёт в спеке. Потребителей у этой цепочки два:
-// test/raw-sql-live-stats.e2e-spec.ts (правило №18: каждый сырой запрос
-// исполняется драйвером) и замер планов test/perf (правило о механизме вместо
-// разового замера). Вторая копия конструктора разъехалась бы с первой на
-// следующем же новом сервисе метрик — и замер молча перестал бы мерить то, что
-// шлёт прод. AppModule целиком тут не поднимается намеренно: вместе с ним
-// поднялись бы кроны, а их тик посреди сценария добавил бы в замер чужие
-// запросы — замер перестал бы быть детерминированным.
+// Почему вынесено сюда: потребителей два — test/raw-sql-live-stats.e2e-spec.ts
+// (правило №18) и замер планов test/perf. Вторая копия конструктора разъехалась
+// бы с первой на следующем же сервисе метрик, и замер перестал бы мерить то, что
+// шлёт прод. AppModule целиком тут не поднимается: вместе с ним поднялись бы
+// кроны, а их тик посреди сценария добавил бы в замер чужие запросы.
 import { PrismaService } from '../../src/prisma/prisma.service';
 import { StatsReportService } from '../../src/bot/stats-report.service';
 import { ProductMetricsService } from '../../src/bot/bot.product-metrics.service';
@@ -32,6 +29,7 @@ import { AuthHealthMetricsService } from '../../src/bot/auth-health-metrics.serv
 import { LoginTicketMetricsService } from '../../src/bot/login-ticket-metrics.service';
 import { ClientErrorMetricsService } from '../../src/bot/client-error-metrics.service';
 import { MoneyMetricsService } from '../../src/bot/money-metrics.service';
+import { SessionCurrencyMetricsService } from '../../src/bot/session-currency-metrics.service';
 import { SignupSourceMetricsService } from '../../src/bot/signup-source-metrics.service';
 import { GameMetricsService } from '../../src/bot/game-metrics.service';
 import { DataExportMetricsService } from '../../src/bot/data-export-metrics.service';
@@ -65,6 +63,7 @@ export function buildStatsReport(prisma: PrismaService): StatsReportService {
     new LoginTicketMetricsService(prisma),
     new ClientErrorMetricsService(prisma),
     new MoneyMetricsService(prisma),
+    new SessionCurrencyMetricsService(prisma),
     new SignupSourceMetricsService(prisma),
     new GameMetricsService(prisma),
     new DataExportMetricsService(prisma),

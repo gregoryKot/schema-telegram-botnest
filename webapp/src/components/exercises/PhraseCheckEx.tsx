@@ -119,7 +119,7 @@ export function PhraseCheckEx({
             ) : undefined
           }
         >
-          <PhraseDoneCard phrase={phrase.trim()} rewrite={rewrite} />
+          <PhraseDoneCard phrase={phrase.trim()} rewrite={rewrite} marks={marks} />
           <div className="ex2-foot">
             <button className="ds-btn ds-btn--secondary" onClick={again}>Проверить ещё одну</button>
             <span className="ex2-spacer" />

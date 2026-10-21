@@ -125,3 +125,9 @@
 .tk-delta { font-size: 12px; font-weight: 700; }
 .tk-needs { margin-top: 12px; }
 .tk-side .tk-hint { font-size: 11px; margin-top: 6px; }
+.tk-days { display: flex; flex-wrap: wrap; gap: var(--space-6); }
+.tk-day {
+  min-width: 44px; min-height: 44px; padding: 0 var(--space-10); border-radius: var(--r-20); border: none; cursor: pointer;
+  background: var(--paper-sunk); color: var(--text-sub); font: 600 13px var(--sans);
+}
+.tk-day.is-on { background: var(--ink); color: var(--on-ink); }

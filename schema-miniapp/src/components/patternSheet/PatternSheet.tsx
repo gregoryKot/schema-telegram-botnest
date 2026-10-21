@@ -15,25 +15,24 @@ import { ShareCardSheet } from '../../share/ShareCardSheet';
 import { drawNoteCard } from '../../../../shared/src/share/cards/noteCard';
 import { buildSchemaIntroExplainer } from '../../../../shared/src/schema/schemaFlowExplainers';
 import { buildModeIntroExplainer } from '../../../../shared/src/mode/modeFlowExplainers';
+import { api } from '../../api';
+import {
+  PATTERN_EMPTY_ENTRIES,
+  PATTERN_SHARE_TITLE,
+  patternShareText,
+} from '../../../../shared/src/pattern/patternShare';
 import { botShortUrl } from '../../utils/botConfig';
-import { patternMeta } from './patternMeta';
+import { patternMeta } from '../../../../shared/src/pattern/patternMeta';
 import { PatternSheetHeader } from './PatternSheetHeader';
 import { PatternCardSection } from './PatternCardSection';
 import { PatternHelpSection } from './PatternHelpSection';
 import { PatternEntriesSection } from './PatternEntriesSection';
-import { usePatternEntryDelete } from './usePatternEntryDelete';
-import type { MyCardsKind, MyCardItem } from '../myCards/useMyCards';
+import { usePatternEntryDelete } from '../../../../shared/src/pattern/usePatternEntryDelete';
+import type {
+  MyCardsKind,
+  MyCardItem,
+} from '../../../../shared/src/pattern/useMyCards';
 import type { SchemaDiaryEntry, ModeDiaryEntry } from '../../types';
-
-const EMPTY_TEXT: Record<MyCardsKind, string> = {
-  schema: 'Записей с этой схемой пока нет.',
-  mode: 'Записей с этим режимом пока нет.',
-};
-const NOUN: Record<MyCardsKind, string> = { schema: 'схемы', mode: 'режима' };
-const SHEET_TITLE: Record<MyCardsKind, string> = {
-  schema: 'Карточка схемы',
-  mode: 'Карточка режима',
-};
 
 interface Props {
   kind: MyCardsKind;
@@ -84,6 +83,7 @@ export function PatternSheet({
   }
 
   const deleteEntry = usePatternEntryDelete({
+    api,
     kind,
     schemaEntries,
     setSchemaEntries,
@@ -139,7 +139,7 @@ export function PatternSheet({
             color={meta.color}
             entries={entries}
             onDeleteEntry={deleteEntry}
-            emptyText={EMPTY_TEXT[kind]}
+            emptyText={PATTERN_EMPTY_ENTRIES[kind]}
           />
 
           <button
@@ -164,7 +164,7 @@ export function PatternSheet({
 
       {showShare && item && (
         <ShareCardSheet
-          title={SHEET_TITLE[kind]}
+          title={PATTERN_SHARE_TITLE[kind]}
           draw={(canvas) =>
             drawNoteCard(canvas, {
               color: meta.color,
@@ -173,7 +173,7 @@ export function PatternSheet({
               fields: item.cardFields,
             })
           }
-          shareText={`Моя карточка ${NOUN[kind]} «${meta.name}».\n\n${botShortUrl}`}
+          shareText={patternShareText(kind, meta.name, botShortUrl)}
           filename={`${kind}-card.png`}
           eventKind={kind}
           onClose={() => setShowShare(false)}

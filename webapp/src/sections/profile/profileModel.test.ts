@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { forEachTimeZone } from '../../../../shared/src/utils/timeZone.test-helpers';
 import {
   utcDateStr, dayLevel, buildLevelMap, buildHeatWeeks, monthLabels, daysWord,
-  achievementProgress, formatNextSession, avatarInitial, trendKind,
+  achievementProgress, formatNextSession, avatarInitial, trendKind, heatWeeksForWidth, patternBarPercent,
 } from './profileModel';
 
 describe('dayLevel', () => {
@@ -86,5 +86,33 @@ describe('мелкие функции', () => {
     expect(trendKind('↑')).toBe('up');
     expect(trendKind('↓')).toBe('down');
     expect(trendKind('→')).toBe('flat');
+  });
+});
+
+describe('heatWeeksForWidth', () => {
+  it('шире 767 — все 18 недель', () => {
+    expect(heatWeeksForWidth(768)).toBe(18);
+    expect(heatWeeksForWidth(1440)).toBe(18);
+  });
+  it('телефон — по ширине, клетка не меньше 18px', () => {
+    expect(heatWeeksForWidth(390)).toBe(14);
+    expect(heatWeeksForWidth(360)).toBe(13);
+    expect(heatWeeksForWidth(320)).toBe(11);
+  });
+  it('верхний телефон не выходит за 16, узкий не падает ниже 8', () => {
+    expect(heatWeeksForWidth(767)).toBe(16);
+    expect(heatWeeksForWidth(200)).toBe(8);
+  });
+});
+
+describe('patternBarPercent', () => {
+  it('среднее 0–10 → процент заполнения полосы', () => {
+    expect(patternBarPercent(4)).toBe(40);
+    expect(patternBarPercent(6.8)).toBe(68);
+  });
+  it('не выходит за 0–100', () => {
+    expect(patternBarPercent(-1)).toBe(0);
+    expect(patternBarPercent(12)).toBe(100);
+    expect(patternBarPercent(null)).toBe(0);
   });
 });

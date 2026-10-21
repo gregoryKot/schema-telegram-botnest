@@ -55,7 +55,7 @@ beforeEach(() => {
   mockApi.adminStatus.mockResolvedValue(statusFixture());
   mockApi.adminGetPrices.mockResolvedValue([
     { type: 'INTRO_15', label: 'Знакомство', durationMin: 15, price: 0 },
-    { type: 'SESSION_50', label: 'Сессия', durationMin: 50, price: 3000 },
+    { type: 'SESSION_50', label: 'Сессия', durationMin: 50, price: 3000, prices: { RUB: 3000, ILS: 150, EUR: 50, USD: 55 } },
   ]);
   mockApi.adminGetSubPrices.mockResolvedValue([
     { period: 'month', price: 5000 },
@@ -135,7 +135,7 @@ describe('BookingSection — статус интеграций', () => {
 describe('BookingSection — цены сессий', () => {
   it('бесплатное знакомство (INTRO_15) не редактируется в списке цен', async () => {
     render(<BookingSection adminKey="k" />);
-    await screen.findByText(/Сессия · 50 мин/);
+    await screen.findAllByText(/Сессия · 50 мин/); // по строке на валюту
     // Строка-подсказка внизу упоминает «Знакомство» словами — редактируемой строки для него нет.
     expect(screen.queryByText(/Знакомство · \d+ мин/)).toBeNull();
   });
@@ -144,18 +144,18 @@ describe('BookingSection — цены сессий', () => {
     mockApi.adminSetPrice.mockResolvedValue({ ok: true });
     mockApi.adminGetPrices.mockResolvedValueOnce([
       { type: 'INTRO_15', label: 'Знакомство', durationMin: 15, price: 0 },
-      { type: 'SESSION_50', label: 'Сессия', durationMin: 50, price: 3000 },
+      { type: 'SESSION_50', label: 'Сессия', durationMin: 50, price: 3000, prices: { RUB: 3000, ILS: 150, EUR: 50, USD: 55 } },
     ]).mockResolvedValue([
       { type: 'INTRO_15', label: 'Знакомство', durationMin: 15, price: 0 },
-      { type: 'SESSION_50', label: 'Сессия', durationMin: 50, price: 3500 },
+      { type: 'SESSION_50', label: 'Сессия', durationMin: 50, price: 3500, prices: { RUB: 3500, ILS: 150, EUR: 50, USD: 55 } },
     ]);
     render(<BookingSection adminKey="k" />);
     const priceInput = await screen.findByDisplayValue('3000');
     fireEvent.change(priceInput, { target: { value: '3500' } });
-    fireEvent.click(within(section('Цены')).getByRole('button', { name: 'Сохранить' }));
+    fireEvent.click(within(section('Цены')).getAllByRole('button', { name: 'Сохранить' })[0]);
 
     await screen.findByText('Цена сохранена ✓');
-    expect(mockApi.adminSetPrice).toHaveBeenCalledWith('k', 'SESSION_50', 3500);
+    expect(mockApi.adminSetPrice).toHaveBeenCalledWith('k', 'SESSION_50', 3500, 'RUB');
   });
 
   // Аудит 2026-10-11: очищенное поле превращалось в Math.max(0, Math.round(Number('')))
@@ -163,7 +163,7 @@ describe('BookingSection — цены сессий', () => {
   it.each(['', '0', '-5', '1e22'])('поле цены сессии = "%s": «Сохранить» неактивна, adminSetPrice не вызывается', async (typed) => {
     render(<BookingSection adminKey="k" />);
     fireEvent.change(await screen.findByDisplayValue('3000'), { target: { value: typed } });
-    const save = within(section('Цены')).getByRole('button', { name: 'Сохранить' }) as HTMLButtonElement;
+    const save = within(section('Цены')).getAllByRole('button', { name: 'Сохранить' })[0] as HTMLButtonElement;
     expect(save.disabled).toBe(true);
     fireEvent.click(save);
     expect(mockApi.adminSetPrice).not.toHaveBeenCalled();
@@ -176,11 +176,11 @@ describe('BookingSection — цены сессий', () => {
     const field = await screen.findByDisplayValue('3000');
     fireEvent.change(field, { target: { value: '' } });
     fireEvent.change(field, { target: { value: '1' } });
-    const save = within(section('Цены')).getByRole('button', { name: 'Сохранить' }) as HTMLButtonElement;
+    const save = within(section('Цены')).getAllByRole('button', { name: 'Сохранить' })[0] as HTMLButtonElement;
     expect(save.disabled).toBe(false);
     fireEvent.click(save);
     await screen.findByText('Цена сохранена ✓');
-    expect(mockApi.adminSetPrice).toHaveBeenCalledWith('k', 'SESSION_50', 1);
+    expect(mockApi.adminSetPrice).toHaveBeenCalledWith('k', 'SESSION_50', 1, 'RUB');
   });
 
   it('таймер сброса «✓» чистится при анмаунте (регресс: setState после снятия компонента ронял CI «window is not defined»)', async () => {
@@ -191,7 +191,7 @@ describe('BookingSection — цены сессий', () => {
       const priceInput = await screen.findByDisplayValue('3000');
       fireEvent.change(priceInput, { target: { value: '3500' } });
       fireEvent.click(
-        within(section('Цены')).getByRole('button', { name: 'Сохранить' }),
+        within(section('Цены')).getAllByRole('button', { name: 'Сохранить' })[0],
       );
       await screen.findByText('Цена сохранена ✓');
 
@@ -206,8 +206,8 @@ describe('BookingSection — цены сессий', () => {
   it('ошибка сохранения цены сессии — видна, «сохранена» не показывается (тот же класс бага, что и в подписке)', async () => {
     mockApi.adminSetPrice.mockRejectedValue(new Error('Не удалось сохранить цену'));
     render(<BookingSection adminKey="k" />);
-    await screen.findByText(/Сессия · 50 мин/);
-    fireEvent.click(within(section('Цены')).getByRole('button', { name: 'Сохранить' }));
+    await screen.findAllByText(/Сессия · 50 мин/); // по строке на валюту
+    fireEvent.click(within(section('Цены')).getAllByRole('button', { name: 'Сохранить' })[0]);
 
     await within(section('Цены')).findByText('Не удалось сохранить цену');
     expect(screen.queryByText('Цена сохранена ✓')).toBeNull();

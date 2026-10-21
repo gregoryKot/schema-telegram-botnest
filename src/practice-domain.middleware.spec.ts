@@ -238,9 +238,9 @@ describe('practiceDomainMiddleware', () => {
 
     it.each([
       '/assets/index-abc.js',
-      '/favicon-personal-32.png',
+      '/favicon-personal-96.png',
       '/fonts/a.woff2',
-      '/og-cover-v3.jpg', // og:image главной визитки
+      '/og-cover-v4.jpg', // og:image главной визитки
       '/gregory.jpg', // image в JSON-LD Person
     ])('статика %s → next', (path) => {
       const { sent, nextCalled } = run('kotlarewski.gr', path);
