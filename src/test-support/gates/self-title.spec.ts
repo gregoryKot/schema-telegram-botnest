@@ -47,7 +47,7 @@ describe('самоописание автора в статике', () => {
     expect(lead).toBe(`> ${APPROVED_LLMS_LEAD}`);
   });
 
-  // Тот же запрет, что у паттернов samonazvanie-* в check-robot-phrases.mjs,
+  // Тот же запрет, что у паттернов samonazvanie-* в robot-phrases-patterns.mjs,
   // но по готовому файлу: подстава «Схема-терапевт» в JSON-LD обязана падать
   // и здесь, даже если кто-то вынесет статику из SCAN_FILES гейта.
   it.each([INDEX_HTML, LLMS_TXT])('%s: слова «схема-терапевт» нет', (rel) => {
