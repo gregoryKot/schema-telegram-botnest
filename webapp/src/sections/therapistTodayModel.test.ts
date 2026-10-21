@@ -54,10 +54,11 @@ describe('therapistTodayModel', () => {
   });
 
   it('статус активности', () => {
-    expect(activityStatus(c({ todayIndex: 6 }), NOW)).toEqual({ text: 'активен сегодня', tone: 'ok' });
+    expect(activityStatus(c({ todayIndex: 6 }), NOW)).toEqual({ text: 'активность сегодня', tone: 'ok' });
     expect(activityStatus(c(), NOW)).toEqual({ text: 'нет данных', tone: 'warn' });
-    expect(activityStatus(c({ lastActiveDate: ago(1) }), NOW).text).toBe('был вчера');
-    expect(activityStatus(c({ lastActiveDate: ago(2) }), NOW).tone).toBe('none');
+    expect(activityStatus(c({ lastActiveDate: ago(0) }), NOW)).toEqual({ text: 'активность сегодня', tone: 'ok' });
+    expect(activityStatus(c({ lastActiveDate: ago(1) }), NOW)).toEqual({ text: 'активность вчера', tone: 'none' });
+    expect(activityStatus(c({ lastActiveDate: ago(2) }), NOW)).toEqual({ text: 'активность 2 дн. назад', tone: 'none' });
     expect(activityStatus(c({ lastActiveDate: ago(5) }), NOW)).toEqual({ text: 'нет активности 5 дн.', tone: 'warn' });
   });
 

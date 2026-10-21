@@ -139,18 +139,31 @@ describe('clientCaption', () => {
   });
   afterEach(() => vi.useRealTimers());
 
-  it('Telegram-клиент: активен сегодня', () => {
-    expect(clientCaption(client({ lastActiveDate: TODAY }), TODAY)).toBe('активен сегодня');
+  // Аудит 2026-10: подписи были в мужском роде («активен сегодня», «был
+  // недавно», «не активен») о человеке, чей пол неизвестен.
+  it('Telegram-клиент: активность сегодня', () => {
+    expect(clientCaption(client({ lastActiveDate: TODAY }), TODAY)).toBe('активность сегодня');
   });
 
-  it('Telegram-клиент: был недавно + стрик', () => {
+  it('Telegram-клиент: активность недавно + стрик', () => {
     expect(clientCaption(client({ lastActiveDate: '2026-10-01', streak: 4 }), TODAY)).toBe(
-      'был недавно · стрик 4 дн.',
+      'активность недавно · стрик 4 дн.',
     );
   });
 
-  it('Telegram-клиент: не активен, без стрика', () => {
-    expect(clientCaption(client({}), TODAY)).toBe('не активен');
+  it('Telegram-клиент: нет активности, без стрика', () => {
+    expect(clientCaption(client({}), TODAY)).toBe('нет активности');
+  });
+
+  it('ни в одной ветке активности нет мужского рода о клиенте', () => {
+    const captions = [
+      clientCaption(client({ lastActiveDate: TODAY, streak: 2 }), TODAY),
+      clientCaption(client({ lastActiveDate: '2026-09-01' }), TODAY),
+      clientCaption(client({}), TODAY),
+    ];
+    for (const caption of captions) {
+      expect(caption).not.toMatch(/активен|был|заходил/);
+    }
   });
 
   it('офлайн без даты начала — подписи нет', () => {

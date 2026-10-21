@@ -81,7 +81,7 @@ export function ClientCard({
         <div className="u-sub12">
           {isVirtual
             ? 'Без Telegram'
-            : `${isToday ? 'Сегодня' : c.lastActiveDate ? fmtDate(c.lastActiveDate) : 'Не активен'} · Стрик ${c.streak} дн`}
+            : `${isToday ? 'Сегодня' : c.lastActiveDate ? fmtDate(c.lastActiveDate) : 'Нет активности'} · Стрик ${c.streak} дн`}
         </div>
         {/* Динамика индекса за 14 дней (index 0 = сегодня →
                       разворачиваем). Меньше 2 точек — не занимаем место. */}

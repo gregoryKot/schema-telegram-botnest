@@ -65,12 +65,12 @@ export function todayCounts(clients: TherapyClientSummary[], now: number): Today
 export interface ActivityStatus { text: string; tone: 'ok' | 'warn' | 'none' }
 
 export function activityStatus(c: TherapyClientSummary, now: number): ActivityStatus {
-  if (c.todayIndex != null) return { text: 'активен сегодня', tone: 'ok' };
+  if (c.todayIndex != null) return { text: 'активность сегодня', tone: 'ok' };
   const days = daysSinceActive(c, now);
   if (days == null) return { text: 'нет данных', tone: 'warn' };
   if (days === 0) return { text: 'активность сегодня', tone: 'ok' };
-  if (days === 1) return { text: 'был вчера', tone: 'none' };
-  if (days < ATTENTION_DAYS) return { text: `был ${days} дн. назад`, tone: 'none' };
+  if (days === 1) return { text: 'активность вчера', tone: 'none' };
+  if (days < ATTENTION_DAYS) return { text: `активность ${days} дн. назад`, tone: 'none' };
   return { text: `нет активности ${days} дн.`, tone: 'warn' };
 }
 

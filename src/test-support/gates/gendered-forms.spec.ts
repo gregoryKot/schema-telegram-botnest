@@ -249,6 +249,60 @@ describe('check-gendered-forms.mjs', () => {
     expect(res.stdout).toContain('1 < 2 — стало лучше');
   });
 
+  // Аудит 2026-10: статусы клиента в кабинете терапевта («активен сегодня»,
+  // «был недавно», «не активен») и партнёра по паре («Ещё не заполнил») —
+  // мужской род о человеке, чей пол неизвестен. Подлежащего в подписи нет,
+  // поэтому правила про «ты»/«я» их не видели: гейт давал 0 на этих файлах.
+  it('status-label-m ловит статусную подпись в литерале, JSX и после ${имя}', () => {
+    const res = runGate('check-gendered-forms.mjs', {
+      'scripts/gendered-forms-baseline.json': JSON.stringify({}),
+      'src/foo.ts':
+        "export const a = (d: string | null) => (d ? 'был недавно' : 'не активен');\n",
+      'src/bar.tsx':
+        'export const B = () => <span className="ds-badge">был сегодня</span>;\n',
+      'src/baz.tsx': [
+        'export const C = () => (',
+        '  <div>',
+        '    Ещё не заполнил',
+        '  </div>',
+        ');',
+        'export const m = (name: string) => `${name} ещё не заполнил дневник — позже`;',
+        '',
+      ].join('\n'),
+    });
+    expect(res.status).toBe(1);
+    expect(res.stderr).toContain("[status-label-m] 'был недавно");
+    expect(res.stderr).toContain("[status-label-m] 'не активен");
+    expect(res.stderr).toContain(
+      'src/bar.tsx: новый файл с 1 мужскими формами',
+    );
+    expect(res.stderr).toContain('[status-label-m] >был сегодня');
+    expect(res.stderr).toContain(
+      'src/baz.tsx: новый файл с 2 мужскими формами',
+    );
+    expect(res.stderr).toContain('[status-label-m] ${name} ещё не заполнил');
+  });
+
+  it('status-label-m молчит на безличных подписях и законном мужском роде', () => {
+    const res = runGate('check-gendered-forms.mjs', {
+      'scripts/gendered-forms-baseline.json': JSON.stringify({}),
+      'src/clean.tsx': [
+        "export const a = (d: string | null) => (d ? 'активность недавно' : 'нет активности');",
+        "export const b = 'Нет активности';",
+        'export const B = () => <span className="ds-badge">активность сегодня</span>;',
+        "export const c = 'Если этот режим активен — стоит поговорить с терапевтом.';",
+        "export const d = 'Клиент ещё не заполнил карточки схем или режимов';",
+        "export const e = 'Был стабильный взрослый, которому можно было доверять.';",
+        'export const f = (x: number) => `Вчера индекс был ${x}`;',
+        'export const g = (who: string) => `${who} не ответил вовремя`;',
+        'export const h = (n: string) => `Записи за сегодня пока нет — когда ${n} заполнит дневник`;',
+        '',
+      ].join('\n'),
+    });
+    expect(res.status).toBe(0);
+    expect(res.stdout).toContain('✓ Храповик мужского рода: 0 (без роста)');
+  });
+
   // Ложно-красный гейт хуже отсутствующего: он заставляет коверкать язык.
   it('форма «вы» рода не имеет — не считается регрессом', () => {
     const res = runGate('check-gendered-forms.mjs', {
@@ -309,6 +363,7 @@ describe('каждый паттерн и ALLOW-исключение пойман
     'child-self-m': 'Дорогой маленький я,',
     'dropped-subject-past': 'Чувства было опасно показывать. Научился прятать.',
     brackets: 'Я обречён(а) быть в одиночестве',
+    'status-label-m': "x ? 'активен сегодня' : y",
   };
 
   it('в PATTERNS нет имени без образца в POSITIVE', () => {
@@ -373,6 +428,41 @@ describe('каждый паттерн и ALLOW-исключение пойман
       'inf-adj-m',
       'Поддержка — это когда можно просто быть рядом с ним',
       '«ним» короче порога основы — не прилагательное',
+    ],
+    [
+      'status-label-m',
+      "tip: 'Если этот режим активен — стоит поговорить с терапевтом'",
+      'род принадлежит слову «режим», и слово не открывает литерал',
+    ],
+    [
+      'status-label-m',
+      "'Клиент ещё не заполнил карточки схем или режимов'",
+      'род согласован с существительным «Клиент» — законно',
+    ],
+    [
+      'status-label-m',
+      "'Был стабильный взрослый, которому можно было доверять.'",
+      'длинная фраза, а не статусная подпись: после «Был» больше двух слов',
+    ],
+    [
+      'status-label-m',
+      '`Вчера индекс был ${x}`',
+      '«был» при подлежащем «индекс», не в начале литерала',
+    ],
+    [
+      'status-label-m',
+      '`${who} не ответил`',
+      '«ответил» не в списке: так пишут о площадке (Google/VK)',
+    ],
+    [
+      'status-label-m',
+      "'Рядом живой человек, а не бот'",
+      'мужской род у слова «человек»',
+    ],
+    [
+      'status-label-m',
+      "x ? 'активность сегодня' : 'Нет активности'",
+      'безличная подпись — то, на что правило и переводит',
     ],
   ] as const)('паттерн «%s» НЕ ловит «%s» (%s)', (name, text) => {
     const p = PATTERNS.find((x) => x.name === name)!;

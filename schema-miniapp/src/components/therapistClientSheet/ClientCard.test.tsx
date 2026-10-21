@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 // ClientCard — строка клиента в списке терапевта. Проверяет цепочку
 // фолбэков имени (алиас → имя → «Оффлайн»/«ID N»), метку активности
-// (сегодня/дата/«Не активен») и что индекс дня скрыт, когда клиент его не
+// (сегодня/дата/«Нет активности») и что индекс дня скрыт, когда клиент его не
 // поставил (пусто, а не выдуманный 0 — правило «никаких хардкод-заглушек»).
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
@@ -96,7 +96,8 @@ describe('ClientCard — метка активности', () => {
     expect(screen.getByText(/Сегодня · Стрик 4 дн/)).toBeTruthy();
   });
 
-  it('никогда не заходил — «Не активен»', () => {
+  // Аудит 2026-10: было «Не активен» — мужской род о клиенте неизвестного пола.
+  it('активности ещё не было — «Нет активности»', () => {
     render(
       <ClientCard
         client={makeClient({ name: 'Иван', lastActiveDate: null })}
@@ -104,7 +105,8 @@ describe('ClientCard — метка активности', () => {
         onOpen={() => {}}
       />,
     );
-    expect(screen.getByText(/Не активен/)).toBeTruthy();
+    expect(screen.getByText('Нет активности · Стрик 0 дн')).toBeTruthy();
+    expect(screen.queryByText(/[Аа]ктивен/)).toBeNull();
   });
 });
 
