@@ -5,7 +5,6 @@ import { MetrikaTracker } from './components/MetrikaTracker';
 import { AuthProvider } from './auth/AuthProvider';
 import { useAuth } from './auth/authContext';
 import { setTokenProvider, setRefreshHandler } from './api';
-import { ConnectionTrouble } from '../../shared/src/components/ConnectionTrouble';
 import { LoginPage } from './pages/LoginPage';
 import { AuthErrorPage } from './pages/AuthErrorPage';
 import { AuthCallback } from './pages/AuthCallback';
@@ -19,9 +18,8 @@ import { RecoveryPage } from './pages/RecoveryPage';
 import { AppShell } from './components/AppShell';
 import { CookieBanner } from './components/CookieBanner';
 import { RouteErrorScreen } from './components/RouteErrorScreen';
-import { AddressFormPicker } from './components/AddressFormPicker';
-import { AddressFormProvider } from './utils/AddressFormProvider';
-import { UiPrefsGate } from './components/UiPrefsGate';
+import { PracticeBrand } from './components/PracticeBrand';
+import { RequireAuth } from './components/RequireAuth';
 import { LandingPage } from './pages/LandingPage';
 import { ProductLandingPage } from './pages/ProductLandingPage';
 import { PrivacyPage } from './pages/PrivacyPage';
@@ -46,19 +44,6 @@ function TokenBridge() {
   useEffect(() => { setTokenProvider(() => accessToken); setRefreshHandler(refreshToken); }, [accessToken, refreshToken]);
   return null;
 }
-// ── Auth guard as a layout route ───────────────────────────────────────────────
-function RequireAuth() {
-  const { isAuthenticated, isLoading, authError, refreshToken } = useAuth();
-  if (isLoading) return <div className="loader-center"><div className="spinner" /></div>;
-  if (!isAuthenticated) return authError === 'transient' ? <ConnectionTrouble onRetry={() => void refreshToken()} /> : <Navigate to="/login" replace />;
-  return (
-    <AddressFormProvider>
-      <AddressFormPicker />
-      <UiPrefsGate><Outlet /></UiPrefsGate>
-    </AddressFormProvider>
-  );
-}
-
 // ── Root layout – providers wrapper ───────────────────────────────────────────
 function Root() {
   return (
@@ -79,23 +64,33 @@ if (isPersonalSite) applyPersonalSiteChrome();
 
 // ── Router ─────────────────────────────────────────────────────────────────────
 const personalRoutes = [
-  { path: '/',               element: <LandingPage /> },
-  { path: '/articles',       element: <ArticlesListPage /> },
-  { path: '/articles/:slug', element: <ArticlePage /> },
-  { path: '/reviews',        element: <ReviewsPage /> },
+  // Страницы визитки — под одним брендом (индиго, см. PracticeBrand).
+  {
+    element: <PracticeBrand />,
+    children: [
+      { path: '/',               element: <LandingPage /> },
+      { path: '/articles',       element: <ArticlesListPage /> },
+      { path: '/articles/:slug', element: <ArticlePage /> },
+      { path: '/reviews',        element: <ReviewsPage /> },
+      { path: '/book',           element: <Suspense fallback={null}><BookingLinkPage /></Suspense> }, // ссылка для клиентов: расписание сразу
+      { path: '/booking/paid',   element: <BookingPaidRoute /> },
+      // Ссылка управления записью (BookingSaveBlock/.ics URL:) — тот же компонент,
+      // что у /booking/paid: путь переименовывать нельзя, туда редиректит
+      // Робокасса, а новая capability-ссылка ведёт на другой путь.
+      { path: '/booking/manage', element: <BookingPaidRoute /> },
+      { path: '/privacy',        element: <PrivacyPage /> },
+      { path: '/offer',          element: <OfferPage /> },
+    ],
+  },
+  // Вне бренда визитки — осознанно:
+  // /admin и редиректы — служебный инструмент, одинаковый на обоих доменах.
   { path: '/admin',          element: <Suspense fallback={null}><AdminPage /></Suspense> },
   { path: '/booking-admin',  element: <Navigate to="/admin" replace /> },
   { path: '/articles-admin', element: <Navigate to="/admin" replace /> },
-  { path: '/book',           element: <Suspense fallback={null}><BookingLinkPage /></Suspense> }, // ссылка для клиентов: расписание сразу
-  { path: '/booking/paid',   element: <BookingPaidRoute /> },
-  // Ссылка управления записью (BookingSaveBlock/.ics URL:) — тот же компонент,
-  // что у /booking/paid: путь переименовывать нельзя, туда редиректит
-  // Робокасса, а новая capability-ссылка ведёт на другой путь.
-  { path: '/booking/manage', element: <BookingPaidRoute /> },
+  // /subscribe и /donate — на .light-lock + styles/auth-pay.css (PR #740):
+  // .light-lock сам переопределяет акцент, страницы осознанно продуктовые.
   { path: '/subscribe',      element: <Suspense fallback={null}><SubscribePage /></Suspense> },
   { path: '/donate',         element: <DonatePage /> },
-  { path: '/privacy',        element: <PrivacyPage /> },
-  { path: '/offer',          element: <OfferPage /> },
   { path: '*',               element: <Navigate to="/" replace /> },
 ];
 
