@@ -1410,7 +1410,7 @@
   "src/infra/self-check/ci-runs-github.ts": 33,
   "src/infra/self-check/clinical-labels-status.ts": 102,
   "src/infra/self-check/cron-gap.ts": 96,
-  "src/infra/self-check/cron-lease-registry.ts": 50,
+  "src/infra/self-check/cron-lease-registry.ts": 41,
   "src/infra/self-check/format.ts": 30,
   "src/infra/self-check/freshness.ts": 38,
   "src/infra/self-check/polling-status.ts": 53,
