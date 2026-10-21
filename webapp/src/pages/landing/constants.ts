@@ -16,7 +16,7 @@ export const menuBtnStyle: CSSProperties = {
   width: 38, height: 38, borderRadius: 9, border: '1px solid var(--line)',
   background: 'transparent', cursor: 'pointer', padding: 0, alignItems: 'center',
 };
-export const burgerLine: CSSProperties = { width: 16, height: 1.6, background: 'var(--text)', borderRadius: 2, display: 'block' };
+export const burgerLine: CSSProperties = { width: 16, height: 1.6, background: 'var(--text)', borderRadius: 'var(--r-2)', display: 'block' };
 
 // ─── Section nav – compact desktop set (≤5 per 2026 nav guidance) ─────────────
 export const NAV_LINKS: { label: string; href: string }[] = [

@@ -271,8 +271,8 @@ html[data-theme="dark"] {
 }
 
 /* ─── Личный сайт терапевта (kotlarewski) — своя, НЕ продуктовая айдентика ──
-   LandingPage.tsx и pages/landing/* оборачивают себя в этот класс (App.tsx
-   рендерит их только на домене kotlarewski). Продукт переехал на терракоту
+   Класс ставит layout-маршрут PracticeBrand (App.tsx) на все страницы
+   визитки (App.tsx рендерит их только на домене kotlarewski). Продукт переехал на терракоту
    и Manrope/Spectral этой волной — личный сайт сознательно остаётся на
    прежних индиго + Instrument Serif, чтобы не выглядеть «тем же продуктом»
    (см. docs/DESIGN_AUDIT_2026-08.md, В11, п.4 задачи волны). landing-kit.tsx
@@ -286,10 +286,16 @@ html[data-theme="dark"] {
   --accent-rgb:    77, 71, 153;
   --accent-hi:     #5b54a8;
   --accent-hover:  var(--accent-hi);
-  --on-accent:     #ffffff;
+  --on-accent:     #ffffff; /* 7.85:1 на --accent #4d4799 */
+  /* Индиго для секций на DARK_BG (landing-kit-hooks), которые тёмные при
+     любой теме: там нужен светлый индиго, а --accent в светлой теме тёмный. */
+  --accent-on-dark: #9089e0;
   --serif:         'Instrument Serif', ui-serif, Georgia, serif;
   --font-serif:    var(--serif);
-  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  /* 'Inter' из стека убран: @font-face для него нет нигде (см. комментарий в
+     shared/src/theme/tokens.css), и рисовался system-ui. Вид не меняется —
+     раньше имя в стеке было ложным. */
+  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
 }
 html[data-theme="dark"] .landing-personal-brand {
   --accent:        #9089e0;
@@ -298,7 +304,10 @@ html[data-theme="dark"] .landing-personal-brand {
   --accent-rgb:    144, 137, 224;
   --accent-hi:     #a59ee8;
   --accent-hover:  var(--accent-hi);
-  --on-accent:     #ffffff;
+  /* Белый на #9089e0 — 3.07:1, ниже нормы AA. Тёплые ночные чернила (то же
+     значение, что --on-accent тёмной темы в shared/src/theme/tokens.css) —
+     6.07:1. Инвариант держит index.css.contrast.test.ts. */
+  --on-accent:     #16120f;
 }
 
 /* ─── Reset ──────────────────────────────────────────────────────────────── */

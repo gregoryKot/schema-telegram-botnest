@@ -1,8 +1,8 @@
 import { CANCEL_SUPPORT_LINK, CANCEL_SUPPORT_HANDLE } from './cancelPolicy';
 import { h1, sub } from './bookingPageStyles';
-import { icon, ghostBtn, primaryBtn } from './bookingPaidStyles';
+import { icon, ghostBtn } from './bookingPaidStyles';
+import { Btn } from '../landing-kit';
 import type { BookingLoadError } from './bookingLoadError';
-
 /**
  * Оплата принята, но данных о встрече нет: человек пришёл с подписанного
  * редиректа без токена, либо статус брони не знаком странице. Сюда НЕ попадает
@@ -14,7 +14,7 @@ export function BookingPaidAccepted() {
       <div style={icon}>✓</div>
       <h1 style={h1}>Оплата принята</h1>
       <p style={sub}>Спасибо! Я свяжусь с вами и пришлю ссылку на встречу.</p>
-      <a href="/" style={primaryBtn}>На главную</a>
+      <Btn href="/" full radius="btn" size="lg">На главную</Btn>
     </>
   );
 }
