@@ -6,10 +6,10 @@ export const icon: React.CSSProperties = {
   background: 'rgba(var(--accent-rgb),0.10)', color: 'var(--accent)', fontSize: 28,
 };
 export const card: React.CSSProperties = { background: 'rgba(var(--fg-rgb),0.04)', border: '1px solid var(--line)', borderRadius: 'var(--r-14)', padding: '16px 18px', margin: '0 0 18px' };
-export const primaryBtn: React.CSSProperties = {
+// Основная кнопка этих экранов — `Btn` (landing-kit), здесь только контурная.
+export const ghostBtn: React.CSSProperties = {
   display: 'block', width: '100%', boxSizing: 'border-box', textAlign: 'center', padding: '14px',
-  fontSize: 15, fontWeight: 600, fontFamily: 'inherit', background: 'var(--accent)', color: '#fff',
-  border: 'none', borderRadius: 'var(--r-12)', cursor: 'pointer', textDecoration: 'none',
+  fontSize: 15, fontWeight: 600, fontFamily: 'inherit', background: 'transparent', color: 'var(--accent)',
+  border: '1.5px solid var(--accent)', borderRadius: 'var(--r-12)', cursor: 'pointer', textDecoration: 'none',
 };
-export const ghostBtn: React.CSSProperties = { ...primaryBtn, background: 'transparent', color: 'var(--accent)', border: '1.5px solid var(--accent)' };
 export const hint: React.CSSProperties = { fontSize: 13, color: 'var(--text-faint)', lineHeight: 1.6, margin: '14px 0 22px' };
