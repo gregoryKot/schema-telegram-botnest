@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { haptic } from '../../haptic';
 import { ExScreen } from '../exercises/ExScreen';
 import { CaseFlowFoot, TertiaryLink } from './caseFlowUi';
 import { CASE_ALIAS_CHIPS } from '../../../../shared/src/case/caseAliasChips';
@@ -52,7 +53,10 @@ export function CaseNameScreen({
               key={label}
               type="button"
               className="ds-chip ex2-chip"
-              onClick={() => onConfirm(label, 'chip')}
+              onClick={() => {
+                haptic.tap();
+                onConfirm(label, 'chip');
+              }}
             >
               {label}
             </button>

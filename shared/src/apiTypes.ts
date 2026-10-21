@@ -4,6 +4,7 @@
 // расходящиеся остаются локальными (ClientConceptualization в webapp несёт
 // modeMapNodes/modeMapEdges — mode-map есть только на сайте).
 import type { UserId } from './userId';
+import type { UiPrefsPatch } from './prefs/uiPrefsSync';
 export type { UserId };
 
 export interface UserSettings {
@@ -22,6 +23,7 @@ export interface UserSettings {
   myModeIds: string[];
   therapistShareCards: boolean;
   therapistShareProfile: boolean;
+  uiPrefs?: UiPrefsPatch | null; // настройки экранов; POST заменяет объект целиком
 }
 
 export interface StreakData {
@@ -55,6 +57,8 @@ export interface PartnerInfo {
 export interface PairsData {
   partners: PartnerInfo[];
   pendingCode: string | null;
+  /** Ссылка-приглашение ждущей пары (null — приглашения нет или бот не настроен). */
+  pendingUrl?: string | null;
 }
 
 export interface PracticePlan {

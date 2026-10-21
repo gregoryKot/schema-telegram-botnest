@@ -46,6 +46,7 @@ vi.mock('../api', () => ({
     deleteYsqResult: vi.fn(),
     submitTherapistRequest: vi.fn(),
   },
+  reportClientError: vi.fn(),
 }));
 import { api } from '../api';
 const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
@@ -544,7 +545,11 @@ describe('SettingsSheet — «Выйти из пары»: отказ виден 
     await screen.findByText('Выйти из пары');
 
     fireEvent.click(screen.getByText('Выйти из пары'));
+    // Выход идёт через подтверждение (ONE_FRONTEND_PLAN): первый тап пару не рвёт.
+    expect(mockApi.leavePair).not.toHaveBeenCalled();
+    fireEvent.click(await screen.findByText('Выйти'));
     await screen.findByText(/Не удалось выйти из пары/);
+    expect(mockApi.leavePair).toHaveBeenCalledWith('ABC');
   });
 });
 

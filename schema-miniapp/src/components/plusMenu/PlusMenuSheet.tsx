@@ -3,17 +3,13 @@
 // Раньше 4 пункта были зашиты прямо в FloatingPill — теперь любое действие
 // реестра открывается отсюда (правило «одна механика — один компонент»).
 import { useState } from 'react';
+import { notifyPrefsChanged } from '../../utils/uiPrefsSync';
 import { BottomSheet } from '../BottomSheet';
 import { useTr } from '../../utils/addressForm';
 import { api } from '../../api';
-import { buildPlusActions, type QuickActionId } from '../../utils/quickActions';
-import { PLUS_ACTIONS_HIDDEN_KEY } from '../../utils/quickActionPrefs';
-import { useHiddenActions } from '../../utils/useHiddenActions';
-import {
-  PLUS_ACTIONS_ORDER_KEY,
-  withDragRange,
-} from '../../utils/quickActionOrder';
-import { useQuickActionOrder } from '../../utils/useQuickActionOrder';
+import type { QuickActionId } from '../../../../shared/src/quickActions/quickActions';
+import { usePlusMenuState } from '../../../../shared/src/quickActions/usePlusMenuState';
+import { withDragRange } from '../../../../shared/src/quickActions/quickActionOrder';
 import { QuickActionCustomizeSheet } from './QuickActionCustomizeSheet';
 import { PlusActionGroup } from './PlusActionGroup';
 import { CustomizeButton } from './CustomizeButton';
@@ -25,27 +21,15 @@ interface Props {
 
 export function PlusMenuSheet({ onAction, onClose }: Props) {
   const tr = useTr();
-  const groups = buildPlusActions(tr);
-  const [hidden, handleToggle] = useHiddenActions(PLUS_ACTIONS_HIDDEN_KEY);
+  const { orderedGroups, visibleGroups, hidden, toggle, onReorder } =
+    usePlusMenuState(tr, notifyPrefsChanged);
   const [showCustomize, setShowCustomize] = useState(false);
-  const { ordered, onReorder } = useQuickActionOrder(
-    PLUS_ACTIONS_ORDER_KEY,
-    groups.map((g) => g.actions),
-  );
-  const orderedGroups = groups.map((g, i) => ({ ...g, actions: ordered[i] }));
 
   function handleAction(id: QuickActionId) {
     api.trackEvent('plus_action', { action: id });
     onClose();
     onAction(id);
   }
-
-  const visibleGroups = orderedGroups
-    .map((g) => ({
-      ...g,
-      actions: g.actions.filter((a) => !hidden.includes(a.id)),
-    }))
-    .filter((g) => g.actions.length > 0);
 
   return (
     <>
@@ -90,7 +74,7 @@ export function PlusMenuSheet({ onAction, onClose }: Props) {
           surface="plus"
           actions={withDragRange(orderedGroups.map((g) => g.actions))}
           hidden={hidden}
-          onToggle={handleToggle}
+          onToggle={toggle}
           onReorder={onReorder}
           onClose={() => setShowCustomize(false)}
         />

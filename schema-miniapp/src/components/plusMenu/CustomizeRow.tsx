@@ -1,6 +1,6 @@
 import { ToggleRow } from '../todayCustomize/ToggleRow';
 import { DragHandle } from './DragHandle';
-import type { DragHandleProps } from '../../hooks/useDragReorder';
+import type { DragHandleProps } from '../../../../shared/src/hooks/useDragReorder';
 
 // Строка листа настройки: ToggleRow (скрыть/показать) + ручка «≡» (порядок,
 // DragHandle — место MoveArrows, удалённого правилом №11). Без onToggle —

@@ -7,7 +7,8 @@ import { api } from '../api';
 import { useRatingSaver } from '../hooks/useRatingSaver';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { deltaView } from '../sections/today/model';
-import { TrackerFooter, TrackerSteps, TrackerTopbar } from './trackerOverlay/TrackerChrome';
+import { TrackerSteps } from './trackerOverlay/TrackerChrome';
+import { buildChrome } from './trackerOverlay/buildChrome';
 import '../styles/sheet-tracker.css';
 import type { Props } from './trackerOverlay/types';
 import { useIsDesktop } from './trackerOverlay/useIsDesktop';
@@ -130,32 +131,23 @@ export function TrackerOverlay({
 
   const nameOf = (n: Need) => NEED_DATA[n.id]?.name ?? n.chartLabel;
   const steps = <TrackerSteps needs={needs} idx={idx} ratings={effectiveRatings} onPick={setIdx} />;
-  const topbar = (
-    <TrackerTopbar
-      isBackfill={isBackfill}
-      isDesktop={isDesktop}
-      date={date}
-      goBack={goBack}
-      onOpenNote={onOpenNote}
-      onOpenHistory={onOpenHistory}
-    />
-  );
-  const footer = (
-    <TrackerFooter
-      needName={nameOf}
-      idx={idx}
-      needs={needs}
-      allRated={allRated}
-      lastSavedAt={lastSavedAt}
-      onPrev={() => idx > 0 && setIdx(idx - 1)}
-      onNext={() => setIdx(idx + 1)}
-      onFinish={() => setShowCompletion(true)}
-      onToEmpty={() => {
-        const f = needs.findIndex((n) => !(effectiveRatings[n.id] ?? 0));
-        if (f >= 0) setIdx(f);
-      }}
-    />
-  );
+  const { topbar, footer, onboarding } = buildChrome({
+    isDesktop,
+    isBackfill,
+    date,
+    goBack,
+    onOpenNote,
+    onOpenHistory,
+    needs,
+    idx,
+    setIdx,
+    allRated,
+    lastSavedAt,
+    effectiveRatings,
+    ratings,
+    nameOf,
+    onFinish: () => setShowCompletion(true),
+  });
 
   const DetailSheet = detailNeed ? (
     <NeedTodaySheet
@@ -184,5 +176,5 @@ export function TrackerOverlay({
     detailSheet: DetailSheet,
   };
   if (isDesktop) return <DesktopLayout {...shared} />;
-  return <MobileLayout {...shared} onTS={onTS} onTE={onTE} />;
+  return <MobileLayout {...shared} onboarding={onboarding} onTS={onTS} onTE={onTE} />;
 }

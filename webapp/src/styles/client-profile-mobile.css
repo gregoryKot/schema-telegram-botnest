@@ -1,0 +1,67 @@
+/* Клиент · Профиль · телефон (≤767px): раскладка и плотность как у «Я» в мини-аппе.
+   Десктоп (≥768px) этим файлом не затрагивается, кроме скрытых по умолчанию
+   элементов (.cpf-ach-more, .cpf-head-mob, .cpf-head-settings, .cpf-heat-days). */
+.cpf-ach-more { display: none; }
+
+@media (max-width: 767px) {
+  .cpf-page { gap: var(--space-16); }
+
+  /* Порядок: шапка → блоки из «Настроить экран» (по умолчанию: портрет, тёплые слова, «Мой путь», стрик,
+     активность, достижения, паттерны — как в мини-аппе) → остальное. Место блока — --blk-o на обёртке. */
+  .cpf-page > * { order: 10; }
+  .cpf-head, .cpf-skeleton, .cpf-error { order: 0; }
+  .cpf-blk { --blk-o: 5; order: var(--blk-o); }
+  .cpf-duo { display: contents; }
+
+  /* Плитки «Прогресс» дублируют карточку стрика. */
+  .cpf-progress { display: none; }
+
+  /* Шапка: аватар, имя, «N дней в приложении», справа «Настроить» и шестерёнка настроек. */
+  .cpf-head { flex-wrap: nowrap; gap: var(--space-10); }
+  .cpf-avatar { flex-shrink: 0; }
+  .cpf-head-text { flex: 1; min-width: 0; }
+  .cpf-head-desk { display: none; }
+  .cpf-head-mob { display: inline; }
+  .cpf-head .ds-h1 { margin: 0; font-size: 24px; line-height: 1.15; }
+  .cpf-head-sub { font-size: 12px; margin-top: var(--space-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .cpf-head-actions { display: flex; align-items: center; gap: var(--space-4); flex-shrink: 0; }
+  .cpf-head-settings {
+    display: inline-flex; align-items: center; flex-shrink: 0; min-height: 44px; padding: 0 var(--space-12);
+    border: none; border-radius: 22px; background: var(--accent-soft); color: var(--accent);
+    font: 600 14px var(--sans); cursor: pointer;
+  }
+
+  /* Заголовки карточек — малые капсы, как в мини-аппе. */
+  .cpf-card .ds-h3 {
+    font: 700 11px var(--sans); letter-spacing: .09em; text-transform: uppercase; color: var(--text-faint);
+  }
+
+  /* Портрет: имя потребности в одну строку. */
+  .cpf-bar-name { color: var(--text); }
+
+  /* Стрик: без заголовка, «дней подряд» в одну строку. */
+  .cpf-streak-title { display: none; }
+  .cpf-streak-top { flex-wrap: nowrap; }
+  .cpf-streak-cap { white-space: normal; font-size: 15px; }
+  .cpf-week-name { font-size: 11px; }
+
+  /* Активность: подписи дней слева, без «последние N недель». */
+  .cpf-heat-range { display: none; }
+  .cpf-heat-wrap { display: grid; grid-template-columns: 22px minmax(0, 1fr); column-gap: var(--space-4); row-gap: var(--space-6); }
+  .cpf-heat-months { grid-column: 2; grid-row: 1; }
+  .cpf-heat-months span { font-size: 11px; }
+  .cpf-heat-days { display: grid; grid-column: 1; grid-row: 2; grid-template-rows: repeat(7, 1fr); gap: 3px; }
+  .cpf-heat-days span { align-self: center; font-size: 11px; line-height: 1; color: var(--text-faint); text-align: right; }
+  .cpf-heat-grid { grid-column: 2; grid-row: 2; }
+
+  /* Достижения: полученные плитками, остальные — одной плиткой «ещё N». */
+  .cpf-ach-grid > .cpf-ach:not(.tone-tint):not(.cpf-ach-more) { display: none; }
+  .cpf-ach-more { display: flex; align-items: center; justify-content: center; opacity: 1; background: var(--paper-sunk); }
+}
+
+/* Узкие телефоны (360px): подпись шапки «N дней в приложении» должна уместиться в одну строку. */
+@media (max-width: 380px) {
+  .cpf-head { gap: var(--space-8); }
+  .cpf-avatar { width: 48px; height: 48px; font-size: 18px; }
+  .cpf-head-settings { padding: 0 var(--space-10); }
+}

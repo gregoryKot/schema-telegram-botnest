@@ -1,9 +1,10 @@
 import { useTr } from '../../utils/addressForm';
+import { welcomeTexts } from '../../../../shared/src/onboarding/consents';
 
 // Шаг 0 онбординга Disclaimer: приветствие. Форма обращения ты/вы уже выбрана
 // на предыдущем шаге (AddressFormPicker) — приветствие звучит в ней.
 export function DisclaimerWelcomeStep() {
-  const tr = useTr();
+  const t = welcomeTexts(useTr());
   return (
     <div>
       <div style={{ textAlign: 'center', marginBottom: 24, paddingTop: 4 }}>
@@ -15,7 +16,7 @@ export function DisclaimerWelcomeStep() {
             marginBottom: 14,
           }}
         >
-          Всё по схеме
+          {t.title}
         </div>
         <div
           style={{
@@ -32,7 +33,7 @@ export function DisclaimerWelcomeStep() {
             letterSpacing: '0.1em',
           }}
         >
-          БЕТА-ВЕРСИЯ
+          {t.beta}
         </div>
       </div>
       <div
@@ -44,10 +45,7 @@ export function DisclaimerWelcomeStep() {
         }}
       >
         <div style={{ fontSize: 14, color: 'var(--text)', lineHeight: 1.7 }}>
-          {tr(
-            'Хорошо, что ты здесь. Замечать свои потребности — это уже немало.',
-            'Хорошо, что вы здесь. Замечать свои потребности — это уже немало.',
-          )}
+          {t.greeting}
         </div>
       </div>
       <div
@@ -57,16 +55,10 @@ export function DisclaimerWelcomeStep() {
         <div
           style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.7 }}
         >
-          «Всё по схеме» — про схема-терапию. Начать можно с одного случая:
-          вспомнить момент, когда что-то задело, и разобрать по шагам. Три
-          минуты — и видно, что это было и чего в тот момент не хватило.
-          Дневники, трекер и практики открываются оттуда же, когда понадобятся.
+          {t.intro}
           <br />
           <br />
-          {tr(
-            'Если чувствуешь, что что-то важное требует внимания — терапия это место, где можно разобраться по-настоящему.',
-            'Если чувствуете, что что-то важное требует внимания — терапия это место, где можно разобраться по-настоящему.',
-          )}
+          {t.outro}
         </div>
       </div>
     </div>

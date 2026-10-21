@@ -146,14 +146,31 @@ describe('BookingAdminController — прайсы', () => {
     await expect(controller.prices(ADMIN_KEY)).resolves.toBe(options);
   });
 
-  it('setPrice передаёт type и amount как число в PricingService.setPrice', async () => {
+  it('setPrice передаёт type и amount как число в PricingService.setPrice (рубли — валюта не задана)', async () => {
     const { controller, pricing } = makeController();
     const result = await controller.setPrice(
       { type: SessionType.SESSION_50, amount: '3500' as any },
       ADMIN_KEY,
     );
-    expect(pricing.setPrice).toHaveBeenCalledWith(SessionType.SESSION_50, 3500);
+    expect(pricing.setPrice).toHaveBeenCalledWith(
+      SessionType.SESSION_50,
+      3500,
+      undefined,
+    );
     expect(result).toEqual({ ok: true });
+  });
+
+  it('setPrice передаёт валюту из тела в PricingService.setPrice', async () => {
+    const { controller, pricing } = makeController();
+    await controller.setPrice(
+      { type: SessionType.SESSION_50, amount: 200, currency: 'ILS' },
+      ADMIN_KEY,
+    );
+    expect(pricing.setPrice).toHaveBeenCalledWith(
+      SessionType.SESSION_50,
+      200,
+      'ILS',
+    );
   });
 });
 

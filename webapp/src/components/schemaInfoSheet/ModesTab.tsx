@@ -4,6 +4,7 @@ import { MODE_GROUP_HUE, hueStyle } from '../../lib/tone';
 import { IdentityDot } from '../../../../shared/src/components/IdentityDot';
 import { buildModes } from './data';
 import { ModeCheckinOverlay } from './ModeCheckinOverlay';
+import { ModeShareButton } from './ModeShareButton';
 
 /** Группы справочника → ключ MODE_GROUP_HUE (копинги в палитре все одного тона). */
 const GROUP_HUE_KEY: Record<string, string> = {
@@ -42,6 +43,9 @@ export function ModesTab() {
                   <div className="ss-mode-name">{m.name}</div>
                   <div className="ss-mode-feel">Чувствуется как: {m.feel}</div>
                 </div>
+                <span className="ss-mode-share">
+                  <ModeShareButton group={g.group} color={g.color} {...m} />
+                </span>
               </div>
               <p className="ss-body ss-body--sm">{m.desc}</p>
             </div>

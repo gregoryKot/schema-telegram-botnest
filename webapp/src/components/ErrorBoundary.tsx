@@ -1,5 +1,6 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
 import { reportClientError } from '../api';
+import { isChunkLoadError, reloadForFreshChunks } from '../utils/chunkReload';
 import '../styles/sheet-tasks.css';
 
 interface Props { children: ReactNode; section: string }
@@ -16,12 +17,9 @@ export class ErrorBoundary extends Component<Props, State> {
     this.setState({ info });
      
     console.error(`[${this.props.section}] crashed:`, error, info?.componentStack);
-    // Auto-reload once on chunk load failures (stale cache after deploy)
-    const isChunk = /Failed to fetch dynamically imported module|Loading chunk|Loading CSS chunk/i.test(error.message);
-    if (isChunk && !sessionStorage.getItem('chunk-reload')) {
-      sessionStorage.setItem('chunk-reload', '1');
-      window.location.reload();
-    }
+    // Устаревший чанк после деплоя — перезагрузка на свежую версию (chunkReload.ts).
+    const isChunk = isChunkLoadError(error.message);
+    if (isChunk) reloadForFreshChunks();
     // Видимость прода: реальные краши уезжают на бэкенд → DM админу. Chunk-load
     // после деплоя — не баг (лечится авто-релоадом выше), его не шлём.
     if (!isChunk) {
@@ -36,9 +34,7 @@ export class ErrorBoundary extends Component<Props, State> {
 
   render() {
     if (!this.state.error) return this.props.children;
-    const isChunkError = /Failed to fetch dynamically imported module|Loading chunk|Loading CSS chunk/i.test(
-      this.state.error.message,
-    );
+    const isChunkError = isChunkLoadError(this.state.error.message);
     return (
       <div className="sk-crash">
         <div className="ds-card sk-crash-card">
@@ -46,7 +42,7 @@ export class ErrorBoundary extends Component<Props, State> {
             <>
               <h1 className="ds-h2">Страница устарела</h1>
               <p className="sk-crash-text">
-                Приложение обновилось – обнови страницу чтобы загрузить новую версию.
+                Приложение обновилось — нужна свежая версия страницы.
               </p>
               <button className="ds-btn" onClick={() => window.location.reload()}>
                 Обновить страницу

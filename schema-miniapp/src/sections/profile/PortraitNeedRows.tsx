@@ -10,19 +10,12 @@
 // и chevron-аффорданс, чтобы кликабельность была видна.
 import { useState } from 'react';
 import { NeedBar } from './PortraitCard';
-import { NEEDS_EXPLAINER } from '../../aboutData';
-import { NEED_ORDER } from '../../../../shared/src/needs/types';
+import { NEED_EXPLAINER_TEXT } from '../../../../shared/src/portrait/portraitTexts';
 import type { PortraitNeed } from '../../../../shared/src/portrait/portraitData';
 
 interface Props {
   needs: PortraitNeed[];
 }
-
-// NEEDS_EXPLAINER — плоский массив без id, порядок совпадает с NEED_ORDER
-// (тот же приём зиппинга по индексу, что в AboutSheet).
-const EXPLAINER_TEXT: Record<string, string | undefined> = Object.fromEntries(
-  NEED_ORDER.map((id, i) => [id, NEEDS_EXPLAINER[i]?.text]),
-);
 
 export function PortraitNeedRows({ needs }: Props) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -32,7 +25,7 @@ export function PortraitNeedRows({ needs }: Props) {
     <div style={{ display: 'flex', flexDirection: 'column', marginBottom: 4 }}>
       {needs.map((n) => {
         const isOpen = expandedId === n.id;
-        const explainer = EXPLAINER_TEXT[n.id];
+        const explainer = NEED_EXPLAINER_TEXT[n.id];
         return (
           <div key={n.id}>
             <button
