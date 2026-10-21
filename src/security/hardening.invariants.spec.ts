@@ -25,6 +25,12 @@ describe('трипваер: hardening-middleware в main.ts', () => {
     expect(MAIN).toMatch(/helmet\(\s*helmetOptions\(\)\s*\)/);
   });
 
+  // helmet 8 Permissions-Policy не ставит — его ставит свой middleware
+  // (сверка заголовка с кодом — permissions-policy.invariants.spec.ts).
+  it('Permissions-Policy подключён', () => {
+    expect(MAIN).toMatch(/app\.use\([^;]*permissionsPolicy\(\)/);
+  });
+
   it('CSP: defaultSrc self, objectSrc none, upgradeInsecureRequests', () => {
     expect(HELMET_CFG).toMatch(/contentSecurityPolicy/);
     expect(HELMET_CFG).toMatch(/defaultSrc:\s*\[\s*["']'self'["']/);

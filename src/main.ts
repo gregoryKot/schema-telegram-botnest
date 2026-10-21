@@ -17,6 +17,7 @@ import { clientIpSampler } from './infra/client-ip-sample';
 import { TRUSTED_PROXY_HOPS } from './infra/trust-proxy';
 import { installBodyParsers } from './infra/body-parsers';
 import { helmetOptions } from './security/helmet-config';
+import { permissionsPolicy } from './security/permissions-policy';
 import { registerUnhandledRejectionHandler } from './infra/unhandled-rejection';
 import { registerUncaughtExceptionHandler } from './infra/uncaught-exception';
 import {
@@ -66,9 +67,8 @@ async function bootstrap() {
   }
 
   app.use(cookieParser());
-  app.use(helmet(helmetOptions()));
-  // Order matters: more-specific filter LAST (Nest applies them in reverse).
-  // GenericExceptionFilter is the catch-all; PrismaExceptionFilter catches first.
+  app.use(helmet(helmetOptions()), permissionsPolicy());
+  // Порядок важен: Nest берёт фильтры с конца, Prisma ловит раньше catch-all.
   app.useGlobalFilters(
     new GenericExceptionFilter(),
     new PrismaExceptionFilter(),
