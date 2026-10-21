@@ -5,6 +5,7 @@
 import { spawnSync } from 'child_process';
 import {
   existsSync,
+  mkdirSync,
   mkdtempSync,
   readFileSync,
   rmSync,
@@ -16,6 +17,7 @@ import { join, resolve } from 'path';
 const ROOT = resolve(__dirname, '..', '..');
 const HOOK = join(ROOT, '.claude', 'hooks', 'log-tool-use.mjs');
 const REPORT = join(ROOT, 'scripts', 'agent', 'session-report.mjs');
+const SESSION_START = join(ROOT, '.claude', 'hooks', 'session-start.mjs');
 
 let tmp: string;
 beforeEach(() => {
@@ -209,5 +211,27 @@ describe('отчёт session-report.mjs', () => {
     const res = spawnSync('node', [REPORT, '--log', log], { encoding: 'utf8' });
     expect(res.status).toBe(0);
     expect(res.stdout).toContain('Вызовов инструментов: 1');
+  });
+});
+
+describe('хук session-start.mjs', () => {
+  const run = (projectDir: string) =>
+    spawnSync('node', [SESSION_START], {
+      encoding: 'utf8',
+      env: { ...process.env, CLAUDE_PROJECT_DIR: projectDir },
+    });
+
+  it('нет node_modules — одна строка с командой установки', () => {
+    const res = run(tmp);
+    expect(res.status).toBe(0);
+    expect(res.stdout.trim().split('\n')).toHaveLength(1);
+    expect(res.stdout).toContain('npm ci --silent');
+  });
+
+  it('зависимости на месте — молчит (вывод хука попадает в контекст)', () => {
+    mkdirSync(join(tmp, 'node_modules'));
+    const res = run(tmp);
+    expect(res.status).toBe(0);
+    expect(res.stdout).toBe('');
   });
 });
