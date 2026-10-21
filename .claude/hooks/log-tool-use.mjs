@@ -71,6 +71,9 @@ export function entryOf(event, now = new Date()) {
     ts: now.toISOString(),
     session: event.session_id ?? '',
     event: event.hook_event_name ?? '',
+    // Вызов субагента: Claude Code передаёт его тип/id — иначе поле пустое,
+    // и отчёт не отличит расход основного агента от расхода исполнителей.
+    ...(event.agent_type || event.agent_id ? { agent: String(event.agent_type || event.agent_id) } : {}),
   };
   if (event.tool_name !== undefined) {
     return {

@@ -65,7 +65,12 @@ export function summarize(entries) {
   const rules = entries
     .filter((e) => e.event === 'InstructionsLoaded')
     .map((e) => ({ file: e.target, reason: e.reason, by: e.by }));
-  return { calls: tools.length, total, byTool, top, repeated, docChars, codeChars, bigBash, rules };
+  const byAgent = {};
+  for (const e of tools) {
+    const a = e.agent || 'основной';
+    byAgent[a] = (byAgent[a] || 0) + (e.chars || 0);
+  }
+  return { calls: tools.length, total, byTool, byAgent, top, repeated, docChars, codeChars, bigBash, rules };
 }
 
 const k = (n) => (n >= 1000 ? `${(n / 1000).toFixed(1)} тыс.` : String(n));
@@ -79,6 +84,12 @@ export function format(s) {
   lines.push('По инструментам:');
   for (const [tool, v] of Object.entries(s.byTool).sort((a, b) => b[1].chars - a[1].chars)) {
     lines.push(`  ${tool}: ${v.calls} вызовов, ${k(v.chars)} знаков`);
+  }
+  if (Object.keys(s.byAgent).length > 1) {
+    lines.push('', 'По исполнителям:');
+    for (const [a, n] of Object.entries(s.byAgent).sort((x, y) => y[1] - x[1])) {
+      lines.push(`  ${a}: ${k(n)} знаков`);
+    }
   }
   lines.push('', `Чтение файлов: документы ${k(s.docChars)} знаков, код ${k(s.codeChars)} знаков.`);
   lines.push('', `Самые дорогие вызовы (топ ${TOP}):`);

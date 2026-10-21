@@ -137,6 +137,19 @@ describe('хук log-tool-use.mjs', () => {
     });
   });
 
+  it('вызов субагента помечен его типом', () => {
+    const { lines } = runHook(
+      JSON.stringify({
+        hook_event_name: 'PostToolUse',
+        agent_type: 'scout',
+        tool_name: 'Grep',
+        tool_input: { pattern: 'x' },
+        tool_response: { content: 'abc' },
+      }),
+    );
+    expect(lines[0].agent).toBe('scout');
+  });
+
   it('мусор на входе — тихий выход 0 без журнала', () => {
     const { res, lines } = runHook('не json');
     expect(res.status).toBe(0);
@@ -193,6 +206,22 @@ describe('отчёт session-report.mjs', () => {
     expect(res.stdout).toContain('40.0 тыс.  npm ci');
     expect(res.stdout).toContain(
       '.claude/rules/tests.md (path_glob_match ← src/x.spec.ts)',
+    );
+  });
+
+  it('вызовы субагентов — отдельной строкой «По исполнителям»', () => {
+    const res = runReport([
+      read('s', 'src/a.ts', 1000),
+      { ...read('s', 'src/b.ts', 3000), agent: 'scout' },
+    ]);
+    expect(res.stdout).toContain('По исполнителям:');
+    expect(res.stdout).toContain('scout: 3.0 тыс. знаков');
+    expect(res.stdout).toContain('основной: 1.0 тыс. знаков');
+  });
+
+  it('контроль: без субагентов строки «По исполнителям» нет', () => {
+    expect(runReport([read('s', 'src/a.ts', 10)]).stdout).not.toContain(
+      'По исполнителям',
     );
   });
 
