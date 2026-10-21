@@ -1,7 +1,7 @@
 import '../../styles/sheet-settings.css';
 
-// Примитивы SettingsSheet (правило №10): вид — st-* из sheet-settings.css + ds-*.
-
+// Примитивы SettingsSheet (правило №10): вид — st-* из sheet-settings.css + ds-*;
+// label у Toggle — имя switch для скринридера, обычно заголовок его строки SRow.
 const onKeyActivate = (fn: () => void) => (e: React.KeyboardEvent) => {
   if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fn(); }
 };
@@ -41,9 +41,9 @@ export function SRow({ title, sub, right, onClick, danger }: {
   );
 }
 
-function Switch({ on, onClick, small }: { on: boolean; onClick: () => void; small?: boolean }) {
+function Switch({ on, onClick, small, label }: { on: boolean; onClick: () => void; small?: boolean; label: string }) {
   return (
-    <div onClick={onClick} role="switch" aria-checked={on} tabIndex={0}
+    <div onClick={onClick} role="switch" aria-checked={on} aria-label={label} tabIndex={0}
       onKeyDown={onKeyActivate(onClick)}
       className={`ds-switch${small ? ' ds-switch--sm' : ''}`}>
       <div className="ds-switch-knob" />
@@ -51,12 +51,12 @@ function Switch({ on, onClick, small }: { on: boolean; onClick: () => void; smal
   );
 }
 
-export function Toggle({ on, onClick }: { on: boolean; onClick: () => void }) {
-  return <Switch on={on} onClick={onClick} />;
+export function Toggle({ on, onClick, label }: { on: boolean; onClick: () => void; label: string }) {
+  return <Switch on={on} onClick={onClick} label={label} />;
 }
 
-export function SmallToggle({ on, onClick }: { on: boolean; onClick: () => void }) {
-  return <Switch on={on} onClick={onClick} small />;
+export function SmallToggle({ on, onClick, label }: { on: boolean; onClick: () => void; label: string }) {
+  return <Switch on={on} onClick={onClick} label={label} small />;
 }
 
 export function ChevronVal({ text, small }: { text: string; small?: boolean }) {

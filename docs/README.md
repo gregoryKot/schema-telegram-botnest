@@ -42,7 +42,7 @@ CLAUDE.md. Не удалять, но и не считать списком за�
 | Документ | Статус |
 |---|---|
 | [archive/PROJECT_AUDIT.md](archive/PROJECT_AUDIT.md) | Аудит 07.2026, 4 оси. Находки закрыты. |
-| [archive/PROJECT_AUDIT_ADDENDUM.md](archive/PROJECT_AUDIT_ADDENDUM.md) | Дополнение: юридика, БД, инфра, a11y. Закрыто, кроме РКН (на владельце). a11y-класс «контрол без имени» (:171, :344) вернулся с новым кодом: девять глиф-кнопок и `pressable()`-div без aria-label, правила линта нет — [AUDIT_2026-10, «Доступность»](AUDIT_2026-10_FINDINGS.md#доступность). |
+| [archive/PROJECT_AUDIT_ADDENDUM.md](archive/PROJECT_AUDIT_ADDENDUM.md) | Дополнение: юридика, БД, инфра, a11y. Закрыто, кроме РКН (на владельце). a11y-класс «контрол без имени» (:171, :344) вернулся с новым кодом и закрыт механизмом на сайте и в `shared/` (#NNN): `jsx-a11y/control-has-associated-label` и гейт `scripts/check-glyph-controls.mjs`; остаток в мини-аппе — в «Что осталось открытым». |
 | [archive/REMEDIATION_PLAN.md](archive/REMEDIATION_PLAN.md) | План 0→10. **Закрыт целиком** 17.07.2026 (этапы 0–4). |
 | [archive/TEST_COVERAGE_PLAN.md](archive/TEST_COVERAGE_PLAN.md) | План покрытия v1. Закрыт в PR #66; продолжен `TEST_IMPROVEMENT_PLAN.md`. На него по имени ссылаются `ci.yml` и `check-coverage-ratchet.mjs`. |
 | [archive/INTEGRATION_NOTES.md](archive/INTEGRATION_NOTES.md) | Разовая карта разрешения конфликтов при merge ветки покрытия. История. |
@@ -180,6 +180,20 @@ Ubuntu 26) у трёх PR подряд падали `backend` → `check-coverag
   и `SchemaMap` (`sections/schemas/`) открывают `SchemaDetailSheet`, плитки
   «Карта режимов» — упражнение `ModeEx`. Не переводились намеренно (задача
   этапа — «Мои схемы»/«Мои режимы»); решить, вести ли их тоже на `PatternSheet`.
+
+**Контролы без имени в мини-аппе — не чиним, мини-апп удаляется** (#NNN, `docs/ONE_FRONTEND_PLAN.md`, этап 6):
+- `scripts/check-glyph-controls.mjs` и `jsx-a11y/control-has-associated-label`
+  смотрят только `webapp/src` и `shared/src`. Прогон того же гейта по
+  `schema-miniapp/src` на 2026-10-21 даёт 17 мест: «←» в `WizardNav.tsx:44` и
+  трёх шагах `schemaFlashcard/`, «−»/«+» в `TrackerOverlay.tsx:496,529`, «+» в
+  `PracticesScreen.tsx:303` и `beliefCheck/EvidenceList.tsx:81`, «×» в
+  `planSheet/PracticeOptionRow.tsx:70` (пара сайта подписана «Удалить»), «?» в
+  `childhoodWheelSheet/NeedFillRow.tsx:86`, «‹» в
+  `therapistClientSheet/ClientDetailView.tsx:68`, тики `WizardProgress.tsx:40` и
+  пять безымянных switch в `settingsSheet/` (`ui.tsx:102`, `AppearanceSection.tsx`,
+  `TherapistPrivacyToggles.tsx`). Решение владельца 2026-10-17 (единая версия): доступность, которая живёт
+  только в мини-аппе, не чиним — он уходит целиком. Если этап 6 отложат, гейт
+  включается для мини-аппа строкой в `SCAN_DIRS` и правкой этих мест.
 
 **Редизайн кабинета — хвосты** (#746, `docs/design/REDESIGN_2026-10.md`):
 - **Лендинг, визитка (`kotlarewski.gr`), статьи и админка** намеренно в старом виде

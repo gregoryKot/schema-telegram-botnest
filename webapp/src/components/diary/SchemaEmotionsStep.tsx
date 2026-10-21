@@ -43,7 +43,7 @@ export function SchemaEmotionsStep({
                       key={i}
                       className={'sd-int-step' + (em.intensity >= i + 1 ? ' is-on' : '')}
                       {...pressable(() => onSetIntensity(em.id, i + 1))}
-                      title={lbl}
+                      title={lbl} aria-label={`${meta.label}: ${lbl}`}
                     />
                   ))}
                 </div>

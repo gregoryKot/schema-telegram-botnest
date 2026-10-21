@@ -218,7 +218,7 @@ export function ModeMapPalette({ onAdd, onAddMany, clientId }: Props) {
 
                 <div className="mm2-add-row">
                   <button onClick={saveCustomMode} className="ds-btn ds-btn--sm">Сохранить</button>
-                  <button onClick={() => setAdding(false)} className="ds-btn ds-btn--icon ds-btn--sm"><MMIcon name="close" size={13} /></button>
+                  <button onClick={() => setAdding(false)} aria-label="Отменить" className="ds-btn ds-btn--icon ds-btn--sm"><MMIcon name="close" size={13} /></button>
                 </div>
               </div>
             )}

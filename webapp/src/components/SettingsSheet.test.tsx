@@ -108,6 +108,17 @@ function toggleForRow(title: string): HTMLElement {
   return within(row).getByRole('switch');
 }
 
+describe('SettingsSheet — имена переключателей', () => {
+  // Шов «строка подписана, а контрол нет» (аудит 2026-10, «Доступность»):
+  // заголовок SRow виден глазами, а switch рядом был безымянным.
+  it('каждый switch уведомлений назван заголовком своей строки', async () => {
+    await renderSheetWithForm('ty');
+    for (const title of ['Итоги дня', 'Напоминание']) {
+      expect(screen.getByRole('switch', { name: title })).toBe(toggleForRow(title));
+    }
+  });
+});
+
 describe('SettingsSheet — диалог (К4)', () => {
   // К4 дизайн-аудита 2026-08: оверлей — role="dialog"/aria-modal.
   it('размечен как диалог', async () => {

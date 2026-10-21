@@ -52,6 +52,13 @@ describe('FlashcardEx (SchemaEx) — кризисная детекция', () =>
     expect(screen.getByText(CRISIS_HOTLINE_DISPLAY)).toBeTruthy();
   });
 
+  // Аудит 2026-10, «Доступность»: тики вопросов были pressable()-div без имени.
+  it('тик назван номером вопроса и ведёт к нему', () => {
+    renderSheet();
+    fireEvent.click(screen.getByRole('button', { name: 'Вопрос 2' }));
+    expect(screen.getByText(/^Вопрос 2 из/)).toBeTruthy();
+  });
+
   it('нейтральный текст не показывает CrisisCard', () => {
     renderSheet();
     const textarea = screen.getByRole('textbox');
