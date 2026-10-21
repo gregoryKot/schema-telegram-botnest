@@ -328,6 +328,12 @@ Ubuntu 26) у трёх PR подряд падали `backend` → `check-coverag
   schemehappens.ru за 2026-10-11…#NNN (YandexBot со своей группой в
   `robots.txt` не читал `*`), страницы снимаются в Вебмастере вручную —
   `Disallow` сам из индекса не выбрасывает.
+- **`/privacy` и `/offer` в карте сайта schemehappens.ru не открываются**:
+  `src/articles/sitemap.middleware.ts:31-32` отдаёт их краулеру, а в
+  `appRoutes` (`webapp/src/App.tsx`) их нет — только в `personalRoutes`
+  визитки, на основном хосте путь уходит в кабинетный `*`. Найдено ревью
+  #NNN (robots.txt), к нему не относится: либо роуты в `appRoutes`, либо
+  строки из карты.
 
 **Занятость календаря — разбор конца события** (находка аудита 2026-10-11,
 разбор закрыт в `src/booking/caldav-event-end.ts`, остаток ниже):

@@ -74,10 +74,16 @@ function appRoutes(): { open: string[]; authed: string[] } {
 const PUBLIC = ['/', '/articles', '/articles/x', '/tests', '/tests/x', '/subscribe', '/donate', '/login'];
 const CLOSED = ['/admin', '/booking-admin', '/articles-admin', '/link'];
 const CLOSED_PREFIXES = ['/auth/'];
-// Не роуты SPA: оболочка мини-аппа, API, диагностика.
-const CLOSED_EXTRA = ['/app', '/app/', '/app/today', '/app/assets/index.js', '/api/me', '/max-probe.html'];
+// Не роуты SPA: оболочка мини-аппа (в том числе ссылка запуска с query) и
+// диагностика.
+const CLOSED_EXTRA = ['/app', '/app/', '/app?startapp=x', '/app/today', '/app/assets/index.js', '/max-probe.html'];
 // Контроль: префиксы закрытого не задевают соседей.
 const PUBLIC_EXTRA = ['/apple-touch-icon.png', '/llms.txt', '/sitemap.xml', '/privacy', '/offer'];
+// API, из которого публичные страницы рисуют контент. Googlebot и YandexBot
+// рендерят SPA и соблюдают robots.txt для fetch: закрытый /api/ отдал бы
+// индексу «Не удалось загрузить статью» и пустой список мини-тестов (ревью
+// этой починки). Новая публичная страница с данными — её ручка сюда.
+const PUBLIC_API = ['/api/articles', '/api/articles/x', '/api/quizzes', '/api/quizzes?form=vy', '/api/subscription/options'];
 
 const robots = read('../public/robots.txt');
 const agents = [...new Set(parseRobots(robots).flatMap((g) => g.agents))];
@@ -108,12 +114,16 @@ describe('robots.txt ↔ роуты App.tsx', () => {
     expect(authed.length).toBeGreaterThan(5);
   });
 
-  it.each(crawlers)('%s: кабинет, вход, админка, /app/ и /api/ закрыты', (bot) => {
+  it.each(crawlers)('%s: кабинет, вход, админка и /app/ закрыты', (bot) => {
     const closed = [...authed, ...open.filter(isClosed), ...CLOSED_EXTRA];
     expect(closed.filter((p) => isAllowed(robots, bot, p))).toEqual([]);
   });
 
   it.each(crawlers)('%s: публичные страницы открыты (контроль против «Disallow: /»)', (bot) => {
     expect([...PUBLIC, ...PUBLIC_EXTRA].filter((p) => !isAllowed(robots, bot, p))).toEqual([]);
+  });
+
+  it.each(crawlers)('%s: API публичных страниц открыт — иначе рендер статей пустой', (bot) => {
+    expect(PUBLIC_API.filter((p) => !isAllowed(robots, bot, p))).toEqual([]);
   });
 });

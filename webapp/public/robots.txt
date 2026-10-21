@@ -1,9 +1,12 @@
-# Личный кабинет, вход, админка, мини-апп и API закрыты от индексации для
-# ВСЕХ ботов. Блок Disallow повторён в каждой группе намеренно: бот, нашедший
+# Личный кабинет, вход, админка и мини-апп закрыты от индексации для ВСЕХ
+# ботов. Блок Disallow повторён в каждой группе намеренно: бот, нашедший
 # группу со своим именем, группу «*» не читает вовсе (RFC 9309 §2.2.1, так же
 # у Яндекса) — одинокий «Allow: /» в такой группе открывал ему весь кабинет.
 # Сверка с роутами webapp/src/App.tsx — webapp/src/robotsTxt.test.ts.
-# «/app$» вместо «/app»: префикс задел бы /apple-touch-icon.png.
+# «/app$» и «/app?» вместо «/app»: префикс задел бы /apple-touch-icon.png.
+# /api/ НЕ закрыт намеренно: Googlebot и YandexBot рендерят SPA и соблюдают
+# robots.txt для fetch — статьи (/api/articles) и мини-тесты (/api/quizzes)
+# без API отрендерились бы пустыми. Закрытые ручки без входа отдают 401.
 
 User-agent: *
 Allow: /
@@ -26,7 +29,7 @@ Disallow: /booking-admin
 Disallow: /articles-admin
 Disallow: /app/
 Disallow: /app$
-Disallow: /api/
+Disallow: /app?
 Disallow: /max-probe.html
 
 # Поисковые боты нейросетей: разрешаем явно. Обучение (GPTBot, Google-Extended) и поиск (OAI-SearchBot) управляются отдельно.
@@ -48,7 +51,7 @@ Disallow: /booking-admin
 Disallow: /articles-admin
 Disallow: /app/
 Disallow: /app$
-Disallow: /api/
+Disallow: /app?
 Disallow: /max-probe.html
 
 User-agent: ChatGPT-User
@@ -69,7 +72,7 @@ Disallow: /booking-admin
 Disallow: /articles-admin
 Disallow: /app/
 Disallow: /app$
-Disallow: /api/
+Disallow: /app?
 Disallow: /max-probe.html
 
 User-agent: GPTBot
@@ -90,7 +93,7 @@ Disallow: /booking-admin
 Disallow: /articles-admin
 Disallow: /app/
 Disallow: /app$
-Disallow: /api/
+Disallow: /app?
 Disallow: /max-probe.html
 
 User-agent: ClaudeBot
@@ -111,7 +114,7 @@ Disallow: /booking-admin
 Disallow: /articles-admin
 Disallow: /app/
 Disallow: /app$
-Disallow: /api/
+Disallow: /app?
 Disallow: /max-probe.html
 
 User-agent: Claude-SearchBot
@@ -132,7 +135,7 @@ Disallow: /booking-admin
 Disallow: /articles-admin
 Disallow: /app/
 Disallow: /app$
-Disallow: /api/
+Disallow: /app?
 Disallow: /max-probe.html
 
 User-agent: Claude-User
@@ -153,7 +156,7 @@ Disallow: /booking-admin
 Disallow: /articles-admin
 Disallow: /app/
 Disallow: /app$
-Disallow: /api/
+Disallow: /app?
 Disallow: /max-probe.html
 
 User-agent: PerplexityBot
@@ -174,7 +177,7 @@ Disallow: /booking-admin
 Disallow: /articles-admin
 Disallow: /app/
 Disallow: /app$
-Disallow: /api/
+Disallow: /app?
 Disallow: /max-probe.html
 
 User-agent: Perplexity-User
@@ -195,7 +198,7 @@ Disallow: /booking-admin
 Disallow: /articles-admin
 Disallow: /app/
 Disallow: /app$
-Disallow: /api/
+Disallow: /app?
 Disallow: /max-probe.html
 
 User-agent: Google-Extended
@@ -216,7 +219,7 @@ Disallow: /booking-admin
 Disallow: /articles-admin
 Disallow: /app/
 Disallow: /app$
-Disallow: /api/
+Disallow: /app?
 Disallow: /max-probe.html
 
 User-agent: Applebot
@@ -237,7 +240,7 @@ Disallow: /booking-admin
 Disallow: /articles-admin
 Disallow: /app/
 Disallow: /app$
-Disallow: /api/
+Disallow: /app?
 Disallow: /max-probe.html
 
 User-agent: Applebot-Extended
@@ -258,7 +261,7 @@ Disallow: /booking-admin
 Disallow: /articles-admin
 Disallow: /app/
 Disallow: /app$
-Disallow: /api/
+Disallow: /app?
 Disallow: /max-probe.html
 
 User-agent: YandexBot
@@ -279,7 +282,7 @@ Disallow: /booking-admin
 Disallow: /articles-admin
 Disallow: /app/
 Disallow: /app$
-Disallow: /api/
+Disallow: /app?
 Disallow: /max-probe.html
 
 Sitemap: https://schemehappens.ru/sitemap.xml
