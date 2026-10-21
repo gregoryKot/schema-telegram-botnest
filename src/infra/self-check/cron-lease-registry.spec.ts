@@ -6,11 +6,7 @@
 // вообще leader-кроны). Разъезд в любую сторону — тест краснеет, а не молчит.
 import { readFileSync } from 'fs';
 import { join, resolve } from 'path';
-import {
-  CRON_LEASE_REGISTRY,
-  NOMINAL_PERIOD_MS,
-  maxLeaseAgeMs,
-} from './cron-lease-registry';
+import { CRON_LEASE_REGISTRY } from './cron-lease-registry';
 import { LEASE_WINDOW } from '../cron-leader.service';
 import { scanCronClaims } from '../../test-support/cron-source-scan';
 
@@ -49,6 +45,23 @@ describe('CRON_LEASE_REGISTRY — сверка с исходниками', () =>
     expect(bad).toEqual([]);
   });
 
+  it('часовой пояс в реестре совпадает с timeZone в @Cron(...)', () => {
+    const bad = found
+      .filter((f) => CRON_LEASE_REGISTRY[f.claimName]?.tz !== f.timeZone)
+      .map(
+        (f) =>
+          `${f.claimName}: в коде ${f.timeZone ?? '<зона процесса>'} (${f.file}), в реестре ${CRON_LEASE_REGISTRY[f.claimName]?.tz ?? '<зона процесса>'}`,
+      );
+    expect(bad).toEqual([]);
+  });
+
+  it('сканер находит зону через константу файла (POST_TZ), а у крона без timeZone её нет', () => {
+    const byName = new Map(found.map((f) => [f.claimName, f.timeZone]));
+    expect(byName.get('healthyAdultMorning')).toBe('Europe/Moscow');
+    expect(byName.has('midnightPlanner')).toBe(true);
+    expect(byName.get('midnightPlanner')).toBeUndefined();
+  });
+
   it('в реестре нет протухших имён — каждое встречается в claimRun в коде', () => {
     const names = new Set(found.map((f) => f.claimName));
     const orphans = Object.keys(CRON_LEASE_REGISTRY).filter(
@@ -74,7 +87,19 @@ describe('CRON_LEASE_REGISTRY — сверка с cron-leader-baseline.json', ()
   });
 });
 
-describe('NOMINAL_PERIOD_MS / maxLeaseAgeMs', () => {
+/** Номинальный период тика по категории окна — свойство самого
+ * `LEASE_WINDOW` («окно меньше периода»). Жил в cron-lease-registry.ts, но
+ * нужен только этому тесту: порог пробы считается из расписания
+ * (cron-lease-verdict.ts), а не из категории. */
+const NOMINAL_PERIOD_MS: Record<keyof typeof LEASE_WINDOW, number> = {
+  everyMinute: 60_000,
+  fiveMinutes: 5 * 60_000,
+  fifteenMinutes: 15 * 60_000,
+  hourly: 3_600_000,
+  daily: 24 * 3_600_000,
+};
+
+describe('NOMINAL_PERIOD_MS', () => {
   it('покрывает каждую категорию LEASE_WINDOW', () => {
     expect(Object.keys(NOMINAL_PERIOD_MS).sort()).toEqual(
       Object.keys(LEASE_WINDOW).sort(),
@@ -87,22 +112,5 @@ describe('NOMINAL_PERIOD_MS / maxLeaseAgeMs', () => {
     >) {
       expect(LEASE_WINDOW[key]).toBeLessThan(NOMINAL_PERIOD_MS[key]);
     }
-  });
-
-  it('maxLeaseAgeMs — из расписания; для равномерных кронов по-прежнему ровно 2 номинальных периода', () => {
-    expect(maxLeaseAgeMs('bookingExpireHolds')).toBe(
-      2 * NOMINAL_PERIOD_MS.everyMinute,
-    );
-    expect(maxLeaseAgeMs('midnightPlanner')).toBe(2 * NOMINAL_PERIOD_MS.daily);
-    expect(maxLeaseAgeMs('неизвестное-имя')).toBeNull();
-  });
-
-  it('maxLeaseAgeMs — оконный healthyAdultMorning: разрыв окна (22ч05м) + шаг (5м), а не 2×5м', () => {
-    // Регрессия 2026-09-16 (issue #501): по старой логике порог был бы
-    // 2×NOMINAL_PERIOD_MS.fiveMinutes = 10 мин, и крон, законно молчащий
-    // 22 часа между окнами публикации, считался бы сбойным почти всегда.
-    expect(maxLeaseAgeMs('healthyAdultMorning')).toBe(
-      22 * 3_600_000 + 5 * 60_000 + 5 * 60_000,
-    );
   });
 });
