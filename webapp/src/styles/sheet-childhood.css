@@ -1,0 +1,38 @@
+/* ── Колесо детства: примеры, схемы по низким зонам, вступление ───────────
+   Цвета — токены; оттенок потребности приходит в --h (lib/tone.ts). */
+
+.cw-examples { margin-top: 6px; }
+.cw-examples-toggle { display: inline-flex; align-items: center; min-height: 44px; font-size: 13px; background: none; border: none; padding: 0; cursor: pointer; text-align: left; }
+.cw-examples-list { border: 1px solid var(--line); border-radius: 14px; overflow: hidden; margin-bottom: 8px; }
+.cw-example + .cw-example { border-top: 1px solid var(--line); }
+.cw-example-head { display: flex; align-items: center; width: 100%; min-height: 44px; padding: 6px 14px; background: var(--paper-tint); border: none; cursor: pointer; font: inherit; color: inherit; }
+.cw-example-chev { margin-left: auto; font-size: 12px; color: var(--text-faint); }
+.cw-example-text { margin: 0; padding: 10px 14px 14px; font-size: 13px; line-height: 1.6; color: var(--text-sub); }
+.cw-badge { font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 10px; font-variant-numeric: tabular-nums; }
+.cw-badge.is-low { background: color-mix(in srgb, var(--err) 14%, transparent); color: var(--err); }
+.cw-badge.is-mid { background: color-mix(in srgb, var(--warn) 16%, transparent); color: var(--warn-ink); }
+.cw-badge.is-high { background: color-mix(in srgb, var(--ok) 14%, transparent); color: var(--ok-ink); }
+
+.cw-hints { margin-top: 32px; }
+.cw-hints-lede { margin: 0 0 14px; font-size: 13.5px; line-height: 1.6; color: var(--text-sub); }
+.cw-hint.ds-card { padding: 16px 18px; margin-bottom: 12px; }
+.cw-hint-head { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.cw-hint-name { font-size: 14px; font-weight: 600; color: var(--text); }
+.cw-hint-score { margin-left: auto; font-size: 12.5px; font-variant-numeric: tabular-nums; color: var(--text-faint); }
+.cw-hint-domain { margin-bottom: 10px; font-size: 12px; color: var(--text-faint); }
+.cw-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.cw-chip { min-height: 44px; border: none; cursor: pointer; font-family: inherit; text-align: left; }
+.cw-more.ds-card { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 18px; width: 100%; box-sizing: border-box; text-align: left; font: inherit; color: inherit; }
+.cw-more-title { font-size: 14px; font-weight: 600; color: var(--text); }
+.cw-more-sub { margin-top: 2px; font-size: 12.5px; color: var(--text-faint); }
+.cw-good.ds-card { padding: 16px 18px; margin-top: 32px; background: color-mix(in srgb, var(--ok) 9%, var(--surface)); border-color: color-mix(in srgb, var(--ok) 25%, transparent); }
+.cw-good-title { margin-bottom: 6px; font-size: 14px; font-weight: 600; color: var(--ok-ink); }
+.cw-good-body { margin: 0; font-size: 13.5px; line-height: 1.6; color: var(--text-sub); }
+.cw-note { margin-top: 24px; }
+
+.cw-intro.ds-card { padding: 20px 22px; margin-bottom: 14px; }
+.cw-intro-body { margin: 0; font-size: 14px; line-height: 1.7; color: var(--text-sub); }
+.cw-intro-body b { font-weight: 600; color: var(--text); }
+.cw-intro-small { margin: 0; font-size: 12.5px; line-height: 1.6; color: var(--text-faint); }
+.cw-skeleton { display: flex; flex-direction: column; gap: 12px; }
+.cw-hints .ds-label { margin-bottom: 8px; }

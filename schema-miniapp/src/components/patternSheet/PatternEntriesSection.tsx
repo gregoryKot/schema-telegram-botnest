@@ -8,7 +8,7 @@ import { DiaryPanel } from '../diary/diaryUi';
 import { SchemaCard } from '../diary/diaryCards/SchemaCard';
 import { ModeCard } from '../diary/diaryCards/ModeCard';
 import type { SchemaDiaryEntry, ModeDiaryEntry } from '../../types';
-import type { MyCardsKind } from '../myCards/useMyCards';
+import type { MyCardsKind } from '../../../../shared/src/pattern/useMyCards';
 
 interface Props {
   kind: MyCardsKind;

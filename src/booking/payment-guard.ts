@@ -52,18 +52,18 @@ export function assertPaymentAvailable(
  * без оплаты»). Два случая: оплата не настроена в проде; цена платной сессии
  * не задана (`amount` меньше рубля — счёт на 0 ₽ выставлять нельзя). Имя и
  * контакт человека не теряются: заявка уходит владельцу лидом в оба канала
- * (правило №18). Бесплатное знакомство не затрагивается.
- *
- * @param amount  сумма счёта, посчитанная book(); null — у бесплатного типа.
+ * (правило №18). Бесплатное знакомство не затрагивается. `manual` — платная не
+ * в рублях: Robokassa не нужна, цена ≥ 1 обязательна. `amount` — сумма из book().
  */
 export async function assertBookingPayable(
   robokassa: Pick<RobokassaService, 'enabled'>,
   notify: Pick<BookingNotifyService, 'notifyAdminBoth'>,
   lead: LostLead,
   amount: number | null,
+  manual = false,
 ): Promise<void> {
   if (lead.type === SessionType.INTRO_15) return;
-  const refuse = paymentMode(robokassa) === 'refuse';
+  const refuse = !manual && paymentMode(robokassa) === 'refuse';
   if (!refuse && (amount ?? 0) >= 1) return;
   await notify.notifyAdminBoth(
     lostLeadAlertText(

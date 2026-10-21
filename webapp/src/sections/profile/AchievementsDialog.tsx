@@ -1,9 +1,9 @@
 import type { Achievement } from '../../api';
 import { Dialog } from '../../components/Dialog';
-import { pressable } from '../../utils/a11y';
 import { hueStyle } from '../../lib/tone';
-import { ACHIEVEMENT_META, PROFILE_HUE } from './profileMeta';
-import { achievementProgress } from './profileModel';
+import { PROFILE_HUE } from './profileMeta';
+import { AchievementTile } from './AchievementTile';
+import { AchievementsShare } from './AchievementsShare';
 
 interface Props {
   achievements: Achievement[];
@@ -19,21 +19,11 @@ export function AchievementsDialog({ achievements, currentStreak, totalDays, onS
     <Dialog label="Достижения" maxWidth={520} closeOnEscape onClose={onClose}>
       <div className="ds-head-row cpf-dlg-head">
         <h2 className="dialog-title cpf-dlg-title">Достижения</h2>
-        <span className="ds-sub">{earned} из {achievements.length}</span>
+        <span className="ds-sub cpf-dlg-count">{earned} из {achievements.length}</span>
+        <AchievementsShare achievements={achievements} />
       </div>
       <div className="cpf-dlg-grid" style={hueStyle(PROFILE_HUE)}>
-        {achievements.map(a => {
-          const m = ACHIEVEMENT_META[a.id];
-          if (!m) return null;
-          const progress = achievementProgress(a.id, a.earned, currentStreak, totalDays);
-          return (
-            <div key={a.id} {...pressable(() => a.earned && onSelect(a.id))}
-              className={`cpf-ach cpf-ach--dlg${a.earned ? ' tone-tint is-earned' : ''}`}>
-              <div className="cpf-ach-title">{m.title}</div>
-              {progress ? <div className="cpf-ach-progress">{progress}</div> : <div className="cpf-ach-desc">{m.desc}</div>}
-            </div>
-          );
-        })}
+        {achievements.map(a => <AchievementTile key={a.id} achievement={a} currentStreak={currentStreak} totalDays={totalDays} onSelect={onSelect} />)}
       </div>
     </Dialog>
   );

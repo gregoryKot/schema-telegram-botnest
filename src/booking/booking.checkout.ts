@@ -5,9 +5,8 @@ import { RobokassaService } from './robokassa.service';
 import { decryptRecord, EncryptSchema } from '../utils/crypto';
 import { assertPaymentAvailable } from './payment-guard';
 
-// После создания брони: бесплатная сессия подтверждается сразу, платная
-// получает ссылку на оплату (вне прода без Robokassa — тоже подтверждается).
-// Вынесено из booking.service.ts (правило №10).
+// После создания брони: бесплатная и платная не в рублях подтверждаются сразу,
+// платная в рублях получает ссылку на оплату (правило №10: из booking.service.ts).
 
 /** Loose e-mail check — enough to decide whether to forward it to Robokassa. */
 function isEmail(s: string): boolean {
@@ -55,6 +54,7 @@ export async function completeCheckout(
   booking: Booking,
   opts: {
     isFree: boolean;
+    manual?: boolean; // платная не в рублях: подтверждается сразу, без Robokassa
     cancelToken: string;
     heldUntil: Date | null;
     startsAt: Date;
@@ -62,12 +62,12 @@ export async function completeCheckout(
     adminNote?: string; // пометка админу в «ожидает оплаты», клиенту не видна
   },
 ): Promise<BookingResult> {
-  const { isFree, cancelToken, heldUntil } = opts;
-  if (isFree) return confirmNow(deps, booking, cancelToken);
+  const { isFree, manual, cancelToken, heldUntil } = opts;
+  if (isFree || manual) return confirmNow(deps, booking, cancelToken);
 
   // Вторая линия обороны: book() отказывает раньше, до INSERT (payment-guard).
   assertPaymentAvailable(deps.robokassa, 'booking');
-  // Dev без Robokassa: auto-confirm; count не читаем — строку создал этот запрос, токен ещё не отдан.
+  // Dev без Robokassa: auto-confirm (строку создал этот запрос, токен не отдан).
   if (!deps.robokassa.enabled) {
     await deps.prisma.booking.updateMany({
       where: { id: booking.id, status: BookingStatus.HELD },

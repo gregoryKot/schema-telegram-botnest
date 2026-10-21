@@ -2,7 +2,7 @@ import { useState } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
 import { ModesHeroSection } from './ModesHeroSection';
 import { ModesPatternSection } from './ModesPatternSection';
-import { WeekTopSummary } from '../../utils/patternsSummary';
+import { WeekTopSummary } from '../../../../shared/src/pattern/patternsSummary';
 import { SchemasSectionProps } from './types';
 import type { BlockVisibility } from './blockVisibility';
 import type { ModeDiaryEntry } from '../../types';

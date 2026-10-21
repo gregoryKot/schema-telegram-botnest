@@ -9,6 +9,7 @@ import { useHistorySheet } from '../../../hooks/useHistorySheet';
 import { detectCrisisAny } from '../../../utils/crisisMarkers';
 import { CrisisCard } from '../../CrisisCard';
 import { BottomSheetShell } from '../../BottomSheetShell';
+import { PhraseCheckShare } from './PhraseCheckShare';
 import { usePhraseHistoryCard } from '../../../../../shared/src/phraseCheck/usePhraseHistoryCard';
 import { PhraseMarkPills } from '../../../../../shared/src/phraseCheck/PhraseMarkPills';
 import { api } from '../../../api';
@@ -71,6 +72,14 @@ export function PhraseHistoryCard({
           >
             {saving ? 'Сохраняю…' : 'Сохранить ответ'}
           </button>
+        </div>
+
+        <div className="ex2-gap">
+          <PhraseCheckShare
+            phrase={entry.phrase}
+            marks={entry.marks}
+            rewrite={rewrite.trim() || undefined}
+          />
         </div>
     </BottomSheetShell>
   );

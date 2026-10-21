@@ -2,55 +2,12 @@ import { useState } from 'react';
 import type { UserProfile } from '../../types';
 import { pressable } from '../../utils/a11y';
 import '../../styles/sheet-tasks.css';
+import { useIsMobile } from '../../components/useIsMobile';
+import { OnboardingPhoneCard } from './OnboardingPhoneCard';
+import { STEPS, ONBOARDING_DONE_KEY, ONBOARDING_SKIPPED_KEY, type StepDef } from './onboardingSteps';
 
 // Онбординг-виджет «С чего начать» (чеклист первых шагов). Вынесено из
 // TodaySection.tsx (правило №10).
-
-const ONBOARDING_DONE_KEY    = 'onboarding_done';
-const ONBOARDING_SKIPPED_KEY = 'onboarding_skipped';
-
-interface StepDef {
-  id: string;
-  color: string;
-  title: string;
-  description: string;
-  detail: string;
-  actionLabel: string;
-  isDone: (profile: UserProfile | null, ctx?: { hasSchemas: boolean }) => boolean;
-}
-
-const STEPS: StepDef[] = [
-  { id: 'ysq', color: 'var(--accent)',
-    title: 'Тест на схемы',
-    description: '116 вопросов, 10 минут. Покажет, какие ранние паттерны управляют реакциями.',
-    detail: '20 схем · история прохождений · советы',
-    actionLabel: 'Начать тест',
-    isDone: (p, ctx) => !!(p?.ysq?.completedAt) || !!(ctx?.hasSchemas) },
-  { id: 'tracker', color: 'var(--c-slate)',
-    title: 'Оценка потребностей сегодня',
-    description: 'Пять базовых эмоциональных потребностей из схема-терапии — по одной оценке на каждую. Через 3–5 дней в графике видно, что питает, а что истощает.',
-    detail: 'Привязанность · Автономия · Выражение · Спонтанность · Границы',
-    actionLabel: 'Перейти в трекер',
-    isDone: p => !!(p?.lastActivity.needsTracker) },
-  { id: 'diary', color: 'var(--accent-indigo)',
-    title: 'Первая запись в дневнике',
-    description: 'Записать момент, который задел, и увидеть, какая схема за ним стоит. Записи собираются в карту повторяющихся реакций.',
-    detail: 'Дневник схем · режимов · благодарности',
-    actionLabel: 'Открыть дневник',
-    isDone: p => !!(p?.lastActivity.schemaDiary || p?.lastActivity.modeDiary || p?.lastActivity.gratitudeDiary) },
-  { id: 'notify', color: 'var(--c-clay)',
-    title: 'Ежедневное напоминание',
-    description: 'Одно уведомление в выбранное время – чтобы практика не держалась на памяти.',
-    detail: 'Время · часовой пояс · серии дней',
-    actionLabel: 'Настроить',
-    isDone: p => !!(p?.notifications.enabled) },
-  { id: 'childhood', color: 'var(--c-moss)',
-    title: 'Колесо детства',
-    description: 'Оценить, как в детстве удовлетворялись те же пять потребностей, — и увидеть, откуда выросли нынешние паттерны.',
-    detail: '5 областей · связь с активными схемами',
-    actionLabel: 'Открыть',
-    isDone: () => !!localStorage.getItem('childhood_wheel_done') },
-];
 
 interface OnboardingProps {
   profile: UserProfile | null;
@@ -68,6 +25,7 @@ export function OnboardingWidget({ profile, hasSchemas, onOpenSchema, onOpenAdva
   });
   const [done,       setDone]       = useState(() => !!localStorage.getItem(ONBOARDING_DONE_KEY));
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const phone = useIsMobile();
 
   if (done || profile === null) return null;
 
@@ -104,9 +62,11 @@ export function OnboardingWidget({ profile, hasSchemas, onOpenSchema, onOpenAdva
     setSelectedId(null);
   }
 
+  // «Отложить» шага, который уже отложен, возвращает его в очередь.
   function handleSkip(step: StepDef) {
-    const next = [...skipped, step.id];
-    localStorage.setItem(ONBOARDING_SKIPPED_KEY, JSON.stringify(next));
+    const next = skipped.includes(step.id) ? skipped.filter(id => id !== step.id) : [...skipped, step.id];
+    if (next.length > 0) localStorage.setItem(ONBOARDING_SKIPPED_KEY, JSON.stringify(next));
+    else localStorage.removeItem(ONBOARDING_SKIPPED_KEY);
     setSkipped(next);
     setSelectedId(null);
   }
@@ -115,6 +75,23 @@ export function OnboardingWidget({ profile, hasSchemas, onOpenSchema, onOpenAdva
   const pendingSteps = STEPS.filter(s => !s.isDone(profile, ctx) && !skipped.includes(s.id));
   const visibleStep = (selectedId ? STEPS.find(s => s.id === selectedId) : null) ?? pendingSteps[0] ?? autoStep ?? null;
   if (!visibleStep && skipped.length === 0) return null;
+
+  // Телефон: одна карточка текущего шага (как в мини-аппе), не полный чеклист.
+  if (phone) {
+    return (
+      <OnboardingPhoneCard
+        steps={STEPS}
+        isDone={s => s.isDone(profile, ctx)}
+        skipped={skipped}
+        current={visibleStep}
+        doneCount={doneCount}
+        onSelect={setSelectedId}
+        onAction={handleAction}
+        onSkip={handleSkip}
+        onResume={() => { setSkipped([]); localStorage.removeItem(ONBOARDING_SKIPPED_KEY); }}
+      />
+    );
+  }
 
   return (
     <div className="ds-card sk-onb">

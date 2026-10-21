@@ -17,16 +17,16 @@ import {
   act,
 } from '@testing-library/react';
 import { ToolsList } from './ToolsList';
-import { QUICK_ACTION_IDS } from '../../utils/quickActions';
+import { QUICK_ACTION_IDS } from '../../../../shared/src/quickActions/quickActions';
 import {
   TOOLS_ACTIONS_HIDDEN_KEY,
   serializeHiddenActions,
-} from '../../utils/quickActionPrefs';
+} from '../../../../shared/src/quickActions/quickActionPrefs';
 import {
   TOOLS_ACTIONS_ORDER_KEY,
   getActionOrder,
   serializeActionOrder,
-} from '../../utils/quickActionOrder';
+} from '../../../../shared/src/quickActions/quickActionOrder';
 
 vi.mock('../../api', () => ({ api: { trackEvent: vi.fn() } }));
 import { api } from '../../api';

@@ -3,7 +3,7 @@
 export type { TherapyClientSummary } from '../../shared/src/types';
 import type { QuizDto } from '../../shared/src/quiz/quizEngine'; export type { QuizDto } from '../../shared/src/quiz/quizEngine';
 export type { UserSchemaNote, UserModeNote } from '../../shared/src/notes/types';
-import type { ContactChannel } from '../../shared/src/booking/contactChannel'; import type { PhraseMarkId } from '../../shared/src/phraseCheck/criteria';
+import type { ContactChannel } from '../../shared/src/booking/contactChannel'; import type { Currency } from '../../shared/src/booking/priceRegion'; import type { PhraseMarkId } from '../../shared/src/phraseCheck/criteria';
 import { buildSharedApi, type ApiTransport } from '../../shared/src/api/sharedApi';
 import { createRatingApi } from '../../shared/src/api/ratingApi';
 import { createPracticeSessionsApi } from '../../shared/src/api/practiceSessionsApi';
@@ -194,7 +194,7 @@ export const api = {
   // Booking admin — key travels in the x-admin-key header (never in URL/logs)
   adminStatus:       (key: string) => adminReq<AdminBookingStatus>('GET', '/api/booking/admin/status', key),
   adminGetPrices:    (key: string) => adminReq<SessionOption[]>('GET', '/api/booking/admin/prices', key),
-  adminSetPrice:     (key: string, type: 'INTRO_15' | 'SESSION_50', amount: number) => adminReq<{ ok: true }>('PATCH', '/api/booking/admin/price', key, { type, amount }),
+  adminSetPrice:     (key: string, type: 'INTRO_15' | 'SESSION_50', amount: number, currency?: Currency) => adminReq<{ ok: true }>('PATCH', '/api/booking/admin/price', key, currency ? { type, amount, currency } : { type, amount }),
   adminGetSubPrices: (key: string) => adminReq<{ period: 'month' | 'year'; price: number }[]>('GET', '/api/booking/admin/sub-prices', key),
   adminSetSubPrice:  (key: string, period: 'month' | 'year', amount: number) => adminReq<{ ok: true }>('PATCH', '/api/booking/admin/sub-price', key, { period, amount }),
   adminListRules:    (key: string) => adminReq<AvailabilityRule[]>('GET', '/api/booking/admin/rules', key),
