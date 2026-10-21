@@ -71,7 +71,7 @@
 | Навыки | `.claude/skills/` — `/grill-me`, `/retro`, `/handoff` | по вызову; в контексте только описание |
 | Субагенты | `.claude/agents/` — `scout` (haiku, поиск по карте), `ci-doctor` (разбор красного CI), `rules-reviewer` (ревью диффа по правилам) | по делегированию; `scout` и `ci-doctor` без `CLAUDE.md` |
 | Настройки | `.claude/settings.json` — модель субагентов `sonnet`, потолки вывода Bash/Read/MCP, запрет чтения dist и lock-файлов, хуки | всегда |
-| Замер контекста | хук `.claude/hooks/log-tool-use.mjs` → `.claude/state/tool-log.jsonl` (не в git) → `scripts/agent/session-report.mjs` | каждый вызов инструмента и загрузка правила |
+| Замер контекста | хук `.claude/hooks/log-tool-use.mjs` → журнал .claude/state/tool-log.jsonl (локальный, не в git) → `scripts/agent/session-report.mjs` | каждый вызов инструмента и загрузка правила |
 | Журнал промахов карты | [docs/agent/NAV_LOG.md](agent/NAV_LOG.md) | дописывает агент, разбирает `/retro журнал` |
 
 ## Каталоги репозитория

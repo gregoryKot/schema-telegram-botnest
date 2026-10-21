@@ -30,7 +30,11 @@ model: sonnet
    - находка вне задачи не записана в `docs/open/`, починка инцидента — без
      строки в `docs/INCIDENTS.md`.
 4. Гейты областей диффа — прогони дешёвые (`docs/architecture/gates.md`,
-   колонка «джоба»: `checks` и `webapp` — быстрые `node scripts/…`).
+   колонка «джоба»: `checks` и `webapp` — быстрые `node scripts/…`) в ЧИСТОМ
+   дереве, как в CI: `git worktree add -q /tmp/rr HEAD && cd /tmp/rr`.
+   Гейты читают диск, и неотслеживаемый локальный файл (журнал хука, сборка)
+   прячет ошибку, которую CI увидит (2026-10-21: путь из `.gitignore` в карте
+   прошёл локально и уронил `checks`). После — `git worktree remove --force /tmp/rr`.
 
 ## Ответ — не длиннее 25 строк
 
