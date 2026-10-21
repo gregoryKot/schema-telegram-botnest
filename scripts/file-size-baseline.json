@@ -552,7 +552,7 @@
   "scripts/jest-exit-guard-rules.mjs": 90,
   "scripts/jest-exit-guard.mjs": 146,
   "scripts/list-survived-mutants.mjs": 66,
-  "scripts/merge-drivers-check.mjs": 110,
+  "scripts/merge-drivers-check.mjs": 108,
   "scripts/merge-json-ratchet.mjs": 154,
   "scripts/merge-miniapp-dist.mjs": 97,
   "scripts/persistent-throttle-parse.mjs": 189,
