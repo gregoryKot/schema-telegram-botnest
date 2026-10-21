@@ -452,7 +452,7 @@ jobs:
   # src/test-support/gates/lockfile-audit.spec.ts с подменённым npm.
   npm-audit:
     if: github.event.schedule != '0 4 * * 0'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
