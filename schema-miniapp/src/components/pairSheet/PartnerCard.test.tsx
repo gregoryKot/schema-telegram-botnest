@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 // PartnerCard — карточка партнёра по совместному отслеживанию. Проверяет:
-// «ещё не заполнил» вместо выдуманного индекса (правило «никаких
+// «дневник пуст» вместо выдуманного индекса (правило «никаких
 // хардкод-заглушек» — 0 не подставляется, когда данных нет), контекстное
 // сообщение по диапазону индекса, и двухшаговое подтверждение выхода из
 // пары (важно: случайный тап не должен разрывать пару без подтверждения).
@@ -28,7 +28,7 @@ function makePartner(overrides: Partial<Partner> = {}): Partner {
 }
 
 describe('PartnerCard — состояние «сегодня»', () => {
-  it('партнёр ещё не заполнил дневник — текст, а не число 0', () => {
+  it('дневник за сегодня пуст — безличный текст, а не число 0', () => {
     render(
       <PartnerCard
         partner={makePartner({ partnerTodayDone: false })}
@@ -37,7 +37,7 @@ describe('PartnerCard — состояние «сегодня»', () => {
         onLeave={() => {}}
       />,
     );
-    expect(screen.getByText('Ещё не заполнил')).toBeTruthy();
+    expect(screen.getByText('Дневник за сегодня пока пуст')).toBeTruthy();
     expect(screen.queryByText('0.0')).toBeNull();
   });
 
@@ -150,5 +150,20 @@ describe('PartnerCard — выход из пары (двухшаговое по�
     );
     fireEvent.click(screen.getByText('Отмена'));
     expect(setConfirmLeaveCode).toHaveBeenCalledWith(null);
+  });
+});
+
+describe('PartnerCard — сбой выхода', () => {
+  it('leaveError показывается текстом', () => {
+    render(
+      <PartnerCard
+        partner={makePartner()}
+        confirmLeaveCode={null}
+        setConfirmLeaveCode={() => {}}
+        onLeave={() => {}}
+        leaveError
+      />,
+    );
+    expect(screen.getByText(/Не удалось выйти из пары/)).toBeTruthy();
   });
 });

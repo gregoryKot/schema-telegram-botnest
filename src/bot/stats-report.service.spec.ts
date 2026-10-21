@@ -56,6 +56,9 @@ describe('StatsReportService.render', () => {
     const money = {
       render: jest.fn().mockResolvedValue('деньги: поддержали 3 раза'),
     };
+    const sessionCurrency = {
+      render: jest.fn().mockResolvedValue('сессии не в рублях: 2'),
+    };
     const signupSource = {
       render: jest.fn().mockResolvedValue('новенькие по ссылкам: 5'),
     };
@@ -88,6 +91,7 @@ describe('StatsReportService.render', () => {
         loginTicket,
         clientErrors,
         money,
+        sessionCurrency,
         signupSource,
         game,
         dataExport,
@@ -113,6 +117,7 @@ describe('StatsReportService.render', () => {
         loginTicket as never,
         clientErrors as never,
         money as never,
+        sessionCurrency as never,
         signupSource as never,
         game as never,
         dataExport as never,
@@ -140,7 +145,7 @@ describe('StatsReportService.render', () => {
       'настройка экранов: 1\n\nпаттерны со вкладки «Я»: 4\n\nсхема случая по режимам: 3\n\nвход в мессенджере: всё хорошо',
     );
     expect(out).toContain(
-      'вход в мессенджере: всё хорошо\n\nвход по коду: 74 из 74\n\nполомки на клиенте: не было\n\nнапоминания из бота: ушло 9\n\nденьги: поддержали 3 раза\n\nновенькие по ссылкам: 5\n\nигра: открыли 12\n\nзабирают свои данные: 7\n\nданные записей: стёрто 5\n\nзаявки со знакомства: 3',
+      'вход в мессенджере: всё хорошо\n\nвход по коду: 74 из 74\n\nполомки на клиенте: не было\n\nнапоминания из бота: ушло 9\n\nденьги: поддержали 3 раза\n\nсессии не в рублях: 2\n\nновенькие по ссылкам: 5\n\nигра: открыли 12\n\nзабирают свои данные: 7\n\nданные записей: стёрто 5\n\nзаявки со знакомства: 3',
     );
     // Хвост — блоки о здоровье системы (считаются из process.env и состояния
     // самопроверки, не мокаются через blocks): порядок календарь → Настройки →
@@ -171,7 +176,7 @@ describe('StatsReportService.render', () => {
       const out = await service.render();
       // Заглушка стоит на месте блока: между соседями, в прежнем порядке.
       expect(out).toContain(
-        `вход в мессенджере: всё хорошо\n\nвход по коду: 74 из 74\n\nполомки на клиенте: не было\n\nнапоминания из бота: ушло 9\n\n⚠️ <b>«Деньги»</b>: ${BLOCK_FAILED_MARK} — pool &lt;timeout&gt;\n\nновенькие по ссылкам: 5`,
+        `вход в мессенджере: всё хорошо\n\nвход по коду: 74 из 74\n\nполомки на клиенте: не было\n\nнапоминания из бота: ушло 9\n\n⚠️ <b>«Деньги»</b>: ${BLOCK_FAILED_MARK} — pool &lt;timeout&gt;\n\nсессии не в рублях: 2\n\nновенькие по ссылкам: 5`,
       );
       expect(out).not.toContain('stack: at x');
       expect(out).toContain('продуктовые метрики');

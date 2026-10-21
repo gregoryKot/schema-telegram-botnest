@@ -125,4 +125,17 @@ describe('BookingService.book — Robokassa не настроена', () => {
     expect(res.status).toBe(BookingStatus.HELD);
     expect(res.paymentUrl).toBe('https://robokassa.test/pay');
   });
+
+  it('прод без Robokassa + SESSION_50 из-за границы: Robokassa не нужна — CONFIRMED, лида об отказе нет', async () => {
+    process.env.NODE_ENV = 'production';
+    const { service, notify } = makeService(false);
+    const res = await service.book({
+      ...dto(SessionType.SESSION_50),
+      clientTimeZone: 'Asia/Jerusalem',
+    });
+    expect(res.status).toBe(BookingStatus.CONFIRMED);
+    expect(res.paymentUrl).toBeNull();
+    expect(notify.notifyAdminBoth).not.toHaveBeenCalled();
+    expect(notify.onConfirmed).toHaveBeenCalledTimes(1);
+  });
 });

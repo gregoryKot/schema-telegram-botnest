@@ -9,10 +9,12 @@ import { DiaryEmptyExplainer } from '../components/diary/DiaryEmptyExplainer';
 import { DiaryLoadFailedBanner } from '../components/diary/DiaryLoadFailedBanner';
 import { DiaryShareButton } from '../share/DiaryShareButton';
 import '../styles/client-diary.css';
+import { diaryRowMeta, trackerRowMeta } from '../../../shared/src/diary/diaryMeta';
 import { TODAY } from './diary/dateHelpers';
 import { DiaryDraft } from './diary/DiaryDraft';
 import { DiaryHeader } from './diary/DiaryHeader';
 import { DiaryQuickAdd } from './diary/DiaryQuickAdd';
+import { DiaryTrackerLink } from './diary/DiaryTrackerLink';
 import { DiaryTimeline, DiaryTimelineSkeleton } from './diary/DiaryTimeline';
 import {
   buildEntries, filterCounts, filterEntries, groupByDay, monthStats, streakDays,
@@ -27,11 +29,13 @@ const FILTERS: { id: DiaryFilter; label: string }[] = [
 ];
 const DRAFT_TYPES: DiaryType[] = ['schema', 'mode', 'gratitude'];
 
-export function DiarySection({ onClose: _onClose }: { onClose?: () => void } = {}) {
+export function DiarySection({ onClose: _onClose, onOpenTracker }: { onClose?: () => void; onOpenTracker?: () => void } = {}) {
   const [schemaEntries,    setSchemaEntries]    = useState<SchemaDiaryEntry[]>([]);
   const [modeEntries,      setModeEntries]      = useState<ModeDiaryEntry[]>([]);
   const [gratitudeEntries, setGratitudeEntries] = useState<GratitudeDiaryEntry[]>([]);
   const [activeSchemaIds,  setActiveSchemaIds]  = useState<string[] | undefined>(undefined);
+  // Последняя отметка трекера — из профиля; на чистом аккаунте строка «Пока пусто».
+  const [lastNeedsDate,    setLastNeedsDate]    = useState<string | undefined>(undefined);
   const [loading,          setLoading]          = useState(true);
   const [filter,           setFilter]           = useState<DiaryFilter>('all');
   const [newEntry,         setNewEntry]         = useState<DiaryType | null>(null);
@@ -50,7 +54,10 @@ export function DiarySection({ onClose: _onClose }: { onClose?: () => void } = {
       setSchemaEntries(schema);
       setModeEntries(mode);
       setGratitudeEntries(gratitude);
-      if (profile) setActiveSchemaIds(profile.ysq.activeSchemaIds);
+      if (profile) {
+        setActiveSchemaIds(profile.ysq.activeSchemaIds);
+        setLastNeedsDate(profile.lastActivity?.needsTracker ?? undefined);
+      }
     }).catch((err) => { console.error(err); setLoadFailed(true); })
       .finally(() => setLoading(false)),
   []);
@@ -74,6 +81,12 @@ export function DiarySection({ onClose: _onClose }: { onClose?: () => void } = {
   const { daysWithEntry, daysInMonth } = monthStats(allEntries, TODAY);
   const streak = streakDays(allEntries, TODAY);
   const totalCount = allEntries.length;
+
+  const hubMeta = loading || loadFailed ? undefined : {
+    schema:    diaryRowMeta(schemaEntries.length, schemaEntries[0]?.createdAt),
+    mode:      diaryRowMeta(modeEntries.length, modeEntries[0]?.createdAt),
+    gratitude: diaryRowMeta(gratitudeEntries.length, gratitudeEntries[0]?.date),
+  };
 
   // Мета для карточки шаринга «сводка дневника» — только для конкретного типа.
   const SHARE_META: Record<DiaryType, { emoji: string; title: string; color: string; entries: { createdAt: string }[] }> = {
@@ -126,7 +139,9 @@ export function DiarySection({ onClose: _onClose }: { onClose?: () => void } = {
 
       <DiaryHeader total={totalCount} daysWithEntry={daysWithEntry} daysInMonth={daysInMonth} streak={streak} />
 
-      <DiaryQuickAdd onOpen={setNewEntry} />
+      <DiaryQuickAdd onOpen={setNewEntry} meta={hubMeta} />
+
+      {onOpenTracker && <DiaryTrackerLink onOpen={onOpenTracker} meta={loading || loadFailed ? undefined : trackerRowMeta(lastNeedsDate)} />}
 
       <div className="cd-drafts">
         {DRAFT_TYPES.filter(t => loadDraft(t)).map(type => (

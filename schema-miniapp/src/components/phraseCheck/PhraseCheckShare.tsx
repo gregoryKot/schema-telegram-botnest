@@ -1,38 +1,21 @@
-import { ShareTwoOptions } from '../../share/ShareTwoOptions';
-import { usePhraseCheckShare } from '../../../../shared/src/share/usePhraseCheckShare';
+import { PhraseCheckShare as Shared } from '../../../../shared/src/share/PhraseCheckShare';
+import { SharePill } from '../../share/SharePill';
+import { ShareCardSheet } from '../../share/ShareCardSheet';
 import type { PhraseMarkId } from '../../../../shared/src/phraseCheck/criteria';
 import { botShortUrl } from '../../utils/botConfig';
 
-/**
- * Поделиться разбором: краткая карточка «было → стало» первична (нужна
- * переписанная фраза), вторая опция — весь разбор с приметами. Ветвление и
- * пропсы считает phraseCheckShareOptions (shared, правило №11), вёрстку даёт
- * общий ShareTwoOptions — здесь остаются только тексты этой фичи.
- */
-export function PhraseCheckShare({
-  phrase,
-  marks,
-  rewrite,
-}: {
+/** Поделиться разбором: логика и тексты — в shared, здесь лист и кнопка мини-аппа. */
+export function PhraseCheckShare(props: {
   phrase: string;
   marks: PhraseMarkId[];
   rewrite?: string;
 }) {
-  const { share, setShare, shortProps, fullProps } = usePhraseCheckShare(
-    phrase,
-    marks,
-    rewrite,
-    botShortUrl,
-  );
-
   return (
-    <ShareTwoOptions
-      share={share}
-      setShare={setShare}
-      shortProps={shortProps}
-      fullProps={fullProps}
-      shortHint="На карточке — только две реплики: было и стало."
-      fullLabel="Поделиться всем разбором"
+    <Shared
+      {...props}
+      link={botShortUrl}
+      Sheet={ShareCardSheet}
+      Pill={SharePill}
       zIndex={300}
     />
   );

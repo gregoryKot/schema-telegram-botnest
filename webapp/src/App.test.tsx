@@ -105,16 +105,15 @@ describe('App — личный сайт (домен kotlarewski)', () => {
   });
 
   it('favicon переключается на персональный', async () => {
-    // jsdom не реализует HTMLLinkElement.sizes (DOMTokenList) — ветка
-    // `sizes?.value === '96x96'` физически недостижима в этом окружении,
-    // проверяем достижимую ветку (обычная link-иконка без sizes).
+    // Проверяем svg-иконку (без sizes); ветка png 96×96 — в domainChrome.test.
     const link = document.createElement('link');
     link.rel = 'icon';
+    link.type = 'image/svg+xml';
     document.head.appendChild(link);
     try {
       stubLocation({ hostname: 'kotlarewski.example', pathname: '/', href: 'http://kotlarewski.example/' });
       await loadApp();
-      expect(link.href).toContain('favicon-personal-32.png');
+      expect(link.href).toContain('favicon-personal-192.png');
       expect(link.type).toBe('image/png');
     } finally {
       link.remove();

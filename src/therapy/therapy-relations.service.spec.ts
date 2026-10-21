@@ -1053,6 +1053,9 @@ describe('getClients — список клиентов терапевта', () =
     expect(client.therapyStartDate).toBeNull();
     expect(client.nextSession).toBeNull();
     expect(client.meetingDays).toEqual([]);
+    // Мутационное усиление (`?? []` у schemaIds виртуального клиента): без
+    // конспектуализации под -rel.id список схем пустой, а не подставленный.
+    expect(client.schemaIds).toEqual([]);
   });
 
   // Мутационное усиление (L196, LogicalOperator + UnaryOperator): schemaIds
@@ -1135,6 +1138,30 @@ describe('getClients — список клиентов терапевта', () =
     expect(new Set(list.map((c) => c.telegramId))).toEqual(
       new Set([-2n, CLIENT]),
     );
+  });
+
+  // Мутационное усиление (фильтр виртуальных: `rel.client === null` →
+  // `true`): у связи с реальным клиентом virtualClientName может остаться —
+  // офлайн-клиент, позже подключившийся по коду. Такая связь — один реальный
+  // клиент; без проверки на client === null она задвоилась бы виртуальной
+  // записью с telegramId = -rel.id.
+  it('связь с реальным клиентом и оставшимся virtualClientName — один реальный клиент, без виртуального двойника', async () => {
+    const { service } = makeFullService(
+      [
+        {
+          id: 4,
+          therapistId: T1,
+          clientId: CLIENT,
+          status: 'active',
+          code: 'AAA222',
+          virtualClientName: 'Оффлайн Иван',
+          createdAt: new Date(),
+        },
+      ],
+      [{ id: CLIENT, firstName: 'Аня' }],
+    );
+    const list = await service.getClients(T1);
+    expect(list.map((c) => c.telegramId)).toEqual([CLIENT]);
   });
 });
 

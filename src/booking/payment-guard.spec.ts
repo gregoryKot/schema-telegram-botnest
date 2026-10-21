@@ -217,3 +217,58 @@ describe('assertBookingPayable', () => {
     expect(notify.notifyAdminBoth).not.toHaveBeenCalled();
   });
 });
+
+// Платная сессия не в рублях (решение владельца 2026-10-20): Robokassa не нужна,
+// бронь подтверждается сразу — но цена ≥ 1 по-прежнему обязательна.
+describe('assertBookingPayable — manual (не в рублях)', () => {
+  const was = process.env.NODE_ENV;
+  const lead = {
+    clientName: 'Мария',
+    clientContact: '@maria',
+    startsAt: new Date('2026-10-20T10:00:00Z'),
+    durationMin: 50,
+    type: SessionType.SESSION_50,
+  };
+  let errorSpy: jest.SpyInstance;
+  beforeEach(() => {
+    errorSpy = jest.spyOn(Logger.prototype, 'error').mockImplementation();
+  });
+  afterEach(() => {
+    process.env.NODE_ENV = was;
+    errorSpy.mockRestore();
+  });
+
+  it('прод без Robokassa: manual с ценой ≥ 1 не отказывается и лида не шлёт', async () => {
+    process.env.NODE_ENV = 'production';
+    const notify = { notifyAdminBoth: jest.fn(async () => undefined) };
+    await expect(
+      assertBookingPayable({ enabled: false }, notify, lead, 70, true),
+    ).resolves.toBeUndefined();
+    expect(notify.notifyAdminBoth).not.toHaveBeenCalled();
+    expect(errorSpy).not.toHaveBeenCalled();
+  });
+
+  it('тот же вызов без manual в проде — отказ (рублёвый путь не изменился)', async () => {
+    process.env.NODE_ENV = 'production';
+    const notify = { notifyAdminBoth: jest.fn(async () => undefined) };
+    await expect(
+      assertBookingPayable({ enabled: false }, notify, lead, 70),
+    ).rejects.toThrow(ServiceUnavailableException);
+  });
+
+  it.each([0, -1, null])(
+    'manual с ценой %p: лид владельцу «цена сессии не задана» и 503',
+    async (amount) => {
+      process.env.NODE_ENV = 'production';
+      const notify = { notifyAdminBoth: jest.fn(async () => undefined) };
+      await expect(
+        assertBookingPayable({ enabled: false }, notify, lead, amount, true),
+      ).rejects.toThrow(ServiceUnavailableException);
+      const [html] = notify.notifyAdminBoth.mock.calls[0] as unknown as [
+        string,
+      ];
+      expect(html).toContain('цена сессии не задана');
+      expect(html).not.toContain('оплата не настроена');
+    },
+  );
+});

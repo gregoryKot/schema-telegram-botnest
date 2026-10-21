@@ -18,6 +18,7 @@ import { LoginTicketMetricsService } from './login-ticket-metrics.service';
 import { ClientErrorMetricsService } from './client-error-metrics.service';
 import { NotifyQueueMetricsService } from './notify-queue-metrics.service';
 import { MoneyMetricsService } from './money-metrics.service';
+import { SessionCurrencyMetricsService } from './session-currency-metrics.service';
 import { GameMetricsService } from './game-metrics.service';
 import { DataExportMetricsService } from './data-export-metrics.service';
 import { BookingRetentionMetricsService } from './booking-retention-metrics.service';
@@ -25,8 +26,8 @@ import { IntroLeadMetricsService } from './intro-lead-metrics.service';
 import { infraBlocks } from './stats-infra-blocks';
 import { settleBlocks } from './stats-settle';
 
-// Склейка второго сообщения /stats: блоки метрик + здоровье системы (правило
-// №10). Блоки независимы (stats-settle.ts): упавший заменяется строкой.
+// Склейка второго сообщения /stats (блоки метрик + здоровье системы), отдельный модуль (№10).
+// Блоки независимы (stats-settle.ts): упавший заменяется строкой, отчёт не гаснет.
 @Injectable()
 export class StatsReportService {
   private readonly logger = new Logger(StatsReportService.name);
@@ -49,6 +50,7 @@ export class StatsReportService {
     private readonly loginTicket: LoginTicketMetricsService,
     private readonly clientErrors: ClientErrorMetricsService,
     private readonly money: MoneyMetricsService,
+    private readonly sessionCurrency: SessionCurrencyMetricsService,
     private readonly signupSource: SignupSourceMetricsService,
     private readonly game: GameMetricsService,
     private readonly dataExport: DataExportMetricsService,
@@ -57,7 +59,7 @@ export class StatsReportService {
     private readonly notifyQueue: NotifyQueueMetricsService,
   ) {}
 
-  /** Порядок блоков — порядок в отчёте; менять осознанно (см. тест). */
+  /** Второе сообщение /stats; порядок блоков — порядок в отчёте (см. тест). */
   async render(): Promise<string> {
     const blocks = [
       { name: 'Как пользуются продуктом', svc: this.product },
@@ -78,19 +80,15 @@ export class StatsReportService {
       { name: 'Поломки на клиенте', svc: this.clientErrors },
       { name: 'Напоминания из бота', svc: this.notifyQueue },
       { name: 'Деньги', svc: this.money },
+      { name: 'Сессии не в рублях', svc: this.sessionCurrency },
       { name: 'Откуда пришли новенькие', svc: this.signupSource },
       { name: 'Игра', svc: this.game },
       { name: 'Забирают свои данные', svc: this.dataExport },
       { name: 'Данные записей', svc: this.bookingRetention },
       { name: 'Заявки с формы знакомства', svc: this.introLeads },
     ];
-    const parts = await settleBlocks(
-      [
-        ...blocks.map((b) => ({ name: b.name, run: () => b.svc.render() })),
-        ...infraBlocks(),
-      ],
-      this.logger,
-    );
+    const runs = blocks.map((b) => ({ ...b, run: () => b.svc.render() }));
+    const parts = await settleBlocks([...runs, ...infraBlocks()], this.logger);
     return parts.join('\n\n');
   }
 }

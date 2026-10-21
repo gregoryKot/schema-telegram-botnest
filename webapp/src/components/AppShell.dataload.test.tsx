@@ -31,6 +31,9 @@ describe('AppShell — согласия: молча не принимаем, н�
   it('accepted: false — показан экран согласий, acceptDisclaimer не зван до двух галочек', async () => {
     mockApi.getDisclaimer.mockResolvedValueOnce({ accepted: false });
     renderAppShell('/today');
+    // Сначала приветствие (как первый шаг визарда мини-аппа), согласия за ним.
+    await screen.findByText('БЕТА-ВЕРСИЯ');
+    fireEvent.click(screen.getByText('Далее'));
     await screen.findByText('Данные и конфиденциальность');
     expect(mockApi.acceptDisclaimer).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole('checkbox'));

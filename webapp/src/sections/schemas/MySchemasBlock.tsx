@@ -2,17 +2,19 @@ import { SCHEMA_DOMAINS } from '../../schemaTherapyData';
 import { useTr } from '../../utils/addressForm';
 import { hueStyle, DOMAIN_HUE } from '../../lib/tone';
 import { Skeleton } from '../../components/Skeleton';
+import { FreqMark, FreqHint } from './FreqMark';
 import { findSchema, shortName } from './schemasModel';
 
 interface Props {
   loading: boolean;
   ids: string[];
-  onAdd: () => void;
-  onOpenSchema: (id: string) => void;
+  onAdd: () => void; onOpenSchema: (id: string) => void;
+  statusFor?: (id: string) => string; // статус карточки словами; undefined — пока грузится
+  freq?: Record<string, number>; // дней за неделю по дневнику; undefined — пока не загрузилось
 }
 
-/** «Мои схемы»: чипы цвета домена (YSQ + ручной выбор) и добавление вручную. */
-export function MySchemasBlock({ loading, ids, onAdd, onOpenSchema }: Props) {
+/** «Мои схемы»: чипы цвета домена со статусом карточки и добавление вручную. */
+export function MySchemasBlock({ loading, ids, onAdd, onOpenSchema, statusFor, freq }: Props) {
   const tr = useTr();
   return (
     <section className="cs-block">
@@ -27,17 +29,20 @@ export function MySchemasBlock({ loading, ids, onAdd, onOpenSchema }: Props) {
       ) : ids.length === 0 ? (
         <p className="cs-empty">{tr('Пройди тест на схемы или добавь вручную', 'Пройдите тест на схемы или добавьте вручную')}</p>
       ) : (
+        <>
+        {freq && <FreqHint kind="schema" freq={freq} />}
         <div className="cs-chips">
           {ids.map(id => {
             const found = findSchema(SCHEMA_DOMAINS, id);
             if (!found) return null;
             return (
-              <button key={id} className="cs-chip tone-tint tone-border" style={hueStyle(DOMAIN_HUE[found.domain.id])} onClick={() => onOpenSchema(id)}>
-                {shortName(found.schema.name)}
+              <button key={id} className={`cs-chip tone-tint tone-border${statusFor || freq?.[id] ? ' cs-chip--stacked' : ''}`} style={hueStyle(DOMAIN_HUE[found.domain.id])} onClick={() => onOpenSchema(id)}>
+                {shortName(found.schema.name)}{statusFor && <span className="cs-chip-status">{statusFor(id)}</span>}{freq && <FreqMark freq={freq[id] ?? 0} />}
               </button>
             );
           })}
         </div>
+        </>
       )}
     </section>
   );

@@ -10,10 +10,11 @@ import {
 } from '../../components/PatternFrequencyList';
 import { PatternSheet } from '../../components/patternSheet/PatternSheet';
 import { usePatternStatus } from '../../components/patternSheet/usePatternStatus';
-import { schemaEntryCounts } from '../../components/patternSheet/patternStatus';
+import { schemaEntryCounts } from '../../../../shared/src/pattern/patternStatus';
 import { PatternListSkeleton } from './CatalogParts';
 import { shortName } from './utils';
-import { WeekTopSummary } from '../../utils/patternsSummary';
+import { freqHint } from '../../../../shared/src/pattern/weekPatternText';
+import { WeekTopSummary } from '../../../../shared/src/pattern/patternsSummary';
 import type { SchemaDiaryEntry } from '../../types';
 
 interface Props {
@@ -70,7 +71,7 @@ export function SchemasPatternSection({
             addLabel="+ Добавить схему"
             onAdd={onShowSchemaPicker}
             anyFreq={Object.values(schemaFreq).some((v) => v > 0)}
-            hint="Полоска рядом со схемой — сколько дней за неделю она всплывала в дневнике. Это наблюдение, а не оценка."
+            hint={freqHint('schema')}
           />
         ) : (
           <button

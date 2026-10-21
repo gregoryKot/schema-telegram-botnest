@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { api } from '../api';
 import { PlusMenuSheet } from './plusMenu/PlusMenuSheet';
-import type { QuickActionId } from '../utils/quickActions';
+import type { QuickActionId } from '../../../shared/src/quickActions/quickActions';
 
 interface Props {
   onAction: (id: QuickActionId) => void;

@@ -3,11 +3,11 @@ import { SessionType } from '@prisma/client';
 import { sessionLabel } from './caldav-event.util';
 import { clientTimeLine } from './client-timezone';
 import { contactPrefix } from './contact-channel';
+import { PriceFields, priceLine } from './booking-notify.price';
 
 // Чистые форматтеры уведомлений админу о бронировании (правило №10).
-
 /** Карточка брони — общие поля для всех уведомлений админу. */
-export interface BookingCard {
+export interface BookingCard extends PriceFields {
   clientName: string;
   clientContact: string;
   clientChannel?: string | null;
@@ -51,8 +51,7 @@ export function formatTime(date: Date): string {
   );
 }
 
-/** «вт, 30 сент., 15:00 МСК» либо, если посетитель прислал непустой не-МСК
- * пояс, «вт, 30 сент., 15:00 МСК · у клиента 19:00 (Бангкок, UTC+7)». */
+/** «15:00 МСК» либо, при не-МСК поясе посетителя, «15:00 МСК · у клиента 19:00 (Бангкок, UTC+7)». */
 function timeWithClientTz(
   b: Pick<BookingCard, 'startsAt' | 'clientTimeZone'>,
 ): string {
@@ -71,6 +70,7 @@ export function bookingCardText(title: string, b: BookingCard): string {
     b.message ? `💬 ${escapeHtml(b.message)}` : null,
     b.meetingUrl ? `🔗 ${b.meetingUrl}` : null,
     b.source ? `🧭 Откуда: ${escapeHtml(b.source)}` : null,
+    priceLine(b),
   ]
     .filter(Boolean)
     .join('\n');
