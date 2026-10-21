@@ -65,7 +65,7 @@ export function AdminPage() {
         {TABS.map(t => (
           <button key={t.id} onClick={() => setTab(t.id)} style={{
             padding: '8px 16px', fontSize: 13, fontWeight: 600, fontFamily: 'inherit', cursor: 'pointer', borderRadius: 100,
-            background: tab === t.id ? 'var(--accent)' : 'transparent', color: tab === t.id ? '#fff' : 'var(--text-sub)',
+            background: tab === t.id ? 'var(--accent)' : 'transparent', color: tab === t.id ? 'var(--on-accent)' : 'var(--text-sub)',
             border: `1.5px solid ${tab === t.id ? 'var(--accent)' : 'var(--line-strong)'}`,
           }}>{t.label}</button>
         ))}

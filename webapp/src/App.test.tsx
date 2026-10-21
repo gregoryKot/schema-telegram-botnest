@@ -113,8 +113,8 @@ describe('App — личный сайт (домен kotlarewski)', () => {
     try {
       stubLocation({ hostname: 'kotlarewski.example', pathname: '/', href: 'http://kotlarewski.example/' });
       await loadApp();
-      expect(link.href).toContain('favicon-personal.svg');
-      expect(link.type).toBe('image/svg+xml');
+      expect(link.href).toContain('favicon-personal-192.png');
+      expect(link.type).toBe('image/png');
     } finally {
       link.remove();
     }
@@ -125,6 +125,34 @@ describe('App — личный сайт (домен kotlarewski)', () => {
     const App = await loadApp();
     render(<App />);
     await waitFor(() => expect(screen.getAllByText('Григорий Котляревский').length).toBeGreaterThan(0));
+  });
+});
+
+describe('App — один бренд на всю визитку (PracticeBrand)', () => {
+  const practice = (pathname: string) =>
+    stubLocation({ hostname: 'kotlarewski.example', pathname, href: `http://kotlarewski.example${pathname}` });
+
+  it.each(['/privacy', '/offer', '/reviews'])('%s рендерится внутри .landing-personal-brand', async (pathname) => {
+    practice(pathname);
+    const App = await loadApp();
+    const { container } = render(<App />);
+    await waitFor(() => expect(container.querySelector('.landing-personal-brand h1')).toBeTruthy());
+  });
+
+  it('/subscribe — осознанно продуктовый (light-lock), вне бренда визитки', async () => {
+    practice('/subscribe');
+    const App = await loadApp();
+    const { container } = render(<App />);
+    await waitFor(() => expect(container.querySelector('h1')).toBeTruthy());
+    expect(container.querySelector('.landing-personal-brand')).toBeNull();
+  });
+
+  it('обёртка не создаёт бокс: display: contents не ломает раскладку #root', async () => {
+    practice('/privacy');
+    const App = await loadApp();
+    const { container } = render(<App />);
+    await waitFor(() => expect(container.querySelector('.landing-personal-brand')).toBeTruthy());
+    expect((container.querySelector('.landing-personal-brand') as HTMLElement).style.display).toBe('contents');
   });
 });
 

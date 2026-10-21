@@ -43,7 +43,7 @@ export function HeroSection({ photo, activeSection, theme, onToggleTheme, onBook
             onClick={onToggleTheme}
             aria-label={theme === 'dark' ? 'Светлая тема' : 'Тёмная тема'}
             title={theme === 'dark' ? 'Светлая тема' : 'Тёмная тема'}
-            style={{ background: 'none', border: '1px solid var(--line)', borderRadius: 8, width: 32, height: 32, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-sub)', transition: 'border-color .15s, color .15s', padding: 0 }}
+            style={{ background: 'none', border: '1px solid var(--line)', borderRadius: 'var(--r-8)', width: 32, height: 32, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-sub)', transition: 'border-color .15s, color .15s', padding: 0 }}
             onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--text-sub)'; (e.currentTarget as HTMLElement).style.color = 'var(--text)'; }}
             onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--line)'; (e.currentTarget as HTMLElement).style.color = 'var(--text-sub)'; }}
           >

@@ -228,6 +228,10 @@ jobs:
       # наоборот: путь в CI без файла — переименованный спек, который jest
       # молча пропускает. Бейслайна нет, флага --update нет.
       - run: node scripts/check-e2e-in-ci.mjs
+      # Документы для агентов не врут: CLAUDE.md в бюджете (он грузится в каждую
+      # сессию), у правил .claude/rules есть paths, карта кода называет все
+      # каталоги и гейты, пути и ссылки живы. Бейслайна и --update нет.
+      - run: node scripts/check-agent-docs.mjs
       # Файл, выделенный из файла мутационной зоны, не выпадает из `mutate`
       # молча (nightly golden-auth, #614: redact() ушёл из security-log.service
       # в security-log-redact.ts и перестал измеряться). Классификация в

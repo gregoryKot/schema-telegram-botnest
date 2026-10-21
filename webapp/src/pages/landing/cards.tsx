@@ -1,23 +1,19 @@
-import { useState } from 'react';
-import { useTilt } from '../../components/landing-kit-hooks';
+import { useId, useState } from 'react';
 import { FAQ_ITEMS } from './constants';
 import { faqAnswer } from './faqAnswer';
 // ─── Approach cards ───────────────────────────────────────────────────────────
 export function BentoCard({ num, title, text, accent = false }: { num: string; title: string; text: string; accent?: boolean }) {
-  const ref = useTilt();
   return (
-    <div ref={ref} style={{
+    <div style={{
       background: accent ? 'var(--accent)' : 'var(--bg-elev)',
       border: accent ? 'none' : '1px solid var(--line)',
-      color: accent ? 'white' : undefined,
-      borderRadius: 20, padding: '32px',
+      color: accent ? 'var(--on-accent)' : undefined,
+      borderRadius: 'var(--r-20)', padding: '32px',
       display: 'flex', flexDirection: 'column', gap: 12,
-      transition: 'transform .25s, box-shadow .25s',
-      cursor: 'default',
     }}>
-      <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: '.12em', opacity: accent ? .65 : 1, color: accent ? 'white' : 'var(--text-faint)' }}>{num}</span>
-      <h3 style={{ fontFamily: 'var(--serif)', fontSize: accent ? 28 : 21, fontWeight: 400, lineHeight: 1.2, margin: 0, color: accent ? 'white' : 'var(--text)', whiteSpace: 'pre-line' }}>{title}</h3>
-      <p style={{ fontSize: 14, lineHeight: 1.7, margin: 0, opacity: accent ? .85 : 1, color: accent ? 'white' : 'var(--text-sub)' }}>{text}</p>
+      <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: '.12em', opacity: accent ? .65 : 1, color: accent ? 'var(--on-accent)' : 'var(--text-faint)' }}>{num}</span>
+      <h3 style={{ fontFamily: 'var(--serif)', fontSize: accent ? 28 : 21, fontWeight: 400, lineHeight: 1.2, margin: 0, color: accent ? 'var(--on-accent)' : 'var(--text)', whiteSpace: 'pre-line' }}>{title}</h3>
+      <p style={{ fontSize: 14, lineHeight: 1.7, margin: 0, opacity: accent ? .85 : 1, color: accent ? 'var(--on-accent)' : 'var(--text-sub)' }}>{text}</p>
     </div>
   );
 }
@@ -25,13 +21,16 @@ export function BentoCard({ num, title, text, accent = false }: { num: string; t
 // ─── FAQ accordion ────────────────────────────────────────────────────────────
 export function FaqList({ price, online = true }: { price: string; online?: boolean }) {
   const [open, setOpen] = useState<number | null>(null);
+  const baseId = useId();
   return (
     <div style={{ display: 'flex', flexDirection: 'column' }}>
       {FAQ_ITEMS.map((item, i) => {
         const isOpen = open === i;
+        const panelId = `${baseId}-faq-${i}`;
         return (
           <div key={i} style={{ borderTop: '1px solid var(--line)', borderBottom: i === FAQ_ITEMS.length - 1 ? '1px solid var(--line)' : 'none' }}>
             <button
+              aria-expanded={isOpen} aria-controls={panelId}
               onClick={() => setOpen(isOpen ? null : i)}
               style={{
                 width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
@@ -46,12 +45,13 @@ export function FaqList({ price, online = true }: { price: string; online?: bool
                 flexShrink: 0, width: 28, height: 28, borderRadius: '50%',
                 background: isOpen ? 'var(--accent)' : 'rgba(var(--fg-rgb),.07)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 18, color: isOpen ? 'white' : 'var(--text-sub)',
+                fontSize: 18, color: isOpen ? 'var(--on-accent)' : 'var(--text-sub)',
                 transition: 'background .2s, transform .2s',
                 transform: isOpen ? 'rotate(45deg)' : 'none',
               }}>+</span>
             </button>
-            <div style={{ display: 'grid', gridTemplateRows: isOpen ? '1fr' : '0fr', transition: 'grid-template-rows .32s ease', overflow: 'hidden' }}>
+            {/* Свёрнутая панель: aria-hidden + inert (React 19 — булев проп): ни скринридера, ни фокуса. */}
+            <div id={panelId} aria-hidden={!isOpen} inert={!isOpen} style={{ display: 'grid', gridTemplateRows: isOpen ? '1fr' : '0fr', transition: 'grid-template-rows .32s ease', overflow: 'hidden' }}>
               <div style={{ overflow: 'hidden' }}>
                 <p style={{ fontSize: 15, color: 'var(--text-sub)', lineHeight: 1.8, margin: '0 0 22px', maxWidth: 660 }}>
                   {faqAnswer(item.a, price, online)}

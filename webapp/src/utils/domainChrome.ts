@@ -19,11 +19,11 @@ const PRACTICE_URL = 'https://kotlarewski.gr';
 // "serviceUrl", "image") — Person и услуга принадлежат визитке практики на
 // любом домене, поэтому здесь его не переписываем.
 export function applyPersonalSiteChrome(doc: Document = document): void {
-  // Монограмма «ГК»: svg-иконке — svg, png 96×96 — png, значку iOS — свой квадрат.
-  // getAttribute, не link.sizes: у jsdom нет DOMTokenList, ветка была бы непроверяемой.
+  // Знак «GK» кистью (растр, вектора нет): обе icon-ссылки — png, iOS — свой квадрат; getAttribute, не link.sizes (jsdom).
   doc.querySelectorAll("link[rel='icon']").forEach((el) => {
     const link = el as HTMLLinkElement;
-    link.href = link.getAttribute('sizes') === '96x96' ? '/favicon-personal-96.png' : '/favicon-personal.svg';
+    link.type = 'image/png';
+    link.href = link.getAttribute('sizes') === '96x96' ? '/favicon-personal-96.png' : '/favicon-personal-192.png';
   });
   doc.querySelector("link[rel='apple-touch-icon']")?.setAttribute('href', '/apple-touch-icon-personal.png');
   doc.querySelector("link[rel='manifest']")?.remove();

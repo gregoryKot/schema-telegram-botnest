@@ -11,7 +11,7 @@ export function confirmText(
 ): string {
   const device = deviceLabel ? `\nУстройство: ${deviceLabel}` : '';
   return (
-    `🔐 <b>Вход в «Всё по схеме»</b>\n\n` +
+    `🔐 <b>Вход во «Всё по схеме»</b>\n\n` +
     `Код на экране: <b>${formatUserCode(code)}</b>${device}\n\n` +
     t(
       form,

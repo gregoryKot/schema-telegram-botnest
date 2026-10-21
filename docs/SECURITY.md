@@ -237,7 +237,9 @@ React экранирует вывод по умолчанию, `dangerouslySetIn
 - **Content-Security-Policy — есть, через helmet** (`src/main.ts`, HTTP-заголовком
   на все ответы Nest, включая статику webapp через `ServeStaticModule`). `helmet`
   с `useDefaults` даёт строгий базис, а мы переопределяем: `default-src 'self'`;
-  `script-src` — allowlist (`telegram.org`, `mc.yandex.ru`, `st.max.ru`);
+  `script-src` — allowlist (`mc.yandex.ru`, `st.max.ru`, `accounts.google.com`;
+  у каждого источника `script-src`/`connect-src` обязан быть потребитель —
+  `src/security/csp-allowlist.invariants.spec.ts`);
   `connect-src`/`img-src`/`frame-src` — по месту; `object-src 'none'`;
   `frame-ancestors 'self' https://max.ru https://*.max.ru https://web.telegram.org https://webk.telegram.org https://weba.telegram.org`
   (+ `frameguard:false`) — клик-джекинг закрыт списком источников (L12 аудита
@@ -249,6 +251,13 @@ React экранирует вывод по умолчанию, `dangerouslySetIn
   ответит 200 (аудит 2026-10-11: Telegram Web). Инлайн-стили живут:
   `style-src` наследует дефолт helmet с `'unsafe-inline'`. Тонкую настройку менять
   осторожно, проверяя рендер в браузере.
+- **Permissions-Policy — свой middleware** (`src/security/permissions-policy.ts`,
+  helmet 8 этот заголовок не ставит). Запрещены целиком камера, микрофон,
+  геопозиция, платежи, датчики, захват экрана, USB/HID/serial/bluetooth/MIDI.
+  Не запрещать то, чем пользуется код: `identity-credentials-get` (Google One
+  Tap через FedCM), `web-share`, `clipboard-write` — запрет ломает их молча.
+  Сверку запретов с API, которое зовут фронты, держит
+  `src/security/permissions-policy.invariants.spec.ts`.
 - **Access-токен — только в памяти.** Хранится в React-state, не в
   `localStorage`. Refresh-токен — в httpOnly-cookie. После OAuth токен приходит
   во фрагменте URL и сразу вычищается (`AuthCallback.tsx`, `replaceState`).
@@ -426,7 +435,7 @@ React экранирует вывод по умолчанию, `dangerouslySetIn
   сравнения секретов зовут `timingSafeEqual`, запрет `===` на секрете.
 - **CSRF** (`src/security/csrf.invariants.spec.ts`): каждый читатель
   refresh-куки зовёт `requireCsrf`; куки не `sameSite:none`.
-- **Hardening** (`src/security/hardening.invariants.spec.ts`): helmet+CSP,
+- **Hardening** (`src/security/hardening.invariants.spec.ts`): helmet+CSP, Permissions-Policy,
   ValidationPipe whitelist, cap тела, exception-фильтры, HTTPS-редирект.
 - **ReDoS** (`webapp/src/utils/crisisMarkers.redos.test.ts`): детект на
   патологическом вводе укладывается в 100мс.

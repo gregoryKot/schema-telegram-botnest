@@ -108,14 +108,13 @@ export function LandingPage() {
   }, [activeSection]);
 
   return (
-    // landing-personal-brand изолирует эту страницу от продуктового акцента
-    // (терракота, shared/src/theme/tokens.css) — личный сайт терапевта
-    // сознательно остаётся на прежних индиго + Instrument Serif, см. блок
-    // .landing-personal-brand в webapp/src/index.css.
+    // Бренд визитки (индиго + Instrument Serif, блок .landing-personal-brand в
+    // webapp/src/index.css) задаёт layout-маршрут PracticeBrand в App.tsx —
+    // одинаково для всех страниц визитки, а не только для этой.
     // alignSelf: flex-start обязателен: #root — flex-контейнер высотой 100vh, и
     // растянутая обёртка с overflowX: hidden становилась внутренним скроллером —
     // window.scrollY всегда 0, липкая панель «Записаться» и scrollspy не включались.
-    <div className="landing-personal-brand" style={{ background: 'var(--bg)', color: 'var(--text)', overflowX: 'hidden', flex: '1 1 0%', minWidth: 0, alignSelf: 'flex-start' }}>
+    <div style={{ background: 'var(--bg)', color: 'var(--text)', overflowX: 'hidden', flex: '1 1 0%', minWidth: 0, alignSelf: 'flex-start' }}>
 
       {/* ── MOBILE MENU ─────────────────────────────────────────────────── */}
       {menuOpen && <MobileMenu onClose={() => setMenuOpen(false)} active={activeSection} onBook={scrollToBooking} />}
@@ -158,8 +157,8 @@ export function LandingPage() {
 
         {/* Soft ambient light – top-right */}
         <div aria-hidden style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 0 }}>
-          <div style={{ position: 'absolute', width: 900, height: 600, borderRadius: '50%', background: 'radial-gradient(ellipse, rgba(77,71,153,.08) 0%, transparent 65%)', top: '-10%', right: '-15%' }} />
-          <div style={{ position: 'absolute', width: 600, height: 400, borderRadius: '50%', background: 'radial-gradient(ellipse, rgba(176,111,74,.07) 0%, transparent 65%)', bottom: '10%', left: '-5%' }} />
+          <div style={{ position: 'absolute', width: 900, height: 600, borderRadius: '50%', background: 'radial-gradient(ellipse, color-mix(in srgb, var(--accent) 8%, transparent) 0%, transparent 65%)', top: '-10%', right: '-15%' }} />
+          <div style={{ position: 'absolute', width: 600, height: 400, borderRadius: '50%', background: 'radial-gradient(ellipse, color-mix(in srgb, var(--c-clay) 7%, transparent) 0%, transparent 65%)', bottom: '10%', left: '-5%' }} />
         </div>
 
         <HeroSection
@@ -194,7 +193,7 @@ export function LandingPage() {
                   }
                 }} />
             </div>
-            <div style={{ position: 'absolute', bottom: 20, left: -16, background: 'var(--bg-elev)', border: '1px solid var(--line)', borderRadius: 14, padding: '12px 18px', boxShadow: '0 8px 32px rgba(28,25,20,.12)' }}>
+            <div style={{ position: 'absolute', bottom: 20, left: -16, background: 'var(--bg-elev)', border: '1px solid var(--line)', borderRadius: 'var(--r-14)', padding: '12px 18px', boxShadow: '0 8px 32px rgba(28,25,20,.12)' }}>
               <p style={{ fontSize: 20, fontWeight: 700, color: 'var(--text)', margin: '0 0 2px' }}>50 мин</p>
               <p style={{ fontSize: 11, color: 'var(--text-faint)', margin: 0 }}>онлайн · сессия</p>
             </div>
@@ -265,16 +264,16 @@ export function LandingPage() {
             <Btn radius="btn" full onClick={scrollToBooking}>Записаться бесплатно →</Btn>
           </div>
           {/* Session – always dark card so light text stays legible in any theme */}
-          <div style={{ background: '#1c1916', borderRadius: 24, padding: '40px', display: 'flex', flexDirection: 'column', gap: 24, position: 'relative', overflow: 'hidden' }}>
+          <div style={{ background: DARK_BG, borderRadius: 24, padding: '40px', display: 'flex', flexDirection: 'column', gap: 24, position: 'relative', overflow: 'hidden' }}>
             <div style={{ position: 'absolute', top: 20, right: 20, background: 'rgba(255,255,255,.12)', padding: '4px 12px', borderRadius: 100, fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,.7)' }}>Основной</div>
             <div>
-              <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.12em', textTransform: 'uppercase', color: 'rgba(236,234,229,.45)' }}>Сессия</span>
+              <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.12em', textTransform: 'uppercase', color: 'rgba(236,234,229,.5)' }}>Сессия</span>
               <p style={{ fontFamily: 'var(--serif)', fontSize: 56, fontWeight: 400, color: INK_ON_DARK, margin: '6px 0 0', letterSpacing: '-.03em', lineHeight: 1 }}>{sessionPrice.text}</p>
             </div>
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 10 }}>
               {['50 минут онлайн (видео)', 'Индивидуальная работа', 'Схема-терапия и КПТ', 'Регулярные встречи'].map(f => (
                 <div key={f} style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-                  <span style={{ color: 'rgba(144,137,224,.9)', fontSize: 15, flexShrink: 0 }}>✓</span>
+                  <span style={{ color: 'color-mix(in srgb, var(--accent-on-dark) 90%, transparent)', fontSize: 15, flexShrink: 0 }}>✓</span>
                   <span style={{ fontSize: 15, color: 'rgba(236,234,229,.7)' }}>{f}</span>
                 </div>
               ))}
@@ -314,12 +313,12 @@ export function LandingPage() {
       {/* ── PRE-FOOTER CTA ──────────────────────────────────────────────── */}
       <section style={{ background: DARK_BG, padding: '96px 40px', textAlign: 'center' }}>
         <div style={{ maxWidth: 560, margin: '0 auto' }}>
-          <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.16em', textTransform: 'uppercase', color: 'rgba(236,234,229,.28)', margin: '0 0 24px' }}>Начать</p>
+          <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.16em', textTransform: 'uppercase', color: 'rgba(236,234,229,.5)', margin: '0 0 24px' }}>Начать</p>
           <h2 style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(40px, 5.5vw, 72px)', fontWeight: 400, color: INK_ON_DARK, lineHeight: 1.05, margin: '0 0 36px', letterSpacing: '-.025em' }}>
-            Первая встреча –<br /><span style={{ fontStyle: 'italic', color: 'rgba(144,137,224,.85)' }}>бесплатно</span>
+            Первая встреча –<br /><span style={{ fontStyle: 'italic', color: 'color-mix(in srgb, var(--accent-on-dark) 85%, transparent)' }}>бесплатно</span>
           </h2>
           <Btn size="lg" onClick={scrollToBooking}>Записаться на знакомство →</Btn>
-          <p style={{ fontSize: 13, color: 'rgba(236,234,229,.28)', marginTop: 20 }}>15 минут · без обязательств · онлайн</p>
+          <p style={{ fontSize: 13, color: 'rgba(236,234,229,.5)', marginTop: 20 }}>15 минут · без обязательств · онлайн</p>
         </div>
       </section>
 
