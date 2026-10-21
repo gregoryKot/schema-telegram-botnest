@@ -146,7 +146,7 @@ describe('трипваер: CORS не пускает алиас практики
   });
 });
 
-describe('трипваер: unhandledRejection (I6)', () => {
+describe('трипваер: unhandledRejection и uncaughtException (I6)', () => {
   it('main.ts регистрирует обработчик необработанных reject-ов', () => {
     expect(MAIN).toMatch(/registerUnhandledRejectionHandler\s*\(/);
   });
@@ -154,6 +154,13 @@ describe('трипваер: unhandledRejection (I6)', () => {
   it("обработчик слушает 'unhandledRejection' и пишет через Logger.error", () => {
     const src = read('src/infra/unhandled-rejection.ts');
     expect(src).toMatch(/process\.on\(\s*['"]unhandledRejection['"]/);
+    expect(src).toMatch(/logger\.error\(/);
+  });
+
+  it('main.ts регистрирует и обработчик uncaughtException, тем же путём', () => {
+    expect(MAIN).toMatch(/registerUncaughtExceptionHandler\s*\(/);
+    const src = read('src/infra/uncaught-exception.ts');
+    expect(src).toMatch(/process\.on\(\s*['"]uncaughtException['"]/);
     expect(src).toMatch(/logger\.error\(/);
   });
 });
