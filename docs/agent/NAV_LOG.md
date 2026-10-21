@@ -16,3 +16,5 @@
 `· устарело: что врала карта` вместо «дописал».
 
 ## Записи
+
+- 2026-10-21 · задача: проверка субагента `scout` («где обрабатывается пауза уведомлений») · искал: обработчик кнопки «⏸ Пауза» · нашёл: `src/telegram/telegram.notify-actions.service.ts` · дописал: `docs/architecture/backend-core.md` (раздел `src/notification/`), `docs/architecture/glossary.md` (строка «⏸ Пауза»)
