@@ -3,7 +3,9 @@ import {
   consentsReady,
   consentHint,
   CONSENT_ANALYTICS_STEPS,
+  welcomeTexts,
 } from './consents';
+import { hasTyForms } from '../utils/tyFormsSweep';
 
 const trFor = (form: 'ty' | 'vy') => (ty: string, vy: string) =>
   form === 'ty' ? ty : vy;
@@ -23,7 +25,21 @@ describe('consents', () => {
     );
     expect(consentHint(true, false, trFor('vy'))).toMatch(/Отметьте/);
   });
-  it('шаги аналитики — privacy и not_therapy', () => {
-    expect(CONSENT_ANALYTICS_STEPS).toEqual(['privacy', 'not_therapy']);
+  it('шаги аналитики — welcome, privacy и not_therapy', () => {
+    expect(CONSENT_ANALYTICS_STEPS).toEqual([
+      'welcome',
+      'privacy',
+      'not_therapy',
+    ]);
+  });
+  it('приветствие различает формы и не оставляет «ты» в форме «вы»', () => {
+    const ty = welcomeTexts(trFor('ty'));
+    const vy = welcomeTexts(trFor('vy'));
+    expect(ty.greeting).toMatch(/Хорошо, что ты здесь/);
+    expect(vy.greeting).toMatch(/Хорошо, что вы здесь/);
+    expect(vy.outro).toMatch(/Если чувствуете/);
+    expect(hasTyForms([vy.greeting, vy.intro, vy.outro].join(' '))).toBe(false);
+    expect(ty.intro).toBe(vy.intro);
+    expect(ty.beta).toBe('БЕТА-ВЕРСИЯ');
   });
 });

@@ -228,4 +228,23 @@ describe('e2e smoke: ownership sweep 2 (deletes/mutations: diary, plans, ysq, pa
     const aPairAfter = await a.get('/api/pair');
     expect(aPairAfter.body.partners).toHaveLength(0);
   });
+
+  it('pairs: ссылка ждущего приглашения видна только его создателю', async () => {
+    const a = agentAs(USER_A);
+    const b = agentAs(USER_B);
+
+    const invite = await a.post('/api/pair/invite');
+    expect(invite.status).toBeLessThan(300);
+    const code = invite.body.code as string;
+
+    // Создатель получает ту же ссылку, что вернул /pair/invite, — для повторной отправки.
+    const aPair = await a.get('/api/pair');
+    expect(aPair.body.pendingCode).toBe(code);
+    expect(aPair.body.pendingUrl).toBe(invite.body.url);
+
+    // Чужой код приглашения и ссылку он не видит.
+    const bPair = await b.get('/api/pair');
+    expect(bPair.body.pendingCode).toBeNull();
+    expect(bPair.body.pendingUrl).toBeNull();
+  });
 });

@@ -23,11 +23,16 @@ vi.mock('../api', () => ({
     getModeDiary: vi.fn(),
     getGratitudeDiary: vi.fn(),
     getYsqHistory: vi.fn(),
+    getProfile: vi.fn(),
+    getModeNotes: vi.fn(),
+    getSchemaNotes: vi.fn(),
+    getPhraseChecks: vi.fn(),
     deleteAllUserData: vi.fn(),
     trackEvent: vi.fn(),
   },
+  reportClientError: vi.fn(),
 }));
-import { api } from '../api';
+import { api, reportClientError } from '../api';
 const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
 
 const mockLogout = vi.fn();
@@ -57,6 +62,10 @@ function emptyMocks() {
   mockApi.getModeDiary.mockResolvedValue([]);
   mockApi.getGratitudeDiary.mockResolvedValue([]);
   mockApi.getYsqHistory.mockResolvedValue([]);
+  mockApi.getProfile.mockResolvedValue({ ysq: { completedAt: null, activeSchemaIds: [] }, mySchemaIds: [], myModeIds: [] });
+  mockApi.getModeNotes.mockResolvedValue([]);
+  mockApi.getSchemaNotes.mockResolvedValue([]);
+  mockApi.getPhraseChecks.mockResolvedValue([]);
 }
 
 function renderSection(props: Partial<Parameters<typeof ProfileSection>[0]> = {}, form: 'ty' | 'vy' = 'ty') {
@@ -353,5 +362,48 @@ describe('ProfileSection — действия', () => {
     await act(async () => {});
     fireEvent.click(screen.getByText('Аккаунт и привязки'));
     await screen.findByText('Экран аккаунта');
+  });
+});
+
+// Этап 3 единой версии: «Мой портрет» и «Тёплые слова» в профиле. Связка
+// «отметил схемы в профиле → портрет их показывает» (read-after-write).
+describe('ProfileSection — портрет и тёплые слова', () => {
+  const profileWith = (mySchemaIds: string[], myModeIds: string[]) => ({
+    ysq: { completedAt: null, activeSchemaIds: [] }, mySchemaIds, myModeIds,
+  });
+
+  it('чистый аккаунт: портрет объясняет, что это, «Пройти тест» зовёт тест, тёплых слов нет', async () => {
+    const onTakeTest = vi.fn();
+    await act(async () => { renderSection({ onTakeTest }); });
+    expect(await screen.findByText(/Здесь соберётся твой портрет/)).toBeTruthy();
+    expect(screen.queryByText('Мои тёплые слова')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Пройти тест' }));
+    expect(onTakeTest).toHaveBeenCalledTimes(1);
+  });
+
+  it('отмеченные схемы и режимы попадают в портрет, тап открывает лист «Мой портрет»', async () => {
+    mockApi.getProfile.mockResolvedValue(profileWith(['abandonment', 'mistrust'], ['vulnerable_child']));
+    await act(async () => { renderSection(); });
+    expect(await screen.findByText(/2 схемы · 1 режим/)).toBeTruthy();
+    fireEvent.click(screen.getByLabelText('Мой портрет'));
+    expect(await screen.findByText('Мои схемы')).toBeTruthy();
+    expect(screen.getByText('Мои режимы')).toBeTruthy();
+  });
+
+  it('тёплые слова из дневника режимов видны карточкой с числом фраз', async () => {
+    mockApi.getModeDiary.mockResolvedValue([
+      { id: 1, modeId: 'vulnerable_child', healthyResponse: 'Я рядом', createdAt: '2026-08-10T00:00:00.000Z' },
+    ]);
+    await act(async () => { renderSection(); });
+    expect(await screen.findByText('Мои тёплые слова')).toBeTruthy();
+    expect(screen.getByText('«Я рядом»')).toBeTruthy();
+    expect(screen.getByText('1 фраза')).toBeTruthy();
+  });
+
+  it('сбой загрузки портрета уходит в отчёт, а не в консоль', async () => {
+    mockApi.getProfile.mockRejectedValue(new Error('net'));
+    await act(async () => { renderSection(); });
+    await screen.findByText(/Здесь соберётся твой портрет/);
+    expect(reportClientError).toHaveBeenCalledWith({ message: 'getProfile failed', section: 'profile-about' });
   });
 });

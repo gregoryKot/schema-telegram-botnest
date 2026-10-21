@@ -2,14 +2,15 @@
 // очевидность»). Новичку — одно очевидное знакомство: Требовательный Критик,
 // самый узнаваемый режим. Опытному — сводка недели «Чаще всего включается»
 // из дневника режимов.
-import { ALL_MODES, MODE_GROUPS } from '../schemaTherapyData';
 import { useTr } from '../utils/addressForm';
 import { ToolRow } from './ToolRow';
 import { HeroCta } from './HeroCta';
 import { WeekTopCard } from './WeekTopCard';
-import { WeekTopSummary } from '../utils/patternsSummary';
+import { WeekTopSummary } from '../../../shared/src/pattern/patternsSummary';
+import { INTRO_MODE_ID } from '../../../shared/src/pattern/weekPatternText';
+import { modesHeroModel } from '../../../shared/src/pattern/modesHeroModel';
 
-export const INTRO_MODE_ID = 'demanding_critic';
+export { INTRO_MODE_ID };
 
 interface Props {
   hasModes: boolean;
@@ -31,65 +32,53 @@ export function ModesHero({
   onOpenDiaries,
 }: Props) {
   const tr = useTr();
+  // Какое состояние и какие слова — решает общая модель (shared), здесь только вёрстка.
+  const m = modesHeroModel(tr, {
+    hasModes,
+    summary,
+    canOpenDiary: !!onOpenDiaries,
+  });
 
-  if (!hasModes) {
+  if (m.kind === 'intro') {
     return (
       <div className="u-col12">
         <HeroCta
-          label="Знакомство"
-          chip="≈2 мин"
-          title="Встретить своего Критика"
-          sub={tr(
-            'Режим — состояние, которое включается в моменте; понятие из схема-терапии. Начни с самого узнаваемого — внутреннего голоса требований. Две минуты на чтение, карточку можно заполнить потом.',
-            'Режим — состояние, которое включается в моменте; понятие из схема-терапии. Начните с самого узнаваемого — внутреннего голоса требований. Две минуты на чтение, карточку можно заполнить потом.',
-          )}
-          buttonLabel="Познакомиться"
+          label={m.intro.label}
+          chip={m.intro.chip}
+          title={m.intro.title}
+          sub={m.intro.sub}
+          buttonLabel={m.buttonLabel}
           onClick={onMeetCritic}
         />
         <ToolRow
-          label="Что такое режимы"
-          sub="части, которые включаются по очереди"
+          label={m.library.label}
+          sub={m.library.sub}
           index={1}
           onClick={onOpenLibrary}
         />
         <ToolRow
-          label="Отметить свои"
-          sub={tr('если уже знаешь свои режимы', 'если уже знаете свои режимы')}
+          label={m.manual.label}
+          sub={m.manual.sub}
           index={2}
           onClick={onPickManually}
         />
       </div>
     );
   }
-
-  if (summary) {
-    const mode = ALL_MODES.find((m) => m.id === summary.id);
-    const group = MODE_GROUPS.find((g) =>
-      g.items.some((m) => m.id === summary.id),
-    );
-    if (!mode || !group) return null;
+  if (m.kind === 'week') {
     return (
       <WeekTopCard
-        label="Чаще всего включается"
-        color={group.color}
-        title={mode.name}
-        sub={`${summary.days} из ${summary.windowDays} дней — по записям дневника. Заметить включение — уже полработы.`}
-        onClick={() => onOpenModeDetail(summary.id)}
+        label={m.text.label}
+        color={m.text.color}
+        title={m.text.title}
+        sub={m.text.sub}
+        onClick={() => onOpenModeDetail(m.id)}
       />
     );
   }
-
-  if (onOpenDiaries) {
+  if (m.kind === 'diary' && onOpenDiaries)
     return (
-      <ToolRow
-        label="Картина недели появится из дневника"
-        sub={tr(
-          'замечай моменты, когда режим включился',
-          'замечайте моменты, когда режим включился',
-        )}
-        onClick={onOpenDiaries}
-      />
+      <ToolRow label={m.row.label} sub={m.row.sub} onClick={onOpenDiaries} />
     );
-  }
   return null;
 }

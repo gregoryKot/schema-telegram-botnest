@@ -7,11 +7,16 @@ const onKeyActivate = (fn: () => void) => (e: React.KeyboardEvent) => {
 };
 
 /** Раздел листа: карточка с заголовком-ярлыком; id нужен боковому оглавлению. */
-export function SSection({ id, label, hint, children }: { id: string; label: string; hint?: string; children: React.ReactNode }) {
+export function SSection({ id, label, hint, help, children }: {
+  id: string; label: string; hint?: string; help?: React.ReactNode; children: React.ReactNode;
+}) {
   return (
     <section className="ds-card st-section">
       <div id={id} className="st-sec-head">
-        <div className="ds-label">{label}</div>
+        <div className="st-sec-title">
+          <div className="ds-label">{label}</div>
+          {help}
+        </div>
         {hint && <div className="st-hint">{hint}</div>}
       </div>
       {children}

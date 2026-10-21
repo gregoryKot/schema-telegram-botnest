@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { api, reportClientError } from '../../api';
 import { MY_SCHEMA_IDS_KEY, MY_MODE_IDS_KEY } from '../../utils/storageKeys';
 import { readLocalIds, type YsqScore } from './schemasModel';
+import { useSaveFailure } from '../../hooks/useSaveFailure';
 
 export function useSchemasData() {
   const [manualSchemaIds, setManualSchemaIds] = useState<string[]>(() => readLocalIds(localStorage.getItem(MY_SCHEMA_IDS_KEY)));
@@ -14,6 +15,8 @@ export function useSchemasData() {
   const [ysqCompletedAt, setYsqCompletedAt] = useState<string | null>(null);
   const [myMapCount, setMyMapCount] = useState(0);
   const [loading, setLoading] = useState(true);
+  // Отказ записи виден человеку (SaveErrorNote в SchemasSection), не только телеметрии.
+  const save = useSaveFailure();
 
   useEffect(() => {
     Promise.all([
@@ -52,17 +55,18 @@ export function useSchemasData() {
   function saveSchemas(ids: string[]) {
     localStorage.setItem(MY_SCHEMA_IDS_KEY, JSON.stringify(ids));
     setManualSchemaIds(ids);
-    api.updateSettings({ mySchemaIds: ids }).catch(() => reportClientError({ message: 'schemas save mySchemaIds failed', section: 'schemas' }));
+    save.track(api.updateSettings({ mySchemaIds: ids }), () => reportClientError({ message: 'schemas save mySchemaIds failed', section: 'schemas' }));
   }
 
   function saveModes(ids: string[]) {
     localStorage.setItem(MY_MODE_IDS_KEY, JSON.stringify(ids));
     setMyModeIds(ids);
-    api.updateSettings({ myModeIds: ids }).catch(() => reportClientError({ message: 'schemas save myModeIds failed', section: 'schemas' }));
+    save.track(api.updateSettings({ myModeIds: ids }), () => reportClientError({ message: 'schemas save myModeIds failed', section: 'schemas' }));
   }
 
   return {
     loading, manualSchemaIds, myModeIds, ysqSchemaIds, ysqScores,
     ysqProgressAnswered, ysqCompletedAt, myMapCount, saveSchemas, saveModes,
+    saveFailed: save.failed,
   };
 }

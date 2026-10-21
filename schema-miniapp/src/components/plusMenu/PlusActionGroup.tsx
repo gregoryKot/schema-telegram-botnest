@@ -1,5 +1,8 @@
 import { ActionRow } from './ActionRow';
-import type { QuickAction, QuickActionId } from '../../utils/quickActions';
+import type {
+  QuickAction,
+  QuickActionId,
+} from '../../../../shared/src/quickActions/quickActions';
 
 // Одна группа меню «плюс»: заголовок + строки действий. Вынесена из
 // PlusMenuSheet.tsx, чтобы добавление порядка (стрелки живут в листе

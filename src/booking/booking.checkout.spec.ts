@@ -29,12 +29,13 @@ function makeDeps() {
   return { deps: deps as never, robokassa, notify };
 }
 
-const row = (amount: number | null) =>
+const row = (amount: number | null, currency = 'RUB') =>
   ({
     id: 5,
     type: SessionType.SESSION_50,
     status: BookingStatus.HELD,
     amount,
+    currency,
   }) as never;
 
 describe('completeCheckout — сумма счёта из брони', () => {
@@ -54,5 +55,52 @@ describe('completeCheckout — сумма счёта из брони', () => {
     );
     expect(robokassa.buildPaymentUrl).not.toHaveBeenCalled();
     expect(notify.onAwaitingPayment).not.toHaveBeenCalled();
+  });
+});
+
+describe('completeCheckout — платная не в рублях (manual)', () => {
+  function manualDeps() {
+    const made = makeDeps();
+    const notify = {
+      ...made.notify,
+      onConfirmed: jest.fn(async () => undefined),
+    };
+    return {
+      ...made,
+      notify,
+      deps: { ...(made.deps as object), notify } as never,
+    };
+  }
+
+  it('подтверждается сразу: CONFIRMED, без ссылки на оплату, без Robokassa и «ждёт оплаты»', async () => {
+    const { deps, robokassa, notify } = manualDeps();
+    const res = await completeCheckout(deps, row(70, 'USD'), {
+      ...OPTS,
+      manual: true,
+      heldUntil: null,
+    });
+    expect(res.status).toBe(BookingStatus.CONFIRMED);
+    expect(res.paymentUrl).toBeNull();
+    expect(res.heldUntil).toBeNull();
+    expect(notify.onConfirmed).toHaveBeenCalledTimes(1);
+    expect(robokassa.buildPaymentUrl).not.toHaveBeenCalled();
+    expect(notify.onAwaitingPayment).not.toHaveBeenCalled();
+  });
+
+  it('manual не требует Robokassa: даже выключенная и в проде не отказывает', async () => {
+    const was = process.env.NODE_ENV;
+    process.env.NODE_ENV = 'production';
+    try {
+      const { deps, robokassa } = manualDeps();
+      robokassa.enabled = false;
+      const res = await completeCheckout(deps, row(200, 'ILS'), {
+        ...OPTS,
+        manual: true,
+        heldUntil: null,
+      });
+      expect(res.status).toBe(BookingStatus.CONFIRMED);
+    } finally {
+      process.env.NODE_ENV = was;
+    }
   });
 });

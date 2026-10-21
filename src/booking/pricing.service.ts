@@ -1,45 +1,45 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import {
-  SESSION_DEFAULT_PRICE,
-  SESSION_META,
-  SessionOption,
-} from './booking.config';
+import { SESSION_META } from './booking.config';
 import { SessionType } from '@prisma/client';
-import { parsePrice, validPrice } from './price-rules';
-
-const KEY = (type: SessionType) => `price:${type}`;
+import { validPrice } from './price-rules';
+import { Currency } from './price-region';
+import { priceKey, priceOrDefault, pricesByCurrency } from './price-currency';
 
 /** Session prices, editable in the admin panel (BookingSetting), with config defaults. */
 @Injectable()
 export class PricingService {
   constructor(private readonly prisma: PrismaService) {}
 
-  /** Price for a session type — DB override if set, else the config default. */
-  async getPrice(type: SessionType): Promise<number> {
-    const row = await this.prisma.bookingSetting.findUnique({
-      where: { key: KEY(type) },
-    });
-    return parsePrice(type, row?.value) ?? SESSION_DEFAULT_PRICE[type];
+  /** Price in a currency — DB override if set, else the default (rubles when omitted). */
+  async getPrice(type: SessionType, currency: Currency = 'RUB') {
+    const key = priceKey(type, currency);
+    const row = await this.prisma.bookingSetting.findUnique({ where: { key } });
+    return priceOrDefault(type, currency, row?.value);
   }
 
-  /** Set the price for a session type (rubles). */
-  async setPrice(type: SessionType, amount: number): Promise<void> {
+  /** Set the price for a session type in a currency (rubles when omitted). */
+  async setPrice(
+    type: SessionType,
+    amount: number,
+    currency: Currency = 'RUB',
+  ) {
+    const key = priceKey(type, currency);
     const value = String(validPrice(type, amount));
     await this.prisma.bookingSetting.upsert({
-      where: { key: KEY(type) },
-      create: { key: KEY(type), value },
+      where: { key },
+      create: { key, value },
       update: { value },
     });
   }
 
-  /** Public session catalogue with current prices, for the UI. */
-  async getOptions(): Promise<SessionOption[]> {
+  /** Public session catalogue with current prices in every currency, for the UI. */
+  async getOptions() {
     return Promise.all(
-      SESSION_META.map(async (m) => ({
-        ...m,
-        price: await this.getPrice(m.type),
-      })),
+      SESSION_META.map(async (m) => {
+        const prices = await pricesByCurrency((c) => this.getPrice(m.type, c));
+        return { ...m, price: prices.RUB, prices };
+      }),
     );
   }
 }

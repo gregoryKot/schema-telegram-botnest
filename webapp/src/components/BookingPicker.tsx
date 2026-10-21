@@ -18,6 +18,8 @@ import type { ContactChannel } from '../../../shared/src/booking/contactChannel'
 import { BookingSlotsSection } from './booking/BookingSlotsSection';
 import { AwaitPaymentScreen, PaymentFailScreen, DoneScreen } from './booking/BookingResultScreens';
 import { localDayLabel, localTimeLabel, submitTimeSuffix } from '../../../shared/src/booking/clientTimeZone';
+import { currencyFromTimeZone } from '../../../shared/src/booking/priceRegion';
+import { bookingPriceView, doneCostNote, formatPriceSuffix, needsOnlinePayment, submitLabel, submitNote } from './booking/bookingPriceLabels';
 
 const dayKeyFmt = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Moscow', year: 'numeric', month: '2-digit', day: '2-digit' });
 const dayKey = (iso: string) => dayKeyFmt.format(new Date(iso));
@@ -84,6 +86,8 @@ export function BookingPicker({ fallback, onWriteInstead, lockedType, compact = 
   }, []);
 
   const chosen = options.find((o) => o.type === sessionType);
+  const currency = currencyFromTimeZone(tz); // тот же tz уходит в clientTimeZone — цена совпадёт с серверной
+  const view = bookingPriceView(chosen, currency);
 
   // On a terminal screen (done / payment failed), scroll it into view — on mobile
   // the result renders above the submit button and was easy to miss.
@@ -102,12 +106,12 @@ export function BookingPicker({ fallback, onWriteInstead, lockedType, compact = 
     return <>{fallback}</>;
   }
 
-  if (status === 'await_payment') return <AwaitPaymentScreen resultRef={resultRef} slot={slot} tz={tz} chosen={chosen} payUrl={payUrl} message={message} />;
+  if (status === 'await_payment') return <AwaitPaymentScreen resultRef={resultRef} slot={slot} tz={tz} priceText={view.paid ? view.text : null} payUrl={payUrl} message={message} />;
   if (status === 'payment_fail') return <PaymentFailScreen resultRef={resultRef} onRetry={() => setStatus('idle')} />;
   if (status === 'done') return (
     <DoneScreen
       resultRef={resultRef} slot={slot} tz={tz} cancelled={cancelled} meetingUrl={meetingUrl} cancelToken={cancelToken}
-      sessionType={sessionType} onCancelled={() => setCancelled(true)} message={message}
+      sessionType={sessionType} onCancelled={() => setCancelled(true)} message={message} costNote={doneCostNote(view, sessionType)}
     />
   );
 
@@ -180,7 +184,7 @@ export function BookingPicker({ fallback, onWriteInstead, lockedType, compact = 
                   border: `1.5px solid ${active ? 'var(--accent)' : 'var(--line-strong)'}`,
                 }}>
                   <div className="u-h15">
-                    {o.label} {o.price > 0 ? `· ${o.price.toLocaleString('ru-RU')} ₽` : '· бесплатно'}
+                    {o.label} {formatPriceSuffix(o, currency)}
                   </div>
                   <div style={{ fontSize: 13, color: 'var(--text-faint)', marginTop: 2 }}>{o.note}</div>
                 </button>
@@ -242,12 +246,12 @@ export function BookingPicker({ fallback, onWriteInstead, lockedType, compact = 
               aria-describedby={invalidField === 'consent' ? 'bp-consent-hint' : undefined}
             />
             <span style={{ fontSize: 13, color: 'var(--text-faint)', lineHeight: 1.6 }}>
-              Я принимаю условия <a href="/offer" target="_blank" className="u-link">Публичной оферты</a>{chosen && chosen.price > 0 ? ' (договора оказания услуг)' : ''} и <a href="/privacy" target="_blank" className="u-link">Политики конфиденциальности</a>, даю согласие на обработку данных
+              Я принимаю условия <a href="/offer" target="_blank" className="u-link">Публичной оферты</a>{view.paid ? ' (договора оказания услуг)' : ''} и <a href="/privacy" target="_blank" className="u-link">Политики конфиденциальности</a>, даю согласие на обработку данных
             </span>
           </label>
           {invalidField === 'consent' && <p id="bp-consent-hint" style={{ ...hintSt, margin: '-8px 0 0' }}>{FIELD_HINTS.consent}</p>}
           {(status === 'error' || status === 'taken') && <BookingErrorNote kind={status} />}
-          {chosen && chosen.price > 0 && (
+          {needsOnlinePayment(view) && (
             <p style={{ fontSize: 12, color: 'var(--text-faint)', margin: '-8px 0 0' }}>
               {localDayLabel(slot.startsAt, tz)}, {localTimeLabel(slot.startsAt, tz)} {submitTimeSuffix(tz)}
             </p>
@@ -259,16 +263,10 @@ export function BookingPicker({ fallback, onWriteInstead, lockedType, compact = 
               cursor: status === 'loading' ? 'default' : 'pointer',
               opacity: status === 'loading' ? 0.4 : (!name.trim() || !contact.trim() || !consent || (sessionType === 'INTRO_15' && !confirmNotice)) ? 0.7 : 1,
             }}>
-            {status === 'loading'
-              ? (chosen && chosen.price > 0 ? 'Перехожу к оплате…' : 'Бронирую…')
-              : chosen && chosen.price > 0
-                ? `Оплатить ${chosen.price.toLocaleString('ru-RU')} ₽ и записаться →`
-                : `Записаться на ${localDayLabel(slot.startsAt, tz).toLowerCase()}, ${localTimeLabel(slot.startsAt, tz)} ${submitTimeSuffix(tz)} →`}
+            {submitLabel(view, status === 'loading', `Записаться на ${localDayLabel(slot.startsAt, tz).toLowerCase()}, ${localTimeLabel(slot.startsAt, tz)} ${submitTimeSuffix(tz)} →`)}
           </button>
           <p style={{ fontSize: 13, color: 'var(--text-faint)', margin: 0 }}>
-            {chosen && chosen.price > 0
-              ? 'Оплата картой или СБП через Robokassa. Чек придёт автоматически.'
-              : 'Первая встреча 15 минут — бесплатно. Никаких обязательств.'}
+            {submitNote(view)}
           </p>
         </>
       )}

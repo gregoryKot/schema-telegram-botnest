@@ -25,7 +25,7 @@ jobs:
     # На воскресном запуске крутится только тяжёлый mutation-bot: гонять
     # ещё и ежедневные джобы вторым заходом незачем.
     if: github.event.schedule != '0 4 * * 0'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     # Установка (~1 мин) + сумма timeout-minutes шагов ниже: зависший шаг
     # падает сам, со своей причиной, раньше, чем джобу снимут целиком
     # (сверка — src/test-support/gates/nightly-jest-steps.spec.ts).
@@ -74,7 +74,7 @@ jobs:
     # На воскресном запуске крутится только тяжёлый mutation-bot: гонять
     # ещё и ежедневные джобы вторым заходом незачем.
     if: github.event.schedule != '0 4 * * 0'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
@@ -137,14 +137,26 @@ jobs:
   # сломанный фильтр откатывает джобу к прежнему поведению, и она снова
   # упрётся в таймаут, а не тихо «пройдёт». В логе строка «covering-test-files:
   # карта на N мутантов» — если её нет, фильтр не подключился.
+  #
+  # С 2026-10-16 волна А снова упиралась в 60 минут при живом фильтре: работа
+  # росла сама. Мутанты горячих путей `crypto.ts`/`crypto-record.ts`
+  # (encrypt/decrypt) покрывает каждый спек, пишущий зашифрованное поле, —
+  # 16 спек-файлов на мутант в среднем, до 67, и каждый спек грузится целиком
+  # (jest-раннер Stryker идёт runInBand без bail). Загрузок спеков за прогон:
+  # 3511 (10-14, 13 мин) → 5947 (10-17, 36 мин); +1441 дал `crypto-record.ts`,
+  # выделенный из `crypto.ts` в #736. Волне А поэтому concurrency 4: jest в
+  # каждом воркере занимает одно ядро, и при 2 воркерах половина раннера
+  # (4 vCPU, 16 ГБ) простаивала. Замер на одном куске кода: 87 с → 46 с.
+  # Память воркера доходит до ~2,8 ГБ — четыре помещаются.
   mutation-golden-auth:
     # На воскресном запуске крутится только тяжёлый mutation-bot: гонять
     # ещё и ежедневные джобы вторым заходом незачем.
     if: github.event.schedule != '0 4 * * 0'
-    runs-on: ubuntu-latest
-    # Волна А (docs/TEST_TRUST_PLAN.md) — 6 файлов входа/шифрования/приватности
-    # (crypto, auth.service, merge.service, telegram-auth.guard,
-    # security-log.service, therapy-relations.service), ~1700 строк.
+    runs-on: ubuntu-24.04
+    # Волна А (docs/TEST_TRUST_PLAN.md) — 9 файлов входа/шифрования/приватности
+    # (crypto, crypto-record, auth.service, merge.service, merge-relations,
+    # telegram-auth.guard, security-log.service, security-log-redact,
+    # therapy-relations.service) — список в stryker.golden-auth.config.json.
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v7
@@ -173,7 +185,7 @@ jobs:
 
   mutation-golden-payments:
     if: github.event.schedule != '0 4 * * 0'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     # Волна Б — 9 файлов денег/бронирования/напоминаний (tz, robokassa,
     # booking, subscription, slot, pricing, payment.controller, donation,
     # notification.planner), ~1650 строк — сопоставимо с волной А по объёму.
@@ -238,7 +250,7 @@ jobs:
     # На воскресном запуске крутится только тяжёлый mutation-bot: гонять
     # ещё и ежедневные джобы вторым заходом незачем.
     if: github.event.schedule != '0 4 * * 0'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     env:
       # Явный флаг — второй (запасной) способ включить WebKit-проект помимо
@@ -291,7 +303,7 @@ jobs:
   # файл/ключ и требуют, чтобы restore упал.
   backup-restore:
     if: github.event.schedule != '0 4 * * 0'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     services:
       postgres:
@@ -412,7 +424,7 @@ jobs:
   # и добавляем сюда шаг сверки (скрипт умеет --report/--baseline).
   mutation-bot:
     if: github.event_name == 'workflow_dispatch' || github.event.schedule == '0 4 * * 0'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 330
     steps:
       - uses: actions/checkout@v7
@@ -485,7 +497,7 @@ jobs:
       - mutation-bot
       - npm-audit
     if: always()
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
       issues: write

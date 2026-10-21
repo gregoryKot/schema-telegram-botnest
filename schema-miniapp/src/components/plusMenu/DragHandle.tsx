@@ -1,4 +1,4 @@
-import type { DragHandleProps } from '../../hooks/useDragReorder';
+import type { DragHandleProps } from '../../../../shared/src/hooks/useDragReorder';
 
 // Ручка «≡» листа настройки — место MoveArrows (компонент удалён этим PR,
 // правило №11). Область ≥44×44, touch-action:none — жест не путается со

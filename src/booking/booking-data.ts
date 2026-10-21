@@ -3,21 +3,16 @@ import { encryptRecord } from '../utils/crypto';
 import { BOOKING_SCHEMA } from './booking.schema';
 import { isValidTimeZone } from './client-timezone';
 import type { CreateBookingDto } from './booking.types';
+import type { BookingPricePath } from './booking-pricing-path';
 
 /**
- * Строка новой брони для INSERT: бесплатная сессия подтверждена сразу, платная
- * держится HELD до `heldUntil`; PII зашифрована. Вынесено из booking.service.ts
- * (правило №10).
+ * Строка новой брони для INSERT: бесплатная сессия и платная не в рублях
+ * подтверждены сразу, платная в рублях держится HELD до `heldUntil`; PII
+ * зашифрована. Вынесено из booking.service.ts (правило №10).
  */
 export function buildBookingData(
   dto: CreateBookingDto,
-  opts: {
-    isFree: boolean;
-    heldUntil: Date | null;
-    cancelToken: string;
-    /** Сумма счёта, рубли; null у бесплатного знакомства. */
-    amount: number | null;
-  },
+  opts: BookingPricePath & { cancelToken: string },
 ) {
   return encryptRecord(
     {
@@ -28,9 +23,13 @@ export function buildBookingData(
       clientContact: dto.clientContact,
       clientChannel: dto.clientChannel ?? null,
       message: dto.message ?? null,
-      status: opts.isFree ? BookingStatus.CONFIRMED : BookingStatus.HELD,
+      status:
+        opts.isFree || opts.manual
+          ? BookingStatus.CONFIRMED
+          : BookingStatus.HELD,
       heldUntil: opts.heldUntil,
       amount: opts.amount,
+      currency: opts.currency,
       cancelToken: opts.cancelToken,
       acceptedOfferAt: new Date(),
       source: dto.source ?? null,

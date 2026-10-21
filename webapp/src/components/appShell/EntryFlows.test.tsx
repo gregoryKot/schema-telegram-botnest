@@ -65,7 +65,8 @@ describe('EntryFlows', () => {
     startParam = 'pair_Z';
     m.getDisclaimer.mockResolvedValue({ accepted: false });
     setup();
-    await screen.findByText('Данные и конфиденциальность');
+    // Экран согласий открывается приветствием: ссылка ждёт и на нём.
+    await screen.findByText('БЕТА-ВЕРСИЯ');
     expect(screen.queryByText('Присоединиться к паре?')).toBeNull();
     expect(m.joinPair).not.toHaveBeenCalled();
   });

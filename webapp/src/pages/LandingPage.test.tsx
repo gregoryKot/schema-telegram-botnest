@@ -24,6 +24,17 @@ vi.mock('../api', () => ({
 }));
 import { api } from '../api';
 
+// Пояс посетителя мокается: валюта цены берётся из него, а не из TZ раннера
+// (CI гоняет vitest и в UTC, и в Australia/Sydney). Дефолт — Москва, рубли.
+vi.mock('../../../shared/src/booking/clientTimeZone', async (orig) => ({
+  ...(await orig<typeof import('../../../shared/src/booking/clientTimeZone')>()),
+  resolveClientTimeZone: vi.fn(() => 'Europe/Moscow'),
+}));
+import { resolveClientTimeZone } from '../../../shared/src/booking/clientTimeZone';
+const mockTz = resolveClientTimeZone as unknown as ReturnType<typeof vi.fn>;
+// getByText сворачивает пробельные символы, а разряды ru-RU идут через неразрывный пробел.
+const RUB = (n: number) => (n.toLocaleString('ru-RU') + ' ₽').replace(/\s+/g, ' ');
+
 // Тесты лендинга — глазами анонимного посетителя: шлюз Метрики по умолчанию
 // считает «сессия возможна» и молчит (решение D-4), поэтому для целей
 // публичных страниц сессию объявляем отсутствующей явно.
@@ -60,6 +71,7 @@ function fireIntersection(inst: MockIntersectionObserver, isIntersecting: boolea
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mockTz.mockReturnValue('Europe/Moscow');
   mockApi.getSiteContent.mockResolvedValue({ heroPhoto: null, marqueeTopicsA: [], marqueeTopicsB: [] });
   localStorage.clear();
   sessionStorage.clear();
@@ -85,10 +97,10 @@ function renderPage() {
 }
 
 describe('LandingPage — цена сессии из реальных данных', () => {
-  it('на чистом состоянии (пока API не ответил) показывает дефолт 3000 ₽, а не пусто/NaN', () => {
+  it('на чистом состоянии (пока API не ответил) показывает дефолт 4000 ₽, а не пусто/NaN', () => {
     mockApi.getBookingOptions.mockReturnValue(new Promise(() => {})); // не резолвится
     renderPage();
-    expect(screen.getByText('3 000 ₽')).toBeTruthy();
+    expect(screen.getByText(RUB(4000))).toBeTruthy();
   });
 
   it('после ответа API цена берётся из SESSION_50, а не из хардкода', async () => {
@@ -97,7 +109,7 @@ describe('LandingPage — цена сессии из реальных данны
     ]);
     await act(async () => { renderPage(); });
     expect(screen.getByText('5 500 ₽')).toBeTruthy();
-    expect(screen.queryByText('3 000 ₽')).toBeNull();
+    expect(screen.queryByText(RUB(4000))).toBeNull();
   });
 
   it('ответ без SESSION_50 не ломает рендер — остаётся дефолтная цена', async () => {
@@ -105,7 +117,72 @@ describe('LandingPage — цена сессии из реальных данны
       { type: 'INTRO_15', label: 'Знакомство', durationMin: 15, price: 0, note: '' },
     ]);
     await act(async () => { renderPage(); });
-    expect(screen.getByText('3 000 ₽')).toBeTruthy();
+    expect(screen.getByText(RUB(4000))).toBeTruthy();
+  });
+});
+
+// Решение владельца 2026-10-20: цена сессии по стране посетителя (часовой пояс):
+// Россия — рубли и онлайн-оплата, Израиль — шекели, Европа — евро, мир — доллары.
+const OPTIONS_BY_CURRENCY = [
+  { type: 'INTRO_15', label: 'Знакомство', durationMin: 15, price: 0, prices: { RUB: 0, ILS: 0, EUR: 0, USD: 0 }, note: '' },
+  { type: 'SESSION_50', label: 'Сессия', durationMin: 50, price: 4000, prices: { RUB: 4000, ILS: 200, EUR: 65, USD: 70 }, note: '' },
+];
+const FAQ_ROUBLES = /Оплата картой или СБП при записи/;
+const FAQ_ABROAD = /Об оплате договоримся после записи/;
+
+describe('LandingPage — цена по стране посетителя', () => {
+  it.each([
+    ['Europe/Moscow', RUB(4000)],
+    ['Asia/Jerusalem', '200 ₪'],
+    ['Europe/Berlin', '65 €'],
+    ['America/New_York', '70 $'],
+  ])('пояс %s: карточка «Сессия» показывает %s из prices ответа API', async (tz, text) => {
+    mockTz.mockReturnValue(tz);
+    mockApi.getBookingOptions.mockResolvedValue(OPTIONS_BY_CURRENCY);
+    await act(async () => { renderPage(); });
+    expect(screen.getByText(text)).toBeTruthy();
+  });
+
+  it('до ответа API у посетителя из Израиля — дефолт шекелей, а не рубли', () => {
+    mockTz.mockReturnValue('Asia/Jerusalem');
+    mockApi.getBookingOptions.mockReturnValue(new Promise(() => {}));
+    renderPage();
+    expect(screen.getByText('200 ₪')).toBeTruthy();
+    expect(screen.queryByText(RUB(4000))).toBeNull();
+  });
+
+  it('старый ответ без prices — рубли из price, даже если пояс зарубежный', async () => {
+    mockTz.mockReturnValue('America/New_York');
+    mockApi.getBookingOptions.mockResolvedValue([
+      { type: 'SESSION_50', label: 'Сессия', durationMin: 50, price: 5500, note: '' },
+    ]);
+    await act(async () => { renderPage(); });
+    expect(screen.getByText(RUB(5500))).toBeTruthy();
+  });
+
+  it('карточка знакомства — 0 в валюте посетителя', async () => {
+    mockTz.mockReturnValue('America/New_York');
+    mockApi.getBookingOptions.mockResolvedValue(OPTIONS_BY_CURRENCY);
+    await act(async () => { renderPage(); });
+    expect(screen.getByText('0 $')).toBeTruthy();
+  });
+
+  it('FAQ в рублях: про СБП и чек, цена со знаком валюты', async () => {
+    mockApi.getBookingOptions.mockResolvedValue(OPTIONS_BY_CURRENCY);
+    await act(async () => { renderPage(); });
+    const answer = screen.getByText(FAQ_ROUBLES);
+    expect(answer.textContent).toContain('(50 минут) – ' + (4000).toLocaleString('ru-RU') + ' ₽.');
+    expect(screen.queryByText(FAQ_ABROAD)).toBeNull();
+  });
+
+  it('FAQ вне рублей: «об оплате договоримся», без Robokassa/СБП/чека', async () => {
+    mockTz.mockReturnValue('Europe/Berlin');
+    mockApi.getBookingOptions.mockResolvedValue(OPTIONS_BY_CURRENCY);
+    await act(async () => { renderPage(); });
+    const answer = screen.getByText(FAQ_ABROAD);
+    expect(answer.textContent).toContain('(50 минут) – 65 €.');
+    expect(screen.queryByText(FAQ_ROUBLES)).toBeNull();
+    expect(screen.queryByText(/Мой налог/)).toBeNull();
   });
 });
 
@@ -116,7 +193,7 @@ describe('LandingPage — год практики (цена и «Обо мне»
   it('под ценой сессии нет подписи про коллег — решение владельца 2026-10-02', async () => {
     mockApi.getBookingOptions.mockResolvedValue([]);
     await act(async () => { renderPage(); });
-    const price = screen.getByText('3 000 ₽');
+    const price = screen.getByText(RUB(4000));
     expect(price.nextElementSibling).toBeNull();
     expect(screen.queryByText(/многолетним стажем/)).toBeNull();
   });
@@ -443,7 +520,7 @@ describe('LandingPage — цели Метрики', () => {
     const link = document.querySelector('a[href="https://t.me/kotlarewski"]') as HTMLAnchorElement;
     expect(link).toBeTruthy();
     // jsdom пытается «перейти» по реальной ссылке — гасим переход, тестируем
-    // только факт клика (как MobileAppBanner.test.tsx).
+    // только факт клика (как раньше в тесте баннера кабинета).
     link.addEventListener('click', (e) => e.preventDefault());
     fireEvent.click(link);
     expect(goalHits('tg_click').length).toBe(1);

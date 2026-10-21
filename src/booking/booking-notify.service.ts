@@ -10,11 +10,12 @@ import { decryptRecord } from '../utils/crypto';
 import { BOOKING_SCHEMA } from './booking.schema';
 import { awaitingPaymentTitle } from './booking-admin-note';
 import { bookingCardText, subjectFromTitle } from './booking-notify.format';
+import type { PriceFields } from './booking-notify.price';
 import { BookingStatus, SessionType } from '@prisma/client';
 import { CronLeaderService, LEASE_WINDOW } from '../infra/cron-leader.service';
 import { runConfirmEffects } from './booking-confirm-run';
 
-export interface PlainBooking {
+export interface PlainBooking extends PriceFields {
   id: number;
   startsAt: Date;
   durationMin: number;
@@ -25,8 +26,7 @@ export interface PlainBooking {
   message: string | null;
   meetingUrl: string | null;
   cancelToken: string;
-  /** Атрибуция лида (страница + referrer), хранится открыто. */
-  source?: string | null;
+  source?: string | null; // атрибуция лида (страница + referrer), хранится открыто
   clientTimeZone?: string | null;
   /** Событие в календаре уже создано (строка брони) — повторно не пушим. */
   calDavUid?: string | null;

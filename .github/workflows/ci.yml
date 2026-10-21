@@ -33,7 +33,7 @@ permissions:
 
 jobs:
   backend:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     # Диагностика зависаний 2026-07-20 (шаг coverage висел бесконечно на
     # раннере, локально не воспроизводится): таймаут вместо вечного
     # in_progress — убитый шаг отдаёт лог с последней строкой вывода,
@@ -153,7 +153,7 @@ jobs:
   # check-address-form.mjs и check-paired-files.mjs НЕ трогаем — они уже
   # живут в джобе webapp.
   checks:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     # Потолок на джобу — страховка от зависшего шага (правило №24): без него
     # GitHub держит джобу до 360 минут. Значения — примерно втрое от замера
     # (пять зелёных прогонов main 2026-10-15). Гейт — job-timeouts.spec.ts.
@@ -366,7 +366,7 @@ jobs:
   # реестр не нужен (сам деплой делает Amvera по push в main, см. CLAUDE.md
   # «Деплой webapp»).
   docker:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
@@ -389,7 +389,7 @@ jobs:
   # в крашлуп; ни один существующий чек SQL не исполнял). Правило CLAUDE.md
   # «Миграции БД»: рукописный SQL не мержится, пока не прошёл migrate deploy.
   migrations:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     services:
       postgres:
@@ -614,7 +614,7 @@ jobs:
   # состояние отчёта (правило №8), а здесь в базе миллионы строк синтетики —
   # вместе они не живут.
   perf:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     # Сидер ~1 минута, замер ~1 минута; потолок — страховка от зависшего шага
     # (правило №24: шаг, который висит, а не падает, — тоже поломка).
     timeout-minutes: 15
@@ -664,7 +664,7 @@ jobs:
           if-no-files-found: warn
 
   webapp:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
@@ -782,7 +782,7 @@ jobs:
   # существовали. Джоба гоняет vitest пакета через тот же
   # check-frontend-coverage-ratchet.mjs (--package shared).
   shared:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
@@ -815,7 +815,7 @@ jobs:
   # пакетов + prisma generate: typed-линт без типов зависимостей видит
   # everything-as-any и счётчики уезжают. game/ исключён (заморожен).
   eslint:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
@@ -843,7 +843,7 @@ jobs:
       - run: node scripts/check-eslint-ratchet.mjs
 
   miniapp:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
