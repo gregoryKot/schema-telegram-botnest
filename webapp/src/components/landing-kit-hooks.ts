@@ -5,7 +5,10 @@ import { api, type ArticleSummary } from '../api';
 // of landing-kit.tsx so that file exports only components (Fast Refresh).
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
-export const R = { pill: 100, card: 24, btn: 12, badge: 14 } as const;   // radius
+// radius. btn/badge — ступени общей шкалы --r-* (shared/src/theme/tokens.css).
+// pill и card — числа: ступени нет в общей шкале (она посчитана по распределению,
+// лендинговые 24/100 туда не входят).
+export const R = { pill: 100, card: 24, btn: 'var(--r-12)', badge: 'var(--r-14)' } as const;
 export const DARK_BG = '#1c1916';     // intentional always-dark sections
 export const INK_ON_DARK = '#eceae5'; // text on dark sections
 
@@ -32,27 +35,6 @@ export function useReveal() {
     // throttled or misfires (past bug: blank sections). Force-reveal after 2.5s.
     const fallback = window.setTimeout(() => el.classList.add('revealed'), 2500);
     return () => { obs.disconnect(); window.clearTimeout(fallback); };
-  }, []);
-  return ref;
-}
-
-// ─── Card hover tilt ──────────────────────────────────────────────────────────
-export function useTilt<T extends HTMLElement = HTMLDivElement>() {
-  const ref = useRef<T>(null);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const onMove = (e: MouseEvent) => {
-      const r = el.getBoundingClientRect();
-      const x = (e.clientX - r.left) / r.width - 0.5;
-      const y = (e.clientY - r.top) / r.height - 0.5;
-      el.style.transform = `perspective(700px) rotateX(${-y * 7}deg) rotateY(${x * 7}deg) translateY(-6px)`;
-      el.style.boxShadow = '0 20px 60px rgba(28,25,20,.16)';
-    };
-    const onLeave = () => { el.style.transform = ''; el.style.boxShadow = ''; };
-    el.addEventListener('mousemove', onMove);
-    el.addEventListener('mouseleave', onLeave);
-    return () => { el.removeEventListener('mousemove', onMove); el.removeEventListener('mouseleave', onLeave); };
   }, []);
   return ref;
 }

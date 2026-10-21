@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { api, type BookingSlot, type SessionOption } from '../api';
 import { BookingErrorNote } from './BookingErrorNote';
+import { Btn } from './landing-kit';
 import { handleBookingFailure } from './bookingFailure';
 import { leadSource } from '../utils/leadSource';
 import { scrollIntoViewSafe } from '../../../shared/src/utils/scrollIntoView';
@@ -256,15 +257,13 @@ export function BookingPicker({ fallback, onWriteInstead, lockedType, compact = 
               {localDayLabel(slot.startsAt, tz)}, {localTimeLabel(slot.startsAt, tz)} {submitTimeSuffix(tz)}
             </p>
           )}
-          <button type="submit" disabled={status === 'loading'}
+          <Btn type="submit" disabled={status === 'loading'} radius="btn" size="lg"
             style={{
-              alignSelf: 'flex-start', padding: '15px 30px', fontSize: 15, fontWeight: 600, fontFamily: 'inherit',
-              background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: 'var(--r-12)',
-              cursor: status === 'loading' ? 'default' : 'pointer',
+              alignSelf: 'flex-start',
               opacity: status === 'loading' ? 0.4 : (!name.trim() || !contact.trim() || !consent || (sessionType === 'INTRO_15' && !confirmNotice)) ? 0.7 : 1,
             }}>
             {submitLabel(view, status === 'loading', `Записаться на ${localDayLabel(slot.startsAt, tz).toLowerCase()}, ${localTimeLabel(slot.startsAt, tz)} ${submitTimeSuffix(tz)} →`)}
-          </button>
+          </Btn>
           <p style={{ fontSize: 13, color: 'var(--text-faint)', margin: 0 }}>
             {submitNote(view)}
           </p>

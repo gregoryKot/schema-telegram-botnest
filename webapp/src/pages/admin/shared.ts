@@ -4,7 +4,7 @@ export const card: React.CSSProperties = {
 };
 export const btn: React.CSSProperties = {
   padding: '9px 16px', fontSize: 14, fontWeight: 600, fontFamily: 'inherit', cursor: 'pointer',
-  background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: 'var(--r-10)',
+  background: 'var(--accent)', color: 'var(--on-accent)', border: 'none', borderRadius: 'var(--r-10)',
 };
 export const btnGhost: React.CSSProperties = {
   ...btn, background: 'transparent', color: 'var(--text-sub)', border: '1.5px solid var(--line-strong)',

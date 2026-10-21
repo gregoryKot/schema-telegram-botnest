@@ -6,7 +6,7 @@
 // Сверка от настоящего заголовка (helmet с helmetOptions, через HTTP): у
 // каждого внешнего источника script-src и connect-src есть потребитель среди
 // того, что исполняется у пользователя. img-src не сверяется — остаток
-// записан в docs/README.md, «Что осталось открытым».
+// записан в docs/open/security.md («Что осталось открытым»).
 import express from 'express';
 import helmet from 'helmet';
 import request from 'supertest';

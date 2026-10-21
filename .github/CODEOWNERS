@@ -13,5 +13,6 @@
 /shared/src/utils/crisisMarkers.ts  @gregorykot
 /.github/                           @gregorykot
 /CLAUDE.md                          @gregorykot
+/.claude/                           @gregorykot
 /docs/SECURITY.md                   @gregorykot
 /docs/security/                     @gregorykot
