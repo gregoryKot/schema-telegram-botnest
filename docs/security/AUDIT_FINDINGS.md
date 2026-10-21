@@ -433,7 +433,7 @@ plaintext в очереди уведомлений. Нумерация: букв
 
 #### F-8 · `/health` отдаёт `builtAt` и id упавших проб ❌ Принято — нужно смоку, без env/версий.
 
-#### F-9 · Нет `Permissions-Policy`; мёртвый `telegram.org` в `script-src` ✅ Закрыто (Low, #NNN)
+#### F-9 · Нет `Permissions-Policy`; мёртвый `telegram.org` в `script-src` ✅ Закрыто (Low, #808)
 - helmet 8 заголовка не ставит — теперь его ставит `src/security/permissions-policy.ts`
   (запрет камеры, микрофона, геопозиции, платежей, датчиков, USB/HID/serial/
   bluetooth/MIDI, захвата экрана). Используемое (`identity-credentials-get` для
