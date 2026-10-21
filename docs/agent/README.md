@@ -38,5 +38,6 @@
 | Куда идти по типу задачи | «Куда идти по задаче» в `docs/ARCHITECTURE.md` |
 | Что ловит красный гейт | `docs/architecture/gates.md`; разбор лога — субагент `ci-doctor` |
 | Проверить дифф по правилам перед PR | субагент `rules-reviewer` |
+| Быстрые гейты CI перед пушем | `node scripts/agent/precheck.mjs` (чистое дерево, вывод — только красное) |
 | Сколько контекста съела сессия | `node scripts/agent/session-report.mjs` (журнал пишет хук) |
 | Карта промолчала | строка в карте + строка в [NAV_LOG.md](NAV_LOG.md) |
