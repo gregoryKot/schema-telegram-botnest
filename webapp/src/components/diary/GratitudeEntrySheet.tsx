@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { ExScreen, GlyphPlus } from '../exercises/ExScreen';
 import { useHistorySheet } from '../../hooks/useHistorySheet';
-import { saveDraft, loadDraft, clearDraft } from '../../utils/drafts';
+import { clearDraft } from '../../utils/drafts';
 import { detectCrisisAny } from '../../utils/crisisMarkers';
 import { CrisisCard } from '../CrisisCard';
 import { fmtDateLong, todayStr } from '../../utils/format';
@@ -9,8 +9,12 @@ import { DIARY_HUE, hueStyle } from '../../lib/tone';
 import { DiaryAside } from './DiaryStepCard';
 import { haptic } from '../../haptic';
 import { SaveEntryButton } from './SaveEntryButton';
+import { GratitudeLoadState } from './GratitudeLoadState';
+import { PLACEHOLDERS } from './gratitudePlaceholders';
+import { api } from '../../api';
 import { LimitedTextarea } from '../../../../shared/src/components/LimitedTextarea';
 import { DIARY_FIELD_MAX } from '../../../../shared/src/limits/textLimits';
+import { useGratitudeItems } from '../../../../shared/src/diary/useGratitudeItems';
 
 interface Props {
   onClose: () => void;
@@ -19,20 +23,17 @@ interface Props {
   onSave: (date: string, items: string[]) => Promise<void>;
 }
 
-const PLACEHOLDERS = [
-  'Что-то хорошее, что произошло сегодня…',
-  'Кто-то, кто помог или поддержал…',
-  'Момент, который хочется запомнить…',
-  'Что-то простое, что согрело…',
-  'Что-то, что обычно ускользает…',
-];
-
 export function GratitudeEntrySheet({ onClose, date, existingItems, onSave }: Props) {
   const goBack = useHistorySheet(onClose);
-  const existing = !existingItems ? loadDraft<{ items: string[] }>('gratitude') : null;
-  const initItems = existingItems ?? existing?.data?.items ?? ['', '', ''];
-
-  const [items, setItems] = useState<string[]>(initItems);
+  // Форма сама поднимает сохранённый день: сервер заменяет пункты дня целиком,
+  // и вход без existingItems («плюс») иначе стирал бы прежнюю запись
+  // (инцидент 2026-10-18, docs/INCIDENTS.md).
+  const { items, setItems, status, retry } = useGratitudeItems({
+    date,
+    existingItems,
+    load: () => api.getGratitudeDiary(),
+  });
+  const ready = status === 'ready';
   const [saving, setSaving] = useState(false);
   // Отказ сохранения раньше сообщался ТОЛЬКО вибрацией haptic.error(), а лист
   // всё равно закрывался: на десктопе вибрации нет вовсе, и человек считал,
@@ -41,17 +42,13 @@ export function GratitudeEntrySheet({ onClose, date, existingItems, onSave }: Pr
   const [saveError, setSaveError] = useState(false);
   const firstItemRef = useRef<HTMLTextAreaElement>(null);
 
-  useEffect(() => { firstItemRef.current?.focus(); }, []);
+  useEffect(() => { if (ready) firstItemRef.current?.focus(); }, [ready]);
 
   const update = (i: number, v: string) => setItems(prev => prev.map((it, idx) => idx === i ? v : it));
   const addItem = () => { haptic.select(); setItems(prev => prev.length < 5 ? [...prev, ''] : prev); };
 
-  useEffect(() => {
-    if (!existingItems) saveDraft('gratitude', { items });
-  }, [items, existingItems]);
-
   const filled = items.filter(it => it.trim().length > 0);
-  const canSave = filled.length >= 1;
+  const canSave = ready && filled.length >= 1;
 
   const handleSave = async () => {
     if (!canSave || saving) return;
@@ -86,7 +83,8 @@ export function GratitudeEntrySheet({ onClose, date, existingItems, onSave }: Pr
       }
     >
       <div className="sd-grat" style={hueStyle(DIARY_HUE.gratitude)}>
-        {items.map((item, i) => (
+        <GratitudeLoadState status={status} onRetry={retry} />
+        {ready && items.map((item, i) => (
           <div key={i} className={'ds-card ds-card--row sd-grat-row' + (item.trim() ? ' is-filled' : '')}>
             <span className="ds-num sd-grat-num">{String(i + 1).padStart(2, '0')}</span>
             <div className="sd-grat-field">
@@ -97,7 +95,7 @@ export function GratitudeEntrySheet({ onClose, date, existingItems, onSave }: Pr
           </div>
         ))}
         {detectCrisisAny(...items) && <CrisisCard surface="gratitude" />}
-        {items.length < 5 && (
+        {ready && items.length < 5 && (
           <button className="ds-btn ds-btn--secondary ds-btn--sm" onClick={addItem}>
             <GlyphPlus />
             <span>Добавить ещё пункт</span>

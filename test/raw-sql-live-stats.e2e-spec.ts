@@ -33,6 +33,8 @@ const DAY = 24 * HOUR;
 // Маркер в meta анонимных событий (userId = null) — по нему спек чистит за
 // собой; лишний ключ метрикам не мешает: они читают только свои поля.
 const MARK = 'raw-sql-live';
+// Бронь не в рублях для блока «Сессии не в рублях»: токен — для чистки.
+const CURRENCY_TOKEN = 'raw-sql-live-currency';
 
 /** Отчёт обязан быть текстом для человека: без следов сломанной арифметики. */
 function expectSaneReport(text: string): void {
@@ -122,6 +124,7 @@ describe('/stats на реальном Postgres: каждый сырой зап�
         id: { in: [USER_ID, ...EDGE_IDS, ...YSQ_DONE_IDS, YSQ_RETAKE_ID] },
       },
     });
+    await prisma.booking.deleteMany({ where: { cancelToken: CURRENCY_TOKEN } });
   }
 
   beforeAll(async () => {
@@ -232,6 +235,28 @@ describe('/stats на реальном Postgres: каждый сырой зап�
     expect(m).not.toBeNull();
     expect(Number(m?.[2])).toBeLessThanOrEqual(Number(m?.[1]));
     expect(product).not.toContain('данные не сходятся');
+  });
+
+  // Блок «Сессии не в рублях» считает Prisma groupBy по Booking.currency
+  // (не сырой SQL): колонка из миграции booking_currency читается драйвером.
+  it('бронь в долларах попадает в блок «Сессии не в рублях»', async () => {
+    await prisma.booking.create({
+      data: {
+        startsAt: new Date(Date.now() + 7 * DAY),
+        durationMin: 50,
+        type: 'SESSION_50',
+        status: 'CONFIRMED',
+        clientName: 'e2e',
+        clientContact: 'e2e',
+        cancelToken: CURRENCY_TOKEN,
+        amount: 70,
+        currency: 'USD',
+      },
+    });
+    const product = await report.render();
+    expectSaneReport(product);
+    expect(product).toContain('Сессии не в рублях');
+    expect(product).toMatch(/За 7 дней: [1-9]\d* \(.*[1-9]\d* в долларах\)/);
   });
 
   // Аудит 2026-10: createdAt — timestamp без зоны, а `now()` в SQL когорт

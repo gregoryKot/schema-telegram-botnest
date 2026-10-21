@@ -5,7 +5,7 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { PatternSheet } from './PatternSheet';
 import type { SchemaDiaryEntry } from '../../types';
-import type { MyCardItem } from '../myCards/useMyCards';
+import type { MyCardItem } from '../../../../shared/src/pattern/useMyCards';
 
 const deleteSchemaDiary = vi.fn().mockResolvedValue(undefined);
 const deleteModeDiary = vi.fn().mockResolvedValue(undefined);
@@ -64,6 +64,7 @@ const FILLED_ITEM: MyCardItem = {
   color: '#5aa8f7',
   excerpt: 'Когда не отвечают',
   cardFields: [{ label: 'Что включает', text: 'Когда не отвечают' }],
+  values: { triggers: 'Когда не отвечают' },
 };
 
 function schemaEntry(id: number, schemaIds: string[]): SchemaDiaryEntry {

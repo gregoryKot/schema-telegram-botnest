@@ -91,6 +91,7 @@ export function AppOverlays({
           <ChildhoodWheelEx
             onBack={() => ov.setShowChildhoodWheel(false)}
             onSaved={(r) => setChildhoodRatings(r)}
+            onOpenSchemas={() => { ov.setShowChildhoodWheel(false); ov.openSchema({ tab: 'schemas' }); }}
           />
         </Suspense>
       </div>

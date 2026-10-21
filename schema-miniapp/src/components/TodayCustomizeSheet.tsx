@@ -7,17 +7,21 @@
 // общих настройках.
 import { useState } from 'react';
 import { BottomSheet } from './BottomSheet';
-import { FOCUS_OPTIONS, FocusPractice } from '../utils/todayFocus';
+import {
+  FOCUS_OPTIONS,
+  FocusPractice,
+} from '../../../shared/src/today/todayFocus';
 import { getTheme, toggleTheme, Theme } from '../utils/theme';
 import { CustomizeRow } from './plusMenu/CustomizeRow';
-import { useDragReorder } from '../hooks/useDragReorder';
-import type { ScreenBlockId } from '../utils/screenBlocks';
+import { useDragReorder } from '../../../shared/src/hooks/useDragReorder';
+import {
+  TODAY_BLOCK_META,
+  highlightedBlock,
+  visibleTodayBlocks,
+  type CustomizeHighlight,
+  type TodayBlockId,
+} from '../../../shared/src/today/todayBlocks';
 import { Row, SettingsLabel, ThemeIcon, Toggle } from './settingsSheet/ui';
-
-// Какую строку подсветить при открытии: долгое нажатие на блок открывает лист
-// и показывает, где этот блок выключается (иначе жест приводит «куда-то в
-// настройки», и человек сам ищет нужный тумблер).
-export type CustomizeHighlight = 'practice' | 'streak' | 'phrase';
 
 interface Props {
   practice: FocusPractice;
@@ -27,7 +31,7 @@ interface Props {
   secondaryHidden: boolean;
   therapistBannerHidden: boolean;
   showTherapistToggle: boolean;
-  orderedIds: ScreenBlockId[];
+  orderedIds: TodayBlockId[];
   reorder: (id: string, toIndex: number, displayedIds?: string[]) => boolean;
   onPractice: (p: FocusPractice) => void;
   onToggleStreak: () => void;
@@ -60,47 +64,27 @@ export function TodayCustomizeSheet({
 
   // Строки блоков — по одному на блок band «Сегодня», в порядке orderedIds.
   // «Фокус дня» без тумблера: главная карточка не скрывается, только
-  // переставляется (сама практика выбирается в группе выше).
-  const rowMeta: Record<
-    string,
-    { title: string; sub: string; on?: boolean; onToggle?: () => void }
+  // переставляется (сама практика выбирается в группе выше). Тумблер
+  // «Что ещё можно сегодня» работает наоборот: on = блок спрятан под сворачивание.
+  const toggles: Partial<
+    Record<TodayBlockId, { on: boolean; onToggle: () => void }>
   > = {
-    streak: {
-      title: 'Карточка серии',
-      sub: 'можно убрать, если счёт дней давит',
-      on: !streakHidden,
-      onToggle: onToggleStreak,
-    },
-    focus: { title: 'Фокус дня', sub: 'главное дело — выбирается выше' },
-    phrase: {
-      title: 'Фраза для себя',
-      sub: 'цитата Здорового Взрослого на главном',
-      on: !phraseHidden,
-      onToggle: onTogglePhrase,
-    },
-    secondary: {
-      title: '«Что ещё можно сегодня»',
-      sub: 'потребности и дневник под сворачиванием',
-      on: secondaryHidden,
-      onToggle: onToggleSecondary,
-    },
+    streak: { on: !streakHidden, onToggle: onToggleStreak },
+    phrase: { on: !phraseHidden, onToggle: onTogglePhrase },
+    secondary: { on: secondaryHidden, onToggle: onToggleSecondary },
     therapist_banner: {
-      title: 'Кабинет терапевта',
-      sub: 'баннер входа в кабинет на главном',
       on: !therapistBannerHidden,
       onToggle: onToggleTherapistBanner,
     },
   };
   // Драг идёт по видимому подмножеству: у не-терапевта строки баннера нет.
-  const visibleIds = orderedIds.filter(
-    (id) => id !== 'therapist_banner' || showTherapistToggle,
-  );
+  const visibleIds = visibleTodayBlocks(orderedIds, showTherapistToggle);
   const d = useDragReorder({
     ids: visibleIds,
     onReorder: (id, toIndex) => reorder(id, toIndex, visibleIds),
   });
   const range = { min: 0, max: visibleIds.length - 1 };
-  const highlightedId = highlight === 'practice' ? 'focus' : highlight;
+  const highlightedId = highlightedBlock(highlight);
 
   return (
     <BottomSheet onClose={onClose} zIndex={200}>
@@ -198,15 +182,15 @@ export function TodayCustomizeSheet({
           </div>
           <div className="card u-r16-clip">
             {visibleIds.map((id, i) => {
-              const meta = rowMeta[id];
-              if (!meta) return null;
+              const meta = TODAY_BLOCK_META[id];
+              const toggle = toggles[id];
               return (
                 <CustomizeRow
                   key={id}
                   label={meta.title}
                   sub={meta.sub}
-                  hidden={meta.onToggle ? !meta.on : undefined}
-                  onToggle={meta.onToggle}
+                  hidden={toggle ? !toggle.on : undefined}
+                  onToggle={toggle?.onToggle}
                   divider={i > 0}
                   dragHandleProps={d.handleProps(id, meta.title, range)}
                   rowRef={d.registerRow(id)}

@@ -4,20 +4,45 @@
 // Состояние — общее (shared/usePhraseShareCard, правило №3), вёрстка своя.
 import { api } from '../api';
 import { Skeleton } from './Skeleton';
+import { useIsMobile } from './useIsMobile';
 import { ShareCardSheet } from '../share/ShareCardSheet';
 import { SharePillButton } from '../share/SharePillButton';
+import type { LongPressProps } from '../../../shared/src/hooks/useLongPress';
 import { usePhraseShareCard } from '../../../shared/src/share/usePhraseShareCard';
 import { phraseShareText } from '../../../shared/src/share/shareTexts';
 
-export function PhraseShareCard() {
+// Низ карточки: на телефоне подпись и «Другая ↻» в одну строку, на десктопе — ссылка под фразой.
+function PhraseMore({ phone, onMore }: { phone: boolean; onMore: () => void }) {
+  if (!phone) {
+    return (
+      <button
+        onClick={onMore}
+        style={{ marginTop: 8, border: 'none', background: 'transparent', color: 'var(--accent)', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', padding: 0 }}
+      >
+        Другая ↻
+      </button>
+    );
+  }
+  return (
+    <div className="ct-phrase-foot">
+      <div className="ct-phrase-cap">Голос Здорового Взрослого — тёплая опора в моменте</div>
+      <button onClick={onMore} className="ct-phrase-more">Другая ↻</button>
+    </div>
+  );
+}
+
+/** hold — долгое нажатие открывает «Настроить экран» (только «Сегодня»). */
+export function PhraseShareCard({ hold }: { hold?: LongPressProps } = {}) {
   const { phrase, loading, showShare, setShowShare, reload, draw } =
     usePhraseShareCard(api.getHealthyPhrase);
+  const phone = useIsMobile();
   if (!loading && !phrase) return null;
 
+  // Телефон — карточка с подписью, как в мини-аппе; десктоп — строка под линией.
   return (
     <>
-    <hr className="hr-soft" style={{ margin: '28px 0' }} />
-    <div>
+    {!phone && <hr className="hr-soft" style={{ margin: '28px 0' }} />}
+    <div {...hold} className={phone ? 'ds-card ct-phrase' : undefined}>
       <div className="u-between-mb10">
         <div className="eyebrow">Фраза для себя</div>
         {phrase && <SharePillButton onClick={() => setShowShare(true)} label="Поделиться фразой" />}
@@ -30,13 +55,8 @@ export function PhraseShareCard() {
         </div>
       ) : (
         <>
-          <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)', lineHeight: 1.5 }}>«{phrase}»</div>
-          <button
-            onClick={reload}
-            style={{ marginTop: 8, border: 'none', background: 'transparent', color: 'var(--accent)', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', padding: 0 }}
-          >
-            Другая ↻
-          </button>
+          <div style={{ fontSize: phone ? 16 : 15, fontWeight: 600, color: 'var(--text)', lineHeight: 1.5 }}>«{phrase}»</div>
+          <PhraseMore phone={phone} onMore={reload} />
         </>
       )}
 

@@ -1,56 +1,11 @@
 import type { NeedId } from './types';
 
-// Схемы, которые могут формироваться при дефиците каждой потребности
-export const SCHEMA_HINTS: Record<
-  NeedId,
-  { domain: string; color: string; schemas: string[] }
-> = {
-  attachment: {
-    domain: 'Нарушение связи и отвержение',
-    color: 'var(--accent-red)',
-    schemas: [
-      'Покинутость / Нестабильность',
-      'Недоверие',
-      'Эмоциональная депривация',
-      'Дефективность / Стыд',
-    ],
-  },
-  autonomy: {
-    domain: 'Нарушенная автономия',
-    color: 'var(--accent-orange)',
-    schemas: [
-      'Зависимость / Беспомощность',
-      'Неуспешность',
-      'Спутанность / Неразвитая идентичность',
-    ],
-  },
-  expression: {
-    domain: 'Направленность на других + Бдительность',
-    color: 'var(--accent-green)',
-    schemas: [
-      'Покорность',
-      'Самопожертвование',
-      'Страх потери контроля над эмоциями',
-      'Эмоциональная скованность',
-      'Поиск одобрения',
-    ],
-  },
-  play: {
-    domain: 'Сверхбдительность и подавление эмоций',
-    color: 'var(--accent-indigo)',
-    schemas: [
-      'Жёсткие стандарты / Придирчивость',
-      'Негативизм / Пессимизм',
-      'Пунитивность (на себя)',
-      'Пунитивность (на других)',
-    ],
-  },
-  limits: {
-    domain: 'Нарушенные границы',
-    color: 'var(--accent-yellow)',
-    schemas: [
-      'Привилегированность / Грандиозность',
-      'Недостаточность самоконтроля',
-    ],
-  },
+// Цвет карточки подсказки по потребности. Домен и список схем – в shared
+// (`CHILDHOOD_SCHEMA_HINTS`, `hintSchemas`), здесь только оформление мини-аппа.
+export const HINT_COLOR: Record<NeedId, string> = {
+  attachment: 'var(--accent-red)',
+  autonomy: 'var(--accent-orange)',
+  expression: 'var(--accent-green)',
+  play: 'var(--accent-indigo)',
+  limits: 'var(--accent-yellow)',
 };

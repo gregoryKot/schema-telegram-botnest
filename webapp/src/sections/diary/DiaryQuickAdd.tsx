@@ -9,7 +9,11 @@ const CARDS: { type: DiaryType; eyebrow: string; title: string; desc: string; fo
 ];
 
 // Три крупные карточки «быстро записать» — каждая открывает поток создания записи своего типа.
-export function DiaryQuickAdd({ onOpen }: { onOpen: (type: DiaryType) => void }) {
+export function DiaryQuickAdd({ onOpen, meta }: {
+  onOpen: (type: DiaryType) => void;
+  /** «N записей · последняя давность» по каждому дневнику; без неё строка не рисуется. */
+  meta?: Record<DiaryType, string>;
+}) {
   return (
     <div className="cd-quick">
       {CARDS.map(c => (
@@ -17,6 +21,7 @@ export function DiaryQuickAdd({ onOpen }: { onOpen: (type: DiaryType) => void })
           <div className="cd-quick-eyebrow">{c.eyebrow}</div>
           <div className="cd-quick-title">{c.title}</div>
           <div className="cd-quick-desc">{c.desc}</div>
+          {meta && <div className="cd-quick-meta">{meta[c.type]}</div>}
           <div className="cd-quick-foot"><b>+ записать</b><span>{c.foot}</span></div>
         </div>
       ))}

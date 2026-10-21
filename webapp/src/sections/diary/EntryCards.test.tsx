@@ -5,6 +5,7 @@
 import { describe, it, expect, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { SchemaEntry, ModeEntry, GratitudeEntry } from './EntryCards';
+import { schemaEntryRows } from './entryRows';
 import type {
   SchemaDiaryEntry,
   ModeDiaryEntry,
@@ -58,5 +59,41 @@ describe('EntryCards — aria-expanded на раскрывашках (Ж7)', () 
     expect(card.getAttribute('aria-expanded')).toBe('false');
     fireEvent.click(card);
     expect(card.getAttribute('aria-expanded')).toBe('true');
+  });
+});
+
+describe('EntryCards — все поля записи в раскрытой карточке (паритет с мини-аппом)', () => {
+  it('SchemaEntry показывает чувства, схемы, происхождение и поля реакции', () => {
+    const full: SchemaDiaryEntry = {
+      ...SCHEMA_ENTRY,
+      emotions: [{ id: 'anxiety', intensity: 3 } as never],
+      schemaIds: ['abandonment'],
+      schemaOrigin: 'Так было в детстве',
+      realProblems: 'Дедлайн в пятницу',
+      excessiveReactions: 'Накрутил себя',
+      healthyBehavior: 'Написать коллеге',
+    };
+    const labels = schemaEntryRows(full).filter(([, t]) => t).map(([l]) => l);
+    expect(labels).toEqual([
+      'Чувства', 'Схемы', 'Происхождение', 'Реальные проблемы', 'Чрезмерные реакции', 'Здоровое поведение',
+    ]);
+    render(<SchemaEntry entry={full} onDelete={() => {}} />);
+    fireEvent.click(screen.getByText('Созвон с командой').closest('[role="button"]')!);
+    expect(screen.getByText('Так было в детстве')).toBeTruthy();
+    expect(screen.getByText('Дедлайн в пятницу')).toBeTruthy();
+    expect(screen.getByText('Написать коллеге')).toBeTruthy();
+  });
+
+  it('SchemaEntry: у пустой записи нет ни одного поля', () => {
+    expect(schemaEntryRows(SCHEMA_ENTRY).filter(([, t]) => t)).toEqual([]);
+  });
+
+  it('ModeEntry показывает «Тело» и «Действия»', () => {
+    const entry: ModeDiaryEntry = { ...MODE_ENTRY, bodyFeelings: 'Сжало живот', actions: 'Замолчал' };
+    render(<ModeEntry entry={entry} onDelete={() => {}} />);
+    fireEvent.click(screen.getByText('Позвонил папа').closest('[role="button"]')!);
+    expect(screen.getByText('Сжало живот')).toBeTruthy();
+    expect(screen.getByText('Замолчал')).toBeTruthy();
+    expect(screen.getByText('Действия')).toBeTruthy();
   });
 });

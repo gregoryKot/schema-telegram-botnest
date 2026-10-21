@@ -5,12 +5,13 @@ import type { Section } from '../components/appShell/navigation';
 import { MY_SCHEMA_IDS_KEY, MY_MODE_IDS_KEY } from '../utils/storageKeys';
 import { TaskCreateSheet } from '../components/TaskCreateSheet';
 import { useTr } from '../utils/addressForm';
-import { pressable } from '../utils/a11y';
 import { PhraseShareCard } from '../components/PhraseShareCard';
 import '../styles/client-today.css';
 const SchemaEx = lazy(() => import('../components/exercises/FlashcardEx').then(m => ({ default: m.SchemaEx })));
+// Лист «Настроить экран» нужен по нажатию — в основной бандл не тянем (с перетаскиванием).
+const TodayCustomizeSheet = lazy(() => import('../components/customize/TodayCustomizeSheet').then(m => ({ default: m.TodayCustomizeSheet })));
 const ModeEx   = lazy(() => import('../components/exercises/FlashcardEx').then(m => ({ default: m.ModeEx })));
-import { greeting, formatHeaderDate } from './today/helpers';
+import { TodayHeader } from './today/TodayHeader';
 import { dayIndex, buildHistory, weekDelta, sparkBars } from './today/model';
 import { AllTasksOverlay } from './today/AllTasksOverlay';
 import { CaseEntryBlock } from './today/CaseEntryBlock';
@@ -21,7 +22,13 @@ import { NeedsCard } from './today/NeedsCard';
 import { PracticesBlock } from './today/PracticesBlock';
 import { DraftsBlock } from './today/DraftsBlock';
 import { RecentEntries } from './today/RecentEntries';
-import { IndexCard, MeetingCard, StreakCard } from './today/TodayAside';
+import { IndexCard, MeetingCard } from './today/TodayAside';
+import { StreakSlot, TherapistLink } from './today/TodayAsideExtras';
+import { TodayFocusBlock } from './today/TodayFocusBlock';
+import { TodayMoreToggle } from './today/TodayMoreToggle';
+import { useTodayMore } from './today/todayMore';
+import { useTodayCustomization } from './today/useTodayCustomization';
+import { todayOrderStyle } from './today/todayOrder';
 
 export { MY_SCHEMA_IDS_KEY, MY_MODE_IDS_KEY };
 
@@ -63,7 +70,10 @@ export function TodaySection({
   refreshKey, userRole, onOpenTherapistCabinet, onTasksChanged, rating,
 }: Props) {
   const tr = useTr();
-  const { profile, manualSchemaIds, recent, diariesLoaded, therapyRelation, historyDays } = useTodayData(refreshKey);
+  const today = useTodayCustomization();
+  const more = useTodayMore(today.secondaryHidden);
+  const data = useTodayData(refreshKey);
+  const { profile, manualSchemaIds, recent, diariesLoaded, therapyRelation, historyDays } = data;
   const { tasks, taskHistory, taskError, completeTask, afterCreate } = useTaskActions(refreshKey);
   const [showDiaryTask,  setShowDiaryTask]  = useState(false);
   const [showAllTasks,   setShowAllTasks]   = useState(false);
@@ -99,32 +109,20 @@ export function TodaySection({
   const score      = dayIndex(needs.map(n => n.id), ratings);
   const history    = useMemo(() => buildHistory(historyDays, ratings), [historyDays, ratings]);
   const showTasks  = tasks.length > 0 || taskError;
+  const isTherapist = userRole === 'THERAPIST';
+  const showTherapistBanner = isTherapist && !today.therapistBannerHidden;
 
   return (
     <div className="ds-page ct-page">
 
-      <header>
-        <div className="ds-eyebrow">
-          {formatHeaderDate()}{streak > 0 ? ` · ${streak}-й день подряд` : ''}
-        </div>
-        <h1 className="ds-h1">
-          {greeting()}{firstName && <>, <i>{firstName}</i></>}
-        </h1>
-      </header>
+      <TodayHeader streak={streak} firstName={firstName} onCustomize={today.openByGear} />
 
-      <div className="ct-grid">
+      <div className={'ct-grid' + (more.open ? ' is-more-open' : '')} style={todayOrderStyle(today.orderedIds)}>
 
         <div className="ct-main">
-          {userRole === 'THERAPIST' && onOpenTherapistCabinet && (
-            <div {...pressable(onOpenTherapistCabinet)} className="ds-card ds-card--row ds-card--hover ct-therapist-link">
-              <div className="ct-task-body">
-                <div className="ds-label">Терапевт</div>
-                <div className="ct-task-text">Кабинет терапевта</div>
-                <div className="ds-sub">Клиенты · Задания · Концептуализация</div>
-              </div>
-              <span className="ds-link">открыть →</span>
-            </div>
-          )}
+          <TodayFocusBlock needs={needs} ratings={ratings} data={data} onOpenTracker={onOpenTracker} onOpenTrackerHistory={onOpenTrackerHistory} practice={today.practice} onPickPractice={today.choosePractice} hold={today.holdFocus} />
+
+          {showTherapistBanner && onOpenTherapistCabinet && <TherapistLink onOpen={onOpenTherapistCabinet} />}
 
           {/* Точка входа «Что это было» + онбординг после первого разбора */}
           <CaseEntryBlock
@@ -165,12 +163,23 @@ export function TodaySection({
             <IndexCard score={score} weekDelta={weekDelta(history)} bars={sparkBars(history)} onOpenHistory={onOpenTrackerHistory} />
             <MeetingCard relation={therapyRelation} now={now} />
           </div>
-          <StreakCard streak={streak} />
-          <PhraseShareCard />
+          <StreakSlot streak={streak} hidden={today.streakHidden} onToggle={today.toggleStreak} hold={today.holdStreak} />
+          {!today.phraseHidden && <PhraseShareCard hold={today.holdPhrase} />}
         </aside>
+
+        {more.collapsible && <TodayMoreToggle open={more.open} onToggle={more.toggle} />}
       </div>
 
       {/* Overlays */}
+      {today.sheet && (
+        <Suspense fallback={null}>
+          <TodayCustomizeSheet
+            today={today}
+            showTherapistBlock={isTherapist && !!onOpenTherapistCabinet}
+            onOpenSettings={() => { today.closeSheet(); onOpenAdvanced(); }}
+          />
+        </Suspense>
+      )}
       {showDiaryTask && <TaskCreateSheet defaultType="diary_streak" onCreated={() => setShowDiaryTask(false)} onClose={() => setShowDiaryTask(false)} />}
       {showTaskCreate && (
         <TaskCreateSheet

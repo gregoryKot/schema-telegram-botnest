@@ -1,15 +1,16 @@
 import { useState } from 'react';
+import { notifyPrefsChanged } from '../../utils/uiPrefsSync';
 import { ToolRow } from '../../components/ToolRow';
 import { buildToolRows, ToolRowsProps } from './toolRows';
 import { QuickActionCustomizeSheet } from '../../components/plusMenu/QuickActionCustomizeSheet';
-import type { QuickActionId } from '../../utils/quickActions';
-import { TOOLS_ACTIONS_HIDDEN_KEY } from '../../utils/quickActionPrefs';
-import { useHiddenActions } from '../../utils/useHiddenActions';
+import type { QuickActionId } from '../../../../shared/src/quickActions/quickActions';
+import { TOOLS_ACTIONS_HIDDEN_KEY } from '../../../../shared/src/quickActions/quickActionPrefs';
+import { useHiddenActions } from '../../../../shared/src/quickActions/useHiddenActions';
 import {
   TOOLS_ACTIONS_ORDER_KEY,
   withDragRange,
-} from '../../utils/quickActionOrder';
-import { useQuickActionOrder } from '../../utils/useQuickActionOrder';
+} from '../../../../shared/src/quickActions/quickActionOrder';
+import { useQuickActionOrder } from '../../../../shared/src/quickActions/useQuickActionOrder';
 
 // Строки блока «Инструменты» — из toolRows.ts, общего с листом настройки
 // видимости (QuickActionCustomizeSheet, правило «одна механика — компонент»).
@@ -34,7 +35,10 @@ interface Props extends ToolRowsProps {
 }
 // props целиком, без деструктуризации (файл в бейслайне размера, №10).
 export function ToolsList(props: Props) {
-  const [hidden, handleToggle] = useHiddenActions(TOOLS_ACTIONS_HIDDEN_KEY);
+  const [hidden, handleToggle] = useHiddenActions(
+    TOOLS_ACTIONS_HIDDEN_KEY,
+    notifyPrefsChanged,
+  );
   const [showCustomize, setShowCustomize] = useState(false);
   if (props.customizeOpenRef)
     props.customizeOpenRef.current = () => setShowCustomize(true);
@@ -51,9 +55,11 @@ export function ToolsList(props: Props) {
     warm_words: props.onOpenWarmWords,
   };
   const rows = buildToolRows(props);
-  const { ordered, onReorder } = useQuickActionOrder(TOOLS_ACTIONS_ORDER_KEY, [
-    rows,
-  ]);
+  const { ordered, onReorder } = useQuickActionOrder(
+    TOOLS_ACTIONS_ORDER_KEY,
+    [rows],
+    notifyPrefsChanged,
+  );
   const orderedRows = ordered[0];
   const visibleRows = orderedRows.filter((r) => !hidden.includes(r.id));
   return (
