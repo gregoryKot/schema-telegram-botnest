@@ -459,9 +459,10 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: 22
-      # Обёртка scripts/npm-audit.mjs: код 1 — high/critical, 2 — реестр не
-      # ответил ни с одной попытки, 3 и прочие — npm не может проверить
-      # каталог (нет lock-файла и т. п., перезапуск не поможет). Худший
+      # Обёртка scripts/npm-audit.mjs: код 4 — high/critical, 2 — реестр не
+      # ответил ни с одной попытки, 3 и прочие (1 — упавший node) — npm или
+      # обёртка не может проверить каталог (нет lock-файла и т. п.,
+      # перезапуск не поможет). Худший
       # случай 2 мин 35 с на lock-файл; пять файлов — 13 мин, отсюда 16.
       - name: npm audit по каждому package-lock.json
         timeout-minutes: 16
@@ -482,7 +483,7 @@ jobs:
             echo '::endgroup::'
             case $code in
               0) ;;
-              1) failed="$failed $dir" ;;
+              4) failed="$failed $dir" ;;
               2) unreachable="$unreachable $dir" ;;
               *) broken="$broken $dir" ;;
             esac

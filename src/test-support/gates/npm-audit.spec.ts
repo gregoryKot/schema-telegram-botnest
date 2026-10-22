@@ -4,12 +4,18 @@
 // отвечает записанными ответами реестра (fake-npm.ts): оба исхода, повторы,
 // убийство зависшей попытки и флаги npm. Флаги теперь живут в обёртке, а не в
 // ci.yml, — значит, ослабление уровня или потеря --omit=dev ловится здесь.
-import { spawnSync } from 'child_process';
+import { spawn, spawnSync } from 'child_process';
 import { join } from 'path';
+import { pathToFileURL } from 'url';
+import { loadRecordedFixture } from '../recorded-fixture';
 import { makeFakeNpm, type FakeNpm } from './fake-npm';
 import { isGatingAudit, prefixDirectory } from './lockfile-audit';
 
 const SCRIPT = join(process.cwd(), 'scripts', 'npm-audit.mjs');
+/** Разбор ответа npm — отдельный модуль обёртки, его форма пинится ниже. */
+const REPORT = join(process.cwd(), 'scripts', 'npm-audit-report.mjs');
+/** Попытка в тестах: короче — тест быстрее, но под нагрузкой раннера ложно-красный. */
+const ATTEMPT_MS = '3000';
 let npm: FakeNpm;
 
 beforeAll(() => {
@@ -29,7 +35,7 @@ function audit(
   const r = spawnSync(process.execPath, [SCRIPT, ...args], {
     env: npm.env(rules, {
       NPM_AUDIT_ATTEMPTS: attempts,
-      NPM_AUDIT_ATTEMPT_MS: '1500',
+      NPM_AUDIT_ATTEMPT_MS: ATTEMPT_MS,
       NPM_AUDIT_PAUSE_MS: '20',
       ...extra,
     }),
@@ -75,7 +81,7 @@ describe('scripts/npm-audit.mjs', () => {
       ]),
     );
     expect(prefixDirectory(call)).toBe('/webapp');
-    expect(isGatingAudit(call)).toBe(true);
+    expect(isGatingAudit(`run: ${call}`)).toBe(true);
   });
 
   it('корень — «.»: npm получает --prefix .', () => {
@@ -92,9 +98,11 @@ describe('scripts/npm-audit.mjs', () => {
 
   // Контроль к moderate: тот же формат с одной high — красный. Пара пинит
   // уровень с обеих сторон: ни critical-only, ни «любая находка».
-  it('high: 1 сразу, без повторов; пакет и advisory названы', () => {
+  // Код уязвимости — 4, не 1: единицу node отдаёт на упавшем скрипте, и
+  // ночной шаг назвал бы падение обёртки «уязвимостью» (ревью #814).
+  it('high: 4 сразу, без повторов; пакет и advisory названы', () => {
     const r = audit('*=high,clean');
-    expect(r.status).toBe(1);
+    expect(r.status).toBe(4);
     expect(r.calls).toHaveLength(1);
     expect(r.out).toContain(
       '::error::npm audit webapp: в prod-зависимостях high — 1, critical — 0',
@@ -106,9 +114,9 @@ describe('scripts/npm-audit.mjs', () => {
     expect(r.out).not.toContain('GHSA-7fh5-64p2-3v2j'); // moderate-advisory не в списке
   });
 
-  it('critical: 1, названы оба пакета', () => {
+  it('critical: 4, названы оба пакета', () => {
     const r = audit('*=critical');
-    expect(r.status).toBe(1);
+    expect(r.status).toBe(4);
     expect(r.out).toContain('lodash — high');
     expect(r.out).toContain('minimist — critical');
   });
@@ -118,10 +126,10 @@ describe('scripts/npm-audit.mjs', () => {
     expect(r.status).toBe(0);
     expect(r.calls).toHaveLength(2);
     expect(r.out).toMatch(
-      /::warning::.*попытка 1\/3 без отчёта — нет ответа за 1\.5 с, процесс npm убит/,
+      /::warning::.*попытка 1\/3 без отчёта — нет ответа за 3 с, процесс npm убит/,
     );
     expect(npm.aliveChildren()).toEqual([]);
-    expect(r.ms).toBeLessThan(10_000);
+    expect(r.ms).toBeLessThan(15_000);
   });
 
   it('реестр отвечает 400 «endpoint retired» во всех попытках: 2, ::error:: про реестр, не про уязвимость', () => {
@@ -149,7 +157,7 @@ describe('scripts/npm-audit.mjs', () => {
     expect(r.status).toBe(2);
     expect(r.calls).toHaveLength(2);
     expect(npm.aliveChildren()).toEqual([]);
-    expect(r.ms).toBeLessThan(10_000);
+    expect(r.ms).toBeLessThan(15_000);
   });
 
   it('без каталога — текущий, как у npm audit без --prefix', () => {
@@ -198,7 +206,7 @@ describe('scripts/npm-audit.mjs', () => {
     const r = audit('*=orphan,clean');
     expect(r.status).toBe(0);
     expect(r.calls).toHaveLength(2);
-    expect(r.ms).toBeLessThan(10_000);
+    expect(r.ms).toBeLessThan(15_000);
   });
 
   // Контрольный образец к флагам: offline/чужой реестр в env не делают
@@ -215,14 +223,79 @@ describe('scripts/npm-audit.mjs', () => {
     expect(args).toContain('--registry=https://registry.npmjs.org/');
   });
 
-  it('SIGTERM снаружи (таймаут шага): 143, не 1 — «убит» не «уязвимость»', () => {
-    const r = spawnSync(process.execPath, [SCRIPT, 'webapp'], {
+  // SIGTERM — только когда поддельный npm уже висит (его pid записан):
+  // фиксированная пауза под нагрузкой раннера приходилась на старт node,
+  // до установки обработчика, и тест краснел не по делу (ревью #814).
+  it('SIGTERM снаружи (таймаут шага): 143, не 4 — «убит» не «уязвимость»', async () => {
+    const child = spawn(process.execPath, [SCRIPT, 'webapp'], {
       env: npm.env('*=hang', { NPM_AUDIT_ATTEMPT_MS: '20000' }),
-      encoding: 'utf8',
-      timeout: 1_500,
-      killSignal: 'SIGTERM',
+      stdio: 'ignore',
     });
-    expect(r.status).toBe(143);
+    const exited = new Promise<number | null>((done) =>
+      child.on('exit', (code) => done(code)),
+    );
+    const until = Date.now() + 20_000;
+    while (npm.aliveChildren().length === 0 && Date.now() < until) {
+      await new Promise((ok) => setTimeout(ok, 50));
+    }
+    expect(npm.aliveChildren()).toHaveLength(1);
+    child.kill('SIGTERM');
+    expect(await exited).toBe(143);
     expect(npm.aliveChildren()).toEqual([]);
+  }, 30_000);
+});
+
+/** classify из npm-audit-report.mjs над текстом ответа npm (ESM — отдельным node). */
+function classify(text: string): { kind: string; reason?: string } {
+  const code =
+    `import { classify } from ${JSON.stringify(pathToFileURL(REPORT).href)};\n` +
+    "import { readFileSync } from 'fs';\n" +
+    'console.log(JSON.stringify(classify(readFileSync(0, "utf8"))));';
+  const r = spawnSync(process.execPath, ['--input-type=module', '-e', code], {
+    input: text,
+    encoding: 'utf8',
+  });
+  if (r.status !== 0) throw new Error(r.stderr);
+  return JSON.parse(r.stdout) as { kind: string; reason?: string };
+}
+
+// Разбор ответа отдельно от таймера и повторов: какая форма — «отчёт», а
+// какая — «отчёта нет». Записанные ответы npm 10 (правило №23) и формы без
+// отчёта: ни одна из них не «чисто».
+describe('scripts/npm-audit-report.mjs: classify', () => {
+  it.each([
+    ['clean', 'clean'],
+    ['moderate', 'clean'],
+    ['high', 'vulnerable'],
+    ['critical', 'vulnerable'],
+    ['registry-400', 'none'],
+    ['enolock', 'broken'],
+  ])('записанный ответ %s → %s', (name, kind) => {
+    expect(classify(loadRecordedFixture(`npm-audit-${name}.json`)).kind).toBe(
+      kind,
+    );
+  });
+
+  it.each([
+    ['пустой объект', '{}'],
+    ['отчёт без metadata', '{"auditReportVersion":2}'],
+    ['сетевая ошибка без statusCode', '{"message":"x"}'],
+    [
+      'счётчики не числа',
+      '{"metadata":{"vulnerabilities":{"high":"0","critical":0}}}',
+    ],
+    ['не JSON', 'npm ERR! code ECONNRESET'],
+    ['пусто', ''],
+  ])('%s → none, не clean', (_n, text) => {
+    expect(classify(text).kind).toBe('none');
+  });
+
+  // Контроль к «сетевая ошибка»: тот же объект с сетевым кодом npm — тоже
+  // повтор (none), а локальный код — broken без повторов.
+  it('код npm: ECONNRESET → none, ENOENT → broken', () => {
+    const err = (code: string) =>
+      JSON.stringify({ error: { code, summary: 's' } });
+    expect(classify(err('ECONNRESET')).kind).toBe('none');
+    expect(classify(err('ENOENT')).kind).toBe('broken');
   });
 });
