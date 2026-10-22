@@ -3,6 +3,7 @@ import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { formatProductMetrics, ProductMetrics } from './product-metrics.format';
 import { countCrisis } from './crisis-metrics';
+import { countYsqFunnel } from './ysq-funnel-metrics';
 import { formatQuizMetrics } from './quiz-metrics.format';
 import { QuizMetricsService } from './quiz-metrics.service';
 import { formatPracticeLinkMetrics } from './practice-link-metrics.format';
@@ -62,11 +63,9 @@ export class ProductMetricsService {
       cohort30,
       completed30,
       diaries,
-      ysqDone,
       exercises,
       practices,
       childhood,
-      ysqStarted,
       ty,
       vy,
       notChosen,
@@ -87,6 +86,7 @@ export class ProductMetricsService {
       homeScreenRows,
       journeyOpens,
       ysqHelpOpens,
+      ysqFunnel,
     ] = await Promise.all([
       this.prisma.user.count({
         where: { ...activeUser, createdAt: { gte: since30 } },
@@ -105,7 +105,6 @@ export class ProductMetricsService {
           UNION SELECT "userId" FROM "ModeDiaryEntry"
           UNION SELECT "userId" FROM "GratitudeDiaryEntry"
         ) t`,
-      this.prisma.ysqResult.count(),
       this.prisma.$queryRaw<Array<{ c: bigint }>>`
         SELECT count(DISTINCT uid)::bigint AS c FROM (
           SELECT "userId" AS uid FROM "UserFlashcard"
@@ -118,7 +117,6 @@ export class ProductMetricsService {
         SELECT count(DISTINCT "userId")::bigint AS c FROM "UserPractice"`,
       this.prisma.$queryRaw<Array<{ c: bigint }>>`
         SELECT count(DISTINCT "userId")::bigint AS c FROM "ChildhoodRating"`,
-      this.prisma.ysqProgress.count(),
       this.prisma.user.count({ where: { ...activeUser, addressForm: 'ty' } }),
       this.prisma.user.count({ where: { ...activeUser, addressForm: 'vy' } }),
       this.prisma.user.count({ where: { ...activeUser, addressForm: null } }),
@@ -196,6 +194,8 @@ export class ProductMetricsService {
       ),
       ev('journey_open'),
       ev('ysq_help_open'),
+      // Последним: юнит-моки $queryRaw позиционные (ysq-funnel-metrics.ts).
+      countYsqFunnel(this.prisma),
     ]);
 
     const sections = sectionsRaw
@@ -232,12 +232,12 @@ export class ProductMetricsService {
       onboardingSteps,
       adoption: {
         diaries: num(diaries),
-        ysqDone,
+        ysqDone: ysqFunnel.completed,
         exercises: num(exercises),
         practices: num(practices),
         childhood: num(childhood),
       },
-      ysq: { started: ysqStarted, completed: ysqDone, helpOpens: ysqHelpOpens },
+      ysq: { ...ysqFunnel, helpOpens: ysqHelpOpens },
       addressForm: { ty, vy, notChosen },
       sections,
       themes: { light: themeLight, dark: themeDark, system: themeSystem },

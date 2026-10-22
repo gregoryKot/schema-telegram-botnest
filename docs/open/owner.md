@@ -14,6 +14,19 @@
 должно видеть рубли и платить через Robokassa, нужна отдельная группа зон в том же модуле и в
 бэкенд-копии `src/booking/price-region.ts`.
 
+**Кнопка «Удалить результаты теста» — решение владельца** (найдено при починке
+воронки теста схем в `/stats`, #815):
+- **Кнопка удаляет только текущий результат, история прохождений остаётся.**
+  `webapp/src/components/settingsSheet/DataSection.tsx` и
+  `schema-miniapp/src/components/settingsSheet/DataOverlays.tsx` зовут
+  `DELETE /api/ysq-result`, а `YsqService.deleteYsqResult`
+  (`src/bot/ysq.service.ts`) удаляет одну строку `YsqResult`. `YsqResultHistory`
+  со всеми прошлыми ответами и `YsqProgress` остаются, `GET /api/ysq-history`
+  их по-прежнему отдаёт. Владельцу решить, должна ли кнопка стирать и историю:
+  это вопрос приватности и того, что пользователь понимает под «удалить». Если
+  да — такие люди законно выпадут из «дошли до конца» в `/stats`
+  (`src/bot/ysq-funnel-metrics.ts` считает по истории), это согласуется.
+
 **На владельце (не код):**
 - **Доходит ли вебхук Robokassa?** Код больше не зависит от хоста в кабинете: `/api/payment` в `PRACTICE_API_PREFIXES`, ResultURL на `schemehappens.ru` и на `kotlarewski.gr` подтверждает бронь одинаково (`test/payment-webhook-practice-host.e2e-spec.ts`). Сверь, что ResultURL в кабинете задан (метод POST) и после тестовой оплаты бронь стала CONFIRMED без ручного `POST /api/booking/admin/confirm/:id`. Остальные вопросы по кабинетам — в [RUNBOOKS.md](../RUNBOOKS.md#что-проверить-владельцу).
 - Уведомление РКН: реестр операторов + трансграничная передача, pd.rkn.gov.ru.

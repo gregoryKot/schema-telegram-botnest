@@ -49,7 +49,9 @@ describe('ProductMetricsService.getMetrics', () => {
         { action: 'shown', c: 200n },
         { action: 'add', c: 60n },
         { action: 'added', c: 45n },
-      ]);
+      ])
+      // воронка теста схем — последней в Promise.all (ysq-funnel-metrics.ts)
+      .mockResolvedValueOnce([{ started: 260n, completed: 210n }]);
     const eventCount = jest
       .fn()
       .mockResolvedValueOnce(12) // crisis_card_shown
@@ -70,8 +72,6 @@ describe('ProductMetricsService.getMetrics', () => {
           { defaultSection: 'today', _count: { _all: 300 } },
         ]),
       },
-      ysqResult: { count: jest.fn(async () => 210) },
-      ysqProgress: { count: jest.fn(async () => 260) },
       analyticsEvent: { count: eventCount },
       $queryRaw: queryRaw,
     };
@@ -148,8 +148,6 @@ describe('ProductMetricsService.getMetrics', () => {
   it('пустая БД — везде нули, ни одного NaN/undefined', async () => {
     const prisma: any = {
       user: { count: jest.fn(async () => 0), groupBy: jest.fn(async () => []) },
-      ysqResult: { count: jest.fn(async () => 0) },
-      ysqProgress: { count: jest.fn(async () => 0) },
       analyticsEvent: { count: jest.fn(async () => 0) },
       $queryRaw: jest.fn(async () => []),
     };
@@ -167,6 +165,8 @@ describe('ProductMetricsService.getMetrics', () => {
       practices: 0,
       childhood: 0,
     });
+    // Воронка теста схем на пустом ответе — нули, не NaN.
+    expect(m.ysq).toEqual({ started: 0, completed: 0, helpOpens: 0 });
     expect(m.sections).toEqual([]);
     expect(m.onboardingSteps).toEqual([]);
     expect(m.shareCard.byKind30).toEqual([]);
@@ -202,7 +202,8 @@ describe('ProductMetricsService.getMetrics', () => {
       .mockResolvedValueOnce([{ block: null, c: 1n }]) // toggle без block
       .mockResolvedValueOnce([{ step: null, c: 5n }]) // онбординг без step
       .mockResolvedValueOnce([{ via: null, c: 4n }]) // customize без via
-      .mockResolvedValueOnce([{ action: null, c: 6n }]); // offer без action
+      .mockResolvedValueOnce([{ action: null, c: 6n }]) // offer без action
+      .mockResolvedValueOnce([]); // воронка теста схем: пустой ответ
     const prisma: any = {
       user: {
         count: jest.fn(async () => 0),
@@ -210,8 +211,6 @@ describe('ProductMetricsService.getMetrics', () => {
           { defaultSection: null, _count: { _all: 4 } },
         ]),
       },
-      ysqResult: { count: jest.fn(async () => 0) },
-      ysqProgress: { count: jest.fn(async () => 0) },
       analyticsEvent: { count: jest.fn(async () => 0) },
       $queryRaw: queryRaw,
     };
