@@ -36,6 +36,7 @@ function makeDeps() {
     hasPending: jest.fn().mockResolvedValue(false),
   } as any;
   const cadence = {
+    claimPlanDay: jest.fn().mockResolvedValue(true),
     expirePauseIfDue: jest.fn().mockResolvedValue('none'),
     evaluate: jest.fn().mockResolvedValue({ remindToday: true }),
     nextReminderSeq: jest.fn().mockResolvedValue(1),

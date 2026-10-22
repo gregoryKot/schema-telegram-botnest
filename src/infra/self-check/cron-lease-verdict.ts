@@ -52,7 +52,7 @@ function ago(ms: number): string {
   return min < 120 ? `${min} мин назад` : `${Math.round(min / 60)} ч назад`;
 }
 
-const hhmm = (ms: number) => new Date(ms).toISOString().slice(11, 16);
+export const hhmm = (ms: number) => new Date(ms).toISOString().slice(11, 16);
 
 /** Прежнее правило — по возрасту: для расписаний, которые не суточные. */
 function byAge(f: LeaseFacts, maxAge: number): string | null {

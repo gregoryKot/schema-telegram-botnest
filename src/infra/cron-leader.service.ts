@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { randomBytes } from 'crypto';
-import { PrismaService } from '../prisma/prisma.service';
 import { noteClaimFailure } from './cron-claim-failures';
+import { CronRunLedger } from './cron-run-done';
 
 // Leader-election для кронов. Расписание одинаковое на всех инстансах, поэтому
 // второй под (масштабирование, перекатывающийся деплой) отрабатывает тот же
@@ -14,7 +14,7 @@ import { noteClaimFailure } from './cron-claim-failures';
 // транзакционный advisory-lock держал бы транзакцию открытой всё время
 // прогона (полуночный планировщик обходит всех пользователей). Аренда —
 // один атомарный запрос, переживает падение процесса без «зависшего» лока:
-// окно просто истекает.
+// окно просто истекает. Отметка завершения и prisma — в базе (cron-run-done.ts).
 
 /** Кто отработал — для разбора «почему тик пропущен» видно в самой строке. */
 const INSTANCE_ID =
@@ -32,10 +32,8 @@ export const LEASE_WINDOW = {
 } as const;
 
 @Injectable()
-export class CronLeaderService {
+export class CronLeaderService extends CronRunLedger {
   private readonly logger = new Logger(CronLeaderService.name);
-
-  constructor(private readonly prisma: PrismaService) {}
 
   /**
    * Забрать прогон крона себе. `true` — этот инстанс лидер и обязан отработать,

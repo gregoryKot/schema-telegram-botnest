@@ -6,6 +6,7 @@
 import { Logger } from '@nestjs/common';
 import { TelegramScheduleService } from './telegram.schedule.service';
 import { LEASE_WINDOW } from '../infra/cron-leader.service';
+import { RESUME_WINDOW_MS } from './telegram.midnight-planner';
 
 function makeService(
   opts: {
@@ -13,6 +14,7 @@ function makeService(
     users?: any[];
     planDay?: jest.Mock;
     claimRun?: boolean;
+    unfinishedRun?: Date | null;
   } = {},
 ) {
   const botService: any = {
@@ -33,7 +35,11 @@ function makeService(
     scheduleReminder: jest.fn().mockResolvedValue(undefined),
   };
   const claimRun = jest.fn().mockResolvedValue(opts.claimRun ?? true);
-  const cronLeader: any = { claimRun };
+  const cronLeader: any = {
+    claimRun,
+    finishRun: jest.fn().mockResolvedValue(undefined),
+    unfinishedRun: jest.fn().mockResolvedValue(opts.unfinishedRun ?? null),
+  };
   const bot = opts.bot === undefined ? { telegram: {} } : opts.bot;
   const service = new TelegramScheduleService(
     bot,
@@ -53,6 +59,7 @@ function makeService(
     notificationService,
     plannerService,
     claimRun,
+    cronLeader,
   };
 }
 
@@ -82,12 +89,17 @@ describe('scheduleDailyReminders', () => {
   it('зовёт planDay для каждого юзера из getAllUsersWithSettings', async () => {
     const users = [{ id: 1n }, { id: 2n }, { id: 3n }];
     const planDay = jest.fn().mockResolvedValue(undefined);
-    const { service } = makeService({ users, planDay });
+    const { service, claimRun, cronLeader } = makeService({ users, planDay });
     await service.scheduleDailyReminders();
+    // Все считают «сегодня» от одного и того же момента захвата аренды — им же
+    // отмечается завершение прогона (доделка после рестарта сверяет его).
+    const [, , runAt] = claimRun.mock.calls[0];
+    expect(runAt).toBeInstanceOf(Date);
     expect(planDay).toHaveBeenCalledTimes(3);
-    expect(planDay).toHaveBeenNthCalledWith(1, users[0]);
-    expect(planDay).toHaveBeenNthCalledWith(2, users[1]);
-    expect(planDay).toHaveBeenNthCalledWith(3, users[2]);
+    expect(planDay).toHaveBeenNthCalledWith(1, users[0], runAt);
+    expect(planDay).toHaveBeenNthCalledWith(2, users[1], runAt);
+    expect(planDay).toHaveBeenNthCalledWith(3, users[2], runAt);
+    expect(cronLeader.finishRun).toHaveBeenCalledWith('midnightPlanner', runAt);
   });
 
   it('изоляция ошибок: падение planDay для одного юзера не останавливает цикл для остальных', async () => {
@@ -102,7 +114,7 @@ describe('scheduleDailyReminders', () => {
     await expect(service.scheduleDailyReminders()).resolves.toBeUndefined();
     // Все три юзера обработаны, несмотря на ошибку у второго.
     expect(planDay).toHaveBeenCalledTimes(3);
-    expect(planDay).toHaveBeenNthCalledWith(3, users[2]);
+    expect(planDay).toHaveBeenNthCalledWith(3, users[2], expect.any(Date));
   });
 
   it('тик уже забрал другой инстанс — цикл по юзерам не стартует', async () => {
@@ -117,9 +129,101 @@ describe('scheduleDailyReminders', () => {
     expect(claimRun).toHaveBeenCalledWith(
       'midnightPlanner',
       LEASE_WINDOW.daily,
+      expect.any(Date),
     );
     expect(accountService.getAllUsersWithSettings).not.toHaveBeenCalled();
     expect(planDay).not.toHaveBeenCalled();
+    // Отказ — штатная работа: уровень log, не warn/error (правило №17).
+    expect(Logger.prototype.log).toHaveBeenCalledWith(
+      'Midnight planner: аренду уже взял другой прогон',
+    );
+  });
+
+  // Доделка — только при старте: на тике второй инстанс в 00:00 обходил бы
+  // параллельно лидеру, и лидерство потеряло бы смысл.
+  it('тик забран другим инстансом, а прогон не завершён — тик НЕ доделывает', async () => {
+    const planDay = jest.fn().mockResolvedValue(undefined);
+    const { service, cronLeader, claimRun } = makeService({
+      users: [{ id: 1n }],
+      planDay,
+      claimRun: false,
+      unfinishedRun: new Date('2026-10-22T00:00:00Z'),
+    });
+    await expect(service.scheduleDailyReminders()).resolves.toBeUndefined();
+    expect(claimRun).toHaveBeenCalledWith(
+      'midnightPlanner',
+      LEASE_WINDOW.daily,
+      expect.any(Date),
+    );
+    expect(cronLeader.unfinishedRun).not.toHaveBeenCalled();
+    expect(planDay).not.toHaveBeenCalled();
+    expect(cronLeader.finishRun).not.toHaveBeenCalled();
+  });
+});
+
+describe('catchUpAfterStart — старт процесса', () => {
+  it('прогон оборван рестартом — доделывает его с тем же runAt и не берёт новую аренду', async () => {
+    const runAt = new Date('2026-10-22T00:00:00Z');
+    const users = [{ id: 1n }, { id: 2n }];
+    const planDay = jest.fn().mockResolvedValue(undefined);
+    const { service, claimRun, cronLeader } = makeService({
+      users,
+      planDay,
+      claimRun: false,
+      unfinishedRun: runAt,
+    });
+    await service.catchUpAfterStart();
+    expect(cronLeader.unfinishedRun).toHaveBeenCalledWith(
+      'midnightPlanner',
+      RESUME_WINDOW_MS,
+    );
+    expect(planDay.mock.calls).toEqual([
+      [users[0], runAt],
+      [users[1], runAt],
+    ]);
+    expect(cronLeader.finishRun).toHaveBeenCalledWith('midnightPlanner', runAt);
+    expect(claimRun).not.toHaveBeenCalled();
+  });
+
+  it('доделывать нечего — пробует пропущенную полночь через claimRun', async () => {
+    const planDay = jest.fn().mockResolvedValue(undefined);
+    const { service, claimRun } = makeService({
+      users: [{ id: 1n }],
+      planDay,
+      unfinishedRun: null,
+    });
+    await service.catchUpAfterStart();
+    expect(claimRun).toHaveBeenCalledWith(
+      'midnightPlanner',
+      LEASE_WINDOW.daily,
+      expect.any(Date),
+    );
+    expect(planDay).toHaveBeenCalledWith({ id: 1n }, claimRun.mock.calls[0][2]);
+  });
+
+  it('бот не запущен — ни доделки, ни захвата', async () => {
+    const { service, claimRun, cronLeader } = makeService({
+      bot: null,
+      unfinishedRun: new Date('2026-10-22T00:00:00Z'),
+    });
+    await expect(service.catchUpAfterStart()).resolves.toBeUndefined();
+    expect(cronLeader.unfinishedRun).not.toHaveBeenCalled();
+    expect(claimRun).not.toHaveBeenCalled();
+  });
+
+  it('onModuleDestroy во время обхода — обход останавливается, прогон не отмечен завершённым', async () => {
+    jest.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined);
+    const users = [{ id: 1n }, { id: 2n }, { id: 3n }];
+    const ref: { service?: TelegramScheduleService } = {};
+    const planDay = jest.fn(() => {
+      if (planDay.mock.calls.length === 1) ref.service?.onModuleDestroy();
+      return Promise.resolve();
+    });
+    const built = makeService({ users, planDay });
+    ref.service = built.service;
+    await built.service.scheduleDailyReminders();
+    expect(planDay.mock.calls.map((c) => c[0])).toEqual([users[0]]);
+    expect(built.cronLeader.finishRun).not.toHaveBeenCalled();
   });
 });
 

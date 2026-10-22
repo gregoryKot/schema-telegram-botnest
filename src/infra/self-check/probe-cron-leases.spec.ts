@@ -10,7 +10,9 @@ const NAMES = Object.keys(CRON_LEASE_REGISTRY);
 const at = (s: string) => new Date(s).getTime();
 const noFailures = () => undefined;
 
-function fakePrisma(rows: Array<{ name: string; runAt: Date }>): PrismaService {
+function fakePrisma(
+  rows: Array<{ name: string; runAt: Date; doneRunAt?: Date | null }>,
+): PrismaService {
   return {
     cronLease: { findMany: jest.fn().mockResolvedValue(rows) },
   } as unknown as PrismaService;
@@ -176,6 +178,77 @@ describe('cronLeasesProbe', () => {
         detail:
           'healthyAdultCatchUp: два тика подряд не отработали (04:15 и 04:30 UTC), последний раз 43 мин назад',
       });
+    });
+  });
+
+  // Аудит 2026-10: полуночный обход, оборванный деплоем, для правила тиков
+  // «свеж» — аренда захвачена. Второе правило смотрит, дошёл ли прогон до конца.
+  describe('незавершённый прогон (cron-lease-done.ts)', () => {
+    const now = at('2026-10-18T12:00:30Z');
+    const midnight = new Date('2026-10-18T00:00:00Z');
+    const withMidnight = (doneRunAt: Date | null) =>
+      rowsAt(now).map((r) =>
+        r.name === 'midnightPlanner'
+          ? { ...r, runAt: midnight, doneRunAt }
+          : { ...r, doneRunAt: null },
+      );
+
+    it('обход начат в 00:00 и не закончен к полудню — не ok, простыми словами', async () => {
+      Date.now = () => now;
+      const res = await cronLeasesProbe(
+        fakePrisma(withMidnight(null)),
+        now - 24 * 3_600_000,
+        noFailures,
+      ).run();
+      expect(res).toEqual({
+        ok: false,
+        detail:
+          'midnightPlanner: обход, начатый в 00:00 UTC, не дошёл до конца — часть людей осталась без запланированных сообщений',
+      });
+    });
+
+    it('обход отмечен завершённым тем же runAt — ok', async () => {
+      Date.now = () => now;
+      const res = await cronLeasesProbe(
+        fakePrisma(withMidnight(new Date(midnight))),
+        now - 24 * 3_600_000,
+        noFailures,
+      ).run();
+      expect(res.ok).toBe(true);
+    });
+
+    const prevMidnight = new Date('2026-10-17T00:00:00Z');
+
+    it('процесс поднялся меньше двух часов назад — даёт время доделать', async () => {
+      Date.now = () => now;
+      const res = await cronLeasesProbe(
+        fakePrisma(withMidnight(prevMidnight)),
+        now - 60_000,
+        noFailures,
+      ).run();
+      expect(res.ok).toBe(true);
+    });
+
+    // Первый деплой колонки днём: у строки из базы doneRunAt = NULL, прошлый
+    // обход прошёл старым кодом, доделать его некому (окно доделки 6 ч).
+    it('первый деплой днём: отметки не было ни разу — ok, ложной тревоги нет', async () => {
+      Date.now = () => now;
+      const res = await cronLeasesProbe(
+        fakePrisma(withMidnight(null)),
+        now - 3 * 3_600_000,
+        noFailures,
+      ).run();
+      expect(res.ok).toBe(true);
+    });
+
+    it('контроль: отметка от прошлого прогона при том же старте — не ok', async () => {
+      Date.now = () => now;
+      const res = await cronLeasesProbe(
+        fakePrisma(withMidnight(prevMidnight)),
+        now - 3 * 3_600_000,
+        noFailures,
+      ).run();
+      expect(res.ok).toBe(false);
     });
   });
 });

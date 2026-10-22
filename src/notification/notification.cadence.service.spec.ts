@@ -381,3 +381,53 @@ describe('NotificationCadenceService', () => {
     });
   });
 });
+
+// Захват локального дня под полуночный обход (аудит 2026-10: доделка обхода
+// после рестарта не должна давать второе проактивное уведомление за день).
+// Атомарность одного UPDATE — свойство Postgres, она доказана живым спеком
+// test/midnight-planner-resume.e2e-spec.ts; здесь — форма запроса и ответ.
+describe('NotificationCadenceService.claimPlanDay', () => {
+  function makeSvc(count: number) {
+    const { prisma, notifications, analytics } = makeDeps();
+    prisma.user.updateMany = jest.fn().mockResolvedValue({ count });
+    const svc = new NotificationCadenceService(
+      prisma,
+      notifications,
+      analytics,
+    );
+    return { svc, prisma };
+  }
+
+  it('день ещё не планировали → забирает его по локальной дате и отвечает true', async () => {
+    const { svc, prisma } = makeSvc(1);
+    await expect(svc.claimPlanDay(makeUser(), NOW)).resolves.toBe(true);
+    expect(prisma.user.updateMany).toHaveBeenCalledWith({
+      where: {
+        id: BigInt(42),
+        // NULL отдельной веткой: `<> today` в SQL отбрасывает NULL, и новичок
+        // без единого спланированного дня не получил бы ничего.
+        OR: [
+          { notifyLastEvalDate: null },
+          { notifyLastEvalDate: { not: TODAY_MSK } },
+        ],
+      },
+      data: { notifyLastEvalDate: TODAY_MSK },
+    });
+  });
+
+  it('день уже забран (0 строк) → false', async () => {
+    const { svc } = makeSvc(0);
+    await expect(svc.claimPlanDay(makeUser(), NOW)).resolves.toBe(false);
+  });
+
+  it('локальный день считается в зоне пользователя: 00:05 UTC в Лос-Анджелесе — ещё вчера', async () => {
+    const { svc, prisma } = makeSvc(1);
+    await svc.claimPlanDay(
+      makeUser({ notifyTimezone: 'America/Los_Angeles' }),
+      NOW,
+    );
+    expect(prisma.user.updateMany.mock.calls[0][0].data).toEqual({
+      notifyLastEvalDate: '2026-07-01',
+    });
+  });
+});

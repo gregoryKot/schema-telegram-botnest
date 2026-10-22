@@ -3,6 +3,10 @@ import { PrismaService } from '../prisma/prisma.service';
 import { NotificationService } from './notification.service';
 import { BotAnalyticsService } from '../bot/bot.analytics.service';
 import { addDaysLocal, localDateString } from './notification.time';
+import {
+  CADENCE_USER_SELECT,
+  claimPlanDay,
+} from './notification.cadence-store';
 
 /** Уровни частоты: 0=каждый день, 1=через день, 2=пара раз в неделю, 3=раз в неделю */
 export const CADENCE_INTERVALS = [1, 2, 3, 7] as const;
@@ -51,6 +55,11 @@ export class NotificationCadenceService {
     private readonly notifications: NotificationService,
     private readonly analytics: BotAnalyticsService,
   ) {}
+
+  /** Захват локального дня под полуночный обход — notification.cadence-store.ts. */
+  claimPlanDay(user: CadenceUser, now = new Date()): Promise<boolean> {
+    return claimPlanDay(this.prisma, user, now);
+  }
 
   /** 'paused' — пропустить юзера; 'expired' — пауза кончилась, отправить welcome_back и больше ничего */
   async expirePauseIfDue(
@@ -218,17 +227,7 @@ export class NotificationCadenceService {
   private loadUser(userId: bigint): Promise<CadenceUser | null> {
     return this.prisma.user.findUnique({
       where: { id: userId },
-      select: {
-        id: true,
-        notifyTimezone: true,
-        notifyFrequency: true,
-        notifyAdaptiveLevel: true,
-        notifyIgnoredCount: true,
-        notifyNextRemindDate: true,
-        notifySkipAckDate: true,
-        notifyLastEvalDate: true,
-        notifyPausedUntil: true,
-      },
+      select: CADENCE_USER_SELECT,
     });
   }
 }
