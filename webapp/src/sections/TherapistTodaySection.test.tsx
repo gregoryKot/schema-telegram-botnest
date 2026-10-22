@@ -76,7 +76,8 @@ describe('TherapistTodaySection — реальные данные клиенто
     await waitFor(() => expect(screen.getAllByText('Иван').length).toBeGreaterThanOrEqual(1));
     expect(screen.getByText('Мария')).toBeTruthy();
     expect(screen.getByText('7.2')).toBeTruthy();
-    expect(screen.getByText('активен сегодня')).toBeTruthy();
+    expect(screen.getByText('активность сегодня')).toBeTruthy();
+    expect(screen.getByText('активность вчера')).toBeTruthy();
   });
 
   it('клиентов без clientAlias/name показывает как "#telegramId" — не пустую строку', async () => {

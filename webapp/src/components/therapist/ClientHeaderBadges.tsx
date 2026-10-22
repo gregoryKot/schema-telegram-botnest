@@ -12,7 +12,7 @@ export function ClientHeaderBadges({ client }: { client: TherapyClientSummary })
       {isVirtualClient(client)
         ? <span className="ds-badge">оффлайн</span>
         : <span className="ds-badge ds-badge--ok">в боте</span>}
-      {client.lastActiveDate === todayCalendarDate() && <span className="ds-badge">был сегодня</span>}
+      {client.lastActiveDate === todayCalendarDate() && <span className="ds-badge">активность сегодня</span>}
       {since && <span className="ds-badge ds-badge--line">{since}</span>}
       {next && <span className="ds-badge ds-badge--accent">Сессия · {next}</span>}
     </div>

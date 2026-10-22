@@ -170,7 +170,9 @@ describe('CommandPalette — клиенты терапевта', () => {
           vi.setSystemTime(new Date(moment));
           fireEvent.change(search(), { target: { value: 'ив' } });
           fireEvent.change(search(), { target: { value: '' } });
-          expect(screen.getByText('Активен сегодня')).toBeTruthy();
+          // Шов текст ↔ подсветка: цвет раньше выбирался сравнением подписи
+          // с литералом, и смена текста молча гасила подсветку.
+          expect(screen.getByText('Активность сегодня').classList.contains('is-ok')).toBe(true);
         });
 
         unmount();
