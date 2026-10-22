@@ -21,9 +21,9 @@ const TOKEN = 'secret-token-123';
 const booking = (over: Record<string, unknown> = {}) => ({
   status: 'CONFIRMED', paid: true, type: 'SESSION_50' as const,
   startsAt: '2099-08-10T10:00:00Z', endsAt: '2099-08-10T10:50:00Z',
-  durationMin: 50, meetingUrl: 'https://meet.example/xyz', ...over,
+  durationMin: 50, ...over,
 });
-const held = () => booking({ status: 'HELD', paid: false, meetingUrl: null });
+const held = () => booking({ status: 'HELD', paid: false });
 
 beforeEach(() => {
   vi.clearAllMocks();

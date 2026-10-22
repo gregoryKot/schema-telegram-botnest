@@ -104,3 +104,33 @@ describe('completeCheckout — платная не в рублях (manual)', ()
     }
   });
 });
+
+// Аудит 2026-10 (утечка ссылки на встречу): ручка записи анонимная, а комната
+// клиента ищется по контакту — ответ не несёт ссылку ни на одном пути, даже
+// когда подтверждение уже проставило её в брони. Форма ответа одна на всех
+// путях (инвариант #662: тело не различает пути).
+describe('completeCheckout — ответ без ссылки на встречу', () => {
+  const KEYS = ['cancelToken', 'heldUntil', 'id', 'paymentUrl', 'status'];
+
+  it('сразу подтверждённая бронь со ссылкой в строке — в ответе ссылки нет', async () => {
+    const { deps } = makeDeps();
+    const notify = { onConfirmed: jest.fn(async () => undefined) };
+    const withLink = {
+      ...(row(70, 'EUR') as object),
+      meetingUrl: 'https://zoom.example/j/1?pwd=secret',
+    } as never;
+    const res = await completeCheckout(
+      { ...(deps as object), notify } as never,
+      withLink,
+      { ...OPTS, manual: true, heldUntil: null },
+    );
+    expect(Object.keys(res).sort()).toEqual(KEYS);
+    expect(JSON.stringify(res)).not.toContain('pwd=secret');
+  });
+
+  it('платная в рублях (HELD) — те же ключи', async () => {
+    const { deps } = makeDeps();
+    const res = await completeCheckout(deps, row(4200), OPTS);
+    expect(Object.keys(res).sort()).toEqual(KEYS);
+  });
+});

@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { api } from '../../api';
 import type { AdminBooking } from '../../api';
 import { bookingContactLine } from './bookingContactLine';
+import { BookingMeetingLink } from './BookingMeetingLink';
 import { card, btn, btnGhost } from './shared';
 import { useSaveFeedback } from './useSaveFeedback';
 
@@ -19,8 +20,7 @@ const FILTERS: { id: Filter; label: string }[] = [
 export function BookingsManager({ adminKey }: { adminKey: string }) {
   const [filter, setFilter] = useState<Filter>('upcoming');
   const [bookings, setBookings] = useState<AdminBooking[]>([]);
-  // Сбой ≠ пусто: «Записей нет.» на отказе запроса читается как «записей
-  // правда нет», хотя запрос мог отвалиться из-за неверного ключа или сети.
+  // Сбой ≠ пусто: «Записей нет.» на отказе — ложь: мог быть неверный ключ или сеть.
   const [bookingsFailed, setBookingsFailed] = useState(false);
   const { guard, feedback } = useSaveFeedback({ saved: 'Готово ✓' });
 
@@ -60,9 +60,8 @@ export function BookingsManager({ adminKey }: { adminKey: string }) {
             {b.status === 'HELD' && <button style={{ ...btn, padding: '5px 12px', fontSize: 13 }} onClick={() => act('Не удалось подтвердить запись', () => api.adminConfirm(adminKey, b.id))}>Подтвердить</button>}
             {b.status !== 'CANCELLED' && b.status !== 'COMPLETED' && <button style={{ ...btnGhost, padding: '5px 12px', fontSize: 13, color: 'var(--accent-red)' }} onClick={() => act('Не удалось отменить запись', () => api.adminCancel(adminKey, b.id))}>Отменить</button>}
           </div>
-          <div style={{ fontSize: 14, color: 'var(--text-sub)', marginTop: 6 }}>
-            {bookingContactLine(b)}
-          </div>
+          <div style={{ fontSize: 14, color: 'var(--text-sub)', marginTop: 6 }}>{bookingContactLine(b)}</div>
+          <BookingMeetingLink meetingUrl={b.meetingUrl} />
         </div>
       ))}
     </section>

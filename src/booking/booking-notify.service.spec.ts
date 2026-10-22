@@ -12,6 +12,7 @@ import { BookingStatus, SessionType } from '@prisma/client';
 import { BookingNotifyService } from './booking-notify.service';
 import { LEASE_WINDOW } from '../infra/cron-leader.service';
 import { RETURNING_NOT_FOUND_NOTE } from './booking-admin-note';
+import { LINK_TO_FORWARD, ROOM_REPLACED } from './booking-confirmed-card';
 
 function makeService(
   opts: {
@@ -55,7 +56,9 @@ function makeService(
     removeEvent: jest.fn(() => Promise.resolve(undefined)),
   };
   const meeting = {
-    createMeeting: jest.fn(() => Promise.resolve('https://meet.jit.si/x')),
+    createMeeting: jest.fn(() =>
+      Promise.resolve({ url: 'https://meet.jit.si/x', replaced: false }),
+    ),
   };
   const email = {
     sendAdminNotification: jest.fn(() => Promise.resolve(undefined)),
@@ -167,6 +170,44 @@ describe('BookingNotifyService.onConfirmed — линк на встречу и C
     );
   });
 
+  // Ревью починки утечки ссылки (аудит 2026-10): клиент ссылку на экране
+  // больше не видит, владелец — единственный канал её доставки. Карточка в
+  // DM и в письме обязана это сказать, а смену комнаты — назвать.
+  it('карточка подтверждения: «переслать ссылку на контакт из брони» — в DM и в письме', async () => {
+    const { service, telegram, email } = makeService();
+    await service.onConfirmed(booking());
+    const dm = telegram.notifyAdmin.mock.calls[0][0] as string;
+    const mail = email.sendAdminNotification.mock.calls[0] as unknown[];
+    for (const text of [dm, String(mail[1])]) {
+      expect(text).toContain('https://meet.jit.si/x');
+      expect(text).toContain(LINK_TO_FORWARD);
+      expect(text).not.toContain(ROOM_REPLACED);
+    }
+  });
+
+  it('комната клиента заменена при подтверждении — DM и письмо говорят переслать новую заранее', async () => {
+    const { service, telegram, email, meeting } = makeService();
+    meeting.createMeeting.mockResolvedValueOnce({
+      url: 'https://meet.jit.si/schemehappens-0123456789abcdef',
+      replaced: true,
+    });
+    await service.onConfirmed(booking());
+    const dm = telegram.notifyAdmin.mock.calls[0][0] as string;
+    const mail = email.sendAdminNotification.mock.calls[0] as unknown[];
+    for (const text of [dm, String(mail[1])]) {
+      expect(text).toContain('schemehappens-0123456789abcdef');
+      expect(text).toContain(ROOM_REPLACED);
+    }
+  });
+
+  it('ссылка уже была в брони (повтор прохода) — о замене комнаты не утверждается', async () => {
+    const { service, telegram } = makeService();
+    await service.onConfirmed(booking({ meetingUrl: 'https://zoom.us/j/1' }));
+    const dm = telegram.notifyAdmin.mock.calls[0][0] as string;
+    expect(dm).toContain(LINK_TO_FORWARD);
+    expect(dm).not.toContain(ROOM_REPLACED);
+  });
+
   it('source (атрибуция лида) попадает в уведомление с HTML-экранированием', async () => {
     const { service, telegram } = makeService();
     await service.onConfirmed(
@@ -264,7 +305,7 @@ describe('BookingNotifyService.onConfirmed — идемпотентность п
     const { service, prisma, meeting, calDav, telegram } = makeService();
     meeting.createMeeting.mockImplementation(async () => {
       order.push('meeting');
-      return 'https://meet.jit.si/x';
+      return { url: 'https://meet.jit.si/x', replaced: false };
     });
     calDav.pushEvent.mockImplementation(async () => {
       order.push('caldav');

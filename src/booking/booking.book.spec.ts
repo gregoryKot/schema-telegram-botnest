@@ -709,7 +709,8 @@ describe('BookingService.getPublicByToken', () => {
     const res = await service.getPublicByToken('tok');
     expect(res.startsAt).toBe('2026-07-13T10:00:00.000Z');
     expect(res.endsAt).toBe('2026-07-13T10:50:00.000Z');
-    expect(res.meetingUrl).toBe('https://meet.test/x');
+    // ссылки на встречу в анонимной проекции нет (аудит 2026-10)
+    expect(res).not.toHaveProperty('meetingUrl');
   });
 
   it('не отдаёт clientName/clientContact (публичный вид без PII)', async () => {
