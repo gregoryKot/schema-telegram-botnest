@@ -46,7 +46,7 @@ scripts/check-agent-docs.mjs (CI, джоба checks). Новое правило:
 - **№9** eslint: число ошибок не растёт; `no-floating-promises` — error; новых `any` нет; каст Prisma-делегата на `any` запрещён.
 - **№10** Новый файл ~150 строк, потолок 300. Файл из `scripts/file-size-baseline.json` может только уменьшаться (`check-file-size-ratchet.mjs`; снизил — `--update`). Разросшийся гейт дробится на движок + `*-rules.mjs`.
 - **№11** Один маршрут — один контроллер (`check-route-collisions`); дубли ≥70 токенов не растут (`check-jscpd-ratchet`); у файла есть не-тестовый потребитель (`check-dead-files`); заменил компонент — удали старый в том же PR.
-- **№13** Конфликт сводится локально: `git fetch origin main && git merge origin/main` (не кнопкой GitHub). Бейслайны и `schema-miniapp/dist` сводят merge-драйверы — руками не разрешать. Новый `*-baseline.json` = строка в `.gitattributes`. `package-lock.json` — любая сторона + `npm install`.
+- **№13** Конфликт сводится локально: `git fetch origin main && git merge origin/main` (не кнопкой GitHub). Бейслайны и `schema-miniapp/dist` сводят merge-драйверы — руками не разрешать. Новый `*-baseline.json` = строка в `.gitattributes`. `package-lock.json` — любая сторона + `npm install`. `main` под ruleset (`strict`, 9 джоб `ci.yml` обязательны): ветка отстала — обнови её с `main`, дождись CI заново, потом мерж или `enable_pr_auto_merge`.
 - **№15** Красный гейт чинят по существу: сначала пойми, почему он прав. Исключение — с причиной, тестом-образцом и контрольным образцом; рост бейслайна объясняется в теле коммита; код остаётся там, куда гейт смотрит (`game/`, `public/` — слепые зоны).
 - `PrismaModule` глобальный: `PrismaService` берут инъекцией, в `providers` других модулей его нет.
 

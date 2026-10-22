@@ -18,8 +18,9 @@
 # CI на коммите main сверяется шагом «Актуальность коммита».
 # Гейт: src/test-support/gates/deploy-needs-ci.spec.ts (push-триггер на
 # воркфлоу с деплоем запрещён).
-# Остаток вне репозитория: ruleset на main (PR + required checks + strict) и
-# автодеплой Amvera — решение владельца, docs/README.md.
+# Ruleset на main (PR + все джобы ci.yml обязательны + strict) включён
+# 2026-10-22, копия — .github/rulesets/main.json. Остаток вне репозитория —
+# автодеплой Amvera, решение владельца, docs/open/audit-2026-10.md.
 name: Деплой на VPS
 
 on:

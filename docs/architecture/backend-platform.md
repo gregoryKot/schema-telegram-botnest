@@ -166,4 +166,4 @@
 - Связи: спеки запускают `scripts/check-*.mjs` и читают `scripts/*-baseline.json`, `.github/workflows/*.yml`, `.github/dependabot.yml`; те же скрипты CI вызывает шагами в `.github/workflows/ci.yml`; сами спеки идут в обычном `jest` (rootDir `src`).
 - Подводные камни:
   - Гейт-скрипт держит scan/report за `if (isMain)`, иначе `src/test-support/gates/pattern-loader.ts` получит побочные эффекты при импорте; `runGate` копирует и локальные зависимости скрипта (`withLocalDeps`).
-  - Не все спеки песочничные: `src/test-support/gates/source-walk.spec.ts` и `src/test-support/gates/ci-concurrency.spec.ts` сами сканируют репозиторий и являются гейтом.
+  - Не все спеки песочничные: `src/test-support/gates/source-walk.spec.ts`, `src/test-support/gates/ci-concurrency.spec.ts` и `src/test-support/gates/main-ruleset.spec.ts` сами сканируют репозиторий и являются гейтом.
