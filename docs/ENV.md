@@ -108,7 +108,7 @@
 | `ALLOWED_ORIGINS` | опциональна | any | CORS-список источников через запятую (нужен мини-аппу — другой origin) — без него используется дефолтный список из main.ts. |
 | `APP_URL` | опциональна | nonEmpty | Базовый адрес для ссылок в письмах/боте (donate, subscribe) — дефолт schemehappens.ru; допускается голый домен без схемы (normalizeBaseUrl). |
 | `BACKUP_ENCRYPTION_KEY` | опциональна | secret32 | Ключ шифрования бэкапов БД (AES-256, ≥ 32 символов) — ОТДЕЛЬНЫЙ от ENCRYPTION_KEY: утечка одного не открывает другое. Хранить ещё и вне Amvera: без него бэкап не расшифровать. |
-| `BACKUP_RETENTION_DAYS` | опциональна | retentionDays | Сколько дней хранить бэкапы в бакете (по умолчанию 90, не меньше 7) — старше удаляются после каждого успешного бэкапа. |
+| `BACKUP_RETENTION_DAYS` | опциональна | retentionDays | Сколько дней хранить бэкапы в бакете (от 7 до 30, по умолчанию 30: столько обещает политика конфиденциальности) — старше удаляются после каждого успешного бэкапа. |
 | `BACKUP_S3_ACCESS_KEY_ID` | опциональна | accessKey | Access Key ID API-токена Cloudflare R2 (Object Read & Write только на бакет бэкапов) — пара к BACKUP_S3_SECRET_ACCESS_KEY. |
 | `BACKUP_S3_BUCKET` | опциональна | bucketName | Имя приватного бакета R2 для зашифрованных бэкапов БД — без него бэкапы не запускаются (deploy/backup-scheduler.cjs). |
 | `BACKUP_S3_ENDPOINT` | опциональна | s3Endpoint | Адрес S3-API хранилища бэкапов без бакета: https://<id аккаунта>.r2.cloudflarestorage.com. |

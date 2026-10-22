@@ -140,13 +140,14 @@ describe('backup-upload.sh → S3 (поддельный сервер, подпи
     const old = (n: number, ext = 'sql.gz.enc') =>
       `schemehappens-${daysAgo(n)}.${ext}`;
 
-    it('удаляет файлы старше BACKUP_RETENTION_DAYS (в т.ч. .sha256), свежие и чужие не трогает; читает все страницы', async () => {
+    it('удаляет файлы возрастом от BACKUP_RETENTION_DAYS (в т.ч. .sha256), свежие и чужие не трогает; читает все страницы', async () => {
       s3.pageSize = 2;
       for (const k of [
         old(100),
         old(100, 'sql.gz.enc.sha256'),
         old(10),
-        old(60),
+        old(29),
+        old(30),
       ])
         s3.add(k, 'x');
       s3.add('schemehappens-2001-01-01.txt', 'alien');
@@ -156,24 +157,39 @@ describe('backup-upload.sh → S3 (поддельный сервер, подпи
       const deleted = s3.requests
         .filter((r) => r.method === 'DELETE')
         .map((r) => r.path.replace('/my-bucket/', ''));
+      // Граница: 30-дневный файл уже удаляется — копия живёт не дольше срока,
+      // который политика обещает для удалённых из базы данных.
       expect(deleted.sort()).toEqual(
-        [old(100), old(100, 'sql.gz.enc.sha256'), old(60)].sort(),
+        [old(100), old(100, 'sql.gz.enc.sha256'), old(30)].sort(),
       );
       expect(s3.objects.has(old(10))).toBe(true);
+      expect(s3.objects.has(old(29))).toBe(true);
       expect(s3.objects.has('schemehappens-2001-01-01.txt')).toBe(true);
-      expect(res.stdout).toContain('удалено файлов старше 30 дн.');
+      expect(res.stdout).toContain('удалено файлов возрастом от 30 дн.');
       // Листинг шёл страницами с курсором.
       expect(
         s3.requests.filter((r) => r.query.get('continuation-token')).length,
       ).toBeGreaterThan(0);
     });
 
-    it('по умолчанию хранит 90 дней: файл 60-дневной давности остаётся', async () => {
-      s3.add(old(60), 'keep');
-      s3.add(old(120), 'drop');
+    it('по умолчанию хранит 30 дней: 20-дневный файл остаётся, 40-дневный удаляется', async () => {
+      s3.add(old(20), 'keep');
+      s3.add(old(40), 'drop');
       await run();
-      expect(s3.objects.has(old(60))).toBe(true);
-      expect(s3.objects.has(old(120))).toBe(false);
+      expect(s3.objects.has(old(20))).toBe(true);
+      expect(s3.objects.has(old(40))).toBe(false);
+    });
+
+    it('срок больше 30 — бэкап идёт, хранится 30 дней, в stderr WARN', async () => {
+      // Потолок — обещание политики конфиденциальности (глава 6); отказ от
+      // бэкапа из-за срока был бы хуже, чем лишние копии.
+      s3.add(old(20), 'keep');
+      s3.add(old(60), 'drop');
+      const res = await run({ BACKUP_RETENTION_DAYS: '90' });
+      expect(res.code).toBe(0);
+      expect(s3.objects.has(old(20))).toBe(true);
+      expect(s3.objects.has(old(60))).toBe(false);
+      expect(res.stderr).toMatch(/WARN: BACKUP_RETENTION_DAYS=90 больше 30/);
     });
 
     it('сбой списка файлов — бэкап всё равно успешен (код 0), в stderr WARN', async () => {

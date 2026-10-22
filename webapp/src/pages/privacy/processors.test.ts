@@ -12,9 +12,9 @@ describe('processors', () => {
     }
   });
 
-  it('иностранные интеграции перечислены: Telegram, Google, Resend, iCloud, Zoom', () => {
+  it('иностранные интеграции перечислены: Telegram, Google, Resend, iCloud, Zoom, Cloudflare R2', () => {
     const names = FOREIGN_PROCESSORS.map((p) => p.name).join('|');
-    for (const n of ['Telegram', 'Google', 'Resend', 'iCloud', 'Zoom']) expect(names).toContain(n);
+    for (const n of ['Telegram', 'Google', 'Resend', 'iCloud', 'Zoom', 'Cloudflare R2']) expect(names).toContain(n);
   });
 
   it('Метрика не в иностранных — российский сервис', () => {
