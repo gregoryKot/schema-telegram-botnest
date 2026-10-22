@@ -1,6 +1,7 @@
 // Форматтеры продуктовых метрик для /stats (правило №8): чистые функции, покрыты
 // тестом, в т.ч. пустая БД (без NaN/мусора). Язык простой, без терминов.
 import type { CrisisMetrics } from './crisis-metrics';
+import { ysqFunnelLine } from './ysq-funnel-metrics';
 
 export interface ProductMetrics {
   // Новички за месяц: сколько дошло до конца обучающего онбординга.
@@ -144,10 +145,7 @@ export function formatProductMetrics(m: ProductMetrics): string {
       `Колесо детства: ${m.adoption.childhood}`,
     '',
     `📋 <b>Тест схем: доходят ли до конца</b>`,
-    `Начали: ${m.ysq.started} · дошли до конца: ${m.ysq.completed}${pct(
-      m.ysq.completed,
-      m.ysq.started,
-    )}`,
+    ysqFunnelLine(m.ysq),
     `Читали «как понимать результат»: ${m.ysq.helpOpens} раз (за месяц)`,
     '',
     `📱 <b>С каким экраном заходят</b>`,

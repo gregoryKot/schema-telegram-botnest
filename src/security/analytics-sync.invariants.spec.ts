@@ -164,6 +164,11 @@ const BACKEND_ONLY: Record<string, string> = {
     'useJourneyDelete (shared/src/journey/journeyDelete.ts) зовёт ' +
     'api.trackEvent(ENTRY_DELETED_EVENT, { type }) сразу за успешным ' +
     'удалением записи; та же причина, что у share_card',
+  notify_queue_tick:
+    'серверное событие: пишет только крон очереди уведомлений бота ' +
+    '(src/telegram/telegram.schedule-queue.tally.ts), userId = null, meta — ' +
+    'только числа прогона. Клиентского действия за ним нет вовсе: это итог ' +
+    'отправки напоминаний, отчёт /stats считает строки с userId IS NULL',
   home_screen_offer:
     'шлётся не литералом trackEvent(...), а через колбэк track(...) общего ' +
     'хука shared/src/host/useHomeScreenOffer.ts (мини-апп и карточка ' +
@@ -224,6 +229,8 @@ describe('трипваер: имена событий фронта ⊆ allow-lis
     // useJourneyDelete через ENTRY_DELETED_EVENT, как share_card.
     // 29 — home_screen_offer (2026-10): последний литерал trackEvent ушёл
     // вместе с баннером кабинета, событие осталось на колбэке общего хука.
-    expect(Object.keys(BACKEND_ONLY).length).toBeLessThanOrEqual(29);
+    // 30 — notify_queue_tick (аудит 2026-10, ответ 429): итог прогона очереди
+    // уведомлений, пишет крон — у фронта такого действия нет по устройству.
+    expect(Object.keys(BACKEND_ONLY).length).toBeLessThanOrEqual(30);
   });
 });

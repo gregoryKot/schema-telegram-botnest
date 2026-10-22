@@ -83,7 +83,7 @@ export function CommandPalette({ onNavigate, onClose, userRole, therapistMode, o
   }, [userRole]);
 
   type RowType = 'client' | 'nav' | 'action';
-  interface Row { type: RowType; label: string; sub?: string; hint?: string; action: () => void }
+  interface Row { type: RowType; label: string; sub?: string; activeToday?: boolean; hint?: string; action: () => void }
 
   const rows = useMemo<Row[]>(() => {
     const today = todayCalendarDate();
@@ -92,7 +92,7 @@ export function CommandPalette({ onNavigate, onClose, userRole, therapistMode, o
     const clientRows: Row[] = clients.map(c => ({
       type: 'client' as const,
       label: c.clientAlias ?? c.name ?? `ID ${c.telegramId}`,
-      sub: c.lastActiveDate === today ? 'Активен сегодня' : 'Клиент',
+      ...(c.lastActiveDate === today ? { sub: 'Активность сегодня', activeToday: true } : { sub: 'Клиент' }),
       hint: 'Открыть карточку',
       action: () => onOpenClient?.(c.telegramId),
     }));
@@ -176,7 +176,7 @@ export function CommandPalette({ onNavigate, onClose, userRole, therapistMode, o
               <span className="sk-cmd-main">
                 <span className="sk-cmd-label">{row.label}</span>
                 {row.sub && (
-                  <span className={'sk-cmd-sub' + (row.sub === 'Активен сегодня' ? ' is-ok' : '')}>
+                  <span className={'sk-cmd-sub' + (row.activeToday ? ' is-ok' : '')}>
                     {row.sub}
                   </span>
                 )}

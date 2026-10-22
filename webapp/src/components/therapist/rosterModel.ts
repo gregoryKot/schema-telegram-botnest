@@ -72,7 +72,7 @@ export function clientCaption(c: TherapyClientSummary, today: string): string | 
   if (duration) return `в работе ${duration}`;
   if (isVirtualClient(c)) return null;
   const activity =
-    c.lastActiveDate === today ? 'активен сегодня' : c.lastActiveDate ? 'был недавно' : 'не активен';
+    c.lastActiveDate === today ? 'активность сегодня' : c.lastActiveDate ? 'активность недавно' : 'нет активности';
   return c.streak > 0 ? `${activity} · стрик ${c.streak} дн.` : activity;
 }
 

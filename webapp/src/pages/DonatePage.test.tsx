@@ -4,6 +4,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, act, cleanup } from '@testing-library/react';
 import { DonatePage } from './DonatePage';
+import { AddressFormContext, type AddressForm } from '../utils/addressForm';
 
 vi.mock('../api', async () => {
   const { ApiError } = await vi.importActual<typeof import('../apiClient')>('../apiClient');
@@ -149,5 +150,36 @@ describe('DonatePage — Вебвизор не пишет ввод', () => {
     const amount = screen.getByPlaceholderText('Своя сумма, ₽') as HTMLInputElement;
     expect(amount.type).toBe('number');
     expect(amount.className).toContain('ym-disable-keys');
+  });
+});
+
+// Аудит 2026-10 (AUDIT_2026-10_FINDINGS, «Страница доната говорит „поддержите“»):
+// лид-текст звал «поддержите» вне tr() — пользователь с формой «ты» видел «вы».
+// /donate публичная и стоит вне RequireAuth/AddressFormProvider (App.tsx), из
+// Telegram/MAX уходит во внешний браузер, на визитке — гость: формы у страницы
+// нет по построению. Поэтому текст безличный, а не вилка useTr (вне провайдера
+// она всегда отдала бы «ты» — баг поменял бы сторону). Третий кейс — шов:
+// страница без провайдера, ровно как в App.tsx.
+describe('DonatePage — форма обращения', () => {
+  const ADDRESS = /(?<![А-Яа-яЁё])поддержи(те)?(?![А-Яа-яЁё])/i;
+
+  function leadWith(form: AddressForm | null): string {
+    const page = <DonatePage />;
+    const { container } = render(
+      form ? <AddressFormContext.Provider value={{ form, setForm: () => {} }}>{page}</AddressFormContext.Provider> : page,
+    );
+    const text = container.querySelector('.ap-lead')?.textContent ?? '';
+    cleanup();
+    return text;
+  }
+
+  it.each(['ty', 'vy', null] as const)('форма %s: лид без обращения, призыв безличный', (form) => {
+    const lead = leadWith(form);
+    expect(lead).toContain('можно поддержать любой суммой');
+    expect(lead).not.toMatch(ADDRESS);
+  });
+
+  it('лид одинаков при «ты», «вы» и без провайдера', () => {
+    expect(new Set([leadWith('ty'), leadWith('vy'), leadWith(null)]).size).toBe(1);
   });
 });

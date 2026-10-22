@@ -444,6 +444,43 @@ jobs:
           path: reports/mutation/
           retention-days: 14
 
+  # Уязвимости в prod-зависимостях всех пакетов (аудит 2026-10). PR-CI видит
+  # новую advisory только при следующем PR, а она появляется без правки кода:
+  # ночной прогон приносит её владельцу через alarm. Список пакетов — из
+  # `git ls-files`, новый lock-файл попадает сюда сам. Тот же уровень, что у
+  # шагов ci.yml: dev-цепочку не гейтим. Шаг исполняется в
+  # src/test-support/gates/lockfile-audit.spec.ts с подменённым npm.
+  npm-audit:
+    if: github.event.schedule != '0 4 * * 0'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - name: npm audit по каждому package-lock.json
+        timeout-minutes: 8
+        run: |
+          locks=$(git ls-files '*package-lock.json')
+          if [ -z "$locks" ]; then
+            echo '::error::npm audit: lock-файлов не найдено, проверять нечего'
+            exit 1
+          fi
+          failed=''
+          for lock in $locks; do
+            dir=$(dirname "$lock")
+            echo "::group::npm audit $dir"
+            if ! npm audit --omit=dev --audit-level=high --prefix "$dir"; then
+              failed="$failed $dir"
+            fi
+            echo '::endgroup::'
+          done
+          if [ -n "$failed" ]; then
+            echo "::error::npm audit: high/critical в prod-зависимостях:$failed"
+            exit 1
+          fi
+
   # Сигнализация (щит): красный nightly раньше был виден только тому, кто сам
   # зашёл во вкладку Actions — 6 из 7 ночных ранов с 2026-09-10 были красными,
   # и никто не заметил. Эта джоба — единственный наблюдатель после самих
@@ -458,6 +495,7 @@ jobs:
       - browser-smoke
       - backup-restore
       - mutation-bot
+      - npm-audit
     if: always()
     runs-on: ubuntu-24.04
     timeout-minutes: 10

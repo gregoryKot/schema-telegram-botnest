@@ -72,15 +72,15 @@ SIGTERM/SIGINT пробрасываются приложению.
 
 | джоба | что гоняет (≤15 слов) |
 |---|---|
-| backend | tsc, coverage-храповик, jest под TZ Sydney, e2e на фейках, npm audit, 6 храповиков |
+| backend | tsc, coverage-храповик, jest под TZ Sydney, e2e на фейках, npm audit корня и game, 6 храповиков |
 | checks | fs-only гейты без `npm ci`, shellcheck `deploy/vps`, `docker compose config` |
 | docker | `docker build` прод-образа (`push: false`, кэш gha) |
 | migrations | Postgres 16: `migrate deploy` дважды, `migrate diff` против schema.prisma, real-DB e2e |
 | perf | сид синтетики, EXPLAIN ANALYZE горячих путей, `check-query-plans.mjs` |
-| webapp | build, bundle-size, vitest+coverage, vitest под TZ Sydney, UI-гейты |
-| shared | coverage-храповик и vitest под TZ Sydney для `shared/` |
+| webapp | build, bundle-size, vitest+coverage, vitest под TZ Sydney, UI-гейты, npm audit |
+| shared | coverage-храповик и vitest под TZ Sydney для `shared/`, npm audit |
 | eslint | `check-eslint-ratchet.mjs` (ставит зависимости всех пакетов, prisma generate) |
-| miniapp | typecheck, build, coverage-храповик, vitest под TZ Sydney, «dist актуален» |
+| miniapp | typecheck, build, coverage-храповик, vitest под TZ Sydney, «dist актуален», npm audit |
 
 **nightly.yml** (cron `0 3 * * *` ежедневно и `0 4 * * 0` по воскресеньям, плюс dispatch). Красный nightly не блокирует PR.
 - `backend-flaky` — jest три раза подряд через `jest-exit-guard.mjs`, затем `--detectOpenHandles`.
@@ -90,6 +90,7 @@ SIGTERM/SIGINT пробрасываются приложению.
 - `browser-smoke` — build webapp, `playwright test` (Chromium + WebKit).
 - `backup-restore` — репетиция: зашифрованный бэкап, restore во вторую БД, `migrate diff`, пробы с порчей файла и неверным ключом.
 - `mutation-bot` — Stryker по `src/bot`, только воскресенье или dispatch.
+- `npm-audit` — `npm audit --omit=dev --audit-level=high` по каждому lock-файлу из `git ls-files`, под alarm.
 - `alarm` — issue `ci-alarm` и DM в Telegram, если упала любая джоба.
 
 **prod-smoke.yml** (cron `*/15 * * * *`, фактический шаг GitHub 3–7 ч, плюс dispatch):
