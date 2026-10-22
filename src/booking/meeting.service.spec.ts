@@ -5,7 +5,7 @@
 import { Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { MeetingService, MeetingTarget } from './meeting.service';
-import { clientKey } from './meeting-key';
+import { clientKey, legacyClientKey } from './client-key';
 import { isLegacyJitsiRoom } from './meeting-jitsi';
 import { decrypt } from '../utils/crypto';
 
@@ -19,6 +19,16 @@ function makeService(env: Record<string, string | undefined> = {}): {
     clientMeeting: {
       findUnique: jest.fn(({ where }: any) =>
         Promise.resolve(store.get(where.clientKey) ?? null),
+      ),
+      findMany: jest.fn(({ where }: any) =>
+        Promise.resolve(
+          where.clientKey.in.map((k: string) => store.get(k)).filter(Boolean),
+        ),
+      ),
+      count: jest.fn(({ where }: any) =>
+        Promise.resolve(
+          where.clientKey.in.filter((k: string) => store.has(k)).length,
+        ),
       ),
       create: jest.fn(({ data }: any) => {
         store.set(data.clientKey, { ...data });
@@ -106,7 +116,7 @@ describe('MeetingService.createMeeting — без Zoom (dev), Jitsi по умо�
     expect(prisma.clientMeeting.create).toHaveBeenCalledTimes(1);
   });
 
-  it('нормализация контакта: "@Maria", " maria ", "+7 999" дают ОДИН и тот же clientKey (SHA-256)', async () => {
+  it('нормализация контакта: "@Maria" и " maria " дают ОДИН и тот же clientKey', async () => {
     const { service, prisma } = makeService();
     const { url: url1 } = await service.createMeeting({
       ...TARGET,
@@ -279,7 +289,7 @@ describe('MeetingService.createMeeting — Zoom настроен, но внеш�
 // вычислял адрес его комнаты без запроса. Теперь имя случайное, а уже выданные
 // комнаты по старой формуле заменяются при следующей брони.
 describe('MeetingService.createMeeting — комната Jitsi не выводится из контакта', () => {
-  const LEGACY = `https://meet.jit.si/schemehappens-${clientKey('@maria').slice(0, 12)}`;
+  const LEGACY = `https://meet.jit.si/schemehappens-${legacyClientKey('@maria').slice(0, 12)}`;
 
   it('новая комната не совпадает с формулой от контакта и различается у двух клиентов', async () => {
     const { service } = makeService();
@@ -290,7 +300,7 @@ describe('MeetingService.createMeeting — комната Jitsi не вывод�
     });
     expect(a).toMatch(/^https:\/\/meet\.jit\.si\/schemehappens-[0-9a-f]{16}$/);
     expect(a).not.toBe(LEGACY);
-    expect(isLegacyJitsiRoom(a, clientKey('@maria'))).toBe(false);
+    expect(isLegacyJitsiRoom(a)).toBe(false);
     expect(b).not.toBe(a);
   });
 
@@ -375,10 +385,28 @@ describe('MeetingService.createMeeting — комната Jitsi не вывод�
     warn.mockRestore();
   });
 
-  it('isLegacyJitsiRoom узнаёт ровно старую формулу, а не префикс', () => {
+  // Ключ строки теперь HMAC (client-key.ts): старую комнату узнаём по форме
+  // адреса, иначе после смены ключа вычисляемые комнаты не заменялись бы никогда.
+  it('isLegacyJitsiRoom узнаёт старую формулу по форме адреса, не по ключу строки', () => {
+    expect(isLegacyJitsiRoom(LEGACY)).toBe(true);
+    expect(isLegacyJitsiRoom(`${LEGACY}0`)).toBe(false); // не префикс
+    // случайная комната — 16 hex, не 12
+    expect(
+      isLegacyJitsiRoom('https://meet.jit.si/schemehappens-0123456789abcdef'),
+    ).toBe(false);
+    expect(
+      isLegacyJitsiRoom('https://evil.example/schemehappens-0123456789ab'),
+    ).toBe(false);
+  });
+
+  it('старая комната заменяется и у строки под новым ключом (после перевода ключей)', async () => {
+    const { service, store } = makeService();
     const key = clientKey('@maria');
-    expect(isLegacyJitsiRoom(LEGACY, key)).toBe(true);
-    expect(isLegacyJitsiRoom(`${LEGACY}0`, key)).toBe(false);
-    expect(isLegacyJitsiRoom(LEGACY, clientKey('@other'))).toBe(false);
+    expect(key).not.toBe(legacyClientKey('@maria'));
+    store.set(key, { clientKey: key, meetingUrl: LEGACY, zoomMeetingId: null });
+    const { url, replaced } = await service.createMeeting(TARGET);
+    expect(replaced).toBe(true);
+    expect(url).not.toBe(LEGACY);
+    expect(decrypt(store.get(key).meetingUrl)).toBe(url);
   });
 });

@@ -106,6 +106,15 @@ Ubuntu 26) у трёх PR подряд падали `backend` → `check-coverag
   ничего не уронит. Пол вносится по результату прогона
   (`scripts/mutation-golden-payments-baseline.json`); не сделано здесь, потому
   что правка бейслайна чужих файлов — отдельное решение (правило №20).
+- **`src/utils/crypto-keys.ts` в `mutate` без пола.** Разбор ключей вынесен из
+  `crypto.ts` при переводе `ClientMeeting.clientKey` на HMAC и стоит в `mutate`
+  обоих конфигов (`stryker.config.json`, `stryker.golden-auth.config.json`), а
+  в `scripts/mutation-baseline.json` и `scripts/mutation-golden-auth-baseline.json`
+  пола нет: ночной храповик печатает «без пола». Замер ревьюера на ветке —
+  85.19% (выжили `.filter(Boolean)`, `k !== null`, `?? ''` для
+  `ENCRYPTION_KEY_OLD`, переехавшие из `crypto.ts`); пол вносится `--update`
+  по первому ночному прогону, а не по ручному замеру — конфиги гоняют разные
+  наборы спеков.
 - **Волна А растёт сама: каждый спек, пишущий шифрованное поле, удорожает
   прогон.** Мутанты горячих путей `crypto.ts`/`crypto-record.ts` покрывает до 67
   спек-файлов, и jest-раннер Stryker грузит каждый целиком: загрузок спеков за

@@ -169,5 +169,9 @@
   "src/therapy/therapist-request.notify.ts": {
     "status": "exempt",
     "reason": "Ошибка Telegram Bot API sendMessage (description) в спеке — синтетическое тело по документации Bot API, не захваченный с прода ответ площадки."
+  },
+  "src/utils/crypto-keys.ts": {
+    "status": "exempt",
+    "reason": "Не разбирает ничего присланного извне: HMAC собственного значения (нормальной формы контакта клиента для ключа ClientMeeting) под серверным ENCRYPTION_KEY. Гейт видит createHmac( — сигнал проверки чужой подписи, но площадки и её ответа здесь нет, записывать нечего."
   }
 }

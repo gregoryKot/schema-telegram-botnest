@@ -20,7 +20,7 @@ const ADMIN_KEY = process.env.ADMIN_BOOKING_KEY;
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { PrismaService } from '../src/prisma/prisma.service';
-import { clientKey } from '../src/booking/meeting-key';
+import { clientKey, legacyClientKey } from '../src/booking/client-key';
 import { decrypt, encrypt } from '../src/utils/crypto';
 import { TELEGRAF_BOT } from '../src/telegram/telegram.constants';
 import { buildRealDbTestApp } from './e2e-support/build-real-db-test-app';
@@ -40,7 +40,7 @@ const SLOT_NEWCOMER = new Date('2095-03-07T14:00:00.000Z');
 const SLOT_LEGACY = new Date('2095-03-07T11:00:00.000Z');
 const SLOTS = [SLOT_INTRO, SLOT_SESSION, SLOT_NEWCOMER, SLOT_LEGACY];
 // Старая формула: адрес комнаты считался из контакта без единого запроса.
-const LEGACY_ROOM = `https://meet.jit.si/schemehappens-${clientKey(LEGACY_CLIENT).slice(0, 12)}`;
+const LEGACY_ROOM = `https://meet.jit.si/schemehappens-${legacyClientKey(LEGACY_CLIENT).slice(0, 12)}`;
 
 const body = (
   contact: string,
@@ -199,7 +199,7 @@ describe('e2e: анонимная запись не отдаёт ссылку н
     expect(res.text).not.toContain(url);
     // старая формула: schemehappens-<sha256(контакт)[0..12]> — знающий контакт
     // вычислял комнату без запроса
-    expect(url).not.toContain(clientKey(NEWCOMER).slice(0, 12));
+    expect(url).not.toContain(legacyClientKey(NEWCOMER).slice(0, 12));
   });
 
   it('форма ответа INTRO одинакова для клиента и не-клиента (оракул #662)', () => {

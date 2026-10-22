@@ -1,31 +1,11 @@
 import { createCipheriv, createDecipheriv, randomBytes } from 'crypto';
 import { Logger } from '@nestjs/common';
+import { HEX_KEY_RE, KEYS } from './crypto-keys';
 
-// Multi-key support for online key rotation:
-//   ENCRYPTION_KEY     — current key, used for ALL new encryption
-//   ENCRYPTION_KEY_OLD — comma-separated old keys, tried on decryption only
+// Multi-key support for online key rotation (разбор env — crypto-keys.ts).
 // During rotation: add new key as ENCRYPTION_KEY, move previous to OLD, run
 // `npm run rotate-encryption`. After it finishes, remove ENCRYPTION_KEY_OLD.
-const HEX_KEY_RE = /^[0-9a-f]{64}$/i;
-
-function loadKeys(): { current: Buffer | null; all: Buffer[] } {
-  // Аудит 2026-10 (D3): одной проверки длины мало — `Buffer.from('zz…', 'hex')`
-  // обрывает разбор на первом не-hex символе и отдаёт КОРОТКИЙ буфер, а длина
-  // строки при этом ровно 64. Ключ «проходил» проверку и падал только на первой
-  // записи. Поэтому формат проверяется целиком: ровно 64 hex-символа.
-  const parse = (hex: string): Buffer | null =>
-    HEX_KEY_RE.test(hex) ? Buffer.from(hex, 'hex') : null;
-  const cur = parse((process.env.ENCRYPTION_KEY ?? '').trim());
-  const olds = (process.env.ENCRYPTION_KEY_OLD ?? '')
-    .split(',')
-    .map((s) => s.trim())
-    .filter(Boolean)
-    .map(parse)
-    .filter((k): k is Buffer => k !== null);
-  const all = [cur, ...olds].filter((k): k is Buffer => k !== null);
-  return { current: cur, all };
-}
-const { current: CURRENT_KEY, all: ALL_KEYS } = loadKeys();
+const { current: CURRENT_KEY, all: ALL_KEYS } = KEYS;
 
 // Старый ключ, молча отброшенный из-за опечатки, — это нечитаемые данные после
 // ротации. В проде такой ENCRYPTION_KEY_OLD роняет бут, как и битый текущий.
