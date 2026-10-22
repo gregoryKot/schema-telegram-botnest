@@ -5,11 +5,11 @@ import { MeetingService } from './meeting.service';
 import { encrypt } from '../utils/crypto';
 import { sessionLabel } from './caldav-event.util';
 import { formatTime, subjectFromTitle } from './booking-notify.format';
+import { CONFIRMED_SUBJECT, confirmedCardText } from './booking-confirmed-card';
 import type { PlainBooking } from './booking-notify.service';
 
-// Тело onConfirmed: ссылка на встречу, событие календаря, флаг, DM админу.
-// Вынесено из booking-notify.service.ts (правило №10: файл под храповиком не
-// растёт). Глобальный аудит 2026-10-11, security#21.
+// Тело onConfirmed: ссылка на встречу, событие календаря, флаг, DM админу. Из
+// booking-notify.service.ts (правило №10), аудит 2026-10-11, security#21.
 
 /** Детерминированный UID события брони: по нему событие снимается и без записанного calDavUid. */
 export const bookingEventUid = (id: number): string =>
@@ -19,7 +19,6 @@ export interface ConfirmRunDeps {
   prisma: PrismaService;
   meeting: MeetingService;
   calDav: CalDavService;
-  sendAdmin: (title: string, b: PlainBooking) => Promise<void>;
   notifyAdminBoth: (html: string, subject: string) => Promise<void>;
 }
 
@@ -43,8 +42,9 @@ export async function runConfirmEffects(
   b: PlainBooking,
 ): Promise<void> {
   if (b.confirmEffectsDoneAt) return;
+  let replaced = false; // комната клиента сменилась — об этом скажет DM
   if (!b.meetingUrl) {
-    b.meetingUrl = await d.meeting.createMeeting(b);
+    ({ url: b.meetingUrl, replaced } = await d.meeting.createMeeting(b));
     await d.prisma.booking.update({
       where: { id: b.id },
       // В БД ссылка лежит зашифрованной (`?pwd=` пускает в комнату клиента).
@@ -94,7 +94,7 @@ export async function runConfirmEffects(
   });
   // 0 строк: параллельный проход уже довёл и уведомил, либо бронь отменена.
   if (claimed.count === 0) return;
-  await d.sendAdmin('✅ <b>Запись подтверждена</b>', b);
+  await d.notifyAdminBoth(confirmedCardText(b, replaced), CONFIRMED_SUBJECT);
   // CalDAV настроен, но запись не удалась — тоже событие брони: оба канала.
   if (d.calDav.enabled && !uid) {
     const title = '⚠ <b>Подтверждена, но НЕ попала в Apple Calendar</b>';

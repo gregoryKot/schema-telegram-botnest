@@ -41,7 +41,7 @@ beforeEach(() => {
   Element.prototype.scrollIntoView = vi.fn();
   mockApi.getSlots.mockResolvedValue([SLOT]);
   mockApi.getBookingOptions.mockResolvedValue(INTRO);
-  mockApi.bookSlot.mockResolvedValue({ id: 1, cancelToken: 't', heldUntil: null, status: 'confirmed', paymentUrl: null, meetingUrl: null });
+  mockApi.bookSlot.mockResolvedValue({ id: 1, cancelToken: 't', heldUntil: null, status: 'confirmed', paymentUrl: null });
 });
 afterEach(() => cleanup());
 
@@ -62,7 +62,7 @@ describe('BookingPicker — кризисный путь поля «Запрос�
 
   it('экран ожидания оплаты (платная сессия): карточка тоже на месте', async () => {
     mockApi.getBookingOptions.mockResolvedValue(PAID);
-    mockApi.bookSlot.mockResolvedValue({ id: 2, cancelToken: 't2', heldUntil: null, status: 'pending', paymentUrl: 'https://pay.example/x', meetingUrl: null });
+    mockApi.bookSlot.mockResolvedValue({ id: 2, cancelToken: 't2', heldUntil: null, status: 'pending', paymentUrl: 'https://pay.example/x' });
     await fillAndSubmit('не хочу больше жить');
     await screen.findByText('Время зарезервировано');
     expect(screen.getByText(HOTLINE)).toBeTruthy();

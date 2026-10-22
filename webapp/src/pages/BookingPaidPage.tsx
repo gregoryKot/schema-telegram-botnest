@@ -49,7 +49,7 @@ export function BookingPaidPage() {
   } else if (phase === 'cancelled') {
     body = <BookingCancelledView paid={!!booking?.paid} />;
   } else if (booking && phase === 'confirmed') {
-    body = <BookingConfirmedView booking={booking} token={token} onReload={reload} onCancelled={() => setCancelledByClient(true)} />;
+    body = <BookingConfirmedView booking={booking} token={token} onCancelled={() => setCancelledByClient(true)} />;
   } else if (booking && phase === 'pending') {
     body = <BookingPaidPending booking={booking} timedOut={timedOut} onRetry={reload} />;
   } else if (booking && phase === 'completed') {

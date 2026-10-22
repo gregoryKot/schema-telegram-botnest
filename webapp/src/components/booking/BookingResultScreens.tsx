@@ -2,7 +2,7 @@ import type { RefObject } from 'react';
 import type { BookingSlot } from '../../api';
 import { localDayLabel, localTimeLabel, submitTimeSuffix } from '../../../../shared/src/booking/clientTimeZone';
 import { BookingCancelControl } from './BookingCancelControl';
-import { BookingSaveBlock } from './BookingSaveBlock';
+import { BookingSaveBlock, MEETING_LINK_LATER } from './BookingSaveBlock';
 import { BookingCrisisNote } from './BookingCrisisNote';
 import { Btn } from '../landing-kit';
 
@@ -41,9 +41,9 @@ export function PaymentFailScreen({ resultRef, onRetry }: { resultRef: RefObject
   );
 }
 
-export function DoneScreen({ resultRef, slot, tz, cancelled, meetingUrl, cancelToken, sessionType, onCancelled, message, costNote }: {
+export function DoneScreen({ resultRef, slot, tz, cancelled, cancelToken, sessionType, onCancelled, message, costNote }: {
   resultRef: RefObject<HTMLDivElement | null>; slot: BookingSlot | null; tz: string; cancelled: boolean;
-  meetingUrl: string | null; cancelToken: string; sessionType: 'INTRO_15' | 'SESSION_50'; onCancelled: () => void; message: string; costNote?: string | null;
+  cancelToken: string; sessionType: 'INTRO_15' | 'SESSION_50'; onCancelled: () => void; message: string; costNote?: string | null;
 }) {
   return (
     <div ref={resultRef} className="ym-hide-content" style={{ textAlign: 'center', padding: '48px 0' }}>
@@ -61,19 +61,13 @@ export function DoneScreen({ resultRef, slot, tz, cancelled, meetingUrl, cancelT
           <a href="https://t.me/kotlarewski" className="u-accent">@kotlarewski</a>. Без подтверждения встреча не состоится.
         </p>
       )}
-      {!cancelled && meetingUrl && (
-        <div style={{ margin: '14px auto 4px', maxWidth: 420, padding: '14px 16px', background: 'rgba(var(--fg-rgb),0.04)', border: '1px solid var(--line)', borderRadius: 'var(--r-12)' }}>
-          <p style={{ fontSize: 13, color: 'var(--text-faint)', margin: '0 0 6px' }}>Ваша персональная ссылка на встречу — она же для всех будущих сессий:</p>
-          <a href={meetingUrl} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)', fontSize: 15, fontWeight: 600, textDecoration: 'none' }}>Открыть встречу</a>
-        </div>
-      )}
       {!cancelled && costNote && <p style={{ color: 'var(--text-sub)', fontSize: 14, lineHeight: 1.6, margin: '0 0 8px' }}>{costNote}</p>}
-      {!cancelled && !meetingUrl && <p style={{ color: 'var(--text-faint)', fontSize: 14, margin: '0 0 8px' }}>Пришлю ссылку на встречу до начала сессии.</p>}
+      {!cancelled && <p style={{ color: 'var(--text-faint)', fontSize: 14, margin: '0 0 8px' }}>{MEETING_LINK_LATER}</p>}
       {!cancelled && <BookingCrisisNote text={message} />}
       {!cancelled && cancelToken && slot && (
         <BookingSaveBlock
           cancelToken={cancelToken} startsAt={slot.startsAt} durationMin={slot.durationMin}
-          type={sessionType} meetingUrl={meetingUrl} tz={tz}
+          type={sessionType} tz={tz}
         />
       )}
       {!cancelled && cancelToken && slot && (

@@ -199,7 +199,7 @@ describe('BookingPicker — выбор слота и обязательные п
 
 describe('BookingPicker — сабмит записи', () => {
   it('вызывает api.bookSlot с выбранным временем, именем, контактом и acceptedOffer=true', async () => {
-    mockApi.bookSlot.mockResolvedValue({ id: 1, cancelToken: 'tok1', heldUntil: null, status: 'confirmed', paymentUrl: null, meetingUrl: null });
+    mockApi.bookSlot.mockResolvedValue({ id: 1, cancelToken: 'tok1', heldUntil: null, status: 'confirmed', paymentUrl: null });
     await fillAndSelectSlot();
     fireEvent.click(screen.getByRole('button', { name: /Записаться на/ }));
 
@@ -219,7 +219,7 @@ describe('BookingPicker — сабмит записи', () => {
   });
 
   it('канал связи: по умолчанию Telegram, выбор WhatsApp уходит в clientChannel', async () => {
-    mockApi.bookSlot.mockResolvedValue({ id: 1, cancelToken: 'tok1', heldUntil: null, status: 'confirmed', paymentUrl: null, meetingUrl: null });
+    mockApi.bookSlot.mockResolvedValue({ id: 1, cancelToken: 'tok1', heldUntil: null, status: 'confirmed', paymentUrl: null });
     await renderLoaded();
     fireEvent.click(screen.getByText(timeLabel(SLOT_A.startsAt)));
     fireEvent.click(screen.getByRole('button', { name: 'WhatsApp' }));
@@ -238,7 +238,7 @@ describe('BookingPicker — сабмит записи', () => {
   // C-9 (аудит 2026-10): бэкенд больше не принимает clientTelegramId (whitelist
   // ValidationPipe вернул бы 400). Фронт его и не шлёт — тест держит это.
   it('в теле записи нет clientTelegramId — личный идентификатор не уходит с формы', async () => {
-    mockApi.bookSlot.mockResolvedValue({ id: 1, cancelToken: 'tok1', heldUntil: null, status: 'confirmed', paymentUrl: null, meetingUrl: null });
+    mockApi.bookSlot.mockResolvedValue({ id: 1, cancelToken: 'tok1', heldUntil: null, status: 'confirmed', paymentUrl: null });
     await fillAndSelectSlot();
     fireEvent.click(screen.getByRole('button', { name: /Записаться на/ }));
     await act(async () => {});
@@ -248,7 +248,7 @@ describe('BookingPicker — сабмит записи', () => {
   });
 
   it('успешная бесплатная запись (INTRO_15) без paymentUrl показывает «Заявка принята»', async () => {
-    mockApi.bookSlot.mockResolvedValue({ id: 1, cancelToken: 'tok1', heldUntil: null, status: 'confirmed', paymentUrl: null, meetingUrl: null });
+    mockApi.bookSlot.mockResolvedValue({ id: 1, cancelToken: 'tok1', heldUntil: null, status: 'confirmed', paymentUrl: null });
     await fillAndSelectSlot();
     fireEvent.click(screen.getByRole('button', { name: /Записаться на/ }));
 
@@ -259,7 +259,7 @@ describe('BookingPicker — сабмит записи', () => {
   // PR C: знакомство подтверждается лично, поэтому DoneScreen для INTRO_15
   // заголовок и текст-предупреждение отличаются от оплаченной сессии.
   it('«Заявка принята» (INTRO_15) — под временем текст про личное подтверждение со ссылкой на @kotlarewski', async () => {
-    mockApi.bookSlot.mockResolvedValue({ id: 1, cancelToken: 'tok1', heldUntil: null, status: 'confirmed', paymentUrl: null, meetingUrl: null });
+    mockApi.bookSlot.mockResolvedValue({ id: 1, cancelToken: 'tok1', heldUntil: null, status: 'confirmed', paymentUrl: null });
     await fillAndSelectSlot();
     fireEvent.click(screen.getByRole('button', { name: /Записаться на/ }));
 
@@ -275,7 +275,7 @@ describe('BookingPicker — сабмит записи', () => {
       { type: 'INTRO_15', label: 'Знакомство', durationMin: 15, price: 0, note: '' },
       { type: 'SESSION_50', label: 'Сессия', durationMin: 50, price: 0, note: '' },
     ]);
-    mockApi.bookSlot.mockResolvedValue({ id: 3, cancelToken: 'tok3', heldUntil: null, status: 'confirmed', paymentUrl: null, meetingUrl: null });
+    mockApi.bookSlot.mockResolvedValue({ id: 3, cancelToken: 'tok3', heldUntil: null, status: 'confirmed', paymentUrl: null });
     await renderLoaded();
     fireEvent.click(screen.getByText(timeLabel(SLOT_A.startsAt)));
     fireEvent.click(screen.getByRole('button', { name: /Сессия/ }));
@@ -289,7 +289,7 @@ describe('BookingPicker — сабмит записи', () => {
   });
 
   it('запись с paymentUrl уводит на экран ожидания оплаты, а не сразу «забронировано»', async () => {
-    mockApi.bookSlot.mockResolvedValue({ id: 2, cancelToken: 'tok2', heldUntil: null, status: 'pending', paymentUrl: 'https://pay.example/x', meetingUrl: null });
+    mockApi.bookSlot.mockResolvedValue({ id: 2, cancelToken: 'tok2', heldUntil: null, status: 'pending', paymentUrl: 'https://pay.example/x' });
     await fillAndSelectSlot();
     fireEvent.click(screen.getByRole('button', { name: /Записаться на/ }));
 
@@ -304,10 +304,10 @@ const TWO_OPTIONS = [
   { type: 'SESSION_50', label: 'Сессия', durationMin: 50, price: 0, note: '' },
 ];
 const RETURNING_BOX = /повторная встреча/;
-const OK_BOOKING = { id: 1, cancelToken: 't', heldUntil: null, status: 'confirmed', paymentUrl: null, meetingUrl: null };
+const OK_BOOKING = { id: 1, cancelToken: 't', heldUntil: null, status: 'confirmed', paymentUrl: null };
 
 describe('BookingPicker — галочка «повторная встреча»', () => {
-  const OK = { id: 1, cancelToken: 't', heldUntil: null, status: 'confirmed', paymentUrl: null, meetingUrl: null };
+  const OK = { id: 1, cancelToken: 't', heldUntil: null, status: 'confirmed', paymentUrl: null };
 
   it('у знакомства (INTRO_15) галочки и пояснения про комнату нет, returning=false', async () => {
     mockApi.bookSlot.mockResolvedValue(OK);
@@ -415,7 +415,7 @@ describe('BookingPicker — цели Метрики', () => {
   });
 
   it('успешная запись (дефолтный тип INTRO_15) шлёт booking_submit и booking_intro', async () => {
-    mockApi.bookSlot.mockResolvedValue({ id: 1, cancelToken: 'tok1', heldUntil: null, status: 'confirmed', paymentUrl: null, meetingUrl: null });
+    mockApi.bookSlot.mockResolvedValue({ id: 1, cancelToken: 'tok1', heldUntil: null, status: 'confirmed', paymentUrl: null });
     await fillAndSelectSlot();
     fireEvent.click(screen.getByRole('button', { name: /Записаться на/ }));
     await act(async () => {});
@@ -428,7 +428,7 @@ describe('BookingPicker — цели Метрики', () => {
       { type: 'INTRO_15', label: 'Знакомство', durationMin: 15, price: 0, note: '' },
       { type: 'SESSION_50', label: 'Сессия', durationMin: 50, price: 3000, note: '' },
     ]);
-    mockApi.bookSlot.mockResolvedValue({ id: 2, cancelToken: 'tok2', heldUntil: null, status: 'confirmed', paymentUrl: null, meetingUrl: null });
+    mockApi.bookSlot.mockResolvedValue({ id: 2, cancelToken: 'tok2', heldUntil: null, status: 'confirmed', paymentUrl: null });
     await renderLoaded();
     fireEvent.click(screen.getByText(timeLabel(SLOT_A.startsAt)));
     fireEvent.click(screen.getByRole('button', { name: /Сессия/ }));
@@ -461,7 +461,7 @@ describe('BookingPicker — цели Метрики', () => {
   });
 
   it('клик по кнопке отправки шлёт booking_submit_click', async () => {
-    mockApi.bookSlot.mockResolvedValue({ id: 1, cancelToken: 'tok1', heldUntil: null, status: 'confirmed', paymentUrl: null, meetingUrl: null });
+    mockApi.bookSlot.mockResolvedValue({ id: 1, cancelToken: 'tok1', heldUntil: null, status: 'confirmed', paymentUrl: null });
     await fillAndSelectSlot();
     fireEvent.click(screen.getByRole('button', { name: /Записаться на/ }));
     await act(async () => {});
@@ -551,7 +551,7 @@ describe('BookingPicker — часовой пояс посетителя', () =>
 
   it('отправка брони несёт фактически используемый пояс', async () => {
     mockUseClientTimeZone.mockReturnValue(['Asia/Bangkok', vi.fn()]);
-    mockApi.bookSlot.mockResolvedValue({ id: 1, cancelToken: 'tok1', heldUntil: null, status: 'confirmed', paymentUrl: null, meetingUrl: null });
+    mockApi.bookSlot.mockResolvedValue({ id: 1, cancelToken: 'tok1', heldUntil: null, status: 'confirmed', paymentUrl: null });
     render(<BookingPicker />);
     fireEvent.click(await screen.findByText('16:00'));
     fireEvent.change(screen.getByLabelText('Имя *'), { target: { value: 'Аня' } });
@@ -645,7 +645,7 @@ describe('BookingPicker — галочка «понятно про подтве�
 
   it('с галочкой запрос уходит', async () => {
     mockApi.getBookingOptions.mockResolvedValue(TWO_OPTIONS);
-    mockApi.bookSlot.mockResolvedValue({ id: 1, cancelToken: 't', heldUntil: null, status: 'confirmed', paymentUrl: null, meetingUrl: null });
+    mockApi.bookSlot.mockResolvedValue({ id: 1, cancelToken: 't', heldUntil: null, status: 'confirmed', paymentUrl: null });
     await fillEverythingButNotice();
     fireEvent.click(screen.getByRole('checkbox', { name: NOTICE }));
     fireEvent.click(screen.getByRole('button', { name: /Записаться на/ }));
@@ -655,7 +655,7 @@ describe('BookingPicker — галочка «понятно про подтве�
 
   it('у SESSION_50 галочки нет и она не требуется', async () => {
     mockApi.getBookingOptions.mockResolvedValue(TWO_OPTIONS);
-    mockApi.bookSlot.mockResolvedValue({ id: 1, cancelToken: 't', heldUntil: null, status: 'held', paymentUrl: null, meetingUrl: null });
+    mockApi.bookSlot.mockResolvedValue({ id: 1, cancelToken: 't', heldUntil: null, status: 'held', paymentUrl: null });
     await fillEverythingButNotice();
     fireEvent.click(screen.getByRole('button', { name: /Сессия/ }));
     expect(screen.queryByRole('checkbox', { name: NOTICE })).toBeNull();

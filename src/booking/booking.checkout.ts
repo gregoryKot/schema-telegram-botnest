@@ -27,11 +27,12 @@ export interface BookingResult {
   heldUntil: Date | null;
   status: BookingStatus;
   paymentUrl: string | null;
-  meetingUrl: string | null;
 }
 
 /** Подтвердить бронь сразу: расшифровать, уведомить, отдать CONFIRMED-ответ
- * (бесплатная сессия и dev-режим без Robokassa — один путь). */
+ * (бесплатная сессия и dev-режим без Robokassa — один путь). Ссылки на встречу
+ * в ответе нет ни на одном пути: ручка анонимная, а комната клиента ищется по
+ * контакту — назвавший чужой контакт получил бы чужую комнату. */
 async function confirmNow(
   deps: CheckoutDeps,
   booking: Booking,
@@ -45,7 +46,6 @@ async function confirmNow(
     heldUntil: null,
     status: BookingStatus.CONFIRMED,
     paymentUrl: null,
-    meetingUrl: plain.meetingUrl ?? null,
   };
 }
 
@@ -101,6 +101,5 @@ export async function completeCheckout(
     heldUntil,
     status: BookingStatus.HELD,
     paymentUrl,
-    meetingUrl: null,
   };
 }
