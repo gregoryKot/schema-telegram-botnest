@@ -32,6 +32,17 @@ export const INFRA_ENV_ENTRIES: EnvVarSpec[] = [
     group: 'infra',
   },
   {
+    name: 'DB_STATEMENT_TIMEOUT_MS',
+    purpose:
+      'Предел одного запроса к базе в миллисекундах (по умолчанию 30 000) — ' +
+      'дольше запрос прерывается с ошибкой; 0 выключает предел. Рубильник ' +
+      'без выкладки кода (src/prisma/statement-timeout.ts).',
+    requiredInProd: false,
+    format: (value: string): string | null =>
+      /^(0|[1-9]\d*)$/.test(value) ? null : 'ожидалось целое число от 0',
+    group: 'infra',
+  },
+  {
     name: 'SUBSCRIPTION_ENABLED',
     purpose:
       '«true» включает автосписание подписки — выключено, пока автосписание не готово.',

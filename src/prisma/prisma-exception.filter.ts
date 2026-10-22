@@ -10,6 +10,7 @@ import { Prisma } from '@prisma/client';
 import type { Request, Response } from 'express';
 import { safeRequestPath } from './safe-request-path';
 import { replyHttpException } from './http-exception-body';
+import { isStatementTimeout } from './statement-timeout';
 
 // Global filter that maps Prisma errors to friendly 4xx responses.
 //
@@ -35,6 +36,17 @@ export class PrismaExceptionFilter implements ExceptionFilter {
     // код/класс ошибки, а полный message — вторым (только stdout; конвенция
     // H0/H6, см. client-errors.controller.ts).
     const path = safeRequestPath(req.url);
+    if (isStatementTimeout(exception)) {
+      // Строку владельцу с местом вызова уже написал PrismaService
+      // ($on('error')) — здесь warn, чтобы не слать второй DM. 503, а не 400:
+      // запрос клиента верный, не успела база.
+      this.logger.warn(`Таймаут запроса к БД на ${path}`);
+      return res.status(HttpStatus.SERVICE_UNAVAILABLE).json({
+        statusCode: 503,
+        error: 'Service Unavailable',
+        message: 'База данных не ответила вовремя',
+      });
+    }
     const kind =
       exception instanceof Prisma.PrismaClientKnownRequestError
         ? exception.code
