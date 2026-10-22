@@ -15,7 +15,7 @@
 бэкенд-копии `src/booking/price-region.ts`.
 
 **Кнопка «Удалить результаты теста» — решение владельца** (найдено при починке
-воронки теста схем в `/stats`, #NNN):
+воронки теста схем в `/stats`, #815):
 - **Кнопка удаляет только текущий результат, история прохождений остаётся.**
   `webapp/src/components/settingsSheet/DataSection.tsx` и
   `schema-miniapp/src/components/settingsSheet/DataOverlays.tsx` зовут
