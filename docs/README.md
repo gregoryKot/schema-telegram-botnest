@@ -48,7 +48,7 @@ CLAUDE.md. Не удалять, но и не считать списком за�
 | Документ | Статус |
 |---|---|
 | [archive/PROJECT_AUDIT.md](archive/PROJECT_AUDIT.md) | Аудит 07.2026, 4 оси. Находки закрыты. |
-| [archive/PROJECT_AUDIT_ADDENDUM.md](archive/PROJECT_AUDIT_ADDENDUM.md) | Дополнение: юридика, БД, инфра, a11y. Закрыто, кроме РКН (на владельце). a11y-класс «контрол без имени» (:171, :344) вернулся с новым кодом и закрыт механизмом на сайте и в `shared/` (#NNN): `jsx-a11y/control-has-associated-label` и гейт `scripts/check-glyph-controls.mjs`; остаток в мини-аппе — в «Что осталось открытым». |
+| [archive/PROJECT_AUDIT_ADDENDUM.md](archive/PROJECT_AUDIT_ADDENDUM.md) | Дополнение: юридика, БД, инфра, a11y. Закрыто, кроме РКН (на владельце). a11y-класс «контрол без имени» (:171, :344) вернулся с новым кодом и закрыт механизмом на сайте и в `shared/` (#818): `jsx-a11y/control-has-associated-label` и гейт `scripts/check-glyph-controls.mjs`; остаток в мини-аппе — в «Что осталось открытым». |
 | [archive/REMEDIATION_PLAN.md](archive/REMEDIATION_PLAN.md) | План 0→10. **Закрыт целиком** 17.07.2026 (этапы 0–4). |
 | [archive/TEST_COVERAGE_PLAN.md](archive/TEST_COVERAGE_PLAN.md) | План покрытия v1. Закрыт в PR #66; продолжен `TEST_IMPROVEMENT_PLAN.md`. На него по имени ссылаются `ci.yml` и `check-coverage-ratchet.mjs`. |
 | [archive/INTEGRATION_NOTES.md](archive/INTEGRATION_NOTES.md) | Разовая карта разрешения конфликтов при merge ветки покрытия. История. |
