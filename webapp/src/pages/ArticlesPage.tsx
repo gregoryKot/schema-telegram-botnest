@@ -7,6 +7,7 @@ import { useAsyncData } from '../hooks/useAsyncData';
 import { DIAGRAMS } from './articleDiagrams';
 import { PRACTICE_BOOKING_URL } from './landing/constants';
 import { siteTitleSuffix } from '../utils/domainChrome';
+import { Btn } from '../components/landing-kit';
 // ─── Article list page ────────────────────────────────────────────────────────
 export function ArticlesListPage() {
   // Сбой ≠ пусто: раньше `.catch(() => setArticles([]))` рисовал читателю со
@@ -31,12 +32,7 @@ export function ArticlesListPage() {
         {failed ? (
           <div role="alert">
             <p style={{ color: 'var(--text-sub)', margin: '0 0 16px' }}>Не удалось загрузить статьи. Проверьте соединение.</p>
-            <button onClick={() => { void reload(); }} style={{
-              padding: '10px 20px', background: 'var(--accent)', color: 'white', border: 'none',
-              borderRadius: 100, fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
-            }}>
-              Попробовать ещё раз
-            </button>
+            <Btn onClick={() => { void reload(); }}>Попробовать ещё раз</Btn>
           </div>
         ) : articles === null ? (
           <p className="u-faint">Загрузка…</p>
@@ -88,12 +84,7 @@ export function ArticlesListPage() {
           <p style={{ fontSize: 16, color: 'var(--text-sub)', lineHeight: 1.7, margin: '0 0 20px' }}>
             Первая встреча – 15 минут, бесплатно. Расскажете о запросе, я расскажу о подходе.
           </p>
-          <a href={PRACTICE_BOOKING_URL} style={{
-            display: 'inline-block', padding: '12px 24px', background: 'var(--accent)', color: 'white',
-            borderRadius: 100, fontSize: 14, fontWeight: 600, textDecoration: 'none',
-          }}>
-            Записаться →
-          </a>
+          <Btn href={PRACTICE_BOOKING_URL} newTab={false}>Записаться →</Btn>
         </div>
       </div>
     </div>
@@ -131,12 +122,7 @@ export function ArticlePage() {
       <div style={{ background: 'var(--bg)', minHeight: '100dvh', flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <div role="alert" style={{ textAlign: 'center', padding: '0 20px' }}>
           <p style={{ fontSize: 16, color: 'var(--text-sub)', margin: '0 0 20px' }}>Не удалось загрузить статью. Проверьте соединение.</p>
-          <button onClick={() => { void reload(); }} style={{
-            padding: '12px 24px', background: 'var(--accent)', color: 'white', border: 'none',
-            borderRadius: 100, fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
-          }}>
-            Попробовать ещё раз
-          </button>
+          <Btn onClick={() => { void reload(); }}>Попробовать ещё раз</Btn>
         </div>
       </div>
     );
@@ -271,9 +257,7 @@ export function ArticlePage() {
             Первая встреча – 15 минут, бесплатно. Обсудим ваш запрос, и я расскажу, как схема-терапия работает в вашем случае.
           </p>
           <div style={{ display: 'flex', gap: 'var(--space-12)', flexWrap: 'wrap' }}>
-            <a href={PRACTICE_BOOKING_URL} style={{ display: 'inline-block', padding: '12px 24px', background: 'var(--accent)', color: 'white', borderRadius: 100, fontSize: 14, fontWeight: 600, textDecoration: 'none' }}>
-              Записаться →
-            </a>
+            <Btn href={PRACTICE_BOOKING_URL} newTab={false}>Записаться →</Btn>
             <a href="/articles" style={{ display: 'inline-block', padding: '12px 20px', background: 'transparent', border: '1.5px solid var(--line-strong)', color: 'var(--text-sub)', borderRadius: 100, fontSize: 14, fontWeight: 500, textDecoration: 'none' }}>
               Читать ещё
             </a>

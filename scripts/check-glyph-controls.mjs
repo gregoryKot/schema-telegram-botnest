@@ -23,7 +23,7 @@
 //
 // Область — webapp/src и shared/src. schema-miniapp не покрыт: мини-апп
 // удаляется по docs/ONE_FRONTEND_PLAN.md, его девять глиф-кнопок записаны в
-// docs/README.md «Что осталось открытым». Абсолютный, без бейслайна.
+// docs/open/one-frontend.md «Что осталось открытым». Абсолютный, без бейслайна.
 import { readFileSync, readdirSync, statSync } from 'fs';
 import { createRequire } from 'module';
 import { join } from 'path';

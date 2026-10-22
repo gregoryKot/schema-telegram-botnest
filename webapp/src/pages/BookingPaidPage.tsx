@@ -7,7 +7,8 @@ import { BookingCancelledView, BookingCompletedView } from '../components/bookin
 import { useBookingByToken } from '../components/booking/useBookingByToken';
 import { paidPhase } from '../components/booking/paidPageModel';
 import { page, h1, sub, backLink } from '../components/booking/bookingPageStyles';
-import { icon, primaryBtn } from '../components/booking/bookingPaidStyles';
+import { icon } from '../components/booking/bookingPaidStyles';
+import { Btn } from '../components/landing-kit';
 
 // Where the client lands after returning from Robokassa. /api/payment/success
 // validates the signature and redirects here with ?token=… (the booking's
@@ -32,7 +33,6 @@ export function BookingPaidPage() {
   const phase = cancelledByClient ? 'cancelled' : booking ? paidPhase(booking.status) : 'unknown';
 
   let body: React.ReactNode;
-
   if (failed) {
     // Токена на FailURL нет (адрес не подписан), срок холда проверить нечем —
     // поэтому не обещаем, что время ещё держится.
@@ -41,7 +41,7 @@ export function BookingPaidPage() {
         <div style={icon}>×</div>
         <h1 style={h1}>Оплата не прошла</h1>
         <p style={sub}>Деньги не списаны. Выберите время и попробуйте ещё раз – если оно уже занято, найдётся другое.</p>
-        <a href="/#booking" style={primaryBtn}>Вернуться к записи</a>
+        <Btn href="/#booking" full radius="btn" size="lg">Вернуться к записи</Btn>
       </>
     );
   } else if (!loaded) {

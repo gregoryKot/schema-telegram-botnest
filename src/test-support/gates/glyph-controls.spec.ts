@@ -130,7 +130,7 @@ describe('check-glyph-controls.mjs — зеленеет', () => {
   });
 
   // Сознательная граница области: мини-апп удаляется по ONE_FRONTEND_PLAN.md,
-  // его глиф-кнопки записаны в docs/README.md «Что осталось открытым».
+  // его глиф-кнопки записаны в docs/open/one-frontend.md «Что осталось открытым».
   it('schema-miniapp вне области', () => {
     const res = gate({
       'schema-miniapp/src/X.tsx': tsx('<button onClick={f}>←</button>'),

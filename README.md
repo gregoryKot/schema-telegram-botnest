@@ -63,5 +63,7 @@ CI гоняет джобы `backend`, `migrations` (реальный Postgres), 
 
 ## Документация
 
-Правила проекта, обязательные к соблюдению, — в [CLAUDE.md](CLAUDE.md).
+Правила проекта, обязательные к соблюдению, — в [CLAUDE.md](CLAUDE.md) (по строке
+на правило; полные тексты — в [.claude/rules/](.claude/rules/)). Карта кода —
+[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 Остальное — в [docs/](docs/README.md).
