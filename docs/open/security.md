@@ -48,7 +48,8 @@
   `ALLOWED_ORIGINS` задан явно и содержит
   `kotlarewski.*` — убрать; проверка env теперь предупреждает об этом (F-2).
 - Ссылка «написать в Telegram» (`tg://user?id=${partnerId}` в
-  `shared/src/utils/therapistContact.ts`, `TodaySection.tsx`, `PartnerCard.tsx`)
+  `shared/src/utils/therapistContact.ts:86`, `webapp/src/sections/today/TodayAside.tsx:46`,
+  `PartnerCard.tsx` на обеих площадках)
   собирается из id связи, а у веб-партнёра (Google/VK/MAX/почта) это не
   Telegram-id — ссылка ведёт в никуда. Поправка аудита 2026-10: веб-id лежат в
   [1e15, 9e15), ниже 2^53 (100 000 сэмплов `src/auth/user-id-range.ts`) — прежняя
