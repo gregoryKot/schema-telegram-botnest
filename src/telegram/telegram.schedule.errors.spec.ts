@@ -33,7 +33,11 @@ function makeService(
   // Тик всегда лидер — эти тесты про поведение внутри тела крона, не про
   // сам захват (он отдельно проверен в telegram.schedule-queue.service.spec.ts
   // и telegram.schedule.service.spec.ts).
-  const cronLeader: any = { claimRun: jest.fn().mockResolvedValue(true) };
+  const cronLeader: any = {
+    claimRun: jest.fn().mockResolvedValue(true),
+    unfinishedRun: jest.fn().mockResolvedValue(null),
+    finishRun: jest.fn().mockResolvedValue(undefined),
+  };
   const bot =
     opts.bot === undefined
       ? { telegram: { callApi: jest.fn().mockResolvedValue(undefined) } }

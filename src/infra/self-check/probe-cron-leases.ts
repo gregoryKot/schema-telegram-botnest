@@ -1,16 +1,16 @@
 import type { PrismaService } from '../../prisma/prisma.service';
 import { lastClaimDbFailureAt } from '../cron-claim-failures';
 import { CRON_LEASE_REGISTRY } from './cron-lease-registry';
-import { leaseProblem } from './cron-lease-verdict';
+import { leaseRowProblem } from './cron-lease-done';
 import { Probe } from './types';
 
 const PROCESS_STARTED_AT = Date.now();
 
 /**
  * Каждая leader-аренда из cron-lease-registry.ts: не пропустил ли её крон два
- * тика подряд, которые этот процесс обязан был отработать. Правило — в
- * cron-lease-verdict.ts; тики до старта процесса и во время аварии базы не
- * судятся (2026-09-16 и 2026-10-17, docs/INCIDENTS.md). Зависимости — явные
+ * тика подряд (cron-lease-verdict.ts; тики до старта процесса и во время
+ * аварии базы не судятся — 2026-09-16 и 2026-10-17, docs/INCIDENTS.md) и дошёл
+ * ли до конца захваченный прогон (cron-lease-done.ts). Зависимости — явные
  * параметры со значениями по умолчанию: спеку не нужно глобальное состояние.
  */
 export function cronLeasesProbe(
@@ -27,13 +27,12 @@ export function cronLeasesProbe(
       const now = Date.now();
       const rows = await prisma.cronLease.findMany({
         where: { name: { in: names } },
-        select: { name: true, runAt: true },
+        select: { name: true, runAt: true, doneRunAt: true },
       });
-      const byName = new Map(rows.map((r) => [r.name, r.runAt.getTime()]));
+      const byName = new Map(rows.map((r) => [r.name, r]));
       const problems: string[] = [];
       for (const name of names) {
-        const problem = leaseProblem(CRON_LEASE_REGISTRY[name], {
-          runAt: byName.get(name),
+        const problem = leaseRowProblem(name, byName.get(name), {
           now,
           startedAt,
           lastDbFailureAt: lastDbFailureAt(name),

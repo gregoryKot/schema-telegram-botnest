@@ -7,6 +7,8 @@
 import { readFileSync } from 'fs';
 import { join, resolve } from 'path';
 import { CRON_LEASE_REGISTRY } from './cron-lease-registry';
+import { COMPLETING_LEASES } from './cron-lease-done';
+import { collectSourceFiles } from '../../security/collect-source-files';
 import { LEASE_WINDOW } from '../cron-leader.service';
 import { scanCronClaims } from '../../test-support/cron-source-scan';
 
@@ -68,6 +70,47 @@ describe('CRON_LEASE_REGISTRY — сверка с исходниками', () =>
       (n) => !names.has(n),
     );
     expect(orphans).toEqual([]);
+  });
+});
+
+// COMPLETING_LEASES (проба судит «прогон не дошёл до конца») ↔ вызовы
+// `finishRun('имя'` в src/**. Аренда в списке без finishRun в коде краснела бы
+// в пробе каждую ночь; finishRun для имени вне списка — отметка, которую никто
+// не проверяет. Оба разъезда красят тест (правило №4).
+const FINISH_RE = /finishRun\(\s*(['"])([\w-]+)\1/g;
+
+function finishRunNames(src: string): string[] {
+  const code = src.replace(/\/\*[\s\S]*?\*\/|\/\/[^\n]*/g, '');
+  return [...code.matchAll(FINISH_RE)].map((m) => m[2]);
+}
+
+describe('COMPLETING_LEASES — сверка с finishRun в исходниках', () => {
+  const names = new Set(
+    collectSourceFiles(join(ROOT, 'src'), {
+      filter: (p) =>
+        !/\.(spec|test)\.ts$/.test(p) && !p.includes('test-support'),
+    }).flatMap((f) => finishRunNames(readFileSync(f, 'utf8'))),
+  );
+
+  it('образцы: вызов находится, комментарий и другие методы — нет', () => {
+    expect(
+      finishRunNames(
+        "await this.leases.finishRun('midnightPlanner', runAt);\n" +
+          "// finishRun('commented', runAt)\n" +
+          "await x.claimRun('other', LEASE_WINDOW.daily);",
+      ),
+    ).toEqual(['midnightPlanner']);
+  });
+
+  it('каждая аренда из списка отмечает завершение в коде и есть в реестре', () => {
+    const bad = [...COMPLETING_LEASES].filter(
+      (n) => !names.has(n) || !CRON_LEASE_REGISTRY[n],
+    );
+    expect(bad).toEqual([]);
+  });
+
+  it('каждый finishRun в коде — для аренды из списка', () => {
+    expect([...names].filter((n) => !COMPLETING_LEASES.has(n))).toEqual([]);
   });
 });
 

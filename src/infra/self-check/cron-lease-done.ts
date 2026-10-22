@@ -1,0 +1,57 @@
+import { CRON_LEASE_REGISTRY } from './cron-lease-registry';
+import { hhmm, leaseProblem, type LeaseFacts } from './cron-lease-verdict';
+
+/**
+ * Второе правило пробы `cronLeases`: прогон захвачен, но не дошёл до конца.
+ * Правило тиков (cron-lease-verdict.ts) смотрит только на факт захвата, и
+ * обход, оборванный деплоем, для него «свеж» — хвост пользователей сутки без
+ * напоминаний, а проба зелёная (аудит 2026-10). Судятся только аренды, чей
+ * прогон отмечает завершение (`finishRun`, src/infra/cron-run-done.ts):
+ * у остальных `doneRunAt` пуст всегда. Список сверяется с исходниками в
+ * cron-lease-registry.spec.ts в обе стороны (правило №4).
+ */
+export const COMPLETING_LEASES: ReadonlySet<string> = new Set([
+  'midnightPlanner',
+]);
+
+/** Обход всех пользователей идёт минуты; два часа — запас на медленную базу,
+ * а не на штатную работу. Отсчёт — от позднего из «прогон начат» и «процесс
+ * поднялся»: рестарт получает те же два часа на доделку (старт её начинает
+ * через 30 с), и первый деплой этой отметки — где у прошлого прогона
+ * `doneRunAt` ещё пуст — не красит пробу. */
+export const UNFINISHED_GRACE_MS = 2 * 3_600_000;
+
+export interface RunDoneFacts {
+  runAt?: number;
+  doneRunAt?: number;
+  now: number;
+  /** Старт этого процесса. */
+  startedAt: number;
+}
+
+/** null — прогон завершён или ещё в пределах запаса; строка — что не так. */
+export function unfinishedRunProblem(
+  name: string,
+  f: RunDoneFacts,
+): string | null {
+  if (!COMPLETING_LEASES.has(name) || f.runAt === undefined) return null;
+  if (f.doneRunAt === f.runAt) return null;
+  if (f.now - Math.max(f.runAt, f.startedAt) <= UNFINISHED_GRACE_MS)
+    return null;
+  return `обход, начатый в ${hhmm(f.runAt)} UTC, не дошёл до конца — часть людей осталась без запланированных сообщений`;
+}
+
+/** Оба правила по строке аренды: сначала тики, потом незавершённый прогон. */
+export function leaseRowProblem(
+  name: string,
+  row: { runAt: Date; doneRunAt: Date | null } | undefined,
+  ctx: Omit<LeaseFacts, 'runAt'>,
+): string | null {
+  const runAt = row?.runAt.getTime();
+  const doneRunAt = row?.doneRunAt?.getTime();
+  const { now, startedAt } = ctx;
+  return (
+    leaseProblem(CRON_LEASE_REGISTRY[name], { ...ctx, runAt }) ??
+    unfinishedRunProblem(name, { runAt, doneRunAt, now, startedAt })
+  );
+}
