@@ -141,17 +141,20 @@ describe('TelegramAdminService — /broadcast (только админ)', () => 
       },
     });
     service.onModuleInit();
-    const sendMessage = fakeBot.telegram.sendMessage;
-    sendMessage
+    // Рассылка шлёт через sendBounded (callApi с сигналом отмены, #681).
+    const callApi = fakeBot.telegram.callApi;
+    callApi
       .mockResolvedValueOnce(undefined)
       .mockRejectedValueOnce({ response: { error_code: 403 } });
     const ctx = await runCommand(fakeBot, 'broadcast', {
       from: { id: 999 },
       message: { text: '/broadcast всем привет' },
     });
-    expect(sendMessage).toHaveBeenCalledWith(1, 'всем привет', {
-      parse_mode: undefined,
-    });
+    expect(callApi).toHaveBeenCalledWith(
+      'sendMessage',
+      { chat_id: 1, text: 'всем привет', parse_mode: undefined },
+      expect.objectContaining({ signal: expect.anything() }),
+    );
     expect(accountService.markUserBlocked).toHaveBeenCalledWith(2n);
     const summary = ctx.reply.mock.calls.at(-1)![0];
     expect(summary).toContain('1 доставлено');
@@ -171,7 +174,7 @@ describe('TelegramAdminService — /broadcast (только админ)', () => 
     const warnSpy = jest
       .spyOn(Logger.prototype, 'warn')
       .mockImplementation(() => undefined);
-    fakeBot.telegram.sendMessage.mockRejectedValueOnce({
+    fakeBot.telegram.callApi.mockRejectedValueOnce({
       response: { error_code: 403 },
     });
     const ctx = await runCommand(fakeBot, 'broadcast', {
@@ -225,7 +228,9 @@ describe('TelegramAdminService — /broadcast на настоящем AccountSer
       from: { id: 999 },
       message: { text: '/broadcast привет' },
     });
-    const sentTo = fakeBot.telegram.sendMessage.mock.calls.map((c) => c[0]);
+    const sentTo = fakeBot.telegram.callApi.mock.calls.map(
+      (c) => (c[1] as { chat_id: number }).chat_id,
+    );
     expect(sentTo).toEqual([42, 555, 777]);
     const summary = ctx.reply.mock.calls.at(-1)![0];
     expect(summary).toContain('3 доставлено');
@@ -237,14 +242,15 @@ describe('TelegramAdminService — /broadcast на настоящем AccountSer
     const { accountService } = makeReal();
     const { service, fakeBot } = makeDeps({ accountService });
     service.onModuleInit();
-    fakeBot.telegram.sendMessage.mockImplementation((chatId: number) =>
-      chatId === 777
-        ? Promise.reject(
-            Object.assign(new Error('Forbidden'), {
-              response: { error_code: 403 },
-            }),
-          )
-        : Promise.resolve(undefined),
+    fakeBot.telegram.callApi.mockImplementation(
+      (_m: string, p: { chat_id: number }) =>
+        p.chat_id === 777
+          ? Promise.reject(
+              Object.assign(new Error('Forbidden'), {
+                response: { error_code: 403 },
+              }),
+            )
+          : Promise.resolve(undefined),
     );
     await runCommand(fakeBot, 'broadcast', {
       from: { id: 999 },
