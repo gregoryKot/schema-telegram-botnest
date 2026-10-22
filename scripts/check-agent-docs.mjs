@@ -28,7 +28,9 @@
 //   5. Карта называет по имени каждый scripts/check-*.mjs и check-*.ts.
 //   6. Пути в `обратных кавычках` в CLAUDE.md и карте существуют на диске
 //      (глобы, шаблоны и каталоги сборки — dist, build — не читаются).
-//   7. Каждый docs/open/*.md есть ссылкой в docs/README.md.
+//   7. Каждый docs/open/*.md есть ссылкой в docs/README.md, а в разделе
+//      «Что осталось открытым» самого README нет записей (`**…**`, `- …`):
+//      ветка, начатая до разделения реестра, при слиянии вписывает их туда.
 //
 // «Карта» — это docs/ARCHITECTURE.md (индекс, обязан существовать) и все
 // docs/architecture/*.md (файлы по областям; каталога может не быть): упоминание
@@ -185,7 +187,25 @@ function checkOpenIndex(root, out) {
         'Реестр без строки в индексе агент не найдёт — добавь строку в таблицу «Что осталось открытым».',
     );
   }
+  for (const line of entriesInOpenIndex(read(root, 'docs/README.md'))) {
+    out.push(
+      `docs/README.md:${line}: запись реестра в индексе «Что осталось открытым». ` +
+        'Перенеси её дословно в docs/open/<область>.md (правило №26); в README — только таблица областей.',
+    );
+  }
   return open.length;
+}
+
+/** Номера строк с записями (`**…**`, `- …`) в разделе «Что осталось открытым» README. */
+export function entriesInOpenIndex(text) {
+  const lines = text.split('\n');
+  const start = lines.findIndex((l) => /^## Что осталось открытым/.test(l));
+  if (start < 0) return [];
+  const found = [];
+  for (let i = start + 1; i < lines.length && !/^## /.test(lines[i]); i++) {
+    if (/^(\*\*|[-*] )/.test(lines[i])) found.push(i + 1);
+  }
+  return found;
 }
 
 /** Все проверки на дереве `root`: { violations, stats }. */

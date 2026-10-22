@@ -13,6 +13,7 @@
 | [architecture/frontends.md](architecture/frontends.md) | webapp (роутинг, кабинет, токены), мини-апп (навигация без роутера, «Назад», сборка), shared (все подкаталоги), игра, подводные камни |
 | [architecture/data-deploy-ci.md](architecture/data-deploy-ci.md) | Модели БД по доменам, миграции, Dockerfile и супервизор, VPS, джобы CI, nightly, смок прода, раскладка тестов |
 | [architecture/gates.md](architecture/gates.md) | Таблица всех гейтов CI (что ловит, бейслайн, `--update`, джоба) и команды для локальной проверки |
+| [architecture/glossary.md](architecture/glossary.md) | Словарь: как говорит владелец («Мой путь», «ЗВ», «визитка») → где это в коде |
 
 ## Куда идти по задаче
 
@@ -45,6 +46,10 @@
 | Конфликт слияния | `git fetch origin main && git merge origin/main` локально | gates (№13) |
 | Прод лёг, деплой не доехал | `deploy/entrypoint.mjs`, [docs/RUNBOOKS.md](RUNBOOKS.md) (grep по сервису) | ops |
 | Задача размыта | `/grill-me` | — |
+| Где живёт X (шире одного grep) | субагент `scout` | — |
+| Перед PR | субагент `rules-reviewer` по диффу | все темы диффа |
+| Контекст на исходе, задача переезжает | `/handoff` | — |
+| Задача закончена, поиск шёл долго | `/retro` + `node scripts/agent/session-report.mjs` | docs |
 
 «Правило темы» — файл `.claude/rules/<тема>.md`; подгружается сам, когда открываешь файлы области.
 
@@ -56,6 +61,20 @@
 - **Слои:** логика — в `src/bot/` (доменный слой), Telegram-UI — в `src/telegram/`. Не смешивай: новая функциональность — сначала логика в `src/bot/bot.service.ts` (или соседнем сервисе), потом UI в `src/telegram/telegram.service.ts`.
 - **Хосты:** приложение — только `schemehappens.ru`; `kotlarewski.gr` — визитка практики (allow-list в `src/practice-domain.surface.ts`), всё остальное с неё 301 на канонический хост.
 - **Деплой:** push в `main` = деплой. Amvera собирает `Dockerfile` (webapp и игра собираются в образе, `schema-miniapp/dist` берётся из git); контейнер стартует `deploy/entrypoint.mjs`: ждёт БД → `prisma/recover-p3009.sql` → `prisma migrate deploy` → приложение.
+
+## Харнесс агентов
+
+| Что | Где | Когда работает |
+|---|---|---|
+| Карта правил | `CLAUDE.md` | всегда в контексте (бюджет — `check-agent-docs.mjs`) |
+| Полные тексты правил | `.claude/rules/<тема>.md` | сами, по маске `paths:` при чтении файла области |
+| Навыки | `.claude/skills/` — `/grill-me`, `/retro`, `/handoff` | по вызову; в контексте только описание |
+| Субагенты | `.claude/agents/` — `scout` (haiku, поиск по карте), `ci-doctor` (разбор красного CI), `rules-reviewer` (ревью диффа по правилам) | по делегированию; `scout` и `ci-doctor` без `CLAUDE.md` |
+| Настройки | `.claude/settings.json` — модель субагентов `sonnet`, потолки вывода Bash/Read/MCP, запрет чтения dist и lock-файлов, хуки | всегда |
+| Замер контекста | хук `.claude/hooks/log-tool-use.mjs` → журнал .claude/state/tool-log.jsonl (локальный, не в git) → `scripts/agent/session-report.mjs` | каждый вызов инструмента и загрузка правила |
+| Проверка перед пушем | `scripts/agent/precheck.mjs` (список гейтов — из `ci.yml`, логика — `precheck-lib.mjs`, `precheck-tree.mjs`) | перед `git push` и в `rules-reviewer`: быстрые гейты CI в чистом worktree, вывод — только красное |
+| Подсказка на старте | хук `.claude/hooks/session-start.mjs` — одна строка, только если чего-то не хватает (нет `node_modules`) | начало сессии |
+| Журнал промахов карты | [docs/agent/NAV_LOG.md](agent/NAV_LOG.md) | дописывает агент, разбирает `/retro журнал` |
 
 ## Каталоги репозитория
 
