@@ -13,8 +13,10 @@ const TARGET = '/today';
 export function isUnifiedFrontendOn(
   raw: string | undefined = process.env.UNIFIED_FRONTEND,
 ): boolean {
+  // Этап 5 плана единой версии: включено по умолчанию. Выключает только явный
+  // `0`/`false` в env — это откат, если вход в мессенджерах начнёт падать.
   const v = raw?.trim().toLowerCase();
-  return v === '1' || v === 'true';
+  return v !== '0' && v !== 'false';
 }
 
 /** Путь целиком: `/app` или `/app/...` (не `/apple-touch-icon.png`). */

@@ -167,14 +167,21 @@
 
 ### Этап 5. Переключение
 
-Кода не нужно: все кнопки бота (`telegram.keyboards.ts`, `telegram.reply-helpers.ts`,
+Шаги 1 и 4 с #770 — дефолт в коде (`telegram.constants.ts`,
+`unified-frontend.middleware.ts`): деплой и есть переключение, env нужен только
+для отката. Владельцу остаётся проверить, что в Amvera **не** заданы старые
+значения (`MINIAPP_URL=…/app/` или `UNIFIED_FRONTEND=0` перебили бы дефолт), и
+сделать шаги 2–3 в панелях площадок.
+
+Все кнопки бота (`telegram.keyboards.ts`, `telegram.reply-helpers.ts`,
 `telegram.quiz.service.ts`) и кнопка меню (`setChatMenuButton` при старте,
 `telegram.service.ts`) берут адрес из `MINIAPP_URL`, а ссылки-приглашения
 `t.me/<бот>/<приложение>?startapp=…` (`miniapp-link.ts`) открывают то
 мини-приложение, адрес которого задан в BotFather. Шаги делает владелец в панелях,
 порядок важен: сначала прямые адреса, потом редирект.
 
-- [ ] **1. Amvera, env:** `MINIAPP_URL=https://schemehappens.ru/today`, перезапуск.
+- [x] **1. Адрес кнопок и меню бота** — дефолт `MINIAPP_URL` = `APP_URL/today` в коде;
+  откат: `MINIAPP_URL=https://schemehappens.ru/app/` в env Amvera.
   Кнопки и меню бота ведут прямо в кабинет, без лишнего перехода через `/app/`
   (кнопка меню переставляется сама при старте). Проверка: в Telegram открыть бота →
   кнопка меню → должен открыться кабинет и войти без экрана «не удалось войти».
@@ -185,7 +192,8 @@
   `JoinConfirmSheet`), а не мини-апп.
 - [ ] **3. MAX:** в кабинете партнёра MAX тот же адрес мини-приложения
   `https://schemehappens.ru/today`.
-- [ ] **4. Amvera, env:** `UNIFIED_FRONTEND=1`, перезапуск. Включает 302 `/app/*` →
+- [x] **4. Редирект `/app/*` → `/today`** — включён по умолчанию в коде; откат:
+  `UNIFIED_FRONTEND=0` в env Amvera. Включает 302 `/app/*` →
   `/today` и заглушку `/app/sw.js`: старые ярлыки на телефоне и кнопки в давних
   сообщениях бота (адрес вшит в сообщение в момент отправки) попадают в кабинет.
   Данные запуска Telegram едут во фрагменте `#tgWebAppData`, сервер его не видит,

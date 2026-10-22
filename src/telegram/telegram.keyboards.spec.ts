@@ -11,14 +11,14 @@ const flat = (kb: {
 }): Button[] => kb.reply_markup.inline_keyboard.flat();
 
 describe('webApp-кнопки бота ведут в мини-апп канонического хоста', () => {
-  it('приветствие: кнопка «Открыть» — https://schemehappens.ru/app/', () => {
+  it('приветствие: кнопка «Открыть» ведёт в кабинет — https://schemehappens.ru/today', () => {
     const open = flat(buildWelcomeKeyboard() as never).find((b) => b.web_app);
-    expect(open?.web_app?.url).toBe('https://schemehappens.ru/app/');
+    expect(open?.web_app?.url).toBe('https://schemehappens.ru/today');
   });
 
   it('MINIAPP_ONLY_KEYBOARD: единственная кнопка — тот же адрес', () => {
     const buttons = flat(MINIAPP_ONLY_KEYBOARD);
     expect(buttons).toHaveLength(1);
-    expect(buttons[0].web_app?.url).toBe('https://schemehappens.ru/app/');
+    expect(buttons[0].web_app?.url).toBe('https://schemehappens.ru/today');
   });
 });
