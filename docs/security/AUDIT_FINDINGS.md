@@ -640,8 +640,9 @@ plaintext в очереди уведомлений. Нумерация: букв
 - Зашифрованы `AuthProvider.email`/`displayName` (ленивая волна
   `encryption-wave3`) и `Booking.meetingUrl`/`ClientMeeting.meetingUrl`;
   ретенция: `WebSession` старше 30 дней после отзыва/истечения и `EmailToken`
-  старше 7 дней удаляются кроном. `recoveryEmail` и `clientKey` оставлены —
-  причина в SECURITY.md §13.
+  старше 7 дней удаляются кроном. `recoveryEmail` оставлен — причина в
+  SECURITY.md §13. `clientKey` с #830 — HMAC под ключом сервера
+  (`src/booking/client-key.ts`), старые строки переводит проход на старте.
 - `AuthProvider.email`/`displayName` (для Google/VK не ключ поиска — можно
   шифровать), `User.recoveryEmail` (blind-index HMAC + шифр),
   `ClientMeeting.clientKey` (несолёный sha256 телефона/хэндла — перебираем,
