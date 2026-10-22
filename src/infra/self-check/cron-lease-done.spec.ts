@@ -1,6 +1,7 @@
 // Правило «прогон захвачен, но не дошёл до конца» пробы cronLeases.
 import {
   COMPLETING_LEASES,
+  RESUME_START_SLACK_MS,
   UNFINISHED_GRACE_MS,
   unfinishedRunProblem,
 } from './cron-lease-done';
@@ -104,8 +105,21 @@ describe('unfinishedRunProblem', () => {
     ).not.toBeNull();
   });
 
+  it('старт за минуту до конца окна доделки: доделка не успеет (задержка старта) — не судится', () => {
+    // Доделка идёт через загрузку + 30 с после старта; к ней прогон уже
+    // старше RESUME_WINDOW_MS, и доделать его некому.
+    const startedAt = RUN + RESUME_WINDOW_MS - 60_000;
+    expect(
+      unfinishedRunProblem('midnightPlanner', {
+        runAt: RUN,
+        startedAt,
+        now: startedAt + UNFINISHED_GRACE_MS + 1,
+      }),
+    ).toBeNull();
+  });
+
   it('контроль: пустая отметка внутри окна доделки — судится через два часа от старта', () => {
-    const startedAt = RUN + RESUME_WINDOW_MS;
+    const startedAt = RUN + RESUME_WINDOW_MS - RESUME_START_SLACK_MS - 1;
     expect(
       unfinishedRunProblem('midnightPlanner', {
         runAt: RUN,

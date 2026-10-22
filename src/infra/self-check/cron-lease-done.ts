@@ -21,6 +21,11 @@ export const COMPLETING_LEASES: ReadonlySet<string> = new Set([
  * через 30 с). */
 export const UNFINISHED_GRACE_MS = 2 * 3_600_000;
 
+/** Доделка начинается не в момент старта, а после загрузки и 30-секундной
+ * задержки (catchupTimer в telegram.schedule.service.ts). Прогон, начатый
+ * чуть меньше чем за RESUME_WINDOW_MS до старта, к ней уже выйдет из окна. */
+export const RESUME_START_SLACK_MS = 5 * 60_000;
+
 export interface RunDoneFacts {
   runAt?: number;
   doneRunAt?: number;
@@ -37,13 +42,14 @@ export function unfinishedRunProblem(
   if (!COMPLETING_LEASES.has(name) || f.runAt === undefined) return null;
   if (f.doneRunAt === f.runAt) return null;
   // Отметки не было ни разу, а прогон начат раньше, чем этот процесс мог бы
-  // его доделать (доделка при старте — только в RESUME_WINDOW_MS): доделать
-  // его некому, и красная проба провисела бы до полуночи. Так выглядит первый
-  // деплой колонки doneRunAt днём — прошлый обход прошёл старым кодом, который
-  // отметку не ставил. Отметка от прошлого прогона (doneRunAt ≠ runAt) сюда не
-  // попадает: это настоящий оборванный обход, он судится.
-  if (f.doneRunAt === undefined && f.runAt < f.startedAt - RESUME_WINDOW_MS)
-    return null;
+  // его доделать (доделка — только в RESUME_WINDOW_MS, считая от момента
+  // доделки, а не старта): доделать его некому, и красная проба провисела бы
+  // до полуночи. Так выглядит первый деплой колонки doneRunAt днём — прошлый
+  // обход прошёл старым кодом, который отметку не ставил. Отметка от прошлого
+  // прогона (doneRunAt ≠ runAt) сюда не попадает: это настоящий оборванный
+  // обход, он судится.
+  const tooOld = f.startedAt - RESUME_WINDOW_MS + RESUME_START_SLACK_MS;
+  if (f.doneRunAt === undefined && f.runAt <= tooOld) return null;
   if (f.now - Math.max(f.runAt, f.startedAt) <= UNFINISHED_GRACE_MS)
     return null;
   return `обход, начатый в ${hhmm(f.runAt)} UTC, не дошёл до конца — часть людей осталась без запланированных сообщений`;
