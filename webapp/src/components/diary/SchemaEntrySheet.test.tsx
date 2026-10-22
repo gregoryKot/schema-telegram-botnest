@@ -88,9 +88,12 @@ describe('SchemaEntrySheet — визард (шаги, обязательнос�
 
   // Аудит 2026-10, «Доступность»: тики были pressable()-div без содержимого —
   // скринридер читал ряд одинаковых «кнопка», не называя шаг.
-  it('тик назван номером шага, интенсивность — эмоцией и степенью', () => {
+  it('тик назван номером шага и помечает текущий, интенсивность — эмоцией и степенью', () => {
     renderSheet();
+    expect(screen.getByRole('button', { name: 'Шаг 1' }).getAttribute('aria-current')).toBe('step');
     fireEvent.click(screen.getByRole('button', { name: 'Шаг 2' }));
+    expect(screen.getByRole('button', { name: 'Шаг 2' }).getAttribute('aria-current')).toBe('step');
+    expect(screen.getByRole('button', { name: 'Шаг 1' }).getAttribute('aria-current')).toBeNull();
     fireEvent.click(screen.getByText('Страх'));
     expect(screen.getByRole('button', { name: 'Страх: заметно' })).toBeTruthy();
   });

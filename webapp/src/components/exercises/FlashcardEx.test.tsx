@@ -53,10 +53,13 @@ describe('FlashcardEx (SchemaEx) — кризисная детекция', () =>
   });
 
   // Аудит 2026-10, «Доступность»: тики вопросов были pressable()-div без имени.
-  it('тик назван номером вопроса и ведёт к нему', () => {
+  it('тик назван номером вопроса, ведёт к нему и помечает текущий', () => {
     renderSheet();
+    expect(screen.getByRole('button', { name: 'Вопрос 1' }).getAttribute('aria-current')).toBe('step');
     fireEvent.click(screen.getByRole('button', { name: 'Вопрос 2' }));
     expect(screen.getByText(/^Вопрос 2 из/)).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Вопрос 2' }).getAttribute('aria-current')).toBe('step');
+    expect(screen.getByRole('button', { name: 'Вопрос 1' }).getAttribute('aria-current')).toBeNull();
   });
 
   it('нейтральный текст не показывает CrisisCard', () => {

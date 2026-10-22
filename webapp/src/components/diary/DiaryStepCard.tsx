@@ -14,7 +14,7 @@ export function DiaryTicks({ filled, active, hue, onJump }: {
     <div className="sd-ticks" style={hueStyle(hue)}>
       {filled.map((f, i) => (
         <div key={i} className={'sd-tick' + (f ? ' is-filled' : '') + (i === active ? ' is-active' : '')}
-          {...pressable(() => onJump(i))} aria-label={`Шаг ${i + 1}`} />
+          {...pressable(() => onJump(i))} aria-label={`Шаг ${i + 1}`} aria-current={i === active ? 'step' : undefined} />
       ))}
     </div>
   );

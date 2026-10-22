@@ -22,7 +22,7 @@
 //     показывают, это подсказка мыши, а не имя.
 //
 // Область — webapp/src и shared/src. schema-miniapp не покрыт: мини-апп
-// удаляется по docs/ONE_FRONTEND_PLAN.md, его девять глиф-кнопок записаны в
+// удаляется по docs/ONE_FRONTEND_PLAN.md, его 17 мест записаны в
 // docs/open/one-frontend.md «Что осталось открытым». Абсолютный, без бейслайна.
 import { readFileSync, readdirSync, statSync } from 'fs';
 import { createRequire } from 'module';
