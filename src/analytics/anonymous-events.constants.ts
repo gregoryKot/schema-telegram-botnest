@@ -3,7 +3,7 @@
 // crisis_card_shown / crisis_hotline_tapped — строка «человек X увидел
 // кризисную карточку» в открытом виде (meta не шифруется) и есть маркер
 // суицидальных мыслей, привязанный к личности, с хранением 90 дней
-// (RETENTION_DAYS в analytics.service.ts). Отчёту /stats нужны только счётчики
+// (analytics-retention.ts). Отчёту /stats нужны только счётчики
 // (`ev(name)` в bot.product-metrics.service.ts — count(*) по имени, без
 // группировки по userId), поэтому связь с человеком не нужна и не пишется.
 // Лежит отдельным файлом, а не рядом с ANALYTICS_EVENTS: тот файл заморожен в

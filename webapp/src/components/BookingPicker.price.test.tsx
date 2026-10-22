@@ -74,7 +74,7 @@ describe('BookingPicker — цена в валюте посетителя', () =
     expect(flat(btn.textContent ?? '')).toContain(`Оплатить ${flat(RUB_4000)} и записаться →`);
     expect(screen.getByText('Оплата картой или СБП через Robokassa. Чек придёт автоматически.')).toBeTruthy();
 
-    mockApi.bookSlot.mockResolvedValue({ id: 2, cancelToken: 't', heldUntil: null, status: 'pending', paymentUrl: 'https://pay.example/x', meetingUrl: null });
+    mockApi.bookSlot.mockResolvedValue({ id: 2, cancelToken: 't', heldUntil: null, status: 'pending', paymentUrl: 'https://pay.example/x' });
     fireEvent.click(btn);
     await screen.findByText('Время зарезервировано');
     expect(flat(screen.getByText(/Для подтверждения нужна оплата/).textContent ?? '')).toBe(`Для подтверждения нужна оплата ${flat(RUB_4000)}.`);
@@ -90,7 +90,7 @@ describe('BookingPicker — цена в валюте посетителя', () =
 
   it('доллары: бронь подтверждается сразу (paymentUrl: null), запрос несёт пояс, экран «забронировано» со стоимостью', async () => {
     await openSessionForm('America/New_York');
-    mockApi.bookSlot.mockResolvedValue({ id: 3, cancelToken: 't3', heldUntil: null, status: 'confirmed', paymentUrl: null, meetingUrl: null });
+    mockApi.bookSlot.mockResolvedValue({ id: 3, cancelToken: 't3', heldUntil: null, status: 'confirmed', paymentUrl: null });
     fireEvent.click(screen.getByRole('button', { name: /^Записаться на/ }));
     await screen.findByText('Время забронировано');
     expect(mockApi.bookSlot).toHaveBeenCalledWith(expect.objectContaining({ type: 'SESSION_50', clientTimeZone: 'America/New_York' }));
@@ -99,7 +99,7 @@ describe('BookingPicker — цена в валюте посетителя', () =
 
   it('рубли с сервером без paymentUrl — строки про стоимость на экране «забронировано» нет', async () => {
     await openSessionForm('Europe/Moscow');
-    mockApi.bookSlot.mockResolvedValue({ id: 4, cancelToken: 't4', heldUntil: null, status: 'confirmed', paymentUrl: null, meetingUrl: null });
+    mockApi.bookSlot.mockResolvedValue({ id: 4, cancelToken: 't4', heldUntil: null, status: 'confirmed', paymentUrl: null });
     fireEvent.click(screen.getByRole('button', { name: /Оплатить/ }));
     await screen.findByText('Время забронировано');
     expect(screen.queryByText(/Стоимость сессии/)).toBeNull();
@@ -107,7 +107,7 @@ describe('BookingPicker — цена в валюте посетителя', () =
 
   it('знакомство вне рублей — только бесплатный текст, без стоимости', async () => {
     mockTz.mockReturnValue(['America/New_York', vi.fn()]);
-    mockApi.bookSlot.mockResolvedValue({ id: 5, cancelToken: 't5', heldUntil: null, status: 'confirmed', paymentUrl: null, meetingUrl: null });
+    mockApi.bookSlot.mockResolvedValue({ id: 5, cancelToken: 't5', heldUntil: null, status: 'confirmed', paymentUrl: null });
     render(<BookingPicker />);
     fireEvent.click(await screen.findByText(localTimeLabel(SLOT.startsAt, 'America/New_York')));
     expect(screen.getByText('Первая встреча 15 минут — бесплатно. Никаких обязательств.')).toBeTruthy();

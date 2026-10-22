@@ -6,6 +6,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { BookingPaidPage } from './BookingPaidPage';
+import { MEETING_LINK_LATER } from '../components/booking/BookingSaveBlock';
 import { ApiError } from '../apiClient';
 
 const getBookingByToken = vi.fn();
@@ -37,7 +38,7 @@ afterEach(() => {
 const BOOKING = {
   status: 'CONFIRMED', paid: true, type: 'SESSION_50' as const,
   startsAt: '2099-08-10T10:00:00Z', endsAt: '2099-08-10T10:50:00Z',
-  durationMin: 50, meetingUrl: 'https://meet.example/xyz',
+  durationMin: 50,
 };
 
 describe('BookingPaidPage — без токена', () => {
@@ -67,22 +68,17 @@ describe('BookingPaidPage — с токеном', () => {
     expect(screen.queryByText('Загружаем…')).toBeNull();
   });
 
-  it('успешная загрузка показывает время встречи и ссылку на видеовстречу', async () => {
+  // Аудит 2026-10: страница открывается по токену, а его получает любой, кто
+  // записался с чужим контактом, — ссылку на встречу присылает владелец, а
+  // экран не зовёт вечно жать «Обновить» в ожидании ссылки.
+  it('успешная загрузка: «Оплата прошла» и обещание прислать ссылку, без кнопок встречи и «Обновить»', async () => {
     setUrl('?token=abc');
     getBookingByToken.mockResolvedValue(BOOKING);
     render(<BookingPaidPage />);
     expect(await screen.findByText('Оплата прошла')).toBeTruthy();
-    const link = screen.getByText('Подключиться к встрече') as HTMLAnchorElement;
-    expect(link.getAttribute('href')).toBe(BOOKING.meetingUrl);
-  });
-
-  it('без готовой ссылки на встречу предлагает обновить, не выдаёт битую ссылку', async () => {
-    setUrl('?token=abc');
-    getBookingByToken.mockResolvedValue({ ...BOOKING, meetingUrl: null });
-    render(<BookingPaidPage />);
-    await screen.findByText('Оплата прошла');
-    expect(screen.getByText(/Ссылку на видеовстречу готовлю/)).toBeTruthy();
+    expect(screen.getByText(MEETING_LINK_LATER)).toBeTruthy();
     expect(screen.queryByText('Подключиться к встрече')).toBeNull();
+    expect(screen.queryByText('Обновить')).toBeNull();
   });
 
   it('токен, которого сервер не знает (404), — «запись не найдена», а не «Оплата принята»', async () => {

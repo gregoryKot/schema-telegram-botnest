@@ -23,7 +23,6 @@ const PROPS = {
   startsAt: '2026-09-30T16:00:00.000Z',
   durationMin: 50,
   type: 'SESSION_50' as const,
-  meetingUrl: 'https://meet.example/room',
   tz: 'Europe/Moscow',
 };
 
@@ -112,14 +111,14 @@ describe('BookingSaveBlock — сохранить ссылку', () => {
   });
 });
 
-describe('BookingSaveBlock — персональная ссылка на встречу', () => {
-  it('с meetingUrl — строка со ссылкой и кнопкой «Скопировать»', () => {
+// Аудит 2026-10: блок живёт на анонимных экранах (ответ записи, страница по
+// токену) — ссылки на встречу в нём нет ни строкой, ни в событии календаря.
+describe('BookingSaveBlock — без ссылки на встречу', () => {
+  it('ни строки «Ссылка на встречу», ни ссылки в деталях события Google', () => {
     render(<BookingSaveBlock {...PROPS} />);
-    expect(screen.getByText('Ссылка на встречу:')).toBeTruthy();
-  });
-
-  it('без meetingUrl — строки нет', () => {
-    render(<BookingSaveBlock {...PROPS} meetingUrl={null} />);
-    expect(screen.queryByText('Ссылка на встречу:')).toBeNull();
+    expect(screen.queryByText(/Ссылка на встречу/)).toBeNull();
+    const google = screen.getByText('Google Календарь').getAttribute('href') ?? '';
+    const details = new URL(google).searchParams.get('details') ?? '';
+    expect(details).toBe(`Посмотреть или отменить запись: ${window.location.origin}/booking/manage?token=tok-1`);
   });
 });

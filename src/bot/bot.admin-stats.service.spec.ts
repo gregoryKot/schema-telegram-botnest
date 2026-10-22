@@ -1,8 +1,11 @@
-// Волна В mutation-покрытия (2026-08): getAdminStats уже гонялся «целиком»
-// в bot.analytics.service.spec.ts (сейчас — этот файл, сервис вынесен по
-// правилу №10), но churnRisk (разница множеств activeOlder/activeRecent) и
-// bestDow (подсчёт по дню недели) не проверялись на КОНКРЕТНОЕ число —
-// мутант, ломающий именно эту арифметику, проходил бы незамеченным.
+// Волна В mutation-покрытия (2026-08): числа отчёта проверяются на КОНКРЕТНОЕ
+// значение, а не «собралось без падения».
+//
+// Аудит 2026-10: «ядро», «заходили за неделю» и «могут уйти» считались в
+// памяти по findMany с take: 5000 и теряли свежие дни. Теперь их считает один
+// SQL — его арифметику (churn, ядро, >5000 пар) доказывает живая база
+// (test/raw-sql-live-admin-stats.e2e-spec.ts, правило №18); здесь — что числа
+// из SQL доходят до отчёта, день недели, зона «сегодня» и пустое состояние.
 import { BotAdminStatsService } from './bot.admin-stats.service';
 
 const FIXED_DATE = new Date('2025-06-11T12:00:00Z'); // среда
@@ -26,6 +29,13 @@ function makeQueryRawMock(
     ret3?: number;
     ret7?: number;
     ret30?: number;
+    activity?: {
+      month30?: number;
+      week7?: number;
+      churn?: number;
+      core?: number;
+    };
+    perDay?: Array<{ date: string; c: number }>;
   } = {},
 ) {
   return jest.fn((strings: TemplateStringsArray, ...values: unknown[]) => {
@@ -37,12 +47,25 @@ function makeQueryRawMock(
         { cohort: BigInt(r.cohort), retained: BigInt(r.retained) },
       ]);
     }
+    if (text.includes('AS last_day')) {
+      const a = cfg.activity ?? {};
+      return Promise.resolve([
+        {
+          month30: BigInt(a.month30 ?? cfg.month30Count ?? 0),
+          week7: BigInt(a.week7 ?? 0),
+          churn: BigInt(a.churn ?? 0),
+          core: BigInt(a.core ?? 0),
+        },
+      ]);
+    }
+    if (text.includes('GROUP BY date'))
+      return Promise.resolve(
+        (cfg.perDay ?? []).map((r) => ({ date: r.date, c: BigInt(r.c) })),
+      );
     if (text.includes('EXISTS (SELECT 1 FROM "Rating" r'))
       return Promise.resolve([{ c: BigInt(cfg.filledOnce30 ?? 0) }]);
     if (text.includes('WHERE date = '))
       return Promise.resolve([{ c: BigInt(cfg.todayCount ?? 0) }]);
-    if (text.includes('WHERE date >= '))
-      return Promise.resolve([{ c: BigInt(cfg.month30Count ?? 0) }]);
     if (text.includes('>= 1)'))
       return Promise.resolve([{ cnt: BigInt(cfg.ret1 ?? 0) }]);
     if (text.includes('>= 3)'))
@@ -68,7 +91,6 @@ function makePrisma(overrides: Record<string, any> = {}) {
       ...overrides.pair,
     },
     rating: {
-      findMany: jest.fn().mockResolvedValue([]),
       groupBy: jest.fn().mockResolvedValue([]),
       ...overrides.rating,
     },
@@ -76,80 +98,99 @@ function makePrisma(overrides: Record<string, any> = {}) {
   } as any;
 }
 
-// activeOlder = { userId: 3, 5 } (заходили в окне d30..d7)
-// activeRecent = { userId: 3 } (заходили за последние 7 дней)
-// churnRisk = |activeOlder \ activeRecent| = |{5}| = 1
-function makePrismaForChurnAndDow() {
-  const fillsByDow = [
-    { date: d(2), userId: 1n }, // понедельник
-    { date: d(2), userId: 2n }, // понедельник
-    { date: d(9), userId: 3n }, // тоже понедельник (d(9) = 2025-06-02, пн)
-    { date: d(0), userId: 4n }, // среда — меньшинство
-  ];
-  return {
-    user: { count: jest.fn().mockResolvedValue(0) },
-    pair: { count: jest.fn().mockResolvedValue(0) },
-    rating: {
-      findMany: jest.fn(({ where, distinct }: any) => {
-        if (where.date?.lt !== undefined)
-          return Promise.resolve([{ userId: 3n }, { userId: 5n }]); // activeOlder
-        if (distinct?.includes('date')) return Promise.resolve(fillsByDow); // fillsByDow
-        return Promise.resolve([{ userId: 3n }]); // week7Ratings (activeRecent)
-      }),
-      groupBy: jest.fn().mockResolvedValue([]),
-    },
-    $queryRaw: makeQueryRawMock(),
-  } as any;
-}
-
-describe('BotAdminStatsService.getAdminStats — churnRisk и bestDow (арифметика отчёта)', () => {
+describe('BotAdminStatsService.getAdminStats — активность, день недели, зона', () => {
   beforeEach(() => {
     jest.useFakeTimers();
     jest.setSystemTime(FIXED_DATE);
   });
   afterEach(() => jest.useRealTimers());
 
-  it('churnRisk считает разницу множеств (был в d30..d7, но не в последние 7 дней), а не пересечение/сумму', async () => {
-    const svc = new BotAdminStatsService(makePrismaForChurnAndDow());
-    const report = await svc.getAdminStats();
+  it('«заходили», «ядро» и «могут уйти» — числа из одного SQL доходят до отчёта как есть', async () => {
+    const prisma = makePrisma({
+      $queryRaw: makeQueryRawMock({
+        activity: { month30: 9, week7: 7, churn: 2, core: 4 },
+      }),
+    });
+    const report = await new BotAdminStatsService(prisma).getAdminStats();
+    expect(report).toContain('Заходили за неделю: 7 · за месяц: 9');
     expect(report).toContain(
-      'Могут уйти (заходили раньше, а всю неделю — ни разу): 1',
+      'Ведут дневник регулярно (хотя бы 3 дня из последних 7): 4 из 7 заходивших за неделю',
+    );
+    expect(report).toContain(
+      'Могут уйти (заходили раньше, а всю неделю — ни разу): 2',
     );
   });
 
-  it('bestDow — день недели с максимумом заполнений (понедельник: 3 против 1 у среды)', async () => {
-    const svc = new BotAdminStatsService(makePrismaForChurnAndDow());
-    const report = await svc.getAdminStats();
+  it('SQL активности получает окна недели и месяца в МСК, без take и без now()', async () => {
+    const queryRaw = makeQueryRawMock();
+    await new BotAdminStatsService(
+      makePrisma({ $queryRaw: queryRaw }),
+    ).getAdminStats();
+    const call = queryRaw.mock.calls.find(([strings]) =>
+      (strings as TemplateStringsArray).join('|').includes('AS last_day'),
+    ) as unknown as [TemplateStringsArray, ...unknown[]];
+    const [strings, ...values] = call;
+    // FIXED_DATE = 12:00 UTC = 15:00 МСК — дни совпадают с UTC-днями.
+    expect(values).toEqual([d(7), d(7), d(7), d(30)]);
+    expect(strings.join('|')).not.toMatch(/now\(\)|LIMIT|take/i);
+  });
+
+  it('bestDow — день недели с наибольшим числом людей (понедельник: 2+1 против 1 у среды)', async () => {
+    const prisma = makePrisma({
+      $queryRaw: makeQueryRawMock({
+        perDay: [
+          { date: d(2), c: 2 }, // 2025-06-09, понедельник
+          { date: d(9), c: 1 }, // 2025-06-02, тоже понедельник
+          { date: d(0), c: 1 }, // 2025-06-11, среда
+        ],
+      }),
+    });
+    const report = await new BotAdminStatsService(prisma).getAdminStats();
     expect(report).toContain('Чаще всего заполняют: пн');
   });
 
-  it('ядро: считает того, кто набрал 3 дня ВНУТРИ окна недели, но не того, чьи 3 дня старше окна (fillsByDow тянет 30 дней, окно ядра — 7)', async () => {
-    const prisma = makePrismaForChurnAndDow();
-    prisma.rating.findMany = jest.fn(({ where, distinct }: any) => {
-      if (where.date?.lt !== undefined)
-        return Promise.resolve([{ userId: 3n }, { userId: 5n }]); // activeOlder
-      if (distinct?.includes('date'))
-        return Promise.resolve([
-          { userId: 10n, date: d(1) },
-          { userId: 10n, date: d(2) },
-          { userId: 10n, date: d(3) }, // 3 разных дня внутри недели → ядро
-          { userId: 20n, date: d(9) },
-          { userId: 20n, date: d(10) },
-          { userId: 20n, date: d(11) }, // 3 дня, но все старше окна недели → не ядро
-          { userId: 30n, date: d(0) },
-          { userId: 30n, date: d(1) }, // только 2 дня внутри окна → не ядро
-        ]);
-      return Promise.resolve([
-        { userId: 10n },
-        { userId: 20n },
-        { userId: 30n },
-      ]); // week7Ratings
+  it('счётчик дня — число людей, а не число строк: один день с 3 людьми весомее двух дней по одному', async () => {
+    const prisma = makePrisma({
+      $queryRaw: makeQueryRawMock({
+        perDay: [
+          { date: d(0), c: 3 }, // среда
+          { date: d(1), c: 1 }, // вторник
+          { date: d(8), c: 1 }, // вторник
+        ],
+      }),
     });
-    const svc = new BotAdminStatsService(prisma);
-    const report = await svc.getAdminStats();
+    const report = await new BotAdminStatsService(prisma).getAdminStats();
+    expect(report).toContain('Чаще всего заполняют: ср');
+  });
+
+  it('пустая база: день недели не выдумывается («вс» из семи нулей — прежний баг)', async () => {
+    const report = await new BotAdminStatsService(makePrisma()).getAdminStats();
     expect(report).toContain(
-      'Ведут дневник регулярно (хотя бы 3 дня из последних 7): 1 из 3 заходивших за неделю',
+      'Чаще всего заполняют: пока мало записей, чтобы сказать',
     );
+    expect(report).not.toContain('Чаще всего заполняют: вс');
+  });
+
+  // Аудит 2026-10: Rating.date пишется в зоне пользователя (по умолчанию
+  // МСК), а «сегодня» отчёта бралось в UTC — с 00:00 до 03:00 МСК отчёт
+  // показывал вчерашний день и «Заполнили сегодня» считал вчерашних.
+  it('01:30 МСК 12 июня — «сегодня» = 2025-06-12, а не UTC-шное 2025-06-11', async () => {
+    jest.setSystemTime(new Date('2025-06-11T22:30:00Z'));
+    const queryRaw = makeQueryRawMock();
+    const report = await new BotAdminStatsService(
+      makePrisma({ $queryRaw: queryRaw }),
+    ).getAdminStats();
+    expect(report).toContain('· 2025-06-12');
+    const todayCall = queryRaw.mock.calls.find(([strings]) =>
+      (strings as TemplateStringsArray).join('|').includes('WHERE date = '),
+    );
+    expect(todayCall?.[1]).toBe('2025-06-12');
+    const actCall = queryRaw.mock.calls.find(([strings]) =>
+      (strings as TemplateStringsArray).join('|').includes('AS last_day'),
+    );
+    // Неделя назад от 12 июня по МСК — 5 июня, месяц — 13 мая.
+    expect(actCall?.[1]).toBe('2025-06-05');
+    expect(actCall?.[4]).toBe('2025-05-13');
   });
 });
 
@@ -161,8 +202,9 @@ describe('BotAdminStatsService.getAdminStats — fillRate = Math.round(todayCoun
   afterEach(() => jest.useRealTimers());
 
   it('7/40 = 17.5% → округляется в 18, а не отбрасывается до 17 (не Math.floor)', async () => {
-    const prisma = makePrismaForChurnAndDow();
-    prisma.$queryRaw = makeQueryRawMock({ todayCount: 7, month30Count: 40 });
+    const prisma = makePrisma({
+      $queryRaw: makeQueryRawMock({ todayCount: 7, month30Count: 40 }),
+    });
     const svc = new BotAdminStatsService(prisma);
     const report = await svc.getAdminStats();
     expect(report).toContain(
@@ -171,8 +213,9 @@ describe('BotAdminStatsService.getAdminStats — fillRate = Math.round(todayCoun
   });
 
   it('month30Count = 0 → fillRate = 0, а не деление на ноль/NaN', async () => {
-    const prisma = makePrismaForChurnAndDow();
-    prisma.$queryRaw = makeQueryRawMock({ todayCount: 0, month30Count: 0 });
+    const prisma = makePrisma({
+      $queryRaw: makeQueryRawMock({ todayCount: 0, month30Count: 0 }),
+    });
     const svc = new BotAdminStatsService(prisma);
     const report = await svc.getAdminStats();
     expect(report).toContain(
@@ -276,14 +319,6 @@ describe('BotAdminStatsService.getAdminStats — отчёт целиком', () 
       },
       pair: { count: jest.fn().mockResolvedValue(4) },
       rating: {
-        findMany: jest.fn(({ distinct }: any) => {
-          if (distinct?.includes('date'))
-            return Promise.resolve([
-              { date: d(0), userId: 1n },
-              { date: d(1), userId: 2n },
-            ]);
-          return Promise.resolve([{ userId: 1n }, { userId: 3n }]);
-        }),
         groupBy: jest.fn().mockResolvedValue([
           { needId: 'limits', _avg: { value: 3.2 } },
           { needId: 'attachment', _avg: { value: 7.1 } },

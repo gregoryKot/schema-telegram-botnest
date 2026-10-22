@@ -1,6 +1,6 @@
 // .ics для клиента (PR B) — отдельная сборка от владельческого CalDAV-события
 // (правило «PII только владельцу»): проверяем, что SUMMARY/DESCRIPTION не
-// содержат имени/контакта клиента, что время в UTC (суффикс Z) и что
+// содержат имени/контакта клиента и ссылки на встречу, что время в UTC (суффикс Z) и что
 // неизвестный/отменённый токен отвечают контролируемо (404/410), а не
 // молчаливым мусором.
 import { GoneException, NotFoundException } from '@nestjs/common';
@@ -40,24 +40,20 @@ describe('buildBookingIcsText — контент без PII', () => {
     expect(ics).toContain('SUMMARY:Знакомство с Григорием Котляревским\r\n');
   });
 
-  it('DESCRIPTION содержит ссылку на встречу и ссылку управления, без PII-полей', async () => {
+  // Аудит 2026-10: cancel-токен получает любой, кто вызвал анонимную запись с
+  // чужим контактом, а комната клиента ищется по контакту — ссылки в .ics нет.
+  it('ссылки на встречу нет ни в DESCRIPTION, ни в LOCATION; ссылка управления есть', async () => {
     const ics = await buildBookingIcsText(
       makePrisma(CONFIRMED),
       'tok-abc',
       'https://kotlarewski.gr',
     );
-    expect(ics).toContain('meet.example');
-    expect(ics).toContain('booking/manage?token=tok-abc');
-  });
-
-  it('без meetingUrl — DESCRIPTION без строки «Ссылка на встречу»', async () => {
-    const ics = await buildBookingIcsText(
-      makePrisma({ ...CONFIRMED, meetingUrl: null }),
-      'tok',
-      'https://kotlarewski.gr',
-    );
     expect(ics).not.toContain('meet.example');
-    expect(ics).toContain('booking/manage?token=tok');
+    expect(ics).not.toMatch(/^LOCATION/m);
+    const unfolded = ics.replace(/\r\n /g, ''); // RFC 5545: перенос длинных строк
+    expect(unfolded).toContain(
+      'DESCRIPTION:Посмотреть или отменить запись: https://kotlarewski.gr/booking/manage?token=tok-abc\r\n',
+    );
   });
 
   it('URL-свойство события — та же ссылка управления', async () => {
