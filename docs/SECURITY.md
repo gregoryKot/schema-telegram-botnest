@@ -212,8 +212,9 @@
       аккаунтов потеряет/сломает данные.
 - [ ] Нет новых секретов в коде и в логах.
 - [ ] `npm audit --omit=dev --audit-level=high` чистый во всех пяти пакетах
-      (держат шаги CI и ночная джоба `npm-audit`; новый `package-lock.json`
-      без шага в `ci.yml` роняет `lockfile-audit.spec.ts`).
+      (держат шаги CI и ночная джоба `npm-audit` через обёртку
+      `scripts/npm-audit.mjs`; новый `package-lock.json` без шага в `ci.yml`
+      роняет `lockfile-audit.spec.ts`).
 - [ ] В проде: `NODE_ENV=production`, `SKIP_AUTH` не выставлен,
       `ALLOWED_ORIGINS` задан явно.
 
