@@ -37,6 +37,14 @@ describe('normalizeContact — форма контакта решает, что 
     expect(normalizeContact('@Ivan_P')).toBe('ivan_p');
     expect(normalizeContact('Иван   Петров ')).toBe('иван петров');
   });
+
+  it('контроль: «ник» из одних цифр не совпадает с телефоном', () => {
+    expect(normalizeContact('@79991234567')).toBe('@79991234567');
+    expect(normalizeContact('@79991234567')).not.toBe(
+      normalizeContact('+7 (999) 123-45-67'),
+    );
+    expect(normalizeContact('@a1_')).toBe('a1_');
+  });
 });
 
 describe('clientKey — HMAC с серверным ключом', () => {

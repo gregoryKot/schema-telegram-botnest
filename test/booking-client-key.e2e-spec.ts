@@ -28,6 +28,8 @@ const RETURNING = 'ck-returning@example.com'; // строка в старом ф
 const SHARED_FIRST = 'ck-a@my-site.example'; // склейка: бронь раньше
 const SHARED_LATER = 'ck-a@mysite.example'; // склейка: бронь позже
 const ORPHAN = 'ck-orphan@example.com'; // строка без единой живой брони
+// по старой формуле — ключ ORPHAN; HELD-бронь без ссылки претендентом не считается
+const ORPHAN_GLUED = 'ck-or-phan@example.com';
 const ANON = 'ck-anon@example.com'; // новый формат, брони обезличены
 const FIXTURE_KEY = 'ck-e2e-fixture-client'; // не hex: чужая фикстура
 const CONTACTS = [
@@ -37,6 +39,7 @@ const CONTACTS = [
   SHARED_FIRST,
   SHARED_LATER,
   ORPHAN,
+  ORPHAN_GLUED,
   ANON,
 ];
 
@@ -50,6 +53,7 @@ const SEED_TOKENS = [
   'ck-e2e-returning',
   'ck-e2e-shared-first',
   'ck-e2e-shared-later',
+  'ck-e2e-orphan-held',
 ];
 const DAY = 86_400_000;
 
@@ -99,14 +103,15 @@ describe('e2e: ключ комнаты клиента не склеивает р
   const seedBooking = (
     token: string,
     contact: string,
-    url: string,
+    url: string | null,
     createdAt: Date,
+    status: 'CONFIRMED' | 'HELD' = 'CONFIRMED',
   ) =>
     prisma.booking.create({
       data: {
         startsAt: new Date('2095-03-21T10:00:00.000Z'),
         durationMin: 50,
-        status: 'CONFIRMED',
+        status,
         clientName: encrypt('Проверка ключа') ?? '',
         clientContact: encrypt(contact) ?? contact,
         cancelToken: token,
@@ -167,6 +172,14 @@ describe('e2e: ключ комнаты клиента не склеивает р
       'https://meet.jit.si/ck-orphan',
       old,
     );
+    expect(legacyClientKey(ORPHAN_GLUED)).toBe(legacyClientKey(ORPHAN));
+    const held = await seedBooking(
+      'ck-e2e-orphan-held',
+      ORPHAN_GLUED,
+      null,
+      old,
+      'HELD',
+    );
     await seedRow(clientKey(ANON), 'https://meet.jit.si/ck-anon', old);
     await seedRow(FIXTURE_KEY, 'https://meet.jit.si/ck-fixture', old);
 
@@ -179,12 +192,14 @@ describe('e2e: ключ комнаты клиента не склеивает р
     expect(await room(clientKey(SHARED_FIRST))).toBe(ROOM_SHARED);
     expect(await room(clientKey(SHARED_LATER))).toBeNull();
     expect(await room(legacyClientKey(ORPHAN))).toBeNull();
+    expect(await room(clientKey(ORPHAN_GLUED))).toBeNull();
     expect(await room(clientKey(ANON))).toBe('https://meet.jit.si/ck-anon');
     expect(await room(FIXTURE_KEY)).toBe('https://meet.jit.si/ck-fixture');
 
     const dms = adminDms().filter((t) => t.includes('Ключи комнат клиентов'));
     expect(dms).toHaveLength(1);
     expect(dms[0]).toContain(`№${later.id}`);
+    expect(dms[0]).not.toContain(`№${held.id}`);
   });
 
   it('read-after-write: повторная бронь переведённого клиента получает прежнюю комнату', async () => {

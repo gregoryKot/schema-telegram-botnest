@@ -11,7 +11,11 @@ import { rekeyReport, type RekeyStats } from './client-key-rekey.report';
 // зашифрован): по каждой брони с выданной ссылкой («претендент» — её
 // подтверждение комнату создало или переиспользовало) считается новый ключ и
 // ключи, под которыми строку мог записать прежний код (client-key.ts,
-// clientKeySources). Строка под старым ключом переезжает на новый.
+// clientKeySources). Строка под старым ключом переезжает на новый. Претендент
+// на строку — только бронь, в которой лежит ссылка ИМЕННО на её комнату:
+// HELD-бронь без ссылки (ящик, похожий на ящик клиента) или бронь со ссылкой
+// из другой эпохи (статичный MEETING_URL, комната до замены) строку не
+// получает и в сообщение владельцу не попадает.
 //
 // Флага «сделано» нет намеренно, в отличие от волн дошифровки: при
 // перекатывающемся деплое старый инстанс пишет строки в старом формате уже
@@ -36,11 +40,20 @@ interface Claim {
   bookingId: number;
   createdAt: Date;
   target: string;
+  /** Расшифрованная ссылка брони — сверяется со ссылкой строки. */
+  url: string | null;
 }
 interface Row {
   clientKey: string;
   meetingUrl: string;
   createdAt: Date;
+}
+
+/** Претенденты, в чьих бронях лежит ссылка именно на комнату этой строки. */
+function holders(row: Row, claims: Claim[] | undefined): Claim[] {
+  if (!claims) return [];
+  const url = decrypt(row.meetingUrl);
+  return claims.filter((c) => !!c.url && c.url === url);
 }
 
 @Injectable()
@@ -77,8 +90,8 @@ export class ClientKeyRekeyService implements OnApplicationBootstrap {
     const cutoff = new Date(now.getTime() - ORPHAN_MIN_AGE_MS);
     const orphans: string[] = [];
     for (const row of rows) {
-      const list = claims.get(row.clientKey);
-      if (list) await this.moveRow(row, list, stats);
+      const list = holders(row, claims.get(row.clientKey));
+      if (list.length > 0) await this.moveRow(row, list, stats);
       else if (isLegacyKey(row.clientKey) && row.createdAt < cutoff)
         orphans.push(row.clientKey);
     }
@@ -117,8 +130,8 @@ export class ClientKeyRekeyService implements OnApplicationBootstrap {
     } catch (e) {
       if (!isUniqueViolation(e)) throw e;
       // Под новым ключом строка уже есть (клиент записался через новый инстанс
-      // в окне деплоя): она остаётся, старая уходит, брони с прежней ссылкой —
-      // владельцу.
+      // в окне деплоя): она остаётся, старая уходит, брони с её ссылкой (list
+      // отфильтрован по ссылке строки) — владельцу.
       const res = await this.prisma.clientMeeting.deleteMany({ where });
       stats.dropped += res.count;
       if (res.count > 0) stats.stale.push(...sorted.map((c) => c.bookingId));
@@ -131,6 +144,9 @@ export class ClientKeyRekeyService implements OnApplicationBootstrap {
     let after = 0;
     for (;;) {
       const rows = await this.prisma.booking.findMany({
+        // anonymizedAt дублирует отсев пустого контакта ниже (крон обезличивания
+        // затирает contact в ''), meetingUrl — сверку ссылки в run(): оба
+        // фильтра сужают чтение на стороне БД, решение принимается не ими.
         where: {
           id: { gt: after },
           anonymizedAt: null,
@@ -138,7 +154,12 @@ export class ClientKeyRekeyService implements OnApplicationBootstrap {
         },
         orderBy: { id: 'asc' },
         take: BATCH,
-        select: { id: true, createdAt: true, clientContact: true },
+        select: {
+          id: true,
+          createdAt: true,
+          clientContact: true,
+          meetingUrl: true,
+        },
       });
       if (rows.length === 0) return bySource;
       for (const r of rows) {
@@ -148,6 +169,7 @@ export class ClientKeyRekeyService implements OnApplicationBootstrap {
           bookingId: r.id,
           createdAt: r.createdAt,
           target: clientKey(contact),
+          url: decrypt(r.meetingUrl),
         };
         for (const src of clientKeySources(contact))
           bySource.set(src, [...(bySource.get(src) ?? []), claim]);

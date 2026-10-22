@@ -33,7 +33,7 @@ export async function reuseClientRoom(
   const key = row.clientKey;
   const url = decrypt(row.meetingUrl) ?? '';
   if (!isLegacyJitsiRoom(url)) {
-    logger.log(`Reusing personal meeting for client ${key.slice(0, 8)}…`);
+    logger.log(`Reusing personal meeting for client ${key.slice(0, 11)}…`);
     return { url, replaced: false };
   }
   const fresh = jitsiRoom();
@@ -46,9 +46,9 @@ export async function reuseClientRoom(
       where: { clientKey: key },
     });
     // Строку удалили между чтением и записью: fresh не записан, бронь берёт его.
-    if (!won) logger.warn(`ClientMeeting of ${key.slice(0, 8)}… vanished`);
+    if (!won) logger.warn(`ClientMeeting of ${key.slice(0, 11)}… vanished`);
     return { url: (won && decrypt(won.meetingUrl)) || fresh, replaced: true };
   }
-  logger.log(`Replaced computable Jitsi room of client ${key.slice(0, 8)}…`);
+  logger.log(`Replaced computable Jitsi room of client ${key.slice(0, 11)}…`);
   return { url: fresh, replaced: true };
 }

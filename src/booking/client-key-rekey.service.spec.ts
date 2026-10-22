@@ -52,11 +52,14 @@ function setup(bookings: B[], rows: R[]) {
       findMany: jest.fn(({ where, take }: any) =>
         Promise.resolve(
           bookings
+            // фильтр — по переданному where, а не копия фильтра сервиса:
+            // иначе снятый в сервисе фильтр не заметил бы ни один тест
             .filter(
               (b) =>
                 b.id > where.id.gt &&
-                b.anonymizedAt === null &&
-                b.meetingUrl !== null,
+                (!('anonymizedAt' in where) ||
+                  b.anonymizedAt === where.anonymizedAt) &&
+                (where.meetingUrl?.not !== null || b.meetingUrl !== null),
             )
             .sort((a, b) => a.id - b.id) // orderBy: { id: 'asc' }
             .slice(0, take),
@@ -204,6 +207,81 @@ describe('ClientKeyRekeyService.run', () => {
     );
     expect(await service.run(NOW)).toMatchObject({ purged: 1, moved: 0 });
     expect(rows).toEqual([legacyFresh, prefixed, fixture]);
+  });
+
+  it('HELD-бронь без ссылки от склеенного ящика — не претендент: строка удалена как сирота, сообщения нет', async () => {
+    const VICTIM = 'ivan-petrov@x.ru';
+    const GLUED = 'ivanpetrov@x.ru';
+    const { service, prisma, rows, telegram } = setup(
+      [booking(9, GLUED, { meetingUrl: null })],
+      [
+        {
+          clientKey: keys.legacyClientKey(VICTIM),
+          meetingUrl: ROOM,
+          createdAt: OLD_ROW,
+        },
+      ],
+    );
+    expect(await service.run(NOW)).toEqual({
+      moved: 0,
+      dropped: 0,
+      purged: 1,
+      shared: [],
+      stale: [],
+    });
+    expect(rows).toEqual([]);
+    expect(telegram.notifyAdmin.mock.calls).toEqual([]);
+    // сужение чтения на стороне БД: без него HELD-брони шли бы в расшифровку
+    expect(prisma.booking.findMany.mock.calls[0][0].where).toEqual({
+      id: { gt: 0 },
+      anonymizedAt: null,
+      meetingUrl: { not: null },
+    });
+  });
+
+  it('бронь со ссылкой на другую комнату — не претендент: строку решает бронь с её ссылкой', async () => {
+    const A = 'a@my-site.ru';
+    const B2 = 'a@mysite.ru';
+    // ранняя бронь A — со ссылкой из другой эпохи (статичный MEETING_URL),
+    // комнату строки держит только поздняя бронь B2
+    const { service, rows, telegram } = setup(
+      [
+        booking(1, A, { meetingUrl: 'enc-static', createdAt: OLD_ROW }),
+        booking(2, B2, { createdAt: NOW }),
+      ],
+      [
+        {
+          clientKey: keys.legacyClientKey(A),
+          meetingUrl: ROOM,
+          createdAt: OLD_ROW,
+        },
+      ],
+    );
+    expect(await service.run(NOW)).toMatchObject({ moved: 1, shared: [] });
+    expect(rows.map((r) => r.clientKey)).toEqual([keys.clientKey(B2)]);
+    expect(telegram.notifyAdmin.mock.calls).toEqual([]);
+  });
+
+  it('под новым ключом строка уже есть: в сообщение идут только брони со ссылкой снятой строки', async () => {
+    const C = 'both@x.ru';
+    const { service, rows, telegram } = setup(
+      [booking(5, C), booking(6, C, { meetingUrl: 'enc-room-2' })],
+      [
+        {
+          clientKey: keys.legacyClientKey(C),
+          meetingUrl: ROOM,
+          createdAt: OLD_ROW,
+        },
+        {
+          clientKey: keys.clientKey(C),
+          meetingUrl: 'enc-room-2',
+          createdAt: NOW,
+        },
+      ],
+    );
+    expect(await service.run(NOW)).toMatchObject({ dropped: 1, stale: [5] });
+    expect(rows.map((r) => r.meetingUrl)).toEqual(['enc-room-2']);
+    expect(String(telegram.notifyAdmin.mock.calls[0])).not.toContain('№6');
   });
 
   it('строку изменили между чтением и записью (count 0) — не тронута, сообщения нет', async () => {

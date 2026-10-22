@@ -98,7 +98,7 @@ export class MeetingService {
             where: { clientKey: key },
             data: { meetingUrl: encrypt(z.url) ?? z.url, zoomMeetingId: z.id },
           });
-          this.logger.log(`Upgraded client ${key.slice(0, 8)}… Jitsi → Zoom`);
+          this.logger.log(`Upgraded client ${key.slice(0, 11)}… Jitsi → Zoom`);
           return { url: z.url, replaced: true };
         }
       }
@@ -128,7 +128,7 @@ export class MeetingService {
       },
     });
     this.logger.log(
-      `Created personal meeting for client ${key.slice(0, 8)}… (${zoom ? 'zoom' : 'jitsi'})`,
+      `Created personal meeting for client ${key.slice(0, 11)}… (${zoom ? 'zoom' : 'jitsi'})`,
     );
     return { url: meetingUrl, replaced: false };
   }

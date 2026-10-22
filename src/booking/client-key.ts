@@ -16,7 +16,9 @@ const LABEL = 'clientMeeting.clientKey.v1';
 // Форма контакта — по самой строке, а не по clientChannel: канал необязателен,
 // у старых броней его нет, а в канале telegram форма разрешает и ник, и номер.
 const PHONE_RE = /^[\d\s()+\-.]+$/;
-const NICK_RE = /^@?[a-z0-9_]{3,32}$/;
+// Ник Telegram начинается с буквы: `@79991234567` — не ник и не телефон, иначе
+// он совпал бы с номером 79991234567 после нормализации.
+const NICK_RE = /^@?[a-z][a-z0-9_]{2,31}$/;
 
 const sha256 = (s: string): string =>
   createHash('sha256').update(s).digest('hex');
