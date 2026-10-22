@@ -50,6 +50,13 @@ function meetingService(env: Record<string, string> = {}) {
       findUnique: jest.fn(({ where }: { where: { clientKey: string } }) =>
         Promise.resolve(store.get(where.clientKey) ?? null),
       ),
+      // поиск по HMAC-ключам контакта (client-meeting-lookup.ts)
+      findMany: jest.fn(
+        ({ where }: { where: { clientKey: { in: string[] } } }) =>
+          Promise.resolve(
+            where.clientKey.in.map((k) => store.get(k)).filter(Boolean),
+          ),
+      ),
       create: jest.fn(({ data }: { data: Record<string, unknown> }) => {
         store.set(data.clientKey as string, { ...data });
         return Promise.resolve(data);

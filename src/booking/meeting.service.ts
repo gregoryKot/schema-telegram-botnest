@@ -3,7 +3,8 @@ import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { SessionType } from '@prisma/client';
 import { decrypt, encrypt } from '../utils/crypto';
-import { clientKey } from './meeting-key';
+import { clientKey } from './client-key';
+import { findClientMeeting, hasClientMeeting } from './client-meeting-lookup';
 import { jitsiRoom, reuseClientRoom } from './meeting-jitsi';
 import type { MeetingLink } from './meeting-link';
 
@@ -19,9 +20,9 @@ export interface MeetingTarget {
 /**
  * Gives every client a PERSONAL video-call link reused across all their sessions.
  *
- * The client is identified by a SHA-256 hash of their normalised contact, so a
- * returning client who enters the same contact gets the same link. The link is
- * created once and stored in ClientMeeting.
+ * The client is identified by an HMAC of their normalised contact (client-key.ts),
+ * so a returning client who enters the same contact gets the same link. The link
+ * is created once and stored in ClientMeeting.
  *
  * Provider (first match wins):
  *   1. Zoom S2S OAuth — a per-client recurring meeting (type 3, no fixed time).
@@ -68,21 +69,16 @@ export class MeetingService {
 
   /** True if this contact already has a personal meeting (i.e. a returning client). */
   async hasMeetingForContact(contact: string): Promise<boolean> {
-    const found = await this.prisma.clientMeeting.findUnique({
-      where: { clientKey: clientKey(contact) },
-    });
-    return found !== null;
+    return hasClientMeeting(this.prisma, contact);
   }
 
   /** This client's personal meeting link, created on first session; `replaced` — the old room was swapped. */
   async createMeeting(b: MeetingTarget): Promise<MeetingLink> {
     if (this.staticUrl) return { url: this.staticUrl, replaced: false };
 
-    const key = clientKey(b.clientContact);
-    const existing = await this.prisma.clientMeeting.findUnique({
-      where: { clientKey: key },
-    });
+    const existing = await findClientMeeting(this.prisma, b.clientContact);
     if (existing) {
+      const key = existing.clientKey;
       // meetingUrl в БД зашифрован (D-9, аудит 2026-10: `?pwd=` пускает в
       // комнату клиента); старую строку с открытой ссылкой decrypt отдаёт как есть.
       const existingUrl = decrypt(existing.meetingUrl) ?? '';
@@ -123,6 +119,7 @@ export class MeetingService {
       : null;
 
     const meetingUrl = zoom?.url ?? jitsiRoom();
+    const key = clientKey(b.clientContact);
     await this.prisma.clientMeeting.create({
       data: {
         clientKey: key,

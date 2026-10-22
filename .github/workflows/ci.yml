@@ -521,6 +521,12 @@ jobs:
       # берёт advisory-lock через $executeRaw — на шве, а не на моке (правило №18).
       - name: e2e анонимная запись не отдаёт ссылку на встречу на реальном Postgres
         run: npx jest --config ./test/jest-e2e.json --runInBand test/booking-meeting-link-leak.e2e-spec.ts
+      # Аудит 2026-10: ключ комнаты клиента (ClientMeeting.clientKey) склеивал
+      # разные ящики (`ivan-petrov@` ≡ `ivanpetrov@`) и был sha256 без секрета.
+      # Шов — нормализация ↔ поиск строки в настоящей БД, перевод старых строк
+      # меняет первичный ключ: уникальность проверяет только Postgres.
+      - name: e2e ключ комнаты клиента не склеивает разные ящики на реальном Postgres
+        run: npx jest --config ./test/jest-e2e.json --runInBand test/booking-client-key.e2e-spec.ts
       # Аудит 2026-10-11: прод без ROBOKASSA_* не подтверждает платную бронь и
       # донат без денег (503 до записи в БД) + проба «приходят ли вебхуки» на
       # настоящих запросах. «В БД ничего не появилось» доказывает только живая база.

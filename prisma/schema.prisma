@@ -881,10 +881,11 @@ model IntroLead {
 }
 
 // Persistent per-client video room. A returning client (same contact) reuses
-// the same Zoom meeting link across all their sessions. clientKey is a SHA-256
-// hash of the normalised contact — pseudonymised, not reversible.
+// the same Zoom meeting link across all their sessions. clientKey is an HMAC of
+// the normalised contact under ENCRYPTION_KEY (src/booking/client-key.ts,
+// `k1:` prefix); bare 64-hex keys are the old unsalted sha256, migrated on boot.
 model ClientMeeting {
-  clientKey     String   @id          // sha256(normalised contact)
+  clientKey     String   @id          // k1:HMAC(normalised contact)
   meetingUrl    String                // join_url reused for all sessions
   zoomMeetingId String?               // Zoom meeting id (for future updates/deletes)
   createdAt     DateTime @default(now())

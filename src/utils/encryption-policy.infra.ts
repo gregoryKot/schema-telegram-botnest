@@ -22,7 +22,7 @@ export const INFRA_FIELD_POLICY: Record<string, Record<string, Policy>> = {
     currency: plain('код валюты цены (RUB/ILS/EUR/USD), не PII'),
   },
   ClientMeeting: {
-    clientKey: plain('sha256 от контакта — уже псевдонимизирован'),
+    clientKey: plain('HMAC контакта с серверным ключом — псевдоним'),
     meetingUrl: enc('src/booking/meeting.service.ts'),
     zoomMeetingId: ID,
   },

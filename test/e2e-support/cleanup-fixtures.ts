@@ -15,7 +15,9 @@
 // cleanupOwnershipFixtures НЕ трогает таблицы вне фикстур ownership-спеков
 // (booking/donation/subscription, article, bookingSetting и т.п.) — для
 // платёжного контура своя чистка, cleanupPaymentFixtures ниже.
-import { createHash } from 'crypto';
+// Ключ ClientMeeting — из кода, а не копией формулы: копия молча промахнулась
+// бы после смены формулы (аудит 2026-10, HMAC), и строки протекли бы между спеками.
+import { clientKey } from '../../src/booking/client-key';
 
 // Таблицы с прямой колонкой userId (в реальной схеме — FK на User с
 // ON DELETE CASCADE), которую можно почистить общим `in`-списком.
@@ -176,16 +178,4 @@ export async function cleanupPaymentFixtures(
       where: { clientKey: { in: fixture.clientContacts.map(clientKey) } },
     });
   }
-}
-
-// Дублирует нормализацию контакта из src/booking/meeting.service.ts
-// (приватная функция сервиса, не экспортируется) — фикстуре нужен тот же
-// хэш, чтобы найти и вычистить ClientMeeting, созданный подтверждением брони.
-function clientKey(contact: string): string {
-  const norm = contact
-    .trim()
-    .toLowerCase()
-    .replace(/^@/, '')
-    .replace(/[\s()+-]/g, '');
-  return createHash('sha256').update(norm).digest('hex');
 }

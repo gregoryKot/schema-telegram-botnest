@@ -15,7 +15,7 @@ process.env.ADMIN_ID = '424242';
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { PrismaService } from '../src/prisma/prisma.service';
-import { clientKey } from '../src/booking/meeting-key';
+import { clientKey } from '../src/booking/client-key';
 import { RETURNING_NOT_FOUND_NOTE } from '../src/booking/booking-admin-note';
 import { TELEGRAF_BOT } from '../src/telegram/telegram.constants';
 import { buildRealDbTestApp } from './e2e-support/build-real-db-test-app';

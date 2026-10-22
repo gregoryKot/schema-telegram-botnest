@@ -15,10 +15,9 @@ export function jitsiRoom(): string {
   return `${JITSI_PREFIX}${randomBytes(8).toString('hex')}`;
 }
 
-/** Комната по старой формуле — её адрес знает любой, кто знает контакт. */
-export function isLegacyJitsiRoom(url: string, key: string): boolean {
-  return url === `${JITSI_PREFIX}${key.slice(0, 12)}`;
-}
+/** Комната по старой формуле — адрес знает любой, кто знает контакт; узнаётся по форме (ключ строки теперь HMAC). */
+export const isLegacyJitsiRoom = (url: string): boolean =>
+  /^https:\/\/meet\.jit\.si\/schemehappens-[0-9a-f]{12}$/.test(url);
 
 /**
  * Ссылка для повторной брони клиента. Комната по старой формуле заменяется
@@ -33,7 +32,7 @@ export async function reuseClientRoom(
 ): Promise<MeetingLink> {
   const key = row.clientKey;
   const url = decrypt(row.meetingUrl) ?? '';
-  if (!isLegacyJitsiRoom(url, key)) {
+  if (!isLegacyJitsiRoom(url)) {
     logger.log(`Reusing personal meeting for client ${key.slice(0, 8)}…`);
     return { url, replaced: false };
   }

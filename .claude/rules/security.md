@@ -105,7 +105,11 @@ paths:
    коды выхода; список ↔ реестр шифрования ↔ схема сверяет
    `src/utils/encryption-rotation-coverage.spec.ts` (новое зашифрованное поле
    без записи в `targets.ts` роняет jest).
-4. Убрать `ENCRYPTION_KEY_OLD`. Restart.
+4. Убрать `ENCRYPTION_KEY_OLD`. Restart. Ключ комнаты клиента
+   (`ClientMeeting.clientKey`) — HMAC под `ENCRYPTION_KEY`: строки клиентов с
+   живой бронью переводит на новый ключ проход на старте шага 2
+   (`client-key-rekey.service.ts`), а клиент, все брони которого обезличены,
+   после удаления старого ключа получит новую комнату.
 
 `decrypt()` поддерживает несколько ключей одновременно — старые читаются как fallback, новые записываются всегда current ключом.
 

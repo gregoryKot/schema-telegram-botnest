@@ -11,7 +11,7 @@ import { AvailabilityService } from './availability.service';
 import { SlotOverrideService } from './slot-override.service';
 import { AdminCalendarService } from './admin-calendar.service';
 import { CalDavService } from './caldav.service';
-import { MeetingService } from './meeting.service';
+import { MEETING_PROVIDERS } from './meeting.providers';
 import { RobokassaService } from './robokassa.service';
 import { PricingService } from './pricing.service';
 import { DonationController } from '../donation/donation.controller';
@@ -39,7 +39,7 @@ export const BOOKING_PROVIDERS = [
   SlotOverrideService,
   AdminCalendarService,
   CalDavService,
-  MeetingService,
+  ...MEETING_PROVIDERS,
   RobokassaService,
   PricingService,
   DonationService,
