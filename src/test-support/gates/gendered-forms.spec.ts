@@ -371,6 +371,22 @@ describe('каждый паттерн и ALLOW-исключение пойман
     expect(missing).toEqual([]);
   });
 
+  // Правило статусных подписей живёт в отдельном модуле (храповик размера,
+  // правило №10). Пин: модуль загружается сам и каждое его правило реально
+  // подключено в PATTERNS — иначе выпавший спред `...STATUS_PATTERNS` молча
+  // выключил бы правило, а тест выше этого бы не заметил.
+  it('каждое правило gendered-forms-status-patterns.mjs подключено в PATTERNS', () => {
+    const STATUS = loadNamedPatterns(
+      'gendered-forms-status-patterns.mjs',
+      'STATUS_PATTERNS',
+    );
+    expect(STATUS.map((p) => p.name)).toEqual(['status-label-m']);
+    for (const s of STATUS) {
+      const p = PATTERNS.find((x) => x.name === s.name);
+      expect(p).toEqual(s);
+    }
+  });
+
   it.each(PATTERNS.map((p) => [p.name] as const))(
     'паттерн «%s» ловит свой образец',
     (name) => {
