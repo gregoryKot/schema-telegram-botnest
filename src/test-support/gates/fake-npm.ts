@@ -6,9 +6,13 @@
 //
 // Ответ выбирается правилами из env FAKE_NPM: `каталог=ответ,ответ;*=ответ`.
 // Ответы по номеру попытки для этого каталога (последний повторяется):
-// имя фикстуры (`clean`, `moderate`, `high`, `critical`, `registry-400`),
-// `hang` — висит 30 с с дочерним `sleep` (его pid пишется в <log>.pids),
-// `garbage` — не-JSON, `empty` — пустой вывод.
+// имя фикстуры (`clean`, `moderate`, `high`, `critical`, `registry-400`,
+// `enolock`), `hang` — висит 30 с с дочерним `sleep` (его pid пишется в
+// <log>.pids), `orphan` — то же, но внук уходит из группы процессов
+// (`setsid`) и держит stdout, `garbage` — не-JSON, `empty` — пустой вывод,
+// `nometa` — JSON без отчёта и без ошибки (обёртка обязана не счесть его
+// чистым; записи с площадки у такого ответа нет — это контрольный образец
+// формы, а не ответ реестра).
 import { spawnSync } from 'child_process';
 import {
   chmodSync,
@@ -22,7 +26,14 @@ import { tmpdir } from 'os';
 import { join } from 'path';
 import { loadRecordedFixture } from '../recorded-fixture';
 
-const RESPONSES = ['clean', 'moderate', 'high', 'critical', 'registry-400'];
+const RESPONSES = [
+  'clean',
+  'moderate',
+  'high',
+  'critical',
+  'registry-400',
+  'enolock',
+];
 
 const SCRIPT = `#!/bin/sh
 echo "npm $*" >> "$NPM_LOG"
@@ -35,6 +46,8 @@ rule=$(printf '%s\\n' "$rules" | awk -F= -v d="$dir" '$1==d{print $2; exit}')
 resp=$(printf '%s\\n' "$rule" | awk -F, -v n="$n" '{print (n<=NF)?$n:$NF}')
 case "$resp" in
   hang) sleep 30 & echo $! >> "$NPM_LOG.pids"; wait ;;
+  orphan) setsid sleep 30 2>/dev/null & echo $! >> "$NPM_LOG.pids"; sleep 30 ;;
+  nometa) echo '{"auditReportVersion":2,"vulnerabilities":{}}' ;;
   garbage) echo 'npm ERR! code ECONNRESET' ;;
   empty) ;;
   *) cat "$FIXTURES/npm-audit-$resp.json" ;;
@@ -48,6 +61,8 @@ export interface FakeNpm {
   calls(): string[];
   /** Живы ли ещё дети висевших попыток (зомби — уже мёртв). */
   aliveChildren(): number[];
+  /** Добить детей висевших попыток (внук после setsid обёрткой не убит). */
+  killChildren(): void;
   reset(): void;
   cleanup(): void;
 }
@@ -79,6 +94,11 @@ export function makeFakeNpm(): FakeNpm {
     }),
     calls: () => lines(log),
     aliveChildren: () => lines(`${log}.pids`).map(Number).filter(alive),
+    killChildren: () => {
+      for (const pid of lines(`${log}.pids`).map(Number)) {
+        spawnSync('kill', ['-9', String(pid)]);
+      }
+    },
     reset: () => {
       rmSync(log, { force: true });
       rmSync(`${log}.pids`, { force: true });

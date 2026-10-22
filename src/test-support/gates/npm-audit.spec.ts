@@ -17,18 +17,32 @@ beforeAll(() => {
 });
 afterAll(() => npm.cleanup());
 beforeEach(() => npm.reset());
+afterEach(() => npm.killChildren());
 
-function audit(rules: string, args = ['webapp'], attempts = '3') {
+function audit(
+  rules: string,
+  args = ['webapp'],
+  attempts = '3',
+  extra: Record<string, string> = {},
+) {
   const started = Date.now();
-  const r = spawnSync('node', [SCRIPT, ...args], {
+  const r = spawnSync(process.execPath, [SCRIPT, ...args], {
     env: npm.env(rules, {
       NPM_AUDIT_ATTEMPTS: attempts,
       NPM_AUDIT_ATTEMPT_MS: '1500',
       NPM_AUDIT_PAUSE_MS: '20',
+      ...extra,
     }),
     encoding: 'utf8',
-    timeout: 20_000,
+    timeout: 30_000,
   });
+  // Обёртка, убитая по таймауту spawnSync, выходит 143 — не путать с исходом.
+  if (r.error || r.signal) {
+    throw new Error(
+      `обёртка не завершилась сама за ${Date.now() - started} мс: ` +
+        `${r.error?.message ?? ''} ${r.signal ?? ''} (status ${r.status})`,
+    );
+  }
   return {
     status: r.status,
     out: `${r.stdout}${r.stderr}`,
@@ -53,6 +67,13 @@ describe('scripts/npm-audit.mjs', () => {
       ]),
     );
     expect(call).toMatch(/--fetch-timeout=\d+/);
+    // Реестр и онлайн — флагами: env и .npmrc им не указ (см. образец ниже).
+    expect(call.split(' ')).toEqual(
+      expect.arrayContaining([
+        '--offline=false',
+        '--registry=https://registry.npmjs.org/',
+      ]),
+    );
     expect(prefixDirectory(call)).toBe('/webapp');
     expect(isGatingAudit(call)).toBe(true);
   });
@@ -135,5 +156,73 @@ describe('scripts/npm-audit.mjs', () => {
     const r = audit('*=clean', []);
     expect(r.status).toBe(0);
     expect(r.calls.map(prefixDirectory)).toEqual(['/']);
+  });
+
+  // JSON без ошибки и без metadata ({}, сменившийся формат ошибки npm) —
+  // не «чисто»: непроверенное зелёным не бывает.
+  it('JSON без metadata.vulnerabilities: 2 после всех попыток, не 0', () => {
+    const r = audit('*=nometa');
+    expect(r.status).toBe(2);
+    expect(r.calls).toHaveLength(3);
+    expect(r.out).toContain(
+      'попытка 3/3 без отчёта — в ответе нет metadata.vulnerabilities',
+    );
+    expect(r.out).not.toContain('high/critical в prod-зависимостях нет');
+  });
+
+  // Записанный ответ npm без lock-файла: повтор и перезапуск не помогут —
+  // 3 сразу, причина названа кодом npm, а не «реестр не ответил».
+  it('нет lock-файла (ENOLOCK): 3 с первой попытки, причина — код npm', () => {
+    const r = audit('*=enolock,clean');
+    expect(r.status).toBe(3);
+    expect(r.calls).toHaveLength(1);
+    expect(r.out).toContain(
+      '::error::npm audit webapp: npm не может проверить каталог — ENOLOCK — This command requires an existing lockfile.',
+    );
+    expect(r.out).toContain('перезапуск не поможет');
+    expect(r.out).not.toContain('реестр npm не ответил');
+  });
+
+  it('npm не запустился: 3, без повторов', () => {
+    const r = audit('*=clean', ['webapp'], '3', { PATH: '/nonexistent' });
+    expect(r.status).toBe(3);
+    expect(r.out).toContain(
+      'npm не может проверить каталог — npm не запустился',
+    );
+    expect(r.out).not.toContain('::warning::');
+  });
+
+  // Внук после setsid в группу не входит и держит stdout: обёртка обязана
+  // закрыть свой конец, а не ждать его 30 с.
+  it('внук, ушедший из группы процессов, не держит обёртку', () => {
+    const r = audit('*=orphan,clean');
+    expect(r.status).toBe(0);
+    expect(r.calls).toHaveLength(2);
+    expect(r.ms).toBeLessThan(10_000);
+  });
+
+  // Контрольный образец к флагам: offline/чужой реестр в env не делают
+  // прогон «чистым» — флаги в вызове всё равно те же (живой npm 10.9.4
+  // флагу командной строки подчиняется, проверено при ревью #814).
+  it('npm_config_offline и npm_config_registry в env: флаги вызова их перекрывают', () => {
+    const r = audit('*=clean', ['webapp'], '3', {
+      npm_config_offline: 'true',
+      NPM_CONFIG_REGISTRY: 'http://127.0.0.1:9/',
+    });
+    expect(r.status).toBe(0);
+    const args = r.calls[0].split(' ');
+    expect(args).toContain('--offline=false');
+    expect(args).toContain('--registry=https://registry.npmjs.org/');
+  });
+
+  it('SIGTERM снаружи (таймаут шага): 143, не 1 — «убит» не «уязвимость»', () => {
+    const r = spawnSync(process.execPath, [SCRIPT, 'webapp'], {
+      env: npm.env('*=hang', { NPM_AUDIT_ATTEMPT_MS: '20000' }),
+      encoding: 'utf8',
+      timeout: 1_500,
+      killSignal: 'SIGTERM',
+    });
+    expect(r.status).toBe(143);
+    expect(npm.aliveChildren()).toEqual([]);
   });
 });

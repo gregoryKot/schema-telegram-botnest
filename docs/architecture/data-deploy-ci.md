@@ -82,7 +82,7 @@ SIGTERM/SIGINT пробрасываются приложению.
 | eslint | `check-eslint-ratchet.mjs` (ставит зависимости всех пакетов, prisma generate) |
 | miniapp | typecheck, build, coverage-храповик, vitest под TZ Sydney, «dist актуален», npm audit |
 
-Шаги npm audit всех джоб зовут обёртку `scripts/npm-audit.mjs <каталог>`: голый `npm audit` висел на реестре до таймаута шага (регресс #814). Попытка до 45 с, до трёх попыток; high/critical — код 1 сразу, «реестр не ответил» — код 2 и отдельный `::error::`. Исполняется с поддельным npm в `src/test-support/gates/npm-audit.spec.ts`.
+Шаги npm audit всех джоб зовут обёртку `scripts/npm-audit.mjs <каталог>`: голый `npm audit` висел на реестре до таймаута шага (регресс #814). Попытка до 45 с, до трёх попыток; high/critical — код 1 сразу, «реестр не ответил» — код 2 и отдельный `::error::`, «npm не может проверить» (нет lock-файла) — код 3 без повторов; реестр и `--offline=false` заданы флагами, env и `.npmrc` их не перекрывают. Разбор ответа npm — `scripts/npm-audit-report.mjs`. Шаг засчитывается гейтом, только если вызов — исход строки (без `||`, `;`, `&`, `|` после него). Исполняется с поддельным npm в `src/test-support/gates/npm-audit.spec.ts`.
 
 **nightly.yml** (cron `0 3 * * *` ежедневно и `0 4 * * 0` по воскресеньям, плюс dispatch). Красный nightly не блокирует PR.
 - `backend-flaky` — jest три раза подряд через `jest-exit-guard.mjs`, затем `--detectOpenHandles`.

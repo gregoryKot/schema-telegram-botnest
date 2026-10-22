@@ -107,6 +107,10 @@ describe('гейт: у каждого lock-файла есть npm audit в CI',
       ['уровень none', `${AUDIT.replace('high', 'none')}`, ''],
       ['|| true', `${AUDIT} || true`, ''],
       ['|| :', `${AUDIT} || :`, ''],
+      ['|| exit 0', `${AUDIT} || exit 0`, ''],
+      ['; exit 0', `${AUDIT}; exit 0`, ''],
+      ['true || — не исполняется', `true || ${AUDIT}`, ''],
+      ['только аргумент echo', `echo ${AUDIT}`, ''],
       ['continue-on-error: true', AUDIT, '        continue-on-error: true\n'],
       ['if: у шага', AUDIT, '        if: false\n'],
       ['npm audit fix — не проверка', 'npm audit fix', ''],
@@ -140,8 +144,22 @@ describe('гейт: у каждого lock-файла есть npm audit в CI',
     });
 
     // Контроль к обёртке: глушащие формы те же, что у голого npm audit.
+    // Код 2 («реестр не ответил») и 3 («npm не может проверить») — красные:
+    // `|| [ $? -eq 2 ]` сделал бы непроверенное зелёным (ревью #814).
     it.each([
       ['|| true', `${WRAP} webapp || true`, ''],
+      ['|| [ $? -eq 2 ]', `${WRAP} webapp || [ $? -eq 2 ]`, ''],
+      ['|| exit 0', `${WRAP} webapp || exit 0`, ''],
+      ['; exit 0', `${WRAP} webapp; exit 0`, ''],
+      ['& в фон', `${WRAP} webapp &`, ''],
+      ['| в конвейер', `${WRAP} webapp | tee audit.log`, ''],
+      ['только аргумент echo', `echo ${WRAP} webapp`, ''],
+      ['другой файл: .mjs.bak', `node scripts/npm-audit.mjs.bak webapp`, ''],
+      [
+        'закомментирован в run: |',
+        `|\n          # cd . && ${WRAP} webapp\n          echo skipped`,
+        '',
+      ],
       [
         'continue-on-error: true',
         `${WRAP} webapp`,
@@ -157,17 +175,34 @@ describe('гейт: у каждого lock-файла есть npm audit в CI',
       expect(auditedDirectories(ci(job('webapp', step)))).toEqual([]);
     });
 
-    it('голый npm audit в run находится; имя шага, echo и комментарий — нет', () => {
+    // Контроль к форме выше: перед вызовом `&&`/`;` и многострочный run —
+    // законны, вызов остаётся исходом строки.
+    it.each([
+      ['echo && обёртка', `echo start && ${WRAP} webapp`],
+      ['cd; обёртка', `cd . ; ${WRAP} webapp`],
+      [
+        'run: | с комментарием',
+        `|\n          # проверка\n          ${WRAP} webapp`,
+      ],
+    ])('обёртка засчитывается: %s', (_n, cmd) => {
+      expect(auditedDirectories(ci(job('webapp', run(cmd))))).toEqual([
+        '/webapp',
+      ]);
+    });
+
+    it('голый npm audit в run находится, и после echo &&; имя шага, аргумент echo и комментарий — нет', () => {
       const text = ci(
         job(
           'b',
           run(AUDIT),
+          run(`echo start && ${AUDIT} --prefix webapp`),
           run(`${WRAP} .`).replace('name: audit', 'name: npm audit — корень'),
           `      # npm audit читает lock-файл\n`,
+          `      # cd webapp && ${AUDIT}\n`,
           run('echo "::group::npm audit $dir"'),
         ),
       );
-      expect(rawAuditLines(text)).toEqual([`run: ${AUDIT}`]);
+      expect(rawAuditLines(text)).toEqual([AUDIT, `${AUDIT} --prefix webapp`]);
     });
 
     it('закомментированный шаг не засчитывается', () => {
@@ -280,6 +315,17 @@ describe('nightly.yml: ночной npm audit всех lock-файлов', () =>
     expect(r.out).not.toContain('high/critical в prod-зависимостях:');
     // game — две попытки, остальные — по одной.
     expect(r.calls).toHaveLength(locks.length + 1);
+  });
+
+  it('npm не может проверить один пакет (ENOLOCK): красный своим ::error::, без повторов', () => {
+    const r = exec(ROOT, 'shared=enolock;*=clean');
+    expect(r.status).not.toBe(0);
+    expect(r.out).toContain(
+      '::error::npm audit: npm не смог проверить: shared',
+    );
+    expect(r.out).not.toContain('high/critical в prod-зависимостях:');
+    expect(r.out).not.toContain('реестр npm не ответил для');
+    expect(r.calls).toHaveLength(locks.length);
   });
 
   it('lock-файлов нет: красный, а не «проверено ничего»', () => {
