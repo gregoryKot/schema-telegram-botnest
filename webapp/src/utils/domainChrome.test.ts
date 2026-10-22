@@ -28,13 +28,13 @@ beforeEach(() => {
 });
 
 describe('applyPersonalSiteChrome', () => {
-  it('меняет фавиконы на монограмму «ГК»: svg → svg, png 96×96 → png', () => {
+  it('меняет фавиконы на знак «GK»: svg-ссылка → png 192, png 96×96 → png 96', () => {
     const svg = addLink('icon', '/favicon.svg');
     svg.type = 'image/svg+xml';
     const png = addLink('icon', '/favicon-96.png', '96x96');
     applyPersonalSiteChrome(document);
-    expect(svg.href).toContain('/favicon-personal.svg');
-    expect(svg.type).toBe('image/svg+xml');
+    expect(svg.href).toContain('/favicon-personal-192.png');
+    expect(svg.type).toBe('image/png');
     expect(png.href).toContain('/favicon-personal-96.png');
   });
 

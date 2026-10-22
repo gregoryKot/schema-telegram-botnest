@@ -42,7 +42,7 @@ export function BookingsManager({ adminKey }: { adminKey: string }) {
         {FILTERS.map(f => (
           <button key={f.id} onClick={() => setFilter(f.id)} style={{
             padding: '6px 14px', fontSize: 13, fontWeight: 600, fontFamily: 'inherit', cursor: 'pointer', borderRadius: 100,
-            background: filter === f.id ? 'var(--accent)' : 'transparent', color: filter === f.id ? '#fff' : 'var(--text-sub)',
+            background: filter === f.id ? 'var(--accent)' : 'transparent', color: filter === f.id ? 'var(--on-accent)' : 'var(--text-sub)',
             border: `1.5px solid ${filter === f.id ? 'var(--accent)' : 'var(--line-strong)'}`,
           }}>{f.label}</button>
         ))}

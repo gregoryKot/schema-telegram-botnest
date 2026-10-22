@@ -1,7 +1,7 @@
 /**
  * Промежутки между соседними тиками 5-полевого cron-выражения (минута час
- * день-месяца месяц день-недели). Используется cron-lease-registry.ts, чтобы
- * порог свежести аренды считался из РЕАЛЬНОГО расписания, а не из вручную
+ * день-месяца месяц день-недели). Используется cron-lease-verdict.ts, чтобы
+ * порог возраста аренды считался из РЕАЛЬНОГО расписания, а не из вручную
  * выбранной категории окна (инцидент 2026-09-16, docs/INCIDENTS.md: оконный
  * крон законно молчит ~22 часа, а порог по категории сгорал за 10 минут).
  *
@@ -12,7 +12,7 @@
 const FIELD_RE = /^(\*|\d+)(?:-(\d+))?(?:\/(\d+))?$/;
 
 /** Множество значений одного поля cron (минута/час) в границах [min, max]. */
-function parseField(field: string, min: number, max: number): number[] {
+export function parseField(field: string, min: number, max: number): number[] {
   const values = new Set<number>();
   for (const part of field.split(',')) {
     const m = FIELD_RE.exec(part);

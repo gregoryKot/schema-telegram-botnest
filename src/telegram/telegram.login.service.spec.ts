@@ -196,6 +196,9 @@ describe('кнопки подтверждения', () => {
 describe('текст карточки — обе формы обращения, без приписанного рода', () => {
   it('форма «ты»', () => {
     const text = confirmText('ty', 'K7M2QX94', 'iPhone · Safari');
+    // Перед «вс-» — «во» (аудит 2026-10). Заодно этот заголовок держит
+    // смысл проверки «билет привязки — не карточка входа» ниже.
+    expect(text).toContain('Вход во «Всё по схеме»');
     expect(text).toContain('видишь');
     expect(text).toContain('K7M2-QX94');
   });
@@ -331,6 +334,6 @@ describe('/start login_<КОД> — сверка намерения', () => {
 
     const text = (ctx.reply as jest.Mock).mock.calls[0][0];
     expect(text).toContain('не найден');
-    expect(text).not.toContain('Вход в «Всё по схеме»');
+    expect(text).not.toContain('Вход во «Всё по схеме»');
   });
 });

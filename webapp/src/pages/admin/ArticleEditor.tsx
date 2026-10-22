@@ -120,7 +120,7 @@ function EditorToolbar({ editor }: { editor: ReturnType<typeof useEditor> }) {
   if (!editor) return null;
   const tbBtn = (active: boolean): React.CSSProperties => ({
     padding: '6px 10px', fontSize: 13, fontWeight: 600, fontFamily: 'inherit', cursor: 'pointer',
-    background: active ? 'var(--accent)' : 'transparent', color: active ? '#fff' : 'var(--text-sub)',
+    background: active ? 'var(--accent)' : 'transparent', color: active ? 'var(--on-accent)' : 'var(--text-sub)',
     border: 'none', borderRadius: 'var(--r-6)',
   });
   return (
