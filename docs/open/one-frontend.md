@@ -247,3 +247,17 @@
   `err.message` как есть. 429 там уже русский — текст рождает сервер (#819), сайт идёт через
   `shared/src/api/humanizeError.ts`. Не чинили сознательно: механика, а не ты/вы и не род,
   мини-апп удаляется на этапе 6 (`docs/ONE_FRONTEND_PLAN.md`).
+
+**Контролы без имени в мини-аппе — не чиним, мини-апп удаляется** (#818, `docs/ONE_FRONTEND_PLAN.md`, этап 6):
+- `scripts/check-glyph-controls.mjs` и `jsx-a11y/control-has-associated-label`
+  смотрят только `webapp/src` и `shared/src`. Прогон того же гейта по
+  `schema-miniapp/src` на 2026-10-21 даёт 17 мест: «←» в `WizardNav.tsx:44` и
+  трёх шагах `schemaFlashcard/`, «−»/«+» в `TrackerOverlay.tsx:496,529`, «+» в
+  `PracticesScreen.tsx:303` и `beliefCheck/EvidenceList.tsx:81`, «×» в
+  `planSheet/PracticeOptionRow.tsx:70` (пара сайта подписана «Удалить»), «?» в
+  `childhoodWheelSheet/NeedFillRow.tsx:86`, «‹» в
+  `therapistClientSheet/ClientDetailView.tsx:68`, тики `WizardProgress.tsx:40` и
+  пять безымянных switch в `settingsSheet/` (`ui.tsx:102`, `AppearanceSection.tsx`,
+  `TherapistPrivacyToggles.tsx`). Решение владельца 2026-10-17 (единая версия): доступность, которая живёт
+  только в мини-аппе, не чиним — он уходит целиком. Если этап 6 отложат, гейт
+  включается для мини-аппа строкой в `SCAN_DIRS` и правкой этих мест.

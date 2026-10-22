@@ -238,6 +238,15 @@ describe('ModeMapPalette — свои режимы терапевта', () => {
     );
   });
 
+  // Аудит 2026-10, «Доступность»: у кнопки отмены внутри была только иконка
+  // крестика с aria-hidden — скринридер называл её просто «кнопка».
+  it('кнопка отмены формы названа «Отменить» и закрывает форму', () => {
+    renderPalette();
+    fireEvent.click(screen.getByLabelText('Добавить свой режим'));
+    fireEvent.click(screen.getByRole('button', { name: 'Отменить' }));
+    expect(screen.queryByPlaceholderText('Название…')).toBeNull();
+  });
+
   it('пустое имя не сохраняет режим (createCustomMode не вызывается)', () => {
     renderPalette();
     fireEvent.click(screen.getByLabelText('Добавить свой режим'));

@@ -25,7 +25,7 @@ export function YsqQuestion({ page, slideKey, slideDir, answer, schema, onSelect
           <span className="ds-label ss-test-count">Вопрос {page + 1} из {TOTAL_PAGES}</span>
           <button onClick={onClose} aria-label="Закрыть" className="ds-btn ds-btn--icon">✕</button>
         </div>
-        <div className="ss-progress" role="progressbar" aria-valuemin={1} aria-valuemax={TOTAL_PAGES} aria-valuenow={page + 1}>
+        <div className="ss-progress" role="progressbar" aria-label="Вопрос теста" aria-valuemin={1} aria-valuemax={TOTAL_PAGES} aria-valuenow={page + 1}>
           <span style={{ width: `${pct}%` }} />
         </div>
       </div>
