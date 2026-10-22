@@ -77,6 +77,19 @@ describe('practiceDomainMiddleware', () => {
     expect(sent.body).toContain('Sitemap: https://kotlarewski.gr/sitemap.xml');
   });
 
+  // Аудит 2026-10-11: «Allow: /$» закрывает только корень, а админка визитки
+  // без явного Disallow оставалась открытой всем ботам.
+  it('kotlarewski.gr/robots.txt закрывает админку, главная открыта', () => {
+    const lines = (run('kotlarewski.gr', '/robots.txt').sent.body ?? '').split(
+      '\n',
+    );
+    for (const p of ['/admin', '/booking-admin', '/articles-admin']) {
+      expect(lines).toContain(`Disallow: ${p}`);
+    }
+    expect(lines).toContain('Allow: /$');
+    expect(lines).not.toContain('Disallow: /');
+  });
+
   it('kotlarewski.gr обычные пути проходят насквозь (SPA)', () => {
     const { sent, nextCalled } = run('kotlarewski.gr', '/');
     expect(sent.redirect).toBeUndefined();

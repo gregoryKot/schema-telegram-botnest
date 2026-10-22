@@ -1,7 +1,5 @@
-// Сборка отчёта /stats без DI-контейнера: сервисы метрик, каждый с
-// одной зависимостью — PrismaService.
-//
-// Почему вынесено сюда: потребителей два — test/raw-sql-live-stats.e2e-spec.ts
+// Сборка отчёта /stats без DI-контейнера: сервисы метрик, каждый с одной
+// зависимостью — PrismaService. Потребителей два — test/raw-sql-live-stats.e2e-spec.ts
 // (правило №18) и замер планов test/perf. Вторая копия конструктора разъехалась
 // бы с первой на следующем же сервисе метрик, и замер перестал бы мерить то, что
 // шлёт прод. AppModule целиком тут не поднимается: вместе с ним поднялись бы
@@ -35,6 +33,7 @@ import { GameMetricsService } from '../../src/bot/game-metrics.service';
 import { DataExportMetricsService } from '../../src/bot/data-export-metrics.service';
 import { BookingRetentionMetricsService } from '../../src/bot/booking-retention-metrics.service';
 import { IntroLeadMetricsService } from '../../src/bot/intro-lead-metrics.service';
+import { NotifyQueueMetricsService } from '../../src/bot/notify-queue-metrics.service';
 
 /** Продуктовый блок /stats (второе сообщение команды). */
 export function buildStatsReport(prisma: PrismaService): StatsReportService {
@@ -69,5 +68,6 @@ export function buildStatsReport(prisma: PrismaService): StatsReportService {
     new DataExportMetricsService(prisma),
     new BookingRetentionMetricsService(prisma),
     new IntroLeadMetricsService(prisma),
+    new NotifyQueueMetricsService(prisma),
   );
 }

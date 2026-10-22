@@ -11,7 +11,7 @@ import {
 import { Telegraf, Context } from 'telegraf';
 import { TELEGRAF_BOT } from './telegram.constants';
 import { failCallback } from './callback-failure';
-import { classifySendFailure } from './telegram-error';
+import { describeBroadcastResult, runBroadcast } from './telegram.broadcast';
 import { replyLong } from './send-long-text';
 import { renderTemplate } from '../notification/notification.templates';
 import { BotAdminStatsService } from '../bot/bot.admin-stats.service';
@@ -230,37 +230,17 @@ export class TelegramAdminService implements OnModuleInit {
         await ctx.reply(
           `Начинаю рассылку для ${userIds.length} пользователей...`,
         );
-        let sent = 0,
-          failed = 0,
-          skipped = 0;
-        for (const uid of userIds) {
-          const chatId = chatIds.get(uid.toString());
-          if (chatId === undefined) {
-            skipped++;
-            continue;
-          }
-          try {
-            // Plain text — no parse_mode. Avoids stray markdown chars from
-            // breaking the broadcast for half the users. Number(chatId) —
-            // чат в Telegram (< 2^53, telegraf ждёт number), не userId.
-            await this.bot!.telegram.sendMessage(Number(chatId), text, {
-              parse_mode: undefined,
-            });
-            sent++;
-          } catch (err: unknown) {
-            failed++;
-            if (classifySendFailure(err) !== 'transient') {
-              await this.accountService
-                .markUserBlocked(uid)
-                .catch((e) => this.logger.warn('markUserBlocked failed', e));
-            }
-          }
-          await new Promise((r) => setTimeout(r, 50));
-        }
-        await ctx.reply(
-          `✅ Готово: ${sent} доставлено, ${failed} ошибок` +
-            (skipped > 0 ? `, ${skipped} без чата в Telegram` : ''),
+        const result = await runBroadcast(
+          {
+            bot: this.bot!,
+            accountService: this.accountService,
+            logger: this.logger,
+          },
+          userIds,
+          chatIds,
+          text,
         );
+        await ctx.reply(describeBroadcastResult(result));
       } catch (err) {
         this.logger.error('broadcast command failed', err);
         await ctx.reply('❌ Ошибка рассылки').catch(() => null);

@@ -16,6 +16,7 @@ import { ConceptGraphMetricsService } from './concept-graph-metrics.service';
 import { AuthHealthMetricsService } from './auth-health-metrics.service';
 import { LoginTicketMetricsService } from './login-ticket-metrics.service';
 import { ClientErrorMetricsService } from './client-error-metrics.service';
+import { NotifyQueueMetricsService } from './notify-queue-metrics.service';
 import { MoneyMetricsService } from './money-metrics.service';
 import { SessionCurrencyMetricsService } from './session-currency-metrics.service';
 import { GameMetricsService } from './game-metrics.service';
@@ -55,6 +56,7 @@ export class StatsReportService {
     private readonly dataExport: DataExportMetricsService,
     private readonly bookingRetention: BookingRetentionMetricsService,
     private readonly introLeads: IntroLeadMetricsService,
+    private readonly notifyQueue: NotifyQueueMetricsService,
   ) {}
 
   /** Второе сообщение /stats; порядок блоков — порядок в отчёте (см. тест). */
@@ -76,6 +78,7 @@ export class StatsReportService {
       { name: 'Вход в мессенджере', svc: this.authHealth },
       { name: 'Вход по коду', svc: this.loginTicket },
       { name: 'Поломки на клиенте', svc: this.clientErrors },
+      { name: 'Напоминания из бота', svc: this.notifyQueue },
       { name: 'Деньги', svc: this.money },
       { name: 'Сессии не в рублях', svc: this.sessionCurrency },
       { name: 'Откуда пришли новенькие', svc: this.signupSource },
@@ -84,13 +87,8 @@ export class StatsReportService {
       { name: 'Данные записей', svc: this.bookingRetention },
       { name: 'Заявки с формы знакомства', svc: this.introLeads },
     ];
-    const parts = await settleBlocks(
-      [
-        ...blocks.map((b) => ({ name: b.name, run: () => b.svc.render() })),
-        ...infraBlocks(),
-      ],
-      this.logger,
-    );
+    const runs = blocks.map((b) => ({ ...b, run: () => b.svc.render() }));
+    const parts = await settleBlocks([...runs, ...infraBlocks()], this.logger);
     return parts.join('\n\n');
   }
 }
