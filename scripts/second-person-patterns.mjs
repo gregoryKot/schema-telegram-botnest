@@ -111,6 +111,8 @@ export const TY_IMPERATIVES = [
   ['Отложи', false],
   ['Отправь', false],
   ['Заверши', false],
+  // Аудит 2026-10: «поддержите» на DonatePage жило вне tr(), глагола гейт не знал.
+  ['Поддержи', false],
 ];
 
 // \b в JS — ASCII-only, кириллицу не видит: границы слова через lookaround.
@@ -236,9 +238,7 @@ export const EXCLUDE = [
 // e-mail админу, ADMIN_ID) — addressForm обычного юзера к нему неприменим
 // (см. EXCLUDE выше, тот же принцип по имени функции, а не пути файла).
 export const CALL_ARG_EXEMPT = [
-  'tr',
-  'pickForm',
-  't',
+  'tr', 'pickForm', 't', // (1) сами вилки форм
   'alertAdmin',
   'notifyAdminText',
   // Тот же владелец-only канал, что notifyAdminText, но оба всегда (2026-09-15).
