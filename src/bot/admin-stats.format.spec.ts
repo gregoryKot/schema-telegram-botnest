@@ -18,7 +18,7 @@ const EMPTY: AdminStatsData = {
   ret7: 0,
   ret30: 0,
   lowestNeed: undefined,
-  bestDow: 0,
+  bestDow: null,
   activePairs: 0,
 };
 
@@ -33,8 +33,12 @@ describe('formatAdminStats', () => {
     // Заголовок и дата на месте.
     expect(out).toContain('Что происходит в приложении');
     expect(out).toContain('2026-07-26');
-    // Лучший день недели — валидный день (bestDow=0 → «вс»), не пусто.
-    expect(out).toContain('Чаще всего заполняют: вс');
+    // Аудит 2026-10: на пустой базе день недели не выдумывается — раньше
+    // indexOf(max) от семи нулей давал 0 и отчёт писал «вс» (правило №8).
+    expect(out).toContain(
+      'Чаще всего заполняют: пока мало записей, чтобы сказать',
+    );
+    expect(out).not.toMatch(/Чаще всего заполняют: (вс|пн|вт|ср|чт|пт|сб)/);
     // Активное ядро на пустой БД — честный «0 из 0», а не NaN/пропуск строки.
     expect(out).toContain(
       'Ведут дневник регулярно (хотя бы 3 дня из последних 7): 0 из 0 заходивших за неделю',
@@ -74,6 +78,11 @@ describe('formatAdminStats', () => {
     expect(out).toContain('Спонтанность (в среднем 4.3 из 10)');
     expect(out).toContain('Чаще всего заполняют: пн'); // bestDow=1
     expect(out).not.toMatch(/NaN|undefined/);
+  });
+
+  it('bestDow = 0 — настоящее воскресенье, а не «нет данных»', () => {
+    const out = formatAdminStats({ ...EMPTY, bestDow: 0 });
+    expect(out).toContain('Чаще всего заполняют: вс');
   });
 
   it('неизвестный needId выводится как есть, без падения', () => {
