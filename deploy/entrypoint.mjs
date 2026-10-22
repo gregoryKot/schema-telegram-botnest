@@ -19,7 +19,7 @@ import { startFront } from './front-server.mjs';
 import backupScheduler from './backup-scheduler.cjs';
 import { parseDbTarget, waitForDb } from './wait-for-db.mjs';
 import { classifyAppExit, crashMessage, superviseSeries } from './app-exit.mjs';
-import { crashesInWindow, validWindowMs } from './crash-window.mjs';
+import { createCrashBook, positiveOr } from './crash-window.mjs';
 
 const PORT =
   process.env.PORT !== undefined && process.env.PORT !== ''
@@ -44,8 +44,10 @@ const DB_WAIT_INTERVAL_MS = Number(process.env.DB_WAIT_INTERVAL_MS ?? 2000);
 const DB_WAIT_CONNECT_MS = Number(process.env.DB_WAIT_CONNECT_MS ?? 3000);
 const MIGRATE_MAX_ATTEMPTS = Number(process.env.MIGRATE_MAX_ATTEMPTS ?? 3);
 const MIGRATE_BACKOFF_MS = Number(process.env.MIGRATE_BACKOFF_MS ?? 3000);
-// Окно счётчика падений (15 мин): MAX_FAILS падений за окно — лимит серии.
-const CRASH_WINDOW_MS = validWindowMs(process.env.STARTUP_CRASH_WINDOW_MS, 900000);
+// Лимит серии (MAX_FAILS за 15 мин или MAX_FAILS_HOUR за час) и троттл DM — crash-window.mjs.
+const CRASH_WINDOW_MS = positiveOr(process.env.STARTUP_CRASH_WINDOW_MS, 900000);
+const MAX_FAILS_HOUR = positiveOr(process.env.STARTUP_MAX_FAILS_HOUR, 6);
+const book = createCrashBook({ windowMs: CRASH_WINDOW_MS, maxFails: MAX_FAILS, hourMaxFails: MAX_FAILS_HOUR });
 
 // Front занимает публичный порт немедленно; приложение живёт на APP_PORT.
 const front = startFront({ port: PORT, appPort: APP_PORT });
@@ -54,7 +56,6 @@ let current = null;
 let shuttingDown = false;
 let cleanExit = false;
 let backup = null; // планировщик бэкапов в R2 (deploy/backup-scheduler.cjs)
-let launches = 0; // номер запуска приложения в контейнере → STARTUP_LAUNCH
 
 function finish() {
   // Front держит event loop живым. Выходим только при чистом выходе приложения
@@ -140,12 +141,12 @@ async function main() {
   // Бэкапам нужна таблица CronLease — стартуем только после успешных миграций.
   backup ??= backupScheduler.startBackupScheduler();
 
-  let crashes = []; // метки падений этой серии, только внутри окна
+  book.newSeries();
   let healthy = false; // хоть раз прожило дольше окна → пауза не растёт
   for (;;) {
     const startedAt = Date.now();
-    // APP_PORT — внутренний, front проксирует; номер запуска — для start-announce.ts.
-    const app = await run(APP_CMD, { PORT: String(APP_PORT), STARTUP_LAUNCH: String(++launches) });
+    // APP_PORT — внутренний, front проксирует; номер запуска и троттл DM — start-announce.ts.
+    const app = await run(APP_CMD, { PORT: String(APP_PORT), ...book.launchEnv(startedAt) });
     const exit = classifyAppExit(app, shuttingDown);
     if (exit === 'stop') return; // graceful shutdown по нашему SIGTERM/SIGINT
     if (exit === 'clean') {
@@ -154,11 +155,10 @@ async function main() {
     }
     const ranMs = Date.now() - startedAt;
     if (ranMs >= CRASH_WINDOW_MS) healthy = true;
-    crashes = crashesInWindow(crashes, Date.now(), CRASH_WINDOW_MS);
-    const fails = crashes.length;
-    console.error(crashMessage(app, ranMs, fails, MAX_FAILS));
-    if (fails >= MAX_FAILS) return { reason: 'limit', healthy }; // front на техработах
-    await sleep(BACKOFF_MS * fails);
+    const c = book.crash(Date.now());
+    console.error(crashMessage(app, ranMs, c.fails, MAX_FAILS, c.note));
+    if (c.limit) return { reason: 'limit', healthy }; // front на техработах
+    await sleep(BACKOFF_MS * c.fails);
     if (shuttingDown) return;
   }
 }

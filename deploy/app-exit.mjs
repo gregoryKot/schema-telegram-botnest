@@ -19,8 +19,8 @@ export function classifyAppExit(app, shuttingDown) {
   return 'crash';
 }
 
-export function crashMessage(app, ranMs, fails, maxFails) {
-  const tail = `ranMs=${ranMs}, fails=${fails}/${maxFails}`;
+export function crashMessage(app, ranMs, fails, maxFails, note = '') {
+  const tail = `ranMs=${ranMs}, fails=${fails}/${maxFails}${note}`;
   return app.signal
     ? `[entrypoint] приложение убито сигналом ${app.signal} (${tail})`
     : `[entrypoint] приложение упало (code=${app.code}, ${tail})`;

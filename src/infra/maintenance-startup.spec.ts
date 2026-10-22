@@ -8,7 +8,7 @@ import { createServer, Server } from 'net';
 import { join } from 'path';
 import { existsSync, unlinkSync } from 'fs';
 import { tmpdir } from 'os';
-import { STARTUP_LAUNCH_ENV } from '../telegram/start-announce';
+import { STARTUP_ENV } from '../telegram/start-launch-env';
 
 const ENTRY = join(process.cwd(), 'deploy', 'entrypoint.mjs');
 
@@ -413,26 +413,79 @@ describe('entrypoint (супервизор старта)', () => {
     }, 30000);
   });
 
-  // Номер запуска (STARTUP_LAUNCH) отличает DM о деплое от DM о перезапуске
-  // (src/telegram/start-announce.ts). Имя — та же константа, что читает
-  // приложение: обе стороны шва держатся одной строки.
-  it('номер запуска доходит до приложения и растёт через серии', async () => {
+  // Аудит 2026-10, повторное ревью: падение реже раза в 15 минут, но чаще раза
+  // в 10 (период 8,5 мин) давало в 15-минутном окне лишь два падения из трёх —
+  // перезапуск без конца, без техработ и паузы. Второе окно — час. Масштаб:
+  // окно 1 с, прогон 0,2 с, бэкофф 1,5 с — в короткое окно не попадает и
+  // второе падение (как 8,5 мин против 15), а прогон короче окна, поэтому
+  // паузы растут, а не сбрасываются (контроль: fails=1/2 — лимит дал час).
+  it('редкий крашлуп (каждое падение вне короткого окна) → лимит по часу, техработы, паузы растут', async () => {
     const { proc, frontPort, log } = launch({
       RECOVER_CMD: 'true',
       MIGRATE_CMD: 'true',
-      APP_CMD: `echo LAUNCH=$${STARTUP_LAUNCH_ENV} >&2; exit 1`,
+      APP_CMD: 'echo APP-START >&2; sleep 0.2; exit 1',
       APP_PORT: String(await freePort()),
+      STARTUP_CRASH_WINDOW_MS: '1000',
       STARTUP_MAX_FAILS: '2',
+      STARTUP_MAX_FAILS_HOUR: '3',
+      STARTUP_BACKOFF_MS: '1500',
+      STARTUP_COOLDOWN_MS: '100',
+      STARTUP_COOLDOWN_MAX_MS: '10000',
+    });
+    alive.push(proc);
+    const port = await frontPort;
+    const out = await waitLog(
+      log,
+      (l) => count(l, /следующая серия через/g) >= 2,
+      25000,
+    );
+    expect(out).toMatch(/fails=1\/2, за час 3\/3\)/);
+    expect(out).not.toMatch(/fails=2\/2/);
+    const pauses = [...out.matchAll(/следующая серия через (\d+) мс/g)].map(
+      (m) => Number(m[1]),
+    );
+    expect(pauses.slice(0, 2)).toEqual([100, 200]);
+    expect(proc.exitCode).toBeNull();
+    const text = await poll(`http://127.0.0.1:${port}/`, /технические работы/);
+    expect(text).toContain('технические работы');
+  }, 40000);
+
+  // Номер запуска и троттл DM (src/telegram/start-announce.ts) ведёт супервизор:
+  // память процесса приложения после падения чистая, его собственный счётчик
+  // обнулялся бы на каждом круге. Падения за сутки копятся через серии; DM —
+  // только на 0 (деплой), 1, 2, 4, 8 падениях. Имена — те же константы, что
+  // читает приложение: обе стороны шва держатся одних строк.
+  it('номер запуска, падения за сутки и троттл DM доходят до приложения через серии', async () => {
+    const { launch: L, crashes: C, notice: N } = STARTUP_ENV;
+    const { proc, frontPort, log } = launch({
+      RECOVER_CMD: 'true',
+      MIGRATE_CMD: 'true',
+      APP_CMD: `echo "RUN L=$${L} C=$${C} N=$${N}" >&2; exit 1`,
+      APP_PORT: String(await freePort()),
+      STARTUP_MAX_FAILS: '3',
       STARTUP_BACKOFF_MS: '10',
       STARTUP_COOLDOWN_MS: '50',
       STARTUP_COOLDOWN_MAX_MS: '50',
     });
     alive.push(proc);
     await frontPort;
-    const out = await waitLog(log, (l) => count(l, /LAUNCH=\d+/g) >= 4);
-    const launches = [...out.matchAll(/LAUNCH=(\d+)/g)].map((m) => m[1]);
-    expect(launches.slice(0, 4)).toEqual(['1', '2', '3', '4']);
-    expect(out).toMatch(/LAUNCH=2[\s\S]*следующая серия через[\s\S]*LAUNCH=3/);
+    const out = await waitLog(log, (l) => count(l, /RUN L=\d+/g) >= 10);
+    const runs = [...out.matchAll(/RUN L=(\d+) C=(\d+) N=(\d)/g)]
+      .slice(0, 10)
+      .map((m) => [m[1], m[2], m[3]].join('/'));
+    expect(runs).toEqual([
+      '1/0/1', // деплой
+      '2/1/1',
+      '3/2/1',
+      '4/3/0', // серия кончилась на 3-м падении, сутки помнят
+      '5/4/1',
+      '6/5/0',
+      '7/6/0',
+      '8/7/0',
+      '9/8/1',
+      '10/9/0',
+    ]);
+    expect(out).toMatch(/L=3 [\s\S]*следующая серия через[\s\S]*L=4 /);
   }, 30000);
 
   it('контроль: SIGTERM самому entrypoint → приложение гасится, выход 0, без перезапуска и без «убито»', async () => {

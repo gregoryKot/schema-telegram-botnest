@@ -15,4 +15,24 @@ export const SUPERVISOR_ENV_ENTRIES: EnvVarSpec[] = [
       /^[1-9]\d*$/.test(value) ? null : 'ожидалось целое число от 1',
     group: 'infra',
   },
+  {
+    name: 'STARTUP_CRASHES_DAY',
+    purpose:
+      'Падений приложения за сутки в этом контейнере — ставит deploy/entrypoint.mjs, ' +
+      'вручную не задаётся. Число попадает в DM о перезапуске (src/telegram/start-announce.ts).',
+    requiredInProd: false,
+    format: (value: string): string | null =>
+      /^(0|[1-9]\d*)$/.test(value) ? null : 'ожидалось целое число от 0',
+    group: 'infra',
+  },
+  {
+    name: 'STARTUP_NOTICE',
+    purpose:
+      'Троттл DM о старте, который ведёт супервизор (deploy/crash-window.mjs): «0» — ' +
+      'не слать (о таком числе падений за сутки уже сообщали), «1» — слать. Вручную не задаётся.',
+    requiredInProd: false,
+    format: (value: string): string | null =>
+      value === '0' || value === '1' ? null : 'ожидалось 0 или 1',
+    group: 'infra',
+  },
 ];

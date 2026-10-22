@@ -52,7 +52,7 @@
 3. `RECOVER_CMD`, по умолчанию `npx prisma db execute --file prisma/recover-p3009.sql || true`.
 4. `MIGRATE_CMD`, по умолчанию `npx prisma migrate deploy`, 3 попытки. Если не прошло, остаются техработы навсегда и приложение не стартует.
 5. `backup-scheduler.cjs`: бэкап БД в R2 с арендой через `CronLease`, стартует только после миграций.
-6. `exec node dist/main` на `APP_PORT`, с номером запуска в `STARTUP_LAUNCH`. Рестарты до `STARTUP_MAX_FAILS`=3 падений за окно `STARTUP_CRASH_WINDOW_MS`=15 мин (`crash-window.mjs`), затем техработы, пауза 5 мин (×2, потолок 1 ч) и новая серия. Рост паузы сбрасывает только прогон дольше окна.
+6. `exec node dist/main` на `APP_PORT`, с номером запуска, числом падений за сутки и решением троттла DM (`STARTUP_LAUNCH`, `STARTUP_CRASHES_DAY`, `STARTUP_NOTICE`). Рестарты до `STARTUP_MAX_FAILS`=3 падений за окно `STARTUP_CRASH_WINDOW_MS`=15 мин или `STARTUP_MAX_FAILS_HOUR`=6 за час (`crash-window.mjs`), затем техработы, пауза 5 мин (×2, потолок 1 ч) и новая серия. Рост паузы сбрасывает только прогон дольше окна.
 
 SIGTERM/SIGINT пробрасываются приложению.
 
