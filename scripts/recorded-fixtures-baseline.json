@@ -159,6 +159,13 @@
     "status": "exempt",
     "reason": "Ответ Telegram Bot API getMe (ok/result.username) — синтетическое тело по документации Bot API в спеке, не захваченный с прода ответ площадки."
   },
+  "src/telegram/telegram-rate-limit.ts": {
+    "status": "recorded",
+    "fixtures": [
+      "telegram-429-too-many-requests.json"
+    ],
+    "spec": "src/telegram/telegram-rate-limit.spec.ts"
+  },
   "src/therapy/therapist-request.notify.ts": {
     "status": "exempt",
     "reason": "Ошибка Telegram Bot API sendMessage (description) в спеке — синтетическое тело по документации Bot API, не захваченный с прода ответ площадки."

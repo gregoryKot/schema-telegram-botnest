@@ -158,7 +158,7 @@
   - `src/test-support/gates/gate-sandbox.ts` — `runGate(script, files, opts)`: копирует реальный скрипт в tmp
   - `src/test-support/gates/pattern-loader.ts` — грузит `PATTERNS` из .mjs-гейта как данные
   - `src/test-support/gates/workflow-yaml.ts` — построчный разбор workflow (`on:`, джобы)
-  - `src/test-support/gates/deploy-needs-ci.ts`, `src/test-support/gates/job-timeouts.ts`, `src/test-support/gates/dependabot-coverage.ts` — правила над workflow и dependabot.yml
+  - `src/test-support/gates/deploy-needs-ci.ts`, `src/test-support/gates/job-timeouts.ts`, `src/test-support/gates/dependabot-coverage.ts`, `src/test-support/gates/lockfile-audit.ts`, `src/test-support/gates/alarm-needs.ts` — правила над workflow и dependabot.yml
 - Связи: спеки запускают `scripts/check-*.mjs` и читают `scripts/*-baseline.json`, `.github/workflows/*.yml`, `.github/dependabot.yml`; те же скрипты CI вызывает шагами в `.github/workflows/ci.yml`; сами спеки идут в обычном `jest` (rootDir `src`).
 - Подводные камни:
   - Гейт-скрипт держит scan/report за `if (isMain)`, иначе `src/test-support/gates/pattern-loader.ts` получит побочные эффекты при импорте; `runGate` копирует и локальные зависимости скрипта (`withLocalDeps`).

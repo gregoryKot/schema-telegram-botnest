@@ -4,9 +4,9 @@ import '../styles/auth-pay.css';
 
 const PRESETS = [200, 500, 1000, 2000];
 
-// Public donation page (no auth) at /donate. Handles the return from Robokassa
-// (?donation=ok|fail) and otherwise shows the donation form. The game and the
-// in-app sheet both ultimately land donors here so they never hit /login.
+// Публичная /donate (и возврат Robokassa ?donation=ok|fail): вне RequireAuth/AddressFormProvider,
+// из Telegram/MAX открывается во внешнем браузере, на визитке — гость. Форма обращения неизвестна
+// по построению → тексты безличные, без useTr (как SubscribeForm.tsx); useTr тут всегда дал бы «ты».
 export function DonatePage() {
   const params = new URLSearchParams(window.location.search);
   const ret = params.get('donation'); // 'ok' | 'fail' | null
@@ -37,7 +37,7 @@ export function DonatePage() {
           <>
             <div className="ds-eyebrow">Разовая поддержка</div>
             <h1 className="ap-h1">Поддержать <i>проект</i></h1>
-            <p className="ap-lead">«Всё по схеме» бесплатно. Если приложение полезно — поддержите развитие любой суммой.</p>
+            <p className="ap-lead">«Всё по схеме» бесплатно. Если приложение полезно, его развитие можно поддержать любой суммой.</p>
             {ret === 'fail' && <p className="ap-err" role="alert">Оплата не прошла. Можно попробовать снова.</p>}
 
             <div className="ap-amounts">

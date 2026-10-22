@@ -1,5 +1,4 @@
-// Исходы сбоя отправки из очереди уведомлений. Вынесено из
-// telegram.schedule-queue.ts (правило №10).
+// Исходы сбоя отправки из очереди (вынесено из telegram.schedule-queue.ts).
 import { classifySendFailure, describeTelegramError } from './telegram-error';
 import { isUnknownOutcome } from './telegram.send-bounded';
 import type { QueueDeps } from './telegram.schedule-queue';
@@ -9,14 +8,14 @@ export async function handleSendError(
   id: number,
   userId: bigint | number,
   err: unknown,
-  unknownOutcomes: number[],
+  seen: { unknown: number[]; transient: number },
 ): Promise<void> {
   const { accountService, notificationService, logger } = deps;
   // Запрос оборван, а Telegram мог его принять: повтор дал бы дубль каждые
   // 5 минут. Метим отправленным и сообщаем одной строкой на тик.
   if (isUnknownOutcome(err)) {
     await notificationService.markSent(id);
-    unknownOutcomes.push(id);
+    seen.unknown.push(id);
     return;
   }
   const verdict = classifySendFailure(err);
@@ -24,7 +23,8 @@ export async function handleSendError(
 
   if (verdict === 'transient') {
     // Наша ошибка (разметка, длина, сеть) — не метим человека и не помечаем
-    // отправленным: повторим на следующем тике.
+    // отправленным: повтор на следующем тике (429 — в telegram.paced-sender).
+    seen.transient++;
     logger.error(`Failed to send notification id=${id} (${desc})`, err);
     return;
   }

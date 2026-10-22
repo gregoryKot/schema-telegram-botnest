@@ -72,6 +72,32 @@ describe('check-second-person.mjs', () => {
     expect(res.stderr).toContain('[imperative-ty] Заполни');
   });
 
+  // Аудит 2026-10: «поддержите развитие» на DonatePage прожило с 2026-07 —
+  // TY_IMPERATIVES не знал глагола. Живой образец обеих форм + контроль.
+  it.each([
+    ['Если полезно — поддержите проект', '[imperative-vy] поддержите'],
+    ['Если полезно — поддержи проект', '[imperative-ty] поддержи'],
+  ])('«%s» вне tr() — exit 1', (text, hit) => {
+    const res = runGate('check-second-person.mjs', {
+      'scripts/second-person-baseline.json': JSON.stringify({}),
+      'webapp/src/components/X.tsx': `export const X = () => <p>${text}</p>;\n`,
+    });
+    expect(res.status).toBe(1);
+    expect(res.stderr).toContain(hit);
+  });
+
+  it('КОНТРОЛЬ: «поддержи/поддержите» внутри tr() и инфинитив «Поддержать» — exit 0', () => {
+    const res = runGate('check-second-person.mjs', {
+      'scripts/second-person-baseline.json': JSON.stringify({}),
+      'webapp/src/components/X.tsx':
+        [
+          "export const a = tr('Если полезно — поддержи проект', 'Если полезно — поддержите проект');",
+          "export const b = 'Поддержать проект; развитие можно поддержать любой суммой';",
+        ].join('\n') + '\n',
+    });
+    expect(res.status).toBe(0);
+  });
+
   it('«ты» внутри вилки tr(...) — легитимно, exit 0', () => {
     const res = runGate('check-second-person.mjs', {
       'scripts/second-person-baseline.json': JSON.stringify({}),
