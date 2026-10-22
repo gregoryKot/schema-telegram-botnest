@@ -39,7 +39,7 @@
     "via": "test/e2e-support/stats-report.factory.ts"
   },
   "src/bot/bot.admin-stats.service.ts": {
-    "spec": "test/raw-sql-live-stats.e2e-spec.ts"
+    "spec": "test/raw-sql-live-admin-stats.e2e-spec.ts"
   },
   "src/bot/bot.product-metrics.service.ts": {
     "spec": "test/raw-sql-live-stats.e2e-spec.ts",
