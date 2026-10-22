@@ -4,11 +4,11 @@
 // предлагает обновления, мерж не блокирует. Правила — lockfile-audit.ts;
 // здесь оба исхода на образцах, прогон по настоящему ci.yml и ИСПОЛНЕНИЕ
 // ночного шага из nightly.yml с подменённым npm (шов — сам скрипт воркфлоу,
-// не его пересказ, как в alarm-workflow.spec.ts).
+// не его пересказ, как в alarm-workflow.spec.ts). Шаги зовут обёртку
+// scripts/npm-audit.mjs (регресс #814); её флаги пинит npm-audit.spec.ts.
 import { execFileSync, spawnSync } from 'child_process';
 import {
-  chmodSync,
-  existsSync,
+  mkdirSync,
   mkdtempSync,
   readFileSync,
   rmSync,
@@ -17,11 +17,13 @@ import {
 import { tmpdir } from 'os';
 import { join } from 'path';
 import { lockDirectory } from './dependabot-coverage';
+import { makeFakeNpm, type FakeNpm } from './fake-npm';
 import {
   auditCoverage,
   auditedDirectories,
   isGatingAudit,
   prefixDirectory,
+  rawAuditLines,
 } from './lockfile-audit';
 import { jobBlocks } from './workflow-yaml';
 
@@ -36,6 +38,7 @@ const locks = execFileSync('git', ['ls-files', '*package-lock.json'], {
   .filter(Boolean);
 
 const AUDIT = 'npm audit --omit=dev --audit-level=high';
+const WRAP = 'node scripts/npm-audit.mjs';
 const job = (id: string, ...steps: string[]) =>
   `  ${id}:\n    runs-on: ubuntu-latest\n    timeout-minutes: 5\n    steps:\n      - uses: actions/checkout@v7\n${steps.join('')}`;
 const run = (cmd: string, extra = '') =>
@@ -110,6 +113,10 @@ describe('гейт: у каждого lock-файла есть npm audit в CI',
       ['уровень none', `${AUDIT.replace('high', 'none')}`, ''],
       ['|| true', `${AUDIT} || true`, ''],
       ['|| :', `${AUDIT} || :`, ''],
+      ['|| exit 0', `${AUDIT} || exit 0`, ''],
+      ['; exit 0', `${AUDIT}; exit 0`, ''],
+      ['true || — не исполняется', `true || ${AUDIT}`, ''],
+      ['только аргумент echo', `echo ${AUDIT}`, ''],
       ['continue-on-error: true', AUDIT, '        continue-on-error: true\n'],
       ['if: у шага', AUDIT, '        if: false\n'],
       ['npm audit fix — не проверка', 'npm audit fix', ''],
@@ -127,8 +134,151 @@ describe('гейт: у каждого lock-файла есть npm audit в CI',
       expect(auditedDirectories(guarded('continue-on-error: true'))).toEqual(
         [],
       );
+      const shell = 'defaults:\n      run:\n        shell: bash {0}';
+      expect(auditedDirectories(guarded(shell))).toEqual([]);
+      expect(
+        auditedDirectories(
+          ci(job('b', run(AUDIT))).replace(
+            'jobs:',
+            'defaults:\n  run:\n    shell: bash {0}\n\njobs:',
+          ),
+        ),
+      ).toEqual([]);
+      // Контроль: continue-on-error: false у шага и джобы — не глушит.
+      expect(
+        auditedDirectories(
+          ci(job('b', run(AUDIT, '        continue-on-error: false\n'))),
+        ),
+      ).toEqual(['/']);
+      expect(auditedDirectories(guarded('continue-on-error: false'))).toEqual([
+        '/',
+      ]);
       // Контроль: тот же сэмпл без ключа засчитан.
       expect(auditedDirectories(ci(job('b', run(AUDIT))))).toEqual(['/']);
+    });
+
+    it('обёртка засчитана, каталог — её аргумент; «.» — корень', () => {
+      const text = ci(
+        job('backend', run(`${WRAP} .`), run(`${WRAP} shared`)),
+        job('webapp', run(`${WRAP} webapp`)),
+      );
+      expect(auditCoverage(text, LOCKS)).toEqual({ missing: [], stale: [] });
+      expect(prefixDirectory(`${WRAP} "game"`)).toBe('/game');
+      expect(prefixDirectory(WRAP)).toBe('/');
+      expect(prefixDirectory(`${WRAP} || true`)).toBe('/');
+    });
+
+    // Контроль к обёртке: глушащие формы те же, что у голого npm audit.
+    // Код 2 («реестр не ответил») и 3 («npm не может проверить») — красные:
+    // `|| [ $? -eq 2 ]` сделал бы непроверенное зелёным (ревью #814).
+    it.each([
+      ['|| true', `${WRAP} webapp || true`, ''],
+      ['|| [ $? -eq 2 ]', `${WRAP} webapp || [ $? -eq 2 ]`, ''],
+      ['|| exit 0', `${WRAP} webapp || exit 0`, ''],
+      ['; exit 0', `${WRAP} webapp; exit 0`, ''],
+      ['& в фон', `${WRAP} webapp &`, ''],
+      ['| в конвейер', `${WRAP} webapp | tee audit.log`, ''],
+      ['только аргумент echo', `echo ${WRAP} webapp`, ''],
+      ['другой файл: .mjs.bak', `node scripts/npm-audit.mjs.bak webapp`, ''],
+      [
+        'закомментирован в run: |',
+        `|\n          # cd . && ${WRAP} webapp\n          echo skipped`,
+        '',
+      ],
+      [
+        'continue-on-error: true',
+        `${WRAP} webapp`,
+        '        continue-on-error: true\n',
+      ],
+      ['if: у шага', `${WRAP} webapp`, '        if: false\n'],
+      ['«npm audit» только в имени шага', 'echo skipped', ''],
+      // Ревью: YAML склеивает строки plain- и `>`-скаляра пробелом, и
+      // `|| …` строкой ниже — тот же заглушённый вызов, что в одну строку.
+      ['|| true строкой ниже (plain)', `${WRAP} webapp\n          || true`, ''],
+      [
+        '|| [ $? -eq 2 ] строкой ниже (>-)',
+        `>-\n          ${WRAP} webapp\n          || [ $? -eq 2 ]`,
+        '',
+      ],
+      [
+        '\\-продолжение и || true (run: |)',
+        `|\n          ${WRAP} webapp \\\n            || true`,
+        '',
+      ],
+      [
+        'set +e … exit 0',
+        `|\n          set +e\n          ${WRAP} webapp\n          [ $? -eq 1 ] && exit 1\n          exit 0`,
+        '',
+      ],
+      [
+        'trap перед вызовом',
+        `|\n          trap 'exit 0' EXIT\n          ${WRAP} webapp`,
+        '',
+      ],
+      ['trap в одной строке', `trap 'exit 0' EXIT; ${WRAP} webapp`, ''],
+      ['exit 0 до вызова', `exit 0; ${WRAP} webapp`, ''],
+      [
+        '{ … } || true',
+        `|\n          {\n            ${WRAP} webapp\n          } || true`,
+        '',
+      ],
+      ['свой shell без -e', `${WRAP} webapp`, '        shell: bash {0}\n'],
+      [
+        'continue-on-error: ${{ true }}',
+        `${WRAP} webapp`,
+        '        continue-on-error: ${{ true }}\n',
+      ],
+    ])('обёртка не засчитывается: %s', (_n, cmd, extra) => {
+      const step = run(cmd, extra).replace(
+        'name: audit',
+        'name: npm audit — x',
+      );
+      expect(auditedDirectories(ci(job('webapp', step)))).toEqual([]);
+    });
+
+    // Контроль к форме выше: перед вызовом `&&`/`;` и многострочный run —
+    // законны, вызов остаётся исходом строки.
+    it.each([
+      ['echo && обёртка', `echo start && ${WRAP} webapp`],
+      ['cd; обёртка', `cd . ; ${WRAP} webapp`],
+      [
+        'run: | с комментарием',
+        `|\n          # проверка\n          ${WRAP} webapp`,
+      ],
+      // Склейка строк скаляра в обе стороны: аргумент строкой ниже — тот
+      // же вызов, а не «вызов без каталога».
+      ['каталог строкой ниже (plain)', `${WRAP}\n          webapp`],
+      [
+        'каталог через \\-продолжение',
+        `|-\n          ${WRAP} \\\n            webapp`,
+      ],
+      ['>- в одну строку', `>-\n          ${WRAP}\n          webapp`],
+    ])('обёртка засчитывается: %s', (_n, cmd) => {
+      expect(auditedDirectories(ci(job('webapp', run(cmd))))).toEqual([
+        '/webapp',
+      ]);
+    });
+
+    it('голый npm audit в run находится, и после echo &&; имя шага, аргумент echo и комментарий — нет', () => {
+      const text = ci(
+        job(
+          'b',
+          run(AUDIT),
+          run(`echo start && ${AUDIT} --prefix webapp`),
+          run(`${WRAP} .`).replace('name: audit', 'name: npm audit — корень'),
+          `      # npm audit читает lock-файл\n`,
+          `      # cd webapp && ${AUDIT}\n`,
+          run('echo "::group::npm audit $dir"'),
+        ),
+      );
+      expect(rawAuditLines(text)).toEqual([AUDIT, `${AUDIT} --prefix webapp`]);
+    });
+
+    it('шаг uses: с вызовом в with — не засчитывается: скрипт только в run', () => {
+      const step =
+        '      - name: npm audit — webapp\n        uses: actions/github-script@v7\n' +
+        `        with:\n          script: |\n            ${WRAP} webapp\n`;
+      expect(auditedDirectories(ci(job('webapp', step)))).toEqual([]);
     });
 
     it('закомментированный шаг не засчитывается', () => {
@@ -148,6 +298,15 @@ describe('гейт: у каждого lock-файла есть npm audit в CI',
         stale: [],
       });
     });
+
+    // Голый audit без внешнего таймера висел на реестре до таймаута шага
+    // и красил main без уязвимости (регресс #814).
+    it.each(['ci.yml', 'nightly.yml'])(
+      '%s: npm audit только через обёртку',
+      (f) => {
+        expect(rawAuditLines(read(f))).toEqual([]);
+      },
+    );
   });
 });
 
@@ -169,40 +328,34 @@ function runBlock(jobText: string, name: string): string {
 
 describe('nightly.yml: ночной npm audit всех lock-файлов', () => {
   const nightly = jobBlocks(read('nightly.yml'))['npm-audit'];
-  let bin: string;
-  let log: string;
+  let npm: FakeNpm;
 
   beforeAll(() => {
-    bin = mkdtempSync(join(tmpdir(), 'fake-npm-'));
-    log = join(bin, 'npm.log');
-    // Подменённый npm: пишет аргументы, валит каталог из FAIL_DIR.
-    writeFileSync(
-      join(bin, 'npm'),
-      '#!/bin/sh\necho "npm $*" >> "$NPM_LOG"\ncase " $* " in *" --prefix $FAIL_DIR "*) exit 1;; esac\n',
-    );
-    chmodSync(join(bin, 'npm'), 0o755);
+    npm = makeFakeNpm();
   });
-  afterAll(() => rmSync(bin, { recursive: true, force: true }));
+  afterAll(() => npm.cleanup());
 
-  function exec(cwd: string, failDir = '') {
-    if (existsSync(log)) rmSync(log);
+  // Настоящий шаг → настоящая обёртка → поддельный npm с записанными
+  // ответами реестра (правила ответов — fake-npm.ts).
+  function exec(cwd: string, rules = '*=clean') {
+    npm.reset();
     const r = spawnSync(
       'bash',
       ['-e', '-c', runBlock(nightly, 'npm audit по каждому package-lock.json')],
       {
         cwd,
-        env: {
-          PATH: `${bin}:${process.env.PATH}`,
-          NPM_LOG: log,
-          FAIL_DIR: failDir,
-        },
+        env: npm.env(rules, {
+          NPM_AUDIT_ATTEMPTS: '2',
+          NPM_AUDIT_PAUSE_MS: '20',
+        }),
         encoding: 'utf8',
       },
     );
-    const calls = existsSync(log)
-      ? readFileSync(log, 'utf8').split('\n').filter(Boolean)
-      : [];
-    return { status: r.status, out: `${r.stdout}${r.stderr}`, calls };
+    return {
+      status: r.status,
+      out: `${r.stdout}${r.stderr}`,
+      calls: npm.calls(),
+    };
   }
 
   it('джоба есть, с таймаутом шага', () => {
@@ -216,13 +369,61 @@ describe('nightly.yml: ночной npm audit всех lock-файлов', () =>
     expect(r.calls.map(prefixDirectory).sort()).toEqual(
       locks.map(lockDirectory).sort(),
     );
-    expect(r.calls.every(isGatingAudit)).toBe(true);
+    expect(r.calls.every((c) => isGatingAudit(`run: ${c}`))).toBe(true);
+  });
+
+  // Код 1 node отдаёт сам на упавшем скрипте: такой исход — «не смог
+  // проверить», а не «уязвимость» (ревью #814).
+  it('обёртка упала (node — код 1): «не смог проверить», не «уязвимость»', () => {
+    const repo = mkdtempSync(join(tmpdir(), 'audit-crash-'));
+    try {
+      mkdirSync(join(repo, 'scripts'));
+      mkdirSync(join(repo, 'pkg'));
+      writeFileSync(join(repo, 'pkg', 'package-lock.json'), '{}');
+      writeFileSync(
+        join(repo, 'scripts', 'npm-audit.mjs'),
+        'throw new Error("boom");\n',
+      );
+      execFileSync('git', ['init', '-q'], { cwd: repo });
+      execFileSync('git', ['add', '.'], { cwd: repo });
+      const r = exec(repo);
+      expect(r.status).not.toBe(0);
+      expect(r.out).toContain('::error::npm audit: npm не смог проверить: pkg');
+      expect(r.out).not.toContain('high/critical в prod-зависимостях:');
+    } finally {
+      rmSync(repo, { recursive: true, force: true });
+    }
   });
 
   it('уязвимость в одном пакете: красный, ::error:: с его именем, остальные всё равно проверены', () => {
-    const r = exec(ROOT, 'webapp');
+    const r = exec(ROOT, 'webapp=high;*=clean');
     expect(r.status).not.toBe(0);
-    expect(r.out).toMatch(/::error::.*webapp/);
+    expect(r.out).toContain(
+      '::error::npm audit: high/critical в prod-зависимостях: webapp',
+    );
+    expect(r.out).not.toContain('реестр npm не ответил для');
+    expect(r.calls).toHaveLength(locks.length);
+  });
+
+  it('реестр не ответил по одному пакету: красный отдельным ::error::, не «уязвимость»', () => {
+    const r = exec(ROOT, 'game=registry-400;*=clean');
+    expect(r.status).not.toBe(0);
+    expect(r.out).toContain(
+      '::error::npm audit: реестр npm не ответил для: game',
+    );
+    expect(r.out).not.toContain('high/critical в prod-зависимостях:');
+    // game — две попытки, остальные — по одной.
+    expect(r.calls).toHaveLength(locks.length + 1);
+  });
+
+  it('npm не может проверить один пакет (ENOLOCK): красный своим ::error::, без повторов', () => {
+    const r = exec(ROOT, 'shared=enolock;*=clean');
+    expect(r.status).not.toBe(0);
+    expect(r.out).toContain(
+      '::error::npm audit: npm не смог проверить: shared',
+    );
+    expect(r.out).not.toContain('high/critical в prod-зависимостях:');
+    expect(r.out).not.toContain('реестр npm не ответил для');
     expect(r.calls).toHaveLength(locks.length);
   });
 

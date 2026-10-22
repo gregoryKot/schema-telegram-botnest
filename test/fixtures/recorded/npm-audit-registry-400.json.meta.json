@@ -1,0 +1,6 @@
+{
+  "source": "registry.npmjs.org через npm 10.9.4 (Node 22.22.0, как в CI) — stdout `npm audit --omit=dev --audit-level=high --json --fetch-timeout=15000`",
+  "recordedAt": "2026-10-22",
+  "how": "записано живым запуском по одноразовому lock-файлу (nanoid@3.3.6) в тот момент, когда bulk-эндпоинт не ответил: npm откатился на выведенный /-/npm/v1/security/audits/quick, тот вернул 400 «This endpoint is being retired» / «Invalid package tree» — ровно тот сбой, что ронял CI 2026-10-22 (PR #814, #816); код выхода 1",
+  "redacted": "из headers убраны set-cookie (__cf_bm) и cf-ray — служебные значения Cloudflare, обёртке не нужны; остальное как пришло"
+}

@@ -453,14 +453,19 @@ jobs:
   npm-audit:
     if: github.event.schedule != '0 4 * * 0'
     runs-on: ubuntu-24.04
-    timeout-minutes: 10
+    timeout-minutes: 18
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
           node-version: 22
+      # Обёртка scripts/npm-audit.mjs: код 4 — high/critical, 2 — реестр не
+      # ответил ни с одной попытки, 3 и прочие (1 — упавший node) — npm или
+      # обёртка не может проверить каталог (нет lock-файла и т. п.,
+      # перезапуск не поможет). Худший
+      # случай 2 мин 41 с на lock-файл; пять файлов — 13,5 мин, отсюда 16.
       - name: npm audit по каждому package-lock.json
-        timeout-minutes: 8
+        timeout-minutes: 16
         run: |
           locks=$(git ls-files '*package-lock.json')
           if [ -z "$locks" ]; then
@@ -468,16 +473,31 @@ jobs:
             exit 1
           fi
           failed=''
+          unreachable=''
+          broken=''
           for lock in $locks; do
             dir=$(dirname "$lock")
             echo "::group::npm audit $dir"
-            if ! npm audit --omit=dev --audit-level=high --prefix "$dir"; then
-              failed="$failed $dir"
-            fi
+            code=0
+            node scripts/npm-audit.mjs "$dir" || code=$?
             echo '::endgroup::'
+            case $code in
+              0) ;;
+              4) failed="$failed $dir" ;;
+              2) unreachable="$unreachable $dir" ;;
+              *) broken="$broken $dir" ;;
+            esac
           done
+          if [ -n "$unreachable" ]; then
+            echo "::error::npm audit: реестр npm не ответил для:$unreachable — это не уязвимость; перезапусти джобу"
+          fi
+          if [ -n "$broken" ]; then
+            echo "::error::npm audit: npm не смог проверить:$broken — это не уязвимость; причина выше, перезапуск не поможет"
+          fi
           if [ -n "$failed" ]; then
             echo "::error::npm audit: high/critical в prod-зависимостях:$failed"
+          fi
+          if [ -n "$failed$unreachable$broken" ]; then
             exit 1
           fi
 
