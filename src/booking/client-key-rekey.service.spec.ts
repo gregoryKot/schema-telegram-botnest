@@ -225,8 +225,10 @@ describe('ClientKeyRekeyService.run', () => {
     const warn = spyWarn(service);
     await service.run(NOW);
     await new Promise((ok) => setImmediate(ok));
-    expect(telegram.notifyAdmin).toHaveBeenCalledTimes(1);
-    expect(warn).not.toHaveBeenCalled();
+    expect(telegram.notifyAdmin.mock.calls).toEqual([
+      [expect.stringContaining('№7')],
+    ]);
+    expect(warn.mock.calls).toEqual([]);
   });
 
   it('зависший Telegram не держит проход (и старт приложения)', async () => {
