@@ -69,6 +69,15 @@ function makeService(opts: {
   return { service, notificationService, accountService, bot, claimRun };
 }
 
+// Тик с несколькими отправками: между ними пауза темпа (35 мс,
+// telegram.paced-sender.ts) на фейковых таймерах — их нужно подвинуть, иначе
+// processQueue ждёт вечно. Секунды хватает на десятки строк.
+async function runTick(service: TelegramScheduleService): Promise<void> {
+  const tick = service.processQueue();
+  await jest.advanceTimersByTimeAsync(1_000);
+  await tick;
+}
+
 beforeEach(() => {
   jest.spyOn(Logger.prototype, 'log').mockImplementation(() => undefined);
   // Фейковые таймеры на весь блок: отправка в очереди ограничена таймером
@@ -285,7 +294,7 @@ describe('processQueue / runProcessQueue', () => {
       },
     };
     const { service, notificationService } = makeService({ due, bot });
-    await service.processQueue();
+    await runTick(service);
     expect(bot.telegram.callApi).toHaveBeenCalledTimes(2);
     // id 7 упало временно — не помечен; id 8 успешно — помечен.
     expect(notificationService.markSent).toHaveBeenCalledWith(8);
@@ -438,7 +447,7 @@ describe('кому писать некуда', () => {
     }));
     const { service, accountService } = makeService({ due });
 
-    await service.processQueue();
+    await runTick(service);
 
     // Один запрос на тик и ровно с уникальными номерами: поштучный поиск
     // адреса превратил бы очередь в N+1.

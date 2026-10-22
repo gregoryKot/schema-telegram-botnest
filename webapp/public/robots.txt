@@ -1,57 +1,288 @@
+# Личный кабинет, вход, админка и мини-апп закрыты от индексации для ВСЕХ
+# ботов. Блок Disallow повторён в каждой группе намеренно: бот, нашедший
+# группу со своим именем, группу «*» не читает вовсе (RFC 9309 §2.2.1, так же
+# у Яндекса) — одинокий «Allow: /» в такой группе открывал ему весь кабинет.
+# Сверка с роутами webapp/src/App.tsx — webapp/src/robotsTxt.test.ts.
+# «/app$» и «/app?» вместо «/app»: префикс задел бы /apple-touch-icon.png.
+# /api/ НЕ закрыт намеренно: Googlebot и YandexBot рендерят SPA и соблюдают
+# robots.txt для fetch — статьи (/api/articles) и мини-тесты (/api/quizzes)
+# без API отрендерились бы пустыми. Закрытые ручки без входа отдают 401.
+
 User-agent: *
 Allow: /
 Allow: /privacy
 Allow: /offer
 Allow: /login
-
-# Закрываем личный кабинет от индексации
 Disallow: /today
 Disallow: /diary
 Disallow: /schemas
 Disallow: /profile
 Disallow: /practice
+Disallow: /help
+Disallow: /exercises
 Disallow: /cabinet
 Disallow: /account
 Disallow: /auth/
-
-# Диагностическая страница для подключения мини-аппа к мессенджеру
+Disallow: /link
+Disallow: /admin
+Disallow: /booking-admin
+Disallow: /articles-admin
+Disallow: /app/
+Disallow: /app$
+Disallow: /app?
 Disallow: /max-probe.html
 
 # Поисковые боты нейросетей: разрешаем явно. Обучение (GPTBot, Google-Extended) и поиск (OAI-SearchBot) управляются отдельно.
 User-agent: OAI-SearchBot
 Allow: /
+Disallow: /today
+Disallow: /diary
+Disallow: /schemas
+Disallow: /profile
+Disallow: /practice
+Disallow: /help
+Disallow: /exercises
+Disallow: /cabinet
+Disallow: /account
+Disallow: /auth/
+Disallow: /link
+Disallow: /admin
+Disallow: /booking-admin
+Disallow: /articles-admin
+Disallow: /app/
+Disallow: /app$
+Disallow: /app?
+Disallow: /max-probe.html
 
 User-agent: ChatGPT-User
 Allow: /
+Disallow: /today
+Disallow: /diary
+Disallow: /schemas
+Disallow: /profile
+Disallow: /practice
+Disallow: /help
+Disallow: /exercises
+Disallow: /cabinet
+Disallow: /account
+Disallow: /auth/
+Disallow: /link
+Disallow: /admin
+Disallow: /booking-admin
+Disallow: /articles-admin
+Disallow: /app/
+Disallow: /app$
+Disallow: /app?
+Disallow: /max-probe.html
 
 User-agent: GPTBot
 Allow: /
+Disallow: /today
+Disallow: /diary
+Disallow: /schemas
+Disallow: /profile
+Disallow: /practice
+Disallow: /help
+Disallow: /exercises
+Disallow: /cabinet
+Disallow: /account
+Disallow: /auth/
+Disallow: /link
+Disallow: /admin
+Disallow: /booking-admin
+Disallow: /articles-admin
+Disallow: /app/
+Disallow: /app$
+Disallow: /app?
+Disallow: /max-probe.html
 
 User-agent: ClaudeBot
 Allow: /
+Disallow: /today
+Disallow: /diary
+Disallow: /schemas
+Disallow: /profile
+Disallow: /practice
+Disallow: /help
+Disallow: /exercises
+Disallow: /cabinet
+Disallow: /account
+Disallow: /auth/
+Disallow: /link
+Disallow: /admin
+Disallow: /booking-admin
+Disallow: /articles-admin
+Disallow: /app/
+Disallow: /app$
+Disallow: /app?
+Disallow: /max-probe.html
 
 User-agent: Claude-SearchBot
 Allow: /
+Disallow: /today
+Disallow: /diary
+Disallow: /schemas
+Disallow: /profile
+Disallow: /practice
+Disallow: /help
+Disallow: /exercises
+Disallow: /cabinet
+Disallow: /account
+Disallow: /auth/
+Disallow: /link
+Disallow: /admin
+Disallow: /booking-admin
+Disallow: /articles-admin
+Disallow: /app/
+Disallow: /app$
+Disallow: /app?
+Disallow: /max-probe.html
 
 User-agent: Claude-User
 Allow: /
+Disallow: /today
+Disallow: /diary
+Disallow: /schemas
+Disallow: /profile
+Disallow: /practice
+Disallow: /help
+Disallow: /exercises
+Disallow: /cabinet
+Disallow: /account
+Disallow: /auth/
+Disallow: /link
+Disallow: /admin
+Disallow: /booking-admin
+Disallow: /articles-admin
+Disallow: /app/
+Disallow: /app$
+Disallow: /app?
+Disallow: /max-probe.html
 
 User-agent: PerplexityBot
 Allow: /
+Disallow: /today
+Disallow: /diary
+Disallow: /schemas
+Disallow: /profile
+Disallow: /practice
+Disallow: /help
+Disallow: /exercises
+Disallow: /cabinet
+Disallow: /account
+Disallow: /auth/
+Disallow: /link
+Disallow: /admin
+Disallow: /booking-admin
+Disallow: /articles-admin
+Disallow: /app/
+Disallow: /app$
+Disallow: /app?
+Disallow: /max-probe.html
 
 User-agent: Perplexity-User
 Allow: /
+Disallow: /today
+Disallow: /diary
+Disallow: /schemas
+Disallow: /profile
+Disallow: /practice
+Disallow: /help
+Disallow: /exercises
+Disallow: /cabinet
+Disallow: /account
+Disallow: /auth/
+Disallow: /link
+Disallow: /admin
+Disallow: /booking-admin
+Disallow: /articles-admin
+Disallow: /app/
+Disallow: /app$
+Disallow: /app?
+Disallow: /max-probe.html
 
 User-agent: Google-Extended
 Allow: /
+Disallow: /today
+Disallow: /diary
+Disallow: /schemas
+Disallow: /profile
+Disallow: /practice
+Disallow: /help
+Disallow: /exercises
+Disallow: /cabinet
+Disallow: /account
+Disallow: /auth/
+Disallow: /link
+Disallow: /admin
+Disallow: /booking-admin
+Disallow: /articles-admin
+Disallow: /app/
+Disallow: /app$
+Disallow: /app?
+Disallow: /max-probe.html
 
 User-agent: Applebot
 Allow: /
+Disallow: /today
+Disallow: /diary
+Disallow: /schemas
+Disallow: /profile
+Disallow: /practice
+Disallow: /help
+Disallow: /exercises
+Disallow: /cabinet
+Disallow: /account
+Disallow: /auth/
+Disallow: /link
+Disallow: /admin
+Disallow: /booking-admin
+Disallow: /articles-admin
+Disallow: /app/
+Disallow: /app$
+Disallow: /app?
+Disallow: /max-probe.html
 
 User-agent: Applebot-Extended
 Allow: /
+Disallow: /today
+Disallow: /diary
+Disallow: /schemas
+Disallow: /profile
+Disallow: /practice
+Disallow: /help
+Disallow: /exercises
+Disallow: /cabinet
+Disallow: /account
+Disallow: /auth/
+Disallow: /link
+Disallow: /admin
+Disallow: /booking-admin
+Disallow: /articles-admin
+Disallow: /app/
+Disallow: /app$
+Disallow: /app?
+Disallow: /max-probe.html
 
 User-agent: YandexBot
 Allow: /
+Disallow: /today
+Disallow: /diary
+Disallow: /schemas
+Disallow: /profile
+Disallow: /practice
+Disallow: /help
+Disallow: /exercises
+Disallow: /cabinet
+Disallow: /account
+Disallow: /auth/
+Disallow: /link
+Disallow: /admin
+Disallow: /booking-admin
+Disallow: /articles-admin
+Disallow: /app/
+Disallow: /app$
+Disallow: /app?
+Disallow: /max-probe.html
 
 Sitemap: https://schemehappens.ru/sitemap.xml

@@ -161,8 +161,20 @@ describe('formatProductMetrics', () => {
     expect(t).not.toMatch(/NaN|undefined/);
   });
 
+  // Аудит 2026-10-11: прогресс теста удаляется при завершении, и отчёт писал
+  // «Начали: 1 · дошли до конца: 3 (300%)». Процент выше 100 не печатается.
+  it('тест схем: дошедших больше, чем начавших — «данные не сходятся», без 300%', () => {
+    const t = formatProductMetrics({
+      ...FULL,
+      ysq: { started: 1, completed: 3, helpOpens: 0 },
+    });
+    expect(t).toContain('Начали: 1 · дошли до конца: 3 — данные не сходятся');
+    expect(t).not.toContain('300%');
+  });
+
   it('пустая БД: без NaN и без «висящих» процентов', () => {
     const t = formatProductMetrics(EMPTY);
+    expect(t).toContain('Пока тест никто не начинал');
     expect(t).not.toContain('NaN');
     expect(t).not.toContain('%'); // все знаменатели 0 → проценты не печатаются
     expect(t).toContain('Дошли до конца: 0 из 0');
