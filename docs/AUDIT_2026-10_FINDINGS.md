@@ -352,7 +352,7 @@ backup, caldav, oauth×2, telegram) с классификацией по пло�
   исчерпана → пауза), DM о деплое только при смене `builtAt` (хранить в БД)
   через `AlertLogger` после `listen`, `STARTUP_RESTARTS` → `/health.restarts`
   → проба и строка в `/stats`.
-  **Закрыто** (#NNN): счётчик падений —
+  **Закрыто** (#827): счётчик падений —
   скользящие окна `STARTUP_CRASH_WINDOW_MS` (15 мин, `deploy/crash-window.mjs`)
   и час (`STARTUP_MAX_FAILS_HOUR`): три падения за 15 мин или шесть за час дают
   лимит, техработы и паузу при любой длине прогона; рост паузы сбрасывает
