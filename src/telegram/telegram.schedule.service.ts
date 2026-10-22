@@ -23,7 +23,8 @@ import {
   maybeNotifyPairPartners,
   type DiaryCompleteDeps,
 } from './telegram.diary-complete';
-import { runProcessQueue } from './telegram.schedule-queue';
+import { runProcessQueue, armQueueKillSwitch } from './telegram.schedule-queue';
+import { AnalyticsService } from '../analytics/analytics.service';
 import { isConnectionError } from '../logger/db-outage';
 import { CronLeaderService, LEASE_WINDOW } from '../infra/cron-leader.service';
 
@@ -43,6 +44,7 @@ export class TelegramScheduleService implements OnModuleInit, OnModuleDestroy {
     private readonly cadenceService: NotificationCadenceService,
     private readonly plannerService: NotificationPlannerService,
     private readonly cronLeader: CronLeaderService,
+    @Optional() private readonly analytics?: AnalyticsService,
   ) {}
 
   private isProcessing = false;
@@ -119,18 +121,15 @@ export class TelegramScheduleService implements OnModuleInit, OnModuleDestroy {
       return;
     }
     // Kill-switch: release lock if runProcessQueue hangs past the next cron tick.
-    const killTimer = setTimeout(() => {
-      this.logger.error('processQueue timed out after 4 min — releasing lock');
+    const killTimer = armQueueKillSwitch(this.logger, () => {
       this.isProcessing = false;
-    }, 4 * 60_000);
+    });
     try {
       await this.runProcessQueue();
     } catch (err: unknown) {
-      // P1017 "Server has closed the connection" and other transient connection
-      // errors should not page the admin on every cron tick — they resolve on
-      // the next tick once the DB comes back.  Log as warn so AlertLogger
-      // doesn't send a DM. Признаки — общие с AlertLogger (src/logger/db-outage.ts),
-      // здесь берём мягкую проверку: важно не куда оборвалось соединение, а что
+      // Обрыв соединения с БД (P1017 и соседи) проходит к следующему тику —
+      // warn, чтобы AlertLogger не будил админа каждый тик. Признаки общие с
+      // AlertLogger (src/logger/db-outage.ts), проверка мягкая: важно, что
       // ошибка временная. Раньше guard искал "P1001" в ТЕКСТЕ сообщения, а
       // Prisma кладёт код в err.code — guard молчал (инцидент 2026-08-31).
       const e = err instanceof Error ? err : undefined;
@@ -154,6 +153,7 @@ export class TelegramScheduleService implements OnModuleInit, OnModuleDestroy {
       accountService: this.accountService,
       notificationService: this.notificationService,
       logger: this.logger,
+      track: (t) => this.analytics?.track(null, 'notify_queue_tick', t),
     });
   }
 
