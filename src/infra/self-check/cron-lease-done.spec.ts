@@ -4,6 +4,7 @@ import {
   UNFINISHED_GRACE_MS,
   unfinishedRunProblem,
 } from './cron-lease-done';
+import { RESUME_WINDOW_MS } from '../../telegram/telegram.midnight-planner';
 
 const RUN = new Date('2026-10-18T00:00:00Z').getTime();
 const H = 3_600_000;
@@ -59,7 +60,13 @@ describe('unfinishedRunProblem', () => {
   });
 
   it('процесс поднялся после начала прогона — два часа отсчитываются от старта', () => {
-    const facts = { runAt: RUN, startedAt: RUN + 10 * H };
+    // Отметка от прошлого прогона: этот оборван по-настоящему и судится,
+    // сколько бы позже ни поднялся процесс.
+    const facts = {
+      runAt: RUN,
+      doneRunAt: RUN - 24 * H,
+      startedAt: RUN + 10 * H,
+    };
     expect(
       unfinishedRunProblem('midnightPlanner', {
         ...facts,
@@ -70,6 +77,40 @@ describe('unfinishedRunProblem', () => {
       unfinishedRunProblem('midnightPlanner', {
         ...facts,
         now: facts.startedAt + UNFINISHED_GRACE_MS + 1,
+      }),
+    ).not.toBeNull();
+  });
+
+  it('первый деплой днём: отметки не было, прогон старше окна доделки — не судится', () => {
+    // Миграция добавила пустую колонку, прошлый обход прошёл старым кодом.
+    // Доделать его некому (catchUp берёт только RESUME_WINDOW_MS), красная
+    // проба висела бы до полуночи и роняла смок прода.
+    expect(
+      unfinishedRunProblem('midnightPlanner', {
+        runAt: RUN,
+        startedAt: RUN + 14 * H,
+        now: RUN + 17 * H,
+      }),
+    ).toBeNull();
+  });
+
+  it('контроль: та же пустая отметка у прогона после старта процесса — красная', () => {
+    expect(
+      unfinishedRunProblem('midnightPlanner', {
+        runAt: RUN,
+        startedAt: LONG_AGO,
+        now: RUN + 3 * H,
+      }),
+    ).not.toBeNull();
+  });
+
+  it('контроль: пустая отметка внутри окна доделки — судится через два часа от старта', () => {
+    const startedAt = RUN + RESUME_WINDOW_MS;
+    expect(
+      unfinishedRunProblem('midnightPlanner', {
+        runAt: RUN,
+        startedAt,
+        now: startedAt + UNFINISHED_GRACE_MS + 1,
       }),
     ).not.toBeNull();
   });

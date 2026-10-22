@@ -1,3 +1,4 @@
+import { RESUME_WINDOW_MS } from '../../telegram/telegram.midnight-planner';
 import { CRON_LEASE_REGISTRY } from './cron-lease-registry';
 import { hhmm, leaseProblem, type LeaseFacts } from './cron-lease-verdict';
 
@@ -17,8 +18,7 @@ export const COMPLETING_LEASES: ReadonlySet<string> = new Set([
 /** Обход всех пользователей идёт минуты; два часа — запас на медленную базу,
  * а не на штатную работу. Отсчёт — от позднего из «прогон начат» и «процесс
  * поднялся»: рестарт получает те же два часа на доделку (старт её начинает
- * через 30 с), и первый деплой этой отметки — где у прошлого прогона
- * `doneRunAt` ещё пуст — не красит пробу. */
+ * через 30 с). */
 export const UNFINISHED_GRACE_MS = 2 * 3_600_000;
 
 export interface RunDoneFacts {
@@ -36,6 +36,14 @@ export function unfinishedRunProblem(
 ): string | null {
   if (!COMPLETING_LEASES.has(name) || f.runAt === undefined) return null;
   if (f.doneRunAt === f.runAt) return null;
+  // Отметки не было ни разу, а прогон начат раньше, чем этот процесс мог бы
+  // его доделать (доделка при старте — только в RESUME_WINDOW_MS): доделать
+  // его некому, и красная проба провисела бы до полуночи. Так выглядит первый
+  // деплой колонки doneRunAt днём — прошлый обход прошёл старым кодом, который
+  // отметку не ставил. Отметка от прошлого прогона (doneRunAt ≠ runAt) сюда не
+  // попадает: это настоящий оборванный обход, он судится.
+  if (f.doneRunAt === undefined && f.runAt < f.startedAt - RESUME_WINDOW_MS)
+    return null;
   if (f.now - Math.max(f.runAt, f.startedAt) <= UNFINISHED_GRACE_MS)
     return null;
   return `обход, начатый в ${hhmm(f.runAt)} UTC, не дошёл до конца — часть людей осталась без запланированных сообщений`;

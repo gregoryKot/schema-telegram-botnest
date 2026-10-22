@@ -166,13 +166,13 @@ export class TelegramScheduleService implements OnModuleInit, OnModuleDestroy {
   @Cron('0 0 * * *')
   async scheduleDailyReminders() {
     if (!this.bot) return;
-    // Без аренды второй инстанс планирует тот же день второй раз — пользователь
-    // получает два одинаковых напоминания/инсайта за сутки.
+    // Аренда: без неё второй инстанс спланирует тот же день повторно (дубли).
     const at = new Date();
     if (
       await this.cronLeader.claimRun('midnightPlanner', LEASE_WINDOW.daily, at)
     )
       await this.midnight.run(at);
+    else this.logger.log('Midnight planner: аренду уже взял другой прогон');
   }
 
   async catchUpAfterStart() {

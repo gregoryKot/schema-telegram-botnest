@@ -133,6 +133,10 @@ describe('scheduleDailyReminders', () => {
     );
     expect(accountService.getAllUsersWithSettings).not.toHaveBeenCalled();
     expect(planDay).not.toHaveBeenCalled();
+    // Отказ — штатная работа: уровень log, не warn/error (правило №17).
+    expect(Logger.prototype.log).toHaveBeenCalledWith(
+      'Midnight planner: аренду уже взял другой прогон',
+    );
   });
 
   // Доделка — только при старте: на тике второй инстанс в 00:00 обходил бы

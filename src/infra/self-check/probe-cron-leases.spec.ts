@@ -217,14 +217,38 @@ describe('cronLeasesProbe', () => {
       expect(res.ok).toBe(true);
     });
 
+    const prevMidnight = new Date('2026-10-17T00:00:00Z');
+
     it('процесс поднялся меньше двух часов назад — даёт время доделать', async () => {
       Date.now = () => now;
       const res = await cronLeasesProbe(
-        fakePrisma(withMidnight(null)),
+        fakePrisma(withMidnight(prevMidnight)),
         now - 60_000,
         noFailures,
       ).run();
       expect(res.ok).toBe(true);
+    });
+
+    // Первый деплой колонки днём: у строки из базы doneRunAt = NULL, прошлый
+    // обход прошёл старым кодом, доделать его некому (окно доделки 6 ч).
+    it('первый деплой днём: отметки не было ни разу — ok, ложной тревоги нет', async () => {
+      Date.now = () => now;
+      const res = await cronLeasesProbe(
+        fakePrisma(withMidnight(null)),
+        now - 3 * 3_600_000,
+        noFailures,
+      ).run();
+      expect(res.ok).toBe(true);
+    });
+
+    it('контроль: отметка от прошлого прогона при том же старте — не ok', async () => {
+      Date.now = () => now;
+      const res = await cronLeasesProbe(
+        fakePrisma(withMidnight(prevMidnight)),
+        now - 3 * 3_600_000,
+        noFailures,
+      ).run();
+      expect(res.ok).toBe(false);
     });
   });
 });
