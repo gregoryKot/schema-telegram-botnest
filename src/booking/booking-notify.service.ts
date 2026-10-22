@@ -61,7 +61,6 @@ export class BookingNotifyService {
         prisma: this.prisma,
         meeting: this.meeting,
         calDav: this.calDav,
-        sendAdmin: (title, booking) => this.sendAdmin(title, booking),
         notifyAdminBoth: (html, subject) => this.notifyAdminBoth(html, subject),
       },
       b,

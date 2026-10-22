@@ -85,7 +85,7 @@ afterEach(() => {
 describe('MeetingService: ClientMeeting.meetingUrl зашифрован', () => {
   it('новая встреча: в БД шифротекст, клиенту возвращается рабочая ссылка', async () => {
     const { service, store } = meetingService();
-    const url = await service.createMeeting(TARGET);
+    const { url } = await service.createMeeting(TARGET);
 
     expect(url).toMatch(/^https:\/\/meet\.jit\.si\//);
     const stored = [...store.values()][0].meetingUrl as string;
@@ -95,10 +95,10 @@ describe('MeetingService: ClientMeeting.meetingUrl зашифрован', () => 
 
   it('повторная сессия: ссылка читается из зашифрованной строки и совпадает', async () => {
     const { service, store } = meetingService();
-    const first = await service.createMeeting(TARGET);
+    const { url: first } = await service.createMeeting(TARGET);
     expect([...store.values()][0].meetingUrl).not.toBe(first);
 
-    expect(await service.createMeeting(TARGET)).toBe(first);
+    expect((await service.createMeeting(TARGET)).url).toBe(first);
   });
 
   it('старая строка с открытой ссылкой (до волны 3) читается как есть', async () => {
@@ -108,7 +108,7 @@ describe('MeetingService: ClientMeeting.meetingUrl зашифрован', () => 
     row.meetingUrl = ZOOM; // legacy plaintext
     row.zoomMeetingId = '123456789';
 
-    expect(await service.createMeeting(TARGET)).toBe(ZOOM);
+    expect((await service.createMeeting(TARGET)).url).toBe(ZOOM);
   });
 
   it('апгрейд Jitsi → Zoom находит Jitsi в ЗАШИФРОВАННОЙ строке и пишет новую ссылку зашифрованной', async () => {
@@ -132,7 +132,7 @@ describe('MeetingService: ClientMeeting.meetingUrl зашифрован', () => 
         json: () => Promise.resolve({ join_url: ZOOM, id: 123456789 }),
       });
 
-    expect(await zoomOn.service.createMeeting(TARGET)).toBe(ZOOM);
+    expect((await zoomOn.service.createMeeting(TARGET)).url).toBe(ZOOM);
     const stored = zoomOn.store.get(key)!.meetingUrl as string;
     expect(stored).not.toContain('pwd=');
     expect(cryptoMod.decrypt(stored)).toBe(ZOOM);
@@ -172,7 +172,11 @@ describe('Booking.meetingUrl: запись и каждый читатель', ()
       enabled: true,
       pushEvent: jest.fn(() => Promise.resolve('uid-1')),
     };
-    const meeting = { createMeeting: jest.fn(() => Promise.resolve(ZOOM)) };
+    const meeting = {
+      createMeeting: jest.fn(() =>
+        Promise.resolve({ url: ZOOM, replaced: false }),
+      ),
+    };
     const telegram = { notifyAdmin: jest.fn(() => Promise.resolve(true)) };
     const email = { sendAdminNotification: jest.fn(() => Promise.resolve()) };
     const svc = new BookingNotifyService(

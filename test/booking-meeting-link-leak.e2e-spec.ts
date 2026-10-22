@@ -12,6 +12,10 @@
 // DM «Запись подтверждена» дошёл до фейкового бота: это законный путь ссылки
 // к владельцу, и его доставку тест проверяет как контроль.
 process.env.ADMIN_ID = '424243';
+// Админка — второй законный путь ссылки к владельцу (ревью): список записей
+// под ключом. ConfigService читает env при сборке приложения — ставим до неё.
+process.env.ADMIN_BOOKING_KEY = 'e2e-meeting-link-admin-key-0123456789abcdef';
+const ADMIN_KEY = process.env.ADMIN_BOOKING_KEY;
 
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
@@ -20,6 +24,10 @@ import { clientKey } from '../src/booking/meeting-key';
 import { decrypt, encrypt } from '../src/utils/crypto';
 import { TELEGRAF_BOT } from '../src/telegram/telegram.constants';
 import { buildRealDbTestApp } from './e2e-support/build-real-db-test-app';
+import {
+  LINK_TO_FORWARD,
+  ROOM_REPLACED,
+} from '../src/booking/booking-confirmed-card';
 
 const VICTIM = 'victim-link@example.com'; // есть в ClientMeeting
 const VICTIM_SPELLING = ' Victim-Link@Example.com '; // то же лицо, другое написание
@@ -153,7 +161,30 @@ describe('e2e: анонимная запись не отдаёт ссылку н
         t.includes('Запись подтверждена') && t.toLowerCase().includes(VICTIM),
     );
     expect(confirmed).toHaveLength(2);
-    for (const dm of confirmed) expect(dm).toContain(SECRET_URL);
+    for (const dm of confirmed) {
+      expect(dm).toContain(SECRET_URL);
+      // владелец — единственный канал доставки, карточка это говорит
+      expect(dm).toContain(LINK_TO_FORWARD);
+      expect(dm).not.toContain(ROOM_REPLACED); // комната жертвы прежняя
+    }
+  });
+
+  it('админка: список записей под ключом отдаёт расшифрованную ссылку, без ключа — 403', async () => {
+    const list = await request(app.getHttpServer())
+      .get('/api/booking/admin/list?filter=all')
+      .set('x-admin-key', ADMIN_KEY);
+    expect(list.status).toBe(200);
+    const mine = (
+      list.body as { startsAt: string; meetingUrl: string }[]
+    ).filter((b) => b.startsAt === SLOT_INTRO.toISOString());
+    expect(mine).toHaveLength(1);
+    expect(mine[0].meetingUrl).toBe(SECRET_URL);
+
+    const anon = await request(app.getHttpServer()).get(
+      '/api/booking/admin/list?filter=all',
+    );
+    expect(anon.status).toBe(403);
+    expect(leaks(anon.text)).toBe(false);
   });
 
   it('новый контакт: комната создана, в ответ не ушла и не выводится из контакта', async () => {
@@ -196,5 +227,12 @@ describe('e2e: анонимная запись не отдаёт ссылку н
       where: { startsAt: SLOT_LEGACY },
     });
     expect(decrypt(row?.meetingUrl ?? null)).toBe(fresh);
+    // клиент по старой ссылке придёт не туда — владелец узнаёт о замене из DM
+    const dm = adminDms().filter(
+      (t) => t.includes('Запись подтверждена') && t.includes(LEGACY_CLIENT),
+    );
+    expect(dm).toHaveLength(1);
+    expect(dm[0]).toContain(fresh);
+    expect(dm[0]).toContain(ROOM_REPLACED);
   });
 });

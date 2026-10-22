@@ -28,6 +28,7 @@ import { BookingSaveBlock, MEETING_LINK_LATER } from './BookingSaveBlock';
 import { BookingCancelControl } from './BookingCancelControl';
 import { BookingPaidPage } from '../../pages/BookingPaidPage';
 import { BookingConfirmedView } from './BookingConfirmedView';
+import { BookingMeetingLink } from '../../pages/admin/BookingMeetingLink';
 
 const TOKEN = '11111111-2222-4333-8444-555555555555';
 const PWD = 'SeCrEtPaSsCoDe';
@@ -121,6 +122,14 @@ describe('компоненты с секретами: DOM под ym-hide-content
     expect(violations(container)).toEqual([]);
   });
 
+  it('BookingMeetingLink (админка): ссылка на встречу — под скрытым узлом', () => {
+    const { container } = render(<BookingMeetingLink meetingUrl={ZOOM} />);
+    expect(carriers(container)).toHaveLength(1);
+    expect(violations(container).filter((v) => !v.includes(PWD))).toEqual([]);
+    // текст ссылки виден владельцу (её надо переслать), но весь узел скрыт
+    expect(container.querySelector('.ym-hide-content')?.textContent).toContain(PWD);
+  });
+
   it('BookingPaidPage: после загрузки по токену управление записью — под скрытым узлом', async () => {
     window.history.pushState({}, '', `/booking/manage?token=${TOKEN}`);
     vi.mocked(api.getBookingByToken).mockResolvedValue({
@@ -146,6 +155,8 @@ const REGISTRY: Record<string, string> = {
   'pages/SubscribePage.tsx': 'paymentUrl только для window.location.href, в DOM нет',
   'api.ts': 'клиент API: типы и запросы, DOM нет',
   'api.types.ts': 'типы, DOM нет',
+  'pages/admin/BookingsManager.tsx': 'передаёт meetingUrl в BookingMeetingLink; сам ссылку не рисует, /admin Вебвизор не пишет (metrika.test.ts)',
+  'pages/admin/BookingMeetingLink.tsx': 'рендерит ссылку владельцу под ym-hide-content — тест выше',
 };
 
 function sources(dir: string, acc: string[] = []): string[] {

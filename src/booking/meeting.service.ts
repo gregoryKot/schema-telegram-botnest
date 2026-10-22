@@ -5,6 +5,7 @@ import { SessionType } from '@prisma/client';
 import { decrypt, encrypt } from '../utils/crypto';
 import { clientKey } from './meeting-key';
 import { jitsiRoom, reuseClientRoom } from './meeting-jitsi';
+import type { MeetingLink } from './meeting-link';
 
 export interface MeetingTarget {
   id: number;
@@ -73,18 +74,17 @@ export class MeetingService {
     return found !== null;
   }
 
-  /** Returns this client's personal meeting URL, creating it on first session. */
-  async createMeeting(b: MeetingTarget): Promise<string> {
-    if (this.staticUrl) return this.staticUrl;
+  /** This client's personal meeting link, created on first session; `replaced` — the old room was swapped. */
+  async createMeeting(b: MeetingTarget): Promise<MeetingLink> {
+    if (this.staticUrl) return { url: this.staticUrl, replaced: false };
 
     const key = clientKey(b.clientContact);
     const existing = await this.prisma.clientMeeting.findUnique({
       where: { clientKey: key },
     });
     if (existing) {
-      // meetingUrl в БД зашифрован (D-9, аудит 2026-10: `?pwd=` в Zoom-ссылке
-      // пускает в комнату клиента); старые строки с открытой ссылкой decrypt
-      // отдаёт как есть.
+      // meetingUrl в БД зашифрован (D-9, аудит 2026-10: `?pwd=` пускает в
+      // комнату клиента); старую строку с открытой ссылкой decrypt отдаёт как есть.
       const existingUrl = decrypt(existing.meetingUrl) ?? '';
       // Upgrade a previously-issued Jitsi room to Zoom once Zoom is configured,
       // so links created during testing/before Zoom setup don't stay on Jitsi.
@@ -103,7 +103,7 @@ export class MeetingService {
             data: { meetingUrl: encrypt(z.url) ?? z.url, zoomMeetingId: z.id },
           });
           this.logger.log(`Upgraded client ${key.slice(0, 8)}… Jitsi → Zoom`);
-          return z.url;
+          return { url: z.url, replaced: true };
         }
       }
       return reuseClientRoom(this.prisma, this.logger, existing);
@@ -133,7 +133,7 @@ export class MeetingService {
     this.logger.log(
       `Created personal meeting for client ${key.slice(0, 8)}… (${zoom ? 'zoom' : 'jitsi'})`,
     );
-    return meetingUrl;
+    return { url: meetingUrl, replaced: false };
   }
 
   /** Create a per-client recurring Zoom meeting (no fixed time → one stable link). */

@@ -2,6 +2,7 @@
 // напрямую, но провал внешнего вызова (Zoom OAuth/API) НЕ должен ронять
 // createMeeting и терять бронь — при сбое обязан быть Jitsi-фолбэк. Это и
 // есть ключевой инвариант, который проверяем ниже.
+import { Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { MeetingService, MeetingTarget } from './meeting.service';
 import { clientKey } from './meeting-key';
@@ -88,8 +89,10 @@ describe('MeetingService.createMeeting — MEETING_STATIC_URL (вырожден�
     const { service, prisma } = makeService({
       MEETING_STATIC_URL: 'https://meet.example.com/room',
     });
-    const url = await service.createMeeting(TARGET);
-    expect(url).toBe('https://meet.example.com/room');
+    expect(await service.createMeeting(TARGET)).toEqual({
+      url: 'https://meet.example.com/room',
+      replaced: false,
+    });
     expect(prisma.clientMeeting.findUnique).not.toHaveBeenCalled();
   });
 });
@@ -97,18 +100,19 @@ describe('MeetingService.createMeeting — MEETING_STATIC_URL (вырожден�
 describe('MeetingService.createMeeting — без Zoom (dev), Jitsi по умолчанию', () => {
   it('новый клиент — создаётся Jitsi-комната, запись в БД', async () => {
     const { service, prisma } = makeService();
-    const url = await service.createMeeting(TARGET);
+    const { url, replaced } = await service.createMeeting(TARGET);
     expect(url).toMatch(/^https:\/\/meet\.jit\.si\/schemehappens-/);
+    expect(replaced).toBe(false); // новая комната — не замена прежней
     expect(prisma.clientMeeting.create).toHaveBeenCalledTimes(1);
   });
 
   it('нормализация контакта: "@Maria", " maria ", "+7 999" дают ОДИН и тот же clientKey (SHA-256)', async () => {
     const { service, prisma } = makeService();
-    const url1 = await service.createMeeting({
+    const { url: url1 } = await service.createMeeting({
       ...TARGET,
       clientContact: '@Maria',
     });
-    const url2 = await service.createMeeting({
+    const { url: url2 } = await service.createMeeting({
       ...TARGET,
       clientContact: ' maria ',
     });
@@ -118,10 +122,10 @@ describe('MeetingService.createMeeting — без Zoom (dev), Jitsi по умо�
 
   it('возвращающийся клиент получает ту же ссылку повторно, create не вызывается снова', async () => {
     const { service, prisma } = makeService();
-    const first = await service.createMeeting(TARGET);
+    const { url: first } = await service.createMeeting(TARGET);
     prisma.clientMeeting.create.mockClear();
     const second = await service.createMeeting(TARGET);
-    expect(second).toBe(first);
+    expect(second).toEqual({ url: first, replaced: false });
     expect(prisma.clientMeeting.create).not.toHaveBeenCalled();
   });
 
@@ -160,8 +164,10 @@ describe('MeetingService.createMeeting — Zoom включён, успешный
       ZOOM_CLIENT_ID: 'b',
       ZOOM_CLIENT_SECRET: 'c',
     });
-    const url = await service.createMeeting(TARGET);
-    expect(url).toBe('https://zoom.us/j/123');
+    expect(await service.createMeeting(TARGET)).toEqual({
+      url: 'https://zoom.us/j/123',
+      replaced: false,
+    });
     expect(prisma.clientMeeting.create).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
@@ -174,7 +180,7 @@ describe('MeetingService.createMeeting — Zoom включён, успешный
 
   it('существующая Jitsi-запись обновляется до Zoom ("апгрейд"), меняется meetingUrl+zoomMeetingId', async () => {
     const { service, prisma } = makeService(); // сначала без Zoom → Jitsi
-    const jitsiUrl = await service.createMeeting(TARGET);
+    const { url: jitsiUrl } = await service.createMeeting(TARGET);
     expect(jitsiUrl).toContain('meet.jit.si');
 
     mockZoomOk();
@@ -191,8 +197,11 @@ describe('MeetingService.createMeeting — Zoom включён, успешный
       return { service: new MeetingService(prisma, config) };
     })();
 
-    const upgraded = await zoomService.createMeeting(TARGET);
-    expect(upgraded).toBe('https://zoom.us/j/123');
+    // Комната клиента сменилась (Jitsi → Zoom): владелец узнаёт из DM.
+    expect(await zoomService.createMeeting(TARGET)).toEqual({
+      url: 'https://zoom.us/j/123',
+      replaced: true,
+    });
     expect(prisma.clientMeeting.update).toHaveBeenCalledWith(
       expect.objectContaining({
         data: { meetingUrl: 'https://zoom.us/j/123', zoomMeetingId: '123' },
@@ -217,7 +226,7 @@ describe('MeetingService.createMeeting — Zoom настроен, но внеш�
       }),
     ) as any;
     const { service, prisma } = makeService(zoomConfig);
-    const url = await service.createMeeting(TARGET);
+    const { url } = await service.createMeeting(TARGET);
     expect(url).toMatch(/meet\.jit\.si/);
     expect(prisma.clientMeeting.create).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -237,14 +246,14 @@ describe('MeetingService.createMeeting — Zoom настроен, но внеш�
       throw new Error('network down');
     }) as any;
     const { service } = makeService(zoomConfig);
-    await expect(service.createMeeting(TARGET)).resolves.toMatch(
-      /meet\.jit\.si/,
-    );
+    await expect(service.createMeeting(TARGET)).resolves.toMatchObject({
+      url: expect.stringMatching(/meet\.jit\.si/),
+    });
   });
 
   it('апгрейд Jitsi→Zoom падает — существующая Jitsi-ссылка остаётся в силе, update не вызывается', async () => {
     const { service, prisma } = makeService(); // сначала Jitsi
-    const jitsiUrl = await service.createMeeting(TARGET);
+    const { url: jitsiUrl } = await service.createMeeting(TARGET);
 
     global.fetch = jest.fn(() =>
       Promise.resolve({
@@ -259,7 +268,8 @@ describe('MeetingService.createMeeting — Zoom настроен, но внеш�
     const zoomService = new MeetingService(prisma, config);
 
     const result = await zoomService.createMeeting(TARGET);
-    expect(result).toBe(jitsiUrl); // старая ссылка не потеряна
+    // старая ссылка не потеряна, и комната не сменилась
+    expect(result).toEqual({ url: jitsiUrl, replaced: false });
     expect(prisma.clientMeeting.update).not.toHaveBeenCalled();
   });
 });
@@ -273,8 +283,8 @@ describe('MeetingService.createMeeting — комната Jitsi не вывод�
 
   it('новая комната не совпадает с формулой от контакта и различается у двух клиентов', async () => {
     const { service } = makeService();
-    const a = await service.createMeeting(TARGET);
-    const b = await service.createMeeting({
+    const { url: a } = await service.createMeeting(TARGET);
+    const { url: b } = await service.createMeeting({
       ...TARGET,
       clientContact: '@other',
     });
@@ -289,8 +299,9 @@ describe('MeetingService.createMeeting — комната Jitsi не вывод�
     const key = clientKey('@maria');
     store.set(key, { clientKey: key, meetingUrl: LEGACY, zoomMeetingId: null });
 
-    const url = await service.createMeeting(TARGET);
+    const { url, replaced } = await service.createMeeting(TARGET);
 
+    expect(replaced).toBe(true); // владелец узнает о смене комнаты из DM
     expect(url).not.toBe(LEGACY);
     expect(url).toMatch(
       /^https:\/\/meet\.jit\.si\/schemehappens-[0-9a-f]{16}$/,
@@ -301,7 +312,10 @@ describe('MeetingService.createMeeting — комната Jitsi не вывод�
     });
     // read-after-write: следующая бронь получает уже новую комнату
     expect(decrypt(store.get(key).meetingUrl)).toBe(url);
-    expect(await service.createMeeting(TARGET)).toBe(url);
+    expect(await service.createMeeting(TARGET)).toEqual({
+      url,
+      replaced: false,
+    });
   });
 
   it('не-legacy комната Jitsi и Zoom переиспользуются без записи в БД', async () => {
@@ -312,7 +326,10 @@ describe('MeetingService.createMeeting — комната Jitsi не вывод�
       'https://zoom.us/j/777?pwd=x',
     ]) {
       store.set(key, { clientKey: key, meetingUrl: kept, zoomMeetingId: null });
-      expect(await service.createMeeting(TARGET)).toBe(kept);
+      expect(await service.createMeeting(TARGET)).toEqual({
+        url: kept,
+        replaced: false,
+      });
     }
     expect(prisma.clientMeeting.update.mock.calls).toEqual([]);
     expect(prisma.clientMeeting.updateMany.mock.calls).toEqual([]);
@@ -329,8 +346,33 @@ describe('MeetingService.createMeeting — комната Jitsi не вывод�
       return Promise.resolve({ count: 0 });
     });
 
-    expect(await service.createMeeting(TARGET)).toBe(WINNER);
+    // комната клиента всё равно сменилась — на комнату победителя
+    expect(await service.createMeeting(TARGET)).toEqual({
+      url: WINNER,
+      replaced: true,
+    });
     expect(store.get(key).meetingUrl).toBe(WINNER);
+  });
+
+  it('строку удалили между чтением и записью: бронь получает новую комнату, а не старую', async () => {
+    const { service, prisma, store } = makeService();
+    const key = clientKey('@maria');
+    store.set(key, { clientKey: key, meetingUrl: LEGACY, zoomMeetingId: null });
+    prisma.clientMeeting.updateMany.mockImplementationOnce(() => {
+      store.delete(key);
+      return Promise.resolve({ count: 0 });
+    });
+    const warn = jest.spyOn(Logger.prototype, 'warn').mockImplementation();
+
+    const { url, replaced } = await service.createMeeting(TARGET);
+
+    expect(url).toMatch(
+      /^https:\/\/meet\.jit\.si\/schemehappens-[0-9a-f]{16}$/,
+    );
+    expect(url).not.toBe(LEGACY);
+    expect(replaced).toBe(true);
+    expect(warn.mock.calls[0][0]).toContain('vanished');
+    warn.mockRestore();
   });
 
   it('isLegacyJitsiRoom узнаёт ровно старую формулу, а не префикс', () => {
