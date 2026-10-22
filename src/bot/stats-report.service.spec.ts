@@ -74,6 +74,9 @@ describe('StatsReportService.render', () => {
     const introLeads = {
       render: jest.fn().mockResolvedValue('заявки со знакомства: 3'),
     };
+    const notifyQueue = {
+      render: jest.fn().mockResolvedValue('напоминания из бота: ушло 9'),
+    };
     return {
       blocks: {
         entryDelete,
@@ -94,6 +97,7 @@ describe('StatsReportService.render', () => {
         dataExport,
         bookingRetention,
         introLeads,
+        notifyQueue,
       },
       service: new StatsReportService(
         product as never,
@@ -119,6 +123,7 @@ describe('StatsReportService.render', () => {
         dataExport as never,
         bookingRetention as never,
         introLeads as never,
+        notifyQueue as never,
       ),
     };
   };
@@ -140,7 +145,7 @@ describe('StatsReportService.render', () => {
       'настройка экранов: 1\n\nпаттерны со вкладки «Я»: 4\n\nсхема случая по режимам: 3\n\nвход в мессенджере: всё хорошо',
     );
     expect(out).toContain(
-      'вход в мессенджере: всё хорошо\n\nвход по коду: 74 из 74\n\nполомки на клиенте: не было\n\nденьги: поддержали 3 раза\n\nсессии не в рублях: 2\n\nновенькие по ссылкам: 5\n\nигра: открыли 12\n\nзабирают свои данные: 7\n\nданные записей: стёрто 5\n\nзаявки со знакомства: 3',
+      'вход в мессенджере: всё хорошо\n\nвход по коду: 74 из 74\n\nполомки на клиенте: не было\n\nнапоминания из бота: ушло 9\n\nденьги: поддержали 3 раза\n\nсессии не в рублях: 2\n\nновенькие по ссылкам: 5\n\nигра: открыли 12\n\nзабирают свои данные: 7\n\nданные записей: стёрто 5\n\nзаявки со знакомства: 3',
     );
     // Хвост — блоки о здоровье системы (считаются из process.env и состояния
     // самопроверки, не мокаются через blocks): порядок календарь → Настройки →
@@ -171,7 +176,7 @@ describe('StatsReportService.render', () => {
       const out = await service.render();
       // Заглушка стоит на месте блока: между соседями, в прежнем порядке.
       expect(out).toContain(
-        `вход в мессенджере: всё хорошо\n\nвход по коду: 74 из 74\n\nполомки на клиенте: не было\n\n⚠️ <b>«Деньги»</b>: ${BLOCK_FAILED_MARK} — pool &lt;timeout&gt;\n\nсессии не в рублях: 2\n\nновенькие по ссылкам: 5`,
+        `вход в мессенджере: всё хорошо\n\nвход по коду: 74 из 74\n\nполомки на клиенте: не было\n\nнапоминания из бота: ушло 9\n\n⚠️ <b>«Деньги»</b>: ${BLOCK_FAILED_MARK} — pool &lt;timeout&gt;\n\nсессии не в рублях: 2\n\nновенькие по ссылкам: 5`,
       );
       expect(out).not.toContain('stack: at x');
       expect(out).toContain('продуктовые метрики');
@@ -242,6 +247,7 @@ describe('StatsReportService.render', () => {
     expect(blocks.dataExport.render).toHaveBeenCalledTimes(1);
     expect(blocks.bookingRetention.render).toHaveBeenCalledTimes(1);
     expect(blocks.introLeads.render).toHaveBeenCalledTimes(1);
+    expect(blocks.notifyQueue.render).toHaveBeenCalledTimes(1);
     expect(out).toContain('удаление записей: 2');
     expect(out).toContain('перенос данных: 2');
     expect(out).toContain('кнопка плюс: 4');
@@ -259,6 +265,7 @@ describe('StatsReportService.render', () => {
     expect(out).toContain('забирают свои данные: 7');
     expect(out).toContain('данные записей: стёрто 5');
     expect(out).toContain('заявки со знакомства: 3');
+    expect(out).toContain('напоминания из бота: ушло 9');
   });
 
   it('упавший запрос заявок числится под своим именем и не гасит «Данные записей» (settleBlocks)', async () => {

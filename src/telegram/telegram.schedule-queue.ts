@@ -10,11 +10,16 @@ import {
   QUIET_EXEMPT_TYPES,
   NotificationType,
 } from '../notification/notification.service';
-import { renderTemplate } from '../notification/notification.templates';
 import { isQuietHours, nextQuietEnd } from '../notification/notification.time';
-import { normalizeAddressForm } from '../notification/address-form';
 import { describeUnknownOutcomes, sendBounded } from './telegram.send-bounded';
 import { handleSendError } from './telegram.schedule-queue.errors';
+import { renderForQueue } from './telegram.schedule-queue.render';
+import {
+  QueueTick,
+  type QueueTickTally,
+} from './telegram.schedule-queue.tally';
+import type { PaceOptions } from './telegram.paced-sender';
+export { armQueueKillSwitch } from './telegram.schedule-queue.budget';
 
 export interface QueueDeps {
   bot: Telegraf<Context>;
@@ -23,6 +28,10 @@ export interface QueueDeps {
   logger: Logger;
   /** Предел ожидания ответа Telegram; в проде — SEND_TIMEOUT_MS. */
   sendTimeoutMs?: number;
+  /** Темп и бюджет прогона; в проде — пауза 35 мс, QUEUE_TICK_BUDGET_MS. */
+  pace?: PaceOptions;
+  /** Итог прогона в /stats (событие notify_queue_tick). */
+  track?: (tally: QueueTickTally) => Promise<void> | undefined;
 }
 
 // Сколько userId показать в итоговой строке про «некуда слать»: авария — это
@@ -39,9 +48,10 @@ export async function runProcessQueue(deps: QueueDeps): Promise<void> {
     ...new Set(due.map((n) => n.userId)),
   ]);
   const noAddress: string[] = [];
-  const unknown: number[] = [];
+  const seen = { unknown: [] as number[], transient: 0 };
+  const tick = new QueueTick(deps.pace);
 
-  for (const notif of due) {
+  for (const [i, notif] of due.entries()) {
     try {
       const s = sendSettings.get(String(notif.userId));
 
@@ -65,52 +75,31 @@ export async function runProcessQueue(deps: QueueDeps): Promise<void> {
           continue;
         }
       }
-      const payload = notif.payload as Record<string, unknown> | null;
-      let template: ReturnType<typeof renderTemplate>;
-      try {
-        template = renderTemplate(
-          notif.type as NotificationType,
-          payload ?? undefined,
-          normalizeAddressForm(s.form),
-        );
-      } catch (renderErr) {
-        logger.error(
-          `renderTemplate threw for type=${notif.type} id=${notif.id} — skipping`,
-          renderErr,
-        );
-        await notificationService.markSent(notif.id);
-        continue;
-      }
-      if (!template) {
-        logger.warn(
-          `No template for type=${notif.type} id=${notif.id} — skipping`,
-        );
-        await notificationService.markSent(notif.id);
-        continue;
-      }
-      const silent = notif.type === 'summary';
-      const opts = {
-        ...(template.keyboard
-          ? { reply_markup: template.keyboard.reply_markup }
-          : {}),
-        ...(silent ? { disable_notification: true } : {}),
-      };
+      const msg = await renderForQueue(deps, notif, s.form);
+      if (!msg) continue;
       // Number(chatId): telegram-id заведомо меньше 2^53, а telegraf ждёт
-      // number | string.
-      await sendBounded(
-        bot,
-        Number(chatId),
-        template.text,
-        opts,
-        deps.sendTimeoutMs,
-      );
+      // number | string. false — Telegram просит ждать дольше, чем осталось
+      // прогону: эту и следующие строки подберёт следующий тик.
+      const send = () =>
+        sendBounded(
+          bot,
+          Number(chatId),
+          msg.text,
+          msg.extra,
+          deps.sendTimeoutMs,
+        );
+      if (!(await tick.send(send, due.length - i))) break;
       await notificationService.markSent(notif.id);
     } catch (err: unknown) {
-      await handleSendError(deps, notif.id, notif.userId, err, unknown);
+      await handleSendError(deps, notif.id, notif.userId, err, seen);
     }
   }
+  tick.tally.transient = seen.transient;
+  await tick.finish(logger, deps.track);
 
-  if (unknown.length > 0) logger.warn(describeUnknownOutcomes(unknown));
+  if (seen.unknown.length > 0) {
+    logger.warn(describeUnknownOutcomes(seen.unknown));
+  }
 
   if (noAddress.length > 0) {
     logger.warn(
