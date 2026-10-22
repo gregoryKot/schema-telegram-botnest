@@ -90,7 +90,7 @@ describe('e2e: returning=true не отличает клиента от не-к�
     for (const res of [asClient, asStranger]) {
       expect(res.body.status).toBe('HELD');
       expect(res.body.paymentUrl).toEqual(expect.stringContaining('robokassa'));
-      expect(res.body.meetingUrl).toBeNull();
+      expect(res.body).not.toHaveProperty('meetingUrl');
     }
     expect(JSON.stringify(asStranger.body)).not.toContain('CLIENT_NOT_FOUND');
 

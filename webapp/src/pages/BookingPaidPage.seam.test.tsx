@@ -67,7 +67,7 @@ describe('BookingPaidPage на шве fetch → api → хук → страни�
   it('контрольный: нормальный ответ рисует бронь', async () => {
     fetchMock.mockImplementation(async (url: string) =>
       String(url).includes('/api/booking/by-token/')
-        ? json(200, { status: 'CONFIRMED', paid: true, type: 'SESSION_50', startsAt: '2099-08-10T10:00:00Z', endsAt: '2099-08-10T10:50:00Z', durationMin: 50, meetingUrl: null })
+        ? json(200, { status: 'CONFIRMED', paid: true, type: 'SESSION_50', startsAt: '2099-08-10T10:00:00Z', endsAt: '2099-08-10T10:50:00Z', durationMin: 50 })
         : json(200, {}));
     render(<BookingPaidPage />);
     expect(await screen.findByText('Оплата прошла')).toBeTruthy();

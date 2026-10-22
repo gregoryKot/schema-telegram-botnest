@@ -121,9 +121,9 @@ export class PaymentController {
   /**
    * Robokassa SuccessURL — the client's browser returns here after paying.
    * We validate the success signature, then send them to a real confirmation
-   * page: bookings → /booking/paid?token=… (shows the meeting link), donations →
-   * the donate page. Handles both InvId ranges so it works even when a single
-   * fixed SuccessURL is configured in the cabinet.
+   * page: bookings → /booking/paid?token=… (status only, no meeting link: it
+   * goes to the owner's DM, audit 2026-10), donations → the donate page.
+   * Handles both InvId ranges (works with one fixed SuccessURL in the cabinet).
    */
   @Get('success')
   async successRedirect(

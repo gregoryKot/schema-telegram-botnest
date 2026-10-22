@@ -7,11 +7,7 @@ import {
   type AnalyticsEventName,
 } from './analytics.constants';
 import { eventOwnerId } from './anonymous-events.constants';
-
-// Ретеншен AnalyticsEvent (L10, аудит 2026-08): таблица росла без ограничения.
-// Метрики /stats считаются в окнах ≤30 дней, поэтому держим 90 (щедрый буфер) и
-// раз в сутки удаляем старше — диск не течёт, окна метрик не задеты.
-const RETENTION_DAYS = 90;
+import { EVENT_RETENTION_DAYS as RETENTION_DAYS } from './analytics-retention';
 
 // Продуктовая аналитика (правило №8 CLAUDE.md): пишет факты «юзер сделал X»
 // для проверки гипотез метриками (D1/D7/D30, доля поделившихся и т.п.).

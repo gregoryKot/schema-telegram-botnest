@@ -520,6 +520,12 @@ jobs:
       # в настоящей БД, поэтому на шве, а не на моке.
       - name: e2e запись не выдаёт, клиент ли контакт, на реальном Postgres
         run: npx jest --config ./test/jest-e2e.json --runInBand test/booking-returning-oracle.e2e-spec.ts
+      # Аудит 2026-10: анонимная запись (INTRO_15, SESSION_50 вне рублей) отдавала
+      # постоянную комнату клиента, найденную по контакту, — в ответе book, по
+      # токену и в .ics. ClientMeeting ищется по clientKey в настоящей БД, бронь
+      # берёт advisory-lock через $executeRaw — на шве, а не на моке (правило №18).
+      - name: e2e анонимная запись не отдаёт ссылку на встречу на реальном Postgres
+        run: npx jest --config ./test/jest-e2e.json --runInBand test/booking-meeting-link-leak.e2e-spec.ts
       # Аудит 2026-10-11: прод без ROBOKASSA_* не подтверждает платную бронь и
       # донат без денег (503 до записи в БД) + проба «приходят ли вебхуки» на
       # настоящих запросах. «В БД ничего не появилось» доказывает только живая база.
@@ -528,11 +534,13 @@ jobs:
       # Правило №18: каждый файл с сырым SQL исполняется на живом Postgres —
       # весь отчёт /stats (20 сервисов), /health, зонд аварии БД, VACUUM после
       # удаления аккаунта, захват списания подписки. Состав держит гейт
-      # check-raw-sql-live.mjs (джоба checks).
+      # check-raw-sql-live.mjs (джоба checks). admin-stats — ядро /stats на
+      # выборке больше 5000 пар «человек–день» (аудит 2026-10).
       - name: e2e сырой SQL на реальном Postgres (/stats и инфраструктура)
         run: >-
           npx jest --config ./test/jest-e2e.json --runInBand
           test/raw-sql-live-stats.e2e-spec.ts test/raw-sql-live-infra.e2e-spec.ts
+          test/raw-sql-live-admin-stats.e2e-spec.ts
       # Инцидент 2026-09-13: троттлинг денежных/заявочных ручек в Postgres —
       # атомарность ON CONFLICT DO UPDATE (правило №18) проверяется только тут.
       - name: e2e троттлинг на реальном Postgres (Postgres-хранилище + HTTP)

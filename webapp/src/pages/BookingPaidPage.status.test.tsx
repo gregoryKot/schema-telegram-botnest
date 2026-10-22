@@ -21,7 +21,7 @@ vi.mock('../api', () => ({
 const booking = (over: Record<string, unknown> = {}) => ({
   status: 'CONFIRMED', paid: true, type: 'SESSION_50' as const,
   startsAt: '2099-08-10T10:00:00Z', endsAt: '2099-08-10T10:50:00Z',
-  durationMin: 50, meetingUrl: 'https://meet.example/xyz', ...over,
+  durationMin: 50, ...over,
 });
 
 const CONFIRMED_TEXT = /Встреча подтверждена/;
@@ -41,7 +41,7 @@ const tick = (ms: number) => act(async () => { await vi.advanceTimersByTimeAsync
 
 describe('BookingPaidPage — HELD: оплата принята, запись ещё не подтверждена', () => {
   it('не говорит «подтверждена», показывает «Оплата принята» и «подтверждаю запись»', async () => {
-    getBookingByToken.mockResolvedValue(booking({ status: 'HELD', paid: false, meetingUrl: null }));
+    getBookingByToken.mockResolvedValue(booking({ status: 'HELD', paid: false }));
     render(<BookingPaidPage />);
     expect(await screen.findByText('Оплата принята')).toBeTruthy();
     expect(screen.getByText(/Подтверждаю запись/)).toBeTruthy();
@@ -53,8 +53,8 @@ describe('BookingPaidPage — HELD: оплата принята, запись е
   it('HELD → поллинг → CONFIRMED: страница сама переходит в подтверждённую ветку', async () => {
     vi.useFakeTimers();
     getBookingByToken
-      .mockResolvedValueOnce(booking({ status: 'HELD', paid: false, meetingUrl: null }))
-      .mockResolvedValueOnce(booking({ status: 'HELD', paid: false, meetingUrl: null }))
+      .mockResolvedValueOnce(booking({ status: 'HELD', paid: false }))
+      .mockResolvedValueOnce(booking({ status: 'HELD', paid: false }))
       .mockResolvedValue(booking());
     render(<BookingPaidPage />);
     await tick(0);
@@ -71,7 +71,7 @@ describe('BookingPaidPage — HELD: оплата принята, запись е
 
   it('HELD → таймаут: честный текст, контакт, отчёт наверх, поллинг остановлен', async () => {
     vi.useFakeTimers();
-    getBookingByToken.mockResolvedValue(booking({ status: 'HELD', paid: false, meetingUrl: null }));
+    getBookingByToken.mockResolvedValue(booking({ status: 'HELD', paid: false }));
     render(<BookingPaidPage />);
     await tick(POLL_LIMIT_MS + POLL_INTERVAL_MS);
     expect(screen.getByText('Подтверждение задерживается')).toBeTruthy();
@@ -87,7 +87,7 @@ describe('BookingPaidPage — HELD: оплата принята, запись е
 
   it('«Проверить ещё раз» после таймаута запускает новый цикл и подхватывает CONFIRMED', async () => {
     vi.useFakeTimers();
-    getBookingByToken.mockResolvedValue(booking({ status: 'HELD', paid: false, meetingUrl: null }));
+    getBookingByToken.mockResolvedValue(booking({ status: 'HELD', paid: false }));
     render(<BookingPaidPage />);
     await tick(POLL_LIMIT_MS + POLL_INTERVAL_MS);
     getBookingByToken.mockResolvedValue(booking());
@@ -99,7 +99,7 @@ describe('BookingPaidPage — HELD: оплата принята, запись е
   it('сбой сети посреди ожидания не стирает бронь и не обрывает поллинг', async () => {
     vi.useFakeTimers();
     getBookingByToken
-      .mockResolvedValueOnce(booking({ status: 'HELD', paid: false, meetingUrl: null }))
+      .mockResolvedValueOnce(booking({ status: 'HELD', paid: false }))
       .mockRejectedValueOnce(new Error('network'))
       .mockResolvedValue(booking());
     render(<BookingPaidPage />);
