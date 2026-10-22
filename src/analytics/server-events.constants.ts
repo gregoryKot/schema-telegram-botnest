@@ -1,8 +1,5 @@
-// Серверные события — пишутся ТОЛЬКО бэкендом (guard'ами/контроллерами),
-// никогда с клиентского POST /api/event. Вынесены из analytics.constants.ts
-// отдельным файлом вместе с доккомментариями (правило №10: тот файл сверх
-// потолка обязан таять, а не расти) — тот же приём, что у CASE_EVENTS/
-// GAME_EVENTS, но здесь группа не «фича», а «кто пишет».
+// Серверные события — пишет ТОЛЬКО бэкенд (guard, контроллер, крон), не клиент
+// через POST /api/event. Отдельный файл — правило №10 (analytics.constants.ts).
 //
 //   auth_rejected — мини-апп пришёл с пустой подписью (meta.reason + meta.host).
 //                   Пишется только guard'ом и всегда с userId = null — по этому
@@ -18,10 +15,10 @@
 //                   мессенджере»: падение входа не всегда выглядит ростом
 //                   отказов, иногда клиент просто перестаёт доезжать до
 //                   сервера — тогда виден провал именно этого счётчика.
-//   client_error  — посчитанная поломка фронтенда, meta.source + meta.section
-//                   (бакет, см. client-error-section.ts). Пишет только
-//                   ClientErrorsController, userId = null, троттлинг по
-//                   source+section+ip — счётчик, не лог.
+//   client_error  — поломка фронтенда, meta.source + meta.section (бакет, см.
+//                   client-error-section.ts). Пишет ClientErrorsController,
+//                   userId = null; строка на source+section+ip за 5 мин, плюс
+//                   числа meta.suppressed/unlogged (client-error-log-gate.ts).
 //   signup_source — атрибуция посева, meta.src — слаг из SIGNUP_SOURCES. Пишет
 //                   только бот в /start, когда payload — deep-link `src_<slug>`
 //                   (parseSourceSlug, src/telegram/start-source.ts), и ровно
@@ -30,10 +27,13 @@
 //                   Возвращающийся по той же ссылке повторно не считается.
 //   data_export   — выгрузка своих данных (152-ФЗ/GDPR, GET /api/account/export);
 //                   meta.tables/meta.rows.
+//   notify_queue_tick — итог прогона очереди уведомлений бота: только числа
+//                   (telegram.schedule-queue.tally.ts); пишет крон, userId = null.
 export const SERVER_EVENTS = [
   'auth_rejected',
   'auth_success',
   'client_error',
   'signup_source',
   'data_export',
+  'notify_queue_tick',
 ] as const;

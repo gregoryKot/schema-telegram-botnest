@@ -24,7 +24,12 @@ import {
   SIGNUP_SOURCES,
   PROFILE_PATTERN_KINDS,
 } from './analytics.constants';
+import { CONCEPT_EVENTS } from './concept-events.constants';
 import { CRISIS_SURFACES as CRISIS_SURFACES_DIRECT } from './crisis-surfaces.constants';
+import {
+  PUBLIC_CRISIS_EVENTS,
+  PUBLIC_CRISIS_SURFACES,
+} from './public-crisis.constants';
 import { SIGNUP_SOURCES as SIGNUP_SOURCES_DIRECT } from './signup-sources.constants';
 import { WEB_BANNER_IDS as WEB_BANNER_IDS_DIRECT } from './web-banner-ids.constants';
 import {
@@ -56,6 +61,7 @@ const REGISTRIES: Record<string, readonly string[]> = {
   GAME_CHAPTERS,
   GAME_CTA_PLACES,
   GAME_ENTRY_SOURCES,
+  CONCEPT_EVENTS,
 };
 
 describe('реестры analytics.constants: без дублей и пустых значений', () => {
@@ -82,6 +88,25 @@ describe('реестры analytics.constants: без дублей и пусты�
       for (const v of values) expect(v).toMatch(/^[a-z][a-z0-9_]*$/);
     },
   );
+});
+
+describe('CONCEPT_EVENTS ⊆ ANALYTICS_EVENTS', () => {
+  it('каждое событие схемы случая есть в общем allow-list и не открыто анонимно', () => {
+    // Терапевт всегда авторизован: анонимный путь (POST /api/public-event) для
+    // клинических событий закрыт — иначе их можно накрутить без входа.
+    for (const name of CONCEPT_EVENTS) {
+      expect(ANALYTICS_EVENTS).toContain(name);
+      expect(PUBLIC_ANALYTICS_EVENTS).not.toContain(name);
+    }
+  });
+
+  it('перенос на холст — событие реестра (concept_canvas_open)', () => {
+    expect(CONCEPT_EVENTS).toContain('concept_canvas_open');
+  });
+
+  it('разворот на весь экран — событие реестра (concept_graph_fullscreen)', () => {
+    expect(CONCEPT_EVENTS).toContain('concept_graph_fullscreen');
+  });
 });
 
 describe('PUBLIC_ANALYTICS_EVENTS ⊆ ANALYTICS_EVENTS', () => {
@@ -142,5 +167,26 @@ describe('GAME_EVENTS ⊆ PUBLIC_ANALYTICS_EVENTS', () => {
     for (const name of GAME_EVENTS) {
       expect(PUBLIC_ANALYTICS_EVENTS).toContain(name);
     }
+  });
+});
+
+describe('анонимная кризисная карточка (форма записи на визитке)', () => {
+  it('каждая публичная поверхность карточки есть в общем реестре CRISIS_SURFACES', () => {
+    // Иначе sanitizeMeta POST /api/event её отбросит, а /stats разойдётся с
+    // тем, что принимает публичный путь (правило №4).
+    for (const surface of PUBLIC_CRISIS_SURFACES) {
+      expect(CRISIS_SURFACES).toContain(surface);
+    }
+  });
+
+  it('публичные кризисные события разрешены анонимно и входят в общий allow-list', () => {
+    for (const name of PUBLIC_CRISIS_EVENTS) {
+      expect(PUBLIC_ANALYTICS_EVENTS).toContain(name);
+      expect(ANALYTICS_EVENTS).toContain(name);
+    }
+  });
+
+  it('публичная поверхность — только booking: остальные экраны с авторизацией', () => {
+    expect(PUBLIC_CRISIS_SURFACES).toEqual(['booking']);
   });
 });

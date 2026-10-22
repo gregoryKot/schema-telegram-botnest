@@ -46,6 +46,43 @@ describe('parseId', () => {
     expect(() => parseId('null')).toThrow(BadRequestException);
   });
 
+  // M6 (аудит 2026-10): Number(raw) принимал экзотические записи чисел.
+  it.each([
+    '1e20',
+    '1e3',
+    '0x1f',
+    '99999999999999999999',
+    ' 5',
+    '5 ',
+    '+5',
+    '١٢٣',
+    '5_0',
+  ])('экзотическая/огромная запись %p отклоняется', (raw) => {
+    expect(() => parseId(raw)).toThrow(BadRequestException);
+    expect(() => parseId(raw, { allowNegative: true })).toThrow(
+      BadRequestException,
+    );
+  });
+
+  it('telegram-id (> INT4, ~1e10) без int32 проходит — therapy-клиенты', () => {
+    expect(parseId('9876543210')).toBe(9876543210);
+  });
+
+  it('int32: true отклоняет значения за пределом INT4 (колонки Int)', () => {
+    expect(parseId('2147483647', { int32: true })).toBe(2147483647);
+    expect(() => parseId('2147483648', { int32: true })).toThrow(
+      BadRequestException,
+    );
+    expect(() =>
+      parseId('-2147483648', { int32: true, allowNegative: true }),
+    ).toThrow(BadRequestException);
+  });
+
+  it('-3 при allowNegative — ок, без флага — ошибка', () => {
+    expect(parseId('-3', { allowNegative: true })).toBe(-3);
+    expect(() => parseId('-3')).toThrow(BadRequestException);
+  });
+
   it('allowNegative: true пропускает отрицательные (виртуальные клиенты терапевта)', () => {
     expect(parseId('-5', { allowNegative: true })).toBe(-5);
   });

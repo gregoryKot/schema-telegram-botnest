@@ -141,3 +141,19 @@ test/**/*.js.map
 playwright.config.js
 playwright.config.d.ts
 playwright.config.js.map
+
+# Отчёт замера планов запросов (test/perf/run-plans.ts → scripts/check-query-plans.mjs).
+# Артефакт джобы `perf`, снимается на синтетике: в репозитории ему делать
+# нечего, планки живут в scripts/query-plan-baseline.json.
+/.perf
+
+# Кэш ts-jest: джоба backend задаёт JEST_CACHE_DIR=.jest-cache, но jest
+# резолвит относительный путь от rootDir каждого конфига: бэкенд пишет в
+# src/.jest-cache, e2e (test/jest-e2e.json) — в test/.jest-cache. Локальный
+# прогон оставляет тысячи файлов под `git status` — ровно то, что однажды
+# уедет в коммит целиком (так и случилось: #243). Правило отслеживаемое не
+# снимает, поэтому есть scripts/check-ignored-tracked.mjs.
+.jest-cache/
+
+# Журнал замера контекста агента (хук .claude/hooks/log-tool-use.mjs) — локальный, у каждой сессии свой.
+.claude/state/

@@ -1,13 +1,13 @@
 // Записи реестра env-переменных (см. env-registry.ts) — группа auth:
-// вход (Google/VK/MAX/Telegram OIDC), JWT, шифрование хранимых данных.
+// вход (Google/VK/MAX/Telegram), JWT, шифрование хранимых данных.
 import { EnvVarSpec, formats } from './env-registry';
 
 export const AUTH_ENV_ENTRIES: EnvVarSpec[] = [
   {
     name: 'ENCRYPTION_KEY',
     purpose:
-      'Ключ AES-256-GCM для заметок/дневников/писем — без него в проде процесс ' +
-      'не стартует (src/utils/crypto.ts бросает при старте).',
+      'Ключ AES-256-GCM (заметки, дневники) и HMAC ключа комнаты клиента ' +
+      '(ClientMeeting.clientKey); без него прод не стартует (utils/crypto.ts).',
     requiredInProd: true,
     format: formats.hex32,
     group: 'auth',
@@ -15,8 +15,8 @@ export const AUTH_ENV_ENTRIES: EnvVarSpec[] = [
   {
     name: 'ENCRYPTION_KEY_OLD',
     purpose:
-      'Старые ключи шифрования на время ротации (через запятую) — читаются ' +
-      'только при расшифровке, новое всегда пишется текущим ключом.',
+      'Старые ключи на время ротации (через запятую) — для расшифровки и ' +
+      'поиска комнаты клиента; новое всегда пишется текущим ключом.',
     requiredInProd: false,
     format: formats.any,
     group: 'auth',
@@ -52,7 +52,7 @@ export const AUTH_ENV_ENTRIES: EnvVarSpec[] = [
       'Подписывает access/refresh/merge JWT сайта — без него вход через ' +
       'Google/VK и merge аккаунтов не работает.',
     requiredInProd: true,
-    format: formats.nonEmpty,
+    format: formats.secret32,
     group: 'auth',
   },
   {

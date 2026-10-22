@@ -149,3 +149,22 @@ describe('a11y: текст на залитом --accent-red держит ≥4.5:
     expect(contrastRatio(ink.rgb, fill.rgb)).toBeGreaterThanOrEqual(4.5);
   });
 });
+
+// Пара «залитый --accent визитки + текст на нём». Белый на светлом индиго
+// проходит (7.85:1), а в тёмной теме индиго осветляется до #9089e0, и тот же
+// белый давал 3.07:1 — ниже AA. Читаем значения из index.css, не дублируем.
+describe('a11y: .landing-personal-brand — текст на залитом --accent ≥4.5:1', () => {
+  const LIGHT_BRAND = extractBlock(CSS, '.landing-personal-brand {');
+  const DARK_BRAND = extractBlock(CSS, 'html[data-theme="dark"] .landing-personal-brand');
+
+  it.each([
+    ['light', LIGHT_BRAND],
+    ['dark', DARK_BRAND],
+  ] as const)('--on-accent на --accent — тема %s', (_label, block) => {
+    const fill = parseColor(resolveToken(block, '--accent'));
+    const ink = parseColor(resolveToken(block, '--on-accent'));
+
+    expect(fill.alpha).toBe(1);
+    expect(contrastRatio(ink.rgb, fill.rgb)).toBeGreaterThanOrEqual(4.5);
+  });
+});

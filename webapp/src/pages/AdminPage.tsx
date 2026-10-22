@@ -9,7 +9,6 @@ import { btn, input } from './admin/shared';
 
 // L7 (аудит 2026-08): ключ админа в sessionStorage, не localStorage — XSS не
 // утащит его из закрытой вкладки и он не переживает браузер (вводится раз в сессию).
-const KEY_STORE = 'booking_admin_key';
 
 type Tab = 'booking' | 'articles' | 'photo' | 'marquee' | 'healthyAdult';
 const TABS: { id: Tab; label: string }[] = [
@@ -22,7 +21,7 @@ const TABS: { id: Tab; label: string }[] = [
 
 /** Single admin panel for the whole site — one key, tabbed sections. */
 export function AdminPage() {
-  const [key, setKey] = useState<string>(() => sessionStorage.getItem(KEY_STORE) ?? '');
+  const [key, setKey] = useState<string>('') // только в памяти: в sessionStorage ключ утёк бы при XSS (E4);
   const [authed, setAuthed] = useState(false);
   const [keyInput, setKeyInput] = useState('');
   const [keyError, setKeyError] = useState(false);
@@ -30,20 +29,23 @@ export function AdminPage() {
 
   useEffect(() => {
     if (!key) return;
-    api.adminStatus(key).then(() => setAuthed(true)).catch(() => { setAuthed(false); sessionStorage.removeItem(KEY_STORE); setKey(''); });
+    api.adminStatus(key).then(() => setAuthed(true)).catch(() => { setAuthed(false); setKey(''); });
   }, [key]);
 
   const tryKey = async () => {
     setKeyError(false);
     try {
       await api.adminStatus(keyInput);
-      sessionStorage.setItem(KEY_STORE, keyInput);
       setKey(keyInput);
     } catch { setKeyError(true); }
   };
 
+  // ym-hide-content: метка Яндекс.Вебвизора «не писать содержимое узла».
+  // Вебвизор включается только на визитке (kotlarewski.gr, см. metrika.ts
+  // shouldRecordSession), и админка технически внутри её allow-list —
+  // экран редактирования сайта не должен уйти в запись сессии.
   if (!authed) return (
-    <div style={{ maxWidth: 420, margin: '80px auto', padding: '0 20px', fontFamily: 'var(--sans)' }}>
+    <div className="ym-hide-content" style={{ maxWidth: 420, margin: '80px auto', padding: '0 20px', fontFamily: 'var(--sans)' }}>
       <h1 style={{ fontFamily: 'var(--serif)', fontSize: 28, fontWeight: 400, color: 'var(--text)' }}>Админка</h1>
       <p style={{ color: 'var(--text-sub)', fontSize: 15 }}>Введите ключ доступа (ADMIN_BOOKING_KEY).</p>
       <div style={{ display: 'flex', gap: 'var(--space-8)', marginTop: 12 }}>
@@ -56,14 +58,14 @@ export function AdminPage() {
   );
 
   return (
-    <div style={{ maxWidth: 760, margin: '40px auto', padding: '0 20px 80px', fontFamily: 'var(--sans)' }}>
+    <div className="ym-hide-content" style={{ maxWidth: 760, margin: '40px auto', padding: '0 20px 80px', fontFamily: 'var(--sans)' }}>
       <h1 style={{ fontFamily: 'var(--serif)', fontSize: 30, fontWeight: 400, color: 'var(--text)', marginBottom: 20 }}>Админка</h1>
 
       <div style={{ display: 'flex', gap: 6, marginBottom: 24, flexWrap: 'wrap' }}>
         {TABS.map(t => (
           <button key={t.id} onClick={() => setTab(t.id)} style={{
             padding: '8px 16px', fontSize: 13, fontWeight: 600, fontFamily: 'inherit', cursor: 'pointer', borderRadius: 100,
-            background: tab === t.id ? 'var(--accent)' : 'transparent', color: tab === t.id ? '#fff' : 'var(--text-sub)',
+            background: tab === t.id ? 'var(--accent)' : 'transparent', color: tab === t.id ? 'var(--on-accent)' : 'var(--text-sub)',
             border: `1.5px solid ${tab === t.id ? 'var(--accent)' : 'var(--line-strong)'}`,
           }}>{t.label}</button>
         ))}

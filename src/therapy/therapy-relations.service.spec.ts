@@ -9,13 +9,19 @@
 // 24% веток — общий хелпер therapy.test-helpers.ts (makeRelationPrismaMock)
 // умеет только findFirst/findUnique/update на therapyRelation и не покрывает
 // createInvite/getRelation/disconnect/getClients/addVirtualClient/
-// addClientManually/renameClient. Ниже — локальный расширенный фейк Prisma
+// renameClient. Ниже — локальный расширенный фейк Prisma
 // (только для этого файла, test-helpers.ts не трогаем — общий для другого
 // спека).
 import { TherapyRelationsService } from './therapy-relations.service';
 import { Rel, makeRelationPrismaMock } from './therapy.test-helpers';
-import { MINIAPP_TGLINK } from '../telegram/telegram.constants';
 import { randomBytes as mockableRandomBytes } from 'crypto';
+
+// Имя бота без дефолта (telegram.constants.ts): для ссылки-приглашения задаём его
+// явно, как это делает env прода.
+jest.mock('../telegram/telegram.constants', () => ({
+  ...jest.requireActual('../telegram/telegram.constants'),
+  BOT_USERNAME: 'SchemeHappensBot',
+}));
 
 // Ключ шифрования не задан (дев-режим crypto.ts) — encrypt() возвращает
 // plaintext, что для этих тестов и нужно.
@@ -51,14 +57,12 @@ const activeRel: Rel = {
 describe('assertRelation — граница доступа терапевта', () => {
   it('терапевт с активной связью проходит', async () => {
     const { service } = makeService([activeRel]);
-    await expect(
-      service.assertHasClient(T1, Number(CLIENT)),
-    ).resolves.toBeUndefined();
+    await expect(service.assertHasClient(T1, CLIENT)).resolves.toBeUndefined();
   });
 
   it('ЧУЖОЙ терапевт к тому же клиенту — отказ', async () => {
     const { service } = makeService([activeRel]);
-    await expect(service.assertHasClient(T2, Number(CLIENT))).rejects.toThrow(
+    await expect(service.assertHasClient(T2, CLIENT)).rejects.toThrow(
       'No active relation',
     );
   });
@@ -67,7 +71,7 @@ describe('assertRelation — граница доступа терапевта', 
     const { service } = makeService([
       { ...activeRel, status: 'pending', clientId: null },
     ]);
-    await expect(service.assertHasClient(T1, Number(CLIENT))).rejects.toThrow(
+    await expect(service.assertHasClient(T1, CLIENT)).rejects.toThrow(
       'No active relation',
     );
   });
@@ -81,8 +85,8 @@ describe('assertRelation — граница доступа терапевта', 
       code: 'BBB222',
     };
     const { service } = makeService([virtualRel]);
-    await expect(service.assertHasClient(T1, -42)).resolves.toBeUndefined();
-    await expect(service.assertHasClient(T2, -42)).rejects.toThrow(
+    await expect(service.assertHasClient(T1, -42n)).resolves.toBeUndefined();
+    await expect(service.assertHasClient(T2, -42n)).rejects.toThrow(
       'No active relation',
     );
   });
@@ -177,7 +181,7 @@ describe('joinAsClient — правила подключения по коду',
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Расширенный фейк Prisma для createInvite/getRelation/disconnect/getClients/
-// addVirtualClient/addClientManually/renameClient — makeRelationPrismaMock
+// addVirtualClient/renameClient — makeRelationPrismaMock
 // выше не умеет findMany/create/updateMany/deleteMany и не знает про
 // clientConceptualization/user. Локально для этого файла (test-helpers.ts
 // не трогаем — он общий с therapy-notes.service.spec.ts).
@@ -198,6 +202,7 @@ interface FullRel {
 interface FakeUser {
   id: bigint;
   firstName: string | null;
+  role?: 'CLIENT' | 'THERAPIST';
 }
 
 interface FakeConcept {
@@ -311,7 +316,7 @@ describe('createInvite — генерация кода приглашения', 
     const result = await service.createInvite(T1);
     expect(result.code).toHaveLength(12);
     expect(result.url).toBe(
-      `${MINIAPP_TGLINK}?startapp=therapy_${result.code}`,
+      `https://t.me/SchemeHappensBot/diary?startapp=therapy_${result.code}`,
     );
     expect(rels).toHaveLength(1);
     expect(rels[0].therapistId).toBe(T1);
@@ -363,7 +368,10 @@ describe('getRelation — статус связи для терапевта и �
           createdAt: new Date(),
         },
       ],
-      [{ id: CLIENT, firstName: 'Аня' }],
+      [
+        { id: CLIENT, firstName: 'Аня' },
+        { id: T1, firstName: 'Т', role: 'THERAPIST' },
+      ],
     );
     // Мутационное усиление: локальный фейк Prisma игнорирует select (всегда
     // отдаёт всё поле), поэтому ObjectLiteral/BooleanLiteral-мутанты внутри
@@ -375,7 +383,7 @@ describe('getRelation — статус связи для терапевта и �
       role: 'therapist',
       status: 'active',
       partnerName: 'Аня',
-      partnerId: Number(CLIENT),
+      partnerId: CLIENT,
       code: 'AAA111',
       nextSession: null,
     });
@@ -386,17 +394,20 @@ describe('getRelation — статус связи для терапевта и �
   });
 
   it('роль терапевта: виртуальный клиент (clientId=null) — партнёр без имени/id', async () => {
-    const { service } = makeFullService([
-      {
-        id: 1,
-        therapistId: T1,
-        clientId: null,
-        status: 'active',
-        code: 'VVV111',
-        virtualClientName: 'Оффлайн-клиент',
-        createdAt: new Date(),
-      },
-    ]);
+    const { service } = makeFullService(
+      [
+        {
+          id: 1,
+          therapistId: T1,
+          clientId: null,
+          status: 'active',
+          code: 'VVV111',
+          virtualClientName: 'Оффлайн-клиент',
+          createdAt: new Date(),
+        },
+      ],
+      [{ id: T1, firstName: 'Т', role: 'THERAPIST' }],
+    );
     const info = await service.getRelation(T1);
     expect(info?.partnerName).toBeNull();
     expect(info?.partnerId).toBeNull();
@@ -415,23 +426,29 @@ describe('getRelation — статус связи для терапевта и �
           createdAt: new Date(),
         },
       ],
-      [{ id: T1, firstName: 'Терапевт Т' }],
+      [{ id: T1, firstName: 'Терапевт Т', role: 'THERAPIST' }],
     );
     const spy = jest.spyOn(prisma.therapyRelation, 'findFirst');
+    const spyMany = jest.spyOn(prisma.therapyRelation, 'findMany');
     const info = await service.getRelation(CLIENT);
     expect(info).toEqual({
       role: 'client',
       status: 'active',
       partnerName: 'Терапевт Т',
-      partnerId: Number(T1),
+      partnerId: T1,
       code: 'AAA111',
       nextSession: '2026-08-01',
     });
-    // Первый вызов — проверка роли терапевта (не находит, CLIENT терапевтом
-    // не выступает), второй — роль клиента; сверяем именно его аргументы.
-    expect(spy).toHaveBeenNthCalledWith(2, {
+    // CLIENT терапевтом не выступает — связи со стороны терапевта не ищутся
+    // вовсе (A-3): findFirst не зовётся, единственный запрос — findMany по
+    // клиентской стороне, с ролью партнёра для сверки (backend#33).
+    expect(spy).not.toHaveBeenCalled();
+    expect(spyMany).toHaveBeenCalledTimes(1);
+    expect(spyMany).toHaveBeenCalledWith({
       where: { clientId: CLIENT, status: 'active' },
-      include: { therapist: { select: { id: true, firstName: true } } },
+      include: {
+        therapist: { select: { id: true, firstName: true, role: true } },
+      },
     });
   });
 
@@ -460,8 +477,8 @@ describe('getRelation — статус связи для терапевта и �
         },
       ],
       [
-        { id: T1, firstName: 'Мой терапевт' },
-        { id: T2, firstName: 'Чужой терапевт' },
+        { id: T1, firstName: 'Мой терапевт', role: 'THERAPIST' },
+        { id: T2, firstName: 'Чужой терапевт', role: 'THERAPIST' },
       ],
     );
     const info = await service.getRelation(CLIENT);
@@ -469,26 +486,174 @@ describe('getRelation — статус связи для терапевта и �
     expect(info?.code).toBe('AAA111');
   });
 
-  it('роль клиента: терапевт не резолвится (FK-запись без пользователя) — партнёр пуст, nextSession null по умолчанию', async () => {
-    const { service } = makeFullService([
-      {
-        id: 1,
-        therapistId: T1,
-        clientId: CLIENT,
-        status: 'active',
-        code: 'AAA111',
-        createdAt: new Date(),
-      },
-    ]); // терапевта нет в users — include вернёт null
+  // A-3 (аудит 2026-10): терапевт вышел из роли (role = CLIENT), а его строки
+  // со стороны терапевта остались. «Мой терапевт» не должен показывать бывшего
+  // клиента как «терапевта», а «Отключиться» — быть пустым действием.
+  it('вышедший из роли терапевта (CLIENT) со старыми строками терапевта: клиентской связи нет → null', async () => {
+    const { service } = makeFullService(
+      [
+        {
+          id: 1,
+          therapistId: T1,
+          clientId: CLIENT,
+          status: 'active',
+          code: 'OLD111',
+          createdAt: new Date(),
+        },
+      ],
+      [
+        { id: T1, firstName: 'Бывший терапевт', role: 'CLIENT' },
+        { id: CLIENT, firstName: 'Его бывший клиент' },
+      ],
+    );
+    await expect(service.getRelation(T1)).resolves.toBeNull();
+  });
+
+  it('вышедший из роли терапевта, но подключённый к новому терапевту как клиент: видит ИМЕННО его', async () => {
+    const { service } = makeFullService(
+      [
+        {
+          id: 1,
+          therapistId: T1,
+          clientId: CLIENT,
+          status: 'active',
+          code: 'OLD111',
+          createdAt: new Date(),
+        },
+        {
+          id: 2,
+          therapistId: T2,
+          clientId: T1,
+          status: 'active',
+          code: 'NEW222',
+          nextSession: '2026-11-01',
+          createdAt: new Date(),
+        },
+      ],
+      [
+        { id: T1, firstName: 'Бывший терапевт', role: 'CLIENT' },
+        { id: T2, firstName: 'Новый терапевт', role: 'THERAPIST' },
+        { id: CLIENT, firstName: 'Его бывший клиент' },
+      ],
+    );
+    expect(await service.getRelation(T1)).toEqual({
+      role: 'client',
+      status: 'active',
+      partnerName: 'Новый терапевт',
+      partnerId: T2,
+      code: 'NEW222',
+      nextSession: '2026-11-01',
+    });
+  });
+
+  it('действующий терапевт (THERAPIST) по-прежнему видит сторону терапевта', async () => {
+    const { service } = makeFullService(
+      [
+        {
+          id: 1,
+          therapistId: T1,
+          clientId: CLIENT,
+          status: 'active',
+          code: 'AAA111',
+          createdAt: new Date(),
+        },
+      ],
+      [
+        { id: T1, firstName: 'Т', role: 'THERAPIST' },
+        { id: CLIENT, firstName: 'Аня' },
+      ],
+    );
+    expect((await service.getRelation(T1))?.role).toBe('therapist');
+  });
+
+  it('роль клиента: у терапевта нет имени — партнёр пуст, nextSession null по умолчанию', async () => {
+    const { service } = makeFullService(
+      [
+        {
+          id: 1,
+          therapistId: T1,
+          clientId: CLIENT,
+          status: 'active',
+          code: 'AAA111',
+          createdAt: new Date(),
+        },
+      ],
+      [{ id: T1, firstName: null, role: 'THERAPIST' }],
+    );
     const info = await service.getRelation(CLIENT);
     expect(info?.partnerName).toBeNull();
-    expect(info?.partnerId).toBeNull();
+    expect(info?.partnerId).toBe(T1);
     expect(info?.nextSession).toBeNull();
+  });
+
+  // backend#33: строка, осиротевшая до статуса `ended` (терапевт вышел из
+  // роли, связь осталась active), не показывает бывшего терапевта клиенту.
+  it('партнёр уже не терапевт (role CLIENT) — «Мой терапевт» пуст', async () => {
+    const { service } = makeFullService(
+      [
+        {
+          id: 1,
+          therapistId: T1,
+          clientId: CLIENT,
+          status: 'active',
+          code: 'ORPHAN',
+          createdAt: new Date(),
+        },
+      ],
+      [{ id: T1, firstName: 'Бывший терапевт', role: 'CLIENT' }],
+    );
+    await expect(service.getRelation(CLIENT)).resolves.toBeNull();
+  });
+
+  it('осиротевшая связь не заслоняет живую: клиент видит действующего терапевта', async () => {
+    const { service } = makeFullService(
+      [
+        {
+          id: 1,
+          therapistId: T1,
+          clientId: CLIENT,
+          status: 'active',
+          code: 'ORPHAN',
+          createdAt: new Date(),
+        },
+        {
+          id: 2,
+          therapistId: T2,
+          clientId: CLIENT,
+          status: 'active',
+          code: 'LIVE22',
+          createdAt: new Date(),
+        },
+      ],
+      [
+        { id: T1, firstName: 'Бывший терапевт', role: 'CLIENT' },
+        { id: T2, firstName: 'Действующий', role: 'THERAPIST' },
+      ],
+    );
+    const info = await service.getRelation(CLIENT);
+    expect(info).toMatchObject({ partnerId: T2, code: 'LIVE22' });
+  });
+
+  it('завершённая связь (ended) клиенту не показывается', async () => {
+    const { service } = makeFullService(
+      [
+        {
+          id: 1,
+          therapistId: T1,
+          clientId: CLIENT,
+          status: 'ended',
+          code: 'ENDED1',
+          createdAt: new Date(),
+        },
+      ],
+      [{ id: T1, firstName: 'Терапевт', role: 'THERAPIST' }],
+    );
+    await expect(service.getRelation(CLIENT)).resolves.toBeNull();
   });
 });
 
-describe('disconnect — разрыв связи с любой стороны', () => {
-  it('удаляет связи, где userId — терапевт ИЛИ клиент', async () => {
+describe('disconnect — клиент разрывает свои связи', () => {
+  it('удаляет только связи, где userId — КЛИЕНТ; связи в роли терапевта остаются (T2, аудит 2026-10)', async () => {
     const relAsTherapist: FullRel = {
       id: 1,
       therapistId: T1,
@@ -516,7 +681,7 @@ describe('disconnect — разрыв связи с любой стороны', 
       unrelated,
     ]);
     await service.disconnect(T1);
-    expect(rels).toEqual([unrelated]);
+    expect(rels).toEqual([relAsTherapist, unrelated]);
   });
 });
 
@@ -558,8 +723,44 @@ describe('getClients — список клиентов терапевта', () =
     );
     const list = await service.getClients(T1);
     expect(list).toHaveLength(1);
-    expect(list[0].telegramId).toBe(Number(CLIENT));
+    expect(list[0].telegramId).toBe(CLIENT);
     expect(list[0].name).toBe('Аня');
+  });
+
+  // Аудит 2026-10, X-1: веб-клиент (Google/VK/MAX/почта) живёт в [1e15, 9e15),
+  // ниже 2^53 (границу держит user-id-range.spec.ts). Id выше 2^53 здесь
+  // выдуманный: он стережёт bigint-путь на случай расширения диапазона, когда
+  // Number(id) округлит его и следующий запрос терапевта не пройдёт
+  // assertRelation. Id обязан пройти от БД до ответа точным bigint.
+  it('клиент с выдуманным id > 2^53: getClients и getRelation отдают точный bigint, assertHasClient проходит', async () => {
+    const WEB = 1000000000000000123n;
+    const { service } = makeFullService(
+      [
+        {
+          id: 1,
+          therapistId: T1,
+          clientId: WEB,
+          status: 'active',
+          code: 'WEB111',
+          createdAt: new Date(),
+        },
+      ],
+      [
+        { id: T1, firstName: 'Терапевт', role: 'THERAPIST' },
+        { id: WEB, firstName: 'Вера' },
+      ],
+    );
+    const [client] = await service.getClients(T1);
+    expect(client.telegramId).toBe(WEB);
+    expect(typeof client.telegramId).toBe('bigint');
+    // Именно с таким id фронт придёт обратно; округлённый — чужая строка.
+    await expect(
+      service.assertHasClient(T1, client.telegramId),
+    ).resolves.toBeUndefined();
+    await expect(
+      service.assertHasClient(T1, BigInt(Number(WEB))),
+    ).rejects.toThrow('No active relation');
+    expect((await service.getRelation(T1))?.partnerId).toBe(WEB);
   });
 
   // Мутационное усиление: связь со статусом pending (приглашение ещё не
@@ -625,7 +826,7 @@ describe('getClients — список клиентов терапевта', () =
     const findManySpy = jest.spyOn(prisma.therapyRelation, 'findMany');
     const conceptsSpy = jest.spyOn(prisma.clientConceptualization, 'findMany');
     const [client] = await service.getClients(T1);
-    expect(client.telegramId).toBe(Number(CLIENT));
+    expect(client.telegramId).toBe(CLIENT);
     expect(client.name).toBe('Аня');
     expect(client.streak).toBe(3);
     expect(client.lastActiveDate).toBe(today);
@@ -839,7 +1040,7 @@ describe('getClients — список клиентов терапевта', () =
       },
     ]);
     const [client] = await service.getClients(T1);
-    expect(client.telegramId).toBe(-7);
+    expect(client.telegramId).toBe(-7n);
     expect(client.name).toBe('Оффлайн Иван');
     expect(client.clientAlias).toBe('Псевдоним');
     expect(client.streak).toBe(0);
@@ -852,6 +1053,9 @@ describe('getClients — список клиентов терапевта', () =
     expect(client.therapyStartDate).toBeNull();
     expect(client.nextSession).toBeNull();
     expect(client.meetingDays).toEqual([]);
+    // Мутационное усиление (`?? []` у schemaIds виртуального клиента): без
+    // конспектуализации под -rel.id список схем пустой, а не подставленный.
+    expect(client.schemaIds).toEqual([]);
   });
 
   // Мутационное усиление (L196, LogicalOperator + UnaryOperator): schemaIds
@@ -875,7 +1079,7 @@ describe('getClients — список клиентов терапевта', () =
       [{ therapistId: T1, clientId: -7n, schemaIds: ['abandonment'] }],
     );
     const [client] = await service.getClients(T1);
-    expect(client.telegramId).toBe(-7);
+    expect(client.telegramId).toBe(-7n);
     expect(client.schemaIds).toEqual(['abandonment']);
   });
 
@@ -931,8 +1135,33 @@ describe('getClients — список клиентов терапевта', () =
     );
     const list = await service.getClients(T1);
     expect(list).toHaveLength(2);
-    const ids = list.map((c) => c.telegramId).sort((a, b) => a - b);
-    expect(ids).toEqual([-2, Number(CLIENT)].sort((a, b) => a - b));
+    expect(new Set(list.map((c) => c.telegramId))).toEqual(
+      new Set([-2n, CLIENT]),
+    );
+  });
+
+  // Мутационное усиление (фильтр виртуальных: `rel.client === null` →
+  // `true`): у связи с реальным клиентом virtualClientName может остаться —
+  // офлайн-клиент, позже подключившийся по коду. Такая связь — один реальный
+  // клиент; без проверки на client === null она задвоилась бы виртуальной
+  // записью с telegramId = -rel.id.
+  it('связь с реальным клиентом и оставшимся virtualClientName — один реальный клиент, без виртуального двойника', async () => {
+    const { service } = makeFullService(
+      [
+        {
+          id: 4,
+          therapistId: T1,
+          clientId: CLIENT,
+          status: 'active',
+          code: 'AAA222',
+          virtualClientName: 'Оффлайн Иван',
+          createdAt: new Date(),
+        },
+      ],
+      [{ id: CLIENT, firstName: 'Аня' }],
+    );
+    const list = await service.getClients(T1);
+    expect(list.map((c) => c.telegramId)).toEqual([CLIENT]);
   });
 });
 
@@ -945,7 +1174,7 @@ describe('addVirtualClient — офлайн-клиент без Telegram', () =>
     expect(rels[0].status).toBe('active');
     expect(list).toHaveLength(1);
     expect(list[0].name).toBe('Оффлайн Пётр');
-    expect(list[0].telegramId).toBe(-rels[0].id);
+    expect(list[0].telegramId).toBe(-BigInt(rels[0].id));
   });
 
   // Мутационное усиление (L206, MethodExpression toUpperCase→toLowerCase):
@@ -967,98 +1196,13 @@ describe('addVirtualClient — офлайн-клиент без Telegram', () =>
   });
 });
 
-describe('addClientManually — подключение по Telegram ID без кода', () => {
-  it('клиент не найден — ошибка, связь не создаётся', async () => {
-    const { service, rels } = makeFullService([]);
-    await expect(service.addClientManually(T1, CLIENT)).rejects.toThrow(
-      'User not found',
-    );
-    expect(rels).toHaveLength(0);
-  });
-
-  it('уже есть активная связь с этим клиентом — ошибка "Already connected"', async () => {
-    const { service, rels } = makeFullService(
-      [
-        {
-          id: 1,
-          therapistId: T1,
-          clientId: CLIENT,
-          status: 'active',
-          code: 'AAA111',
-          createdAt: new Date(),
-        },
-      ],
-      [{ id: CLIENT, firstName: 'Аня' }],
-    );
-    await expect(service.addClientManually(T1, CLIENT)).rejects.toThrow(
-      'Already connected',
-    );
-    expect(rels).toHaveLength(1); // повторной связи не создалось
-  });
-
-  it('успешное подключение — создаёт активную связь и возвращает список клиентов', async () => {
-    const { service, rels, prisma } = makeFullService(
-      [],
-      [{ id: CLIENT, firstName: 'Аня' }],
-    );
-    // Мутационное усиление (L226, ObjectLiteral/BooleanLiteral в select):
-    // фейк отдаёт весь user-объект вне зависимости от select — ловим только
-    // сверкой точных аргументов вызова findUnique.
-    const userSpy = jest.spyOn(prisma.user, 'findUnique');
-    const list = await service.addClientManually(T1, CLIENT);
-    expect(rels).toHaveLength(1);
-    expect(rels[0].status).toBe('active');
-    expect(rels[0].clientId).toBe(CLIENT);
-    expect(list).toHaveLength(1);
-    expect(list[0].telegramId).toBe(Number(CLIENT));
-    expect(list[0].name).toBe('Аня');
-    expect(userSpy).toHaveBeenCalledWith({
-      where: { id: CLIENT },
-      select: { id: true, firstName: true },
-    });
-  });
-
-  // Мутационное усиление (L231/L232, ObjectLiteral where→{}): если проверка
-  // "уже подключён" потеряет свой where, findFirst вернёт ПЕРВУЮ связь в
-  // таблице — здесь она принадлежит ЧУЖОМУ терапевту с ТЕМ ЖЕ клиентом — и
-  // T1 ошибочно получит "Already connected", хотя своей связи с CLIENT у
-  // него нет.
-  it('активная связь ЧУЖОГО терапевта с тем же клиентом не мешает новому подключению (изоляция по where)', async () => {
-    const { service, rels } = makeFullService(
-      [
-        {
-          id: 1,
-          therapistId: T2,
-          clientId: CLIENT,
-          status: 'active',
-          code: 'FOREIGN',
-          createdAt: new Date(),
-        },
-      ],
-      [{ id: CLIENT, firstName: 'Аня' }],
-    );
-    await service.addClientManually(T1, CLIENT); // не должно бросить "Already connected"
-    const own = rels.find((r) => r.therapistId === T1);
-    expect(own?.clientId).toBe(CLIENT);
-    expect(own?.status).toBe('active');
-  });
-
-  // Мутационное усиление (L237, MethodExpression toUpperCase→toLowerCase) —
-  // см. аналогичный тест в addVirtualClient выше.
-  it('код связи при ручном подключении генерируется в ВЕРХНЕМ регистре', async () => {
-    const { service, rels } = makeFullService(
-      [],
-      [{ id: CLIENT, firstName: 'Аня' }],
-    );
-    const spy = mockableRandomBytes as jest.Mock;
-    spy.mockClear();
-    spy.mockReturnValueOnce(Buffer.from('aabbccddee', 'hex'));
-    try {
-      await service.addClientManually(T1, CLIENT);
-      expect(rels[0].code).toBe('AABBCCDDEE');
-    } finally {
-      spy.mockClear();
-    }
+describe('addClientManually — удалён', () => {
+  // Метод создавал активную связь терапевт↔клиент без согласия клиента.
+  // Реальный клиент подключается только по приглашению (joinAsClient);
+  // пин не даёт методу вернуться.
+  it('в сервисе нет метода ручного добавления реального пользователя', () => {
+    const { service } = makeFullService([]);
+    expect('addClientManually' in service).toBe(false);
   });
 });
 
@@ -1079,7 +1223,7 @@ describe('renameClient — псевдоним клиента (alias)', () => {
       code: 'BBB222',
     };
     const { service } = makeFullService([own, foreign]);
-    await service.renameClient(T1, Number(CLIENT), 'Псевдоним');
+    await service.renameClient(T1, CLIENT, 'Псевдоним');
     expect(own.clientAlias).toBe('Псевдоним');
     expect(foreign.clientAlias).toBeUndefined(); // чужая связь не тронута
   });
@@ -1105,7 +1249,7 @@ describe('renameClient — псевдоним клиента (alias)', () => {
       virtualClientName: 'Пётр',
     };
     const { service } = makeFullService([virtual, foreignVirtual]);
-    await service.renameClient(T1, -5, 'Новый псевдоним');
+    await service.renameClient(T1, -5n, 'Новый псевдоним');
     expect(virtual.clientAlias).toBe('Новый псевдоним');
     expect(foreignVirtual.clientAlias).toBeUndefined(); // чужая связь не тронута
   });
@@ -1120,7 +1264,7 @@ describe('renameClient — псевдоним клиента (alias)', () => {
       clientAlias: 'Было',
     };
     const { service } = makeFullService([rel]);
-    await service.renameClient(T1, Number(CLIENT), '   ');
+    await service.renameClient(T1, CLIENT, '   ');
     expect(rel.clientAlias).toBeNull();
   });
 
@@ -1137,7 +1281,7 @@ describe('renameClient — псевдоним клиента (alias)', () => {
       code: 'AAA111',
     };
     const { service } = makeFullService([rel]);
-    await service.renameClient(T1, Number(CLIENT), '  Псевдоним  ');
+    await service.renameClient(T1, CLIENT, '  Псевдоним  ');
     expect(rel.clientAlias).toBe('Псевдоним');
   });
 
@@ -1154,8 +1298,8 @@ describe('renameClient — псевдоним клиента (alias)', () => {
       code: 'AAA111',
     };
     const { service } = makeFullService([rel]);
-    await expect(service.assertHasClient(T1, 0)).resolves.toBeUndefined();
-    await service.renameClient(T1, 0, 'Нулевой клиент');
+    await expect(service.assertHasClient(T1, 0n)).resolves.toBeUndefined();
+    await service.renameClient(T1, 0n, 'Нулевой клиент');
     expect(rel.clientAlias).toBe('Нулевой клиент');
   });
 });

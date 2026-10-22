@@ -1,0 +1,10 @@
+{
+  "schema-miniapp/src/components/disclaimer/DisclaimerCheckbox.tsx": 1,
+  "schema-miniapp/src/components/planSheet/PracticeOptionRow.tsx": 1,
+  "schema-miniapp/src/components/settingsSheet/TherapistPrivacyToggles.tsx": 2,
+  "schema-miniapp/src/components/therapistClientSheet/ClientListView.tsx": 2,
+  "schema-miniapp/src/sections/profile/InsightsCard.tsx": 1,
+  "webapp/src/pages/landing/HeroSection.tsx": 1,
+  "webapp/src/pages/landing/nav.tsx": 1,
+  "webapp/src/share/SharePillButton.tsx": 1
+}

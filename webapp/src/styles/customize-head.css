@@ -1,0 +1,8 @@
+/* Входы в «Настроить экран» из шапок «Сегодня», «Профиля» и «Паттернов»: шестерёнка (телефон) и ссылка (десктоп). */
+.cz-gear {
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  width: 44px; height: 44px; padding: 0; cursor: pointer;
+  border-radius: var(--r-14); border: 1px solid var(--line);
+  background: var(--surface); color: var(--text-sub);
+}
+.cz-link { min-height: 44px; display: inline-flex; align-items: center; flex-shrink: 0; white-space: nowrap; }

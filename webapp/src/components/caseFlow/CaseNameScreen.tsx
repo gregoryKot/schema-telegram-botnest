@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { haptic } from '../../haptic';
 import { ExScreen } from '../exercises/ExScreen';
 import { CaseFlowFoot, TertiaryLink } from './caseFlowUi';
 import { CASE_ALIAS_CHIPS } from '../../../../shared/src/case/caseAliasChips';
@@ -42,18 +43,20 @@ export function CaseNameScreen({
       onBack={onBack}
       backLabel="Закрыть"
       eyebrow="Разбор случая"
-      eyebrowColor="var(--accent-indigo)"
       title={tr('Как назовёшь эту часть?', 'Как назовёте эту часть?')}
       lede="Своим словом — так её проще узнавать."
     >
       {suggestions.length > 0 && (
-        <div className="chip-row">
+        <div className="ex2-chips">
           {suggestions.map((label) => (
             <button
               key={label}
               type="button"
-              className="chip-pill"
-              onClick={() => onConfirm(label, 'chip')}
+              className="ds-chip ex2-chip"
+              onClick={() => {
+                haptic.tap();
+                onConfirm(label, 'chip');
+              }}
             >
               {label}
             </button>
@@ -68,20 +71,19 @@ export function CaseNameScreen({
         placeholder="Своё слово"
         aria-label={tr('Как назовёшь эту часть?', 'Как назовёте эту часть?')}
         maxLength={ALIAS_MAX}
-        className="field-input"
-        style={{ marginBottom: 16 }}
+        className="ds-input ex2-gap-b"
       />
 
       <button
         type="button"
-        className="ex-btn ex-btn-primary"
+        className="ds-btn"
         disabled={own.trim().length === 0 || saving}
         onClick={() => onConfirm(own.trim(), 'own')}
       >
         {saving ? 'Сохраняю…' : 'Назвать'}
       </button>
 
-      <div className="u-mt8">
+      <div>
         <TertiaryLink label="Пропустить →" onClick={() => onConfirm('', 'skipped')} />
       </div>
 

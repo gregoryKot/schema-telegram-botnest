@@ -1,6 +1,8 @@
 // Щит, волна 8: класс «ветка, зависящая от конфигурации, деградирует
 // МОЛЧА». Реестр — чистая функция от env, проверяем оба состояния каждой
 // возможности и критичность мёртвой сигнализации.
+import { existsSync } from 'fs';
+import { join } from 'path';
 import { buildCapabilityReport, isAlertChannelDead } from './capability-report';
 
 const ALL_CONFIGURED = {
@@ -16,6 +18,15 @@ const ALL_CONFIGURED = {
   ENCRYPTION_KEY: 'k'.repeat(64),
   HEALTHY_ADULT_THREADS_TOKEN: 'tok',
   JWT_SECRET: 'jwt-secret',
+  BACKUP_S3_ENDPOINT: 'https://acc.r2.cloudflarestorage.com',
+  BACKUP_S3_BUCKET: 'b',
+  BACKUP_S3_ACCESS_KEY_ID: 'k',
+  BACKUP_S3_SECRET_ACCESS_KEY: 'a',
+  BACKUP_ENCRYPTION_KEY: 'x'.repeat(40),
+  // Приём оплаты (аудит 2026-10-11) — тоже «настроено».
+  ROBOKASSA_MERCHANT_LOGIN: 'shop',
+  ROBOKASSA_PASSWORD1: 'p1',
+  ROBOKASSA_PASSWORD2: 'p2',
 };
 
 describe('buildCapabilityReport', () => {
@@ -78,6 +89,33 @@ describe('buildCapabilityReport', () => {
     }
   });
 
+  it('каждый путь из files существует в репозитории (протухший путь делает запись декорацией)', () => {
+    const root = join(__dirname, '..', '..');
+    const missing = buildCapabilityReport({}).flatMap((c) =>
+      c.files.filter((f) => !existsSync(join(root, f))),
+    );
+    expect(missing).toEqual([]);
+  });
+
+  it('legacyEncryptionMigration: включается ENCRYPTION_KEY, files — миграция, классификатор строк и итог для пробы', () => {
+    const off = buildCapabilityReport({}).find(
+      (c) => c.id === 'legacyEncryptionMigration',
+    )!;
+    expect(off.on).toBe(false);
+    expect(off.critical).toBe(false);
+    const on = buildCapabilityReport({ ENCRYPTION_KEY: 'k'.repeat(64) }).find(
+      (c) => c.id === 'legacyEncryptionMigration',
+    )!;
+    expect(on.on).toBe(true);
+    expect(on.files).toEqual(
+      expect.arrayContaining([
+        'src/utils/encrypt-migration.ts',
+        'src/utils/encrypt-migration.rows.ts',
+        'src/infra/self-check/clinical-labels-status.ts',
+      ]),
+    );
+  });
+
   // 2026-09-16: GOOGLE_REDIRECT_URI/VK_REDIRECT_URI на legacy/www-хосте
   // зацикливали редирект колбэка с хостовым мидлваром main.ts — отдельная
   // запись реестра ловит это до первой жалобы пользователя.
@@ -95,5 +133,25 @@ describe('buildCapabilityReport', () => {
     const cap = report.find((c) => c.id === 'oauthRedirectSane')!;
     expect(cap.on).toBe(false);
     expect(cap.critical).toBe(false);
+  });
+  // Аудит D-2: бэкапы в R2 включает только полный набор переменных.
+  it('dbBackups: нет переменных — off, причина называет их, не критично', () => {
+    const cap = buildCapabilityReport({}).find((c) => c.id === 'dbBackups')!;
+    expect(cap.on).toBe(false);
+    expect(cap.critical).toBe(false);
+    expect(cap.offReason).toContain('BACKUP_S3_ACCESS_KEY_ID');
+    expect(cap.offReason).toContain('BACKUP_ENCRYPTION_KEY');
+  });
+
+  it('dbBackups: не хватает одной переменной — off и называет именно её', () => {
+    const cap = buildCapabilityReport({
+      BACKUP_S3_ENDPOINT: 'https://acc.r2.cloudflarestorage.com',
+      BACKUP_S3_BUCKET: 'b',
+      BACKUP_S3_ACCESS_KEY_ID: 'k',
+      BACKUP_S3_SECRET_ACCESS_KEY: 'a',
+    }).find((c) => c.id === 'dbBackups')!;
+    expect(cap.on).toBe(false);
+    expect(cap.offReason).toContain('BACKUP_ENCRYPTION_KEY');
+    expect(cap.offReason).not.toContain('BACKUP_S3_BUCKET');
   });
 });

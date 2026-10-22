@@ -65,11 +65,10 @@ export function accessOnlyPair(
  * одного из них, второй живёт «сиротой». Теперь претендента гасим через
  * `updateMany` с условием `revokedAt: null`, и наследника создаём ТОЛЬКО при
  * `count === 1` (мы выиграли гонку). Postgres READ COMMITTED сериализует два
- * таких updateMany на одной строке: проигравший видит `revokedAt` уже
- * непустым и получает `count === 0`. Тот же claim при восстановлении писал
- * НАСЛЕДНИКУ только `revokedAt`, без `replacedByHash`: поздний живой ответ
- * старой ротации находил сироту без исходящей связи и улетал в `theft`.
- * Теперь claim сразу репойнтит его на нового наследника — уходит в `recover`.
+ * таких updateMany на одной строке: проигравший получает `count === 0`. Claim
+ * при восстановлении репойнтит наследника на нового (иначе поздний ответ
+ * старой ротации находил сироту и улетал в `theft`) и метит новую строку
+ * `recoveredAt` — счётчик кражи, refresh-recover-budget.ts.
  */
 export async function issueRotatedPair(
   deps: IssueRotatedDeps,
@@ -82,15 +81,15 @@ export async function issueRotatedPair(
   const newHash = deps.hashToken(newRaw);
   const now = new Date();
   const expiresAt = new Date(now.getTime() + deps.refreshTtlS * 1000);
-
+  const priorSuccessor = session.replacedByHash; // до claim: фейк даёт ссылку
   const won = await deps.prisma.$transaction(async (tx) => {
-    if (session.replacedByHash) {
+    if (priorSuccessor) {
       // Восстановление: живой претендент — прежний наследник. Гасим его
       // атомарно; выиграли — репойнтим старую строку на НОВОГО наследника
       // (`replacedByHash` — то, по чему следующий повтор отличат от кражи,
       // refresh-rotation.ts).
       const claim = await tx.webSession.updateMany({
-        where: { tokenHash: session.replacedByHash, revokedAt: null },
+        where: { tokenHash: priorSuccessor, revokedAt: null },
         data: { revokedAt: now, replacedByHash: newHash },
       });
       if (claim.count === 0) return false;
@@ -115,6 +114,7 @@ export async function issueRotatedPair(
         tokenHash: newHash,
         family: session.family,
         expiresAt,
+        ...(priorSuccessor ? { recoveredAt: now } : {}),
         ipAddress: ip,
         userAgent,
       },

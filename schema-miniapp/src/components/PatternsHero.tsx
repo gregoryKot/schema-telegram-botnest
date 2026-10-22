@@ -2,12 +2,16 @@
 // очевидность»: одно главное действие, «откуда это и зачем» — до действия).
 // Новичок: одна крупная CTA «Узнать свои схемы» + два тихих входа.
 // Опытный: сводка недели «Чаще всего звучит» из дневника схем.
-import { SCHEMA_DOMAINS } from '../schemaTherapyData';
 import { useTr } from '../utils/addressForm';
 import { ToolRow } from './ToolRow';
 import { HeroCta } from './HeroCta';
 import { WeekTopCard } from './WeekTopCard';
-import { WeekTopSummary } from '../utils/patternsSummary';
+import { WeekTopSummary } from '../../../shared/src/pattern/patternsSummary';
+import {
+  schemaIntro,
+  weekTopText,
+  diaryIntro,
+} from '../../../shared/src/pattern/weekPatternText';
 
 interface Props {
   hasSchemas: boolean;
@@ -34,16 +38,14 @@ export function PatternsHero({
   const tr = useTr();
 
   if (!hasSchemas) {
+    const intro = schemaIntro(tr);
     return (
       <div className="u-col12">
         <HeroCta
-          label="Первый шаг"
-          chip="≈10 мин"
-          title="Узнать свои схемы"
-          sub={tr(
-            'Схемы — привычные реакции родом из детства. Тест покажет, какие включаются у тебя чаще всего.',
-            'Схемы — привычные реакции родом из детства. Тест покажет, какие включаются у вас чаще всего.',
-          )}
+          label={intro.label}
+          chip={intro.chip}
+          title={intro.title}
+          sub={intro.sub}
           buttonLabel={
             progressAnswered != null
               ? `Продолжить тест (${progressAnswered} из 116)`
@@ -68,17 +70,14 @@ export function PatternsHero({
   }
 
   if (summary) {
-    const domain = SCHEMA_DOMAINS.find((d) =>
-      d.schemas.some((s) => s.id === summary.id),
-    );
-    const schema = domain?.schemas.find((s) => s.id === summary.id);
-    if (!schema || !domain) return null;
+    const text = weekTopText('schema', summary);
+    if (!text) return null;
     return (
       <WeekTopCard
-        label="Чаще всего звучит"
-        color={domain.color}
-        title={schema.name.split(' / ')[0]}
-        sub={`${summary.days} из ${summary.windowDays} дней — по записям дневника. Это не приговор — просто то, за чем стоит понаблюдать.`}
+        label={text.label}
+        color={text.color}
+        title={text.title}
+        sub={text.sub}
         onClick={() => onOpenSchemaDetail(summary.id)}
       />
     );
@@ -87,7 +86,7 @@ export function PatternsHero({
   if (onOpenDiaries) {
     return (
       <ToolRow
-        label="Картина недели появится из дневника"
+        label={diaryIntro(tr).title}
         sub={tr(
           'замечай моменты, когда схема включилась',
           'замечайте моменты, когда схема включилась',

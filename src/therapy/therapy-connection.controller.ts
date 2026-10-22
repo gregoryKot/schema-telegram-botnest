@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   Body,
+  ConflictException,
   Controller,
   Delete,
   ForbiddenException,
@@ -11,21 +12,19 @@ import {
   Req,
   UseGuards,
 } from '@nestjs/common';
-import { Throttle } from '@nestjs/throttler';
+import { PersistentThrottleLimit } from '../api/persistent-throttle-limit';
 import { Request } from 'express';
-import { uid, parseId as parseIdShared } from '../api/request-utils';
+import { uid } from '../api/request-utils';
+import { parseClientId } from '../api/parse-user-id';
 import { SubmitTherapistRequestDto } from './therapist-request.dto';
 import { TelegramAuthGuard } from '../api/telegram-auth.guard';
 import { TherapyRelationsService } from './therapy-relations.service';
+import { ALREADY_CONNECTED_ERROR } from './therapy-invite';
 import { TherapyClientDataService } from './therapy-client-data.service';
 import { TherapistRequestService } from './therapist-request.service';
 import { AccountService } from '../bot/account.service';
-import {
-  JoinTherapyDto,
-  VirtualClientDto,
-  AddClientDto,
-  TherapistViewDto,
-} from './dto/connection.dto';
+import { JoinTherapyDto, TherapistViewDto } from './dto/connection.dto';
+import { VirtualClientDto } from './dto/virtual-client.dto';
 import { RenameClientDto } from './dto/client-data.dto';
 
 interface AuthRequest extends Request {
@@ -33,12 +32,6 @@ interface AuthRequest extends Request {
   userRole?: string;
   webUser: { userId: bigint };
 }
-
-// uid()/parseId() — единый источник в request-utils (аудит 2026-07, 2в).
-// allowNegative: виртуальные (офлайн) клиенты терапевта кодируются
-// отрицательным id = -TherapyRelation.id — только в therapy-эндпоинтах.
-const parseId = (raw: string): number =>
-  parseIdShared(raw, { allowNegative: true });
 
 // Подключение клиент↔терапевт: инвайт-коды, join/disconnect, список
 // клиентов (add/virtual/rename/remove) и заявка на роль терапевта.
@@ -69,7 +62,20 @@ export class TherapyConnectionController {
   @Post('join')
   async join(@Req() req: AuthRequest, @Body() body: JoinTherapyDto) {
     if (!body.code) throw new BadRequestException('code required');
-    const ok = await this.relationsService.joinAsClient(uid(req), body.code);
+    let ok: boolean;
+    try {
+      ok = await this.relationsService.joinAsClient(uid(req), body.code);
+    } catch (e) {
+      // Уже есть активная связь с другим терапевтом (аудит 2026-10, T3): 409 с
+      // машиночитаемой причиной — фронт может показать точный текст вместо
+      // общего «неверный код». Форма успешного ответа не меняется.
+      if (e instanceof Error && e.message === ALREADY_CONNECTED_ERROR)
+        throw new ConflictException({
+          message: 'Already connected to another therapist',
+          reason: 'already_connected',
+        });
+      throw e;
+    }
     if (!ok) throw new BadRequestException('Invalid or expired code');
     return { ok: true };
   }
@@ -94,7 +100,10 @@ export class TherapyConnectionController {
   ) {
     const role = await this.accountService.getUserRole(uid(req));
     if (role !== 'THERAPIST') throw new ForbiddenException('Therapist only');
-    await this.clientDataService.removeClient(uid(req), parseId(clientId));
+    await this.clientDataService.removeClient(
+      uid(req),
+      parseClientId(clientId),
+    );
     return { ok: true };
   }
 
@@ -109,23 +118,6 @@ export class TherapyConnectionController {
     return this.relationsService.addVirtualClient(uid(req), body.name);
   }
 
-  @Post('clients/add')
-  addClientManually(@Req() req: AuthRequest, @Body() body: AddClientDto) {
-    // SECURITY: silently attaching a therapist to a real user's account (and
-    // gaining read access to their schema/mode notes, ratings, etc) without
-    // the client's consent is unacceptable for a therapy app. Manual add is
-    // now restricted to VIRTUAL clients (offline patients, those without
-    // Telegram). Real clients must use the invite-code flow (`joinAsClient`).
-    throw new ForbiddenException(
-      'Manual add of real Telegram users is disabled. Use the invite code flow: ' +
-        'generate a code via /api/therapy/invite, share it with the client, ' +
-        'they POST /api/therapy/join.',
-    );
-    // Defensive: silence "unused" lint by referencing args.
-    void req;
-    void body;
-  }
-
   @Post('rename-client/:clientId')
   async renameClient(
     @Req() req: AuthRequest,
@@ -136,7 +128,7 @@ export class TherapyConnectionController {
     if (role !== 'THERAPIST') throw new ForbiddenException('Therapist only');
     await this.relationsService.renameClient(
       uid(req),
-      parseId(clientId),
+      parseClientId(clientId),
       body.alias,
     );
     return { ok: true };
@@ -156,7 +148,7 @@ export class TherapyConnectionController {
   // ─── Therapist role request (admin-approved) ────────────────────────────
 
   @Post('request')
-  @Throttle({
+  @PersistentThrottleLimit({
     short: { limit: 2, ttl: 60_000 },
     long: { limit: 5, ttl: 24 * 3_600_000 },
   })

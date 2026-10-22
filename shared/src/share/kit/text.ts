@@ -1,6 +1,4 @@
-// Текст на канвасе: перенос по словам, обрезка с многоточием, отрисовка
-// абзаца. Чистая часть (wrapLines/clampLines) покрыта тестами — canvas в
-// jsdom не реализован, поэтому измерение приходит функцией снаружи.
+// Текст на канвасе: перенос, обрезка с многоточием, абзац; wrapLines/clampLines — чистые.
 import { cardFont } from './theme';
 import type { Card } from './frame';
 
@@ -40,9 +38,10 @@ export function measureWrap(
   maxW: number,
   size: number,
   weight?: 'bold',
+  family?: string,
 ): string[] {
   const ctx = canvas.getContext('2d')!;
-  ctx.font = cardFont(size, weight);
+  ctx.font = cardFont(size, weight, family);
   return wrapLines((s) => ctx.measureText(s).width, text, maxW);
 }
 
@@ -54,6 +53,7 @@ export interface WrapOpts {
   align?: CanvasTextAlign;
   weight?: 'bold';
   italic?: boolean;
+  family?: string;
 }
 
 /** Рисует обёрнутый текст, возвращает Y после последней строки. */
@@ -65,8 +65,8 @@ export function drawWrapped(
   maxW: number,
   opts: WrapOpts,
 ): number {
-  const base = cardFont(opts.size, opts.weight);
-  c.ctx.font = opts.italic ? `italic ${base}` : base;
+  const { size, weight, family, italic } = opts;
+  c.ctx.font = `${italic ? 'italic ' : ''}${cardFont(size, weight, family)}`;
   c.ctx.fillStyle = opts.color;
   c.ctx.textAlign = opts.align ?? 'left';
   let lines = wrapLines((s) => c.ctx.measureText(s).width, text, maxW);

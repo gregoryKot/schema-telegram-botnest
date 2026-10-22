@@ -11,8 +11,13 @@ import {
   PRACTICE_PAGE_PREFIXES,
 } from './practice-domain.middleware';
 
-function run(hostname: string, path: string, originalUrl = path) {
-  const req = { hostname, path, originalUrl } as never;
+function run(
+  hostname: string,
+  path: string,
+  originalUrl = path,
+  method = 'GET',
+) {
+  const req = { hostname, path, originalUrl, method } as never;
   const sent: {
     redirect?: [number, string];
     type?: string;
@@ -70,6 +75,19 @@ describe('practiceDomainMiddleware', () => {
     expect(sent.type).toBe('text/plain');
     expect(sent.body).toContain('Disallow: /articles');
     expect(sent.body).toContain('Sitemap: https://kotlarewski.gr/sitemap.xml');
+  });
+
+  // Аудит 2026-10-11: «Allow: /$» закрывает только корень, а админка визитки
+  // без явного Disallow оставалась открытой всем ботам.
+  it('kotlarewski.gr/robots.txt закрывает админку, главная открыта', () => {
+    const lines = (run('kotlarewski.gr', '/robots.txt').sent.body ?? '').split(
+      '\n',
+    );
+    for (const p of ['/admin', '/booking-admin', '/articles-admin']) {
+      expect(lines).toContain(`Disallow: ${p}`);
+    }
+    expect(lines).toContain('Allow: /$');
+    expect(lines).not.toContain('Disallow: /');
   });
 
   it('kotlarewski.gr обычные пути проходят насквозь (SPA)', () => {
@@ -176,6 +194,17 @@ describe('practiceDomainMiddleware', () => {
       expect(nextCalled).toBe(false);
     });
 
+    // Правило №15: контрольные образцы к '/api/payment' — похожие, но
+    // незаконные пути обязаны по-прежнему краснеть.
+    it.each(['/api/paymentx', '/api/payments', '/api/payment-admin'])(
+      '%s → 301 (похожий, но незаконный префикс — не подстрока)',
+      (path) => {
+        const { sent, nextCalled } = run('kotlarewski.gr', path);
+        expect(sent.redirect).toEqual([301, `https://schemehappens.ru${path}`]);
+        expect(nextCalled).toBe(false);
+      },
+    );
+
     it('/api/client-errorsx → 301 (похожий, но незаконный префикс — не подстрока)', () => {
       const { sent, nextCalled } = run('kotlarewski.gr', '/api/client-errorsx');
       expect(sent.redirect).toEqual([
@@ -222,8 +251,10 @@ describe('practiceDomainMiddleware', () => {
 
     it.each([
       '/assets/index-abc.js',
-      '/favicon-personal-32.png',
+      '/favicon-personal-96.png',
       '/fonts/a.woff2',
+      '/og-cover-v4.jpg', // og:image главной визитки
+      '/gregory.jpg', // image в JSON-LD Person
     ])('статика %s → next', (path) => {
       const { sent, nextCalled } = run('kotlarewski.gr', path);
       expect(nextCalled).toBe(true);
@@ -240,6 +271,77 @@ describe('practiceDomainMiddleware', () => {
         'https://schemehappens.ru/app/assets/index.js',
       ]);
       expect(nextCalled).toBe(false);
+    });
+  });
+
+  // Аудит 2026-10 (I1): allow-list действовал только на GET — запись
+  // (POST/PUT/PATCH/DELETE) на алиасе доходила до любой ручки, включая
+  // /api/auth/**. Сам middleware метод не различает, поэтому защиту держат
+  // два теста: вердикт для записи и РЕГИСТРАЦИЯ на всех методах в AppModule.
+  describe('запись на алиасе: allow-list действует на все методы', () => {
+    it('POST /api/auth/refresh → 301 на канонический хост', () => {
+      const { sent, nextCalled } = run(
+        'kotlarewski.gr',
+        '/api/auth/refresh',
+        '/api/auth/refresh',
+        'POST',
+      );
+      expect(sent.redirect).toEqual([
+        301,
+        'https://schemehappens.ru/api/auth/refresh',
+      ]);
+      expect(nextCalled).toBe(false);
+    });
+
+    it('POST /api/booking (запись на консультацию визитки) → проходит', () => {
+      const { sent, nextCalled } = run(
+        'kotlarewski.gr',
+        '/api/booking',
+        '/api/booking',
+        'POST',
+      );
+      expect(sent.redirect).toBeUndefined();
+      expect(nextCalled).toBe(true);
+    });
+
+    // ResultURL Robokassa (аудит 2026-10, security#16): POST формой с алиаса
+    // обязан дойти до контроллера, а не получить 301 без тела.
+    it.each([
+      ['POST', '/api/payment/result'],
+      ['GET', '/api/payment/success'],
+      ['GET', '/api/payment/fail'],
+    ])(
+      '%s %s на kotlarewski.gr → проходит (вебхук/возврат Robokassa)',
+      (method, path) => {
+        const { sent, nextCalled } = run('kotlarewski.gr', path, path, method);
+        expect(sent.redirect).toBeUndefined();
+        expect(nextCalled).toBe(true);
+      },
+    );
+
+    it.each(['DELETE', 'PATCH', 'PUT'])(
+      '%s /api/therapy/x на алиасе → 301',
+      (method) => {
+        const { sent } = run(
+          'kotlarewski.gr',
+          '/api/therapy/x',
+          '/api/therapy/x',
+          method,
+        );
+        expect(sent.redirect?.[0]).toBe(301);
+      },
+    );
+
+    // Читаем исходник, а не собираем AppModule: его импорт тянет весь граф
+    // (jose и т. п.), а проверяется одна строка регистрации.
+    it('AppModule вешает practiceDomainMiddleware на ВСЕ методы, не только GET', () => {
+      const src = readFileSync(join(__dirname, 'app.module.ts'), 'utf8');
+      const m = src.match(
+        /\.apply\(practiceDomainMiddleware\)\s*\.forRoutes\([\s\S]*?\);/,
+      );
+      expect(m).not.toBeNull();
+      expect(m![0]).toContain('RequestMethod.ALL');
+      expect(m![0]).not.toContain('RequestMethod.GET');
     });
   });
 

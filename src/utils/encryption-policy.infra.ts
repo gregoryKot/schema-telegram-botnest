@@ -1,26 +1,29 @@
-// Продолжение реестра решений о шифровании: сущности, у которых нет владельца
-// среди пользователей, — бронирование и деньги, контент проекта, инфраструктура.
-// Отдельным файлом по правилу №10: реестр рос вместе с продуктом и пробил
-// потолок 300 строк, а дробить данные по смыслу честнее, чем заводить
-// исключение из храповика (правило №15).
+// Продолжение реестра шифрования: бронирование и деньги, контент проекта,
+// инфраструктура. Отдельным файлом по правилу №10 (потолок 300 строк).
 import { Policy, enc, plain, ID, TOKEN } from './encryption-policy';
+import { INTRO_LEAD_FIELD_POLICY } from './encryption-policy.intro-lead';
 
 export const INFRA_FIELD_POLICY: Record<string, Record<string, Policy>> = {
   AvailabilityRule: { timezone: ID },
   Booking: {
-    clientName: enc('src/booking/booking.service.ts'),
-    clientContact: enc('src/booking/booking.service.ts'),
-    message: enc('src/booking/booking.service.ts'),
+    clientName: enc('src/booking/booking.schema.ts'),
+    clientContact: enc('src/booking/booking.schema.ts'),
+    clientChannel: plain(
+      'перечисление канала связи (telegram/whatsapp/email), не персональные данные — показывается в админке и уведомлениях',
+    ),
+    message: enc('src/booking/booking.schema.ts'),
     cancelToken: TOKEN,
-    meetingUrl: plain('ссылка на Zoom/Телемост, задаётся терапевтом'),
+    meetingUrl: enc('src/booking/booking.schema.ts'),
     calDavUid: ID,
     source: plain(
       'страница + referrer при брони — структурная атрибуция лида, не PII',
     ),
+    clientTimeZone: plain('IANA-идентификатор пояса посетителя, не текст'),
+    currency: plain('код валюты цены (RUB/ILS/EUR/USD), не PII'),
   },
   ClientMeeting: {
-    clientKey: plain('sha256 от контакта — уже псевдонимизирован'),
-    meetingUrl: plain('переиспользуемая ссылка на встречу'),
+    clientKey: plain('HMAC контакта с серверным ключом — псевдоним'),
+    meetingUrl: enc('src/booking/meeting.service.ts'),
     zoomMeetingId: ID,
   },
   BookingSetting: {
@@ -66,4 +69,5 @@ export const INFRA_FIELD_POLICY: Record<string, Record<string, Policy>> = {
         'какой инстанс забрал прогон; пользователя в ней нет',
     ),
   },
+  ...INTRO_LEAD_FIELD_POLICY,
 };

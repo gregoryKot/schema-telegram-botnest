@@ -14,7 +14,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { HealthyAdultService } from '../bot/healthy-adult.service';
 import { ChannelPublisherService } from '../channel/channel-publisher.service';
-import { assertAdminKey } from '../booking/admin-key.util';
+import { AdminThrottle, assertAdminKey } from '../booking/admin-key.util';
 import {
   CheckPhraseDto,
   CreatePhraseDto,
@@ -29,6 +29,7 @@ import { formatImportReport } from '../bot/healthy-adult.import';
  * ADMIN_BOOKING_KEY, что и вся админка (x-admin-key header). Живёт в
  * TelegramModule, т.к. тестовая публикация ходит через ChannelPublisherService.
  */
+@AdminThrottle()
 @Controller('api/healthy-adult/admin')
 export class HealthyAdultAdminController {
   private readonly adminKey: string;

@@ -2,14 +2,14 @@ import { useHistorySheet } from '../../hooks/useHistorySheet';
 import { INK, GLASS_BORDER, VIOLET, glow } from './aurora';
 import { Cta } from './BrandKit';
 import { NAV_LINKS } from './productContent';
+import { entryCta, type EntryCta } from './entryCta';
 import { scrollIntoViewSafe } from '../../../../shared/src/utils/scrollIntoView';
 
 // Мобильное меню продуктового лендинга (В4, аудит 2026-08) — .pl2-nav
 // исчезал ≤640px без замены, ссылки становились недостижимы с телефона.
 // СВОЯ айдентика pl2 (тёмный холст + аврора), не серийная nav.tsx личного
-// сайта терапевта — два разных бренда (см. шапку ProductLandingPage.tsx).
-// Fullscreen-оверлей ⇒ useHistorySheet обязателен (CLAUDE.md).
-export function ProductMobileMenu({ onClose }: { onClose: () => void }) {
+// сайта терапевта — два разных бренда. Fullscreen-оверлей ⇒ useHistorySheet.
+export function ProductMobileMenu({ onClose, entry = entryCta(false) }: { onClose: () => void; entry?: EntryCta }) {
   const goBack = useHistorySheet(onClose);
 
   const go = (href: string) => {
@@ -66,7 +66,7 @@ export function ProductMobileMenu({ onClose }: { onClose: () => void }) {
         ))}
       </nav>
       <div style={{ marginTop: 16 }}>
-        <Cta href="/login" size="lg">Войти</Cta>
+        <Cta href={entry.href} size="lg">{entry.nav}</Cta>
       </div>
       <p style={{ fontSize: 11.5, color: 'rgba(255,255,255,.4)', margin: '14px 0 0', textAlign: 'center' }}>
         Схема-терапия · бесплатно · без рекламы

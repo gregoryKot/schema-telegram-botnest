@@ -75,13 +75,28 @@ describe('ErrorBoundary — устаревший чанк после депло�
     expect(reportClientError).not.toHaveBeenCalled();
   });
 
-  it('авто-релоадит один раз (флаг в sessionStorage предотвращает цикл)', () => {
+  it('авто-релоадит один раз (метка в sessionStorage предотвращает цикл)', () => {
     render(
       <ErrorBoundary section="Дневник">
         <Boom message="Loading chunk 3 failed" />
       </ErrorBoundary>,
     );
     expect(reloadSpy).toHaveBeenCalledTimes(1);
-    expect(sessionStorage.getItem('chunk-reload')).toBe('1');
+    expect(sessionStorage.getItem('chunk-reload-at')).toBeTruthy();
+  });
+
+  // Инцидент 2026-10-19: Safari пишет «Importing a module script failed.» —
+  // проверка знала только текст Chrome, и на iPhone вместо перезагрузки
+  // показывался «Раздел упал» со стеком.
+  it('Safari: «Importing a module script failed.» — тоже устаревший чанк', () => {
+    render(
+      <ErrorBoundary section="Сегодня">
+        <Boom message="Importing a module script failed." />
+      </ErrorBoundary>,
+    );
+    expect(screen.getByText('Страница устарела')).toBeTruthy();
+    expect(screen.queryByText('Раздел упал')).toBeNull();
+    expect(reloadSpy).toHaveBeenCalledTimes(1);
+    expect(reportClientError).not.toHaveBeenCalled();
   });
 });

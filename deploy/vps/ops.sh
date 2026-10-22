@@ -1,0 +1,456 @@
+#!/bin/bash
+# Фиксированные операции над сервером. Запускается на VPS из GitHub Actions
+# (deploy-vps.yml и vps.yml) через ssh: `bash /opt/schemehappens/ops.sh <op>`.
+# Произвольного шелла здесь нет: список операций закрыт `case` внизу.
+#
+# ЛОГИ ACTIONS ПУБЛИЧНЫ (репозиторий открытый). Поэтому скрипт печатает только
+# статусы, числа, sha коммитов и имена миграций: ни env, ни логов приложения,
+# ни строк из таблиц. `set -x` не использовать.
+#
+# Состояние сервера (файлы в /opt/schemehappens):
+#   image, release, release.prev   образ и sha текущего/предыдущего релиза
+#   HOLD_APP                       пока файл есть, app не стартует (идёт перенос БД)
+#   TRANSFER_OPEN                  порт Postgres открыт наружу (см. dc.sh)
+set -Eeuo pipefail
+
+BASE="${SCHEMEHAPPENS_DIR:-/opt/schemehappens}"
+cd "$BASE"
+
+log() { echo "[ops] $*"; }
+die() { echo "[ops] ОШИБКА: $*" >&2; exit 1; }
+dc() { bash ./dc.sh "$@"; }
+short() { cut -c1-12; }
+
+# Изменяющие операции не перемешиваются (деплой по пушу и ручной запуск).
+lock() {
+  exec 9> .ops.lock
+  flock -w 900 9 || die "другая операция держит блокировку больше 15 минут"
+}
+
+health_body() {
+  timeout 15 bash ./dc.sh exec -T app node -e \
+    "fetch('http://127.0.0.1:3000/health').then(r=>r.text()).then(t=>process.stdout.write(t)).catch(()=>process.exit(1))" \
+    2>/dev/null || true
+}
+
+# Ждёт {"status":"ok"} от приложения. Страница техработ тоже отвечает 200, но
+# такого маркера в ней нет, поэтому смотрим на тело, а не на код.
+health_wait() {
+  # OPS_HEALTH_LIMIT/OPS_HEALTH_POLL — только для теста (src/infra/vps-ops.spec.ts).
+  local limit=${OPS_HEALTH_LIMIT:-$1} poll=${OPS_HEALTH_POLL:-5} waited=0 body
+  while [ "$waited" -lt "$limit" ]; do
+    body=$(health_body)
+    if [[ "$body" == *'"status":"ok"'* ]]; then
+      log "приложение здорово: $(printf '%s' "$body" | cut -c1-300)"
+      return 0
+    fi
+    if [ $((waited % 30)) -eq 0 ] && [ "$poll" -ge 5 ]; then log "жду здоровья приложения (${waited}с из ${limit}с)"; fi
+    sleep "$poll"
+    waited=$((waited + poll))
+  done
+  log "приложение не стало здоровым за ${limit}с"
+  return 1
+}
+
+# Имена переменных бэкапов — те же, что в src/infra/backup-config.ts
+# (BACKUP_REQUIRED_ENV_VARS); сверка — src/infra/vps-ops.spec.ts. На VPS
+# `pgdata` — единственная копия базы, поэтому приложение без бэкапов в R2 не
+# стартует (аудит 2026-10, infra#11). Смотрим только имена: значения в вывод
+# не попадают, логи Actions публичны. Значение из одних пробелов и кавычек
+# (`NAME=""`) — тоже «не задано»: env_file в compose читается как raw, кавычки
+# не снимаются, приложение получит литерал из двух кавычек.
+BACKUP_ENV_NAMES=(BACKUP_S3_ENDPOINT BACKUP_S3_BUCKET BACKUP_S3_ACCESS_KEY_ID BACKUP_S3_SECRET_ACCESS_KEY BACKUP_ENCRYPTION_KEY)
+
+require_backup_env() {
+  local name missing=""
+  for name in "${BACKUP_ENV_NAMES[@]}"; do
+    grep -Eq "^${name}=[[:space:]\"']*[^[:space:]\"']" .env || missing="$missing $name"
+  done
+  [ -z "$missing" ] || die "в .env (секрет PROD_ENV) не заданы:$missing. На VPS база лежит только на диске сервера, без бэкапов в R2 приложение не запускается. Заведите бакет и API-токен Cloudflare R2 (docs/MIGRATION_VPS.md, шаг до переключения DNS), обновите PROD_ENV и повторите"
+}
+
+start_app() {
+  require_backup_env
+  dc up -d --remove-orphans db caddy app
+  health_wait 300
+}
+
+# Снимает застрявшие записи миграций (finished_at IS NULL): Prisma помечает так
+# миграцию, упавшую или убитую посреди выполнения, и до снятия записи любой
+# `migrate deploy` отвечает P3009, то есть образ без упавшей миграции тоже не
+# поднимется. Prisma не оборачивает миграцию в транзакцию, поэтому огрызок
+# остаётся в схеме, а безопасность держится на идемпотентности миграций
+# (CLAUDE.md, «Миграции БД», п. 3). Тот же запрос, что в prisma/recover-p3009.sql
+# (сверяет src/infra/vps-ops.spec.ts), включая защиту: пока Prisma держит свой
+# advisory-lock, миграция идёт, а не застряла, и запись не трогается.
+# Печатает ТОЛЬКО имена: логи Actions публичны, а logs несёт значения из таблиц.
+RESOLVE_STUCK_COUNT_SQL='SELECT count(*) FROM "_prisma_migrations" WHERE finished_at IS NULL AND rolled_back_at IS NULL'
+RESOLVE_FAILED_SQL='DELETE FROM "_prisma_migrations" WHERE finished_at IS NULL AND rolled_back_at IS NULL AND pg_try_advisory_xact_lock(72707369) RETURNING migration_name'
+
+resolve_failed_migrations() {
+  local out name stuck count=0 other=0
+  out=$(dc exec -T db psql -U postgres -d schemehappens -X -q -t -A -c "$RESOLVE_FAILED_SQL" 2> /dev/null) || {
+    log "не удалось обратиться к _prisma_migrations (база не отвечает или таблицы нет)"
+    return 1
+  }
+  while IFS= read -r name; do
+    [ -n "$name" ] || continue
+    if [[ "$name" =~ ^[0-9A-Za-z_-]{1,100}$ ]]; then
+      log "снята застрявшая запись миграции: $name"
+      count=$((count + 1))
+    else
+      other=$((other + 1))
+    fi
+  done <<< "$out"
+  [ "$other" -eq 0 ] || log "снято записей с нестандартным именем: $other"
+  [ $((count + other)) -eq 0 ] || return 0
+  # 0 снятых строк — не всегда «всё чисто»: запись есть, но замок Prisma занят.
+  # Так бывает, когда `dc stop app` оборвал клиента посреди долгого оператора
+  # (CREATE INDEX), а бэкенд Postgres продолжает его выполнять и держит замок.
+  stuck=$(dc exec -T db psql -U postgres -d schemehappens -X -q -t -A -c "$RESOLVE_STUCK_COUNT_SQL" 2> /dev/null | tr -dc '0-9') || stuck=""
+  if [ -n "$stuck" ] && [ "$stuck" -gt 0 ]; then
+    log "миграция ещё выполняется (замок Prisma занят), повторите позже: op=migrate-resolve-failed"
+    return 1
+  fi
+  log "застрявших записей миграций нет"
+}
+
+# Возвращает release.prev. Новый релиз мог умереть посреди миграции, а запись о
+# ней блокирует любой образ (P3009), поэтому перед подъёмом prev приложение
+# останавливается (миграция точно не идёт) и застрявшая запись снимается:
+# релиз, которому она принадлежала, снят с эксплуатации. Огрызок схемы остаётся,
+# prev-код на нём работает, если миграция была аддитивной и идемпотентной.
+# release.prev стирается только когда откат стал здоровым: иначе при сбое (база
+# ещё не починена) ручной rollback нечем было бы повторить. Повтор после сбоя
+# безопасен: release уже равен prev, и откатанный релиз назад не вернётся.
+rollback_release() {
+  [ -s release.prev ] || { log "откатываться некуда: нет release.prev"; return 1; }
+  local bad
+  bad=$(cat release)
+  dc stop app > /dev/null 2>&1 || true
+  resolve_failed_migrations || true
+  cat release.prev > release
+  if [ "$bad" = "$(cat release)" ]; then
+    log "повторный подъём предыдущего релиза: $(short < release)"
+  else
+    log "ОТКАТ: $(echo "$bad" | short) -> $(short < release)"
+  fi
+  dc up -d app || { log "образ предыдущего релиза не поднялся (нет на диске?); release.prev оставлен"; return 1; }
+  if health_wait 180; then
+    rm -f release.prev
+    return 0
+  fi
+  log "откат не стал здоровым: release.prev оставлен, после устранения причины op=rollback повторит попытку"
+  return 1
+}
+
+# Оставляем образы текущего и предыдущего релиза, остальные чистим: диск не
+# резиновый, а откат без образа на диске требует входа в ghcr.
+prune_images() {
+  local keep ref
+  keep=" $(cat release) $(cat release.prev 2>/dev/null || true) "
+  while read -r ref; do
+    [[ "$keep" == *" ${ref##*:} "* ]] || docker rmi "$ref" > /dev/null 2>&1 || true
+  done < <(docker images --format '{{.Repository}}:{{.Tag}}' "$(cat image)")
+  docker image prune -f > /dev/null 2>&1 || true
+}
+
+require_ready() {
+  [ -f db.env ] || die "нет db.env: сначала op=bootstrap"
+  [ -f .env ] || die "нет .env: его пишет deploy-vps.yml из секрета PROD_ENV"
+  [ -f docker-compose.yml ] || die "нет docker-compose.yml"
+}
+
+cmd_deploy() {
+  local image=${1:?image} sha=${2:?sha} actor=${3:?actor} token
+  [[ "$image" =~ ^ghcr\.io/[a-z0-9._/-]+$ ]] || die "странное имя образа"
+  [[ "$sha" =~ ^[0-9a-f]{7,40}$ ]] || die "странный sha"
+  IFS= read -r token || true
+  [ -n "$token" ] || die "токен ghcr не передан на stdin"
+  lock
+  require_ready
+  # До любых записей состояния: иначе release указывал бы на версию, которая не
+  # стартовала. При HOLD_APP приложение не запускается, проверка в release-hold.
+  [ -e HOLD_APP ] || require_backup_env
+
+  # Вход в ghcr живёт во временном DOCKER_CONFIG и стирается сразу после pull.
+  DOCKER_CONFIG=$(mktemp -d)
+  export DOCKER_CONFIG
+  trap 'rm -rf "${DOCKER_CONFIG:-/nonexistent}"' EXIT
+  printf '%s' "$token" | docker login ghcr.io -u "$actor" --password-stdin > /dev/null 2>&1 \
+    || die "вход в ghcr не удался"
+  APP_IMAGE="$image:$sha" dc pull --quiet app || die "образ $sha не скачался"
+  docker logout ghcr.io > /dev/null 2>&1 || true
+  rm -rf "$DOCKER_CONFIG"
+  unset DOCKER_CONFIG
+
+  local cur=""
+  [ -s release ] && cur=$(cat release)
+  if [ -n "$cur" ] && [ "$cur" != "$sha" ]; then cp release release.prev; fi
+  printf '%s' "$sha" > release
+  printf '%s' "$image" > image
+  log "релиз: $(echo "$sha" | short) (предыдущий: $(short 2> /dev/null < release.prev || echo нет))"
+
+  if [ -e HOLD_APP ]; then
+    dc up -d --remove-orphans db caddy
+    log "HOLD_APP: приложение намеренно не запущено (перенос данных не закончен); релиз записан, op=release-hold его поднимет"
+    prune_images
+    return 0
+  fi
+  if start_app; then
+    prune_images
+    return 0
+  fi
+  rollback_release || true
+  die "деплой не удался, джоба красная"
+}
+
+# Имена, которых в .env быть не может. Списки однострочные и отсортированные:
+# src/infra/vps-ops.spec.ts достаёт их регэкспом и сверяет с deploy/*.mjs и
+# docker-compose.yml (правило №4), поэтому не разбивать на несколько строк.
+#
+# Ручки супервизора (deploy/entrypoint.mjs, front-server.mjs, wait-for-db.mjs):
+# команда запуска и миграций, порты за Caddy, повторы и ожидание базы. Из
+# PROD_ENV они не берутся: env_file сильнее ENV образа, и значение отсюда
+# исполнилось бы как команда контейнера, а откат поднимает прежний релиз с тем
+# же .env. Задаются только образом и compose.
+SUPERVISOR_ENV_NAMES=(APP_CMD APP_PORT DB_WAIT_CONNECT_MS DB_WAIT_INTERVAL_MS DB_WAIT_TIMEOUT_MS MIGRATE_BACKOFF_MS MIGRATE_CMD MIGRATE_MAX_ATTEMPTS PORT RECOVER_CMD STARTUP_BACKOFF_MS STARTUP_COOLDOWN_MAX_MS STARTUP_COOLDOWN_MS STARTUP_CRASH_WINDOW_MS STARTUP_MAX_FAILS STARTUP_MAX_FAILS_HOUR)
+# Значения, которые задаёт docker-compose.yml в `environment` (он сильнее env_file).
+COMPOSE_OWNED_ENV=(DATABASE_URL DEPLOY_TARGET NODE_ENV)
+# Адрес чужой базы для переноса: с ним скрипт переноса стартовал бы на новом сервере.
+TRANSFER_ENV_NAMES=(TRANSFER_TARGET_URL)
+
+cmd_write_env() {
+  umask 077
+  local tmp bad total kept deny dropped
+  local -a denied
+  tmp=$(mktemp .env.XXXXXX)
+  # Строки из списков выше отбрасываем (по имени целиком, не по подстроке).
+  # Пустые строки и комментарии тоже убираем.
+  tr -d '\r' | grep -Ev '^[[:space:]]*(#|$)' > "$tmp" || true
+  bad=$(grep -nEv '^[A-Za-z_][A-Za-z0-9_]*=' "$tmp" | cut -d: -f1 | tr '\n' ' ' || true)
+  [ -z "$bad" ] || { rm -f "$tmp"; die "в PROD_ENV строки не вида KEY=value (номера строк после чистки: $bad)"; }
+  total=$(wc -l < "$tmp")
+  denied=("${SUPERVISOR_ENV_NAMES[@]}" "${COMPOSE_OWNED_ENV[@]}" "${TRANSFER_ENV_NAMES[@]}")
+  deny=$(IFS='|'; echo "${denied[*]}")
+  # Только имена: значения секретны, а логи Actions публичны.
+  dropped=$(grep -E "^($deny)=" "$tmp" | cut -d= -f1 | LC_ALL=C sort -u | paste -sd' ' - || true)
+  grep -Ev "^($deny)=" "$tmp" > "$tmp.f" || true
+  mv -f "$tmp.f" "$tmp"
+  rm -f "$tmp.f"
+  kept=$(wc -l < "$tmp")
+  if [ "$kept" -eq 0 ]; then
+    rm -f "$tmp"
+    # Пустой секрет и секрет, где всё отброшено, чинятся по-разному: во втором
+    # случае строки были, но их задаёт образ или compose. Печатаем только имена.
+    [ "$total" -gt 0 ] || die "PROD_ENV пуст"
+    die "в PROD_ENV остались только переменные, которые write-env отбрасывает ($dropped): их задаёт образ или compose, а не секрет. Переменных приложения в секрете нет. Добавьте их и повторите"
+  fi
+  chmod 600 "$tmp"
+  mv -f "$tmp" .env
+  log ".env записан: переменных $kept, отброшено $((total - kept))${dropped:+: $dropped}"
+}
+
+cmd_status() {
+  log "release: $(short 2> /dev/null < release || echo нет), prev: $(short 2> /dev/null < release.prev || echo нет)"
+  log "HOLD_APP: $([ -e HOLD_APP ] && echo есть || echo нет), TRANSFER_OPEN: $([ -e TRANSFER_OPEN ] && echo есть || echo нет)"
+  dc ps --format 'table {{.Service}}\t{{.Status}}\t{{.Ports}}' || true
+  uptime
+  free -m
+  df -h /
+  local body
+  body=$(health_body)
+  if [ -n "$body" ]; then log "health: $(printf '%s' "$body" | cut -c1-300)"; else log "health: приложение не отвечает"; fi
+}
+
+cmd_restart_app() {
+  lock
+  [ ! -e HOLD_APP ] || die "HOLD_APP: приложение не должно работать до конца переноса"
+  dc restart app
+  health_wait 300 || die "приложение не поднялось после перезапуска"
+}
+
+# После переключения DNS Caddy мог уже раз-другой не выпустить сертификат (хост
+# ещё смотрел на старый сервер) и ждёт следующей попытки: перезапуск начинает
+# выпуск заново, не дожидаясь паузы.
+cmd_restart_caddy() {
+  lock
+  dc restart caddy
+  log "caddy перезапущен: выпуск сертификатов для хостов, чей DNS уже на этом сервере, пойдёт заново"
+}
+
+cmd_rollback() {
+  lock
+  [ ! -e HOLD_APP ] || die "HOLD_APP: приложение не должно работать до конца переноса"
+  rollback_release || die "откат не удался"
+}
+
+# Ручной люк на случай, когда автооткат не справился: снимает застрявшую запись
+# миграции (эквивалент `prisma migrate resolve --rolled-back`) и больше ничего.
+# Произвольного SQL здесь нет: запрос один, зашит выше. Приложение не трогает.
+cmd_migrate_resolve_failed() {
+  lock
+  [ -f db.env ] || die "нет db.env: сначала op=bootstrap"
+  dc up -d db
+  wait_db || die "Postgres не поднялся"
+  resolve_failed_migrations || die "запись не снята"
+  log "дальше: op=rollback (вернуть предыдущий релиз) или новый деплой с исправленной миграцией"
+}
+
+wait_db() {
+  for _ in $(seq 1 30); do
+    if dc exec -T db pg_isready -U postgres -d schemehappens > /dev/null 2>&1; then return 0; fi
+    sleep 2
+  done
+  return 1
+}
+
+cmd_transfer_open() {
+  lock
+  touch HOLD_APP TRANSFER_OPEN
+  dc stop app > /dev/null 2>&1 || true
+  dc up -d db
+  wait_db || die "Postgres не поднялся"
+  log "HOLD_APP поставлен, порт 5432 открыт наружу по TLS. Пароль — в db.env на сервере. Закрыть: op=transfer-close"
+}
+
+cmd_transfer_close() {
+  lock
+  rm -f TRANSFER_OPEN
+  dc up -d db
+  wait_db || die "Postgres не поднялся"
+  if dc port db 5432 > /dev/null 2>&1; then die "порт 5432 всё ещё опубликован"; fi
+  log "порт 5432 снаружи закрыт"
+}
+
+# Запрос к базе в db-контейнере; при сбое печатает заглушку, а не падает.
+q() { dc exec -T db psql -U postgres -d schemehappens -X -q -t -A -c "$1" 2> /dev/null || echo "нет данных (таблицы нет?)"; }
+
+print_counts() {
+  log "строк в _prisma_migrations: $(q 'SELECT count(*) FROM _prisma_migrations')"
+  log "строк в \"User\": $(q 'SELECT count(*) FROM "User"')"
+}
+
+cmd_transfer_check() {
+  print_counts
+  log "последние миграции:"
+  q 'SELECT migration_name FROM _prisma_migrations ORDER BY started_at DESC LIMIT 3'
+}
+
+# Скрипт для контейнера app: скачать свежий бэкап из R2 и залить в базу. Ошибки
+# psql фильтруются до строк с ERROR/FATAL (CONTEXT/DETAIL несут значения из
+# таблиц, а логи Actions публичны); весь остальной вывод заливки уходит в файл.
+# shellcheck disable=SC2016  # переменные раскрывает bash внутри контейнера, не здесь
+RESTORE_BACKUP_INNER='set -Eeuo pipefail
+d=$(mktemp -d)
+bash scripts/backup-fetch-latest.sh "$d"
+f=$(ls "$d"/*.sql.gz.enc)
+if ! bash scripts/restore-backup.sh "$f" "$DATABASE_URL" > "$d/out" 2> "$d/err"; then
+  grep -hE "ERROR|FATAL" "$d/err" | cut -c1-200 | head -5 >&2 || true
+  echo "[restore-backup] заливка не прошла" >&2
+  exit 1
+fi
+grep -hE "^\[restore\] (контрольная|готово)" "$d/out" || true
+echo "[restore-backup] восстановлен файл: $(basename "$f")"'
+
+# План Б (docs/MIGRATION_VPS.md): основная база недоступна, поднимаем из
+# ночного бэкапа в R2. Только в пустую базу и только пока приложение держит
+# HOLD_APP; после успеха флаг остаётся (приложение поднимает release-hold).
+cmd_restore_backup() {
+  lock
+  require_ready
+  require_backup_env
+  [ -e HOLD_APP ] || die "нужен HOLD_APP (op=transfer-open или свежий bootstrap): восстанавливать можно только при остановленном приложении"
+  { [ -s image ] && [ -s release ]; } || die "релиза нет: сначала деплой (push в main или deploy-vps.yml), контейнеру восстановления нужен образ приложения"
+  dc up -d db
+  wait_db || die "Postgres не поднялся"
+  local tables
+  tables=$(dc exec -T db psql -U postgres -d schemehappens -X -q -t -A -c "SELECT count(*) FROM information_schema.tables WHERE table_type = 'BASE TABLE' AND table_schema NOT IN ('pg_catalog', 'information_schema')") \
+    || die "не прочитать список таблиц в базе"
+  [ "$tables" = "0" ] || die "ОТКАЗ: в базе уже есть таблицы (всего $tables), заливку не начинаю, ничего не изменено"
+  log "база пуста, качаю свежий бэкап из R2 и заливаю"
+  # -T: у ssh из Actions нет tty; --entrypoint обходит CMD образа (entrypoint.mjs
+  # поднял бы приложение); --no-deps: db уже поднята и проверена.
+  if ! dc run --rm --no-deps -T --entrypoint bash app -c "$RESTORE_BACKUP_INNER"; then
+    # Приёмник до заливки был пуст (проверено выше): убираем только свой огрызок.
+    dc exec -T db psql -U postgres -d schemehappens -X -q -c 'DROP SCHEMA public CASCADE; CREATE SCHEMA public' > /dev/null 2>&1 \
+      || log "не удалось сбросить неполную заливку: очистите базу вручную перед повтором"
+    die "восстановление из бэкапа не удалось, неполная заливка сброшена; причина в строках выше"
+  fi
+  print_counts
+  local migs
+  migs=$(q 'SELECT count(*) FROM _prisma_migrations')
+  if ! { [[ "$migs" =~ ^[0-9]+$ ]] && [ "$migs" -gt 0 ]; }; then
+    die "после заливки в _prisma_migrations нет строк: бэкап не похож на базу приложения"
+  fi
+  log "восстановлено, HOLD_APP остаётся. Дальше: op=transfer-check, затем op=release-hold (или внешняя база для Amvera: op=external-db-check)"
+}
+
+# Строка подключения для приложения на Amvera: те же параметры, что в
+# docs/MIGRATION_VPS.md. sslmode=require + uselibpqcompat=true: node-pg иначе
+# проверяет сертификат как verify-full и падает на самоподписанном; sslaccept —
+# то же для Rust-движка Prisma (migrate deploy).
+EXTERNAL_DB_QUERY='sslmode=require&uselibpqcompat=true&sslaccept=accept_invalid_certs'
+
+public_ip() {
+  local ip="${OPS_PUBLIC_IP:-}"
+  # OPS_PUBLIC_IP — только для теста (src/infra/vps-ops.spec.ts).
+  [ -n "$ip" ] || ip=$(curl -fsS --max-time 10 https://api.ipify.org 2> /dev/null || true)
+  [[ "$ip" =~ ^[0-9]{1,3}(\.[0-9]{1,3}){3}$ ]] \
+    || ip=$(ip -4 -o addr show scope global 2> /dev/null | awk '{ sub(/\/.*/, "", $4); print $4; exit }')
+  [[ "$ip" =~ ^[0-9]{1,3}(\.[0-9]{1,3}){3}$ ]] || return 1
+  printf '%s' "$ip"
+}
+
+# Проверяет ровно ту строку, которую владелец поставит в Amvera, но изнутри
+# контейнера приложения на хосте сервера (--network host): дорога до порта
+# 5432 та же, что у внешнего клиента, кроме сети провайдера. Пароль и URL не
+# печатаются (см. external-db-check.sh).
+cmd_external_db_check() {
+  require_ready
+  { [ -s image ] && [ -s release ]; } || die "релиза нет: сначала деплой, проверке нужен образ приложения"
+  [ -e TRANSFER_OPEN ] || die "порт 5432 закрыт: сначала op=transfer-open"
+  [ -f external-db-check.sh ] || die "нет external-db-check.sh рядом с ops.sh"
+  local ip pw
+  ip=$(public_ip) || die "не определить публичный IP сервера"
+  pw=$(grep -m1 '^POSTGRES_PASSWORD=' db.env | cut -d= -f2-)
+  [[ "$pw" =~ ^[A-Za-z0-9._~-]+$ ]] || die "пароль в db.env пуст или с символами, которые надо кодировать в URL"
+  log "проверяю подключение к $ip:5432 так, как будет подключаться Amvera"
+  # URL с паролем живёт только в окружении этого процесса: в аргументы docker
+  # (а значит, в ps и логи) он не попадает, `-e DATABASE_URL` берёт его отсюда.
+  DATABASE_URL="postgresql://postgres:${pw}@${ip}:5432/schemehappens?${EXTERNAL_DB_QUERY}" \
+    docker run --rm --network host -e DATABASE_URL \
+    -v "$BASE/external-db-check.sh:/tmp/external-db-check.sh:ro" \
+    --entrypoint bash "$(cat image):$(cat release)" /tmp/external-db-check.sh \
+    || die "проверка внешнего подключения не прошла, причина в строках выше"
+  log "внешнее подключение работает"
+}
+
+cmd_release_hold() {
+  lock
+  require_ready
+  [ -s release ] || die "релиза нет: сначала деплой (push в main или deploy-vps.yml)"
+  require_backup_env # до снятия флага: отказ не должен терять HOLD_APP
+  rm -f HOLD_APP
+  log "HOLD_APP снят"
+  if start_app; then prune_images; return 0; fi
+  rollback_release || true
+  die "приложение не поднялось"
+}
+
+case "${1:-}" in
+  deploy) shift; cmd_deploy "$@" ;;
+  write-env) cmd_write_env ;;
+  status) cmd_status ;;
+  restart-app) cmd_restart_app ;;
+  restart-caddy) cmd_restart_caddy ;;
+  rollback) cmd_rollback ;;
+  migrate-resolve-failed) cmd_migrate_resolve_failed ;;
+  transfer-open) cmd_transfer_open ;;
+  transfer-close) cmd_transfer_close ;;
+  transfer-check) cmd_transfer_check ;;
+  restore-backup) cmd_restore_backup ;;
+  external-db-check) cmd_external_db_check ;;
+  release-hold) cmd_release_hold ;;
+  *) die "неизвестная операция" ;;
+esac

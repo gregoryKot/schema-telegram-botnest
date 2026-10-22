@@ -8,6 +8,8 @@ import { LoginTicketWait } from '../../../../shared/src/components/LoginTicketWa
 import { botUsername } from '../../utils/botConfig';
 import { reportClientError } from '../../api';
 import { useGoogleOneTap } from '../../hooks/useGoogleOneTap';
+import { isStandalone } from '../../../../shared/src/host/web';
+import '../../styles/auth-login.css';
 
 // Вход по билету — та же механика, что у мини-аппа (правило №3 и «одна
 // механика — один компонент»: общий хук в shared/src/auth/useLoginTicket).
@@ -103,52 +105,40 @@ export function LoginProviderButtons({
   const deps = { botUsername, apiBase: API_BASE };
   const href = (p: 'telegram' | 'google' | 'vk') =>
     code ? loginUrl(p, code, deps) : undefined;
+  // Google/VK по билету — только из установленного приложения: оно не видит
+  // куку браузера. Во вкладке кука общая — прямой вход в той же вкладке, без
+  // экрана «это вы?» с кодом (2026-10-03).
+  const ticketed = isStandalone();
+  const oauthLink = (p: 'google' | 'vk') =>
+    ticketed
+      ? { href: href(p), target: '_blank', rel: 'noopener noreferrer' }
+      : { href: `${API_BASE}/api/auth/${p}` };
 
   return (
     <>
       {/* Telegram первым: это основной путь продукта и единственный, который
           сразу даёт тот же аккаунт, что в боте и мини-аппе. */}
       <a
-        className="btn-outline u-mb8"
+        className="al-btn-main"
         href={href('telegram')}
         target="_blank"
         rel="noopener noreferrer"
       >
-        <TelegramIcon />
+        <span className="al-ico"><TelegramIcon /></span>
         Войти через Telegram
+        <span className="al-badge">рекомендуем</span>
       </a>
       {/* Google — официальные брендовые цвета логотипа, не токены продукта */}
-      <a
-        className="btn-outline u-mb8"
-        href={href('google')}
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        <GoogleIcon />
+      <a className="al-btn" {...oauthLink('google')}>
+        <span className="al-ico"><GoogleIcon /></span>
         Войти через Google
       </a>
-      {/* VK — официальный брендовый цвет (#0077FF), не токен продукта */}
-      <a
-        className="btn-outline u-mb12"
-        href={href('vk')}
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        <span
-          style={{
-            background: '#0077FF',
-            color: 'white',
-            borderRadius: 'var(--r-4)',
-            padding: '1px 6px',
-            fontWeight: 700,
-            fontSize: 12,
-          }}
-        >
-          VK
-        </span>
+      {/* VK — официальный брендовый цвет (#0077FF), задан в auth-login.css */}
+      <a className="al-btn" {...oauthLink('vk')}>
+        <span className="al-ico al-vk">VK</span>
         Войти через ВКонтакте
       </a>
-      {code ? <LoginTicketWait state={state} onRetry={reset} /> : null}
+      {code ? <div className="al-ticket"><LoginTicketWait state={state} onRetry={reset} /></div> : null}
     </>
   );
 }

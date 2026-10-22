@@ -25,6 +25,7 @@ vi.mock('../../api', () => ({
     adminSetOverrides: vi.fn(),
     adminListBookings: vi.fn(),
     adminConfirm: vi.fn(),
+    adminCancel: vi.fn(),
     cancelBooking: vi.fn(),
   },
 }));
@@ -54,7 +55,7 @@ beforeEach(() => {
   mockApi.adminStatus.mockResolvedValue(statusFixture());
   mockApi.adminGetPrices.mockResolvedValue([
     { type: 'INTRO_15', label: 'Знакомство', durationMin: 15, price: 0 },
-    { type: 'SESSION_50', label: 'Сессия', durationMin: 50, price: 3000 },
+    { type: 'SESSION_50', label: 'Сессия', durationMin: 50, price: 3000, prices: { RUB: 3000, ILS: 150, EUR: 50, USD: 55 } },
   ]);
   mockApi.adminGetSubPrices.mockResolvedValue([
     { period: 'month', price: 5000 },
@@ -134,7 +135,7 @@ describe('BookingSection — статус интеграций', () => {
 describe('BookingSection — цены сессий', () => {
   it('бесплатное знакомство (INTRO_15) не редактируется в списке цен', async () => {
     render(<BookingSection adminKey="k" />);
-    await screen.findByText(/Сессия · 50 мин/);
+    await screen.findAllByText(/Сессия · 50 мин/); // по строке на валюту
     // Строка-подсказка внизу упоминает «Знакомство» словами — редактируемой строки для него нет.
     expect(screen.queryByText(/Знакомство · \d+ мин/)).toBeNull();
   });
@@ -143,18 +144,43 @@ describe('BookingSection — цены сессий', () => {
     mockApi.adminSetPrice.mockResolvedValue({ ok: true });
     mockApi.adminGetPrices.mockResolvedValueOnce([
       { type: 'INTRO_15', label: 'Знакомство', durationMin: 15, price: 0 },
-      { type: 'SESSION_50', label: 'Сессия', durationMin: 50, price: 3000 },
+      { type: 'SESSION_50', label: 'Сессия', durationMin: 50, price: 3000, prices: { RUB: 3000, ILS: 150, EUR: 50, USD: 55 } },
     ]).mockResolvedValue([
       { type: 'INTRO_15', label: 'Знакомство', durationMin: 15, price: 0 },
-      { type: 'SESSION_50', label: 'Сессия', durationMin: 50, price: 3500 },
+      { type: 'SESSION_50', label: 'Сессия', durationMin: 50, price: 3500, prices: { RUB: 3500, ILS: 150, EUR: 50, USD: 55 } },
     ]);
     render(<BookingSection adminKey="k" />);
     const priceInput = await screen.findByDisplayValue('3000');
     fireEvent.change(priceInput, { target: { value: '3500' } });
-    fireEvent.click(within(section('Цены')).getByRole('button', { name: 'Сохранить' }));
+    fireEvent.click(within(section('Цены')).getAllByRole('button', { name: 'Сохранить' })[0]);
 
     await screen.findByText('Цена сохранена ✓');
-    expect(mockApi.adminSetPrice).toHaveBeenCalledWith('k', 'SESSION_50', 3500);
+    expect(mockApi.adminSetPrice).toHaveBeenCalledWith('k', 'SESSION_50', 3500, 'RUB');
+  });
+
+  // Аудит 2026-10-11: очищенное поле превращалось в Math.max(0, Math.round(Number('')))
+  // = 0 и уходило на сервер — платная сессия за 0 ₽.
+  it.each(['', '0', '-5', '1e22'])('поле цены сессии = "%s": «Сохранить» неактивна, adminSetPrice не вызывается', async (typed) => {
+    render(<BookingSection adminKey="k" />);
+    fireEvent.change(await screen.findByDisplayValue('3000'), { target: { value: typed } });
+    const save = within(section('Цены')).getAllByRole('button', { name: 'Сохранить' })[0] as HTMLButtonElement;
+    expect(save.disabled).toBe(true);
+    fireEvent.click(save);
+    expect(mockApi.adminSetPrice).not.toHaveBeenCalled();
+    expect(within(section('Цены')).getByText(/Сумма — от 1 до/)).toBeTruthy();
+  });
+
+  it('контроль: после исправления поля кнопка снова работает и шлёт введённую сумму', async () => {
+    mockApi.adminSetPrice.mockResolvedValue({ ok: true });
+    render(<BookingSection adminKey="k" />);
+    const field = await screen.findByDisplayValue('3000');
+    fireEvent.change(field, { target: { value: '' } });
+    fireEvent.change(field, { target: { value: '1' } });
+    const save = within(section('Цены')).getAllByRole('button', { name: 'Сохранить' })[0] as HTMLButtonElement;
+    expect(save.disabled).toBe(false);
+    fireEvent.click(save);
+    await screen.findByText('Цена сохранена ✓');
+    expect(mockApi.adminSetPrice).toHaveBeenCalledWith('k', 'SESSION_50', 1, 'RUB');
   });
 
   it('таймер сброса «✓» чистится при анмаунте (регресс: setState после снятия компонента ронял CI «window is not defined»)', async () => {
@@ -165,7 +191,7 @@ describe('BookingSection — цены сессий', () => {
       const priceInput = await screen.findByDisplayValue('3000');
       fireEvent.change(priceInput, { target: { value: '3500' } });
       fireEvent.click(
-        within(section('Цены')).getByRole('button', { name: 'Сохранить' }),
+        within(section('Цены')).getAllByRole('button', { name: 'Сохранить' })[0],
       );
       await screen.findByText('Цена сохранена ✓');
 
@@ -180,8 +206,8 @@ describe('BookingSection — цены сессий', () => {
   it('ошибка сохранения цены сессии — видна, «сохранена» не показывается (тот же класс бага, что и в подписке)', async () => {
     mockApi.adminSetPrice.mockRejectedValue(new Error('Не удалось сохранить цену'));
     render(<BookingSection adminKey="k" />);
-    await screen.findByText(/Сессия · 50 мин/);
-    fireEvent.click(within(section('Цены')).getByRole('button', { name: 'Сохранить' }));
+    await screen.findAllByText(/Сессия · 50 мин/); // по строке на валюту
+    fireEvent.click(within(section('Цены')).getAllByRole('button', { name: 'Сохранить' })[0]);
 
     await within(section('Цены')).findByText('Не удалось сохранить цену');
     expect(screen.queryByText('Цена сохранена ✓')).toBeNull();
@@ -193,6 +219,25 @@ describe('BookingSection — цены подписки', () => {
     render(<BookingSection adminKey="k" />);
     await screen.findByDisplayValue('5000');
     expect(screen.getByDisplayValue('50000')).toBeTruthy();
+  });
+
+  // Раньше из пустого поля подписка сохранялась за 1 ₽ (Math.max(1, …)).
+  it.each(['', '0', '1e22'])('поле цены подписки = "%s": «Сохранить» неактивна, adminSetSubPrice не вызывается', async (typed) => {
+    render(<BookingSection adminKey="k" />);
+    fireEvent.change(await screen.findByDisplayValue('5000'), { target: { value: typed } });
+    const [save] = within(section('Подписка')).getAllByRole('button', { name: 'Сохранить' }) as HTMLButtonElement[];
+    expect(save.disabled).toBe(true);
+    fireEvent.click(save);
+    expect(mockApi.adminSetSubPrice).not.toHaveBeenCalled();
+  });
+
+  it('контроль: корректная сумма подписки уходит как есть', async () => {
+    mockApi.adminSetSubPrice.mockResolvedValue({ ok: true });
+    render(<BookingSection adminKey="k" />);
+    fireEvent.change(await screen.findByDisplayValue('5000'), { target: { value: '600' } });
+    fireEvent.click(within(section('Подписка')).getAllByRole('button', { name: 'Сохранить' })[0]);
+    await screen.findByText('Цена сохранена ✓');
+    expect(mockApi.adminSetSubPrice).toHaveBeenCalledWith('k', 'month', 600);
   });
 
   it('ошибка сохранения подписки — видна, «сохранена» не показывается (регресс: раньше save() был без try/catch — необработанный промис, ноль обратной связи)', async () => {
@@ -264,18 +309,56 @@ describe('BookingSection — записи', () => {
     await screen.findByText(/Борис/);
     fireEvent.click(screen.getByRole('button', { name: 'Подтвердить' }));
     expect(mockApi.adminConfirm).toHaveBeenCalledWith('k', 5);
+    await screen.findByText('Готово ✓');
   });
 
-  it('«Отменить» доступна для активной записи и вызывает cancelBooking по токену', async () => {
-    mockApi.adminListBookings.mockResolvedValue([
-      { id: 6, startsAt: '2026-08-10T10:00:00Z', status: 'CONFIRMED', clientName: 'Вера', clientContact: 'vera@x.ru', message: 'Первая встреча', cancelToken: 'tok6' },
-    ]);
-    mockApi.cancelBooking.mockResolvedValue({ ok: true });
+  // security#22: админка жала публичный cancel/:token с клиентским cutoff 24 ч
+  // и без catch — за сутки до встречи ответ 400 уходил в unhandledRejection.
+  it('«Отменить» зовёт админский adminCancel по id (не публичный cancelBooking) и обновляет строку', async () => {
+    const row = { id: 6, startsAt: '2026-08-10T10:00:00Z', status: 'CONFIRMED', clientName: 'Вера', clientContact: 'vera@x.ru', message: 'Первая встреча', cancelToken: 'tok6' };
+    mockApi.adminListBookings.mockResolvedValueOnce([row]).mockResolvedValue([{ ...row, status: 'CANCELLED' }]);
+    mockApi.adminCancel.mockResolvedValue({ ok: true });
     render(<BookingSection adminKey="k" />);
     await screen.findByText(/Вера/);
     expect(screen.getByText(/«Первая встреча»/)).toBeTruthy();
+    expect(screen.getByText('Подтверждена')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Отменить' }));
-    expect(mockApi.cancelBooking).toHaveBeenCalledWith('tok6');
+    await screen.findByText('Отменена');
+    expect(mockApi.adminCancel).toHaveBeenCalledWith('k', 6);
+    expect(mockApi.cancelBooking).not.toHaveBeenCalled();
+    expect(screen.queryByRole('button', { name: 'Отменить' })).toBeNull();
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
+  it('отказ сервера при «Отменить» виден текстом, строка не меняется, список не перезапрашивается', async () => {
+    mockApi.adminListBookings.mockResolvedValue([
+      { id: 6, startsAt: '2026-08-10T10:00:00Z', status: 'CONFIRMED', clientName: 'Вера', clientContact: 'vera@x.ru', message: null, cancelToken: 'tok6' },
+    ]);
+    mockApi.adminCancel.mockRejectedValue(new Error('Cannot cancel completed session'));
+    render(<BookingSection adminKey="k" />);
+    await screen.findByText(/Вера/);
+    const loads = mockApi.adminListBookings.mock.calls.length;
+    fireEvent.click(screen.getByRole('button', { name: 'Отменить' }));
+    const alert = await screen.findByRole('alert');
+    expect(alert.textContent).toBe('Не удалось отменить запись: Cannot cancel completed session');
+    expect(screen.getByText('Подтверждена')).toBeTruthy();
+    expect(mockApi.adminListBookings.mock.calls.length).toBe(loads);
+  });
+
+  it('отказ при «Подтвердить» виден текстом, а следующее удачное действие его убирает', async () => {
+    const row = { id: 5, startsAt: '2026-08-10T10:00:00Z', status: 'HELD', clientName: 'Борис', clientContact: 'boris@x.ru', message: null, cancelToken: 'tok5' };
+    mockApi.adminListBookings.mockResolvedValue([row]);
+    mockApi.adminConfirm.mockRejectedValueOnce(new Error('Cannot confirm booking in status CANCELLED'));
+    render(<BookingSection adminKey="k" />);
+    await screen.findByText(/Борис/);
+    fireEvent.click(screen.getByRole('button', { name: 'Подтвердить' }));
+    const alert = await screen.findByRole('alert');
+    expect(alert.textContent).toBe('Не удалось подтвердить запись: Cannot confirm booking in status CANCELLED');
+
+    mockApi.adminConfirm.mockResolvedValueOnce({ ok: true });
+    fireEvent.click(screen.getByRole('button', { name: 'Подтвердить' }));
+    await screen.findByText('Готово ✓');
+    expect(screen.queryByRole('alert')).toBeNull();
   });
 
   it('завершённая запись не предлагает «Отменить»', async () => {

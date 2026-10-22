@@ -76,6 +76,35 @@ describe('e2e smoke: публичные мини-тесты', () => {
     });
   });
 
+  // Аудит 2026-10, frontends#5: форма записи на визитке показывает кризисную
+  // карточку посетителю БЕЗ входа, а /api/event ему закрыт (401). Событие
+  // показа идёт анонимным путём — только с surface=booking.
+  it('POST /api/public-event: показ кризисной карточки записи пишется анонимно, чужой surface дропается', async () => {
+    const where = { userId: null, name: 'crisis_card_shown' };
+    const before = await prisma.analyticsEvent.count({ where });
+    const send = (meta: Record<string, unknown>) =>
+      request(app.getHttpServer())
+        .post('/api/public-event')
+        .send({ name: 'crisis_card_shown', meta });
+
+    const ok = await send({ surface: 'booking', text: 'не хочу жить' });
+    expect(ok.status).toBe(201);
+    const foreign = await send({ surface: 'note' }); // авторизованный экран
+    expect(foreign.status).toBe(201); // молча: аноним не оракул
+    expect(foreign.body).toEqual({ ok: true });
+
+    expect(await prisma.analyticsEvent.count({ where })).toBe(before + 1);
+    const [row] = await prisma.analyticsEvent.findMany({
+      where,
+      orderBy: { id: 'desc' },
+      take: 1,
+    });
+    expect(row.userId).toBeNull();
+    // Текст не доехал до БД — только перечислимый surface (правило №7).
+    expect(row.meta).toEqual({ surface: 'booking' });
+    await prisma.analyticsEvent.delete({ where: { id: row.id } });
+  });
+
   it('POST /api/public-event не принимает НЕ-публичные события (400 от DTO)', async () => {
     const res = await request(app.getHttpServer())
       .post('/api/public-event')

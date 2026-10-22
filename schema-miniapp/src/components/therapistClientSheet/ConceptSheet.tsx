@@ -1,44 +1,40 @@
 import { BottomSheet } from '../BottomSheet';
-import { SectionLabel } from '../SectionLabel';
 import { TherapyClientSummary } from '../../api';
 import { fmtDate, momentDayKey } from '../../utils/format';
-import { SCHEMA_DOMAINS, ALL_SCHEMAS } from '../../schemaTherapyData';
+import { ALL_SCHEMAS } from '../../schemaTherapyData';
 import { IdentityDot } from '../../../../shared/src/components/IdentityDot';
-import { CONCEPT_FIELDS } from './helpers';
 import { ClientDetail } from './types';
-import { ConceptModePicker } from './conceptSheet/ConceptModePicker';
+import { ConceptFieldsView } from './conceptSheet/ConceptFieldsView';
+import { ConceptGraphView } from './conceptSheet/ConceptGraphView';
+import {
+  ConceptViewSwitch,
+  useConceptView,
+} from '../../../../shared/src/therapy/conceptGraph/ConceptViewSwitch';
 import { ConceptHistoryPanel } from './conceptSheet/ConceptHistoryPanel';
 import { ConceptYsqHistory } from './conceptSheet/ConceptYsqHistory';
+import { YsqRequestButton } from './conceptSheet/YsqRequestButton';
 import { cm } from '../../sections/schemas/utils';
 interface ConceptSheetProps {
   selectedClient: TherapyClientSummary;
   detail: ClientDetail;
 }
-
 export function ConceptSheet({ selectedClient, detail }: ConceptSheetProps) {
   const {
     concept,
-    localConcept,
     conceptDirty,
     conceptSaving,
     conceptError,
     showHistory,
     setShowHistory,
     setShowConceptSheet,
-    ysqRequested,
-    ysqError,
     exportCopied,
-    activeSchemaIds,
-    ysqSchemaIds,
     selfSchemaIds,
     activeModeIds,
-    patchConcept,
-    toggleSchemaId,
-    toggleModeId,
     saveConcept,
-    handleRequestYsq,
     handleExport,
   } = detail;
+  // Вид выбирается один раз при открытии листа (см. useConceptView).
+  const [view, setView] = useConceptView(activeModeIds.length);
 
   return (
     <BottomSheet
@@ -80,38 +76,7 @@ export function ConceptSheet({ selectedClient, detail }: ConceptSheetProps) {
           )}
         </div>
         <ConceptHistoryPanel detail={detail} />
-        {selectedClient.telegramId > 0 && (
-          <div className="u-mb12">
-            <button
-              onClick={handleRequestYsq}
-              style={{
-                width: '100%',
-                padding: '10px 16px',
-                borderRadius: 'var(--r-12)',
-                border: `1px solid ${cm('var(--accent-blue)', 20)}`,
-                background: cm('var(--accent-blue)', 6),
-                color: ysqRequested ? '#06d6a0' : cm('var(--accent-blue)', 80),
-                fontSize: 13,
-                fontWeight: 500,
-                cursor: 'pointer',
-              }}
-            >
-              {ysqRequested ? '✓ Запрос отправлен' : 'Запросить тест на схемы'}
-            </button>
-            {ysqError && (
-              <div
-                style={{
-                  fontSize: 12,
-                  color: 'var(--accent-red)',
-                  marginTop: 6,
-                  textAlign: 'center',
-                }}
-              >
-                {ysqError}
-              </div>
-            )}
-          </div>
-        )}
+        <YsqRequestButton selectedClient={selectedClient} detail={detail} />
         <ConceptYsqHistory detail={detail} />
         {selfSchemaIds.length > 0 && (
           <div
@@ -157,99 +122,14 @@ export function ConceptSheet({ selectedClient, detail }: ConceptSheetProps) {
             </div>
           </div>
         )}
-        <SectionLabel mb={8}>Актуальные схемы (ЭДС)</SectionLabel>
-        {SCHEMA_DOMAINS.map((domain) => (
-          <div key={domain.id} className="u-mb10">
-            <div
-              style={{
-                fontSize: 10,
-                fontWeight: 700,
-                letterSpacing: '0.07em',
-                color: domain.color + 'aa',
-                textTransform: 'uppercase',
-                marginBottom: 5,
-                paddingLeft: 2,
-              }}
-            >
-              {domain.domain}
-            </div>
-            <div className="u-wrap5">
-              {domain.schemas.map((schema) => {
-                const active = activeSchemaIds.includes(schema.id);
-                const fromYsq = ysqSchemaIds.includes(schema.id);
-                return (
-                  <button
-                    key={schema.id}
-                    onClick={() => toggleSchemaId(schema.id)}
-                    style={{
-                      padding: '5px 10px',
-                      borderRadius: 'var(--r-20)',
-                      cursor: 'pointer',
-                      border: fromYsq
-                        ? `1px solid ${domain.color}55`
-                        : '1px solid transparent',
-                      background: active
-                        ? domain.color + '30'
-                        : 'rgba(var(--fg-rgb),0.05)',
-                      color: active ? domain.color : 'rgba(var(--fg-rgb),0.45)',
-                      fontSize: 12,
-                      fontWeight: active ? 600 : 400,
-                      transition: 'all 0.15s ease',
-                    }}
-                    title={schema.desc}
-                  >
-                    <IdentityDot color={domain.color} size={7} /> {schema.name}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        ))}
-        <div style={{ marginTop: 6 }}>
-          <SectionLabel mb={8}>Карта режимов</SectionLabel>
+        <div className="u-mb12">
+          <ConceptViewSwitch view={view} onChange={setView} />
         </div>
-        <ConceptModePicker
-          activeModeIds={activeModeIds}
-          onToggle={toggleModeId}
-        />
-        <div className="u-mt8">
-          {CONCEPT_FIELDS.map(({ key, label, placeholder }) => (
-            <div key={key} className="u-mb12">
-              <div
-                style={{
-                  fontSize: 11,
-                  fontWeight: 700,
-                  letterSpacing: '0.07em',
-                  color: 'var(--text-sub)',
-                  textTransform: 'uppercase',
-                  marginBottom: 5,
-                }}
-              >
-                {label}
-              </div>
-              <textarea
-                value={(localConcept[key] as string) ?? ''}
-                onChange={(e) => patchConcept({ [key]: e.target.value })}
-                placeholder={placeholder}
-                rows={3}
-                style={{
-                  width: '100%',
-                  boxSizing: 'border-box',
-                  background: 'rgba(var(--fg-rgb),0.04)',
-                  border: '1px solid rgba(var(--fg-rgb),0.08)',
-                  borderRadius: 'var(--r-12)',
-                  padding: '10px 12px',
-                  outline: 'none',
-                  resize: 'none',
-                  color: 'var(--text)',
-                  fontSize: 13,
-                  lineHeight: 1.5,
-                  fontFamily: 'inherit',
-                }}
-              />
-            </div>
-          ))}
-        </div>
+        {view === 'graph' ? (
+          <ConceptGraphView detail={detail} />
+        ) : (
+          <ConceptFieldsView detail={detail} />
+        )}
         <button
           onClick={saveConcept}
           disabled={conceptSaving || !conceptDirty}

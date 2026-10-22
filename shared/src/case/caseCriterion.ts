@@ -29,7 +29,7 @@ export interface CaseCriterionQuestion {
 export const buildCriterionIntro = (
   _tr: Tr,
 ): { title: string; sub: string } => ({
-  title: 'Последний шаг — два вопроса',
+  title: 'Последние два вопроса',
   sub: 'Они помогают отличить обычную досаду от реакции, которая включается сама.',
 });
 

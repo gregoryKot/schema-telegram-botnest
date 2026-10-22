@@ -1,6 +1,8 @@
 import { useCallback, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ExScreen, GlyphCheck } from './exercises/ExScreen';
+import { GlyphCheck } from './exercises/ExScreen';
+import { SsSheet } from './schemaSheets/SsSheet';
+import { DOMAIN_HUE, hueStyle } from '../lib/tone';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { SCHEMA_DOMAINS } from '../schemaTherapyData';
 import { MY_SCHEMA_IDS_KEY } from '../utils/storageKeys';
@@ -68,7 +70,6 @@ export function SchemaDetailSheet({ schemaId, onClose }: Props) {
   if (!schema || !domainEntry) return null;
 
   const beliefs = BELIEFS[schemaId] ?? [];
-  const domainColor = domainEntry.color;
 
   function toggleSchema() {
     const next = isAdded
@@ -79,84 +80,46 @@ export function SchemaDetailSheet({ schemaId, onClose }: Props) {
     api.updateSettings({ mySchemaIds: next }).catch(() => {});
   }
 
+  const lede = schema.libraryDesc ?? schema.desc;
+  const actions = (
+    <>
+      <button onClick={toggleSchema} className={'ds-btn ds-btn--secondary'}>
+        {isAdded ? <><GlyphCheck /> В моих схемах</> : '+ В мои схемы'}
+      </button>
+      <button onClick={() => navigate('/exercises', { state: { openSchemaEx: schemaId } })} className="ds-btn">
+        Познакомиться →
+      </button>
+      <button onClick={() => setShowShare(true)} className="ds-btn ds-btn--secondary">
+        Поделиться
+      </button>
+    </>
+  );
+
   return (
-    <ExScreen
-      onBack={goBack}
-      backLabel="Назад"
-      eyebrow={domainEntry.domain}
-      eyebrowColor={domainColor}
-      title={<>{schema.name}</>}
-      lede={schema.libraryDesc ?? schema.desc}
-      aside={
-        <div className="aside-card" style={{ borderColor: domainColor + '40', background: domainColor + '08', position: 'sticky', top: 40 }}>
-          <div className="aside-card-eyebrow" style={{ color: domainColor }}>Домен</div>
-          <h3 style={{ fontSize: 18 }}>{domainEntry.domain}</h3>
-          <p className="body">{'Группа схем, связанных общей темой.'}</p>
-          <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 'var(--space-8)' }}>
-            <button
-              onClick={toggleSchema}
-              className={'ex-btn ' + (isAdded ? 'ex-btn-outline' : 'ex-btn-ghost')}
-              style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 'var(--space-8)' }}
-            >
-              {isAdded ? <><GlyphCheck /> В моих схемах</> : '+ В мои схемы'}
-            </button>
-            <button
-              onClick={() => navigate('/exercises', { state: { openSchemaEx: schemaId } })}
-              className="ex-btn ex-btn-primary"
-              style={{ width: '100%' }}
-            >
-              Познакомиться →
-            </button>
-            <button
-              onClick={() => setShowShare(true)}
-              className="ex-btn ex-btn-ghost"
-              style={{ width: '100%' }}
-            >
-              Поделиться
-            </button>
-          </div>
-        </div>
-      }
-    >
+    <SsSheet onBack={goBack}>
+      <div className="ss-head">
+        <span className="ds-chip tone-tint" style={{ ...hueStyle(DOMAIN_HUE[domainEntry.id]), alignSelf: 'flex-start' }}>
+          {domainEntry.domain}
+        </span>
+        <h1 className="ss-title">{schema.name}</h1>
+        <p className="ss-lede">{lede}</p>
+      </div>
+
       {beliefs.length > 0 && (
-        <div className="prompt">
-          <div className="prompt-num">·</div>
-          <div className="u-w100">
-            <div className="prompt-label">Типичные убеждения</div>
-            <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 0 }}>
-              {beliefs.map((b, i) => (
-                <div key={i} style={{ padding: '16px 0', borderTop: '1px solid var(--line)', display: 'flex', gap: 16, alignItems: 'flex-start' }}>
-                  <span style={{ color: domainColor, fontFamily: 'var(--serif)', fontSize: 22, lineHeight: 1, flexShrink: 0 }}>·</span>
-                  <span style={{ fontFamily: 'var(--serif)', fontSize: 18, fontStyle: 'italic', lineHeight: 1.55, color: 'var(--text)' }}>«{b}»</span>
-                </div>
-              ))}
-              <div style={{ borderTop: '1px solid var(--line)' }} />
-            </div>
+        <div className="ds-card ss-card-stack">
+          <div className="ds-label">Типичные убеждения</div>
+          <div style={hueStyle(DOMAIN_HUE[domainEntry.id])}>
+            {beliefs.map((b, i) => (
+              <div key={i} className="ss-belief">
+                <span className="ss-belief-dot tone-text">·</span>
+                <span className="ss-belief-text">«{b}»</span>
+              </div>
+            ))}
           </div>
         </div>
       )}
 
-      {/* Mobile action buttons (aside hidden on small screens) */}
-      <div className="ex-foot">
-        <button
-          onClick={toggleSchema}
-          className={'ex-btn ' + (isAdded ? 'ex-btn-outline' : 'ex-btn-ghost')}
-        >
-          {isAdded ? <><GlyphCheck /> В моих схемах</> : '+ В мои схемы'}
-        </button>
-        <button
-          onClick={() => navigate('/exercises', { state: { openSchemaEx: schemaId } })}
-          className="ex-btn ex-btn-primary"
-        >
-          Познакомиться →
-        </button>
-        <button
-          onClick={() => setShowShare(true)}
-          className="ex-btn ex-btn-ghost"
-        >
-          Поделиться
-        </button>
-      </div>
+      <div className="ss-actions ss-actions--row">{actions}</div>
 
       {showShare && (
         <ShareCardSheet
@@ -168,6 +131,6 @@ export function SchemaDetailSheet({ schemaId, onClose }: Props) {
           onClose={() => setShowShare(false)}
         />
       )}
-    </ExScreen>
+    </SsSheet>
   );
 }

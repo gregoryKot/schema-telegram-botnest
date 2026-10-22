@@ -1,4 +1,6 @@
+import { buildSelfMapIntro } from '../../../../shared/src/onboarding/onboardingExplainers';
 import { useMemo } from 'react';
+import { haptic } from '../../haptic';
 import { ExScreen } from '../exercises/ExScreen';
 import { SelfMapLane } from './SelfMapLane';
 import { useTr } from '../../utils/addressForm';
@@ -54,12 +56,8 @@ export function SelfMapScreen({
       onBack={onBack}
       backLabel="Закрыть"
       eyebrow="Карта себя"
-      eyebrowColor="var(--accent-indigo)"
       title="Карта себя"
-      lede={tr(
-        'Черновик. Меняется с каждым разбором — переписать можно когда угодно.',
-        'Черновик. Меняется с каждым разбором — переписать можно когда угодно.',
-      )}
+      lede={buildSelfMapIntro(tr)}
     >
       {lanes.map((lane) => (
         <SelfMapLane
@@ -80,11 +78,7 @@ export function SelfMapScreen({
       </div>
 
       <div className="eyebrow u-mb10">Что дальше</div>
-      <button
-        type="button"
-        className="ex-btn ex-btn-primary"
-        onClick={() => onNextStep(step.id)}
-      >
+      <button type="button" className="ex-btn ex-btn-primary" onClick={() => { haptic.tap(); onNextStep(step.id); }}>
         {step.time ? `${step.label} · ${step.time}` : step.label}
       </button>
       {step.hint && (

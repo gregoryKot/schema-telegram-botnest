@@ -1,22 +1,25 @@
 import { useRef, useState } from 'react';
-import { api, reportClientError } from '../../api';
-import type { TherapyClientSummary, UserTask, TherapistNote, ClientConceptualization, ClientData } from '../../api';
+import { api, reportClientError, type TherapyClientSummary, type UserTask, type ClientConceptualization, type ClientData, type UserId } from '../../api';
+import { useNotesPage } from '../../../../shared/src/therapy/useNotesPage';
+import { sameId } from '../../../../shared/src/utils/sameId';
 import { fmtDate, momentDayKey, todayStr } from '../../utils/format';
 import { SCHEMA_DOMAINS, MODE_GROUPS } from '../../schemaTherapyData';
 import { useCopyToClipboard } from '../../../../shared/src/utils/useCopyToClipboard';
+import { useYsqRequest } from '../../../../shared/src/therapy/useYsqRequest';
 import { useTr } from '../../utils/addressForm';
-
+import { conceptSaveBody } from '../../../../shared/src/therapy/conceptGraph/conceptSaveBody';
+import { formatConceptLinksExport } from '../../../../shared/src/therapy/conceptGraph/conceptLinksExport';
 type ClientTab = 'overview' | 'concept' | 'mode_map' | 'sessions' | 'tasks' | 'ysq' | 'client_notes';
 
 interface Params {
-  onOpenClient?: (id: number) => void;
+  onOpenClient?: (id: UserId) => void;
   switchView: (v: 'list' | 'client') => void;
   setClients: React.Dispatch<React.SetStateAction<TherapyClientSummary[]>>;
 }
 
 export function useClientDetail({ onOpenClient, switchView, setClients }: Params) {
   const tr = useTr();
-  const openClientIdRef = useRef<number | null>(null);
+  const openClientIdRef = useRef<UserId | null>(null);
   const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Зеркало localConcept, обновляется СИНХРОННО (setLocalConceptSynced ниже).
   // Нужно autoSave: setTimeout(autoSave, 700) в patchConcept захватывает
@@ -36,7 +39,7 @@ export function useClientDetail({ onOpenClient, switchView, setClients }: Params
     modeFunction: string; needsMet: string;
   }>>([]);
   const [clientTasks, setClientTasks] = useState<UserTask[]>([]);
-  const [notes, setNotes] = useState<TherapistNote[]>([]);
+  const np = useNotesPage();
   const [noteError, setNoteError] = useState('');
   const [concept, setConcept] = useState<ClientConceptualization | null>(null);
   const [clientData, setClientData] = useState<ClientData | null>(null);
@@ -79,8 +82,8 @@ export function useClientDetail({ onOpenClient, switchView, setClients }: Params
   const [aliasError, setAliasError] = useState('');
 
   // YSQ / Export
-  const [ysqRequested, setYsqRequested] = useState(false);
-  const [ysqError, setYsqError] = useState('');
+  const { ysqRequested, ysqError, resetYsq, handleRequestYsq } = useYsqRequest(
+    selectedClient?.telegramId, (id) => api.requestYsq(id));
   const { copied: exportCopied, copy: copyExport } = useCopyToClipboard({
     onError: () => reportClientError({ message: 'client detail export clipboard write failed', section: 'therapist.clientDetail' }),
   });
@@ -110,7 +113,7 @@ export function useClientDetail({ onOpenClient, switchView, setClients }: Params
     setClientSchemaNotesData([]);
     setClientModeNotesData([]);
     setClientTasks([]);
-    setNotes([]);
+    np.resetNotesPage();
     setNoteError('');
     setConcept(null);
     setClientData(null);
@@ -119,8 +122,7 @@ export function useClientDetail({ onOpenClient, switchView, setClients }: Params
     setLocalConceptSynced({});
     setConceptError('');
     setExpandedSnapshot(null);
-    setYsqRequested(false);
-    setYsqError('');
+    resetYsq();
     setRenamingAlias(false);
     setAliasError('');
     setDeleteError('');
@@ -135,7 +137,7 @@ export function useClientDetail({ onOpenClient, switchView, setClients }: Params
     // Ловим каждый источник отдельно (тест «не роняя остальные»); фолбэк [] неотличим от «данных нет» — копим упавшие, шлём одним отчётом.
     const failed: string[] = []; const [tasks, fetchedNotes, fetchedConcept, fetchedData, sn, mn, hist, diary] = await Promise.all([
       api.getTherapyTasksForClient(clientId).catch(() => { failed.push('задачи'); return []; }),
-      api.getTherapistNotes(clientId).catch(() => { failed.push('заметки'); return []; }),
+      api.getTherapistNotes(clientId).catch(() => { failed.push('заметки'); return null; }),
       api.getConceptualization(clientId).catch(() => { failed.push('концептуализация'); return null; }),
       api.getTherapyClientData(clientId).catch(() => { failed.push('данные клиента'); return null; }),
       api.getClientSchemaNotes(clientId).catch(() => { failed.push('карточки схем'); return []; }),
@@ -144,11 +146,11 @@ export function useClientDetail({ onOpenClient, switchView, setClients }: Params
       api.getClientDiary(clientId).catch(() => { failed.push('дневник'); return []; }),
     ]); if (failed.length) reportClientError({ message: `client detail partial load fail: ${failed.join(', ')}`, section: 'therapist.clientDetail' });
 
-    if (openClientIdRef.current !== clientId) return;
+    if (!sameId(openClientIdRef.current, clientId)) return;
 
     setTabLoading(false);
     setClientTasks(tasks);
-    setNotes(fetchedNotes);
+    if (fetchedNotes) np.setNotesPage(fetchedNotes); else np.resetNotesPage();
     setConcept(fetchedConcept);
     setClientData(fetchedData);
     setClientSchemaNotesData(sn);
@@ -175,7 +177,7 @@ export function useClientDetail({ onOpenClient, switchView, setClients }: Params
     setDeleteError('');
     try {
       await api.removeClient(selectedClient.telegramId);
-      setClients(prev => prev.filter(c => c.telegramId !== selectedClient.telegramId));
+      setClients(prev => prev.filter(c => !sameId(c.telegramId, selectedClient.telegramId)));
       switchView('list');
     } catch { setDeleteError('Не удалось удалить клиента'); } finally { setDeleteLoading(false); }
   }
@@ -188,7 +190,7 @@ export function useClientDetail({ onOpenClient, switchView, setClients }: Params
     try {
       const date = newNoteDate || todayStr();
       const note = await api.createTherapistNote(selectedClient.telegramId, date, newNoteText.trim());
-      setNotes(prev => [note, ...prev].sort((a, b) => b.date.localeCompare(a.date)));
+      np.onNoteSaved(note);
       setNewNoteText('');
       setNewNoteDate('');
     } catch { setNoteError('Не удалось сохранить заметку'); } finally { setNoteSaving(false); }
@@ -197,7 +199,7 @@ export function useClientDetail({ onOpenClient, switchView, setClients }: Params
   async function removeNote(noteId: number) {
     try {
       await api.deleteTherapistNote(noteId);
-      setNotes(prev => prev.filter(n => n.id !== noteId));
+      np.onNoteDeleted(noteId);
     } catch { setNoteError('Не удалось удалить заметку'); }
   }
 
@@ -214,17 +216,7 @@ export function useClientDetail({ onOpenClient, switchView, setClients }: Params
     setSaveStatus('saving');
     const c = localConceptRef.current; // не state — см. комментарий у localConceptRef
     try {
-      const saved = await api.saveConceptualization(selectedClient.telegramId, {
-        schemaIds: (c.schemaIds ?? []) as string[],
-        modeIds: (c.modeIds ?? []) as string[],
-        earlyExperience: (c.earlyExperience as string) ?? '',
-        unmetNeeds: (c.unmetNeeds as string) ?? '',
-        triggers: (c.triggers as string) ?? '',
-        copingStyles: (c.copingStyles as string) ?? '',
-        goals: (c.goals as string) ?? '',
-        currentProblems: (c.currentProblems as string) ?? '',
-        modeTransitions: (c.modeTransitions as string) ?? '',
-      });
+      const saved = await api.saveConceptualization(selectedClient.telegramId, conceptSaveBody(c));
       setConcept(saved);
       setConceptError('');
       setSaveStatus('saved');
@@ -253,7 +245,7 @@ export function useClientDetail({ onOpenClient, switchView, setClients }: Params
       await api.renameClient(selectedClient.telegramId, aliasInput);
       const updated = { ...selectedClient, clientAlias: aliasInput.trim() || null };
       setSelectedClient(updated);
-      setClients(prev => prev.map(c => c.telegramId === selectedClient.telegramId ? updated : c));
+      setClients(prev => prev.map(c => sameId(c.telegramId, selectedClient.telegramId) ? updated : c));
       setRenamingAlias(false);
     } catch { setAliasError('Не удалось сохранить имя'); } finally { setAliasSaving(false); }
   }
@@ -265,20 +257,9 @@ export function useClientDetail({ onOpenClient, switchView, setClients }: Params
     try {
       await api.updateSessionInfo(selectedClient.telegramId, patch);
       const updated = { ...selectedClient, ...patch }; if (patch.meetingDays !== undefined) updated.meetingDays = patch.meetingDays;
-      setSelectedClient(updated); setClients(prev => prev.map(c => c.telegramId === selectedClient.telegramId ? updated : c));
+      setSelectedClient(updated); setClients(prev => prev.map(c => sameId(c.telegramId, selectedClient.telegramId) ? updated : c));
       return true;
     } catch { setSessionInfoError('Не удалось сохранить дату'); return false; } finally { setSessionInfoSaving(false); }
-  }
-
-  // ── YSQ ───────────────────────────────────────────────────────────────────────
-  async function handleRequestYsq() {
-    if (!selectedClient) return;
-    setYsqError('');
-    try {
-      await api.requestYsq(selectedClient.telegramId);
-      setYsqRequested(true);
-      setTimeout(() => setYsqRequested(false), 3000);
-    } catch { setYsqError('Не удалось отправить запрос'); }
   }
 
   // ── Export ─────────────────────────────────────────────────────────────────────
@@ -297,11 +278,13 @@ export function useClientDetail({ onOpenClient, switchView, setClients }: Params
     });
     const row = (label: string, value: string | null | undefined) => `${label}\n${value?.trim() || '–'}\n`;
     const div = '─'.repeat(44);
+    const links = formatConceptLinksExport(activeSchemaIds, activeModeIds, c);
     return [
       `Клиент: ${clientName}   Дата: ${date}`,
       '', '══════ КРАТКАЯ КОНЦЕПТУАЛИЗАЦИЯ ══════', '',
       div, row('АКТУАЛЬНЫЕ СХЕМЫ (ЭДС)', schemaNames.join(' · ') || null),
       div, row('КАРТА РЕЖИМОВ', modeNames.join(' · ') || null),
+      ...(links ? [div, `${links}\n`] : []),
       div, row('РАННИЙ ДИСФУНКЦИОНАЛЬНЫЙ ОПЫТ', c.earlyExperience as string),
       div, row('НЕУДОВЛЕТВОРЁННЫЕ БАЗОВЫЕ ПОТРЕБНОСТИ', c.unmetNeeds as string),
       div, row('СХЕМНЫЕ ТРИГГЕРЫ', c.triggers as string),
@@ -327,7 +310,7 @@ export function useClientDetail({ onOpenClient, switchView, setClients }: Params
     selectedClient, setSelectedClient,
     clientSchemaNotesData, clientModeNotesData,
     clientTasks, setClientTasks,
-    notes, noteError,
+    notes: np.notesPage.notes, notesPage: np.notesPage, noteError,
     concept, clientData, clientHistory, clientDiary,
     localConcept, conceptError, expandedSnapshot, setExpandedSnapshot,
     saveStatus,

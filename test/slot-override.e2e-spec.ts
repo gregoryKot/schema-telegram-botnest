@@ -9,7 +9,7 @@
 // существующий e2e не ходил в admin-эндпоинты бронирования) — выставляем
 // здесь, до buildTestApp(): ConfigService читает env один раз при сборке
 // AppModule внутри buildTestApp(), а не лениво при каждом get().
-process.env.ADMIN_BOOKING_KEY = 'e2e-slot-override-admin-key';
+process.env.ADMIN_BOOKING_KEY = 'e2e-slot-override-admin-key-0123456789abcdef';
 
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';

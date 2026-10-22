@@ -1,3 +1,5 @@
+import { buildPracticesIntro } from '../../../shared/src/onboarding/onboardingExplainers';
+import { PRACTICE_TEXT_MAX } from '../../../shared/src/limits/textLimits';
 import { useState } from 'react';
 import { PracticesList } from './PracticesList';
 import { useSafeTop } from '../utils/safezone';
@@ -8,7 +10,6 @@ import { detectCrisisAny } from '../utils/crisisMarkers';
 import { CrisisCard } from './CrisisCard';
 import { usePracticesData } from '../hooks/usePracticesData';
 import { hitboxStyle } from '../utils/hitbox';
-
 const NEED_IDS = ['attachment', 'autonomy', 'expression', 'play', 'limits'];
 const NEED_NAMES: Record<string, string> = {
   attachment: 'Привязанность',
@@ -130,7 +131,7 @@ export function PracticesScreen({ onClose, onOpenTracker }: Props) {
         <div
           style={{ fontSize: 12, color: 'var(--text-sub)', lineHeight: 1.55 }}
         >
-          Практики — конкретные действия, которые наполняют потребность.
+          {buildPracticesIntro(tr)}
           {onOpenTracker && (
             <>
               {' '}
@@ -286,7 +287,7 @@ export function PracticesScreen({ onClose, onOpenTracker }: Props) {
               if (e.key === 'Enter') void handleAdd();
             }}
             placeholder="Добавить практику..."
-            maxLength={200}
+            maxLength={PRACTICE_TEXT_MAX}
             style={{
               flex: 1,
               background: 'rgba(var(--fg-rgb),0.05)',

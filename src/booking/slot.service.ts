@@ -5,13 +5,14 @@ import { CalDavService } from './caldav.service';
 import { BookingStatus } from '@prisma/client';
 import { MIN_BOOK_LEAD_HOURS } from './booking.config';
 import { localDate } from '../utils/tz';
+import { computeSlotWindow } from './slot-window';
 import { expandRuleForDay, weekdayOf } from './rule-expand';
-import { isOccupied, overlapsBusy, applyOverrides } from './slot-filters';
-
-// D1 (аудит 2026-08): жёсткий потолок перебора по суткам в getSlots — год с
-// запасом. Контроллер режет пользовательский запрос строже (92 дня); это —
-// абсолютный предохранитель от зависания event-loop при вызове в обход него.
-const MAX_SLOT_SCAN_DAYS = 366;
+import {
+  isOccupied,
+  overlapsBusy,
+  applyOverrides,
+  dedupeByStart,
+} from './slot-filters';
 
 // Override живёт максимум 180 мин (SlotOverrideItemDto) — запас скана назад
 // от rangeStart, чтобы поймать BLOCK, начавшийся раньше окна, но
@@ -52,19 +53,11 @@ export class SlotService {
       where: { isActive: true },
     });
 
-    // Окно, в которое обязан попасть каждый возвращённый слот — целые UTC-сутки
-    // fromDate..toDate (так исторически трактует диапазон вызывающий код,
-    // /api/booking/slots?from=YYYY-MM-DD&to=YYYY-MM-DD без времени).
-    const rangeStart = new Date(fromDate);
-    rangeStart.setUTCHours(0, 0, 0, 0);
-    const rawRangeEnd = new Date(toDate);
-    rawRangeEnd.setUTCHours(23, 59, 59, 999);
-    // D1 (аудит 2026-08): защитный потолок перебора по суткам. Контроллер уже
-    // режет запрос на 92 дня (400) — это второй рубеж на случай вызова в обход
-    // него: без него огромный диапазон вешал event-loop (DoS всего API).
-    const maxEndMs = rangeStart.getTime() + MAX_SLOT_SCAN_DAYS * 86_400_000;
-    const rangeEnd =
-      rawRangeEnd.getTime() > maxEndMs ? new Date(maxEndMs) : rawRangeEnd;
+    // Одно окно на слоты, брони и календарь — см. slot-window.ts.
+    const { rangeStart, rangeEnd, bookingScanFrom } = computeSlotWindow(
+      fromDate,
+      toDate,
+    );
 
     // Ручной слой нужен ДО раннего выхода: OPEN обязан работать и без единого
     // правила (см. slot.service.spec.ts). Запас назад — максимальная
@@ -80,10 +73,10 @@ export class SlotService {
     const hasOpen = overrides.some((o) => o.kind === 'OPEN');
     if (!rules.length && !hasOpen) return [];
 
-    // Fetch all bookings in window that occupy a slot
+    // Брони, занимающие окно (в том числе начавшиеся до него, но заходящие в него)
     const busyBookings = await this.prisma.booking.findMany({
       where: {
-        startsAt: { gte: fromDate, lte: toDate },
+        startsAt: { gte: bookingScanFrom, lte: rangeEnd },
         status: { in: [BookingStatus.HELD, BookingStatus.CONFIRMED] },
       },
       select: { startsAt: true, durationMin: true },
@@ -92,7 +85,7 @@ export class SlotService {
     // Busy intervals from the therapist's real calendar — only when explicitly
     // enabled, so /slots never depends on (or hangs on) CalDAV by default.
     const calBusy = this.blockBusy
-      ? await this.calDav.getBusyTimes(fromDate, toDate)
+      ? await this.calDav.getBusyTimes(rangeStart, rangeEnd)
       : [];
 
     // Earliest bookable instant: now + minimum lead time.
@@ -148,7 +141,8 @@ export class SlotService {
         o.kind !== 'OPEN' ||
         (o.startsAt >= rangeStart && o.startsAt <= rangeEnd),
     );
-    return applyOverrides(slots, inWindow, {
+    // Пересекающиеся правила рождают один startsAt дважды (инцидент 2026-09-29).
+    return applyOverrides(dedupeByStart(slots), inWindow, {
       earliest,
       bookings: busyBookings,
       busy: calBusy,

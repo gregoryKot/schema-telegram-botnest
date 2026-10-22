@@ -15,7 +15,9 @@ import { AuthService } from '../auth.service';
 import { MergeService } from '../merge.service';
 import { SecurityLogService } from '../security-log.service';
 import { LoginTicketService } from './login-ticket.service';
+import { claimApproval, loadForApproval } from './ticket-approval';
 import type { LinkPreview } from './login-ticket.types';
+import * as authPii from '../../utils/auth-provider-crypto';
 
 @Injectable()
 export class TicketLinkService {
@@ -43,58 +45,55 @@ export class TicketLinkService {
           where: { userId: row.userId, provider: row.provider },
         })
       : null;
-    // Этот поток тоже зовёт merge.merge() ниже, значит и здесь второй фактор
-    // переносимого аккаунта пропадает — предпросмотр обязан это показать.
+    // Этот поток тоже зовёт merge.merge(): 2FA переносимого аккаунта пропадает.
     const { counts, twoFactorLost } =
       sameAccount || !row.userId
         ? { counts: {}, twoFactorLost: false }
         : await this.merge.summarize(row.userId, targetUserId);
     return {
       provider: row.provider,
-      displayName: source?.displayName ?? null,
+      displayName: source
+        ? authPii.decryptAuthProviderRow(source).displayName
+        : null,
       sameAccount,
       summary: counts,
       twoFactorLost,
     };
   }
 
-  /** Человек подтвердил. Здесь и происходит перенос. */
+  /** Человек подтвердил: здесь перенос. `repeat` — он уже подтверждал. */
   async approve(
     userCode: string,
     targetUserId: bigint,
     ip?: string,
-  ): Promise<{ merged: boolean }> {
-    const row = await this.tickets.liveByUserCode(userCode);
-    if (row.intent !== 'link') {
-      throw new BadRequestException('Этот код не для привязки');
-    }
-    if (row.approvedUserId)
-      throw new BadRequestException('Код уже подтверждён');
-    // Запоминаем источник до всякой записи: дальше хозяин строки меняется, и
-    // читать его оттуда уже нельзя.
+    viaTelegramId?: bigint,
+  ): Promise<{ merged: boolean; repeat?: true }> {
+    const row = await loadForApproval(
+      { prisma: this.prisma, tickets: this.tickets },
+      userCode,
+      { userId: targetUserId, intent: 'link', via: viaTelegramId },
+    );
+    if (!row) return { merged: false, repeat: true };
+    // Источник запоминаем до записи: дальше хозяин строки меняется. Тот же
+    // аккаунт (sameAccount) — переносить нечего.
     const sourceUserId = row.userId;
+    const sameAccount = sourceUserId === null || sourceUserId === targetUserId;
 
-    const approved = { approvedUserId: targetUserId, approvedAt: new Date() };
-    if (sourceUserId === null || sourceUserId === targetUserId) {
-      // Подтвердили под тем же аккаунтом — переносить нечего.
-      await this.prisma.loginTicket.update({
-        where: { id: row.id },
-        data: approved,
-      });
-      return { merged: false };
-    }
+    // Хозяина строки меняем ДО merge: иначе merge снесёт её вместе с
+    // исчезающим аккаунтом (SECURITY_SENSITIVE_TABLES) — «код не найден».
+    // Захват атомарный: повтор или параллельный тап возвращается здесь, до
+    // merge, — второй раз переносить уже нечего (источник удалён).
+    const claim = await claimApproval(
+      this.prisma,
+      row,
+      targetUserId,
+      sameAccount ? {} : { userId: targetUserId },
+    );
+    if (claim === 'repeat') return { merged: false, repeat: true };
+    if (sameAccount) return { merged: false };
 
     const source = await this.prisma.authProvider.findFirst({
       where: { userId: sourceUserId, provider: row.provider },
-    });
-
-    // Хозяина строки меняем ДО merge. Иначе merge снесёт её вместе с
-    // исчезающим аккаунтом (SECURITY_SENSITIVE_TABLES), и приложение,
-    // вернувшись за сессией, увидит «код не найден» — при том, что данные уже
-    // переехали.
-    await this.prisma.loginTicket.update({
-      where: { id: row.id },
-      data: { userId: targetUserId, ...approved },
     });
 
     try {

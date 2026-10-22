@@ -6,7 +6,8 @@
 //   2. «Это не я» доезжает до билета отказом, а не тишиной;
 //   3. тексты звучат в обеих формах обращения и не приписывают читателю род.
 import { Logger } from '@nestjs/common';
-import { TelegramLoginService, confirmText } from './telegram.login.service';
+import { TelegramLoginService } from './telegram.login.service';
+import { confirmText } from './telegram.login-card';
 import { makeFakeBot, makeCtx, runAction } from './telegram.test-helpers.spec';
 import type { LoginTicketService } from '../auth/login-ticket/login-ticket.service';
 import type { BotService } from '../bot/bot.service';
@@ -76,6 +77,12 @@ describe('/start login_<КОД> — карточка сверки', () => {
     expect(JSON.stringify(extra)).toContain('tglogin:no:K7M2QX94');
   });
 
+  it('карточку закрепляют за тем, кому показали: forConfirm получает сырой telegramId (B1)', async () => {
+    const { service, ticketService } = makeDeps();
+    await service.handleStart(makeCtx(), 'login_K7M2QX94', 42);
+    expect(ticketService.forConfirm).toHaveBeenCalledWith('K7M2QX94', 42n);
+  });
+
   it('негодный код — говорит об этом, а не молчит и не показывает карточку', async () => {
     const { service } = makeDeps({ card: null });
     const ctx = makeCtx();
@@ -121,7 +128,11 @@ describe('кнопки подтверждения', () => {
       from: { id: 42 },
     });
 
-    expect(ticketService.approveLogin).toHaveBeenCalledWith('K7M2QX94', 42n);
+    expect(ticketService.approveLogin).toHaveBeenCalledWith(
+      'K7M2QX94',
+      42n,
+      42n,
+    );
     expect(ctx.editMessageText.mock.calls[0][0]).toMatch(/Готово/);
   });
 
@@ -133,7 +144,7 @@ describe('кнопки подтверждения', () => {
       from: { id: 42 },
     });
 
-    expect(ticketService.deny).toHaveBeenCalledWith('K7M2QX94');
+    expect(ticketService.deny).toHaveBeenCalledWith('K7M2QX94', 42n);
     expect(ticketService.approveLogin).not.toHaveBeenCalled();
     // Причина отказа теперь в аудите: ручное «это не я» отличается от
     // перебора кодов, хотя событие у них одно.
@@ -185,6 +196,9 @@ describe('кнопки подтверждения', () => {
 describe('текст карточки — обе формы обращения, без приписанного рода', () => {
   it('форма «ты»', () => {
     const text = confirmText('ty', 'K7M2QX94', 'iPhone · Safari');
+    // Перед «вс-» — «во» (аудит 2026-10). Заодно этот заголовок держит
+    // смысл проверки «билет привязки — не карточка входа» ниже.
+    expect(text).toContain('Вход во «Всё по схеме»');
     expect(text).toContain('видишь');
     expect(text).toContain('K7M2-QX94');
   });
@@ -276,9 +290,14 @@ describe('tglogin:yes — чей аккаунт впускаем', () => {
 
     await runAction(fakeBot, 'tglogin:yes:K7M2QX94', { from: { id: 42 } });
 
-    expect(ticketService.approveLogin).toHaveBeenCalledWith('K7M2QX94', WEB);
+    expect(ticketService.approveLogin).toHaveBeenCalledWith(
+      'K7M2QX94',
+      WEB,
+      42n,
+    );
     expect(ticketService.approveLogin).not.toHaveBeenCalledWith(
       'K7M2QX94',
+      42n,
       42n,
     );
   });
@@ -315,6 +334,6 @@ describe('/start login_<КОД> — сверка намерения', () => {
 
     const text = (ctx.reply as jest.Mock).mock.calls[0][0];
     expect(text).toContain('не найден');
-    expect(text).not.toContain('Вход в «Всё по схеме»');
+    expect(text).not.toContain('Вход во «Всё по схеме»');
   });
 });

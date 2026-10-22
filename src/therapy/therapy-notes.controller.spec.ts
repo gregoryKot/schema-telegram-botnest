@@ -35,7 +35,9 @@ type AccountMock = Pick<AccountService, 'getUserRole'> & {
 
 function makeNotes(): NotesMock {
   return {
-    getNotes: jest.fn().mockResolvedValue([{ id: 1, text: 'заметка' }]),
+    getNotes: jest
+      .fn()
+      .mockResolvedValue({ notes: [{ id: 1, text: 'заметка' }], total: 7 }),
     createNote: jest
       .fn()
       .mockResolvedValue({ id: 2, date: '2026-07-01', text: 'новая' }),
@@ -83,8 +85,8 @@ describe('TherapyNotesController.getNotes', () => {
   it('терапевт → делегирует getNotes(therapistId, clientId)', async () => {
     const { controller, notes } = makeController();
     const res = await controller.getNotes(makeReq(3n), '5');
-    expect(notes.getNotes).toHaveBeenCalledWith(3n, 5);
-    expect(res).toEqual([{ id: 1, text: 'заметка' }]);
+    expect(notes.getNotes).toHaveBeenCalledWith(3n, 5n);
+    expect(res).toEqual({ notes: [{ id: 1, text: 'заметка' }], total: 7 });
   });
 
   it('No active relation → ForbiddenException', async () => {
@@ -142,14 +144,14 @@ describe('TherapyNotesController.createNote', () => {
   it('валидное тело → делегирует createNote(therapistId, clientId, {date, text})', async () => {
     const { controller, notes } = makeController();
     const res = await controller.createNote(makeReq(3n), '5', VALID_BODY);
-    expect(notes.createNote).toHaveBeenCalledWith(3n, 5, {
+    expect(notes.createNote).toHaveBeenCalledWith(3n, 5n, {
       date: '2026-07-01',
       text: 'текст заметки',
     });
     expect(res).toEqual({ id: 2, date: '2026-07-01', text: 'новая' });
   });
 
-  it('текст длиннее 5000 символов обрезается до 5000 перед передачей в сервис', async () => {
+  it('текст длиннее прежних 5000 доходит до сервиса целиком: лимит один, в DTO (backend#29)', async () => {
     const { controller, notes } = makeController();
     const longText = 'а'.repeat(6000);
     await controller.createNote(makeReq(3n), '5', {
@@ -157,7 +159,7 @@ describe('TherapyNotesController.createNote', () => {
       text: longText,
     });
     const passed = notes.createNote.mock.calls[0][2] as { text: string };
-    expect(passed.text).toHaveLength(5000);
+    expect(passed.text).toBe(longText);
   });
 
   it('No active relation → ForbiddenException', async () => {
@@ -210,7 +212,7 @@ describe('TherapyNotesController.getConceptualization', () => {
   it('терапевт → делегирует getConceptualization(therapistId, clientId)', async () => {
     const { controller, notes } = makeController();
     const res = await controller.getConceptualization(makeReq(3n), '5');
-    expect(notes.getConceptualization).toHaveBeenCalledWith(3n, 5);
+    expect(notes.getConceptualization).toHaveBeenCalledWith(3n, 5n);
     expect(res).toEqual({ schemaIds: [] });
   });
 
@@ -250,7 +252,7 @@ describe('TherapyNotesController.updateSessionInfo', () => {
     const { controller, clientData } = makeController();
     const body = { therapyStartDate: '2026-01-01', meetingDays: [1, 3] };
     const res = await controller.updateSessionInfo(makeReq(3n), '5', body);
-    expect(clientData.updateSessionInfo).toHaveBeenCalledWith(3n, 5, body);
+    expect(clientData.updateSessionInfo).toHaveBeenCalledWith(3n, 5n, body);
     expect(res).toEqual({ ok: true });
   });
 
@@ -290,7 +292,7 @@ describe('TherapyNotesController.saveConceptualization', () => {
     const { controller, notes } = makeController();
     const body = { schemaIds: ['abandonment'] };
     const res = await controller.saveConceptualization(makeReq(3n), '5', body);
-    expect(notes.saveConceptualization).toHaveBeenCalledWith(3n, 5, body);
+    expect(notes.saveConceptualization).toHaveBeenCalledWith(3n, 5n, body);
     expect(res).toEqual({ ok: true });
   });
 

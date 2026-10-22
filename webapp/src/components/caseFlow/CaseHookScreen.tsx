@@ -1,3 +1,4 @@
+import { CASE_HOOK_LEDE } from '../../../../shared/src/onboarding/onboardingExplainers';
 import { ExScreen } from '../exercises/ExScreen';
 import { TertiaryLink } from './caseLinks';
 import { CaseSupportBlock } from './CaseSupportFoot';
@@ -22,32 +23,20 @@ export function CaseHookScreen({
       onBack={onBack}
       backLabel="Закрыть"
       eyebrow="Разбор случая"
-      eyebrowColor="var(--accent-indigo)"
       title="Что сегодня зацепило?"
-      lede="Крупное необязательно — хватит мелочи: сообщение, взгляд, тишина в ответ."
+      lede={CASE_HOOK_LEDE}
     >
       <button
         type="button"
-        className="ex-btn ex-btn-primary"
+        className="ds-btn"
         onClick={onStart}
       >
         Разобрать свой случай
       </button>
-      <div
-        style={{
-          display: 'inline-block',
-          marginTop: 14,
-          padding: '6px 12px',
-          borderRadius: 999,
-          background: 'var(--surface-2)',
-          color: 'var(--text-sub)',
-          fontSize: 12,
-          fontWeight: 600,
-        }}
-      >
-        ≈ 3 минуты
+      <div className="ex2-gap">
+        <span className="ds-badge">≈ 3 минуты</span>
       </div>
-      <div className="u-mt8">
+      <div>
         <TertiaryLink label="Сегодня ровный день →" onClick={onSteadyDay} />
         <CaseSupportBlock crisis={false} onHardNow={onHardNow} />
       </div>

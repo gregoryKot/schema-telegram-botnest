@@ -6,14 +6,11 @@
 // безопасности, сбои платежей, сбои канала волн 2/3/7) улетает в никуда без
 // следа — это и есть позвоночник всех рантайм-наблюдателей щита.
 //
-// Чистая функция от env — используется загрузочной сводкой
-// (capability-boot-log.ts) и блоком «Настройки» в /stats
-// (src/bot/capability-metrics.format.ts).
-//
-// Гейт scripts/check-capability-registry.mjs сверяет силовую ветку
-// «if (!config) return» — файл либо в `files` ниже, либо в
-// capability-registry-baseline.json (REGISTERED_FILES там зеркалит `files`).
-import { buildOauthRedirectCapability } from '../auth/oauth-redirect-config';
+// Чистая функция от env — для загрузочной сводки (capability-boot-log.ts) и
+// блока «Настройки» в /stats (src/bot/capability-metrics.format.ts). Гейт
+// scripts/check-capability-registry.mjs: файл с веткой «if (!config) return»
+// — либо в `files` ниже, либо в capability-registry-baseline.json.
+import { buildIntegrationCapabilities } from './capability-integrations';
 
 export interface CapabilityStatus {
   /** Слаг для тестов/сверки. */
@@ -92,21 +89,6 @@ export function buildCapabilityReport(
       critical: false,
     },
     {
-      id: 'legacyEncryptionMigration',
-      title: 'Дошифровка старых записей при старте',
-      on: has(env, 'ENCRYPTION_KEY'),
-      envVars: ['ENCRYPTION_KEY'],
-      offReason:
-        'Дошифровка старых записей пропущена: нет ENCRYPTION_KEY (в проде ' +
-        'без него процесс вообще не стартует — см. src/utils/crypto.ts, ' +
-        'здесь это только dev/CI).',
-      files: [
-        'src/prisma/encryption-wave2.service.ts',
-        'src/utils/encrypt-migration.ts',
-      ],
-      critical: false,
-    },
-    {
       // Не «фича выключена», а деградация в более строгую сторону: без
       // секретов подпись проверить нечем, и лимит запросов считается по
       // адресу. Обход этим не открывается — наоборот, закрывается; цену
@@ -146,8 +128,7 @@ export function buildCapabilityReport(
       files: ['src/channel/targets/threads-token.service.ts'],
       critical: false,
     },
-    // Инцидент 2026-09-16: сама запись — в src/auth/oauth-redirect-config.ts.
-    buildOauthRedirectCapability(env),
+    ...buildIntegrationCapabilities(env),
   ];
 }
 

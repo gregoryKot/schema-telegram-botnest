@@ -371,7 +371,9 @@ pointer-based div: без `role="slider"`, `tabIndex`, `aria-value*`, стрел
 - **Заглушек вместо данных нет** — наоборот, «сбой ≠ пусто» закомментировано
   и корректно разведено (`DiarySection.tsx:41-45`, `PlansScreen.tsx:18-20`).
 - **`useHistorySheet` соблюдается дисциплинированно** — ~54 места, одно
-  нарушение (В6).
+  нарушение (В6). *Дополнение 2026-10:* без гейта класс вернулся — чек-ин в
+  `ModesTab` родился после В6 и закрывал справочник целиком; теперь под
+  `scripts/check-history-sheet.mjs`.
 - **`pressable()` из `shared/src/utils/a11y.ts`** — 114 применений на два
   фронтенда, кликабельные div реально доступны с клавиатуры.
 - **`NeedRatingBar`** — образцовый доступный контрол.
@@ -417,8 +419,10 @@ pointer-based div: без `role="slider"`, `tabIndex`, `aria-value*`, стрел
 «правило без механизма не работает»):
 
 - гейт на `fontSize` ниже порога (храповик по образцу robot-phrases);
-- гейт «оверлей с `inset: 0` обязан вызывать `useHistorySheet`» (В6 нашлось
-  вручную);
+- ~~гейт «оверлей с `inset: 0` обязан вызывать `useHistorySheet`»~~ — сделан:
+  `scripts/check-history-sheet.mjs` (инлайн `position: fixed` + `inset: 0` и
+  className с CSS-классом того же свойства; исключения — в
+  `scripts/history-sheet-baseline.json` с причиной);
 - в дифф-тест парных файлов (правило №3) добавить проверку «строка с
   обращением в одной копии обёрнута в `tr()`, в другой нет» — ровно класс К1;
 - мёртвый файл, живой только импортом типа (Ж1), — учесть в
@@ -470,7 +474,7 @@ pointer-based div: без `role="slider"`, `tabIndex`, `aria-value*`, стрел
 | Ж2. Два входа в настройку «Инструментов» | done · волна 5 (текущая) | Оставлена шестерёнка `HelpHeader` (тот же паттерн, что «Сегодня»/«Паттерны»), пилюля «Настроить» убрана из `ToolsList` — решение и его причина зафиксированы в комментарии кода. |
 | Ж3. FloatingPill «+» против `TodayFocusCard` | done · волна 5 (текущая) | «+» скрыта на «Сегодня» (`section !== 'today'` в `AppDiaryNav.tsx`), на остальных трёх вкладках — видна, нижняя навигация видна всегда. |
 | Ж4. Нативный `confirm()` × 3 | done · волна 5 (текущая) | Общий `webapp/src/components/ConfirmDialog.tsx` (`useDialogA11y`, Escape) — `AccountPage` (отвязка провайдера — заодно починен старый баг с текстом диалога для VK/MAX/Email), `ModeMapSelector` (удаление карты), `useClientDetail`/`ClientHeader` (удаление клиента). `DeleteAccountDialog` переведён на тот же примитив. |
-| Ж5. Escape в `useHistorySheet` (webapp) | done · #398 | webapp слушает Escape наравне с miniapp (стек id смонтированных шитов — Escape закрывает верхний из наложенных) — единый паттерн закрытия. |
+| Ж5. Escape в `useHistorySheet` (webapp) | done · #398 | webapp слушает Escape через стек id смонтированных шитов (Escape закрывает верхний из наложенных). Мини-апп образцом не был: `BottomSheet` вешал свой слушатель на каждый шит, и Escape закрывал все разом — исправлено 2026-10 общим стеком диалогов в `useDialogA11y` (`shared/src/utils/dialogStack.ts`), им же теперь пользуются оба фронта. |
 | Ж6. `scrollIntoView({behavior:'smooth'})` игнорировал reduced-motion | done · #403 | Общий `shared/src/utils/scrollIntoView.ts` — 11 живых вызовов (9 webapp + 2 miniapp) переведены. |
 | Ж7. `aria-expanded`/`role="button"` на панелях | частично · #403 | a) `aria-expanded` — 2 явно названных в аудите места (`SchemasTab`, `EntryCards`); полного свипа всех раскрывашек не было. b) `role="button"` только ради `stopPropagation` — убран во всех найденных случаях (`NeedAdviceModal`, `CommandPalette`, `DonateNudge`, `InfoModal`). **Открыто**: остальные раскрывашки miniapp, упомянутые в аудите как «5 штук», но не перечисленные поимённо. |
 | Ж8. Свайп между потребностями в трекере сайта | **открыто** | Только miniapp; тач-аудитория сайта листает стрелками — не входило ни в одну волну. |

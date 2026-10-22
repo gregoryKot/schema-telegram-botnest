@@ -47,7 +47,7 @@ describe('DiaryController schema diary', () => {
     expect(diaryService.createSchemaDiaryEntry).not.toHaveBeenCalled();
   });
 
-  it('обрезает свободный текст до 2000 символов перед сохранением', async () => {
+  it('свободный текст доходит до сервиса целиком: лимит один, в DTO (backend#29)', async () => {
     const { controller, diaryService } = makeController();
     await controller.createSchemaDiary(makeReq(6n), {
       trigger: 'x'.repeat(3000),
@@ -58,8 +58,8 @@ describe('DiaryController schema diary', () => {
     const [userId, saved] = (diaryService.createSchemaDiaryEntry as jest.Mock)
       .mock.calls[0];
     expect(userId).toBe(6n);
-    expect(saved.trigger.length).toBe(2000);
-    expect(saved.thoughts.length).toBe(2000);
+    expect(saved.trigger).toBe('x'.repeat(3000));
+    expect(saved.thoughts).toBe('y'.repeat(2500));
   });
 
   it('успешное создание в фоне запускает checkStreakTasks, падение фона не мешает ответу', async () => {
@@ -152,7 +152,7 @@ describe('DiaryController gratitude diary', () => {
     expect(diaryService.upsertGratitudeDiaryEntry).not.toHaveBeenCalled();
   });
 
-  it('обрезает каждый item до 500 символов', async () => {
+  it('пункты благодарности доходят до сервиса целиком (лимит — в DTO)', async () => {
     const { controller, diaryService } = makeController();
     await controller.createGratitudeDiary(makeReq(2n), {
       date: '2026-07-17',
@@ -161,7 +161,7 @@ describe('DiaryController gratitude diary', () => {
     expect(diaryService.upsertGratitudeDiaryEntry).toHaveBeenCalledWith(
       2n,
       '2026-07-17',
-      ['a'.repeat(500), 'короткий'],
+      ['a'.repeat(600), 'короткий'],
     );
   });
 

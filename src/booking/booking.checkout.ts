@@ -1,13 +1,12 @@
-import { Booking, BookingStatus, SessionType } from '@prisma/client';
+import { Booking, BookingStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { BookingNotifyService } from './booking-notify.service';
 import { RobokassaService } from './robokassa.service';
-import { PricingService } from './pricing.service';
 import { decryptRecord, EncryptSchema } from '../utils/crypto';
+import { assertPaymentAvailable } from './payment-guard';
 
-// Что происходит после создания брони: бесплатная сессия подтверждается
-// сразу, платная получает ссылку на оплату (или тоже подтверждается, если
-// Robokassa не настроена — dev). Вынесено из booking.service.ts (правило №10).
+// После создания брони: бесплатная и платная не в рублях подтверждаются сразу,
+// платная в рублях получает ссылку на оплату (правило №10: из booking.service.ts).
 
 /** Loose e-mail check — enough to decide whether to forward it to Robokassa. */
 function isEmail(s: string): boolean {
@@ -18,7 +17,6 @@ export interface CheckoutDeps {
   prisma: PrismaService;
   notify: BookingNotifyService;
   robokassa: RobokassaService;
-  pricing: PricingService;
   siteUrl: string;
   schema: EncryptSchema;
 }
@@ -29,14 +27,12 @@ export interface BookingResult {
   heldUntil: Date | null;
   status: BookingStatus;
   paymentUrl: string | null;
-  meetingUrl: string | null;
 }
 
-/**
- * Подтвердить бронь сразу: расшифровать, уведомить, отдать CONFIRMED-ответ.
- * Один путь для бесплатной сессии и для dev-режима без Robokassa — раньше
- * этот блок стоял в двух местах слово в слово.
- */
+/** Подтвердить бронь сразу: расшифровать, уведомить, отдать CONFIRMED-ответ
+ * (бесплатная сессия и dev-режим без Robokassa — один путь). Ссылки на встречу
+ * в ответе нет ни на одном пути: ручка анонимная, а комната клиента ищется по
+ * контакту — назвавший чужой контакт получил бы чужую комнату. */
 async function confirmNow(
   deps: CheckoutDeps,
   booking: Booking,
@@ -50,7 +46,6 @@ async function confirmNow(
     heldUntil: null,
     status: BookingStatus.CONFIRMED,
     paymentUrl: null,
-    meetingUrl: plain.meetingUrl ?? null,
   };
 }
 
@@ -59,30 +54,36 @@ export async function completeCheckout(
   booking: Booking,
   opts: {
     isFree: boolean;
+    manual?: boolean; // платная не в рублях: подтверждается сразу, без Robokassa
     cancelToken: string;
     heldUntil: Date | null;
     startsAt: Date;
-    type: SessionType;
     clientContact: string;
+    adminNote?: string; // пометка админу в «ожидает оплаты», клиенту не видна
   },
 ): Promise<BookingResult> {
-  const { isFree, cancelToken, heldUntil } = opts;
-  if (isFree) return confirmNow(deps, booking, cancelToken);
+  const { isFree, manual, cancelToken, heldUntil } = opts;
+  if (isFree || manual) return confirmNow(deps, booking, cancelToken);
 
-  // Robokassa not configured (dev): auto-confirm so slot isn't stuck in HELD.
+  // Вторая линия обороны: book() отказывает раньше, до INSERT (payment-guard).
+  assertPaymentAvailable(deps.robokassa, 'booking');
+  // Dev без Robokassa: auto-confirm (строку создал этот запрос, токен не отдан).
   if (!deps.robokassa.enabled) {
-    await deps.prisma.booking.update({
-      where: { id: booking.id },
+    await deps.prisma.booking.updateMany({
+      where: { id: booking.id, status: BookingStatus.HELD },
       data: { status: BookingStatus.CONFIRMED, heldUntil: null },
     });
     return confirmNow(deps, booking, cancelToken);
   }
 
-  // Paid session — build Robokassa payment URL.
-  const price = await deps.pricing.getPrice(opts.type);
+  // Paid session — build Robokassa payment URL по сумме счёта, сохранённой в
+  // брони при записи (не по второму чтению цены: она могла смениться).
+  if (booking.amount == null) {
+    throw new Error(`Booking ${booking.id} has no invoiced amount`);
+  }
   const paymentUrl = deps.robokassa.buildPaymentUrl({
     invId: booking.id,
-    amount: price,
+    amount: booking.amount,
     desc: `Психологическая сессия ${new Intl.DateTimeFormat('ru-RU', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Moscow' }).format(opts.startsAt)} МСК`,
     // Pass the client's e-mail so Robokassa / «Мой налог» can send the cheque.
     // Only when the contact actually is an e-mail (could be a phone / @handle).
@@ -90,10 +91,9 @@ export async function completeCheckout(
     successUrl: `${deps.siteUrl}/api/payment/success`,
     failUrl: `${deps.siteUrl}/api/payment/fail`,
   });
-  // Tell the admin a slot is reserved & awaiting payment — so even if the
-  // client's payment fails (or Robokassa is misconfigured), the request and
-  // contact are never lost.
-  await deps.notify.onAwaitingPayment(decryptRecord(booking, deps.schema));
+  // Admin hears "awaiting payment": the lead survives a failed payment.
+  const plain = decryptRecord(booking, deps.schema);
+  await deps.notify.onAwaitingPayment(plain, opts.adminNote);
 
   return {
     id: booking.id,
@@ -101,6 +101,5 @@ export async function completeCheckout(
     heldUntil,
     status: BookingStatus.HELD,
     paymentUrl,
-    meetingUrl: null,
   };
 }

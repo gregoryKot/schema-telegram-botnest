@@ -1,7 +1,7 @@
 import { GlyphPlus, GlyphX } from '../ExScreen';
 
 // Список доказательств (за/против) в проверке убеждения: строки с
-// удалением + поле добавления. Вынесено из BeliefCheckEx.tsx (правило №10).
+// удалением + поле добавления (правило №10). «×» видна всегда, зона 44×44.
 export function EviList({
   items,
   onRemove,
@@ -18,13 +18,13 @@ export function EviList({
   placeholder: string;
 }) {
   return (
-    <div className="evi-list">
+    <div className="ex2-evi">
       {items.map((f, i) => (
-        <div key={i} className="evi-row">
-          <span className="evi-num">{String(i + 1).padStart(2, '0')}</span>
-          <span className="evi-text">{f}</span>
+        <div key={i} className="ex2-evi-row">
+          <span className="ex2-evi-num">{String(i + 1).padStart(2, '0')}</span>
+          <span className="ex2-evi-text">{f}</span>
           <button
-            className="evi-x"
+            className="ex2-evi-x"
             onClick={() => onRemove(i)}
             aria-label="Удалить"
           >
@@ -32,19 +32,19 @@ export function EviList({
           </button>
         </div>
       ))}
-      <div className="evi-add">
-        <span className="evi-add-plus">
+      <div className="ex2-evi-add">
+        <span className="ex2-evi-plus">
           <GlyphPlus />
         </span>
         <input
-          className="evi-add-input"
+          className="ds-input"
           value={input}
           onChange={(e) => onInput(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && onAdd()}
           placeholder={placeholder}
         />
         <button
-          className={'evi-add-go ' + (input.trim() ? 'ready' : '')}
+          className={'ds-btn ds-btn--sm ds-btn--secondary ex2-evi-go' + (input.trim() ? ' is-ready' : '')}
           onClick={onAdd}
         >
           ⏎ добавить

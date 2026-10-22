@@ -1,16 +1,20 @@
+import { buildPracticesIntro } from '../../../shared/src/onboarding/onboardingExplainers';
+import { PRACTICE_TEXT_MAX } from '../../../shared/src/limits/textLimits';
 import { useState, useEffect, useCallback } from 'react';
 import { api } from '../api';
 import type { UserPractice } from '../api';
 import { useAsyncData } from '../hooks/useAsyncData';
 import { Loader } from './Loader';
-import { COLORS } from '../types';
 import { useHistorySheet } from '../hooks/useHistorySheet';
+import { useConfirmTap } from '../../../shared/src/hooks/useConfirmTap';
 import { useTr } from '../utils/addressForm';
 import { useNeedData } from '../needData';
 import { pressable } from '../utils/a11y';
 import { detectCrisisAny } from '../utils/crisisMarkers';
 import { CrisisCard } from './CrisisCard';
-
+import { NEED_HUE, hueStyle } from '../lib/tone';
+import type { NeedId } from '../../../shared/src/needs/types';
+import '../styles/sheet-tasks.css';
 const NEED_IDS = ['attachment', 'autonomy', 'expression', 'play', 'limits'];
 const NEED_NAMES: Record<string, string> = {
   attachment: 'Привязанность', autonomy: 'Автономия',
@@ -76,115 +80,102 @@ export function PracticesScreen({ onClose, onOpenTracker }: Props) {
     });
   }
 
+  // Удаление двумя тапами (как в мини-аппе): первый — «Точно удалить?», второй стирает.
+  const { tap: tapDelete, isPending: deletePending } = useConfirmTap<number>(handleDelete);
+
   const needId = NEED_IDS[needIdx];
-  const needColor = COLORS[needId] ?? 'var(--accent)';
   const todayScore = ratings[needId];
   const isLow = todayScore !== undefined && todayScore <= 4;
   const isMid = todayScore !== undefined && todayScore > 4 && todayScore <= 7;
 
   return (
     <div data-testid="practices-screen" className="u-sheet">
-      <div className="page-inner-wide" style={{ paddingTop: 40, paddingBottom: 80 }}>
-        {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 36 }}>
+      <div className="sk-page sk-page--wide">
+        <div className="ds-head-row sk-head">
           <div>
-            <div className="eyebrow u-mb8">
-              <span className="u-accent">● </span>Каталог практик
-            </div>
-            <h1 className="hub-title u-mb8">Мои<br /><span className="it">практики</span></h1>
-            <div className="text-md muted" style={{ maxWidth: 560, lineHeight: 1.6 }}>
-              Конкретные действия, которые наполняют потребность.
-              {onOpenTracker && <> Что-то просело? <span {...pressable(onOpenTracker)} className="link u-pointer">{tr('Открой трекер →', 'Откройте трекер →')}</span></>}
+            <div className="ds-eyebrow">Каталог практик</div>
+            <h1 className="ds-h2 sk-title">Мои<br /><em className="sk-it">практики</em></h1>
+            <div className="ds-sub sk-lead sk-intro">
+              {buildPracticesIntro(tr)}
+              {onOpenTracker &&<> Что-то просело? <span {...pressable(onOpenTracker)} className="ds-link">{tr('Открой трекер →', 'Откройте трекер →')}</span></>}
             </div>
           </div>
-          <div style={{ display: 'flex', gap: 'var(--space-12)', alignItems: 'center' }}>
-            {errorToast && <span className="text-sm" style={{ color: 'var(--c-rose)', fontWeight: 500 }}>Ошибка сохранения</span>}
-            {addedToast && <span className="text-sm" style={{ color: 'var(--c-moss)', fontWeight: 500 }}>Добавлено</span>}
-            <button onClick={goBack} className="btn btn-secondary">Закрыть</button>
+          <div className="sk-head-actions">
+            {errorToast && <span className="sk-error">Ошибка сохранения</span>}
+            {addedToast && <span className="sk-ok">Добавлено</span>}
+            <button onClick={goBack} className="ds-btn ds-btn--secondary">Закрыть</button>
           </div>
         </div>
 
-        {/* Need tabs – calm document style */}
-        <div className="tabs u-mb28">
+        <div className="ds-seg">
           {NEED_IDS.map((id, i) => {
-            const active = i === needIdx;
             const score = ratings[id];
             return (
               <button
                 key={id}
-                className={`tab ${active ? 'is-active' : ''}`}
+                className={'ds-seg-btn' + (i === needIdx ? ' is-active' : '')}
                 onClick={() => { setNeedIdx(i); setInput(''); }}
               >
                 {NEED_NAMES[id]}
-                {score !== undefined && <span className="count" style={{ color: score <= 4 ? 'var(--c-rose)' : score <= 7 ? 'var(--c-amber)' : 'var(--c-moss)' }}>{score}</span>}
+                {score !== undefined && <span className="ds-count">{score}</span>}
               </button>
             );
           })}
         </div>
 
-        {/* Contextual hint */}
         {(isLow || isMid) && (
-          <div className="section" style={{ paddingBottom: 8 }}>
-            <div className="text-md" style={{ color: isLow ? needColor : 'var(--c-amber)', lineHeight: 1.55, maxWidth: 600 }}>
-              {isLow
-                ? <>Сегодня <b>{NEED_NAMES[needId]}</b> на {todayScore}/10 – хороший момент чтобы что-то сделать для этой потребности.</>
-                : <>Сегодня {NEED_NAMES[needId]} – {todayScore}/10. Есть куда расти.</>}
-            </div>
+          <div className="sk-hint tone-tint" style={hueStyle(NEED_HUE[needId as NeedId])}>
+            {isLow
+              ? <>Сегодня <b>{NEED_NAMES[needId]}</b> на {todayScore}/10 – хороший момент чтобы что-то сделать для этой потребности.</>
+              : <>Сегодня {NEED_NAMES[needId]} – {todayScore}/10. Есть куда расти.</>}
           </div>
         )}
 
-        {/* Practices list */}
-        <div className="section">
-          <div className="section-head">
-            <h3>{NEED_DATA[needId]?.name ?? NEED_NAMES[needId]}</h3>
-            {practices && <span className="hint">{practices.length} {practices.length === 1 ? 'практика' : practices.length < 5 ? 'практики' : 'практик'}</span>}
+        <section className="sk-group">
+          <div className="ds-head-row">
+            <h3 className="ds-h3">{NEED_DATA[needId]?.name ?? NEED_NAMES[needId]}</h3>
+            {practices && <span className="ds-sub">{practices.length} {practices.length === 1 ? 'практика' : practices.length < 5 ? 'практики' : 'практик'}</span>}
           </div>
           {practicesFailed ? (
-            <div role="alert" className="text-sm" style={{ color: 'var(--c-rose)' }}>
+            <div role="alert" className="sk-error">
               {tr('Не удалось загрузить практики. Проверь соединение и обнови страницу', 'Не удалось загрузить практики. Проверьте соединение и обновите страницу')}
             </div>
           ) : !practices ? (
             <Loader minHeight="20vh" />
           ) : practices.length === 0 ? (
-            <div className="text-sm muted">{tr('Пока пусто — добавь первую практику ниже.', 'Пока пусто — добавьте первую практику ниже.')}</div>
+            <div className="ds-sub">{tr('Пока пусто — добавь первую практику ниже.', 'Пока пусто — добавьте первую практику ниже.')}</div>
           ) : (
-            practices.map(p => (
-              <div key={p.id} className="list-line">
-                <div className="u-fill">
-                  <div className="text-md" style={{ lineHeight: 1.5 }}>{p.text}</div>
+            <div className="sk-list">
+              {practices.map(p => (
+                <div key={p.id} className="ds-card ds-card--row sk-practice">
+                  <div className="sk-practice-text">{p.text}</div>
+                  <button onClick={() => tapDelete(p.id as number)} className="ds-link sk-danger">
+                    {deletePending(p.id as number) ? 'Точно удалить?' : 'удалить'}
+                  </button>
                 </div>
-                <button
-                  onClick={() => handleDelete(p.id as number)}
-                  className="link"
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', color: 'var(--c-rose)' }}
-                >
-                  удалить
-                </button>
-              </div>
-            ))
+              ))}
+            </div>
           )}
-        </div>
+        </section>
 
-        {/* Add input */}
-        <div className="section">
-          <div className="eyebrow u-mb10">Новая практика</div>
-          <div className="text-sm muted" style={{ marginBottom: 12, maxWidth: 600 }}>
+        <section className="sk-group">
+          <div className="ds-label">Новая практика</div>
+          <div className="ds-sub">
             Небольшое конкретное действие – например «позвонить другу» или «прогулка 20 минут»
           </div>
-          <div style={{ display: 'flex', gap: 'var(--space-8)', maxWidth: 600 }}>
+          <div className="sk-add">
             <input
               value={input}
               onChange={e => setInput(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter') handleAdd(); }}
               placeholder="Добавить практику..."
-              maxLength={200}
-              className="input"
-              style={{ flex: 1 }}
+              maxLength={PRACTICE_TEXT_MAX}
+              className="ds-input"
             />
             <button
               onClick={handleAdd}
               disabled={!input.trim() || saving}
-              className={input.trim() ? 'btn btn-primary' : 'btn btn-secondary'}
+              className="ds-btn"
             >
               {saving ? '...' : '+ Добавить'}
             </button>
@@ -192,7 +183,7 @@ export function PracticesScreen({ onClose, onOpenTracker }: Props) {
           {/* правило №7: свободный текст обязан проходить кризисную детекцию,
               до сохранения/шифрования — см. LetterEx/GratitudeEntrySheet */}
           {detectCrisisAny(input) && <CrisisCard surface="practice" />}
-        </div>
+        </section>
       </div>
     </div>
   );

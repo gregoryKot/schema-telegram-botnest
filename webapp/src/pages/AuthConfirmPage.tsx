@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/authContext';
 import { useTr } from '../utils/addressForm';
+import { ServicePage } from './service/ServicePage';
 import { formatUserCode } from '../../../shared/src/auth/loginTicketCode';
 
 const API_BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? '';
@@ -89,110 +90,67 @@ export function AuthConfirmPage() {
     setPhase('denied');
   };
 
-  const wrap: React.CSSProperties = {
-    paddingTop: 'var(--space-48)',
-    paddingBottom: 'var(--space-48)',
-    maxWidth: 420,
-    margin: '0 auto',
-  };
-
   if (phase === 'notfound') {
     return (
-      <div className="page-inner-wide" style={wrap}>
-        <h1 style={{ fontSize: 28, fontWeight: 600, marginBottom: 14 }}>
-          Код не найден
-        </h1>
-        <div className="text-md muted" style={{ lineHeight: 1.6 }}>
-          {tr(
-            'Возможно, времени прошло слишком много или код уже использован. Открой вход в приложении заново.',
-            'Возможно, времени прошло слишком много или код уже использован. Откройте вход в приложении заново.',
-          )}
+      <ServicePage>
+        <div className="as-body">
+          <h1 className="ds-h2">Код не найден</h1>
+          <p className="as-lead">
+            {tr(
+              'Возможно, времени прошло слишком много или код уже использован. Открой вход в приложении заново.',
+              'Возможно, времени прошло слишком много или код уже использован. Откройте вход в приложении заново.',
+            )}
+          </p>
         </div>
-      </div>
+      </ServicePage>
     );
   }
 
   if (phase === 'denied') {
     return (
-      <div className="page-inner-wide" style={wrap}>
-        <h1 style={{ fontSize: 28, fontWeight: 600, marginBottom: 14 }}>
-          Доступ никто не получил
-        </h1>
-        <div className="text-md muted" style={{ lineHeight: 1.6 }}>
-          {tr(
-            'Если этот код пришёл со стороны, всё правильно — подтверждать его не стоило.',
-            'Если этот код пришёл со стороны, всё правильно — подтверждать его не стоило.',
-          )}
+      <ServicePage>
+        <div className="as-body">
+          <h1 className="ds-h2">Доступ никто не получил</h1>
+          <p className="as-lead">
+            {tr(
+              'Если этот код пришёл со стороны, всё правильно — подтверждать его не стоило.',
+              'Если этот код пришёл со стороны, всё правильно — подтверждать его не стоило.',
+            )}
+          </p>
         </div>
-      </div>
+      </ServicePage>
     );
   }
 
   return (
-    <div className="page-inner-wide" style={wrap}>
-      <div className="eyebrow u-mb14">
-        Вход по коду
+    <ServicePage>
+      <div className="as-body">
+        <div className="ds-eyebrow">Вход по коду</div>
+        <h1 className="ds-h2">{tr('Это ты открываешь приложение?', 'Это вы открываете приложение?')}</h1>
+        <p className="as-lead">
+          {tr(
+            'Сверь код с тем, что показан в приложении, откуда ты входишь.',
+            'Сверьте код с тем, что показан в приложении, откуда вы входите.',
+          )}
+        </p>
+        <div className="as-code">{formatUserCode(code)}</div>
+        <p className="as-lead">
+          {tr(
+            'Если это не ты открываешь приложение — нажми «Это не я»: кто-то мог прислать этот код, чтобы попасть в твой аккаунт.',
+            'Если это не вы открываете приложение — нажмите «Это не я»: кто-то мог прислать этот код, чтобы попасть в ваш аккаунт.',
+          )}
+        </p>
+        <div className="as-actions">
+          <button type="button" onClick={confirm} disabled={phase === 'busy'} className="ds-btn">
+            {phase === 'busy'
+              ? tr('Впускаю…', 'Впускаю…')
+              : tr('Да, это я — впустить', 'Да, это я — впустить')}
+          </button>
+          <button type="button" onClick={deny} disabled={phase === 'busy'} className="ds-btn ds-btn--secondary as-btn-deny">
+            Это не я
+          </button>
+        </div>
       </div>
-      <h1
-        style={{
-          fontSize: 32,
-          fontWeight: 600,
-          lineHeight: 1.1,
-          marginBottom: 14,
-        }}
-      >
-        {tr('Это ты открываешь приложение?', 'Это вы открываете приложение?')}
-      </h1>
-      <div
-        className="text-md muted"
-        style={{ lineHeight: 1.6, marginBottom: 8 }}
-      >
-        {tr(
-          'Сверь код с тем, что показан в приложении, откуда ты входишь.',
-          'Сверьте код с тем, что показан в приложении, откуда вы входите.',
-        )}
-      </div>
-      <div
-        style={{
-          fontSize: 30,
-          fontWeight: 700,
-          letterSpacing: 3,
-          fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
-          margin: '10px 0 20px',
-        }}
-      >
-        {formatUserCode(code)}
-      </div>
-      <div
-        className="text-sm muted"
-        style={{ lineHeight: 1.6, marginBottom: 24 }}
-      >
-        {tr(
-          'Если это не ты открываешь приложение — нажми «Это не я»: кто-то мог прислать этот код, чтобы попасть в твой аккаунт.',
-          'Если это не вы открываете приложение — нажмите «Это не я»: кто-то мог прислать этот код, чтобы попасть в ваш аккаунт.',
-        )}
-      </div>
-      <div className="u-col12">
-        <button
-          type="button"
-          onClick={confirm}
-          disabled={phase === 'busy'}
-          className="btn btn-primary"
-        >
-          {phase === 'busy'
-            ? tr('Впускаю…', 'Впускаю…')
-            : tr('Да, это я — впустить', 'Да, это я — впустить')}
-        </button>
-        <button
-          type="button"
-          onClick={deny}
-          disabled={phase === 'busy'}
-          className="btn"
-          style={{ color: 'var(--c-rose)' }}
-        >
-          Это не я
-        </button>
-      </div>
-    </div>
+    </ServicePage>
   );
 }

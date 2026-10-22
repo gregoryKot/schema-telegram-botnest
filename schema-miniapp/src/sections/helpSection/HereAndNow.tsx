@@ -1,6 +1,6 @@
 import { ToolRow } from '../../components/ToolRow';
 import { BreathingCard } from '../../components/BreathingCard';
-import { practiceCountLabel } from '../../../../shared/src/practices/PracticeDoneFooter';
+import { practiceCountLabel } from '../../../../shared/src/practices/practiceCountLabel';
 import type { QuickPracticeId } from '../../../../shared/src/practices/quickPractices';
 import type { HelpOverlaysState } from './useHelpOverlays';
 
@@ -15,9 +15,12 @@ export function HereAndNow({
 }) {
   return (
     <>
+      <div className="u-sub13-lh15" style={{ margin: '0 4px' }}>
+        Три коротких практики самопомощи из КПТ и ДБТ — на одну-три минуты, для
+        момента, когда накрыло.
+      </div>
       {/* ── «Здесь и сейчас» (дизайн-макет, волна 2): дыхание первым ── */}
       <BreathingCard />
-
       <div className="section-label" style={{ margin: '8px 4px -4px' }}>
         Если нужно больше
       </div>

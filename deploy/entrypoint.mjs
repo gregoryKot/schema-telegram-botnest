@@ -1,27 +1,25 @@
 // Точка входа контейнера (Dockerfile CMD). Node-супервизор старта.
 //
-// Ключевое отличие от прежней версии: публичный порт 3000 с ПЕРВОЙ секунды
-// держит front (deploy/front-server.mjs), а приложение слушает внутренний
-// APP_PORT. Поэтому пока идёт старт (recover → migrate → буст Nest) или пока
-// приложение крашлупит, клиент видит нашу страницу техработ, а не generic-503
-// самой Amvera. Как только приложение поднимает APP_PORT — front прозрачно
-// проксирует на него; упало — снова страница техработ. Никакого окна, где порт
-// 3000 пустой (кроме пересборки образа — это уровень платформы).
+// Публичный порт 3000 с ПЕРВОЙ секунды держит front (deploy/front-server.mjs),
+// приложение слушает внутренний APP_PORT. Пока идёт старт (recover → migrate →
+// буст Nest) или крашлуп, клиент видит нашу страницу техработ, а не generic-503
+// Amvera; поднялось — front проксирует. Окна с пустым портом нет.
 //
-// Логика:
-//   1. front поднимается сразу (владеет портом 3000 всю жизнь контейнера);
-//   2. recover-p3009 (идемпотентно, ошибки игнорируем);
-//   3. migrate deploy — упал → front остаётся на техработах, приложение не
-//      стартуем (не гоним крашлуп по битой схеме);
-//   4. node dist/main на APP_PORT — с ограниченным числом перезапусков
-//      (транзиентный краш восстанавливается сам); исчерпали лимит → техработы.
+// Логика: front сразу (владеет портом 3000) → ожидание БД → recover-p3009 →
+// migrate deploy (упал → техработы навсегда: повтор неидемпотентной миграции
+// задваивает DML, лечится руками) → node dist/main на APP_PORT с лимитом
+// падений за окно (crash-window.mjs) → планировщик бэкапов. Лимит исчерпан или
+// БД не поднялась → техработы, пауза (cooldownMs) и новая серия: HEALTHCHECK при
+// этом красный (Dockerfile смотрит тело /health, не код front).
 //
-// Graceful shutdown: Node как PID 1 ловит SIGTERM/SIGINT и пробрасывает их
-// текущему дочернему процессу приложения (bot.stop, prisma disconnect), затем
-// закрывает front и выходит.
+// Graceful shutdown: Node как PID 1 ловит SIGTERM/SIGINT, пробрасывает их
+// приложению (bot.stop, prisma disconnect), затем закрывает front и выходит.
 import { spawn } from 'node:child_process';
 import { startFront } from './front-server.mjs';
+import backupScheduler from './backup-scheduler.cjs';
 import { parseDbTarget, waitForDb } from './wait-for-db.mjs';
+import { classifyAppExit, crashMessage, superviseSeries } from './app-exit.mjs';
+import { createCrashBook, positiveOr } from './crash-window.mjs';
 
 const PORT =
   process.env.PORT !== undefined && process.env.PORT !== ''
@@ -36,6 +34,9 @@ const MIGRATE_CMD = process.env.MIGRATE_CMD ?? 'npx prisma migrate deploy';
 const APP_CMD = process.env.APP_CMD ?? 'exec node dist/main';
 const MAX_FAILS = Number(process.env.STARTUP_MAX_FAILS ?? 3);
 const BACKOFF_MS = Number(process.env.STARTUP_BACKOFF_MS ?? 2000);
+// Пауза между сериями после исчерпанного лимита (×2 до потолка).
+const COOLDOWN_MS = Number(process.env.STARTUP_COOLDOWN_MS ?? 300000);
+const COOLDOWN_MAX_MS = Number(process.env.STARTUP_COOLDOWN_MAX_MS ?? 3600000);
 // Ожидание готовности БД перед миграциями (инцидент 2026-07-20, см.
 // wait-for-db.mjs) и ретраи migrate deploy на окне инициализации Postgres.
 const DB_WAIT_TIMEOUT_MS = Number(process.env.DB_WAIT_TIMEOUT_MS ?? 120000);
@@ -43,8 +44,10 @@ const DB_WAIT_INTERVAL_MS = Number(process.env.DB_WAIT_INTERVAL_MS ?? 2000);
 const DB_WAIT_CONNECT_MS = Number(process.env.DB_WAIT_CONNECT_MS ?? 3000);
 const MIGRATE_MAX_ATTEMPTS = Number(process.env.MIGRATE_MAX_ATTEMPTS ?? 3);
 const MIGRATE_BACKOFF_MS = Number(process.env.MIGRATE_BACKOFF_MS ?? 3000);
-// Проработал дольше — считаем следующий краш «свежим», а не частью крашлупа.
-const HEALTHY_UPTIME_MS = Number(process.env.STARTUP_HEALTHY_MS ?? 60000);
+// Лимит серии (MAX_FAILS за 15 мин или MAX_FAILS_HOUR за час) и троттл DM — crash-window.mjs.
+const CRASH_WINDOW_MS = positiveOr(process.env.STARTUP_CRASH_WINDOW_MS, 900000);
+const MAX_FAILS_HOUR = positiveOr(process.env.STARTUP_MAX_FAILS_HOUR, 6);
+const book = createCrashBook({ windowMs: CRASH_WINDOW_MS, maxFails: MAX_FAILS, hourMaxFails: MAX_FAILS_HOUR });
 
 // Front занимает публичный порт немедленно; приложение живёт на APP_PORT.
 const front = startFront({ port: PORT, appPort: APP_PORT });
@@ -52,11 +55,12 @@ const front = startFront({ port: PORT, appPort: APP_PORT });
 let current = null;
 let shuttingDown = false;
 let cleanExit = false;
+let backup = null; // планировщик бэкапов в R2 (deploy/backup-scheduler.cjs)
 
 function finish() {
-  // Front держит event loop живым (слушает порт). Явно закрываем и выходим,
-  // только когда это осмысленно (чистый выход приложения или сигнал). При
-  // техработах — НЕ выходим: front должен продолжать отдавать страницу.
+  // Front держит event loop живым. Выходим только при чистом выходе приложения
+  // или сигнале; при техработах — НЕ выходим: front отдаёт страницу.
+  backup?.stop();
   front.close(() => process.exit(0));
   // Страховка, если close висит на удерживаемых соединениях.
   setTimeout(() => process.exit(0), 3000).unref();
@@ -65,9 +69,8 @@ function finish() {
 for (const sig of ['SIGTERM', 'SIGINT']) {
   process.on(sig, () => {
     shuttingDown = true;
-    // Есть живой ребёнок (app) → пробрасываем сигнал для graceful shutdown;
-    // дождёмся его выхода в main() и закроемся там. Нет ребёнка (идут техработы
-    // или пауза) → закрываемся сами.
+    // Есть живой ребёнок → пробрасываем сигнал (graceful shutdown), закроемся
+    // в main() после его выхода. Нет ребёнка (техработы, пауза) → закрываемся сами.
     if (current && !current.killed) current.kill(sig);
     else finish();
   });
@@ -93,13 +96,11 @@ function run(cmdStr, extraEnv) {
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
+// Одна серия. { reason: 'limit' | 'db', healthy } — исчерпана, superviseSeries
+// выдержит паузу и начнёт новую; undefined — завершение или парковка по migrate.
 async function main() {
-  // Ждём готовности БД перед recover/migrate: при рестарте контейнера
-  // Postgres-под Amvera (CNPG) поднимается медленнее приложения, и migrate
-  // deploy падал с P1001 (БД недоступна) → entrypoint навсегда парковался на
-  // техработах, хотя схема цела (инцидент 2026-07-20). Ждём именно TCP-порт:
-  // P1001 — это и есть отказ connect. Пока ждём, front и так отдаёт техработы,
-  // так что ожидание ничего не ухудшает — только даёт БД время встать.
+  // Ждём TCP-порт БД перед recover/migrate: CNPG поднимается медленнее
+  // приложения, migrate падал с P1001 (инцидент 2026-07-20).
   const dbTarget = parseDbTarget(process.env.DATABASE_URL);
   if (dbTarget) {
     const reachable = await waitForDb({
@@ -110,19 +111,14 @@ async function main() {
       log: (m) => console.warn(m),
     });
     if (shuttingDown) return;
-    if (!reachable) {
-      console.error('[entrypoint] БД не поднялась в отведённое время — держу техработы');
-      return;
-    }
+    if (!reachable) return { reason: 'db', healthy: false };
   }
 
   await run(RECOVER_CMD);
   if (shuttingDown) return;
 
-  // migrate deploy с ретраями: доступность TCP ещё не гарантирует, что Postgres
-  // готов обслуживать запросы (короткое окно инициализации). Персистентную
-  // ошибку миграции (битый SQL/P3009) ретраи не «вылечат» — просто отложат
-  // техработы на backoff; это приемлемо и не роняет прод в крашлуп.
+  // migrate deploy с ретраями: открытый TCP не гарантирует готовность Postgres.
+  // Битый SQL/P3009 ретраи не вылечат — лишь отложат техработы на backoff.
   let migrateOk = false;
   for (let attempt = 1; attempt <= MIGRATE_MAX_ATTEMPTS; attempt++) {
     const migrate = await run(MIGRATE_CMD);
@@ -142,31 +138,33 @@ async function main() {
     return; // front уже отдаёт техработы; приложение не стартуем
   }
 
-  let fails = 0;
+  // Бэкапам нужна таблица CronLease — стартуем только после успешных миграций.
+  backup ??= backupScheduler.startBackupScheduler();
+
+  book.newSeries();
+  let healthy = false; // хоть раз прожило дольше окна → пауза не растёт
   for (;;) {
     const startedAt = Date.now();
-    // Приложение слушает внутренний APP_PORT — front проксирует на него.
-    const app = await run(APP_CMD, { PORT: String(APP_PORT) });
-    if (shuttingDown || app.signal) return; // graceful shutdown / убит сигналом
-    if (app.code === 0) {
+    // APP_PORT — внутренний, front проксирует; номер запуска и троттл DM — start-announce.ts.
+    const app = await run(APP_CMD, { PORT: String(APP_PORT), ...book.launchEnv(startedAt) });
+    const exit = classifyAppExit(app, shuttingDown);
+    if (exit === 'stop') return; // graceful shutdown по нашему SIGTERM/SIGINT
+    if (exit === 'clean') {
       cleanExit = true; // чистый выход приложения → выходим и мы
       return;
     }
     const ranMs = Date.now() - startedAt;
-    fails = ranMs > HEALTHY_UPTIME_MS ? 1 : fails + 1;
-    console.error(
-      `[entrypoint] приложение упало (code=${app.code}, ranMs=${ranMs}, fails=${fails}/${MAX_FAILS})`,
-    );
-    if (fails >= MAX_FAILS) {
-      console.error('[entrypoint] лимит перезапусков исчерпан — держу страницу техработ');
-      return; // front остаётся на техработах
-    }
-    await sleep(BACKOFF_MS * fails);
+    if (ranMs >= CRASH_WINDOW_MS) healthy = true;
+    const c = book.crash(Date.now());
+    console.error(crashMessage(app, ranMs, c.fails, MAX_FAILS, c.note));
+    if (c.limit) return { reason: 'limit', healthy }; // front на техработах
+    await sleep(BACKOFF_MS * c.fails);
     if (shuttingDown) return;
   }
 }
 
-main().then(() => {
+const cfg = { base: COOLDOWN_MS, max: COOLDOWN_MAX_MS, sleep, log: console.error };
+superviseSeries(main, { ...cfg, stopping: () => shuttingDown }).then(() => {
   if (shuttingDown || cleanExit) finish();
-  // Иначе (техработы) — процесс остаётся жив: front продолжает отдавать страницу.
+  // Иначе (парковка по migrate) — процесс жив: front отдаёт страницу.
 });

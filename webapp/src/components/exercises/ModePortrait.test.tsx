@@ -22,7 +22,7 @@ afterEach(() => {
 
 describe('ModePortrait (webapp)', () => {
   it('рендерит все 8 блоков портрета', () => {
-    render(<ModePortrait card={CARD} accentColor="#60a5fa" onStart={() => {}} />);
+    render(<ModePortrait card={CARD} hue={240} onStart={() => {}} />);
     expect(screen.getByText('Когда включается')).toBeTruthy();
     expect(screen.getByText('Как узнать в теле')).toBeTruthy();
     expect(screen.getByText('Что говорит')).toBeTruthy();
@@ -36,13 +36,13 @@ describe('ModePortrait (webapp)', () => {
 
   it('клик по главной кнопке зовёт onStart', () => {
     const onStart = vi.fn();
-    render(<ModePortrait card={CARD} accentColor="#60a5fa" onStart={onStart} />);
+    render(<ModePortrait card={CARD} hue={240} onStart={onStart} />);
     fireEvent.click(screen.getByText('Заполнить свою карточку →'));
     expect(onStart).toHaveBeenCalledTimes(1);
   });
 
   it('ctaLabel переопределяет текст кнопки (честный возврат, не «начало»)', () => {
-    render(<ModePortrait card={CARD} accentColor="#60a5fa" onStart={() => {}} ctaLabel="Назад к вопросам →" />);
+    render(<ModePortrait card={CARD} hue={240} onStart={() => {}} ctaLabel="Назад к вопросам →" />);
     expect(screen.getByText('Назад к вопросам →')).toBeTruthy();
     expect(screen.queryByText('Заполнить свою карточку →')).toBeNull();
   });

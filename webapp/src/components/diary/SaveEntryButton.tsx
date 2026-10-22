@@ -14,7 +14,7 @@ export function SaveEntryButton({
 }) {
   return (
     <button
-      className="ex-btn ex-btn-primary u-ac8"
+      className="ds-btn"
       disabled={!canSave || saving}
       onClick={onSave}
     >

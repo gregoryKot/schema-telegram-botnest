@@ -26,7 +26,7 @@ export function ArticlesSection({ adminKey }: { adminKey: string }) {
   return (
     <section style={card}>
       <div style={{ display: 'flex', alignItems: 'center', marginBottom: 14 }}>
-        <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', margin: 0, flex: 1 }}>Статьи</h2>
+        <h2 style={{ fontFamily: 'var(--serif)', fontSize: 26, fontWeight: 400, letterSpacing: '-0.01em', color: 'var(--text)', margin: 0, flex: 1 }}>Статьи</h2>
         <button style={btn} onClick={() => setEditing('new')}>+ Новая статья</button>
       </div>
       {/* Сбой ≠ пусто: неверный ключ или обрыв сети раньше выглядел как «статей нет». */}

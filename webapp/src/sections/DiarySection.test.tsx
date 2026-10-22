@@ -107,6 +107,36 @@ describe('DiarySection — пустой аккаунт (без хардкод-з
   });
 });
 
+describe('DiarySection — строка «N записей · давность» на карточках хаба', () => {
+  it('пустой дневник: «Пока пусто» на всех трёх карточках', async () => {
+    renderSection();
+    await waitFor(() => expect(screen.getByText('Пока ни одной записи')).toBeTruthy());
+    const metas = [...document.querySelectorAll('.cd-quick-meta')].map(n => n.textContent);
+    expect(metas).toEqual(['Пока пусто', 'Пока пусто', 'Пока пусто']);
+  });
+
+  it('записи: число и давность последней считаются по реальным данным', async () => {
+    mockApi.getSchemaDiary.mockResolvedValue([
+      schemaEntry({ id: 2, createdAt: new Date().toISOString() }),
+      schemaEntry({ id: 1 }),
+    ]);
+    mockApi.getModeDiary.mockResolvedValue([modeEntry({ createdAt: new Date().toISOString() })]);
+    renderSection();
+    await waitFor(() => expect(document.querySelectorAll('.cd-quick-meta')[0]?.textContent).toBe('2 записи · сегодня'));
+    const metas = [...document.querySelectorAll('.cd-quick-meta')].map(n => n.textContent);
+    expect(metas[1]).toBe('1 запись · сегодня');
+    expect(metas[2]).toBe('Пока пусто');
+  });
+
+  it('при сбое загрузки строки нет: «Пока пусто» соврало бы про стёртые записи', async () => {
+    mockApi.getSchemaDiary.mockRejectedValue(new Error('network down'));
+    renderSection();
+    await waitFor(() => expect(mockApi.getSchemaDiary).toHaveBeenCalled());
+    await waitFor(() => expect(screen.getByText('Пока ни одной записи')).toBeTruthy());
+    expect(document.querySelectorAll('.cd-quick-meta').length).toBe(0);
+  });
+});
+
 describe('DiarySection — сбой загрузки (сбой ≠ пусто)', () => {
   // Регрессия: раньше отказ Promise.all([getSchemaDiary, getModeDiary,
   // getGratitudeDiary]) оставлял entries [] без объяснения — дневник
@@ -117,8 +147,8 @@ describe('DiarySection — сбой загрузки (сбой ≠ пусто)',
     renderSection();
     const alert = await screen.findByRole('alert');
     expect(alert.textContent).toMatch(/Не удалось загрузить записи дневника/);
-    // Баннер не блокирует остальной UI — кнопка новой записи доступна.
-    expect(screen.getByText('+ Новая запись')).toBeTruthy();
+    // Баннер не блокирует остальной UI — карточки новой записи доступны.
+    expect(screen.getByText('Записать момент')).toBeTruthy();
   });
 
   it('«Обновить» перезапрашивает записи и убирает баннер при успехе', async () => {
@@ -213,11 +243,11 @@ describe('DiarySection — удаление записи (с подтвержд�
 });
 
 describe('DiarySection — новая запись', () => {
-  it('клик "+ Новая запись" открывает лист схемы (SchemaEntrySheet)', async () => {
+  it('карточка "Записать момент" открывает лист схемы (SchemaEntrySheet)', async () => {
     renderSection();
     await waitFor(() => expect(mockApi.getSchemaDiary).toHaveBeenCalled());
 
-    fireEvent.click(screen.getByText('+ Новая запись'));
+    fireEvent.click(screen.getByText('Записать момент'));
     await screen.findByTestId('schema-entry-sheet');
   });
 
@@ -234,7 +264,7 @@ describe('DiarySection — новая запись', () => {
     renderSection();
     await waitFor(() => expect(mockApi.getSchemaDiary).toHaveBeenCalled());
 
-    fireEvent.click(screen.getByText('+ Новая запись'));
+    fireEvent.click(screen.getByText('Записать момент'));
     fireEvent.click(await screen.findByText('Сохранить схему'));
 
     await waitFor(() => expect(screen.queryByTestId('schema-entry-sheet')).toBeNull());
@@ -281,7 +311,7 @@ describe('DiarySection — новая запись', () => {
     renderSection();
     await waitFor(() => expect(mockApi.getSchemaDiary).toHaveBeenCalled());
 
-    fireEvent.click(screen.getByText('+ Новая запись'));
+    fireEvent.click(screen.getByText('Записать момент'));
     fireEvent.click(await screen.findByText('Закрыть лист схемы'));
 
     await waitFor(() => expect(screen.queryByTestId('schema-entry-sheet')).toBeNull());
@@ -362,8 +392,37 @@ describe('DiarySection — группировка по дате', () => {
     // «сегодня · понедельник» рендерится как два соседних текстовых узла —
     // ищем по содержимому родителя, а не по одному узлу.
     await waitFor(() => {
-      const rel = document.querySelector('.date-group-rel');
+      const rel = document.querySelector('.cd-day-rel');
       expect(rel?.textContent).toContain('сегодня');
     });
+  });
+});
+
+describe('DiarySection — переход в трекер (паритет с мини-аппом)', () => {
+  it('с onOpenTracker показывает строку «Трекер потребностей» и вызывает переход', async () => {
+    const onOpenTracker = vi.fn();
+    render(<MemoryRouter><DiarySection onOpenTracker={onOpenTracker} /></MemoryRouter>);
+    await waitFor(() => expect(screen.getByText('Трекер потребностей')).toBeTruthy());
+    fireEvent.click(screen.getByText('Трекер потребностей'));
+    expect(onOpenTracker).toHaveBeenCalledTimes(1);
+  });
+
+  it('строка трекера: «Пока пусто» без отметок и «Последняя отметка · …» с ними', async () => {
+    const { unmount } = render(<MemoryRouter><DiarySection onOpenTracker={() => {}} /></MemoryRouter>);
+    await waitFor(() => expect(screen.getByText('Трекер потребностей')).toBeTruthy());
+    expect(document.querySelector('.cd-tracker-meta')?.textContent).toBe('Пока пусто');
+    unmount();
+    mockApi.getProfile.mockResolvedValue({
+      ysq: { activeSchemaIds: [] },
+      lastActivity: { needsTracker: new Date().toISOString() },
+    });
+    render(<MemoryRouter><DiarySection onOpenTracker={() => {}} /></MemoryRouter>);
+    await waitFor(() => expect(document.querySelector('.cd-tracker-meta')?.textContent).toBe('Последняя отметка · сегодня'));
+  });
+
+  it('без onOpenTracker строки трекера нет', async () => {
+    renderSection();
+    await waitFor(() => expect(screen.getByText('Пока ни одной записи')).toBeTruthy());
+    expect(screen.queryByText('Трекер потребностей')).toBeNull();
   });
 });

@@ -57,7 +57,7 @@ export function HealthyAdultSection({ adminKey }: { adminKey: string }) {
   return (
     <>
       <section style={card}>
-        <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginTop: 0, marginBottom: 8 }}>
+        <h2 style={{ fontFamily: 'var(--serif)', fontSize: 26, fontWeight: 400, letterSpacing: '-0.01em', color: 'var(--text)', marginTop: 0, marginBottom: 8 }}>
           Канал «Здоровый Взрослый»
         </h2>
         <p style={{ color: 'var(--text-sub)', fontSize: 14, margin: '0 0 14px', lineHeight: 1.5 }}>
@@ -86,7 +86,7 @@ export function HealthyAdultSection({ adminKey }: { adminKey: string }) {
       </section>
 
       <section style={card}>
-        <h3 style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', marginTop: 0, marginBottom: 12 }}>
+        <h3 style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)', marginTop: 0, marginBottom: 12 }}>
           Добавить фразу
         </h3>
         <div style={{ display: 'flex', gap: 'var(--space-8)', alignItems: 'flex-start' }}>

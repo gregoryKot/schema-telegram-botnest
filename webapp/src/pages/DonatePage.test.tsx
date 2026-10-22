@@ -4,11 +4,13 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, act, cleanup } from '@testing-library/react';
 import { DonatePage } from './DonatePage';
+import { AddressFormContext, type AddressForm } from '../utils/addressForm';
 
-vi.mock('../api', () => ({
-  api: { donate: vi.fn() },
-}));
-import { api } from '../api';
+vi.mock('../api', async () => {
+  const { ApiError } = await vi.importActual<typeof import('../apiClient')>('../apiClient');
+  return { api: { donate: vi.fn() }, ApiError };
+});
+import { api, ApiError } from '../api';
 const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
 
 function resetLocation() {
@@ -110,5 +112,74 @@ describe('DonatePage — ошибка API', () => {
     fireEvent.click(screen.getByRole('button', { name: /Поддержать/ }));
 
     await screen.findByText('Не получилось. Попробовать ещё раз.');
+  });
+});
+
+describe('DonatePage — оплата не настроена на сервере (503)', () => {
+  it('503 показывает «недоступна», а не призыв повторить', async () => {
+    mockApi.donate.mockRejectedValue(new ApiError(503, 'PAYMENT_UNAVAILABLE'));
+    render(<DonatePage />);
+    fireEvent.click(screen.getByRole('button', { name: /Поддержать/ }));
+
+    await screen.findByText(/Оплата сейчас недоступна/);
+    expect(screen.queryByText('Не получилось. Попробовать ещё раз.')).toBeNull();
+  });
+
+  it('другая ошибка API (500) по-прежнему просит попробовать ещё раз', async () => {
+    mockApi.donate.mockRejectedValue(new ApiError(500, 'boom'));
+    render(<DonatePage />);
+    fireEvent.click(screen.getByRole('button', { name: /Поддержать/ }));
+
+    await screen.findByText('Не получилось. Попробовать ещё раз.');
+    expect(screen.queryByText(/Оплата сейчас недоступна/)).toBeNull();
+  });
+});
+
+// security#27: Вебвизор визитки не должен писать ввод email (политика
+// конфиденциальности обещает обратное) — метка ym-disable-keys, как у формы записи.
+describe('DonatePage — Вебвизор не пишет ввод', () => {
+  it('поле email несёт ym-disable-keys', () => {
+    render(<DonatePage />);
+    const email = screen.getByPlaceholderText('Email для чека (необязательно)') as HTMLInputElement;
+    expect(email.type).toBe('email');
+    expect(email.className).toContain('ym-disable-keys');
+  });
+
+  it('поле суммы несёт ym-disable-keys: политика обещает «поля ввода не записываются» без исключений', () => {
+    render(<DonatePage />);
+    const amount = screen.getByPlaceholderText('Своя сумма, ₽') as HTMLInputElement;
+    expect(amount.type).toBe('number');
+    expect(amount.className).toContain('ym-disable-keys');
+  });
+});
+
+// Аудит 2026-10 (AUDIT_2026-10_FINDINGS, «Страница доната говорит „поддержите“»):
+// лид-текст звал «поддержите» вне tr() — пользователь с формой «ты» видел «вы».
+// /donate публичная и стоит вне RequireAuth/AddressFormProvider (App.tsx), из
+// Telegram/MAX уходит во внешний браузер, на визитке — гость: формы у страницы
+// нет по построению. Поэтому текст безличный, а не вилка useTr (вне провайдера
+// она всегда отдала бы «ты» — баг поменял бы сторону). Третий кейс — шов:
+// страница без провайдера, ровно как в App.tsx.
+describe('DonatePage — форма обращения', () => {
+  const ADDRESS = /(?<![А-Яа-яЁё])поддержи(те)?(?![А-Яа-яЁё])/i;
+
+  function leadWith(form: AddressForm | null): string {
+    const page = <DonatePage />;
+    const { container } = render(
+      form ? <AddressFormContext.Provider value={{ form, setForm: () => {} }}>{page}</AddressFormContext.Provider> : page,
+    );
+    const text = container.querySelector('.ap-lead')?.textContent ?? '';
+    cleanup();
+    return text;
+  }
+
+  it.each(['ty', 'vy', null] as const)('форма %s: лид без обращения, призыв безличный', (form) => {
+    const lead = leadWith(form);
+    expect(lead).toContain('можно поддержать любой суммой');
+    expect(lead).not.toMatch(ADDRESS);
+  });
+
+  it('лид одинаков при «ты», «вы» и без провайдера', () => {
+    expect(new Set([leadWith('ty'), leadWith('vy'), leadWith(null)]).size).toBe(1);
   });
 });

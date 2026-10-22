@@ -4,16 +4,21 @@
 // ClientConceptualization.schemaIds/modeIds/history).
 //
 // Важно: это НЕ универсальный скрипт ротации ENCRYPTION_KEY (тот —
-// scripts/rotate-encryption-key.ts, через reencrypt()). migrateClinicalLabels
+// src/cli/rotate-encryption/rotate-all.ts, через reencrypt()). migrateClinicalLabels
 // переводит легаси-плейнтекст в шифротекст текущим ключом эвристикой
 // looksPlaintext/Array.isArray — и НЕ перешифровывает уже зашифрованное
 // старым ключом (см. describe про смену ENCRYPTION_KEY, включая найденный
 // баг двойного шифрования).
 //
+// Остаток: строки под потерянным ключом считаются в unknownKey и в JSON-полях
+// (describe «остаток в JSON-полях» ниже), а не только в Note.tags/ModeDiaryEntry.
+//
 // Ключи читаются один раз при загрузке модуля — каждый сценарий грузит
 // свежую пару crypto.ts/encrypt-migration.ts через jest.isolateModules
 // (паттерн из src/utils/crypto.spec.ts).
 
+import { readFileSync } from 'fs';
+import { join } from 'path';
 import type { PrismaService } from '../prisma/prisma.service';
 
 type CryptoModule = typeof import('./crypto');
@@ -209,7 +214,7 @@ describe('migrateClinicalLabels — плейнтекст → шифротекс�
 });
 
 describe('поведение при уже проведённой смене ENCRYPTION_KEY (это НЕ ротация)', () => {
-  it('JSON-поле под старым ключом миграция не трогает вообще (эвристика — только Array.isArray)', async () => {
+  it('JSON-поле под старым ключом миграция не пишет (эвристика — только Array.isArray), но считает в остаток', async () => {
     const oldMods = load({ key: KEY_A });
     const oldBlob = oldMods.crypto.encryptJson(['abandon'])!;
 
@@ -217,11 +222,14 @@ describe('поведение при уже проведённой смене ENC
     const { migrateClinicalLabels } = load({ key: KEY_B });
     const entryRows = [{ id: 1, schemaIds: oldBlob }];
     const db = makeDb({ schemaDiaryEntries: entryRows }) as any;
-    await migrateClinicalLabels(db);
+    jest.spyOn(process.stderr, 'write').mockImplementation(() => true);
+    const result = await migrateClinicalLabels(db);
 
-    // Поле — строка (не массив), поэтому эвристика считает его «уже
+    // Поле — строка (не массив), поэтому на запись эвристика считает его «уже
     // зашифрованным» и не трогает вообще — независимо от того, каким именно
-    // ключом оно реально зашифровано. Строка остаётся нечитаемой без старого ключа.
+    // ключом оно реально зашифровано. Строка остаётся нечитаемой без старого
+    // ключа, и именно поэтому попадает в остаток (подробности — describe ниже).
+    expect(result.unknownKey).toEqual({ SchemaDiaryEntry: 1 });
     expect(db.schemaDiaryEntry.findMany).toHaveBeenCalledTimes(1);
     expect(db.schemaDiaryEntry.update).not.toHaveBeenCalled();
     // Значение в «БД» не тронуто вообще — тот же blob, что записали в фикстуру.
@@ -238,7 +246,7 @@ describe('поведение при уже проведённой смене ENC
     // decrypt() успешно читает старым ключом из ENCRYPTION_KEY_OLD ⇒
     // looksPlaintext=false ⇒ строка пропускается как «уже зашифрованная».
     // Значит, migrateClinicalLabels НЕ выполняет фактическую перешифровку на
-    // новый ключ — этим занимается только scripts/rotate-encryption-key.ts.
+    // новый ключ — этим занимается только src/cli/rotate-encryption/rotate-all.ts.
     expect(db.note.update).not.toHaveBeenCalled();
     expect(crypto.decrypt(oldBlob)).toBe('anxiety,anger'); // читается, пока жив OLD-ключ
   });
@@ -248,11 +256,16 @@ describe('поведение при уже проведённой смене ENC
     const oldBlob = oldMods.crypto.encrypt('anxiety,anger')!;
 
     // Сценарий инцидента: старый ключ убрали из env, не прогнав
-    // scripts/rotate-encryption-key.ts перед этим.
+    // src/cli/rotate-encryption/rotate-all.ts перед этим.
     const { migrateClinicalLabels } = load({ key: KEY_B });
-    const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    const stdoutWrite = jest
+      .spyOn(process.stdout, 'write')
+      .mockImplementation(() => true);
+    const stderrWrite = jest
+      .spyOn(process.stderr, 'write')
+      .mockImplementation(() => true);
     const db = makeDb({ notes: [{ id: 1, tags: oldBlob }] }) as any;
-    await migrateClinicalLabels(db);
+    const result = await migrateClinicalLabels(db);
 
     // Раньше: decrypt(oldBlob) новым ключом не срабатывает ⇒ decrypt()
     // возвращает oldBlob без изменений ⇒ looksPlaintext(oldBlob) === true
@@ -264,11 +277,22 @@ describe('поведение при уже проведённой смене ENC
     // «неизвестный ключ», а не «плейнтекст» ⇒ строка НЕ трогается, только
     // громкий warn — можно восстановить после починки ENCRYPTION_KEY_OLD.
     expect(db.note.update).not.toHaveBeenCalled();
-    expect(warn).toHaveBeenCalledWith(
-      expect.stringContaining(
-        'возможна неполная ротация ENCRYPTION_KEY — строка похожа на шифротекст, пропущена',
-      ),
+    expect(result.unknownKey).toEqual({ Note: 1 });
+    const warned = stdoutWrite.mock.calls.map((c) => String(c[0])).join('\n');
+    expect(warned).toContain(
+      'возможна неполная ротация ENCRYPTION_KEY — строка похожа на шифротекст, пропущена',
     );
+    // Итог — ОДИН error (его алертит AlertLogger), только счётчики и имя
+    // таблицы: ни id строки, ни шифроблок в сводку не попадают.
+    // (decrypt() в crypto.ts отдельно логирует свой error на нечитаемый blob —
+    // это его сигнал, здесь считаем только сводку миграции.)
+    const errored = stderrWrite.mock.calls
+      .map((c) => String(c[0]))
+      .filter((l) => l.includes('[EncryptMigration]'));
+    expect(errored).toHaveLength(1);
+    expect(errored[0]).toContain('строк под нечитаемым ключом: 1 (Note: 1)');
+    expect(errored[0]).toContain('старый ключ шифрования убран раньше');
+    expect(errored[0]).not.toContain(oldBlob);
 
     // Блоб остался нетронутым и всё ещё читается старым ключом.
     expect(oldMods.crypto.decrypt(oldBlob)).toBe('anxiety,anger');
@@ -286,6 +310,9 @@ describe('устойчивость к ошибкам при записи (изо
     const stdoutWrite = jest
       .spyOn(process.stdout, 'write')
       .mockImplementation(() => true);
+    const stderrWrite = jest
+      .spyOn(process.stderr, 'write')
+      .mockImplementation(() => true);
     const db = makeDb({
       notes: [
         { id: 1, tags: 'anxiety' },
@@ -298,7 +325,9 @@ describe('устойчивость к ошибкам при записи (изо
     // Раньше: первая же упавшая строка обрывала for-цикл целиком (throw
     // наружу из migrateClinicalLabels) — вторая заметка (id=2) и таблица
     // User так и не обрабатывались, try/catch по строке отсутствовал.
-    await expect(migrateClinicalLabels(db)).resolves.toBeUndefined();
+    const result = await migrateClinicalLabels(db);
+    expect(result.failures).toBe(1);
+    expect(result.encrypted).toMatchObject({ Note: 1, User: 1 });
 
     // Строка id=1 упала и осталась нетронутой в БД (update откатился),
     // но строка id=2 всё равно обработана, и таблица User дошла до findMany
@@ -309,7 +338,142 @@ describe('устойчивость к ошибкам при записи (изо
 
     // Сводка о падениях залогирована через Logger.warn.
     const logged = stdoutWrite.mock.calls.map((c) => String(c[0])).join('\n');
-    expect(logged).toEqual(expect.stringContaining('1 row failure'));
+    expect(logged).toEqual(expect.stringContaining('update failed, skipping'));
+    // Сводка — error (alert), а не warn: иначе до владельца не доходит.
+    const errored = stderrWrite.mock.calls.map((c) => String(c[0])).join('\n');
+    expect(errored).toContain('не удалось записать строк: 1');
     stdoutWrite.mockRestore();
+    stderrWrite.mockRestore();
+  });
+
+  it('чистый прогон не шлёт error-сводку', async () => {
+    const { migrateClinicalLabels } = load({ key: KEY_A });
+    jest.spyOn(process.stdout, 'write').mockImplementation(() => true);
+    const stderrWrite = jest
+      .spyOn(process.stderr, 'write')
+      .mockImplementation(() => true);
+    const db = makeDb({ notes: [{ id: 1, tags: 'anxiety' }] }) as any;
+    const result = await migrateClinicalLabels(db);
+    expect(result).toEqual({
+      encrypted: expect.objectContaining({ Note: 1 }),
+      failures: 0,
+      unknownKey: {},
+    });
+    expect(stderrWrite).not.toHaveBeenCalled();
+  });
+});
+
+// Остаток в JSON-полях: строка под потерянным ключом — тот же остаток, что у
+// Note.tags. Раньше её молча считали «уже зашифрованной», и проба рапортовала
+// «все метки зашифрованы» при нечитаемых данных. Считаем, но не пишем.
+describe('остаток в JSON-полях (строка под потерянным ключом)', () => {
+  const lostBlob = () => load({ key: KEY_A }).crypto.encryptJson(['abandon'])!;
+
+  const quietLogs = () => {
+    jest.spyOn(process.stdout, 'write').mockImplementation(() => true);
+    jest.spyOn(process.stderr, 'write').mockImplementation(() => true);
+  };
+
+  it('User: обе колонки под потерянным ключом — одна строка таблицы, не пишется', async () => {
+    const blob = lostBlob();
+    const { migrateClinicalLabels } = load({ key: KEY_B });
+    quietLogs();
+    const db = makeDb({
+      users: [
+        { id: 1, mySchemaIds: blob, myModeIds: blob },
+        { id: 2, mySchemaIds: blob, myModeIds: [] }, // массив пишется, строка считается
+      ],
+    }) as any;
+    const result = await migrateClinicalLabels(db);
+
+    expect(result.unknownKey).toEqual({ User: 2 });
+    expect(db.user.update).toHaveBeenCalledTimes(1); // только myModeIds: [] у id=2
+    expect(db.user.update.mock.calls[0][0].data).not.toHaveProperty(
+      'mySchemaIds',
+    );
+  });
+
+  it('ClientConceptualization: верхний уровень и снапшот истории — одна строка таблицы', async () => {
+    const blob = lostBlob();
+    const { migrateClinicalLabels } = load({ key: KEY_B });
+    quietLogs();
+    const db = makeDb({
+      conceptualizations: [
+        { id: 1, schemaIds: blob, modeIds: blob, history: [] },
+        {
+          id: 2,
+          schemaIds: [],
+          modeIds: [],
+          history: [{ modeIds: blob }, null],
+        },
+      ],
+    }) as any;
+    const result = await migrateClinicalLabels(db);
+
+    expect(result.unknownKey).toEqual({ ClientConceptualization: 2 });
+  });
+
+  it('строка под текущим ключом и пустое значение в остаток не идут; итог без error', async () => {
+    const { migrateClinicalLabels, crypto } = load({ key: KEY_B });
+    jest.spyOn(process.stdout, 'write').mockImplementation(() => true);
+    const stderr = jest
+      .spyOn(process.stderr, 'write')
+      .mockImplementation(() => true);
+    const ok = crypto.encryptJson(['abandon'])!;
+    const db = makeDb({
+      users: [{ id: 1, mySchemaIds: ok, myModeIds: '' }],
+      schemaDiaryEntries: [{ id: 2, schemaIds: ok }],
+      conceptualizations: [
+        { id: 3, schemaIds: ok, modeIds: ok, history: [{ schemaIds: ok }] },
+      ],
+    }) as any;
+    const result = await migrateClinicalLabels(db);
+
+    expect(result.unknownKey).toEqual({});
+    expect(stderr).not.toHaveBeenCalled();
+  });
+
+  it('под ENCRYPTION_KEY_OLD строка читается — не остаток', async () => {
+    const blob = lostBlob();
+    const { migrateClinicalLabels } = load({ key: KEY_B, old: KEY_A });
+    quietLogs();
+    const db = makeDb({ schemaDiaryEntries: [{ id: 1, schemaIds: blob }] });
+    const result = await migrateClinicalLabels(db);
+
+    expect(result.unknownKey).toEqual({});
+  });
+
+  it('остаток из JSON-поля попадает в error-сводку с именем таблицы, без шифроблока', async () => {
+    const blob = lostBlob();
+    const { migrateClinicalLabels } = load({ key: KEY_B });
+    jest.spyOn(process.stdout, 'write').mockImplementation(() => true);
+    const stderr = jest
+      .spyOn(process.stderr, 'write')
+      .mockImplementation(() => true);
+    const db = makeDb({
+      schemaDiaryEntries: [{ id: 7, schemaIds: blob }],
+    });
+    await migrateClinicalLabels(db);
+
+    const errored = stderr.mock.calls
+      .map((c) => String(c[0]))
+      .filter((l) => l.includes('[EncryptMigration]'));
+    expect(errored).toHaveLength(1);
+    expect(errored[0]).toContain('(SchemaDiaryEntry: 1)');
+    expect(errored[0]).not.toContain(blob);
+  });
+});
+
+// Класс «сигнал мимо AlertLogger» (аудит 2026-10): console.* и logger.warn не
+// доходят до владельца. Трипваер строгий, без исключений: в этих файлах
+// сообщения идут только через Nest Logger.
+describe('миграция клинических меток не пишет в console.*', () => {
+  it.each([
+    'src/utils/encrypt-migration.ts',
+    'src/utils/encrypt-migration.rows.ts',
+    'src/main.ts',
+  ])('%s', (file) => {
+    const src = readFileSync(join(__dirname, '..', '..', file), 'utf8');
+    expect(src).not.toMatch(/\bconsole\.(log|warn|error|info)\(/);
   });
 });

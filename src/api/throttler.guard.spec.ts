@@ -17,6 +17,7 @@ import { createHmac } from 'crypto';
 import type { ExecutionContext } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { UserThrottlerGuard } from './throttler.guard';
+import { verifiedInitDataSubject } from './throttler-init-data';
 import { PersistentThrottle } from './persistent-throttle.decorator';
 
 const JWT_SECRET = 'secret-for-tests';
@@ -49,9 +50,13 @@ function jwtWith(
   return `${head}.${body}.${sig}`;
 }
 
-function initDataWith(id: number, token: string | null): string {
+function initDataWith(
+  id: number,
+  token: string | null,
+  authDateS: number = Math.floor(Date.now() / 1000),
+): string {
   const params = new URLSearchParams({
-    auth_date: '1700000000',
+    auth_date: String(authDateS),
     user: JSON.stringify({ id }),
   });
   const checkString = Array.from(params.entries())
@@ -85,8 +90,23 @@ describe('UserThrottlerGuard.getTracker', () => {
 
   it('верифицированный userId (после auth-гарда) — чистый uid-бакет', async () => {
     await expect(
-      guard.track({ telegramUserId: 42, ip: '1.2.3.4' }),
+      guard.track({ webUser: { userId: 42n }, ip: '1.2.3.4' }),
     ).resolves.toBe('uid:42');
+  });
+
+  // Аудит 2026-10, X-1: через Number() два соседних id выше 2^53 (выдуманных,
+  // веб-id ниже) упали бы в один бакет. Ключ строится из точного bigint.
+  it('id > 2^53 (выдуманный) — точный ключ, соседние аккаунты не делят бакет', async () => {
+    const a = await guard.track({
+      webUser: { userId: 1000000000000000123n },
+      ip: '1.2.3.4',
+    });
+    const b = await guard.track({
+      webUser: { userId: 1000000000000000124n },
+      ip: '1.2.3.4',
+    });
+    expect(a).toBe('uid:1000000000000000123');
+    expect(b).toBe('uid:1000000000000000124');
   });
 
   it('честно подписанный JWT — свой бакет, без привязки к адресу', async () => {
@@ -156,6 +176,52 @@ describe('UserThrottlerGuard.getTracker', () => {
         ip: '5.6.7.8',
       }),
     ).resolves.toBe('uid:777');
+  });
+
+  // B2 (аудит 2026-10): подпись настоящая, но старая — гард её уже не примет,
+  // а счётчик раньше считал «проверенной» и пускал в личный бакет жертвы с
+  // любого адреса. Теперь — в бакет адреса.
+  it('настоящая, но протухшая initData (старше 3600 с) — бакет адреса, а не чужой uid', async () => {
+    const old = Math.floor(Date.now() / 1000) - 3601;
+    const stale = initDataWith(777, BOT_TOKEN, old);
+    const fresh = initDataWith(777, BOT_TOKEN);
+    expect(verifiedInitDataSubject(stale, BOT_TOKEN, Date.now())).toBeNull();
+    // Контроль: тот же пользователь со свежей подписью — свой бакет.
+    expect(verifiedInitDataSubject(fresh, BOT_TOKEN, Date.now())).toBe('777');
+  });
+
+  it('через гард: протухшая initData жертвы с чужого адреса — бакет адреса, не uid жертвы', async () => {
+    const stale = initDataWith(
+      777,
+      BOT_TOKEN,
+      Math.floor(Date.now() / 1000) - 7200,
+    );
+    await expect(
+      guard.track({
+        headers: { 'x-telegram-init-data': stale },
+        ip: '9.9.9.9',
+      }),
+    ).resolves.toBe('9.9.9.9');
+  });
+
+  it('граница окна: ровно 3600 с ещё свежая, 3601 — уже нет', () => {
+    const now = 1_800_000_000_000;
+    const at = (ageS: number) => initDataWith(5, BOT_TOKEN, now / 1000 - ageS);
+    expect(verifiedInitDataSubject(at(3600), BOT_TOKEN, now)).toBe('5');
+    expect(verifiedInitDataSubject(at(3601), BOT_TOKEN, now)).toBeNull();
+  });
+
+  it('без auth_date подпись не считается свежей', () => {
+    const params = new URLSearchParams({ user: JSON.stringify({ id: 5 }) });
+    const checkString = `user=${params.get('user')}`;
+    const hash = createHmac(
+      'sha256',
+      createHmac('sha256', 'WebAppData').update(BOT_TOKEN).digest(),
+    )
+      .update(checkString)
+      .digest('hex');
+    params.set('hash', hash);
+    expect(verifiedInitDataSubject(params.toString(), BOT_TOKEN)).toBeNull();
   });
 
   it('BOT_TOKEN с пробелом/переносом в env — initData всё равно в свой бакет', async () => {

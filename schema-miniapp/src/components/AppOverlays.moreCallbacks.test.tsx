@@ -14,6 +14,7 @@ import {
 } from '@testing-library/react';
 import { AppOverlays } from './AppOverlays';
 import type { UseSheetsReturn } from '../hooks/useSheets';
+import { buildOverlayClosers, type ClosersDeps } from '../hooks/overlayClosers';
 import { api } from '../api';
 
 type Cb = () => void;
@@ -126,9 +127,28 @@ function makeSheets(overrides: Partial<UseSheetsReturn> = {}): UseSheetsReturn {
   };
 }
 
-function baseProps(overrides: Partial<Parameters<typeof AppOverlays>[0]> = {}) {
+// closers строятся из тех же sheets/колбэков, что и в проде (useHostBackButton).
+type Overrides = Partial<Parameters<typeof AppOverlays>[0]> &
+  Partial<Omit<ClosersDeps, 'sheets'>>;
+
+function baseProps(overrides: Overrides = {}) {
+  const {
+    childhoodWheelPending = false,
+    setChildhoodWheelPending = vi.fn(),
+    onAddressPickerDone = vi.fn(),
+    ...rest
+  } = overrides;
+  const sheets = rest.sheets ?? makeSheets();
+  const setPairData = rest.setPairData ?? vi.fn();
   return {
-    sheets: makeSheets(),
+    sheets,
+    closers: buildOverlayClosers({
+      sheets,
+      childhoodWheelPending,
+      setChildhoodWheelPending,
+      onAddressPickerDone,
+      setPairData,
+    }),
     needs: [],
     ratings: {},
     saved: {},
@@ -137,16 +157,13 @@ function baseProps(overrides: Partial<Parameters<typeof AppOverlays>[0]> = {}) {
     onSaved: vi.fn(),
     yesterdayRatings: {},
     showOnboarding: false,
-    onAddressPickerDone: vi.fn(),
     consentGiven: false,
     onConsentDisclaimer: vi.fn(),
     onAcceptDisclaimer: vi.fn(),
     celebrationStreak: null,
     setCelebrationStreak: vi.fn(),
-    childhoodWheelPending: false,
-    setChildhoodWheelPending: vi.fn(),
     setChildhoodRatings: vi.fn(),
-    setPairData: vi.fn(),
+    setPairData,
     userRole: 'CLIENT' as const,
     displayName: null,
     setDisplayName: vi.fn(),
@@ -158,13 +175,11 @@ function baseProps(overrides: Partial<Parameters<typeof AppOverlays>[0]> = {}) {
     setNewDiaryEntry: vi.fn(),
     section: 'today' as const,
     setSection: vi.fn(),
-    ...overrides,
+    ...rest,
   };
 }
 
-function renderOverlays(
-  overrides: Partial<Parameters<typeof AppOverlays>[0]> = {},
-) {
+function renderOverlays(overrides: Overrides = {}) {
   return render(<AppOverlays {...baseProps(overrides)} />);
 }
 

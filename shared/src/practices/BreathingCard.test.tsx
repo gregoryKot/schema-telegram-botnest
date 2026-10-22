@@ -12,7 +12,9 @@ import {
   act,
   cleanup,
 } from '@testing-library/react';
+import type { ComponentType } from 'react';
 import { BreathingCard, type BreathingCardProps } from './BreathingCard';
+import { BreathingSiteCard } from './BreathingSiteCard';
 import { BREATH_CYCLE_S } from './breathing';
 import type { ShareCardSheetProps } from '../share/shareCardSheetProps';
 
@@ -67,9 +69,9 @@ async function flush() {
   });
 }
 
-function renderCard() {
+function renderCard(Card: ComponentType<BreathingCardProps> = BreathingCard) {
   return render(
-    <BreathingCard
+    <Card
       api={fakeApi}
       ShareCardSheet={FakeShareCardSheet}
       botShortUrl="https://t.me/test_bot"
@@ -163,5 +165,46 @@ describe('BreathingCard — карточка «Поделиться»', () => {
     expect(screen.getByText('Дыхание 4-4-6')).toBeTruthy();
     fireEvent.click(screen.getByText('Закрыть карточку'));
     expect(screen.queryByTestId('share-sheet')).toBeNull();
+  });
+});
+
+describe('BreathingCard / BreathingSiteCard — вёрстка площадки', () => {
+  it('app (по умолчанию): «Поделиться» плашкой, без эйбрау сайта', async () => {
+    mockApi.getPracticeSessions.mockResolvedValue({
+      breathing: 2,
+      grounding: 0,
+      stop: 0,
+    });
+    renderCard();
+    await flush();
+    expect(screen.getByText('Поделиться')).toBeTruthy();
+    expect(screen.queryByText('поделиться →')).toBeNull();
+  });
+
+  it('site: эйбрау «Дыхание 4-4-6», ссылка «поделиться →», логика та же', async () => {
+    mockApi.getPracticeSessions.mockResolvedValue({
+      breathing: 2,
+      grounding: 0,
+      stop: 0,
+    });
+    renderCard(BreathingSiteCard);
+    await flush();
+    expect(screen.getByText('Дыхание 4-4-6')).toBeTruthy();
+    expect(screen.getByText('Дыши со мной')).toBeTruthy();
+    expect(screen.getByText(/Пройдено уже 2 раза/)).toBeTruthy();
+    expect(screen.queryByText('Поделиться')).toBeNull();
+
+    fireEvent.click(screen.getByText('Начать дыхание'));
+    expect(mockApi.trackEvent).toHaveBeenCalledWith('breath_start');
+    expect(screen.getByText('Вдох')).toBeTruthy();
+    act(() => {
+      vi.advanceTimersByTime(BREATH_CYCLE_S * 1000);
+    });
+    fireEvent.click(screen.getByText('Достаточно'));
+    await flush();
+    expect(mockApi.recordPracticeSession).toHaveBeenCalledWith('breathing');
+
+    fireEvent.click(screen.getByText('поделиться →'));
+    expect(screen.getByTestId('share-sheet')).toBeTruthy();
   });
 });

@@ -6,12 +6,14 @@
 // (roleGuardedRoutes), argument-passing и happy path — по каждому хендлеру.
 import {
   BadRequestException,
+  ConflictException,
   ForbiddenException,
   HttpException,
 } from '@nestjs/common';
 import type { Request } from 'express';
 import { TherapyConnectionController } from './therapy-connection.controller';
 import { TherapyRelationsService } from './therapy-relations.service';
+import { ALREADY_CONNECTED_ERROR } from './therapy-invite';
 import { TherapyClientDataService } from './therapy-client-data.service';
 import { AccountService } from '../bot/account.service';
 import { TherapistRequestService } from './therapist-request.service';
@@ -168,6 +170,30 @@ describe('TherapyConnectionController.join', () => {
     expect(relations.joinAsClient).toHaveBeenCalledWith(5n, 'BAD');
   });
 
+  // Аудит 2026-10, T3: уже есть связь с другим терапевтом → 409 с причиной
+  // (не 400 «неверный код» и не тихий успех).
+  it('связь с другим терапевтом → 409 с reason: already_connected', async () => {
+    const { controller, relations } = makeController();
+    relations.joinAsClient.mockRejectedValue(
+      new Error(ALREADY_CONNECTED_ERROR),
+    );
+    const err = await controller
+      .join(makeReq(5n), { code: 'GOOD' })
+      .catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(ConflictException);
+    expect((err as ConflictException).getResponse()).toMatchObject({
+      reason: 'already_connected',
+    });
+  });
+
+  it('неизвестная ошибка сервиса пробрасывается как есть (не маскируется под 409)', async () => {
+    const { controller, relations } = makeController();
+    relations.joinAsClient.mockRejectedValue(new Error('db down'));
+    await expect(
+      controller.join(makeReq(5n), { code: 'GOOD' }),
+    ).rejects.toThrow('db down');
+  });
+
   it('валидный код → { ok: true }', async () => {
     const { controller, relations } = makeController();
     const res = await controller.join(makeReq(5n), { code: 'GOOD' });
@@ -196,7 +222,7 @@ describe('TherapyConnectionController.getClients / removeClient', () => {
   it('removeClient: терапевт → делегирует removeClient(therapistId, clientId)', async () => {
     const { controller, clientData } = makeController();
     const res = await controller.removeClient(makeReq(3n), '9');
-    expect(clientData.removeClient).toHaveBeenCalledWith(3n, 9);
+    expect(clientData.removeClient).toHaveBeenCalledWith(3n, 9n);
     expect(res).toEqual({ ok: true });
   });
 });
@@ -220,22 +246,13 @@ describe('TherapyConnectionController.addVirtualClient', () => {
   });
 });
 
-describe('TherapyConnectionController.addClientManually', () => {
-  it('всегда → ForbiddenException (ручное добавление реальных клиентов отключено)', () => {
-    const { controller } = makeController();
-    expect(() =>
-      controller.addClientManually(makeReq(3n), { clientTelegramId: 123 }),
-    ).toThrow(ForbiddenException);
-  });
-});
-
 describe('TherapyConnectionController.renameClient', () => {
   it('терапевт → делегирует renameClient(therapistId, clientId, alias)', async () => {
     const { controller, relations } = makeController();
     const res = await controller.renameClient(makeReq(3n), '5', {
       alias: 'Клиент А',
     });
-    expect(relations.renameClient).toHaveBeenCalledWith(3n, 5, 'Клиент А');
+    expect(relations.renameClient).toHaveBeenCalledWith(3n, 5n, 'Клиент А');
     expect(res).toEqual({ ok: true });
   });
 });

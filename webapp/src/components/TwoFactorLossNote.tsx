@@ -10,7 +10,7 @@ import { useTr } from '../utils/addressForm';
 export function TwoFactorLossNote() {
   const tr = useTr();
   return (
-    <p className="text-sm u-mb14" style={{ color: 'var(--c-rose)', lineHeight: 1.7 }}>
+    <p className="as-warn u-mb14">
       {tr(
         'Двухфакторная защита второго аккаунта не переедет. После объединения вход будет без кода – включи её заново в настройках.',
         'Двухфакторная защита второго аккаунта не переедет. После объединения вход будет без кода – включите её заново в настройках.',

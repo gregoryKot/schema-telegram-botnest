@@ -29,7 +29,7 @@ export function SectionNav({ className, color = 'var(--text-sub)', active = '' }
         const isActive = active === l.href.slice(1);
         return (
           <a key={l.href} href={l.href}
-            style={{ fontSize: 13, fontWeight: isActive ? 600 : 500, color: isActive ? 'var(--accent)' : color, textDecoration: 'none', padding: '6px 10px', borderRadius: 8, whiteSpace: 'nowrap', transition: 'color .15s' }}
+            style={{ fontSize: 13, fontWeight: isActive ? 600 : 500, color: isActive ? 'var(--accent)' : color, textDecoration: 'none', padding: '6px 10px', borderRadius: 'var(--r-8)', whiteSpace: 'nowrap', transition: 'color .15s' }}
             onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'var(--accent)'; }}
             onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = isActive ? 'var(--accent)' : color; }}>
             {l.label}
@@ -61,7 +61,7 @@ export function MobileMenu({ onClose, active, onBook }: { onClose: () => void; a
     }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
         <span style={{ fontFamily: 'var(--serif)', fontSize: 18, color: 'var(--text)' }}>Меню</span>
-        <button onClick={goBack} aria-label="Закрыть меню" style={{ width: 40, height: 40, borderRadius: 10, border: '1px solid var(--line)', background: 'transparent', color: 'var(--text)', fontSize: 22, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
+        <button onClick={goBack} aria-label="Закрыть меню" style={{ width: 40, height: 40, borderRadius: 'var(--r-10)', border: '1px solid var(--line)', background: 'transparent', color: 'var(--text)', fontSize: 22, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
       </div>
       <nav style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
         {MOBILE_LINKS.map((l, i) => {
@@ -76,7 +76,7 @@ export function MobileMenu({ onClose, active, onBook }: { onClose: () => void; a
               display: 'flex', alignItems: 'center', gap: 12,
               animation: `menu-item-in .32s cubic-bezier(.16,1,.3,1) ${i * 35}ms both`,
             }}>
-              {isActive && <span aria-hidden style={{ width: 3, height: 22, borderRadius: 2, background: 'var(--accent)', flexShrink: 0, display: 'inline-block' }} />}
+              {isActive && <span aria-hidden style={{ width: 3, height: 22, borderRadius: 'var(--r-2)', background: 'var(--accent)', flexShrink: 0, display: 'inline-block' }} />}
               {l.label}
             </button>
           );

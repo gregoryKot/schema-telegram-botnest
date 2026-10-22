@@ -1,23 +1,10 @@
-import { useEffect, useState, lazy, Suspense } from 'react';
+import { useEffect, useState } from 'react';
 import { api } from '../../api';
 import type { UserProfile } from '../../types';
 import { CaseEntryCard } from './CaseEntryCard';
 import { OnboardingWidget } from './OnboardingWidget';
-
-// Ленивые чанки (по образцу SchemaEx/ModeEx выше в TodaySection.tsx и
-// параллельного схлопывания в schema-miniapp, правило CLAUDE.md про
-// бандл-храповик): десять экранов потока и карта себя открываются по явному
-// тапу, а не при каждом заходе на /today — не должны утяжелять чанк раздела.
-const CaseFlowScreen = lazy(() =>
-  import('../../components/caseFlow/CaseFlowScreen').then((m) => ({
-    default: m.CaseFlowScreen,
-  })),
-);
-const SelfMapOverlay = lazy(() =>
-  import('../../components/selfMap/SelfMapOverlay').then((m) => ({
-    default: m.SelfMapOverlay,
-  })),
-);
+import { HomeScreenOfferCard } from '../../components/HomeScreenOfferCard';
+import { CaseFlowHost, type CaseFlowStart } from '../../components/caseFlow/CaseFlowHost';
 
 /**
  * Точка входа в разбор случая на /today + условный показ онбординга
@@ -51,8 +38,7 @@ export function CaseEntryBlock({
   onOpenChildhoodWheel: () => void;
 }) {
   const [caseCount, setCaseCount] = useState<number | null>(null);
-  const [showFlow, setShowFlow] = useState(false);
-  const [showMap, setShowMap] = useState(false);
+  const [open, setOpen] = useState<CaseFlowStart | null>(null);
 
   const load = () => {
     api
@@ -66,9 +52,9 @@ export function CaseEntryBlock({
     <>
       <CaseEntryCard
         caseCount={caseCount ?? 0}
-        onStart={() => setShowFlow(true)}
+        onStart={() => setOpen('flow')}
         onSteadyDay={onOpenTracker}
-        onOpenMap={() => setShowMap(true)}
+        onOpenMap={() => setOpen('map')}
       />
 
       {!!caseCount && (
@@ -83,42 +69,19 @@ export function CaseEntryBlock({
         />
       )}
 
-      {showFlow && (
-        <Suspense fallback={null}>
-          <CaseFlowScreen
-            caseCount={caseCount ?? 0}
-            onSave={async (data) => {
-              await api.createModeDiary(data);
-            }}
-            onSaveCard={async (body) => {
-              await api.saveModeNote(body);
-            }}
-            onSteadyDay={onOpenTracker}
-            onOpenMap={() => {
-              setShowFlow(false);
-              setShowMap(true);
-            }}
-            onClose={() => {
-              setShowFlow(false);
-              load();
-            }}
-            onDoubt={() => {}}
-          />
-        </Suspense>
-      )}
+      <HomeScreenOfferCard />
 
-      {showMap && (
-        <Suspense fallback={null}>
-          <SelfMapOverlay
-            onClose={() => setShowMap(false)}
-            onStartCase={() => {
-              setShowMap(false);
-              setShowFlow(true);
-            }}
-            onOpenTracker={onOpenTracker}
-            onOpenSchema={onOpenSchema}
-          />
-        </Suspense>
+      {open && (
+        <CaseFlowHost
+          start={open}
+          caseCount={caseCount ?? 0}
+          onClose={() => {
+            setOpen(null);
+            load();
+          }}
+          onOpenTracker={onOpenTracker}
+          onOpenSchema={onOpenSchema}
+        />
       )}
     </>
   );

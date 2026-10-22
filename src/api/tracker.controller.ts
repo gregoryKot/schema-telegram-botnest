@@ -170,12 +170,7 @@ export class TrackerController {
       typeof body.text !== 'string'
     )
       throw new BadRequestException();
-    await this.botService.saveNote(
-      uid(req),
-      body.date,
-      body.text.slice(0, 500),
-      body.tags,
-    );
+    await this.botService.saveNote(uid(req), body.date, body.text, body.tags);
     return { ok: true };
   }
 

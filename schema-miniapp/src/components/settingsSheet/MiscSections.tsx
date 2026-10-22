@@ -17,7 +17,7 @@ interface NameProps {
   nameSaving: boolean;
   setNameSaving: (v: boolean) => void;
   onNameChanged?: (name: string) => void;
-  setSavedToast: (v: boolean) => void;
+  flashSaved: () => void;
 }
 
 export function NameSection({
@@ -28,7 +28,7 @@ export function NameSection({
   nameSaving,
   setNameSaving,
   onNameChanged,
-  setSavedToast,
+  flashSaved,
 }: NameProps) {
   const tr = useTr();
   return (
@@ -68,8 +68,7 @@ export function NameSection({
               try {
                 await api.updateName(name);
                 onNameChanged?.(name);
-                setSavedToast(true);
-                setTimeout(() => setSavedToast(false), 1800);
+                flashSaved();
               } catch (e) {
                 console.error('updateName failed', e);
               } finally {

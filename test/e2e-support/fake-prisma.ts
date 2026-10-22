@@ -14,6 +14,7 @@
 
 import { makeFakeExecuteRaw } from './fake-cron-lease';
 import { makeTable, withUserJoin, withDefaults } from './fake-prisma-engine';
+import { withUpdatedAt } from './fake-updated-at';
 
 /** Собирает фейковый PrismaService, готовый к .overrideProvider(PrismaService). */
 export function makeFakePrisma() {
@@ -89,7 +90,14 @@ export function makeFakePrisma() {
     // (matches() трактует cond===null как «== null», но здесь прямое сравнение
     // в сервисе — `undefined !== null` даёт true и ломает инвайт-флоу).
     therapyRelation: withUserJoin(
-      withDefaults(makeTable(), { status: 'pending', clientId: null }),
+      // createdAt/meetingDays — @default схемы: getClients читает
+      // rel.createdAt.toISOString() у виртуальных клиентов.
+      withDefaults(makeTable(), {
+        status: 'pending',
+        clientId: null,
+        createdAt: new Date(),
+        meetingDays: [],
+      }),
       userTable,
     ),
     therapistNote: makeTable(),
@@ -99,10 +107,9 @@ export function makeFakePrisma() {
     // TherapyTasksService.scheduleTaskNotification (POST /api/therapy/tasks
     // с clientId вызывает notificationService.schedule).
     scheduledNotification: makeTable(),
-    // Платёжный контур (test/payment-webhooks.e2e-spec.ts): общий Robokassa
-    // Result-вебхук маршрутизирует по InvId между booking/donation/subscriptionCharge;
-    // BookingNotifyService.onConfirmed на confirm() ещё трогает clientMeeting.
-    booking: makeTable(),
+    // Платёжный контур (payment-webhooks.e2e-spec.ts): Result-вебхук маршрутизирует
+    // по InvId между booking/donation/subscriptionCharge; onConfirmed трогает clientMeeting.
+    booking: withUpdatedAt(makeTable()),
     clientMeeting: makeTable(),
     donation: makeTable(),
     subscription: makeTable(),
@@ -112,6 +119,7 @@ export function makeFakePrisma() {
     cronLease: makeTable(),
     availabilityRule: withDefaults(makeTable(), { isActive: true }), // @default(true)
     slotOverride: makeTable(),
+    introLead: makeTable(), // форма знакомства, POST /api/booking (IntroLeadService)
   };
 
   const prisma: any = {

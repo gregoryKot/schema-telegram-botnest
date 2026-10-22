@@ -105,7 +105,6 @@ export function PhraseCheckEx({
         <ExScreen
           onBack={goBack}
           eyebrow="Критик или забота? · сохранено"
-          eyebrowColor="var(--c-moss)"
           title={<>Разобрано.<br /><span className="it">Голос учится заново.</span></>}
           lede={tr(
             'Голос, который помогает, ставится тренировкой. Даже просто заметить приметы — уже работа.',
@@ -113,18 +112,18 @@ export function PhraseCheckEx({
           )}
           aside={
             pastEntries.length > 0 ? (
-              <div className="aside-card">
-                <div className="aside-card-eyebrow">Прошлые разборы · {history.length}</div>
+              <div className="ds-card ex2-note">
+                <div className="ds-label">Прошлые разборы · {history.length}</div>
                 <PhraseHistoryRows entries={pastEntries} onOpen={setOpenHistoryId} />
               </div>
             ) : undefined
           }
         >
-          <PhraseDoneCard phrase={phrase.trim()} rewrite={rewrite} />
-          <div className="ex-foot">
-            <button className="ex-btn ex-btn-outline" onClick={again}>Проверить ещё одну</button>
-            <span className="spacer" />
-            <button className="ex-btn ex-btn-primary" onClick={goBack}>Закрыть</button>
+          <PhraseDoneCard phrase={phrase.trim()} rewrite={rewrite} marks={marks} />
+          <div className="ex2-foot">
+            <button className="ds-btn ds-btn--secondary" onClick={again}>Проверить ещё одну</button>
+            <span className="ex2-spacer" />
+            <button className="ds-btn" onClick={goBack}>Закрыть</button>
           </div>
         </ExScreen>
         {historyOverlay}
@@ -146,36 +145,35 @@ export function PhraseCheckEx({
     <ExScreen
       onBack={goBack}
       eyebrow="№ 08 · Внутренний голос"
-      eyebrowColor="var(--c-teal)"
       title={<>Критик<br /><span className="it">или забота?</span></>}
       lede={tr(
         'Запиши фразу, которую сказал себе или услышал — дословно. Разбери её по девяти приметам и перепиши голосом, который помогает.',
         'Запишите фразу, которую сказали себе или услышали — дословно. Разберите её по девяти приметам и перепишите голосом, который помогает.',
       )}
       aside={
-        <div className="aside-card">
-          <div className="aside-card-eyebrow">{asideCard.title}</div>
-          <p className="body">{asideCard.body}</p>
+        <div className="ds-card ex2-note">
+          <div className="ds-label">{asideCard.title}</div>
+          <p className="ex2-note-body">{asideCard.body}</p>
         </div>
       }
     >
       <div
-        role="progressbar"
+        role="progressbar" aria-label="Шаг упражнения"
         aria-valuenow={stepNumber}
         aria-valuemin={1}
         aria-valuemax={TOTAL_STEPS}
-        style={{ height: 3, borderRadius: 'var(--r-2)', background: 'var(--line)', marginBottom: 28, overflow: 'hidden' }}
+        className="ex2-progress"
       >
-        <div style={{ width: `${progress}%`, height: '100%', borderRadius: 'var(--r-2)', background: 'var(--c-teal)', transition: 'width 0.2s' }} />
+        <i style={{ width: `${progress}%` }} />
       </div>
 
       {markIndex < 0 && (
         <>
-          <div className="ex-prompt">
-            <div className="ex-prompt-num">01.</div>
+          <div className="ex2-prompt">
+            <div className="ex2-prompt-num">01.</div>
             <div>
-              <div className="ex-prompt-label" style={{ fontSize: 30 }}>Что сказал внутренний голос?</div>
-              <p className="ex-prompt-hint">
+              <div className="ex2-prompt-label">Что сказал внутренний голос?</div>
+              <p className="ex2-prompt-hint">
                 {tr(
                   'Дословно, теми же словами. Дальше проверим её по девяти приметам.',
                   'Дословно, теми же словами. Дальше проверим её по девяти приметам.',
@@ -183,7 +181,7 @@ export function PhraseCheckEx({
               </p>
               <textarea
                 ref={phraseRef}
-                className="paper-area"
+                className="ds-textarea"
                 rows={3}
                 value={phrase}
                 onChange={(e) => setPhrase(e.target.value)}
@@ -192,9 +190,9 @@ export function PhraseCheckEx({
             </div>
           </div>
           {detectCrisisAny(phrase) && <CrisisCard surface="phrase_check" />}
-          <div className="ex-foot">
-            <span className="spacer" />
-            <button className="ex-btn ex-btn-primary" disabled={!phrase.trim()} onClick={() => setMarkIndex(0)}>
+          <div className="ex2-foot">
+            <span className="ex2-spacer" />
+            <button className="ds-btn" disabled={!phrase.trim()} onClick={() => setMarkIndex(0)}>
               Проверить <GlyphArrowRight />
             </button>
           </div>

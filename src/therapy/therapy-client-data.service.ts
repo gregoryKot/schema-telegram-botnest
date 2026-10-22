@@ -4,6 +4,9 @@ import { PrismaService } from '../prisma/prisma.service';
 import { BotAnalyticsService } from '../bot/bot.analytics.service';
 import { NotificationService } from '../notification/notification.service';
 import { TherapyRelationsService } from './therapy-relations.service';
+import { removeTherapistClient } from './remove-client';
+import { requestYsq } from './ysq-request';
+import { activeRelationWhere } from './relation-where';
 import { decrypt, decryptJson, decryptRecord } from '../utils/crypto';
 import { computeActiveSchemas, computeYsqScores } from '../utils/ysq';
 import { decodeYsqAnswers } from '../bot/ysq.service';
@@ -23,9 +26,9 @@ export class TherapyClientDataService {
     private readonly relationsService: TherapyRelationsService,
   ) {}
 
-  async getClientData(therapistId: bigint, clientId: number) {
+  async getClientData(therapistId: bigint, clientId: bigint) {
     await this.relationsService.assertHasClient(therapistId, clientId);
-    if (clientId < 0) {
+    if (clientId < 0n) {
       return {
         name: null,
         mySchemaIds: [],
@@ -34,7 +37,7 @@ export class TherapyClientDataService {
         ysqActiveSchemaIds: [],
       };
     }
-    const uid = BigInt(clientId);
+    const uid = clientId;
     const [user, ysq, rawHistory] = await Promise.all([
       this.prisma.user.findUnique({
         where: { id: uid },
@@ -73,10 +76,16 @@ export class TherapyClientDataService {
       scores: computeYsqScores(decodeYsqAnswers(r.answers)),
     }));
 
+    // mySchemaIds/myModeIds в БД — зашифрованные JSON-строки (bot.service.ts,
+    // profile.service.ts читают их через decryptRecord). Без расшифровки
+    // терапевт получал шифротекст, объявленный массивом (аудит 2026-10, F2).
+    const labels = user
+      ? decryptRecord(user, { jsonArrays: ['mySchemaIds', 'myModeIds'] })
+      : null;
     return {
       name: user?.firstName ?? null,
-      mySchemaIds: (user?.mySchemaIds as string[]) ?? [],
-      myModeIds: (user?.myModeIds as string[]) ?? [],
+      mySchemaIds: (labels?.mySchemaIds as string[] | null) ?? [],
+      myModeIds: (labels?.myModeIds as string[] | null) ?? [],
       ysqCompletedAt: ysq?.completedAt?.toISOString() ?? null,
       ysqActiveSchemaIds,
       ysqHistory,
@@ -85,16 +94,13 @@ export class TherapyClientDataService {
 
   async getClientHistory(
     therapistId: bigint,
-    clientId: number,
+    clientId: bigint,
   ): Promise<
     { date: string; index: number | null; ratings: Record<string, number> }[]
   > {
-    if (clientId < 0) return [];
+    if (clientId < 0n) return [];
     await this.relationsService.assertHasClient(therapistId, clientId);
-    const history = await this.analyticsService.getHistoryRatings(
-      BigInt(clientId),
-      14,
-    );
+    const history = await this.analyticsService.getHistoryRatings(clientId, 14);
     return history.map((h) => {
       const ratings = h.ratings as Record<string, number>;
       const vals = Object.values(ratings);
@@ -108,7 +114,7 @@ export class TherapyClientDataService {
 
   async getClientDiaryEntries(
     therapistId: bigint,
-    clientId: number,
+    clientId: bigint,
   ): Promise<
     {
       type: 'schema' | 'mode' | 'gratitude';
@@ -118,12 +124,12 @@ export class TherapyClientDataService {
       excerpt: string;
     }[]
   > {
-    if (clientId < 0) return [];
+    if (clientId < 0n) return [];
     await this.relationsService.assertHasClient(therapistId, clientId);
     // L1 (аудит 2026-08): дневник чтит therapistShareCards, как соседи-заметки
     // (getClientSchemaNotes/ModeNotes); свободный клин. текст не течёт при opt-out.
     if (!(await this.cardsShared(clientId))) return [];
-    const uid = BigInt(clientId);
+    const uid = clientId;
     const [schemaRows, modeRows, gratitudeRows] = await Promise.all([
       this.prisma.schemaDiaryEntry.findMany({
         where: { userId: uid },
@@ -204,55 +210,50 @@ export class TherapyClientDataService {
   // Клиент может закрыть карточки от терапевта (therapistShareCards=false) —
   // тогда отдаём пусто. Инвариант privacy: аудит 2026-07 нашёл маршрут-дубль,
   // где эта проверка терялась (см. therapy-client-data.service.spec.ts).
-  private async cardsShared(clientId: number): Promise<boolean> {
+  private async cardsShared(clientId: bigint): Promise<boolean> {
     const client = await this.prisma.user.findUnique({
-      where: { id: BigInt(clientId) },
+      where: { id: clientId },
       select: { therapistShareCards: true },
     });
     return client?.therapistShareCards !== false;
   }
 
-  async getClientSchemaNotes(therapistId: bigint, clientId: number) {
-    if (clientId < 0) return [];
+  async getClientSchemaNotes(therapistId: bigint, clientId: bigint) {
+    if (clientId < 0n) return [];
     await this.relationsService.assertHasClient(therapistId, clientId);
     if (!(await this.cardsShared(clientId))) return [];
     const rows = await this.prisma.userSchemaNote.findMany({
-      where: { userId: BigInt(clientId) },
+      where: { userId: clientId },
     });
     return rows.map((r) => decryptRecord(r, SCHEMA_NOTE_SCHEMA));
   }
 
-  async getClientModeNotes(therapistId: bigint, clientId: number) {
-    if (clientId < 0) return [];
+  async getClientModeNotes(therapistId: bigint, clientId: bigint) {
+    if (clientId < 0n) return [];
     await this.relationsService.assertHasClient(therapistId, clientId);
     if (!(await this.cardsShared(clientId))) return [];
     const rows = await this.prisma.userModeNote.findMany({
-      where: { userId: BigInt(clientId) },
+      where: { userId: clientId },
     });
     return rows.map((r) => decryptRecord(r, MODE_NOTE_SCHEMA));
   }
 
-  async requestYsq(therapistId: bigint, clientId: number): Promise<void> {
-    await this.relationsService.assertHasClient(therapistId, clientId);
-    if (clientId < 0) return; // Virtual client — no Telegram account, cannot send notification
-    const therapist = await this.prisma.user.findUnique({
-      where: { id: therapistId },
-      select: { firstName: true },
-    });
-    await this.notificationService.schedule(
-      BigInt(clientId),
-      'ysq_requested',
-      new Date(),
+  requestYsq(therapistId: bigint, clientId: bigint): Promise<void> {
+    return requestYsq(
       {
-        therapistName: therapist?.firstName ?? null,
+        prisma: this.prisma,
+        notifications: this.notificationService,
+        relations: this.relationsService,
       },
+      therapistId,
+      clientId,
     );
   }
 
   // ─── Session Info ────────────────────────────────────────────────────────────
   async updateSessionInfo(
     therapistId: bigint,
-    clientId: number,
+    clientId: bigint,
     body: {
       therapyStartDate?: string | null;
       nextSession?: string | null;
@@ -267,37 +268,14 @@ export class TherapyClientDataService {
     if (body.meetingDays !== undefined) data['meetingDays'] = body.meetingDays;
     if (Object.keys(data).length === 0) return;
     const mutation = data as Prisma.TherapyRelationUpdateManyMutationInput;
-    if (clientId < 0) {
-      await this.prisma.therapyRelation.updateMany({
-        where: { id: -clientId, therapistId, status: 'active' },
-        data: mutation,
-      });
-    } else {
-      await this.prisma.therapyRelation.updateMany({
-        where: { therapistId, clientId: BigInt(clientId), status: 'active' },
-        data: mutation,
-      });
-    }
+    await this.prisma.therapyRelation.updateMany({
+      where: activeRelationWhere(therapistId, clientId),
+      data: mutation,
+    });
   }
 
   // ─── Remove client from list ─────────────────────────────────────────────────
-  async removeClient(therapistId: bigint, clientId: number): Promise<void> {
-    const tid = therapistId;
-    const cid = BigInt(clientId);
-    await this.prisma.$transaction([
-      this.prisma.therapistNote.deleteMany({
-        where: { therapistId: tid, clientId: cid },
-      }),
-      this.prisma.clientConceptualization.deleteMany({
-        where: { therapistId: tid, clientId: cid },
-      }),
-      clientId < 0
-        ? this.prisma.therapyRelation.deleteMany({
-            where: { id: -clientId, therapistId: tid },
-          })
-        : this.prisma.therapyRelation.deleteMany({
-            where: { therapistId: tid, clientId: cid },
-          }),
-    ]);
+  async removeClient(therapistId: bigint, clientId: bigint): Promise<void> {
+    await removeTherapistClient(this.prisma, therapistId, clientId);
   }
 }

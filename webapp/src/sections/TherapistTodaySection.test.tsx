@@ -51,7 +51,7 @@ describe('TherapistTodaySection — пустой аккаунт (без хард
     await waitFor(() => expect(screen.getByText('Сессий не запланировано')).toBeTruthy());
     expect(screen.getByText('Нет клиентов')).toBeTruthy();
     // Блок сводной статистики скрыт вовсе на пустом списке — не «0/0».
-    expect(screen.queryByText('активны сегодня')).toBeNull();
+    expect(screen.queryByText('Активны сегодня')).toBeNull();
   });
 
   it('ошибка api.getTherapyClients не роняет экран — остаётся пустое состояние', async () => {
@@ -73,11 +73,11 @@ describe('TherapistTodaySection — реальные данные клиенто
     ]);
     render(<TherapistTodaySection displayName="Терапевт" onOpenClient={vi.fn()} />);
 
-    // Иван и в списке активности, и (т.к. заполнил) в блоке "Заполнили сегодня".
     await waitFor(() => expect(screen.getAllByText('Иван').length).toBeGreaterThanOrEqual(1));
     expect(screen.getByText('Мария')).toBeTruthy();
     expect(screen.getByText('7.2')).toBeTruthy();
-    expect(screen.getByText('заполнил')).toBeTruthy();
+    expect(screen.getByText('активность сегодня')).toBeTruthy();
+    expect(screen.getByText('активность вчера')).toBeTruthy();
   });
 
   it('клиентов без clientAlias/name показывает как "#telegramId" — не пустую строку', async () => {
@@ -174,7 +174,7 @@ describe('TherapistTodaySection — требуют внимания', () => {
     ]);
     render(<TherapistTodaySection displayName={null} onOpenClient={vi.fn()} />);
 
-    await screen.findByText('Требуют внимания');
+    await screen.findByRole('heading', { name: 'Требуют внимания' });
     // Имя встречается и в общем списке активности, и в разделе "Требуют внимания".
     expect(screen.getAllByText('Забытый клиент').length).toBeGreaterThanOrEqual(1);
   });
@@ -185,7 +185,7 @@ describe('TherapistTodaySection — требуют внимания', () => {
     ]);
     render(<TherapistTodaySection displayName={null} onOpenClient={vi.fn()} />);
 
-    await screen.findByText('Требуют внимания');
+    await screen.findByRole('heading', { name: 'Требуют внимания' });
     expect(screen.getAllByText('нет данных').length).toBeGreaterThanOrEqual(1);
   });
 
@@ -196,7 +196,7 @@ describe('TherapistTodaySection — требуют внимания', () => {
     render(<TherapistTodaySection displayName={null} onOpenClient={vi.fn()} />);
 
     await waitFor(() => expect(screen.getAllByText('Активный').length).toBeGreaterThanOrEqual(1));
-    expect(screen.queryByText('Требуют внимания')).toBeNull();
+    expect(screen.queryByRole('heading', { name: 'Требуют внимания' })).toBeNull();
   });
 });
 

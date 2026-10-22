@@ -1,25 +1,10 @@
-import { createBrowserRouter, RouterProvider, Navigate, Outlet, useLocation } from 'react-router-dom';
+import { createBrowserRouter, RouterProvider, Navigate, Outlet } from 'react-router-dom';
 import { useEffect, lazy, Suspense } from 'react';
-import { telemetryUrl } from './utils/telemetryUrl';
 import { applyPersonalSiteChrome, isPracticeHost } from './utils/domainChrome';
-
-// ── Yandex.Metrika SPA pageview tracking ──────────────────────────────────────
-const YM_ID = 109568051;
-declare global { interface Window { ym?: (id: number, action: string, ...args: unknown[]) => void } }
-
-function MetrikaTracker() {
-  const loc = useLocation();
-  useEffect(() => {
-    // L6 (аудит 2026-08): голая location.href уносила во фрагменте живой JWT
-    // (/auth/callback#access_token=…) в Метрику. telemetryUrl оставляет путь.
-    window.ym?.(YM_ID, 'hit', telemetryUrl(window.location.href), { referer: telemetryUrl(document.referrer) });
-  }, [loc.pathname, loc.search]);
-  return null;
-}
+import { MetrikaTracker } from './components/MetrikaTracker';
 import { AuthProvider } from './auth/AuthProvider';
 import { useAuth } from './auth/authContext';
 import { setTokenProvider, setRefreshHandler } from './api';
-import { ConnectionTrouble } from '../../shared/src/components/ConnectionTrouble';
 import { LoginPage } from './pages/LoginPage';
 import { AuthErrorPage } from './pages/AuthErrorPage';
 import { AuthCallback } from './pages/AuthCallback';
@@ -32,8 +17,9 @@ import { TwoFactorChallengePage } from './pages/TwoFactorChallengePage';
 import { RecoveryPage } from './pages/RecoveryPage';
 import { AppShell } from './components/AppShell';
 import { CookieBanner } from './components/CookieBanner';
-import { AddressFormPicker } from './components/AddressFormPicker';
-import { AddressFormProvider } from './utils/AddressFormProvider';
+import { RouteErrorScreen } from './components/RouteErrorScreen';
+import { PracticeBrand } from './components/PracticeBrand';
+import { RequireAuth } from './components/RequireAuth';
 import { LandingPage } from './pages/LandingPage';
 import { ProductLandingPage } from './pages/ProductLandingPage';
 import { PrivacyPage } from './pages/PrivacyPage';
@@ -42,16 +28,15 @@ import { ArticlesListPage, ArticlePage } from './pages/ArticlesPage';
 import { TestsPage } from './pages/tests/TestsPage';
 import { QuizPage } from './pages/tests/QuizPage';
 import { ReviewsPage } from './pages/ReviewsPage';
-// Lazy: pulls in the TipTap WYSIWYG editor, which shouldn't bloat the main
-// bundle every visitor downloads just for the public site.
+// Lazy: pulls in the TipTap WYSIWYG editor, which shouldn't bloat the main bundle every visitor downloads just for the public site.
 const AdminPage = lazy(() => import('./pages/AdminPage').then(m => ({ default: m.AdminPage })));
 import { DonatePage } from './pages/DonatePage';
-import { BookingPaidPage } from './pages/BookingPaidPage';
-import { SubscribePage } from './pages/SubscribePage';
+import { BookingPaidRoute } from './components/booking/BookingPaidRoute';
+const BookingLinkPage = lazy(() => import('./pages/BookingLinkPage').then(m => ({ default: m.BookingLinkPage }))); // не в главном чанке: страница по ссылке
+const SubscribePage = lazy(() => import('./pages/SubscribePage').then(m => ({ default: m.SubscribePage }))); // не в главном чанке: редкая страница по ссылке
 
 // Apply saved theme before first render
-const savedTheme = localStorage.getItem('app_theme');
-if (savedTheme === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+if (localStorage.getItem('app_theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
 
 // ── Token bridge (inside AuthProvider) ────────────────────────────────────────
 function TokenBridge() {
@@ -59,19 +44,6 @@ function TokenBridge() {
   useEffect(() => { setTokenProvider(() => accessToken); setRefreshHandler(refreshToken); }, [accessToken, refreshToken]);
   return null;
 }
-// ── Auth guard as a layout route ───────────────────────────────────────────────
-function RequireAuth() {
-  const { isAuthenticated, isLoading, authError, refreshToken } = useAuth();
-  if (isLoading) return <div className="loader-center"><div className="spinner" /></div>;
-  if (!isAuthenticated) return authError === 'transient' ? <ConnectionTrouble onRetry={() => void refreshToken()} /> : <Navigate to="/login" replace />;
-  return (
-    <AddressFormProvider>
-      <AddressFormPicker />
-      <Outlet />
-    </AddressFormProvider>
-  );
-}
-
 // ── Root layout – providers wrapper ───────────────────────────────────────────
 function Root() {
   return (
@@ -92,18 +64,33 @@ if (isPersonalSite) applyPersonalSiteChrome();
 
 // ── Router ─────────────────────────────────────────────────────────────────────
 const personalRoutes = [
-  { path: '/',               element: <LandingPage /> },
-  { path: '/articles',       element: <ArticlesListPage /> },
-  { path: '/articles/:slug', element: <ArticlePage /> },
-  { path: '/reviews',        element: <ReviewsPage /> },
+  // Страницы визитки — под одним брендом (индиго, см. PracticeBrand).
+  {
+    element: <PracticeBrand />,
+    children: [
+      { path: '/',               element: <LandingPage /> },
+      { path: '/articles',       element: <ArticlesListPage /> },
+      { path: '/articles/:slug', element: <ArticlePage /> },
+      { path: '/reviews',        element: <ReviewsPage /> },
+      { path: '/book',           element: <Suspense fallback={null}><BookingLinkPage /></Suspense> }, // ссылка для клиентов: расписание сразу
+      { path: '/booking/paid',   element: <BookingPaidRoute /> },
+      // Ссылка управления записью (BookingSaveBlock/.ics URL:) — тот же компонент,
+      // что у /booking/paid: путь переименовывать нельзя, туда редиректит
+      // Робокасса, а новая capability-ссылка ведёт на другой путь.
+      { path: '/booking/manage', element: <BookingPaidRoute /> },
+      { path: '/privacy',        element: <PrivacyPage /> },
+      { path: '/offer',          element: <OfferPage /> },
+    ],
+  },
+  // Вне бренда визитки — осознанно:
+  // /admin и редиректы — служебный инструмент, одинаковый на обоих доменах.
   { path: '/admin',          element: <Suspense fallback={null}><AdminPage /></Suspense> },
   { path: '/booking-admin',  element: <Navigate to="/admin" replace /> },
   { path: '/articles-admin', element: <Navigate to="/admin" replace /> },
-  { path: '/booking/paid',   element: <BookingPaidPage /> },
-  { path: '/subscribe',      element: <SubscribePage /> },
+  // /subscribe и /donate — на .light-lock + styles/auth-pay.css (PR #740):
+  // .light-lock сам переопределяет акцент, страницы осознанно продуктовые.
+  { path: '/subscribe',      element: <Suspense fallback={null}><SubscribePage /></Suspense> },
   { path: '/donate',         element: <DonatePage /> },
-  { path: '/privacy',        element: <PrivacyPage /> },
-  { path: '/offer',          element: <OfferPage /> },
   { path: '*',               element: <Navigate to="/" replace /> },
 ];
 
@@ -114,7 +101,7 @@ const appRoutes = [
   // Мини-тесты — публичный лид-магнит, регистрация не нужна.
   { path: '/tests',          element: <TestsPage /> },
   { path: '/tests/:quizId',  element: <QuizPage /> },
-  { path: '/subscribe',      element: <SubscribePage /> },
+  { path: '/subscribe',      element: <Suspense fallback={null}><SubscribePage /></Suspense> },
   { path: '/donate',         element: <DonatePage /> },
   // Admin panel is gated by its own key (not the app login), so it's reachable
   // on the app domain too — otherwise /admin here falls through to the login/app.
@@ -157,6 +144,7 @@ const appRoutes = [
 const router = createBrowserRouter([
   {
     element: <Root />,
+    errorElement: <RouteErrorScreen />,
     children: isPersonalSite ? personalRoutes : appRoutes,
   },
 ]);

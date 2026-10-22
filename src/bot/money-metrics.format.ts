@@ -23,7 +23,7 @@ export interface MoneySourceStats {
 export interface MoneyWindow {
   donations: MoneySourceStats;
   subscriptions: MoneySourceStats;
-  /** Платных сессий подтверждено (сумму по ним отдельно не храним). */
+  /** Оплачено по вебхуку (paidAt); знакомства и ручное подтверждение не в счёте. */
   paidSessions: number;
   /** Платных сессий забронировано, но оплата ещё не пришла. */
   pendingSessions: number;
@@ -38,7 +38,7 @@ export interface MoneyMetrics {
 
 const times = (n: number): string => `${n} ${plural(n, 'раз', 'раза', 'раз')}`;
 
-function windowIsEmpty(w: MoneyWindow): boolean {
+export function windowIsEmpty(w: MoneyWindow): boolean {
   return (
     w.donations.paidCount === 0 &&
     w.donations.pendingCount === 0 &&

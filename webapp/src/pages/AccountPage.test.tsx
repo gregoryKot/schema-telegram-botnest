@@ -158,6 +158,16 @@ describe('AccountPage — загрузка', () => {
     expect(screen.getByText('не привязан')).toBeTruthy();
   });
 
+  it('заголовок способов входа считает реальные привязки: «N из M»', async () => {
+    renderPage();
+    await screen.findByText('0 из 4');
+    cleanup();
+    meProviders = [{ provider: 'google', email: 'user@gmail.com', displayName: null }];
+    renderPage();
+    await screen.findByText('1 из 4');
+    expect(screen.getByText('U')).toBeTruthy();
+  });
+
   it('ошибка /api/auth/me показывает сообщение об ошибке, а не тишину', async () => {
     meFails = true;
     renderPage();
@@ -326,7 +336,7 @@ describe('AccountPage — привязка email', () => {
     fireEvent.change(input, { target: { value: 'me@example.com' } });
     fireEvent.click(screen.getByText('Отправить'));
 
-    await screen.findByText(/Письмо отправлено на/);
+    await screen.findByText(/письмо придёт в течение минуты/);
     expect(screen.getByText('me@example.com')).toBeTruthy();
 
     const linkCall = fetchMock.mock.calls.find(([url]: [string]) =>
@@ -358,7 +368,7 @@ describe('AccountPage — привязка email', () => {
     fireEvent.click(screen.getByText('Отправить'));
 
     await screen.findByText(/Email уже занят/);
-    expect(screen.queryByText(/Письмо отправлено на/)).toBeNull();
+    expect(screen.queryByText(/письмо придёт в течение минуты/)).toBeNull();
   });
 });
 

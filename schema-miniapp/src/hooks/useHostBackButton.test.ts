@@ -8,7 +8,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook } from '@testing-library/react';
 import { useHostBackButton } from './useHostBackButton';
-import type { UseSheetsReturn } from './useSheets';
+import { initialState, type UseSheetsReturn } from './useSheets';
 
 vi.mock('../api', () => ({
   api: { getPair: vi.fn() },
@@ -27,26 +27,11 @@ function makeBackButton() {
   };
 }
 
+// Из реестра, а не ручным списком: третий список ключей разъехался бы так же,
+// как разъехалась лесенка в самом хуке (инцидент аудита 2026-10, frontends#8).
 function makeSheets(overrides: Partial<UseSheetsReturn> = {}): UseSheetsReturn {
   return {
-    about: false,
-    schemaInfo: false,
-    schemaAutoStartTest: false,
-    schemaInitialTab: 'needs',
-    schemaHighlight: undefined,
-    settings: false,
-    practices: false,
-    plans: false,
-    todayNote: false,
-    pairSheet: false,
-    childhoodWheel: false,
-    tracker: false,
-    trackerTab: 'today',
-    trackerOverlay: false,
-    trackerNeedId: null,
-    trackerGoal: false,
-    diaries: false,
-    addressPicker: false,
+    ...initialState,
     open: vi.fn(),
     close: vi.fn(),
     ...overrides,
@@ -64,6 +49,9 @@ function makeArgs(
     cabinetView: 'list' as const,
     therapistBackHandlerRef: { current: vi.fn() },
     setPairData: vi.fn(),
+    childhoodWheelPending: false,
+    setChildhoodWheelPending: vi.fn(),
+    onAddressPickerDone: vi.fn(),
     ...overrides,
   };
 }
@@ -194,19 +182,20 @@ describe('useHostBackButton — хост с собственной кнопко�
     expect(args.sheets.close).not.toHaveBeenCalled();
   });
 
-  it('несколько оверлеев разом -> Назад закрывает только более приоритетный (trackerOverlay раньше tracker)', () => {
+  it('несколько оверлеев разом -> Назад закрывает последний открытый (tracker открыт позже trackerOverlay)', () => {
     const args = makeArgs({
       sheets: makeSheets({
         trackerOverlay: true,
         tracker: true,
         trackerNeedId: 'safety',
+        openOrder: ['trackerOverlay', 'tracker'],
       }),
     });
     renderHook(() => useHostBackButton(args));
     const bb = getBB();
     registeredHandler(bb)();
-    expect(args.sheets.close).toHaveBeenCalledWith('trackerOverlay', {
-      trackerNeedId: null,
+    expect(args.sheets.close).toHaveBeenCalledWith('tracker', {
+      trackerTab: 'today',
     });
     expect(args.sheets.close).toHaveBeenCalledTimes(1);
   });

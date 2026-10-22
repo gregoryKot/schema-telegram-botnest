@@ -126,6 +126,31 @@ describe('запуск из MAX', () => {
   });
 });
 
+// E-5 (аудит 2026-10): ссылка-ловушка `…/app/#WebAppData=x` в обычном
+// браузере. Раньше мост грузился, приложение считало себя MAX и слало
+// `x-max-init-data: x` (401 + алерт владельцу на каждый клик).
+describe('голый WebAppData в адресе обычного браузера (E-5)', () => {
+  beforeEach(() => {
+    window.location.hash = '#WebAppData=x';
+    resetMaxLaunchParams();
+    loadTelegramSdk({ insideTelegram: false });
+  });
+
+  it('мост не подключается, хост — браузер, MAX-подпись не уходит', () => {
+    expect(runLoaderAndLoadBridge()).toBe(false);
+    expect(detectHostId()).toBe('web');
+    expect(getHost().authHeaders()).not.toHaveProperty('x-max-init-data');
+    expect(getHost().sessionExchange()).toBeNull();
+  });
+
+  it('даже с hash без auth_date — это не запуск MAX', () => {
+    window.location.hash = '#WebAppData=hash%3Dabc';
+    resetMaxLaunchParams();
+    expect(runLoaderAndLoadBridge()).toBe(false);
+    expect(detectHostId()).toBe('web');
+  });
+});
+
 describe('обычная вкладка браузера', () => {
   it('ни один мессенджер не опознаётся, мост не грузится', () => {
     window.location.hash = '';
@@ -134,5 +159,21 @@ describe('обычная вкладка браузера', () => {
 
     expect(runLoaderAndLoadBridge()).toBe(false);
     expect(detectHostId()).toBe('web');
+  });
+});
+
+// Без тега в index.html загрузчик никто не запускает, и вход из MAX невозможен
+// (план одного фронтенда, этап 1). Тег обязан быть синхронным: загрузчик
+// дописывает мост через document.write, с async/defer это не работает.
+describe('index.html сайта подключает загрузчик моста MAX', () => {
+  const html = readFileSync(resolve(__dirname, '../index.html'), 'utf8');
+  const tag = html.match(/<script\b[^>]*\bsrc="\/max-bridge\.js"[^>]*>/);
+
+  it('тег есть', () => {
+    expect(tag).not.toBeNull();
+  });
+
+  it('тег синхронный', () => {
+    expect(tag?.[0]).not.toMatch(/\b(async|defer|type="module")/);
   });
 });

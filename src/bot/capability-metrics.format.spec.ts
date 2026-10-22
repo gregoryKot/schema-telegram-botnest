@@ -18,6 +18,16 @@ const ALL_CONFIGURED = {
   ENCRYPTION_KEY: 'k'.repeat(64),
   HEALTHY_ADULT_THREADS_TOKEN: 'tok',
   JWT_SECRET: 'jwt-secret',
+  // Бэкапы в R2 (аудит 2026-10, D-2) — тоже «настроено».
+  BACKUP_S3_ENDPOINT: 'https://acc.r2.cloudflarestorage.com',
+  BACKUP_S3_BUCKET: 'b',
+  BACKUP_S3_ACCESS_KEY_ID: 'k',
+  BACKUP_S3_SECRET_ACCESS_KEY: 'a',
+  BACKUP_ENCRYPTION_KEY: 'x'.repeat(40),
+  // Приём оплаты (аудит 2026-10-11) — тоже «настроено».
+  ROBOKASSA_MERCHANT_LOGIN: 'shop',
+  ROBOKASSA_PASSWORD1: 'p1',
+  ROBOKASSA_PASSWORD2: 'p2',
 };
 
 describe('formatCapabilityReport', () => {

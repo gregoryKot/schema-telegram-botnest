@@ -5,8 +5,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CalDavService } from './caldav.service';
 import { calDavHealth } from './caldav-health';
 import { SlotOverrideService } from './slot-override.service';
-import { decryptRecord } from '../utils/crypto';
-import { SCHEMA } from './booking.service';
+import { decryptBookingForAdmin } from './booking-admin-view';
 import { localMidnightUTC } from '../utils/tz';
 import { addDaysToDateString } from './rule-expand';
 import { buildAdminCalendar, AdminCalendarDay } from './admin-calendar';
@@ -69,7 +68,7 @@ export class AdminCalendarService {
     const snap = calDavHealth.snapshot();
 
     const bookings = bookingRows.map((b) => {
-      const decrypted = decryptRecord(b, SCHEMA);
+      const decrypted = decryptBookingForAdmin(b);
       return {
         id: b.id,
         startsAt: b.startsAt,

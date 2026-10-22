@@ -1,9 +1,11 @@
 // @vitest-environment jsdom
 // Секция «значок на экране» лендинга: шаги всех трёх платформ из общего
-// источника installSteps, CTA в /app/, нативная кнопка установки при
+// источника installSteps, CTA в /today, нативная кнопка установки при
 // пойманном beforeinstallprompt; аналитика анонимная (public-event).
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
+
+import { installTelegram, removeTelegram } from '../../host/tgStub.test-helpers';
 
 vi.mock('../../api', () => ({ api: { trackPublicEvent: vi.fn() } }));
 
@@ -18,19 +20,20 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  removeTelegram();
   cleanup();
   vi.unstubAllGlobals();
 });
 
 describe('AppInstallSection', () => {
-  it('рендерит карточки всех трёх платформ и CTA в /app/', () => {
+  it('рендерит карточки всех трёх платформ и CTA в /today', () => {
     render(<AppInstallSection />);
     for (const p of ['ios', 'android', 'desktop'] as const) {
       expect(screen.getByText(INSTALL_STEPS[p].title)).toBeTruthy();
       expect(screen.getByText(INSTALL_STEPS[p].steps[0])).toBeTruthy();
     }
     const cta = screen.getByText('Открыть приложение') as HTMLAnchorElement;
-    expect(cta.getAttribute('href')).toBe('/app/');
+    expect(cta.getAttribute('href')).toBe('/today');
   });
 
   it('без пойманного beforeinstallprompt кнопки «Установить сейчас» нет', () => {
@@ -68,5 +71,13 @@ describe('AppInstallSection', () => {
       action: 'added',
       surface: 'site_landing',
     });
+  });
+});
+
+describe('AppInstallSection внутри мессенджера', () => {
+  it('скрыт внутри Telegram', () => {
+    installTelegram();
+    render(<AppInstallSection />);
+    expect(screen.queryByText(INSTALL_STEPS.ios.title)).toBeNull();
   });
 });

@@ -1,30 +1,36 @@
+import { hueStyle } from '../../../lib/tone';
+import { HUE_STRAIN, HUE_CARE } from '../exHue';
+import { PhraseCheckShare } from './PhraseCheckShare';
+import type { PhraseMarkId } from '../../../../../shared/src/phraseCheck/criteria';
+
 // Экран «готово»: было → стало, рядом дословно. Вёрстка — по образцу
-// .done-card из BeliefCheckEx (единый визуальный язык done-экранов упражнений
+// ink-карточки BeliefDoneScreen (единый визуальный язык done-экранов упражнений
 // webapp), только с двумя цитатами вместо таблицы доказательств.
 export function PhraseDoneCard({
   phrase,
   rewrite,
+  marks,
 }: {
   phrase: string;
   rewrite: string;
+  marks: PhraseMarkId[];
 }) {
   const trimmedRewrite = rewrite.trim();
   return (
-    <div className="done-card">
-      <div className="dlabel" style={{ color: 'var(--c-rose)', marginTop: 0 }}>
+    <>
+    <div className="ds-card ds-card--ink ex2-done">
+      <div className="ex2-dlabel is-tone" style={hueStyle(HUE_STRAIN)}>
         Было
       </div>
-      <div className="belief-line">«{phrase}»</div>
+      <div className="ex2-quote ex2-quote--em">«{phrase}»</div>
       {trimmedRewrite && (
-        <>
-          <div className="dlabel" style={{ color: 'var(--c-moss)' }}>
-            Стало
-          </div>
-          <div className="reframe-line" style={{ color: 'var(--c-moss)' }}>
-            «{trimmedRewrite}»
-          </div>
-        </>
+        <div style={hueStyle(HUE_CARE)}>
+          <div className="ex2-dlabel is-tone">Стало</div>
+          <div className="ex2-quote is-tone">«{trimmedRewrite}»</div>
+        </div>
       )}
     </div>
+    <PhraseCheckShare phrase={phrase} marks={marks} rewrite={trimmedRewrite || undefined} />
+    </>
   );
 }

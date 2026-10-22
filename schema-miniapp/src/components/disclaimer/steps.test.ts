@@ -8,6 +8,7 @@ import {
   CONSENT_STEP,
   buildSteps,
   canAdvance,
+  canJumpTo,
   initialStepIndex,
 } from './steps';
 
@@ -45,6 +46,37 @@ describe('порядок шагов онбординга', () => {
     expect(canAdvance('not_therapy', true)).toBe(true);
     expect(canAdvance('welcome', false)).toBe(true);
     expect(canAdvance('privacy', false)).toBe(true);
+  });
+
+  // Аудит онбординга 2026-10: точками-пагинатором гейт согласий обходился —
+  // тап по последней точке открывал home_screen, где canAdvance разрешает всё,
+  // и финальная кнопка писала согласие на сервер без галочек.
+  describe('точки-пагинатор не перепрыгивают гейт согласий', () => {
+    const steps = buildSteps(true); // welcome, privacy, not_therapy, home_screen
+    const consent = steps.indexOf(CONSENT_STEP); // 2
+
+    it('без галочек вперёд пускает только до шага согласий', () => {
+      expect(canJumpTo(steps, 0, 1, false)).toBe(true);
+      expect(canJumpTo(steps, 0, consent, false)).toBe(true);
+      expect(canJumpTo(steps, 0, consent + 1, false)).toBe(false);
+      expect(canJumpTo(steps, consent, consent + 1, false)).toBe(false);
+    });
+
+    it('назад пускает всегда — перечитать согласие законно', () => {
+      expect(canJumpTo(steps, consent, 0, false)).toBe(true);
+      expect(canJumpTo(steps, consent + 1, consent, false)).toBe(true);
+      expect(canJumpTo(steps, 1, 1, false)).toBe(true);
+    });
+
+    it('галочки стоят — открыт любой шаг', () => {
+      expect(canJumpTo(steps, 0, steps.length - 1, true)).toBe(true);
+    });
+
+    it('home_screen недоступен — последний шаг и есть шаг согласий', () => {
+      const short = buildSteps(false);
+      expect(canJumpTo(short, 0, short.length - 1, false)).toBe(true);
+      expect(short[short.length - 1]).toBe(CONSENT_STEP);
+    });
   });
 
   // Ничего не показывается дважды: согласие, данное в боте или на сайте,

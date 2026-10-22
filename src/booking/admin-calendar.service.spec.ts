@@ -4,7 +4,7 @@
 // админке». Сборка сетки — buildAdminCalendar (admin-calendar.spec.ts), тут
 // проверяется только слой загрузки/расшифровки/метаданных.
 import { encryptRecord } from '../utils/crypto';
-import { SCHEMA } from './booking.service';
+import { BOOKING_SCHEMA } from './booking.schema';
 import { AdminCalendarService } from './admin-calendar.service';
 import { calDavHealth } from './caldav-health';
 
@@ -54,7 +54,7 @@ describe('AdminCalendarService.getCalendar — расшифровка броне
         clientContact: '+7 900 000-00-00',
         message: 'позвоните вечером',
       },
-      SCHEMA,
+      BOOKING_SCHEMA,
     );
     const { service } = makeService({ bookings: [row] });
     const cal = await service.getCalendar(FROM, TO);
@@ -66,6 +66,57 @@ describe('AdminCalendarService.getCalendar — расшифровка броне
       clientName: 'Мария',
       status: 'CONFIRMED',
     });
+  });
+});
+
+describe('AdminCalendarService.getCalendar — обезличенная бронь', () => {
+  const cellAt = (
+    cal: Awaited<ReturnType<AdminCalendarService['getCalendar']>>,
+  ) => cal.days[0].cells.find((c) => c.startsAt === '2026-07-13T10:00:00.000Z');
+
+  // Крон booking-retention.service.ts стирает имя через 12 месяцев: в БД
+  // clientName = '' (encrypt('') отдаёт ''). Без подписи ячейка календаря была
+  // бы безымянной и читалась как поломка.
+  it('имя стёрто по сроку (пустая строка в БД) — в ячейке подпись «обезличено»', async () => {
+    const row = encryptRecord(
+      {
+        id: 7,
+        startsAt: new Date('2026-07-13T10:00:00Z'),
+        durationMin: 50,
+        status: 'CONFIRMED',
+        clientName: '',
+        clientContact: '',
+        message: null,
+        anonymizedAt: new Date('2026-07-14T04:41:00Z'),
+      },
+      BOOKING_SCHEMA,
+    );
+    expect(row.clientName).toBe('');
+    const { service } = makeService({ bookings: [row] });
+    const cal = await service.getCalendar(FROM, TO);
+    expect(cellAt(cal)?.booking).toEqual({
+      id: 7,
+      clientName: 'обезличено',
+      status: 'CONFIRMED',
+    });
+  });
+
+  it('обычное имя не подменяется подписью', async () => {
+    const row = encryptRecord(
+      {
+        id: 8,
+        startsAt: new Date('2026-07-13T10:00:00Z'),
+        durationMin: 50,
+        status: 'HELD',
+        clientName: 'Мария',
+        clientContact: 'maria@example.com',
+        message: null,
+      },
+      BOOKING_SCHEMA,
+    );
+    const { service } = makeService({ bookings: [row] });
+    const cal = await service.getCalendar(FROM, TO);
+    expect(cellAt(cal)?.booking?.clientName).toBe('Мария');
   });
 });
 

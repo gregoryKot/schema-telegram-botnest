@@ -4,7 +4,13 @@
 // внешнему браузеру, и с ярлыка войти нельзя в принципе) — оно открывает
 // подтверждение снаружи и забирает сессию опросом.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, cleanup, waitFor } from '@testing-library/react';
+import {
+  render,
+  screen,
+  cleanup,
+  waitFor,
+  fireEvent,
+} from '@testing-library/react';
 
 // vi.mock поднимается наверх файла — фабрики не имеют права ссылаться на
 // обычные переменные модуля. vi.hoisted поднимается вместе с ними.
@@ -36,7 +42,14 @@ afterEach(cleanup);
 
 async function renderReady() {
   render(<LoginProviderButtons />);
-  await waitFor(() => expect(screen.getByText('K7M2-QX94')).toBeTruthy());
+  // Билет выписан — код уже в ссылке Telegram (на экране он свёрнут).
+  await waitFor(() =>
+    expect(
+      screen
+        .getByRole('link', { name: /Войти через Telegram/ })
+        .getAttribute('href'),
+    ).toContain('login_K7M2QX94'),
+  );
 }
 
 describe('кнопки входа', () => {
@@ -78,8 +91,12 @@ describe('кнопки входа', () => {
     }
   });
 
-  it('код на экране виден — его сверяют с тем, что покажет бот', async () => {
+  // 2026-10-03: код свёрнут, пока о нём не спросили — крупный код без
+  // запроса читался как непонятная проверка. Для сверки с ботом — одно нажатие.
+  it('код свёрнут, а по нажатию виден — его сверяют с тем, что покажет бот', async () => {
     await renderReady();
+    expect(screen.queryByText('K7M2-QX94')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Показать код входа' }));
     expect(screen.getByText('K7M2-QX94')).toBeTruthy();
   });
 });

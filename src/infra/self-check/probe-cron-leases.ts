@@ -1,20 +1,22 @@
 import type { PrismaService } from '../../prisma/prisma.service';
-import { CRON_LEASE_REGISTRY, maxLeaseAgeMs } from './cron-lease-registry';
+import { lastClaimDbFailureAt } from '../cron-claim-failures';
+import { CRON_LEASE_REGISTRY } from './cron-lease-registry';
+import { leaseRowProblem } from './cron-lease-done';
 import { Probe } from './types';
 
 const PROCESS_STARTED_AT = Date.now();
 
 /**
- * Каждая leader-аренда из cron-lease-registry.ts обязана была тикнуть не
- * позже `maxLeaseAgeMs(name)` — порог считается из расписания крона
- * (cron-gap.ts), не из категории окна: иначе оконный `healthyAdultMorning`
- * (тикает только 09:00–10:55 МСК) сбоил бы почти круглосуточно (issue #501,
- * 2026-09-16, docs/INCIDENTS.md). Аренды, которых ещё вообще не может быть
- * (суточный крон в первый час жизни процесса), не считаются сбоем.
+ * Каждая leader-аренда из cron-lease-registry.ts: не пропустил ли её крон два
+ * тика подряд (cron-lease-verdict.ts; тики до старта процесса и во время
+ * аварии базы не судятся — 2026-09-16 и 2026-10-17, docs/INCIDENTS.md) и дошёл
+ * ли до конца захваченный прогон (cron-lease-done.ts). Зависимости — явные
+ * параметры со значениями по умолчанию: спеку не нужно глобальное состояние.
  */
 export function cronLeasesProbe(
   prisma: PrismaService,
   startedAt: number = PROCESS_STARTED_AT,
+  lastDbFailureAt: (name: string) => number | undefined = lastClaimDbFailureAt,
 ): Probe {
   return {
     id: 'cronLeases',
@@ -25,27 +27,24 @@ export function cronLeasesProbe(
       const now = Date.now();
       const rows = await prisma.cronLease.findMany({
         where: { name: { in: names } },
-        select: { name: true, runAt: true },
+        select: { name: true, runAt: true, doneRunAt: true },
       });
-      const byName = new Map(rows.map((r) => [r.name, r.runAt.getTime()]));
-      const stale: string[] = [];
+      const byName = new Map(rows.map((r) => [r.name, r]));
+      const problems: string[] = [];
       for (const name of names) {
-        const maxAge = maxLeaseAgeMs(name) ?? Infinity;
-        const runAt = byName.get(name);
-        if (runAt === undefined) {
-          if (now - startedAt > maxAge)
-            stale.push(`${name}: ни разу не отработал`);
-          continue;
-        }
-        if (now - runAt > maxAge) {
-          stale.push(
-            `${name}: последний раз ${Math.round((now - runAt) / 60_000)} мин назад`,
-          );
-        }
+        const problem = leaseRowProblem(name, byName.get(name), {
+          now,
+          startedAt,
+          lastDbFailureAt: lastDbFailureAt(name),
+        });
+        if (problem) problems.push(`${name}: ${problem}`);
       }
-      return stale.length === 0
-        ? { ok: true, detail: `все ${names.length} аренды свежие` }
-        : { ok: false, detail: stale.join('; ') };
+      return problems.length === 0
+        ? {
+            ok: true,
+            detail: `все ${names.length} кронов тикают по расписанию`,
+          }
+        : { ok: false, detail: problems.join('; ') };
     },
   };
 }

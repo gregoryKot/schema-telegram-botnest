@@ -13,6 +13,22 @@ export interface SchemaDiaryDraftData extends Record<
   schemaIds: string[];
 }
 
+/**
+ * Есть ли в загруженном черновике хоть что-то заполненное — по снапшоту
+ * черновика, не по живому стейту: пока не набран первый символ, лист говорит
+ * «С чего начнём?», а не «Продолжаем с того места».
+ */
+export function hasSchemaDiaryDraft(
+  d: Partial<SchemaDiaryDraftData> | null | undefined,
+): boolean {
+  if (!d) return false;
+  return (
+    SCHEMA_DIARY_FIELD_KEYS.some((k) => (d[k] ?? '').trim().length > 0) ||
+    (d.emotions ?? []).length > 0 ||
+    (d.schemaIds ?? []).length > 0
+  );
+}
+
 interface HapticLike {
   select: () => void;
 }

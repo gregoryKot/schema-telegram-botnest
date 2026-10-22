@@ -2,6 +2,7 @@
 // терапевта. Access-control по mapId (getModeMap/updateModeMap/
 // deleteModeMap + клиентский read-only доступ) — в mode-maps.access.spec.ts
 // (файл разделён из-за лимита ~300 строк/файл, CLAUDE.md).
+import { ConflictException, Logger } from '@nestjs/common';
 import { ModeMapsService } from './mode-maps.service';
 import { TherapyRelationsService } from './therapy-relations.service';
 import { Rel, makeRelationPrismaMock } from './therapy.test-helpers';
@@ -96,16 +97,16 @@ const relB: Rel = {
 describe('ModeMapsService — listModeMaps/createModeMap требуют активную связь', () => {
   it('listModeMaps: чужой терапевт без связи с клиентом — отказ', async () => {
     const { service } = makeService([relA]);
-    await expect(service.listModeMaps(T2, Number(CLIENT_A))).rejects.toThrow(
+    await expect(service.listModeMaps(T2, CLIENT_A)).rejects.toThrow(
       'No active relation',
     );
   });
 
   it('createModeMap: без активной связи — отказ, карта не создаётся', async () => {
     const { service, maps } = makeService([relA]);
-    await expect(
-      service.createModeMap(T2, Number(CLIENT_A), 'Карта'),
-    ).rejects.toThrow('No active relation');
+    await expect(service.createModeMap(T2, CLIENT_A, 'Карта')).rejects.toThrow(
+      'No active relation',
+    );
     expect(maps).toHaveLength(0);
   });
 
@@ -113,7 +114,7 @@ describe('ModeMapsService — listModeMaps/createModeMap требуют акти
     const { service, maps } = makeService([relA]);
     const map = await service.createModeMap(
       T1,
-      Number(CLIENT_A),
+      CLIENT_A,
       'Карта Ани',
       'couple',
     );
@@ -126,7 +127,7 @@ describe('ModeMapsService — listModeMaps/createModeMap требуют акти
 
   it('createModeMap: неизвестный kind подменяется на "problem"', async () => {
     const { service } = makeService([relA]);
-    const map = await service.createModeMap(T1, Number(CLIENT_A), 'X', 'bogus');
+    const map = await service.createModeMap(T1, CLIENT_A, 'X', 'bogus');
     expect(map.kind).toBe('problem');
   });
 
@@ -156,25 +157,25 @@ describe('ModeMapsService — listModeMaps/createModeMap требуют акти
         updatedAt: new Date(),
       },
     );
-    const listA = await service.listModeMaps(T1, Number(CLIENT_A));
-    const listB = await service.listModeMaps(T1, Number(CLIENT_B));
+    const listA = await service.listModeMaps(T1, CLIENT_A);
+    const listB = await service.listModeMaps(T1, CLIENT_B);
     expect(listA.map((m: any) => m.title)).toEqual(['A']);
     expect(listB.map((m: any) => m.title)).toEqual(['B']);
   });
 });
 
 describe('ModeMapsService — кастомные режимы терапевта', () => {
-  it('createCustomMode: неизвестный nodeType подменяется на "custom", имя обрезается до 80 символов, emoji — до 8', async () => {
+  it('createCustomMode: неизвестный nodeType подменяется на "custom", имя и emoji сохраняются как пришли (пределы — в DTO, backend#29)', async () => {
     const { service, customModes } = makeService([]);
-    const longName = 'а'.repeat(100);
+    const name = 'а'.repeat(80);
     const mode = await service.createCustomMode(T1, {
-      name: longName,
-      emoji: '🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥',
+      name,
+      emoji: '🔥',
       nodeType: 'bogus',
     });
     expect(mode.nodeType).toBe('custom');
-    expect(mode.name).toHaveLength(80);
-    expect(customModes[0].emoji.length).toBeLessThanOrEqual(8);
+    expect(mode.name).toBe(name);
+    expect(customModes[0].emoji).toBe('🔥');
   });
 
   it('createCustomMode: emoji по умолчанию "⬡", если не передан', async () => {
@@ -222,5 +223,86 @@ describe('ModeMapsService — кастомные режимы терапевта
 
     await service.deleteCustomMode(T1, 5);
     expect(customModes).toHaveLength(0);
+  });
+});
+
+describe('ModeMapsService — нечитаемая карта (D-8, аудит 2026-10)', () => {
+  it('nodes/edges под чужим ключом приходят пустыми массивами, а не строкой-блобом', async () => {
+    const foreign = Buffer.alloc(48, 7).toString('base64');
+    jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
+    const { service } = makeService(
+      [relA],
+      [
+        {
+          id: 9,
+          therapistId: T1,
+          clientId: CLIENT_A,
+          title: 'Карта',
+          kind: 'problem',
+          nodes: foreign,
+          edges: foreign,
+        },
+      ],
+    );
+    const map = await service.getModeMap(T1, 9);
+    expect(map.nodes).toEqual([]);
+    expect(map.edges).toEqual([]);
+    jest.restoreAllMocks();
+  });
+
+  // Редактор получил [] вместо нечитаемых nodes и первой же правкой прислал бы
+  // свой список целиком — живой шифротекст был бы стёрт. Запись отказывает 409.
+  const mapWith = (nodes: unknown) => ({
+    id: 9,
+    therapistId: T1,
+    clientId: CLIENT_A,
+    title: 'Карта',
+    kind: 'problem',
+    nodes,
+    edges: [],
+  });
+  const withUpdate = (db: any) =>
+    (db.modeMap.update = jest.fn(({ data }: any) =>
+      Promise.resolve({ ...mapWith([]), ...data }),
+    ));
+
+  it('updateModeMap поверх нечитаемых nodes — 409, update не вызван', async () => {
+    jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
+    const warn = jest
+      .spyOn(Logger.prototype, 'warn')
+      .mockImplementation(() => undefined);
+    const foreign = Buffer.alloc(48, 7).toString('base64');
+    const { service, db } = makeService([relA], [mapWith(foreign)]);
+    const update = withUpdate(db);
+    await expect(
+      service.updateModeMap(T1, 9, { nodes: [{ id: 'n1' }] }),
+    ).rejects.toBeInstanceOf(ConflictException);
+    expect(update).not.toHaveBeenCalled();
+    expect(String(warn.mock.calls[0]?.[0])).toContain('modeMap#9');
+    jest.restoreAllMocks();
+  });
+
+  it('контроль: правка только title не трогает нечитаемые nodes — пишет', async () => {
+    jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
+    const foreign = Buffer.alloc(48, 7).toString('base64');
+    const { service, db } = makeService([relA], [mapWith(foreign)]);
+    const update = withUpdate(db);
+    await service.updateModeMap(T1, 9, { title: 'Новое' });
+    expect(update).toHaveBeenCalledWith({
+      where: { id: 9 },
+      data: { title: 'Новое' },
+    });
+    jest.restoreAllMocks();
+  });
+
+  it('контроль: читаемая карта — правка nodes пишется', async () => {
+    const { service, db } = makeService([relA], [mapWith([])]);
+    const update = withUpdate(db);
+    const res = await service.updateModeMap(T1, 9, { nodes: [{ id: 'n1' }] });
+    expect(update).toHaveBeenCalledWith({
+      where: { id: 9 },
+      data: { nodes: expect.any(String) },
+    });
+    expect(res.nodes).toEqual([{ id: 'n1' }]);
   });
 });

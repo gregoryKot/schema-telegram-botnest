@@ -1,7 +1,8 @@
 import type { UserTask } from '../../api';
-import { GlyphArrowLeft } from '../../components/exercises/ExScreen';
+import { OverlayFrame } from '../../components/OverlayFrame';
 import { useHistorySheet } from '../../hooks/useHistorySheet';
 import { fmtDate, momentDayKey } from '../../utils/format';
+import { TaskProgressBar } from '../../components/TaskProgressBar';
 import { resolveTaskText, taskStatusMark } from './helpers';
 
 // Оверлей «Все задания» экрана «Сегодня». Вынесено из TodaySection.tsx
@@ -15,50 +16,44 @@ export function AllTasksOverlay({ tasks, taskHistory, onClose, onTaskDone, onAdd
 }) {
   const goBack = useHistorySheet(onClose);
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'var(--bg)', display: 'grid', gridTemplateRows: 'auto 1fr', overflow: 'hidden' }}>
-      <div className="ex-topbar">
-        <button className="ex-back" onClick={goBack}><GlyphArrowLeft /> Назад</button>
-      </div>
-      <div style={{ overflowY: 'auto' }}>
-      <div style={{ maxWidth: 560, margin: '0 auto', padding: '32px 24px 80px' }}>
-        <h1 style={{ fontFamily: 'var(--serif)', fontSize: 28, fontWeight: 400, color: 'var(--text)', marginBottom: 24 }}>Все задания</h1>
+    <OverlayFrame title="Все задания" onBack={goBack}>
+      <div className="sk-list">
         {tasks.map(task => (
-          <div key={task.id} style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-12)', padding: '11px 0', borderBottom: '1px solid var(--line)' }}>
-            <span style={{ fontSize: 18, flexShrink: 0, width: 22, textAlign: 'center' }}>
-              {taskStatusMark(task.done)}
-            </span>
-            <div className="u-fill">
-              {task.assignedBy !== null && <div className="eyebrow" style={{ color: 'var(--accent)', marginBottom: 1 }}>от терапевта</div>}
-              <div style={{ fontSize: 13, fontWeight: 500, lineHeight: 1.35 }}>{resolveTaskText(task)}</div>
-              {task.dueDate && <div style={{ fontSize: 11, color: 'var(--text-sub)', marginTop: 2 }}>до {fmtDate(task.dueDate)}</div>}
+          <div key={task.id} className="ds-card ds-card--row sk-task">
+            <span className="sk-task-mark">{taskStatusMark(task.done)}</span>
+            <div className="sk-task-main">
+              {task.assignedBy !== null && <div className="ds-eyebrow">от терапевта</div>}
+              <div className="sk-task-text">{resolveTaskText(task)}</div>
+              <TaskProgressBar task={task} />
+              {task.dueDate && <div className="ds-sub">до {fmtDate(task.dueDate)}</div>}
             </div>
-            {task.done === null && task.assignedBy !== null && task.type === 'custom' && (
-              <button onClick={() => onTaskDone(task.id as number)}
-                style={{ padding: '6px 12px', border: 'none', borderRadius: 'var(--r-10)', background: 'color-mix(in srgb, var(--c-moss) 14%, transparent)', color: 'var(--c-moss)', fontSize: 12, fontWeight: 600, cursor: 'pointer', flexShrink: 0 }}>
+            {task.done === null && task.type === 'custom' && (
+              <button onClick={() => onTaskDone(task.id as number)} className="ds-btn ds-btn--sm ds-btn--secondary">
                 Готово
               </button>
             )}
           </div>
         ))}
-        {taskHistory.length > 0 && (
-          <>
-            <div className="eyebrow" style={{ marginTop: 20, marginBottom: 8 }}>Выполнено</div>
+      </div>
+      {taskHistory.length > 0 && (
+        <div className="sk-group">
+          <div className="ds-label">Выполнено</div>
+          <div className="sk-list">
             {taskHistory.map(task => (
-              <div key={task.id} style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-12)', padding: '9px 0', borderBottom: '1px solid var(--line)', opacity: 0.5 }}>
-                <span style={{ fontSize: 16, flexShrink: 0, width: 22, textAlign: 'center' }}>{taskStatusMark(task.done)}</span>
-                <div className="u-fill">
-                  <div style={{ fontSize: 12, lineHeight: 1.35 }}>{resolveTaskText(task)}</div>
-                  {task.completedAt && <div style={{ fontSize: 10, color: 'var(--text-faint)', marginTop: 1 }}>{fmtDate(momentDayKey(task.completedAt))}</div>}
+              <div key={task.id} className="ds-card ds-card--row sk-task is-past">
+                <span className="sk-task-mark">{taskStatusMark(task.done)}</span>
+                <div className="sk-task-main">
+                  <div className="sk-task-text">{resolveTaskText(task)}</div>
+                  {task.completedAt && <div className="ds-sub">{fmtDate(momentDayKey(task.completedAt))}</div>}
                 </div>
               </div>
             ))}
-          </>
-        )}
-        <button onClick={onAddTask} className="ex-btn ex-btn-primary" style={{ marginTop: 20, width: '100%' }}>
-          + Поставить цель
-        </button>
-      </div>
-      </div>
-    </div>
+          </div>
+        </div>
+      )}
+      <button onClick={onAddTask} className="ds-btn sk-wide-btn">
+        + Поставить цель
+      </button>
+    </OverlayFrame>
   );
 }

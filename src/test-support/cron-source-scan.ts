@@ -1,15 +1,14 @@
-// Общий сканер исходников для leader-кронов: находит пары `@Cron(<выражение
-// или константа>)` + `claimRun('имя', LEASE_WINDOW.<x>)` внутри тела одного
-// метода. Перенесён как есть из cron-leader-windows.spec.ts (логика разбора
-// не менялась) в общее место, чтобы у него было два потребителя без второй
-// копии парсера (jscpd, правило №11 CLAUDE.md):
+// Общий сканер исходников для leader-кронов: пары `@Cron(<выражение или
+// константа>, { timeZone })` + `claimRun('имя', LEASE_WINDOW.<x>)` в теле
+// одного метода. Два потребителя без второй копии парсера (правило №11):
 // - src/infra/cron-leader-windows.spec.ts — сверяет «окно < период»;
 // - src/infra/self-check/cron-lease-registry.spec.ts — сверяет реестр с
-//   исходниками (и окно, и саму cron-строку).
-// Период/окно из windowKey — дело каждого потребителя (cronPeriodMs /
-// LEASE_WINDOW у себя), этот модуль отдаёт только сырое совпадение.
-import { readdirSync, readFileSync, statSync } from 'fs';
-import { join, resolve } from 'path';
+//   исходниками (окно, cron-строку и часовой пояс).
+// Период/окно из windowKey — дело потребителя; модуль отдаёт сырое совпадение.
+import { readFileSync } from 'fs';
+import { join, relative, resolve, sep } from 'path';
+import { collectSourceFiles } from '../security/collect-source-files';
+import { cronTimeZone } from './cron-source-tz';
 
 const ROOT = resolve(__dirname, '..', '..');
 
@@ -36,8 +35,7 @@ function skipString(src: string, i: number): number {
   return i;
 }
 
-// matchParen/matchBrace — один и тот же счётчик глубины на разных символах
-// скобок (ниже — тонкие обёртки), а не две копии цикла.
+// matchParen/matchBrace — тонкие обёртки над одним счётчиком глубины.
 function matchDelims(
   src: string,
   openIndex: number,
@@ -134,19 +132,14 @@ function firstCronArg(
   return consts.get(m[0]) ?? null;
 }
 
-function walk(dir: string, acc: string[] = []): string[] {
-  for (const name of readdirSync(join(ROOT, dir))) {
-    const rel = `${dir}/${name}`;
-    const st = statSync(join(ROOT, rel));
-    if (st.isDirectory()) {
-      if (name === 'node_modules' || name === 'dist' || name === 'test-support')
-        continue;
-      walk(rel, acc);
-    } else if (/\.ts$/.test(name) && !/\.(spec|test)\.ts$/.test(name)) {
-      acc.push(rel);
-    }
-  }
-  return acc;
+// Обход — общий collectSourceFiles (issue #215): он не заходит в скрытые
+// каталоги, поэтому `src/.jest-cache`, куда параллельные воркеры jest пишут
+// файлы прямо во время обхода, не роняет сканер ENOENT. test-support — сам
+// сканер и его фикстуры, не прод-код.
+function sourceFiles(root: string): string[] {
+  return collectSourceFiles(join(root, 'src'), {
+    filter: (p) => !p.split(sep).includes('test-support'),
+  }).map((p) => relative(root, p).split(sep).join('/'));
 }
 
 const CLAIM_RE =
@@ -156,16 +149,17 @@ export interface CronClaimFinding {
   file: string;
   method: string;
   cron: string;
+  timeZone: string | undefined;
   claimName: string;
   windowKey: string;
 }
 
 /** Каждая пара `@Cron(...)` + `claimRun('имя', LEASE_WINDOW.<x>)` в теле
  * одного метода, во всём `src/**`. */
-export function scanCronClaims(): CronClaimFinding[] {
+export function scanCronClaims(root: string = ROOT): CronClaimFinding[] {
   const out: CronClaimFinding[] = [];
-  for (const rel of walk('src')) {
-    const raw = readFileSync(join(ROOT, rel), 'utf8');
+  for (const rel of sourceFiles(root)) {
+    const raw = readFileSync(join(root, rel), 'utf8');
     if (!raw.includes('@Cron(')) continue;
     const src = stripComments(raw);
     const consts = fileStringConsts(src);
@@ -175,6 +169,7 @@ export function scanCronClaims(): CronClaimFinding[] {
       const decoratorOpen = m.index + m[0].length - 1;
       const decoratorClose = matchParen(src, decoratorOpen);
       if (decoratorClose === -1) continue;
+      const decorator = src.slice(decoratorOpen, decoratorClose);
       const cronExpr = firstCronArg(src, decoratorOpen, consts);
       const method = findMethodAfter(src, decoratorClose + 1);
       if (!method || cronExpr === null) continue;
@@ -192,6 +187,7 @@ export function scanCronClaims(): CronClaimFinding[] {
         file: rel,
         method: method.name,
         cron: cronExpr,
+        timeZone: cronTimeZone(decorator, consts),
         claimName,
         windowKey,
       });

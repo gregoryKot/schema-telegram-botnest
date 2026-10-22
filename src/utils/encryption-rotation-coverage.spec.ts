@@ -1,104 +1,210 @@
-// Сверка: КАЖДОЕ зашифрованное поле обязано быть в scripts/rotate-encryption-key.ts
-// (аудит 2026-07-20, H4).
+// Сверка (правило №4): список ротации ENCRYPTION_KEY ↔ реестр шифрования ↔
+// схема Prisma — по ПАРЕ (модель, поле), а не по имени поля.
 //
-// Инцидент, который это предотвращает: рунбук ротации ENCRYPTION_KEY
-// (docs/SECURITY.md) добавляет второй ключ, гоняет rotate-encryption-key,
-// затем УДАЛЯЕТ старый ключ. Любое зашифрованное поле, пропущенное скриптом,
-// остаётся под старым ключом → в шаге «удалить старый ключ» превращается в
-// нерасшифровываемый мусор БЕЗ ошибки (decrypt() молча возвращает ciphertext
-// как «plaintext»). На момент аудита скрипт не покрывал Booking, Donation,
-// Subscription, ModeMap, TherapistCustomMode, TherapistRequest, TherapyRelation,
-// totp-секреты и часть полей (evidenceFor/evidenceAgainst, emotions,
-// modeMapNodes/Edges, history) — то есть платёжки, чеки ФНС и 2FA.
-//
-// Механизм: статически находим зашифрованные поля в src/ (декларативный
-// EncryptSchema + инлайн `field: encrypt(...)`) и требуем, чтобы имя каждого
-// встречалось в скрипте ротации. Проверка на уровне ИМЕНИ поля (не модель+поле):
-// residual-слабость — новое поле с именем, уже покрытым для другой модели,
-// проскользнёт; но реальные пропуски (отдельные имена) ловятся. Стиль —
-// как у table-registry.spec.ts (чтение исходников как текста, без импорта).
+// Рунбук (CLAUDE.md, «Ротация ENCRYPTION_KEY») добавляет второй ключ, гоняет
+// ротацию, затем УДАЛЯЕТ старый. Поле, пропущенное ротацией, превращается в
+// нерасшифровываемый мусор без ошибки. Прежняя версия этого спека искала имя
+// поля в ТЕКСТЕ скрипта, и аудит 2026-10-11 нашёл три дыры такой проверки:
+//   - `origins`/`healthyView` «покрыты» записью userSchemaNote, хотя у
+//     UserModeNote их в списке не было (имя совпало, пара — нет);
+//   - `answers` (YSQ) шифруется присваиванием и обнаружению не виден вовсе;
+//   - `pk` не сверялся со схемой: userSafePlace (ключ userId) и diaryDraft
+//     (составной ключ) стояли без верного pk, и ротация падала на седьмой
+//     модели из 27.
+// Теперь источник правды — FIELD_POLICY (enc) и schema.prisma, а не текст.
 import { readFileSync } from 'fs';
 import { join } from 'path';
-import { collectSourceFiles } from '../security/collect-source-files';
+import { Prisma } from '@prisma/client';
+import { RotationTarget, TARGETS } from '../cli/rotate-encryption/targets';
+import { pkColumns } from '../cli/rotate-encryption/rotate-all';
+import { FIELD_POLICY, Policy } from './encryption-policy';
 
-const ROOT = join(__dirname, '..', '..');
-const rotationScript = readFileSync(
-  join(ROOT, 'scripts', 'rotate-encryption-key.ts'),
-  'utf8',
-);
-
-const srcFiles = collectSourceFiles(join(ROOT, 'src'));
-
-// ── Обнаружение зашифрованных полей ─────────────────────────────────────────
-// (1) EncryptSchema = { strings:[...], jsonArrays:[...] } → все строки в блоке.
-// (2) инлайн `field: encrypt(` / `field: encryptJson(` (объектное свойство).
-function discoverEncryptedFields(): Map<string, string> {
-  const found = new Map<string, string>(); // field → пример файла
-  const rel = (f: string) => f.slice(ROOT.length + 1);
-  for (const file of srcFiles) {
-    const text = readFileSync(file, 'utf8');
-
-    // (1) EncryptSchema-литералы
-    const schemaRe = /EncryptSchema\s*=\s*\{([\s\S]*?)\}/g;
-    let sm: RegExpExecArray | null;
-    while ((sm = schemaRe.exec(text)) !== null) {
-      // отбрасываем строки-комментарии (пример в crypto.ts)
-      if (/^\s*\/\//.test(text.slice(sm.index - 3, sm.index))) continue;
-      const fieldRe = /'([a-zA-Z][\w]*)'/g;
-      let fm: RegExpExecArray | null;
-      while ((fm = fieldRe.exec(sm[1])) !== null) {
-        if (!found.has(fm[1])) found.set(fm[1], rel(file));
-      }
-    }
-
-    // (2) инлайн encrypt/encryptJson как значение свойства объекта.
-    // Требуем `{` или `,` перед именем — иначе ловится тернар
-    // `cond ? val : encrypt(val)` (val — не колонка).
-    const inlineRe = /[{,]\s*(\w+)\s*:\s*(?:encrypt|encryptJson)\(/g;
-    let im: RegExpExecArray | null;
-    while ((im = inlineRe.exec(text)) !== null) {
-      if (!found.has(im[1])) found.set(im[1], rel(file));
-    }
-  }
-  return found;
+interface ModelInfo {
+  fields: Record<string, string>; // поле → тип Prisma
+  pk: string[];
 }
 
-// Поля, зашифрованные ПРИСВАИВАНИЕМ (`const data = encryptJson(...)`), а не
-// свойством объекта или EncryptSchema — авто-обнаружение их не видит (LHS-имя
-// переменной ненадёжно: у большинства это generic `enc`/`encText`, дало бы
-// false-positive). Такие поля перечисляются здесь ВРУЧНУЮ и всё равно
-// проверяются против скрипта ротации. Реальный инцидент: DiaryDraft.data
-// (клинический текст черновика) шифровался, но в ротацию не попал, и обе
-// авто-защиты (эта сверка + ручной обзор) его пропустили — 2026-07-20, H3.
-const ASSIGNMENT_ENCRYPTED: Record<string, string> = {
-  data: 'src/api/api.controller.ts (DiaryDraft.data)',
-};
+const ROOT = join(__dirname, '..', '..');
+const schemaText = readFileSync(join(ROOT, 'prisma', 'schema.prisma'), 'utf8');
 
-describe('покрытие ротации ENCRYPTION_KEY (H4)', () => {
-  const encrypted = discoverEncryptedFields();
-  for (const [field, where] of Object.entries(ASSIGNMENT_ENCRYPTED)) {
-    if (!encrypted.has(field)) encrypted.set(field, where);
-  }
-
-  it('обнаружены зашифрованные поля (санити — парсер не сломан)', () => {
-    // Если обнаружений мало — регэксп протух и тест стал бесполезен.
-    expect(encrypted.size).toBeGreaterThan(20);
-  });
-
-  it('каждое зашифрованное поле присутствует в скрипте ротации', () => {
-    const missing: string[] = [];
-    for (const [field, file] of encrypted) {
-      // поле покрыто, если его имя встречается как строка в скрипте ротации
-      if (!rotationScript.includes(`'${field}'`)) {
-        missing.push(`${field}  (напр. ${file})`);
-      }
+// Первичные ключи: рантайм-DMMF клиента Prisma 7 их не отдаёт (в нём только
+// имя/вид/тип поля), поэтому ключ читается из schema.prisma — `@id` на поле или
+// `@@id([a, b])` на модели.
+function primaryKeys(): Record<string, string[]> {
+  const out: Record<string, string[]> = {};
+  for (const m of schemaText.matchAll(/model\s+(\w+)\s+\{([\s\S]*?)\n\}/g)) {
+    const body = m[2];
+    const composite = /@@id\(\[([^\]]+)\]/.exec(body);
+    if (composite) {
+      out[m[1]] = composite[1].split(',').map((c) => c.trim());
+      continue;
     }
-    expect({ missing }).toEqual({ missing: [] });
+    const single = /^\s*(\w+)\s+\S+.*@id\b/m.exec(body);
+    if (single) out[m[1]] = [single[1]];
+  }
+  return out;
+}
+
+function realModels(): Record<string, ModelInfo> {
+  const pks = primaryKeys();
+  const out: Record<string, ModelInfo> = {};
+  for (const m of Prisma.dmmf.datamodel.models) {
+    out[m.name] = {
+      fields: Object.fromEntries(m.fields.map((f) => [f.name, f.type])),
+      pk: pks[m.name] ?? [],
+    };
+  }
+  return out;
+}
+
+// Чистая сверка — отдельной функцией, чтобы её можно было проверить на
+// синтетических реестрах (контрольные образцы ниже, правило №15 п.2).
+export function findRotationProblems(
+  targets: RotationTarget[],
+  policy: Record<string, Record<string, Policy>>,
+  models: Record<string, ModelInfo>,
+): string[] {
+  const problems: string[] = [];
+  const covered = new Set<string>();
+  const seen = new Set<string>();
+  for (const t of targets) {
+    const model = t.name[0].toUpperCase() + t.name.slice(1);
+    if (seen.has(t.name))
+      problems.push(`${t.name}: запись списка продублирована`);
+    seen.add(t.name);
+    const info = models[model];
+    if (!info) {
+      problems.push(`${t.name}: в схеме нет модели ${model}`);
+      continue;
+    }
+    const pk = pkColumns(t);
+    if ([...pk].sort().join() !== [...info.pk].sort().join())
+      problems.push(
+        `${t.name}: pk [${pk.join(',')}] не совпадает с ключом схемы [${info.pk.join(',')}]`,
+      );
+    for (const f of t.fields) {
+      covered.add(`${model}.${f}`);
+      if (!['String', 'Json'].includes(info.fields[f]))
+        problems.push(
+          `${t.name}.${f}: нет в схеме String/Json-поля с таким именем`,
+        );
+      else if (!('enc' in (policy[model]?.[f] ?? {})))
+        problems.push(
+          `${t.name}.${f}: протухшая запись — в реестре шифрования поле не enc`,
+        );
+    }
+  }
+  for (const [model, fields] of Object.entries(policy))
+    for (const [f, p] of Object.entries(fields))
+      if ('enc' in p && !covered.has(`${model}.${f}`))
+        problems.push(
+          `${model}.${f}: зашифровано, но ротация его не перешифровывает`,
+        );
+  return problems.sort();
+}
+
+describe('покрытие ротации ENCRYPTION_KEY: список ↔ реестр шифрования ↔ схема', () => {
+  const models = realModels();
+
+  it('санити: ключи схемы разобраны (одиночный, составной, нестандартный)', () => {
+    expect(models.Note.pk).toEqual(['id']);
+    expect(models.UserSafePlace.pk).toEqual(['userId']);
+    expect(models.DiaryDraft.pk).toEqual(['userId', 'type']);
+    expect(models.ClientMeeting.pk).toEqual(['clientKey']);
+    const withoutPk = Object.entries(models).filter(
+      ([, m]) => m.pk.length === 0,
+    );
+    expect(withoutPk.map(([n]) => n)).toEqual([]);
   });
 
-  it('вложенный history ротируется отдельным блоком', () => {
-    // history — массив снапшотов, общий строковый цикл его не трогает.
-    expect(rotationScript).toMatch(/clientConceptualization\.history/);
-    expect(rotationScript).toContain('.history');
+  it('санити: в реестре достаточно enc-полей, проверка не пустая', () => {
+    const enc = Object.values(FIELD_POLICY).flatMap((m) =>
+      Object.values(m).filter((p) => 'enc' in p),
+    );
+    expect(enc.length).toBeGreaterThan(90);
+  });
+
+  it('список ротации и реестр шифрования совпадают по парам (модель, поле); pk — как в схеме', () => {
+    expect(findRotationProblems(TARGETS, FIELD_POLICY, models)).toEqual([]);
+  });
+
+  it('вложенная история концептуализаций ротируется отдельным шагом, а не списком', () => {
+    // history — plain-контейнер: чувствительные поля внутри шифруются попольно.
+    expect('enc' in FIELD_POLICY.ClientConceptualization.history).toBe(false);
+    expect(TARGETS.some((t) => t.fields.includes('history'))).toBe(false);
+  });
+
+  describe('контрольные образцы: сверка краснеет там, где обязана', () => {
+    const policy: Record<string, Record<string, Policy>> = {
+      UserModeNote: {
+        origins: { enc: 'x' },
+        modeId: { plain: 'ключ' },
+      },
+      DiaryDraft: { data: { enc: 'x' } },
+    };
+    const info: Record<string, ModelInfo> = {
+      UserModeNote: {
+        fields: { origins: 'String', modeId: 'String', id: 'Int' },
+        pk: ['id'],
+      },
+      DiaryDraft: {
+        fields: { data: 'Json', userId: 'BigInt', type: 'String' },
+        pk: ['userId', 'type'],
+      },
+    };
+    const good: RotationTarget[] = [
+      { name: 'userModeNote', fields: ['origins'] },
+      { name: 'diaryDraft', fields: ['data'], pk: ['userId', 'type'] },
+    ];
+
+    it('согласованный набор — без замечаний', () => {
+      expect(findRotationProblems(good, policy, info)).toEqual([]);
+    });
+
+    it('пара, убранная из списка, краснеет (а имя поля у другой модели не спасает)', () => {
+      const withoutPair = [
+        good[1],
+        { name: 'userSchemaNote', fields: ['origins'] },
+      ];
+      const infoPlus = {
+        ...info,
+        UserSchemaNote: { fields: { origins: 'String' }, pk: ['id'] },
+      };
+      const problems = findRotationProblems(withoutPair, policy, infoPlus);
+      expect(problems).toContain(
+        'UserModeNote.origins: зашифровано, но ротация его не перешифровывает',
+      );
+    });
+
+    it('неверный pk краснеет: дефолтный id у модели с составным ключом', () => {
+      const problems = findRotationProblems(
+        [good[0], { name: 'diaryDraft', fields: ['data'] }],
+        policy,
+        info,
+      );
+      expect(problems).toEqual([
+        'diaryDraft: pk [id] не совпадает с ключом схемы [userId,type]',
+      ]);
+    });
+
+    it('запись про несуществующее поле, не-enc поле и несуществующую модель краснеет', () => {
+      const problems = findRotationProblems(
+        [
+          ...good,
+          { name: 'userModeNote', fields: ['origins', 'ghost', 'modeId'] },
+          { name: 'noSuchModel', fields: ['x'] },
+        ],
+        policy,
+        info,
+      );
+      expect(problems).toEqual(
+        [
+          'noSuchModel: в схеме нет модели NoSuchModel',
+          'userModeNote.ghost: нет в схеме String/Json-поля с таким именем',
+          'userModeNote.modeId: протухшая запись — в реестре шифрования поле не enc',
+          'userModeNote: запись списка продублирована',
+        ].sort(),
+      );
+    });
   });
 });

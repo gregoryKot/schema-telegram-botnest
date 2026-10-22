@@ -5,10 +5,10 @@ import { H2, EYEBROW } from './productContent';
 import { Cta } from './BrandKit';
 import { INSTALL_STEPS } from '../../components/installGuide/installSteps';
 import { useInstallPrompt } from '../../hooks/useInstallPrompt';
-import { isStandalone, subscribeAppInstalled } from '../../utils/pwaInstall';
+import { hideInstallOffers, subscribeAppInstalled } from '../../utils/pwaInstall';
 
 // Секция «значок на экране» продуктового лендинга: сайт ставится как
-// приложение прямо из браузера (манифест у корня ведёт в /app/). Шаги — из
+// приложение прямо из браузера (манифест у корня ведёт в кабинет /today). Шаги — из
 // общего источника installSteps, те же, что в баннере кабинета (одна
 // механика — один источник текста). Аналитика анонимная: гость лендинга не
 // авторизован, событие уходит в POST /api/public-event (userId = null).
@@ -23,7 +23,7 @@ export function AppInstallSection() {
 
   // Лендинг в scope установленного приложения: открытый изнутри standalone,
   // он не должен предлагать поставить то, что уже стоит.
-  if (isStandalone()) return null;
+  if (hideInstallOffers()) return null;
 
   return (
     <section id="app" style={{ padding: '72px 24px', scrollMarginTop: 70 }}>
@@ -34,8 +34,7 @@ export function AppInstallSection() {
         </h2>
         <p style={{ fontSize: 15.5, lineHeight: 1.7, color: SUB, maxWidth: 560, margin: '0 0 36px' }}>
           «Всё по схеме» ставится прямо из браузера: значок на экране телефона,
-          запуск на весь экран, вход тот же, что на сайте. Данные общие с
-          Telegram-версией — дневник, начатый там, продолжается здесь.
+          запуск на весь экран, вход тот же, что на сайте.
         </p>
         <div
           className="pl2-3"
@@ -76,7 +75,7 @@ export function AppInstallSection() {
           })}
         </div>
         <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'center' }}>
-          <Cta href="/app/" size="lg">Открыть приложение</Cta>
+          <Cta href="/today" size="lg">Открыть приложение</Cta>
           {canPrompt && (
             <Cta
               href="#app"

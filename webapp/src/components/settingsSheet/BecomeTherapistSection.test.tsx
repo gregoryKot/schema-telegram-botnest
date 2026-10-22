@@ -7,6 +7,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup, waitFor } from '@testing-library/react';
 import { BecomeTherapistSection } from './BecomeTherapistSection';
 import { withAddressForm, fillTherapistRequestForm } from './SettingsSheet.test-helpers';
+import * as LIM from '../../../../shared/src/limits/textLimits';
 
 vi.mock('../../api', () => ({
   api: {
@@ -30,16 +31,19 @@ function renderWithForm(form: 'ty' | 'vy' = 'ty') {
 }
 
 describe('BecomeTherapistSection — статусы заявки', () => {
-  it('нет заявки — кнопка «Подать заявку»', async () => {
+  it('нет заявки — кнопка «Я психолог — подать заявку»', async () => {
     mockApi.getTherapistRequest.mockResolvedValue(null);
     renderWithForm();
-    await screen.findByText('Подать заявку');
+    await screen.findByText('Я психолог — подать заявку');
   });
 
   it('status=pending — «Заявка на рассмотрении»', async () => {
     mockApi.getTherapistRequest.mockResolvedValue({ status: 'pending', rejectReason: null });
     renderWithForm();
-    await screen.findByText('Заявка на рассмотрении.', { exact: false });
+    const note = await screen.findByText('Заявка на рассмотрении.', { exact: false });
+    // «Появится здесь» верно для обоих исходов: одобрение и отказ с причиной
+    // рисуются в этом же блоке (тесты ниже).
+    expect(note.textContent).toContain('Решение появится здесь');
   });
 
   it('status=approved — сообщение об одобрении', async () => {
@@ -52,13 +56,13 @@ describe('BecomeTherapistSection — статусы заявки', () => {
     mockApi.getTherapistRequest.mockResolvedValue({ status: 'rejected', rejectReason: 'нет диплома' });
     renderWithForm();
     await screen.findByText(/Заявка отклонена: нет диплома/);
-    expect(screen.getByText('Подать заявку')).toBeTruthy();
+    expect(screen.getByText('Я психолог — подать заявку')).toBeTruthy();
   });
 
   it('getTherapistRequest() падает — форма доступна как для новой заявки', async () => {
     mockApi.getTherapistRequest.mockRejectedValue(new Error('network down'));
     renderWithForm();
-    await screen.findByText('Подать заявку');
+    await screen.findByText('Я психолог — подать заявку');
   });
 });
 
@@ -66,8 +70,8 @@ describe('BecomeTherapistSection — клиентская валидация (т
   it('форма «ты»: пустая заявка просит на «ты»', async () => {
     mockApi.getTherapistRequest.mockResolvedValue(null);
     renderWithForm('ty');
-    await screen.findByText('Подать заявку');
-    fireEvent.click(screen.getByText('Подать заявку'));
+    await screen.findByText('Я психолог — подать заявку');
+    fireEvent.click(screen.getByText('Я психолог — подать заявку'));
     fireEvent.click(screen.getByText('Отправить заявку'));
 
     await screen.findByText('Заполни ФИО, квалификацию и контакты');
@@ -77,8 +81,8 @@ describe('BecomeTherapistSection — клиентская валидация (т
   it('форма «вы»: та же проверка звучит на «вы»', async () => {
     mockApi.getTherapistRequest.mockResolvedValue(null);
     renderWithForm('vy');
-    await screen.findByText('Подать заявку');
-    fireEvent.click(screen.getByText('Подать заявку'));
+    await screen.findByText('Я психолог — подать заявку');
+    fireEvent.click(screen.getByText('Я психолог — подать заявку'));
     fireEvent.click(screen.getByText('Отправить заявку'));
 
     await screen.findByText('Заполните ФИО, квалификацию и контакты');
@@ -87,7 +91,7 @@ describe('BecomeTherapistSection — клиентская валидация (т
 
 describe('BecomeTherapistSection — отправка заявки', () => {
   async function openAndFill() {
-    fireEvent.click(await screen.findByText('Подать заявку'));
+    fireEvent.click(await screen.findByText('Я психолог — подать заявку'));
     fillTherapistRequestForm();
   }
 
@@ -121,16 +125,30 @@ describe('BecomeTherapistSection — отправка заявки', () => {
     expect(screen.getByPlaceholderText('ФИО')).toBeTruthy();
   });
 
-  it('отмена формы очищает ошибку и возвращает к кнопке «Подать заявку»', async () => {
+  it('отмена формы очищает ошибку и возвращает к кнопке «Я психолог — подать заявку»', async () => {
     mockApi.getTherapistRequest.mockResolvedValue(null);
     renderWithForm();
-    await screen.findByText('Подать заявку');
-    fireEvent.click(screen.getByText('Подать заявку'));
+    await screen.findByText('Я психолог — подать заявку');
+    fireEvent.click(screen.getByText('Я психолог — подать заявку'));
     fireEvent.click(screen.getByText('Отправить заявку'));
     await screen.findByText('Заполни ФИО, квалификацию и контакты');
 
     fireEvent.click(screen.getByText('Отмена'));
-    expect(screen.getByText('Подать заявку')).toBeTruthy();
+    expect(screen.getByText('Я психолог — подать заявку')).toBeTruthy();
     expect(screen.queryByText('Заполни ФИО, квалификацию и контакты')).toBeNull();
+  });
+});
+
+describe('BecomeTherapistSection — пределы длины (один источник с DTO сервера)', () => {
+  it('поля держат maxLength из shared', async () => {
+    mockApi.getTherapistRequest.mockResolvedValue(null);
+    renderWithForm();
+    fireEvent.click(await screen.findByText('Я психолог — подать заявку'));
+    const max = (placeholder: string) =>
+      screen.getByPlaceholderText<HTMLInputElement>(placeholder).maxLength;
+    expect(max('ФИО')).toBe(LIM.THERAPIST_REQUEST_NAME_MAX);
+    expect(max('Квалификация: образование, направление, опыт, сертификаты')).toBe(LIM.THERAPIST_REQUEST_QUAL_MAX);
+    expect(max('Контакты: сайт, @telegram, b17 и т.д.')).toBe(LIM.THERAPIST_REQUEST_CONTACTS_MAX);
+    expect(max('Сообщение (необязательно)')).toBe(LIM.THERAPIST_REQUEST_MESSAGE_MAX);
   });
 });

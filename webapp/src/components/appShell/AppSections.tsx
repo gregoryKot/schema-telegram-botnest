@@ -9,13 +9,12 @@
 import { lazy, Suspense, type MutableRefObject } from 'react';
 import type { NavigateFunction } from 'react-router-dom';
 import { ErrorBoundary } from '../ErrorBoundary';
-import { MobileAppBanner } from '../MobileAppBanner';
 import { ScreenSkeleton } from '../Skeleton';
 import type { Need } from '../../types';
-import type { TherapyClientSummary } from '../../api';
+import type { TherapyClientSummary, UserId } from '../../api';
 import type { Section } from './navigation';
 import type { useOverlays } from './useOverlays';
-
+import type { TodayRating } from '../../sections/TodaySection';
 const TodaySection    = lazy(() => import('../../sections/TodaySection').then(m => ({ default: m.TodaySection })));
 const DiarySection    = lazy(() => import('../../sections/DiarySection').then(m => ({ default: m.DiarySection })));
 const SchemasSection  = lazy(() => import('../../sections/SchemasSection').then(m => ({ default: m.SchemasSection })));
@@ -34,7 +33,7 @@ interface Props {
   yesterdayRatings: Record<string, number>;
   displayName: string | null;
   navigate: NavigateFunction;
-  openClientId: number | null;
+  openClientId: UserId | null;
   switchTherapistMode: (on: boolean, persist?: boolean) => void;
   therapistBackHandlerRef: MutableRefObject<() => void>;
   setTherapistClients: (clients: TherapyClientSummary[]) => void;
@@ -46,13 +45,15 @@ interface Props {
   childhoodRatings: Record<string, number>;
   helpTasksKey: number;
   setHelpTasksKey: (updater: (k: number) => number) => void;
+  /** Оценка потребности со шкалы «Сегодня» — те же обработчики, что у трекера. */
+  rating: TodayRating;
 }
 
 export function AppSections({
   inert, therapistMode, pathname, section, needs, ratings, yesterdayRatings,
   displayName, navigate, openClientId, switchTherapistMode, therapistBackHandlerRef,
   setTherapistClients, setSection, ov, todayRefreshKey, userRole, profileRefreshKey,
-  childhoodRatings, helpTasksKey, setHelpTasksKey,
+  childhoodRatings, helpTasksKey, setHelpTasksKey, rating,
 }: Props) {
   return (
     // display:contents — обёртка не участвует в flex-раскладке canvas
@@ -60,7 +61,6 @@ export function AppSections({
     // существует только как узел DOM для inert.
     <div style={{ display: 'contents' }} inert={inert}>
     <Suspense fallback={<ScreenSkeleton />}>
-
     {/* Therapist mode */}
     {therapistMode && pathname === '/cabinet/today' && (
       <ErrorBoundary section="Кабинет" key="cabinet-today-boundary">
@@ -87,8 +87,8 @@ export function AppSections({
     {/* Regular sections */}
     {!therapistMode && (
       <div className="page animate-fade" key={section}>
-        <MobileAppBanner />
         {section === 'today' && (
+          <ErrorBoundary section="Сегодня" key="today-boundary">
           <TodaySection
             needs={needs}
             ratings={ratings}
@@ -104,11 +104,13 @@ export function AppSections({
             refreshKey={todayRefreshKey}
             userRole={userRole}
             onOpenTherapistCabinet={() => { switchTherapistMode(true); }}
+            rating={rating}
           />
+          </ErrorBoundary>
         )}
         {section === 'diary' && (
           <ErrorBoundary section="Дневник" key="diary-boundary">
-            <DiarySection />
+            <DiarySection onOpenTracker={() => { ov.setTrackerNeedId(null); ov.setShowTrackerOverlay(true); }} />
           </ErrorBoundary>
         )}
         {section === 'schemas' && (
@@ -126,6 +128,7 @@ export function AppSections({
             onOpenTracker={() => { ov.setTrackerNeedId(null); ov.setShowTrackerOverlay(true); }}
             refreshKey={profileRefreshKey}
             displayName={displayName}
+            onTakeTest={() => { ov.setSchemaAutoStartTest(true); ov.setSchemaInitialTab('needs'); ov.setShowSchemaInfo(true); }}
           />
         )}
         {section === 'practice' && (
@@ -144,7 +147,6 @@ export function AppSections({
         )}
       </div>
     )}
-
     </Suspense>
     </div>
   );

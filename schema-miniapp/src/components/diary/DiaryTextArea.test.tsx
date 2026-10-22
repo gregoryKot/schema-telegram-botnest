@@ -5,6 +5,7 @@
 import { describe, it, expect, afterEach } from 'vitest';
 import { render, screen, cleanup } from '@testing-library/react';
 import { DiaryTextArea } from './DiaryTextArea';
+import { DIARY_FIELD_MAX } from '../../../../shared/src/limits/textLimits';
 
 afterEach(() => {
   cleanup();
@@ -47,5 +48,24 @@ describe('DiaryTextArea — связь с вопросом (В7)', () => {
     );
     expect(screen.queryByLabelText('Например…')).toBeNull();
     expect(screen.getByPlaceholderText('Например…')).toBeTruthy();
+  });
+});
+
+describe('DiaryTextArea — предел длины (backend#29)', () => {
+  it('maxLength = предел поля дневника из shared; у границы виден остаток', () => {
+    const { rerender } = render(
+      <DiaryTextArea value="" onChange={() => {}} placeholder="Например…" />,
+    );
+    const area = screen.getByPlaceholderText('Например…');
+    expect(area.maxLength).toBe(DIARY_FIELD_MAX);
+    expect(screen.queryByText(/Осталось знаков/)).toBeNull();
+    rerender(
+      <DiaryTextArea
+        value={'а'.repeat(DIARY_FIELD_MAX - 5)}
+        onChange={() => {}}
+        placeholder="Например…"
+      />,
+    );
+    expect(screen.getByText(/Осталось знаков: 5/)).toBeTruthy();
   });
 });

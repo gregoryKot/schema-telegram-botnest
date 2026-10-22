@@ -6,12 +6,11 @@ import {
   CARD_W,
   DPR,
   cardFont,
-  luminance,
   resolveCardTheme,
-  withAlpha,
   type CardTheme,
 } from './theme';
 import { clampLines, wrapLines } from './text';
+import { paintGlow } from './glow';
 
 export interface Card {
   ctx: CanvasRenderingContext2D;
@@ -32,16 +31,8 @@ export interface CardOpts {
   accent?: string;
   /** Второй цвет для градиентов фона и брендовой метки. */
   accent2?: string;
-}
-
-/**
- * Прозрачность свечения под цвет карточки. Светлые акценты (жёлтый,
- * оранжевый) при той же альфе заливают карточку горчичным — им свечение
- * приглушается, тёмно-синий и фиолетовый остаются в полную силу.
- */
-export function glowAlpha(base: number, color: string): number {
-  const lum = luminance(color);
-  return lum > 0.5 ? base * Math.max(0.5, 1 - (lum - 0.5) * 1.1) : base;
+  /** false — ровный цвет темы без градиента и свечений (editorial-карточки). */
+  glow?: boolean;
 }
 
 /** Межбуквенный интервал (в браузерах без поддержки — молча игнорируется). */
@@ -71,44 +62,10 @@ export function beginCard(
   ctx.roundRect(0, 0, W, H, 26);
   ctx.clip();
 
-  const base = ctx.createLinearGradient(0, 0, W * 0.4, H);
-  base.addColorStop(0, th.sheetBg);
-  base.addColorStop(1, th.bg);
-  ctx.fillStyle = base;
-  ctx.fillRect(0, 0, W, H);
-
-  // Два мягких свечения цветами карточки: сверху — «рассвет», снизу — отблеск.
-  const glowTop = ctx.createRadialGradient(
-    W * 0.82,
-    -30,
-    0,
-    W * 0.82,
-    -30,
-    W * 0.72,
-  );
-  glowTop.addColorStop(
-    0,
-    withAlpha(accent, glowAlpha(th.isLight ? 0.3 : 0.4, accent)),
-  );
-  glowTop.addColorStop(1, withAlpha(accent, 0));
-  ctx.fillStyle = glowTop;
-  ctx.fillRect(0, 0, W, Math.min(H, 320));
-
-  const glowBottom = ctx.createRadialGradient(
-    -10,
-    H + 20,
-    0,
-    -10,
-    H + 20,
-    W * 0.66,
-  );
-  glowBottom.addColorStop(
-    0,
-    withAlpha(accent2, glowAlpha(th.isLight ? 0.15 : 0.19, accent2)),
-  );
-  glowBottom.addColorStop(1, withAlpha(accent2, 0));
-  ctx.fillStyle = glowBottom;
-  ctx.fillRect(0, Math.max(0, H - 320), W, Math.min(H, 320));
+  if (opts.glow === false) {
+    ctx.fillStyle = th.bg;
+    ctx.fillRect(0, 0, W, H);
+  } else paintGlow(ctx, c);
   ctx.restore();
 
   // Тонкая рамка — карточка не сливается с фоном мессенджера
@@ -246,13 +203,39 @@ export function header(c: Card, o: HeaderOpts): number {
 // Бот-ссылка в текст шаринга идёт отдельно через botShortUrl каждого фронта.
 const BRAND = '@SchemeHappens';
 
+export interface FooterOpts {
+  /** Своя брендовая строка слева: без градиентного логотипа, спокойным цветом. */
+  brand?: string;
+}
+
 /** Футер: брендовая метка со ссылкой слева, подпись карточки справа. */
-export function footer(c: Card, label: string) {
+export function footer(c: Card, label: string, o: FooterOpts = {}) {
   const { ctx, th } = c;
   const y = c.H - 38;
 
   divider(c, y - 24, 0.07);
 
+  if (o.brand) {
+    ctx.font = cardFont(11.5);
+    ctx.fillStyle = th.fg(0.55);
+    ctx.textAlign = 'left';
+    ctx.fillText(o.brand, CARD_PAD, y + 1);
+  } else {
+    drawLogoBrand(c, y);
+  }
+
+  if (label) {
+    ctx.font = cardFont(11);
+    ctx.fillStyle = th.fg(0.32);
+    ctx.textAlign = 'right';
+    ctx.fillText(label, c.W - CARD_PAD, y + 1);
+  }
+  ctx.textAlign = 'left';
+}
+
+/** Фирменная метка: градиентный квадратик и @SchemeHappens. */
+function drawLogoBrand(c: Card, y: number) {
+  const { ctx, th } = c;
   const grad = ctx.createLinearGradient(CARD_PAD, y - 13, CARD_PAD + 20, y + 5);
   grad.addColorStop(0, c.accent);
   grad.addColorStop(1, c.accent2);
@@ -269,12 +252,6 @@ export function footer(c: Card, label: string) {
   ctx.fillStyle = th.fg(0.5);
   ctx.textAlign = 'left';
   ctx.fillText(BRAND, CARD_PAD + 28, y + 1);
-
-  ctx.font = cardFont(11);
-  ctx.fillStyle = th.fg(0.32);
-  ctx.textAlign = 'right';
-  ctx.fillText(label, c.W - CARD_PAD, y + 1);
-  ctx.textAlign = 'left';
 }
 
 /**

@@ -12,7 +12,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { AdminCalendarService } from './admin-calendar.service';
 import { SlotOverrideService } from './slot-override.service';
-import { assertAdminKey } from './admin-key.util';
+import { AdminThrottle, assertAdminKey } from './admin-key.util';
 import {
   AdminCalendarQueryDto,
   SlotOverridesDto,
@@ -26,6 +26,7 @@ const MAX_RANGE_DAYS = 35;
  * Админ-эндпоинты календаря слотов (контракт «Календарь слотов в админке»).
  * За x-admin-key — ровно как booking-admin.controller.ts.
  */
+@AdminThrottle()
 @Controller('api/booking/admin/calendar')
 export class BookingCalendarAdminController {
   private readonly adminKey: string;

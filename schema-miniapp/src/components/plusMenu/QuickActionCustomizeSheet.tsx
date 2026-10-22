@@ -4,8 +4,9 @@
 import { CustomizeSheetShell } from '../CustomizeSheetShell';
 import { CustomizeRow } from './CustomizeRow';
 import { useQuickActionDragRows } from './quickActionDragRows';
-import { makeQuickActionRowHandlers } from './quickActionRowHandlers';
-import type { QuickActionSurface } from '../../utils/quickActionPrefs';
+import { makeQuickActionRowHandlers } from '../../../../shared/src/quickActions/quickActionRowHandlers';
+import { api } from '../../api';
+import type { QuickActionSurface } from '../../../../shared/src/quickActions/quickActionPrefs';
 
 interface CustomizeAction {
   id: string;
@@ -34,7 +35,12 @@ export function QuickActionCustomizeSheet({
   onReorder,
   onClose,
 }: Props) {
-  const handlers = makeQuickActionRowHandlers(surface, onToggle, onReorder);
+  const handlers = makeQuickActionRowHandlers(
+    surface,
+    onToggle,
+    onReorder,
+    api,
+  );
   const { rowProps } = useQuickActionDragRows(actions, handlers.handleReorder);
   return (
     <CustomizeSheetShell

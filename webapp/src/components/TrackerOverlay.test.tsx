@@ -92,16 +92,16 @@ describe('TrackerOverlay — выбор потребности', () => {
 });
 
 describe('TrackerOverlay — сохранение оценки', () => {
-  it('клик по цифре пикера сразу пробрасывает значение наверх (onChange)', () => {
+  it('клик по сегменту шкалы сразу пробрасывает значение наверх (onChange)', () => {
     const onChange = vi.fn();
     renderOverlay({ onChange });
-    fireEvent.click(screen.getByText('7'));
+    fireEvent.click(screen.getByRole('button', { name: '7 из 10' }));
     expect(onChange).toHaveBeenCalledWith('attachment', 7);
   });
 
   it('api.saveRating вызывается только после паузы 500мс (debounce)', () => {
     renderOverlay();
-    fireEvent.click(screen.getByText('7'));
+    fireEvent.click(screen.getByRole('button', { name: '7 из 10' }));
     expect(mockApi.saveRating).not.toHaveBeenCalled();
   });
 
@@ -109,7 +109,7 @@ describe('TrackerOverlay — сохранение оценки', () => {
     mockApi.saveRating.mockResolvedValue({ ok: true, allDone: true, streak: { count: 3 } });
     const onSaved = vi.fn();
     renderOverlay({ onSaved });
-    fireEvent.click(screen.getByText('7'));
+    fireEvent.click(screen.getByRole('button', { name: '7 из 10' }));
 
     await act(async () => {
       await vi.advanceTimersByTimeAsync(500);
@@ -145,7 +145,7 @@ describe('TrackerOverlay — ошибка API', () => {
     mockApi.saveRating.mockRejectedValue(new Error('network'));
     const onSaved = vi.fn();
     renderOverlay({ onSaved });
-    fireEvent.click(screen.getByText('7'));
+    fireEvent.click(screen.getByRole('button', { name: '7 из 10' }));
 
     await act(async () => {
       await vi.advanceTimersByTimeAsync(500);
@@ -162,7 +162,7 @@ describe('TrackerOverlay — ошибка API', () => {
   it('ошибка api.saveRating отправляет отчёт наверх с section: tracker', async () => {
     mockApi.saveRating.mockRejectedValue(new Error('network'));
     renderOverlay();
-    fireEvent.click(screen.getByText('7'));
+    fireEvent.click(screen.getByRole('button', { name: '7 из 10' }));
 
     await act(async () => {
       await vi.advanceTimersByTimeAsync(500);
@@ -291,7 +291,7 @@ describe('TrackerOverlay — детальный лист потребности'
 describe('TrackerOverlay — офлайн: не пытается сохранить', () => {
   it('isOffline=true не вызывает api.saveRating после debounce', async () => {
     renderOverlay({ isOffline: true });
-    fireEvent.click(screen.getByText('7'));
+    fireEvent.click(screen.getByRole('button', { name: '7 из 10' }));
     await act(async () => {
       await vi.advanceTimersByTimeAsync(500);
     });
@@ -304,7 +304,7 @@ describe('TrackerOverlay — бэкафилл: сохранение оценки
     mockApi.ratings.mockResolvedValue({});
     renderOverlay({ date: '2026-07-10' });
     await act(async () => {});
-    fireEvent.click(screen.getByText('6'));
+    fireEvent.click(screen.getByRole('button', { name: '6 из 10' }));
     await act(async () => {
       await vi.advanceTimersByTimeAsync(500);
     });
@@ -316,7 +316,7 @@ describe('TrackerOverlay — бэкафилл: сохранение оценки
     mockApi.saveRating.mockRejectedValue(new Error('network'));
     renderOverlay({ date: '2026-07-10' });
     await act(async () => {});
-    fireEvent.click(screen.getByText('6'));
+    fireEvent.click(screen.getByRole('button', { name: '6 из 10' }));
     await act(async () => {
       await vi.advanceTimersByTimeAsync(500);
     });
@@ -330,7 +330,7 @@ describe('TrackerOverlay — бэкафилл: сохранение оценки
     mockApi.saveRating.mockRejectedValue(new Error('network'));
     renderOverlay({ date: '2026-07-10' });
     await act(async () => {});
-    fireEvent.click(screen.getByText('6'));
+    fireEvent.click(screen.getByRole('button', { name: '6 из 10' }));
     await act(async () => {
       await vi.advanceTimersByTimeAsync(500);
     });

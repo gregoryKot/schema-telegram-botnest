@@ -226,9 +226,5 @@ export class ApiController {
   // Settings живут в settings.controller.ts — здесь был маршрут-дубль
   // (аудит 2026-07: GET/POST /api/settings регистрировались дважды).
 
-  @Delete('user')
-  async deleteUser(@Req() req: AuthRequest) {
-    await this.accountService.deleteAllUserData(uid(req));
-    return { ok: true };
-  }
+  // DELETE /api/user живёт в account-delete.controller.ts (второй фактор, B-13).
 }

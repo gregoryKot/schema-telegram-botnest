@@ -1,10 +1,9 @@
 // Shared API client for the web app (Authorization: Bearer <token> вместо x-telegram-init-data).
-// Единственная фронтовая копия типов — в shared (правило №3); методы, которые
-// их используют, переехали в shared-фабрику, здесь остались только ре-экспорты.
+// Типы — единственная копия в shared (правило №3); методы переехали в shared-фабрику, здесь ре-экспорты.
 export type { TherapyClientSummary } from '../../shared/src/types';
 import type { QuizDto } from '../../shared/src/quiz/quizEngine'; export type { QuizDto } from '../../shared/src/quiz/quizEngine';
 export type { UserSchemaNote, UserModeNote } from '../../shared/src/notes/types';
-import type { PhraseMarkId } from '../../shared/src/phraseCheck/criteria';
+import type { ContactChannel } from '../../shared/src/booking/contactChannel'; import type { Currency } from '../../shared/src/booking/priceRegion'; import type { PhraseMarkId } from '../../shared/src/phraseCheck/criteria';
 import { buildSharedApi, type ApiTransport } from '../../shared/src/api/sharedApi';
 import { createRatingApi } from '../../shared/src/api/ratingApi';
 import { createPracticeSessionsApi } from '../../shared/src/api/practiceSessionsApi';
@@ -72,6 +71,7 @@ import type {
   PhraseIssue,
   SiteContent,
   UserTask,
+  UserId,
   TherapistCustomMode,
   ModeMapKind,
   ModeMapMeta,
@@ -83,6 +83,7 @@ import type {
   PhraseCheckEntry,
 } from './api.types';
 export type {
+  UserId,
   UserSettings,
   StreakData,
   Achievement,
@@ -144,14 +145,13 @@ export const api = {
   // анонимная аналитика — мини-тесты и клики лендинга (userId = null).
   getQuizzes: (form?: 'ty' | 'vy') =>
     get<{ quizzes: QuizDto[] }>(`/api/quizzes${form === 'vy' ? '?form=vy' : ''}`),
-  getAllTherapyTasks:       () => get<{ clientId: number; clientName: string; tasks: UserTask[] }[]>('/api/therapy/tasks/all'),
-  getConceptualization: (clientId: number) => get<ClientConceptualization | null>(`/api/therapy/conceptualization/${clientId}`),
-  saveConceptualization: (clientId: number, body: Partial<Omit<ClientConceptualization, 'id' | 'therapistId' | 'clientId' | 'history' | 'updatedAt'>>) => postJson<ClientConceptualization>(`/api/therapy/conceptualization/${clientId}`, body),
-  getTherapyClientHistory: (clientId: number) => get<{ date: string; index: number | null; ratings: Record<string, number> }[]>(`/api/therapy/client-history/${clientId}`),
+  getAllTherapyTasks:       () => get<{ clientId: UserId; clientName: string; tasks: UserTask[] }[]>('/api/therapy/tasks/all'),
+  getConceptualization: (clientId: UserId) => get<ClientConceptualization | null>(`/api/therapy/conceptualization/${clientId}`),
+  saveConceptualization: (clientId: UserId, body: Partial<Omit<ClientConceptualization, 'id' | 'therapistId' | 'clientId' | 'history' | 'updatedAt'>>) => postJson<ClientConceptualization>(`/api/therapy/conceptualization/${clientId}`, body),
+  getTherapyClientHistory: (clientId: UserId) => get<{ date: string; index: number | null; ratings: Record<string, number> }[]>(`/api/therapy/client-history/${clientId}`),
   // Разборы фразы («Критик или забота?», теперь на обоих фронтендах — раньше
   // miniapp-only решение (PR #261), сайту тоже нужны write-методы, не только GET для «Тёплых слов»).
-  // Случайная фраза Здорового Взрослого для карточки шаринга («Фраза для
-  // себя», PhraseShareCard.tsx) — паритет с мини-аппом, правило №16.
+  // Случайная фраза Здорового Взрослого для карточки шаринга (PhraseShareCard.tsx) — паритет, правило №16.
   getHealthyPhrase:     () => get<{ text: string | null }>('/api/healthy-phrase'),
   getPhraseChecks:      () => get<PhraseCheckEntry[]>('/api/phrase-checks'),
   createPhraseCheck:    (body: { phrase: string; marks: PhraseMarkId[]; rewrite?: string; inWarmWords?: boolean }) => post('/api/phrase-checks', body),
@@ -168,8 +168,8 @@ export const api = {
   getFlashcards:        () => get<FlashcardEntry[]>('/api/flashcards'),
   createFlashcard:      (body: { modeId: string; needId: string; reflection?: string; action?: string }) => post('/api/flashcards', body),
   deleteFlashcard:      (id: number) => del(`/api/flashcards/${id}`),
-  getClientDiary:       (clientId: number) => get<{ type: 'schema' | 'mode' | 'gratitude'; date: string; schemaIds?: string[]; modeId?: string; excerpt: string }[]>(`/api/therapy/client/${clientId}/diary`),
-  submitBooking:        (body: { name: string; contact: string; message?: string; source?: string }) => postJson<{ ok: true }>('/api/booking', body),
+  getClientDiary:       (clientId: UserId) => get<{ type: 'schema' | 'mode' | 'gratitude'; date: string; schemaIds?: string[]; modeId?: string; excerpt: string }[]>(`/api/therapy/client/${clientId}/diary`),
+  submitBooking:        (body: { name: string; contact: string; message?: string; source?: string; channel?: ContactChannel }) => postJson<{ ok: true }>('/api/booking', body),
   // Slot-based booking
   getBookingOptions:    () => get<SessionOption[]>('/api/booking/options'),
   getSlots:             (from?: string, to?: string) => {
@@ -179,9 +179,9 @@ export const api = {
     const qs = q.toString();
     return get<BookingSlot[]>(`/api/booking/slots${qs ? `?${qs}` : ''}`);
   },
-  bookSlot:             (body: { startsAt: string; durationMin?: number; type?: 'INTRO_15' | 'SESSION_50'; clientName: string; clientContact: string; message?: string; returning?: boolean; acceptedOffer?: boolean; website?: string; source?: string }) =>
-    postJson<{ id: number; cancelToken: string; heldUntil: string | null; status: string; paymentUrl?: string | null; meetingUrl?: string | null }>('/api/booking/book', body),
-  getBookingByToken:    (token: string) => get<{ status: string; type: 'INTRO_15' | 'SESSION_50'; startsAt: string; endsAt: string; durationMin: number; meetingUrl: string | null }>(`/api/booking/by-token/${token}`),
+  bookSlot:             (body: { startsAt: string; durationMin?: number; type?: 'INTRO_15' | 'SESSION_50'; clientName: string; clientContact: string; message?: string; returning?: boolean; acceptedOffer?: boolean; website?: string; source?: string; clientTimeZone?: string; clientChannel?: ContactChannel }) =>
+    postJson<{ id: number; cancelToken: string; heldUntil: string | null; status: string; paymentUrl?: string | null }>('/api/booking/book', body),
+  getBookingByToken:    (token: string) => get<{ status: string; paid: boolean; type: 'INTRO_15' | 'SESSION_50'; startsAt: string; endsAt: string; durationMin: number }>(`/api/booking/by-token/${token}`),
   cancelBooking:        (token: string) => postJson<{ ok: true }>(`/api/booking/cancel/${token}`, {}),
   donate:               (body: { amount: number; source?: 'app' | 'game'; email?: string; comment?: string; website?: string }) =>
     postJson<{ id: number; paymentUrl: string | null }>('/api/donation', body),
@@ -194,16 +194,16 @@ export const api = {
   // Booking admin — key travels in the x-admin-key header (never in URL/logs)
   adminStatus:       (key: string) => adminReq<AdminBookingStatus>('GET', '/api/booking/admin/status', key),
   adminGetPrices:    (key: string) => adminReq<SessionOption[]>('GET', '/api/booking/admin/prices', key),
-  adminSetPrice:     (key: string, type: 'INTRO_15' | 'SESSION_50', amount: number) => adminReq<{ ok: true }>('PATCH', '/api/booking/admin/price', key, { type, amount }),
+  adminSetPrice:     (key: string, type: 'INTRO_15' | 'SESSION_50', amount: number, currency?: Currency) => adminReq<{ ok: true }>('PATCH', '/api/booking/admin/price', key, currency ? { type, amount, currency } : { type, amount }),
   adminGetSubPrices: (key: string) => adminReq<{ period: 'month' | 'year'; price: number }[]>('GET', '/api/booking/admin/sub-prices', key),
   adminSetSubPrice:  (key: string, period: 'month' | 'year', amount: number) => adminReq<{ ok: true }>('PATCH', '/api/booking/admin/sub-price', key, { period, amount }),
   adminListRules:    (key: string) => adminReq<AvailabilityRule[]>('GET', '/api/booking/admin/rules', key),
   adminCreateRule:   (key: string, rule: NewAvailabilityRule) => adminReq<AvailabilityRule>('POST', '/api/booking/admin/rules', key, rule),
   adminToggleRule:   (key: string, id: number, isActive: boolean) => adminReq<AvailabilityRule>('PATCH', `/api/booking/admin/rules/${id}`, key, { isActive }),
   adminDeleteRule:   (key: string, id: number) => adminReq<void>('DELETE', `/api/booking/admin/rules/${id}`, key),
-  adminListBookings: (key: string, filter: 'upcoming' | 'past' | 'cancelled' | 'all' = 'upcoming') =>
-    adminReq<AdminBooking[]>('GET', `/api/booking/admin/list?filter=${filter}`, key),
+  adminListBookings: (key: string, filter: 'upcoming' | 'past' | 'cancelled' | 'all' = 'upcoming') => adminReq<AdminBooking[]>('GET', `/api/booking/admin/list?filter=${filter}`, key),
   adminConfirm:      (key: string, id: number) => adminReq<{ ok: true }>('POST', `/api/booking/admin/confirm/${id}`, key),
+  adminCancel:       (key: string, id: number) => adminReq<{ ok: true }>('POST', `/api/booking/admin/cancel/${id}`, key), // в любой срок, без 24 ч клиента
   adminCalendar:     (key: string, from: string, to: string) => adminReq<AdminCalendar>('GET', `/api/booking/admin/calendar?from=${from}&to=${to}`, key),
   adminSetOverrides: (key: string, patch: SlotOverridePatch) => adminReq<{ ok: true }>('POST', '/api/booking/admin/calendar/overrides', key, patch),
   // Articles
@@ -232,9 +232,9 @@ export const api = {
   createCustomMode:  (body: { name: string; emoji?: string; nodeType?: string }) => postJson<TherapistCustomMode>('/api/therapy/custom-modes', body),
   deleteCustomMode:  (id: number)                    => del(`/api/therapy/custom-modes/${id}`),
   // Mode Maps
-  listModeMaps:   (clientId: number) => get<ModeMapMeta[]>(`/api/therapy/mode-maps/${clientId}`),
+  listModeMaps:   (clientId: UserId) => get<ModeMapMeta[]>(`/api/therapy/mode-maps/${clientId}`),
   getModeMap:     (mapId: number)    => get<ModeMapFull>(`/api/therapy/mode-maps/map/${mapId}`),
-  createModeMap:  (clientId: number, title: string, kind: ModeMapKind = 'problem') => postJson<ModeMapFull>(`/api/therapy/mode-maps/${clientId}`, { title, kind }),
+  createModeMap:  (clientId: UserId, title: string, kind: ModeMapKind = 'problem') => postJson<ModeMapFull>(`/api/therapy/mode-maps/${clientId}`, { title, kind }),
   updateModeMap:  (mapId: number, body: Partial<Pick<ModeMapFull, 'title' | 'nodes' | 'edges'>>) => patchJson<ModeMapFull>(`/api/therapy/mode-maps/map/${mapId}`, body),
   deleteModeMap:  (mapId: number) => del(`/api/therapy/mode-maps/map/${mapId}`),
   // Client read-only view of their own maps

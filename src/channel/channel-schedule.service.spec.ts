@@ -267,7 +267,7 @@ describe('ChannelScheduleService', () => {
         row('telegram', true),
       ]);
 
-      await service.maybePost(msk(10, 30));
+      await service.catchUp(msk(10, 30));
 
       expect(retry).toHaveBeenCalledWith('утро', 'фраза этого слота', ['max']);
       // Обычная публикация не повторяется — иначе дубль там, где пост вышел.
@@ -277,7 +277,7 @@ describe('ChannelScheduleService', () => {
     it('успешная досылка закрывает историю сообщением владельцу', async () => {
       spyLogger();
       const { service } = closedSlot([row('max', false)]);
-      await service.maybePost(msk(10, 30));
+      await service.catchUp(msk(10, 30));
       expect(alertTexts()).toEqual([expect.stringContaining('досталось')]);
     });
 
@@ -288,7 +288,7 @@ describe('ChannelScheduleService', () => {
         { ...row('max', true), source: 'утро — повтор' },
         row('max', false),
       ]);
-      await service.maybePost(msk(10, 30));
+      await service.catchUp(msk(10, 30));
       expect(retry).not.toHaveBeenCalled();
       // Журнал всё же прочитан — решение принято по данным, а не по памяти.
       expect(slotRows).toHaveBeenCalledWith('утро', expect.any(Date));
@@ -306,7 +306,7 @@ describe('ChannelScheduleService', () => {
       });
 
       for (const minute of [10, 15, 20, 25, 30])
-        await service.maybePost(msk(10, minute));
+        await service.catchUp(msk(10, minute));
 
       expect(retry).toHaveBeenCalledTimes(3);
       // Каждая попытка — та же фраза тем же должникам.
@@ -320,14 +320,14 @@ describe('ChannelScheduleService', () => {
       // повторять было уже нечем. Долг тянется до вечера.
       spyLogger();
       const { service, retry } = closedSlot([row('max', false)]);
-      await service.maybePost(msk(14, 0));
+      await service.catchUp(msk(14, 0));
       expect(retry).toHaveBeenCalledWith('утро', 'фраза этого слота', ['max']);
     });
 
     it('ночью не досылает — подписчики спят, утром выйдет свежая фраза', async () => {
       spyLogger();
       const { service, retry, slotRows } = closedSlot([row('max', false)]);
-      await service.maybePost(msk(3, 0));
+      await service.catchUp(msk(3, 0));
       expect(retry).not.toHaveBeenCalled();
       expect(slotRows).not.toHaveBeenCalled();
       expect(alertTexts()).toEqual([]);
@@ -339,9 +339,62 @@ describe('ChannelScheduleService', () => {
         row('telegram', true),
         row('max', true),
       ]);
-      await service.maybePost(msk(10, 30));
+      await service.catchUp(msk(10, 30));
       expect(retry).not.toHaveBeenCalled();
       expect(alertTexts()).toEqual([]);
+    });
+
+    it('тик публикации при закрытом слоте долг не трогает — у досылки один вход', async () => {
+      // Аудит 2026-10: maybePost звал досылку под арендой утра/вечера, а
+      // tickCatchUp — под своей. Разные аренды друг друга не исключают.
+      spyLogger();
+      const { service, retry, slotRows } = closedSlot([row('max', false)]);
+      await service.maybePost(msk(10, 30));
+      expect(retry).not.toHaveBeenCalled();
+      expect(slotRows).not.toHaveBeenCalled();
+      // Ни «досталось», ни «дошло не везде» — этот тик про долг молчит.
+      expect(alertTexts()).toEqual([]);
+    });
+
+    it('долг держится — следующий тик досылки пробует снова', async () => {
+      // Контроль к гонке ниже: один вызов retry там — из-за одного входа, а
+      // не потому, что вторая досылка не идёт вообще.
+      spyLogger();
+      const { service, retry } = closedSlot([row('max', false)]);
+      retry.mockResolvedValue({ ...okResult, ok: false, message: 'не дошло' });
+      await service.catchUp(msk(9, 15));
+      await service.catchUp(msk(9, 31));
+      expect(retry.mock.calls).toEqual([
+        ['утро', 'фраза этого слота', ['max']],
+        ['утро', 'фраза этого слота', ['max']],
+      ]);
+    });
+
+    it('тики утра и досылки в одну минуту досылают фразу один раз', async () => {
+      // Аудит 2026-10: в 9:15 оба крона бежали параллельно, оба читали один
+      // долг из журнала до того, как первый повтор в него записался.
+      jest.useFakeTimers({
+        now: msk(9, 15),
+        doNotFake: ['setTimeout', 'setImmediate', 'nextTick'],
+      });
+      spyLogger();
+      const rows: unknown[] = [row('max', false)];
+      const { service, retry, slotRows } = makeService(okResult, msk(9, 0));
+      // Журнал с состоянием: повтор попадает в него только после фан-аута.
+      slotRows.mockImplementation(async () => [...rows]);
+      retry.mockImplementation(async () => {
+        await new Promise((r) => setTimeout(r, 10));
+        rows.unshift({ ...row('max', true), source: 'утро — повтор' });
+        return okResult;
+      });
+      try {
+        await Promise.all([service.tickMorning(), service.tickCatchUp()]);
+      } finally {
+        jest.useRealTimers();
+      }
+      expect(retry.mock.calls).toEqual([
+        ['утро', 'фраза этого слота', ['max']],
+      ]);
     });
   });
 

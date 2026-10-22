@@ -3,8 +3,10 @@ import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { RobokassaService } from '../booking/robokassa.service';
 import { BookingNotifyService } from '../booking/booking-notify.service';
+import { assertPaymentAvailable } from '../booking/payment-guard';
 import { encryptRecord, decryptRecord, EncryptSchema } from '../utils/crypto';
 import { normalizeBaseUrl } from '../utils/url';
+import { escapeHtml } from '../utils/escape-html';
 
 // Donation InvId is offset so it never collides with booking InvId (booking uses
 // booking.id directly). Both share one Robokassa shop → one Result URL, which
@@ -52,6 +54,8 @@ export class DonationService {
       throw new BadRequestException(`Сумма должна быть от ${MIN} до ${MAX} ₽`);
     }
     const source = dto.source === 'game' ? 'game' : 'app';
+    // Прод без Robokassa: отказ ДО INSERT, иначе останется pending без оплаты.
+    assertPaymentAvailable(this.robokassa, 'donation');
 
     let row: { id: number };
     try {
@@ -68,22 +72,14 @@ export class DonationService {
         ),
       });
     } catch (e) {
-      // Известная дыра (docs/SHIELD_PROMPT.md): DonationController.donate()
-      // не оборачивает create() в try/catch — если сам INSERT падает (БД
-      // недоступна), исключение раньше молча улетало клиенту 500-кой, и
-      // никто не узнавал. Хуже, чем «оплата прошла, а донат не
-      // подтвердился» (payment.controller.ts): здесь нет даже строки в БД,
-      // за которую можно зацепиться при ручной сверке.
-      //
-      // Канал — ТОТ ЖЕ, что уже используют соседние денежные пути в
-      // payment.controller.ts для «PAID, но запись не подтвердилась»:
-      // this.logger.error() со стабильным текстом (троттлинг по тексту —
-      // AlertLogger, main.ts, 60с) + this.notify.alertAdmin() (DM в Telegram
-      // с e-mail фолбэком). Новый канал не заводим.
-      //
-      // Пробрасываем ДАЛЬШЕ: DonationController ничего не ловит, поэтому
-      // исключение и так превратится в HTTP-ошибку клиенту — тихий успех
-      // здесь был бы нечестен (донат не создан, а UI сказал бы «спасибо»).
+      // Известная дыра (docs/SHIELD_PROMPT.md): create() раньше не
+      // оборачивался в try/catch — упавший INSERT (БД недоступна) молча
+      // улетал клиенту 500-кой, и никто не узнавал; даже строки в БД для
+      // ручной сверки нет. Канал тот же, что у соседних денежных путей
+      // (payment.controller.ts): logger.error со стабильным текстом
+      // (троттлинг AlertLogger, 60с) + notify.alertAdmin. Новый не заводим.
+      // Пробрасываем ДАЛЬШЕ: тихий успех нечестен — донат не создан, а UI
+      // сказал бы «спасибо».
       this.logger.error(
         `Donation create() DB write failed: ${(e as Error).message}`,
       );
@@ -96,7 +92,7 @@ export class DonationService {
     this.logger.log(`Donation ${row.id} created (${amount}₽, ${source})`);
 
     if (!this.robokassa.enabled) {
-      // Dev / not configured — mark paid immediately so the flow is testable.
+      // Только вне прода (в проде отказали выше): flow проверяем без денег.
       await this.markPaid(row.id);
       return { id: row.id, paymentUrl: null as string | null };
     }
@@ -137,9 +133,10 @@ export class DonationService {
     if (claimed.count === 0) return { ok: true };
     const plain = decryptRecord(row, SCHEMA);
     await this.notify.alertAdmin(
-      `💛 <b>Донат ${row.amount} ₽</b> (${row.source})` +
-        (plain.email ? `\n📬 ${plain.email}` : '') +
-        (plain.comment ? `\n💬 ${plain.comment}` : ''),
+      // M1 (аудит 2026-10): email/comment/source — ввод донора, уходит админу как HTML.
+      `💛 <b>Донат ${row.amount} ₽</b> (${escapeHtml(String(row.source))})` +
+        (plain.email ? `\n📬 ${escapeHtml(plain.email)}` : '') +
+        (plain.comment ? `\n💬 ${escapeHtml(plain.comment)}` : ''),
     );
     this.logger.log(`Donation ${id} PAID`);
     return { ok: true };

@@ -2,11 +2,12 @@ import { useCallback } from 'react';
 import { api } from '../api';
 import type { PracticePlan } from '../api';
 import { Loader } from './Loader';
-import { COLORS } from '../types';
 import { useNeedData } from '../needData';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { useAsyncData } from '../hooks/useAsyncData';
-import { IdentityDot } from '../../../shared/src/components/IdentityDot';
+import { NEED_HUE, hueStyle } from '../lib/tone';
+import type { NeedId } from '../../../shared/src/needs/types';
+import '../styles/sheet-tasks.css';
 import { useTr } from '../utils/addressForm';
 
 interface Props {
@@ -14,10 +15,10 @@ interface Props {
   onOpenTracker?: () => void;
 }
 
-function statusColor(done: boolean | null) {
-  if (done === true)  return { bg: 'color-mix(in srgb, var(--accent-green) 8%, transparent)', border: 'color-mix(in srgb, var(--accent-green) 20%, transparent)', text: 'var(--accent-green)' };
-  if (done === false) return { bg: 'color-mix(in srgb, var(--accent-red) 7%, transparent)', border: 'color-mix(in srgb, var(--accent-red) 18%, transparent)', text: 'var(--accent-red)' };
-  return { bg: 'transparent', border: 'var(--line)', text: 'var(--text-sub)' };
+function statusClass(done: boolean | null) {
+  if (done === true)  return 'sk-status is-ok';
+  if (done === false) return 'sk-status is-err';
+  return 'sk-status';
 }
 
 function statusIcon(done: boolean | null) {
@@ -47,95 +48,77 @@ export function PlansScreen({ onClose, onOpenTracker }: Props) {
   const pending   = (plans ?? []).filter(p => p.done === null);
   const completed = (plans ?? []).filter(p => p.done !== null);
 
+  const total = (plans ?? []).length;
+
   return (
     <div className="u-sheet">
-      <div className="page-inner-wide" style={{ paddingTop: 40, paddingBottom: 80 }}>
-        {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 36 }}>
+      <div className="sk-page sk-page--wide">
+        <div className="ds-head-row sk-head">
           <div>
-            <div className="eyebrow u-mb8">
-              <span className="u-accent">● </span>Планы
-            </div>
-            <h1 className="hub-title u-mb8">История<br /><span className="it">планов</span></h1>
+            <div className="ds-eyebrow">Планы</div>
+            <h1 className="ds-h2 sk-title">История<br /><em className="sk-it">планов</em></h1>
             {plans !== null && plans.length > 0 && (
-              <div className="text-md muted">{pending.length} активных · {completed.length} завершённых</div>
+              <div className="ds-sub sk-lead">{pending.length} активных · {completed.length} завершённых</div>
             )}
           </div>
-          <div style={{ display: 'flex', gap: 'var(--space-12)', alignItems: 'center' }}>
-            <button onClick={goBack} className="btn btn-secondary">Закрыть</button>
-          </div>
+          <button onClick={goBack} className="ds-btn ds-btn--secondary">Закрыть</button>
         </div>
 
-        <div>
+        {plans !== null && total > 0 && (
+          <div className="sk-bar" aria-hidden="true">
+            <i style={{ width: `${Math.round((completed.length / total) * 100)}%` }} />
+          </div>
+        )}
+
         {loadFailed ? (
           // Сбой ≠ пусто: не путать с «Планов пока нет» ниже — там реальный
           // пустой ответ, здесь запрос не прошёл вовсе.
-          <div role="alert" style={{ padding: '24px 0' }}>
-            <p style={{ color: 'var(--c-rose)', fontSize: 14, margin: '0 0 16px' }}>
+          <div role="alert" className="ds-card sk-alert">
+            <p className="sk-error">
               {tr('Не удалось загрузить планы. Проверь соединение', 'Не удалось загрузить планы. Проверьте соединение')}
             </p>
-            <button onClick={load} style={{
-              padding: '10px 20px', background: 'var(--accent)', color: 'white', border: 'none',
-              borderRadius: 100, fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
-            }}>
+            <button onClick={load} className="ds-btn">
               Попробовать ещё раз
             </button>
           </div>
         ) : !plans ? (
           <Loader minHeight="30vh" />
         ) : plans.length === 0 ? (
-          /* Empty state */
-          <div style={{ paddingTop: 60, textAlign: 'center' }}>
-            <div style={{ fontSize: 17, fontWeight: 700, color: 'var(--text)', marginBottom: 8 }}>
-              Планов пока нет
-            </div>
-            <div style={{
-              fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.65,
-              marginBottom: 24, maxWidth: 280, margin: '0 auto 24px',
-            }}>
+          <div className="sk-empty">
+            <h2 className="ds-h2">Планов пока нет</h2>
+            <p className="ds-sub sk-empty-text">
               {tr(
                 'Планы создаются в трекере — выбери потребность с низкой оценкой и нажми «Запланировать практику»',
                 'Планы создаются в трекере — выберите потребность с низкой оценкой и нажмите «Запланировать практику»',
               )}
-            </div>
+            </p>
             {onOpenTracker && (
-              <button onClick={() => { onOpenTracker?.(); goBack(); }} style={{
-                padding: '12px 28px', borderRadius: 'var(--r-14)', border: 'none', fontFamily: 'inherit',
-                background: 'transparent', outline: '1px solid var(--line)',
-                color: 'var(--accent)', fontSize: 14, fontWeight: 600, cursor: 'pointer',
-              }}>
+              <button onClick={() => { onOpenTracker?.(); goBack(); }} className="ds-link">
                 Открыть трекер →
               </button>
             )}
           </div>
         ) : (
           <>
-            {/* Pending plans */}
             {pending.length > 0 && (
-              <div className="u-mb24">
-                <div className="eyebrow u-mb10">
-                  Ожидают выполнения
-                </div>
-                <div className="u-col10">
+              <div className="sk-group">
+                <div className="ds-label">Ожидают выполнения</div>
+                <div className="sk-list">
                   {pending.map(plan => <PlanCard key={plan.id} plan={plan} onUpdate={setPlans}/>)}
                 </div>
               </div>
             )}
 
-            {/* Completed plans */}
             {completed.length > 0 && (
-              <div>
-                <div className="eyebrow u-mb10">
-                  Выполненные
-                </div>
-                <div className="u-col10">
+              <div className="sk-group">
+                <div className="ds-label">Выполненные</div>
+                <div className="sk-list">
                   {completed.map(plan => <PlanCard key={plan.id} plan={plan} onUpdate={setPlans}/>)}
                 </div>
               </div>
             )}
           </>
         )}
-        </div>
       </div>
     </div>
   );
@@ -143,8 +126,6 @@ export function PlansScreen({ onClose, onOpenTracker }: Props) {
 
 function PlanCard({ plan, onUpdate }: { plan: PracticePlan; onUpdate: React.Dispatch<React.SetStateAction<PracticePlan[] | null>> }) {
   const isPending  = plan.done === null;
-  const colors     = statusColor(plan.done);
-  const needColor  = COLORS[plan.needId] ?? 'var(--accent)';
   const NEED_DATA = useNeedData();
   const needData   = NEED_DATA[plan.needId];
 
@@ -156,48 +137,27 @@ function PlanCard({ plan, onUpdate }: { plan: PracticePlan; onUpdate: React.Disp
   }
 
   return (
-    <div style={{
-      background: colors.bg,
-      border: `1px solid ${colors.border}`,
-      borderRadius: 'var(--r-20)',
-      padding: '14px 16px',
-      overflow: 'hidden',
-    }}>
-      {/* Top row */}
-      <div className="u-between-mb10">
-        <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-          {needData && <IdentityDot id={plan.needId} size={12} />}
-          <span style={{ fontSize: 12, fontWeight: 600, color: needColor }}>
+    <div className="ds-card ds-card--row sk-plan">
+      <div className="sk-plan-top">
+        <div className="sk-plan-meta">
+          {needData && <span className="ds-dot tone-fill" style={hueStyle(NEED_HUE[plan.needId as NeedId])} />}
+          <span className="sk-plan-need tone-ink" style={hueStyle(NEED_HUE[plan.needId as NeedId])}>
             {needData?.name ?? plan.needId}
           </span>
-          <span className="u-faint11">·</span>
-          <span className="u-faint11">
-            {formatDate(plan.scheduledDate)}
-          </span>
+          <span className="ds-sub">·</span>
+          <span className="ds-sub">{formatDate(plan.scheduledDate)}</span>
         </div>
-        <span style={{ fontSize: 16 }}>{statusIcon(plan.done)}</span>
+        <span className={statusClass(plan.done)}>{statusIcon(plan.done)}</span>
       </div>
 
-      {/* Practice text */}
-      <div style={{ fontSize: 14, color: 'var(--text)', lineHeight: 1.55, marginBottom: isPending ? 12 : 0 }}>
-        {plan.practiceText}
-      </div>
+      <div className="sk-plan-text">{plan.practiceText}</div>
 
-      {/* Action buttons for pending */}
       {isPending && (
-        <div className="u-row8">
-          <button onClick={() => checkin(true)} style={{
-            flex: 1, padding: '9px 0', border: 'none', borderRadius: 'var(--r-12)', fontFamily: 'inherit',
-            background: 'color-mix(in srgb, var(--accent-green) 12%, transparent)', outline: '1px solid color-mix(in srgb, var(--accent-green) 22%, transparent)',
-            color: 'var(--accent-green)', fontSize: 13, fontWeight: 600, cursor: 'pointer',
-          }}>
-            ✓ Выполнено
+        <div className="sk-plan-actions">
+          <button onClick={() => checkin(true)} className="ds-btn ds-btn--sm ds-btn--secondary">
+            Выполнено
           </button>
-          <button onClick={() => checkin(false)} style={{
-            flex: 1, padding: '9px 0', border: 'none', borderRadius: 'var(--r-12)', fontFamily: 'inherit',
-            background: 'color-mix(in srgb, var(--accent-red) 8%, transparent)', outline: '1px solid color-mix(in srgb, var(--accent-red) 18%, transparent)',
-            color: 'var(--accent-red)', fontSize: 13, fontWeight: 500, cursor: 'pointer',
-          }}>
+          <button onClick={() => checkin(false)} className="ds-btn ds-btn--sm ds-btn--secondary">
             Не вышло
           </button>
         </div>

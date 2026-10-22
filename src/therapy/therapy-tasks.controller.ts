@@ -10,6 +10,7 @@ import {
 } from '@nestjs/common';
 import { Request } from 'express';
 import { uid, parseId as parseIdShared } from '../api/request-utils';
+import { parseClientId } from '../api/parse-user-id';
 import { TelegramAuthGuard } from '../api/telegram-auth.guard';
 import { TherapyRelationsService } from './therapy-relations.service';
 import { TherapyTasksService } from './therapy-tasks.service';
@@ -23,9 +24,7 @@ interface AuthRequest extends Request {
   webUser: { userId: bigint };
 }
 
-// uid()/parseId() — единый источник в request-utils (аудит 2026-07, 2в).
-// allowNegative: виртуальные (офлайн) клиенты терапевта кодируются
-// отрицательным id = -TherapyRelation.id — только в therapy-эндпоинтах.
+// id Int-колонок (заметка, задача, карта) — обычное число.
 const parseId = (raw: string): number =>
   parseIdShared(raw, { allowNegative: true });
 
@@ -48,14 +47,15 @@ export class TherapyTasksController {
     if (body.clientId) {
       const role = await this.accountService.getUserRole(uid(req));
       if (role !== 'THERAPIST') throw new ForbiddenException('Therapist only');
+      const clientId = parseClientId(body.clientId);
       // SECURITY: assert there is an actual therapy relation. Without this
       // any THERAPIST can inject tasks into ANY user's account.
       try {
-        await this.relationsService.assertHasClient(uid(req), body.clientId);
+        await this.relationsService.assertHasClient(uid(req), clientId);
       } catch {
         throw new ForbiddenException('No therapy relation with this client');
       }
-      targetUserId = BigInt(body.clientId);
+      targetUserId = clientId;
       assignedBy = uid(req);
     }
 
@@ -101,7 +101,7 @@ export class TherapyTasksController {
     if (role !== 'THERAPIST') throw new ForbiddenException('Therapist only');
     const tasks = await this.tasksViewService.getTasksForClient(
       uid(req),
-      parseId(clientId),
+      parseClientId(clientId),
     );
     if (tasks === null)
       throw new ForbiddenException('No active relation with this client');

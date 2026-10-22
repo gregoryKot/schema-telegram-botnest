@@ -13,6 +13,9 @@ export const CHILDHOOD_DONE_KEY = 'childhood_wheel_done';
 // без этого ключа каждый возврат сбрасывал вкладку на «Схемы» (см.
 // schema-miniapp/src/sections/schemas/patternsTabStorage.ts).
 export const PATTERNS_LAST_TAB_KEY = 'patterns_last_tab';
+// Ручной выбор часового пояса в BookingPicker сайта («не ваш часовой
+// пояс?») — переживает возврат на страницу записи.
+export const BOOKING_TIME_ZONE_KEY = 'booking_time_zone';
 
 export function shouldShowChildhoodWheel(): boolean {
   return !localStorage.getItem(CHILDHOOD_DONE_KEY);

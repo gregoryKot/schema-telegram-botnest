@@ -12,14 +12,8 @@
 // бакет — это чинит обход ценой лимита для честных. С проверкой подписи цена
 // не нужна: у настоящего пользователя подпись сходится всегда, у подделки —
 // никогда, и она падает в IP-бакет, где ротация уже ничего не даёт.
-import { createHmac, timingSafeEqual } from 'crypto';
-
-/** Постоянное по времени сравнение строк разной длины. */
-function sameDigest(a: string, b: string): boolean {
-  const ab = Buffer.from(a);
-  const bb = Buffer.from(b);
-  return ab.length === bb.length && timingSafeEqual(ab, bb);
-}
+import { createHmac } from 'crypto';
+import { sameDigest, verifiedInitDataSubject } from './throttler-init-data';
 
 /**
  * Подпись HS256 сходится И это именно ACCESS-токен, ещё живой? Ключ — тот же,
@@ -60,43 +54,8 @@ export function verifiedJwtSubject(
   }
 }
 
-/**
- * Подпись initData Telegram сходится? Схема площадки: ключ — HMAC от токена
- * бота по строке `WebAppData`, им подписан отсортированный список полей.
- * Свежесть тут не проверяется — это забота auth-гарда, а не счётчика.
- */
-export function verifiedInitDataSubject(
-  initData: string,
-  botToken: string | undefined,
-): string | null {
-  if (!botToken) return null;
-  try {
-    const params = new URLSearchParams(initData);
-    const hash = params.get('hash');
-    if (!hash) return null;
-    params.delete('hash');
-    const checkString = Array.from(params.entries())
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([k, v]) => `${k}=${v}`)
-      .join('\n');
-    const secretKey = createHmac('sha256', 'WebAppData')
-      .update(botToken)
-      .digest();
-    const expected = createHmac('sha256', secretKey)
-      .update(checkString)
-      .digest('hex');
-    if (!sameDigest(hash, expected)) return null;
-    const user = JSON.parse(params.get('user') ?? '{}') as {
-      id?: string | number;
-    };
-    return user.id == null ? null : String(user.id);
-  } catch {
-    return null;
-  }
-}
-
 export interface TrackerRequest {
-  telegramUserId?: number;
+  webUser?: { userId: bigint };
   ip?: string;
   headers?: Record<string, string | string[] | undefined>;
 }
@@ -111,9 +70,9 @@ export function resolveTracker(
   req: TrackerRequest,
   secrets: TrackerSecrets,
 ): string {
-  // Ставится TelegramAuthGuard'ом, который идёт ПОСЛЕ этого гарда, — значит
-  // на первом проходе поля нет. Оставлено на случай повторной проверки.
-  if (req.telegramUserId) return `uid:${req.telegramUserId}`;
+  // Ставится TelegramAuthGuard'ом ПОСЛЕ этого гарда — на первом проходе поля нет.
+  // Точный bigint, не Number: id выше 2^53 округлились бы в один бакет (X-1).
+  if (req.webUser) return `uid:${req.webUser.userId.toString()}`;
 
   const header = (name: string): string | undefined => {
     const value = req.headers?.[name];

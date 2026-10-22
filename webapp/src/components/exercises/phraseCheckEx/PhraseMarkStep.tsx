@@ -3,19 +3,9 @@
 // вопросов (что спрашивать, чем отличаются варианты) — shared/src/phraseCheck,
 // эта вёрстка — только webapp-стиль (правило: логику не копируем, верстаем
 // заново в стиле фронтенда).
-import type { CSSProperties } from 'react';
 import { PHRASE_CRITERIA, type PhraseMarkId } from '../../../../../shared/src/phraseCheck/criteria';
-
-const BASE: CSSProperties = {
-  width: '100%',
-  textAlign: 'left',
-  padding: '14px 18px',
-  borderRadius: 'var(--r-10)',
-  fontSize: 14.5,
-  lineHeight: 1.5,
-  fontFamily: 'inherit',
-  cursor: 'pointer',
-};
+import { hueStyle } from '../../../lib/tone';
+import { HUE_STRAIN, HUE_CARE } from '../exHue';
 
 export function PhraseMarkStep({
   index,
@@ -32,42 +22,24 @@ export function PhraseMarkStep({
   const c = PHRASE_CRITERIA[index];
   return (
     <>
-      <div className="ex-prompt">
-        <div className="ex-prompt-num">{String(index + 1).padStart(2, '0')}</div>
+      <div className="ex2-prompt">
+        <div className="ex2-prompt-num">{String(index + 1).padStart(2, '0')}</div>
         <div>
-          <div className="ex-prompt-hint u-mb4">
+          <div className="ex2-prompt-hint">
             Примета {index + 1} из {total} · «{phrase}»
           </div>
-          <div className="ex-prompt-label" style={{ fontSize: 26, marginBottom: 4 }}>
-            {c.emoji} {c.question}
-          </div>
+          <div className="ex2-prompt-label ex2-prompt-label--sm">{c.question}</div>
         </div>
       </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-10)', marginBottom: 20 }}>
-        <button
-          onClick={() => onAnswer(c.id, false)}
-          style={{
-            ...BASE,
-            background: 'color-mix(in srgb, var(--c-moss) 8%, transparent)',
-            border: '1px solid color-mix(in srgb, var(--c-moss) 28%, transparent)',
-            color: 'var(--text)',
-          }}
-        >
+      <div className="ex2-stack">
+        <button className="ex2-choice" style={hueStyle(HUE_CARE)} onClick={() => onAnswer(c.id, false)}>
           {c.care}
         </button>
-        <button
-          onClick={() => onAnswer(c.id, true)}
-          style={{
-            ...BASE,
-            background: 'color-mix(in srgb, var(--c-rose) 8%, transparent)',
-            border: '1px solid color-mix(in srgb, var(--c-rose) 28%, transparent)',
-            color: 'var(--text)',
-          }}
-        >
+        <button className="ex2-choice" style={hueStyle(HUE_STRAIN)} onClick={() => onAnswer(c.id, true)}>
           {c.critic}
         </button>
       </div>
-      <p className="text-sm muted" style={{ lineHeight: 1.55 }}>{c.why}</p>
+      <p className="ds-sub ex2-gap">{c.why}</p>
     </>
   );
 }

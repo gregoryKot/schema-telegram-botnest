@@ -151,7 +151,7 @@ describe('TodaySection — скелетон "последних записей"'
     const { container } = renderSection();
 
     expect(screen.queryByText('Замечать моменты, когда схема активируется – главная практика')).toBeNull();
-    expect(container.querySelectorAll('.section').length).toBeGreaterThan(0);
+    expect(container.querySelectorAll('.ct-section').length).toBeGreaterThan(0);
 
     resolveAll();
     await screen.findByText('Замечать моменты, когда схема активируется – главная практика');
@@ -177,7 +177,7 @@ describe('TodaySection — реальные оценки потребносте�
       ratings: { attachment: 8, autonomy: 6, expression: 4, play: 10, limits: 2 },
       yesterdayRatings: { attachment: 5 },
     });
-    await screen.findByText('↑3.0');
+    await screen.findByText('↑3');
   });
 });
 
@@ -376,25 +376,76 @@ describe('TodaySection — индекс дня: спарклайн из реал
   });
 });
 
-describe('TodaySection — терапевт: ближайшая встреча в блоке «Следующая встреча»', () => {
-  it('встреча завтра — подпись «завтра», имя и кнопка «Написать» видны', async () => {
+describe('TodaySection — сбой API отдал не массив (`{}`): экран не падает', () => {
+  it('history = {} — индекс и «—» за неделю вместо «e is not iterable»', async () => {
+    mockApi.history.mockResolvedValue({});
+    mockApi.getSchemaDiary.mockResolvedValue({});
+    mockApi.getTasks.mockResolvedValue({});
+    renderSection({ ratings: { attachment: 8, autonomy: 6, expression: 4, play: 10, limits: 2 } });
+    await screen.findByText('6.0');
+    expect(await screen.findByText('— за неделю')).toBeTruthy();
+    expect(screen.getByText('Индекс сегодня')).toBeTruthy();
+  });
+
+  it('дельта недели, округлённая до нуля, показывается без минуса', async () => {
+    const days = [
+      ...Array.from({ length: 7 }, (_, i) => ({ date: daysAgoStr(13 - i), ratings: { attachment: 5.04 } })),
+      ...Array.from({ length: 7 }, (_, i) => ({ date: daysAgoStr(6 - i), ratings: { attachment: 5 } })),
+    ];
+    mockApi.history.mockResolvedValue(days);
+    renderSection();
+    await screen.findByText('0.0 за неделю');
+  });
+});
+
+describe('TodaySection — терапевт: карточка «Встреча с терапевтом»', () => {
+  it('встреча завтра — заголовок «Завтра · время», имя и кнопка «Написать» видны', async () => {
     const tomorrow = new Date(Date.now() + 24 * 3600 * 1000).toISOString();
     mockApi.getTherapyRelation.mockResolvedValue({
       role: 'client', status: 'active', partnerName: 'Анна', partnerId: 42, code: 'X', nextSession: tomorrow,
     });
     renderSection();
     await screen.findByText('Анна');
-    await screen.findByText('завтра');
+    await screen.findByText(/^Завтра · /);
     expect(screen.getByText('Написать').getAttribute('href')).toBe('tg://user?id=42');
   });
 
-  it('встреча сегодня — подпись «сегодня»', async () => {
-    const inHours = new Date(Date.now() + 3 * 3600 * 1000).toISOString();
+  it('встреча сегодня — заголовок «Сегодня · время»', async () => {
+    const at = new Date();
+    at.setHours(23, 59, 0, 0);
     mockApi.getTherapyRelation.mockResolvedValue({
-      role: 'client', status: 'active', partnerName: 'Анна', partnerId: 42, code: 'X', nextSession: inHours,
+      role: 'client', status: 'active', partnerName: 'Анна', partnerId: 42, code: 'X', nextSession: at.toISOString(),
     });
     renderSection();
-    await screen.findByText('сегодня');
+    await screen.findByText(/^Сегодня · 23:59$/);
+  });
+
+  it('без терапевта карточки встречи нет', async () => {
+    renderSection();
+    await waitFor(() => expect(mockApi.getTherapyRelation).toHaveBeenCalled());
+    expect(screen.queryByText('Встреча с терапевтом')).toBeNull();
+  });
+});
+
+describe('TodaySection — оценка прямо со шкалы', () => {
+  it('клик по сегменту зовёт onRatingChange и через паузу сохраняет оценку', async () => {
+    mockApi.saveRating = vi.fn().mockResolvedValue({ allDone: false });
+    const onRatingChange = vi.fn();
+    render(
+      <AddressFormContext.Provider value={{ form: 'ty', setForm: vi.fn() }}>
+        <MemoryRouter>
+          <TodaySection
+            needs={NEEDS} ratings={{}} onNavigate={vi.fn()} onOpenSchema={vi.fn()}
+            onOpenAdvanced={vi.fn()} onOpenTracker={vi.fn()} onOpenDiaries={vi.fn()}
+            onOpenChildhoodWheel={vi.fn()} rating={{ onChange: onRatingChange, onSaved: vi.fn(), isOffline: false }}
+          />
+        </MemoryRouter>
+      </AddressFormContext.Provider>,
+    );
+    const group = await screen.findByRole('group', { name: 'Привязанность' });
+    fireEvent.click(within(group).getByRole('button', { name: '6 из 10' }));
+    expect(onRatingChange).toHaveBeenCalledWith('attachment', 6);
+    await waitFor(() => expect(mockApi.saveRating).toHaveBeenCalledWith('attachment', 6));
   });
 });
 
@@ -456,7 +507,7 @@ describe('TodaySection — задания: каждый тип «начать �
   /** «начать →» встречается и в OnboardingWidget — скоуп через заголовок раздела задач. */
   async function clickTaskStart() {
     const heading = await screen.findByText('Практики на сегодня');
-    const section = heading.closest('.section')!;
+    const section = heading.closest('.ct-section')!;
     fireEvent.click(within(section).getByText('начать →'));
   }
 
@@ -555,8 +606,8 @@ describe('TodaySection — оверлей «Все задания»: отмет�
     mockApi.getTasks.mockResolvedValue(Array.from({ length: 6 }, (_, i) => task({ id: i + 1, text: `Задача ${i + 1}` })));
     renderSection();
     fireEvent.click(await screen.findByText('Все задания (6) →'));
-    const overlay = await screen.findByText('Все задания');
-    fireEvent.click(overlay.parentElement!.parentElement!.querySelector('.ex-btn-primary')!);
+    await screen.findByText('Все задания');
+    fireEvent.click(document.querySelector('.sk-overlay .sk-wide-btn')!);
 
     await screen.findByText('Новое задание');
   });

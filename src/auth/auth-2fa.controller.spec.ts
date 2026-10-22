@@ -14,6 +14,7 @@ import { TotpService } from './totp.service';
 import { EmailService } from './email.service';
 import { REFRESH_COOKIE } from './auth-http.util';
 import { TwoFaChallengeDto, TwoFaCodeDto } from './dto/twofa.dto';
+import { PERSISTENT_THROTTLE_KEY } from '../api/persistent-throttle.decorator';
 
 const WEBAPP_URL = 'https://schemehappens.ru';
 
@@ -467,5 +468,106 @@ describe('Auth2faController.totpChallenge', () => {
     );
 
     expect(out.accessToken).toBeTruthy();
+  });
+});
+
+// H1 аудита 2026-10: шестизначный код без @Throttle подбирался за сутки
+// (штатные 200 запросов/мин на пользователя). Метаданные читаем напрямую —
+// так их расставляют декораторы (образец: booking.controller.spec.ts).
+describe('Auth2faController — троттлинг ручек, проверяющих код (H1)', () => {
+  const proto = Auth2faController.prototype;
+  const routes = [
+    ['totpEnable', proto.totpEnable],
+    ['totpDisable', proto.totpDisable],
+    ['totpRegenerateRecovery', proto.totpRegenerateRecovery],
+    ['totpChallenge', proto.totpChallenge],
+    ['recoveryConfirm', proto.recoveryConfirm],
+  ] as const;
+
+  it.each(routes)('%s: 5/мин и 20/час', (_name, handler) => {
+    expect(Reflect.getMetadata('THROTTLER:LIMITshort', handler)).toBe(5);
+    expect(Reflect.getMetadata('THROTTLER:TTLshort', handler)).toBe(60_000);
+    expect(Reflect.getMetadata('THROTTLER:LIMITlong', handler)).toBe(20);
+    expect(Reflect.getMetadata('THROTTLER:TTLlong', handler)).toBe(3_600_000);
+  });
+
+  it.each(routes)(
+    '%s: @PersistentThrottle — счётчик общий на все инстансы (Postgres)',
+    (_name, handler) => {
+      expect(Reflect.getMetadata(PERSISTENT_THROTTLE_KEY, handler)).toBe(true);
+    },
+  );
+});
+
+describe('Auth2faController — неверный код пишется в аудит totp_failed (H1)', () => {
+  const failed = (route: string) => [
+    'totp_failed',
+    { userId: 3n, ip: '198.51.100.1', route },
+  ];
+
+  it('enable: неверный код → totp_failed (userId, ip), ошибка пробрасывается', async () => {
+    const { controller, totp, securityLog } = makeController();
+    totp.confirmSetup.mockRejectedValue(
+      new UnauthorizedException('Invalid code'),
+    );
+    await expect(
+      controller.totpEnable(makeReq({ webUser: { userId: 3n } }), CODE_DTO),
+    ).rejects.toThrow(UnauthorizedException);
+    expect(securityLog.log).toHaveBeenCalledWith(...failed('2fa/enable'));
+  });
+
+  it('disable: неверный код → totp_failed', async () => {
+    const { controller, totp, securityLog } = makeController();
+    totp.disable.mockRejectedValue(new UnauthorizedException('Invalid code'));
+    await expect(
+      controller.totpDisable(makeReq({ webUser: { userId: 3n } }), CODE_DTO),
+    ).rejects.toThrow(UnauthorizedException);
+    expect(securityLog.log).toHaveBeenCalledWith(...failed('2fa/disable'));
+    expect(securityLog.log).not.toHaveBeenCalledWith(
+      'role_changed',
+      expect.anything(),
+    );
+  });
+
+  it('recovery-codes: неверный код → totp_failed', async () => {
+    const { controller, totp, securityLog } = makeController();
+    totp.regenerateRecoveryCodes.mockRejectedValue(
+      new UnauthorizedException('Invalid code'),
+    );
+    await expect(
+      controller.totpRegenerateRecovery(
+        makeReq({ webUser: { userId: 3n } }),
+        CODE_DTO,
+      ),
+    ).rejects.toThrow(UnauthorizedException);
+    expect(securityLog.log).toHaveBeenCalledWith(
+      ...failed('2fa/recovery-codes'),
+    );
+  });
+
+  it('challenge: неверный код → totp_failed с userId из challenge-токена', async () => {
+    const { controller, auth, totp, securityLog } = makeController();
+    auth.verifyTotpChallengeToken.mockReturnValue({ userId: 3n });
+    totp.verifyCode.mockResolvedValue(false);
+    await expect(
+      controller.totpChallenge(makeReq(), makeRes(), {
+        code: '000000',
+        challengeToken: 'chal',
+      }),
+    ).rejects.toThrow(UnauthorizedException);
+    expect(securityLog.log).toHaveBeenCalledWith(...failed('2fa/challenge'));
+  });
+
+  it('верный код и не-401 ошибка (setup не начат) — totp_failed не пишется', async () => {
+    const { controller, totp, securityLog } = makeController();
+    await controller.totpEnable(makeReq({ webUser: { userId: 3n } }), CODE_DTO);
+    totp.confirmSetup.mockRejectedValue(new Error('Setup not started'));
+    await expect(
+      controller.totpEnable(makeReq({ webUser: { userId: 3n } }), CODE_DTO),
+    ).rejects.toThrow('Setup not started');
+    expect(securityLog.log).not.toHaveBeenCalledWith(
+      'totp_failed',
+      expect.anything(),
+    );
   });
 });

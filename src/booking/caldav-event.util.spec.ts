@@ -132,6 +132,69 @@ describe('escapeText — экранирование по RFC 5545', () => {
   });
 });
 
+describe('URL и VALARM — опциональные поля (PR B, клиентский .ics)', () => {
+  it('URL отсутствует, если не задан', () => {
+    expect(buildVcalendar([BASE])).not.toContain('URL:');
+  });
+
+  it('URL включается, если задан', () => {
+    const ics = buildVcalendar([
+      { ...BASE, url: 'https://schemehappens.ru/booking/manage?token=abc' },
+    ]);
+    expect(ics).toContain('https://schemehappens.ru/booking/manage?token=abc');
+  });
+
+  it('VALARM отсутствует, если alarmMinutesBefore не задан', () => {
+    expect(buildVcalendar([BASE])).not.toContain('BEGIN:VALARM');
+  });
+
+  it('VALARM за N минут — TRIGGER:-PTNM, ACTION:DISPLAY', () => {
+    const ics = buildVcalendar([{ ...BASE, alarmMinutesBefore: 60 }]);
+    expect(ics).toContain('BEGIN:VALARM\r\n');
+    expect(ics).toContain('ACTION:DISPLAY\r\n');
+    expect(ics).toContain('TRIGGER:-PT60M\r\n');
+    expect(ics).toContain('END:VALARM\r\n');
+  });
+});
+
+describe('складывание длинных строк (RFC 5545 §3.1, folding при > 75 октетов)', () => {
+  it('короткая строка не складывается', () => {
+    const ics = buildVcalendar([BASE]);
+    expect(ics).toContain('SUMMARY:Сессия — Мария\r\n');
+  });
+
+  it('длинная DESCRIPTION складывается на несколько строк, продолжение начинается с пробела', () => {
+    const long =
+      'https://schemehappens.ru/booking/manage?token=' + 'a'.repeat(80);
+    const ics = buildVcalendar([{ ...BASE, description: long }]);
+    // Ни одна физическая строка тела не длиннее 75 октетов.
+    for (const physicalLine of ics.split('\r\n')) {
+      expect(Buffer.byteLength(physicalLine, 'utf8')).toBeLessThanOrEqual(75);
+    }
+    expect(ics).toMatch(/DESCRIPTION:[^\r\n]*\r\n [^\r\n]/);
+  });
+
+  it('склеивание сложенных строк обратно (убрать CRLF+пробел) восстанавливает исходное значение', () => {
+    const long = 'x'.repeat(200);
+    const ics = buildVcalendar([{ ...BASE, description: long }]);
+    const unfolded = ics.replace(/\r\n /g, '');
+    expect(unfolded).toContain(`DESCRIPTION:${long}`);
+  });
+
+  it('складывание не разрезает многобайтовый символ (кириллица/эмодзи) посередине', () => {
+    const long =
+      'Очень длинное описание встречи на русском языке с эмодзи 🧠🎉🌟 '.repeat(
+        3,
+      );
+    const ics = buildVcalendar([{ ...BASE, description: long }]);
+    // Валидная UTF-8 строка целиком — если бы код разрезал символ пополам,
+    // Buffer.from(...).toString('utf8') не собрал бы обратно ровно тот же текст.
+    const unfolded = ics.replace(/\r\n /g, '');
+    expect(unfolded).toContain(`DESCRIPTION:${long}`);
+    expect(ics).not.toContain('�'); // replacement character — признак разрезанного символа
+  });
+});
+
 describe('sessionLabel', () => {
   it('INTRO_15 → «Знакомство (15 мин)»', () => {
     expect(sessionLabel(SessionType.INTRO_15)).toBe('Знакомство (15 мин)');

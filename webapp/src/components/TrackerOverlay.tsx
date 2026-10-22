@@ -1,12 +1,15 @@
 // TrackerOverlay.tsx – Variant C · PickerRail (editorial triptych)
 
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { COLORS } from '../types';
 import { useNeedData } from '../needData';
 import { NeedTodaySheet } from './NeedTodaySheet';
-import { GlyphArrowLeft } from './exercises/ExScreen';
-import { api, reportClientError } from '../api';
+import { api } from '../api';
+import { useRatingSaver } from '../hooks/useRatingSaver';
 import { useHistorySheet } from '../hooks/useHistorySheet';
+import { deltaView } from '../sections/today/model';
+import { TrackerSteps } from './trackerOverlay/TrackerChrome';
+import { buildChrome } from './trackerOverlay/buildChrome';
+import '../styles/sheet-tracker.css';
 import type { Props } from './trackerOverlay/types';
 import { useIsDesktop } from './trackerOverlay/useIsDesktop';
 import { CompletionScreen } from './trackerOverlay/CompletionScreen';
@@ -32,7 +35,6 @@ export function TrackerOverlay({
 }: Props) {
   const goBack = useHistorySheet(onClose);
   const isDesktop = useIsDesktop();
-  const timers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
   const isBackfill = !!date;
 
   const [localRatings, setLocalRatings] = useState<Record<string, number>>({});
@@ -63,61 +65,34 @@ export function TrackerOverlay({
   const [showCompletion, setShowCompletion] = useState(false);
 
   const need = needs[idx];
-  const color = COLORS[need.id] ?? 'var(--accent)';
   const value = effectiveRatings[need.id] ?? 0;
   const allRated = needs.every((n) => (effectiveRatings[n.id] ?? 0) > 0);
   // Только реальные вчерашние оценки: нет данных — нет дельты (правило
   // CLAUDE.md «Никаких хардкод-заглушек»; фолбэк на константу YESTERDAY —
   // ровно инцидент из правила, miniapp-двойник всегда был чист).
   const yval = yesterdayRatings[need.id];
-  const delta =
-    !isBackfill && value > 0 && yval !== undefined ? value - yval : null;
+  const delta = isBackfill ? null : deltaView(value > 0 ? value : undefined, yval);
   const NEED_DATA = useNeedData();
   const extra = NEED_DATA[need.id];
   const needName = extra?.name ?? need.chartLabel;
 
+  const markSaved = useCallback(() => setLastSavedAt(new Date()), []);
+  // Бэкафилл пишет оценки прошлого дня: своя дата, без стрика и без офлайн-паузы.
+  const save = useRatingSaver({
+    date: isBackfill ? date : undefined,
+    isOffline: !isBackfill && isOffline,
+    onSaved: isBackfill ? undefined : onSaved,
+    onSavedAt: markSaved,
+    errorMessage: isBackfill ? 'tracker backfill rating save failed' : 'tracker rating save failed',
+    section: 'tracker',
+  });
   const handleChange = useCallback(
     (needId: string, v: number) => {
-      if (isBackfill) {
-        setLocalRatings((prev) => ({ ...prev, [needId]: v }));
-        clearTimeout(timers.current[needId]);
-        timers.current[needId] = setTimeout(async () => {
-          if (v === 0) return;
-          try {
-            await api.saveRating(needId, v, date);
-            setLastSavedAt(new Date());
-          } catch (e) {
-            // Сеть/5xx — в outbox (shared/api/ratingApi); сюда доходит только
-            // настоящая ошибка запроса (4xx) — она редкая, потому видимая.
-            console.error('saveRating failed', e);
-            reportClientError({
-              message: 'tracker backfill rating save failed',
-              section: 'tracker',
-            });
-          }
-        }, 500);
-        return;
-      }
-      onChange(needId, v);
-      if (isOffline) return;
-      clearTimeout(timers.current[needId]);
-      timers.current[needId] = setTimeout(async () => {
-        if (v === 0) return;
-        try {
-          const res = await api.saveRating(needId, v);
-          onSaved(needId, res.allDone ? res.streak : undefined);
-          setLastSavedAt(new Date());
-        } catch (e) {
-          // См. бэкафилл-ветку выше: здесь только ошибка запроса.
-          console.error('saveRating failed', e);
-          reportClientError({
-            message: 'tracker rating save failed',
-            section: 'tracker',
-          });
-        }
-      }, 500);
+      if (isBackfill) setLocalRatings((prev) => ({ ...prev, [needId]: v }));
+      else onChange(needId, v);
+      save(needId, v);
     },
-    [onChange, onSaved, isOffline, isBackfill, date],
+    [onChange, isBackfill, save],
   );
 
   const touchRef = useRef<{ x: number; y: number } | null>(null);
@@ -136,20 +111,8 @@ export function TrackerOverlay({
 
   if (localLoading)
     return (
-      <div
-        style={{
-          position: 'fixed',
-          inset: 0,
-          zIndex: 80,
-          background: 'var(--bg)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-      >
-        <div style={{ fontSize: 14, color: 'var(--text-sub)' }}>
-          Загрузка...
-        </div>
+      <div className="tk2-overlay tk2-done">
+        <div className="ds-sub">Загрузка...</div>
       </div>
     );
 
@@ -166,277 +129,25 @@ export function TrackerOverlay({
     );
   }
 
-  const prevNeed = needs[idx - 1];
-  const nextNeed = needs[idx + 1];
-
-  const steps = (
-    <div className="u-ac6">
-      {needs.map((n, i) => (
-        <button
-          key={n.id}
-          onClick={() => setIdx(i)}
-          aria-label={n.chartLabel}
-          style={{
-            width: i === idx ? 22 : 6,
-            height: 6,
-            borderRadius: 3,
-            border: 'none',
-            padding: 0,
-            background:
-              i === idx
-                ? (COLORS[n.id] ?? 'var(--accent)')
-                : (effectiveRatings[n.id] ?? 0) > 0
-                  ? 'rgba(var(--fg-rgb),0.3)'
-                  : 'rgba(var(--fg-rgb),0.12)',
-            cursor: 'pointer',
-            transition: 'all 0.2s',
-          }}
-        />
-      ))}
-    </div>
-  );
-
-  const topbar = (
-    <div
-      style={{
-        height: 52,
-        padding: '0 24px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        borderBottom: '1px solid rgba(var(--fg-rgb),0.07)',
-        flexShrink: 0,
-      }}
-    >
-      <button
-        onClick={goBack}
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 'var(--space-8)',
-          background: 'none',
-          border: 'none',
-          color: 'var(--text-sub)',
-          fontSize: 13,
-          cursor: 'pointer',
-          padding: 0,
-        }}
-      >
-        <GlyphArrowLeft /> {isBackfill ? 'Закрыть' : 'Назад'}
-      </button>
-      {isDesktop && (
-        <div
-          style={{
-            fontSize: 11,
-            color: 'var(--text-faint)',
-            letterSpacing: '0.08em',
-            textTransform: 'uppercase',
-            fontWeight: 600,
-          }}
-        >
-          {isBackfill ? `Оценки за ${date}` : 'Трекер потребностей'}
-        </div>
-      )}
-      <div style={{ display: 'flex', gap: 2 }}>
-        {onOpenNote && (
-          <button
-            onClick={onOpenNote}
-            aria-label="Заметка"
-            style={{
-              width: 30,
-              height: 30,
-              borderRadius: 'var(--r-6)',
-              display: 'grid',
-              placeItems: 'center',
-              background: 'none',
-              border: 'none',
-              color: 'var(--text-faint)',
-              cursor: 'pointer',
-            }}
-          >
-            <svg
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
-            </svg>
-          </button>
-        )}
-        {onOpenHistory && (
-          <button
-            onClick={() => {
-              onOpenHistory();
-              goBack();
-            }}
-            aria-label="История"
-            style={{
-              width: 30,
-              height: 30,
-              borderRadius: 'var(--r-6)',
-              display: 'grid',
-              placeItems: 'center',
-              background: 'none',
-              border: 'none',
-              color: 'var(--text-faint)',
-              cursor: 'pointer',
-            }}
-          >
-            <svg
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
-            </svg>
-          </button>
-        )}
-      </div>
-    </div>
-  );
-
-  const footer = (
-    <div
-      style={{
-        padding: '14px 24px',
-        display: 'grid',
-        gridTemplateColumns: '1fr auto 1fr',
-        alignItems: 'center',
-        borderTop: '1px solid rgba(var(--fg-rgb),0.07)',
-        flexShrink: 0,
-        gap: 'var(--space-8)',
-      }}
-    >
-      {/* Left: previous need */}
-      <div>
-        <button
-          onClick={() => idx > 0 && setIdx(idx - 1)}
-          disabled={idx === 0}
-          style={{
-            display: 'inline-flex',
-            alignItems: 'baseline',
-            gap: 'var(--space-8)',
-            background: 'none',
-            border: 'none',
-            cursor: idx === 0 ? 'default' : 'pointer',
-            padding: 0,
-            color: idx === 0 ? 'transparent' : 'var(--text-faint)',
-            fontSize: 14,
-          }}
-        >
-          <span>←</span>
-          {prevNeed && (
-            <span
-              style={{
-                fontFamily: 'var(--serif)',
-                fontStyle: 'italic',
-                fontSize: 15,
-              }}
-            >
-              {(
-                NEED_DATA[prevNeed.id]?.name ?? prevNeed.chartLabel
-              ).toLowerCase()}
-            </span>
-          )}
-        </button>
-      </div>
-      {/* Center: auto-save label — stays perfectly centered regardless of button widths */}
-      <div
-        style={{
-          fontSize: 11,
-          color: 'var(--text-ghost)',
-          letterSpacing: '0.08em',
-          textTransform: 'uppercase',
-          fontWeight: 600,
-          textAlign: 'center',
-          whiteSpace: 'nowrap',
-        }}
-      >
-        {lastSavedAt
-          ? `сохранено ${lastSavedAt.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}`
-          : 'сохранено автоматически'}
-      </div>
-      {/* Right: action button */}
-      <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-        {allRated ? (
-          <button
-            onClick={() => setShowCompletion(true)}
-            style={{
-              padding: '10px 20px',
-              borderRadius: 'var(--r-8)',
-              border: 'none',
-              background: 'var(--text)',
-              color: 'var(--bg)',
-              cursor: 'pointer',
-              fontSize: 13,
-              fontWeight: 600,
-            }}
-          >
-            ✓ Готово
-          </button>
-        ) : nextNeed ? (
-          <button
-            onClick={() => setIdx(idx + 1)}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 'var(--space-10)',
-              padding: '10px 20px',
-              borderRadius: 'var(--r-8)',
-              border: 'none',
-              background: 'var(--text)',
-              color: 'var(--bg)',
-              cursor: 'pointer',
-              fontSize: 13,
-              fontWeight: 600,
-            }}
-          >
-            <span
-              style={{
-                fontFamily: 'var(--serif)',
-                fontStyle: 'italic',
-                fontWeight: 400,
-              }}
-            >
-              далее:{' '}
-              {(
-                NEED_DATA[nextNeed.id]?.name ?? nextNeed.chartLabel
-              ).toLowerCase()}
-            </span>
-            <span>→</span>
-          </button>
-        ) : (
-          <button
-            onClick={() => {
-              const f = needs.findIndex((n) => !(effectiveRatings[n.id] ?? 0));
-              if (f >= 0) setIdx(f);
-            }}
-            style={{
-              padding: '10px 20px',
-              borderRadius: 'var(--r-8)',
-              border: '1px solid rgba(var(--fg-rgb),0.12)',
-              background: 'transparent',
-              color: 'var(--text-sub)',
-              cursor: 'pointer',
-              fontSize: 13,
-            }}
-          >
-            К незаполненным ↩
-          </button>
-        )}
-      </div>
-    </div>
-  );
+  const nameOf = (n: Need) => NEED_DATA[n.id]?.name ?? n.chartLabel;
+  const steps = <TrackerSteps needs={needs} idx={idx} ratings={effectiveRatings} onPick={setIdx} />;
+  const { topbar, footer, onboarding } = buildChrome({
+    isDesktop,
+    isBackfill,
+    date,
+    goBack,
+    onOpenNote,
+    onOpenHistory,
+    needs,
+    idx,
+    setIdx,
+    allRated,
+    lastSavedAt,
+    effectiveRatings,
+    ratings,
+    nameOf,
+    onFinish: () => setShowCompletion(true),
+  });
 
   const DetailSheet = detailNeed ? (
     <NeedTodaySheet
@@ -448,45 +159,22 @@ export function TrackerOverlay({
     />
   ) : null;
 
-  // ── Desktop triptych ───────────────────────────────────────────────────────
-  if (isDesktop)
-    return (
-      <DesktopLayout
-        need={need}
-        color={color}
-        value={value}
-        needName={needName}
-        extra={extra}
-        idx={idx}
-        needsLength={needs.length}
-        handleChange={handleChange}
-        setDetailNeed={setDetailNeed}
-        delta={delta}
-        topbar={topbar}
-        footer={footer}
-        steps={steps}
-        detailSheet={DetailSheet}
-      />
-    );
-
-  // ── Mobile layout ──────────────────────────────────────────────────────────
-  return (
-    <MobileLayout
-      need={need}
-      color={color}
-      value={value}
-      needName={needName}
-      extra={extra}
-      idx={idx}
-      needsLength={needs.length}
-      handleChange={handleChange}
-      setDetailNeed={setDetailNeed}
-      onTS={onTS}
-      onTE={onTE}
-      topbar={topbar}
-      footer={footer}
-      steps={steps}
-      detailSheet={DetailSheet}
-    />
-  );
+  const shared = {
+    need,
+    value,
+    needName,
+    extra,
+    idx,
+    needsLength: needs.length,
+    handleChange,
+    setDetailNeed,
+    yesterday: isBackfill ? undefined : yval,
+    delta,
+    topbar,
+    footer,
+    steps,
+    detailSheet: DetailSheet,
+  };
+  if (isDesktop) return <DesktopLayout {...shared} />;
+  return <MobileLayout {...shared} onboarding={onboarding} onTS={onTS} onTE={onTE} />;
 }

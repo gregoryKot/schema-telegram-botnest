@@ -30,6 +30,14 @@ describe('CrisisBlock — постоянный «спасательный кру
     expect(link?.getAttribute('href')).toBe(CRISIS_HOTLINE_TEL);
   });
 
+  // Регрессия 2026-10-03: блок видят все, без детекции — карточка не должна
+  // «угадывать» состояние («Похоже, сейчас очень тяжело»).
+  it('постоянный блок не говорит «Похоже, сейчас очень тяжело»', () => {
+    render(<CrisisBlock />);
+    expect(screen.queryByText(/Похоже/)).toBeNull();
+    expect(screen.getByText('Если станет совсем тяжело')).toBeTruthy();
+  });
+
   it('упоминает 112 и разговор с близким', () => {
     render(<CrisisBlock />);
     expect(screen.getByText(/112/)).toBeTruthy();

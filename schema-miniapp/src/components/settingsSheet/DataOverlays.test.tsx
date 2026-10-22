@@ -180,4 +180,30 @@ describe('DeleteOverlay', () => {
     expect(reloadSpy).not.toHaveBeenCalled();
     expect(localStorage.getItem('some_other_key')).toBe('still-here');
   });
+
+  // B-13 (аудит 2026-10): при включённом 2FA сервер отвечает 403 totp_required —
+  // оверлей просит код и повторяет удаление уже с ним (парно с webapp, правило №3).
+  it('2FA: 403 totp_required → поле кода, повтор с кодом, затем перезагрузка', async () => {
+    const err = Object.assign(new Error('Нужен код'), {
+      status: 403,
+      reason: 'totp_required',
+    });
+    mockApi.deleteAllUserData
+      .mockRejectedValueOnce(err)
+      .mockResolvedValueOnce(undefined);
+
+    const { setDeleteConfirm } = renderOverlay(true);
+    fireEvent.click(screen.getByText('Да, удалить всё навсегда'));
+
+    const input = await screen.findByLabelText(/двухфакторная/);
+    // Нужен код — не сбой: шаг подтверждения не сбрасывается.
+    expect(setDeleteConfirm).not.toHaveBeenCalled();
+    expect(reloadSpy).not.toHaveBeenCalled();
+
+    fireEvent.change(input, { target: { value: '123456' } });
+    fireEvent.click(screen.getByText('Да, удалить всё навсегда'));
+
+    await waitFor(() => expect(reloadSpy).toHaveBeenCalledTimes(1));
+    expect(mockApi.deleteAllUserData).toHaveBeenLastCalledWith('123456');
+  });
 });

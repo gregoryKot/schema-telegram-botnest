@@ -1,8 +1,8 @@
 import { TherapyClientSummary } from '../../api';
 import { ClientDetail } from './types';
+import { CLIENT_NAME_MAX } from '../../../../shared/src/limits/textLimits';
 
-// Имя клиента в шапке карточки: просмотр ↔ переименование (alias) + удаление.
-// Вынесено из ClientDetailView (правило №10 — файл-храповик).
+// Имя клиента в шапке карточки: просмотр ↔ переименование (alias) + удаление; вынесено из ClientDetailView (правило №10).
 export function ClientNameHeader({
   selectedClient,
   detail,
@@ -41,7 +41,7 @@ export function ClientNameHeader({
             onChange={(e) => setAliasInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && saveAlias()}
             placeholder={selectedClient.name ?? 'Имя'}
-            maxLength={100}
+            maxLength={CLIENT_NAME_MAX}
             style={{
               flex: 1,
               background: 'rgba(var(--fg-rgb),0.07)',

@@ -67,6 +67,12 @@ describe('PhraseCheckEx — кризисная детекция ДО сохра�
     expect(screen.getByText(CRISIS_HOTLINE_DISPLAY)).toBeTruthy();
   });
 
+  // Аудит 2026-10, «Доступность»: progressbar без имени (control-has-associated-label).
+  it('полоса прогресса названа «Шаг упражнения»', () => {
+    renderEx();
+    expect(screen.getByRole('progressbar', { name: 'Шаг упражнения' }).getAttribute('aria-valuenow')).toBe('1');
+  });
+
   it('нейтральная фраза не показывает CrisisCard', () => {
     renderEx();
     fireEvent.change(

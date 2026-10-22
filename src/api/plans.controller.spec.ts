@@ -68,17 +68,17 @@ describe('PlansController.getPractices', () => {
 });
 
 describe('PlansController.addPractice', () => {
-  it('обрезает текст до 200 символов, сохраняет под userId из req', async () => {
+  it('чистит пробелы по краям, не режет хвост (лимит — в DTO), сохраняет под userId из req', async () => {
     const { controller, practicesService } = makeController();
     await controller.addPractice(makeReq(3n), {
       needId: 'attachment',
-      text: '  ' + 'x'.repeat(250) + '  ',
+      text: '  ' + 'x'.repeat(200) + '  ',
     });
     const [userId, needId, text] = (practicesService.addPractice as jest.Mock)
       .mock.calls[0];
     expect(userId).toBe(3n);
     expect(needId).toBe('attachment');
-    expect(text.length).toBe(200);
+    expect(text).toBe('x'.repeat(200));
   });
 });
 

@@ -14,14 +14,13 @@ import { LazyCaseFlowSheet as CaseFlowSheet } from '../LazyOverlays';
  */
 export function CaseFlowOverlay({
   sheets,
+  onClose,
 }: {
-  sheets: {
-    close: (k: 'caseFlow') => void;
-    open: (k: 'selfMap' | 'trackerOverlay') => void;
-  };
+  sheets: { open: (k: 'selfMap' | 'trackerOverlay') => void };
+  // closers.caseFlow из реестра: крестик и «Назад» хоста закрывают одинаково.
+  onClose: () => void;
 }) {
   const [caseCount, setCaseCount] = useState(0);
-  const close = () => sheets.close('caseFlow');
 
   useEffect(() => {
     let ignore = false;
@@ -46,14 +45,14 @@ export function CaseFlowOverlay({
         await api.saveModeNote(body);
       }}
       onSteadyDay={() => {
-        close();
+        onClose();
         sheets.open('trackerOverlay');
       }}
       onOpenMap={() => {
-        close();
+        onClose();
         sheets.open('selfMap');
       }}
-      onClose={close}
+      onClose={onClose}
       onDoubt={() => {}}
     />
   );

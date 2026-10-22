@@ -1,8 +1,9 @@
-// Проверка env при старте (щит, инциденты 2026-09-15/16 — см. заголовок
-// env-registry.ts). Чистая функция от env — тестируется без мутации
-// глобалов, вызывается из main.ts и из блока /stats (env-check.format.ts).
+// Проверка env при старте (щит, инциденты 2026-09-15/16 — см. env-registry.ts).
+// Чистая функция от env: вызывается из main.ts и блока /stats (env-check.format.ts).
 import { ENV_REGISTRY } from './env-registry.entries';
 import { findMisconfiguredOauthRedirects } from '../auth/oauth-redirect-config';
+import { BACKUP_CROSS_CHECKS } from './env-check.backup';
+import { HOST_CROSS_CHECKS } from './env-check.hosts';
 
 type Env = Record<string, string | undefined>;
 
@@ -42,11 +43,10 @@ function requiresToo(id: string, cause: string, ...deps: string[]): CrossCheck {
   };
 }
 
-// Кросс-проверки, которые не выражаются одним форматом одной переменной —
-// связывают несколько переменных сразу. Сверку адреса возврата OAuth с
-// каноническим хостом НЕ дублируем — она уже в oauth-redirect-config.ts,
-// здесь только вызов.
+// Кросс-проверки связывают несколько переменных; адрес возврата OAuth сверяет oauth-redirect-config.ts.
 export const CROSS_CHECKS: CrossCheck[] = [
+  ...BACKUP_CROSS_CHECKS,
+  ...HOST_CROSS_CHECKS,
   // Инцидент 2026-09-15: пустой ADMIN_EMAIL при заданном RESEND_API_KEY —
   // письма о записях молчали.
   requiresToo('resendRequiresAdminEmail', 'RESEND_API_KEY', 'ADMIN_EMAIL'),
@@ -58,6 +58,14 @@ export const CROSS_CHECKS: CrossCheck[] = [
     'GOOGLE_REDIRECT_URI',
   ),
   requiresToo('vkAppRequiresRedirect', 'VK_APP_ID', 'VK_REDIRECT_URI'),
+  // M3 (аудит 2026-10): логин без паролей — подпись вебхука считалась бы от
+  // пустого пароля и подделывалась бы любым желающим.
+  requiresToo(
+    'robokassaLoginRequiresPasswords',
+    'ROBOKASSA_MERCHANT_LOGIN',
+    'ROBOKASSA_PASSWORD1',
+    'ROBOKASSA_PASSWORD2',
+  ),
   {
     id: 'encryptionKeyOldDistinctFromCurrent',
     check: (env) => {

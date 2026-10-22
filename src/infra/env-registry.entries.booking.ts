@@ -1,15 +1,17 @@
 // Записи реестра env-переменных (см. env-registry.ts) — группа booking:
 // запись на консультацию, оплата, личный календарь, видеовстречи.
 import { EnvVarSpec, formats } from './env-registry';
+import { adminKeyFormat } from '../booking/admin-key.util';
 
 export const BOOKING_ENV_ENTRIES: EnvVarSpec[] = [
   {
     name: 'ADMIN_BOOKING_KEY',
     purpose:
       'Ключ админских эндпоинтов записи/статей/контента сайта — без него они ' +
-      'отвечают 403 всем (assertAdminKey отказывает закрыто, не открыто).',
+      'отвечают 403 всем (assertAdminKey отказывает закрыто, не открыто). ' +
+      'Не короче 32 символов: более короткий ключ приравнен к незаданному.',
     requiredInProd: true,
-    format: formats.nonEmpty,
+    format: adminKeyFormat,
     group: 'booking',
   },
   {

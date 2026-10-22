@@ -130,10 +130,10 @@ describe('PlansScreen — чек-ин плана', () => {
     renderScreen();
     await screen.findByText('Позвонить другу');
 
-    fireEvent.click(screen.getByText('✓ Выполнено'));
+    fireEvent.click(screen.getByText('Выполнено'));
     expect(checkinPlan).toHaveBeenCalledWith(7, true);
     // Кнопки чек-ина пропадают — план перешёл в «выполненные».
-    await waitFor(() => expect(screen.queryByText('✓ Выполнено')).toBeNull());
+    await waitFor(() => expect(screen.queryByText('Выполнено')).toBeNull());
   });
 
   it('провал чек-ина откатывает план обратно в «ожидающие», а не тихо теряет статус', async () => {
@@ -147,6 +147,6 @@ describe('PlansScreen — чек-ин плана', () => {
     await screen.findByText('Прогулка');
 
     fireEvent.click(screen.getByText('Не вышло'));
-    await waitFor(() => expect(screen.getByText('✓ Выполнено')).toBeTruthy());
+    await waitFor(() => expect(screen.getByText('Выполнено')).toBeTruthy());
   });
 });

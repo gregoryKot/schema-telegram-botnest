@@ -23,8 +23,7 @@ function YesNoChip({
   return (
     <button
       type="button"
-      className={'chip-pill ' + (active ? 'is-selected' : '')}
-      style={{ minHeight: 40, padding: '8px 22px' }}
+      className={'ds-chip ex2-chip ex2-chip--yn' + (active ? ' is-selected' : '')}
       onClick={onClick}
     >
       {label}
@@ -65,16 +64,13 @@ export function CaseCriterionScreen({
     <ExScreen
       onBack={onBack}
       eyebrow="Разбор случая · Шаг 5 из 5"
-      eyebrowColor="var(--accent-indigo)"
       title={intro.title}
       lede={intro.sub}
     >
       {questions.map((q) => (
-        <div key={q.key} className="u-mb24">
-          <div style={{ fontSize: 15, color: 'var(--text)', marginBottom: 10 }}>
-            {q.text}
-          </div>
-          <div className="u-row8">
+        <div key={q.key} className="ds-card ds-card--row ex2-question">
+          <div className="ex2-question-text">{q.text}</div>
+          <div className="ex2-chips">
             <YesNoChip
               active={criterion[q.key] === true}
               label="Да"
@@ -90,7 +86,7 @@ export function CaseCriterionScreen({
       ))}
 
       {verdict && (
-        <div style={{ fontSize: 14, color: 'var(--accent)', lineHeight: 1.5, marginBottom: 8 }}>
+        <div className="ex2-verdict">
           {buildVerdictReply(tr)[verdict]}
         </div>
       )}

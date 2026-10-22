@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { ReactFlowProvider, useNodesState, useEdgesState } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
-import type { ModeMapNode, ModeMapEdge, ModeMapKind } from '../api';
+import type { ModeMapNode, ModeMapEdge, ModeMapKind, UserId } from '../api';
 import { NODE_DEFAULT_SIZES } from './modeMapData';
 import { ModeMapPalette } from './ModeMapPalette';
 import { ModeMapNodeEditor, ModeMapEdgeEditor } from './ModeMapNodeEditor';
@@ -15,13 +15,15 @@ import {
 import { useModeMapHistory } from './useModeMapHistory';
 import { useModeMapAutosave } from './useModeMapAutosave';
 import { useIsMobile } from './useIsMobile';
+import { collapseBtnStyle } from './modeMap/paletteStyle';
+import { useSettleFresh } from './modeMap/useSettleFresh';
 
 
 // ─── Public component ─────────────────────────────────────────────────────────
 
 interface Props {
   mapId: number;
-  clientId: number;
+  clientId: UserId;
   kind: ModeMapKind;
   initialNodes: ModeMapNode[];
   initialEdges: ModeMapEdge[];
@@ -52,6 +54,7 @@ export function ModeMapEditor({ mapId, clientId, kind, initialNodes, initialEdge
   const selectedEdge = edges.find(e => e.id === selectedEdgeId) ?? null;
 
   const { saveStatus, scheduleSave } = useModeMapAutosave(mapId, nodesRef, edgesRef);
+  useSettleFresh({ nodes, edgesRef, setNodes, scheduleSave }); // свежая схема случая: колонки по реальной высоте
 
   const clearSelection = useCallback(() => { setSelectedNodeId(null); setSelectedEdgeId(null); }, []);
   const { pushHistory, undo, redo, canUndo, canRedo } = useModeMapHistory({
@@ -269,13 +272,4 @@ export function ModeMapEditor({ mapId, clientId, kind, initialNodes, initialEdge
       </div>
     </ReactFlowProvider>
   );
-}
-
-function collapseBtnStyle(side: 'left' | 'right'): React.CSSProperties {
-  return {
-    position: 'absolute', top: 8, [side === 'left' ? 'right' : 'left']: -11, zIndex: 6,
-    width: 22, height: 22, borderRadius: '50%', border: '1px solid rgba(var(--fg-rgb),0.15)',
-    background: 'var(--bg-elev)', color: 'var(--text-sub)', cursor: 'pointer', fontSize: 13, lineHeight: 1,
-    display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 1px 4px rgba(0,0,0,0.1)',
-  };
 }

@@ -112,7 +112,7 @@ describe('e2e smoke: ownership isolation + BigInt serialization (app-ownership)'
     expect(res.status).toBe(200);
     const row = res.body.find((r: any) => r.schemaId === 'defectiveness');
     expect(row).toBeDefined();
-    // main.ts патчит BigInt.prototype.toJSON → Number(this); без этого
+    // main.ts ставит BigInt.prototype.toJSON (число для безопасных id); без этого
     // JSON.stringify на объекте с полем-BigInt бросает TypeError и запрос
     // упал бы 500-кой ещё до вопроса про owner-изоляцию.
     expect(typeof row.userId).toBe('number');

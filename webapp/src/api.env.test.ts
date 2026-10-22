@@ -17,6 +17,8 @@ function okResponse(): Response {
     ok: true,
     status: 200,
     json: () => Promise.resolve({}),
+    // readJsonBody читает тело через text().
+    text: () => Promise.resolve('{}'),
   } as unknown as Response;
 }
 

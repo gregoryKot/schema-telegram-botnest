@@ -41,6 +41,7 @@ import {
   tzOffsetAt,
 } from '../notification/notification.time';
 import { retryWithBackoff } from '../utils/retry';
+import { BotLauncher } from './telegram.launch';
 import { t, AddressForm } from '../notification/address-form';
 import {
   MINIAPP_ONLY_KEYBOARD,
@@ -74,7 +75,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     private readonly linkService: TelegramLinkService,
   ) {}
 
-  private stopping = false;
+  private launcher: BotLauncher | undefined;
   // Pending pair codes for users who need to accept consent first (in-memory, 15 min TTL)
   private pairDeps(): PairStartDeps {
     return {
@@ -111,6 +112,8 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
       }
     }, 30 * 60_000).unref();
 
+    this.launcher = new BotLauncher(this.bot, this.logger);
+
     const redirectUsername = process.env.BOT_REDIRECT_USERNAME;
     if (redirectUsername) {
       const redirectText = `Бот переехал! Открывай @${redirectUsername}`;
@@ -122,9 +125,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
           .answerCbQuery(redirectText, { show_alert: true })
           .catch(() => null);
       });
-      this.bot.launch({ dropPendingUpdates: true }).catch((err) => {
-        this.logger.error('Redirect-mode bot failed to launch', err);
-      });
+      this.launcher.start();
       this.logger.log(`Bot running in redirect mode → @${redirectUsername}`);
       return;
     }
@@ -473,22 +474,8 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
       if (!ok) this.logger.warn('setChatMenuButton failed after retries');
     });
 
-    this.launchBotWithRetry();
-    const adminId = process.env.ADMIN_ID;
-    if (adminId) {
-      this.bot.telegram
-        .sendMessage(adminId, '🚀 Деплой завершён')
-        .catch((err) => this.logger.error('deploy DM failed', err));
-    }
-
-    // One-time cleanup: cancel legacy pre_reminder notifications left in queue
-    this.botService
-      .cancelAllPreReminders()
-      .then((n) => {
-        if (n > 0)
-          this.logger.log(`Cancelled ${n} legacy pre_reminder notifications`);
-      })
-      .catch((e) => this.logger.error('cancelAllPreReminders failed', e));
+    this.launcher.start();
+    // DM о старте — не здесь (это каждый рестарт, до listen): src/telegram/start-announce.ts.
   }
 
   /** Отправить сообщение администратору. Возвращает true, если доставлено. */
@@ -530,50 +517,8 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     return true;
   }
 
-  /**
-   * Запуск long-polling с ретраем. `bot.launch()` внутри дёргает `getMe()`;
-   * если сеть на старте контейнера ещё не поднялась (Amvera → Telegram
-   * ETIMEDOUT), launch() реджектится, и БЕЗ ретрая поллинг НИКОГДА не стартует
-   * — бот висит «живым» (Nest поднят, уведомления-`sendMessage` идут), но не
-   * отвечает на команды до следующего рестарта (инцидент 2026-07-16).
-   *
-   * 409 / «terminated by other» = поллит другой инстанс, ретрай навредит.
-   * `stopping` = штатная остановка, ретрай не нужен. Промис launch() на успехе
-   * резолвится лишь при остановке поллинга — поэтому только .catch, без await.
-   */
-  private launchBotWithRetry(attempt = 1): void {
-    const MAX_ATTEMPTS = 5;
-    if (attempt === 1) this.logger.log('Bot launch initiated');
-    this.bot!.launch({ dropPendingUpdates: true }).catch((err) => {
-      const msg = String(err);
-      if (
-        msg.includes('409') ||
-        msg.includes('terminated by other') ||
-        this.stopping
-      ) {
-        return;
-      }
-      if (attempt < MAX_ATTEMPTS) {
-        const delayMs = attempt * 5_000;
-        this.logger.warn(
-          `Bot launch failed (попытка ${attempt}/${MAX_ATTEMPTS}), ` +
-            `ретрай через ${delayMs}ms: ${msg}`,
-        );
-        setTimeout(() => {
-          if (!this.stopping) this.launchBotWithRetry(attempt + 1);
-        }, delayMs);
-      } else {
-        this.logger.error(
-          `Bot launch провалился после ${MAX_ATTEMPTS} попыток — ` +
-            `поллинг не стартовал`,
-          err,
-        );
-      }
-    });
-  }
-
   onModuleDestroy() {
-    this.stopping = true;
+    this.launcher?.stop();
     try {
       this.bot?.stop();
     } catch {

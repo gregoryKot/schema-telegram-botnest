@@ -15,7 +15,7 @@ afterEach(() => {
 function makeDetail(overrides: Partial<ClientDetail> = {}): ClientDetail {
   return {
     clientTasks: [],
-    notes: [],
+    notesPage: { notes: [], total: 0 },
     concept: null,
     clientSchemaNotesData: [],
     clientModeNotesData: [],
@@ -44,8 +44,20 @@ describe('ActionButtons — счётчики-подсказки', () => {
   });
 
   it('без заметок сессий подсказка не рисуется', () => {
-    render(<ActionButtons detail={makeDetail({ notes: [] })} />);
+    render(<ActionButtons detail={makeDetail()} />);
     expect(screen.queryByText(/заметок/)).toBeNull();
+  });
+
+  it('счётчик заметок идёт от total, а не от длины среза (105 при 100 показанных)', () => {
+    const notes = Array.from({ length: 100 }, (_, i) => ({
+      id: i + 1,
+    })) as unknown as ClientDetail['notes'];
+    render(
+      <ActionButtons
+        detail={makeDetail({ notesPage: { notes, total: 105 } })}
+      />,
+    );
+    expect(screen.getByText('105 заметок')).toBeTruthy();
   });
 
   it('без концептуализации нет строки «Обновлено»', () => {

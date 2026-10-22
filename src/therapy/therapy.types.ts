@@ -5,13 +5,13 @@ export interface TherapyRelationInfo {
   role: 'therapist' | 'client';
   status: string;
   partnerName: string | null;
-  partnerId: number | null;
+  partnerId: bigint | null;
   code: string;
   nextSession: string | null;
 }
 
 export interface TherapyClientSummary {
-  telegramId: number;
+  telegramId: bigint;
   name: string | null;
   clientAlias: string | null;
   streak: number;

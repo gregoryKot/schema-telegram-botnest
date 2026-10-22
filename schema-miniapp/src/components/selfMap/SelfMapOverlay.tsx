@@ -14,19 +14,19 @@ import { BottomSheet } from '../BottomSheet';
  */
 export function SelfMapOverlay({
   sheets,
+  onClose,
 }: {
   sheets: {
     selfMap: boolean;
-    close: (k: 'selfMap') => void;
     open: (k: 'caseFlow' | 'schemaInfo' | 'trackerOverlay') => void;
   };
+  onClose: () => void; // closers.selfMap: реестр закрытия, как у «Назад» хоста
 }) {
   const { map, next } = useSelfMapData();
-  const close = () => sheets.close('selfMap');
 
   if (!map || !next) {
     return (
-      <BottomSheet onClose={close}>
+      <BottomSheet onClose={onClose}>
         <ScreenSkeleton cards={3} />
       </BottomSheet>
     );
@@ -36,10 +36,10 @@ export function SelfMapOverlay({
     <SelfMapScreen
       map={map}
       next={next}
-      onClose={close}
-      onPickMode={close}
+      onClose={onClose}
+      onPickMode={onClose}
       onNextStep={(id) => {
-        close();
+        onClose();
         // Тест схем и «посмотреть потребности» ведут в свои разделы, всё
         // остальное — обратно в разбор: он и есть основная работа.
         if (id === 'ysq_test') sheets.open('schemaInfo');

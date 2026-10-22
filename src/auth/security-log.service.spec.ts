@@ -13,21 +13,56 @@
 // умолчанию, ему не нужно об этом помнить. Часы инжектируются (как в
 // auth-failure.report.ts) — тесты бюджета детерминированы, без реальных
 // таймеров.
-import { Logger } from '@nestjs/common';
-import { SecurityLogService } from './security-log.service';
-import { notifyAdminWithFallback } from '../utils/admin-alert';
+import type { Logger as LoggerType } from '@nestjs/common';
 
+// Мок доставки — `mock`-префикс, чтобы фабрика jest.mock могла на него
+// сослаться; фабрика вызывается заново на каждую свежую загрузку модулей
+// (см. loadFresh), и все загрузки обязаны делить ОДИН мок, иначе тест смотрел
+// бы в чужой.
+const mockNotify = jest.fn().mockResolvedValue(undefined);
 jest.mock('../utils/admin-alert', () => ({
-  notifyAdminWithFallback: jest.fn().mockResolvedValue(undefined),
+  notifyAdminWithFallback: (...args: unknown[]) => mockNotify(...args),
 }));
 
-const mockedNotify = notifyAdminWithFallback as jest.Mock;
+type ServiceModule = typeof import('./security-log.service');
+
+// Сервис грузится ЗАНОВО на каждый тест, внутри теста. Причина — атрибуция
+// мутаций: код уровня модуля (`ALERT_EVENTS`, окно бюджета) исполняется при
+// загрузке, и если спек грузит файл статическим импортом, Stryker считает его
+// «статическим» мутантом ни одним тестом не покрытым. Единственный спек,
+// который грузил модуль внутри теста, — data-export.service.spec.ts, и после
+// #605 именно он «владел» десятью мутантами списка алертов, не проверяя DM
+// (nightly golden-auth: security-log.service 95.74% → 65.71%, issue #614).
+// Образец — loadCrypto в crypto.spec.ts. Logger берём из той же свежей
+// загрузки: изолированный реестр держит свой экземпляр @nestjs/common.
+function loadFresh(): {
+  SecurityLogService: ServiceModule['SecurityLogService'];
+  Logger: typeof LoggerType;
+} {
+  let loaded!: ReturnType<typeof loadFresh>;
+  jest.isolateModules(() => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { Logger } = require('@nestjs/common') as {
+      Logger: typeof LoggerType;
+    };
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const mod = require('./security-log.service') as ServiceModule;
+    loaded = { SecurityLogService: mod.SecurityLogService, Logger };
+  });
+  return loaded;
+}
+
+const mockedNotify = mockNotify;
 const flush = () => new Promise((r) => setImmediate(r));
 
-let logSpy: jest.SpiedFunction<typeof Logger.prototype.log>;
+let SecurityLogService: ServiceModule['SecurityLogService'];
+let Logger: typeof LoggerType;
+let logSpy: jest.SpiedFunction<typeof LoggerType.prototype.log>;
 
 beforeEach(() => {
-  mockedNotify.mockClear();
+  mockedNotify.mockReset();
+  mockedNotify.mockResolvedValue(undefined);
+  ({ SecurityLogService, Logger } = loadFresh());
   logSpy = jest.spyOn(Logger.prototype, 'log').mockImplementation();
 });
 
@@ -45,13 +80,28 @@ describe('SecurityLogService — every event is logged', () => {
   });
 });
 
+describe('SecurityLogService — канал аудита', () => {
+  it('строки аудита идут под контекстом SecurityAudit', () => {
+    // По контексту админ фильтрует аудит в логах Amvera; переименование
+    // молча ломает его запрос и алерты на строки аудита.
+    new SecurityLogService().log('login_success', { userId: 1 });
+    // `context` — приватное поле Logger из @nestjs/common: обновление Nest может
+    // его переименовать, и тест упадёт без изменения нашего кода. Публичного
+    // геттера контекста у Logger нет; при падении после апгрейда сверь поле.
+    const logger = logSpy.mock.contexts[0] as unknown as { context: string };
+    expect(logger.context).toBe('SecurityAudit');
+  });
+});
+
 describe('SecurityLogService — only ALERT_EVENTS DM the admin', () => {
   const ALERT_EVENTS = [
     'merge_confirmed',
+    'merge_subscription_conflict',
     'role_changed',
     'therapist_request_submitted',
     'csrf_blocked',
     'suspicious_initdata',
+    'empty_signature',
     'refresh_token_reuse',
   ] as const;
 
@@ -61,8 +111,10 @@ describe('SecurityLogService — only ALERT_EVENTS DM the admin', () => {
     'merge_initiated',
     'provider_linked',
     'provider_unlinked',
+    'data_exported',
     'therapist_request_decided',
     'rate_limited',
+    'totp_failed',
   ] as const;
 
   it.each(ALERT_EVENTS)(
@@ -106,6 +158,27 @@ describe('SecurityLogService — only ALERT_EVENTS DM the admin', () => {
     expect(warnSpy).toHaveBeenCalledWith(
       expect.stringContaining('telegram + email both down'),
     );
+  });
+
+  it('отказ доставки без Error (reject(undefined)) не роняет log() и пишется в лог как есть', async () => {
+    // Транспорт может отклонить промис чем угодно, в том числе undefined:
+    // `err.message` на нём бросил бы уже ВНУТРИ catch-обработчика, и ошибка
+    // ушла бы в unhandledRejection — недоставка снова невидима.
+    const warnSpy = jest.spyOn(Logger.prototype, 'warn').mockImplementation();
+    const unhandled = jest.fn();
+    process.on('unhandledRejection', unhandled);
+    try {
+      mockedNotify.mockRejectedValueOnce(undefined);
+      new SecurityLogService().log('csrf_blocked', { endpoint: 'x' });
+      await flush();
+      await flush();
+    } finally {
+      process.off('unhandledRejection', unhandled);
+    }
+    expect(warnSpy).toHaveBeenCalledWith(
+      'не удалось отправить DM админу про csrf_blocked: undefined',
+    );
+    expect(unhandled).not.toHaveBeenCalled();
   });
 });
 
@@ -228,19 +301,24 @@ describe('SecurityLogService — DM-бюджет по имени события'
   // такую подмену не ловит, если сам искомый текст не задет.
   it('первый DM в свежем окне: точный текст — заголовок + поля через \\n, без хвоста подавления', async () => {
     const service = new SecurityLogService(() => 0);
-    service.log('csrf_blocked', { endpoint: 'refresh', method: 'POST' });
+    // Поля — из белого списка (security-log-redact.ts): тест про СКЛЕЙКУ
+    // текста, и незарегистрированный ключ подменил бы значение на
+    // `[redacted]`, проверяя вычистку вместо формата.
+    service.log('csrf_blocked', { endpoint: 'refresh', ip: '203.0.113.7' });
     await flush();
     const text = mockedNotify.mock.calls[0][0] as string;
-    expect(text).toBe('🔐 csrf_blocked\nendpoint: refresh\nmethod: POST');
+    expect(text).toBe('🔐 csrf_blocked\nendpoint: refresh\nip: 203.0.113.7');
   });
 
   it('значение длиннее 80 символов обрезается в DM (защита от раздутого/injection-подобного значения)', async () => {
     const service = new SecurityLogService(() => 0);
     const longValue = 'x'.repeat(200);
-    service.log('csrf_blocked', { payload: longValue });
+    // `detail` — то самое разрешённое поле со свободным текстом, которое в
+    // проде и может оказаться длинным (конфликт подписок при merge).
+    service.log('csrf_blocked', { detail: longValue });
     await flush();
     const text = mockedNotify.mock.calls[0][0] as string;
-    expect(text).toBe(`🔐 csrf_blocked\npayload: ${'x'.repeat(80)}`);
+    expect(text).toBe(`🔐 csrf_blocked\ndetail: ${'x'.repeat(80)}`);
   });
 
   it('разные имена событий не делят один бюджет', async () => {

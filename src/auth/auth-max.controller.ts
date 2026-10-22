@@ -16,13 +16,12 @@ import { MaxProvider } from './providers/max.provider';
 import { ProviderIdentity } from './providers/types';
 import { SecurityLogService } from './security-log.service';
 import { rejectInitData } from '../api/initdata-alert';
-import { setRefreshCookie } from './auth-http.util';
+import { requireCsrf, setRefreshCookie } from './auth-http.util';
 import { MaxNotConfiguredError } from './max-init-data';
 import { MaxWebAppDto } from './dto/max-webapp.dto';
 
-// MAX mini-app auto-auth — тот же паттерн, что telegram/webapp
-// (auth-account.controller.ts): подписанный initData обменивается на сессию
-// без предварительной аутентификации — это и есть точка входа.
+// MAX mini-app auto-auth — как telegram/webapp (auth-account.controller.ts):
+// initData меняется на сессию без аутентификации, поэтому requireCsrf (login-CSRF).
 @Controller('api/auth')
 export class AuthMaxController {
   private readonly logger = new Logger(AuthMaxController.name);
@@ -44,6 +43,7 @@ export class AuthMaxController {
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ): Promise<{ accessToken: string; expiresIn: number }> {
+    requireCsrf(req, 'max/webapp', this.securityLog);
     if (!body?.initData) throw new BadRequestException('Missing initData');
 
     let identity: ProviderIdentity;
