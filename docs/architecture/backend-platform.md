@@ -33,6 +33,7 @@
   - `src/api/api.module.ts` — реестр контроллеров (+ `src/api/account-api.module.ts`)
   - `src/api/throttler.guard.ts` — UserThrottlerGuard (глобальный APP_GUARD)
   - `src/api/hybrid-throttle-storage.ts` — память или Postgres (`ThrottleHit`) по префиксу ключа
+  - `src/api/throttle-error-message.ts` — текст 429 по-русски со сроком из счётчика (`errorMessage` в `throttler-module-options.ts`)
   - `src/api/request-utils.ts` — `uid()` и `parseId()` для контроллеров
 - Связи: гард зависит от `src/auth/` (AuthService, MaxProvider, SecurityLogService) и `src/analytics/`; ApiModule импортирует Bot/Notification/Telegram/Therapy/Auth/Analytics/IntroLead; diary и tracker зовут `src/therapy/therapy-tasks.service.ts`; `src/api/throttler-module-options.ts` подключает `src/app.module.ts`.
 - Подводные камни:
@@ -106,6 +107,7 @@
   - `src/prisma/prisma.service.ts` — PrismaClient + пул pg (keepAlive, ретраи connect)
   - `src/prisma/prisma.module.ts` — @Global, экспортирует PrismaService
   - `src/prisma/prisma-exception.filter.ts` — коды Prisma → дружелюбные 4xx
+  - `src/prisma/http-exception-body.ts` — тело HttpException в форме Nest (строка → `{ statusCode, message }`)
   - `src/prisma/encryption-wave2.service.ts` и `src/prisma/encryption-wave3.service.ts` — дошифровка старых строк на старте
   - `src/prisma/unique-violation.ts` — детектор P2002 / SQLSTATE 23505
 - Связи: используется почти всеми модулями (PrismaModule глобальный); фильтр подключён в `src/main.ts` (`useGlobalFilters`); волны шифруют через `src/utils/encrypt-if-plain.ts` и хранят флаг-гард в `BookingSetting`.

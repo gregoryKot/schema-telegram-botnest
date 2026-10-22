@@ -3,9 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { clearApiCache } from '../../../../shared/src/api/apiCache';
 import { useAuth } from '../../auth/authContext';
 import { useTr } from '../../utils/addressForm';
+import { humanizeThrown, readHumanError } from '../../../../shared/src/api/humanizeError';
 
 const API_BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? '';
-
+const MERGE_FAILED = 'Не получилось объединить аккаунты';
 // Причина 403 от POST /api/auth/merge: у поглощаемого аккаунта включён TOTP, и
 // сервер просит его код (аудит 2026-10, A4). Строка — контракт с бэкендом
 // (src/auth/merge-confirm.ts → SOURCE_TOTP_REQUIRED).
@@ -40,17 +41,16 @@ export function useMergeConfirm(token: string) {
         body: JSON.stringify(sentCode ? { token, code: sentCode } : { token }),
       });
       if (!res.ok) {
-        const body = await res.json().catch(() => ({ message: 'Merge failed' }));
+        const body = await readHumanError(res, MERGE_FAILED);
         if (res.status === 403 && body.reason === SOURCE_TOTP_REQUIRED) {
-          // Первый отказ — просто показываем поле; повторный (код уходил) —
-          // говорим, что код не подошёл.
+          // Первый отказ — просто поле; повторный (код уходил) — «код не подошёл».
           setNeedCode(true);
           setCode('');
           setBusy(false);
           if (sentCode) setError(tr('Код не подошёл. Проверь его и попробуй ещё раз.', 'Код не подошёл. Проверьте его и попробуйте ещё раз.'));
           return;
         }
-        throw new Error(body.message ?? 'Merge failed');
+        throw new Error(body.message);
       }
       const { accessToken: next, expiresIn } = await res.json() as { accessToken: string; expiresIn: number };
       setAccessToken(next, expiresIn);
@@ -59,7 +59,7 @@ export function useMergeConfirm(token: string) {
       clearApiCache();
       navigate('/account', { replace: true });
     } catch (e) {
-      setError(String(e));
+      setError(humanizeThrown(e, MERGE_FAILED));
       setBusy(false);
     }
   };

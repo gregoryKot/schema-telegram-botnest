@@ -97,6 +97,17 @@
   (гейт `lastTouchTimestamp`). Проверить на живом iPhone t.me-ссылки и `/donate`
   из настроек кабинета; если не открываются — запасной путь через якорь, как у
   кнопки «Добавить значок».
+- **Тема мини-аппа не следует за хостом — не чиним, мини-апп удаляется.**
+  `schema-miniapp/src/App.tsx:10` зовёт `applyTheme(getTheme())` на уровне
+  модуля, а `applyTheme` (`schema-miniapp/src/utils/theme.ts`) всегда пишет
+  `app_theme`: первый автодетект становится «ручным выбором», `themeChanged`
+  хоста и `matchMedia(...).change` никто не слушает. Telegram переведён в
+  тёмную — мини-апп остаётся светлым до «Как в системе», и то до следующего
+  старта. На сайте класса больше нет: #746 убрал модульный `applyTheme` из
+  `AppShell`, кабинет рисуется только светлым (`applyCabinetLightTheme` ключ не
+  пишет), `app_theme` пишет лишь тумблер лендинга. Если этап 6
+  `docs/ONE_FRONTEND_PLAN.md` отложат — механизм в находке
+  `docs/AUDIT_2026-10_FINDINGS.md`, «Тема хоста читается один раз».
 
 **Единая версия, этап 3А — экран паттерна на сайте** (`docs/ONE_FRONTEND_PLAN.md`):
 - **«Познакомиться →» в `SchemaDetailSheet` открывает пустое упражнение даже при
@@ -242,3 +253,22 @@
 - **Список достижений в `ProfileSection.tsx` прячется, пока открыта деталь.**
   Это обход старой драки трапов; теперь трап у верхнего слоя, и список можно
   показывать под деталью. Это правка UI, решение за владельцем.
+- **Вход по почте мини-аппа показывает «Failed to fetch» и английский ValidationPipe.**
+  `schema-miniapp/src/components/loginScreen/LoginEmailForm.tsx` (`sendLink`, `catch`) кладёт
+  `err.message` как есть. 429 там уже русский — текст рождает сервер (#819), сайт идёт через
+  `shared/src/api/humanizeError.ts`. Не чинили сознательно: механика, а не ты/вы и не род,
+  мини-апп удаляется на этапе 6 (`docs/ONE_FRONTEND_PLAN.md`).
+
+**Контролы без имени в мини-аппе — не чиним, мини-апп удаляется** (#818, `docs/ONE_FRONTEND_PLAN.md`, этап 6):
+- `scripts/check-glyph-controls.mjs` и `jsx-a11y/control-has-associated-label`
+  смотрят только `webapp/src` и `shared/src`. Прогон того же гейта по
+  `schema-miniapp/src` на 2026-10-21 даёт 17 мест: «←» в `WizardNav.tsx:44` и
+  трёх шагах `schemaFlashcard/`, «−»/«+» в `TrackerOverlay.tsx:496,529`, «+» в
+  `PracticesScreen.tsx:303` и `beliefCheck/EvidenceList.tsx:81`, «×» в
+  `planSheet/PracticeOptionRow.tsx:70` (пара сайта подписана «Удалить»), «?» в
+  `childhoodWheelSheet/NeedFillRow.tsx:86`, «‹» в
+  `therapistClientSheet/ClientDetailView.tsx:68`, тики `WizardProgress.tsx:40` и
+  пять безымянных switch в `settingsSheet/` (`ui.tsx:102`, `AppearanceSection.tsx`,
+  `TherapistPrivacyToggles.tsx`). Решение владельца 2026-10-17 (единая версия): доступность, которая живёт
+  только в мини-аппе, не чиним — он уходит целиком. Если этап 6 отложат, гейт
+  включается для мини-аппа строкой в `SCAN_DIRS` и правкой этих мест.

@@ -9,6 +9,7 @@ import {
 import { Prisma } from '@prisma/client';
 import type { Request, Response } from 'express';
 import { safeRequestPath } from './safe-request-path';
+import { replyHttpException } from './http-exception-body';
 
 // Global filter that maps Prisma errors to friendly 4xx responses.
 //
@@ -118,10 +119,8 @@ export class GenericExceptionFilter implements ExceptionFilter {
 
   catch(exception: unknown, host: ArgumentsHost) {
     if (exception instanceof HttpException) {
-      // Nest's normal exception flow — pass through.
-      const res = host.switchToHttp().getResponse<Response>();
-      const body = exception.getResponse();
-      return res.status(exception.getStatus()).json(body);
+      // Nest's normal exception flow — pass through (строка → объект, как у Nest).
+      return replyHttpException(host, exception);
     }
     const req = host.switchToHttp().getRequest<Request>();
     const err = exception instanceof Error ? exception : undefined;

@@ -1,13 +1,12 @@
 import type { ThrottlerModuleOptions } from '@nestjs/throttler';
 import { PrismaService } from '../prisma/prisma.service';
 import { HybridThrottleStorage } from './hybrid-throttle-storage';
+import { throttleErrorMessage } from './throttle-error-message';
 
-// Вынесено из app.module.ts (правило №10: файл упёрся в потолок
-// файл-храповика — раздутый файл дробится, а не растёт дальше).
-//
-// storage — HybridThrottleStorage: Postgres для маршрутов с
-// `@PersistentThrottle()` (booking/donation/subscription — инцидент
-// 2026-09-13), память процесса для остальных, как было раньше.
+// Вынесено из app.module.ts (правило №10). storage — HybridThrottleStorage:
+// Postgres для `@PersistentThrottle()` (booking/donation/subscription —
+// инцидент 2026-09-13), память процесса для остальных. errorMessage — текст
+// 429 по-русски вместо «ThrottlerException…» (throttle-error-message.ts).
 export function throttlerOptions(
   prisma: PrismaService,
 ): ThrottlerModuleOptions {
@@ -17,5 +16,6 @@ export function throttlerOptions(
       { name: 'long', ttl: 60000, limit: 200 },
     ],
     storage: new HybridThrottleStorage(prisma),
+    errorMessage: (_context, detail) => throttleErrorMessage(detail),
   };
 }

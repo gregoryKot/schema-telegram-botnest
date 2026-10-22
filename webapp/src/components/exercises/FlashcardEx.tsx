@@ -60,7 +60,7 @@ function FlashcardFlow({ questions, hue, onSave, explainer, initial }: { questio
   return (<>
     {explainer && <p className="ex2-fine">{explainer}</p>}
     <div className="ex2-ticks" style={hueStyle(hue)}>
-      {questions.map((_, i) => <div key={i} className={'ex2-tick' + (filled[i] ? ' is-filled' : '') + (i === step ? ' is-active' : '')} {...pressable(() => setStep(i))} />)}
+      {questions.map((_, i) => <div key={i} className={'ex2-tick' + (filled[i] ? ' is-filled' : '') + (i === step ? ' is-active' : '')} {...pressable(() => setStep(i))} aria-label={`Вопрос ${i + 1}`} aria-current={i === step ? 'step' : undefined} />)}
     </div>
     <div className={'ds-card ex2-flash' + (data[q.key].trim() ? ' tone-border' : '')} style={hueStyle(hue)}>
       <div className="ds-label ex2-flash-eyebrow">

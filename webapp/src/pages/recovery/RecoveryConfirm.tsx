@@ -3,8 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../auth/authContext';
 import { ServicePage } from '../service/ServicePage';
 import { ServiceLoading } from '../service/ServiceLoading';
+import { humanizeThrown, readHumanError } from '../../../../shared/src/api/humanizeError';
 
 const API_BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? '';
+const LINK_INVALID = 'Ссылка недействительна или истекла';
 
 export function RecoveryConfirm({ token }: { token: string }) {
   const navigate = useNavigate();
@@ -20,16 +22,13 @@ export function RecoveryConfirm({ token }: { token: string }) {
           headers: { 'Content-Type': 'application/json', 'x-requested-with': 'webapp' },
           body: JSON.stringify({ token }),
         });
-        if (!res.ok) {
-          const body = await res.json().catch(() => ({}));
-          throw new Error(body.message ?? 'Ссылка недействительна или истекла');
-        }
+        if (!res.ok) throw new Error((await readHumanError(res, LINK_INVALID)).message);
         const { accessToken, expiresIn } = await res.json() as { accessToken: string; expiresIn: number };
         setAccessToken(accessToken, expiresIn);
         navigate('/account?recovered=1', { replace: true });
       } catch (e) {
         setStatus('error');
-        setError(String(e).replace('Error: ', ''));
+        setError(humanizeThrown(e, LINK_INVALID));
       }
     })();
   }, [token, setAccessToken, navigate]);

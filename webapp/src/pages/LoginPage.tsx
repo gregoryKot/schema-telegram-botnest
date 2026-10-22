@@ -8,6 +8,8 @@ import { LoginProviderButtons } from './login/LoginProviderButtons';
 import { LoginHero } from './login/LoginHero';
 import { LoginEmailForm } from './login/LoginEmailForm';
 import { TelegramRetry } from './login/TelegramRetry';
+import { exchangeErrorText } from './login/exchangeError';
+import { humanizeThrown } from '../../../shared/src/api/humanizeError';
 import { hasAuthSeen } from '../../../shared/src/auth/authSeen';
 import { useTr } from '../utils/addressForm';
 import { useLoginConsentMark } from '../hooks/useLoginConsentMark';
@@ -64,16 +66,12 @@ export function LoginPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(exchange.body),
       });
-      if (!res.ok) {
-        const body = await res.text().catch(() => '');
-        setError(`Ошибка ${res.status}: ${body.slice(0, 120)}`);
-        return;
-      }
+      if (!res.ok) { setError(await exchangeErrorText(res)); return; }
       const { accessToken, expiresIn } = await res.json() as { accessToken: string; expiresIn: number };
       setAccessToken(accessToken, expiresIn);
       navigate('/today', { replace: true });
     } catch (e) {
-      setError(String(e));
+      setError(humanizeThrown(e, String(e)));
     } finally {
       setMiniAppLoading(false);
     }
