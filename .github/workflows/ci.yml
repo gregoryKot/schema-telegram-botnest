@@ -109,13 +109,17 @@ jobs:
       # смотрел только корень, фронт проверял лишь аудитор глазами). Сверка
       # «lock-файл ↔ шаг» — src/test-support/gates/lockfile-audit.spec.ts.
       # npm audit читает lock-файл, node_modules пакету не нужны.
+      # Через обёртку scripts/npm-audit.mjs (регресс #814: голый audit висел на
+      # реестре до таймаута шага): попытка ≤45 с, до трёх попыток с паузой
+      # 10 с — худший случай 2 мин 35 с, отсюда timeout-minutes: 4. Уязвимость
+      # краснеет сразу, «реестр не ответил» — отдельным ::error::.
       - name: npm audit — корень
-        timeout-minutes: 3
-        run: npm audit --omit=dev --audit-level=high
+        timeout-minutes: 4
+        run: node scripts/npm-audit.mjs .
       # Игра своей джобы не имеет, а в прод-образ собирается (Dockerfile).
       - name: npm audit — game
-        timeout-minutes: 3
-        run: npm audit --omit=dev --audit-level=high --prefix game
+        timeout-minutes: 4
+        run: node scripts/npm-audit.mjs game
       # Храповик копипасты: новая дублированная логика ≥70 токенов не проходит.
       # Требует npx jscpd из node_modules — не fs-only, остаётся здесь
       # (в отличие от route-collisions/legacy-name, см. джобу checks).
@@ -777,8 +781,8 @@ jobs:
       # prod-зависимостях блокирует мерж (см. шаг audit в джобе backend).
       # Последним, чтобы красный audit не прятал сигнал тестов.
       - name: npm audit — webapp
-        timeout-minutes: 3
-        run: npm audit --omit=dev --audit-level=high --prefix webapp
+        timeout-minutes: 4
+        run: node scripts/npm-audit.mjs webapp
 
   # shared/ — общий пакет двух фронтендов (этап 2.2 TEST_IMPROVEMENT_PLAN.md):
   # до этой джобы 3431 строка shared-кода тестировалась только транзитивно
@@ -812,8 +816,8 @@ jobs:
           TZ: Australia/Sydney
       # См. шаг audit в джобе backend.
       - name: npm audit — shared
-        timeout-minutes: 3
-        run: npm audit --omit=dev --audit-level=high --prefix shared
+        timeout-minutes: 4
+        run: node scripts/npm-audit.mjs shared
 
   # eslint-храповик (этап 2е, правило №9). Нужны node_modules всех трёх
   # пакетов + prisma generate: typed-линт без типов зависимостей видит
@@ -883,5 +887,5 @@ jobs:
           fi
       # См. шаг audit в джобе backend.
       - name: npm audit — schema-miniapp
-        timeout-minutes: 3
-        run: npm audit --omit=dev --audit-level=high --prefix schema-miniapp
+        timeout-minutes: 4
+        run: node scripts/npm-audit.mjs schema-miniapp

@@ -5,6 +5,11 @@
 // каталог lock-файла — dependabot-coverage.ts. Образцы на оба исхода и прогон
 // по настоящим файлам — lockfile-audit.spec.ts.
 //
+// Шаг может звать npm напрямую или через обёртку с повторами
+// `node scripts/npm-audit.mjs <каталог>` (регресс #814: голый audit висел на
+// реестре). У обёртки флаги внутри — их и уровень пинит исполнением
+// npm-audit.spec.ts, здесь проверяется только форма шага.
+//
 // Чего гейт НЕ видит: исполнение. Он проверяет наличие и форму шага; ответ
 // реестра npm приходит только в CI.
 import { lockDirectory, type Coverage } from './dependabot-coverage';
@@ -13,21 +18,30 @@ import { jobBlocks } from './workflow-yaml';
 /** Уровни, на которых high/critical валят шаг. critical и none — слабее. */
 const GATING_LEVELS = new Set(['info', 'low', 'moderate', 'high']);
 
-/** `--prefix webapp` → `/webapp`, без prefix и `.` → `/`. */
+/** Вызов обёртки; каталог — первый аргумент, без него корень (как у npm). */
+const WRAPPER = /\bnode scripts\/npm-audit\.mjs\b(?:[ \t]+["']?([^\s"'|;&]+))?/;
+
+/**
+ * `--prefix webapp` и `npm-audit.mjs webapp` → `/webapp`; без prefix или
+ * аргумента обёртки и `.` → `/`.
+ */
 export function prefixDirectory(cmd: string): string {
-  const m = /--prefix[ =]["']?([^\s"']+)/.exec(cmd);
+  const m = WRAPPER.exec(cmd) ?? /--prefix[ =]["']?([^\s"']+)/.exec(cmd);
   const dir = (m?.[1] ?? '.').replace(/^\.\/?/, '').replace(/\/+$/, '');
   return dir ? `/${dir}` : '/';
 }
 
 /**
- * Засчитывается ли шаг как гейт: `npm audit` (не `fix`), уровень не слабее
- * high (без флага npm валит на любой находке — это строже), и ничто не
- * глушит исход: ни `continue-on-error: true`, ни `|| true`, ни `if:` шага.
+ * Засчитывается ли шаг как гейт: обёртка или `npm audit` (не
+ * `fix`), уровень не слабее high (без флага npm валит на любой находке — это
+ * строже), и ничто не глушит исход: ни `continue-on-error: true`, ни
+ * `|| true`, ни `if:` шага. Имя шага не в счёт: «name: npm audit» при
+ * `run: echo` — не проверка.
  */
 export function isGatingAudit(step: string): boolean {
-  if (!/\bnpm audit\b(?! fix)/.test(step)) return false;
-  const level = /--audit-level[ =]["']?(\w+)/.exec(step)?.[1];
+  const cmd = step.replace(/^\s*name:.*$/gm, '');
+  if (!WRAPPER.test(cmd) && !/\bnpm audit\b(?! fix)/.test(cmd)) return false;
+  const level = /--audit-level[ =]["']?(\w+)/.exec(cmd)?.[1];
   if (level !== undefined && !GATING_LEVELS.has(level)) return false;
   if (/^\s*continue-on-error:\s*true\b/m.test(step)) return false;
   if (/\|\|\s*(?:true\b|:(?!\S))/.test(step)) return false;
@@ -60,4 +74,17 @@ export function auditCoverage(ciText: string, lockPaths: string[]): Coverage {
     missing: [...wanted].filter((d) => !have.has(d)).sort(),
     stale: [...have].filter((d) => !wanted.has(d)).sort(),
   };
+}
+
+/**
+ * Шаги ci.yml/nightly.yml, где `npm audit` вызван голым, мимо обёртки:
+ * без внешнего таймера и повторов он висит на реестре до таймаута шага.
+ * Комментарии, имена шагов и `echo` не в счёт.
+ */
+export function rawAuditLines(workflowText: string): string[] {
+  return workflowText
+    .split('\n')
+    .map((l) => l.trim())
+    .filter((l) => !/^(?:#|-?\s*name:|(?:run:\s*)?echo\b)/.test(l))
+    .filter((l) => /\bnpm audit\b/.test(l));
 }

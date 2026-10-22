@@ -453,14 +453,17 @@ jobs:
   npm-audit:
     if: github.event.schedule != '0 4 * * 0'
     runs-on: ubuntu-24.04
-    timeout-minutes: 10
+    timeout-minutes: 18
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
           node-version: 22
+      # Обёртка scripts/npm-audit.mjs: код 1 — high/critical, 2 — реестр не
+      # ответил ни с одной попытки (худший случай 2 мин 35 с на lock-файл;
+      # пять файлов — 13 мин, отсюда 16 у шага).
       - name: npm audit по каждому package-lock.json
-        timeout-minutes: 8
+        timeout-minutes: 16
         run: |
           locks=$(git ls-files '*package-lock.json')
           if [ -z "$locks" ]; then
@@ -468,16 +471,26 @@ jobs:
             exit 1
           fi
           failed=''
+          unreachable=''
           for lock in $locks; do
             dir=$(dirname "$lock")
             echo "::group::npm audit $dir"
-            if ! npm audit --omit=dev --audit-level=high --prefix "$dir"; then
-              failed="$failed $dir"
-            fi
+            code=0
+            node scripts/npm-audit.mjs "$dir" || code=$?
             echo '::endgroup::'
+            case $code in
+              0) ;;
+              2) unreachable="$unreachable $dir" ;;
+              *) failed="$failed $dir" ;;
+            esac
           done
+          if [ -n "$unreachable" ]; then
+            echo "::error::npm audit: реестр npm не ответил для:$unreachable — это не уязвимость; перезапусти джобу"
+          fi
           if [ -n "$failed" ]; then
             echo "::error::npm audit: high/critical в prod-зависимостях:$failed"
+          fi
+          if [ -n "$failed$unreachable" ]; then
             exit 1
           fi
 
