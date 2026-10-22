@@ -29,13 +29,13 @@ export function AppearanceSection({ userRole, therapistMode, onToggleTherapistMo
       <SRow
         title="Меньше движения"
         sub={motion.sub}
-        right={<Toggle on={motion.reduced} onClick={motion.toggle} />}
+        right={<Toggle on={motion.reduced} onClick={motion.toggle} label="Меньше движения" />}
       />
       {userRole === 'THERAPIST' && onToggleTherapistMode && (
         <SRow
           title="Режим специалиста"
           sub={therapistMode ? 'Кабинет терапевта' : 'Режим клиента'}
-          right={<Toggle on={!!therapistMode} onClick={onToggleTherapistMode} />}
+          right={<Toggle on={!!therapistMode} onClick={onToggleTherapistMode} label="Режим специалиста" />}
         />
       )}
       {userRole === 'THERAPIST' && onResignTherapist && (

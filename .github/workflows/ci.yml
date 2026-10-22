@@ -761,6 +761,14 @@ jobs:
       # меньше 44 мимо `hitboxStyle`; промах по одной стороне не считается.
       # fs-only, тот же принцип, что у check-tiny-fonts.mjs выше.
       - run: node scripts/check-tap-targets.mjs
+      # Контрол без имени из одного глифа (аудит 2026-10, «Доступность»):
+      # `<button>←</button>`, пустой `{...pressable(f)}`-тик, кнопка с одной
+      # иконкой — скринридер читает «стрелка влево» или просто «кнопка».
+      # jsx-a11y/control-has-associated-label глиф считает подписью, а роль из
+      # спреда pressable() не видит — эту половину держит гейт. AST через
+      # typescript из webapp/node_modules. Абсолютный, без бейслайна;
+      # webapp/src и shared/src, мини-апп не покрыт (ONE_FRONTEND_PLAN.md).
+      - run: node scripts/check-glyph-controls.mjs
       # Оверлей на весь экран обязан жить в истории браузера (находка аудита
       # 2026-10: чек-ин в ModesTab закрывал справочник целиком). `.tsx` с
       # position: fixed + inset: 0 — инлайном или через CSS-класс — вызывает

@@ -158,7 +158,7 @@ export function PhraseCheckEx({
       }
     >
       <div
-        role="progressbar"
+        role="progressbar" aria-label="Шаг упражнения"
         aria-valuenow={stepNumber}
         aria-valuemin={1}
         aria-valuemax={TOTAL_STEPS}

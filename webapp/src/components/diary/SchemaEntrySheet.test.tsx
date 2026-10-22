@@ -63,10 +63,10 @@ describe('SchemaEntrySheet — поля связаны с вопросом (В7)
   });
 });
 
-// Тик-страйп прогресса — 10 div[role=button] без текста (pressable), порядок
-// SCHEMA_DIARY_STEP_ORDER: 0 trigger, 1 emotions, 5 schemas, 8 excessiveReactions.
+// Тик-страйп прогресса — 10 div[role=button] (pressable) с именами «Шаг N»,
+// порядок SCHEMA_DIARY_STEP_ORDER: 0 trigger, 1 emotions, 5 schemas, 8 excessiveReactions.
 function ticks() {
-  return screen.getAllByRole('button', { name: '' });
+  return screen.getAllByRole('button', { name: /^Шаг \d+$/ });
 }
 
 describe('SchemaEntrySheet — визард (шаги, обязательность, чипы)', () => {
@@ -84,6 +84,18 @@ describe('SchemaEntrySheet — визард (шаги, обязательнос�
     renderSheet();
     fireEvent.click(ticks()[1]);
     expect(screen.getByText('Страх')).toBeTruthy();
+  });
+
+  // Аудит 2026-10, «Доступность»: тики были pressable()-div без содержимого —
+  // скринридер читал ряд одинаковых «кнопка», не называя шаг.
+  it('тик назван номером шага и помечает текущий, интенсивность — эмоцией и степенью', () => {
+    renderSheet();
+    expect(screen.getByRole('button', { name: 'Шаг 1' }).getAttribute('aria-current')).toBe('step');
+    fireEvent.click(screen.getByRole('button', { name: 'Шаг 2' }));
+    expect(screen.getByRole('button', { name: 'Шаг 2' }).getAttribute('aria-current')).toBe('step');
+    expect(screen.getByRole('button', { name: 'Шаг 1' }).getAttribute('aria-current')).toBeNull();
+    fireEvent.click(screen.getByText('Страх'));
+    expect(screen.getByRole('button', { name: 'Страх: заметно' })).toBeTruthy();
   });
 
   it('клик по тику переключает на шаг «Схемы» — чипы схем и поле «откуда это знакомо» видны', () => {

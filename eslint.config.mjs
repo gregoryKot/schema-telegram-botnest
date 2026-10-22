@@ -2,6 +2,7 @@
 import eslint from '@eslint/js';
 import eslintPluginPrettierRecommended from 'eslint-plugin-prettier/recommended';
 import jsxA11y from 'eslint-plugin-jsx-a11y';
+import { sharedA11yBlock } from './eslint.a11y-labels.mjs';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
@@ -133,13 +134,12 @@ export default tseslint.config(
     },
   },
   {
-    // a11y-гейт мини-аппа (best-practice, 2026-07, правило №3 паритет с webapp).
-    // Мини-апп линтуется корневым конфигом (ближайший к его файлам), поэтому
-    // jsx-a11y подключается здесь, точечно на schema-miniapp/src — типизированные
-    // правила выше при этом сохраняются. webapp свой a11y берёт из
-    // webapp/eslint.config.js. Счётчик держит eslint-храповик (правило №9).
+    // a11y-гейт мини-аппа (2026-07) и shared/ (2026-10, eslint.a11y-labels.mjs):
+    // они линтуются корневым конфигом, typed-правила выше сохраняются. webapp
+    // свой a11y берёт из webapp/eslint.config.js. Счётчик — eslint-храповик (№9).
     files: ['schema-miniapp/src/**/*.{ts,tsx}'],
     plugins: jsxA11y.flatConfigs.recommended.plugins,
     rules: jsxA11y.flatConfigs.recommended.rules,
   },
+  sharedA11yBlock(jsxA11y),
 );
