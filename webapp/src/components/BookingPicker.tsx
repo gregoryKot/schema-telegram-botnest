@@ -60,7 +60,6 @@ export function BookingPicker({ fallback, onWriteInstead, lockedType, compact = 
   const [payUrl, setPayUrl] = useState<string | null>(null);
   const [cancelToken, setCancelToken] = useState('');
   const [cancelled, setCancelled] = useState(false);
-  const [meetingUrl, setMeetingUrl] = useState<string | null>(null);
   const [options, setOptions] = useState<SessionOption[]>([]);
   const [sessionType, setSessionType] = useState<BookingType>(lockedType ?? 'INTRO_15');
   const [website, setWebsite] = useState(''); // honeypot — stays empty for humans
@@ -111,7 +110,7 @@ export function BookingPicker({ fallback, onWriteInstead, lockedType, compact = 
   if (status === 'payment_fail') return <PaymentFailScreen resultRef={resultRef} onRetry={() => setStatus('idle')} />;
   if (status === 'done') return (
     <DoneScreen
-      resultRef={resultRef} slot={slot} tz={tz} cancelled={cancelled} meetingUrl={meetingUrl} cancelToken={cancelToken}
+      resultRef={resultRef} slot={slot} tz={tz} cancelled={cancelled} cancelToken={cancelToken}
       sessionType={sessionType} onCancelled={() => setCancelled(true)} message={message} costNote={doneCostNote(view, sessionType)}
     />
   );
@@ -146,7 +145,6 @@ export function BookingPicker({ fallback, onWriteInstead, lockedType, compact = 
         setStatus('await_payment');
         return;
       }
-      setMeetingUrl(res.meetingUrl ?? null);
       setStatus('done');
     } catch (err) {
       trackGoal('booking_error', { reason: 'server' });

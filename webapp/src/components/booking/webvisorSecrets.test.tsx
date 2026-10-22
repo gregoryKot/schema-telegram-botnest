@@ -24,7 +24,7 @@ vi.mock('../../api', () => ({
 }));
 import { api } from '../../api';
 import { DoneScreen, AwaitPaymentScreen } from './BookingResultScreens';
-import { BookingSaveBlock } from './BookingSaveBlock';
+import { BookingSaveBlock, MEETING_LINK_LATER } from './BookingSaveBlock';
 import { BookingCancelControl } from './BookingCancelControl';
 import { BookingPaidPage } from '../../pages/BookingPaidPage';
 import { BookingConfirmedView } from './BookingConfirmedView';
@@ -77,14 +77,15 @@ describe('помощник violations (контроль: тест умеет к�
 });
 
 describe('компоненты с секретами: DOM под ym-hide-content', () => {
-  it('DoneScreen: токен и Zoom в href — под скрытым узлом, полный URL встречи не печатается', () => {
+  it('DoneScreen: токен в href — под скрытым узлом; ссылки на встречу нет (аудит 2026-10)', () => {
     const { container } = render(
       <DoneScreen resultRef={createRef<HTMLDivElement>()} slot={slot} tz="Europe/Moscow" cancelled={false}
-        meetingUrl={ZOOM} cancelToken={TOKEN} sessionType="SESSION_50" onCancelled={() => {}} />,
+        cancelToken={TOKEN} sessionType="SESSION_50" onCancelled={() => {}} />,
     );
-    expect(carriers(container).length).toBeGreaterThanOrEqual(4); // Zoom, Google, .ics, Telegram
+    expect(carriers(container).length).toBeGreaterThanOrEqual(3); // Google, .ics, Telegram
     expect(violations(container)).toEqual([]);
-    expect(screen.getByRole('link', { name: 'Открыть встречу' }).getAttribute('href')).toBe(ZOOM);
+    expect(screen.queryByRole('link', { name: 'Открыть встречу' })).toBeNull();
+    expect(screen.getByText(MEETING_LINK_LATER)).toBeTruthy();
   });
 
   it('AwaitPaymentScreen: ссылка на оплату Робокассы — под скрытым узлом', () => {
@@ -97,7 +98,7 @@ describe('компоненты с секретами: DOM под ym-hide-content
 
   it('BookingSaveBlock: отдельно от родителя защищён собственным корнем', () => {
     const { container } = render(
-      <BookingSaveBlock cancelToken={TOKEN} startsAt={startsAt} durationMin={50} type="SESSION_50" meetingUrl={ZOOM} tz="Europe/Moscow" />,
+      <BookingSaveBlock cancelToken={TOKEN} startsAt={startsAt} durationMin={50} type="SESSION_50" tz="Europe/Moscow" />,
     );
     expect(carriers(container).length).toBeGreaterThanOrEqual(3);
     expect(violations(container)).toEqual([]);
@@ -112,22 +113,22 @@ describe('компоненты с секретами: DOM под ym-hide-content
   it('BookingConfirmedView: отдельно от страницы защищён собственным корнем', () => {
     const { container } = render(
       <BookingConfirmedView
-        booking={{ status: 'CONFIRMED', type: 'SESSION_50', startsAt, durationMin: 50, meetingUrl: ZOOM } as never}
-        token={TOKEN} onReload={() => {}} onCancelled={() => {}}
+        booking={{ status: 'CONFIRMED', type: 'SESSION_50', startsAt, durationMin: 50 } as never}
+        token={TOKEN} onCancelled={() => {}}
       />,
     );
-    expect(carriers(container).length).toBeGreaterThanOrEqual(4); // Zoom + ссылки BookingSaveBlock
+    expect(carriers(container).length).toBeGreaterThanOrEqual(3); // ссылки BookingSaveBlock
     expect(violations(container)).toEqual([]);
   });
 
-  it('BookingPaidPage: после загрузки по токену ссылка встречи и управление записью — под скрытым узлом', async () => {
+  it('BookingPaidPage: после загрузки по токену управление записью — под скрытым узлом', async () => {
     window.history.pushState({}, '', `/booking/manage?token=${TOKEN}`);
     vi.mocked(api.getBookingByToken).mockResolvedValue({
-      status: 'CONFIRMED', type: 'SESSION_50', startsAt, endsAt: startsAt, durationMin: 50, meetingUrl: ZOOM,
+      status: 'CONFIRMED', type: 'SESSION_50', startsAt, endsAt: startsAt, durationMin: 50,
     } as never);
     const { container } = render(<BookingPaidPage />);
     await screen.findByText('Оплата прошла');
-    expect(carriers(container).length).toBeGreaterThanOrEqual(4);
+    expect(carriers(container).length).toBeGreaterThanOrEqual(3);
     expect(violations(container)).toEqual([]);
     window.history.pushState({}, '', '/');
   });

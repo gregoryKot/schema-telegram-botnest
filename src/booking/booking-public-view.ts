@@ -1,10 +1,11 @@
 import { NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { decrypt } from '../utils/crypto';
 
 /**
  * Public booking view by self-cancel token (used by the post-payment page).
- * Returns only non-PII session fields — never the client's name/contact.
+ * Returns only non-PII session fields — never the client's name/contact, and
+ * never the meeting link: the token is handed to whoever called anonymous
+ * `book`, and the client's room is looked up by contact (audit 2026-10).
  *
  * `paid` — булев «деньги получены вебхуком» (из `paidAt`, самой метки не
  * отдаём). `paidAt` и переход в CONFIRMED пишутся одним `updateMany`, поэтому
@@ -29,6 +30,5 @@ export async function getPublicBookingByToken(
       b.startsAt.getTime() + b.durationMin * 60_000,
     ).toISOString(),
     durationMin: b.durationMin,
-    meetingUrl: decrypt(b.meetingUrl),
   };
 }

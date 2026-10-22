@@ -4,6 +4,9 @@
 // есть ключевой инвариант, который проверяем ниже.
 import { ConfigService } from '@nestjs/config';
 import { MeetingService, MeetingTarget } from './meeting.service';
+import { clientKey } from './meeting-key';
+import { isLegacyJitsiRoom } from './meeting-jitsi';
+import { decrypt } from '../utils/crypto';
 
 function makeService(env: Record<string, string | undefined> = {}): {
   service: MeetingService;
@@ -84,7 +87,7 @@ describe('MeetingService.createMeeting — MEETING_STATIC_URL (вырожден�
 });
 
 describe('MeetingService.createMeeting — без Zoom (dev), Jitsi по умолчанию', () => {
-  it('новый клиент — создаётся детерминированная Jitsi-комната, запись в БД', async () => {
+  it('новый клиент — создаётся Jitsi-комната, запись в БД', async () => {
     const { service, prisma } = makeService();
     const url = await service.createMeeting(TARGET);
     expect(url).toMatch(/^https:\/\/meet\.jit\.si\/schemehappens-/);
@@ -250,5 +253,66 @@ describe('MeetingService.createMeeting — Zoom настроен, но внеш�
     const result = await zoomService.createMeeting(TARGET);
     expect(result).toBe(jitsiUrl); // старая ссылка не потеряна
     expect(prisma.clientMeeting.update).not.toHaveBeenCalled();
+  });
+});
+
+// Аудит 2026-10 (утечка ссылки на встречу): комната Jitsi считалась из контакта
+// (`schemehappens-<sha256(контакт)[0..12]>`), то есть знающий контакт клиента
+// вычислял адрес его комнаты без запроса. Теперь имя случайное, а уже выданные
+// комнаты по старой формуле заменяются при следующей брони.
+describe('MeetingService.createMeeting — комната Jitsi не выводится из контакта', () => {
+  const LEGACY = `https://meet.jit.si/schemehappens-${clientKey('@maria').slice(0, 12)}`;
+
+  it('новая комната не совпадает с формулой от контакта и различается у двух клиентов', async () => {
+    const { service } = makeService();
+    const a = await service.createMeeting(TARGET);
+    const b = await service.createMeeting({
+      ...TARGET,
+      clientContact: '@other',
+    });
+    expect(a).toMatch(/^https:\/\/meet\.jit\.si\/schemehappens-[0-9a-f]{16}$/);
+    expect(a).not.toBe(LEGACY);
+    expect(isLegacyJitsiRoom(a, clientKey('@maria'))).toBe(false);
+    expect(b).not.toBe(a);
+  });
+
+  it('комната по старой формуле при повторной брони заменяется случайной и записывается в ClientMeeting', async () => {
+    const { service, prisma, store } = makeService();
+    const key = clientKey('@maria');
+    store.set(key, { clientKey: key, meetingUrl: LEGACY, zoomMeetingId: null });
+
+    const url = await service.createMeeting(TARGET);
+
+    expect(url).not.toBe(LEGACY);
+    expect(url).toMatch(
+      /^https:\/\/meet\.jit\.si\/schemehappens-[0-9a-f]{16}$/,
+    );
+    expect(prisma.clientMeeting.update).toHaveBeenCalledWith({
+      where: { clientKey: key },
+      data: { meetingUrl: expect.any(String) },
+    });
+    // read-after-write: следующая бронь получает уже новую комнату
+    expect(decrypt(store.get(key).meetingUrl)).toBe(url);
+    expect(await service.createMeeting(TARGET)).toBe(url);
+  });
+
+  it('не-legacy комната Jitsi и Zoom переиспользуются без записи в БД', async () => {
+    const { service, prisma, store } = makeService();
+    const key = clientKey('@maria');
+    for (const kept of [
+      'https://meet.jit.si/schemehappens-0123456789abcdef',
+      'https://zoom.us/j/777?pwd=x',
+    ]) {
+      store.set(key, { clientKey: key, meetingUrl: kept, zoomMeetingId: null });
+      expect(await service.createMeeting(TARGET)).toBe(kept);
+    }
+    expect(prisma.clientMeeting.update.mock.calls).toEqual([]);
+  });
+
+  it('isLegacyJitsiRoom узнаёт ровно старую формулу, а не префикс', () => {
+    const key = clientKey('@maria');
+    expect(isLegacyJitsiRoom(LEGACY, key)).toBe(true);
+    expect(isLegacyJitsiRoom(`${LEGACY}0`, key)).toBe(false);
+    expect(isLegacyJitsiRoom(LEGACY, clientKey('@other'))).toBe(false);
   });
 });

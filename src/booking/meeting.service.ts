@@ -3,7 +3,8 @@ import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { SessionType } from '@prisma/client';
 import { decrypt, encrypt } from '../utils/crypto';
-import { clientKey, jitsiRoom } from './meeting-key';
+import { clientKey } from './meeting-key';
+import { jitsiRoom, reuseClientRoom } from './meeting-jitsi';
 
 export interface MeetingTarget {
   id: number;
@@ -25,7 +26,7 @@ export interface MeetingTarget {
  *   1. Zoom S2S OAuth — a per-client recurring meeting (type 3, no fixed time).
  *      Needs ZOOM_ACCOUNT_ID, ZOOM_CLIENT_ID, ZOOM_CLIENT_SECRET.
  *   2. MEETING_STATIC_URL — one shared permanent room (degenerate fallback).
- *   3. Jitsi — a per-client deterministic meet.jit.si room (no config, works RU).
+ *   3. Jitsi — a per-client random meet.jit.si room (no config, works RU).
  */
 @Injectable()
 export class MeetingService {
@@ -105,10 +106,7 @@ export class MeetingService {
           return z.url;
         }
       }
-      this.logger.log(
-        `Reusing personal meeting for client ${key.slice(0, 8)}…`,
-      );
-      return existingUrl;
+      return reuseClientRoom(this.prisma, this.logger, key, existingUrl);
     }
 
     if (!this.zoomEnabled)
@@ -124,7 +122,7 @@ export class MeetingService {
         })
       : null;
 
-    const meetingUrl = zoom?.url ?? jitsiRoom(key);
+    const meetingUrl = zoom?.url ?? jitsiRoom();
     await this.prisma.clientMeeting.create({
       data: {
         clientKey: key,
