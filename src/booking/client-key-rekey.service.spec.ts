@@ -2,6 +2,7 @@
 // базой — test/booking-client-key.e2e-spec.ts; здесь ветки прохода: перенос,
 // склейка ящиков, строка под новым ключом уже есть, сироты старого формата.
 // Ключи читаются при загрузке модулей — грузим под ключом (loadWithKeys).
+import type { Logger } from '@nestjs/common';
 import { loadWithKeys } from '../test-support/load-with-keys';
 
 type Svc = typeof import('./client-key-rekey.service');
@@ -21,6 +22,7 @@ const ROOM = 'enc-room-1';
 interface B {
   id: number;
   createdAt: Date;
+  confirmEffectsDoneAt: Date | null;
   clientContact: string;
   meetingUrl: string | null;
   anonymizedAt: Date | null;
@@ -33,13 +35,18 @@ interface R {
 const booking = (id: number, contact: string, extra: Partial<B> = {}): B => ({
   id,
   createdAt: new Date(Date.UTC(2026, 0, id)),
+  confirmEffectsDoneAt: null,
   clientContact: contact, // plaintext: decrypt отдаёт как есть
   meetingUrl: ROOM,
   anonymizedAt: null,
   ...extra,
 });
 
-function setup(bookings: B[], rows: R[]) {
+function setup(
+  bookings: B[],
+  rows: R[],
+  notify: () => Promise<boolean> = () => Promise.resolve(true),
+) {
   const has = (k: string) => rows.some((r) => r.clientKey === k);
   const hit = (where: any) => (r: R) =>
     (where.clientKey?.in
@@ -84,10 +91,17 @@ function setup(bookings: B[], rows: R[]) {
       }),
     },
   };
-  const telegram = { notifyAdmin: jest.fn(() => Promise.resolve(true)) };
+  const telegram = { notifyAdmin: jest.fn(notify) };
   const service = new mod.ClientKeyRekeyService(prisma as any, telegram as any);
   return { service, prisma, telegram, rows };
 }
+
+// Модуль загружен в отдельном реестре (loadWithKeys): шпион — на логгер
+// экземпляра, а не на Logger.prototype этого файла.
+const spyWarn = (service: object) =>
+  jest
+    .spyOn((service as { logger: Logger }).logger, 'warn')
+    .mockImplementation(() => undefined);
 
 describe('ClientKeyRekeyService.run', () => {
   it('строка старого формата переезжает на новый ключ; повторный прогон ничего не меняет', async () => {
@@ -145,6 +159,91 @@ describe('ClientKeyRekeyService.run', () => {
       expect.stringContaining('№7'),
     ]);
     expect(String(telegram.notifyAdmin.mock.calls[0])).not.toContain('№3');
+  });
+
+  it('склейка: комната за бронью, подтверждённой раньше, а не созданной раньше', async () => {
+    // Бронь №3 создана раньше, но оплачена (подтверждена) позже №7: строку
+    // создало подтверждение №7, комната её.
+    const A = 'ivan-petrov@x.ru';
+    const B2 = 'ivanpetrov@x.ru';
+    const { service, rows } = setup(
+      [
+        booking(3, A, {
+          createdAt: new Date('2026-05-01'),
+          confirmEffectsDoneAt: new Date('2026-05-05'),
+        }),
+        booking(7, B2, {
+          createdAt: new Date('2026-05-02'),
+          confirmEffectsDoneAt: new Date('2026-05-02'),
+        }),
+      ],
+      [
+        {
+          clientKey: keys.legacyClientKey(A),
+          meetingUrl: ROOM,
+          createdAt: OLD_ROW,
+        },
+      ],
+    );
+    expect(await service.run(NOW)).toMatchObject({ moved: 1, shared: [3] });
+    expect(rows.map((r) => r.clientKey)).toEqual([keys.clientKey(B2)]);
+  });
+
+  it('DM владельцу не ушёл: номера броней остаются в логе', async () => {
+    const A = 'ivan-petrov@x.ru';
+    const B2 = 'ivanpetrov@x.ru';
+    const { service } = setup(
+      [booking(3, A), booking(7, B2)],
+      [
+        {
+          clientKey: keys.legacyClientKey(A),
+          meetingUrl: ROOM,
+          createdAt: OLD_ROW,
+        },
+      ],
+      () => Promise.resolve(false),
+    );
+    const warn = spyWarn(service);
+    await service.run(NOW);
+    await new Promise((ok) => setImmediate(ok));
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('№7'));
+  });
+
+  it('контроль: DM ушёл — в логе отчёта нет', async () => {
+    const A = 'ivan-petrov@x.ru';
+    const B2 = 'ivanpetrov@x.ru';
+    const { service, telegram } = setup(
+      [booking(3, A), booking(7, B2)],
+      [
+        {
+          clientKey: keys.legacyClientKey(A),
+          meetingUrl: ROOM,
+          createdAt: OLD_ROW,
+        },
+      ],
+    );
+    const warn = spyWarn(service);
+    await service.run(NOW);
+    await new Promise((ok) => setImmediate(ok));
+    expect(telegram.notifyAdmin).toHaveBeenCalledTimes(1);
+    expect(warn).not.toHaveBeenCalled();
+  });
+
+  it('зависший Telegram не держит проход (и старт приложения)', async () => {
+    const A = 'ivan-petrov@x.ru';
+    const B2 = 'ivanpetrov@x.ru';
+    const { service } = setup(
+      [booking(3, A), booking(7, B2)],
+      [
+        {
+          clientKey: keys.legacyClientKey(A),
+          meetingUrl: ROOM,
+          createdAt: OLD_ROW,
+        },
+      ],
+      () => new Promise<boolean>(() => undefined),
+    );
+    await expect(service.run(NOW)).resolves.toMatchObject({ shared: [7] });
   });
 
   it('под новым ключом строка уже есть: она остаётся, старая снимается, брони — владельцу', async () => {

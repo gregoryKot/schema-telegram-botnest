@@ -23,10 +23,15 @@ import { rekeyReport, type RekeyStats } from './client-key-rekey.report';
 // клиента, повторный проход ничего не меняет.
 //
 // Склейка: одна старая строка, претенденты с РАЗНЫМИ новыми ключами (ящики
-// `ivan-petrov@` и `ivanpetrov@` давали один ключ). Комната остаётся за самой
-// ранней бронью — её подтверждение строку и создало; остальные контакты при
-// следующей брони получат новую комнату. Брони, где уже лежит ссылка на чужую
-// комнату, уходят владельцу одним сообщением на прогон.
+// `ivan-petrov@` и `ivanpetrov@` давали один ключ). Комната остаётся за бронью,
+// подтверждённой раньше всех (`confirmEffectsDoneAt`; у брони без отметки —
+// время создания): её подтверждение строку и создало. Время создания брони тут
+// не годится: HELD-бронь, созданная раньше, а оплаченная позже, комнату не
+// создавала. Остальные контакты при следующей брони получат новую комнату.
+// Брони, где уже лежит ссылка на чужую комнату, уходят владельцу одним
+// сообщением на прогон; не ушло (нет бота, Telegram недоступен) — тот же текст
+// (номера броней, без контактов) остаётся в логе: следующий старт этих броней
+// уже не найдёт. Сообщение не ждётся: зависший Telegram не держит старт.
 //
 // Строка старого формата без единого претендента — остаток обезличенных броней
 // (ретенция 12 месяцев): по ней дамп отвечал «записывался ли человек». Такие
@@ -38,7 +43,8 @@ const ORPHAN_MIN_AGE_MS = 3_600_000;
 
 interface Claim {
   bookingId: number;
-  createdAt: Date;
+  /** Когда бронь подтверждена (эффекты доведены), иначе — создана. */
+  claimedAt: Date;
   target: string;
   /** Расшифрованная ссылка брони — сверяется со ссылкой строки. */
   url: string | null;
@@ -106,14 +112,26 @@ export class ClientKeyRekeyService implements OnApplicationBootstrap {
         `clientKey rekey: moved ${stats.moved}, dropped ${stats.dropped}, purged ${stats.purged}`,
       );
     const report = rekeyReport(stats);
-    if (report) await this.telegram.notifyAdmin(report);
+    if (report) this.sendReport(report);
     return stats;
+  }
+
+  private sendReport(report: string): void {
+    const keep = (why: string) =>
+      this.logger.warn(`clientKey rekey: DM владельцу ${why}\n${report}`);
+    void this.telegram.notifyAdmin(report).then(
+      (ok) => {
+        if (!ok) keep('не ушёл');
+      },
+      (e: unknown) =>
+        keep(`упал: ${e instanceof Error ? e.message : String(e)}`),
+    );
   }
 
   private async moveRow(row: Row, list: Claim[], stats: RekeyStats) {
     const sorted = [...list].sort(
       (a, b) =>
-        a.createdAt.getTime() - b.createdAt.getTime() ||
+        a.claimedAt.getTime() - b.claimedAt.getTime() ||
         a.bookingId - b.bookingId,
     );
     const target = sorted[0].target;
@@ -157,6 +175,7 @@ export class ClientKeyRekeyService implements OnApplicationBootstrap {
         select: {
           id: true,
           createdAt: true,
+          confirmEffectsDoneAt: true,
           clientContact: true,
           meetingUrl: true,
         },
@@ -167,7 +186,7 @@ export class ClientKeyRekeyService implements OnApplicationBootstrap {
         if (!contact) continue;
         const claim = {
           bookingId: r.id,
-          createdAt: r.createdAt,
+          claimedAt: r.confirmEffectsDoneAt ?? r.createdAt,
           target: clientKey(contact),
           url: decrypt(r.meetingUrl),
         };
