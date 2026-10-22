@@ -244,6 +244,6 @@
   показывать под деталью. Это правка UI, решение за владельцем.
 - **Вход по почте мини-аппа показывает «Failed to fetch» и английский ValidationPipe.**
   `schema-miniapp/src/components/loginScreen/LoginEmailForm.tsx` (`sendLink`, `catch`) кладёт
-  `err.message` как есть. 429 там уже русский — текст рождает сервер (#NNN), сайт идёт через
+  `err.message` как есть. 429 там уже русский — текст рождает сервер (#819), сайт идёт через
   `shared/src/api/humanizeError.ts`. Не чинили сознательно: механика, а не ты/вы и не род,
   мини-апп удаляется на этапе 6 (`docs/ONE_FRONTEND_PLAN.md`).
