@@ -19,8 +19,8 @@ export function classifyAppExit(app, shuttingDown) {
   return 'crash';
 }
 
-export function crashMessage(app, ranMs, fails, maxFails) {
-  const tail = `ranMs=${ranMs}, fails=${fails}/${maxFails}`;
+export function crashMessage(app, ranMs, fails, maxFails, note = '') {
+  const tail = `ranMs=${ranMs}, fails=${fails}/${maxFails}${note}`;
   return app.signal
     ? `[entrypoint] приложение убито сигналом ${app.signal} (${tail})`
     : `[entrypoint] приложение упало (code=${app.code}, ${tail})`;
@@ -30,9 +30,9 @@ export function crashMessage(app, ranMs, fails, maxFails) {
 // БД не поднялась: base, затем ×2 на каждом круге подряд, потолок max. Без неё
 // супервизор паркуется навсегда (аудит 2026-10-11, infra#13): контейнер жив,
 // restart-policy не срабатывает, а чинить сбой, прошедший сам, — некому.
-// Рост нужен, чтобы затяжная авария не слала DM «Деплой завершён» каждые
-// несколько минут: троттлы AlertLogger живут в памяти и с процессом не
-// переживают, поэтому шторм гасит только эта пауза.
+// Рост нужен, чтобы затяжная авария не слала стартовые DM каждые несколько
+// минут: троттлы AlertLogger живут в памяти процесса. Шторм гасят двое: окно
+// падений (crash-window.mjs) доводит серию до лимита, эта пауза её разрежает.
 export function cooldownMs(round, base, max) {
   if (!(base > 0)) return 0;
   return Math.min(base * 2 ** Math.max(0, round), Math.max(base, max));
@@ -55,7 +55,7 @@ export function cooldownMessage(reason, ms) {
 
 // Внешний цикл супервизора: серия (runSeries) кончилась лимитом или недоступной
 // БД → пауза cooldownMs и новая серия. Пауза растёт с каждой серией подряд и
-// сбрасывается, когда в серии приложение хоть раз проработало «здоровое» время.
+// сбрасывается, когда в серии приложение хоть раз прожило дольше окна падений.
 // runSeries отдаёт undefined, когда продолжать нечего (остановка, чистый выход,
 // парковка по migrate: её повтор задвоил бы DML неидемпотентной миграции).
 export async function superviseSeries(runSeries, { base, max, stopping, sleep, log }) {

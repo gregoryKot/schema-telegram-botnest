@@ -9,6 +9,12 @@
 // процесса. Гейт рождается с нулём нарушений; исключений нет (правило №15: не
 // замалчивать). Граница проверки — тело метода: косвенный вызов
 // (onModuleInit → this.cleanup() → updateMany) тест не видит.
+//
+// Тот же класс вовне — сообщения: sendMessage / notifyAdmin* (аудит 2026-10,
+// «Супервизор контейнера»). «🚀 Деплой завершён» уходил из onModuleInit
+// TelegramService при каждом рестарте, ещё до listen: крашлуп слал его на
+// каждом круге. DM о старте живёт в src/telegram/start-announce.ts и
+// зовётся из main.ts после listen. Сообщение в колбэке хендлера законно.
 import { readFileSync } from 'fs';
 import { join, relative, sep } from 'path';
 import * as ts from 'typescript';
@@ -30,7 +36,8 @@ const HANDLER_REGISTRARS = new Set([
   'catch',
 ]);
 
-const FORBIDDEN_NAME = /^(?:updateMany|deleteMany|cancelAll\w*)$/;
+const FORBIDDEN_NAME =
+  /^(?:updateMany|deleteMany|cancelAll\w*|sendMessage|notifyAdmin\w*)$/;
 
 // Обход — общий collectSourceFiles (не заходит в скрытый src/.jest-cache, где
 // параллельные воркеры jest пишут файлы прямо во время обхода — флак ENOENT).
@@ -75,8 +82,8 @@ function violations(code: string): string[] {
   return found;
 }
 
-describe('onModuleInit не делает массовых записей', () => {
-  it('в src/** нет updateMany / deleteMany / cancelAll* при старте', () => {
+describe('onModuleInit не делает массовых записей и не пишет людям', () => {
+  it('в src/** нет updateMany / deleteMany / cancelAll* / sendMessage / notifyAdmin* при старте', () => {
     const found = sourceFiles(SRC).flatMap((file) =>
       violations(readFileSync(file, 'utf8')).map(
         (v) => `${relative(SRC, file)}: ${v}`,
@@ -134,6 +141,36 @@ describe('onModuleInit не делает массовых записей', () =>
         void this.x.load().then(() => this.n.cancelAll(1));
       } }`;
       expect(violations(code)).toEqual(['cancelAll']);
+    });
+
+    it('прежний DM «Деплой завершён» из хвоста onModuleInit краснеет', () => {
+      const old = `class S { onModuleInit() {
+        this.launcher.start();
+        const adminId = process.env.ADMIN_ID;
+        if (adminId) {
+          this.bot.telegram
+            .sendMessage(adminId, '🚀 Деплой завершён')
+            .catch((err) => this.logger.error('deploy DM failed', err));
+        }
+      } }`;
+      expect(violations(old)).toEqual(['sendMessage']);
+    });
+
+    it.each(['notifyAdmin', 'notifyAdminWithFallback'])(
+      '%s в onModuleInit краснеет',
+      (fn) => {
+        const code = `class S { async onModuleInit() { await this.t.${fn}('x'); } }`;
+        expect(violations(code)).toEqual([fn]);
+      },
+    );
+
+    it('sendMessage в колбэке хендлера (ответ на нажатие) законен', () => {
+      const code = `class S { onModuleInit() {
+        this.bot.action('ping', async (ctx) => {
+          await this.bot.telegram.sendMessage(ctx.chat.id, 'pong');
+        });
+      } }`;
+      expect(violations(code)).toEqual([]);
     });
 
     it('updateMany в ДРУГОМ методе не считается (гейт про onModuleInit)', () => {
