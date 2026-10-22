@@ -82,6 +82,8 @@ SIGTERM/SIGINT пробрасываются приложению.
 | eslint | `check-eslint-ratchet.mjs` (ставит зависимости всех пакетов, prisma generate) |
 | miniapp | typecheck, build, coverage-храповик, vitest под TZ Sydney, «dist актуален», npm audit |
 
+Шаги npm audit всех джоб зовут обёртку `scripts/npm-audit.mjs <каталог>`: голый `npm audit` висел на реестре до таймаута шага (регресс #814). Попытка до 45 с, до трёх попыток; high/critical — код 4 сразу (не 1: его node отдаёт на упавшем скрипте), «реестр не ответил» — код 2 и отдельный `::error::`, «npm не может проверить» (нет lock-файла) — код 3 без повторов; реестр и `--offline=false` заданы флагами, env и `.npmrc` их не перекрывают. Разбор ответа npm — `scripts/npm-audit-report.mjs`. Шаг засчитывается гейтом, только если скрипт `run:` — одна команда (так, как его склеят YAML и `\`-продолжения shell, — `src/test-support/gates/step-script.ts`) и вызов — её исход: без `||`, `;`, `&`, `|` после него, без `exit`/`trap`/`set +e`, без своего `shell:` и `continue-on-error` с любым значением, кроме `false`. Исполняется с поддельным npm в `src/test-support/gates/npm-audit.spec.ts`.
+
 **nightly.yml** (cron `0 3 * * *` ежедневно и `0 4 * * 0` по воскресеньям, плюс dispatch). Красный nightly не блокирует PR.
 - `backend-flaky` — jest три раза подряд через `jest-exit-guard.mjs`, затем `--detectOpenHandles`.
 - `frontend-flaky` — vitest webapp ×3, miniapp ×3, shared ×1.
@@ -90,7 +92,7 @@ SIGTERM/SIGINT пробрасываются приложению.
 - `browser-smoke` — build webapp, `playwright test` (Chromium + WebKit).
 - `backup-restore` — репетиция: зашифрованный бэкап, restore во вторую БД, `migrate diff`, пробы с порчей файла и неверным ключом.
 - `mutation-bot` — Stryker по `src/bot`, только воскресенье или dispatch.
-- `npm-audit` — `npm audit --omit=dev --audit-level=high` по каждому lock-файлу из `git ls-files`, под alarm.
+- `npm-audit` — `scripts/npm-audit.mjs` (`npm audit --omit=dev --audit-level=high` с таймером на попытку и повторами) по каждому lock-файлу из `git ls-files`, под alarm.
 - `alarm` — issue `ci-alarm` и DM в Telegram, если упала любая джоба.
 
 **prod-smoke.yml** (cron `*/15 * * * *`, фактический шаг GitHub 3–7 ч, плюс dispatch):
