@@ -1531,7 +1531,7 @@
   "src/telegram/telegram.schedule-queue.ts": 112,
   "src/telegram/telegram.schedule.service.ts": 202,
   "src/telegram/telegram.send-bounded.ts": 89,
-  "src/telegram/telegram.service.ts": 533,
+  "src/telegram/telegram.service.ts": 528,
   "src/telegram/telegram.settings.service.ts": 218,
   "src/telegram/telegram.settings.view.ts": 93,
   "src/telegram/telegram.stale-updates.ts": 89,

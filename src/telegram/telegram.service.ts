@@ -475,12 +475,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     });
 
     this.launcher.start();
-    const adminId = process.env.ADMIN_ID;
-    if (adminId) {
-      this.bot.telegram
-        .sendMessage(adminId, '🚀 Деплой завершён')
-        .catch((err) => this.logger.error('deploy DM failed', err));
-    }
+    // DM о старте — не здесь (это каждый рестарт, до listen): src/telegram/start-announce.ts.
   }
 
   /** Отправить сообщение администратору. Возвращает true, если доставлено. */
