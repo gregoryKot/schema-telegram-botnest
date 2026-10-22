@@ -85,6 +85,23 @@ describe('check-glyph-controls.mjs — краснеет', () => {
     expect(res.status).toBe(1);
   });
 
+  // Атрибут есть, имени нет: проверяется значение, а не наличие.
+  it.each([
+    ['пустой aria-label', '<button onClick={f} aria-label="">×</button>'],
+    [
+      'aria-label={undefined}',
+      '<button onClick={f} aria-label={undefined}>×</button>',
+    ],
+    [
+      'голый aria-label без значения',
+      '<button onClick={f} aria-label>×</button>',
+    ],
+  ])('%s — всё равно красный', (_name, jsx) => {
+    const res = gate({ 'webapp/src/X.tsx': tsx(jsx) });
+    expect(res.status).toBe(1);
+    expect(res.stderr).toContain('webapp/src/X.tsx:2');
+  });
+
   it('сообщение подсказывает нейтральную метку', () => {
     const res = gate({
       'webapp/src/X.tsx': tsx('<button onClick={f}>←</button>'),

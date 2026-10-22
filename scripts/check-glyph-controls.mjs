@@ -114,7 +114,10 @@ function scan(rel) {
   const visit = (n) => {
     if ((ts.isJsxElement(n) || ts.isJsxSelfClosingElement(n)) && isControl(n, sf)) {
       const attrs = attrsOf(n);
-      const named = attrs.some((a) => NAME_ATTR.test(attrName(a, sf) ?? ''));
+      // Пустая строка и undefined — не имя: скринридер прочтёт голый глиф.
+      const named = attrs.some(
+        (a) => NAME_ATTR.test(attrName(a, sf) ?? '') && !/^(""|''|\{(""|''|``|undefined)\})$/.test(a.initializer?.getText(sf) ?? '""'),
+      );
       // Чужой спред ({...props}) может нести aria-label — не гадаем.
       const foreignSpread = attrs.some(
         (a) => ts.isJsxSpreadAttribute(a) && !/^pressable\(/.test(a.expression.getText(sf)),
