@@ -11,7 +11,8 @@ const reportCopyFail = () => reportClientError({ message: 'admin link copy faile
  * Отказ буфера не выглядит как успех: ссылка рядом, её можно выделить руками.
  */
 export function useCopyText() {
-  const { copied, failed, copy } = useCopyToClipboard({ onError: reportCopyFail });
+  // 6 с, а не 2: подсказку «выделить руками» надо успеть прочитать.
+  const { copied, failed, copy } = useCopyToClipboard({ onError: reportCopyFail, resetMs: 6000 });
   const status =
     copied ? <span style={{ color: 'var(--accent-green)', fontSize: 13 }}>Скопировано ✓</span>
     : failed ? <span style={{ color: 'var(--accent-red)', fontSize: 13 }}>Не скопировалось – ссылку можно выделить и скопировать руками</span>

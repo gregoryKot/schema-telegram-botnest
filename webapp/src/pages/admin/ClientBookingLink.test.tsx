@@ -42,7 +42,10 @@ describe('ClientBookingLink', () => {
       render(<ClientBookingLink />);
       await act(async () => { fireEvent.click(screen.getByRole('button', { name: 'Скопировать' })); });
       expect(screen.getByText('Скопировано ✓')).toBeTruthy();
-      act(() => { vi.advanceTimersByTime(2000); });
+      // Подпись держится 6 с (подсказку об отказе надо успеть прочитать), потом гаснет.
+      act(() => { vi.advanceTimersByTime(5000); });
+      expect(screen.getByText('Скопировано ✓')).toBeTruthy();
+      act(() => { vi.advanceTimersByTime(1000); });
       expect(screen.queryByText('Скопировано ✓')).toBeNull();
     } finally {
       vi.useRealTimers();
