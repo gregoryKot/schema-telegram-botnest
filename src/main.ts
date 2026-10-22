@@ -17,7 +17,9 @@ import { clientIpSampler } from './infra/client-ip-sample';
 import { TRUSTED_PROXY_HOPS } from './infra/trust-proxy';
 import { installBodyParsers } from './infra/body-parsers';
 import { helmetOptions } from './security/helmet-config';
+import { permissionsPolicy } from './security/permissions-policy';
 import { registerUnhandledRejectionHandler } from './infra/unhandled-rejection';
+import { registerUncaughtExceptionHandler } from './infra/uncaught-exception';
 import {
   PrismaExceptionFilter,
   GenericExceptionFilter,
@@ -27,10 +29,9 @@ import {
 // (src/utils/bigint-json.ts, аудит 2026-10 X-1).
 installBigIntJson();
 
-// Аудит 2026-10 (I6): до создания приложения — отказ внутри bootstrap тоже
-// должен дойти до алерта. Logger статический: после NestFactory.create он
-// пишет через AlertLogger.
+// Аудит 2026-10 (I6): до create — отказ и throw тоже в алерт (Logger → AlertLogger).
 registerUnhandledRejectionHandler(new Logger('UnhandledRejection'));
+registerUncaughtExceptionHandler(new Logger('UncaughtException'));
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
@@ -66,9 +67,8 @@ async function bootstrap() {
   }
 
   app.use(cookieParser());
-  app.use(helmet(helmetOptions()));
-  // Order matters: more-specific filter LAST (Nest applies them in reverse).
-  // GenericExceptionFilter is the catch-all; PrismaExceptionFilter catches first.
+  app.use(helmet(helmetOptions()), permissionsPolicy());
+  // Порядок важен: Nest берёт фильтры с конца, Prisma ловит раньше catch-all.
   app.useGlobalFilters(
     new GenericExceptionFilter(),
     new PrismaExceptionFilter(),
