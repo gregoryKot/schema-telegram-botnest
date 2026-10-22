@@ -5,6 +5,7 @@
 // «просто работает»: границу окна, порядок значений в запросе и поведение
 // при недоступной БД.
 import { CronLeaderService, LEASE_WINDOW } from './cron-leader.service';
+import { lastClaimDbFailureAt } from './cron-claim-failures';
 
 function makeLeader(executeRaw: jest.Mock) {
   const prisma = { $executeRaw: executeRaw } as never;
@@ -74,6 +75,34 @@ describe('CronLeaderService.claimRun', () => {
       false,
     );
     expect(executeRaw).toHaveBeenCalledTimes(1);
+  });
+});
+
+// Шов claimRun → память отказов → проба cronLeases (2026-10-17): тик,
+// упавший на недоступной базе, проба не засчитывает кроне в пропуск.
+describe('CronLeaderService.claimRun — память отказов для пробы аренд', () => {
+  it('база недоступна → момент тика запомнен под именем аренды', async () => {
+    const { leader } = makeLeader(
+      jest.fn().mockRejectedValue(new Error("Can't reach database server")),
+    );
+    const now = new Date('2026-10-17T16:55:00Z');
+
+    await leader.claimRun('healthyAdultEvening', LEASE_WINDOW.fiveMinutes, now);
+
+    expect(lastClaimDbFailureAt('healthyAdultEvening')).toBe(now.getTime());
+  });
+
+  it('контроль: таблицы нет (кривая миграция) → не запомнено, крон мёртв', async () => {
+    const { leader } = makeLeader(
+      jest
+        .fn()
+        .mockRejectedValue(new Error('relation "CronLease" does not exist')),
+    );
+
+    await expect(
+      leader.claimRun('healthyAdultMorning', LEASE_WINDOW.fiveMinutes),
+    ).resolves.toBe(false);
+    expect(lastClaimDbFailureAt('healthyAdultMorning')).toBeUndefined();
   });
 });
 

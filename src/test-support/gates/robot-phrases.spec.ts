@@ -133,6 +133,30 @@ describe('check-robot-phrases.mjs', () => {
   });
 });
 
+// Аудит 2026-10: «в «Всё по схеме»» в теме письма входа и в карточке входа
+// бота. CLI-образец — паттерн доходит до движка из вынесенного модуля.
+describe('предлог перед названием продукта', () => {
+  it('«Вход в «Всё по схеме»» в новом файле — exit 1', () => {
+    const res = runGate('check-robot-phrases.mjs', {
+      'scripts/robot-phrases-baseline.json': JSON.stringify({}),
+      'src/x.ts': "export const h = '🔐 <b>Вход в «Всё по схеме»</b>';\n",
+    });
+    expect(res.status).toBe(1);
+    expect(res.stderr).toContain('[predlog-vse-po-skheme] в «Всё по схеме');
+  });
+
+  it('КОНТРОЛЬ: «Вход во «Всё по схеме»» — exit 0', () => {
+    const res = runGate('check-robot-phrases.mjs', {
+      'scripts/robot-phrases-baseline.json': JSON.stringify({}),
+      'src/x.ts': "export const h = '🔐 <b>Вход во «Всё по схеме»</b>';\n",
+    });
+    expect(res.status).toBe(0);
+    expect(res.stdout).toContain(
+      '✓ Храповик роботных конструкций: 0 (без роста)',
+    );
+  });
+});
+
 describe('ALLOW-исключения check-robot-phrases.mjs', () => {
   const ALLOW = loadRegexList('check-robot-phrases.mjs', 'ALLOW');
 
@@ -216,7 +240,7 @@ describe('статика вне src/ (SCAN_FILES)', () => {
 // у КАЖДОГО паттерна — живой образец, который ловит именно он. Новый паттерн
 // без образца в POSITIVE роняет первый тест ниже сразу.
 describe('каждый паттерн пойман своим образцом', () => {
-  const PATTERNS = loadNamedPatterns('check-robot-phrases.mjs', 'PATTERNS');
+  const PATTERNS = loadNamedPatterns('robot-phrases-patterns.mjs', 'PATTERNS');
 
   const POSITIVE: Record<string, string> = {
     'eto-ne-eto': 'Это не упражнение, это способ прожить эмоцию',
@@ -231,6 +255,7 @@ describe('каждый паттерн пойман своим образцом',
     symmetry: 'С одной стороны это страшно',
     'samonazvanie-terapevt': 'Автор проекта — схема-терапевт, работает онлайн',
     'samonazvanie-avtora': 'Я психолог, работаю в подходе схема-терапия',
+    'predlog-vse-po-skheme': 'Перейди по ссылке, чтобы войти в «Всё по схеме»',
   };
 
   it('в PATTERNS нет имени без образца в POSITIVE', () => {
@@ -279,6 +304,28 @@ describe('каждый паттерн пойман своим образцом',
       'samonazvanie-avtora',
       'Я работаю в подходе схема-терапия и сделал приложение бесплатным',
       'правильная формулировка о себе — без существительного-квалификации',
+    ],
+    // Контроль к predlog-vse-po-skheme (правило №15 п.2): норма и законные
+    // соседи предлога не краснеют.
+    [
+      'predlog-vse-po-skheme',
+      'Вход во «Всё по схеме»',
+      'нормативное «во» перед «вс-»',
+    ],
+    [
+      'predlog-vse-po-skheme',
+      'Восстановление доступа ко «Всё по схеме»',
+      'нормативное «ко» перед «вс-»',
+    ],
+    [
+      'predlog-vse-po-skheme',
+      'Новая заметка в приложении «Всё по схеме»',
+      '«в» относится к слову «приложении», а не к названию',
+    ],
+    [
+      'predlog-vse-po-skheme',
+      'Приглашение в дневник «Всё по схеме»',
+      'lookbehind: «к» в конце слова «дневник» — не предлог',
     ],
   ] as const)('паттерн «%s» НЕ ловит «%s» (%s)', (name, text) => {
     const p = PATTERNS.find((x) => x.name === name)!;

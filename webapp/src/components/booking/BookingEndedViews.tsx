@@ -2,8 +2,8 @@ import { BookingSessionCard } from './BookingSessionCard';
 import type { PublicBooking } from './useBookingByToken';
 import { CANCEL_SUPPORT_LINK, CANCEL_SUPPORT_HANDLE } from './cancelPolicy';
 import { h1, sub } from './bookingPageStyles';
-import { icon, primaryBtn } from './bookingPaidStyles';
-
+import { icon } from './bookingPaidStyles';
+import { Btn } from '../landing-kit';
 /** Бронь отменена. При `paid` деньги получены, а брони нет: прямо говорим про возврат. */
 export function BookingCancelledView({ paid }: { paid: boolean }) {
   return (
@@ -18,7 +18,7 @@ export function BookingCancelledView({ paid }: { paid: boolean }) {
       ) : (
         <p style={sub}>Если оплата уже прошла – напишите мне, верну деньги.</p>
       )}
-      <a href="/#booking" style={primaryBtn}>Записаться снова</a>
+      <Btn href="/#booking" full radius="btn" size="lg">Записаться снова</Btn>
     </>
   );
 }
@@ -31,7 +31,7 @@ export function BookingCompletedView({ booking }: { booking: PublicBooking }) {
       <h1 style={h1}>Встреча прошла</h1>
       <p style={sub}>Спасибо, что пришли. Если захотите продолжить – запишитесь на новое время.</p>
       <BookingSessionCard type={booking.type} durationMin={booking.durationMin} startsAt={booking.startsAt} />
-      <a href="/#booking" style={primaryBtn}>Записаться снова</a>
+      <Btn href="/#booking" full radius="btn" size="lg">Записаться снова</Btn>
     </>
   );
 }

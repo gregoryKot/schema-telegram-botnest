@@ -13,7 +13,7 @@ export const SELF_CHECK_CRON = '43 * * * *';
 export const STARTUP_GRACE_MS = 10 * 60_000;
 
 /** Возраст снимка, после которого часовой крон считается остановившимся: один
- * пропущенный тик допустим, два — нет (та же формула, что `maxLeaseAgeMs`). */
+ * пропущенный тик допустим, два — нет (та же формула, что `leaseAgeLimitMs`). */
 export function maxSnapshotAgeMs(): number {
   const { minGapMs, maxGapMs } = cronGapsMs(SELF_CHECK_CRON);
   return maxGapMs + minGapMs;

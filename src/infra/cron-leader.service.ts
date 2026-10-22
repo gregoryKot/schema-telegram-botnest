@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { randomBytes } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
+import { noteClaimFailure } from './cron-claim-failures';
 
 // Leader-election для кронов. Расписание одинаковое на всех инстансах, поэтому
 // второй под (масштабирование, перекатывающийся деплой) отрабатывает тот же
@@ -20,10 +21,8 @@ const INSTANCE_ID =
   process.env.HOSTNAME?.trim() ||
   `pid-${process.pid}-${randomBytes(3).toString('hex')}`;
 
-/**
- * Окно аренды: «этот крон уже отработал за последние N мс — не повторять».
- * Всегда меньше периода самого крона, иначе тик пропускался бы штатно.
- */
+/** Окно аренды: «этот крон уже отработал за последние N мс — не повторять».
+ * Всегда меньше периода самого крона, иначе тик пропускался бы штатно. */
 export const LEASE_WINDOW = {
   everyMinute: 45_000,
   fiveMinutes: 4 * 60_000,
@@ -58,9 +57,10 @@ export class CronLeaderService {
       `;
       return claimed > 0;
     } catch (err) {
-      // БД недоступна: тело крона всё равно ходит в неё и упало бы следом,
-      // поэтому пропускаем тик, а не рискуем дублем. Warn, а не error —
-      // error ушёл бы в AlertLogger и на каждом тике будил админа DM.
+      // БД недоступна: тело крона упало бы следом — пропуск лучше дубля.
+      // Warn, а не error: error будил бы админа DM каждый тик. Отказ из-за
+      // базы запоминается — проба cronLeases не судит крон за этот тик.
+      noteClaimFailure(name, err, now);
       this.logger.warn(
         `claimRun(${name}) не удался, тик пропущен: ${(err as Error)?.message?.slice(0, 120)}`,
       );

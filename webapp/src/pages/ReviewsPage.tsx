@@ -1,4 +1,5 @@
 import { PRACTICE_BOOKING_URL } from './landing/constants';
+import { Btn } from '../components/landing-kit';
 
 // ─── Почему на сайте нет отзывов – этическое обоснование ─────────────────────
 const REASONS = [
@@ -65,13 +66,7 @@ export function ReviewsPage() {
             не подойдём друг другу, я честно скажу и при необходимости
             порекомендую коллегу.
           </p>
-          <a href={PRACTICE_BOOKING_URL} style={{
-            display: 'inline-flex', alignItems: 'center', gap: 'var(--space-8)',
-            padding: '13px 26px', background: 'var(--accent)', color: '#fff',
-            borderRadius: 100, fontSize: 14, fontWeight: 600, textDecoration: 'none',
-          }}>
-            Записаться на знакомство →
-          </a>
+          <Btn href={PRACTICE_BOOKING_URL} newTab={false}>Записаться на знакомство →</Btn>
         </div>
       </div>
     </div>

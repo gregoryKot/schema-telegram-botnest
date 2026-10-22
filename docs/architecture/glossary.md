@@ -1,0 +1,78 @@
+# Карта: словарь — как говорит владелец → где это в коде
+
+> Владелец называет экраны и фичи словами интерфейса. Найди слово здесь (`grep -n 'слово' docs/architecture/glossary.md`) вместо поиска русских строк по коду. Нет слова или путь устарел — допиши строку в том же PR и запиши промах в [docs/agent/NAV_LOG.md](../agent/NAV_LOG.md). Подробности модулей — [docs/ARCHITECTURE.md](../ARCHITECTURE.md).
+
+«Сайт» = `webapp/` (залогиненная часть — «кабинет»), «мини-апп» = `schema-miniapp/` (Telegram/MAX), общее = `shared/`. Парный файл правится в оба фронтенда (правило №3).
+
+| Говорят | Что это | Бэкенд | Фронт |
+|---|---|---|---|
+| **Навигация** | | | |
+| «Сегодня», главная | вкладка дня | — | `webapp/src/sections/TodaySection.tsx`, `schema-miniapp/src/sections/TodaySection.tsx` |
+| «Дневник» | вкладка сайта; в мини-аппе оверлей | `src/bot/diary.service.ts` | `webapp/src/sections/DiarySection.tsx`, `schema-miniapp/src/sections/DiarySection.tsx` |
+| «Паттерны», «Мои паттерны» | вкладка: Схемы / Режимы / Потребности | `src/bot/notes.service.ts` | `webapp/src/sections/SchemasSection.tsx`, `schema-miniapp/src/sections/SchemasSection.tsx` |
+| «Практика» (сайт), «Помощь» (мини-апп) | вкладка инструментов и самопомощи | `src/bot/practices.service.ts` | `webapp/src/sections/PracticeSection.tsx`, `schema-miniapp/src/sections/HelpSection.tsx` |
+| «Профиль», «Я» | вкладка профиля | `src/bot/profile.service.ts` | `webapp/src/sections/ProfileSection.tsx`, `schema-miniapp/src/sections/ProfileSection.tsx` |
+| меню «+», быстрые действия | разобраться / записать / оценить / успокоиться | — | `shared/src/quickActions/quickActionsRegistry.ts`, `webapp/src/components/quickActions/PlusMenuSheet.tsx`, `schema-miniapp/src/components/plusMenu/PlusMenuSheet.tsx` |
+| «Настроить экран» | порядок и скрытие блоков | — | `shared/src/screens/screenBlocks.ts`, `webapp/src/components/customize/ScreenCustomizeSheet.tsx`, `schema-miniapp/src/components/customize/ScreenCustomizeSheet.tsx` |
+| «Настройки», шестерёнка | шторка настроек | `src/api/settings.controller.ts` | `webapp/src/components/SettingsSheet.tsx`, `schema-miniapp/src/components/SettingsSheet.tsx` |
+| «ты/вы» | форма обращения | `src/notification/address-form.ts` | `shared/src/utils/addressForm.ts` |
+| онбординг, согласие | первые шаги и согласия первого входа | `src/telegram/telegram.consent-text.ts` | `shared/src/onboarding/`, `webapp/src/sections/today/OnboardingWidget.tsx`, `schema-miniapp/src/sections/today/OnboardingWidget.tsx` |
+| **Фичи** | | | |
+| «Фокус» | главная практика дня | — | `webapp/src/sections/today/TodayFocusCard.tsx`, `schema-miniapp/src/components/TodayFocusCard.tsx` |
+| «Трекер потребностей», «оценить день», «индекс дня» | оценка пяти потребностей | `src/api/tracker.controller.ts`, `src/bot/bot.service.ts` | `webapp/src/components/TrackerOverlay.tsx`, `schema-miniapp/src/components/TrackerOverlay.tsx` |
+| «История», «заметка дня» | история оценок | `src/bot/bot.rating-history.ts` | `webapp/src/components/HistorySheet.tsx`, `schema-miniapp/src/components/HistoryView.tsx` |
+| «Схема» / «Режим» / «Благодарность» | три дневника, мастера записи | `src/api/diary.controller.ts` | `webapp/src/components/diary/SchemaEntrySheet.tsx`, `schema-miniapp/src/components/diary/SchemaEntrySheet.tsx` |
+| «Что это было» | разбор случая; пишет в дневник режимов и карточку режима | `src/bot/diary.service.ts`, `src/bot/case-metrics.service.ts` | `shared/src/case/`, `webapp/src/components/caseFlow/CaseFlowHost.tsx`, `schema-miniapp/src/components/caseFlow/CaseFlowOverlay.tsx` |
+| «Карта себя» | карта режимов из разборов | — | `webapp/src/components/selfMap/SelfMapScreen.tsx`, `schema-miniapp/src/components/selfMap/SelfMapScreen.tsx` |
+| «Мой путь» | лента активности за период | `src/bot/journey.service.ts`, `src/api/journey.controller.ts` | `shared/src/journey/`, `webapp/src/components/JourneySheet.tsx`, `schema-miniapp/src/components/JourneySheet.tsx` |
+| «Мой портрет» | портрет по потребностям | — | `webapp/src/sections/profile/PortraitCard.tsx`, `schema-miniapp/src/sections/profile/PortraitCard.tsx` |
+| «Мои схемы», «Мои режимы», карточка схемы / режима | заметки по паттерну | `src/bot/notes.service.ts` | `webapp/src/components/exercises/FlashcardEx.tsx`, `webapp/src/components/patternSheet/PatternSheet.tsx`, `schema-miniapp/src/components/patternSheet/PatternSheet.tsx` |
+| «Тест на схемы», YSQ | опросник из 116 вопросов | `src/bot/ysq.service.ts` | `webapp/src/components/YSQTestSheet.tsx`, `schema-miniapp/src/components/YSQTestSheet.tsx` |
+| «Карта режимов» (каталог), справка по схемам и режимам | все режимы по группам; шторка-справочник | — | `webapp/src/sections/schemas/ModeMap.tsx`, `webapp/src/components/SchemaInfoSheet.tsx`, `schema-miniapp/src/components/SchemaInfoSheet.tsx` |
+| «Проверка убеждения» | «правда ли это?» | `src/bot/exercises.service.ts` | `webapp/src/components/exercises/BeliefCheckEx.tsx`, `schema-miniapp/src/components/BeliefCheck.tsx` |
+| «Схема включилась» | флэшкарта в 5 шагов | `src/bot/exercises.service.ts` | `webapp/src/components/SchemaFlashcard.tsx`, `schema-miniapp/src/components/SchemaFlashcard.tsx` |
+| «Письмо себе» | письмо Уязвимому Ребёнку | `src/bot/exercises.service.ts` | `webapp/src/components/exercises/LetterEx.tsx`, `schema-miniapp/src/components/LetterToSelf.tsx` |
+| «Безопасное место» | место-ресурс | `src/bot/exercises.service.ts` | `webapp/src/components/exercises/SafePlaceEx.tsx`, `schema-miniapp/src/components/SafePlace.tsx` |
+| «Колесо детства» | потребности в детстве | `src/bot/bot.service.ts` | `webapp/src/components/exercises/ChildhoodWheelEx.tsx`, `schema-miniapp/src/components/ChildhoodWheelSheet.tsx` |
+| «Тёплые слова» | свои слова поддержки | — | `shared/src/warmWords/collectWarmWords.ts`, `webapp/src/components/exercises/WarmWordsEx.tsx`, `schema-miniapp/src/components/WarmWords.tsx` |
+| «Критик или забота?» | разбор фразы внутреннего голоса | `src/bot/phrase-check.service.ts` | `shared/src/phraseCheck/`, `webapp/src/components/exercises/PhraseCheckEx.tsx`, `schema-miniapp/src/components/PhraseCheck.tsx` |
+| «Здесь и сейчас», дыхание, заземление, «Стоп» | быстрые практики | `src/bot/practice-sessions.service.ts` | `webapp/src/sections/practice/HereAndNowBlock.tsx`, `schema-miniapp/src/sections/helpSection/HereAndNow.tsx` |
+| «Практики», «Планы» | что питает; план с чек-ином | `src/bot/practices.service.ts` | `webapp/src/components/PracticesScreen.tsx`, `schema-miniapp/src/components/PracticesScreen.tsx` |
+| «Мои цели», задания | задачи свои и от терапевта | `src/therapy/therapy-tasks.service.ts` | `webapp/src/sections/practice/AllGoalsOverlay.tsx`, `schema-miniapp/src/sections/helpSection/AllTasksSheet.tsx` |
+| «Пара», партнёр | видны индексы дня друг друга | `src/bot/pairs.service.ts` | `webapp/src/components/settingsSheet/PartnerSection.tsx`, `schema-miniapp/src/components/PairSheet.tsx` |
+| «Достижения», «серия» | награды, дни подряд | `src/bot/bot.insight-metrics.ts`, `src/bot/bot.activity-streak.ts` | `webapp/src/sections/profile/AchievementsCard.tsx`, `schema-miniapp/src/sections/profile/AchievementsCard.tsx` |
+| «Поделиться», карточка-картинка | шаринг | — | `webapp/src/share/ShareCardSheet.tsx`, `schema-miniapp/src/share/ShareCardSheet.tsx` |
+| «Черновики» | незавершённые записи | `src/api/api.controller.ts` | `webapp/src/utils/drafts.ts`, `schema-miniapp/src/utils/drafts.ts` |
+| «Телефон доверия», кризисная карточка | при тревожных маркерах | `src/bot/crisis-metrics.ts` | `shared/src/components/CrisisCard.tsx` |
+| игра, котик Мистер | отдельный пакет `game/` | `src/bot/game-metrics.service.ts` | `game/src/main.ts` |
+| **Сайт, вход, бот, канал** | | | |
+| лендинг | продуктовая главная сайта | — | `webapp/src/pages/ProductLandingPage.tsx` |
+| «Мини-тесты» | публичные тесты, `/tests` и в боте | `src/quiz/quiz-registry.ts`, `src/telegram/telegram.quiz.service.ts` | `webapp/src/pages/tests/TestsPage.tsx` |
+| «Статьи» | блог | `src/articles/articles.service.ts` | `webapp/src/pages/ArticlesPage.tsx` |
+| «Визитка» | `kotlarewski.gr`, отдаёт только свои страницы | `src/practice-domain.middleware.ts`, `src/practice-domain.surface.ts` | `webapp/src/pages/LandingPage.tsx`, `webapp/src/App.tsx` |
+| «Вход», логин | Google, VK, Telegram, почта | `src/auth/auth.controller.ts`, `src/auth/auth-oauth.controller.ts` | `webapp/src/pages/LoginPage.tsx`, `schema-miniapp/src/components/LoginScreen.tsx` |
+| «Привязать Telegram», слияние аккаунтов | merge двух userId | `src/auth/merge.service.ts` | `webapp/src/pages/MergePage.tsx`, `webapp/src/pages/AccountPage.tsx` |
+| «Удалить аккаунт», «выгрузить данные» | удаление и экспорт | `src/bot/account.delete.ts`, `src/account/data-export.service.ts` | `webapp/src/sections/profile/DeleteAccountDialog.tsx`, `shared/src/account/useDataExport.ts` |
+| бот, команды | `/start` `/tests` `/settings` `/donate` `/about` | `src/telegram/telegram.service.ts` | — |
+| напоминания, уведомления | очередь, планировщик, тихие часы | `src/notification/notification.planner.service.ts`, `src/telegram/telegram.schedule.service.ts` | `webapp/src/components/settingsSheet/NotificationsSection.tsx`, `schema-miniapp/src/components/settingsSheet/NotificationsSection.tsx` |
+| «⏸ Пауза» уведомлений, отложить | кнопки под напоминанием бота; пауза 7/30 дней снимает проактивную очередь | `src/telegram/telegram.notify-actions.service.ts`, `src/notification/notification.cadence.service.ts` | баннер «Возобновить» — `webapp/src/components/settingsSheet/NotificationsSection.tsx`, `schema-miniapp/src/components/settingsSheet/NotificationsSection.tsx` |
+| «Здоровый Взрослый», «ЗВ», канал | пост из пула фраз дважды в день | `src/channel/channel-publisher.service.ts`, `src/bot/healthy-adult.service.ts` | `webapp/src/pages/admin/HealthyAdultSection.tsx` |
+| MAX | второй мессенджер: вход и канал | `src/auth/auth-max.controller.ts` | `shared/src/host/max.ts` |
+| **Запись и деньги** | | | |
+| «Записаться», бронь, слоты | запись на консультацию | `src/booking/booking.service.ts` | `webapp/src/components/BookingPicker.tsx`, `webapp/src/pages/BookingLinkPage.tsx` |
+| «Знакомство», «Свяжусь с вами» | заявка с лендинга | `src/booking/intro-lead.service.ts` | `webapp/src/pages/landing/BookingForm.tsx` |
+| оплата, Robokassa, страница после оплаты | `/booking/paid`, управление записью | `src/booking/payment.controller.ts`, `src/booking/robokassa.service.ts` | `webapp/src/pages/BookingPaidPage.tsx` |
+| «Расписание», «Цены», iCloud | окна приёма, цена, занятость CalDAV | `src/booking/availability.service.ts`, `src/booking/pricing.service.ts`, `src/booking/caldav.service.ts` | `webapp/src/pages/admin/ScheduleSection.tsx` |
+| «Подписка» | рекуррентные списания | `src/subscription/subscription.service.ts` | `webapp/src/pages/SubscribePage.tsx` |
+| «Донат» | разовый донат | `src/donation/donation.service.ts` | `webapp/src/pages/DonatePage.tsx` |
+| **Терапевт** | | | |
+| «Кабинет терапевта», клиенты | список и карточка клиента, `/cabinet` | `src/therapy/therapy-connection.controller.ts` | `webapp/src/components/TherapistClientSheet.tsx`, `schema-miniapp/src/components/TherapistClientSheet.tsx`, `webapp/src/sections/TherapistTodaySection.tsx` |
+| Обзор / Концептуализация / Сессии / Задания | вкладки карточки клиента | `src/therapy/therapy-notes.controller.ts`, `src/therapy/therapy-tasks.controller.ts` | `webapp/src/components/therapist/ClientTabs.tsx`, `schema-miniapp/src/components/therapistClientSheet/ClientDetailView.tsx` |
+| «Карта режимов с терапевтом» | холст режимов клиента | `src/therapy/mode-maps.service.ts` | `webapp/src/components/ModeMapCanvas.tsx` |
+| «Мой терапевт», код приглашения | связь клиента и терапевта | `src/therapy/therapy-invite.ts` | `shared/src/therapy/useJoinConfirm.ts`, `webapp/src/components/settingsSheet/TherapistSections.tsx` |
+| «Я психолог — подать заявку» | заявка на роль терапевта | `src/therapy/therapist-request.service.ts` | `webapp/src/pages/account/TherapistRequestSection.tsx` |
+| **Админка и эксплуатация** | | | |
+| «Админка», `/admin` | Запись / Статьи / Фото / Бегущая строка / Канал ЗВ | `src/booking/booking-admin.controller.ts`, `src/articles/articles-admin.controller.ts` | `webapp/src/pages/AdminPage.tsx` |
+| `/stats`, отчёт | отчёт админу; ещё `/zv` `/broadcast` `/zayavki` | `src/bot/stats-report.service.ts`, `src/telegram/telegram.admin.service.ts` | — |
+| «Самопроверка», `/health` | живые пробы после деплоя | `src/infra/self-check/self-check.service.ts`, `src/api/health.controller.ts` | — |
+| «Всё по схеме», «СхемаЛаб» | имя продукта; «СхемаЛаб» — старое, `schemalab.ru` редиректится | `src/infra/canonical-host.ts` | — |

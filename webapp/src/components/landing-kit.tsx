@@ -29,7 +29,7 @@ export function Btn({
   const variants: Record<BtnVariant, React.CSSProperties> = {
     // Цвет следует за --accent (продукт: терракота; личный сайт: изолированный
     // индиго). Свечения-тени нет: на бумажном сайте кнопка плоская.
-    primary: { background: 'var(--accent)', color: '#fff' },
+    primary: { background: 'var(--accent)', color: 'var(--on-accent)' },
     ghost:   { background: 'transparent', borderColor: 'var(--line-strong)', color: 'var(--text-sub)', fontWeight: 500 },
     dark:    { background: 'rgba(255,255,255,.1)', borderColor: 'rgba(255,255,255,.2)', color: INK_ON_DARK },
   };
