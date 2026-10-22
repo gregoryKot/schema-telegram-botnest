@@ -33,6 +33,7 @@ import { bookingEventUid } from '../src/booking/booking-confirm-run';
 import { CronLeaderService } from '../src/infra/cron-leader.service';
 import { TelegramService } from '../src/telegram/telegram.service';
 import { EmailService } from '../src/auth/email.service';
+import { decrypt } from '../src/utils/crypto';
 
 function md5(s: string): string {
   return createHash('md5').update(s, 'utf8').digest('hex');
@@ -534,13 +535,17 @@ describe('e2e smoke: платёжный контур Robokassa по HTTP', () =>
           .map((c) => String(c[1]))
           .filter((t) => t.includes(EFFECTS_CLIENT_CONTACT)),
       ).toHaveLength(1);
-      // read-after-write: то, что видит клиент на странице «Оплачено».
+      // read-after-write: ссылка дошла до владельца (строка брони), а страница
+      // «Оплачено» по токену её не отдаёт — токен получает любой, кто вызвал
+      // анонимную запись с чужим контактом (аудит 2026-10).
+      expect(decrypt(afterSecond?.meetingUrl ?? null)).toMatch(/^https:\/\//);
       await pauseThrottle();
       const pub = await request(app.getHttpServer()).get(
         '/api/booking/by-token/bk-ct-10',
       );
       expect(pub.status).toBe(200);
-      expect(pub.body.meetingUrl).toMatch(/^https:\/\//);
+      expect(pub.body.status).toBe('CONFIRMED');
+      expect(pub.body).not.toHaveProperty('meetingUrl');
     });
 
     it('контроль: повтор по полностью подтверждённой брони — OK, ничего не шлёт и встречу заново не создаёт', async () => {

@@ -51,12 +51,18 @@ describe('getPublicBookingByToken — paid', () => {
     expect(res.paid).toBe(false);
   });
 
-  it('не отдаёт метку paidAt и PII — только булев признак', async () => {
-    const res = await view(row({ paidAt: new Date('2026-07-13T09:00:00Z') }));
+  // Ссылки на встречу тоже нет (аудит 2026-10): токен получает любой, кто
+  // вызвал анонимную запись с чужим контактом.
+  it('не отдаёт метку paidAt, PII и ссылку на встречу — только булев признак', async () => {
+    const res = await view(
+      row({
+        paidAt: new Date('2026-07-13T09:00:00Z'),
+        meetingUrl: 'https://zoom.example/j/1?pwd=secret',
+      }),
+    );
     expect(Object.keys(res).sort()).toEqual([
       'durationMin',
       'endsAt',
-      'meetingUrl',
       'paid',
       'startsAt',
       'status',

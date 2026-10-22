@@ -1,8 +1,9 @@
 // D-9 (аудит 2026-10): Booking.meetingUrl и ClientMeeting.meetingUrl лежат в БД
 // зашифрованными — Zoom-ссылка несёт `?pwd=`, по ней входят в комнату клиента.
 // Проверяем связку запись → чтение (CLAUDE.md «read-after-write»): что реально
-// уходит в БД, и что на каждом читателе (создание встречи, публичная проекция,
-// .ics, админский список) человек/клиент получает рабочую ссылку.
+// уходит в БД, и что на каждом читателе (создание встречи, админский список,
+// DM владельцу) получает рабочую ссылку, а анонимные (проекция по токену,
+// .ics) не получают её вовсе.
 //
 // crypto.ts читает ENCRYPTION_KEY на загрузке, поэтому модули подгружаются
 // через resetModules+require ПОСЛЕ установки ключа (как в волнах дошифровки) —
@@ -84,7 +85,7 @@ afterEach(() => {
 describe('MeetingService: ClientMeeting.meetingUrl зашифрован', () => {
   it('новая встреча: в БД шифротекст, клиенту возвращается рабочая ссылка', async () => {
     const { service, store } = meetingService();
-    const url = await service.createMeeting(TARGET);
+    const { url } = await service.createMeeting(TARGET);
 
     expect(url).toMatch(/^https:\/\/meet\.jit\.si\//);
     const stored = [...store.values()][0].meetingUrl as string;
@@ -94,10 +95,10 @@ describe('MeetingService: ClientMeeting.meetingUrl зашифрован', () => 
 
   it('повторная сессия: ссылка читается из зашифрованной строки и совпадает', async () => {
     const { service, store } = meetingService();
-    const first = await service.createMeeting(TARGET);
+    const { url: first } = await service.createMeeting(TARGET);
     expect([...store.values()][0].meetingUrl).not.toBe(first);
 
-    expect(await service.createMeeting(TARGET)).toBe(first);
+    expect((await service.createMeeting(TARGET)).url).toBe(first);
   });
 
   it('старая строка с открытой ссылкой (до волны 3) читается как есть', async () => {
@@ -107,7 +108,7 @@ describe('MeetingService: ClientMeeting.meetingUrl зашифрован', () => 
     row.meetingUrl = ZOOM; // legacy plaintext
     row.zoomMeetingId = '123456789';
 
-    expect(await service.createMeeting(TARGET)).toBe(ZOOM);
+    expect((await service.createMeeting(TARGET)).url).toBe(ZOOM);
   });
 
   it('апгрейд Jitsi → Zoom находит Jitsi в ЗАШИФРОВАННОЙ строке и пишет новую ссылку зашифрованной', async () => {
@@ -131,7 +132,7 @@ describe('MeetingService: ClientMeeting.meetingUrl зашифрован', () => 
         json: () => Promise.resolve({ join_url: ZOOM, id: 123456789 }),
       });
 
-    expect(await zoomOn.service.createMeeting(TARGET)).toBe(ZOOM);
+    expect((await zoomOn.service.createMeeting(TARGET)).url).toBe(ZOOM);
     const stored = zoomOn.store.get(key)!.meetingUrl as string;
     expect(stored).not.toContain('pwd=');
     expect(cryptoMod.decrypt(stored)).toBe(ZOOM);
@@ -171,7 +172,11 @@ describe('Booking.meetingUrl: запись и каждый читатель', ()
       enabled: true,
       pushEvent: jest.fn(() => Promise.resolve('uid-1')),
     };
-    const meeting = { createMeeting: jest.fn(() => Promise.resolve(ZOOM)) };
+    const meeting = {
+      createMeeting: jest.fn(() =>
+        Promise.resolve({ url: ZOOM, replaced: false }),
+      ),
+    };
     const telegram = { notifyAdmin: jest.fn(() => Promise.resolve(true)) };
     const email = { sendAdminNotification: jest.fn(() => Promise.resolve()) };
     const svc = new BookingNotifyService(
@@ -209,17 +214,21 @@ describe('Booking.meetingUrl: запись и каждый читатель', ()
     expect(telegram.notifyAdmin.mock.calls[0][0]).toContain(ZOOM);
   });
 
-  it('публичная проекция по cancel-токену отдаёт расшифрованную ссылку', async () => {
+  // Аудит 2026-10 (утечка ссылки на встречу): cancel-токен получает любой, кто
+  // вызвал анонимную запись с чужим контактом, поэтому ни проекция по токену,
+  // ни .ics ссылку не отдают — ни открытой, ни шифротекстом.
+  it('публичная проекция по cancel-токену ссылку на встречу не отдаёт', async () => {
+    const row = encryptedBookingRow();
     const prisma = {
-      booking: {
-        findUnique: jest.fn(() => Promise.resolve(encryptedBookingRow())),
-      },
+      booking: { findUnique: jest.fn(() => Promise.resolve(row)) },
     };
     const view = await queries.getPublicBookingByToken(prisma as never, 'tok');
-    expect(view.meetingUrl).toBe(ZOOM);
+    expect(view).not.toHaveProperty('meetingUrl');
+    expect(JSON.stringify(view)).not.toContain('SECRETPWD');
+    expect(JSON.stringify(view)).not.toContain(row.meetingUrl);
   });
 
-  it('.ics для клиента несёт рабочую ссылку, а не шифротекст', async () => {
+  it('.ics для клиента не несёт ссылку на встречу — ни открытой, ни шифротекстом', async () => {
     const row = encryptedBookingRow();
     const prisma = {
       booking: { findUnique: jest.fn(() => Promise.resolve(row)) },
@@ -229,7 +238,8 @@ describe('Booking.meetingUrl: запись и каждый читатель', ()
       'tok',
       'https://schemehappens.ru',
     );
-    expect(text).toContain('SECRETPWD');
+    expect(text).not.toContain('SECRETPWD');
+    expect(text).not.toContain('zoom.us');
     expect(text).not.toContain(row.meetingUrl);
   });
 
@@ -254,7 +264,7 @@ describe('Booking.meetingUrl: запись и каждый читатель', ()
     expect(one.meetingUrl).toBe(ZOOM);
   });
 
-  it('старая строка с открытой ссылкой читается везде как есть (до дошифровки)', async () => {
+  it('старая строка с открытой ссылкой читается админом как есть (до дошифровки)', async () => {
     const prisma = {
       booking: {
         findUnique: jest.fn(() =>
@@ -262,9 +272,11 @@ describe('Booking.meetingUrl: запись и каждый читатель', ()
         ),
       },
     };
-    expect(
-      (await queries.getPublicBookingByToken(prisma as never, 'tok'))
-        .meetingUrl,
-    ).toBe(ZOOM);
+    const one = await queries.getBookingById(
+      prisma as never,
+      BOOKING_SCHEMA,
+      5,
+    );
+    expect(one.meetingUrl).toBe(ZOOM);
   });
 });
