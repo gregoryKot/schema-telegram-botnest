@@ -125,7 +125,7 @@ describe('TwoFactorChallengePage — лимит, авария и сеть не �
     return container;
   }
 
-  it('429 — русский текст сервера', async () => {
+  it('контроль: 429 — русский текст сервера проходит как есть', async () => {
     const text = 'Слишком много попыток подряд. Повторить можно через 12 минут';
     const container = await submitWith(() =>
       Promise.resolve(new Response(JSON.stringify({ statusCode: 429, message: text }), { status: 429 })));

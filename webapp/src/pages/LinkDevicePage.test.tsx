@@ -234,7 +234,7 @@ describe('подтверждение', () => {
 // показывали «ThrottlerException…» (код человека — 5 в минуту, CODE_THROTTLE),
 // а обрыв сети — «Failed to fetch». Ответы — настоящие Response.
 describe('ошибки человеческим текстом', () => {
-  it('сводка упёрлась в лимит — русский текст сервера', async () => {
+  it('контроль: сводка упёрлась в лимит — русский текст сервера проходит как есть', async () => {
     const text = 'Слишком много попыток подряд. Повторить можно через минуту';
     fetchMock.mockImplementation(() =>
       Promise.resolve(new Response(JSON.stringify({ statusCode: 429, message: text }), { status: 429 })));

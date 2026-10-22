@@ -177,7 +177,7 @@ describe('RecoveryPage — ошибки человеческим текстом'
     expect(container.textContent).not.toMatch(/Token expired/);
   });
 
-  it('запрос письма упёрся в суточный лимит — русский текст сервера со сроком', async () => {
+  it('контроль: запрос письма упёрся в суточный лимит — русский текст сервера проходит как есть', async () => {
     const text = 'Слишком много попыток подряд. Повторить можно через 24 часа';
     fetchMock.mockImplementation(() =>
       Promise.resolve(new Response(JSON.stringify({ statusCode: 429, message: text }), { status: 429 })));

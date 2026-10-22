@@ -283,7 +283,7 @@ function submitEmail(container: HTMLElement) {
 }
 
 describe('LoginPage — ошибки письма входа человеческим текстом', () => {
-  it('429 — русский текст сервера со сроком, без «ThrottlerException»', async () => {
+  it('контроль: 429 — русский текст сервера со сроком проходит как есть', async () => {
     failEmailWith(throttled);
     const { container } = renderPage();
     submitEmail(container);
