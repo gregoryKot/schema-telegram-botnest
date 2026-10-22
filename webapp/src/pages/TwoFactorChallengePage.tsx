@@ -4,6 +4,7 @@ import { useAuth } from '../auth/authContext';
 import { OtpCells } from './login/OtpCells';
 import '../styles/auth-login.css';
 import { TwoFactorIntro } from './login/TwoFactorIntro';
+import { humanizeThrown, readHumanError } from '../../../shared/src/api/humanizeError';
 
 const API_BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? '';
 
@@ -38,15 +39,13 @@ export function TwoFactorChallengePage() {
         headers: { 'Content-Type': 'application/json', 'x-requested-with': 'webapp' },
         body: JSON.stringify({ challengeToken, code: code.trim() }),
       });
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({ message: 'Неверный код' }));
-        throw new Error(body.message ?? 'Неверный код');
-      }
+      // 401 сервера — «Invalid 2FA code»; лимит и авария — свой текст, не «Неверный код».
+      if (!res.ok) throw new Error((await readHumanError(res, 'Неверный код')).message);
       const { accessToken, expiresIn } = await res.json() as { accessToken: string; expiresIn: number };
       setAccessToken(accessToken, expiresIn);
       navigate('/today', { replace: true });
     } catch (err) {
-      setError(String(err).replace('Error: ', ''));
+      setError(humanizeThrown(err, 'Не получилось войти'));
       setBusy(false);
       setCode('');
       inputRef.current?.focus();

@@ -229,8 +229,21 @@ describe('e2e HTTP: лимит кодовых ручек переживает р
     const post = (a: INestApplication) =>
       request(a.getHttpServer()).post('/api/auth/merge').send({});
     const statuses: number[] = [];
-    for (let i = 0; i < 4; i++) statuses.push((await post(first)).status);
+    let last: request.Response | undefined;
+    for (let i = 0; i < 4; i++) {
+      last = await post(first);
+      statuses.push(last.status);
+    }
     expect(statuses).toEqual([400, 400, 400, 429]);
+    // Текст 429 через настоящий путь Postgres-счётчика — русский, со сроком
+    // из счётчика (окно STRICT_THROTTLE.short — минута), а не «ThrottlerException…»
+    // (аудит 2026-10, сырой текст сервера на экранах входа). Глобальных
+    // фильтров main.ts buildRealDbTestApp не ставит; форму тела при
+    // GenericExceptionFilter держит src/api/throttler-module-options.spec.ts.
+    expect(last?.body).toEqual({
+      statusCode: 429,
+      message: 'Слишком много попыток подряд. Повторить можно через минуту',
+    });
 
     await first.close();
     const second = await boot(false);

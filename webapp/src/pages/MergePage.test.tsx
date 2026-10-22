@@ -280,3 +280,43 @@ describe('MergePage — второй фактор второго аккаунт�
     expect(screen.queryByLabelText('Код второго аккаунта')).toBeNull();
   });
 });
+
+// Аудит 2026-10, «сырой текст сервера на экранах входа»: экран показывал
+// «Error: Merge failed», «ThrottlerException…» (POST /api/auth/merge — 3 в
+// минуту, test/throttle-storage.e2e-spec.ts) и «TypeError: Failed to fetch».
+// Ответы — настоящие Response.
+describe('MergePage — ошибки человеческим текстом', () => {
+  it('429 — русский текст сервера со сроком', async () => {
+    const text = 'Слишком много попыток подряд. Повторить можно через минуту';
+    fetchMock.mockImplementation(() =>
+      Promise.resolve(new Response(JSON.stringify({ statusCode: 429, message: text }), { status: 429 })));
+    const { container } = renderAt('/merge?token=secret-token');
+    await confirmMerge();
+    await screen.findByText(text);
+    expect(container.textContent).not.toMatch(/Throttler|Error:/);
+  });
+
+  it('500 без текста (HTML прокси) — «сервер не ответил»', async () => {
+    fetchMock.mockImplementation(() => Promise.resolve(new Response('<html>502</html>', { status: 502 })));
+    renderAt('/merge?token=secret-token');
+    await confirmMerge();
+    await screen.findByText('Сервер не ответил. Повторить можно чуть позже');
+  });
+
+  it('служебный английский сервера — запасной русский текст, не «Merge failed»', async () => {
+    fetchMock.mockImplementation(() =>
+      Promise.resolve(new Response('{"statusCode":401,"message":"Unauthorized"}', { status: 401 })));
+    const { container } = renderAt('/merge?token=secret-token');
+    await confirmMerge();
+    await screen.findByText('Не получилось объединить аккаунты');
+    expect(container.textContent).not.toMatch(/Unauthorized|Merge failed/);
+  });
+
+  it('обрыв сети — «Нет связи с сервером»', async () => {
+    fetchMock.mockImplementation(() => Promise.reject(new TypeError('Failed to fetch')));
+    const { container } = renderAt('/merge?token=secret-token');
+    await confirmMerge();
+    await screen.findByText('Нет связи с сервером');
+    expect(container.textContent).not.toMatch(/TypeError/);
+  });
+});

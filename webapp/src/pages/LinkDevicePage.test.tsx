@@ -229,3 +229,36 @@ describe('подтверждение', () => {
     expect(screen.queryByText('Готово')).toBeNull();
   });
 });
+
+// Аудит 2026-10, «сырой текст сервера на экранах входа»: сводка и подтверждение
+// показывали «ThrottlerException…» (код человека — 5 в минуту, CODE_THROTTLE),
+// а обрыв сети — «Failed to fetch». Ответы — настоящие Response.
+describe('ошибки человеческим текстом', () => {
+  it('сводка упёрлась в лимит — русский текст сервера', async () => {
+    const text = 'Слишком много попыток подряд. Повторить можно через минуту';
+    fetchMock.mockImplementation(() =>
+      Promise.resolve(new Response(JSON.stringify({ statusCode: 429, message: text }), { status: 429 })));
+    const { container } = renderAt('/link?code=ABCD2345');
+    await waitFor(() => expect(screen.getByText(text)).toBeTruthy());
+    expect(container.textContent).not.toMatch(/Throttler/);
+  });
+
+  it('сводка: обрыв сети — «Нет связи с сервером»', async () => {
+    fetchMock.mockImplementation(() => Promise.reject(new TypeError('Failed to fetch')));
+    const { container } = renderAt('/link?code=ABCD2345');
+    await waitFor(() => expect(screen.getByText('Нет связи с сервером')).toBeTruthy());
+    expect(container.textContent).not.toMatch(/Failed to fetch/);
+  });
+
+  it('подтверждение: 502 HTML прокси — «сервер не ответил», не «Не получилось»', async () => {
+    renderAt('/link?code=ABCD2345');
+    await waitFor(() => expect(screen.getByText('Разрешить доступ')).toBeTruthy());
+
+    fetchMock.mockImplementation(() => Promise.resolve(new Response('<html>502</html>', { status: 502 })));
+    fireEvent.click(screen.getByText('Разрешить доступ'));
+
+    await waitFor(() =>
+      expect(screen.getByText('Сервер не ответил. Повторить можно чуть позже')).toBeTruthy());
+    expect(screen.queryByText('Готово')).toBeNull();
+  });
+});

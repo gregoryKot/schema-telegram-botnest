@@ -252,3 +252,107 @@ describe('LoginPage — внутри Telegram (авто-вход не удалс
     await screen.findByText(/Ошибка 401/);
   });
 });
+
+// Аудит 2026-10, «сырой текст сервера на экранах входа»: при лимите экран
+// показывал «ThrottlerException: Too Many Requests» (или «Ошибка 429»), при
+// обрыве сети — «Failed to fetch». Ответы — настоящие Response, не подделки:
+// разбор тела идёт тем же путём, что в проде. Тело 429 — в форме, которую
+// сервер отдаёт после починки (держит src/api/throttler-module-options.spec.ts
+// на настоящем гарде), и в старой — голая JSON-строка.
+const THROTTLED_RU = 'Слишком много попыток подряд. Повторить можно через минуту';
+const throttled = () =>
+  new Response(JSON.stringify({ statusCode: 429, message: THROTTLED_RU }), { status: 429 });
+const throttledLegacy = () =>
+  new Response('"ThrottlerException: Too Many Requests"', { status: 429 });
+
+/** Письмо падает выбранным ответом; остальные запросы экрана — 200 {}. */
+function failEmailWith(fail: () => Response | Error) {
+  fetchMock.mockImplementation((url: string) => {
+    if (!String(url).includes('/api/auth/email/link')) {
+      return Promise.resolve(new Response('{}', { status: 200 }));
+    }
+    const out = fail();
+    return out instanceof Error ? Promise.reject(out) : Promise.resolve(out);
+  });
+}
+
+function submitEmail(container: HTMLElement) {
+  fireEvent.click(screen.getByRole('button', { name: 'Войти по email' }));
+  fireEvent.change(screen.getByPlaceholderText('your@email.com'), { target: { value: 'me@example.com' } });
+  fireEvent.submit(container.querySelector('form')!);
+}
+
+describe('LoginPage — ошибки письма входа человеческим текстом', () => {
+  it('429 — русский текст сервера со сроком, без «ThrottlerException»', async () => {
+    failEmailWith(throttled);
+    const { container } = renderPage();
+    submitEmail(container);
+    await screen.findByText(THROTTLED_RU);
+    expect(container.textContent).not.toMatch(/Throttler|Ошибка 429/);
+  });
+
+  it('429 старой формы — общий текст про лимит', async () => {
+    failEmailWith(throttledLegacy);
+    const { container } = renderPage();
+    submitEmail(container);
+    await screen.findByText('Слишком много попыток подряд. Повторить можно чуть позже');
+    expect(container.textContent).not.toMatch(/Throttler/);
+  });
+
+  it('обрыв сети — «Нет связи с сервером», не «Failed to fetch»', async () => {
+    failEmailWith(() => new TypeError('Failed to fetch'));
+    const { container } = renderPage();
+    submitEmail(container);
+    await screen.findByText('Нет связи с сервером');
+    expect(container.textContent).not.toMatch(/Failed to fetch/);
+  });
+
+  it('400 ValidationPipe по-английски — запасной текст экрана', async () => {
+    failEmailWith(() => new Response('{"statusCode":400,"message":["email must be an email"]}', { status: 400 }));
+    const { container } = renderPage();
+    submitEmail(container);
+    await screen.findByText('Не удалось отправить письмо');
+  });
+});
+
+describe('LoginPage — «Попробовать снова» в мессенджере: лимит и авария', () => {
+  beforeEach(() => {
+    mockGetHost.mockReturnValue({
+      id: 'telegram',
+      sessionExchange: () => ({ path: '/api/auth/telegram/exchange', body: { initData: 'x' } }),
+    });
+  });
+
+  it('429 — код ответа остаётся, вместо «ThrottlerException» человеческий текст', async () => {
+    fetchMock.mockImplementation(() => Promise.resolve(throttledLegacy()));
+    const { container } = renderPage();
+    fireEvent.click(screen.getByRole('button', { name: 'Попробовать снова' }));
+    await screen.findByText('Ошибка 429: Слишком много попыток подряд. Повторить можно чуть позже');
+    expect(container.textContent).not.toMatch(/Throttler/);
+  });
+
+  it('502 HTML прокси — код ответа и «сервер не ответил», без разметки', async () => {
+    fetchMock.mockImplementation(() =>
+      Promise.resolve(new Response('<html><body>502 Bad Gateway</body></html>', { status: 502 })));
+    const { container } = renderPage();
+    fireEvent.click(screen.getByRole('button', { name: 'Попробовать снова' }));
+    await screen.findByText('Ошибка 502: Сервер не ответил. Повторить можно чуть позже');
+    expect(container.textContent).not.toMatch(/<html|Bad Gateway/);
+  });
+
+  it('обрыв сети — «Нет связи с сервером», не «TypeError: Failed to fetch»', async () => {
+    fetchMock.mockImplementation(() => Promise.reject(new TypeError('Failed to fetch')));
+    const { container } = renderPage();
+    fireEvent.click(screen.getByRole('button', { name: 'Попробовать снова' }));
+    await screen.findByText('Нет связи с сервером');
+    expect(container.textContent).not.toMatch(/TypeError/);
+  });
+
+  it('401 — тело сервера как есть: диагностика отказа подписи (инцидент 2026-08-08)', async () => {
+    fetchMock.mockImplementation(() =>
+      Promise.resolve(new Response('{"message":"Missing authentication","statusCode":401}', { status: 401 })));
+    renderPage();
+    fireEvent.click(screen.getByRole('button', { name: 'Попробовать снова' }));
+    await screen.findByText(/Ошибка 401: .*Missing authentication/);
+  });
+});
