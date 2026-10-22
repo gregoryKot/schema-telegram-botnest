@@ -10,8 +10,9 @@ import { render, screen, fireEvent, cleanup, within } from '@testing-library/rea
 
 vi.mock('../../api', () => ({
   api: { adminListBookings: vi.fn(), adminConfirm: vi.fn(), adminCancel: vi.fn() },
+  reportClientError: vi.fn(),
 }));
-import { api } from '../../api';
+import { api, reportClientError } from '../../api';
 import { BookingsManager } from './BookingsManager';
 import { BookingMeetingLink } from './BookingMeetingLink';
 
@@ -58,6 +59,8 @@ describe('BookingMeetingLink', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Скопировать ссылку' }));
     await screen.findByText(/Не скопировалось/);
     expect(screen.queryByText('Скопировано ✓')).toBeNull();
+    // сбой уходит наверх общим useCopyToClipboard, а не глотается молча
+    expect(reportClientError).toHaveBeenCalledWith({ message: 'admin link copy failed', section: 'admin' });
   });
 
   it('без ссылки не рендерит ничего', () => {

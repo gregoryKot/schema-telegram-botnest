@@ -1,24 +1,20 @@
-import { useState } from 'react';
+import { reportClientError } from '../../api';
+import { useCopyToClipboard } from '../../../../shared/src/utils/useCopyToClipboard';
+
+const reportCopyFail = () => reportClientError({ message: 'admin link copy failed', section: 'admin' });
 
 /**
- * «Скопировать» в админке: текст в буфер + честная подпись исхода. Общий для
- * ссылки на запись (ClientBookingLink) и ссылки на встречу в строке брони
- * (BookingMeetingLink) — одна механика, один хук. Отказ буфера не выглядит
- * как успех: ссылка рядом, её можно выделить руками.
+ * «Скопировать» в админке: подпись исхода поверх общего useCopyToClipboard
+ * (сам буфер, сброс статуса и отчёт наверх живут только там — «одна механика,
+ * один компонент»). Здесь только разметка подписи, общая для ссылки на запись
+ * (ClientBookingLink) и ссылки на встречу в строке брони (BookingMeetingLink).
+ * Отказ буфера не выглядит как успех: ссылка рядом, её можно выделить руками.
  */
 export function useCopyText() {
-  const [copied, setCopied] = useState<'ok' | 'fail' | null>(null);
-  const copy = async (text: string) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopied('ok');
-    } catch {
-      setCopied('fail'); // нет clipboard API / отказ браузера
-    }
-  };
+  const { copied, failed, copy } = useCopyToClipboard({ onError: reportCopyFail });
   const status =
-    copied === 'ok' ? <span style={{ color: 'var(--accent-green)', fontSize: 13 }}>Скопировано ✓</span>
-    : copied === 'fail' ? <span style={{ color: 'var(--accent-red)', fontSize: 13 }}>Не скопировалось – ссылку можно выделить и скопировать руками</span>
+    copied ? <span style={{ color: 'var(--accent-green)', fontSize: 13 }}>Скопировано ✓</span>
+    : failed ? <span style={{ color: 'var(--accent-red)', fontSize: 13 }}>Не скопировалось – ссылку можно выделить и скопировать руками</span>
     : null;
   return { copy, status };
 }
