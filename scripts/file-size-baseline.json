@@ -1223,7 +1223,7 @@
   "src/booking/intro-lead.module.ts": 21,
   "src/booking/intro-lead.schema.ts": 9,
   "src/booking/intro-lead.service.ts": 144,
-  "src/booking/meeting-jitsi.ts": 46,
+  "src/booking/meeting-jitsi.ts": 55,
   "src/booking/meeting-key.ts": 14,
   "src/booking/meeting.service.ts": 191,
   "src/booking/payment-guard.ts": 78,

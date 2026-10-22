@@ -1,7 +1,7 @@
 import { Logger } from '@nestjs/common';
 import { randomBytes } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
-import { encrypt } from '../utils/crypto';
+import { decrypt, encrypt } from '../utils/crypto';
 
 // Комната Jitsi клиента (аудит 2026-10, утечка ссылки на встречу). Раньше адрес
 // считался из контакта: `schemehappens-<sha256(контакт)[0..12]>` — любой, кто
@@ -24,23 +24,32 @@ export function isLegacyJitsiRoom(url: string, key: string): boolean {
 /**
  * Ссылка для повторной брони клиента. Комната по старой формуле заменяется
  * случайной и записывается в ClientMeeting (тот же приём, что апгрейд до Zoom),
- * остальные переиспользуются как есть.
+ * остальные переиспользуются как есть. Запись условная — по прежнему
+ * шифротексту: два одновременных подтверждения одного клиента не выписывают
+ * две разные комнаты, проигравший берёт ту, что записал победитель.
  */
 export async function reuseClientRoom(
   prisma: PrismaService,
   logger: Logger,
-  key: string,
-  url: string,
+  row: { clientKey: string; meetingUrl: string },
 ): Promise<string> {
+  const key = row.clientKey;
+  const url = decrypt(row.meetingUrl) ?? '';
   if (!isLegacyJitsiRoom(url, key)) {
     logger.log(`Reusing personal meeting for client ${key.slice(0, 8)}…`);
     return url;
   }
   const fresh = jitsiRoom();
-  await prisma.clientMeeting.update({
-    where: { clientKey: key },
+  const res = await prisma.clientMeeting.updateMany({
+    where: { clientKey: key, meetingUrl: row.meetingUrl },
     data: { meetingUrl: encrypt(fresh) ?? fresh },
   });
+  if (res.count === 0) {
+    const won = await prisma.clientMeeting.findUnique({
+      where: { clientKey: key },
+    });
+    return (won && decrypt(won.meetingUrl)) || fresh;
+  }
   logger.log(`Replaced computable Jitsi room of client ${key.slice(0, 8)}…`);
   return fresh;
 }

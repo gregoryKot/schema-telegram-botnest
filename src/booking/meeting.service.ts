@@ -106,7 +106,7 @@ export class MeetingService {
           return z.url;
         }
       }
-      return reuseClientRoom(this.prisma, this.logger, key, existingUrl);
+      return reuseClientRoom(this.prisma, this.logger, existing);
     }
 
     if (!this.zoomEnabled)

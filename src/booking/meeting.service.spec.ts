@@ -28,6 +28,14 @@ function makeService(env: Record<string, string | undefined> = {}): {
         Object.assign(row, data);
         return Promise.resolve(row);
       }),
+      // условная запись, как в Postgres: строка ушла из-под where — count 0
+      updateMany: jest.fn(({ where, data }: any) => {
+        const row = store.get(where.clientKey);
+        if (!row || row.meetingUrl !== where.meetingUrl)
+          return Promise.resolve({ count: 0 });
+        Object.assign(row, data);
+        return Promise.resolve({ count: 1 });
+      }),
     },
   };
   const config = { get: (key: string) => env[key] } as unknown as ConfigService;
@@ -287,8 +295,8 @@ describe('MeetingService.createMeeting — комната Jitsi не вывод�
     expect(url).toMatch(
       /^https:\/\/meet\.jit\.si\/schemehappens-[0-9a-f]{16}$/,
     );
-    expect(prisma.clientMeeting.update).toHaveBeenCalledWith({
-      where: { clientKey: key },
+    expect(prisma.clientMeeting.updateMany).toHaveBeenCalledWith({
+      where: { clientKey: key, meetingUrl: LEGACY },
       data: { meetingUrl: expect.any(String) },
     });
     // read-after-write: следующая бронь получает уже новую комнату
@@ -307,6 +315,22 @@ describe('MeetingService.createMeeting — комната Jitsi не вывод�
       expect(await service.createMeeting(TARGET)).toBe(kept);
     }
     expect(prisma.clientMeeting.update.mock.calls).toEqual([]);
+    expect(prisma.clientMeeting.updateMany.mock.calls).toEqual([]);
+  });
+
+  it('гонка двух подтверждений: проигравший берёт комнату победителя, а не свою', async () => {
+    const { service, prisma, store } = makeService();
+    const key = clientKey('@maria');
+    store.set(key, { clientKey: key, meetingUrl: LEGACY, zoomMeetingId: null });
+    const WINNER = 'https://meet.jit.si/schemehappens-aaaaaaaaaaaaaaaa';
+    // победитель записал свою комнату между нашим чтением и нашей записью
+    prisma.clientMeeting.updateMany.mockImplementationOnce(() => {
+      store.get(key).meetingUrl = WINNER;
+      return Promise.resolve({ count: 0 });
+    });
+
+    expect(await service.createMeeting(TARGET)).toBe(WINNER);
+    expect(store.get(key).meetingUrl).toBe(WINNER);
   });
 
   it('isLegacyJitsiRoom узнаёт ровно старую формулу, а не префикс', () => {

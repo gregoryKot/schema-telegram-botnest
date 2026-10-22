@@ -24,11 +24,15 @@ import { buildRealDbTestApp } from './e2e-support/build-real-db-test-app';
 const VICTIM = 'victim-link@example.com'; // есть в ClientMeeting
 const VICTIM_SPELLING = ' Victim-Link@Example.com '; // то же лицо, другое написание
 const NEWCOMER = 'newcomer-link@example.com'; // в ClientMeeting нет
+const LEGACY_CLIENT = 'legacy-link@example.com'; // комната по старой формуле
 const SECRET_URL = 'https://zoom.example/j/1?pwd=secret';
 const SLOT_INTRO = new Date('2095-03-07T10:00:00.000Z');
 const SLOT_SESSION = new Date('2095-03-07T12:00:00.000Z');
 const SLOT_NEWCOMER = new Date('2095-03-07T14:00:00.000Z');
-const SLOTS = [SLOT_INTRO, SLOT_SESSION, SLOT_NEWCOMER];
+const SLOT_LEGACY = new Date('2095-03-07T11:00:00.000Z');
+const SLOTS = [SLOT_INTRO, SLOT_SESSION, SLOT_NEWCOMER, SLOT_LEGACY];
+// Старая формула: адрес комнаты считался из контакта без единого запроса.
+const LEGACY_ROOM = `https://meet.jit.si/schemehappens-${clientKey(LEGACY_CLIENT).slice(0, 12)}`;
 
 const body = (
   contact: string,
@@ -57,7 +61,11 @@ describe('e2e: анонимная запись не отдаёт ссылку н
   const cleanup = async () => {
     await prisma.booking.deleteMany({ where: { startsAt: { in: SLOTS } } });
     await prisma.clientMeeting.deleteMany({
-      where: { clientKey: { in: [clientKey(VICTIM), clientKey(NEWCOMER)] } },
+      where: {
+        clientKey: {
+          in: [VICTIM, NEWCOMER, LEGACY_CLIENT].map((c) => clientKey(c)),
+        },
+      },
     });
     // Троттл записи (6/ч на IP) живёт в Postgres и переживает прогон.
     await prisma.throttleHit.deleteMany({});
@@ -76,6 +84,13 @@ describe('e2e: анонимная запись не отдаёт ссылку н
         zoomMeetingId: null,
       },
     });
+    await prisma.clientMeeting.create({
+      data: {
+        clientKey: clientKey(LEGACY_CLIENT),
+        meetingUrl: encrypt(LEGACY_ROOM) ?? LEGACY_ROOM,
+        zoomMeetingId: null,
+      },
+    });
     const bot = app.get(TELEGRAF_BOT);
     bot.telegram.sendMessage.mockClear();
     adminDms = () =>
@@ -86,6 +101,7 @@ describe('e2e: анонимная запись не отдаёт ссылку н
       body(VICTIM_SPELLING, SLOT_SESSION, 'SESSION_50', 'Europe/Berlin'),
     );
     responses.newcomer = await book(body(NEWCOMER, SLOT_NEWCOMER, 'INTRO_15'));
+    responses.legacy = await book(body(LEGACY_CLIENT, SLOT_LEGACY, 'INTRO_15'));
   });
 
   afterAll(async () => {
@@ -159,5 +175,26 @@ describe('e2e: анонимная запись не отдаёт ссылку н
     expect(Object.keys(responses.newcomer.body).sort()).toEqual(
       Object.keys(responses.intro.body).sort(),
     );
+  });
+
+  // Условная запись по прежнему шифротексту (meeting-jitsi.ts) идёт через
+  // настоящий Prisma: where по зашифрованной колонке обязан совпасть с тем, что
+  // лежит в строке, иначе замена молча не случится и клиент останется в
+  // вычисляемой комнате.
+  it('комната по старой формуле при следующей брони заменена: в ClientMeeting и в брони одна новая', async () => {
+    expect(responses.legacy.status).toBe(200);
+    expect(responses.legacy.text).not.toContain('meet.jit.si');
+    const cm = await prisma.clientMeeting.findUnique({
+      where: { clientKey: clientKey(LEGACY_CLIENT) },
+    });
+    const fresh = decrypt(cm?.meetingUrl ?? null) ?? '';
+    expect(fresh).toMatch(
+      /^https:\/\/meet\.jit\.si\/schemehappens-[0-9a-f]{16}$/,
+    );
+    expect(fresh).not.toBe(LEGACY_ROOM);
+    const row = await prisma.booking.findFirst({
+      where: { startsAt: SLOT_LEGACY },
+    });
+    expect(decrypt(row?.meetingUrl ?? null)).toBe(fresh);
   });
 });
