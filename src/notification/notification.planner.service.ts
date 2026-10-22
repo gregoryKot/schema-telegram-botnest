@@ -39,8 +39,8 @@ export class NotificationPlannerService {
   ) {}
 
   async planDay(user: PlannerUser, now = new Date()) {
+    if (!(await this.cadence.claimPlanDay(user, now))) return; // уже спланирован
     const { id: uid, notifyLocalHour: hour, notifyTimezone: tz } = user;
-
     const pauseState = await this.cadence.expirePauseIfDue(user, now);
     if (pauseState === 'paused') return;
     if (pauseState === 'expired') {

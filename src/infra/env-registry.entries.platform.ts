@@ -1,10 +1,10 @@
-// Записи реестра env-переменных (см. env-registry.ts) — площадка и адрес
-// сайта; подключаются в INFRA_ENV_ENTRIES. Отдельный файл: infra под
-// храповиком размера (правило №10). Группа — infra.
+// Реестр env (env-registry.ts), группа infra: площадка, сайт, супервизор; → INFRA_ENV_ENTRIES.
 import { EnvVarSpec, formats } from './env-registry';
 import { DEPLOY_TARGETS } from './deploy-target';
+import { SUPERVISOR_ENV_ENTRIES } from './env-registry.entries.supervisor';
 
 export const PLATFORM_ENV_ENTRIES: EnvVarSpec[] = [
+  ...SUPERVISOR_ENV_ENTRIES,
   {
     name: 'DEPLOY_TARGET',
     purpose:

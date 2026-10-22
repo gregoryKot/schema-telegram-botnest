@@ -7,6 +7,7 @@ import helmet from 'helmet';
 import { AppModule } from './app.module';
 import { AlertLogger } from './logger/alert.logger';
 import { PrismaService } from './prisma/prisma.service';
+import { announceStart } from './telegram/start-announce';
 import { installBigIntJson } from './utils/bigint-json';
 import { runClinicalLabelMigration } from './infra/self-check/clinical-labels-status';
 import { logCapabilityReport } from './infra/capability-boot-log';
@@ -82,9 +83,7 @@ async function bootstrap() {
   // внешняя система, — в src/infra/body-parsers.ts (login-CSRF, security#6).
   installBodyParsers(app);
 
-  // CORS only needed for the Telegram mini-app (different origin).
-  // The web app is served from the same domain → no CORS needed for it.
-  // Production default is restrictive; localhost is dev-only.
+  // CORS нужен только мини-аппу (другой origin): сайт на том же домене, localhost — dev.
   const isProd = process.env.NODE_ENV === 'production';
   const origins =
     process.env.ALLOWED_ORIGINS?.split(',') ??
@@ -113,6 +112,7 @@ async function bootstrap() {
 
   const port = process.env.PORT ?? 3000;
   await app.listen(port);
+  void announceStart(app); // DM о старте — только когда HTTP уже слушает
 
   // Реестр возможностей, зависящих от конфигурации (щит, волна 8): раз при
   // старте видно, что выключено и почему — мёртвая сигнализация (оба канала

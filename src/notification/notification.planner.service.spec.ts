@@ -32,6 +32,7 @@ function makeDeps() {
     hasPending: jest.fn().mockResolvedValue(false),
   } as any;
   const cadence = {
+    claimPlanDay: jest.fn().mockResolvedValue(true),
     expirePauseIfDue: jest.fn().mockResolvedValue('none'),
     evaluate: jest.fn().mockResolvedValue({ remindToday: true }),
     nextReminderSeq: jest.fn().mockResolvedValue(1),
@@ -84,6 +85,32 @@ describe('NotificationPlannerService.planDay — дневной бюджет', (
     expect(deps.cadence.expirePauseIfDue).toHaveBeenCalledWith(user, NOW);
     expect(deps.notifications.schedule).not.toHaveBeenCalled();
     expect(deps.cadence.evaluate).not.toHaveBeenCalled();
+  });
+
+  // Аудит 2026-10: доделка полуночного обхода после рестарта зовёт planDay
+  // повторно для уже обойдённого человека. evaluate второй раз отвечает «не
+  // день напоминания», и без захвата дня планировщик добавлял practice_missed
+  // или инсайт к уже стоящему reminder — два проактивных за день.
+  it('день уже забран (повтор обхода) → ни оценки, ни снятия паузы, ни одного уведомления', async () => {
+    const { svc, deps } = make();
+    deps.cadence.claimPlanDay.mockResolvedValue(false);
+    deps.practices.getMissedPlans.mockResolvedValue([
+      { practiceText: 'дыхание' },
+    ]);
+    const user = makeUser();
+    await svc.planDay(user, NOW);
+    expect(deps.cadence.claimPlanDay).toHaveBeenCalledWith(user, NOW);
+    expect(scheduledTypes(deps)).toEqual([]);
+    expect(deps.cadence.expirePauseIfDue).not.toHaveBeenCalled();
+    expect(deps.cadence.evaluate).not.toHaveBeenCalled();
+  });
+
+  it('день забран этим вызовом → обычное планирование с тем же now', async () => {
+    const { svc, deps } = make();
+    const user = makeUser();
+    await svc.planDay(user, NOW);
+    expect(deps.cadence.claimPlanDay).toHaveBeenCalledWith(user, NOW);
+    expect(scheduledTypes(deps)).toEqual(['reminder']);
   });
 
   it('пауза истекла → только welcome_back', async () => {

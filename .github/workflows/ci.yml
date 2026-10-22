@@ -446,6 +446,11 @@ jobs:
       # нашего кода. На фейке этот спек ничего бы не доказывал, поэтому только тут.
       - name: e2e leader-election кронов на реальном Postgres
         run: npx jest --config ./test/jest-e2e.json --runInBand test/cron-leader.e2e-spec.ts
+      # Полуночный обход, оборванный рестартом (аудит 2026-10): хвост доделывает
+      # старт нового процесса, дублей нет — день человека забирает один UPDATE с
+      # условием, а это свойство Postgres, не нашего кода.
+      - name: e2e доделка полуночного обхода после рестарта на реальном Postgres
+        run: npx jest --config ./test/jest-e2e.json --runInBand test/midnight-planner-resume.e2e-spec.ts
       # Ротация ENCRYPTION_KEY (аудит 2026-10-11, r2-0#0..#2; правило №18): по
       # строке на КАЖДУЮ запись списка ротации → rotateAll → читается новым ключом,
       # не читается старым; плюс отдельный процесс точки входа и его коды выхода.
@@ -535,11 +540,13 @@ jobs:
       # Правило №18: каждый файл с сырым SQL исполняется на живом Postgres —
       # весь отчёт /stats (20 сервисов), /health, зонд аварии БД, VACUUM после
       # удаления аккаунта, захват списания подписки. Состав держит гейт
-      # check-raw-sql-live.mjs (джоба checks).
+      # check-raw-sql-live.mjs (джоба checks). admin-stats — ядро /stats на
+      # выборке больше 5000 пар «человек–день» (аудит 2026-10).
       - name: e2e сырой SQL на реальном Postgres (/stats и инфраструктура)
         run: >-
           npx jest --config ./test/jest-e2e.json --runInBand
           test/raw-sql-live-stats.e2e-spec.ts test/raw-sql-live-infra.e2e-spec.ts
+          test/raw-sql-live-admin-stats.e2e-spec.ts
       # Инцидент 2026-09-13: троттлинг денежных/заявочных ручек в Postgres —
       # атомарность ON CONFLICT DO UPDATE (правило №18) проверяется только тут.
       - name: e2e троттлинг на реальном Postgres (Postgres-хранилище + HTTP)

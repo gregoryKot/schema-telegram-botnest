@@ -1018,10 +1018,14 @@ model ChannelDelivery {
 /// же расписание второй раз: подписчики канала получают два одинаковых поста,
 /// пользователь — два одинаковых напоминания. См. src/infra/cron-leader.service.ts.
 /// Пользовательских данных нет: имя крона, время прогона и имя процесса.
+/// `doneRunAt` — runAt прогона, дошедшего до конца (только у обходов, которые
+/// умеют доделываться после рестарта, — сейчас midnightPlanner): отличается от
+/// runAt — прогон оборван, см. src/infra/cron-run-done.ts.
 model CronLease {
-  name       String   @id
+  name       String    @id
   runAt      DateTime
   instanceId String
+  doneRunAt  DateTime?
 }
 
 /// Счётчик троттлинга для денежных/заявочных ручек (инцидент 2026-09-13):
