@@ -126,10 +126,18 @@ describe('Полуночный обход: обрыв рестартом и до
     return ids.map((id) => rows.filter((r) => r.userId === id).length);
   }
 
+  /** Человек так, как его видит обход нового процесса: заново из базы. */
+  const loadUser = async (id: bigint) =>
+    (await app.get(AccountService).getAllUsersWithSettings()).find(
+      (u) => u.id === id,
+    )!;
+
   /** «Процесс» — новый экземпляр сервиса с настоящими зависимостями из DI. */
   const newProcess = () => moduleRef.create(TelegramScheduleService);
 
-  it('обход оборван после двух человек → старт нового процесса доделывает хвост, дублей нет', async () => {
+  /** Полночь: обход доходит до второго человека, и приходит SIGTERM деплоя
+   * (Nest зовёт onModuleDestroy) — обход обязан выйти сам. */
+  async function cutWalkAfterTwo() {
     for (const id of WALK) await seedMissedPlan(id, new Date());
     const first = await newProcess();
     const realPlanDay = planner.planDay.bind(planner);
@@ -138,22 +146,24 @@ describe('Полуночный обход: обрыв рестартом и до
       .spyOn(planner, 'planDay')
       .mockImplementation(async (user, now) => {
         await realPlanDay(user, now);
-        // SIGTERM деплоя: Nest зовёт onModuleDestroy, обход обязан выйти сам.
         if (++planned === 2) first.onModuleDestroy();
       });
-
     await first.scheduleDailyReminders();
-
-    expect(planned).toBe(2);
-    expect((await pendingProactive(WALK)).sort()).toEqual([0, 0, 0, 1, 1]);
+    spy.mockRestore();
     const cut = await prisma.cronLease.findUnique({
       where: { name: 'midnightPlanner' },
     });
     expect(cut?.doneRunAt).toBeNull();
+    return { planned, cut };
+  }
+
+  it('обход оборван после двух человек → старт нового процесса доделывает хвост, дублей нет', async () => {
+    const { planned, cut } = await cutWalkAfterTwo();
+    expect(planned).toBe(2);
+    expect((await pendingProactive(WALK)).sort()).toEqual([0, 0, 0, 1, 1]);
 
     // Рестарт: новый процесс, тот же путь, что onModuleInit через 30 с.
     await (await newProcess()).catchUpAfterStart();
-    spy.mockRestore();
 
     expect(await pendingProactive(WALK)).toEqual([1, 1, 1, 1, 1]);
     const done = await prisma.cronLease.findUnique({
@@ -170,13 +180,12 @@ describe('Полуночный обход: обрыв рестартом и до
   it('planDay дважды для одного человека в один день → одно проактивное уведомление', async () => {
     const now = new Date();
     await seedMissedPlan(SOLO, now);
-    const user = (await app.get(AccountService).getAllUsersWithSettings()).find(
-      (u) => u.id === SOLO,
-    )!;
-    await planner.planDay(user, now);
-    // Второй проход с тем же (уже устаревшим) снимком пользователя — так его
-    // видит доделка, загрузившая список до первого прохода.
-    await planner.planDay(user, now);
+    await planner.planDay(await loadUser(SOLO), now);
+    // Второй проход видит человека заново из базы — так его видит доделка
+    // нового процесса: notifyLastEvalDate уже сегодняшний. Без захвата дня
+    // evaluate отвечает «сегодня не напоминать», и planDay уходит в ветку
+    // practice_missed к уже стоящему reminder — два уведомления за день.
+    await planner.planDay(await loadUser(SOLO), now);
     expect(await pendingProactive([SOLO])).toEqual([1]);
   });
 
@@ -208,14 +217,33 @@ describe('Полуночный обход: обрыв рестартом и до
     await expect(cadence.claimPlanDay(user as never, now)).resolves.toBe(true);
   });
 
-  it('параллельные planDay одного человека → одно проактивное уведомление', async () => {
+  it('параллельные planDay одного человека после проведённого дня → одно проактивное уведомление', async () => {
     const now = new Date();
     await seedMissedPlan(RACE, now);
-    const user = (await app.get(AccountService).getAllUsersWithSettings()).find(
-      (u) => u.id === RACE,
-    )!;
-    await Promise.all([planner.planDay(user, now), planner.planDay(user, now)]);
+    await planner.planDay(await loadUser(RACE), now);
+    // День уже проведён; два процесса (перекатывающийся деплой) приходят к
+    // человеку одновременно со свежим снимком. Без захвата дня оба уходят в
+    // practice_missed, и уведомлений больше одного при любом порядке.
+    const fresh = await loadUser(RACE);
+    await Promise.all([
+      planner.planDay(fresh, now),
+      planner.planDay(fresh, now),
+    ]);
     expect(await pendingProactive([RACE])).toEqual([1]);
+  });
+
+  it('два процесса стартуют одновременно после оборванного обхода → доделка без дублей', async () => {
+    const { cut } = await cutWalkAfterTwo();
+
+    // Оба видят один и тот же незавершённый runAt и обходят параллельно.
+    const [a, b] = await Promise.all([newProcess(), newProcess()]);
+    await Promise.all([a.catchUpAfterStart(), b.catchUpAfterStart()]);
+
+    expect(await pendingProactive(WALK)).toEqual([1, 1, 1, 1, 1]);
+    const done = await prisma.cronLease.findUnique({
+      where: { name: 'midnightPlanner' },
+    });
+    expect(done?.doneRunAt?.getTime()).toBe(cut?.runAt.getTime());
   });
 
   it('отметка завершения: захват → не завершён → finishRun → завершён; старый runAt не метит новый прогон', async () => {

@@ -2,7 +2,7 @@
 // отметка завершения и доделка после рестарта. Аудит 2026-10: деплой посреди
 // обхода оставлял хвост пользователей без напоминаний на сутки, а проба
 // аренд видела «свежо». Шов с живой базой — test/midnight-planner-resume.e2e-spec.ts.
-import { MidnightPlanner } from './telegram.midnight-planner';
+import { MidnightPlanner, RESUME_WINDOW_MS } from './telegram.midnight-planner';
 import { LEASE_WINDOW } from '../infra/cron-leader.service';
 
 const RUN_AT = new Date('2026-10-22T00:00:00Z');
@@ -80,6 +80,19 @@ describe('MidnightPlanner.run', () => {
     expect(built.logger.error).not.toHaveBeenCalled();
   });
 
+  it('отметка завершения не записалась (пул закрыт после последнего человека) — warn, не reject', async () => {
+    const { mp, leases, logger } = make();
+    leases.finishRun.mockRejectedValue(new Error('pool closed'));
+    await expect(mp.run(RUN_AT)).resolves.toBeUndefined();
+    expect(logger.warn).toHaveBeenCalledWith(
+      'Midnight planner: отметка завершения не записалась: pool closed',
+    );
+    expect(logger.error).not.toHaveBeenCalled();
+    expect(logger.log).toHaveBeenLastCalledWith(
+      'Midnight planner: обработано 3 из 3, ошибок 0',
+    );
+  });
+
   it('список пользователей не загрузился — прогон не отмечен завершённым (его увидит проба)', async () => {
     const { mp, leases } = make({ usersError: new Error('db down') });
     await expect(mp.run(RUN_AT)).rejects.toThrow('db down');
@@ -94,7 +107,7 @@ describe('MidnightPlanner.catchUp', () => {
     await mp.catchUp(claimAndRun);
     expect(leases.unfinishedRun).toHaveBeenCalledWith(
       'midnightPlanner',
-      LEASE_WINDOW.daily,
+      RESUME_WINDOW_MS,
     );
     expect(planner.planDay.mock.calls).toEqual(users.map((u) => [u, RUN_AT]));
     expect(claimAndRun).not.toHaveBeenCalled();
@@ -118,5 +131,37 @@ describe('MidnightPlanner.catchUp', () => {
       'Startup planner catch-up failed (non-critical, retries at midnight): db down',
     );
     expect(logger.error).not.toHaveBeenCalled();
+  });
+
+  // Старт в 23:59:3x: тик 00:00 начал обход раньше, чем выстрелил таймер
+  // старта, и доделка увидела бы свежий незавершённый runAt своего же обхода.
+  it('обход уже идёт в этом процессе — доделка не запускает второй параллельно', async () => {
+    let release!: () => void;
+    const gate = new Promise<void>((r) => (release = r));
+    const planDay = jest.fn(() => gate);
+    const { mp, leases, logger } = make({ planDay, unfinishedRun: RUN_AT });
+    const tick = mp.run(RUN_AT);
+    await Promise.resolve();
+    const claimAndRun = jest.fn().mockResolvedValue(undefined);
+    await mp.catchUp(claimAndRun);
+    expect(leases.unfinishedRun).not.toHaveBeenCalled();
+    expect(claimAndRun).not.toHaveBeenCalled();
+    expect(logger.log).toHaveBeenCalledWith(
+      'Midnight planner: обход уже идёт, доделка при старте не нужна',
+    );
+    release();
+    await tick;
+    expect(planDay.mock.calls.length).toBe(3);
+    // Обход закончился — следующий старт снова смотрит на аренду.
+    await mp.catchUp(claimAndRun);
+    expect(leases.unfinishedRun).toHaveBeenCalledWith(
+      'midnightPlanner',
+      RESUME_WINDOW_MS,
+    );
+  });
+
+  it('окно доделки короче окна аренды: поздняя доделка не ставит напоминание вплотную к завтрашнему', () => {
+    expect(RESUME_WINDOW_MS).toBe(6 * 3_600_000);
+    expect(RESUME_WINDOW_MS).toBeLessThan(LEASE_WINDOW.daily);
   });
 });

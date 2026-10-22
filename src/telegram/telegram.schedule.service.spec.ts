@@ -6,6 +6,7 @@
 import { Logger } from '@nestjs/common';
 import { TelegramScheduleService } from './telegram.schedule.service';
 import { LEASE_WINDOW } from '../infra/cron-leader.service';
+import { RESUME_WINDOW_MS } from './telegram.midnight-planner';
 
 function makeService(
   opts: {
@@ -170,7 +171,7 @@ describe('catchUpAfterStart — старт процесса', () => {
     await service.catchUpAfterStart();
     expect(cronLeader.unfinishedRun).toHaveBeenCalledWith(
       'midnightPlanner',
-      LEASE_WINDOW.daily,
+      RESUME_WINDOW_MS,
     );
     expect(planDay.mock.calls).toEqual([
       [users[0], runAt],

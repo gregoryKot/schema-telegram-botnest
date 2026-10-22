@@ -66,4 +66,16 @@ describe('CronRunLedger', () => {
       ledger.unfinishedRun('midnightPlanner', 23 * H, new Date(+RUN + 23 * H)),
     ).resolves.toBeNull();
   });
+
+  it('unfinishedRun без now — меряет окно от текущего времени', async () => {
+    const recent = new Date(Date.now() - H);
+    const { ledger } = make({ runAt: recent, doneRunAt: null });
+    await expect(
+      ledger.unfinishedRun('midnightPlanner', 6 * H),
+    ).resolves.toEqual(recent);
+    const old = make({ runAt: new Date(Date.now() - 7 * H), doneRunAt: null });
+    await expect(
+      old.ledger.unfinishedRun('midnightPlanner', 6 * H),
+    ).resolves.toBeNull();
+  });
 });
