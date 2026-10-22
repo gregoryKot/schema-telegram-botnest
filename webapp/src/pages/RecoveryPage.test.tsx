@@ -152,3 +152,48 @@ describe('RecoveryPage — подтверждение по токену (?token=
     await screen.findByText('Нет доступа к аккаунту?');
   });
 });
+
+// Аудит 2026-10, «сырой текст сервера на экранах входа». Тексты сервера — как
+// отдаёт прод (src/auth/email.service.ts consumeToken: 'Token expired'), а не
+// выдуманные (правило №23). Ответы — настоящие Response.
+describe('RecoveryPage — ошибки человеческим текстом', () => {
+  function renderConfirm() {
+    return render(
+      <MemoryRouter initialEntries={['/auth/recovery?token=stale']}>
+        <AuthContext.Provider value={authValue()}>
+          <Routes>
+            <Route path="/auth/recovery" element={<RecoveryPage />} />
+          </Routes>
+        </AuthContext.Provider>
+      </MemoryRouter>,
+    );
+  }
+
+  it('ссылка протухла (401 «Token expired») — русский текст, не английский', async () => {
+    fetchMock.mockImplementation(() =>
+      Promise.resolve(new Response('{"statusCode":401,"message":"Token expired","error":"Unauthorized"}', { status: 401 })));
+    const { container } = renderConfirm();
+    await screen.findByText('Ссылка недействительна или истекла');
+    expect(container.textContent).not.toMatch(/Token expired/);
+  });
+
+  it('контроль: запрос письма упёрся в суточный лимит — русский текст сервера проходит как есть', async () => {
+    const text = 'Слишком много попыток подряд. Повторить можно через 24 часа';
+    fetchMock.mockImplementation(() =>
+      Promise.resolve(new Response(JSON.stringify({ statusCode: 429, message: text }), { status: 429 })));
+    const { container } = renderAt('/auth/recovery');
+    fireEvent.change(screen.getByPlaceholderText('you@example.com'), { target: { value: 'me@example.com' } });
+    fireEvent.submit(container.querySelector('form')!);
+    await screen.findByText(text);
+    expect(container.textContent).not.toMatch(/Throttler/);
+  });
+
+  it('запрос письма: обрыв сети — «Нет связи с сервером»', async () => {
+    fetchMock.mockImplementation(() => Promise.reject(new TypeError('Failed to fetch')));
+    const { container } = renderAt('/auth/recovery');
+    fireEvent.change(screen.getByPlaceholderText('you@example.com'), { target: { value: 'me@example.com' } });
+    fireEvent.submit(container.querySelector('form')!);
+    await screen.findByText('Нет связи с сервером');
+    expect(container.textContent).not.toMatch(/Failed to fetch|TypeError/);
+  });
+});

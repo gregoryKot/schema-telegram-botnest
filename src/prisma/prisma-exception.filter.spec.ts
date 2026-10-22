@@ -266,6 +266,27 @@ describe('GenericExceptionFilter', () => {
     });
   });
 
+  // Аудит 2026-10, «сырой текст сервера на экранах входа»: ThrottlerException
+  // создаётся строкой, и тело 429 уходило голой JSON-строкой — фронтовый
+  // readErrorBody искал `message` в объекте и текст сервера терял.
+  it('HttpException со строкой — тело в форме Nest: { statusCode, message }', () => {
+    const filter = new GenericExceptionFilter();
+    const { host, res, json } = makeHost();
+    filter.catch(
+      new HttpException(
+        'Слишком много попыток подряд',
+        HttpStatus.TOO_MANY_REQUESTS,
+      ),
+      host,
+    );
+
+    expect(res.status).toHaveBeenCalledWith(HttpStatus.TOO_MANY_REQUESTS);
+    expect(json).toHaveBeenCalledWith({
+      statusCode: 429,
+      message: 'Слишком много попыток подряд',
+    });
+  });
+
   it('неизвестное исключение (TypeError) → 500 generic-сообщение, message/stack НЕ утекают в ответ', () => {
     const filter = new GenericExceptionFilter();
     const { host, res, json } = makeHost();

@@ -253,6 +253,11 @@
 - **Список достижений в `ProfileSection.tsx` прячется, пока открыта деталь.**
   Это обход старой драки трапов; теперь трап у верхнего слоя, и список можно
   показывать под деталью. Это правка UI, решение за владельцем.
+- **Вход по почте мини-аппа показывает «Failed to fetch» и английский ValidationPipe.**
+  `schema-miniapp/src/components/loginScreen/LoginEmailForm.tsx` (`sendLink`, `catch`) кладёт
+  `err.message` как есть. 429 там уже русский — текст рождает сервер (#819), сайт идёт через
+  `shared/src/api/humanizeError.ts`. Не чинили сознательно: механика, а не ты/вы и не род,
+  мини-апп удаляется на этапе 6 (`docs/ONE_FRONTEND_PLAN.md`).
 
 **Контролы без имени в мини-аппе — не чиним, мини-апп удаляется** (#818, `docs/ONE_FRONTEND_PLAN.md`, этап 6):
 - `scripts/check-glyph-controls.mjs` и `jsx-a11y/control-has-associated-label`

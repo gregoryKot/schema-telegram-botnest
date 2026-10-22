@@ -9,6 +9,7 @@ import { ServiceRows } from './service/ServiceRows';
 import { Skeleton } from '../components/Skeleton';
 import { TwoFactorLossNote } from '../components/TwoFactorLossNote';
 import { AddressFormProvider } from '../utils/AddressFormProvider';
+import { humanizeThrown, readHumanError } from '../../../shared/src/api/humanizeError';
 import {
   ACCOUNT_LINK_CONFIRMED_EVENT,
   type AccountLinkHost,
@@ -75,16 +76,15 @@ function LinkDeviceContent({ code }: { code: string }) {
       headers: { 'Content-Type': 'application/json', 'x-requested-with': 'webapp' },
       body: JSON.stringify({ code }),
     });
-    const body = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error((body as { message?: string }).message ?? 'Не получилось');
-    return body;
+    if (!res.ok) throw new Error((await readHumanError(res, 'Не получилось')).message);
+    return res.json().catch(() => ({})) as Promise<unknown>;
   }, [code]);
 
   useEffect(() => {
     let alive = true;
     call('preview')
       .then((p) => { if (alive) setPreview(p as Preview); })
-      .catch((e: Error) => { if (alive) setError(e.message); });
+      .catch((e: unknown) => { if (alive) setError(humanizeThrown(e, 'Не получилось')); });
     return () => { alive = false; };
   }, [call]);
 
@@ -101,7 +101,7 @@ function LinkDeviceContent({ code }: { code: string }) {
       });
       setDone(true);
     } catch (e) {
-      setError((e as Error).message);
+      setError(humanizeThrown(e, 'Не получилось'));
     } finally {
       setBusy(false);
     }

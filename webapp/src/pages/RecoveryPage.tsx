@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTr } from '../utils/addressForm';
 import { ServicePage } from './service/ServicePage';
 import { RecoveryConfirm } from './recovery/RecoveryConfirm';
+import { humanizeThrown, readHumanError } from '../../../shared/src/api/humanizeError';
 
 const API_BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? '';
 
@@ -32,12 +33,9 @@ function RecoveryRequest() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: email.trim() }),
       });
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error(body.message ?? 'Не удалось отправить письмо');
-      }
+      if (!res.ok) throw new Error((await readHumanError(res, 'Не удалось отправить письмо')).message);
       setSent(true);
-    } catch (e) { setError(String(e).replace('Error: ', '')); }
+    } catch (e) { setError(humanizeThrown(e, 'Не удалось отправить письмо')); }
     finally { setBusy(false); }
   };
 

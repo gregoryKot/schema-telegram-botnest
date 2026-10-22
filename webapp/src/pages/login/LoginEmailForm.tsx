@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTr } from '../../utils/addressForm';
+import { humanizeThrown, readHumanError } from '../../../../shared/src/api/humanizeError';
 
 const API_BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? '';
 
 function isEmail(s: string) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s); }
+const SEND_FAILED = 'Не удалось отправить письмо';
 
 // Вход по ссылке из письма. Ошибки отдаёт наверх (общая строка ошибки страницы).
 export function LoginEmailForm({ setError }: { setError: (e: string | null) => void }) {
@@ -14,9 +16,7 @@ export function LoginEmailForm({ setError }: { setError: (e: string | null) => v
   const [loading, setLoading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    if (show && !sent) inputRef.current?.focus();
-  }, [show, sent]);
+  useEffect(() => { if (show && !sent) inputRef.current?.focus(); }, [show, sent]);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,10 +29,10 @@ export function LoginEmailForm({ setError }: { setError: (e: string | null) => v
         headers: { 'Content-Type': 'application/json', 'x-requested-with': 'webapp' },
         body: JSON.stringify({ email: value }),
       });
-      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).message ?? `Ошибка ${res.status}`);
+      if (!res.ok) throw new Error((await readHumanError(res, SEND_FAILED)).message);
       setSent(true);
     } catch (err) {
-      setError((err as Error).message || 'Не удалось отправить письмо');
+      setError(humanizeThrown(err, SEND_FAILED));
     } finally {
       setLoading(false);
     }
