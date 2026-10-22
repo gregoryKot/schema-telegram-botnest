@@ -111,7 +111,7 @@ jobs:
       # npm audit читает lock-файл, node_modules пакету не нужны.
       # Через обёртку scripts/npm-audit.mjs (регресс #814: голый audit висел на
       # реестре до таймаута шага): попытка ≤45 с, до трёх попыток с паузой
-      # 10 с — худший случай 2 мин 35 с, отсюда timeout-minutes: 4. Уязвимость
+      # 10 с — худший случай 2 мин 41 с (с 2 с на добивание группы), отсюда timeout-minutes: 4. Уязвимость
       # краснеет сразу, «реестр не ответил» — отдельным ::error::.
       - name: npm audit — корень
         timeout-minutes: 4
@@ -791,7 +791,9 @@ jobs:
   # check-frontend-coverage-ratchet.mjs (--package shared).
   shared:
     runs-on: ubuntu-24.04
-    timeout-minutes: 10
+    # 13, а не 10: тесты с покрытием и вторая зона идут до ~8,5 мин, плюс
+    # худший случай audit-обёртки (2 мин 41 с) в конце джобы.
+    timeout-minutes: 13
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
