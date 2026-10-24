@@ -18,7 +18,7 @@ import {
 
 vi.mock('../../api', () => ({
   api: {
-    deleteYsqResult: vi.fn(),
+    deleteYsqData: vi.fn(),
     deleteAllUserData: vi.fn(),
   },
 }));
@@ -80,33 +80,62 @@ describe('DataSection — конфиденциальность: модалка',
   });
 });
 
+// Решение владельца 2026-10-22: кнопка стирает всё про тест (итог, историю,
+// прогресс — DELETE /api/ysq-data) и сначала спрашивает подтверждение.
 describe('DataSection — удаление результатов YSQ', () => {
   beforeEach(() => {
     localStorage.setItem(YSQ_RESULT_KEY, JSON.stringify({ answers: [1] }));
+    localStorage.setItem(YSQ_PROGRESS_KEY, JSON.stringify({ page: 2 }));
   });
 
-  it('успех: localStorage очищается только после подтверждённого удаления', async () => {
-    mockApi.deleteYsqResult.mockResolvedValue(undefined);
-    renderWithForm();
+  async function openYsqConfirm(form: 'ty' | 'vy' = 'ty') {
+    renderWithForm(form);
     fireEvent.click(screen.getByText('Конфиденциальность'));
-    await screen.findByText('Удалить результаты теста');
+    fireEvent.click(await screen.findByText('Удалить результаты теста'));
+    await screen.findByText('Удалить все результаты теста?');
+  }
 
-    fireEvent.click(screen.getByText('Удалить результаты теста'));
-    await waitFor(() => expect(mockApi.deleteYsqResult).toHaveBeenCalledTimes(1));
+  it('первый тап только спрашивает: видно подтверждение, запроса ещё нет', async () => {
+    await openYsqConfirm();
+    expect(screen.getByText(/все прошлые прохождения и незаконченные ответы/)).toBeTruthy();
+    expect(mockApi.deleteYsqData).not.toHaveBeenCalled();
+    expect(localStorage.getItem(YSQ_RESULT_KEY)).not.toBeNull();
+  });
+
+  it('«Удалить всё»: DELETE /api/ysq-data, потом оба ключа очищены, окна закрыты', async () => {
+    mockApi.deleteYsqData.mockResolvedValue(undefined);
+    await openYsqConfirm();
+
+    fireEvent.click(screen.getByText('Удалить всё'));
+    await waitFor(() => expect(mockApi.deleteYsqData).toHaveBeenCalledTimes(1));
     await waitFor(() => expect(localStorage.getItem(YSQ_RESULT_KEY)).toBeNull());
     expect(localStorage.getItem(YSQ_PROGRESS_KEY)).toBeNull();
+    await waitFor(() => expect(screen.queryByText('Данные и конфиденциальность')).toBeNull());
+    expect(screen.queryByText('Удалить все результаты теста?')).toBeNull();
   });
 
-  it('ошибка API: localStorage НЕ очищается, видна ошибка, модалка не закрывается', async () => {
-    mockApi.deleteYsqResult.mockRejectedValue(new Error('network down'));
-    renderWithForm();
-    fireEvent.click(screen.getByText('Конфиденциальность'));
-    await screen.findByText('Удалить результаты теста');
+  it('«Отмена»: запроса нет, ключи на месте, подтверждение закрыто', async () => {
+    await openYsqConfirm();
 
-    fireEvent.click(screen.getByText('Удалить результаты теста'));
-    await screen.findByText(/Не удалось удалить/);
+    fireEvent.click(screen.getByText('Отмена'));
+    expect(screen.queryByText('Удалить все результаты теста?')).toBeNull();
+    expect(mockApi.deleteYsqData).not.toHaveBeenCalled();
     expect(localStorage.getItem(YSQ_RESULT_KEY)).not.toBeNull();
-    expect(screen.getByText(/Удалить результаты теста|Удаляю/)).toBeTruthy();
+    expect(localStorage.getItem(YSQ_PROGRESS_KEY)).not.toBeNull();
+  });
+
+  it.each([
+    ['ty', 'Не удалось удалить. Попробуй ещё раз'],
+    ['vy', 'Не удалось удалить. Попробуйте ещё раз'],
+  ] as const)('ошибка API (%s): ключи на месте, видна ошибка, окно не закрылось', async (form, text) => {
+    mockApi.deleteYsqData.mockRejectedValue(new Error('network down'));
+    await openYsqConfirm(form);
+
+    fireEvent.click(screen.getByText('Удалить всё'));
+    expect((await screen.findByRole('alert')).textContent).toBe(text);
+    expect(localStorage.getItem(YSQ_RESULT_KEY)).not.toBeNull();
+    expect(localStorage.getItem(YSQ_PROGRESS_KEY)).not.toBeNull();
+    expect(screen.getByText('Удалить все результаты теста?')).toBeTruthy();
   });
 });
 

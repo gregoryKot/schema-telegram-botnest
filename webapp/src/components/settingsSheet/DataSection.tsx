@@ -2,8 +2,9 @@ import { useState } from 'react';
 import { api } from '../../api';
 import { authedFetch } from '../../apiClient';
 import { useTr } from '../../utils/addressForm';
-import { YSQ_PROGRESS_KEY, YSQ_RESULT_KEY } from '../../utils/storageKeys';
 import { SSection, SRow, InfoModal } from './ui';
+import { YsqDataDeleteButton } from './YsqDataDeleteButton';
+import { hasLocalYsqData } from '../../../../shared/src/hooks/ysqDataDelete';
 import { privacyStorageText, PRIVACY_NO_SHARE_TEXT } from '../../../../shared/src/settings/privacyText';
 import { useDataExport } from '../../../../shared/src/account/useDataExport';
 import { DeleteAccountConfirm } from '../../../../shared/src/components/DeleteAccountConfirm';
@@ -14,7 +15,6 @@ import { DeleteAccountConfirm } from '../../../../shared/src/components/DeleteAc
 export function DataSection() {
   const tr = useTr();
   const [showPrivacy, setShowPrivacy] = useState(false);
-  const [ysqDeleting, setYsqDeleting] = useState(false); const [ysqDeleteError, setYsqDeleteError] = useState(false); // раньше локально стиралось раньше запроса к серверу
   const [showDeleteSheet, setShowDeleteSheet] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [deleting, setDeleting]     = useState(false); const [deleteError, setDeleteError] = useState(false); // отказ раньше не был виден
@@ -63,23 +63,8 @@ export function DataSection() {
               <div className="st-text">{b.text}</div>
             </div>
           ))}
-          {(!!localStorage.getItem(YSQ_PROGRESS_KEY) || !!localStorage.getItem(YSQ_RESULT_KEY)) && (<>
-            {/* Раньше localStorage чистился ДО ответа сервера — при отказе api
-                пользователь видел «удалено», хотя результаты теста оставались
-                на сервере (приватность). Теперь локально чистим только после
-                подтверждённого удаления. */}
-            <button className="ds-btn ds-btn--secondary st-btn-danger st-block st-mb10" disabled={ysqDeleting} onClick={async () => {
-              setYsqDeleting(true); setYsqDeleteError(false);
-              try {
-                await api.deleteYsqResult();
-                localStorage.removeItem(YSQ_PROGRESS_KEY); localStorage.removeItem(YSQ_RESULT_KEY);
-                setShowPrivacy(false);
-              } catch { setYsqDeleteError(true); } finally { setYsqDeleting(false); }
-            }}>
-              {ysqDeleting ? 'Удаляю...' : 'Удалить результаты теста'}
-            </button>
-            {ysqDeleteError && <div role="alert" className="st-err">{tr('Не удалось удалить. Попробуй ещё раз', 'Не удалось удалить. Попробуйте ещё раз')}</div>}
-          </>)}
+          {/* Всё про тест — итог, история, прогресс — после подтверждения (решение владельца 2026-10-22). */}
+          {hasLocalYsqData() && <YsqDataDeleteButton onDeleted={() => setShowPrivacy(false)} />}
           <div className="st-fine st-center">Это образовательный инструмент.</div>
         </InfoModal>
       )}
