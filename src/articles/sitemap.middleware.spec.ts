@@ -1,4 +1,7 @@
-import { SitemapMiddleware } from './sitemap.middleware';
+import { readFileSync } from 'fs';
+import { join } from 'path';
+import { SitemapMiddleware, buildSitemapXml } from './sitemap.middleware';
+import { SITE_URL } from './article-seo.render';
 import type { ArticlesService } from './articles.service';
 
 function setup(list: jest.Mock) {
@@ -92,5 +95,47 @@ describe('SitemapMiddleware', () => {
     expect(res.status).toHaveBeenCalledWith(503);
     expect(res.send).toHaveBeenCalledWith('sitemap temporarily unavailable');
     expect(next).not.toHaveBeenCalled();
+  });
+});
+
+// Инцидент 2026-10-22: карта отдавала краулеру /privacy и /offer, а в роутах
+// продукта их не было — `*` под RequireAuth уводил на экран входа. Каждая
+// ссылка карты обязана быть открытым роутом appRoutes (правило №4). Тот же
+// разбор appRoutes — в webapp/src/robotsTxt.test.ts и webapp/src/lib/metrikaRoutes.test.ts:
+// меняешь форму таблицы роутов — правь все три.
+describe('buildSitemapXml ⇄ appRoutes (webapp/src/App.tsx)', () => {
+  const appTsx = readFileSync(
+    join(__dirname, '../../webapp/src/App.tsx'),
+    'utf8',
+  );
+  const block = /const appRoutes = \[([\s\S]*?)\n\];/.exec(appTsx)?.[1] ?? '';
+  const cut = block.indexOf('element: <RequireAuth />');
+  if (cut < 0) {
+    throw new Error(
+      'в webapp/src/App.tsx не найден блок `const appRoutes = [ … ];` с ' +
+        'маркером `element: <RequireAuth />` — обнови регэксп теста',
+    );
+  }
+  const openRoutes = [...block.slice(0, cut).matchAll(/path:\s*'([^']+)'/g)]
+    .map((m) => m[1])
+    .filter((p) => p !== '*')
+    .map((p) => new RegExp(`^${p.replace(/:[^/]+/g, '[^/]+')}$`));
+  const isOpenRoute = (path: string) => openRoutes.some((re) => re.test(path));
+
+  it('каждая ссылка карты — открытый роут продукта, а не путь в `*`', () => {
+    const xml = buildSitemapXml([
+      { ...article({ slug: 'some-slug' }), title: 't', description: 'd' },
+    ]);
+    const paths = [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) =>
+      m[1].slice(SITE_URL.length),
+    );
+    expect(paths).toContain('/articles/some-slug');
+    expect(paths.filter((p) => !isOpenRoute(p))).toEqual([]);
+  });
+
+  it('контроль: путь визитки и путь кабинета открытыми роутами не считаются', () => {
+    expect(isOpenRoute('/reviews')).toBe(false);
+    expect(isOpenRoute('/today')).toBe(false);
+    expect(isOpenRoute('/privacy')).toBe(true);
   });
 });

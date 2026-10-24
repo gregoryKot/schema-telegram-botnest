@@ -103,6 +103,9 @@ const appRoutes = [
   { path: '/tests/:quizId',  element: <QuizPage /> },
   { path: '/subscribe',      element: <Suspense fallback={null}><SubscribePage /></Suspense> },
   { path: '/donate',         element: <DonatePage /> },
+  // Юрстраницы — на обоих хостах (инцидент 2026-10-22); сверка: sitemap.middleware.spec.ts.
+  { path: '/privacy',        element: <PrivacyPage /> },
+  { path: '/offer',          element: <OfferPage /> },
   // Admin panel is gated by its own key (not the app login), so it's reachable
   // on the app domain too — otherwise /admin here falls through to the login/app.
   { path: '/admin',          element: <Suspense fallback={null}><AdminPage /></Suspense> },

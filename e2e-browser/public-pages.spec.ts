@@ -10,22 +10,31 @@
 // сборку, роутер и сервер статики.
 import { test, expect } from '@playwright/test';
 
-// Публичные маршруты из webapp/src/App.tsx (personalRoutes). Юридические
-// страницы включены намеренно: на них ведут ссылки из платёжной формы, и их
-// недоступность блокирует оплату.
+// Публичные маршруты из webapp/src/App.tsx. Набор роутов выбирает хост:
+// 127.0.0.1 — продукт schemehappens.ru (appRoutes), `?site=personal` — визитка
+// kotlarewski.gr (personalRoutes). Юридические страницы включены намеренно: на
+// них ведут ссылки из платёжной формы, входа и согласия, и их недоступность
+// блокирует оплату и регистрацию.
 const PUBLIC_ROUTES = [
-  { path: '/', name: 'лендинг' },
+  { path: '/', name: 'лендинг продукта' },
   { path: '/articles', name: 'список статей' },
-  { path: '/reviews', name: 'отзывы' },
+  { path: '/tests', name: 'мини-тесты' },
   { path: '/subscribe', name: 'подписка' },
   { path: '/donate', name: 'пожертвование' },
   { path: '/privacy', name: 'политика конфиденциальности' },
   { path: '/offer', name: 'оферта' },
+  { path: '/login', name: 'вход' },
+  { path: '/', query: '?site=personal', name: 'визитка' },
+  { path: '/reviews', query: '?site=personal', name: 'отзывы визитки' },
+  { path: '/privacy', query: '?site=personal', name: 'политика на визитке' },
+  { path: '/offer', query: '?site=personal', name: 'оферта на визитке' },
 ];
 
 test.describe('браузерный smoke: публичные страницы открываются прямой ссылкой', () => {
   for (const route of PUBLIC_ROUTES) {
-    test(`${route.name} (${route.path})`, async ({ page }) => {
+    test(`${route.name} (${route.path}${route.query ?? ''})`, async ({
+      page,
+    }) => {
       const errors: string[] = [];
       page.on('pageerror', (err) => errors.push(err.message));
       // Бэкенда нет — отвечаем пустым успехом. Страница обязана открыться
@@ -38,9 +47,17 @@ test.describe('браузерный smoke: публичные страницы �
         }),
       );
 
-      const res = await page.goto(route.path);
+      const res = await page.goto(route.path + (route.query ?? ''));
       expect(res?.status(), `HTTP-статус ${route.path}`).toBeLessThan(400);
       await expect(page.locator('#root')).not.toBeEmpty();
+      // Непустой экран — ещё не та страница: путь, которого нет в наборе роутов
+      // хоста, `*` уводит на вход или главную, и экран там тоже непустой
+      // (инцидент 2026-10-22: /privacy на продукте открывал вход). Ждём
+      // заголовок: у подменённой страницы он появляется уже после ухода.
+      await expect(page.locator('h1').first()).toBeVisible();
+      expect(new URL(page.url()).pathname, `адрес после ${route.path}`).toBe(
+        route.path,
+      );
       // Ошибка рантайма — то, с чего начинается белый экран у пользователя.
       expect(errors, `ошибки рантайма на ${route.path}`).toEqual([]);
     });
