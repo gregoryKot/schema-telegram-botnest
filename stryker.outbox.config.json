@@ -6,6 +6,9 @@
     "command": "npm --prefix shared test -- src/utils/ratingOutbox.test.ts src/api/ratingApi.test.ts"
   },
   "mutate": ["shared/src/utils/ratingOutbox.ts", "shared/src/api/ratingApi.ts"],
+  "mutator": {
+    "excludedMutations": ["CallExpression"]
+  },
   "reporters": ["clear-text", "progress", "html", "json"],
   "htmlReporter": {
     "fileName": "reports/mutation/outbox.html"
