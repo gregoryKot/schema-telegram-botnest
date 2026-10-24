@@ -40,7 +40,7 @@
 | Кабинет терапевта | `src/therapy/therapy-relations.service.ts` (`assertHasClient`), `shared/src/therapy/` | security |
 | Env-переменная | `src/infra/env-registry.ts` + `docs/ENV.md` | ops |
 | Внешняя интеграция | проба в `src/infra/self-check/registry.ts` | ops |
-| Хост, редирект, визитка | `src/practice-domain.middleware.ts`, `src/practice-domain.surface.ts`, `src/infra/canonical-host.ts` | backend-api |
+| Хост, редирект, визитка; что визитка показывает поисковикам | `src/practice-domain.middleware.ts`, `src/practice-domain.surface.ts`, `src/practice-domain.seo.ts` (robots, sitemap, `PRACTICE_INDEXED_PAGES`), `src/practice-index-html.ts` (canonical), `src/infra/canonical-host.ts` | backend-api |
 | Статья сайта | `src/articles/articles.seed.ts` (+ поднять `SEED_VERSION` в `src/articles/articles.service.ts`), [docs/ARTICLES.md](ARTICLES.md) | texts, telegram |
 | Фраза канала «Здоровый Взрослый» | `src/bot/healthy-adult.data.ts` + миграция; площадки — `src/channel/channel.providers.ts` | telegram, texts |
 | Красный CI | [architecture/gates.md](architecture/gates.md) → строка гейта → его шапка | gates |

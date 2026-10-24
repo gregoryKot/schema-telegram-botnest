@@ -11,11 +11,16 @@ import {
   PRACTICE_PAGES,
   PRACTICE_PAGE_PREFIXES,
 } from './practice-domain.surface';
+import { readFileSync } from 'fs';
+import { join } from 'path';
 
 const robots = practiceRobots('kotlarewski.gr');
 
 // Матчер одной группы «*» по RFC 9309: побеждает самое длинное совпадение, при
-// равенстве — Allow; «*» — любая строка, «$» в конце якорит конец пути.
+// равенстве — Allow; «*» — любая строка, «$» в конце якорит конец пути. Полный
+// матчер с группами по ботам — в webapp/src/robotsTxt.test.ts (vitest); общий модуль
+// в shared/ не выносим: бэкенд в рантайме shared/ не импортирует, а здесь одна группа
+// (ниже проверено, что второй нет).
 function isAllowed(text: string, path: string): boolean {
   let best = { allow: true, pattern: '' };
   for (const m of text.matchAll(/^(Allow|Disallow):\s*(\S+)$/gm)) {
@@ -46,10 +51,30 @@ describe('robots.txt визитки ⇄ страницы визитки', () => 
     expect(isAllowed(txt, '/zzz')).toBe(true);
   });
 
+  it('одна группа «User-agent: *» — бот со своей группой «*» не читает (#813)', () => {
+    expect(robots.match(/^User-agent:.*$/gm)).toEqual(['User-agent: *']);
+  });
+
   it('в поиске ровно главная и /reviews', () => {
-    expect(pages.filter((p) => isAllowed(robots, p))).toEqual([
-      ...PRACTICE_INDEXED_PAGES,
-    ]);
+    expect(pages.filter((p) => isAllowed(robots, p)).sort()).toEqual(
+      [...PRACTICE_INDEXED_PAGES].sort(),
+    );
+  });
+
+  it('у каждой страницы в поиске свой canonical и заголовок на фронте', () => {
+    const chrome = readFileSync(
+      join(__dirname, '..', 'webapp/src/utils/domainChrome.ts'),
+      'utf8',
+    );
+    const block = /PRACTICE_INDEXED_TITLES[^{]*\{([\s\S]*?)\n\};/.exec(
+      chrome,
+    )?.[1];
+    if (!block)
+      throw new Error(
+        'PRACTICE_INDEXED_TITLES не найден в domainChrome.ts — обнови регэксп',
+      );
+    const keys = [...block.matchAll(/^\s*'([^']+)':/gm)].map((m) => m[1]);
+    expect(keys.sort()).toEqual([...PRACTICE_INDEXED_PAGES].sort());
   });
 
   it('закрыты /subscribe и /donate — копии страниц продукта', () => {

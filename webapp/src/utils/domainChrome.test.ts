@@ -81,6 +81,24 @@ describe('applyPersonalSiteChrome', () => {
     expect(ogUrl.getAttribute('content')).toBe('https://kotlarewski.gr/');
   });
 
+  // Решение владельца 2026-10-24: /reviews в поиске — значит, своя страница, а не
+  // копия главной (иначе поисковик склеит их по canonical).
+  it('/reviews: свой canonical, og:url и заголовок; хвостовой слэш не мешает', () => {
+    const canonical = addLink('canonical', 'https://schemehappens.ru/');
+    const ogUrl = addMeta('og:url', 'https://schemehappens.ru/');
+    applyPersonalSiteChrome(document, '/reviews/');
+    expect(canonical.getAttribute('href')).toBe('https://kotlarewski.gr/reviews');
+    expect(ogUrl.getAttribute('content')).toBe('https://kotlarewski.gr/reviews');
+    expect(document.title).toBe('Почему здесь нет отзывов – Григорий Котляревский');
+  });
+
+  it('страница вне поиска (/book) берёт canonical и заголовок главной', () => {
+    const canonical = addLink('canonical', 'https://schemehappens.ru/');
+    applyPersonalSiteChrome(document, '/book');
+    expect(canonical.getAttribute('href')).toBe('https://kotlarewski.gr/');
+    expect(document.title).toBe('Григорий Котляревский – схема-терапия онлайн');
+  });
+
   it('без og:url в документе не падает', () => {
     expect(() => applyPersonalSiteChrome(document)).not.toThrow();
     expect(document.querySelector("meta[property='og:url']")).toBeNull();
