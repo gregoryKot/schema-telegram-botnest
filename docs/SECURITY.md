@@ -363,7 +363,7 @@ React экранирует вывод по умолчанию, `dangerouslySetIn
     `logDecryptFailure` в `crypto.ts` (прямые `decrypt`/`decryptJson`) и
     `reportUnreadable` в `crypto-record.ts` — до двух DM в минуту плюс DM пробы.
     Это ожидаемо, не шквал.
-  - *`User.recoveryEmail`* по всей видимости пуста и с #PR не пишется и не читается:
+  - *`User.recoveryEmail`* по всей видимости пуста и с #864 не пишется и не читается:
     восстановление по запасной почте убрано (решение владельца 2026-10-22),
     колонку удаляет отдельная миграция после выкладки
     (`docs/open/audit-2026-10.md`). *`ClientMeeting.clientKey`* с аудита 2026-10 — HMAC

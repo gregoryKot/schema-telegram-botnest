@@ -268,7 +268,7 @@ describe('CSRF-трипваер auth-контроллеры', () => {
       offenders.push(...unguardedWriters(code).map((h) => `${f}: ${h}`));
     }
     // санити: telegram/webapp, max/webapp, ticket/poll, widget, merge, 2fa…
-    // (было 8: восьмым ставил куку recovery/confirm, убранный в #PR).
+    // (было 8: восьмым ставил куку recovery/confirm, убранный в #864).
     expect(writers).toBeGreaterThanOrEqual(7);
     expect(offenders).toEqual([]);
   });

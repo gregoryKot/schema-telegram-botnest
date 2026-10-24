@@ -41,7 +41,7 @@ export const FIELD_POLICY: Record<string, Record<string, Policy>> = {
     totpSecret: enc('src/auth/totp.service.ts'),
     totpRecoveryCodes: enc('src/auth/totp.service.ts'),
     recoveryEmail: plain(
-      'по всей видимости пуста и не используется с #PR (восстановление по почте убрано); ' +
+      'по всей видимости пуста и не используется с #864 (восстановление по почте убрано); ' +
         'колонку удаляет отдельная миграция — docs/open/audit-2026-10.md',
     ),
     uiPrefs: plain(
