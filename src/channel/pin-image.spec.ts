@@ -148,7 +148,8 @@ describe('@napi-rs/canvas: повторная загрузка модуля', ()
       jest.requireActual('@napi-rs/canvas');
     });
     jest.isolateModules(() => {
-      canvas = jest.requireActual<typeof import('@napi-rs/canvas')>('@napi-rs/canvas');
+      canvas =
+        jest.requireActual<typeof import('@napi-rs/canvas')>('@napi-rs/canvas');
     });
     const ctx = canvas!.createCanvas(10, 10).getContext('2d');
     ctx.beginPath();
