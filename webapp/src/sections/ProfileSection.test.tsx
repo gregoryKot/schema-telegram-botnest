@@ -19,6 +19,8 @@ vi.mock('../api', () => ({
     getInsights: vi.fn(),
     history: vi.fn(),
     getTherapyRelation: vi.fn(),
+    // Связи нет → карточка спрашивает бывшего терапевта (TherapistCard.test.tsx).
+    getFormerTherapist: vi.fn(() => Promise.resolve(null)),
     getSchemaDiary: vi.fn(),
     getModeDiary: vi.fn(),
     getGratitudeDiary: vi.fn(),

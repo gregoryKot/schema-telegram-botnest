@@ -77,6 +77,9 @@ describe('StatsReportService.render', () => {
     const notifyQueue = {
       render: jest.fn().mockResolvedValue('напоминания из бота: ушло 9'),
     };
+    const therapistExit = {
+      render: jest.fn().mockResolvedValue('терапевты уходят: 2'),
+    };
     return {
       blocks: {
         entryDelete,
@@ -98,6 +101,7 @@ describe('StatsReportService.render', () => {
         bookingRetention,
         introLeads,
         notifyQueue,
+        therapistExit,
       },
       service: new StatsReportService(
         product as never,
@@ -124,6 +128,7 @@ describe('StatsReportService.render', () => {
         bookingRetention as never,
         introLeads as never,
         notifyQueue as never,
+        therapistExit as never,
       ),
     };
   };
@@ -145,7 +150,7 @@ describe('StatsReportService.render', () => {
       'настройка экранов: 1\n\nпаттерны со вкладки «Я»: 4\n\nсхема случая по режимам: 3\n\nвход в мессенджере: всё хорошо',
     );
     expect(out).toContain(
-      'вход в мессенджере: всё хорошо\n\nвход по коду: 74 из 74\n\nполомки на клиенте: не было\n\nнапоминания из бота: ушло 9\n\nденьги: поддержали 3 раза\n\nсессии не в рублях: 2\n\nновенькие по ссылкам: 5\n\nигра: открыли 12\n\nзабирают свои данные: 7\n\nданные записей: стёрто 5\n\nзаявки со знакомства: 3',
+      'вход в мессенджере: всё хорошо\n\nвход по коду: 74 из 74\n\nполомки на клиенте: не было\n\nнапоминания из бота: ушло 9\n\nденьги: поддержали 3 раза\n\nсессии не в рублях: 2\n\nновенькие по ссылкам: 5\n\nигра: открыли 12\n\nзабирают свои данные: 7\n\nданные записей: стёрто 5\n\nзаявки со знакомства: 3\n\nтерапевты уходят: 2',
     );
     // Хвост — блоки о здоровье системы (считаются из process.env и состояния
     // самопроверки, не мокаются через blocks): порядок календарь → Настройки →
@@ -153,7 +158,7 @@ describe('StatsReportService.render', () => {
     const settings = out.indexOf('⚙️ <b>Настройки</b>');
     const env = out.indexOf('Настройки: переменные</b>');
     const selfCheck = out.indexOf('🩺 <b>Самопроверка</b>');
-    expect(settings).toBeGreaterThan(out.indexOf('заявки со знакомства: 3'));
+    expect(settings).toBeGreaterThan(out.indexOf('терапевты уходят: 2'));
     expect(env).toBeGreaterThan(settings);
     expect(selfCheck).toBeGreaterThan(env);
     expect(out.indexOf('🩺', selfCheck + 1)).toBe(-1);
@@ -248,6 +253,7 @@ describe('StatsReportService.render', () => {
     expect(blocks.bookingRetention.render).toHaveBeenCalledTimes(1);
     expect(blocks.introLeads.render).toHaveBeenCalledTimes(1);
     expect(blocks.notifyQueue.render).toHaveBeenCalledTimes(1);
+    expect(blocks.therapistExit.render).toHaveBeenCalledTimes(1);
     expect(out).toContain('удаление записей: 2');
     expect(out).toContain('перенос данных: 2');
     expect(out).toContain('кнопка плюс: 4');
@@ -266,6 +272,7 @@ describe('StatsReportService.render', () => {
     expect(out).toContain('данные записей: стёрто 5');
     expect(out).toContain('заявки со знакомства: 3');
     expect(out).toContain('напоминания из бота: ушло 9');
+    expect(out).toContain('терапевты уходят: 2');
   });
 
   it('упавший запрос заявок числится под своим именем и не гасит «Данные записей» (settleBlocks)', async () => {

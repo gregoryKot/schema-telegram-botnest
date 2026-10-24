@@ -12,6 +12,7 @@ import { TherapyNotesController } from './therapy-notes.controller';
 import { ModeMapsController } from './mode-maps.controller';
 import { TherapistRequestService } from './therapist-request.service';
 import { TherapistRequestNotifyService } from './therapist-request.notify';
+import { TherapistExitService } from './therapist-exit.service';
 import { BotModule } from '../bot/bot.module';
 import { NotificationModule } from '../notification/notification.module';
 import { TelegramAuthGuard } from '../api/telegram-auth.guard';
@@ -36,6 +37,7 @@ import { AuthModule } from '../auth/auth.module';
     ModeMapsService,
     TherapistRequestService,
     TherapistRequestNotifyService,
+    TherapistExitService,
     TelegramAuthGuard,
   ],
   exports: [

@@ -58,14 +58,15 @@
 Кабинет терапевта: связь терапевт↔клиент (код-приглашение, виртуальные офлайн-клиенты), заметки по сессиям, концептуализация, карты режимов, задания клиенту, заявка на роль терапевта (`therapist-request.*`).
 - Входы:
   - `src/therapy/therapy-relations.service.ts` — связи; `assertHasClient`/`assertRelation` (барьер доступа)
-  - `src/therapy/therapy-connection.controller.ts` — invite/join/clients/request/become-therapist
+  - `src/therapy/therapy-connection.controller.ts` — invite/join/relation/former-therapist/clients/request/become-therapist/therapist-role
   - `src/therapy/therapy-client-data.service.ts` — данные клиента для терапевта, запрос YSQ
   - `src/therapy/therapy-tasks.service.ts` — задачи (свои и назначенные), стрик-прогресс
   - `src/therapy/therapist-request.service.ts` — заявка на роль терапевта
+  - `src/therapy/therapist-exit.service.ts` — отказ от роли (`DELETE therapist-role`, событие `therapist_resigned`) и бывший терапевт клиента (`GET former-therapist`, `former-therapist-info.ts`)
 - Связи: Prisma (TherapyRelation, TherapistNote, ClientConceptualization, ModeMap, TherapistCustomMode, UserTask, TherapistRequest); импортирует Bot/Notification/Auth/Analytics; сервисы зовут `src/api/` (diary, tracker → TherapyTasksService) и `src/telegram/`; все 5 контроллеров — `/api/therapy/*` под `TelegramAuthGuard`.
 - Подводные камни:
   - Доступ терапевта к чужим клиническим данным закрыт только `assertHasClient`; виртуальный клиент = отрицательный id `-TherapyRelation.id` (`clientId: null`, `src/therapy/relation-where.ts`), его `UserTask` лежат с отрицательным userId без FK и чистятся вручную (`src/therapy/remove-client.ts`).
-  - `RelationStatus`: pending/active/ended — `ended` (отказ от роли, `src/therapy/end-therapist-relations.ts`) не оживает; срок кода-приглашения считается по `createdAt` (колонки expiresAt нет), захват кода атомарный (`src/therapy/therapy-invite-claim.ts`).
+  - `RelationStatus`: pending/active/ended — `ended` (отказ от роли, `src/therapy/end-therapist-relations.ts`, с `endedAt`/`endReason`, `src/therapy/relation-end-reason.ts`) не оживает; карты и задания бывшего терапевта остаются у клиента как история; срок кода-приглашения считается по `createdAt` (колонки expiresAt нет), захват кода атомарный (`src/therapy/therapy-invite-claim.ts`).
 
 ### `src/booking/`
 Запись на консультации и деньги: слоты, бронь, оплата Robokassa, .ics, админка записи, календарь CalDAV, ссылки на встречи (Zoom/Jitsi), подписки/донаты, заявки с формы знакомства (IntroLead).

@@ -86,8 +86,8 @@
 //                         (meta.screen + meta.block + meta.dir: 'up'|'down').
 //                         Единственное из трёх screen_*-событий, которое
 //                         реально шлётся с meta.screen='today'.
-//   auth_*/client_error/signup_source/data_export/notify_queue_tick —
-//                         СЕРВЕРНЫЕ события (пишет только бэкенд, не клиент)
+//   auth_*/client_error/signup_source/data_export/notify_queue_tick/therapist_resigned
+//                         — СЕРВЕРНЫЕ события (пишет только бэкенд, не клиент)
 //                         — реестр и описания каждого в server-events.constants.ts
 //                         (правило №10, тот же приём, что у CASE_EVENTS ниже).
 //   profile_pattern_open — открыл лист схемы/режима с редизайна вкладки «Я»

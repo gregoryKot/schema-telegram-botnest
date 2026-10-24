@@ -858,6 +858,14 @@ describe('sanitizeMeta', () => {
     expect(sanitizeMeta('outbox_flush', { count: '5' })).toBeUndefined();
   });
 
+  // Серверное событие: число пишет TherapistExitService, клиентский путь его
+  // не пропускает — иначе блок «Терапевты уходят» в /stats накручивался бы.
+  it('therapist_resigned: meta с клиента отбрасывается целиком', () => {
+    expect(
+      sanitizeMeta('therapist_resigned', { clientsEnded: 5 }),
+    ).toBeUndefined();
+  });
+
   it('allow-list-сверка: у каждого события ANALYTICS_EVENTS есть предсказуемое поведение sanitizeMeta', () => {
     // События, ветка которых проверена выше пооперационно (с meta) —
     // остальные (без meta) покрыты тестом deny-by-default. Сверка сама

@@ -3,6 +3,7 @@ import { SkeletonLines } from '../Skeleton';
 import { SectionHeader } from './ui';
 import { TherapistPrivacyToggles } from './TherapistPrivacyToggles';
 import { useTr } from '../../utils/addressForm';
+import { FormerTherapistNote } from '../../../../shared/src/therapy/FormerTherapistNote';
 
 interface Props {
   therapyRelation: TherapyRelationInfo | null | undefined;
@@ -36,14 +37,7 @@ export function TherapistClientSection({
         style={{ borderRadius: 'var(--r-16)', padding: 16 }}
       >
         {therapyRelation === undefined ? (
-          <div
-            style={{
-              color: 'var(--text-sub)',
-              fontSize: 13,
-              textAlign: 'center',
-              padding: '8px 0',
-            }}
-          >
+          <div style={{ padding: '8px 0' }}>
             <SkeletonLines widths={['80%', '60%']} />
           </div>
         ) : therapyRelation?.status === 'active' ? (
@@ -95,6 +89,12 @@ export function TherapistClientSection({
           </div>
         ) : (
           <div>
+            {/* Терапевт отказался от роли — сообщение над формой кода. */}
+            <FormerTherapistNote
+              load={api.getFormerTherapist}
+              enabled={therapyRelation === null}
+              className="u-mb12"
+            />
             <div
               style={{
                 fontSize: 13,

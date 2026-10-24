@@ -18,3 +18,4 @@
 ## Записи
 
 - 2026-10-21 · задача: проверка субагента `scout` («где обрабатывается пауза уведомлений») · искал: обработчик кнопки «⏸ Пауза» · нашёл: `src/telegram/telegram.notify-actions.service.ts` · дописал: `docs/architecture/backend-core.md` (раздел `src/notification/`), `docs/architecture/glossary.md` (строка «⏸ Пауза»)
+- 2026-10-22 · задача: сообщение клиенту о бывшем терапевте · искал: где читается «Мой терапевт» и кто ставит `ended` · нашёл: `src/therapy/therapy-relation-info.ts`, `webapp/src/sections/profile/TherapistCard.tsx`, `schema-miniapp/src/components/settingsSheet/TherapistClientSection.tsx`; `ended` ставит ещё дедуп-миграция `20261016100000_active_relation_unique` · дописал: `docs/architecture/glossary.md` (строка «Мой терапевт»), `docs/architecture/backend-platform.md` (входы `src/therapy/`)

@@ -14,6 +14,7 @@ vi.mock('../utils/uiPrefsSync', () => ({ notifyPrefsChanged: vi.fn() }));
 vi.mock('../api', () => ({
   api: {
     getStreak: vi.fn(), getAchievements: vi.fn(), getInsights: vi.fn(), history: vi.fn(), getTherapyRelation: vi.fn(),
+    getFormerTherapist: vi.fn(() => Promise.resolve(null)),
     getSchemaDiary: vi.fn(), getModeDiary: vi.fn(), getGratitudeDiary: vi.fn(), getYsqHistory: vi.fn(),
     getProfile: vi.fn(), getModeNotes: vi.fn(), getSchemaNotes: vi.fn(), getPhraseChecks: vi.fn(), trackEvent: vi.fn(),
   },

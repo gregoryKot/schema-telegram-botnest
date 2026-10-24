@@ -1,7 +1,8 @@
 // Волна В mutation-покрытия (2026-08): registerUser/роль/блокировка/рассылки
 // AccountService не имели ни одного теста — deleteAllUserData и
-// resignTherapist/setTherapistMode покрыты в account.service.spec.ts (лимит
-// ~300 строк на файл), этот файл добирает остальную публичную поверхность.
+// setTherapistMode покрыты в account.service.spec.ts (лимит ~300 строк на
+// файл), этот файл добирает остальную публичную поверхность. Отказ от роли
+// терапевта переехал в src/therapy/therapist-exit.service.ts (2026-10-22).
 import { AccountService } from './account.service';
 
 function makePrisma() {

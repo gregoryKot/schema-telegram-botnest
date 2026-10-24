@@ -1,9 +1,8 @@
 // TherapyConnectionController был на 0% покрытия. Инстанцируем напрямую (без
 // Nest TestingModule) с типизированными двойниками зависимостей — паттерн
 // auth-2fa.controller.spec.ts (Pick<Service, 'method'> & { method: jest.Mock }).
-// Хендлеры проверяют роль THERAPIST инлайн (не через общий helper, в отличие
-// от therapy.controller) — общий 403-guard проверен один раз таблично
-// (roleGuardedRoutes), argument-passing и happy path — по каждому хендлеру.
+// Хендлеры проверяют роль THERAPIST общим assertTherapist — 403-guard
+// проверен один раз таблично, argument-passing и happy path — по каждому хендлеру.
 import {
   BadRequestException,
   ConflictException,
@@ -17,6 +16,7 @@ import { ALREADY_CONNECTED_ERROR } from './therapy-invite';
 import { TherapyClientDataService } from './therapy-client-data.service';
 import { AccountService } from '../bot/account.service';
 import { TherapistRequestService } from './therapist-request.service';
+import { TherapistExitService } from './therapist-exit.service';
 import { SubmitTherapistRequestDto } from './therapist-request.dto';
 
 type RelationsMock = Pick<
@@ -42,13 +42,14 @@ type ClientDataMock = Pick<TherapyClientDataService, 'removeClient'> & {
   removeClient: jest.Mock;
 };
 
-type AccountMock = Pick<
-  AccountService,
-  'getUserRole' | 'setTherapistMode' | 'resignTherapist'
-> & {
+type AccountMock = Pick<AccountService, 'getUserRole' | 'setTherapistMode'> & {
   getUserRole: jest.Mock;
   setTherapistMode: jest.Mock;
-  resignTherapist: jest.Mock;
+};
+
+type ExitMock = Pick<TherapistExitService, 'resign' | 'formerTherapist'> & {
+  resign: jest.Mock;
+  formerTherapist: jest.Mock;
 };
 
 type RequestSvcMock = Pick<TherapistRequestService, 'submit' | 'getMine'> & {
@@ -80,7 +81,15 @@ function makeAccount(role: 'CLIENT' | 'THERAPIST' = 'THERAPIST'): AccountMock {
   return {
     getUserRole: jest.fn().mockResolvedValue(role),
     setTherapistMode: jest.fn().mockResolvedValue(undefined),
-    resignTherapist: jest.fn().mockResolvedValue(undefined),
+  };
+}
+
+function makeExit(): ExitMock {
+  return {
+    resign: jest.fn().mockResolvedValue(undefined),
+    formerTherapist: jest
+      .fn()
+      .mockResolvedValue({ name: 'Анна', endedAt: '2026-10-22T10:00:00.000Z' }),
   };
 }
 
@@ -102,13 +111,15 @@ function makeController(
   const clientData = makeClientData();
   const account = opts.account ?? makeAccount();
   const requestSvc = makeRequestSvc();
+  const exit = makeExit();
   const controller = new TherapyConnectionController(
     relations as unknown as TherapyRelationsService,
     clientData as unknown as TherapyClientDataService,
     account as unknown as AccountService,
     requestSvc as unknown as TherapistRequestService,
+    exit as unknown as TherapistExitService,
   );
-  return { controller, relations, clientData, account, requestSvc };
+  return { controller, relations, clientData, account, requestSvc, exit };
 }
 
 // Все эти хендлеры одинаково начинаются с getUserRole !== 'THERAPIST' → 403,
@@ -127,8 +138,11 @@ describe('TherapyConnectionController — 403 для не-терапевта', (
   ];
 
   it.each(cases)('%s → ForbiddenException для CLIENT', async (_name, call) => {
-    const { controller } = makeController({ account: makeAccount('CLIENT') });
+    const { controller, exit } = makeController({
+      account: makeAccount('CLIENT'),
+    });
     await expect(call(controller)).rejects.toThrow(ForbiddenException);
+    expect(exit.resign).not.toHaveBeenCalled();
   });
 });
 
@@ -149,6 +163,23 @@ describe('TherapyConnectionController.getRelation', () => {
     const res = await controller.getRelation(makeReq(11n));
     expect(relations.getRelation).toHaveBeenCalledWith(11n);
     expect(res).toEqual({ role: 'client', status: 'active' });
+  });
+});
+
+describe('TherapyConnectionController.getFormerTherapist', () => {
+  it('доступен любой роли → отдаёт бывшего терапевта текущего пользователя', async () => {
+    const { controller, exit } = makeController({
+      account: makeAccount('CLIENT'),
+    });
+    const res = await controller.getFormerTherapist(makeReq(11n));
+    expect(exit.formerTherapist).toHaveBeenCalledWith(11n);
+    expect(res).toEqual({ name: 'Анна', endedAt: '2026-10-22T10:00:00.000Z' });
+  });
+
+  it('бывшего терапевта нет → null как есть', async () => {
+    const { controller, exit } = makeController();
+    exit.formerTherapist.mockResolvedValue(null);
+    expect(await controller.getFormerTherapist(makeReq(12n))).toBeNull();
   });
 });
 
@@ -307,10 +338,10 @@ describe('TherapyConnectionController.setTherapistView / resignTherapist', () =>
     expect(res).toEqual({ ok: true });
   });
 
-  it('resignTherapist: терапевт → делегирует resignTherapist(userId)', async () => {
-    const { controller, account } = makeController();
+  it('resignTherapist: терапевт → делегирует TherapistExitService.resign(userId)', async () => {
+    const { controller, exit } = makeController();
     const res = await controller.resignTherapist(makeReq(3n));
-    expect(account.resignTherapist).toHaveBeenCalledWith(3n);
+    expect(exit.resign).toHaveBeenCalledWith(3n);
     expect(res).toEqual({ ok: true });
   });
 });

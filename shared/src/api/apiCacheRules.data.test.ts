@@ -64,3 +64,21 @@ describe('RULES: tasks с clientId веб-клиента', () => {
     expect(targets).toContain('/api/therapy/tasks/client/1000000000000000123');
   });
 });
+
+// Сообщение о бывшем терапевте (решение владельца 2026-10-22) зависит от живой
+// связи: после подключения по коду и после отключения кеш обязан сброситься,
+// иначе сообщение висит 15 секунд поверх нового «Мой терапевт».
+describe('бывший терапевт: join и отключение сбрасывают сообщение', () => {
+  const targetsOf = (method: string, path: string) => {
+    const rule = RULES.find((r) => r.method === method && r.pattern.test(path))!;
+    return rule.targets?.(path.match(rule.pattern)!, undefined) ?? [];
+  };
+  it.each([
+    ['POST', '/api/therapy/join'],
+    ['DELETE', '/api/therapy/relation'],
+  ])('%s %s', (method, path) => {
+    expect(targetsOf(method, path)).toEqual(
+      expect.arrayContaining(['/api/therapy/relation', '/api/therapy/former-therapist']),
+    );
+  });
+});
