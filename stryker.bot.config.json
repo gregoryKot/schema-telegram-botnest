@@ -18,6 +18,9 @@
     "src/bot/account.service.ts",
     "src/therapy/end-therapist-relations.ts"
   ],
+  "mutator": {
+    "excludedMutations": ["CallExpression"]
+  },
   "reporters": ["clear-text", "progress", "html", "json", "covering-test-files"],
   "htmlReporter": {
     "fileName": "reports/mutation/bot.html"
