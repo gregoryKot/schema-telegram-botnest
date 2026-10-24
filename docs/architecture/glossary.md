@@ -15,6 +15,7 @@
 | меню «+», быстрые действия | разобраться / записать / оценить / успокоиться | — | `shared/src/quickActions/quickActionsRegistry.ts`, `webapp/src/components/quickActions/PlusMenuSheet.tsx`, `schema-miniapp/src/components/plusMenu/PlusMenuSheet.tsx` |
 | «Настроить экран» | порядок и скрытие блоков | — | `shared/src/screens/screenBlocks.ts`, `webapp/src/components/customize/ScreenCustomizeSheet.tsx`, `schema-miniapp/src/components/customize/ScreenCustomizeSheet.tsx` |
 | «Настройки», шестерёнка | шторка настроек | `src/api/settings.controller.ts` | `webapp/src/components/SettingsSheet.tsx`, `schema-miniapp/src/components/SettingsSheet.tsx` |
+| «Конфиденциальность», «Удалить результаты теста», «Удалить все данные» | раздел «Данные» настроек: удаление теста схем (итог, история, прогресс) и аккаунта | `DELETE /api/ysq-data` (`src/api/ysq.controller.ts`), `DELETE /api/user` (`src/api/account-delete.controller.ts`) | `shared/src/hooks/ysqDataDelete.ts`, `webapp/src/components/settingsSheet/DataSection.tsx`, `schema-miniapp/src/components/settingsSheet/DataOverlays.tsx` |
 | «ты/вы» | форма обращения | `src/notification/address-form.ts` | `shared/src/utils/addressForm.ts` |
 | онбординг, согласие | первые шаги и согласия первого входа | `src/telegram/telegram.consent-text.ts` | `shared/src/onboarding/`, `webapp/src/sections/today/OnboardingWidget.tsx`, `schema-miniapp/src/sections/today/OnboardingWidget.tsx` |
 | **Фичи** | | | |
@@ -27,7 +28,7 @@
 | «Мой путь» | лента активности за период | `src/bot/journey.service.ts`, `src/api/journey.controller.ts` | `shared/src/journey/`, `webapp/src/components/JourneySheet.tsx`, `schema-miniapp/src/components/JourneySheet.tsx` |
 | «Мой портрет» | портрет по потребностям | — | `webapp/src/sections/profile/PortraitCard.tsx`, `schema-miniapp/src/sections/profile/PortraitCard.tsx` |
 | «Мои схемы», «Мои режимы», карточка схемы / режима | заметки по паттерну | `src/bot/notes.service.ts` | `webapp/src/components/exercises/FlashcardEx.tsx`, `webapp/src/components/patternSheet/PatternSheet.tsx`, `schema-miniapp/src/components/patternSheet/PatternSheet.tsx` |
-| «Тест на схемы», YSQ | опросник из 116 вопросов | `src/bot/ysq.service.ts` | `webapp/src/components/YSQTestSheet.tsx`, `schema-miniapp/src/components/YSQTestSheet.tsx` |
+| «Тест на схемы», YSQ | опросник из 116 вопросов; «Пройти заново» стирает только итог, кнопка в настройках — всё (строка «Удалить результаты теста») | `src/bot/ysq.service.ts` | `webapp/src/components/YSQTestSheet.tsx`, `schema-miniapp/src/components/YSQTestSheet.tsx` |
 | «Карта режимов» (каталог), справка по схемам и режимам | все режимы по группам; шторка-справочник | — | `webapp/src/sections/schemas/ModeMap.tsx`, `webapp/src/components/SchemaInfoSheet.tsx`, `schema-miniapp/src/components/SchemaInfoSheet.tsx` |
 | «Проверка убеждения» | «правда ли это?» | `src/bot/exercises.service.ts` | `webapp/src/components/exercises/BeliefCheckEx.tsx`, `schema-miniapp/src/components/BeliefCheck.tsx` |
 | «Схема включилась» | флэшкарта в 5 шагов | `src/bot/exercises.service.ts` | `webapp/src/components/SchemaFlashcard.tsx`, `schema-miniapp/src/components/SchemaFlashcard.tsx` |
@@ -73,6 +74,6 @@
 | «Я психолог — подать заявку» | заявка на роль терапевта | `src/therapy/therapist-request.service.ts` | `webapp/src/pages/account/TherapistRequestSection.tsx` |
 | **Админка и эксплуатация** | | | |
 | «Админка», `/admin` | Запись / Статьи / Фото / Бегущая строка / Канал ЗВ | `src/booking/booking-admin.controller.ts`, `src/articles/articles-admin.controller.ts` | `webapp/src/pages/AdminPage.tsx` |
-| `/stats`, отчёт | отчёт админу; ещё `/zv` `/broadcast` `/zayavki` | `src/bot/stats-report.service.ts`, `src/telegram/telegram.admin.service.ts` | — |
+| `/stats`, отчёт | отчёт админу; ещё `/zv` `/broadcast` `/zayavki` | `src/bot/stats-report.service.ts`, `src/bot/bot.admin-stats.service.ts` (главные цифры, удержание), `src/telegram/telegram.admin.service.ts` | — |
 | «Самопроверка», `/health` | живые пробы после деплоя | `src/infra/self-check/self-check.service.ts`, `src/api/health.controller.ts` | — |
 | «Всё по схеме», «СхемаЛаб» | имя продукта; «СхемаЛаб» — старое, `schemalab.ru` редиректится | `src/infra/canonical-host.ts` | — |

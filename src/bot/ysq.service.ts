@@ -50,8 +50,19 @@ export class YsqService {
     return { answers: decAnswers(r.answers), completedAt: r.completedAt };
   }
 
+  // Только итог — для «Пройти заново» (handleRetake): история остаётся.
   async deleteYsqResult(userId: bigint): Promise<void> {
     await this.prisma.ysqResult.deleteMany({ where: { userId } });
+  }
+
+  // «Удалить результаты теста» в настройках (решение владельца 2026-10-22):
+  // итог, вся история и прогресс — одной транзакцией, без половины.
+  async deleteAllYsqData(userId: bigint): Promise<void> {
+    await this.prisma.$transaction([
+      this.prisma.ysqResult.deleteMany({ where: { userId } }),
+      this.prisma.ysqResultHistory.deleteMany({ where: { userId } }),
+      this.prisma.ysqProgress.deleteMany({ where: { userId } }),
+    ]);
   }
 
   async saveYsqResult(userId: bigint, answers: number[]): Promise<void> {

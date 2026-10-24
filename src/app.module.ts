@@ -14,7 +14,6 @@ import { existsSync, readFileSync } from 'fs';
 import { join } from 'path';
 import type { ServerResponse } from 'http';
 import { cacheControlFor } from './infra/static-cache';
-import type { Request, Response } from 'express';
 import { UserThrottlerGuard } from './api/throttler.guard';
 import { TelegramModule } from './telegram/telegram.module';
 import { BotModule } from './bot/bot.module';
@@ -35,7 +34,8 @@ import {
   PRACTICE_ALIAS_HOSTS,
 } from './practice-domain.middleware';
 import { configureUnifiedFrontend } from './unified-frontend.middleware';
-import { practiceIndexHtml } from './practice-index-html';
+import { practiceIndexMiddleware } from './practice-index-html';
+import { PRACTICE_INDEXED_PAGES } from './practice-domain.seo';
 import { SiteContentModule } from './site-content/site-content.module';
 import { DbOutageMonitorService } from './infra/db-outage.service';
 import { SelfCheckService } from './infra/self-check/self-check.service';
@@ -91,7 +91,7 @@ const ALIAS_DOMAINS = PRACTICE_ALIAS_HOSTS;
 })
 export class AppModule implements NestModule {
   // configure() runs before ServeStaticModule.onModuleInit(), so this
-  // middleware intercepts GET / before serve-static can respond.
+  // middleware intercepts GET of indexed practice pages before serve-static.
   configure(consumer: MiddlewareConsumer) {
     const indexPath = join(__dirname, '..', 'webapp', 'dist', 'index.html');
     const html = existsSync(indexPath) ? readFileSync(indexPath, 'utf8') : null;
@@ -105,15 +105,12 @@ export class AppModule implements NestModule {
       .forRoutes({ path: '{*path}', method: RequestMethod.ALL });
 
     configureUnifiedFrontend(consumer); // /app/* → /today за флагом
-    consumer
-      .apply((req: Request, res: Response, next: () => void) => {
-        if (!html) return next();
-        if (!ALIAS_DOMAINS.has(req.hostname)) return next();
-        const modified = practiceIndexHtml(html, req.hostname);
-        res.setHeader('Content-Type', 'text/html; charset=utf-8');
-        return res.send(modified);
-      })
-      .forRoutes({ path: '/', method: RequestMethod.GET });
+    consumer.apply(practiceIndexMiddleware(html, ALIAS_DOMAINS)).forRoutes(
+      ...PRACTICE_INDEXED_PAGES.map((path) => ({
+        path,
+        method: RequestMethod.GET,
+      })),
+    );
 
     // SEO для /articles* и sitemap.xml — после practiceDomainMiddleware.
     configureArticleSeo(consumer);

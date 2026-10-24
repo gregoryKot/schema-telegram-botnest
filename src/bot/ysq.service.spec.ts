@@ -123,6 +123,55 @@ describe('YsqService.saveYsqResult — история накапливается
   });
 });
 
+// Кнопка «Удалить результаты теста» в настройках (решение владельца
+// 2026-10-22): стирает всё про тест — итог, всю историю и незаконченный
+// прогресс — и только у этого человека. «Пройти заново» по-прежнему зовёт
+// deleteYsqResult (тест выше: история остаётся).
+describe('YsqService.deleteAllYsqData — итог, история и прогресс разом', () => {
+  it('после удаления ничего не читается: ни итог, ни история, ни прогресс', async () => {
+    const db = makeDb();
+    const svc = new YsqService(db);
+    await svc.saveYsqResult(1n, [1]);
+    await svc.saveYsqResult(1n, [2]);
+    await svc.saveYsqProgress(1n, [3], 1);
+
+    await svc.deleteAllYsqData(1n);
+
+    expect(await svc.getYsqResult(1n)).toBeNull();
+    expect(await svc.getYsqHistory(1n)).toEqual([]);
+    expect(await svc.getYsqProgress(1n)).toBeNull();
+  });
+
+  it('чужие данные теста остаются на месте', async () => {
+    const db = makeDb();
+    const svc = new YsqService(db);
+    await svc.saveYsqResult(1n, [1]);
+    await svc.saveYsqResult(2n, [5]);
+    await svc.saveYsqProgress(2n, [4], 2);
+
+    await svc.deleteAllYsqData(1n);
+
+    expect((await svc.getYsqResult(2n))?.answers).toEqual([5]);
+    expect(await svc.getYsqHistory(2n)).toHaveLength(1);
+    expect(await svc.getYsqProgress(2n)).toEqual({ answers: [4], page: 2 });
+  });
+
+  it('три удаления идут одной транзакцией и каждое — по userId', async () => {
+    const db = makeDb();
+    const svc = new YsqService(db);
+
+    await svc.deleteAllYsqData(7n);
+
+    // Без проверки формы аргумента прошло бы и удаление, из которого
+    // «выпала» одна таблица: счётчик $transaction тот же.
+    expect(db.$transaction).toHaveBeenCalledTimes(1);
+    expect(db.$transaction.mock.calls[0][0]).toHaveLength(3);
+    for (const table of [db.ysqResult, db.ysqResultHistory, db.ysqProgress]) {
+      expect(table.deleteMany).toHaveBeenCalledWith({ where: { userId: 7n } });
+    }
+  });
+});
+
 // Аудит 2026-07-20: ответы YSQ — клинический профиль схем, до этого лежали
 // в БД plaintext-массивом. Теперь в Json-колонке — строка-блоб (шифроблоб,
 // без ключа в тестовом окружении — JSON-строка), наружу — числа.

@@ -4,6 +4,8 @@
 // наверх (или уводит на второй фактор). CLIENT_ID/API_BASE читаются из
 // import.meta.env один раз при импорте модуля — поэтому каждый тест сбрасывает
 // кэш и переимпортирует хук со своим окружением (образец — api.env.test.ts).
+// Скрипт Google хук грузит сам (gsiScript.ts): в jsdom внешние скрипты не
+// грузятся, поэтому событие load на теге тест шлёт руками.
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { renderHook } from '@testing-library/react';
 
@@ -54,6 +56,7 @@ const postCall = (fm: ReturnType<typeof fetchRouter>) =>
   ) as unknown as [string, RequestInit & { body: string }];
 const initialized = (id: GoogleIdMock) =>
   vi.waitFor(() => expect(id.initialize).toHaveBeenCalledTimes(1));
+const gsiTag = () => document.head.querySelector('script#gsi-client');
 
 afterEach(() => {
   vi.useRealTimers();
@@ -61,6 +64,9 @@ afterEach(() => {
   vi.unstubAllGlobals();
   vi.resetModules();
   delete (window as unknown as { google?: unknown }).google;
+  document.head
+    .querySelectorAll('script#gsi-client')
+    .forEach((n) => n.remove());
 });
 
 describe('useGoogleOneTap', () => {
@@ -81,6 +87,8 @@ describe('useGoogleOneTap', () => {
     expect(cfg.nonce).toBe(NONCE);
     expect(typeof cfg.callback).toBe('function');
     expect(id.prompt).toHaveBeenCalledTimes(1);
+    // Скрипт Google уже на странице — второй тег не нужен.
+    expect(gsiTag()).toBeNull();
   });
 
   it('колбэк постит credential на /api/auth/google/one-tap → onSession(access, expiresIn)', async () => {
@@ -143,12 +151,42 @@ describe('useGoogleOneTap', () => {
     expect(id.prompt).not.toHaveBeenCalled();
   });
 
-  it('сеть легла при отправке credential → onError, без onSession/onTwofa', async () => {
-    vi.stubEnv('VITE_GOOGLE_CLIENT_ID', 'client-123');
-    vi.stubGlobal(
-      'fetch',
-      fetchRouter(() => Promise.reject(new Error('network down'))),
+  it('без VITE_GOOGLE_CLIENT_ID и без window.google → тег Google не вставляется', async () => {
+    vi.stubEnv('VITE_GOOGLE_CLIENT_ID', '');
+    const { useGoogleOneTap } = await import('./useGoogleOneTap');
+
+    renderHook(() =>
+      useGoogleOneTap({ enabled: true, onSession: NOOP, onTwofa: NOOP }),
     );
+
+    // Окно выключено сборкой — к Google вообще не ходим.
+    expect(gsiTag()).toBeNull();
+  });
+
+  it('enabled: false → тег Google не вставляется (скрипта нет, к Google не ходим)', async () => {
+    vi.stubEnv('VITE_GOOGLE_CLIENT_ID', 'client-123');
+    const { useGoogleOneTap } = await import('./useGoogleOneTap');
+
+    renderHook(() =>
+      useGoogleOneTap({ enabled: false, onSession: NOOP, onTwofa: NOOP }),
+    );
+
+    expect(gsiTag()).toBeNull();
+  });
+
+  // Сбой отправки виден в телеметрии, но не как экран-тупик (правило №14): onError
+  // вызван, входа нет, кнопки ниже остаются рабочими. Отказ сервера (например,
+  // client id сборки разошёлся с бэкендом) приходит с кодом ответа.
+  it.each([
+    ['сеть легла', () => Promise.reject(new Error('network down')), 'one-tap submit failed'],
+    [
+      'сервер ответил 401',
+      () => Promise.resolve({ ok: false, status: 401, json: () => Promise.resolve({}) } as unknown as Response),
+      'one-tap rejected 401',
+    ],
+  ] as const)('%s при отправке credential → onError, без onSession/onTwofa', async (_case, post, message) => {
+    vi.stubEnv('VITE_GOOGLE_CLIENT_ID', 'client-123');
+    vi.stubGlobal('fetch', fetchRouter(post));
     const id = installGoogle();
     const onError = vi.fn();
     const onSession = vi.fn();
@@ -161,57 +199,58 @@ describe('useGoogleOneTap', () => {
     await initialized(id);
     capturedCallback(id)({ credential: 'x.y.z' });
 
-    // Сбой отправки виден в телеметрии, но не как экран-тупик (правило №14):
-    // onError вызван, входа нет, кнопки ниже остаются рабочими.
     await vi.waitFor(() =>
-      expect(onError).toHaveBeenCalledWith({
-        message: 'one-tap submit failed',
-        section: 'login.one-tap',
-      }),
+      expect(onError).toHaveBeenCalledWith({ message, section: 'login.one-tap' }),
     );
     expect(onSession).not.toHaveBeenCalled();
     expect(onTwofa).not.toHaveBeenCalled();
   });
 
-  it('сервер ответил не-2xx → ни onSession, ни onTwofa (кнопки остаются)', async () => {
-    vi.stubEnv('VITE_GOOGLE_CLIENT_ID', 'client-123');
-    const fetchMock = fetchRouter(() =>
-      Promise.resolve({
-        ok: false,
-        json: () => Promise.resolve({}),
-      } as unknown as Response),
-    );
-    vi.stubGlobal('fetch', fetchMock);
-    const id = installGoogle();
-    const onSession = vi.fn();
-    const onTwofa = vi.fn();
-    const { useGoogleOneTap } = await import('./useGoogleOneTap');
-
-    renderHook(() => useGoogleOneTap({ enabled: true, onSession, onTwofa }));
-    await initialized(id);
-    capturedCallback(id)({ credential: 'x.y.z' });
-
-    await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
-    expect(onSession).not.toHaveBeenCalled();
-    expect(onTwofa).not.toHaveBeenCalled();
-  });
-
-  it('скрипт GIS ещё не загрузился → опрос, после появления window.google — initialize', async () => {
-    vi.useFakeTimers();
+  it('window.google нет → хук вставил script#gsi-client; после load — initialize', async () => {
     vi.stubEnv('VITE_GOOGLE_CLIENT_ID', 'client-123');
     vi.stubGlobal('fetch', fetchRouter(() => Promise.resolve(okJson({}))));
-    // window.google пока нет — хук должен запланировать повторную попытку.
+    // window.google пока нет — хук сам подключает скрипт Google.
     const { useGoogleOneTap } = await import('./useGoogleOneTap');
 
     renderHook(() =>
       useGoogleOneTap({ enabled: true, onSession: NOOP, onTwofa: NOOP }),
     );
-    // Скрипт догрузился между попытками.
+
+    const tag = gsiTag();
+    expect(tag).not.toBeNull();
+    expect(tag?.getAttribute('src')).toBe(
+      'https://accounts.google.com/gsi/client',
+    );
+    // Скрипт догрузился: появился window.google и пришло событие load.
     const id = installGoogle();
-    await vi.advanceTimersByTimeAsync(100);
+    tag?.dispatchEvent(new Event('load'));
 
     await initialized(id);
     expect(id.prompt).toHaveBeenCalledTimes(1);
+  });
+
+  it('скрипт Google не загрузился (error) → всплывашка не показывается, без ошибок', async () => {
+    vi.stubEnv('VITE_GOOGLE_CLIENT_ID', 'client-123');
+    const fetchMock = fetchRouter(() => Promise.resolve(okJson({})));
+    vi.stubGlobal('fetch', fetchMock);
+    const onError = vi.fn();
+    const { useGoogleOneTap } = await import('./useGoogleOneTap');
+
+    renderHook(() =>
+      useGoogleOneTap({
+        enabled: true,
+        onSession: NOOP,
+        onTwofa: NOOP,
+        onError,
+      }),
+    );
+    gsiTag()?.dispatchEvent(new Event('error'));
+    await vi.waitFor(() => expect(gsiTag()).toBeNull());
+    await Promise.resolve();
+
+    // Даже nonce не запрашиваем: показывать нечем, кнопки входа остаются.
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(onError).not.toHaveBeenCalled();
   });
 
   it('nonce не получен (сервер/сеть) → всплывашка не показывается: без nonce сервер токен всё равно отклонит', async () => {

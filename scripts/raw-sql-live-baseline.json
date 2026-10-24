@@ -130,6 +130,9 @@
   "src/infra/db-outage.service.ts": {
     "spec": "test/raw-sql-live-infra.e2e-spec.ts"
   },
+  "src/prisma/statement-timeout.ts": {
+    "spec": "test/statement-timeout.e2e-spec.ts"
+  },
   "src/subscription/subscription.charges.ts": {
     "spec": "test/raw-sql-live-infra.e2e-spec.ts"
   }

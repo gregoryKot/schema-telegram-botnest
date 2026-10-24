@@ -126,6 +126,23 @@
   разрушительна). Вернуть вход через Telegram OIDC можно из git, но сначала
   `sub` → `telegramId` нужно доказать записанным ответом oauth.telegram.org
   (правило №23).
+- **`/privacy` и `/offer` шире экрана телефона на обоих хостах**: при ширине 390px
+  `document.documentElement.scrollWidth` — 482 (schemehappens.ru) и 487 (визитка),
+  текст режется справа. Причина — таблица реквизитов `Table` с
+  `gridTemplateColumns: '220px 1fr'` (`webapp/src/pages/PrivacyPage.tsx:274`,
+  `webapp/src/pages/OfferPage.tsx:311`, две копии одной механики): колонка подписи
+  фиксирована, длинные неразрывные значения раздвигают сетку. Замер — headless
+  Chromium по сборке webapp: с `overflow-wrap: anywhere; min-width: 0` на тексте
+  страница укладывается в 390px. Найдено при починке #860 (юрстраницы на продукте).
+- **Ссылки `href` в компонентах не сверяются с роутами своего хоста** (класс 16 в
+  `docs/INCIDENTS.md`). Инцидент с `/privacy` жил в ссылках `LoginPage`, `ConsentScreen`,
+  `CookieBanner`, `AppShell`, `ProductLandingPage`: путь был роутом, но только у визитки.
+  Сверка литералов `href`/`to` из `webapp/src` с `appRoutes` ∪ `personalRoutes` этот класс
+  не ловит (путь есть в объединении), а сверка по хосту требует знать, на каком хосте живёт
+  компонент, — такой разметки нет, общие компоненты рисуются на обоих. Поэтому не сделано;
+  держат карта сайта (`sitemap.middleware.spec.ts`) и ночной smoke адресов
+  (`e2e-browser/public-pages.spec.ts`). На 2026-10-24 второй такой ссылки нет: `/reviews`,
+  `/book`, `/booking/*` встречаются только в компонентах визитки (ревью #860).
 - **`check-feature-parity.mjs` слеп к `src/auth/*.controller.ts`**: он смотрит
   только `src/api/**`. Мёртвый публичный роут в `src/auth` (так жил
   `/api/auth/telegram-oidc`) ловит только `registry-consumers.spec.ts` — и
