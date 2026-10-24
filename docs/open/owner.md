@@ -248,7 +248,7 @@ Jitsi раньше вычислялся из контакта (`schemehappens-<s
     (YandexBot со своей группой в `robots.txt` не читал `*`): `/today`, `/diary`,
     `/schemas`, `/profile`, `/practice`, `/cabinet`, `/account`, `/auth/`, `/link`,
     `/admin`, `/app/`;
-  - kotlarewski.gr — `/subscribe` и `/donate` (закрыты #NNN: решение владельца
+  - kotlarewski.gr — `/subscribe` и `/donate` (закрыты #861: решение владельца
     2026-10-24 — в поиске от визитки только главная и `/reviews`).
   Яндекс.Вебмастер → сайт → «Индексирование» → «Страницы в поиске» (поиск по адресу);
   удаление — «Инструменты» → «Удаление страниц из поиска» → «По префиксу». Google Search
