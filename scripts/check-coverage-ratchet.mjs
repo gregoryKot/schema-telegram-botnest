@@ -10,6 +10,7 @@
 import { spawnSync } from 'child_process';
 import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { join } from 'path';
+import { exitFlushed as exit, relayOutput } from './child-output.mjs';
 
 const ROOT = join(import.meta.dirname, '..');
 const BASELINE_PATH = join(ROOT, 'scripts', 'coverage-baseline.json');
@@ -37,18 +38,17 @@ const res = spawnSync('npx', jestArgs, {
   encoding: 'utf8',
   maxBuffer: 512 * 1024 * 1024,
 });
-if (res.stdout) process.stdout.write(res.stdout);
-if (res.stderr) process.stderr.write(res.stderr);
+relayOutput(res);
 
 if (res.error) {
   console.error('❌ не удалось запустить jest: ' + res.error.message);
-  process.exit(1);
+  await exit(1);
 }
 if (res.status !== 0) {
   console.error(
     '❌ jest завершился с ошибкой (упавшие тесты?) — coverage-храповик не проверяется.',
   );
-  process.exit(res.status ?? 1);
+  await exit(res.status ?? 1);
 }
 
 let summary;
@@ -58,7 +58,7 @@ try {
   console.error(
     `❌ не найден ${SUMMARY_PATH} — jest не сгенерировал coverage-summary.json.`,
   );
-  process.exit(1);
+  await exit(1);
 }
 
 function relPath(absPath) {
@@ -102,7 +102,7 @@ if (UPDATE) {
       console.error(
         `❌ --update: под "${dir}" не найдено ни одного файла в coverage-summary.json.`,
       );
-      process.exit(1);
+      await exit(1);
     }
     // Пол — с запасом ~2пп ниже текущего значения, чтобы не флеймить на
     // некритичных колебаниях, но всё равно ловить настоящую деградацию.
@@ -120,7 +120,7 @@ if (UPDATE) {
     `Бейслайн обновлён: lines ${current.lines}%, branches ${current.branches}%, ` +
       `floors ${JSON.stringify(floors)}.`,
   );
-  process.exit(0);
+  await exit(0);
 }
 
 let baseline;
@@ -130,7 +130,7 @@ try {
   console.error(
     'Нет бейслайна — сгенерируй: node scripts/check-coverage-ratchet.mjs --update',
   );
-  process.exit(1);
+  await exit(1);
 }
 
 const failures = [];
@@ -172,7 +172,7 @@ if (failures.length > 0 || floorFailures.length > 0) {
       'Если снижение осознанное и оправдано — обсуди перед тем как обновлять ' +
       'бейслайн: node scripts/check-coverage-ratchet.mjs --update',
   );
-  process.exit(1);
+  await exit(1);
 }
 
 if (

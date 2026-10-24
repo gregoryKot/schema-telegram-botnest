@@ -15,6 +15,7 @@
 import { spawnSync } from 'child_process';
 import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { join } from 'path';
+import { exitFlushed as exit, relayOutput } from './child-output.mjs';
 
 const ROOT = join(import.meta.dirname, '..');
 const BASELINE_PATH = join(ROOT, 'scripts', 'frontend-coverage-baseline.json');
@@ -29,7 +30,7 @@ if (requestedPackage && !PACKAGES.includes(requestedPackage)) {
   console.error(
     `❌ неизвестный пакет "${requestedPackage}" — ожидается один из: ${PACKAGES.join(', ')}`,
   );
-  process.exit(1);
+  await exit(1);
 }
 
 const packages = requestedPackage ? [requestedPackage] : PACKAGES;
@@ -38,26 +39,25 @@ const packages = requestedPackage ? [requestedPackage] : PACKAGES;
 // теста) не флеймил CI на десятые доли процента — как в бэкендовом храповике.
 const EPSILON = 0.1;
 
-function runVitestCoverage(pkg) {
+async function runVitestCoverage(pkg) {
   const cwd = join(ROOT, pkg);
   const res = spawnSync('npx', ['vitest', 'run', '--coverage', '--silent'], {
     cwd,
     encoding: 'utf8',
     maxBuffer: 512 * 1024 * 1024,
   });
-  if (res.stdout) process.stdout.write(res.stdout);
-  if (res.stderr) process.stderr.write(res.stderr);
+  relayOutput(res);
   if (res.error) {
     console.error(
       `❌ [${pkg}] не удалось запустить vitest: ${res.error.message}`,
     );
-    process.exit(1);
+    await exit(1);
   }
   if (res.status !== 0) {
     console.error(
       `❌ [${pkg}] vitest завершился с ошибкой (упавшие тесты?) — coverage-храповик не проверяется.`,
     );
-    process.exit(res.status ?? 1);
+    await exit(res.status ?? 1);
   }
 
   const summaryPath = join(cwd, 'coverage', 'coverage-summary.json');
@@ -69,7 +69,7 @@ function runVitestCoverage(pkg) {
       `❌ [${pkg}] не найден ${summaryPath} — vitest не сгенерировал coverage-summary.json ` +
         `(проверь reporter: ['...', 'json-summary'] в ${pkg}/vite.config.ts → test.coverage).`,
     );
-    process.exit(1);
+    await exit(1);
   }
   return {
     lines: summary.total.lines.pct,
@@ -79,7 +79,7 @@ function runVitestCoverage(pkg) {
 
 const current = {};
 for (const pkg of packages) {
-  current[pkg] = runVitestCoverage(pkg);
+  current[pkg] = await runVitestCoverage(pkg);
 }
 
 if (UPDATE) {
@@ -93,7 +93,7 @@ if (UPDATE) {
       .map(([pkg, c]) => `${pkg} — lines ${c.lines}%, branches ${c.branches}%`)
       .join('; ')}.`,
   );
-  process.exit(0);
+  await exit(0);
 }
 
 let baseline;
@@ -103,7 +103,7 @@ try {
   console.error(
     'Нет бейслайна — сгенерируй: node scripts/check-frontend-coverage-ratchet.mjs --update',
   );
-  process.exit(1);
+  await exit(1);
 }
 
 let hasFailure = false;
@@ -159,6 +159,6 @@ for (const pkg of packages) {
   }
 }
 
-if (hasFailure) process.exit(1);
-if (hasProgress) process.exit(0);
-process.exit(0);
+if (hasFailure) await exit(1);
+if (hasProgress) await exit(0);
+await exit(0);

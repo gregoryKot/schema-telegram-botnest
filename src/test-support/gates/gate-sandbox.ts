@@ -17,7 +17,6 @@ import {
   writeFileSync,
   copyFileSync,
   readFileSync,
-  chmodSync,
   realpathSync,
 } from 'fs';
 import { tmpdir } from 'os';
@@ -49,7 +48,7 @@ export interface RunGateOptions {
    * тест обязан сам вызвать cleanupTmp(tmp) в конце. */
   keepTmp?: boolean;
   /** Полностью заменяет process.env дочернего процесса (напр. чтобы
-   * подсунуть фейковый `npx` через PATH — см. makeFakeNpx). */
+   * подсунуть фейковый `npx` через PATH — см. fake-npx.ts). */
   env?: Record<string, string>;
   /** Хук после записи fixture-файлов и до запуска скрипта — для вещей,
    * которые не выразить как relPath→content (создать директорию-заглушку
@@ -141,40 +140,6 @@ export function runGate(
   } finally {
     if (!options.keepTmp) rmSync(tmp, { recursive: true, force: true });
   }
-}
-
-/**
- * Создаёт фейковый бинарь `npx` для гейтов, которые сами запускают
- * `npx jest --coverage` / `npx vitest run --coverage`
- * (check-coverage-ratchet.mjs, check-frontend-coverage-ratchet.mjs).
- * Поднимать настоящий jest/vitest в песочнице не нужно и дорого — гейт
- * проверяется как читатель coverage-summary.json, а не как раннер тестов.
- *
- * Фейк ничего не знает про переданные ему аргументы: он смотрит на
- * env FAKE_NPX_SUMMARY (JSON-строка) и, если она задана, пишет её в
- * `<cwd>/coverage/coverage-summary.json` (cwd — то, что передал гейт-скрипт
- * через spawnSync({cwd})), имитируя успешный прогон с отчётом. Если
- * переменная не задана — эмулирует прогон, который отчёта не оставил.
- */
-export function makeFakeNpx(): { binDir: string; cleanup: () => void } {
-  const binDir = mkdtempSync(join(tmpdir(), 'fakenpx-'));
-  const script = [
-    '#!/bin/sh',
-    'if [ -z "$FAKE_NPX_SUMMARY" ]; then',
-    '  exit 0',
-    'fi',
-    'mkdir -p coverage',
-    'printf \'%s\' "$FAKE_NPX_SUMMARY" > coverage/coverage-summary.json',
-    'exit 0',
-    '',
-  ].join('\n');
-  const npxPath = join(binDir, 'npx');
-  writeFileSync(npxPath, script);
-  chmodSync(npxPath, 0o755);
-  return {
-    binDir,
-    cleanup: () => rmSync(binDir, { recursive: true, force: true }),
-  };
 }
 
 /** `n` строк вида `line 1\nline 2\n...\nline n` без завершающего перевода
