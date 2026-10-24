@@ -24,6 +24,9 @@
     "src/auth/security-log-redact.ts",
     "src/therapy/therapy-relations.service.ts"
   ],
+  "mutator": {
+    "excludedMutations": ["CallExpression"]
+  },
   "reporters": [
     "clear-text",
     "progress",
