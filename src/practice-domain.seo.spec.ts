@@ -1,0 +1,75 @@
+// robots.txt и sitemap.xml визитки ⇄ её страницы (правило №4). Решение владельца
+// 2026-10-24: в поиске главная и /reviews, остальное закрыто. Каждая страница
+// визитки (PRACTICE_PAGES — зеркало personalRoutes) классифицирована: новая
+// страница без решения роняет тест, а не открывается ботам молча.
+import {
+  PRACTICE_INDEXED_PAGES,
+  practiceRobots,
+  practiceSitemap,
+} from './practice-domain.seo';
+import {
+  PRACTICE_PAGES,
+  PRACTICE_PAGE_PREFIXES,
+} from './practice-domain.surface';
+
+const robots = practiceRobots('kotlarewski.gr');
+
+// Матчер одной группы «*» по RFC 9309: побеждает самое длинное совпадение, при
+// равенстве — Allow; «*» — любая строка, «$» в конце якорит конец пути.
+function isAllowed(text: string, path: string): boolean {
+  let best = { allow: true, pattern: '' };
+  for (const m of text.matchAll(/^(Allow|Disallow):\s*(\S+)$/gm)) {
+    const rule = { allow: m[1] === 'Allow', pattern: m[2] };
+    const re = new RegExp(
+      '^' +
+        rule.pattern.replace(/[.+?^{}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*'),
+    );
+    if (!re.test(path)) continue;
+    const longer = rule.pattern.length > best.pattern.length;
+    const tieAllow = rule.pattern.length === best.pattern.length && rule.allow;
+    if (longer || tieAllow) best = rule;
+  }
+  return best.allow;
+}
+
+const pages = [
+  ...PRACTICE_PAGES,
+  ...PRACTICE_PAGE_PREFIXES.map((prefix) => `${prefix}some-slug`),
+];
+
+describe('robots.txt визитки ⇄ страницы визитки', () => {
+  it('матчер: «/$» открывает только корень, длинное совпадение побеждает', () => {
+    const txt = 'Allow: /$\nDisallow: /a\nAllow: /a/b\n';
+    expect(isAllowed(txt, '/')).toBe(true);
+    expect(isAllowed(txt, '/a')).toBe(false);
+    expect(isAllowed(txt, '/a/b')).toBe(true);
+    expect(isAllowed(txt, '/zzz')).toBe(true);
+  });
+
+  it('в поиске ровно главная и /reviews', () => {
+    expect(pages.filter((p) => isAllowed(robots, p))).toEqual([
+      ...PRACTICE_INDEXED_PAGES,
+    ]);
+  });
+
+  it('закрыты /subscribe и /donate — копии страниц продукта', () => {
+    expect(isAllowed(robots, '/subscribe')).toBe(false);
+    expect(isAllowed(robots, '/donate')).toBe(false);
+  });
+
+  it('ссылки клиентов закрыты вместе с параметрами', () => {
+    for (const p of ['/book', '/booking/paid?t=x', '/booking/manage?t=x']) {
+      expect(isAllowed(robots, p)).toBe(false);
+    }
+  });
+
+  it('sitemap.xml визитки — те же страницы, что открыты в robots.txt', () => {
+    const xml = practiceSitemap('kotlarewski.gr');
+    const locs = [
+      ...xml.matchAll(/<loc>https:\/\/kotlarewski\.gr([^<]*)<\/loc>/g),
+    ].map((m) => m[1]);
+    expect(locs).toEqual([...PRACTICE_INDEXED_PAGES]);
+    expect(locs.every((p) => isAllowed(robots, p))).toBe(true);
+    expect(robots).toContain('Sitemap: https://kotlarewski.gr/sitemap.xml');
+  });
+});

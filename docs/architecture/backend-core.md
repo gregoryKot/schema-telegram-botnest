@@ -15,7 +15,7 @@
 
 ### `src/` — корневые файлы (middleware хостов)
 Хост-стратегия: визитка `kotlarewski.gr` как узкая поверхность + увод мини-аппа `/app/*` в кабинет сайта.
-- Входы: `src/practice-domain.middleware.ts` — редиректы хостов, allow-list визитки; `src/practice-domain.surface.ts` — `PRACTICE_PAGES`, `PRACTICE_API_PREFIXES`; `src/practice-index-html.ts` — canonical/og:url под хост-алиас; `src/unified-frontend.middleware.ts` — `/app/*` → 302 `/today` за флагом; `src/unified-frontend.sw-stub.ts` — заглушка SW, снимает старый воркер мини-аппа.
+- Входы: `src/practice-domain.middleware.ts` — редиректы хостов, allow-list визитки; `src/practice-domain.surface.ts` — `PRACTICE_PAGES`, `PRACTICE_API_PREFIXES`; `src/practice-domain.seo.ts` — robots.txt и sitemap.xml визитки, что в поиске — `PRACTICE_INDEXED_PAGES` (каждая страница классифицирована в `practice-domain.seo.spec.ts`); `src/practice-index-html.ts` — canonical/og:url под хост-алиас; `src/unified-frontend.middleware.ts` — `/app/*` → 302 `/today` за флагом; `src/unified-frontend.sw-stub.ts` — заглушка SW, снимает старый воркер мини-аппа.
 - Связи: подключаются в `AppModule.configure`; `CANONICAL_HOST` из `src/infra/canonical-host.ts`; `PRACTICE_ALIAS_HOSTS` использует и `src/articles/article-seo.middleware.ts`; `PRACTICE_PAGES` — зеркало `personalRoutes` в `webapp/src/App.tsx` (сверяет спек).
 - Подводные камни: страница/ручка API вне allow-list на `.gr` получает 301 на канон-хост, запись (POST/PUT/PATCH/DELETE) вне `PRACTICE_API_PREFIXES` не принимается вовсе, `/app*` и `/health` — исключения; новая страница визитки = строка в `PRACTICE_PAGES`. `UNIFIED_FRONTEND` (`1`/`true`) по умолчанию не задан: без него редирект `/app` не работает; флаг читать только через `isUnifiedFrontendOn()`.
 
