@@ -9,7 +9,7 @@ import { ARTICLE_SEED } from './articles.seed';
 import { ARTICLE_DIAGRAM_KEYS } from './article-diagrams';
 
 // Bump when built-in article content changes: instances refresh seeds on start.
-const SEED_VERSION = '16';
+const SEED_VERSION = '17';
 const SEED_VERSION_KEY = 'articlesSeedVersion';
 
 export interface ArticleDto {
