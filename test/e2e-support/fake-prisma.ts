@@ -15,7 +15,7 @@
 import { makeFakeExecuteRaw } from './fake-cron-lease';
 import { makeTable, withDefaults } from './fake-prisma-engine';
 import { withUserJoin } from './fake-user-join';
-import { withUpdatedAt } from './fake-updated-at';
+import { withCreatedAt, withUpdatedAt } from './fake-updated-at';
 
 /** Собирает фейковый PrismaService, готовый к .overrideProvider(PrismaService). */
 export function makeFakePrisma() {
@@ -79,7 +79,7 @@ export function makeFakePrisma() {
     ysqProgress: makeTable(),
     ysqResult: makeTable(),
     ysqResultHistory: makeTable(),
-    analyticsEvent: makeTable(),
+    analyticsEvent: withCreatedAt(makeTable()),
     diaryDraft: makeTable(),
     therapistRequest: makeTable(),
     // Therapy ownership smoke (test/therapy-ownership*.e2e-spec.ts, план

@@ -30,6 +30,7 @@ import { signAccessToken } from './e2e-support/jwt';
 import { cleanupOwnershipFixtures } from './e2e-support/cleanup-fixtures';
 import { MergeService } from '../src/auth/merge.service';
 import { TherapistRequestService } from '../src/therapy/therapist-request.service';
+import { TherapistExitMetricsService } from '../src/bot/therapist-exit-metrics.service';
 
 const ADMIN = 4_400_000_000_009n;
 process.env.ADMIN_ID = ADMIN.toString();
@@ -181,6 +182,21 @@ describe('e2e: отказ от роли терапевта завершает с
     expect(events.map((e: { meta: unknown }) => e.meta)).toEqual([
       { clientsEnded: 3 },
     ]);
+  });
+
+  // Сохранил → нашёл (правило №4): записанное отказом видно в блоке /stats
+  // «Терапевты уходят» — тем же сервисом, которым его строит отчёт
+  // (buildStatsReport, test/e2e-support/stats-report.factory.ts).
+  it('блок /stats «Терапевты уходят» видит этот отказ: 1 терапевт, 3 клиента', async () => {
+    const metrics = new TherapistExitMetricsService(prisma);
+    const totals = { therapists: 1, clients: 3 };
+    expect(await metrics.getMetrics()).toEqual({
+      window: totals,
+      month: totals,
+    });
+    expect(await metrics.render()).toContain(
+      'отказались от роли терапевта: 1 человек, клиентов это коснулось: 3.',
+    );
   });
 
   it('карты режимов и задания бывшего терапевта остаются у клиента как история', async () => {
