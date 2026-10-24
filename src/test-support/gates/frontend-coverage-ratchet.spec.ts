@@ -5,7 +5,8 @@
 //
 // Гоняем только с --package webapp, чтобы не создавать фикстуры для
 // schema-miniapp/shared — поведение гейта на них идентично.
-import { makeFakeNpx, runGate } from './gate-sandbox';
+import { makeFakeNpx } from './fake-npx';
+import { runGate } from './gate-sandbox';
 
 function envWithFakeNpx(
   binDir: string,
@@ -90,6 +91,66 @@ describe('check-frontend-coverage-ratchet.mjs', () => {
       );
       expect(res.status).toBe(1);
       expect(res.stderr).toContain('[webapp] нет в бейслайне');
+    } finally {
+      fake.cleanup();
+    }
+  });
+
+  // Находка 2026-10-24: вывод vitest терялся хвостом при process.exit в pipe
+  // (см. coverage-ratchet.spec.ts). Читаем через pipe — как CI.
+  it('[webapp] vitest упал и написал > 1 МБ лога — хвост вывода и сообщение храповика доходят целиком', () => {
+    const fake = makeFakeNpx();
+    try {
+      const res = runGate(
+        'check-frontend-coverage-ratchet.mjs',
+        {
+          'scripts/frontend-coverage-baseline.json': JSON.stringify({
+            webapp: { lines: 80, branches: 70 },
+          }),
+          'webapp/.keep': '',
+        },
+        {
+          args: ['--package', 'webapp'],
+          env: {
+            ...envWithFakeNpx(fake.binDir),
+            FAKE_NPX_NOISE_KB: '1536',
+            FAKE_NPX_EXIT: '1',
+          },
+        },
+      );
+      expect(res.status).toBe(1);
+      expect(res.stdout).toContain('NPX_TAIL_STDOUT');
+      expect(res.stderr).toContain('NPX_TAIL_STDERR');
+      expect(res.stderr).toContain('vitest завершился с ошибкой');
+    } finally {
+      fake.cleanup();
+    }
+  });
+
+  it('[webapp] vitest прошёл с логом > 1 МБ, покрытие в норме — итог храповика дописан после лога, exit 0', () => {
+    const fake = makeFakeNpx();
+    try {
+      const res = runGate(
+        'check-frontend-coverage-ratchet.mjs',
+        {
+          'scripts/frontend-coverage-baseline.json': JSON.stringify({
+            webapp: { lines: 80, branches: 70 },
+          }),
+          'webapp/.keep': '',
+        },
+        {
+          args: ['--package', 'webapp'],
+          env: {
+            ...envWithFakeNpx(fake.binDir, {
+              total: { lines: { pct: 80 }, branches: { pct: 70 } },
+            }),
+            FAKE_NPX_NOISE_KB: '1536',
+          },
+        },
+      );
+      expect(res.status).toBe(0);
+      expect(res.stdout).toContain('NPX_TAIL_STDOUT');
+      expect(res.stdout).toContain('[webapp] coverage-храповик');
     } finally {
       fake.cleanup();
     }
