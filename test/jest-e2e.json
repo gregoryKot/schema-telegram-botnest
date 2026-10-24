@@ -12,6 +12,10 @@
     "^jose$": "<rootDir>/e2e-support/jose.stub.ts"
   },
   "transform": {
+    "/node_modules/@nestjs/(common|core|testing|platform-express|config|schedule|serve-static)/.+\\.js$": "<rootDir>/../src/test-support/esm-to-cjs.transform.cjs",
     "^.+\\.(t|j)s$": "ts-jest"
-  }
+  },
+  "transformIgnorePatterns": [
+    "/node_modules/(?!@nestjs/(common|core|testing|platform-express|config|schedule|serve-static)/)"
+  ]
 }
