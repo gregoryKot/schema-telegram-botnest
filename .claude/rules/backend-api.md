@@ -41,7 +41,7 @@ Postgres общим на все инстансы счётчиком; остал�
 
 Механизм принуждения — классификация, не поиск признака: **`scripts/check-persistent-throttle.mjs`**
 (CI, джоба `checks`) требует решения о КАЖДОЙ ручке контроллера, у которой есть
-`@Throttle(` либо в теле `verifyCode(`/`assertSourceTotp(`/`confirmSetup(`/`regenerateRecoveryCodes(`/`totp.disable(`/`consumeToken(`/`.approve(`/`.deny(`/`.submit(`:
+`@Throttle(` либо в теле `verifyCode(`/`assertSourceTotp(`/`confirmSetup(`/`regenerateRecoveryCodes(`/`totp.disable(`/`consumeEmailToken(`/`.approve(`/`.deny(`/`.submit(`:
 метка (`@PersistentThrottle()`, составной `@PersistentThrottleLimit(...)` из
 `src/api/persistent-throttle-limit.ts`, `AdminThrottle()` на классе) либо запись
 `exempt` с причиной ≥20 символов и `since` в `scripts/persistent-throttle-baseline.json`.

@@ -41,8 +41,8 @@ export const FIELD_POLICY: Record<string, Record<string, Policy>> = {
     totpSecret: enc('src/auth/totp.service.ts'),
     totpRecoveryCodes: enc('src/auth/totp.service.ts'),
     recoveryEmail: plain(
-      '@unique + WHERE-лукап при восстановлении — недетерминированное ' +
-        'шифрование сломает поиск; осознанный компромисс',
+      'по всей видимости пуста и не используется с #864 (восстановление по почте убрано); ' +
+        'колонку удаляет отдельная миграция — docs/open/audit-2026-10.md',
     ),
     uiPrefs: plain(
       'серверное зеркало кастомизации мини-аппа — плоский объект флагов/id ' +
@@ -54,7 +54,7 @@ export const FIELD_POLICY: Record<string, Record<string, Policy>> = {
   EmailToken: {
     id: ID,
     tokenHash: TOKEN,
-    email: enc('src/auth/email.service.ts'),
+    email: enc('src/auth/auth.service.ts'), // encryptEmail → magic-link.ts
     purpose: ID,
   },
   TherapistRequest: {

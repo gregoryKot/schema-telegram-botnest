@@ -21,7 +21,7 @@ const TRIGGERS = new RegExp(
     '\\bconfirmSetup\\(', // подтверждение настройки 2FA кодом (2fa/enable)
     '\\bregenerateRecoveryCodes\\(', // код TOTP за новые резервные коды
     '\\btotp\\.disable\\(', // код TOTP за отключение 2FA (2fa/disable)
-    '\\bconsumeToken\\(', // погашение токена из письма (перебираемая строка)
+    '\\bconsumeEmailToken\\(', // погашение токена из письма (перебираемая строка)
     '\\.approve\\(',
     '\\bapproveLogin',
     '\\.deny\\(',

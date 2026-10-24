@@ -157,9 +157,7 @@ model User {
   // (±1 шаг, ~90с) не должен приниматься дважды — verifyCode двигает значение
   // вперёд атомарно и отвергает шаг ≤ сохранённого. null = ещё не входил по TOTP.
   totpLastStep           Int?
-  // Recovery email — last-resort path in case user loses ALL their auth
-  // providers (Google/Telegram/VK all gone). Receives a magic link to add
-  // a new provider. Verified separately (verifiedAt).
+  // Не используется с #864: восстановление по почте убрано; удалить миграцией отдельным PR после выкладки (см. docs/open/audit-2026-10.md)
   recoveryEmail          String?  @unique
   recoveryEmailVerifiedAt DateTime?
 
@@ -178,14 +176,14 @@ model User {
   analyticsEvents        AnalyticsEvent[]
 }
 
-// Email magic-link tokens — for recovery, email verification, etc.
+// Email magic-link tokens — вход по ссылке и привязка адреса.
 // One-use, ~30 min TTL. Hash stored, raw token only in the email.
 model EmailToken {
   id        String   @id @default(cuid())
-  userId    BigInt?  // null = pre-verification (verify email before binding)
+  userId    BigInt?  // null = вход по почте для адреса, у которого ещё нет аккаунта
   tokenHash String   @unique
   email     String   // sent to this address
-  purpose   String   // 'recovery' | 'verify_email'
+  purpose   String   // 'login' | 'link_email_auth' (до #864 ещё 'recovery' | 'verify_email')
   expiresAt DateTime
   usedAt    DateTime?
   createdAt DateTime @default(now())

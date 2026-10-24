@@ -124,7 +124,10 @@ describe('check-persistent-throttle.mjs', () => {
       'return this.totp.regenerateRecoveryCodes(uid, dto.code);',
     ],
     ['totp.disable(', 'await this.totp.disable(uid, dto.code);'],
-    ['consumeToken(', "await this.email.consumeToken(dto.token, 'recovery');"],
+    [
+      'consumeEmailToken(',
+      'return this.emailTokens.consumeEmailToken(dto.token, req.ip);',
+    ],
     ['.approve(', 'return this.links.approve(code, uid);'],
     ['approveLogin', 'await this.t.approveLoginIfPossible(c, u);'],
     ['.deny(', 'await this.t.deny(code);'],
@@ -337,10 +340,8 @@ describe('check-persistent-throttle.mjs', () => {
         join(ROOT, 'src', 'auth', 'auth-2fa.controller.ts'),
         'utf8',
       );
-      const baseline = {
-        'GET /api/auth/recovery-email/verify':
-          REAL_BASELINE['GET /api/auth/recovery-email/verify'],
-      };
+      // Исключений у контроллера нет: каждая ручка с кодом несёт метку.
+      const baseline = {};
       expect(gate({ 'src/auth/a.controller.ts': real }, baseline).status).toBe(
         0,
       );
