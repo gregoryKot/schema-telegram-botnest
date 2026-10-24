@@ -13,8 +13,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { PersistentThrottleLimit } from '../api/persistent-throttle-limit';
-import { Request } from 'express';
-import { uid } from '../api/request-utils';
+import { type AuthRequest, uid } from '../api/request-utils';
 import { parseClientId } from '../api/parse-user-id';
 import { SubmitTherapistRequestDto } from './therapist-request.dto';
 import { TelegramAuthGuard } from '../api/telegram-auth.guard';
@@ -23,15 +22,10 @@ import { ALREADY_CONNECTED_ERROR } from './therapy-invite';
 import { TherapyClientDataService } from './therapy-client-data.service';
 import { TherapistRequestService } from './therapist-request.service';
 import { AccountService } from '../bot/account.service';
+import { TherapistExitService } from './therapist-exit.service';
 import { JoinTherapyDto, TherapistViewDto } from './dto/connection.dto';
 import { VirtualClientDto } from './dto/virtual-client.dto';
 import { RenameClientDto } from './dto/client-data.dto';
-
-interface AuthRequest extends Request {
-  telegramUserId: number;
-  userRole?: string;
-  webUser: { userId: bigint };
-}
 
 // Подключение клиент↔терапевт: инвайт-коды, join/disconnect, список
 // клиентов (add/virtual/rename/remove) и заявка на роль терапевта.
@@ -43,20 +37,31 @@ export class TherapyConnectionController {
     private readonly clientDataService: TherapyClientDataService,
     private readonly accountService: AccountService,
     private readonly therapistRequestService: TherapistRequestService,
+    private readonly exit: TherapistExitService,
   ) {}
+
+  private async assertTherapist(req: AuthRequest): Promise<void> {
+    const role = await this.accountService.getUserRole(uid(req));
+    if (role !== 'THERAPIST') throw new ForbiddenException('Therapist only');
+  }
 
   // ─── Connection ─────────────────────────────────────────────────────────────
 
   @Post('invite')
   async createInvite(@Req() req: AuthRequest) {
-    const role = await this.accountService.getUserRole(uid(req));
-    if (role !== 'THERAPIST') throw new ForbiddenException('Therapist only');
+    await this.assertTherapist(req);
     return this.relationsService.createInvite(uid(req));
   }
 
   @Get('relation')
   async getRelation(@Req() req: AuthRequest) {
     return this.relationsService.getRelation(uid(req));
+  }
+
+  // Терапевт отказался от роли — клиенту сообщение вместо «Мой терапевт».
+  @Get('former-therapist')
+  async getFormerTherapist(@Req() req: AuthRequest) {
+    return this.exit.formerTherapist(uid(req));
   }
 
   @Post('join')
@@ -88,8 +93,7 @@ export class TherapyConnectionController {
 
   @Get('clients')
   async getClients(@Req() req: AuthRequest) {
-    const role = await this.accountService.getUserRole(uid(req));
-    if (role !== 'THERAPIST') throw new ForbiddenException('Therapist only');
+    await this.assertTherapist(req);
     return this.relationsService.getClients(uid(req));
   }
 
@@ -98,8 +102,7 @@ export class TherapyConnectionController {
     @Req() req: AuthRequest,
     @Param('clientId') clientId: string,
   ) {
-    const role = await this.accountService.getUserRole(uid(req));
-    if (role !== 'THERAPIST') throw new ForbiddenException('Therapist only');
+    await this.assertTherapist(req);
     await this.clientDataService.removeClient(
       uid(req),
       parseClientId(clientId),
@@ -112,8 +115,7 @@ export class TherapyConnectionController {
     @Req() req: AuthRequest,
     @Body() body: VirtualClientDto,
   ) {
-    const role = await this.accountService.getUserRole(uid(req));
-    if (role !== 'THERAPIST') throw new ForbiddenException('Therapist only');
+    await this.assertTherapist(req);
     if (!body.name?.trim()) throw new BadRequestException('name required');
     return this.relationsService.addVirtualClient(uid(req), body.name);
   }
@@ -124,8 +126,7 @@ export class TherapyConnectionController {
     @Param('clientId') clientId: string,
     @Body() body: RenameClientDto,
   ) {
-    const role = await this.accountService.getUserRole(uid(req));
-    if (role !== 'THERAPIST') throw new ForbiddenException('Therapist only');
+    await this.assertTherapist(req);
     await this.relationsService.renameClient(
       uid(req),
       parseClientId(clientId),
@@ -174,18 +175,16 @@ export class TherapyConnectionController {
     @Req() req: AuthRequest,
     @Body() body: TherapistViewDto,
   ) {
-    const role = await this.accountService.getUserRole(uid(req));
-    if (role !== 'THERAPIST') throw new ForbiddenException('Therapist only');
+    await this.assertTherapist(req);
     await this.accountService.setTherapistMode(uid(req), body.on);
     return { ok: true };
   }
 
-  // Отказ от роли терапевта — возврат в CLIENT (см. AccountService.resignTherapist).
+  // Отказ от роли терапевта — возврат в CLIENT (см. TherapistExitService.resign).
   @Delete('therapist-role')
   async resignTherapist(@Req() req: AuthRequest) {
-    const role = await this.accountService.getUserRole(uid(req));
-    if (role !== 'THERAPIST') throw new ForbiddenException('Therapist only');
-    await this.accountService.resignTherapist(uid(req));
+    await this.assertTherapist(req);
+    await this.exit.resign(uid(req));
     return { ok: true };
   }
 }

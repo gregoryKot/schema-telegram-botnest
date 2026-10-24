@@ -279,7 +279,7 @@ export function sanitizeMeta(
   if (name.startsWith('case_') || name === 'mode_renamed') {
     return sanitizeCaseMeta(name, meta);
   }
-  // breath_start / stop_start / journey_open / ysq_help_open / plus_open /
-  // CONCEPT_EVENTS (concept_graph_open … concept_graph_fullscreen) — без meta.
+  // Без meta: breath_start / stop_start / journey_open / ysq_help_open / plus_open /
+  // CONCEPT_EVENTS; серверные notify_queue_tick, therapist_resigned (подделке — без чисел).
   return undefined;
 }

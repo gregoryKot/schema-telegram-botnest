@@ -522,6 +522,12 @@ model TherapyRelation {
   nextSession       String?  // YYYY-MM-DD, next scheduled session
   meetingDays       Json     @default("[]")  // number[] weekdays 0=Sun..6=Sat
   createdAt   DateTime @default(now())
+  // Когда и почему связь стала `ended` (src/therapy/relation-end-reason.ts).
+  // Причина — машинный код, не свободный текст: 'therapist_resigned' — терапевт
+  // отказался от роли, клиент видит сообщение (GET /api/therapy/former-therapist).
+  // endedAt NULL у связей, завершённых до появления колонки (дата неизвестна).
+  endedAt     DateTime?
+  endReason   String?  @db.VarChar(32)
 
   therapist   User  @relation("TherapistOf", fields: [therapistId], references: [id], onDelete: Cascade)
   client      User? @relation("ClientOf",    fields: [clientId],    references: [id], onDelete: SetNull)

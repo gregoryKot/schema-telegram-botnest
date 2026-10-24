@@ -182,17 +182,14 @@ const NOT_YET_COVERED: Array<{ route: string; reason: string }> = [
   { route: 'DELETE /api/therapy/custom-modes/:param', reason: REASON.THERAPY },
   { route: 'DELETE /api/therapy/mode-maps/map/:param', reason: REASON.THERAPY },
   { route: 'GET /api/therapy/my-mode-maps/:param', reason: REASON.THERAPY },
-  { route: 'GET /api/therapy/relation', reason: REASON.THERAPY },
   { route: 'DELETE /api/therapy/clients/:param', reason: REASON.THERAPY },
   { route: 'POST /api/therapy/rename-client/:param', reason: REASON.THERAPY },
   { route: 'POST /api/therapy/become-therapist', reason: REASON.THERAPY },
-  { route: 'POST /api/therapy/request', reason: REASON.THERAPY },
   { route: 'GET /api/therapy/request', reason: REASON.THERAPY },
   { route: 'POST /api/therapy/therapist-view', reason: REASON.THERAPY },
   { route: 'DELETE /api/therapy/therapist-role', reason: REASON.THERAPY },
   { route: 'DELETE /api/therapy/notes/:param', reason: REASON.THERAPY },
   { route: 'POST /api/therapy/session-info/:param', reason: REASON.THERAPY },
-  { route: 'GET /api/therapy/tasks', reason: REASON.THERAPY },
   { route: 'GET /api/therapy/tasks/history', reason: REASON.THERAPY },
   { route: 'POST /api/therapy/tasks/:param/complete', reason: REASON.THERAPY },
   { route: 'POST /api/therapy/request-ysq/:param', reason: REASON.THERAPY },
@@ -246,7 +243,9 @@ describe('трипваер: каждый guarded-маршрут вызван х�
 
   // 61 → 52 (#864): −4 за ручки восстановления по почте (убраны вместе с
   // кодом), −5 — запас между полом и фактом подтянут до факта.
-  it('ратчет: allowlist может только сокращаться (сейчас ≤52)', () => {
-    expect(NOT_YET_COVERED.length).toBeLessThanOrEqual(52);
+  // 52 → 49: GET relation, POST request и GET tasks ходят через
+  // test/therapy-resign.e2e-spec.ts.
+  it('ратчет: allowlist может только сокращаться (сейчас ≤49)', () => {
+    expect(NOT_YET_COVERED.length).toBeLessThanOrEqual(49);
   });
 });

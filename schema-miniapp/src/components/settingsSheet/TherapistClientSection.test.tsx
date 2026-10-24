@@ -24,6 +24,7 @@ vi.mock('../../api', () => ({
     leaveTherapy: vi.fn(),
     joinTherapy: vi.fn(),
     getTherapyRelation: vi.fn(),
+    getFormerTherapist: vi.fn(() => Promise.resolve(null)),
   },
 }));
 import { api } from '../../api';
@@ -31,10 +32,13 @@ const mockApi = api as unknown as {
   leaveTherapy: ReturnType<typeof vi.fn>;
   joinTherapy: ReturnType<typeof vi.fn>;
   getTherapyRelation: ReturnType<typeof vi.fn>;
+  getFormerTherapist: ReturnType<typeof vi.fn>;
 };
 
 afterEach(() => {
   cleanup();
+  mockApi.getFormerTherapist.mockReset();
+  mockApi.getFormerTherapist.mockResolvedValue(null);
 });
 
 function renderWithForm(ui: ReactElement, form: AddressForm) {
@@ -284,5 +288,50 @@ describe('TherapistClientSection — пояснение', () => {
     render(<TherapistClientSection {...baseProps({ onInfo })} />);
     fireEvent.click(screen.getByLabelText('Пояснение'));
     expect(onInfo).toHaveBeenCalled();
+  });
+});
+
+// Решение владельца 2026-10-22: терапевт отказался от роли — над формой кода
+// сообщение о нём (GET /api/therapy/former-therapist), а не пустота.
+describe('TherapistClientSection — бывший терапевт', () => {
+  const FORMER = { name: 'Мария', endedAt: '2026-10-22T10:00:00.000Z' };
+
+  it('связи нет, сервер отдал бывшего — сообщение с именем над формой кода', async () => {
+    mockApi.getFormerTherapist.mockResolvedValue(FORMER);
+    renderWithForm(<TherapistClientSection {...baseProps()} />, 'vy');
+    expect(
+      await screen.findByText(
+        'Мария больше не работает в приложении как терапевт',
+      ),
+    ).toBeTruthy();
+    expect(screen.getByRole('note').textContent).toContain('остаётся у вас');
+    expect(screen.getByText('Войти')).toBeTruthy();
+  });
+
+  it('сервер отдал null — сообщения нет, форма кода на месте', async () => {
+    render(<TherapistClientSection {...baseProps()} />);
+    await waitFor(() =>
+      expect(mockApi.getFormerTherapist).toHaveBeenCalledTimes(1),
+    );
+    expect(screen.queryByRole('note')).toBeNull();
+    expect(screen.getByText('Войти')).toBeTruthy();
+  });
+
+  it('терапевт подключён — бывшего не спрашиваем и не показываем', () => {
+    mockApi.getFormerTherapist.mockResolvedValue(FORMER);
+    render(
+      <TherapistClientSection
+        {...baseProps({ therapyRelation: activeRelation() })}
+      />,
+    );
+    expect(mockApi.getFormerTherapist).not.toHaveBeenCalled();
+    expect(screen.queryByRole('note')).toBeNull();
+  });
+
+  it('связь ещё грузится — бывшего не спрашиваем', () => {
+    render(
+      <TherapistClientSection {...baseProps({ therapyRelation: undefined })} />,
+    );
+    expect(mockApi.getFormerTherapist).not.toHaveBeenCalled();
   });
 });

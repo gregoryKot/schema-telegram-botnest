@@ -23,6 +23,7 @@ import { GameMetricsService } from './game-metrics.service';
 import { DataExportMetricsService } from './data-export-metrics.service';
 import { BookingRetentionMetricsService } from './booking-retention-metrics.service';
 import { IntroLeadMetricsService } from './intro-lead-metrics.service';
+import { TherapistExitMetricsService } from './therapist-exit-metrics.service';
 import { infraBlocks } from './stats-infra-blocks';
 import { settleBlocks } from './stats-settle';
 
@@ -57,6 +58,7 @@ export class StatsReportService {
     private readonly bookingRetention: BookingRetentionMetricsService,
     private readonly introLeads: IntroLeadMetricsService,
     private readonly notifyQueue: NotifyQueueMetricsService,
+    private readonly therapistExit: TherapistExitMetricsService,
   ) {}
 
   /** Второе сообщение /stats; порядок блоков — порядок в отчёте (см. тест). */
@@ -86,6 +88,7 @@ export class StatsReportService {
       { name: 'Забирают свои данные', svc: this.dataExport },
       { name: 'Данные записей', svc: this.bookingRetention },
       { name: 'Заявки с формы знакомства', svc: this.introLeads },
+      { name: 'Терапевты уходят', svc: this.therapistExit },
     ];
     const runs = blocks.map((b) => ({ ...b, run: () => b.svc.render() }));
     const parts = await settleBlocks([...runs, ...infraBlocks()], this.logger);

@@ -28,6 +28,7 @@ import type {
   ClientData,
   Insights,
 } from '../apiTypes';
+import type { FormerTherapistInfo } from '../therapy/formerTherapist';
 import type {
   UserSchemaNote,
   UserModeNote,
@@ -163,6 +164,9 @@ export const buildSharedApi = (t: ApiTransport) => ({
     t.postJson<{ code: string; url: string }>('/api/therapy/invite', {}),
   getTherapyRelation: () =>
     t.get<TherapyRelationInfo | null>('/api/therapy/relation'),
+  // Терапевт отказался от роли — сообщение вместо «Мой терапевт».
+  getFormerTherapist: () =>
+    t.get<FormerTherapistInfo | null>('/api/therapy/former-therapist'),
   joinTherapy: (code: string) => t.post('/api/therapy/join', { code }),
   leaveTherapy: () => t.del('/api/therapy/relation'),
   getTherapyClients: () =>

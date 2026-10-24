@@ -158,6 +158,7 @@ export const FIELD_POLICY: Record<string, Record<string, Policy>> = {
     therapyStartDate: DATE,
     nextSession: DATE,
     meetingDays: plain('номера дней недели'),
+    endReason: ID,
   },
   UserTask: {
     type: ID,

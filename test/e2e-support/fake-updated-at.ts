@@ -18,3 +18,17 @@ export function withUpdatedAt(table: ReturnType<typeof makeTable>) {
   );
   return table;
 }
+
+/**
+ * Имитация `createdAt @default(now())`: create ставит момент вставки (явная
+ * `data.createdAt` сильнее). Отчёт /stats считает события в окне по
+ * createdAt (therapist-exit-metrics.service.ts) — без этого в фейке окно
+ * было бы пустым всегда, а «сохранил → нашёл» проверял бы ничто.
+ */
+export function withCreatedAt(table: ReturnType<typeof makeTable>) {
+  const { create } = table;
+  table.create = jest.fn(({ data }: any) =>
+    create({ data: { createdAt: new Date(), ...data } }),
+  );
+  return table;
+}

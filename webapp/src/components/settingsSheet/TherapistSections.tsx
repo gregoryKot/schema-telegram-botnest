@@ -1,4 +1,6 @@
+import { api } from '../../api';
 import type { UserSettings } from '../../api';
+import { FormerTherapistNote } from '../../../../shared/src/therapy/FormerTherapistNote';
 import { useTr } from '../../utils/addressForm';
 import { SSection, SRow, SmallToggle } from './ui';
 import type { useTherapyRelationSettings } from './useTherapyRelationSettings';
@@ -28,6 +30,7 @@ export function MyTherapistSection({ rel, settings, patch }: {
         </div>
       ) : (
         <div className="st-body-block">
+          <FormerTherapistNote load={api.getFormerTherapist} enabled={therapyRelation === null} />
           <p className="st-text">
             {tr('Если терапевт выслал ссылку-приглашение — введи код ниже.', 'Если терапевт выслал ссылку-приглашение — введите код ниже.')}
           </p>

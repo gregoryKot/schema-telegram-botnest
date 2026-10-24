@@ -65,6 +65,29 @@ describe('RULES: tasks с clientId веб-клиента', () => {
   });
 });
 
+// Сообщение о бывшем терапевте (решение владельца 2026-10-22) зависит от живой
+// связи: после подключения по коду и после отключения кеш обязан сброситься,
+// иначе сообщение висит 15 секунд поверх нового «Мой терапевт».
+describe('бывший терапевт: join и отключение сбрасывают сообщение', () => {
+  const targetsOf = (method: string, path: string) => {
+    const rule = RULES.find(
+      (r) => r.method === method && r.pattern.test(path),
+    )!;
+    return rule.targets?.(path.match(rule.pattern)!, undefined) ?? [];
+  };
+  it.each([
+    ['POST', '/api/therapy/join'],
+    ['DELETE', '/api/therapy/relation'],
+  ])('%s %s', (method, path) => {
+    expect(targetsOf(method, path)).toEqual(
+      expect.arrayContaining([
+        '/api/therapy/relation',
+        '/api/therapy/former-therapist',
+      ]),
+    );
+  });
+});
+
 // Кнопка «Удалить результаты теста» (решение владельца 2026-10-22) стирает
 // итог, историю и прогресс: ни одна вкладка не должна ещё 15 секунд
 // показывать удалённый тест из кеша.

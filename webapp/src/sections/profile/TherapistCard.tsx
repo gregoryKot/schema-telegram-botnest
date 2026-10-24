@@ -1,7 +1,12 @@
+import { api } from '../../api';
 import type { TherapyRelationInfo } from '../../api';
+import { FormerTherapistNote } from '../../../../shared/src/therapy/FormerTherapistNote';
 import { avatarInitial, formatNextSession } from './profileModel';
 
-export function TherapistCard({ relation }: { relation: TherapyRelationInfo }) {
+// Карточка «Терапевт» профиля. Связи нет, а терапевт отказался от роли — вместо
+// пустоты сообщение о бывшем терапевте (решение владельца 2026-10-22).
+export function TherapistCard({ relation }: { relation: TherapyRelationInfo | null }) {
+  if (!relation) return <FormerTherapistNote load={api.getFormerTherapist} enabled className="ds-card cpf-former" />;
   if (relation.role !== 'client' || !relation.partnerName) return null;
   return (
     <section className="ds-card ds-card--ink cpf-therapist">
