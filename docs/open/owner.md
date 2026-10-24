@@ -249,9 +249,3 @@ Jitsi раньше вычислялся из контакта (`schemehappens-<s
   schemehappens.ru за 2026-10-11…#813 (YandexBot со своей группой в
   `robots.txt` не читал `*`), страницы снимаются в Вебмастере вручную —
   `Disallow` сам из индекса не выбрасывает.
-- **`/privacy` и `/offer` в карте сайта schemehappens.ru не открываются**:
-  `src/articles/sitemap.middleware.ts:31-32` отдаёт их краулеру, а в
-  `appRoutes` (`webapp/src/App.tsx`) их нет — только в `personalRoutes`
-  визитки, на основном хосте путь уходит в кабинетный `*`. Найдено ревью
-  #813 (robots.txt), к нему не относится: либо роуты в `appRoutes`, либо
-  строки из карты.
