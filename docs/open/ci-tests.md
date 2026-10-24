@@ -30,18 +30,11 @@
   после деплоя Nest 12 — логи первых минут (остановка Express-адаптера, формат HTTP-ошибок).
   Проверил — убери строку.
 
-**`check-coverage-ratchet.mjs` теряет FAIL упавшего jest** (найдено на #836, 2026-10-24).
-`scripts/check-coverage-ratchet.mjs:40-51` пишет весь `res.stdout`/`res.stderr` jest (на CI ~100 КБ
-логов Nest) и сразу `process.exit()`: в pipe доходят только первые 64 КБ, хвост с блоком FAIL и
-сводкой обрезается (проверено: `node -e` с 5 МБ в stdout и `process.exit(1)` отдаёт ровно 65 536
-байт). В логе шага видны «206 PASS, 0 FAIL» без сводки — так выглядел упавший `doc-pr-pointers.spec.ts`
-на #836 и, вероятно, бот-PR #748 и записи про Ubuntu 26 ниже (не проверено). Чинить: `process.exitCode = …`
-с `return` вместо `process.exit()`, либо `fs.writeSync(1, …)`; плюс спек гейта на большой вывод.
-
 **CI на Ubuntu 26 не переведён** (#789, 2026-10-20). На `ubuntu-latest` (с 2026-10-19 —
 Ubuntu 26) у трёх PR подряд падали `backend` → `check-coverage-ratchet.mjs` и `migrations` →
 «e2e перенос БД на VPS» (`test/transfer-db.e2e-spec.ts`), на `ubuntu-24.04` эти шаги
-зелёные. Причину по логам не разобрали: из песочницы агента логи Actions не скачиваются.
+зелёные. Причину по логам не разобрали: из песочницы агента логи Actions не скачиваются
+(хвост вывода храповика в pipe терялся — исправлено, следующий красный прогон покажет FAIL jest).
 Версия для переноса — `pg_dump` 17+ пишет `SET transaction_timeout`, которого нет в Postgres 16
 сервиса джобы. Переход — отдельный PR: сменить `runs-on`, прочитать логи, починить.
 Плавающую метку держит `src/test-support/gates/runner-pin.spec.ts`.
