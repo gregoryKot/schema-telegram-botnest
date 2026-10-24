@@ -68,7 +68,7 @@ SIGTERM/SIGINT пробрасываются приложению.
 
 ### CI
 
-`.github/workflows/ci.yml`: триггеры `push` на main, `pull_request`, `workflow_dispatch`. Токен только на чтение. PR-прогоны отменяются при новом пуше, прогоны main не отменяются. Рядом лежат `CODEOWNERS`, `dependabot.yml`, `pull_request_template.md`.
+`.github/workflows/ci.yml`: триггеры `push` на main, `pull_request`, `workflow_dispatch`. Токен только на чтение. PR-прогоны отменяются при новом пуше, прогоны main не отменяются. Рядом лежат `CODEOWNERS`, `dependabot.yml`, `pull_request_template.md` и `rulesets/main.json` — копия ruleset `main` (только через PR, все джобы `ci.yml` обязательны, `strict`; живой — в настройках GitHub, правка — владелец, порядок — правило №13), сверка с джобами — `src/test-support/gates/main-ruleset.spec.ts`.
 
 | джоба | что гоняет (≤15 слов) |
 |---|---|
