@@ -40,11 +40,14 @@ describe('MemoryThrottleStorage', () => {
       expect(await crossKeyScenario(hybrid)).toBe(1);
     });
 
-    it('КОНТРОЛЬ: штатное хранилище тот же сценарий считает неверно (2)', async () => {
-      // Покраснеет, если апстрим починит clearExpirationTimes: тогда можно
-      // вернуться на штатное хранилище и удалить MemoryThrottleStorage.
+    it('КОНТРОЛЬ: штатное хранилище с 6.6.0 считает тот же сценарий верно (1)', async () => {
+      // На 6.5.0 здесь было 2 (дефект из шапки файла). В 6.6.0 апстрим
+      // перевёл clearExpirationTimes на ключ, в 6.7.0 добавил выметание
+      // записей — замена больше не обязательна; возврат на штатное хранилище
+      // и удаление MemoryThrottleStorage — строка в docs/open/backend.md.
+      // Покраснеет, если дефект вернётся в новой версии библиотеки.
       const lib = new ThrottlerStorageService();
-      expect(await crossKeyScenario(lib)).toBe(2);
+      expect(await crossKeyScenario(lib)).toBe(1);
       lib.onApplicationShutdown();
     });
   });

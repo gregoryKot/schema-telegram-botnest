@@ -71,6 +71,12 @@ paths:
   (`exercise-delete-ownership`, `max-auth`) лежали в `test/` без единого
   прогона. Гейт `scripts/check-e2e-in-ci.mjs` (CI, джоба `checks`): спек-сирота
   и путь в CI без файла — красное. Бейслайна и `--update` нет.
+- **ESM-пакеты в jest** (с NestJS 12, 2026-10-24): бэкенд на CommonJS, а
+  `@nestjs/*` — только ESM; рантайм Node 22 грузит их сам, jest — только через
+  `src/test-support/esm-to-cjs.transform.cjs`. Новая зависимость падает в спеке
+  с «Must use import to load ES Module» — допиши пакет в `transform` и
+  `transformIgnorePatterns` обоих конфигов (`package.json`, `test/jest-e2e.json`),
+  а не переводи бэкенд на ESM.
 
 ## 25. Календарный день — полночь UTC; сьюты гоняются во второй зоне (инцидент 2026-09-17)
 
