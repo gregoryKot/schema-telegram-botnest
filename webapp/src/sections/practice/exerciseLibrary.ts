@@ -1,5 +1,6 @@
 // Каталог упражнений раздела «Практика»: данные карточек и чистые функции
-// форматирования. Экраны самих упражнений — components/exercises/*.
+// форматирования. «Давность» карточки — fmtAgo из shared (utils/format), своей
+// копии здесь нет (правило №11). Экраны самих упражнений — components/exercises/*.
 import { ALL_SCHEMAS, ALL_MODES } from '../../schemaTherapyData';
 import { getTaskDisplayText } from '../../components/taskDisplayText';
 import type { UserTask } from '../../api';
@@ -25,15 +26,6 @@ export const LIBRARY_HUES = [28, 70, 135, 240, 310, 190] as const;
 export function exerciseHue(index: number): number {
   const n = LIBRARY_HUES.length;
   return LIBRARY_HUES[((index % n) + n) % n];
-}
-
-export function fmtAgo(d: string | null, now: number = Date.now()): string {
-  if (!d) return 'пройдено';
-  const days = Math.floor((now - new Date(d).getTime()) / 86400000);
-  if (days === 0) return 'сегодня';
-  if (days === 1) return 'вчера';
-  if (days < 7) return `${days} дн. назад`;
-  return new Date(d).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
 }
 
 export function fmtCount(n: number): string {
