@@ -193,11 +193,6 @@
          без unsafe-inline. Синхронный — загрузчик дописывает мост через
          document.write, с async это не работает. -->
     <script src="/max-bridge.js"></script>
-    <!-- Google Identity Services: нативная всплывашка One Tap на экране входа
-         (webapp/src/hooks/useGoogleOneTap.ts). Грузится и работает, только если
-         задан VITE_GOOGLE_CLIENT_ID и origin разрешён в Google Cloud Console —
-         иначе тихо не показывается, остаются обычные кнопки входа. -->
-    <script src="https://accounts.google.com/gsi/client" async></script>
   </head>
   <body>
     <div id="root"></div>

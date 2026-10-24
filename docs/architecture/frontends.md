@@ -14,7 +14,7 @@
   - `webapp/src/pages/` — страницы-роуты (`LoginPage`, `AccountPage`, `AdminPage` (lazy), `Booking*`, `Donate`, `Subscribe`, `Articles`, `LandingPage` и `ProductLandingPage`; подпапки `tests/`, `login/`, `admin/` и т.д.).
   - `webapp/src/sections/` — экраны кабинета: `Today`, `Diary`, `Schemas`, `Practice`, `Profile`, `TherapistToday` (+ подпапки).
   - `webapp/src/components/` — весь остальной UI: шторки и оверлеи, `Dialog`, `Skeleton`, `booking/`, `therapist/`, `modeMap*`, `landing-kit.tsx`, `appShell/`.
-  - `webapp/src/hooks/` — `useHistorySheet`, `useHostBackButton`, `useHostShell`, `useHostSafeTop`, `useAsyncData`, `useQuizRunner`, `useGoogleOneTap`, `useIsOffline`, `useOutboxFlushOnOnline`.
+  - `webapp/src/hooks/` — `useHistorySheet`, `useHostBackButton`, `useHostShell`, `useHostSafeTop`, `useAsyncData`, `useQuizRunner`, `useGoogleOneTap` (окно «Продолжить как…», только на экране входа; скрипт Google грузит `gsiScript.ts`, client id — `ARG VITE_GOOGLE_CLIENT_ID` в `Dockerfile`, сверка `src/test-support/gates/google-one-tap-build.spec.ts`), `useIsOffline`, `useOutboxFlushOnOnline`.
   - `webapp/src/utils/` — `addressForm.ts`, `AddressFormProvider.tsx`, `apiBase.ts`, `domainChrome.ts`, `theme.ts`, `uiPrefsSync.ts`, `chunkReload.ts`; часть файлов — реэкспорты из shared.
   - `webapp/src/auth/` — `AuthProvider`, `authContext`, `refreshSession` (refresh-кука и кросс-табный замок), `telegramWebAppAuth`, `loginConsent`, `clearLocalData`.
   - `webapp/src/host/` — поведение внутри WebView Telegram/MAX: `initHost`, `ExternalLink`, `useHostId`. Само определение хоста лежит в `shared/src/host/`.

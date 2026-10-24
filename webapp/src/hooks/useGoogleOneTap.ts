@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
-import type { OneTapResponse } from './googleOneTapTypes';
+import { loadGsiScript } from './gsiScript';
+import { postOneTapCredential } from './oneTapCredential';
 import { fetchOneTapNonce } from './oneTapNonce';
 
 // Google One Tap: нативная всплывашка Google прямо на сайте. Если человек уже
@@ -7,11 +8,14 @@ import { fetchOneTapNonce } from './oneTapNonce';
 // касанием, без ухода на страницу Google. Токен (id_token) прилетает в колбэк
 // в браузер, мы постим его на /api/auth/google/one-tap и получаем свою сессию.
 //
+// Скрипт Google (gsi/client) грузит сам хук (gsiScript.ts), и только когда окно
+// включено и задан VITE_GOOGLE_CLIENT_ID, — не тег в index.html на всех страницах.
+//
 // Необязательный путь: если VITE_GOOGLE_CLIENT_ID не задан, скрипт Google не
 // загрузился, origin не разрешён в Google Cloud Console или всплывашку не
 // показали — просто ничего не происходит, остаются обычные кнопки входа.
 // Поэтому все сбои здесь ГЛОТАЮТСЯ намеренно: это не экран-тупик, у человека
-// всегда есть кнопки ниже.
+// всегда есть кнопки ниже (в телеметрию — через onError).
 
 const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined;
 const API_BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? '';
@@ -27,9 +31,10 @@ export function useGoogleOneTap(opts: {
   onSession: (accessToken: string, expiresIn: number) => void;
   onTwofa: (challengeToken: string) => void;
   /**
-   * Куда сообщить о СБОЕ отправки credential (сеть легла). Не экран-тупик —
-   * кнопки остаются, поэтому не обязателен и без текста ошибки (правило №7: в
-   * отчёт не уходит ни адрес, ни тело — только факт).
+   * Куда сообщить о СБОЕ отправки credential (сеть легла или сервер отклонил
+   * токен). Не экран-тупик — кнопки остаются, поэтому не обязателен и без
+   * текста ошибки (правило №7: в отчёт не уходит ни адрес, ни тело — только
+   * факт и код ответа).
    */
   onError?: (payload: { message: string; section: string }) => void;
 }): void {
@@ -47,22 +52,20 @@ export function useGoogleOneTap(opts: {
   useEffect(() => {
     if (!enabled || !CLIENT_ID) return;
     let cancelled = false;
-    let tries = 0;
 
     const submit = async (credential: string): Promise<void> => {
       try {
-        const res = await fetch(`${API_BASE}/api/auth/google/one-tap`, {
-          method: 'POST',
-          credentials: 'include',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-requested-with': 'one-tap',
-          },
-          body: JSON.stringify({ credential }),
-        });
-        if (!res.ok || cancelled) return;
-        const data = (await res.json()) as OneTapResponse;
+        const res = await postOneTapCredential(API_BASE, credential);
         if (cancelled) return;
+        if (!res.ok) {
+          // Отказ сервера (скажем, разъезд client id) — в телеметрию (№14).
+          cb.current.onError?.({
+            message: `one-tap rejected ${res.status}`,
+            section: 'login.one-tap',
+          });
+          return;
+        }
+        const { data } = res;
         if (data.twofa && data.challengeToken) {
           cb.current.onTwofa(data.challengeToken);
         } else if (data.accessToken) {
@@ -79,14 +82,11 @@ export function useGoogleOneTap(opts: {
       }
     };
 
-    const init = (): void => {
+    // Скрипт Google грузим сами; не загрузился — тихо остаются кнопки входа.
+    void loadGsiScript().then((ok) => {
+      if (!ok || cancelled) return;
       const id = window.google?.accounts?.id;
-      if (!id) {
-        // Скрипт GIS грузится асинхронно (async в index.html) — ждём ~4с.
-        if (cancelled || tries++ > 40) return;
-        setTimeout(init, 100);
-        return;
-      }
+      if (!id) return;
       // Сначала nonce (кука gsi_nonce + хеш для GIS): без него сервер токен не
       // примет (B-16 аудита 2026-10). Не вышло — всплывашку не показываем.
       void fetchOneTapNonce(API_BASE).then((nonce) => {
@@ -101,8 +101,7 @@ export function useGoogleOneTap(opts: {
         });
         id.prompt();
       });
-    };
-    init();
+    });
 
     return () => {
       cancelled = true;
