@@ -239,13 +239,9 @@ describeOnRealDb('e2e: адресация уведомлений после сл
     });
 
     it('id за 2^53 доходит до Postgres точно, форма «вы» — в тексте письма', async () => {
-      await prisma.user.create({
-        data: {
-          id: BIG,
-          addressForm: 'vy',
-          recoveryEmail: 'big@example.com',
-          recoveryEmailVerifiedAt: new Date(),
-        },
+      await prisma.user.create({ data: { id: BIG, addressForm: 'vy' } });
+      await prisma.authProvider.create({
+        data: { userId: BIG, provider: 'email', providerId: 'big@example.com' },
       });
       const id = await pendingRequest(BIG);
 

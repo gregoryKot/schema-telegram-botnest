@@ -57,6 +57,17 @@ afterEach(() => {
 });
 
 describe('EmailLinkRow — когда видна форма', () => {
+  // Онбординг: до первого нажатия видно, зачем привязывать почту, — она
+  // запасной ключ (восстановления доступа по почте нет).
+  it('адрес не привязан — подсказка «зачем» видна до нажатия', () => {
+    render(<Harness />);
+    expect(
+      screen.getByText(
+        'Пригодится, если пропадёт доступ к Telegram или другому способу входа.',
+      ),
+    ).toBeTruthy();
+  });
+
   it('адрес не привязан — «Привязать» открывает поле ввода', () => {
     render(<Harness />);
     expect(screen.getByText('не привязан')).toBeTruthy();
@@ -73,6 +84,7 @@ describe('EmailLinkRow — когда видна форма', () => {
     expect(screen.getByText('me@example.com')).toBeTruthy();
     expect(screen.getByText('Отвязать')).toBeTruthy();
     expect(screen.queryByText('Привязать')).toBeNull();
+    expect(screen.queryByText(/Пригодится, если пропадёт доступ/)).toBeNull();
   });
 });
 

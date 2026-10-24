@@ -5,17 +5,9 @@
 import { Logger } from '@nestjs/common';
 import { EmailService } from './email.service';
 
-function makeConfig() {
-  return { getOrThrow: () => 'https://schemehappens.ru' } as any;
-}
-
-function makePrisma() {
-  return {} as any;
-}
-
 describe('EmailService.sendLoginLink', () => {
   it('отправляет письмо со ссылкой через send() (subject/text содержат ссылку)', async () => {
-    const service = new EmailService(makePrisma(), makeConfig());
+    const service = new EmailService();
     const spy = jest.spyOn(service as any, 'send').mockResolvedValue(undefined);
 
     await service.sendLoginLink(
@@ -40,7 +32,7 @@ describe('EmailService.sendAdminNotification', () => {
 
   it('ADMIN_EMAIL не настроен — письмо не уходит, но авария видна в логе (правило №14)', async () => {
     delete process.env.ADMIN_EMAIL;
-    const service = new EmailService(makePrisma(), makeConfig());
+    const service = new EmailService();
     const spy = jest.spyOn(service as any, 'send').mockResolvedValue(undefined);
     const warn = jest
       .spyOn(Logger.prototype, 'warn')
@@ -60,7 +52,7 @@ describe('EmailService.sendAdminNotification', () => {
 
   it('ADMIN_EMAIL настроен — отправляет на этот адрес', async () => {
     process.env.ADMIN_EMAIL = 'admin@test.com';
-    const service = new EmailService(makePrisma(), makeConfig());
+    const service = new EmailService();
     const spy = jest.spyOn(service as any, 'send').mockResolvedValue(true);
 
     await expect(
@@ -78,7 +70,7 @@ describe('EmailService.sendAdminNotification', () => {
     const error = jest
       .spyOn(Logger.prototype, 'error')
       .mockImplementation(() => {});
-    const service = new EmailService(makePrisma(), makeConfig());
+    const service = new EmailService();
     jest
       .spyOn(service as any, 'send')
       .mockRejectedValue(new Error('Email delivery failed'));
@@ -113,7 +105,7 @@ describe('EmailService.send — Resend HTTP wrapper', () => {
 
   it('успешный ответ Resend — запрос уходит с корректными полями, промис резолвится', async () => {
     fetchSpy.mockResolvedValue({ ok: true, text: async () => '' } as any);
-    const service = new EmailService(makePrisma(), makeConfig());
+    const service = new EmailService();
 
     await expect(
       (service as any).send('a@test.com', 'Тема', 'Текст письма'),
@@ -141,7 +133,7 @@ describe('EmailService.send — Resend HTTP wrapper', () => {
       status: 422,
       text: async () => 'invalid recipient',
     } as any);
-    const service = new EmailService(makePrisma(), makeConfig());
+    const service = new EmailService();
 
     await expect(
       (service as any).send('a@test.com', 'Тема', 'Текст'),
@@ -150,7 +142,7 @@ describe('EmailService.send — Resend HTTP wrapper', () => {
 
   it('сетевая ошибка fetch — send() бросает "Email delivery failed" с cause', async () => {
     fetchSpy.mockRejectedValue(new Error('ECONNRESET'));
-    const service = new EmailService(makePrisma(), makeConfig());
+    const service = new EmailService();
 
     await expect(
       (service as any).send('a@test.com', 'Тема', 'Текст'),
@@ -179,7 +171,7 @@ describe('EmailService.send — без RESEND_API_KEY письмо не счит
       jest.spyOn(Logger.prototype, 'error').mockImplementation(() => {});
       jest.spyOn(Logger.prototype, 'warn').mockImplementation(() => {});
       const fetchSpy = jest.spyOn(global, 'fetch' as any);
-      const service = new EmailService(makePrisma(), makeConfig());
+      const service = new EmailService();
 
       await expect(
         (service as any).send('a@test.com', 'Тема', 'Текст'),
@@ -193,7 +185,7 @@ describe('EmailService.send — без RESEND_API_KEY письмо не счит
     process.env.NODE_ENV = 'production';
     process.env.ADMIN_EMAIL = 'admin@test.com';
     jest.spyOn(Logger.prototype, 'error').mockImplementation(() => {});
-    const service = new EmailService(makePrisma(), makeConfig());
+    const service = new EmailService();
 
     await expect(service.sendAdminNotification('Тема', 'Текст')).resolves.toBe(
       false,

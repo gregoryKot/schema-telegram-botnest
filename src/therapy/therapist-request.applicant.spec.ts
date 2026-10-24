@@ -115,7 +115,10 @@ describe('decisionMessage', () => {
 describe('loadApplicantProfile', () => {
   const ID = 1_000_000_000_000_102n;
 
-  it('подтверждённый recoveryEmail сильнее провайдеров; форма читается из User', async () => {
+  // Восстановление по запасной почте убрано (#PR): колонка recoveryEmail пуста
+  // у всех и не читается — адрес берётся у способов входа, даже если старая
+  // строка в базе вдруг заполнена.
+  it('адрес — у способа входа, не из recoveryEmail; форма читается из User', async () => {
     const prisma = prismaWith([{ provider: 'email', providerId: 'x@e.ru' }], {
       addressForm: 'vy',
       recoveryEmail: 'r@e.ru',
@@ -123,9 +126,11 @@ describe('loadApplicantProfile', () => {
     });
     expect(await mod.loadApplicantProfile(prisma, ID)).toEqual({
       form: 'vy',
-      email: 'r@e.ru',
+      email: 'x@e.ru',
     });
-    expect(prisma.authProvider.findMany).not.toHaveBeenCalled();
+    expect(prisma.user.findUnique.mock.calls[0][0].select).toEqual({
+      addressForm: true,
+    });
   });
 
   it('email Google, лежащий шифротекстом, уходит в письмо расшифрованным', async () => {

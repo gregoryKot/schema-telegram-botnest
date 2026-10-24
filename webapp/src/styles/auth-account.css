@@ -23,6 +23,7 @@
 .aa-row-note { font-size: 12px; color: var(--text-faint); }
 .aa-row-wrap { padding: 0; }
 .aa-row-wrap > .aa-row { padding-bottom: 14px; }
+.aa-email-why { margin: -6px 0 14px; font-size: 12px; line-height: 1.5; color: var(--text-faint); }
 .aa-email-form { display: flex; gap: 8px; padding-bottom: 14px; }
 .aa-email-form .ds-input { flex: 1; min-width: 0; }
 .aa-email-sent { margin-bottom: 14px; padding: 12px 14px; background: var(--paper-tint); border-radius: 12px; font-size: 13px; color: var(--text-sub); line-height: 1.5; overflow-wrap: anywhere; }

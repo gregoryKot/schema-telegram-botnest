@@ -6,17 +6,13 @@
 // правило "Обработка ошибок" в CLAUDE.md), плюс happy-path и главную ошибку.
 import { UnauthorizedException } from '@nestjs/common';
 import type { Request, Response } from 'express';
-import { ConfigService } from '@nestjs/config';
 import { Auth2faController } from './auth-2fa.controller';
 import { AuthService, TokenPair } from './auth.service';
 import { SecurityLogService } from './security-log.service';
 import { TotpService } from './totp.service';
-import { EmailService } from './email.service';
 import { REFRESH_COOKIE } from './auth-http.util';
 import { TwoFaChallengeDto, TwoFaCodeDto } from './dto/twofa.dto';
 import { PERSISTENT_THROTTLE_KEY } from '../api/persistent-throttle.decorator';
-
-const WEBAPP_URL = 'https://schemehappens.ru';
 
 const FAKE_TOKENS: TokenPair = {
   accessToken: 'access-abc',
@@ -48,15 +44,6 @@ type TotpMock = Pick<
   verifyCode: jest.Mock;
 };
 
-type EmailMock = Pick<
-  EmailService,
-  'sendVerificationLink' | 'consumeToken' | 'sendRecoveryLink'
-> & {
-  sendVerificationLink: jest.Mock;
-  consumeToken: jest.Mock;
-  sendRecoveryLink: jest.Mock;
-};
-
 type SecurityLogMock = Pick<SecurityLogService, 'log'> & { log: jest.Mock };
 
 function makeAuth(): AuthMock {
@@ -86,23 +73,6 @@ function makeTotp(): TotpMock {
   };
 }
 
-function makeEmail(): EmailMock {
-  return {
-    sendVerificationLink: jest.fn().mockResolvedValue({ ok: true }),
-    consumeToken: jest.fn().mockResolvedValue({ userId: 1n, email: 'a@b.ru' }),
-    sendRecoveryLink: jest.fn().mockResolvedValue({ ok: true }),
-  };
-}
-
-function makeConfig(): ConfigService {
-  return {
-    getOrThrow: jest.fn((key: string) => {
-      if (key === 'WEBAPP_URL') return WEBAPP_URL;
-      throw new Error(`unexpected config key ${key}`);
-    }),
-  } as unknown as ConfigService;
-}
-
 function makeSecurityLog(): SecurityLogMock {
   return { log: jest.fn() };
 }
@@ -126,33 +96,26 @@ function makeReq(
 function makeRes(): Response & {
   cookie: jest.Mock;
   clearCookie: jest.Mock;
-  redirect: jest.Mock;
 } {
   return {
     cookie: jest.fn(),
     clearCookie: jest.fn(),
-    redirect: jest.fn(),
   } as unknown as Response & {
     cookie: jest.Mock;
     clearCookie: jest.Mock;
-    redirect: jest.Mock;
   };
 }
 
 function makeController() {
   const auth = makeAuth();
-  const config = makeConfig();
   const securityLog = makeSecurityLog();
   const totp = makeTotp();
-  const emailSvc = makeEmail();
   const controller = new Auth2faController(
     auth as unknown as AuthService,
-    config,
     securityLog as unknown as SecurityLogService,
     totp as unknown as TotpService,
-    emailSvc as unknown as EmailService,
   );
-  return { controller, auth, config, securityLog, totp, emailSvc };
+  return { controller, auth, securityLog, totp };
 }
 
 const CODE_DTO: TwoFaCodeDto = { code: '123456' };
@@ -263,109 +226,6 @@ describe('Auth2faController.totpRegenerateRecovery', () => {
     );
     expect(totp.regenerateRecoveryCodes).toHaveBeenCalledWith(4n, '123456');
     expect(res).toEqual({ recoveryCodes: ['f6g7h8i9j0'] });
-  });
-});
-
-describe('Auth2faController.recoveryEmailStart', () => {
-  it('без CSRF-заголовка → UnauthorizedException, письмо не отправляется', async () => {
-    const { controller, emailSvc } = makeController();
-    await expect(
-      controller.recoveryEmailStart(
-        makeReq({ csrf: false, webUser: { userId: 1n } }),
-        { email: 'a@b.ru' },
-      ),
-    ).rejects.toThrow(UnauthorizedException);
-    expect(emailSvc.sendVerificationLink).not.toHaveBeenCalled();
-  });
-
-  it('валидный запрос → делегирует в emailSvc.sendVerificationLink', async () => {
-    const { controller, emailSvc } = makeController();
-    const res = await controller.recoveryEmailStart(
-      makeReq({ webUser: { userId: 6n } }),
-      { email: 'a@b.ru' },
-    );
-    expect(emailSvc.sendVerificationLink).toHaveBeenCalledWith(6n, 'a@b.ru');
-    expect(res).toEqual({ ok: true });
-  });
-});
-
-describe('Auth2faController.recoveryEmailVerify', () => {
-  it('успешный токен → редирект на /account?verified=1', async () => {
-    const { controller, emailSvc } = makeController();
-    const res = makeRes();
-    await controller.recoveryEmailVerify('tok-1', res);
-    expect(emailSvc.consumeToken).toHaveBeenCalledWith('tok-1', 'verify_email');
-    expect(res.redirect).toHaveBeenCalledWith(
-      `${WEBAPP_URL}/account?verified=1`,
-    );
-  });
-
-  it('невалидный/просроченный токен → редирект на /account?verified=0, исключение не пробрасывается', async () => {
-    const { controller, emailSvc } = makeController();
-    emailSvc.consumeToken.mockRejectedValue(new Error('expired'));
-    const res = makeRes();
-    await expect(
-      controller.recoveryEmailVerify('bad-tok', res),
-    ).resolves.toBeUndefined();
-    expect(res.redirect).toHaveBeenCalledWith(
-      `${WEBAPP_URL}/account?verified=0`,
-    );
-  });
-});
-
-describe('Auth2faController.recoveryRequest', () => {
-  it('публичный эндпоинт (без CSRF) → делегирует в emailSvc.sendRecoveryLink', async () => {
-    const { controller, emailSvc } = makeController();
-    const res = await controller.recoveryRequest({ email: 'x@y.ru' });
-    expect(emailSvc.sendRecoveryLink).toHaveBeenCalledWith('x@y.ru');
-    expect(res).toEqual({ ok: true });
-  });
-});
-
-describe('Auth2faController.recoveryConfirm', () => {
-  it('без CSRF-заголовка → UnauthorizedException, токен не потребляется', async () => {
-    const { controller, emailSvc } = makeController();
-    await expect(
-      controller.recoveryConfirm(makeReq({ csrf: false }), makeRes(), {
-        token: 'tok-1',
-      }),
-    ).rejects.toThrow(UnauthorizedException);
-    expect(emailSvc.consumeToken).not.toHaveBeenCalled();
-  });
-
-  it('валидный запрос → сессия выдана, cookie httpOnly/strict, аудит recovery_login', async () => {
-    const { controller, emailSvc, auth, securityLog } = makeController();
-    emailSvc.consumeToken.mockResolvedValue({ userId: 8n, email: 'x@y.ru' });
-    const req = makeReq();
-    const res = makeRes();
-    const result = await controller.recoveryConfirm(req, res, {
-      token: 'tok-1',
-    });
-    expect(emailSvc.consumeToken).toHaveBeenCalledWith('tok-1', 'recovery');
-    expect(auth.issueTokens).toHaveBeenCalledWith(
-      8n,
-      '198.51.100.1',
-      undefined,
-    );
-    expect(res.cookie).toHaveBeenCalledWith(
-      REFRESH_COOKIE,
-      FAKE_TOKENS.refreshToken,
-      expect.objectContaining({
-        httpOnly: true,
-        secure: true,
-        sameSite: 'strict',
-        path: '/api/auth',
-      }),
-    );
-    expect(securityLog.log).toHaveBeenCalledWith('role_changed', {
-      userId: 8n,
-      event: 'recovery_login',
-      ip: '198.51.100.1',
-    });
-    expect(result).toEqual({
-      accessToken: FAKE_TOKENS.accessToken,
-      expiresIn: FAKE_TOKENS.expiresIn,
-    });
   });
 });
 
@@ -481,7 +341,6 @@ describe('Auth2faController — троттлинг ручек, проверяю�
     ['totpDisable', proto.totpDisable],
     ['totpRegenerateRecovery', proto.totpRegenerateRecovery],
     ['totpChallenge', proto.totpChallenge],
-    ['recoveryConfirm', proto.recoveryConfirm],
   ] as const;
 
   it.each(routes)('%s: 5/мин и 20/час', (_name, handler) => {

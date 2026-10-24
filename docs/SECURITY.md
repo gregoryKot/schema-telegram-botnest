@@ -293,7 +293,7 @@ React экранирует вывод по умолчанию, `dangerouslySetIn
 - **Хвосты аудита 2026-10 (Low):** B-14 magic-link гасится по GET; B-16 nonce
   One Tap, перечисление адресов, предсоздание User по почте; D-8 fail-open
   `decrypt()` и AAD; D-9 открытые колонки (`AuthProvider.email`,
-  `recoveryEmail`, `clientKey`, `meetingUrl`); D-10 миграция старых событий
+  `clientKey`, `meetingUrl`); D-10 миграция старых событий
   кризиса; E-5 детекция MAX по одному фрагменту; E-6 кризисный путь на текстах
   психолога; C-9 `clientTelegramId` из анонимного тела брони.
 
@@ -363,10 +363,10 @@ React экранирует вывод по умолчанию, `dangerouslySetIn
     `logDecryptFailure` в `crypto.ts` (прямые `decrypt`/`decryptJson`) и
     `reportUnreadable` в `crypto-record.ts` — до двух DM в минуту плюс DM пробы.
     Это ожидаемо, не шквал.
-  - *`User.recoveryEmail`* остаётся как есть: уникальный поиск при входе;
-    blind-index добавил бы вторую колонку и миграцию ради сценария, в котором
-    утёкший дамп и так содержит зашифрованные данные под тем же ключом
-    окружения. *`ClientMeeting.clientKey`* с аудита 2026-10 — HMAC
+  - *`User.recoveryEmail`* пуста и с #PR не пишется и не читается:
+    восстановление по запасной почте убрано (решение владельца 2026-10-22),
+    колонку удаляет отдельная миграция после выкладки
+    (`docs/open/audit-2026-10.md`). *`ClientMeeting.clientKey`* с аудита 2026-10 — HMAC
     (`src/booking/client-key.ts`): колонка та же, сменилось значение ключа, а
     старые строки переводит проход на старте.
   - *`updateMany`/`deleteMany` с нулевым `count`* теперь отдают 404 (C-8);

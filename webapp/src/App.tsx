@@ -14,7 +14,6 @@ import { AccountPage } from './pages/AccountPage';
 import { MergePage } from './pages/MergePage';
 import { LinkDevicePage } from './pages/LinkDevicePage';
 import { TwoFactorChallengePage } from './pages/TwoFactorChallengePage';
-import { RecoveryPage } from './pages/RecoveryPage';
 import { AppShell } from './components/AppShell';
 import { CookieBanner } from './components/CookieBanner';
 import { RouteErrorScreen } from './components/RouteErrorScreen';
@@ -113,8 +112,6 @@ const appRoutes = [
   { path: '/auth/confirm',   element: <AuthConfirmPage /> },
   { path: '/auth/telegram',  element: <TelegramWidgetCallback /> },
   { path: '/auth/2fa',       element: <TwoFactorChallengePage /> },
-  { path: '/auth/recovery',         element: <RecoveryPage /> },
-  { path: '/auth/recovery/confirm', element: <RecoveryPage /> },
   { path: '/auth/error',     element: <AuthErrorPage /> },
   { path: '/link',           element: <LinkDevicePage /> },
   {
