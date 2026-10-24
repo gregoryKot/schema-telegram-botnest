@@ -1,5 +1,5 @@
 import { Probe } from './types';
-import { backupS3Config } from '../backup-config';
+import { BACKUP_RETENTION_MAX_DAYS, backupS3Config } from '../backup-config';
 import { backupMisconfigResult } from '../backup-misconfig';
 import { listObjects, S3Object } from '../s3-list-objects';
 
@@ -9,6 +9,10 @@ import { listObjects, S3Object } from '../s3-list-objects';
 // свежий файл schemehappens-*.sql.gz.enc в бакете (ListObjectsV2 по S3-API —
 // тот же, которым бэкап туда пишет). Старше 36 ч — суточный прогон пропущен
 // хотя бы раз и не наверстан (планировщик повторяет сбойный прогон каждый час).
+// Второй вопрос — самая старая копия: политика конфиденциальности обещает, что
+// копии живут не дольше BACKUP_RETENTION_MAX_DAYS, а сбой чистки скрипт бэкапа
+// только пишет в stderr. Копия старше потолка (по дате в имени, как считает
+// чистка) — обещание нарушено, проба красная.
 
 const TIMEOUT_MS = 10_000;
 const MAX_AGE_HOURS = 36;
@@ -39,6 +43,10 @@ const fileTime = (f: S3Object): number => {
   const date = NAME_RE.exec(f.key)?.[1] ?? '1970-01-01';
   return Date.parse(`${date}T00:00:00Z`);
 };
+
+/** Полночь UTC даты из имени — по ней считает срок чистка в backup-upload.sh. */
+const nameDay = (f: S3Object): number =>
+  Date.parse(`${NAME_RE.exec(f.key)?.[1] ?? '1970-01-01'}T00:00:00Z`);
 
 export function backupFreshnessProbe(
   env: Env = process.env,
@@ -71,11 +79,19 @@ export function backupFreshnessProbe(
         const newest = Math.max(...files.map(fileTime));
         const ageH = Math.floor((now() - newest) / 3_600_000);
         const detail = `последний бэкап ${ddmm(newest)}, ${ageH} ч назад`;
-        return ageH < MAX_AGE_HOURS
+        if (ageH >= MAX_AGE_HOURS) {
+          const norm = `норма — не старше ${MAX_AGE_HOURS} ч`;
+          return { ok: false, detail: `${detail} (${norm})` };
+        }
+        const oldest = Math.min(...files.map(nameDay));
+        const oldDays = Math.floor((now() - oldest) / 86_400_000);
+        return oldDays <= BACKUP_RETENTION_MAX_DAYS
           ? { ok: true, detail }
           : {
               ok: false,
-              detail: `${detail} (норма — не старше ${MAX_AGE_HOURS} ч)`,
+              detail:
+                `${detail}; самая старая копия от ${ddmm(oldest)} — ${oldDays} дн., ` +
+                `политика обещает не дольше ${BACKUP_RETENTION_MAX_DAYS}: чистка не сработала`,
             };
       } catch (e) {
         const msg = (e as Error)?.message?.slice(0, 150) ?? 'сеть недоступна';

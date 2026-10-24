@@ -1413,7 +1413,7 @@
   "src/infra/self-check/format.ts": 30,
   "src/infra/self-check/freshness.ts": 38,
   "src/infra/self-check/polling-status.ts": 53,
-  "src/infra/self-check/probe-backup-freshness.ts": 86,
+  "src/infra/self-check/probe-backup-freshness.ts": 102,
   "src/infra/self-check/probe-caldav.ts": 64,
   "src/infra/self-check/probe-capabilities.ts": 47,
   "src/infra/self-check/probe-ci-runs.ts": 92,

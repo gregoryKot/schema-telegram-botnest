@@ -8,8 +8,9 @@
 // юридический текст живёт в другом пакете — расхождение не видел никто
 // (AUDIT_2026-10, «куки в §10 политики ↔ все `res.cookie(`»). Пин проверяет
 // оба направления: кука из кода названа в политике, кука из политики есть в коде.
-import { readdirSync, readFileSync, statSync } from 'fs';
+import { readFileSync } from 'fs';
 import { join, resolve } from 'path';
+import { collectSourceFiles } from '../../security/collect-source-files';
 
 const ROOT = resolve(__dirname, '..', '..', '..');
 const PRIVACY_PAGE = 'webapp/src/pages/PrivacyPage.tsx';
@@ -35,14 +36,6 @@ function read(rel: string): string {
   return readFileSync(join(ROOT, rel), 'utf8');
 }
 
-function sourceFiles(dir: string): string[] {
-  return readdirSync(join(ROOT, dir)).flatMap((name) => {
-    const rel = `${dir}/${name}`;
-    if (statSync(join(ROOT, rel)).isDirectory()) return sourceFiles(rel);
-    return /\.ts$/.test(name) && !/\.(spec|test)\.ts$/.test(name) ? [rel] : [];
-  });
-}
-
 /** Имена кук из кода: литерал в `res.cookie('…'` и константы `*_COOKIE = '…'`. */
 function cookiesSetByCode(sources: string[]): Set<string> {
   const names = new Set<string>();
@@ -64,7 +57,9 @@ function cookiesNamedInPolicy(policy: string): Set<string> {
   return names;
 }
 
-const code = cookiesSetByCode(sourceFiles('src').map(read));
+const code = cookiesSetByCode(
+  collectSourceFiles(join(ROOT, 'src')).map((p) => readFileSync(p, 'utf8')),
+);
 const policyText = read(PRIVACY_PAGE);
 const policy = cookiesNamedInPolicy(policyText);
 
