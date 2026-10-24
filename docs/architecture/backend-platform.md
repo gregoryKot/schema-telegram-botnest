@@ -104,7 +104,8 @@
 ### `src/prisma/`
 Доступ к Postgres: глобальный PrismaService (Prisma + driver-adapter pg), фильтр Prisma-ошибок → 4xx, одноразовые «волны» дошифровки старых строк при старте. Схема и миграции — вне src: `prisma/schema.prisma`, `prisma/migrations/`.
 - Входы:
-  - `src/prisma/prisma.service.ts` — PrismaClient + пул pg (keepAlive, ретраи connect)
+  - `src/prisma/prisma.service.ts` — PrismaClient + пул pg (keepAlive, ретраи connect, `statement_timeout`), строка владельцу о таймауте (`$on('error')`)
+  - `src/prisma/statement-timeout.ts` — порог 30 с и рубильник `DB_STATEMENT_TIMEOUT_MS`, распознавание 57014, исключение `withStatementTimeout`
   - `src/prisma/prisma.module.ts` — @Global, экспортирует PrismaService
   - `src/prisma/prisma-exception.filter.ts` — коды Prisma → дружелюбные 4xx
   - `src/prisma/http-exception-body.ts` — тело HttpException в форме Nest (строка → `{ statusCode, message }`)
@@ -113,6 +114,7 @@
 - Связи: используется почти всеми модулями (PrismaModule глобальный); фильтр подключён в `src/main.ts` (`useGlobalFilters`); волны шифруют через `src/utils/encrypt-if-plain.ts` и хранят флаг-гард в `BookingSetting`.
 - Подводные камни:
   - Волны идемпотентны и не роняют старт при ошибке (флаг не ставится — повтор на следующем старте); wave3 обновляет условно (`where` со старым значением), чтобы не затереть свежую запись приложения.
+  - Предел — на каждый запрос, параметр сессии пула, а не `DATABASE_URL`: `prisma migrate deploy` его не получает. Свой `PrismaClient` вне `PrismaService` берёт `buildPrismaAdapter(порог)`; VACUUM в `withStatementTimeout` не обернуть (в транзакции запрещён).
   - В `logger.error` фильтра идёт только маскированный путь (`src/prisma/safe-request-path.ts`) + код ошибки: первый аргумент уходит в DM админу (AlertLogger), сырой `req.url` и `exception.message` туда нельзя.
 
 ### `src/utils/`

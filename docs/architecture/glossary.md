@@ -74,6 +74,6 @@
 | «Я психолог — подать заявку» | заявка на роль терапевта | `src/therapy/therapist-request.service.ts` | `webapp/src/pages/account/TherapistRequestSection.tsx` |
 | **Админка и эксплуатация** | | | |
 | «Админка», `/admin` | Запись / Статьи / Фото / Бегущая строка / Канал ЗВ | `src/booking/booking-admin.controller.ts`, `src/articles/articles-admin.controller.ts` | `webapp/src/pages/AdminPage.tsx` |
-| `/stats`, отчёт | отчёт админу; ещё `/zv` `/broadcast` `/zayavki` | `src/bot/stats-report.service.ts`, `src/telegram/telegram.admin.service.ts` | — |
+| `/stats`, отчёт | отчёт админу; ещё `/zv` `/broadcast` `/zayavki` | `src/bot/stats-report.service.ts`, `src/bot/bot.admin-stats.service.ts` (главные цифры, удержание), `src/telegram/telegram.admin.service.ts` | — |
 | «Самопроверка», `/health` | живые пробы после деплоя | `src/infra/self-check/self-check.service.ts`, `src/api/health.controller.ts` | — |
 | «Всё по схеме», «СхемаЛаб» | имя продукта; «СхемаЛаб» — старое, `schemalab.ru` редиректится | `src/infra/canonical-host.ts` | — |
