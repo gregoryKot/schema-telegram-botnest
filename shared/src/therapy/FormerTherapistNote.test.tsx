@@ -17,7 +17,9 @@ describe('FormerTherapistNote', () => {
       <FormerTherapistNote load={() => Promise.resolve(anna)} enabled={true} />,
     );
     expect(
-      await screen.findByText('Анна больше не работает в приложении как терапевт'),
+      await screen.findByText(
+        'Анна больше не работает в приложении как терапевт',
+      ),
     ).toBeTruthy();
     expect(screen.getByRole('note').textContent).toContain('остаётся у тебя');
   });
@@ -25,7 +27,10 @@ describe('FormerTherapistNote', () => {
   it('форма «вы» из контекста', async () => {
     render(
       <AddressFormContext.Provider value={{ form: 'vy', setForm: () => {} }}>
-        <FormerTherapistNote load={() => Promise.resolve(anna)} enabled={true} />
+        <FormerTherapistNote
+          load={() => Promise.resolve(anna)}
+          enabled={true}
+        />
       </AddressFormContext.Provider>,
     );
     expect((await screen.findByRole('note')).textContent).toContain(

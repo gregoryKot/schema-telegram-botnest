@@ -121,7 +121,12 @@ export const RULES: Rule[] = [
   // Сообщение о бывшем терапевте зависит от живой связи: подключился по коду —
   // пропадает, отключился — может вернуться (former-therapist-info.ts).
   simple('POST', /^\/api\/therapy\/join$/, '/api/therapy/relation', FORMER),
-  simple('DELETE', /^\/api\/therapy\/relation$/, '/api/therapy/relation', FORMER),
+  simple(
+    'DELETE',
+    /^\/api\/therapy\/relation$/,
+    '/api/therapy/relation',
+    FORMER,
+  ),
   simple('POST', /^\/api\/therapy\/clients\/add$/, '/api/therapy/clients'),
   simple('POST', /^\/api\/therapy\/clients\/virtual$/, '/api/therapy/clients'),
   simple('DELETE', /^\/api\/therapy\/clients\/\d+$/, '/api/therapy/clients'),

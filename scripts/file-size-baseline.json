@@ -576,7 +576,7 @@
   "shared/src/account/useDataExport.ts": 94,
   "shared/src/analytics/useCrisisCardTracking.ts": 26,
   "shared/src/api/apiCache.ts": 202,
-  "shared/src/api/apiCacheRules.data.ts": 197,
+  "shared/src/api/apiCacheRules.data.ts": 202,
   "shared/src/api/apiCacheRules.ts": 40,
   "shared/src/api/clientErrorReport.ts": 46,
   "shared/src/api/practiceSessionsApi.ts": 20,

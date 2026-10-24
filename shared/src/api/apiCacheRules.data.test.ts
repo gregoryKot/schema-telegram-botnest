@@ -70,7 +70,9 @@ describe('RULES: tasks с clientId веб-клиента', () => {
 // иначе сообщение висит 15 секунд поверх нового «Мой терапевт».
 describe('бывший терапевт: join и отключение сбрасывают сообщение', () => {
   const targetsOf = (method: string, path: string) => {
-    const rule = RULES.find((r) => r.method === method && r.pattern.test(path))!;
+    const rule = RULES.find(
+      (r) => r.method === method && r.pattern.test(path),
+    )!;
     return rule.targets?.(path.match(rule.pattern)!, undefined) ?? [];
   };
   it.each([
@@ -78,7 +80,10 @@ describe('бывший терапевт: join и отключение сбрас
     ['DELETE', '/api/therapy/relation'],
   ])('%s %s', (method, path) => {
     expect(targetsOf(method, path)).toEqual(
-      expect.arrayContaining(['/api/therapy/relation', '/api/therapy/former-therapist']),
+      expect.arrayContaining([
+        '/api/therapy/relation',
+        '/api/therapy/former-therapist',
+      ]),
     );
   });
 });
