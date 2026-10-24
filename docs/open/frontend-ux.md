@@ -147,7 +147,7 @@
   только `src/api/**`. Мёртвый публичный роут в `src/auth` (так жил
   `/api/auth/telegram-oidc`) ловит только `registry-consumers.spec.ts` — и
   только для роутов провайдеров из `registry.ts`. Прочие роуты `src/auth/*`
-  (2fa, ticket, recovery) паритетом не сверяются.
+  (2fa, ticket) паритетом не сверяются.
 - **Запасной код 2FA нельзя набрать на телефоне**:
   `webapp/src/pages/TwoFactorChallengePage.tsx:67` ставит `inputMode="numeric"`,
   а резервный код — 10 символов hex с буквами a–f

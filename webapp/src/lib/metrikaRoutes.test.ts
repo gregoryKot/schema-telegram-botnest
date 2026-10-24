@@ -12,7 +12,7 @@ const isWebvisorRecordRoute = (p: string) => WEBVISOR_PATHS.test(p);
 // Редиректы (Navigate) и '*' сюда не входят — страницы у них нет.
 const PRIVATE = [
   '/admin', '/login', '/auth/callback', '/auth/confirm', '/auth/telegram', '/auth/2fa',
-  '/auth/recovery', '/auth/recovery/confirm', '/auth/error', '/link', '/account', '/account/merge',
+  '/auth/error', '/link', '/account', '/account/merge',
   '/today', '/diary', '/schemas', '/profile', '/practice', '/cabinet', '/cabinet/:clientId',
 ];
 const REDIRECTS = ['/booking-admin', '/articles-admin', '/help', '/exercises', '*'];

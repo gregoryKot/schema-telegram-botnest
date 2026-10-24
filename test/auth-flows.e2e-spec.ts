@@ -360,6 +360,29 @@ describe('e2e smoke: auth-flows (cookie/CSRF/refresh/logout/2FA)', () => {
     });
   });
 
+  // Решение владельца 2026-10-22 (#864): восстановление по запасной почте
+  // убрано целиком. Ручек нет — 404, а не молчаливое «{ok:true}» без письма.
+  describe('восстановление по запасной почте убрано', () => {
+    it('recovery/request, recovery/confirm, recovery-email/* → 404', async () => {
+      const server = app.getHttpServer();
+      expect(
+        (await post('/api/auth/recovery/request').send({ email: 'a@b.ru' }))
+          .status,
+      ).toBe(404);
+      expect(
+        (await post('/api/auth/recovery/confirm').send({ token: 'x' })).status,
+      ).toBe(404);
+      expect(
+        (await post('/api/auth/recovery-email/start').send({ email: 'a@b.ru' }))
+          .status,
+      ).toBe(404);
+      expect(
+        (await request(server).get('/api/auth/recovery-email/verify?token=x'))
+          .status,
+      ).toBe(404);
+    });
+  });
+
   describe('Google One Tap nonce (B-16)', () => {
     it('GET nonce → кука gsi_nonce (httpOnly) + хеш секрета в теле, без кэша', async () => {
       const res = await request(app.getHttpServer()).get(

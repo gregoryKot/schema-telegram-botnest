@@ -132,9 +132,10 @@ const REASON = {
   JOURNEY:
     'read-only агрегат поверх уже покрытых по отдельности таблиц (rating/diary/practice)',
   AUTH_LOGIN:
-    'login/OAuth/recovery-контур: auth-flows.e2e-spec.ts покрывает основной путь ' +
-    '(2fa setup/enable/challenge, refresh/logout, telegram webapp/widget); email ' +
-    'magic-link callback, recovery-email, provider link/unlink и OAuth redirect ' +
+    'login/OAuth-контур: auth-flows.e2e-spec.ts покрывает основной путь ' +
+    '(2fa setup/enable/challenge, refresh/logout, telegram webapp/widget, ' +
+    'погашение ссылки из письма); запрос ссылки и привязка почты, 2fa ' +
+    'disable/recovery-codes, merge, provider link/unlink и OAuth redirect ' +
     '(302 на провайдера, не JSON API) — вне фокуса этапа 1.3',
   THERAPY:
     'therapy-контур покрыт по основным сценариям therapy-ownership*.e2e-spec.ts ' +
@@ -166,10 +167,6 @@ const NOT_YET_COVERED: Array<{ route: string; reason: string }> = [
   { route: 'GET /api/journey', reason: REASON.JOURNEY },
   { route: 'POST /api/auth/2fa/disable', reason: REASON.AUTH_LOGIN },
   { route: 'POST /api/auth/2fa/recovery-codes', reason: REASON.AUTH_LOGIN },
-  { route: 'POST /api/auth/recovery-email/start', reason: REASON.AUTH_LOGIN },
-  { route: 'GET /api/auth/recovery-email/verify', reason: REASON.AUTH_LOGIN },
-  { route: 'POST /api/auth/recovery/request', reason: REASON.AUTH_LOGIN },
-  { route: 'POST /api/auth/recovery/confirm', reason: REASON.AUTH_LOGIN },
   { route: 'POST /api/auth/email/link', reason: REASON.AUTH_LOGIN },
   { route: 'POST /api/auth/email/link-to-account', reason: REASON.AUTH_LOGIN },
   { route: 'POST /api/auth/merge', reason: REASON.AUTH_LOGIN },
@@ -244,9 +241,11 @@ describe('трипваер: каждый guarded-маршрут вызван х�
     expect(stale).toEqual([]);
   });
 
-  it('ратчет: allowlist может только сокращаться (сейчас ≤58)', () => {
-    // 61 → 58 (2026-10-22): GET relation, POST request и GET tasks ходят
-    // через test/therapy-resign.e2e-spec.ts.
-    expect(NOT_YET_COVERED.length).toBeLessThanOrEqual(58);
+  // 61 → 52 (#864): −4 за ручки восстановления по почте (убраны вместе с
+  // кодом), −5 — запас между полом и фактом подтянут до факта.
+  // 52 → 49: GET relation, POST request и GET tasks ходят через
+  // test/therapy-resign.e2e-spec.ts.
+  it('ратчет: allowlist может только сокращаться (сейчас ≤49)', () => {
+    expect(NOT_YET_COVERED.length).toBeLessThanOrEqual(49);
   });
 });

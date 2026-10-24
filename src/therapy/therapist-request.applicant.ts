@@ -84,9 +84,9 @@ export interface ApplicantProfile {
 
 /**
  * Форма обращения и почта аккаунта — по точному bigint. Порядок почты:
- * подтверждённый recoveryEmail → вход по почте (providerId и есть адрес,
- * подтверждён ссылкой) → email из OAuth-профиля (Google/VK; в базе лежит
- * шифротекстом — только через decryptAuthProviderRow).
+ * вход по почте (providerId и есть адрес, подтверждён ссылкой) → email из
+ * OAuth-профиля (Google/VK; в базе лежит шифротекстом — только через
+ * decryptAuthProviderRow).
  */
 export async function loadApplicantProfile(
   prisma: PrismaService,
@@ -94,16 +94,9 @@ export async function loadApplicantProfile(
 ): Promise<ApplicantProfile> {
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: {
-      addressForm: true,
-      recoveryEmail: true,
-      recoveryEmailVerifiedAt: true,
-    },
+    select: { addressForm: true },
   });
   const form = normalizeAddressForm(user?.addressForm);
-  if (user?.recoveryEmail && user.recoveryEmailVerifiedAt) {
-    return { form, email: user.recoveryEmail };
-  }
   const rows = await prisma.authProvider.findMany({
     where: { userId },
     select: { provider: true, providerId: true, email: true },
