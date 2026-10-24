@@ -2187,7 +2187,7 @@
   "webapp/src/sections/practice/CatalogsBlock.tsx": 25,
   "webapp/src/sections/practice/CrisisBlock.tsx": 23,
   "webapp/src/sections/practice/CrisisContactsSheet.tsx": 17,
-  "webapp/src/sections/practice/exerciseLibrary.ts": 52,
+  "webapp/src/sections/practice/exerciseLibrary.ts": 44,
   "webapp/src/sections/practice/ExerciseLibrary.tsx": 42,
   "webapp/src/sections/practice/HereAndNowBlock.tsx": 86,
   "webapp/src/sections/practice/HereAndNowIntro.tsx": 27,

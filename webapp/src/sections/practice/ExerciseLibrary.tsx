@@ -2,8 +2,8 @@ import '../../styles/client-practice.css';
 import { hueStyle } from '../../lib/tone';
 import { pluralRu } from '../../../../shared/src/utils/pluralRu';
 import { pressable } from '../../utils/a11y';
-import { EXERCISES, exerciseHue, fmtAgo, fmtCount } from './exerciseLibrary';
-import type { ExId, ExStats } from './exerciseLibrary';
+import { fmtAgo } from '../../utils/format';
+import { EXERCISES, exerciseHue, fmtCount, type ExId, type ExStats } from './exerciseLibrary';
 
 type Card = (typeof EXERCISES)[number];
 
@@ -31,7 +31,7 @@ export function ExerciseLibrary({ stats, onOpen, phone = false, items = EXERCISE
               <div className="cp-ex-title">{ex.title}</div>
               <div className="cp-ex-desc">{ex.desc}</div>
               <div className={'cp-ex-state' + (s ? '' : ' is-new')}>
-                {s ? `${fmtCount(s.count)} · ${fmtAgo(s.lastDone)}` : 'не начато'}
+                {s ? `${fmtCount(s.count)} · ${s.lastDone ? fmtAgo(s.lastDone) : 'пройдено'}` : 'не начато'}
               </div>
             </div>
           );
