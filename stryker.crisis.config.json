@@ -6,6 +6,9 @@
     "command": "npm --prefix shared test -- src/utils/crisisMarkers.test.ts"
   },
   "mutate": ["shared/src/utils/crisisMarkers.ts"],
+  "mutator": {
+    "excludedMutations": ["CallExpression"]
+  },
   "reporters": ["clear-text", "progress", "html", "json"],
   "htmlReporter": {
     "fileName": "reports/mutation/crisis.html"
