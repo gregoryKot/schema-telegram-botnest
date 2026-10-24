@@ -53,6 +53,14 @@ RUN npm run build
 # Build webapp (website) — output → webapp/dist/ → served at /
 # VITE_BOT_USERNAME is baked into the bundle so the Telegram Login Widget works
 ENV VITE_BOT_USERNAME=SchemeHappensBot
+# Google One Tap (webapp/src/hooks/useGoogleOneTap.ts): публичный client id
+# OAuth-клиента Google — тот же, что GOOGLE_CLIENT_ID бэкенда (он виден в
+# редиректе кнопки «Войти через Google»). Origin https://schemehappens.ru для
+# него разрешён в Google Cloud Console (проверено 2026-10-24: gsi/status → 200).
+# Без переменной окно «Продолжить как…» молча не показывалось никому (аудит
+# 2026-10, п.16). Сверка — src/test-support/gates/google-one-tap-build.spec.ts.
+ARG VITE_GOOGLE_CLIENT_ID=283410385894-d4fu4fmchc8baq5e0rla4n607shtihth.apps.googleusercontent.com
+ENV VITE_GOOGLE_CLIENT_ID=$VITE_GOOGLE_CLIENT_ID
 RUN npm run build --prefix webapp
 
 # Copy the pre-built Telegram mini-app into webapp/dist/app → served at /app by
