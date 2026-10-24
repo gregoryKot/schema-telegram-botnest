@@ -24,6 +24,22 @@ describe('ExerciseLibrary', () => {
     expect(screen.getAllByText('не начато')).toHaveLength(7);
   });
 
+  // Колесо детства — единственное упражнение без даты прохождения
+  // (`lastDone: null`): API отдаёт только оценки. «пройдено» — ветка на месте
+  // вызова, shared-fmtAgo принимает только момент; без ветки new Date(null) —
+  // эпоха, и карточка молча врала бы «1 янв.».
+  it('колесо детства без даты прохождения — подпись «пройдено», а не «1 янв.»', () => {
+    render(<ExerciseLibrary stats={{ wheel: { count: 1, lastDone: null } }} onOpen={vi.fn()} />);
+    const el = screen.getByText(/1 запись/);
+    expect(el.textContent).toBe('1 запись · пройдено');
+    expect(el.textContent).not.toContain('янв');
+  });
+
+  it('с датой прохождения — давность из fmtAgo', () => {
+    render(<ExerciseLibrary stats={{ letter: { count: 2, lastDone: new Date().toISOString() } }} onOpen={vi.fn()} />);
+    expect(screen.getByText(/2 записи/).textContent).toBe('2 записи · сегодня');
+  });
+
   it('заголовок: «Библиотека» на десктопе, «Инструменты» на телефоне', () => {
     const { rerender } = render(<ExerciseLibrary stats={{}} onOpen={vi.fn()} />);
     expect(screen.getByRole('heading', { name: 'Библиотека' })).toBeTruthy();
