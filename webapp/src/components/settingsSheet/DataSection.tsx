@@ -4,7 +4,6 @@ import { authedFetch } from '../../apiClient';
 import { useTr } from '../../utils/addressForm';
 import { SSection, SRow, InfoModal } from './ui';
 import { YsqDataDeleteButton } from './YsqDataDeleteButton';
-import { hasLocalYsqData } from '../../../../shared/src/hooks/ysqDataDelete';
 import { privacyStorageText, PRIVACY_NO_SHARE_TEXT } from '../../../../shared/src/settings/privacyText';
 import { useDataExport } from '../../../../shared/src/account/useDataExport';
 import { DeleteAccountConfirm } from '../../../../shared/src/components/DeleteAccountConfirm';
@@ -64,7 +63,7 @@ export function DataSection() {
             </div>
           ))}
           {/* Всё про тест — итог, история, прогресс — после подтверждения (решение владельца 2026-10-22). */}
-          {hasLocalYsqData() && <YsqDataDeleteButton onDeleted={() => setShowPrivacy(false)} />}
+          <YsqDataDeleteButton onDeleted={() => setShowPrivacy(false)} />
           <div className="st-fine st-center">Это образовательный инструмент.</div>
         </InfoModal>
       )}

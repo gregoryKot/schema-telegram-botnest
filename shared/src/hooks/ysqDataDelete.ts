@@ -14,8 +14,9 @@
 // Экраны: webapp/src/components/settingsSheet/YsqDataDeleteButton.tsx (общий
 // ConfirmDialog сайта) и schema-miniapp/src/components/settingsSheet/
 // YsqDataDelete.tsx (подтверждение прямо в шторке). Вид у площадок свой,
-// состояние «спросили → удаляем → ошибка» — одно, `useYsqDataDelete`.
-import { useState } from 'react';
+// состояние «спросили → удаляем → ошибка» — одно, `useYsqDataDelete`, и
+// видимость кнопки — одна, `useHasYsqData`.
+import { useEffect, useState } from 'react';
 import { YSQ_PROGRESS_KEY, YSQ_RESULT_KEY } from './ysqStorageKeys';
 import type { Tr } from './ysqSchemas';
 
@@ -57,12 +58,52 @@ export function useYsqDataDelete(api: YsqDataDeleteApi, onDeleted: () => void) {
   return { confirming, busy, failed, ask, cancel, confirm };
 }
 
-/** Есть ли на этом устройстве что-то от теста — тогда кнопка видна. */
+/** Есть ли на этом устройстве что-то от теста. */
 export function hasLocalYsqData(): boolean {
   return (
     !!localStorage.getItem(YSQ_PROGRESS_KEY) ||
     !!localStorage.getItem(YSQ_RESULT_KEY)
   );
+}
+
+export interface YsqDataPresenceApi {
+  getYsqHistory: () => Promise<readonly unknown[] | null | undefined>;
+  getYsqProgress: () => Promise<unknown>;
+}
+
+/**
+ * Видна ли кнопка: тест есть на этом устройстве — сразу, без сети; иначе —
+ * когда сервер ответил непустой историей или прогрессом. Без проверки
+ * сервера тест, пройденный на другой площадке, и история после «Пройти
+ * заново» без новых ответов не стирались из настроек вовсе. Пока ответа нет
+ * и при сбое сети — кнопки нет. GET-ы идут через общий apiCache; после
+ * удаления их сбрасывает правило DELETE /api/ysq-data (apiCacheRules.data.ts).
+ */
+export function useHasYsqData(api: YsqDataPresenceApi): boolean {
+  const [local] = useState(hasLocalYsqData);
+  const [server, setServer] = useState(false);
+
+  useEffect(() => {
+    if (local) return;
+    let alive = true;
+    // Каждый ответ — отдельное свидетельство: сбой одного не прячет другое.
+    void Promise.allSettled([
+      Promise.resolve().then(() => api.getYsqHistory()),
+      Promise.resolve().then(() => api.getYsqProgress()),
+    ]).then(([history, progress]) => {
+      const hasHistory =
+        history.status === 'fulfilled' &&
+        Array.isArray(history.value) &&
+        history.value.length > 0;
+      const hasProgress = progress.status === 'fulfilled' && !!progress.value;
+      if (alive) setServer(hasHistory || hasProgress);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [api, local]);
+
+  return local || server;
 }
 
 /** Тексты кнопки и подтверждения — безличные, одинаковые на обеих площадках. */

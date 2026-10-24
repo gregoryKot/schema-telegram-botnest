@@ -3,17 +3,21 @@ import { useTr } from '../../utils/addressForm';
 import { ConfirmDialog } from '../ConfirmDialog';
 import {
   buildYsqDataDeleteCopy,
+  useHasYsqData,
   useYsqDataDelete,
 } from '../../../../shared/src/hooks/ysqDataDelete';
 
 // «Удалить результаты теста» в окне «Конфиденциальность» (DataSection):
 // сначала общий ConfirmDialog сайта, потом стирается всё про тест — итог,
-// история, прогресс. Состояние, тексты и порядок «сервер → localStorage» —
+// история, прогресс. Видна, если тест есть здесь или на сервере. Состояние,
+// видимость, тексты и порядок «сервер → localStorage» —
 // shared/src/hooks/ysqDataDelete.ts, пара в мини-аппе —
 // schema-miniapp/src/components/settingsSheet/YsqDataDelete.tsx.
 export function YsqDataDeleteButton({ onDeleted }: { onDeleted: () => void }) {
   const copy = buildYsqDataDeleteCopy(useTr());
   const del = useYsqDataDelete(api, onDeleted);
+  const visible = useHasYsqData(api);
+  if (!visible) return null;
 
   return (
     <>

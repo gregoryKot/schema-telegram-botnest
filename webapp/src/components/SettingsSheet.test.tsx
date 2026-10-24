@@ -44,6 +44,8 @@ vi.mock('../api', () => ({
     createTherapyInvite: vi.fn(),
     updateName: vi.fn(),
     deleteYsqData: vi.fn(),
+    getYsqHistory: vi.fn(),
+    getYsqProgress: vi.fn(),
     submitTherapistRequest: vi.fn(),
   },
   reportClientError: vi.fn(),
@@ -74,6 +76,8 @@ beforeEach(() => {
   mockApi.getTherapyRelation.mockResolvedValue(null);
   mockApi.getTherapistRequest.mockResolvedValue(null);
   mockApi.updateSettings.mockResolvedValue(undefined);
+  mockApi.getYsqHistory.mockResolvedValue([]);
+  mockApi.getYsqProgress.mockResolvedValue(null);
   reloadSpy = mockLocationReload();
 });
 

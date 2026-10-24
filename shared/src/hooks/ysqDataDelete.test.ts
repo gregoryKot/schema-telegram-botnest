@@ -4,11 +4,12 @@
 // только после ответа сервера, при отказе остаются, а ошибка доходит до
 // экрана (раньше мини-апп чистил их до запроса и говорил «удалено»).
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { act, renderHook } from '@testing-library/react';
+import { act, renderHook, waitFor } from '@testing-library/react';
 import {
   buildYsqDataDeleteCopy,
   deleteAllYsqData,
   hasLocalYsqData,
+  useHasYsqData,
   useYsqDataDelete,
 } from './ysqDataDelete';
 import { YSQ_PROGRESS_KEY, YSQ_RESULT_KEY } from './ysqStorageKeys';
@@ -118,6 +119,65 @@ describe('hasLocalYsqData', () => {
     expect(hasLocalYsqData()).toBe(true);
     localStorage.removeItem(YSQ_PROGRESS_KEY);
     expect(hasLocalYsqData()).toBe(false);
+  });
+});
+
+// Видимость кнопки: тест, пройденный на другой площадке, лежит только на
+// сервере — без его проверки кнопку не видно и стереть его нельзя.
+describe('useHasYsqData — локально сразу, иначе по ответу сервера', () => {
+  function presenceApi(history: unknown, progress: unknown) {
+    const settle = (v: unknown) =>
+      v instanceof Error ? Promise.reject(v) : Promise.resolve(v);
+    return {
+      getYsqHistory: vi.fn(() => settle(history) as Promise<unknown[]>),
+      getYsqProgress: vi.fn(() => settle(progress)),
+    };
+  }
+  const flush = () => act(() => new Promise((r) => setTimeout(r, 0)));
+
+  it('тест есть на устройстве → true сразу и без запросов', () => {
+    const api = presenceApi([], null);
+    const { result } = renderHook(() => useHasYsqData(api));
+    expect(result.current).toBe(true);
+    expect(api.getYsqHistory).not.toHaveBeenCalled();
+    expect(api.getYsqProgress).not.toHaveBeenCalled();
+  });
+
+  it('локально пусто, на сервере только история → true после ответа', async () => {
+    localStorage.clear();
+    const api = presenceApi([{ id: 1 }], null);
+    const { result } = renderHook(() => useHasYsqData(api));
+    expect(result.current).toBe(false); // пока ответа нет — кнопки нет
+    await waitFor(() => expect(result.current).toBe(true));
+  });
+
+  it('локально пусто, на сервере только прогресс → true', async () => {
+    localStorage.clear();
+    const api = presenceApi([], { answers: [1], page: 1 });
+    const { result } = renderHook(() => useHasYsqData(api));
+    await waitFor(() => expect(result.current).toBe(true));
+  });
+
+  it('пусто и тут, и на сервере → false', async () => {
+    localStorage.clear();
+    const api = presenceApi([], null);
+    const { result } = renderHook(() => useHasYsqData(api));
+    await flush();
+    expect(api.getYsqHistory).toHaveBeenCalledTimes(1);
+    expect(api.getYsqProgress).toHaveBeenCalledTimes(1);
+    expect(result.current).toBe(false);
+  });
+
+  it('сбой сети → false; сбой одного запроса не прячет данные другого', async () => {
+    localStorage.clear();
+    const down = presenceApi(new Error('net'), new Error('net'));
+    const offline = renderHook(() => useHasYsqData(down));
+    await flush();
+    expect(offline.result.current).toBe(false);
+
+    const halfDown = presenceApi([{ id: 1 }], new Error('net'));
+    const partial = renderHook(() => useHasYsqData(halfDown));
+    await waitFor(() => expect(partial.result.current).toBe(true));
   });
 });
 

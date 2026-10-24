@@ -1,9 +1,8 @@
 import { api } from '../../api';
 import { BottomSheet } from '../BottomSheet';
-// Из лёгкого общего модуля, не из YSQTestSheet.tsx (компонент ленивый,
-// LazyOverlays.tsx) — иначе открытие «Настроек» (SettingsSheet остаётся
-// eager) тянуло бы за собой и код теста YSQ.
-import { hasLocalYsqData } from '../../../../shared/src/hooks/ysqDataDelete';
+// Из лёгкого общего модуля (shared/src/hooks/ysqDataDelete.ts), не из
+// YSQTestSheet.tsx (компонент ленивый, LazyOverlays.tsx) — иначе открытие
+// «Настроек» (SettingsSheet остаётся eager) тянуло бы за собой код теста YSQ.
 import { YsqDataDelete } from './YsqDataDelete';
 import { ConfirmButtons } from './ConfirmButtons';
 import { DeleteAccountConfirm } from '../../../../shared/src/components/DeleteAccountConfirm';
@@ -140,7 +139,7 @@ export function PrivacyOverlay({
 
         {/* Всё про тест — итог, история, прогресс — после подтверждения
             (решение владельца 2026-10-22). */}
-        {hasLocalYsqData() && <YsqDataDelete onDeleted={onDeletedYsq} />}
+        <YsqDataDelete onDeleted={onDeletedYsq} />
 
         <div
           style={{

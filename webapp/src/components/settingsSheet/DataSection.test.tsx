@@ -19,6 +19,8 @@ import {
 vi.mock('../../api', () => ({
   api: {
     deleteYsqData: vi.fn(),
+    getYsqHistory: vi.fn(),
+    getYsqProgress: vi.fn(),
     deleteAllUserData: vi.fn(),
   },
 }));
@@ -45,6 +47,9 @@ let reloadSpy: ReturnType<typeof vi.fn>;
 beforeEach(() => {
   vi.clearAllMocks();
   localStorage.clear();
+  // На сервере теста нет, пока тест не скажет иное.
+  mockApi.getYsqHistory.mockResolvedValue([]);
+  mockApi.getYsqProgress.mockResolvedValue(null);
   reloadSpy = mockLocationReload();
   vi.stubGlobal('URL', {
     ...URL,
@@ -73,10 +78,21 @@ describe('DataSection — конфиденциальность: модалка',
     await waitFor(() => expect(screen.queryByText('Данные и конфиденциальность')).toBeNull());
   });
 
-  it('нет сохранённого теста — кнопка удаления результатов не показана', () => {
+  it('теста нет ни тут, ни на сервере — кнопка удаления результатов не показана', async () => {
     renderWithForm();
     fireEvent.click(screen.getByText('Конфиденциальность'));
+    await waitFor(() => expect(mockApi.getYsqProgress).toHaveBeenCalledTimes(1));
+    await act(() => new Promise((r) => setTimeout(r, 0))); // ответы сервера разобраны
     expect(screen.queryByText('Удалить результаты теста')).toBeNull();
+  });
+
+  // Тест пройден на другой площадке: на этом устройстве пусто, на сервере
+  // история — без проверки сервера его нельзя было стереть отсюда.
+  it('только серверная история — кнопка видна', async () => {
+    mockApi.getYsqHistory.mockResolvedValue([{ id: 1, completedAt: '2026-10-01T00:00:00.000Z', scores: {} }]);
+    renderWithForm();
+    fireEvent.click(screen.getByText('Конфиденциальность'));
+    expect(await screen.findByText('Удалить результаты теста')).toBeTruthy();
   });
 });
 

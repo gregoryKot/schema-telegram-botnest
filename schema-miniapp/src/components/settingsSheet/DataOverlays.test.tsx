@@ -11,6 +11,7 @@ import {
   fireEvent,
   cleanup,
   waitFor,
+  act,
 } from '@testing-library/react';
 import { ExportOverlay, PrivacyOverlay, DeleteOverlay } from './DataOverlays';
 import { YSQ_PROGRESS_KEY, YSQ_RESULT_KEY } from '../YSQTestSheet';
@@ -19,6 +20,8 @@ import { AddressFormContext, type AddressForm } from '../../utils/addressForm';
 vi.mock('../../api', () => ({
   api: {
     deleteYsqData: vi.fn(),
+    getYsqHistory: vi.fn(),
+    getYsqProgress: vi.fn(),
     deleteAllUserData: vi.fn(),
   },
 }));
@@ -32,6 +35,9 @@ afterEach(() => {
 beforeEach(() => {
   vi.clearAllMocks();
   localStorage.clear();
+  // На сервере теста нет, пока тест не скажет иное.
+  mockApi.getYsqHistory.mockResolvedValue([]);
+  mockApi.getYsqProgress.mockResolvedValue(null);
 });
 
 describe('ExportOverlay', () => {
@@ -82,9 +88,23 @@ describe('ExportOverlay', () => {
 });
 
 describe('PrivacyOverlay', () => {
-  it('нет сохранённого теста в localStorage — кнопка удаления результатов не показана (пустое состояние)', () => {
+  it('теста нет ни тут, ни на сервере — кнопка удаления результатов не показана (пустое состояние)', async () => {
     render(<PrivacyOverlay onClose={() => {}} onDeletedYsq={() => {}} />);
+    await waitFor(() =>
+      expect(mockApi.getYsqProgress).toHaveBeenCalledTimes(1),
+    );
+    await act(() => new Promise((r) => setTimeout(r, 0))); // ответы разобраны
     expect(screen.queryByText('Удалить результаты теста')).toBeNull();
+  });
+
+  // Тест пройден на другой площадке: на этом устройстве пусто, на сервере
+  // история — без проверки сервера его нельзя было стереть отсюда.
+  it('только серверная история — кнопка видна', async () => {
+    mockApi.getYsqHistory.mockResolvedValue([
+      { id: 1, completedAt: '2026-10-01T00:00:00.000Z', scores: {} },
+    ]);
+    render(<PrivacyOverlay onClose={() => {}} onDeletedYsq={() => {}} />);
+    expect(await screen.findByText('Удалить результаты теста')).toBeTruthy();
   });
 
   // Решение владельца 2026-10-22: кнопка стирает всё про тест (итог,
