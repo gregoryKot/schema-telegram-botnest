@@ -1,10 +1,10 @@
 import { api } from '../../api';
-import { logErr } from '../../utils/logErr';
 import { BottomSheet } from '../BottomSheet';
-// Из общего реестра ключей, не из YSQTestSheet.tsx (компонент теперь ленивый,
-// LazyOverlays.tsx) — иначе открытие «Настроек» (SettingsSheet остаётся
-// eager) тянуло бы за собой и код теста YSQ.
-import { YSQ_PROGRESS_KEY, YSQ_RESULT_KEY } from '../../utils/storageKeys';
+// Из лёгкого общего модуля (shared/src/hooks/ysqDataDelete.ts), не из
+// YSQTestSheet.tsx (компонент ленивый, LazyOverlays.tsx) — иначе открытие
+// «Настроек» (SettingsSheet остаётся eager) тянуло бы за собой код теста YSQ.
+import { YsqDataDelete } from './YsqDataDelete';
+import { ConfirmButtons } from './ConfirmButtons';
 import { DeleteAccountConfirm } from '../../../../shared/src/components/DeleteAccountConfirm';
 import { useTr } from '../../utils/addressForm';
 import {
@@ -137,44 +137,9 @@ export function PrivacyOverlay({
           </div>
         ))}
 
-        {(!!localStorage.getItem(YSQ_PROGRESS_KEY) ||
-          !!localStorage.getItem(YSQ_RESULT_KEY)) && (
-          <div className="u-mb12">
-            <div
-              style={{
-                fontSize: 13,
-                fontWeight: 600,
-                color: 'rgba(var(--fg-rgb),0.8)',
-                marginBottom: 10,
-              }}
-            >
-              Удалить данные теста
-            </div>
-            <button
-              onClick={() => {
-                localStorage.removeItem(YSQ_PROGRESS_KEY);
-                localStorage.removeItem(YSQ_RESULT_KEY);
-                api.deleteYsqResult().catch(logErr('deleteYsq'));
-                onDeletedYsq();
-              }}
-              style={{
-                width: '100%',
-                padding: '13px 0',
-                borderRadius: 'var(--r-12)',
-                border:
-                  '1px solid color-mix(in srgb, var(--accent-red) 30%, transparent)',
-                background:
-                  'color-mix(in srgb, var(--accent-red) 8%, transparent)',
-                color: 'var(--accent-red)',
-                fontSize: 14,
-                fontWeight: 500,
-                cursor: 'pointer',
-              }}
-            >
-              Удалить результаты теста
-            </button>
-          </div>
-        )}
+        {/* Всё про тест — итог, история, прогресс — после подтверждения
+            (решение владельца 2026-10-22). */}
+        <YsqDataDelete onDeleted={onDeletedYsq} />
 
         <div
           style={{
@@ -234,40 +199,11 @@ export function DeleteOverlay({
           действие необратимо.
         </div>
         {!deleteConfirm ? (
-          <div className="u-row8">
-            <button
-              onClick={onCancel}
-              style={{
-                flex: 1,
-                padding: '14px 0',
-                borderRadius: 'var(--r-14)',
-                border: '1px solid rgba(var(--fg-rgb),0.1)',
-                background: 'transparent',
-                color: 'var(--text-sub)',
-                fontSize: 14,
-                cursor: 'pointer',
-              }}
-            >
-              Отмена
-            </button>
-            <button
-              onClick={() => setDeleteConfirm(true)}
-              style={{
-                flex: 1,
-                padding: '14px 0',
-                borderRadius: 'var(--r-14)',
-                border: 'none',
-                background:
-                  'color-mix(in srgb, var(--accent-red) 15%, transparent)',
-                color: 'var(--accent-red)',
-                fontSize: 14,
-                fontWeight: 600,
-                cursor: 'pointer',
-              }}
-            >
-              Удалить
-            </button>
-          </div>
+          <ConfirmButtons
+            confirmLabel="Удалить"
+            onConfirm={() => setDeleteConfirm(true)}
+            onCancel={onCancel}
+          />
         ) : (
           <DeleteAccountConfirm
             tr={tr}

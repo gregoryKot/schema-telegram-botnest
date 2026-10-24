@@ -31,6 +31,8 @@ const MOCKED_API_METHODS = [
   'trackEvent',
   // SettingsSheet.test.tsx
   'getSettings', 'getPair', 'getTherapyRelation', 'getTherapistRequest', 'getExport', 'deleteAllUserData',
+  // settingsSheet/DataSection.test.tsx
+  'deleteYsqData',
   // TrackerOverlay.test.tsx
   'ratings', 'saveRating',
   // BookingPicker.test.tsx

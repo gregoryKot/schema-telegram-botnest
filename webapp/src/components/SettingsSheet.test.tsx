@@ -43,7 +43,9 @@ vi.mock('../api', () => ({
     joinTherapy: vi.fn(),
     createTherapyInvite: vi.fn(),
     updateName: vi.fn(),
-    deleteYsqResult: vi.fn(),
+    deleteYsqData: vi.fn(),
+    getYsqHistory: vi.fn(),
+    getYsqProgress: vi.fn(),
     submitTherapistRequest: vi.fn(),
   },
   reportClientError: vi.fn(),
@@ -74,6 +76,8 @@ beforeEach(() => {
   mockApi.getTherapyRelation.mockResolvedValue(null);
   mockApi.getTherapistRequest.mockResolvedValue(null);
   mockApi.updateSettings.mockResolvedValue(undefined);
+  mockApi.getYsqHistory.mockResolvedValue([]);
+  mockApi.getYsqProgress.mockResolvedValue(null);
   reloadSpy = mockLocationReload();
 });
 
@@ -592,27 +596,30 @@ describe('SettingsSheet — удаление результатов YSQ: при�
     localStorage.setItem('ysq_progress', JSON.stringify({ answers: [1] }));
   });
 
-  it('ошибка api.deleteYsqResult: localStorage НЕ очищается, видна ошибка, модалка не закрывается', async () => {
-    mockApi.deleteYsqResult.mockRejectedValue(new Error('network down'));
+  // Кнопка сначала спрашивает подтверждение и стирает всё про тест
+  // (DELETE /api/ysq-data) — подробные сценарии в DataSection.test.tsx.
+  async function confirmYsqDelete() {
     await renderSheet();
     fireEvent.click(screen.getByText('Конфиденциальность'));
-    await screen.findByText('Удалить результаты теста');
+    fireEvent.click(await screen.findByText('Удалить результаты теста'));
+    fireEvent.click(await screen.findByText('Удалить всё'));
+  }
 
-    fireEvent.click(screen.getByText('Удалить результаты теста'));
+  it('ошибка api.deleteYsqData: localStorage НЕ очищается, видна ошибка, окно не закрывается', async () => {
+    mockApi.deleteYsqData.mockRejectedValue(new Error('network down'));
+    await confirmYsqDelete();
+
     await screen.findByText(/Не удалось удалить/);
     expect(localStorage.getItem('ysq_progress')).not.toBeNull();
-    // Модалка осталась открытой — кнопка всё ещё видна.
-    expect(screen.getByText(/Удалить результаты теста|Удаляю/)).toBeTruthy();
+    // Подтверждение осталось открытым.
+    expect(screen.getByText('Удалить все результаты теста?')).toBeTruthy();
   });
 
   it('успех: localStorage очищается только после подтверждённого удаления', async () => {
-    mockApi.deleteYsqResult.mockResolvedValue(undefined);
-    await renderSheet();
-    fireEvent.click(screen.getByText('Конфиденциальность'));
-    await screen.findByText('Удалить результаты теста');
+    mockApi.deleteYsqData.mockResolvedValue(undefined);
+    await confirmYsqDelete();
 
-    fireEvent.click(screen.getByText('Удалить результаты теста'));
-    await waitFor(() => expect(mockApi.deleteYsqResult).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(mockApi.deleteYsqData).toHaveBeenCalledTimes(1));
     await waitFor(() => expect(localStorage.getItem('ysq_progress')).toBeNull());
   });
 });

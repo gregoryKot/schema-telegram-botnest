@@ -18,4 +18,5 @@
 ## Записи
 
 - 2026-10-21 · задача: проверка субагента `scout` («где обрабатывается пауза уведомлений») · искал: обработчик кнопки «⏸ Пауза» · нашёл: `src/telegram/telegram.notify-actions.service.ts` · дописал: `docs/architecture/backend-core.md` (раздел `src/notification/`), `docs/architecture/glossary.md` (строка «⏸ Пауза»)
+- 2026-10-22 · задача: «Удалить результаты теста» стирает итог, историю и прогресс · искал: кнопку «Удалить результаты теста» (в glossary нет, строки «Настройки» и «Тест на схемы» про неё молчат) · нашёл: `webapp/src/components/settingsSheet/DataSection.tsx`, `schema-miniapp/src/components/settingsSheet/DataOverlays.tsx` · дописал: `docs/architecture/glossary.md` (строка «Конфиденциальность», «Удалить результаты теста»; пометка в «Тест на схемы»)
 - 2026-10-22 · задача: таймаут запроса к БД (долгие запросы `/stats`) · искал: агрегаты отчёта «Главные цифры» и воронку удержания · нашёл: `src/bot/bot.admin-stats.service.ts` · дописал: `docs/architecture/glossary.md` (строка `/stats`)

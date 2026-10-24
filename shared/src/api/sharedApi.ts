@@ -121,6 +121,8 @@ export const buildSharedApi = (t: ApiTransport) => ({
     t.get<{ answers: number[]; completedAt: string } | null>('/api/ysq-result'),
   saveYsqResult: (answers: number[]) => t.post('/api/ysq-result', { answers }),
   deleteYsqResult: () => t.del('/api/ysq-result'),
+  /** Итог, вся история и прогресс теста разом — кнопка в настройках. */
+  deleteYsqData: () => t.del('/api/ysq-data'),
   getYsqHistory: () => t.get<YsqHistoryEntry[]>('/api/ysq-history'),
   getProfile: () => t.get<UserProfile>('/api/profile'),
   updateName: (name: string) =>

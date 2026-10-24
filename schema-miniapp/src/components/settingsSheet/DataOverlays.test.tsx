@@ -11,13 +11,17 @@ import {
   fireEvent,
   cleanup,
   waitFor,
+  act,
 } from '@testing-library/react';
 import { ExportOverlay, PrivacyOverlay, DeleteOverlay } from './DataOverlays';
 import { YSQ_PROGRESS_KEY, YSQ_RESULT_KEY } from '../YSQTestSheet';
+import { AddressFormContext, type AddressForm } from '../../utils/addressForm';
 
 vi.mock('../../api', () => ({
   api: {
-    deleteYsqResult: vi.fn(),
+    deleteYsqData: vi.fn(),
+    getYsqHistory: vi.fn(),
+    getYsqProgress: vi.fn(),
     deleteAllUserData: vi.fn(),
   },
 }));
@@ -31,6 +35,9 @@ afterEach(() => {
 beforeEach(() => {
   vi.clearAllMocks();
   localStorage.clear();
+  // На сервере теста нет, пока тест не скажет иное.
+  mockApi.getYsqHistory.mockResolvedValue([]);
+  mockApi.getYsqProgress.mockResolvedValue(null);
 });
 
 describe('ExportOverlay', () => {
@@ -81,24 +88,96 @@ describe('ExportOverlay', () => {
 });
 
 describe('PrivacyOverlay', () => {
-  it('нет сохранённого теста в localStorage — кнопка удаления результатов не показана (пустое состояние)', () => {
+  it('теста нет ни тут, ни на сервере — кнопка удаления результатов не показана (пустое состояние)', async () => {
     render(<PrivacyOverlay onClose={() => {}} onDeletedYsq={() => {}} />);
+    await waitFor(() =>
+      expect(mockApi.getYsqProgress).toHaveBeenCalledTimes(1),
+    );
+    await act(() => new Promise((r) => setTimeout(r, 0))); // ответы разобраны
     expect(screen.queryByText('Удалить результаты теста')).toBeNull();
   });
 
-  it('есть результат теста в localStorage — клик удаляет его локально и на бэке', () => {
+  // Тест пройден на другой площадке: на этом устройстве пусто, на сервере
+  // история — без проверки сервера его нельзя было стереть отсюда.
+  it('только серверная история — кнопка видна', async () => {
+    mockApi.getYsqHistory.mockResolvedValue([
+      { id: 1, completedAt: '2026-10-01T00:00:00.000Z', scores: {} },
+    ]);
+    render(<PrivacyOverlay onClose={() => {}} onDeletedYsq={() => {}} />);
+    expect(await screen.findByText('Удалить результаты теста')).toBeTruthy();
+  });
+
+  // Решение владельца 2026-10-22: кнопка стирает всё про тест (итог,
+  // историю, прогресс — DELETE /api/ysq-data), сначала спрашивает, а
+  // localStorage чистит только после ответа сервера (раньше — до запроса,
+  // без ожидания ответа и без ошибки на экране).
+  function openYsqConfirm(form: AddressForm = 'ty') {
     localStorage.setItem(YSQ_RESULT_KEY, JSON.stringify({ x: 1 }));
+    localStorage.setItem(YSQ_PROGRESS_KEY, JSON.stringify({ step: 2 }));
     const onDeletedYsq = vi.fn();
-    mockApi.deleteYsqResult.mockResolvedValue(undefined);
-
-    render(<PrivacyOverlay onClose={() => {}} onDeletedYsq={onDeletedYsq} />);
+    render(
+      <AddressFormContext.Provider value={{ form, setForm: () => {} }}>
+        <PrivacyOverlay onClose={() => {}} onDeletedYsq={onDeletedYsq} />
+      </AddressFormContext.Provider>,
+    );
     fireEvent.click(screen.getByText('Удалить результаты теста'));
+    return onDeletedYsq;
+  }
 
+  it('первый тап только спрашивает: видно подтверждение, запроса нет', () => {
+    const onDeletedYsq = openYsqConfirm();
+    expect(screen.getByText('Удалить все результаты теста?')).toBeTruthy();
+    expect(
+      screen.getByText(/все прошлые прохождения и незаконченные ответы/),
+    ).toBeTruthy();
+    expect(mockApi.deleteYsqData).not.toHaveBeenCalled();
+    expect(localStorage.getItem(YSQ_RESULT_KEY)).not.toBeNull();
+    expect(onDeletedYsq).not.toHaveBeenCalled();
+  });
+
+  it('«Удалить всё»: DELETE /api/ysq-data, потом ключи очищены и шторка закрывается', async () => {
+    mockApi.deleteYsqData.mockResolvedValue(undefined);
+    const onDeletedYsq = openYsqConfirm();
+
+    fireEvent.click(screen.getByText('Удалить всё'));
+
+    await waitFor(() => expect(onDeletedYsq).toHaveBeenCalledTimes(1));
+    expect(mockApi.deleteYsqData).toHaveBeenCalledTimes(1);
     expect(localStorage.getItem(YSQ_RESULT_KEY)).toBeNull();
     expect(localStorage.getItem(YSQ_PROGRESS_KEY)).toBeNull();
-    expect(mockApi.deleteYsqResult).toHaveBeenCalledTimes(1);
-    expect(onDeletedYsq).toHaveBeenCalledTimes(1);
   });
+
+  it('«Отмена»: запроса нет, ключи на месте, снова видна кнопка', () => {
+    const onDeletedYsq = openYsqConfirm();
+
+    fireEvent.click(screen.getByText('Отмена'));
+
+    expect(screen.queryByText('Удалить все результаты теста?')).toBeNull();
+    expect(screen.getByText('Удалить результаты теста')).toBeTruthy();
+    expect(mockApi.deleteYsqData).not.toHaveBeenCalled();
+    expect(localStorage.getItem(YSQ_RESULT_KEY)).not.toBeNull();
+    expect(localStorage.getItem(YSQ_PROGRESS_KEY)).not.toBeNull();
+    expect(onDeletedYsq).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['ty', 'Не удалось удалить. Попробуй ещё раз'],
+    ['vy', 'Не удалось удалить. Попробуйте ещё раз'],
+  ] as const)(
+    'ошибка сервера (%s): ключи на месте, видна ошибка, шторка не закрывается',
+    async (form, text) => {
+      mockApi.deleteYsqData.mockRejectedValue(new Error('network down'));
+      const onDeletedYsq = openYsqConfirm(form);
+
+      fireEvent.click(screen.getByText('Удалить всё'));
+
+      expect((await screen.findByRole('alert')).textContent).toBe(text);
+      expect(localStorage.getItem(YSQ_RESULT_KEY)).not.toBeNull();
+      expect(localStorage.getItem(YSQ_PROGRESS_KEY)).not.toBeNull();
+      expect(screen.getByText('Удалить все результаты теста?')).toBeTruthy();
+      expect(onDeletedYsq).not.toHaveBeenCalled();
+    },
+  );
 
   it('есть незавершённый прогресс теста — тоже показывает кнопку удаления', () => {
     localStorage.setItem(YSQ_PROGRESS_KEY, JSON.stringify({ step: 2 }));
