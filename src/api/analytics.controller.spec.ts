@@ -64,3 +64,35 @@ describe('AnalyticsController — делегирует sanitizeMeta и track', (
     expect(track).toHaveBeenCalledWith(7n, 'stop_start', undefined);
   });
 });
+
+// D4 (аудит 2026-10), на шве: настоящий контроллер → настоящий сервис →
+// поддельная БД. Контроллер передаёт uid (он нужен остальным событиям), а
+// кризисные события обязаны лечь в таблицу без него.
+describe('AnalyticsController → AnalyticsService: кризисные события анонимны', () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { AnalyticsService: Real } = require('../analytics/analytics.service');
+
+  function wire() {
+    const create = jest.fn(async () => ({ id: 1 }));
+    const service = new Real({ analyticsEvent: { create } });
+    const controller = new AnalyticsController(service);
+    const req = { webUser: { userId: 7n } } as never;
+    return {
+      create,
+      fire: (body: Record<string, unknown>) =>
+        controller.track(req, body as unknown as TrackEventDto),
+    };
+  }
+
+  it('crisis_card_shown с uid → строка с userId = null', async () => {
+    const { create, fire } = wire();
+    await fire({ name: 'crisis_card_shown', meta: { surface: 'note' } });
+    expect(create.mock.calls[0][0].data.userId).toBeNull();
+  });
+
+  it('обычное событие (share_card) → строка с userId', async () => {
+    const { create, fire } = wire();
+    await fire({ name: 'share_card', meta: { kind: 'weekly' } });
+    expect(create.mock.calls[0][0].data.userId).toBe(7n);
+  });
+});

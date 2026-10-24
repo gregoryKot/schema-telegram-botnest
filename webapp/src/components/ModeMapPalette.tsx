@@ -1,29 +1,22 @@
 import { useEffect, useRef, useState } from 'react';
 import { MODE_GROUPS, getModeById } from '../schemaTherapyData';
-import type { ModeMapNode, TherapistCustomMode } from '../api';
-import { api } from '../api';
+import { api, type ModeMapNode, type TherapistCustomMode, type UserId } from '../api';
+import { CUSTOM_MODE_NAME_MAX } from '../../../shared/src/limits/textLimits';
 import { MMIcon } from './modeMapIcons';
 import { DRAG_TYPE, GROUP_TO_TYPE, TYPE_COLORS, type NodeType } from './modeMapData';
 import { IdentityDot } from '../../../shared/src/components/IdentityDot';
 import { scrollIntoViewSafe } from '../../../shared/src/utils/scrollIntoView';
 import { useTr } from '../utils/addressForm';
 import { ShapePicker } from './modeMap/ShapePicker';
-
-// Maps a mode id → which palette group/type it belongs to (for client modes)
-function findModeMeta(modeId: string): { type: NodeType; copingSubtype?: 'over' | 'avoid' | 'surr'; color: string; name: string } | null {
-  for (const group of MODE_GROUPS) {
-    const meta = GROUP_TO_TYPE[group.id];
-    if (!meta) continue;
-    const item = group.items.find(i => i.id === modeId);
-    if (item) return { type: meta.type, copingSubtype: meta.copingSubtype, color: meta.color, name: item.name };
-  }
-  return null;
-}
+import { ConceptPaletteItems } from './modeMap/ConceptPaletteItems';
+import { findModeMeta } from './modeMap/modeNodeMeta';
+import { hueStyle, MODE_GROUP_HUE } from '../lib/tone';
+import '../styles/sheet-modemap.css';
 
 // Clinical display order: child → critic → coping(×3) → healthy
 const GROUP_ORDER = ['child', 'critic', 'coping_overcompensation', 'coping_avoidance', 'coping_surrender', 'healthy'];
 
-interface Props { onAdd: (node: Omit<ModeMapNode, 'position'>) => void; onAddMany?: (nodes: Omit<ModeMapNode, 'position'>[]) => void; clientId: number }
+interface Props { onAdd: (node: Omit<ModeMapNode, 'position'>) => void; onAddMany?: (nodes: Omit<ModeMapNode, 'position'>[]) => void; clientId: UserId }
 
 export function ModeMapPalette({ onAdd, onAddMany, clientId }: Props) {
   const tr = useTr();
@@ -107,45 +100,34 @@ export function ModeMapPalette({ onAdd, onAddMany, clientId }: Props) {
   }
 
   return (
-    <div style={{
-      width: 210, flexShrink: 0, display: 'flex', flexDirection: 'column',
-      borderRight: '1px solid var(--line)',
-      background: 'var(--surface-2)',
-    }}>
+    <div className="ds-card mm2-pal">
       {/* Search */}
-      <div style={{ padding: '10px 10px 8px', borderBottom: '1px solid var(--line)', flexShrink: 0 }}>
-        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Поиск режима…"
-          style={{ width: '100%', padding: '6px 10px', borderRadius: 'var(--r-6)', boxSizing: 'border-box',
-            border: '1px solid var(--line-strong)', background: 'var(--bg-elev)',
-            color: 'var(--text)', fontSize: 12.5, outline: 'none' }} />
+      <div className="mm2-pal-search">
+        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Поиск режима…" className="ds-input" />
       </div>
 
-      <div style={{ flex: 1, overflowY: 'auto' }}>
+      <div className="mm2-pal-scroll">
         {/* Client's identified modes (from conceptualization) — collapsible.
             Сбой загрузки показывается, а не молчит: раньше секция просто не
             рендерилась (условие было ...length > 0), и терапевт думал, что у
             клиента режимы не отмечены (карта режимов, три молчания). */}
         {!q && (clientModeIds === 'failed' || clientModeList.length > 0) && (
-          <div style={{ background: clientOpen ? 'var(--accent-soft)' : 'none', paddingBottom: clientOpen ? 4 : 0 }}>
-            <div style={{ display: 'flex', alignItems: 'center', width: '100%', padding: '7px 12px' }}>
-              <button onClick={() => setClientOpen(o => !o)}
-                style={{ display: 'flex', alignItems: 'center', flex: 1, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
-                <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--accent)', flex: 1, textAlign: 'left' }}>Режимы клиента</span>
-                <span style={{ fontSize: 10, color: 'var(--accent)' }}>{clientModeIds === 'failed' ? '' : clientOpen ? '▲' : `▼ ${clientModeList.length}`}</span>
+          <div className={`mm2-client${clientOpen ? ' is-open' : ''}`}>
+            <div className="mm2-client-row">
+              <button onClick={() => setClientOpen(o => !o)} className="mm2-pal-head">
+                <span className="mm2-pal-head-name">Режимы клиента</span>
+                <span className="mm2-pal-head-n">{clientModeIds === 'failed' ? '' : clientOpen ? '▲' : `▼ ${clientModeList.length}`}</span>
               </button>
               {onAddMany && clientModeIds !== 'failed' && (
                 <button onClick={() => { const all = clientModeList.map(clientModeNode).filter(Boolean) as Omit<ModeMapNode, 'position'>[]; if (all.length) onAddMany(all); }}
                   title="Вынести все режимы клиента на карту" aria-label="Вынести все режимы клиента на карту"
-                  style={{ marginLeft: 8, display: 'flex', alignItems: 'center', gap: 3, background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: 5,
-                    cursor: 'pointer', fontSize: 10.5, fontWeight: 600, padding: '3px 8px', flexShrink: 0, whiteSpace: 'nowrap' }}>
+                  className="ds-btn ds-btn--accent mm2-pal-add">
                   <MMIcon name="plus" size={11} /> все
                 </button>
               )}
             </div>
             {clientModeIds === 'failed' ? (
-              <div style={{ padding: '4px 14px 10px', fontSize: 11.5, color: 'var(--accent-red)' }}>
-                Не удалось загрузить режимы клиента
-              </div>
+              <div className="mm2-pal-sub is-err">Не удалось загрузить режимы клиента</div>
             ) : clientOpen && clientModeList.map(modeId => {
               const node = clientModeNode(modeId);
               if (!node) return null;
@@ -153,9 +135,9 @@ export function ModeMapPalette({ onAdd, onAddMany, clientId }: Props) {
                 <button key={modeId}
                   onClick={() => onAdd(node)}
                   draggable onDragStart={e => onDragStart(e, node)}
-                  style={{ ...itemStyle, padding: '5px 14px' }} title="Из концептуализации клиента" aria-label="Из концептуализации клиента">
-                  {clientModeColor(modeId) ? <IdentityDot color={clientModeColor(modeId)} size={12} /> : <span style={{ fontSize: 12 }}>◆</span>}
-                  <span style={{ fontSize: 12, flex: 1 }}>{node.data.label}</span>
+                  className="mm2-pal-item" title="Из концептуализации клиента" aria-label="Из концептуализации клиента">
+                  {clientModeColor(modeId) ? <IdentityDot color={clientModeColor(modeId)} size={12} /> : <span>◆</span>}
+                  <span className="mm2-pal-item-name">{node.data.label}</span>
                 </button>
               );
             })}
@@ -166,19 +148,21 @@ export function ModeMapPalette({ onAdd, onAddMany, clientId }: Props) {
         {(!q || 'триггер ситуация'.includes(q)) && (
           <button onClick={() => onAdd({ id: `trigger_${Date.now()}`, type: 'trigger', data: { label: 'Триггер' } })}
             draggable onDragStart={e => onDragStart(e, { id: `trigger_${Date.now()}`, type: 'trigger', data: { label: 'Триггер' } })}
-            style={itemStyle} title="Внешняя ситуация, запускающая цикл" aria-label="Внешняя ситуация, запускающая цикл">
+            className="mm2-pal-item is-lg" title="Внешняя ситуация, запускающая цикл" aria-label="Внешняя ситуация, запускающая цикл">
             <IdentityDot color={TYPE_COLORS.trigger} size={12} />
-            <span style={{ fontSize: 12.5, flex: 1 }}>Триггер / Ситуация</span>
+            <span className="mm2-pal-item-name">Триггер / Ситуация</span>
           </button>
         )}
         {(!q || 'поведение последствие'.includes(q)) && (
           <button onClick={() => onAdd({ id: `behavior_${Date.now()}`, type: 'behavior', data: { label: 'Поведение' } })}
             draggable onDragStart={e => onDragStart(e, { id: `behavior_${Date.now()}`, type: 'behavior', data: { label: 'Поведение' } })}
-            style={itemStyle} title="Что человек делает / последствие" aria-label="Что человек делает / последствие">
+            className="mm2-pal-item is-lg" title="Что человек делает / последствие" aria-label="Что человек делает / последствие">
             <IdentityDot color={TYPE_COLORS.behavior} size={12} />
-            <span style={{ fontSize: 12.5, flex: 1 }}>Поведение / Последствие</span>
+            <span className="mm2-pal-item-name">Поведение / Последствие</span>
           </button>
         )}
+
+        {!q && <ConceptPaletteItems onAdd={onAdd} onDragStart={onDragStart} />}
 
         {/* Standard mode groups — child → critic → coping → healthy (clinical order) */}
         {[...MODE_GROUPS].sort((a, b) => GROUP_ORDER.indexOf(a.id) - GROUP_ORDER.indexOf(b.id)).map(group => {
@@ -190,24 +174,19 @@ export function ModeMapPalette({ onAdd, onAddMany, clientId }: Props) {
           if (q && items.length === 0) return null;
           const isOpen = q ? true : openGroups.has(group.id);
           return (
-            <div key={group.id}>
-              <button onClick={() => !q && toggleGroup(group.id)}
-                style={{ display: 'flex', alignItems: 'center', width: '100%', padding: '6px 12px',
-                  background: 'none', border: 'none', cursor: q ? 'default' : 'pointer',
-                  borderTop: '1px solid var(--line)' }}>
-                <GroupDot type={meta.type} color={group.color} />
-                <span style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--text-sub)', flex: 1, textAlign: 'left', marginLeft: 7 }}>
-                  {group.group}
-                </span>
-                {!q && <span style={{ fontSize: 10, color: 'var(--text-faint)' }}>{isOpen ? '▲' : `▼ ${group.items.length}`}</span>}
+            <div key={group.id} style={hueStyle(MODE_GROUP_HUE[group.id])}>
+              <button onClick={() => !q && toggleGroup(group.id)} className={`mm2-pal-head${q ? ' is-static' : ''}`}>
+                <i className="ds-dot tone-fill" />
+                <span className="mm2-pal-head-name">{group.group}</span>
+                {!q && <span className="mm2-pal-head-n">{isOpen ? '▲' : `▼ ${group.items.length}`}</span>}
               </button>
               {isOpen && items.map(item => (
                 <button key={item.id}
                   onClick={() => onAdd(makeNode(item.id, meta.type, item.name, meta.copingSubtype ? { copingSubtype: meta.copingSubtype } : {}))}
                   draggable onDragStart={e => onDragStart(e, makeNode(item.id, meta.type, item.name, meta.copingSubtype ? { copingSubtype: meta.copingSubtype } : {}))}
-                  style={itemStyle} title={item.short}>
-                  <IdentityDot color={meta.color} size={12} />
-                  <span style={{ fontSize: 12, flex: 1, lineHeight: 1.3 }}>{item.name}</span>
+                  className="mm2-pal-item is-tone" title={item.short}>
+                  <i className="ds-dot tone-fill" />
+                  <span className="mm2-pal-item-name">{item.name}</span>
                 </button>
               ))}
             </div>
@@ -216,58 +195,55 @@ export function ModeMapPalette({ onAdd, onAddMany, clientId }: Props) {
 
         {/* Custom therapist modes */}
         {!q && (
-          <div style={{ borderTop: '1px solid var(--line)', marginTop: 4 }}>
-            <div style={{ display: 'flex', alignItems: 'center', padding: '6px 12px' }}>
-              <span style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--text-sub)', flex: 1 }}>Мои режимы</span>
+          <div className="mm2-mine">
+            <div className="mm2-mine-head">
+              <span className="mm2-pal-head-name">Мои режимы</span>
               <button onClick={() => { const next = !adding; setAdding(next); if (next) setTimeout(() => { scrollIntoViewSafe(addFormRef.current, { block: 'nearest' }); addInputRef.current?.focus(); }, 60); }}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--accent)', padding: 0, lineHeight: 1, display: 'flex', alignItems: 'center' }}
+                className="mm2-mine-plus"
                 title="Добавить свой режим" aria-label="Добавить свой режим"><MMIcon name="plus" size={15} /></button>
             </div>
 
             {adding && (
-              <div ref={addFormRef} style={{ padding: '6px 10px 16px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <div ref={addFormRef} className="mm2-add-form">
                 {/* Emoji + name */}
-                <div style={{ display: 'flex', gap: 6 }}>
+                <div className="mm2-add-row">
                   <input ref={addInputRef} value={newEmoji} onChange={e => setNewEmoji(e.target.value)}
-                    style={{ ...miniInputStyle, width: 34, textAlign: 'center', fontSize: 15 }} maxLength={2} />
+                    className="ds-input mm2-add-emoji" maxLength={2} />
                   <input value={newName} onChange={e => setNewName(e.target.value)}
                     onKeyDown={e => { if (e.key === 'Enter') saveCustomMode(); if (e.key === 'Escape') setAdding(false); }}
-                    placeholder="Название…" style={{ ...miniInputStyle, flex: 1 }} />
+                    placeholder="Название…" maxLength={CUSTOM_MODE_NAME_MAX} className="ds-input" />
                 </div>
 
                 <ShapePicker newType={newType} newCopingSub={newCopingSub} setNewType={setNewType} setNewCopingSub={setNewCopingSub} />
 
-                <div style={{ display: 'flex', gap: 6 }}>
-                  <button onClick={saveCustomMode} style={{ ...miniInputStyle, background: 'var(--accent)', color: '#fff', border: 'none', cursor: 'pointer', fontWeight: 600, flex: 1 }}>
-                    Сохранить
-                  </button>
-                  <button onClick={() => setAdding(false)} style={{ ...miniInputStyle, cursor: 'pointer', flex: 0, padding: '5px 10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><MMIcon name="close" size={13} /></button>
+                <div className="mm2-add-row">
+                  <button onClick={saveCustomMode} className="ds-btn ds-btn--sm">Сохранить</button>
+                  <button onClick={() => setAdding(false)} aria-label="Отменить" className="ds-btn ds-btn--icon ds-btn--sm"><MMIcon name="close" size={13} /></button>
                 </div>
               </div>
             )}
 
             {customModesList.map(m => (
-              <div key={m.id} style={{ display: 'flex', alignItems: 'center' }}>
+              <div key={m.id} className="mm2-mine-row">
                 <button
                   onClick={() => onAdd({ id: `cm_${m.id}_${Date.now()}`, type: m.nodeType as NodeType, data: getCustomNodeData(m) })}
                   draggable onDragStart={e => onDragStart(e, { id: `cm_${m.id}_${Date.now()}`, type: m.nodeType as NodeType, data: getCustomNodeData(m) })}
-                  style={{ ...itemStyle, flex: 1 }}>
-                  <span style={{ fontSize: 13 }}>{m.emoji}</span>
-                  <span style={{ fontSize: 12.5, flex: 1 }}>{m.name}</span>
+                  className="mm2-pal-item is-lg">
+                  <span>{m.emoji}</span>
+                  <span className="mm2-pal-item-name">{m.name}</span>
                 </button>
-                <button onClick={() => removeCustomMode(m.id)}
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-faint)', padding: '0 10px', flexShrink: 0, display: 'flex', alignItems: 'center' }}
+                <button onClick={() => removeCustomMode(m.id)} className="mm2-mine-del"
                   title="Удалить" aria-label="Удалить"><MMIcon name="close" size={11} /></button>
               </div>
             ))}
 
             {customModes === 'failed' && (
-              <div style={{ padding: '4px 12px 10px', fontSize: 11.5, color: 'var(--accent-red)' }}>
+              <div className="mm2-pal-sub is-err">
                 {tr('Не удалось загрузить твои режимы', 'Не удалось загрузить ваши режимы')}
               </div>
             )}
             {customModes !== 'failed' && customModesList.length === 0 && !adding && (
-              <div style={{ padding: '4px 12px 10px', fontSize: 11.5, color: 'var(--text-faint)', lineHeight: 1.4 }}>
+              <div className="mm2-pal-sub">
                 {tr('Добавь режимы, с которыми', 'Добавьте режимы, с которыми')}<br />{tr('работаешь чаще всего', 'работаете чаще всего')}
               </div>
             )}
@@ -279,32 +255,9 @@ export function ModeMapPalette({ onAdd, onAddMany, clientId }: Props) {
           const m = GROUP_TO_TYPE[g.id];
           return !m || !g.items.some(i => i.name.toLowerCase().includes(q) || i.short.toLowerCase().includes(q));
         }) && !customModesList.some(m => m.name.toLowerCase().includes(q)) && (
-          <div style={{ padding: '20px 14px', fontSize: 12.5, color: 'var(--text-faint)', textAlign: 'center' }}>
-            Режим не найден
-          </div>
+          <div className="mm2-pal-empty">Режим не найден</div>
         )}
       </div>
     </div>
   );
 }
-
-function GroupDot({ type, color }: { type: NodeType; color: string }) {
-  if (type === 'child') return <div style={{ width: 10, height: 10, borderRadius: '50%', background: color, flexShrink: 0 }} />;
-  if (type === 'coping') return <div style={{ width: 10, height: 10, background: color, clipPath: 'polygon(50% 0%,100% 38%,82% 100%,18% 100%,0% 38%)', flexShrink: 0 }} />;
-  return <div style={{ width: 10, height: 10, borderRadius: 'var(--r-2)', background: color, flexShrink: 0 }} />;
-}
-
-const itemStyle: React.CSSProperties = {
-  display: 'flex', alignItems: 'center', gap: 'var(--space-8)',
-  width: '100%', padding: '6px 14px',
-  background: 'none', border: 'none', cursor: 'pointer',
-  color: 'var(--text)', textAlign: 'left', outline: 'none',
-};
-
-const miniInputStyle: React.CSSProperties = {
-  padding: '5px 8px', borderRadius: 5, fontSize: 12.5,
-  border: '1px solid var(--line-strong)',
-  color: 'var(--text)', outline: 'none', boxSizing: 'border-box',
-};
-
-

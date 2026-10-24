@@ -1,5 +1,11 @@
 import type { Request, Response } from 'express';
 import { CANONICAL_HOST } from './infra/canonical-host';
+import {
+  PRACTICE_API_PREFIXES,
+  PRACTICE_PAGES,
+  PRACTICE_PAGE_PREFIXES,
+} from './practice-domain.surface';
+import { practiceRobots, practiceSitemap } from './practice-domain.seo';
 
 // Доменная стратегия (2026-09-08 / 2026-09-16): практика (kotlarewski.gr)
 // теперь отдаёт только визитку. Раньше алиас отдавал весь SPA и API: кука
@@ -7,70 +13,30 @@ import { CANONICAL_HOST } from './infra/canonical-host';
 // канонический хост — вход падал; последующий редирект-фикс без сужения
 // поверхности зациклился. Решение ниже — allow-list визитки, остальное 301.
 const PRACTICE_HOST = 'kotlarewski.gr';
+/** Хосты-алиасы, которым статьи/главная переписывают canonical и og:url на
+ *  собственный хост (единый allow-list: app.module, article-seo.middleware).
+ *  kotlarewski.ru сюда не входит — он 301-ится на .gr. */
+export const PRACTICE_ALIAS_HOSTS: ReadonlySet<string> = new Set([
+  PRACTICE_HOST,
+]);
 const REDIRECT_HOSTS = new Set([
   'kotlarewski.ru',
   'www.kotlarewski.ru',
   'www.kotlarewski.gr',
 ]);
 
-const PRACTICE_SITEMAP = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url>
-    <loc>https://${PRACTICE_HOST}/</loc>
-    <changefreq>monthly</changefreq>
-    <priority>1.0</priority>
-  </url>
-</urlset>
-`;
+const PRACTICE_SITEMAP = practiceSitemap(PRACTICE_HOST);
+const PRACTICE_ROBOTS = practiceRobots(PRACTICE_HOST);
 
-// Практике не нужны в индексе служебные и продуктовые маршруты — только
-// главная (брендовые запросы). Статьи и приложение канонично живут на
-// schemehappens.ru.
-const PRACTICE_ROBOTS = `User-agent: *
-Allow: /$
-Disallow: /articles
-Disallow: /privacy
-Disallow: /offer
-Disallow: /app
-Disallow: /api
-
-Sitemap: https://${PRACTICE_HOST}/sitemap.xml
-`;
-
-/** Страницы SPA, которые визитка рендерит сама — зеркало `personalRoutes`
- *  в webapp/src/App.tsx (тест-сверка в practice-domain.middleware.spec.ts). */
-export const PRACTICE_PAGES: readonly string[] = [
-  '/',
-  '/articles',
-  '/reviews',
-  '/admin',
-  '/booking-admin',
-  '/articles-admin',
-  '/booking/paid',
-  '/subscribe',
-  '/donate',
-  '/privacy',
-  '/offer',
-];
-/** Префиксы страниц с параметром (`/articles/:slug`). */
-export const PRACTICE_PAGE_PREFIXES: readonly string[] = ['/articles/'];
-
-/** GET-ручки API, которые зовут страницы визитки. Каждая — с причиной. */
-export const PRACTICE_API_PREFIXES: readonly string[] = [
-  '/api/booking', // запись на консультацию: options, slots, by-token, admin/*
-  '/api/subscription', // подписка: options, by-token
-  '/api/donation', // донат (страница /donate)
-  '/api/site-content', // фото/бегущая строка лендинга + admin/*
-  '/api/articles', // статьи и их админка
-  '/api/healthy-adult', // админка фраз канала (AdminPage)
-  '/api/client-errors', // отчёт о сбое формы брони (bookingFailure.ts), правило №14
-];
+// Allow-list визитки живёт в соседнем модуле (правило №10), но по-прежнему
+// доступен отсюда: на него ссылаются спеки и комментарии.
+export { PRACTICE_API_PREFIXES, PRACTICE_PAGES, PRACTICE_PAGE_PREFIXES };
 
 // Хвостовой слэш не различает маршрут ('/donate/' === '/donate'); корень не трогаем.
 const stripTrailingSlash = (path: string): string =>
   path.length > 1 && path.endsWith('/') ? path.slice(0, -1) : path;
 
-// Бандл SPA и иконки визитки (`/assets/index.js`, `/favicon-personal-32.png`)
+// Бандл SPA и иконки визитки (`/assets/index.js`, `/favicon-personal-96.png`)
 // узнаются по точке в последнем сегменте пути.
 const isStaticAsset = (path: string): boolean =>
   path.slice(path.lastIndexOf('/') + 1).includes('.');

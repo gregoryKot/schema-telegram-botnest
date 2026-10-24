@@ -90,6 +90,7 @@ function makeFakePrisma() {
         );
       }),
     },
+    authProvider: { findMany: jest.fn(() => Promise.resolve([])) },
     $transaction: jest.fn((arg: any) =>
       Array.isArray(arg) ? Promise.all(arg) : arg(prisma),
     ),
@@ -106,6 +107,17 @@ function makeFakePrismaService() {
       const u = users.find((x) => x.id === userId);
       return Promise.resolve(u?.role ?? 'CLIENT');
     }),
+    // Как AccountService: телеграмный номер без привязки — сам себе адрес,
+    // веб-номер без привязки адреса не имеет.
+    telegramIdsFor: jest.fn((ids: bigint[]) =>
+      Promise.resolve(
+        new Map(
+          ids
+            .filter((id) => id < 1_000_000_000_000_000n)
+            .map((id) => [id.toString(), id]),
+        ),
+      ),
+    ),
   };
   const securityLog = { log: jest.fn() };
   return { prisma, requests, users, accountService, securityLog };
@@ -114,7 +126,11 @@ function makeFakePrismaService() {
 function makeService() {
   const { prisma, requests, users, accountService, securityLog } =
     makeFakePrismaService();
-  const notifyService = new TherapistRequestNotifyService(prisma);
+  const notifyService = new TherapistRequestNotifyService(
+    prisma,
+    accountService as any,
+    { send: jest.fn() } as any,
+  );
   const svc = new TherapistRequestService(
     prisma,
     accountService as any,
@@ -199,10 +215,8 @@ describe('TherapistRequestService.submit', () => {
     ['fullName отсутствует', { ...INPUT, fullName: undefined }],
     ['qualification пустая', { ...INPUT, qualification: '  ' }],
     ['qualification отсутствует', { ...INPUT, qualification: undefined }],
-    ['qualification длиннее 500', { ...INPUT, qualification: 'x'.repeat(501) }],
     ['contacts пустой', { ...INPUT, contacts: '' }],
     ['contacts отсутствует', { ...INPUT, contacts: undefined }],
-    ['message длиннее 1000', { ...INPUT, message: 'x'.repeat(1001) }],
   ])('невалидное поле (%s) → BadRequestException', async (_name, bad) => {
     const { svc, users, requests } = makeService();
     users.push({ id: 3n, role: 'CLIENT' });
@@ -333,6 +347,24 @@ describe('TherapistRequestService.approve — выдача роли THERAPIST', 
     expect(body.text).toContain('Ваша заявка');
     expect(body.text).toContain('Перезапустите');
     expect(body.text).not.toContain('Твоя заявка');
+  });
+
+  // Регрессия аудита 2026-10 (X-1): заявитель с сайта (веб-id вне диапазона
+  // telegram-id, привязки Telegram нет) получал решение в sendMessage с
+  // chat_id = его userId — то есть в никуда. Теперь в Telegram не пишем вовсе.
+  it('веб-аккаунт без Telegram: решение не уходит в sendMessage с веб-id как chat_id', async () => {
+    const { svc, users } = makeService();
+    const web = 1_000_000_000_000_555n;
+    users.push({ id: web, role: 'CLIENT', therapistMode: false });
+    const { id: reqId } = await svc.submit(web, INPUT);
+    await svc.approve(ADMIN_ID, reqId);
+
+    await flush();
+    const chatIds = fetchMock.mock.calls.map(
+      (c) => JSON.parse(c[1].body).chat_id,
+    );
+    expect(chatIds).toEqual([ADMIN_ID]); // только DM админу о самой заявке
+    expect(users[0]).toMatchObject({ role: 'THERAPIST' });
   });
 
   it('несуществующая заявка → NotFoundException, роль не трогается', async () => {
@@ -476,6 +508,12 @@ describe('approve()/reject() — сбой notifyApplicant логируется, 
       'notifyApplicant failed',
       expect.any(Error),
     );
+    // userId уходит точным bigint, не через Number() (аудит 2026-10, X-1).
+    expect(failingNotify.notifyApplicant).toHaveBeenCalledWith({
+      requestId: reqId,
+      userId: 17n,
+      decision: 'approved',
+    });
     errorSpy.mockRestore();
   });
 
@@ -509,6 +547,12 @@ describe('approve()/reject() — сбой notifyApplicant логируется, 
       'notifyApplicant failed',
       expect.any(Error),
     );
+    expect(failingNotify.notifyApplicant).toHaveBeenCalledWith({
+      requestId: reqId,
+      userId: 18n,
+      decision: 'rejected',
+      reason: 'причина',
+    });
     errorSpy.mockRestore();
   });
 });

@@ -1,9 +1,9 @@
 import { pressable } from '../../utils/a11y';
 import { TherapyClientSummary } from '../../api';
-import { fmtDate } from '../../utils/format';
+import { isVirtualId } from '../../../../shared/src/utils/sameId';
+import { fmtDate, momentDayKey } from '../../utils/format';
 import { DAY_NAMES, calcTherapyDuration, nextSessionLabel } from './helpers';
 import { ClientDetail } from './types';
-
 interface SessionCardProps {
   selectedClient: TherapyClientSummary;
   today: string;
@@ -127,15 +127,16 @@ export function SessionCard({
               {...pressable(() => {
                 setLocalStartDate(
                   selectedClient.therapyStartDate ??
-                    selectedClient.relationCreatedAt?.slice(0, 10) ??
-                    '',
+                    (selectedClient.relationCreatedAt
+                      ? momentDayKey(selectedClient.relationCreatedAt)
+                      : ''),
                 );
                 setEditingStartDate(true);
               })}
             >
               <span className="u-sub13">
                 {effectiveStart
-                  ? `С ${fmtDate(effectiveStart.slice(0, 10))}`
+                  ? `С ${fmtDate(momentDayKey(effectiveStart))}`
                   : 'Начало не указано'}
               </span>
               {duration && <span className="u-sub12">· {duration}</span>}
@@ -144,29 +145,29 @@ export function SessionCard({
           )}
         </div>
         {/* Activity badge */}
-        {selectedClient.telegramId > 0 && selectedClient.lastActiveDate && (
-          <span
-            style={{
-              fontSize: 11,
-              color:
-                selectedClient.lastActiveDate === today
-                  ? '#06d6a0'
-                  : 'rgba(var(--fg-rgb),0.3)',
-              background:
-                selectedClient.lastActiveDate === today
-                  ? 'color-mix(in srgb, var(--accent-green) 10%, transparent)'
-                  : 'rgba(var(--fg-rgb),0.05)',
-              padding: '3px 8px',
-              borderRadius: 'var(--r-20)',
-            }}
-          >
-            {selectedClient.lastActiveDate === today
-              ? '● сегодня'
-              : fmtDate(selectedClient.lastActiveDate)}
-          </span>
-        )}
+        {!isVirtualId(selectedClient.telegramId) &&
+          selectedClient.lastActiveDate && (
+            <span
+              style={{
+                fontSize: 11,
+                color:
+                  selectedClient.lastActiveDate === today
+                    ? '#06d6a0'
+                    : 'rgba(var(--fg-rgb),0.3)',
+                background:
+                  selectedClient.lastActiveDate === today
+                    ? 'color-mix(in srgb, var(--accent-green) 10%, transparent)'
+                    : 'rgba(var(--fg-rgb),0.05)',
+                padding: '3px 8px',
+                borderRadius: 'var(--r-20)',
+              }}
+            >
+              {selectedClient.lastActiveDate === today
+                ? '● сегодня'
+                : fmtDate(selectedClient.lastActiveDate)}
+            </span>
+          )}
       </div>
-
       {/* Row 2: Meeting days + next session */}
       <div
         style={{

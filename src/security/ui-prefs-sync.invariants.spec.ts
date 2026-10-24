@@ -3,7 +3,7 @@
 // дублированные реестры, обязанные совпадать, фиксируются тестом-сверкой).
 // Бэкенд валидирует/хранит только ключи из SYNCED_PREF_KEYS
 // (src/api/ui-prefs.sanitize.ts); фронт заводит парную константу
-// SYNCED_PREF_KEYS в schema-miniapp/src/utils/uiPrefsSync.ts. Расхождение
+// SYNCED_PREF_KEYS в shared/src/prefs/uiPrefsSync.ts. Расхождение
 // молча роняет синхронизацию: сервер отбросит ключ, которого не знает, или
 // фронт будет ждать ключ, который бэк никогда не сохранит.
 //
@@ -15,7 +15,7 @@ import { join } from 'path';
 import { SYNCED_PREF_KEYS } from '../api/ui-prefs.sanitize';
 
 const ROOT = join(__dirname, '..', '..');
-const FRONTEND_REL = 'schema-miniapp/src/utils/uiPrefsSync.ts';
+const FRONTEND_REL = 'shared/src/prefs/uiPrefsSync.ts';
 const FRONTEND_PATH = join(ROOT, FRONTEND_REL);
 
 // Вырезает блок `SYNCED_PREF_KEYS = [ ... ]` и достаёт строковые литералы.

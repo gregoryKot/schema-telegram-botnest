@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { api } from '../api';
-import { BookingPicker } from '../components/BookingPicker';
-import { Btn, ThemeIcon } from '../components/landing-kit';
+import { Btn } from '../components/landing-kit';
 import { DARK_BG, INK_ON_DARK, useReveal, useTheme } from '../components/landing-kit-hooks';
 import { scrollIntoViewSafe } from '../../../shared/src/utils/scrollIntoView';
 import {
@@ -9,11 +8,19 @@ import {
   TOPICS_A, TOPICS_B,
 } from './landing/constants';
 import { isPracticeHost } from '../utils/domainChrome';
-import { TgLink, SectionNav, MobileMenu } from './landing/nav';
+import { OPERATOR_NAME, OPERATOR_INN, OPERATOR_STATUS } from '../legal/operator';
+import { SectionNav, MobileMenu } from './landing/nav';
+import { HeroSection } from './landing/HeroSection';
+import { AuthorAvatar } from './landing/AuthorAvatar';
 import { MarqueeStrip } from './landing/MarqueeStrip';
-import { BookingForm } from './landing/BookingForm';
+import { BookingEntry } from './landing/BookingEntry';
 import { FaqList } from './landing/cards';
 import { LandingStyles } from './landing/LandingStyles';
+import { trackGoalOnce } from '../lib/metrika';
+import { useLandingGoals } from './landing/useLandingGoals';
+import { useHashJump } from './landing/useHashJump';
+import { useSessionPrice } from './landing/useSessionPrice';
+import { formatPrice } from '../../../shared/src/booking/priceRegion';
 import {
   WorkSection,
   EducationSection,
@@ -32,14 +39,10 @@ export function LandingPage() {
   const [scrollPct, setScrollPct] = useState(0);
   const [activeSection, setActiveSection] = useState('');
   const [menuOpen, setMenuOpen] = useState(false);
-  // Live session price (editable in admin) — keep the landing in sync with checkout.
-  const [sessionPrice, setSessionPrice] = useState(4000);
-  useEffect(() => {
-    api.getBookingOptions()
-      .then((o) => { const s = o.find((x) => x.type === 'SESSION_50'); if (s) setSessionPrice(s.price); })
-      .catch(() => {});
-  }, []);
-  const priceStr = sessionPrice.toLocaleString('ru-RU');
+  useLandingGoals();
+  useHashJump();
+  // Живая цена сессии в валюте посетителя (правится в админке) — лендинг совпадает с формой записи.
+  const sessionPrice = useSessionPrice();
   // Hero photo + marquee topics (editable in admin) — hardcoded defaults keep
   // the site looking the same until the therapist actually edits them.
   const [siteContent, setSiteContent] = useState<{ heroPhoto: string | null; marqueeTopicsA: typeof TOPICS_A; marqueeTopicsB: typeof TOPICS_B }>({
@@ -55,12 +58,9 @@ export function LandingPage() {
   // Запись живёт на сайте практики (kotlarewski). На самом kotlarewski —
   // плавно скроллим к форме; на schemehappens и прочих — уводим на практику.
   const scrollToBooking = useCallback(() => {
-    const onPractice = isPracticeHost();
-    if (onPractice) {
-      scrollIntoViewSafe(bookingRef.current, { block: 'start' });
-    } else {
-      window.location.href = PRACTICE_BOOKING_URL;
-    }
+    trackGoalOnce('booking_start');
+    if (isPracticeHost()) scrollIntoViewSafe(bookingRef.current, { block: 'start' });
+    else window.location.href = PRACTICE_BOOKING_URL;
   }, []);
 
   useEffect(() => {
@@ -103,26 +103,18 @@ export function LandingPage() {
   useEffect(() => {
     if (!scrollspyReadyRef.current) return;
     const hash = activeSection ? `#${activeSection}` : '';
-    window.history.replaceState(window.history.state, '', window.location.pathname + hash);
+    // search обязателен: без него терялись utm_source/yclid Яндекс.Директа.
+    window.history.replaceState(window.history.state, '', window.location.pathname + window.location.search + hash);
   }, [activeSection]);
 
-  // On first load with a hash (e.g. shared /#prices) jump to that block
-  useEffect(() => {
-    const id = window.location.hash.slice(1);
-    if (!id) return;
-    const el = document.getElementById(id);
-    if (el) setTimeout(() => el.scrollIntoView({ behavior: 'auto', block: 'start' }), 0);
-  }, []);
-
   return (
-    // landing-personal-brand изолирует эту страницу от продуктового акцента
-    // (терракота, shared/src/theme/tokens.css) — личный сайт терапевта
-    // сознательно остаётся на прежних индиго + Instrument Serif, см. блок
-    // .landing-personal-brand в webapp/src/index.css.
+    // Бренд визитки (индиго + Instrument Serif, блок .landing-personal-brand в
+    // webapp/src/index.css) задаёт layout-маршрут PracticeBrand в App.tsx —
+    // одинаково для всех страниц визитки, а не только для этой.
     // alignSelf: flex-start обязателен: #root — flex-контейнер высотой 100vh, и
     // растянутая обёртка с overflowX: hidden становилась внутренним скроллером —
     // window.scrollY всегда 0, липкая панель «Записаться» и scrollspy не включались.
-    <div className="landing-personal-brand" style={{ background: 'var(--bg)', color: 'var(--text)', overflowX: 'hidden', flex: '1 1 0%', minWidth: 0, alignSelf: 'flex-start' }}>
+    <div style={{ background: 'var(--bg)', color: 'var(--text)', overflowX: 'hidden', flex: '1 1 0%', minWidth: 0, alignSelf: 'flex-start' }}>
 
       {/* ── MOBILE MENU ─────────────────────────────────────────────────── */}
       {menuOpen && <MobileMenu onClose={() => setMenuOpen(false)} active={activeSection} onBook={scrollToBooking} />}
@@ -147,10 +139,7 @@ export function LandingPage() {
         transition: 'transform .4s cubic-bezier(.4,0,.2,1)',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
-          <div style={{ position: 'relative', width: 30, height: 30, borderRadius: '50%', overflow: 'hidden', background: 'var(--surface-2)', border: '1px solid var(--line)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <span style={{ position: 'absolute', fontFamily: 'var(--serif)', fontSize: 13, color: 'var(--text-sub)' }}>Г</span>
-            <img src={siteContent.heroPhoto ?? "/gregory.jpg"} alt="Григорий Котляревский" decoding="async" width={34} height={34} style={{ position: 'relative', width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 18%' }} onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
-          </div>
+          <AuthorAvatar photo={siteContent.heroPhoto ?? '/gregory.jpg'} size={30} letterSize={13} />
           {/* Узкий экран: имя ужимается с многоточием, кнопка и бургер не сжимаются. */}
           <span style={{ fontSize: 15, fontFamily: 'var(--serif)', color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Григорий Котляревский</span>
         </div>
@@ -168,97 +157,18 @@ export function LandingPage() {
 
         {/* Soft ambient light – top-right */}
         <div aria-hidden style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 0 }}>
-          <div style={{ position: 'absolute', width: 900, height: 600, borderRadius: '50%', background: 'radial-gradient(ellipse, rgba(77,71,153,.08) 0%, transparent 65%)', top: '-10%', right: '-15%' }} />
-          <div style={{ position: 'absolute', width: 600, height: 400, borderRadius: '50%', background: 'radial-gradient(ellipse, rgba(176,111,74,.07) 0%, transparent 65%)', bottom: '10%', left: '-5%' }} />
+          <div style={{ position: 'absolute', width: 900, height: 600, borderRadius: '50%', background: 'radial-gradient(ellipse, color-mix(in srgb, var(--accent) 8%, transparent) 0%, transparent 65%)', top: '-10%', right: '-15%' }} />
+          <div style={{ position: 'absolute', width: 600, height: 400, borderRadius: '50%', background: 'radial-gradient(ellipse, color-mix(in srgb, var(--c-clay) 7%, transparent) 0%, transparent 65%)', bottom: '10%', left: '-5%' }} />
         </div>
 
-        <div className="hero-wrap" style={{ position: 'relative', zIndex: 1 }}>
-
-          {/* ── Nav ── */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '26px 0', animation: 'hero-in .5s both' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
-              {/* Имя + фото → Обо мне */}
-              <a href="#about" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none', color: 'inherit' }}
-                onMouseEnter={e => { const n = e.currentTarget.querySelector('.nav-name') as HTMLElement | null; if (n) n.style.color = 'var(--accent)'; }}
-                onMouseLeave={e => { const n = e.currentTarget.querySelector('.nav-name') as HTMLElement | null; if (n) n.style.color = 'var(--text)'; }}>
-                <div style={{ position: 'relative', width: 34, height: 34, borderRadius: '50%', overflow: 'hidden', background: 'var(--surface-2)', border: '1px solid var(--line)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <span style={{ position: 'absolute', fontFamily: 'var(--serif)', fontSize: 14, color: 'var(--text-sub)' }}>Г</span>
-                  <img src={siteContent.heroPhoto ?? "/gregory.jpg"} alt="Григорий Котляревский" decoding="async" width={34} height={34} style={{ position: 'relative', width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 18%' }} onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
-                </div>
-                <span className="nav-name" style={{ fontFamily: 'var(--serif)', fontSize: 16, color: 'var(--text)', whiteSpace: 'nowrap', transition: 'color .15s' }}>Григорий Котляревский</span>
-              </a>
-            </div>
-            <SectionNav className="hero-nav" active={activeSection} />
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0, marginLeft: 12 }}>
-              <button
-                onClick={toggleTheme}
-                aria-label={theme === 'dark' ? 'Светлая тема' : 'Тёмная тема'}
-                title={theme === 'dark' ? 'Светлая тема' : 'Тёмная тема'}
-                style={{ background: 'none', border: '1px solid var(--line)', borderRadius: 8, width: 32, height: 32, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-sub)', transition: 'border-color .15s, color .15s', padding: 0 }}
-                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--text-sub)'; (e.currentTarget as HTMLElement).style.color = 'var(--text)'; }}
-                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--line)'; (e.currentTarget as HTMLElement).style.color = 'var(--text-sub)'; }}
-              >
-                <ThemeIcon dark={theme === 'dark'} />
-              </button>
-              <a href={TG_URL} target="_blank" rel="noopener noreferrer"
-                className="nav-tg"
-                style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-sub)', textDecoration: 'none', transition: 'color .15s', whiteSpace: 'nowrap' }}
-                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'var(--text)'; }}
-                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = ''; }}>
-                Написать ↗
-              </a>
-              <button className="menu-btn" aria-label="Открыть меню" onClick={() => setMenuOpen(true)} style={menuBtnStyle}>
-                <span style={burgerLine} /><span style={burgerLine} /><span style={burgerLine} />
-              </button>
-            </div>
-          </div>
-
-          {/* ── Eyebrow ── */}
-          <p style={{ fontSize: 12, fontWeight: 700, letterSpacing: '.16em', textTransform: 'uppercase', color: 'var(--accent)', margin: '20px 0 20px', animation: 'hero-in .6s .15s both' }}>
-            Схема-терапия · Онлайн
-          </p>
-
-          {/* ── Full-width headline – the centrepiece ── */}
-          <h1 className="hero-h1" style={{
-            fontFamily: 'var(--serif)',
-            fontSize: 'clamp(44px, 9vw, 120px)',
-            fontWeight: 400, lineHeight: 1.0, letterSpacing: '-.025em',
-            color: 'var(--text)', margin: 0,
-          }}>
-            <span style={{ display: 'block', overflow: 'hidden' }}>
-              <span style={{ display: 'block', animation: 'line-in .75s .2s both' }}>Работа с тем,</span>
-            </span>
-            <span style={{ display: 'block', overflow: 'hidden' }}>
-              <span style={{ display: 'block', animation: 'line-in .75s .38s both', fontStyle: 'italic', color: 'var(--accent)' }}>что мешает</span>
-            </span>
-            <span style={{ display: 'block', overflow: 'hidden' }}>
-              <span style={{ display: 'block', animation: 'line-in .75s .56s both' }}>жить</span>
-            </span>
-          </h1>
-
-          {/* ── Divider ── */}
-          <div style={{ height: 1, background: 'var(--line-strong)', margin: '36px 0', animation: 'hero-in .5s .7s both' }} />
-
-          {/* ── Below divider: single editorial column, generous whitespace ── */}
-          <div style={{ maxWidth: 460, animation: 'hero-in .7s .8s both' }}>
-            <p style={{ fontSize: 17, color: 'var(--text-sub)', lineHeight: 1.8, margin: '0 0 28px' }}>
-              Одни и те же сценарии повторяются – в отношениях, в самооценке, в тревоге. Схема-терапия помогает понять, почему так, – и найти выход.
-            </p>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 22, flexWrap: 'wrap' }}>
-              <Btn size="lg" onClick={scrollToBooking}>Записаться на знакомство →</Btn>
-              <TgLink label="Написать в Telegram" size="lg" />
-            </div>
-            <p style={{ fontSize: 13, color: 'var(--text-faint)', margin: '18px 0 0' }}>
-              Первая встреча бесплатно · 15 минут · без обязательств
-            </p>
-          </div>
-
-          {/* ── Subtle scroll cue ── */}
-          <div style={{ display: 'flex', justifyContent: 'center', padding: '32px 0 28px', animation: 'hero-in .5s 1.1s both' }}>
-            <div style={{ width: 1, height: 28, background: 'var(--line-strong)', animation: 'scroll-bar 2s ease-in-out infinite' }} />
-          </div>
-
-        </div>
+        <HeroSection
+          photo={siteContent.heroPhoto ?? '/gregory.jpg'}
+          activeSection={activeSection}
+          theme={theme}
+          onToggleTheme={toggleTheme}
+          onBook={scrollToBooking}
+          onOpenMenu={() => setMenuOpen(true)}
+        />
       </section>
 
       {/* ── MARQUEE #1 ───────────────────────────────────────────────────── */}
@@ -283,7 +193,7 @@ export function LandingPage() {
                   }
                 }} />
             </div>
-            <div style={{ position: 'absolute', bottom: 20, left: -16, background: 'var(--bg-elev)', border: '1px solid var(--line)', borderRadius: 14, padding: '12px 18px', boxShadow: '0 8px 32px rgba(28,25,20,.12)' }}>
+            <div style={{ position: 'absolute', bottom: 20, left: -16, background: 'var(--bg-elev)', border: '1px solid var(--line)', borderRadius: 'var(--r-14)', padding: '12px 18px', boxShadow: '0 8px 32px rgba(28,25,20,.12)' }}>
               <p style={{ fontSize: 20, fontWeight: 700, color: 'var(--text)', margin: '0 0 2px' }}>50 мин</p>
               <p style={{ fontSize: 11, color: 'var(--text-faint)', margin: 0 }}>онлайн · сессия</p>
             </div>
@@ -300,7 +210,7 @@ export function LandingPage() {
               Меня интересует «что» происходит с человеком и «почему» – какие ранние убеждения и режимы стоят за сегодняшними трудностями. Работаю онлайн.
             </p>
             <p style={{ fontSize: 16, color: 'var(--text-sub)', lineHeight: 1.8, margin: '0 0 32px' }}>
-              Работаю самостоятельно и регулярно разбираю случаи с супервизором. Шестой год прохожу личную терапию: убеждён, что сопровождать другого можно, только зная этот путь изнутри.
+              Веду частную практику с 2025 года и регулярно разбираю случаи с супервизором. Шестой год прохожу личную терапию: убеждён, что сопровождать другого можно, только зная этот путь изнутри.
             </p>
             <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
               {['Схема-терапия', 'КПТ', 'Онлайн'].map(tag => (
@@ -341,7 +251,7 @@ export function LandingPage() {
           <div style={{ background: 'var(--accent-soft)', border: '1.5px solid var(--accent-line)', borderRadius: 24, padding: '40px', display: 'flex', flexDirection: 'column', gap: 24 }}>
             <div>
               <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.12em', textTransform: 'uppercase', color: 'var(--accent)' }}>Знакомство</span>
-              <p style={{ fontFamily: 'var(--serif)', fontSize: 56, fontWeight: 400, color: 'var(--accent)', margin: '6px 0 0', letterSpacing: '-.03em', lineHeight: 1 }}>0 ₽</p>
+              <p style={{ fontFamily: 'var(--serif)', fontSize: 56, fontWeight: 400, color: 'var(--accent)', margin: '6px 0 0', letterSpacing: '-.03em', lineHeight: 1 }}>{formatPrice(0, sessionPrice.currency)}</p>
             </div>
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 10 }}>
               {['15 минут онлайн', 'Рассказываете о запросе', 'Я рассказываю о подходе', 'Никаких обязательств'].map(f => (
@@ -354,16 +264,16 @@ export function LandingPage() {
             <Btn radius="btn" full onClick={scrollToBooking}>Записаться бесплатно →</Btn>
           </div>
           {/* Session – always dark card so light text stays legible in any theme */}
-          <div style={{ background: '#1c1916', borderRadius: 24, padding: '40px', display: 'flex', flexDirection: 'column', gap: 24, position: 'relative', overflow: 'hidden' }}>
+          <div style={{ background: DARK_BG, borderRadius: 24, padding: '40px', display: 'flex', flexDirection: 'column', gap: 24, position: 'relative', overflow: 'hidden' }}>
             <div style={{ position: 'absolute', top: 20, right: 20, background: 'rgba(255,255,255,.12)', padding: '4px 12px', borderRadius: 100, fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,.7)' }}>Основной</div>
             <div>
-              <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.12em', textTransform: 'uppercase', color: 'rgba(236,234,229,.45)' }}>Сессия</span>
-              <p style={{ fontFamily: 'var(--serif)', fontSize: 56, fontWeight: 400, color: INK_ON_DARK, margin: '6px 0 0', letterSpacing: '-.03em', lineHeight: 1 }}>{priceStr} ₽</p>
+              <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.12em', textTransform: 'uppercase', color: 'rgba(236,234,229,.5)' }}>Сессия</span>
+              <p style={{ fontFamily: 'var(--serif)', fontSize: 56, fontWeight: 400, color: INK_ON_DARK, margin: '6px 0 0', letterSpacing: '-.03em', lineHeight: 1 }}>{sessionPrice.text}</p>
             </div>
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 10 }}>
               {['50 минут онлайн (видео)', 'Индивидуальная работа', 'Схема-терапия и КПТ', 'Регулярные встречи'].map(f => (
                 <div key={f} style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-                  <span style={{ color: 'rgba(144,137,224,.9)', fontSize: 15, flexShrink: 0 }}>✓</span>
+                  <span style={{ color: 'color-mix(in srgb, var(--accent-on-dark) 90%, transparent)', fontSize: 15, flexShrink: 0 }}>✓</span>
                   <span style={{ fontSize: 15, color: 'rgba(236,234,229,.7)' }}>{f}</span>
                 </div>
               ))}
@@ -383,12 +293,8 @@ export function LandingPage() {
           <h2 style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(30px, 3.8vw, 46px)', fontWeight: 400, color: 'var(--text)', margin: '0 0 12px', letterSpacing: '-.01em' }}>
             Записаться<br /><span style={{ fontStyle: 'italic' }}>на первую встречу</span>
           </h2>
-          <p style={{ fontSize: 16, color: 'var(--text-sub)', lineHeight: 1.7, margin: '0 0 40px' }}>Выберите удобное время – забронирую его сразу, пришлю подтверждение и ссылку на встречу.</p>
-          <BookingPicker fallback={<BookingForm />} />
-          <div style={{ marginTop: 32, paddingTop: 28, borderTop: '1px solid var(--line)', display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
-            <span style={{ fontSize: 14, color: 'var(--text-faint)' }}>Или напишите напрямую:</span>
-            <TgLink label="@kotlarewski" />
-          </div>
+          <p style={{ fontSize: 16, color: 'var(--text-sub)', lineHeight: 1.7, margin: '0 0 40px' }}>Напишите пару слов о себе и как с вами связаться – отвечу в течение дня, и мы договоримся о времени. Если удобнее выбрать время самим, расписание откроется ниже.</p>
+          <BookingEntry />
         </section>
       </section>
 
@@ -398,7 +304,7 @@ export function LandingPage() {
         <h2 style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(28px, 4vw, 44px)', fontWeight: 400, color: 'var(--text)', margin: '0 0 48px', letterSpacing: '-.01em' }}>
           Что нужно знать
         </h2>
-        <FaqList price={priceStr} />
+        <FaqList price={sessionPrice.text} online={sessionPrice.online} />
       </section>
 
       {/* ── MARQUEE #4 ───────────────────────────────────────────────────── */}
@@ -407,19 +313,19 @@ export function LandingPage() {
       {/* ── PRE-FOOTER CTA ──────────────────────────────────────────────── */}
       <section style={{ background: DARK_BG, padding: '96px 40px', textAlign: 'center' }}>
         <div style={{ maxWidth: 560, margin: '0 auto' }}>
-          <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.16em', textTransform: 'uppercase', color: 'rgba(236,234,229,.28)', margin: '0 0 24px' }}>Начать</p>
+          <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.16em', textTransform: 'uppercase', color: 'rgba(236,234,229,.5)', margin: '0 0 24px' }}>Начать</p>
           <h2 style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(40px, 5.5vw, 72px)', fontWeight: 400, color: INK_ON_DARK, lineHeight: 1.05, margin: '0 0 36px', letterSpacing: '-.025em' }}>
-            Первая встреча –<br /><span style={{ fontStyle: 'italic', color: 'rgba(144,137,224,.85)' }}>бесплатно</span>
+            Первая встреча –<br /><span style={{ fontStyle: 'italic', color: 'color-mix(in srgb, var(--accent-on-dark) 85%, transparent)' }}>бесплатно</span>
           </h2>
           <Btn size="lg" onClick={scrollToBooking}>Записаться на знакомство →</Btn>
-          <p style={{ fontSize: 13, color: 'rgba(236,234,229,.28)', marginTop: 20 }}>15 минут · без обязательств · онлайн</p>
+          <p style={{ fontSize: 13, color: 'rgba(236,234,229,.5)', marginTop: 20 }}>15 минут · без обязательств · онлайн</p>
         </div>
       </section>
 
       {/* ── FOOTER ──────────────────────────────────────────────────────── */}
       <footer style={{ borderTop: '1px solid var(--line)', padding: '28px 40px' }}>
         <div style={{ maxWidth: 1100, margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
-          <span style={{ fontSize: 13, color: 'var(--text-faint)' }}>© {new Date().getFullYear()} Григорий Котляревский</span>
+          <span style={{ fontSize: 13, color: 'var(--text-faint)', lineHeight: 1.5 }}>© {new Date().getFullYear()} {OPERATOR_NAME} · {OPERATOR_STATUS} · ИНН {OPERATOR_INN}</span>
           <div style={{ display: 'flex', gap: 20, alignItems: 'center', flexWrap: 'wrap' }}>
             <a href="/articles" style={{ fontSize: 13, color: 'var(--text-faint)', textDecoration: 'none' }}>Статьи</a>
             <a href="/reviews" style={{ fontSize: 13, color: 'var(--text-faint)', textDecoration: 'none' }}>Отзывы</a>

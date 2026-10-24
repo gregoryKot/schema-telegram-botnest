@@ -38,6 +38,7 @@ function makeService(
   };
   const prisma: any = {
     availabilityRule: { findMany: jest.fn(async () => []) },
+    slotOverride: { findMany: jest.fn(async () => []) },
     $transaction: jest.fn(async (fn: any) => fn(tx)),
     booking: { update: jest.fn(async () => ({})) },
   };
@@ -146,7 +147,9 @@ describe('BookingService.book — денормализованные ?? null п�
     expect(created.message).toBeNull();
   });
 
-  it('clientTelegramId передан → сохраняется как есть, не обнуляется', async () => {
+  // C-9: анонимная форма не пишет Telegram-id (колонка осталась ради старых
+  // строк и обнуления при удалении аккаунта — account.delete.ts).
+  it('Telegram-id в создаваемую бронь не пишется, даже если его подсунули', async () => {
     const { service, tx } = makeService();
     await service.book({
       ...BASE_DTO,
@@ -154,12 +157,12 @@ describe('BookingService.book — денормализованные ?? null п�
       startsAt: INSIDE_WINDOW,
       durationMin: 15,
       type: SessionType.INTRO_15,
-    });
+    } as typeof BASE_DTO);
     const created = tx.booking.create.mock.calls[0][0].data;
-    expect(created.clientTelegramId).toBe(999n);
+    expect(created).not.toHaveProperty('clientTelegramId');
   });
 
-  it('source длиннее 200 символов обрезается до 200 (MethodExpression .slice)', async () => {
+  it('source уходит в бронь как есть: предел 200 стоит в book.dto.ts (@MaxLength), сервис не режет молча', async () => {
     const { service, tx } = makeService();
     const longSource = 'x'.repeat(500);
     await service.book({
@@ -170,8 +173,36 @@ describe('BookingService.book — денормализованные ?? null п�
       type: SessionType.INTRO_15,
     });
     const created = tx.booking.create.mock.calls[0][0].data;
-    expect(created.source).toHaveLength(200);
-    expect(created.source).toBe('x'.repeat(200));
+    expect(created.source).toBe(longSource);
+  });
+
+  const bookIntro = async (extra: Record<string, unknown>) => {
+    const { service, tx } = makeService();
+    await service.book({
+      ...BASE_DTO,
+      ...extra,
+      startsAt: INSIDE_WINDOW,
+      durationMin: 15,
+      type: SessionType.INTRO_15,
+    });
+    return tx.booking.create.mock.calls[0][0].data;
+  };
+
+  it('clientChannel передан → сохраняется как есть, не передан → null', async () => {
+    expect((await bookIntro({ clientChannel: 'telegram' })).clientChannel).toBe(
+      'telegram',
+    );
+    expect((await bookIntro({})).clientChannel).toBeNull();
+  });
+
+  it('clientTimeZone: валидный пояс сохраняется, невалидный и пустой → null', async () => {
+    expect(
+      (await bookIntro({ clientTimeZone: 'Europe/Moscow' })).clientTimeZone,
+    ).toBe('Europe/Moscow');
+    expect(
+      (await bookIntro({ clientTimeZone: 'Mars/Olympus' })).clientTimeZone,
+    ).toBeNull();
+    expect((await bookIntro({})).clientTimeZone).toBeNull();
   });
 
   it('source не передан → null, а не undefined-строка', async () => {
@@ -245,13 +276,7 @@ describe('BookingService.confirm — сообщения об ошибках и o
     const state = { row };
     const prisma: any = {
       booking: {
-        findUnique: jest.fn(async ({ select }: any = {}) =>
-          select
-            ? state.row
-              ? { status: state.row.status }
-              : null
-            : state.row,
-        ),
+        findUnique: jest.fn(async () => state.row),
         updateMany: jest.fn(async () => ({ count: 0 })), // никогда не забираем CAS
       },
     };
@@ -280,9 +305,9 @@ describe('BookingService.confirm — сообщения об ошибках и o
     let calls = 0;
     const prisma: any = {
       booking: {
-        findUnique: jest.fn(async ({ select }: any = {}) => {
+        findUnique: jest.fn(async () => {
           calls++;
-          if (select) return null; // второй запрос "не нашёл" статус
+          if (calls > 1) return null; // второй запрос "не нашёл" строку
           return { id: 1, status: 'HELD' };
         }),
         updateMany: jest.fn(async () => ({ count: 0 })),

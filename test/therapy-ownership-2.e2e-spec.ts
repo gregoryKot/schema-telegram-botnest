@@ -4,10 +4,12 @@
 // пара терапевт/клиент (T3/C2), чтобы не зависеть от порядка выполнения
 // тестов в соседнем файле.
 //
-// Сценарий 3: T1 (тут — T3) РАЗРЫВАЕТ связь с клиентом (DELETE
-// /api/therapy/relation — единственный реальный способ поменять статус
-// связи, RelationStatus знает только pending/active, назад к pending код не
-// переводит). После разрыва TherapyRelation-строка удаляется, но
+// Сценарий 3: связь с клиентом РАЗРЫВАЕТСЯ — клиент C2 вызывает DELETE
+// /api/therapy/relation (с 2026-10 этот маршрут рвёт только связи в роли
+// КЛИЕНТА, аудит T2; терапевт убирает клиента через DELETE clients/:id, а оно
+// стирает и клинические данные — здесь нужен именно разрыв с сохранением
+// строк). RelationStatus знает только pending/active, назад к pending код не
+// переводит. После разрыва TherapyRelation-строка удаляется, но
 // ModeMap/TherapistNote/ClientConceptualization, созданные ПОКА связь была
 // активна, остаются в БД с прежним (therapistId, clientId). Регресс
 // PR #66: getModeMap/updateModeMap искали карту только по
@@ -101,8 +103,8 @@ describe('e2e smoke: therapy ownership — after disconnect (PR #66 regression)'
     expect(map.status).toBeLessThan(300);
     mapId = map.body.id as number;
 
-    // Разрываем связь — единственный реальный способ поменять её статус.
-    const disconnect = await t3.delete('/api/therapy/relation');
+    // Клиент разрывает связь — терапевтские строки остаются в БД.
+    const disconnect = await c2.delete('/api/therapy/relation');
     expect(disconnect.status).toBeLessThan(300);
     expect(disconnect.body).toEqual({ ok: true });
   });

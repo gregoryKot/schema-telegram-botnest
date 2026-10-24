@@ -1,17 +1,14 @@
-// Вход через Google One Tap: нативная всплывашка Google отдаёт id_token прямо
-// в браузер (без редиректа), фронт постит его сюда, а мы выдаём свою сессию.
-//
-// Зачем отдельным сервисом, а не в auth-flow.service: тот уже у потолка размера
-// (правило №10 CLAUDE.md). Логика тонкая — проверить токен тем же
-// верификатором, что и обмен кода, и переиспользовать общий signInOrLinkOrMerge,
-// — но это ВХОД, не привязка (linkUserId всегда null), поэтому исход только
-// «сессия» или «нужен второй фактор».
+// Вход через Google One Tap: id_token из браузера (без редиректа) → наша сессия.
+// Отдельным сервисом: auth-flow.service у потолка размера (правило №10). Это
+// ВХОД, не привязка (linkUserId всегда null): исход «сессия» или «нужен второй
+// фактор». Токен привязан к браузеру nonce-кукой (google-one-tap-nonce.ts).
 import { BadRequestException, Injectable } from '@nestjs/common';
 import type { Response } from 'express';
 import { AuthProviderRegistry } from './providers/registry';
 import type { GoogleProvider } from './providers/google.provider';
 import { AuthFlowService } from './auth-flow.service';
 import { setRefreshCookie } from './auth-http.util';
+import { clearOneTapNonce } from './google-one-tap-nonce';
 
 /**
  * Что вернуть браузеру. `tokens` — сессия выдана (refresh уехал в куку, access
@@ -31,14 +28,16 @@ export class GoogleOneTapService {
 
   async login(
     credential: string,
+    nonceCookie: string | undefined,
     res: Response,
     ip?: string,
     userAgent?: string,
   ): Promise<OneTapLoginResult> {
     const google = this.providers.get('google') as GoogleProvider;
-    // Тот же путь проверки, что и у обмена кода: издатель/получатель/срок и
-    // подпись по JWKS. Подделка/чужой aud/просрочка — UnauthorizedException.
-    const identity = await google.verifyIdToken(credential);
+    // Тот же верификатор, что у обмена кода (издатель/получатель/срок/подпись) +
+    // nonce из куки; подделка/чужой aud/просрочка/нет nonce — Unauthorized.
+    const identity = await google.verifyIdToken(credential, { nonceCookie });
+    clearOneTapNonce(res); // одноразовая: повтор того же токена не пройдёт
 
     // Всегда ВХОД (linkUserId=null): One Tap не привязывает второй аккаунт.
     const outcome = await this.flow.signInOrLinkOrMerge('google', identity, {

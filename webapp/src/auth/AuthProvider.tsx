@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback, useRef, type ReactNode } from 'react';
 import { nextRetryTimerDelayMs } from '../../../shared/src/auth/sessionRefresh';
 import { clearApiCache } from '../../../shared/src/api/apiCache';
-import { markAuthSeen, clearAuthSeen } from '../../../shared/src/auth/authSeen';
+import { clearAuthSeen } from '../../../shared/src/auth/authSeen';
+import { markSessionStarted } from '../../../shared/src/auth/dataOwnerGuard';
 import { postLogout } from '../../../shared/src/auth/logout';
 import { AuthContext } from './authContext';
 import { clearLocalData } from './clearLocalData';
@@ -39,9 +40,8 @@ export function AuthProvider({ children, bootstrapSession = true }: { children: 
   // Общая точка «сессия жива» для refresh/Telegram-auth/логина — сбрасывает
   // authError и бэкофф ретраев, планирует следующий проактивный refresh.
   const applyToken = useCallback((token: string, expiresIn: number) => {
-    // Отметка «в этом контейнере вход удавался» (shared/auth/authSeen):
-    // экран входа обязан отличать новичка от истёкшей сессии.
-    markAuthSeen();
+    // Отметка «вход удавался» (shared/auth/authSeen) + стирание данных прежнего аккаунта (E1).
+    markSessionStarted(token);
     hasToken.current = true;
     setTokenState(token);
     setAuthError(null);

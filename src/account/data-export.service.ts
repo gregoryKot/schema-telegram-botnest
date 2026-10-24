@@ -6,13 +6,16 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { AnalyticsService } from '../analytics/analytics.service';
-import { decryptRecord } from '../utils/crypto';
+import { SecurityLogService } from '../auth/security-log.service';
+import { decryptExport } from './export-decrypt';
+import { decryptAuthProviderRow } from '../utils/auth-provider-crypto';
 import {
   EXPORT_POLICY,
   USER_EXPORT_SELECT,
   WITHHELD_USER_FIELDS,
   assertSyncedWithEncryptionPolicy,
 } from './export-policy';
+import { exportClientSide } from './data-export.client-side';
 
 export interface DataExportResult {
   exportedAt: string;
@@ -40,7 +43,15 @@ const WITHHELD_OUT_OF_CONTOUR = {
   reason:
     'связи с User нет (формы публичные, без входа) — сопоставление по email/' +
     'контакту недостоверно: указавший чужой адрес получил бы чужую запись со ' +
-    'свободным текстом. Доступны только ручным запросом администратору',
+    'свободным текстом. Доступны только ручным запросом администратору. ' +
+    'Имя, контакт и текст запроса в записи на консультацию стираются ' +
+    'автоматически через 12 месяцев после даты сессии',
+};
+const WITHHELD_PAIR = {
+  table: 'Pair',
+  reason:
+    'связи с другими людьми (пара с другом) содержат данные второго человека, ' +
+    'без его согласия в этот файл они не попадают',
 };
 
 @Injectable()
@@ -50,6 +61,7 @@ export class DataExportService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly analytics: AnalyticsService,
+    private readonly securityLog: SecurityLogService,
   ) {}
 
   async buildExport(userId: bigint): Promise<DataExportResult> {
@@ -57,21 +69,25 @@ export class DataExportService {
     // дневника лежит нерасшифрованная строка, похожая на данные.
     assertSyncedWithEncryptionPolicy();
     const account = await this.loadAccount(userId);
-    const providers = await this.prisma.authProvider.findMany({
-      where: { userId },
-      select: {
-        provider: true,
-        providerId: true,
-        email: true,
-        displayName: true,
-        createdAt: true,
-      },
-    });
+    // email/displayName в БД зашифрованы (D-9, аудит 2026-10).
+    const providers = (
+      await this.prisma.authProvider.findMany({
+        where: { userId },
+        select: {
+          provider: true,
+          providerId: true,
+          email: true,
+          displayName: true,
+          createdAt: true,
+        },
+      })
+    ).map(decryptAuthProviderRow);
 
     const data: Record<string, unknown[]> = {};
     const withheld: { table: string; reason: string }[] = [
       WITHHELD_USER_SECRETS,
       WITHHELD_OUT_OF_CONTOUR,
+      WITHHELD_PAIR,
     ];
 
     for (const [model, decision] of Object.entries(EXPORT_POLICY)) {
@@ -91,8 +107,13 @@ export class DataExportService {
       )[delegateName];
       const rows = await delegate.findMany({ where: { userId } });
       const schema = decision.schema;
-      data[model] = schema ? rows.map((r) => decryptRecord(r, schema)) : rows;
+      data[model] = schema ? rows.map((r) => decryptExport(r, schema)) : rows;
     }
+
+    // A-10: данные обо мне на стороне терапевта (ключ clientId, не userId).
+    const clientSide = await exportClientSide(this.prisma, userId);
+    Object.assign(data, clientSide.data);
+    withheld.push(...clientSide.withheld);
 
     let rows = providers.length;
     for (const tableRows of Object.values(data)) rows += tableRows.length;
@@ -102,6 +123,12 @@ export class DataExportService {
       tables: Object.keys(data).length + 1, // +providers
       rows,
     });
+    // M7 (аудит 2026-10): выгрузка всех данных — самое чувствительное чтение
+    // в продукте (угнанная сессия забирает дневники одним запросом). Аналитика
+    // — про воронку, не аудит; след для расследования пишется сюда. Только
+    // userId, без содержимого. В DM админу не уходит (не ALERT_EVENTS) —
+    // законная выгрузка не повод будить, но в логах она видна.
+    this.securityLog.log('data_exported', { userId });
     this.logger.log(`data export: userId=${userId} rows=${rows}`);
 
     return {
@@ -121,7 +148,7 @@ export class DataExportService {
     if (!row) return null;
     // mySchemaIds/myModeIds — зашифрованный JSON-массив (FIELD_POLICY, User),
     // тот же decrypt-приём, что и в bot.service.ts getUserSettings.
-    return decryptRecord(row as Row, {
+    return decryptExport(row, {
       jsonArrays: ['mySchemaIds', 'myModeIds'],
     });
   }

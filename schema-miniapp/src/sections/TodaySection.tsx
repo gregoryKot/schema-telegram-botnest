@@ -14,7 +14,7 @@ import { api } from '../api';
 import { useSafeTop } from '../utils/safezone';
 import { MY_SCHEMA_IDS_KEY, MY_MODE_IDS_KEY } from '../utils/storageKeys';
 import { TaskCreateSheet } from '../components/TaskCreateSheet';
-import { fmtDate, todayStr } from '../utils/format';
+import { momentDayLabel, momentIsToday, momentTime } from '../utils/format';
 import { HomeScreenOfferCard } from '../components/HomeScreenOfferCard';
 import { GearButton } from '../components/GearButton';
 import { TodayCustomizeSheet } from '../components/TodayCustomizeSheet';
@@ -100,29 +100,27 @@ export function TodaySection({
     ])
       .then(([schema, mode, gratitude]) => {
         if (ignore) return;
-        const today = todayStr();
-        const dateLabel = (iso: string) =>
-          iso.slice(0, 10) === today ? 'Сегодня' : fmtDate(iso.slice(0, 10));
+        // Момент — в зоне читателя, день — как есть: см. utils/momentDate.
         const all = [
           ...schema.slice(0, 2).map((e) => ({
             type: 'schema',
             label: e.trigger.slice(0, 46),
-            time: e.createdAt.slice(11, 16),
-            dateStr: dateLabel(e.createdAt),
+            time: momentTime(e.createdAt),
+            dateStr: momentDayLabel(e.createdAt),
             sortKey: e.createdAt,
           })),
           ...mode.slice(0, 2).map((e) => ({
             type: 'mode',
             label: e.situation.slice(0, 46),
-            time: e.createdAt.slice(11, 16),
-            dateStr: dateLabel(e.createdAt),
+            time: momentTime(e.createdAt),
+            dateStr: momentDayLabel(e.createdAt),
             sortKey: e.createdAt,
           })),
           ...gratitude.slice(0, 2).map((e) => ({
             type: 'gratitude',
             label: e.items[0]?.slice(0, 46) ?? 'Благодарность',
             time: '',
-            dateStr: e.date === today ? 'Сегодня' : fmtDate(e.date),
+            dateStr: momentDayLabel(e.date),
             sortKey: e.date,
           })),
         ];
@@ -130,9 +128,9 @@ export function TodaySection({
         setRecentDiaries(all.slice(0, 3));
         setCaseCount(mode.length);
         setTodayDone({
-          schema: schema.some((e) => e.createdAt.slice(0, 10) === today),
-          mode: mode.some((e) => e.createdAt.slice(0, 10) === today),
-          gratitude: gratitude.some((e) => e.date === today),
+          schema: schema.some((e) => momentIsToday(e.createdAt)),
+          mode: mode.some((e) => momentIsToday(e.createdAt)),
+          gratitude: gratitude.some((e) => momentIsToday(e.date)),
         });
       })
       .catch((e) => console.error('diaries load failed', e))

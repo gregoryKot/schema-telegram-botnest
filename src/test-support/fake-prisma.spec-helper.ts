@@ -80,6 +80,10 @@ export function matchesWhere(row: Row, where: Where = {}): boolean {
         const list = cond.in;
         return Array.isArray(list) && list.includes(value);
       }
+      // Как в SQL: NULL/отсутствующее поле не проходит ни одно сравнение
+      // (`recoveredAt: { gte }` не должен матчить строки без recoveredAt).
+      const isCompare = ['gte', 'lte', 'gt', 'lt'].some((op) => op in cond);
+      if (isCompare && (value === null || value === undefined)) return false;
       if ('gte' in cond) return compareScalars(value, cond.gte) >= 0;
       if ('lte' in cond) return compareScalars(value, cond.lte) <= 0;
       if ('gt' in cond) return compareScalars(value, cond.gt) > 0;

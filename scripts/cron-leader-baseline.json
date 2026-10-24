@@ -11,13 +11,29 @@
     "status": "leader",
     "reason": "Проверка домена бота шлёт DM админу при расхождении — на двух инстансах дубль DM."
   },
+  "src/booking/booking-confirm-retry.service.ts::retryStalled": {
+    "status": "leader",
+    "reason": "Добор эффектов подтверждения брони (ссылка, календарь, DM админу) — на двух инстансах одна бронь доделывается дважды: два события в календаре и два одинаковых уведомления."
+  },
   "src/booking/booking-notify.service.ts::sendReminders": {
     "status": "leader",
     "reason": "Напоминание о записи пользователю — на двух инстансах уйдёт два одинаковых сообщения."
   },
+  "src/booking/booking-retention.service.ts::anonymizeOld": {
+    "status": "exempt",
+    "reason": "updateMany идемпотентен: второй инстанс на том же тике обновит 0 строк (первый уже проставил anonymizedAt, фильтр anonymizedAt: null их не берёт), наружу ничего не уходит — ни DM, ни поста."
+  },
   "src/booking/booking.service.ts::expireHolds": {
     "status": "leader",
     "reason": "Снятие истёкших холдов записи — гонка на двух инстансах может снять чужой свежий холд."
+  },
+  "src/booking/intro-lead-redelivery.service.ts::redeliver": {
+    "status": "leader",
+    "reason": "Повтор доставки заявки шлёт DM и письмо админу — на двух инстансах дубль каждого сообщения."
+  },
+  "src/booking/intro-lead-retention.service.ts::anonymizeOld": {
+    "status": "exempt",
+    "reason": "updateMany идемпотентен: второй инстанс на том же тике обновит 0 строк (первый уже проставил anonymizedAt, фильтр anonymizedAt: null их не берёт), наружу ничего не уходит — ни DM, ни письма."
   },
   "src/channel/channel-schedule.service.ts::tickCatchUp": {
     "status": "leader",
@@ -42,6 +58,10 @@
   "src/infra/self-check/self-check.service.ts::hourly": {
     "status": "leader",
     "reason": "Часовая самопроверка прода шлёт DM владельцу при сбоях — на двух инстансах дубль DM и двойная нагрузка на живые проверки (getMe, CalDAV discovery, запись в ThrottleHit)."
+  },
+  "src/infra/session-retention.service.ts::cleanup": {
+    "status": "exempt",
+    "reason": "deleteMany идемпотентен, второй инстанс на том же тике удалит 0 строк (уже удалены), дублирования наружу нет."
   },
   "src/subscription/subscription.service.ts::chargeDue": {
     "status": "exempt",

@@ -1,6 +1,7 @@
-// Форматтеры продуктовых метрик для /stats (правило №8). Чистые функции —
-// покрыты тестом (включая пустую БД: отчёт не должен показывать NaN/мусор).
-// Язык — простой, без терминов: понятно даже ребёнку.
+// Форматтеры продуктовых метрик для /stats (правило №8): чистые функции, покрыты
+// тестом, в т.ч. пустая БД (без NaN/мусора). Язык простой, без терминов.
+import type { CrisisMetrics } from './crisis-metrics';
+import { ysqFunnelLine } from './ysq-funnel-metrics';
 
 export interface ProductMetrics {
   // Новички за месяц: сколько дошло до конца обучающего онбординга.
@@ -31,7 +32,7 @@ export interface ProductMetrics {
     total30: number;
     byKind30: Array<{ kind: string; count: number }>;
   };
-  crisis: { shown: number; hotlineTapped: number };
+  crisis: CrisisMetrics;
   shareResult: { ok: number; fallback: number };
   outbox: { flushes: number; recovered: number };
   // Настройка экрана «Сегодня» и дыхание «Здесь и сейчас» (за месяц).
@@ -144,10 +145,7 @@ export function formatProductMetrics(m: ProductMetrics): string {
       `Колесо детства: ${m.adoption.childhood}`,
     '',
     `📋 <b>Тест схем: доходят ли до конца</b>`,
-    `Начали: ${m.ysq.started} · дошли до конца: ${m.ysq.completed}${pct(
-      m.ysq.completed,
-      m.ysq.started,
-    )}`,
+    ysqFunnelLine(m.ysq),
     `Читали «как понимать результат»: ${m.ysq.helpOpens} раз (за месяц)`,
     '',
     `📱 <b>С каким экраном заходят</b>`,
@@ -170,7 +168,7 @@ export function formatProductMetrics(m: ProductMetrics): string {
           .join(' · '),
     '',
     `💛 <b>Карточка помощи в трудный момент</b> (за месяц)`,
-    `Показали: ${m.crisis.shown} · позвонили по телефону доверия: ${m.crisis.hotlineTapped}`,
+    `Показали: ${m.crisis.shown} · позвонили по телефону доверия: ${m.crisis.hotlineTapped} (из них в форме записи на консультацию: показали ${m.crisis.booking.shown}, позвонили ${m.crisis.booking.hotlineTapped})`,
     '',
     `📤 <b>Получилось ли поделиться картинкой</b> (за месяц)`,
     `Отправили картинку: ${m.shareResult.ok} · сохранили текстом: ${m.shareResult.fallback}`,

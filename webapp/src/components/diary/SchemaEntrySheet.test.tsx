@@ -7,6 +7,7 @@ import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { SchemaEntrySheet } from './SchemaEntrySheet';
 import { CRISIS_HOTLINE_DISPLAY } from '../../utils/crisisMarkers';
+import { DIARY_FIELD_MAX } from '../../../../shared/src/limits/textLimits';
 
 vi.mock('../../api', () => ({
   api: { trackEvent: vi.fn() },
@@ -62,10 +63,10 @@ describe('SchemaEntrySheet — поля связаны с вопросом (В7)
   });
 });
 
-// Тик-страйп прогресса — 10 div[role=button] без текста (pressable), порядок
-// SCHEMA_DIARY_STEP_ORDER: 0 trigger, 1 emotions, 5 schemas, 8 excessiveReactions.
+// Тик-страйп прогресса — 10 div[role=button] (pressable) с именами «Шаг N»,
+// порядок SCHEMA_DIARY_STEP_ORDER: 0 trigger, 1 emotions, 5 schemas, 8 excessiveReactions.
 function ticks() {
-  return screen.getAllByRole('button', { name: '' });
+  return screen.getAllByRole('button', { name: /^Шаг \d+$/ });
 }
 
 describe('SchemaEntrySheet — визард (шаги, обязательность, чипы)', () => {
@@ -83,6 +84,18 @@ describe('SchemaEntrySheet — визард (шаги, обязательнос�
     renderSheet();
     fireEvent.click(ticks()[1]);
     expect(screen.getByText('Страх')).toBeTruthy();
+  });
+
+  // Аудит 2026-10, «Доступность»: тики были pressable()-div без содержимого —
+  // скринридер читал ряд одинаковых «кнопка», не называя шаг.
+  it('тик назван номером шага и помечает текущий, интенсивность — эмоцией и степенью', () => {
+    renderSheet();
+    expect(screen.getByRole('button', { name: 'Шаг 1' }).getAttribute('aria-current')).toBe('step');
+    fireEvent.click(screen.getByRole('button', { name: 'Шаг 2' }));
+    expect(screen.getByRole('button', { name: 'Шаг 2' }).getAttribute('aria-current')).toBe('step');
+    expect(screen.getByRole('button', { name: 'Шаг 1' }).getAttribute('aria-current')).toBeNull();
+    fireEvent.click(screen.getByText('Страх'));
+    expect(screen.getByRole('button', { name: 'Страх: заметно' })).toBeTruthy();
   });
 
   it('клик по тику переключает на шаг «Схемы» — чипы схем и поле «откуда это знакомо» видны', () => {
@@ -113,5 +126,18 @@ describe('SchemaEntrySheet — визард (шаги, обязательнос�
     expect(onSave).toHaveBeenCalledWith(
       expect.objectContaining({ excessiveReactions: 'Слишком остро отреагировал на пустяк' }),
     );
+  });
+});
+
+// backend#29: раньше контроллер молча резал поля дневника до 2000 знаков, а
+// поле ввода предела не знало. Теперь предел один (DIARY_FIELD_MAX) и виден.
+describe('SchemaEntrySheet — предел длины поля', () => {
+  it('textarea.maxLength = предел поля дневника из shared; у границы виден остаток', () => {
+    renderSheet();
+    const area = screen.getByLabelText('Что случилось?') as HTMLTextAreaElement;
+    expect(area.maxLength).toBe(DIARY_FIELD_MAX);
+    expect(screen.queryByText(/Осталось знаков/)).toBeNull();
+    fireEvent.change(area, { target: { value: 'а'.repeat(DIARY_FIELD_MAX - 7) } });
+    expect(screen.getByText(/Осталось знаков: 7/)).toBeTruthy();
   });
 });

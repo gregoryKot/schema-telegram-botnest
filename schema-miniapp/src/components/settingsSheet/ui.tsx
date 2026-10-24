@@ -1,4 +1,5 @@
 import { type ReactNode } from 'react';
+import { hitboxStyle } from '../../utils/hitbox';
 
 export function SectionHeader({
   children,
@@ -32,24 +33,23 @@ export function SectionHeader({
         <button
           onClick={onInfo}
           aria-label="Пояснение"
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            width: 16,
-            height: 16,
-            borderRadius: '50%',
-            background: 'rgba(var(--fg-rgb),0.08)',
-            color: 'var(--text-faint)',
-            fontSize: 9,
-            fontWeight: 700,
-            cursor: 'pointer',
-            border: 'none',
-            flexShrink: 0,
-            padding: 0,
-          }}
+          style={{ ...hitboxStyle(16, 16, 44).outer, flexShrink: 0 }}
         >
-          ?
+          <span
+            style={{
+              ...hitboxStyle(16, 16, 44).inner,
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderRadius: '50%',
+              background: 'rgba(var(--fg-rgb),0.08)',
+              color: 'var(--text-faint)',
+              fontSize: 9,
+              fontWeight: 700,
+            }}
+          >
+            ?
+          </span>
         </button>
       )}
     </div>

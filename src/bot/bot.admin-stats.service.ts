@@ -2,12 +2,18 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { localDate } from '../utils/tz';
 import { formatAdminStats } from './admin-stats.format';
-import { countActiveCore } from './active-core-metrics';
 import {
   formatRetentionBlock,
   RetentionStats,
   RetentionPoint,
 } from './retention.format';
+
+// Rating.date — календарный день в зоне пользователя (bot.service.ts, по
+// умолчанию notifyTimezone = Europe/Moscow), поэтому «сегодня» и окна отчёта
+// считаются в той же зоне: по UTC с 00:00 до 03:00 МСК «сегодня» было
+// вчерашним днём (правило №25, аудит 2026-10).
+const REPORT_TZ = 'Europe/Moscow';
+type ActivityKey = 'month30' | 'week7' | 'churn' | 'core';
 
 // Админский отчёт по всей базе (не по конкретному юзеру, в отличие от
 // BotAnalyticsService) — единственный потребитель: команда `/stats` в
@@ -22,16 +28,17 @@ export class BotAdminStatsService {
 
   /**
    * Когортный retention + воронка онбординга (аудит 2026-07, этап 4.6 /
-   * правило №8 CLAUDE.md: гипотезы про онбординг проверяются D1/D7/D30,
-   * а не ощущениями). Всё выводится из существующих данных — User.createdAt,
-   * AppActivity, Rating, disclaimerAccepted; событийной таблицы не требуется.
+   * правило №8: гипотезы про онбординг проверяются D1/D7/D30, а не ощущениями).
+   * Данные существующие: User.createdAt, AppActivity, Rating, disclaimerAccepted.
    */
   async getRetentionStats(): Promise<RetentionStats> {
-    // DN: юзеры, зарегистрированные [N, N+7) дней назад (когорта недели);
-    // retained = есть AppActivity ровно в день createdAt + N дней.
-    // AppActivity.date — локальная дата юзера, createdAt — UTC: для
-    // админ-метрики допустимо (±1 день на границах таймзон).
+    // DN: созданные [N, N+7) дней назад; retained = есть AppActivity в день
+    // createdAt + N. Границы — Date из Node: createdAt это timestamp без зоны,
+    // now() в SQL зависел бы от TimeZone сессии.
+    const nowMs = Date.now();
     const point = async (n: number): Promise<RetentionPoint> => {
+      const from = new Date(nowMs - (n + 7) * 86_400_000);
+      const to = new Date(nowMs - n * 86_400_000);
       const rows = await this.prisma.$queryRaw<
         Array<{ cohort: bigint; retained: bigint }>
       >`
@@ -44,15 +51,14 @@ export class BotAdminStatsService {
                  )
                )::bigint AS retained
         FROM "User" u
-        WHERE u."createdAt" >= now() - make_interval(days => ${n + 7})
-          AND u."createdAt" <  now() - make_interval(days => ${n})
+        WHERE u."createdAt" >= ${from} AND u."createdAt" < ${to}
       `;
       return {
         cohort: Number(rows[0]?.cohort ?? 0),
         retained: Number(rows[0]?.retained ?? 0),
       };
     };
-    const since30 = new Date(Date.now() - 30 * 86_400_000);
+    const since30 = new Date(nowMs - 30 * 86_400_000);
     const [d1, d7, d30, registered30, consented30, filledRows] =
       await Promise.all([
         point(1),
@@ -82,15 +88,12 @@ export class BotAdminStatsService {
 
   async getAdminStats(): Promise<string> {
     const now = new Date();
-    const today = this.localDateString('UTC', now);
-    const d7 = this.localDateString(
-      'UTC',
-      new Date(now.getTime() - 7 * 86_400_000),
-    );
-    const d30 = this.localDateString(
-      'UTC',
-      new Date(now.getTime() - 30 * 86_400_000),
-    );
+    const day = (ago: number) =>
+      this.localDateString(
+        REPORT_TZ,
+        new Date(now.getTime() - ago * 86_400_000),
+      );
+    const [today, d7, d30] = [day(0), day(7), day(30)];
     const ago7 = new Date(now.getTime() - 7 * 86_400_000);
     const ago30 = new Date(now.getTime() - 30 * 86_400_000);
 
@@ -102,10 +105,9 @@ export class BotAdminStatsService {
       blockedUsers,
       activePairs,
       todayCountRows,
-      week7Ratings,
-      month30CountRows,
+      activityRows,
       needAvgs,
-      fillsByDow,
+      perDayRows,
     ] = await Promise.all([
       this.prisma.user.count({ where: { deletedAt: null } }),
       this.prisma.user.count({
@@ -121,24 +123,27 @@ export class BotAdminStatsService {
         where: { deletedAt: null, botBlockedAt: { not: null } },
       }),
       this.prisma.pair.count({ where: { status: 'active' } }),
-      // D-4 (аудит 2026-07): раньше findMany({distinct:['userId']}).length —
-      // без take это неограниченная выборка. Здесь нужен только сам счётчик
-      // (не id), поэтому меняем на честный COUNT(DISTINCT), а не на take —
-      // take исказил бы статистику при росте числа активных юзеров.
+      // D-4 (аудит 2026-07): честный COUNT(DISTINCT), а не выборка id.
       this.prisma.$queryRaw<Array<{ c: bigint }>>`
         SELECT COUNT(DISTINCT "userId")::bigint AS c FROM "Rating" WHERE date = ${today}
       `,
-      this.prisma.rating.findMany({
-        where: { date: { gte: d7 } },
-        select: { userId: true },
-        distinct: ['userId'],
-        // D-4: явная страховка от роста таблицы (не пагинация). Тут (в
-        // отличие от today/month30) нужен сам список id — используется ниже
-        // для churnRisk (activeRecent) — поэтому COUNT(DISTINCT) не подходит.
-        take: 5000,
-      }),
-      this.prisma.$queryRaw<Array<{ c: bigint }>>`
-        SELECT COUNT(DISTINCT "userId")::bigint AS c FROM "Rating" WHERE date >= ${d30}
+      // Заходившие за месяц/неделю, «могут уйти» и «ядро» (≥3 разных дня за
+      // неделю, docs/LAUNCH_STRATEGY.md §5) — одним проходом в SQL. Раньше —
+      // findMany с distinct и take: 5000: Prisma дедуплицирует в памяти поверх
+      // ORDER BY id, и выше ~170 человек в день свежие дни выпадали — «ядро»
+      // показывало 0 из 500 (аудит 2026-10). «Могут уйти» = последний день
+      // в окне месяца раньше недели.
+      this.prisma.$queryRaw<Array<Record<ActivityKey, bigint>>>`
+        SELECT count(*)::bigint AS month30,
+               count(*) FILTER (WHERE t.last_day >= ${d7})::bigint AS week7,
+               count(*) FILTER (WHERE t.last_day < ${d7})::bigint AS churn,
+               count(*) FILTER (WHERE t.days7 >= 3)::bigint AS core
+        FROM (
+          SELECT p."userId", max(p.date) AS last_day,
+                 count(*) FILTER (WHERE p.date >= ${d7}) AS days7
+          FROM (SELECT DISTINCT "userId", date FROM "Rating" WHERE date >= ${d30}) p
+          GROUP BY p."userId"
+        ) t
       `,
       // Average score per need over last 7 days — по числу потребностей
       // (NEED_IDS), не растёт с таблицей, take не нужен.
@@ -148,18 +153,16 @@ export class BotAdminStatsService {
         _avg: { value: true },
         orderBy: { _avg: { value: 'asc' } },
       }),
-      // Fills by day of week (last 30 days) — date strings, compute DOW in JS.
-      // D-4: явная страховка от роста таблицы (не пагинация) — нужны сами
-      // пары (date, userId) для подсчёта по дням недели, COUNT не подходит.
-      this.prisma.rating.findMany({
-        where: { date: { gte: d30 } },
-        select: { date: true, userId: true },
-        distinct: ['userId', 'date'],
-        take: 5000,
-      }),
+      // Сколько разных людей заполняли в каждый день за 30 дней — ≤31 строки;
+      // день недели считается ниже в JS, без каста строки в date в SQL.
+      this.prisma.$queryRaw<Array<{ date: string; c: bigint }>>`
+        SELECT date, COUNT(DISTINCT "userId")::bigint AS c
+        FROM "Rating" WHERE date >= ${d30} GROUP BY date
+      `,
     ]);
     const todayCount = Number(todayCountRows[0]?.c ?? 0);
-    const month30Count = Number(month30CountRows[0]?.c ?? 0);
+    const act = (k: ActivityKey): number => Number(activityRows[0]?.[k] ?? 0);
+    const month30Count = act('month30');
 
     // Retention funnel — count users with N+ distinct fill days (raw SQL for efficiency)
     const retentionRows = await this.prisma.$queryRaw<Array<{ cnt: bigint }>>`
@@ -186,33 +189,17 @@ export class BotAdminStatsService {
       )[0]?.cnt ?? 0,
     );
 
-    // Churn signal: active in d7-d30 but NOT in last 7 days
-    const activeRecent = new Set(week7Ratings.map((r) => String(r.userId)));
-    const activeOlder = new Set(
-      await this.prisma.rating
-        .findMany({
-          where: { date: { gte: d30, lt: d7 } },
-          select: { userId: true },
-          distinct: ['userId'],
-          // D-4: страховка от роста таблицы (не пагинация) — нужен сам
-          // список id для сравнения с activeRecent (churnRisk).
-          take: 5000,
-        })
-        .then((rows) => rows.map((r) => String(r.userId))),
-    );
-    const churnRisk = [...activeOlder].filter(
-      (id) => !activeRecent.has(id),
-    ).length;
-
     // Most neglected need (lowest avg this week)
     const lowestNeed = needAvgs[0];
 
-    // Best fill day of week (last 30 days) — count user-day pairs per DOW
+    // День недели с наибольшим числом пар «человек–день»; на пустой базе —
+    // null, а не «вс» из массива нулей (правило №8).
     const dowCounts: number[] = new Array<number>(7).fill(0);
-    for (const r of fillsByDow) {
-      dowCounts[new Date(r.date + 'T12:00:00Z').getUTCDay()]++;
+    for (const r of perDayRows) {
+      dowCounts[new Date(r.date + 'T12:00:00Z').getUTCDay()] += Number(r.c);
     }
-    const bestDow = dowCounts.indexOf(Math.max(...dowCounts));
+    const maxDow = Math.max(...dowCounts);
+    const bestDow = maxDow > 0 ? dowCounts.indexOf(maxDow) : null;
     const fillRate =
       month30Count > 0 ? Math.round((todayCount / month30Count) * 100) : 0;
 
@@ -225,10 +212,10 @@ export class BotAdminStatsService {
       blockedUsers,
       todayCount,
       fillRate,
-      week7Count: week7Ratings.length,
-      activeCoreCount: countActiveCore(fillsByDow, d7),
+      week7Count: act('week7'),
+      activeCoreCount: act('core'),
       month30Count,
-      churnRisk,
+      churnRisk: act('churn'),
       ret1,
       ret3,
       ret7,

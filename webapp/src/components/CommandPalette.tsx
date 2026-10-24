@@ -1,9 +1,12 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { api } from '../api';
-import type { TherapyClientSummary } from '../api';
+import { useTr } from '../utils/addressForm';
+import { buildPlusActions, type QuickActionId } from '../../../shared/src/quickActions/quickActions';
+import type { TherapyClientSummary, UserId } from '../api';
 import { todayCalendarDate } from '../../../shared/src/utils/calendarDate';
 import { pressable } from '../utils/a11y';
 import { useDialogA11y } from '../../../shared/src/utils/dialogA11y';
+import '../styles/sheet-tasks.css';
 
 type Section = 'today' | 'diary' | 'schemas' | 'profile' | 'practice';
 
@@ -14,8 +17,8 @@ interface Props {
   userRole?: 'CLIENT' | 'THERAPIST';
   therapistMode?: boolean;
   onToggleMode?: () => void;
-  onOpenClient?: (id: number) => void;
-  onNewDiaryEntry?: () => void;
+  onOpenClient?: (id: UserId) => void;
+  onQuickAction?: (id: QuickActionId) => void;
 }
 
 const NAV_ITEMS: { id: Section; label: string; sub: string; hint: string }[] = [
@@ -55,12 +58,14 @@ function IconBolt() {
 
 // ── Component ──────────────────────────────────────────────────────────────────
 
-export function CommandPalette({ onNavigate, onClose, userRole, therapistMode, onToggleMode, onOpenClient, onNewDiaryEntry }: Props) {
+export function CommandPalette({ onNavigate, onClose, userRole, therapistMode, onToggleMode, onOpenClient, onQuickAction }: Props) {
+  const tr = useTr();
   const [q, setQ] = useState('');
   const [sel, setSel] = useState(0);
   const [clients, setClients] = useState<TherapyClientSummary[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
-  const dialogA11y = useDialogA11y();
+  // Escape — через стек диалогов: поверх палитры он закроет только верхнее окно.
+  const dialogA11y = useDialogA11y({ onEscape: onClose });
 
   // Reset the highlighted row to the top whenever the query changes. Adjusting
   // state during render (not in an effect) is the documented pattern for
@@ -78,7 +83,7 @@ export function CommandPalette({ onNavigate, onClose, userRole, therapistMode, o
   }, [userRole]);
 
   type RowType = 'client' | 'nav' | 'action';
-  interface Row { type: RowType; label: string; sub?: string; hint?: string; action: () => void }
+  interface Row { type: RowType; label: string; sub?: string; activeToday?: boolean; hint?: string; action: () => void }
 
   const rows = useMemo<Row[]>(() => {
     const today = todayCalendarDate();
@@ -87,7 +92,7 @@ export function CommandPalette({ onNavigate, onClose, userRole, therapistMode, o
     const clientRows: Row[] = clients.map(c => ({
       type: 'client' as const,
       label: c.clientAlias ?? c.name ?? `ID ${c.telegramId}`,
-      sub: c.lastActiveDate === today ? 'Активен сегодня' : 'Клиент',
+      ...(c.lastActiveDate === today ? { sub: 'Активность сегодня', activeToday: true } : { sub: 'Клиент' }),
       hint: 'Открыть карточку',
       action: () => onOpenClient?.(c.telegramId),
     }));
@@ -106,21 +111,22 @@ export function CommandPalette({ onNavigate, onClose, userRole, therapistMode, o
         sub: therapistMode ? 'Клиентский вид' : 'Кабинет',
         action: () => onToggleMode?.(),
       }] : []),
-      ...(!therapistMode ? [{
+      // Те же быстрые действия, что в «+» на телефоне (общий реестр).
+      ...(!therapistMode ? buildPlusActions(tr).flatMap(g => g.actions.map(a => ({ a, group: g.title }))).map(({ a, group }) => ({
         type: 'action' as const,
-        label: 'Новая запись в дневник',
-        action: () => { onNewDiaryEntry?.(); },
-      }] : []),
+        label: a.label,
+        sub: `${group} · ${a.sub}`,
+        action: () => onQuickAction?.(a.id),
+      })) : []),
     ];
 
     const all: Row[] = [...clientRows, ...navRows, ...actionRows];
     if (!term) return all;
     return all.filter(r => (r.label + ' ' + (r.sub ?? '')).toLowerCase().includes(term));
-  }, [q, clients, userRole, therapistMode, onNavigate, onOpenClient, onToggleMode, onNewDiaryEntry]);
+  }, [q, clients, userRole, therapistMode, onNavigate, onOpenClient, onToggleMode, onQuickAction, tr]);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') { onClose(); return; }
       if (e.key === 'ArrowDown') { e.preventDefault(); setSel(s => Math.min(rows.length - 1, s + 1)); }
       if (e.key === 'ArrowUp')   { e.preventDefault(); setSel(s => Math.max(0, s - 1)); }
       if (e.key === 'Enter')     { e.preventDefault(); rows[sel]?.action(); onClose(); }
@@ -130,53 +136,52 @@ export function CommandPalette({ onNavigate, onClose, userRole, therapistMode, o
   }, [rows, sel, onClose]);
 
   return (
-    <div className="cmd-bg" onClick={onClose} role="button" tabIndex={0} aria-label="Закрыть"
+    <div className="sk-cmd-bg" onClick={onClose} role="button" tabIndex={0} aria-label="Закрыть"
       onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClose(); } }}>
-      {/* onClick/onKeyDown — не интерактив, а stopPropagation: не дать клику
-          или Enter/Space (печатая в поиске) всплыть до onClick/onKeyDown
-          бэкдропа выше и закрыть палитру на пробеле в запросе.
-          role="dialog" (К4) не входит в список «интерактивных» ролей
-          jsx-a11y — ложное срабатывание. */}
+      {/* onClick/onKeyDown — stopPropagation: клик или Enter/Space (печатая в
+          поиске) не должны всплыть до бэкдропа и закрыть палитру. role="dialog"
+          не входит в «интерактивные» роли jsx-a11y — ложное срабатывание. */}
       {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions */}
       <div
         {...dialogA11y}
-        className="cmd-panel"
+        className="ds-card ds-card--flush sk-cmd-panel"
         onClick={e => e.stopPropagation()}
         onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); } }}
       >
-        <div className="cmd-search">
-          <svg viewBox="0 0 24 24" width={16} height={16} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--text-faint)', flexShrink: 0 }}>
+        <div className="sk-cmd-search">
+          <svg viewBox="0 0 24 24" width={16} height={16} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="sk-cmd-ic">
             <path d="M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16zM21 21l-4.35-4.35" />
           </svg>
           <input
             ref={inputRef}
+            className="ds-input sk-cmd-input"
             value={q}
             onChange={e => setQ(e.target.value)}
             placeholder="Найти клиента, страницу или действие…"
           />
           <span className="kbd">Esc</span>
         </div>
-        <div className="cmd-list">
-          {rows.length === 0 && <div style={{ padding: '24px 20px', color: 'var(--text-faint)', fontSize: 13 }}>Ничего не найдено</div>}
+        <div className="sk-cmd-list">
+          {rows.length === 0 && <div className="ds-list-row sk-cmd-empty ds-sub">Ничего не найдено</div>}
           {rows.map((row, i) => (
             <div
               key={i}
-              className={`cmd-row${i === sel ? ' is-sel' : ''}`}
+              className={`ds-list-row ds-list-row--hover sk-cmd-row${i === sel ? ' is-sel' : ''}`}
               onMouseEnter={() => setSel(i)}
               {...pressable(() => { row.action(); onClose(); })}
             >
-              <span style={{ color: 'var(--text-faint)', flexShrink: 0, display: 'flex', alignItems: 'center' }}>
+              <span className="sk-cmd-ic">
                 {row.type === 'client' ? <IconPerson /> : row.type === 'nav' ? <IconArrow /> : <IconBolt />}
               </span>
-              <span className="u-fill">
-                <span className="u-fg">{row.label}</span>
+              <span className="sk-cmd-main">
+                <span className="sk-cmd-label">{row.label}</span>
                 {row.sub && (
-                  <span style={{ marginLeft: 8, fontSize: 11, color: row.sub === 'Активен сегодня' ? 'var(--c-moss)' : 'var(--text-faint)' }}>
+                  <span className={'sk-cmd-sub' + (row.activeToday ? ' is-ok' : '')}>
                     {row.sub}
                   </span>
                 )}
               </span>
-              {row.hint && <span className="hint" style={{ fontSize: 11 }}>{row.hint}</span>}
+              {row.hint && <span className="kbd">{row.hint}</span>}
             </div>
           ))}
         </div>

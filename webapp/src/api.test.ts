@@ -19,6 +19,8 @@ function jsonResponse(status: number, body: unknown): Response {
     ok: status >= 200 && status < 300,
     status,
     json: () => Promise.resolve(body),
+    // readJsonBody читает тело через text() — мок отдаёт обе формы.
+    text: () => Promise.resolve(body === undefined ? '' : JSON.stringify(body)),
   } as unknown as Response;
 }
 
@@ -587,17 +589,19 @@ describe('сетевой сбой (fetch отклоняется) пробрас�
 
 // ── Непарсибельный/пустой ответ на успешном статусе — тоже проброс ──────────
 describe('успешный статус, но тело не JSON — не глотается молча', () => {
-  it('get<T>: res.json() падает на 200 — ошибка долетает до caller', async () => {
-    fetchMock.mockResolvedValue({
-      ok: true,
-      status: 200,
-      json: () =>
-        Promise.reject(new SyntaxError('Unexpected end of JSON input')),
-    } as unknown as Response);
+  it('get<T>: непустое тело не JSON на 200 — ошибка долетает до caller', async () => {
+    // Настоящий мусор (502-страница прокси) обязан оставаться видимым.
+    fetchMock.mockResolvedValue(new Response('<html>Bad Gateway</html>', { status: 200 }));
 
-    await expect(api.getSettings()).rejects.toThrow(
-      'Unexpected end of JSON input',
-    );
+    await expect(api.getSettings()).rejects.toThrow(SyntaxError);
+  });
+
+  it('get<T>: ПУСТОЕ тело на 200 (Nest на null) — null, а не SyntaxError', async () => {
+    // Раньше этот случай пинился как «ошибка»; по факту это штатный ответ
+    // сервера «нет записи» (инцидент 2026-10-03, apiClient.seam.test.ts).
+    fetchMock.mockResolvedValue(new Response('', { status: 200 }));
+
+    await expect(api.getSettings()).resolves.toBeNull();
   });
 });
 
@@ -726,6 +730,14 @@ describe('adminReq — запрос с телом и обработка ошиб
     await api.adminSetPrice('key', 'INTRO_15', 1500);
     const [, init] = fetchMock.mock.calls[0];
     expect(JSON.parse(init.body)).toEqual({ type: 'INTRO_15', amount: 1500 });
+  });
+
+  it('adminSetPrice с валютой: currency уходит в теле (цена сессии по стране посетителя)', async () => {
+    fetchMock.mockResolvedValue(jsonResponse(200, { ok: true }));
+    await api.adminSetPrice('key', 'SESSION_50', 70, 'USD');
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(String(url)).toContain('/api/booking/admin/price');
+    expect(JSON.parse(init.body)).toEqual({ type: 'SESSION_50', amount: 70, currency: 'USD' });
   });
 
   it('ошибка с телом { message } пробрасывает именно это сообщение', async () => {

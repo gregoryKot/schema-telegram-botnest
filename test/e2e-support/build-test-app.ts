@@ -14,7 +14,6 @@
 // фейк расходился с реальностью.
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
-import { json, urlencoded } from 'express';
 import { AppModule } from '../../src/app.module';
 import { PrismaService } from '../../src/prisma/prisma.service';
 import { TELEGRAF_BOT } from '../../src/telegram/telegram.constants';
@@ -22,18 +21,18 @@ import {
   GenericExceptionFilter,
   PrismaExceptionFilter,
 } from '../../src/prisma/prisma-exception.filter';
+import { installBigIntJson } from '../../src/utils/bigint-json';
+import { installBodyParsers } from '../../src/infra/body-parsers';
 import { makeFakePrisma, FakePrisma } from './fake-prisma';
 import { makeFakeBot } from './fake-bot';
 import { buildRealDbTestApp } from './build-real-db-test-app';
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const cookieParser = require('cookie-parser');
 
-// BigInt → number в JSON-ответах — та же строка, что в src/main.ts. Без неё
-// любой ответ с полем-BigInt (userId в некоторых эндпоинтах) падает на
-// JSON.stringify (TypeError: Do not know how to serialize a BigInt).
-(BigInt.prototype as any).toJSON = function () {
-  return Number(this);
-};
+// BigInt в JSON-ответах — тот же установщик, что в src/main.ts (число для
+// безопасного целого, строка для id ≥ 2^53). Без него любой ответ с
+// полем-BigInt падает на JSON.stringify.
+installBigIntJson();
 
 export interface TestApp {
   app: INestApplication;
@@ -70,7 +69,9 @@ export async function buildTestApp(): Promise<TestApp> {
     .useValue(makeFakeBot())
     .compile();
 
-  const app = moduleRef.createNestApplication();
+  // `bodyParser: false` — как в src/main.ts: свой парсер с BODY_LIMIT ставится
+  // ниже, штатный (100 КБ) не регистрируется вовсе.
+  const app = moduleRef.createNestApplication({ bodyParser: false });
 
   // ── ЗЕРКАЛО src/main.ts — держать синхронно при правках bootstrap() ────────
   // (helmet/CORS/redirect-middleware/ServeStatic намеренно опущены: они не
@@ -82,8 +83,7 @@ export async function buildTestApp(): Promise<TestApp> {
     new PrismaExceptionFilter(),
   );
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
-  app.use(json({ limit: '256kb' }));
-  app.use(urlencoded({ limit: '256kb', extended: true }));
+  installBodyParsers(app);
   // ─────────────────────────────────────────────────────────────────────────
 
   await app.init();

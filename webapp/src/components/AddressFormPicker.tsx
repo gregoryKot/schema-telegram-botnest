@@ -7,6 +7,7 @@ import {
   markAddressFormAsked,
 } from '../../../shared/src/settings/addressFormPrompt';
 import { useHistorySheet } from '../hooks/useHistorySheet';
+import { Dialog } from './Dialog';
 
 /**
  * Выбор обращения («ты»/«вы») при первом входе — пока addressForm в настройках null.
@@ -54,34 +55,27 @@ function AddressFormPickerModal({ onClose }: { onClose: () => void }) {
   );
 
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
-      <div style={{ width: '100%', maxWidth: 380, background: 'var(--bg)', borderRadius: 'var(--r-20)', padding: 28 }}>
-        <div style={{ fontSize: 17, fontWeight: 700, color: 'var(--text)', marginBottom: 8 }}>
-          Как удобнее общаться?
-        </div>
-        <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.6, marginBottom: 18 }}>
-          Поменять можно в любой момент в настройках.
-        </div>
-        <div style={{ display: 'flex', gap: 'var(--space-10)', marginBottom: 10 }}>
-          <button onClick={() => choose('ty')}
-            style={{ flex: 1, padding: '13px 0', borderRadius: 'var(--r-12)', border: 'none', background: 'var(--accent)', color: '#fff', fontSize: 15, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
-            На «ты»
-          </button>
-          <button onClick={() => choose('vy')}
-            style={{ flex: 1, padding: '13px 0', borderRadius: 'var(--r-12)', border: 'none', background: 'rgba(var(--fg-rgb),0.08)', color: 'var(--text)', fontSize: 15, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
-            На «вы»
-          </button>
-        </div>
-        {failed && (
-          <div style={{ fontSize: 12.5, color: 'var(--accent-red)', lineHeight: 1.5, marginBottom: 10 }}>
-            Не удалось сохранить выбор. Проверить соединение и попробовать ещё раз — или «Позже».
-          </div>
-        )}
-        <button onClick={goBack}
-          style={{ width: '100%', padding: '9px 0', borderRadius: 'var(--r-10)', border: 'none', background: 'transparent', color: 'var(--text-faint)', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>
-          Позже
+    <Dialog label="Как удобнее общаться?" zIndex={200}>
+      <h2 className="dialog-title">Как удобнее общаться?</h2>
+      <p className="dialog-text" style={{ marginBottom: 20 }}>
+        Поменять можно в любой момент в настройках.
+      </p>
+      <div className="dialog-actions" style={{ marginBottom: 10 }}>
+        <button className="btn-primary" onClick={() => choose('ty')}>
+          На «ты»
+        </button>
+        <button className="btn-outline" onClick={() => choose('vy')}>
+          На «вы»
         </button>
       </div>
-    </div>
+      {failed && (
+        <div className="dialog-error">
+          Не удалось сохранить выбор. Проверить соединение и попробовать ещё раз — или «Позже».
+        </div>
+      )}
+      <button className="dialog-link" onClick={goBack}>
+        Позже
+      </button>
+    </Dialog>
   );
 }

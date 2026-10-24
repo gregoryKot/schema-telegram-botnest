@@ -10,16 +10,28 @@ import {
   QUIET_EXEMPT_TYPES,
   NotificationType,
 } from '../notification/notification.service';
-import { renderTemplate } from '../notification/notification.templates';
 import { isQuietHours, nextQuietEnd } from '../notification/notification.time';
-import { normalizeAddressForm } from '../notification/address-form';
-import { classifySendFailure, describeTelegramError } from './telegram-error';
+import { describeUnknownOutcomes, sendBounded } from './telegram.send-bounded';
+import { handleSendError } from './telegram.schedule-queue.errors';
+import { renderForQueue } from './telegram.schedule-queue.render';
+import {
+  QueueTick,
+  type QueueTickTally,
+} from './telegram.schedule-queue.tally';
+import type { PaceOptions } from './telegram.paced-sender';
+export { armQueueKillSwitch } from './telegram.schedule-queue.budget';
 
 export interface QueueDeps {
   bot: Telegraf<Context>;
   accountService: AccountService;
   notificationService: NotificationService;
   logger: Logger;
+  /** Предел ожидания ответа Telegram; в проде — SEND_TIMEOUT_MS. */
+  sendTimeoutMs?: number;
+  /** Темп и бюджет прогона; в проде — пауза 35 мс, QUEUE_TICK_BUDGET_MS. */
+  pace?: PaceOptions;
+  /** Итог прогона в /stats (событие notify_queue_tick). */
+  track?: (tally: QueueTickTally) => Promise<void> | undefined;
 }
 
 // Сколько userId показать в итоговой строке про «некуда слать»: авария — это
@@ -32,12 +44,14 @@ export async function runProcessQueue(deps: QueueDeps): Promise<void> {
   if (due.length === 0) return;
   logger.log(`Processing ${due.length} due notifications`);
 
-  const sendSettings = await accountService.getSendSettingsFor(
-    [...new Set(due.map((n) => n.userId))].map((id) => BigInt(id)),
-  );
+  const sendSettings = await accountService.getSendSettingsFor([
+    ...new Set(due.map((n) => n.userId)),
+  ]);
   const noAddress: string[] = [];
+  const seen = { unknown: [] as number[], transient: 0 };
+  const tick = new QueueTick(deps.pace);
 
-  for (const notif of due) {
+  for (const [i, notif] of due.entries()) {
     try {
       const s = sendSettings.get(String(notif.userId));
 
@@ -61,48 +75,30 @@ export async function runProcessQueue(deps: QueueDeps): Promise<void> {
           continue;
         }
       }
-      const payload = notif.payload as Record<string, unknown> | null;
-      let template: ReturnType<typeof renderTemplate>;
-      try {
-        template = renderTemplate(
-          notif.type as NotificationType,
-          payload ?? undefined,
-          normalizeAddressForm(s.form),
-        );
-      } catch (renderErr) {
-        logger.error(
-          `renderTemplate threw for type=${notif.type} id=${notif.id} — skipping`,
-          renderErr,
-        );
-        await notificationService.markSent(notif.id);
-        continue;
-      }
-      if (!template) {
-        logger.warn(
-          `No template for type=${notif.type} id=${notif.id} — skipping`,
-        );
-        await notificationService.markSent(notif.id);
-        continue;
-      }
-      const silent = notif.type === 'summary';
-      const opts = {
-        ...(template.keyboard
-          ? { reply_markup: template.keyboard.reply_markup }
-          : {}),
-        ...(silent ? { disable_notification: true } : {}),
-      };
+      const msg = await renderForQueue(deps, notif, s.form);
+      if (!msg) continue;
       // Number(chatId): telegram-id заведомо меньше 2^53, а telegraf ждёт
-      // number | string.
-      await Promise.race([
-        bot.telegram.sendMessage(Number(chatId), template.text, opts),
-        new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error('sendMessage timeout')), 15_000),
-        ),
-      ]);
+      // number | string. false — Telegram просит ждать дольше, чем осталось
+      // прогону: эту и следующие строки подберёт следующий тик.
+      const send = () =>
+        sendBounded(
+          bot,
+          Number(chatId),
+          msg.text,
+          msg.extra,
+          deps.sendTimeoutMs,
+        );
+      if (!(await tick.send(send, due.length - i))) break;
       await notificationService.markSent(notif.id);
     } catch (err: unknown) {
-      await handleSendError(deps, notif.id, notif.userId, err);
+      await handleSendError(deps, notif.id, notif.userId, err, seen);
     }
+  }
+  tick.tally.transient = seen.transient;
+  await tick.finish(logger, deps.track);
+
+  if (seen.unknown.length > 0) {
+    logger.warn(describeUnknownOutcomes(seen.unknown));
   }
 
   if (noAddress.length > 0) {
@@ -113,31 +109,4 @@ export async function runProcessQueue(deps: QueueDeps): Promise<void> {
         `${noAddress.length > NO_ADDRESS_SAMPLE ? ' …' : ''}`,
     );
   }
-}
-
-async function handleSendError(
-  deps: QueueDeps,
-  id: number,
-  userId: bigint | number,
-  err: unknown,
-): Promise<void> {
-  const { accountService, notificationService, logger } = deps;
-  const verdict = classifySendFailure(err);
-  const desc = describeTelegramError(err);
-
-  if (verdict === 'transient') {
-    // Наша ошибка (разметка, длина, сеть) — не метим человека и не помечаем
-    // отправленным: повторим на следующем тике.
-    logger.error(`Failed to send notification id=${id} (${desc})`, err);
-    return;
-  }
-
-  // Оба оставшихся исхода означают «по этому адресу писать больше нельзя»,
-  // поэтому оба ставят флаг и перестают долбиться каждую ночь. Разводим их
-  // в ЛОГЕ: раньше причина терялась, и «человек закрыл бота» было не отличить
-  // от «мы пишем не туда» — а именно второе и было массовым.
-  await notificationService.markSent(id);
-  await accountService.markUserBlocked(BigInt(userId));
-  const reason = verdict === 'blocked' ? 'bot blocked' : 'chat_not_found';
-  logger.warn(`Skipping notification id=${id} — ${reason} (${desc})`);
 }

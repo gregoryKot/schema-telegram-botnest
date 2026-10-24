@@ -3,7 +3,7 @@
 // дублированные реестры, обязанные совпадать, фиксируются тестом-сверкой).
 // Бэкенд валидирует meta.block по allow-list SCREEN_BLOCK_IDS
 // (src/analytics/screen-blocks.constants.ts); фронт заводит парную константу
-// SCREEN_BLOCK_IDS в schema-miniapp/src/utils/screenBlocks.ts. Расхождение
+// SCREEN_BLOCK_IDS в shared/src/screens/screenBlocks.ts. Расхождение
 // молча роняет метрику (сервер отбросит meta.block) или ломает UI (фронт
 // покажет блок, который бэк не признаёт валидным).
 //
@@ -15,7 +15,7 @@ import { join } from 'path';
 import { SCREEN_BLOCK_IDS } from '../analytics/screen-blocks.constants';
 
 const ROOT = join(__dirname, '..', '..');
-const FRONTEND_REL = 'schema-miniapp/src/utils/screenBlocks.ts';
+const FRONTEND_REL = 'shared/src/screens/screenBlocks.ts';
 const FRONTEND_PATH = join(ROOT, FRONTEND_REL);
 
 // Вырезает блок `SCREEN_BLOCK_IDS = [ ... ]` и достаёт строковые литералы id.

@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { encryptRecord, decryptRecord, EncryptSchema } from '../utils/crypto';
+import { addToMyList } from './notes-my-list';
 
 // Поля, общие для карточки схемы и карточки режима — не копипастим список
 // дважды (правило №4/№10 CLAUDE.md). Различаются только doc-специфичные
@@ -25,9 +26,11 @@ type CommonNoteFields = {
 // Схемы шифрования — общий источник правды для NotesService (юзер) и
 // TherapyClientDataService (терапевт читает те же таблицы, импортирует отсюда).
 export const SCHEMA_NOTE_SCHEMA: EncryptSchema = {
+  model: 'userSchemaNote',
   strings: [...COMMON_NOTE_FIELDS, 'reality'],
 };
 export const MODE_NOTE_SCHEMA: EncryptSchema = {
+  model: 'userModeNote',
   strings: [
     ...COMMON_NOTE_FIELDS,
     'needs',
@@ -74,36 +77,8 @@ export class NotesService {
       create: { userId, schemaId, ...enc },
     });
     // Заполненная карточка = схема в коллекции юзера, иначе её не найти в «Моих записях».
-    await this.addToMyList(userId, 'mySchemaIds', schemaId);
+    await addToMyList(this.prisma, userId, 'mySchemaIds', schemaId);
     return res;
-  }
-
-  // Добавляет id в зашифрованный json-массив профиля (mySchemaIds/myModeIds), если его там ещё нет.
-  private async addToMyList(
-    userId: bigint,
-    field: 'mySchemaIds' | 'myModeIds',
-    id: string,
-  ) {
-    // Read-modify-write по денормализованному зашифрованному списку — в
-    // транзакции (аудит 2026-07, 2.2): конкурентные upsert'ы разных карточек
-    // одного юзера гонялись за одним прочитанным списком → lost update.
-    await this.prisma.$transaction(async (tx) => {
-      const row = await tx.user.findUnique({
-        where: { id: userId },
-        select: { [field]: true },
-      });
-      if (!row) return;
-      const dec = decryptRecord(row as Record<string, unknown>, {
-        jsonArrays: [field],
-      });
-      const list = Array.isArray(dec[field]) ? (dec[field] as string[]) : [];
-      if (list.includes(id)) return;
-      const enc = encryptRecord(
-        { [field]: [...list, id] },
-        { jsonArrays: [field] },
-      );
-      await tx.user.update({ where: { id: userId }, data: enc });
-    });
   }
 
   async getModeNote(userId: bigint, modeId: string) {
@@ -135,7 +110,7 @@ export class NotesService {
       update: enc,
       create: { userId, modeId, ...enc },
     });
-    await this.addToMyList(userId, 'myModeIds', modeId);
+    await addToMyList(this.prisma, userId, 'myModeIds', modeId);
     return res;
   }
 }

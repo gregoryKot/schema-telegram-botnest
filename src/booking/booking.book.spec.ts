@@ -5,12 +5,14 @@
 import {
   BadRequestException,
   ConflictException,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { BookingStatus, SessionType } from '@prisma/client';
 import { BookingService } from './booking.service';
 import { MIN_BOOK_LEAD_HOURS, MIN_CANCEL_LEAD_HOURS } from './booking.config';
 import { LEASE_WINDOW } from '../infra/cron-leader.service';
+import { RETURNING_NOT_FOUND_NOTE } from './booking-admin-note';
 
 const FIXED_NOW = new Date('2026-07-13T00:00:00Z'); // понедельник, 00:00 UTC
 const RULE = {
@@ -61,12 +63,19 @@ function makeService(
   };
   const prisma: any = {
     availabilityRule: { findMany: jest.fn(async () => opts.rules ?? []) },
+    slotOverride: { findMany: jest.fn(async () => []) },
     $transaction: jest.fn(async (fn: any) => fn(tx)),
     booking: {
-      update: jest.fn(async ({ where, data }: any) => {
-        const row = bookingRows.find((b) => b.id === where.id);
+      // CAS как в Postgres: WHERE на id и статус решает, обновится ли строка.
+      updateMany: jest.fn(async ({ where, data }: any) => {
+        const row = bookingRows.find(
+          (b) =>
+            b.id === where.id &&
+            (where.status === undefined || b.status === where.status),
+        );
+        if (!row) return { count: 0 };
         Object.assign(row, data);
-        return row;
+        return { count: 1 };
       }),
     },
   };
@@ -144,18 +153,53 @@ describe('BookingService.book — валидация до транзакции',
     ).rejects.toThrow('OFFER_NOT_ACCEPTED');
   });
 
-  it('returning=true без личной встречи — CLIENT_NOT_FOUND', async () => {
+  // security#19 (аудит 2026-10): ответ не должен выдавать, клиент ли этот контакт.
+  const RETURNING_DTO = {
+    ...BASE_DTO,
+    returning: true,
+    startsAt: INSIDE_WINDOW,
+    durationMin: 50,
+    type: SessionType.SESSION_50,
+  };
+
+  it('returning=true без личной встречи — бронь создаётся как первая, ответ тот же, что у найденного контакта; админу уходит пометка', async () => {
+    const stranger = makeService({ robokassaEnabled: true });
+    stranger.meeting.hasMeetingForContact.mockResolvedValue(false);
+    const known = makeService({ robokassaEnabled: true });
+    known.meeting.hasMeetingForContact.mockResolvedValue(true);
+
+    const rStranger = await stranger.service.book(RETURNING_DTO);
+    const rKnown = await known.service.book(RETURNING_DTO);
+
+    expect(rStranger.status).toBe(rKnown.status);
+    expect(Object.keys(rStranger).sort()).toEqual(Object.keys(rKnown).sort());
+    // Цена — первой встречи: тип брони тот же, что у обычной записи на сессию.
+    expect(stranger.pricing.getPrice).toHaveBeenCalledWith(
+      SessionType.SESSION_50,
+      'RUB',
+    );
+    expect(stranger.notify.onAwaitingPayment).toHaveBeenCalledWith(
+      expect.objectContaining({ clientContact: BASE_DTO.clientContact }),
+      RETURNING_NOT_FOUND_NOTE,
+    );
+    expect(known.notify.onAwaitingPayment).toHaveBeenCalledWith(
+      expect.objectContaining({ clientContact: BASE_DTO.clientContact }),
+      undefined,
+    );
+  });
+
+  it('INTRO_15 с returning=true (старый клиент) — returning игнорируется, бронь создаётся без проверки личной встречи', async () => {
     const { service, meeting } = makeService();
     meeting.hasMeetingForContact.mockResolvedValue(false);
-    await expect(
-      service.book({
-        ...BASE_DTO,
-        returning: true,
-        startsAt: INSIDE_WINDOW,
-        durationMin: 50,
-        type: SessionType.SESSION_50,
-      }),
-    ).rejects.toThrow('CLIENT_NOT_FOUND');
+    const res = await service.book({
+      ...BASE_DTO,
+      returning: true,
+      startsAt: INSIDE_WINDOW,
+      durationMin: 15,
+      type: SessionType.INTRO_15,
+    });
+    expect(res.status).toBe(BookingStatus.CONFIRMED);
+    expect(meeting.hasMeetingForContact).not.toHaveBeenCalled();
   });
 
   it('слот раньше MIN_BOOK_LEAD_HOURS (12ч) — TOO_SOON', async () => {
@@ -299,11 +343,80 @@ describe('BookingService.book — создание и side-effects', () => {
     });
     expect(res.status).toBe(BookingStatus.HELD);
     expect(res.paymentUrl).toBeTruthy();
-    expect(pricing.getPrice).toHaveBeenCalledWith(SessionType.SESSION_50);
+    expect(pricing.getPrice).toHaveBeenCalledWith(
+      SessionType.SESSION_50,
+      'RUB',
+    );
     expect(robokassa.buildPaymentUrl).toHaveBeenCalledTimes(1);
     expect(notify.onAwaitingPayment).toHaveBeenCalledTimes(1);
     expect(notify.onConfirmed).not.toHaveBeenCalled();
   });
+
+  // Аудит 2026-10-11: сумма счёта нигде не сохранялась, а checkout читал цену
+  // второй раз, отдельно от INSERT. Теперь книга читает цену один раз, кладёт её
+  // в строку, и в Robokassa уходит именно сохранённая сумма.
+  it('SESSION_50: цена читается один раз, пишется в строку (amount) и уходит в Robokassa как есть', async () => {
+    const { service, tx, robokassa, pricing } = makeService({
+      rules: [],
+      robokassaEnabled: true,
+    });
+    pricing.getPrice.mockResolvedValueOnce(4200).mockResolvedValue(9999);
+    await service.book({
+      ...BASE_DTO,
+      startsAt: INSIDE_WINDOW,
+      durationMin: 50,
+      type: SessionType.SESSION_50,
+    });
+    expect(pricing.getPrice).toHaveBeenCalledTimes(1);
+    expect(tx.booking.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ amount: 4200 }),
+    });
+    expect(robokassa.buildPaymentUrl).toHaveBeenCalledWith(
+      expect.objectContaining({ amount: 4200 }),
+    );
+  });
+
+  it('INTRO_15: сумма не выставляется — amount null, цена не читается', async () => {
+    const { service, tx, pricing } = makeService();
+    await service.book({
+      ...BASE_DTO,
+      startsAt: INSIDE_WINDOW,
+      durationMin: 15,
+      type: SessionType.INTRO_15,
+    });
+    expect(tx.booking.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ amount: null }),
+    });
+    expect(pricing.getPrice).not.toHaveBeenCalled();
+  });
+
+  it.each([0, -5])(
+    'платная сессия с ценой %p: 503 и лид владельцу ДО INSERT, слот не держится',
+    async (price) => {
+      const { service, tx, notify, prisma, pricing } = makeService({
+        rules: [],
+        robokassaEnabled: true,
+      });
+      const lead = jest.fn(async () => undefined);
+      Object.assign(notify, { notifyAdminBoth: lead });
+      const errorSpy = jest
+        .spyOn(Logger.prototype, 'error')
+        .mockImplementation();
+      pricing.getPrice.mockResolvedValue(price);
+      await expect(
+        service.book({
+          ...BASE_DTO,
+          startsAt: INSIDE_WINDOW,
+          durationMin: 50,
+          type: SessionType.SESSION_50,
+        }),
+      ).rejects.toThrow('PAYMENT_UNAVAILABLE');
+      errorSpy.mockRestore();
+      expect(lead).toHaveBeenCalledTimes(1);
+      expect(tx.booking.create).not.toHaveBeenCalled();
+      expect(prisma.$transaction).not.toHaveBeenCalled();
+    },
+  );
 
   it('SESSION_50 + Robokassa выключена (dev) — авто-подтверждение, notify.onConfirmed вызван', async () => {
     const { service, notify, prisma } = makeService({
@@ -317,11 +430,12 @@ describe('BookingService.book — создание и side-effects', () => {
       type: SessionType.SESSION_50,
     });
     expect(res.status).toBe(BookingStatus.CONFIRMED);
-    expect(prisma.booking.update).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({ status: BookingStatus.CONFIRMED }),
-      }),
-    );
+    // Аудит 2026-10-11 (booking-cas): переход HELD→CONFIRMED только с
+    // предикатом статуса, иначе dev-ветка перекрасила бы чужой переход.
+    expect(prisma.booking.updateMany).toHaveBeenCalledWith({
+      where: { id: 100, status: BookingStatus.HELD },
+      data: { status: BookingStatus.CONFIRMED, heldUntil: null },
+    });
     expect(notify.onConfirmed).toHaveBeenCalledTimes(1);
   });
 });
@@ -350,7 +464,19 @@ function makeSimpleService(
         Object.assign(state.row, data);
         return state.row;
       }),
-      updateMany: jest.fn(async () => ({ count: rows.length })),
+      // CAS как в Postgres: WHERE на токен и СТАТУС (значение или {in}) решает,
+      // обновится ли строка; count — сколько реально обновлено.
+      updateMany: jest.fn(async ({ where, data }: any) => {
+        const row = state.row;
+        const statuses = where.status?.in ?? [where.status];
+        if (
+          !row ||
+          (where.status !== undefined && !statuses.includes(row.status))
+        )
+          return { count: 0 };
+        Object.assign(row, data);
+        return { count: 1 };
+      }),
       findMany: jest.fn(async () => rows),
     },
   };
@@ -460,6 +586,89 @@ describe('BookingService.cancel', () => {
       'cal-42',
     );
   });
+
+  // Событие календаря: у CONFIRMED без записанного uid (под умер между PUT и
+  // записью) DELETE идёт по детерминированному uid, у HELD события не бывает.
+  it.each([
+    [BookingStatus.CONFIRMED, 'booking-5@schemehappens.ru'],
+    [BookingStatus.HELD, null],
+  ])(
+    'без calDavUid: бронь %s → onCancelled получает uid %s',
+    async (status, uid) => {
+      const { service, notify } = makeSimpleService({
+        bookingRow: activeBooking({ status, calDavUid: null }),
+      });
+      await service.cancel('tok');
+      expect(notify.onCancelled).toHaveBeenCalledWith(expect.anything(), uid);
+    },
+  );
+
+  // Аудит 2026-10-11, r2-1#1: find→update без предиката статуса — N параллельных
+  // отмен давали N× DM+письмо+DELETE, а отмена поверх подтверждения брала
+  // calDavUid из снимка до CAS (null) и не снимала событие из календаря.
+  it('CAS отмены: updateMany по токену с предикатом status in [HELD, CONFIRMED]', async () => {
+    const { service, prisma } = makeSimpleService({
+      bookingRow: activeBooking(),
+    });
+    await service.cancel('tok');
+    expect(prisma.booking.updateMany).toHaveBeenCalledWith({
+      where: {
+        cancelToken: 'tok',
+        status: { in: [BookingStatus.HELD, BookingStatus.CONFIRMED] },
+      },
+      data: { status: BookingStatus.CANCELLED, heldUntil: null },
+    });
+    expect(prisma.booking.update).not.toHaveBeenCalled();
+  });
+
+  it('проиграл CAS (параллельная отмена уже перевела в CANCELLED) → {ok:true} БЕЗ onCancelled', async () => {
+    const { service, prisma, notify } = makeSimpleService({
+      bookingRow: activeBooking(),
+    });
+    // Снимок до CAS ещё HELD, а к моменту updateMany строку забрал соседний вызов.
+    prisma.booking.updateMany = jest.fn(async () => ({ count: 0 }));
+    const orig = prisma.booking.findUnique.getMockImplementation();
+    let reads = 0;
+    prisma.booking.findUnique = jest.fn(async (args: any) => {
+      const row = await orig!(args);
+      return ++reads === 1 ? row : { ...row, status: BookingStatus.CANCELLED };
+    });
+    await expect(service.cancel('tok')).resolves.toEqual({ ok: true });
+    expect(notify.onCancelled).not.toHaveBeenCalled();
+  });
+
+  it('проиграл CAS, а в базе уже COMPLETED → BadRequest, а не молчаливый ok', async () => {
+    const { service, prisma, notify } = makeSimpleService({
+      bookingRow: activeBooking(),
+    });
+    prisma.booking.updateMany = jest.fn(async () => ({ count: 0 }));
+    const orig = prisma.booking.findUnique.getMockImplementation();
+    let reads = 0;
+    prisma.booking.findUnique = jest.fn(async (args: any) => {
+      const row = await orig!(args);
+      return ++reads === 1 ? row : { ...row, status: BookingStatus.COMPLETED };
+    });
+    await expect(service.cancel('tok')).rejects.toThrow(BadRequestException);
+    expect(notify.onCancelled).not.toHaveBeenCalled();
+  });
+
+  it('onCancelled получает calDavUid СВЕЖЕЙ строки (выигравший confirm успел записать событие), а не снимка до CAS', async () => {
+    const { service, prisma, notify } = makeSimpleService({
+      bookingRow: activeBooking({ calDavUid: null }),
+    });
+    const orig = prisma.booking.findUnique.getMockImplementation();
+    let reads = 0;
+    prisma.booking.findUnique = jest.fn(async (args: any) => {
+      const row = await orig!(args);
+      // первое чтение (проверки) — calDavUid ещё нет; после CAS — confirm дописал
+      return ++reads === 1 ? row : { ...row, calDavUid: 'booking-5@cal' };
+    });
+    await service.cancel('tok');
+    expect(notify.onCancelled).toHaveBeenCalledWith(
+      expect.anything(),
+      'booking-5@cal',
+    );
+  });
 });
 
 describe('BookingService.getById', () => {
@@ -500,7 +709,8 @@ describe('BookingService.getPublicByToken', () => {
     const res = await service.getPublicByToken('tok');
     expect(res.startsAt).toBe('2026-07-13T10:00:00.000Z');
     expect(res.endsAt).toBe('2026-07-13T10:50:00.000Z');
-    expect(res.meetingUrl).toBe('https://meet.test/x');
+    // ссылки на встречу в анонимной проекции нет (аудит 2026-10)
+    expect(res).not.toHaveProperty('meetingUrl');
   });
 
   it('не отдаёт clientName/clientContact (публичный вид без PII)', async () => {
@@ -579,28 +789,64 @@ describe('BookingService.expireHolds', () => {
     expect(notify.notifyExpired).not.toHaveBeenCalled();
   });
 
-  it('есть истёкшие HELD — переводит их в CANCELLED по точным id, уведомляет расшифрованным списком', async () => {
+  // Аудит 2026-10-11, r2-1#0: updateMany по `id in (…)` без статуса перекрашивал
+  // в CANCELLED бронь, подтверждённую вебхуком между findMany и updateMany.
+  it('есть истёкшие HELD — CAS на каждую строку (id + status HELD + heldUntil), уведомляет расшифрованным списком', async () => {
     const expiring = [
       { id: 11, status: BookingStatus.HELD, clientName: 'А' },
       { id: 12, status: BookingStatus.HELD, clientName: 'Б' },
     ];
     const { service, prisma, notify } = makeSimpleService({});
     prisma.booking.findMany = jest.fn(async () => expiring);
-    prisma.booking.updateMany = jest.fn(async () => ({ count: 2 }));
+    prisma.booking.updateMany = jest.fn(async () => ({ count: 1 }));
     await service.expireHolds();
-    expect(prisma.booking.updateMany).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: { id: { in: [11, 12] } },
-        data: expect.objectContaining({
-          status: BookingStatus.CANCELLED,
-          heldUntil: null,
-        }),
-      }),
-    );
+    for (const id of [11, 12]) {
+      expect(prisma.booking.updateMany).toHaveBeenCalledWith({
+        where: {
+          id,
+          status: BookingStatus.HELD,
+          heldUntil: { lte: expect.any(Date) },
+        },
+        data: { status: BookingStatus.CANCELLED, heldUntil: null },
+      });
+    }
+    expect(prisma.booking.updateMany).toHaveBeenCalledTimes(2);
     expect(notify.notifyExpired).toHaveBeenCalledWith([
       expect.objectContaining({ id: 11, clientName: 'А' }),
       expect.objectContaining({ id: 12, clientName: 'Б' }),
     ]);
+  });
+
+  it('строку уже перевёл вебхук (CAS count=0) — «истекла без оплаты» по ней НЕ уходит, остальные уходят', async () => {
+    const expiring = [
+      { id: 11, status: BookingStatus.HELD, clientName: 'А' },
+      { id: 12, status: BookingStatus.HELD, clientName: 'Б' },
+    ];
+    const { service, prisma, notify } = makeSimpleService({});
+    prisma.booking.findMany = jest.fn(async () => expiring);
+    prisma.booking.updateMany = jest.fn(async ({ where }: any) => ({
+      count: where.id === 11 ? 0 : 1, // 11 успел подтвердиться
+    }));
+    await service.expireHolds();
+    expect(notify.notifyExpired).toHaveBeenCalledWith([
+      expect.objectContaining({ id: 12 }),
+    ]);
+  });
+
+  it('все строки снимка уже переведены другими — notifyExpired не вызывается', async () => {
+    const { service, prisma, notify } = makeSimpleService({});
+    prisma.booking.findMany = jest.fn(async () => [
+      { id: 11, status: BookingStatus.HELD },
+    ]);
+    prisma.booking.updateMany = jest.fn(async () => ({ count: 0 }));
+    await service.expireHolds();
+    // CAS всё равно попробован — по этой строке, с предикатом статуса.
+    expect(prisma.booking.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ id: 11, status: BookingStatus.HELD }),
+      }),
+    );
+    expect(notify.notifyExpired).not.toHaveBeenCalled();
   });
 
   it('тик уже забрал другой инстанс — findMany не вызывается, брони не трогаем', async () => {
@@ -614,5 +860,186 @@ describe('BookingService.expireHolds', () => {
     );
     expect(prisma.booking.findMany).not.toHaveBeenCalled();
     expect(notify.notifyExpired).not.toHaveBeenCalled();
+  });
+});
+
+// Цена и путь оплаты по стране посетителя (решение владельца 2026-10-20):
+// Россия — рубли и Robokassa; Израиль, Европа, остальной мир — валюта страны,
+// онлайн-оплаты нет, бронь платной сессии подтверждается сразу (manual), а
+// владелец получает цену в валюте и договаривается об оплате сам. Страна —
+// часовой пояс, который фронт шлёт в `clientTimeZone`.
+describe('BookingService.book — страна посетителя (валюта и путь оплаты)', () => {
+  beforeEach(() => {
+    jest.useFakeTimers();
+    jest.setSystemTime(FIXED_NOW);
+  });
+  afterEach(() => jest.useRealTimers());
+
+  const CURRENCY_DTO = {
+    clientName: 'Мария',
+    clientContact: '@maria',
+    acceptedOffer: true,
+    startsAt: INSIDE_WINDOW,
+    durationMin: 50,
+    type: SessionType.SESSION_50,
+  };
+
+  /** Цена по валюте, как отдаёт PricingService по умолчанию. */
+  const CURRENCY_PRICES: Record<string, number> = {
+    RUB: 4000,
+    ILS: 200,
+    EUR: 65,
+    USD: 70,
+  };
+
+  function setupCurrency(robokassaEnabled = true) {
+    const made = makeService({ rules: [], robokassaEnabled });
+    made.pricing.getPrice.mockImplementation(
+      async (_type: unknown, currency?: string) =>
+        CURRENCY_PRICES[currency ?? 'RUB'],
+    );
+    return made;
+  }
+
+  describe('BookingService.book — не в рублях: подтверждена сразу, без Robokassa', () => {
+    it.each([
+      ['Asia/Jerusalem', 'ILS', 200],
+      ['Europe/Berlin', 'EUR', 65],
+      ['America/New_York', 'USD', 70],
+      ['Asia/Bangkok', 'USD', 70],
+    ])(
+      '%s → %s %i: CONFIRMED, без paymentUrl и холда, Robokassa не вызвана',
+      async (tz, currency, amount) => {
+        const { service, tx, notify, robokassa, pricing } = setupCurrency();
+        const res = await service.book({ ...CURRENCY_DTO, clientTimeZone: tz });
+        expect(res.status).toBe(BookingStatus.CONFIRMED);
+        expect(res.paymentUrl).toBeNull();
+        expect(res.heldUntil).toBeNull();
+        expect(pricing.getPrice).toHaveBeenCalledWith(
+          SessionType.SESSION_50,
+          currency,
+        );
+        expect(tx.booking.create).toHaveBeenCalledWith({
+          data: expect.objectContaining({
+            status: BookingStatus.CONFIRMED,
+            heldUntil: null,
+            amount,
+            currency,
+            clientTimeZone: tz,
+          }),
+        });
+        expect(robokassa.buildPaymentUrl).not.toHaveBeenCalled();
+        expect(notify.onAwaitingPayment).not.toHaveBeenCalled();
+        expect(notify.onConfirmed).toHaveBeenCalledTimes(1);
+      },
+    );
+
+    it('карточка подтверждения несёт сумму и валюту (админ увидит цену)', async () => {
+      const { service, notify } = setupCurrency();
+      await service.book({ ...CURRENCY_DTO, clientTimeZone: 'Asia/Jerusalem' });
+      expect(notify.onConfirmed).toHaveBeenCalledWith(
+        expect.objectContaining({ amount: 200, currency: 'ILS' }),
+      );
+    });
+
+    it('цена вне рублей не задана (0): 503 и лид владельцу ДО INSERT, как у рублёвой', async () => {
+      const { service, tx, notify, pricing } = setupCurrency();
+      const lead = jest.fn(async () => undefined);
+      Object.assign(notify, { notifyAdminBoth: lead });
+      const errorSpy = jest
+        .spyOn(Logger.prototype, 'error')
+        .mockImplementation();
+      pricing.getPrice.mockResolvedValue(0);
+      await expect(
+        service.book({ ...CURRENCY_DTO, clientTimeZone: 'Asia/Jerusalem' }),
+      ).rejects.toThrow('PAYMENT_UNAVAILABLE');
+      errorSpy.mockRestore();
+      expect(lead).toHaveBeenCalledTimes(1);
+      expect(tx.booking.create).not.toHaveBeenCalled();
+    });
+
+    it('лог: «CONFIRMED, manual payment USD»', async () => {
+      const { service } = setupCurrency();
+      const log = jest.spyOn(Logger.prototype, 'log').mockImplementation();
+      await service.book({ ...CURRENCY_DTO, clientTimeZone: 'Asia/Bangkok' });
+      expect(log).toHaveBeenCalledWith(
+        expect.stringMatching(
+          /Booking \d+ created \(CONFIRMED, manual payment USD\)/,
+        ),
+      );
+      log.mockRestore();
+    });
+
+    it('знакомство из-за границы: бесплатно, amount null, цена не читается', async () => {
+      const { service, tx, pricing } = setupCurrency();
+      await service.book({
+        ...CURRENCY_DTO,
+        type: SessionType.INTRO_15,
+        durationMin: 15,
+        clientTimeZone: 'Asia/Jerusalem',
+      });
+      expect(pricing.getPrice).not.toHaveBeenCalled();
+      expect(tx.booking.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          amount: null,
+          status: BookingStatus.CONFIRMED,
+        }),
+      });
+    });
+  });
+
+  describe('BookingService.book — рубли: прежний путь', () => {
+    it.each([
+      ['Europe/Moscow'],
+      ['Asia/Yekaterinburg'],
+      [undefined],
+      ['мусор'],
+      ['Europe/Nonexistent'],
+    ])(
+      'пояс %p → рубли: HELD, paymentUrl, холд 15 минут, Robokassa вызвана',
+      async (tz) => {
+        const { service, tx, notify, robokassa, pricing } = setupCurrency();
+        const res = await service.book({ ...CURRENCY_DTO, clientTimeZone: tz });
+        expect(res.status).toBe(BookingStatus.HELD);
+        expect(res.paymentUrl).toBeTruthy();
+        expect(pricing.getPrice).toHaveBeenCalledWith(
+          SessionType.SESSION_50,
+          'RUB',
+        );
+        expect(tx.booking.create).toHaveBeenCalledWith({
+          data: expect.objectContaining({
+            status: BookingStatus.HELD,
+            amount: 4000,
+            currency: 'RUB',
+            heldUntil: new Date(FIXED_NOW.getTime() + 15 * 60_000),
+          }),
+        });
+        expect(robokassa.buildPaymentUrl).toHaveBeenCalledWith(
+          expect.objectContaining({ amount: 4000 }),
+        );
+        expect(notify.onAwaitingPayment).toHaveBeenCalledTimes(1);
+        expect(notify.onConfirmed).not.toHaveBeenCalled();
+      },
+    );
+
+    it('рубли без Robokassa в проде — по-прежнему отказ 503', async () => {
+      const was = process.env.NODE_ENV;
+      process.env.NODE_ENV = 'production';
+      const errorSpy = jest
+        .spyOn(Logger.prototype, 'error')
+        .mockImplementation();
+      try {
+        const { service, notify } = setupCurrency(false);
+        Object.assign(notify, {
+          notifyAdminBoth: jest.fn(async () => undefined),
+        });
+        await expect(
+          service.book({ ...CURRENCY_DTO, clientTimeZone: 'Europe/Moscow' }),
+        ).rejects.toThrow('PAYMENT_UNAVAILABLE');
+      } finally {
+        process.env.NODE_ENV = was;
+        errorSpy.mockRestore();
+      }
+    });
   });
 });

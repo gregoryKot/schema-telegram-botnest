@@ -3,7 +3,6 @@ import {
   Logger,
   UnauthorizedException,
   BadRequestException,
-  ConflictException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
@@ -15,10 +14,14 @@ import * as crypto from 'crypto';
 // Адрес в EmailToken — PII, шифруется; лукап токена идёт по tokenHash.
 import { encrypt as encField } from '../utils/crypto';
 import { sendMagicLink } from './magic-link';
+import * as authPii from '../utils/auth-provider-crypto'; // D-9: email/имя — PII
 import { issueRotatedPair, type RotatingSession } from './refresh-issue';
 import { normalizeAddressForm } from '../notification/address-form';
-import { classifyReuse, shouldSkipRotation } from './refresh-rotation';
-import { revokeFamilyAndAlert } from './refresh-theft';
+import { shouldSkipRotation } from './refresh-rotation';
+import { resolveReuse } from './refresh-reuse';
+import { revokeFamilyQuiet } from './refresh-logout';
+import { unlinkProviderSafely } from './unlink-provider';
+import { verifyTelegramInitData } from './telegram-init-data';
 
 function isValidEmail(s: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s) && s.length <= 254;
@@ -58,62 +61,17 @@ export class AuthService {
     id: number;
     firstName: string;
   } {
-    const botToken = this.config.getOrThrow<string>('BOT_TOKEN').trim();
-
-    const params = new URLSearchParams(initData);
-    const hash = params.get('hash');
-    if (!hash) throw new UnauthorizedException('Missing hash in initData');
-    // Must be 64 hex chars — otherwise Buffer.from(hash,'hex') yields a
-    // wrong-length buffer and timingSafeEqual throws RangeError → 500.
-    if (!/^[0-9a-f]{64}$/i.test(hash))
-      throw new UnauthorizedException('Malformed hash in initData');
-
-    // Check auth_date freshness (allow 1 hour for mini apps — WebApp is long-lived)
-    const authDate = parseInt(params.get('auth_date') ?? '0', 10);
-    if (Date.now() / 1000 - authDate > 3600)
-      throw new UnauthorizedException('Telegram initData expired');
-
-    // Build check string: all fields except hash, sorted, joined with \n
-    params.delete('hash');
-    const checkString = Array.from(params.entries())
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([k, v]) => `${k}=${v}`)
-      .join('\n');
-
-    const secretKey = crypto
-      .createHmac('sha256', 'WebAppData')
-      .update(botToken)
-      .digest();
-    const expectedHash = crypto
-      .createHmac('sha256', secretKey)
-      .update(checkString)
-      .digest('hex');
-
-    if (
-      !crypto.timingSafeEqual(
-        Buffer.from(hash, 'hex'),
-        Buffer.from(expectedHash, 'hex'),
-      )
-    ) {
-      throw new UnauthorizedException('Invalid Telegram WebApp signature');
-    }
-
-    // Parse user field (JSON string in initData)
-    const userJson = params.get('user');
-    if (!userJson) throw new UnauthorizedException('Missing user in initData');
-    let user: { id: number; first_name?: string };
+    const botToken = this.config.getOrThrow<string>('BOT_TOKEN');
+    // Подпись, окно свежести и разбор user — один верификатор на все входы
+    // (telegram-init-data.ts); здесь только превращение отказа в 401.
     try {
-      user = JSON.parse(userJson) as { id: number; first_name?: string };
-    } catch {
-      throw new UnauthorizedException('Invalid user JSON in initData');
+      const { user } = verifyTelegramInitData(initData, botToken);
+      return { id: user.id, firstName: user.first_name ?? '' };
+    } catch (err) {
+      // Верификатор бросает только Error (см. шапку telegram-init-data.ts).
+      throw new UnauthorizedException((err as Error).message);
     }
-
-    if (!user.id)
-      throw new UnauthorizedException('Missing user id in initData');
-    return { id: user.id, firstName: user.first_name ?? '' };
   }
-
-  // ─── Find or create user ───────────────────────────────────────────────────
 
   // ─── Email magic-link login ───────────────────────────────────────────────
 
@@ -124,20 +82,22 @@ export class AuthService {
     if (!isValidEmail(email)) throw new BadRequestException('Invalid email');
     const lower = email.toLowerCase().trim();
 
-    // Find or create user — always succeeds so we don't leak existence
-    const userId = await this.findOrCreateUserByProvider(
-      'email',
+    // B-16: до подтверждения адреса ничего не создаём — аккаунт появится при
+    // погашении ссылки. Известный адрес — токен сразу на его аккаунт.
+    const known = await this.prisma.authProvider.findUnique({
+      where: { provider_providerId: { provider: 'email', providerId: lower } },
+    });
+    await this.sendMagicLink(
+      known?.userId ?? null,
       lower,
-      lower.split('@')[0],
+      'login',
+      'sendLoginLink',
+      ticket,
     );
-
-    // userId только что найден/создан выше — форма обращения уже выбрана.
-    await this.sendMagicLink(userId, lower, 'login', 'sendLoginLink', ticket);
     return { ok: true };
   }
 
-  // Send a magic link that links email as auth provider (not a new login).
-  // The token has purpose='link_email_auth' so the callback knows what to do.
+  // Magic link привязки почты (purpose='link_email_auth'), не новый вход.
   async linkEmailToAccount(
     targetUserId: bigint,
     email: string,
@@ -145,12 +105,13 @@ export class AuthService {
     if (!isValidEmail(email)) throw new BadRequestException('Invalid email');
     const lower = email.toLowerCase().trim();
 
-    // Check if already linked to another user
     const taken = await this.prisma.authProvider.findUnique({
       where: { provider_providerId: { provider: 'email', providerId: lower } },
     });
     if (taken && BigInt(taken.userId) !== targetUserId) {
-      throw new ConflictException('Этот email уже привязан к другому аккаунту');
+      // B-16: ответ как у свободного адреса, письма нет (иначе 409 — перебор).
+      this.securityLog.log('email_link_conflict', { userId: targetUserId });
+      return { ok: true };
     }
 
     await this.sendMagicLink(
@@ -174,11 +135,10 @@ export class AuthService {
       where: { provider_providerId: { provider, providerId } },
     });
     if (existing) {
-      // Update display name if changed
       if (displayName) {
         await this.prisma.authProvider.update({
           where: { id: existing.id },
-          data: { displayName, email },
+          data: authPii.encryptAuthProviderFields({ displayName, email }),
         });
       }
       return existing.userId;
@@ -196,14 +156,13 @@ export class AuthService {
       create: { id: userId, firstName: displayName },
     });
 
-    // Atomic upsert (Postgres INSERT … ON CONFLICT) — the mini-app fires several
-    // API requests in parallel on first load; without this they race between the
-    // findUnique above and this insert and all-but-one crash on the
-    // (provider, providerId) unique constraint.
+    // Atomic upsert (ON CONFLICT): параллельные запросы мини-аппа на первом
+    // входе иначе гонятся между findUnique и insert и падают на unique.
+    const pii = authPii.encryptAuthProviderFields({ displayName, email });
     const row = await this.prisma.authProvider.upsert({
       where: { provider_providerId: { provider, providerId } },
-      update: { displayName, email },
-      create: { userId, provider, providerId, displayName, email },
+      update: pii,
+      create: { userId, provider, providerId, ...pii },
     });
 
     this.logger.log(
@@ -233,8 +192,9 @@ export class AuthService {
     }
 
     try {
+      const pii = authPii.encryptAuthProviderFields({ displayName, email });
       await this.prisma.authProvider.create({
-        data: { userId, provider, providerId, displayName, email },
+        data: { userId, provider, providerId, ...pii },
       });
     } catch (e: unknown) {
       // Race: a concurrent request inserted the same (provider, providerId)
@@ -359,18 +319,7 @@ export class AuthService {
   }
 
   async unlinkProvider(userId: bigint, provider: string): Promise<void> {
-    // Don't allow unlinking the last provider — user would lose access
-    const all = await this.prisma.authProvider.findMany({
-      where: { userId },
-    });
-    if (all.length <= 1) {
-      throw new ConflictException(
-        'Cannot unlink the only authentication method',
-      );
-    }
-    await this.prisma.authProvider.deleteMany({
-      where: { userId, provider },
-    });
+    await unlinkProviderSafely(this.prisma, userId, provider);
     this.logger.log(`Unlinked ${provider} from userId ${userId}`);
   }
 
@@ -385,7 +334,7 @@ export class AuthService {
       where: { userId },
       select: { provider: true, email: true, displayName: true },
     });
-    return rows;
+    return rows.map(authPii.decryptAuthProviderRow);
   }
 
   // ─── Token issuance ────────────────────────────────────────────────────────
@@ -496,32 +445,22 @@ export class AuthService {
 
     if (!session) throw new UnauthorizedException('Unknown refresh token');
 
-    // Потерянный ответ vs кража — classifyReuse, refresh-rotation.ts.
+    // Потерянный ответ vs кража — refresh-reuse.ts (classifyReuse + бюджет
+    // восстановлений); не-recover исход бросает 401.
     const now = new Date();
     if (session.revokedAt || session.expiresAt < now) {
-      const successor = session.replacedByHash
-        ? await this.prisma.webSession.findUnique({
-            where: { tokenHash: session.replacedByHash },
-          })
-        : null;
-      const verdict = classifyReuse(session, successor, now, session.userId);
-      this.logger.warn(verdict.logMessage);
-      // recover — наследник цел и не тронут: второго участника нет.
-      if (verdict.outcome === 'recover')
-        return this.issueRotated(session, rawRefresh, ip, userAgent);
-      if (verdict.outcome === 'theft' && session.family) {
-        await revokeFamilyAndAlert(
-          {
-            prisma: this.prisma,
-            onAlert: (userId, family) =>
-              this.securityLog.log('refresh_token_reuse', { userId, family }),
-            onEcho: (msg) => this.logger.warn(msg),
-          },
-          session.family,
-          session.userId,
-        );
-      }
-      throw new UnauthorizedException('Refresh token already used or expired');
+      await resolveReuse(
+        {
+          prisma: this.prisma,
+          onAlert: (userId, family) =>
+            this.securityLog.log('refresh_token_reuse', { userId, family }),
+          onEcho: (msg) => this.logger.warn(msg),
+          onWarn: (msg) => this.logger.warn(msg),
+        },
+        session,
+        now,
+      );
+      return this.issueRotated(session, rawRefresh, ip, userAgent);
     }
 
     // Ротировали недавно — только access, кука прежняя (rotated:false).
@@ -555,12 +494,14 @@ export class AuthService {
 
   // ─── Logout ────────────────────────────────────────────────────────────────
 
+  // Выход закрывает всю family предъявленного токена, а не одну строку: иначе
+  // вор с наследником той же цепочки переживал «Выйти» жертвы (аудит 2026-10).
   async revokeSession(rawRefresh: string): Promise<void> {
-    const tokenHash = this.hashToken(rawRefresh);
-    await this.prisma.webSession.updateMany({
-      where: { tokenHash, revokedAt: null },
-      data: { revokedAt: new Date() },
+    const session = await this.prisma.webSession.findUnique({
+      where: { tokenHash: this.hashToken(rawRefresh) },
+      select: { family: true },
     });
+    if (session) await revokeFamilyQuiet(this.prisma, session.family);
   }
 
   async revokeAllSessions(userId: bigint): Promise<void> {
@@ -591,7 +532,7 @@ export class AuthService {
   }
   // Тонкая обёртка над magic-link.ts: сервис только собирает зависимости.
   private sendMagicLink(
-    userId: bigint,
+    userId: bigint | null,
     lower: string,
     purpose: 'login' | 'link_email_auth',
     logLabel: string,
@@ -603,8 +544,8 @@ export class AuthService {
         webappUrl: this.config.getOrThrow<string>('WEBAPP_URL'),
         encryptEmail: (e) => encField(e) ?? e,
         addressForm: (id) => this.userAddressForm(id),
-        send: (email, link, form) =>
-          this.emailSvc.sendLoginLink(email, link, form),
+        send: (e, l, f) => this.emailSvc.sendLoginLink(e, l, f),
+        sendLink: (e, l, f) => this.emailSvc.sendLinkEmailLetter(e, l, f),
         onSendError: (m) => this.logger.error(`${logLabel} failed: ${m}`),
       },
       userId,

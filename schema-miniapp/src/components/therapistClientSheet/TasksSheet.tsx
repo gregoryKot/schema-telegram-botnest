@@ -1,5 +1,5 @@
 import { BottomSheet } from '../BottomSheet';
-import { fmtDate } from '../../utils/format';
+import { fmtDate, momentDayKey } from '../../utils/format';
 import { ClientDetail } from './types';
 
 interface TasksSheetProps {
@@ -102,7 +102,7 @@ export function TasksSheet({ detail }: TasksSheetProps) {
                   >
                     {task.dueDate
                       ? `Срок: ${fmtDate(task.dueDate)}`
-                      : fmtDate(task.createdAt.slice(0, 10))}
+                      : fmtDate(momentDayKey(task.createdAt))}
                   </div>
                   {task.progress !== undefined && task.targetDays && (
                     <div

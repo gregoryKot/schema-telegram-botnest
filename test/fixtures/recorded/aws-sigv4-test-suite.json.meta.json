@@ -1,0 +1,6 @@
+{
+  "source": "AWS Signature Version 4 Test Suite (https://docs.aws.amazon.com/general/latest/gr/signature-v4-test-suite.html); тот же набор в AWS SDK для Python: https://github.com/boto/botocore/tree/develop/tests/unit/auth/aws4_testsuite",
+  "recordedAt": "2026-10-14",
+  "how": "скачано curl-ом из botocore (raw.githubusercontent.com, ветка develop): каталоги get-vanilla, get-vanilla-query-order-key-case, get-vanilla-query-unreserved, post-x-www-form-urlencoded — файлы .req (запрос) и .authz (ожидаемый заголовок Authorization); перенесены в JSON без изменения значений",
+  "redacted": "ничего — публичные тестовые ключи AWS (AKIDEXAMPLE), не секреты"
+}

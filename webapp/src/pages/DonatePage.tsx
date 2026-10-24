@@ -1,18 +1,19 @@
 import { useState } from 'react';
-import { api } from '../api';
+import { api, ApiError } from '../api';
+import '../styles/auth-pay.css';
 
 const PRESETS = [200, 500, 1000, 2000];
 
-// Public donation page (no auth) at /donate. Handles the return from Robokassa
-// (?donation=ok|fail) and otherwise shows the donation form. The game and the
-// in-app sheet both ultimately land donors here so they never hit /login.
+// Публичная /donate (и возврат Robokassa ?donation=ok|fail): вне RequireAuth/AddressFormProvider,
+// из Telegram/MAX открывается во внешнем браузере, на визитке — гость. Форма обращения неизвестна
+// по построению → тексты безличные, без useTr (как SubscribeForm.tsx); useTr тут всегда дал бы «ты».
 export function DonatePage() {
   const params = new URLSearchParams(window.location.search);
   const ret = params.get('donation'); // 'ok' | 'fail' | null
   const [amount, setAmount] = useState(500);
   const [email, setEmail] = useState('');
   const [website, setWebsite] = useState('');
-  const [status, setStatus] = useState<'idle' | 'loading' | 'error'>('idle');
+  const [status, setStatus] = useState<'idle' | 'loading' | 'error' | 'unavailable'>('idle');
 
   const submit = async () => {
     if (amount < 10) return;
@@ -21,57 +22,41 @@ export function DonatePage() {
       const res = await api.donate({ amount, source: 'app', email: email.trim() || undefined, website });
       if (res.paymentUrl) { window.location.href = res.paymentUrl; return; }
       window.location.search = '?donation=ok'; // dev / unconfigured
-    } catch { setStatus('error'); }
-  };
-
-  const field: React.CSSProperties = {
-    width: '100%', padding: '13px 15px', fontSize: 15, boxSizing: 'border-box',
-    background: 'rgba(var(--fg-rgb),0.04)', border: '1.5px solid var(--line)',
-    borderRadius: 'var(--r-12)', color: 'var(--text)', outline: 'none', fontFamily: 'inherit',
+    } catch (e) { setStatus(e instanceof ApiError && e.status === 503 ? 'unavailable' : 'error'); } // 503: оплата не настроена, повтор не поможет
   };
 
   return (
-    <div style={{ flex: 1, width: '100%', boxSizing: 'border-box', background: 'var(--bg)', color: 'var(--text)', minHeight: '100dvh' }}>
-      <div style={{ maxWidth: 460, margin: '0 auto', padding: '48px 20px 60px' }}>
-        <a href="/" style={{ color: 'var(--text-sub)', fontSize: 15, textDecoration: 'none' }}>← На главную</a>
-
+    <div className="light-lock ap-page ap-page--center">
+      <div className="ds-card ap-donate">
         {ret === 'ok' ? (
-          <div style={{ textAlign: 'center', padding: '48px 0' }}>
-            <h1 style={{ fontFamily: 'var(--serif)', fontSize: 28, fontWeight: 400, margin: '0 0 10px' }}>Спасибо за поддержку!</h1>
-            <p style={{ color: 'var(--text-sub)', fontSize: 16, lineHeight: 1.6 }}>Это очень помогает развивать проект.</p>
+          <div className="ap-thanks">
+            <h1 className="ap-h1 ap-h1--sm">Спасибо за поддержку!</h1>
+            <p className="ap-lead">Это очень помогает развивать проект.</p>
           </div>
         ) : (
-          <div className="u-mt24">
-            <h1 style={{ fontFamily: 'var(--serif)', fontSize: 30, fontWeight: 400, margin: '0 0 8px' }}>Поддержать проект</h1>
-            <p style={{ color: 'var(--text-sub)', fontSize: 15, lineHeight: 1.6, margin: '0 0 24px' }}>
-              «Всё по схеме» бесплатно. Если приложение полезно — поддержите развитие любой суммой.
-            </p>
-            {ret === 'fail' && <p style={{ color: 'var(--accent-red)', fontSize: 14, margin: '0 0 16px' }}>Оплата не прошла. Можно попробовать снова.</p>}
+          <>
+            <div className="ds-eyebrow">Разовая поддержка</div>
+            <h1 className="ap-h1">Поддержать <i>проект</i></h1>
+            <p className="ap-lead">«Всё по схеме» бесплатно. Если приложение полезно, его развитие можно поддержать любой суммой.</p>
+            {ret === 'fail' && <p className="ap-err" role="alert">Оплата не прошла. Можно попробовать снова.</p>}
 
-            <div style={{ display: 'flex', gap: 'var(--space-8)', flexWrap: 'wrap', marginBottom: 12 }}>
+            <div className="ap-amounts">
               {PRESETS.map((p) => (
-                <button key={p} type="button" onClick={() => setAmount(p)} style={{
-                  flex: '1 1 60px', padding: '12px 0', fontSize: 15, fontWeight: 700, fontFamily: 'inherit', cursor: 'pointer', borderRadius: 'var(--r-10)',
-                  background: amount === p ? 'var(--accent)' : 'transparent', color: amount === p ? '#fff' : 'var(--text-sub)',
-                  border: `1.5px solid ${amount === p ? 'var(--accent)' : 'var(--line-strong)'}`,
-                }}>{p} ₽</button>
+                <button key={p} type="button" aria-pressed={amount === p} onClick={() => setAmount(p)} className={`ap-amount${amount === p ? ' is-on' : ''}`}>{p} ₽</button>
               ))}
             </div>
-            <input type="number" min={10} max={100000} value={amount} onChange={(e) => setAmount(Math.max(0, Math.round(Number(e.target.value))))} style={{ ...field, marginBottom: 16 }} placeholder="Своя сумма, ₽" />
-            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} style={{ ...field, marginBottom: 20 }} placeholder="Email для чека (необязательно)" />
-            <input type="text" tabIndex={-1} autoComplete="off" value={website} onChange={(e) => setWebsite(e.target.value)} aria-hidden="true" style={{ position: 'absolute', left: '-9999px', width: 1, height: 1, opacity: 0 }} />
+            <input type="number" className="ym-disable-keys ds-input ap-input" min={10} max={100000} value={amount} onChange={(e) => setAmount(Math.max(0, Math.round(Number(e.target.value))))} placeholder="Своя сумма, ₽" />
+            <input type="email" className="ym-disable-keys ds-input ap-input" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email для чека (необязательно)" />
+            <input type="text" tabIndex={-1} autoComplete="off" value={website} onChange={(e) => setWebsite(e.target.value)} aria-hidden="true" className="ap-honey" />
 
-            {status === 'error' && <p style={{ color: 'var(--accent-red)', fontSize: 13, margin: '0 0 12px' }}>Не получилось. Попробовать ещё раз.</p>}
-            <button onClick={submit} disabled={status === 'loading' || amount < 10} style={{
-              width: '100%', padding: '15px', fontSize: 16, fontWeight: 700, fontFamily: 'inherit',
-              background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: 'var(--r-12)',
-              cursor: 'pointer', opacity: status === 'loading' || amount < 10 ? 0.5 : 1,
-            }}>
+            {(status === 'error' || status === 'unavailable') && <p className="ap-err" role="alert">{status === 'unavailable' ? 'Оплата сейчас недоступна: сбой на стороне сайта, о нём уже знают. Повторять бесполезно, лучше вернуться позже.' : 'Не получилось. Попробовать ещё раз.'}</p>}
+            <button type="button" onClick={submit} disabled={status === 'loading' || amount < 10} className="ds-btn ds-btn--accent ap-donate-cta">
               {status === 'loading' ? 'Перехожу к оплате…' : `Поддержать ${amount.toLocaleString('ru-RU')} ₽`}
             </button>
-            <p style={{ fontSize: 12, color: 'var(--text-faint)', textAlign: 'center', marginTop: 12, lineHeight: 1.5 }}>Оплата картой или СБП через Robokassa.<br />Добровольное пожертвование, возврату не подлежит.</p>
-          </div>
+            <p className="ap-fine">Оплата картой или СБП через Robokassa.<br />Добровольное пожертвование, возврату не подлежит.</p>
+          </>
         )}
+        <a href="/" className="ap-back">← На главную</a>
       </div>
     </div>
   );

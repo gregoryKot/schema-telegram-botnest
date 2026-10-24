@@ -1,5 +1,5 @@
 import { UserTask } from '../../api';
-import { fmtDate } from '../../utils/format';
+import { fmtDate, momentDayKey } from '../../utils/format';
 import { resolveTaskDisplayText } from './taskEmoji';
 
 interface Props {
@@ -87,9 +87,7 @@ export function TaskHistoryList({ taskHistory, variant = 'full' }: Props) {
                     marginTop: full ? 2 : 1,
                   }}
                 >
-                  {fmtDate(
-                    new Date(task.completedAt).toISOString().slice(0, 10),
-                  )}
+                  {fmtDate(momentDayKey(task.completedAt))}
                 </div>
               )}
             </div>

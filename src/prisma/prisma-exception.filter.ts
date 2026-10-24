@@ -8,6 +8,8 @@ import {
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import type { Request, Response } from 'express';
+import { safeRequestPath } from './safe-request-path';
+import { replyHttpException } from './http-exception-body';
 
 // Global filter that maps Prisma errors to friendly 4xx responses.
 //
@@ -25,11 +27,19 @@ export class PrismaExceptionFilter implements ExceptionFilter {
   catch(exception: Error, host: ArgumentsHost) {
     const res = host.switchToHttp().getResponse<Response>();
     const req = host.switchToHttp().getRequest<Request>();
-    const path = req.url ?? '?';
-
-    // Always log the full internal message — admin gets the alert via
-    // AlertLogger and we keep the trail in case we need to debug.
-    this.logger.error(`Prisma error on ${path}: ${exception.message}`);
+    // Аудит 2026-10 (D1): AlertLogger шлёт админу в DM и на почту ТОЛЬКО
+    // первый аргумент `.error()`. Сырой `req.url` (токены записи в пути,
+    // `?token=`, OAuth `?code=&state=`) и `exception.message` (у
+    // PrismaClientValidationError внутри полный `args` с открытыми колонками)
+    // туда попадать не должны. Поэтому первый аргумент — маскированный путь +
+    // код/класс ошибки, а полный message — вторым (только stdout; конвенция
+    // H0/H6, см. client-errors.controller.ts).
+    const path = safeRequestPath(req.url);
+    const kind =
+      exception instanceof Prisma.PrismaClientKnownRequestError
+        ? exception.code
+        : exception.name;
+    this.logger.error(`Prisma error on ${path} (${kind})`, exception.message);
 
     if (exception instanceof Prisma.PrismaClientKnownRequestError) {
       switch (exception.code) {
@@ -70,6 +80,36 @@ export class PrismaExceptionFilter implements ExceptionFilter {
   }
 }
 
+// Клиентские ошибки express-слоя (http-errors): тело больше лимита, неизвестная
+// кодировка, оборванный запрос. Сюда они приходят НЕ как HttpException — Nest
+// переводит в свои только SyntaxError и URIError (routes-resolver.js,
+// `mapExternalException`), остальное отдаёт фильтру как есть.
+//
+// Аудит 2026-07-20 (L2): без этой ветки клиент получал 500 вместо 413, а
+// `logger.error` будил владельца в DM. Хуже статуса был шум — ключ троттлинга
+// AlertLogger нормализует только цифры, а первым аргументом идёт ПУТЬ: меняя
+// его (`/api/aaa`, `/api/aab`, …), любой без авторизации выжигал общий бюджет
+// алертов (15/мин на все подсистемы), и настоящая авария в это окно молчала
+// (правило №14: «алерт, тонущий в шуме, — это не алерт»). Разбор лимита —
+// src/infra/body-limit.ts.
+//
+// Признак узкий: `expose === true` ставит только http-errors. Числового
+// `status` мало — он есть и у ошибок исходящих клиентов (AxiosError), а чужой
+// 404 от Telegram или Resend остаётся нашей аварией (контроль — в спеке).
+const CLIENT_ERROR_MESSAGES: Record<number, string> = {
+  413: 'Слишком большой запрос',
+  415: 'Неподдерживаемый формат данных',
+};
+
+function clientErrorStatus(exception: unknown): number | undefined {
+  if (!(exception instanceof Error)) return undefined;
+  const e = exception as Error & { expose?: unknown; status?: unknown };
+  if (e.expose !== true) return undefined;
+  return typeof e.status === 'number' && e.status >= 400 && e.status < 500
+    ? e.status
+    : undefined;
+}
+
 // Re-throws HttpException as-is, hides any other unhandled exception's message.
 // Acts as a safety net so that a stray TypeError or raw fetch error doesn't
 // leak its stack to the API client.
@@ -79,16 +119,39 @@ export class GenericExceptionFilter implements ExceptionFilter {
 
   catch(exception: unknown, host: ArgumentsHost) {
     if (exception instanceof HttpException) {
-      // Nest's normal exception flow — pass through.
-      const res = host.switchToHttp().getResponse<Response>();
-      const body = exception.getResponse();
-      return res.status(exception.getStatus()).json(body);
+      // Nest's normal exception flow — pass through (строка → объект, как у Nest).
+      return replyHttpException(host, exception);
     }
     const req = host.switchToHttp().getRequest<Request>();
     const err = exception instanceof Error ? exception : undefined;
+    // D1: первый аргумент уходит в ALERT-канал — только маскированный путь и
+    // класс ошибки; message и стек — вторым (stdout), см. PrismaExceptionFilter.
+    // Сырой req.url не попадает в логи ни в одной из веток ниже — трипваер
+    // src/security/log-leak.invariants.spec.ts следит именно за этим.
+    const path = safeRequestPath(req.url);
+
+    const clientStatus = clientErrorStatus(exception);
+    if (clientStatus !== undefined) {
+      // Уровень `warn`, а не `error`: в стандартный вывод строка попадает,
+      // в канал алертов (AlertLogger переопределяет только `error`) — нет.
+      // Сообщение самой ошибки клиенту не отдаём и в лог не кладём.
+      this.logger.warn(
+        `Client error on ${path} (${err?.name ?? typeof exception}) → ${clientStatus}`,
+      );
+      return host
+        .switchToHttp()
+        .getResponse<Response>()
+        .status(clientStatus)
+        .json({
+          statusCode: clientStatus,
+          error: 'Client Error',
+          message: CLIENT_ERROR_MESSAGES[clientStatus] ?? 'Некорректный запрос',
+        });
+    }
+
     this.logger.error(
-      `Unhandled error on ${req.url ?? '?'}: ${err?.message ?? String(exception)}`,
-      err?.stack,
+      `Unhandled error on ${path} (${err?.name ?? typeof exception})`,
+      err?.stack ?? err?.message ?? String(exception),
     );
     host.switchToHttp().getResponse<Response>().status(500).json({
       statusCode: 500,

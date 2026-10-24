@@ -43,6 +43,25 @@ describe('CrisisCardView — рендер', () => {
   });
 });
 
+describe('CrisisCardView — постоянный блок (standing)', () => {
+  // Регрессия 2026-10-03: блок «Помощь рядом» видят все, а карточка
+  // говорила «Похоже, сейчас очень тяжело» и про запись, которой нет.
+  it('не угадывает состояние и не говорит о записи, линии на месте', () => {
+    render(<CrisisCardView standing tr={tr} track={vi.fn()} />);
+    expect(screen.getByText('Если станет совсем тяжело')).toBeTruthy();
+    expect(screen.queryByText(/Похоже/)).toBeNull();
+    expect(screen.queryByText(/Запись сохранится/)).toBeNull();
+    for (const h of CRISIS_HOTLINES)
+      expect(screen.getByText(h.display)).toBeTruthy();
+  });
+
+  it('показ по детекции — прежний текст', () => {
+    render(<CrisisCardView surface="note" tr={tr} track={vi.fn()} />);
+    expect(screen.getByText(/Похоже, сейчас очень тяжело/)).toBeTruthy();
+    expect(screen.getByText(/Запись сохранится/)).toBeTruthy();
+  });
+});
+
 describe('CrisisCardView — аналитика (правило №8)', () => {
   it('с surface: при маунте трекает crisis_card_shown с {surface}', () => {
     const track = vi.fn();

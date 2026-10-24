@@ -75,7 +75,12 @@ export const EXPORT_POLICY: Record<string, ExportDecision> = {
   PracticePlan: { status: 'export', schema: { strings: ['practiceText'] } },
   PracticeSession: { status: 'export' },
   UserTask: { status: 'export', schema: { strings: ['text'] } },
-  ScheduledNotification: { status: 'export' },
+  // payload — зашифрованная JSON-строка (notification-payload.crypto.ts); в
+  // файле выгрузки он должен быть читаемым объектом, не шифротекстом.
+  ScheduledNotification: {
+    status: 'export',
+    schema: { jsonArrays: ['payload'] },
+  },
   // ── YSQ (тест схем) — ответы лежат зашифрованным JSON-блобом ──────────────
   YsqProgress: { status: 'export', schema: { jsonArrays: ['answers'] } },
   YsqResult: { status: 'export', schema: { jsonArrays: ['answers'] } },
@@ -119,10 +124,12 @@ export const EXPORT_POLICY: Record<string, ExportDecision> = {
     schema: { jsonArrays: ['items'] },
   },
   DiaryDraft: { status: 'export', schema: { jsonArrays: ['data'] } },
-  // ── Аналитика о собственных действиях (не путать с /stats-агрегатами) ────
   AnalyticsEvent: { status: 'export' },
-  // ── Входы: какие способы входа привязаны (НЕ токены/сессии — см. withhold) ─
-  AuthProvider: { status: 'export' },
+  // ── Входы: привязанные способы входа (НЕ токены/сессии — см. withhold) ──
+  AuthProvider: {
+    status: 'export',
+    schema: { strings: ['email', 'displayName'] },
+  },
   // Заявка на роль терапевта — собственный текст заявителя о себе, не секрет
   // входа. rejectReason — комментарий админа, оставляем как есть (не PII заявителя).
   TherapistRequest: {
@@ -153,11 +160,9 @@ export const EXPORT_POLICY: Record<string, ExportDecision> = {
   },
 };
 
-// Модели вне EXPORT_POLICY, но упомянутые здесь ОСОЗНАННО — не userId-модели
-// (см. src/auth/table-registry.spec.ts, раздел OTHER_MODELS), поэтому вне
-// гейта этого файла: субъект (User, свои безопасные поля собирает
-// data-export.service.ts явным select) и данные, у которых нет связи с User
-// (Booking/Donation/ClientMeeting — см. withheld-список в самом экспорте).
+// Вне EXPORT_POLICY осознанно: User (поля — USER_EXPORT_SELECT ниже), модели без
+// связи с User (Booking/Donation/ClientMeeting — withheld в самом экспорте) и
+// модели с ключом clientId — их реестр в export-policy.client.ts.
 
 // ── Поля самого субъекта (модель User) ─────────────────────────────────────
 // Явный список, а не «все колонки минус секреты»: новая колонка не попадёт в

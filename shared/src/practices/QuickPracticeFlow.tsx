@@ -1,16 +1,12 @@
 // Быстрая практика «Здесь и сейчас» с пошаговым флоу (заземление 5-4-3-2-1,
-// техника «Стоп») — один компонент на обе и на обе площадки (правило №3 и
-// «одна механика — один компонент»). Контент — shared/practices/quickPractices,
-// пошаговое тело — StepFlowBody, done-экран фиксирует прохождение через
-// useQuickPractice и показывает счётчик + «Поделиться» (PracticeDoneFooter).
-// Площадочное приходит инъекцией, как ShareCardSheet в MonthShareButton:
-// свой пошаговый лист (оболочка-шит у webapp и мини-аппа разная), свой
-// ShareCardSheet, свой api и botShortUrl. Событие stop_start парное с
-// ANALYTICS_EVENTS на бэке (src/analytics/analytics.constants.ts) — уходит
-// только для техники «Стоп» (у заземления своего события нет).
+// техника «Стоп») — один компонент на обе площадки (правило №3). Контент —
+// quickPractices, тело — StepFlowBody, done-экран фиксирует прохождение
+// (useQuickPractice) и показывает счётчик + «Поделиться» (Footer).
+// Площадочное — инъекцией (лист, ShareCardSheet, api). stop_start — только «Стоп».
 import { useEffect, useState, type ComponentType } from 'react';
-import { PracticeDoneFooter, practiceCountLabel } from './PracticeDoneFooter';
-import type { StepFlowProps } from './StepFlowBody';
+import type { PracticeDoneFooterProps } from './PracticeDoneFooter';
+import { practiceCountLabel } from './practiceCountLabel';
+import type { StepFlowProps } from './stepFlowTypes';
 import { useQuickPractice, type QuickPracticeApi } from './useQuickPractice';
 import { useTr } from '../utils/addressForm';
 import { drawPracticeCard } from '../share/cards/practiceCard';
@@ -30,6 +26,8 @@ export interface QuickPracticeFlowProps {
   /** Карточка шаринга обязана лечь ПОВЕРХ листа практики, а слои у площадок
    * разные (мини-апп: лист 200 → карточка 300; сайт: лист 300 → карточка 320). */
   shareZIndex: number;
+  /** Подвал done-экрана: вёрстка площадки (PracticeDoneFooter / ...Site). */
+  Footer: ComponentType<PracticeDoneFooterProps>;
 }
 
 export function QuickPracticeFlow({
@@ -40,6 +38,7 @@ export function QuickPracticeFlow({
   ShareCardSheet,
   botShortUrl,
   shareZIndex,
+  Footer,
 }: QuickPracticeFlowProps) {
   const tr = useTr();
   const practice = buildQuickPractice(id, tr);
@@ -60,7 +59,7 @@ export function QuickPracticeFlow({
         steps={practice.steps}
         done={practice.done}
         doneExtra={
-          <PracticeDoneFooter
+          <Footer
             count={count}
             onShown={complete}
             onShare={() => setShowShare(true)}

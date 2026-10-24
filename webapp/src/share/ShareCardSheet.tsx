@@ -9,6 +9,7 @@ import { ShareIcon } from '../../../shared/src/share/ShareIcon';
 import { useShareCard } from '../../../shared/src/share/useShareCard';
 import type { ShareCardKind } from '../../../shared/src/share/analytics';
 import { api } from '../api';
+import '../styles/sheet-diary.css';
 
 interface Props {
   title: string;
@@ -47,91 +48,27 @@ export function ShareCardSheet({
   });
 
   return (
-    <BottomSheetShell goBack={goBack} zIndex={zIndex} padding="24px 24px 48px">
-        <div
-          style={{
-            fontSize: 17,
-            fontWeight: 600,
-            color: 'var(--text)',
-            marginBottom: 4,
-          }}
-        >
-          {title}
-        </div>
-        <div
-          style={{ fontSize: 13, color: 'var(--text-sub)', marginBottom: 18 }}
-        >
-          Картинка уйдёт вместе со ссылкой
+    <BottomSheetShell goBack={goBack} zIndex={zIndex}>
+        <h2 className="ds-h3 sd-share-title">{title}</h2>
+        <div className="ds-sub sd-share-sub">Картинка уйдёт вместе со ссылкой</div>
+
+        <div className="ds-card ds-card--flush sd-canvas">
+          <canvas ref={canvasRef} className="sd-canvas-el" />
         </div>
 
-        <div
-          style={{
-            borderRadius: 'var(--r-20)',
-            overflow: 'hidden',
-            border: '1px solid var(--line)',
-            boxShadow: '0 14px 34px rgba(0,0,0,0.22)',
-            marginBottom: 18,
-          }}
-        >
-          <canvas
-            ref={canvasRef}
-            style={{ display: 'block', width: '100%', height: 'auto' }}
-          />
-        </div>
-
-        {s.showText && (
-          <pre
-            style={{
-              fontSize: 12,
-              color: 'var(--text-sub)',
-              lineHeight: 1.6,
-              background: 'var(--surface-2)',
-              borderRadius: 'var(--r-12)',
-              padding: '12px 14px',
-              overflowX: 'auto',
-              whiteSpace: 'pre-wrap',
-              wordBreak: 'break-word',
-              marginBottom: 14,
-              userSelect: 'all',
-              fontFamily: 'inherit',
-            }}
-          >
-            {s.text}
-          </pre>
-        )}
+        {s.showText && <pre className="sd-pre">{s.text}</pre>}
 
         <button
           onClick={() => void s.share()}
           disabled={s.sharing}
-          className="ex-btn ex-btn-primary"
-          style={{
-            width: '100%',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 'var(--space-8)',
-            background: 'var(--accent)',
-            color: 'var(--on-accent)',
-            opacity: s.sharing ? 0.6 : 1,
-          }}
+          className="ds-btn sd-wide"
         >
           <ShareIcon size={17} />
           {s.sharing ? 'Готовлю картинку…' : 'Поделиться'}
         </button>
         <button
           onClick={() => void s.copy()}
-          style={{
-            width: '100%',
-            marginTop: 10,
-            padding: '12px 0',
-            border: 'none',
-            borderRadius: 'var(--r-12)',
-            background: 'var(--surface-2)',
-            color: s.copied ? 'var(--c-moss)' : s.failed ? 'var(--accent-red)' : 'var(--text-sub)',
-            fontSize: 14,
-            fontWeight: 600,
-            cursor: 'pointer',
-          }}
+          className={'ds-btn ds-btn--secondary sd-wide sd-wide-gap' + (s.copied ? ' is-ok' : s.failed ? ' is-err' : '')}
         >
           {s.copied ? '✓ Текст скопирован' : s.failed ? 'Не получилось' : 'Скопировать текст'}
         </button>

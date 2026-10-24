@@ -1,9 +1,6 @@
 import { Prisma } from '@prisma/client';
-import {
-  MERGED_USER_FIELDS,
-  USER_MERGE_RULES,
-  mergedValue,
-} from './merge-user-rules';
+import { mergedUserData } from './merge-user-lists';
+import { MERGED_USER_FIELDS } from './merge-user-rules';
 
 // Диагностика 2026-08-21: после слияния Google-аккаунта с Telegram-аккаунтом
 // пользователь снова проходил онбординг и заново выбирал форму обращения —
@@ -18,8 +15,6 @@ import {
 // настройки уведомлений, кастомизация мини-аппа, имя. Теперь решение принято
 // для КАЖДОГО скалярного поля User (merge-user-rules.ts), а сверка со
 // schema.prisma держится тестом — забыть поле больше нельзя (правило №4).
-
-type MergeableUser = Record<string, unknown>;
 
 /**
  * Переносит скалярные поля User source → target внутри уже открытой
@@ -69,7 +64,7 @@ export async function mergeUserScalarFields(
   `);
   // Promote target to THERAPIST if source had that role — merge must not
   // silently downgrade a user's access level. Also carry therapistMode flag
-  // (account.service.setRole sets them together; merge should mirror that).
+  // (therapist-request.service при одобрении заявки выставляет их вместе; merge повторяет это).
   await tx.$executeRaw(Prisma.sql`
     UPDATE "User" SET "role" = 'THERAPIST', "therapistMode" = true
     WHERE id = ${targetId}
@@ -86,14 +81,9 @@ export async function mergeUserScalarFields(
     tx.user.findUnique({ where: { id: targetId }, select }),
   ]);
   if (!src || !tgt) return;
-  const srcRow = src as MergeableUser;
-  const tgtRow = tgt as MergeableUser;
-
-  const data: Record<string, unknown> = {};
-  for (const f of MERGED_USER_FIELDS) {
-    const next = mergedValue(USER_MERGE_RULES[f], srcRow[f], tgtRow[f]);
-    if (next !== undefined) data[f] = next;
-  }
+  // Значения для update собираются в merge-user-lists.ts: шифрованные поля
+  // («мои схемы/режимы») читаются расшифрованными, пишутся зашифрованными.
+  const data = await mergedUserData(tx, targetId, src, tgt);
   if (Object.keys(data).length > 0) {
     await tx.user.update({ where: { id: targetId }, data });
   }

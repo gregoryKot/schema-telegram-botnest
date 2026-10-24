@@ -33,6 +33,16 @@ describe('PrivacyPage', () => {
     }
   });
 
+  it('называет срок обезличивания данных формы записи', () => {
+    // Обещание документа обязано совпадать с кодом: срок затирания имени,
+    // контакта и текста запроса задан в booking-retention.service.ts, и
+    // расхождение между ним и этой строкой ловит отдельный пин
+    // (src/test-support/gates/booking-retention-policy.spec.ts). Здесь —
+    // что строка в документе вообще есть и называет срок.
+    render(<PrivacyPage />);
+    expect(screen.getAllByText(/через 12 месяцев после даты консультации/).length).toBeGreaterThan(0);
+  });
+
   it('явно фиксирует, что дневники и опросники шифруются AES-256-GCM', () => {
     // Регрессия: это единственное публичное место, где юзер узнаёт, что его
     // свободный текст (дневник, YSQ) не лежит в базе открытым текстом.
@@ -50,5 +60,26 @@ describe('PrivacyPage', () => {
     render(<PrivacyPage />);
     expect(screen.getByText(/Обязательные \(технические\) cookie/)).toBeTruthy();
     expect(screen.getByText(/Аналитические cookie/)).toBeTruthy();
+  });
+});
+
+// D-4 / D-11 (аудит 2026-10): политика называет всех получателей данных и
+// честно описывает, где работает счётчик. Список — privacy/processors.ts.
+describe('PrivacyPage — получатели данных', () => {
+  it('называет Telegram, Google, Resend, iCloud, Zoom и Яндекс Метрику с назначением', () => {
+    render(<PrivacyPage />);
+    for (const name of ['Telegram (Telegram', 'Google LLC', 'Resend', 'Apple iCloud', 'Zoom', 'Яндекс Метрика (ООО']) {
+      expect(screen.getAllByText(new RegExp(name.replace(/[()]/g, '\\$&'))).length).toBeGreaterThan(0);
+    }
+    expect(screen.getByText(/ссылки для входа и восстановления доступа/)).toBeTruthy();
+    expect(screen.getByText(/календарь Оператора/)).toBeTruthy();
+    expect(screen.getByText(/создание ссылки на видеовстречу/)).toBeTruthy();
+  });
+
+  it('про Метрику: только публичные страницы, в приложении и кабинете счётчик не работает', () => {
+    render(<PrivacyPage />);
+    expect(screen.getAllByText(/В приложении и личном кабинете счётчик не работает/).length).toBeGreaterThan(0);
+    // Старое обещание «тепловые карты» снято — карта кликов выключена.
+    expect(screen.getByText(/Тепловые карты кликов и отслеживание переходов по ссылкам отключены/)).toBeTruthy();
   });
 });

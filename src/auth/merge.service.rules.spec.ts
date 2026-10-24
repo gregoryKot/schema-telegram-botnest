@@ -25,6 +25,7 @@ import {
   MergeService,
   USER_OWNED_TABLES,
   SECURITY_SENSITIVE_TABLES,
+  UNIQUE_RULES,
 } from './merge.service';
 
 type FakePrisma = ConstructorParameters<typeof MergeService>[0];
@@ -92,6 +93,9 @@ function makeMergePrisma(
         $executeRaw: execSpy,
         $queryRaw: querySpy,
         user: { findUnique: userFindUnique, update: userUpdate },
+        // Карточки нужны merge-user-lists.ts (источник правды для «моих схем»).
+        userSchemaNote: { findMany: jest.fn().mockResolvedValue([]) },
+        userModeNote: { findMany: jest.fn().mockResolvedValue([]) },
       });
     }),
     $executeRaw: execSpy,
@@ -103,24 +107,9 @@ function makeMergePrisma(
   };
 }
 
-// ── Реестр-зеркало UNIQUE_RULES (сама константа в merge.service.ts не
-// экспортирована — прод-код не трогаем). Если ряд в источнике поменяется,
-// findDedupeCall() перестанет находить SQL для строки реестра здесь и тест
-// упадёт — это и есть сверка. ─────────────────────────────────────────────
-const EXPECTED_UNIQUE_RULES: Array<{ table: string; cols: string[] }> = [
-  { table: 'Rating', cols: ['date', 'needId'] },
-  { table: 'Note', cols: ['date'] },
-  { table: 'GratitudeDiaryEntry', cols: ['date'] },
-  { table: 'AppActivity', cols: ['date'] },
-  { table: 'YsqProgress', cols: [] },
-  { table: 'YsqResult', cols: [] },
-  { table: 'UserSchemaNote', cols: ['schemaId'] },
-  { table: 'UserModeNote', cols: ['modeId'] },
-  { table: 'UserSafePlace', cols: [] },
-  { table: 'ChildhoodRating', cols: ['needId'] },
-  { table: 'DiaryDraft', cols: ['type'] },
-  { table: 'TherapistRequest', cols: [] },
-];
+// UNIQUE_RULES импортируется из продакшен-кода; сверка «правило = констрейнт
+// schema.prisma» живёт в unique-rules-registry.spec.ts, а живое исполнение
+// DELETE…EXISTS — в test/merge-unique-rules.e2e-spec.ts.
 
 function findDedupeCall(calls: RawCall[], table: string): RawCall | undefined {
   return calls.find(
@@ -218,7 +207,7 @@ function applyPairDeleteSelf(rows: PairRow[], values: unknown[]): PairRow[] {
   return rows.filter((r) => !(r.userId1 === s1 || r.userId2 === s2));
 }
 
-// ── Основной прогон merge(): один вызов на весь файл (кроме секций email/
+// ── Основной прогон merge(): свой вызов на каждый тест (кроме секций email/
 // логирования — там нужны разные $queryRaw-ответы/моки Date.now). ──────────
 describe('MergeService — реестры таблиц и SQL-инварианты merge()', () => {
   const SRC = BigInt(1001);
@@ -227,7 +216,13 @@ describe('MergeService — реестры таблиц и SQL-инвариант
 
   let execCalls: RawCall[];
 
-  beforeAll(async () => {
+  // beforeEach, а не beforeAll — ради mutation-замера. Код, исполненный в
+  // beforeAll, Stryker не приписывает ни одному тесту (для него это загрузка
+  // модуля), и с ignoreStatic мутант в теле merge() проверяли только тесты,
+  // вызывающие merge() внутри it: 37 поломок реестров «выжили», хотя эти
+  // тесты их ловят (счёт файла 58.7% при поле 92%). Фейк в памяти — прогон
+  // на тест стоит миллисекунды.
+  beforeEach(async () => {
     const { prisma, execCalls: calls } = makeMergePrisma({
       re: null,
       rev: null,
@@ -276,7 +271,7 @@ describe('MergeService — реестры таблиц и SQL-инвариант
   });
 
   describe('UNIQUE_RULES: конфликтующая по ключу строка дропается, несвязанная выживает, чужая не трогается', () => {
-    it.each(EXPECTED_UNIQUE_RULES)('$table', ({ table, cols }) => {
+    it.each(UNIQUE_RULES)('$table', ({ table, cols }) => {
       const call = findDedupeCall(execCalls, table);
       expect(call).toBeDefined();
       expect(extractConflictCols(call!.sql)).toEqual(cols);
@@ -292,6 +287,15 @@ describe('MergeService — реестры таблиц и SQL-инвариант
           rows.find((r) => r.id === 4),
         ); // другой ключ — дедуп-шаг не трогает
       }
+    });
+
+    // extractConflictCols вынимает колонки регэкспом и не видит, чем они
+    // склеены: без AND условие по двум колонкам — не SQL, и merge падал бы на
+    // первом же юзере с оценками.
+    it('колонки ключа склеены через AND', () => {
+      expect(findDedupeCall(execCalls, 'Rating')!.sql).toContain(
+        'src."date" = tgt."date" AND src."needId" = tgt."needId"',
+      );
     });
   });
 
@@ -525,6 +529,27 @@ describe('MergeService — лог длительности merge', () => {
     // при каждом расширении сводки, ничего не проверяя дополнительно.
     expect(logSpy).toHaveBeenCalledWith(
       expect.stringContaining('Merged user 1001 → 2002 (732ms)'),
+    );
+  });
+
+  it('число перенесённых подписок берётся из исхода переноса; без подписок — 0', async () => {
+    const logSpy = jest
+      .spyOn(Logger.prototype, 'log')
+      .mockImplementation(() => undefined);
+    // Живых подписок нет ни у кого, у источника две завершённые — переезжают.
+    const moved = makeMergePrisma([
+      { re: null, rev: null, live: BigInt(0), total: BigInt(2) },
+    ]);
+    await new MergeService(moved.prisma).merge(BigInt(1001), BigInt(2002));
+    expect(logSpy).toHaveBeenCalledWith(
+      expect.stringContaining('подписок перенесено: 2'),
+    );
+
+    logSpy.mockClear();
+    const none = makeMergePrisma({ re: null, rev: null });
+    await new MergeService(none.prisma).merge(BigInt(1001), BigInt(2002));
+    expect(logSpy).toHaveBeenCalledWith(
+      expect.stringContaining('подписок перенесено: 0'),
     );
   });
 });

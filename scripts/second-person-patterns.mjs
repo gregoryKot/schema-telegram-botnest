@@ -111,6 +111,8 @@ export const TY_IMPERATIVES = [
   ['Отложи', false],
   ['Отправь', false],
   ['Заверши', false],
+  // Аудит 2026-10: «поддержите» на DonatePage жило вне tr(), глагола гейт не знал.
+  ['Поддержи', false],
 ];
 
 // \b в JS — ASCII-only, кириллицу не видит: границы слова через lookaround.
@@ -131,7 +133,7 @@ const tyAlt = TY_IMPERATIVES.map(([w]) => bothCase(w)).join('|');
 const vyAlt = TY_IMPERATIVES.map((p) => bothCase(vyForm(p))).join('|');
 
 // Экспорт ради second-person.spec.ts — пинит каждый паттерн живым образцом
-// (как PATTERNS в check-robot-phrases.mjs/check-gendered-forms.mjs).
+// (как PATTERNS в robot-phrases-patterns.mjs/gendered-forms-patterns.mjs).
 export const PATTERNS = [
   [
     'pronoun-ty',
@@ -168,6 +170,15 @@ export const EXCLUDE = [
   // 2026-09-13: честное «заявка не сохранилась» вместо «время заняли»). Та
   // же зона: гость до входа, формы негде взять.
   /webapp\/src\/components\/BookingErrorNote\.tsx$/,
+  // Подкомпоненты/хук, вынесенные из BookingPicker при добавлении часового
+  // пояса посетителя (правило №10 — файл не должен пухнуть). Та же зона:
+  // гость до входа, ни один файл не импортирует useTr/useAddressForm.
+  /webapp\/src\/components\/booking\//,
+  // Форматтеры подписи пояса («Время указано по вашему часовому поясу»,
+  // «по вашему времени») — общий модуль для того же гостевого виджета
+  // записи, addressForm физически неоткуда взять (нет залогиненного
+  // пользователя на этом пути).
+  /^shared\/src\/booking\/clientTimeZone\.ts$/,
   // Статьи сайта — единая форма «вы» (docs/ARTICLES.md), addressForm не
   // читают, как и лендинг.
   /^src\/articles\/articles\.seed\.ts$/,
@@ -175,14 +186,14 @@ export const EXCLUDE = [
   // конкретного userId и его формы; HEALTHY_ADULT.md прямо фиксирует «ты»
   // для всего канала.
   /^src\/bot\/healthy-adult\.data\.ts$/,
-  // До входа выбирать нечего — гость ещё не сделал выбор формы, а
-  // BookingPaidPage вообще не про пользователя приложения (клиент разовой
-  // платной записи, попадает по ссылке из Robokassa, аккаунта не заводит).
+  // До входа выбирать нечего — гость ещё не сделал выбор формы; BookingPaidPage
+  // и BookingLinkPage (/book) вообще не про пользователя приложения: клиент разовой
+  // записи по ссылке из Robokassa / из мессенджера, аккаунта не заводит.
   // ПРОВЕРЕНО и намеренно НЕ добавлен: LinkDevicePage.tsx — он требует
   // authenticated (иначе редиректит на /login) и показывает контент только
   // вошедшему пользователю с известной формой — это реальный долг, не зона.
   /webapp\/src\/pages\/LoginPage\.tsx$/,
-  /webapp\/src\/pages\/BookingPaidPage\.tsx$/,
+  /webapp\/src\/pages\/(BookingPaidPage|BookingLinkPage)\.tsx$/,
   // Юридические документы — исключение прямо названо в docs/VOICE.md,
   // формальный регистр там уместен и не варьируется по форме.
   /webapp\/src\/pages\/(PrivacyPage|OfferPage)\.tsx$/,
@@ -195,11 +206,11 @@ export const EXCLUDE = [
   // публикации поста; это операционный, а не продуктовый текст.
   /^src\/channel\/targets\/.*\.target\.ts$/,
   /^src\/telegram\/telegram-channel\.target\.ts$/,
-  // /stats и DM-алерты (иссякающий пул фраз, здоровье входа, здоровье
-  // CalDAV) — тоже владелец-only отчёты (ADMIN_ID), не текст для подписчика.
+  // /stats и DM-алерты (иссякающий пул фраз, здоровье входа/CalDAV, «деньги
+  // получены, а брони/подписки нет») — владелец-only отчёты (ADMIN_ID), не для подписчика.
   /^src\/bot\/healthy-adult\.pool-alert\.ts$/,
   /^src\/bot\/auth-health-metrics\.format\.ts$/,
-  /^src\/booking\/caldav-health\.ts$/,
+  /^src\/(booking\/(caldav-health|booking-paid-after-cancel)|subscription\/subscription-paid-after-cancel)\.ts$/,
   // Мета-код: детектор остаточных «ты»-форм для тестов «вы»-режима — его
   // регэксп обязан содержать реальные «ты»-слова буквально, это не UI-строка
   // (тот же случай, что address-form-baseline.json у check-address-form.mjs).
@@ -227,9 +238,7 @@ export const EXCLUDE = [
 // e-mail админу, ADMIN_ID) — addressForm обычного юзера к нему неприменим
 // (см. EXCLUDE выше, тот же принцип по имени функции, а не пути файла).
 export const CALL_ARG_EXEMPT = [
-  'tr',
-  'pickForm',
-  't',
+  'tr', 'pickForm', 't', // (1) сами вилки форм
   'alertAdmin',
   'notifyAdminText',
   // Тот же владелец-only канал, что notifyAdminText, но оба всегда (2026-09-15).

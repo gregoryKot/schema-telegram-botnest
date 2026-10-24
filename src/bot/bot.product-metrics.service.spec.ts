@@ -49,11 +49,15 @@ describe('ProductMetricsService.getMetrics', () => {
         { action: 'shown', c: 200n },
         { action: 'add', c: 60n },
         { action: 'added', c: 45n },
-      ]);
+      ])
+      // воронка теста схем — последней в Promise.all (ysq-funnel-metrics.ts)
+      .mockResolvedValueOnce([{ started: 260n, completed: 210n }]);
     const eventCount = jest
       .fn()
       .mockResolvedValueOnce(12) // crisis_card_shown
       .mockResolvedValueOnce(3) // crisis_hotline_tapped
+      .mockResolvedValueOnce(5) // crisis_card_shown, surface=booking
+      .mockResolvedValueOnce(2) // crisis_hotline_tapped, surface=booking
       .mockResolvedValueOnce(12) // share_card total7
       .mockResolvedValueOnce(40) // share_card total30
       .mockResolvedValueOnce(15) // today_focus_change
@@ -68,8 +72,6 @@ describe('ProductMetricsService.getMetrics', () => {
           { defaultSection: 'today', _count: { _all: 300 } },
         ]),
       },
-      ysqResult: { count: jest.fn(async () => 210) },
-      ysqProgress: { count: jest.fn(async () => 260) },
       analyticsEvent: { count: eventCount },
       $queryRaw: queryRaw,
     };
@@ -122,7 +124,11 @@ describe('ProductMetricsService.getMetrics', () => {
         { kind: 'schema', count: 3 },
       ],
     });
-    expect(m.crisis).toEqual({ shown: 12, hotlineTapped: 3 });
+    expect(m.crisis).toEqual({
+      shown: 12,
+      hotlineTapped: 3,
+      booking: { shown: 5, hotlineTapped: 2 },
+    });
     expect(m.shareResult).toEqual({ ok: 35, fallback: 5 });
     expect(m.outbox).toEqual({ flushes: 8, recovered: 21 });
     expect(m.today.focusChanged).toBe(15);
@@ -142,8 +148,6 @@ describe('ProductMetricsService.getMetrics', () => {
   it('пустая БД — везде нули, ни одного NaN/undefined', async () => {
     const prisma: any = {
       user: { count: jest.fn(async () => 0), groupBy: jest.fn(async () => []) },
-      ysqResult: { count: jest.fn(async () => 0) },
-      ysqProgress: { count: jest.fn(async () => 0) },
       analyticsEvent: { count: jest.fn(async () => 0) },
       $queryRaw: jest.fn(async () => []),
     };
@@ -161,6 +165,8 @@ describe('ProductMetricsService.getMetrics', () => {
       practices: 0,
       childhood: 0,
     });
+    // Воронка теста схем на пустом ответе — нули, не NaN.
+    expect(m.ysq).toEqual({ started: 0, completed: 0, helpOpens: 0 });
     expect(m.sections).toEqual([]);
     expect(m.onboardingSteps).toEqual([]);
     expect(m.shareCard.byKind30).toEqual([]);
@@ -196,7 +202,8 @@ describe('ProductMetricsService.getMetrics', () => {
       .mockResolvedValueOnce([{ block: null, c: 1n }]) // toggle без block
       .mockResolvedValueOnce([{ step: null, c: 5n }]) // онбординг без step
       .mockResolvedValueOnce([{ via: null, c: 4n }]) // customize без via
-      .mockResolvedValueOnce([{ action: null, c: 6n }]); // offer без action
+      .mockResolvedValueOnce([{ action: null, c: 6n }]) // offer без action
+      .mockResolvedValueOnce([]); // воронка теста схем: пустой ответ
     const prisma: any = {
       user: {
         count: jest.fn(async () => 0),
@@ -204,8 +211,6 @@ describe('ProductMetricsService.getMetrics', () => {
           { defaultSection: null, _count: { _all: 4 } },
         ]),
       },
-      ysqResult: { count: jest.fn(async () => 0) },
-      ysqProgress: { count: jest.fn(async () => 0) },
       analyticsEvent: { count: jest.fn(async () => 0) },
       $queryRaw: queryRaw,
     };
@@ -321,7 +326,11 @@ const EMPTY_METRICS = {
   sections: [],
   themes: { light: 0, dark: 0, system: 0 },
   shareCard: { total7: 0, total30: 0, byKind30: [] },
-  crisis: { shown: 0, hotlineTapped: 0 },
+  crisis: {
+    shown: 0,
+    hotlineTapped: 0,
+    booking: { shown: 0, hotlineTapped: 0 },
+  },
   shareResult: { ok: 0, fallback: 0 },
   outbox: { flushes: 0, recovered: 0 },
   today: {

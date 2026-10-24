@@ -1,7 +1,8 @@
 import { getHost } from '../../../../shared/src/host';
-import { fmtDate, todayStr } from '../../utils/format';
-import { SCHEMA_DOMAINS, MODE_GROUPS } from '../../schemaTherapyData';
+import { fmtDate, momentDayKey, todayStr } from '../../utils/format';
+import { getModeById, getSchemaById } from '../../schemaTherapyData';
 import type { TherapyClientSummary, ClientConceptualization } from '../../api';
+import { formatConceptLinksExport } from '../../../../shared/src/therapy/conceptGraph/conceptLinksExport';
 
 // Текст экспорта краткой концептуализации (share/clipboard). Чистая функция,
 // вынесена из useClientDetail.ts (правило №10).
@@ -25,20 +26,17 @@ export function buildConceptExport({
     selectedClient.name ??
     `ID ${selectedClient.telegramId}`;
   const date = concept.updatedAt
-    ? fmtDate(concept.updatedAt.slice(0, 10))
+    ? fmtDate(momentDayKey(concept.updatedAt))
     : todayStr();
   const c = { ...concept, ...localConcept };
-  const schemaNames = activeSchemaIds.map((id) => {
-    const s = SCHEMA_DOMAINS.flatMap((d) => d.schemas).find((x) => x.id === id);
-    return s ? s.name : id;
-  });
-  const modeNames = activeModeIds.map((id) => {
-    const m = MODE_GROUPS.flatMap((g) => g.items).find((x) => x.id === id);
-    return m ? m.name : id;
-  });
+  const schemaNames = activeSchemaIds.map(
+    (id) => getSchemaById(id)?.name ?? id,
+  );
+  const modeNames = activeModeIds.map((id) => getModeById(id)?.name ?? id);
   const row = (label: string, value: string | null | undefined) =>
     `${label}\n${value?.trim() || '—'}\n`;
   const div = '─'.repeat(44);
+  const links = formatConceptLinksExport(activeSchemaIds, activeModeIds, c);
   return [
     `Терапевт: ${therapistName}   Клиент: ${clientName}   Дата: ${date}`,
     '',
@@ -48,6 +46,7 @@ export function buildConceptExport({
     row('АКТУАЛЬНЫЕ СХЕМЫ (ЭДС)', schemaNames.join(' · ') || null),
     div,
     row('КАРТА РЕЖИМОВ', modeNames.join(' · ') || null),
+    ...(links ? [div, `${links}\n`] : []),
     div,
     row('РАННИЙ ДИСФУНКЦИОНАЛЬНЫЙ ОПЫТ', c.earlyExperience),
     div,

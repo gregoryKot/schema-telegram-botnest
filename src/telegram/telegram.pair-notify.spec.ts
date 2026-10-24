@@ -59,7 +59,7 @@ const ACTIVE_PAIR = {
   code: 'X',
   status: 'active',
   isCreator: true,
-  partnerId: 777,
+  partnerId: 777n,
 };
 
 describe('maybeNotifyPairPartners', () => {

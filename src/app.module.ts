@@ -8,7 +8,8 @@ import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { ServeStaticModule } from '@nestjs/serve-static';
-import { APP_GUARD } from '@nestjs/core';
+import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
+import { AdminKeyAuditInterceptor } from './booking/admin-key-audit.interceptor';
 import { existsSync, readFileSync } from 'fs';
 import { join } from 'path';
 import type { ServerResponse } from 'http';
@@ -28,8 +29,13 @@ import { TherapyModule } from './therapy/therapy.module';
 import { AuthModule } from './auth/auth.module';
 import { BookingModule } from './booking/booking.module';
 import { ArticlesModule } from './articles/articles.module';
-import { ArticleSeoMiddleware } from './articles/article-seo.middleware';
-import { practiceDomainMiddleware } from './practice-domain.middleware';
+import { configureArticleSeo } from './articles/article-seo.routes';
+import {
+  practiceDomainMiddleware,
+  PRACTICE_ALIAS_HOSTS,
+} from './practice-domain.middleware';
+import { configureUnifiedFrontend } from './unified-frontend.middleware';
+import { practiceIndexHtml } from './practice-index-html';
 import { SiteContentModule } from './site-content/site-content.module';
 import { DbOutageMonitorService } from './infra/db-outage.service';
 import { SelfCheckService } from './infra/self-check/self-check.service';
@@ -37,7 +43,7 @@ import { SelfCheckService } from './infra/self-check/self-check.service';
 // Domains that are aliases of schemehappens.ru and need their own og:url / canonical
 // so Telegram generates a separate link preview card for each domain.
 // kotlarewski.ru здесь не нужен: practiceDomainMiddleware 301-ит его на .gr.
-const ALIAS_DOMAINS = new Set(['kotlarewski.gr']);
+const ALIAS_DOMAINS = PRACTICE_ALIAS_HOSTS;
 
 @Module({
   imports: [
@@ -77,6 +83,8 @@ const ALIAS_DOMAINS = new Set(['kotlarewski.gr']);
   ],
   providers: [
     { provide: APP_GUARD, useClass: UserThrottlerGuard },
+    // Отказы по ключу админки — в аудит-лог (аудит 2026-10, I2).
+    { provide: APP_INTERCEPTOR, useClass: AdminKeyAuditInterceptor },
     DbOutageMonitorService,
     SelfCheckService,
   ],
@@ -88,35 +96,26 @@ export class AppModule implements NestModule {
     const indexPath = join(__dirname, '..', 'webapp', 'dist', 'index.html');
     const html = existsSync(indexPath) ? readFileSync(indexPath, 'utf8') : null;
 
-    // Первым: 301 kotlarewski.ru → .gr + домен-зависимые sitemap/robots
-    // практики (см. practice-domain.middleware.ts).
+    // Первым: 301 kotlarewski.ru → .gr + sitemap/robots практики. Метод ALL,
+    // не GET: правило №19 («визитка отдаёт только себя») касается и записи —
+    // до аудита 2026-10 POST/PUT/PATCH/DELETE на kotlarewski.gr доходили до
+    // любой ручки, включая /api/auth/** (CSRF-модель рассчитана на один хост).
     consumer
       .apply(practiceDomainMiddleware)
-      .forRoutes({ path: '{*path}', method: RequestMethod.GET });
+      .forRoutes({ path: '{*path}', method: RequestMethod.ALL });
 
+    configureUnifiedFrontend(consumer); // /app/* → /today за флагом
     consumer
       .apply((req: Request, res: Response, next: () => void) => {
         if (!html) return next();
         if (!ALIAS_DOMAINS.has(req.hostname)) return next();
-        const domain = req.hostname;
-        const modified = html
-          .replace(
-            'href="https://schemehappens.ru/"',
-            `href="https://${domain}/"`,
-          )
-          .replace(
-            'content="https://schemehappens.ru/"',
-            `content="https://${domain}/"`,
-          );
+        const modified = practiceIndexHtml(html, req.hostname);
         res.setHeader('Content-Type', 'text/html; charset=utf-8');
         return res.send(modified);
       })
       .forRoutes({ path: '/', method: RequestMethod.GET });
 
-    // Server-side SEO for article pages: inject real title/description/OG +
-    // article text so crawlers (esp. Yandex) index them instead of an empty SPA.
-    consumer
-      .apply(ArticleSeoMiddleware)
-      .forRoutes({ path: 'articles/*path', method: RequestMethod.GET });
+    // SEO для /articles* и sitemap.xml — после practiceDomainMiddleware.
+    configureArticleSeo(consumer);
   }
 }

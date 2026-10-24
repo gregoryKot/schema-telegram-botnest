@@ -10,6 +10,7 @@ import { createRef } from 'react';
 import { ClientListView } from './ClientListView';
 import type { ClientDetail, AddClient } from './types';
 import type { TherapyClientSummary } from '../../api';
+import { CLIENT_NAME_MAX } from '../../../../shared/src/limits/textLimits';
 
 vi.mock('./ClientCard', () => ({
   ClientCard: ({ client }: { client: TherapyClientSummary }) => (
@@ -47,7 +48,6 @@ function makeAddClient(overrides: Partial<AddClient> = {}): AddClient {
     openAddMode: vi.fn(),
     createInvite: vi.fn(),
     copyInvite: vi.fn(),
-    addByTelegramId: vi.fn(),
     addVirtualClient: vi.fn(),
     addLoading: false,
     ...overrides,
@@ -71,7 +71,6 @@ function baseProps(
     safeTop: 0,
     animKey: 0,
     onClose: vi.fn(),
-    telegramInputRef: createRef<HTMLInputElement>(),
     virtualInputRef: createRef<HTMLInputElement>(),
     detail: makeDetail(),
     addClient: makeAddClient(),
@@ -109,6 +108,16 @@ describe('ClientListView — режим «Оффлайн» (виртуальны
     expect(addVirtualClient).toHaveBeenCalled();
   });
 
+  it('поле имени офлайн-клиента не принимает больше CLIENT_NAME_MAX знаков', () => {
+    render(
+      <ClientListView
+        {...baseProps({ addClient: makeAddClient({ addMode: 'virtual' }) })}
+      />,
+    );
+    const input = screen.getByPlaceholderText('Имя клиента');
+    expect(input.maxLength).toBe(CLIENT_NAME_MAX);
+  });
+
   it('Enter в поле имени зовёт addVirtualClient', () => {
     const addVirtualClient = vi.fn();
     render(
@@ -131,7 +140,7 @@ describe('ClientListView — ошибка добавления', () => {
       <ClientListView
         {...baseProps({
           addClient: makeAddClient({
-            addMode: 'telegram',
+            addMode: 'invite',
             addError: 'Клиент не найден',
           }),
         })}

@@ -40,7 +40,7 @@ function renderScreen(
 describe('CaseCriterionScreen — шапка объясняет шаг, термина «часть» нет', () => {
   it('заголовок и подзаголовок из buildCriterionIntro, вопросы дословно', () => {
     renderScreen();
-    expect(screen.getByText('Последний шаг — два вопроса')).toBeTruthy();
+    expect(screen.getByText('Последние два вопроса')).toBeTruthy();
     expect(
       screen.getByText(
         'Они помогают отличить обычную досаду от реакции, которая включается сама.',

@@ -13,9 +13,13 @@
 // button: корень — div c role="button" через pressable, не сам <button>).
 import type { CSSProperties, MouseEvent } from 'react';
 import { useTr } from '../../utils/addressForm';
-import { fmtDate } from '../../utils/format';
+import { fmtDate, momentDayKey } from '../../utils/format';
 import { pressable } from '../../utils/a11y';
-import { pluralRu } from '../../../../shared/src/utils/pluralRu';
+import {
+  portraitTexts,
+  portraitTotalsText,
+  portraitDeltaText,
+} from '../../../../shared/src/portrait/portraitTexts';
 import {
   hasPortraitData,
   type Portrait,
@@ -120,6 +124,8 @@ export function PortraitCard({
   const hasData = hasPortraitData(portrait);
   const maxCount = Math.max(1, ...portrait.needs.map((n) => n.count));
   const delta = portrait.delta;
+  const deltaText = portraitDeltaText(delta);
+  const txt = portraitTexts(tr);
 
   return (
     <div
@@ -144,10 +150,7 @@ export function PortraitCard({
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
           {hasData && (
             <div className="d-display" style={{ fontSize: 14 }}>
-              {portrait.totalSchemas}{' '}
-              {pluralRu(portrait.totalSchemas, 'схема', 'схемы', 'схем')} ·{' '}
-              {portrait.totalModes}{' '}
-              {pluralRu(portrait.totalModes, 'режим', 'режима', 'режимов')}
+              {portraitTotalsText(portrait)}
             </div>
           )}
           <span
@@ -170,20 +173,12 @@ export function PortraitCard({
           lineHeight: 1.4,
         }}
       >
-        {tr(
-          'Сколько твоих активных схем стоит за каждой из пяти потребностей',
-          'Сколько ваших активных схем стоит за каждой из пяти потребностей',
-        )}
+        {txt.hint}
       </div>
 
       {!hasData && (
         <div>
-          <div className="u-sub13-lh16">
-            {tr(
-              'Здесь соберётся твой портрет: какие схемы и режимы активны. Основа — тест на схемы и твои отметки.',
-              'Здесь соберётся ваш портрет: какие схемы и режимы активны. Основа — тест на схемы и ваши отметки.',
-            )}
-          </div>
+          <div className="u-sub13-lh16">{txt.emptyCard}</div>
           <button
             onClick={stopAnd(onOpenPatterns)}
             style={{
@@ -199,7 +194,7 @@ export function PortraitCard({
               cursor: 'pointer',
             }}
           >
-            Пройти тест
+            {txt.takeTest}
           </button>
         </div>
       )}
@@ -224,9 +219,9 @@ export function PortraitCard({
           }}
         >
           <span className="u-faint11">
-            Тест на схемы · {fmtDate(ysqCompletedAt.slice(0, 10))}
+            Тест на схемы · {fmtDate(momentDayKey(ysqCompletedAt))}
           </span>
-          {delta != null && delta !== 0 && (
+          {deltaText && delta != null && (
             <span
               style={{
                 fontSize: 11,
@@ -242,7 +237,7 @@ export function PortraitCard({
                   : { color: 'var(--text-sub)', background: 'transparent' }),
               }}
             >
-              {delta < 0 ? delta : `+${delta}`} с прошлого теста
+              {deltaText}
             </span>
           )}
         </div>
@@ -253,7 +248,7 @@ export function PortraitCard({
           onClick={stopAnd(onOpenPatterns)}
           style={{ ...footBtn, marginTop: 14 }}
         >
-          Пройти тест на схемы →
+          {txt.takeTestArrow}
         </button>
       )}
     </div>

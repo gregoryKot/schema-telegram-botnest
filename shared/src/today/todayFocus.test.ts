@@ -1,0 +1,148 @@
+// Тесты настраиваемого «Сегодня» (волна 2 нейродизайна).
+import { describe, it, expect, beforeEach } from 'vitest';
+import {
+  parseFocusPractice,
+  getFocusPractice,
+  setFocusPractice,
+  setStreakHidden,
+  focusCardContent,
+  FOCUS_OPTIONS,
+  isFocusDone,
+  isSecondaryHidden,
+  setSecondaryHidden,
+  isStreakHidden,
+  isTherapistBannerHidden,
+  setTherapistBannerHidden,
+  isPhraseHidden,
+  setPhraseHidden,
+} from './todayFocus';
+
+// В node-окружении vitest нет localStorage — простой in-memory стаб.
+beforeEach(() => {
+  const store = new Map<string, string>();
+  globalThis.localStorage = {
+    getItem: (k: string) => store.get(k) ?? null,
+    setItem: (k: string, v: string) => void store.set(k, v),
+    removeItem: (k: string) => void store.delete(k),
+    clear: () => store.clear(),
+    key: (i: number) => [...store.keys()][i] ?? null,
+    get length() {
+      return store.size;
+    },
+  };
+});
+
+describe('флаги видимости «Сегодня»', () => {
+  it('второстепенное скрыто по умолчанию; выключается и включается', () => {
+    localStorage.clear();
+    expect(isSecondaryHidden()).toBe(true);
+    setSecondaryHidden(false);
+    expect(isSecondaryHidden()).toBe(false);
+    setSecondaryHidden(true);
+    expect(isSecondaryHidden()).toBe(true);
+  });
+
+  it('цитата показана по умолчанию; скрывается и возвращается', () => {
+    localStorage.clear();
+    expect(isPhraseHidden()).toBe(false);
+    setPhraseHidden(true);
+    expect(isPhraseHidden()).toBe(true);
+    // read-after-write: флаг переживает «перезапуск» (читается из storage)
+    expect(localStorage.getItem('today_phrase_hidden')).toBe('1');
+    setPhraseHidden(false);
+    expect(isPhraseHidden()).toBe(false);
+    expect(localStorage.getItem('today_phrase_hidden')).toBe(null);
+  });
+
+  it('скрытие цитаты не задевает соседние блоки', () => {
+    localStorage.clear();
+    setPhraseHidden(true);
+    expect(isStreakHidden()).toBe(false);
+    expect(isTherapistBannerHidden()).toBe(false);
+  });
+
+  it('баннер терапевта показан по умолчанию; скрывается', () => {
+    localStorage.clear();
+    expect(isTherapistBannerHidden()).toBe(false);
+    setTherapistBannerHidden(true);
+    expect(isTherapistBannerHidden()).toBe(true);
+  });
+});
+
+describe('parseFocusPractice', () => {
+  it('валидные значения проходят, мусор и null — tracker', () => {
+    expect(parseFocusPractice('schema')).toBe('schema');
+    expect(parseFocusPractice('mode')).toBe('mode');
+    expect(parseFocusPractice('gratitude')).toBe('gratitude');
+    expect(parseFocusPractice('tracker')).toBe('tracker');
+    expect(parseFocusPractice(null)).toBe('tracker');
+    expect(parseFocusPractice('мусор')).toBe('tracker');
+  });
+});
+
+describe('focusCardContent', () => {
+  it('трекер: динамический подзаголовок и кнопка по прогрессу', () => {
+    const fresh = focusCardContent('tracker', 0, 5);
+    expect(fresh.buttonLabel).toBe('Начать');
+    const mid = focusCardContent('tracker', 2, 5);
+    expect(mid.sub).toContain('Осталось 3 из 5');
+    expect(mid.buttonLabel).toBe('Продолжить');
+  });
+
+  it('дневники: статичный контент с оценкой времени', () => {
+    expect(focusCardContent('schema', 0, 5).chip).toContain('2 мин');
+    expect(focusCardContent('gratitude', 0, 5).title).toBe('Три хорошие вещи');
+  });
+});
+
+describe('isFocusDone', () => {
+  const todayDone = { schema: true, mode: false, gratitude: false };
+  it('tracker — по allRated', () => {
+    expect(isFocusDone('tracker', { allRated: true, todayDone })).toBe(true);
+    expect(isFocusDone('tracker', { allRated: false, todayDone })).toBe(false);
+  });
+  it('дневники — по сегодняшним записям', () => {
+    expect(isFocusDone('schema', { allRated: false, todayDone })).toBe(true);
+    expect(isFocusDone('mode', { allRated: true, todayDone })).toBe(false);
+  });
+});
+
+describe('главная практика и серия — хранение под ключами мини-аппа', () => {
+  it('практика: записал → прочитал; трекер стирает ключ', () => {
+    localStorage.clear();
+    expect(getFocusPractice()).toBe('tracker');
+    setFocusPractice('gratitude');
+    expect(localStorage.getItem('today_focus_practice')).toBe('gratitude');
+    expect(getFocusPractice()).toBe('gratitude');
+    setFocusPractice('tracker');
+    expect(localStorage.getItem('today_focus_practice')).toBe(null);
+    expect(getFocusPractice()).toBe('tracker');
+  });
+
+  it('серия: скрытие пишется в today_streak_hidden и снимается', () => {
+    localStorage.clear();
+    expect(isStreakHidden()).toBe(false);
+    setStreakHidden(true);
+    expect(localStorage.getItem('today_streak_hidden')).toBe('1');
+    expect(isStreakHidden()).toBe(true);
+    setStreakHidden(false);
+    expect(isStreakHidden()).toBe(false);
+  });
+
+  it('доп. практики: ровно четыре, id совпадают с FocusPractice', () => {
+    expect(FOCUS_OPTIONS.map((o) => o.id)).toEqual([
+      'tracker',
+      'schema',
+      'mode',
+      'gratitude',
+    ]);
+  });
+
+  it('сообщение завершённой практики у каждого дневника своё', () => {
+    expect(focusCardContent('mode', 0, 5).doneSub).toContain('режимов');
+    expect(focusCardContent('schema', 0, 5).doneSub).toContain('схем');
+    expect(focusCardContent('gratitude', 0, 5).doneSub).toContain(
+      'Благодарности',
+    );
+  });
+});

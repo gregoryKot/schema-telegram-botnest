@@ -10,6 +10,13 @@ import type { BotService } from '../bot/bot.service';
 import type { AccountService } from '../bot/account.service';
 import type { BotAnalyticsService } from '../bot/bot.analytics.service';
 
+// Имя бота без дефолта (telegram.constants.ts): для ссылки-приглашения задаём его
+// явно, как это делает env прода.
+jest.mock('../telegram/telegram.constants', () => ({
+  ...jest.requireActual('../telegram/telegram.constants'),
+  BOT_USERNAME: 'SchemeHappensBot',
+}));
+
 function makeReq(userId = 1n) {
   return { webUser: { userId } } as any;
 }
@@ -66,6 +73,7 @@ describe('PairsController.getPair', () => {
     await expect(controller.getPair(makeReq())).resolves.toEqual({
       partners: [],
       pendingCode: null,
+      pendingUrl: null,
     });
   });
 
@@ -83,7 +91,12 @@ describe('PairsController.getPair', () => {
       },
     });
     const res = await controller.getPair(makeReq());
-    expect(res).toEqual({ partners: [], pendingCode: 'WAIT1' });
+    expect(res).toEqual({
+      partners: [],
+      pendingCode: 'WAIT1',
+      // Ссылка для повторной отправки — та же, что отдаёт createPairInvite.
+      pendingUrl: 'https://t.me/SchemeHappensBot/diary?startapp=pair_WAIT1',
+    });
   });
 
   it('партнёр оценил не все потребности сегодня → partnerTodayDone: false, partnerIndex: null', async () => {
@@ -92,7 +105,7 @@ describe('PairsController.getPair', () => {
         getUserPairs: jest
           .fn()
           .mockResolvedValue([
-            { code: 'AB', status: 'active', isCreator: true, partnerId: 42 },
+            { code: 'AB', status: 'active', isCreator: true, partnerId: 42n },
           ]),
       },
       botService: {
@@ -110,7 +123,7 @@ describe('PairsController.getPair', () => {
         getUserPairs: jest
           .fn()
           .mockResolvedValue([
-            { code: 'AB', status: 'active', isCreator: true, partnerId: 42 },
+            { code: 'AB', status: 'active', isCreator: true, partnerId: 42n },
           ]),
       },
       botService: { getRatings: jest.fn().mockResolvedValue(allNeedsRated(7)) },
@@ -119,18 +132,21 @@ describe('PairsController.getPair', () => {
     expect(res.partners[0].partnerTodayDone).toBe(true);
     expect(res.partners[0].partnerIndex).toBe(7);
     expect(res.partners[0].partnerName).toBe('Партнёр');
-    expect(res.partners[0].partnerTelegramId).toBe(42);
+    expect(res.partners[0].partnerTelegramId).toBe(42n);
   });
 
   it('запрашивает данные ИМЕННО partnerId, а не userId текущего юзера', async () => {
     const { controller, botService, accountService, analyticsService } =
       makeController({
         pairsService: {
-          getUserPairs: jest
-            .fn()
-            .mockResolvedValue([
-              { code: 'AB', status: 'active', isCreator: true, partnerId: 555 },
-            ]),
+          getUserPairs: jest.fn().mockResolvedValue([
+            {
+              code: 'AB',
+              status: 'active',
+              isCreator: true,
+              partnerId: 555n,
+            },
+          ]),
         },
       });
     await controller.getPair(makeReq(1n));
@@ -146,7 +162,7 @@ describe('PairsController.getPair', () => {
         getUserPairs: jest
           .fn()
           .mockResolvedValue([
-            { code: 'AB', status: 'active', isCreator: true, partnerId: 1 },
+            { code: 'AB', status: 'active', isCreator: true, partnerId: 1n },
           ]),
       },
       analyticsService: {
@@ -166,7 +182,9 @@ describe('PairsController.createPairInvite', () => {
     const res = await controller.createPairInvite(makeReq(9n));
     expect(pairsService.createPairInvite).toHaveBeenCalledWith(9n);
     expect(res.code).toBe('ABCDE');
-    expect(res.url).toContain('ABCDE');
+    expect(res.url).toBe(
+      'https://t.me/SchemeHappensBot/diary?startapp=pair_ABCDE',
+    );
   });
 });
 

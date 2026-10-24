@@ -28,13 +28,24 @@ beforeEach(() => {
 });
 
 describe('applyPersonalSiteChrome', () => {
-  it('меняет фавиконы на personal-вариант', () => {
+  it('меняет фавиконы на знак «GK»: svg-ссылка → png 192, png 96×96 → png 96', () => {
     const svg = addLink('icon', '/favicon.svg');
+    svg.type = 'image/svg+xml';
     const png = addLink('icon', '/favicon-96.png', '96x96');
     applyPersonalSiteChrome(document);
-    expect(svg.href).toContain('/favicon-personal-32.png');
+    expect(svg.href).toContain('/favicon-personal-192.png');
     expect(svg.type).toBe('image/png');
-    expect(png.href).toContain('/favicon-personal-32.png');
+    expect(png.href).toContain('/favicon-personal-96.png');
+  });
+
+  it('значок на экран iOS — свой, не значок продукта', () => {
+    const touch = addLink('apple-touch-icon', '/apple-touch-icon.png', '180x180');
+    applyPersonalSiteChrome(document);
+    expect(touch.getAttribute('href')).toBe('/apple-touch-icon-personal.png');
+  });
+
+  it('без apple-touch-icon в документе не падает', () => {
+    expect(() => applyPersonalSiteChrome(document)).not.toThrow();
   });
 
   it('убирает ссылку на манифест приложения', () => {

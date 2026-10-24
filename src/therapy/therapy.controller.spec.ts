@@ -6,7 +6,11 @@
 // другая ошибка сервиса пробрасывается как есть (проверяем на одном хендлере,
 // поведение общее для всех — asTherapist единственная точка).
 import { ForbiddenException } from '@nestjs/common';
+import type { ExecutionContext } from '@nestjs/common';
+import { Reflector } from '@nestjs/core';
 import type { Request } from 'express';
+import { PERSISTENT_THROTTLE_KEY } from '../api/persistent-throttle.decorator';
+import { UserThrottlerGuard } from '../api/throttler.guard';
 import { TherapyController } from './therapy.controller';
 import { TherapyClientDataService } from './therapy-client-data.service';
 import { AccountService } from '../bot/account.service';
@@ -76,7 +80,7 @@ describe('TherapyController.requestYsq', () => {
   it('терапевт → делегирует requestYsq(therapistId, clientId) и возвращает { ok: true }', async () => {
     const { controller, clientData } = makeController();
     const res = await controller.requestYsq(makeReq(7n), '5');
-    expect(clientData.requestYsq).toHaveBeenCalledWith(7n, 5);
+    expect(clientData.requestYsq).toHaveBeenCalledWith(7n, 5n);
     expect(res).toEqual({ ok: true });
   });
 
@@ -107,7 +111,7 @@ describe('TherapyController.requestYsq', () => {
   it('отрицательный clientId (виртуальный офлайн-клиент) разрешён', async () => {
     const { controller, clientData } = makeController();
     await controller.requestYsq(makeReq(7n), '-3');
-    expect(clientData.requestYsq).toHaveBeenCalledWith(7n, -3);
+    expect(clientData.requestYsq).toHaveBeenCalledWith(7n, -3n);
   });
 });
 
@@ -122,7 +126,7 @@ describe('TherapyController.getClientDiary', () => {
   it('терапевт → делегирует и возвращает результат сервиса', async () => {
     const { controller, clientData } = makeController();
     const res = await controller.getClientDiary(makeReq(9n), '5');
-    expect(clientData.getClientDiaryEntries).toHaveBeenCalledWith(9n, 5);
+    expect(clientData.getClientDiaryEntries).toHaveBeenCalledWith(9n, 5n);
     expect(res).toEqual([{ id: 1 }]);
   });
 });
@@ -131,7 +135,7 @@ describe('TherapyController.getClientSchemaNotes', () => {
   it('терапевт → делегирует getClientSchemaNotes(therapistId, clientId)', async () => {
     const { controller, clientData } = makeController();
     const res = await controller.getClientSchemaNotes(makeReq(9n), '11');
-    expect(clientData.getClientSchemaNotes).toHaveBeenCalledWith(9n, 11);
+    expect(clientData.getClientSchemaNotes).toHaveBeenCalledWith(9n, 11n);
     expect(res).toEqual([{ id: 2 }]);
   });
 });
@@ -140,7 +144,7 @@ describe('TherapyController.getClientModeNotes', () => {
   it('терапевт → делегирует getClientModeNotes(therapistId, clientId)', async () => {
     const { controller, clientData } = makeController();
     const res = await controller.getClientModeNotes(makeReq(9n), '11');
-    expect(clientData.getClientModeNotes).toHaveBeenCalledWith(9n, 11);
+    expect(clientData.getClientModeNotes).toHaveBeenCalledWith(9n, 11n);
     expect(res).toEqual([{ id: 3 }]);
   });
 });
@@ -149,7 +153,7 @@ describe('TherapyController.getClientHistory', () => {
   it('терапевт → делегирует getClientHistory(therapistId, clientId)', async () => {
     const { controller, clientData } = makeController();
     const res = await controller.getClientHistory(makeReq(9n), '11');
-    expect(clientData.getClientHistory).toHaveBeenCalledWith(9n, 11);
+    expect(clientData.getClientHistory).toHaveBeenCalledWith(9n, 11n);
     expect(res).toEqual({ ratings: [] });
   });
 });
@@ -158,7 +162,7 @@ describe('TherapyController.getClientData', () => {
   it('терапевт → делегирует getClientData(therapistId, clientId)', async () => {
     const { controller, clientData } = makeController();
     const res = await controller.getClientData(makeReq(9n), '11');
-    expect(clientData.getClientData).toHaveBeenCalledWith(9n, 11);
+    expect(clientData.getClientData).toHaveBeenCalledWith(9n, 11n);
     expect(res).toEqual({ ysq: null });
   });
 
@@ -168,5 +172,41 @@ describe('TherapyController.getClientData', () => {
     await expect(controller.getClientData(makeReq(9n), '11')).rejects.toThrow(
       ForbiddenException,
     );
+  });
+});
+
+describe('TherapyController.requestYsq — троттлинг', () => {
+  // Лимит на терапевта: второй рубеж против рассылки клиенту (аудит 2026-10)
+  // и единственная серверная граница для гонки двух параллельных запросов.
+  // В памяти он умножался бы на число инстансов и обнулялся деплоем (правило
+  // №5, инцидент 2026-09-13), поэтому счётчик — в Postgres.
+  const handler = TherapyController.prototype.requestYsq;
+
+  it('30 запросов в час в бакете "long"', () => {
+    expect(Reflect.getMetadata('THROTTLER:LIMITlong', handler)).toBe(30);
+    expect(Reflect.getMetadata('THROTTLER:TTLlong', handler)).toBe(3_600_000);
+  });
+
+  it('@PersistentThrottle: ключ лимита с префиксом db: (счёт в Postgres)', () => {
+    const reflector = new Reflector();
+    expect(Reflect.getMetadata(PERSISTENT_THROTTLE_KEY, handler)).toBe(true);
+    const guard = new UserThrottlerGuard(
+      [],
+      { increment: jest.fn() },
+      reflector,
+    );
+    const key = (
+      guard as unknown as {
+        generateKey(c: ExecutionContext, s: string, n: string): string;
+      }
+    ).generateKey(
+      {
+        getHandler: () => handler,
+        getClass: () => TherapyController,
+      } as unknown as ExecutionContext,
+      'uid:42',
+      'long',
+    );
+    expect(key.startsWith('db:')).toBe(true);
   });
 });

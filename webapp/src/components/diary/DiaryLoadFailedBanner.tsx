@@ -1,3 +1,4 @@
+import '../../styles/sheet-diary.css';
 import { useTr } from '../../utils/addressForm';
 
 // Сбой ≠ пусто: НЕблокирующий баннер сверху дневника (пара к miniapp
@@ -8,27 +9,14 @@ import { useTr } from '../../utils/addressForm';
 export function DiaryLoadFailedBanner({ onRetry }: { onRetry: () => void }) {
   const tr = useTr();
   return (
-    <div
-      role="alert"
-      style={{
-        display: 'flex', alignItems: 'center', gap: 'var(--space-10)', justifyContent: 'space-between', flexWrap: 'wrap',
-        padding: '10px 16px', marginBottom: 20,
-        background: 'color-mix(in srgb, var(--accent-red) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--accent-red) 25%, transparent)', borderRadius: 'var(--r-12)',
-        fontSize: 13, color: 'var(--c-rose)', lineHeight: 1.5,
-      }}
-    >
+    <div role="alert" className="ds-card ds-card--row sd-banner">
       <span>
         {tr(
           'Не удалось загрузить записи дневника. Проверь соединение — записи на месте, просто не загрузились',
           'Не удалось загрузить записи дневника. Проверьте соединение — записи на месте, просто не загрузились',
         )}
       </span>
-      <button onClick={onRetry} style={{
-        flexShrink: 0, padding: '6px 14px', borderRadius: 'var(--r-10)', border: 'none', fontFamily: 'inherit',
-        background: 'color-mix(in srgb, var(--accent-red) 15%, transparent)', color: 'var(--c-rose)', fontSize: 13, fontWeight: 600, cursor: 'pointer',
-      }}>
-        Обновить
-      </button>
+      <button onClick={onRetry} className="ds-btn ds-btn--secondary ds-btn--sm">Обновить</button>
     </div>
   );
 }

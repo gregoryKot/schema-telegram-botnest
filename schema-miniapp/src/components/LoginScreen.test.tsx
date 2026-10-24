@@ -7,10 +7,14 @@ import { render, screen, cleanup } from '@testing-library/react';
 import { AddressFormContext } from '../utils/addressForm';
 import { LoginScreen } from './LoginScreen';
 
-afterEach(() => vi.unstubAllGlobals());
-
-beforeEach(() => {
+// cleanup — в afterEach, не только перед тестом: после ПОСЛЕДНЕГО теста экран
+// оставался смонтированным, и отложенные чтения хоста из useSafeTop
+// (LATE_HOST_READS_MS) срабатывали после сноса jsdom — «window is not
+// defined» ронял весь прогон мини-аппа при зелёных тестах (CI 2026-10-05,
+// тот же класс, что тост-таймеры в docs/README.md).
+afterEach(() => {
   cleanup();
+  vi.unstubAllGlobals();
 });
 
 describe('LoginScreen — онбординг «откуда это и зачем»', () => {

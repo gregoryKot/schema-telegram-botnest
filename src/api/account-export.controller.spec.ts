@@ -4,6 +4,7 @@
 // параметром) и отдаёт файл, а не строку в теле страницы.
 import { AccountExportController } from './account-export.controller';
 import type { DataExportResult } from '../account/data-export.service';
+import { PERSISTENT_THROTTLE_KEY } from './persistent-throttle.decorator';
 
 function makeResult(): DataExportResult {
   return {
@@ -66,5 +67,18 @@ describe('AccountExportController', () => {
     // export-policy.ts, и раздвоение этого решения здесь было бы вторым
     // местом, где можно случайно потерять или добавить данные.
     expect(out).toBe(result);
+  });
+});
+
+// Правило №5 / аудит 2026-10 (D2): лимит выгрузки («5 в сутки») должен
+// считаться в Postgres — общим на все инстансы, а не в памяти каждого.
+describe('AccountExportController — throttle', () => {
+  it('exportData помечен @PersistentThrottle()', () => {
+    expect(
+      Reflect.getMetadata(
+        PERSISTENT_THROTTLE_KEY,
+        AccountExportController.prototype.exportData,
+      ),
+    ).toBe(true);
   });
 });

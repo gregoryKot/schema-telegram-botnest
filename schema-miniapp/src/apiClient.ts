@@ -11,6 +11,8 @@ import {
 } from './session';
 import { cachedGet, isCacheableGetPath } from '../../shared/src/api/apiCache';
 import { applyMutationInvalidation } from '../../shared/src/api/apiCacheRules';
+import { readJsonBody } from '../../shared/src/api/readJsonBody';
+import { readErrorBody } from '../../shared/src/api/readErrorBody';
 
 export { BASE, authHeaders };
 
@@ -32,9 +34,8 @@ function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-// fetch() отклоняет промис TypeError-ом при обрыве связи/DNS-фейле; таймаут
-// из fetchWithTimeout отклоняет AbortError. Оба случая — «сети нет прямо
-// сейчас», а не осмысленный ответ сервера.
+// fetch() отклоняется TypeError-ом при обрыве связи/DNS-фейле, таймаут из
+// fetchWithTimeout — AbortError: оба случая «сети нет», а не ответ сервера.
 function isNetworkError(err: unknown): boolean {
   if (err instanceof DOMException && err.name === 'AbortError') return true;
   return err instanceof TypeError;
@@ -42,9 +43,14 @@ function isNetworkError(err: unknown): boolean {
 
 // Статус ответа сервера (не сетевая ошибка) — отдельный класс, чтобы вызывающий
 // код мог различить «сервер ответил 4xx» и «ответа не было вообще».
+// message — текст из тела ответа (если есть), reason — машинный код причины.
 export class HttpStatusError extends Error {
-  constructor(public status: number) {
-    super(`API error: ${status}`);
+  constructor(
+    public status: number,
+    message = `API error: ${status}`,
+    public reason?: string,
+  ) {
+    super(message);
   }
 }
 
@@ -81,9 +87,9 @@ export async function authedFetch(
   return retried;
 }
 
-// GET-ретраи: до 2 повторов с бэкоффом ~800мс/~2.5с ТОЛЬКО на сетевые ошибки
-// и 502/503/504. 4xx и прочие 5xx не ретраятся — осмысленный ответ сервера.
-// POST/DELETE не участвуют — не идемпотентны (см. outbox.ts, исключение — оценки).
+// GET-ретраи: до 2 повторов с бэкоффом ~800мс/~2.5с ТОЛЬКО на сетевые ошибки и
+// 502/503/504; 4xx и прочие 5xx — осмысленный ответ. POST/DELETE не участвуют:
+// не идемпотентны (см. outbox.ts, исключение — оценки).
 const GET_RETRY_DELAYS_MS = [800, 2500];
 const RETRYABLE_STATUSES = new Set([502, 503, 504]);
 
@@ -101,7 +107,7 @@ async function rawGet<T>(path: string): Promise<T> {
         }
         throw new HttpStatusError(res.status);
       }
-      return res.json() as Promise<T>;
+      return readJsonBody<T>(res);
     } catch (err) {
       if (isNetworkError(err) && attempt < GET_RETRY_DELAYS_MS.length) {
         await delay(GET_RETRY_DELAYS_MS[attempt]);
@@ -131,16 +137,8 @@ async function sendWithBody(
     ...(body === undefined ? {} : { body: JSON.stringify(body) }),
   });
   if (res.ok) return res;
-  let msg = `API error: ${res.status}`;
-  try {
-    const j = (await res.json()) as { message?: unknown };
-    if (j?.message)
-      msg =
-        typeof j.message === 'string' ? j.message : JSON.stringify(j.message);
-  } catch {
-    /* тело ответа не распарсилось — оставляем дефолтный msg */
-  }
-  throw new Error(msg);
+  const { message, reason } = await readErrorBody(res);
+  throw new HttpStatusError(res.status, message, reason);
 }
 
 export async function post(path: string, body: unknown): Promise<void> {
@@ -149,7 +147,7 @@ export async function post(path: string, body: unknown): Promise<void> {
 
 export async function postJson<T>(path: string, body: unknown): Promise<T> {
   const res = await sendWithBody(path, 'POST', body);
-  return res.json() as Promise<T>;
+  return readJsonBody<T>(res);
 }
 
 export async function del(path: string, body?: unknown): Promise<void> {

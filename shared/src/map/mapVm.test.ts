@@ -6,7 +6,7 @@
  * рисуется вместо того, чтобы висеть укором. Даты в тестах относительные —
  * абсолютные протухнут (правило тестов проекта).
  */
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import {
   buildMapLanes,
   collectModeItems,
@@ -15,6 +15,8 @@ import {
   ORIGINS_UNLOCK_CASES,
   type MapInput,
 } from './mapVm';
+import { todayStr } from '../utils/format';
+import { forEachTimeZone } from '../utils/timeZone.test-helpers';
 
 const TODAY = '2026-08-28';
 
@@ -201,5 +203,51 @@ describe('buildMapLanes', () => {
     expect(ids('stage')).toEqual(['detached_protector']);
     expect(ids('backstage')).toEqual(['vulnerable_child']);
     expect(ids('healthy')).toEqual(['happy_child']);
+  });
+});
+
+// ── Регрессия «момент против локального сегодня» ─────────────────────────────
+// `at` разбора приезжает МОМЕНТОМ, а `today` собирается локальным `todayStr()`
+// (см. useSelfMapData обоих фронтендов). День момента брался срезом строки —
+// то есть по Гринвичу, — и разбор, сделанный минуту назад, в зонах восточнее
+// UTC считался вчерашним: «сколько режим не появлялся» врало на сутки, а
+// затихание наступало на день раньше. Проверка сама обходит зоны и
+// замораживает «сейчас», поэтому краснеет в любой час прогона.
+describe('daysSince — момент и «сегодня» в одних координатах', () => {
+  const MOMENTS = ['2026-09-18T23:30:00.000Z', '2026-09-19T00:30:00.000Z'];
+
+  for (const iso of MOMENTS) {
+    it(`разбор, сделанный в ${iso}, — сегодняшний (0 дней) в любой зоне`, () => {
+      forEachTimeZone((tz) => {
+        vi.useFakeTimers({ toFake: ['Date'] });
+        vi.setSystemTime(new Date(iso));
+        try {
+          const items = collectModeItems(
+            input({
+              cases: [{ modeId: 'detached_protector', at: iso }],
+              today: todayStr(),
+            }),
+          );
+          expect(items[0].daysSince, tz).toBe(0);
+          expect(items[0].dormant, tz).toBe(false);
+        } finally {
+          vi.useRealTimers();
+        }
+      });
+    });
+  }
+
+  // Контроль (правило №15): моменты выбраны так, что гринвичский день и
+  // локальный заведомо расходятся, — иначе проверка выше зеленела бы и со
+  // срезом строки.
+  it('контроль: гринвичский день момента в какой-то зоне не равен локальному', () => {
+    const seen = new Set<boolean>();
+    forEachTimeZone(() => {
+      vi.useFakeTimers({ toFake: ['Date'] });
+      vi.setSystemTime(new Date(MOMENTS[0]));
+      seen.add(MOMENTS[0].slice(0, 10) === todayStr());
+      vi.useRealTimers();
+    });
+    expect(seen.has(false)).toBe(true);
   });
 });

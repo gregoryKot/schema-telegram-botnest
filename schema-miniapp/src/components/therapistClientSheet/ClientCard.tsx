@@ -1,9 +1,10 @@
 import { pressable } from '../../utils/a11y';
 import { TherapyClientSummary } from '../../api';
+import { idBucket } from '../../../../shared/src/utils/sameId';
 import { fmtDate } from '../../utils/format';
 import { indexColor } from './helpers';
+import { isVirtualClient } from '../../../../shared/src/therapy/clientSheetHelpers';
 import { RosterSparkline } from '../../../../shared/src/components/Sparklines';
-
 // Строка клиента в списке терапевта (аватар, активность, спарклайн индекса,
 // индекс дня). Вынесено из ClientListView.tsx (правило №10).
 export function ClientCard({
@@ -16,7 +17,7 @@ export function ClientCard({
   onOpen: (c: TherapyClientSummary) => void;
 }) {
   const isToday = c.lastActiveDate === today;
-  const isVirtual = c.telegramId < 0;
+  const isVirtual = isVirtualClient(c);
   const displayName =
     c.clientAlias ?? c.name ?? (isVirtual ? 'Оффлайн' : `ID ${c.telegramId}`);
   const initials = displayName
@@ -33,8 +34,7 @@ export function ClientCard({
     'var(--accent-orange)',
     'var(--accent-yellow)',
   ];
-  const avatarColor =
-    avatarColors[Math.abs(c.telegramId) % avatarColors.length];
+  const avatarColor = avatarColors[idBucket(c.telegramId, avatarColors.length)];
   return (
     <div
       {...pressable(() => onOpen(c))}
@@ -81,7 +81,7 @@ export function ClientCard({
         <div className="u-sub12">
           {isVirtual
             ? 'Без Telegram'
-            : `${isToday ? 'Сегодня' : c.lastActiveDate ? fmtDate(c.lastActiveDate) : 'Не активен'} · Стрик ${c.streak} дн`}
+            : `${isToday ? 'Сегодня' : c.lastActiveDate ? fmtDate(c.lastActiveDate) : 'Нет активности'} · Стрик ${c.streak} дн`}
         </div>
         {/* Динамика индекса за 14 дней (index 0 = сегодня →
                       разворачиваем). Меньше 2 точек — не занимаем место. */}

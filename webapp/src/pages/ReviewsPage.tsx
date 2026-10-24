@@ -1,11 +1,12 @@
 import { PRACTICE_BOOKING_URL } from './landing/constants';
+import { Btn } from '../components/landing-kit';
 
 // ─── Почему на сайте нет отзывов – этическое обоснование ─────────────────────
 const REASONS = [
   {
     n: '01',
     title: 'Сам факт обращения – тайна',
-    text: 'То, что человек пришёл к терапевту, – чувствительная личная информация. Даже анонимный отзыв оставляет следы: формулировки, детали запроса, время. По ним близкие иногда узнают автора. Я не могу гарантировать, что этого не случится, – поэтому не публикую отзывы вообще.',
+    text: 'То, что человек обратился за психологической помощью, – чувствительная личная информация. Даже анонимный отзыв оставляет следы: формулировки, детали запроса, время. По ним близкие иногда узнают автора. Я не могу гарантировать, что этого не случится, – поэтому не публикую отзывы вообще.',
   },
   {
     n: '02',
@@ -45,7 +46,7 @@ export function ReviewsPage() {
             }}>
               <span style={{ fontFamily: 'var(--serif)', fontSize: 32, fontWeight: 400, color: 'var(--accent)', lineHeight: 1, letterSpacing: '-.02em' }}>{r.n}</span>
               <div>
-                <h2 style={{ fontSize: 19, fontWeight: 700, color: 'var(--text)', margin: '0 0 10px', lineHeight: 1.3 }}>{r.title}</h2>
+                <h2 style={{ fontFamily: 'var(--serif)', fontSize: 26, fontWeight: 400, letterSpacing: '-0.01em', color: 'var(--text)', margin: '0 0 10px', lineHeight: 1.2 }}>{r.title}</h2>
                 <p style={{ fontSize: 15, color: 'var(--text-sub)', lineHeight: 1.75, margin: 0 }}>{r.text}</p>
               </div>
             </div>
@@ -65,13 +66,7 @@ export function ReviewsPage() {
             не подойдём друг другу, я честно скажу и при необходимости
             порекомендую коллегу.
           </p>
-          <a href={PRACTICE_BOOKING_URL} style={{
-            display: 'inline-flex', alignItems: 'center', gap: 'var(--space-8)',
-            padding: '13px 26px', background: 'var(--accent)', color: '#fff',
-            borderRadius: 100, fontSize: 14, fontWeight: 700, textDecoration: 'none',
-          }}>
-            Записаться на знакомство →
-          </a>
+          <Btn href={PRACTICE_BOOKING_URL} newTab={false}>Записаться на знакомство →</Btn>
         </div>
       </div>
     </div>

@@ -13,7 +13,7 @@ const BTN_STYLE = {
   border: 'none',
   borderRadius: 'var(--r-14)',
   background: 'var(--accent)',
-  color: 'var(--text)',
+  color: 'var(--on-accent)',
   fontSize: 15,
   fontWeight: 600,
   cursor: 'pointer',

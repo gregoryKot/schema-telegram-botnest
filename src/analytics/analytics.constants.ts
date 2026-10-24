@@ -27,7 +27,7 @@
 //                         Поверхности мини-аппа (Telegram) шлют событие
 //                         авторизованно через POST /api/event. Сайт добавил
 //                         две свои: баннер «приложение для телефона» в
-//                         кабинете (webapp/src/components/MobileAppBanner.tsx)
+//                         кабинете (убран 2026-10, id для старых строк)
 //                         тоже идёт авторизованно через /api/event, а блок
 //                         установки на публичном лендинге
 //                         (webapp/src/pages/landing/AppInstallSection.tsx) —
@@ -86,12 +86,14 @@
 //                         (meta.screen + meta.block + meta.dir: 'up'|'down').
 //                         Единственное из трёх screen_*-событий, которое
 //                         реально шлётся с meta.screen='today'.
-//   auth_rejected/auth_success/client_error/signup_source/data_export —
+//   auth_*/client_error/signup_source/data_export/notify_queue_tick —
 //                         СЕРВЕРНЫЕ события (пишет только бэкенд, не клиент)
 //                         — реестр и описания каждого в server-events.constants.ts
 //                         (правило №10, тот же приём, что у CASE_EVENTS ниже).
 //   profile_pattern_open — открыл лист схемы/режима с редизайна вкладки «Я»
 //                         (meta.kind — PROFILE_PATTERN_KINDS: schema|mode).
+//   concept_*            — схема случая в кабинете терапевта (без meta); реестр и
+//                         описания каждого — в concept-events.constants.ts.
 //   desktop_app_open     — запустил установленное приложение на компьютере,
 //                         открылся кабинет сайта (без meta).
 //   case_*               — разбор случая («Что это было»); имена, мета и
@@ -105,8 +107,10 @@
 //                         вообще находят и им пользуются, а не считать это
 //                         само собой разумеющимся.
 import { CASE_EVENTS } from './case-steps.constants';
+import { CONCEPT_EVENTS } from './concept-events.constants';
 import { GAME_EVENTS } from './game-events.constants';
 import { SERVER_EVENTS } from './server-events.constants';
+import { PUBLIC_CRISIS_EVENTS } from './public-crisis.constants';
 
 export const ANALYTICS_EVENTS = [
   'share_card',
@@ -149,6 +153,8 @@ export const ANALYTICS_EVENTS = [
   // Серверные события (guard'ы/контроллеры) — реестр в server-events.constants.ts.
   ...SERVER_EVENTS,
   'profile_pattern_open',
+  // Схема случая в кабинете терапевта — реестр рядом с фичей (правило №10).
+  ...CONCEPT_EVENTS,
   'desktop_app_open',
   // Путь входа по билету: один шаг в meta.step (см. login-ticket-steps).
   'login_ticket_step',
@@ -161,16 +167,15 @@ export const ANALYTICS_EVENTS = [
 ] as const;
 export type AnalyticsEventName = (typeof ANALYTICS_EVENTS)[number];
 
-// События, которые разрешено слать БЕЗ авторизации (POST /api/public-event):
-// мини-тесты «без регистрации», клики лендинга и вся игра (она вообще не
-// авторизует пользователя, правило №5/№14). Только этот срез — остальная
-// аналитика по-прежнему требует верифицированной идентичности.
+// События БЕЗ авторизации (POST /api/public-event): мини-тесты, клики лендинга,
+// игра (правило №5/№14), кризисная карточка записи. Остальное — только с входом.
 export const PUBLIC_ANALYTICS_EVENTS = [
   'quiz_started',
   'quiz_completed',
   'practice_link_click',
   'home_screen_offer',
   ...GAME_EVENTS,
+  ...PUBLIC_CRISIS_EVENTS,
 ] as const;
 export type PublicAnalyticsEventName = (typeof PUBLIC_ANALYTICS_EVENTS)[number];
 
@@ -237,7 +242,7 @@ export type AccountLinkFailReason = (typeof ACCOUNT_LINK_FAIL_REASONS)[number];
 
 // 'onboarding'/'today'/'settings' — мини-апп (Telegram). 'site_banner' —
 // баннер «приложение для телефона» в кабинете сайта
-// (webapp/src/components/MobileAppBanner.tsx), авторизованный путь.
+// (убран из кабинета 2026-10; id остаётся, пока в 30-дневных отчётах есть старые строки).
 // 'site_landing' — блок установки на публичном лендинге
 // (webapp/src/pages/landing/AppInstallSection.tsx); с лендинга событие идёт
 // анонимно через POST /api/public-event, и там принимается ТОЛЬКО эта
@@ -297,7 +302,7 @@ export {
 } from './crisis-surfaces.constants';
 
 // Главная практика экрана «Сегодня» (meta.practice для today_focus_change) —
-// парно с FocusPractice на фронте (schema-miniapp/src/utils/todayFocus.ts).
+// парно с FocusPractice на фронте (shared/src/today/todayFocus.ts).
 export const TODAY_FOCUS_PRACTICES = [
   'tracker',
   'schema',

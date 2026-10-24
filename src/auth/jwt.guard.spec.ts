@@ -46,27 +46,83 @@ function signToken(opts: {
   );
 }
 
+// Живой аккаунт по умолчанию; тест меняет под своё условие.
+function makePrisma(
+  row: { deletedAt: Date | null } | null = { deletedAt: null },
+) {
+  return { user: { findUnique: jest.fn().mockResolvedValue(row) } };
+}
+
 function makeAuth(): AuthService {
   const config = { getOrThrow: () => SECRET } as any;
   return new AuthService({} as any, config, {} as any, {} as any);
 }
 
 describe('JwtAuthGuard', () => {
-  const guard = new JwtAuthGuard(makeAuth());
+  const guard = new JwtAuthGuard(makeAuth(), makePrisma() as never);
 
-  it('валидный access-токен → webUser.userId (BigInt)', () => {
+  it('валидный access-токен → webUser.userId (BigInt)', async () => {
     const req: FakeRequest = {
       headers: { authorization: `Bearer ${signToken({ sub: '123' })}` },
     };
-    expect(guard.canActivate(makeCtx(req))).toBe(true);
+    await expect(guard.canActivate(makeCtx(req))).resolves.toBe(true);
     expect(req.webUser).toEqual({ userId: 123n });
+  });
+
+  // A5 (аудит 2026-10): подпись токена ничего не говорит о том, жив ли
+  // аккаунт — access-токен живёт 15 минут, дольше удаления/слияния.
+  it('аккаунт удалён (строки нет) → 401, webUser не ставится', async () => {
+    const g = new JwtAuthGuard(makeAuth(), makePrisma(null) as never);
+    const req: FakeRequest = {
+      headers: { authorization: `Bearer ${signToken({ sub: '123' })}` },
+    };
+    await expect(g.canActivate(makeCtx(req))).rejects.toThrow(
+      UnauthorizedException,
+    );
+    expect(req.webUser).toBeUndefined();
+  });
+
+  it('аккаунт помечен deletedAt → 401, webUser не ставится', async () => {
+    const g = new JwtAuthGuard(
+      makeAuth(),
+      makePrisma({ deletedAt: new Date() }) as never,
+    );
+    const req: FakeRequest = {
+      headers: { authorization: `Bearer ${signToken({ sub: '123' })}` },
+    };
+    await expect(g.canActivate(makeCtx(req))).rejects.toThrow(
+      UnauthorizedException,
+    );
+    expect(req.webUser).toBeUndefined();
+  });
+
+  it('проверка жизни спрашивает именно userId из токена', async () => {
+    const prisma = makePrisma();
+    const g = new JwtAuthGuard(makeAuth(), prisma as never);
+    await g.canActivate(
+      makeCtx({
+        headers: { authorization: `Bearer ${signToken({ sub: '42' })}` },
+      }),
+    );
+    expect(prisma.user.findUnique).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id: 42n } }),
+    );
+  });
+
+  it('невалидный токен отклоняется ДО обращения к БД', async () => {
+    const prisma = makePrisma();
+    const g = new JwtAuthGuard(makeAuth(), prisma as never);
+    await expect(
+      g.canActivate(makeCtx({ headers: { authorization: 'Bearer мусор' } })),
+    ).rejects.toThrow(UnauthorizedException);
+    expect(prisma.user.findUnique).not.toHaveBeenCalled();
   });
 
   it.each([
     ['нет заголовка', {}],
     ['не Bearer-схема', { authorization: 'Basic abc' }],
-  ])('%s → UnauthorizedException', (_name, headers) => {
-    expect(() => guard.canActivate(makeCtx({ headers }))).toThrow(
+  ])('%s → UnauthorizedException', async (_name, headers) => {
+    await expect(guard.canActivate(makeCtx({ headers }))).rejects.toThrow(
       UnauthorizedException,
     );
   });
@@ -80,9 +136,9 @@ describe('JwtAuthGuard', () => {
     // обязан их отвергать (иначе украденный merge-токен = сессия)
     ['type=refresh', signToken({ type: 'refresh' })],
     ['type=link', signToken({ type: 'link' })],
-  ])('отвергает: %s', (_name, token) => {
+  ])('отвергает: %s', async (_name, token) => {
     const req: FakeRequest = { headers: { authorization: `Bearer ${token}` } };
-    expect(() => guard.canActivate(makeCtx(req))).toThrow(
+    await expect(guard.canActivate(makeCtx(req))).rejects.toThrow(
       UnauthorizedException,
     );
     expect(req.webUser).toBeUndefined();
@@ -121,13 +177,27 @@ describe('OptionalJwtGuard', () => {
     expect(req.webUser).toEqual({ userId: 55n });
   });
 
-  it('link_token из query — legacy-fallback (аудит 2026-07, S-4)', () => {
+  // A1 (аудит 2026-10): login-CSRF. Злоумышленник выпускает link-токен
+  // СВОЕГО аккаунта (GET /api/auth/link-token) и отправляет жертву на
+  // /api/auth/google?link_token=…; фолбэк на query делал жертву «вошедшей» как
+  // злоумышленник, и её Google привязывался к его аккаунту.
+  it('link_token из query-параметра ИГНОРИРУЕТСЯ — аноним (A1)', () => {
     const req: FakeRequest = {
       headers: {},
       query: { link_token: signToken({ sub: '56', type: 'link' }) },
     };
+    expect(guard.canActivate(makeCtx(req))).toBe(true);
+    expect(req.webUser).toBeUndefined();
+  });
+
+  it('валидный link_token в query не перебивает отсутствующую куку, но куку читает как раньше', () => {
+    const req: FakeRequest = {
+      headers: {},
+      cookies: { link_token: signToken({ sub: '55', type: 'link' }) },
+      query: { link_token: signToken({ sub: '56', type: 'link' }) },
+    };
     guard.canActivate(makeCtx(req));
-    expect(req.webUser).toEqual({ userId: 56n });
+    expect(req.webUser).toEqual({ userId: 55n });
   });
 
   it('access-токен в link_token отвергается (webUser не ставится)', () => {

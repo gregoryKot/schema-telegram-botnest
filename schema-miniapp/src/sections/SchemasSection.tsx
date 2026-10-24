@@ -12,7 +12,7 @@ import {
   weekModeSummary,
   weekModeFrequency,
   WeekTopSummary,
-} from '../utils/patternsSummary';
+} from '../../../shared/src/pattern/patternsSummary';
 import { Tab, SchemasSectionProps as Props } from './schemas/types';
 import { PatternsHeader } from './schemas/PatternsHeader';
 import { SchemasTab } from './schemas/SchemasTab';

@@ -156,6 +156,14 @@ describe('определение хоста', () => {
       expect(detectHostId()).toBe('max');
     });
 
+    // E-5 (аудит 2026-10): голый ключ без hash/auth_date — не запуск MAX.
+    it('голый #WebAppData=x в адресе — не MAX, остаётся Telegram', () => {
+      setHash('#WebAppData=x');
+      fakeTelegram();
+      fakeMax();
+      expect(detectHostId()).toBe('telegram');
+    });
+
     // Регресс инцидента 2026-08-08: живая телеграмная подпись весит больше,
     // чем посторонний window.WebApp без параметров запуска MAX.
     it('параметров MAX в адресе нет, подпись Telegram живая — Telegram', () => {

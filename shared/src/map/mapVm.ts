@@ -18,6 +18,7 @@
 import { findTestGroupByModeId } from '../mode/modeTest';
 import { modeDisplayName } from '../mode/modeDisplayName';
 import { dateStringMs } from '../utils/calendarDate';
+import { momentDayKey } from '../utils/momentDate';
 
 /** Полосы карты сверху вниз. */
 export type MapLaneId = 'healthy' | 'stage' | 'backstage' | 'origins';
@@ -99,8 +100,10 @@ export function laneForMode(modeId: string): MapLaneId {
 function daysBetween(fromIso: string, toIso: string): number {
   // Считаем по календарным дням, оба конца — полночь UTC (utils/calendarDate),
   // поэтому разница целая и одинаковая в любой зоне машины.
-  const from = dateStringMs(fromIso.slice(0, 10));
-  const to = dateStringMs(toIso.slice(0, 10));
+  // `at` разбора — МОМЕНТ, а `today` приходит локальным: день берётся через
+  // momentDayKey, иначе стороны сравниваются в разных зонах (utils/momentDate).
+  const from = dateStringMs(momentDayKey(fromIso));
+  const to = dateStringMs(momentDayKey(toIso));
   if (Number.isNaN(from) || Number.isNaN(to)) return 0;
   return Math.max(0, Math.round((to - from) / 86400000));
 }

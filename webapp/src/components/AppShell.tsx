@@ -4,7 +4,7 @@ import { useAuth } from '../auth/authContext';
 import { useTr } from '../utils/addressForm';
 import { api } from '../api';
 import type { DayHistory } from '../types';
-import { applyTheme, getTheme } from '../utils/theme';
+import { applyCabinetLightTheme } from '../utils/theme';
 import { syncMotionAttr } from '../utils/reducedMotion';
 import { shouldShowChildhoodWheel } from '../utils/storageKeys';
 import { CommandPalette } from './CommandPalette';
@@ -12,15 +12,21 @@ import { Loader } from './Loader';
 import { useBootstrapLoad, TODAY_DATE, TODAY_KEY } from './appShell/useBootstrapLoad';
 import { useOverlays } from './appShell/useOverlays';
 import { AppOverlays } from './appShell/AppOverlays';
+import { EntryFlows } from './appShell/EntryFlows';
 import { AppSections } from './appShell/AppSections';
 import { type Section, sectionFromPath, fillHistoryGaps } from './appShell/navigation';
 import { MobileNav } from './appShell/MobileNav';
+import { QuickActions } from './quickActions/QuickActions';
 import { useDesktopAppLaunch } from '../hooks/useDesktopAppLaunch';
-
+import { useHostShell } from '../hooks/useHostShell';
+import { useIsOffline } from '../hooks/useIsOffline';
+import { useOutboxFlushOnOnline } from '../hooks/useOutboxFlushOnOnline';
+import { OfflineBanner } from './OfflineBanner';
 // – always-needed small helpers (no heavy data deps) –
 import { Celebration } from './Celebration';
 import { todayInsightPhrase } from '../utils/todayInsight';
 import { DonateNudge } from './DonateNudge';
+import { SECTION_HUE, clientHue, hueStyle } from '../lib/tone';
 
 // – lazy: heavy overlays –
 // SettingsSheet/PracticesScreen/PlansScreen/SchemaInfoSheet/ChildhoodWheelEx/
@@ -31,9 +37,10 @@ const DiariesOverlay = lazy(() => import('./DiariesOverlay').then(m => ({ defaul
 const HistorySheet   = lazy(() => import('./HistorySheet').then(m => ({ default: m.HistorySheet })));
 
 import type { StreakData } from '../api';
+import { parseRouteUserId } from '../../../shared/src/utils/sameId';
 
-// Apply saved theme immediately before first render
-applyTheme(getTheme());
+// Кабинет — только светлая тема (решение владельца 2026-10-15); тумблер темы живёт на лендинге.
+applyCabinetLightTheme();
 syncMotionAttr();
 
 const NAV_ITEMS: { id: Section; label: string }[] = [
@@ -46,14 +53,11 @@ const NAV_ITEMS: { id: Section; label: string }[] = [
 // Desktop sidebar omits Profile — it's accessible via the footer account link
 const SIDEBAR_NAV_ITEMS = NAV_ITEMS.filter(i => i.id !== 'profile');
 
-const SECTION_LABELS: Record<Section, string> = {
-  today: 'Сегодня', diary: 'Дневник', schemas: 'Паттерны', profile: 'Профиль', practice: 'Практика',
-};
-
 export function AppShell() {
   const { logout } = useAuth();
   // Запуск установленного приложения на компьютере приходит сюда (?from=app).
   useDesktopAppLaunch();
+  useHostShell();
   const tr = useTr();
   const location = useLocation();
   const navigate = useNavigate();
@@ -64,7 +68,7 @@ export function AppShell() {
   const setSection = useCallback((s: Section) => navigate('/' + s), [navigate]);
 
   const therapistMode = location.pathname.startsWith('/cabinet');
-  const openClientId = clientIdParam ? parseInt(clientIdParam, 10) : null;
+  const openClientId = parseRouteUserId(clientIdParam);
 
   // Remember last path per mode so the toggle returns user to where they were
   useEffect(() => {
@@ -90,7 +94,6 @@ export function AppShell() {
   }, [navigate]);
 
   const historyDays = 30;
-
   // Bootstrap data — needs/ratings/profile/role/therapist clients/… fetched
   // on mount; see useBootstrapLoad for the fetch + silent-failure reporting.
   const {
@@ -105,7 +108,8 @@ export function AppShell() {
 
   const [history, setHistory] = useState<DayHistory[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
-  const [isOffline, setIsOffline] = useState(!navigator.onLine);
+  const isOffline = useIsOffline();
+  useOutboxFlushOnOnline();
   const [helpTasksKey, setHelpTasksKey] = useState(0);
   const [celebrationStreak, setCelebrationStreak] = useState<number | null>(null);
   const [childhoodWheelPending, setChildhoodWheelPending] = useState(false);
@@ -130,13 +134,6 @@ export function AppShell() {
   // Therapist cabinet navigation helpers (URL-based)
   const therapistBackHandlerRef = useRef<() => void>(() => navigate('/cabinet'));
 
-  // Breadcrumbs
-  const breadcrumbs = useMemo(() => {
-    if (therapistMode) return ['Кабинет'];
-    return [SECTION_LABELS[section]];
-  }, [therapistMode, section]);
-
-
   // Global ⌘K + ⌘1–5 section shortcuts
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -150,15 +147,6 @@ export function AppShell() {
     return () => window.removeEventListener('keydown', onKey);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- ov.setCmdOpen стабильный сеттер useState; ov как объект не нужен в deps (не хотим переустанавливать обработчик на каждый чужой оверлей)
   }, [therapistMode, setSection]);
-
-  // Online/offline
-  useEffect(() => {
-    const handleOffline = () => setIsOffline(true);
-    const handleOnline = () => setIsOffline(false);
-    window.addEventListener('offline', handleOffline);
-    window.addEventListener('online', handleOnline);
-    return () => { window.removeEventListener('offline', handleOffline); window.removeEventListener('online', handleOnline); };
-  }, []);
 
   // Show the history loading state the moment the history tab is opened.
   // Adjusting state during render (not in an effect) keeps this off
@@ -219,7 +207,7 @@ export function AppShell() {
   const anyOverlayOpen = ov.showTrackerOverlay || ov.showTracker || ov.showDiaries
     || ov.showSchemaInfo || ov.showSettings || ov.showPractices || ov.showPlans
     || ov.showChildhoodWheel || ov.showTodayNote || ov.showTrackerGoal
-    || ov.showTherapistDisclaimer || celebrationStreak !== null;
+    || ov.showTherapistDisclaimer || ov.quickAction !== null || celebrationStreak !== null;
 
   if (loading) {
     return <Loader minHeight="100vh" />;
@@ -238,11 +226,11 @@ export function AppShell() {
   }
 
   return (
-    <div className="app-shell">
+    <div className="app-shell light-lock">
       {/* ── Sidebar ──────────────────────────────────────────────────────────── */}
       <aside className="sidebar">
         <div className="sb-brand">
-          <div className="sb-logo">ВС</div>
+          <div className="sb-logo">В</div>
           <div className="sb-name">Всё по схеме</div>
         </div>
 
@@ -259,7 +247,7 @@ export function AppShell() {
           {!therapistMode && SIDEBAR_NAV_ITEMS.map(item => (
             <NavLink key={item.id} to={'/' + item.id}
                      className={({ isActive }) => `sb-item${isActive ? ' is-active' : ''}`}>
-              <span>{item.label}</span>
+              <span className="sb-dot" style={hueStyle(SECTION_HUE[item.id])} />{item.label}
             </NavLink>
           ))}
           {therapistMode && (<>
@@ -269,25 +257,14 @@ export function AppShell() {
             </NavLink>
             <NavLink to="/cabinet" end
                      className={({ isActive }) => `sb-item${isActive ? ' is-active' : ''}`}>
-              <span>Все клиенты</span>
+              <span>Все клиенты</span><span className="badge">{therapistClients.length || ''}</span>
             </NavLink>
             {therapistClients.length > 0 && (
               <div className="sb-clients">
+                <div className="sb-section-label">Клиенты</div>
                 {therapistClients.length > 4 && (
-                  <div style={{ padding: '4px 12px 6px' }}>
-                    <input
-                      value={clientSearch}
-                      onChange={e => setClientSearch(e.target.value)}
-                      placeholder="Поиск клиента…"
-                      style={{
-                        width: '100%', padding: '5px 9px', borderRadius: 'var(--r-6)',
-                        border: '1px solid rgba(var(--fg-rgb),0.13)',
-                        background: 'rgba(var(--fg-rgb),0.05)',
-                        color: 'var(--text)', fontSize: 12.5, outline: 'none',
-                        boxSizing: 'border-box',
-                      }}
-                    />
-                  </div>
+                  <input className="sb-search" value={clientSearch} placeholder="Поиск клиента…"
+                         onChange={e => setClientSearch(e.target.value)} />
                 )}
                 {therapistClients
                   .filter(c => {
@@ -301,8 +278,9 @@ export function AppShell() {
                     return (
                       <NavLink key={c.telegramId} to={`/cabinet/${c.telegramId}`}
                                className={({ isActive }) => `sb-item sb-client-item${isActive ? ' is-active' : ''}`}>
-                        {activeToday && <span className="sb-active-dot" />}
+                        <span className="sb-client-av" style={hueStyle(clientHue(c.telegramId))}>{name.slice(0, 2).toUpperCase()}</span>
                         <span className="sb-client-name">{name}</span>
+                        {activeToday && <span className="sb-active-dot" />}
                       </NavLink>
                     );
                   })}
@@ -345,19 +323,14 @@ export function AppShell() {
               <div className="sb-acc-role">{userRole === 'THERAPIST' ? 'Терапевт' : 'Клиент'}</div>
             </div>
           </NavLink>
-          <button className="sb-item" onClick={() => ov.setShowSettings(true)} style={{ marginTop: 2 }}>
-            <span>Настройки</span>
-          </button>
-          <NavLink to="/account" className="sb-item" style={{ fontSize: 12, color: 'var(--text-sub)', marginTop: 2 }}>
-            <span>Аккаунт и привязки</span>
-          </NavLink>
-          <button className="sb-item sb-danger" onClick={() => logout()}
-                  style={{ marginTop: 2 }}>
-            <span>Выйти</span>
-          </button>
-          <div style={{ display: 'flex', gap: 'var(--space-12)', padding: '8px 0 0', borderTop: '1px solid var(--line)', marginTop: 4 }}>
-            <a href="/privacy" target="_blank" style={{ fontSize: 11, color: 'var(--text-faint)', textDecoration: 'none' }}>Конфиденциальность</a>
-            <a href="/offer" target="_blank" style={{ fontSize: 11, color: 'var(--text-faint)', textDecoration: 'none' }}>Оферта</a>
+          <div className="sb-links">
+            <button className="sb-item" onClick={() => ov.setShowSettings(true)}>Настройки</button>
+            <NavLink to="/account" className="sb-item">Аккаунт</NavLink>
+            <button className="sb-item sb-danger" onClick={() => logout()}>Выйти</button>
+          </div>
+          <div className="sb-links sb-legal">
+            <a href="/privacy" target="_blank">Конфиденциальность</a>
+            <a href="/offer" target="_blank">Оферта</a>
           </div>
         </div>
         </div>{/* end sb-foot-wrap */}
@@ -365,21 +338,14 @@ export function AppShell() {
 
       {/* ── Main ─────────────────────────────────────────────────────────────── */}
       <div className={`main${therapistMode ? ' main--cabinet' : ''}`}>
+        <OfflineBanner offline={isOffline} />
         {/* Topbar – shown in all modes */}
         <div className="topbar">
-          {!therapistMode && (
-            <div className="crumbs">
-              {breadcrumbs.map((c, i) => (
-                <span key={i}>
-                  {i > 0 && <span className="sep" style={{ margin: '0 4px' }}>›</span>}
-                  <span className={i === breadcrumbs.length - 1 ? 'now' : ''}>{c}</span>
-                </span>
-              ))}
-            </div>
-          )}
           <div className="t-spacer" />
-          {isOffline && (
-            <span style={{ fontSize: 12, color: 'var(--c-rose)', fontWeight: 500 }}>офлайн</span>
+          {isOffline && <span className="topbar-offline">офлайн</span>}
+          {!therapistMode && (
+            <button className="topbar-sos tone-tint" style={hueStyle(28)}
+                    onClick={() => navigate('/practice', { state: { openFlashcard: true } })}>Мне плохо</button>
           )}
           <button className="search-pill" onClick={() => ov.setCmdOpen(true)}>
             <span>Перейти к…</span>
@@ -400,6 +366,7 @@ export function AppShell() {
           сквозь открытый оверлей — AppSections получает inert=anyOverlayOpen.
         */}
         <AppSections
+          rating={{ onChange: handleChange, onSaved: handleSaved, isOffline }}
           inert={anyOverlayOpen}
           therapistMode={therapistMode}
           pathname={location.pathname}
@@ -468,15 +435,12 @@ export function AppShell() {
         {/* ── Diaries overlay ── */}
         {ov.showDiaries && (
           <Suspense fallback={null}>
-            <DiariesOverlay onClose={() => ov.setShowDiaries(false)} />
+            <DiariesOverlay onClose={() => ov.setShowDiaries(false)} onOpenTracker={() => { ov.setShowDiaries(false); ov.setTrackerNeedId(null); ov.setShowTrackerOverlay(true); }} />
           </Suspense>
         )}
 
-        {/* ── Полноэкранные шторки (настройки/практики/планы/справочник схем/
-            колесо детства/заметка/цель/дисклеймер кабинета) — вынесены в
-            AppOverlays.tsx (правило №10), каждая со своей Suspense-границей
-            (fallback={null} — контент под ней уже смонтирован отдельно
-            выше, аудит 2026-08-22, находка №1). */}
+        {/* Согласия и ссылки-приглашения (EntryFlows), затем шторки (AppOverlays, правило №10) */}
+        <EntryFlows ov={ov} />
         <AppOverlays
           ov={ov}
           userRole={userRole}
@@ -502,8 +466,9 @@ export function AppShell() {
       </div>{/* end main */}
 
       {/* ── Mobile bottom nav ──────────────────────────────────────────────── */}
-      <MobileNav items={NAV_ITEMS} />
+      <MobileNav items={NAV_ITEMS} therapist={therapistMode} onSearch={() => ov.setCmdOpen(true)} />
 
+      <QuickActions ov={ov} showButton={!therapistMode} />
       {/* ── Command palette ─────────────────────────────────────────────────── */}
       {ov.cmdOpen && (
         <CommandPalette
@@ -514,7 +479,7 @@ export function AppShell() {
           therapistMode={therapistMode}
           onToggleMode={() => switchTherapistMode(!therapistMode)}
           onOpenClient={(id) => { navigate('/cabinet/' + id); }}
-          onNewDiaryEntry={() => { navigate('/diary'); }}
+          onQuickAction={ov.runQuickAction}
         />
       )}
 

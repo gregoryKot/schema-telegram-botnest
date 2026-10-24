@@ -1,0 +1,49 @@
+/* Экран «Сегодня» кабинета терапевта. Префикс tt-. */
+.tt-page { max-width: 1200px; }
+.tt-counters { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; }
+.tt-counter { border-radius: 18px; padding: 22px 24px; display: flex; flex-direction: column; }
+.tt-counter .ds-label { color: inherit; opacity: .75; }
+.tt-counter .ds-num { font-size: 52px; margin-top: 12px; }
+.tt-counter--plain .ds-label { color: var(--text-faint); opacity: 1; }
+.tt-counter--warn .ds-label { font-weight: 600; }
+.tt-denom { font-size: 22px; font-style: italic; color: var(--on-ink-faint); }
+.tt-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr)); gap: 32px; align-items: start; }
+.tt-col { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.tt-empty { font-family: var(--serif); font-style: italic; font-size: 14px; color: var(--text-faint); }
+.tt-reset { font: inherit; color: inherit; text-align: left; width: 100%; appearance: none; }
+.tt-session {
+  display: grid; grid-template-columns: 64px 4px minmax(0, 1fr) auto; gap: 16px; align-items: center;
+  min-height: 44px;
+}
+.tt-time { font-family: var(--serif); font-size: 26px; }
+.tt-bar { height: 40px; border-radius: 2px; }
+.tt-name { font-size: 16px; font-weight: 600; overflow-wrap: anywhere; }
+.tt-row-sub { font-size: 13px; color: var(--text-sub); margin-top: 2px; }
+.tt-arrow { font-size: 18px; color: var(--accent); font-weight: 600; white-space: nowrap; }
+.tt-act { grid-template-columns: 36px minmax(0, 1fr) minmax(48px, 120px) 44px; min-height: 44px; background: none; border-top: none; border-left: none; border-right: none; }
+.tt-act .ds-avatar { width: 36px; height: 36px; font-size: 12px; }
+.tt-act-name { font-size: 14px; font-weight: 600; overflow-wrap: anywhere; }
+.tt-act-status { font-size: 12px; margin-top: 2px; color: var(--text-muted); }
+.tt-act-status.is-ok { color: var(--ok); }
+.tt-act-status.is-warn { color: var(--warn-ink); }
+.tt-idx { font-family: var(--serif); font-size: 22px; text-align: right; }
+.tt-attn { display: flex; align-items: center; gap: 12px; text-align: left; border: none; cursor: pointer; min-height: 44px; }
+.tt-attn .ds-avatar { width: 36px; height: 36px; font-size: 12px; }
+.tt-attn-body { flex: 1; min-width: 0; }
+.tt-attn .tt-row-sub { color: var(--warn-ink); font-size: 12px; }
+.tt-attn .tt-arrow { color: var(--warn-ink); }
+.tt-attn-list { display: flex; flex-direction: column; gap: 8px; }
+
+@media (max-width: 767px) {
+  .tt-counters { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .tt-counter { border-radius: 14px; padding: 12px; flex-direction: column-reverse; }
+  .tt-counter .ds-num { font-size: 28px; margin-top: 0; }
+  .tt-counter .ds-label { font-size: 11px; letter-spacing: 0; text-transform: none; margin-top: 6px; }
+  .tt-denom { font-size: 14px; }
+  .tt-cols { gap: 24px; }
+  .tt-session { grid-template-columns: 56px 4px minmax(0, 1fr) auto; gap: 12px; }
+  .tt-time { font-size: 21px; }
+  .tt-bar { height: 36px; }
+  .tt-name { font-size: 15px; font-weight: 700; }
+  .tt-row-sub { font-size: 12px; }
+}

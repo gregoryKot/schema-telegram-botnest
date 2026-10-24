@@ -1,62 +1,20 @@
 import type { CSSProperties, ReactNode } from 'react';
-import { getHost } from '../../../shared/src/host';
-import { ADD_ICON_HOP_URL, homeScreenPlatform } from '../utils/homeScreen';
+import { AddHomeScreenButton as SharedAddHomeScreenButton } from '../../../shared/src/host/AddHomeScreenButton';
 
-// Единая кнопка «добавить значок на экран» (одна механика — один компонент).
-//
-// Android — нативный WebApp.addToHomeScreen(), работает штатно.
-// iOS — НАСТОЯЩАЯ ссылка <a target="_blank">, а не postEvent: на устройстве
-// пользователя молча умирают и addToHomeScreen (x-safari-https в клиенте), и
-// openLink (гейт lastTouchTimestamp в web_app_open_link). Тап по якорю идёт
-// через навигационную политику WKWebView — совсем другой механизм, который
-// Telegram обрабатывает как внешнюю навигацию и открывает браузер.
-// Ссылка ведёт на прыжковую страницу нашего домена (add-icon.html), она
-// переправляет на t.me-инструкцию добавления значка.
-export function AddHomeScreenButton({
-  children,
-  onActivated,
-  style,
-}: {
+// Кнопка «добавить значок на экран»: механика (Android — нативный вызов, iOS —
+// настоящая ссылка на прыжковую страницу) живёт в shared/src/host/AddHomeScreenButton.tsx
+// и общая с сайтом; здесь только вид мини-аппа.
+export function AddHomeScreenButton(props: {
   children: ReactNode;
   /** Побочные действия при активации (снуз, аналитика, согласие). */
   onActivated?: () => void;
   style?: CSSProperties;
 }) {
-  const host = getHost();
-  const platform = homeScreenPlatform(host.platform);
-
-  if (platform === 'android' && host.capabilities.homeScreen) {
-    return (
-      <button
-        className="btn-primary"
-        style={style}
-        onClick={() => {
-          // Нативный вызов ПЕРВЫМ, в жесте; побочные действия после.
-          host.homeScreen.add();
-          onActivated?.();
-        }}
-      >
-        {children}
-      </button>
-    );
-  }
-
   return (
-    <a
+    <SharedAddHomeScreenButton
       className="btn-primary"
-      href={ADD_ICON_HOP_URL}
-      target="_blank"
-      rel="noopener noreferrer"
-      onClick={() => onActivated?.()}
-      style={{
-        display: 'block',
-        textAlign: 'center',
-        textDecoration: 'none',
-        boxSizing: 'border-box',
-        ...style,
-      }}
-    >
-      {children}
-    </a>
+      linkStyle={{ display: 'block', textAlign: 'center' }}
+      {...props}
+    />
   );
 }

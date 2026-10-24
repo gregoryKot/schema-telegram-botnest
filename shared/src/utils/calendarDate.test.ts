@@ -11,7 +11,11 @@ import {
   formatDateString,
   todayCalendarDate,
 } from './calendarDate';
-import { withTimeZone, forEachTimeZone } from './timeZone.test-helpers';
+import {
+  withTimeZone,
+  forEachTimeZone,
+  forEachTimeZoneAsync,
+} from './timeZone.test-helpers';
 import { todayStr } from './format';
 
 describe('forEachTimeZone', () => {
@@ -27,6 +31,31 @@ describe('forEachTimeZone', () => {
       seen.add(new Date('2026-07-14T00:00:00').getTime());
     });
     expect(seen.size).toBeGreaterThan(1);
+  });
+
+  // Асинхронный вариант нужен рендеру компонента (waitFor). Главное, чего у
+  // синхронного не проверить: зона держится ПОСЛЕ await, а не слетает на
+  // первом же — иначе проверка шла бы в зоне процесса, а не в заданной.
+  it('async: зона держится после await и возвращается обратно', async () => {
+    const before = new Date('2026-07-14T00:00:00').getTime();
+    const seen = new Set<number>();
+    await forEachTimeZoneAsync(async () => {
+      await Promise.resolve();
+      seen.add(new Date('2026-07-14T00:00:00').getTime());
+    });
+    expect(seen.size).toBeGreaterThan(1);
+    expect(new Date('2026-07-14T00:00:00').getTime()).toBe(before);
+  });
+
+  it('async: зоны у процесса не было — после обхода её и нет', async () => {
+    const previous = process.env.TZ;
+    delete process.env.TZ;
+    try {
+      await forEachTimeZoneAsync(async () => undefined);
+      expect(process.env.TZ).toBeUndefined();
+    } finally {
+      if (previous !== undefined) process.env.TZ = previous;
+    }
   });
 });
 

@@ -69,3 +69,37 @@ describe('SessionInfoDto', () => {
     ).resolves.toContain('meetingDays');
   });
 });
+
+// Аудит 2026-10, T6: форматы дат и границы дней недели.
+describe('SessionInfoDto — форматы (T6)', () => {
+  it('therapyStartDate: только YYYY-MM-DD', async () => {
+    await expect(
+      errorsFor(SessionInfoDto, { therapyStartDate: '2026-01-31' }),
+    ).resolves.toEqual([]);
+    for (const bad of ['31.01.2026', '2026-01-31T10:00', 'x'.repeat(5000)])
+      await expect(
+        errorsFor(SessionInfoDto, { therapyStartDate: bad }),
+      ).resolves.toContain('therapyStartDate');
+  });
+
+  it('nextSession: день или момент (datetime-local сайта), мусор и простыни — отказ', async () => {
+    for (const ok of ['2026-08-01', '2026-08-01T14:30', '2026-08-01T14:30:00'])
+      await expect(
+        errorsFor(SessionInfoDto, { nextSession: ok }),
+      ).resolves.toEqual([]);
+    for (const bad of ['завтра', '2026-08-01 14:30', 'x'.repeat(5000)])
+      await expect(
+        errorsFor(SessionInfoDto, { nextSession: bad }),
+      ).resolves.toContain('nextSession');
+  });
+
+  it('meetingDays: не более 7 элементов, каждый 0–6', async () => {
+    await expect(
+      errorsFor(SessionInfoDto, { meetingDays: [0, 6] }),
+    ).resolves.toEqual([]);
+    for (const bad of [[7], [-1], [0, 1, 2, 3, 4, 5, 6, 0], [1.5]])
+      await expect(
+        errorsFor(SessionInfoDto, { meetingDays: bad }),
+      ).resolves.toContain('meetingDays');
+  });
+});

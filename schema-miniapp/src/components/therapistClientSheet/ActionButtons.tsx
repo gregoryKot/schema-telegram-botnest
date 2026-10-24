@@ -1,5 +1,5 @@
 import { pressable } from '../../utils/a11y';
-import { fmtDate } from '../../utils/format';
+import { fmtDate, momentDayKey } from '../../utils/format';
 import { ClientDetail } from './types';
 
 interface ActionButtonsProps {
@@ -59,7 +59,7 @@ function ActionRow({
 export function ActionButtons({ detail }: ActionButtonsProps) {
   const {
     clientTasks,
-    notes,
+    notesPage,
     concept,
     clientSchemaNotesData,
     clientModeNotesData,
@@ -83,14 +83,14 @@ export function ActionButtons({ detail }: ActionButtonsProps) {
       />
       <ActionRow
         label="Заметки сессий"
-        sub={notes.length > 0 ? `${notes.length} заметок` : undefined}
+        sub={notesPage.total > 0 ? `${notesPage.total} заметок` : undefined}
         onClick={() => setShowNotesSheet(true)}
       />
       <ActionRow
         label="Концептуализация"
         sub={
           concept?.updatedAt
-            ? `Обновлено ${fmtDate(concept.updatedAt.slice(0, 10))}`
+            ? `Обновлено ${fmtDate(momentDayKey(concept.updatedAt))}`
             : undefined
         }
         onClick={() => setShowConceptSheet(true)}

@@ -1,8 +1,8 @@
-// Покрытие AuthOauthController (был 0%): маршруты google/vk/telegram-oidc.
+// Покрытие AuthOauthController (был 0%): маршруты google/vk.
 // Контроллер инстанцируется напрямую с typed test doubles (без TestingModule)
 // — стиль auth.service.spec.ts. google-роуты — тонкие делегаты в
-// AuthFlowService (проверяем сам факт и аргументы делегирования), vk и
-// telegram-oidc содержат собственную PKCE/state-логику — она тестируется
+// AuthFlowService (проверяем сам факт и аргументы делегирования), vk содержит
+// собственную PKCE/state-логику — она тестируется
 // по существу (state → cookie → provider exchange → signInOrLinkOrMerge →
 // finishOAuthRedirect), плюс основная guard-ветка (state mismatch/деним).
 //
@@ -13,21 +13,14 @@
 // telegram.provider.spec.ts.
 jest.mock('./providers/google.provider', () => ({ GoogleProvider: class {} }));
 
-import { UnauthorizedException } from '@nestjs/common';
 import type { ConfigService } from '@nestjs/config';
 import type { Request, Response } from 'express';
 import { AuthOauthController } from './auth-oauth.controller';
 import type { AuthProviderRegistry } from './providers/registry';
 import type { AuthFlowService, SignInOutcome } from './auth-flow.service';
-import type { VkProvider } from './providers/vk.provider';
-import type { TelegramOidcProvider } from './providers/telegram-oidc.provider';
+import { VkProvider } from './providers/vk.provider';
+import { toVkState } from './providers/vk-state';
 import type { ProviderIdentity } from './providers/types';
-import type {
-  GoogleOneTapService,
-  OneTapLoginResult,
-} from './google-one-tap.service';
-import type { SecurityLogService } from './security-log.service';
-import type { GoogleOneTapDto } from './dto/google-one-tap.dto';
 
 const WEBAPP_URL = 'https://schemehappens.ru';
 
@@ -97,31 +90,12 @@ function makeRes(): { res: Response; mocks: ResMocks } {
   return { res: mocks as unknown as Response, mocks };
 }
 
-interface OneTapMocks {
-  login: jest.Mock;
-}
-
-function makeOneTap(): { oneTap: GoogleOneTapService; mocks: OneTapMocks } {
-  const mocks: OneTapMocks = { login: jest.fn() };
-  return { oneTap: mocks as unknown as GoogleOneTapService, mocks };
-}
-
-function makeSecurityLog(): {
-  securityLog: SecurityLogService;
-  log: jest.Mock;
-} {
-  const log = jest.fn();
-  return { securityLog: { log } as unknown as SecurityLogService, log };
-}
-
 function makeController(
   providers: AuthProviderRegistry,
   flow: AuthFlowService,
   config: ConfigService = makeConfig(),
-  oneTap: GoogleOneTapService = makeOneTap().oneTap,
-  securityLog: SecurityLogService = makeSecurityLog().securityLog,
 ): AuthOauthController {
-  return new AuthOauthController(config, providers, flow, oneTap, securityLog);
+  return new AuthOauthController(config, providers, flow);
 }
 
 interface VkProviderMocks {
@@ -138,32 +112,6 @@ function makeVkProvider(): { vk: VkProvider; mocks: VkProviderMocks } {
     callbackOrigin: jest.fn().mockReturnValue(WEBAPP_URL),
   };
   return { vk: mocks as unknown as VkProvider, mocks };
-}
-
-interface TgOidcProviderMocks {
-  generatePkce: jest.Mock;
-  buildAuthUrl: jest.Mock;
-  exchangeCodePkce: jest.Mock;
-  callbackOrigin: jest.Mock;
-}
-
-function makeTgOidcProvider(): {
-  provider: TelegramOidcProvider;
-  mocks: TgOidcProviderMocks;
-} {
-  const mocks: TgOidcProviderMocks = {
-    generatePkce: jest
-      .fn()
-      .mockReturnValue({ verifier: 'verifier-1', challenge: 'challenge-1' }),
-    buildAuthUrl: jest.fn(
-      (state: string, challenge?: string) =>
-        `https://oauth.telegram.org/auth?state=${state}&challenge=${String(challenge)}`,
-    ),
-    exchangeCodePkce: jest.fn(),
-    // callbackOrigin — origin WEBAPP_URL (2026-09-08), см. комментарий в makeVkProvider.
-    callbackOrigin: jest.fn().mockReturnValue(WEBAPP_URL),
-  };
-  return { provider: mocks as unknown as TelegramOidcProvider, mocks };
 }
 
 const TOKENS_OUTCOME: SignInOutcome = {
@@ -230,7 +178,14 @@ describe('AuthOauthController.vkCallback', () => {
     } as Partial<Request>);
     const { res, mocks: resMocks } = makeRes();
 
-    await controller.vkCallback('code-1', 'state-1', 'device-1', '', req, res);
+    await controller.vkCallback(
+      'code-1',
+      toVkState('state-1'),
+      'device-1',
+      '',
+      req,
+      res,
+    );
 
     expect(vkMocks.exchangeCodeWithContext).toHaveBeenCalledWith(
       'code-1',
@@ -263,7 +218,14 @@ describe('AuthOauthController.vkCallback', () => {
     } as Partial<Request>);
     const { res, mocks: resMocks } = makeRes();
 
-    await controller.vkCallback('code-1', 'state-1', 'device-1', '', req, res);
+    await controller.vkCallback(
+      'code-1',
+      toVkState('state-1'),
+      'device-1',
+      '',
+      req,
+      res,
+    );
 
     expect(vkMocks.exchangeCodeWithContext).not.toHaveBeenCalled();
     expect(mocks.signInOrLinkOrMerge).not.toHaveBeenCalled();
@@ -283,7 +245,7 @@ describe('AuthOauthController.vkCallback', () => {
 
     await controller.vkCallback(
       'code-1',
-      'state-1',
+      toVkState('state-1'),
       'device-1',
       'access_denied',
       req,
@@ -305,177 +267,54 @@ describe('AuthOauthController.vkCallback', () => {
     } as Partial<Request>);
     const { res, mocks: resMocks } = makeRes();
 
-    await controller.vkCallback('code-1', 'state-1', '', '', req, res);
+    await controller.vkCallback(
+      'code-1',
+      toVkState('state-1'),
+      '',
+      '',
+      req,
+      res,
+    );
 
     expect(vkMocks.exchangeCodeWithContext).not.toHaveBeenCalled();
     expect(resMocks.redirect).toHaveBeenCalledWith(
       `${WEBAPP_URL}/auth/error?reason=vk_failed`,
     );
   });
-});
-
-describe('AuthOauthController.telegramOidcRedirect', () => {
-  it('без webUser: state строит flow.buildLinkState(null), обе cookie ставятся, редирект на buildAuthUrl(state, challenge)', () => {
-    const { flow, mocks: flowMocks } = makeFlow();
-    const { provider, mocks: tgMocks } = makeTgOidcProvider();
-    const controller = makeController(
-      makeProviders({ 'telegram-oidc': provider }),
-      flow,
-    );
-    const req = makeReq();
-    const { res, mocks: resMocks } = makeRes();
-
-    controller.telegramOidcRedirect(req, res);
-
-    expect(tgMocks.generatePkce).toHaveBeenCalled();
-    // Подписанный state (C1): аноним → buildLinkState(null); значение куки —
-    // ровно то, что вернул buildLinkState, а не самодельный base64url JSON.
-    expect(flowMocks.buildLinkState).toHaveBeenCalledWith(null);
-    expect(resMocks.cookie).toHaveBeenCalledWith(
-      'oauth_state',
-      'signed-oauth-state',
-      expect.objectContaining({ httpOnly: true }),
-    );
-    expect(resMocks.cookie).toHaveBeenCalledWith(
-      'tg_pkce_verifier',
-      'verifier-1',
-      expect.objectContaining({ httpOnly: true }),
-    );
-    expect(tgMocks.buildAuthUrl).toHaveBeenCalledWith(
-      'signed-oauth-state',
-      'challenge-1',
-    );
-    expect(resMocks.redirect).toHaveBeenCalledWith(
-      'https://oauth.telegram.org/auth?state=signed-oauth-state&challenge=challenge-1',
-    );
-  });
-
-  it('с webUser: linkUserId уходит в flow.buildLinkState (подписанный state, не сырой id)', () => {
-    const { flow, mocks: flowMocks } = makeFlow();
-    const { provider } = makeTgOidcProvider();
-    const controller = makeController(
-      makeProviders({ 'telegram-oidc': provider }),
-      flow,
-    );
-    const req = makeReq({ webUser: { userId: 42n } } as Partial<Request>);
-    const { res, mocks: resMocks } = makeRes();
-
-    controller.telegramOidcRedirect(req, res);
-
-    expect(flowMocks.buildLinkState).toHaveBeenCalledWith(42n);
-    expect(resMocks.cookie).toHaveBeenCalledWith(
-      'oauth_state',
-      'signed-oauth-state',
-      expect.objectContaining({ httpOnly: true }),
-    );
-  });
-
-  // РЕГРЕССИЯ 2026-09-08: сайт обслуживается и с домена-алиаса — колбэк
-  // всегда приходит на канонический хост, кука на алиасе там не увидится.
-  it('анонимный вход с алиас-домена → 302 на хост колбэка, ни одна cookie не ставится, PKCE не генерируется', () => {
-    const { flow, mocks: flowMocks } = makeFlow();
-    const { provider, mocks: tgMocks } = makeTgOidcProvider();
-    const controller = makeController(
-      makeProviders({ 'telegram-oidc': provider }),
-      flow,
-    );
-    const req = makeReq({
-      headers: { host: 'kotlarewski.gr' },
-      originalUrl: '/api/auth/telegram-oidc',
-    } as Partial<Request>);
-    const { res, mocks: resMocks } = makeRes();
-
-    controller.telegramOidcRedirect(req, res);
-
-    expect(resMocks.redirect).toHaveBeenCalledWith(
-      302,
-      `${WEBAPP_URL}/api/auth/telegram-oidc?_oh=1`,
-    );
-    expect(resMocks.cookie).not.toHaveBeenCalled();
-    expect(tgMocks.generatePkce).not.toHaveBeenCalled();
-    expect(flowMocks.buildLinkState).not.toHaveBeenCalled();
-  });
-});
-
-describe('AuthOauthController.telegramOidcCallback', () => {
-  it('успешный обмен: exchangeCodePkce → signInOrLinkOrMerge → finishOAuthRedirect, обе cookie очищаются', async () => {
+  // Инцидент 2026-10-03: VK пропускает в state только [A-Za-z0-9_-] и молча
+  // вырезает остальное. Подписанный state — JWT с двумя точками; вернувшись
+  // без них, он не совпадал с кукой, и каждый вход через VK падал vk_failed.
+  // Тест идёт через шов: настоящий buildAuthUrl → то, что вернёт VK →
+  // настоящий колбэк.
+  it('state, прошедший через VK (точки вырезаны), совпадает с кукой oauth_state', async () => {
     const { flow, mocks } = makeFlow();
-    const { provider, mocks: tgMocks } = makeTgOidcProvider();
-    const identity: ProviderIdentity = {
-      providerId: 'tg-1',
-      displayName: 'Tg User',
-    };
-    tgMocks.exchangeCodePkce.mockResolvedValue(identity);
     mocks.signInOrLinkOrMerge.mockResolvedValue(TOKENS_OUTCOME);
+    const jwtLike = 'eyJhbGciOiJIUzI1NiJ9.eyJraW5kIjoib2F1dGhfc3RhdGUifQ.c2ln';
+    const real = new VkProvider({
+      getOrThrow: (k: string) =>
+        ({
+          VK_APP_ID: '1',
+          VK_REDIRECT_URI: `${WEBAPP_URL}/api/auth/vk/callback`,
+          JWT_SECRET: 's',
+        })[k],
+    } as unknown as ConfigService);
+    const sent = new URL(real.buildAuthUrl(jwtLike)).searchParams.get('state')!;
+    const vkReturns = sent.replace(/[^A-Za-z0-9_-]/g, '');
+    expect(vkReturns).toBe(sent);
 
-    const controller = makeController(
-      makeProviders({ 'telegram-oidc': provider }),
-      flow,
-    );
+    const exchange = jest
+      .spyOn(real, 'exchangeCodeWithContext')
+      .mockResolvedValue({ providerId: '1' });
+    const controller = makeController(makeProviders({ vk: real }), flow);
     const req = makeReq({
-      cookies: { oauth_state: 'state-1', tg_pkce_verifier: 'verifier-1' },
+      cookies: { oauth_state: jwtLike },
     } as Partial<Request>);
-    const { res, mocks: resMocks } = makeRes();
+    const { res } = makeRes();
 
-    await controller.telegramOidcCallback('code-1', 'state-1', '', req, res);
+    await controller.vkCallback('code-1', vkReturns, 'device-1', '', req, res);
 
-    expect(tgMocks.exchangeCodePkce).toHaveBeenCalledWith(
-      'code-1',
-      'verifier-1',
-    );
-    expect(resMocks.clearCookie).toHaveBeenCalledWith('oauth_state', {
-      path: '/api/auth',
-    });
-    expect(resMocks.clearCookie).toHaveBeenCalledWith('tg_pkce_verifier', {
-      path: '/api/auth',
-    });
-    expect(mocks.finishOAuthRedirect).toHaveBeenCalledWith(
-      TOKENS_OUTCOME,
-      'telegram-oidc',
-      res,
-      WEBAPP_URL,
-      null,
-    );
-  });
-
-  it('нет cookie tg_pkce_verifier → UnauthorizedException внутри, редирект на /auth/error, exchangeCodePkce не вызывается', async () => {
-    const { flow } = makeFlow();
-    const { provider, mocks: tgMocks } = makeTgOidcProvider();
-    const controller = makeController(
-      makeProviders({ 'telegram-oidc': provider }),
-      flow,
-    );
-    const req = makeReq({
-      cookies: { oauth_state: 'state-1' },
-    } as Partial<Request>);
-    const { res, mocks: resMocks } = makeRes();
-
-    await controller.telegramOidcCallback('code-1', 'state-1', '', req, res);
-
-    expect(tgMocks.exchangeCodePkce).not.toHaveBeenCalled();
-    expect(resMocks.redirect).toHaveBeenCalledWith(
-      `${WEBAPP_URL}/auth/error?reason=telegram_oidc_failed`,
-    );
-  });
-
-  it('state mismatch → редирект на /auth/error без обмена кода', async () => {
-    const { flow } = makeFlow();
-    const { provider, mocks: tgMocks } = makeTgOidcProvider();
-    const controller = makeController(
-      makeProviders({ 'telegram-oidc': provider }),
-      flow,
-    );
-    const req = makeReq({
-      cookies: { oauth_state: 'other-state', tg_pkce_verifier: 'verifier-1' },
-    } as Partial<Request>);
-    const { res, mocks: resMocks } = makeRes();
-
-    await controller.telegramOidcCallback('code-1', 'state-1', '', req, res);
-
-    expect(tgMocks.exchangeCodePkce).not.toHaveBeenCalled();
-    expect(resMocks.redirect).toHaveBeenCalledWith(
-      `${WEBAPP_URL}/auth/error?reason=telegram_oidc_failed`,
-    );
+    expect(exchange).toHaveBeenCalledWith('code-1', 'device-1', jwtLike);
+    expect(mocks.finishOAuthRedirect).toHaveBeenCalled();
   });
 });
 
@@ -492,89 +331,5 @@ describe('AuthOauthController — колбэки не пробрасывают �
     await expect(
       controller.vkCallback('', '', '', '', req, res),
     ).resolves.not.toThrow();
-  });
-});
-
-// Google One Tap: анонимный POST-роут (у человека сессии ещё нет), но защищён
-// CSRF-заголовком — иначе сторонний сайт мог бы дёрнуть его с чужой всплывашкой.
-// Контроллер — тонкий делегат: requireCsrf, затем GoogleOneTapService.login с
-// credential/res/ip/ua. requireCsrf — реальный (hasCsrfHeader из auth-http.util).
-describe('AuthOauthController.googleOneTap', () => {
-  const BODY: GoogleOneTapDto = { credential: 'header.payload.sig' };
-
-  it('нет CSRF-заголовка → UnauthorizedException, oneTap.login не вызывается', async () => {
-    const { flow } = makeFlow();
-    const { oneTap, mocks } = makeOneTap();
-    const controller = makeController(
-      makeProviders({}),
-      flow,
-      makeConfig(),
-      oneTap,
-    );
-    const req = makeReq(); // headers: {} — ни x-requested-with, ни JSON-контента
-    const { res } = makeRes();
-
-    await expect(
-      controller.googleOneTap(BODY, req, res),
-    ).rejects.toBeInstanceOf(UnauthorizedException);
-    expect(mocks.login).not.toHaveBeenCalled();
-  });
-
-  it('есть x-requested-with → login(credential, res, ip, ua) и его результат возвращается', async () => {
-    const { flow } = makeFlow();
-    const { oneTap, mocks } = makeOneTap();
-    const result: OneTapLoginResult = {
-      accessToken: 'access-1',
-      expiresIn: 900,
-    };
-    mocks.login.mockResolvedValue(result);
-
-    const controller = makeController(
-      makeProviders({}),
-      flow,
-      makeConfig(),
-      oneTap,
-    );
-    const req = makeReq({
-      headers: { 'x-requested-with': 'one-tap', 'user-agent': 'UA/1.0' },
-    } as Partial<Request>);
-    const { res } = makeRes();
-
-    await expect(controller.googleOneTap(BODY, req, res)).resolves.toBe(result);
-    expect(mocks.login).toHaveBeenCalledWith(
-      'header.payload.sig',
-      res,
-      '1.2.3.4',
-      'UA/1.0',
-    );
-  });
-
-  it('application/json-контент тоже проходит CSRF-проверку (fallback hasCsrfHeader)', async () => {
-    const { flow } = makeFlow();
-    const { oneTap, mocks } = makeOneTap();
-    const result: OneTapLoginResult = {
-      twofa: true,
-      challengeToken: 'challenge-1',
-    };
-    mocks.login.mockResolvedValue(result);
-
-    const controller = makeController(
-      makeProviders({}),
-      flow,
-      makeConfig(),
-      oneTap,
-    );
-    const req = makeReq({
-      headers: { 'content-type': 'application/json' },
-    } as Partial<Request>);
-    const { res } = makeRes();
-
-    await expect(controller.googleOneTap(BODY, req, res)).resolves.toBe(result);
-    expect(mocks.login).toHaveBeenCalledWith(
-      'header.payload.sig',
-      res,
-      '1.2.3.4',
-      undefined,
-    );
   });
 });

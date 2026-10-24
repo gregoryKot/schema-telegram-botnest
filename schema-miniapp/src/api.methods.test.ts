@@ -14,6 +14,8 @@ function mockFetchOnce(body?: unknown) {
     ok: true,
     status: 200,
     json,
+    // readJsonBody читает тело через text() — мок отдаёт обе формы.
+    text: vi.fn().mockResolvedValue(JSON.stringify(body ?? {})),
   });
 }
 
@@ -188,11 +190,6 @@ const POST_CASES: [string, () => Promise<unknown>, string][] = [
     '/api/therapy/invite',
   ],
   [
-    'addClientManually',
-    () => api.addClientManually(123),
-    '/api/therapy/clients/add',
-  ],
-  [
     'addVirtualClient',
     () => api.addVirtualClient('Имя'),
     '/api/therapy/clients/virtual',
@@ -281,5 +278,13 @@ describe('api — DELETE-ручки шлют верный метод и URL', ()
     const { url, init } = lastCall();
     expect(url).toBe(expectedUrl);
     expect(init.method).toBe('DELETE');
+  });
+});
+
+describe('api — удалённые методы не возвращаются', () => {
+  // Ручное добавление реального пользователя по Telegram ID создавало связь
+  // без согласия клиента; сервер роут снял (404). Клиент подключается по ссылке.
+  it('addClientManually нет в api', () => {
+    expect('addClientManually' in api).toBe(false);
   });
 });

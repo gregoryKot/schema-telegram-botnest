@@ -2,11 +2,14 @@ import { useTr } from '../../utils/addressForm';
 import { SectionLabel } from '../SectionLabel';
 import { IdentityDot } from '../../../../shared/src/components/IdentityDot';
 import { needColor } from '../../../../shared/src/needs/needColors';
-import { SCHEMA_DOMAINS } from '../../schemaTherapyData';
+import {
+  LOW_NEED_MAX,
+  lowNeedIds,
+} from '../../../../shared/src/childhoodWheel/childhoodWheel';
 import { TherapyNote } from '../TherapyNote';
 import { pressable } from '../../utils/a11y';
 import { ChildhoodWheel } from './ChildhoodWheel';
-import { SCHEMA_HINTS } from './schemaHints';
+import { SchemaHintCard } from './SchemaHintCard';
 import {
   NEED_IDS,
   type ActiveSchema,
@@ -31,7 +34,7 @@ export function ResultPhase({
   setActiveSchema: (s: ActiveSchema) => void;
 }) {
   const tr = useTr();
-  const lowNeeds = NEED_IDS.filter((id) => ratings[id] <= 4);
+  const lowNeeds = lowNeedIds(ratings);
 
   return (
     <div>
@@ -82,7 +85,7 @@ export function ResultPhase({
                   fontSize: 13,
                   fontWeight: 600,
                   color:
-                    value <= 4
+                    value <= LOW_NEED_MAX
                       ? 'var(--accent-red)'
                       : value <= 6
                         ? 'var(--accent-yellow)'
@@ -112,80 +115,15 @@ export function ResultPhase({
             вырабатывает стратегии выживания. Это и есть схемы — не диагноз, а
             паттерн, который когда-то помогал.
           </div>
-          {lowNeeds.map((id) => {
-            const meta = NEED_META[id];
-            const hint = SCHEMA_HINTS[id];
-            return (
-              <div
-                key={id}
-                style={{
-                  background: 'rgba(var(--fg-rgb),0.04)',
-                  borderRadius: 'var(--r-14)',
-                  padding: '12px 14px',
-                  marginBottom: 10,
-                }}
-              >
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 'var(--space-8)',
-                    marginBottom: 8,
-                  }}
-                >
-                  <IdentityDot id={id} />
-                  <span className="u-h13">{meta.label}</span>
-                  <span
-                    style={{
-                      fontSize: 12,
-                      color: hint.color,
-                      marginLeft: 'auto',
-                    }}
-                  >
-                    {ratings[id]}/10 в детстве
-                  </span>
-                </div>
-                <div
-                  style={{
-                    fontSize: 11,
-                    color: 'var(--text-sub)',
-                    marginBottom: 6,
-                  }}
-                >
-                  Домен: {hint.domain}
-                </div>
-                <div className="u-wrap5">
-                  {hint.schemas.map((s) => {
-                    const schemaData = SCHEMA_DOMAINS.flatMap((d) =>
-                      d.schemas.map((sc) => ({ ...sc, color: d.color })),
-                    ).find((sc) => sc.name === s);
-                    return (
-                      <span
-                        key={s}
-                        {...pressable(() => {
-                          if (schemaData) setActiveSchema(schemaData);
-                        })}
-                        style={{
-                          fontSize: 11,
-                          padding: '3px 10px',
-                          borderRadius: 'var(--r-20)',
-                          background: hint.color + '18',
-                          color: hint.color,
-                          cursor: schemaData ? 'pointer' : 'default',
-                          textDecoration: schemaData
-                            ? 'underline dotted'
-                            : 'none',
-                          textUnderlineOffset: 3,
-                        }}
-                      >
-                        {s}
-                      </span>
-                    );
-                  })}
-                </div>
-              </div>
-            );
-          })}
+          {lowNeeds.map((id) => (
+            <SchemaHintCard
+              key={id}
+              id={id}
+              label={NEED_META[id].label}
+              rating={ratings[id]}
+              setActiveSchema={setActiveSchema}
+            />
+          ))}
 
           <div
             {...pressable(() => {

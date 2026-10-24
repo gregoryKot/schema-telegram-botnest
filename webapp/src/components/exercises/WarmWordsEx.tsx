@@ -28,7 +28,6 @@ export function WarmWordsEx({ onBack }: { onBack: () => void }) {
     <ExScreen
       onBack={goBack}
       eyebrow="Ресурс"
-      eyebrowColor="var(--c-amber)"
       title={
         <>
           Тёплые
@@ -42,7 +41,7 @@ export function WarmWordsEx({ onBack }: { onBack: () => void }) {
       )}
     >
       {items === null && (
-        <div className="u-col12">
+        <div className="ex2-stack">
           {[0, 1, 2].map((i) => (
             <SkeletonCard key={i} height={92} />
           ))}
@@ -50,16 +49,7 @@ export function WarmWordsEx({ onBack }: { onBack: () => void }) {
       )}
 
       {failed && (
-        <div
-          role="alert"
-          style={{
-            textAlign: 'center',
-            padding: '20px 8px',
-            fontSize: 14,
-            color: 'var(--text-sub)',
-            lineHeight: 1.6,
-          }}
-        >
+        <div role="alert" className="ds-card ex2-empty">
           {tr(
             'Не удалось загрузить твои слова. Они на месте — проверь связь и открой ещё раз.',
             'Не удалось загрузить ваши слова. Они на месте — проверьте связь и откройте ещё раз.',
@@ -68,7 +58,7 @@ export function WarmWordsEx({ onBack }: { onBack: () => void }) {
       )}
 
       {!failed && items !== null && items.length === 0 && (
-        <p className="text-sm muted" style={{ lineHeight: 1.6 }}>
+        <p className="ds-card ex2-empty">
           {tr(
             'Здесь пока пусто. Слова появятся, когда сохранишь ответ Здорового Взрослого — в дневнике режимов или в карточке режима.',
             'Здесь пока пусто. Слова появятся, когда сохраните ответ Здорового Взрослого — в дневнике режимов или в карточке режима.',
@@ -78,34 +68,25 @@ export function WarmWordsEx({ onBack }: { onBack: () => void }) {
 
       {items !== null && items.length > 0 && (
         <>
-          <div className="text-xs faint u-mb14">
+          <div className="ds-sub ex2-count">
             {items.length} {pluralEntries(items.length)}
           </div>
-          <div className="u-col12">
+          <div className="ex2-stack">
             {items.map((item) => {
               const mode = getModeById(item.modeId);
               return (
-                <div key={item.key} className="aside-card" style={{ marginBottom: 0 }}>
-                  <div
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      gap: 'var(--space-8)',
-                      marginBottom: 8,
-                    }}
-                  >
-                    <span className="text-sm u-ac6">
+                <div key={item.key} className="ds-card ds-card--row">
+                  <div className="ex2-warm-head">
+                    <span className="ex2-warm-mode">
                       {mode && <IdentityDot color={mode.groupColor} />}
                       {mode ? mode.name : 'Режим'}
                     </span>
-                    <span className="text-xs faint" style={{ textAlign: 'right', flexShrink: 0 }}>
+                    <span className="ds-sub ex2-warm-when">
                       {fmtDate(item.at)} ·{' '}
                       {item.source === 'diary' ? 'дневник' : 'карточка режима'}
                     </span>
                   </div>
-                  <p className="body" style={{ whiteSpace: 'pre-wrap' }}>
-                    {item.text}
-                  </p>
+                  <p className="ex2-body-text">{item.text}</p>
                 </div>
               );
             })}

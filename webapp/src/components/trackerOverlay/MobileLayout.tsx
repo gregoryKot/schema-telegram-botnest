@@ -1,18 +1,23 @@
-import { PickerRail } from './PickerRail';
-import { IdentityDot } from '../../../../shared/src/components/IdentityDot';
+import { MobileScale } from './MobileScale';
+import { NeedExamples } from './NeedExamples';
+import { hueStyle, NEED_HUE } from '../../lib/tone';
+import type { NeedId } from '../../../../shared/src/needs/types';
 import type { LayoutProps } from './types';
-
+import '../../styles/sheet-tracker-mobile.css';
+/** Трекер на телефоне: шкала и «Далее» в первом экране; вопрос дня и примеры — ниже шкалы. */
 export function MobileLayout({
   need,
-  color,
   value,
   needName,
   extra,
   handleChange,
   setDetailNeed,
+  yesterday,
+  delta,
   onTS,
   onTE,
   topbar,
+  onboarding,
   footer,
   steps,
   detailSheet,
@@ -20,186 +25,45 @@ export function MobileLayout({
   onTS: (e: React.TouchEvent) => void;
   onTE: (e: React.TouchEvent) => void;
 }) {
+  const hue = NEED_HUE[need.id as NeedId];
   return (
-    <div
-      style={{
-        position: 'fixed',
-        inset: 0,
-        zIndex: 80,
-        background: 'var(--bg)',
-        display: 'flex',
-        flexDirection: 'column',
-        overflow: 'hidden',
-      }}
-      onTouchStart={onTS}
-      onTouchEnd={onTE}
-    >
+    <div className="tk2-overlay" onTouchStart={onTS} onTouchEnd={onTE}>
       {topbar}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '18px 20px 20px' }}>
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            marginBottom: 12,
-          }}
-        >
-          <div
-            className="eyebrow"
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 'var(--space-8)',
-              color,
-            }}
-          >
-            <span
-              style={{
-                width: 5,
-                height: 5,
-                borderRadius: 3,
-                background: 'currentColor',
-                display: 'inline-block',
-              }}
-            />
-            <span>{extra?.subtitle ?? ''}</span>
-          </div>
-          {steps}
-        </div>
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 'var(--space-14)',
-            marginBottom: 14,
-          }}
-        >
-          <div className="u-flex1">
-            <button
-              onClick={() => setDetailNeed(need)}
-              style={{ all: 'unset', cursor: 'pointer' }}
-            >
-              <h1
-                style={{
-                  fontFamily: 'var(--serif)',
-                  fontSize: 34,
-                  fontWeight: 400,
-                  lineHeight: 1.0,
-                  letterSpacing: '-0.02em',
-                  color: 'var(--text)',
-                  margin: 0,
-                }}
-              >
-                {needName}
-              </h1>
-            </button>
-            {extra?.desc && (
-              <div
-                style={{
-                  fontSize: 13,
-                  color: 'var(--text-sub)',
-                  lineHeight: 1.55,
-                  marginTop: 6,
-                }}
-              >
-                {extra.desc}
-              </div>
-            )}
-          </div>
-          <IdentityDot id={need.id} size={18} />
-        </div>
-        <div
-          style={{
-            padding: '14px 0',
-            borderTop: '1px solid rgba(var(--fg-rgb),0.07)',
-            borderBottom: '1px solid rgba(var(--fg-rgb),0.07)',
-            marginBottom: 20,
-          }}
-        >
-          <div
-            className="eyebrow"
-            style={{ marginBottom: 10, color: 'var(--text-faint)' }}
-          >
-            вопрос дня
-          </div>
-          <p
-            style={{
-              fontFamily: 'var(--serif)',
-              fontStyle: 'italic',
-              fontSize: 17,
-              lineHeight: 1.45,
-              color: 'var(--text)',
-              margin: 0,
-            }}
-          >
-            {extra?.question ?? ''}
+      <div className="tk2-body">
+        <div className="tkm-inner" style={hueStyle(hue)}>
+          {onboarding}
+          <p className="tkm-intro">
+            Пять базовых эмоциональных потребностей — из схема-терапии. Через 3–5 дней оценки показывают, что питает,
+            а что истощает.
           </p>
-        </div>
-        <div className="u-mb24">
-          <PickerRail
-            value={value}
-            onChange={(v) => handleChange(need.id, v)}
-            color={color}
-          />
-        </div>
-        <div
-          style={{
-            paddingTop: 4,
-            borderTop: '1px solid rgba(var(--fg-rgb),0.07)',
-          }}
-        >
-          <div
-            className="eyebrow"
-            style={{ marginBottom: 12, color: 'var(--text-faint)' }}
-          >
-            что считается
+          <div className="tkm-head">
+            {steps}
+            <button type="button" onClick={() => setDetailNeed(need)} className="tkm-pill">
+              <span className="tkm-pill-name">{needName}</span>
+              <span className="tkm-pill-i" aria-hidden="true">ⓘ</span>
+            </button>
+            <div className="tkm-sub tone-text">
+              <span className="ds-dot tone-fill" />
+              <span>{extra?.subtitle ?? ''}</span>
+            </div>
+            {extra?.desc && <p className="tkm-desc">{extra.desc}</p>}
           </div>
-          <ul
-            style={{
-              listStyle: 'none',
-              padding: 0,
-              margin: 0,
-              display: 'flex',
-              flexDirection: 'column',
-            }}
-          >
-            {(extra?.examples ?? []).map((ex, i, arr) => (
-              <li
-                key={i}
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: '20px 1fr',
-                  gap: 'var(--space-10)',
-                  padding: '10px 0',
-                  borderBottom:
-                    i < arr.length - 1
-                      ? '1px solid rgba(var(--fg-rgb),0.07)'
-                      : 'none',
-                  alignItems: 'start',
-                }}
-              >
-                <span
-                  style={{
-                    fontFamily: 'var(--serif)',
-                    fontStyle: 'italic',
-                    fontSize: 14,
-                    color: 'var(--text-ghost)',
-                  }}
-                >
-                  {i + 1}.
-                </span>
-                <span
-                  style={{
-                    fontSize: 13,
-                    lineHeight: 1.55,
-                    color: 'var(--text-sub)',
-                  }}
-                >
-                  {ex}
-                </span>
-              </li>
-            ))}
-          </ul>
+          <MobileScale
+            value={value}
+            hue={hue}
+            label={needName}
+            yesterday={yesterday}
+            delta={delta}
+            onChange={(v) => handleChange(need.id, v)}
+          />
+          <section className="tkm-q">
+            <div className="ds-label">вопрос дня</div>
+            <p className="tk2-question tkm-q-text">{extra?.question ?? ''}</p>
+          </section>
+          <details className="tkm-ex">
+            <summary>Что считается</summary>
+            <NeedExamples examples={extra?.examples ?? []} />
+          </details>
         </div>
       </div>
       {footer}

@@ -1,4 +1,4 @@
-import { IsBoolean, IsInt, IsNotEmpty, IsString } from 'class-validator';
+import { IsBoolean, IsNotEmpty, IsString, MaxLength } from 'class-validator';
 
 /**
  * DTO подключения клиент↔терапевт (аудит 2026-07, 2г / правило №6
@@ -8,20 +8,8 @@ import { IsBoolean, IsInt, IsNotEmpty, IsString } from 'class-validator';
 export class JoinTherapyDto {
   @IsString()
   @IsNotEmpty()
+  @MaxLength(32)
   code!: string;
-}
-
-export class VirtualClientDto {
-  @IsString()
-  name!: string;
-}
-
-// Эндпоинт всегда возвращает 403 (см. therapy-connection.controller.ts) — DTO нужен
-// только для рантайм-типизации тела запроса, ручной ветки добавления
-// реальных клиентов больше нет.
-export class AddClientDto {
-  @IsInt()
-  clientTelegramId!: number;
 }
 
 // Запоминаемое предпочтение терапевта: стартовать в кабинете (on=true) или в

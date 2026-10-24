@@ -2,7 +2,7 @@
 // (правило №3 CLAUDE.md, В10 аудита 2026-08). Раньше webapp дублировал
 // buildModes/NEEDS/STEPS инлайном в SchemaFlashcard.tsx, а miniapp — в
 // components/schemaFlashcard/constants.ts; здесь и жил ты/вы-баг режима
-// «Злой Ребёнок», не обёрнутого в tr() в одной из копий (см.
+// «Сердитый Ребёнок», не обёрнутого в tr() в одной из копий (см.
 // shared/src/flashcard/modes.test.ts — тест теперь покрывает оба фронтенда).
 import type { FlashcardEntry, ModeData, NeedData, Step } from './types';
 
@@ -25,7 +25,7 @@ export const buildModes = (
   {
     id: 'angry_child',
     emoji: '😡',
-    label: 'Злой Ребёнок',
+    label: 'Сердитый Ребёнок',
     desc: 'Злость, раздражение, хочется взорваться',
     response: tr(
       'Злость — сигнал, что нарушено что-то важное. Не нужно ни давить её, ни выплёскивать. Давай выясним, что за ней стоит.',

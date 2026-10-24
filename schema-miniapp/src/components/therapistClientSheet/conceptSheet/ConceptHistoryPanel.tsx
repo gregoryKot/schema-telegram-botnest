@@ -1,7 +1,8 @@
-import { fmtDate } from '../../../utils/format';
+import { fmtDate, momentDayKey } from '../../../utils/format';
 import { SCHEMA_DOMAINS, MODE_GROUPS } from '../../../schemaTherapyData';
 import { IdentityDot } from '../../../../../shared/src/components/IdentityDot';
 import { ClientDetail } from '../types';
+import { snapshotToConceptFields } from '../../../../../shared/src/therapy/conceptSnapshotRestore';
 
 // Панель истории концептуализации (снимки с возможностью восстановить).
 // Вынесено из ConceptSheet.tsx (правило №10). Поведение не менялось.
@@ -65,21 +66,11 @@ export function ConceptHistoryPanel({ detail }: { detail: ClientDetail }) {
                     color: 'var(--text-sub)',
                   }}
                 >
-                  {fmtDate(snap.savedAt.slice(0, 10))}
+                  {fmtDate(momentDayKey(snap.savedAt))}
                 </span>
                 <button
                   onClick={() => {
-                    setLocalConcept({
-                      schemaIds: snap.schemaIds ?? [],
-                      modeIds: snap.modeIds ?? [],
-                      earlyExperience: snap.earlyExperience ?? '',
-                      unmetNeeds: snap.unmetNeeds ?? '',
-                      triggers: snap.triggers ?? '',
-                      copingStyles: snap.copingStyles ?? '',
-                      goals: snap.goals ?? '',
-                      currentProblems: snap.currentProblems ?? '',
-                      modeTransitions: snap.modeTransitions ?? '',
-                    });
+                    setLocalConcept(snapshotToConceptFields(snap));
                     setConceptDirty(true);
                     setShowHistory(false);
                   }}

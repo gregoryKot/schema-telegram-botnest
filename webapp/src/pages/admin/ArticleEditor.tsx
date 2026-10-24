@@ -60,7 +60,7 @@ export function ArticleEditor({ adminKey, article, onDone, onCancel }: {
 
   return (
     <section style={card}>
-      <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginTop: 0, marginBottom: 16 }}>
+      <h2 style={{ fontFamily: 'var(--serif)', fontSize: 26, fontWeight: 400, letterSpacing: '-0.01em', color: 'var(--text)', marginTop: 0, marginBottom: 16 }}>
         {article ? 'Редактировать статью' : 'Новая статья'}
       </h2>
 
@@ -120,7 +120,7 @@ function EditorToolbar({ editor }: { editor: ReturnType<typeof useEditor> }) {
   if (!editor) return null;
   const tbBtn = (active: boolean): React.CSSProperties => ({
     padding: '6px 10px', fontSize: 13, fontWeight: 600, fontFamily: 'inherit', cursor: 'pointer',
-    background: active ? 'var(--accent)' : 'transparent', color: active ? '#fff' : 'var(--text-sub)',
+    background: active ? 'var(--accent)' : 'transparent', color: active ? 'var(--on-accent)' : 'var(--text-sub)',
     border: 'none', borderRadius: 'var(--r-6)',
   });
   return (

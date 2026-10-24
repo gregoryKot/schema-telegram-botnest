@@ -1,3 +1,4 @@
+import type { UserId } from './userId';
 export interface Need {
   id: string;
   emoji: string;
@@ -96,12 +97,11 @@ export interface UserProfile {
   myModeIds: string[];
 }
 
-// Сводка клиента в кабинете терапевта — единственная фронтовая копия
-// (правило №3). Источник правды — src/therapy/therapy.types.ts на бэке
-// (бэк не может импортировать shared из-за rootDir=src, поэтому пара
-// бэк↔shared остаётся; при изменении — синхронь оба).
+// Сводка клиента в кабинете терапевта — единственная фронтовая копия (правило
+// №3). Источник правды — src/therapy/therapy.types.ts на бэке (бэк не может
+// импортировать shared из-за rootDir=src: пара бэк↔shared, меняй оба).
 export interface TherapyClientSummary {
-  telegramId: number;
+  telegramId: UserId;
   name: string | null;
   clientAlias: string | null;
   streak: number;

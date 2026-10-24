@@ -13,20 +13,23 @@ export function siteTitleSuffix(): string {
   return isPracticeHost() ? 'kotlarewski.gr' : 'schemehappens.ru';
 }
 
+const PRACTICE_URL = 'https://kotlarewski.gr';
+
+// JSON-LD в index.html уже указывает на kotlarewski.gr ("@id", "url",
+// "serviceUrl", "image") — Person и услуга принадлежат визитке практики на
+// любом домене, поэтому здесь его не переписываем.
 export function applyPersonalSiteChrome(doc: Document = document): void {
+  // Знак «GK» кистью (растр, вектора нет): обе icon-ссылки — png, iOS — свой квадрат; getAttribute, не link.sizes (jsdom).
   doc.querySelectorAll("link[rel='icon']").forEach((el) => {
     const link = el as HTMLLinkElement;
-    if (link.sizes?.value === '96x96') {
-      link.href = '/favicon-personal-32.png';
-    } else {
-      link.type = 'image/png';
-      link.href = '/favicon-personal-32.png';
-    }
+    link.type = 'image/png';
+    link.href = link.getAttribute('sizes') === '96x96' ? '/favicon-personal-96.png' : '/favicon-personal-192.png';
   });
+  doc.querySelector("link[rel='apple-touch-icon']")?.setAttribute('href', '/apple-touch-icon-personal.png');
   doc.querySelector("link[rel='manifest']")?.remove();
   doc.title = 'Григорий Котляревский – схема-терапия онлайн';
   const canonical = doc.querySelector("link[rel='canonical']");
-  if (canonical) canonical.setAttribute('href', 'https://kotlarewski.gr/');
+  if (canonical) canonical.setAttribute('href', `${PRACTICE_URL}/`);
   const ogUrl = doc.querySelector("meta[property='og:url']");
-  if (ogUrl) ogUrl.setAttribute('content', 'https://kotlarewski.gr/');
+  if (ogUrl) ogUrl.setAttribute('content', `${PRACTICE_URL}/`);
 }

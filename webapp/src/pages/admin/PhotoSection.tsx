@@ -46,7 +46,7 @@ export function PhotoSection({ adminKey }: { adminKey: string }) {
 
   return (
     <section style={card}>
-      <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginTop: 0, marginBottom: 14 }}>Фото на сайте</h2>
+      <h2 style={{ fontFamily: 'var(--serif)', fontSize: 26, fontWeight: 400, letterSpacing: '-0.01em', color: 'var(--text)', marginTop: 0, marginBottom: 14 }}>Фото на сайте</h2>
       <p style={{ fontSize: 13, color: 'var(--text-faint)', marginBottom: 16 }}>Используется в блоке «Обо мне» и в шапке. Загрузите новое фото — оно автоматически сожмётся под нужный размер.</p>
 
       <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start', flexWrap: 'wrap' }}>

@@ -7,6 +7,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { CommandPalette } from './CommandPalette';
+import { Dialog } from './Dialog';
 import type { TherapyClientSummary } from '../api';
 import { todayCalendarDate } from '../../../shared/src/utils/calendarDate';
 import { forEachTimeZone } from '../../../shared/src/utils/timeZone.test-helpers';
@@ -86,6 +87,22 @@ describe('CommandPalette — клавиатура', () => {
     expect(onClose).toHaveBeenCalled();
   });
 
+  it('Escape над диалогом поверх палитры закрывает только диалог', () => {
+    const onClose = vi.fn();
+    const onCloseDialog = vi.fn();
+    render(
+      <>
+        <CommandPalette onNavigate={vi.fn()} onClose={onClose} />
+        <Dialog label="Подтверждение" closeOnEscape onClose={onCloseDialog}>
+          <button>ок</button>
+        </Dialog>
+      </>,
+    );
+    fireEvent.keyDown(window, { key: 'Escape' });
+    expect(onCloseDialog).toHaveBeenCalledTimes(1);
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
   it('Enter выполняет действие выбранной (по умолчанию первой) строки', () => {
     const onNavigate = vi.fn();
     const onClose = vi.fn();
@@ -153,7 +170,9 @@ describe('CommandPalette — клиенты терапевта', () => {
           vi.setSystemTime(new Date(moment));
           fireEvent.change(search(), { target: { value: 'ив' } });
           fireEvent.change(search(), { target: { value: '' } });
-          expect(screen.getByText('Активен сегодня')).toBeTruthy();
+          // Шов текст ↔ подсветка: цвет раньше выбирался сравнением подписи
+          // с литералом, и смена текста молча гасила подсветку.
+          expect(screen.getByText('Активность сегодня').classList.contains('is-ok')).toBe(true);
         });
 
         unmount();
@@ -170,5 +189,28 @@ describe('CommandPalette — фон', () => {
     renderPalette({ onClose });
     fireEvent.click(screen.getByLabelText('Закрыть'));
     expect(onClose).toHaveBeenCalled();
+  });
+});
+
+describe('CommandPalette — быстрые действия («+» на телефоне)', () => {
+  it('показывает действия общего реестра и зовёт onQuickAction с id', () => {
+    const onQuickAction = vi.fn();
+    const onClose = vi.fn();
+    renderPalette({ onQuickAction, onClose });
+    fireEvent.click(screen.getByText('Дыхание 4-4-6'));
+    expect(onQuickAction).toHaveBeenCalledWith('breathing');
+    expect(onClose).toHaveBeenCalled();
+  });
+
+  it('действия находятся поиском по названию группы и подписи', () => {
+    renderPalette();
+    fireEvent.change(screen.getByPlaceholderText('Найти клиента, страницу или действие…'), { target: { value: 'успокоиться' } });
+    expect(screen.getByText('Техника «Стоп»')).toBeTruthy();
+    expect(screen.queryByText('Трекер потребностей')).toBeNull();
+  });
+
+  it('в кабинете терапевта клиентских действий нет', () => {
+    renderPalette({ therapistMode: true });
+    expect(screen.queryByText('Дыхание 4-4-6')).toBeNull();
   });
 });

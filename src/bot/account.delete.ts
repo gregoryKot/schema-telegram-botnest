@@ -61,6 +61,13 @@ export async function deleteAllUserData(
       where: { OR: [{ therapistId: uid }, { clientId: uid }] },
     }),
     prisma.therapistCustomMode.deleteMany({ where: { therapistId: uid } }),
+    // Задания офлайн-клиентов терапевта: у них userId = -TherapyRelation.id и
+    // нет FK на User, поэтому ни реестр USER_DATA_TABLES (по userId = uid), ни
+    // каскад их не достают — без этой строки они оставались сиротами (аудит
+    // 2026-10, T8). Текст заданий — клинический, шифрованный.
+    prisma.userTask.deleteMany({
+      where: { assignedBy: uid, userId: { lt: 0n } },
+    }),
     // Пары (две ссылки).
     prisma.pair.deleteMany({
       where: { OR: [{ userId1: uid }, { userId2: uid }] },
@@ -69,9 +76,36 @@ export async function deleteAllUserData(
     prisma.authProvider.deleteMany({ where: { userId: uid } }),
     prisma.webSession.deleteMany({ where: { userId: uid } }),
     prisma.therapistRequest.deleteMany({ where: { userId: uid } }),
+    // Билеты входа, где человек стоит НЕ в колонке userId: `shownToTelegramId`
+    // — сырой telegramId того, кому бот показал карточку сверки,
+    // `approvedUserId` — кто её подтвердил. Реестр чистит LoginTicket только по
+    // userId, поэтому обе оси оставались (L3, 2026-07-20 — тот же класс, что
+    // Subscription.telegramId). Протухшие билеты сносятся при выписке
+    // следующего, но «следующий» может не случиться месяцами, и до тех пор
+    // мёртвая строка хранит адрес человека, который аккаунт удалил.
+    prisma.loginTicket.deleteMany({
+      where: {
+        OR: [
+          { shownToTelegramId: { in: subscriptionIds } },
+          { approvedUserId: uid },
+        ],
+      },
+    }),
     // Регулярные подписки: снимаем списание. Списания уходят каскадом по FK.
     prisma.subscription.deleteMany({
       where: { telegramId: { in: subscriptionIds } },
+    }),
+    // Записи на консультацию не удаляем — это финансовые и календарные записи
+    // (оплата, встреча в календаре терапевта), но связь с человеком по
+    // Telegram-id рвём: иначе после удаления аккаунта по id по-прежнему можно
+    // найти все его записи (аудит 2026-10, F3). Имя, контакт и текст запроса
+    // удалением аккаунта НЕ затрагиваются — их закрывает ретенция по сроку
+    // (booking-retention.service.ts, решение владельца 2026-10-08 по находке
+    // L3): привязки брони к аккаунту не существует, с C-9 clientTelegramId не
+    // записывается, и этот updateMany достаёт только легаси-строки.
+    prisma.booking.updateMany({
+      where: { clientTelegramId: { in: subscriptionIds } },
+      data: { clientTelegramId: null },
     }),
     // И наконец сама строка пользователя.
     prisma.user.delete({ where: { id: uid } }),

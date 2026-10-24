@@ -1,8 +1,6 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/authContext';
 import { useRecentArticles } from '../components/landing-kit-hooks';
-import { botUrl, botHandle } from '../utils/botConfig';
 // Палитра, логотип и CTA — в общих модулях бренда (используются и в /tests).
 import { INK, SUB, FAINT, GLASS, GLASS_BORDER, VIOLET, PINK, CYAN, AURORA, glow } from './landing/aurora';
 import { Logo, Cta } from './landing/BrandKit';
@@ -13,25 +11,22 @@ import { AppInstallSection } from './landing/AppInstallSection';
 import { AppPreview } from './landing/AppPreview';
 import { AUTHOR_SITE, trackPracticeClick } from './landing/practiceLink';
 import { ProductMobileMenu } from './landing/ProductMobileMenu';
+import { entryCta } from './landing/entryCta';
 
 // Продуктовый лендинг «Всё по схеме» — главная app-домена (schemehappens.ru).
 // САМОСТОЯТЕЛЬНАЯ айдентика: тёмный «ночной» холст + аврора-градиенты, глассморфизм,
 // крупная жирная типографика. Намеренно НЕ похоже на тёплую serif-страничку терапевта.
 // Палитра захардкожена (не зависит от app-темы) — это отдельный маркетинговый бренд.
 
-const BOT_URL = botUrl;
-
-
 // ─── Страница ─────────────────────────────────────────────────────────────────
 // Данные (STEPS/FEATURES/TRUST/FAQ, H2/EYEBROW) — в landing/productContent.tsx,
 // карточки (GlassCard/ArticleCard/FaqList) — в landing/ProductKit.tsx.
 export function ProductLandingPage() {
   const { isAuthenticated } = useAuth();
-  const navigate = useNavigate();
   const articles = useRecentArticles(3);
   const [menuOpen, setMenuOpen] = useState(false);
+  const entry = entryCta(isAuthenticated);
 
-  useEffect(() => { if (isAuthenticated) navigate('/today', { replace: true }); }, [isAuthenticated, navigate]);
   useEffect(() => { document.title = 'Всё по схеме — инструмент схема-терапии'; }, []);
 
   return (
@@ -55,7 +50,7 @@ export function ProductLandingPage() {
           </nav>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <div className="pl2-nav">
-              <Cta href="/login">Войти</Cta>
+              <Cta href={entry.href}>{entry.nav}</Cta>
             </div>
             {/* Бургер — виден только ≤640px, .pl2-nav скрыт там же (В4, аудит 2026-08) */}
             <button
@@ -69,7 +64,7 @@ export function ProductLandingPage() {
           </div>
         </header>
 
-        {menuOpen && <ProductMobileMenu onClose={() => setMenuOpen(false)} />}
+        {menuOpen && <ProductMobileMenu entry={entry} onClose={() => setMenuOpen(false)} />}
 
         {/* ── Hero ── */}
         <section style={{ padding: '140px 24px 90px' }}>
@@ -88,10 +83,10 @@ export function ProductLandingPage() {
                 «Всё по схеме» — бесплатное приложение для самостоятельной работы в подходе схема-терапии.
               </p>
               <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
-                <Cta href="/login" size="lg">Начать бесплатно →</Cta>
+                <Cta href={entry.href} size="lg">{entry.main}</Cta>
                 <Cta href="/tests" variant="ghost" size="lg">🎲 Мини-тесты без регистрации</Cta>
               </div>
-              <p style={{ fontSize: 12.5, color: FAINT, margin: '18px 0 0' }}>Вход через Google, ВКонтакте, Telegram или email · регистрация не нужна</p>
+              {!isAuthenticated && <p style={{ fontSize: 12.5, color: FAINT, margin: '18px 0 0' }}>Вход через Google, ВКонтакте, Telegram или email · регистрация не нужна</p>}
             </div>
             <div style={{ animation: 'pl2-in .7s cubic-bezier(.16,1,.3,1) .15s both' }}><AppPreview /></div>
           </div>
@@ -125,33 +120,6 @@ export function ProductLandingPage() {
             <h2 style={{ ...H2, margin: '14px 0 48px', maxWidth: 620 }}>Всё для работы между сессиями — или до них</h2>
             <div className="pl2-3" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 18 }}>
               {FEATURES.map((f) => <GlassCard key={f.title} emoji={f.emoji} color={f.color} title={f.title} big>{f.text}</GlassCard>)}
-            </div>
-          </div>
-        </section>
-
-        {/* ── Telegram ── */}
-        <section style={{ padding: '20px 24px 72px' }}>
-          <div className="pl2-tg" style={{ maxWidth: 1160, margin: '0 auto', display: 'grid', gridTemplateColumns: '1.1fr 1fr', gap: 48, alignItems: 'center', background: 'linear-gradient(120deg, rgba(167,139,250,.12), rgba(56,224,208,.08))', border: `1px solid ${GLASS_BORDER}`, borderRadius: 28, padding: '48px 44px' }}>
-            <div>
-              <span style={EYEBROW}>Telegram</span>
-              <h2 style={{ ...H2, margin: '14px 0 18px' }}>Живёт и в&nbsp;Telegram</h2>
-              <p style={{ fontSize: 15.5, lineHeight: 1.7, color: SUB, maxWidth: 470, margin: '0 0 26px' }}>
-                Бот <strong style={{ color: INK }}>{botHandle}</strong> раз в месяц мягко напомнит заглянуть на чек-ин,
-                а мини-приложение открывается прямо в чате — тот же дневник, те же схемы.
-                Данные общие с сайтом: начните в телефоне, продолжите в браузере.
-              </p>
-              <Cta href={BOT_URL} size="lg">Открыть в Telegram ↗</Cta>
-            </div>
-            <div aria-hidden style={{ display: 'flex', flexDirection: 'column', gap: 12, maxWidth: 340, width: '100%', justifySelf: 'center' }}>
-              <div style={{ padding: '14px 16px', borderRadius: '16px 16px 16px 6px', background: 'rgba(255,255,255,.05)', border: `1px solid ${GLASS_BORDER}` }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-                  <span style={{ width: 22, height: 22, borderRadius: 7, background: AURORA, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 12 }}>🧠</span>
-                  <span style={{ fontSize: 12.5, fontWeight: 700, color: INK }}>Всё по схеме</span>
-                </div>
-                <p style={{ fontSize: 13.5, lineHeight: 1.5, color: SUB, margin: 0 }}>🌤️ Как ты в этом месяце? Пара минут на чек-ин помогут увидеть динамику.</p>
-                <div style={{ marginTop: 12, padding: '9px 14px', borderRadius: 10, background: AURORA, color: '#1a0f2e', fontSize: 13, fontWeight: 800, textAlign: 'center' }}>Открыть чек-ин</div>
-              </div>
-              <span style={{ fontSize: 11.5, color: FAINT, alignSelf: 'center' }}>мини-приложение открывается прямо в чате</span>
             </div>
           </div>
         </section>
@@ -203,7 +171,7 @@ export function ProductLandingPage() {
             <div style={{ position: 'relative', maxWidth: 640, margin: '0 auto' }}>
               <h2 style={{ fontFamily: 'inherit', fontSize: 'clamp(32px, 4.6vw, 52px)', fontWeight: 800, letterSpacing: '-.03em', lineHeight: 1.06, margin: '0 0 18px', color: '#1a0f2e' }}>Первый шаг — просто заметить</h2>
               <p style={{ fontSize: 16, lineHeight: 1.6, color: 'rgba(26,15,46,.78)', margin: '0 0 34px', fontWeight: 500 }}>Минутный чек-ин в день — и через пару недель паттерны станут видимыми. Бесплатно, бережно, в вашем темпе.</p>
-              <a href="/login" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '15px 34px', background: '#12091f', color: INK, borderRadius: 14, fontSize: 15, fontWeight: 800, textDecoration: 'none', boxShadow: '0 12px 34px rgba(0,0,0,.3)' }}>Начать бесплатно →</a>
+              <a href={entry.href} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '15px 34px', background: '#12091f', color: INK, borderRadius: 14, fontSize: 15, fontWeight: 800, textDecoration: 'none', boxShadow: '0 12px 34px rgba(0,0,0,.3)' }}>{entry.main}</a>
             </div>
           </div>
         </section>
@@ -240,7 +208,6 @@ export function ProductLandingPage() {
         @media (max-width: 900px) {
           .pl2-hero { grid-template-columns: 1fr !important; gap: 48px !important; }
           .pl2-3 { grid-template-columns: 1fr !important; }
-          .pl2-tg { grid-template-columns: 1fr !important; gap: 36px !important; padding: 36px 28px !important; }
           .pl2-author { grid-template-columns: 1fr !important; gap: 32px !important; padding: 36px 28px !important; }
           .pl2-chip { display: none; }
         }

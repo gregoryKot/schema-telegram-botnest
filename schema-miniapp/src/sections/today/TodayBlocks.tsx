@@ -109,7 +109,7 @@ export function TodayBlocks({
       </div>
     ),
 
-    // Фраза Здорового взрослого (перенесена с «Помощи»).
+    // Фраза Здорового Взрослого (перенесена с «Помощи»).
     phrase: () =>
       !today.phraseHidden ? (
         <div {...today.holdPhrase}>

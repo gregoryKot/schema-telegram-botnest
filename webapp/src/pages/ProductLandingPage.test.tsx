@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 // ProductLandingPage — маркетинговый лендинг app-домена (0% покрытия, 290
 // строк). Логика здесь минимальна (в основном JSX/стили — тест не
-// обязателен по CLAUDE.md), но две вещи важны: авторизованный юзер не
-// должен видеть лендинг (редирект на /today), а статьи в блоке «Статьи» —
+// обязателен по CLAUDE.md), но две вещи важны: авторизованный юзер видит
+// главную с дверью в приложение (не «Войти»), а статьи в блоке «Статьи» —
 // реальные из API, не заглушка.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, cleanup, waitFor, fireEvent } from '@testing-library/react';
@@ -50,7 +50,10 @@ describe('ProductLandingPage — неавторизованный визитор
   it('рендерит главный заголовок и CTA на вход', () => {
     renderPage();
     expect(screen.getByText(/это происходит\?/)).toBeTruthy();
-    expect(screen.getAllByText('Начать бесплатно →').length).toBeGreaterThan(0);
+    const ctas = screen.getAllByText('Начать →') as HTMLAnchorElement[];
+    expect(ctas.length).toBeGreaterThan(0);
+    for (const a of ctas) expect(a.getAttribute('href')).toBe('/login');
+    expect(screen.queryByText(/Начать бесплатно/)).toBeNull();
   });
 
   it('рендерит блок «Как это работает» и «Возможности» без падений', () => {
@@ -106,9 +109,30 @@ describe('ProductLandingPage — мобильное меню (В4, аудит 20
 });
 
 describe('ProductLandingPage — авторизованный юзер', () => {
-  it('не должен видеть маркетинговый лендинг — уходит в приложение', () => {
-    // useNavigate внутри MemoryRouter без Routes не меняет видимый экран,
-    // но эффект обязан сработать хотя бы без падений и без ошибок в консоли.
-    expect(() => renderPage(authValue({ isAuthenticated: true, accessToken: 'tok' }))).not.toThrow();
+  // Раньше главная молча уводила залогиненного на /today — и посмотреть её
+  // было нельзя. Теперь лендинг виден, а кнопки ведут в приложение.
+  it('видит главную; кнопки ведут в приложение, «Войти» нет', () => {
+    renderPage(authValue({ isAuthenticated: true, accessToken: 'tok' }));
+    expect(screen.getByText(/это происходит\?/)).toBeTruthy();
+    expect(screen.queryByText('Войти')).toBeNull();
+    const ctas = screen.getAllByText('Перейти в приложение →') as HTMLAnchorElement[];
+    expect(ctas.length).toBe(2);
+    for (const a of ctas) expect(a.getAttribute('href')).toBe('/today');
+    expect((screen.getByText('В приложение') as HTMLAnchorElement).getAttribute('href')).toBe('/today');
+  });
+
+  it('в мобильном меню тоже «В приложение», а не «Войти»', () => {
+    renderPage(authValue({ isAuthenticated: true, accessToken: 'tok' }));
+    fireEvent.click(screen.getByLabelText('Открыть меню'));
+    expect(screen.queryByText('Войти')).toBeNull();
+    expect(screen.getAllByText('В приложение').length).toBe(2);
+  });
+});
+
+describe('ProductLandingPage — Telegram не перетягивает внимание', () => {
+  it('на главной нет промо бота', () => {
+    renderPage();
+    expect(screen.queryByText(/Есть и в Telegram/)).toBeNull();
+    expect(screen.queryByText(/Живёт и в/)).toBeNull();
   });
 });

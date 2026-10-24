@@ -21,6 +21,8 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
+import { PersistentThrottleLimit } from '../api/persistent-throttle-limit';
+import { CODE_THROTTLE } from './auth-throttles';
 import type { Request, Response } from 'express';
 import { JwtAuthGuard, OptionalJwtGuard } from './jwt.guard';
 import { LoginTicketService } from './login-ticket/login-ticket.service';
@@ -87,7 +89,7 @@ export class AuthTicketController {
   // ─── Шаг 2: подтверждающий смотрит, что произойдёт ────────────────────────
   @Post('preview')
   @UseGuards(JwtAuthGuard)
-  @Throttle({
+  @PersistentThrottleLimit({
     short: { limit: 10, ttl: 60_000 },
     long: { limit: 60, ttl: 3_600_000 },
   })
@@ -105,24 +107,20 @@ export class AuthTicketController {
   // не существует, и это намеренно.
   @Post('approve')
   @UseGuards(JwtAuthGuard)
-  @Throttle({
-    short: { limit: 5, ttl: 60_000 },
-    long: { limit: 20, ttl: 3_600_000 },
-  })
+  @PersistentThrottleLimit(CODE_THROTTLE)
   @HttpCode(200)
   async approve(
     @Body() body: UserCodeDto,
     @Req() req: Request,
-  ): Promise<{ merged: boolean }> {
+  ): Promise<{ merged: boolean; repeat?: true }> {
     requireCsrf(req, 'ticket/approve', this.securityLog);
     return this.links.approve(body.code, req.webUser!.userId, req.ip);
   }
 
   // ─── Шаг 4: контейнер забирает сессию ─────────────────────────────────────
-  // Без JwtAuthGuard: длинный код и есть доказательство — так же устроен token
-  // endpoint в RFC 8628. При входе сессии у контейнера ещё нет вовсе, а при
-  // привязке аккаунт, под которым начинали, к этому моменту уже слит и его
-  // токен ничего не докажет.
+  // Без JwtAuthGuard: длинный код и есть доказательство (token endpoint RFC
+  // 8628): при входе сессии нет вовсе, при привязке исходный аккаунт уже слит.
+  // Ставит куку неаутентифицированному запросу — отсюда requireCsrf.
   @Post('poll')
   @Throttle({
     short: { limit: 40, ttl: 60_000 },
@@ -138,6 +136,7 @@ export class AuthTicketController {
     accessToken?: string;
     expiresIn?: number;
   }> {
+    requireCsrf(req, 'ticket/poll', this.securityLog);
     const result = await this.tickets.poll(
       body.deviceCode,
       req.ip,

@@ -166,3 +166,35 @@ describe('issueRotatedPair — восстановление (есть прежн
     expect(rows).toHaveLength(2); // ничего не создано
   });
 });
+
+// Аудит 2026-10 (High): строка, рождённая восстановлением, обязана нести
+// `recoveredAt` — по нему refresh-recover-budget.ts отличает третье
+// восстановление (вторая сторона цепочки) от потерянного ответа.
+describe('issueRotatedPair — метка recoveredAt', () => {
+  const run = async (replacedByHash: string | null, seed: Row[]) => {
+    const { deps, rows } = makeDeps(seed);
+    const res = await issueRotatedPair(
+      deps,
+      { tokenHash: 'h:parent', userId: 7n, family: 'fam-1', replacedByHash },
+      RAW,
+    );
+    return { res, rows };
+  };
+
+  it('восстановление → новая строка с recoveredAt', async () => {
+    const { res, rows } = await run('h:succ', [
+      live({ revokedAt: new Date(), replacedByHash: 'h:succ' }),
+      live({ id: 'sess-2', tokenHash: 'h:succ' }),
+    ]);
+    if (!res.rotated) throw new Error('unreachable');
+    const born = rows.find((r) => r.tokenHash === `h:${res.refreshToken}`)!;
+    expect(born.recoveredAt).toBeInstanceOf(Date);
+  });
+
+  it('обычная ротация → recoveredAt не выставляется', async () => {
+    const { res, rows } = await run(null, [live()]);
+    if (!res.rotated) throw new Error('unreachable');
+    const born = rows.find((r) => r.tokenHash === `h:${res.refreshToken}`)!;
+    expect(born.recoveredAt ?? null).toBeNull();
+  });
+});

@@ -11,12 +11,20 @@ import { Logger } from '@nestjs/common';
 import { BookingStatus, SessionType } from '@prisma/client';
 import { BookingNotifyService } from './booking-notify.service';
 import { LEASE_WINDOW } from '../infra/cron-leader.service';
+import { RETURNING_NOT_FOUND_NOTE } from './booking-admin-note';
+import { LINK_TO_FORWARD, ROOM_REPLACED } from './booking-confirmed-card';
 
 function makeService(
   opts: {
     calDavEnabled?: boolean;
     dueReminders?: any[];
     claimRun?: boolean;
+    /** Сколько строк вернёт CAS флага эффектов (0 — параллельный проход успел). */
+    flagClaimCount?: number;
+    /** Сколько строк вернёт CAS записи calDavUid (0 — бронь отменили во время PUT). */
+    uidClaimCount?: number;
+    /** Статус, который вернёт перечитывание брони перед CalDAV (по умолчанию CONFIRMED). */
+    freshStatus?: BookingStatus;
   } = {},
 ) {
   const prisma: any = {
@@ -24,7 +32,21 @@ function makeService(
       update: jest.fn(({ where, data }: any) =>
         Promise.resolve({ id: where.id, ...data }),
       ),
+      // Два разных CAS по статусу CONFIRMED: запись uid и флаг эффектов.
+      updateMany: jest.fn(({ data }: any) =>
+        Promise.resolve({
+          count:
+            'calDavUid' in data
+              ? (opts.uidClaimCount ?? 1)
+              : (opts.flagClaimCount ?? 1),
+        }),
+      ),
       findMany: jest.fn(() => Promise.resolve(opts.dueReminders ?? [])),
+      findUnique: jest.fn(() =>
+        Promise.resolve({
+          status: opts.freshStatus ?? BookingStatus.CONFIRMED,
+        }),
+      ),
     },
   };
   const telegram = { notifyAdmin: jest.fn(() => Promise.resolve(true)) };
@@ -34,7 +56,9 @@ function makeService(
     removeEvent: jest.fn(() => Promise.resolve(undefined)),
   };
   const meeting = {
-    createMeeting: jest.fn(() => Promise.resolve('https://meet.jit.si/x')),
+    createMeeting: jest.fn(() =>
+      Promise.resolve({ url: 'https://meet.jit.si/x', replaced: false }),
+    ),
   };
   const email = {
     sendAdminNotification: jest.fn(() => Promise.resolve(undefined)),
@@ -110,9 +134,26 @@ describe('BookingNotifyService.onConfirmed — линк на встречу и C
   it('успешный push сохраняет calDavUid в БД', async () => {
     const { service, prisma } = makeService();
     await service.onConfirmed(booking({ meetingUrl: 'x' }));
-    expect(prisma.booking.update).toHaveBeenCalledWith(
-      expect.objectContaining({ data: { calDavUid: 'ics-uid-1' } }),
+    // CAS по статусу: запись uid в отменённую строку была бы осиротевшим событием.
+    expect(prisma.booking.updateMany).toHaveBeenCalledWith({
+      where: { id: 42, status: BookingStatus.CONFIRMED },
+      data: { calDavUid: 'ics-uid-1' },
+    });
+  });
+
+  it('CAS записи uid дал 0 строк (отмена во время PUT) — событие снимается, флага и DM нет', async () => {
+    const { service, prisma, calDav, telegram, email } = makeService({
+      uidClaimCount: 0,
+    });
+    await service.onConfirmed(booking({ meetingUrl: 'https://x' }));
+    expect(calDav.removeEvent).toHaveBeenCalledTimes(1);
+    expect(calDav.removeEvent).toHaveBeenCalledWith('ics-uid-1');
+    const dataKeys = prisma.booking.updateMany.mock.calls.map((c: any[]) =>
+      Object.keys(c[0].data),
     );
+    expect(dataKeys).toEqual([['calDavUid']]); // флаг confirmEffectsDoneAt не ставился
+    expect(telegram.notifyAdmin).not.toHaveBeenCalled();
+    expect(email.sendAdminNotification).not.toHaveBeenCalled();
   });
 
   it('уведомляет админа "Запись подтверждена" с именем/контактом/временем клиента — в ОБА канала', async () => {
@@ -127,6 +168,44 @@ describe('BookingNotifyService.onConfirmed — линк на встречу и C
       'Запись подтверждена',
       expect.stringContaining('Мария'),
     );
+  });
+
+  // Ревью починки утечки ссылки (аудит 2026-10): клиент ссылку на экране
+  // больше не видит, владелец — единственный канал её доставки. Карточка в
+  // DM и в письме обязана это сказать, а смену комнаты — назвать.
+  it('карточка подтверждения: «переслать ссылку на контакт из брони» — в DM и в письме', async () => {
+    const { service, telegram, email } = makeService();
+    await service.onConfirmed(booking());
+    const dm = telegram.notifyAdmin.mock.calls[0][0] as string;
+    const mail = email.sendAdminNotification.mock.calls[0] as unknown[];
+    for (const text of [dm, String(mail[1])]) {
+      expect(text).toContain('https://meet.jit.si/x');
+      expect(text).toContain(LINK_TO_FORWARD);
+      expect(text).not.toContain(ROOM_REPLACED);
+    }
+  });
+
+  it('комната клиента заменена при подтверждении — DM и письмо говорят переслать новую заранее', async () => {
+    const { service, telegram, email, meeting } = makeService();
+    meeting.createMeeting.mockResolvedValueOnce({
+      url: 'https://meet.jit.si/schemehappens-0123456789abcdef',
+      replaced: true,
+    });
+    await service.onConfirmed(booking());
+    const dm = telegram.notifyAdmin.mock.calls[0][0] as string;
+    const mail = email.sendAdminNotification.mock.calls[0] as unknown[];
+    for (const text of [dm, String(mail[1])]) {
+      expect(text).toContain('schemehappens-0123456789abcdef');
+      expect(text).toContain(ROOM_REPLACED);
+    }
+  });
+
+  it('ссылка уже была в брони (повтор прохода) — о замене комнаты не утверждается', async () => {
+    const { service, telegram } = makeService();
+    await service.onConfirmed(booking({ meetingUrl: 'https://zoom.us/j/1' }));
+    const dm = telegram.notifyAdmin.mock.calls[0][0] as string;
+    expect(dm).toContain(LINK_TO_FORWARD);
+    expect(dm).not.toContain(ROOM_REPLACED);
   });
 
   it('source (атрибуция лида) попадает в уведомление с HTML-экранированием', async () => {
@@ -175,6 +254,124 @@ describe('BookingNotifyService.onConfirmed — линк на встречу и C
   });
 });
 
+// security#21: onConfirmed повторяется (ретрай вебхука, ручное подтверждение,
+// крон-добор) и обязан пропускать сделанное, а флаг ставить до DM.
+describe('BookingNotifyService.onConfirmed — идемпотентность по состоянию строки', () => {
+  it('флаг confirmEffectsDoneAt уже стоит — не делает ничего', async () => {
+    const { service, prisma, meeting, calDav, telegram, email } = makeService();
+    await expect(
+      service.onConfirmed(
+        booking({ confirmEffectsDoneAt: new Date('2026-07-01') }),
+      ),
+    ).resolves.toBeUndefined();
+    expect(meeting.createMeeting).not.toHaveBeenCalled();
+    expect(calDav.pushEvent).not.toHaveBeenCalled();
+    expect(prisma.booking.updateMany).not.toHaveBeenCalled();
+    expect(telegram.notifyAdmin).not.toHaveBeenCalled();
+    expect(email.sendAdminNotification).not.toHaveBeenCalled();
+  });
+
+  it('ссылка и событие уже записаны — повтор не создаёт встречу и не пушит событие, но доделывает флаг и DM', async () => {
+    const { service, prisma, meeting, calDav, telegram } = makeService();
+    await service.onConfirmed(
+      booking({ meetingUrl: 'https://existing', calDavUid: 'uid-old' }),
+    );
+    expect(meeting.createMeeting).not.toHaveBeenCalled();
+    expect(calDav.pushEvent).not.toHaveBeenCalled();
+    expect(prisma.booking.update).not.toHaveBeenCalled();
+    expect(prisma.booking.updateMany).toHaveBeenCalledWith({
+      where: {
+        id: 42,
+        status: BookingStatus.CONFIRMED,
+        confirmEffectsDoneAt: null,
+      },
+      data: { confirmEffectsDoneAt: expect.any(Date) },
+    });
+    expect(telegram.notifyAdmin).toHaveBeenCalledTimes(1);
+  });
+
+  it('есть calDavUid, CalDAV включён — «не попала в календарь» не шлём (событие уже там)', async () => {
+    const { service, telegram } = makeService({ calDavEnabled: true });
+    await service.onConfirmed(
+      booking({ meetingUrl: 'https://x', calDavUid: 'uid-old' }),
+    );
+    const texts = telegram.notifyAdmin.mock.calls.map((c: any[]) => c[0]);
+    expect(texts).toHaveLength(1);
+    expect(texts[0]).toContain('Запись подтверждена');
+  });
+
+  it('флаг ставится ПОСЛЕ ссылки и календаря и ДО DM', async () => {
+    const order: string[] = [];
+    const { service, prisma, meeting, calDav, telegram } = makeService();
+    meeting.createMeeting.mockImplementation(async () => {
+      order.push('meeting');
+      return { url: 'https://meet.jit.si/x', replaced: false };
+    });
+    calDav.pushEvent.mockImplementation(async () => {
+      order.push('caldav');
+      return 'uid-1';
+    });
+    prisma.booking.updateMany.mockImplementation(async ({ data }: any) => {
+      order.push('calDavUid' in data ? 'uid' : 'flag');
+      return { count: 1 };
+    });
+    telegram.notifyAdmin.mockImplementation(async () => {
+      order.push('dm');
+      return true;
+    });
+    await service.onConfirmed(booking());
+    expect(order).toEqual(['meeting', 'caldav', 'uid', 'flag', 'dm']);
+  });
+
+  it('падение записи ссылки: ни флага, ни DM — повтор доделает всё', async () => {
+    const { service, prisma, telegram } = makeService();
+    prisma.booking.update.mockRejectedValueOnce(new Error('ECONNRESET'));
+    await expect(service.onConfirmed(booking())).rejects.toThrow('ECONNRESET');
+    expect(prisma.booking.updateMany).not.toHaveBeenCalled();
+    expect(telegram.notifyAdmin).not.toHaveBeenCalled();
+  });
+
+  it('параллельный проход уже поставил флаг (CAS 0 строк) — DM второй раз не шлём', async () => {
+    const { service, telegram, email } = makeService({ flagClaimCount: 0 });
+    await expect(service.onConfirmed(booking())).resolves.toBeUndefined();
+    expect(telegram.notifyAdmin).not.toHaveBeenCalled();
+    expect(email.sendAdminNotification).not.toHaveBeenCalled();
+  });
+});
+
+// Ревью security#21: отмена, пришедшая пока шёл проход, не должна давать
+// событие в календаре и «Запись подтверждена» по отменённой брони.
+describe('BookingNotifyService.onConfirmed — отмена во время прохода', () => {
+  it('бронь уже CANCELLED на перечитывании: ни события, ни флага, ни DM', async () => {
+    const { service, prisma, calDav, telegram, email } = makeService({
+      freshStatus: BookingStatus.CANCELLED,
+    });
+    await expect(
+      service.onConfirmed(booking({ meetingUrl: 'https://x' })),
+    ).resolves.toBeUndefined();
+    expect(prisma.booking.findUnique).toHaveBeenCalledWith({
+      where: { id: 42 },
+      select: { status: true },
+    });
+    expect(calDav.pushEvent.mock.calls).toHaveLength(0);
+    expect(prisma.booking.updateMany.mock.calls).toHaveLength(0);
+    expect(telegram.notifyAdmin.mock.calls).toHaveLength(0);
+    expect(email.sendAdminNotification.mock.calls).toHaveLength(0);
+  });
+
+  it('отмена между перечитыванием и флагом: CAS по CONFIRMED даёт 0 строк — DM не уходит', async () => {
+    const { service, prisma, telegram } = makeService({ flagClaimCount: 0 });
+    await service.onConfirmed(booking({ meetingUrl: 'https://x' }));
+    const flagCall = prisma.booking.updateMany.mock.calls.find(
+      (c: any[]) => 'confirmEffectsDoneAt' in c[0].data,
+    );
+    expect(flagCall[0].where).toMatchObject({
+      status: BookingStatus.CONFIRMED,
+    });
+    expect(telegram.notifyAdmin.mock.calls).toHaveLength(0);
+  });
+});
+
 describe('BookingNotifyService.onCancelled', () => {
   it('с calDavUid — вызывает calDav.removeEvent с этим uid', async () => {
     const { service, calDav } = makeService();
@@ -182,7 +379,7 @@ describe('BookingNotifyService.onCancelled', () => {
     expect(calDav.removeEvent).toHaveBeenCalledWith('ics-uid-old');
   });
 
-  it('без calDavUid (null) — removeEvent не вызывается, но админ всё равно уведомлён в ОБА канала', async () => {
+  it('без calDavUid (у HELD события не бывает) — DELETE не уходит, админ уведомлён в ОБА канала', async () => {
     const { service, calDav, telegram, email } = makeService();
     await service.onCancelled(booking(), null);
     expect(calDav.removeEvent).not.toHaveBeenCalled();
@@ -203,6 +400,19 @@ describe('BookingNotifyService — прочие уведомления жизн�
       expect.stringContaining('Бронь ожидает оплаты'),
       expect.any(String),
     );
+  });
+
+  it('onAwaitingPayment с пометкой кладёт её в Telegram и в письмо; без пометки строки нет', async () => {
+    const { service, telegram, email } = makeService();
+    await service.onAwaitingPayment(booking(), RETURNING_NOT_FOUND_NOTE);
+    expect(telegram.notifyAdmin.mock.calls[0][0]).toContain(
+      `⚠️ ${RETURNING_NOT_FOUND_NOTE}`,
+    );
+    expect(email.sendAdminNotification.mock.calls[0][1]).toContain(
+      RETURNING_NOT_FOUND_NOTE,
+    );
+    await service.onAwaitingPayment(booking());
+    expect(telegram.notifyAdmin.mock.calls[1][0]).not.toContain('⚠️');
   });
 
   it('notifyExpired шлёт по одному сообщению на каждую истёкшую бронь, в ОБА канала', async () => {

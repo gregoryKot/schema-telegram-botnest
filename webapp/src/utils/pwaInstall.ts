@@ -5,10 +5,10 @@
 // Safari/iOS события не даёт вовсе — там показываем шаги руками
 // (components/installGuide/installSteps.ts).
 import { isStandalone, webPlatform } from '../../../shared/src/host/web';
-
-// Детект «уже открыто как приложение» — единственная реализация в shared
-// (правило №3), здесь только ре-экспорт для потребителей установки.
+import { getHost } from '../../../shared/src/host';
+// Детект в shared (правило №3); установку не предлагаем с иконки и в Telegram/MAX.
 export { isStandalone };
+export const hideInstallOffers = () => isStandalone() || getHost().id !== 'web';
 
 export interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>;

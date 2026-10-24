@@ -95,7 +95,7 @@ describe('QuickPracticeSheet (webapp) — техника «Стоп»', () => {
     renderSheet('stop');
     await finishAllSteps();
     expect(document.querySelector('canvas')).toBeNull();
-    fireEvent.click(screen.getByText('Поделиться'));
+    fireEvent.click(screen.getByText('поделиться →'));
     expect(document.querySelector('canvas')).not.toBeNull();
   });
 });
@@ -125,6 +125,6 @@ describe('QuickPracticeSheet (webapp) — заземление 5-4-3-2-1', () =>
     await finishAllSteps();
     expect(screen.queryByText(/Пройдено уже/)).toBeNull();
     // «Поделиться» остаётся доступной и без счётчика
-    expect(screen.getByText('Поделиться')).toBeTruthy();
+    expect(screen.getByText('поделиться →')).toBeTruthy();
   });
 });

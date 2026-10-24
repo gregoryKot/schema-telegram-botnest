@@ -207,7 +207,7 @@ export const MODE_GROUPS: ModeGroup[] = [
       },
       {
         id: 'pollyanna',
-        name: 'Полианна',
+        name: 'Поллианна',
         emoji: '🌈',
         short: 'Отрицает проблемы, видит всё в розовом цвете',
       },

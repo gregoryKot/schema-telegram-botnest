@@ -1,3 +1,4 @@
+import { NotFoundException } from '@nestjs/common';
 import { PracticesService } from './practices.service';
 import { createFakeTable } from '../test-support/fake-prisma.spec-helper';
 
@@ -36,7 +37,9 @@ describe('PracticesService — practice read-after-write', () => {
     await svc.addPractice(1n, 'attachment', 'x');
     const [row] = await svc.getPractices(1n, 'attachment');
 
-    await svc.deletePractice(2n, row.id);
+    await expect(svc.deletePractice(2n, row.id)).rejects.toThrow(
+      NotFoundException,
+    ); // C-8: чужая запись — 404
 
     expect(await svc.getPractices(1n, 'attachment')).toHaveLength(1);
   });
@@ -62,7 +65,9 @@ describe('PracticesService — план: read-after-write и изоляция ч
     const svc = new PracticesService(db);
     const plan = await svc.createPlan(1n, 'attachment', 'x', '2026-07-20');
 
-    await svc.checkinPlan(2n, plan.id, true);
+    await expect(svc.checkinPlan(2n, plan.id, true)).rejects.toThrow(
+      NotFoundException,
+    ); // C-8: чужой план — 404, не 200
 
     expect(db._plans[0].done).toBeNull();
   });

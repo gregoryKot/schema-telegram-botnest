@@ -52,6 +52,16 @@ describe('FlashcardEx (SchemaEx) — кризисная детекция', () =>
     expect(screen.getByText(CRISIS_HOTLINE_DISPLAY)).toBeTruthy();
   });
 
+  // Аудит 2026-10, «Доступность»: тики вопросов были pressable()-div без имени.
+  it('тик назван номером вопроса, ведёт к нему и помечает текущий', () => {
+    renderSheet();
+    expect(screen.getByRole('button', { name: 'Вопрос 1' }).getAttribute('aria-current')).toBe('step');
+    fireEvent.click(screen.getByRole('button', { name: 'Вопрос 2' }));
+    expect(screen.getByText(/^Вопрос 2 из/)).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Вопрос 2' }).getAttribute('aria-current')).toBe('step');
+    expect(screen.getByRole('button', { name: 'Вопрос 1' }).getAttribute('aria-current')).toBeNull();
+  });
+
   it('нейтральный текст не показывает CrisisCard', () => {
     renderSheet();
     const textarea = screen.getByRole('textbox');
@@ -161,5 +171,18 @@ describe('FlashcardEx (ModeEx) — портрет режима: первый п�
 
     fireEvent.click(screen.getByText('Назад к вопросам →'));
     expect(screen.getByRole('textbox')).toBeTruthy();
+  });
+});
+
+// «Дополнить» из экрана паттерна: сохранение шлёт ВСЕ поля, поэтому форма
+// обязана стартовать с уже написанного — иначе карточка затирается пустыми.
+describe('FlashcardEx (SchemaEx) — initialData', () => {
+  it('поля стартуют с переданных значений, а не с пустых строк', async () => {
+    render(
+      <MemoryRouter>
+        <SchemaEx onBack={vi.fn()} initialSchemaId="emotional_deprivation" initialData={{ triggers: 'Когда молчат', feelings: 'Пусто' }} />
+      </MemoryRouter>,
+    );
+    expect((screen.getByRole('textbox') as HTMLTextAreaElement).value).toBe('Когда молчат');
   });
 });

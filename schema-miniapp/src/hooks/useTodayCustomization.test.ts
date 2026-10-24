@@ -3,7 +3,7 @@
 // восемь useState + обработчики, вынесенные из TodaySection, правило №10).
 // Тестируем именно связку toggle → localStorage → следующий рендер хука
 // видит сохранённое (read-after-write), а не только факт вызова сеттера.
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { act, renderHook } from '@testing-library/react';
 import { useTodayCustomization } from './useTodayCustomization';
 
@@ -16,6 +16,37 @@ const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
 beforeEach(() => {
   vi.clearAllMocks();
   localStorage.clear();
+});
+
+describe('useTodayCustomization — долгое нажатие на блок', () => {
+  beforeEach(() => vi.useFakeTimers());
+  afterEach(() => vi.useRealTimers());
+
+  it.each([
+    ['holdFocus', 'practice'],
+    ['holdStreak', 'streak'],
+    ['holdPhrase', 'phrase'],
+  ] as const)(
+    '%s: удержание открывает лист с подсветкой «%s»',
+    (hold, highlight) => {
+      const { result } = renderHook(() => useTodayCustomization());
+      act(() => {
+        result.current[hold].onPointerDown({
+          button: 0,
+          isPrimary: true,
+          clientX: 0,
+          clientY: 0,
+        } as never);
+      });
+      act(() => {
+        vi.advanceTimersByTime(500);
+      });
+      expect(result.current.sheet).toBe(highlight);
+      expect(mockApi.trackEvent).toHaveBeenCalledWith('today_customize_open', {
+        via: 'longpress',
+      });
+    },
+  );
 });
 
 describe('useTodayCustomization — открытие листа настройки', () => {

@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { pressable } from '../../utils/a11y';
+import '../../styles/sheet-exercises.css';
 
 // ── Shared SVG icons ─────────────────────────────────────────────────────────
 export function GlyphArrowLeft() {
@@ -43,7 +44,6 @@ interface ExScreenProps {
   onBack: () => void;
   backLabel?: string;
   eyebrow: ReactNode;
-  eyebrowColor: string;
   title: ReactNode;
   lede?: ReactNode;
   aside?: ReactNode;
@@ -51,29 +51,24 @@ interface ExScreenProps {
   children?: ReactNode;
 }
 
-export function ExScreen({ onBack, backLabel, eyebrow, eyebrowColor, title, lede, aside, foot, children }: ExScreenProps) {
+export function ExScreen({ onBack, backLabel, eyebrow, title, lede, aside, foot, children }: ExScreenProps) {
   return (
-    <div className="ex-screen">
-      <div className="ex-topbar">
-        <button className="ex-back" onClick={onBack}>
+    <div className="ex2-screen">
+      <div className="ex2-top">
+        <button className="ds-link ex2-back" onClick={onBack}>
           <GlyphArrowLeft />
           {backLabel ?? 'Назад к упражнениям'}
         </button>
       </div>
-      <div className="page">
-        <div className={'ex-body ' + (aside ? '' : 'ex-body--single')}>
-          <div>
-            <div className="ex-eyebrow" style={{ color: eyebrowColor }}>
-              <span className="ex-dot" />
-              {eyebrow}
-            </div>
-            <h1 className="ex-title">{title}</h1>
-            {lede && <p className="ex-lede">{lede}</p>}
-            {children}
-            {foot}
-          </div>
-          {aside && <aside className="ex-aside">{aside}</aside>}
+      <div className={'ex2-body' + (aside ? '' : ' ex2-body--single')}>
+        <div className="ex2-main">
+          <div className="ds-eyebrow">{eyebrow}</div>
+          <h1 className="ds-h2 ex2-title">{title}</h1>
+          {lede && <p className="ds-sub ex2-lede">{lede}</p>}
+          {children}
+          {foot}
         </div>
+        {aside && <aside className="ex2-aside">{aside}</aside>}
       </div>
     </div>
   );
@@ -89,17 +84,17 @@ interface StepsBarProps {
 
 export function StepsBar({ steps, current, completed, onJump }: StepsBarProps) {
   return (
-    <div className="ex-steps">
+    <div className="ex2-steps">
       {steps.map((s, i) => {
         const done = completed.includes(i);
         const active = current === i;
         return (
           <div
             key={i}
-            className={'ex-step ' + (active ? 'is-active' : done ? 'is-done' : '')}
+            className={'ex2-step' + (active ? ' is-active' : done ? ' is-done' : '')}
             {...pressable(() => (done || active) && onJump?.(i))}
           >
-            <span className="sn">{String(i + 1).padStart(2, '0')}</span>
+            <span className="ex2-step-n">{String(i + 1).padStart(2, '0')}</span>
             <span>{s}</span>
           </div>
         );

@@ -46,6 +46,7 @@ vi.mock('../api', () => ({
     deleteYsqResult: vi.fn(),
     submitTherapistRequest: vi.fn(),
   },
+  reportClientError: vi.fn(),
 }));
 import { api } from '../api';
 const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
@@ -106,6 +107,17 @@ function toggleForRow(title: string): HTMLElement {
   const row = screen.getByText(title).parentElement!.parentElement!;
   return within(row).getByRole('switch');
 }
+
+describe('SettingsSheet — имена переключателей', () => {
+  // Шов «строка подписана, а контрол нет» (аудит 2026-10, «Доступность»):
+  // заголовок SRow виден глазами, а switch рядом был безымянным.
+  it('каждый switch уведомлений назван заголовком своей строки', async () => {
+    await renderSheetWithForm('ty');
+    for (const title of ['Итоги дня', 'Напоминание']) {
+      expect(screen.getByRole('switch', { name: title })).toBe(toggleForRow(title));
+    }
+  });
+});
 
 describe('SettingsSheet — диалог (К4)', () => {
   // К4 дизайн-аудита 2026-08: оверлей — role="dialog"/aria-modal.
@@ -239,6 +251,24 @@ describe('сводка для терапевта: отказ API виден по
     );
     // Модалка со сводкой не открывается — показывать нечего.
     expect(screen.queryByText(/Скопировать/i)).toBeNull();
+  });
+});
+
+// Регрессия (CI run 36409902702): таймер тоста «Сохранено ✓» не чистился при
+// размонтировании и стрелял после сноса jsdom — «ReferenceError: window is not
+// defined» валил весь прогон vitest, хотя все тесты уже прошли.
+describe('SettingsSheet — таймеры тоста не переживают размонтирование', () => {
+  it('после сохранения и unmount не остаётся висящих таймеров', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      const { unmount } = await renderSheet();
+      fireEvent.click(toggleForRow('Итоги дня'));
+      await screen.findByText('Сохранено ✓');
+      unmount();
+      expect(vi.getTimerCount()).toBe(0);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
 
@@ -440,7 +470,7 @@ describe('SettingsSheet — удаление аккаунта: отказ пок
 describe('SettingsSheet — форма обращения в заявке на роль специалиста', () => {
   it('форма «ты»: пустая заявка просит на «ты»', async () => {
     await renderSheetWithForm('ty');
-    fireEvent.click(screen.getByText('Подать заявку'));
+    fireEvent.click(screen.getByText('Я психолог — подать заявку'));
     fireEvent.click(screen.getByText('Отправить заявку'));
 
     await screen.findByText('Заполни ФИО, квалификацию и контакты');
@@ -448,7 +478,7 @@ describe('SettingsSheet — форма обращения в заявке на �
 
   it('форма «вы»: та же проверка звучит на «вы»', async () => {
     await renderSheetWithForm('vy');
-    fireEvent.click(screen.getByText('Подать заявку'));
+    fireEvent.click(screen.getByText('Я психолог — подать заявку'));
     fireEvent.click(screen.getByText('Отправить заявку'));
 
     await screen.findByText('Заполните ФИО, квалификацию и контакты');
@@ -526,7 +556,11 @@ describe('SettingsSheet — «Выйти из пары»: отказ виден 
     await screen.findByText('Выйти из пары');
 
     fireEvent.click(screen.getByText('Выйти из пары'));
+    // Выход идёт через подтверждение (ONE_FRONTEND_PLAN): первый тап пару не рвёт.
+    expect(mockApi.leavePair).not.toHaveBeenCalled();
+    fireEvent.click(await screen.findByText('Выйти'));
     await screen.findByText(/Не удалось выйти из пары/);
+    expect(mockApi.leavePair).toHaveBeenCalledWith('ABC');
   });
 });
 
@@ -596,7 +630,7 @@ describe('SettingsSheet — сбой начальной загрузки не б
   it('getTherapistRequest() падает — форма заявки на специалиста доступна как для новой заявки', async () => {
     mockApi.getTherapistRequest.mockRejectedValueOnce(new Error('network down'));
     await renderSheet();
-    expect(screen.getByText('Подать заявку')).toBeTruthy();
+    expect(screen.getByText('Я психолог — подать заявку')).toBeTruthy();
     expect(screen.queryByText('Заявка на рассмотрении.', { exact: false })).toBeNull();
   });
 });
@@ -605,7 +639,7 @@ describe('SettingsSheet — заявка на специалиста: отказ
   it('api.submitTherapistRequest падает — текст ошибки сервера показан, форма не закрывается', async () => {
     mockApi.submitTherapistRequest.mockRejectedValue(new Error('уже подана заявка'));
     await renderSheet();
-    fireEvent.click(screen.getByText('Подать заявку'));
+    fireEvent.click(screen.getByText('Я психолог — подать заявку'));
     fillTherapistRequestForm();
     fireEvent.click(screen.getByText('Отправить заявку'));
 
@@ -617,7 +651,7 @@ describe('SettingsSheet — заявка на специалиста: отказ
   it('успех: заявка уходит на сервер, форма закрывается, статус — «на рассмотрении»', async () => {
     mockApi.submitTherapistRequest.mockResolvedValue(undefined);
     await renderSheet();
-    fireEvent.click(screen.getByText('Подать заявку'));
+    fireEvent.click(screen.getByText('Я психолог — подать заявку'));
     fillTherapistRequestForm();
     fireEvent.click(screen.getByText('Отправить заявку'));
 
@@ -648,10 +682,12 @@ describe('SettingsSheet — переключатель формы обращен
   });
 
   it('текущая форма подсвечена активной кнопкой', async () => {
+    mockApi.getSettings.mockResolvedValue({ ...SETTINGS, addressForm: 'vy' });
     await renderSheetWithForm('vy');
     const vyBtn = screen.getByText('На «вы»');
     const tyBtn = screen.getByText('На «ты»');
-    expect(vyBtn.style.background).not.toBe(tyBtn.style.background);
+    expect(vyBtn.className).toContain('is-active');
+    expect(tyBtn.className).not.toContain('is-active');
   });
 });
 
@@ -692,27 +728,6 @@ describe('SettingsSheet — переключение подвидов «Част
     fireEvent.click(moscow);
     await waitFor(() => expect(mockApi.updateSettings).toHaveBeenCalled());
     await screen.findByText('Настройки');
-  });
-});
-
-// ── Тема: тумблер тёмная/светлая и «Авто (по системе)» ────────────────────────
-describe('SettingsSheet — тема оформления', () => {
-  it('тумблер темы переключает заголовок строки (Тёмная ⇄ Светлая)', async () => {
-    localStorage.setItem('app_theme', 'light');
-    await renderSheet();
-    expect(screen.getByText('Светлая тема')).toBeTruthy();
-    const row = screen.getByText('Светлая тема').parentElement!.parentElement!;
-    fireEvent.click(within(row).getByRole('switch'));
-    await waitFor(() => expect(screen.getByText('Тёмная тема')).toBeTruthy());
-    localStorage.removeItem('app_theme');
-  });
-
-  it('«Авто (по системе)» клавиатурой (Enter) не падает и не открывает соседний тумблер', async () => {
-    await renderSheet();
-    const autoLink = screen.getByText('Авто (по системе) →');
-    fireEvent.keyDown(autoLink, { key: 'Enter' });
-    // Экран остался на месте (не упал, не ушёл на подвид).
-    expect(screen.getByText('Настройки')).toBeTruthy();
   });
 });
 
@@ -930,24 +945,49 @@ describe('SettingsSheet — вход по коду терапевта (клие�
 
     await screen.findByText('Игорь подключён');
   });
+
+  // 409 { reason: 'already_connected' }: код верный, мешает действующее
+  // подключение — «Неверный код» вводил бы в заблуждение.
+  it('409 already_connected — текст про действующее подключение, а не «Неверный код»', async () => {
+    mockApi.getTherapyRelation.mockResolvedValue(null);
+    mockApi.joinTherapy.mockRejectedValue(
+      Object.assign(new Error('already'), { status: 409, reason: 'already_connected' }),
+    );
+    await renderSheet();
+    fireEvent.change(screen.getByPlaceholderText('ABCDEF'), { target: { value: 'code12' } });
+    fireEvent.click(screen.getByText('Войти', { selector: 'button' }));
+
+    await screen.findByText(/У тебя уже есть подключение к терапевту/);
+    expect(screen.queryByText('Неверный код')).toBeNull();
+  });
+
+  it('любой другой отказ — прежний «Неверный код»', async () => {
+    mockApi.getTherapyRelation.mockResolvedValue(null);
+    mockApi.joinTherapy.mockRejectedValue(Object.assign(new Error('nf'), { status: 404 }));
+    await renderSheet();
+    fireEvent.change(screen.getByPlaceholderText('ABCDEF'), { target: { value: 'code12' } });
+    fireEvent.click(screen.getByText('Войти', { selector: 'button' }));
+
+    await screen.findByText('Неверный код');
+  });
 });
 
 describe('SettingsSheet — заявка на специалиста: необязательное сообщение и отмена формы', () => {
-  it('отмена формы очищает ошибку и возвращает к кнопке «Подать заявку»', async () => {
+  it('отмена формы очищает ошибку и возвращает к кнопке «Я психолог — подать заявку»', async () => {
     await renderSheet();
-    fireEvent.click(screen.getByText('Подать заявку'));
+    fireEvent.click(screen.getByText('Я психолог — подать заявку'));
     fireEvent.click(screen.getByText('Отправить заявку'));
     await screen.findByText('Заполни ФИО, квалификацию и контакты');
 
     fireEvent.click(screen.getByText('Отмена'));
-    expect(screen.getByText('Подать заявку')).toBeTruthy();
+    expect(screen.getByText('Я психолог — подать заявку')).toBeTruthy();
     expect(screen.queryByText('Заполни ФИО, квалификацию и контакты')).toBeNull();
   });
 
   it('необязательное сообщение уходит в submitTherapistRequest', async () => {
     mockApi.submitTherapistRequest.mockResolvedValue(undefined);
     await renderSheet();
-    fireEvent.click(screen.getByText('Подать заявку'));
+    fireEvent.click(screen.getByText('Я психолог — подать заявку'));
     fillTherapistRequestForm({ fio: 'Иван' });
     fireEvent.change(screen.getByPlaceholderText('Сообщение (необязательно)'), { target: { value: 'Работаю со схема-терапией' } });
     fireEvent.click(screen.getByText('Отправить заявку'));

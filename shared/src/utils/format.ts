@@ -55,3 +55,18 @@ export function localDateStr(d: Date): string {
 export function todayStr(): string {
   return localDateStr(new Date());
 }
+
+/** «сегодня» / «вчера» / «N дн. назад» / «3 авг.» для момента времени.
+ *  Разница считается в миллисекундах, поэтому от зоны машины не зависит;
+ *  дату старше недели показываем в зоне читателя — момент остаётся моментом
+ *  (правило №25 CLAUDE.md). */
+export function fmtAgo(d: string): string {
+  const days = Math.floor((Date.now() - new Date(d).getTime()) / 86400000);
+  if (days === 0) return 'сегодня';
+  if (days === 1) return 'вчера';
+  if (days < 7) return `${days} дн. назад`;
+  return new Date(d).toLocaleDateString('ru-RU', {
+    day: 'numeric',
+    month: 'short',
+  });
+}

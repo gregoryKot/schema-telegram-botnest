@@ -14,6 +14,8 @@
 // точка отправки, хук здесь покрывает и ratingApi (прямой вызов authedFetch).
 import { cachedGet, isCacheableGetPath } from '../../shared/src/api/apiCache';
 import { applyMutationInvalidation } from '../../shared/src/api/apiCacheRules';
+import { readJsonBody } from '../../shared/src/api/readJsonBody';
+import { readErrorBody } from '../../shared/src/api/readErrorBody';
 
 export const BASE_RAW = (import.meta.env.VITE_API_URL as string) ?? '';
 export const BASE = BASE_RAW && !BASE_RAW.startsWith('http') ? `https://${BASE_RAW}` : BASE_RAW;
@@ -53,21 +55,18 @@ export async function fetchWithTimeout(input: string, init: RequestInit, ms = 15
 // HttpStatusError мини-аппа (apiClient.ts, правило №3).
 export class ApiError extends Error {
   status: number;
-  constructor(status: number, message: string) {
+  reason?: string; // машинный код причины из тела (`already_connected`)
+  constructor(status: number, message: string, reason?: string) {
     super(message);
     this.status = status;
+    this.reason = reason;
   }
 }
 
-// Тело может прийти не-JSON (502 от прокси, оборванное соединение) — тогда
-// res.json() отклоняется, и body остаётся пустым объектом: message ниже не
-// найдётся, в ход идёт дефолтное сообщение по статусу.
+// Разбор тела (message + машинный reason, не-JSON тело) — shared/readErrorBody.
 async function apiError(res: Response): Promise<ApiError> {
-  const body = await res.json().catch(() => ({}) as { message?: unknown });
-  const msg = body?.message
-    ? typeof body.message === 'string' ? body.message : JSON.stringify(body.message)
-    : `API error: ${res.status}`;
-  return new ApiError(res.status, msg);
+  const { message, reason } = await readErrorBody(res);
+  return new ApiError(res.status, message, reason);
 }
 
 // Единственная точка отправки. На 401 перевыпускает сессию (через
@@ -89,7 +88,7 @@ export async function authedFetch(path: string, init: RequestInit = {}): Promise
 async function rawGet<T>(path: string): Promise<T> {
   const res = await authedFetch(path);
   if (!res.ok) throw await apiError(res);
-  return res.json();
+  return readJsonBody<T>(res);
 }
 
 // Кеш живёт в памяти вкладки (shared/src/api/apiCache.ts) — дедуп
@@ -108,13 +107,13 @@ export async function post(path: string, body: unknown): Promise<void> {
 export async function postJson<T>(path: string, body: unknown): Promise<T> {
   const res = await authedFetch(path, { method: 'POST', body: JSON.stringify(body) });
   if (!res.ok) throw await apiError(res);
-  return res.json();
+  return readJsonBody<T>(res);
 }
 
 export async function patchJson<T>(path: string, body: unknown): Promise<T> {
   const res = await authedFetch(path, { method: 'PATCH', body: JSON.stringify(body) });
   if (!res.ok) throw await apiError(res);
-  return res.json();
+  return readJsonBody<T>(res);
 }
 
 export async function del(path: string, body?: unknown): Promise<void> {

@@ -9,6 +9,7 @@ import { useHistorySheet } from '../../../hooks/useHistorySheet';
 import { detectCrisisAny } from '../../../utils/crisisMarkers';
 import { CrisisCard } from '../../CrisisCard';
 import { BottomSheetShell } from '../../BottomSheetShell';
+import { PhraseCheckShare } from './PhraseCheckShare';
 import { usePhraseHistoryCard } from '../../../../../shared/src/phraseCheck/usePhraseHistoryCard';
 import { PhraseMarkPills } from '../../../../../shared/src/phraseCheck/PhraseMarkPills';
 import { api } from '../../../api';
@@ -35,42 +36,26 @@ export function PhraseHistoryCard({
 
   return (
     <BottomSheetShell goBack={goBack} zIndex={320}>
-        <div style={{ fontSize: 17, fontWeight: 600, color: 'var(--text)', marginBottom: 14 }}>
-          Разбор фразы
-        </div>
+        <h2 className="ds-h3 ex2-sheet-h">Разбор фразы</h2>
 
-        <div
-          style={{
-            background: 'var(--surface-2)',
-            border: '1px solid var(--line)',
-            borderRadius: 'var(--r-14)',
-            padding: '12px 14px',
-            marginBottom: markLabels.length > 0 ? 10 : 16,
-            fontSize: 14,
-            lineHeight: 1.5,
-            color: 'var(--text-sub)',
-          }}
-        >
-          «{entry.phrase}»
-        </div>
+        <div className="ds-card ds-card--row ex2-sheet-quote">«{entry.phrase}»</div>
 
         <PhraseMarkPills labels={markLabels} />
 
-        <div style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--text-sub)', marginBottom: 8 }}>
+        <div className="ds-label ex2-sheet-label">
           {tr('Твой ответ себе', 'Ваш ответ себе')}
         </div>
         <textarea
-          className="paper-area"
+          className="ds-textarea"
           value={rewrite}
           onChange={(e) => setRewrite(e.target.value)}
           placeholder="Каким может быть ответ Здорового Взрослого?"
           rows={4}
-          style={{ marginBottom: 10 }}
         />
         {detectCrisisAny(rewrite) && <CrisisCard surface="phrase_check" />}
 
         {error && (
-          <div style={{ fontSize: 12.5, color: 'var(--accent-red)', marginBottom: 10, lineHeight: 1.5 }}>
+          <div className="ex2-err ex2-gap">
             {tr(
               'Не сохранилось — проверь связь и попробуй ещё раз.',
               'Не сохранилось — проверьте связь и попробуйте ещё раз.',
@@ -78,16 +63,23 @@ export function PhraseHistoryCard({
           </div>
         )}
 
-        <div className="ex-foot">
-          <span className="spacer" />
+        <div className="ex2-foot">
+          <span className="ex2-spacer" />
           <button
-            className="ex-btn ex-btn-primary"
+            className="ds-btn"
             onClick={() => void handleSave()}
             disabled={saving}
-            style={{ opacity: saving ? 0.6 : 1 }}
           >
             {saving ? 'Сохраняю…' : 'Сохранить ответ'}
           </button>
+        </div>
+
+        <div className="ex2-gap">
+          <PhraseCheckShare
+            phrase={entry.phrase}
+            marks={entry.marks}
+            rewrite={rewrite.trim() || undefined}
+          />
         </div>
     </BottomSheetShell>
   );

@@ -105,16 +105,15 @@ describe('App — личный сайт (домен kotlarewski)', () => {
   });
 
   it('favicon переключается на персональный', async () => {
-    // jsdom не реализует HTMLLinkElement.sizes (DOMTokenList) — ветка
-    // `sizes?.value === '96x96'` физически недостижима в этом окружении,
-    // проверяем достижимую ветку (обычная link-иконка без sizes).
+    // Проверяем svg-иконку (без sizes); ветка png 96×96 — в domainChrome.test.
     const link = document.createElement('link');
     link.rel = 'icon';
+    link.type = 'image/svg+xml';
     document.head.appendChild(link);
     try {
       stubLocation({ hostname: 'kotlarewski.example', pathname: '/', href: 'http://kotlarewski.example/' });
       await loadApp();
-      expect(link.href).toContain('favicon-personal-32.png');
+      expect(link.href).toContain('favicon-personal-192.png');
       expect(link.type).toBe('image/png');
     } finally {
       link.remove();
@@ -126,6 +125,34 @@ describe('App — личный сайт (домен kotlarewski)', () => {
     const App = await loadApp();
     render(<App />);
     await waitFor(() => expect(screen.getAllByText('Григорий Котляревский').length).toBeGreaterThan(0));
+  });
+});
+
+describe('App — один бренд на всю визитку (PracticeBrand)', () => {
+  const practice = (pathname: string) =>
+    stubLocation({ hostname: 'kotlarewski.example', pathname, href: `http://kotlarewski.example${pathname}` });
+
+  it.each(['/privacy', '/offer', '/reviews'])('%s рендерится внутри .landing-personal-brand', async (pathname) => {
+    practice(pathname);
+    const App = await loadApp();
+    const { container } = render(<App />);
+    await waitFor(() => expect(container.querySelector('.landing-personal-brand h1')).toBeTruthy());
+  });
+
+  it('/subscribe — осознанно продуктовый (light-lock), вне бренда визитки', async () => {
+    practice('/subscribe');
+    const App = await loadApp();
+    const { container } = render(<App />);
+    await waitFor(() => expect(container.querySelector('h1')).toBeTruthy());
+    expect(container.querySelector('.landing-personal-brand')).toBeNull();
+  });
+
+  it('обёртка не создаёт бокс: display: contents не ломает раскладку #root', async () => {
+    practice('/privacy');
+    const App = await loadApp();
+    const { container } = render(<App />);
+    await waitFor(() => expect(container.querySelector('.landing-personal-brand')).toBeTruthy());
+    expect((container.querySelector('.landing-personal-brand') as HTMLElement).style.display).toBe('contents');
   });
 });
 
@@ -201,31 +228,49 @@ describe('App — страница ошибки входа (/auth/error)', () =>
     const App = await loadApp();
     render(<App />);
     await screen.findByText('telegram_mismatch');
-    expect(screen.getByText('Что-то')).toBeTruthy();
+    expect(screen.getByText('Что-то пошло не так')).toBeTruthy();
   });
 
   it('без причины — блок с текстом ошибки не рисуется вовсе', async () => {
     stubLocation({ pathname: '/auth/error', href: 'http://localhost/auth/error' });
     const App = await loadApp();
     const { container } = render(<App />);
-    await screen.findByText('Что-то');
-    expect(container.querySelector('[style*="monospace"]')).toBeNull();
+    await screen.findByText('Что-то пошло не так');
+    expect(container.querySelector('.as-reason')).toBeNull();
   });
 });
 
 describe('App — Яндекс.Метрика SPA-трекинг', () => {
-  it('шлёт hit БЕЗ фрагмента — токен из #access_token не утекает в Метрику (L6)', async () => {
+  afterEach(() => {
+    delete (window as unknown as { ym?: unknown }).ym;
+  });
+
+  it('на публичной странице шлёт hit БЕЗ секретов из query и фрагмента (L6)', async () => {
     const ym = vi.fn();
     (window as unknown as { ym: typeof ym }).ym = ym;
-    stubLocation({ pathname: '/auth/callback', href: 'http://localhost/auth/callback#access_token=SECRET_JWT&expires_in=900' });
+    stubLocation({
+      pathname: '/articles/some-slug',
+      search: '?code=SECRET_CODE&utm_source=ad',
+      href: 'http://localhost/articles/some-slug?code=SECRET_CODE&utm_source=ad#access_token=SECRET_JWT',
+    });
     const App = await loadApp();
     render(<App />);
     await waitFor(() => expect(ym).toHaveBeenCalled());
     expect(ym.mock.calls[0][1]).toBe('hit');
     const urlArg = String(ym.mock.calls[0][2]);
-    expect(urlArg).toBe('http://localhost/auth/callback'); // фрагмент срезан
-    expect(urlArg).not.toContain('SECRET_JWT');
-    delete (window as unknown as { ym?: typeof ym }).ym;
+    expect(urlArg).toBe('http://localhost/articles/some-slug?utm_source=ad'); // метка есть, секретов нет
+    expect(urlArg).not.toContain('SECRET');
+  });
+
+  it('на /auth/callback (не публичный маршрут) в Метрику не уходит ничего — D-4', async () => {
+    const ym = vi.fn();
+    (window as unknown as { ym: typeof ym }).ym = ym;
+    stubLocation({ pathname: '/auth/callback', href: 'http://localhost/auth/callback#access_token=SECRET_JWT&expires_in=900' });
+    const App = await loadApp();
+    render(<App />);
+    // Дать приложению отработать проверку сессии, затем убедиться, что хитов нет.
+    await new Promise((r) => setTimeout(r, 300));
+    expect(ym).not.toHaveBeenCalled();
   });
 });
 

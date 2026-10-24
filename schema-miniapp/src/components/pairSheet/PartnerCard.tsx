@@ -1,39 +1,35 @@
 import { PairsData } from '../../api';
+import { TONE_COLOR, WeekBars } from './WeekBars';
+import { useTr } from '../../utils/addressForm';
+import {
+  indexTone,
+  partnerContextText,
+  PARTNER_EMPTY_TEXT,
+} from '../../../../shared/src/pair/partnerCard';
 
 // Карточка активного партнёра (индекс дня, недельные бары, выход из пары).
 // Вынесено из PairSheet.tsx (правило №10).
 type Partner = PairsData['partners'][number];
-
-function indexColor(v: number): string {
-  if (v >= 7) return '#06d6a0';
-  if (v >= 4) return 'var(--accent-yellow)';
-  return 'var(--accent-red)';
-}
 
 export function PartnerCard({
   partner,
   confirmLeaveCode,
   setConfirmLeaveCode,
   onLeave,
+  leaveError,
 }: {
   partner: Partner;
+  leaveError?: boolean;
   confirmLeaveCode: string | null;
   setConfirmLeaveCode: (v: string | null) => void;
   onLeave: (code: string) => void;
 }) {
+  const tr = useTr();
   const name = partner.partnerName ?? 'Друг';
   const done = partner.partnerTodayDone && partner.partnerIndex !== null;
-  const color = done
-    ? indexColor(partner.partnerIndex!)
-    : 'rgba(var(--fg-rgb),0.35)';
   const idx = partner.partnerIndex ?? 0;
-  const contextMsg = !done
-    ? `${name} ещё не заполнил дневник — когда заполнит, день появится здесь`
-    : idx < 4
-      ? `Сегодня у ${name} непростой день. Иногда просто написать пару слов — уже помогает`
-      : idx < 7
-        ? `${name} в норме сегодня. Отслеживаете вместе — это уже кое-что`
-        : `У ${name} хороший день. Приятно, когда у обоих всё неплохо`;
+  const color = done ? TONE_COLOR[indexTone(idx)] : 'rgba(var(--fg-rgb),0.35)';
+  const contextMsg = partnerContextText(name, !!done, idx);
   return (
     <div
       style={{
@@ -83,7 +79,7 @@ export function PartnerCard({
             </div>
           ) : (
             <div style={{ fontSize: 14, color: 'var(--text-sub)' }}>
-              Ещё не заполнил
+              {PARTNER_EMPTY_TEXT}
             </div>
           )}
         </div>
@@ -110,55 +106,7 @@ export function PartnerCard({
         )}
       </div>
 
-      {partner.partnerWeekAvgs?.length > 0 && (
-        <div
-          style={{
-            display: 'flex',
-            gap: 'var(--space-4)',
-            alignItems: 'flex-end',
-            height: 28,
-            marginBottom: 10,
-          }}
-        >
-          {[...partner.partnerWeekAvgs].reverse().map((v, i) => {
-            const barH = v !== null ? Math.round((v / 10) * 24) : 3;
-            const barColor =
-              v === null ? 'rgba(var(--fg-rgb),0.08)' : indexColor(v);
-            return (
-              <div
-                key={i}
-                style={{
-                  flex: 1,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  gap: 3,
-                }}
-              >
-                <div
-                  style={{
-                    width: '100%',
-                    height: barH,
-                    borderRadius: 3,
-                    background: barColor,
-                    transition: 'height 0.3s',
-                  }}
-                />
-                {v !== null && i === partner.partnerWeekAvgs.length - 1 && (
-                  <div
-                    style={{
-                      fontSize: 9,
-                      color: 'var(--text-sub)',
-                    }}
-                  >
-                    сег
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      )}
+      <WeekBars avgs={partner.partnerWeekAvgs} />
 
       <div
         style={{
@@ -170,6 +118,17 @@ export function PartnerCard({
       >
         {contextMsg}
       </div>
+
+      {leaveError && (
+        <div
+          style={{ fontSize: 12, color: 'var(--accent-red)', marginBottom: 8 }}
+        >
+          {tr(
+            'Не удалось выйти из пары. Попробуй ещё раз',
+            'Не удалось выйти из пары. Попробуйте ещё раз',
+          )}
+        </div>
+      )}
 
       {confirmLeaveCode === partner.code ? (
         <div className="u-row8">

@@ -7,7 +7,12 @@ import { DisclaimerPrivacyStep } from './disclaimer/DisclaimerPrivacyStep';
 import { DisclaimerNotTherapyStep } from './disclaimer/DisclaimerNotTherapyStep';
 import { DisclaimerHomeScreenStep } from './disclaimer/DisclaimerHomeScreenStep';
 import { canOfferHomeScreenNow } from '../utils/homeScreen';
-import { buildSteps, canAdvance, initialStepIndex } from './disclaimer/steps';
+import {
+  buildSteps,
+  canAdvance,
+  canJumpTo,
+  initialStepIndex,
+} from './disclaimer/steps';
 import {
   useOnboardingStepTracking,
   trackOnboardingDone,
@@ -49,7 +54,10 @@ export function Disclaimer({
     done: null,
   }[stepId];
 
-  const blocked = !canAdvance(stepId, ready);
+  // Финальная кнопка держит гейт согласий сама, на каком бы шаге она ни
+  // стояла: `canAdvance` разрешает уход с любого шага кроме `not_therapy`, и
+  // на `home_screen` финал оказывался открыт (аудит онбординга 2026-10).
+  const blocked = isLast ? !ready : !canAdvance(stepId, ready);
 
   return (
     <BottomSheet dismissable={false} zIndex={300}>
@@ -67,7 +75,10 @@ export function Disclaimer({
           return (
             <div
               key={id}
-              {...pressable(() => setStep(i))}
+              {...pressable(() => {
+                if (canJumpTo(steps, step, i, ready)) setStep(i);
+              })}
+              aria-label={`Шаг ${i + 1} из ${steps.length}`}
               style={hitboxStyle(dotW, 8, 24).outer}
             >
               <div

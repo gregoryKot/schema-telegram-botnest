@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { encrypt, decrypt, encryptJson, decryptJson } from '../utils/crypto';
-
+import { deleteOwned } from '../utils/require-affected';
 // Упражнения: письма, безопасное место, флешкарты, проверка убеждений
 // (belief checks) — самостоятельные user-owned инструменты без общей схемы.
 @Injectable()
@@ -49,7 +49,7 @@ export class ExercisesService {
   }
 
   async deleteBeliefCheck(userId: bigint, id: number) {
-    return this.prisma.userBeliefCheck.deleteMany({ where: { id, userId } });
+    return deleteOwned(this.prisma.userBeliefCheck, id, userId);
   }
 
   // ── Letters ───────────────────────────────────────────────────────────────────
@@ -71,7 +71,7 @@ export class ExercisesService {
   }
 
   async deleteLetter(userId: bigint, id: number) {
-    return this.prisma.userLetter.deleteMany({ where: { id, userId } });
+    return deleteOwned(this.prisma.userLetter, id, userId);
   }
 
   // ── Safe place ────────────────────────────────────────────────────────────────
@@ -135,6 +135,6 @@ export class ExercisesService {
   }
 
   async deleteFlashcard(userId: bigint, id: number) {
-    return this.prisma.userFlashcard.deleteMany({ where: { id, userId } });
+    return deleteOwned(this.prisma.userFlashcard, id, userId);
   }
 }

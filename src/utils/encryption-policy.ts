@@ -71,8 +71,8 @@ export const FIELD_POLICY: Record<string, Record<string, Policy>> = {
       'лукап-ключ OAuth (для email-провайдера равен адресу) — ' +
         'шифрование сломает findUnique; осознанный компромисс',
     ),
-    email: plain('дублирует providerId/OAuth-профиль — см. providerId'),
-    displayName: plain('имя из OAuth-профиля, показывается в /account'),
+    email: enc('src/utils/auth-provider-crypto.ts'),
+    displayName: enc('src/utils/auth-provider-crypto.ts'),
   },
   LoginTicket: {
     id: ID,
@@ -178,6 +178,8 @@ export const FIELD_POLICY: Record<string, Record<string, Policy>> = {
     modeTransitions: enc(`${TH}/therapy-notes.service.ts`),
     modeMapNodes: enc(`${TH}/therapy-notes.service.ts`),
     modeMapEdges: enc(`${TH}/therapy-notes.service.ts`),
+    modeLinks: enc(`${TH}/therapy-notes.service.ts`),
+    schemaLinks: enc(`${TH}/therapy-notes.service.ts`),
     history: plain(
       'контейнер снапшотов; чувствительные поля каждого снапшота ' +
         'шифруются попольно (encryptConceptFields)',

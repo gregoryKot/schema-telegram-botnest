@@ -12,15 +12,17 @@ export const PARSER_PATH_PATTERNS = [
   /^src\/auth\/providers\/(?!types\.ts$|registry\.ts$)[^/]+\.ts$/,
   /^src\/channel\/targets\/[^/]+\.ts$/,
   /\/[^/]*webhook[^/]*\.ts$/,
-  // Точечные добавления: реальные парсеры внешнего формата, которые общие
-  // сигналы ниже (fetch(/.json()/createHmac() и т.п.) не ловят по форме кода,
-  // а не потому что они не парсеры.
-  // - robokassa.service.ts: подпись Robokassa — md5(outSum:invId:pass), не
-  //   HMAC и не JSON-тело; content-эвристика на createHmac её не видит.
-  // - channel-http.ts: общий fetch/JSON-клиент адаптеров канала — вызов
-  //   пробрасывается через переменную (`const send = ...; send(url, ...)`),
-  //   поэтому литерал `fetch(` не совпадает с ним напрямую.
+  // Точечные добавления: парсеры, которых сигналы содержимого (fetch(/.json()/
+  // createHmac()) не видят по форме кода:
+  // - robokassa.service.ts: подпись md5(outSum:invId:pass), не HMAC и не JSON;
+  // - channel-http.ts: fetch адаптеров канала идёт через переменную (`send(`);
+  // - s3-list-objects.ts: XML ListObjectsV2 разбирается регэкспом, fetch —
+  //   параметром (`fetchFn(`);
+  // - telegram-rate-limit.ts: ответ 429 (parameters.retry_after) приходит уже
+  //   разобранным telegraf-ом в TelegramError.response.
   /^src\/booking\/robokassa\.service\.ts$/,
   /^src\/channel\/channel-http\.ts$/,
+  /^src\/infra\/s3-list-objects\.ts$/,
+  /^src\/telegram\/telegram-rate-limit\.ts$/,
 ];
 

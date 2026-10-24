@@ -71,6 +71,9 @@ function makePrisma() {
           findUnique: jest.fn().mockResolvedValue(defaultUserFlagsRow()),
           update: jest.fn(),
         },
+        // Карточки нужны merge-user-lists.ts (источник правды для «моих схем»).
+        userSchemaNote: { findMany: jest.fn().mockResolvedValue([]) },
+        userModeNote: { findMany: jest.fn().mockResolvedValue([]) },
       };
       await fn(tx);
     }),

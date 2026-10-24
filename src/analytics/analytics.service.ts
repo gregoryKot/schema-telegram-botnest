@@ -6,11 +6,8 @@ import {
   ANALYTICS_EVENTS,
   type AnalyticsEventName,
 } from './analytics.constants';
-
-// Ретеншен AnalyticsEvent (L10, аудит 2026-08): таблица росла без ограничения.
-// Метрики /stats считаются в окнах ≤30 дней, поэтому держим 90 (щедрый буфер) и
-// раз в сутки удаляем старше — диск не течёт, окна метрик не задеты.
-const RETENTION_DAYS = 90;
+import { eventOwnerId } from './anonymous-events.constants';
+import { EVENT_RETENTION_DAYS as RETENTION_DAYS } from './analytics-retention';
 
 // Продуктовая аналитика (правило №8 CLAUDE.md): пишет факты «юзер сделал X»
 // для проверки гипотез метриками (D1/D7/D30, доля поделившихся и т.п.).
@@ -33,14 +30,13 @@ export class AnalyticsService {
     name: AnalyticsEventName,
     meta?: Record<string, unknown>,
   ): Promise<void> {
-    // Defence in depth: DTO уже проверил name, но сервис — нижний слой,
-    // к которому могут прийти и из других мест (бот, крон). Неизвестное
-    // имя молча игнорируем, а не засоряем таблицу.
+    // Defence in depth: DTO проверил name, но сервис — нижний слой (бот, крон);
+    // неизвестное имя молча игнорируем. userId — через eventOwnerId (D4).
     if (!ANALYTICS_EVENTS.includes(name)) return;
     try {
       await this.prisma.analyticsEvent.create({
         data: {
-          userId,
+          userId: eventOwnerId(name, userId),
           name,
           meta: (meta as Prisma.InputJsonValue) ?? Prisma.JsonNull,
         },

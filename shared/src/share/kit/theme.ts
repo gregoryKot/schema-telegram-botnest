@@ -3,55 +3,32 @@
 // (правило №3) — визуал строится на --bg/--sheet-bg/--fg-rgb/--accent и
 // адаптируется к светлой теме сайта и тёмной теме мини-аппа.
 
+import { luminance } from './color';
+
+export { withAlpha, luminance } from './color';
+
 export const CARD_W = 400;
 export const CARD_PAD = 30;
 /** Плотность растра: 3× — карточка остаётся резкой на ретине и в предпросмотре. */
 export const DPR = 3;
 
-export const cardFont = (size: number, weight?: 'bold') =>
-  `${weight ? 'bold ' : ''}${size}px -apple-system, BlinkMacSystemFont, sans-serif`;
+const SANS = '-apple-system, BlinkMacSystemFont, sans-serif';
+
+/** Шрифт канваса; family — семейство вместо системного sans (serif темы). */
+export const cardFont = (size: number, weight?: 'bold', family = SANS) =>
+  `${weight ? 'bold ' : ''}${size}px ${family}`;
 
 export interface CardTheme {
   bg: string;
   sheetBg: string;
   accent: string;
+  /** Семейство для цитат: --serif темы (на сайте Instrument Serif), фолбэк Georgia. */
+  serif: string;
   /** Светлая тема сайта — свечения и заливки идут слабее, чем на тёмной. */
   isLight: boolean;
   fg: (alpha: number) => string;
   /** 'var(--accent-red)' или '#hex' → конкретный цвет для canvas */
   color: (value: string) => string;
-}
-
-/** '#rrggbb' + alpha → 'rgba(r,g,b,a)'. Принимает и уже готовые rgb/rgba. */
-export function withAlpha(color: string, alpha: number): string {
-  const hex = color.trim();
-  const m = /^#([0-9a-f]{6})$/i.exec(hex);
-  if (m) {
-    const n = parseInt(m[1], 16);
-    return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${alpha})`;
-  }
-  const short = /^#([0-9a-f]{3})$/i.exec(hex);
-  if (short) {
-    const [r, g, b] = short[1].split('').map((ch) => parseInt(ch + ch, 16));
-    return `rgba(${r},${g},${b},${alpha})`;
-  }
-  const rgb = /^rgba?\(([^)]+)\)$/i.exec(hex);
-  if (rgb) {
-    const [r, g, b] = rgb[1].split(',').map((v) => parseFloat(v));
-    return `rgba(${r},${g},${b},${alpha})`;
-  }
-  return hex;
-}
-
-/** Воспринимаемая яркость цвета 0..1 — по ней отличаем светлую тему. */
-export function luminance(color: string): number {
-  const m = /^#([0-9a-f]{6})$/i.exec(color.trim());
-  if (!m) return 0;
-  const n = parseInt(m[1], 16);
-  return (
-    (0.299 * ((n >> 16) & 255) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) /
-    255
-  );
 }
 
 /** Источник CSS-переменной: DOM во фронтендах, пусто — на сервере. */
@@ -82,6 +59,7 @@ function buildTheme(read: VarSource): CardTheme {
     bg,
     sheetBg: get('--sheet-bg', '#23252f'),
     accent: get('--accent', '#8f86ff'),
+    serif: get('--serif', "Georgia, 'Times New Roman', serif"),
     isLight: luminance(bg) > 0.5,
     fg: (alpha) => `rgba(${fgRgb},${alpha})`,
     color,

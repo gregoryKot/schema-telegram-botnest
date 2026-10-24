@@ -1,4 +1,6 @@
 import { useEffect, useRef } from 'react';
+import type { OneTapResponse } from './googleOneTapTypes';
+import { fetchOneTapNonce } from './oneTapNonce';
 
 // Google One Tap: нативная всплывашка Google прямо на сайте. Если человек уже
 // вошёл в Google в этом браузере — показывает «Продолжить как …» одним
@@ -13,32 +15,6 @@ import { useEffect, useRef } from 'react';
 
 const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined;
 const API_BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? '';
-
-interface CredentialResponse {
-  credential?: string;
-}
-interface GoogleIdApi {
-  initialize(cfg: {
-    client_id: string;
-    callback: (r: CredentialResponse) => void;
-    use_fedcm_for_prompt?: boolean;
-    auto_select?: boolean;
-  }): void;
-  prompt(): void;
-  cancel(): void;
-}
-declare global {
-  interface Window {
-    google?: { accounts?: { id?: GoogleIdApi } };
-  }
-}
-
-interface OneTapResponse {
-  accessToken?: string;
-  expiresIn?: number;
-  twofa?: boolean;
-  challengeToken?: string;
-}
 
 /**
  * Запускает One Tap, пока экран входа открыт. `enabled` — показывать ли (обычно
@@ -111,14 +87,20 @@ export function useGoogleOneTap(opts: {
         setTimeout(init, 100);
         return;
       }
-      id.initialize({
-        client_id: CLIENT_ID,
-        callback: (r) => {
-          if (r.credential) void submit(r.credential);
-        },
-        use_fedcm_for_prompt: true,
+      // Сначала nonce (кука gsi_nonce + хеш для GIS): без него сервер токен не
+      // примет (B-16 аудита 2026-10). Не вышло — всплывашку не показываем.
+      void fetchOneTapNonce(API_BASE).then((nonce) => {
+        if (!nonce || cancelled) return;
+        id.initialize({
+          client_id: CLIENT_ID,
+          nonce,
+          callback: (r) => {
+            if (r.credential) void submit(r.credential);
+          },
+          use_fedcm_for_prompt: true,
+        });
+        id.prompt();
       });
-      id.prompt();
     };
     init();
 

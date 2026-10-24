@@ -51,13 +51,8 @@ export function useBootstrapLoad({ navigate, initialPathname }: Params) {
     // тот же outbox, что в мини-аппе) — один флаш на старте, как там.
     const outboxPromise = api.flushOutbox().catch(() => fail('отложенные оценки'));
 
-    // Mirror disclaimer acceptance to server so the Telegram mini-app can skip
-    // its consent screen for users who are already active on the website.
-    // Вложенный acceptDisclaimer возвращается из .then — как и запросы под
-    // профилем ниже: не вернуть его = флаш отчёта не дождётся его исхода.
-    const disclaimerPromise = api.getDisclaimer().then(d => {
-      if (!d.accepted) return api.acceptDisclaimer().catch(() => fail('дисклеймер'));
-    }).catch(() => fail('дисклеймер'));
+    // Согласия (getDisclaimer/acceptDisclaimer) — hooks/useConsentGate: молча
+    // принимать их нельзя, нужен экран.
 
     const needsRatingsPromise = Promise.all([api.needs(), api.ratings(), api.ratings(YESTERDAY_DATE)])
       .then(([n, r, yR]) => {
@@ -143,7 +138,7 @@ export function useBootstrapLoad({ navigate, initialPathname }: Params) {
       }
     }).catch(() => fail('профиль'));
 
-    Promise.allSettled([initPromise, activityPromise, outboxPromise, disclaimerPromise, needsRatingsPromise, plansPromise, childhoodPromise, ysqPromise, profilePromise])
+    Promise.allSettled([initPromise, activityPromise, outboxPromise, needsRatingsPromise, plansPromise, childhoodPromise, ysqPromise, profilePromise])
       .then(() => {
         if (failed.length) {
           reportClientError({ message: `appshell bootstrap fail: ${failed.join(', ')}`, section: 'appshell.bootstrap' });

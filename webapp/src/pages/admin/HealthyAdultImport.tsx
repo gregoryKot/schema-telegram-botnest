@@ -53,7 +53,7 @@ export function HealthyAdultImport({
 
   return (
     <section style={card}>
-      <h3 style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', marginTop: 0, marginBottom: 6 }}>
+      <h3 style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)', marginTop: 0, marginBottom: 6 }}>
         Добавить списком
       </h3>
       <p style={{ color: 'var(--text-sub)', fontSize: 13, margin: '0 0 12px', lineHeight: 1.5 }}>

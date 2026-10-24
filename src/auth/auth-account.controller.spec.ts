@@ -13,7 +13,11 @@
 // поэтому подменяем модуль тем же способом, что и auth-flow.service.spec.ts.
 jest.mock('./providers/google.provider', () => ({ GoogleProvider: class {} }));
 
-import { BadRequestException, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import type { Request, Response } from 'express';
 import { ConfigService } from '@nestjs/config';
 import { AuthAccountController } from './auth-account.controller';
@@ -24,6 +28,10 @@ import { MergeService } from './merge.service';
 import { SecurityLogService } from './security-log.service';
 import { EmailTokenService } from './email-token.service';
 import { REFRESH_COOKIE } from './auth-http.util';
+import { CallerIdentityService } from './caller-identity';
+import { TotpService } from './totp.service';
+import { LinkSessionRequiredException } from './link-session-required.exception';
+import { hashToken } from './email.util';
 
 const WEBAPP_URL = 'https://schemehappens.ru';
 
@@ -140,6 +148,8 @@ function makeReq(
     csrf?: boolean;
     webUser?: { userId: bigint };
     headers?: Record<string, string>;
+    cookies?: Record<string, string>;
+    query?: Record<string, string>;
   } = {},
 ): Request {
   const headers: Record<string, string> = { ...opts.headers };
@@ -148,7 +158,8 @@ function makeReq(
     headers,
     webUser: opts.webUser,
     ip: '198.51.100.1',
-    cookies: {},
+    cookies: opts.cookies ?? {},
+    query: opts.query ?? {},
   } as unknown as Request;
 }
 
@@ -168,13 +179,45 @@ function makeRes(): Response & {
   };
 }
 
-function makeController(opts: { providers?: ProvidersMock } = {}) {
+type TotpMock = { isEnabled: jest.Mock; verifyCode: jest.Mock };
+
+// Живые сессии по sha256 сырого refresh-токена: CallerIdentityService берётся
+// НАСТОЯЩИЙ (правило №14 — тест на шве), подменяется только таблица WebSession.
+type SessionRow = { userId: bigint; revokedAt: Date | null; expiresAt: Date };
+function makeIdentity(sessions: Record<string, SessionRow> = {}) {
+  const prisma = {
+    webSession: {
+      findUnique: jest.fn(({ where }: { where: { tokenHash: string } }) =>
+        Promise.resolve(sessions[where.tokenHash] ?? null),
+      ),
+    },
+  };
+  return new CallerIdentityService(prisma as never);
+}
+const liveSession = (userId: bigint): SessionRow => ({
+  userId,
+  revokedAt: null,
+  expiresAt: new Date(Date.now() + 3600_000),
+});
+
+function makeController(
+  opts: {
+    providers?: ProvidersMock;
+    sessions?: Record<string, SessionRow>;
+    sourceTotp?: boolean;
+    codeOk?: boolean;
+  } = {},
+) {
   const auth = makeAuth();
   const config = makeConfig();
   const providers = opts.providers ?? makeProviders();
   const merge = makeMerge();
   const securityLog = makeSecurityLog();
   const emailTokens = makeEmailTokens();
+  const totp: TotpMock = {
+    isEnabled: jest.fn().mockResolvedValue(opts.sourceTotp ?? false),
+    verifyCode: jest.fn().mockResolvedValue(opts.codeOk ?? false),
+  };
   const controller = new AuthAccountController(
     auth as unknown as AuthService,
     config,
@@ -182,8 +225,11 @@ function makeController(opts: { providers?: ProvidersMock } = {}) {
     merge as unknown as MergeService,
     securityLog as unknown as SecurityLogService,
     emailTokens as unknown as EmailTokenService,
+    makeIdentity(opts.sessions),
+    totp as unknown as TotpService,
   );
   return {
+    totp,
     controller,
     auth,
     config,
@@ -211,45 +257,152 @@ describe('AuthAccountController.emailLoginLink', () => {
   });
 });
 
-describe('AuthAccountController.emailLoginCallback', () => {
-  it('purpose="login" → cookie выставлена, редирект на /auth/callback с access_token', async () => {
+// B-14 (аудит 2026-10): GET по ссылке из письма больше НЕ гасит токен и не
+// ставит куку — почтовые сканеры и превью ссылок открывают ссылки раньше
+// человека. Гасит POST email/consume со страницы сайта.
+describe('AuthAccountController.emailLoginCallback (GET) — только редирект', () => {
+  function makeGetRes() {
+    return {
+      ...makeRes(),
+      set: jest.fn().mockReturnThis(),
+    } as unknown as Response & {
+      cookie: jest.Mock;
+      redirect: jest.Mock;
+      set: jest.Mock;
+    };
+  }
+
+  it('302 на страницу-погашение с токеном; токен НЕ гасится, кука НЕ ставится', () => {
     const { controller, emailTokens } = makeController();
-    emailTokens.consumeEmailToken.mockResolvedValue({
-      kind: 'tokens',
-      tokens: FAKE_TOKENS,
-      purpose: 'login',
-      userId: 1n,
-    });
+    const res = makeGetRes();
+    controller.emailLoginCallback('tok-1', undefined, res);
+    expect(res.redirect).toHaveBeenCalledWith(
+      302,
+      `${WEBAPP_URL}/auth/callback?email_token=tok-1`,
+    );
+    expect(emailTokens.consumeEmailToken).not.toHaveBeenCalled();
+    expect(res.cookie).not.toHaveBeenCalled();
+    // Ответ не кэшируется и не утекает токен в Referer.
+    expect(res.set).toHaveBeenCalledWith(
+      expect.objectContaining({
+        'Cache-Control': 'no-store',
+        'Referrer-Policy': 'no-referrer',
+      }),
+    );
+  });
+
+  it('билет входа едет следом — сверку на странице решает человек, не сервер', () => {
+    const { controller, emailTokens } = makeController();
+    const res = makeGetRes();
+    controller.emailLoginCallback('tok-1', 'K7M2QX94', res);
+    expect(res.redirect).toHaveBeenCalledWith(
+      302,
+      `${WEBAPP_URL}/auth/callback?email_token=tok-1&ticket=K7M2QX94`,
+    );
+    expect(emailTokens.consumeEmailToken).not.toHaveBeenCalled();
+  });
+
+  it('нет токена или токен не строка (?token=a&token=b) → экран ошибки входа', () => {
+    const { controller } = makeController();
+    const res = makeGetRes();
+    controller.emailLoginCallback(undefined, undefined, res);
+    controller.emailLoginCallback(['a', 'b'], undefined, res);
+    expect(res.redirect).toHaveBeenNthCalledWith(
+      1,
+      302,
+      `${WEBAPP_URL}/auth/error?reason=email_link_expired`,
+    );
+    expect(res.redirect).toHaveBeenNthCalledWith(
+      2,
+      302,
+      `${WEBAPP_URL}/auth/error?reason=email_link_expired`,
+    );
+  });
+});
+
+describe('AuthAccountController.emailConsume (POST)', () => {
+  it('без CSRF-заголовка → UnauthorizedException, токен не гасится', async () => {
+    const { controller, emailTokens } = makeController();
+    await expect(
+      controller.emailConsume(
+        { token: 'tok-1' },
+        makeReq({ csrf: false }),
+        makeRes(),
+      ),
+    ).rejects.toThrow(UnauthorizedException);
+    expect(emailTokens.consumeEmailToken).not.toHaveBeenCalled();
+  });
+
+  it('login → кука выставлена, в теле accessToken/expiresIn (без редиректа)', async () => {
+    const { controller } = makeController();
     const res = makeRes();
-    await controller.emailLoginCallback('tok-1', '', makeReq(), res);
+    const body = await controller.emailConsume(
+      { token: 'tok-1' },
+      makeReq(),
+      res,
+    );
     expect(res.cookie).toHaveBeenCalledWith(
       REFRESH_COOKIE,
       FAKE_TOKENS.refreshToken,
       expect.objectContaining({ httpOnly: true, sameSite: 'strict' }),
     );
-    expect(res.redirect).toHaveBeenCalledWith(
-      `${WEBAPP_URL}/auth/callback#access_token=${FAKE_TOKENS.accessToken}&expires_in=${FAKE_TOKENS.expiresIn}`,
-    );
+    expect(body).toEqual({
+      accessToken: FAKE_TOKENS.accessToken,
+      expiresIn: FAKE_TOKENS.expiresIn,
+    });
+    expect(res.redirect).not.toHaveBeenCalled();
   });
 
-  it('purpose="link_email_auth" → редирект на /account?linked=email', async () => {
+  // A3: привязка почты сессию НЕ выдаёт — человек уже вошёл в свой аккаунт.
+  it('linked → { linked: true }, кука НЕ ставится', async () => {
     const { controller, emailTokens } = makeController();
     emailTokens.consumeEmailToken.mockResolvedValue({
-      kind: 'tokens',
-      tokens: FAKE_TOKENS,
+      kind: 'linked',
       purpose: 'link_email_auth',
       userId: 1n,
     });
     const res = makeRes();
-    await controller.emailLoginCallback('tok-1', '', makeReq(), res);
-    expect(res.redirect).toHaveBeenCalledWith(
-      `${WEBAPP_URL}/account?linked=email`,
+    await expect(
+      controller.emailConsume({ token: 'tok-1' }, makeReq(), res),
+    ).resolves.toEqual({ linked: true });
+    expect(res.cookie).not.toHaveBeenCalled();
+  });
+
+  it('сервису уходит userId сессии из refresh-куки браузера', async () => {
+    const { controller, emailTokens } = makeController({
+      sessions: { [hashToken('raw-refresh')]: liveSession(7n) },
+    });
+    const req = makeReq({ cookies: { [REFRESH_COOKIE]: 'raw-refresh' } });
+    await controller.emailConsume({ token: 'tok-1' }, req, makeRes());
+    expect(emailTokens.consumeEmailToken).toHaveBeenCalledWith(
+      'tok-1',
+      '198.51.100.1',
+      undefined,
+      7n,
     );
+  });
+
+  it('нет сессии в браузере → сервису уходит null (не undefined, не 0n)', async () => {
+    const { controller, emailTokens } = makeController();
+    await controller.emailConsume({ token: 'tok-1' }, makeReq(), makeRes());
+    expect(emailTokens.consumeEmailToken.mock.calls[0][3]).toBeNull();
+  });
+
+  it('ссылка привязки открыта не в том браузере (A3) → ошибка пробрасывается (страница покажет подсказку), кука не ставится', async () => {
+    const { controller, emailTokens } = makeController();
+    emailTokens.consumeEmailToken.mockRejectedValue(
+      new LinkSessionRequiredException(),
+    );
+    const res = makeRes();
+    await expect(
+      controller.emailConsume({ token: 'tok-1' }, makeReq(), res),
+    ).rejects.toThrow(LinkSessionRequiredException);
+    expect(res.cookie).not.toHaveBeenCalled();
   });
 
   // H1 (аудит 2026-08): login при включённом TOTP не выдаёт сессию сразу —
   // клиент уходит на экран ввода 2FA-кода с одноразовым challengeToken.
-  it('kind="totp_challenge" → редирект на /auth/2fa с challengeToken, cookie НЕ выставлена', async () => {
+  it('totp_challenge → { challengeToken }, кука НЕ выставлена', async () => {
     const { controller, emailTokens } = makeController();
     emailTokens.consumeEmailToken.mockResolvedValue({
       kind: 'totp_challenge',
@@ -258,24 +411,20 @@ describe('AuthAccountController.emailLoginCallback', () => {
       userId: 1n,
     });
     const res = makeRes();
-    await controller.emailLoginCallback('tok-1', '', makeReq(), res);
+    await expect(
+      controller.emailConsume({ token: 'tok-1' }, makeReq(), res),
+    ).resolves.toEqual({ challengeToken: 'ch-tok' });
     expect(res.cookie).not.toHaveBeenCalled();
-    expect(res.redirect).toHaveBeenCalledWith(
-      `${WEBAPP_URL}/auth/2fa?token=ch-tok`,
-    );
   });
 
-  it('просроченный/невалидный токен → редирект на /auth/error, без cookie', async () => {
+  it('просроченный/невалидный токен → ошибка пробрасывается, без cookie', async () => {
     const { controller, emailTokens } = makeController();
     emailTokens.consumeEmailToken.mockRejectedValue(new Error('expired'));
     const res = makeRes();
     await expect(
-      controller.emailLoginCallback('bad-tok', '', makeReq(), res),
-    ).resolves.toBeUndefined();
+      controller.emailConsume({ token: 'bad-tok' }, makeReq(), res),
+    ).rejects.toThrow('expired');
     expect(res.cookie).not.toHaveBeenCalled();
-    expect(res.redirect).toHaveBeenCalledWith(
-      `${WEBAPP_URL}/auth/error?reason=email_link_expired`,
-    );
   });
 });
 
@@ -303,6 +452,28 @@ describe('AuthAccountController.emailLinkToAccount', () => {
 });
 
 describe('AuthAccountController.telegramWebApp', () => {
+  // Login-CSRF (security#6): см. auth-max.controller.spec.ts.
+  it('без CSRF-заголовка (форма с чужого сайта) → 401, ни подписи, ни куки', async () => {
+    const { controller, auth } = makeController();
+    const res = makeRes();
+    await expect(
+      controller.telegramWebApp(
+        { initData: 'attacker-signed' },
+        makeReq({
+          csrf: false,
+          headers: {
+            'content-type': 'application/x-www-form-urlencoded',
+            'sec-fetch-site': 'cross-site',
+          },
+        }),
+        res,
+      ),
+    ).rejects.toThrow(UnauthorizedException);
+    expect(auth.verifyTelegramWebAppData).not.toHaveBeenCalled();
+    expect(auth.issueTokens).not.toHaveBeenCalled();
+    expect(res.cookie).not.toHaveBeenCalled();
+  });
+
   it('без initData → BadRequestException, подпись не проверяется', async () => {
     const { controller, auth } = makeController();
     await expect(
@@ -359,7 +530,11 @@ describe('AuthAccountController.telegramWebApp', () => {
   });
 });
 
+// Токен объединения — согласие на действие, а не доказательство, что
+// вызывающий владеет аккаунтом-целью (аудит 2026-10, A2/A4). target из токена = 1n.
 describe('AuthAccountController.confirmMerge', () => {
+  const asTarget = () => makeReq({ webUser: { userId: 1n } });
+
   it('без CSRF-заголовка → UnauthorizedException, токен не проверяется', async () => {
     const { controller, auth } = makeController();
     await expect(
@@ -380,20 +555,68 @@ describe('AuthAccountController.confirmMerge', () => {
     expect(auth.verifyMergeToken).not.toHaveBeenCalled();
   });
 
+  // A2: до фикса анонимный держатель токена проходил (проверялось лишь
+  // «если вошёл — то как тот же юзер»), и перехваченный токен отдавал аккаунт.
+  it('АНОНИМ с валидным токеном → UnauthorizedException, merge не выполняется', async () => {
+    const { controller, merge, auth } = makeController();
+    await expect(
+      controller.confirmMerge({ token: 'tok-1' }, makeReq(), makeRes()),
+    ).rejects.toThrow(UnauthorizedException);
+    expect(merge.merge).not.toHaveBeenCalled();
+    expect(auth.issueTokens).not.toHaveBeenCalled();
+  });
+
   it('текущая сессия принадлежит другому userId → UnauthorizedException, merge не выполняется', async () => {
     const { controller, merge } = makeController();
-    const req = makeReq({ webUser: { userId: 999n } }); // target из токена = 1n
+    const req = makeReq({ webUser: { userId: 999n } });
     await expect(
       controller.confirmMerge({ token: 'tok-1' }, req, makeRes()),
     ).rejects.toThrow(UnauthorizedException);
     expect(merge.merge).not.toHaveBeenCalled();
   });
 
+  it('refresh-кука ЖИВОЙ сессии target (без Bearer) → merge проходит', async () => {
+    const { controller, merge } = makeController({
+      sessions: { [hashToken('raw-refresh')]: liveSession(1n) },
+    });
+    const req = makeReq({ cookies: { [REFRESH_COOKIE]: 'raw-refresh' } });
+    await controller.confirmMerge({ token: 'tok-1' }, req, makeRes());
+    expect(merge.merge).toHaveBeenCalledWith(2n, 1n);
+  });
+
+  it('refresh-кука ДРУГОГО пользователя → UnauthorizedException, merge не выполняется', async () => {
+    const { controller, merge } = makeController({
+      sessions: { [hashToken('raw-refresh')]: liveSession(999n) },
+    });
+    const req = makeReq({ cookies: { [REFRESH_COOKIE]: 'raw-refresh' } });
+    await expect(
+      controller.confirmMerge({ token: 'tok-1' }, req, makeRes()),
+    ).rejects.toThrow(UnauthorizedException);
+    expect(merge.merge).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['отозванная', { ...liveSession(1n), revokedAt: new Date() }],
+    ['истёкшая', { ...liveSession(1n), expiresAt: new Date(Date.now() - 1) }],
+  ])(
+    'refresh-кука target, но сессия %s → UnauthorizedException',
+    async (_n, row) => {
+      const { controller, merge } = makeController({
+        sessions: { [hashToken('raw-refresh')]: row },
+      });
+      const req = makeReq({ cookies: { [REFRESH_COOKIE]: 'raw-refresh' } });
+      await expect(
+        controller.confirmMerge({ token: 'tok-1' }, req, makeRes()),
+      ).rejects.toThrow(UnauthorizedException);
+      expect(merge.merge).not.toHaveBeenCalled();
+    },
+  );
+
   it('merge.merge падает → BadRequestException с дружелюбным текстом, линковка провайдера не выполняется', async () => {
     const { controller, auth, merge } = makeController();
     merge.merge.mockRejectedValue(new Error('db down'));
     await expect(
-      controller.confirmMerge({ token: 'tok-1' }, makeReq(), makeRes()),
+      controller.confirmMerge({ token: 'tok-1' }, asTarget(), makeRes()),
     ).rejects.toThrow(BadRequestException);
     expect(auth.linkProviderToUser).not.toHaveBeenCalled();
   });
@@ -405,13 +628,13 @@ describe('AuthAccountController.confirmMerge', () => {
       conflictUserId: '2',
     });
     await expect(
-      controller.confirmMerge({ token: 'tok-1' }, makeReq(), makeRes()),
+      controller.confirmMerge({ token: 'tok-1' }, asTarget(), makeRes()),
     ).rejects.toThrow(BadRequestException);
   });
 
   it('валидный merge → данные перенесены, токены выданы, cookie httpOnly/strict, аудит merge_confirmed', async () => {
     const { controller, auth, merge, securityLog } = makeController();
-    const req = makeReq();
+    const req = asTarget();
     const res = makeRes();
     const result = await controller.confirmMerge({ token: 'tok-1' }, req, res);
     expect(merge.merge).toHaveBeenCalledWith(2n, 1n);
@@ -435,6 +658,79 @@ describe('AuthAccountController.confirmMerge', () => {
     expect(result).toEqual({
       accessToken: FAKE_TOKENS.accessToken,
       expiresIn: FAKE_TOKENS.expiresIn,
+    });
+  });
+
+  // A4: владелец одного лишь взломанного входа (Google) мог поглотить
+  // аккаунт, защищённый TOTP, — второй фактор source не спрашивали никогда.
+  describe('второй фактор поглощаемого аккаунта (A4)', () => {
+    const forbiddenBody = async (p: Promise<unknown>) => {
+      const err = await p.then(
+        () => null,
+        (e: ForbiddenException) => e,
+      );
+      expect(err).toBeInstanceOf(ForbiddenException);
+      return (err as ForbiddenException).getResponse() as { reason: string };
+    };
+
+    it('у source включён TOTP, кода нет → 403 source_totp_required, merge не выполняется', async () => {
+      const { controller, merge, totp } = makeController({ sourceTotp: true });
+      const body = await forbiddenBody(
+        controller.confirmMerge({ token: 'tok-1' }, asTarget(), makeRes()),
+      );
+      expect(body.reason).toBe('source_totp_required');
+      expect(totp.isEnabled).toHaveBeenCalledWith(2n);
+      expect(totp.verifyCode).not.toHaveBeenCalled();
+      expect(merge.merge).not.toHaveBeenCalled();
+    });
+
+    it('у source включён TOTP, код неверный → 403, merge не выполняется', async () => {
+      const { controller, merge, totp } = makeController({
+        sourceTotp: true,
+        codeOk: false,
+      });
+      const body = await forbiddenBody(
+        controller.confirmMerge(
+          { token: 'tok-1', code: '000000' },
+          asTarget(),
+          makeRes(),
+        ),
+      );
+      expect(body.reason).toBe('source_totp_required');
+      expect(totp.verifyCode).toHaveBeenCalledWith(2n, '000000');
+      expect(merge.merge).not.toHaveBeenCalled();
+    });
+
+    it('у source включён TOTP, код верный → merge проходит', async () => {
+      const { controller, merge, totp } = makeController({
+        sourceTotp: true,
+        codeOk: true,
+      });
+      await controller.confirmMerge(
+        { token: 'tok-1', code: '123456' },
+        asTarget(),
+        makeRes(),
+      );
+      expect(totp.verifyCode).toHaveBeenCalledWith(2n, '123456');
+      expect(merge.merge).toHaveBeenCalledWith(2n, 1n);
+    });
+
+    it('TOTP у source нет → код не спрашивается', async () => {
+      const { controller, totp, merge } = makeController();
+      await controller.confirmMerge({ token: 'tok-1' }, asTarget(), makeRes());
+      expect(totp.verifyCode).not.toHaveBeenCalled();
+      expect(merge.merge).toHaveBeenCalledWith(
+        expect.any(BigInt),
+        expect.any(BigInt),
+      );
+    });
+
+    it('проверка TOTP идёт только ПОСЛЕ доказательства личности target', async () => {
+      const { controller, totp } = makeController({ sourceTotp: true });
+      await expect(
+        controller.confirmMerge({ token: 'tok-1' }, makeReq(), makeRes()),
+      ).rejects.toThrow(UnauthorizedException);
+      expect(totp.isEnabled).not.toHaveBeenCalled();
     });
   });
 });
@@ -557,33 +853,5 @@ describe('AuthAccountController — билет входа в email-флоу', ()
       makeReq(),
     );
     expect(auth.requestEmailLogin).toHaveBeenCalledWith('a@b.ru', 'K7M2QX94');
-  });
-
-  it('переход по ссылке с билетом уводит на сверку, а НЕ одобряет молча', async () => {
-    // Фикс device-code phishing (разбор 2026-08-31): код в письме мог
-    // подставить кто угодно, поэтому билет подтверждает человек на
-    // /auth/confirm, а не сервер в callback.
-    const { controller } = makeController();
-    const res = makeRes();
-    await controller.emailLoginCallback('tok-1', 'K7M2QX94', makeReq(), res);
-    const url = (res.redirect as jest.Mock).mock.calls[0][0];
-    expect(url).toContain('/auth/confirm?code=K7M2QX94');
-    // Сессия для браузера всё равно выдана — вход по ссылке состоялся.
-    expect(url).toContain(`access_token=${FAKE_TOKENS.accessToken}`);
-    expect(url).not.toContain('/auth/callback');
-  });
-
-  it('без билета — обычный приём сессии на /auth/callback', async () => {
-    const { controller } = makeController();
-    const res = makeRes();
-    await controller.emailLoginCallback('tok-1', '', makeReq(), res);
-    expect(res.cookie).toHaveBeenCalledWith(
-      REFRESH_COOKIE,
-      FAKE_TOKENS.refreshToken,
-      expect.objectContaining({ httpOnly: true }),
-    );
-    expect(res.redirect).toHaveBeenCalledWith(
-      `${WEBAPP_URL}/auth/callback#access_token=${FAKE_TOKENS.accessToken}&expires_in=${FAKE_TOKENS.expiresIn}`,
-    );
   });
 });

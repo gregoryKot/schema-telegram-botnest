@@ -5,7 +5,7 @@
 // правило №10 CLAUDE.md).
 import { ModesHero } from '../../components/ModesHero';
 import { SchemasSectionProps } from './types';
-import { WeekTopSummary } from '../../utils/patternsSummary';
+import { WeekTopSummary } from '../../../../shared/src/pattern/patternsSummary';
 import type { BlockVisibility } from './blockVisibility';
 
 interface Props {

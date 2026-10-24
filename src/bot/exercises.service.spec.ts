@@ -1,3 +1,4 @@
+import { NotFoundException } from '@nestjs/common';
 import { ExercisesService } from './exercises.service';
 
 // Stateful in-memory fake Prisma для 4 независимых user-owned таблиц.
@@ -155,7 +156,10 @@ describe('ExercisesService — изоляция по userId на удалени�
     });
     const [row] = await svc.getBeliefChecks(1n);
 
-    await svc.deleteBeliefCheck(2n, row.id); // юзер 2 пытается стереть запись юзера 1
+    // юзер 2 пытается стереть запись юзера 1 — 404 (C-8), запись жива
+    await expect(svc.deleteBeliefCheck(2n, row.id)).rejects.toThrow(
+      NotFoundException,
+    );
 
     expect(await svc.getBeliefChecks(1n)).toHaveLength(1);
   });
@@ -177,7 +181,9 @@ describe('ExercisesService — изоляция по userId на удалени�
     await svc.createFlashcard(1n, { modeId: 'm', needId: 'n' });
     const [row] = await svc.getFlashcards(1n);
 
-    await svc.deleteFlashcard(999n, row.id);
+    await expect(svc.deleteFlashcard(999n, row.id)).rejects.toThrow(
+      NotFoundException,
+    );
 
     expect(await svc.getFlashcards(1n)).toHaveLength(1);
   });

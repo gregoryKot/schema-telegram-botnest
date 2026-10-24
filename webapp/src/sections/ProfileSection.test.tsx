@@ -23,11 +23,16 @@ vi.mock('../api', () => ({
     getModeDiary: vi.fn(),
     getGratitudeDiary: vi.fn(),
     getYsqHistory: vi.fn(),
+    getProfile: vi.fn(),
+    getModeNotes: vi.fn(),
+    getSchemaNotes: vi.fn(),
+    getPhraseChecks: vi.fn(),
     deleteAllUserData: vi.fn(),
     trackEvent: vi.fn(),
   },
+  reportClientError: vi.fn(),
 }));
-import { api } from '../api';
+import { api, reportClientError } from '../api';
 const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
 
 const mockLogout = vi.fn();
@@ -57,6 +62,10 @@ function emptyMocks() {
   mockApi.getModeDiary.mockResolvedValue([]);
   mockApi.getGratitudeDiary.mockResolvedValue([]);
   mockApi.getYsqHistory.mockResolvedValue([]);
+  mockApi.getProfile.mockResolvedValue({ ysq: { completedAt: null, activeSchemaIds: [] }, mySchemaIds: [], myModeIds: [] });
+  mockApi.getModeNotes.mockResolvedValue([]);
+  mockApi.getSchemaNotes.mockResolvedValue([]);
+  mockApi.getPhraseChecks.mockResolvedValue([]);
 }
 
 function renderSection(props: Partial<Parameters<typeof ProfileSection>[0]> = {}, form: 'ty' | 'vy' = 'ty') {
@@ -143,6 +152,15 @@ describe('ProfileSection — реальные данные пользовате�
     expect(screen.getByText('Первый шаг')).toBeTruthy();
   });
 
+  it('«?» у «лучшего дня» — настоящая кнопка с именем, нажатие открывает пояснение', async () => {
+    fillMocks();
+    await act(async () => { renderSection(); });
+    const help = screen.getByRole('button', { name: 'Что такое лучший день' });
+    expect(help.tagName).toBe('BUTTON');
+    fireEvent.click(help);
+    expect(screen.getByText('Становится точнее с каждой неделей.')).toBeTruthy();
+  });
+
   it('клик по карточке достижений открывает модалку со всеми достижениями', async () => {
     fillMocks();
     await act(async () => { renderSection(); });
@@ -178,11 +196,11 @@ describe('ProfileSection — реальные данные пользовате�
     // «Первый шаг» дублируется — в полосе достижений на странице и в
     // открывшейся модалке; берём последнее вхождение (из модалки).
     const cards = screen.getAllByText('Первый шаг');
-    const before = screen.getAllByText('Первая запись в дневнике').length;
     fireEvent.click(cards[cards.length - 1]);
-    // AchievementDetail рендерится ПОВЕРХ модалки (обе видны одновременно) —
-    // проверяем, что описание достижения появилось ещё раз (не просто «уже было»).
-    await waitFor(() => expect(screen.getAllByText('Первая запись в дневнике').length).toBe(before + 1));
+    // Деталь заменяет список (два диалога с фокус-ловушкой на одном документе
+    // дерутся за Tab): остаётся одно окно — достижение, список скрыт.
+    await waitFor(() => expect(screen.getByRole('dialog', { name: 'Первый шаг' })).toBeTruthy());
+    expect(screen.queryByText('5/7')).toBeNull();
   });
 
   it('прогресс к недостигнутым достижениям (стрик/всего) показывает реальные числа, а не заглушку', async () => {
@@ -344,5 +362,48 @@ describe('ProfileSection — действия', () => {
     await act(async () => {});
     fireEvent.click(screen.getByText('Аккаунт и привязки'));
     await screen.findByText('Экран аккаунта');
+  });
+});
+
+// Этап 3 единой версии: «Мой портрет» и «Тёплые слова» в профиле. Связка
+// «отметил схемы в профиле → портрет их показывает» (read-after-write).
+describe('ProfileSection — портрет и тёплые слова', () => {
+  const profileWith = (mySchemaIds: string[], myModeIds: string[]) => ({
+    ysq: { completedAt: null, activeSchemaIds: [] }, mySchemaIds, myModeIds,
+  });
+
+  it('чистый аккаунт: портрет объясняет, что это, «Пройти тест» зовёт тест, тёплых слов нет', async () => {
+    const onTakeTest = vi.fn();
+    await act(async () => { renderSection({ onTakeTest }); });
+    expect(await screen.findByText(/Здесь соберётся твой портрет/)).toBeTruthy();
+    expect(screen.queryByText('Мои тёплые слова')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Пройти тест' }));
+    expect(onTakeTest).toHaveBeenCalledTimes(1);
+  });
+
+  it('отмеченные схемы и режимы попадают в портрет, тап открывает лист «Мой портрет»', async () => {
+    mockApi.getProfile.mockResolvedValue(profileWith(['abandonment', 'mistrust'], ['vulnerable_child']));
+    await act(async () => { renderSection(); });
+    expect(await screen.findByText(/2 схемы · 1 режим/)).toBeTruthy();
+    fireEvent.click(screen.getByLabelText('Мой портрет'));
+    expect(await screen.findByText('Мои схемы')).toBeTruthy();
+    expect(screen.getByText('Мои режимы')).toBeTruthy();
+  });
+
+  it('тёплые слова из дневника режимов видны карточкой с числом фраз', async () => {
+    mockApi.getModeDiary.mockResolvedValue([
+      { id: 1, modeId: 'vulnerable_child', healthyResponse: 'Я рядом', createdAt: '2026-08-10T00:00:00.000Z' },
+    ]);
+    await act(async () => { renderSection(); });
+    expect(await screen.findByText('Мои тёплые слова')).toBeTruthy();
+    expect(screen.getByText('«Я рядом»')).toBeTruthy();
+    expect(screen.getByText('1 фраза')).toBeTruthy();
+  });
+
+  it('сбой загрузки портрета уходит в отчёт, а не в консоль', async () => {
+    mockApi.getProfile.mockRejectedValue(new Error('net'));
+    await act(async () => { renderSection(); });
+    await screen.findByText(/Здесь соберётся твой портрет/);
+    expect(reportClientError).toHaveBeenCalledWith({ message: 'getProfile failed', section: 'profile-about' });
   });
 });

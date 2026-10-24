@@ -1,3 +1,4 @@
+import { haptic } from '../../haptic';
 import { GlyphArrowLeft, GlyphArrowRight, GlyphCheck } from '../exercises/ExScreen';
 
 // Подвал визарда дневника: Назад / ранний «Сохранить» (не проходя все шаги,
@@ -28,18 +29,14 @@ export function DiaryWizardFoot({
   onNext: () => void;
 }) {
   return (
-    <div className="ex-foot">
-      <button
-        className="ex-btn ex-btn-ghost u-ac8"
-        disabled={backDisabled}
-        onClick={onBack}
-      >
+    <div className="sd-foot">
+      <button className="ds-btn ds-btn--secondary" disabled={backDisabled} onClick={() => { haptic.tap(); onBack(); }}>
         <GlyphArrowLeft /> {backLabel}
       </button>
-      <span className="spacer" />
+      <span className="sd-spacer" />
       {canSave && !isLast && (
         <button
-          className="ex-btn ex-btn-ghost u-ac8"
+          className="ds-btn ds-btn--secondary"
           disabled={saving}
           onClick={onSave}
         >
@@ -48,18 +45,14 @@ export function DiaryWizardFoot({
       )}
       {isLast ? (
         <button
-          className="ex-btn ex-btn-primary u-ac8"
+          className="ds-btn"
           disabled={!canSave || saving}
           onClick={onSave}
         >
           {saving ? 'Сохраняю…' : 'Сохранить запись'} {!saving && <GlyphCheck />}
         </button>
       ) : (
-        <button
-          className="ex-btn ex-btn-primary u-ac8"
-          disabled={curRequired && !curFilled}
-          onClick={onNext}
-        >
+        <button className="ds-btn" disabled={curRequired && !curFilled} onClick={() => { haptic.tap(); onNext(); }}>
           {curFilled || curRequired ? 'Дальше' : 'Пропустить'} <GlyphArrowRight />
         </button>
       )}

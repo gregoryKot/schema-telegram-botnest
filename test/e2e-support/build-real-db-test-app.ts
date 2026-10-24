@@ -10,15 +10,15 @@ import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import cookieParser from 'cookie-parser';
 import { AppModule } from '../../src/app.module';
+import { installBodyParsers } from '../../src/infra/body-parsers';
 import { PrismaService } from '../../src/prisma/prisma.service';
 import { TELEGRAF_BOT } from '../../src/telegram/telegram.constants';
+import { installBigIntJson } from '../../src/utils/bigint-json';
 import { makeFakeBot } from './fake-bot';
 
-// BigInt → number в JSON-ответах — то же зеркало src/main.ts, что и в
-// build-test-app.ts (ответы с userId падают на JSON.stringify без этого).
-(BigInt.prototype as any).toJSON = function () {
-  return Number(this);
-};
+// BigInt в JSON-ответах — тот же установщик, что в src/main.ts и
+// build-test-app.ts.
+installBigIntJson();
 
 export interface RealDbTestApp {
   app: INestApplication;
@@ -33,7 +33,7 @@ export async function buildRealDbTestApp(): Promise<RealDbTestApp> {
     .useValue(makeFakeBot())
     .compile();
 
-  const app = moduleRef.createNestApplication();
+  const app = moduleRef.createNestApplication({ bodyParser: false });
   // cookieParser — то же зеркало src/main.ts, что и в build-test-app.ts. Без
   // него `req.cookies` пуст, и ЛЮБОЙ сценарий с refresh-кукой на живой базе
   // молча отвечал бы 401: не потому что сессия плоха, а потому что куку никто
@@ -41,6 +41,12 @@ export async function buildRealDbTestApp(): Promise<RealDbTestApp> {
   // 2026-08-28).
   app.use(cookieParser());
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
+  // Парсеры тела — то же зеркало src/main.ts (аудит 2026-07-20, L2). До этого
+  // прогон на живой базе парсеры не ставил вообще и жил со штатным потолком
+  // Nest в 100 КБ: тело на 150 КБ проходило в фейковом прогоне и падало в
+  // настоящем. Ровно тот класс расхождения фейка с реальностью, ради которого
+  // второй прогон и заведён.
+  installBodyParsers(app);
   await app.init();
   return { app, prisma: app.get(PrismaService) };
 }

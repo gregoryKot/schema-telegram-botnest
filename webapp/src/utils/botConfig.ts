@@ -1,13 +1,12 @@
 // Единый источник username Telegram-бота в webapp. Значение — из env
 // VITE_BOT_USERNAME (в проде вшивается Dockerfile'ом). Переезд на новый бот =
-// смена этой переменной, без правок кода. Дефолт сохраняет текущее поведение.
+// смена этой переменной, без правок кода. Дефолта нет: пусто — сборка падает.
 // Парный файл: schema-miniapp/src/utils/botConfig.ts (CLAUDE.md, правило №3);
 // у мини-аппа свой набор экспортов — общий пакет отложен до «волны 2».
 const BOT_USERNAME =
-  (import.meta.env.VITE_BOT_USERNAME as string | undefined)?.trim() ||
-  'SchemaLabBot';
+  (import.meta.env.VITE_BOT_USERNAME as string | undefined)?.trim() ?? '';
 
-// Username без @ — напр. 'SchemaLabBot'.
+// Username без @ — напр. 'SchemeHappensBot'.
 export const botUsername = BOT_USERNAME;
 // С @ — для отображения в тексте.
 export const botHandle = `@${BOT_USERNAME}`;

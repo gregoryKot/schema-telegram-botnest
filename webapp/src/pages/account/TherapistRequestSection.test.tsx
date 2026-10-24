@@ -4,6 +4,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup, waitFor } from '@testing-library/react';
 import { TherapistRequestSection } from './TherapistRequestSection';
+import * as LIM from '../../../../shared/src/limits/textLimits';
 
 function jsonResponse(status: number, body: unknown): Response {
   return {
@@ -43,8 +44,16 @@ describe('TherapistRequestSection — статусы существующей з
   it('pending — сообщение "на рассмотрении", без формы', async () => {
     fetchMock.mockResolvedValue(jsonResponse(200, { id: 1, status: 'pending', rejectReason: null, createdAt: '2026-07-01', reviewedAt: null }));
     render(<TherapistRequestSection accessToken="tok" />);
-    await screen.findByText(/на рассмотрении/);
+    const note = await screen.findByText(/на рассмотрении/);
     expect(screen.queryByText('ФИО')).toBeNull();
+    // Решение приходит не только в бота: заявку подают и с сайта (аудит 2026-10).
+    // «Решение появится здесь» тут неверно: отказ виден только внутри раскрытой
+    // формы (тест ниже), поэтому обещаем сообщение и смену статуса.
+    expect(note.textContent).toContain(
+      'О решении сообщим в Telegram, на почту или по контактам из заявки',
+    );
+    expect(note.textContent).not.toContain('в боте');
+    expect(note.textContent).not.toContain('появится здесь');
   });
 
   it('approved — сообщение "одобрена"', async () => {
@@ -113,5 +122,26 @@ describe('TherapistRequestSection — отправка заявки', () => {
 
     await waitFor(() => expect(screen.queryByPlaceholderText('ФИО')).toBeNull());
     expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('TherapistRequestSection — пределы длины (один источник с DTO сервера)', () => {
+  it('поля держат maxLength из shared; у textarea есть счётчик остатка', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse(200, null));
+    render(<TherapistRequestSection accessToken="tok" />);
+    fireEvent.click(await screen.findByText('Я психолог — подать заявку'));
+    const max = (placeholder: string) =>
+      screen.getByPlaceholderText<HTMLInputElement>(placeholder).maxLength;
+    expect(max('ФИО')).toBe(LIM.THERAPIST_REQUEST_NAME_MAX);
+    expect(max('Квалификация: образование, направление, опыт, сертификаты')).toBe(LIM.THERAPIST_REQUEST_QUAL_MAX);
+    expect(max('Контакты: сайт, @telegram, b17 и т.д.')).toBe(LIM.THERAPIST_REQUEST_CONTACTS_MAX);
+    expect(max('Сообщение админу (необязательно)')).toBe(LIM.THERAPIST_REQUEST_MESSAGE_MAX);
+
+    // Счётчик остатка появляется у границы: «осталось N», а не молчаливый отказ ввода.
+    fireEvent.change(
+      screen.getByPlaceholderText('Квалификация: образование, направление, опыт, сертификаты'),
+      { target: { value: 'x'.repeat(LIM.THERAPIST_REQUEST_QUAL_MAX - 10) } },
+    );
+    expect(screen.getByText('Осталось знаков: 10')).toBeTruthy();
   });
 });

@@ -53,7 +53,7 @@ function makeService(opts: {
   const cronLeader: any = { claimRun };
   const bot =
     opts.bot === undefined
-      ? { telegram: { sendMessage: jest.fn().mockResolvedValue(undefined) } }
+      ? { telegram: { callApi: jest.fn().mockResolvedValue(undefined) } }
       : opts.bot;
   const service = new TelegramScheduleService(
     bot,
@@ -69,10 +69,19 @@ function makeService(opts: {
   return { service, notificationService, accountService, bot, claimRun };
 }
 
+// Тик с несколькими отправками: между ними пауза темпа (35 мс,
+// telegram.paced-sender.ts) на фейковых таймерах — их нужно подвинуть, иначе
+// processQueue ждёт вечно. Секунды хватает на десятки строк.
+async function runTick(service: TelegramScheduleService): Promise<void> {
+  const tick = service.processQueue();
+  await jest.advanceTimersByTimeAsync(1_000);
+  await tick;
+}
+
 beforeEach(() => {
   jest.spyOn(Logger.prototype, 'log').mockImplementation(() => undefined);
-  // Фейковые таймеры на весь блок: sendMessage внутри гонится с
-  // Promise.race(..., setTimeout(15s)) — без фейковых таймеров этот реальный
+  // Фейковые таймеры на весь блок: отправка в очереди ограничена таймером
+  // на 15 с (telegram.send-bounded.ts) — без фейковых таймеров этот реальный
   // 15-секундный таймер зависает и не даёт jest-процессу выйти после тестов.
   jest.useFakeTimers();
   jest.setSystemTime(new Date('2026-07-16T12:00:00+03:00')); // не тихие часы по умолчанию
@@ -88,12 +97,18 @@ describe('processQueue / runProcessQueue', () => {
     const { service, bot, notificationService } = makeService({ due: [] });
     await service.processQueue();
     expect(notificationService.getDue).toHaveBeenCalledWith();
-    expect(bot.telegram.sendMessage).not.toHaveBeenCalled();
+    expect(bot.telegram.callApi).not.toHaveBeenCalled();
   });
 
   it('тихие часы у получателя — уведомление откладывается (defer), не отправляется', async () => {
     const due = [
-      { id: 1, userId: 1, type: 'reminder', payload: null, sendAt: new Date() },
+      {
+        id: 1,
+        userId: 1n,
+        type: 'reminder',
+        payload: null,
+        sendAt: new Date(),
+      },
     ];
     const sendSettings = new Map([
       ['1', { tz: 'Europe/Moscow', start: 22, end: 8, form: 'ty', chatId: 1n }],
@@ -105,7 +120,7 @@ describe('processQueue / runProcessQueue', () => {
     });
     await service.processQueue();
     expect(notificationService.defer).toHaveBeenCalledWith(1, expect.any(Date));
-    expect(bot.telegram.sendMessage).not.toHaveBeenCalled();
+    expect(bot.telegram.callApi).not.toHaveBeenCalled();
     expect(notificationService.markSent).not.toHaveBeenCalled();
   });
 
@@ -113,7 +128,7 @@ describe('processQueue / runProcessQueue', () => {
     const due = [
       {
         id: 2,
-        userId: 1,
+        userId: 1n,
         type: 'summary',
         payload: { text: 'итог дня' },
         sendAt: new Date(),
@@ -128,21 +143,25 @@ describe('processQueue / runProcessQueue', () => {
       sendSettings,
     });
     await service.processQueue();
-    expect(bot.telegram.sendMessage).toHaveBeenCalledWith(
-      1,
-      'итог дня',
-      expect.objectContaining({ disable_notification: true }),
+    expect(bot.telegram.callApi).toHaveBeenCalledWith(
+      'sendMessage',
+      expect.objectContaining({
+        chat_id: 1,
+        text: 'итог дня',
+        disable_notification: true,
+      }),
+      expect.anything(),
     );
     expect(notificationService.markSent).toHaveBeenCalledWith(2);
   });
 
   it('нет шаблона для типа (no text в payload) — помечает отправленным, не шлёт', async () => {
     const due = [
-      { id: 3, userId: 1, type: 'summary', payload: null, sendAt: new Date() },
+      { id: 3, userId: 1n, type: 'summary', payload: null, sendAt: new Date() },
     ];
     const { service, bot, notificationService } = makeService({ due });
     await service.processQueue();
-    expect(bot.telegram.sendMessage).not.toHaveBeenCalled();
+    expect(bot.telegram.callApi).not.toHaveBeenCalled();
     expect(notificationService.markSent).toHaveBeenCalledWith(3);
   });
 
@@ -154,11 +173,17 @@ describe('processQueue / runProcessQueue', () => {
         throw new Error('template crashed');
       });
     const due = [
-      { id: 99, userId: 1, type: 'summary', payload: null, sendAt: new Date() },
+      {
+        id: 99,
+        userId: 1n,
+        type: 'summary',
+        payload: null,
+        sendAt: new Date(),
+      },
     ];
     const { service, bot, notificationService } = makeService({ due });
     await expect(service.processQueue()).resolves.toBeUndefined();
-    expect(bot.telegram.sendMessage).not.toHaveBeenCalled();
+    expect(bot.telegram.callApi).not.toHaveBeenCalled();
     // Помечаем отправленным — иначе битый шаблон зацикливает очередь навечно
     // (повторная попытка на каждом тике до бесконечности).
     expect(notificationService.markSent).toHaveBeenCalledWith(99);
@@ -169,7 +194,7 @@ describe('processQueue / runProcessQueue', () => {
     const due = [
       {
         id: 4,
-        userId: 42,
+        userId: 42n,
         type: 'summary',
         payload: { text: 'привет' },
         sendAt: new Date(),
@@ -177,9 +202,9 @@ describe('processQueue / runProcessQueue', () => {
     ];
     const { service, bot, notificationService } = makeService({ due });
     await service.processQueue();
-    expect(bot.telegram.sendMessage).toHaveBeenCalledWith(
-      42,
-      'привет',
+    expect(bot.telegram.callApi).toHaveBeenCalledWith(
+      'sendMessage',
+      expect.objectContaining({ chat_id: 42, text: 'привет' }),
       expect.anything(),
     );
     expect(notificationService.markSent).toHaveBeenCalledWith(4);
@@ -190,7 +215,7 @@ describe('processQueue / runProcessQueue', () => {
     const due = [
       {
         id: 5,
-        userId: 42,
+        userId: 42n,
         type: 'summary',
         payload: { text: 'привет' },
         sendAt: new Date(),
@@ -198,9 +223,7 @@ describe('processQueue / runProcessQueue', () => {
     ];
     const bot = {
       telegram: {
-        sendMessage: jest
-          .fn()
-          .mockRejectedValue({ response: { error_code: 403 } }),
+        callApi: jest.fn().mockRejectedValue({ response: { error_code: 403 } }),
       },
     };
     const { service, notificationService, accountService } = makeService({
@@ -217,7 +240,7 @@ describe('processQueue / runProcessQueue', () => {
     const due = [
       {
         id: 6,
-        userId: 42,
+        userId: 42n,
         type: 'summary',
         payload: { text: 'привет' },
         sendAt: new Date(),
@@ -225,7 +248,7 @@ describe('processQueue / runProcessQueue', () => {
     ];
     const bot = {
       telegram: {
-        sendMessage: jest.fn().mockRejectedValue(new Error('network blip')),
+        callApi: jest.fn().mockRejectedValue(new Error('network blip')),
       },
     };
     const { service, notificationService, accountService } = makeService({
@@ -235,9 +258,9 @@ describe('processQueue / runProcessQueue', () => {
     await service.processQueue();
     // Отправка реально была попытана (иначе «не помечает» было бы тривиально
     // верно и в случае, когда до sendMessage дело вообще не дошло).
-    expect(bot.telegram.sendMessage).toHaveBeenCalledWith(
-      42,
-      'привет',
+    expect(bot.telegram.callApi).toHaveBeenCalledWith(
+      'sendMessage',
+      expect.objectContaining({ chat_id: 42, text: 'привет' }),
       expect.anything(),
     );
     expect(notificationService.markSent).not.toHaveBeenCalled();
@@ -249,14 +272,14 @@ describe('processQueue / runProcessQueue', () => {
     const due = [
       {
         id: 7,
-        userId: 1,
+        userId: 1n,
         type: 'summary',
         payload: { text: 'первое' },
         sendAt: new Date(),
       },
       {
         id: 8,
-        userId: 2,
+        userId: 2n,
         type: 'summary',
         payload: { text: 'второе' },
         sendAt: new Date(),
@@ -264,15 +287,15 @@ describe('processQueue / runProcessQueue', () => {
     ];
     const bot = {
       telegram: {
-        sendMessage: jest
+        callApi: jest
           .fn()
           .mockRejectedValueOnce(new Error('boom'))
           .mockResolvedValueOnce(undefined),
       },
     };
     const { service, notificationService } = makeService({ due, bot });
-    await service.processQueue();
-    expect(bot.telegram.sendMessage).toHaveBeenCalledTimes(2);
+    await runTick(service);
+    expect(bot.telegram.callApi).toHaveBeenCalledTimes(2);
     // id 7 упало временно — не помечен; id 8 успешно — помечен.
     expect(notificationService.markSent).toHaveBeenCalledWith(8);
     expect(notificationService.markSent).not.toHaveBeenCalledWith(7);
@@ -283,13 +306,13 @@ describe('processQueue / runProcessQueue', () => {
     const sendPromise = new Promise<void>((res) => (resolveSend = res));
     const bot = {
       telegram: {
-        sendMessage: jest.fn(() => sendPromise),
+        callApi: jest.fn(() => sendPromise),
       },
     };
     const due = [
       {
         id: 9,
-        userId: 1,
+        userId: 1n,
         type: 'summary',
         payload: { text: 'x' },
         sendAt: new Date(),
@@ -301,10 +324,10 @@ describe('processQueue / runProcessQueue', () => {
     const second = service.processQueue(); // должен увидеть isProcessing=true и выйти
     resolveSend();
     await Promise.all([first, second]);
-    expect(bot.telegram.sendMessage).toHaveBeenCalledTimes(1);
-    expect(bot.telegram.sendMessage).toHaveBeenCalledWith(
-      1,
-      'x',
+    expect(bot.telegram.callApi).toHaveBeenCalledTimes(1);
+    expect(bot.telegram.callApi).toHaveBeenCalledWith(
+      'sendMessage',
+      expect.objectContaining({ chat_id: 1, text: 'x' }),
       expect.anything(),
     );
   });
@@ -314,7 +337,7 @@ describe('processQueue / runProcessQueue', () => {
     const due = [
       {
         id: 10,
-        userId: 1,
+        userId: 1n,
         type: 'summary',
         payload: { text: 'x' },
         sendAt: new Date(),
@@ -332,7 +355,7 @@ describe('processQueue / runProcessQueue', () => {
       LEASE_WINDOW.fiveMinutes,
     );
     expect(notificationService.getDue).not.toHaveBeenCalled();
-    expect(bot.telegram.sendMessage).not.toHaveBeenCalled();
+    expect(bot.telegram.callApi).not.toHaveBeenCalled();
   });
 });
 
@@ -367,7 +390,7 @@ describe('кому писать некуда', () => {
 
     await service.processQueue();
 
-    expect(bot.telegram.sendMessage).not.toHaveBeenCalled();
+    expect(bot.telegram.callApi).not.toHaveBeenCalled();
     // cancelledAt, а не markSent: sentAt читает lastSentAt(), на нём каденс.
     expect(notificationService.cancelOne).toHaveBeenCalledWith(9);
     expect(notificationService.markSent).not.toHaveBeenCalled();
@@ -398,14 +421,17 @@ describe('кому писать некуда', () => {
 
     await service.processQueue();
 
-    expect(bot.telegram.sendMessage).toHaveBeenCalledWith(
-      777,
-      'итог дня',
+    expect(bot.telegram.callApi).toHaveBeenCalledWith(
+      'sendMessage',
+      expect.objectContaining({ chat_id: 777, text: 'итог дня' }),
       expect.anything(),
     );
-    expect(bot.telegram.sendMessage).not.toHaveBeenCalledWith(
-      Number(WEB),
-      expect.anything(),
+    expect(bot.telegram.callApi).not.toHaveBeenCalledWith(
+      'sendMessage',
+      expect.objectContaining({
+        chat_id: Number(WEB),
+        text: expect.anything(),
+      }),
       expect.anything(),
     );
     expect(notificationService.markSent).toHaveBeenCalledWith(10);
@@ -414,14 +440,14 @@ describe('кому писать некуда', () => {
   it('адрес спрашивается ОДИН раз на тик, а не на каждое уведомление', async () => {
     const due = [1, 2, 3].map((id) => ({
       id,
-      userId: 1,
+      userId: 1n,
       type: 'summary',
       payload: { text: 'итог' },
       sendAt: new Date(),
     }));
     const { service, accountService } = makeService({ due });
 
-    await service.processQueue();
+    await runTick(service);
 
     // Один запрос на тик и ровно с уникальными номерами: поштучный поиск
     // адреса превратил бы очередь в N+1.
@@ -434,7 +460,7 @@ describe('разные причины «писать больше нельзя»
   const due = (id: number) => [
     {
       id,
-      userId: 1,
+      userId: 1n,
       type: 'summary',
       payload: { text: 'итог' },
       sendAt: new Date(),
@@ -448,7 +474,7 @@ describe('разные причины «писать больше нельзя»
     const warns = jest.spyOn(Logger.prototype, 'warn');
     const bot = {
       telegram: {
-        sendMessage: jest.fn().mockRejectedValue({
+        callApi: jest.fn().mockRejectedValue({
           response: { error_code: 400, description: 'chat not found' },
         }),
       },
@@ -495,5 +521,148 @@ describe('разные причины «писать больше нельзя»
       .find((s) => s.includes('некому доставить'));
     expect(line).toContain('7 уведомлений');
     expect(line).toContain('…');
+  });
+});
+
+// Аудит 2026-10, r2-3#3. Telegram отвечает дольше 15 с: сообщение доставлено,
+// а очередь считала его недоставленным и слала то же напоминание каждый тик
+// (5 минут) плюс «Failed to send» админу. Настоящая отмена запроса и разбор
+// исхода «неизвестно» (telegram.send-bounded.ts).
+describe('медленный ответ Telegram', () => {
+  const abortError = () =>
+    Object.assign(new Error('The user aborted a request.'), {
+      name: 'AbortError',
+      type: 'aborted',
+    });
+
+  // Фейк Telegram: «доставляет» через 16 с, а если сигнал сработал раньше —
+  // отклоняется AbortError, как node-fetch. delivered считает доставки.
+  function slowBot() {
+    const state = { delivered: 0 };
+    const callApi = jest.fn(
+      (_m: string, _p: unknown, opts?: { signal?: AbortSignal }) =>
+        new Promise((resolve, reject) => {
+          const timer = setTimeout(() => {
+            state.delivered++;
+            resolve({ message_id: 1 });
+          }, 16_000);
+          opts?.signal?.addEventListener('abort', () => {
+            clearTimeout(timer);
+            // Запрос уже у Telegram: доставка не откатывается отменой.
+            state.delivered++;
+            reject(abortError());
+          });
+        }),
+    );
+    return { bot: { telegram: { callApi } }, state, callApi };
+  }
+
+  // getDue, учитывающий markSent: помеченная строка больше не «due».
+  function statefulDue(rows: any[]) {
+    const sent = new Set<number>();
+    return {
+      sent,
+      getDue: jest.fn(() =>
+        Promise.resolve(rows.filter((r) => !sent.has(r.id))),
+      ),
+      markSent: jest.fn((id: number) => {
+        sent.add(id);
+        return Promise.resolve();
+      }),
+    };
+  }
+
+  const row = {
+    id: 300,
+    userId: 42n,
+    type: 'summary',
+    payload: { text: 'напоминание' },
+    sendAt: new Date(),
+  };
+
+  async function tick(service: TelegramScheduleService) {
+    const p = service.processQueue();
+    await jest.advanceTimersByTimeAsync(15_000);
+    await p;
+  }
+
+  it('таймаут: строка помечена отправленной, без error, один warn; второй тик не шлёт', async () => {
+    const errors = jest.spyOn(Logger.prototype, 'error').mockImplementation();
+    const warns = jest.spyOn(Logger.prototype, 'warn').mockImplementation();
+    const { bot, state, callApi } = slowBot();
+    const { service, notificationService } = makeService({ due: [row], bot });
+    const dueState = statefulDue([row]);
+    notificationService.getDue = dueState.getDue;
+    notificationService.markSent = dueState.markSent;
+
+    await tick(service);
+    expect(notificationService.markSent).toHaveBeenCalledWith(300);
+    expect(errors).not.toHaveBeenCalled();
+    expect(warns).toHaveBeenCalledTimes(1);
+    expect(String(warns.mock.calls[0][0])).toContain(
+      'исход отправки неизвестен',
+    );
+
+    await tick(service);
+    expect(callApi).toHaveBeenCalledTimes(1);
+    expect(state.delivered).toBe(1);
+  });
+
+  it.each([
+    [
+      'ECONNREFUSED',
+      Object.assign(new Error('connect'), { code: 'ECONNREFUSED' }),
+    ],
+    ['ETIMEDOUT', Object.assign(new Error('connect'), { code: 'ETIMEDOUT' })],
+    ['ENOTFOUND', Object.assign(new Error('dns'), { code: 'ENOTFOUND' })],
+    [
+      '429',
+      { response: { error_code: 429, description: 'Too Many Requests' } },
+    ],
+    ['502', { response: { error_code: 502, description: 'Bad Gateway' } }],
+  ])(
+    '%s — до Telegram не доехали или он ответил ошибкой: повторяется на следующем тике',
+    async (_n, failure) => {
+      jest.spyOn(Logger.prototype, 'error').mockImplementation();
+      const callApi = jest.fn().mockRejectedValue(failure);
+      const { service, notificationService } = makeService({
+        due: [row],
+        bot: { telegram: { callApi } },
+      });
+      const dueState = statefulDue([row]);
+      notificationService.getDue = dueState.getDue;
+      notificationService.markSent = dueState.markSent;
+
+      await service.processQueue();
+      await service.processQueue();
+
+      expect(notificationService.markSent).not.toHaveBeenCalled();
+      expect(callApi).toHaveBeenCalledTimes(2);
+      expect(callApi).toHaveBeenLastCalledWith(
+        'sendMessage',
+        expect.objectContaining({ chat_id: 42, text: 'напоминание' }),
+        expect.anything(),
+      );
+    },
+  );
+
+  it('403 по-прежнему ставит флаг блокировки, а не считается неизвестным исходом', async () => {
+    jest.spyOn(Logger.prototype, 'warn').mockImplementation();
+    const callApi = jest
+      .fn()
+      .mockRejectedValue({ response: { error_code: 403 } });
+    const { service, accountService, notificationService } = makeService({
+      due: [row],
+      bot: { telegram: { callApi } },
+    });
+    await service.processQueue();
+    expect(accountService.markUserBlocked).toHaveBeenCalledWith(42n);
+    expect(notificationService.markSent).toHaveBeenCalledWith(300);
+  });
+
+  it('успешная отправка не оставляет висящих таймеров', async () => {
+    const { service } = makeService({ due: [row] });
+    await service.processQueue();
+    expect(jest.getTimerCount()).toBe(0);
   });
 });

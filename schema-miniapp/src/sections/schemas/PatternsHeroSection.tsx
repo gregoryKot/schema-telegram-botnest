@@ -5,7 +5,7 @@ import { Fragment, type ReactNode } from 'react';
 import { PatternsHero } from '../../components/PatternsHero';
 import { YsqStatusCard } from './YsqStatusCard';
 import { SchemasSectionProps } from './types';
-import { WeekTopSummary } from '../../utils/patternsSummary';
+import { WeekTopSummary } from '../../../../shared/src/pattern/patternsSummary';
 import type { ScreenBlockId } from '../../utils/screenBlocks';
 import type { BlockVisibility } from './blockVisibility';
 

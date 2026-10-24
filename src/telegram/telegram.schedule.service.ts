@@ -23,7 +23,9 @@ import {
   maybeNotifyPairPartners,
   type DiaryCompleteDeps,
 } from './telegram.diary-complete';
-import { runProcessQueue } from './telegram.schedule-queue';
+import { runProcessQueue, armQueueKillSwitch } from './telegram.schedule-queue';
+import { MidnightPlanner } from './telegram.midnight-planner';
+import { AnalyticsService } from '../analytics/analytics.service';
 import { isConnectionError } from '../logger/db-outage';
 import { CronLeaderService, LEASE_WINDOW } from '../infra/cron-leader.service';
 
@@ -43,27 +45,31 @@ export class TelegramScheduleService implements OnModuleInit, OnModuleDestroy {
     private readonly cadenceService: NotificationCadenceService,
     private readonly plannerService: NotificationPlannerService,
     private readonly cronLeader: CronLeaderService,
-  ) {}
+    @Optional() private readonly analytics?: AnalyticsService,
+  ) {
+    this.midnight = new MidnightPlanner(
+      accountService,
+      plannerService,
+      cronLeader,
+      this.logger,
+    );
+  }
 
   private isProcessing = false;
+  private readonly midnight: MidnightPlanner;
   private readonly catchupTimer = new CatchupTimer();
 
   onModuleInit() {
-    // Catch-up: планировщик пропустил полночь (деплой/рестарт) — досчитать
-    // через 30с (прогрев CNPG/бота). planDay идемпотентен, warn не будит админа.
-    this.catchupTimer.arm(() => {
-      this.scheduleDailyReminders().catch((e) =>
-        this.logger.warn(
-          `Startup planner catch-up failed (non-critical, retries at midnight): ${(e as Error).message}`,
-        ),
-      );
-    }, 30_000);
+    // Через 30с после старта (прогрев CNPG/бота): доделать оборванный обход
+    // или пропущенную полночь — MidnightPlanner.catchUp.
+    this.catchupTimer.arm(() => void this.catchUpAfterStart(), 30_000);
   }
 
   // Иначе таймер стреляет в закрытый Prisma-пул после app.close() — см.
-  // комментарий в telegram.catchup-timer.ts.
+  // комментарий в telegram.catchup-timer.ts. Идущий обход выходит сам.
   onModuleDestroy() {
     this.catchupTimer.clear();
+    this.midnight.stop();
   }
 
   /** Reschedule reminder for a single user (called after settings change). */
@@ -119,18 +125,15 @@ export class TelegramScheduleService implements OnModuleInit, OnModuleDestroy {
       return;
     }
     // Kill-switch: release lock if runProcessQueue hangs past the next cron tick.
-    const killTimer = setTimeout(() => {
-      this.logger.error('processQueue timed out after 4 min — releasing lock');
+    const killTimer = armQueueKillSwitch(this.logger, () => {
       this.isProcessing = false;
-    }, 4 * 60_000);
+    });
     try {
       await this.runProcessQueue();
     } catch (err: unknown) {
-      // P1017 "Server has closed the connection" and other transient connection
-      // errors should not page the admin on every cron tick — they resolve on
-      // the next tick once the DB comes back.  Log as warn so AlertLogger
-      // doesn't send a DM. Признаки — общие с AlertLogger (src/logger/db-outage.ts),
-      // здесь берём мягкую проверку: важно не куда оборвалось соединение, а что
+      // Обрыв соединения с БД (P1017 и соседи) проходит к следующему тику —
+      // warn, чтобы AlertLogger не будил админа каждый тик. Признаки общие с
+      // AlertLogger (src/logger/db-outage.ts), проверка мягкая: важно, что
       // ошибка временная. Раньше guard искал "P1001" в ТЕКСТЕ сообщения, а
       // Prisma кладёт код в err.code — guard молчал (инцидент 2026-08-31).
       const e = err instanceof Error ? err : undefined;
@@ -154,30 +157,27 @@ export class TelegramScheduleService implements OnModuleInit, OnModuleDestroy {
       accountService: this.accountService,
       notificationService: this.notificationService,
       logger: this.logger,
+      track: (t) => this.analytics?.track(null, 'notify_queue_tick', t),
     });
   }
 
   // Midnight UTC: единый дневной планировщик — приоритеты (пауза, перерывы,
-  // weekly/donate/напоминание/инсайты) в NotificationPlannerService, максимум одно уведомление в день.
+  // weekly/donate/напоминание/инсайты) в NotificationPlannerService, одно в день; обход — MidnightPlanner.
   @Cron('0 0 * * *')
   async scheduleDailyReminders() {
     if (!this.bot) return;
-    // Без аренды второй инстанс планирует тот же день второй раз — пользователь
-    // получает два одинаковых напоминания/инсайта за сутки.
+    // Аренда: без неё второй инстанс спланирует тот же день повторно (дубли).
+    const at = new Date();
     if (
-      !(await this.cronLeader.claimRun('midnightPlanner', LEASE_WINDOW.daily))
+      await this.cronLeader.claimRun('midnightPlanner', LEASE_WINDOW.daily, at)
     )
-      return;
-    const users = await this.accountService.getAllUsersWithSettings();
-    this.logger.log(`Midnight planner: ${users.length} users`);
+      await this.midnight.run(at);
+    else this.logger.log('Midnight planner: аренду уже взял другой прогон');
+  }
 
-    for (const user of users) {
-      try {
-        await this.plannerService.planDay(user);
-      } catch (err) {
-        this.logger.error(`Midnight planner failed for userId=${user.id}`, err);
-      }
-    }
+  async catchUpAfterStart() {
+    if (this.bot)
+      await this.midnight.catchUp(() => this.scheduleDailyReminders());
   }
 
   /** Трекер заполнен: сводка, вехи, напарник — см. telegram.diary-complete.ts. */
