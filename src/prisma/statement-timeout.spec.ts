@@ -3,8 +3,10 @@
 // сырого), и строка лога для владельца. Что лимит реально доходит до сессии и
 // срабатывает — test/statement-timeout.e2e-spec.ts (джоба migrations).
 import { Prisma } from '@prisma/client';
+import { ENV_REGISTRY } from '../infra/env-registry.entries';
 import {
   DEFAULT_STATEMENT_TIMEOUT_MS,
+  MAX_STATEMENT_TIMEOUT_MS,
   isStatementTimeout,
   statementTimeoutLogLine,
   statementTimeoutMs,
@@ -28,8 +30,26 @@ describe('statementTimeoutMs — рубильник DB_STATEMENT_TIMEOUT_MS', ()
     ['-1', DEFAULT_STATEMENT_TIMEOUT_MS],
     ['30s', DEFAULT_STATEMENT_TIMEOUT_MS],
     ['abc', DEFAULT_STATEMENT_TIMEOUT_MS],
+    // Потолок типа Postgres: больше — FATAL на каждом соединении, не выключение.
+    ['2147483647', MAX_STATEMENT_TIMEOUT_MS],
+    ['2147483648', DEFAULT_STATEMENT_TIMEOUT_MS],
+    ['300000000000', DEFAULT_STATEMENT_TIMEOUT_MS],
   ])('%j → %d', (raw, expected) => {
     expect(statementTimeoutMs(raw)).toBe(expected);
+  });
+
+  it('реестр env проверяет рубильник тем же правилом, что и пул (правило №4)', () => {
+    const entry = ENV_REGISTRY.find(
+      (e) => e.name === 'DB_STATEMENT_TIMEOUT_MS',
+    );
+    expect(entry?.format('0')).toBeNull();
+    expect(entry?.format('2147483647')).toBeNull();
+    expect(entry?.format('2147483648')).toBe(
+      'ожидалось целое число миллисекунд от 0 до 2147483647',
+    );
+    expect(entry?.format('30s')).toBe(
+      'ожидалось целое число миллисекунд от 0 до 2147483647',
+    );
   });
 
   it('по умолчанию — 30 с (порог, согласованный владельцем)', () => {
@@ -122,7 +142,22 @@ describe('withStatementTimeout', () => {
     });
   });
 
-  it.each([0, -1, 1.5])(
+  it('граница транзакции Prisma не выходит за потолок setTimeout', async () => {
+    const tx = { $executeRaw: jest.fn(async () => 1) };
+    const $transaction = jest.fn(
+      async (fn: (t: typeof tx) => Promise<unknown>, _opts: unknown) => fn(tx),
+    );
+    const prisma = { $transaction } as unknown as Parameters<
+      typeof withStatementTimeout
+    >[0];
+    await withStatementTimeout(prisma, MAX_STATEMENT_TIMEOUT_MS, async () => 1);
+    expect($transaction.mock.calls[0][1]).toEqual({
+      timeout: MAX_STATEMENT_TIMEOUT_MS,
+      maxWait: 10_000,
+    });
+  });
+
+  it.each([0, -1, 1.5, MAX_STATEMENT_TIMEOUT_MS + 1])(
     'limitMs = %d — ошибка, а не тихий «без лимита»',
     (ms) => {
       const prisma = { $transaction: jest.fn() } as unknown as Parameters<

@@ -2,6 +2,7 @@
 // БД, публичные адреса сайта/вебаппа, CORS, платные фичи-флаги.
 import { EnvVarSpec, formats } from './env-registry';
 import { PLATFORM_ENV_ENTRIES } from './env-registry.entries.platform';
+import { isValidStatementTimeout } from '../prisma/statement-timeout';
 
 export const INFRA_ENV_ENTRIES: EnvVarSpec[] = [
   ...PLATFORM_ENV_ENTRIES,
@@ -39,7 +40,9 @@ export const INFRA_ENV_ENTRIES: EnvVarSpec[] = [
       'без выкладки кода (src/prisma/statement-timeout.ts).',
     requiredInProd: false,
     format: (value: string): string | null =>
-      /^(0|[1-9]\d*)$/.test(value) ? null : 'ожидалось целое число от 0',
+      isValidStatementTimeout(value)
+        ? null
+        : 'ожидалось целое число миллисекунд от 0 до 2147483647',
     group: 'infra',
   },
   {

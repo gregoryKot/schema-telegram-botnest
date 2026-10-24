@@ -38,12 +38,13 @@ export class PrismaExceptionFilter implements ExceptionFilter {
     const path = safeRequestPath(req.url);
     if (isStatementTimeout(exception)) {
       // Строку владельцу с местом вызова уже написал PrismaService
-      // ($on('error')) — здесь warn, чтобы не слать второй DM. 503, а не 400:
-      // запрос клиента верный, не успела база.
+      // ($on('error')) — здесь warn, чтобы не слать второй DM. 500, а не 503:
+      // GET на 502/503/504 мини-апп повторяет дважды (schema-miniapp/src/
+      // apiClient.ts), а запрос, упёршийся в предел, повтор лишь утяжелит.
       this.logger.warn(`Таймаут запроса к БД на ${path}`);
-      return res.status(HttpStatus.SERVICE_UNAVAILABLE).json({
-        statusCode: 503,
-        error: 'Service Unavailable',
+      return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+        statusCode: 500,
+        error: 'Internal Server Error',
         message: 'База данных не ответила вовремя',
       });
     }

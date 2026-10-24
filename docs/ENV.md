@@ -115,7 +115,7 @@
 | `BACKUP_S3_REGION` | опциональна | nonEmpty | Регион в подписи запросов к хранилищу — по умолчанию auto (так требует R2); менять только при переезде на другое S3-хранилище. |
 | `BACKUP_S3_SECRET_ACCESS_KEY` | опциональна | accessKey | Secret Access Key API-токена R2 — вместе с BACKUP_S3_ACCESS_KEY_ID, BACKUP_S3_ENDPOINT, BACKUP_S3_BUCKET и BACKUP_ENCRYPTION_KEY включает бэкапы БД. |
 | `DATABASE_URL` | **обязательна** | nonEmpty | Строка подключения к Postgres — без неё Prisma не подключается, приложение не работает. |
-| `DB_STATEMENT_TIMEOUT_MS` | опциональна | целое ≥ 0 | Предел одного запроса к базе в миллисекундах (по умолчанию 30 000) — дольше запрос прерывается с ошибкой; 0 выключает предел. Рубильник без выкладки кода (src/prisma/statement-timeout.ts). |
+| `DB_STATEMENT_TIMEOUT_MS` | опциональна | целое 0…2147483647 | Предел одного запроса к базе в миллисекундах (по умолчанию 30 000) — дольше запрос прерывается с ошибкой; 0 выключает предел. Рубильник без выкладки кода (src/prisma/statement-timeout.ts). |
 | `DEPLOY_TARGET` | опциональна | oneOf(amvera, vps) | Площадка: «vps» (задаёт deploy/vps/docker-compose.yml) — там pgdata единственная копия базы, и бэкапы в R2 обязательны; не задана или «amvera» — бэкапы платформы, R2 по желанию. |
 | `SITE_URL` | опциональна | url | Адрес сайта для ссылок в уведомлениях о записи — дефолт kotlarewski.gr. |
 | `STARTUP_CRASHES_DAY` | опциональна | целое ≥ 0 | Падений приложения за сутки в этом контейнере — ставит `deploy/entrypoint.mjs` (`deploy/crash-window.mjs`), вручную не задаётся. Число попадает в DM о перезапуске. |

@@ -29,15 +29,29 @@ export const CLI_STATEMENT_TIMEOUT_MS = 600_000;
 const QUERY_CANCELED = '57014';
 
 /**
+ * Потолок типа Postgres. Больше сервер отвергает FATAL на КАЖДОМ соединении
+ * (проверено на живой базе): лишний ноль в рубильнике дал бы полный простой,
+ * а не выключение предела.
+ */
+export const MAX_STATEMENT_TIMEOUT_MS = 2_147_483_647;
+
+/** Значение, которое Postgres примет: целое мс от 0 до потолка. Его же проверяет реестр env. */
+export function isValidStatementTimeout(value: string): boolean {
+  return /^\d+$/.test(value) && Number(value) <= MAX_STATEMENT_TIMEOUT_MS;
+}
+
+/**
  * Порог пула приложения: DB_STATEMENT_TIMEOUT_MS — рубильник без выкладки
- * (0 — без лимита), иначе 30 с. Неверный формат — дефолт; о формате на
- * старте сообщает env-check (реестр env, правило №22).
+ * (0 — без лимита), иначе 30 с. Неверное значение — дефолт; о нём на старте
+ * сообщает env-check (реестр env, правило №22).
  */
 export function statementTimeoutMs(
   raw: string | undefined = process.env.DB_STATEMENT_TIMEOUT_MS,
 ): number {
   const value = raw?.trim() ?? '';
-  return /^\d+$/.test(value) ? Number(value) : DEFAULT_STATEMENT_TIMEOUT_MS;
+  return isValidStatementTimeout(value)
+    ? Number(value)
+    : DEFAULT_STATEMENT_TIMEOUT_MS;
 }
 
 interface AdapterErrorMeta {
@@ -88,7 +102,7 @@ export function withStatementTimeout<T>(
   limitMs: number,
   fn: (tx: Prisma.TransactionClient) => Promise<T>,
 ): Promise<T> {
-  if (!Number.isInteger(limitMs) || limitMs <= 0)
+  if (!isValidStatementTimeout(String(limitMs)) || limitMs === 0)
     throw new Error(`withStatementTimeout: limitMs > 0, получено ${limitMs}`);
   return prisma.$transaction(
     async (tx) => {
@@ -97,6 +111,10 @@ export function withStatementTimeout<T>(
     },
     // Своя граница интерактивной транзакции Prisma (по умолчанию 5 с)
     // оборвала бы путь раньше лимита.
-    { timeout: limitMs + 5_000, maxWait: 10_000 },
+    // Потолок — тот же: setTimeout Node больше 2^31-1 мс срабатывает сразу.
+    {
+      timeout: Math.min(limitMs + 5_000, MAX_STATEMENT_TIMEOUT_MS),
+      maxWait: 10_000,
+    },
   );
 }

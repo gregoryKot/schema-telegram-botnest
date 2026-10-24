@@ -48,6 +48,6 @@ describe('PrismaService — строка о таймауте запроса', ()
   it('контроль: другая ошибка Prisma — без строки (её логирует вызывающий)', () => {
     new PrismaService();
     handlers.error({ message: 'Unique constraint failed. Code: `23505`' });
-    expect(errorLog).not.toHaveBeenCalled();
+    expect(errorLog.mock.calls).toEqual([]);
   });
 });

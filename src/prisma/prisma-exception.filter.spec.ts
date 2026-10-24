@@ -236,11 +236,11 @@ describe('PrismaExceptionFilter', () => {
     });
   });
 
-  // Таймаут запроса (statement_timeout, SQLSTATE 57014) — не ошибка клиента:
-  // раньше P2039/P2010 падали в общий «неизвестный код» → 500, а таймаут — это
-  // «база не успела». Строку владельцу с местом вызова пишет PrismaService, здесь
-  // только warn — без второго DM.
-  it('таймаут запроса (57014 в meta адаптера) → 503, warn вместо error', () => {
+  // Таймаут запроса (statement_timeout, SQLSTATE 57014): строку владельцу с
+  // местом вызова пишет PrismaService, здесь только warn — без второго DM.
+  // Статус 500, не 503: на 503 мини-апп повторяет GET, а повтор запроса,
+  // упёршегося в предел, только нагрузил бы тормозящую базу.
+  it('таймаут запроса (57014 в meta адаптера) → 500 с понятным текстом, warn вместо error', () => {
     const filter = new PrismaExceptionFilter();
     const logger = (
       filter as unknown as {
@@ -265,10 +265,10 @@ describe('PrismaExceptionFilter', () => {
     );
     filter.catch(timeout, host);
 
-    expect(res.status).toHaveBeenCalledWith(HttpStatus.SERVICE_UNAVAILABLE);
+    expect(res.status).toHaveBeenCalledWith(HttpStatus.INTERNAL_SERVER_ERROR);
     expect(json).toHaveBeenCalledWith({
-      statusCode: 503,
-      error: 'Service Unavailable',
+      statusCode: 500,
+      error: 'Internal Server Error',
       message: 'База данных не ответила вовремя',
     });
     expect(error).not.toHaveBeenCalled();

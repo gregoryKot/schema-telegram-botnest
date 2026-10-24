@@ -15,6 +15,7 @@ import { PrismaService } from '../src/prisma/prisma.service';
 import { PrismaExceptionFilter } from '../src/prisma/prisma-exception.filter';
 import {
   DEFAULT_STATEMENT_TIMEOUT_MS,
+  MAX_STATEMENT_TIMEOUT_MS,
   isStatementTimeout,
   withStatementTimeout,
 } from '../src/prisma/statement-timeout';
@@ -76,6 +77,35 @@ describe('statement_timeout на реальном Postgres', () => {
     expect(await sessionLimits(prod, 5)).toEqual(['30s']);
   });
 
+  it('лишний ноль в рубильнике — дефолт 30 с, а не FATAL на каждом соединении', async () => {
+    const build = (raw: string) => {
+      process.env.DB_STATEMENT_TIMEOUT_MS = raw;
+      try {
+        return new PrismaService();
+      } finally {
+        if (prevEnv === undefined) delete process.env.DB_STATEMENT_TIMEOUT_MS;
+        else process.env.DB_STATEMENT_TIMEOUT_MS = prevEnv;
+      }
+    };
+    const typo = build(`${MAX_STATEMENT_TIMEOUT_MS}0`);
+    const atMax = build(String(MAX_STATEMENT_TIMEOUT_MS));
+    try {
+      expect(await sessionLimits(typo, 1)).toEqual(['30s']);
+      // Потолок — ровно предел Postgres: на нём соединение ещё живо.
+      expect(await sessionLimits(atMax, 1)).toEqual(['2147483647ms']);
+    } finally {
+      await Promise.all([typo.$disconnect(), atMax.$disconnect()]);
+    }
+    // Контроль: без защиты то же значение роняет само соединение.
+    const raw = new Client({
+      connectionString: process.env.DATABASE_URL,
+      statement_timeout: MAX_STATEMENT_TIMEOUT_MS + 1,
+    });
+    await expect(raw.connect()).rejects.toThrow(
+      'invalid value for parameter "statement_timeout"',
+    );
+  });
+
   it('сырой запрос сверх порога прерывается базой (57014), владельцу — строка с порогом', async () => {
     const started = Date.now();
     const err = await rejection(short.$executeRaw`SELECT pg_sleep(2)`);
@@ -107,7 +137,7 @@ describe('statement_timeout на реальном Postgres', () => {
     }
   });
 
-  it('настоящая ошибка таймаута через HTTP-фильтр — 503, а не 400/500 (шов: форма ошибки живая)', async () => {
+  it('настоящая ошибка таймаута через HTTP-фильтр — 500 с текстом про базу, без второго DM (шов: форма ошибки живая)', async () => {
     const err = await rejection(short.$executeRaw`SELECT pg_sleep(2)`);
     const json = jest.fn();
     const res = { status: jest.fn(() => ({ json })) };
@@ -124,9 +154,14 @@ describe('statement_timeout на реальном Postgres', () => {
 
     new PrismaExceptionFilter().catch(err as Error, host);
 
-    expect(res.status).toHaveBeenCalledWith(HttpStatus.SERVICE_UNAVAILABLE);
-    expect(errorLog).not.toHaveBeenCalled();
-    expect(warn).toHaveBeenCalledTimes(1);
+    expect(res.status).toHaveBeenCalledWith(HttpStatus.INTERNAL_SERVER_ERROR);
+    expect(json).toHaveBeenCalledWith(
+      expect.objectContaining({ message: 'База данных не ответила вовремя' }),
+    );
+    expect(errorLog.mock.calls).toEqual([]);
+    expect(warn.mock.calls.map((c) => String(c[0]))).toEqual([
+      'Таймаут запроса к БД на /api/tracker/history',
+    ]);
     warn.mockRestore();
   });
 
