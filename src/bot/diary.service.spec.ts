@@ -5,6 +5,7 @@
 // на write, порядок/лимит списка, edge-кейсы. Ключа шифрования нет (dev-режим
 // crypto.ts) — encrypt()/decrypt() passthrough, но раунд-трип идёт через
 // реальные encrypt/decrypt/encryptJson/decryptJson.
+import { NotFoundException } from '@nestjs/common';
 import { DiaryService } from './diary.service';
 
 const baseSchema = { emotions: [] as unknown[], schemaIds: [] as string[] };
@@ -169,7 +170,13 @@ describe('DiaryService — дневник схем: сохранил → наш�
       trigger: 'запись А',
     });
     const id = schemaRows[0].id as number;
-    await svc.deleteSchemaDiaryEntry(USER_B, id); // чужой userId
+    // C-8: чужая запись — 404, а не молчаливый 200
+    await expect(svc.deleteSchemaDiaryEntry(USER_B, id)).rejects.toThrow(
+      NotFoundException,
+    );
+    await expect(svc.deleteSchemaDiaryEntry(USER_A, 999_999)).rejects.toThrow(
+      NotFoundException,
+    ); // несуществующая
     expect(schemaRows).toHaveLength(1); // запись жива
     await svc.deleteSchemaDiaryEntry(USER_A, id); // владелец
     expect(schemaRows).toHaveLength(0);

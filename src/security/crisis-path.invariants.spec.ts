@@ -17,12 +17,15 @@ const ROOT = join(__dirname, '..', '..');
 // Директории фронтендов, где вообще может жить пользовательский ввод.
 const FRONTEND_DIRS = ['webapp/src', 'schema-miniapp/src', 'shared/src'];
 
-const TEXTAREA_RE = /<textarea/i;
-// Детекцией считается и прямой вызов detectCrisis*, и общий гейт-примитив
-// <CrisisGate> (schema-miniapp/src/components/CrisisGate.tsx) — он
-// инкапсулирует detectCrisisAny + CrisisCard; что сам CrisisGate реально
-// зовёт detectCrisis, фиксирует отдельный тест ниже.
-const DETECT_CRISIS_RE = /detectCrisis|CrisisGate/;
+// `<LimitedTextarea` — общая обёртка поля с пределом длины (shared): без неё в
+// регэкспе все поля, переехавшие на обёртку, выпали бы из-под трипваера.
+const TEXTAREA_RE = /<(?:textarea|LimitedTextarea)/i;
+// Детекцией считается и прямой вызов detectCrisis*, и общие гейт-примитивы:
+// <CrisisGate> (schema-miniapp/src/components/CrisisGate.tsx) и
+// <BookingCrisisNote> (webapp/src/components/booking/BookingCrisisNote.tsx,
+// форма записи на визитке) — оба инкапсулируют detectCrisisAny + карточку; что
+// сами они реально зовут detectCrisis, фиксируют отдельные тесты ниже.
+const DETECT_CRISIS_RE = /detectCrisis|CrisisGate|BookingCrisisNote/;
 
 // Все .tsx-файлы с <textarea> (свободный текст пользователя), путь
 // относительно корня репозитория.
@@ -39,11 +42,14 @@ const TEXTAREA_FILES = FRONTEND_DIRS.flatMap((rel) => {
 const NON_THERAPEUTIC_ALLOWLIST: Record<string, string> = {
   // Админка — текст пишет владелец проекта, не клиент терапии.
   'webapp/src/pages/admin/HealthyAdultImport.tsx': 'админский импорт контента',
+  'webapp/src/pages/admin/HealthyAdultCheck.tsx':
+    'админская проверка текста фразы перед сохранением',
   'webapp/src/pages/admin/ArticleEditor.tsx': 'админский редактор статей сайта',
   'webapp/src/pages/admin/HealthyAdultSection.tsx': 'админская секция контента',
-  // Лендинг и запись на приём — контактная форма/бронирование, не дневник.
-  'webapp/src/pages/landing/BookingForm.tsx': 'лид-форма записи с лендинга',
-  'webapp/src/components/BookingPicker.tsx': 'выбор слота записи на приём',
+  // Поле «Запрос» записи на приём (BookingForm и BookingPicker) здесь больше
+  // не числится: посетитель описывает там своё состояние до всякого контакта,
+  // это свободный текст о переживаниях — кризисный путь подключён (аудит
+  // 2026-10, frontends#5; RequestField → BookingCrisisNote), запись снята.
   // Планы/задачи/заметки настроек — операционный текст (что сделать), а не
   // рефлексия/переживание.
   'webapp/src/components/PlanSheet.tsx': 'план действий — операционный текст',
@@ -68,11 +74,17 @@ const NON_THERAPEUTIC_ALLOWLIST: Record<string, string> = {
   // свободный текст клиента о своём состоянии.
   'webapp/src/components/therapist/ClientSessionsTab.tsx':
     'заметки терапевта о сессии клиента',
-  'webapp/src/components/therapist/ClientConceptTab.tsx':
+  // Вид «Поля» уехал из ClientConceptTab/ConceptSheet в отдельные файлы
+  // (правило №10): запись переехала за <textarea>, а не добавилась. Поля
+  // связей режимов графической концептуализации — ConceptTextField (shared,
+  // общий для обоих фронтендов): тот же класс «концептуализация терапевта».
+  'webapp/src/components/therapist/ClientConceptFields.tsx':
     'концептуализация терапевта, не текст клиента',
+  'shared/src/therapy/conceptGraph/ConceptTextField.tsx':
+    'концептуализация терапевта (связи режимов), не текст клиента',
   'schema-miniapp/src/components/therapistClientSheet/NotesSheet.tsx':
     'заметки терапевта о клиенте',
-  'schema-miniapp/src/components/therapistClientSheet/ConceptSheet.tsx':
+  'schema-miniapp/src/components/therapistClientSheet/conceptSheet/ConceptFieldsView.tsx':
     'концептуализация терапевта, не текст клиента',
   'schema-miniapp/src/components/settingsSheet/BecomeTherapistSection.tsx':
     'заявка «стать терапевтом» — анкета, не дневник',
@@ -80,6 +92,18 @@ const NON_THERAPEUTIC_ALLOWLIST: Record<string, string> = {
   // SchemaEntrySheet), который прогоняет detectCrisisAny по всем полям.
   'schema-miniapp/src/components/diary/DiaryTextArea.tsx':
     'дочерний <textarea>-контрол, детекция в родительском шите',
+  // Общая обёртка поля с пределом длины (backend#29): сама ничего не знает о
+  // содержании, детекция стоит у каждого вызывающего — они попадают в скан
+  // через `<LimitedTextarea` (регэксп выше) и классифицируются поштучно.
+  'shared/src/components/LimitedTextarea.tsx':
+    'дочерний <textarea>-контрол с пределом длины, детекция у вызывающих',
+  // Разбор случая (webapp): сцена — поле общего shared-хука
+  // useCaseFlowState (crisis = detectCrisisAny(scene, bodyOwn, impulseOwn,
+  // alias)), CrisisCard рисует CaseFlowFoot на том же экране. Тот же приём,
+  // что у DiaryTextArea.tsx строкой выше — не выдуманное исключение
+  // (правило №15), а тот же класс «дочерний контрол».
+  'webapp/src/components/caseFlow/CaseSceneScreen.tsx':
+    'дочерний <textarea>-контрол потока разбора случая, детекция в общем shared/src/case/useCaseFlowState.ts',
 };
 
 // Файлы, где кризисная детекция ОБЯЗАНА появиться в рамках текущей задачи
@@ -94,12 +118,18 @@ const EXPECTED_CRISIS_FILES = [
   'schema-miniapp/src/components/SafePlace.tsx',
   'schema-miniapp/src/components/NoteSheet.tsx',
   'schema-miniapp/src/components/WeeklyQuestion.tsx',
-  'schema-miniapp/src/components/BeliefCheck.tsx',
+  // Проверка убеждения: свободный текст живёт в двух шагах, детекция
+  // переехала вместе с ними (BeliefCheck.tsx остался оркестратором без
+  // <textarea>) — тот же случай, что ModeEntrySheet → ModeEntryForm ниже.
+  'schema-miniapp/src/components/beliefCheck/BeliefStep.tsx',
+  'schema-miniapp/src/components/beliefCheck/ReframeStep.tsx',
   'schema-miniapp/src/components/IntroSheetFlashcard.tsx',
   'schema-miniapp/src/components/schemaFlashcard/ResponseStep.tsx',
   'schema-miniapp/src/components/schemaFlashcard/ActionStep.tsx',
   'webapp/src/components/NoteSheet.tsx',
-  'webapp/src/components/SchemaFlashcard.tsx',
+  // «Мне плохо» (#746): шаги со свободным текстом и детекция переехали из
+  // SchemaFlashcard.tsx в FlashcardSteps.tsx, оркестратор остался без <textarea>.
+  'webapp/src/components/flashcard/FlashcardSteps.tsx',
   'webapp/src/components/exercises/LetterEx.tsx',
   'webapp/src/components/exercises/BeliefCheckEx.tsx',
   'webapp/src/components/exercises/FlashcardEx.tsx',
@@ -111,7 +141,9 @@ const EXPECTED_CRISIS_FILES = [
   'webapp/src/components/diary/GratitudeEntrySheet.tsx',
   'webapp/src/components/diary/SchemaEntrySheet.tsx',
   'schema-miniapp/src/components/diary/ModeEntrySheet.tsx',
-  'schema-miniapp/src/components/diary/GratitudeEntrySheet.tsx',
+  // Благодарность (#769): поля и детекция вынесены в GratitudeParts.tsx,
+  // GratitudeEntrySheet.tsx остался оркестратором без <textarea>.
+  'schema-miniapp/src/components/diary/GratitudeParts.tsx',
   'schema-miniapp/src/components/diary/SchemaEntrySheet.tsx',
 ];
 
@@ -131,8 +163,26 @@ describe('трипваер: кризисная детекция для своб�
   });
 
   it('allowlist не разросся сверх известного (может только сокращаться)', () => {
+    // 18 → 19 (2026-08): админская проверка текста фразы перед сохранением
+    // (HealthyAdultCheck). Поле админское — туда владелец вставляет фразу
+    // пула, чтобы увидеть претензии до сохранения; это не свободный текст
+    // клиента терапии. Потолок поднимается только так — правкой в диффе,
+    // видимой на ревью, а не молча.
+    // 19 → 20 (2026-08, перенос «Разбор случая» в webapp): CaseSceneScreen.tsx —
+    // дочерний <textarea>-контрол потока, тот же класс, что уже допущенный
+    // DiaryTextArea.tsx строкой выше (детекция стоит в родительском shared-хуке).
+    // 20 → 18 (2026-10, frontends#5): поле «Запрос» формы записи получило
+    // кризисную карточку — BookingForm.tsx и RequestField.tsx сняты с allowlist.
+    // 18 → 19 (2026-10, backend#29): shared/LimitedTextarea.tsx — общий
+    // контрол-обёртка `<textarea>` с `maxLength` и счётчиком, тот же класс
+    // «дочерний контрол», что DiaryTextArea/CaseSceneScreen; вызывающие файлы
+    // скан ловит по `<LimitedTextarea`.
+    // 19 → 20 (2026-10, графическая концептуализация): shared/ConceptTextField —
+    // поля «Откуда режим / Как проявляется / Что делаем в терапии» в кабинете
+    // терапевта, тот же класс, что соседние ClientConceptFields/ConceptFieldsView
+    // (их записи переехали за <textarea>, не добавились).
     expect(Object.keys(NON_THERAPEUTIC_ALLOWLIST).length).toBeLessThanOrEqual(
-      18,
+      20,
     );
   });
 
@@ -145,6 +195,32 @@ describe('трипваер: кризисная детекция для своб�
     );
     expect(src).toMatch(/detectCrisisAny/);
     expect(src).toMatch(/CrisisCard/);
+  });
+
+  it('BookingCrisisNote (форма записи на визитке) сам зовёт detectCrisisAny и карточку', () => {
+    // Регэксп категории (A) засчитывает <BookingCrisisNote> как детекцию — якорь
+    // против выродившегося в пустышку примитива (тот же приём, что у CrisisGate).
+    const src = readFileSync(
+      join(ROOT, 'webapp/src/components/booking/BookingCrisisNote.tsx'),
+      'utf8',
+    );
+    expect(src).toMatch(/detectCrisisAny/);
+    expect(src).toMatch(/CrisisCardView/);
+  });
+
+  it('форма записи: оба экрана с полем «Запрос» и оба терминальных экрана подключают детекцию', () => {
+    // RequestField — единственный <textarea> «Запроса» (BookingForm и
+    // BookingPicker берут его); результат — DoneScreen/AwaitPaymentScreen и
+    // «Заявка отправлена» простой формы. Потеря любого звена — карточки нет.
+    for (const rel of [
+      'webapp/src/components/booking/RequestField.tsx',
+      'webapp/src/components/booking/BookingResultScreens.tsx',
+      'webapp/src/pages/landing/BookingForm.tsx',
+    ]) {
+      expect(readFileSync(join(ROOT, rel), 'utf8')).toMatch(
+        /BookingCrisisNote/,
+      );
+    }
   });
 
   it('санити: ключевые терапевтические шиты подключают детекцию (diary + letter/safe place и т.п.)', () => {

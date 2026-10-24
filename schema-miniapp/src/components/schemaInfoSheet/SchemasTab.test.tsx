@@ -15,23 +15,37 @@ afterEach(() => {
 describe('SchemasTab — без highlight', () => {
   it('домены видны, но схемы внутри свёрнуты по умолчанию', () => {
     render(<SchemasTab />);
-    expect(screen.getByText('Отчуждение и отвержение')).toBeTruthy();
+    expect(screen.getByText('Нарушение связи и отвержение')).toBeTruthy();
     expect(screen.queryByText('Эмоциональная депривация')).toBeNull();
   });
 
   it('клик по домену раскрывает список его схем', () => {
     render(<SchemasTab />);
-    fireEvent.click(screen.getByText('Отчуждение и отвержение'));
+    fireEvent.click(screen.getByText('Нарушение связи и отвержение'));
     expect(screen.getByText('Эмоциональная депривация')).toBeTruthy();
   });
 
   it('повторный клик сворачивает домен обратно', () => {
     render(<SchemasTab />);
-    const header = screen.getByText('Отчуждение и отвержение');
+    const header = screen.getByText('Нарушение связи и отвержение');
     fireEvent.click(header);
     expect(screen.getByText('Эмоциональная депривация')).toBeTruthy();
     fireEvent.click(header);
     expect(screen.queryByText('Эмоциональная депривация')).toBeNull();
+  });
+
+  // Ж7 дизайн-аудита 2026-08: раскрывашка без aria-expanded/aria-controls.
+  it('aria-expanded/aria-controls связывают заголовок домена с панелью', () => {
+    render(<SchemasTab />);
+    const header = screen
+      .getByText('Нарушение связи и отвержение')
+      .closest('[role="button"]')!;
+    expect(header.getAttribute('aria-expanded')).toBe('false');
+    fireEvent.click(header);
+    expect(header.getAttribute('aria-expanded')).toBe('true');
+    const panelId = header.getAttribute('aria-controls');
+    expect(panelId).toBeTruthy();
+    expect(document.getElementById(panelId!)).toBeTruthy();
   });
 });
 

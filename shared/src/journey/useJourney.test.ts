@@ -110,6 +110,28 @@ describe('useJourney', () => {
     expect(result.current.items.length).toBeLessThan(2);
   });
 
+  it('reload() рефетчит ленту без повторного трекинга journey_open (после удаления записи)', async () => {
+    const trackEvent = vi.fn();
+    const data1: JourneyData = { counts: zeroCounts(), items: ITEMS };
+    const data2: JourneyData = {
+      counts: zeroCounts(),
+      items: [ITEMS[0]],
+    };
+    const getJourney = vi
+      .fn()
+      .mockResolvedValueOnce(data1)
+      .mockResolvedValueOnce(data2);
+    const deps: JourneyDeps = { getJourney, trackEvent };
+    const { result } = renderHook(() => useJourney(deps));
+    await waitFor(() => expect(result.current.items).toHaveLength(2));
+
+    act(() => result.current.reload());
+    await waitFor(() => expect(result.current.items).toHaveLength(1));
+
+    expect(getJourney).toHaveBeenCalledTimes(2);
+    expect(trackEvent).toHaveBeenCalledTimes(1);
+  });
+
   it('sortDir=asc переворачивает порядок ленты относительно desc', async () => {
     const deps: JourneyDeps = {
       getJourney: vi

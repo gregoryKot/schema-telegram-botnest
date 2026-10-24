@@ -50,7 +50,7 @@ export function NeedRatingBar({
               <div
                 style={{
                   height: 12,
-                  borderRadius: 4,
+                  borderRadius: 'var(--r-4)',
                   background: filled ? color : 'rgba(var(--fg-rgb),0.09)',
                   boxShadow: isYesterday
                     ? `inset 0 0 0 1.5px ${color}80`
@@ -75,7 +75,7 @@ export function NeedRatingBar({
       >
         <span>мало</span>
         {yesterday > 0 ? (
-          <span style={{ color: 'var(--text-sub)' }}>
+          <span className="u-sub">
             вчера {yesterday}
             {delta !== 0 && (
               <span style={{ color, fontWeight: 600 }}>

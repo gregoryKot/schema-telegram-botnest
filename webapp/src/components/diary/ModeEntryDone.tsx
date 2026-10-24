@@ -1,5 +1,6 @@
 import { ExScreen, GlyphCheck } from '../exercises/ExScreen';
 import { getModeById } from '../../schemaTherapyData';
+import '../../styles/sheet-diary.css';
 import { ModeEntryShare } from './ModeEntryShare';
 import { ModeChainSuggestion } from './ModeChainSuggestion';
 import type { ModeEntryFullSource } from '../../../../shared/src/share/cards/modeEntryFullCard';
@@ -28,7 +29,6 @@ export function ModeEntryDone({
       onBack={goBack}
       backLabel="Закрыть"
       eyebrow="Дневник режимов"
-      eyebrowColor="var(--c-moss)"
       title={
         <>
           Запись
@@ -38,23 +38,15 @@ export function ModeEntryDone({
       }
       lede="Она в «Дневнике режимов» и в «Моём пути» — можно открыть и перечитать в любой момент."
     >
-      <ModeEntryShare
-        mode={getModeById(modeId)}
-        healthyResponse={healthyResponse}
-        entry={entry}
-        color="var(--c-moss)"
-      />
+      <div className="ds-card ds-card--ink sd-done">
+        <ModeEntryShare
+          mode={getModeById(modeId)}
+          healthyResponse={healthyResponse}
+          entry={entry}
+        />
+      </div>
       <ModeChainSuggestion modeId={modeId} onPick={onPickChain} />
-      <button
-        className="ex-btn ex-btn-primary"
-        onClick={goBack}
-        style={{
-          marginTop: 16,
-          display: 'flex',
-          alignItems: 'center',
-          gap: 8,
-        }}
-      >
+      <button className="ds-btn sd-done-btn" onClick={goBack}>
         Готово <GlyphCheck />
       </button>
     </ExScreen>

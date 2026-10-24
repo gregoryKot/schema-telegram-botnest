@@ -73,7 +73,7 @@ export function SchemaCard({
         )}
       </div>
       {open && (
-        <div style={{ marginTop: 10 }}>
+        <div className="u-mt10">
           {emotionMetas.length > 0 && (
             <Field
               label="Чувства"

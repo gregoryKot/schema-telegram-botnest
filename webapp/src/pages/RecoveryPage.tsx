@@ -1,7 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { useAuth } from '../auth/authContext';
 import { useTr } from '../utils/addressForm';
+import { ServicePage } from './service/ServicePage';
+import { RecoveryConfirm } from './recovery/RecoveryConfirm';
+import { humanizeThrown, readHumanError } from '../../../shared/src/api/humanizeError';
 
 const API_BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? '';
 
@@ -31,96 +33,53 @@ function RecoveryRequest() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: email.trim() }),
       });
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error(body.message ?? 'Не удалось отправить письмо');
-      }
+      if (!res.ok) throw new Error((await readHumanError(res, 'Не удалось отправить письмо')).message);
       setSent(true);
-    } catch (e) { setError(String(e).replace('Error: ', '')); }
+    } catch (e) { setError(humanizeThrown(e, 'Не удалось отправить письмо')); }
     finally { setBusy(false); }
   };
 
   if (sent) {
     return (
-      <div className="page-inner-wide" style={{ paddingTop: 80, maxWidth: 480, margin: '0 auto' }}>
-        <div className="eyebrow" style={{ marginBottom: 14 }}>Восстановление</div>
-        <h1 style={{ fontSize: 28, fontWeight: 600, marginBottom: 14 }}>{tr('Проверь почту', 'Проверьте почту')}</h1>
-        <div className="text-md muted" style={{ lineHeight: 1.6 }}>
-          Если этот email привязан к аккаунту — на него отправлено письмо со ссылкой.
-          Ссылка действует 30 минут. {tr('Не пришло? Проверь спам.', 'Не пришло? Проверьте спам.')}
+      <ServicePage>
+        <div className="as-body">
+          <div className="ds-eyebrow">Восстановление</div>
+          <h1 className="ds-h2">{tr('Проверь почту', 'Проверьте почту')}</h1>
+          <p className="as-lead">
+            Если этот email привязан к аккаунту — на него отправлено письмо со ссылкой.
+            Ссылка действует 30 минут. {tr('Не пришло? Проверь спам.', 'Не пришло? Проверьте спам.')}
+          </p>
+          <button onClick={() => navigate('/login')} className="ds-btn ds-btn--secondary">
+            На страницу входа
+          </button>
         </div>
-        <button onClick={() => navigate('/login')} className="btn btn-secondary" style={{ marginTop: 24 }}>
-          На страницу входа
-        </button>
-      </div>
+      </ServicePage>
     );
   }
 
   return (
-    <div className="page-inner-wide" style={{ paddingTop: 80, maxWidth: 480, margin: '0 auto' }}>
-      <div className="eyebrow" style={{ marginBottom: 14 }}>Восстановление доступа</div>
-      <h1 style={{ fontSize: 28, fontWeight: 600, lineHeight: 1.1, marginBottom: 14 }}>Потерял доступ?</h1>
-      <div className="text-md muted" style={{ lineHeight: 1.6, marginBottom: 24 }}>
+    <ServicePage>
+      <div className="as-body">
+      <div className="ds-eyebrow">Восстановление доступа</div>
+      <h1 className="ds-h2">Нет доступа к аккаунту?</h1>
+      <p className="as-lead">
         {tr(
-          'Если у тебя был привязан и подтверждён recovery-email — введи его, мы пришлём ссылку для входа.',
-          'Если у вас был привязан и подтверждён recovery-email — введите его, мы пришлём ссылку для входа.',
+          'Если запасная почта для восстановления уже указана — введи её, мы пришлём ссылку для входа.',
+          'Если запасная почта для восстановления уже указана — введите её, мы пришлём ссылку для входа.',
         )}{' '}
         Иначе доступ к аккаунту восстановить нельзя.
-      </div>
-      <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      </p>
+      <form onSubmit={submit} className="as-form">
         <input
           type="email" required value={email} onChange={e => setEmail(e.target.value)}
-          placeholder="you@example.com"
-          style={{ padding: '13px 16px', border: '1px solid var(--line)', borderRadius: 12, background: 'var(--surface)', color: 'var(--text)', fontSize: 15 }}
+          placeholder="you@example.com" className="ds-input"
         />
-        {error && <div className="text-sm" style={{ color: 'var(--c-rose)' }}>{error}</div>}
-        <button type="submit" disabled={busy || !email.trim()} className="btn btn-primary">
+        {error && <div className="ds-card as-err">{error}</div>}
+        <button type="submit" disabled={busy || !email.trim()} className="ds-btn">
           {busy ? 'Отправляю…' : 'Отправить ссылку'}
         </button>
       </form>
-    </div>
-  );
-}
-
-function RecoveryConfirm({ token }: { token: string }) {
-  const navigate = useNavigate();
-  const { setAccessToken } = useAuth();
-  const [status, setStatus] = useState<'loading' | 'error'>('loading');
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    (async () => {
-      try {
-        const res = await fetch(`${API_BASE}/api/auth/recovery/confirm`, {
-          method: 'POST', credentials: 'include',
-          headers: { 'Content-Type': 'application/json', 'x-requested-with': 'webapp' },
-          body: JSON.stringify({ token }),
-        });
-        if (!res.ok) {
-          const body = await res.json().catch(() => ({}));
-          throw new Error(body.message ?? 'Ссылка недействительна или истекла');
-        }
-        const { accessToken, expiresIn } = await res.json() as { accessToken: string; expiresIn: number };
-        setAccessToken(accessToken, expiresIn);
-        navigate('/account?recovered=1', { replace: true });
-      } catch (e) {
-        setStatus('error');
-        setError(String(e).replace('Error: ', ''));
-      }
-    })();
-  }, [token, setAccessToken, navigate]);
-
-  if (status === 'loading') {
-    return <div className="loader-center" style={{ minHeight: '60vh' }}><div className="spinner" /></div>;
-  }
-  return (
-    <div className="page-inner-wide" style={{ paddingTop: 80, maxWidth: 480, margin: '0 auto' }}>
-      <div className="eyebrow" style={{ marginBottom: 14 }}>Восстановление</div>
-      <h1 style={{ fontSize: 28, fontWeight: 600, marginBottom: 14 }}>Не получилось</h1>
-      <div className="text-sm" style={{ color: 'var(--c-rose)', marginBottom: 24 }}>{error}</div>
-      <button onClick={() => navigate('/auth/recovery')} className="btn btn-primary">
-        Запросить новую ссылку
-      </button>
-    </div>
+      </div>
+    </ServicePage>
   );
 }

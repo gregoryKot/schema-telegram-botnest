@@ -7,6 +7,7 @@ import { EDGE_TYPES } from './modeMapRegistry';
 import { toFlowNodes, toFlowEdges } from './modeMapFlow';
 import { ModeMapLegend } from './ModeMapLegend';
 import { MMIcon } from './modeMapIcons';
+import '../styles/sheet-modemap.css';
 
 function Canvas({ map }: { map: ModeMapFull }) {
   const { zoomIn, zoomOut, fitView } = useReactFlow();
@@ -20,8 +21,7 @@ function Canvas({ map }: { map: ModeMapFull }) {
     >
       <Background variant={BackgroundVariant.Dots} color="rgba(var(--fg-rgb),0.16)" gap={22} size={1.5} />
       <Panel position="top-left">
-        <div style={{ display: 'flex', gap: 2, padding: 4, borderRadius: 9, background: 'var(--bg-elev)',
-          border: '1px solid var(--line)', boxShadow: 'var(--shadow-2)' }}>
+        <div className="ds-card mm2-toolbar">
           <ViewBtn onClick={() => zoomOut()}><MMIcon name="minus" size={17} /></ViewBtn>
           <ViewBtn onClick={() => zoomIn()}><MMIcon name="plus" size={17} /></ViewBtn>
           <ViewBtn onClick={() => fitView({ padding: 0.2 })}><MMIcon name="fit" size={17} /></ViewBtn>
@@ -35,9 +35,7 @@ function Canvas({ map }: { map: ModeMapFull }) {
 
 function ViewBtn({ children, onClick, active }: { children: React.ReactNode; onClick: () => void; active?: boolean }) {
   return (
-    <button onClick={onClick} style={{ width: 32, height: 30, borderRadius: 6, border: 'none', cursor: 'pointer',
-      background: active ? 'var(--accent-soft)' : 'none', color: active ? 'var(--accent)' : 'var(--text-sub)',
-      fontSize: 15, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{children}</button>
+    <button onClick={onClick} className={`ds-btn ds-btn--icon mm2-tb-btn${active ? ' is-active' : ''}`}>{children}</button>
   );
 }
 
@@ -60,13 +58,10 @@ export function ModeMapViewer() {
 
   if (!loading && maps.length === 0) {
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 10, color: 'var(--text-sub)' }}>
-        <div style={{ width: 52, height: 52, borderRadius: 12, background: 'var(--surface-2)', border: '1px solid var(--line)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-faint)' }}>
-          <MMIcon name="map" size={26} />
-        </div>
-        <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>Карты режимов пока нет</div>
-        <div style={{ fontSize: 13, textAlign: 'center', maxWidth: 300, lineHeight: 1.5 }}>
+      <div className="mm2-center">
+        <div className="mm2-empty-ico"><MMIcon name="map" size={26} /></div>
+        <div className="mm2-empty-title">Карты режимов пока нет</div>
+        <div className="mm2-empty-sub">
           Терапевт создаёт её на сессии — она появится здесь.
         </div>
       </div>
@@ -74,24 +69,19 @@ export function ModeMapViewer() {
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+    <div className="mm2-fill">
       {maps.length > 1 && (
-        <div style={{ display: 'flex', gap: 6, padding: '8px 12px', overflowX: 'auto', flexShrink: 0,
-          borderBottom: '1px solid var(--line)' }}>
+        <div className="mm2-bar">
           {maps.map(m => (
             <button key={m.id} onClick={() => select(m.id)}
-              style={{ padding: '5px 12px', borderRadius: 7, fontSize: 13, cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0,
-                fontWeight: active?.id === m.id ? 600 : 400,
-                border: active?.id === m.id ? '1px solid var(--line)' : '1px solid transparent',
-                background: active?.id === m.id ? 'var(--surface-3)' : 'none',
-                color: active?.id === m.id ? 'var(--text)' : 'var(--text-sub)' }}>
+              className={`ds-card mm2-map mm2-map-btn${active?.id === m.id ? ' is-active' : ''}`}>
               {m.title}
             </button>
           ))}
         </div>
       )}
       <div style={{ flex: 1, minHeight: 0, position: 'relative' }}>
-        {loading && <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-faint)' }}>Загрузка…</div>}
+        {loading && <div className="mm2-loading" style={{ position: 'absolute', inset: 0 }}>Загрузка…</div>}
         {active && (
           <ReactFlowProvider>
             <div style={{ width: '100%', height: '100%' }}><Canvas key={active.id} map={active} /></div>

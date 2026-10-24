@@ -1,6 +1,6 @@
 import { SectionHeader } from './ui';
 import { PairPanel } from '../pairSheet/PairPanel';
-import { usePairMechanics } from '../pairSheet/usePairMechanics';
+import { usePair } from '../pairSheet/usePair';
 
 // «Партнёр» в настройках — компактная секция той же механики «пара», что и
 // PairSheet.tsx («Вместе»). Логика/состояние/разметка общие
@@ -9,7 +9,7 @@ import { usePairMechanics } from '../pairSheet/usePairMechanics';
 // полноэкранная карточка-приглашение здесь неуместна (тесная секция внутри
 // настроек, не отдельный экран).
 export function PartnerSection({ onInfo }: { onInfo: () => void }) {
-  const pair = usePairMechanics((_code, url) => {
+  const pair = usePair((_code, url) => {
     if (!navigator.share) return;
     navigator
       .share({ text: `Давай отслеживать потребности вместе! ${url}` })
@@ -19,9 +19,12 @@ export function PartnerSection({ onInfo }: { onInfo: () => void }) {
   });
 
   return (
-    <div style={{ marginBottom: 8 }}>
+    <div className="u-mb8">
       <SectionHeader onInfo={onInfo}>ПАРТНЁР</SectionHeader>
-      <div className="card" style={{ borderRadius: 16, padding: 16 }}>
+      <div
+        className="card"
+        style={{ borderRadius: 'var(--r-16)', padding: 16 }}
+      >
         <PairPanel pair={pair} compact />
       </div>
     </div>

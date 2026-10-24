@@ -115,4 +115,34 @@ describe('ModeNoteDto', () => {
       }),
     ).resolves.toContain('healthyView');
   });
+
+  // modeFunction/needsMet — вопросы бланка проработки режима («какая у режима
+  // функция», «даёт ли поведение то, что нужно»), режим-специфичные поля.
+  it('modeFunction/needsMet — валидное тело проходит', async () => {
+    await expect(
+      errorsFor(ModeNoteDto, {
+        modeId: 'vulnerable_child',
+        modeFunction: 'защищает от боли отвержения',
+        needsMet: 'даёт передышку, но потребность остаётся',
+      }),
+    ).resolves.toEqual([]);
+  });
+
+  it('modeFunction длиннее 3000 символов — отказ', async () => {
+    await expect(
+      errorsFor(ModeNoteDto, {
+        modeId: 'vulnerable_child',
+        modeFunction: 'x'.repeat(3001),
+      }),
+    ).resolves.toContain('modeFunction');
+  });
+
+  it('needsMet длиннее 3000 символов — отказ', async () => {
+    await expect(
+      errorsFor(ModeNoteDto, {
+        modeId: 'vulnerable_child',
+        needsMet: 'x'.repeat(3001),
+      }),
+    ).resolves.toContain('needsMet');
+  });
 });

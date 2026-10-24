@@ -12,9 +12,11 @@
 //   node scripts/setup-merge-drivers.mjs --check    — сверка для CI (см. ниже)
 //
 // --check ничего не ставит: он проверяет, что у каждого `merge=<имя>` из
-// .gitattributes есть драйвер в этом файле, а у каждого драйвера — свой
-// скрипт. Без сверки легко добавить атрибут и забыть драйвер: слияние тогда
-// пойдёт текстовым, ошибки не будет, и узнаем мы об этом по битому бейслайну.
+// .gitattributes есть драйвер в этом файле, у каждого драйвера — свой скрипт
+// и у каждого `*-baseline.json` — явная строка в .gitattributes (логика —
+// scripts/merge-drivers-check.mjs). Без сверки легко добавить атрибут и
+// забыть драйвер или завести бейслайн и забыть атрибут: слияние тогда пойдёт
+// текстовым, ошибки не будет, и узнаем мы об этом по битому бейслайну.
 import { spawnSync } from 'child_process';
 import {
   chmodSync,
@@ -24,6 +26,7 @@ import {
   writeFileSync,
 } from 'fs';
 import { dirname, join } from 'path';
+import { checkMergeDrivers } from './merge-drivers-check.mjs';
 
 const ROOT = join(import.meta.dirname, '..');
 const CHECK = process.argv.includes('--check');
@@ -47,28 +50,8 @@ const DRIVERS = {
   },
 };
 
-function usedInAttributes() {
-  const path = join(ROOT, '.gitattributes');
-  if (!existsSync(path)) return [];
-  const text = readFileSync(path, 'utf8');
-  return [...new Set([...text.matchAll(/\bmerge=([\w.-]+)/g)].map((m) => m[1]))];
-}
-
 if (CHECK) {
-  const problems = [];
-  for (const used of usedInAttributes()) {
-    if (!DRIVERS[used]) {
-      problems.push(
-        `.gitattributes ссылается на merge=${used}, но драйвера с таким именем ` +
-          'нет в scripts/setup-merge-drivers.mjs — слияние пойдёт текстовым, молча',
-      );
-    }
-  }
-  for (const [driver, { script }] of Object.entries(DRIVERS)) {
-    if (!existsSync(join(ROOT, script))) {
-      problems.push(`драйвер ${driver} ссылается на несуществующий ${script}`);
-    }
-  }
+  const { problems, baselines } = checkMergeDrivers(ROOT, DRIVERS);
   if (problems.length) {
     console.error('❌ merge-драйверы рассинхронизированы:');
     for (const p of problems) console.error(`   ${p}`);
@@ -76,7 +59,7 @@ if (CHECK) {
   }
   console.log(
     `✅ merge-драйверы: ${Object.keys(DRIVERS).length} объявлено, ` +
-      `все имена из .gitattributes покрыты.`,
+      `все имена из .gitattributes покрыты, у ${baselines} бейслайнов есть атрибут.`,
   );
   process.exit(0);
 }

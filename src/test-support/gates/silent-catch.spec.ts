@@ -11,7 +11,9 @@ import {
   loadRegexList,
   loadStringList,
 } from './pattern-loader';
-import { runGate } from './gate-sandbox';
+import { readFileSync } from 'fs';
+import { join } from 'path';
+import { REAL_SCRIPTS_DIR, runGate } from './gate-sandbox';
 
 describe('check-silent-catch.mjs', () => {
   it('новый файл с .catch(() => {}) — exit 1, допустимо 0', () => {
@@ -238,6 +240,51 @@ describe('check-silent-catch.mjs', () => {
     expect(res.stdout).toContain('✓ Храповик тихих catch: 0 (без роста)');
   });
 
+  // FILE_ALLOW: единственный доступ к localStorage. Отказ хранилища роняет
+  // даже чтение (приватный режим, забитая квота), а хранятся там подсказки
+  // интерфейса, не данные человека.
+  it('shared/src/utils/safeLocalStorage.ts — не считается целиком', () => {
+    const res = runGate('check-silent-catch.mjs', {
+      'scripts/silent-catch-baseline.json': JSON.stringify({}),
+      'shared/src/utils/safeLocalStorage.ts': [
+        'export function readLocal(key) {',
+        '  try {',
+        '    return localStorage.getItem(key);',
+        '  } catch {',
+        '    return null;',
+        '  }',
+        '}',
+        'export function writeLocal(key, value) {',
+        '  try {',
+        '    localStorage.setItem(key, value);',
+        '    return true;',
+        '  } catch {}',
+        '}',
+        '',
+      ].join('\n'),
+    });
+    expect(res.status).toBe(0);
+    expect(res.stdout).toContain('✓ Храповик тихих catch: 0 (без роста)');
+  });
+
+  // Граница: тот же приём с localStorage в ЛЮБОМ другом новом файле — долг.
+  // Иначе исключение расползлось бы на все обёртки хранилища подряд.
+  it('такой же доступ к localStorage в другом файле — считается', () => {
+    const res = runGate('check-silent-catch.mjs', {
+      'scripts/silent-catch-baseline.json': JSON.stringify({}),
+      'shared/src/utils/otherStorage.ts': [
+        'export function writeLocal(key, value) {',
+        '  try {',
+        '    localStorage.setItem(key, value);',
+        '  } catch {}',
+        '}',
+        '',
+      ].join('\n'),
+    });
+    expect(res.status).toBe(1);
+    expect(res.stderr).toContain('новый файл с 1 тихими catch');
+  });
+
   // Граница FILE_ALLOW: те же catch в ЛЮБОМ другом новом файле — ошибка.
   it('такой же код в другом файле — считается', () => {
     const res = runGate('check-silent-catch.mjs', {
@@ -412,11 +459,35 @@ describe('правила гейта: каждый паттерн со своим
     const CORPUS = [
       'trackEvent: (name, meta) => {',
       'trackPublicEvent(name) {',
+      'export function resolveClientTimeZone(): string {',
     ];
     const unmatched = ENCLOSING_ALLOW.filter(
       (p) => !CORPUS.some((text) => new RegExp(p.source, p.flags).test(text)),
     );
     expect(unmatched).toEqual([]);
+  });
+
+  // resolveClientTimeZone (shared/src/booking/clientTimeZone.ts): Intl
+  // бросил/недоступен — ответ уже стоит следующей строкой (фолбэк
+  // Europe/Moscow), показывать и откатывать нечего.
+  it('runGate: resolveClientTimeZone — Intl-фолбэк, не проглоченный запрос', () => {
+    const res = runGate('check-silent-catch.mjs', {
+      'scripts/silent-catch-baseline.json': JSON.stringify({}),
+      'shared/src/booking/clientTimeZone.ts': [
+        'export function resolveClientTimeZone(): string {',
+        '  try {',
+        '    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;',
+        '    if (tz) return tz;',
+        '  } catch {',
+        '    // Intl недоступен/бросил — берём фолбэк ниже.',
+        '  }',
+        "  return 'Europe/Moscow';",
+        '}',
+        '',
+      ].join('\n'),
+    });
+    expect(res.status).toBe(0);
+    expect(res.stdout).toContain('✓ Храповик тихих catch: 0 (без роста)');
   });
 
   it('runGate: trackPublicEvent — тоже легитимно, не только trackEvent', () => {
@@ -436,9 +507,22 @@ describe('правила гейта: каждый паттерн со своим
   });
 
   // FILE_ALLOW — третий способ (файл целиком best-effort примитив). Список
-  // короткий: единственный образец на 2026-08 — телеметрия крашей.
+  // держим коротким и перечисляем поимённо: молча выросший список исключений
+  // — это и есть замалчивание гейта (правило №15 CLAUDE.md).
   it('у каждой записи FILE_ALLOW реальный файл гасится целиком', () => {
-    expect(FILE_ALLOW).toEqual(['shared/src/api/clientErrorReport.ts']);
+    expect(FILE_ALLOW).toEqual([
+      // Телеметрия крашей: отчёт о поломке не имеет права ломать UI сам.
+      'shared/src/api/clientErrorReport.ts',
+      // Доступ к localStorage: отказ хранилища роняет даже чтение, а хранятся
+      // там подсказки интерфейса, не данные человека (2026-08-28).
+      'shared/src/utils/safeLocalStorage.ts',
+      // Сетевой шаг выхода: POST /api/auth/logout best-effort — сервер может не
+      // ответить, но локальный выход обязан состояться (2026-09-03).
+      'shared/src/auth/logout.ts',
+      // Чистка хранилища при выходе: clear() роняет отказ хранилища, выход всё
+      // равно должен состояться — сосед safeLocalStorage (2026-09-03).
+      'shared/src/auth/clearLocalData.ts',
+    ]);
   });
 
   it.each(FILE_ALLOW)(
@@ -452,4 +536,109 @@ describe('правила гейта: каждый паттерн со своим
       expect(res.stdout).toContain('✓ Храповик тихих catch: 0 (без роста)');
     },
   );
+});
+
+// Денежные пути (аудит 2026-10-11, frontends#0): отмена подписки глотала
+// отказ и два месяца числилась в бейслайне как «долг». Для файлов с
+// subscri|donat|booking|payment в пути бейслайн не применяется: тихий catch
+// там красный всегда, а запись в бейслайне — тоже. Правило №15: исключение
+// (MONEY_ALLOW) — с образцом, который оно гасит, И контрольным образцом,
+// который по-прежнему красный.
+describe('денежные пути: бейслайна для тихих catch нет', () => {
+  const MONEY_ALLOW = loadStringList('silent-catch-money.mjs', 'MONEY_ALLOW');
+  const SILENT = 'try { await api.cancel(t); } catch { /* ignore */ }\n';
+
+  it('тихий catch в файле подписки красный, даже если файл записан в бейслайн', () => {
+    const res = runGate('check-silent-catch.mjs', {
+      'scripts/silent-catch-baseline.json': JSON.stringify({
+        'webapp/src/pages/SubscribePage.tsx': 1,
+      }),
+      'webapp/src/pages/SubscribePage.tsx': SILENT,
+    });
+    expect(res.status).toBe(1);
+    expect(res.stderr).toContain(
+      'webapp/src/pages/SubscribePage.tsx: 1 тихих catch на денежном пути',
+    );
+  });
+
+  it.each([
+    ['webapp/src/pages/DonatePage.tsx'],
+    ['src/booking/booking.create.ts'],
+    ['src/payment/payment.service.ts'],
+    ['shared/src/subscription/useSubscription.ts'],
+  ])('то же для %s', (file) => {
+    const res = runGate('check-silent-catch.mjs', {
+      'scripts/silent-catch-baseline.json': JSON.stringify({ [file]: 1 }),
+      [file]: SILENT,
+    });
+    expect(res.status).toBe(1);
+    expect(res.stderr).toContain('на денежном пути');
+  });
+
+  it('запись денежного файла в бейслайне красная и без самого catch', () => {
+    const res = runGate('check-silent-catch.mjs', {
+      'scripts/silent-catch-baseline.json': JSON.stringify({
+        'webapp/src/pages/SubscribePage.tsx': 1,
+      }),
+      'webapp/src/pages/SubscribePage.tsx': 'export const x = 1;\n',
+    });
+    expect(res.status).toBe(1);
+    expect(res.stderr).toContain('запись бейслайна на денежном пути');
+  });
+
+  it('контроль: тот же catch вне денежного пути по-прежнему держится храповиком', () => {
+    const res = runGate('check-silent-catch.mjs', {
+      'scripts/silent-catch-baseline.json': JSON.stringify({
+        'webapp/src/pages/MergePage.tsx': 1,
+      }),
+      'webapp/src/pages/MergePage.tsx': SILENT,
+    });
+    expect(res.status).toBe(0);
+    expect(res.stdout).toContain('✓ Храповик тихих catch: 1 (без роста)');
+  });
+
+  it('чистый денежный файл — зелёный', () => {
+    const res = runGate('check-silent-catch.mjs', {
+      'scripts/silent-catch-baseline.json': JSON.stringify({}),
+      'webapp/src/pages/SubscribePage.tsx':
+        'try { await api.cancel(t); } catch (e) { report(e); }\n',
+    });
+    expect(res.status).toBe(0);
+  });
+
+  it('MONEY_ALLOW перечислен поимённо: разбор TZID чужого календаря', () => {
+    expect(MONEY_ALLOW).toEqual(['src/booking/caldav-busy.ts']);
+  });
+
+  it('образец MONEY_ALLOW гасится, соседний файл того же пути — нет', () => {
+    const allowed = runGate('check-silent-catch.mjs', {
+      'scripts/silent-catch-baseline.json': JSON.stringify({
+        'src/booking/caldav-busy.ts': 1,
+      }),
+      'src/booking/caldav-busy.ts': SILENT,
+    });
+    expect(allowed.status).toBe(0);
+    const neighbour = runGate('check-silent-catch.mjs', {
+      'scripts/silent-catch-baseline.json': JSON.stringify({
+        'src/booking/booking.service.ts': 1,
+      }),
+      'src/booking/booking.service.ts': SILENT,
+    });
+    expect(neighbour.status).toBe(1);
+    expect(neighbour.stderr).toContain('на денежном пути');
+  });
+
+  it('реальный бейслайн: ни одной денежной записи вне MONEY_ALLOW', () => {
+    const baseline = JSON.parse(
+      readFileSync(
+        join(REAL_SCRIPTS_DIR, 'silent-catch-baseline.json'),
+        'utf8',
+      ),
+    ) as Record<string, number>;
+    const money = Object.keys(baseline).filter(
+      (f) =>
+        /(subscri|donat|booking|payment)/i.test(f) && !MONEY_ALLOW.includes(f),
+    );
+    expect(money).toEqual([]);
+  });
 });

@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { API_BASE } from '../../utils/apiBase'; import { useTr } from '../../utils/addressForm';
+import { LimitedTextarea } from '../../../../shared/src/components/LimitedTextarea';
+import * as LIM from '../../../../shared/src/limits/textLimits';
 
 // Секция «Роль психолога» (заявка терапевта). Вынесено из AccountPage.tsx
 // (правило №10).
@@ -62,42 +64,41 @@ export function TherapistRequestSection({ accessToken }: { accessToken: string |
   };
 
   return (
-    <div style={{ marginTop: 24 }}>
-      <div className="eyebrow" style={{ marginBottom: 8 }}>Роль психолога</div>
+    <div className="ds-card ds-card--ink aa-role">
+      <div className="aa-role-label">Роль психолога</div>
       {req?.status === 'pending' ? (
-        <div className="card-elevated" style={{ padding: 16, fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.5 }}>
-          {tr('Твоя заявка на рассмотрении. Рассмотрим её и напишем в боте.', 'Ваша заявка на рассмотрении. Рассмотрим её и напишем в боте.')}
+        <div className="aa-role-note">
+          {tr('Твоя заявка на рассмотрении. О решении сообщим в Telegram, на почту или по контактам из заявки; здесь тоже обновится статус.', 'Ваша заявка на рассмотрении. О решении сообщим в Telegram, на почту или по контактам из заявки; здесь тоже обновится статус.')}
         </div>
       ) : req?.status === 'approved' ? (
-        <div className="card-elevated" style={{ padding: 16, fontSize: 13, color: 'var(--accent-green)' }}>
+        <div className="aa-role-note">
           {tr('Заявка одобрена. Перезайди в приложение.', 'Заявка одобрена. Перезайдите в приложение.')}
         </div>
       ) : !open ? (
-        <button onClick={() => setOpen(true)} style={{ padding: '9px 20px', borderRadius: 6, border: '1px solid rgba(var(--fg-rgb),0.15)', background: 'transparent', color: 'var(--text-sub)', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>
-          Я психолог — подать заявку
-        </button>
+        <>
+          <div className="ds-h3">{tr('Ведёшь клиентов? Открой кабинет терапевта', 'Ведёте клиентов? Откройте кабинет терапевта')}</div>
+          <button onClick={() => setOpen(true)} className="ds-btn">
+            Я психолог — подать заявку
+          </button>
+        </>
       ) : (
-        <div className="card-elevated" style={{ padding: 16 }}>
+        <div className="aa-role-form">
           {req?.status === 'rejected' && (
-            <div style={{ fontSize: 12, color: 'var(--accent-red)', marginBottom: 10, padding: 8, background: 'rgba(248,113,113,0.08)', borderRadius: 8 }}>
+            <div className="aa-role-note">
               Прошлая заявка отклонена{req.rejectReason ? `: ${req.rejectReason}` : ''}. {tr('Можешь подать новую.', 'Можете подать новую.')}
             </div>
           )}
-          <input value={fullName} onChange={e => setFullName(e.target.value)} placeholder="ФИО"
-            style={{ width: '100%', boxSizing: 'border-box', marginBottom: 8, background: 'rgba(var(--fg-rgb),0.06)', border: '1px solid rgba(var(--fg-rgb),0.12)', borderRadius: 10, padding: '10px 12px', color: 'var(--text)', fontSize: 14 }} />
-          <textarea value={qualification} onChange={e => setQualification(e.target.value)} rows={3}
-            placeholder="Квалификация: образование, направление, опыт, сертификаты"
-            style={{ width: '100%', boxSizing: 'border-box', marginBottom: 8, background: 'rgba(var(--fg-rgb),0.06)', border: '1px solid rgba(var(--fg-rgb),0.12)', borderRadius: 10, padding: '10px 12px', color: 'var(--text)', fontSize: 14, fontFamily: 'inherit', resize: 'vertical' }} />
-          <input value={contacts} onChange={e => setContacts(e.target.value)} placeholder="Контакты: сайт, @telegram, b17 и т.д."
-            style={{ width: '100%', boxSizing: 'border-box', marginBottom: 8, background: 'rgba(var(--fg-rgb),0.06)', border: '1px solid rgba(var(--fg-rgb),0.12)', borderRadius: 10, padding: '10px 12px', color: 'var(--text)', fontSize: 14 }} />
-          <textarea value={message} onChange={e => setMessage(e.target.value)} rows={2}
-            placeholder="Сообщение админу (необязательно)"
-            style={{ width: '100%', boxSizing: 'border-box', marginBottom: 8, background: 'rgba(var(--fg-rgb),0.06)', border: '1px solid rgba(var(--fg-rgb),0.12)', borderRadius: 10, padding: '10px 12px', color: 'var(--text)', fontSize: 14, fontFamily: 'inherit', resize: 'vertical' }} />
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button disabled={busy} onClick={() => setOpen(false)} style={{ flex: 1, padding: '12px 0', borderRadius: 10, border: '1px solid rgba(var(--fg-rgb),0.15)', background: 'transparent', color: 'var(--text-sub)', fontSize: 13, cursor: 'pointer' }}>Отмена</button>
-            <button disabled={busy} onClick={submit} style={{ flex: 2, padding: '10px 0', borderRadius: 6, border: 'none', background: 'var(--text)', color: 'var(--bg)', fontSize: 13, fontWeight: 600, cursor: 'pointer', opacity: busy ? 0.6 : 1 }}>{busy ? 'Отправляю…' : 'Отправить заявку'}</button>
+          <input value={fullName} onChange={e => setFullName(e.target.value)} placeholder="ФИО" maxLength={LIM.THERAPIST_REQUEST_NAME_MAX} className="ds-input" />
+          <LimitedTextarea max={LIM.THERAPIST_REQUEST_QUAL_MAX} value={qualification} onChange={e => setQualification(e.target.value)} rows={3}
+            placeholder="Квалификация: образование, направление, опыт, сертификаты" className="ds-textarea" />
+          <input value={contacts} onChange={e => setContacts(e.target.value)} placeholder="Контакты: сайт, @telegram, b17 и т.д." maxLength={LIM.THERAPIST_REQUEST_CONTACTS_MAX} className="ds-input" />
+          <LimitedTextarea max={LIM.THERAPIST_REQUEST_MESSAGE_MAX} value={message} onChange={e => setMessage(e.target.value)} rows={2}
+            placeholder="Сообщение админу (необязательно)" className="ds-textarea" />
+          <div className="aa-actions">
+            <button disabled={busy} onClick={() => setOpen(false)} className="ds-btn ds-btn--secondary">Отмена</button>
+            <button disabled={busy} onClick={submit} className="ds-btn">{busy ? 'Отправляю…' : 'Отправить заявку'}</button>
           </div>
-          {err && <div style={{ fontSize: 12, color: 'var(--accent-red)', marginTop: 8 }}>{err}</div>}
+          {err && <div className="aa-fail">{err}</div>}
         </div>
       )}
     </div>

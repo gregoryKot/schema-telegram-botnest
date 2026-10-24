@@ -39,7 +39,7 @@ export function IntroPhase({
           background: 'color-mix(in srgb, var(--accent) 8%, transparent)',
           border:
             '1px solid color-mix(in srgb, var(--accent) 15%, transparent)',
-          borderRadius: 14,
+          borderRadius: 'var(--r-14)',
           padding: '14px 16px',
           marginBottom: 20,
         }}
@@ -65,7 +65,7 @@ export function IntroPhase({
       <div
         style={{
           background: 'rgba(var(--fg-rgb),0.04)',
-          borderRadius: 14,
+          borderRadius: 'var(--r-14)',
           padding: '12px 16px',
           marginBottom: 24,
         }}
@@ -87,7 +87,7 @@ export function IntroPhase({
         style={{
           width: '100%',
           padding: '15px 0',
-          borderRadius: 14,
+          borderRadius: 'var(--r-14)',
           border: 'none',
           background:
             'linear-gradient(135deg, var(--accent), var(--accent-hi))',
@@ -105,7 +105,7 @@ export function IntroPhase({
         style={{
           width: '100%',
           padding: '12px 0',
-          borderRadius: 14,
+          borderRadius: 'var(--r-14)',
           border: 'none',
           background: 'transparent',
           color: 'var(--text-sub)',

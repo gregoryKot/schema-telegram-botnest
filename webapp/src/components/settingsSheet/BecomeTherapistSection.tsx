@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { api } from '../../api';
 import { useTr } from '../../utils/addressForm';
-import { SHead } from './ui';
-import { inputStyle } from './inputStyle';
+import { SSection } from './ui';
+import { LimitedTextarea } from '../../../../shared/src/components/LimitedTextarea';
+import * as LIM from '../../../../shared/src/limits/textLimits';
 
 // Раздел «Стать специалистом» — вынесен из SettingsSheet.tsx (правило №10,
 // файл-должник, пофайловый храповик размера). Состояние заявки полностью
@@ -45,56 +46,48 @@ export function BecomeTherapistSection() {
   }
 
   return (
-    <>
-      <SHead id="s-specialist" label="Стать специалистом" />
-      <div style={{ padding: '16px 0', borderBottom: '1px solid rgba(var(--fg-rgb),0.06)' }}>
+    <SSection id="s-specialist" label="Стать специалистом">
+      <div className="st-body-block">
         {therapistReq?.status === 'pending' ? (
-          <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.6 }}>
-            Заявка на рассмотрении. Когда администратор одобрит — придёт уведомление в Telegram.
+          <div className="st-text">
+            Заявка на рассмотрении. Решение появится здесь.
           </div>
         ) : therapistReq?.status === 'approved' ? (
-          <div style={{ fontSize: 13, color: 'var(--accent-green)', lineHeight: 1.6 }}>
+          <div className="st-text st-text--ok">
             {tr('Заявка одобрена. Перезайди в приложение, чтобы появился кабинет терапевта.', 'Заявка одобрена. Перезайдите в приложение, чтобы появился кабинет терапевта.')}
           </div>
         ) : !showReqForm ? (
           <div>
             {therapistReq?.status === 'rejected' && (
-              <div style={{ fontSize: 12, color: 'var(--accent-red)', marginBottom: 12 }}>
+              <div className="st-err">
                 Заявка отклонена{therapistReq.rejectReason ? `: ${therapistReq.rejectReason}` : ''}. {tr('Можешь подать снова.', 'Можете подать снова.')}
               </div>
             )}
-            <p style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.6, margin: '0 0 12px' }}>
+            <p className="st-text">
               {tr('Если ты практикующий специалист — подай заявку. Администратор проверит и откроет доступ к кабинету.', 'Если вы практикующий специалист — подайте заявку. Администратор проверит и откроет доступ к кабинету.')}
             </p>
-            <button onClick={() => setShowReqForm(true)}
-              style={{ background: 'none', border: '1px solid rgba(var(--fg-rgb),0.15)', borderRadius: 7, padding: '7px 14px', color: 'var(--text-sub)', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>
-              Подать заявку
+            <button className="ds-btn ds-btn--sm ds-btn--secondary" onClick={() => setShowReqForm(true)}>
+              Я психолог — подать заявку
             </button>
           </div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <input value={reqFullName} onChange={e => setReqFullName(e.target.value)} placeholder="ФИО" style={inputStyle} />
-            <textarea value={reqQual} onChange={e => setReqQual(e.target.value)} rows={3}
-              placeholder="Квалификация: образование, направление, опыт, сертификаты"
-              style={{ ...inputStyle, resize: 'vertical', fontFamily: 'inherit' }} />
-            <input value={reqContacts} onChange={e => setReqContacts(e.target.value)} placeholder="Контакты: сайт, @telegram, b17 и т.д." style={inputStyle} />
-            <textarea value={reqMsg} onChange={e => setReqMsg(e.target.value)} rows={2}
-              placeholder="Сообщение (необязательно)"
-              style={{ ...inputStyle, resize: 'vertical', fontFamily: 'inherit' }} />
-            {reqError && <div style={{ fontSize: 12, color: 'var(--accent-red)' }}>{reqError}</div>}
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button onClick={() => { setShowReqForm(false); setReqError(''); }}
-                style={{ flex: 1, padding: '10px 0', borderRadius: 7, border: '1px solid rgba(var(--fg-rgb),0.12)', background: 'transparent', color: 'var(--text-sub)', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>
+          <div className="st-form">
+            <input value={reqFullName} onChange={e => setReqFullName(e.target.value)} placeholder="ФИО" maxLength={LIM.THERAPIST_REQUEST_NAME_MAX} className="ds-input" />
+            <LimitedTextarea max={LIM.THERAPIST_REQUEST_QUAL_MAX} value={reqQual} onChange={e => setReqQual(e.target.value)} rows={3} placeholder="Квалификация: образование, направление, опыт, сертификаты" className="ds-textarea" />
+            <input value={reqContacts} onChange={e => setReqContacts(e.target.value)} placeholder="Контакты: сайт, @telegram, b17 и т.д." maxLength={LIM.THERAPIST_REQUEST_CONTACTS_MAX} className="ds-input" />
+            <LimitedTextarea max={LIM.THERAPIST_REQUEST_MESSAGE_MAX} value={reqMsg} onChange={e => setReqMsg(e.target.value)} rows={2} placeholder="Сообщение (необязательно)" className="ds-textarea" />
+            {reqError && <div className="st-err">{reqError}</div>}
+            <div className="st-modal-actions">
+              <button className="ds-btn ds-btn--secondary" onClick={() => { setShowReqForm(false); setReqError(''); }}>
                 Отмена
               </button>
-              <button disabled={reqBusy} onClick={submitTherapistRequest}
-                style={{ flex: 2, padding: '10px 0', borderRadius: 7, border: 'none', background: 'var(--accent)', color: '#fff', fontSize: 13, fontWeight: 600, cursor: reqBusy ? 'default' : 'pointer', opacity: reqBusy ? 0.7 : 1, fontFamily: 'inherit' }}>
+              <button className="ds-btn ds-btn--accent" style={{ flex: 2 }} disabled={reqBusy} onClick={submitTherapistRequest}>
                 {reqBusy ? 'Отправляю...' : 'Отправить заявку'}
               </button>
             </div>
           </div>
         )}
       </div>
-    </>
+    </SSection>
   );
 }

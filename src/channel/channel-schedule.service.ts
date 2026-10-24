@@ -13,6 +13,7 @@ import { notifyAdminWithFallback } from '../utils/admin-alert';
 import { SlotAttempts } from '../bot/healthy-adult.attempts';
 import { ChannelPublisherService } from './channel-publisher.service';
 import { failedSummary, silentSummary } from './publish-report';
+import { CronLeaderService, LEASE_WINDOW } from '../infra/cron-leader.service';
 
 /** Часовой пояс расписания канала (единый для broadcast, не per-user). */
 const POST_TZ = 'Europe/Moscow';
@@ -52,20 +53,47 @@ export class ChannelScheduleService {
     private readonly publisher: ChannelPublisherService,
     private readonly phrases: HealthyAdultService,
     private readonly deliveries: DeliveryLogService,
+    private readonly cronLeader: CronLeaderService,
   ) {}
 
   @Cron(MORNING_CRON, { name: 'healthyAdultMorning', timeZone: POST_TZ })
   async tickMorning() {
+    // Без аренды второй инстанс (масштабирование/рестарт) продублирует пост
+    // подписчикам канала в то же окно — один и тот же слот выйдет дважды.
+    if (
+      !(await this.cronLeader.claimRun(
+        'healthyAdultMorning',
+        LEASE_WINDOW.fiveMinutes,
+      ))
+    )
+      return;
     await this.maybePost();
   }
 
   @Cron(EVENING_CRON, { name: 'healthyAdultEvening', timeZone: POST_TZ })
   async tickEvening() {
+    // Тот же риск, что и у утреннего тика, но для вечернего окна.
+    if (
+      !(await this.cronLeader.claimRun(
+        'healthyAdultEvening',
+        LEASE_WINDOW.fiveMinutes,
+      ))
+    )
+      return;
     await this.maybePost();
   }
 
   @Cron(CATCH_UP_CRON, { name: 'healthyAdultCatchUp', timeZone: POST_TZ })
   async tickCatchUp() {
+    // Единственный вход досылки: из maybePost под арендой утра/вечера фраза в
+    // 9–10 и 18–19 уходила дважды (аудит 2026-10). Аренда разводит и инстансы.
+    if (
+      !(await this.cronLeader.claimRun(
+        'healthyAdultCatchUp',
+        LEASE_WINDOW.fifteenMinutes,
+      ))
+    )
+      return;
     try {
       await this.catchUp(new Date());
     } catch (err) {
@@ -86,8 +114,8 @@ export class ChannelScheduleService {
   async maybePost(now = new Date()): Promise<void> {
     try {
       const slot = dueSlot(now, await this.phrases.lastPostAt());
-      // Слот закрыт — но пост мог выйти не везде: досылаем долг адресно.
-      if (!slot) return void (await this.catchUp(now));
+      // Слот закрыт: долг досылает только tickCatchUp (см. там), не этот тик.
+      if (!slot) return;
       const key = `${mskParts(now).dateKey}:${slot}`;
       if (!this.attempts.allow(key)) return;
 
@@ -133,7 +161,7 @@ export class ChannelScheduleService {
    * весь фан-аут нельзя — это дубль там, где пост уже вышел, — поэтому долг
    * считается по журналу и досылается только должникам.
    */
-  private async catchUp(now: Date): Promise<void> {
+  async catchUp(now = new Date()): Promise<void> {
     const slot = catchUpSlot(now);
     if (!slot) return;
     const key = `${mskParts(now).dateKey}:${slot}:повтор`;

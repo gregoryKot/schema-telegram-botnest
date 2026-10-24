@@ -91,7 +91,7 @@ export function IntroSheetShell<T extends Record<string, string>>({
 
   return (
     <BottomSheet onClose={onClose}>
-      <div style={{ paddingTop: 4 }}>
+      <div className="u-pt4">
         <IntroSheetHeader
           emoji={emoji}
           title={title}
@@ -103,7 +103,7 @@ export function IntroSheetShell<T extends Record<string, string>>({
           headerAction={headerAction}
         />
 
-        <div style={{ marginBottom: 20 }}>
+        <div className="u-mb20">
           <WizardProgress
             segments={questions.map((question) => ({
               filled: data[question.key].trim().length > 0,
@@ -124,7 +124,7 @@ export function IntroSheetShell<T extends Record<string, string>>({
           />
         )}
 
-        <div style={{ marginBottom: 16 }}>
+        <div className="u-mb16">
           <WizardNav
             accentColor={accentColor}
             onBack={() => setStep((s) => Math.max(0, s - 1))}

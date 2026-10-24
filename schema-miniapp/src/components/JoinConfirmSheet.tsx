@@ -1,8 +1,12 @@
-import { useState } from 'react';
 import { BottomSheet } from './BottomSheet';
 import { api, PairsData } from '../api';
 import { useTr } from '../utils/addressForm';
 import { logErr } from '../utils/logErr';
+import { useJoinConfirm } from '../../../shared/src/therapy/useJoinConfirm';
+import {
+  joinConfirmExplain,
+  joinConfirmTitle,
+} from '../../../shared/src/therapy/joinConfirmCopy';
 
 interface Props {
   joinKind: 'pair' | 'therapy';
@@ -24,44 +28,26 @@ export function JoinConfirmSheet({
   onPairJoined,
 }: Props) {
   const tr = useTr();
-  const [busy, setBusy] = useState(false);
-  const [failed, setFailed] = useState(false);
   const isPair = joinKind === 'pair';
 
-  // Заголовок и подписи кнопок нейтральны (без ты/вы) — не разводим.
-  const title = isPair ? 'Присоединиться к паре?' : 'Открыть доступ терапевту?';
+  // Заголовок и объяснение («откуда и зачем», честный объём) — shared, общие с сайтом.
+  const title = joinConfirmTitle(isPair);
+  const explain = joinConfirmExplain(isPair, tr);
 
-  // «Откуда и зачем» + ЧЕСТНЫЙ объём: существующая копия занижала («только
-  // число 0–10»), но партнёр видит ещё и неделю (PartnerCard). Для экрана
-  // согласия занижать нельзя.
-  const explain = isPair
-    ? tr(
-        'Пара — это взаимная видимость с другим человеком. Партнёр увидит твой индекс дня (число от 0 до 10) и как он менялся последнюю неделю. Ты увидишь его. Дневники, заметки и оценки по потребностям остаются только у тебя.',
-        'Пара — это взаимная видимость с другим человеком. Партнёр увидит ваш индекс дня (число от 0 до 10) и как он менялся последнюю неделю. Вы увидите его. Дневники, заметки и оценки по потребностям остаются только у вас.',
-      )
-    : tr(
-        'Код от терапевта — это согласие открыть ему доступ к твоим записям. Трекер потребностей и задания терапевт видит всегда; дневники, карточки схем и результаты опросников — по твоему выбору в настройках. Отключить терапевта можно в любой момент.',
-        'Код от терапевта — это согласие открыть ему доступ к вашим записям. Трекер потребностей и задания терапевт видит всегда; дневники, карточки схем и результаты опросников — по вашему выбору в настройках. Отключить терапевта можно в любой момент.',
-      );
-
-  async function confirm() {
-    setBusy(true);
-    setFailed(false);
-    try {
+  const { busy, failMsg, confirm } = useJoinConfirm(
+    isPair,
+    tr,
+    async () => {
       if (isPair) {
         await api.joinPair(joinCode);
-        const data = await api.getPair();
-        onPairJoined(data);
+        onPairJoined(await api.getPair());
       } else {
         await api.joinTherapy(joinCode);
       }
-      onClose();
-    } catch (e) {
-      logErr('joinConfirm')(e);
-      setFailed(true);
-      setBusy(false);
-    }
-  }
+    },
+    onClose,
+    logErr('joinConfirm'),
+  );
 
   return (
     <BottomSheet onClose={onClose} zIndex={300}>
@@ -86,19 +72,16 @@ export function JoinConfirmSheet({
         >
           {explain}
         </p>
-        {failed && (
+        {failMsg && (
           <p
             style={{
               fontSize: 14,
-              color: 'var(--danger, #c0392b)',
+              color: 'var(--accent-red)',
               lineHeight: 1.6,
               marginBottom: 16,
             }}
           >
-            {tr(
-              'Не получилось присоединиться. Проверь ссылку и попробуй ещё раз.',
-              'Не получилось присоединиться. Проверьте ссылку и попробуйте ещё раз.',
-            )}
+            {failMsg}
           </p>
         )}
         <button
@@ -107,10 +90,10 @@ export function JoinConfirmSheet({
           style={{
             width: '100%',
             padding: '15px 0',
-            borderRadius: 14,
+            borderRadius: 'var(--r-14)',
             border: 'none',
             background: 'var(--accent)',
-            color: '#fff',
+            color: 'var(--on-accent)',
             fontSize: 15,
             fontWeight: 600,
             cursor: busy ? 'default' : 'pointer',
@@ -126,7 +109,7 @@ export function JoinConfirmSheet({
           style={{
             width: '100%',
             padding: '13px 0',
-            borderRadius: 12,
+            borderRadius: 'var(--r-12)',
             border: 'none',
             background: 'rgba(var(--fg-rgb),0.08)',
             color: 'var(--text)',

@@ -10,13 +10,14 @@ import { TrackerController } from './tracker.controller';
 import { SettingsController } from './settings.controller';
 import { HealthController } from './health.controller';
 import { DiaryController } from './diary.controller';
-import { BookingController } from './booking.controller';
+import { IntroLeadModule } from '../booking/intro-lead.module';
 import { ClientErrorsController } from './client-errors.controller';
 import { AnalyticsController } from './analytics.controller';
 import { PublicEventsController } from './public-events.controller';
 import { QuizController } from './quiz.controller';
 import { JourneyController } from './journey.controller';
 import { PracticeSessionsController } from './practice-sessions.controller';
+import { AccountApiModule } from './account-api.module';
 import { TelegramAuthGuard } from './telegram-auth.guard';
 import { BotModule } from '../bot/bot.module';
 import { NotificationModule } from '../notification/notification.module';
@@ -33,6 +34,8 @@ import { AnalyticsModule } from '../analytics/analytics.module';
     TherapyModule,
     AuthModule,
     AnalyticsModule,
+    AccountApiModule,
+    IntroLeadModule,
   ],
   controllers: [
     ApiController,
@@ -45,7 +48,6 @@ import { AnalyticsModule } from '../analytics/analytics.module';
     TrackerController,
     SettingsController,
     DiaryController,
-    BookingController,
     AnalyticsController,
     PublicEventsController,
     QuizController,

@@ -30,10 +30,11 @@ export function LoadErrorBanner({
           style={{
             marginTop: 12,
             padding: '10px 24px',
-            borderRadius: 12,
+            borderRadius: 'var(--r-12)',
             border: 'none',
             fontFamily: 'inherit',
-            background: 'rgba(248,113,113,0.12)',
+            background:
+              'color-mix(in srgb, var(--accent-red) 12%, transparent)',
             color: 'var(--accent-red)',
             fontSize: 13,
             fontWeight: 600,

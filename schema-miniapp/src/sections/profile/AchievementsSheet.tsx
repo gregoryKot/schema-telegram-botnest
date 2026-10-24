@@ -46,18 +46,16 @@ export function AchievementsSheet({
 
   return (
     <BottomSheet onClose={onClose}>
-      <div style={{ paddingTop: 4 }}>
+      <div className="u-pt4">
         <div
           style={{
             display: 'flex',
             alignItems: 'center',
-            gap: 10,
+            gap: 'var(--space-10)',
             marginBottom: 20,
           }}
         >
-          <span style={{ fontSize: 17, fontWeight: 700, color: 'var(--text)' }}>
-            Достижения
-          </span>
+          <span className="u-h17">Достижения</span>
           <span
             style={{
               fontSize: 13,
@@ -75,7 +73,7 @@ export function AchievementsSheet({
           style={{
             display: 'grid',
             gridTemplateColumns: '1fr 1fr 1fr',
-            gap: 8,
+            gap: 'var(--space-8)',
           }}
         >
           {achievements.map((a) => {
@@ -112,7 +110,7 @@ export function AchievementsSheet({
                     ? 'color-mix(in srgb, var(--accent) 10%, transparent)'
                     : 'rgba(var(--fg-rgb),0.03)',
                   border: `1px solid ${a.earned ? 'color-mix(in srgb, var(--accent) 22%, transparent)' : 'rgba(var(--fg-rgb),0.06)'}`,
-                  borderRadius: 16,
+                  borderRadius: 'var(--r-16)',
                   padding: '14px 10px 12px',
                   textAlign: 'center',
                   cursor: a.earned ? 'pointer' : 'default',

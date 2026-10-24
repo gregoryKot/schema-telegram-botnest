@@ -1,4 +1,5 @@
 import { type ReactNode } from 'react';
+import { hitboxStyle } from '../../utils/hitbox';
 
 export function SectionHeader({
   children,
@@ -32,24 +33,23 @@ export function SectionHeader({
         <button
           onClick={onInfo}
           aria-label="Пояснение"
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            width: 16,
-            height: 16,
-            borderRadius: '50%',
-            background: 'rgba(var(--fg-rgb),0.08)',
-            color: 'var(--text-faint)',
-            fontSize: 9,
-            fontWeight: 700,
-            cursor: 'pointer',
-            border: 'none',
-            flexShrink: 0,
-            padding: 0,
-          }}
+          style={{ ...hitboxStyle(16, 16, 44).outer, flexShrink: 0 }}
         >
-          ?
+          <span
+            style={{
+              ...hitboxStyle(16, 16, 44).inner,
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderRadius: '50%',
+              background: 'rgba(var(--fg-rgb),0.08)',
+              color: 'var(--text-faint)',
+              fontSize: 9,
+              fontWeight: 700,
+            }}
+          >
+            ?
+          </span>
         </button>
       )}
     </div>
@@ -139,7 +139,7 @@ export function Toggle({ on, onClick }: { on: boolean; onClick: () => void }) {
 
 export function RowRight({ text, small }: { text: string; small?: boolean }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+    <div className="u-ac6">
       <span
         style={{
           fontSize: small ? 13 : 15,
@@ -188,13 +188,13 @@ export function Row({
       style={{
         display: 'flex',
         alignItems: 'center',
-        gap: 12,
+        gap: 'var(--space-12)',
         padding: '13px 16px',
         cursor: onClick ? 'pointer' : 'default',
         borderTop: divider ? '1px solid rgba(var(--fg-rgb),0.05)' : undefined,
       }}
     >
-      <div style={{ flex: 1 }}>
+      <div className="u-flex1">
         <div
           style={{
             fontSize: 14,

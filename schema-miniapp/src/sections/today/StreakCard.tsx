@@ -11,7 +11,7 @@ export function StreakCard({ streak }: { streak: number }) {
       style={{
         display: 'flex',
         alignItems: 'center',
-        gap: 12,
+        gap: 'var(--space-12)',
         padding: '12px 16px',
         borderRadius: 18,
         animation: 'slide-up 0.3s ease both',
@@ -22,7 +22,7 @@ export function StreakCard({ streak }: { streak: number }) {
         style={{
           width: 40,
           height: 40,
-          borderRadius: 12,
+          borderRadius: 'var(--r-12)',
           flexShrink: 0,
           background: 'var(--accent-bg)',
           display: 'flex',
@@ -35,8 +35,8 @@ export function StreakCard({ streak }: { streak: number }) {
       >
         {streak}
       </div>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>
+      <div className="u-fill">
+        <div className="u-h15">
           {streak} {plural(streak, 'день', 'дня', 'дней')} подряд
         </div>
         <div style={{ fontSize: 12, color: 'var(--text-sub)', marginTop: 1 }}>

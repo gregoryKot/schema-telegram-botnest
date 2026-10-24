@@ -1,7 +1,8 @@
-import { useState } from 'react';
 import { BottomSheet } from './BottomSheet';
+import { PickerStickyHeader } from './PickerStickyHeader';
 import { SCHEMA_DOMAINS } from '../schemaTherapyData';
 import { useTr } from '../utils/addressForm';
+import { useAutosavedSelection } from '../../../shared/src/hooks/useAutosavedSelection';
 
 interface Props {
   selected: string[];
@@ -9,56 +10,19 @@ interface Props {
   onClose: () => void;
 }
 
-const SCHEMA_DESC: Record<string, string> = {
-  emotional_deprivation:
-    'Убеждение что эмоциональные потребности никогда не будут удовлетворены',
-  abandonment: 'Страх что близкие бросят или станут недоступны',
-  mistrust: 'Ожидание что люди причинят боль, используют или обманут',
-  defectiveness: 'Ощущение себя плохим, неполноценным или нелюбимым',
-  social_isolation: 'Ощущение чужим — отличным от всех остальных людей',
-  dependence: 'Ощущение неспособности справляться с жизнью самостоятельно',
-  vulnerability: 'Преувеличенный страх катастрофы: болезни, краха, аварии',
-  enmeshment: 'Чрезмерная вовлечённость с близкими за счёт своей идентичности',
-  failure: 'Убеждение в неизбежном провале там где другие успешны',
-  entitlement:
-    'Ощущение собственной исключительности: правила будто для других',
-  insufficient_self_control:
-    'Сложно терпеть дискомфорт, откладывать удовольствия или рутину',
-  subjugation: 'Подавление своих желаний чтобы избежать гнева или отвержения',
-  self_sacrifice: 'Чрезмерный фокус на нуждах других в ущерб собственным',
-  approval_seeking: 'Сильная потребность в одобрении в ущерб подлинному себе',
-  negativity: 'Фокус на негативе: потере, разочаровании, худшем сценарии',
-  emotion_inhibition_fear:
-    'Страх потерять контроль над эмоциями или импульсами',
-  emotional_inhibition:
-    'Сдерживание эмоций, спонтанности и естественного общения',
-  unrelenting_standards: 'Жёсткие внутренние требования чтобы избежать критики',
-  punitiveness_self: 'Жёсткое наказание себя за ошибки',
-  punitiveness_others: 'Жёсткое суждение и наказание других за ошибки',
-};
-
 export function SchemaPickerSheet({ selected, onSave, onClose }: Props) {
   const tr = useTr();
-  const [ids, setIds] = useState<string[]>(selected);
-
-  const toggle = (id: string) =>
-    setIds((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
-    );
+  const { ids, toggle } = useAutosavedSelection(selected, onSave);
 
   return (
     <BottomSheet onClose={onClose}>
-      <div style={{ paddingTop: 4 }}>
-        <div
-          style={{
-            fontSize: 18,
-            fontWeight: 700,
-            color: 'var(--text)',
-            marginBottom: 4,
-          }}
-        >
-          Мои схемы
-        </div>
+      <div className="u-pt4">
+        <PickerStickyHeader
+          title="Мои схемы"
+          hint="Выбор сохраняется сразу"
+          count={ids.length}
+          onDone={onClose}
+        />
         <div
           style={{
             fontSize: 13,
@@ -74,7 +38,7 @@ export function SchemaPickerSheet({ selected, onSave, onClose }: Props) {
         </div>
 
         {SCHEMA_DOMAINS.map((domain) => (
-          <div key={domain.id} style={{ marginBottom: 18 }}>
+          <div key={domain.id} className="u-mb18">
             <div
               style={{
                 fontSize: 11,
@@ -88,7 +52,7 @@ export function SchemaPickerSheet({ selected, onSave, onClose }: Props) {
             >
               {domain.domain}
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <div className="u-col4">
               {domain.schemas.map((s) => {
                 const active = ids.includes(s.id);
                 return (
@@ -106,9 +70,9 @@ export function SchemaPickerSheet({ selected, onSave, onClose }: Props) {
                     style={{
                       display: 'flex',
                       alignItems: 'center',
-                      gap: 10,
+                      gap: 'var(--space-10)',
                       padding: '10px 12px',
-                      borderRadius: 12,
+                      borderRadius: 'var(--r-12)',
                       cursor: 'pointer',
                       background: active
                         ? `${domain.color}12`
@@ -129,7 +93,7 @@ export function SchemaPickerSheet({ selected, onSave, onClose }: Props) {
                         marginTop: 2,
                       }}
                     />
-                    <div style={{ flex: 1, minWidth: 0 }}>
+                    <div className="u-fill">
                       <div
                         style={{
                           fontSize: 14,
@@ -141,7 +105,7 @@ export function SchemaPickerSheet({ selected, onSave, onClose }: Props) {
                       >
                         {s.name}
                       </div>
-                      {SCHEMA_DESC[s.id] && (
+                      {s.desc && (
                         <div
                           style={{
                             fontSize: 11,
@@ -150,7 +114,7 @@ export function SchemaPickerSheet({ selected, onSave, onClose }: Props) {
                             lineHeight: 1.4,
                           }}
                         >
-                          {SCHEMA_DESC[s.id]}
+                          {s.desc}
                         </div>
                       )}
                     </div>
@@ -171,28 +135,6 @@ export function SchemaPickerSheet({ selected, onSave, onClose }: Props) {
             </div>
           </div>
         ))}
-
-        <button
-          onClick={() => {
-            onSave(ids);
-            onClose();
-          }}
-          style={{
-            marginTop: 8,
-            width: '100%',
-            padding: '14px',
-            borderRadius: 14,
-            border: 'none',
-            background:
-              'linear-gradient(135deg, var(--accent), var(--accent-hi))',
-            color: 'var(--text)',
-            fontSize: 16,
-            fontWeight: 600,
-            cursor: 'pointer',
-          }}
-        >
-          Сохранить{ids.length > 0 ? ` (${ids.length})` : ''}
-        </button>
       </div>
     </BottomSheet>
   );

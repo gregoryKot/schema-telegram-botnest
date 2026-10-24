@@ -26,7 +26,9 @@ import { useOnboardingGate } from './useOnboardingGate';
 beforeEach(() => {
   (globalThis as { localStorage: unknown }).localStorage =
     createLocalStorageMock();
-  sessionStorage.setItem('addr_form_asked', '1'); // форма обращения уже выбрана
+  // форма обращения уже спрошена (снуз «Позже» свежий, см.
+  // shared/settings/addressFormPrompt)
+  localStorage.setItem('addr_form_asked', String(Date.now()));
   acceptDisclaimer.mockClear();
   getDisclaimer.mockClear();
   setFlag.mockClear();

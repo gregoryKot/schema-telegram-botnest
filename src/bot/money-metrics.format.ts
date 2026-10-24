@@ -10,6 +10,7 @@
 //
 // Язык простой: «поддержали проект», а не «donations: count=3 sum=1500».
 
+import { plural } from './plural';
 export interface MoneySourceStats {
   /** Сколько раз реально заплатили. */
   paidCount: number;
@@ -22,7 +23,7 @@ export interface MoneySourceStats {
 export interface MoneyWindow {
   donations: MoneySourceStats;
   subscriptions: MoneySourceStats;
-  /** Платных сессий подтверждено (сумму по ним отдельно не храним). */
+  /** Оплачено по вебхуку (paidAt); знакомства и ручное подтверждение не в счёте. */
   paidSessions: number;
   /** Платных сессий забронировано, но оплата ещё не пришла. */
   pendingSessions: number;
@@ -35,16 +36,9 @@ export interface MoneyMetrics {
   allTime: MoneyWindow;
 }
 
-const plural = (n: number, one: string, few: string, many: string): string =>
-  n % 10 === 1 && n % 100 !== 11
-    ? one
-    : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14)
-      ? few
-      : many;
-
 const times = (n: number): string => `${n} ${plural(n, 'раз', 'раза', 'раз')}`;
 
-function windowIsEmpty(w: MoneyWindow): boolean {
+export function windowIsEmpty(w: MoneyWindow): boolean {
   return (
     w.donations.paidCount === 0 &&
     w.donations.pendingCount === 0 &&

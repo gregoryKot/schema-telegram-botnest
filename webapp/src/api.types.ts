@@ -1,11 +1,11 @@
-// Типы API webapp (зеркало бэкенда, ранее инлайном в api.ts).
-// Вынесено из api.ts (правило №10).
-//
+// Типы API webapp (зеркало бэкенда), вынесены из api.ts (правило №10).
 // Типы, общие с мини-аппом, живут в shared/src/apiTypes (правило №3) — здесь
-// только ре-экспорт. ConceptSnapshot ещё и импортируется: на него ссылается
-// локальный ClientConceptualization (в webapp он с mode-map, потому локальный).
-import type { ConceptSnapshot } from '../../shared/src/apiTypes';
+// только ре-экспорт. ClientConceptualization локальный: в webapp он расширяет
+// общую ClientConceptualizationBase полями mode-map.
+import type { UserId } from '../../shared/src/apiTypes'; import type { Currency } from '../../shared/src/booking/priceRegion';
+import type { ClientConceptualizationBase } from '../../shared/src/therapy/clientConceptualization';
 export type {
+  UserId,
   UserSettings,
   StreakData,
   Achievement,
@@ -23,8 +23,9 @@ export type {
 } from '../../shared/src/apiTypes';
 
 // ─── Site-only types (booking, articles, mode-map) ───────────────────────────
+export type { AdminCalendar, AdminCalendarDay, AdminCalendarCell, AdminCalendarCellState, SlotOverrideKind, SlotOverrideItem, SlotOverridePatch } from './api.calendar.types';
 export interface BookingSlot { startsAt: string; endsAt: string; durationMin: number; }
-export interface SessionOption { type: 'INTRO_15' | 'SESSION_50'; label: string; durationMin: number; price: number; note: string; }
+export interface SessionOption { type: 'INTRO_15' | 'SESSION_50'; label: string; durationMin: number; price: number; prices?: Record<Currency, number>; note: string; } // price — рубли (старое поле), prices — по валютам; в старом ответе сервера prices нет — тогда рубли
 export interface AvailabilityRule {
   id: number; dayOfWeek: number; startHour: number; startMinute: number;
   endHour: number; endMinute: number; sessionDuration: number; bufferMin: number;
@@ -36,7 +37,7 @@ export type NewAvailabilityRule = {
 };
 export interface AdminBooking {
   id: number; startsAt: string; durationMin: number; type: string; status: string;
-  clientName: string; clientContact: string; message: string | null;
+  clientName: string; clientContact: string; clientChannel?: string | null; message: string | null;
   cancelToken: string; meetingUrl: string | null;
 }
 /** Diagnostics snapshot from GET /api/booking/admin/status (no secrets). */
@@ -51,7 +52,7 @@ export interface AdminBookingStatus {
   appleCalendar: boolean;
   calendarBusyCount: number | null;
   calendarNames: string[];
-  calendarBlocking: boolean;
+  calendarReadError: string | null; calendarBlocking: boolean;
   emailFallback: boolean;
 }
 export interface ArticleSummary {
@@ -61,12 +62,23 @@ export interface Article extends ArticleSummary { content: string; }
 export type ArticleDto = { slug: string; title: string; description: string; content: string; date: string; readMin: number; heroImage?: string | null; diagramKey?: string | null; };
 export interface MarqueeTopic { label: string; href: string; }
 export interface HealthyAdultPhrase { id: number; text: string; enabled: boolean; sortOrder: number; }
+/** Претензия проверки качества к тексту фразы. */
+export interface PhraseIssue {
+  kind: 'род' | 'робот' | 'слово';
+  rule: string;
+  fragment: string;
+  severity: 'block' | 'warn';
+}
+/** Фраза пула с претензиями — результат проверки всего пула. */
+export interface AuditedPhrase extends HealthyAdultPhrase {
+  issues: PhraseIssue[];
+}
 /** Остаток пула канала: на сколько дней хватит ещё не звучавших фраз. */
 export interface HealthyAdultPoolStatus { enabled: number; unused: number; daysLeft: number; }
 export interface SiteContent { heroPhoto: string | null; marqueeTopicsA: MarqueeTopic[]; marqueeTopicsB: MarqueeTopic[]; }
 export interface TherapistCustomMode {
   id: number;
-  therapistId: number;
+  therapistId: UserId;
   name: string;
   emoji: string;
   nodeType: string;
@@ -75,7 +87,7 @@ export interface TherapistCustomMode {
 
 export interface ModeMapNode {
   id: string;
-  type: 'trigger' | 'child' | 'critic' | 'coping' | 'healthy' | 'custom' | 'behavior';
+  type: 'trigger' | 'child' | 'critic' | 'coping' | 'healthy' | 'custom' | 'behavior' | 'schema' | 'origin' | 'need' | 'needs';
   position: { x: number; y: number };
   data: {
     modeId?: string;
@@ -83,8 +95,7 @@ export interface ModeMapNode {
     note?: string;
     unmetNeed?: string;
     customColor?: string;
-    filled?: boolean;
-    fillFull?: boolean;
+    filled?: boolean; fillFull?: boolean;
     copingSubtype?: 'over' | 'avoid' | 'surr';
     display?: 'name' | 'note' | 'full';   // что показывать на фигуре
     healthyResponse?: string;             // что сказал бы Здоровый Взрослый
@@ -92,9 +103,10 @@ export interface ModeMapNode {
     fontSize?: 'sm' | 'md' | 'lg';        // размер текста в фигуре
     side?: 'A' | 'B';                      // чей режим на карте пары (Партнёр А / Б)
     schemaId?: string;                     // связанная схема (из списка схем клиента)
+    needId?: string; diameter?: number;    // потребность таблетки; диаметр круга потребностей
+    settle?: boolean;                      // свежая схема случая: после замера колонки раздвинутся по высоте (useSettleFresh), флаг снимется
   };
-  width?: number;
-  height?: number;
+  width?: number; height?: number;
 }
 
 export type EdgeType = 'activates' | 'protects' | 'suppresses' | 'leads_to';
@@ -126,23 +138,9 @@ export interface ModeMapFull extends ModeMapMeta {
   edges: ModeMapEdge[];
 }
 
-export interface ClientConceptualization {
-  id: number;
-  therapistId: number;
-  clientId: number;
-  schemaIds: string[];
-  modeIds: string[];
-  earlyExperience: string | null;
-  unmetNeeds: string | null;
-  triggers: string | null;
-  copingStyles: string | null;
-  goals: string | null;
-  currentProblems: string | null;
-  modeTransitions: string | null;
+export interface ClientConceptualization extends ClientConceptualizationBase {
   modeMapNodes: ModeMapNode[];
   modeMapEdges: ModeMapEdge[];
-  history: ConceptSnapshot[];
-  updatedAt: string;
 }
 export interface BeliefCheckEntry {
   id: number;
@@ -163,6 +161,14 @@ export interface FlashcardEntry {
   needId: string;
   reflection: string | null;
   action: string | null;
+  createdAt: string;
+}
+export interface PhraseCheckEntry {
+  id: number;
+  phrase: string;
+  marks: import('../../shared/src/phraseCheck/criteria').PhraseMarkId[];
+  rewrite: string | null;
+  inWarmWords: boolean;
   createdAt: string;
 }
 

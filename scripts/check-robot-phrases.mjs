@@ -11,6 +11,7 @@
 import { readFileSync, writeFileSync, readdirSync, statSync } from 'fs';
 import { join, relative, resolve } from 'path';
 import { fileURLToPath } from 'url';
+import { PATTERNS } from './robot-phrases-patterns.mjs';
 
 const ROOT = join(import.meta.dirname, '..');
 const BASELINE_PATH = join(ROOT, 'scripts', 'robot-phrases-baseline.json');
@@ -18,6 +19,14 @@ const UPDATE = process.argv.includes('--update');
 const VERBOSE = process.argv.includes('--verbose');
 
 const SCAN_DIRS = ['src', 'webapp/src', 'schema-miniapp/src', 'shared/src'];
+
+// Статика вне `src/` — та же слепая зона, что закрывал гейт публичных
+// скриптов (правило №14): её не импортирует ни один модуль, поэтому ни один
+// гейт в неё не смотрел. Именно там самоназвание «Консультант по
+// схема-терапии» (JSON-LD) и «Сайт специалиста по психологическому
+// консультированию» (llms.txt) прожили свип 2026-09 и нашлись ручной
+// вычиткой владельца, а не проверкой.
+const SCAN_FILES = ['webapp/index.html', 'webapp/public/llms.txt'];
 
 // Юридические документы — отдельный жанр: «является публичной офертой» и
 // «обработка осуществляется в соответствии с 152-ФЗ» юридически точны, живым
@@ -43,44 +52,23 @@ export const ALLOW = [
   // схема), а не пересказывает первую часть другими словами. Тот же критерий,
   // что у примера выше.
   /[Ээ]то\s+не\s+факт,\s*это\s+схема/,
+  // «Я психолог — подать заявку»: кнопка, которой СПЕЦИАЛИСТ заявляет о своей
+  // квалификации, чтобы получить роль терапевта (webapp/src/pages/account/
+  // TherapistRequestSection.tsx и двойник в мини-аппе). Это чужая реплика о
+  // себе, а не самоназвание автора — паттерн samonazvanie-avtora её задевать
+  // не должен. Контрольный образец в robot-phrases.spec.ts проверяет, что
+  // похожая, но НЕзаконная «Я психолог, работаю в подходе…» по-прежнему
+  // краснеет.
+  /[Яя]\s+психолог\s+—\s+подать\s+заявку/,
+  // Та же кнопка, названная в кавычках из другого места («Настройки → "Я
+  // психолог"» в боте и в 410-ответе become-therapist): это ссылка на элемент
+  // интерфейса, а не утверждение о чьей-то квалификации. Кавычки обязательны —
+  // без них запись погасила бы и самоназвание автора.
+  /[«"„]Я\s+психолог[»"“]/,
 ];
 
-// Экспорт ради robot-phrases.spec.ts — пинит каждый паттерн живым образцом.
-export const PATTERNS = [
-  // Определение через отрицание: «это не X, это Y» / «это не про А, это про B»
-  ['eto-ne-eto', /[Ээ]то\s+не\s+[^,.!?;»]{2,60}[,.]\s*(?:[Ээ]то|а)\s/g],
-  ['eto-ne-pro', /[Ээ]то\s+не\s+про\s/g],
-  ['tire-eto-ne', /[—–]\s*это\s+не\s/g],
-  ['ne-prosto', /не\s+просто\s/gi],
-  ['ne-znachit', /не\s+значит\s[^.!?]{2,60}[,.]\s*[Ээ]то\s+значит/g],
-  // Метатекст
-  [
-    'metatext',
-    /важно\s+(?:отметить|понимать|помнить)|стоит\s+(?:отметить|сказать|учитывать|помнить)|следует\s+(?:отметить|понимать|помнить)|необходимо\s+отметить|в\s+заключение|в\s+конечном\s+итоге/gi,
-  ],
-  // Канцелярит. Левая граница обязательна: без неё «являет(ся)» ловит
-  // «проявляется»/«появляется»/«выявляется», а «производится» —
-  // «воспроизводится». \b в JS работает только по ASCII, поэтому lookbehind.
-  [
-    'kancelyarit',
-    /(?<![А-Яа-яЁё])(?:являет(?:ся|ются)|представля(?:ет|ют)\s+собой|осуществля(?:ет|ется|ются|ть)|производится)/gi,
-  ],
-  // Слова без содержания. «значимые люди» из-под правила выведены: это
-  // устоявшийся перевод significant others в описании схемы Покинутости —
-  // термин, а не декоративное прилагательное (docs/ARTICLES.md: термин
-  // используется точно или не используется).
-  [
-    'filler',
-    /ключев(?:ой|ая|ое|ые|ым|ого|ую)|эффективн(?:ый|ая|ое|ые|ым)|уникальн(?:ый|ая|ое|ые)|значимы(?:й|е)(?!\s+люд)|мощн(?:ый|ое)\s+инструмент|играет\s+(?:важную|ключевую)\s+роль|в\s+современном\s+мире/gi,
-  ],
-  // Служебные мостики между абзацами
-  [
-    'bridges',
-    /таким\s+образом|однако\s+стоит|при\s+этом\s+важно|тем\s+не\s+менее|в\s+связи\s+с\s+этим|в\s+свою\s+очередь/gi,
-  ],
-  // Симметрия ради баланса
-  ['symmetry', /с\s+одной\s+стороны/gi],
-];
+// PATTERNS — в robot-phrases-patterns.mjs (правило №10: движок не растёт
+// вместе со списком правил, образец — gendered-forms-patterns.mjs).
 
 function walk(dir, acc = []) {
   let entries;
@@ -109,41 +97,40 @@ function walk(dir, acc = []) {
 function main() {
   const counts = {};
   const details = {};
-  for (const dir of SCAN_DIRS) {
-    for (const file of walk(dir)) {
-      if (EXCLUDED.has(file)) continue;
-      let src;
-      try {
-        src = readFileSync(join(ROOT, file), 'utf8');
-      } catch {
-        continue;
-      }
-      let n = 0;
-      src.split('\n').forEach((line, i) => {
-        if (!/[А-Яа-я]{4}/.test(line)) return; // только строки с русским текстом
-        if (/^\s*(\/\/|\*|\/\*)/.test(line)) return; // комментарии — не user-facing
-        // ALLOW гасит только свой фрагмент, а не всю строку: иначе одна
-        // законная конструкция прячет соседнее нарушение в той же строке
-        // (тот же приём, что в check-gendered-forms.mjs).
-        const scan = ALLOW.reduce(
-          (acc, a) =>
-            acc.replace(
-              new RegExp(a.source, a.flags.replace('g', '') + 'g'),
-              ' ',
-            ),
-          line,
-        );
-        for (const [name, re] of PATTERNS) {
-          re.lastIndex = 0;
-          let m;
-          while ((m = re.exec(scan))) {
-            n++;
-            (details[file] ||= []).push(`  L${i + 1} [${name}] ${m[0].trim()}`);
-          }
-        }
-      });
-      if (n > 0) counts[file] = n;
+  const scanned = [...SCAN_DIRS.flatMap((dir) => walk(dir)), ...SCAN_FILES];
+  for (const file of scanned) {
+    if (EXCLUDED.has(file)) continue;
+    let src;
+    try {
+      src = readFileSync(join(ROOT, file), 'utf8');
+    } catch {
+      continue;
     }
+    let n = 0;
+    src.split('\n').forEach((line, i) => {
+      if (!/[А-Яа-я]{4}/.test(line)) return; // только строки с русским текстом
+      if (/^\s*(\/\/|\*|\/\*)/.test(line)) return; // комментарии — не user-facing
+      // ALLOW гасит только свой фрагмент, а не всю строку: иначе одна
+      // законная конструкция прячет соседнее нарушение в той же строке
+      // (тот же приём, что в check-gendered-forms.mjs).
+      const scan = ALLOW.reduce(
+        (acc, a) =>
+          acc.replace(
+            new RegExp(a.source, a.flags.replace('g', '') + 'g'),
+            ' ',
+          ),
+        line,
+      );
+      for (const [name, re] of PATTERNS) {
+        re.lastIndex = 0;
+        let m;
+        while ((m = re.exec(scan))) {
+          n++;
+          (details[file] ||= []).push(`  L${i + 1} [${name}] ${m[0].trim()}`);
+        }
+      }
+    });
+    if (n > 0) counts[file] = n;
   }
 
   const total = Object.values(counts).reduce((a, b) => a + b, 0);
@@ -191,6 +178,7 @@ function main() {
       '\nЧто это значит — docs/VOICE.md: определение через отрицание,\n' +
         'канцелярит, слова-филлеры и служебные мостики в тексте, который видит\n' +
         'пользователь. Перепиши утвердительно.\n' +
+        '[predlog-vse-po-skheme] — перед «Всё по схеме» пишется «во»/«ко».\n' +
         'Бейслайн обновляется только вниз: node scripts/check-robot-phrases.mjs --update',
     );
     process.exit(1);

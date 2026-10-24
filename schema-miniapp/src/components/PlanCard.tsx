@@ -8,14 +8,14 @@ import { useNeedData } from '../needData';
 function statusColor(done: boolean | null) {
   if (done === true)
     return {
-      bg: 'rgba(52,211,153,0.08)',
-      border: 'rgba(52,211,153,0.2)',
+      bg: 'color-mix(in srgb, var(--accent-green) 8%, transparent)',
+      border: 'color-mix(in srgb, var(--accent-green) 20%, transparent)',
       text: 'var(--accent-green)',
     };
   if (done === false)
     return {
-      bg: 'rgba(248,113,113,0.07)',
-      border: 'rgba(248,113,113,0.18)',
+      bg: 'color-mix(in srgb, var(--accent-red) 7%, transparent)',
+      border: 'color-mix(in srgb, var(--accent-red) 18%, transparent)',
       text: 'var(--accent-red)',
     };
   return {
@@ -38,6 +38,46 @@ function formatDate(dateStr: string): string {
   if (dateStr === tomorrow) return 'Завтра';
   const d = new Date(dateStr);
   return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
+}
+
+/** Кнопка отметки плана. Две кнопки различались только цветом и насыщенностью
+ *  текста — остальные 9 свойств совпадали дословно (правило «одна механика —
+ *  один компонент» CLAUDE.md). */
+function CheckinButton({
+  onClick,
+  bg,
+  line,
+  color,
+  weight,
+  label,
+}: {
+  onClick: () => void;
+  bg: string;
+  line: string;
+  color: string;
+  weight: number;
+  label: string;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        flex: 1,
+        padding: '9px 0',
+        border: 'none',
+        borderRadius: 'var(--r-12)',
+        fontFamily: 'inherit',
+        background: bg,
+        outline: `1px solid ${line}`,
+        color,
+        fontSize: 13,
+        fontWeight: weight,
+        cursor: 'pointer',
+      }}
+    >
+      {label}
+    </button>
+  );
 }
 
 export function PlanCard({
@@ -72,28 +112,19 @@ export function PlanCard({
       style={{
         background: colors.bg,
         border: `1px solid ${colors.border}`,
-        borderRadius: 20,
+        borderRadius: 'var(--r-20)',
         padding: '14px 16px',
         overflow: 'hidden',
       }}
     >
       {/* Top row */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          marginBottom: 10,
-        }}
-      >
+      <div className="u-between-mb10">
         <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
           <span style={{ fontSize: 12, fontWeight: 600, color: needColor }}>
             {needData?.name ?? plan.needId}
           </span>
-          <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>·</span>
-          <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>
-            {formatDate(plan.scheduledDate)}
-          </span>
+          <span className="u-faint11">·</span>
+          <span className="u-faint11">{formatDate(plan.scheduledDate)}</span>
         </div>
         <span style={{ fontSize: 16 }}>{statusIcon(plan.done)}</span>
       </div>
@@ -112,43 +143,23 @@ export function PlanCard({
 
       {/* Action buttons for pending */}
       {isPending && (
-        <div style={{ display: 'flex', gap: 8 }}>
-          <button
+        <div className="u-row8">
+          <CheckinButton
             onClick={() => checkin(true)}
-            style={{
-              flex: 1,
-              padding: '9px 0',
-              border: 'none',
-              borderRadius: 12,
-              fontFamily: 'inherit',
-              background: 'rgba(52,211,153,0.12)',
-              outline: '1px solid rgba(52,211,153,0.22)',
-              color: 'var(--accent-green)',
-              fontSize: 13,
-              fontWeight: 600,
-              cursor: 'pointer',
-            }}
-          >
-            ✓ Выполнено
-          </button>
-          <button
+            bg="color-mix(in srgb, var(--accent-green) 12%, transparent)"
+            line="color-mix(in srgb, var(--accent-green) 22%, transparent)"
+            color="var(--accent-green)"
+            weight={600}
+            label="✓ Выполнено"
+          />
+          <CheckinButton
             onClick={() => checkin(false)}
-            style={{
-              flex: 1,
-              padding: '9px 0',
-              border: 'none',
-              borderRadius: 12,
-              fontFamily: 'inherit',
-              background: 'rgba(248,113,113,0.08)',
-              outline: '1px solid rgba(248,113,113,0.18)',
-              color: 'var(--accent-red)',
-              fontSize: 13,
-              fontWeight: 500,
-              cursor: 'pointer',
-            }}
-          >
-            Не вышло
-          </button>
+            bg="color-mix(in srgb, var(--accent-red) 8%, transparent)"
+            line="color-mix(in srgb, var(--accent-red) 18%, transparent)"
+            color="var(--accent-red)"
+            weight={500}
+            label="Не вышло"
+          />
         </div>
       )}
     </div>

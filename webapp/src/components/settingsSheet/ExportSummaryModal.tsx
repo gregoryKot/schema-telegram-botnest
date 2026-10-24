@@ -26,12 +26,11 @@ export function ExportSummaryModal({
       : 'Скопировать';
   return (
     <InfoModal onClose={onClose}>
-      <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 12 }}>Сводка для терапевта</div>
-      <pre style={{ fontSize: 11, color: 'var(--text-sub)', lineHeight: 1.6, background: 'rgba(var(--fg-rgb),0.04)', borderRadius: 8, padding: '12px 14px', overflowX: 'auto', whiteSpace: 'pre-wrap', wordBreak: 'break-word', marginBottom: 14, userSelect: 'all', fontFamily: 'monospace' }}>
+      <h2 className="dialog-title st-modal-title">Сводка для терапевта</h2>
+      <pre className="st-pre">
         {text}
       </pre>
-      <button onClick={() => void copy.copy(text)}
-        style={{ width: '100%', padding: '12px 0', border: 'none', borderRadius: 10, background: copy.copied ? 'rgba(52,211,153,0.12)' : copy.failed ? 'rgba(196,107,107,0.12)' : 'rgba(var(--fg-rgb),0.08)', color: copy.copied ? 'var(--accent-green)' : copy.failed ? 'var(--accent-red)' : 'var(--text-sub)', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
+      <button className={`ds-btn ds-btn--secondary${copy.failed ? ' st-btn-danger' : ''} st-block`} onClick={() => void copy.copy(text)}>
         {label}
       </button>
     </InfoModal>

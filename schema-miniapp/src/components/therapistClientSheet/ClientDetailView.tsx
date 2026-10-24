@@ -60,7 +60,7 @@ export function ClientDetailView({
           style={{
             display: 'flex',
             alignItems: 'center',
-            gap: 8,
+            gap: 'var(--space-8)',
             marginBottom: 4,
           }}
         >
@@ -164,7 +164,7 @@ export function ClientDetailView({
         <ActionButtons detail={detail} />
 
         {/* Карта режимов — только на сайте (скрываемый баннер) */}
-        <div style={{ marginTop: 12 }}>
+        <div className="u-mt12">
           <WebBanner
             id="mode_map"
             title="Карта режимов клиента — на сайте"

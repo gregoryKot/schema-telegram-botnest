@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTimedFlag } from '../../../shared/src/hooks/useTimedFlag';
 import { getHost } from '../../../shared/src/host';
 import { api, UserSettings, TherapyRelationInfo } from '../api';
 import { SkeletonList } from './Skeleton';
@@ -57,7 +58,7 @@ export function SettingsSheet({
   const [showTherapistInfo, setShowTherapistInfo] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const [savedToast, setSavedToast] = useState(false);
+  const [savedToast, flashSaved] = useTimedFlag(1800);
   const [therapyRelation, setTherapyRelation] = useState<
     TherapyRelationInfo | null | undefined
   >(undefined);
@@ -83,8 +84,7 @@ export function SettingsSheet({
   const [nameSaving, setNameSaving] = useState(false);
   const [theme, setTheme] = useState<Theme>(getTheme);
   const motion = useReducedMotionPref(() => {
-    setSavedToast(true);
-    setTimeout(() => setSavedToast(false), 1800);
+    flashSaved();
   });
   const setAddressForm = useSetAddressForm();
 
@@ -116,8 +116,7 @@ export function SettingsSheet({
   }, []);
 
   const { patch, saveError } = usePatchSettings(settings, setSettings, () => {
-    setSavedToast(true);
-    setTimeout(() => setSavedToast(false), 1800);
+    flashSaved();
   });
 
   if (!settings) {
@@ -139,7 +138,7 @@ export function SettingsSheet({
             width: '100%',
             display: 'flex',
             flexDirection: 'column',
-            gap: 10,
+            gap: 'var(--space-10)',
           }}
         >
           <SkeletonList rows={5} h={64} />
@@ -167,7 +166,7 @@ export function SettingsSheet({
           style={{
             display: 'flex',
             alignItems: 'center',
-            gap: 12,
+            gap: 'var(--space-12)',
             padding: '16px 20px 8px',
           }}
         >
@@ -192,12 +191,13 @@ export function SettingsSheet({
           >
             ‹
           </span>
-          <span
+          <h2
             style={{
               fontSize: 18,
               fontWeight: 600,
               color: 'var(--text)',
               flex: 1,
+              margin: 0,
             }}
           >
             {view === 'time'
@@ -209,7 +209,7 @@ export function SettingsSheet({
                   : view === 'quiet'
                     ? 'Тихие часы'
                     : 'Настройки'}
-          </span>
+          </h2>
           <span
             style={{
               fontSize: 12,
@@ -259,7 +259,7 @@ export function SettingsSheet({
                 nameSaving={nameSaving}
                 setNameSaving={setNameSaving}
                 onNameChanged={onNameChanged}
-                setSavedToast={setSavedToast}
+                flashSaved={flashSaved}
               />
 
               <NotificationsSection

@@ -194,7 +194,7 @@ vi.mock('./CommandPalette', () => ({
       navigateDiary: () => p.onNavigate('diary'),
       toggleMode: () => p.onToggleMode?.(),
       openClient: () => p.onOpenClient?.(9),
-      newDiaryEntry: () => p.onNewDiaryEntry?.(),
+      quickTracker: () => p.onQuickAction?.('tracker'),
     }} />
   ),
 }));
@@ -220,6 +220,7 @@ vi.mock('../api', () => ({
     getProfile: vi.fn().mockResolvedValue({ role: 'CLIENT', name: null, mySchemaIds: [] }),
     getTherapyClients: vi.fn().mockResolvedValue([]),
     getTherapyRelation: vi.fn().mockResolvedValue(null),
+    getUserFlags: vi.fn().mockResolvedValue({}),
     setTherapistView: vi.fn().mockResolvedValue({ ok: true }),
     resignTherapist: vi.fn().mockResolvedValue(undefined),
     history: vi.fn().mockResolvedValue([]),

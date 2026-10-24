@@ -24,7 +24,7 @@ const MODES: ModeData[] = [
   {
     id: 'angry_child',
     emoji: '😡',
-    label: 'Злой Ребёнок',
+    label: 'Сердитый Ребёнок',
     desc: 'Злость',
     response: '...',
     color: '#f87171',
@@ -44,7 +44,7 @@ describe('ModeStep', () => {
         onSelectMode={onSelectMode}
       />,
     );
-    fireEvent.click(screen.getByText('Злой Ребёнок'));
+    fireEvent.click(screen.getByText('Сердитый Ребёнок'));
     expect(onSelectMode).toHaveBeenCalledWith('angry_child');
   });
 

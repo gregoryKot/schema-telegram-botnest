@@ -96,6 +96,31 @@ describe('check-robot-phrases.mjs', () => {
     expect(res.stderr).toContain('[metatext] Важно отметить');
   });
 
+  // Кнопка заявки специалиста («Я психолог — подать заявку») — чужая реплика
+  // о своей квалификации, ALLOW её гасит. Контроль ниже: самоназвание автора
+  // той же формой по-прежнему краснеет.
+  it('«Я психолог — подать заявку» — заявка специалиста, гейт молчит', () => {
+    const res = runGate('check-robot-phrases.mjs', {
+      'scripts/robot-phrases-baseline.json': JSON.stringify({}),
+      'webapp/src/pages/account/TherapistRequestSection.tsx':
+        "export const label = 'Я психолог — подать заявку';\n",
+    });
+    expect(res.status).toBe(0);
+    expect(res.stdout).toContain(
+      '✓ Храповик роботных конструкций: 0 (без роста)',
+    );
+  });
+
+  it('КОНТРОЛЬ: «Я психолог» о себе в другом контексте — по-прежнему exit 1', () => {
+    const res = runGate('check-robot-phrases.mjs', {
+      'scripts/robot-phrases-baseline.json': JSON.stringify({}),
+      'webapp/src/pages/landing/AuthorSection.tsx':
+        "export const bio = 'Я психолог, работаю в подходе схема-терапия';\n",
+    });
+    expect(res.status).toBe(1);
+    expect(res.stderr).toContain('[samonazvanie-avtora] Я психолог');
+  });
+
   // Похожая, но НЕзаконная «это не X, это Y» — вторая часть пересказывает
   // первую, ALLOW не должен ловить произвольные вариации «это не каприз».
   it('похожая, но пустая «это не X, это Y» по-прежнему ловится', () => {
@@ -108,11 +133,40 @@ describe('check-robot-phrases.mjs', () => {
   });
 });
 
+// Аудит 2026-10: «в «Всё по схеме»» в теме письма входа и в карточке входа
+// бота. CLI-образец — паттерн доходит до движка из вынесенного модуля.
+describe('предлог перед названием продукта', () => {
+  it('«Вход в «Всё по схеме»» в новом файле — exit 1', () => {
+    const res = runGate('check-robot-phrases.mjs', {
+      'scripts/robot-phrases-baseline.json': JSON.stringify({}),
+      'src/x.ts': "export const h = '🔐 <b>Вход в «Всё по схеме»</b>';\n",
+    });
+    expect(res.status).toBe(1);
+    expect(res.stderr).toContain('[predlog-vse-po-skheme] в «Всё по схеме');
+  });
+
+  it('КОНТРОЛЬ: «Вход во «Всё по схеме»» — exit 0', () => {
+    const res = runGate('check-robot-phrases.mjs', {
+      'scripts/robot-phrases-baseline.json': JSON.stringify({}),
+      'src/x.ts': "export const h = '🔐 <b>Вход во «Всё по схеме»</b>';\n",
+    });
+    expect(res.status).toBe(0);
+    expect(res.stdout).toContain(
+      '✓ Храповик роботных конструкций: 0 (без роста)',
+    );
+  });
+});
+
 describe('ALLOW-исключения check-robot-phrases.mjs', () => {
   const ALLOW = loadRegexList('check-robot-phrases.mjs', 'ALLOW');
 
   it('у каждого ALLOW-исключения есть образец, который оно распознаёт', () => {
-    const CORPUS = ['Это не каприз, это счётчик', 'но это не факт, это схема'];
+    const CORPUS = [
+      'Это не каприз, это счётчик',
+      'но это не факт, это схема',
+      'Я психолог — подать заявку',
+      'Настройки → «Я психолог» → заполни форму',
+    ];
     const unmatched = ALLOW.filter(
       (p) => !CORPUS.some((text) => new RegExp(p.source, p.flags).test(text)),
     );
@@ -150,6 +204,35 @@ describe('EXCLUDED-исключения check-robot-phrases.mjs', () => {
   });
 });
 
+// SCAN_FILES — статика вне src/ (webapp/index.html, webapp/public/llms.txt).
+// Её никто не импортирует, поэтому до свипа 2026-09 в неё не смотрел ни один
+// гейт: самоназвание в JSON-LD нашёл владелец глазами. Пара «ловит / молчит»
+// на том же файле, потому что «гейт добавили в список» и «гейт его правда
+// читает» — разные утверждения.
+describe('статика вне src/ (SCAN_FILES)', () => {
+  it('нарушение в webapp/index.html — exit 1', () => {
+    const res = runGate('check-robot-phrases.mjs', {
+      'scripts/robot-phrases-baseline.json': JSON.stringify({}),
+      'webapp/index.html':
+        '<meta name="description" content="Схема-терапевт онлайн" />\n',
+    });
+    expect(res.status).toBe(1);
+    expect(res.stderr).toContain('webapp/index.html: новый файл с 1');
+  });
+
+  it('чистая статика — exit 0', () => {
+    const res = runGate('check-robot-phrases.mjs', {
+      'scripts/robot-phrases-baseline.json': JSON.stringify({}),
+      'webapp/public/llms.txt':
+        '> Веду практику в подходе схема-терапии и КПТ. Онлайн.\n',
+    });
+    expect(res.status).toBe(0);
+    expect(res.stdout).toContain(
+      '✓ Храповик роботных конструкций: 0 (без роста)',
+    );
+  });
+});
+
 // Механизм вместо добросовестности (как shared/src/utils/crisisMarkers.test.ts):
 // тесты выше бьют по CLI через известные строки и НЕ пинят каждый паттерн —
 // замер 2026-08-13 показал, что отключение регэкспа 8 из 10 паттернов
@@ -157,7 +240,7 @@ describe('EXCLUDED-исключения check-robot-phrases.mjs', () => {
 // у КАЖДОГО паттерна — живой образец, который ловит именно он. Новый паттерн
 // без образца в POSITIVE роняет первый тест ниже сразу.
 describe('каждый паттерн пойман своим образцом', () => {
-  const PATTERNS = loadNamedPatterns('check-robot-phrases.mjs', 'PATTERNS');
+  const PATTERNS = loadNamedPatterns('robot-phrases-patterns.mjs', 'PATTERNS');
 
   const POSITIVE: Record<string, string> = {
     'eto-ne-eto': 'Это не упражнение, это способ прожить эмоцию',
@@ -170,6 +253,9 @@ describe('каждый паттерн пойман своим образцом',
     filler: 'Это ключевой момент',
     bridges: 'Таким образом, ты справишься',
     symmetry: 'С одной стороны это страшно',
+    'samonazvanie-terapevt': 'Автор проекта — схема-терапевт, работает онлайн',
+    'samonazvanie-avtora': 'Я психолог, работаю в подходе схема-терапия',
+    'predlog-vse-po-skheme': 'Перейди по ссылке, чтобы войти в «Всё по схеме»',
   };
 
   it('в PATTERNS нет имени без образца в POSITIVE', () => {
@@ -203,6 +289,43 @@ describe('каждый паттерн пойман своим образцом',
       'filler',
       'Значимые люди в его жизни',
       'термин «значимые люди» выведен из-под правила намеренно',
+    ],
+    [
+      'samonazvanie-terapevt',
+      'Схема-терапия помогает понять, почему сценарий повторяется',
+      'запрещено самоназвание, а не метод: «схема-терапия» остаётся',
+    ],
+    [
+      'samonazvanie-avtora',
+      'Работаете с психологом? Поделитесь динамикой',
+      '«психолог» о других людях законен — правило только про автора',
+    ],
+    [
+      'samonazvanie-avtora',
+      'Я работаю в подходе схема-терапия и сделал приложение бесплатным',
+      'правильная формулировка о себе — без существительного-квалификации',
+    ],
+    // Контроль к predlog-vse-po-skheme (правило №15 п.2): норма и законные
+    // соседи предлога не краснеют.
+    [
+      'predlog-vse-po-skheme',
+      'Вход во «Всё по схеме»',
+      'нормативное «во» перед «вс-»',
+    ],
+    [
+      'predlog-vse-po-skheme',
+      'Восстановление доступа ко «Всё по схеме»',
+      'нормативное «ко» перед «вс-»',
+    ],
+    [
+      'predlog-vse-po-skheme',
+      'Новая заметка в приложении «Всё по схеме»',
+      '«в» относится к слову «приложении», а не к названию',
+    ],
+    [
+      'predlog-vse-po-skheme',
+      'Приглашение в дневник «Всё по схеме»',
+      'lookbehind: «к» в конце слова «дневник» — не предлог',
     ],
   ] as const)('паттерн «%s» НЕ ловит «%s» (%s)', (name, text) => {
     const p = PATTERNS.find((x) => x.name === name)!;

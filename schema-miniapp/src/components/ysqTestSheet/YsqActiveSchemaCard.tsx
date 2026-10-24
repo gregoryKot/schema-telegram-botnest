@@ -31,7 +31,7 @@ export function YsqActiveSchemaCard({
       style={{
         marginBottom: 10,
         background: `color-mix(in srgb, ${color} 10%, transparent)`,
-        borderRadius: 16,
+        borderRadius: 'var(--r-16)',
         padding: '14px 16px',
         border: `1px solid color-mix(in srgb, ${color} 28%, transparent)`,
       }}
@@ -48,7 +48,7 @@ export function YsqActiveSchemaCard({
           style={{
             display: 'flex',
             alignItems: 'center',
-            gap: 8,
+            gap: 'var(--space-8)',
             flex: 1,
             paddingRight: 8,
           }}
@@ -144,21 +144,15 @@ export function YsqActiveSchemaCard({
       <div
         style={{
           display: 'flex',
-          gap: 8,
+          gap: 'var(--space-8)',
           background: 'rgba(var(--fg-rgb),0.05)',
-          borderRadius: 10,
+          borderRadius: 'var(--r-10)',
           padding: '8px 12px',
           marginBottom: 10,
         }}
       >
         <span style={{ fontSize: 14, flexShrink: 0 }}>💡</span>
-        <span
-          style={{
-            fontSize: 13,
-            color: 'var(--text-sub)',
-            lineHeight: 1.5,
-          }}
-        >
+        <span className="u-sub13-lh15">
           {ysqSchemas.find((sc) => sc.name === schema.name)?.tip ?? schema.tip}
         </span>
       </div>
@@ -190,7 +184,7 @@ export function YsqActiveSchemaCard({
             lineHeight: 1.4,
             padding: '6px 10px',
             background: 'rgba(250,204,21,0.1)',
-            borderRadius: 8,
+            borderRadius: 'var(--r-8)',
           }}
         >
           ⚡ Совпадает с дневником: «{NEED_LABELS[schema.needId]}» стабильно

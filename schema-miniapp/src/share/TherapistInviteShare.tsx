@@ -15,7 +15,7 @@ export function TherapistInviteShare({ inviteUrl }: { inviteUrl: string }) {
         style={{
           flex: 1,
           padding: '10px 0',
-          borderRadius: 10,
+          borderRadius: 'var(--r-10)',
           border: 'none',
           background: 'color-mix(in srgb, var(--accent) 15%, transparent)',
           color: 'var(--accent)',

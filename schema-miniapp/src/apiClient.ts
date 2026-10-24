@@ -1,8 +1,18 @@
-// HTTP-инфраструктура мини-аппа: базовый URL, заголовки, обёртки
-// get/post/postJson/del с таймаутом, ретраями и перевыпуском сессии. Чистый
-// транспорт — доменные методы живут в api.ts, состояние сессии — в session.ts.
+// HTTP-инфраструктура мини-аппа: get/post/postJson/del с таймаутом, ретраями и перевыпуском сессии (доменные методы — api.ts, состояние сессии — session.ts).
+// Кеш GET (дедуп + stale-while-revalidate) и инвалидация мутаций — shared/src/api/apiCache*.ts (правило №3); authedFetch — единственная точка отправки, хук здесь покрывает и ratingApi/updatePhraseCheck (прямые вызовы authedFetch).
 import { BASE } from './utils/apiBase';
-import { authHeaders, markSessionExpired, renewSession } from './session';
+import {
+  authHeaders,
+  ensureSession,
+  hasInstantAuth,
+  isSessionDead,
+  markSessionExpired,
+  renewSession,
+} from './session';
+import { cachedGet, isCacheableGetPath } from '../../shared/src/api/apiCache';
+import { applyMutationInvalidation } from '../../shared/src/api/apiCacheRules';
+import { readJsonBody } from '../../shared/src/api/readJsonBody';
+import { readErrorBody } from '../../shared/src/api/readErrorBody';
 
 export { BASE, authHeaders };
 
@@ -24,9 +34,8 @@ function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-// fetch() отклоняет промис TypeError-ом при обрыве связи/DNS-фейле; таймаут
-// из fetchWithTimeout отклоняет AbortError. Оба случая — «сети нет прямо
-// сейчас», а не осмысленный ответ сервера.
+// fetch() отклоняется TypeError-ом при обрыве связи/DNS-фейле, таймаут из
+// fetchWithTimeout — AbortError: оба случая «сети нет», а не ответ сервера.
 function isNetworkError(err: unknown): boolean {
   if (err instanceof DOMException && err.name === 'AbortError') return true;
   return err instanceof TypeError;
@@ -34,42 +43,57 @@ function isNetworkError(err: unknown): boolean {
 
 // Статус ответа сервера (не сетевая ошибка) — отдельный класс, чтобы вызывающий
 // код мог различить «сервер ответил 4xx» и «ответа не было вообще».
+// message — текст из тела ответа (если есть), reason — машинный код причины.
 export class HttpStatusError extends Error {
-  constructor(public status: number) {
-    super(`API error: ${status}`);
+  constructor(
+    public status: number,
+    message = `API error: ${status}`,
+    public reason?: string,
+  ) {
+    super(message);
   }
 }
 
-// Единственная точка отправки. На 401 один раз перевыпускает сессию и повторяет
-// запрос: initData протухает через час после открытия мини-аппа, и без этого
-// свернутое приложение переставало работать целиком (инцидент 2026-07-29).
-// Перевыпустить не вышло — говорим об этом экрану, а не молчим.
+// Единственная точка отправки. На 401 перевыпускает сессию и повторяет запрос
+// (инцидент 2026-07-29). Не вышло ИЗ-ЗА СЕССИИ (401/403 от refresh) — говорим
+// об этом экрану; не вышло из-за сети/5xx — сессия жива, молчим, оставляем
+// пользователя в приложении (диагностика 2026-08-21).
 export async function authedFetch(
   path: string,
   init: RequestInit = {},
 ): Promise<Response> {
   const send = () =>
     fetchWithTimeout(`${BASE}${path}`, { ...init, headers: authHeaders() });
+  // Веб-хост (PWA с ярлыка / вкладка) без живого токена: authHeaders() пуст,
+  // запрос обречён на 401 → renew → повтор. До этой правки ВЕСЬ стартовый
+  // залп (~19 GET) ходил по этому кругу — каждый запрос дважды плюс общий
+  // обмен куки между попытками; отсюда «в Телеграме летает, из ярлыка
+  // долго» (2026-08-23). Ждём один общий обмен (ensureSession дедуплицирует)
+  // и уходим сразу с Bearer. Обмен не удался (кука мертва/сети нет) —
+  // отправляем как раньше: существующая ветка 401 покажет экран входа.
+  if (!hasInstantAuth()) await ensureSession();
   const res = await send();
-  if (res.status !== 401) return res;
+  if (res.status !== 401) {
+    if (res.ok) applyMutationInvalidation(init.method, path, init.body);
+    return res;
+  }
   if (!(await renewSession())) {
-    markSessionExpired();
+    if (isSessionDead()) markSessionExpired();
     return res;
   }
   const retried = await send();
   if (retried.status === 401) markSessionExpired();
+  else if (retried.ok) applyMutationInvalidation(init.method, path, init.body);
   return retried;
 }
 
-// GET-ретраи: до 2 повторов с бэкоффом ~800мс/~2.5с ТОЛЬКО на сетевые
-// ошибки и статусы 502/503/504 (временная недоступность инфры). 4xx и
-// прочие 5xx не ретраятся — это осмысленный ответ сервера, повтор его не
-// изменит. POST/DELETE здесь не участвуют: они не идемпотентны на уровне
-// протокола (см. outbox.ts для единственного исключения — оценок).
+// GET-ретраи: до 2 повторов с бэкоффом ~800мс/~2.5с ТОЛЬКО на сетевые ошибки и
+// 502/503/504; 4xx и прочие 5xx — осмысленный ответ. POST/DELETE не участвуют:
+// не идемпотентны (см. outbox.ts, исключение — оценки).
 const GET_RETRY_DELAYS_MS = [800, 2500];
 const RETRYABLE_STATUSES = new Set([502, 503, 504]);
 
-export async function get<T>(path: string): Promise<T> {
+async function rawGet<T>(path: string): Promise<T> {
   for (let attempt = 0; ; attempt++) {
     try {
       const res = await authedFetch(path);
@@ -83,7 +107,7 @@ export async function get<T>(path: string): Promise<T> {
         }
         throw new HttpStatusError(res.status);
       }
-      return res.json() as Promise<T>;
+      return readJsonBody<T>(res);
     } catch (err) {
       if (isNetworkError(err) && attempt < GET_RETRY_DELAYS_MS.length) {
         await delay(GET_RETRY_DELAYS_MS[attempt]);
@@ -94,8 +118,15 @@ export async function get<T>(path: string): Promise<T> {
   }
 }
 
-// Тело ошибки сервера (message от ValidationPipe/контроллера) полезнее статуса:
-// его показывают пользователю — вытаскиваем один раз для всех не-GET методов.
+// Кеш живёт в памяти вкладки (shared/src/api/apiCache.ts) — дедуп
+// одновременных запросов и stale-while-revalidate на возврате в открытый
+// экран. /api/auth/* и health исключены isCacheableGetPath.
+export function get<T>(path: string): Promise<T> {
+  if (!isCacheableGetPath(path)) return rawGet<T>(path);
+  return cachedGet(path, () => rawGet<T>(path));
+}
+
+// Тело ошибки (message от ValidationPipe) полезнее статуса — вытаскиваем один раз для всех не-GET методов.
 async function sendWithBody(
   path: string,
   method: 'POST' | 'DELETE',
@@ -106,16 +137,8 @@ async function sendWithBody(
     ...(body === undefined ? {} : { body: JSON.stringify(body) }),
   });
   if (res.ok) return res;
-  let msg = `API error: ${res.status}`;
-  try {
-    const j = (await res.json()) as { message?: unknown };
-    if (j?.message)
-      msg =
-        typeof j.message === 'string' ? j.message : JSON.stringify(j.message);
-  } catch {
-    /* тело ответа не распарсилось — оставляем дефолтный msg */
-  }
-  throw new Error(msg);
+  const { message, reason } = await readErrorBody(res);
+  throw new HttpStatusError(res.status, message, reason);
 }
 
 export async function post(path: string, body: unknown): Promise<void> {
@@ -124,7 +147,7 @@ export async function post(path: string, body: unknown): Promise<void> {
 
 export async function postJson<T>(path: string, body: unknown): Promise<T> {
   const res = await sendWithBody(path, 'POST', body);
-  return res.json() as Promise<T>;
+  return readJsonBody<T>(res);
 }
 
 export async function del(path: string, body?: unknown): Promise<void> {

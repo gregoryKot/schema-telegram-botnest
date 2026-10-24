@@ -7,27 +7,43 @@ import {
   Res,
   Query,
   Param,
-  UnauthorizedException,
   BadRequestException,
   Logger,
   UseGuards,
   HttpCode,
 } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
+import { PersistentThrottleLimit } from '../api/persistent-throttle-limit';
+import { STRICT_THROTTLE } from './auth-throttles';
 import { ConfigService } from '@nestjs/config';
 import { AuthService } from './auth.service';
 import { JwtAuthGuard, OptionalJwtGuard, WebUser } from './jwt.guard';
 import { AuthProviderRegistry } from './providers/registry';
 import { MergeService } from './merge.service';
 import { SecurityLogService } from './security-log.service';
+import { emailCallbackRedirectUrl } from './email-callback-redirect';
+import { emailConsumeBody, type EmailConsumeBody } from './email-consume-body';
 import { EmailTokenService } from './email-token.service';
+import type { LinkProviderResult } from './merge-summary.types';
 import {
   EmailBodyDto,
-  TokenBodyDto,
   InitDataBodyDto,
+  TokenBodyDto,
 } from './dto/auth-scalar.dto';
+import { MergeConfirmDto } from './dto/merge-confirm.dto';
+import { CallerIdentityService } from './caller-identity';
+import { TotpService } from './totp.service';
+import {
+  assertMergeCaller,
+  assertSourceTotp,
+  mergeOrThrow,
+} from './merge-confirm';
 import type { Request, Response } from 'express';
-import { REFRESH_COOKIE, cookieOptions, requireCsrf } from './auth-http.util';
+import {
+  isCrossSiteRequest,
+  requireCsrf,
+  setRefreshCookie,
+} from './auth-http.util';
 
 @Controller('api/auth')
 export class AuthAccountController {
@@ -40,68 +56,70 @@ export class AuthAccountController {
     private readonly merge: MergeService,
     private readonly securityLog: SecurityLogService,
     private readonly emailTokens: EmailTokenService,
+    private readonly identity: CallerIdentityService,
+    private readonly totp: TotpService,
   ) {}
 
   // ─── Email magic-link login ───────────────────────────────────────────────
 
   @Post('email/link')
-  @Throttle({
-    short: { limit: 3, ttl: 60_000 },
-    long: { limit: 10, ttl: 3_600_000 },
-  })
+  @PersistentThrottleLimit(STRICT_THROTTLE)
   @HttpCode(200)
   async emailLoginLink(
     @Body() dto: EmailBodyDto,
     @Req() req: Request,
   ): Promise<{ ok: true }> {
     requireCsrf(req, 'email/link', this.securityLog);
-    return this.auth.requestEmailLogin(dto.email);
+    return this.auth.requestEmailLogin(dto.email, dto.ticket);
   }
 
+  // Ссылка из письма (B-14): только 302 на страницу сайта, токен не гасится —
+  // его гасит POST email/consume. См. email-callback-redirect.ts.
   @Get('email/callback')
-  async emailLoginCallback(
-    @Query('token') token: string,
-    @Req() req: Request,
+  emailLoginCallback(
+    @Query('token') token: unknown,
+    @Query('ticket') ticket: unknown,
     @Res() res: Response,
-  ): Promise<void> {
-    const frontendBase = this.config.getOrThrow<string>('WEBAPP_URL');
-    try {
-      const r = await this.emailTokens.consumeEmailToken(
-        token,
-        req.ip,
-        req.headers['user-agent'],
-      );
-      // 2FA-гейт (H1): login при включённом TOTP → экран ввода кода, не сессия.
-      if (r.kind === 'totp_challenge') {
-        res.redirect(
-          `${frontendBase}/auth/2fa?token=${encodeURIComponent(r.challengeToken)}`,
-        );
-        return;
-      }
-      res.cookie(
-        REFRESH_COOKIE,
-        r.tokens.refreshToken,
-        cookieOptions(30 * 24 * 3600),
-      );
-      res.redirect(
-        r.purpose === 'link_email_auth'
-          ? `${frontendBase}/account?linked=email`
-          : `${frontendBase}/auth/callback#access_token=${r.tokens.accessToken}&expires_in=${r.tokens.expiresIn}`,
-      );
-    } catch (err) {
-      this.logger.error(`Email callback: ${(err as Error).message}`);
-      res.redirect(`${frontendBase}/auth/error?reason=email_link_expired`);
-    }
+  ): void {
+    res.set({ 'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer' });
+    res.redirect(
+      302,
+      emailCallbackRedirectUrl(
+        this.config.getOrThrow<string>('WEBAPP_URL'),
+        typeof token === 'string' ? token : undefined,
+        typeof ticket === 'string' ? ticket : undefined,
+      ),
+    );
+  }
+
+  // Погашение токена со страницы сайта. Анонимный роут (человек входит), но с
+  // CSRF-заголовком и троттлингом; токен — 256 бит, лимит против шума.
+  @Post('email/consume')
+  @Throttle({
+    short: { limit: 10, ttl: 60_000 },
+    long: { limit: 40, ttl: 3_600_000 },
+  })
+  @HttpCode(200)
+  async emailConsume(
+    @Body() dto: TokenBodyDto,
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<EmailConsumeBody> {
+    requireCsrf(req, 'email/consume', this.securityLog);
+    const r = await this.emailTokens.consumeEmailToken(
+      dto.token,
+      req.ip,
+      req.headers['user-agent'],
+      await this.identity.resolve(req), // A3: чья сессия в этом браузере
+    );
+    return emailConsumeBody(r, res);
   }
 
   // ─── Link email to existing account ──────────────────────────────────────
 
   @Post('email/link-to-account')
   @UseGuards(JwtAuthGuard)
-  @Throttle({
-    short: { limit: 3, ttl: 60_000 },
-    long: { limit: 10, ttl: 3_600_000 },
-  })
+  @PersistentThrottleLimit(STRICT_THROTTLE)
   @HttpCode(200)
   async emailLinkToAccount(
     @Body() dto: EmailBodyDto,
@@ -125,6 +143,7 @@ export class AuthAccountController {
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ): Promise<{ accessToken: string; expiresIn: number }> {
+    requireCsrf(req, 'telegram/webapp', this.securityLog);
     const { initData } = dto;
     if (!initData) throw new BadRequestException('Missing initData');
     const { id: telegramId, firstName } =
@@ -139,11 +158,13 @@ export class AuthAccountController {
       req.ip,
       req.headers['user-agent'],
     );
-    res.cookie(
-      REFRESH_COOKIE,
-      tokens.refreshToken,
-      cookieOptions(30 * 24 * 3600),
+    // Telegram Web (Web A/K) грузит мини-апп в iframe, как MAX: strict-кука
+    // там не продлевается (2026-08-21). Нативное вебвью остаётся на strict.
+    const crossSite = isCrossSiteRequest(
+      req,
+      this.config.getOrThrow<string>('WEBAPP_URL'),
     );
+    setRefreshCookie(res, tokens.refreshToken, 30 * 24 * 3600, crossSite);
     return { accessToken: tokens.accessToken, expiresIn: tokens.expiresIn };
   }
 
@@ -151,13 +172,10 @@ export class AuthAccountController {
 
   @Post('merge')
   @UseGuards(OptionalJwtGuard)
-  @Throttle({
-    short: { limit: 3, ttl: 60_000 },
-    long: { limit: 10, ttl: 3_600_000 },
-  })
+  @PersistentThrottleLimit(STRICT_THROTTLE)
   @HttpCode(200)
   async confirmMerge(
-    @Body() dto: TokenBodyDto,
+    @Body() dto: MergeConfirmDto,
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ): Promise<{ accessToken: string; expiresIn: number }> {
@@ -169,31 +187,14 @@ export class AuthAccountController {
     const { target, source, provider, providerId } =
       this.auth.verifyMergeToken(token);
 
-    // Security: caller must be the target (JWT session) OR anonymous via the
-    // OAuth callback that just minted this token (merge token = signed proof of
-    // intent). Reject only if logged in as a DIFFERENT user.
-    const webUser = req.webUser;
-    if (webUser && String(webUser.userId) !== String(target)) {
-      throw new UnauthorizedException(
-        'Merge token does not match current session',
-      );
-    }
+    // Security (аудит 2026-10, A2/A4): merge-токен — не пропуск. Вызывающий
+    // доказывает, что он target (Bearer или живая refresh-кука), а если у
+    // поглощаемого аккаунта включён TOTP — ещё и вводит его код.
+    assertMergeCaller(await this.identity.resolve(req), target);
+    await assertSourceTotp(this.totp, source, dto.code);
 
     // 1. Move data from source → target.
-    try {
-      await this.merge.merge(source, target);
-    } catch (err) {
-      const msg = (err as Error).message ?? 'merge failed';
-      // Full error → logs + admin alert (AlertLogger picks up .error).
-      this.logger.error(
-        `merge ${source} → ${target} failed: ${msg}`,
-        (err as Error).stack,
-      );
-      // Friendly message to client — no Prisma internals leaked.
-      throw new BadRequestException(
-        'Не удалось объединить аккаунты. Админ уведомлён — попробовать позже.',
-      );
-    }
+    await mergeOrThrow(this.merge, this.logger, source, target);
 
     // 2. Link the provider that triggered the merge to the target user.
     const linkRes = await this.auth.linkProviderToUser(
@@ -213,11 +214,7 @@ export class AuthAccountController {
       req.ip,
       req.headers['user-agent'],
     );
-    res.cookie(
-      REFRESH_COOKIE,
-      tokens.refreshToken,
-      cookieOptions(30 * 24 * 3600),
-    );
+    setRefreshCookie(res, tokens.refreshToken, 30 * 24 * 3600, false);
     this.securityLog.log('merge_confirmed', {
       target,
       source,
@@ -237,10 +234,7 @@ export class AuthAccountController {
     // Не DTO: подписанный Telegram-payload, whitelist срежет поля и сломает hash-верификацию.
     @Body() body: Record<string, unknown>,
     @Req() req: Request,
-  ): Promise<
-    | { ok: true }
-    | { merge: true; mergeToken: string; summary: Record<string, number> }
-  > {
+  ): Promise<LinkProviderResult> {
     const handler = this.providers.get(provider);
     if (!handler.verifyClientData) {
       throw new BadRequestException(
@@ -267,8 +261,9 @@ export class AuthAccountController {
       provider,
       identity.providerId,
     );
-    const summary = await this.merge.summarize(sourceId);
-    return { merge: true, mergeToken, summary };
+    const s = await this.merge.summarize(sourceId, webUser.userId);
+    const { counts: summary, twoFactorLost } = s;
+    return { merge: true, mergeToken, summary, twoFactorLost };
   }
 
   // ─── Unlink a provider ────────────────────────────────────────────────────

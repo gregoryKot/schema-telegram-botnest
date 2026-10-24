@@ -9,7 +9,10 @@ import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { buildTestApp, TestApp } from './e2e-support/build-test-app';
 import { signAccessToken } from './e2e-support/jwt';
-import { cleanupOwnershipFixtures } from './e2e-support/cleanup-fixtures';
+import {
+  cleanupOwnershipFixtures,
+  seedUsers,
+} from './e2e-support/cleanup-fixtures';
 
 describe('e2e smoke: ownership isolation sweep (tracker/diary/plans/exercises/ysq)', () => {
   let app: INestApplication;
@@ -26,6 +29,8 @@ describe('e2e smoke: ownership isolation sweep (tracker/diary/plans/exercises/ys
     // в app-ownership.e2e-spec.ts. Обязательна на реальном Postgres, no-op
     // на фейке.
     await cleanupOwnershipFixtures(prisma, ALL_USER_IDS);
+    // Guard больше не воскрешает строку по Bearer-токену — заводим явно.
+    await seedUsers(prisma, ALL_USER_IDS);
   });
 
   afterAll(async () => {

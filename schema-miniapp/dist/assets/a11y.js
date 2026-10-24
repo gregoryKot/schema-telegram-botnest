@@ -1,0 +1,1 @@
+var e=/^(input|textarea|select|button|a)$/;function t(t){let n=t.target;if(!n||n===t.currentTarget)return!1;let r=n.tagName?.toLowerCase()??``;return e.test(r)||!!n.isContentEditable}function n(e){let n=()=>{e()};return{role:`button`,tabIndex:0,onClick:n,onKeyDown:e=>{t(e)||(e.key===`Enter`||e.key===` `)&&(e.preventDefault(),n())}}}export{n as t};

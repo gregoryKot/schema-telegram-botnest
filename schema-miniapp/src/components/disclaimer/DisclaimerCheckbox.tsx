@@ -14,7 +14,7 @@ export function DisclaimerCheckbox({
       style={{
         display: 'flex',
         alignItems: 'flex-start',
-        gap: 10,
+        gap: 'var(--space-10)',
         cursor: 'pointer',
         marginBottom: 12,
       }}
@@ -33,7 +33,7 @@ export function DisclaimerCheckbox({
         style={{
           width: 20,
           height: 20,
-          borderRadius: 6,
+          borderRadius: 'var(--r-6)',
           flexShrink: 0,
           marginTop: 1,
           border: `2px solid ${checked ? 'var(--accent)' : 'rgba(var(--fg-rgb),0.2)'}`,
@@ -52,11 +52,7 @@ export function DisclaimerCheckbox({
           </span>
         )}
       </div>
-      <span
-        role="presentation"
-        onClick={onToggle}
-        style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.5 }}
-      >
+      <span role="presentation" onClick={onToggle} className="u-sub13-lh15">
         {label}
       </span>
     </label>

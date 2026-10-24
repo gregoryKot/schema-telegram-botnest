@@ -1,7 +1,17 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { HEALTHY_ADULT_PHRASES } from './healthy-adult.data';
 import { prepareImport, type ImportPreparation } from './healthy-adult.import';
+import {
+  blockingIssues,
+  findIssues,
+  issuesToReason,
+  type PhraseIssue,
+} from './healthy-adult.quality';
 
 /** Остаток пула: сколько включённых фраз ещё не звучало и на сколько хватит. */
 export interface HealthyAdultPoolStatus {
@@ -38,6 +48,20 @@ export class HealthyAdultService {
   constructor(private readonly prisma: PrismaService) {}
 
   /** Полный список для админки (в порядке отображения). */
+  /**
+   * Весь пул с претензиями к каждой фразе — для проверки в админке. Показываем
+   * и пометки ('warn'), а не только блокирующее: решает человек, а фразы,
+   * заведённые ДО появления планки, никто не перепроверял.
+   */
+  async audit(): Promise<
+    (HealthyAdultPhraseRow & { issues: PhraseIssue[] })[]
+  > {
+    const rows = await this.list();
+    return rows
+      .map((row) => ({ ...row, issues: findIssues(row.text) }))
+      .filter((row) => row.issues.length > 0);
+  }
+
   async list(): Promise<HealthyAdultPhraseRow[]> {
     return this.prisma.healthyAdultPhrase.findMany({
       orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }],
@@ -132,6 +156,12 @@ export class HealthyAdultService {
   }
 
   async create(text: string): Promise<HealthyAdultPhraseRow> {
+    const issues = blockingIssues(text);
+    if (issues.length) {
+      throw new BadRequestException(
+        `Фраза не принята: ${issuesToReason(issues)}. Пул читают и женщины — перепиши без мужского рода.`,
+      );
+    }
     const max = await this.prisma.healthyAdultPhrase.aggregate({
       _max: { sortOrder: true },
     });
@@ -157,6 +187,18 @@ export class HealthyAdultService {
       raw,
       existing.map((r) => r.text),
     );
+    // Проверка качества — после дублей: одинаковые правила с гейтами
+    // репозитория, но пул живёт в БД и мимо них проходит (реальный пропуск
+    // 2026-08 — фраза с мужским родом во всём тексте доехала до прода).
+    const kept: string[] = [];
+    for (const text of report.accepted) {
+      const issues = blockingIssues(text);
+      if (issues.length)
+        report.rejected.push({ text, reason: issuesToReason(issues) });
+      else kept.push(text);
+    }
+    report.accepted = kept;
+
     if (report.accepted.length === 0) return { created: [], report };
 
     const max = await this.prisma.healthyAdultPhrase.aggregate({
@@ -175,6 +217,14 @@ export class HealthyAdultService {
     patch: { text?: string; enabled?: boolean },
   ): Promise<HealthyAdultPhraseRow> {
     await this.ensureExists(id);
+    if (patch.text !== undefined) {
+      const issues = blockingIssues(patch.text);
+      if (issues.length) {
+        throw new BadRequestException(
+          `Фраза не принята: ${issuesToReason(issues)}. Пул читают и женщины — перепиши без мужского рода.`,
+        );
+      }
+    }
     return this.prisma.healthyAdultPhrase.update({
       where: { id },
       data: {

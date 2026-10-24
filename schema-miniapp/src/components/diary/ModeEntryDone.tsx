@@ -64,7 +64,7 @@ export function ModeEntryDone({
             marginTop: 20,
             width: '100%',
             padding: '16px 0',
-            borderRadius: 16,
+            borderRadius: 'var(--r-16)',
             border: 'none',
             fontFamily: 'inherit',
             fontSize: 16,

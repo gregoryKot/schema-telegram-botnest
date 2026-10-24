@@ -5,17 +5,28 @@ import { PrismaService } from '../prisma/prisma.service';
 // импорты спек и соседей из merge.service продолжали работать.
 export { USER_OWNED_TABLES } from './user-owned-tables';
 import { USER_OWNED_TABLES } from './user-owned-tables';
+import { mergeUserScalarFields } from './merge-user-fields';
+import {
+  reassignSubscriptions,
+  conflictAlertText,
+  type ReassignOutcome,
+} from './merge-subscriptions';
+import { SecurityLogService } from './security-log.service';
+import { twoFactorWillBeLost } from './merge-two-factor';
+import { remapAssignerRefs } from './merge-assigner-refs';
+import { remapRelations } from './merge-relations';
+import type { MergeSummary } from './merge-summary.types';
 
 // Tables we DELETE rather than move during merge — moving them would carry
 // over security-sensitive state (refresh tokens of the old account become
 // valid for the new one). Source's rows are simply destroyed. EmailToken:
 // verification-токены старого аккаунта не должны подтверждать e-mail нового,
 // а после DELETE User стали бы сиротами (FK у него нет) — spec-сверка реестров
-// (аудит 2026-07, S-2). DeviceLinkRequest: код привязки живёт минуты.
+// (аудит 2026-07, S-2). LoginTicket: код входа/привязки живёт минуты.
 export const SECURITY_SENSITIVE_TABLES = [
   'WebSession',
   'EmailToken',
-  'DeviceLinkRequest',
+  'LoginTicket',
 ] as const;
 
 // Per-table allow-list of "other columns" in unique constraints that include
@@ -75,17 +86,22 @@ export function ident(name: string, kind: 'table' | 'col'): string {
 export class MergeService {
   private readonly logger = new Logger(MergeService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly securityLog: SecurityLogService,
+  ) {}
 
-  // Returns a row-count summary so the UI can present an informed merge
-  // confirmation ("you'll move 87 ratings, 14 diary entries, …").
-  async summarize(userId: bigint): Promise<Record<string, number>> {
+  // Сводка для экрана подтверждения: сколько строк переедет + пропадёт ли
+  // второй фактор. Флаг отдаётся ЗДЕСЬ, вместе со счётчиками, а не отдельным
+  // методом — иначе подтверждение можно собрать, «забыв» предупредить
+  // (аудит 2026-07, M4; детали — merge-two-factor.ts).
+  async summarize(sourceId: bigint, targetId: bigint): Promise<MergeSummary> {
     const counts: Record<string, number> = {};
     const failed: string[] = [];
     for (const table of USER_OWNED_TABLES) {
       try {
         const rows = await this.prisma.$queryRaw<Array<{ c: bigint }>>(
-          Prisma.sql`SELECT COUNT(*)::bigint AS c FROM ${Prisma.raw(ident(table, 'table'))} WHERE "userId" = ${userId}`,
+          Prisma.sql`SELECT COUNT(*)::bigint AS c FROM ${Prisma.raw(ident(table, 'table'))} WHERE "userId" = ${sourceId}`,
         );
         const n = Number(rows[0]?.c ?? 0n);
         if (n > 0) counts[table] = n;
@@ -101,7 +117,13 @@ export class MergeService {
         `summarize partial — failed tables: ${failed.join(', ')}`,
       );
     }
-    return counts;
+
+    const twoFactorLost = await twoFactorWillBeLost(
+      this.prisma,
+      sourceId,
+      targetId,
+    );
+    return { counts, twoFactorLost };
   }
 
   // Move all user-owned data from `source` to `target`, then delete `source`.
@@ -111,6 +133,10 @@ export class MergeService {
   async merge(sourceId: bigint, targetId: bigint): Promise<void> {
     if (sourceId === targetId) return;
     const startedAt = Date.now();
+    // Обёртка, а не `let`: результат забирается изнутри колбэка транзакции, а
+    // возврату значения из $transaction доверять нельзя — тестовые дублёры
+    // Prisma сплошь и рядом просто вызывают колбэк, ничего не возвращая.
+    const state: { subs: ReassignOutcome } = { subs: { kind: 'none' } };
     await this.prisma.$transaction(async (tx) => {
       // 0. Drop security-sensitive rows of source (refresh tokens, etc).
       for (const table of SECURITY_SENSITIVE_TABLES) {
@@ -159,38 +185,8 @@ export class MergeService {
         `);
       }
 
-      // 3. Pair table has two refs — both can point at source.
-      await tx.$executeRaw(Prisma.sql`
-        UPDATE "Pair" SET "userId1" = ${targetId}
-        WHERE "userId1" = ${sourceId} AND ("userId2" IS NULL OR "userId2" <> ${targetId})
-      `);
-      await tx.$executeRaw(Prisma.sql`
-        UPDATE "Pair" SET "userId2" = ${targetId}
-        WHERE "userId2" = ${sourceId} AND "userId1" <> ${targetId}
-      `);
-      // Anything left points at source on either side AND the other side is
-      // already target → would create a self-pair; just drop.
-      await tx.$executeRaw(Prisma.sql`
-        DELETE FROM "Pair" WHERE "userId1" = ${sourceId} OR "userId2" = ${sourceId}
-      `);
-
-      // 4. TherapyRelation (therapistId / clientId).
-      // NOTE: use IS DISTINCT FROM instead of <> so that NULL clientId
-      // (virtual / offline clients) is handled correctly. With plain <>,
-      // NULL <> targetId evaluates to NULL, skipping the UPDATE; those rows
-      // then get caught by the DELETE below and are lost permanently.
-      await tx.$executeRaw(Prisma.sql`
-        UPDATE "TherapyRelation" SET "therapistId" = ${targetId}
-        WHERE "therapistId" = ${sourceId}
-          AND "clientId" IS DISTINCT FROM ${targetId}
-      `);
-      await tx.$executeRaw(Prisma.sql`
-        UPDATE "TherapyRelation" SET "clientId" = ${targetId}
-        WHERE "clientId" = ${sourceId} AND "therapistId" <> ${targetId}
-      `);
-      await tx.$executeRaw(Prisma.sql`
-        DELETE FROM "TherapyRelation" WHERE "therapistId" = ${sourceId} OR "clientId" = ${sourceId}
-      `);
+      // 3-4. Pair и TherapyRelation: дедуп активных связей и ремап (см. merge-relations.ts).
+      await remapRelations(tx, sourceId, targetId);
 
       // 4b. TherapistNote (therapistId, clientId — no FK, no unique).
       // Same IS DISTINCT FROM fix for virtual-client notes (clientId can be NULL
@@ -270,12 +266,9 @@ export class MergeService {
         WHERE "therapistId" = ${sourceId}
       `);
 
-      // Step D: clean up orphaned virtual-client conceptualizations.
-      // Virtual clients are identified by negative clientId (-TherapyRelation.id).
-      // If the corresponding TherapyRelation was deleted (e.g. by a previous buggy
-      // merge), the conceptualization row becomes a "ghost" and can pollute a
-      // newly created virtual client that happens to get the same relation id.
-      // Delete any such orphans for the target therapist.
+      // Step D: orphaned virtual-client conceptualizations (negative clientId =
+      // -TherapyRelation.id, relation already gone after a buggy merge) would
+      // pollute a new virtual client with the same id — delete them.
       await tx.$executeRaw(Prisma.sql`
         DELETE FROM "ClientConceptualization" cc
         WHERE cc."therapistId" = ${targetId}
@@ -288,44 +281,15 @@ export class MergeService {
           )
       `);
 
-      // 5. Propagate recoveryEmail, disclaimerAccepted and role from source → target.
-      //    Must happen before DELETE so we can still read source fields.
-      //    recoveryEmail is @unique — clear from source first, then set on target
-      //    (otherwise Postgres unique constraint fires within the transaction).
-      const srcEmailRows = await tx.$queryRaw<
-        Array<{ re: string | null; rev: Date | null }>
-      >(Prisma.sql`
-        SELECT "recoveryEmail" AS re, "recoveryEmailVerifiedAt" AS rev
-        FROM "User" WHERE id = ${sourceId}
-      `);
-      const srcEmail = srcEmailRows[0]?.re ?? null;
-      const srcEmailVerified = srcEmailRows[0]?.rev ?? null;
-      if (srcEmail) {
-        // Free the unique slot on source first
-        await tx.$executeRaw(Prisma.sql`
-          UPDATE "User" SET "recoveryEmail" = NULL, "recoveryEmailVerifiedAt" = NULL
-          WHERE id = ${sourceId}
-        `);
-        // Apply to target only if target has no email yet
-        await tx.$executeRaw(Prisma.sql`
-          UPDATE "User" SET "recoveryEmail" = ${srcEmail}, "recoveryEmailVerifiedAt" = ${srcEmailVerified}
-          WHERE id = ${targetId} AND "recoveryEmail" IS NULL
-        `);
-      }
+      // 5. Скалярные поля User source → target (до DELETE source); вынесено в
+      //    merge-user-fields.ts (правило №10).
+      await mergeUserScalarFields(tx, sourceId, targetId);
 
-      await tx.$executeRaw(Prisma.sql`
-        UPDATE "User" SET "disclaimerAccepted" = true
-        WHERE id = ${targetId}
-          AND (SELECT "disclaimerAccepted" FROM "User" WHERE id = ${sourceId})
-      `);
-      // Promote target to THERAPIST if source had that role — merge must not
-      // silently downgrade a user's access level. Also carry therapistMode flag
-      // (account.service.setRole sets them together; merge should mirror that).
-      await tx.$executeRaw(Prisma.sql`
-        UPDATE "User" SET "role" = 'THERAPIST', "therapistMode" = true
-        WHERE id = ${targetId}
-          AND (SELECT "role" FROM "User" WHERE id = ${sourceId}) = 'THERAPIST'
-      `);
+      // 5b. Подписка привязана к telegramId, а не userId — цикл по
+      //     USER_OWNED_TABLES её не видит и она осталась бы на удаляемом аккаунте.
+      state.subs = await reassignSubscriptions(tx, sourceId, targetId);
+
+      await remapAssignerRefs(tx, sourceId, targetId); // 5c (D-6)
 
       // 6. Finally, delete the now-empty source User.
       await tx.$executeRaw(
@@ -333,6 +297,24 @@ export class MergeService {
       );
     });
     const ms = Date.now() - startedAt;
-    this.logger.log(`Merged user ${sourceId} → ${targetId} (${ms}ms)`);
+    this.logger.log(
+      `Merged user ${sourceId} → ${targetId} (${ms}ms), подписок перенесено: ` +
+        (state.subs.kind === 'moved' ? state.subs.count : 0),
+    );
+    // Живые подписки с обеих сторон — редчайший случай про деньги, который
+    // нельзя решить кодом (какую отменить — не наше решение). Идёт через
+    // SecurityLogService, а не прямым notifyAdminWithFallback: там уже есть
+    // бюджет DM (правило №14 — сигнализация без троттлинга мьютит чат ровно
+    // во время аварии). Сообщается ПОСЛЕ транзакции: сеть внутри неё держала
+    // бы блокировки, а недоставка не должна откатывать слияние.
+    if (state.subs.kind === 'conflict') {
+      this.securityLog.log('merge_subscription_conflict', {
+        sourceId: String(sourceId),
+        targetId: String(targetId),
+        sourceLive: state.subs.sourceLive,
+        targetLive: state.subs.targetLive,
+        detail: conflictAlertText(sourceId, targetId, state.subs),
+      });
+    }
   }
 }

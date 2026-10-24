@@ -42,12 +42,12 @@ export function ModePortrait({
   const sections = buildModePortraitSections(card);
   return (
     <BottomSheet onClose={onClose}>
-      <div style={{ paddingTop: 4 }}>
+      <div className="u-pt4">
         <div
           style={{
             display: 'flex',
             alignItems: 'center',
-            gap: 12,
+            gap: 'var(--space-12)',
             marginBottom: 16,
           }}
         >
@@ -55,7 +55,7 @@ export function ModePortrait({
             style={{
               width: 48,
               height: 48,
-              borderRadius: 14,
+              borderRadius: 'var(--r-14)',
               flexShrink: 0,
               background: cm(accentColor, 9),
               border: `1px solid ${cm(accentColor, 16)}`,
@@ -67,7 +67,7 @@ export function ModePortrait({
           >
             {emoji}
           </div>
-          <div style={{ flex: 1, minWidth: 0 }}>
+          <div className="u-fill">
             <div
               style={{
                 fontSize: 18,
@@ -95,7 +95,7 @@ export function ModePortrait({
           style={{
             background: cm(accentColor, 5),
             border: `1px solid ${cm(accentColor, 13)}`,
-            borderRadius: 16,
+            borderRadius: 'var(--r-16)',
             padding: '12px 14px',
             marginBottom: 16,
             fontSize: 13,
@@ -117,7 +117,7 @@ export function ModePortrait({
           {explainer}
         </div>
 
-        <div style={{ marginBottom: 20 }}>
+        <div className="u-mb20">
           {sections.map((s, i) => (
             <div
               key={s.key}
@@ -155,7 +155,7 @@ export function ModePortrait({
           style={{
             width: '100%',
             minHeight: 48,
-            borderRadius: 14,
+            borderRadius: 'var(--r-14)',
             border: 'none',
             background: accentColor,
             color: '#fff',

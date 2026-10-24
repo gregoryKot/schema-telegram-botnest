@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
-// useAddClient — три способа добавить клиента в кабинете терапевта
-// (пригласительная ссылка / Telegram ID / виртуальный клиент). Read-after-write:
+// useAddClient — два способа добавить клиента в кабинете терапевта
+// (пригласительная ссылка / виртуальный клиент). Read-after-write:
 // список клиентов обязан обновиться значением ИЗ ОТВЕТА сервера, а не
 // локальной догадкой; ошибки API — видны (не «тихо съедены», правило №4).
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -10,7 +10,6 @@ import { useAddClient } from './useAddClient';
 vi.mock('../../api', () => ({
   api: {
     createTherapyInvite: vi.fn(),
-    addClientManually: vi.fn(),
     addVirtualClient: vi.fn(),
   },
 }));
@@ -42,42 +41,6 @@ describe('useAddClient — приглашение по ссылке', () => {
     await act(() => result.current.createInvite());
     expect(result.current.addError).toBe('Не удалось создать ссылку');
     expect(result.current.inviteUrl).toBe('');
-  });
-});
-
-describe('useAddClient — добавление по Telegram ID', () => {
-  it('пустой/нечисловой ввод — ошибка, запрос не уходит', async () => {
-    const { result } = setup();
-    act(() => result.current.setAddInput('не число'));
-    await act(() => result.current.addByTelegramId());
-    expect(result.current.addError).toMatch(/Telegram ID/);
-    expect(mockApi.addClientManually).not.toHaveBeenCalled();
-  });
-
-  it('успех — setClients получает список ИЗ ОТВЕТА сервера, режим закрывается', async () => {
-    const updated = [{ telegramId: 42, name: 'Клиент' }];
-    mockApi.addClientManually.mockResolvedValue(updated);
-    const { result, setClients } = setup();
-    act(() => result.current.setAddInput('42'));
-    await act(() => result.current.addByTelegramId());
-    expect(setClients).toHaveBeenCalledWith(updated);
-    expect(result.current.addMode).toBeNull();
-  });
-
-  it('сервер говорит "not found" — понятная человеку ошибка', async () => {
-    mockApi.addClientManually.mockRejectedValue(new Error('User not found'));
-    const { result } = setup();
-    act(() => result.current.setAddInput('42'));
-    await act(() => result.current.addByTelegramId());
-    expect(result.current.addError).toMatch(/не найден/);
-  });
-
-  it('сервер говорит "already" — «клиент уже подключён»', async () => {
-    mockApi.addClientManually.mockRejectedValue(new Error('already linked'));
-    const { result } = setup();
-    act(() => result.current.setAddInput('42'));
-    await act(() => result.current.addByTelegramId());
-    expect(result.current.addError).toBe('Клиент уже подключён');
   });
 });
 

@@ -1,5 +1,13 @@
 import { api } from '../../api';
 import { useTr } from '../../utils/addressForm';
+import { FIELD_STYLE } from './fieldStyle';
+import { LimitedTextarea } from '../../../../shared/src/components/LimitedTextarea';
+import {
+  THERAPIST_REQUEST_CONTACTS_MAX,
+  THERAPIST_REQUEST_MESSAGE_MAX,
+  THERAPIST_REQUEST_NAME_MAX,
+  THERAPIST_REQUEST_QUAL_MAX,
+} from '../../../../shared/src/limits/textLimits';
 
 type TherapistReq = {
   id: number;
@@ -72,7 +80,7 @@ export function BecomeTherapistSection({
   }
 
   return (
-    <div style={{ marginBottom: 8 }}>
+    <div className="u-mb8">
       {therapistReq === undefined ? null : therapistReq?.status ===
         'pending' ? (
         <div className="card" style={{ borderRadius: 16, padding: 16 }}>
@@ -86,14 +94,8 @@ export function BecomeTherapistSection({
           >
             Заявка отправлена
           </div>
-          <div
-            style={{
-              fontSize: 12,
-              color: 'var(--text-sub)',
-              lineHeight: 1.5,
-            }}
-          >
-            Рассмотрим в течение нескольких дней и напишем в боте.
+          <div className="u-sub12-lh15">
+            Сообщим о решении в Telegram, на почту или по контактам из заявки.
           </div>
         </div>
       ) : therapistReq?.status === 'approved' ? (
@@ -108,7 +110,7 @@ export function BecomeTherapistSection({
           >
             ✓ Заявка одобрена
           </div>
-          <div style={{ fontSize: 12, color: 'var(--text-sub)' }}>
+          <div className="u-sub12">
             Обновите страницу, чтобы войти как специалист.
           </div>
         </div>
@@ -154,7 +156,7 @@ export function BecomeTherapistSection({
               lineHeight: 1.5,
             }}
           >
-            Рассмотрим заявку и напишем в боте
+            Сообщим о решении в Telegram, на почту или по контактам из заявки
           </div>
           {[
             {
@@ -162,21 +164,24 @@ export function BecomeTherapistSection({
               val: reqFullName,
               set: setReqFullName,
               placeholder: 'Мария Иванова',
+              max: THERAPIST_REQUEST_NAME_MAX,
             },
             {
               label: 'Квалификация',
               val: reqQual,
               set: setReqQual,
-              placeholder: 'Схема-терапевт, КПТ, 5 лет практики',
+              placeholder: 'Психолог, схема-терапия и КПТ, 5 лет практики',
+              max: THERAPIST_REQUEST_QUAL_MAX,
             },
             {
               label: 'Контакты',
               val: reqContacts,
               set: setReqContacts,
               placeholder: '@telegram или email',
+              max: THERAPIST_REQUEST_CONTACTS_MAX,
             },
-          ].map(({ label, val, set, placeholder }) => (
-            <div key={label} style={{ marginBottom: 10 }}>
+          ].map(({ label, val, set, placeholder, max }) => (
+            <div key={label} className="u-mb10">
               <div
                 style={{
                   fontSize: 11,
@@ -190,21 +195,12 @@ export function BecomeTherapistSection({
                 value={val}
                 onChange={(e) => set(e.target.value)}
                 placeholder={placeholder}
-                style={{
-                  width: '100%',
-                  background: 'rgba(var(--fg-rgb),0.06)',
-                  border: '1px solid rgba(var(--fg-rgb),0.12)',
-                  borderRadius: 10,
-                  padding: '9px 12px',
-                  color: 'var(--text)',
-                  fontSize: 13,
-                  outline: 'none',
-                  boxSizing: 'border-box',
-                }}
+                maxLength={max}
+                style={FIELD_STYLE}
               />
             </div>
           ))}
-          <div style={{ marginBottom: 14 }}>
+          <div className="u-mb14">
             <div
               style={{
                 fontSize: 11,
@@ -214,7 +210,8 @@ export function BecomeTherapistSection({
             >
               Сообщение (необязательно)
             </div>
-            <textarea
+            <LimitedTextarea
+              max={THERAPIST_REQUEST_MESSAGE_MAX}
               value={reqMsg}
               onChange={(e) => setReqMsg(e.target.value)}
               placeholder={tr(
@@ -222,19 +219,7 @@ export function BecomeTherapistSection({
                 'Расскажите о себе или своём подходе',
               )}
               rows={3}
-              style={{
-                width: '100%',
-                background: 'rgba(var(--fg-rgb),0.06)',
-                border: '1px solid rgba(var(--fg-rgb),0.12)',
-                borderRadius: 10,
-                padding: '9px 12px',
-                color: 'var(--text)',
-                fontSize: 13,
-                outline: 'none',
-                resize: 'none',
-                fontFamily: 'inherit',
-                boxSizing: 'border-box',
-              }}
+              style={{ ...FIELD_STYLE, resize: 'none', fontFamily: 'inherit' }}
             />
           </div>
           {reqError && (
@@ -281,7 +266,7 @@ export function BecomeTherapistSection({
                 borderRadius: 10,
                 border: 'none',
                 background: 'var(--accent)',
-                color: '#fff',
+                color: 'var(--on-accent)',
                 fontSize: 13,
                 fontWeight: 600,
                 cursor: 'pointer',

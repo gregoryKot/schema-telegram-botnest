@@ -1,19 +1,13 @@
 // Лист «Настроить экран»: скрыть/показать + переставить (drag&drop) блоки
 // экрана. Строка — CustomizeRow, общая с QuickActionCustomizeSheet; порядок —
 // useDragReorder (тот же примитив, что у меню «плюс»/«Инструментов»).
+import type { ScreenBlocksApi } from '../../../../shared/src/screens/useScreenBlocks';
 import { CustomizeSheetShell } from '../CustomizeSheetShell';
 import { CustomizeRow } from '../plusMenu/CustomizeRow';
-import { useDragReorder } from '../../hooks/useDragReorder';
-import { BLOCK_META, type ScreenBlockId } from '../../utils/screenBlocks';
+import { useDragReorder } from '../../../../shared/src/hooks/useDragReorder';
+import { BLOCK_META } from '../../utils/screenBlocks';
 
-export interface ScreenBlocksApi {
-  hidden: string[];
-  orderedIds: ScreenBlockId[];
-  highlight?: ScreenBlockId;
-  toggle: (id: ScreenBlockId) => void;
-  reorder: (id: string, toIndex: number) => boolean;
-  closeSheet: () => void;
-}
+export type { ScreenBlocksApi };
 
 export function ScreenCustomizeSheet({ blocks }: { blocks: ScreenBlocksApi }) {
   const { hidden, orderedIds, highlight, toggle, reorder, closeSheet } = blocks;
@@ -25,7 +19,7 @@ export function ScreenCustomizeSheet({ blocks }: { blocks: ScreenBlocksApi }) {
       subtitle="Скрытые блоки можно вернуть в любой момент"
       onClose={closeSheet}
     >
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <div className="u-col8">
         {orderedIds.map((id) => {
           const meta = BLOCK_META[id];
           if (!meta) return null;

@@ -8,6 +8,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
   render,
   screen,
+  within,
   fireEvent,
   cleanup,
   waitFor,
@@ -152,6 +153,38 @@ describe('ModeMapSelector — список карт и переключение'
   });
 });
 
+describe('ModeMapSelector — initialMapId («Открыть на холсте»)', () => {
+  it('открывает карту initialMapId, а не первую в списке', async () => {
+    listModeMaps.mockResolvedValue([meta(1, 'Карта А'), meta(7, 'Схема случая · 15 окт.', 'personality')]);
+    getModeMap.mockImplementation((id: number) => Promise.resolve(full(id, `Карта ${id}`)));
+    await act(async () => {
+      render(<ModeMapSelector clientId={5} initialMapId={7} />);
+    });
+    expect(getModeMap).toHaveBeenCalledTimes(1);
+    expect(getModeMap).toHaveBeenCalledWith(7);
+    expect(screen.getByTestId('mm-editor-stub').textContent).toBe('editor:7:problem');
+  });
+
+  it('карты с таким id в списке нет — открывается первая, как раньше', async () => {
+    listModeMaps.mockResolvedValue([meta(1, 'Карта А'), meta(2, 'Карта Б')]);
+    getModeMap.mockImplementation((id: number) => Promise.resolve(full(id, `Карта ${id}`)));
+    await act(async () => {
+      render(<ModeMapSelector clientId={5} initialMapId={99} />);
+    });
+    expect(getModeMap).toHaveBeenCalledWith(1);
+    expect(screen.getByTestId('mm-editor-stub').textContent).toBe('editor:1:problem');
+  });
+
+  it('без initialMapId поведение прежнее: первая карта', async () => {
+    listModeMaps.mockResolvedValue([meta(3, 'Карта В'), meta(4, 'Карта Г')]);
+    getModeMap.mockImplementation((id: number) => Promise.resolve(full(id, `Карта ${id}`)));
+    await act(async () => {
+      render(<ModeMapSelector clientId={5} />);
+    });
+    expect(getModeMap).toHaveBeenCalledWith(3);
+  });
+});
+
 describe('ModeMapSelector — создание новой карты через меню', () => {
   it('кнопка «Новая карта» открывает список типов, клик создаёт карту нужного вида', async () => {
     listModeMaps.mockResolvedValue([meta(1, 'Карта А')]);
@@ -193,18 +226,24 @@ describe('ModeMapSelector — переименование и удаление �
     expect(screen.getByText('Новое имя')).toBeTruthy();
   });
 
+  // Ж4 (аудит 2026-08): нативный window.confirm() заменён на ConfirmDialog —
+  // клик по «Удалить карту» открывает диалог, удаление подтверждается его
+  // собственной кнопкой «Удалить».
   it('удаление подтверждённой картой убирает её из списка и открывает следующую', async () => {
     listModeMaps.mockResolvedValue([meta(1, 'Карта А'), meta(2, 'Карта Б')]);
     getModeMap
       .mockResolvedValueOnce(full(1, 'Карта А'))
       .mockResolvedValueOnce(full(2, 'Карта Б'));
     deleteModeMap.mockResolvedValue(undefined);
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
     await act(async () => {
       render(<ModeMapSelector clientId={5} />);
     });
     expect(screen.getByTestId('mm-editor-stub')).toBeTruthy();
     fireEvent.click(screen.getByLabelText('Удалить карту'));
+    const dialog = screen.getByRole('dialog');
+    expect(dialog.getAttribute('aria-modal')).toBe('true');
+    expect(deleteModeMap).not.toHaveBeenCalled();
+    fireEvent.click(within(dialog).getByText('Удалить'));
     expect(deleteModeMap).toHaveBeenCalledWith(1);
     await waitFor(() =>
       expect(screen.getByTestId('mm-editor-stub').textContent).toBe(
@@ -214,17 +253,30 @@ describe('ModeMapSelector — переименование и удаление �
     expect(screen.queryByText('Карта А')).toBeNull();
   });
 
-  it('отказ от подтверждения не удаляет карту', async () => {
+  it('отмена в диалоге не удаляет карту', async () => {
     listModeMaps.mockResolvedValue([meta(1, 'Карта А'), meta(2, 'Карта Б')]);
     getModeMap.mockResolvedValue(full(1, 'Карта А'));
-    vi.spyOn(window, 'confirm').mockReturnValue(false);
     await act(async () => {
       render(<ModeMapSelector clientId={5} />);
     });
     expect(screen.getByTestId('mm-editor-stub')).toBeTruthy();
     fireEvent.click(screen.getByLabelText('Удалить карту'));
+    fireEvent.click(screen.getByText('Отмена'));
     expect(deleteModeMap).not.toHaveBeenCalled();
     expect(screen.getByText('Карта А')).toBeTruthy();
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
+  it('Escape в диалоге закрывает его без удаления', async () => {
+    listModeMaps.mockResolvedValue([meta(1, 'Карта А'), meta(2, 'Карта Б')]);
+    getModeMap.mockResolvedValue(full(1, 'Карта А'));
+    await act(async () => {
+      render(<ModeMapSelector clientId={5} />);
+    });
+    fireEvent.click(screen.getByLabelText('Удалить карту'));
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(deleteModeMap).not.toHaveBeenCalled();
+    expect(screen.queryByRole('dialog')).toBeNull();
   });
 
   it('единственная карта не показывает кнопку удаления', async () => {

@@ -85,8 +85,8 @@ describe('ModesPatternSection — группировка режимов поль
     );
   });
 
-  it('во время загрузки — скелетон, а не список', () => {
-    render(
+  it('во время загрузки — скелетон-строки (форма списка), а не список', () => {
+    const { container } = render(
       <ModesPatternSection
         {...BASE_PROPS}
         myModeIds={['demanding_critic']}
@@ -94,6 +94,25 @@ describe('ModesPatternSection — группировка режимов поль
       />,
     );
     expect(screen.queryByTestId('pattern-list')).toBeNull();
+    // Минимум 3 строки, даже когда локально известен всего один режим.
+    expect(container.querySelectorAll('.card > div').length).toBe(3);
+  });
+
+  it('во время загрузки — строк скелетона столько же, сколько локально известных режимов', () => {
+    const { container } = render(
+      <ModesPatternSection
+        {...BASE_PROPS}
+        myModeIds={[
+          'demanding_critic',
+          'vulnerable_child',
+          'punitive_parent',
+          'detached_protector',
+          'angry_child',
+        ]}
+        profileLoading={true}
+      />,
+    );
+    expect(container.querySelectorAll('.card > div').length).toBe(5);
   });
 });
 

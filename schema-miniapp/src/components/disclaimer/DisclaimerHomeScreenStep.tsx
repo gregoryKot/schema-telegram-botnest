@@ -44,7 +44,7 @@ export function DisclaimerHomeScreenStep({
           marginBottom: 22,
           textAlign: 'left',
           padding: '12px 14px',
-          borderRadius: 12,
+          borderRadius: 'var(--r-12)',
           background: 'rgba(var(--fg-rgb),0.05)',
         }}
       >

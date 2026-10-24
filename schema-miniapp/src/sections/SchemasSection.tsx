@@ -12,7 +12,7 @@ import {
   weekModeSummary,
   weekModeFrequency,
   WeekTopSummary,
-} from '../utils/patternsSummary';
+} from '../../../shared/src/pattern/patternsSummary';
 import { Tab, SchemasSectionProps as Props } from './schemas/types';
 import { PatternsHeader } from './schemas/PatternsHeader';
 import { SchemasTab } from './schemas/SchemasTab';
@@ -20,6 +20,10 @@ import { ModesTab } from './schemas/ModesTab';
 import { NeedsTab } from './schemas/NeedsTab';
 import { ModePickerSheet } from './schemas/ModePickerSheet';
 import { useMySelections } from './schemas/useMySelections';
+import {
+  readStoredPatternsTab,
+  writeStoredPatternsTab,
+} from './schemas/patternsTabStorage';
 import { useScreenBlocks } from '../hooks/useScreenBlocks';
 import { SCREEN_HIDDEN_KEYS } from '../utils/screenBlocks';
 import { ScreenCustomizeSheet } from '../components/customize/ScreenCustomizeSheet';
@@ -30,8 +34,22 @@ export function SchemasSection({
   childhoodRatings = {},
   onOpenChildhoodWheel,
   onOpenDiaries,
+  initialTab,
 }: Props) {
-  const [tab, setTab] = useState<Tab>('schemas');
+  // Приоритет: явный initialTab (переход с карточки «Мой портрет») → то, на
+  // чём пользователь оставался в прошлый раз → 'schemas'. Персист — эффектом
+  // ниже, он же фиксирует initialTab (если пришёл) как новое «последнее».
+  const [tab, setTab] = useState<Tab>(
+    () => initialTab ?? readStoredPatternsTab() ?? 'schemas',
+  );
+  useEffect(() => writeStoredPatternsTab(tab), [tab]);
+  // Явный переход «открой вкладку X» (карточка портрета в «Я») теперь
+  // приходит к уже смонтированной секции (KeepMountedSection) — раньше
+  // initialTab применялся только инициализатором useState при
+  // перемонтировании. App гасит сигнал в null сразу после доставки.
+  useEffect(() => {
+    if (initialTab) setTab(initialTab);
+  }, [initialTab]);
   const {
     manualSchemaIds,
     myModeIds,
@@ -111,7 +129,7 @@ export function SchemasSection({
             display: 'flex',
             background: 'var(--surface-2)',
             border: '1px solid var(--border-color)',
-            borderRadius: 14,
+            borderRadius: 'var(--r-14)',
             padding: 3,
           }}
         >
@@ -140,7 +158,7 @@ export function SchemasSection({
         </div>
         {((tab === 'schemas' && schemaSaveError) ||
           (tab === 'modes' && modeSaveError)) && (
-          <div style={{ marginTop: 8 }}>
+          <div className="u-mt8">
             <SaveErrorNote
               ty="Не удалось сохранить выбор на сервере. Здесь применилось, но на другом устройстве может не появиться — попробуй ещё раз."
               vy="Не удалось сохранить выбор на сервере. Здесь применилось, но на другом устройстве может не появиться — попробуйте ещё раз."

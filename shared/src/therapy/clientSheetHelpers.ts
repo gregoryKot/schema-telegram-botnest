@@ -1,19 +1,37 @@
 // Общие чистые хелперы карточки клиента терапевта (webapp ↔ schema-miniapp,
 // правило №3). indexColor и CONCEPT_FIELDS сведены 2026-08: канон — версия
-// мини-аппа. Цвета согласованы с RosterSparkline (--accent-* определены в
-// обоих фронтендах, в webapp — алиасы --c-amber/--c-rose); поле goals есть
-// в типе и на бэке, в webapp его форма теряла — доехало вместе со сведением.
+// мини-аппа. Цвета согласованы с RosterSparkline (--accent-* есть в обоих
+// фронтендах, в webapp — алиасы --c-amber/--c-rose); поле goals есть в типе
+// и на бэке, в webapp форма его теряла — доехало вместе со сведением.
+// Даты сессий — календарный день (`2026-01-15`), utils/calendarDate читает его
+// полночью UTC: до инцидента 2026-09-17 день читался в зоне машины, и «1 месяц
+// в терапии» на западном смещении превращался в «2 месяца».
+import { dateStringMs, dateStringParts } from '../utils/calendarDate';
+import { fmtDate } from '../utils/format';
+import { isVirtualId } from '../utils/sameId';
+import type { UserId } from '../userId';
 
 export const DAY_NAMES = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
 
+/**
+ * Офлайн-клиент (без Telegram): бэкенд отдаёт для него отрицательный
+ * telegramId (-rel.id). По `name` его не отличить: name у такого клиента —
+ * расшифрованное virtualClientName, то есть непустое.
+ */
+export function isVirtualClient(c: { telegramId: UserId }): boolean {
+  return isVirtualId(c.telegramId);
+}
+
 export function calcTherapyDuration(startDateStr: string): string {
-  const start = new Date(startDateStr);
+  const start = dateStringParts(startDateStr);
+  if (!start) return '';
   const now = new Date();
   const months =
-    (now.getFullYear() - start.getFullYear()) * 12 +
-    (now.getMonth() - start.getMonth());
+    (now.getFullYear() - start.year) * 12 + (now.getMonth() + 1 - start.month);
   if (months < 1) {
-    const days = Math.floor((now.getTime() - start.getTime()) / 86400000);
+    const days = Math.floor(
+      (now.getTime() - dateStringMs(startDateStr)) / 86400000,
+    );
     if (days < 1) return 'сегодня';
     const m10 = days % 10,
       m100 = days % 100;
@@ -44,23 +62,10 @@ export function nextSessionLabel(dateStr: string): string {
   const [datePart, timePart] = dateStr.includes('T')
     ? dateStr.split('T')
     : [dateStr, null];
-  const [, m, d] = datePart.split('-');
-  const MONTHS = [
-    'янв',
-    'фев',
-    'мар',
-    'апр',
-    'май',
-    'июн',
-    'июл',
-    'авг',
-    'сен',
-    'окт',
-    'ноя',
-    'дек',
-  ];
-  const date = new Date(datePart + 'T00:00:00');
-  const base = `${DAY_NAMES[date.getDay()]}, ${parseInt(d)} ${MONTHS[parseInt(m) - 1]}`;
+  const parts = dateStringParts(datePart);
+  if (!parts) return '';
+  // Число и месяц — через fmtDate: копию списка месяцев тут держать нечего.
+  const base = `${DAY_NAMES[parts.weekday]}, ${fmtDate(datePart)}`;
   return timePart ? `${base} · ${timePart}` : base;
 }
 
@@ -116,7 +121,7 @@ export const CONCEPT_FIELDS: {
     key: 'modeTransitions',
     label: 'Переключение режимов',
     placeholder:
-      'Что запускает переход в уязвимого ребёнка? Как активируется карающий критик? Когда появляется здоровый взрослый?...',
+      'Что запускает переход в Уязвимого Ребёнка? Как активируется Карающий Критик? Когда появляется Здоровый Взрослый?...',
   },
   {
     key: 'currentProblems',

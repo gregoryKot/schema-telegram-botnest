@@ -12,10 +12,17 @@ import { act, renderHook } from '@testing-library/react';
 beforeEach(() => {
   vi.resetModules();
   vi.stubGlobal('fetch', vi.fn());
+  // Хост — Telegram: у веб-хоста authedFetch сначала меняет refresh-куку на
+  // токен (hasInstantAuth), и одиночный мок fetch съедался бы обменом. Эти
+  // тесты — про флаги, не про авторизацию.
+  (window as unknown as { Telegram?: unknown }).Telegram = {
+    WebApp: { initData: 'query_id=AAA&hash=deadbeef' },
+  };
 });
 
 afterEach(() => {
   vi.unstubAllGlobals();
+  delete (window as unknown as { Telegram?: unknown }).Telegram;
 });
 
 async function freshModule() {
@@ -111,5 +118,55 @@ describe('useUserFlags — updateFlags (пакетное обновление)',
     expect(result.current.flags.onboardingV1Done).toBe(true);
     expect(result.current.flags.onboardingV2Done).toBe(true);
     expect(result.current.flags.therapistMode).toBe(false); // не задет
+  });
+});
+
+// Регресс «двадцать раз прошёл онбординг» (2026-08-21). Дефолтные флаги
+// неотличимы от флагов новичка, поэтому решение «показать первый вход»
+// опирается на loadedFromServer, а не на loaded.
+describe('useUserFlags — loadedFromServer', () => {
+  it('успешный ответ: флаги прочитаны с сервера', async () => {
+    (fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
+      ok: true,
+      json: async () => ({ onboardingV2Done: true }),
+    });
+    const { useUserFlags } = await freshModule();
+    const { result } = renderHook(() => useUserFlags());
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(result.current.loadedFromServer).toBe(true);
+    expect(result.current.flags.onboardingV2Done).toBe(true);
+  });
+
+  it('сетевая ошибка: попытка завершена, но серверных флагов у нас нет', async () => {
+    (fetch as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('offline'));
+    const { useUserFlags } = await freshModule();
+    const { result } = renderHook(() => useUserFlags());
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(result.current.loaded).toBe(true);
+    expect(result.current.loadedFromServer).toBe(false);
+  });
+
+  it('401 без возможности перевыпустить сессию: серверных флагов нет', async () => {
+    // Именно этот случай и ломал вход из браузера: запрос уходил без Bearer,
+    // сервер отвечал 401, а дефолты выдавались за «пользователь новый».
+    (fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
+      ok: false,
+      status: 401,
+      json: async () => ({}),
+    });
+    const { useUserFlags } = await freshModule();
+    const { result } = renderHook(() => useUserFlags());
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(result.current.loadedFromServer).toBe(false);
+    expect(result.current.flags.onboardingV2Done).toBe(false);
   });
 });

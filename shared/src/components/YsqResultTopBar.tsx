@@ -32,14 +32,12 @@ export function YsqResultTopBar({ tr, onShare, onHelpOpen }: Props) {
       >
         {title}
       </div>
-      <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.6 }}>
-        {text}
-      </div>
+      <div className="u-sub13-lh16">{text}</div>
     </div>
   );
 
   return (
-    <div style={{ marginBottom: 16 }}>
+    <div className="u-mb16">
       <div style={{ display: 'flex', gap: 8 }}>
         <button
           onClick={toggleHelp}

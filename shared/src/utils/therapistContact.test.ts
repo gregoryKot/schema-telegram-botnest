@@ -110,7 +110,7 @@ describe('contactCta', () => {
     expect(cta.label).toBe('');
   });
 
-  it('контакт по умолчанию (автор) — «Поговорить с психологом»', () => {
+  it('контакт по умолчанию (автор) — «Записаться на консультацию»', () => {
     const cta = contactCta({
       url: 'https://t.me/kotlarewski',
       bookingUrl: 'https://kotlarewski.gr/#booking',
@@ -118,7 +118,7 @@ describe('contactCta', () => {
       isTherapist: false,
     });
     expect(cta.isSelf).toBe(false);
-    expect(cta.label).toBe('Поговорить с психологом →');
+    expect(cta.label).toBe('Записаться на консультацию →');
   });
 
   it('свой терапевт — «Написать терапевту»', () => {

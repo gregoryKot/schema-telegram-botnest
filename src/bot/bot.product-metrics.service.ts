@@ -1,16 +1,26 @@
 import { Injectable } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { formatProductMetrics, ProductMetrics } from './product-metrics.format';
+import { countCrisis } from './crisis-metrics';
+import { countYsqFunnel } from './ysq-funnel-metrics';
 import { formatQuizMetrics } from './quiz-metrics.format';
 import { QuizMetricsService } from './quiz-metrics.service';
 import { formatPracticeLinkMetrics } from './practice-link-metrics.format';
 import { PracticeLinkMetricsService } from './practice-link-metrics.service';
 import { formatPracticeMetrics } from './practice-metrics.format';
 import { PracticeMetricsService } from './practice-metrics.service';
+import { formatCaseMetrics } from './case-metrics.format';
+import { CaseMetricsService } from './case-metrics.service';
 import {
   ONBOARDING_STEPS,
+  SITE_INSTALL_SURFACES,
   TODAY_BLOCKS,
 } from '../analytics/analytics.constants';
+
+// IN-список сайтовых surface для исключения из воронки мини-аппа — сама
+// строка ${...} собирается один раз, а не в каждом запросе.
+const SITE_SURFACES_LIST = Prisma.join(SITE_INSTALL_SURFACES);
 
 // Продуктовые метрики для /stats (правило №8). Всё выводится из БД: часть — из
 // таблиц-фич (онбординг/adoption/распределения), часть — из событий
@@ -23,17 +33,20 @@ export class ProductMetricsService {
     private readonly quizMetrics: QuizMetricsService,
     private readonly practiceLink: PracticeLinkMetricsService,
     private readonly practiceMetrics: PracticeMetricsService,
+    private readonly caseMetrics: CaseMetricsService,
   ) {}
 
   /** Готовый текстовый блок для /stats (+ мини-тесты, переходы к автору, практики). */
   async render(): Promise<string> {
-    const [metrics, quiz, practice, practiceSessions] = await Promise.all([
-      this.getMetrics(),
-      this.quizMetrics.getMetrics(),
-      this.practiceLink.getMetrics(),
-      this.practiceMetrics.getMetrics(),
-    ]);
-    return `${formatProductMetrics(metrics)}\n\n${formatQuizMetrics(quiz)}\n\n${formatPracticeLinkMetrics(practice)}\n\n${formatPracticeMetrics(practiceSessions)}`;
+    const [metrics, quiz, practice, practiceSessions, cases] =
+      await Promise.all([
+        this.getMetrics(),
+        this.quizMetrics.getMetrics(),
+        this.practiceLink.getMetrics(),
+        this.practiceMetrics.getMetrics(),
+        this.caseMetrics.getMetrics(),
+      ]);
+    return `${formatProductMetrics(metrics)}\n\n${formatQuizMetrics(quiz)}\n\n${formatPracticeLinkMetrics(practice)}\n\n${formatPracticeMetrics(practiceSessions)}\n\n${formatCaseMetrics(cases)}`;
   }
 
   async getMetrics(): Promise<ProductMetrics> {
@@ -50,11 +63,9 @@ export class ProductMetricsService {
       cohort30,
       completed30,
       diaries,
-      ysqDone,
       exercises,
       practices,
       childhood,
-      ysqStarted,
       ty,
       vy,
       notChosen,
@@ -62,8 +73,7 @@ export class ProductMetricsService {
       themeLight,
       themeDark,
       themeSystem,
-      crisisShown,
-      crisisTapped,
+      crisis,
       shareRows,
       outboxRows,
       shareCard7,
@@ -76,6 +86,7 @@ export class ProductMetricsService {
       homeScreenRows,
       journeyOpens,
       ysqHelpOpens,
+      ysqFunnel,
     ] = await Promise.all([
       this.prisma.user.count({
         where: { ...activeUser, createdAt: { gte: since30 } },
@@ -94,7 +105,6 @@ export class ProductMetricsService {
           UNION SELECT "userId" FROM "ModeDiaryEntry"
           UNION SELECT "userId" FROM "GratitudeDiaryEntry"
         ) t`,
-      this.prisma.ysqResult.count(),
       this.prisma.$queryRaw<Array<{ c: bigint }>>`
         SELECT count(DISTINCT uid)::bigint AS c FROM (
           SELECT "userId" AS uid FROM "UserFlashcard"
@@ -107,7 +117,6 @@ export class ProductMetricsService {
         SELECT count(DISTINCT "userId")::bigint AS c FROM "UserPractice"`,
       this.prisma.$queryRaw<Array<{ c: bigint }>>`
         SELECT count(DISTINCT "userId")::bigint AS c FROM "ChildhoodRating"`,
-      this.prisma.ysqProgress.count(),
       this.prisma.user.count({ where: { ...activeUser, addressForm: 'ty' } }),
       this.prisma.user.count({ where: { ...activeUser, addressForm: 'vy' } }),
       this.prisma.user.count({ where: { ...activeUser, addressForm: null } }),
@@ -119,8 +128,7 @@ export class ProductMetricsService {
       this.prisma.user.count({ where: { ...activeUser, themePref: 'light' } }),
       this.prisma.user.count({ where: { ...activeUser, themePref: 'dark' } }),
       this.prisma.user.count({ where: { ...activeUser, themePref: null } }),
-      ev('crisis_card_shown'),
-      ev('crisis_hotline_tapped'),
+      countCrisis(this.prisma, since30),
       this.prisma.$queryRaw<Array<{ ok: string | null; c: bigint }>>`
         SELECT "meta"->>'ok' AS ok, count(*)::bigint AS c FROM "AnalyticsEvent"
         WHERE "name" = 'share_result' AND "createdAt" >= ${since30}
@@ -171,13 +179,23 @@ export class ProductMetricsService {
         FROM "AnalyticsEvent"
         WHERE "name" = 'today_customize_open' AND "createdAt" >= ${since30}
         GROUP BY "meta"->>'via'`,
-      this.prisma.$queryRaw<Array<{ action: string | null; c: bigint }>>`
+      // Воронка мини-аппа: сайтовые surface (site_banner/site_landing) не
+      // считаются здесь — у них своя семантика shown/add/added (см. блок
+      // «Установка с сайта», site-install-metrics.*), подмешивать их сюда
+      // значит пачкать воронку Telegram цифрами с другого источника.
+      this.prisma.$queryRaw<Array<{ action: string | null; c: bigint }>>(
+        Prisma.sql`
         SELECT "meta"->>'action' AS action, count(*)::bigint AS c
         FROM "AnalyticsEvent"
         WHERE "name" = 'home_screen_offer' AND "createdAt" >= ${since30}
+          AND ("meta"->>'surface' IS NULL
+               OR "meta"->>'surface' NOT IN (${SITE_SURFACES_LIST}))
         GROUP BY "meta"->>'action'`,
+      ),
       ev('journey_open'),
       ev('ysq_help_open'),
+      // Последним: юнит-моки $queryRaw позиционные (ysq-funnel-metrics.ts).
+      countYsqFunnel(this.prisma),
     ]);
 
     const sections = sectionsRaw
@@ -214,12 +232,12 @@ export class ProductMetricsService {
       onboardingSteps,
       adoption: {
         diaries: num(diaries),
-        ysqDone,
+        ysqDone: ysqFunnel.completed,
         exercises: num(exercises),
         practices: num(practices),
         childhood: num(childhood),
       },
-      ysq: { started: ysqStarted, completed: ysqDone, helpOpens: ysqHelpOpens },
+      ysq: { ...ysqFunnel, helpOpens: ysqHelpOpens },
       addressForm: { ty, vy, notChosen },
       sections,
       themes: { light: themeLight, dark: themeDark, system: themeSystem },
@@ -231,7 +249,7 @@ export class ProductMetricsService {
           count: Number(r.c),
         })),
       },
-      crisis: { shown: crisisShown, hotlineTapped: crisisTapped },
+      crisis,
       shareResult: { ok: shareOk, fallback: shareFallback },
       outbox: {
         flushes: Number(outboxRows[0]?.flushes ?? 0n),

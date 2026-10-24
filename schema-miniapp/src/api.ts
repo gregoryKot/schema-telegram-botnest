@@ -1,4 +1,3 @@
-import type { QuickPracticeId } from '../../shared/src/practices/quickPractices';
 // Типы, чьи методы переехали в shared-фабрику, здесь остались только ре-экспортом.
 export type {
   UserSchemaNote,
@@ -10,14 +9,15 @@ import {
   type ApiTransport,
 } from '../../shared/src/api/sharedApi';
 import { createRatingApi } from '../../shared/src/api/ratingApi';
+import { createPracticeSessionsApi } from '../../shared/src/api/practiceSessionsApi';
 import { createClientErrorReporter } from '../../shared/src/api/clientErrorReport';
 import { BASE, authedFetch, get, post, postJson, del } from './apiClient';
-import type { UiPrefsPatch } from './utils/uiPrefsSync';
 
 // Типы вынесены в ./apiTypes и ре-экспортируются здесь — импорты потребителей не меняются.
 export * from './apiTypes';
 import type { ClientConceptualization } from './apiTypes';
-import type { UserSettings } from './apiTypes';
+import type { ConceptSaveBody } from '../../shared/src/therapy/conceptGraph/conceptSaveBody';
+import type { UserId } from './apiTypes';
 
 // Единственная копия — shared/src/api/clientErrorReport.ts (правило №3).
 export const reportClientError = createClientErrorReporter(BASE, 'miniapp');
@@ -37,47 +37,28 @@ export const api = {
   // Общие с webapp методы — из shared-фабрики (правило №3).
   ...buildSharedApi(transport),
   ...ratingApi,
+  // Быстрые практики «Здесь и сейчас» — тоже общие (правило №3).
+  ...createPracticeSessionsApi(transport),
 
-  // uiPrefs — только мини-апп (utils/uiPrefsSync.ts), тип локальный поверх shared.
-  getSettings: () =>
-    get<UserSettings & { uiPrefs?: UiPrefsPatch | null }>('/api/settings'),
-  updateSettings: (body: Partial<UserSettings> & { uiPrefs?: UiPrefsPatch }) =>
-    post('/api/settings', body),
-
-  // Случайная фраза Здорового взрослого (пул канала; готовый контент).
+  // Способы входа аккаунта — по ним решается, предлагать ли объединение
+  // (missingLinkTarget, shared/src/account/linkTarget.ts). Роут общий с сайтом.
+  getAuthProviders: () =>
+    get<{ providers: { provider: string }[] }>('/api/auth/me').then((r) =>
+      r.providers.map((p) => p.provider),
+    ),
+  // Случайная фраза Здорового Взрослого (пул канала; готовый контент).
   getHealthyPhrase: () => get<{ text: string | null }>('/api/healthy-phrase'),
   // ─── Case Conceptualization ──────────────────────────────────────────────────
-  getConceptualization: (clientId: number) =>
+  getConceptualization: (clientId: UserId) =>
     get<ClientConceptualization | null>(
       `/api/therapy/conceptualization/${clientId}`,
     ),
-  saveConceptualization: (
-    clientId: number,
-    body: {
-      schemaIds?: string[];
-      modeIds?: string[];
-      earlyExperience?: string;
-      unmetNeeds?: string;
-      triggers?: string;
-      copingStyles?: string;
-      goals?: string;
-      currentProblems?: string;
-      modeTransitions?: string;
-    },
-  ) =>
+  saveConceptualization: (clientId: UserId, body: Partial<ConceptSaveBody>) =>
     postJson<ClientConceptualization>(
       `/api/therapy/conceptualization/${clientId}`,
       body,
     ),
   ...exercisesApi,
-  // ─── Быстрые практики «Здесь и сейчас» (дыхание/заземление/«Стоп») ─────────────
-  recordPracticeSession: (tool: QuickPracticeId) =>
-    postJson<{ ok: true; count: number }>('/api/practice-session', { tool }),
-  // Форма ответа выражена через QuickPracticeId — отдельный интерфейс в
-  // apiTypes.ts не заводим: тот файл потокенно зеркалит api.ts и уже висит
-  // в jscpd-храповике как клон, каждая новая строка удлиняет дубль.
-  getPracticeSessions: () =>
-    get<Record<QuickPracticeId, number>>('/api/practice-sessions'),
   // saveRating/flushOutbox (outbox — см. ../../shared/src/utils/ratingOutbox.ts)
   // приезжают через ...ratingApi выше. Вызывается при старте приложения и
   // при возврате online — см. App.tsx.

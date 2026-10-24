@@ -201,7 +201,7 @@ export function NeedsWheel({
           r={CENTER_R}
           fill="transparent"
           onClick={onClickCenter}
-          style={{ cursor: 'pointer' }}
+          className="u-pointer"
         />
       )}
     </svg>

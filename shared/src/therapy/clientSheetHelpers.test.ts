@@ -3,11 +3,13 @@
 // длительности и формат «день недели, число месяц · время».
 import { describe, it, expect, afterEach, vi } from 'vitest';
 import {
+  isVirtualClient,
   calcTherapyDuration,
   nextSessionLabel,
   indexColor,
   CONCEPT_FIELDS,
 } from './clientSheetHelpers';
+import { forEachTimeZone } from '../utils/timeZone.test-helpers';
 
 describe('calcTherapyDuration', () => {
   afterEach(() => vi.useRealTimers());
@@ -41,6 +43,22 @@ describe('calcTherapyDuration', () => {
     );
   });
 
+  // Регрессия инцидента 2026-09-17: старт приходит календарным днём, а
+  // разбирался в зоне машины — на UTC-7 «2026-03-01» становился 28 февраля,
+  // и месяц старта съезжал: «1 месяц в терапии» показывался как «2 месяца».
+  it('длительность не зависит от зоны машины', () => {
+    forEachTimeZone((tz) => {
+      withNow('2026-04-01T12:00:00', () => {
+        expect(calcTherapyDuration('2026-03-01'), tz).toBe('1 месяц');
+        expect(calcTherapyDuration('2026-04-01'), tz).toBe('сегодня');
+      });
+    });
+  });
+
+  it('нечитаемая дата — пусто, а не «NaN месяцев»', () => {
+    expect(calcTherapyDuration('мусор')).toBe('');
+  });
+
   it('месяцы склоняются (1 месяц / 3 месяца / 5 месяцев)', () => {
     withNow('2026-02-15T00:00:00', () =>
       expect(calcTherapyDuration('2026-01-10T00:00:00')).toBe('1 месяц'),
@@ -62,6 +80,19 @@ describe('nextSessionLabel', () => {
 
   it('дата со временем добавляет « · HH:MM»', () => {
     expect(nextSessionLabel('2026-01-15T18:30')).toBe('Чт, 15 янв · 18:30');
+  });
+
+  it('день недели тот же в любой зоне машины', () => {
+    forEachTimeZone((tz) => {
+      expect(nextSessionLabel('2026-01-15'), tz).toBe('Чт, 15 янв');
+      expect(nextSessionLabel('2026-01-15T18:30'), tz).toBe(
+        'Чт, 15 янв · 18:30',
+      );
+    });
+  });
+
+  it('нечитаемая дата — пусто, а не «undefined, NaN»', () => {
+    expect(nextSessionLabel('мусор')).toBe('');
   });
 });
 
@@ -90,5 +121,30 @@ describe('CONCEPT_FIELDS', () => {
   it('ключи уникальны', () => {
     const keys = CONCEPT_FIELDS.map((f) => f.key);
     expect(new Set(keys).size).toBe(keys.length);
+  });
+});
+
+describe('isVirtualClient: id строкой (веб-аккаунт > 2^53)', () => {
+  it('веб-клиент — не виртуальный, строковый отрицательный — виртуальный', () => {
+    expect(isVirtualClient({ telegramId: '1000000000000000123' })).toBe(false);
+    expect(isVirtualClient({ telegramId: '-3' })).toBe(true);
+  });
+});
+
+describe('isVirtualClient', () => {
+  it('отрицательный telegramId — офлайн-клиент', () => {
+    expect(isVirtualClient({ telegramId: -3 })).toBe(true);
+  });
+
+  it('положительный telegramId — клиент из Telegram', () => {
+    expect(isVirtualClient({ telegramId: 123456 })).toBe(false);
+  });
+
+  it('name не участвует: у офлайн-клиента оно непустое', () => {
+    expect(
+      isVirtualClient({ telegramId: -3, name: 'Борис' } as {
+        telegramId: number;
+      }),
+    ).toBe(true);
   });
 });

@@ -27,7 +27,7 @@ export function WheelCard({
   return (
     <div
       className="card"
-      style={{ borderRadius: 20, paddingTop: 4, paddingBottom: 8 }}
+      style={{ borderRadius: 'var(--r-20)', paddingTop: 4, paddingBottom: 8 }}
     >
       <div key={selectedDate}>
         <NeedsWheel
@@ -83,12 +83,8 @@ export function WheelCard({
                 strokeDasharray="3 3"
               />
             </svg>
-            <span style={{ fontSize: 12, color: 'var(--text-faint)' }}>
-              детство
-            </span>
-            {onOpenChildhoodWheel && (
-              <span style={{ fontSize: 12, color: 'var(--accent)' }}>→</span>
-            )}
+            <span className="u-faint12">детство</span>
+            {onOpenChildhoodWheel && <span className="u-accent12">→</span>}
           </div>
         ) : onOpenChildhoodWheel ? (
           <div
@@ -103,9 +99,7 @@ export function WheelCard({
             }}
             style={{ cursor: 'pointer' }}
           >
-            <span style={{ fontSize: 12, color: 'var(--accent)' }}>
-              Оценить детство →
-            </span>
+            <span className="u-accent12">Оценить детство →</span>
           </div>
         ) : null}
         {onOpenSchemas && (
@@ -121,9 +115,7 @@ export function WheelCard({
             }}
             style={{ cursor: 'pointer' }}
           >
-            <span style={{ fontSize: 12, color: 'var(--accent)' }}>
-              Что за этим стоит →
-            </span>
+            <span className="u-accent12">Что за этим стоит →</span>
           </div>
         )}
       </div>

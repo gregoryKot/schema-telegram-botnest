@@ -20,10 +20,10 @@ export function ActionRow({
         width: '100%',
         display: 'flex',
         alignItems: 'center',
-        gap: 12,
+        gap: 'var(--space-12)',
         minHeight: 60,
         padding: '14px 16px',
-        borderRadius: 16,
+        borderRadius: 'var(--r-16)',
         border: '1px solid var(--line)',
         background: 'var(--surface)',
         cursor: 'pointer',
@@ -33,9 +33,7 @@ export function ActionRow({
       }}
     >
       <div style={{ minWidth: 0 }}>
-        <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--text)' }}>
-          {label}
-        </div>
+        <div className="u-h16">{label}</div>
         <div style={{ fontSize: 13, color: 'var(--muted)', marginTop: 3 }}>
           {sub}
         </div>

@@ -6,7 +6,8 @@ import type { ArticleSummary, Article } from '../api';
 import { useAsyncData } from '../hooks/useAsyncData';
 import { DIAGRAMS } from './articleDiagrams';
 import { PRACTICE_BOOKING_URL } from './landing/constants';
-
+import { siteTitleSuffix } from '../utils/domainChrome';
+import { Btn } from '../components/landing-kit';
 // ─── Article list page ────────────────────────────────────────────────────────
 export function ArticlesListPage() {
   // Сбой ≠ пусто: раньше `.catch(() => setArticles([]))` рисовал читателю со
@@ -15,7 +16,7 @@ export function ArticlesListPage() {
   const { data: articles, reload, failed } = useAsyncData<ArticleSummary[] | null>(listFetcher, null);
 
   useEffect(() => {
-    document.title = 'Статьи о схема-терапии | schemehappens.ru';
+    document.title = `Статьи о схема-терапии | ${siteTitleSuffix()}`;
   }, []);
 
   return (
@@ -25,21 +26,16 @@ export function ArticlesListPage() {
         <p style={eyebrow}>Статьи</p>
         <h1 style={h1}>Схема-терапия:<br /><span style={{ fontStyle: 'italic' }}>читайте и разбирайтесь</span></h1>
         <p style={{ fontSize: 16, color: 'var(--text-sub)', lineHeight: 1.7, margin: '0 0 48px', maxWidth: 560 }}>
-          Объясняю, как работают схемы, режимы и паттерны – простым языком, без воды.
+          Объясняю, как работают схемы, режимы и паттерны – простым языком.
         </p>
 
         {failed ? (
           <div role="alert">
             <p style={{ color: 'var(--text-sub)', margin: '0 0 16px' }}>Не удалось загрузить статьи. Проверьте соединение.</p>
-            <button onClick={() => { void reload(); }} style={{
-              padding: '10px 20px', background: 'var(--accent)', color: 'white', border: 'none',
-              borderRadius: 100, fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
-            }}>
-              Попробовать ещё раз
-            </button>
+            <Btn onClick={() => { void reload(); }}>Попробовать ещё раз</Btn>
           </div>
         ) : articles === null ? (
-          <p style={{ color: 'var(--text-faint)' }}>Загрузка…</p>
+          <p className="u-faint">Загрузка…</p>
         ) : null}
 
         {!failed && articles && (
@@ -83,17 +79,12 @@ export function ArticlesListPage() {
           }
         `}</style>
 
-        <div style={{ marginTop: 64, padding: '32px', background: 'var(--accent-soft)', border: '1px solid var(--accent-line)', borderRadius: 20 }}>
+        <div style={{ marginTop: 64, padding: '32px', background: 'var(--accent-soft)', border: '1px solid var(--accent-line)', borderRadius: 'var(--r-20)' }}>
           <p style={{ fontSize: 13, fontWeight: 600, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--accent)', margin: '0 0 10px' }}>Хотите разобраться глубже?</p>
           <p style={{ fontSize: 16, color: 'var(--text-sub)', lineHeight: 1.7, margin: '0 0 20px' }}>
             Первая встреча – 15 минут, бесплатно. Расскажете о запросе, я расскажу о подходе.
           </p>
-          <a href={PRACTICE_BOOKING_URL} style={{
-            display: 'inline-block', padding: '12px 24px', background: 'var(--accent)', color: 'white',
-            borderRadius: 100, fontSize: 14, fontWeight: 700, textDecoration: 'none',
-          }}>
-            Записаться →
-          </a>
+          <Btn href={PRACTICE_BOOKING_URL} newTab={false}>Записаться →</Btn>
         </div>
       </div>
     </div>
@@ -123,7 +114,7 @@ export function ArticlePage() {
   const { data: article, reload, failed } = useAsyncData<Article | null | undefined>(articleFetcher, undefined, slug);
 
   useEffect(() => {
-    if (article) document.title = `${article.title} | schemehappens.ru`;
+    if (article) document.title = `${article.title} | ${siteTitleSuffix()}`;
   }, [article]);
 
   if (failed) {
@@ -131,12 +122,7 @@ export function ArticlePage() {
       <div style={{ background: 'var(--bg)', minHeight: '100dvh', flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <div role="alert" style={{ textAlign: 'center', padding: '0 20px' }}>
           <p style={{ fontSize: 16, color: 'var(--text-sub)', margin: '0 0 20px' }}>Не удалось загрузить статью. Проверьте соединение.</p>
-          <button onClick={() => { void reload(); }} style={{
-            padding: '12px 24px', background: 'var(--accent)', color: 'white', border: 'none',
-            borderRadius: 100, fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
-          }}>
-            Попробовать ещё раз
-          </button>
+          <Btn onClick={() => { void reload(); }}>Попробовать ещё раз</Btn>
         </div>
       </div>
     );
@@ -145,7 +131,7 @@ export function ArticlePage() {
   if (article === undefined) {
     return (
       <div style={{ background: 'var(--bg)', minHeight: '100dvh', flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <p style={{ color: 'var(--text-faint)' }}>Загрузка…</p>
+        <p className="u-faint">Загрузка…</p>
       </div>
     );
   }
@@ -153,9 +139,9 @@ export function ArticlePage() {
   if (!article) {
     return (
       <div style={{ background: 'var(--bg)', minHeight: '100dvh', flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ textAlign: 'center' }}>
+        <div className="u-tc">
           <p style={{ fontSize: 48, margin: '0 0 16px' }}>404</p>
-          <a href="/articles" style={{ color: 'var(--accent)' }}>← К статьям</a>
+          <a href="/articles" className="u-accent">← К статьям</a>
         </div>
       </div>
     );
@@ -199,13 +185,13 @@ export function ArticlePage() {
       <div className="art-page" style={{ maxWidth: 720, margin: '0 auto' }}>
         <a href="/articles" style={backLink}>← Все статьи</a>
 
-        <div style={{ marginBottom: 40 }}>
+        <div className="u-mb40">
           <div style={{ display: 'flex', gap: 16, alignItems: 'center', marginBottom: 20 }}>
-            <span style={{ fontSize: 12, color: 'var(--text-faint)' }}>
+            <span className="u-faint12">
               {new Date(article.date).toLocaleDateString('ru', { day: 'numeric', month: 'long', year: 'numeric' })}
             </span>
-            <span style={{ fontSize: 12, color: 'var(--text-faint)' }}>·</span>
-            <span style={{ fontSize: 12, color: 'var(--text-faint)' }}>{article.readMin} минут чтения</span>
+            <span className="u-faint12">·</span>
+            <span className="u-faint12">{article.readMin} минут чтения</span>
           </div>
           <h1 style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(28px, 5vw, 44px)', fontWeight: 400, lineHeight: 1.15, margin: '0 0 20px', letterSpacing: '-.01em' }}>
             {article.title}
@@ -217,7 +203,7 @@ export function ArticlePage() {
 
         {article.heroImage ? (
           <img src={article.heroImage} alt="" loading="lazy" decoding="async"
-            style={{ width: '100%', height: 'auto', maxHeight: 380, objectFit: 'cover', borderRadius: 20, display: 'block', margin: '0 0 44px' }} />
+            style={{ width: '100%', height: 'auto', maxHeight: 380, objectFit: 'cover', borderRadius: 'var(--r-20)', display: 'block', margin: '0 0 44px' }} />
         ) : (
           <div style={{ height: 1, background: 'var(--line)', margin: '0 0 40px' }} />
         )}
@@ -265,15 +251,13 @@ export function ArticlePage() {
           .dg-ice-sub { fill: var(--surface); stroke: var(--accent-line); stroke-width: 1.5; opacity: .92; }
         `}</style>
 
-        <div style={{ marginTop: 64, padding: '32px', background: 'var(--accent-soft)', border: '1px solid var(--accent-line)', borderRadius: 20 }}>
+        <div style={{ marginTop: 64, padding: '32px', background: 'var(--accent-soft)', border: '1px solid var(--accent-line)', borderRadius: 'var(--r-20)' }}>
           <p style={{ fontSize: 13, fontWeight: 600, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--accent)', margin: '0 0 10px' }}>Разобраться на практике</p>
           <p style={{ fontSize: 15, color: 'var(--text-sub)', lineHeight: 1.7, margin: '0 0 20px' }}>
-            Первая встреча – 15 минут, бесплатно. Обсудим ваш запрос и я расскажу, как схема-терапия работает в вашем случае.
+            Первая встреча – 15 минут, бесплатно. Обсудим ваш запрос, и я расскажу, как схема-терапия работает в вашем случае.
           </p>
-          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-            <a href={PRACTICE_BOOKING_URL} style={{ display: 'inline-block', padding: '12px 24px', background: 'var(--accent)', color: 'white', borderRadius: 100, fontSize: 14, fontWeight: 700, textDecoration: 'none' }}>
-              Записаться →
-            </a>
+          <div style={{ display: 'flex', gap: 'var(--space-12)', flexWrap: 'wrap' }}>
+            <Btn href={PRACTICE_BOOKING_URL} newTab={false}>Записаться →</Btn>
             <a href="/articles" style={{ display: 'inline-block', padding: '12px 20px', background: 'transparent', border: '1.5px solid var(--line-strong)', color: 'var(--text-sub)', borderRadius: 100, fontSize: 14, fontWeight: 500, textDecoration: 'none' }}>
               Читать ещё
             </a>

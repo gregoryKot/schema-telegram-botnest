@@ -6,27 +6,32 @@ import { TelegramService } from '../telegram/telegram.service';
 import { CalDavService } from './caldav.service';
 import { MeetingService } from './meeting.service';
 import { EmailService } from '../auth/email.service';
-import { decryptRecord, EncryptSchema } from '../utils/crypto';
-import { escapeHtml } from '../utils/escape-html';
-import { sessionLabel } from './caldav-event.util';
+import { decryptRecord } from '../utils/crypto';
+import { BOOKING_SCHEMA } from './booking.schema';
+import { awaitingPaymentTitle } from './booking-admin-note';
+import { bookingCardText, subjectFromTitle } from './booking-notify.format';
+import type { PriceFields } from './booking-notify.price';
 import { BookingStatus, SessionType } from '@prisma/client';
+import { CronLeaderService, LEASE_WINDOW } from '../infra/cron-leader.service';
+import { runConfirmEffects } from './booking-confirm-run';
 
-const SCHEMA: EncryptSchema = {
-  strings: ['clientName', 'clientContact', 'message'],
-};
-
-interface PlainBooking {
+export interface PlainBooking extends PriceFields {
   id: number;
   startsAt: Date;
   durationMin: number;
   type: SessionType;
   clientName: string;
   clientContact: string;
+  clientChannel?: string | null;
   message: string | null;
   meetingUrl: string | null;
   cancelToken: string;
-  /** Атрибуция лида (страница + referrer), хранится открыто. */
-  source?: string | null;
+  source?: string | null; // атрибуция лида (страница + referrer), хранится открыто
+  clientTimeZone?: string | null;
+  /** Событие в календаре уже создано (строка брони) — повторно не пушим. */
+  calDavUid?: string | null;
+  /** Эффекты подтверждения доведены до конца — onConfirmed ничего не делает. */
+  confirmEffectsDoneAt?: Date | null;
 }
 
 /** All side-effects of the booking lifecycle: Telegram, CalDAV, reminders. */
@@ -42,49 +47,24 @@ export class BookingNotifyService {
     private readonly meeting: MeetingService,
     private readonly email: EmailService,
     config: ConfigService,
+    private readonly cronLeader: CronLeaderService,
   ) {
     this.siteUrl = (
       config.get<string>('SITE_URL') ?? 'https://kotlarewski.gr'
     ).replace(/\/$/, '');
   }
 
-  /**
-   * On confirmation: ensure a meeting link, push to Apple Calendar, notify admin.
-   * Mutates b.meetingUrl so callers can return it to the client.
-   */
+  /** On confirmation: meeting link + Apple Calendar + admin notify (идемпотентно, см. booking-confirm-run.ts). */
   async onConfirmed(b: PlainBooking): Promise<void> {
-    if (!b.meetingUrl) {
-      b.meetingUrl = await this.meeting.createMeeting(b);
-      await this.prisma.booking.update({
-        where: { id: b.id },
-        data: { meetingUrl: b.meetingUrl },
-      });
-    }
-    const uid = await this.calDav.pushEvent({
-      uid: `booking-${b.id}@schemehappens.ru`,
-      startsAt: b.startsAt,
-      durationMin: b.durationMin,
-      summary: `${sessionLabel(b.type)} — ${b.clientName}`,
-      description: [b.clientContact, b.message, b.meetingUrl]
-        .filter(Boolean)
-        .join('\n'),
-      location: b.meetingUrl ?? undefined,
-    });
-    if (uid) {
-      await this.prisma.booking.update({
-        where: { id: b.id },
-        data: { calDavUid: uid },
-      });
-    }
-    await this.sendAdmin('✅ <b>Запись подтверждена</b>', b);
-    // CalDAV is configured but the write failed — the session won't appear in
-    // the calendar, so surface it explicitly instead of hiding it in logs.
-    if (this.calDav.enabled && !uid) {
-      await this.notifyAdminText(
-        `⚠️ <b>Бронь подтверждена, но НЕ попала в Apple Calendar</b>\n` +
-          `${formatTime(b.startsAt)} · ${b.clientName}\nДобавьте в календарь вручную.`,
-      );
-    }
+    await runConfirmEffects(
+      {
+        prisma: this.prisma,
+        meeting: this.meeting,
+        calDav: this.calDav,
+        notifyAdminBoth: (html, subject) => this.notifyAdminBoth(html, subject),
+      },
+      b,
+    );
   }
 
   /** Remove from Apple Calendar + notify admin when cancelled. */
@@ -94,11 +74,8 @@ export class BookingNotifyService {
   }
 
   /** Notify admin a paid slot is reserved and awaiting payment (so a failed/abandoned payment isn't lost). */
-  async onAwaitingPayment(b: PlainBooking): Promise<void> {
-    await this.sendAdmin(
-      '⏳ <b>Бронь ожидает оплаты</b> (слот зарезервирован на 15 мин)',
-      b,
-    );
+  async onAwaitingPayment(b: PlainBooking, note?: string): Promise<void> {
+    await this.sendAdmin(awaitingPaymentTitle(note), b);
   }
 
   /** Notify admin that HELD bookings expired without payment (so they're not lost silently). */
@@ -116,6 +93,15 @@ export class BookingNotifyService {
   /** Send confirmation/cancellation reminders. Runs every 5 minutes. */
   @Cron('*/5 * * * *')
   async sendReminders(): Promise<void> {
+    // Без аренды второй инстанс шлёт то же напоминание о сессии второй раз —
+    // клиент получает два одинаковых DM.
+    if (
+      !(await this.cronLeader.claimRun(
+        'bookingReminders',
+        LEASE_WINDOW.fiveMinutes,
+      ))
+    )
+      return;
     const now = Date.now();
     await this.remindWindow(now + 24 * 3_600_000, 'reminder24SentAt', 'завтра');
     await this.remindWindow(
@@ -138,7 +124,7 @@ export class BookingNotifyService {
       },
     });
     for (const row of due) {
-      const b = decryptRecord(row, SCHEMA) as unknown as PlainBooking;
+      const b = decryptRecord(row, BOOKING_SCHEMA) as unknown as PlainBooking;
       await this.sendAdmin(`⏰ <b>Напоминание: сессия ${when}</b>`, b);
       await this.prisma.booking.update({
         where: { id: b.id },
@@ -148,20 +134,22 @@ export class BookingNotifyService {
     if (due.length) this.logger.log(`Sent ${due.length} ${field} reminder(s)`);
   }
 
+  // Разделение (2026-09-15): события брони — оба канала всегда (деньги/
+  // заявки); alertAdmin — Telegram-first, почта как запасной ход.
   private async sendAdmin(title: string, b: PlainBooking): Promise<void> {
-    const text = [
-      title,
-      '',
-      `👤 ${b.clientName}`,
-      `📬 ${b.clientContact}`,
-      `🗓 ${formatTime(b.startsAt)}`,
-      b.message ? `💬 ${b.message}` : null,
-      b.meetingUrl ? `🔗 ${b.meetingUrl}` : null,
-      b.source ? `🧭 Откуда: ${escapeHtml(b.source)}` : null,
-    ]
-      .filter(Boolean)
-      .join('\n');
-    await this.notifyAdminText(text);
+    const subject = subjectFromTitle(title);
+    await this.notifyAdminBoth(bookingCardText(title, b), subject);
+  }
+
+  /** Событие брони или потерянный лид — оба канала сразу, независимо от исхода Telegram. */
+  async notifyAdminBoth(html: string, subject: string): Promise<void> {
+    const plain = html.replace(/<[^>]+>/g, '');
+    await Promise.all([
+      this.telegram.notifyAdmin(html),
+      this.email
+        .sendAdminNotification(subject, plain)
+        .catch((e) => this.logger.error('Critical admin e-mail failed', e)),
+    ]);
   }
 
   /** Send to admin via Telegram; if that fails, fall back to e-mail so alerts are never lost. */
@@ -174,17 +162,4 @@ export class BookingNotifyService {
       .sendAdminNotification('Уведомление о записи', plain)
       .catch((e) => this.logger.error('Admin e-mail alert also failed', e));
   }
-}
-
-function formatTime(date: Date): string {
-  return (
-    new Intl.DateTimeFormat('ru-RU', {
-      timeZone: 'Europe/Moscow',
-      weekday: 'long',
-      day: 'numeric',
-      month: 'long',
-      hour: '2-digit',
-      minute: '2-digit',
-    }).format(date) + ' МСК'
-  );
 }

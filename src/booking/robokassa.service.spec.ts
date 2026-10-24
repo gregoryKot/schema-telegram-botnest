@@ -30,6 +30,13 @@ describe('RobokassaService.enabled', () => {
     expect(makeService({ ROBOKASSA_PASSWORD2: undefined }).enabled).toBe(false);
     expect(makeService({ ROBOKASSA_MERCHANT_LOGIN: '' }).enabled).toBe(false);
   });
+
+  it('значение из одних пробелов — «не задано», как в записи реестра возможностей', () => {
+    // Расхождение предикатов: capability/проба режут пробелы, а enabled — нет,
+    // и гард считал бы режим 'live' при «не настроено» в отчёте.
+    expect(makeService({ ROBOKASSA_PASSWORD1: '  ' }).enabled).toBe(false);
+    expect(makeService({ ROBOKASSA_MERCHANT_LOGIN: '\n' }).enabled).toBe(false);
+  });
 });
 
 describe('RobokassaService.validateWebhook (ResultURL, MD5(OutSum:InvId:Password2))', () => {
@@ -111,6 +118,22 @@ describe('RobokassaService.buildPaymentUrl — подпись исходящег
     successUrl: 'https://schemehappens.ru/api/payment/success',
     failUrl: 'https://schemehappens.ru/api/payment/fail',
   };
+
+  // Аудит 2026-10-11: HELD-бронь получала счёт OutSum=0.00. Последняя линия
+  // для всех трёх вызывающих (бронь, донат, подписка): счёт без суммы не строим.
+  it.each([0, -1, NaN, Infinity])(
+    'сумма %p — бросок, ссылка на оплату не строится',
+    (amount) => {
+      expect(() => makeService().buildPaymentUrl({ ...base, amount })).toThrow(
+        'Invalid payment amount',
+      );
+    },
+  );
+
+  it('минимальная положительная сумма (1 ₽) строится как раньше', () => {
+    const url = new URL(makeService().buildPaymentUrl({ ...base, amount: 1 }));
+    expect(url.searchParams.get('OutSum')).toBe('1.00');
+  });
 
   it('fiscal ON (по умолчанию): подпись = MD5(login:sum:invId:Receipt:pass1)', () => {
     const svc = makeService();
@@ -379,5 +402,31 @@ describe('RobokassaService.chargeRecurring — подпись MIT-списани
     expect(res.body).toContain('network down');
     expect(errSpy).toHaveBeenCalledTimes(1);
     expect(errSpy.mock.calls[0][0]).toContain('network down');
+  });
+});
+
+// M3 (аудит 2026-10): пароль не задан, а логин есть — подпись от пустой строки
+// подделывается любым желающим. Такой сервис обязан отклонять любые подписи.
+describe('RobokassaService — пустые пароли не дают подделать подпись (M3)', () => {
+  it('validateWebhook без Password2 отклоняет даже подпись, посчитанную от пустого пароля', () => {
+    const svc = makeService({ ROBOKASSA_PASSWORD2: undefined });
+    const forged = md5('100.00:42:');
+    expect(svc.validateWebhook('100.00', '42', forged)).toBe(false);
+  });
+
+  it('validateSuccess без Password1 отклоняет подпись, посчитанную от пустого пароля', () => {
+    const svc = makeService({ ROBOKASSA_PASSWORD1: undefined });
+    const forged = md5('100.00:42:');
+    expect(svc.validateSuccess('100.00', '42', forged)).toBe(false);
+  });
+
+  it('с заданными паролями поведение прежнее', () => {
+    const svc = makeService();
+    expect(svc.validateWebhook('100.00', '42', md5(`100.00:42:${PASS2}`))).toBe(
+      true,
+    );
+    expect(svc.validateSuccess('100.00', '42', md5(`100.00:42:${PASS1}`))).toBe(
+      true,
+    );
   });
 });

@@ -7,6 +7,47 @@ interface ClientNotesSheetProps {
   detail: ClientDetail;
 }
 
+// Общий рендер заполненных полей карточки (схема и режим) — раньше разметка
+// жила дублем в обоих блоках (jscpd-храповик).
+function NoteFieldList({
+  fields,
+}: {
+  fields: { label: string; val?: string }[];
+}) {
+  return (
+    <>
+      {fields
+        .filter((f) => f.val?.trim())
+        .map((f) => (
+          <div key={f.label} className="u-mb6">
+            <div
+              style={{
+                fontSize: 10,
+                fontWeight: 700,
+                color: 'var(--text-faint)',
+                textTransform: 'uppercase',
+                letterSpacing: '0.07em',
+                marginBottom: 2,
+              }}
+            >
+              {f.label}
+            </div>
+            <div
+              style={{
+                fontSize: 13,
+                color: 'var(--text-sub)',
+                lineHeight: 1.5,
+                whiteSpace: 'pre-wrap',
+              }}
+            >
+              {f.val}
+            </div>
+          </div>
+        ))}
+    </>
+  );
+}
+
 export function ClientNotesSheet({ detail }: ClientNotesSheetProps) {
   const {
     clientSchemaNotesData,
@@ -16,7 +57,7 @@ export function ClientNotesSheet({ detail }: ClientNotesSheetProps) {
 
   return (
     <BottomSheet onClose={() => setShowClientNotesSheet(false)}>
-      <div style={{ paddingTop: 4 }}>
+      <div className="u-pt4">
         <div
           style={{
             fontSize: 17,
@@ -43,7 +84,7 @@ export function ClientNotesSheet({ detail }: ClientNotesSheetProps) {
         ) : (
           <>
             {clientSchemaNotesData.length > 0 && (
-              <div style={{ marginBottom: 20 }}>
+              <div className="u-mb20">
                 <div
                   style={{
                     fontSize: 10,
@@ -73,7 +114,7 @@ export function ClientNotesSheet({ detail }: ClientNotesSheetProps) {
                       style={{
                         background: 'rgba(var(--fg-rgb),0.03)',
                         border: '1px solid rgba(var(--fg-rgb),0.07)',
-                        borderRadius: 12,
+                        borderRadius: 'var(--r-12)',
                         padding: '12px 14px',
                         marginBottom: 8,
                       }}
@@ -89,51 +130,19 @@ export function ClientNotesSheet({ detail }: ClientNotesSheetProps) {
                         <IdentityDot color={s?.domainColor} size={10} />{' '}
                         {s?.name ?? n.schemaId}
                       </div>
-                      {[
-                        { label: 'Триггеры', val: n.triggers },
-                        { label: 'Чувства', val: n.feelings },
-                        { label: 'Мысли', val: n.thoughts },
-                        { label: 'Корни', val: n.origins },
-                        { label: 'Реальность', val: n.reality },
-                        { label: 'Здоровый взгляд', val: n.healthyView },
-                        { label: 'Поведение', val: n.behavior },
-                      ]
-                        .filter((f) => f.val?.trim())
-                        .map((f) => (
-                          <div key={f.label} style={{ marginBottom: 6 }}>
-                            <div
-                              style={{
-                                fontSize: 10,
-                                fontWeight: 700,
-                                color: 'var(--text-faint)',
-                                textTransform: 'uppercase',
-                                letterSpacing: '0.07em',
-                                marginBottom: 2,
-                              }}
-                            >
-                              {f.label}
-                            </div>
-                            <div
-                              style={{
-                                fontSize: 13,
-                                color: 'var(--text-sub)',
-                                lineHeight: 1.5,
-                                whiteSpace: 'pre-wrap',
-                              }}
-                            >
-                              {f.val}
-                            </div>
-                          </div>
-                        ))}
+                      <NoteFieldList
+                        fields={[
+                          { label: 'Триггеры', val: n.triggers },
+                          { label: 'Чувства', val: n.feelings },
+                          { label: 'Мысли', val: n.thoughts },
+                          { label: 'Корни', val: n.origins },
+                          { label: 'Реальность', val: n.reality },
+                          { label: 'Здоровый взгляд', val: n.healthyView },
+                          { label: 'Поведение', val: n.behavior },
+                        ]}
+                      />
                       {filled.length === 0 && (
-                        <div
-                          style={{
-                            fontSize: 12,
-                            color: 'var(--text-faint)',
-                          }}
-                        >
-                          Не заполнено
-                        </div>
+                        <div className="u-faint12">Не заполнено</div>
                       )}
                     </div>
                   );
@@ -162,7 +171,7 @@ export function ClientNotesSheet({ detail }: ClientNotesSheetProps) {
                       style={{
                         background: 'rgba(var(--fg-rgb),0.03)',
                         border: '1px solid rgba(var(--fg-rgb),0.07)',
-                        borderRadius: 12,
+                        borderRadius: 'var(--r-12)',
                         padding: '12px 14px',
                         marginBottom: 8,
                       }}
@@ -177,40 +186,19 @@ export function ClientNotesSheet({ detail }: ClientNotesSheetProps) {
                       >
                         {m?.name ?? n.modeId}
                       </div>
-                      {[
-                        { label: 'Триггеры', val: n.triggers },
-                        { label: 'Чувства', val: n.feelings },
-                        { label: 'Мысли', val: n.thoughts },
-                        { label: 'Потребности', val: n.needs },
-                        { label: 'Поведение', val: n.behavior },
-                      ]
-                        .filter((f) => f.val?.trim())
-                        .map((f) => (
-                          <div key={f.label} style={{ marginBottom: 6 }}>
-                            <div
-                              style={{
-                                fontSize: 10,
-                                fontWeight: 700,
-                                color: 'var(--text-faint)',
-                                textTransform: 'uppercase',
-                                letterSpacing: '0.07em',
-                                marginBottom: 2,
-                              }}
-                            >
-                              {f.label}
-                            </div>
-                            <div
-                              style={{
-                                fontSize: 13,
-                                color: 'var(--text-sub)',
-                                lineHeight: 1.5,
-                                whiteSpace: 'pre-wrap',
-                              }}
-                            >
-                              {f.val}
-                            </div>
-                          </div>
-                        ))}
+                      <NoteFieldList
+                        fields={[
+                          { label: 'Триггеры', val: n.triggers },
+                          { label: 'Чувства', val: n.feelings },
+                          { label: 'Мысли', val: n.thoughts },
+                          { label: 'Поведение', val: n.behavior },
+                          { label: 'Функция режима', val: n.modeFunction },
+                          { label: 'Потребности', val: n.needs },
+                          { label: 'Даёт ли то, что нужно', val: n.needsMet },
+                          { label: 'Корни', val: n.origins },
+                          { label: 'Здоровый взгляд', val: n.healthyView },
+                        ]}
+                      />
                     </div>
                   );
                 })}

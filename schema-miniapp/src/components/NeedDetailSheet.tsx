@@ -61,13 +61,13 @@ export function NeedDetailSheet({
 
   return (
     <BottomSheet onClose={onClose}>
-      <div style={{ paddingTop: 4 }}>
+      <div className="u-pt4">
         {/* Header */}
         <div
           style={{
             display: 'flex',
             alignItems: 'center',
-            gap: 12,
+            gap: 'var(--space-12)',
             marginBottom: 14,
           }}
         >
@@ -75,7 +75,7 @@ export function NeedDetailSheet({
             style={{
               width: 48,
               height: 48,
-              borderRadius: 14,
+              borderRadius: 'var(--r-14)',
               flexShrink: 0,
               background: `${color}18`,
               border: `1px solid ${color}30`,
@@ -92,11 +92,7 @@ export function NeedDetailSheet({
             >
               {need.name}
             </div>
-            <div
-              style={{ fontSize: 12, color: 'var(--text-sub)', marginTop: 2 }}
-            >
-              {need.subtitle}
-            </div>
+            <div className="u-sub12-mt2">{need.subtitle}</div>
           </div>
         </div>
 
@@ -118,12 +114,12 @@ export function NeedDetailSheet({
             style={{
               background: `${color}10`,
               border: `1px solid ${color}25`,
-              borderRadius: 14,
+              borderRadius: 'var(--r-14)',
               padding: '12px 16px',
               marginBottom: 16,
               display: 'flex',
               alignItems: 'flex-start',
-              gap: 14,
+              gap: 'var(--space-14)',
             }}
           >
             <div style={{ textAlign: 'center', flexShrink: 0 }}>
@@ -158,7 +154,7 @@ export function NeedDetailSheet({
 
         {/* Related schemas */}
         {relatedSchemas.length > 0 && (
-          <div style={{ marginBottom: 16 }}>
+          <div className="u-mb16">
             <div
               style={{
                 fontSize: 11,
@@ -171,31 +167,23 @@ export function NeedDetailSheet({
             >
               Связанные схемы
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <div className="u-col6">
               {relatedSchemas.map((s) => (
                 <div
                   key={s.id}
                   style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: 10,
+                    gap: 'var(--space-10)',
                     padding: '8px 12px',
-                    borderRadius: 12,
+                    borderRadius: 'var(--r-12)',
                     background: `${color}08`,
                     border: `1px solid ${color}15`,
                   }}
                 >
                   <IdentityDot color={s.domainColor} size={10} />
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div
-                      style={{
-                        fontSize: 13,
-                        fontWeight: 600,
-                        color: 'var(--text)',
-                      }}
-                    >
-                      {s.name}
-                    </div>
+                  <div className="u-fill">
+                    <div className="u-h13">{s.name}</div>
                     <div
                       style={{
                         fontSize: 11,
@@ -229,17 +217,21 @@ export function NeedDetailSheet({
           >
             {level === 'low' ? 'Что поможет сейчас' : 'Практика'}
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <div className="u-col10">
             {tips.map((tip, i) => (
               <div
                 key={i}
-                style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: 'var(--space-10)',
+                }}
               >
                 <div
                   style={{
                     width: 22,
                     height: 22,
-                    borderRadius: 6,
+                    borderRadius: 'var(--r-6)',
                     flexShrink: 0,
                     marginTop: 1,
                     background: `${color}18`,

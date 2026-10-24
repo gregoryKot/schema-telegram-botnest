@@ -72,6 +72,13 @@ const CALL_RE = /\.(get|post|patch|put|delete)\(\s*(`[^`]*`|'[^']*'|"[^"]*")/g;
 // в поле `list:`, вызывается позже как `a.get(list)` — литерал не стоит
 // прямо рядом с `.get(`.
 const LIST_FIELD_RE = /\blist:\s*(`[^`]*`|'[^']*'|"[^"]*")/g;
+// Конвенция auth-flows.e2e-spec.ts: локальный хелпер
+// `const post = (url) => request(...).post(url).set('x-requested-with', ...)`
+// убирает повтор CSRF-заголовка на каждом POST. Литерал по-прежнему стоит
+// прямо у вызова — только без ведущей точки (это не метод объекта, а вызов
+// голой функции-хелпера с тем же именем, что и HTTP-метод).
+const BARE_CALL_RE =
+  /(?<![.\w])(get|post|patch|put|delete)\(\s*(`[^`]*`|'[^']*'|"[^"]*")/g;
 
 function literalToKey(method: string, raw: string): string | null {
   let path = raw.replace(/\$\{[^}]*\}/g, ':param').split('?')[0];
@@ -99,6 +106,11 @@ function calledRouteKeys(): Set<string> {
     LIST_FIELD_RE.lastIndex = 0;
     while ((m = LIST_FIELD_RE.exec(src))) {
       const key = literalToKey('GET', m[1].slice(1, -1));
+      if (key) keys.add(key);
+    }
+    BARE_CALL_RE.lastIndex = 0;
+    while ((m = BARE_CALL_RE.exec(src))) {
+      const key = literalToKey(m[1].toUpperCase(), m[2].slice(1, -1));
       if (key) keys.add(key);
     }
   }
@@ -159,7 +171,6 @@ const NOT_YET_COVERED: Array<{ route: string; reason: string }> = [
   { route: 'POST /api/auth/recovery/request', reason: REASON.AUTH_LOGIN },
   { route: 'POST /api/auth/recovery/confirm', reason: REASON.AUTH_LOGIN },
   { route: 'POST /api/auth/email/link', reason: REASON.AUTH_LOGIN },
-  { route: 'GET /api/auth/email/callback', reason: REASON.AUTH_LOGIN },
   { route: 'POST /api/auth/email/link-to-account', reason: REASON.AUTH_LOGIN },
   { route: 'POST /api/auth/merge', reason: REASON.AUTH_LOGIN },
   { route: 'POST /api/auth/link/:param', reason: REASON.AUTH_LOGIN },
@@ -168,13 +179,7 @@ const NOT_YET_COVERED: Array<{ route: string; reason: string }> = [
   { route: 'GET /api/auth/google/callback', reason: REASON.AUTH_LOGIN },
   { route: 'GET /api/auth/vk', reason: REASON.AUTH_LOGIN },
   { route: 'GET /api/auth/vk/callback', reason: REASON.AUTH_LOGIN },
-  { route: 'GET /api/auth/telegram-oidc', reason: REASON.AUTH_LOGIN },
-  { route: 'GET /api/auth/telegram-oidc/callback', reason: REASON.AUTH_LOGIN },
   { route: 'GET /api/auth/telegram/redirect', reason: REASON.AUTH_LOGIN },
-  {
-    route: 'GET /api/auth/telegram/widget-redirect',
-    reason: REASON.AUTH_LOGIN,
-  },
   { route: 'GET /api/auth/me', reason: REASON.AUTH_LOGIN },
   { route: 'GET /api/auth/link-token', reason: REASON.AUTH_LOGIN },
   { route: 'DELETE /api/therapy/custom-modes/:param', reason: REASON.THERAPY },
@@ -182,8 +187,6 @@ const NOT_YET_COVERED: Array<{ route: string; reason: string }> = [
   { route: 'GET /api/therapy/my-mode-maps/:param', reason: REASON.THERAPY },
   { route: 'GET /api/therapy/relation', reason: REASON.THERAPY },
   { route: 'DELETE /api/therapy/clients/:param', reason: REASON.THERAPY },
-  { route: 'POST /api/therapy/clients/virtual', reason: REASON.THERAPY },
-  { route: 'POST /api/therapy/clients/add', reason: REASON.THERAPY },
   { route: 'POST /api/therapy/rename-client/:param', reason: REASON.THERAPY },
   { route: 'POST /api/therapy/become-therapist', reason: REASON.THERAPY },
   { route: 'POST /api/therapy/request', reason: REASON.THERAPY },
@@ -244,7 +247,7 @@ describe('трипваер: каждый guarded-маршрут вызван х�
     expect(stale).toEqual([]);
   });
 
-  it('ратчет: allowlist может только сокращаться (сейчас ≤62)', () => {
-    expect(NOT_YET_COVERED.length).toBeLessThanOrEqual(62);
+  it('ратчет: allowlist может только сокращаться (сейчас ≤61)', () => {
+    expect(NOT_YET_COVERED.length).toBeLessThanOrEqual(61);
   });
 });

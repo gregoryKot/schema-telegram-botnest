@@ -21,17 +21,24 @@ function firstSentence(text: string): string {
  * Мягкий выход обязателен: не выбрать — нормальный исход, а не тупик. Из
  * любой семьи он ведёт во вход «подскажет тело» (семья unknown), из него
  * самого — назад к списку состояний.
+ *
+ * `showClinicalName` гасит мету с клиническим именем. В дневнике термин рядом
+ * нужен — там человек уже знает, что такое режим. В потоке «Разбор случая»
+ * термин приходит ПОСЛЕ узнавания, отдельным экраном: увидев «Отстранённый
+ * Защитник» до того, как узнал себя, человек получает ярлык вместо опыта.
  */
 export function ModeCandidateStep({
   groupId,
   onPickMode,
   onPickGroup,
   onBack,
+  showClinicalName = true,
 }: {
   groupId: string;
   onPickMode: (modeId: string) => void;
   onPickGroup: (groupId: string) => void;
   onBack: () => void;
+  showClinicalName?: boolean;
 }) {
   const tr = useTr();
   const group = MODE_PICKER_GROUPS.find((g) => g.id === groupId);
@@ -47,9 +54,7 @@ export function ModeCandidateStep({
         onEdit={onBack}
       />
 
-      <div className="d-display" style={{ fontSize: 21, marginBottom: 8 }}>
-        {group.question}
-      </div>
+      <div className="d-display u-e21">{group.question}</div>
       <div
         style={{
           fontSize: 14,
@@ -67,7 +72,7 @@ export function ModeCandidateStep({
             key={leaf.modeId + leaf.label}
             title={leaf.label}
             desc={firstSentence(leaf.desc)}
-            meta={getModeById(leaf.modeId)?.name}
+            meta={showClinicalName ? getModeById(leaf.modeId)?.name : undefined}
             trailing="dot"
             onClick={() => {
               api.trackEvent(MODE_TEST_COMPLETED_EVENT, {

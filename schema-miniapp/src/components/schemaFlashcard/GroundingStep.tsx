@@ -49,7 +49,7 @@ export function GroundingStep({
           style={{
             background: cm('var(--accent-blue)', 7),
             border: `1px solid ${cm('var(--accent-blue)', 18)}`,
-            borderRadius: 20,
+            borderRadius: 'var(--r-20)',
             padding: '18px 16px',
             marginBottom: 24,
             textAlign: 'left',
@@ -67,7 +67,7 @@ export function GroundingStep({
           </div>
           {[
             'Вдох через нос — 4 секунды',
-            'Задержи — 2 секунды',
+            'Задержка — 2 секунды',
             'Медленный выдох — 6 секунд',
           ].map((t, i) => (
             <div
@@ -75,7 +75,7 @@ export function GroundingStep({
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: 12,
+                gap: 'var(--space-12)',
                 marginBottom: i < 2 ? 10 : 0,
               }}
             >
@@ -97,7 +97,7 @@ export function GroundingStep({
               >
                 {i + 1}
               </div>
-              <div style={{ fontSize: 13, color: 'var(--text-sub)' }}>{t}</div>
+              <div className="u-sub13">{t}</div>
             </div>
           ))}
         </div>
@@ -118,7 +118,7 @@ export function GroundingStep({
           style={{
             width: '100%',
             padding: '14px',
-            borderRadius: 14,
+            borderRadius: 'var(--r-14)',
             border: 'none',
             fontFamily: 'inherit',
             background: cm('var(--accent-blue)', 12),
@@ -138,7 +138,7 @@ export function GroundingStep({
             style={{
               width: '100%',
               padding: '11px',
-              borderRadius: 14,
+              borderRadius: 'var(--r-14)',
               fontFamily: 'inherit',
               border: 'none',
               background: 'var(--surface)',
@@ -157,7 +157,7 @@ export function GroundingStep({
           style={{
             width: '100%',
             padding: '11px',
-            borderRadius: 14,
+            borderRadius: 'var(--r-14)',
             border: 'none',
             fontFamily: 'inherit',
             background: 'transparent',

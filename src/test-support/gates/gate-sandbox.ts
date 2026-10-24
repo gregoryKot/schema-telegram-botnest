@@ -18,6 +18,7 @@ import {
   copyFileSync,
   readFileSync,
   chmodSync,
+  realpathSync,
 } from 'fs';
 import { tmpdir } from 'os';
 import { join, dirname } from 'path';
@@ -89,7 +90,14 @@ export function runGate(
   files: Record<string, string>,
   options: RunGateOptions = {},
 ): GateResult {
-  const tmp = mkdtempSync(join(tmpdir(), 'gate-'));
+  // realpathSync обязателен: на macOS os.tmpdir() — это симлинк
+  // (/var/folders/… → /private/var/folders/…). Гейты запускают main() по
+  // сверке `resolve(process.argv[1]) === fileURLToPath(import.meta.url)`, а
+  // import.meta.url приходит уже разрезолвленным — по симлинк-пути сверка не
+  // совпадала, скрипт молча завершался с кодом 0 и пустым выводом, и тесты
+  // песочницы падали у всех на маке (ровно то, о чём правило №15: гейт, чей
+  // тест не работает, защищает только на бумаге).
+  const tmp = mkdtempSync(join(realpathSync(tmpdir()), 'gate-'));
   try {
     const scriptsDir = join(tmp, 'scripts');
     mkdirSync(scriptsDir, { recursive: true });

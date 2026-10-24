@@ -29,9 +29,12 @@ export function TherapistClientSection({
 }: Props) {
   const tr = useTr();
   return (
-    <div style={{ marginBottom: 8 }}>
+    <div className="u-mb8">
       <SectionHeader onInfo={onInfo}>МОЙ ТЕРАПЕВТ</SectionHeader>
-      <div className="card" style={{ borderRadius: 16, padding: 16 }}>
+      <div
+        className="card"
+        style={{ borderRadius: 'var(--r-16)', padding: 16 }}
+      >
         {therapyRelation === undefined ? (
           <div
             style={{
@@ -80,7 +83,7 @@ export function TherapistClientSection({
                   'color-mix(in srgb, var(--accent-red) 12%, transparent)',
                 border:
                   '1px solid color-mix(in srgb, var(--accent-red) 25%, transparent)',
-                borderRadius: 10,
+                borderRadius: 'var(--r-10)',
                 padding: '8px 16px',
                 color: 'var(--accent-red)',
                 fontSize: 13,
@@ -116,7 +119,7 @@ export function TherapistClientSection({
               дневникам, заметкам и результатам опросников (объём настраивается
               после подключения, отключить терапевта можно в любой момент).
             </div>
-            <div style={{ display: 'flex', gap: 8 }}>
+            <div className="u-row8">
               <input
                 value={therapyJoinCode}
                 onChange={(e) =>
@@ -128,7 +131,7 @@ export function TherapistClientSection({
                   flex: 1,
                   background: 'rgba(var(--fg-rgb),0.06)',
                   border: `1px solid ${therapyJoinError ? 'var(--accent-red)' : 'rgba(var(--fg-rgb),0.12)'}`,
-                  borderRadius: 10,
+                  borderRadius: 'var(--r-10)',
                   padding: '9px 12px',
                   color: 'var(--text)',
                   fontSize: 14,
@@ -150,7 +153,7 @@ export function TherapistClientSection({
                 style={{
                   background: 'var(--accent)',
                   border: 'none',
-                  borderRadius: 10,
+                  borderRadius: 'var(--r-10)',
                   padding: '9px 16px',
                   color: 'var(--text)',
                   fontSize: 13,

@@ -22,7 +22,6 @@ function makeDeps(overrides: Record<string, any> = {}) {
     updateUserSettings: jest.fn().mockResolvedValue(undefined),
     acceptDisclaimer: jest.fn().mockResolvedValue(undefined),
     hasAcceptedDisclaimer: jest.fn().mockResolvedValue(false),
-    cancelAllPreReminders: jest.fn().mockResolvedValue(0),
     ...overrides.botService,
   };
   const analyticsService = {
@@ -30,6 +29,9 @@ function makeDeps(overrides: Record<string, any> = {}) {
   };
   const accountService = {
     registerUser: jest.fn().mockResolvedValue(undefined),
+    // Канонический номер: по умолчанию совпадает с telegramId (пользователь
+    // бота без отдельного веб-входа). Спеки про слияние переопределяют.
+    canonicalUserId: jest.fn(async (id: number) => BigInt(id)),
     ...overrides.accountService,
   };
   const pairsService = {
@@ -171,7 +173,7 @@ describe('TelegramService — accept:(ty|vy) сохраняет согласие
     // /start pair_ABC123 без согласия — код кладётся в pendingPairCodes, ждём согласия
     const startCtx = await runCommand(fakeBot, 'start', {
       from: { id: 1 },
-      startPayload: 'pair_abc123',
+      payload: 'pair_abc123',
     });
     expect(startCtx.reply).toHaveBeenCalledWith(
       expect.stringContaining('Соглашение'),

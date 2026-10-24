@@ -18,7 +18,7 @@ const CYCLE = `
     <text class="dg-s" x="341" y="157" text-anchor="middle">«меня бросят»</text>
     <rect class="dg-node" x="410" y="286" width="212" height="60" rx="16"/>
     <text class="dg-t" x="516" y="312" text-anchor="middle">Режим</text>
-    <text class="dg-s" x="516" y="331" text-anchor="middle">Уязвимый ребёнок</text>
+    <text class="dg-s" x="516" y="331" text-anchor="middle">Уязвимый Ребёнок</text>
     <rect class="dg-node" x="60" y="286" width="212" height="60" rx="16"/>
     <text class="dg-t" x="166" y="312" text-anchor="middle">Поведение</text>
     <text class="dg-s" x="166" y="331" text-anchor="middle">цепляние, ревность</text>
@@ -61,8 +61,8 @@ const MODES = `
     <text class="dg-s" x="34" y="94">боль, страх, гнев,</text>
     <text class="dg-s" x="34" y="112">ощущение несправедливости</text>
     <rect class="dg-node" x="326" y="14" width="300" height="118" rx="16"/>
-    <text class="dg-cap-acc" x="346" y="42">ДИСФУНКЦ. РОДИТЕЛЬ</text>
-    <text class="dg-t" x="346" y="72">Карающий · Требующий</text>
+    <text class="dg-cap-acc" x="346" y="42">КРИТИК</text>
+    <text class="dg-t" x="346" y="72">Карающий · Требовательный</text>
     <text class="dg-s" x="346" y="94">внутренний критик,</text>
     <text class="dg-s" x="346" y="112">«ты недостаточно хорош»</text>
     <rect class="dg-node" x="14" y="146" width="300" height="118" rx="16"/>
@@ -72,11 +72,11 @@ const MODES = `
     <text class="dg-s" x="34" y="244">гиперкомпенсация</text>
     <rect class="dg-accent" x="326" y="146" width="300" height="118" rx="16"/>
     <text class="dg-cap-on" x="346" y="174">ЦЕЛЬ ТЕРАПИИ</text>
-    <text class="dg-t-on" x="346" y="204">Здоровый взрослый</text>
+    <text class="dg-t-on" x="346" y="204">Здоровый Взрослый</text>
     <text class="dg-s-on" x="346" y="226">заботится о ребёнке,</text>
     <text class="dg-s-on" x="346" y="244">противостоит критику</text>
   </svg>
-  <figcaption><b>Карта режимов.</b> Три группы «рабочих» состояний и одно ресурсное — Здоровый взрослый, который развивается в терапии.</figcaption>
+  <figcaption><b>Карта режимов.</b> Три группы «рабочих» состояний и одно ресурсное — Здоровый Взрослый, который развивается в терапии.</figcaption>
 </figure>`;
 
 const ANX_DEP = `
@@ -85,23 +85,23 @@ const ANX_DEP = `
     <rect class="dg-node" x="14" y="14" width="300" height="230" rx="16"/>
     <text class="dg-cap-acc" x="34" y="44">ЗА ТРЕВОГОЙ</text>
     <rect class="dg-chip" x="30" y="60" width="268" height="34" rx="9"/>
-    <text class="dg-s" x="46" y="82">Уязвимость к опасности</text>
+    <text class="dg-s" x="46" y="82">Уязвимость</text>
     <rect class="dg-chip" x="30" y="102" width="268" height="34" rx="9"/>
     <text class="dg-s" x="46" y="124">Покинутость</text>
     <rect class="dg-chip" x="30" y="144" width="268" height="34" rx="9"/>
     <text class="dg-s" x="46" y="166">Жёсткие стандарты</text>
     <rect class="dg-chip" x="30" y="186" width="268" height="34" rx="9"/>
-    <text class="dg-s" x="46" y="208">Негативизм / пессимизм</text>
+    <text class="dg-s" x="46" y="208">Негативизм / Пессимизм</text>
     <rect class="dg-node" x="326" y="14" width="300" height="230" rx="16"/>
     <text class="dg-cap-acc" x="346" y="44">ЗА ДЕПРЕССИЕЙ</text>
     <rect class="dg-chip" x="342" y="60" width="268" height="34" rx="9"/>
-    <text class="dg-s" x="358" y="82">Дефективность / стыд</text>
+    <text class="dg-s" x="358" y="82">Дефективность / Стыд</text>
     <rect class="dg-chip" x="342" y="102" width="268" height="34" rx="9"/>
     <text class="dg-s" x="358" y="124">Эмоциональная депривация</text>
     <rect class="dg-chip" x="342" y="144" width="268" height="34" rx="9"/>
-    <text class="dg-s" x="358" y="166">Неудача</text>
+    <text class="dg-s" x="358" y="166">Неуспешность</text>
     <rect class="dg-chip" x="342" y="186" width="268" height="34" rx="9"/>
-    <text class="dg-s" x="358" y="208">Подчинение · Карающий родитель</text>
+    <text class="dg-s" x="358" y="208">Покорность · Карающий Критик</text>
   </svg>
   <figcaption><b>У симптома есть адрес.</b> Когда понятно, какая схема подпитывает тревогу или спад, становится ясно, куда прикладывать усилия.</figcaption>
 </figure>`;
@@ -245,6 +245,29 @@ const LAYERS = `
   <figcaption><b>Разная глубина фокуса.</b> КПТ хорошо работает с мыслями и поведением на поверхности. Схема-терапия идёт до самого дна — к убеждениям и детскому опыту, из которых всё остальное растёт.</figcaption>
 </figure>`;
 
+const BELIEF_BEHAVIORS = `
+<figure class="dg">
+  <svg viewBox="0 0 640 300" role="img" aria-label="Одно убеждение, четыре стратегии защиты">
+    <rect class="dg-node" x="14" y="14" width="300" height="130" rx="16"/>
+    <text class="dg-cap-acc" x="34" y="44">ПЕРФЕКЦИОНИЗМ</text>
+    <text class="dg-t" x="34" y="76">Делать всё безупречно</text>
+    <text class="dg-s" x="34" y="98">чтобы изъян не всплыл</text>
+    <rect class="dg-node" x="326" y="14" width="300" height="130" rx="16"/>
+    <text class="dg-cap-acc" x="346" y="44">ИЗБЕГАНИЕ БЛИЗОСТИ</text>
+    <text class="dg-t" x="346" y="76">Держать дистанцию</text>
+    <text class="dg-s" x="346" y="98">чем ближе, тем выше риск</text>
+    <rect class="dg-node" x="14" y="158" width="300" height="130" rx="16"/>
+    <text class="dg-cap-acc" x="34" y="188">ПОИСК ОДОБРЕНИЯ</text>
+    <text class="dg-t" x="34" y="220">Постоянное подтверждение</text>
+    <text class="dg-s" x="34" y="242">глушит вердикт ненадолго</text>
+    <rect class="dg-node" x="326" y="158" width="300" height="130" rx="16"/>
+    <text class="dg-cap-acc" x="346" y="188">САМОКРИТИКА ВПЕРЁД</text>
+    <text class="dg-t" x="346" y="220">Сказать плохое первым</text>
+    <text class="dg-s" x="346" y="242">чтобы не услышать от других</text>
+  </svg>
+  <figcaption><b>Четыре стратегии, одно убеждение.</b> Внешне это выглядит как разные черты характера, а по сути — разные способы защититься от одного и того же «со мной что-то не так».</figcaption>
+</figure>`;
+
 const RELATIONS = `
 <figure class="dg">
   <svg viewBox="0 0 640 300" role="img" aria-label="Одна схема, разные партнёры, один и тот же итог">
@@ -300,6 +323,7 @@ const DURATION = `
 </figure>`;
 
 export const DIAGRAMS: Record<string, string> = {
+  'belief-behaviors': BELIEF_BEHAVIORS,
   'support-vs-structure': SUPPORT_VS_STRUCTURE,
   standards: STANDARDS,
   duration: DURATION,
@@ -316,6 +340,7 @@ export const DIAGRAMS: Record<string, string> = {
 
 // For the admin editor's diagram picker.
 export const DIAGRAM_OPTIONS: { key: string; label: string }[] = [
+  { key: 'belief-behaviors', label: 'Одно убеждение, четыре стратегии' },
   { key: 'support-vs-structure', label: 'Поддерживающая беседа vs схема-терапия' },
   { key: 'standards', label: 'Здоровая планка vs перфекционизм' },
   { key: 'duration', label: 'Сколько длится (таймлайн этапов)' },

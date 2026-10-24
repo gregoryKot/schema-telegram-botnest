@@ -38,6 +38,14 @@ describe('DayShareButton', () => {
     expect(screen.getByText('Скопировать текст')).toBeTruthy();
   });
 
+  // Паритет с miniapp DayShareButton (В10 аудита 2026-08): у webapp его не
+  // было вовсе — ShareCardSheet принимал проп, но никто его не передавал.
+  it('открытый шит показывает TherapyNote (заход на терапию после «Поделиться»)', () => {
+    renderButton();
+    fireEvent.click(screen.getByText('Поделиться днём'));
+    expect(screen.getByText(/не замена психологу/)).toBeTruthy();
+  });
+
   it('клик по фону шита закрывает его (goBack), не оставляя карточку открытой', () => {
     renderButton();
     fireEvent.click(screen.getByText('Поделиться днём'));

@@ -29,23 +29,23 @@ export function NotificationsSection({
     settings.notifyTimezone;
 
   return (
-    <div style={{ marginBottom: 8 }}>
+    <div className="u-mb8">
       <SectionHeader onInfo={onInfo}>УВЕДОМЛЕНИЯ</SectionHeader>
       {settings.notifyPausedUntil &&
         new Date(settings.notifyPausedUntil) > new Date() && (
           <div
             className="card"
             style={{
-              borderRadius: 16,
+              borderRadius: 'var(--r-16)',
               padding: '12px 16px',
               marginBottom: 8,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              gap: 10,
+              gap: 'var(--space-10)',
             }}
           >
-            <div style={{ fontSize: 13, color: 'var(--text-sub)' }}>
+            <div className="u-sub13">
               ⏸ Уведомления на паузе до{' '}
               {new Date(settings.notifyPausedUntil).toLocaleDateString('ru-RU')}
             </div>
@@ -59,7 +59,7 @@ export function NotificationsSection({
                 background:
                   'color-mix(in srgb, var(--accent) 15%, transparent)',
                 border: 'none',
-                borderRadius: 10,
+                borderRadius: 'var(--r-10)',
                 padding: '7px 14px',
                 color: 'var(--accent)',
                 fontSize: 13,
@@ -75,7 +75,7 @@ export function NotificationsSection({
       <div
         className="card"
         style={{
-          borderRadius: 16,
+          borderRadius: 'var(--r-16)',
           overflow: 'hidden',
           marginBottom: 8,
         }}
@@ -171,7 +171,7 @@ export function NotificationsSection({
           <div
             style={{
               fontSize: 12,
-              color: 'var(--accent-yellow, #eab308)',
+              color: 'var(--accent-yellow)',
               lineHeight: 1.5,
               marginBottom: 8,
               padding: '0 4px',
@@ -196,7 +196,7 @@ export function NotificationsSection({
             href={botUrl}
             target="_blank"
             rel="noopener noreferrer"
-            style={{ color: 'var(--accent)', textDecoration: 'none' }}
+            className="u-link"
           >
             {botHandle}
           </a>

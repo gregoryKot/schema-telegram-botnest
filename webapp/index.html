@@ -5,28 +5,26 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="icon" type="image/png" sizes="96x96" href="/favicon-96.png" />
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <!-- Ярлык/установка с любой страницы сайта ставит приложение: start_url
+         ведёт в мини-апп /app/ (docs/PWA_PLAN.md — база установки именно он).
+         На персональном домене ссылка убирается в applyPersonalSiteChrome. -->
+    <link rel="manifest" href="/manifest.webmanifest" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 
-    <!-- Apply theme BEFORE any rendering to prevent white flash -->
-    <script>
-      (function(){
-        var t = localStorage.getItem('app_theme');
-        if (t === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
-        var bg = t === 'dark' ? '#14141a' : '#f5f2eb';
-        document.documentElement.style.background = bg;
-        document.documentElement.style.colorScheme = t === 'dark' ? 'dark' : 'light';
-      })();
-    </script>
+    <!-- Apply theme BEFORE any rendering to prevent white flash.
+         Внешний файл, а не инлайн: CSP не разрешает инлайн-скрипты. Без
+         async/defer — выполняется синхронно до первого кадра. -->
+    <script src="/theme.js"></script>
 
     <!-- Address bar / status bar color (updates via JS after load) -->
-    <meta name="theme-color" content="#f5f2eb" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#f6f2eb" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#14141a" media="(prefers-color-scheme: dark)" />
-    <meta name="theme-color" id="theme-color-meta" content="#f5f2eb" />
+    <meta name="theme-color" id="theme-color-meta" content="#f6f2eb" />
 
     <!-- ── Primary SEO ──────────────────────────────────────────────────────── -->
-    <title>Григорий Котляревский – схема-терапия онлайн | schemehappens.ru</title>
+    <title>Григорий Котляревский – схема-терапия онлайн</title>
     <meta name="description" content="Индивидуальные онлайн-консультации в подходе схема-терапии и КПТ. Работа с тем, что мешает жить: тревогой, самооценкой, отношениями. Первая встреча – бесплатно." />
-    <meta name="keywords" content="схема-терапия онлайн, когнитивно-поведенческая терапия, КПТ онлайн, психологическое консультирование онлайн, работа с паттернами, тревога, самооценка, отношения" />
+    <meta name="keywords" content="схема-терапия онлайн, когнитивно-поведенческая терапия, КПТ онлайн, психологическое консультирование онлайн, работа с паттернами, тревога, самооценка, отношения, СДВГ у взрослых, РАС у взрослых, аутизм у взрослых" />
     <meta name="author" content="Котляревский Григорий Юрьевич" />
     <link rel="canonical" href="https://schemehappens.ru/" />
 
@@ -37,7 +35,7 @@
     <meta property="og:site_name"   content="Григорий Котляревский" />
     <meta property="og:title"       content="Григорий Котляревский – схема-терапия онлайн" />
     <meta property="og:description" content="Онлайн-консультации в подходе схема-терапии. Работа с тем, что мешает жить: тревогой, самооценкой, отношениями. Первая встреча бесплатно." />
-    <meta property="og:image"       content="https://cdn.jsdelivr.net/gh/gregoryKot/schema-telegram-botnest@main/webapp/public/og-cover-v2.jpg" />
+    <meta property="og:image"       content="https://kotlarewski.gr/og-cover-v4.jpg" />
     <meta property="og:image:type"  content="image/jpeg" />
     <meta property="og:image:width"  content="1200" />
     <meta property="og:image:height" content="630" />
@@ -47,7 +45,7 @@
     <meta name="twitter:card"        content="summary_large_image" />
     <meta name="twitter:title"       content="Григорий Котляревский – схема-терапия онлайн" />
     <meta name="twitter:description" content="Онлайн-консультации в подходе схема-терапии. Работа с тем, что мешает жить: тревогой, самооценкой, отношениями. Первая встреча бесплатно." />
-    <meta name="twitter:image"       content="https://cdn.jsdelivr.net/gh/gregoryKot/schema-telegram-botnest@main/webapp/public/og-cover-v2.jpg" />
+    <meta name="twitter:image"       content="https://kotlarewski.gr/og-cover-v4.jpg" />
 
     <!-- ── Robots / Crawl hints ────────────────────────────────────────────── -->
     <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
@@ -65,15 +63,16 @@
       "@graph": [
         {
           "@type": "Person",
-          "@id": "https://schemehappens.ru/#person",
+          "@id": "https://kotlarewski.gr/#person",
           "name": "Котляревский Григорий Юрьевич",
           "givenName": "Григорий",
           "familyName": "Котляревский",
-          "jobTitle": "Консультант по схема-терапии",
+          "jobTitle": "Веду практику в подходе схема-терапии",
           "description": "Веду практику в подходе схема-терапии и КПТ. Работаю с повторяющимися паттернами – в отношениях, самооценке, хронической тревоге. Онлайн-сессии.",
-          "url": "https://schemehappens.ru",
-          "image": "https://schemehappens.ru/gregory.jpg",
+          "url": "https://kotlarewski.gr",
+          "image": "https://kotlarewski.gr/gregory.jpg",
           "email": "gregorykot@gmail.com",
+          "taxID": "450163793969",
           "sameAs": [
             "https://t.me/kotlarewski",
             "https://t.me/SchemeHappens"
@@ -83,16 +82,19 @@
             "Когнитивно-поведенческая терапия",
             "КПТ",
             "Психологическое консультирование",
-            "Работа с психологическими паттернами"
+            "Работа с психологическими паттернами",
+            "Жизнь после переезда и эмиграция",
+            "СДВГ у взрослых",
+            "РАС (аутизм) у взрослых"
           ]
         },
         {
           "@type": "ProfessionalService",
-          "@id": "https://schemehappens.ru/#service",
+          "@id": "https://kotlarewski.gr/#service",
           "name": "Онлайн-консультации по схема-терапии",
           "description": "Индивидуальные онлайн-консультации в подходе схема-терапии и КПТ. Работа с паттернами, тревогой, самооценкой, отношениями.",
-          "url": "https://schemehappens.ru",
-          "provider": { "@id": "https://schemehappens.ru/#person" },
+          "url": "https://kotlarewski.gr",
+          "provider": { "@id": "https://kotlarewski.gr/#person" },
           "serviceType": "Психологическое консультирование",
           "areaServed": {
             "@type": "Country",
@@ -100,7 +102,7 @@
           },
           "availableChannel": {
             "@type": "ServiceChannel",
-            "serviceUrl": "https://schemehappens.ru",
+            "serviceUrl": "https://kotlarewski.gr",
             "serviceType": "Онлайн"
           },
           "offers": [
@@ -115,14 +117,14 @@
               "@type": "Offer",
               "name": "Онлайн-сессия",
               "description": "Индивидуальная онлайн-сессия 50 минут",
-              "price": "4000",
+              "price": "3000",
               "priceCurrency": "RUB"
             }
           ]
         },
         {
           "@type": "FAQPage",
-          "@id": "https://schemehappens.ru/#faq",
+          "@id": "https://kotlarewski.gr/#faq",
           "mainEntity": [
             {
               "@type": "Question",
@@ -153,7 +155,7 @@
               "name": "Сколько стоит консультация?",
               "acceptedAnswer": {
                 "@type": "Answer",
-                "text": "Первая вводная встреча (15 минут) – бесплатно. Стоимость одной сессии (50 минут) – 4 000 рублей. После оплаты выдаётся чек самозанятого через приложение «Мой налог»."
+                "text": "Первая вводная встреча (15 минут) – бесплатно. Стоимость одной сессии (50 минут) – 3 000 рублей. После оплаты выдаётся чек самозанятого через приложение «Мой налог»."
               }
             },
             {
@@ -178,10 +180,24 @@
     }
     </script>
 
-    <!-- ── Fonts (self-hosted – no Google dependency) ───────────────────────── -->
-    <link rel="preload" href="/fonts/instrument-serif-latin.woff2" as="font" type="font/woff2" crossorigin />
-    <link rel="preload" href="/fonts/instrument-serif-italic-latin.woff2" as="font" type="font/woff2" crossorigin />
+    <!-- ── Fonts (self-hosted – no Google dependency) ─────────────────────────
+         Manrope/Spectral — единая пара продукта (shared/src/theme/tokens.css),
+         нужна каждому визитору, поэтому в preload вместо Instrument Serif
+         (теперь используется только изолированной страницей
+         практики, .landing-personal-brand — не стоит преференса всем). -->
+    <link rel="preload" href="/fonts/manrope-cyrillic.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/spectral-500-cyrillic.woff2" as="font" type="font/woff2" crossorigin />
     <script src="/telegram-web-app.js" async></script>
+    <!-- Мост MAX: подключается только внутри MAX, решает это сам загрузчик
+         (public/max-bridge.js). Внешним файлом, не инлайном: script-src 'self'
+         без unsafe-inline. Синхронный — загрузчик дописывает мост через
+         document.write, с async это не работает. -->
+    <script src="/max-bridge.js"></script>
+    <!-- Google Identity Services: нативная всплывашка One Tap на экране входа
+         (webapp/src/hooks/useGoogleOneTap.ts). Грузится и работает, только если
+         задан VITE_GOOGLE_CLIENT_ID и origin разрешён в Google Cloud Console —
+         иначе тихо не показывается, остаются обычные кнопки входа. -->
+    <script src="https://accounts.google.com/gsi/client" async></script>
   </head>
   <body>
     <div id="root"></div>

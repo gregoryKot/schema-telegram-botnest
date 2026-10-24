@@ -1,6 +1,7 @@
 import { Markup } from 'telegraf';
 import { MINIAPP_URL } from './telegram.constants';
 import { BotService } from '../bot/bot.service';
+import { AccountService } from '../bot/account.service';
 import {
   AddressForm,
   normalizeAddressForm,
@@ -31,11 +32,19 @@ export function acceptRetryText(form?: AddressForm): string {
   );
 }
 
-/** Форма обращения по Telegram ID — для мест вне /settings (donate, therapist). */
+/**
+ * Форма обращения по Telegram ID — для мест вне /settings (donate, therapist).
+ * Номер приводим к каноническому: после слияния аккаунтов настройки человека
+ * лежат под веб-номером, и чтение по сырому telegramId вернуло бы пусто, то
+ * есть форму «ты» тому, кто выбрал «вы».
+ */
 export async function resolveForm(
+  accountService: AccountService,
   botService: BotService,
   rawId: number | undefined,
 ): Promise<AddressForm> {
-  const s = rawId ? await botService.getUserSettings(BigInt(rawId)) : null;
+  if (!rawId) return normalizeAddressForm(undefined);
+  const userId = await accountService.canonicalUserId(rawId);
+  const s = await botService.getUserSettings(userId);
   return normalizeAddressForm(s?.addressForm);
 }

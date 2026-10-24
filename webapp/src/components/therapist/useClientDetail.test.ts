@@ -48,9 +48,8 @@ async function openedHook(clientOverrides: Partial<Record<string, unknown>> = {}
 
 beforeEach(() => {
   vi.clearAllMocks();
-  vi.spyOn(window, 'confirm').mockReturnValue(true);
   mockApi.getTherapyTasksForClient.mockResolvedValue([]);
-  mockApi.getTherapistNotes.mockResolvedValue([]);
+  mockApi.getTherapistNotes.mockResolvedValue({ notes: [], total: 0 });
   mockApi.getConceptualization.mockResolvedValue(null);
   mockApi.getTherapyClientData.mockResolvedValue(null);
   mockApi.getClientSchemaNotes.mockResolvedValue([]);
@@ -137,15 +136,34 @@ describe('openClient', () => {
 });
 
 // ── Удаление клиента ─────────────────────────────────────────────────────────
+// Ж4 (аудит 2026-08): нативный window.confirm() заменён на ConfirmDialog
+// (рендерится в ClientHeader). requestDeleteClient открывает подтверждение
+// (confirmingDelete=true), deleteClient — сама операция (вызывается диалогом
+// на «Удалить»), cancelDeleteClient — отмена без обращения к api.
+describe('requestDeleteClient / cancelDeleteClient', () => {
+  it('ничего не делает без выбранного клиента', () => {
+    const { result } = setup();
+    act(() => { result.current.requestDeleteClient(); });
+    expect(result.current.confirmingDelete).toBe(false);
+  });
+  it('с выбранным клиентом — открывает подтверждение', async () => {
+    const { result } = await openedHook();
+    act(() => { result.current.requestDeleteClient(); });
+    expect(result.current.confirmingDelete).toBe(true);
+    expect(mockApi.removeClient).not.toHaveBeenCalled();
+  });
+  it('отмена закрывает подтверждение без обращения к api', async () => {
+    const { result } = await openedHook();
+    act(() => { result.current.requestDeleteClient(); });
+    act(() => { result.current.cancelDeleteClient(); });
+    expect(result.current.confirmingDelete).toBe(false);
+    expect(mockApi.removeClient).not.toHaveBeenCalled();
+  });
+});
+
 describe('deleteClient', () => {
   it('ничего не делает без выбранного клиента', async () => {
     const { result } = setup();
-    await act(async () => { await result.current.deleteClient(); });
-    expect(mockApi.removeClient).not.toHaveBeenCalled();
-  });
-  it('ничего не делает, если пользователь отменил confirm', async () => {
-    vi.spyOn(window, 'confirm').mockReturnValue(false);
-    const { result } = await openedHook();
     await act(async () => { await result.current.deleteClient(); });
     expect(mockApi.removeClient).not.toHaveBeenCalled();
   });
@@ -207,11 +225,20 @@ describe('addNote / removeNote', () => {
     expect(result.current.noteError).toBe('Не удалось удалить заметку');
   });
   it('removeNote удаляет заметку из списка по id', async () => {
-    mockApi.getTherapistNotes.mockResolvedValue([{ id: 1, date: '2026-01-01' }, { id: 2, date: '2026-01-02' }]);
+    mockApi.getTherapistNotes.mockResolvedValue({ notes: [{ id: 1, date: '2026-01-01' }, { id: 2, date: '2026-01-02' }], total: 2 });
     mockApi.deleteTherapistNote.mockResolvedValue(undefined);
     const { result } = await openedHook();
     await act(async () => { await result.current.removeNote(1); });
     expect(mockApi.deleteTherapistNote).toHaveBeenCalledWith(1);
     expect(result.current.notes.map(n => n.id)).toEqual([2]);
+    expect(result.current.notesPage.total).toBe(1);
+  });
+  it('total приходит от сервера и не равен длине среза: удаление уменьшает именно его', async () => {
+    mockApi.getTherapistNotes.mockResolvedValue({ notes: [{ id: 1, date: '2026-01-01' }], total: 105 });
+    mockApi.deleteTherapistNote.mockResolvedValue(undefined);
+    const { result } = await openedHook();
+    expect(result.current.notesPage.total).toBe(105);
+    await act(async () => { await result.current.removeNote(1); });
+    expect(result.current.notesPage.total).toBe(104);
   });
 });

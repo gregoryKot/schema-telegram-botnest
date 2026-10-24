@@ -63,9 +63,9 @@ describe('TwoFactorChallengePage — без токена вызова', () => {
 });
 
 describe('TwoFactorChallengePage — ввод кода', () => {
-  it('кнопка «Войти» задизейблена, пока код пуст', () => {
+  it('кнопка «Подтвердить» задизейблена, пока код пуст', () => {
     renderAt('/auth/2fa?token=chal123');
-    expect((screen.getByRole('button', { name: /Войти/ }) as HTMLButtonElement).disabled).toBe(true);
+    expect((screen.getByRole('button', { name: /Подтвердить/ }) as HTMLButtonElement).disabled).toBe(true);
   });
 
   it('успешный код → accessToken сохранён, уход на /today (read-after-write)', async () => {
@@ -83,7 +83,12 @@ describe('TwoFactorChallengePage — ввод кода', () => {
   });
 
   it('неверный код — ошибка показана, поле очищается, не уходит на /today', async () => {
-    fetchMock.mockResolvedValue(jsonResponse(401, { message: 'Неверный код' }));
+    // Тело — как отдаёт прод (src/auth/auth-2fa.controller.ts: UnauthorizedException
+    // 'Invalid 2FA code'), а не выдуманное «Неверный код» (правило №23): с
+    // выдуманной фикстурой тест не видел, что экран показывает английский.
+    fetchMock.mockResolvedValue(
+      jsonResponse(401, { statusCode: 401, message: 'Invalid 2FA code', error: 'Unauthorized' }),
+    );
     const { container } = renderAt('/auth/2fa?token=chal123');
     const input = screen.getByPlaceholderText('123456') as HTMLInputElement;
     fireEvent.change(input, { target: { value: '000000' } });
@@ -92,5 +97,59 @@ describe('TwoFactorChallengePage — ввод кода', () => {
     await screen.findByText('Неверный код');
     expect(screen.queryByText('today-page')).toBeNull();
     expect(input.value).toBe('');
+  });
+});
+
+describe('TwoFactorChallengePage — recovery-код', () => {
+  it('переключение на recovery-код принимает код не из шести цифр и отправляет как есть', async () => {
+    fetchMock.mockResolvedValue(jsonResponse(200, { accessToken: 't', expiresIn: 900 }));
+    const { container } = renderAt('/auth/2fa?token=chal123');
+    fireEvent.click(screen.getByRole('button', { name: /recovery-код/ }));
+    fireEvent.change(screen.getByLabelText('Recovery-код'), { target: { value: 'ab12-cd34-ef56' } });
+    fireEvent.submit(container.querySelector('form')!);
+    await screen.findByText('today-page');
+    const [, init] = fetchMock.mock.calls[0];
+    expect(JSON.parse((init as RequestInit).body as string).code).toBe('ab12-cd34-ef56');
+  });
+});
+
+// Аудит 2026-10, «сырой текст сервера на экранах входа»: на лимит и аварию
+// экран отвечал «Неверный код» (или «ThrottlerException…») — человек решал, что
+// ошибся с кодом, и тратил попытки дальше. Ответы — настоящие Response.
+describe('TwoFactorChallengePage — лимит, авария и сеть не выдаются за неверный код', () => {
+  async function submitWith(reply: () => Promise<Response>) {
+    fetchMock.mockImplementation(reply);
+    const { container } = renderAt('/auth/2fa?token=chal123');
+    fireEvent.change(screen.getByPlaceholderText('123456'), { target: { value: '000000' } });
+    fireEvent.submit(container.querySelector('form')!);
+    return container;
+  }
+
+  it('контроль: 429 — русский текст сервера проходит как есть', async () => {
+    const text = 'Слишком много попыток подряд. Повторить можно через 12 минут';
+    const container = await submitWith(() =>
+      Promise.resolve(new Response(JSON.stringify({ statusCode: 429, message: text }), { status: 429 })));
+    await screen.findByText(text);
+    expect(container.textContent).not.toMatch(/Неверный код|Throttler/);
+  });
+
+  it('429 старой формы (голая строка) — общий текст про лимит, не «Неверный код»', async () => {
+    const container = await submitWith(() =>
+      Promise.resolve(new Response('"ThrottlerException: Too Many Requests"', { status: 429 })));
+    await screen.findByText('Слишком много попыток подряд. Повторить можно чуть позже');
+    expect(container.textContent).not.toMatch(/Неверный код|Throttler/);
+  });
+
+  it('502 HTML прокси — «сервер не ответил», не «Неверный код»', async () => {
+    const container = await submitWith(() =>
+      Promise.resolve(new Response('<html>502 Bad Gateway</html>', { status: 502 })));
+    await screen.findByText('Сервер не ответил. Повторить можно чуть позже');
+    expect(container.textContent).not.toMatch(/Неверный код/);
+  });
+
+  it('обрыв сети — «Нет связи с сервером»', async () => {
+    const container = await submitWith(() => Promise.reject(new TypeError('Load failed')));
+    await screen.findByText('Нет связи с сервером');
+    expect(container.textContent).not.toMatch(/Load failed|TypeError/);
   });
 });

@@ -10,13 +10,14 @@
 //     assertWithinAvailability, которые раньше проверялись только по классу
 //     исключения или вообще не проверялись.
 import { BookingStatus, SessionType } from '@prisma/client';
+import { assertWithinAvailability } from './booking.availability';
 import { BookingService, PaymentAmountMismatchError } from './booking.service';
 
 const FIXED_NOW = new Date('2026-07-13T00:00:00Z');
 const INSIDE_WINDOW = new Date(FIXED_NOW.getTime() + 13 * 3_600_000);
 // Приватная константа booking.service.ts (advisory-lock ключ) — дублируем
 // намеренно, тест ловит именно СОДЕРЖИМОЕ SQL-шаблона, не саму константу.
-const LOCK_KEY_FOR_TEST = 911_001;
+import { BOOKING_SLOT_LOCK_KEY as LOCK_KEY_FOR_TEST } from './booking-slot-lock';
 
 describe('BookingService.book — if(isFree) реально короткозамыкает платный путь', () => {
   beforeEach(() => {
@@ -28,7 +29,7 @@ describe('BookingService.book — if(isFree) реально короткозам
   it('INTRO_15 с ВКЛЮЧЁННОЙ Robokassa — pricing/buildPaymentUrl НЕ вызываются вовсе', async () => {
     let nextId = 100;
     const tx = {
-      $queryRaw: jest.fn(async () => undefined),
+      $executeRaw: jest.fn(async () => undefined),
       booking: {
         findMany: jest.fn(async () => []),
         create: jest.fn(async ({ data }: any) => ({ id: nextId++, ...data })),
@@ -36,6 +37,7 @@ describe('BookingService.book — if(isFree) реально короткозам
     };
     const prisma: any = {
       availabilityRule: { findMany: jest.fn(async () => []) },
+      slotOverride: { findMany: jest.fn(async () => []) },
       $transaction: jest.fn(async (fn: any) => fn(tx)),
       booking: { update: jest.fn(async () => ({})) },
     };
@@ -56,6 +58,7 @@ describe('BookingService.book — if(isFree) реально короткозам
       robokassa as any,
       pricing as any,
       { get: () => undefined } as any,
+      { claimRun: jest.fn().mockResolvedValue(true) } as any,
     );
     const res = await service.book({
       clientName: 'Мария',
@@ -84,6 +87,7 @@ describe('BookingService.book — точное сообщение об отсу�
       {} as any,
       {} as any,
       { get: () => undefined } as any,
+      { claimRun: jest.fn().mockResolvedValue(true) } as any,
     );
     await expect(
       service.book({
@@ -107,10 +111,10 @@ describe('BookingService.book — advisory-lock реально блокируе�
   });
   afterEach(() => jest.useRealTimers());
 
-  it('$queryRaw уходит с pg_advisory_xact_lock и правильным числовым ключом (не пустой запрос)', async () => {
+  it('$executeRaw уходит с pg_advisory_xact_lock и правильным числовым ключом (не пустой запрос)', async () => {
     let nextId = 100;
     const tx = {
-      $queryRaw: jest.fn(async () => undefined),
+      $executeRaw: jest.fn(async () => undefined),
       booking: {
         findMany: jest.fn(async () => []),
         create: jest.fn(async ({ data }: any) => ({ id: nextId++, ...data })),
@@ -118,6 +122,7 @@ describe('BookingService.book — advisory-lock реально блокируе�
     };
     const prisma: any = {
       availabilityRule: { findMany: jest.fn(async () => []) },
+      slotOverride: { findMany: jest.fn(async () => []) },
       $transaction: jest.fn(async (fn: any) => fn(tx)),
     };
     const notify = { onConfirmed: jest.fn(async () => undefined) };
@@ -129,6 +134,7 @@ describe('BookingService.book — advisory-lock реально блокируе�
       { enabled: false } as any,
       {} as any,
       { get: () => undefined } as any,
+      { claimRun: jest.fn().mockResolvedValue(true) } as any,
     );
     await service.book({
       clientName: 'Мария',
@@ -138,7 +144,7 @@ describe('BookingService.book — advisory-lock реально блокируе�
       durationMin: 15,
       type: SessionType.INTRO_15,
     });
-    const [strings, ...values] = tx.$queryRaw.mock.calls[0];
+    const [strings, ...values] = tx.$executeRaw.mock.calls[0];
     expect(strings.join('')).toContain('pg_advisory_xact_lock');
     expect(values[0]).toBe(LOCK_KEY_FOR_TEST);
   });
@@ -158,6 +164,7 @@ describe('BookingService.confirm — findUnique уходит с точным whe
       {} as any,
       {} as any,
       { get: () => undefined } as any,
+      { claimRun: jest.fn().mockResolvedValue(true) } as any,
     );
     await expect(service.confirm(77)).rejects.toThrow('Booking not found');
     expect(prisma.booking.findUnique).toHaveBeenCalledWith({
@@ -192,6 +199,7 @@ describe('BookingService.confirm — расхождение суммы: текс
       {} as any,
       pricing as any,
       { get: () => undefined } as any,
+      { claimRun: jest.fn().mockResolvedValue(true) } as any,
     );
     await expect(service.confirm(42, 1)).rejects.toThrow(
       expect.objectContaining({ message: 'Amount mismatch — manual review' }),
@@ -205,8 +213,8 @@ describe('BookingService.confirm — расхождение суммы: текс
   });
 });
 
-describe('BookingService.cancel — update уходит с точным where:{cancelToken}', () => {
-  it('успешная отмена шлёт update именно по тому токену, что пришёл (не пустой объект)', async () => {
+describe('BookingService.cancel — updateMany уходит с точным where:{cancelToken, status}', () => {
+  it('успешная отмена шлёт CAS именно по тому токену, что пришёл (не пустой объект), с предикатом статуса', async () => {
     const row = {
       id: 9,
       status: BookingStatus.HELD,
@@ -216,7 +224,10 @@ describe('BookingService.cancel — update уходит с точным where:{c
     const prisma: any = {
       booking: {
         findUnique: jest.fn(async () => row),
-        update: jest.fn(async ({ data }: any) => Object.assign(row, data)),
+        updateMany: jest.fn(async ({ data }: any) => {
+          Object.assign(row, data);
+          return { count: 1 };
+        }),
       },
     };
     const notify = { onCancelled: jest.fn(async () => undefined) };
@@ -227,10 +238,14 @@ describe('BookingService.cancel — update уходит с точным where:{c
       {} as any,
       {} as any,
       { get: () => undefined } as any,
+      { claimRun: jest.fn().mockResolvedValue(true) } as any,
     );
     await service.cancel('tok-cancel-me');
-    expect(prisma.booking.update).toHaveBeenCalledWith({
-      where: { cancelToken: 'tok-cancel-me' },
+    expect(prisma.booking.updateMany).toHaveBeenCalledWith({
+      where: {
+        cancelToken: 'tok-cancel-me',
+        status: { in: [BookingStatus.HELD, BookingStatus.CONFIRMED] },
+      },
       data: { status: BookingStatus.CANCELLED, heldUntil: null },
     });
   });
@@ -240,16 +255,9 @@ describe('BookingService.assertWithinAvailability — точный where:{isActi
   it('findMany вызывается ровно с {isActive:true}, а не пустым фильтром', async () => {
     const prisma: any = {
       availabilityRule: { findMany: jest.fn(async () => []) },
+      slotOverride: { findMany: jest.fn(async () => []) },
     };
-    const service = new BookingService(
-      prisma,
-      {} as any,
-      {} as any,
-      {} as any,
-      {} as any,
-      { get: () => undefined } as any,
-    );
-    await (service as any).assertWithinAvailability(new Date(), 50);
+    await assertWithinAvailability(prisma, new Date(), 50);
     expect(prisma.availabilityRule.findMany).toHaveBeenCalledWith({
       where: { isActive: true },
     });

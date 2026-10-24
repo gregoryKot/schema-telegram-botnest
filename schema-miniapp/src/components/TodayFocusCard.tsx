@@ -4,7 +4,10 @@
 // Выполнено — спокойное «на сегодня всё», без давления сделать больше.
 import { useTr } from '../utils/addressForm';
 import { HeroCta } from './HeroCta';
-import { FocusPractice, focusCardContent } from '../utils/todayFocus';
+import {
+  FocusPractice,
+  focusCardContent,
+} from '../../../shared/src/today/todayFocus';
 
 interface Props {
   practice: FocusPractice;
@@ -49,12 +52,12 @@ export function TodayFocusCard({
           animationDelay: '80ms',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div className="u-ac12">
           <div
             style={{
               width: 44,
               height: 44,
-              borderRadius: 14,
+              borderRadius: 'var(--r-14)',
               flexShrink: 0,
               fontSize: 22,
               background:
@@ -66,12 +69,8 @@ export function TodayFocusCard({
           >
             ✓
           </div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div
-              style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)' }}
-            >
-              На сегодня — всё
-            </div>
+          <div className="u-fill">
+            <div className="u-h15">На сегодня — всё</div>
             <div
               style={{
                 fontSize: 12,
@@ -95,7 +94,7 @@ export function TodayFocusCard({
                   'color-mix(in srgb, var(--accent) 10%, transparent)',
                 border:
                   '1px solid color-mix(in srgb, var(--accent) 20%, transparent)',
-                borderRadius: 10,
+                borderRadius: 'var(--r-10)',
                 padding: '8px 12px',
                 fontSize: 12,
                 fontWeight: 600,
@@ -109,9 +108,7 @@ export function TodayFocusCard({
             </button>
           )}
         </div>
-        {isTracker && shareSlot && (
-          <div style={{ marginTop: 14 }}>{shareSlot}</div>
-        )}
+        {isTracker && shareSlot && <div className="u-mt14">{shareSlot}</div>}
       </div>
     );
   }

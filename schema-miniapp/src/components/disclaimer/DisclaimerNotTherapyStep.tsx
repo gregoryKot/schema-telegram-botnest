@@ -30,7 +30,11 @@ export function DisclaimerNotTherapyStep({
       </div>
       <div
         className="card"
-        style={{ borderRadius: 16, padding: '16px 18px', marginBottom: 16 }}
+        style={{
+          borderRadius: 'var(--r-16)',
+          padding: '16px 18px',
+          marginBottom: 16,
+        }}
       >
         <div
           style={{
@@ -42,10 +46,8 @@ export function DisclaimerNotTherapyStep({
         >
           «Всё по схеме» — инструмент самоисследования. Оценки, тесты и
           упражнения внутри{' '}
-          <strong style={{ color: 'var(--text)' }}>
-            не ставят клинический диагноз
-          </strong>{' '}
-          и не заменяют работу с психологом.
+          <strong className="u-fg">не ставят клинический диагноз</strong> и не
+          заменяют работу с психологом.
         </div>
         <DisclaimerCheckbox
           checked={c1}

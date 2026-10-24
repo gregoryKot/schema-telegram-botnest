@@ -1,6 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/authContext';
+import { OtpCells } from './login/OtpCells';
+import '../styles/auth-login.css';
+import { TwoFactorIntro } from './login/TwoFactorIntro';
+import { humanizeThrown, readHumanError } from '../../../shared/src/api/humanizeError';
 
 const API_BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? '';
 
@@ -14,6 +18,7 @@ export function TwoFactorChallengePage() {
   const [code, setCode] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [recovery, setRecovery] = useState(false);
   const challengeToken = params.get('token') ?? '';
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -34,62 +39,55 @@ export function TwoFactorChallengePage() {
         headers: { 'Content-Type': 'application/json', 'x-requested-with': 'webapp' },
         body: JSON.stringify({ challengeToken, code: code.trim() }),
       });
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({ message: 'Неверный код' }));
-        throw new Error(body.message ?? 'Неверный код');
-      }
+      // 401 сервера — «Invalid 2FA code»; лимит и авария — свой текст, не «Неверный код».
+      if (!res.ok) throw new Error((await readHumanError(res, 'Неверный код')).message);
       const { accessToken, expiresIn } = await res.json() as { accessToken: string; expiresIn: number };
       setAccessToken(accessToken, expiresIn);
       navigate('/today', { replace: true });
     } catch (err) {
-      setError(String(err).replace('Error: ', ''));
+      setError(humanizeThrown(err, 'Не получилось войти'));
       setBusy(false);
       setCode('');
       inputRef.current?.focus();
     }
   };
 
-  return (
-    <div className="page-inner-wide" style={{ paddingTop: 80, paddingBottom: 80, maxWidth: 420, margin: '0 auto' }}>
-      <div className="eyebrow" style={{ marginBottom: 14 }}>Двухфакторная проверка</div>
-      <h1 style={{ fontSize: 32, fontWeight: 600, letterSpacing: '-0.03em', lineHeight: 1.1, marginBottom: 14 }}>
-        Код из приложения-аутентификатора
-      </h1>
-      <div className="text-md muted" style={{ lineHeight: 1.6, marginBottom: 32 }}>
-        Понадобится код из приложения-аутентификатора (Google Authenticator, 1Password, Bitwarden и т.п.) — 6 цифр.
-        Подойдёт и один из recovery-кодов, если доступ к телефону потерян.
-      </div>
+  const switchMode = () => { setRecovery(r => !r); setCode(''); setError(null); };
+  useEffect(() => { inputRef.current?.focus(); }, [recovery]);
 
-      <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-        <input
-          ref={inputRef}
-          type="text"
-          inputMode="numeric"
-          autoComplete="one-time-code"
-          value={code}
-          onChange={e => setCode(e.target.value)}
-          placeholder="123456"
-          disabled={busy}
-          style={{
-            padding: '14px 16px',
-            border: '1px solid var(--line)',
-            borderRadius: 12,
-            background: 'var(--surface)',
-            color: 'var(--text)',
-            fontSize: 22,
-            letterSpacing: '0.25em',
-            textAlign: 'center',
-            fontVariantNumeric: 'tabular-nums',
-            fontFamily: 'monospace',
-          }}
-        />
-        {error && (
-          <div className="text-sm" style={{ color: 'var(--c-rose)', padding: '8px 0' }}>{error}</div>
-        )}
-        <button type="submit" disabled={busy || !code.trim()} className="btn btn-primary" style={{ marginTop: 8 }}>
-          {busy ? 'Проверяю…' : 'Войти'}
-        </button>
-      </form>
+  return (
+    <div className="light-lock al-2fa">
+      <div className="al-2fa-in">
+        <TwoFactorIntro />
+
+        <form onSubmit={submit} className="al-form">
+          {recovery ? (
+            <input
+              ref={inputRef}
+              type="text"
+              className="ds-input"
+              autoComplete="one-time-code"
+              aria-label="Recovery-код"
+              value={code}
+              onChange={e => setCode(e.target.value)}
+              placeholder="recovery-код"
+              disabled={busy}
+            />
+          ) : (
+            <OtpCells ref={inputRef} value={code} onChange={setCode} disabled={busy} label="Код из приложения" />
+          )}
+          {error && <p className="al-error">{error}</p>}
+          <button type="submit" disabled={busy || !code.trim()} className="al-submit">
+            {busy ? 'Проверяю…' : 'Подтвердить'}
+          </button>
+          <p className="al-foot" style={{ textAlign: 'center' }}>
+            {recovery ? 'Есть телефон? ' : 'Нет телефона? '}
+            <button type="button" className="al-linkbtn" onClick={switchMode}>
+              {recovery ? 'Ввести код из приложения' : 'Ввести recovery-код'}
+            </button>
+          </p>
+        </form>
+      </div>
     </div>
   );
 }

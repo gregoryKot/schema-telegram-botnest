@@ -34,7 +34,7 @@ export function LandingStyles() {
 
         @keyframes hero-in    { from { opacity:0; transform:translateY(18px) } to { opacity:1; transform:none } }
         @keyframes line-in    { from { transform:translateY(110%) } to { transform:none } }
-        @keyframes blob-float { 0%,100% { transform:translate(0,0) scale(1) } 50% { transform:translate(2%,2%) scale(1.03) } }
+        /* blob-float удалён: мёртвый код, ни один элемент его не использовал (правило №11) */
         @keyframes scroll-bar { 0%,100% { opacity:.3; transform:scaleY(.5) } 50% { opacity:1; transform:scaleY(1) } }
         @keyframes pulse-dot  { 0%,100% { opacity:1; transform:scale(1) } 50% { opacity:.4; transform:scale(.65) } }
         @keyframes marquee-fwd { from { transform:translateX(0) } to { transform:translateX(-100%) } }
@@ -49,7 +49,12 @@ export function LandingStyles() {
           .hero-h1   { font-size:clamp(36px, 7vh, 80px) !important; }
           .hero-wrap { min-height:100dvh; }
         }
-
+        /* Текст + лицо автора под заголовком: на десктопе портрет справа от
+           текста, на телефоне скрыт целиком — единственное фото на первом
+           экране это аватар в навигации (решение владельца 2026-10-01). */
+        .hero-below        { display:grid; grid-template-columns:minmax(0,460px) 200px; justify-content:space-between; gap:48px; align-items:start; }
+        .hero-person       { display:flex; flex-direction:column; gap:14px; margin:0; }
+        .hero-person-photo { flex-shrink:0; width:200px; height:auto; aspect-ratio:4/5; border-radius:24px; box-shadow:0 24px 80px rgba(0,0,0,.1); }
 
         /* Grids */
         .about-inner  { display:grid; grid-template-columns:2fr 3fr; gap:48px; align-items:start; }
@@ -58,7 +63,6 @@ export function LandingStyles() {
         .bento-wide   { grid-column:2/4; }
         .process-grid { display:grid; grid-template-columns:repeat(3,1fr); }
         .price-grid   { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
-        .app-grid     { display:grid; grid-template-columns:1fr 1fr; gap:60px; align-items:center; }
         .form-grid    { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
         .edu-grid     { display:grid; grid-template-columns:1fr 2fr; gap:60px; align-items:start; }
         .work-grid    { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
@@ -72,6 +76,8 @@ export function LandingStyles() {
         }
 
         @media (max-width:900px) {
+          .hero-below        { grid-template-columns:1fr; gap:0; }
+          .hero-person       { display:none; }
           .about-inner  { grid-template-columns:1fr; }
           .bento-grid   { grid-template-columns:1fr; }
           .bento-tall   { grid-row:auto; }
@@ -79,7 +85,6 @@ export function LandingStyles() {
           .process-grid { grid-template-columns:1fr; gap:32px; }
           .process-grid > div { border-left:none !important; padding:0 !important; }
           .price-grid   { grid-template-columns:1fr; }
-          .app-grid     { grid-template-columns:1fr; }
           .edu-grid     { grid-template-columns:1fr; gap:28px; }
           .work-grid    { grid-template-columns:1fr; }
           .trust-grid   { grid-template-columns:1fr; gap:32px; }
@@ -91,6 +96,7 @@ export function LandingStyles() {
         @media (max-width:600px) {
           .form-grid  { grid-template-columns:1fr; }
           .hero-wrap, section, footer { padding-left:20px !important; padding-right:20px !important; }
+          .sticky-bar { padding-left:16px !important; padding-right:16px !important; }
         }
       `}</style>
   );

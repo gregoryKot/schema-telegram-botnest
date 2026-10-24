@@ -1,55 +1,13 @@
 import { useState } from 'react';
 import type { UserProfile } from '../../types';
 import { pressable } from '../../utils/a11y';
+import '../../styles/sheet-tasks.css';
+import { useIsMobile } from '../../components/useIsMobile';
+import { OnboardingPhoneCard } from './OnboardingPhoneCard';
+import { STEPS, ONBOARDING_DONE_KEY, ONBOARDING_SKIPPED_KEY, type StepDef } from './onboardingSteps';
 
 // Онбординг-виджет «С чего начать» (чеклист первых шагов). Вынесено из
 // TodaySection.tsx (правило №10).
-
-const ONBOARDING_DONE_KEY    = 'onboarding_done';
-const ONBOARDING_SKIPPED_KEY = 'onboarding_skipped';
-
-interface StepDef {
-  id: string;
-  color: string;
-  title: string;
-  description: string;
-  detail: string;
-  actionLabel: string;
-  isDone: (profile: UserProfile | null, ctx?: { hasSchemas: boolean }) => boolean;
-}
-
-const STEPS: StepDef[] = [
-  { id: 'ysq', color: 'var(--accent)',
-    title: 'Тест на схемы',
-    description: '116 вопросов, 10 минут. Покажет, какие ранние паттерны управляют реакциями.',
-    detail: '20 схем · история прохождений · советы',
-    actionLabel: 'Начать тест',
-    isDone: (p, ctx) => !!(p?.ysq?.completedAt) || !!(ctx?.hasSchemas) },
-  { id: 'tracker', color: 'var(--c-slate)',
-    title: 'Оценка потребностей сегодня',
-    description: 'Пять оценок – и виден индекс дня. Через неделю паттерн начнёт проявляться в графике.',
-    detail: 'Привязанность · Автономия · Выражение · Спонтанность · Границы',
-    actionLabel: 'Перейти в трекер',
-    isDone: p => !!(p?.lastActivity.needsTracker) },
-  { id: 'diary', color: 'var(--accent-indigo)',
-    title: 'Первая запись в дневнике',
-    description: 'Зафиксировать момент, когда схема сработала – главная практика схема-терапии.',
-    detail: 'Дневник схем · режимов · благодарности',
-    actionLabel: 'Открыть дневник',
-    isDone: p => !!(p?.lastActivity.schemaDiary || p?.lastActivity.modeDiary || p?.lastActivity.gratitudeDiary) },
-  { id: 'notify', color: 'var(--c-clay)',
-    title: 'Ежедневное напоминание',
-    description: 'Одно уведомление в выбранное время – чтобы практика не держалась на памяти.',
-    detail: 'Время · часовой пояс · серии дней',
-    actionLabel: 'Настроить',
-    isDone: p => !!(p?.notifications.enabled) },
-  { id: 'childhood', color: 'var(--c-moss)',
-    title: 'Колесо детства',
-    description: 'Как удовлетворялись потребности в детстве – откуда пришли нынешние паттерны.',
-    detail: '5 областей · связь с активными схемами',
-    actionLabel: 'Открыть',
-    isDone: () => !!localStorage.getItem('childhood_wheel_done') },
-];
 
 interface OnboardingProps {
   profile: UserProfile | null;
@@ -67,6 +25,7 @@ export function OnboardingWidget({ profile, hasSchemas, onOpenSchema, onOpenAdva
   });
   const [done,       setDone]       = useState(() => !!localStorage.getItem(ONBOARDING_DONE_KEY));
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const phone = useIsMobile();
 
   if (done || profile === null) return null;
 
@@ -77,13 +36,13 @@ export function OnboardingWidget({ profile, hasSchemas, onOpenSchema, onOpenAdva
 
   if (allDone) {
     return (
-      <div className="section" style={{ borderTop: '1px solid var(--line)', paddingTop: 24 }}>
-        <div className="eyebrow" style={{ marginBottom: 8, color: 'var(--c-moss)' }}>Старт пройден</div>
-        <div className="text-md" style={{ maxWidth: 540, lineHeight: 1.55 }}>
+      <div className="ds-card sk-onb">
+        <div className="ds-eyebrow sk-onb-ok">Старт пройден</div>
+        <div className="sk-onb-done-text">
           Все инструменты изучены – теперь начинается настоящая работа.
         </div>
-        <div style={{ marginTop: 14 }}>
-          <button className="link" style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontFamily: 'inherit' }}
+        <div>
+          <button className="ds-link"
                   onClick={() => { localStorage.setItem(ONBOARDING_DONE_KEY, '1'); setDone(true); }}>
             скрыть →
           </button>
@@ -103,9 +62,11 @@ export function OnboardingWidget({ profile, hasSchemas, onOpenSchema, onOpenAdva
     setSelectedId(null);
   }
 
+  // «Отложить» шага, который уже отложен, возвращает его в очередь.
   function handleSkip(step: StepDef) {
-    const next = [...skipped, step.id];
-    localStorage.setItem(ONBOARDING_SKIPPED_KEY, JSON.stringify(next));
+    const next = skipped.includes(step.id) ? skipped.filter(id => id !== step.id) : [...skipped, step.id];
+    if (next.length > 0) localStorage.setItem(ONBOARDING_SKIPPED_KEY, JSON.stringify(next));
+    else localStorage.removeItem(ONBOARDING_SKIPPED_KEY);
     setSkipped(next);
     setSelectedId(null);
   }
@@ -115,11 +76,28 @@ export function OnboardingWidget({ profile, hasSchemas, onOpenSchema, onOpenAdva
   const visibleStep = (selectedId ? STEPS.find(s => s.id === selectedId) : null) ?? pendingSteps[0] ?? autoStep ?? null;
   if (!visibleStep && skipped.length === 0) return null;
 
+  // Телефон: одна карточка текущего шага (как в мини-аппе), не полный чеклист.
+  if (phone) {
+    return (
+      <OnboardingPhoneCard
+        steps={STEPS}
+        isDone={s => s.isDone(profile, ctx)}
+        skipped={skipped}
+        current={visibleStep}
+        doneCount={doneCount}
+        onSelect={setSelectedId}
+        onAction={handleAction}
+        onSkip={handleSkip}
+        onResume={() => { setSkipped([]); localStorage.removeItem(ONBOARDING_SKIPPED_KEY); }}
+      />
+    );
+  }
+
   return (
-    <div className="section" style={{ borderTop: '1px solid var(--line)', paddingTop: 24 }}>
-      <div className="section-head">
-        <h3>С чего начать</h3>
-        <span className="hint">{doneCount} из {STEPS.length} · {pendingSteps.length} впереди</span>
+    <div className="ds-card sk-onb">
+      <div className="ds-head-row">
+        <h3 className="ds-h3">С чего начать</h3>
+        <span className="ds-sub">{doneCount} из {STEPS.length} · {pendingSteps.length} впереди</span>
       </div>
 
       {/* Calm checklist – all steps as document lines */}
@@ -128,27 +106,34 @@ export function OnboardingWidget({ profile, hasSchemas, onOpenSchema, onOpenAdva
         const isSkipped = skipped.includes(s.id) && !isDone;
         const isCurrent = s.id === visibleStep?.id;
         return (
-          <div key={s.id} className="list-line" style={{ cursor: 'pointer', opacity: isSkipped ? 0.5 : 1 }}
-               {...pressable(() => setSelectedId(s.id))}>
-            <span style={{
-              width: 14, height: 14, borderRadius: 4,
-              border: `1.5px solid ${isDone ? 'var(--c-moss)' : isCurrent ? 'var(--accent)' : 'var(--line-strong)'}`,
-              background: isDone ? 'var(--c-moss)' : 'transparent',
-              flexShrink: 0, marginTop: 4,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 9, color: '#fff',
-            }}>{isDone ? '✓' : ''}</span>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div className="text-md" style={{ fontWeight: 600, opacity: isDone ? 0.6 : 1 }}>{s.title}</div>
+          // Контейнер строки НЕ role="button" (axe nested-interactive): внутри
+          // живут настоящие кнопки «отложить»/«вернуть», а вложенный интерактив
+          // ломает скринридер — непонятно, что именно нажимается. Клавиатурный
+          // вход в шаг даёт заголовок-кнопка ниже; клик по всей строке остаётся
+          // для мыши/тапа.
+          // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions
+          <div key={s.id} className={'sk-onb-row' + (isSkipped ? ' is-skipped' : '')}
+               onClick={() => setSelectedId(s.id)}>
+            <span className={'sk-onb-box' + (isDone ? ' is-done' : isCurrent ? ' is-current' : '')}>{isDone ? '✓' : ''}</span>
+            <div className="sk-onb-main">
+              {/* Заголовок — единственный таб-стоп строки (см. комментарий у
+                  контейнера). Приглушение выполненного шага — цветом, а не
+                  opacity: 0.6 давала 4.41:1 при норме 4.5 (axe, WCAG 1.4.3). */}
+              <div
+                className={'sk-onb-title' + (isDone ? ' is-done' : '')}
+                role="button"
+                tabIndex={0}
+                onClick={e => { e.stopPropagation(); setSelectedId(s.id); }}
+                onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedId(s.id); } }}
+              >{s.title}</div>
               {isCurrent && !isDone && (
-                <div className="text-sm muted" style={{ marginTop: 4, lineHeight: 1.55 }}>{s.description}</div>
+                <div className="ds-sub sk-onb-desc">{s.description}</div>
               )}
             </div>
             {isCurrent && !isDone ? (
-              <div style={{ display: 'flex', gap: 14, alignItems: 'center', flexShrink: 0 }}>
+              <div className="sk-onb-actions">
                 <span
-                  className="link"
-                  style={{ cursor: 'pointer' }}
+                  className="ds-link"
                   role="button"
                   tabIndex={0}
                   onClick={e => { e.stopPropagation(); handleSkip(s); }}
@@ -157,7 +142,7 @@ export function OnboardingWidget({ profile, hasSchemas, onOpenSchema, onOpenAdva
                   отложить
                 </span>
                 <span
-                  className="link"
+                  className="ds-link"
                   role="button"
                   tabIndex={0}
                   onClick={e => { e.stopPropagation(); handleAction(s); }}
@@ -167,17 +152,17 @@ export function OnboardingWidget({ profile, hasSchemas, onOpenSchema, onOpenAdva
                 </span>
               </div>
             ) : isSkipped ? (
-              <span className="text-xs faint">отложено</span>
+              <span className="ds-sub">отложено</span>
             ) : !isDone ? (
-              <span className="text-xs faint">в очереди</span>
+              <span className="ds-sub">в очереди</span>
             ) : null}
           </div>
         );
       })}
 
       {pendingSteps.length === 0 && skipped.length > 0 && (
-        <div style={{ marginTop: 14 }}>
-          <span className="link" style={{ cursor: 'pointer' }}
+        <div>
+          <span className="ds-link"
                 {...pressable(() => { setSkipped([]); localStorage.removeItem(ONBOARDING_SKIPPED_KEY); })}>
             вернуть отложенные →
           </span>

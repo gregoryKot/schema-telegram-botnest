@@ -1,9 +1,9 @@
 import { pressable } from '../../utils/a11y';
 import { TherapyClientSummary } from '../../api';
-import { fmtDate } from '../../utils/format';
+import { isVirtualId } from '../../../../shared/src/utils/sameId';
+import { fmtDate, momentDayKey } from '../../utils/format';
 import { DAY_NAMES, calcTherapyDuration, nextSessionLabel } from './helpers';
 import { ClientDetail } from './types';
-
 interface SessionCardProps {
   selectedClient: TherapyClientSummary;
   today: string;
@@ -54,14 +54,7 @@ export function SessionCard({
       }}
     >
       {/* Row 1: Start date + duration */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          marginBottom: 10,
-        }}
-      >
+      <div className="u-between-mb10">
         <div>
           {editingStartDate ? (
             <div
@@ -79,7 +72,7 @@ export function SessionCard({
                 style={{
                   background: 'rgba(var(--fg-rgb),0.07)',
                   border: '1px solid rgba(var(--fg-rgb),0.15)',
-                  borderRadius: 8,
+                  borderRadius: 'var(--r-8)',
                   padding: '5px 8px',
                   outline: 'none',
                   color: 'var(--text)',
@@ -97,10 +90,10 @@ export function SessionCard({
                 aria-label="Сохранить"
                 style={{
                   padding: '5px 10px',
-                  borderRadius: 8,
+                  borderRadius: 'var(--r-8)',
                   border: 'none',
                   background: 'var(--accent)',
-                  color: '#fff',
+                  color: 'var(--on-accent)',
                   fontSize: 12,
                   cursor: 'pointer',
                 }}
@@ -112,7 +105,7 @@ export function SessionCard({
                 aria-label="Отменить"
                 style={{
                   padding: '5px 8px',
-                  borderRadius: 8,
+                  borderRadius: 'var(--r-8)',
                   border: 'none',
                   background: 'rgba(var(--fg-rgb),0.08)',
                   color: 'var(--text-sub)',
@@ -134,58 +127,53 @@ export function SessionCard({
               {...pressable(() => {
                 setLocalStartDate(
                   selectedClient.therapyStartDate ??
-                    selectedClient.relationCreatedAt?.slice(0, 10) ??
-                    '',
+                    (selectedClient.relationCreatedAt
+                      ? momentDayKey(selectedClient.relationCreatedAt)
+                      : ''),
                 );
                 setEditingStartDate(true);
               })}
             >
-              <span style={{ fontSize: 13, color: 'var(--text-sub)' }}>
+              <span className="u-sub13">
                 {effectiveStart
-                  ? `С ${fmtDate(effectiveStart.slice(0, 10))}`
+                  ? `С ${fmtDate(momentDayKey(effectiveStart))}`
                   : 'Начало не указано'}
               </span>
-              {duration && (
-                <span style={{ fontSize: 12, color: 'var(--text-sub)' }}>
-                  · {duration}
-                </span>
-              )}
-              <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>
-                ✎
-              </span>
+              {duration && <span className="u-sub12">· {duration}</span>}
+              <span className="u-faint11">✎</span>
             </div>
           )}
         </div>
         {/* Activity badge */}
-        {selectedClient.telegramId > 0 && selectedClient.lastActiveDate && (
-          <span
-            style={{
-              fontSize: 11,
-              color:
-                selectedClient.lastActiveDate === today
-                  ? '#06d6a0'
-                  : 'rgba(var(--fg-rgb),0.3)',
-              background:
-                selectedClient.lastActiveDate === today
-                  ? 'color-mix(in srgb, var(--accent-green) 10%, transparent)'
-                  : 'rgba(var(--fg-rgb),0.05)',
-              padding: '3px 8px',
-              borderRadius: 20,
-            }}
-          >
-            {selectedClient.lastActiveDate === today
-              ? '● сегодня'
-              : fmtDate(selectedClient.lastActiveDate)}
-          </span>
-        )}
+        {!isVirtualId(selectedClient.telegramId) &&
+          selectedClient.lastActiveDate && (
+            <span
+              style={{
+                fontSize: 11,
+                color:
+                  selectedClient.lastActiveDate === today
+                    ? '#06d6a0'
+                    : 'rgba(var(--fg-rgb),0.3)',
+                background:
+                  selectedClient.lastActiveDate === today
+                    ? 'color-mix(in srgb, var(--accent-green) 10%, transparent)'
+                    : 'rgba(var(--fg-rgb),0.05)',
+                padding: '3px 8px',
+                borderRadius: 'var(--r-20)',
+              }}
+            >
+              {selectedClient.lastActiveDate === today
+                ? '● сегодня'
+                : fmtDate(selectedClient.lastActiveDate)}
+            </span>
+          )}
       </div>
-
       {/* Row 2: Meeting days + next session */}
       <div
         style={{
           display: 'flex',
           alignItems: 'center',
-          gap: 8,
+          gap: 'var(--space-8)',
           flexWrap: 'wrap',
         }}
       >
@@ -194,7 +182,7 @@ export function SessionCard({
           <div
             style={{
               display: 'flex',
-              gap: 4,
+              gap: 'var(--space-4)',
               alignItems: 'center',
               flexWrap: 'wrap',
             }}
@@ -211,7 +199,7 @@ export function SessionCard({
                 }
                 style={{
                   padding: '4px 9px',
-                  borderRadius: 20,
+                  borderRadius: 'var(--r-20)',
                   border: 'none',
                   cursor: 'pointer',
                   fontSize: 12,
@@ -238,10 +226,10 @@ export function SessionCard({
               aria-label="Сохранить"
               style={{
                 padding: '4px 10px',
-                borderRadius: 20,
+                borderRadius: 'var(--r-20)',
                 border: 'none',
                 background: 'var(--accent)',
-                color: '#fff',
+                color: 'var(--on-accent)',
                 fontSize: 12,
                 cursor: 'pointer',
                 fontWeight: 600,
@@ -254,7 +242,7 @@ export function SessionCard({
               aria-label="Отменить"
               style={{
                 padding: '4px 8px',
-                borderRadius: 20,
+                borderRadius: 'var(--r-20)',
                 border: 'none',
                 background: 'rgba(var(--fg-rgb),0.07)',
                 color: 'var(--text-sub)',
@@ -269,7 +257,7 @@ export function SessionCard({
           <div
             style={{
               display: 'flex',
-              gap: 4,
+              gap: 'var(--space-4)',
               alignItems: 'center',
               cursor: 'pointer',
             }}
@@ -299,7 +287,7 @@ export function SessionCard({
                         fontSize: 12,
                         fontWeight: 600,
                         padding: '3px 8px',
-                        borderRadius: 20,
+                        borderRadius: 'var(--r-20)',
                         background:
                           'color-mix(in srgb, var(--accent) 15%, transparent)',
                         color: 'var(--accent)',
@@ -308,14 +296,7 @@ export function SessionCard({
                       {DAY_NAMES[d]}
                     </span>
                   ))}
-                <span
-                  style={{
-                    fontSize: 11,
-                    color: 'var(--text-faint)',
-                  }}
-                >
-                  ✎
-                </span>
+                <span className="u-faint11">✎</span>
               </>
             )}
           </div>
@@ -340,7 +321,7 @@ export function SessionCard({
                 style={{
                   background: 'rgba(var(--fg-rgb),0.07)',
                   border: '1px solid rgba(var(--fg-rgb),0.15)',
-                  borderRadius: 8,
+                  borderRadius: 'var(--r-8)',
                   padding: '5px 8px',
                   outline: 'none',
                   color: 'var(--text)',
@@ -358,10 +339,10 @@ export function SessionCard({
                 aria-label="Сохранить"
                 style={{
                   padding: '5px 10px',
-                  borderRadius: 8,
+                  borderRadius: 'var(--r-8)',
                   border: 'none',
                   background: 'var(--accent)',
-                  color: '#fff',
+                  color: 'var(--on-accent)',
                   fontSize: 12,
                   cursor: 'pointer',
                 }}
@@ -373,7 +354,7 @@ export function SessionCard({
                 aria-label="Отменить"
                 style={{
                   padding: '5px 8px',
-                  borderRadius: 8,
+                  borderRadius: 'var(--r-8)',
                   border: 'none',
                   background: 'rgba(var(--fg-rgb),0.08)',
                   color: 'var(--text-sub)',
@@ -391,7 +372,7 @@ export function SessionCard({
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
-                gap: 4,
+                gap: 'var(--space-4)',
               }}
               {...pressable(() => {
                 setLocalNextSession(selectedClient.nextSession ?? '');
@@ -417,14 +398,7 @@ export function SessionCard({
                   >
                     {nextSessionLabel(selectedClient.nextSession)}
                   </span>
-                  <span
-                    style={{
-                      fontSize: 11,
-                      color: 'var(--text-faint)',
-                    }}
-                  >
-                    ✎
-                  </span>
+                  <span className="u-faint11">✎</span>
                 </>
               ) : (
                 <span

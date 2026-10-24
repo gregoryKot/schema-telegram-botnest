@@ -1,48 +1,31 @@
 // @vitest-environment jsdom
-// SW регистрируется только в web-хосте (docs/MULTI_HOST_PLAN.md шаг 3):
-// внутри Telegram/MAX мини-апп живёт в вебвью мессенджера — свой SW там
-// рискует отдать устаревшую оболочку. workbox-window мокнут: jsdom не
-// реализует navigator.serviceWorker/ServiceWorkerRegistration.
+// Эксперимент 2026-08-25 (см. шапку registerServiceWorker.ts): SW в PWA
+// выключен — registerServiceWorker теперь СНИМАЕТ установленный ранее SW и
+// чистит его кеши, чтобы статика ехала тем же путём, что в Telegram
+// (HTTP-кеш + байткод-кеш браузера), а не из Cache Storage без него.
 //
 // getHost() определяет хост живым чтением window.Telegram/window.WebApp
 // (см. shared/src/host/index.ts) — поэтому хост мокается теми же глобалами,
-// что и loginScreenGate.test.ts, а не через setHost() (она перепроверяет
-// detectHostId() и пересоздаст хост, если глобалы ему не соответствуют).
+// что и loginScreenGate.test.ts.
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { setHost } from '../../shared/src/host';
-
-type Listener = () => void;
-const listeners: Record<string, Listener[]> = {};
-const registerMock = vi.fn().mockResolvedValue(undefined);
-const messageSkipWaitingMock = vi.fn();
-
-vi.mock('workbox-window', () => ({
-  // Обычная function-форма обязательна: стрелочная не годится конструктором
-  // (`new Workbox(...)` в registerServiceWorker.ts бросил бы TypeError).
-  Workbox: vi.fn().mockImplementation(function FakeWorkbox() {
-    return {
-      addEventListener: (type: string, cb: Listener) => {
-        (listeners[type] ??= []).push(cb);
-      },
-      register: registerMock,
-      messageSkipWaiting: messageSkipWaitingMock,
-    };
-  }),
-}));
-
-const { Workbox } = await import('workbox-window');
-const {
+import {
   shouldRegisterServiceWorker,
   registerServiceWorker,
-  onUpdateAvailable,
   applyUpdate,
   _resetForTests,
-} = await import('./registerServiceWorker');
+} from './registerServiceWorker';
+
+const unregisterMock = vi.fn().mockResolvedValue(true);
+let registrations: { unregister: typeof unregisterMock }[] = [];
+const getRegistrationsMock = vi.fn(() => Promise.resolve(registrations));
+const cacheKeysMock = vi.fn(() => Promise.resolve(['wb-precache', 'runtime']));
+const cacheDeleteMock = vi.fn(() => Promise.resolve(true));
 
 function setServiceWorkerSupport(supported: boolean) {
   if (supported) {
     Object.defineProperty(navigator, 'serviceWorker', {
-      value: {},
+      value: { getRegistrations: getRegistrationsMock },
       configurable: true,
     });
   } else {
@@ -62,16 +45,23 @@ function setMaxHost() {
   (globalThis as { WebApp?: unknown }).WebApp = { initData: 'query_id=abc' };
 }
 
+const flush = () => new Promise((r) => setTimeout(r, 0));
+
 beforeEach(() => {
   setHost(null);
   delete (globalThis as { Telegram?: unknown }).Telegram;
   delete (globalThis as { WebApp?: unknown }).WebApp;
   _resetForTests();
-  registerMock.mockClear();
-  messageSkipWaitingMock.mockClear();
-  (Workbox as unknown as ReturnType<typeof vi.fn>).mockClear();
-  for (const key of Object.keys(listeners)) delete listeners[key];
+  registrations = [];
+  unregisterMock.mockClear();
+  getRegistrationsMock.mockClear();
+  cacheKeysMock.mockClear();
+  cacheDeleteMock.mockClear();
   setServiceWorkerSupport(true);
+  Object.defineProperty(window, 'caches', {
+    value: { keys: cacheKeysMock, delete: cacheDeleteMock },
+    configurable: true,
+  });
 });
 
 describe('shouldRegisterServiceWorker', () => {
@@ -95,58 +85,49 @@ describe('shouldRegisterServiceWorker', () => {
   });
 });
 
-describe('registerServiceWorker', () => {
-  it('не в web-хосте — Workbox не создаётся', () => {
+describe('registerServiceWorker (эксперимент: снятие SW)', () => {
+  it('не в web-хосте — ничего не трогает', async () => {
     setTelegramHost();
     registerServiceWorker();
-    expect(Workbox).not.toHaveBeenCalled();
-    expect(registerMock).not.toHaveBeenCalled();
+    await flush();
+    expect(getRegistrationsMock).not.toHaveBeenCalled();
   });
 
-  it('в web-хосте — регистрирует SW со scope /app/', () => {
+  it('стоял SW — снимает его и чистит все кеши', async () => {
+    registrations = [{ unregister: unregisterMock }];
     registerServiceWorker();
-    expect(Workbox).toHaveBeenCalledWith(
-      '/app/sw.js',
-      expect.objectContaining({ scope: '/app/' }),
-    );
-    expect(registerMock).toHaveBeenCalled();
+    await flush();
+    expect(unregisterMock).toHaveBeenCalledTimes(1);
+    expect(cacheDeleteMock).toHaveBeenCalledWith('wb-precache');
+    expect(cacheDeleteMock).toHaveBeenCalledWith('runtime');
   });
 
-  it('событие waiting зовёт подписчика onUpdateAvailable', () => {
-    const onUpdate = vi.fn();
-    onUpdateAvailable(onUpdate);
+  it('SW не стоял (чистый браузер) — кеши НЕ трогает', async () => {
+    registrations = [];
     registerServiceWorker();
-    listeners.waiting?.forEach((cb) => cb());
-    expect(onUpdate).toHaveBeenCalledTimes(1);
+    await flush();
+    expect(unregisterMock).not.toHaveBeenCalled();
+    expect(cacheDeleteMock).not.toHaveBeenCalled();
   });
 
-  it('отписка onUpdateAvailable останавливает уведомления', () => {
-    const onUpdate = vi.fn();
-    const unsubscribe = onUpdateAvailable(onUpdate);
+  it('сбой снятия логируется, не бросается наружу', async () => {
+    getRegistrationsMock.mockRejectedValueOnce(new Error('boom'));
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     registerServiceWorker();
-    unsubscribe();
-    listeners.waiting?.forEach((cb) => cb());
-    expect(onUpdate).not.toHaveBeenCalled();
+    await flush();
+    expect(errSpy).toHaveBeenCalledWith('sw cleanup failed', expect.any(Error));
+    errSpy.mockRestore();
   });
 });
 
 describe('applyUpdate', () => {
-  it('без предшествующей регистрации — не падает', () => {
-    expect(() => applyUpdate()).not.toThrow();
-    expect(messageSkipWaitingMock).not.toHaveBeenCalled();
-  });
-
-  it('после регистрации — шлёт SKIP_WAITING и перезагружает по controllerchange', () => {
-    registerServiceWorker();
-    const reloadSpy = vi.fn();
+  it('без SW достаточно перезагрузки страницы', () => {
+    const reload = vi.fn();
     Object.defineProperty(window, 'location', {
-      value: { ...window.location, reload: reloadSpy },
+      value: { ...window.location, reload },
       configurable: true,
     });
-
     applyUpdate();
-    expect(messageSkipWaitingMock).toHaveBeenCalledTimes(1);
-    listeners.controlling?.forEach((cb) => cb());
-    expect(reloadSpy).toHaveBeenCalledTimes(1);
+    expect(reload).toHaveBeenCalledTimes(1);
   });
 });

@@ -4,6 +4,7 @@ import { haptic } from '../../haptic';
 import { pressable } from '../../utils/a11y';
 import { useTr } from '../../utils/addressForm';
 import { DiaryHubIntro } from './DiaryHubIntro';
+import { DIARY_TRACKER_LINK } from '../../../../shared/src/diary/diaryTrackerLink';
 import { CapsLabel, DiaryPanel, DiaryRow } from './diaryUi';
 import { diaryRowMeta } from './diaryMeta';
 import { plural } from '../../sections/today/helpers';
@@ -34,7 +35,7 @@ function StreakChip({ streak }: { streak: number }) {
         alignItems: 'center',
         gap: 2,
         padding: '8px 14px',
-        borderRadius: 14,
+        borderRadius: 'var(--r-14)',
         background: 'var(--accent-bg)',
         border: '1px solid rgba(154,91,62,0.28)',
       }}
@@ -42,7 +43,7 @@ function StreakChip({ streak }: { streak: number }) {
       <span style={{ fontSize: 17, fontWeight: 700, color: 'var(--accent)' }}>
         {streak}
       </span>
-      <span className="d-caps" style={{ color: 'var(--accent)' }}>
+      <span className="d-caps u-accent">
         {plural(streak, 'день', 'дня', 'дней')}
       </span>
     </div>
@@ -99,7 +100,7 @@ export function HomeView({
         style={{
           display: 'flex',
           alignItems: 'flex-start',
-          gap: 12,
+          gap: 'var(--space-12)',
           marginBottom: 22,
         }}
       >
@@ -118,10 +119,10 @@ export function HomeView({
             ‹
           </span>
         )}
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div className="d-display" style={{ fontSize: 27 }}>
+        <div className="u-fill">
+          <h1 className="d-display" style={{ fontSize: 27, margin: 0 }}>
             Мои дневники
-          </div>
+          </h1>
           <div
             style={{
               fontSize: 14,
@@ -156,11 +157,11 @@ export function HomeView({
 
       {onOpenTracker && (
         <>
-          <CapsLabel>Оценить день</CapsLabel>
+          <CapsLabel>{DIARY_TRACKER_LINK.label}</CapsLabel>
           <DiaryPanel>
             <DiaryRow
-              title="Трекер потребностей"
-              desc="Пять базовых потребностей — что сегодня питает, что истощает"
+              title={DIARY_TRACKER_LINK.title}
+              desc={DIARY_TRACKER_LINK.desc}
               meta={
                 lastNeedsDate
                   ? `Последняя отметка · ${fmtAgo(lastNeedsDate)}`

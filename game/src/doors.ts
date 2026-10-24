@@ -38,6 +38,7 @@ export class Door {
   constructor(
     private scene: Phaser.Scene, readonly kind: DoorKind, readonly x: number,
     private onEnter: (d: Door) => void, private onLockedTry: () => void,
+    maxX?: number, // правый край мира: вывеска не должна уходить за кадр
   ) {
     const st = STYLE[kind];
     const g = scene.add.graphics().setDepth(5);
@@ -63,6 +64,10 @@ export class Door {
       fontFamily: FONT, fontSize: '9px', color: '#fff0d8',
       backgroundColor: 'rgba(10,8,20,0.72)', padding: { x: 5, y: 4 },
     }).setOrigin(0.5, 1).setDepth(9).setAlpha(0);
+    // дверь стоит у самого конца улицы — вывеску и подсказку прижимаем к краю мира
+    if (maxX !== undefined) for (const o of [this.label, this.prompt]) {
+      if (o.x + o.width / 2 > maxX - 8) o.x = maxX - 8 - o.width / 2;
+    }
     this.leaf.on('pointerdown', () => { if (this.isNear) this.tryEnter(); });
   }
 

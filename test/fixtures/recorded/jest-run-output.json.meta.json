@@ -1,0 +1,6 @@
+{
+  "source": "Вывод jest 30.5.1 (stderr) в двух режимах джобы backend-flaky (.github/workflows/nightly.yml): воркеры с --silent и один процесс с --detectOpenHandles. Читатель — scripts/jest-exit-guard.mjs (спек src/test-support/gates/jest-exit-guard.spec.ts)",
+  "recordedAt": "2026-10-15",
+  "how": "silentWorkersClean и silentWorkersLeak — лог джобы backend-flaky прогона 38700877351 (2026-10-15, шаги «jest run1» и «jest run3»), скачан `gh api repos/gregoryKot/schema-telegram-botnest/actions/jobs/116308483929/logs`; inBandClean — лог той же джобы прогона 38532509227 (2026-10-14, шаг detectOpenHandles, последний зелёный перед #649). inBandFailed — локальный полный прогон `npx jest --detectOpenHandles` 2026-10-15 (упал один пин). openHandlesDetected и didNotExit — локальные прогоны jest 30.5.1 2026-10-15 на временном спеке с setInterval без unref (`--detectOpenHandles --forceExit` и обычный запуск под `timeout 20`): в CI эти строки не записаны, потому что шаг с `| tail` повис раньше, чем jest успел их напечатать",
+  "redacted": "из строк CI-лога срезана метка времени GitHub (`2026-10-15T07:46:57.7693609Z `); от сотен строк PASS оставлены последние 1–3 перед сводкой; в inBandFailed выкинуто тело упавшего утверждения между «FAIL …» и сводкой (своя строка README, к сторожу отношения не имеет). Секретов и персональных данных в выводе jest нет"
+}

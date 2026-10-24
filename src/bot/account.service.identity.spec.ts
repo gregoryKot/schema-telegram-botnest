@@ -107,32 +107,6 @@ describe('AccountService.getUserFirstName', () => {
   });
 });
 
-describe('AccountService.setRole', () => {
-  it('повышение до THERAPIST одновременно включает therapistMode', async () => {
-    const prisma = makePrisma();
-    const service = new AccountService(prisma);
-
-    await service.setRole(3n, 'THERAPIST');
-
-    expect(prisma.user.update).toHaveBeenCalledWith({
-      where: { id: 3n },
-      data: { role: 'THERAPIST', therapistMode: true },
-    });
-  });
-
-  it('понижение до CLIENT одновременно выключает therapistMode (не оставляет висеть кабинет)', async () => {
-    const prisma = makePrisma();
-    const service = new AccountService(prisma);
-
-    await service.setRole(3n, 'CLIENT');
-
-    expect(prisma.user.update).toHaveBeenCalledWith({
-      where: { id: 3n },
-      data: { role: 'CLIENT', therapistMode: false },
-    });
-  });
-});
-
 describe('AccountService.updateName / getUserRole', () => {
   it('updateName пишет ровно переданное имя в firstName нужного юзера', async () => {
     const prisma = makePrisma();
@@ -175,26 +149,16 @@ describe('AccountService.markUserBlocked', () => {
   });
 });
 
-describe('AccountService.getAllUserIds / getBroadcastUserIds', () => {
-  it('getAllUserIds конвертирует bigint id в number для КАЖДОГО юзера, без фильтра', async () => {
+describe('AccountService.getBroadcastUserIds', () => {
+  it('исключает удалённых и заблокировавших бота и отдаёт id как bigint, без округления', async () => {
     const prisma = makePrisma();
-    prisma.user.findMany.mockResolvedValue([{ id: 1n }, { id: 2n }]);
-    const service = new AccountService(prisma);
-
-    const ids = await service.getAllUserIds();
-
-    expect(ids).toEqual([1, 2]);
-    expect(prisma.user.findMany).toHaveBeenCalledWith({ select: { id: true } });
-  });
-
-  it('getBroadcastUserIds исключает удалённых и заблокировавших бота', async () => {
-    const prisma = makePrisma();
-    prisma.user.findMany.mockResolvedValue([{ id: 3n }]);
+    const big = 2n ** 53n + 1n;
+    prisma.user.findMany.mockResolvedValue([{ id: 3n }, { id: big }]);
     const service = new AccountService(prisma);
 
     const ids = await service.getBroadcastUserIds();
 
-    expect(ids).toEqual([3]);
+    expect(ids).toEqual([3n, big]);
     expect(prisma.user.findMany).toHaveBeenCalledWith({
       where: { deletedAt: null, botBlockedAt: null },
       select: { id: true },
@@ -236,18 +200,26 @@ describe('AccountService.getSendSettingsFor', () => {
         notifyQuietStart: 22,
         notifyQuietEnd: 8,
         addressForm: 'ty',
+        // Привязки нет, номер телеграмный — адресом служит сам userId
+        // (старый пользователь бота, строку AuthProvider ему не заводили).
+        authProviders: [],
       },
       {
-        id: 2n,
+        // Слитый аккаунт: номер веб-диапазона, адрес живёт в привязке.
+        id: 1_000_000_000_000_002n,
         notifyTimezone: 'Asia/Almaty',
         notifyQuietStart: 23,
         notifyQuietEnd: 7,
         addressForm: 'vy',
+        authProviders: [{ providerId: '777' }],
       },
     ]);
     const service = new AccountService(prisma);
 
-    const result = await service.getSendSettingsFor([1n, 2n]);
+    const result = await service.getSendSettingsFor([
+      1n,
+      1_000_000_000_000_002n,
+    ]);
 
     // Каждый юзер должен читаться под своим ключом и со своими полями —
     // мутант, склеивающий одно значение на всех, не пройдёт эту проверку.
@@ -256,21 +228,30 @@ describe('AccountService.getSendSettingsFor', () => {
       start: 22,
       end: 8,
       form: 'ty',
+      chatId: 1n,
     });
-    expect(result.get('2')).toEqual({
+    // Адрес взят из привязки, а НЕ из userId: писать по веб-номеру некуда.
+    expect(result.get('1000000000000002')).toEqual({
       tz: 'Asia/Almaty',
       start: 23,
       end: 7,
       form: 'vy',
+      chatId: 777n,
     });
     expect(prisma.user.findMany).toHaveBeenCalledWith({
-      where: { id: { in: [1n, 2n] } },
+      where: { id: { in: [1n, 1_000_000_000_000_002n] } },
       select: {
         id: true,
         notifyTimezone: true,
         notifyQuietStart: true,
         notifyQuietEnd: true,
         addressForm: true,
+        authProviders: {
+          where: { provider: 'telegram' },
+          select: { providerId: true },
+          orderBy: { id: 'desc' },
+          take: 1,
+        },
       },
     });
   });
@@ -287,7 +268,15 @@ describe('AccountService.getAllUsersWithSettings', () => {
 
     expect(result).toBe(rows);
     expect(prisma.user.findMany).toHaveBeenCalledWith({
-      where: { notifyEnabled: true, botBlockedAt: null, deletedAt: null },
+      where: {
+        notifyEnabled: true,
+        botBlockedAt: null,
+        deletedAt: null,
+        OR: [
+          { authProviders: { some: { provider: 'telegram' } } },
+          { id: { lt: 1_000_000_000_000_000n } },
+        ],
+      },
       select: {
         id: true,
         notifyLocalHour: true,
@@ -304,5 +293,66 @@ describe('AccountService.getAllUsersWithSettings', () => {
         addressForm: true,
       },
     });
+  });
+});
+
+// Разбор 2026-08-29: соответствие «аккаунт ↔ адрес в Telegram». Сама механика
+// живёт в auth/telegram-identity.ts и покрыта там; здесь — что сервис ею
+// пользуется и что фолбэк для старых пользователей бота на месте.
+describe('AccountService — адрес в Telegram', () => {
+  function makeIdentityPrisma(
+    rows: Array<{ userId: bigint; providerId: string }> = [],
+  ) {
+    return {
+      authProvider: {
+        findUnique: jest.fn(async (args: any) => {
+          const wanted = args.where.provider_providerId.providerId;
+          const row = rows.find((r) => r.providerId === wanted);
+          return row ? { userId: row.userId } : null;
+        }),
+        findMany: jest.fn(async (args: any) => {
+          const ids: bigint[] = args.where.userId.in;
+          return rows.filter((r) => ids.some((id) => id === r.userId));
+        }),
+      },
+    } as any;
+  }
+
+  it('canonicalUserId у слитого аккаунта отдаёт целевой номер', async () => {
+    const prisma = makeIdentityPrisma([
+      { userId: 1_000_000_000_000_777n, providerId: '42' },
+    ]);
+    const service = new AccountService(prisma);
+    await expect(service.canonicalUserId(42)).resolves.toBe(
+      1_000_000_000_000_777n,
+    );
+  });
+
+  it('canonicalUserId без привязки отдаёт сам telegramId', async () => {
+    const service = new AccountService(makeIdentityPrisma());
+    await expect(service.canonicalUserId(42)).resolves.toBe(42n);
+  });
+
+  it('telegramIdsFor: телеграмный номер без привязки — сам себе адрес', async () => {
+    // Старым пользователям бота строку AuthProvider никогда не заводили: без
+    // этого фолбэка рассылка перестала бы до них доходить.
+    const service = new AccountService(makeIdentityPrisma());
+    const map = await service.telegramIdsFor([42n]);
+    expect(map.get('42')).toBe(42n);
+  });
+
+  it('telegramIdsFor: веб-номер без привязки в карту не попадает', async () => {
+    const service = new AccountService(makeIdentityPrisma());
+    const map = await service.telegramIdsFor([1_000_000_000_000_002n]);
+    expect(map.has('1000000000000002')).toBe(false);
+  });
+
+  it('telegramIdsFor: привязка сильнее фолбэка', async () => {
+    const prisma = makeIdentityPrisma([
+      { userId: 1_000_000_000_000_777n, providerId: '42' },
+    ]);
+    const service = new AccountService(prisma);
+    const map = await service.telegramIdsFor([1_000_000_000_000_777n]);
+    expect(map.get('1000000000000777')).toBe(42n);
   });
 });

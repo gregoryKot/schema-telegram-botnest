@@ -7,27 +7,12 @@ import { CheckInSheet } from './CheckInSheet';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { GlyphArrowLeft } from './exercises/ExScreen';
 import { needColor } from '../../../shared/src/needs/needColors';
+import { useDialogA11y } from '../../../shared/src/utils/dialogA11y';
+import { fillHistoryGaps } from './appShell/navigation';
+import '../styles/sheet-diary.css';
 
 const HistoryView   = lazy(() => import('./HistoryView').then(m => ({ default: m.HistoryView })));
 const TrackerOverlay = lazy(() => import('./TrackerOverlay').then(m => ({ default: m.TrackerOverlay })));
-
-function fillHistoryGaps(h: DayHistory[], todayDate: string): DayHistory[] {
-  if (h.length === 0) return h;
-  const byDate = new Map(h.map(d => [d.date, d]));
-  const todayEntry = h.find(d => d.date === todayDate);
-  const nonToday = h.filter(d => d.date !== todayDate);
-  if (nonToday.length === 0) return h;
-  const filled: DayHistory[] = todayEntry ? [todayEntry] : [];
-  const cursor = new Date();
-  cursor.setDate(cursor.getDate() - 1);
-  for (let i = 0; i < 60; i++) {
-    const key = cursor.toISOString().slice(0, 10);
-    if (key < nonToday[nonToday.length - 1].date) break;
-    filled.push(byDate.get(key) ?? { date: key, ratings: {} });
-    cursor.setDate(cursor.getDate() - 1);
-  }
-  return filled;
-}
 
 interface Props {
   needs: Need[];
@@ -55,23 +40,24 @@ export function HistorySheet({
 }: Props) {
   const goBack = useHistorySheet(onClose);
   const [backfillDate, setBackfillDate] = useState<string | null>(null);
+  const dialogA11y = useDialogA11y();
 
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'var(--bg)', display: 'grid', gridTemplateRows: 'auto 1fr', overflow: 'hidden' }}>
+    <div {...dialogA11y} className="u-sheet-grid">
       {/* ExScreen-style topbar */}
-      <div className="ex-topbar" style={{ justifyContent: 'space-between' }}>
+      <div className="ex-topbar sd-topbar">
         <button className="ex-back" onClick={goBack}>
           <GlyphArrowLeft /> Назад к трекеру
         </button>
-        <button onClick={() => { onOpenTracker(); goBack(); }} className="btn btn-primary" style={{ fontSize: 13, padding: '7px 16px' }}>
+        <button onClick={() => { onOpenTracker(); goBack(); }} className="ds-btn ds-btn--sm">
           Оценить →
         </button>
       </div>
 
       <div className="page">
-        <div className="page-inner-wide" style={{ paddingTop: 48, paddingBottom: 24 }}>
-          <div className="eyebrow" style={{ marginBottom: 10 }}>Трекер</div>
-          <h1 className="hub-title" style={{ marginBottom: 40 }}>История<br /><span className="it">потребностей</span></h1>
+        <div className="sd-head">
+          <div className="ds-eyebrow">Трекер</div>
+          <h1 className="ds-h1">История<br /><span className="it">потребностей</span></h1>
         </div>
 
         {historyLoading
@@ -89,7 +75,6 @@ export function HistorySheet({
               />
             </Suspense>
         }
-        <div style={{ height: 80 }} />
       </div>
 
       {pendingPlans.length > 0 && needs.length > 0 && (() => {

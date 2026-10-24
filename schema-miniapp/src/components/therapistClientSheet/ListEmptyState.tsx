@@ -28,8 +28,8 @@ export function ListEmptyState({ failed }: { failed: boolean }) {
     <div style={style}>
       Нет подключённых клиентов.
       <br />
-      {tr('Нажми', 'Нажмите')}{' '}
-      <strong style={{ color: 'var(--accent)' }}>+</strong> чтобы добавить.
+      {tr('Нажми', 'Нажмите')} <strong className="u-accent">+</strong> чтобы
+      добавить.
     </div>
   );
 }

@@ -16,10 +16,19 @@ model Rating {
 
   @@unique([userId, date, needId])
   @@index([userId, date])
-  // Индекс по голому date (аудит M2): /stats фильтрует Rating по date без
-  // userId (COUNT DISTINCT userId за день, ретеншен-GROUP BY), и userId-ведущий
-  // индекс выше для этого не годится — был seq-scan самой растущей таблицы.
-  @@index([date])
+  // Индекс под фильтр по date без userId (/stats: COUNT DISTINCT userId за
+  // день, ретеншен-GROUP BY) — userId-ведущий индекс выше для этого не годится.
+  //
+  // Был `@@index([date])` (аудит M2, 2026-08). Замер планов на синтетике
+  // горизонта роста (docs/PERF_PLANS.md) показал, что одной колонки мало:
+  // индекс находил строки, а `userId` всё равно читался из таблицы —
+  // `COUNT(DISTINCT "userId") WHERE date = $1` трогал 9402 страницы за 70 мс.
+  // Со второй колонкой тот же запрос идёт Index Only Scan: 33 страницы, 2 мс
+  // (×285 по страницам). Индексов по-прежнему два, не три: `[date, userId]`
+  // обслуживает всё, что обслуживал `[date]` (date — ведущая колонка), так что
+  // второй индекс заменён, а не добавлен — лишняя запись на каждый INSERT
+  // в самую растущую таблицу нам не нужна.
+  @@index([date, userId])
 }
 
 model YsqProgress {
@@ -41,6 +50,10 @@ enum UserRole {
 enum RelationStatus {
   pending
   active
+  // Связь завершена (терапевт отказался от роли). Строка и данные терапевта
+  // остаются, но во все «активные» выборки она не попадает и сама не оживает:
+  // новая связь — только через новое приглашение.
+  ended
 }
 
 enum RequestStatus {
@@ -128,7 +141,7 @@ model User {
   ysqHistory             YsqResultHistory[]
   authProviders          AuthProvider[]
   webSessions            WebSession[]
-  deviceLinks            DeviceLinkRequest[]
+  loginTickets           LoginTicket[]
   drafts                 DiaryDraft[]
   therapistRequest       TherapistRequest?
   // ── 2FA (TOTP, RFC 6238) ────────────────────────────────────────────────
@@ -248,6 +261,15 @@ model WebSession {
   lastUsedAt   DateTime @default(now())
   expiresAt    DateTime
   revokedAt    DateTime?
+  // Хеш токена, выданного взамен этого при ротации. По нему видно, ПОЛЬЗОВАЛСЯ
+  // ли кто-нибудь наследником: если нет — значит ответ ротации не доехал до
+  // клиента, и предъявление старого токена это потерянный ответ, а не кража
+  // (разбор 2026-08-28). Пусто у токенов, выданных до этой правки.
+  replacedByHash String?
+  // Строка рождена восстановлением потерянного ответа ротации; счётчик детекции
+  // кражи: третье восстановление в семье за сутки — второй участник цепочки
+  // (src/auth/refresh-recover-budget.ts).
+  recoveredAt  DateTime?
   ipAddress    String?
   userAgent    String?
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -268,24 +290,47 @@ model WebSession {
 // Кодов два, как в самой RFC. Длинный (device_code) знает только мини-апп —
 // им он опрашивает сервер. Короткий (user_code) видит человек, он же едет в
 // ссылке на браузер. Хранятся хэшами: подсмотренная строка в БД не даёт войти.
-model DeviceLinkRequest {
+// Билет входа. Контейнер (ярлык, вкладка браузера, мини-апп) создаёт билет у
+// себя, уводит человека подтверждать вход куда угодно — в бота, во внешний
+// браузер — и потом ЗАБИРАЕТ сессию опросом. Так вход возвращается ровно
+// туда, где начался: установленное приложение живёт в отдельной банке кук, и
+// сессия, выданная внешнему браузеру, ему не видна (разбор 2026-08-28).
+//
+// Выросло из device-link (RFC 8628, привязка аккаунта мессенджера к
+// существующему). Механизм тот же, поэтому второй таблицы рядом не заводим —
+// добавлен `intent`, а `userId` стал необязательным: у входа хозяина ещё нет.
+model LoginTicket {
   id             String    @id @default(cuid())
   deviceCodeHash String    @unique
   userCodeHash   String    @unique
-  // Хозяин строки. Сначала это аккаунт мессенджера, попросивший привязку; при
-  // подтверждении хозяин меняется на целевой аккаунт. Иначе строку унесло бы
-  // каскадом вместе с исчезающим аккаунтом прямо посреди переноса, и мини-аппу
-  // нечего было бы забрать.
-  userId         BigInt
-  provider       String    // 'max' | 'telegram' — откуда пришёл запрос
+  // Кто ПОПРОСИЛ билет. У привязки (intent='link') это аккаунт мессенджера, и
+  // при подтверждении хозяин меняется на целевой аккаунт — иначе строку унесло
+  // бы каскадом вместе с исчезающим аккаунтом прямо посреди переноса, и
+  // забирать сессию было бы неоткуда. У входа (intent='login') хозяина нет.
+  userId         BigInt?
+  // 'login' — вход в пустой контейнер; 'link' — привязка к существующему.
+  intent         String    @default("link")
+  provider       String    // 'max' | 'telegram' | 'google' | 'vk' | 'email'
+  // Где билет создан ('web' | 'telegram' | 'max') и на чём — строка вида
+  // «iPhone · Safari». Показывается человеку при сверке, чтобы подтверждение
+  // не было слепым.
+  hostId         String    @default("web")
+  deviceLabel    String    @default("")
   createdAt      DateTime  @default(now())
   expiresAt      DateTime
-  // Кто подтвердил в браузере. Он же становится хозяином данных.
+  // Кто подтвердил. Он же становится хозяином данных.
   approvedUserId BigInt?
   approvedAt     DateTime?
-  // Мини-апп забрал сессию — код больше не действует (одноразовость).
+  // Человек нажал «это не я» — билет мёртв, и это видно опросу.
+  deniedAt       DateTime?
+  // Сессия забрана — код больше не действует (одноразовость).
   consumedAt     DateTime?
-  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // СЫРОЙ telegramId того, кому бот показал карточку сверки (первый увидевший
+  // выигрывает). Подтвердить/отклонить из Telegram может только он: иначе
+  // карточку из группы или пересылки нажал бы кто угодно и отдал свою сессию
+  // (аудит 2026-10, B1). Null — в Telegram билет не показывали (MAX/веб).
+  shownToTelegramId BigInt?
+  user           User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([expiresAt])
@@ -303,6 +348,9 @@ model Note {
   @@unique([userId, date])
 }
 
+// Инвариант «одна активная пара на двоих в любой ориентации» держит частичный
+// unique-индекс Pair_active_users_key (миграция 20261016100000_active_relation_unique):
+// выражение LEAST/GREATEST и WHERE в PSL не выражаются, `migrate diff` его не видит.
 model Pair {
   id        Int      @id @default(autoincrement())
   code      String   @unique
@@ -461,6 +509,9 @@ model AnalyticsEvent {
   @@index([name, createdAt])
 }
 
+// Инвариант «одна активная связь на (therapistId, clientId)» держит частичный
+// unique-индекс TherapyRelation_active_pair_key (миграция
+// 20261016100000_active_relation_unique); у офлайн-клиентов clientId NULL, они не дубли.
 model TherapyRelation {
   id          Int      @id @default(autoincrement())
   code        String   @unique
@@ -525,6 +576,8 @@ model ClientConceptualization {
   goals           String?  // Цели схема-терапии
   currentProblems String?  // Текущие проблемы и симптомы
   modeTransitions String?  // Переключение режимов
+  modeLinks       Json     @default("[]")  // ConceptModeLink[] — encrypted JSON: связи режимов графической концептуализации
+  schemaLinks     Json     @default("[]")  // ConceptSchemaLink[] — encrypted JSON: убеждение, детский опыт и блокируемые потребности схем графической концептуализации
   modeMapNodes    Json     @default("[]")  // ModeMapNode[] — encrypted JSON
   modeMapEdges    Json     @default("[]")  // ModeMapEdge[] — encrypted JSON
   history         Json     @default("[]")  // ConceptSnapshot[]
@@ -583,18 +636,26 @@ model UserSchemaNote {
 }
 
 model UserModeNote {
-  id          Int      @id @default(autoincrement())
-  userId      BigInt
-  modeId      String
-  triggers    String   @default("")
-  feelings    String   @default("")
-  thoughts    String   @default("")
-  needs       String   @default("")
-  origins     String   @default("")
-  healthyView String   @default("")
-  behavior    String   @default("")
-  updatedAt   DateTime @updatedAt
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id           Int      @id @default(autoincrement())
+  userId       BigInt
+  modeId       String
+  triggers     String   @default("")
+  feelings     String   @default("")
+  thoughts     String   @default("")
+  needs        String   @default("")
+  origins      String   @default("")
+  healthyView  String   @default("")
+  behavior     String   @default("")
+  // Бланк проработки режима: функция режима и «даёт ли поведение то, что нужно»
+  modeFunction String   @default("")
+  needsMet     String   @default("")
+  // Имя, которым человек называет режим своими словами («Стена»), и вопрос
+  // «чего боишься, если этот режим перестанет так делать» — оба свободный
+  // текст, шифруются (MODE_NOTE_SCHEMA).
+  alias        String   @default("")
+  fear         String   @default("")
+  updatedAt    DateTime @updatedAt
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, modeId])
 }
@@ -699,6 +760,21 @@ model AvailabilityRule {
   createdAt       DateTime @default(now())
 }
 
+enum SlotOverrideKind {
+  BLOCK // закрыть время, которое иначе открыто правилом (или встречей при выключенной блокировке)
+  OPEN  // открыть разовый слот вне недельных правил
+}
+
+// Ручной слой поверх недельных AvailabilityRule: одна строка на момент времени
+// (startsAt @unique — BLOCK и OPEN на одну ячейку не могут сосуществовать по построению).
+model SlotOverride {
+  id          Int              @id @default(autoincrement())
+  kind        SlotOverrideKind
+  startsAt    DateTime         @unique // UTC, начало слота
+  durationMin Int              @default(50)
+  createdAt   DateTime         @default(now())
+}
+
 enum BookingStatus {
   HELD        // slot reserved, not yet confirmed (hold expires in 15 min)
   CONFIRMED
@@ -722,6 +798,7 @@ model Booking {
   // PII — stored encrypted
   clientName      String
   clientContact   String        // phone or telegram @handle
+  clientChannel   String?       // канал связи: telegram | whatsapp | email — не PII, открыто
   message         String?
   clientTelegramId BigInt?      // if client came from Telegram
   cancelToken     String        @unique  // random UUID for self-cancel link
@@ -731,9 +808,42 @@ model Booking {
   // Атрибуция лида: страница + referrer в момент брони (собирает фронт).
   // Структурные данные, не PII — хранится открыто, идёт в уведомление админу.
   source          String?
+  // Часовой пояс посетителя (IANA, напр. "Asia/Bangkok") — собирает фронт из
+  // Intl, сервер проверяет валидность и игнорирует мусор (не 400). Нужен,
+  // чтобы уведомление админу показывало и местное время клиента.
+  clientTimeZone  String?
   // Legal: when the client accepted the public offer (consent checkbox) — proof
   // of the basis on which payment is taken. Not encrypted (a timestamp only).
   acceptedOfferAt  DateTime?
+  // Обезличивание по сроку (решение владельца 2026-10-08, находка L3 аудита
+  // 2026-07-20): через 12 месяцев после даты сессии имя, контакт и текст
+  // запроса затираются кроном (booking-retention.service.ts), а факт записи —
+  // дата, тип, согласие с офертой — остаётся. Непустое значение = строка уже
+  // обезличена, повторно крон её не берёт.
+  anonymizedAt    DateTime?
+  // Когда пришла оплата, подтверждённая вебхуком Robokassa (подпись + сумма
+  // сверены). Источник правды «деньги получены», не зависящий от статуса:
+  // платёж мог прийти уже после истечения холда или отмены (CANCELLED +
+  // paidAt — «деньги есть, брони нет»). У бесплатного знакомства и у брони,
+  // подтверждённой руками админа, пусто. Метка времени — не шифруется.
+  paidAt          DateTime?
+  // Сумма счёта в валюте `currency`: цена на момент брони. Для рублей вебхук
+  // сверяет оплату с ней, а не с текущей ценой в админке — смена цены между
+  // записью и оплатой не превращает честный платёж в «фрод». Пусто у
+  // бесплатного знакомства и у броней до миграции (их сверка берёт текущую
+  // цену). Число, не PII — не шифруется.
+  amount          Int?
+  // Валюта цены (RUB | ILS | EUR | USD): определяется по часовому поясу
+  // посетителя (src/booking/price-region.ts). Вне рублей онлайн-оплаты нет —
+  // бронь подтверждается сразу, об оплате владелец договаривается сам. У
+  // старых строк — рубли. Код валюты, не PII — не шифруется.
+  currency        String        @default("RUB")
+  // Побочные эффекты подтверждения (ссылка на встречу, событие календаря, DM и
+  // письма админу) доведены до конца. Пусто у CONFIRMED-брони = эффекты не
+  // доделаны (падение БД или смерть пода после CAS HELD→CONFIRMED): их
+  // доводят повтор вебхука, ручное подтверждение и крон-добор. Ставит
+  // `BookingNotifyService.onConfirmed` CAS-ом прямо перед отправкой DM.
+  confirmEffectsDoneAt DateTime?
   // Reminders
   reminder24SentAt DateTime?
   reminder2SentAt  DateTime?
@@ -744,11 +854,38 @@ model Booking {
   @@index([heldUntil, status])
 }
 
+// Заявка с простой формы знакомства на визитке (POST /api/booking, без слота).
+// Пишется в БД ДО уведомлений: если Telegram и почта мертвы, заявка не
+// исчезает (находка глобального аудита 2026-10-11). Связи с аккаунтом нет
+// (форма публичная), поэтому в USER_DATA_TABLES модели нет, а срок хранения
+// держит крон intro-lead-retention.service.ts. PII зашифрована.
+model IntroLead {
+  id               Int       @id @default(autoincrement())
+  createdAt        DateTime  @default(now())
+  // PII — stored encrypted (intro-lead.schema.ts)
+  clientName       String
+  clientContact    String
+  message          String?
+  clientChannel    String?   // telegram | whatsapp | max | email — не PII, открыто
+  source           String?   // страница + referrer — структурная атрибуция, не PII
+  // Факт доставки админу по каждому каналу; оба null = заявка до владельца не
+  // дошла, её подберёт повтор доставки (intro-lead.service.ts); deliveryAttempts —
+  // сколько раз его уже пробовал крон.
+  tgDeliveredAt    DateTime?
+  emailDeliveredAt DateTime?
+  deliveryAttempts Int       @default(0)
+  // Обезличено по сроку (12 месяцев от createdAt): имя, контакт и текст затёрты.
+  anonymizedAt     DateTime?
+
+  @@index([createdAt])
+}
+
 // Persistent per-client video room. A returning client (same contact) reuses
-// the same Zoom meeting link across all their sessions. clientKey is a SHA-256
-// hash of the normalised contact — pseudonymised, not reversible.
+// the same Zoom meeting link across all their sessions. clientKey is an HMAC of
+// the normalised contact under ENCRYPTION_KEY (src/booking/client-key.ts,
+// `k1:` prefix); bare 64-hex keys are the old unsalted sha256, migrated on boot.
 model ClientMeeting {
-  clientKey     String   @id          // sha256(normalised contact)
+  clientKey     String   @id          // k1:HMAC(normalised contact)
   meetingUrl    String                // join_url reused for all sessions
   zoomMeetingId String?               // Zoom meeting id (for future updates/deletes)
   createdAt     DateTime @default(now())
@@ -874,4 +1011,34 @@ model ChannelDelivery {
   createdAt   DateTime @default(now())
 
   @@index([createdAt])
+}
+
+/// Кто из инстансов уже отработал крон в текущем окне. Без строки-аренды
+/// второй инстанс (масштабирование, перекатывающийся деплой) отрабатывает то
+/// же расписание второй раз: подписчики канала получают два одинаковых поста,
+/// пользователь — два одинаковых напоминания. См. src/infra/cron-leader.service.ts.
+/// Пользовательских данных нет: имя крона, время прогона и имя процесса.
+/// `doneRunAt` — runAt прогона, дошедшего до конца (только у обходов, которые
+/// умеют доделываться после рестарта, — сейчас midnightPlanner): отличается от
+/// runAt — прогон оборван, см. src/infra/cron-run-done.ts.
+model CronLease {
+  name       String    @id
+  runAt      DateTime
+  instanceId String
+  doneRunAt  DateTime?
+}
+
+/// Счётчик троттлинга для денежных/заявочных ручек (инцидент 2026-09-13):
+/// счётчик @nestjs/throttler по умолчанию живёт в памяти процесса, и на двух
+/// инстансах Amvera лимит на POST /api/booking/book обходился ротацией
+/// инстанса. `key` — sha256 маршрута+бакета из ThrottlerGuard.generateKey
+/// (правило №5: бакет уже верифицирован), PII в нём нет. См.
+/// src/api/postgres-throttle-storage.ts.
+model ThrottleHit {
+  key          String    @id
+  hits         Int
+  expiresAt    DateTime
+  blockedUntil DateTime?
+
+  @@index([expiresAt])
 }

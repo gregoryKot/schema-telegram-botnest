@@ -75,7 +75,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   vi.spyOn(window, 'confirm').mockReturnValue(true);
   mockApi.getTherapyTasksForClient.mockResolvedValue([]);
-  mockApi.getTherapistNotes.mockResolvedValue([]);
+  mockApi.getTherapistNotes.mockResolvedValue({ notes: [], total: 0 });
   mockApi.getConceptualization.mockResolvedValue(null);
   mockApi.getTherapyClientData.mockResolvedValue(null);
   mockApi.getClientSchemaNotes.mockResolvedValue([]);
@@ -108,9 +108,10 @@ describe('openClient', () => {
 
   it('раскладывает ответы api по состояниям после загрузки', async () => {
     mockApi.getTherapyTasksForClient.mockResolvedValue([{ id: 1 }]);
-    mockApi.getTherapistNotes.mockResolvedValue([
-      { id: 5, date: '2026-01-01' },
-    ]);
+    mockApi.getTherapistNotes.mockResolvedValue({
+      notes: [{ id: 5, date: '2026-01-01' }],
+      total: 1,
+    });
     mockApi.getConceptualization.mockResolvedValue({
       id: 3,
       schemaIds: ['abandonment'],
@@ -259,6 +260,19 @@ describe('deleteClient', () => {
     expect(mockApi.removeClient).not.toHaveBeenCalled();
   });
 
+  it('confirm говорит правду: заметки удалятся насовсем, «связь разорвана» нет', async () => {
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false);
+    const { result } = await openedHook({ telegramId: 5, name: 'Иван' });
+    await act(async () => {
+      await result.current.deleteClient();
+    });
+    const text = confirmSpy.mock.calls[0][0] as string;
+    expect(text).toContain('Удалить клиента «Иван»?');
+    expect(text).toContain('удалятся насовсем');
+    expect(text).toContain('карты режимов');
+    expect(text).not.toMatch(/Связь будет разорвана/);
+  });
+
   it('удаляет клиента, чистит список и переключает вид на list', async () => {
     mockApi.removeClient.mockResolvedValue(undefined);
     const { result, setClients, switchView } = await openedHook({
@@ -319,6 +333,7 @@ describe('addNote / removeNote', () => {
       'привет',
     );
     expect(result.current.notes[0]).toEqual(newNote);
+    expect(result.current.notesPage.total).toBe(1);
     expect(result.current.newNoteText).toBe('');
   });
 
@@ -336,10 +351,13 @@ describe('addNote / removeNote', () => {
   });
 
   it('removeNote удаляет заметку из списка по id', async () => {
-    mockApi.getTherapistNotes.mockResolvedValue([
-      { id: 1, date: '2026-01-01' },
-      { id: 2, date: '2026-01-02' },
-    ]);
+    mockApi.getTherapistNotes.mockResolvedValue({
+      notes: [
+        { id: 1, date: '2026-01-01' },
+        { id: 2, date: '2026-01-02' },
+      ],
+      total: 2,
+    });
     mockApi.deleteTherapistNote.mockResolvedValue(undefined);
     const { result } = await openedHook();
     await act(async () => {
@@ -350,9 +368,10 @@ describe('addNote / removeNote', () => {
   });
 
   it('removeNote выставляет noteError при ошибке api', async () => {
-    mockApi.getTherapistNotes.mockResolvedValue([
-      { id: 1, date: '2026-01-01' },
-    ]);
+    mockApi.getTherapistNotes.mockResolvedValue({
+      notes: [{ id: 1, date: '2026-01-01' }],
+      total: 1,
+    });
     mockApi.deleteTherapistNote.mockRejectedValue(new Error('fail'));
     const { result } = await openedHook();
     await act(async () => {

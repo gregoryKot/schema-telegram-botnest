@@ -3,6 +3,8 @@ import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { TherapyRelationsService } from './therapy-relations.service';
 import { encrypt, decrypt, encryptJson, decryptJson } from '../utils/crypto';
+import { findSessionNotesPage } from './session-notes-page';
+import { nextConceptHistory } from './concept-history';
 
 const CONCEPT_TEXT_FIELDS = [
   'earlyExperience',
@@ -14,6 +16,19 @@ const CONCEPT_TEXT_FIELDS = [
   'modeTransitions',
 ] as const;
 
+// JSON-массивы: метки схем/режимов, карта режимов (узлы и рёбра), связи
+// режимов (alias, истоки, проявления, работа в терапии) и схем (убеждение,
+// детский опыт) — клинические данные, шифруются целиком. Новое поле такого рода = строка здесь (и в
+// encryption-policy / rotate-encryption/targets).
+const CONCEPT_JSON_ARRAY_FIELDS = [
+  'schemaIds',
+  'modeIds',
+  'modeMapNodes',
+  'modeMapEdges',
+  'modeLinks',
+  'schemaLinks',
+] as const;
+
 function encryptConceptFields(
   body: Record<string, unknown>,
 ): Record<string, string | null> {
@@ -21,22 +36,12 @@ function encryptConceptFields(
   for (const f of CONCEPT_TEXT_FIELDS) {
     if (f in body) result[f] = encrypt(body[f] as string | null | undefined);
   }
-  // Clinical labels — encrypted JSON string (plaintext-tolerant on read).
-  if ('schemaIds' in body && Array.isArray(body.schemaIds)) {
-    result.schemaIds =
-      encryptJson(body.schemaIds) ?? JSON.stringify(body.schemaIds);
-  }
-  if ('modeIds' in body && Array.isArray(body.modeIds)) {
-    result.modeIds = encryptJson(body.modeIds) ?? JSON.stringify(body.modeIds);
-  }
-  // Mode map — nodes and edges contain sensitive clinical data, must be encrypted.
-  if ('modeMapNodes' in body && Array.isArray(body.modeMapNodes)) {
-    result.modeMapNodes =
-      encryptJson(body.modeMapNodes) ?? JSON.stringify(body.modeMapNodes);
-  }
-  if ('modeMapEdges' in body && Array.isArray(body.modeMapEdges)) {
-    result.modeMapEdges =
-      encryptJson(body.modeMapEdges) ?? JSON.stringify(body.modeMapEdges);
+  // Encrypted JSON string (plaintext-tolerant on read).
+  for (const f of CONCEPT_JSON_ARRAY_FIELDS) {
+    const v = body[f];
+    if (f in body && Array.isArray(v)) {
+      result[f] = encryptJson(v) ?? JSON.stringify(v);
+    }
   }
   return result;
 }
@@ -48,24 +53,12 @@ function decryptConceptFields(
   for (const f of CONCEPT_TEXT_FIELDS) {
     result[f] = row[f] != null ? decrypt(row[f] as string) : null;
   }
-  // schemaIds / modeIds / modeMapNodes / modeMapEdges: legacy rows have JSON arrays;
-  // new rows have encrypted strings.
-  for (const f of ['schemaIds', 'modeIds']) {
+  // Legacy rows have plain JSON arrays; new rows have encrypted strings. Нет
+  // значения (старый снапшот истории, строка до колонки modeLinks) — [].
+  for (const f of CONCEPT_JSON_ARRAY_FIELDS) {
     const v = row[f];
-    if (v == null) {
-      result[f] = [];
-      continue;
-    }
-    if (typeof v === 'string') result[f] = decryptJson<string[]>(v) ?? [];
-    else result[f] = v;
-  }
-  for (const f of ['modeMapNodes', 'modeMapEdges']) {
-    const v = row[f];
-    if (v == null) {
-      result[f] = [];
-      continue;
-    }
-    if (typeof v === 'string') result[f] = decryptJson<unknown[]>(v) ?? [];
+    if (v == null) result[f] = [];
+    else if (typeof v === 'string') result[f] = decryptJson<unknown[]>(v) ?? [];
     else result[f] = v;
   }
   return result;
@@ -89,28 +82,21 @@ export class TherapyNotesService {
 
   // ─── Session Notes ───────────────────────────────────────────────────────────
 
-  async getNotes(therapistId: bigint, clientId: number) {
+  async getNotes(therapistId: bigint, clientId: bigint) {
     await this.relationsService.assertHasClient(therapistId, clientId);
-    const tid = therapistId;
-    const cid = BigInt(clientId);
-    const rows = await this.prisma.therapistNote.findMany({
-      where: { therapistId: tid, clientId: cid },
-      orderBy: { createdAt: 'desc' },
-      take: 100,
-    });
-    return rows.map((r) => ({ ...r, text: decrypt(r.text) ?? r.text }));
+    return findSessionNotesPage(this.prisma, therapistId, clientId);
   }
 
   async createNote(
     therapistId: bigint,
-    clientId: number,
+    clientId: bigint,
     body: { date: string; text: string },
   ) {
     await this.relationsService.assertHasClient(therapistId, clientId);
     const note = await this.prisma.therapistNote.create({
       data: {
         therapistId,
-        clientId: BigInt(clientId),
+        clientId,
         date: body.date,
         text: encrypt(body.text) ?? body.text,
       },
@@ -126,10 +112,10 @@ export class TherapyNotesService {
 
   // ─── Case Conceptualization ──────────────────────────────────────────────────
 
-  async getConceptualization(therapistId: bigint, clientId: number) {
+  async getConceptualization(therapistId: bigint, clientId: bigint) {
     await this.relationsService.assertHasClient(therapistId, clientId);
     const tid = therapistId;
-    const cid = BigInt(clientId);
+    const cid = clientId;
     const row = await this.prisma.clientConceptualization.findUnique({
       where: { therapistId_clientId: { therapistId: tid, clientId: cid } },
     });
@@ -142,7 +128,7 @@ export class TherapyNotesService {
 
   async saveConceptualization(
     therapistId: bigint,
-    clientId: number,
+    clientId: bigint,
     body: {
       schemaIds?: string[];
       modeIds?: string[];
@@ -155,42 +141,31 @@ export class TherapyNotesService {
       modeTransitions?: string;
       modeMapNodes?: unknown[];
       modeMapEdges?: unknown[];
+      modeLinks?: unknown[];
+      schemaLinks?: unknown[];
     },
   ) {
     await this.relationsService.assertHasClient(therapistId, clientId);
     const tid = therapistId;
-    const cid = BigInt(clientId);
+    const cid = clientId;
     const enc = encryptConceptFields(body);
-    const now = new Date().toISOString();
+    const nowMs = Date.now();
 
     // Read-modify-write по history-массиву — в транзакции (аудит 2026-07,
     // 2.3): две вкладки/двойной клик гонялись за одним прочитанным history →
     // потерянный или задвоенный snapshot.
     const { saved, history } = await this.prisma.$transaction(async (tx) => {
-      // Fetch current state to push to history before overwriting
       const existing = await tx.clientConceptualization.findUnique({
         where: { therapistId_clientId: { therapistId: tid, clientId: cid } },
       });
 
-      let hist: unknown[] =
-        existing && Array.isArray(existing.history) ? existing.history : [];
-
-      if (existing) {
-        // Snapshot current state into history (max 20 snapshots)
-        const snapshot = {
-          savedAt: now,
-          schemaIds: existing.schemaIds,
-          modeIds: existing.modeIds,
-          earlyExperience: existing.earlyExperience,
-          unmetNeeds: existing.unmetNeeds,
-          triggers: existing.triggers,
-          copingStyles: existing.copingStyles,
-          goals: existing.goals,
-          currentProblems: existing.currentProblems,
-          modeTransitions: existing.modeTransitions ?? null,
-        };
-        hist = [snapshot, ...hist].slice(0, 20);
-      }
+      // Снимок прежнего состояния — один на сессию правки (окно склейки,
+      // concept-history.ts), иначе автосохранение сайта выжигает историю.
+      const hist = nextConceptHistory(
+        existing && Array.isArray(existing.history) ? existing.history : [],
+        existing,
+        nowMs,
+      );
 
       // Частичный апдейт: пишем только те поля, что реально пришли в body.
       const bodyMap = body as Record<string, unknown>;
@@ -220,6 +195,8 @@ export class TherapyNotesService {
           modeTransitions: enc.modeTransitions ?? null,
           modeMapNodes: enc.modeMapNodes ?? [],
           modeMapEdges: enc.modeMapEdges ?? [],
+          modeLinks: enc.modeLinks ?? [],
+          schemaLinks: enc.schemaLinks ?? [],
           history: [],
         },
         update,

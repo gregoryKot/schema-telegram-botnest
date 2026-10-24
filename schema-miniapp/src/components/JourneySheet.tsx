@@ -1,7 +1,5 @@
-// «Мой путь» (мини-апп) — обёртка над общими useJourney/JourneyView
-// (shared/src/journey, правило №3): BottomSheet, заголовок, открытие записи
-// (тап → детальный вид) и шаринг ленты/шага.
-// Парный файл: webapp/src/components/JourneySheet.tsx.
+// «Мой путь» (мини-апп) — обёртка над общими useJourney/JourneyView (правило
+// №3): BottomSheet, заголовок, запись, шаринг. Парный: webapp/…/JourneySheet.tsx.
 import { BottomSheet } from './BottomSheet';
 import { SkeletonCard, SkeletonList } from './Skeleton';
 import { api } from '../api';
@@ -15,11 +13,11 @@ import {
   useJourney,
 } from '../../../shared/src/journey/useJourney';
 import { JourneyView } from '../../../shared/src/journey/JourneyView';
+import { MINIAPP_JOURNEY_HEROES } from '../../../shared/src/journey/miniappJourneyHeroes';
 import { useJourneyShare } from '../../../shared/src/journey/journeyShare';
-import {
-  JourneyItemDetail,
-  useJourneyDetail,
-} from '../../../shared/src/journey/JourneyItemDetail';
+import { useJourneyDetail } from '../../../shared/src/journey/JourneyItemDetail';
+import { JourneyDetailPane } from '../../../shared/src/journey/JourneyDetailPane';
+import { useJourneyDelete } from '../../../shared/src/journey/journeyDelete';
 
 // Уровень модуля — стабильные ссылки (см. комментарий makeJourneyProps).
 const jp = makeJourneyProps(api, { getModeById, getSchemaById });
@@ -29,24 +27,26 @@ export function JourneySheet({ onClose }: { onClose: () => void }) {
   const j = useJourney(jp.deps);
   const sh = useJourneyShare(j, jp.subtitle, botShortUrl, jp.fetchResult);
   const detail = useJourneyDetail(jp.fetchDetail);
+  const del = useJourneyDelete(api, () => {
+    detail.close();
+    j.reload();
+  });
 
   return (
     <BottomSheet onClose={onClose}>
       <div style={{ paddingTop: 4, minHeight: '55vh' }}>
         {detail.item ? (
-          <JourneyItemDetail
+          <JourneyDetailPane
             detail={detail}
             subtitle={jp.subtitle}
-            onShare={() => detail.item && sh.shareItem(detail.item)}
+            tr={tr}
+            onShare={sh.shareItem}
+            del={del}
           />
         ) : (
           <>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <span
-                style={{ fontSize: 17, fontWeight: 700, color: 'var(--text)' }}
-              >
-                Мой путь
-              </span>
+            <div className="u-ac10">
+              <span className="u-h17">Мой путь</span>
               <span style={{ marginRight: 'auto' }} />
               {j.total > 0 && <SharePill compact onClick={sh.shareSummary} />}
             </div>
@@ -57,6 +57,7 @@ export function JourneySheet({ onClose }: { onClose: () => void }) {
               subtitle={jp.subtitle}
               onOpenItem={detail.open}
               onShareFeed={sh.shareFeed}
+              heroes={MINIAPP_JOURNEY_HEROES}
               skeleton={
                 <>
                   <SkeletonCard h={96} />

@@ -17,6 +17,7 @@ describe('ClientErrorMetricsService.getMetrics', () => {
         total_week: 40n,
         auth_day: 5n,
         auth_week: 9n,
+        login_week: 2n,
         today_week: 3n,
         diary_week: 8n,
         schemas_week: 0n,
@@ -24,9 +25,12 @@ describe('ClientErrorMetricsService.getMetrics', () => {
         profile_week: 1n,
         help_week: 0n,
         cabinet_week: 4n,
+        booking_week: 2n,
         other_week: 13n,
         webapp_week: 22n,
         miniapp_week: 18n,
+        repeats_week: 57n,
+        unlogged_week: 4n,
       },
     ]);
     await expect(service.getMetrics()).resolves.toEqual({
@@ -35,6 +39,7 @@ describe('ClientErrorMetricsService.getMetrics', () => {
       authDay: 5,
       authWeek: 9,
       bySection: {
+        login: 2,
         today: 3,
         diary: 8,
         schemas: 0,
@@ -42,9 +47,12 @@ describe('ClientErrorMetricsService.getMetrics', () => {
         profile: 1,
         help: 0,
         cabinet: 4,
+        booking: 2,
         other: 13,
       },
       bySource: { webapp: 22, miniapp: 18 },
+      repeatsWeek: 57,
+      unloggedWeek: 4,
     });
   });
 
@@ -56,6 +64,7 @@ describe('ClientErrorMetricsService.getMetrics', () => {
       authDay: 0,
       authWeek: 0,
       bySection: {
+        login: 0,
         today: 0,
         diary: 0,
         schemas: 0,
@@ -63,9 +72,12 @@ describe('ClientErrorMetricsService.getMetrics', () => {
         profile: 0,
         help: 0,
         cabinet: 0,
+        booking: 0,
         other: 0,
       },
       bySource: { webapp: 0, miniapp: 0 },
+      repeatsWeek: 0,
+      unloggedWeek: 0,
     });
   });
 
@@ -86,6 +98,7 @@ describe('ClientErrorMetricsService.getMetrics', () => {
         profile_week: 0n,
         help_week: 0n,
         cabinet_week: 0n,
+        booking_week: 0n,
         other_week: 0n,
         webapp_week: 0n,
         miniapp_week: 0n,

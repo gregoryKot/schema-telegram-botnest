@@ -1,5 +1,5 @@
 import { UserTask } from '../../api';
-import { fmtDate } from '../../utils/format';
+import { fmtDate, momentDayKey } from '../../utils/format';
 import { resolveTaskDisplayText } from './taskEmoji';
 
 interface Props {
@@ -34,7 +34,7 @@ export function TaskHistoryList({ taskHistory, variant = 'full' }: Props) {
             ? {
                 background: 'var(--surface)',
                 border: '1px solid var(--border-color)',
-                borderRadius: 16,
+                borderRadius: 'var(--r-16)',
                 overflow: 'hidden',
               }
             : undefined
@@ -46,7 +46,7 @@ export function TaskHistoryList({ taskHistory, variant = 'full' }: Props) {
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: 12,
+              gap: 'var(--space-12)',
               padding: full ? '11px 14px' : '9px 0',
               borderTop:
                 full && i > 0 ? '1px solid var(--border-color)' : undefined,
@@ -69,7 +69,7 @@ export function TaskHistoryList({ taskHistory, variant = 'full' }: Props) {
             >
               {task.done === true ? '✓' : '×'}
             </span>
-            <div style={{ flex: 1, minWidth: 0 }}>
+            <div className="u-fill">
               <div
                 style={{
                   fontSize: full ? 13 : 12,
@@ -87,9 +87,7 @@ export function TaskHistoryList({ taskHistory, variant = 'full' }: Props) {
                     marginTop: full ? 2 : 1,
                   }}
                 >
-                  {fmtDate(
-                    new Date(task.completedAt).toISOString().slice(0, 10),
-                  )}
+                  {fmtDate(momentDayKey(task.completedAt))}
                 </div>
               )}
             </div>

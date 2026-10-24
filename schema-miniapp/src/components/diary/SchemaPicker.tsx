@@ -39,7 +39,7 @@ export function SchemaPicker({
         const picked = schemas.filter((s) => schemaIds.includes(s.id));
         const open = openId === domain.id || picked.length > 0;
         return (
-          <div key={domain.id} style={{ marginBottom: 6 }}>
+          <div key={domain.id} className="u-mb6">
             <button
               onClick={() => {
                 haptic.tap();
@@ -48,7 +48,7 @@ export function SchemaPicker({
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: 10,
+                gap: 'var(--space-10)',
                 width: '100%',
                 minHeight: 48,
                 padding: '12px 2px',
@@ -59,13 +59,9 @@ export function SchemaPicker({
                 textAlign: 'left',
               }}
             >
-              <span className="d-caps" style={{ flex: 1 }}>
-                {domain.domain}
-              </span>
+              <span className="d-caps u-flex1">{domain.domain}</span>
               {picked.length > 0 && (
-                <span style={{ fontSize: 12, color: 'var(--accent)' }}>
-                  {picked.length}
-                </span>
+                <span className="u-accent12">{picked.length}</span>
               )}
               <span style={{ fontSize: 12, color: 'var(--chevron)' }}>
                 {open ? '▲' : '▼'}
@@ -76,7 +72,7 @@ export function SchemaPicker({
                 style={{
                   display: 'flex',
                   flexWrap: 'wrap',
-                  gap: 8,
+                  gap: 'var(--space-8)',
                   padding: '12px 0 6px',
                 }}
               >

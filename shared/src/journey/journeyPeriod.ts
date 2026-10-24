@@ -1,6 +1,7 @@
 // Период ленты «Моего пути»: за всё время / последние 7 / последние 30 дней —
 // чипы фильтра, заголовки карточек и сам фильтр. Вынесено из journeyMeta
 // (правило №10: реестр типов подошёл к потолку размера файла).
+import { dateStringMs } from '../utils/calendarDate';
 import type { JourneyItem } from './journeyMeta';
 
 // Период ленты: за всё время / последние 7 / последние 30 дней.
@@ -26,7 +27,14 @@ export const JOURNEY_PERIOD_SUBTITLE: Record<JourneyPeriod, string> = {
   month: 'за последние 30 дней',
 };
 
-/** Фильтр по периоду (скользящие 7/30 дней). Чистая, не мутирует вход. */
+/**
+ * Фильтр по периоду (скользящие 7/30 дней). Чистая, не мутирует вход.
+ *
+ * Дата записи разбирается через dateStringMs: календарный день `YYYY-MM-DD`
+ * берётся полночью UTC. До инцидента 2026-09-17 тут стояло `${at}T00:00:00`
+ * без `Z` — полночь зоны машины, и на UTC+3 запись «ровно на границе» окна
+ * выпадала из выборки, а под TZ=UTC тот же тест зеленел.
+ */
 export function filterJourneyByPeriod(
   items: readonly JourneyItem[],
   period: JourneyPeriod,
@@ -36,7 +44,7 @@ export function filterJourneyByPeriod(
   const days = period === 'week' ? 7 : 30;
   const from = now.getTime() - days * 86_400_000;
   return items.filter((i) => {
-    const t = Date.parse(i.at.length === 10 ? `${i.at}T00:00:00` : i.at);
+    const t = dateStringMs(i.at);
     return !Number.isNaN(t) && t >= from;
   });
 }

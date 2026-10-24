@@ -1,93 +1,32 @@
-import { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
 import { useAuth } from '../auth/authContext';
 import { useRecentArticles } from '../components/landing-kit-hooks';
-import { botUrl, botHandle } from '../utils/botConfig';
 // Палитра, логотип и CTA — в общих модулях бренда (используются и в /tests).
-import { INK, SUB, FAINT, GLASS, GLASS_BORDER, VIOLET, PINK, CYAN, AMBER, EMERALD, ROSE, AURORA, glow } from './landing/aurora';
+import { INK, SUB, FAINT, GLASS, GLASS_BORDER, VIOLET, PINK, CYAN, AURORA, glow } from './landing/aurora';
 import { Logo, Cta } from './landing/BrandKit';
-import { STEPS, FEATURES, TRUST, H2, EYEBROW } from './landing/productContent';
+import { STEPS, FEATURES, TRUST, H2, EYEBROW, NAV_LINKS } from './landing/productContent';
 import { GlassCard, ArticleCard, FaqList } from './landing/ProductKit';
 import { AuthorSection } from './landing/AuthorSection';
+import { AppInstallSection } from './landing/AppInstallSection';
+import { AppPreview } from './landing/AppPreview';
 import { AUTHOR_SITE, trackPracticeClick } from './landing/practiceLink';
+import { ProductMobileMenu } from './landing/ProductMobileMenu';
+import { entryCta } from './landing/entryCta';
 
 // Продуктовый лендинг «Всё по схеме» — главная app-домена (schemehappens.ru).
 // САМОСТОЯТЕЛЬНАЯ айдентика: тёмный «ночной» холст + аврора-градиенты, глассморфизм,
 // крупная жирная типографика. Намеренно НЕ похоже на тёплую serif-страничку терапевта.
 // Палитра захардкожена (не зависит от app-темы) — это отдельный маркетинговый бренд.
 
-const BOT_URL = botUrl;
-
-
-// ─── Мокап приложения (тёмное стекло) ─────────────────────────────────────────
-const MOCK_NEEDS = [
-  { emoji: '🤝', name: 'Привязанность', v: 7, c: CYAN },
-  { emoji: '🚀', name: 'Автономия',     v: 8, c: EMERALD },
-  { emoji: '⚖️', name: 'Границы',       v: 4, c: ROSE },
-  { emoji: '🎉', name: 'Спонтанность',  v: 6, c: AMBER },
-];
-const MOCK_SPARK = [4, 5, 3, 6, 5, 7, 6, 8, 7, 8, 6, 9];
-
-function AppPreview() {
-  return (
-    <div className="pl2-preview" style={{ position: 'relative', display: 'flex', justifyContent: 'center' }} aria-hidden>
-      <div style={{
-        width: 300, boxSizing: 'border-box', padding: '22px 20px 20px',
-        background: 'linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.03))',
-        border: `1px solid ${GLASS_BORDER}`, borderRadius: 32,
-        boxShadow: `0 40px 90px rgba(0,0,0,.5), 0 0 60px ${glow(VIOLET, .18)}`,
-        backdropFilter: 'blur(12px)', animation: 'pl2-float 7s ease-in-out infinite',
-      }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 4 }}>
-          <span style={{ fontSize: 22, fontWeight: 800, letterSpacing: '-.02em', color: INK }}>Сегодня</span>
-          <span style={{ fontSize: 11, fontWeight: 600, color: FAINT }}>минутный чек-ин</span>
-        </div>
-        <p style={{ fontSize: 12, color: SUB, margin: '0 0 16px' }}>Как ты? Отметь свои потребности</p>
-        {MOCK_NEEDS.map((n) => (
-          <div key={n.name} style={{ marginBottom: 12 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5, marginBottom: 5 }}>
-              <span style={{ color: INK, fontWeight: 600 }}>{n.emoji} {n.name}</span>
-              <span style={{ color: n.c, fontWeight: 800 }}>{n.v}</span>
-            </div>
-            <div style={{ height: 7, borderRadius: 5, background: 'rgba(255,255,255,.08)' }}>
-              <div style={{ width: `${n.v * 10}%`, height: '100%', borderRadius: 5, background: n.c, boxShadow: `0 0 10px ${glow(n.c, .6)}` }} />
-            </div>
-          </div>
-        ))}
-        <div style={{ marginTop: 18, padding: '12px 14px', borderRadius: 16, border: `1px solid ${GLASS_BORDER}`, background: 'rgba(255,255,255,.03)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, marginBottom: 8 }}>
-            <span style={{ fontWeight: 800, color: INK }}>Динамика</span>
-            <span style={{ color: FAINT }}>2 недели</span>
-          </div>
-          <svg width="100%" height="42" viewBox="0 0 220 42" preserveAspectRatio="none">
-            <defs><linearGradient id="pl2bar" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stopColor={VIOLET} /><stop offset="1" stopColor={PINK} /></linearGradient></defs>
-            {MOCK_SPARK.map((v, i) => (
-              <rect key={i} x={i * 18.5} y={42 - v * 4.2} width="11" height={v * 4.2} rx="3" fill="url(#pl2bar)" opacity={0.45 + (v / 9) * 0.55} />
-            ))}
-          </svg>
-        </div>
-      </div>
-      <div className="pl2-chip" style={{ position: 'absolute', top: 30, right: -10, padding: '10px 14px', borderRadius: 14, background: 'rgba(20,14,34,.85)', border: `1px solid ${glow(PINK, .35)}`, boxShadow: `0 14px 40px rgba(0,0,0,.5)`, backdropFilter: 'blur(8px)', fontSize: 12, fontWeight: 700, color: INK, animation: 'pl2-float 6s ease-in-out .8s infinite' }}>
-        <span style={{ color: PINK }}>🔍 Схема замечена</span>
-        <div style={{ fontSize: 11, fontWeight: 500, color: SUB, marginTop: 2 }}>Покинутость · 3-й раз за неделю</div>
-      </div>
-      <div className="pl2-chip" style={{ position: 'absolute', bottom: 44, left: -16, padding: '10px 14px', borderRadius: 14, background: 'rgba(20,14,34,.85)', border: `1px solid ${glow(EMERALD, .35)}`, boxShadow: `0 14px 40px rgba(0,0,0,.5)`, backdropFilter: 'blur(8px)', fontSize: 12, fontWeight: 700, color: INK, animation: 'pl2-float 8s ease-in-out 1.6s infinite' }}>
-        <span style={{ color: EMERALD }}>🌱 Критик — тише</span>
-        <div style={{ fontSize: 11, fontWeight: 500, color: SUB, marginTop: 2 }}>реже, чем месяц назад</div>
-      </div>
-    </div>
-  );
-}
-
 // ─── Страница ─────────────────────────────────────────────────────────────────
 // Данные (STEPS/FEATURES/TRUST/FAQ, H2/EYEBROW) — в landing/productContent.tsx,
 // карточки (GlassCard/ArticleCard/FaqList) — в landing/ProductKit.tsx.
 export function ProductLandingPage() {
   const { isAuthenticated } = useAuth();
-  const navigate = useNavigate();
   const articles = useRecentArticles(3);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const entry = entryCta(isAuthenticated);
 
-  useEffect(() => { if (isAuthenticated) navigate('/today', { replace: true }); }, [isAuthenticated, navigate]);
   useEffect(() => { document.title = 'Всё по схеме — инструмент схема-терапии'; }, []);
 
   return (
@@ -104,13 +43,28 @@ export function ProductLandingPage() {
         <header style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '12px 24px', boxSizing: 'border-box', background: 'rgba(11,8,23,.6)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', borderBottom: `1px solid ${GLASS_BORDER}` }}>
           <a href="/" style={{ textDecoration: 'none' }}><Logo /></a>
           <nav className="pl2-nav" style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            {[['Как это работает', '#how'], ['Возможности', '#features'], ['Тесты', '/tests'], ['Статьи', '#articles'], ['Вопросы', '#faq']].map(([label, href]) => (
+            {NAV_LINKS.map(({ label, href }) => (
               <a key={href} href={href} style={{ fontSize: 13.5, fontWeight: 600, color: SUB, textDecoration: 'none', padding: '7px 12px', borderRadius: 10, whiteSpace: 'nowrap', transition: 'color .15s' }}
                 onMouseEnter={(e) => { e.currentTarget.style.color = INK; }} onMouseLeave={(e) => { e.currentTarget.style.color = SUB; }}>{label}</a>
             ))}
           </nav>
-          <Cta href="/login">Войти</Cta>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div className="pl2-nav">
+              <Cta href={entry.href}>{entry.nav}</Cta>
+            </div>
+            {/* Бургер — виден только ≤640px, .pl2-nav скрыт там же (В4, аудит 2026-08) */}
+            <button
+              className="pl2-burger" aria-label="Открыть меню" onClick={() => setMenuOpen(true)}
+              style={{ display: 'none', flexDirection: 'column', justifyContent: 'center', gap: 4, alignItems: 'center', width: 44, height: 44, borderRadius: 10, border: `1px solid ${GLASS_BORDER}`, background: 'rgba(255,255,255,.05)', cursor: 'pointer', padding: 0 }}
+            >
+              <span style={{ width: 17, height: 1.6, background: INK, borderRadius: 2, display: 'block' }} />
+              <span style={{ width: 17, height: 1.6, background: INK, borderRadius: 2, display: 'block' }} />
+              <span style={{ width: 17, height: 1.6, background: INK, borderRadius: 2, display: 'block' }} />
+            </button>
+          </div>
         </header>
+
+        {menuOpen && <ProductMobileMenu entry={entry} onClose={() => setMenuOpen(false)} />}
 
         {/* ── Hero ── */}
         <section style={{ padding: '140px 24px 90px' }}>
@@ -129,10 +83,10 @@ export function ProductLandingPage() {
                 «Всё по схеме» — бесплатное приложение для самостоятельной работы в подходе схема-терапии.
               </p>
               <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
-                <Cta href="/login" size="lg">Начать бесплатно →</Cta>
+                <Cta href={entry.href} size="lg">{entry.main}</Cta>
                 <Cta href="/tests" variant="ghost" size="lg">🎲 Мини-тесты без регистрации</Cta>
               </div>
-              <p style={{ fontSize: 12.5, color: FAINT, margin: '18px 0 0' }}>Вход через Google, ВКонтакте, Telegram или email · регистрация не нужна</p>
+              {!isAuthenticated && <p style={{ fontSize: 12.5, color: FAINT, margin: '18px 0 0' }}>Вход через Google, ВКонтакте, Telegram или email · регистрация не нужна</p>}
             </div>
             <div style={{ animation: 'pl2-in .7s cubic-bezier(.16,1,.3,1) .15s both' }}><AppPreview /></div>
           </div>
@@ -170,32 +124,8 @@ export function ProductLandingPage() {
           </div>
         </section>
 
-        {/* ── Telegram ── */}
-        <section style={{ padding: '20px 24px 72px' }}>
-          <div className="pl2-tg" style={{ maxWidth: 1160, margin: '0 auto', display: 'grid', gridTemplateColumns: '1.1fr 1fr', gap: 48, alignItems: 'center', background: 'linear-gradient(120deg, rgba(167,139,250,.12), rgba(56,224,208,.08))', border: `1px solid ${GLASS_BORDER}`, borderRadius: 28, padding: '48px 44px' }}>
-            <div>
-              <span style={EYEBROW}>Telegram</span>
-              <h2 style={{ ...H2, margin: '14px 0 18px' }}>Живёт и в&nbsp;Telegram</h2>
-              <p style={{ fontSize: 15.5, lineHeight: 1.7, color: SUB, maxWidth: 470, margin: '0 0 26px' }}>
-                Бот <strong style={{ color: INK }}>{botHandle}</strong> раз в месяц мягко напомнит заглянуть на чек-ин,
-                а мини-приложение открывается прямо в чате — тот же дневник, те же схемы.
-                Данные общие с сайтом: начните в телефоне, продолжите в браузере.
-              </p>
-              <Cta href={BOT_URL} size="lg">Открыть в Telegram ↗</Cta>
-            </div>
-            <div aria-hidden style={{ display: 'flex', flexDirection: 'column', gap: 12, maxWidth: 340, width: '100%', justifySelf: 'center' }}>
-              <div style={{ padding: '14px 16px', borderRadius: '16px 16px 16px 6px', background: 'rgba(255,255,255,.05)', border: `1px solid ${GLASS_BORDER}`, backdropFilter: 'blur(8px)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-                  <span style={{ width: 22, height: 22, borderRadius: 7, background: AURORA, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 12 }}>🧠</span>
-                  <span style={{ fontSize: 12.5, fontWeight: 700, color: INK }}>Всё по схеме</span>
-                </div>
-                <p style={{ fontSize: 13.5, lineHeight: 1.5, color: SUB, margin: 0 }}>🌤️ Как ты в этом месяце? Пара минут на чек-ин помогут увидеть динамику.</p>
-                <div style={{ marginTop: 12, padding: '9px 14px', borderRadius: 10, background: AURORA, color: '#1a0f2e', fontSize: 13, fontWeight: 800, textAlign: 'center' }}>Открыть чек-ин</div>
-              </div>
-              <span style={{ fontSize: 11.5, color: FAINT, alignSelf: 'center' }}>мини-приложение открывается прямо в чате</span>
-            </div>
-          </div>
-        </section>
+        {/* ── Значок на экран (PWA) ── */}
+        <AppInstallSection />
 
         {/* ── Доверие ── */}
         <section style={{ padding: '20px 24px 72px' }}>
@@ -241,7 +171,7 @@ export function ProductLandingPage() {
             <div style={{ position: 'relative', maxWidth: 640, margin: '0 auto' }}>
               <h2 style={{ fontFamily: 'inherit', fontSize: 'clamp(32px, 4.6vw, 52px)', fontWeight: 800, letterSpacing: '-.03em', lineHeight: 1.06, margin: '0 0 18px', color: '#1a0f2e' }}>Первый шаг — просто заметить</h2>
               <p style={{ fontSize: 16, lineHeight: 1.6, color: 'rgba(26,15,46,.78)', margin: '0 0 34px', fontWeight: 500 }}>Минутный чек-ин в день — и через пару недель паттерны станут видимыми. Бесплатно, бережно, в вашем темпе.</p>
-              <a href="/login" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '15px 34px', background: '#12091f', color: INK, borderRadius: 14, fontSize: 15, fontWeight: 800, textDecoration: 'none', boxShadow: '0 12px 34px rgba(0,0,0,.3)' }}>Начать бесплатно →</a>
+              <a href={entry.href} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '15px 34px', background: '#12091f', color: INK, borderRadius: 14, fontSize: 15, fontWeight: 800, textDecoration: 'none', boxShadow: '0 12px 34px rgba(0,0,0,.3)' }}>{entry.main}</a>
             </div>
           </div>
         </section>
@@ -254,7 +184,7 @@ export function ProductLandingPage() {
               <span style={{ fontSize: 12.5, color: FAINT }}>© {new Date().getFullYear()}</span>
             </div>
             <nav style={{ display: 'flex', gap: 20, flexWrap: 'wrap' }}>
-              {[['Политика конфиденциальности', '/privacy'], ['Оферта', '/offer'], ['Поддержать 💛', '/donate'], ['Григорий Котляревский — автор, схема-терапевт ↗', AUTHOR_SITE]].map(([label, href]) => (
+              {[['Политика конфиденциальности', '/privacy'], ['Оферта', '/offer'], ['Поддержать 💛', '/donate'], ['Григорий Котляревский — автор проекта ↗', AUTHOR_SITE]].map(([label, href]) => (
                 <a key={href} href={href} target={href.startsWith('http') ? '_blank' : undefined} rel={href.startsWith('http') ? 'noopener noreferrer' : undefined}
                   onClick={href === AUTHOR_SITE ? () => trackPracticeClick('footer') : undefined}
                   style={{ fontSize: 13, color: SUB, textDecoration: 'none', transition: 'color .15s' }}
@@ -278,12 +208,11 @@ export function ProductLandingPage() {
         @media (max-width: 900px) {
           .pl2-hero { grid-template-columns: 1fr !important; gap: 48px !important; }
           .pl2-3 { grid-template-columns: 1fr !important; }
-          .pl2-tg { grid-template-columns: 1fr !important; gap: 36px !important; padding: 36px 28px !important; }
           .pl2-author { grid-template-columns: 1fr !important; gap: 32px !important; padding: 36px 28px !important; }
           .pl2-chip { display: none; }
         }
         @media (min-width: 601px) and (max-width: 900px) { .pl2-3 { grid-template-columns: 1fr 1fr !important; } }
-        @media (max-width: 640px) { .pl2-nav { display: none !important; } }
+        @media (max-width: 640px) { .pl2-nav { display: none !important; } .pl2-burger { display: flex !important; } }
       `}</style>
     </div>
   );

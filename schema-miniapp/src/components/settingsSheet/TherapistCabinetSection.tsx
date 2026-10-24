@@ -18,9 +18,9 @@ export function TherapistCabinetSection({
   const { failed: inviteCopyFailed, copy: copyInviteUrl } =
     useCopyToClipboard();
   return (
-    <div style={{ marginBottom: 8 }}>
+    <div className="u-mb8">
       <SettingsLabel>КАБИНЕТ ТЕРАПЕВТА</SettingsLabel>
-      <div className="card" style={{ borderRadius: 16, overflow: 'hidden' }}>
+      <div className="card u-r16-clip">
         <div
           onClick={onOpenTherapistCabinet}
           role="button"
@@ -45,11 +45,7 @@ export function TherapistCabinetSection({
             >
               Открыть кабинет
             </div>
-            <div
-              style={{ fontSize: 12, color: 'var(--text-faint)', marginTop: 2 }}
-            >
-              Клиенты, задания, приглашения
-            </div>
+            <div className="u-faint12-mt2">Клиенты, задания, приглашения</div>
           </div>
           <span style={{ color: 'var(--text-faint)', fontSize: 18 }}>›</span>
         </div>
@@ -75,7 +71,7 @@ export function TherapistCabinetSection({
               background: 'color-mix(in srgb, var(--accent) 12%, transparent)',
               border:
                 '1px solid color-mix(in srgb, var(--accent) 25%, transparent)',
-              borderRadius: 10,
+              borderRadius: 'var(--r-10)',
               padding: '8px 16px',
               color: 'var(--accent)',
               fontSize: 13,

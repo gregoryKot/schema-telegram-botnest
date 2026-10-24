@@ -1,7 +1,7 @@
 // Компактная карточка статуса теста YSQ (вход к результатам/продолжению) —
 // вынесена из SchemasTab.tsx, чтобы освободить бюджет строк файла под
 // правило №10 CLAUDE.md (файл-храповик), без изменения поведения.
-import { fmtDate } from '../../utils/format';
+import { fmtDate, momentDayKey } from '../../utils/format';
 import { useTr } from '../../utils/addressForm';
 import { SchemasSectionProps } from './types';
 
@@ -40,11 +40,11 @@ export function YsqStatusCard({
         >
           Тест на схемы
         </div>
-        <div style={{ fontSize: 11, color: 'var(--text-faint)' }}>
+        <div className="u-faint11">
           {ysqProgressAnswered != null
             ? `Начат · отвечено ${ysqProgressAnswered} из 116`
             : ysqCompletedAt
-              ? `Пройден ${fmtDate(ysqCompletedAt.slice(0, 10))} · результаты внутри`
+              ? `Пройден ${fmtDate(momentDayKey(ysqCompletedAt))} · результаты внутри`
               : tr(
                   'Определи схемы автоматически',
                   'Определите схемы автоматически',
@@ -55,7 +55,7 @@ export function YsqStatusCard({
         onClick={() => onOpenSchema({ startTest: true })}
         style={{
           padding: '9px 20px',
-          borderRadius: 12,
+          borderRadius: 'var(--r-12)',
           border: 'none',
           background:
             ysqCompletedAt && ysqProgressAnswered == null

@@ -50,6 +50,7 @@ function makeService(opts: {
     notificationService,
     {} as any, // cadenceService
     {} as any, // plannerService
+    { claimRun: jest.fn().mockResolvedValue(true) } as any, // cronLeader
   );
   return { service, scheduled, notificationService };
 }
@@ -58,7 +59,7 @@ const ACTIVE_PAIR = {
   code: 'X',
   status: 'active',
   isCreator: true,
-  partnerId: 777,
+  partnerId: 777n,
 };
 
 describe('maybeNotifyPairPartners', () => {

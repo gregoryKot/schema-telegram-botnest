@@ -1,10 +1,9 @@
-import { api } from '../../api';
-import type {
-  UserTask,
-  TherapistNote,
-  ClientConceptualization,
-  ClientData,
-} from '../../api';
+import { api, type UserId } from '../../api';
+import type { UserTask, ClientConceptualization, ClientData } from '../../api';
+import {
+  EMPTY_NOTES_PAGE,
+  type TherapistNotesPage,
+} from '../../../../shared/src/therapy/notesPage';
 
 export interface ClientSchemaNoteRow {
   schemaId: string;
@@ -24,11 +23,15 @@ export interface ClientModeNoteRow {
   thoughts: string;
   needs: string;
   behavior: string;
+  origins: string;
+  healthyView: string;
+  modeFunction: string;
+  needsMet: string;
 }
 
 export interface ClientDetailFetchResult {
   tasks: UserTask[];
-  notes: TherapistNote[];
+  notesPage: TherapistNotesPage;
   concept: ClientConceptualization | null;
   clientData: ClientData | null;
   schemaNotes: ClientSchemaNoteRow[];
@@ -46,7 +49,7 @@ export interface ClientDetailFetchResult {
  * явный флаг loadError, который вызывающая сторона может показать терапевту.
  */
 export async function fetchClientDetail(
-  clientId: number,
+  clientId: UserId,
 ): Promise<ClientDetailFetchResult> {
   const results = await Promise.allSettled([
     api.getTherapyTasksForClient(clientId),
@@ -67,7 +70,7 @@ export async function fetchClientDetail(
   }
   return {
     tasks: tasksR.status === 'fulfilled' ? tasksR.value : [],
-    notes: notesR.status === 'fulfilled' ? notesR.value : [],
+    notesPage: notesR.status === 'fulfilled' ? notesR.value : EMPTY_NOTES_PAGE,
     concept: conceptR.status === 'fulfilled' ? conceptR.value : null,
     clientData: dataR.status === 'fulfilled' ? dataR.value : null,
     schemaNotes: snR.status === 'fulfilled' ? snR.value : [],

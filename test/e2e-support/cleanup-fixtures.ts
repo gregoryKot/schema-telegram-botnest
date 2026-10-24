@@ -15,7 +15,9 @@
 // cleanupOwnershipFixtures НЕ трогает таблицы вне фикстур ownership-спеков
 // (booking/donation/subscription, article, bookingSetting и т.п.) — для
 // платёжного контура своя чистка, cleanupPaymentFixtures ниже.
-import { createHash } from 'crypto';
+// Ключ ClientMeeting — из кода, а не копией формулы: копия молча промахнулась
+// бы после смены формулы (аудит 2026-10, HMAC), и строки протекли бы между спеками.
+import { clientKey } from '../../src/booking/client-key';
 
 // Таблицы с прямой колонкой userId (в реальной схеме — FK на User с
 // ON DELETE CASCADE), которую можно почистить общим `in`-списком.
@@ -101,6 +103,28 @@ export async function cleanupOwnershipFixtures(
     where: { therapistId: { in: userIds } },
   });
   await prisma.user.deleteMany({ where: { id: { in: userIds } } });
+  // Аренда прогона кронов (CronLease) — не привязана к userId, но состояние
+  // ОБЩЕЕ и переживает границу теста на живой БД. Спек, который дважды зовёт
+  // крон с захватом (`processQueue`), получил бы во втором тесте честный отказ
+  // «тик уже забрали» — в проде это правильно (тики идут раз в 5 минут), а
+  // внутри одного прогона два `it` — это два РАЗНЫХ тика, разнесённых во
+  // времени. Чистим здесь, а не в отдельном спеке: иначе следующий автор
+  // теста, дёргающего крон, ловит молча пропущенное тело.
+  await prisma.cronLease.deleteMany({});
+}
+
+/**
+ * Заводит строки User для переданных id — фикстуры, на которые ссылаются данные
+ * ownership-спеков через FK userId. Раньше строку лениво создавал upsert в
+ * TelegramAuthGuard при первом Bearer-запросе. С 2026-08-31 guard этого больше
+ * НЕ делает: устаревший 15-минутный токен не должен воскрешать удалённый или
+ * слитый аккаунт (telegram-auth.guard.ts). Поэтому пользователей спеки заводят
+ * явно — вызывать в beforeAll ПОСЛЕ cleanupOwnershipFixtures. Идемпотентно.
+ */
+export async function seedUsers(prisma: any, userIds: bigint[]): Promise<void> {
+  for (const id of userIds) {
+    await prisma.user.upsert({ where: { id }, update: {}, create: { id } });
+  }
 }
 
 // ─── Платёжный контур (test/payment-webhooks.e2e-spec.ts) ─────────────────
@@ -154,16 +178,4 @@ export async function cleanupPaymentFixtures(
       where: { clientKey: { in: fixture.clientContacts.map(clientKey) } },
     });
   }
-}
-
-// Дублирует нормализацию контакта из src/booking/meeting.service.ts
-// (приватная функция сервиса, не экспортируется) — фикстуре нужен тот же
-// хэш, чтобы найти и вычистить ClientMeeting, созданный подтверждением брони.
-function clientKey(contact: string): string {
-  const norm = contact
-    .trim()
-    .toLowerCase()
-    .replace(/^@/, '')
-    .replace(/[\s()+-]/g, '');
-  return createHash('sha256').update(norm).digest('hex');
 }

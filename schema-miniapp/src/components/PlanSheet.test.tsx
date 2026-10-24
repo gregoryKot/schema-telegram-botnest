@@ -303,3 +303,27 @@ describe('PlanSheet — кризисная детекция в свободно�
     expect(screen.queryByRole('status')).toBeNull();
   });
 });
+
+describe('PlanSheet — сбой загрузки своих практик (сбой ≠ пусто, В10 аудита 2026-08)', () => {
+  // Регрессия: отказ getPractices здесь глушился одним console.error —
+  // пользователь молча видел куцый список готовых вариантов, как будто
+  // своих практик нет. webapp уже показывал баннер отказа — теперь и здесь.
+  it('отказ getPractices — виден баннер отказа, готовые варианты остаются', async () => {
+    mockApi.getPractices.mockRejectedValue(new Error('offline'));
+    render(<PlanSheet {...baseProps()} />);
+    await waitFor(() => expect(mockApi.getPractices).toHaveBeenCalled());
+    const alert = await screen.findByRole('alert');
+    expect(alert.textContent).toContain(
+      'Не удалось загрузить твои практики — ниже только готовые варианты',
+    );
+    // Кураторский список работает — деградация, не пустота.
+    expect(screen.getByText('Или своя')).toBeTruthy();
+  });
+
+  it('успешная загрузка — баннера отказа нет', async () => {
+    mockApi.getPractices.mockResolvedValue([]);
+    render(<PlanSheet {...baseProps()} />);
+    await waitFor(() => expect(mockApi.getPractices).toHaveBeenCalled());
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+});

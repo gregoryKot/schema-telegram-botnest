@@ -1,6 +1,12 @@
 import { useState } from 'react';
 import { SCHEMA_DOMAINS } from '../../schemaTherapyData';
 
+// id атрибут не может содержать пробелы (HTML5) — домены схем на кириллице
+// с пробелами («Нарушение связи и отвержение»), делаем безопасный slug для aria-controls.
+function domainPanelId(domain: string): string {
+  return `schema-domain-${domain.replace(/\s+/g, '-')}`;
+}
+
 function hexToRgbStr(hex: string): string {
   const r = parseInt(hex.slice(1, 3), 16);
   const g = parseInt(hex.slice(3, 5), 16);
@@ -30,11 +36,13 @@ export function SchemasTab({ highlight }: { highlight?: string }) {
         когда-то помогал выжить и приспособиться.
       </p>
       {SCHEMA_DOMAINS.map((d) => (
-        <div key={d.domain} style={{ marginBottom: 12 }}>
+        <div key={d.domain} className="u-mb12">
           <div
             onClick={() => setOpen(open === d.domain ? null : d.domain)}
             role="button"
             tabIndex={0}
+            aria-expanded={open === d.domain}
+            aria-controls={domainPanelId(d.domain)}
             onKeyDown={(e) => {
               if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault();
@@ -51,7 +59,7 @@ export function SchemasTab({ highlight }: { highlight?: string }) {
               cursor: 'pointer',
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div className="u-ac10">
               <div
                 style={{
                   width: 10,
@@ -96,6 +104,7 @@ export function SchemasTab({ highlight }: { highlight?: string }) {
           </div>
           {open === d.domain && (
             <div
+              id={domainPanelId(d.domain)}
               style={{
                 background: 'rgba(var(--fg-rgb),0.03)',
                 borderRadius: '0 0 14px 14px',
@@ -127,13 +136,7 @@ export function SchemasTab({ highlight }: { highlight?: string }) {
                       {s.name}
                       {isHighlighted && ' ◀'}
                     </div>
-                    <div
-                      style={{
-                        fontSize: 12,
-                        color: 'var(--text-sub)',
-                        lineHeight: 1.5,
-                      }}
-                    >
+                    <div className="u-sub12-lh15">
                       {(s as { libraryDesc?: string; desc: string })
                         .libraryDesc ?? s.desc}
                     </div>

@@ -72,7 +72,7 @@ export function YsqResultView({
       )}
 
       {/* Header */}
-      <div style={{ marginBottom: 16 }}>
+      <div className="u-mb16">
         <div
           style={{
             fontSize: 24,
@@ -84,11 +84,7 @@ export function YsqResultView({
         >
           {activeLabel}
         </div>
-        {dateLabel && (
-          <div style={{ fontSize: 12, color: 'var(--text-faint)' }}>
-            Пройдено {dateLabel}
-          </div>
-        )}
+        {dateLabel && <div className="u-faint12">Пройдено {dateLabel}</div>}
       </div>
 
       {activeCount === 0 && (

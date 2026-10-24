@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { encryptPayload, decryptPayload } from './notification-payload.crypto';
 
 export type NotificationType =
   | 'reminder'
@@ -73,7 +74,7 @@ export const QUIET_EXEMPT_TYPES: NotificationType[] = [
 
 export interface DueNotification {
   id: number;
-  userId: number;
+  userId: bigint;
   type: string;
   payload: unknown;
   sendAt: Date;
@@ -91,7 +92,14 @@ export class NotificationService {
     payload?: object,
   ) {
     await this.prisma.scheduledNotification.create({
-      data: { userId, type, sendAt, payload: payload ?? undefined },
+      // Текст задания терапевта и подобное шифруется (аудит 2026-10, T1) —
+      // в БД свободный текст открытым не лежит.
+      data: {
+        userId,
+        type,
+        sendAt,
+        payload: encryptPayload(payload),
+      },
     });
   }
 
@@ -110,7 +118,10 @@ export class NotificationService {
       orderBy: { sendAt: 'asc' },
       take: 500, // M3: бэклог после даунтайма дренируется батчами, старейшие первыми
     });
-    return rows.map((r) => ({ ...r, userId: Number(r.userId) }));
+    return rows.map((r) => ({
+      ...r,
+      payload: decryptPayload(r.payload),
+    }));
   }
 
   /** Пометить уведомление как отправленное. Идемпотентно — двойной вызов не падает. */
@@ -170,6 +181,18 @@ export class NotificationService {
       select: { sentAt: true },
     });
     return row?.sentAt ?? null;
+  }
+
+  /**
+   * Снять одно уведомление, которое доставить некому (у аккаунта нет входа в
+   * Telegram). Именно cancelledAt, а не markSent: sentAt читает lastSentAt(),
+   * на нём стоит каденс — «отправлено» без отправки сдвинуло бы расписание.
+   */
+  async cancelOne(id: number) {
+    await this.prisma.scheduledNotification.updateMany({
+      where: { id, sentAt: null, cancelledAt: null },
+      data: { cancelledAt: new Date() },
+    });
   }
 
   /** Перенести неотправленное уведомление на другое время (тихие часы) */

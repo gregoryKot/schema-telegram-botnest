@@ -1,7 +1,16 @@
 import { api } from '../../api';
 import { logErr } from '../../utils/logErr';
 import { BottomSheet } from '../BottomSheet';
-import { YSQ_PROGRESS_KEY, YSQ_RESULT_KEY } from '../YSQTestSheet';
+// Из общего реестра ключей, не из YSQTestSheet.tsx (компонент теперь ленивый,
+// LazyOverlays.tsx) — иначе открытие «Настроек» (SettingsSheet остаётся
+// eager) тянуло бы за собой и код теста YSQ.
+import { YSQ_PROGRESS_KEY, YSQ_RESULT_KEY } from '../../utils/storageKeys';
+import { DeleteAccountConfirm } from '../../../../shared/src/components/DeleteAccountConfirm';
+import { useTr } from '../../utils/addressForm';
+import {
+  privacyStorageText,
+  PRIVACY_NO_SHARE_TEXT,
+} from '../../../../shared/src/settings/privacyText';
 
 // 3 состояния кнопки «Скопировать» (copied/failed/idle) — индекс вместо копипасты ternary.
 const FG = ['#06d6a0', 'var(--accent-red)', 'rgba(var(--fg-rgb),0.7)'];
@@ -23,7 +32,7 @@ export function ExportOverlay({
   const st = exportCopied ? 0 : exportFailed ? 1 : 2;
   return (
     <BottomSheet onClose={onClose} zIndex={300}>
-      <div style={{ paddingTop: 4 }}>
+      <div className="u-pt4">
         <div
           style={{
             fontSize: 16,
@@ -40,7 +49,7 @@ export function ExportOverlay({
             color: 'var(--text-sub)',
             lineHeight: 1.6,
             background: 'rgba(var(--fg-rgb),0.04)',
-            borderRadius: 12,
+            borderRadius: 'var(--r-12)',
             padding: '12px 14px',
             overflowX: 'auto',
             whiteSpace: 'pre-wrap',
@@ -58,7 +67,7 @@ export function ExportOverlay({
             width: '100%',
             padding: '13px 0',
             border: 'none',
-            borderRadius: 12,
+            borderRadius: 'var(--r-12)',
             background: exportCopied
               ? 'color-mix(in srgb, var(--accent-green) 20%, transparent)'
               : 'rgba(var(--fg-rgb),0.08)',
@@ -84,7 +93,7 @@ export function PrivacyOverlay({
 }) {
   return (
     <BottomSheet onClose={onClose} zIndex={300}>
-      <div style={{ paddingTop: 4 }}>
+      <div className="u-pt4">
         <div
           style={{
             fontSize: 18,
@@ -98,11 +107,11 @@ export function PrivacyOverlay({
         {[
           {
             title: 'Что хранится на сервере',
-            text: 'Дневник, оценки, заметки, практики, результаты тестов — всё привязано к Telegram-аккаунту и доступно с любого устройства.',
+            text: privacyStorageText('Telegram-аккаунту'),
           },
           {
             title: 'Передача третьим лицам',
-            text: 'Данные не продаются и не передаются рекламным сетям или третьим лицам. Никогда.',
+            text: PRIVACY_NO_SHARE_TEXT,
           },
         ].map((block) => (
           <div
@@ -110,7 +119,7 @@ export function PrivacyOverlay({
             style={{
               marginBottom: 12,
               background: 'rgba(var(--fg-rgb),0.04)',
-              borderRadius: 12,
+              borderRadius: 'var(--r-12)',
               padding: '14px 16px',
             }}
           >
@@ -124,21 +133,13 @@ export function PrivacyOverlay({
             >
               {block.title}
             </div>
-            <div
-              style={{
-                fontSize: 13,
-                color: 'var(--text-sub)',
-                lineHeight: 1.6,
-              }}
-            >
-              {block.text}
-            </div>
+            <div className="u-sub13-lh16">{block.text}</div>
           </div>
         ))}
 
         {(!!localStorage.getItem(YSQ_PROGRESS_KEY) ||
           !!localStorage.getItem(YSQ_RESULT_KEY)) && (
-          <div style={{ marginBottom: 12 }}>
+          <div className="u-mb12">
             <div
               style={{
                 fontSize: 13,
@@ -159,9 +160,11 @@ export function PrivacyOverlay({
               style={{
                 width: '100%',
                 padding: '13px 0',
-                borderRadius: 12,
-                border: '1px solid rgba(239,68,68,0.3)',
-                background: 'rgba(239,68,68,0.08)',
+                borderRadius: 'var(--r-12)',
+                border:
+                  '1px solid color-mix(in srgb, var(--accent-red) 30%, transparent)',
+                background:
+                  'color-mix(in srgb, var(--accent-red) 8%, transparent)',
                 color: 'var(--accent-red)',
                 fontSize: 14,
                 fontWeight: 500,
@@ -204,9 +207,10 @@ export function DeleteOverlay({
   onBackdropClose: () => void;
   onCancel: () => void;
 }) {
+  const tr = useTr();
   return (
     <BottomSheet onClose={onBackdropClose} zIndex={300}>
-      <div style={{ paddingTop: 4 }}>
+      <div className="u-pt4">
         <div
           style={{
             fontSize: 18,
@@ -230,13 +234,13 @@ export function DeleteOverlay({
           действие необратимо.
         </div>
         {!deleteConfirm ? (
-          <div style={{ display: 'flex', gap: 8 }}>
+          <div className="u-row8">
             <button
               onClick={onCancel}
               style={{
                 flex: 1,
                 padding: '14px 0',
-                borderRadius: 14,
+                borderRadius: 'var(--r-14)',
                 border: '1px solid rgba(var(--fg-rgb),0.1)',
                 background: 'transparent',
                 color: 'var(--text-sub)',
@@ -251,9 +255,10 @@ export function DeleteOverlay({
               style={{
                 flex: 1,
                 padding: '14px 0',
-                borderRadius: 14,
+                borderRadius: 'var(--r-14)',
                 border: 'none',
-                background: 'rgba(239,68,68,0.15)',
+                background:
+                  'color-mix(in srgb, var(--accent-red) 15%, transparent)',
                 color: 'var(--accent-red)',
                 fontSize: 14,
                 fontWeight: 600,
@@ -264,49 +269,20 @@ export function DeleteOverlay({
             </button>
           </div>
         ) : (
-          <div>
-            <div
-              style={{
-                fontSize: 14,
-                color: 'var(--accent-red)',
-                textAlign: 'center',
-                marginBottom: 16,
-                fontWeight: 500,
-              }}
-            >
-              Точно? Восстановить невозможно.
-            </div>
-            <button
-              disabled={deleting}
-              onClick={async () => {
-                setDeleting(true);
-                try {
-                  await api.deleteAllUserData();
-                  const theme = localStorage.getItem('app_theme');
-                  localStorage.clear();
-                  sessionStorage.clear();
-                  if (theme) localStorage.setItem('app_theme', theme);
-                  window.location.reload();
-                } catch {
-                  setDeleting(false);
-                  setDeleteConfirm(false);
-                }
-              }}
-              style={{
-                width: '100%',
-                padding: '14px 0',
-                borderRadius: 14,
-                border: 'none',
-                background: '#ef4444',
-                color: 'var(--text)',
-                fontSize: 15,
-                fontWeight: 700,
-                cursor: deleting ? 'default' : 'pointer',
-              }}
-            >
-              {deleting ? 'Удаляем...' : 'Да, удалить всё навсегда'}
-            </button>
-          </div>
+          <DeleteAccountConfirm
+            tr={tr}
+            deleting={deleting}
+            setDeleting={setDeleting}
+            deleteAllUserData={api.deleteAllUserData}
+            onFailed={() => setDeleteConfirm(false)}
+            onDeleted={() => {
+              const theme = localStorage.getItem('app_theme');
+              localStorage.clear();
+              sessionStorage.clear();
+              if (theme) localStorage.setItem('app_theme', theme);
+              window.location.reload();
+            }}
+          />
         )}
       </div>
     </BottomSheet>

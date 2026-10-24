@@ -14,9 +14,13 @@ import { OptionalJwtGuard } from './jwt.guard';
 import { AuthProviderRegistry } from './providers/registry';
 import type { Request, Response } from 'express';
 import { VkProvider } from './providers/vk.provider';
-import { TelegramOidcProvider } from './providers/telegram-oidc.provider';
+import { fromVkState } from './providers/vk-state';
 import { AuthFlowService } from './auth-flow.service';
-import { getCookie } from './auth-http.util';
+import {
+  OAUTH_COOKIE_PATH,
+  OAUTH_STATE_COOKIE,
+  assertOAuthStateMatches,
+} from './oauth-host';
 
 @Controller('api/auth')
 export class AuthOauthController {
@@ -60,25 +64,24 @@ export class AuthOauthController {
   @Get('vk/callback')
   async vkCallback(
     @Query('code') code: string,
-    @Query('state') state: string,
+    @Query('state') vkState: string,
     @Query('device_id') deviceId: string,
     @Query('error') error: string,
     @Req() req: Request,
     @Res() res: Response,
   ): Promise<void> {
-    // VK ID needs device_id + PKCE state for token exchange. Bypass the
-    // generic helper and call the provider-specific method.
     const frontendBase = this.config.getOrThrow<string>('WEBAPP_URL');
+    // VK ID: обмен кода требует device_id + PKCE, общий хелпер не подходит.
+    // state ушёл к VK в base64url (VK режет точки JWT) — см. vk-state.ts.
+    const state = vkState ? fromVkState(vkState) : vkState;
     try {
       const vk = this.providers.get('vk') as VkProvider;
       if (error) throw new UnauthorizedException(`vk auth denied: ${error}`);
       if (!code || !state || !deviceId)
         throw new BadRequestException('Missing code / state / device_id');
 
-      const savedState = getCookie(req, 'oauth_state');
-      if (!savedState || savedState !== state)
-        throw new UnauthorizedException('OAuth state mismatch');
-      res.clearCookie('oauth_state', { path: '/api/auth' });
+      assertOAuthStateMatches(req, state, vk.callbackOrigin());
+      res.clearCookie(OAUTH_STATE_COOKIE, { path: OAUTH_COOKIE_PATH });
 
       const identity = await vk.exchangeCodeWithContext(code, deviceId, state);
 
@@ -89,94 +92,16 @@ export class AuthOauthController {
         ip: req.ip,
         userAgent: req.headers['user-agent'],
       });
-      this.flow.finishOAuthRedirect(outcome, 'vk', res, frontendBase);
+      this.flow.finishOAuthRedirect(
+        outcome,
+        'vk',
+        res,
+        frontendBase,
+        this.flow.ticketFromState(state),
+      );
     } catch (err) {
       this.logger.error(`vk callback error: ${(err as Error).message}`);
       res.redirect(`${frontendBase}/auth/error?reason=vk_failed`);
-    }
-  }
-
-  // ─── Telegram OIDC (new flow, PKCE) ──────────────────────────────────────
-
-  @Get('telegram-oidc')
-  @UseGuards(OptionalJwtGuard)
-  telegramOidcRedirect(@Req() req: Request, @Res() res: Response): void {
-    const provider = this.providers.get(
-      'telegram-oidc',
-    ) as TelegramOidcProvider;
-    // Подписанный state (C1): linkUserId нельзя подделать, иначе привязка чужого
-    // провайдера к аккаунту жертвы = захват. Единая точка — flow.buildLinkState.
-    const state = this.flow.buildLinkState(req.webUser?.userId ?? null);
-    const { verifier, challenge } = provider.generatePkce();
-    res.cookie('oauth_state', state, {
-      httpOnly: true,
-      secure: true,
-      sameSite: 'lax',
-      maxAge: 10 * 60 * 1000,
-      path: '/api/auth',
-    });
-    res.cookie('tg_pkce_verifier', verifier, {
-      httpOnly: true,
-      secure: true,
-      sameSite: 'lax',
-      maxAge: 10 * 60 * 1000,
-      path: '/api/auth',
-    });
-    res.redirect(provider.buildAuthUrl(state, challenge));
-  }
-
-  @Get('telegram-oidc/callback')
-  async telegramOidcCallback(
-    @Query('code') code: string,
-    @Query('state') state: string,
-    @Query('error') error: string,
-    @Req() req: Request,
-    @Res() res: Response,
-  ): Promise<void> {
-    const frontendBase = this.config.getOrThrow<string>('WEBAPP_URL');
-    try {
-      if (error)
-        throw new UnauthorizedException(`Telegram OIDC auth denied: ${error}`);
-      if (!code || !state)
-        throw new BadRequestException('Missing code or state');
-
-      const savedState = getCookie(req, 'oauth_state');
-      if (!savedState || savedState !== state)
-        throw new UnauthorizedException('OAuth state mismatch');
-      res.clearCookie('oauth_state', { path: '/api/auth' });
-
-      const codeVerifier = getCookie(req, 'tg_pkce_verifier');
-      if (!codeVerifier)
-        throw new UnauthorizedException('Missing PKCE verifier');
-      res.clearCookie('tg_pkce_verifier', { path: '/api/auth' });
-
-      const provider = this.providers.get(
-        'telegram-oidc',
-      ) as TelegramOidcProvider;
-      const identity = await provider.exchangeCodePkce(code, codeVerifier);
-
-      const linkUserId = this.flow.linkUserIdFromState(state);
-
-      const outcome = await this.flow.signInOrLinkOrMerge(
-        'telegram-oidc',
-        identity,
-        {
-          linkUserId,
-          ip: req.ip,
-          userAgent: req.headers['user-agent'],
-        },
-      );
-      this.flow.finishOAuthRedirect(
-        outcome,
-        'telegram-oidc',
-        res,
-        frontendBase,
-      );
-    } catch (err) {
-      this.logger.error(
-        `telegram-oidc callback error: ${(err as Error).message}`,
-      );
-      res.redirect(`${frontendBase}/auth/error?reason=telegram_oidc_failed`);
     }
   }
 }

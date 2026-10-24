@@ -3,14 +3,20 @@
 // отсутствующий ключ на КАЖДОМ эндпоинте (не только на одном как образец),
 // и что валидный запрос корректно делегирует нужному сервису с нужными
 // аргументами. Стиль — как payment.controller.spec.ts / booking.controller.spec.ts.
-import { ForbiddenException } from '@nestjs/common';
+import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { SessionType } from '@prisma/client';
 import { BookingAdminController } from './booking-admin.controller';
+import { calDavHealth } from './caldav-health';
 
-const ADMIN_KEY = 'super-secret-key';
+const ADMIN_KEY = 'super-secret-key-0123456789-abcdefghij';
 
 function makeController(configOverrides: Record<string, string> = {}) {
-  const booking = { confirm: jest.fn(), list: jest.fn() };
+  const booking = {
+    confirm: jest.fn(),
+    list: jest.fn(),
+    getById: jest.fn(),
+    cancel: jest.fn(),
+  };
   const availability = {
     list: jest.fn(),
     create: jest.fn(),
@@ -65,6 +71,7 @@ describe('BookingAdminController — граница доступа (x-admin-key)
     ],
     ['status', (c: any) => c.status('wrong')],
     ['confirm', (c: any) => c.confirm(1, 'wrong')],
+    ['cancel', (c: any) => c.cancel(1, 'wrong')],
     ['list', (c: any) => c.list('wrong')],
     ['sub-prices', (c: any) => c.subPrices('wrong')],
     [
@@ -91,6 +98,8 @@ describe('BookingAdminController — граница доступа (x-admin-key)
     await expect(call(controller)).rejects.toThrow(ForbiddenException);
     expect(booking.confirm).not.toHaveBeenCalled();
     expect(booking.list).not.toHaveBeenCalled();
+    expect(booking.getById).not.toHaveBeenCalled();
+    expect(booking.cancel).not.toHaveBeenCalled();
     expect(availability.create).not.toHaveBeenCalled();
     expect(pricing.setPrice).not.toHaveBeenCalled();
     expect(subs.setPrice).not.toHaveBeenCalled();
@@ -105,6 +114,30 @@ describe('BookingAdminController — граница доступа (x-admin-key)
   });
 });
 
+describe('BookingAdminController.cancel (security#22)', () => {
+  it('отменяет по id токеном брони и БЕЗ cutoff 24 ч', async () => {
+    const { controller, booking } = makeController();
+    booking.getById.mockResolvedValue({ id: 7, cancelToken: 'tok-7' });
+    booking.cancel.mockResolvedValue({ ok: true });
+    await expect(controller.cancel(7, ADMIN_KEY)).resolves.toEqual({
+      ok: true,
+    });
+    expect(booking.getById).toHaveBeenCalledWith(7);
+    expect(booking.cancel).toHaveBeenCalledWith('tok-7', false);
+  });
+
+  it('несуществующая бронь: ошибка getById уходит наружу, cancel не зовётся', async () => {
+    const { controller, booking } = makeController();
+    booking.getById.mockRejectedValue(
+      new NotFoundException('Booking not found'),
+    );
+    await expect(controller.cancel(99, ADMIN_KEY)).rejects.toThrow(
+      NotFoundException,
+    );
+    expect(booking.cancel).not.toHaveBeenCalled();
+  });
+});
+
 describe('BookingAdminController — прайсы', () => {
   it('prices делегирует PricingService.getOptions с валидным ключом', async () => {
     const { controller, pricing } = makeController();
@@ -113,14 +146,31 @@ describe('BookingAdminController — прайсы', () => {
     await expect(controller.prices(ADMIN_KEY)).resolves.toBe(options);
   });
 
-  it('setPrice передаёт type и amount как число в PricingService.setPrice', async () => {
+  it('setPrice передаёт type и amount как число в PricingService.setPrice (рубли — валюта не задана)', async () => {
     const { controller, pricing } = makeController();
     const result = await controller.setPrice(
       { type: SessionType.SESSION_50, amount: '3500' as any },
       ADMIN_KEY,
     );
-    expect(pricing.setPrice).toHaveBeenCalledWith(SessionType.SESSION_50, 3500);
+    expect(pricing.setPrice).toHaveBeenCalledWith(
+      SessionType.SESSION_50,
+      3500,
+      undefined,
+    );
     expect(result).toEqual({ ok: true });
+  });
+
+  it('setPrice передаёт валюту из тела в PricingService.setPrice', async () => {
+    const { controller, pricing } = makeController();
+    await controller.setPrice(
+      { type: SessionType.SESSION_50, amount: 200, currency: 'ILS' },
+      ADMIN_KEY,
+    );
+    expect(pricing.setPrice).toHaveBeenCalledWith(
+      SessionType.SESSION_50,
+      200,
+      'ILS',
+    );
   });
 });
 
@@ -172,6 +222,26 @@ describe('BookingAdminController.status', () => {
     expect(status.calendarBusyCount).toBe(1);
     expect(status.calendarNames).toEqual(['Основной']);
     expect(status.appleCalendar).toBe(true);
+    expect(status.calendarReadError).toBeNull();
+  });
+
+  // Регресс 2026-09-13: раньше status не сообщал, что чтение календаря
+  // падает — «appleCalendar: true» выглядело как «связь есть».
+  it('авария чтения открыта — calendarReadError несёт подробность, а не молчит', async () => {
+    const { controller, calDav } = makeController();
+    calDav.enabled = true;
+    calDav.getBusyTimes.mockResolvedValue([]);
+    calDav.debugCalendars.mockResolvedValue([]);
+    calDavHealth.reset();
+    calDavHealth.noteFailure('auth', 'REPORT 403 for https://x/calendars/');
+
+    const status = await controller.status(ADMIN_KEY);
+
+    expect(status.appleCalendar).toBe(true);
+    expect(status.calendarReadError).toBe(
+      'REPORT 403 for https://x/calendars/',
+    );
+    calDavHealth.reset();
   });
 
   it('отражает конфиг robokassaTest/emailFallback из ConfigService', async () => {

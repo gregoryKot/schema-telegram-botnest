@@ -19,6 +19,11 @@ export function NeedsTab({
 
   return (
     <>
+      <div className="u-sub13-lh16 u-mb12">
+        В схема-терапии у каждого пять базовых эмоциональных потребностей. Если
+        в детстве какая-то оставалась без ответа, складывается схема. Колесо
+        детства показывает, где было тепло, а где пусто.
+      </div>
       {!hasChildhood && (
         <div
           {...pressable(() => onOpenChildhoodWheel?.())}
@@ -45,7 +50,7 @@ export function NeedsTab({
             >
               Колесо детства
             </div>
-            <div style={{ fontSize: 11, color: 'var(--text-faint)' }}>
+            <div className="u-faint11">
               Как потребности удовлетворялись в детстве?
             </div>
           </div>
@@ -60,8 +65,7 @@ export function NeedsTab({
           </span>
         </div>
       )}
-
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <div className="u-col8">
         {NEED_IDS.map(({ id, color }) => {
           const d = NEED_DATA[id];
           if (!d) return null;
@@ -78,14 +82,14 @@ export function NeedsTab({
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
-                gap: 14,
+                gap: 'var(--space-14)',
               }}
             >
               {/* Не иконка, а образец цвета: тот же цвет потребность носит на
                   графиках и в трекере, поэтому кружок связывает строку с ними.
                   Эмодзи такой связи не давал — он был просто картинкой. */}
               <IdentityDot id={id} />
-              <div style={{ flex: 1, minWidth: 0 }}>
+              <div className="u-fill">
                 <div
                   style={{
                     fontSize: 15,
@@ -154,9 +158,7 @@ export function NeedsTab({
             cursor: 'pointer',
           }}
         >
-          <span style={{ fontSize: 12, color: 'var(--text-faint)' }}>
-            Изменить ответы →
-          </span>
+          <span className="u-faint12">Изменить ответы →</span>
         </div>
       )}
     </>

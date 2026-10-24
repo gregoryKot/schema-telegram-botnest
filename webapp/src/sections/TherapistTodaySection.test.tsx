@@ -7,6 +7,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup, waitFor } from '@testing-library/react';
 import { TherapistTodaySection } from './TherapistTodaySection';
+import { todayCalendarDate } from '../../../shared/src/utils/calendarDate';
+import { forEachTimeZone } from '../../../shared/src/utils/timeZone.test-helpers';
 
 vi.mock('../api', () => ({
   api: {
@@ -49,7 +51,7 @@ describe('TherapistTodaySection — пустой аккаунт (без хард
     await waitFor(() => expect(screen.getByText('Сессий не запланировано')).toBeTruthy());
     expect(screen.getByText('Нет клиентов')).toBeTruthy();
     // Блок сводной статистики скрыт вовсе на пустом списке — не «0/0».
-    expect(screen.queryByText('активны сегодня')).toBeNull();
+    expect(screen.queryByText('Активны сегодня')).toBeNull();
   });
 
   it('ошибка api.getTherapyClients не роняет экран — остаётся пустое состояние', async () => {
@@ -71,11 +73,11 @@ describe('TherapistTodaySection — реальные данные клиенто
     ]);
     render(<TherapistTodaySection displayName="Терапевт" onOpenClient={vi.fn()} />);
 
-    // Иван и в списке активности, и (т.к. заполнил) в блоке "Заполнили сегодня".
     await waitFor(() => expect(screen.getAllByText('Иван').length).toBeGreaterThanOrEqual(1));
     expect(screen.getByText('Мария')).toBeTruthy();
     expect(screen.getByText('7.2')).toBeTruthy();
-    expect(screen.getByText('заполнил')).toBeTruthy();
+    expect(screen.getByText('активность сегодня')).toBeTruthy();
+    expect(screen.getByText('активность вчера')).toBeTruthy();
   });
 
   it('клиентов без clientAlias/name показывает как "#telegramId" — не пустую строку', async () => {
@@ -129,6 +131,39 @@ describe('TherapistTodaySection — сессии сегодня', () => {
     await waitFor(() => expect(screen.getAllByText('Клиент В').length).toBeGreaterThanOrEqual(1));
     expect(screen.queryByText('Сессий не запланировано')).toBeNull();
   });
+
+  // РЕГРЕССИЯ (TZ-класс, инцидент 2026-09-17): hasSessionToday/sessionTime
+  // сравнивают календарный день `nextSession` с «сегодня» — здесь уже через
+  // общий todayCalendarDate(), а не инлайн-копию помощника. Моменты
+  // зафиксированы там, где зоны заведомо расходятся с UTC — иначе тест
+  // зеленеет под TZ=UTC и молчит про регресс. Клиенты грузятся асинхронно,
+  // поэтому первичная загрузка идёт под текущей зоной процесса, а проверка
+  // по зонам — синхронный `rerender` (без повторного фетча), чтобы момент
+  // смены TZ совпадал с моментом пересчёта sessionsToday/sessionTime.
+  it('сессия на сегодняшний календарный день сервера видна в "Сессии сегодня" в любой зоне', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    try {
+      for (const moment of ['2026-09-18T23:30:00Z', '2026-09-19T00:30:00Z']) {
+        vi.setSystemTime(new Date(moment));
+        mockApi.getTherapyClients.mockResolvedValue([
+          client({ telegramId: 1, name: 'Клиент А', nextSession: `${todayCalendarDate()}T14:30:00Z` }),
+        ]);
+        const { unmount, rerender } = render(<TherapistTodaySection displayName={null} onOpenClient={vi.fn()} />);
+        await waitFor(() => expect(screen.getAllByText('Клиент А').length).toBeGreaterThanOrEqual(1));
+
+        forEachTimeZone(() => {
+          vi.setSystemTime(new Date(moment));
+          rerender(<TherapistTodaySection displayName={null} onOpenClient={vi.fn()} />);
+          expect(screen.getByText('14:30')).toBeTruthy();
+          expect(screen.queryByText('Сессий не запланировано')).toBeNull();
+        });
+
+        unmount();
+      }
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });
 
 describe('TherapistTodaySection — требуют внимания', () => {
@@ -139,7 +174,7 @@ describe('TherapistTodaySection — требуют внимания', () => {
     ]);
     render(<TherapistTodaySection displayName={null} onOpenClient={vi.fn()} />);
 
-    await screen.findByText('Требуют внимания');
+    await screen.findByRole('heading', { name: 'Требуют внимания' });
     // Имя встречается и в общем списке активности, и в разделе "Требуют внимания".
     expect(screen.getAllByText('Забытый клиент').length).toBeGreaterThanOrEqual(1);
   });
@@ -150,7 +185,7 @@ describe('TherapistTodaySection — требуют внимания', () => {
     ]);
     render(<TherapistTodaySection displayName={null} onOpenClient={vi.fn()} />);
 
-    await screen.findByText('Требуют внимания');
+    await screen.findByRole('heading', { name: 'Требуют внимания' });
     expect(screen.getAllByText('нет данных').length).toBeGreaterThanOrEqual(1);
   });
 
@@ -161,7 +196,7 @@ describe('TherapistTodaySection — требуют внимания', () => {
     render(<TherapistTodaySection displayName={null} onOpenClient={vi.fn()} />);
 
     await waitFor(() => expect(screen.getAllByText('Активный').length).toBeGreaterThanOrEqual(1));
-    expect(screen.queryByText('Требуют внимания')).toBeNull();
+    expect(screen.queryByRole('heading', { name: 'Требуют внимания' })).toBeNull();
   });
 });
 

@@ -1,0 +1,66 @@
+import { getHost } from '../../../../shared/src/host';
+import { fmtDate, momentDayKey, todayStr } from '../../utils/format';
+import { getModeById, getSchemaById } from '../../schemaTherapyData';
+import type { TherapyClientSummary, ClientConceptualization } from '../../api';
+import { formatConceptLinksExport } from '../../../../shared/src/therapy/conceptGraph/conceptLinksExport';
+
+// Текст экспорта краткой концептуализации (share/clipboard). Чистая функция,
+// вынесена из useClientDetail.ts (правило №10).
+export function buildConceptExport({
+  selectedClient,
+  concept,
+  localConcept,
+  activeSchemaIds,
+  activeModeIds,
+}: {
+  selectedClient: TherapyClientSummary | null;
+  concept: ClientConceptualization | null;
+  localConcept: Partial<ClientConceptualization>;
+  activeSchemaIds: string[];
+  activeModeIds: string[];
+}): string {
+  if (!selectedClient || !concept) return '';
+  const therapistName = getHost().user()?.firstName ?? 'Терапевт';
+  const clientName =
+    selectedClient.clientAlias ??
+    selectedClient.name ??
+    `ID ${selectedClient.telegramId}`;
+  const date = concept.updatedAt
+    ? fmtDate(momentDayKey(concept.updatedAt))
+    : todayStr();
+  const c = { ...concept, ...localConcept };
+  const schemaNames = activeSchemaIds.map(
+    (id) => getSchemaById(id)?.name ?? id,
+  );
+  const modeNames = activeModeIds.map((id) => getModeById(id)?.name ?? id);
+  const row = (label: string, value: string | null | undefined) =>
+    `${label}\n${value?.trim() || '—'}\n`;
+  const div = '─'.repeat(44);
+  const links = formatConceptLinksExport(activeSchemaIds, activeModeIds, c);
+  return [
+    `Терапевт: ${therapistName}   Клиент: ${clientName}   Дата: ${date}`,
+    '',
+    '══════ КРАТКАЯ КОНЦЕПТУАЛИЗАЦИЯ ══════',
+    '',
+    div,
+    row('АКТУАЛЬНЫЕ СХЕМЫ (ЭДС)', schemaNames.join(' · ') || null),
+    div,
+    row('КАРТА РЕЖИМОВ', modeNames.join(' · ') || null),
+    ...(links ? [div, `${links}\n`] : []),
+    div,
+    row('РАННИЙ ДИСФУНКЦИОНАЛЬНЫЙ ОПЫТ', c.earlyExperience),
+    div,
+    row('НЕУДОВЛЕТВОРЁННЫЕ БАЗОВЫЕ ПОТРЕБНОСТИ', c.unmetNeeds),
+    div,
+    row('СХЕМНЫЕ ТРИГГЕРЫ', c.triggers),
+    div,
+    row('ДЕЗАДАПТИВНЫЕ КОПИНГИ', c.copingStyles),
+    div,
+    row('АКТУАЛЬНЫЕ ПРОБЛЕМЫ И СИМПТОМЫ', c.currentProblems),
+    div,
+    row('ЦЕЛИ СХЕМА-ТЕРАПИИ', c.goals),
+    div,
+    '',
+    '@SchemeHappens · Всё по схеме',
+  ].join('\n');
+}

@@ -22,6 +22,7 @@ vi.mock('../api', () => ({
     createCustomMode: vi.fn().mockResolvedValue({}),
     deleteCustomMode: vi.fn().mockResolvedValue(undefined),
   },
+  reportClientError: vi.fn(),
 }));
 
 function mmNode(
@@ -190,6 +191,28 @@ describe('ModeMapEditor — удаление узла снимает и его �
     } finally {
       vi.useRealTimers();
     }
+  });
+});
+
+// РЕГРЕССИЯ: scheduleSave (теперь useModeMapAutosave — детальные кейсы см.
+// useModeMapAutosave.test.ts) взводил setTimeout на 1200мс без очистки при
+// размонтировании — уход с экрана раньше срабатывания либо терял правку,
+// либо звал setState на пропавшем дереве (unhandled rejection под
+// vitest --coverage). Здесь — сквозная проверка, что реальная проводка
+// ModeMapEditor (не изолированный хук) действительно долетает до api.
+describe('ModeMapEditor — размонтирование со взведённым таймером сохранения', () => {
+  it('уход с экрана до срабатывания автосейва всё равно отправляет несохранённую правку', async () => {
+    const { unmount } = renderEditor([mmNode('n1', 'trigger', 'Триггер')]);
+    await act(async () => {});
+    fireEvent.click(screen.getByText('Триггер').closest('.react-flow__node')!);
+    fireEvent.click(screen.getByTitle('Здоров')); // меняет тип узла → scheduleSave взводит таймер
+    expect(updateModeMap).not.toHaveBeenCalled(); // таймер ещё не сработал (1200мс не прошло)
+
+    unmount(); // размонтирование ДО срабатывания таймера — работа не должна потеряться
+
+    expect(updateModeMap).toHaveBeenCalledTimes(1); // отправлено немедленно, а не потеряно
+    const body = updateModeMap.mock.calls.at(-1)![1] as { nodes: ModeMapNode[] };
+    expect(body.nodes[0].type).toBe('healthy');
   });
 });
 

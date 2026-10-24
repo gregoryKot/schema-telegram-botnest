@@ -29,6 +29,20 @@ describe('AuthFailureHelp', () => {
     expect(screen.queryByText(/t\.me/)).toBeNull();
   });
 
+  // Веб-хост (PWA с ярлыка) — не мессенджер, «переоткрой и получишь свежий
+  // пропуск» там неверно: разлогинило бы обещанием, которое не работает.
+  it('в браузере не упоминает ни один мессенджер — совет «войти заново»', () => {
+    render(<AuthFailureHelp hostId="web" />);
+    expect(screen.getByText(/Попробовать войти заново/)).toBeTruthy();
+    expect(screen.queryByText(/Telegram/)).toBeNull();
+    expect(screen.queryByText(/MAX/)).toBeNull();
+  });
+
+  it('контрольный: в Telegram слово Telegram по-прежнему есть', () => {
+    render(<AuthFailureHelp hostId="telegram" />);
+    expect(screen.getByText(/Telegram выдаст свежий пропуск/)).toBeTruthy();
+  });
+
   // До входа профиля нет, форма обращения неизвестна — «ты»-форма показала бы
   // «ты» человеку, выбравшему «вы» (правило ты/вы CLAUDE.md).
   it('обходится без обращения на ты и на вы', () => {

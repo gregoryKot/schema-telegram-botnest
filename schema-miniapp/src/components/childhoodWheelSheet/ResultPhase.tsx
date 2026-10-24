@@ -2,11 +2,14 @@ import { useTr } from '../../utils/addressForm';
 import { SectionLabel } from '../SectionLabel';
 import { IdentityDot } from '../../../../shared/src/components/IdentityDot';
 import { needColor } from '../../../../shared/src/needs/needColors';
-import { SCHEMA_DOMAINS } from '../../schemaTherapyData';
+import {
+  LOW_NEED_MAX,
+  lowNeedIds,
+} from '../../../../shared/src/childhoodWheel/childhoodWheel';
 import { TherapyNote } from '../TherapyNote';
 import { pressable } from '../../utils/a11y';
 import { ChildhoodWheel } from './ChildhoodWheel';
-import { SCHEMA_HINTS } from './schemaHints';
+import { SchemaHintCard } from './SchemaHintCard';
 import {
   NEED_IDS,
   type ActiveSchema,
@@ -31,7 +34,7 @@ export function ResultPhase({
   setActiveSchema: (s: ActiveSchema) => void;
 }) {
   const tr = useTr();
-  const lowNeeds = NEED_IDS.filter((id) => ratings[id] <= 4);
+  const lowNeeds = lowNeedIds(ratings);
 
   return (
     <div>
@@ -46,19 +49,13 @@ export function ResultPhase({
         >
           {tr('Твоё колесо детства', 'Ваше колесо детства')}
         </div>
-        <div
-          style={{
-            fontSize: 13,
-            color: 'var(--text-sub)',
-            lineHeight: 1.5,
-          }}
-        >
+        <div className="u-sub13-lh15">
           Сравнение отобразится в разделе История поверх дневника
         </div>
       </div>
 
       {/* Wheel */}
-      <div style={{ marginBottom: 20 }}>
+      <div className="u-mb20">
         <ChildhoodWheel ratings={ratings} />
       </div>
 
@@ -80,7 +77,7 @@ export function ResultPhase({
               style={{ display: 'flex', alignItems: 'center', gap: 5 }}
             >
               <IdentityDot id={id} />
-              <span style={{ fontSize: 12, color: 'var(--text-sub)' }}>
+              <span className="u-sub12">
                 {NEED_META[id].label.split(' ')[0]}
               </span>
               <span
@@ -88,7 +85,7 @@ export function ResultPhase({
                   fontSize: 13,
                   fontWeight: 600,
                   color:
-                    value <= 4
+                    value <= LOW_NEED_MAX
                       ? 'var(--accent-red)'
                       : value <= 6
                         ? 'var(--accent-yellow)'
@@ -104,7 +101,7 @@ export function ResultPhase({
 
       {/* Schema hints for low needs */}
       {lowNeeds.length > 0 && (
-        <div style={{ marginBottom: 24 }}>
+        <div className="u-mb24">
           <SectionLabel>Возможные активные схемы</SectionLabel>
           <div
             style={{
@@ -118,88 +115,15 @@ export function ResultPhase({
             вырабатывает стратегии выживания. Это и есть схемы — не диагноз, а
             паттерн, который когда-то помогал.
           </div>
-          {lowNeeds.map((id) => {
-            const meta = NEED_META[id];
-            const hint = SCHEMA_HINTS[id];
-            return (
-              <div
-                key={id}
-                style={{
-                  background: 'rgba(var(--fg-rgb),0.04)',
-                  borderRadius: 14,
-                  padding: '12px 14px',
-                  marginBottom: 10,
-                }}
-              >
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 8,
-                    marginBottom: 8,
-                  }}
-                >
-                  <IdentityDot id={id} />
-                  <span
-                    style={{
-                      fontSize: 13,
-                      fontWeight: 600,
-                      color: 'var(--text)',
-                    }}
-                  >
-                    {meta.label}
-                  </span>
-                  <span
-                    style={{
-                      fontSize: 12,
-                      color: hint.color,
-                      marginLeft: 'auto',
-                    }}
-                  >
-                    {ratings[id]}/10 в детстве
-                  </span>
-                </div>
-                <div
-                  style={{
-                    fontSize: 11,
-                    color: 'var(--text-sub)',
-                    marginBottom: 6,
-                  }}
-                >
-                  Домен: {hint.domain}
-                </div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
-                  {hint.schemas.map((s) => {
-                    const schemaData = SCHEMA_DOMAINS.flatMap((d) =>
-                      d.schemas.map((sc) => ({ ...sc, color: d.color })),
-                    ).find((sc) => sc.name === s);
-                    return (
-                      <span
-                        key={s}
-                        {...pressable(() => {
-                          if (schemaData) setActiveSchema(schemaData);
-                        })}
-                        style={{
-                          fontSize: 11,
-                          padding: '3px 10px',
-                          borderRadius: 20,
-                          background: hint.color + '18',
-                          color: hint.color,
-                          cursor: schemaData ? 'pointer' : 'default',
-                          textDecoration: schemaData
-                            ? 'underline dotted'
-                            : 'none',
-                          textUnderlineOffset: 3,
-                        }}
-                      >
-                        {s}
-                      </span>
-                    );
-                  })}
-                </div>
-              </div>
-            );
-          })}
+          {lowNeeds.map((id) => (
+            <SchemaHintCard
+              key={id}
+              id={id}
+              label={NEED_META[id].label}
+              rating={ratings[id]}
+              setActiveSchema={setActiveSchema}
+            />
+          ))}
 
           <div
             {...pressable(() => {
@@ -213,7 +137,7 @@ export function ResultPhase({
               background: 'color-mix(in srgb, var(--accent) 10%, transparent)',
               border:
                 '1px solid color-mix(in srgb, var(--accent) 20%, transparent)',
-              borderRadius: 14,
+              borderRadius: 'var(--r-14)',
               padding: '12px 16px',
               cursor: 'pointer',
               marginTop: 4,
@@ -229,13 +153,7 @@ export function ResultPhase({
               >
                 Подробнее о схемах
               </div>
-              <div
-                style={{
-                  fontSize: 12,
-                  color: 'var(--text-sub)',
-                  marginTop: 2,
-                }}
-              >
+              <div className="u-sub12-mt2">
                 Что они значат и как с ними работать
               </div>
             </div>
@@ -251,7 +169,7 @@ export function ResultPhase({
               'color-mix(in srgb, var(--accent-green) 10%, transparent)',
             border:
               '1px solid color-mix(in srgb, var(--accent-green) 20%, transparent)',
-            borderRadius: 14,
+            borderRadius: 'var(--r-14)',
             padding: '14px 16px',
             marginBottom: 24,
           }}
@@ -266,30 +184,24 @@ export function ResultPhase({
           >
             Хорошее детство по всем зонам
           </div>
-          <div
-            style={{
-              fontSize: 13,
-              color: 'var(--text-sub)',
-              lineHeight: 1.6,
-            }}
-          >
+          <div className="u-sub13-lh16">
             Все потребности выше 4/10 — это редкость и ресурс. Если сейчас
             что-то низкое, скорее всего это ситуативное, а не схема.
           </div>
         </div>
       )}
 
-      <div style={{ marginBottom: 16 }}>
+      <div className="u-mb16">
         <TherapyNote compact />
       </div>
 
-      <div style={{ display: 'flex', gap: 10 }}>
+      <div className="u-row10">
         <button
           onClick={onEdit}
           style={{
             flex: 1,
             padding: '14px 0',
-            borderRadius: 14,
+            borderRadius: 'var(--r-14)',
             border: '1px solid rgba(var(--fg-rgb),0.1)',
             background: 'transparent',
             color: 'var(--text-sub)',
@@ -304,7 +216,7 @@ export function ResultPhase({
           style={{
             flex: 2,
             padding: '14px 0',
-            borderRadius: 14,
+            borderRadius: 'var(--r-14)',
             border: 'none',
             background: 'rgba(var(--fg-rgb),0.08)',
             color: 'rgba(var(--fg-rgb),0.7)',

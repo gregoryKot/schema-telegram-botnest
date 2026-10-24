@@ -6,7 +6,7 @@ import {
   Optional,
   Logger,
 } from '@nestjs/common';
-import { Telegraf, Context, Markup } from 'telegraf';
+import { Telegraf, Context } from 'telegraf';
 import { TELEGRAF_BOT, MINIAPP_URL, DONATE_URL } from './telegram.constants';
 import { BOT_COMMANDS, ERROR_RETRY } from './telegram.constants';
 import { BotService } from '../bot/bot.service';
@@ -17,12 +17,31 @@ import { PracticesService } from '../bot/practices.service';
 import { NotificationService } from '../notification/notification.service';
 import { AnalyticsService } from '../analytics/analytics.service';
 import { parseSourceSlug } from './start-source';
+import { readStartPayload } from './start-payload';
+import { sendStartWelcome } from './telegram.start-welcome';
+import { ADDRESS_PROMPT } from './telegram.consent-text';
+import {
+  handlePairStart,
+  PAIR_PREFIX,
+  type PairStartDeps,
+} from './telegram.pair-start';
+import {
+  buildAddressKeyboard,
+  buildWelcomeKeyboard,
+} from './telegram.keyboards';
+// Ре-экспорт: telegram.notify-actions.service импортирует клавиатуру отсюда.
+export { buildWelcomeKeyboard };
+import { isLoginPayload } from './login-payload';
+import { isLinkPayload } from './link-payload';
+import { TelegramLoginService } from './telegram.login.service';
+import { TelegramLinkService } from './telegram.link.service';
 import {
   isQuietHours,
   nextQuietEnd,
   tzOffsetAt,
 } from '../notification/notification.time';
 import { retryWithBackoff } from '../utils/retry';
+import { BotLauncher } from './telegram.launch';
 import { t, AddressForm } from '../notification/address-form';
 import {
   MINIAPP_ONLY_KEYBOARD,
@@ -36,50 +55,6 @@ export const WELCOME_TEXT = `Привет!
 Бывает, что день прошёл нормально — а внутри что-то не так. Или наоборот, всё объективно сложно, но ощущение живое и устойчивое.
 
 Дело почти всегда в потребностях. «Всё по схеме» помогает это увидеть — трекер, дневники схема-терапии и тест на схемы в одном месте.`;
-
-const CONSENT_TEXT = `🔐 Соглашение об обработке данных
-
-Прежде чем начать:
-
-• Данные (оценки, дневники, планы) хранятся на защищённом сервере в зашифрованном виде и привязаны к Telegram ID
-• Записи и ответы на опросники могут касаться психоэмоционального состояния — на обработку таких сведений тоже нужно отдельное согласие (даётся той же кнопкой ниже)
-• Данные не передаются третьим лицам — кроме терапевта при подключении по коду и технической инфраструктуры (подробнее: schemehappens.ru/privacy)
-• Всё можно удалить в любой момент через Настройки → Удалить данные
-• Приложение не медицинский инструмент и не заменяет психотерапию
-• Сервис предназначен для пользователей старше 18 лет
-
-Кнопка ниже — это согласие с условиями, подтверждение 18+ и выбор формы обращения (поменять можно в любой момент в /settings).`;
-
-export function buildWelcomeKeyboard(): ReturnType<
-  typeof Markup.inlineKeyboard
-> {
-  return Markup.inlineKeyboard([
-    [Markup.button.webApp('🧠 Открыть «Всё по схеме»', MINIAPP_URL)],
-    [Markup.button.callback('🎲 Мини-тесты на 2 минуты', 'qz:list')],
-    [Markup.button.url('💛 Поддержать проект', DONATE_URL)],
-  ]);
-}
-
-// Онбординг −1 шаг (аудит 2026-07, этап 4.3): согласие и выбор ты/вы — один
-// экран с двумя кнопками вместо двух последовательных сообщений.
-function buildConsentKeyboard() {
-  return Markup.inlineKeyboard([
-    [Markup.button.callback('✅ Принять — общаемся на «ты»', 'accept:ty')],
-    [Markup.button.callback('✅ Принять — на «вы»', 'accept:vy')],
-  ]);
-}
-
-const ADDRESS_PROMPT =
-  'Один вопрос, чтобы дальше было комфортно: как удобнее общаться?';
-
-export function buildAddressKeyboard() {
-  return Markup.inlineKeyboard([
-    [
-      Markup.button.callback('На «ты»', 'addr:ty'),
-      Markup.button.callback('На «вы»', 'addr:vy'),
-    ],
-  ]);
-}
 
 @Injectable()
 export class TelegramService implements OnModuleInit, OnModuleDestroy {
@@ -96,10 +71,27 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     private readonly practicesService: PracticesService,
     private readonly notificationService: NotificationService,
     private readonly analyticsEvents: AnalyticsService,
+    private readonly loginService: TelegramLoginService,
+    private readonly linkService: TelegramLinkService,
   ) {}
 
-  private stopping = false;
+  private launcher: BotLauncher | undefined;
   // Pending pair codes for users who need to accept consent first (in-memory, 15 min TTL)
+  private pairDeps(): PairStartDeps {
+    return {
+      botService: this.botService,
+      pairsService: this.pairsService,
+      accountService: this.accountService,
+      pending: this.pendingPairCodes,
+      now: () => Date.now(),
+    };
+  }
+
+  /** Форма обращения по сырому telegramId — привязка общего помощника. */
+  private form(rawId: number | undefined) {
+    return resolveForm(this.accountService, this.botService, rawId);
+  }
+
   private readonly pendingPairCodes = new Map<
     number,
     { code: string; expiresAt: number }
@@ -120,6 +112,8 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
       }
     }, 30 * 60_000).unref();
 
+    this.launcher = new BotLauncher(this.bot, this.logger);
+
     const redirectUsername = process.env.BOT_REDIRECT_USERNAME;
     if (redirectUsername) {
       const redirectText = `Бот переехал! Открывай @${redirectUsername}`;
@@ -131,9 +125,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
           .answerCbQuery(redirectText, { show_alert: true })
           .catch(() => null);
       });
-      this.bot.launch({ dropPendingUpdates: true }).catch((err) => {
-        this.logger.error('Redirect-mode bot failed to launch', err);
-      });
+      this.launcher.start();
       this.logger.log(`Bot running in redirect mode → @${redirectUsername}`);
       return;
     }
@@ -142,12 +134,15 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
       try {
         const rawId = ctx.from?.id;
         if (!rawId) return;
-        const userId = BigInt(rawId);
+        // Канонический номер, а не сырой telegramId: после слияния аккаунтов
+        // данные человека лежат под веб-номером, и registerUser по сырому
+        // номеру завёл бы рядом второй, пустой аккаунт — раздвоение
+        // возвращалось само на следующем /start.
+        const userId = await this.accountService.canonicalUserId(rawId);
         const existingSettings = await this.botService.getUserSettings(userId);
         const isReturning = !!existingSettings;
         await this.accountService.registerUser(userId, ctx.from?.first_name);
-        const payload = (ctx as Context & { startPayload?: string })
-          .startPayload;
+        const payload = readStartPayload(ctx);
         // Атрибуция посева (src_<slug>) — ровно один раз, при первом
         // касании нового юзера, ДО гейта согласия (чтобы видеть и конверсию
         // «переход → принял соглашение»). Возвращающийся по той же ссылке
@@ -158,50 +153,33 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
             src: sourceSlug,
           });
         }
-        if (payload?.startsWith('pair_')) {
-          const code = payload.slice(5).toUpperCase();
-          const hasConsent =
-            await this.botService.hasAcceptedDisclaimer(userId);
-          if (!hasConsent) {
-            this.pendingPairCodes.set(rawId, {
-              code,
-              expiresAt: Date.now() + 15 * 60_000,
-            });
-            await ctx.reply(CONSENT_TEXT, buildConsentKeyboard());
-            return;
-          }
-          const ok = await this.pairsService.joinPair(userId, code);
-          const pairForm = await resolveForm(this.botService, ctx.from?.id);
-          await ctx.reply(
-            pairJoinResultText(ok, pairForm),
-            MINIAPP_ONLY_KEYBOARD,
-          );
+        // Вход по диплинку из приложения. Раньше гейта согласия: человек уже
+        // соглашался при первом входе, а тут он ждёт подтверждения на другом
+        // экране — упереться здесь в стену согласия значило бы подвесить его.
+        if (isLoginPayload(payload)) {
+          await this.loginService.handleStart(ctx, payload!, rawId);
           return;
         }
-        const hasConsent2 = await this.botService.hasAcceptedDisclaimer(userId);
-        if (!hasConsent2) {
-          await ctx.reply(CONSENT_TEXT, buildConsentKeyboard());
+        // Как и вход, объединение идёт ДО гейта согласия: человек ждёт
+        // подтверждения на другом экране, и упереться здесь в соглашение
+        // значит оставить тот экран висеть.
+        if (isLinkPayload(payload)) {
+          await this.linkService.handleStart(ctx, payload!, rawId);
           return;
         }
-        // Форма обращения ещё не выбрана — спросить до приветствия
-        if (!existingSettings?.addressForm) {
-          await ctx.reply(ADDRESS_PROMPT, buildAddressKeyboard());
+        if (payload?.startsWith(PAIR_PREFIX)) {
+          await handlePairStart(this.pairDeps(), ctx, payload, rawId, userId);
           return;
         }
-        if (isReturning) {
-          const streak = await this.analyticsService.getConsecutiveDays(userId);
-          const name = ctx.from?.first_name ? ` ${ctx.from.first_name}` : '';
-          const streakLine =
-            streak >= 3
-              ? `\n🔥 Серия: ${streak} ${streak < 5 ? 'дня' : 'дней'} подряд`
-              : '';
-          await ctx.reply(
-            `С возвращением${name}!${streakLine}`,
-            buildWelcomeKeyboard(),
-          );
-        } else {
-          await ctx.reply(WELCOME_TEXT, buildWelcomeKeyboard());
-        }
+        await sendStartWelcome(
+          {
+            botService: this.botService,
+            analyticsService: this.analyticsService,
+          },
+          ctx,
+          userId,
+          existingSettings,
+        );
       } catch (err) {
         this.logger.error('start command failed', err);
         await ctx
@@ -243,7 +221,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
 
     this.bot.command('donate', async (ctx) => {
       try {
-        const form = await resolveForm(this.botService, ctx.from?.id);
+        const form = await this.form(ctx.from?.id);
         const text =
           '💛 <b>Поддержать SchemeHappens</b>\n\n' +
           t(
@@ -301,7 +279,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
         const rawId = ctx.from?.id;
         if (!rawId) return;
         const form = (ctx.match as RegExpMatchArray)[1] as AddressForm;
-        const userId = BigInt(rawId);
+        const userId = await this.accountService.canonicalUserId(rawId);
         await this.botService.acceptDisclaimer(userId);
         await this.botService.updateUserSettings(userId, {
           addressForm: form,
@@ -341,7 +319,8 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
         await ctx.answerCbQuery('Принято ✅');
         const rawId = ctx.from?.id;
         if (rawId) {
-          await this.botService.acceptDisclaimer(BigInt(rawId));
+          const userId = await this.accountService.canonicalUserId(rawId);
+          await this.botService.acceptDisclaimer(userId);
           if (await this.resumePendingPair(ctx, rawId)) return;
         }
         // После согласия — сразу выбор обращения, приветствие покажет addr-хендлер
@@ -362,7 +341,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
         await ctx.answerCbQuery('⏰ Напомню через час');
         const rawId = ctx.from?.id;
         if (rawId) {
-          const userId = BigInt(rawId);
+          const userId = await this.accountService.canonicalUserId(rawId);
           const settings = await this.botService.getUserSettings(userId);
           const tz = settings?.notifyTimezone ?? 'Europe/Moscow';
           const quietStart = settings?.notifyQuietStart ?? 22;
@@ -403,7 +382,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
         await ctx.answerCbQuery();
         const rawId = ctx.from?.id;
         if (!rawId) return;
-        const userId = BigInt(rawId);
+        const userId = await this.accountService.canonicalUserId(rawId);
         const match = ctx.match as RegExpMatchArray;
         const done = match[1] === 'done';
         const planId = Number(match[2]);
@@ -424,7 +403,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
       // DEPRECATED: was `/therapist <THERAPIST_CODE>` — bypassed the new
       // admin-approval flow. Redirect users to the mini-app form.
       try {
-        const form = await resolveForm(this.botService, ctx.from?.id);
+        const form = await this.form(ctx.from?.id);
         await ctx.reply(
           t(
             form,
@@ -495,22 +474,8 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
       if (!ok) this.logger.warn('setChatMenuButton failed after retries');
     });
 
-    this.launchBotWithRetry();
-    const adminId = process.env.ADMIN_ID;
-    if (adminId) {
-      this.bot.telegram
-        .sendMessage(adminId, '🚀 Деплой завершён')
-        .catch((err) => this.logger.error('deploy DM failed', err));
-    }
-
-    // One-time cleanup: cancel legacy pre_reminder notifications left in queue
-    this.botService
-      .cancelAllPreReminders()
-      .then((n) => {
-        if (n > 0)
-          this.logger.log(`Cancelled ${n} legacy pre_reminder notifications`);
-      })
-      .catch((e) => this.logger.error('cancelAllPreReminders failed', e));
+    this.launcher.start();
+    // DM о старте — не здесь (это каждый рестарт, до listen): src/telegram/start-announce.ts.
   }
 
   /** Отправить сообщение администратору. Возвращает true, если доставлено. */
@@ -540,11 +505,9 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     const pending = this.pendingPairCodes.get(rawId);
     if (!pending || pending.expiresAt <= Date.now()) return false;
     this.pendingPairCodes.delete(rawId);
-    const ok = await this.pairsService.joinPair(BigInt(rawId), pending.code);
-    const text = pairJoinResultText(
-      ok,
-      await resolveForm(this.botService, rawId),
-    );
+    const userId = await this.accountService.canonicalUserId(rawId);
+    const ok = await this.pairsService.joinPair(userId, pending.code);
+    const text = pairJoinResultText(ok, await this.form(rawId));
     const kb = MINIAPP_ONLY_KEYBOARD;
     try {
       await ctx.editMessageText(text, kb);
@@ -554,50 +517,8 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     return true;
   }
 
-  /**
-   * Запуск long-polling с ретраем. `bot.launch()` внутри дёргает `getMe()`;
-   * если сеть на старте контейнера ещё не поднялась (Amvera → Telegram
-   * ETIMEDOUT), launch() реджектится, и БЕЗ ретрая поллинг НИКОГДА не стартует
-   * — бот висит «живым» (Nest поднят, уведомления-`sendMessage` идут), но не
-   * отвечает на команды до следующего рестарта (инцидент 2026-07-16).
-   *
-   * 409 / «terminated by other» = поллит другой инстанс, ретрай навредит.
-   * `stopping` = штатная остановка, ретрай не нужен. Промис launch() на успехе
-   * резолвится лишь при остановке поллинга — поэтому только .catch, без await.
-   */
-  private launchBotWithRetry(attempt = 1): void {
-    const MAX_ATTEMPTS = 5;
-    if (attempt === 1) this.logger.log('Bot launch initiated');
-    this.bot!.launch({ dropPendingUpdates: true }).catch((err) => {
-      const msg = String(err);
-      if (
-        msg.includes('409') ||
-        msg.includes('terminated by other') ||
-        this.stopping
-      ) {
-        return;
-      }
-      if (attempt < MAX_ATTEMPTS) {
-        const delayMs = attempt * 5_000;
-        this.logger.warn(
-          `Bot launch failed (попытка ${attempt}/${MAX_ATTEMPTS}), ` +
-            `ретрай через ${delayMs}ms: ${msg}`,
-        );
-        setTimeout(() => {
-          if (!this.stopping) this.launchBotWithRetry(attempt + 1);
-        }, delayMs);
-      } else {
-        this.logger.error(
-          `Bot launch провалился после ${MAX_ATTEMPTS} попыток — ` +
-            `поллинг не стартовал`,
-          err,
-        );
-      }
-    });
-  }
-
   onModuleDestroy() {
-    this.stopping = true;
+    this.launcher?.stop();
     try {
       this.bot?.stop();
     } catch {

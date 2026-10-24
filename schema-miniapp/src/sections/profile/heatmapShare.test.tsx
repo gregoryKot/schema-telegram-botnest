@@ -30,7 +30,9 @@ describe('MonthShareButton — есть активные дни', () => {
     render(<MonthShareButton activeDates={new Set([today])} totalDays={5} />);
     fireEvent.click(screen.getByLabelText('Поделиться'));
     expect(screen.getByText('Мой месяц')).toBeTruthy();
-    fireEvent.click(screen.getByLabelText('Закрыть'));
+    // BottomSheet рисует и бэкдроп, и кнопку-полоску под тем же aria-label
+    // «Закрыть» — бэкдроп идёт первым в DOM.
+    fireEvent.click(screen.getAllByLabelText('Закрыть')[0]);
     expect(screen.queryByText('Мой месяц')).toBeNull();
   });
 });

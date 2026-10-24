@@ -22,7 +22,7 @@ export function CustomizeSheetShell({
 }: Props) {
   return (
     <BottomSheet onClose={onClose} zIndex={zIndex}>
-      <div style={{ paddingTop: 4 }}>
+      <div className="u-pt4">
         <div style={{ fontSize: 17, fontWeight: 800, color: 'var(--text)' }}>
           {title}
         </div>
@@ -38,11 +38,7 @@ export function CustomizeSheetShell({
           {subtitle}
         </div>
         {children}
-        <button
-          className="btn-primary"
-          style={{ marginTop: 16 }}
-          onClick={onClose}
-        >
+        <button className="btn-primary u-mt16" onClick={onClose}>
           Готово
         </button>
       </div>

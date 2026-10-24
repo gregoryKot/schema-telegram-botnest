@@ -6,14 +6,16 @@ import {
   GlyphArrowLeft,
   GlyphArrowRight,
   GlyphCheck,
-  GlyphPlus,
-  GlyphX,
 } from './ExScreen';
 import { useHistorySheet } from '../../hooks/useHistorySheet';
+import { buildSideHints } from './beliefCheck/sideHints';
+import { EviList } from './beliefCheck/EviList';
+import { BeliefDoneScreen } from './beliefCheck/BeliefDoneScreen';
 import { useTr } from '../../utils/addressForm';
-import { fmtAgo } from '../../utils/format';
 import { detectCrisisAny } from '../../utils/crisisMarkers';
 import { CrisisCard } from '../CrisisCard';
+import { hueStyle } from '../../lib/tone';
+import { HUE_STRAIN, HUE_CARE } from './exHue';
 
 const STEPS = [
   'Убеждение',
@@ -22,58 +24,6 @@ const STEPS = [
   'Переформулировка',
 ];
 
-const buildSideHints = (
-  tr: (ty: string, vy: string) => string,
-): Record<number, { title: string; body: string; list: string[] }> => ({
-  0: {
-    title: 'Что такое убеждение схемы',
-    body: tr(
-      'Схемы говорят голосом абсолютных утверждений. Слушай слова «всегда», «никогда», «никто», «все», «должен» – это маркеры.',
-      'Схемы говорят голосом абсолютных утверждений. Слушайте слова «всегда», «никогда», «никто», «все», «должен» – это маркеры.',
-    ),
-    list: [
-      '«я всегда всё порчу»',
-      '«меня никто не любит»',
-      '«если ошибусь – это конец»',
-    ],
-  },
-  1: {
-    title: tr('Будь честен', 'Будьте честны'),
-    body: tr(
-      'Не отмахивайся от мысли. Запиши все факты, которые её подтверждают – даже неприятные. Это не значит что она правдива.',
-      'Не отмахивайтесь от мысли. Запишите все факты, которые её подтверждают – даже неприятные. Это не значит что она правдива.',
-    ),
-    list: [
-      'Конкретные ситуации',
-      'Слова других людей',
-      tr('Твои ощущения тогда', 'Ваши ощущения тогда'),
-    ],
-  },
-  2: {
-    title: 'Что упустила схема',
-    body: tr(
-      'Схема – фильтр, который выбрасывает то, что ей противоречит. Восстанови баланс. Вспомни исключения, факты, чужие точки зрения.',
-      'Схема – фильтр, который выбрасывает то, что ей противоречит. Восстановите баланс. Вспомните исключения, факты, чужие точки зрения.',
-    ),
-    list: [
-      'Случаи, где было иначе',
-      tr('Люди, которые видят тебя другим', 'Люди, которые видят вас другим'),
-      'Что сказал бы друг?',
-    ],
-  },
-  3: {
-    title: 'Не позитив, а точность',
-    body: tr(
-      '«Всё хорошо» тут не работает. Сформулируй точнее: с оговорками, с признанием сложности, с состраданием.',
-      '«Всё хорошо» тут не работает. Сформулируйте точнее: с оговорками, с признанием сложности, с состраданием.',
-    ),
-    list: [
-      '«иногда я ошибаюсь, и это»',
-      '«часть из этого правда, и»',
-      '«мне тяжело, и это не значит»',
-    ],
-  },
-});
 
 export function BeliefCheckEx({
   onBack,
@@ -144,105 +94,23 @@ export function BeliefCheckEx({
 
   if (done) {
     return (
-      <ExScreen
-        onBack={goBack}
-        eyebrow="Проверка убеждения · сохранено"
-        eyebrowColor="var(--c-moss)"
-        title={
-          <>
-            Готово.
-            <br />
-            <span className="it">Мысль проверена.</span>
-          </>
-        }
-        lede="Иногда достаточно увидеть доказательства, чтобы мысль потеряла силу. Сохранено в дневнике."
-        aside={
-          <>
-            <div className="aside-card">
-              <div className="aside-card-eyebrow">Что попробовать дальше</div>
-              <h3>Знакомство со схемой</h3>
-              <p className="body">
-                Если эта мысль возвращается часто – стоит копнуть, какая схема
-                за ней стоит.
-              </p>
-            </div>
-            {pastChecks.length > 0 && (
-              <div className="aside-card">
-                <div className="aside-card-eyebrow">
-                  Прошлые проверки · {history.length}
-                </div>
-                {pastChecks.map((h, i) => (
-                  <div key={i} className="history-row">
-                    <span className="history-date">{fmtAgo(h.createdAt)}</span>
-                    <span className="history-snippet">«{h.belief}»</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </>
-        }
-      >
-        <div className="done-card">
-          <div className="stamp">
-            <GlyphCheck /> Сохранено ·{' '}
-            {new Date().toLocaleDateString('ru-RU', {
-              day: 'numeric',
-              month: 'long',
-            })}
-          </div>
-          <div className="dlabel">Убеждение</div>
-          <div className="belief-line">«{belief}»</div>
-          <div className="done-cols">
-            <div>
-              <div className="dlabel" style={{ color: 'var(--c-rose)' }}>
-                За · {forList.length}
-              </div>
-              <ul className="ev-col" style={{ margin: 0, padding: 0 }}>
-                {forList.map((f, i) => (
-                  <li key={i}>{f}</li>
-                ))}
-              </ul>
-            </div>
-            <div>
-              <div className="dlabel" style={{ color: 'var(--c-moss)' }}>
-                Против · {againstList.length}
-              </div>
-              <ul className="ev-col" style={{ margin: 0, padding: 0 }}>
-                {againstList.map((a, i) => (
-                  <li key={i}>{a}</li>
-                ))}
-              </ul>
-            </div>
-          </div>
-          {reframe.trim() && (
-            <>
-              <div className="dlabel" style={{ color: 'var(--accent)' }}>
-                Точнее
-              </div>
-              <div className="reframe-line">«{reframe}»</div>
-            </>
-          )}
-        </div>
-        <div className="ex-foot">
-          <button
-            className="ex-btn ex-btn-outline"
-            onClick={() => {
-              setDone(false);
-              setStep(0);
-              setBelief('');
-              setForList([]);
-              setAgainstList([]);
-              setReframe('');
-            }}
-          >
-            Проверить ещё одну
-          </button>
-          <span className="spacer" />
-          <button className="ex-btn ex-btn-primary" onClick={goBack}>
-            Закрыть
-          </button>
-        </div>
-      </ExScreen>
+      <BeliefDoneScreen
+        goBack={goBack}
+        belief={belief}
+        forList={forList}
+        againstList={againstList}
+        reframe={reframe}
+        history={history}
+        pastChecks={pastChecks}
+        onRestart={() => {
+          setDone(false);
+          setStep(0);
+          setBelief('');
+          setForList([]);
+          setAgainstList([]);
+          setReframe('');
+        }}
+      />
     );
   }
 
@@ -251,7 +119,6 @@ export function BeliefCheckEx({
     <ExScreen
       onBack={goBack}
       eyebrow="№ 01 · Когнитивная работа"
-      eyebrowColor="var(--c-slate)"
       title={
         <>
           Проверка
@@ -264,11 +131,11 @@ export function BeliefCheckEx({
         'Поставьте одну мысль перед судом фактов. Что её подтверждает, что опровергает, и как сформулировать точнее.',
       )}
       aside={
-        <div className="aside-card">
-          <div className="aside-card-eyebrow">Шаг {step + 1} из 4</div>
-          <h3>{hint.title}</h3>
-          <p className="body">{hint.body}</p>
-          <ul>
+        <div className="ds-card ex2-note">
+          <div className="ds-label">Шаг {step + 1} из 4</div>
+          <h3 className="ex2-note-h">{hint.title}</h3>
+          <p className="ex2-note-body">{hint.body}</p>
+          <ul className="ex2-note-list">
             {hint.list.map((x, i) => (
               <li key={i}>{x}</li>
             ))}
@@ -285,22 +152,22 @@ export function BeliefCheckEx({
 
       {step === 0 && (
         <>
-          <div className="ex-prompt">
-            <div className="ex-prompt-num">1.</div>
+          <div className="ex2-prompt">
+            <div className="ex2-prompt-num">1.</div>
             <div>
-              <div className="ex-prompt-label">
+              <div className="ex2-prompt-label">
                 {tr(
                   'Запиши мысль, которую хочешь проверить',
                   'Запишите мысль, которую хотите проверить',
                 )}
               </div>
-              <p className="ex-prompt-hint">
+              <p className="ex2-prompt-hint">
                 Одно убеждение за раз. Та самая фраза, которая повторяется в
                 голове.
               </p>
               <textarea
                 ref={beliefRef}
-                className={'paper-input ' + (belief.trim() ? 'is-filled' : '')}
+                className="ds-textarea"
                 rows={3}
                 value={belief}
                 onChange={(e) => setBelief(e.target.value)}
@@ -309,10 +176,10 @@ export function BeliefCheckEx({
             </div>
           </div>
           {detectCrisisAny(belief) && <CrisisCard surface="belief_check" />}
-          <div className="ex-foot">
-            <span className="spacer" />
+          <div className="ex2-foot">
+            <span className="ex2-spacer" />
             <button
-              className="ex-btn ex-btn-primary"
+              className="ds-btn"
               disabled={!belief.trim()}
               onClick={() => setStep(1)}
             >
@@ -324,16 +191,16 @@ export function BeliefCheckEx({
 
       {step === 1 && (
         <>
-          <div className="ex-prompt">
-            <div className="ex-prompt-num">2.</div>
+          <div className="ex2-prompt">
+            <div className="ex2-prompt-num">2.</div>
             <div>
-              <div className="ex-prompt-label">
+              <div className="ex2-prompt-label">
                 Что подтверждает «
-                <span style={{ color: 'var(--c-rose)' }}>{belief}</span>»?
+                <span className="tone-ink" style={hueStyle(HUE_STRAIN)}>{belief}</span>»?
               </div>
-              <p className="ex-prompt-hint">
-                Будь честен. Не убеждай себя, что мысль не имеет оснований – она
-                их имеет.
+              <p className="ex2-prompt-hint">
+                {tr('Записывай честно. Не убеждай себя, что мысль не имеет оснований — она их имеет.',
+                  'Записывайте честно. Не убеждайте себя, что мысль не имеет оснований — она их имеет.')}
               </p>
             </div>
           </div>
@@ -346,13 +213,13 @@ export function BeliefCheckEx({
             placeholder="Добавить доказательство…"
           />
           {detectCrisisAny(forInput, ...forList) && <CrisisCard surface="belief_check" />}
-          <div className="ex-foot">
-            <button className="ex-btn ex-btn-ghost" onClick={() => setStep(0)}>
+          <div className="ex2-foot">
+            <button className="ds-btn ex2-ghost" onClick={() => setStep(0)}>
               <GlyphArrowLeft /> Назад
             </button>
-            <span className="spacer" />
+            <span className="ex2-spacer" />
             <button
-              className="ex-btn ex-btn-primary"
+              className="ds-btn"
               disabled={forList.length === 0}
               onClick={() => setStep(2)}
             >
@@ -364,14 +231,14 @@ export function BeliefCheckEx({
 
       {step === 2 && (
         <>
-          <div className="ex-prompt">
-            <div className="ex-prompt-num">3.</div>
+          <div className="ex2-prompt">
+            <div className="ex2-prompt-num">3.</div>
             <div>
-              <div className="ex-prompt-label">
+              <div className="ex2-prompt-label">
                 Что опровергает «
-                <span style={{ color: 'var(--c-moss)' }}>{belief}</span>»?
+                <span className="tone-ink" style={hueStyle(HUE_CARE)}>{belief}</span>»?
               </div>
-              <p className="ex-prompt-hint">
+              <p className="ex2-prompt-hint">
                 {tr(
                   'Вспомни факты, исключения, другие точки зрения. Что сказал бы хороший друг?',
                   'Вспомните факты, исключения, другие точки зрения. Что сказал бы хороший друг?',
@@ -388,13 +255,13 @@ export function BeliefCheckEx({
             placeholder="Добавить контр-доказательство…"
           />
           {detectCrisisAny(againstInput, ...againstList) && <CrisisCard surface="belief_check" />}
-          <div className="ex-foot">
-            <button className="ex-btn ex-btn-ghost" onClick={() => setStep(1)}>
+          <div className="ex2-foot">
+            <button className="ds-btn ex2-ghost" onClick={() => setStep(1)}>
               <GlyphArrowLeft /> Назад
             </button>
-            <span className="spacer" />
+            <span className="ex2-spacer" />
             <button
-              className="ex-btn ex-btn-primary"
+              className="ds-btn"
               disabled={againstList.length === 0}
               onClick={() => setStep(3)}
             >
@@ -406,13 +273,13 @@ export function BeliefCheckEx({
 
       {step === 3 && (
         <>
-          <div className="ex-prompt">
-            <div className="ex-prompt-num">4.</div>
+          <div className="ex2-prompt">
+            <div className="ex2-prompt-num">4.</div>
             <div>
-              <div className="ex-prompt-label">
+              <div className="ex2-prompt-label">
                 Как можно сформулировать точнее?
               </div>
-              <p className="ex-prompt-hint">
+              <p className="ex2-prompt-hint">
                 {tr(
                   'Не «всё хорошо». А: что из мысли правда, что преувеличено, и что ты на самом деле сейчас знаешь.',
                   'Не «всё хорошо». А: что из мысли правда, что преувеличено, и что вы на самом деле сейчас знаете.',
@@ -420,77 +287,37 @@ export function BeliefCheckEx({
               </p>
             </div>
           </div>
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: '1fr 1fr',
-              gap: 24,
-              marginBottom: 28,
-              padding: '18px 0',
-              borderTop: '1px solid var(--line)',
-              borderBottom: '1px solid var(--line)',
-            }}
-          >
-            <div>
-              <div
-                className="eyebrow"
-                style={{ color: 'var(--c-rose)', marginBottom: 8 }}
-              >
-                За · {forList.length}
-              </div>
+          <div className="ds-card ex2-recap">
+            <div style={hueStyle(HUE_STRAIN)}>
+              <div className="ds-label tone-ink">За · {forList.length}</div>
               {forList.slice(0, 3).map((f, i) => (
-                <div
-                  key={i}
-                  style={{
-                    fontSize: 13,
-                    color: 'var(--text-sub)',
-                    lineHeight: 1.5,
-                    padding: '4px 0',
-                  }}
-                >
-                  · {f}
-                </div>
+                <div key={i} className="ex2-recap-row">· {f}</div>
               ))}
             </div>
-            <div>
-              <div
-                className="eyebrow"
-                style={{ color: 'var(--c-moss)', marginBottom: 8 }}
-              >
-                Против · {againstList.length}
-              </div>
+            <div style={hueStyle(HUE_CARE)}>
+              <div className="ds-label tone-ink">Против · {againstList.length}</div>
               {againstList.slice(0, 3).map((a, i) => (
-                <div
-                  key={i}
-                  style={{
-                    fontSize: 13,
-                    color: 'var(--text-sub)',
-                    lineHeight: 1.5,
-                    padding: '4px 0',
-                  }}
-                >
-                  · {a}
-                </div>
+                <div key={i} className="ex2-recap-row">· {a}</div>
               ))}
             </div>
           </div>
           <textarea
             ref={reframeRef}
-            className="paper-area"
+            className="ds-textarea"
             value={reframe}
             onChange={(e) => setReframe(e.target.value)}
             placeholder="Иногда я действительно ошибаюсь, но это не значит что я всегда всё порчу…"
             rows={6}
           />
           {detectCrisisAny(reframe) && <CrisisCard surface="belief_check" />}
-          {saveError && <div role="alert" style={{ color: 'var(--accent-red)', fontSize: 13, marginBottom: 10 }}>{tr('Не удалось сохранить. Проверь связь и попробуй ещё раз', 'Не удалось сохранить. Проверьте связь и попробуйте ещё раз')}</div>}
-          <div className="ex-foot">
-            <button className="ex-btn ex-btn-ghost" onClick={() => setStep(2)}>
+          {saveError && <div role="alert" className="ex2-err">{tr('Не удалось сохранить. Проверь связь и попробуй ещё раз', 'Не удалось сохранить. Проверьте связь и попробуйте ещё раз')}</div>}
+          <div className="ex2-foot">
+            <button className="ds-btn ex2-ghost" onClick={() => setStep(2)}>
               <GlyphArrowLeft /> Назад
             </button>
-            <span className="spacer" />
+            <span className="ex2-spacer" />
             <button
-              className="ex-btn ex-btn-primary"
+              className="ds-btn"
               disabled={!reframe.trim() || saving}
               onClick={saveAll}
             >
@@ -500,57 +327,5 @@ export function BeliefCheckEx({
         </>
       )}
     </ExScreen>
-  );
-}
-
-function EviList({
-  items,
-  onRemove,
-  input,
-  onInput,
-  onAdd,
-  placeholder,
-}: {
-  items: string[];
-  onRemove: (i: number) => void;
-  input: string;
-  onInput: (v: string) => void;
-  onAdd: () => void;
-  placeholder: string;
-}) {
-  return (
-    <div className="evi-list">
-      {items.map((f, i) => (
-        <div key={i} className="evi-row">
-          <span className="evi-num">{String(i + 1).padStart(2, '0')}</span>
-          <span className="evi-text">{f}</span>
-          <button
-            className="evi-x"
-            onClick={() => onRemove(i)}
-            aria-label="Удалить"
-          >
-            <GlyphX />
-          </button>
-        </div>
-      ))}
-      <div className="evi-add">
-        <span className="evi-add-plus">
-          <GlyphPlus />
-        </span>
-        <input
-          className="evi-add-input"
-          value={input}
-          onChange={(e) => onInput(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && onAdd()}
-          placeholder={placeholder}
-        />
-        <button
-          className={'evi-add-go ' + (input.trim() ? 'ready' : '')}
-          onClick={onAdd}
-        >
-          ⏎ добавить
-        </button>
-      </div>
-    </div>
   );
 }

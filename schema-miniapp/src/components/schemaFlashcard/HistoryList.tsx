@@ -18,7 +18,7 @@ export function HistoryList({
 }: HistoryListProps) {
   return (
     <BottomSheet onClose={onClose} zIndex={300}>
-      <div style={{ paddingTop: 4 }}>
+      <div className="u-pt4">
         <div
           style={{
             fontSize: 18,
@@ -52,7 +52,7 @@ export function HistoryList({
                   padding: '12px 14px',
                   background: 'var(--surface)',
                   border: '1px solid var(--border-color)',
-                  borderRadius: 16,
+                  borderRadius: 'var(--r-16)',
                   marginBottom: 8,
                   cursor: 'pointer',
                 }}

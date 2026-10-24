@@ -1,6 +1,6 @@
 import { ToggleRow } from '../todayCustomize/ToggleRow';
 import { DragHandle } from './DragHandle';
-import type { DragHandleProps } from '../../hooks/useDragReorder';
+import type { DragHandleProps } from '../../../../shared/src/hooks/useDragReorder';
 
 // Строка листа настройки: ToggleRow (скрыть/показать) + ручка «≡» (порядок,
 // DragHandle — место MoveArrows, удалённого правилом №11). Без onToggle —
@@ -32,14 +32,14 @@ export function CustomizeRow({
       ref={rowRef}
       style={{
         display: 'flex',
-        gap: 4,
+        gap: 'var(--space-4)',
         transform: `translateY(${offsetY}px)${lifted ? ' scale(1.02)' : ''}`,
         transition: lifted ? 'none' : 'transform 150ms ease',
         boxShadow: lifted ? '0 8px 24px rgba(var(--fg-rgb),0.18)' : undefined,
         zIndex: lifted ? 1 : undefined,
       }}
     >
-      <div style={{ flex: 1, minWidth: 0 }}>
+      <div className="u-fill">
         <ToggleRow
           title={label}
           sub={sub}

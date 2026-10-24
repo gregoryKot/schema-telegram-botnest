@@ -52,13 +52,16 @@ export class PhraseCheckController {
   ) {
     return this.phraseChecks.updatePhraseCheck(
       uid(req),
-      parseId(id),
+      parseId(id, { int32: true }),
       body.rewrite.trim() || undefined,
     );
   }
 
   @Delete('phrase-checks/:id')
   deletePhraseCheck(@Req() req: AuthRequest, @Param('id') id: string) {
-    return this.phraseChecks.deletePhraseCheck(uid(req), parseId(id));
+    return this.phraseChecks.deletePhraseCheck(
+      uid(req),
+      parseId(id, { int32: true }),
+    );
   }
 }

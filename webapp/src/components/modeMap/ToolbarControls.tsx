@@ -8,28 +8,18 @@ export function TbBtn({ children, label, onClick, disabled, active, caret }: {
 }) {
   const [hover, setHover] = useState(false);
   return (
-    <div style={{ position: 'relative', display: 'flex' }}>
+    <div className="mm2-tb">
       <button onClick={onClick} disabled={disabled}
-        style={{ minWidth: 32, height: 30, padding: caret ? '0 6px 0 8px' : '0 7px', borderRadius: 6, border: 'none',
-          cursor: disabled ? 'default' : 'pointer', gap: 3,
-          background: active ? 'var(--accent-soft)' : hover && !disabled ? 'var(--surface-2)' : 'none', fontSize: 15, lineHeight: 1,
-          color: disabled ? 'var(--text-ghost)' : active ? 'var(--accent)' : 'var(--text-sub)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+        className={`ds-btn ds-btn--icon mm2-tb-btn${active ? ' is-active' : ''}`}
         onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}>
-        {children}{caret && <MMIcon name="caret" size={11} style={{ opacity: 0.65, marginLeft: 1 }} />}
+        {children}{caret && <MMIcon name="caret" size={11} className="mm2-tb-caret" />}
       </button>
-      {hover && !disabled && (
-        <div style={{ position: 'absolute', top: 36, left: '50%', transform: 'translateX(-50%)', zIndex: 40,
-          background: 'var(--text)', color: 'var(--bg)', fontSize: 11, padding: '3px 7px', borderRadius: 5,
-          whiteSpace: 'nowrap', pointerEvents: 'none', boxShadow: 'var(--shadow-2)' }}>
-          {label}
-        </div>
-      )}
+      {hover && !disabled && <div className="mm2-tip">{label}</div>}
     </div>
   );
 }
 export function TbSep() {
-  return <div style={{ width: 1, background: 'var(--line)', margin: '4px 2px' }} />;
+  return <div className="mm2-tb-sep" />;
 }
 
 // Anchored to its trigger button and rendered fixed, clamped inside the viewport —
@@ -51,11 +41,9 @@ export function Dropdown({ children, onClose, anchorRef }: {
     <>
       <div role="button" tabIndex={0} aria-label="Закрыть" onClick={onClose}
         onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClose(); } }}
-        style={{ position: 'fixed', inset: 0, zIndex: 39 }} />
+        className="mm2-backdrop" style={{ zIndex: 39 }} />
       {pos && (
-        <div style={{ position: 'fixed', top: pos.top, left: pos.left, zIndex: 40, width: 220,
-          background: 'var(--bg-elev)', border: '1px solid var(--line)', borderRadius: 8,
-          padding: 4, boxShadow: 'var(--shadow-2)' }}>
+        <div className="ds-card mm2-drop" style={{ top: pos.top, left: pos.left }}>
           {children}
         </div>
       )}

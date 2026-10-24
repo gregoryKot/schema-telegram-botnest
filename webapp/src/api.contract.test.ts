@@ -35,6 +35,8 @@ const MOCKED_API_METHODS = [
   'ratings', 'saveRating',
   // BookingPicker.test.tsx
   'getSlots', 'getBookingOptions', 'bookSlot', 'cancelBooking',
+  // pages/admin/PricesManager.test.tsx, BookingSection.test.tsx — цены сессии по валютам
+  'adminGetPrices', 'adminSetPrice',
   // utils/addressForm.test.tsx — уже покрыт getSettings выше
   // pages/DonatePage.test.tsx
   'donate',
@@ -48,6 +50,10 @@ const MOCKED_API_METHODS = [
   'getTherapyClients',
   // sections/SchemasSection.test.tsx
   'getProfile', 'getYsqHistory', 'getYsqProgress', 'updateSettings',
+  // components/appShell/useBootstrapLoad.test.ts, AppShell.test-helpers.tsx
+  'getUserFlags',
+  // components/PhraseShareCard.test.tsx, sections/TodaySection.test.tsx
+  'getHealthyPhrase',
   // sections/TodaySection.test.tsx
   'getSchemaDiary', 'getModeDiary', 'getGratitudeDiary', 'history',
   // sections/DiarySection.test.tsx

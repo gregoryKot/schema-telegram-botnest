@@ -296,6 +296,63 @@ describe('sanitizeMeta', () => {
     ).toEqual({ from: 'vulnerable_child', to: 'helpless_surrenderer' });
   });
 
+  it('profile_pattern_open: kind schema/mode проходит', () => {
+    expect(sanitizeMeta('profile_pattern_open', { kind: 'schema' })).toEqual({
+      kind: 'schema',
+    });
+    expect(sanitizeMeta('profile_pattern_open', { kind: 'mode' })).toEqual({
+      kind: 'mode',
+    });
+  });
+
+  it('profile_pattern_open: неизвестный/отсутствующий kind → отброшено', () => {
+    expect(
+      sanitizeMeta('profile_pattern_open', { kind: 'diary' }),
+    ).toBeUndefined();
+    expect(sanitizeMeta('profile_pattern_open', {})).toBeUndefined();
+  });
+
+  it('profile_pattern_open: лишние поля срезаются (защита от PII)', () => {
+    expect(
+      sanitizeMeta('profile_pattern_open', {
+        kind: 'schema',
+        note: 'секретный текст',
+      }),
+    ).toEqual({ kind: 'schema' });
+  });
+
+  it('entry_deleted: type из allow-list проходит', () => {
+    expect(sanitizeMeta('entry_deleted', { type: 'belief_check' })).toEqual({
+      type: 'belief_check',
+    });
+    expect(sanitizeMeta('entry_deleted', { type: 'letter' })).toEqual({
+      type: 'letter',
+    });
+    expect(sanitizeMeta('entry_deleted', { type: 'flashcard' })).toEqual({
+      type: 'flashcard',
+    });
+  });
+
+  it('entry_deleted: неизвестный/отсутствующий type → отброшено', () => {
+    expect(sanitizeMeta('entry_deleted', { type: 'diary' })).toBeUndefined();
+    expect(sanitizeMeta('entry_deleted', {})).toBeUndefined();
+  });
+
+  it('entry_deleted: type не строка → отброшено', () => {
+    expect(
+      sanitizeMeta('entry_deleted', { type: ['belief_check'] }),
+    ).toBeUndefined();
+  });
+
+  it('entry_deleted: лишние поля срезаются (защита от PII)', () => {
+    expect(
+      sanitizeMeta('entry_deleted', {
+        type: 'letter',
+        text: 'секретный текст письма',
+      }),
+    ).toEqual({ type: 'letter' });
+  });
+
   it('plus_action: action из allow-list проходит', () => {
     expect(sanitizeMeta('plus_action', { action: 'tracker' })).toEqual({
       action: 'tracker',
@@ -511,6 +568,53 @@ describe('sanitizeMeta', () => {
     expect(sanitizeMeta('signup_source', {})).toBeUndefined();
   });
 
+  it('data_export: целые tables + rows проходят', () => {
+    expect(sanitizeMeta('data_export', { tables: 18, rows: 4200 })).toEqual({
+      tables: 18,
+      rows: 4200,
+    });
+    expect(sanitizeMeta('data_export', { tables: 0, rows: 0 })).toEqual({
+      tables: 0,
+      rows: 0,
+    });
+  });
+
+  it('data_export: значения выше потолка обрезаются, а не отбрасываются', () => {
+    expect(
+      sanitizeMeta('data_export', { tables: 9999, rows: 50_000_000 }),
+    ).toEqual({ tables: 200, rows: 1_000_000 });
+  });
+
+  it('data_export: нецелые/отрицательные/не-числа → отброшено целиком', () => {
+    expect(
+      sanitizeMeta('data_export', { tables: 1.5, rows: 10 }),
+    ).toBeUndefined();
+    expect(
+      sanitizeMeta('data_export', { tables: -1, rows: 10 }),
+    ).toBeUndefined();
+    expect(
+      sanitizeMeta('data_export', { tables: 5, rows: -1 }),
+    ).toBeUndefined();
+    expect(
+      sanitizeMeta('data_export', { tables: '5', rows: 10 }),
+    ).toBeUndefined();
+    expect(sanitizeMeta('data_export', {})).toBeUndefined();
+  });
+
+  // Проверка на утечку (правило №7): эндпоинт выгрузки шлёт только числа, но
+  // защита не должна зависеть от того, что вызывающий не ошибётся — лишнее
+  // поле (даже свободный текст) обязано отбрасываться, а не проезжать в БД.
+  it('data_export: лишние/свободнотекстовые поля не пропускаются (защита от PII)', () => {
+    expect(
+      sanitizeMeta('data_export', {
+        tables: 18,
+        rows: 4200,
+        email: 'user@example.com',
+        note: 'мой личный дневник за сегодня',
+      }),
+    ).toEqual({ tables: 18, rows: 4200 });
+  });
+
   it('без meta — undefined для любого события', () => {
     expect(sanitizeMeta('share_card', undefined)).toBeUndefined();
   });
@@ -615,6 +719,15 @@ describe('sanitizeMeta', () => {
     ).toEqual({ action: 'added', surface: 'today' });
   });
 
+  it('home_screen_offer: сайтовая поверхность site_banner проходит авторизованным путём', () => {
+    expect(
+      sanitizeMeta('home_screen_offer', {
+        action: 'shown',
+        surface: 'site_banner',
+      }),
+    ).toEqual({ action: 'shown', surface: 'site_banner' });
+  });
+
   it('home_screen_offer: неизвестный action → отброшено целиком', () => {
     expect(
       sanitizeMeta('home_screen_offer', {
@@ -649,6 +762,22 @@ describe('sanitizeMeta', () => {
     expect(sanitizeMeta('journey_open', { junk: 'x' })).toBeUndefined();
     expect(sanitizeMeta('ysq_help_open', { junk: 'x' })).toBeUndefined();
     expect(sanitizeMeta('plus_open', { junk: 'x' })).toBeUndefined();
+  });
+
+  // Графическая концептуализация: текст связей режима — клиническая запись
+  // (правило №7), в событие не попадает ни он, ни id клиента.
+  it('concept_graph_open/concept_mode_linked/concept_schema_linked/concept_canvas_open/concept_graph_fullscreen: meta игнорируется', () => {
+    const leak = {
+      clientId: '555',
+      origin: 'Голос отца',
+      belief: 'Я плохой',
+      schemaId: 'defectiveness',
+    };
+    expect(sanitizeMeta('concept_graph_open', leak)).toBeUndefined();
+    expect(sanitizeMeta('concept_mode_linked', leak)).toBeUndefined();
+    expect(sanitizeMeta('concept_schema_linked', leak)).toBeUndefined();
+    expect(sanitizeMeta('concept_canvas_open', leak)).toBeUndefined();
+    expect(sanitizeMeta('concept_graph_fullscreen', leak)).toBeUndefined();
   });
 
   // quiz_started/quiz_completed/practice_link_click несут meta по реестру
@@ -742,6 +871,30 @@ describe('sanitizeMeta', () => {
         'nonexistent_event' as unknown as Parameters<typeof sanitizeMeta>[0],
         { anything: 'here' },
       ),
+    ).toBeUndefined();
+  });
+});
+
+// Карточка объединения на сайте шлёт host: 'web'. До неё в allow-list были
+// только мессенджеры, и meta целиком возвращалась бы undefined — событие
+// записано, а веб-половина воронки в отчёте невидима.
+describe('account_link_* — площадка «сайт»', () => {
+  it('host: web проходит и meta сохраняется', () => {
+    expect(sanitizeMeta('account_link_started', { host: 'web' })).toEqual({
+      host: 'web',
+    });
+    expect(
+      sanitizeMeta('account_link_confirmed', { host: 'web', merged: true }),
+    ).toEqual({ host: 'web', merged: true });
+  });
+
+  // Контрольный случай: список не стал «любой строкой».
+  it('незнакомая площадка по-прежнему отбрасывается целиком', () => {
+    expect(
+      sanitizeMeta('account_link_started', { host: 'vk' }),
+    ).toBeUndefined();
+    expect(
+      sanitizeMeta('account_link_started', { host: 'что угодно' }),
     ).toBeUndefined();
   });
 });

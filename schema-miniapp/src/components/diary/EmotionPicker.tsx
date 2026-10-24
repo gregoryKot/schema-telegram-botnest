@@ -58,7 +58,7 @@ export function EmotionPicker({
             style={{
               marginBottom: 10,
               background: 'var(--surface-2)',
-              borderRadius: 14,
+              borderRadius: 'var(--r-14)',
               padding: '12px 14px',
             }}
           >
@@ -83,7 +83,7 @@ export function EmotionPicker({
                     background:
                       em.intensity === i + 1 ? color : 'var(--surface)',
                     border: '1px solid rgba(34,30,27,0.1)',
-                    borderRadius: 10,
+                    borderRadius: 'var(--r-10)',
                     padding: '10px 2px',
                     minHeight: 44,
                     color: em.intensity === i + 1 ? '#fff' : 'var(--muted)',

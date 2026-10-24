@@ -12,7 +12,7 @@ import {
   cleanup,
 } from '@testing-library/react';
 import { BreathingCard } from './BreathingCard';
-import { BREATH_CYCLE_S } from '../utils/breathing';
+import { BREATH_CYCLE_S } from '../../../shared/src/practices/breathing';
 import { asMockApi } from '../test-support/mockApi';
 
 vi.mock('../api', async () => {

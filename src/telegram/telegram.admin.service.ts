@@ -10,11 +10,14 @@ import {
 } from '@nestjs/common';
 import { Telegraf, Context } from 'telegraf';
 import { TELEGRAF_BOT } from './telegram.constants';
+import { failCallback } from './callback-failure';
+import { describeBroadcastResult, runBroadcast } from './telegram.broadcast';
+import { replyLong } from './send-long-text';
 import { renderTemplate } from '../notification/notification.templates';
 import { BotAdminStatsService } from '../bot/bot.admin-stats.service';
 import { StatsReportService } from '../bot/stats-report.service';
 import { HealthyAdultService } from '../bot/healthy-adult.service';
-import { formatPoolStatus } from '../bot/healthy-adult.pool-alert';
+import { collectStatsMessages } from './stats-messages';
 import { AccountService } from '../bot/account.service';
 import { TherapistRequestService } from '../therapy/therapist-request.service';
 import { ChannelPublisherService } from '../channel/channel-publisher.service';
@@ -66,16 +69,18 @@ export class TelegramAdminService implements OnModuleInit {
           await ctx.reply('⛔ Нет доступа');
           return;
         }
-        // Двумя сообщениями — суммарно отчёт длиннее лимита Telegram (4096).
-        const [core, product, pool] = await Promise.all([
-          this.adminStatsService.getAdminStats(),
-          this.statsReport.render(),
-          this.healthyAdult.poolStatus(),
-        ]);
-        await ctx.reply(core, { parse_mode: 'HTML' });
-        await ctx.reply(`${product}\n\n${formatPoolStatus(pool)}`, {
-          parse_mode: 'HTML',
-        });
+        // Двумя сообщениями — отчёт длиннее лимита Telegram (4096); replyLong
+        // рубит рост отчёта разбиением, а не падением целиком.
+        const { first, second } = await collectStatsMessages(
+          {
+            adminStats: this.adminStatsService,
+            statsReport: this.statsReport,
+            healthyAdult: this.healthyAdult,
+          },
+          this.logger,
+        );
+        await replyLong(ctx, first, { parse_mode: 'HTML' });
+        await replyLong(ctx, second, { parse_mode: 'HTML' });
       } catch (err) {
         this.logger.error('stats command failed', err);
         await ctx.reply(`❌ ${String(err).slice(0, 300)}`).catch(() => null);
@@ -144,8 +149,7 @@ export class TelegramAdminService implements OnModuleInit {
           await ctx.reply(`Заявка #${reqId} отклонена`);
         }
       } catch (err) {
-        this.logger.error(`treq action failed: ${(err as Error).message}`);
-        await ctx.answerCbQuery('Ошибка').catch(() => null);
+        await failCallback(this.logger, ctx, 'treq action', err);
       }
     });
 
@@ -218,42 +222,25 @@ export class TelegramAdminService implements OnModuleInit {
           return;
         }
         const userIds = await this.accountService.getBroadcastUserIds();
+        // Адрес в Telegram — не то же самое, что userId: у входа через Google,
+        // почту и MAX он лежит в веб-диапазоне, и после слияния аккаунтов тоже.
+        // Раньше рассылка слала прямо по userId и каждый её прогон молча метил
+        // таких людей botBlockedAt.
+        const chatIds = await this.accountService.telegramIdsFor(userIds);
         await ctx.reply(
           `Начинаю рассылку для ${userIds.length} пользователей...`,
         );
-        let sent = 0,
-          failed = 0;
-        for (const uid of userIds) {
-          try {
-            // Plain text — no parse_mode. Avoids stray markdown chars from
-            // breaking the broadcast for half the users.
-            await this.bot!.telegram.sendMessage(uid, text, {
-              parse_mode: undefined,
-            });
-            sent++;
-          } catch (err: unknown) {
-            failed++;
-            const e = err as {
-              response?: { error_code?: number; description?: string };
-              message?: string;
-            };
-            const code = e.response?.error_code;
-            const desc = String(e.response?.description ?? e.message ?? '');
-            const isPermanent =
-              code === 403 ||
-              (code === 400 &&
-                /chat not found|user is deactivated|bot was blocked/i.test(
-                  desc,
-                ));
-            if (isPermanent) {
-              await this.accountService
-                .markUserBlocked(BigInt(uid))
-                .catch((e) => this.logger.warn('markUserBlocked failed', e));
-            }
-          }
-          await new Promise((r) => setTimeout(r, 50));
-        }
-        await ctx.reply(`✅ Готово: ${sent} доставлено, ${failed} ошибок`);
+        const result = await runBroadcast(
+          {
+            bot: this.bot!,
+            accountService: this.accountService,
+            logger: this.logger,
+          },
+          userIds,
+          chatIds,
+          text,
+        );
+        await ctx.reply(describeBroadcastResult(result));
       } catch (err) {
         this.logger.error('broadcast command failed', err);
         await ctx.reply('❌ Ошибка рассылки').catch(() => null);

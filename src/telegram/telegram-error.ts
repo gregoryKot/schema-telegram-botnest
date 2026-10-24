@@ -50,3 +50,30 @@ export function describeTelegramError(err: unknown): string {
   if (code) return message ? `${code} (${message})` : code;
   return message || 'неизвестная ошибка';
 }
+
+/**
+ * Что делать со сбоем отправки. Раньше это решение принимали два одинаковых
+ * регэкспа — в очереди уведомлений и в рассылке, — и оба складывали «чата
+ * нет» и «бот заблокирован» в один исход: пометить человека `botBlockedAt`.
+ * Исходы разные. Заблокировал бота — человек так решил. Чата нет — мы просто
+ * пишем не туда (после слияния аккаунтов адрес живёт в AuthProvider, а не в
+ * userId), и молчаливый флаг выключает уведомления тому, кто ни о чём не
+ * просил.
+ *
+ * `transient` — всё остальное: разметка не разобралась, сообщение длиннее
+ * лимита, сеть отвалилась. Это наши ошибки, за них человека метить нельзя.
+ */
+export type SendFailure = 'blocked' | 'chat_not_found' | 'transient';
+
+export function classifySendFailure(err: unknown): SendFailure {
+  const code = telegramErrorCode(err);
+  const desc = describeTelegramError(err);
+  if (code === 403) return 'blocked';
+  if (code === 400) {
+    if (/chat not found/i.test(desc)) return 'chat_not_found';
+    if (/user is deactivated|bot was blocked|kicked/i.test(desc)) {
+      return 'blocked';
+    }
+  }
+  return 'transient';
+}

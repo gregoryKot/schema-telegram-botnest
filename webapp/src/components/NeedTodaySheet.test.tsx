@@ -1,11 +1,7 @@
 // @vitest-environment jsdom
-// NeedTodaySheet — экран оценки одной потребности. 0% покрытия (48 строк).
-// ВАЖНО: этот компонент реализует СВОЙ drag-слайдер (calcValue/onPtrDown/
-// trackRef) — третья независимая реализация механики «оценить потребность
-// 0–10» в webapp, наряду с PickerRail (tap-грид в TrackerOverlay). CLAUDE.md
-// прямо запрещает дублировать один и тот же ввод («красные флаги на ревью:
-// две реализации одного ввода onPointerDown/calcValue/trackRef») — заведён
-// как дефект в отчёте по задаче, здесь тестируем поведение как есть.
+// NeedTodaySheet — экран оценки одной потребности. Ввод оценки — общая
+// десятисегментная шкала NeedScale (та же, что на «Сегодня»): один компонент
+// на всё приложение, тестируем здесь только подключение к листу.
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup, act } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
@@ -43,16 +39,10 @@ function renderSheet(
 afterEach(() => cleanup());
 
 describe('NeedTodaySheet', () => {
-  it('перетаскивание слайдера зовёт onChange с округлённым значением 0–10', () => {
+  it('клик по сегменту общей шкалы зовёт onChange с оценкой 1–10', () => {
     const onChange = vi.fn();
-    const { container } = renderSheet({ value: 5, onChange });
-    const track = container.querySelector('[style*="touch-action"]') as HTMLElement;
-    expect(track).toBeTruthy();
-    vi.spyOn(track, 'getBoundingClientRect').mockReturnValue({
-      left: 0, right: 100, width: 100, top: 0, bottom: 0, height: 0, x: 0, y: 0, toJSON: () => {},
-    });
-    (track as unknown as { setPointerCapture: () => void }).setPointerCapture = vi.fn();
-    fireEvent.pointerDown(track, { clientX: 70, buttons: 1 });
+    renderSheet({ value: 5, onChange });
+    fireEvent.click(screen.getByRole('button', { name: '7 из 10' }));
     expect(onChange).toHaveBeenCalledWith(7);
   });
 
@@ -105,5 +95,27 @@ describe('NeedTodaySheet', () => {
   it('оценка выше 3 НЕ показывает блок «Что с этим сделать?»', () => {
     renderSheet({ value: 6 });
     expect(screen.queryByText('Что с этим сделать?')).toBeNull();
+  });
+});
+
+describe('NeedTodaySheet — маркер «вчера» (В10 аудита 2026-08)', () => {
+  // Регрессия: yesterdayValue был объявлен в Props, но не деструктурирован —
+  // пользователь сайта не видел маркер «вчера», который есть в miniapp
+  // (NeedRatingBar). Паритет — не обязательно тот же DOM, тот же смысл.
+  it('yesterdayValue передан — виден текст «вчера N»', () => {
+    renderSheet({ value: 5, yesterdayValue: 3 });
+    const hint = screen.getByText(/вчера/);
+    expect(hint.textContent).toContain('вчера');
+    expect(hint.textContent).toContain('3');
+  });
+
+  it('yesterdayValue не передан — текста «вчера» нет', () => {
+    renderSheet({ value: 5 });
+    expect(screen.queryByText(/вчера/)).toBeNull();
+  });
+
+  it('yesterdayValue=0 — текста «вчера» нет (нет оценки за вчера — не «оценка 0»)', () => {
+    renderSheet({ value: 5, yesterdayValue: 0 });
+    expect(screen.queryByText(/вчера/)).toBeNull();
   });
 });

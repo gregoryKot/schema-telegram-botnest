@@ -7,6 +7,7 @@
 // telegram.admin.service.broadcast.spec.ts (тот же лимит).
 import { Logger } from '@nestjs/common';
 import { TelegramAdminService } from './telegram.admin.service';
+import { BLOCK_FAILED_MARK } from '../bot/stats-settle';
 import { makeFakeBot, runCommand } from './telegram.test-helpers.spec';
 
 const OLD_ADMIN_ID = process.env.ADMIN_ID;
@@ -135,17 +136,82 @@ describe('TelegramAdminService — /zv (только админ)', () => {
 });
 
 describe('TelegramAdminService — /stats падение аналитики', () => {
-  it('getAdminStats бросает — не роняет хендлер, отвечает усечённым текстом ошибки', async () => {
+  const replies = (ctx: { reply: jest.Mock }): string[] =>
+    ctx.reply.mock.calls.map((c) => String(c[0]));
+
+  beforeEach(() => {
+    jest.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined);
     jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
     process.env.ADMIN_ID = '999';
+  });
+
+  it('getAdminStats бросает — первое сообщение это заглушка с причиной, второе всё равно уходит', async () => {
     const { service, fakeBot } = makeDeps({
       adminStatsService: {
         getAdminStats: jest.fn().mockRejectedValue(new Error('db down')),
       },
+      statsReport: {
+        render: jest.fn().mockResolvedValue('продуктовые метрики'),
+      },
     });
     service.onModuleInit();
     const ctx = await runCommand(fakeBot, 'stats', { from: { id: 999 } });
-    expect(ctx.reply).toHaveBeenCalledWith(expect.stringContaining('db down'));
+    const [first, second] = replies(ctx);
+    expect(first).toContain('Главные цифры');
+    expect(first).toContain(BLOCK_FAILED_MARK);
+    expect(first).toContain('db down');
+    expect(second).toContain('продуктовые метрики');
+    expect(second).toContain('Здоровый Взрослый');
+    expect(ctx.reply).toHaveBeenCalledTimes(2);
+  });
+
+  it('poolStatus бросает — оба сообщения ушли, вместо запаса фраз заглушка', async () => {
+    const { service, fakeBot } = makeDeps({
+      adminStatsService: {
+        getAdminStats: jest.fn().mockResolvedValue('core stats'),
+      },
+      statsReport: {
+        render: jest.fn().mockResolvedValue('продуктовые метрики'),
+      },
+      healthyAdultService: {
+        poolStatus: jest.fn().mockRejectedValue(new Error('pool down')),
+      },
+    });
+    service.onModuleInit();
+    const ctx = await runCommand(fakeBot, 'stats', { from: { id: 999 } });
+    const [first, second] = replies(ctx);
+    expect(first).toBe('core stats');
+    expect(second).toContain('продуктовые метрики');
+    expect(second).toContain('Запас фраз канала');
+    expect(second).toContain('pool down');
+  });
+
+  it('упал весь продуктовый отчёт — ядро и запас фраз всё равно доехали', async () => {
+    const { service, fakeBot } = makeDeps({
+      adminStatsService: {
+        getAdminStats: jest.fn().mockResolvedValue('core stats'),
+      },
+      statsReport: { render: jest.fn().mockRejectedValue(new Error('x')) },
+    });
+    service.onModuleInit();
+    const ctx = await runCommand(fakeBot, 'stats', { from: { id: 999 } });
+    const [first, second] = replies(ctx);
+    expect(first).toBe('core stats');
+    expect(second).toContain('Остальной отчёт');
+    expect(second).toContain('Здоровый Взрослый');
+  });
+
+  it('отказ самого Telegram (reply падает) по-прежнему не роняет хендлер', async () => {
+    const { service, fakeBot } = makeDeps();
+    service.onModuleInit();
+    const ctx = await runCommand(fakeBot, 'stats', {
+      from: { id: 999 },
+      reply: jest
+        .fn()
+        .mockRejectedValueOnce(new Error('tg down'))
+        .mockResolvedValue(undefined),
+    });
+    expect(replies(ctx).some((r) => r.includes('tg down'))).toBe(true);
   });
 });
 
@@ -187,6 +253,34 @@ describe('TelegramAdminService — /stats (только админ)', () => {
       expect.stringContaining('карточки режимов: 9'),
       { parse_mode: 'HTML' },
     );
+  });
+
+  it('отчёт перерос лимит Telegram — уезжает частями, а не падает целиком', async () => {
+    // Шов, ради которого появился replyLong: блоки в отчёт добавляются
+    // регулярно, и раньше семнадцатый мог уронить ВЕСЬ /stats одним 400 от
+    // Telegram — админ увидел бы «❌», а не цифры.
+    process.env.ADMIN_ID = '999';
+    const long = Array.from(
+      { length: 60 },
+      (_, i) => `<b>Блок ${i}</b>\n${'ц'.repeat(200)}`,
+    ).join('\n\n');
+    const { service, fakeBot } = makeDeps({
+      adminStatsService: { getAdminStats: jest.fn().mockResolvedValue('core') },
+      statsReport: { render: jest.fn().mockResolvedValue(long) },
+    });
+    service.onModuleInit();
+
+    const ctx = await runCommand(fakeBot, 'stats', { from: { id: 999 } });
+
+    const calls = (ctx.reply as jest.Mock).mock.calls;
+    expect(calls.length).toBeGreaterThan(2);
+    for (const [text] of calls) {
+      expect(text.length).toBeLessThanOrEqual(4096);
+      // Оборванный тег Telegram отвергает целиком — тогда часть отчёта
+      // пропала бы молча.
+      expect(text.split('<').length).toBe(text.split('>').length);
+    }
+    expect(calls.map(([t]) => t).join('')).toContain('Блок 59');
   });
 });
 

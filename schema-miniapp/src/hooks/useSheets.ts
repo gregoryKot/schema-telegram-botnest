@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useReducer } from 'react';
+import { dropOpen, pushOpen } from './sheetsStack';
 
 export type SchemaTab = 'needs' | 'schemas' | 'modes';
 export type TrackerTabName = 'today' | 'history';
@@ -22,6 +23,10 @@ export interface SheetsValues {
   trackerGoal: boolean;
   diaries: boolean;
   addressPicker: boolean;
+  // Разбор случая («Что это было») — новая точка входа, и карта себя, куда
+  // он складывается. Открываются с «Сегодня» и друг из друга.
+  caseFlow: boolean;
+  selfMap: boolean;
   // Экран-подтверждение присоединения по startParam (M1, аудит 2026-08):
   // pair_/therapy_ в ссылке НЕ джойнят молча на маунте, а сначала спрашивают
   // согласие. joinKind/joinCode — что именно подтверждаем.
@@ -29,6 +34,9 @@ export interface SheetsValues {
   joinKind: 'pair' | 'therapy' | null;
   joinCode: string | null;
 }
+
+// openOrder — порядок открытия, см. sheetsStack.
+export type SheetsState = SheetsValues & { openOrder: SheetKey[] };
 
 export type SheetKey =
   | 'about'
@@ -44,9 +52,11 @@ export type SheetKey =
   | 'trackerGoal'
   | 'diaries'
   | 'addressPicker'
+  | 'caseFlow'
+  | 'selfMap'
   | 'joinConfirm';
 
-const initialState: SheetsValues = {
+export const initialState: SheetsState = {
   about: false,
   schemaInfo: false,
   schemaAutoStartTest: false,
@@ -65,29 +75,29 @@ const initialState: SheetsValues = {
   trackerGoal: false,
   diaries: false,
   addressPicker: false,
+  caseFlow: false,
+  selfMap: false,
   joinConfirm: false,
   joinKind: null,
   joinCode: null,
+  openOrder: [],
 };
 
 type Action =
   | { type: 'open'; sheet: SheetKey; payload?: Partial<SheetsValues> }
   | { type: 'close'; sheet: SheetKey; payload?: Partial<SheetsValues> };
 
-function reducer(state: SheetsValues, action: Action): SheetsValues {
-  switch (action.type) {
-    case 'open':
-      return { ...state, ...action.payload, [action.sheet]: true };
-    case 'close':
-      return { ...state, ...action.payload, [action.sheet]: false };
-    default:
-      return state;
-  }
+function reducer(state: SheetsState, action: Action): SheetsState {
+  const isOpen = action.type === 'open';
+  return {
+    ...state,
+    ...action.payload,
+    [action.sheet]: isOpen,
+    openOrder: (isOpen ? pushOpen : dropOpen)(state.openOrder, action.sheet),
+  };
 }
 
-// Единый реестр видимости оверлеев/шитов App.tsx. open/close вместо
-// отдельных useState на каждый showX — механическая замена без смены
-// поведения (см. REMEDIATION_PLAN этап 3).
+// Единый реестр видимости оверлеев/шитов App.tsx (REMEDIATION_PLAN этап 3).
 export function useSheets() {
   const [state, dispatch] = useReducer(reducer, initialState);
 
@@ -102,9 +112,7 @@ export function useSheets() {
     [],
   );
 
-  // Memoized so consumers can safely put `sheets` (or a field of it) into
-  // effect/callback dependency arrays without picking up a new identity on
-  // every unrelated re-render — only on an actual open/close.
+  // Memoized: identity меняется только при реальном open/close.
   return useMemo(() => ({ ...state, open, close }), [state, open, close]);
 }
 

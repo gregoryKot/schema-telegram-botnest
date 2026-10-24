@@ -36,7 +36,7 @@ export function DiaryWizardNav({
   onSave: () => void;
 }) {
   return (
-    <div style={{ marginTop: 16 }}>
+    <div className="u-mt16">
       <WizardNav
         accentColor={accentColor}
         onBack={() => {

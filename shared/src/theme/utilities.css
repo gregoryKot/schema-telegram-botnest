@@ -1,0 +1,159 @@
+/* ─────────────────────────────────────────────────────────────────────────
+   Классы-утилиты под самые частые инлайновые наборы — webapp ⇄ schema-miniapp
+   (волна «класс вместо копии», продолжение В11 к shared/src/theme/tokens.css).
+
+   Зачем. Шкалы отступов и радиусов сами по себе сделали бандл ТОЛЩЕ: строка
+   `var(--space-12)` длиннее, чем `12`, а минификатор инлайновый объект не
+   сворачивает — каждое из сотен мест несёт свою копию. Класс пишется в CSS
+   один раз, в JS остаётся короткая ссылка. Отсюда и состав файла: сюда
+   попадают ТОЛЬКО наборы, встречавшиеся в продуктовом коде ≥6 раз, замеренные
+   по факту (кластеризация всех `style={{…}}` обоих фронтендов), а не
+   придуманные «на всякий случай». Утилита без потребителей — мёртвый код.
+
+   Почему файл общий, а не по копии в каждом index.css: правило №3 CLAUDE.md
+   (общий код — в shared/), плюс копия-близнец сразу попала бы в счётчик
+   дублей jscpd.
+
+   Почему селектор УДВОЕН (`.u-mb8.u-mb8`). Инлайновый стиль побеждал любое
+   правило таблицы; одиночный класс (0,1,0) проигрывает `.card p {…}` и
+   `.sb-item .badge {…}` — то есть перевод в класс менял бы вид там, где
+   такое правило есть. Удвоение даёт (0,2,0) и сохраняет прежнее поведение
+   по построению, а не по надежде на то, что все экраны попали в скриншоты.
+   Это не «!important на всякий случай»: у самих утилит важности нет, и любой
+   селектор от (0,2,1) их по-прежнему перебивает.
+
+   Подключается ПОСЛЕ index.css (см. main.tsx обоих фронтендов) — чтобы при
+   равной специфичности последнее слово оставалось за утилитой.
+
+   Значения берутся из шкал tokens.css там, где ступень есть; сырые пиксели
+   (3px, 18px) — это замороженный дрейф, который волна лишь вынесла из JS в
+   одно место, не подгоняя «на глаз» под ближайшую ступень: подгонка меняла
+   бы вид, а это не редизайн.
+   ───────────────────────────────────────────────────────────────────────── */
+
+/* ── Раскладка ─────────────────────────────────────────────────────────── */
+.u-fill.u-fill { flex: 1; min-width: 0; }
+.u-flex1.u-flex1 { flex: 1; }
+.u-w100.u-w100 { width: 100%; }
+.u-row8.u-row8 { display: flex; gap: var(--space-8); }
+.u-row10.u-row10 { display: flex; gap: var(--space-10); }
+.u-ac6.u-ac6 { display: flex; align-items: center; gap: var(--space-6); }
+.u-ac8.u-ac8 { display: flex; align-items: center; gap: var(--space-8); }
+.u-ac10.u-ac10 { display: flex; align-items: center; gap: var(--space-10); }
+.u-ac12.u-ac12 { display: flex; align-items: center; gap: var(--space-12); }
+.u-col4.u-col4 { display: flex; flex-direction: column; gap: var(--space-4); }
+.u-col6.u-col6 { display: flex; flex-direction: column; gap: var(--space-6); }
+.u-col8.u-col8 { display: flex; flex-direction: column; gap: var(--space-8); }
+.u-col10.u-col10 { display: flex; flex-direction: column; gap: var(--space-10); }
+.u-col12.u-col12 { display: flex; flex-direction: column; gap: var(--space-12); }
+.u-wrap8.u-wrap8 { display: flex; flex-wrap: wrap; gap: var(--space-8); }
+.u-col2.u-col2 { display: flex; flex-direction: column; gap: var(--space-2); }
+/* gap: 5px — вне шкалы, заморожен как был (подгонка меняла бы вид). */
+.u-wrap5.u-wrap5 { display: flex; flex-wrap: wrap; gap: 5px; }
+.u-between-mb10.u-between-mb10 {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-10);
+}
+
+/* ── Отступы ───────────────────────────────────────────────────────────── */
+.u-mb4.u-mb4 { margin-bottom: var(--space-4); }
+.u-mb6.u-mb6 { margin-bottom: var(--space-6); }
+.u-mb8.u-mb8 { margin-bottom: var(--space-8); }
+.u-mb10.u-mb10 { margin-bottom: var(--space-10); }
+.u-mb12.u-mb12 { margin-bottom: var(--space-12); }
+.u-mb14.u-mb14 { margin-bottom: var(--space-14); }
+.u-mb16.u-mb16 { margin-bottom: var(--space-16); }
+.u-mb18.u-mb18 { margin-bottom: 18px; } /* вне шкалы — заморожен как был */
+.u-mb20.u-mb20 { margin-bottom: var(--space-20); }
+.u-mb24.u-mb24 { margin-bottom: var(--space-24); }
+.u-mb28.u-mb28 { margin-bottom: 28px; } /* вне шкалы — заморожен как был */
+.u-mb40.u-mb40 { margin-bottom: var(--space-40); }
+.u-mt3.u-mt3 { margin-top: 3px; } /* вне шкалы — заморожен как был */
+.u-mt8.u-mt8 { margin-top: var(--space-8); }
+.u-mt10.u-mt10 { margin-top: var(--space-10); }
+.u-mt12.u-mt12 { margin-top: var(--space-12); }
+.u-mt14.u-mt14 { margin-top: var(--space-14); }
+.u-mt16.u-mt16 { margin-top: var(--space-16); }
+.u-mt20.u-mt20 { margin-top: var(--space-20); }
+.u-mt24.u-mt24 { margin-top: var(--space-24); }
+.u-pt4.u-pt4 { padding-top: var(--space-4); }
+.u-pt8.u-pt8 { padding-top: var(--space-8); }
+.u-pt40.u-pt40 { padding-top: var(--space-40); }
+
+/* ── Текст ─────────────────────────────────────────────────────────────── */
+.u-tc.u-tc { text-align: center; }
+.u-w600.u-w600 { font-weight: 600; }
+.u-fg.u-fg { color: var(--text); }
+.u-accent.u-accent { color: var(--accent); }
+.u-faint.u-faint { color: var(--text-faint); }
+.u-sub.u-sub { color: var(--text-sub); }
+.u-link.u-link { color: var(--accent); text-decoration: none; }
+.u-faint11.u-faint11 { font-size: 11px; color: var(--text-faint); }
+.u-faint12.u-faint12 { font-size: 12px; color: var(--text-faint); }
+.u-faint13.u-faint13 { font-size: 13px; color: var(--text-faint); }
+.u-faint14.u-faint14 { font-size: 14px; color: var(--text-faint); }
+.u-accent12.u-accent12 { font-size: 12px; color: var(--accent); }
+.u-sub12.u-sub12 { font-size: 12px; color: var(--text-sub); }
+.u-sub13.u-sub13 { font-size: 13px; color: var(--text-sub); }
+.u-faint12-mt2.u-faint12-mt2 {
+  font-size: 12px;
+  color: var(--text-faint);
+  margin-top: var(--space-2);
+}
+/* margin-top: 1px — вне шкалы, заморожен как был. */
+.u-sub11-mt1.u-sub11-mt1 { font-size: 11px; color: var(--text-sub); margin-top: 1px; }
+.u-sub12-lh15.u-sub12-lh15 {
+  font-size: 12px;
+  color: var(--text-sub);
+  line-height: 1.5;
+}
+.u-sub12-mt2.u-sub12-mt2 {
+  font-size: 12px;
+  color: var(--text-sub);
+  margin-top: var(--space-2);
+}
+.u-sub13-lh15.u-sub13-lh15 {
+  font-size: 13px;
+  color: var(--text-sub);
+  line-height: 1.5;
+}
+.u-sub13-lh16.u-sub13-lh16 {
+  font-size: 13px;
+  color: var(--text-sub);
+  line-height: 1.6;
+}
+.u-sub14-lh15.u-sub14-lh15 {
+  font-size: 14px;
+  color: var(--text-sub);
+  line-height: 1.5;
+}
+.u-h13.u-h13 { font-size: 13px; font-weight: 600; color: var(--text); }
+.u-h14.u-h14 { font-size: 14px; font-weight: 600; color: var(--text); }
+.u-h15.u-h15 { font-size: 15px; font-weight: 700; color: var(--text); }
+.u-h16.u-h16 { font-size: 16px; font-weight: 600; color: var(--text); }
+.u-h17.u-h17 { font-size: 17px; font-weight: 700; color: var(--text); }
+/* Эмодзи-иллюстрация над заголовком карточки (мини-апп). */
+.u-e21.u-e21 { font-size: 21px; margin-bottom: var(--space-8); }
+
+/* ── Поверхности ───────────────────────────────────────────────────────── */
+.u-pointer.u-pointer { cursor: pointer; }
+.u-r16-clip.u-r16-clip { border-radius: var(--r-16); overflow: hidden; }
+/* Полноэкранный лист (правило useHistorySheet — про историю, не про вид). */
+.u-sheet.u-sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  background: var(--bg);
+  overflow-y: auto;
+}
+.u-sheet-grid.u-sheet-grid {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  background: var(--bg);
+  display: grid;
+  grid-template-rows: auto 1fr;
+  overflow: hidden;
+}

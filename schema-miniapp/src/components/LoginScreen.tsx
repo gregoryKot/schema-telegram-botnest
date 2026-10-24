@@ -1,4 +1,5 @@
 import { useTr } from '../utils/addressForm';
+import { hasAuthSeen } from '../../../shared/src/auth/authSeen';
 import { useSafeTop } from '../utils/safezone';
 import { buildWhyItWorks } from '../aboutData';
 import { LoginProviderButtons } from './loginScreen/LoginProviderButtons';
@@ -22,6 +23,10 @@ export function LoginScreen() {
   const tr = useTr();
   const safeTop = useSafeTop();
   const whyText = buildWhyItWorks(tr);
+  // Тот же экран показывался и новичку, и человеку, у которого истекла
+  // сессия. Для второго «Войдите, чтобы продолжить» — это молчание о том, что
+  // произошло: жалоба звучала как «приложение не сообщает, просто выкидывает».
+  const returning = hasAuthSeen();
 
   return (
     <div
@@ -37,19 +42,36 @@ export function LoginScreen() {
         </h1>
       </div>
 
-      <div className="card" style={{ padding: '16px 18px', marginBottom: 12 }}>
-        <p style={{ fontSize: 14, lineHeight: 1.7, margin: 0 }}>{WHAT_IS_IT}</p>
-        <p
-          style={{
-            fontSize: 13,
-            lineHeight: 1.7,
-            color: 'var(--text-sub)',
-            margin: '10px 0 0',
-          }}
+      {returning ? (
+        <div
+          className="card"
+          style={{ padding: '14px 18px', marginBottom: 12 }}
         >
-          {whyText}
-        </p>
-      </div>
+          <p style={{ fontSize: 14, lineHeight: 1.7, margin: 0 }}>
+            Вход устарел — такое бывает после долгого перерыва. Данные на месте,
+            нужно только войти заново тем же способом.
+          </p>
+        </div>
+      ) : (
+        <div
+          className="card"
+          style={{ padding: '16px 18px', marginBottom: 12 }}
+        >
+          <p style={{ fontSize: 14, lineHeight: 1.7, margin: 0 }}>
+            {WHAT_IS_IT}
+          </p>
+          <p
+            style={{
+              fontSize: 13,
+              lineHeight: 1.7,
+              color: 'var(--text-sub)',
+              margin: '10px 0 0',
+            }}
+          >
+            {whyText}
+          </p>
+        </div>
+      )}
 
       <div className="card" style={{ padding: '20px 18px' }}>
         <p
@@ -60,7 +82,9 @@ export function LoginScreen() {
             margin: '0 0 4px',
           }}
         >
-          {tr('Войди, чтобы продолжить', 'Войдите, чтобы продолжить')}
+          {returning
+            ? tr('Войди заново', 'Войдите заново')
+            : tr('Войди, чтобы продолжить', 'Войдите, чтобы продолжить')}
         </p>
         <LoginProviderButtons />
         <LoginEmailForm />

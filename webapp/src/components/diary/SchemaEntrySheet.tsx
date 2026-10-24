@@ -2,7 +2,8 @@ import { useState, useRef, useEffect } from 'react';
 import { ExScreen } from '../exercises/ExScreen';
 import { useHistorySheet } from '../../hooks/useHistorySheet';
 import { useTr } from '../../utils/addressForm';
-import { pressable } from '../../utils/a11y';
+import { DIARY_HUE } from '../../lib/tone';
+import { DiaryAside, DiaryStepCard, DiaryStepQ, DiaryTicks } from './DiaryStepCard';
 import { saveDraft, loadDraft, clearDraft } from '../../utils/drafts';
 import { detectCrisisAny } from '../../utils/crisisMarkers';
 import { CrisisCard } from '../CrisisCard';
@@ -10,6 +11,8 @@ import { haptic } from '../../haptic';
 import { SchemaEmotionsStep } from './SchemaEmotionsStep';
 import { SchemaChipsStep } from './SchemaChipsStep';
 import { DiaryWizardFoot } from './DiaryWizardFoot';
+import { LimitedTextarea } from '../../../../shared/src/components/LimitedTextarea';
+import { DIARY_FIELD_MAX } from '../../../../shared/src/limits/textLimits';
 import {
   buildSchemaDiarySteps,
   buildSchemaDiaryChipLabels,
@@ -21,6 +24,7 @@ import {
 } from '../../../../shared/src/schema/schemaDiarySteps';
 import {
   useSchemaDiaryDraftState,
+  hasSchemaDiaryDraft,
   type SchemaDiaryDraftData,
 } from '../../../../shared/src/schema/useSchemaDiaryDraftState';
 import { buildSchemaDiaryExplainer } from '../../../../shared/src/schema/schemaFlowExplainers';
@@ -39,7 +43,7 @@ interface Props {
   onSave: (data: SchemaDiaryEntryInput) => Promise<void>;
 }
 
-const ACCENT = 'var(--c-rose)';
+const HUE = DIARY_HUE.schema;
 
 export function SchemaEntrySheet({ activeSchemaIds, onClose, onSave }: Props) {
   const tr = useTr();
@@ -123,60 +127,37 @@ export function SchemaEntrySheet({ activeSchemaIds, onClose, onSave }: Props) {
     <ExScreen
       onBack={goBack}
       backLabel="Назад к дневнику"
-      eyebrow="Дневник схем · новая запись"
-      eyebrowColor={ACCENT}
+      eyebrow={hasSchemaDiaryDraft(d) ? 'Дневник схем · продолжаем с того места' : 'Дневник схем · с чего начнём?'}
       title={<>Записать<br /><span className="it">момент</span></>}
       lede={tr(
-        'Поймал триггер – приходи сюда. Обязательна только ситуация, остальное можно дополнить по шагам.',
-        'Поймали триггер – приходите сюда. Обязательна только ситуация, остальное можно дополнить по шагам.',
+        'Что-то задело — приходи сюда. Обязательна только ситуация, остальное можно дополнить по шагам.',
+        'Что-то задело — приходите сюда. Обязательна только ситуация, остальное можно дополнить по шагам.',
       )}
       aside={
-        <div className="aside-card" style={{ borderColor: ACCENT + '40', background: ACCENT + '08', position: 'sticky', top: 40 }}>
-          <div className="aside-card-eyebrow" style={{ color: ACCENT }}>Совет</div>
-          <h3>Не обязательно по порядку</h3>
-          <p className="body">{tr('Если в моменте трудно – запиши только триггер и чувство. Остальное можно дополнить позже, или когда тебе кто-то поможет это разобрать.', 'Если в моменте трудно – запишите только триггер и чувство. Остальное можно дополнить позже, или когда вам кто-то поможет это разобрать.')}</p>
-          <ul>
+        <DiaryAside hue={HUE} eyebrow="Совет" title="Не обязательно по порядку">
+          <p className="ds-sub">{tr('Если в моменте трудно – запиши только триггер и чувство. Остальное можно дополнить позже, или когда тебе кто-то поможет это разобрать.', 'Если в моменте трудно – запишите только триггер и чувство. Остальное можно дополнить позже, или когда вам кто-то поможет это разобрать.')}</p>
+          <ul className="sd-aside-list">
             <li>Автосохранение на каждом шаге</li>
             <li>Можно вернуться и продолжить</li>
             <li>{tr('Никто кроме тебя не увидит', 'Никто кроме вас не увидит')}</li>
           </ul>
-        </div>
+        </DiaryAside>
       }
     >
-      <p style={{ fontSize: 13, color: 'var(--text-faint)', lineHeight: 1.5, marginBottom: 20 }}>{buildSchemaDiaryExplainer(tr)}</p>
+      <p className="ds-sub sd-explainer">{buildSchemaDiaryExplainer(tr)}</p>
 
-      <div className="tick-strip">
-        {tickFilled.map((filled, i) => (
-          <div
-            key={i}
-            className={'tick ' + (filled ? 'is-filled ' : '') + (i === stepIdx ? 'is-active' : '')}
-            style={{ '--accent': ACCENT } as React.CSSProperties}
-            {...pressable(() => setStepIdx(i))}
-          />
-        ))}
-      </div>
+      <DiaryTicks filled={tickFilled} active={stepIdx} hue={HUE} onJump={setStepIdx} />
 
-      <div className="flash" style={{ borderColor: curFilled ? ACCENT + '55' : 'var(--line)' }}>
-        <div className="flash-eyebrow" style={{ color: ACCENT }}>
-          <span style={{ width: 6, height: 6, borderRadius: 3, background: 'currentColor' }} />
-          Шаг {stepIdx + 1} из {TOTAL}
-          {curRequired
-            ? <span style={{ marginLeft: 6, fontWeight: 600, color: ACCENT }}>· обязательно</span>
-            : <span style={{ marginLeft: 6, fontWeight: 400, textTransform: 'none', letterSpacing: 0, color: 'var(--text-faint)' }}>· можно пропустить</span>}
-          <span className="flash-counter">{filledCount} / {TOTAL} заполнено</span>
-        </div>
-
+      <DiaryStepCard hue={HUE} stepIdx={stepIdx} total={TOTAL} required={curRequired} filled={curFilled} filledCount={filledCount}>
         {kind === 'emotions' && (
           <>
-            <div className="flash-q">{chipLabels.emotions.title}</div>
-            <div className="flash-hint">{chipLabels.emotions.hint}</div>
+            <DiaryStepQ title={chipLabels.emotions.title} hint={chipLabels.emotions.hint} />
             <SchemaEmotionsStep emotions={emotions} onToggle={toggleEmotion} onSetIntensity={setIntensity} />
           </>
         )}
         {kind === 'schemas' && (
           <>
-            <div className="flash-q">{chipLabels.schemas.title}</div>
-            <div className="flash-hint">{chipLabels.schemas.hint}</div>
+            <DiaryStepQ id="schema-entry-question" title={chipLabels.schemas.title} hint={chipLabels.schemas.hint} />
             <SchemaChipsStep
               schemaIds={schemaIds}
               onToggle={toggleSchema}
@@ -185,32 +166,30 @@ export function SchemaEntrySheet({ activeSchemaIds, onClose, onSave }: Props) {
               onToggleShowAll={() => { haptic.tap(); setShowAllSchemas((v) => !v); }}
             />
             {/* Свободный текст — здесь, а не в чип-компоненте: detectCrisisAny
-                ниже прогоняет его вместе с остальными полями (правило №7). */}
-            <textarea
-              className={'paper-area ' + (values.schemaOrigin.trim() ? 'is-filled' : '')}
-              rows={2}
+                ниже прогоняет его вместе с остальными полями (правило №7).
+                Своя aria-label (не flash-q выше — тот описывает чипы, а не
+                это поле): у schemaOrigin есть отдельный вопрос в контенте
+                (stepByKey.schemaOrigin.title), видимо он нигде не рендерится. */}
+            <LimitedTextarea max={DIARY_FIELD_MAX} className="ds-textarea sd-area-gap" rows={2}
               value={values.schemaOrigin}
               onChange={(e) => setField('schemaOrigin', e.target.value)}
               placeholder={stepByKey.schemaOrigin.example}
-              style={{ marginTop: 12 }}
+              aria-label={stepByKey.schemaOrigin.title}
             />
           </>
         )}
         {textStep && (
           <>
-            <div className="flash-q">{textStep.title}</div>
-            <div className="flash-hint">{textStep.hint}</div>
-            <textarea
-              ref={areaRef}
-              className={'paper-area ' + (curFilled ? 'is-filled' : '')}
-              rows={textStep.rows ?? 3}
+            <DiaryStepQ id="schema-entry-question" title={textStep.title} hint={textStep.hint} />
+            <LimitedTextarea max={DIARY_FIELD_MAX} ref={areaRef} className="ds-textarea" rows={textStep.rows ?? 3}
               value={values[textStep.key]}
               onChange={(e) => setField(textStep.key, e.target.value)}
               placeholder={textStep.example}
+              aria-labelledby="schema-entry-question"
             />
           </>
         )}
-      </div>
+      </DiaryStepCard>
 
       {detectCrisisAny(...Object.values(values)) && <CrisisCard surface="schema" />}
 

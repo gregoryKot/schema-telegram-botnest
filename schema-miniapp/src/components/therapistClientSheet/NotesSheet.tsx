@@ -1,7 +1,11 @@
 import { BottomSheet } from '../BottomSheet';
-import { fmtDate } from '../../utils/format';
 import { ClientDetail } from './types';
 import { useTr } from '../../utils/addressForm';
+import { LimitedTextarea } from '../../../../shared/src/components/LimitedTextarea';
+import { SESSION_NOTE_MAX } from '../../../../shared/src/limits/textLimits';
+import { NOTE_FIELD_STYLE } from './noteFieldStyle';
+import { NoteCard } from './NoteCard';
+import { NotesTruncationHint } from '../../../../shared/src/therapy/NotesTruncationHint';
 
 interface NotesSheetProps {
   detail: ClientDetail;
@@ -11,6 +15,7 @@ export function NotesSheet({ detail }: NotesSheetProps) {
   const tr = useTr();
   const {
     notes,
+    notesPage,
     removeNote,
     newNoteText,
     setNewNoteText,
@@ -23,7 +28,7 @@ export function NotesSheet({ detail }: NotesSheetProps) {
 
   return (
     <BottomSheet onClose={() => setShowNotesSheet(false)}>
-      <div style={{ paddingTop: 4 }}>
+      <div className="u-pt4">
         <div
           style={{
             fontSize: 17,
@@ -34,6 +39,7 @@ export function NotesSheet({ detail }: NotesSheetProps) {
         >
           Заметки сессий
         </div>
+        <NotesTruncationHint page={notesPage} />
         {notes.length === 0 ? (
           <div
             style={{
@@ -50,66 +56,20 @@ export function NotesSheet({ detail }: NotesSheetProps) {
           </div>
         ) : (
           notes.map((note) => (
-            <div
-              key={note.id}
-              style={{
-                background: 'rgba(var(--fg-rgb),0.03)',
-                border: '1px solid rgba(var(--fg-rgb),0.06)',
-                borderRadius: 14,
-                padding: '12px 14px',
-                marginBottom: 8,
-              }}
-            >
-              <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'flex-start',
-                  marginBottom: 6,
-                }}
-              >
-                <span style={{ fontSize: 11, color: 'var(--text-sub)' }}>
-                  {fmtDate(note.date)}
-                </span>
-                <button
-                  onClick={() => removeNote(note.id)}
-                  aria-label="Удалить заметку"
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    color: 'var(--accent-red)',
-                    fontSize: 18,
-                    cursor: 'pointer',
-                    padding: '0 2px',
-                    lineHeight: 1,
-                  }}
-                >
-                  ×
-                </button>
-              </div>
-              <div
-                style={{
-                  fontSize: 13,
-                  color: 'rgba(var(--fg-rgb),0.75)',
-                  lineHeight: 1.6,
-                  whiteSpace: 'pre-wrap',
-                }}
-              >
-                {note.text}
-              </div>
-            </div>
+            <NoteCard key={note.id} note={note} onRemove={removeNote} />
           ))
         )}
         <div
           style={{
             background: 'rgba(var(--fg-rgb),0.03)',
             border: '1px solid rgba(var(--fg-rgb),0.07)',
-            borderRadius: 16,
+            borderRadius: 'var(--r-16)',
             padding: 14,
             marginTop: 8,
           }}
         >
-          <textarea
+          <LimitedTextarea
+            max={SESSION_NOTE_MAX}
             value={newNoteText}
             onChange={(e) => {
               setNewNoteText(e.target.value);
@@ -117,18 +77,7 @@ export function NotesSheet({ detail }: NotesSheetProps) {
             }}
             placeholder="Заметка сессии: наблюдения, гипотезы, динамика, план следующей встречи..."
             rows={3}
-            style={{
-              width: '100%',
-              boxSizing: 'border-box',
-              background: 'transparent',
-              border: 'none',
-              outline: 'none',
-              resize: 'none',
-              color: 'var(--text)',
-              fontSize: 13,
-              lineHeight: 1.5,
-              fontFamily: 'inherit',
-            }}
+            style={NOTE_FIELD_STYLE}
           />
           <div
             style={{
@@ -150,7 +99,7 @@ export function NotesSheet({ detail }: NotesSheetProps) {
               disabled={noteSaving || !newNoteText.trim()}
               style={{
                 padding: '8px 18px',
-                borderRadius: 10,
+                borderRadius: 'var(--r-10)',
                 border: 'none',
                 background: newNoteText.trim()
                   ? 'color-mix(in srgb, var(--accent) 25%, transparent)'

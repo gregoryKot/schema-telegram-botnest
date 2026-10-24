@@ -6,7 +6,7 @@ import { HealthyAdultAdminController } from './healthy-adult-admin.controller';
 import type { HealthyAdultService } from '../bot/healthy-adult.service';
 import type { ChannelPublisherService } from '../channel/channel-publisher.service';
 
-const ADMIN_KEY = 'test-admin-key-1234';
+const ADMIN_KEY = 'test-admin-key-1234-0123456789abcdefghij';
 
 function makeConfig(key: string | undefined = ADMIN_KEY) {
   return { get: jest.fn(() => key) } as any;

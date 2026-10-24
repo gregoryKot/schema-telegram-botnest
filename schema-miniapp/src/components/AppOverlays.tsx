@@ -1,29 +1,34 @@
 import { Need } from '../types';
-import { api, PairsData, StreakData } from '../api';
-import { DiarySection } from '../sections/DiarySection';
+import { PairsData, StreakData } from '../api';
 import { Section } from './BottomNav';
 import { TrackerOverlay } from './TrackerOverlay';
 import { Disclaimer } from './Disclaimer';
 import { SettingsSheet } from './SettingsSheet';
 import { AddressFormPicker } from './AddressFormPicker';
 import { DonateNudge } from './DonateNudge';
-import { PracticesScreen } from './PracticesScreen';
-import { PlansScreen } from './PlansScreen';
 import { Celebration } from './Celebration';
 import { todayInsightPhrase } from '../utils/todayInsight';
 import { NoteSheet } from './NoteSheet';
-import { SchemaInfoSheet } from './SchemaInfoSheet';
 import { PairSheet } from './PairSheet';
 import { JoinConfirmSheet } from './JoinConfirmSheet';
-import { ChildhoodWheelSheet } from './ChildhoodWheelSheet';
-import { TaskCreateSheet } from './TaskCreateSheet';
 import { AboutSheet } from './AboutSheet';
+import {
+  LazyDiarySection as DiarySection,
+  LazyPracticesScreen as PracticesScreen,
+  LazyPlansScreen as PlansScreen,
+  LazySchemaInfoSheet as SchemaInfoSheet,
+  LazyChildhoodWheelSheet as ChildhoodWheelSheet,
+  LazyTaskCreateSheet as TaskCreateSheet,
+} from './LazyOverlays';
 import { AppDiaryNav } from './AppDiaryNav';
 import { UseSheetsReturn } from '../hooks/useSheets';
+import type { OverlaySheetKey } from '../hooks/sheetsStack';
 import { TODAY_DATE } from '../utils/todayConstants';
 
 interface Props {
   sheets: UseSheetsReturn;
+  /** Единый реестр закрытия листов (useHostBackButton): крестик = «Назад». */
+  closers: Record<OverlaySheetKey, () => void>;
   needs: Need[];
   ratings: Record<string, number>;
   saved: Record<string, boolean>;
@@ -32,14 +37,11 @@ interface Props {
   onSaved: (needId: string, streak?: StreakData) => void;
   yesterdayRatings: Record<string, number>;
   showOnboarding: boolean;
-  onAddressPickerDone: () => void;
   consentGiven: boolean;
   onConsentDisclaimer: () => void;
   onAcceptDisclaimer: () => void;
   celebrationStreak: number | null;
   setCelebrationStreak: (v: number | null) => void;
-  childhoodWheelPending: boolean;
-  setChildhoodWheelPending: (v: boolean) => void;
   setChildhoodRatings: (r: Record<string, number>) => void;
   setPairData: (data: PairsData) => void;
   userRole: 'CLIENT' | 'THERAPIST';
@@ -58,8 +60,12 @@ interface Props {
 // Оверлеи/шиты App.tsx, не относящиеся к главным экранам или истории
 // потребностей (те — в AppSections/TrackerHistoryOverlay). Перенесено из
 // App.tsx как есть (этап 3 REMEDIATION_PLAN) — без смены поведения.
+import { CaseFlowOverlay } from './caseFlow/CaseFlowOverlay';
+import { SelfMapOverlay } from './selfMap/SelfMapOverlay';
+
 export function AppOverlays({
   sheets,
+  closers,
   needs,
   ratings,
   saved,
@@ -68,14 +74,11 @@ export function AppOverlays({
   onSaved,
   yesterdayRatings,
   showOnboarding,
-  onAddressPickerDone,
   consentGiven,
   onConsentDisclaimer,
   onAcceptDisclaimer,
   celebrationStreak,
   setCelebrationStreak,
-  childhoodWheelPending,
-  setChildhoodWheelPending,
   setChildhoodRatings,
   setPairData,
   userRole,
@@ -90,6 +93,11 @@ export function AppOverlays({
   section,
   setSection,
 }: Props) {
+  // Три экрана ведут к оценке потребностей: лист закрывается функцией реестра.
+  const openTrackerAfter = (close: () => void) => () => {
+    close();
+    sheets.open('trackerOverlay', { trackerNeedId: null });
+  };
   return (
     <>
       {/* ── TrackerOverlay (NeedDial, per-need) ── */}
@@ -101,14 +109,12 @@ export function AppOverlays({
           isOffline={isOffline}
           onChange={onChange}
           onSaved={onSaved}
-          onClose={() =>
-            sheets.close('trackerOverlay', { trackerNeedId: null })
-          }
+          onClose={closers.trackerOverlay}
           initialNeedId={sheets.trackerNeedId}
           onOpenNote={() => sheets.open('todayNote')}
           onOpenGoal={() => sheets.open('trackerGoal')}
           onOpenHistory={() => {
-            sheets.close('trackerOverlay', { trackerNeedId: null });
+            closers.trackerOverlay();
             sheets.open('tracker', { trackerTab: 'history' });
           }}
           yesterdayRatings={yesterdayRatings}
@@ -126,11 +132,8 @@ export function AppOverlays({
           }}
         >
           <DiarySection
-            onClose={() => sheets.close('diaries')}
-            onOpenTracker={() => {
-              sheets.close('diaries');
-              sheets.open('trackerOverlay', { trackerNeedId: null });
-            }}
+            onClose={closers.diaries}
+            onOpenTracker={openTrackerAfter(closers.diaries)}
           />
         </div>
       )}
@@ -157,62 +160,52 @@ export function AppOverlays({
       )}
 
       {sheets.todayNote && (
-        <NoteSheet
-          date={TODAY_DATE}
-          onClose={() => {
-            sheets.close('todayNote');
-            if (childhoodWheelPending) {
-              setChildhoodWheelPending(false);
-              sheets.open('childhoodWheel');
-            }
-          }}
-        />
+        <NoteSheet date={TODAY_DATE} onClose={closers.todayNote} />
       )}
 
       {sheets.trackerGoal && (
         <TaskCreateSheet
           defaultType="tracker_streak"
-          onCreated={() => sheets.close('trackerGoal')}
-          onClose={() => sheets.close('trackerGoal')}
+          onCreated={closers.trackerGoal}
+          onClose={closers.trackerGoal}
         />
+      )}
+
+      {sheets.caseFlow && (
+        <CaseFlowOverlay sheets={sheets} onClose={closers.caseFlow} />
+      )}
+
+      {sheets.selfMap && (
+        <SelfMapOverlay sheets={sheets} onClose={closers.selfMap} />
       )}
 
       {sheets.childhoodWheel && (
         <ChildhoodWheelSheet
-          onClose={() => sheets.close('childhoodWheel')}
+          onClose={closers.childhoodWheel}
           onOpenSchemas={() => {
-            sheets.close('childhoodWheel');
+            closers.childhoodWheel();
             sheets.open('schemaInfo');
           }}
           onSaved={(r) => setChildhoodRatings(r)}
         />
       )}
 
-      {sheets.pairSheet && (
-        <PairSheet
-          onClose={() => {
-            sheets.close('pairSheet');
-            void api.getPair().then(setPairData);
-          }}
-        />
-      )}
+      {sheets.pairSheet && <PairSheet onClose={closers.pairSheet} />}
 
       {sheets.joinConfirm && sheets.joinKind && sheets.joinCode && (
         <JoinConfirmSheet
           joinKind={sheets.joinKind}
           joinCode={sheets.joinCode}
-          onClose={() =>
-            sheets.close('joinConfirm', { joinKind: null, joinCode: null })
-          }
+          onClose={closers.joinConfirm}
           onPairJoined={setPairData}
         />
       )}
 
       {sheets.about && (
         <AboutSheet
-          onClose={() => sheets.close('about')}
+          onClose={closers.about}
           onOpenSchemaInfo={() => {
-            sheets.close('about');
+            closers.about();
             sheets.open('schemaInfo');
           }}
         />
@@ -220,12 +213,12 @@ export function AppOverlays({
 
       {sheets.settings && (
         <SettingsSheet
-          onClose={() => sheets.close('settings')}
+          onClose={closers.settings}
           userRole={userRole}
           displayName={displayName}
           onNameChanged={setDisplayName}
           onOpenTherapistCabinet={() => {
-            sheets.close('settings');
+            closers.settings();
             switchTherapistMode(true);
           }}
           therapistMode={therapistMode}
@@ -234,43 +227,26 @@ export function AppOverlays({
         />
       )}
       {sheets.addressPicker && (
-        <AddressFormPicker
-          onDone={() => {
-            sessionStorage.setItem('addr_form_asked', '1');
-            sheets.close('addressPicker');
-            onAddressPickerDone();
-          }}
-        />
+        <AddressFormPicker onDone={closers.addressPicker} />
       )}
       <DonateNudge />
 
       {/* therapistMode renders inline in main flow, not as overlay — see below */}
       {sheets.practices && (
         <PracticesScreen
-          onClose={() => sheets.close('practices')}
-          onOpenTracker={() => {
-            sheets.close('practices');
-            sheets.open('trackerOverlay', { trackerNeedId: null });
-          }}
+          onClose={closers.practices}
+          onOpenTracker={openTrackerAfter(closers.practices)}
         />
       )}
       {sheets.plans && (
         <PlansScreen
-          onClose={() => sheets.close('plans')}
-          onOpenTracker={() => {
-            sheets.close('plans');
-            sheets.open('trackerOverlay', { trackerNeedId: null });
-          }}
+          onClose={closers.plans}
+          onOpenTracker={openTrackerAfter(closers.plans)}
         />
       )}
       {sheets.schemaInfo && (
         <SchemaInfoSheet
-          onClose={() =>
-            sheets.close('schemaInfo', {
-              schemaAutoStartTest: false,
-              schemaHighlight: undefined,
-            })
-          }
+          onClose={closers.schemaInfo}
           ratings={ratings}
           autoStartTest={sheets.schemaAutoStartTest}
           initialTab={sheets.schemaInitialTab}

@@ -1,0 +1,59 @@
+{
+  "$schema": "./node_modules/@stryker-mutator/core/schema/stryker-schema.json",
+  "packageManager": "npm",
+  "testRunner": "jest",
+  "appendPlugins": [
+    "./scripts/stryker/covering-test-files.plugin.mjs"
+  ],
+  "jest": {
+    "projectType": "custom",
+    "configFile": "package.json",
+    "config": {
+      "filter": "<rootDir>/../scripts/stryker/covering-test-files.cjs"
+    }
+  },
+  "mutate": [
+    "src/utils/tz.ts",
+    "src/booking/robokassa.service.ts",
+    "src/booking/booking.service.ts",
+    "src/booking/payment-guard.ts",
+    "src/booking/booking-data.ts",
+    "src/subscription/subscription.service.ts",
+    "src/booking/slot.service.ts",
+    "src/booking/slot-window.ts",
+    "src/booking/pricing.service.ts",
+    "src/booking/price-currency.ts",
+    "src/booking/booking-pricing-path.ts",
+    "src/booking/price-rules.ts",
+    "src/booking/booking-amount.ts",
+    "src/booking/booking-amount-alert.ts",
+    "src/booking/payment.controller.ts",
+    "src/booking/payment.booking-webhook.ts",
+    "src/booking/booking-paid-after-cancel.ts",
+    "src/booking/booking.transitions.ts",
+    "src/donation/donation.service.ts",
+    "src/notification/notification.planner.service.ts"
+  ],
+  "reporters": [
+    "clear-text",
+    "progress",
+    "html",
+    "json",
+    "covering-test-files"
+  ],
+  "htmlReporter": {
+    "fileName": "reports/mutation/golden-payments.html"
+  },
+  "concurrency": 2,
+  "coverageAnalysis": "perTest",
+  "ignoreStatic": true,
+  "thresholds": {
+    "high": 80,
+    "low": 60,
+    "break": null
+  },
+  "timeoutMS": 60000,
+  "jsonReporter": {
+    "fileName": "reports/mutation/golden-payments.json"
+  }
+}

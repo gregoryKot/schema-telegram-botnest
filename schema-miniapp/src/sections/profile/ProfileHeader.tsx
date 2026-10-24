@@ -21,7 +21,13 @@ export function ProfileHeader({
         padding: '20px 20px 0',
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 'var(--space-14)',
+        }}
+      >
         <div
           style={{
             width: 52,
@@ -41,9 +47,9 @@ export function ProfileHeader({
           {(firstName || 'Я')[0].toUpperCase()}
         </div>
         <div>
-          <div className="d-display" style={{ fontSize: 22 }}>
+          <h1 className="d-display" style={{ fontSize: 22, margin: 0 }}>
             {firstName || 'Я'}
-          </div>
+          </h1>
           {totalDays > 0 && (
             <div
               style={{ fontSize: 12, color: 'var(--text-sub)', marginTop: 1 }}

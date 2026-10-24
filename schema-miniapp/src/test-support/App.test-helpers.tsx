@@ -8,9 +8,8 @@
 // Моки api/session/useUserFlags — в соседнем App.test-fixtures.ts (иначе файл
 // пробивает потолок 300 строк, правило №10).
 //
-// ВАЖНО (как в webapp-хелпере): vi.mock — на верхнем уровне модуля, не внутри
-// функции, иначе он не попадёт под hoisting и сработает позже статических
-// импортов ниже.
+// ВАЖНО (как в webapp-хелпере): vi.mock — только на верхнем уровне модуля
+// (hoisting), не внутри функции.
 import { vi } from 'vitest';
 import type { ComponentProps } from 'react';
 import { render } from '@testing-library/react';
@@ -28,6 +27,7 @@ vi.mock('../components/AppSections', () => ({
   AppSections: (p: ComponentProps<typeof AppSectionsT>) => (
     <div
       data-testid="app-sections"
+      data-inert={String(p.inert)}
       data-therapist-mode={String(p.therapistMode)}
       data-section={p.section}
       data-user-role={p.userRole}
@@ -87,7 +87,7 @@ vi.mock('../components/AppOverlays', () => ({
       data-join-code={p.sheets.joinCode ?? ''}
       data-settings={String(p.sheets.settings)}
       data-celebration-streak={p.celebrationStreak ?? ''}
-      data-childhood-pending={String(p.childhoodWheelPending)}
+      data-childhood-wheel={String(p.sheets.childhoodWheel)}
       data-show-onboarding={String(p.showOnboarding)}
       data-consent-given={String(p.consentGiven)}
       data-therapist-mode={String(p.therapistMode)}
@@ -147,10 +147,10 @@ vi.mock('../components/AppOverlays', () => ({
         change
       </button>
       <button
-        data-testid="app-overlays-address-picker-done"
-        onClick={() => p.onAddressPickerDone()}
+        data-testid="app-overlays-close-today-note"
+        onClick={() => p.closers.todayNote()}
       >
-        address-picker-done
+        close-today-note
       </button>
       <button
         data-testid="app-overlays-accept-disclaimer"
@@ -196,8 +196,42 @@ vi.mock('../components/AppOverlays', () => ({
   ),
 }));
 
-vi.mock('../components/TherapistClientSheet', () => ({
-  TherapistClientSheet: (p: ComponentProps<typeof TherapistClientSheetT>) => (
+// App.tsx зовёт preloadOtherSections в простое (правка производительности
+// 2026-08-22) — она сама по себе дёргает РЕАЛЬНЫЙ dynamic import() секций
+// (sectionLoaders.ts не мокается через AppSections-заглушку выше, это
+// отдельный модуль). Логика самой предзагрузки уже покрыта отдельно
+// (utils/preloadSections.test.ts) — здесь она просто мешает: async import()
+// иногда резолвится уже ПОСЛЕ того, как тест завершился и jsdom-окружение
+// снесено (EnvironmentTeardownError).
+vi.mock('../utils/preloadSections', () => ({
+  preloadOtherSections: vi.fn(),
+  onIdle: vi.fn(),
+}));
+
+// Тот же риск, что у preloadOtherSections выше — прогрев ДАННЫХ чужих
+// вкладок (prefetchSectionData.ts) дёргает реальные api.* по идентичному
+// requestIdleCallback/setTimeout расписанию (своя логика — в
+// prefetchSectionData.test.ts).
+vi.mock('../utils/prefetchSectionData', () => ({
+  prefetchOtherSectionsData: vi.fn(),
+}));
+
+// App.tsx рендерит ленивую обёртку (LazyTherapistClientSheet.tsx,
+// React.lazy+Suspense — правка производительности 2026-08-22), но
+// подставная типизация берётся у настоящего компонента: сигнатура пропов
+// обязана совпадать с прод-кодом (см. комментарий в шапке файла).
+// Та же защита для чанков дневниковых шитов (LazyDiarySheets.tsx): App.tsx
+// зовёт preloadDiarySheets на маунте, реальные import() улетали бы после
+// teardown jsdom. Сами Lazy*-обёртки здесь не нужны — AppOverlays замокан.
+vi.mock('../components/LazyDiarySheets', async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  preloadDiarySheets: vi.fn(() => []),
+}));
+
+vi.mock('../components/LazyTherapistClientSheet', () => ({
+  LazyTherapistClientSheet: (
+    p: ComponentProps<typeof TherapistClientSheetT>,
+  ) => (
     <div data-testid="therapist-client-sheet" data-view={p.view}>
       <button data-testid="therapist-client-sheet-close" onClick={p.onClose}>
         close
@@ -214,8 +248,9 @@ vi.mock('../components/TherapistClientSheet', () => ({
 
 vi.mock('../components/TrackerHistoryOverlay', () => ({
   TrackerHistoryOverlay: (p: ComponentProps<typeof TrackerHistoryOverlayT>) => (
-    <div
+    <button
       data-testid="tracker-history-overlay"
+      onClick={p.onClose}
       data-tracker={String(p.sheets.tracker)}
       data-history-loading={String(p.historyLoading)}
       data-history-count={p.history.length}
@@ -229,8 +264,7 @@ vi.mock('../components/TrackerHistoryOverlay', () => ({
 // в шапке файла и в webapp-хелпере).
 import App from '../App';
 
-/** Рендерит App с чистым web-хостом (id 'web' → shouldShowLoginScreen()===true,
- *  useSafeTop/insets детерминированы, backButton — история браузера). */
+/** Рендерит App с чистым web-хостом (id 'web' → shouldShowLoginScreen()===true, useSafeTop/insets детерминированы, backButton — история браузера). */
 export function renderApp() {
   setHost(createWebHost());
   return render(<App />);

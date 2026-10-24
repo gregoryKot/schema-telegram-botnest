@@ -9,6 +9,7 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { AppOverlays } from './AppOverlays';
 import type { UseSheetsReturn } from '../hooks/useSheets';
+import { buildOverlayClosers, type ClosersDeps } from '../hooks/overlayClosers';
 
 vi.mock('../sections/DiarySection', () => ({
   DiarySection: (p: { onClose: () => void }) => (
@@ -103,9 +104,28 @@ function makeSheets(overrides: Partial<UseSheetsReturn> = {}): UseSheetsReturn {
   };
 }
 
-function baseProps(overrides: Partial<Parameters<typeof AppOverlays>[0]> = {}) {
+// closers строятся из тех же sheets/колбэков, что и в проде (useHostBackButton).
+type Overrides = Partial<Parameters<typeof AppOverlays>[0]> &
+  Partial<Omit<ClosersDeps, 'sheets'>>;
+
+function baseProps(overrides: Overrides = {}) {
+  const {
+    childhoodWheelPending = false,
+    setChildhoodWheelPending = vi.fn(),
+    onAddressPickerDone = vi.fn(),
+    ...rest
+  } = overrides;
+  const sheets = rest.sheets ?? makeSheets();
+  const setPairData = rest.setPairData ?? vi.fn();
   return {
-    sheets: makeSheets(),
+    sheets,
+    closers: buildOverlayClosers({
+      sheets,
+      childhoodWheelPending,
+      setChildhoodWheelPending,
+      onAddressPickerDone,
+      setPairData,
+    }),
     needs: [],
     ratings: {},
     saved: {},
@@ -114,16 +134,13 @@ function baseProps(overrides: Partial<Parameters<typeof AppOverlays>[0]> = {}) {
     onSaved: vi.fn(),
     yesterdayRatings: {},
     showOnboarding: false,
-    onAddressPickerDone: vi.fn(),
     consentGiven: false,
     onConsentDisclaimer: vi.fn(),
     onAcceptDisclaimer: vi.fn(),
     celebrationStreak: null,
     setCelebrationStreak: vi.fn(),
-    childhoodWheelPending: false,
-    setChildhoodWheelPending: vi.fn(),
     setChildhoodRatings: vi.fn(),
-    setPairData: vi.fn(),
+    setPairData,
     userRole: 'CLIENT' as const,
     displayName: null,
     setDisplayName: vi.fn(),
@@ -135,11 +152,18 @@ function baseProps(overrides: Partial<Parameters<typeof AppOverlays>[0]> = {}) {
     setNewDiaryEntry: vi.fn(),
     section: 'today' as const,
     setSection: vi.fn(),
-    ...overrides,
+    ...rest,
   };
 }
 
 describe('AppOverlays — видимость по sheets.*', () => {
+  // DiarySection/TaskCreateSheet/ChildhoodWheelSheet/PracticesScreen/
+  // PlansScreen/SchemaInfoSheet — React.lazy (LazyOverlays.tsx, правка
+  // производительности 2026-08-22): даже с замоканным модулем import()
+  // резолвится асинхронно, поэтому findByText (не getByText) нужен всем
+  // пунктам списка — часть из них уже была бы готова синхронно, но
+  // единообразие важнее: гейт ловит регресс независимо от того, какая
+  // шторка стала ленивой в следующей правке.
   it.each([
     ['trackerOverlay', 'TrackerOverlay'],
     ['diaries', 'DiarySection'],
@@ -153,11 +177,11 @@ describe('AppOverlays — видимость по sheets.*', () => {
     ['plans', 'PlansScreen'],
     ['schemaInfo', 'SchemaInfoSheet'],
     ['todayNote', 'NoteSheet'],
-  ] as const)('sheets.%s=true показывает %s', (flag, label) => {
+  ] as const)('sheets.%s=true показывает %s', async (flag, label) => {
     render(
       <AppOverlays {...baseProps({ sheets: makeSheets({ [flag]: true }) })} />,
     );
-    expect(screen.getByText(label)).toBeTruthy();
+    expect(await screen.findByText(label)).toBeTruthy();
   });
 
   it('ничего не открыто — ни один шит не рендерится (кроме постоянного DonateNudge)', () => {
@@ -252,7 +276,8 @@ describe('AppOverlays — цепочки колбэков между шитам�
       />,
     );
     fireEvent.click(screen.getByText('address-done'));
-    expect(sessionStorage.getItem('addr_form_asked')).toBe('1');
+    // Метка — время в localStorage: переживает вкладку (регресс 2026-08-21)
+    expect(Number(localStorage.getItem('addr_form_asked'))).toBeGreaterThan(0);
     expect(close).toHaveBeenCalledWith('addressPicker');
     expect(onAddressPickerDone).toHaveBeenCalled();
   });

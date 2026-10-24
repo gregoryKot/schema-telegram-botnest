@@ -10,7 +10,10 @@ import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { buildTestApp, TestApp } from './e2e-support/build-test-app';
 import { signAccessToken } from './e2e-support/jwt';
-import { cleanupOwnershipFixtures } from './e2e-support/cleanup-fixtures';
+import {
+  cleanupOwnershipFixtures,
+  seedUsers,
+} from './e2e-support/cleanup-fixtures';
 
 describe('e2e smoke: ownership sweep 2 (deletes/mutations: diary, plans, ysq, pairs)', () => {
   let app: INestApplication;
@@ -28,6 +31,8 @@ describe('e2e smoke: ownership sweep 2 (deletes/mutations: diary, plans, ysq, pa
     // в app-ownership.e2e-spec.ts. Обязательна на реальном Postgres, no-op
     // на фейке.
     await cleanupOwnershipFixtures(prisma, ALL_USER_IDS);
+    // Guard больше не воскрешает строку по Bearer-токену — заводим явно.
+    await seedUsers(prisma, ALL_USER_IDS);
   });
 
   afterAll(async () => {
@@ -102,7 +107,7 @@ describe('e2e smoke: ownership sweep 2 (deletes/mutations: diary, plans, ysq, pa
   ];
 
   it.each(DELETE_ENDPOINTS)(
-    '$label: B не может удалить чужую запись, A может удалить свою',
+    '$label: B получает 404 на чужую запись, A может удалить свою',
     async ({ create, list, del }) => {
       const a = agentAs(USER_A);
       const b = agentAs(USER_B);
@@ -112,7 +117,8 @@ describe('e2e smoke: ownership sweep 2 (deletes/mutations: diary, plans, ysq, pa
       const id = created.body.id as number;
 
       const bDelete = await del(b, id);
-      expect(bDelete.status).toBeLessThan(300); // filtered WHERE — no-op, not 403
+      // C-8: filtered WHERE затронул 0 строк → 404 (раньше — молчаливые 200)
+      expect(bDelete.status).toBe(404);
       const stillThere = await a.get(list);
       expect(stillThere.body.some((r: { id: number }) => r.id === id)).toBe(
         true,
@@ -141,7 +147,7 @@ describe('e2e smoke: ownership sweep 2 (deletes/mutations: diary, plans, ysq, pa
     const bCheckin = await b.post(`/api/plan/${planId}/checkin`, {
       done: true,
     });
-    expect(bCheckin.status).toBeLessThan(300); // updateMany WHERE userId — no-op
+    expect(bCheckin.status).toBe(404); // C-8: updateMany WHERE userId затронул 0 строк
 
     const bHistory = await b.get('/api/plans/history?days=30');
     expect(bHistory.status).toBe(200);
@@ -157,7 +163,7 @@ describe('e2e smoke: ownership sweep 2 (deletes/mutations: diary, plans, ysq, pa
     const aHistory = await a.get('/api/plans/history?days=30');
     expect(aHistory.status).toBe(200);
     const row = aHistory.body.find((p: { id: number }) => p.id === planId);
-    expect(row?.done).toBe(true); // B's no-op checkin never touched it
+    expect(row?.done).toBe(true); // отвергнутый checkin B план не тронул
   });
 
   // ─── YSQ progress/result DELETE (self-only — no id param, always caller) ──
@@ -221,5 +227,24 @@ describe('e2e smoke: ownership sweep 2 (deletes/mutations: diary, plans, ysq, pa
 
     const aPairAfter = await a.get('/api/pair');
     expect(aPairAfter.body.partners).toHaveLength(0);
+  });
+
+  it('pairs: ссылка ждущего приглашения видна только его создателю', async () => {
+    const a = agentAs(USER_A);
+    const b = agentAs(USER_B);
+
+    const invite = await a.post('/api/pair/invite');
+    expect(invite.status).toBeLessThan(300);
+    const code = invite.body.code as string;
+
+    // Создатель получает ту же ссылку, что вернул /pair/invite, — для повторной отправки.
+    const aPair = await a.get('/api/pair');
+    expect(aPair.body.pendingCode).toBe(code);
+    expect(aPair.body.pendingUrl).toBe(invite.body.url);
+
+    // Чужой код приглашения и ссылку он не видит.
+    const bPair = await b.get('/api/pair');
+    expect(bPair.body.pendingCode).toBeNull();
+    expect(bPair.body.pendingUrl).toBeNull();
   });
 });

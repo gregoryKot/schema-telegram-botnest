@@ -1,20 +1,26 @@
 // @vitest-environment jsdom
 // Тесты HTTP-слоя webapp (api.ts) — TEST_COVERAGE_PLAN этап 2 п.10.
 //
-// ВАЖНО: в api.ts НЕТ логики refresh/retry при 401. Обновление access-токена
-// живёт отдельно, в src/auth/AuthContext.tsx (doRefresh по таймеру, за 60с до
-// истечения expiresIn) — api.ts просто использует то, что вернёт
-// setTokenProvider(), и при 401 бросает обычный Error, без похода на
-// /api/auth/refresh и без повторного запроса. Тесты ниже фиксируют это
-// РЕАЛЬНОЕ поведение, а не предполагаемый interceptor-паттерн.
+// Сетевая инфраструктура (get/post/authedFetch/401-retry) переехала в
+// apiClient.ts (правило №10 — api.ts не имеет права расти сверх бейслайна;
+// правило №3 — зеркало schema-miniapp/src/apiClient.ts). api.ts зовёт
+// setRefreshHandler() только через TokenBridge (App.tsx) в реальном
+// приложении — по умолчанию, пока его никто не вызвал, _refresh === null и
+// 401 ведёт себя как раньше: единственный запрос, без похода на
+// /api/auth/refresh. Тесты ниже фиксируют оба режима — «хэндлера нет» (по
+// умолчанию) и «хэндлер есть» (диагностика «постоянно нужно логиниться
+// заново», 2026-08-21, пункт 4).
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { api, ApiError, setTokenProvider, reportClientError } from './api';
+import { api, ApiError, setTokenProvider, setRefreshHandler, reportClientError } from './api';
+import { clearApiCache } from '../../shared/src/api/apiCache';
 
 function jsonResponse(status: number, body: unknown): Response {
   return {
     ok: status >= 200 && status < 300,
     status,
     json: () => Promise.resolve(body),
+    // readJsonBody читает тело через text() — мок отдаёт обе формы.
+    text: () => Promise.resolve(body === undefined ? '' : JSON.stringify(body)),
   } as unknown as Response;
 }
 
@@ -31,7 +37,16 @@ let fetchMock: ReturnType<typeof vi.fn>;
 beforeEach(() => {
   fetchMock = vi.fn();
   vi.stubGlobal('fetch', fetchMock);
+  // Кеш GET-ответов (apiCache.ts) живёт в памяти модуля — без сброса каждый
+  // повторный api.getSettings() в этом файле отвечал бы из кеша предыдущего
+  // теста, а не бил mock fetch заново.
+  clearApiCache();
   setTokenProvider(() => null);
+  // По умолчанию — режим «хэндлера нет» (как в проде до маунта TokenBridge):
+  // refresh не удался, authedFetch отдаёт исходный 401 без второго запроса.
+  // Это сохраняет старое поведение всех тестов ниже, кроме тех, что явно
+  // регистрируют свой хэндлер (describe «setRefreshHandler» в конце файла).
+  setRefreshHandler(() => Promise.resolve(false));
 });
 
 afterEach(() => {
@@ -72,6 +87,9 @@ describe('authHeaders — формат заголовка авторизации
     );
 
     current = 'second';
+    // Второй вызов обязан реально дойти до сети (а не отдаться из свежего
+    // кеша apiCache.ts) — тест проверяет именно чтение токена ПЕРЕД отправкой.
+    clearApiCache();
     await api.getSettings();
     expect(fetchMock.mock.calls[1][1].headers.Authorization).toBe(
       'Bearer second',
@@ -571,17 +589,19 @@ describe('сетевой сбой (fetch отклоняется) пробрас�
 
 // ── Непарсибельный/пустой ответ на успешном статусе — тоже проброс ──────────
 describe('успешный статус, но тело не JSON — не глотается молча', () => {
-  it('get<T>: res.json() падает на 200 — ошибка долетает до caller', async () => {
-    fetchMock.mockResolvedValue({
-      ok: true,
-      status: 200,
-      json: () =>
-        Promise.reject(new SyntaxError('Unexpected end of JSON input')),
-    } as unknown as Response);
+  it('get<T>: непустое тело не JSON на 200 — ошибка долетает до caller', async () => {
+    // Настоящий мусор (502-страница прокси) обязан оставаться видимым.
+    fetchMock.mockResolvedValue(new Response('<html>Bad Gateway</html>', { status: 200 }));
 
-    await expect(api.getSettings()).rejects.toThrow(
-      'Unexpected end of JSON input',
-    );
+    await expect(api.getSettings()).rejects.toThrow(SyntaxError);
+  });
+
+  it('get<T>: ПУСТОЕ тело на 200 (Nest на null) — null, а не SyntaxError', async () => {
+    // Раньше этот случай пинился как «ошибка»; по факту это штатный ответ
+    // сервера «нет записи» (инцидент 2026-10-03, apiClient.seam.test.ts).
+    fetchMock.mockResolvedValue(new Response('', { status: 200 }));
+
+    await expect(api.getSettings()).resolves.toBeNull();
   });
 });
 
@@ -712,6 +732,14 @@ describe('adminReq — запрос с телом и обработка ошиб
     expect(JSON.parse(init.body)).toEqual({ type: 'INTRO_15', amount: 1500 });
   });
 
+  it('adminSetPrice с валютой: currency уходит в теле (цена сессии по стране посетителя)', async () => {
+    fetchMock.mockResolvedValue(jsonResponse(200, { ok: true }));
+    await api.adminSetPrice('key', 'SESSION_50', 70, 'USD');
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(String(url)).toContain('/api/booking/admin/price');
+    expect(JSON.parse(init.body)).toEqual({ type: 'SESSION_50', amount: 70, currency: 'USD' });
+  });
+
   it('ошибка с телом { message } пробрасывает именно это сообщение', async () => {
     fetchMock.mockResolvedValue(
       jsonResponse(403, { message: 'Неверный ключ администратора' }),
@@ -770,6 +798,32 @@ describe('личный контент — URL, метод, тело запрос
     fetchMock.mockResolvedValue(jsonResponse(200, []));
     await api.getPhraseChecks();
     expect(String(fetchMock.mock.calls[0][0])).toContain('/api/phrase-checks');
+  });
+
+  it('createPhraseCheck: POST /api/phrase-checks с телом разбора', async () => {
+    fetchMock.mockResolvedValue(jsonResponse(200, {}));
+    await api.createPhraseCheck({ phrase: 'я всё порчу', marks: ['worth'], rewrite: 'бывает, поправимо', inWarmWords: true });
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(String(url)).toContain('/api/phrase-checks');
+    expect(init.method).toBe('POST');
+    expect(JSON.parse(init.body)).toEqual({ phrase: 'я всё порчу', marks: ['worth'], rewrite: 'бывает, поправимо', inWarmWords: true });
+  });
+
+  it('updatePhraseCheck: PATCH /api/phrase-checks/:id с rewrite', async () => {
+    fetchMock.mockResolvedValue(jsonResponse(200, { id: 5, rewrite: 'новый ответ' }));
+    await api.updatePhraseCheck(5, 'новый ответ');
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(String(url)).toContain('/api/phrase-checks/5');
+    expect(init.method).toBe('PATCH');
+    expect(JSON.parse(init.body)).toEqual({ rewrite: 'новый ответ' });
+  });
+
+  it('deletePhraseCheck: DELETE по id', async () => {
+    fetchMock.mockResolvedValue(jsonResponse(204, undefined));
+    await api.deletePhraseCheck(5);
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(String(url)).toContain('/api/phrase-checks/5');
+    expect(init.method).toBe('DELETE');
   });
 
   it('getBeliefChecks: GET /api/belief-checks', async () => {
@@ -1050,5 +1104,62 @@ describe('админские эндпоинты — оставшиеся мет�
     fetchMock.mockResolvedValue(jsonResponse(200, {}));
     await api.getMyModeMap(99);
     expect(String(fetchMock.mock.calls[1][0])).toContain('/api/therapy/my-mode-maps/99');
+  });
+});
+
+// ── setRefreshHandler — 401 перевыпускает сессию и повторяет запрос ──────────
+// Диагностика «постоянно нужно логиниться заново» (2026-08-21, пункт 4): у
+// сайта не было НИ ОДНОЙ попытки перевыпустить сессию на 401 обычного
+// запроса — мини-апп это уже умел (apiClient.ts:authedFetch), сайт просто
+// бросал ошибку. В проде хэндлер кладёт TokenBridge (App.tsx), здесь —
+// напрямую через setRefreshHandler (зеркало schema-miniapp/src/apiClient.test.ts).
+describe('setRefreshHandler — 401 → перевыпуск сессии → повтор запроса', () => {
+  it('успешный refresh повторяет запрос и получает данные', async () => {
+    setRefreshHandler(() => Promise.resolve(true));
+    fetchMock
+      .mockResolvedValueOnce(jsonResponse(401, {})) // исходный запрос: токен истёк
+      .mockResolvedValueOnce(jsonResponse(200, { addressForm: 'ty' })); // повтор — уже с новым токеном
+
+    await expect(api.getSettings()).resolves.toEqual({ addressForm: 'ty' });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('POST/postJson тоже повторяется — действие не теряется из-за истёкшей сессии', async () => {
+    setRefreshHandler(() => Promise.resolve(true));
+    fetchMock
+      .mockResolvedValueOnce(jsonResponse(401, {}))
+      .mockResolvedValueOnce(jsonResponse(200, { ok: true }));
+
+    await expect(api.updateName('Аня')).resolves.toEqual({ ok: true });
+    const [, retryInit] = fetchMock.mock.calls[1];
+    expect(JSON.parse(retryInit.body)).toEqual({ name: 'Аня' });
+  });
+
+  it('refresh не удался (сессия мертва) — единственный запрос, ошибка исходного 401 долетает как есть', async () => {
+    setRefreshHandler(() => Promise.resolve(false));
+    fetchMock.mockResolvedValue(jsonResponse(401, { message: 'Unauthorized' }));
+
+    await expect(api.getSettings()).rejects.toMatchObject({ status: 401 });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('успешный запрос не трогает refresh-хэндлер — лишних вызовов нет', async () => {
+    const refresh = vi.fn().mockResolvedValue(true);
+    setRefreshHandler(refresh);
+    fetchMock.mockResolvedValue(jsonResponse(200, {}));
+
+    await api.getSettings();
+
+    expect(refresh).not.toHaveBeenCalled();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('повторный запрос всё равно 401 — второй раз не рефрешит, ошибка долетает', async () => {
+    setRefreshHandler(() => Promise.resolve(true));
+    fetchMock.mockResolvedValue(jsonResponse(401, {})); // и исходный, и повтор — 401
+
+    await expect(api.getSettings()).rejects.toMatchObject({ status: 401 });
+    // Один поход к refresh-хэндлеру, два похода к самому эндпоинту (исходный + повтор).
+    expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 });

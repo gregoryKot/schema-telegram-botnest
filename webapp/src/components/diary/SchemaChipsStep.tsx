@@ -1,9 +1,11 @@
 import { SCHEMA_DOMAINS } from '../../schemaTherapyData';
+import { DOMAIN_HUE, hueStyle } from '../../lib/tone';
+import '../../styles/sheet-diary.css';
 
 // Шаг «Схемы» дневника схем (webapp): только чипы по доменам + «Только
 // мои/Показать все». Вынесено из SchemaEntrySheet — файл-источник пробивал
-// потолок 300 строк (правило №10 CLAUDE.md). Разметка — существующие классы
-// webapp, перенесены как есть.
+// потолок 300 строк (правило №10 CLAUDE.md). Чипы — ds-chip в тоне домена
+// (DOMAIN_HUE).
 // Свободный текст («откуда это знакомо») рендерит РОДИТЕЛЬ: правило №7 —
 // поле свободного текста живёт в файле, который прогоняет detectCrisisAny
 // (инвариант src/security/crisis-path.invariants.spec.ts).
@@ -33,53 +35,27 @@ export function SchemaChipsStep({
           : domain.schemas;
         if (schemas.length === 0) return null;
         return (
-          <div key={domain.id} style={{ marginBottom: 18 }}>
-            <div
-              className="chip-section-eyebrow"
-              style={{ color: domain.color }}
-            >
-              <span className="dot" style={{ background: domain.color }} />
+          <div key={domain.id} className="sd-group" style={hueStyle(DOMAIN_HUE[domain.id])}>
+            <div className="ds-label sd-group-label">
+              <i className="ds-dot tone-fill" />
               {domain.domain}
             </div>
-            <div className="chip-row" style={{ marginBottom: 0 }}>
-              {schemas.map((s) => {
-                const sel = schemaIds.includes(s.id);
-                return (
-                  <button
-                    key={s.id}
-                    className={'chip-pill ' + (sel ? 'is-selected' : '')}
-                    style={
-                      sel
-                        ? ({
-                            '--pill-color': domain.color + '15',
-                            '--pill-fg': domain.color,
-                            '--pill-border': domain.color + '50',
-                          } as React.CSSProperties)
-                        : undefined
-                    }
-                    onClick={() => onToggle(s.id)}
-                  >
-                    {s.name}
-                  </button>
-                );
-              })}
+            <div className="sd-chips">
+              {schemas.map((s) => (
+                <button
+                  key={s.id}
+                  className={'ds-chip sd-chip' + (schemaIds.includes(s.id) ? ' is-selected tone-tint' : '')}
+                  onClick={() => onToggle(s.id)}
+                >
+                  {s.name}
+                </button>
+              ))}
             </div>
           </div>
         );
       })}
       {hasPersonalSchemas && (
-        <button
-          onClick={onToggleShowAll}
-          style={{
-            background: 'none',
-            border: 'none',
-            color: 'var(--text-sub)',
-            fontSize: 12,
-            cursor: 'pointer',
-            padding: '4px 0',
-            marginBottom: 8,
-          }}
-        >
+        <button onClick={onToggleShowAll} className="ds-link sd-show-all">
           {showAllSchemas ? '↑ Только мои' : '↓ Показать все'}
         </button>
       )}

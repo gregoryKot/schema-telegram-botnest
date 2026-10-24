@@ -7,7 +7,7 @@ import { CrisisCard } from '../../components/CrisisCard';
 export function CrisisSheet({ onClose }: { onClose: () => void }) {
   return (
     <BottomSheet onClose={onClose} zIndex={200}>
-      <div style={{ paddingTop: 4 }}>
+      <div className="u-pt4">
         <div
           style={{
             fontSize: 17,
@@ -18,7 +18,7 @@ export function CrisisSheet({ onClose }: { onClose: () => void }) {
         >
           Помощь рядом
         </div>
-        <CrisisCard />
+        <CrisisCard standing />
         <div
           style={{
             fontSize: 12,

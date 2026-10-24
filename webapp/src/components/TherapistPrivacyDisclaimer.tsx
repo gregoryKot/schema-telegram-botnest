@@ -1,5 +1,6 @@
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { useTr } from '../utils/addressForm';
+import '../styles/sheet-tasks.css';
 
 export const THERAPIST_DISCLAIMER_KEY = 'therapist_privacy_disclaimer_seen';
 
@@ -22,56 +23,42 @@ export function TherapistPrivacyDisclaimer({ onDone }: Props) {
   }
 
   return (
-    <div style={{
-      position: 'fixed', inset: 0, zIndex: 260,
-      background: 'var(--bg)', overflowY: 'auto',
-    }}>
-      <div style={{ maxWidth: 540, margin: '0 auto', padding: '56px 24px 40px' }}>
+    <div className="sk-priv">
+      <div className="sk-priv-col">
 
-        <div style={{ textAlign: 'center', marginBottom: 30 }}>
-          <h1 style={{
-            fontFamily: 'var(--serif)', fontSize: 30, fontWeight: 400,
-            color: 'var(--text)', lineHeight: 1.2, marginBottom: 14,
-          }}>
-            Немного о заботе о клиентах
-          </h1>
-          <p style={{ fontSize: 15, color: 'var(--text-sub)', lineHeight: 1.7 }}>
+        <div className="sk-priv-head">
+          <h1 className="ds-h2 sk-priv-title">Немного о заботе о клиентах</h1>
+          <p className="sk-priv-lead">
             {tr('Здесь будет твоя работа с людьми, которые тебе доверились. Одна маленькая привычка поможет бережно сохранить это доверие.', 'Здесь будет ваша работа с людьми, которые вам доверились. Одна маленькая привычка поможет бережно сохранить это доверие.')}
           </p>
         </div>
 
-        <p style={{ fontSize: 15, color: 'var(--text)', lineHeight: 1.75, marginBottom: 18 }}>
-          Пожалуйста, {tr('старайся', 'старайтесь')} <span style={{ fontWeight: 600 }}>не вносить настоящие имена
+        <p className="sk-priv-p">
+          Пожалуйста, {tr('старайся', 'старайтесь')} <span className="u-w600">не вносить настоящие имена
           и фамилии клиентов</span> — ни в карточку клиента, ни в заметки, ни в записи о
           сессиях. Достаточно инициалов, псевдонима или любого обозначения, понятного
           только {tr('тебе', 'вам')}.
         </p>
 
-        <p style={{ fontSize: 15, color: 'var(--text)', lineHeight: 1.75, marginBottom: 20 }}>
+        <p className="sk-priv-p">
           Это привычная профессиональная практика, а не лишняя перестраховка — так бережно
           поступают даже с бумажными записями: если они вдруг окажутся не у тех людей,
           по ним нельзя будет понять, о ком речь.
         </p>
 
-        <div style={{
-          background: 'color-mix(in srgb, var(--accent) 8%, transparent)',
-          border: '1px solid color-mix(in srgb, var(--accent) 16%, transparent)',
-          borderRadius: 14, padding: '16px 18px', marginBottom: 22,
-        }}>
-          <div style={{ fontSize: 13.5, color: 'var(--text-sub)', lineHeight: 1.7 }}>
-            На этом стоят и этические кодексы психологов —{' '}
-            <span style={{ color: 'var(--accent)', fontWeight: 600 }}>РПО</span> и{' '}
-            <span style={{ color: 'var(--accent)', fontWeight: 600 }}>APA (стандарт 6.02)</span>:
-            они рекомендуют обезличивать данные клиента и использовать условные обозначения
-            вместо настоящих имён.
-          </div>
+        <div className="ds-card sk-priv-note tone-soft">
+          На этом стоят и этические кодексы психологов —{' '}
+          <span className="sk-priv-em">РПО</span> и{' '}
+          <span className="sk-priv-em">APA (стандарт 6.02)</span>:
+          они рекомендуют обезличивать данные клиента и использовать условные обозначения
+          вместо настоящих имён.
         </div>
 
-        <p style={{ fontSize: 15, color: 'var(--text)', lineHeight: 1.75, marginBottom: 16 }}>
+        <p className="sk-priv-p">
           А обо всём остальном мы уже позаботились. Вот что делаем со своей стороны:
         </p>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginBottom: 24 }}>
+        <div className="sk-priv-list">
           {[
             ['Шифрование',
               'Всё чувствительное — заметки, записи о сессиях, дневники — хранится в зашифрованном виде (AES-256-GCM). Ключ лежит отдельно от базы, поэтому даже при её утечке прочитать данные без него невозможно.'],
@@ -80,23 +67,19 @@ export function TherapistPrivacyDisclaimer({ onDone }: Props) {
               'Вход подтверждается подписью Telegram, а попытки подделать сессию мы отслеживаем и отклоняем.'],
             ['Полное удаление', tr('Если решишь удалить аккаунт — данные стираются насовсем, без «скрытых» копий про запас.', 'Если решите удалить аккаунт — данные стираются насовсем, без «скрытых» копий про запас.')],
           ].map(([title, text]) => (
-            <div key={title}>
-              <div style={{ fontSize: 14.5, fontWeight: 600, color: 'var(--text)', marginBottom: 2 }}>{title}</div>
-              <div style={{ fontSize: 13.5, color: 'var(--text-sub)', lineHeight: 1.65 }}>{text}</div>
+            <div key={title} className="ds-card ds-card--row">
+              <div className="sk-priv-item-title">{title}</div>
+              <div className="sk-priv-item-text">{text}</div>
             </div>
           ))}
         </div>
 
-        <p style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.75, marginBottom: 32 }}>
+        <p className="sk-priv-p sk-priv-p--sub">
           И всё же самая надёжная защита — когда лишних персональных данных в системе
           просто нет.
         </p>
 
-        <button
-          onClick={acknowledge}
-          className="ex-btn ex-btn-primary"
-          style={{ width: '100%', padding: '16px', fontSize: 16 }}
-        >
+        <button onClick={acknowledge} className="ds-btn sk-wide-btn">
           Спасибо, буду иметь в виду
         </button>
       </div>

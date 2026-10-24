@@ -34,6 +34,15 @@ describe('OfferPage', () => {
     }
   });
 
+  it('глава 6: сессия — 3 000 рублей прописью, редакция от 1 октября 2026 г.', () => {
+    render(<OfferPage />);
+    // Цена в оферте обязана совпадать с ценой на странице записи
+    // (SESSION_DEFAULT_PRICE и BookingSetting) — решение владельца 2026-10-01.
+    expect(screen.getByText(/^3 000 \(три тысячи\) рублей, если иная стоимость/)).toBeTruthy();
+    expect(screen.queryByText(/четыре тысячи/)).toBeNull();
+    expect(screen.getByText('Редакция от 1 октября 2026 г.')).toBeTruthy();
+  });
+
   it('реквизиты исполнителя содержат реальный e-mail и ИНН, а не плейсхолдер', () => {
     render(<OfferPage />);
     expect(screen.getAllByText('gregorykot@gmail.com').length).toBeGreaterThan(0);

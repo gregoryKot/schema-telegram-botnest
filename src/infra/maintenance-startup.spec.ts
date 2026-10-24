@@ -4,10 +4,11 @@
 // приложение поднялось — front проксирует на него. Гоняем реальным процессом,
 // подсовывая фейковые команды через env (RECOVER_CMD/MIGRATE_CMD/APP_CMD).
 import { spawn, ChildProcess } from 'child_process';
-import { createServer } from 'net';
+import { createServer, Server } from 'net';
 import { join } from 'path';
 import { existsSync, unlinkSync } from 'fs';
 import { tmpdir } from 'os';
+import { STARTUP_ENV } from '../telegram/start-launch-env';
 
 const ENTRY = join(process.cwd(), 'deploy', 'entrypoint.mjs');
 
@@ -29,10 +30,27 @@ async function freePort(): Promise<number> {
 
 // Запускает entrypoint с фейковыми командами. front всегда поднимается на PORT=0
 // (эфемерный) — возвращаем промис его порта (из лога) и промис exit-кода.
+//
+// detached: true — entrypoint.mjs сам ловит только SIGTERM/SIGINT и не
+// пробрасывает SIGKILL своим детям (RECOVER_CMD/MIGRATE_CMD/APP_CMD) — их
+// нельзя перехватить, поэтому они и не должны требовать этого от родителя.
+// Без своей группы процессов afterEach ниже убивал бы только entrypoint.mjs,
+// а `node -e "...listen(...)"` из последнего теста (нарочно вечный «апп»)
+// оставался сиротой: он держит унаследованный (stdio по умолчанию 'pipe')
+// файловый дескриptor stderr, и жест жив в этой строке пока другой конец не
+// закрыт — Jest-процесс висел на этом хендле под --detectOpenHandles
+// --forceExit=false (nightly.yml, джоба backend-flaky), а обычный `npx jest`
+// это маскировал принудительным выходом воркера. detached: true делает
+// entrypoint.mjs лидером своей группы — её и убиваем целиком.
 function launch(env: Record<string, string>) {
   const proc: ChildProcess = spawn('node', [ENTRY], {
     env: { ...process.env, PORT: '0', ...env },
+    detached: true,
   });
+  // Весь stderr entrypoint'а (и унаследованный stderr APP_CMD) — для тестов,
+  // которые проверяют строки `[entrypoint] …` и число запусков приложения.
+  let logBuf = '';
+  proc.stderr?.on('data', (d: Buffer) => (logBuf += d.toString()));
   const frontPort = new Promise<number>((resolve, reject) => {
     const timer = setTimeout(
       () => reject(new Error('front не поднялся за 5с')),
@@ -54,7 +72,7 @@ function launch(env: Record<string, string>) {
   const exit = new Promise<number>((resolve) =>
     proc.on('exit', (c) => resolve(c ?? -1)),
   );
-  return { proc, frontPort, exit };
+  return { proc, frontPort, exit, log: () => logBuf };
 }
 
 async function poll(url: string, want: RegExp, tries = 40): Promise<string> {
@@ -71,10 +89,39 @@ async function poll(url: string, want: RegExp, tries = 40): Promise<string> {
   throw new Error(`не дождались ${want} по ${url}`);
 }
 
+// Ждём, пока предикат над логом станет истинным. Бюджет большой (10 с): на
+// загруженном раннере второго полного прогона jest спеки с настоящим процессом
+// мигали по нехватке времени (docs/README.md, «Тесты и даты»).
+async function waitLog(
+  log: () => string,
+  ok: (l: string) => boolean,
+  budgetMs = 10000,
+): Promise<string> {
+  const until = Date.now() + budgetMs;
+  while (Date.now() < until) {
+    if (ok(log())) return log();
+    await new Promise((r) => setTimeout(r, 50));
+  }
+  throw new Error(`не дождались условия по логу:\n${log()}`);
+}
+const count = (l: string, re: RegExp) => (l.match(re) ?? []).length;
+
 describe('entrypoint (супервизор старта)', () => {
   const alive: ChildProcess[] = [];
   afterEach(() => {
-    while (alive.length) alive.pop()?.kill('SIGKILL');
+    while (alive.length) {
+      const proc = alive.pop();
+      if (!proc) continue;
+      // -pid (не pid) — сигнал всей группе процессов (see launch(): detached:
+      // true делает entrypoint.mjs её лидером), иначе RECOVER_CMD/MIGRATE_CMD/
+      // APP_CMD-потомки переживают убитого родителя сиротами.
+      try {
+        if (proc.pid) process.kill(-proc.pid, 'SIGKILL');
+        else proc.kill('SIGKILL');
+      } catch {
+        proc.kill('SIGKILL');
+      }
+    }
   });
 
   it('migrate deploy упал → front держит страницу техработ (200)', async () => {
@@ -148,6 +195,78 @@ describe('entrypoint (супервизор старта)', () => {
     expect(text).toContain('технические работы');
   }, 10000);
 
+  // Аудит 2026-10-11 (infra#13): после лимита перезапусков супервизор парковался
+  // НАВСЕГДА (процесс жив, restart-policy не срабатывает), и сбой, прошедший
+  // сам, чинился только руками. Теперь — пауза и новая серия, front всё это
+  // время отдаёт техработы. Короткая пауза через env, бюджет — waitLog.
+  it('лимит исчерпан → процесс жив, front на техработах, после паузы идёт новая серия', async () => {
+    const { proc, frontPort, log } = launch({
+      RECOVER_CMD: 'true',
+      MIGRATE_CMD: 'true',
+      APP_CMD: 'echo APP-START >&2; exit 1',
+      APP_PORT: String(await freePort()),
+      STARTUP_MAX_FAILS: '2',
+      STARTUP_BACKOFF_MS: '10',
+      STARTUP_COOLDOWN_MS: '200',
+      STARTUP_COOLDOWN_MAX_MS: '200',
+    });
+    alive.push(proc);
+    const port = await frontPort;
+    const first = await waitLog(log, (l) => /следующая серия через/.test(l));
+    expect(first).toMatch(
+      /лимит перезапусков исчерпан — техработы, следующая серия через 200 мс/,
+    );
+    expect(proc.exitCode).toBeNull();
+    const out = await waitLog(log, (l) => count(l, /APP-START/g) >= 4);
+    expect(count(out, /лимит перезапусков исчерпан/g)).toBeGreaterThanOrEqual(
+      1,
+    );
+    expect(proc.exitCode).toBeNull();
+    const text = await poll(`http://127.0.0.1:${port}/`, /технические работы/);
+    expect(text).toContain('технические работы');
+  }, 30000);
+
+  it('БД не поднялась за отведённое время → повтор ожидания, а когда БД ожила — старт идёт дальше', async () => {
+    const dbPort = await freePort();
+    const marker = join(
+      tmpdir(),
+      `entrypoint-db-retry-marker-${process.pid}-${Date.now()}`,
+    );
+    if (existsSync(marker)) unlinkSync(marker);
+    let db: Server | undefined;
+    try {
+      const { proc, frontPort, log } = launch({
+        DATABASE_URL: `postgresql://u:p@127.0.0.1:${dbPort}/db`,
+        DB_WAIT_TIMEOUT_MS: '150',
+        DB_WAIT_INTERVAL_MS: '50',
+        DB_WAIT_CONNECT_MS: '50',
+        STARTUP_COOLDOWN_MS: '200',
+        STARTUP_COOLDOWN_MAX_MS: '200',
+        RECOVER_CMD: `node -e "require('fs').writeFileSync('${marker}','x')"`,
+        MIGRATE_CMD: 'true',
+        APP_CMD: 'echo APP-START >&2; exec sleep 30',
+        APP_PORT: String(await freePort()),
+      });
+      alive.push(proc);
+      await frontPort;
+      await waitLog(log, (l) =>
+        /БД не поднялась в отведённое время — техработы, следующая серия через/.test(
+          l,
+        ),
+      );
+      expect(existsSync(marker)).toBe(false);
+      expect(proc.exitCode).toBeNull();
+      // БД «ожила»: следующая серия обязана дойти до recover и приложения.
+      db = createServer((c) => c.destroy());
+      await new Promise<void>((r) => db?.listen(dbPort, '127.0.0.1', r));
+      await waitLog(log, (l) => /APP-START/.test(l));
+      expect(existsSync(marker)).toBe(true);
+    } finally {
+      db?.close();
+      if (existsSync(marker)) unlinkSync(marker);
+    }
+  }, 30000);
+
   it('приложение подняло APP_PORT → front проксирует на него (не техработы)', async () => {
     const APP_PORT = String(await freePort());
     const { proc, frontPort } = launch({
@@ -174,4 +293,217 @@ describe('entrypoint (супервизор старта)', () => {
     alive.push(proc);
     expect(await exit).toBe(0);
   }, 10000);
+
+  // Инцидент-класс аудита 2026-10-11 (r2-3#0): `if (shuttingDown || app.signal)
+  // return` читал ЛЮБОЙ сигнал у ребёнка как штатную остановку. V8 при heap-OOM
+  // (SIGABRT), OOM-killer хоста (SIGKILL), нативный модуль (SIGSEGV) → прод
+  // навсегда на техработах: ни перезапуска, ни строки в логе, а HEALTHCHECK
+  // зелёный (front отдаёт 200). Ребёнок убивает сам себя настоящим сигналом,
+  // как это делает ядро, — шов «child.on('exit', (code, signal))» проходит
+  // настоящий процесс, а не подставленный объект.
+  describe.each([
+    ['SIGKILL (OOM-killer хоста)', 'kill -9 $$', 'SIGKILL'],
+    ['SIGABRT (V8 heap-OOM)', 'kill -ABRT $$', 'SIGABRT'],
+    ['SIGSEGV (нативный модуль)', 'kill -SEGV $$', 'SIGSEGV'],
+    ['SIGTERM не от entrypoint', 'kill -TERM $$', 'SIGTERM'],
+  ])('ребёнок убит сигналом: %s', (_name, kill, sig) => {
+    const appCmd = `echo APP-START >&2; sleep 0.2; ${kill}`;
+
+    it('перезапускается с логом и бэкоффом, после лимита — техработы', async () => {
+      const { proc, frontPort, log } = launch({
+        RECOVER_CMD: 'true',
+        MIGRATE_CMD: 'true',
+        APP_CMD: appCmd,
+        APP_PORT: String(await freePort()),
+        STARTUP_MAX_FAILS: '3',
+        STARTUP_BACKOFF_MS: '10',
+      });
+      alive.push(proc);
+      const port = await frontPort;
+      const out = await waitLog(log, (l) => /лимит перезапусков/.test(l));
+      expect(count(out, /APP-START/g)).toBe(3);
+      expect(
+        count(out, new RegExp(`приложение убито сигналом ${sig} `, 'g')),
+      ).toBe(3);
+      expect(out).toMatch(/ranMs=\d+, fails=3\/3/);
+      // Лимит исчерпан → процесс жив и отдаёт техработы (а не молча умер).
+      expect(proc.exitCode).toBeNull();
+      const text = await poll(
+        `http://127.0.0.1:${port}/`,
+        /технические работы/,
+      );
+      expect(text).toContain('технические работы');
+    }, 30000);
+
+    // Контроль окна: падения реже окна — не крашлуп, лимита нет. Ребёнок
+    // живёт 200 мс, окно 100 мс: прежнее падение всегда старше окна.
+    it('падения реже окна (STARTUP_CRASH_WINDOW_MS) не копятся, лимита нет', async () => {
+      const { proc, frontPort, log } = launch({
+        RECOVER_CMD: 'true',
+        MIGRATE_CMD: 'true',
+        APP_CMD: appCmd,
+        APP_PORT: String(await freePort()),
+        STARTUP_MAX_FAILS: '2',
+        STARTUP_BACKOFF_MS: '10',
+        STARTUP_CRASH_WINDOW_MS: '100',
+      });
+      alive.push(proc);
+      await frontPort;
+      const out = await waitLog(log, (l) => count(l, /APP-START/g) >= 4);
+      expect(out).not.toMatch(/лимит перезапусков/);
+      expect(out).toMatch(`приложение убито сигналом ${sig} (ranMs=`);
+      expect(out).not.toMatch(/fails=2\/2/);
+    }, 30000);
+  });
+
+  // Аудит 2026-10, «Супервизор контейнера»: прогон дольше STARTUP_HEALTHY_MS
+  // (минута) обнулял счётчик — приложение, падающее каждые 61 с, жило на
+  // «fails=1/3» вечно: ни лимита, ни техработ, ни паузы, а каждый круг слал
+  // владельцу DM о старте. Две ручки нужны, чтобы тест различал старое и новое:
+  // по старому порогу (200 мс) каждый прогон «здоровый», по окну (60 с) три
+  // падения подряд — крашлуп.
+  describe('крашлуп с «долгими» прогонами (окно падений)', () => {
+    const slowCrash = {
+      RECOVER_CMD: 'true',
+      MIGRATE_CMD: 'true',
+      APP_CMD: 'echo APP-START >&2; sleep 0.3; exit 1',
+      STARTUP_HEALTHY_MS: '200', // прежний порог «здорового» прогона
+      STARTUP_CRASH_WINDOW_MS: '60000',
+      STARTUP_BACKOFF_MS: '10',
+    };
+
+    it('три падения за окно → лимит и техработы, процесс жив', async () => {
+      const { proc, frontPort, log } = launch({
+        ...slowCrash,
+        APP_PORT: String(await freePort()),
+        STARTUP_MAX_FAILS: '3',
+      });
+      alive.push(proc);
+      const port = await frontPort;
+      const out = await waitLog(log, (l) => /лимит перезапусков/.test(l));
+      expect(count(out, /APP-START/g)).toBe(3);
+      expect(out).toMatch(/ranMs=\d+, fails=3\/3/);
+      expect(proc.exitCode).toBeNull();
+      const text = await poll(
+        `http://127.0.0.1:${port}/`,
+        /технические работы/,
+      );
+      expect(text).toContain('технические работы');
+    }, 30000);
+
+    it('серии подряд без прогона дольше окна → пауза растёт, а не сбрасывается', async () => {
+      const { proc, frontPort, log } = launch({
+        ...slowCrash,
+        APP_PORT: String(await freePort()),
+        STARTUP_MAX_FAILS: '2',
+        STARTUP_COOLDOWN_MS: '100',
+        STARTUP_COOLDOWN_MAX_MS: '10000',
+      });
+      alive.push(proc);
+      await frontPort;
+      const out = await waitLog(
+        log,
+        (l) => count(l, /следующая серия через/g) >= 3,
+        20000,
+      );
+      const pauses = [...out.matchAll(/следующая серия через (\d+) мс/g)].map(
+        (m) => Number(m[1]),
+      );
+      expect(pauses.slice(0, 3)).toEqual([100, 200, 400]);
+    }, 30000);
+  });
+
+  // Аудит 2026-10, повторное ревью: падение реже раза в 15 минут, но чаще раза
+  // в 10 (период 8,5 мин) давало в 15-минутном окне лишь два падения из трёх —
+  // перезапуск без конца, без техработ и паузы. Второе окно — час. Масштаб:
+  // окно 1 с, прогон 0,2 с, бэкофф 1,5 с — в короткое окно не попадает и
+  // второе падение (как 8,5 мин против 15), а прогон короче окна, поэтому
+  // паузы растут, а не сбрасываются (контроль: fails=1/2 — лимит дал час).
+  it('редкий крашлуп (каждое падение вне короткого окна) → лимит по часу, техработы, паузы растут', async () => {
+    const { proc, frontPort, log } = launch({
+      RECOVER_CMD: 'true',
+      MIGRATE_CMD: 'true',
+      APP_CMD: 'echo APP-START >&2; sleep 0.2; exit 1',
+      APP_PORT: String(await freePort()),
+      STARTUP_CRASH_WINDOW_MS: '1000',
+      STARTUP_MAX_FAILS: '2',
+      STARTUP_MAX_FAILS_HOUR: '3',
+      STARTUP_BACKOFF_MS: '1500',
+      STARTUP_COOLDOWN_MS: '100',
+      STARTUP_COOLDOWN_MAX_MS: '10000',
+    });
+    alive.push(proc);
+    const port = await frontPort;
+    const out = await waitLog(
+      log,
+      (l) => count(l, /следующая серия через/g) >= 2,
+      25000,
+    );
+    expect(out).toMatch(/fails=1\/2, за час 3\/3\)/);
+    expect(out).not.toMatch(/fails=2\/2/);
+    const pauses = [...out.matchAll(/следующая серия через (\d+) мс/g)].map(
+      (m) => Number(m[1]),
+    );
+    expect(pauses.slice(0, 2)).toEqual([100, 200]);
+    expect(proc.exitCode).toBeNull();
+    const text = await poll(`http://127.0.0.1:${port}/`, /технические работы/);
+    expect(text).toContain('технические работы');
+  }, 40000);
+
+  // Номер запуска и троттл DM (src/telegram/start-announce.ts) ведёт супервизор:
+  // память процесса приложения после падения чистая, его собственный счётчик
+  // обнулялся бы на каждом круге. Падения за сутки копятся через серии; DM —
+  // только на 0 (деплой), 1, 2, 4, 8 падениях. Имена — те же константы, что
+  // читает приложение: обе стороны шва держатся одних строк.
+  it('номер запуска, падения за сутки и троттл DM доходят до приложения через серии', async () => {
+    const { launch: L, crashes: C, notice: N } = STARTUP_ENV;
+    const { proc, frontPort, log } = launch({
+      RECOVER_CMD: 'true',
+      MIGRATE_CMD: 'true',
+      APP_CMD: `echo "RUN L=$${L} C=$${C} N=$${N}" >&2; exit 1`,
+      APP_PORT: String(await freePort()),
+      STARTUP_MAX_FAILS: '3',
+      STARTUP_BACKOFF_MS: '10',
+      STARTUP_COOLDOWN_MS: '50',
+      STARTUP_COOLDOWN_MAX_MS: '50',
+    });
+    alive.push(proc);
+    await frontPort;
+    const out = await waitLog(log, (l) => count(l, /RUN L=\d+/g) >= 10);
+    const runs = [...out.matchAll(/RUN L=(\d+) C=(\d+) N=(\d)/g)]
+      .slice(0, 10)
+      .map((m) => [m[1], m[2], m[3]].join('/'));
+    expect(runs).toEqual([
+      '1/0/1', // деплой
+      '2/1/1',
+      '3/2/1',
+      '4/3/0', // серия кончилась на 3-м падении, сутки помнят
+      '5/4/1',
+      '6/5/0',
+      '7/6/0',
+      '8/7/0',
+      '9/8/1',
+      '10/9/0',
+    ]);
+    expect(out).toMatch(/L=3 [\s\S]*следующая серия через[\s\S]*L=4 /);
+  }, 30000);
+
+  it('контроль: SIGTERM самому entrypoint → приложение гасится, выход 0, без перезапуска и без «убито»', async () => {
+    const { proc, frontPort, exit, log } = launch({
+      RECOVER_CMD: 'true',
+      MIGRATE_CMD: 'true',
+      APP_CMD: 'echo APP-START >&2; exec sleep 30',
+      APP_PORT: String(await freePort()),
+      STARTUP_MAX_FAILS: '3',
+      STARTUP_BACKOFF_MS: '10',
+    });
+    alive.push(proc);
+    await frontPort;
+    await waitLog(log, (l) => /APP-START/.test(l));
+    proc.kill('SIGTERM');
+    expect(await exit).toBe(0);
+    const out = log();
+    expect(count(out, /APP-START/g)).toBe(1);
+    expect(out).not.toMatch(/убито сигналом|приложение упало/);
+  }, 30000);
 });

@@ -5,40 +5,51 @@ import { AuthOauthController } from './auth-oauth.controller';
 import { AuthTelegramController } from './auth-telegram.controller';
 import { AuthAccountController } from './auth-account.controller';
 import { AuthMaxController } from './auth-max.controller';
-import { AuthDeviceLinkController } from './auth-device-link.controller';
-import { DeviceLinkService } from './device-link.service';
+import { AuthTicketController } from './auth-ticket.controller';
+import { AuthLoginConfirmController } from './auth-login-confirm.controller';
+import { LoginTicketService } from './login-ticket/login-ticket.service';
+import { LoginTicketReport } from './login-ticket/login-ticket.report';
+import { TicketLinkService } from './login-ticket/ticket-link.service';
 import { Auth2faController } from './auth-2fa.controller';
 import { AuthFlowService } from './auth-flow.service';
+import { AuthOneTapController } from './auth-one-tap.controller';
+import { GoogleOneTapService } from './google-one-tap.service';
 import { EmailTokenService } from './email-token.service';
+import { CallerIdentityService } from './caller-identity';
 import { JwtAuthGuard, OptionalJwtGuard } from './jwt.guard';
 import { MergeService } from './merge.service';
 import { SecurityLogService } from './security-log.service';
+import { TelegramDomainWatchdogService } from './telegram-domain-watchdog.service';
 import { TotpService } from './totp.service';
 import { EmailService } from './email.service';
 import { AuthProviderRegistry } from './providers/registry';
 import { GoogleProvider } from './providers/google.provider';
 import { TelegramProvider } from './providers/telegram.provider';
-import { TelegramOidcProvider } from './providers/telegram-oidc.provider';
 import { VkProvider } from './providers/vk.provider';
 import { MaxProvider } from './providers/max.provider';
 import { PrismaModule } from '../prisma/prisma.module';
+import { AnalyticsModule } from '../analytics/analytics.module';
 
 @Module({
-  imports: [PrismaModule],
+  imports: [PrismaModule, AnalyticsModule],
   providers: [
     AuthService,
     AuthFlowService,
+    GoogleOneTapService,
     EmailTokenService,
+    CallerIdentityService,
     JwtAuthGuard,
     OptionalJwtGuard,
     MergeService,
-    DeviceLinkService,
+    LoginTicketService,
+    LoginTicketReport,
+    TicketLinkService,
     SecurityLogService,
+    TelegramDomainWatchdogService,
     TotpService,
     EmailService,
     GoogleProvider,
     TelegramProvider,
-    TelegramOidcProvider,
     VkProvider,
     MaxProvider,
     AuthProviderRegistry,
@@ -46,20 +57,24 @@ import { PrismaModule } from '../prisma/prisma.module';
   controllers: [
     AuthController,
     AuthOauthController,
+    AuthOneTapController,
     AuthTelegramController,
     AuthAccountController,
     AuthMaxController,
-    AuthDeviceLinkController,
+    AuthTicketController,
+    AuthLoginConfirmController,
     Auth2faController,
   ],
-  // MaxProvider экспортируется отдельно от реестра: его напрямую использует
-  // TelegramAuthGuard (api/init-data-paths.ts) вне этого модуля.
+  // MaxProvider — отдельно от реестра: его использует TelegramAuthGuard (api/).
   exports: [
     AuthService,
     JwtAuthGuard,
     SecurityLogService,
     EmailService,
+    TotpService, // второй фактор перед удалением аккаунта (api/)
     MaxProvider,
+    LoginTicketService, // карточка сверки в боте (TelegramModule)
+    TicketLinkService, // подтверждение объединения (telegram.link.service)
   ],
 })
 export class AuthModule {}

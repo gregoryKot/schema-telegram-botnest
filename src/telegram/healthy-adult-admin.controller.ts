@@ -14,12 +14,14 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { HealthyAdultService } from '../bot/healthy-adult.service';
 import { ChannelPublisherService } from '../channel/channel-publisher.service';
-import { assertAdminKey } from '../booking/admin-key.util';
+import { AdminThrottle, assertAdminKey } from '../booking/admin-key.util';
 import {
+  CheckPhraseDto,
   CreatePhraseDto,
   ImportPhrasesDto,
   UpdatePhraseDto,
 } from '../bot/healthy-adult.dto';
+import { findIssues } from '../bot/healthy-adult.quality';
 import { formatImportReport } from '../bot/healthy-adult.import';
 
 /**
@@ -27,6 +29,7 @@ import { formatImportReport } from '../bot/healthy-adult.import';
  * ADMIN_BOOKING_KEY, что и вся админка (x-admin-key header). Живёт в
  * TelegramModule, т.к. тестовая публикация ходит через ChannelPublisherService.
  */
+@AdminThrottle()
 @Controller('api/healthy-adult/admin')
 export class HealthyAdultAdminController {
   private readonly adminKey: string;
@@ -37,6 +40,27 @@ export class HealthyAdultAdminController {
     config: ConfigService,
   ) {
     this.adminKey = config.get<string>('ADMIN_BOOKING_KEY') ?? '';
+  }
+
+  /**
+   * Прогнать текст через планку, ничего не сохраняя: «покажи, что не так».
+   * Отдаём и пометки ('warn'), не только блокирующее — решает человек.
+   */
+  @Post('check')
+  @HttpCode(HttpStatus.OK)
+  check(@Body() dto: CheckPhraseDto, @Headers('x-admin-key') key: string) {
+    assertAdminKey(key, this.adminKey);
+    return { issues: findIssues(dto.text) };
+  }
+
+  /**
+   * Претензии ко всему пулу. Фразы, заведённые до появления планки, её не
+   * проходили — этот список показывает, что чинить руками.
+   */
+  @Get('audit')
+  async audit(@Headers('x-admin-key') key: string) {
+    assertAdminKey(key, this.adminKey);
+    return this.phrases.audit();
   }
 
   @Get('list')

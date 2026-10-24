@@ -53,10 +53,10 @@ export function ModeDoubtButton({
         style={{
           width: '100%',
           minHeight: 44,
-          marginTop: 8,
+          margin: '8px 0 16px',
           background: cm('var(--accent-blue)', 10),
           border: `1px solid ${cm('var(--accent-blue)', 35)}`,
-          borderRadius: 12,
+          borderRadius: 'var(--r-12)',
           color: 'var(--accent-blue)',
           fontSize: 13,
           fontWeight: 600,
@@ -73,7 +73,7 @@ export function ModeDoubtButton({
 
       {open && (
         <BottomSheet onClose={() => setOpen(false)}>
-          <div style={{ paddingTop: 4 }}>
+          <div className="u-pt4">
             <button
               onClick={() => {
                 haptic.tap();
@@ -100,7 +100,7 @@ export function ModeDoubtButton({
               style={{
                 background: cm('var(--accent-blue)', 10),
                 border: `1px solid ${cm('var(--accent-blue)', 25)}`,
-                borderRadius: 14,
+                borderRadius: 'var(--r-14)',
                 padding: '10px 14px',
                 marginBottom: 14,
               }}
@@ -120,9 +120,7 @@ export function ModeDoubtButton({
                 )}
                 {mode?.name ?? ''}
               </div>
-              <div style={{ fontSize: 12, color: 'var(--text-sub)' }}>
-                сейчас выбран
-              </div>
+              <div className="u-sub12">сейчас выбран</div>
             </div>
             <div
               style={{
@@ -135,7 +133,7 @@ export function ModeDoubtButton({
               Вот с чем его чаще всего путают — и как отличить.
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div className="u-col12">
               {doubts.map((d) => {
                 const other = getModeById(d.otherId);
                 const leafLabel = getModeLeafLabel(d.otherId);
@@ -145,7 +143,7 @@ export function ModeDoubtButton({
                     style={{
                       background: 'rgba(var(--fg-rgb),0.04)',
                       border: '1px solid rgba(var(--fg-rgb),0.08)',
-                      borderRadius: 14,
+                      borderRadius: 'var(--r-14)',
                       padding: '12px 14px',
                     }}
                   >
@@ -153,7 +151,7 @@ export function ModeDoubtButton({
                       style={{
                         display: 'flex',
                         alignItems: 'center',
-                        gap: 8,
+                        gap: 'var(--space-8)',
                         fontSize: 14.5,
                         fontWeight: 600,
                         color: 'var(--text)',
@@ -186,7 +184,7 @@ export function ModeDoubtButton({
                     <div
                       style={{
                         background: cm('var(--accent-blue)', 8),
-                        borderRadius: 10,
+                        borderRadius: 'var(--r-10)',
                         padding: '8px 10px',
                         marginBottom: 10,
                       }}
@@ -216,7 +214,7 @@ export function ModeDoubtButton({
                         minHeight: 44,
                         background: cm('var(--accent-blue)', 16),
                         border: `1px solid ${cm('var(--accent-blue)', 40)}`,
-                        borderRadius: 12,
+                        borderRadius: 'var(--r-12)',
                         color: 'var(--accent-blue)',
                         fontSize: 14,
                         fontWeight: 600,
@@ -240,7 +238,7 @@ export function ModeDoubtButton({
                 width: '100%',
                 marginTop: 18,
                 padding: 14,
-                borderRadius: 14,
+                borderRadius: 'var(--r-14)',
                 border: 'none',
                 minHeight: 48,
                 background:

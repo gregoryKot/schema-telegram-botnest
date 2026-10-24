@@ -16,7 +16,19 @@ import { AccountService } from '../bot/account.service';
 import { BotAnalyticsService } from '../bot/bot.analytics.service';
 import { TelegramAuthGuard } from './telegram-auth.guard';
 import { PairCodeDto } from './dto/pairs.dto';
-import { MINIAPP_TGLINK } from '../telegram/telegram.constants';
+import { miniappStartLink } from '../telegram/miniapp-link';
+
+// Ссылка ждущего приглашения — чтобы клиент мог отправить её повторно, не
+// создавая новый код. Бот не настроен (miniappStartLink бросает 503) — это не
+// повод ронять весь GET /api/pair: партнёры и индексы нужны и без ссылки.
+function pendingInviteUrl(code: string | null): string | null {
+  if (!code) return null;
+  try {
+    return miniappStartLink(`pair_${code}`);
+  } catch {
+    return null;
+  }
+}
 
 interface AuthRequest extends Request {
   webUser: { userId: bigint };
@@ -46,9 +58,9 @@ export class PairsController {
       activePairs.map(async (pair) => {
         const [partnerRatings, partnerName, partnerHistory] = await Promise.all(
           [
-            this.botService.getRatings(BigInt(pair.partnerId!)),
-            this.accountService.getUserFirstName(BigInt(pair.partnerId!)),
-            this.analyticsService.getHistoryRatings(BigInt(pair.partnerId!), 7),
+            this.botService.getRatings(pair.partnerId!),
+            this.accountService.getUserFirstName(pair.partnerId!),
+            this.analyticsService.getHistoryRatings(pair.partnerId!, 7),
           ],
         );
         const partnerRaw =
@@ -86,13 +98,14 @@ export class PairsController {
       }),
     );
 
-    return { partners, pendingCode: pendingPair?.code ?? null };
+    const pendingCode = pendingPair?.code ?? null;
+    return { partners, pendingCode, pendingUrl: pendingInviteUrl(pendingCode) };
   }
 
   @Post('pair/invite')
   async createPairInvite(@Req() req: AuthRequest) {
     const code = await this.pairsService.createPairInvite(uid(req));
-    const url = `${MINIAPP_TGLINK}?startapp=pair_${code}`;
+    const url = miniappStartLink(`pair_${code}`);
     return { code, url };
   }
 

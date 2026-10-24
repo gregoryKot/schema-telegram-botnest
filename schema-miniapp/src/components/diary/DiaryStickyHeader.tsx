@@ -46,7 +46,7 @@ export function DiaryStickyHeader({
         style={{
           padding: '12px 18px',
           minHeight: 48,
-          borderRadius: 14,
+          borderRadius: 'var(--r-14)',
           border: 'none',
           fontFamily: 'inherit',
           background: canSave ? color : 'var(--surface-2)',

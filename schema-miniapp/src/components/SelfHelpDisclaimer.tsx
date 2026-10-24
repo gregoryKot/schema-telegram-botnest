@@ -4,8 +4,13 @@
 // (experiential avoidance). Тон — тёплый и ясный, без запугивания.
 // Вход — кнопка-значок ⚠️ в шапке «Здесь и сейчас» (HelpHeader.tsx; была
 // широким текстовым чипом, сужена до значка), полный текст — по тапу.
+// Сам текст – в shared/src/selfHelp/selfHelpText.ts (общий с сайтом).
 import { BottomSheet } from './BottomSheet';
 import { useTr } from '../utils/addressForm';
+import {
+  buildSelfHelpParagraphs,
+  SELF_HELP_TITLE,
+} from '../../../shared/src/selfHelp/selfHelpText';
 
 export function SelfHelpSheet({
   onClose,
@@ -29,7 +34,7 @@ export function SelfHelpSheet({
   );
   return (
     <BottomSheet onClose={onClose} zIndex={200}>
-      <div style={{ paddingTop: 4 }}>
+      <div className="u-pt4">
         <div
           className="d-display"
           style={{
@@ -38,36 +43,18 @@ export function SelfHelpSheet({
             marginBottom: 12,
           }}
         >
-          Важное о самопомощи
+          {SELF_HELP_TITLE}
         </div>
-        <P>
-          Дыхание, заземление и другие практики здесь — способ пережить острый
-          момент. Они как спасательный жилет в шторм: помогают удержаться на
-          воде, но не меняют погоду.
-        </P>
-        <P>
-          У самопомощи есть и обратная сторона. Если каждый раз глушить чувства
-          практикой, можно незаметно научиться их избегать — а то, чего мы
-          избегаем, со временем пугает сильнее. Так закрепляется избегающее
-          поведение.
-        </P>
-        <P>
-          {tr(
-            'Ориентир простой: практика нужна, чтобы вернуться к жизни и к чувствам — а не спрятаться от них. Если замечаешь, что тянешься к ним всё чаще, — провала тут нет. Это сигнал, что пора поговорить со специалистом.',
-            'Ориентир простой: практика нужна, чтобы вернуться к жизни и к чувствам — а не спрятаться от них. Если замечаете, что тянетесь к ним всё чаще, — провала тут нет. Это сигнал, что пора поговорить со специалистом.',
-          )}
-        </P>
-        <P>
-          Самопомощь не заменяет терапию. Если тяжело подолгу и часто — не
-          обязательно нести это в одиночку.
-        </P>
-        <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+        {buildSelfHelpParagraphs(tr).map((p) => (
+          <P key={p}>{p}</P>
+        ))}
+        <div style={{ display: 'flex', gap: 'var(--space-8)', marginTop: 4 }}>
           {onOpenCrisis && (
             <button
               onClick={onOpenCrisis}
               style={{
                 padding: '13px 16px',
-                borderRadius: 12,
+                borderRadius: 'var(--r-12)',
                 border: 'none',
                 background: 'rgba(var(--fg-rgb),0.06)',
                 color: 'var(--text-sub)',
@@ -79,7 +66,7 @@ export function SelfHelpSheet({
               Контакты помощи
             </button>
           )}
-          <button className="btn-primary" style={{ flex: 1 }} onClick={onClose}>
+          <button className="btn-primary u-flex1" onClick={onClose}>
             Понятно
           </button>
         </div>

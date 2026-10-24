@@ -1,7 +1,6 @@
-const EFFECTIVE_DATE = '7 июля 2026 г.';
-const OPERATOR_NAME  = 'Котляревский Григорий Юрьевич';
-const OPERATOR_INN   = '450163793969';
-const OPERATOR_EMAIL = 'gregorykot@gmail.com';
+import { OPERATOR_NAME, OPERATOR_INN, OPERATOR_EMAIL } from '../legal/operator';
+
+const EFFECTIVE_DATE = '1 октября 2026 г.';
 
 export function OfferPage() {
   return (
@@ -16,9 +15,9 @@ export function OfferPage() {
           кодекса Российской Федерации и содержит все существенные условия договора
           возмездного оказания консультационных услуг.
         </p>
-        <div style={{ background: 'rgba(var(--fg-rgb),.04)', border: '1px solid var(--line)', borderRadius: 12, padding: '16px 20px', marginTop: 24 }}>
+        <div style={{ background: 'rgba(var(--fg-rgb),.04)', border: '1px solid var(--line)', borderRadius: 'var(--r-12)', padding: '16px 20px', marginTop: 24 }}>
           <p style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.7, margin: 0 }}>
-            <strong style={{ color: 'var(--text)' }}>Важно.</strong> Услуги, описанные в настоящей оферте, являются
+            <strong className="u-fg">Важно.</strong> Услуги, описанные в настоящей оферте, являются
             консультационными и не относятся к медицинской деятельности, психиатрической помощи
             или психотерапии в смысле Федерального закона от 21.11.2011 № 323-ФЗ
             «Об основах охраны здоровья граждан в Российской Федерации».
@@ -69,7 +68,7 @@ export function OfferPage() {
             <P>
               Акцепт означает, что Заказчик ознакомился с настоящей офертой, понимает её содержание
               и безоговорочно принимает все её условия. Оферта является публичной и доступна по
-              адресу: <strong>schemehappens.ru/offer</strong>.
+              адресу: <strong>kotlarewski.gr/offer и schemehappens.ru/offer</strong>.
             </P>
           </Chapter>
 
@@ -96,10 +95,10 @@ export function OfferPage() {
             <P><strong>5.1. Формат:</strong> онлайн-видеосвязь (Zoom, Google Meet или иной согласованный сервис).</P>
             <P><strong>5.2. Продолжительность Сессии:</strong> 50 (пятьдесят) минут.</P>
             <P><strong>5.3. Вводная встреча:</strong> 15 (пятнадцать) минут, проводится однократно, безвозмездно.</P>
-            <P><strong>5.4. Согласование:</strong> дата и время каждой Сессии согласовываются через мессенджер
-              (Telegram) или электронную почту. Исполнитель подтверждает запись в течение 24 часов.</P>
+            <P><strong>5.4. Согласование:</strong> дата и время Сессии выбираются Заказчиком на сайте при записи
+              (подтверждение приходит автоматически) либо согласовываются через мессенджер (Telegram) или электронную почту – тогда Исполнитель подтверждает запись в течение 24 часов.</P>
             <P><strong>5.5. Периодичность:</strong> определяется совместно в зависимости от запроса
-              Заказчика, как правило – 1 раз в неделю или 1 раз в 2 недели.</P>
+              Заказчика, как правило – 1–2 раза в неделю; реже – по договорённости сторон.</P>
             <P><strong>5.6. Услуга считается оказанной</strong> с момента окончания Сессии независимо
               от субъективной оценки её результата Заказчиком.</P>
           </Chapter>
@@ -107,7 +106,7 @@ export function OfferPage() {
           <Chapter n="6" title="Стоимость и порядок оплаты">
             <Table rows={[
               ['Вводная встреча', 'Бесплатно'],
-              ['Сессия (50 минут)', '4 000 (четыре тысячи) рублей, если иная стоимость не указана на сайте при записи. Стоимость фиксируется в момент оплаты'],
+              ['Сессия (50 минут)', '3 000 (три тысячи) рублей, если иная стоимость не указана на сайте при записи. Стоимость фиксируется в момент оплаты'],
               ['Форма оплаты', 'Онлайн на сайте через платёжный сервис Robokassa (банковская карта, СБП) при записи, либо по реквизитам, которые Исполнитель направляет Заказчику после согласования времени'],
               ['Срок оплаты', 'Не позднее чем за 2 часа до начала Сессии, если иное не согласовано сторонами'],
               ['Налоговый документ', 'Чек самозанятого через приложение «Мой налог» – направляется в течение 24 часов после оплаты'],
@@ -153,7 +152,7 @@ export function OfferPage() {
             ]} />
             <P><strong>8.2. Исполнитель вправе:</strong></P>
             <Ul items={[
-              'Отказать в оказании Услуг или прекратить работу с Заказчиком, если это противоречит этическим принципам, профессиональным стандартам или ставит под угрозу безопасность одной из сторон',
+              'Отказать в оказании Услуг или прекратить работу с Заказчиком, если это противоречит этическим принципам, профессиональным стандартам или ставит под угрозу безопасность одной из сторон, с рекомендацией другого специалиста',
               'Рекомендовать Заказчику обратиться к другому специалисту, если запрос выходит за рамки квалификации Исполнителя',
             ]} />
             <P><strong>8.3. Заказчик обязуется:</strong></P>
@@ -268,7 +267,7 @@ export function OfferPage() {
               ['ИНН', OPERATOR_INN],
               ['E-mail', OPERATOR_EMAIL],
               ['Telegram', '@kotlarewski'],
-              ['Сайт', 'schemehappens.ru'],
+              ['Сайт', 'kotlarewski.gr, schemehappens.ru'],
             ]} />
           </Chapter>
 
@@ -288,7 +287,7 @@ function Chapter({ n, title, children }: { n: string; title: string; children: R
       <h2 style={{ fontFamily: 'var(--serif)', fontSize: 22, fontWeight: 400, color: 'var(--text)', margin: '0 0 20px', letterSpacing: '-.01em', paddingBottom: 12, borderBottom: '1px solid var(--line)' }}>
         <span style={{ color: 'var(--accent)', marginRight: 10, fontSize: 14, fontFamily: 'inherit', fontStyle: 'normal' }}>{n}.</span>{title}
       </h2>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>{children}</div>
+      <div className="u-col12">{children}</div>
     </section>
   );
 }
@@ -306,7 +305,7 @@ function Ul({ items }: { items: string[] }) {
 }
 function Table({ rows }: { rows: [string, string][] }) {
   return (
-    <div style={{ border: '1px solid var(--line)', borderRadius: 12, overflow: 'hidden' }}>
+    <div style={{ border: '1px solid var(--line)', borderRadius: 'var(--r-12)', overflow: 'hidden' }}>
       {rows.map(([label, value], i) => (
         <div key={i} style={{
           display: 'grid', gridTemplateColumns: '220px 1fr',

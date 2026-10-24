@@ -16,6 +16,14 @@ const base = {
 };
 
 describe('HomeView — хаб дневников', () => {
+  // В8 дизайн-аудита 2026-08: «Мои дневники» — заголовок экрана (h1).
+  it('«Мои дневники» — h1', () => {
+    render(<HomeView {...base} streak={0} />);
+    expect(
+      screen.getByRole('heading', { level: 1, name: 'Мои дневники' }),
+    ).toBeTruthy();
+  });
+
   it('на чистом аккаунте нет чипа серии и нет выдуманных цифр', () => {
     const { container } = render(<HomeView {...base} streak={0} />);
     expect(screen.getAllByText('Пока пусто').length).toBe(3);

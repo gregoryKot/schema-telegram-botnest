@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { TherapyRelationsService } from './therapy-relations.service';
 import { encryptRecord, decryptRecord, EncryptSchema } from '../utils/crypto';
+import { guardOverwrite } from '../utils/crypto-record';
 
 // Declarative encryption schemas — single source of truth, so a newly added
 // free-text field can't silently end up in plaintext (just add it here).
@@ -12,9 +13,8 @@ const MODE_MAP_SCHEMA: EncryptSchema = {
 const CUSTOM_MODE_SCHEMA: EncryptSchema = { strings: ['name'] };
 const MODE_MAP_KINDS = ['personality', 'problem', 'couple'] as const;
 
-// Карты режимов (mode maps) терапевта для клиента + кастомные режимы
-// терапевта. Доступ к чужому клиенту закрыт через
-// TherapyRelationsService.assertHasClient.
+// Карты режимов (mode maps) терапевта для клиента + кастомные режимы терапевта.
+// Доступ к чужому клиенту закрыт через TherapyRelationsService.assertHasClient.
 @Injectable()
 export class ModeMapsService {
   constructor(
@@ -24,10 +24,10 @@ export class ModeMapsService {
 
   // ─── Mode Maps ───────────────────────────────────────────────────────────────
 
-  async listModeMaps(therapistId: bigint, clientId: number) {
+  async listModeMaps(therapistId: bigint, clientId: bigint) {
     await this.relationsService.assertHasClient(therapistId, clientId);
     const rows = await this.prisma.modeMap.findMany({
-      where: { therapistId, clientId: BigInt(clientId) },
+      where: { therapistId, clientId },
       orderBy: { createdAt: 'asc' },
       select: {
         id: true,
@@ -53,14 +53,14 @@ export class ModeMapsService {
     // не только на листинге), догоняем активность связи здесь же.
     await this.relationsService.assertHasClient(
       therapistId,
-      Number((row as { clientId: bigint }).clientId),
+      (row as { clientId: bigint }).clientId,
     );
     return decryptRecord(row, MODE_MAP_SCHEMA);
   }
 
   async createModeMap(
     therapistId: bigint,
-    clientId: number,
+    clientId: bigint,
     title: string,
     kind?: string,
   ) {
@@ -71,7 +71,7 @@ export class ModeMapsService {
     const row = await this.prisma.modeMap.create({
       data: {
         therapistId,
-        clientId: BigInt(clientId),
+        clientId,
         kind: k,
         ...encryptRecord({ title }, MODE_MAP_SCHEMA),
       },
@@ -93,16 +93,17 @@ export class ModeMapsService {
     });
     if (!existing || existing.therapistId.toString() !== therapistId.toString())
       throw new Error('Not found');
-    // См. комментарий в getModeMap — та же догоняющая проверка активности
-    // связи, симметрично для записи.
+    // См. getModeMap: догоняющая проверка связи, симметрично для записи.
     await this.relationsService.assertHasClient(
       therapistId,
-      Number((existing as { clientId: bigint }).clientId),
+      (existing as { clientId: bigint }).clientId,
     );
     const fields: Record<string, unknown> = {};
     if (body.title !== undefined) fields.title = body.title;
     if (body.nodes !== undefined) fields.nodes = body.nodes;
     if (body.edges !== undefined) fields.edges = body.edges;
+    // Нечитаемые nodes/edges ушли клиенту как [] — запись поверх стёрла бы их.
+    guardOverwrite(existing, MODE_MAP_SCHEMA, fields, `modeMap#${mapId}`);
     const row = await this.prisma.modeMap.update({
       where: { id: mapId },
       data: encryptRecord(fields, MODE_MAP_SCHEMA),
@@ -116,11 +117,10 @@ export class ModeMapsService {
     });
     if (!existing || existing.therapistId.toString() !== therapistId.toString())
       throw new Error('Not found');
-    // См. комментарий в getModeMap — та же догоняющая проверка активности
-    // связи, симметрично для удаления.
+    // См. getModeMap: догоняющая проверка связи, симметрично для удаления.
     await this.relationsService.assertHasClient(
       therapistId,
-      Number((existing as { clientId: bigint }).clientId),
+      (existing as { clientId: bigint }).clientId,
     );
     await this.prisma.modeMap.delete({ where: { id: mapId } });
   }
@@ -174,8 +174,8 @@ export class ModeMapsService {
       data: {
         therapistId,
         nodeType,
-        emoji: (body.emoji ?? '⬡').slice(0, 8),
-        ...encryptRecord({ name: body.name.slice(0, 80) }, CUSTOM_MODE_SCHEMA),
+        emoji: body.emoji ?? '⬡',
+        ...encryptRecord({ name: body.name }, CUSTOM_MODE_SCHEMA),
       },
     });
     return decryptRecord(row, CUSTOM_MODE_SCHEMA);

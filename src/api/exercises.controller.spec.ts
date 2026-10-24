@@ -212,3 +212,24 @@ describe('ExercisesController flashcards', () => {
     });
   });
 });
+
+// M6 (аудит 2026-10): id в DELETE :id адресует колонку Int — значение за INT4
+// отклоняется на входе, а не доходит до Prisma (там — 500 на переполнении).
+describe('ExercisesController DELETE :id — границы id (M6)', () => {
+  it.each(['2147483648', '99999999999999999999', '1e3', '0x1f'])(
+    'id=%p — 400, сервис не вызывается',
+    async (badId) => {
+      const { controller, exercisesService } = makeController();
+      await expect(
+        (async () => controller.deleteLetter(makeReq(7n), badId))(),
+      ).rejects.toThrow(BadRequestException);
+      await expect(
+        (async () => controller.deleteBeliefCheck(makeReq(7n), badId))(),
+      ).rejects.toThrow(BadRequestException);
+      await expect(
+        (async () => controller.deleteFlashcard(makeReq(7n), badId))(),
+      ).rejects.toThrow(BadRequestException);
+      expect(exercisesService.deleteLetter).not.toHaveBeenCalled();
+    },
+  );
+});

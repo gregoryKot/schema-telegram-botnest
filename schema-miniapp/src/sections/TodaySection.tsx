@@ -1,6 +1,4 @@
-// TodaySection.tsx — Redesigned Today screen
-// Place at: src/sections/TodaySection.tsx
-// Replaces the existing TodaySection.
+// TodaySection.tsx — Redesigned Today screen.
 //
 // Key differences from original:
 //  – NeedMini grid with fill-bar indicators (tap opens tracker at that need)
@@ -16,15 +14,17 @@ import { api } from '../api';
 import { useSafeTop } from '../utils/safezone';
 import { MY_SCHEMA_IDS_KEY, MY_MODE_IDS_KEY } from '../utils/storageKeys';
 import { TaskCreateSheet } from '../components/TaskCreateSheet';
-import { fmtDate, todayStr } from '../utils/format';
+import { momentDayLabel, momentIsToday, momentTime } from '../utils/format';
 import { HomeScreenOfferCard } from '../components/HomeScreenOfferCard';
 import { GearButton } from '../components/GearButton';
 import { TodayCustomizeSheet } from '../components/TodayCustomizeSheet';
 import { useTodayCustomization } from '../hooks/useTodayCustomization';
 import { useTr } from '../utils/addressForm';
 import { Props } from './today/types';
+import { CaseEntryCard } from './today/CaseEntryCard';
 import { formatGreetingDate, readLocalIds } from './today/helpers';
 import { OnboardingWidget } from './today/OnboardingWidget';
+import { isOnboardingWidgetVisible } from './today/onboardingSteps';
 import { TodayBlocks } from './today/TodayBlocks';
 
 export { MY_SCHEMA_IDS_KEY, MY_MODE_IDS_KEY };
@@ -46,6 +46,9 @@ export function TodaySection({
   userRole,
   onOpenTherapistCabinet,
   onNewDiaryEntry,
+  onStartCase,
+  onOpenMap,
+  onSteadyDay,
 }: Props) {
   const tr = useTr();
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -58,6 +61,9 @@ export function TodaySection({
   const [diariesLoaded, setDiariesLoaded] = useState(false);
   const [showDiaryTask, setShowDiaryTask] = useState(false);
   const today = useTodayCustomization();
+  // Разборов всего — берём из уже загружаемого дневника режимов: разбор
+  // сохраняется обычной записью, отдельного хранилища у него нет.
+  const [caseCount, setCaseCount] = useState(0);
   const [todayDone, setTodayDone] = useState({
     schema: false,
     mode: false,
@@ -94,38 +100,37 @@ export function TodaySection({
     ])
       .then(([schema, mode, gratitude]) => {
         if (ignore) return;
-        const today = todayStr();
-        const dateLabel = (iso: string) =>
-          iso.slice(0, 10) === today ? 'Сегодня' : fmtDate(iso.slice(0, 10));
+        // Момент — в зоне читателя, день — как есть: см. utils/momentDate.
         const all = [
           ...schema.slice(0, 2).map((e) => ({
             type: 'schema',
             label: e.trigger.slice(0, 46),
-            time: e.createdAt.slice(11, 16),
-            dateStr: dateLabel(e.createdAt),
+            time: momentTime(e.createdAt),
+            dateStr: momentDayLabel(e.createdAt),
             sortKey: e.createdAt,
           })),
           ...mode.slice(0, 2).map((e) => ({
             type: 'mode',
             label: e.situation.slice(0, 46),
-            time: e.createdAt.slice(11, 16),
-            dateStr: dateLabel(e.createdAt),
+            time: momentTime(e.createdAt),
+            dateStr: momentDayLabel(e.createdAt),
             sortKey: e.createdAt,
           })),
           ...gratitude.slice(0, 2).map((e) => ({
             type: 'gratitude',
             label: e.items[0]?.slice(0, 46) ?? 'Благодарность',
             time: '',
-            dateStr: e.date === today ? 'Сегодня' : fmtDate(e.date),
+            dateStr: momentDayLabel(e.date),
             sortKey: e.date,
           })),
         ];
         all.sort((a, b) => b.sortKey.localeCompare(a.sortKey));
         setRecentDiaries(all.slice(0, 3));
+        setCaseCount(mode.length);
         setTodayDone({
-          schema: schema.some((e) => e.createdAt.slice(0, 10) === today),
-          mode: mode.some((e) => e.createdAt.slice(0, 10) === today),
-          gratitude: gratitude.some((e) => e.date === today),
+          schema: schema.some((e) => momentIsToday(e.createdAt)),
+          mode: mode.some((e) => momentIsToday(e.createdAt)),
+          gratitude: gratitude.some((e) => momentIsToday(e.date)),
         });
       })
       .catch((e) => console.error('diaries load failed', e))
@@ -138,6 +143,7 @@ export function TodaySection({
     };
   }, [refreshKey]);
 
+  const onboardingVisible = isOnboardingWidgetVisible(profile);
   const streak = profile?.streak ?? 0;
   const ratedCount = needs.filter((n) => ratings[n.id] !== undefined).length;
   const allRated = needs.length > 0 && ratedCount === needs.length;
@@ -164,18 +170,19 @@ export function TodaySection({
             display: 'flex',
             alignItems: 'flex-start',
             justifyContent: 'space-between',
-            gap: 12,
+            gap: 'var(--space-12)',
           }}
         >
-          <div
+          <h1
             className="d-display"
             style={{
               fontSize: 26,
               lineHeight: 1.15,
+              margin: 0,
             }}
           >
             {firstName ? `Привет, ${firstName}` : 'Добро пожаловать'}
-          </div>
+          </h1>
           <div style={{ marginTop: -6, flexShrink: 0 }}>
             <GearButton
               onClick={today.openByGear}
@@ -200,23 +207,36 @@ export function TodaySection({
           padding: '16px 20px 0',
           display: 'flex',
           flexDirection: 'column',
-          gap: 12,
+          gap: 'var(--space-12)',
         }}
       >
-        {/* ── Onboarding widget — закреплён над band: воронка новичка ── */}
-        <OnboardingWidget
-          profile={profile}
-          hasSchemas={hasSchemas}
-          onOpenSchema={onOpenSchema}
-          onOpenAdvanced={onOpenAdvanced}
-          onOpenTracker={onOpenTracker}
-          onOpenDiaries={onOpenDiaries}
-          onOpenChildhoodWheel={onOpenChildhoodWheel}
+        {/* ── Точка входа: одно главное действие экрана ── */}
+        <CaseEntryCard
+          caseCount={caseCount}
+          onStart={onStartCase}
+          onSteadyDay={onSteadyDay}
+          onOpenMap={onOpenMap}
         />
+
+        {/* Воронка новичка появляется ПОСЛЕ первого разбора: два «начни
+            отсюда» рядом возвращают ровно ту растерянность, из-за которой
+            затевался редизайн входа. */}
+        {caseCount > 0 && (
+          <OnboardingWidget
+            profile={profile}
+            hasSchemas={hasSchemas}
+            onOpenSchema={onOpenSchema}
+            onOpenAdvanced={onOpenAdvanced}
+            onOpenTracker={onOpenTracker}
+            onOpenDiaries={onOpenDiaries}
+            onOpenChildhoodWheel={onOpenChildhoodWheel}
+          />
+        )}
 
         {/* ── Band переставляемых блоков (screen_order_today) ── */}
         <TodayBlocks
           today={today}
+          onboardingVisible={onboardingVisible}
           userRole={userRole}
           onOpenTherapistCabinet={onOpenTherapistCabinet}
           streak={streak}
@@ -237,8 +257,8 @@ export function TodaySection({
           onSetDiaryTask={() => setShowDiaryTask(true)}
         />
 
-        {/* ── Значок на экран — закреплён под band: временная карточка ── */}
-        <HomeScreenOfferCard />
+        {/* Значок — не третий CTA подряд поверх онбординга (полировка, п.1). */}
+        {!onboardingVisible && <HomeScreenOfferCard />}
       </div>
 
       {today.sheet && (

@@ -142,7 +142,9 @@ describe('PracticesScreen — добавление практики', () => {
 });
 
 describe('PracticesScreen — удаление практики', () => {
-  it('клик по × убирает практику из списка сразу (оптимистично) и шлёт запрос', async () => {
+  it('первый клик по × не удаляет (показывает подтверждение), второй убирает практику из списка (оптимистично) и шлёт запрос', async () => {
+    // Двухтапное подтверждение (аудит 2026-08, К3): один тап по маленькой
+    // кнопке больше не удаляет необратимо.
     getPractices.mockResolvedValue([
       { id: 5, needId: 'attachment', text: 'Медитация' },
     ]);
@@ -150,7 +152,11 @@ describe('PracticesScreen — удаление практики', () => {
     renderScreen();
     await screen.findByText('Медитация');
 
-    fireEvent.click(screen.getByText('×'));
+    fireEvent.click(screen.getByLabelText('Удалить практику'));
+    expect(deletePractice).not.toHaveBeenCalled();
+    expect(screen.queryByText('Медитация')).toBeTruthy();
+
+    fireEvent.click(screen.getByText('Точно удалить?'));
     expect(screen.queryByText('Медитация')).toBeNull();
     expect(deletePractice).toHaveBeenCalledWith(5);
   });
@@ -166,7 +172,8 @@ describe('PracticesScreen — удаление практики', () => {
     renderScreen();
     await screen.findByText('Медитация');
 
-    fireEvent.click(screen.getByText('×'));
+    fireEvent.click(screen.getByLabelText('Удалить практику'));
+    fireEvent.click(screen.getByText('Точно удалить?'));
     expect(screen.queryByText('Медитация')).toBeNull();
 
     expect(await screen.findByText('Медитация')).toBeTruthy();

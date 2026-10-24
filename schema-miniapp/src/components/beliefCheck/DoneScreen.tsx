@@ -44,7 +44,7 @@ export function BeliefDoneScreen({
           style={{
             background: cm('var(--accent-blue)', 8),
             border: `1px solid ${cm('var(--accent-blue)', 15)}`,
-            borderRadius: 16,
+            borderRadius: 'var(--r-16)',
             padding: '14px 16px',
             textAlign: 'left',
             marginBottom: 16,
@@ -94,7 +94,7 @@ export function BeliefDoneScreen({
                   • {f}
                 </div>
               ))}
-              <div style={{ marginBottom: 10 }} />
+              <div className="u-mb10" />
             </>
           )}
           {againstList.length > 0 && (
@@ -121,7 +121,7 @@ export function BeliefDoneScreen({
                   • {a}
                 </div>
               ))}
-              <div style={{ marginBottom: 10 }} />
+              <div className="u-mb10" />
             </>
           )}
           {reframe && (
@@ -153,7 +153,7 @@ export function BeliefDoneScreen({
           style={{
             width: '100%',
             padding: '13px 0',
-            borderRadius: 14,
+            borderRadius: 'var(--r-14)',
             border: 'none',
             background: cm('var(--accent-blue)', 15),
             color: 'var(--accent-blue)',

@@ -1,0 +1,58 @@
+import { useState } from 'react';
+import { useTr } from '../../utils/addressForm';
+import { MODE_GROUP_HUE, hueStyle } from '../../lib/tone';
+import { IdentityDot } from '../../../../shared/src/components/IdentityDot';
+import { buildModes } from './data';
+import { ModeCheckinOverlay } from './ModeCheckinOverlay';
+import { ModeShareButton } from './ModeShareButton';
+
+/** Группы справочника → ключ MODE_GROUP_HUE (копинги в палитре все одного тона). */
+const GROUP_HUE_KEY: Record<string, string> = {
+  'Детские режимы': 'child', 'Дисфункциональные копинги': 'coping_surrender',
+  'Критикующие режимы': 'critic', 'Здоровые режимы': 'healthy',
+};
+
+// Вкладка «режимы» справочника схем: карточки режимов + чек-ин (вынесено из SchemaInfoSheet, правило №10).
+export function ModesTab() {
+  const tr = useTr();
+  const [showCheckin, setShowCheckin] = useState(false);
+  const open = () => setShowCheckin(true);
+  return (
+    <div className="ss-pane">
+      <div
+        onClick={open} role="button" tabIndex={0}
+        onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); } }}
+        className="ds-card ds-card--hover ss-cta"
+      >
+        <div className="ss-cta-text">
+          <div className="ds-eyebrow">Режим прямо сейчас</div>
+          <div className="ss-need-title">{tr('Как ты себя чувствуешь? →', 'Как вы себя чувствуете? →')}</div>
+        </div>
+      </div>
+      <p className="ss-body">Режим – это актуальное состояние психики прямо сейчас. Цель – расширить доступ к Здоровому Взрослому.</p>
+      {buildModes(tr).map((g) => (
+        <div key={g.group} className="ss-pane" style={hueStyle(MODE_GROUP_HUE[GROUP_HUE_KEY[g.group]])}>
+          <span className="ds-chip tone-tint" style={{ alignSelf: 'flex-start' }}>
+            <span className="ds-dot tone-fill" />{g.group}
+          </span>
+          {g.items.map((m) => (
+            <div key={m.name} className="ds-card ss-mode">
+              <div className="ss-need-head">
+                <IdentityDot color={g.color} size={16} />
+                <div>
+                  <div className="ss-mode-name">{m.name}</div>
+                  <div className="ss-mode-feel">Чувствуется как: {m.feel}</div>
+                </div>
+                <span className="ss-mode-share">
+                  <ModeShareButton group={g.group} color={g.color} {...m} />
+                </span>
+              </div>
+              <p className="ss-body ss-body--sm">{m.desc}</p>
+            </div>
+          ))}
+        </div>
+      ))}
+      {showCheckin && <ModeCheckinOverlay onClose={() => setShowCheckin(false)} />}
+    </div>
+  );
+}

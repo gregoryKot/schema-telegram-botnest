@@ -1,59 +1,35 @@
-// Shared API client for the web app.
-// Uses Authorization: Bearer <token> instead of x-telegram-init-data.
-// Единственная фронтовая копия типов — в shared (правило №3); методы, которые
-// их используют, переехали в shared-фабрику, здесь остались только ре-экспорты.
+// Shared API client for the web app (Authorization: Bearer <token> вместо x-telegram-init-data).
+// Типы — единственная копия в shared (правило №3); методы переехали в shared-фабрику, здесь ре-экспорты.
 export type { TherapyClientSummary } from '../../shared/src/types';
-import type { QuizDto } from '../../shared/src/quiz/quizEngine';
-export type { QuizDto } from '../../shared/src/quiz/quizEngine';
+import type { QuizDto } from '../../shared/src/quiz/quizEngine'; export type { QuizDto } from '../../shared/src/quiz/quizEngine';
 export type { UserSchemaNote, UserModeNote } from '../../shared/src/notes/types';
+import type { ContactChannel } from '../../shared/src/booking/contactChannel'; import type { Currency } from '../../shared/src/booking/priceRegion'; import type { PhraseMarkId } from '../../shared/src/phraseCheck/criteria';
 import { buildSharedApi, type ApiTransport } from '../../shared/src/api/sharedApi';
 import { createRatingApi } from '../../shared/src/api/ratingApi';
+import { createPracticeSessionsApi } from '../../shared/src/api/practiceSessionsApi';
 import { createClientErrorReporter } from '../../shared/src/api/clientErrorReport';
+import {
+  BASE,
+  ApiError,
+  fetchWithTimeout,
+  authedFetch,
+  get,
+  post,
+  postJson,
+  patchJson,
+  del,
+  setTokenProvider,
+  setRefreshHandler,
+} from './apiClient';
+export { ApiError, setTokenProvider, setRefreshHandler };
 
-const rawBase = (import.meta.env.VITE_API_URL as string) ?? '';
-const BASE = rawBase && !rawBase.startsWith('http') ? `https://${rawBase}` : rawBase;
+// Единственная копия — shared/src/api/clientErrorReport.ts (правило №3).
+export const reportClientError = createClientErrorReporter(BASE, 'webapp');
 
-let _getToken: (() => string | null) | null = null;
-
-export function setTokenProvider(fn: () => string | null) {
-  _getToken = fn;
-}
-
-function authHeaders(): Record<string, string> {
-  const token = _getToken?.();
-  return {
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    'Content-Type': 'application/json',
-  };
-}
-
-async function fetchWithTimeout(input: string, init: RequestInit, ms = 15000): Promise<Response> {
-  const ctrl = new AbortController();
-  const id = setTimeout(() => ctrl.abort(), ms);
-  try {
-    return await fetch(input, { ...init, signal: ctrl.signal, credentials: 'include' });
-  } finally {
-    clearTimeout(id);
-  }
-}
-
-// Ошибка HTTP-ответа со статусом ПОЛЕМ, а не подстрокой в message: потребители
-// (ArticlePage: «настоящий 404 или сеть?») ветвятся по `status`, поэтому текст
-// message можно улучшать серверным `message` без слома этих проверок. Зеркало
-// HttpStatusError мини-аппа (apiClient.ts, правило №3); явное поле вместо
-// параметр-свойства — erasableSyntaxOnly в tsc -b.
-export class ApiError extends Error {
-  status: number;
-  constructor(status: number, message: string) {
-    super(message);
-    this.status = status;
-  }
-}
-
-// Текст ошибки — из поля `message` тела, если распарсилось, иначе код статуса.
-// Тело может прийти не-JSON (502 от прокси, оборванное соединение) — тогда
-// остаётся код статуса; глушим только попытку его прочитать, не саму ошибку.
-async function apiError(res: Response): Promise<ApiError> {
+// Ошибку сервера показываем как есть — apiError() (apiClient.ts) уже вытащила
+// message из тела; глушим только попытку прочитать тело admin-ответа, не саму
+// ошибку (502 от прокси, оборванное соединение — тело может прийти не-JSON).
+async function adminApiError(res: Response): Promise<ApiError> {
   let msg = `API error: ${res.status}`;
   try {
     const j = await res.json();
@@ -64,58 +40,16 @@ async function apiError(res: Response): Promise<ApiError> {
   return new ApiError(res.status, msg);
 }
 
-async function get<T>(path: string): Promise<T> {
-  const res = await fetchWithTimeout(`${BASE}${path}`, { headers: authHeaders() });
-  if (!res.ok) throw await apiError(res);
-  return res.json();
-}
-
-async function post(path: string, body: unknown): Promise<void> {
-  const res = await fetchWithTimeout(`${BASE}${path}`, {
-    method: 'POST',
-    headers: authHeaders(),
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) throw await apiError(res);
-}
-
-async function postJson<T>(path: string, body: unknown): Promise<T> {
-  const res = await fetchWithTimeout(`${BASE}${path}`, {
-    method: 'POST',
-    headers: authHeaders(),
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) throw await apiError(res);
-  return res.json();
-}
-
-// Единственная копия — shared/src/api/clientErrorReport.ts (правило №3).
-export const reportClientError = createClientErrorReporter(BASE, 'webapp');
-
-async function patchJson<T>(path: string, body: unknown): Promise<T> {
-  const res = await fetchWithTimeout(`${BASE}${path}`, {
-    method: 'PATCH',
-    headers: authHeaders(),
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) throw await apiError(res);
-  return res.json();
-}
-
-async function del(path: string, body?: unknown): Promise<void> {
-  const res = await fetchWithTimeout(`${BASE}${path}`, { method: 'DELETE', headers: authHeaders(), ...(body !== undefined ? { body: JSON.stringify(body) } : {}) });
-  if (!res.ok) throw await apiError(res);
-}
-
 // Admin booking requests: the admin key goes in the x-admin-key header so it
-// never appears in URLs or server access logs.
+// never appears in URLs or server access logs (не через JWT-транспорт
+// apiClient.ts — свой ключ, свой заголовок, свой 401-путь не нужен).
 async function adminReq<T>(method: string, path: string, key: string, body?: unknown): Promise<T> {
   const res = await fetchWithTimeout(`${BASE}${path}`, {
     method,
     headers: { 'Content-Type': 'application/json', 'x-admin-key': key },
     ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
   });
-  if (!res.ok) throw await apiError(res);
+  if (!res.ok) throw await adminApiError(res);
   if (res.status === 204) return undefined as T;
   return res.json().catch(() => undefined as T);
 }
@@ -126,15 +60,18 @@ import type {
   AvailabilityRule,
   NewAvailabilityRule,
   AdminBooking,
-  AdminBookingStatus,
+  AdminBookingStatus, AdminCalendar, SlotOverridePatch,
   ArticleSummary,
   Article,
   ArticleDto,
   MarqueeTopic,
+  AuditedPhrase,
   HealthyAdultPhrase,
   HealthyAdultPoolStatus,
+  PhraseIssue,
   SiteContent,
   UserTask,
+  UserId,
   TherapistCustomMode,
   ModeMapKind,
   ModeMapMeta,
@@ -143,8 +80,10 @@ import type {
   BeliefCheckEntry,
   LetterEntry,
   FlashcardEntry,
+  PhraseCheckEntry,
 } from './api.types';
 export type {
+  UserId,
   UserSettings,
   StreakData,
   Achievement,
@@ -153,13 +92,15 @@ export type {
   AvailabilityRule,
   NewAvailabilityRule,
   AdminBooking,
-  AdminBookingStatus,
+  AdminBookingStatus, AdminCalendar, AdminCalendarDay, AdminCalendarCell,
   ArticleSummary,
   Article,
   ArticleDto,
   MarqueeTopic,
+  AuditedPhrase,
   HealthyAdultPhrase,
   HealthyAdultPoolStatus,
+  PhraseIssue, AdminCalendarCellState, SlotOverrideKind, SlotOverrideItem, SlotOverridePatch,
   SiteContent,
   UserPractice,
   PartnerInfo,
@@ -183,32 +124,39 @@ export type {
   BeliefCheckEntry,
   LetterEntry,
   FlashcardEntry,
+  PhraseCheckEntry,
   Insights,
 } from './api.types';
-// ─── API object (identical endpoints, different auth header) ──────────────────
 
 // Единый транспорт: общие методы приезжают из shared-фабрики (правило №3).
 const transport: ApiTransport = { get, post, postJson, del };
 
 // Оффлайн-надёжность оценки — shared/src/api/ratingApi.ts (единая реализация для обоих фронтендов, правило №3); `api.trackEvent` внутри — лениво (TDZ: `api` определится ниже, замыкание исполнится позже).
-const ratingApi = createRatingApi((path, init) => fetchWithTimeout(`${BASE}${path}`, { ...init, headers: authHeaders() }), (name, meta) => api.trackEvent(name, meta));
+// authedFetch (не голый fetchWithTimeout) — оценка теперь тоже переживает 401 (пункт 4 диагностики 2026-08-21), а не только сеть/5xx.
+const ratingApi = createRatingApi((path, init) => authedFetch(path, init), (name, meta) => api.trackEvent(name, meta));
 
 export const api = {
-  // Общие с мини-аппом методы — из shared-фабрики (правило №3).
   ...buildSharedApi(transport),
   ...ratingApi,
+  // Быстрые практики «Здесь и сейчас» — тоже общие (правило №3).
+  ...createPracticeSessionsApi(transport),
 
   // Публичные вызовы БЕЗ auth (лид-магнит): контент тестов из quiz-registry и
   // анонимная аналитика — мини-тесты и клики лендинга (userId = null).
   getQuizzes: (form?: 'ty' | 'vy') =>
     get<{ quizzes: QuizDto[] }>(`/api/quizzes${form === 'vy' ? '?form=vy' : ''}`),
-  getAllTherapyTasks:       () => get<{ clientId: number; clientName: string; tasks: UserTask[] }[]>('/api/therapy/tasks/all'),
-  getConceptualization: (clientId: number) => get<ClientConceptualization | null>(`/api/therapy/conceptualization/${clientId}`),
-  saveConceptualization: (clientId: number, body: Partial<Omit<ClientConceptualization, 'id' | 'therapistId' | 'clientId' | 'history' | 'updatedAt'>>) => postJson<ClientConceptualization>(`/api/therapy/conceptualization/${clientId}`, body),
-  getTherapyClientHistory: (clientId: number) => get<{ date: string; index: number | null; ratings: Record<string, number> }[]>(`/api/therapy/client-history/${clientId}`),
-  // Разборы фразы (упражнение «Критик или забота?» живёт в мини-аппе) — сайту
-  // нужны для «Тёплых слов»: в коллекцию идут помеченные inWarmWords.
-  getPhraseChecks:      () => get<Array<{ id: number; rewrite: string | null; inWarmWords: boolean; createdAt: string }>>('/api/phrase-checks'),
+  getAllTherapyTasks:       () => get<{ clientId: UserId; clientName: string; tasks: UserTask[] }[]>('/api/therapy/tasks/all'),
+  getConceptualization: (clientId: UserId) => get<ClientConceptualization | null>(`/api/therapy/conceptualization/${clientId}`),
+  saveConceptualization: (clientId: UserId, body: Partial<Omit<ClientConceptualization, 'id' | 'therapistId' | 'clientId' | 'history' | 'updatedAt'>>) => postJson<ClientConceptualization>(`/api/therapy/conceptualization/${clientId}`, body),
+  getTherapyClientHistory: (clientId: UserId) => get<{ date: string; index: number | null; ratings: Record<string, number> }[]>(`/api/therapy/client-history/${clientId}`),
+  // Разборы фразы («Критик или забота?», теперь на обоих фронтендах — раньше
+  // miniapp-only решение (PR #261), сайту тоже нужны write-методы, не только GET для «Тёплых слов»).
+  // Случайная фраза Здорового Взрослого для карточки шаринга (PhraseShareCard.tsx) — паритет, правило №16.
+  getHealthyPhrase:     () => get<{ text: string | null }>('/api/healthy-phrase'),
+  getPhraseChecks:      () => get<PhraseCheckEntry[]>('/api/phrase-checks'),
+  createPhraseCheck:    (body: { phrase: string; marks: PhraseMarkId[]; rewrite?: string; inWarmWords?: boolean }) => post('/api/phrase-checks', body),
+  updatePhraseCheck:    (id: number, rewrite: string) => patchJson<{ id: number; rewrite: string | null }>(`/api/phrase-checks/${id}`, { rewrite }),
+  deletePhraseCheck:    (id: number) => del(`/api/phrase-checks/${id}`),
   getBeliefChecks:      () => get<BeliefCheckEntry[]>('/api/belief-checks'),
   createBeliefCheck:    (body: { belief: string; evidenceFor: string[]; evidenceAgainst: string[]; reframe?: string }) => post('/api/belief-checks', body),
   deleteBeliefCheck:    (id: number) => del(`/api/belief-checks/${id}`),
@@ -220,8 +168,8 @@ export const api = {
   getFlashcards:        () => get<FlashcardEntry[]>('/api/flashcards'),
   createFlashcard:      (body: { modeId: string; needId: string; reflection?: string; action?: string }) => post('/api/flashcards', body),
   deleteFlashcard:      (id: number) => del(`/api/flashcards/${id}`),
-  getClientDiary:       (clientId: number) => get<{ type: 'schema' | 'mode' | 'gratitude'; date: string; schemaIds?: string[]; modeId?: string; excerpt: string }[]>(`/api/therapy/client/${clientId}/diary`),
-  submitBooking:        (body: { name: string; contact: string; message?: string; source?: string }) => postJson<{ ok: true }>('/api/booking', body),
+  getClientDiary:       (clientId: UserId) => get<{ type: 'schema' | 'mode' | 'gratitude'; date: string; schemaIds?: string[]; modeId?: string; excerpt: string }[]>(`/api/therapy/client/${clientId}/diary`),
+  submitBooking:        (body: { name: string; contact: string; message?: string; source?: string; channel?: ContactChannel }) => postJson<{ ok: true }>('/api/booking', body),
   // Slot-based booking
   getBookingOptions:    () => get<SessionOption[]>('/api/booking/options'),
   getSlots:             (from?: string, to?: string) => {
@@ -231,9 +179,9 @@ export const api = {
     const qs = q.toString();
     return get<BookingSlot[]>(`/api/booking/slots${qs ? `?${qs}` : ''}`);
   },
-  bookSlot:             (body: { startsAt: string; durationMin?: number; type?: 'INTRO_15' | 'SESSION_50'; clientName: string; clientContact: string; message?: string; returning?: boolean; acceptedOffer?: boolean; website?: string; source?: string }) =>
-    postJson<{ id: number; cancelToken: string; heldUntil: string | null; status: string; paymentUrl?: string | null; meetingUrl?: string | null }>('/api/booking/book', body),
-  getBookingByToken:    (token: string) => get<{ status: string; type: 'INTRO_15' | 'SESSION_50'; startsAt: string; endsAt: string; durationMin: number; meetingUrl: string | null }>(`/api/booking/by-token/${token}`),
+  bookSlot:             (body: { startsAt: string; durationMin?: number; type?: 'INTRO_15' | 'SESSION_50'; clientName: string; clientContact: string; message?: string; returning?: boolean; acceptedOffer?: boolean; website?: string; source?: string; clientTimeZone?: string; clientChannel?: ContactChannel }) =>
+    postJson<{ id: number; cancelToken: string; heldUntil: string | null; status: string; paymentUrl?: string | null }>('/api/booking/book', body),
+  getBookingByToken:    (token: string) => get<{ status: string; paid: boolean; type: 'INTRO_15' | 'SESSION_50'; startsAt: string; endsAt: string; durationMin: number }>(`/api/booking/by-token/${token}`),
   cancelBooking:        (token: string) => postJson<{ ok: true }>(`/api/booking/cancel/${token}`, {}),
   donate:               (body: { amount: number; source?: 'app' | 'game'; email?: string; comment?: string; website?: string }) =>
     postJson<{ id: number; paymentUrl: string | null }>('/api/donation', body),
@@ -246,16 +194,18 @@ export const api = {
   // Booking admin — key travels in the x-admin-key header (never in URL/logs)
   adminStatus:       (key: string) => adminReq<AdminBookingStatus>('GET', '/api/booking/admin/status', key),
   adminGetPrices:    (key: string) => adminReq<SessionOption[]>('GET', '/api/booking/admin/prices', key),
-  adminSetPrice:     (key: string, type: 'INTRO_15' | 'SESSION_50', amount: number) => adminReq<{ ok: true }>('PATCH', '/api/booking/admin/price', key, { type, amount }),
+  adminSetPrice:     (key: string, type: 'INTRO_15' | 'SESSION_50', amount: number, currency?: Currency) => adminReq<{ ok: true }>('PATCH', '/api/booking/admin/price', key, currency ? { type, amount, currency } : { type, amount }),
   adminGetSubPrices: (key: string) => adminReq<{ period: 'month' | 'year'; price: number }[]>('GET', '/api/booking/admin/sub-prices', key),
   adminSetSubPrice:  (key: string, period: 'month' | 'year', amount: number) => adminReq<{ ok: true }>('PATCH', '/api/booking/admin/sub-price', key, { period, amount }),
   adminListRules:    (key: string) => adminReq<AvailabilityRule[]>('GET', '/api/booking/admin/rules', key),
   adminCreateRule:   (key: string, rule: NewAvailabilityRule) => adminReq<AvailabilityRule>('POST', '/api/booking/admin/rules', key, rule),
   adminToggleRule:   (key: string, id: number, isActive: boolean) => adminReq<AvailabilityRule>('PATCH', `/api/booking/admin/rules/${id}`, key, { isActive }),
   adminDeleteRule:   (key: string, id: number) => adminReq<void>('DELETE', `/api/booking/admin/rules/${id}`, key),
-  adminListBookings: (key: string, filter: 'upcoming' | 'past' | 'cancelled' | 'all' = 'upcoming') =>
-    adminReq<AdminBooking[]>('GET', `/api/booking/admin/list?filter=${filter}`, key),
+  adminListBookings: (key: string, filter: 'upcoming' | 'past' | 'cancelled' | 'all' = 'upcoming') => adminReq<AdminBooking[]>('GET', `/api/booking/admin/list?filter=${filter}`, key),
   adminConfirm:      (key: string, id: number) => adminReq<{ ok: true }>('POST', `/api/booking/admin/confirm/${id}`, key),
+  adminCancel:       (key: string, id: number) => adminReq<{ ok: true }>('POST', `/api/booking/admin/cancel/${id}`, key), // в любой срок, без 24 ч клиента
+  adminCalendar:     (key: string, from: string, to: string) => adminReq<AdminCalendar>('GET', `/api/booking/admin/calendar?from=${from}&to=${to}`, key),
+  adminSetOverrides: (key: string, patch: SlotOverridePatch) => adminReq<{ ok: true }>('POST', '/api/booking/admin/calendar/overrides', key, patch),
   // Articles
   listArticles:      () => get<ArticleSummary[]>('/api/articles'),
   getArticle:        (slug: string) => get<Article>(`/api/articles/${slug}`),
@@ -275,14 +225,16 @@ export const api = {
   adminTestPhrasePost: (key: string) => adminReq<{ ok: boolean; message: string }>('POST', '/api/healthy-adult/admin/test-post', key, {}),
   adminImportPhrases: (key: string, text: string) => adminReq<{ created: HealthyAdultPhrase[]; message: string }>('POST', '/api/healthy-adult/admin/import', key, { text }),
   adminPhrasePoolStatus: (key: string) => adminReq<HealthyAdultPoolStatus>('GET', '/api/healthy-adult/admin/pool-status', key),
+  adminCheckPhrase:  (key: string, text: string) => adminReq<{ issues: PhraseIssue[] }>('POST', '/api/healthy-adult/admin/check', key, { text }),
+  adminAuditPhrases: (key: string) => adminReq<AuditedPhrase[]>('GET', '/api/healthy-adult/admin/audit', key),
   // Therapist custom modes
   listCustomModes:   ()                               => get<TherapistCustomMode[]>('/api/therapy/custom-modes'),
   createCustomMode:  (body: { name: string; emoji?: string; nodeType?: string }) => postJson<TherapistCustomMode>('/api/therapy/custom-modes', body),
   deleteCustomMode:  (id: number)                    => del(`/api/therapy/custom-modes/${id}`),
   // Mode Maps
-  listModeMaps:   (clientId: number) => get<ModeMapMeta[]>(`/api/therapy/mode-maps/${clientId}`),
+  listModeMaps:   (clientId: UserId) => get<ModeMapMeta[]>(`/api/therapy/mode-maps/${clientId}`),
   getModeMap:     (mapId: number)    => get<ModeMapFull>(`/api/therapy/mode-maps/map/${mapId}`),
-  createModeMap:  (clientId: number, title: string, kind: ModeMapKind = 'problem') => postJson<ModeMapFull>(`/api/therapy/mode-maps/${clientId}`, { title, kind }),
+  createModeMap:  (clientId: UserId, title: string, kind: ModeMapKind = 'problem') => postJson<ModeMapFull>(`/api/therapy/mode-maps/${clientId}`, { title, kind }),
   updateModeMap:  (mapId: number, body: Partial<Pick<ModeMapFull, 'title' | 'nodes' | 'edges'>>) => patchJson<ModeMapFull>(`/api/therapy/mode-maps/map/${mapId}`, body),
   deleteModeMap:  (mapId: number) => del(`/api/therapy/mode-maps/map/${mapId}`),
   // Client read-only view of their own maps

@@ -23,6 +23,7 @@ vi.mock('../../api', () => ({
     getProfile: vi.fn().mockResolvedValue({ role: 'CLIENT', name: null, mySchemaIds: [] }),
     getTherapyClients: vi.fn().mockResolvedValue([]),
     getTherapyRelation: vi.fn().mockResolvedValue(null),
+    getUserFlags: vi.fn().mockResolvedValue({}),
   },
   reportClientError: vi.fn(),
 }));
@@ -38,9 +39,10 @@ async function flush() {
   await act(async () => { await new Promise(r => setTimeout(r, 0)); });
 }
 
-function setup() {
+function setup(initialPathname = '/today') {
   const navigate = vi.fn();
-  return renderHook(() => useBootstrapLoad({ navigate, initialPathname: '/today' }));
+  const result = renderHook(() => useBootstrapLoad({ navigate, initialPathname }));
+  return { navigate, ...result };
 }
 
 beforeEach(() => {
@@ -61,6 +63,7 @@ beforeEach(() => {
   mockApi.getProfile.mockResolvedValue({ role: 'CLIENT', name: null, mySchemaIds: [] });
   mockApi.getTherapyClients.mockResolvedValue([]);
   mockApi.getTherapyRelation.mockResolvedValue(null);
+  mockApi.getUserFlags.mockResolvedValue({});
 });
 
 afterEach(() => {
@@ -110,5 +113,58 @@ describe('useBootstrapLoad — сбои фоновых источников не
     setup();
     await flush();
     expect(mockApi.flushOutbox).toHaveBeenCalledTimes(1);
+  });
+
+  // К2 (аудит 2026-08): needs/ratings — самый блокирующий источник (без него
+  // весь AppShell рисует «Не удалось загрузить»), но его catch раньше делал
+  // только setError, минуя общий отчёт — единственный из одиннадцати.
+  it('упавший needs()/ratings() тоже попадает в отчёт с именем «needs/ratings»', async () => {
+    mockApi.needs.mockRejectedValue(new Error('boom'));
+    const { result } = setup();
+    await flush();
+    expect(result.current.error).toBeTruthy();
+    expect(mockReport).toHaveBeenCalledTimes(1);
+    expect(mockReport.mock.calls[0][0].message).toContain('needs/ratings');
+  });
+});
+
+// Правило №16 (гейт паритета фич): GET /api/user-flags был доступен только
+// мини-аппу. therapistMode оттуда — серверное предпочтение «кабинет vs
+// клиент», source of truth, единый с /api/therapy/therapist-view. Новый
+// браузер (пустой localStorage) теперь спрашивает сервер вместо того, чтобы
+// всегда угадывать «кабинет».
+describe('useBootstrapLoad — дефолтный роутинг терапевта учитывает серверный therapistMode', () => {
+  it('пустой localStorage + сервер отдал therapistMode:false — НЕ уводит терапевта в кабинет', async () => {
+    mockApi.getProfile.mockResolvedValue({ role: 'THERAPIST', name: 'Др. Кто', mySchemaIds: [] });
+    mockApi.getUserFlags.mockResolvedValue({ therapistMode: false });
+    const { navigate } = setup('/today');
+    await flush();
+    expect(navigate).not.toHaveBeenCalledWith('/cabinet');
+    expect(localStorage.getItem('therapist_mode')).toBe('0');
+  });
+
+  it('пустой localStorage + сервер отдал therapistMode:true — уводит в кабинет (как раньше)', async () => {
+    mockApi.getProfile.mockResolvedValue({ role: 'THERAPIST', name: 'Др. Кто', mySchemaIds: [] });
+    mockApi.getUserFlags.mockResolvedValue({ therapistMode: true });
+    const { navigate } = setup('/today');
+    await flush();
+    expect(navigate).toHaveBeenCalledWith('/cabinet');
+  });
+
+  it('пустой localStorage + флаги не пришли (сеть легла) — фолбэк как раньше: кабинет', async () => {
+    mockApi.getProfile.mockResolvedValue({ role: 'THERAPIST', name: 'Др. Кто', mySchemaIds: [] });
+    mockApi.getUserFlags.mockRejectedValue(new Error('network down'));
+    const { navigate } = setup('/today');
+    await flush();
+    expect(navigate).toHaveBeenCalledWith('/cabinet');
+  });
+
+  it('явный локальный выбор «клиент» (therapist_mode=0) перекрывает сервер', async () => {
+    localStorage.setItem('therapist_mode', '0');
+    mockApi.getProfile.mockResolvedValue({ role: 'THERAPIST', name: 'Др. Кто', mySchemaIds: [] });
+    mockApi.getUserFlags.mockResolvedValue({ therapistMode: true });
+    const { navigate } = setup('/today');
+    await flush();
+    expect(navigate).not.toHaveBeenCalledWith('/cabinet');
   });
 });

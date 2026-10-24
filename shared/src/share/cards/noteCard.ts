@@ -24,7 +24,9 @@ export type NoteFieldKey =
   | 'reality'
   | 'healthyView'
   | 'behavior'
-  | 'needs';
+  | 'modeFunction'
+  | 'needs'
+  | 'needsMet';
 
 /**
  * Подписи полей от первого лица: без обращения к читателю и без рода —
@@ -41,7 +43,9 @@ export const NOTE_FIELD_LABELS: Record<NoteFieldKey, string> = {
   reality: 'Как на самом деле',
   healthyView: 'Взгляд Здорового Взрослого',
   behavior: 'Что делаю',
+  modeFunction: 'От чего защищает',
   needs: 'Что на самом деле нужно',
+  needsMet: 'Даёт ли то, что нужно',
 };
 
 /** Порядок полей карточки схемы — совпадает с шагами SchemaIntroSheet. */
@@ -61,7 +65,9 @@ export const MODE_NOTE_FIELD_ORDER: NoteFieldKey[] = [
   'feelings',
   'thoughts',
   'behavior',
+  'modeFunction',
   'needs',
+  'needsMet',
   'origins',
   'healthyView',
 ];

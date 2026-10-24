@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { createHash, timingSafeEqual } from 'crypto';
+import { payableAmount } from './price-rules';
 
 /**
  * Robokassa payment integration.
@@ -27,9 +28,9 @@ export class RobokassaService {
   private readonly fiscal: boolean;
 
   constructor(config: ConfigService) {
-    this.login = config.get<string>('ROBOKASSA_MERCHANT_LOGIN') ?? '';
-    this.pass1 = config.get<string>('ROBOKASSA_PASSWORD1') ?? '';
-    this.pass2 = config.get<string>('ROBOKASSA_PASSWORD2') ?? '';
+    this.login = (config.get<string>('ROBOKASSA_MERCHANT_LOGIN') ?? '').trim();
+    this.pass1 = (config.get<string>('ROBOKASSA_PASSWORD1') ?? '').trim();
+    this.pass2 = (config.get<string>('ROBOKASSA_PASSWORD2') ?? '').trim();
     this.isTest = config.get<string>('ROBOKASSA_IS_TEST') === 'true';
     this.fiscal = config.get<string>('ROBOKASSA_FISCAL') !== 'false'; // default ON
   }
@@ -41,11 +42,10 @@ export class RobokassaService {
   /**
    * Build a Robokassa payment URL.
    * @param invId   booking.id — used as Robokassa InvId (must be unique per merchant)
-   * @param amount  amount in rubles (e.g. 3500)
+   * @param amount  amount in rubles (e.g. 3500); must be > 0, otherwise throws
    * @param desc    payment description shown to the client
    * @param email   client e-mail for the receipt (optional)
-   * @param successUrl  where to redirect after success
-   * @param failUrl     where to redirect after failure/cancel
+   * @param successUrl, failUrl  where to redirect after success / failure
    */
   buildPaymentUrl(params: {
     invId: number;
@@ -59,7 +59,7 @@ export class RobokassaService {
   }): string {
     const { invId, amount, desc, email, successUrl, failUrl, recurring } =
       params;
-    const outSum = amount.toFixed(2);
+    const outSum = payableAmount(amount).toFixed(2);
 
     // Optional ОФД fiscalization. Per Robokassa docs, when a Receipt is sent it
     // MUST be part of the signature between InvId and Password1:
@@ -108,6 +108,9 @@ export class RobokassaService {
    * Expected formula: MD5(OutSum:InvId:Password2)
    */
   validateWebhook(outSum: string, invId: string, sigReceived: string): boolean {
+    // M3 (аудит 2026-10): без Password2 подпись считалась бы от пустой строки —
+    // `md5(OutSum:InvId:)` любой желающий посчитает сам и подделает «оплачено».
+    if (!this.pass2) return false;
     const expected = md5(`${outSum}:${invId}:${this.pass2}`);
     return safeEqualHex(expected, sigReceived);
   }
@@ -119,6 +122,8 @@ export class RobokassaService {
    */
   validateSuccess(outSum: string, invId: string, sigReceived: string): boolean {
     if (!outSum || !invId || !sigReceived) return false;
+    // M3: пустой Password1 — та же подделка подписи, что и с Password2.
+    if (!this.pass1) return false;
     const expected = md5(`${outSum}:${invId}:${this.pass1}`);
     return safeEqualHex(expected, sigReceived);
   }

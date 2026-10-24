@@ -1,3 +1,5 @@
+import '../styles/sheet-tasks.css';
+
 export function Loader({ minHeight }: { minHeight?: string }) {
   // Use fixed overlay for full-screen loads (100vh / 100dvh) so the spinner
   // is always centred regardless of the parent's flex direction.
@@ -5,23 +7,14 @@ export function Loader({ minHeight }: { minHeight?: string }) {
 
   if (fullScreen) {
     return (
-      <div style={{
-        position: 'fixed', inset: 0,
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        background: 'var(--bg)',
-        zIndex: 9999,
-      }}>
+      <div className="sk-loader sk-loader--full">
         <div className="spinner" />
       </div>
     );
   }
 
   return (
-    <div style={{
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      width: '100%', flex: 1,
-      minHeight: minHeight ?? '60vh',
-    }}>
+    <div className="sk-loader" style={{ minHeight: minHeight ?? '60vh' }}>
       <div className="spinner" />
     </div>
   );

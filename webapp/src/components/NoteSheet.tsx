@@ -5,7 +5,12 @@ import { ExScreen } from './exercises/ExScreen';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { detectCrisisAny } from '../utils/crisisMarkers';
 import { CrisisCard } from './CrisisCard';
+import { DIARY_HUE } from '../lib/tone';
+import { DiaryAside } from './diary/DiaryStepCard';
+import '../styles/sheet-diary.css';
 import { NoteTagsPicker } from './NoteTagsPicker';
+import { LimitedTextarea } from '../../../shared/src/components/LimitedTextarea';
+import { DAY_NOTE_MAX } from '../../../shared/src/limits/textLimits';
 
 interface Props {
   date: string;
@@ -60,59 +65,42 @@ export function NoteSheet({ date, onClose }: Props) {
       onBack={goBack}
       backLabel="Назад"
       eyebrow="Дневник"
-      eyebrowColor="var(--accent)"
       title={<>Заметка<br /><span className="it">к дню</span></>}
-      lede={tr('Фиксируй момент – что происходило, что чувствовал.', 'Фиксируйте момент – что происходило, что чувствовали.')}
+      lede={tr('Запиши момент — что происходило и какие были чувства.', 'Запишите момент — что происходило и какие были чувства.')}
       aside={
-        <div className="aside-card" style={{
-          borderColor: 'color-mix(in srgb, var(--accent) 25%, transparent)',
-          background: 'color-mix(in srgb, var(--accent) 5%, transparent)',
-          position: 'sticky', top: 40,
-        }}>
-          <div className="aside-card-eyebrow" style={{ color: 'var(--accent)' }}>Зачем это?</div>
-          <h3 style={{ fontSize: 18 }}>Рефлексия помогает</h3>
-          <p className="body">Регулярные короткие записи помогают увидеть паттерны и понять, что происходит внутри.</p>
-        </div>
+        <DiaryAside hue={DIARY_HUE.schema} eyebrow="Зачем это?" title="Рефлексия помогает">
+          <p className="ds-sub">Регулярные короткие записи помогают увидеть паттерны и понять, что происходит внутри.</p>
+        </DiaryAside>
       }
     >
       {/* Tags */}
       <NoteTagsPicker selectedTags={selectedTags} onToggle={toggleTag} />
 
       {/* Text */}
-      <div className="prompt">
-        <div className="prompt-num">·</div>
-        <div style={{ width: '100%' }}>
-          <div className="prompt-label">Запись</div>
-          <textarea
-            value={text}
-            onChange={e => setText(e.target.value)}
-            placeholder="Что происходило сегодня? Любая мысль..."
-            maxLength={500}
-            rows={5}
-            className={'paper-input ' + (text.trim() ? 'is-filled' : '')}
-          />
-          <div style={{ fontSize: 11, color: 'var(--text-faint)', textAlign: 'right', marginTop: 4 }}>
-            {text.length}/500
-          </div>
-        </div>
+      <div className="ds-card sd-note-field">
+        <div className="ds-label">Запись</div>
+        <LimitedTextarea
+          max={DAY_NOTE_MAX}
+          alwaysCount
+          value={text}
+          onChange={e => setText(e.target.value)}
+          placeholder="Что происходило сегодня? Любая мысль..."
+          rows={5}
+          className="ds-textarea"
+        />
       </div>
 
       {detectCrisisAny(text) && <CrisisCard surface="note" />}
 
       {error && (
-        <div style={{ fontSize: 13, color: 'var(--c-rose)', textAlign: 'center', marginBottom: 12 }}>
+        <div role="status" className="sd-save-error">
           {tr('Не удалось сохранить. Попробуй ещё раз.', 'Не удалось сохранить. Попробуйте ещё раз.')}
         </div>
       )}
 
-      <div className="ex-foot">
-        <span className="spacer" />
-        <button
-          onClick={handleSave}
-          disabled={!hasContent || saving}
-          className="ex-btn ex-btn-primary"
-          style={{ opacity: hasContent ? 1 : 0.35 }}
-        >
+      <div className="sd-foot">
+        <span className="sd-spacer" />
+        <button onClick={handleSave} disabled={!hasContent || saving} className="ds-btn">
           {saving ? '…' : 'Сохранить'}
         </button>
       </div>

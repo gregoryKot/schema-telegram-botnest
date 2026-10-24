@@ -1,49 +1,55 @@
-import { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../auth/authContext';
 import { getHost } from '../../../shared/src/host';
-import { AuthFailureHelp } from '../../../shared/src/components/AuthFailureHelp';
 import { useAuthFailureReport } from '../../../shared/src/host/authFailureReport';
 import { reportClientError } from '../api';
-import { MMIcon } from '../components/modeMapIcons';
+import { LoginProviderButtons } from './login/LoginProviderButtons';
+import { LoginHero } from './login/LoginHero';
+import { LoginEmailForm } from './login/LoginEmailForm';
+import { TelegramRetry } from './login/TelegramRetry';
+import { exchangeErrorText } from './login/exchangeError';
+import { humanizeThrown } from '../../../shared/src/api/humanizeError';
+import { hasAuthSeen } from '../../../shared/src/auth/authSeen';
+import { useTr } from '../utils/addressForm';
+import { useLoginConsentMark } from '../hooks/useLoginConsentMark';
+import '../styles/auth-login.css';
 
 const API_BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? '';
-
-function isEmail(s: string) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s); }
 
 export function LoginPage() {
   const { isAuthenticated, setAccessToken } = useAuth();
   const navigate = useNavigate();
-  const [error, setError] = useState<string | null>(null);
-  const [showEmail, setShowEmail] = useState(false);
-  const [emailValue, setEmailValue] = useState('');
-  const [emailSent, setEmailSent] = useState(false);
-  const [emailLoading, setEmailLoading] = useState(false);
+  const location = useLocation();
+  const tr = useTr();
+  useLoginConsentMark();
+  // В5: после провала OAuth AuthCallback уводит сюда с ?error=no_token (читаем один раз).
+  const [error, setError] = useState<string | null>(() =>
+    new URLSearchParams(location.search).get('error') === 'no_token'
+      ? tr(
+          'Вход не получился: окно входа закрылось раньше времени. Попробуй ещё раз',
+          'Вход не получился: окно входа закрылось раньше времени. Попробуйте ещё раз',
+        )
+      : null,
+  );
   const isTelegramContext = !!getHost().sessionExchange();
-  const emailInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (isAuthenticated) navigate('/today', { replace: true });
   }, [isAuthenticated, navigate]);
 
-  useEffect(() => {
-    if (showEmail && !emailSent) emailInputRef.current?.focus();
-  }, [showEmail, emailSent]);
-
-  // ── Mini-app fallback ────────────────────────────────────────────────────
   const [miniAppLoading, setMiniAppLoading] = useState(false);
-  // Сломанный вход внутри мессенджера обязан быть слышен нам, а не только
-  // виден пользователю (инцидент 2026-08-08: пять суток вход не работал у
-  // всех пользователей Telegram, и телеметрия молчала — она была только у
-  // крашей ErrorBoundary). Парная правка к AppErrorScreen мини-аппа.
+  // Сломанный вход обязан быть слышен нам, а не только виден пользователю
+  // (инцидент 2026-08-08). Парная правка к AppErrorScreen мини-аппа; отчёт
+  // уходит и для обычного веб-логина.
   useAuthFailureReport(
     reportClientError,
-    isTelegramContext && error
+    error
       ? {
           hostId: getHost().id,
-          signaturePresent:
-            ((getHost().sessionExchange()?.body.initData as string) ?? '') !==
-            '',
+          signaturePresent: isTelegramContext
+            ? ((getHost().sessionExchange()?.body.initData as string) ?? '') !== ''
+            : true,
           error,
         }
       : null,
@@ -60,200 +66,75 @@ export function LoginPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(exchange.body),
       });
-      if (!res.ok) {
-        const body = await res.text().catch(() => '');
-        setError(`Ошибка ${res.status}: ${body.slice(0, 120)}`);
-        return;
-      }
+      if (!res.ok) { setError(await exchangeErrorText(res)); return; }
       const { accessToken, expiresIn } = await res.json() as { accessToken: string; expiresIn: number };
       setAccessToken(accessToken, expiresIn);
       navigate('/today', { replace: true });
     } catch (e) {
-      setError(String(e));
+      setError(humanizeThrown(e, String(e)));
     } finally {
       setMiniAppLoading(false);
     }
   };
 
-  const handleGoogle = () => { window.location.href = `${API_BASE}/api/auth/google`; };
-  const handleVk    = () => { window.location.href = `${API_BASE}/api/auth/vk`; };
-
-  const handleEmailSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!isEmail(emailValue)) { setError('Введи корректный email'); return; }
-    setEmailLoading(true);
-    setError(null);
-    try {
-      const res = await fetch(`${API_BASE}/api/auth/email/link`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-requested-with': 'webapp' },
-        body: JSON.stringify({ email: emailValue }),
-      });
-      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).message ?? `Ошибка ${res.status}`);
-      setEmailSent(true);
-    } catch (e) {
-      setError((e as Error).message || 'Не удалось отправить письмо');
-    } finally {
-      setEmailLoading(false);
-    }
-  };
-
-  // Inside Telegram but auto-auth failed – show minimal retry UI
   if (isTelegramContext) {
-    return (
-      <div style={{ flex: 1, minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
-        <p style={{ color: 'var(--text-sub)', marginBottom: 24, textAlign: 'center' }}>{miniAppLoading ? 'Загрузка...' : 'Не удалось войти автоматически'}</p>
-        {error && <p style={{ color: 'var(--accent-red)', fontSize: 13, marginBottom: 16, textAlign: 'center', maxWidth: 320 }}>{error}</p>}
-        <button className="btn-outline" onClick={retryTelegramAuth} disabled={miniAppLoading}>Попробовать снова</button>
-        {/* Экран обязан назвать, кому написать (пара к AppErrorScreen, правило №3). */}
-        <div style={{ marginTop: 24, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, textAlign: 'center', maxWidth: 320 }}><AuthFailureHelp hostId={getHost().id} /></div>
-      </div>
-    );
+    return <TelegramRetry loading={miniAppLoading} error={error} onRetry={retryTelegramAuth} />;
   }
 
   return (
-    <div style={{
-      flex: 1, minHeight: '100vh', display: 'flex', flexDirection: 'column',
-      alignItems: 'center', justifyContent: 'center', padding: '24px',
-      position: 'relative', overflow: 'hidden',
-    }}>
-      {/* Ambient blobs */}
-      <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0 }}>
-        <div style={{ position: 'absolute', width: 600, height: 600, borderRadius: '50%', background: 'var(--blob-1)', filter: 'blur(80px)', top: '-10%', left: '-15%' }} />
-        <div style={{ position: 'absolute', width: 500, height: 500, borderRadius: '50%', background: 'var(--blob-2)', filter: 'blur(80px)', bottom: '-5%', right: '-10%' }} />
-      </div>
-
-      <div style={{ width: '100%', maxWidth: 400, position: 'relative', zIndex: 1, animation: 'fade-in 0.4s ease both' }}>
-        {/* Logo */}
-        <div style={{ textAlign: 'center', marginBottom: 40 }}>
-          <div style={{ width: 72, height: 72, background: 'linear-gradient(135deg, var(--accent-indigo), var(--accent))', borderRadius: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', color: '#fff', boxShadow: '0 8px 32px rgba(124, 114, 248, 0.35)' }}><MMIcon name="compass" size={34} stroke={1.6} /></div>
-          <h1 style={{ fontSize: 26, fontWeight: 700, marginBottom: 8 }}>Всё по схеме</h1>
-          <p style={{ color: 'var(--text-sub)', fontSize: 15, lineHeight: 1.5, maxWidth: 320, margin: '0 auto' }}>
-            Инструмент схема-терапии для работы с мыслями, эмоциями и паттернами
-          </p>
-        </div>
-
-        {/* Auth card */}
-        <div className="card-elevated" style={{ padding: '28px 24px' }}>
-          <p style={{ color: 'var(--text-sub)', fontSize: 13, marginBottom: 20, textAlign: 'center' }}>
-            Войдите, чтобы продолжить
+    <div className="light-lock al-root">
+      <LoginHero />
+      <main className="al-side">
+        <div className="al-form">
+          <div className="ds-eyebrow">Вход</div>
+          <h1 className="al-title">Всё по схеме</h1>
+          {/* Новичку и человеку с истёкшей сессией нужно сказать разное
+              (парная правка к LoginScreen мини-аппа, правило №3). */}
+          <p className="al-sub">
+            {hasAuthSeen()
+              ? 'Вход устарел — данные на месте, нужно войти заново'
+              : 'Войдите, чтобы продолжить. Telegram даёт тот же аккаунт, что в боте и мини-аппе'}
           </p>
 
-          {/* Google */}
-          <button className="btn-outline" onClick={handleGoogle} style={{ marginBottom: 8 }}>
-            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-              <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4"/>
-              <path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.859-3.048.859-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z" fill="#34A853"/>
-              <path d="M3.964 10.71c-.18-.54-.282-1.117-.282-1.71s.102-1.17.282-1.71V4.958H.957C.347 6.173 0 7.548 0 9s.348 2.827.957 4.042l3.007-2.332z" fill="#FBBC05"/>
-              <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.958L3.964 6.29C4.672 4.163 6.656 3.58 9 3.58z" fill="#EA4335"/>
-            </svg>
-            Войти через Google
-          </button>
+          <LoginProviderButtons
+            onSession={(token, expiresIn) => {
+              setAccessToken(token, expiresIn);
+              navigate('/today', { replace: true });
+            }}
+          />
 
-          {/* VK */}
-          <button className="btn-outline" onClick={handleVk} style={{ marginBottom: 12 }}>
-            <span style={{ background: '#0077FF', color: 'white', borderRadius: 4, padding: '1px 6px', fontWeight: 700, fontSize: 12 }}>VK</span>
-            Войти через ВКонтакте
-          </button>
-
-          {/* Divider */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '16px 0' }}>
-            <div style={{ flex: 1, height: 1, background: 'var(--line)' }} />
-            <span style={{ color: 'var(--text-faint)', fontSize: 12 }}>или</span>
-            <div style={{ flex: 1, height: 1, background: 'var(--line)' }} />
-          </div>
-
-          {/* Telegram */}
+          {/* Прежний путь через oauth.telegram.org остался вторым способом:
+              не требует установленного Telegram, но при первом визите просит
+              телефон и код. */}
           <button
-            className="btn-outline"
+            className="al-linkbtn"
             onClick={() => { window.location.href = `${API_BASE}/api/auth/telegram/redirect`; }}
-            style={{ marginBottom: 0 }}
           >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-              <circle cx="12" cy="12" r="12" fill="#29B6F6"/>
-              <path d="M17.47 7.27 5.26 11.84c-.82.3-.81.72-.15.91l3.12.97 7.21-4.55c.34-.21.65-.1.4.13L9.7 14.6l-.2 3.29c.3 0 .43-.13.59-.28l1.41-1.37 2.93 2.16c.54.3.93.15 1.07-.5l1.93-9.1c.2-.8-.3-1.16-.96-.53z" fill="white"/>
-            </svg>
-            Войти через Telegram
+            Войти через Telegram другим способом
           </button>
 
-          {/* Email magic link */}
-          {!showEmail ? (
-            <p style={{ textAlign: 'center', marginTop: 12 }}>
-              <button
-                onClick={() => { setShowEmail(true); setError(null); }}
-                style={{ background: 'none', border: 'none', color: 'var(--text-faint)', fontSize: 12, cursor: 'pointer', textDecoration: 'underline', padding: 0 }}
-              >
-                Войти по email
-              </button>
-            </p>
-          ) : emailSent ? (
-            <div style={{ marginTop: 16, padding: '14px 16px', background: 'rgba(var(--fg-rgb),0.04)', borderRadius: 10, textAlign: 'center' }}>
-              <p style={{ fontSize: 14, color: 'var(--text)', fontWeight: 600, margin: '0 0 4px' }}>Письмо отправлено</p>
-              <p style={{ fontSize: 13, color: 'var(--text-sub)', margin: 0 }}>Проверь почту и перейди по ссылке — она действует 30 минут</p>
-              <button
-                onClick={() => { setEmailSent(false); setEmailValue(''); }}
-                style={{ background: 'none', border: 'none', color: 'var(--text-faint)', fontSize: 12, cursor: 'pointer', marginTop: 10, textDecoration: 'underline', padding: 0 }}
-              >
-                Ввести другой email
-              </button>
-            </div>
-          ) : (
-            <form onSubmit={handleEmailSubmit} style={{ marginTop: 16 }}>
-              <input
-                type="email"
-                ref={emailInputRef}
-                placeholder="your@email.com"
-                value={emailValue}
-                onChange={e => setEmailValue(e.target.value)}
-                style={{ width: '100%', padding: '11px 14px', fontSize: 14, border: '1.5px solid var(--line)', borderRadius: 10, background: 'rgba(var(--fg-rgb),0.04)', color: 'var(--text)', fontFamily: 'inherit', boxSizing: 'border-box', outline: 'none', marginBottom: 8 }}
-              />
-              <button
-                type="submit"
-                disabled={emailLoading}
-                style={{ width: '100%', padding: '11px', fontSize: 14, fontWeight: 600, background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: 10, cursor: emailLoading ? 'default' : 'pointer', opacity: emailLoading ? 0.7 : 1 }}
-              >
-                {emailLoading ? 'Отправляем…' : 'Отправить ссылку'}
-              </button>
-              <button
-                type="button"
-                onClick={() => { setShowEmail(false); setError(null); }}
-                style={{ background: 'none', border: 'none', color: 'var(--text-faint)', fontSize: 12, cursor: 'pointer', textDecoration: 'underline', padding: '6px 0 0', width: '100%' }}
-              >
-                Отмена
-              </button>
-            </form>
-          )}
+          <LoginEmailForm setError={setError} />
 
-          {error && (
-            <p style={{ color: 'var(--accent-red)', fontSize: 13, marginTop: 12, textAlign: 'center' }}>{error}</p>
-          )}
+          {error && <p className="al-error">{error}</p>}
 
-          <p style={{ textAlign: 'center', marginTop: 18 }}>
-            <a href="/auth/recovery" style={{ color: 'var(--text-faint)', fontSize: 12, textDecoration: 'underline' }}>
-              Потерял доступ ко всем способам входа?
-            </a>
+          <p className="al-foot">
+            <a href="/auth/recovery">Нет доступа ни к одному способу входа?</a>
+          </p>
+
+          <p className="al-note">
+            Нажимая «Войти», вы подтверждаете, что вам исполнилось 18 лет, и даёте согласие
+            на обработку персональных данных — включая сведения о психоэмоциональном состоянии
+            (дневники, ответы на опросники), которые вы добровольно вносите, —
+            в соответствии с{' '}
+            <a href="/privacy" target="_blank">Политикой конфиденциальности</a>
+          </p>
+
+          {/* Проект бесплатный — ненавязчивая точка поддержки на первом экране */}
+          <p className="al-note">
+            Проект бесплатный <a href="/donate">поддержать</a>
           </p>
         </div>
-
-        {/* Consent note */}
-        <p style={{ color: 'var(--text-faint)', fontSize: 12, textAlign: 'center', marginTop: 20, lineHeight: 1.7 }}>
-          Нажимая «Войти», вы подтверждаете, что вам исполнилось 18 лет, и даёте согласие
-          на обработку персональных данных — включая сведения о психоэмоциональном состоянии
-          (дневники, ответы на опросники), которые вы добровольно вносите, —
-          в соответствии с{' '}
-          <a href="/privacy" target="_blank" style={{ color: 'var(--text-faint)', textDecoration: 'underline' }}>
-            Политикой конфиденциальности
-          </a>
-        </p>
-
-        {/* Проект бесплатный — ненавязчивая точка поддержки на первом экране */}
-        <p style={{ color: 'var(--text-faint)', fontSize: 12, textAlign: 'center', marginTop: 14 }}>
-          Проект бесплатный{' '}
-          <a href="/donate" style={{ color: 'var(--accent)', textDecoration: 'none' }}>поддержать</a>
-        </p>
-      </div>
-
-      <style>{`@keyframes fade-in { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }`}</style>
+      </main>
     </div>
   );
 }

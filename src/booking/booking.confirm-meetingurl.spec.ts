@@ -1,13 +1,14 @@
 // Точечное усиление против выживших мутантов booking.service.ts:
-// meetingUrl ?? null (LogicalOperator), paidAmount != null guard
-// (ConditionalExpression), точные аргументы повторного findUnique в CAS-ретрае.
+// paidAmount != null guard (ConditionalExpression), точные аргументы повторного
+// findUnique в CAS-ретрае. Плюс ответ book() без ссылки на встречу (аудит
+// 2026-10: раньше здесь пинилось `meetingUrl ?? null` — ссылка в ответе).
 import { BookingStatus, SessionType } from '@prisma/client';
 import { BookingService } from './booking.service';
 
 const FIXED_NOW = new Date('2026-07-13T00:00:00Z');
 const INSIDE_WINDOW = new Date(FIXED_NOW.getTime() + 13 * 3_600_000);
 
-describe('BookingService.book — meetingUrl ?? null: правда пробрасывается, не гасится', () => {
+describe('BookingService.book — ссылка на встречу в анонимный ответ не уходит', () => {
   beforeEach(() => {
     jest.useFakeTimers();
     jest.setSystemTime(FIXED_NOW);
@@ -16,7 +17,7 @@ describe('BookingService.book — meetingUrl ?? null: правда пробра�
 
   function makeService() {
     const tx = {
-      $queryRaw: jest.fn(async () => undefined),
+      $executeRaw: jest.fn(async () => undefined),
       booking: {
         findMany: jest.fn(async () => []),
         // Симулируем бронь, у которой meetingUrl уже проставлен (реалистичный
@@ -30,8 +31,9 @@ describe('BookingService.book — meetingUrl ?? null: правда пробра�
     };
     const prisma: any = {
       availabilityRule: { findMany: jest.fn(async () => []) },
+      slotOverride: { findMany: jest.fn(async () => []) },
       $transaction: jest.fn(async (fn: any) => fn(tx)),
-      booking: { update: jest.fn(async () => ({})) },
+      booking: { updateMany: jest.fn(async () => ({ count: 1 })) },
     };
     const notify = {
       onConfirmed: jest.fn(async () => undefined),
@@ -47,11 +49,12 @@ describe('BookingService.book — meetingUrl ?? null: правда пробра�
       robokassa as any,
       pricing as any,
       { get: () => undefined } as any,
+      { claimRun: jest.fn().mockResolvedValue(true) } as any,
     );
     return { service };
   }
 
-  it('INTRO_15: meetingUrl уже есть на строке брони → отдаётся как есть (не null из-за ?? → && мутации)', async () => {
+  it('INTRO_15: meetingUrl уже есть на строке брони → в ответе его нет', async () => {
     const { service } = makeService();
     const res = await service.book({
       clientName: 'Мария',
@@ -61,10 +64,12 @@ describe('BookingService.book — meetingUrl ?? null: правда пробра�
       durationMin: 15,
       type: SessionType.INTRO_15,
     });
-    expect(res.meetingUrl).toBe('https://meet.test/abc');
+    expect(res.status).toBe(BookingStatus.CONFIRMED);
+    expect(res).not.toHaveProperty('meetingUrl');
+    expect(JSON.stringify(res)).not.toContain('meet.test');
   });
 
-  it('SESSION_50 + Robokassa выключена (dev auto-confirm): meetingUrl тоже пробрасывается', async () => {
+  it('SESSION_50 + Robokassa выключена (dev auto-confirm): ссылки в ответе тоже нет', async () => {
     const { service } = makeService();
     const res = await service.book({
       clientName: 'Мария',
@@ -74,46 +79,8 @@ describe('BookingService.book — meetingUrl ?? null: правда пробра�
       durationMin: 50,
       type: SessionType.SESSION_50,
     });
-    expect(res.meetingUrl).toBe('https://meet.test/abc');
-  });
-
-  it('нет meetingUrl на строке → возвращается ровно null (не undefined)', async () => {
-    const tx = {
-      $queryRaw: jest.fn(async () => undefined),
-      booking: {
-        findMany: jest.fn(async () => []),
-        create: jest.fn(async ({ data }: any) => ({ id: 100, ...data })),
-      },
-    };
-    const prisma: any = {
-      availabilityRule: { findMany: jest.fn(async () => []) },
-      $transaction: jest.fn(async (fn: any) => fn(tx)),
-      booking: { update: jest.fn(async () => ({})) },
-    };
-    const notify = {
-      onConfirmed: jest.fn(async () => undefined),
-      onAwaitingPayment: jest.fn(async () => undefined),
-    };
-    const meeting = { hasMeetingForContact: jest.fn(async () => true) };
-    const robokassa = { enabled: false, buildPaymentUrl: jest.fn() };
-    const pricing = { getPrice: jest.fn(async () => 4000) };
-    const service = new BookingService(
-      prisma,
-      notify as any,
-      meeting as any,
-      robokassa as any,
-      pricing as any,
-      { get: () => undefined } as any,
-    );
-    const res = await service.book({
-      clientName: 'Мария',
-      clientContact: '@maria',
-      acceptedOffer: true,
-      startsAt: INSIDE_WINDOW,
-      durationMin: 15,
-      type: SessionType.INTRO_15,
-    });
-    expect(res.meetingUrl).toBeNull();
+    expect(res.status).toBe(BookingStatus.CONFIRMED);
+    expect(JSON.stringify(res)).not.toContain('meet.test');
   });
 });
 
@@ -148,20 +115,25 @@ describe('BookingService.confirm — paidAmount не передан → свер
       {} as any,
       pricing as any,
       { get: () => undefined } as any,
+      { claimRun: jest.fn().mockResolvedValue(true) } as any,
     );
     await expect(service.confirm(9)).resolves.toEqual({ ok: true });
     expect(state.row.status).toBe(BookingStatus.CONFIRMED);
   });
 });
 
-describe('BookingService.confirm — повторный findUnique в CAS-ретрае бьёт точным where/select', () => {
-  it('запрос статуса идёт с where:{id} и select:{status:true} (не пустые объекты)', async () => {
+describe('BookingService.confirm — повторный findUnique в CAS-ретрае бьёт точным where', () => {
+  it('запрос свежей строки идёт с where:{id}, а повтор по доделанной брони эффектов не зовёт', async () => {
     const prisma: any = {
       booking: {
-        findUnique: jest.fn(async ({ select }: any = {}) => {
-          if (select) return { status: BookingStatus.CONFIRMED };
-          return { id: 3, status: BookingStatus.HELD };
-        }),
+        findUnique: jest
+          .fn()
+          .mockResolvedValueOnce({ id: 3, status: BookingStatus.HELD })
+          .mockResolvedValueOnce({
+            id: 3,
+            status: BookingStatus.CONFIRMED,
+            confirmEffectsDoneAt: new Date(),
+          }),
         updateMany: jest.fn(async () => ({ count: 0 })), // CAS проигран
       },
     };
@@ -174,12 +146,11 @@ describe('BookingService.confirm — повторный findUnique в CAS-рет
       {} as any,
       pricing as any,
       { get: () => undefined } as any,
+      { claimRun: jest.fn().mockResolvedValue(true) } as any,
     );
     await expect(service.confirm(3, 4000)).resolves.toEqual({ ok: true });
     const secondCallArgs = prisma.booking.findUnique.mock.calls[1][0];
-    expect(secondCallArgs).toEqual({
-      where: { id: 3 },
-      select: { status: true },
-    });
+    expect(secondCallArgs).toEqual({ where: { id: 3 } });
+    expect(notify.onConfirmed).not.toHaveBeenCalled();
   });
 });

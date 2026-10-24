@@ -38,6 +38,8 @@ export const SCREEN_BLOCK_LABELS: Record<string, string> = {
   phrase: 'Фраза взрослого',
   secondary: 'Что ещё сегодня',
   therapist_banner: 'Баннер терапевта',
+  portrait: 'Мой портрет',
+  warm_words: 'Тёплые слова',
 };
 
 // Порядок строк — как в настройке, а не по убыванию счёта (та же логика,

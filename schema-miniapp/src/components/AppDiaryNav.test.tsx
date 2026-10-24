@@ -78,17 +78,14 @@ vi.mock('./plusMenu/QuickActionOverlays', () => ({
   QuickActionOverlays: ({
     active,
     onClose,
-    onOpenTracker,
   }: {
     active: string | null;
     onClose: () => void;
-    onOpenTracker: () => void;
   }) =>
     active ? (
       <div>
         <span>QuickActionOverlays:{active}</span>
         <button onClick={onClose}>close-overlay</button>
-        <button onClick={onOpenTracker}>overlay-open-tracker</button>
       </div>
     ) : null,
 }));
@@ -125,6 +122,8 @@ const emptySheets: UseSheetsReturn = {
   close: vi.fn(),
 };
 
+// Тесты видимости пилюли/нава используют section='help' исторически (при
+// Ж3 «Сегодня» была особым случаем; с 2026-08-25 — нет, см. describe ниже).
 function baseProps(overrides: Partial<UseSheetsReturn> = {}) {
   return {
     sheets: { ...emptySheets, ...overrides },
@@ -132,7 +131,7 @@ function baseProps(overrides: Partial<UseSheetsReturn> = {}) {
     newDiaryEntry: null as 'schema' | 'mode' | 'gratitude' | null,
     setNewDiaryEntry: vi.fn(),
     diaryActiveSchemaIds: undefined,
-    section: 'today' as const,
+    section: 'help' as const,
     setSection: vi.fn(),
     userRole: 'CLIENT' as const,
   };
@@ -166,6 +165,19 @@ describe('AppDiaryNav — видимость пилюли/нава', () => {
   });
 });
 
+// Ж3 (аудит 2026-08, #405) прятала «+» на «Сегодня»; владелец откатил
+// решение 2026-08-25 — пропажа привычной кнопки с главного экрана читалась
+// как поломка. Теперь «+» видна на всех четырёх экранах.
+describe('AppDiaryNav — «+» видна на всех экранах, включая «Сегодня»', () => {
+  it.each(['today', 'help', 'schemas', 'profile'] as const)(
+    'section=%s — пилюля видна',
+    (section) => {
+      render(<AppDiaryNav {...baseProps()} section={section} />);
+      expect(screen.getByLabelText('Быстрое действие')).toBeTruthy();
+    },
+  );
+});
+
 describe('AppDiaryNav — сохранение записей дневника', () => {
   it('newDiaryEntry=schema — рендерит SchemaEntrySheet, onSave зовёт createSchemaDiary', async () => {
     const setNewDiaryEntry = vi.fn();
@@ -176,7 +188,8 @@ describe('AppDiaryNav — сохранение записей дневника',
         setNewDiaryEntry={setNewDiaryEntry}
       />,
     );
-    expect(screen.getByText('SchemaEntrySheet')).toBeTruthy();
+    // Шит теперь ленивый (LazyDiarySheets) — ждём появления, не берём синхронно.
+    expect(await screen.findByText('SchemaEntrySheet')).toBeTruthy();
     fireEvent.click(screen.getByText('save-schema'));
     await waitFor(() =>
       expect(api.createSchemaDiary).toHaveBeenCalledWith({ trigger: 't' }),
@@ -185,7 +198,7 @@ describe('AppDiaryNav — сохранение записей дневника',
 
   it('newDiaryEntry=mode — onSave зовёт createModeDiary', async () => {
     render(<AppDiaryNav {...baseProps()} newDiaryEntry="mode" />);
-    fireEvent.click(screen.getByText('save-mode'));
+    fireEvent.click(await screen.findByText('save-mode'));
     await waitFor(() =>
       expect(api.createModeDiary).toHaveBeenCalledWith({ modeId: 'x' }),
     );
@@ -193,7 +206,7 @@ describe('AppDiaryNav — сохранение записей дневника',
 
   it('newDiaryEntry=gratitude — onSave зовёт createGratitudeDiary(date, items)', async () => {
     render(<AppDiaryNav {...baseProps()} newDiaryEntry="gratitude" />);
-    fireEvent.click(screen.getByText('save-gratitude'));
+    fireEvent.click(await screen.findByText('save-gratitude'));
     await waitFor(() =>
       expect(api.createGratitudeDiary).toHaveBeenCalledWith('2026-08-03', [
         'a',
@@ -201,7 +214,7 @@ describe('AppDiaryNav — сохранение записей дневника',
     );
   });
 
-  it('закрытие карточки схемы зовёт setNewDiaryEntry(null)', () => {
+  it('закрытие карточки схемы зовёт setNewDiaryEntry(null)', async () => {
     const setNewDiaryEntry = vi.fn();
     render(
       <AppDiaryNav
@@ -210,7 +223,7 @@ describe('AppDiaryNav — сохранение записей дневника',
         setNewDiaryEntry={setNewDiaryEntry}
       />,
     );
-    fireEvent.click(screen.getByText('close-schema'));
+    fireEvent.click(await screen.findByText('close-schema'));
     expect(setNewDiaryEntry).toHaveBeenCalledWith(null);
   });
 });
@@ -254,15 +267,17 @@ describe('AppDiaryNav — открытие пилюлей', () => {
     expect(screen.getByLabelText('Быстрое действие')).toBeTruthy();
   });
 
-  it('onOpenTracker из оверлея (flashcard) открывает trackerOverlay и закрывает оверлей', () => {
+  it('«Схема включилась» больше не в «плюсе» (переехала в «Инструменты», один дом на действие)', () => {
+    render(<AppDiaryNav {...baseProps()} />);
+    fireEvent.click(screen.getByLabelText('Быстрое действие'));
+    expect(screen.queryByText('Схема включилась')).toBeNull();
+  });
+
+  it('пункт «Что это было» открывает разбор случая через sheets.open("caseFlow")', () => {
     const open = vi.fn();
     render(<AppDiaryNav {...baseProps({ open })} />);
     fireEvent.click(screen.getByLabelText('Быстрое действие'));
-    fireEvent.click(screen.getByText('Схема включилась'));
-    fireEvent.click(screen.getByText('overlay-open-tracker'));
-    expect(open).toHaveBeenCalledWith('trackerOverlay', {
-      trackerNeedId: null,
-    });
-    expect(screen.queryByText('QuickActionOverlays:flashcard')).toBeNull();
+    fireEvent.click(screen.getByText('Что это было'));
+    expect(open).toHaveBeenCalledWith('caseFlow');
   });
 });

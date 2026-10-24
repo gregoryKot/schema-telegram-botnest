@@ -11,8 +11,10 @@
 // где однозначного ответа нет (отдаёт конфликт человеку, а не выдумывает).
 import {
   copyFileSync,
+  existsSync,
   mkdirSync,
   mkdtempSync,
+  readdirSync,
   readFileSync,
   rmSync,
   writeFileSync,
@@ -87,6 +89,67 @@ describe('merge-json-ratchet: слияние бейслайнов по сема�
     );
     expect(status).toBe(0);
     expect(merged).toEqual({ 'a.ts': 70 });
+  });
+
+  // Инцидент 2026-09-16 (PR #496): ветка отведена от старого main, за это время
+  // main принял через `--update` законный рост чужих файлов. Ветка их не
+  // трогала — и «всегда min» брал её старые значения, то есть размеры, которых
+  // на слитом дереве уже нет. `check-file-size-ratchet.mjs` после такого
+  // слияния краснел на файлы, к которым ветка не прикасалась.
+  it('min: main поднял ключ через --update, ветка не трогала — остаётся значение main', () => {
+    const base = {
+      'src/api/api.module.ts': 59,
+      'src/auth/merge.service.ts': 306,
+      'src/channel/channel-schedule.service.ts': 185,
+      'src/own.ts': 200,
+    };
+    const { status, merged } = mergeJson(
+      'min',
+      base,
+      // ветка: тронула только свой файл, чужие — как были у предка
+      { ...base, 'src/own.ts': 180 },
+      // main: рост трёх чужих файлов, принятый осознанно через --update
+      {
+        ...base,
+        'src/api/api.module.ts': 62,
+        'src/auth/merge.service.ts': 342,
+        'src/channel/channel-schedule.service.ts': 213,
+      },
+    );
+    expect(status).toBe(0);
+    expect(merged).toEqual({
+      'src/api/api.module.ts': 62,
+      'src/auth/merge.service.ts': 342,
+      'src/channel/channel-schedule.service.ts': 213,
+      'src/own.ts': 180,
+    });
+  });
+
+  // Контроль к предыдущему: «сторона не трогала — берём вторую» не должно
+  // превратиться в «берём ту, что больше». Когда ключ двинули ОБЕ стороны,
+  // храповик работает как прежде — прогресс обеих сохраняется.
+  it('контроль: обе стороны опустили один ключ — берётся минимум из двух', () => {
+    const { status, merged } = mergeJson(
+      'min',
+      { 'src/api/api.module.ts': 59 },
+      { 'src/api/api.module.ts': 55 },
+      { 'src/api/api.module.ts': 51 },
+    );
+    expect(status).toBe(0);
+    expect(merged).toEqual({ 'src/api/api.module.ts': 51 });
+  });
+
+  // Зеркало того же для max: сторона, не трогавшая пол покрытия, не тянет его
+  // вниз, а две поднявшие по-прежнему сводятся по лучшему.
+  it('max: одна сторона опустила пол осознанно — её значение и остаётся', () => {
+    const { status, merged } = mergeJson(
+      'max',
+      { floors: { 'src/api': 78 } },
+      { floors: { 'src/api': 78 } },
+      { floors: { 'src/api': 71 } },
+    );
+    expect(status).toBe(0);
+    expect(merged).toEqual({ floors: { 'src/api': 71 } });
   });
 
   it('max: покрытие сводится по лучшему, включая вложенные полы', () => {
@@ -238,40 +301,428 @@ describe('merge-json-ratchet: настоящее слияние git', () => {
     expect(status).not.toBe(0);
     expect(baseline).toContain('<<<<<<<');
   });
+
+  // Сквозная проверка инцидента 2026-09-16: важно не только, что функция
+  // считает верно, но и что git отдаёт драйверу настоящую базу слияния (%O) —
+  // ту точку, от которой ветка отведена, а не текущий main. Возьми драйвер
+  // предка неверно, и «ветка не трогала» превратится в «трогали обе».
+  it('ветка от старого main: рост, принятый в main, переживает слияние', () => {
+    const tmp = mkdtempSync(join(tmpdir(), 'stale-branch-'));
+    try {
+      const git = (...args: string[]) =>
+        spawnSync('git', args, { cwd: tmp, encoding: 'utf8' });
+      git('init', '-q', '.');
+      git('config', 'user.email', 'test@example.com');
+      git('config', 'user.name', 'test');
+      git(
+        'config',
+        'merge.ratchet-min.driver',
+        'node scripts/merge-json-ratchet.mjs min %O %A %B %P',
+      );
+      mkdirSync(join(tmp, 'scripts'), { recursive: true });
+      copyFileSync(join(REAL_SCRIPTS, RATCHET), join(tmp, 'scripts', RATCHET));
+      writeFileSync(
+        join(tmp, '.gitattributes'),
+        'scripts/sizes.json merge=ratchet-min\n',
+      );
+      const sizes = join(tmp, 'scripts', 'sizes.json');
+      const write = (value: Record<string, number>) =>
+        writeFileSync(sizes, JSON.stringify(value, null, 2) + '\n');
+
+      write({ 'api.module.ts': 59, 'merge.service.ts': 306, 'own.ts': 200 });
+      git('add', '-A');
+      git('commit', '-qm', 'база: точка, от которой отведена ветка');
+      const main = git('rev-parse', '--abbrev-ref', 'HEAD').stdout.trim();
+
+      git('checkout', '-qb', 'feature');
+      write({ 'api.module.ts': 59, 'merge.service.ts': 306, 'own.ts': 180 });
+      git('commit', '-qam', 'ветка: ужала свой файл');
+
+      git('checkout', '-q', main);
+      write({ 'api.module.ts': 62, 'merge.service.ts': 342, 'own.ts': 200 });
+      git('commit', '-qam', 'main: --update после законного роста двух файлов');
+
+      const merge = git('merge', 'feature', '-m', 'merge');
+      expect(merge.status).toBe(0);
+      expect(JSON.parse(readFileSync(sizes, 'utf8'))).toEqual({
+        'api.module.ts': 62,
+        'merge.service.ts': 342,
+        'own.ts': 180,
+      });
+    } finally {
+      rmSync(tmp, { recursive: true, force: true });
+    }
+  });
 });
 
 describe('setup-merge-drivers --check: атрибут без драйвера не проходит', () => {
   const SETUP = 'setup-merge-drivers.mjs';
+  const REPO = join(REAL_SCRIPTS, '..');
+  const STUBS = {
+    'scripts/merge-json-ratchet.mjs': '// заглушка, проверяется наличие',
+    'scripts/merge-miniapp-dist.mjs': '// заглушка, проверяется наличие',
+  };
+
+  /** Настоящие бейслайны репозитория как пустые заглушки: гейт смотрит на
+   *  имена файлов, а не на содержимое. Без них песочница была бы пустой, и
+   *  тест зеленел бы даже на дыре «бейслайн без атрибута». */
+  function realBaselines(): Record<string, string> {
+    const out: Record<string, string> = {};
+    for (const dir of ['scripts', 'e2e-browser']) {
+      for (const f of readdirSync(join(REPO, dir))) {
+        if (f.endsWith('-baseline.json')) out[`${dir}/${f}`] = '{}';
+      }
+    }
+    return out;
+  }
 
   it('зеленеет на настоящем .gitattributes репозитория', () => {
-    const attributes = readFileSync(
-      join(REAL_SCRIPTS, '..', '.gitattributes'),
-      'utf8',
-    );
+    const attributes = readFileSync(join(REPO, '.gitattributes'), 'utf8');
+    const baselines = realBaselines();
+    // страховка от пустой песочницы: тест обязан видеть реальные бейслайны
+    expect(Object.keys(baselines).length).toBeGreaterThan(30);
     const res = runGate(
       SETUP,
-      {
-        '.gitattributes': attributes,
-        'scripts/merge-json-ratchet.mjs': '// заглушка, проверяется наличие',
-        'scripts/merge-miniapp-dist.mjs': '// заглушка, проверяется наличие',
-      },
+      { '.gitattributes': attributes, ...STUBS, ...baselines },
       { args: ['--check'] },
     );
+    expect(res.stderr).toBe('');
     expect(res.status).toBe(0);
   });
 
   it('краснеет на merge=<имя>, которому нет драйвера', () => {
     const res = runGate(
       SETUP,
-      {
-        '.gitattributes': 'some/file.json merge=ratchet-median\n',
-        'scripts/merge-json-ratchet.mjs': '// заглушка',
-        'scripts/merge-miniapp-dist.mjs': '// заглушка',
-      },
+      { '.gitattributes': 'some/file.json merge=ratchet-median\n', ...STUBS },
       { args: ['--check'] },
     );
     expect(res.status).toBe(1);
     expect(res.stderr).toContain('ratchet-median');
+  });
+
+  const ATTR = 'scripts/foo-baseline.json  merge=ratchet-min\n';
+
+  it('краснеет на бейслайне без строки в .gitattributes', () => {
+    const res = runGate(
+      SETUP,
+      {
+        '.gitattributes': 'scripts/bar-baseline.json  merge=ratchet-min\n',
+        'scripts/foo-baseline.json': '{}',
+        'scripts/bar-baseline.json': '{}',
+        ...STUBS,
+      },
+      { args: ['--check'] },
+    );
+    expect(res.status).toBe(1);
+    expect(res.stderr).toContain('scripts/foo-baseline.json');
+    expect(res.stderr).not.toContain('scripts/bar-baseline.json');
+  });
+
+  it('зеленеет, когда у бейслайна есть строка с драйвером', () => {
+    const res = runGate(
+      SETUP,
+      { '.gitattributes': ATTR, 'scripts/foo-baseline.json': '{}', ...STUBS },
+      { args: ['--check'] },
+    );
+    expect(res.status).toBe(0);
+  });
+
+  it('e2e-browser/*-baseline.json учитывается так же, как scripts/', () => {
+    const files = {
+      'e2e-browser/a11y-baseline.json': '{}',
+      ...STUBS,
+    };
+    const without = runGate(
+      SETUP,
+      { '.gitattributes': '', ...files },
+      {
+        args: ['--check'],
+      },
+    );
+    expect(without.status).toBe(1);
+    expect(without.stderr).toContain('e2e-browser/a11y-baseline.json');
+    const withAttr = runGate(
+      SETUP,
+      {
+        '.gitattributes': 'e2e-browser/a11y-baseline.json merge=ratchet-min\n',
+        ...files,
+      },
+      { args: ['--check'] },
+    );
+    expect(withAttr.status).toBe(0);
+  });
+
+  it('краснеет на протухшей строке: файла бейслайна нет на диске', () => {
+    const res = runGate(
+      SETUP,
+      { '.gitattributes': ATTR, ...STUBS },
+      { args: ['--check'] },
+    );
+    expect(res.status).toBe(1);
+    expect(res.stderr).toContain('протухла');
+    expect(res.stderr).toContain('scripts/foo-baseline.json');
+  });
+
+  it('встроенный merge=text для бейслайна не годится', () => {
+    const res = runGate(
+      SETUP,
+      {
+        '.gitattributes': 'scripts/foo-baseline.json  merge=text\n',
+        'scripts/foo-baseline.json': '{}',
+        ...STUBS,
+      },
+      { args: ['--check'] },
+    );
+    expect(res.status).toBe(1);
+    expect(res.stderr).toContain('merge=text');
+  });
+
+  it('контроль: небейслайновый файл без атрибута гейту не интересен', () => {
+    const res = runGate(
+      SETUP,
+      { '.gitattributes': '', 'scripts/check-foo.mjs': '//', ...STUBS },
+      { args: ['--check'] },
+    );
+    expect(res.status).toBe(0);
+  });
+
+  // Встроенный union нужен файлам-журналам только на дозапись
+  // (docs/agent/NAV_LOG.md): обе стороны дописали по строке — остаются обе.
+  // Для бейслайна он по-прежнему не годится: нужна семантика храповика.
+  describe('встроенные драйверы git (union, text, binary)', () => {
+    const LOG = 'docs/agent/NAV_LOG.md';
+    const check = (attributes: string, files: Record<string, string> = {}) =>
+      runGate(
+        SETUP,
+        { '.gitattributes': attributes, ...STUBS, ...files },
+        { args: ['--check'] },
+      );
+
+    it.each(['union', 'text', 'binary'])(
+      'merge=%s на небейслайновом файле — без замечаний',
+      (driver) => {
+        const res = check(`${LOG}  merge=${driver}\n`);
+        expect(res.stderr).toBe('');
+        expect(res.status).toBe(0);
+      },
+    );
+
+    it('merge=union на небейслайне рядом с настоящим бейслайном — зелёное', () => {
+      const res = check(`${ATTR}${LOG}  merge=union\n`, {
+        'scripts/foo-baseline.json': '{}',
+      });
+      expect(res.stderr).toBe('');
+      expect(res.status).toBe(0);
+    });
+
+    it('контроль: merge=union на бейслайне по-прежнему красное', () => {
+      const res = check('scripts/foo-baseline.json  merge=union\n', {
+        'scripts/foo-baseline.json': '{}',
+      });
+      expect(res.status).toBe(1);
+      expect(res.stderr).toContain('scripts/foo-baseline.json');
+      expect(res.stderr).toContain('merge=union');
+      expect(res.stderr).toContain('не драйвер репозитория');
+    });
+
+    it('контроль: неизвестное merge=foo на небейслайне по-прежнему красное', () => {
+      const res = check(`${LOG}  merge=foo\n`);
+      expect(res.status).toBe(1);
+      expect(res.stderr).toContain('merge=foo');
+      expect(res.stderr).toContain('нет в scripts/setup-merge-drivers.mjs');
+    });
+
+    it('контроль: встроенное имя не освобождает от проверки соседней строки', () => {
+      const res = check(`${LOG}  merge=union\nsome/file.json  merge=foo\n`);
+      expect(res.status).toBe(1);
+      expect(res.stderr).toContain('merge=foo');
+      expect(res.stderr).not.toContain('merge=union');
+    });
+
+    // Git берёт последнюю подходящую строку: маска с union в конце файла
+    // молча перебила бы ratchet-min точной строки выше. Что именно накрывает
+    // маска, сверка не вычисляет — встроенный драйвер допускается только на
+    // точном пути, и это дешевле и надёжнее разбора глобов.
+    it.each([
+      'scripts/*.json',
+      'scripts/*-baseline.json',
+      '*.json',
+      'e2e-browser/**',
+      'docs/**/*.md',
+      'docs/?.log',
+      'docs/[ab].log',
+    ])('контроль: маска %s с merge=union — красное', (mask) => {
+      const res = check(`${ATTR}${mask}  merge=union\n`, {
+        'scripts/foo-baseline.json': '{}',
+      });
+      expect(res.status).toBe(1);
+      expect(res.stderr).toContain(`.gitattributes: ${mask} merge=union`);
+      expect(res.stderr).toContain('только на точном пути');
+    });
+
+    it('контроль: маска с ratchet-драйвером остаётся законной (catch-all запрещён отдельно)', () => {
+      const res = check('docs/*.json  merge=ratchet-min\n');
+      expect(res.stderr).not.toContain('только на точном пути');
+    });
+  });
+});
+
+describe('настоящее .gitattributes сводит бейслайны, у которых раньше не было атрибута', () => {
+  // Сценарий находки аудита 2026-10: color-drift (числовой пофайловый
+  // храповик) и реестры-классификации жили без `merge=`, и два PR, тронувших
+  // один такой файл, получали текстовый конфликт. Берём НАСТОЯЩИЙ
+  // .gitattributes и настоящий драйвер — шов, а не выдуманную пару.
+  const REPO = join(REAL_SCRIPTS, '..');
+  const COLOR = 'scripts/color-drift-baseline.json';
+  const CRON = 'scripts/cron-leader-baseline.json';
+
+  const entry = (reason: string) => ({ status: 'exempt', reason });
+  const write = (tmp: string, rel: string, value: unknown) =>
+    writeFileSync(join(tmp, rel), JSON.stringify(value, null, 2) + '\n');
+
+  function twoBranches(withAttributes: boolean) {
+    const tmp = mkdtempSync(join(tmpdir(), 'real-attrs-'));
+    try {
+      const git = (...args: string[]) =>
+        spawnSync('git', args, { cwd: tmp, encoding: 'utf8' });
+      git('init', '-q', '.');
+      git('config', 'user.email', 'test@example.com');
+      git('config', 'user.name', 'test');
+      git(
+        'config',
+        'merge.ratchet-min.driver',
+        'node scripts/merge-json-ratchet.mjs min %O %A %B %P',
+      );
+      mkdirSync(join(tmp, 'scripts'), { recursive: true });
+      copyFileSync(join(REAL_SCRIPTS, RATCHET), join(tmp, 'scripts', RATCHET));
+      writeFileSync(
+        join(tmp, '.gitattributes'),
+        withAttributes
+          ? readFileSync(join(REPO, '.gitattributes'), 'utf8')
+          : '',
+      );
+      write(tmp, COLOR, { 'a.tsx': 3, 'b.tsx': 3 });
+      write(tmp, CRON, {
+        'src/a.ts::run': entry('a'),
+        'src/z.ts::run': entry('z'),
+      });
+      git('add', '-A');
+      git('commit', '-qm', 'base');
+      const base = git('rev-parse', '--abbrev-ref', 'HEAD').stdout.trim();
+
+      git('checkout', '-qb', 'agent-b');
+      write(tmp, COLOR, { 'a.tsx': 3, 'b.tsx': 1 });
+      write(tmp, CRON, {
+        'src/a.ts::run': entry('a'),
+        'src/m.ts::run': entry('m'),
+        'src/z.ts::run': entry('z'),
+      });
+      git('commit', '-qam', 'агент B');
+
+      git('checkout', '-q', base);
+      write(tmp, COLOR, { 'a.tsx': 2, 'b.tsx': 3 });
+      write(tmp, CRON, {
+        'src/a.ts::run': entry('a'),
+        'src/b.ts::run': entry('b'),
+        'src/z.ts::run': entry('z'),
+      });
+      git('commit', '-qam', 'агент A');
+
+      const merge = git('merge', 'agent-b', '-m', 'merge');
+      const read = (rel: string) =>
+        existsSync(join(tmp, rel)) ? readFileSync(join(tmp, rel), 'utf8') : '';
+      return { status: merge.status, color: read(COLOR), cron: read(CRON) };
+    } finally {
+      rmSync(tmp, { recursive: true, force: true });
+    }
+  }
+
+  it('с атрибутами: оба ужатия color-drift и обе вставки реестра сохранены', () => {
+    const { status, color, cron } = twoBranches(true);
+    expect(status).toBe(0);
+    expect(JSON.parse(color)).toEqual({ 'a.tsx': 2, 'b.tsx': 1 });
+    expect(Object.keys(JSON.parse(cron))).toEqual([
+      'src/a.ts::run',
+      'src/b.ts::run',
+      'src/m.ts::run',
+      'src/z.ts::run',
+    ]);
+  });
+
+  it('контроль: без атрибутов та же пара веток конфликтует', () => {
+    const { status, color } = twoBranches(false);
+    expect(status).not.toBe(0);
+    expect(color).toContain('<<<<<<<');
+  });
+
+  // Другая сторона тех же реестров: обе ветки переписали ОДНУ причину —
+  // драйвер не выбирает «свою», а отдаёт конфликт человеку. Покрыто выше:
+  // «НЕ сводит, когда обе стороны написали разные строки».
+});
+
+describe('настоящее .gitattributes: журнал на дозапись сводится встроенным union', () => {
+  // docs/agent/NAV_LOG.md: каждый PR дописывает строку в хвост, и две ветки от
+  // одного main конфликтуют по построению. Встроенный драйвер git не требует
+  // установки в .git/config — достаточно строки в .gitattributes. Шов — настоящий
+  // .gitattributes репозитория и настоящий git, как у бейслайнов выше.
+  const LOG = 'docs/agent/NAV_LOG.md';
+
+  function twoAppends(withAttributes: boolean) {
+    const tmp = mkdtempSync(join(tmpdir(), 'union-log-'));
+    try {
+      const git = (...args: string[]) =>
+        spawnSync('git', args, { cwd: tmp, encoding: 'utf8' });
+      git('init', '-q', '.');
+      git('config', 'user.email', 'test@example.com');
+      git('config', 'user.name', 'test');
+      mkdirSync(join(tmp, 'docs', 'agent'), { recursive: true });
+      writeFileSync(
+        join(tmp, '.gitattributes'),
+        withAttributes
+          ? readFileSync(join(REAL_SCRIPTS, '..', '.gitattributes'), 'utf8')
+          : '',
+      );
+      writeFileSync(join(tmp, LOG), '# Журнал\n- 2026-10-01 старая запись\n');
+      git('add', '-A');
+      git('commit', '-qm', 'base');
+      const base = git('rev-parse', '--abbrev-ref', 'HEAD').stdout.trim();
+
+      git('checkout', '-qb', 'agent-b');
+      writeFileSync(
+        join(tmp, LOG),
+        '# Журнал\n- 2026-10-01 старая запись\n- 2026-10-02 запись агента B\n',
+      );
+      git('commit', '-qam', 'агент B');
+
+      git('checkout', '-q', base);
+      writeFileSync(
+        join(tmp, LOG),
+        '# Журнал\n- 2026-10-01 старая запись\n- 2026-10-03 запись агента A\n',
+      );
+      git('commit', '-qam', 'агент A');
+
+      const merge = git('merge', 'agent-b', '-m', 'merge');
+      return {
+        status: merge.status,
+        log: readFileSync(join(tmp, LOG), 'utf8'),
+      };
+    } finally {
+      rmSync(tmp, { recursive: true, force: true });
+    }
+  }
+
+  it('с атрибутом: дописанные строки обеих веток остались, конфликта нет', () => {
+    const { status, log } = twoAppends(true);
+    expect(status).toBe(0);
+    expect(log).toContain('запись агента A');
+    expect(log).toContain('запись агента B');
+    expect(log).not.toContain('<<<<<<<');
+  });
+
+  it('контроль: без атрибута та же пара веток конфликтует', () => {
+    const { status, log } = twoAppends(false);
+    expect(status).not.toBe(0);
+    expect(log).toContain('<<<<<<<');
   });
 });
 
@@ -375,10 +826,10 @@ describe('prepare выживает в Docker-контексте (инциден�
     const dir = mkdtempSync(join(tmpdir(), 'prepare-docker-'));
     try {
       mkdirSync(join(dir, 'scripts'));
-      copyFileSync(
-        join(REAL_SCRIPTS, 'setup-merge-drivers.mjs'),
-        join(dir, 'scripts', 'setup-merge-drivers.mjs'),
-      );
+      // ровно то, что копирует Dockerfile перед `npm ci`
+      for (const f of ['setup-merge-drivers.mjs', 'merge-drivers-check.mjs']) {
+        copyFileSync(join(REAL_SCRIPTS, f), join(dir, 'scripts', f));
+      }
       const res = spawnSync(
         process.execPath,
         ['scripts/setup-merge-drivers.mjs'],
@@ -401,5 +852,9 @@ describe('prepare выживает в Docker-контексте (инциден�
     expect(copyAt).toBeGreaterThan(-1);
     expect(ciAt).toBeGreaterThan(-1);
     expect(copyAt).toBeLessThan(ciAt);
+    // статический импорт setup: файл рядом обязан ехать той же командой COPY,
+    // иначе `prepare` в образе падает с ERR_MODULE_NOT_FOUND
+    const copyLine = dockerfile.slice(copyAt).split('\n')[0];
+    expect(copyLine).toContain('scripts/merge-drivers-check.mjs');
   });
 });

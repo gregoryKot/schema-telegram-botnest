@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { ExScreen } from '../exercises/ExScreen';
 import { useTr } from '../../utils/addressForm';
+import { DIARY_HUE } from '../../lib/tone';
+import { DiaryAside } from './DiaryStepCard';
 import { haptic } from '../../haptic';
 import { ModeFeelingBrowse } from './ModeFeelingBrowse';
 import { ModeGroupList } from './ModeGroupList';
@@ -29,7 +31,6 @@ export function ModeSelectScreen({
       onBack={onBack}
       backLabel="Назад к дневнику"
       eyebrow="Дневник режимов · новая запись"
-      eyebrowColor="var(--c-slate)"
       title={
         <>
           Кто сейчас
@@ -42,21 +43,8 @@ export function ModeSelectScreen({
         'Режим – состояние, которое сейчас «за рулём». Не знаете названия – определим по чувству, в пару тапов.',
       )}
       aside={
-        <div
-          className="aside-card"
-          style={{
-            borderColor: 'var(--c-slate)40',
-            background: 'var(--c-slate)08',
-          }}
-        >
-          <div
-            className="aside-card-eyebrow"
-            style={{ color: 'var(--c-slate)' }}
-          >
-            Подсказка
-          </div>
-          <h3>Как его узнать</h3>
-          <p className="body">
+        <DiaryAside hue={DIARY_HUE.mode} eyebrow="Подсказка" title="Как его узнать">
+          <p className="ds-sub">
             Режим узнаётся не по мыслям, а по тому, как меняется тело и тон
             голоса в голове.{' '}
             {tr(
@@ -64,11 +52,11 @@ export function ModeSelectScreen({
               'Замечайте резкие переключения – это его след.',
             )}
           </p>
-        </div>
+        </DiaryAside>
       }
     >
       {/* Главное действие: выбор по ощущению */}
-      <div style={{ fontSize: 12.5, color: 'var(--text-faint)', margin: '0 0 10px' }}>
+      <div className="ds-sub sd-select-q">
         {tr(
           'Что сейчас чувствуешь? Выбери самое близкое:',
           'Что сейчас чувствуете? Выберите самое близкое:',
@@ -79,7 +67,7 @@ export function ModeSelectScreen({
       {/* Третичное: полный список для тех, кто знает режим */}
       <button
         type="button"
-        className="ex-btn ex-btn-ghost mode-list-toggle"
+        className="ds-btn ds-btn--secondary ds-btn--sm sd-list-toggle"
         onClick={() => {
           haptic.tap();
           setListOpen((v) => !v);

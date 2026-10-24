@@ -1,3 +1,5 @@
+import { buildPracticesIntro } from '../../../shared/src/onboarding/onboardingExplainers';
+import { PRACTICE_TEXT_MAX } from '../../../shared/src/limits/textLimits';
 import { useState } from 'react';
 import { PracticesList } from './PracticesList';
 import { useSafeTop } from '../utils/safezone';
@@ -7,7 +9,7 @@ import { pressable } from '../utils/a11y';
 import { detectCrisisAny } from '../utils/crisisMarkers';
 import { CrisisCard } from './CrisisCard';
 import { usePracticesData } from '../hooks/usePracticesData';
-
+import { hitboxStyle } from '../utils/hitbox';
 const NEED_IDS = ['attachment', 'autonomy', 'expression', 'play', 'limits'];
 const NEED_NAMES: Record<string, string> = {
   attachment: 'Привязанность',
@@ -64,21 +66,29 @@ export function PracticesScreen({ onClose, onOpenTracker }: Props) {
         style={{
           display: 'flex',
           alignItems: 'center',
-          gap: 12,
+          gap: 'var(--space-12)',
           padding: '16px 20px 8px',
         }}
       >
-        <span
-          {...pressable(onClose)}
-          style={{
-            fontSize: 26,
-            color: 'var(--text-sub)',
-            cursor: 'pointer',
-            lineHeight: 1,
-          }}
+        <button
+          onClick={onClose}
+          aria-label="Назад"
+          style={hitboxStyle(26, 26).outer}
         >
-          ‹
-        </span>
+          <span
+            style={{
+              ...hitboxStyle(26, 26).inner,
+              fontSize: 26,
+              color: 'var(--text-sub)',
+              lineHeight: 1,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            ‹
+          </span>
+        </button>
         <span
           style={{
             fontSize: 18,
@@ -121,7 +131,7 @@ export function PracticesScreen({ onClose, onOpenTracker }: Props) {
         <div
           style={{ fontSize: 12, color: 'var(--text-sub)', lineHeight: 1.55 }}
         >
-          Практики — конкретные действия, которые наполняют потребность.
+          {buildPracticesIntro(tr)}
           {onOpenTracker && (
             <>
               {' '}
@@ -163,7 +173,7 @@ export function PracticesScreen({ onClose, onOpenTracker }: Props) {
                 style={{
                   flexShrink: 0,
                   padding: '7px 12px',
-                  borderRadius: 20,
+                  borderRadius: 'var(--r-20)',
                   background: active
                     ? color + '28'
                     : 'rgba(var(--fg-rgb),0.05)',
@@ -207,22 +217,16 @@ export function PracticesScreen({ onClose, onOpenTracker }: Props) {
             style={{
               background: `${needColor}12`,
               border: `1px solid ${needColor}25`,
-              borderRadius: 14,
+              borderRadius: 'var(--r-14)',
               padding: '11px 14px',
               marginBottom: 14,
               display: 'flex',
               alignItems: 'center',
-              gap: 10,
+              gap: 'var(--space-10)',
             }}
           >
             <span style={{ fontSize: 18 }}>📍</span>
-            <div
-              style={{
-                fontSize: 12,
-                color: 'var(--text-sub)',
-                lineHeight: 1.5,
-              }}
-            >
+            <div className="u-sub12-lh15">
               Сегодня{' '}
               <span style={{ color: needColor, fontWeight: 600 }}>
                 {NEED_NAMES[needId]}
@@ -237,22 +241,16 @@ export function PracticesScreen({ onClose, onOpenTracker }: Props) {
             style={{
               background: 'rgba(251,191,36,0.08)',
               border: '1px solid rgba(251,191,36,0.2)',
-              borderRadius: 14,
+              borderRadius: 'var(--r-14)',
               padding: '11px 14px',
               marginBottom: 14,
               display: 'flex',
               alignItems: 'center',
-              gap: 10,
+              gap: 'var(--space-10)',
             }}
           >
             <span style={{ fontSize: 18 }}>💛</span>
-            <div
-              style={{
-                fontSize: 12,
-                color: 'var(--text-sub)',
-                lineHeight: 1.5,
-              }}
-            >
+            <div className="u-sub12-lh15">
               Сегодня {NEED_NAMES[needId]} — {todayScore}/10. Есть куда расти.
             </div>
           </div>
@@ -281,7 +279,7 @@ export function PracticesScreen({ onClose, onOpenTracker }: Props) {
           Небольшое конкретное действие — например «позвонить другу» или
           «прогулка 20 минут»
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div className="u-row8">
           <input
             value={input}
             onChange={(e) => setInput(e.target.value)}
@@ -289,12 +287,12 @@ export function PracticesScreen({ onClose, onOpenTracker }: Props) {
               if (e.key === 'Enter') void handleAdd();
             }}
             placeholder="Добавить практику..."
-            maxLength={200}
+            maxLength={PRACTICE_TEXT_MAX}
             style={{
               flex: 1,
               background: 'rgba(var(--fg-rgb),0.05)',
               border: '1px solid rgba(var(--fg-rgb),0.1)',
-              borderRadius: 12,
+              borderRadius: 'var(--r-12)',
               padding: '12px 14px',
               color: 'var(--text)',
               fontSize: 14,
@@ -307,7 +305,7 @@ export function PracticesScreen({ onClose, onOpenTracker }: Props) {
             disabled={!input.trim() || saving}
             style={{
               padding: '12px 18px',
-              borderRadius: 12,
+              borderRadius: 'var(--r-12)',
               border: 'none',
               background: input.trim() ? needColor : 'rgba(var(--fg-rgb),0.07)',
               color: 'var(--text)',

@@ -77,8 +77,42 @@ describe('EvidenceList — добавление/удаление пунктов'
     fireEvent.change(input, { target: { value: 'аргумент' } });
     fireEvent.click(screen.getByText('+'));
     expect(screen.getByText('• аргумент')).toBeTruthy();
-    fireEvent.click(screen.getByText('×'));
+    fireEvent.click(screen.getByRole('button', { name: 'Удалить' }));
     expect(screen.queryByText('• аргумент')).toBeNull();
+  });
+
+  it('кнопка удаления: зона нажатия не меньше 44×44, видимый крестик остаётся мелким', () => {
+    render(<Wrapper />);
+    fireEvent.change(screen.getByPlaceholderText('Добавить...'), {
+      target: { value: 'аргумент' },
+    });
+    fireEvent.click(screen.getByText('+'));
+    const btn = screen.getByRole('button', { name: 'Удалить' });
+    expect(btn.getAttribute('type')).toBe('button');
+    expect(btn.style.width).toBe('44px');
+    expect(btn.style.height).toBe('44px');
+    const glyph = screen.getByText('×');
+    expect(glyph.style.width).toBe('16px');
+    expect(glyph.style.height).toBe('16px');
+  });
+
+  it('зона нажатия не выходит за строку: padding строки не меньше выступа зоны', () => {
+    render(<Wrapper />);
+    const input = screen.getByPlaceholderText('Добавить...');
+    for (const v of ['первый', 'второй']) {
+      fireEvent.change(input, { target: { value: v } });
+      fireEvent.click(screen.getByText('+'));
+    }
+    const buttons = screen.getAllByRole('button', { name: 'Удалить' });
+    expect(buttons).toHaveLength(2);
+    for (const btn of buttons) {
+      const row = btn.parentElement as HTMLElement;
+      const reach = -parseFloat(btn.style.marginTop);
+      // Зона выступает над и под глифом на reach — строка обязана вместить её
+      // своим padding, иначе тап возле «×» попадёт в кнопку соседней строки.
+      expect(parseFloat(row.style.paddingTop)).toBeGreaterThanOrEqual(reach);
+      expect(parseFloat(row.style.paddingBottom)).toBeGreaterThanOrEqual(reach);
+    }
   });
 
   it('Enter в поле ввода вызывает onAdd (пустой ввод не добавляет пункт — логика родителя)', () => {

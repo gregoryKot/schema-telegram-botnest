@@ -1,0 +1,6 @@
+{
+  "source": "iCloud CalDAV — PROPFIND Depth 1 по calendar-home-set (шаг 3, список календарей)",
+  "recordedAt": "2026-09-16",
+  "how": "Форма подтверждена расследованием инцидентов 2026-09-13 (#491) и 2026-09-16 (#494, см. `git show b4141e1`): PROPFIND Depth 1 по корню отдаёт ПЕРВЫМ <response> сам корень (тоже с VEVENT в component-set, но без <calendar/> в resourcetype), а календарь — тегом calendar С ПРЕФИКСОМ И АТРИБУТАМИ (`<C:calendar xmlns:C=\"urn:ietf:params:xml:ns:caldav\"/>`), не голым тегом. Старый регэксп `/<[^>:]*:?calendar\\s*\\/?>/i` эту форму не матчил — регресс жил на проде 3 дня. Это тот самый признак, отсутствие которого в старой фикстуре и было причиной инцидента (см. CLAUDE.md, правило №14).",
+  "redacted": "href/displayname заменены на плейсхолдеры /123/calendars/, /123/calendars/home/, «Home» (реальные содержат Apple ID/DSID и имя личного календаря пользователя)"
+}

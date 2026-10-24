@@ -17,6 +17,9 @@ import {
 import { setHost, createWebHost } from '../../../shared/src/host';
 import { TodaySection } from './TodaySection';
 import { TODAY_MORE_KEY } from './today/helpers';
+import { setSecondaryHidden } from '../../../shared/src/today/todayFocus';
+import { ONBOARDING_DONE_KEY } from './today/onboardingSteps';
+import { forEachTimeZoneAsync } from '../../../shared/src/utils/timeZone.test-helpers';
 
 // Даты — относительные к моменту запуска теста (не литералы): компонент
 // сравнивает createdAt с «сегодня» (todayStr()), и фиксированная дата в
@@ -49,11 +52,19 @@ vi.mock('./today/SecondaryCards', () => ({
     recentDiaries,
     onSetDiaryTask,
   }: {
-    recentDiaries: { label: string }[];
+    recentDiaries: { label: string; dateStr: string; time: string }[];
     onSetDiaryTask: () => void;
   }) => (
     <div data-testid="secondary-cards">
       diaries={recentDiaries.length}
+      {/* Подпись дня и времени — ровно то, что рисует настоящий
+          SecondaryCards: без неё регрессию зоны в моке не увидеть. */}
+      {recentDiaries.map((e, i) => (
+        <div key={i} data-testid="diary-stamp">
+          {e.dateStr}
+          {e.time ? ` · ${e.time}` : ''}
+        </div>
+      ))}
       <button onClick={onSetDiaryTask}>secondary-set-diary-task</button>
     </div>
   ),
@@ -123,15 +134,30 @@ function baseProps() {
     onOpenTracker: vi.fn(),
     onOpenDiaries: vi.fn(),
     onOpenChildhoodWheel: vi.fn(),
+    onStartCase: vi.fn(),
+    onOpenMap: vi.fn(),
+    onSteadyDay: vi.fn(),
   };
 }
+
+// Один разбор в истории — состояние «человек уже начал». Воронка новичка
+// показывается только после первого разбора, поэтому дефолтом для тестов,
+// которые её проверяют, идёт именно оно.
+const ONE_CASE = [
+  {
+    id: 1,
+    createdAt: new Date(Date.now() - 86400000).toISOString(),
+    modeId: 'detached_protector',
+    situation: 'не ответили на сообщение',
+  },
+];
 
 beforeEach(() => {
   vi.clearAllMocks();
   localStorage.clear();
   mockApi.getProfile.mockResolvedValue(BASE_PROFILE);
   mockApi.getSchemaDiary.mockResolvedValue([]);
-  mockApi.getModeDiary.mockResolvedValue([]);
+  mockApi.getModeDiary.mockResolvedValue(ONE_CASE);
   mockApi.getGratitudeDiary.mockResolvedValue([]);
   // Хост по умолчанию (web) с заданным именем — читаем через getHost().user().
   setHost({ ...createWebHost(), user: () => ({ id: '1', firstName: 'Аня' }) });
@@ -146,7 +172,9 @@ async function renderReady(
   props: Partial<Parameters<typeof TodaySection>[0]> = {},
 ) {
   const utils = render(<TodaySection {...baseProps()} {...props} />);
-  await screen.findByTestId('onboarding');
+  // Ждём карточку входа, а не воронку новичка: воронка теперь появляется
+  // только после первого разбора, а точка входа на экране есть всегда.
+  await screen.findByText(/Разобрать · ≈ 3 мин/);
   await waitFor(() => expect(mockApi.getProfile).toHaveBeenCalled());
   return utils;
 }
@@ -155,6 +183,14 @@ describe('TodaySection — приветствие', () => {
   it('с именем пользователя из хоста показывает персональное приветствие', async () => {
     await renderReady();
     expect(screen.getByText(/Привет, Аня/)).toBeTruthy();
+  });
+
+  // В8 дизайн-аудита 2026-08: приветствие — заголовок экрана (h1), не div.
+  it('приветствие — h1', async () => {
+    await renderReady();
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toContain(
+      'Привет, Аня',
+    );
   });
 
   it('без имени (хост не отдал firstName) — нейтральное приветствие, не пусто', async () => {
@@ -195,6 +231,9 @@ describe('TodaySection — загрузка дневников', () => {
         createdAt: isoDaysAgo(1),
       },
     ]);
+    // Ровно одна запись на весь экран: дефолтный разбор из ONE_CASE тут
+    // мешал бы считать, сколько записей доехало до карточек.
+    mockApi.getModeDiary.mockResolvedValue([]);
     await renderReady();
     fireEvent.click(screen.getByText('Что ещё можно сегодня'));
     await waitFor(() =>
@@ -230,6 +269,30 @@ describe('TodaySection — «Что ещё можно сегодня» (свор
     fireEvent.click(screen.getByText('Свернуть'));
     expect(screen.queryByTestId('secondary-cards')).toBeNull();
     expect(localStorage.getItem(TODAY_MORE_KEY)).toBeNull();
+  });
+});
+
+describe('Ж10 (аудит 2026-08) — свёрнут по умолчанию, пока виден OnboardingWidget', () => {
+  it('пользователь ранее включил «всегда показывать» (secondaryHidden=false), но онбординг ещё виден — блок всё равно свёрнут по умолчанию', async () => {
+    setSecondaryHidden(false);
+    await renderReady();
+    expect(screen.queryByTestId('secondary-cards')).toBeNull();
+    expect(screen.getByText('Что ещё можно сегодня')).toBeTruthy();
+  });
+
+  it('тот же случай, но пользователь раньше раскрывал блок (память в TODAY_MORE_KEY) — выбор уважается', async () => {
+    setSecondaryHidden(false);
+    localStorage.setItem(TODAY_MORE_KEY, '1');
+    await renderReady();
+    expect(screen.getByTestId('secondary-cards')).toBeTruthy();
+  });
+
+  it('онбординг уже пройден (ONBOARDING_DONE_KEY) + secondaryHidden=false — прежнее поведение: блок открыт без раскрывашки', async () => {
+    localStorage.setItem(ONBOARDING_DONE_KEY, '1');
+    setSecondaryHidden(false);
+    await renderReady();
+    expect(screen.getByTestId('secondary-cards')).toBeTruthy();
+    expect(screen.queryByText('Что ещё можно сегодня')).toBeNull();
   });
 });
 
@@ -287,6 +350,11 @@ describe('TodaySection — порядок блоков band', () => {
     !!(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
 
   it('по умолчанию фраза выше «что ещё», онбординг первый, значок последний', async () => {
+    // Полировка 2026-08, п.1: значок — только после воронки новичка (см.
+    // describe ниже), поэтому здесь порядок band проверяем на «прошёл
+    // онбординг» — иначе тест порядка блоков смешивался бы с тестом
+    // видимости значка.
+    localStorage.setItem(ONBOARDING_DONE_KEY, '1');
     await renderReady();
     const onboarding = screen.getByTestId('onboarding');
     const phrase = screen.getByTestId('phrase-card');
@@ -299,6 +367,7 @@ describe('TodaySection — порядок блоков band', () => {
   });
 
   it('сохранённый порядок меняет DOM: «что ещё» поднимается над фразой', async () => {
+    localStorage.setItem(ONBOARDING_DONE_KEY, '1');
     localStorage.setItem(
       'screen_order_today',
       JSON.stringify(['secondary', 'phrase']),
@@ -312,4 +381,88 @@ describe('TodaySection — порядок блоков band', () => {
     expect(follows(phrase, offer)).toBe(true);
     expect(follows(screen.getByTestId('onboarding'), secondary)).toBe(true);
   });
+});
+
+// Полировка 2026-08, п.1 (наблюдение 1): три CTA подряд на первом экране
+// новичка (тест → «Одно дело» → значок). Предложение значка откладывается,
+// пока идёт воронка онбординга — не срочное, и само возвращается снузом.
+describe('TodaySection — значок на экран откладывается, пока виден онбординг', () => {
+  it('онбординг не пройден (профиль загружен, ONBOARDING_DONE_KEY нет) — значка нет', async () => {
+    await renderReady();
+    expect(screen.queryByTestId('home-screen-offer')).toBeNull();
+  });
+
+  it('онбординг пройден (ONBOARDING_DONE_KEY=1) — значок показывается', async () => {
+    localStorage.setItem(ONBOARDING_DONE_KEY, '1');
+    await renderReady();
+    expect(screen.getByTestId('home-screen-offer')).toBeTruthy();
+  });
+});
+
+describe('TodaySection — одно главное действие у новичка', () => {
+  // Главное правило нового входа: на чистом аккаунте на экране РОВНО одна
+  // точка старта. Два «начни отсюда» рядом — карточка разбора и воронка
+  // новичка — возвращают ту самую растерянность, из-за которой затевался
+  // редизайн.
+  it('без единого разбора воронка новичка не показывается', async () => {
+    mockApi.getModeDiary.mockResolvedValue([]);
+    await renderReady();
+    await waitFor(() => expect(mockApi.getProfile).toHaveBeenCalled());
+    expect(screen.queryByTestId('onboarding')).toBeNull();
+    expect(screen.getByText(/Разобрать · ≈ 3 мин/)).toBeTruthy();
+  });
+
+  it('после первого разбора воронка новичка появляется', async () => {
+    mockApi.getModeDiary.mockResolvedValue(ONE_CASE);
+    await renderReady();
+    await screen.findByTestId('onboarding');
+  });
+
+  it('запуск разбора уходит наверх', async () => {
+    const onStartCase = vi.fn();
+    await renderReady({ onStartCase });
+    fireEvent.click(screen.getByText(/Разобрать · ≈ 3 мин/));
+    expect(onStartCase).toHaveBeenCalledTimes(1);
+  });
+});
+
+// ── Регрессия «момент, показанный по Гринвичу» ───────────────────────────────
+// Зеркало инцидента 2026-09-17: календарный день там читали локальной
+// полночью, а МОМЕНТ здесь резали строкой — `createdAt.slice(0, 10)` давал
+// гринвичский день и сравнивался с локальным `todayStr()`, `slice(11, 16)`
+// показывал гринвичское время. Проверка замораживает «сейчас» на моментах,
+// где гринвичский день и локальный заведомо разные, и сама обходит зоны —
+// поэтому краснеет в любой час прогона, а не только во второй CI-джобе.
+describe('TodaySection — день и время записи в зоне читателя', () => {
+  const MOMENTS = ['2026-09-18T23:30:00.000Z', '2026-09-19T00:30:00.000Z'];
+
+  for (const iso of MOMENTS) {
+    it(`запись, сделанная в ${iso}, подписана «Сегодня» и локальным временем`, async () => {
+      await forEachTimeZoneAsync(async (tz) => {
+        vi.useFakeTimers({ toFake: ['Date'] });
+        vi.setSystemTime(new Date(iso));
+        localStorage.clear();
+        try {
+          mockApi.getSchemaDiary.mockResolvedValue([
+            { id: 1, trigger: 'триггер', createdAt: iso },
+          ]);
+          mockApi.getModeDiary.mockResolvedValue([]);
+          await renderReady();
+          fireEvent.click(screen.getByText('Что ещё можно сегодня'));
+          const at = new Date(iso);
+          const hhmm = `${String(at.getHours()).padStart(2, '0')}:${String(
+            at.getMinutes(),
+          ).padStart(2, '0')}`;
+          await waitFor(() =>
+            expect(screen.getByTestId('diary-stamp').textContent, tz).toBe(
+              `Сегодня · ${hhmm}`,
+            ),
+          );
+        } finally {
+          cleanup();
+          vi.useRealTimers();
+        }
+      });
+    });
+  }
 });

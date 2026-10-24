@@ -72,6 +72,32 @@ describe('check-second-person.mjs', () => {
     expect(res.stderr).toContain('[imperative-ty] Заполни');
   });
 
+  // Аудит 2026-10: «поддержите развитие» на DonatePage прожило с 2026-07 —
+  // TY_IMPERATIVES не знал глагола. Живой образец обеих форм + контроль.
+  it.each([
+    ['Если полезно — поддержите проект', '[imperative-vy] поддержите'],
+    ['Если полезно — поддержи проект', '[imperative-ty] поддержи'],
+  ])('«%s» вне tr() — exit 1', (text, hit) => {
+    const res = runGate('check-second-person.mjs', {
+      'scripts/second-person-baseline.json': JSON.stringify({}),
+      'webapp/src/components/X.tsx': `export const X = () => <p>${text}</p>;\n`,
+    });
+    expect(res.status).toBe(1);
+    expect(res.stderr).toContain(hit);
+  });
+
+  it('КОНТРОЛЬ: «поддержи/поддержите» внутри tr() и инфинитив «Поддержать» — exit 0', () => {
+    const res = runGate('check-second-person.mjs', {
+      'scripts/second-person-baseline.json': JSON.stringify({}),
+      'webapp/src/components/X.tsx':
+        [
+          "export const a = tr('Если полезно — поддержи проект', 'Если полезно — поддержите проект');",
+          "export const b = 'Поддержать проект; развитие можно поддержать любой суммой';",
+        ].join('\n') + '\n',
+    });
+    expect(res.status).toBe(0);
+  });
+
   it('«ты» внутри вилки tr(...) — легитимно, exit 0', () => {
     const res = runGate('check-second-person.mjs', {
       'scripts/second-person-baseline.json': JSON.stringify({}),
@@ -142,6 +168,42 @@ describe('check-second-person.mjs', () => {
     );
   });
 
+  it('исход формы записи (BookingErrorNote — та же зона, что BookingPicker) исключён', () => {
+    const res = runGate('check-second-person.mjs', {
+      'scripts/second-person-baseline.json': JSON.stringify({}),
+      'webapp/src/components/BookingErrorNote.tsx':
+        "export const msg = 'Выберите другое время';\n",
+    });
+    expect(res.status).toBe(0);
+  });
+
+  it('подкомпоненты BookingPicker (webapp/src/components/booking/) исключены — та же гостевая зона', () => {
+    const res = runGate('check-second-person.mjs', {
+      'scripts/second-person-baseline.json': JSON.stringify({}),
+      'webapp/src/components/booking/BookingSlotsSection.tsx':
+        "export const msg = 'Выберите другое время';\n",
+    });
+    expect(res.status).toBe(0);
+  });
+
+  it('shared/src/booking/clientTimeZone.ts (подпись пояса гостя) исключён', () => {
+    const res = runGate('check-second-person.mjs', {
+      'scripts/second-person-baseline.json': JSON.stringify({}),
+      'shared/src/booking/clientTimeZone.ts':
+        "export const msg = 'по вашему времени';\n",
+    });
+    expect(res.status).toBe(0);
+  });
+
+  it('КОНТРОЛЬ: соседний компонент с тем же императивом — по-прежнему exit 1', () => {
+    const res = runGate('check-second-person.mjs', {
+      'scripts/second-person-baseline.json': JSON.stringify({}),
+      'webapp/src/components/BookingSummaryNote.tsx':
+        "export const msg = 'Выберите другое время';\n",
+    });
+    expect(res.status).toBe(1);
+  });
+
   // ── Калибровка 2026-08: зоны вне addressForm ──────────────────────────
   it('статьи сайта (единая форма «вы», не привязаны к addressForm) исключены', () => {
     const res = runGate('check-second-person.mjs', {
@@ -167,6 +229,69 @@ describe('check-second-person.mjs', () => {
     expect(res.stdout).toContain(
       '✓ Обращение вне механики форм: 0 (без роста)',
     );
+  });
+
+  it('владелец-only здоровье CalDAV (KIND_TEXT/DM-алерт) исключено', () => {
+    // src/booking/caldav-health.ts — текст сбоя чтения календаря уходит DM
+    // владельцу (calDavHealth.noteFailure → logger.error) и в /stats, не
+    // пользователю с addressForm (2026-09-16, kind 'empty').
+    const res = runGate('check-second-person.mjs', {
+      'scripts/second-person-baseline.json': JSON.stringify({}),
+      'src/booking/caldav-health.ts':
+        "export const msg = 'Проверьте APPLE_CALENDAR_NAME/APPLE_CALDAV_URL или права пароля приложения';\n",
+    });
+    expect(res.status).toBe(0);
+    expect(res.stdout).toContain(
+      '✓ Обращение вне механики форм: 0 (без роста)',
+    );
+  });
+
+  it('владелец-only сигнал «деньги получены, а брони нет» исключён', () => {
+    // src/booking/booking-paid-after-cancel.ts — текст уходит DM и письмом
+    // владельцу (notifyAdminBoth), не пользователю с addressForm.
+    const res = runGate('check-second-person.mjs', {
+      'scripts/second-person-baseline.json': JSON.stringify({}),
+      'src/booking/booking-paid-after-cancel.ts':
+        "export const msg = 'Верните деньги клиенту либо запишите его заново вручную';\n",
+    });
+    expect(res.status).toBe(0);
+    expect(res.stdout).toContain(
+      '✓ Обращение вне механики форм: 0 (без роста)',
+    );
+  });
+
+  it('владелец-only сигнал «деньги за подписку получены, а подписка отменена» исключён', () => {
+    // src/subscription/subscription-paid-after-cancel.ts — текст уходит DM и
+    // письмом владельцу (notifyAdminBoth), не подписчику с addressForm.
+    const res = runGate('check-second-person.mjs', {
+      'scripts/second-person-baseline.json': JSON.stringify({}),
+      'src/subscription/subscription-paid-after-cancel.ts':
+        "export const msg = 'Верните деньги клиенту либо запишите его заново вручную';\n",
+    });
+    expect(res.status).toBe(0);
+    expect(res.stdout).toContain(
+      '✓ Обращение вне механики форм: 0 (без роста)',
+    );
+  });
+
+  it('КОНТРОЛЬ: тот же императив в соседнем файле subscription/ — по-прежнему exit 1', () => {
+    // Исключение держится на одном имени файла, а не на всей папке subscription/.
+    const res = runGate('check-second-person.mjs', {
+      'scripts/second-person-baseline.json': JSON.stringify({}),
+      'src/subscription/subscription.notify.ts':
+        "export const msg = 'Верните деньги клиенту либо запишите его заново вручную';\n",
+    });
+    expect(res.status).toBe(1);
+  });
+
+  it('КОНТРОЛЬ: тот же императив в соседнем файле booking/ — по-прежнему exit 1', () => {
+    // Исключение держится на одном имени файла, а не на всей папке booking/.
+    const res = runGate('check-second-person.mjs', {
+      'scripts/second-person-baseline.json': JSON.stringify({}),
+      'src/booking/booking-client-letter.ts':
+        "export const msg = 'Верните деньги клиенту либо запишите его заново вручную';\n",
+    });
+    expect(res.status).toBe(1);
   });
 
   it('КОНТРОЛЬ: тот же императив в обычном компоненте — по-прежнему exit 1', () => {
@@ -379,6 +504,9 @@ describe('каждый паттерн и EXCLUDE-исключение пойма
       // Публичный лендинг психолога / виджет записи до входа.
       'webapp/src/pages/landing/BookingForm.tsx',
       'webapp/src/components/BookingPicker.tsx',
+      'webapp/src/components/BookingErrorNote.tsx',
+      'webapp/src/components/booking/BookingSlotsSection.tsx',
+      'shared/src/booking/clientTimeZone.ts',
       // Статьи сайта, канал (broadcast без userId).
       'src/articles/articles.seed.ts',
       'src/bot/healthy-adult.data.ts',
@@ -389,6 +517,7 @@ describe('каждый паттерн и EXCLUDE-исключение пойма
       // До входа — гость/разовый клиент, форма ещё не выбрана.
       'webapp/src/pages/LoginPage.tsx',
       'webapp/src/pages/BookingPaidPage.tsx',
+      'webapp/src/pages/BookingLinkPage.tsx',
       // Юридические документы.
       'webapp/src/pages/PrivacyPage.tsx',
       'webapp/src/pages/OfferPage.tsx',
@@ -400,6 +529,9 @@ describe('каждый паттерн и EXCLUDE-исключение пойма
       'src/telegram/telegram-channel.target.ts',
       'src/bot/healthy-adult.pool-alert.ts',
       'src/bot/auth-health-metrics.format.ts',
+      'src/booking/caldav-health.ts',
+      'src/booking/booking-paid-after-cancel.ts',
+      'src/subscription/subscription-paid-after-cancel.ts',
       // Мета-код детектора и нейтральная CTA-подпись к третьему лицу.
       'shared/src/utils/tyFormsSweep.ts',
       'shared/src/utils/therapistContact.ts',

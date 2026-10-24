@@ -1,8 +1,8 @@
 import { TherapyClientSummary } from '../../api';
 import { ClientDetail } from './types';
+import { CLIENT_NAME_MAX } from '../../../../shared/src/limits/textLimits';
 
-// Имя клиента в шапке карточки: просмотр ↔ переименование (alias) + удаление.
-// Вынесено из ClientDetailView (правило №10 — файл-храповик).
+// Имя клиента в шапке карточки: просмотр ↔ переименование (alias) + удаление; вынесено из ClientDetailView (правило №10).
 export function ClientNameHeader({
   selectedClient,
   detail,
@@ -27,20 +27,26 @@ export function ClientNameHeader({
 
   if (renamingAlias) {
     return (
-      <div style={{ flex: 1 }}>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+      <div className="u-flex1">
+        <div
+          style={{
+            display: 'flex',
+            gap: 'var(--space-8)',
+            alignItems: 'center',
+          }}
+        >
           <input
             ref={aliasInputRef}
             value={aliasInput}
             onChange={(e) => setAliasInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && saveAlias()}
             placeholder={selectedClient.name ?? 'Имя'}
-            maxLength={100}
+            maxLength={CLIENT_NAME_MAX}
             style={{
               flex: 1,
               background: 'rgba(var(--fg-rgb),0.07)',
               border: '1px solid rgba(var(--fg-rgb),0.15)',
-              borderRadius: 10,
+              borderRadius: 'var(--r-10)',
               padding: '7px 10px',
               outline: 'none',
               color: 'var(--text)',
@@ -53,10 +59,10 @@ export function ClientNameHeader({
             aria-label="Сохранить"
             style={{
               padding: '7px 12px',
-              borderRadius: 10,
+              borderRadius: 'var(--r-10)',
               border: 'none',
               background: 'var(--accent)',
-              color: '#fff',
+              color: 'var(--on-accent)',
               fontSize: 13,
               fontWeight: 600,
               cursor: 'pointer',
@@ -72,7 +78,7 @@ export function ClientNameHeader({
             aria-label="Отменить"
             style={{
               padding: '7px 10px',
-              borderRadius: 10,
+              borderRadius: 'var(--r-10)',
               border: 'none',
               background: 'rgba(var(--fg-rgb),0.07)',
               color: 'var(--text-sub)',

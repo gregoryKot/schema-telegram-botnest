@@ -3,6 +3,7 @@
 // событие или неверно распарсить дату, слот покажется свободным, хотя
 // терапевт уже занят. Покрываем максимально исчерпывающе.
 import { busyQueryXml, parseBusy } from './caldav-busy';
+import { overlapsInterval } from './slot-filters';
 
 describe('busyQueryXml', () => {
   it('содержит c:time-range с UTC-таймстемпами формата YYYYMMDDTHHMMSSZ', () => {
@@ -222,5 +223,228 @@ describe('parseBusy — несколько событий и общая усто
 
   it('нет ни одного VEVENT-блока — пустой результат', () => {
     expect(parseBusy('<d:multistatus></d:multistatus>')).toEqual([]);
+  });
+});
+
+describe('parseBusy — SUMMARY события (только для отображения владельцу, см. admin-calendar.ts)', () => {
+  it('VEVENT с SUMMARY — у интервала есть раз-экранированное поле summary', () => {
+    const xml = multistatus([
+      vevent(
+        'DTSTART:20260713T170000Z\nDTEND:20260713T175000Z\nSUMMARY:Встреча с клиентом',
+      ),
+    ]);
+    const out = parseBusy(xml);
+    expect(out).toHaveLength(1);
+    expect(out[0].summary).toBe('Встреча с клиентом');
+  });
+
+  it('VEVENT без SUMMARY — поле summary отсутствует, а не пустая строка', () => {
+    const xml = multistatus([
+      vevent('DTSTART:20260713T170000Z\nDTEND:20260713T175000Z'),
+    ]);
+    const out = parseBusy(xml);
+    expect(out).toHaveLength(1);
+    expect(out[0].summary).toBeUndefined();
+    expect('summary' in out[0]).toBe(false);
+    // Старый ассерт (до summary) остаётся зелёным: toEqual игнорирует
+    // отсутствующий ключ — регресс для существующих потребителей исключён.
+    expect(out[0]).toEqual({
+      start: new Date('2026-07-13T17:00:00.000Z'),
+      end: new Date('2026-07-13T17:50:00.000Z'),
+    });
+  });
+});
+
+// Находка аудита 2026-10-11: событие «весь день» без DTEND (и любое событие с
+// DURATION) закрывало один час с начала — выходной владельца оставался открыт
+// 9 слотов из 9. Спек раньше пинил только start, поэтому дыра была невидима.
+// Ожидаемые значения — точные ISO, от зоны процесса не зависят (во второй
+// CI-джобе гоняется под TZ=Australia/Sydney).
+describe('parseBusy — конец события по RFC 5545 §3.6.1', () => {
+  const endOf = (lines: string): string | undefined =>
+    parseBusy(multistatus([vevent(lines)]))[0]?.end.toISOString();
+
+  it.each([
+    [
+      'DATE без DTEND — сутки',
+      'DTSTART;VALUE=DATE:20261017',
+      '2026-10-18T00:00:00.000Z',
+    ],
+    [
+      'DATE + DURATION:P1D',
+      'DTSTART;VALUE=DATE:20261017\nDURATION:P1D',
+      '2026-10-18T00:00:00.000Z',
+    ],
+    [
+      'DATE + DURATION:P2D',
+      'DTSTART;VALUE=DATE:20261017\nDURATION:P2D',
+      '2026-10-19T00:00:00.000Z',
+    ],
+    [
+      'DATE + DURATION:P1W',
+      'DTSTART;VALUE=DATE:20261017\nDURATION:P1W',
+      '2026-10-24T00:00:00.000Z',
+    ],
+    [
+      'UTC + DURATION:PT2H',
+      'DTSTART:20261017T100000Z\nDURATION:PT2H',
+      '2026-10-17T12:00:00.000Z',
+    ],
+    [
+      'UTC + DURATION:PT1H30M',
+      'DTSTART:20261017T100000Z\nDURATION:PT1H30M',
+      '2026-10-17T11:30:00.000Z',
+    ],
+    [
+      'UTC + DURATION:PT45S',
+      'DTSTART:20261017T100000Z\nDURATION:PT45S',
+      '2026-10-17T10:00:45.000Z',
+    ],
+    [
+      'UTC + DURATION:P1DT2H',
+      'DTSTART:20261017T100000Z\nDURATION:P1DT2H',
+      '2026-10-18T12:00:00.000Z',
+    ],
+    [
+      'знак + допустим',
+      'DTSTART:20261017T100000Z\nDURATION:+PT2H',
+      '2026-10-17T12:00:00.000Z',
+    ],
+    [
+      'DURATION с параметрами',
+      'DTSTART:20261017T100000Z\nDURATION;X-A=b:PT2H',
+      '2026-10-17T12:00:00.000Z',
+    ],
+    [
+      'TZID: длительность прибавляется к уже переведённому start',
+      'DTSTART;TZID=Europe/Moscow:20261017T100000\nDURATION:PT50M',
+      '2026-10-17T07:50:00.000Z',
+    ],
+  ])('%s', (_name, lines, end) => {
+    expect(endOf(lines)).toBe(end);
+  });
+
+  it('TZID + DURATION: start тоже в UTC, интервал ровно 50 минут', () => {
+    const [iv] = parseBusy(
+      multistatus([
+        vevent('DTSTART;TZID=Europe/Moscow:20261017T100000\nDURATION:PT50M'),
+      ]),
+    );
+    expect(iv.start.toISOString()).toBe('2026-10-17T07:00:00.000Z');
+    expect(iv.end.getTime() - iv.start.getTime()).toBe(50 * 60_000);
+  });
+
+  it('DTEND сильнее DURATION, если по ошибке пришли оба', () => {
+    expect(
+      endOf('DTSTART:20261017T100000Z\nDTEND:20261017T103000Z\nDURATION:PT5H'),
+    ).toBe('2026-10-17T10:30:00.000Z');
+  });
+
+  it.each([
+    ['abc', 'DTSTART:20261017T100000Z', '2026-10-17T11:00:00.000Z'],
+    ['-PT1H', 'DTSTART:20261017T100000Z', '2026-10-17T11:00:00.000Z'],
+    ['PT0S', 'DTSTART:20261017T100000Z', '2026-10-17T11:00:00.000Z'],
+    ['P', 'DTSTART:20261017T100000Z', '2026-10-17T11:00:00.000Z'],
+    ['abc', 'DTSTART;VALUE=DATE:20261017', '2026-10-18T00:00:00.000Z'],
+    ['-P1D', 'DTSTART;VALUE=DATE:20261017', '2026-10-18T00:00:00.000Z'],
+    // Не помещается в Date (Invalid Date) — не теряем событие, а откатываемся.
+    [
+      'P99999999999999999999W',
+      'DTSTART:20261017T100000Z',
+      '2026-10-17T11:00:00.000Z',
+    ],
+    ['P100000000D', 'DTSTART;VALUE=DATE:20261017', '2026-10-18T00:00:00.000Z'],
+  ])(
+    'мусорный DURATION:%s у %s — откат к умолчанию, событие не теряется',
+    (dur, start, end) => {
+      expect(endOf(`${start}\nDURATION:${dur}`)).toBe(end);
+    },
+  );
+
+  it('мусорный DURATION не ломает соседние события', () => {
+    const out = parseBusy(
+      multistatus([
+        vevent('DTSTART:20261017T100000Z\nDURATION:abc'),
+        vevent('DTSTART:20261017T120000Z\nDURATION:PT2H'),
+      ]),
+    );
+    expect(out.map((i) => i.end.toISOString())).toEqual([
+      '2026-10-17T11:00:00.000Z',
+      '2026-10-17T14:00:00.000Z',
+    ]);
+  });
+
+  it('DURATION, перенесённый CRLF + пробел (unfolding), читается целиком', () => {
+    const xml = `<c>BEGIN:VEVENT\r\nDTSTART:20261017T100000Z\r\nDURATION:PT\r\n 2H\r\nEND:VEVENT</c>`;
+    expect(parseBusy(xml)[0].end.toISOString()).toBe(
+      '2026-10-17T12:00:00.000Z',
+    );
+  });
+
+  // DURATION у VALARM (RFC 5545 §3.6.6: с REPEAT обязателен) — пауза между
+  // напоминаниями, а не длительность события.
+  describe('DURATION вложенного VALARM не считается длительностью события', () => {
+    const alarm =
+      'BEGIN:VALARM\nTRIGGER:-PT15M\nREPEAT:2\nDURATION:PT5M\nACTION:DISPLAY\nEND:VALARM';
+
+    it('DATE без DTEND + VALARM с DURATION — сутки', () => {
+      expect(endOf(`DTSTART;VALUE=DATE:20261017\n${alarm}`)).toBe(
+        '2026-10-18T00:00:00.000Z',
+      );
+    });
+
+    it('время без DTEND + VALARM с DURATION — час', () => {
+      expect(endOf(`DTSTART:20261017T100000Z\n${alarm}`)).toBe(
+        '2026-10-17T11:00:00.000Z',
+      );
+    });
+
+    it('собственный DURATION события берётся, а не VALARM (до и после)', () => {
+      expect(endOf(`${alarm}\nDTSTART:20261017T100000Z\nDURATION:PT2H`)).toBe(
+        '2026-10-17T12:00:00.000Z',
+      );
+      expect(endOf(`DTSTART:20261017T100000Z\nDURATION:PT2H\n${alarm}`)).toBe(
+        '2026-10-17T12:00:00.000Z',
+      );
+    });
+  });
+
+  it('DTSTART-дата в середине файла не путается с DTSTART другого поля', () => {
+    // X-DTSTART-подобные строки не должны считаться началом «на весь день».
+    expect(endOf('DTSTART:20261017T100000Z\nX-DTSTART:20261017')).toBe(
+      '2026-10-17T11:00:00.000Z',
+    );
+  });
+});
+
+// Шов (правило №14): парсер → фильтр слотов, как в slot.service. В
+// caldav.service.spec.ts parseBusy замокан и этот стык не виден.
+describe('parseBusy → overlapsInterval — выходной владельца закрыт целиком', () => {
+  const slotsOfDay = (): { start: Date; end: Date }[] =>
+    Array.from({ length: 9 }, (_, i) => {
+      const start = new Date(Date.UTC(2026, 9, 17, 9 + i));
+      return { start, end: new Date(start.getTime() + 50 * 60_000) };
+    });
+
+  it.each([
+    ['без DTEND', 'DTSTART;VALUE=DATE:20261017'],
+    ['с DURATION:P1D', 'DTSTART;VALUE=DATE:20261017\nDURATION:P1D'],
+    ['с DTEND', 'DTSTART;VALUE=DATE:20261017\nDTEND;VALUE=DATE:20261018'],
+  ])('событие на весь день %s: свободных слотов 0 из 9', (_n, lines) => {
+    const busy = parseBusy(multistatus([vevent(lines)]));
+    const free = slotsOfDay().filter(
+      (s) => !overlapsInterval(s.start, s.end, busy),
+    );
+    expect(free).toHaveLength(0);
+  });
+
+  it('соседний день событием не закрывается', () => {
+    const busy = parseBusy(
+      multistatus([vevent('DTSTART;VALUE=DATE:20261016')]),
+    );
+    const free = slotsOfDay().filter(
+      (s) => !overlapsInterval(s.start, s.end, busy),
+    );
+    expect(free).toHaveLength(9);
   });
 });

@@ -8,6 +8,8 @@ import { render, screen, fireEvent, cleanup, waitFor, within, act } from '@testi
 import { MemoryRouter } from 'react-router-dom';
 import { AddressFormContext } from '../utils/addressForm';
 import { PracticeSection } from './PracticeSection';
+import { todayCalendarDate } from '../../../shared/src/utils/calendarDate';
+import { forEachTimeZone } from '../../../shared/src/utils/timeZone.test-helpers';
 
 // Мок фабрики `../api` возвращает только `{ api: {...} }` по умолчанию, но
 // хук useTaskActions (используемый внутри PracticeSection) импортирует ещё и
@@ -23,6 +25,7 @@ vi.mock('../api', () => ({
     getLetters: vi.fn(),
     getSafePlace: vi.fn(),
     getChildhoodRatings: vi.fn(),
+    getPhraseChecks: vi.fn(),
     listMyModeMaps: vi.fn(),
     completeTask: vi.fn(),
     createTask: vi.fn(),
@@ -30,9 +33,21 @@ vi.mock('../api', () => ({
     createFlashcard: vi.fn(),
     createLetter: vi.fn(),
     trackEvent: vi.fn(),
+    getPractices: vi.fn(),
+    getPlanHistory: vi.fn(),
   },
   reportClientError: vi.fn(),
 }));
+// Блок «Здесь и сейчас» ходит в api за счётчиком прохождений и проверяется
+// своим тестом (sections/practice/HereAndNowBlock.test.tsx) — здесь заглушка,
+// как BreathingCard в HelpSection.test.tsx мини-аппа: тесты экрана «Практика»
+// про библиотеку упражнений и задания, а не про быстрые практики.
+vi.mock('./practice/HereAndNowBlock', () => ({
+  HereAndNowBlock: ({ extraRows }: { extraRows?: React.ReactNode }) => <div data-testid="here-and-now-block">{extraRows}</div>,
+}));
+
+vi.mock('../utils/uiPrefsSync', () => ({ notifyPrefsChanged: vi.fn() }));
+import { notifyPrefsChanged } from '../utils/uiPrefsSync';
 import { api } from '../api';
 const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
 
@@ -76,12 +91,15 @@ beforeEach(() => {
   mockApi.getLetters.mockResolvedValue([]);
   mockApi.getSafePlace.mockResolvedValue(null);
   mockApi.getChildhoodRatings.mockResolvedValue({});
+  mockApi.getPhraseChecks.mockResolvedValue([]);
   mockApi.listMyModeMaps.mockResolvedValue([]);
   mockApi.completeTask.mockResolvedValue(undefined);
   mockApi.createTask.mockResolvedValue(undefined);
   mockApi.getFlashcards.mockResolvedValue([]);
   mockApi.createFlashcard.mockResolvedValue(undefined);
   mockApi.createLetter.mockResolvedValue(undefined);
+  mockApi.getPractices.mockRejectedValue(new Error('offline'));
+  mockApi.getPlanHistory.mockRejectedValue(new Error('offline'));
 });
 
 afterEach(() => {
@@ -91,13 +109,13 @@ afterEach(() => {
 describe('PracticeSection — ты/вы вилка', () => {
   it('подзаголовок звучит на «ты» по умолчанию', () => {
     renderSection({}, 'ty');
-    expect(screen.getByText(/Семь практик схема-терапии плюс твои личные цели/)).toBeTruthy();
+    expect(screen.getByText(/Восемь практик схема-терапии плюс твои личные цели/)).toBeTruthy();
     expect(screen.queryByText(/ваши личные цели/)).toBeNull();
   });
 
   it('подзаголовок звучит на «вы», когда выбрана форма vy — «ваши», а не «твои»', () => {
     renderSection({}, 'vy');
-    expect(screen.getByText(/Семь практик схема-терапии плюс ваши личные цели/)).toBeTruthy();
+    expect(screen.getByText(/Восемь практик схема-терапии плюс ваши личные цели/)).toBeTruthy();
     expect(screen.queryByText(/твои личные цели/)).toBeNull();
   });
 
@@ -118,7 +136,7 @@ describe('PracticeSection — пустой аккаунт (без хардкод
   it('на пустом аккаунте все упражнения показывают "не начато", а не выдуманную статистику', async () => {
     renderSection();
     await waitFor(() => expect(mockApi.getBeliefChecks).toHaveBeenCalled());
-    expect(screen.getAllByText('не начато').length).toBe(7);
+    expect(screen.getAllByText('не начато').length).toBe(8);
   });
 
   it('без активных целей показывает пустое состояние, а не "0 активных" молча', async () => {
@@ -261,6 +279,46 @@ describe('PracticeSection — мои цели', () => {
   });
 });
 
+describe('PracticeSection — своя цель: «Готово» и серия за сегодня (паритет с мини-аппом)', () => {
+  it('у своей цели есть «Готово»: закрывает цель на сервере и обновляет список', async () => {
+    const onTasksChanged = vi.fn();
+    mockApi.getTasks.mockResolvedValue([task({ id: 7, text: 'Позвонить другу' })]);
+    renderSection({ onTasksChanged });
+    await screen.findByText('Позвонить другу');
+
+    mockApi.getTasks.mockResolvedValue([]);
+    fireEvent.click(screen.getByText('Готово'));
+    await waitFor(() => expect(mockApi.completeTask).toHaveBeenCalledWith(7, true));
+    await waitFor(() => expect(screen.queryByText('Позвонить другу')).toBeNull());
+    expect(onTasksChanged).toHaveBeenCalled();
+  });
+
+  it('серия, сделанная сегодня, остаётся в списке серой с подписью, без «Готово»', async () => {
+    mockApi.getTasks.mockResolvedValue([
+      task({ id: 8, type: 'diary_streak', text: '', doneToday: true }),
+    ]);
+    renderSection();
+    await screen.findByText('Сделано сегодня — завтра снова');
+    expect(screen.queryByText('Готово')).toBeNull();
+    expect(screen.getByText('1 активных')).toBeTruthy();
+  });
+});
+
+describe('PracticeSection — счётчики в «Каталогах»', () => {
+  it('число практик и планов берётся из данных; без данных — только пояснение', async () => {
+    renderSection();
+    await screen.findByText('Каталоги');
+    expect(screen.getByText('Рекомендованные упражнения по потребностям')).toBeTruthy();
+
+    cleanup();
+    mockApi.getPractices.mockResolvedValue([{ id: 1 }, { id: 2 }]);
+    mockApi.getPlanHistory.mockResolvedValue([{ id: 1 }]);
+    renderSection();
+    await screen.findByText('10 практик · Рекомендованные упражнения по потребностям');
+    expect(screen.getByText('1 план · Планы поддержки и кризисов')).toBeTruthy();
+  });
+});
+
 describe('PracticeSection — баннер ближайшей сессии', () => {
   it('клиент с сессией сегодня видит "Сегодня встреча"', async () => {
     mockApi.getTherapyRelation.mockResolvedValue({
@@ -271,6 +329,44 @@ describe('PracticeSection — баннер ближайшей сессии', () 
 
     await screen.findByText('● Сегодня встреча');
     expect(screen.getByText(/с Анна/)).toBeTruthy();
+  });
+
+  // РЕГРЕССИЯ (TZ-класс, инцидент 2026-09-17): isToday сравнивал календарный
+  // день `nextSession` с «сегодня» через `new Date().toISOString().slice(0,10)`
+  // — уже UTC, но инлайн-копией; теперь общий todayCalendarDate(). Моменты
+  // зафиксированы там, где зоны заведомо расходятся с UTC. Данные грузятся
+  // асинхронно (api.getTherapyRelation), поэтому первичная загрузка идёт под
+  // текущей зоной процесса, а проверка по зонам — синхронный `rerender`, чтобы
+  // момент смены TZ совпадал с моментом пересчёта isToday.
+  it('сессия на сегодняшний календарный день сервера — «Сегодня встреча» в любой зоне', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    try {
+      for (const moment of ['2026-09-18T23:30:00Z', '2026-09-19T00:30:00Z']) {
+        vi.setSystemTime(new Date(moment));
+        mockApi.getTherapyRelation.mockResolvedValue({
+          role: 'client', status: 'active', partnerName: 'Анна', partnerId: 1, code: 'x',
+          nextSession: `${todayCalendarDate()}T10:00:00Z`,
+        });
+        const { unmount, rerender } = renderSection();
+        await screen.findByText('● Сегодня встреча');
+
+        forEachTimeZone(() => {
+          vi.setSystemTime(new Date(moment));
+          rerender(
+            <AddressFormContext.Provider value={{ form: 'ty', setForm: vi.fn() }}>
+              <MemoryRouter>
+                <PracticeSection {...noopProps} />
+              </MemoryRouter>
+            </AddressFormContext.Provider>,
+          );
+          expect(screen.getByText('● Сегодня встреча')).toBeTruthy();
+        });
+
+        unmount();
+      }
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('терапевт (role=therapist) не видит баннер сессии клиента', async () => {
@@ -284,23 +380,128 @@ describe('PracticeSection — баннер ближайшей сессии', () 
   });
 });
 
-describe('PracticeSection — колесо детства (localStorage)', () => {
-  it('без пройденного колеса детства кнопка "начать →"', async () => {
+describe('PracticeSection — колесо детства', () => {
+  it('одна точка входа — карточка в «Инструментах»; плитки в «В трудный момент» нет', async () => {
     renderSection();
     await waitFor(() => expect(mockApi.getTasks).toHaveBeenCalled());
-    // «Колесо детства» встречается и в библиотеке упражнений, и в карточках
-    // «В трудный момент» — берём карточку из второго блока (с описанием
-    // "Как удовлетворялись потребности").
-    const card = screen.getByText('Как удовлетворялись потребности в детстве').parentElement!;
-    expect(card.textContent).toContain('начать →');
+    expect(screen.queryByText('Как удовлетворялись потребности в детстве')).toBeNull();
+    expect(screen.getAllByText('Колесо детства')).toHaveLength(1);
   });
 
-  it('с пройденным колесом (localStorage-флаг) кнопка "открыть →"', async () => {
-    localStorage.setItem('childhood_wheel_done', '1');
-    renderSection();
+  it('карточка открывает колесо общим оверлеем приложения (onOpenChildhoodWheel), а не локальной копией', async () => {
+    const onOpenChildhoodWheel = vi.fn();
+    renderSection({ onOpenChildhoodWheel });
     await waitFor(() => expect(mockApi.getTasks).toHaveBeenCalled());
-    const card = screen.getByText('Как удовлетворялись потребности в детстве').parentElement!;
-    expect(card.textContent).toContain('открыть →');
+    fireEvent.click(screen.getByText('Колесо детства'));
+    expect(onOpenChildhoodWheel).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('PracticeSection — «Инструменты»: скрытие и порядок (ключи tools, как в мини-аппе)', () => {
+  const HIDDEN = 'quick_actions_hidden_tools';
+  const ORDER = 'quick_actions_order_tools';
+  const hide = (...ids: string[]) => localStorage.setItem(HIDDEN, JSON.stringify(ids));
+  const cardTitles = () => Array.from(document.querySelectorAll('.cp-ex-title')).map(e => e.textContent);
+  const setWidth = (w: number) => Object.defineProperty(window, 'innerWidth', { configurable: true, writable: true, value: w });
+  afterEach(() => setWidth(1024));
+
+  it('без настроек: все восемь карточек, «Мои цели» и оба каталога', () => {
+    renderSection();
+    expect(cardTitles()).toHaveLength(8);
+    expect(screen.getByText('8 упражнений')).toBeTruthy();
+    expect(screen.getByText('Мои цели')).toBeTruthy();
+    expect(screen.getByText('Практики')).toBeTruthy();
+    expect(screen.getByText('Планы')).toBeTruthy();
+  });
+
+  it('скрытая карточка (belief_check) исчезает, номера и счётчик идут по показанному', () => {
+    hide('belief_check');
+    renderSection();
+    expect(cardTitles()).not.toContain('Проверка убеждения');
+    expect(cardTitles()).toHaveLength(7);
+    expect(screen.getByText('7 упражнений')).toBeTruthy();
+    expect(Array.from(document.querySelectorAll('.cp-ex-num')).map(e => e.textContent)).toEqual(['01', '02', '03', '04', '05', '06', '07']);
+  });
+
+  it('карточки схемы и режима не скрываются, даже если все пункты реестра скрыты', () => {
+    hide('belief_check', 'phrase_check', 'safe_place', 'letter_to_self', 'warm_words', 'childhood_wheel');
+    renderSection();
+    expect(cardTitles()).toEqual(['Карточка схемы', 'Карточка режима']);
+  });
+
+  it('скрытые «Мои цели» убирают раздел целиком', () => {
+    hide('tasks');
+    renderSection();
+    expect(screen.queryByText('Мои цели')).toBeNull();
+    expect(screen.queryByText('+ Поставить цель')).toBeNull();
+  });
+
+  it('скрытая «Практики» убирает свою строку, «Планы» остаются', () => {
+    hide('practices');
+    renderSection();
+    expect(screen.queryByText('Практики')).toBeNull();
+    expect(screen.getByText('Планы')).toBeTruthy();
+    expect(screen.getByText('Каталоги')).toBeTruthy();
+  });
+
+  it('скрыты оба каталога — заголовок «Каталоги» не рисуется', () => {
+    hide('practices', 'plans');
+    renderSection();
+    expect(screen.queryByText('Каталоги')).toBeNull();
+  });
+
+  it('скрытая «Схема включилась» убирает «Мне плохо» на десктопе; контакты помощи остаются', () => {
+    hide('flashcard');
+    renderSection();
+    expect(screen.queryByText('Мне плохо')).toBeNull();
+    expect(screen.getAllByText('Помощь рядом').length).toBeGreaterThan(0);
+  });
+
+  it('скрытая «Схема включилась» убирает строку «Мне плохо» на телефоне, «Мне очень плохо» остаётся', () => {
+    setWidth(390);
+    hide('flashcard');
+    renderSection();
+    expect(screen.queryByText('Мне плохо')).toBeNull();
+    expect(screen.getByText('Мне очень плохо')).toBeTruthy();
+  });
+
+  it('сохранённый порядок переставляет карточки с пунктами; схема и режим стоят на своих местах', () => {
+    localStorage.setItem(ORDER, JSON.stringify(['warm_words', 'phrase_check']));
+    renderSection();
+    expect(cardTitles()).toEqual([
+      'Тёплые слова', 'Карточка схемы', 'Карточка режима', 'Критик или забота?',
+      'Проверка убеждения', 'Безопасное место', 'Письмо Уязвимому Ребёнку', 'Колесо детства',
+    ]);
+  });
+
+  it('шестерёнка (телефон) открывает лист со всеми десятью пунктами', async () => {
+    setWidth(390);
+    renderSection();
+    fireEvent.click(screen.getByRole('button', { name: 'Какие инструменты показывать' }));
+    expect(await screen.findByRole('heading', { name: 'Какие инструменты показывать' })).toBeTruthy();
+    expect(screen.getAllByRole('switch')).toHaveLength(10);
+  });
+
+  it('тумблер в листе: пишет ключ, шлёт quick_action_toggle (surface tools), зовёт notifyPrefsChanged и прячет карточку сразу', async () => {
+    renderSection();
+    fireEvent.click(screen.getByRole('button', { name: 'Настроить инструменты' }));
+    fireEvent.click(await screen.findByRole('switch', { name: 'Тёплые слова' }));
+    expect(JSON.parse(localStorage.getItem(HIDDEN)!)).toEqual(['warm_words']);
+    expect(mockApi.trackEvent).toHaveBeenCalledWith('quick_action_toggle', { action: 'warm_words', hidden: true, surface: 'tools' });
+    expect(notifyPrefsChanged).toHaveBeenCalledTimes(1);
+    expect(cardTitles()).not.toContain('Тёплые слова');
+    fireEvent.click(screen.getByRole('switch', { name: 'Тёплые слова' }));
+    expect(JSON.parse(localStorage.getItem(HIDDEN) ?? '[]')).toEqual([]);
+    expect(cardTitles()).toContain('Тёплые слова');
+  });
+
+  it('лист: ручки «≡» только у карточек; у разделов страницы — одни тумблеры', async () => {
+    setWidth(390);
+    renderSection();
+    fireEvent.click(screen.getByRole('button', { name: 'Какие инструменты показывать' }));
+    await screen.findByText('Разделы страницы');
+    expect(document.querySelectorAll('.cz-handle')).toHaveLength(6);
+    expect(screen.getByText('Разделы страницы')).toBeTruthy();
   });
 });
 
@@ -312,6 +513,15 @@ describe('PracticeSection — упражнение открывается по �
     fireEvent.click(screen.getByText('Проверка убеждения'));
 
     await screen.findByPlaceholderText('Например: я всегда всё порчу, меня никто не любит…');
+  });
+
+  it('клик "Критик или забота?" открывает PhraseCheckEx (8-е упражнение, дизайн-аудит В2)', async () => {
+    renderSection();
+    await waitFor(() => expect(mockApi.getPhraseChecks).toHaveBeenCalled());
+
+    fireEvent.click(screen.getByText('Критик или забота?'));
+
+    await screen.findByPlaceholderText('Например: опять всё завалила, ни на что не гожусь');
   });
 });
 
@@ -369,7 +579,20 @@ describe('PracticeSection — открытие карточки схемы по 
       </AddressFormContext.Provider>,
     );
     // Экран сразу в режиме упражнения — библиотека (заголовок раздела) не видна.
-    await waitFor(() => expect(screen.queryByText('Библиотека · 7 упражнений')).toBeNull());
+    await waitFor(() => expect(screen.queryByText('Библиотека')).toBeNull());
+  });
+});
+
+describe('PracticeSection — флешкарта «Мне плохо» по навигационному state (кнопка топбара)', () => {
+  it('location.state.openFlashcard открывает SchemaFlashcard сразу', async () => {
+    render(
+      <AddressFormContext.Provider value={{ form: 'ty', setForm: vi.fn() }}>
+        <MemoryRouter initialEntries={[{ pathname: '/practice', state: { openFlashcard: true } }]}>
+          <PracticeSection {...noopProps} />
+        </MemoryRouter>
+      </AddressFormContext.Provider>,
+    );
+    await screen.findByText('Стало чуть лучше – разобраться →');
   });
 });
 
@@ -396,7 +619,7 @@ describe('PracticeSection — задания терапевта: остальн�
     renderSection();
     await screen.findByText('От терапевта');
     fireEvent.click(screen.getAllByText('начать →')[0]);
-    await waitFor(() => expect(screen.queryByText('Библиотека · 7 упражнений')).toBeNull());
+    await waitFor(() => expect(screen.queryByText('Библиотека')).toBeNull());
   });
 
   it('letter_to_self → открывает «Письмо уязвимому ребёнку»', async () => {
@@ -404,7 +627,7 @@ describe('PracticeSection — задания терапевта: остальн�
     renderSection();
     await screen.findByText('От терапевта');
     fireEvent.click(screen.getAllByText('начать →')[0]);
-    await waitFor(() => expect(screen.queryByText('Библиотека · 7 упражнений')).toBeNull());
+    await waitFor(() => expect(screen.queryByText('Библиотека')).toBeNull());
   });
 
   it('childhood_wheel → onOpenChildhoodWheel', async () => {
@@ -431,7 +654,7 @@ describe('PracticeSection — задания терапевта: остальн�
     renderSection();
     await screen.findByText('От терапевта');
     fireEvent.click(screen.getAllByText('начать →')[0]);
-    await waitFor(() => expect(screen.queryByText('Библиотека · 7 упражнений')).toBeNull());
+    await waitFor(() => expect(screen.queryByText('Библиотека')).toBeNull());
   });
 
   it('mode_intro с текстом-id режима → открывает карточку режима с этим id', async () => {
@@ -439,7 +662,7 @@ describe('PracticeSection — задания терапевта: остальн�
     renderSection();
     await screen.findByText('От терапевта');
     fireEvent.click(screen.getAllByText('начать →')[0]);
-    await waitFor(() => expect(screen.queryByText('Библиотека · 7 упражнений')).toBeNull());
+    await waitFor(() => expect(screen.queryByText('Библиотека')).toBeNull());
   });
 
   it('неизвестный тип задания с текстом = id известной схемы — фолбэк на карточку схемы', async () => {
@@ -447,7 +670,7 @@ describe('PracticeSection — задания терапевта: остальн�
     renderSection();
     await screen.findByText('От терапевта');
     fireEvent.click(screen.getAllByText('начать →')[0]);
-    await waitFor(() => expect(screen.queryByText('Библиотека · 7 упражнений')).toBeNull());
+    await waitFor(() => expect(screen.queryByText('Библиотека')).toBeNull());
   });
 });
 
@@ -517,7 +740,7 @@ describe('PracticeSection — создание цели обновляет сп�
 
     fireEvent.click(within(overlay).getByText('Цель 1'));
     await waitFor(() => expect(screen.queryByText('Все цели')).toBeNull());
-    await waitFor(() => expect(screen.queryByText('Библиотека · 7 упражнений')).toBeNull());
+    await waitFor(() => expect(screen.queryByText('Библиотека')).toBeNull());
   });
 
   it('«+ Поставить цель» внутри AllGoalsOverlay открывает TaskCreateSheet поверх', async () => {

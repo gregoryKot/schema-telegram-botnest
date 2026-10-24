@@ -99,7 +99,7 @@ export function SchemaDiaryWizard({
 
   return (
     <div style={{ marginTop: 18 }}>
-      <div style={{ marginBottom: 8 }}>
+      <div className="u-mb8">
         <WizardProgress
           segments={progressSegments}
           active={step}
@@ -115,6 +115,7 @@ export function SchemaDiaryWizard({
       </div>
 
       <div
+        id="schema-diary-question"
         style={{
           fontSize: 17,
           fontWeight: 700,
@@ -152,6 +153,7 @@ export function SchemaDiaryWizard({
             onChange={(v) => onChange('schemaOrigin', v)}
             placeholder={stepByKey.schemaOrigin.example}
             rows={2}
+            ariaLabel={stepByKey.schemaOrigin.title}
           />
         </>
       )}
@@ -161,6 +163,7 @@ export function SchemaDiaryWizard({
           onChange={(v) => onChange(textStep.key, v)}
           placeholder={textStep.example}
           rows={textStep.rows}
+          labelId="schema-diary-question"
         />
       )}
 

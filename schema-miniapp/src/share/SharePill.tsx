@@ -25,7 +25,7 @@ export function SharePill({ onClick, label, compact }: Props) {
         minHeight: 40,
         width: compact ? 40 : undefined,
         padding: compact ? 0 : '0 16px',
-        borderRadius: 12,
+        borderRadius: 'var(--r-12)',
         border: '1px solid color-mix(in srgb, var(--accent) 28%, transparent)',
         background: 'color-mix(in srgb, var(--accent) 12%, transparent)',
         color: 'var(--accent)',

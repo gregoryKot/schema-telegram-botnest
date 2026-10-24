@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { Need, DayHistory } from '../../types';
 import { SparklineRow } from './SparklineRow';
 import { InsightCard } from './InsightCard';
+import { BOOKING_CTA_LABEL } from '../../../../shared/src/history/therapistCta';
 
 // Недельный вид истории: спарклайны по потребностям + инсайт + карточка
 // недели. Вынесено из HistoryView.tsx (правило №10).
@@ -34,12 +35,10 @@ export function HistoryWeekView({
         padding: '0 16px',
         display: 'flex',
         flexDirection: 'column',
-        gap: 8,
+        gap: 'var(--space-8)',
       }}
     >
-      <div className="section-label" style={{ marginBottom: 4 }}>
-        За {days} дней
-      </div>
+      <div className="section-label u-mb4">За {days} дней</div>
 
       {needs.map((need) => (
         <SparklineRow
@@ -55,7 +54,10 @@ export function HistoryWeekView({
       <InsightCard needs={needs} ratings={selectedRatings} onTap={onTapNeed} />
 
       {needsLow.length > 0 && (
-        <div className="card" style={{ borderRadius: 16, padding: '16px' }}>
+        <div
+          className="card"
+          style={{ borderRadius: 'var(--r-16)', padding: '16px' }}
+        >
           <div
             style={{
               fontSize: 13,
@@ -64,15 +66,13 @@ export function HistoryWeekView({
               marginBottom: 10,
             }}
           >
-            <strong style={{ color: 'var(--text)' }}>
-              {needsLow[0].chartLabel}
-            </strong>{' '}
-            остаётся низкой несколько дней
+            <strong className="u-fg">{needsLow[0].chartLabel}</strong> остаётся
+            низкой несколько дней
             {!isTherapist &&
               ' — разобраться с живым человеком рядом бывает легче'}
             .
           </div>
-          {bookingLink('Записаться →')}
+          {bookingLink(BOOKING_CTA_LABEL)}
         </div>
       )}
 
@@ -82,7 +82,7 @@ export function HistoryWeekView({
         style={{
           width: '100%',
           padding: '14px 0',
-          borderRadius: 16,
+          borderRadius: 'var(--r-16)',
           fontFamily: 'inherit',
           color: 'var(--text-sub)',
           fontSize: 14,
@@ -91,7 +91,7 @@ export function HistoryWeekView({
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          gap: 8,
+          gap: 'var(--space-8)',
         }}
       >
         Карточка недели

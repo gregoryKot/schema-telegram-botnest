@@ -24,7 +24,7 @@ export function ModeStep({
   const tr = useTr();
   return (
     <BottomSheet onClose={onClose}>
-      <div style={{ paddingTop: 4 }}>
+      <div className="u-pt4">
         <div
           style={{
             display: 'flex',
@@ -34,18 +34,8 @@ export function ModeStep({
           }}
         >
           <div>
-            <div
-              style={{ fontSize: 17, fontWeight: 700, color: 'var(--text)' }}
-            >
-              Что сейчас активно?
-            </div>
-            <div
-              style={{
-                fontSize: 12,
-                color: 'var(--text-faint)',
-                marginTop: 2,
-              }}
-            >
+            <div className="u-h17">Что сейчас активно?</div>
+            <div className="u-faint12-mt2">
               {tr('Шаг 1 из 4 — выбери режим', 'Шаг 1 из 4 — выберите режим')}
             </div>
           </div>
@@ -58,7 +48,11 @@ export function ModeStep({
                 fontSize: 11,
                 color: 'var(--text-faint)',
                 cursor: 'pointer',
-                padding: 0,
+                // Зона нажатия 44 по высоте; шрифт и цвет прежние.
+                display: 'inline-flex',
+                alignItems: 'center',
+                minHeight: 44,
+                padding: '0 4px',
               }}
             >
               История
@@ -66,7 +60,7 @@ export function ModeStep({
           )}
         </div>
         <ProgressBar stepIndex={stepIndex} />
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div className="u-col8">
           {modes.map((m) => (
             <button
               key={m.id}
@@ -74,7 +68,7 @@ export function ModeStep({
               style={{
                 textAlign: 'left',
                 padding: '14px 16px',
-                borderRadius: 16,
+                borderRadius: 'var(--r-16)',
                 border: '1px solid var(--border-color)',
                 background: 'var(--surface)',
                 cursor: 'pointer',
@@ -84,7 +78,7 @@ export function ModeStep({
                 style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: 10,
+                  gap: 'var(--space-10)',
                   marginBottom: 4,
                 }}
               >
@@ -104,7 +98,7 @@ export function ModeStep({
             </button>
           ))}
         </div>
-        <div style={{ marginTop: 20 }}>
+        <div className="u-mt20">
           <TherapyNote compact />
         </div>
       </div>

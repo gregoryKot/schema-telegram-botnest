@@ -2,6 +2,7 @@ import { SessionType } from '@prisma/client';
 import {
   IsBoolean,
   IsEnum,
+  IsIn,
   IsInt,
   IsISO8601,
   IsOptional,
@@ -11,13 +12,10 @@ import {
   MaxLength,
   Min,
 } from 'class-validator';
+import * as L from '../utils/text-limits';
+import { CONTACT_CHANNELS, type ContactChannel } from './contact-channel';
 
-/**
- * Тело POST /api/booking/book — первый DTO с рантайм-валидацией
- * (аудит 2026-07, 2г / правило №6 CLAUDE.md). Публичный анонимный
- * эндпоинт с деньгами — приоритетный кандидат: до этого тело
- * проверялось только compile-time интерфейсом.
- */
+/** Тело POST /api/booking/book — публичный эндпоинт с деньгами, рантайм-валидация (аудит 2026-07, правило №6). */
 export class BookDto {
   @IsISO8601()
   startsAt!: string;
@@ -41,23 +39,30 @@ export class BookDto {
   clientContact!: string;
 
   @IsOptional()
-  @IsString()
-  @MaxLength(2000)
-  message?: string;
+  @IsIn(CONTACT_CHANNELS)
+  clientChannel?: ContactChannel;
 
   @IsOptional()
-  @IsInt()
-  clientTelegramId?: number;
+  @IsString()
+  @MaxLength(L.BOOKING_SLOT_MESSAGE_MAX)
+  message?: string;
 
   // Атрибуция лида: страница + referrer (собирает фронт, leadSource()).
   @IsOptional()
   @IsString()
-  @MaxLength(200)
+  @MaxLength(L.BOOKING_SOURCE_MAX)
   source?: string;
 
   @IsOptional()
   @IsBoolean()
   returning?: boolean;
+
+  // Часовой пояс посетителя (IANA, напр. "Asia/Bangkok") — из Intl на фронте.
+  // Невалидное значение сервис игнорирует, а не отклоняет запрос (правило №14).
+  @IsOptional()
+  @IsString()
+  @MaxLength(64)
+  clientTimeZone?: string;
 
   @IsBoolean()
   acceptedOffer!: boolean;

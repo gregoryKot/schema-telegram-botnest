@@ -20,10 +20,14 @@ import { SettingsSheet } from './SettingsSheet';
 vi.mock('../api', () => ({
   api: {
     getSettings: vi.fn(),
+    // Секция «данные из другого аккаунта» спрашивает способы входа —
+    // по ним решается, предлагать ли объединение (LinkAccountSection).
+    getAuthProviders: vi.fn(),
     getTherapyRelation: vi.fn(),
     getTherapistRequest: vi.fn(),
     updateSettings: vi.fn(),
   },
+  reportClientError: vi.fn(),
 }));
 import { api } from '../api';
 const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
@@ -201,6 +205,7 @@ const SETTINGS = {
 beforeEach(() => {
   vi.clearAllMocks();
   mockApi.getSettings.mockResolvedValue(SETTINGS);
+  mockApi.getAuthProviders.mockResolvedValue(['telegram']);
   mockApi.getTherapyRelation.mockResolvedValue(null);
   mockApi.getTherapistRequest.mockResolvedValue(null);
   setHost({ ...createWebHost(), user: () => ({ id: '1', firstName: 'Аня' }) });
@@ -219,6 +224,14 @@ async function renderReady(
 }
 
 describe('SettingsSheet — загрузка настроек', () => {
+  // В8 дизайн-аудита 2026-08: заголовок шита — h2.
+  it('«Настройки» — h2', async () => {
+    await renderReady();
+    expect(
+      screen.getByRole('heading', { level: 2, name: 'Настройки' }),
+    ).toBeTruthy();
+  });
+
   it('до ответа api.getSettings показывает скелетон, а не пустой экран', () => {
     mockApi.getSettings.mockReturnValue(new Promise(() => {})); // висит вечно
     render(<SettingsSheet onClose={() => {}} />);

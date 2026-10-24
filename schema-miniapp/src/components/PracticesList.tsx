@@ -1,8 +1,9 @@
 import { SkeletonList } from './Skeleton';
 import { LoadErrorBanner } from './LoadErrorBanner';
-import { pressable } from '../utils/a11y';
 import { UserPractice } from '../api';
 import { useTr } from '../utils/addressForm';
+import { useConfirmTap } from '../hooks/useConfirmTap';
+import { hitboxStyle } from '../utils/hitbox';
 
 // Список практик — вынесено из PracticesScreen.tsx (правило №10, файл был
 // над потолком в 300 строк). Три состояния: сбой загрузки (LoadErrorBanner —
@@ -19,6 +20,7 @@ export function PracticesList({
   onDelete: (id: number) => void;
 }) {
   const tr = useTr();
+  const { tap: tapDelete, isPending } = useConfirmTap<number>(onDelete);
   if (loadFailed) {
     // Практики есть, просто не загрузились — не путать с «Пока пусто» ниже,
     // иначе человек решит, что список стёрт.
@@ -31,7 +33,7 @@ export function PracticesList({
       style={{
         display: 'flex',
         flexDirection: 'column',
-        gap: 8,
+        gap: 'var(--space-8)',
         marginBottom: 16,
       }}
     >
@@ -56,9 +58,9 @@ export function PracticesList({
           style={{
             display: 'flex',
             alignItems: 'center',
-            gap: 10,
+            gap: 'var(--space-10)',
             background: 'rgba(var(--fg-rgb),0.04)',
-            borderRadius: 14,
+            borderRadius: 'var(--r-14)',
             padding: '13px 14px',
           }}
         >
@@ -72,24 +74,49 @@ export function PracticesList({
           >
             {p.text}
           </div>
-          <div
-            {...pressable(() => onDelete(p.id))}
-            style={{
-              width: 30,
-              height: 30,
-              borderRadius: 9,
-              flexShrink: 0,
-              background: 'rgba(255,100,100,0.1)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-              fontSize: 16,
-              color: 'rgba(255,100,100,0.5)',
-            }}
-          >
-            ×
-          </div>
+          {isPending(p.id) ? (
+            <button
+              onClick={() => tapDelete(p.id)}
+              style={{
+                flexShrink: 0,
+                minHeight: 44,
+                padding: '0 14px',
+                borderRadius: 9,
+                border: 'none',
+                background:
+                  'color-mix(in srgb, var(--accent-red) 16%, transparent)',
+                color: 'var(--accent-red)',
+                fontSize: 12,
+                fontWeight: 600,
+                cursor: 'pointer',
+              }}
+            >
+              Точно удалить?
+            </button>
+          ) : (
+            <button
+              onClick={() => tapDelete(p.id)}
+              aria-label="Удалить практику"
+              style={{ ...hitboxStyle(30, 30).outer, flexShrink: 0 }}
+            >
+              <span
+                style={{
+                  ...hitboxStyle(30, 30).inner,
+                  borderRadius: 9,
+                  background:
+                    'color-mix(in srgb, var(--accent-red) 10%, transparent)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: 16,
+                  color:
+                    'color-mix(in srgb, var(--accent-red) 50%, transparent)',
+                }}
+              >
+                ×
+              </span>
+            </button>
+          )}
         </div>
       ))}
     </div>

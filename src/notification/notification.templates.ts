@@ -1,64 +1,25 @@
 import { Markup } from 'telegraf';
 import { NotificationType } from './notification.service';
-import {
-  BOOKING_URL,
-  MINIAPP_URL,
-  DONATE_URL,
-} from '../telegram/telegram.constants';
+import { BOOKING_URL, MINIAPP_URL } from '../telegram/telegram.constants';
 import { Need, NeedId } from '../bot/bot.service';
 import { renderSoftTemplate, pluralDays } from './notification.templates.soft';
 import { AddressForm, t } from './address-form';
-
-const MONTHS = [
-  'января',
-  'февраля',
-  'марта',
-  'апреля',
-  'мая',
-  'июня',
-  'июля',
-  'августа',
-  'сентября',
-  'октября',
-  'ноября',
-  'декабря',
-];
-
-// One curated practice suggestion per need — short, concrete, fits in a notification.
-// Формулировки нейтральные — работают и при «ты», и при «вы».
-const CURATED_PRACTICE: Record<NeedId, string[]> = {
-  attachment: [
-    'Написать кому-то близкому без повода',
-    'Спросить кого-то «Как ты на самом деле?»',
-    'Поделиться чем-то личным в разговоре',
-  ],
-  autonomy: [
-    'Принять одно решение самостоятельно, без совета',
-    'Сделать что-то просто потому, что хочется',
-    'Сказать «нет» одной просьбе, если не хочется',
-  ],
-  expression: [
-    'Назвать вслух одну свою эмоцию',
-    'Рассказать кому-то о том, что трогает',
-    'Выразить несогласие мягко, но честно',
-  ],
-  play: [
-    'Сделать что-то без цели — просто потому что весело',
-    'Попробовать новое место или маршрут',
-    'Поиграть во что-нибудь — хоть в игру на телефоне',
-  ],
-  limits: [
-    'Закончить работу вовремя, не задерживаться',
-    'Выполнить одно отложенное дело',
-    'Соблюдать одно правило для себя весь день',
-  ],
-};
-
-function pickPractice(needId: NeedId, seed: number): string {
-  const list = CURATED_PRACTICE[needId];
-  if (!list?.length) return '';
-  return list[seed % list.length];
-}
+import { renderActivityTemplate } from './notification.templates.activity';
+import {
+  MONTHS,
+  pickPractice,
+  DONATE_MESSAGES,
+  REMINDER_INTROS,
+  BREAK_INTROS,
+} from './notification.template-data';
+import {
+  openDiaryButton,
+  donateButton,
+  snoozeButton,
+  skipTodayButton,
+  pauseButton,
+  slowerButton,
+} from './notification.buttons';
 
 export function buildSummaryText(
   needs: Need[],
@@ -87,80 +48,6 @@ export function buildSummaryText(
   const dateStr = `${day} ${MONTHS[month]}`;
   return `📔 Трекер потребностей · ${dateStr}\n${t(form, 'Твои', 'Ваши')} оценки за сегодня 👇\n\n${lines.join('\n')}\n\n${legend}`;
 }
-
-const openDiaryButton = Markup.button.webApp(
-  '📱 Открыть «Всё по схеме»',
-  MINIAPP_URL,
-);
-const bookingButton = Markup.button.url('📝 Записаться на сессию', BOOKING_URL);
-const donateButton = Markup.button.url('💛 Поддержать проект', DONATE_URL);
-
-// Rotated so the monthly nudge doesn't feel like the same canned message.
-const DONATE_MESSAGES: Array<[string, string]> = [
-  [
-    '💛 «Всё по схеме» бесплатное и без рекламы. Если оно тебе помогает — поддержи проект, это помогает его развивать.',
-    '💛 «Всё по схеме» бесплатное и без рекламы. Если оно вам помогает — поддержите проект, это помогает его развивать.',
-  ],
-  [
-    '💛 Раз в месяц напоминаю: приложение живёт на поддержке пользователей. Любая сумма помогает.',
-    '💛 Раз в месяц напоминаю: приложение живёт на поддержке пользователей. Любая сумма помогает.',
-  ],
-  [
-    '💛 Если приложение приносит пользу — можно поддержать его разовым донатом. Спасибо, что ты здесь.',
-    '💛 Если приложение приносит пользу — можно поддержать его разовым донатом. Спасибо, что вы здесь.',
-  ],
-];
-const snoozeButton = Markup.button.callback('⏰ Через час', 'snooze_reminder');
-const skipTodayButton = Markup.button.callback(
-  'Сегодня не могу',
-  'notify:skip',
-);
-const pauseButton = Markup.button.callback('⏸ Пауза', 'notify:pause');
-const slowerButton = Markup.button.callback('🔕 Реже', 'notify:slower');
-
-// Тон напоминаний — как у бережного схема-терапевта: приглашение побыть с собой,
-// а не задача на исполнение. Без «отметь оценки за сегодня» в лоб, без давления и
-// подсчёта. Формулировки двухформенные (ты/вы), см. CLAUDE.md.
-const REMINDER_INTROS: Array<[string, string]> = [
-  [
-    '📔 Минутка для себя. Как ты сегодня — по-честному, а не «нормально»?',
-    '📔 Минутка для себя. Как вы сегодня — по-честному, а не «нормально»?',
-  ],
-  [
-    '📔 Пять коротких вопросов к себе. Правильных ответов нет — есть только твои.',
-    '📔 Пять коротких вопросов к себе. Правильных ответов нет — есть только ваши.',
-  ],
-  [
-    '📔 Если есть силы — загляни к себе на минутку. Без спешки и без оценок.',
-    '📔 Если есть силы — загляните к себе на минутку. Без спешки и без оценок.',
-  ],
-  [
-    '📔 Как прошёл твой день? Побудь пару секунд с этим вопросом.',
-    '📔 Как прошёл ваш день? Побудьте пару секунд с этим вопросом.',
-  ],
-  [
-    '📔 Немного бережного внимания к себе — что было с тобой сегодня?',
-    '📔 Немного бережного внимания к себе — что было с вами сегодня?',
-  ],
-];
-
-// Перерыв ≥3 дней: тон признаёт паузу без вины, приглашает мягко, без «за сегодня»
-// и без наверстывания. Приходит вместо обычного напоминания на коротких перерывах
-// (3–6 дней); с 7-го дня сухие напоминания замолкают вовсе (см. planner).
-const BREAK_INTROS: Array<[string, string]> = [
-  [
-    '📔 Тебя не было пару дней — и это нормально. Записи ждут в истории, вернуться можно с любого дня, без наверстывания.',
-    '📔 Вас не было пару дней — и это нормально. Записи ждут в истории, вернуться можно с любого дня, без наверстывания.',
-  ],
-  [
-    '📔 Перерыв — часть пути, а не сбой. Если сегодня есть силы побыть с собой — я рядом.',
-    '📔 Перерыв — часть пути, а не сбой. Если сегодня есть силы побыть с собой — я рядом.',
-  ],
-  [
-    '📔 Возвращаться к себе можно без спешки. Как ты сейчас, в эту минуту?',
-    '📔 Возвращаться к себе можно без спешки. Как вы сейчас, в эту минуту?',
-  ],
-];
 
 export interface NotificationTemplate {
   text: string;
@@ -342,122 +229,13 @@ export function renderTemplate(
         text: '📅 Три месяца без перерыва — дольше, чем живёт большинство привычек вообще.',
       };
 
-    case 'practice_reminder': {
-      const text = payload?.practiceText as string | undefined;
-      const planId = payload?.planId as number | undefined;
-      if (!text) return null;
-      const buttons =
-        planId !== undefined
-          ? [
-              [
-                Markup.button.callback('✅ Сделано', `plan_done:${planId}`),
-                Markup.button.callback(
-                  '❌ Не получилось',
-                  `plan_skip:${planId}`,
-                ),
-              ],
-              [openDiaryButton],
-            ]
-          : [[openDiaryButton]];
-      return {
-        // Формулировка намеренно безличная: она одинаково звучит
-        // и в «ты», и в «вы», и не навязывает читателю мужской род.
-        text: `🎯 План на сегодня:\n\n${text}`,
-        keyboard: Markup.inlineKeyboard(buttons),
-      };
-    }
-
-    case 'practice_missed': {
-      const text = payload?.practiceText as string | undefined;
-      const planId = payload?.planId as number | undefined;
-      if (!text) return null;
-      const buttons =
-        planId !== undefined
-          ? [
-              [
-                Markup.button.callback(
-                  '✅ Всё-таки сделано',
-                  `plan_done:${planId}`,
-                ),
-                Markup.button.callback('❌ Не вышло', `plan_skip:${planId}`),
-              ],
-              [openDiaryButton],
-            ]
-          : [[openDiaryButton]];
-      return {
-        text: `🎯 Вчера был план:\n\n${text}\n\nКак получилось?`,
-        keyboard: Markup.inlineKeyboard(buttons),
-      };
-    }
-
-    case 'low_streak_insight': {
-      const text = payload?.text as string | undefined;
-      const showBooking = payload?.showBooking as boolean | undefined;
-      if (!text) return null;
-      const buttons = showBooking
-        ? [
-            [Markup.button.webApp('📱 Раздел Помощь', MINIAPP_URL)],
-            [bookingButton],
-          ]
-        : [[Markup.button.webApp('📱 Раздел Помощь', MINIAPP_URL)]];
-      return {
-        text,
-        keyboard: Markup.inlineKeyboard(buttons),
-      };
-    }
-
-    case 'task_assigned': {
-      const text = payload?.text as string | undefined;
-      const needId = payload?.needId as string | undefined;
-      const dueDate = payload?.dueDate as string | undefined;
-      if (!text) return null;
-      const NEED_LABELS: Record<string, string> = {
-        attachment: 'Привязанность',
-        autonomy: 'Автономия',
-        expression: 'Выражение чувств',
-        play: 'Спонтанность',
-        limits: 'Границы',
-      };
-      let msg = `👨‍⚕️ Терапевт назначил задание:\n\n${text}`;
-      if (needId && NEED_LABELS[needId])
-        msg += `\n\nПотребность: ${NEED_LABELS[needId]}`;
-      if (dueDate) {
-        const d = new Date(dueDate + 'T12:00:00Z'); // noon UTC — timezone-safe date parsing
-        msg += `\nСрок: ${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]}`;
-      }
-      return {
-        text: msg,
-        keyboard: Markup.inlineKeyboard([[openDiaryButton]]),
-      };
-    }
-
-    // Парный триггер (аудит 2026-07, 4.5): напарник заполнил трекер.
-    // Формулировка нейтральная по обращению, без сравнения и соревнования.
-    case 'pair_activity': {
-      return {
-        text: '🤝 Напарник сегодня уже отметил свои потребности.\n\nХороший момент свериться с собой — минутка на пять оценок.',
-        keyboard: Markup.inlineKeyboard([[openDiaryButton]]),
-      };
-    }
-
-    case 'ysq_requested': {
-      const tn = payload?.therapistName as string | undefined;
-      return {
-        text: t(
-          form,
-          `📋 ${tn ? `Терапевт ${tn}` : 'Твой терапевт'} просит тебя пройти тест на схемы.\n\nЭто займёт 10–15 минут. Результаты помогут лучше понять твои схемы.`,
-          `📋 ${tn ? `Терапевт ${tn}` : 'Ваш терапевт'} просит вас пройти тест на схемы.\n\nЭто займёт 10–15 минут. Результаты помогут лучше понять ваши схемы.`,
-        ),
-        keyboard: Markup.inlineKeyboard([
-          [Markup.button.webApp('📋 Пройти тест', MINIAPP_URL)],
-        ]),
-      };
-    }
-
     // comeback / welcome_back / lapsing_* / dormant_7 / reengagement_30 / nudge —
     // мягкие сообщения про перерывы живут в отдельном модуле
     default:
-      return renderSoftTemplate(type, payload, form);
+      return (
+        renderActivityTemplate(type, payload, form) ??
+        renderSoftTemplate(type, payload, form)
+      );
   }
 }
 

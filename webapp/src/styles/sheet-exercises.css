@@ -1,0 +1,222 @@
+/* ─────────────────────────────────────────────────────────────────────────
+   Упражнения и «Разбор случая» — оболочка редизайна 2026-10 (префикс ex2-).
+   Старые ex-* в index.css не трогаем: ими ещё пользуются соседние экраны.
+   Цвета — токены; оттенок сущности приходит в --h (lib/tone.ts).
+   Никаких «видно только по hover»: любое действие доступно пальцем.
+   ───────────────────────────────────────────────────────────────────────── */
+
+/* ── Каркас экрана упражнения ─────────────────────────────────────────── */
+.ex2-screen {
+  position: fixed; inset: 0; z-index: 200; background: var(--bg); color: var(--text);
+  overflow-y: auto; -webkit-overflow-scrolling: touch;
+}
+.ex2-top {
+  position: sticky; top: 0; z-index: 2; background: var(--bg);
+  border-bottom: 1px solid var(--line); padding: 0 clamp(16px, 4vw, 40px);
+  min-height: 56px; display: flex; align-items: center;
+}
+.ex2-back { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; }
+.ex2-body {
+  display: grid; grid-template-columns: minmax(0, 720px) 300px; gap: 56px;
+  align-items: start; justify-content: center; box-sizing: border-box;
+  max-width: 1160px; margin: 0 auto; padding: 40px clamp(16px, 4vw, 56px) 96px;
+}
+.ex2-body--single { grid-template-columns: minmax(0, 720px); }
+.ex2-main { min-width: 0; }
+.ex2-aside { position: sticky; top: 80px; min-width: 0; }
+.ex2-title.ds-h2 { margin: 8px 0 12px; font-size: 40px; line-height: 1.08; }
+.ex2-title .it { font-style: italic; }
+.ex2-lede.ds-sub { margin: 0 0 32px; font-size: 15px; line-height: 1.6; color: var(--text-sub); max-width: 560px; }
+@media (max-width: 900px) {
+  .ex2-body { grid-template-columns: minmax(0, 1fr); gap: 32px; padding-top: 24px; padding-bottom: 120px; }
+  .ex2-aside { position: static; }
+  .ex2-title.ds-h2 { font-size: 30px; }
+}
+
+/* ── Шаги, вопрос, низ экрана ─────────────────────────────────────────── */
+.ex2-steps { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 28px; padding-bottom: 18px; border-bottom: 1px solid var(--line); }
+.ex2-step {
+  display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 12px;
+  border-radius: 14px; cursor: pointer; font-size: 12.5px; color: var(--text-faint);
+}
+.ex2-step-n { font-family: var(--serif); font-style: italic; font-size: 17px; color: var(--text-ghost); }
+.ex2-step.is-active { background: var(--paper-sunk); color: var(--text); font-weight: 600; }
+.ex2-step.is-active .ex2-step-n { color: var(--accent); }
+.ex2-step.is-done { color: var(--text-sub); }
+.ex2-step.is-done .ex2-step-n { color: var(--ok); }
+.ex2-prompt { display: grid; grid-template-columns: 48px minmax(0, 1fr); gap: 16px; align-items: start; margin-bottom: 24px; }
+.ex2-prompt-num { font-family: var(--serif); font-style: italic; font-size: 30px; line-height: 1.1; color: var(--text-ghost); }
+.ex2-prompt-label { font-family: var(--serif); font-size: 26px; line-height: 1.2; color: var(--text); margin-bottom: 8px; }
+.ex2-prompt-label--sm { font-size: 22px; }
+.ex2-prompt-hint { margin: 0 0 16px; font-size: 14px; line-height: 1.6; color: var(--text-sub); }
+.ex2-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 32px; padding-top: 24px; border-top: 1px solid var(--line); }
+.ex2-spacer { flex: 1; }
+.ds-btn.ex2-ghost, .ds-btn.ex2-ghost:hover:not(:disabled) { background: transparent; color: var(--text-sub); }
+.ds-btn.ex2-ghost:hover:not(:disabled) { color: var(--text); background: var(--paper-tint); }
+.ex2-err { margin: 0 0 12px; font-size: 13px; line-height: 1.5; color: var(--err); }
+.ex2-gap { margin-top: 16px; }
+.ex2-stack { display: flex; flex-direction: column; gap: 12px; }
+.ex2-fine { margin: 0 0 20px; font-size: 13px; line-height: 1.5; color: var(--text-faint); }
+.ex2-body-text { margin: 0; font-size: 15px; line-height: 1.6; color: var(--text); white-space: pre-wrap; }
+
+/* ── Боковая карточка и «прошлые записи» ──────────────────────────────── */
+.ex2-note.ds-card { padding: 20px 22px; margin-bottom: 14px; }
+.ex2-note .ds-label { margin-bottom: 8px; }
+.ex2-note-h { margin: 0 0 8px; font-family: var(--serif); font-weight: 400; font-size: 20px; line-height: 1.25; }
+.ex2-note-body { margin: 0; font-size: 13.5px; line-height: 1.6; color: var(--text-sub); }
+.ex2-note-list { margin: 10px 0 0; padding: 0; list-style: none; font-size: 13px; line-height: 1.6; color: var(--text-sub); }
+.ex2-note-list li { padding-left: 14px; position: relative; }
+.ex2-note-list li::before { content: '·'; position: absolute; left: 3px; color: var(--text-ghost); }
+.ex2-tint.ds-card { background: oklch(0.96 0.03 var(--h)); border-color: oklch(0.88 0.05 var(--h)); }
+.ex2-tint .ds-label { color: oklch(0.38 0.1 var(--h)); }
+.ex2-hist-row { display: flex; align-items: baseline; gap: 12px; min-height: 44px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+.ex2-hist-row[role='button'] { cursor: pointer; }
+.ex2-hist-date { min-width: 56px; font-size: 11px; color: var(--text-faint); font-variant-numeric: tabular-nums; }
+.ex2-hist-snip {
+  font-size: 13px; line-height: 1.45; color: var(--text-sub);
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+
+/* ── Выбор схемы / режима ─────────────────────────────────────────────── */
+.ex2-group-h { margin: 24px 0 10px; }
+.ex2-picklist { display: flex; flex-direction: column; gap: 8px; }
+.ex2-pick { display: grid; grid-template-columns: 10px minmax(0, 1fr) auto; gap: 16px; align-items: center; min-height: 44px; }
+.ex2-pick-name { font-family: var(--serif); font-size: 20px; line-height: 1.2; color: var(--text); margin-bottom: 2px; }
+.ex2-pick-arrow { font-size: 22px; color: var(--text-ghost); }
+
+/* ── Карточка-вопрос (FlashcardEx) ────────────────────────────────────── */
+.ex2-ticks { display: flex; gap: 6px; margin-bottom: 20px; }
+.ex2-tick { position: relative; flex: 1; height: 4px; border-radius: 2px; background: var(--line-strong); cursor: pointer; }
+.ex2-tick::before { content: ''; position: absolute; inset: -20px 0; }
+.ex2-tick.is-filled, .ex2-tick.is-active { background: oklch(0.58 0.12 var(--h)); }
+.ex2-tick.is-active { transform: scaleY(1.75); }
+.ex2-flash.ds-card { padding: 26px 28px; margin-bottom: 24px; }
+.ex2-flash-eyebrow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 12px; }
+.ex2-flash-counter { margin-left: auto; font-family: var(--serif); font-style: italic; font-size: 13px; color: var(--text-faint); text-transform: none; letter-spacing: 0; }
+.ex2-flash-q { font-family: var(--serif); font-size: 26px; line-height: 1.2; margin-bottom: 8px; }
+.ex2-flash-hint { margin-bottom: 16px; font-size: 14px; line-height: 1.6; color: var(--text-sub); }
+
+/* ── Экран «готово» (ink) ─────────────────────────────────────────────── */
+.ex2-done.ds-card { padding: 28px 32px; }
+.ex2-stamp { display: inline-flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--on-ink-sub); margin-bottom: 8px; }
+.ex2-dlabel { margin: 18px 0 6px; font-size: 11px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--on-ink-faint); }
+.ex2-dlabel.is-tone { color: oklch(0.82 0.08 var(--h)); }
+.ex2-dtext { font-size: 15px; line-height: 1.65; color: var(--on-ink); white-space: pre-wrap; }
+.ex2-quote { font-family: var(--serif); font-size: 22px; line-height: 1.3; color: var(--on-ink); margin: 0; }
+.ex2-quote--em { font-style: italic; }
+.ex2-quote.is-tone { color: oklch(0.86 0.08 var(--h)); }
+.ex2-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 24px; }
+.ex2-ev { margin: 0; padding: 0; list-style: none; font-size: 14px; line-height: 1.5; color: var(--on-ink-sub); }
+.ex2-ev li { padding: 6px 0; border-bottom: 1px solid var(--ink-line); }
+.ex2-ev li:last-child { border-bottom: 0; }
+
+/* ── Доказательства (за/против) ───────────────────────────────────────── */
+.ex2-evi { display: flex; flex-direction: column; margin-bottom: 16px; }
+.ex2-evi-row, .ex2-evi-add { display: grid; grid-template-columns: 32px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--line); }
+.ex2-evi-num { font-family: var(--serif); font-style: italic; font-size: 17px; color: var(--text-ghost); }
+.ex2-evi-text { font-size: 15px; line-height: 1.55; color: var(--text); padding: 8px 0; }
+.ex2-evi-x { width: 44px; height: 44px; display: grid; place-items: center; border: none; border-radius: 50%; background: none; color: var(--text-faint); cursor: pointer; }
+.ex2-evi-x:hover { background: var(--paper-tint); color: var(--text); }
+.ex2-evi-add { border-bottom: none; padding-top: 14px; }
+.ex2-evi-plus { display: grid; place-items: center; color: var(--text-faint); }
+.ds-btn.ex2-evi-go.is-ready { color: var(--accent); border-color: var(--accent); }
+.ex2-recap.ds-card { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 24px; }
+.ex2-recap-row { padding: 4px 0; font-size: 13px; line-height: 1.5; color: var(--text-sub); }
+
+/* ── Письмо, безопасное место ─────────────────────────────────────────── */
+.ex2-letter.ds-card { padding: 26px 30px; }
+.ex2-letter-hi { font-family: var(--serif); font-style: italic; font-size: 16px; color: var(--text-faint); margin-bottom: 6px; }
+.ex2-letter textarea, .ex2-letter-text { width: 100%; box-sizing: border-box; font-family: var(--serif); font-size: 19px; line-height: 32px; color: var(--text); }
+.ex2-letter textarea { min-height: 240px; border: none; outline: none; background: transparent; resize: none; padding: 0; }
+.ex2-letter textarea::placeholder { color: var(--text-ghost); }
+.ex2-letter-text { white-space: pre-wrap; }
+.ex2-meta { display: flex; justify-content: space-between; gap: 12px; margin-top: 14px; font-size: 11.5px; color: var(--text-faint); }
+.ex2-scene.ds-card { display: flex; align-items: center; justify-content: center; min-height: 140px; margin-bottom: 28px; background: var(--paper-tint); text-align: center; }
+.ex2-scene-text { font-family: var(--serif); font-style: italic; font-size: 18px; line-height: 1.5; color: var(--text-sub); }
+.ex2-senses { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin-bottom: 28px; }
+.ex2-sense-label { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+
+/* ── Разбор фразы ─────────────────────────────────────────────────────── */
+.ex2-progress { height: 4px; border-radius: 2px; background: var(--line); margin-bottom: 28px; overflow: hidden; }
+.ex2-progress > i { display: block; height: 100%; border-radius: 2px; background: var(--accent); transition: width .2s; }
+.ex2-choice {
+  width: 100%; min-height: 48px; padding: 14px 18px; text-align: left; border-radius: 14px; cursor: pointer;
+  font: 14.5px/1.5 var(--sans); color: var(--text);
+  background: oklch(0.96 0.03 var(--h)); border: 1px solid oklch(0.88 0.05 var(--h));
+}
+.ex2-choice:hover { border-color: oklch(0.58 0.12 var(--h)); }
+.ex2-check { display: flex; align-items: flex-start; gap: 12px; padding: 12px 14px; margin: 16px 0; border: 1px solid var(--line); border-radius: 14px; }
+.ex2-check.is-off { opacity: .5; }
+.ex2-check input { width: 20px; height: 20px; margin: 1px 0 0; flex: 0 0 auto; accent-color: var(--accent); }
+.ex2-check label { font-size: 13px; line-height: 1.5; color: var(--text-sub); cursor: pointer; }
+.ex2-check label small { display: block; margin-top: 2px; font-size: 11.5px; color: var(--text-faint); }
+
+/* ── Колесо детства ───────────────────────────────────────────────────── */
+.ex2-cw-scale { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 12px; margin-bottom: 8px; padding-bottom: 12px; border-bottom: 1px solid var(--line); font-size: 12px; color: var(--text-faint); }
+.ex2-cw-row { display: grid; grid-template-columns: 32px minmax(0, 1fr) 64px; gap: 16px; align-items: center; padding: 18px 0; border-bottom: 1px solid var(--line); }
+.ex2-cw-num { font-family: var(--serif); font-style: italic; font-size: 20px; color: var(--text-ghost); }
+.ex2-cw-label { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+.ex2-cw-q { font-size: 12.5px; line-height: 1.5; color: var(--text-faint); margin-bottom: 4px; }
+.ex2-cw-track { position: relative; height: 44px; display: flex; align-items: center; cursor: pointer; touch-action: none; user-select: none; }
+.ex2-cw-line { position: relative; width: 100%; height: 2px; background: var(--line-strong); }
+.ex2-cw-fill { position: absolute; left: 0; top: 0; height: 2px; background: oklch(0.58 0.12 var(--h)); }
+.ex2-cw-pip { position: absolute; top: -3px; width: 1px; height: 8px; background: var(--text-ghost); }
+.ex2-cw-thumb { position: absolute; top: 50%; width: 18px; height: 18px; margin: -9px 0 0 -9px; border-radius: 50%; background: oklch(0.58 0.12 var(--h)); border: 2px solid var(--surface); box-shadow: 0 1px 4px rgba(0, 0, 0, .25); }
+.ex2-cw-value { font-family: var(--serif); font-size: 26px; line-height: 1; text-align: right; font-variant-numeric: tabular-nums; color: oklch(0.58 0.12 var(--h)); }
+.ex2-cw-value span { font-family: var(--sans); font-size: 12px; color: var(--text-faint); }
+.ex2-cw-ends { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px 16px; margin-top: 4px; }
+.ex2-cw-end { font-size: 11.5px; line-height: 1.55; color: var(--text-faint); }
+.ex2-cw-end.is-low { color: var(--err); font-weight: 500; }
+.ex2-cw-end.is-high { color: var(--ok); font-weight: 500; }
+.ex2-cw-grid { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 32px; align-items: start; }
+@media (max-width: 900px) { .ex2-cw-grid { grid-template-columns: minmax(0, 1fr); } }
+.ex2-cw-svg { display: block; margin: 0 auto; overflow: visible; max-width: 100%; }
+.ex2-cw-dot { fill: oklch(0.58 0.12 var(--h)); }
+.ex2-cw-legend { display: flex; flex-direction: column; gap: 6px; margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--line); }
+.ex2-cw-legend-row { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--text-sub); }
+.ex2-cw-legend-val { margin-left: auto; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--ok); }
+.ex2-cw-legend-val.is-low { color: var(--err); }
+.ex2-cw-legend-val.is-mid { color: var(--warn); }
+
+/* ── Разбор случая ────────────────────────────────────────────────────── */
+.ex2-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+.ex2-chip {
+  min-height: 44px; padding: 8px 16px; border: 1px solid var(--line-strong); background: var(--surface);
+  color: var(--text-sub); font: 500 13.5px var(--sans); cursor: pointer; border-radius: 12px;
+}
+.ex2-chip:hover { border-color: var(--text-faint); color: var(--text); }
+.ex2-chip.is-selected { background: var(--ink); border-color: var(--ink); color: var(--on-ink); }
+.ex2-trait { margin-bottom: 12px; }
+.ex2-trait .ds-label { color: var(--on-ink-faint); margin-bottom: 2px; }
+.ex2-trait-text { font-size: 14px; line-height: 1.4; color: var(--on-ink); }
+.ex2-chain { margin-bottom: 20px; }
+.ex2-chain .ds-card, .ex2-chain.ds-card { padding: 20px 24px; }
+.ex2-support { margin-top: 20px; }
+.ex2-verdict { margin: 0 0 12px; font-size: 14px; line-height: 1.5; color: var(--accent); }
+.ex2-link-row { display: block; min-height: 44px; padding: 12px 0; text-align: left; }
+.ex2-frame { display: block; width: 100%; text-align: left; font: 14px/1.5 var(--sans); color: var(--text); }
+
+/* ── Портрет режима ───────────────────────────────────────────────────── */
+.ex2-portrait.ds-card { padding: 8px 24px; }
+.ex2-portrait-row { padding: 16px 0; border-bottom: 1px solid var(--line); }
+.ex2-portrait-row:last-child { border-bottom: none; }
+.ex2-portrait-row .ds-label { margin-bottom: 6px; }
+.ex2-portrait-cta { margin-top: 22px; width: 100%; min-height: 48px; }
+
+/* ── Тёплые слова ─────────────────────────────────────────────────────── */
+.ex2-empty.ds-card { text-align: center; padding: 20px 16px; font-size: 14px; line-height: 1.6; color: var(--text-sub); }
+.ex2-count.ds-sub { margin-bottom: 14px; }
+.ex2-warm-head { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+.ex2-warm-mode { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; }
+.ex2-warm-when { text-align: right; flex-shrink: 0; }
+
+/* ── Лист «Разбор фразы» (история) ────────────────────────────────────── */
+.ex2-sheet-h { margin-bottom: 14px; }
+.ex2-sheet-quote.ds-card { margin-bottom: 12px; font-size: 14px; line-height: 1.5; color: var(--text-sub); background: var(--paper-tint); }
+.ex2-sheet-label { margin: 14px 0 8px; }
+.ds-card--warn .ex2-note-body, .ds-card--warn .ds-label { color: var(--warn-ink); }
+.ex2-gap-b { margin-bottom: 16px; }
+.ex2-chain.ds-card { padding: 20px 24px; margin-bottom: 20px; }
+.ex2-question.ds-card { margin-bottom: 12px; }
+.ex2-question-text { margin-bottom: 10px; font-size: 15px; line-height: 1.5; color: var(--text); }
+.ex2-chip--yn { min-width: 88px; justify-content: center; }

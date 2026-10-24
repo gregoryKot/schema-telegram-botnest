@@ -8,7 +8,7 @@
 // только латиницей (SchemaLab) и кириллицу пропустил — поэтому ловим кириллицу.
 //
 // Про юзернейм бота этот гейт НЕ про: он живёт в utils/botConfig.ts из env
-// (дефолт-фолбэк 'SchemaLabBot' там легитимен), переезд делается сменой env.
+// (дефолта нет, пустое роняет сборку), переезд делается сменой env.
 import { readFileSync, readdirSync, statSync } from 'fs';
 import { join, relative } from 'path';
 

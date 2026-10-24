@@ -1,14 +1,53 @@
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { api, PracticePlan } from '../api';
 import { SkeletonList } from './Skeleton';
 import { LoadErrorBanner } from './LoadErrorBanner';
 import { PlanCard } from './PlanCard';
 import { useSafeTop } from '../utils/safezone';
 import { useTr } from '../utils/addressForm';
+import { hitboxStyle } from '../utils/hitbox';
 
 interface Props {
   onClose: () => void;
   onOpenTracker?: () => void;
+}
+
+/** Группа планов с заголовком-рубрикой. Два вызова вместо двух одинаковых
+ *  блоков разметки: после перевода инлайновых стилей в классы блоки стали
+ *  различаться только подписью и списком, и jscpd справедливо увидел дубль. */
+function PlanGroup({
+  label,
+  plans,
+  onUpdate,
+  spaced,
+}: {
+  label: string;
+  plans: PracticePlan[];
+  onUpdate: React.Dispatch<React.SetStateAction<PracticePlan[] | null>>;
+  spaced?: boolean;
+}) {
+  if (plans.length === 0) return null;
+  return (
+    <div className={spaced ? 'u-mb24' : undefined}>
+      <div
+        style={{
+          fontSize: 11,
+          fontWeight: 700,
+          letterSpacing: '0.10em',
+          textTransform: 'uppercase',
+          color: 'var(--text-faint)',
+          marginBottom: 10,
+        }}
+      >
+        {label}
+      </div>
+      <div className="u-col10">
+        {plans.map((plan) => (
+          <PlanCard key={plan.id} plan={plan} onUpdate={onUpdate} />
+        ))}
+      </div>
+    </div>
+  );
 }
 
 export function PlansScreen({ onClose, onOpenTracker }: Props) {
@@ -53,32 +92,33 @@ export function PlansScreen({ onClose, onOpenTracker }: Props) {
           position: 'sticky',
           top: 0,
           zIndex: 10,
+          // Без backdrop-filter — см. BottomNav.tsx (замеры 2026-08-26).
           background: 'var(--nav-bg)',
-          backdropFilter: 'blur(20px)',
-          WebkitBackdropFilter: 'blur(20px)',
           borderBottom: '1px solid var(--border-color)',
           padding: '16px 20px 14px',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div className="u-ac12">
           <button
             onClick={onClose}
-            style={{
-              width: 34,
-              height: 34,
-              borderRadius: 10,
-              border: 'none',
-              cursor: 'pointer',
-              background: 'var(--surface-2)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: 'var(--text-sub)',
-              fontSize: 20,
-              lineHeight: 1,
-            }}
+            aria-label="Назад"
+            style={hitboxStyle(34, 34).outer}
           >
-            ‹
+            <span
+              style={{
+                ...hitboxStyle(34, 34).inner,
+                borderRadius: 'var(--r-10)',
+                background: 'var(--surface-2)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'var(--text-sub)',
+                fontSize: 20,
+                lineHeight: 1,
+              }}
+            >
+              ‹
+            </span>
           </button>
           <div>
             <div
@@ -155,7 +195,7 @@ export function PlansScreen({ onClose, onOpenTracker }: Props) {
                 }}
                 style={{
                   padding: '12px 28px',
-                  borderRadius: 14,
+                  borderRadius: 'var(--r-14)',
                   border: 'none',
                   fontFamily: 'inherit',
                   background: 'var(--surface)',
@@ -172,55 +212,17 @@ export function PlansScreen({ onClose, onOpenTracker }: Props) {
           </div>
         ) : (
           <>
-            {/* Pending plans */}
-            {pending.length > 0 && (
-              <div style={{ marginBottom: 24 }}>
-                <div
-                  style={{
-                    fontSize: 11,
-                    fontWeight: 700,
-                    letterSpacing: '0.10em',
-                    textTransform: 'uppercase',
-                    color: 'var(--text-faint)',
-                    marginBottom: 10,
-                  }}
-                >
-                  Ожидают выполнения
-                </div>
-                <div
-                  style={{ display: 'flex', flexDirection: 'column', gap: 10 }}
-                >
-                  {pending.map((plan) => (
-                    <PlanCard key={plan.id} plan={plan} onUpdate={setPlans} />
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Completed plans */}
-            {completed.length > 0 && (
-              <div>
-                <div
-                  style={{
-                    fontSize: 11,
-                    fontWeight: 700,
-                    letterSpacing: '0.10em',
-                    textTransform: 'uppercase',
-                    color: 'var(--text-faint)',
-                    marginBottom: 10,
-                  }}
-                >
-                  Выполненные
-                </div>
-                <div
-                  style={{ display: 'flex', flexDirection: 'column', gap: 10 }}
-                >
-                  {completed.map((plan) => (
-                    <PlanCard key={plan.id} plan={plan} onUpdate={setPlans} />
-                  ))}
-                </div>
-              </div>
-            )}
+            <PlanGroup
+              label="Ожидают выполнения"
+              plans={pending}
+              onUpdate={setPlans}
+              spaced
+            />
+            <PlanGroup
+              label="Выполненные"
+              plans={completed}
+              onUpdate={setPlans}
+            />
           </>
         )}
       </div>

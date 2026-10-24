@@ -1,0 +1,6 @@
+{
+  "source": "GitHub REST API, репозиторий gregoryKot/schema-telegram-botnest — GET /repos/{owner}/{repo}/actions/workflows/{file}/runs?status=completed&per_page=1 (без токена, репозиторий публичный)",
+  "recordedAt": "2026-09-17",
+  "how": "записано живым curl прямо из сессии, готовящей probe-ci-runs.ts: GET .../actions/workflows/prod-smoke.yml/runs?status=completed&per_page=1, HTTP 200",
+  "redacted": "из тела ответа оставлены только поля, которые читает probe-ci-runs.ts (total_count и в workflow_runs[0]: id, conclusion, status, html_url, display_title, updated_at, head_sha); убраны все поля с данными аккаунта (actor/triggering_actor, avatar_url и т.п.) и служебные ссылки API (url, jobs_url, logs_url, check_suite_id и др.) — их в фикстуре не было персональных данных сверх публичного GitHub-логина, но они не нужны парсеру и раздували бы файл"
+}

@@ -10,12 +10,12 @@ export function SchemaDescSheet({
 }) {
   return (
     <BottomSheet onClose={onClose} zIndex={300}>
-      <div style={{ paddingTop: 4 }}>
+      <div className="u-pt4">
         <div
           style={{
             display: 'flex',
             alignItems: 'center',
-            gap: 10,
+            gap: 'var(--space-10)',
             marginBottom: 16,
           }}
         >

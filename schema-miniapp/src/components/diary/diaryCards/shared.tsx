@@ -17,7 +17,7 @@ export function formatDt(iso: string) {
 
 export function Field({ label, text }: { label: string; text: string }) {
   return (
-    <div style={{ marginBottom: 10 }}>
+    <div className="u-mb10">
       <div
         style={{
           fontSize: 11,
@@ -59,7 +59,7 @@ export function DeleteBtn({
           marginTop: 8,
           background: cm(color, 13),
           border: 'none',
-          borderRadius: 8,
+          borderRadius: 'var(--r-8)',
           padding: '6px 12px',
           color,
           fontSize: 12,
@@ -71,15 +71,15 @@ export function DeleteBtn({
     );
   }
   return (
-    <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+    <div style={{ display: 'flex', gap: 'var(--space-8)', marginTop: 8 }}>
       <button
         onClick={onClick}
         style={{
           flex: 1,
           padding: '8px 0',
-          borderRadius: 8,
+          borderRadius: 'var(--r-8)',
           border: 'none',
-          background: 'rgba(239,68,68,0.15)',
+          background: 'color-mix(in srgb, var(--accent-red) 15%, transparent)',
           color: 'var(--accent-red)',
           fontSize: 12,
           fontWeight: 600,
@@ -92,7 +92,7 @@ export function DeleteBtn({
         onClick={() => setConfirm(false)}
         style={{
           padding: '8px 14px',
-          borderRadius: 8,
+          borderRadius: 'var(--r-8)',
           border: 'none',
           background: 'rgba(var(--fg-rgb),0.06)',
           color: 'var(--text-sub)',

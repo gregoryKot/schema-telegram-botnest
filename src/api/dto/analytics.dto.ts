@@ -18,6 +18,8 @@ import {
   SCREEN_BLOCK_IDS,
   CUSTOMIZABLE_SCREENS,
   SIGNUP_SOURCES,
+  PROFILE_PATTERN_KINDS,
+  ENTRY_DELETE_TYPES,
 } from '../../analytics/analytics.constants';
 
 // DTO для POST /api/event (правило №6: рантайм-валидация декораторами +
@@ -77,3 +79,9 @@ export const CUSTOMIZABLE_SCREEN_SET: ReadonlySet<string> = new Set(
   CUSTOMIZABLE_SCREENS,
 );
 export const SIGNUP_SOURCE_SET: ReadonlySet<string> = new Set(SIGNUP_SOURCES);
+export const PROFILE_PATTERN_KIND_SET: ReadonlySet<string> = new Set(
+  PROFILE_PATTERN_KINDS,
+);
+export const ENTRY_DELETE_TYPE_SET: ReadonlySet<string> = new Set(
+  ENTRY_DELETE_TYPES,
+);

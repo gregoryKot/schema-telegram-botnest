@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useTr } from '../utils/addressForm';
+import { hitboxStyle } from '../utils/hitbox';
 import { Need, DayHistory, COLORS } from '../types';
 import { useNeedData } from '../needData';
 import { BottomSheet } from './BottomSheet';
@@ -90,12 +91,12 @@ export function NeedHistorySheet({
       />
 
       {/* Section 1: 7-day sparkline */}
-      <div style={{ marginBottom: 24 }}>
+      <div className="u-mb24">
         <SectionLabel>За 7 дней</SectionLabel>
         <div
           style={{
             background: 'rgba(var(--fg-rgb),0.04)',
-            borderRadius: 14,
+            borderRadius: 'var(--r-14)',
             padding: '14px 16px',
             display: 'flex',
             alignItems: 'center',
@@ -107,7 +108,7 @@ export function NeedHistorySheet({
             height={H}
             viewBox={`0 0 ${W} ${H}`}
             preserveAspectRatio="none"
-            style={{ flex: 1 }}
+            className="u-flex1"
           >
             <defs>
               <linearGradient
@@ -166,9 +167,7 @@ export function NeedHistorySheet({
             <div style={{ fontSize: 13, fontWeight: 600, color }}>
               {trendLabel}
             </div>
-            <div
-              style={{ fontSize: 12, color: 'var(--text-sub)', marginTop: 2 }}
-            >
+            <div className="u-sub12-mt2">
               {trendSign}
               {trendDiff.toFixed(1)} за неделю
             </div>
@@ -178,7 +177,7 @@ export function NeedHistorySheet({
 
       {/* Childhood context — shown if data exists */}
       {childhoodValue !== undefined && (
-        <div style={{ marginBottom: 24 }}>
+        <div className="u-mb24">
           <div
             style={{
               background:
@@ -186,11 +185,11 @@ export function NeedHistorySheet({
                   ? 'color-mix(in srgb, var(--accent-red) 8%, transparent)'
                   : 'color-mix(in srgb, var(--accent-green) 8%, transparent)',
               border: `1px solid ${childhoodValue <= 4 ? 'color-mix(in srgb, var(--accent-red) 20%, transparent)' : 'color-mix(in srgb, var(--accent-green) 20%, transparent)'}`,
-              borderRadius: 14,
+              borderRadius: 'var(--r-14)',
               padding: '12px 14px',
               display: 'flex',
               alignItems: 'center',
-              gap: 12,
+              gap: 'var(--space-12)',
             }}
           >
             <div>
@@ -223,13 +222,7 @@ export function NeedHistorySheet({
                   </span>
                 )}
               </div>
-              <div
-                style={{
-                  fontSize: 12,
-                  color: 'var(--text-sub)',
-                  lineHeight: 1.5,
-                }}
-              >
+              <div className="u-sub12-lh15">
                 {childhoodValue <= 4
                   ? 'Эта потребность давно чувствительна — вероятно, дело не в плохом периоде, а в паттерне. Схема-терапия работает именно с этим.'
                   : 'В детстве эта зона была достаточно удовлетворена. Если сейчас низко — скорее всего ситуативное истощение.'}
@@ -240,14 +233,14 @@ export function NeedHistorySheet({
       )}
 
       {/* Section 2: Random tip */}
-      <div style={{ marginBottom: 24 }}>
+      <div className="u-mb24">
         <SectionLabel>
           {tr('Попробуй сегодня', 'Попробуйте сегодня')}
         </SectionLabel>
         <div
           style={{
             background: 'rgba(var(--fg-rgb),0.04)',
-            borderRadius: 14,
+            borderRadius: 'var(--r-14)',
             padding: '14px 16px',
           }}
         >
@@ -274,23 +267,30 @@ export function NeedHistorySheet({
                   setShowDisclaimer(true);
                 }
               }}
+              // Зона 44×44 вокруг видимых 16×16; inline-flex и marginLeft −8
+              // (= 6 зазор − 14 растяжки) оставляют «?» в строке текста.
               style={{
+                ...hitboxStyle(16, 16, 44).outer,
                 display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                width: 16,
-                height: 16,
-                borderRadius: '50%',
-                background: 'rgba(var(--fg-rgb),0.1)',
-                color: 'var(--text-sub)',
-                fontSize: 10,
-                fontWeight: 600,
-                cursor: 'pointer',
-                marginLeft: 6,
+                marginLeft: -8,
                 verticalAlign: 'middle',
               }}
             >
-              ?
+              <span
+                style={{
+                  ...hitboxStyle(16, 16, 44).inner,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderRadius: '50%',
+                  background: 'rgba(var(--fg-rgb),0.1)',
+                  color: 'var(--text-sub)',
+                  fontSize: 10,
+                  fontWeight: 600,
+                }}
+              >
+                ?
+              </span>
             </span>
           </div>
         </div>
@@ -303,11 +303,7 @@ export function NeedHistorySheet({
       {/* Section 3: Explanation */}
       <div>
         <SectionLabel>Об этой потребности</SectionLabel>
-        <div
-          style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.6 }}
-        >
-          {data.explanation}
-        </div>
+        <div className="u-sub13-lh16">{data.explanation}</div>
       </div>
     </BottomSheet>
   );

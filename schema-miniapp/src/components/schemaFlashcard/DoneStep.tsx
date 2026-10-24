@@ -31,7 +31,7 @@ export function DoneStep({
   const needInfo = NEEDS.find((n) => n.id === selectedNeed);
   return (
     <BottomSheet onClose={onClose}>
-      <div style={{ paddingTop: 4 }}>
+      <div className="u-pt4">
         <div style={{ textAlign: 'center', marginBottom: 24 }}>
           <div
             style={{
@@ -52,13 +52,7 @@ export function DoneStep({
           >
             Сохранено
           </div>
-          <div
-            style={{
-              fontSize: 13,
-              color: 'var(--text-sub)',
-              lineHeight: 1.6,
-            }}
-          >
+          <div className="u-sub13-lh16">
             {tr(
               'Это твой шаг навстречу себе. Уже немало.',
               'Это ваш шаг навстречу себе. Уже немало.',
@@ -85,7 +79,7 @@ export function DoneStep({
             style={{
               width: '100%',
               padding: '13px',
-              borderRadius: 14,
+              borderRadius: 'var(--r-14)',
               border: 'none',
               fontFamily: 'inherit',
               background: 'var(--surface)',
@@ -100,13 +94,13 @@ export function DoneStep({
             Открыть трекер →
           </button>
         )}
-        <div style={{ display: 'flex', gap: 10 }}>
+        <div className="u-row10">
           <button
             onClick={onNew}
             style={{
               flex: 1,
               padding: '13px',
-              borderRadius: 14,
+              borderRadius: 'var(--r-14)',
               border: 'none',
               fontFamily: 'inherit',
               background: 'var(--surface-2)',
@@ -123,7 +117,7 @@ export function DoneStep({
             style={{
               flex: 1,
               padding: '13px',
-              borderRadius: 14,
+              borderRadius: 'var(--r-14)',
               border: 'none',
               fontFamily: 'inherit',
               background: 'rgba(var(--fg-rgb),0.06)',

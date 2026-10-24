@@ -33,7 +33,7 @@ export function IntroSheetFlashcard<T extends Record<string, string>>({
   onChange,
 }: Props<T>) {
   return (
-    <div style={{ marginBottom: 16 }}>
+    <div className="u-mb16">
       <div
         style={{ fontSize: 11, color: 'var(--text-faint)', marginBottom: 12 }}
       >
@@ -42,6 +42,7 @@ export function IntroSheetFlashcard<T extends Record<string, string>>({
       </div>
 
       <div
+        id="intro-flashcard-question"
         style={{
           fontSize: 17,
           fontWeight: 700,
@@ -68,6 +69,7 @@ export function IntroSheetFlashcard<T extends Record<string, string>>({
         onChange={onChange}
         placeholder={question.placeholder}
         rows={4}
+        labelId="intro-flashcard-question"
       />
 
       <CrisisGate texts={[answer]} surface="flashcard" />

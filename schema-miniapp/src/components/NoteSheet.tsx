@@ -4,6 +4,8 @@ import { api } from '../api';
 import { BottomSheet } from './BottomSheet';
 import { SectionLabel } from './SectionLabel';
 import { CrisisGate } from './CrisisGate';
+import { LimitedTextarea } from '../../../shared/src/components/LimitedTextarea';
+import { DAY_NOTE_MAX } from '../../../shared/src/limits/textLimits';
 
 const TAGS = [
   { id: 'work', label: 'Работа', emoji: '💼' },
@@ -69,8 +71,8 @@ export function NoteSheet({ date, onClose }: Props) {
 
   return (
     <BottomSheet onClose={onClose}>
-      <div style={{ paddingTop: 8 }}>
-        <SectionLabel purple mb={16}>
+      <div className="u-pt8">
+        <SectionLabel purple mb={16} as="h2">
           Заметка к дню
         </SectionLabel>
 
@@ -102,7 +104,7 @@ export function NoteSheet({ date, onClose }: Props) {
                   alignItems: 'center',
                   gap: 5,
                   padding: '6px 12px',
-                  borderRadius: 20,
+                  borderRadius: 'var(--r-20)',
                   cursor: 'pointer',
                   background: on
                     ? 'color-mix(in srgb, var(--accent) 15%, transparent)'
@@ -121,17 +123,18 @@ export function NoteSheet({ date, onClose }: Props) {
           })}
         </div>
 
-        <textarea
+        <LimitedTextarea
+          max={DAY_NOTE_MAX}
+          alwaysCount
           value={text}
           onChange={(e) => setText(e.target.value)}
           placeholder="Что происходило сегодня? Любая мысль..."
-          maxLength={500}
           style={{
             width: '100%',
             minHeight: 100,
             background: 'rgba(var(--fg-rgb),0.05)',
             border: '1px solid rgba(var(--fg-rgb),0.1)',
-            borderRadius: 12,
+            borderRadius: 'var(--r-12)',
             padding: '12px 14px',
             color: 'var(--text)',
             fontSize: 15,
@@ -142,24 +145,13 @@ export function NoteSheet({ date, onClose }: Props) {
             fontFamily: 'inherit',
           }}
         />
-        <div
-          style={{
-            fontSize: 11,
-            color: 'var(--text-faint)',
-            textAlign: 'right',
-            marginTop: 4,
-            marginBottom: 16,
-          }}
-        >
-          {text.length}/500
-        </div>
         <CrisisGate texts={[text]} surface="note" />
 
         {error && (
           <div
             style={{
               fontSize: 12,
-              color: 'rgba(255,100,100,0.8)',
+              color: 'var(--accent-red)',
               marginBottom: 10,
             }}
           >
@@ -173,7 +165,10 @@ export function NoteSheet({ date, onClose }: Props) {
           onClick={handleSave}
           disabled={!hasContent || saving}
           className="btn-primary"
-          style={{ borderRadius: 12, opacity: hasContent ? 1 : 0.35 }}
+          style={{
+            borderRadius: 'var(--r-12)',
+            opacity: hasContent ? 1 : 0.35,
+          }}
         >
           {saving ? 'Сохранение...' : 'Сохранить'}
         </button>

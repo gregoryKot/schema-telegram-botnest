@@ -57,7 +57,7 @@ export function ModeDiaryWizard({
 
   return (
     <div>
-      <div style={{ marginBottom: 8 }}>
+      <div className="u-mb8">
         <WizardProgress
           segments={progressSegments}
           active={step}
@@ -65,13 +65,13 @@ export function ModeDiaryWizard({
           onSelect={(i) => setStep(i)}
         />
       </div>
-      <div className="d-caps" style={{ marginBottom: 18 }}>
+      <div className="d-caps u-mb18">
         Шаг {step + 1} из {TOTAL}
         {optional && ' · можно пропустить'}
       </div>
 
       {/* Вопрос */}
-      <div className="d-display" style={{ fontSize: 21, marginBottom: 8 }}>
+      <div id="mode-diary-question" className="d-display u-e21">
         {isHa
           ? tr(
               'Что бы сказал твой Здоровый Взрослый?',
@@ -99,14 +99,12 @@ export function ModeDiaryWizard({
         <div
           style={{
             background: 'var(--calm)',
-            borderRadius: 14,
+            borderRadius: 'var(--r-14)',
             padding: '12px 14px',
             marginBottom: 12,
           }}
         >
-          <div className="d-caps" style={{ marginBottom: 6 }}>
-            Например, можно сказать себе
-          </div>
+          <div className="d-caps u-mb6">Например, можно сказать себе</div>
           <div
             style={{
               fontSize: 14,
@@ -129,6 +127,7 @@ export function ModeDiaryWizard({
             : cur!.example
         }
         rows={isHa ? 3 : cur!.rows}
+        labelId="mode-diary-question"
       />
 
       <DiaryWizardNav

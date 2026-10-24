@@ -71,7 +71,7 @@ export function ModeCard({
         </div>
       </div>
       {open && (
-        <div style={{ marginTop: 10 }}>
+        <div className="u-mt10">
           {rows
             .filter(([, text]) => text)
             .map(([label, text]) => (

@@ -1,0 +1,174 @@
+// @vitest-environment jsdom
+// Точка монтирования разбора случая на «Сегодня» (правило CLAUDE.md про
+// онбординг: пока этот файл не смонтирован ни одним тестом, реальный API-путь
+// разбора никем не проверен). Счётчик прошлых разборов приезжает из
+// api.getModeDiary, а onSave/onSaveCard обязаны реально доехать до
+// api.createModeDiary/saveModeNote — иначе разбор красиво проходит на экране
+// и никуда не сохраняется (та же логика read-after-write, что и в
+// notes.service.spec.ts на бэкенде, только на стыке компонент↔API).
+import {
+  describe,
+  it,
+  expect,
+  vi,
+  beforeAll,
+  beforeEach,
+  afterEach,
+} from 'vitest';
+import {
+  render,
+  screen,
+  cleanup,
+  fireEvent,
+  waitFor,
+} from '@testing-library/react';
+import { CaseFlowOverlay } from './CaseFlowOverlay';
+import { CRISIS_HOTLINE_DISPLAY } from '../../utils/crisisMarkers';
+
+vi.mock('../../api', () => ({
+  api: {
+    getModeDiary: vi.fn(),
+    createModeDiary: vi.fn(),
+    saveModeNote: vi.fn(),
+    trackEvent: vi.fn(),
+  },
+}));
+vi.mock('../../haptic', () => ({ haptic: { tap: vi.fn(), select: vi.fn() } }));
+
+import { api } from '../../api';
+const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
+
+const SCENE_TEXT = 'Мама позвонила и стала расспрашивать про работу';
+
+function makeSheets() {
+  return { open: vi.fn() };
+}
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  mockApi.createModeDiary.mockResolvedValue(undefined);
+  mockApi.saveModeNote.mockResolvedValue(undefined);
+});
+afterEach(cleanup);
+// Холодная загрузка ленивого чанка разбора на загруженной машине дольше
+// секунды (findBy по умолчанию): греем его в хуке, у которого свой таймаут.
+beforeAll(() => import('./CaseFlowSheet'));
+
+describe('CaseFlowOverlay — счётчик разборов приезжает из API', () => {
+  it('дожидается api.getModeDiary и показывает реальный поток (не заглушку)', async () => {
+    mockApi.getModeDiary.mockResolvedValue([{ id: 1 }, { id: 2 }]);
+    render(<CaseFlowOverlay sheets={makeSheets()} onClose={vi.fn()} />);
+    await screen.findByText('Разобрать свой случай');
+    expect(mockApi.getModeDiary).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('CaseFlowOverlay — «Сегодня ровный день»', () => {
+  it('закрывает разбор и открывает трекер настроения', async () => {
+    mockApi.getModeDiary.mockResolvedValue([]);
+    const sheets = makeSheets();
+    const onClose = vi.fn();
+    render(<CaseFlowOverlay sheets={sheets} onClose={onClose} />);
+    await screen.findByText('Сегодня ровный день →');
+
+    fireEvent.click(screen.getByText('Сегодня ровный день →'));
+    expect(onClose).toHaveBeenCalled();
+    expect(sheets.open).toHaveBeenCalledWith('trackerOverlay');
+  });
+});
+
+// Регрессия прода 2026-08-31: здесь стоял onHardNow={close} — «Тяжело прямо
+// сейчас» выбрасывала человека из разбора на главную (фидбек владельца с
+// телефона). Кризисный путь (правило №7) обязан помогать на месте.
+describe('CaseFlowOverlay — «Тяжело прямо сейчас» на входе', () => {
+  it('показывает карточку с телефоном доверия и НЕ закрывает разбор', async () => {
+    mockApi.getModeDiary.mockResolvedValue([]);
+    const sheets = makeSheets();
+    const onClose = vi.fn();
+    render(<CaseFlowOverlay sheets={sheets} onClose={onClose} />);
+    await screen.findByText('Тяжело прямо сейчас →');
+
+    fireEvent.click(screen.getByText('Тяжело прямо сейчас →'));
+    expect(screen.getByText(CRISIS_HOTLINE_DISPLAY)).toBeTruthy();
+    expect(onClose).not.toHaveBeenCalled();
+    expect(sheets.open).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByText('Вернуться к разбору ▲'));
+    expect(screen.queryByText(CRISIS_HOTLINE_DISPLAY)).toBeNull();
+    expect(screen.getByText('Разобрать свой случай')).toBeTruthy();
+  });
+});
+
+describe('CaseFlowOverlay — полный проход доезжает до реального API', () => {
+  it('onSave/onSaveCard зовут api.createModeDiary/saveModeNote, «Открыть карту» открывает карту', async () => {
+    mockApi.getModeDiary.mockResolvedValue([]);
+    const sheets = makeSheets();
+    const onClose = vi.fn();
+    render(<CaseFlowOverlay sheets={sheets} onClose={onClose} />);
+    await screen.findByText('Разобрать свой случай');
+
+    fireEvent.click(screen.getByText('Разобрать свой случай'));
+    fireEvent.change(
+      screen.getByPlaceholderText(/сообщение прочитано час назад/i),
+      { target: { value: SCENE_TEXT } },
+    );
+    fireEvent.click(screen.getByText('Дальше'));
+    fireEvent.click(screen.getByText('Страшно, тревожно'));
+    fireEvent.click(screen.getByText('Одиноко, страшно, грустно'));
+    fireEvent.click(screen.getByText('Дальше')); // тело -> порыв
+    fireEvent.click(screen.getByText('Свернуть разговор'));
+    fireEvent.click(screen.getByText('Дальше')); // порыв -> критерий
+
+    fireEvent.click(screen.getAllByText('Да')[0]);
+    fireEvent.click(screen.getAllByText('Нет')[1]); // -> вердикт «часть»
+    fireEvent.click(screen.getByText('Дальше'));
+
+    await waitFor(() =>
+      expect(mockApi.createModeDiary).toHaveBeenCalledTimes(1),
+    );
+    expect(mockApi.createModeDiary).toHaveBeenCalledWith(
+      expect.objectContaining({
+        modeId: 'vulnerable_child',
+        situation: SCENE_TEXT,
+      }),
+    );
+
+    await screen.findByText('Вот что произошло');
+    fireEvent.click(screen.getByText('Дальше')); // recognition -> name
+    fireEvent.click(screen.getByText('Стена'));
+
+    await waitFor(() => expect(mockApi.saveModeNote).toHaveBeenCalledTimes(1));
+    expect(mockApi.saveModeNote).toHaveBeenCalledWith(
+      expect.objectContaining({ modeId: 'vulnerable_child', alias: 'Стена' }),
+    );
+
+    await screen.findByText('Открыть карту');
+    fireEvent.click(screen.getByText('Открыть карту'));
+    expect(onClose).toHaveBeenCalled();
+    expect(sheets.open).toHaveBeenCalledWith('selfMap');
+  });
+});
+
+// Закрытие листа определяет реестр (hooks/overlayClosers): крестик и «Назад»
+// хоста обязаны звать ОДНУ функцию. Своё sheets.close('caseFlow') внутри
+// компонента снова развело бы два места закрытия (ревью PR #696) — у
+// компонента теперь нет даже метода close, звать нечем.
+describe('CaseFlowOverlay — закрытие идёт через onClose из реестра', () => {
+  it('ручка, подложка и «Дописать потом» зовут onClose, а не sheets.close', async () => {
+    mockApi.getModeDiary.mockResolvedValue([]);
+    const sheets = { ...makeSheets(), close: vi.fn() };
+    const onClose = vi.fn();
+    render(<CaseFlowOverlay sheets={sheets} onClose={onClose} />);
+    await screen.findByText('Разобрать свой случай');
+
+    // Ручка листа и подложка — два элемента «Закрыть»; зовут одно и то же.
+    const dismiss = screen.getAllByRole('button', { name: 'Закрыть' });
+    dismiss.forEach((el) => fireEvent.click(el));
+    expect(onClose).toHaveBeenCalledTimes(dismiss.length);
+
+    fireEvent.click(screen.getByText('Разобрать свой случай'));
+    fireEvent.click(screen.getByText('Дописать потом'));
+    expect(onClose).toHaveBeenCalledTimes(dismiss.length + 1);
+    expect(sheets.close).not.toHaveBeenCalled();
+  });
+});

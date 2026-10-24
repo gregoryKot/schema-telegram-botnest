@@ -11,6 +11,7 @@ import { TherapyClientDataService } from './therapy-client-data.service';
 import { TherapyRelationsService } from './therapy-relations.service';
 import { Rel, makeRelationPrismaMock } from './therapy.test-helpers';
 import { encrypt, encryptJson } from '../utils/crypto';
+import { NotificationService } from '../notification/notification.service';
 
 const blank = { triggers: '', feelings: '', thoughts: '', behavior: '' };
 const blankSchemaNote = { ...blank, origins: '', reality: '', healthyView: '' };
@@ -53,6 +54,8 @@ function makeDb(rels: Rel[]) {
   const gratitudeDiary: any[] = [];
   const schemaNotes: any[] = [];
   const modeNotes: any[] = [];
+  const tasks: any[] = [];
+  const modeMaps: any[] = [];
   const desc = (rows: any[], userId: bigint, key: string, take: number) =>
     rows
       .filter((r) => r.userId === userId)
@@ -98,6 +101,30 @@ function makeDb(rels: Rel[]) {
     clientConceptualization: {
       deleteMany: jest.fn(() => Promise.resolve({ count: 0 })),
     },
+    modeMap: {
+      deleteMany: jest.fn(({ where }: any) => {
+        const before = modeMaps.length;
+        for (let i = modeMaps.length - 1; i >= 0; i--)
+          if (
+            modeMaps[i].therapistId === where.therapistId &&
+            modeMaps[i].clientId === where.clientId
+          )
+            modeMaps.splice(i, 1);
+        return Promise.resolve({ count: before - modeMaps.length });
+      }),
+    },
+    userTask: {
+      deleteMany: jest.fn(({ where }: any) => {
+        const before = tasks.length;
+        for (let i = tasks.length - 1; i >= 0; i--)
+          if (
+            tasks[i].userId === where.userId &&
+            tasks[i].assignedBy === where.assignedBy
+          )
+            tasks.splice(i, 1);
+        return Promise.resolve({ count: before - tasks.length });
+      }),
+    },
     $transaction: jest.fn((arg: any) =>
       Array.isArray(arg) ? Promise.all(arg) : arg(db),
     ),
@@ -110,6 +137,8 @@ function makeDb(rels: Rel[]) {
     gratitudeDiary,
     schemaNotes,
     modeNotes,
+    tasks,
+    modeMaps,
   };
 }
 
@@ -121,6 +150,7 @@ function makeService(rels: Rel[]) {
   } as any;
   const notificationService = {
     schedule: jest.fn(() => Promise.resolve(undefined)),
+    hasPending: jest.fn(() => Promise.resolve(false)),
   } as any;
   const svc = new TherapyClientDataService(
     t.db,
@@ -135,7 +165,7 @@ const T1 = 100n; // терапевт-владелец связи с CLIENT_A
 const T2 = 200n; // чужой терапевт — не должен видеть данные CLIENT_A
 const CLIENT_A = 555n;
 const CLIENT_B = 777n;
-const CID_A = Number(CLIENT_A);
+const CID_A = CLIENT_A;
 const relA: Rel = {
   id: 1,
   therapistId: T1,
@@ -149,6 +179,14 @@ const relB: Rel = {
   clientId: CLIENT_B,
   status: 'active',
   code: 'BBB222',
+};
+
+const relVirtual: Rel = {
+  id: 3,
+  therapistId: T1,
+  clientId: null,
+  status: 'active',
+  code: 'VVV333',
 };
 
 describe('TherapyClientDataService — граница доступа (assertHasClient)', () => {
@@ -252,6 +290,28 @@ describe('TherapyClientDataService — расшифровка на пути чт
     expect(gratEntry.excerpt).toBe('выспалась · вкусный кофе');
   });
 
+  // Регрессия инцидента 2026-09-17: дата благодарности хранится календарным
+  // днём и разбиралась без `Z` — в зоне процесса. На сервере восточнее UTC
+  // «сегодняшняя» благодарность получала момент предыдущих суток и вставала в
+  // ленте ниже вчерашнего разбора. Ловится вторым прогоном jest под
+  // TZ=Australia/Sydney (джоба backend).
+  it('лента отсортирована по дате независимо от зоны процесса', async () => {
+    const { svc, modeDiary, gratitudeDiary } = makeService([relA]);
+    modeDiary.push({
+      userId: CLIENT_A,
+      modeId: 'vulnerable_child',
+      situation: 'разбор девятого числа',
+      createdAt: new Date('2026-07-09T15:00:00Z'),
+    });
+    gratitudeDiary.push({
+      userId: CLIENT_A,
+      date: '2026-07-10',
+      items: ['благодарность десятого'],
+    });
+    const entries = await svc.getClientDiaryEntries(T1, CID_A);
+    expect(entries.map((e) => e.type)).toEqual(['gratitude', 'mode']);
+  });
+
   it('заметки по схеме и режиму: decryptRecord возвращает исходные строки полей', async () => {
     const { svc, schemaNotes, modeNotes } = makeService([relA]);
     schemaNotes.push(
@@ -304,16 +364,63 @@ describe('TherapyClientDataService — ownership на write-путях', () => {
   });
 
   it('removeClient с виртуальным клиентом (clientId<0) удаляет связь по -clientId=id', async () => {
-    const { svc, rels } = makeService([relA]); // relA.id === 1
-    await svc.removeClient(T1, -1);
+    const { svc, rels } = makeService([relVirtual]); // relVirtual.id === 3
+    await svc.removeClient(T1, -3n);
     expect(rels).toHaveLength(0);
+  });
+
+  it('removeClient с отрицательным id связи с РЕАЛЬНЫМ клиентом — no-op (иначе заметки остались бы сиротами)', async () => {
+    const { svc, rels } = makeService([relA]); // relA.id === 1, clientId задан
+    await svc.removeClient(T1, -1n);
+    expect(rels).toHaveLength(1);
+  });
+
+  it('removeClient виртуального клиента удаляет его задания, чужие и «свои» задания других остаются', async () => {
+    const { svc, tasks } = makeService([relVirtual]); // id 3 → userId -3
+    tasks.push(
+      { id: 1, userId: -3n, assignedBy: T1 }, // задание виртуальному клиенту
+      { id: 2, userId: -2n, assignedBy: T1 }, // другой виртуальный клиент
+      { id: 3, userId: -3n, assignedBy: T2 }, // не от этого терапевта
+    );
+    await svc.removeClient(T1, -3n);
+    expect(tasks.map((t) => t.id)).toEqual([2, 3]);
+  });
+
+  it('removeClient стирает именные карты режимов пары, чужие карты остаются', async () => {
+    const { svc, modeMaps } = makeService([relA]); // relA.id === 1
+    modeMaps.push(
+      { id: 1, therapistId: T1, clientId: CLIENT_A }, // карта этой пары
+      { id: 2, therapistId: T1, clientId: 777n }, // другой клиент того же терапевта
+      { id: 3, therapistId: T2, clientId: CLIENT_A }, // другой терапевт, тот же клиент
+    );
+    await svc.removeClient(T1, CID_A);
+    expect(modeMaps.map((m) => m.id)).toEqual([2, 3]);
+  });
+
+  it('removeClient виртуального клиента стирает его карты режимов', async () => {
+    const { svc, modeMaps } = makeService([relVirtual]); // id 3 → clientId -3
+    modeMaps.push(
+      { id: 1, therapistId: T1, clientId: -3n },
+      { id: 2, therapistId: T1, clientId: -2n },
+    );
+    await svc.removeClient(T1, -3n);
+    expect(modeMaps.map((m) => m.id)).toEqual([2]);
+  });
+
+  it('removeClient клиента с аккаунтом НЕ трогает задания — они у клиента', async () => {
+    const { svc, tasks } = makeService([relA]);
+    tasks.push({ id: 1, userId: CLIENT_A, assignedBy: T1 });
+    await svc.removeClient(T1, CID_A);
+    expect(tasks.map((t) => t.id)).toEqual([1]);
   });
 });
 
 describe('TherapyClientDataService — виртуальный клиент (id<0) в getClientData', () => {
   it('getClientData возвращает заглушку без чтения User/YSQ, но проверяет связь', async () => {
-    const { svc, db } = makeService([relA]); // relA.id === 1 → clientId=-1 проходит assertHasClient
-    const result = await svc.getClientData(T1, -1);
+    // relVirtual.id === 3 → clientId=-3 (связь реального клиента relA под -1
+    // больше не проходит как «виртуальная» — аудит 2026-10, T4)
+    const { svc, db } = makeService([relVirtual]);
+    const result = await svc.getClientData(T1, -3);
     expect(result).toEqual({
       name: null,
       mySchemaIds: [],
@@ -379,14 +486,14 @@ describe('TherapyClientDataService — clientId<0 короткие пути', ()
   });
 
   it('requestYsq для виртуального клиента → связь проверяется, но уведомление не шлётся', async () => {
-    const { svc, db, notificationService } = makeService([relA]);
+    const { svc, db, notificationService } = makeService([relVirtual]);
     const findFirstSpy = jest.spyOn(db.therapyRelation, 'findFirst');
-    await svc.requestYsq(T1, -1);
+    await svc.requestYsq(T1, -3);
     expect(notificationService.schedule).not.toHaveBeenCalled();
     // «связь проверяется» — это реальный поход в БД за relation по -clientId=id,
     // а не голый early-return без проверки принадлежности.
     expect(findFirstSpy).toHaveBeenCalledWith({
-      where: { id: 1, therapistId: T1, status: 'active' },
+      where: { id: 3, therapistId: T1, clientId: null, status: 'active' },
     });
   });
 });
@@ -421,6 +528,27 @@ describe('TherapyClientDataService — getClientHistory с данными', () =
 });
 
 describe('TherapyClientDataService — requestYsq для реального клиента', () => {
+  it('уже есть неотправленный запрос → ничего не планируется, имя терапевта не читается', async () => {
+    const { svc, db, notificationService } = makeService([relA]);
+    notificationService.hasPending.mockResolvedValue(true);
+    const findUser = jest.spyOn(db.user, 'findUnique');
+    await svc.requestYsq(T1, CID_A);
+    expect(notificationService.hasPending).toHaveBeenCalledWith(
+      CLIENT_A,
+      'ysq_requested',
+    );
+    expect(notificationService.schedule).not.toHaveBeenCalled();
+    expect(findUser).not.toHaveBeenCalled();
+  });
+
+  it('чужой терапевт без связи → отказ ДО проверки очереди', async () => {
+    const { svc, notificationService } = makeService([relA]);
+    await expect(svc.requestYsq(T2, CID_A)).rejects.toThrow(
+      'No active relation',
+    );
+    expect(notificationService.hasPending).not.toHaveBeenCalled();
+  });
+
   it('клиент с id>=0: подтягивает имя терапевта и планирует уведомление ysq_requested', async () => {
     const { svc, users, notificationService } = makeService([relA]);
     users.push(mkUser(T1, 'Доктор Иванова', []));
@@ -442,6 +570,101 @@ describe('TherapyClientDataService — requestYsq для реального кл
       expect.any(Date),
       { therapistName: null },
     );
+  });
+});
+
+// Шов «запрос → очередь»: аудит 2026-10 — каждый тап создавал новую строку
+// ScheduledNotification, клиент получал пять одинаковых DM. Здесь НАСТОЯЩИЙ
+// NotificationService поверх фейкового делегата: проверяется реальное where у
+// hasPending (sentAt/cancelledAt/type/userId), а не «вызвали мок».
+describe('TherapyClientDataService — requestYsq: дедуп очереди (шов с NotificationService)', () => {
+  type Row = {
+    userId: bigint;
+    type: string;
+    sentAt: Date | null;
+    cancelledAt: Date | null;
+  };
+  function makeSeam() {
+    const { db, users } = makeService([relA]);
+    const queue: Row[] = [];
+    const scheduledNotification = {
+      create: jest.fn(({ data }: { data: Row }) => {
+        queue.push({ sentAt: null, cancelledAt: null, ...data });
+        return Promise.resolve(undefined);
+      }),
+      count: jest.fn(({ where }: { where: Partial<Row> }) =>
+        Promise.resolve(
+          queue.filter(
+            (r) =>
+              r.userId === where.userId &&
+              r.type === where.type &&
+              (where.sentAt === null ? r.sentAt === null : true) &&
+              (where.cancelledAt === null ? r.cancelledAt === null : true),
+          ).length,
+        ),
+      ),
+    };
+    const notifications = new NotificationService({
+      scheduledNotification,
+    } as any);
+    const svc = new TherapyClientDataService(
+      db,
+      {} as any,
+      notifications,
+      new TherapyRelationsService(db, {} as any),
+    );
+    users.push(mkUser(T1, 'Доктор Иванова', []));
+    const ysqRows = () => queue.filter((r) => r.type === 'ysq_requested');
+    return { svc, queue, ysqRows };
+  }
+
+  it('два запроса подряд, пока первый в очереди → одна строка', async () => {
+    const { svc, ysqRows } = makeSeam();
+    await svc.requestYsq(T1, CID_A);
+    await svc.requestYsq(T1, CID_A);
+    await svc.requestYsq(T1, CID_A);
+    expect(ysqRows()).toHaveLength(1);
+    expect(ysqRows()[0].userId).toBe(CLIENT_A);
+  });
+
+  it('после отправки (sentAt) повтор снова ставится в очередь', async () => {
+    const { svc, ysqRows } = makeSeam();
+    await svc.requestYsq(T1, CID_A);
+    ysqRows()[0].sentAt = new Date();
+    await svc.requestYsq(T1, CID_A);
+    expect(ysqRows()).toHaveLength(2);
+  });
+
+  it('отменённая строка (клиент без Telegram) не блокирует повтор', async () => {
+    const { svc, ysqRows } = makeSeam();
+    await svc.requestYsq(T1, CID_A);
+    ysqRows()[0].cancelledAt = new Date();
+    await svc.requestYsq(T1, CID_A);
+    expect(ysqRows()).toHaveLength(2);
+  });
+
+  it('чужой тип в очереди (task_assigned) не блокирует ysq_requested', async () => {
+    const { svc, queue, ysqRows } = makeSeam();
+    queue.push({
+      userId: CLIENT_A,
+      type: 'task_assigned',
+      sentAt: null,
+      cancelledAt: null,
+    });
+    await svc.requestYsq(T1, CID_A);
+    expect(ysqRows()).toHaveLength(1);
+  });
+
+  it('очередь другого клиента не блокирует этого', async () => {
+    const { svc, queue, ysqRows } = makeSeam();
+    queue.push({
+      userId: CLIENT_B,
+      type: 'ysq_requested',
+      sentAt: null,
+      cancelledAt: null,
+    });
+    await svc.requestYsq(T1, CID_A);
+    expect(ysqRows().filter((r) => r.userId === CLIENT_A)).toHaveLength(1);
   });
 });
 
@@ -470,9 +693,20 @@ describe('TherapyClientDataService — updateSessionInfo: поля и вирту
   });
 
   it('виртуальный клиент (clientId<0): обновляет связь по -clientId=id, не по clientId', async () => {
-    const { svc, rels } = makeService([relA]); // relA.id === 1
-    await svc.updateSessionInfo(T1, -1, { nextSession: '2026-09-01' });
+    const { svc, rels } = makeService([relVirtual]); // relVirtual.id === 3
+    await svc.updateSessionInfo(T1, -3n, { nextSession: '2026-09-01' });
     expect((rels[0] as any).nextSession).toBe('2026-09-01');
+  });
+
+  // Аудит 2026-10, T4: -id связи РЕАЛЬНОГО клиента не должен проходить как
+  // виртуальный клиент — ни проверка доступа, ни запись в чужую строку.
+  it('-relA.id (связь реального клиента) не проходит как виртуальный: отказ, строка не тронута', async () => {
+    const { svc, rels } = makeService([relA]); // relA.id === 1, clientId задан
+    const before = (rels[0] as any).nextSession; // relA — общий объект, мог быть изменён раньше
+    await expect(
+      svc.updateSessionInfo(T1, -1n, { nextSession: '2026-09-01' }),
+    ).rejects.toThrow('No active relation');
+    expect((rels[0] as any).nextSession).toBe(before);
   });
 });
 

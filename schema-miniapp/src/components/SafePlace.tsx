@@ -7,6 +7,7 @@ import { useTr } from '../utils/addressForm';
 import { CrisisGate } from './CrisisGate';
 import { SaveErrorNote } from './SaveErrorNote';
 import { SafePlaceSavedView } from './safePlace/SavedView';
+import { buildPrompts } from './safePlace/prompts';
 
 const STORAGE_KEY = 'safe_place';
 
@@ -25,21 +26,6 @@ function loadLocal(): SafePlaceData | null {
   }
 }
 
-const buildPrompts = (tr: (ty: string, vy: string) => string) => [
-  tr(
-    'Вспомни или представь место, где тебе спокойно и безопасно. Реальное или воображаемое.',
-    'Вспомните или представьте место, где вам спокойно и безопасно. Реальное или воображаемое.',
-  ),
-  tr(
-    'Что ты там видишь? Какие звуки, запахи, ощущения в теле?',
-    'Что вы там видите? Какие звуки, запахи, ощущения в теле?',
-  ),
-  tr(
-    'Почему именно здесь ты чувствуешь себя в безопасности?',
-    'Почему именно здесь вы чувствуете себя в безопасности?',
-  ),
-];
-
 interface Props {
   onClose: () => void;
   onComplete?: () => void;
@@ -56,6 +42,7 @@ export function SafePlace({ onClose, onComplete }: Props) {
   const [error, setError] = useState(false);
 
   useEffect(() => {
+    const seededText = loadLocal()?.text ?? '';
     api
       .getSafePlace()
       .then((data) => {
@@ -72,6 +59,15 @@ export function SafePlace({ onClose, onComplete }: Props) {
           setSaved(local);
           if (!text) setText(data.description);
           setEditing(false);
+        } else {
+          // Сервер уверенно ответил «пусто»: локальная копия — чужая (смена
+          // аккаунта) или устаревшая, оставлять её нельзя (аудит 2026-10, E1).
+          // Фолбэк на неё — только при ошибке сети (catch ниже).
+          localStorage.removeItem(STORAGE_KEY);
+          setSaved(null);
+          // Текст, который человек успел набрать сам, не трогаем.
+          setText((t) => (t === seededText ? '' : t));
+          setEditing(true);
         }
       })
       .catch((e) => console.error('getSafePlace failed', e));
@@ -124,7 +120,7 @@ export function SafePlace({ onClose, onComplete }: Props) {
 
   return (
     <BottomSheet onClose={onClose}>
-      <div style={{ paddingTop: 4 }}>
+      <div className="u-pt4">
         <SheetIconHeader
           title="Безопасное место"
           subtitle={tr(
@@ -140,7 +136,7 @@ export function SafePlace({ onClose, onComplete }: Props) {
               'color-mix(in srgb, var(--accent-green) 6%, transparent)',
             border:
               '1px solid color-mix(in srgb, var(--accent-green) 12%, transparent)',
-            borderRadius: 14,
+            borderRadius: 'var(--r-14)',
             padding: '12px 14px',
             marginBottom: 16,
           }}
@@ -170,7 +166,7 @@ export function SafePlace({ onClose, onComplete }: Props) {
             boxSizing: 'border-box',
             background: 'rgba(var(--fg-rgb),0.04)',
             border: `1px solid ${text.trim() ? 'color-mix(in srgb, var(--accent-green) 25%, transparent)' : 'rgba(var(--fg-rgb),0.1)'}`,
-            borderRadius: 14,
+            borderRadius: 'var(--r-14)',
             padding: '13px 14px',
             color: 'var(--text)',
             fontSize: 14,
@@ -196,7 +192,7 @@ export function SafePlace({ onClose, onComplete }: Props) {
           style={{
             width: '100%',
             padding: '14px 0',
-            borderRadius: 14,
+            borderRadius: 'var(--r-14)',
             border: 'none',
             background: text.trim()
               ? 'color-mix(in srgb, var(--accent-green) 15%, transparent)'

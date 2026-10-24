@@ -20,8 +20,9 @@ export function WorkSection() {
             Эти темы чаще всего приносят на сессии. Не обязательно формулировать запрос идеально – достаточно ощущения «это про меня».
           </p>
           <div className="work-grid">
+            {/* Якоря карточек — для объявлений Директа, ведущих сразу на конкретную карточку; 72 = высота липкой шапки (58) плюс воздух, иначе карточка прячется под шапкой. */}
             {WORK_THEMES.map(t => (
-              <div key={t.title} style={{ background: 'var(--bg-elev)', border: '1px solid var(--line)', borderRadius: 16, padding: '24px 22px' }}>
+              <div key={t.title} id={t.id} style={{ background: 'var(--bg-elev)', border: '1px solid var(--line)', borderRadius: 'var(--r-16)', padding: '24px 22px', scrollMarginTop: 72 }}>
                 <h3 style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)', margin: '0 0 8px' }}>{t.title}</h3>
                 <p style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.65, margin: 0 }}>{t.text}</p>
               </div>
@@ -43,7 +44,7 @@ export function EducationSection() {
               Подготовка<br /><span style={{ fontStyle: 'italic' }}>и обучение</span>
             </h2>
             <p style={{ fontSize: 15, color: 'var(--text-sub)', lineHeight: 1.7, margin: 0, maxWidth: 290 }}>
-              Регулярно повышаю квалификацию – это методы, которые использую в работе с вами.
+              Учусь постоянно. Ниже – то, на что опираюсь в работе с вами.
             </p>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column' }}>
@@ -79,7 +80,7 @@ export function TrustSection() {
         <div style={{ maxWidth: 1100, margin: '0 auto' }}>
           <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.14em', textTransform: 'uppercase', color: 'var(--text-faint)', margin: '0 0 10px' }}>Этика и качество практики</p>
           <h2 style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(30px, 3.8vw, 46px)', fontWeight: 400, color: 'var(--text)', margin: '0 0 44px', letterSpacing: '-.01em' }}>
-            Почему мне можно <span style={{ fontStyle: 'italic' }}>доверять</span>
+            На что можно <span style={{ fontStyle: 'italic' }}>опереться</span>
           </h2>
           <div className="trust-grid">
             {TRUST.map((t, i) => (
@@ -104,9 +105,9 @@ export function ApproachSection() {
           <h2 style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(30px, 3.8vw, 48px)', fontWeight: 400, color: 'var(--text)', margin: '0 0 44px', letterSpacing: '-.01em' }}>Как я работаю</h2>
           <div className="bento-grid">
             <div className="bento-tall"><BentoCard num="01" title={'Схема-\nтерапия'} text="Работаем с глубинными убеждениями и режимами, которые сформировались ещё в детстве – и тихо управляют сегодняшними выборами." accent /></div>
-            <div className="bento-wide"><BentoCard num="02" title="Тёплый контакт" text="Наши отношения – не нейтральный экран, а инструмент изменений. Я присутствую в сессии целиком и использую этот контакт как часть терапии." /></div>
-            <div><BentoCard num="03" title="Доказательная база" text="Схема-терапия – один из наиболее исследованных методов работы с хроническими трудностями, это подтверждают клинические исследования." /></div>
-            <div><BentoCard num="04" title="Долгосрочный результат" text="Работаем глубже одного симптома — на то, как вы воспринимаете себя. Медленнее, зато надолго." /></div>
+            <div className="bento-wide"><BentoCard num="02" title="Тёплый контакт" text="Наши отношения – не нейтральный экран, а инструмент изменений. В сессии я живой человек и использую этот контакт как часть терапии." /></div>
+            <div><BentoCard num="03" title="Доказательная база" text="У схема-терапии есть рандомизированные исследования при расстройствах личности и хронических паттернах. Где данных меньше – скажу прямо." /></div>
+            <div><BentoCard num="04" title="Долгосрочный результат" text="Работаем не с одним симптомом, а с тем, как вы воспринимаете себя. Медленнее, зато надолго." /></div>
           </div>
         </div>
       </section>
@@ -118,7 +119,7 @@ export function ProcessSection() {
   return (
       <section id="process" ref={ref} className="reveal-section" style={{ background: DARK_BG, padding: '80px 40px' }}>
         <div style={{ maxWidth: 1100, margin: '0 auto' }}>
-          <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.14em', textTransform: 'uppercase', color: 'rgba(236,234,229,.4)', margin: '0 0 10px' }}>Как начать</p>
+          <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.14em', textTransform: 'uppercase', color: 'rgba(236,234,229,.5)', margin: '0 0 10px' }}>Как начать</p>
           <h2 style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(28px, 3.5vw, 44px)', fontWeight: 400, color: INK_ON_DARK, margin: '0 0 56px', letterSpacing: '-.01em' }}>Три шага до первой встречи</h2>
           <div className="process-grid">
             {[
@@ -127,7 +128,7 @@ export function ProcessSection() {
               { n: '03', title: 'Начинаем работу', sub: 'Если подходим друг другу – назначаем регулярные сессии и двигаемся вглубь.' },
             ].map((s, i) => (
               <div key={i} style={{ borderLeft: i > 0 ? '1px solid rgba(255,255,255,.08)' : 'none', padding: '0 40px 0 ' + (i > 0 ? '40px' : '0') }}>
-                <p style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(52px, 6vw, 80px)', fontWeight: 400, color: 'rgba(144,137,224,.3)', lineHeight: 1, margin: '0 0 16px', letterSpacing: '-.03em' }}>{s.n}</p>
+                <p style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(52px, 6vw, 80px)', fontWeight: 400, color: 'color-mix(in srgb, var(--accent-on-dark) 30%, transparent)', lineHeight: 1, margin: '0 0 16px', letterSpacing: '-.03em' }}>{s.n}</p>
                 <p style={{ fontSize: 18, fontWeight: 600, color: INK_ON_DARK, margin: '0 0 10px' }}>{s.title}</p>
                 <p style={{ fontSize: 14, color: 'rgba(236,234,229,.5)', lineHeight: 1.7, margin: 0 }}>{s.sub}</p>
               </div>

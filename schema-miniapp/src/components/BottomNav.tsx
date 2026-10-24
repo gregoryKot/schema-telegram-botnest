@@ -1,14 +1,6 @@
-// BottomNav.tsx — Redesigned bottom navigation
-// Place at: src/components/BottomNav.tsx
-// Replaces the existing BottomNav component fully.
-//
-// Changes from original:
-//  – Thinner top indicator pill instead of a line
-//  – Active icon gets a soft glow (drop-shadow filter)
-//  – Each tab has its own accent color
-//  – Uses new --surface, --border-color tokens
-
+// BottomNav.tsx — нижняя навигация мини-аппа.
 import React from 'react';
+import { tapStart } from '../utils/perfLog';
 
 export type Section = 'today' | 'help' | 'schemas' | 'profile';
 
@@ -35,7 +27,7 @@ const TABS: TabDef[] = [
   { id: 'today', label: 'Сегодня', color: ACTIVE },
   { id: 'help', label: 'Помощь', color: ACTIVE },
   { id: 'schemas', label: 'Паттерны', color: ACTIVE },
-  { id: 'profile', label: 'Профиль', color: ACTIVE },
+  { id: 'profile', label: 'Я', color: ACTIVE },
 ];
 
 function TabIcon({
@@ -137,9 +129,9 @@ export function BottomNav({ section, onSelect, userRole }: Props) {
         bottom: 0,
         left: 0,
         right: 0,
+        // Размытия нет и быть не должно: стоило ~1.4с на кадр в PWA
+        // (CLAUDE.md «Никакого размытия»). --nav-bg непрозрачен.
         background: 'var(--nav-bg)',
-        backdropFilter: 'blur(24px)',
-        WebkitBackdropFilter: 'blur(24px)',
         borderTop: '1px solid var(--border-color)',
         zIndex: 50,
         paddingBottom: 'var(--safe-bottom)',
@@ -151,6 +143,11 @@ export function BottomNav({ section, onSelect, userRole }: Props) {
           return (
             <button
               key={tab.id}
+              // Точка отсчёта замера тапа (perfLog): pointerdown — момент
+              // касания пальцем, click на телефоне приходит позже.
+              // e.timeStamp — время САМОГО касания: если главный поток был
+              // занят, обработчик запустится позже, и разница = очередь.
+              onPointerDown={(e) => tapStart(tab.id, e.timeStamp)}
               onClick={() => onSelect(tab.id)}
               style={{
                 flex: 1,
@@ -158,7 +155,7 @@ export function BottomNav({ section, onSelect, userRole }: Props) {
                 flexDirection: 'column',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: 4,
+                gap: 'var(--space-4)',
                 background: 'none',
                 border: 'none',
                 cursor: 'pointer',
@@ -173,7 +170,7 @@ export function BottomNav({ section, onSelect, userRole }: Props) {
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'center',
-                  gap: 4,
+                  gap: 'var(--space-4)',
                 }}
               >
                 {active && (
@@ -181,8 +178,12 @@ export function BottomNav({ section, onSelect, userRole }: Props) {
                     style={{
                       position: 'absolute',
                       inset: '-6px -10px',
-                      borderRadius: 12,
-                      background: 'var(--accent-bg)',
+                      borderRadius: 'var(--r-12)',
+                      // 6%, не общий --accent-bg (12%): текст на плашке — тот
+                      // же --accent, заливка той же насыщенности съедает его
+                      // контраст (a11y-smoke: 4.27:1 → 4.62:1 light/5.44 dark).
+                      background:
+                        'color-mix(in srgb, var(--accent) 6%, transparent)',
                       border: '1px solid var(--line)',
                     }}
                   />

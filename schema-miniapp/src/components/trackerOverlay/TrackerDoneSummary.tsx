@@ -27,7 +27,7 @@ export function TrackerDoneSummary({
         style={{
           background: 'var(--surface)',
           border: '1px solid var(--border-color)',
-          borderRadius: 16,
+          borderRadius: 'var(--r-16)',
           padding: '14px 18px',
           display: 'flex',
           alignItems: 'center',
@@ -42,11 +42,11 @@ export function TrackerDoneSummary({
               marginBottom: 4,
             }}
           >
-            Индекс дня
+            Индекс дня · среднее из пяти оценок
           </div>
           <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--text)' }}>
             {avg.toFixed(1)}
-            <span style={{ fontSize: 13, color: 'var(--text-sub)' }}>/10</span>
+            <span className="u-sub13">/10</span>
           </div>
         </div>
         <SummaryDonut avg={avg} />
@@ -56,7 +56,7 @@ export function TrackerDoneSummary({
         style={{
           width: '100%',
           padding: '14px',
-          borderRadius: 16,
+          borderRadius: 'var(--r-16)',
           border:
             '1px solid color-mix(in srgb, var(--accent-green) 25%, transparent)',
           background:

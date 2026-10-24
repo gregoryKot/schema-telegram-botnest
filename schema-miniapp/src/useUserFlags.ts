@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getHost } from '../../shared/src/host';
+import { authedFetch } from './apiClient';
 
 export type UserFlags = {
   themePref: string | null;
@@ -43,15 +43,12 @@ const DEFAULT_FLAGS: UserFlags = {
 
 let flags: UserFlags = { ...DEFAULT_FLAGS };
 let loaded = false;
+// Ответ сервера реально получен (а не «попытка завершилась»). Различать
+// обязательно: дефолтные флаги неотличимы от флагов новичка, и после
+// неудачного запроса прошедший онбординг человек проходил его снова.
+let loadedFromServer = false;
 const subscribers = new Set<(f: UserFlags) => void>();
 let fetchPromise: Promise<void> | null = null;
-
-function getHeaders(): Record<string, string> {
-  return {
-    ...getHost().authHeaders(),
-    'Content-Type': 'application/json',
-  };
-}
 
 function notify(): void {
   for (const sub of subscribers) sub(flags);
@@ -59,10 +56,16 @@ function notify(): void {
 
 async function doFetch(): Promise<void> {
   try {
-    const res = await fetch('/api/user-flags', { headers: getHeaders() });
+    // Через authedFetch, а не голым fetch: в браузере (ярлык, сайт) вход идёт
+    // по Bearer из session.ts, а `host.authHeaders()` там пуст — запрос уходил
+    // без авторизации, флаги не читались и не сохранялись НИКОГДА. В Telegram
+    // та же дыра открывалась через час, когда протухала initData
+    // (инцидент 2026-07-29, ради него и появился session.ts).
+    const res = await authedFetch('/api/user-flags');
     if (res.ok) {
       const data = (await res.json()) as Partial<UserFlags>;
       flags = { ...DEFAULT_FLAGS, ...data };
+      loadedFromServer = true;
     }
   } catch {
     /* network error — keep defaults */
@@ -91,9 +94,8 @@ export async function setFlag<K extends keyof UserFlags>(
   flags = { ...flags, [key]: value };
   notify();
   try {
-    await fetch('/api/user-flags', {
+    await authedFetch('/api/user-flags', {
       method: 'POST',
-      headers: getHeaders(),
       body: JSON.stringify({ [key]: value }),
     });
   } catch {
@@ -108,9 +110,8 @@ export async function updateFlags(patch: Partial<UserFlags>): Promise<void> {
   flags = { ...flags, ...patch };
   notify();
   try {
-    await fetch('/api/user-flags', {
+    await authedFetch('/api/user-flags', {
       method: 'POST',
-      headers: getHeaders(),
       body: JSON.stringify(patch),
     });
   } catch {
@@ -130,6 +131,7 @@ export async function updateFlags(patch: Partial<UserFlags>): Promise<void> {
 export function useUserFlags(): {
   flags: UserFlags;
   loaded: boolean;
+  loadedFromServer: boolean;
   setFlag: typeof setFlag;
   updateFlags: typeof updateFlags;
 } {
@@ -137,13 +139,18 @@ export function useUserFlags(): {
   // `loaded` нужен, чтобы стартовая логика не приняла дефолтные флаги за
   // серверные (иначе экран моргнёт до подгрузки настроек).
   const [isLoaded, setIsLoaded] = useState<boolean>(loaded);
+  // Отдельно от `loaded`: решения вида «показать первый вход» имеют право
+  // опираться только на РЕАЛЬНО прочитанные с сервера флаги.
+  const [fromServer, setFromServer] = useState<boolean>(loadedFromServer);
 
   useEffect(() => {
     setCurrent({ ...flags }); // sync in case flags loaded between render and effect
     setIsLoaded(loaded);
+    setFromServer(loadedFromServer);
     const handler = (f: UserFlags) => {
       setCurrent({ ...f });
       setIsLoaded(loaded);
+      setFromServer(loadedFromServer);
     };
     subscribers.add(handler);
     void ensureUserFlagsLoaded();
@@ -152,5 +159,11 @@ export function useUserFlags(): {
     };
   }, []);
 
-  return { flags: current, loaded: isLoaded, setFlag, updateFlags };
+  return {
+    flags: current,
+    loaded: isLoaded,
+    loadedFromServer: fromServer,
+    setFlag,
+    updateFlags,
+  };
 }

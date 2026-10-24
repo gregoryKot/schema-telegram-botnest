@@ -178,3 +178,33 @@ describe('SafePlace — сохранение: read-after-write и видимая
     );
   });
 });
+
+// Аудит 2026-10, E1: после смены аккаунта на устройстве лежал текст прежнего
+// пользователя. Сервер нового ответил «пусто» — экран обязан показать пустую
+// форму, а не чужое «безопасное место» (и не сохранить его в новый аккаунт).
+describe('SafePlace — сервер ответил «пусто» при чужой локальной копии', () => {
+  it('рендерит пустую форму, чистит ключ, чужой текст не уходит на сервер', async () => {
+    localStorage.setItem(
+      'safe_place',
+      JSON.stringify({ text: 'ЧУЖОЙ ТЕКСТ', savedAt: '1 января 2026 г.' }),
+    );
+    const textarea = (await renderSheet()) as HTMLTextAreaElement;
+    expect(screen.queryByText('ЧУЖОЙ ТЕКСТ')).toBeNull();
+    expect(textarea.value).toBe('');
+    expect(localStorage.getItem('safe_place')).toBeNull();
+    expect(mockApi.saveSafePlace).not.toHaveBeenCalled();
+  });
+
+  it('ошибка сети — локальная копия остаётся (офлайн-устойчивость)', async () => {
+    localStorage.setItem(
+      'safe_place',
+      JSON.stringify({ text: 'свой текст', savedAt: '1 января 2026 г.' }),
+    );
+    mockApi.getSafePlace.mockRejectedValueOnce(new Error('offline'));
+    vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    render(<SafePlace onClose={() => {}} />);
+    await act(async () => {});
+    expect(screen.getByText('свой текст')).toBeTruthy();
+    expect(localStorage.getItem('safe_place')).not.toBeNull();
+  });
+});

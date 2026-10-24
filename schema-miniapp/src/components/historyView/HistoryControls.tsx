@@ -14,14 +14,16 @@ export function HistoryControls({
   onChangeDays?: (days: number) => void;
 }) {
   return (
-    <div style={{ padding: '0 16px 16px', display: 'flex', gap: 8 }}>
+    <div
+      style={{ padding: '0 16px 16px', display: 'flex', gap: 'var(--space-8)' }}
+    >
       {/* Day / Week toggle */}
       <div
         style={{
           display: 'flex',
           flex: 1,
           background: 'rgba(var(--fg-rgb),0.06)',
-          borderRadius: 12,
+          borderRadius: 'var(--r-12)',
           padding: 3,
         }}
       >
@@ -35,7 +37,7 @@ export function HistoryControls({
                 flex: 1,
                 padding: '7px 0',
                 border: 'none',
-                borderRadius: 10,
+                borderRadius: 'var(--r-10)',
                 fontFamily: 'inherit',
                 background: active ? 'var(--surface)' : 'transparent',
                 boxShadow: active ? '0 1px 4px rgba(0,0,0,0.1)' : 'none',
@@ -58,7 +60,7 @@ export function HistoryControls({
           style={{
             display: 'flex',
             background: 'rgba(var(--fg-rgb),0.06)',
-            borderRadius: 12,
+            borderRadius: 'var(--r-12)',
             padding: 3,
           }}
         >
@@ -71,7 +73,7 @@ export function HistoryControls({
                 style={{
                   padding: '7px 10px',
                   border: 'none',
-                  borderRadius: 10,
+                  borderRadius: 'var(--r-10)',
                   fontFamily: 'inherit',
                   background: active ? 'var(--surface)' : 'transparent',
                   boxShadow: active ? '0 1px 4px rgba(0,0,0,0.1)' : 'none',

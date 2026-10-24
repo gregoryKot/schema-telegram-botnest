@@ -124,7 +124,7 @@ describe('ModeMapsController.listModeMaps', () => {
   it('терапевт → делегирует listModeMaps(therapistId, clientId)', async () => {
     const { controller, modeMaps } = makeController();
     const res = await controller.listModeMaps(makeReq(3n), '5');
-    expect(modeMaps.listModeMaps).toHaveBeenCalledWith(3n, 5);
+    expect(modeMaps.listModeMaps).toHaveBeenCalledWith(3n, 5n);
     expect(res).toEqual([{ id: 1, title: 'Карта' }]);
   });
 
@@ -176,18 +176,18 @@ describe('ModeMapsController.createModeMap', () => {
     await controller.createModeMap(makeReq(3n), '5', {});
     expect(modeMaps.createModeMap).toHaveBeenCalledWith(
       3n,
-      5,
+      5n,
       'Карта режимов',
       undefined,
     );
   });
 
-  it('длинный title обрезается до 120 символов', async () => {
+  it('title доходит до сервиса как есть: лимит один, в DTO (backend#29)', async () => {
     const { controller, modeMaps } = makeController();
     const longTitle = 'а'.repeat(200);
     await controller.createModeMap(makeReq(3n), '5', { title: longTitle });
     const passedTitle = modeMaps.createModeMap.mock.calls[0][2] as string;
-    expect(passedTitle).toHaveLength(120);
+    expect(passedTitle).toBe(longTitle);
   });
 
   it('No active relation → ForbiddenException', async () => {

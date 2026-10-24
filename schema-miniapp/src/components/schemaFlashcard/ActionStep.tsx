@@ -28,16 +28,10 @@ export function ActionStep({
   const needInfo = NEEDS.find((n) => n.id === selectedNeed);
   return (
     <BottomSheet onClose={onClose}>
-      <div style={{ paddingTop: 4 }}>
-        <div style={{ marginBottom: 16 }}>
-          <div style={{ fontSize: 17, fontWeight: 700, color: 'var(--text)' }}>
-            Один маленький шаг
-          </div>
-          <div
-            style={{ fontSize: 12, color: 'var(--text-faint)', marginTop: 2 }}
-          >
-            Шаг 4 из 4
-          </div>
+      <div className="u-pt4">
+        <div className="u-mb16">
+          <div className="u-h17">Один маленький шаг</div>
+          <div className="u-faint12-mt2">Шаг 4 из 4</div>
         </div>
         <ProgressBar stepIndex={stepIndex} />
         {needInfo && (
@@ -45,10 +39,10 @@ export function ActionStep({
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: 10,
+              gap: 'var(--space-10)',
               background: 'var(--surface)',
               border: '1px solid var(--border-color)',
-              borderRadius: 14,
+              borderRadius: 'var(--r-14)',
               padding: '11px 14px',
               marginBottom: 16,
             }}
@@ -94,7 +88,7 @@ export function ActionStep({
             boxSizing: 'border-box',
             background: 'var(--surface)',
             border: `1px solid ${action.trim() ? 'var(--accent)' : 'var(--border-color)'}`,
-            borderRadius: 14,
+            borderRadius: 'var(--r-14)',
             padding: '12px 14px',
             color: 'var(--text)',
             fontSize: 14,
@@ -107,13 +101,13 @@ export function ActionStep({
           }}
         />
         <CrisisGate texts={[action]} surface="flashcard" />
-        <div style={{ display: 'flex', gap: 10 }}>
+        <div className="u-row10">
           <button
             onClick={onBack}
             style={{
               width: 44,
               height: 44,
-              borderRadius: 12,
+              borderRadius: 'var(--r-12)',
               border: 'none',
               fontFamily: 'inherit',
               background: 'var(--surface-2)',
@@ -133,7 +127,7 @@ export function ActionStep({
             style={{
               flex: 1,
               padding: '13px',
-              borderRadius: 12,
+              borderRadius: 'var(--r-12)',
               border: 'none',
               fontFamily: 'inherit',
               background: action.trim()
@@ -154,7 +148,7 @@ export function ActionStep({
             Сохранить
           </button>
         </div>
-        <div style={{ marginTop: 20 }}>
+        <div className="u-mt20">
           <TherapyNote compact />
         </div>
       </div>

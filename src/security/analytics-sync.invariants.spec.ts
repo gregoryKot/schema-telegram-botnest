@@ -15,7 +15,16 @@ const ROOT = join(__dirname, '..', '..');
 
 // Директории фронтендов, где вообще есть трекинг (правило №3: пайплайн
 // событий общий, но реализация вызова живёт в каждом фронте + shared).
-const FRONTEND_DIRS = ['webapp/src', 'schema-miniapp/src', 'shared/src'];
+// 'game/src' — третий фронтенд (Phaser, отдельный SPA): её trackEvent
+// ('game_…', …) (game/src/analytics.ts) шлёт события анонимно через
+// POST /api/public-event, литералы там обязаны быть в ANALYTICS_EVENTS —
+// как и у двух остальных фронтендов.
+const FRONTEND_DIRS = [
+  'webapp/src',
+  'schema-miniapp/src',
+  'shared/src',
+  'game/src',
+];
 
 // Литералы вида trackEvent('name'...) / api.trackEvent('name'...). НЕ ловит
 // вызовы через импортируемую константу (SHARE_CARD_EVENT и т.п.) и НЕ ловит
@@ -131,6 +140,43 @@ const BACKEND_ONLY: Record<string, string> = {
     'ровно один раз при первом касании нового юзера. Фронт его не шлёт и не ' +
     'должен — атрибуция посева живёт только на сервере, иначе её можно ' +
     'подделать через POST /api/event',
+  profile_pattern_open:
+    'константа PROFILE_PATTERN_OPEN_EVENT (shared/src/share/analytics.ts) — ' +
+    'та же группа, что и mode_card_saved: контракт события (allow-list + ' +
+    'sanitizeMeta + /stats) заведён раньше UI редизайна вкладки «Я», сам ' +
+    'вызов api.trackEvent(PROFILE_PATTERN_OPEN_EVENT, …) приедет с UI-PR',
+  login_ticket_step:
+    'серверное событие: пишет единственный шов LoginTicketReport ' +
+    '(src/auth/login-ticket/login-ticket.report.ts), всегда с userId = null — ' +
+    'тот же приём, что у auth_rejected/auth_success. Фронт его не шлёт и не ' +
+    'должен: шаги воронки входа известны только серверу (подтверждение ' +
+    'происходит в боте или во внешнем браузере, а не в контейнере, который ' +
+    'просил билет), и отчёт /stats считает строки с userId IS NULL',
+  data_export:
+    'серверное событие: пишет только эндпоинт выгрузки данных ' +
+    '(GET /api/account/export, право на доступ по 152-ФЗ/GDPR), с реальным ' +
+    'userId. Фронт его не шлёт: выгрузку запускает сам HTTP-запрос к ' +
+    'эндпоинту, а не клиентское действие вроде клика — событие пишется в ' +
+    'том же обработчике, что формирует файл',
+  entry_deleted:
+    'шлётся через импортируемую константу ENTRY_DELETED_EVENT ' +
+    '(shared/src/share/analytics.ts), не строковым литералом — общий хук ' +
+    'useJourneyDelete (shared/src/journey/journeyDelete.ts) зовёт ' +
+    'api.trackEvent(ENTRY_DELETED_EVENT, { type }) сразу за успешным ' +
+    'удалением записи; та же причина, что у share_card',
+  notify_queue_tick:
+    'серверное событие: пишет только крон очереди уведомлений бота ' +
+    '(src/telegram/telegram.schedule-queue.tally.ts), userId = null, meta — ' +
+    'только числа прогона. Клиентского действия за ним нет вовсе: это итог ' +
+    'отправки напоминаний, отчёт /stats считает строки с userId IS NULL',
+  home_screen_offer:
+    'шлётся не литералом trackEvent(...), а через колбэк track(...) общего ' +
+    'хука shared/src/host/useHomeScreenOffer.ts (мини-апп и карточка ' +
+    'HomeScreenOfferCard на «Сегодня» сайта, surface onboarding/today/' +
+    'settings; «Сегодня» сайта — today) и api.trackPublicEvent с лендинга ' +
+    '(AppInstallSection, surface site_landing) — та же причина, что у ' +
+    "crisis_card_shown. Единственный литерал trackEvent('home_screen_offer') " +
+    'жил в баннере кабинета MobileAppBanner, убранном 2026-10 (PR #771)',
 };
 
 describe('трипваер: имена событий фронта ⊆ allow-list бэкенда (правило №8)', () => {
@@ -167,7 +213,24 @@ describe('трипваер: имена событий фронта ⊆ allow-lis
     // 23 — client_error (волна 9 щита покрытия): пишет ClientErrorsController,
     // а не trackEvent(), тот же приём userId = null, что у auth_rejected.
     // 24 — signup_source (атрибуция посевов, 2026-08): пишет только бот в
-    // /start, тот же приём (серверное событие, фронт не шлёт).
-    expect(Object.keys(BACKEND_ONLY).length).toBeLessThanOrEqual(24);
+    // /start, тот же приём (серверное событие, фронт не шлёт). 25 —
+    // profile_pattern_open (редизайн вкладки «Я», 2026-08): контракт-первым
+    // паттерн, тот же приём, что и mode_card_saved — UI ещё не подключён.
+    // 26 — login_ticket_step (путь входа по билету, 2026-08): четвёртое
+    // серверное событие подряд, к фронту не относится по устройству механизма.
+    // Билет подтверждают ВНЕ контейнера, который его просил (бот или внешний
+    // браузер), поэтому шаги воронки видит только сервер; отправить их с
+    // фронта было бы не «удобнее», а неверно — и открыло бы отчёт о здоровье
+    // входа для накрутки через POST /api/event. 27 — data_export (право на
+    // доступ по 152-ФЗ/GDPR): пятое серверное событие подряд, тот же приём —
+    // выгрузку запускает сам HTTP-запрос к эндпоинту, кликать на фронте
+    // нечего. 28 — entry_deleted (удаление своей записи в архиве «Мой
+    // путь»): не серверное, а константное — фронт шлёт его из общего хука
+    // useJourneyDelete через ENTRY_DELETED_EVENT, как share_card.
+    // 29 — home_screen_offer (2026-10): последний литерал trackEvent ушёл
+    // вместе с баннером кабинета, событие осталось на колбэке общего хука.
+    // 30 — notify_queue_tick (аудит 2026-10, ответ 429): итог прогона очереди
+    // уведомлений, пишет крон — у фронта такого действия нет по устройству.
+    expect(Object.keys(BACKEND_ONLY).length).toBeLessThanOrEqual(30);
   });
 });

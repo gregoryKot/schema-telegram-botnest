@@ -14,8 +14,8 @@ export function NeedDisclaimerSheet({ onClose }: { onClose: () => void }) {
   const cta = contactCta();
   return (
     <BottomSheet onClose={onClose} zIndex={300}>
-      <div style={{ paddingTop: 8 }}>
-        <SectionLabel purple mb={16}>
+      <div className="u-pt8">
+        <SectionLabel purple mb={16} as="h2">
           О советах
         </SectionLabel>
         {DISCLAIMER_CONTENT.map((p, i) => (

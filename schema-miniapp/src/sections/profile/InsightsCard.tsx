@@ -13,7 +13,7 @@ export function InsightsCard({
   return (
     <div
       className="card"
-      style={{ borderRadius: 20, padding: '16px 16px 18px' }}
+      style={{ borderRadius: 'var(--r-20)', padding: '16px 16px 18px' }}
     >
       <div
         style={{
@@ -31,7 +31,9 @@ export function InsightsCard({
       {/* Best / worst day pills */}
       {(insights?.bestDayOfWeek || insights?.worstDayOfWeek) &&
         (insights?.totalDays ?? 0) >= 7 && (
-          <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+          <div
+            style={{ display: 'flex', gap: 'var(--space-8)', marginBottom: 16 }}
+          >
             {insights?.bestDayOfWeek && (
               <div
                 style={{
@@ -39,7 +41,7 @@ export function InsightsCard({
                   alignItems: 'center',
                   gap: 6,
                   padding: '7px 12px',
-                  borderRadius: 10,
+                  borderRadius: 'var(--r-10)',
                   background:
                     'color-mix(in srgb, var(--accent-yellow) 12%, transparent)',
                   border:
@@ -111,7 +113,7 @@ export function InsightsCard({
                   alignItems: 'center',
                   gap: 6,
                   padding: '7px 12px',
-                  borderRadius: 10,
+                  borderRadius: 'var(--r-10)',
                   background:
                     'color-mix(in srgb, var(--accent-red) 10%, transparent)',
                   border:
@@ -144,7 +146,7 @@ export function InsightsCard({
         )}
 
       {/* Need bars */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <div className="u-col12">
         {insights?.weeklyStats
           .filter((s) => s.avg !== null)
           .map((s) => {
@@ -166,9 +168,7 @@ export function InsightsCard({
                     marginBottom: 6,
                   }}
                 >
-                  <span style={{ fontSize: 13, color: 'var(--text-sub)' }}>
-                    {NEED_NAMES[s.needId]}
-                  </span>
+                  <span className="u-sub13">{NEED_NAMES[s.needId]}</span>
                   <span
                     style={{
                       fontSize: 13,
@@ -183,7 +183,7 @@ export function InsightsCard({
                 <div
                   style={{
                     height: 6,
-                    borderRadius: 4,
+                    borderRadius: 'var(--r-4)',
                     background: 'rgba(var(--fg-rgb),0.07)',
                     overflow: 'hidden',
                   }}
@@ -191,7 +191,7 @@ export function InsightsCard({
                   <div
                     style={{
                       height: '100%',
-                      borderRadius: 4,
+                      borderRadius: 'var(--r-4)',
                       width: `${barW}%`,
                       background: barColor,
                       opacity: 0.7,

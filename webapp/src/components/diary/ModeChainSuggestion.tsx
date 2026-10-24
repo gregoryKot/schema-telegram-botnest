@@ -4,6 +4,7 @@ import {
   modeChainVmLocal,
   type ModeChainSuggestionProps,
 } from '../../modeChainVm';
+import '../../styles/sheet-diary.css';
 import { IdentityDot } from '../../../../shared/src/components/IdentityDot';
 
 /**
@@ -12,37 +13,20 @@ import { IdentityDot } from '../../../../shared/src/components/IdentityDot';
  * → копинг вышел защищать). Вью-модель — shared/mode/modeChain, зависит от
  * семьи сохранённого режима. Тап по кандидату сообщает родителю modeId —
  * тот перезапускает форму с той же ситуацией (ModeEntrySheet).
- * Классы — существующие chip-row/chip-pill (правило webapp: классы, не инлайн).
+ * Кандидаты — ds-chip.
  */
 export function ModeChainSuggestion({ modeId, onPick }: ModeChainSuggestionProps) {
   const vm = modeChainVmLocal(modeId, useTr());
 
   return (
-    vm && <div
-      style={{
-        marginTop: 20,
-        padding: '14px 16px 12px',
-        border: '1px solid var(--line)',
-        borderRadius: 14,
-        background: 'var(--surface-2)',
-      }}
-    >
-      <div
-        style={{
-          fontSize: 14,
-          color: 'var(--text)',
-          lineHeight: 1.45,
-          marginBottom: 10,
-        }}
-      >
-        {vm.question}
-      </div>
-      <div className="chip-row" style={{ marginBottom: 8 }}>
+    vm && <div className="ds-card ds-card--row sd-chain">
+      <div className="sd-chain-q">{vm.question}</div>
+      <div className="sd-chips">
         {vm.candidates.map(({ id, mode }) => (
           <button
             key={id}
             type="button"
-            className="chip-pill"
+            className="ds-chip sd-chip"
             onClick={() => {
               haptic.select();
               onPick(id);
@@ -53,7 +37,7 @@ export function ModeChainSuggestion({ modeId, onPick }: ModeChainSuggestionProps
         ))}
         <button
           type="button"
-          className="chip-pill"
+          className="ds-chip sd-chip"
           onClick={() => {
             haptic.tap();
             onPick(null);
@@ -62,9 +46,7 @@ export function ModeChainSuggestion({ modeId, onPick }: ModeChainSuggestionProps
           Другой режим
         </button>
       </div>
-      <div style={{ fontSize: 12, color: 'var(--text-faint)', lineHeight: 1.5 }}>
-        {vm.hint}
-      </div>
+      <div className="ds-sub">{vm.hint}</div>
     </div>
   );
 }

@@ -1,13 +1,15 @@
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { ErrorBoundary } from './ErrorBoundary';
 import { DiarySection } from '../sections/DiarySection';
+import { useDialogA11y } from '../../../shared/src/utils/dialogA11y';
 
-export function DiariesOverlay({ onClose }: { onClose: () => void }) {
+export function DiariesOverlay({ onClose, onOpenTracker }: { onClose: () => void; onOpenTracker?: () => void }) {
   const goBack = useHistorySheet(onClose);
+  const dialogA11y = useDialogA11y();
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'var(--bg)', overflowY: 'auto' }}>
+    <div {...dialogA11y} className="u-sheet">
       <ErrorBoundary section="Дневник" key="diary-overlay-boundary">
-        <DiarySection onClose={goBack} />
+        <DiarySection onClose={goBack} onOpenTracker={onOpenTracker} />
       </ErrorBoundary>
     </div>
   );

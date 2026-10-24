@@ -17,34 +17,50 @@ vi.mock('../../api', () => ({
   api: {
     submitBooking: vi.fn(),
   },
+  reportClientError: vi.fn(),
 }));
-import { api } from '../../api';
+import { api, reportClientError } from '../../api';
+import { ApiError } from '../../apiClient';
+
+// Тесты лендинга — глазами анонимного посетителя: шлюз Метрики по умолчанию
+// считает «сессия возможна» и молчит (решение D-4), поэтому для целей
+// публичных страниц сессию объявляем отсутствующей явно.
+import { setMetrikaSessionPossible } from '../../lib/metrikaGate';
+setMetrikaSessionPossible(false);
 const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
 
 function fillValid() {
   fireEvent.change(screen.getByLabelText('Имя *'), {
     target: { value: 'Ира' },
   });
-  fireEvent.change(screen.getByLabelText('Telegram / телефон *'), {
+  fireEvent.change(screen.getByLabelText('Где вам удобнее отвечать *'), {
     target: { value: '@ira' },
   });
   fireEvent.click(screen.getByRole('checkbox'));
 }
 
-beforeEach(() => vi.clearAllMocks());
+beforeEach(() => {
+  vi.clearAllMocks();
+  // Метрика (lib/metrika) грузится реально, не мокается — тест цели ниже
+  // читает очередь window.ym.a напрямую (единый приём с LandingPage/BookingPicker).
+  sessionStorage.clear();
+  delete (window as unknown as { __ym_loaded?: boolean }).__ym_loaded;
+  delete (window as unknown as { ym?: unknown }).ym;
+  document.querySelectorAll('script[src*="mc.yandex.ru"]').forEach((s) => s.remove());
+});
 afterEach(() => cleanup());
 
 describe('BookingForm — валидация', () => {
   it('кнопка отправки недоступна, пока не заполнены имя, контакт и согласие', () => {
     render(<BookingForm />);
     const button = screen.getByRole('button', {
-      name: /Записаться на знакомство/,
+      name: /Написать/,
     });
     expect(button).toHaveProperty('disabled', true);
 
     fillValid();
     expect(
-      screen.getByRole('button', { name: /Записаться на знакомство/ }),
+      screen.getByRole('button', { name: /Написать/ }),
     ).toHaveProperty('disabled', false);
   });
 
@@ -53,11 +69,11 @@ describe('BookingForm — валидация', () => {
     fireEvent.change(screen.getByLabelText('Имя *'), {
       target: { value: 'Ира' },
     });
-    fireEvent.change(screen.getByLabelText('Telegram / телефон *'), {
+    fireEvent.change(screen.getByLabelText('Где вам удобнее отвечать *'), {
       target: { value: '@ira' },
     });
     fireEvent.click(
-      screen.getByRole('button', { name: /Записаться на знакомство/ }),
+      screen.getByRole('button', { name: /Написать/ }),
     );
     expect(mockApi.submitBooking).not.toHaveBeenCalled();
   });
@@ -70,12 +86,12 @@ describe('BookingForm — успешная отправка', () => {
     fireEvent.change(screen.getByLabelText('Имя *'), {
       target: { value: '  Ира  ' },
     });
-    fireEvent.change(screen.getByLabelText('Telegram / телефон *'), {
+    fireEvent.change(screen.getByLabelText('Где вам удобнее отвечать *'), {
       target: { value: '  @ira  ' },
     });
     fireEvent.click(screen.getByRole('checkbox'));
     fireEvent.click(
-      screen.getByRole('button', { name: /Записаться на знакомство/ }),
+      screen.getByRole('button', { name: /Написать/ }),
     );
 
     await screen.findByText('Заявка отправлена');
@@ -95,7 +111,7 @@ describe('BookingForm — успешная отправка', () => {
       },
     );
     fireEvent.click(
-      screen.getByRole('button', { name: /Записаться на знакомство/ }),
+      screen.getByRole('button', { name: /Написать/ }),
     );
 
     await waitFor(() =>
@@ -115,7 +131,7 @@ describe('BookingForm — отказ сети виден пользовател�
     render(<BookingForm />);
     fillValid();
     fireEvent.click(
-      screen.getByRole('button', { name: /Записаться на знакомство/ }),
+      screen.getByRole('button', { name: /Написать/ }),
     );
 
     await screen.findByText(/Что-то не отправилось/);
@@ -123,18 +139,92 @@ describe('BookingForm — отказ сети виден пользовател�
     expect(screen.queryByText('Заявка отправлена')).toBeNull();
   });
 
+  // Правило №14: экран-тупик обязан сообщать наверх. Сервер теперь отвечает 503,
+  // когда заявку не удалось ни сохранить, ни доставить владельцу, — ветка достижима.
+  it('503 от сервера: тот же текст со ссылкой на Telegram и отчёт наверх в секцию booking', async () => {
+    mockApi.submitBooking.mockRejectedValue(new ApiError(503, 'Заявка не принята'));
+    render(<BookingForm />);
+    fillValid();
+    fireEvent.click(screen.getByRole('button', { name: /Написать/ }));
+
+    await screen.findByText(/Что-то не отправилось/);
+    expect(screen.getByRole('link', { name: '@kotlarewski' })).toBeTruthy();
+    expect(reportClientError).toHaveBeenCalledWith({
+      message: 'lead submit failed: HTTP 503',
+      section: 'booking',
+    });
+  });
+
+  it('успешная отправка в отчёт об ошибке не пишет', async () => {
+    mockApi.submitBooking.mockResolvedValue({ ok: true });
+    render(<BookingForm />);
+    fillValid();
+    fireEvent.click(screen.getByRole('button', { name: /Написать/ }));
+    await screen.findByText('Заявка отправлена');
+    expect(reportClientError).not.toHaveBeenCalled();
+  });
+
   it('после отказа кнопка снова доступна — можно повторить попытку', async () => {
     mockApi.submitBooking.mockRejectedValue(new Error('network down'));
     render(<BookingForm />);
     fillValid();
     fireEvent.click(
-      screen.getByRole('button', { name: /Записаться на знакомство/ }),
+      screen.getByRole('button', { name: /Написать/ }),
     );
     await screen.findByText(/Что-то не отправилось/);
 
     expect(
-      screen.getByRole('button', { name: /Записаться на знакомство/ }),
+      screen.getByRole('button', { name: /Написать/ }),
     ).toHaveProperty('disabled', false);
+  });
+});
+
+// Продуктовая цель лендинга: эта форма — основной путь заявки («напишите мне»).
+// booking_submit — итог по всем заявкам, lead_submit — только простая форма
+// (слоты считаются отдельно: booking_intro / booking_session).
+describe('BookingForm — цель Метрики', () => {
+  it('успешная отправка шлёт booking_submit и lead_submit', async () => {
+    mockApi.submitBooking.mockResolvedValue({ ok: true });
+    render(<BookingForm />);
+    fillValid();
+    fireEvent.click(
+      screen.getByRole('button', { name: /Написать/ }),
+    );
+
+    await screen.findByText('Заявка отправлена');
+    const goals = ((window as unknown as { ym?: { a?: unknown[][] } }).ym?.a ?? [])
+      .filter((c) => c[1] === 'reachGoal')
+      .map((c) => c[2]);
+    expect(goals).toEqual(['booking_submit', 'lead_submit']);
+  });
+});
+
+// Владелец за границей и не звонит на российские номера: посетитель выбирает
+// мессенджер, канал уходит на бэк и в цель Метрики.
+describe('BookingForm — выбор канала связи', () => {
+  it('по умолчанию Telegram', async () => {
+    mockApi.submitBooking.mockResolvedValue({ ok: true });
+    render(<BookingForm />);
+    fillValid();
+    fireEvent.click(screen.getByRole('button', { name: /Написать/ }));
+    await screen.findByText('Заявка отправлена');
+    expect(mockApi.submitBooking).toHaveBeenCalledWith(expect.objectContaining({ channel: 'telegram' }));
+  });
+
+  it('выбор WhatsApp уходит в теле заявки и в lead_submit', async () => {
+    mockApi.submitBooking.mockResolvedValue({ ok: true });
+    render(<BookingForm />);
+    fireEvent.click(screen.getByRole('button', { name: 'WhatsApp' }));
+    fillValid();
+    fireEvent.click(screen.getByRole('button', { name: /Написать/ }));
+
+    await screen.findByText('Заявка отправлена');
+    expect(mockApi.submitBooking).toHaveBeenCalledWith(
+      expect.objectContaining({ contact: '@ira', channel: 'whatsapp' }),
+    );
+    const lead = ((window as unknown as { ym?: { a?: unknown[][] } }).ym?.a ?? [])
+      .find((c) => c[1] === 'reachGoal' && c[2] === 'lead_submit');
+    expect(lead?.[3]).toEqual({ channel: 'whatsapp' });
   });
 });
 
@@ -149,7 +239,7 @@ describe('BookingForm — во время отправки', () => {
     render(<BookingForm />);
     fillValid();
     fireEvent.click(
-      screen.getByRole('button', { name: /Записаться на знакомство/ }),
+      screen.getByRole('button', { name: /Написать/ }),
     );
 
     expect(screen.getByRole('button', { name: 'Отправляю…' })).toHaveProperty(
@@ -158,5 +248,16 @@ describe('BookingForm — во время отправки', () => {
     );
     resolveFn({ ok: true });
     await screen.findByText('Заявка отправлена');
+  });
+});
+
+// Аудит 2026-10, E2: Вебвизор записывал нажатия клавиш в полях запасной формы
+// (имя, контакт, текст запроса). Метка та же, что у BookingPicker.
+describe('BookingForm — Вебвизор не пишет ввод', () => {
+  it('поля имени/контакта/запроса несут ym-disable-keys', () => {
+    render(<BookingForm />);
+    expect(screen.getByLabelText('Имя *').className).toContain('ym-disable-keys');
+    expect(screen.getByLabelText('Где вам удобнее отвечать *').className).toContain('ym-disable-keys');
+    expect(screen.getByPlaceholderText('Пара слов о том, с чем хотите разобраться').className).toContain('ym-disable-keys');
   });
 });

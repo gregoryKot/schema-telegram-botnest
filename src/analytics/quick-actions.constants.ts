@@ -1,10 +1,11 @@
 // Идентификаторы пунктов универсального меню «плюс» (meta.action для
 // plus_action/quick_action_toggle). Парный реестр — на фронте та же строка в
-// строку копия живёт в schema-miniapp/src/utils/quickActions.ts (константа
+// строку копия живёт в shared/src/quickActions/quickActions.ts (константа
 // QUICK_ACTION_IDS, по одному id в строке); сверку держит
 // src/security/quick-actions-sync.invariants.spec.ts. Вынесено из
 // analytics.constants.ts отдельным файлом (правило №10 — тот файл держим
 // минимальным).
+//   case             — разбор случая («Что это было»);
 //   tracker          — трекер потребностей;
 //   diary_schema     — дневник схем;
 //   diary_mode       — дневник режимов;
@@ -23,6 +24,7 @@
 //   practices        — практики;
 //   plans            — планы.
 export const QUICK_ACTION_IDS = [
+  'case',
   'tracker',
   'diary_schema',
   'diary_mode',

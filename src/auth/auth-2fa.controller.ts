@@ -11,7 +11,6 @@ import {
   UseGuards,
   HttpCode,
 } from '@nestjs/common';
-import { Throttle } from '@nestjs/throttler';
 import { ConfigService } from '@nestjs/config';
 import { AuthService } from './auth.service';
 import { JwtAuthGuard, WebUser } from './jwt.guard';
@@ -21,7 +20,9 @@ import { TwoFaCodeDto, TwoFaChallengeDto } from './dto/twofa.dto';
 import { EmailBodyDto, TokenBodyDto } from './dto/auth-scalar.dto';
 import { EmailService } from './email.service';
 import type { Request, Response } from 'express';
-import { REFRESH_COOKIE, cookieOptions, requireCsrf } from './auth-http.util';
+import { requireCsrf, setRefreshCookie } from './auth-http.util';
+import { PersistentThrottleLimit } from '../api/persistent-throttle-limit';
+import { CODE_THROTTLE, DAILY_MAIL_THROTTLE } from './auth-throttles';
 
 @Controller('api/auth')
 export class Auth2faController {
@@ -56,6 +57,7 @@ export class Auth2faController {
 
   @Post('2fa/enable')
   @UseGuards(JwtAuthGuard)
+  @PersistentThrottleLimit(CODE_THROTTLE)
   @HttpCode(200)
   async totpEnable(
     @Req() req: Request,
@@ -63,7 +65,12 @@ export class Auth2faController {
   ): Promise<{ recoveryCodes: string[] }> {
     requireCsrf(req, '2fa/enable', this.securityLog);
     const webUser: WebUser = req.webUser!;
-    const result = await this.totp.confirmSetup(webUser.userId, dto.code);
+    const result = await this.logTotpFailure(
+      req,
+      webUser.userId,
+      '2fa/enable',
+      () => this.totp.confirmSetup(webUser.userId, dto.code),
+    );
     this.securityLog.log('role_changed', {
       userId: webUser.userId,
       event: '2fa_enabled',
@@ -73,6 +80,7 @@ export class Auth2faController {
 
   @Post('2fa/disable')
   @UseGuards(JwtAuthGuard)
+  @PersistentThrottleLimit(CODE_THROTTLE)
   @HttpCode(200)
   async totpDisable(
     @Req() req: Request,
@@ -80,7 +88,9 @@ export class Auth2faController {
   ): Promise<{ ok: true }> {
     requireCsrf(req, '2fa/disable', this.securityLog);
     const webUser: WebUser = req.webUser!;
-    await this.totp.disable(webUser.userId, dto.code);
+    await this.logTotpFailure(req, webUser.userId, '2fa/disable', () =>
+      this.totp.disable(webUser.userId, dto.code),
+    );
     this.securityLog.log('role_changed', {
       userId: webUser.userId,
       event: '2fa_disabled',
@@ -90,6 +100,7 @@ export class Auth2faController {
 
   @Post('2fa/recovery-codes')
   @UseGuards(JwtAuthGuard)
+  @PersistentThrottleLimit(CODE_THROTTLE)
   @HttpCode(200)
   async totpRegenerateRecovery(
     @Req() req: Request,
@@ -97,17 +108,16 @@ export class Auth2faController {
   ): Promise<{ recoveryCodes: string[] }> {
     requireCsrf(req, '2fa/recovery-codes', this.securityLog);
     const webUser: WebUser = req.webUser!;
-    return this.totp.regenerateRecoveryCodes(webUser.userId, dto.code);
+    return this.logTotpFailure(req, webUser.userId, '2fa/recovery-codes', () =>
+      this.totp.regenerateRecoveryCodes(webUser.userId, dto.code),
+    );
   }
 
   // ─── Recovery email ──────────────────────────────────────────────────────
 
   @Post('recovery-email/start')
   @UseGuards(JwtAuthGuard)
-  @Throttle({
-    short: { limit: 3, ttl: 60_000 },
-    long: { limit: 10, ttl: 24 * 3_600_000 },
-  })
+  @PersistentThrottleLimit(DAILY_MAIL_THROTTLE)
   @HttpCode(200)
   async recoveryEmailStart(
     @Req() req: Request,
@@ -138,10 +148,7 @@ export class Auth2faController {
   // Public — anyone can request a recovery link by email. We silently
   // succeed regardless to avoid leaking which emails are registered.
   @Post('recovery/request')
-  @Throttle({
-    short: { limit: 3, ttl: 60_000 },
-    long: { limit: 10, ttl: 24 * 3_600_000 },
-  })
+  @PersistentThrottleLimit(DAILY_MAIL_THROTTLE)
   @HttpCode(200)
   async recoveryRequest(@Body() dto: EmailBodyDto): Promise<{ ok: true }> {
     return this.emailSvc.sendRecoveryLink(dto.email);
@@ -150,6 +157,7 @@ export class Auth2faController {
   // Confirm a recovery magic link → issue a session for that user. They land
   // on /account and can link a new provider before the original token expires.
   @Post('recovery/confirm')
+  @PersistentThrottleLimit(CODE_THROTTLE)
   @HttpCode(200)
   async recoveryConfirm(
     @Req() req: Request,
@@ -165,11 +173,7 @@ export class Auth2faController {
       req.ip,
       req.headers['user-agent'],
     );
-    res.cookie(
-      REFRESH_COOKIE,
-      tokens.refreshToken,
-      cookieOptions(30 * 24 * 3600),
-    );
+    setRefreshCookie(res, tokens.refreshToken, 30 * 24 * 3600, false);
     this.securityLog.log('role_changed', {
       userId,
       event: 'recovery_login',
@@ -181,10 +185,7 @@ export class Auth2faController {
   // Verify a TOTP code in exchange for a real access token. Called by the
   // /auth/2fa frontend page after primary login returned a challengeToken.
   @Post('2fa/challenge')
-  @Throttle({
-    short: { limit: 5, ttl: 60_000 },
-    long: { limit: 20, ttl: 3_600_000 },
-  })
+  @PersistentThrottleLimit(CODE_THROTTLE)
   @HttpCode(200)
   async totpChallenge(
     @Req() req: Request,
@@ -194,17 +195,44 @@ export class Auth2faController {
     requireCsrf(req, '2fa/challenge', this.securityLog);
     const { userId } = this.auth.verifyTotpChallengeToken(dto.challengeToken);
     const ok = await this.totp.verifyCode(userId, dto.code);
-    if (!ok) throw new UnauthorizedException('Invalid 2FA code');
+    if (!ok) {
+      this.logTotpFailed(req, userId, '2fa/challenge');
+      throw new UnauthorizedException('Invalid 2FA code');
+    }
     const tokens = await this.auth.issueTokens(
       userId,
       req.ip,
       req.headers['user-agent'],
     );
-    res.cookie(
-      REFRESH_COOKIE,
-      tokens.refreshToken,
-      cookieOptions(30 * 24 * 3600),
-    );
+    setRefreshCookie(res, tokens.refreshToken, 30 * 24 * 3600, false);
+    // Билет здесь НЕ одобряем: код в теле мог подставить кто угодно (выписка
+    // анонимна), а молчаливое одобрение за вошедшего — та самая дыра
+    // device-code phishing (разбор 2026-08-31). Одобрение живёт на экране
+    // сверки `/auth/confirm`, куда клиент уводит человека сам, если вход
+    // начинался в отдельном контейнере.
     return { accessToken: tokens.accessToken, expiresIn: tokens.expiresIn };
+  }
+
+  // Неверный код — след в аудите (userId + ip). Бросает сервис
+  // (UnauthorizedException 'Invalid code'); прочие ошибки (setup не начат и т.п.)
+  // — не попытка подбора, их не пишем.
+  private async logTotpFailure<T>(
+    req: Request,
+    userId: bigint,
+    route: string,
+    run: () => Promise<T>,
+  ): Promise<T> {
+    try {
+      return await run();
+    } catch (err) {
+      if (err instanceof UnauthorizedException) {
+        this.logTotpFailed(req, userId, route);
+      }
+      throw err;
+    }
+  }
+
+  private logTotpFailed(req: Request, userId: bigint, route: string): void {
+    this.securityLog.log('totp_failed', { userId, ip: req.ip, route });
   }
 }

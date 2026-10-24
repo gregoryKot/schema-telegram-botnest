@@ -132,7 +132,7 @@ describe('ModeMapCanvas — привязка к сетке и зоны', () => {
     expect(screen.queryByText(/Здоровый Взрослый — над системой/)).toBeNull();
     clickToolbarButton(
       container,
-      'Зоны: здоровый взрослый / копинги / детские и критики',
+      'Зоны: Здоровый Взрослый / копинги / детские и критики',
     );
     expect(screen.getByText(/Здоровый Взрослый — над системой/)).toBeTruthy();
   });
@@ -154,6 +154,14 @@ describe('ModeMapCanvas — легенда и подсказки', () => {
     expect(screen.getByText('Легенда')).toBeTruthy();
     clickToolbarButton(container, 'Легенда: формы и цвета');
     expect(screen.queryByText('Легенда')).toBeNull();
+  });
+
+  it('легенда называет и фигуры схемы случая', () => {
+    const { container } = renderCanvas({ initialNodes: [mmNode('n1', 'trigger')] });
+    clickToolbarButton(container, 'Легенда: формы и цвета');
+    for (const label of ['Схема (убеждение)', 'Опыт детства', 'Потребность']) {
+      expect(screen.getByText(label)).toBeTruthy();
+    }
   });
 
   it('подсказки (гайд) показаны по умолчанию и скрываются по кнопке', () => {

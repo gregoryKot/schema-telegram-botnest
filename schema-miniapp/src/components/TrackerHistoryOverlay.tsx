@@ -22,7 +22,8 @@ function formatHeaderDate(): string {
 }
 
 interface Props {
-  sheets: UseSheetsReturn;
+  sheets: Omit<UseSheetsReturn, 'close'>; // закрытие — только через onClose
+  onClose: () => void; // closers.tracker: реестр закрытия, как у «Назад» хоста
   safeTop: number;
   needs: Need[];
   history: DayHistory[];
@@ -44,6 +45,7 @@ interface Props {
 // Перенесено из App.tsx как есть (этап 3 REMEDIATION_PLAN) — без смены поведения.
 export function TrackerHistoryOverlay({
   sheets,
+  onClose,
   safeTop,
   needs,
   history,
@@ -60,41 +62,29 @@ export function TrackerHistoryOverlay({
   backfillDate,
   setBackfillDate,
 }: Props) {
+  const closeAndRate = () => {
+    onClose();
+    sheets.open('trackerOverlay', { trackerNeedId: null });
+  };
   if (!sheets.tracker) return null;
 
   return (
-    <div
-      style={{
-        position: 'fixed',
-        inset: 0,
-        zIndex: 80,
-        background: 'var(--bg)',
-        overflowY: 'auto',
-      }}
-    >
+    <div className="u-sheet">
       {/* Sticky header */}
       <div
         style={{
           position: 'sticky',
           top: 0,
           zIndex: 10,
+          // Без backdrop-filter — см. BottomNav.tsx (замеры 2026-08-26).
           background: 'var(--nav-bg)',
-          backdropFilter: 'blur(20px)',
-          WebkitBackdropFilter: 'blur(20px)',
           padding: `${safeTop + 16}px 20px 14px`,
           borderBottom: '1px solid rgba(var(--fg-rgb),0.04)',
         }}
       >
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            marginBottom: 10,
-          }}
-        >
+        <div className="u-between-mb10">
           <button
-            onClick={() => sheets.close('tracker', { trackerTab: 'today' })}
+            onClick={onClose}
             style={{
               background: 'none',
               border: 'none',
@@ -104,25 +94,20 @@ export function TrackerHistoryOverlay({
               padding: '0 4px 0 0',
               display: 'flex',
               alignItems: 'center',
-              gap: 4,
+              gap: 'var(--space-4)',
             }}
           >
             ‹ Назад
           </button>
-          <span style={{ fontSize: 13, color: 'var(--text-sub)' }}>
-            {formatHeaderDate()}
-          </span>
+          <span className="u-sub13">{formatHeaderDate()}</span>
           <button
-            onClick={() => {
-              sheets.close('tracker', { trackerTab: 'today' });
-              sheets.open('trackerOverlay', { trackerNeedId: null });
-            }}
+            onClick={closeAndRate}
             style={{
               background:
                 'color-mix(in srgb, var(--accent) 10%, var(--surface-2))',
               border:
                 '1px solid color-mix(in srgb, var(--accent) 20%, transparent)',
-              borderRadius: 10,
+              borderRadius: 'var(--r-10)',
               padding: '6px 12px',
               cursor: 'pointer',
               fontSize: 12,
@@ -153,7 +138,7 @@ export function TrackerHistoryOverlay({
             padding: '16px 20px',
             display: 'flex',
             flexDirection: 'column',
-            gap: 12,
+            gap: 'var(--space-12)',
           }}
         >
           <SkeletonCard h={180} />
@@ -167,10 +152,7 @@ export function TrackerHistoryOverlay({
           childhoodRatings={childhoodRatings}
           onOpenSchemas={() => sheets.open('schemaInfo')}
           onOpenChildhoodWheel={() => sheets.open('childhoodWheel')}
-          onGoToToday={() => {
-            sheets.close('tracker');
-            sheets.open('trackerOverlay', { trackerNeedId: null });
-          }}
+          onGoToToday={closeAndRate}
           onBackfill={(date) => setBackfillDate(date)}
         />
       )}

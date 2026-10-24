@@ -38,6 +38,10 @@ const PAIRS = [
   'hooks/useReducedMotionPref.ts',
   'utils/telemetryUrl.ts',
   'utils/telemetryUrl.test.ts',
+  'components/schemaFlashcard/constants.ts',
+  'components/schemaFlashcard/types.ts',
+  'test-support/rtlCleanup.ts',
+  'test-support/rtlCleanup.test.tsx',
 ];
 
 // Осознанно НЕ в списке (разошлись содержательно, или намеренное визуальное

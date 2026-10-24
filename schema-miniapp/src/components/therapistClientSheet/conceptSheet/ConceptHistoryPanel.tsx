@@ -1,7 +1,8 @@
-import { fmtDate } from '../../../utils/format';
+import { fmtDate, momentDayKey } from '../../../utils/format';
 import { SCHEMA_DOMAINS, MODE_GROUPS } from '../../../schemaTherapyData';
 import { IdentityDot } from '../../../../../shared/src/components/IdentityDot';
 import { ClientDetail } from '../types';
+import { snapshotToConceptFields } from '../../../../../shared/src/therapy/conceptSnapshotRestore';
 
 // Панель истории концептуализации (снимки с возможностью восстановить).
 // Вынесено из ConceptSheet.tsx (правило №10). Поведение не менялось.
@@ -16,14 +17,8 @@ export function ConceptHistoryPanel({ detail }: { detail: ClientDetail }) {
   if (!(showHistory && concept && (concept.history as unknown[])?.length > 0))
     return null;
   return (
-    <div style={{ marginBottom: 16 }}>
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 10,
-        }}
-      >
+    <div className="u-mb16">
+      <div className="u-col10">
         {concept.history.map((snap, i) => {
           const snapSchemas = (snap.schemaIds ?? [])
             .map((id) => {
@@ -52,7 +47,7 @@ export function ConceptHistoryPanel({ detail }: { detail: ClientDetail }) {
               style={{
                 background: 'rgba(var(--fg-rgb),0.03)',
                 border: '1px solid rgba(var(--fg-rgb),0.06)',
-                borderRadius: 14,
+                borderRadius: 'var(--r-14)',
                 padding: '12px 14px',
               }}
             >
@@ -71,21 +66,11 @@ export function ConceptHistoryPanel({ detail }: { detail: ClientDetail }) {
                     color: 'var(--text-sub)',
                   }}
                 >
-                  {fmtDate(snap.savedAt.slice(0, 10))}
+                  {fmtDate(momentDayKey(snap.savedAt))}
                 </span>
                 <button
                   onClick={() => {
-                    setLocalConcept({
-                      schemaIds: snap.schemaIds ?? [],
-                      modeIds: snap.modeIds ?? [],
-                      earlyExperience: snap.earlyExperience ?? '',
-                      unmetNeeds: snap.unmetNeeds ?? '',
-                      triggers: snap.triggers ?? '',
-                      copingStyles: snap.copingStyles ?? '',
-                      goals: snap.goals ?? '',
-                      currentProblems: snap.currentProblems ?? '',
-                      modeTransitions: snap.modeTransitions ?? '',
-                    });
+                    setLocalConcept(snapshotToConceptFields(snap));
                     setConceptDirty(true);
                     setShowHistory(false);
                   }}
@@ -95,7 +80,7 @@ export function ConceptHistoryPanel({ detail }: { detail: ClientDetail }) {
                     background:
                       'color-mix(in srgb, var(--accent) 10%, transparent)',
                     border: 'none',
-                    borderRadius: 8,
+                    borderRadius: 'var(--r-8)',
                     padding: '4px 10px',
                     cursor: 'pointer',
                   }}
@@ -108,7 +93,7 @@ export function ConceptHistoryPanel({ detail }: { detail: ClientDetail }) {
                   style={{
                     display: 'flex',
                     flexWrap: 'wrap',
-                    gap: 4,
+                    gap: 'var(--space-4)',
                     marginBottom: 6,
                   }}
                 >
@@ -118,7 +103,7 @@ export function ConceptHistoryPanel({ detail }: { detail: ClientDetail }) {
                       style={{
                         fontSize: 11,
                         padding: '2px 8px',
-                        borderRadius: 20,
+                        borderRadius: 'var(--r-20)',
                         background: color + '20',
                         color,
                       }}
@@ -129,7 +114,7 @@ export function ConceptHistoryPanel({ detail }: { detail: ClientDetail }) {
                 </div>
               )}
               {(snap.modeIds ?? []).length > 0 && (
-                <div style={{ marginBottom: 6 }}>
+                <div className="u-mb6">
                   {MODE_GROUPS.map((group) => {
                     const gm = group.items.filter((m) =>
                       (snap.modeIds ?? []).includes(m.id),
@@ -141,7 +126,7 @@ export function ConceptHistoryPanel({ detail }: { detail: ClientDetail }) {
                         style={{
                           display: 'flex',
                           flexWrap: 'wrap',
-                          gap: 4,
+                          gap: 'var(--space-4)',
                           marginBottom: 3,
                         }}
                       >
@@ -151,7 +136,7 @@ export function ConceptHistoryPanel({ detail }: { detail: ClientDetail }) {
                             style={{
                               fontSize: 11,
                               padding: '2px 8px',
-                              borderRadius: 20,
+                              borderRadius: 'var(--r-20)',
                               background: group.color + '20',
                               color: group.color,
                             }}

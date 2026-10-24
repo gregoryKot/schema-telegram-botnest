@@ -37,7 +37,7 @@ export function WarmWords({ onClose }: Props) {
 
   return (
     <BottomSheet onClose={onClose}>
-      <div style={{ paddingTop: 4 }}>
+      <div className="u-pt4">
         <SheetIconHeader
           title="Тёплые слова"
           subtitle="Слова поддержки от Здорового Взрослого"
@@ -48,7 +48,7 @@ export function WarmWords({ onClose }: Props) {
           style={{
             background: 'rgba(251,191,36,0.06)',
             border: '1px solid rgba(251,191,36,0.12)',
-            borderRadius: 14,
+            borderRadius: 'var(--r-14)',
             padding: '12px 14px',
             marginBottom: 16,
             fontSize: 12,
@@ -84,13 +84,7 @@ export function WarmWords({ onClose }: Props) {
 
         {!failed && items !== null && items.length === 0 && (
           <div style={{ textAlign: 'center', padding: '20px 8px' }}>
-            <div
-              style={{
-                fontSize: 13,
-                color: 'var(--text-sub)',
-                lineHeight: 1.6,
-              }}
-            >
+            <div className="u-sub13-lh16">
               {tr(
                 'Здесь пока пусто. Слова появятся, когда сохранишь ответ Здорового Взрослого — в дневнике режимов или в карточке режима.',
                 'Здесь пока пусто. Слова появятся, когда сохраните ответ Здорового Взрослого — в дневнике режимов или в карточке режима.',
@@ -119,7 +113,7 @@ export function WarmWords({ onClose }: Props) {
                     padding: '12px 14px',
                     background: 'rgba(var(--fg-rgb),0.03)',
                     border: '1px solid rgba(var(--fg-rgb),0.06)',
-                    borderRadius: 14,
+                    borderRadius: 'var(--r-14)',
                     marginBottom: 8,
                   }}
                 >
@@ -129,10 +123,10 @@ export function WarmWords({ onClose }: Props) {
                       justifyContent: 'space-between',
                       alignItems: 'center',
                       marginBottom: 6,
-                      gap: 8,
+                      gap: 'var(--space-8)',
                     }}
                   >
-                    <span style={{ fontSize: 12, color: 'var(--text-sub)' }}>
+                    <span className="u-sub12">
                       {item.source === 'phrase' ? (
                         'Переписанная фраза'
                       ) : mode ? (
@@ -174,7 +168,7 @@ export function WarmWords({ onClose }: Props) {
           </>
         )}
 
-        <div style={{ marginTop: 16 }}>
+        <div className="u-mt16">
           <TherapyNote compact />
         </div>
       </div>

@@ -101,12 +101,14 @@ export function DiarySection({ onClose, onOpenTracker }: Props = {}) {
           style={{
             display: 'flex',
             alignItems: 'center',
-            gap: 10,
+            gap: 'var(--space-10)',
             justifyContent: 'space-between',
             flexWrap: 'wrap',
             padding: '10px 16px',
-            background: 'rgba(248,113,113,0.1)',
-            borderBottom: '1px solid rgba(248,113,113,0.25)',
+            background:
+              'color-mix(in srgb, var(--accent-red) 10%, transparent)',
+            borderBottom:
+              '1px solid color-mix(in srgb, var(--accent-red) 25%, transparent)',
             fontSize: 13,
             color: 'var(--accent-red)',
             lineHeight: 1.5,
@@ -123,10 +125,11 @@ export function DiarySection({ onClose, onOpenTracker }: Props = {}) {
             style={{
               flexShrink: 0,
               padding: '6px 14px',
-              borderRadius: 10,
+              borderRadius: 'var(--r-10)',
               border: 'none',
               fontFamily: 'inherit',
-              background: 'rgba(248,113,113,0.15)',
+              background:
+                'color-mix(in srgb, var(--accent-red) 15%, transparent)',
               color: 'var(--accent-red)',
               fontSize: 13,
               fontWeight: 600,

@@ -15,15 +15,29 @@ import {
   CUSTOMIZE_ENTRY_POINTS,
   HOME_SCREEN_ACTIONS,
   HOME_SCREEN_SURFACES,
+  SITE_INSTALL_SURFACES,
   ONBOARDING_STEPS,
   SHARE_CARD_KINDS,
   CRISIS_SURFACES,
   TODAY_FOCUS_PRACTICES,
   WEB_BANNER_IDS,
   SIGNUP_SOURCES,
+  PROFILE_PATTERN_KINDS,
 } from './analytics.constants';
+import { CONCEPT_EVENTS } from './concept-events.constants';
 import { CRISIS_SURFACES as CRISIS_SURFACES_DIRECT } from './crisis-surfaces.constants';
+import {
+  PUBLIC_CRISIS_EVENTS,
+  PUBLIC_CRISIS_SURFACES,
+} from './public-crisis.constants';
 import { SIGNUP_SOURCES as SIGNUP_SOURCES_DIRECT } from './signup-sources.constants';
+import { WEB_BANNER_IDS as WEB_BANNER_IDS_DIRECT } from './web-banner-ids.constants';
+import {
+  GAME_EVENTS,
+  GAME_CHAPTERS,
+  GAME_CTA_PLACES,
+  GAME_ENTRY_SOURCES,
+} from './game-events.constants';
 
 /** Все перечислимые реестры events/enum'ов этого модуля — сверяются одинаково. */
 const REGISTRIES: Record<string, readonly string[]> = {
@@ -35,12 +49,19 @@ const REGISTRIES: Record<string, readonly string[]> = {
   CUSTOMIZE_ENTRY_POINTS,
   HOME_SCREEN_ACTIONS,
   HOME_SCREEN_SURFACES,
+  SITE_INSTALL_SURFACES,
   ONBOARDING_STEPS,
   SHARE_CARD_KINDS,
   CRISIS_SURFACES,
   TODAY_FOCUS_PRACTICES,
   WEB_BANNER_IDS,
   SIGNUP_SOURCES,
+  PROFILE_PATTERN_KINDS,
+  GAME_EVENTS,
+  GAME_CHAPTERS,
+  GAME_CTA_PLACES,
+  GAME_ENTRY_SOURCES,
+  CONCEPT_EVENTS,
 };
 
 describe('реестры analytics.constants: без дублей и пустых значений', () => {
@@ -69,6 +90,25 @@ describe('реестры analytics.constants: без дублей и пусты�
   );
 });
 
+describe('CONCEPT_EVENTS ⊆ ANALYTICS_EVENTS', () => {
+  it('каждое событие схемы случая есть в общем allow-list и не открыто анонимно', () => {
+    // Терапевт всегда авторизован: анонимный путь (POST /api/public-event) для
+    // клинических событий закрыт — иначе их можно накрутить без входа.
+    for (const name of CONCEPT_EVENTS) {
+      expect(ANALYTICS_EVENTS).toContain(name);
+      expect(PUBLIC_ANALYTICS_EVENTS).not.toContain(name);
+    }
+  });
+
+  it('перенос на холст — событие реестра (concept_canvas_open)', () => {
+    expect(CONCEPT_EVENTS).toContain('concept_canvas_open');
+  });
+
+  it('разворот на весь экран — событие реестра (concept_graph_fullscreen)', () => {
+    expect(CONCEPT_EVENTS).toContain('concept_graph_fullscreen');
+  });
+});
+
 describe('PUBLIC_ANALYTICS_EVENTS ⊆ ANALYTICS_EVENTS', () => {
   it('каждое публичное (анонимное) событие есть в общем allow-list', () => {
     // Иначе AnalyticsService.track молча дропнет «публичное» событие: DTO его
@@ -76,6 +116,18 @@ describe('PUBLIC_ANALYTICS_EVENTS ⊆ ANALYTICS_EVENTS', () => {
     // отбросит по ANALYTICS_EVENTS.includes(name) — метрика тихо пропадёт.
     for (const name of PUBLIC_ANALYTICS_EVENTS) {
       expect(ANALYTICS_EVENTS).toContain(name);
+    }
+  });
+});
+
+describe('SITE_INSTALL_SURFACES ⊆ HOME_SCREEN_SURFACES', () => {
+  it('каждая сайтовая surface установки есть в общем реестре поверхностей', () => {
+    // Иначе фильтр воронки мини-аппа (bot.product-metrics.service.ts) и блок
+    // «Установка с сайта» (site-install-metrics.service.ts) молча разъедутся
+    // с DTO-валидацией surface (правило №4: дублированные реестры — только
+    // с тестом-сверкой).
+    for (const surface of SITE_INSTALL_SURFACES) {
+      expect(HOME_SCREEN_SURFACES).toContain(surface);
     }
   });
 });
@@ -96,5 +148,45 @@ describe('SIGNUP_SOURCES реэкспортирован без искажени�
 
   it('содержит other — обязательный фолбэк для неизвестного/мусорного slug', () => {
     expect(SIGNUP_SOURCES).toContain('other');
+  });
+});
+
+describe('WEB_BANNER_IDS реэкспортирован без искажений', () => {
+  it('analytics.constants.ts отдаёт тот же массив, что и web-banner-ids.constants.ts', () => {
+    // Правило №10: WEB_BANNER_IDS вынесен в отдельный файл ради лимита строк
+    // (тот же приём, что и SIGNUP_SOURCES выше) — реэкспорт легко протухает.
+    expect(WEB_BANNER_IDS).toEqual(WEB_BANNER_IDS_DIRECT);
+  });
+});
+
+describe('GAME_EVENTS ⊆ PUBLIC_ANALYTICS_EVENTS', () => {
+  it('каждое событие игры разрешено анонимно — иначе DTO публичного эндпоинта его отвергнет', () => {
+    // Игра вообще не авторизует пользователя (правило №5/№14): если бы
+    // событие игры оказалось только в ANALYTICS_EVENTS, PublicEventDto
+    // (IsIn(PUBLIC_ANALYTICS_EVENTS)) отклонил бы его ещё до сервиса.
+    for (const name of GAME_EVENTS) {
+      expect(PUBLIC_ANALYTICS_EVENTS).toContain(name);
+    }
+  });
+});
+
+describe('анонимная кризисная карточка (форма записи на визитке)', () => {
+  it('каждая публичная поверхность карточки есть в общем реестре CRISIS_SURFACES', () => {
+    // Иначе sanitizeMeta POST /api/event её отбросит, а /stats разойдётся с
+    // тем, что принимает публичный путь (правило №4).
+    for (const surface of PUBLIC_CRISIS_SURFACES) {
+      expect(CRISIS_SURFACES).toContain(surface);
+    }
+  });
+
+  it('публичные кризисные события разрешены анонимно и входят в общий allow-list', () => {
+    for (const name of PUBLIC_CRISIS_EVENTS) {
+      expect(PUBLIC_ANALYTICS_EVENTS).toContain(name);
+      expect(ANALYTICS_EVENTS).toContain(name);
+    }
+  });
+
+  it('публичная поверхность — только booking: остальные экраны с авторизацией', () => {
+    expect(PUBLIC_CRISIS_SURFACES).toEqual(['booking']);
   });
 });

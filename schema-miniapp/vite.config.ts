@@ -1,11 +1,16 @@
 /// <reference types="vitest/config" />
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import { requireBotUsernamePlugin } from '../shared/src/build/requireBotUsername.ts';
 import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig({
+  // Времени сборки в define здесь НЕ будет: dist закоммичен, и CI-джоба miniapp пересобирает его
+  // для сверки байт-в-байт — любой new Date() в бандле роняет её (поймано на PR #431). Метка
+  // версии для BuildInfoLine берётся в рантайме из document.lastModified (HTTP Last-Modified).
   plugins: [
     react(),
+    requireBotUsernamePlugin(),
     // PWA-каркас (docs/PWA_PLAN.md фаза 1, docs/MULTI_HOST_PLAN.md шаг 3).
     // injectManifest, не generateSW — фаза 4 добавит свой push-handler в
     // sw.ts, переезд стратегии посреди пути был бы лишней переделкой.
@@ -24,15 +29,31 @@ export default defineConfig({
           'Дневник состояний, тест по схемам и практики между сессиями.',
         lang: 'ru',
         display: 'standalone',
-        scope: '/app/',
+        // Scope как у корневого манифеста сайта (webapp/public/manifest.webmanifest,
+        // оба описывают ОДНО приложение: id = start_url = /app/). Разные scope
+        // давали два вида установки: у поставленной из /app/ переходы на сайт
+        // открывались out-of-scope браузерной вкладкой, display-mode: standalone
+        // там не матчился — и баннер «поставь приложение» показывался внутри
+        // уже установленного. Сверка — webapp/src/pwaManifest.test.ts.
+        scope: '/',
         start_url: '/app/',
         // Светлая тема мини-аппа (src/index.css, html[data-theme="light"]) —
         // манифест один, тёмную отрабатывает meta theme-color в index.html.
         theme_color: '#faf7f3',
         background_color: '#faf7f3',
         icons: [
-          { src: '/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
-          { src: '/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
+          {
+            src: '/icon-192.png',
+            sizes: '192x192',
+            type: 'image/png',
+            purpose: 'any',
+          },
+          {
+            src: '/icon-512.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'any',
+          },
           {
             src: '/icon-512-maskable.png',
             sizes: '512x512',
@@ -76,11 +97,10 @@ export default defineConfig({
   resolve: { dedupe: ['react', 'react-dom'] },
   // dev-сервер должен читать ../shared (реэкспорты выходят за root)
   server: { fs: { allow: ['..'] } },
-  // Тестовое окружение (environment/globals) НЕ задаётся здесь глобально —
-  // каждый *.test.ts(x) сам объявляет `// @vitest-environment jsdom` пер-файл
-  // (см. CLAUDE.md / существующие тесты). Настраиваем только coverage —
-  // по образцу webapp/vite.config.ts (фронтенд-coverage-храповик).
+  // environment/globals НЕ глобально: каждый *.test.ts(x) сам ставит `// @vitest-environment jsdom`.
+  // Очистка DOM после теста — setupFiles (test-support/rtlCleanup.ts), не память автора.
   test: {
+    setupFiles: ['./src/test-support/rtlCleanup.ts'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json-summary'],

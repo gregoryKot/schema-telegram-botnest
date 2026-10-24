@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { api, reportClientError } from '../api';
-import type { TherapyClientSummary, UserTask } from '../api';
+import type { TherapyClientSummary, UserTask, UserId } from '../api';
 import { TaskCreateSheet } from './TaskCreateSheet';
+import { SkeletonCard } from './Skeleton';
 import { ClientNotesTab } from './therapist/ClientNotesTab';
 import { ClientYSQTab } from './therapist/ClientYSQTab';
 import { useClientDetail } from './therapist/useClientDetail';
@@ -14,12 +15,12 @@ import { ClientConceptTab } from './therapist/ClientConceptTab';
 import { ClientSessionsTab } from './therapist/ClientSessionsTab';
 import { ClientTasksTab } from './therapist/ClientTasksTab';
 import { reloadKeepingShown } from '../../../shared/src/utils/reloadKeepingShown';
-
+import { sameId } from '../../../shared/src/utils/sameId';
 interface Props {
   view: 'list' | 'client';
-  openClientId?: number | null;
+  openClientId?: UserId | null;
   onViewChange: (v: 'list' | 'client') => void;
-  onOpenClient?: (id: number) => void;
+  onOpenClient?: (id: UserId) => void;
   onClose: () => void;
   backHandlerRef?: React.MutableRefObject<() => void>;
   onClientsChange?: (clients: TherapyClientSummary[]) => void;
@@ -35,12 +36,13 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
   const [listTab, setListTab] = useState<'clients' | 'kanban'>('clients');
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'wait' | 'virtual'>('all');
-  const [allTasks, setAllTasks] = useState<{ clientId: number; clientName: string; tasks: UserTask[] }[] | null>(null);
+  const [allTasks, setAllTasks] = useState<{ clientId: UserId; clientName: string; tasks: UserTask[] }[] | null>(null);
   const [allTasksLoading, setAllTasksLoading] = useState(false);
   // Сбой ≠ пусто: канбан «Задания» не должен показать терапевту пустую доску
   // на отказе запроса (см. ClientListView.loadAllTasks).
   const [allTasksFailed, setAllTasksFailed] = useState(false);
   const [animKey, setAnimKey] = useState(0);
+  const [canvasMapId, setCanvasMapId] = useState<number | null>(null); // карта, созданная кнопкой «Открыть на холсте»
 
   function switchView(v: 'list' | 'client') {
     setAnimKey(k => k + 1);
@@ -57,7 +59,7 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
       setClients(cl);
       setLoadFailed(false);
       if (openClientIdProp) {
-        const c = cl.find(x => x.telegramId === openClientIdProp);
+        const c = cl.find(x => sameId(x.telegramId, openClientIdProp));
         if (c) detail.openClient(c);
       }
     }).catch(() => {
@@ -75,8 +77,8 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
   // ─── React to URL-driven client navigation ────────────────────────────────────
   useEffect(() => {
     if (!openClientIdProp || loading) return;
-    if (detail.selectedClient?.telegramId === openClientIdProp) return;
-    const c = clients.find(x => x.telegramId === openClientIdProp);
+    if (sameId(detail.selectedClient?.telegramId, openClientIdProp)) return;
+    const c = clients.find(x => sameId(x.telegramId, openClientIdProp));
     if (c) detail.openClient(c);
   }, [openClientIdProp, loading]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -104,7 +106,7 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
   // ─── Render ───────────────────────────────────────────────────────────────────
 
   return (
-    <div className="therapist-sheet" style={{ background: 'var(--bg)' }}>
+    <div className="therapist-sheet tk-sheet">
 
       {/* ── LIST VIEW ──────────────────────────────────────────────────────────── */}
       {view === 'list' && (
@@ -134,17 +136,13 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
       {view === 'client' && selectedClient && (
         <div className="therapist-scroll therapist-scroll--client" key={`client-${animKey}`} style={{ animation: 'fade-in 0.22s ease' }}>
 
-          {/* Client header — moderately compact */}
           <ClientHeader selectedClient={selectedClient} detail={detail} switchView={switchView} />
 
           {/* Tab content */}
-          <div className="therapist-scroll therapist-scroll--tabs" key={clientTab}>
+          <div className="therapist-scroll therapist-scroll--tabs tk-tabs-body" key={clientTab}>
 
-            {/* Loading state */}
             {tabLoading ? (
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 240 }}>
-                <div className="spinner" />
-              </div>
+              <div className="tk-load" aria-hidden><SkeletonCard height={96} /><SkeletonCard /></div>
             ) : <>
 
             {/* ── OVERVIEW ─────────────────────────────────────────────────────── */}
@@ -154,13 +152,13 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
 
             {/* ── CONCEPT ──────────────────────────────────────────────────────── */}
             {clientTab === 'concept' && (
-              <ClientConceptTab detail={detail} />
+              <ClientConceptTab detail={detail} onOpenCanvas={(id) => { setCanvasMapId(id); detail.setClientTab('mode_map'); }} />
             )}
 
             {/* ── MODE MAP — keep mounted to preserve React Flow state across tab switches */}
             {selectedClient != null && clientTab === 'mode_map' && (
               <div style={{ height: '100%', minHeight: 0, display: 'flex', flexDirection: 'column' }}>
-                <ModeMapSelector key={selectedClient.telegramId} clientId={selectedClient.telegramId} />
+                <ModeMapSelector key={`${selectedClient.telegramId}-${canvasMapId}`} clientId={selectedClient.telegramId} initialMapId={canvasMapId ?? undefined} />
               </div>
             )}
 
@@ -189,8 +187,6 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
               />
             )}
 
-            {/* ── OLD YSQ BODY (replaced) – keep tombstone so edit finds it */}
-
             {/* ── CLIENT NOTES ─────────────────────────────────────────────────── */}
             {clientTab === 'client_notes' && (
               <ClientNotesTab
@@ -201,7 +197,6 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
             )}
 
             </> /* end tabLoading ternary */}
-
 
           </div>
         </div>

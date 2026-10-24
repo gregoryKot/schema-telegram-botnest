@@ -1,8 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { createHash } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { SessionType } from '@prisma/client';
+import { decrypt, encrypt } from '../utils/crypto';
+import { clientKey } from './client-key';
+import { findClientMeeting, hasClientMeeting } from './client-meeting-lookup';
+import { jitsiRoom, reuseClientRoom } from './meeting-jitsi';
+import type { MeetingLink } from './meeting-link';
 
 export interface MeetingTarget {
   id: number;
@@ -16,15 +20,15 @@ export interface MeetingTarget {
 /**
  * Gives every client a PERSONAL video-call link reused across all their sessions.
  *
- * The client is identified by a SHA-256 hash of their normalised contact, so a
- * returning client who enters the same contact gets the same link. The link is
- * created once and stored in ClientMeeting.
+ * The client is identified by an HMAC of their normalised contact (client-key.ts),
+ * so a returning client who enters the same contact gets the same link. The link
+ * is created once and stored in ClientMeeting.
  *
  * Provider (first match wins):
  *   1. Zoom S2S OAuth — a per-client recurring meeting (type 3, no fixed time).
  *      Needs ZOOM_ACCOUNT_ID, ZOOM_CLIENT_ID, ZOOM_CLIENT_SECRET.
  *   2. MEETING_STATIC_URL — one shared permanent room (degenerate fallback).
- *   3. Jitsi — a per-client deterministic meet.jit.si room (no config, works RU).
+ *   3. Jitsi — a per-client random meet.jit.si room (no config, works RU).
  */
 @Injectable()
 export class MeetingService {
@@ -65,27 +69,25 @@ export class MeetingService {
 
   /** True if this contact already has a personal meeting (i.e. a returning client). */
   async hasMeetingForContact(contact: string): Promise<boolean> {
-    const found = await this.prisma.clientMeeting.findUnique({
-      where: { clientKey: clientKey(contact) },
-    });
-    return found !== null;
+    return hasClientMeeting(this.prisma, contact);
   }
 
-  /** Returns this client's personal meeting URL, creating it on first session. */
-  async createMeeting(b: MeetingTarget): Promise<string> {
-    if (this.staticUrl) return this.staticUrl;
+  /** This client's personal meeting link, created on first session; `replaced` — the old room was swapped. */
+  async createMeeting(b: MeetingTarget): Promise<MeetingLink> {
+    if (this.staticUrl) return { url: this.staticUrl, replaced: false };
 
-    const key = clientKey(b.clientContact);
-    const existing = await this.prisma.clientMeeting.findUnique({
-      where: { clientKey: key },
-    });
+    const existing = await findClientMeeting(this.prisma, b.clientContact);
     if (existing) {
+      const key = existing.clientKey;
+      // meetingUrl в БД зашифрован (D-9, аудит 2026-10: `?pwd=` пускает в
+      // комнату клиента); старую строку с открытой ссылкой decrypt отдаёт как есть.
+      const existingUrl = decrypt(existing.meetingUrl) ?? '';
       // Upgrade a previously-issued Jitsi room to Zoom once Zoom is configured,
       // so links created during testing/before Zoom setup don't stay on Jitsi.
       if (
         this.zoomEnabled &&
         !existing.zoomMeetingId &&
-        existing.meetingUrl.includes('meet.jit.si')
+        existingUrl.includes('meet.jit.si')
       ) {
         const z = await this.createZoom(b).catch((e) => {
           this.logger.error(`Zoom upgrade failed: ${(e as Error).message}`);
@@ -94,16 +96,13 @@ export class MeetingService {
         if (z) {
           await this.prisma.clientMeeting.update({
             where: { clientKey: key },
-            data: { meetingUrl: z.url, zoomMeetingId: z.id },
+            data: { meetingUrl: encrypt(z.url) ?? z.url, zoomMeetingId: z.id },
           });
-          this.logger.log(`Upgraded client ${key.slice(0, 8)}… Jitsi → Zoom`);
-          return z.url;
+          this.logger.log(`Upgraded client ${key.slice(0, 11)}… Jitsi → Zoom`);
+          return { url: z.url, replaced: true };
         }
       }
-      this.logger.log(
-        `Reusing personal meeting for client ${key.slice(0, 8)}…`,
-      );
-      return existing.meetingUrl;
+      return reuseClientRoom(this.prisma, this.logger, existing);
     }
 
     if (!this.zoomEnabled)
@@ -119,14 +118,19 @@ export class MeetingService {
         })
       : null;
 
-    const meetingUrl = zoom?.url ?? jitsiRoom(key);
+    const meetingUrl = zoom?.url ?? jitsiRoom();
+    const key = clientKey(b.clientContact);
     await this.prisma.clientMeeting.create({
-      data: { clientKey: key, meetingUrl, zoomMeetingId: zoom?.id ?? null },
+      data: {
+        clientKey: key,
+        meetingUrl: encrypt(meetingUrl) ?? meetingUrl,
+        zoomMeetingId: zoom?.id ?? null,
+      },
     });
     this.logger.log(
-      `Created personal meeting for client ${key.slice(0, 8)}… (${zoom ? 'zoom' : 'jitsi'})`,
+      `Created personal meeting for client ${key.slice(0, 11)}… (${zoom ? 'zoom' : 'jitsi'})`,
     );
-    return meetingUrl;
+    return { url: meetingUrl, replaced: false };
   }
 
   /** Create a per-client recurring Zoom meeting (no fixed time → one stable link). */
@@ -181,20 +185,4 @@ export class MeetingService {
     const data = (await res.json()) as { access_token?: string };
     return data.access_token ?? null;
   }
-}
-
-// ── helpers ──────────────────────────────────────────────────────────────────
-
-/** Normalise a contact (telegram/phone) so the same person maps to one key. */
-function clientKey(contact: string): string {
-  const norm = contact
-    .trim()
-    .toLowerCase()
-    .replace(/^@/, '')
-    .replace(/[\s()+-]/g, '');
-  return createHash('sha256').update(norm).digest('hex');
-}
-
-function jitsiRoom(key: string): string {
-  return `https://meet.jit.si/schemehappens-${key.slice(0, 12)}`;
 }

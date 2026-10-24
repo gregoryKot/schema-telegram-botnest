@@ -11,6 +11,19 @@ afterEach(() => {
 });
 
 describe('ProfileHeader', () => {
+  // В8 дизайн-аудита 2026-08: имя пользователя — заголовок экрана (h1).
+  it('имя пользователя — h1', () => {
+    render(
+      <ProfileHeader
+        firstName="Аня"
+        totalDays={0}
+        onOpenSettings={() => {}}
+        onCustomize={() => {}}
+      />,
+    );
+    expect(screen.getByRole('heading', { level: 1, name: 'Аня' })).toBeTruthy();
+  });
+
   it('чистый аккаунт (totalDays=0) — строка «дней в приложении» не показывается', () => {
     render(
       <ProfileHeader

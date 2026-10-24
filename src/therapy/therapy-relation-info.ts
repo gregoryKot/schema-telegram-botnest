@@ -1,0 +1,50 @@
+import { PrismaService } from '../prisma/prisma.service';
+import { TherapyRelationInfo } from './therapy.types';
+
+// Статус связи терапевт↔клиент «глазами» пользователя (экран «Мой терапевт»).
+//
+// Роль партнёра сверяется с обеих сторон. Терапевт: у вышедшего из роли
+// остаются старые строки (A-3, аудит 2026-10). Клиент: связи бывшего терапевта,
+// осиротевшие до статуса `ended`, не показываем (backend#33).
+export async function getRelationInfo(
+  prisma: PrismaService,
+  uid: bigint,
+): Promise<TherapyRelationInfo | null> {
+  const me = await prisma.user.findUnique({
+    where: { id: uid },
+    select: { role: true },
+  });
+  const asTherapist =
+    me?.role === 'THERAPIST'
+      ? await prisma.therapyRelation.findFirst({
+          where: { therapistId: uid, status: 'active' },
+          include: { client: { select: { firstName: true } } },
+        })
+      : null;
+  if (asTherapist) {
+    return {
+      role: 'therapist',
+      status: 'active',
+      partnerName: asTherapist.client?.firstName ?? null,
+      partnerId: asTherapist.clientId ?? null,
+      code: asTherapist.code,
+      nextSession: null,
+    };
+  }
+  const rows = await prisma.therapyRelation.findMany({
+    where: { clientId: uid, status: 'active' },
+    include: {
+      therapist: { select: { id: true, firstName: true, role: true } },
+    },
+  });
+  const asClient = rows.find((r) => r.therapist?.role === 'THERAPIST');
+  if (!asClient) return null;
+  return {
+    role: 'client',
+    status: 'active',
+    partnerName: asClient.therapist?.firstName ?? null,
+    partnerId: asClient.therapist?.id ?? null,
+    code: asClient.code,
+    nextSession: asClient.nextSession ?? null,
+  };
+}

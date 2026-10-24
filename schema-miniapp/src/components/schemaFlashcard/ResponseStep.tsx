@@ -27,23 +27,17 @@ export function ResponseStep({
 }: ResponseStepProps) {
   return (
     <BottomSheet onClose={onClose}>
-      <div style={{ paddingTop: 4 }}>
-        <div style={{ marginBottom: 16 }}>
-          <div style={{ fontSize: 17, fontWeight: 700, color: 'var(--text)' }}>
-            Здоровый Взрослый
-          </div>
-          <div
-            style={{ fontSize: 12, color: 'var(--text-faint)', marginTop: 2 }}
-          >
-            Шаг 2 из 4
-          </div>
+      <div className="u-pt4">
+        <div className="u-mb16">
+          <div className="u-h17">Здоровый Взрослый</div>
+          <div className="u-faint12-mt2">Шаг 2 из 4</div>
         </div>
         <ProgressBar stepIndex={stepIndex} />
         <div
           style={{
             background: 'rgba(52,211,153,0.07)',
             border: '1px solid rgba(52,211,153,0.18)',
-            borderRadius: 20,
+            borderRadius: 'var(--r-20)',
             padding: '16px',
             marginBottom: 16,
           }}
@@ -67,8 +61,7 @@ export function ResponseStep({
         <div
           style={{ fontSize: 13, color: 'var(--text-sub)', marginBottom: 8 }}
         >
-          Что отзывается?{' '}
-          <span style={{ color: 'var(--text-faint)' }}>(необязательно)</span>
+          Что отзывается? <span className="u-faint">(необязательно)</span>
         </div>
         <textarea
           value={reflection}
@@ -80,7 +73,7 @@ export function ResponseStep({
             boxSizing: 'border-box',
             background: 'var(--surface)',
             border: '1px solid var(--border-color)',
-            borderRadius: 14,
+            borderRadius: 'var(--r-14)',
             padding: '12px 14px',
             color: 'var(--text)',
             fontSize: 14,
@@ -92,13 +85,13 @@ export function ResponseStep({
           }}
         />
         <CrisisGate texts={[reflection]} surface="flashcard" />
-        <div style={{ display: 'flex', gap: 10 }}>
+        <div className="u-row10">
           <button
             onClick={onBack}
             style={{
               width: 44,
               height: 44,
-              borderRadius: 12,
+              borderRadius: 'var(--r-12)',
               border: 'none',
               fontFamily: 'inherit',
               background: 'var(--surface-2)',
@@ -117,7 +110,7 @@ export function ResponseStep({
             style={{
               flex: 1,
               padding: '13px',
-              borderRadius: 12,
+              borderRadius: 'var(--r-12)',
               border: 'none',
               fontFamily: 'inherit',
               background: 'rgba(var(--fg-rgb),0.08)',
@@ -130,7 +123,7 @@ export function ResponseStep({
             Дальше →
           </button>
         </div>
-        <div style={{ marginTop: 20 }}>
+        <div className="u-mt20">
           <TherapyNote compact />
         </div>
       </div>

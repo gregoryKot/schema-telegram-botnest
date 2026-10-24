@@ -1,5 +1,5 @@
 import { BottomSheet } from '../BottomSheet';
-import { fmtDate } from '../../utils/format';
+import { fmtDate, momentDayKey } from '../../utils/format';
 import { ClientDetail } from './types';
 
 interface TasksSheetProps {
@@ -28,7 +28,7 @@ export function TasksSheet({ detail }: TasksSheetProps) {
 
   return (
     <BottomSheet onClose={() => setShowTasksSheet(false)}>
-      <div style={{ paddingTop: 4 }}>
+      <div className="u-pt4">
         <div
           style={{
             fontSize: 17,
@@ -43,7 +43,7 @@ export function TasksSheet({ detail }: TasksSheetProps) {
           style={{
             background: 'rgba(var(--fg-rgb),0.03)',
             border: '1px solid rgba(var(--fg-rgb),0.07)',
-            borderRadius: 16,
+            borderRadius: 'var(--r-16)',
             overflow: 'hidden',
             marginBottom: 12,
           }}
@@ -66,7 +66,7 @@ export function TasksSheet({ detail }: TasksSheetProps) {
                 style={{
                   display: 'flex',
                   alignItems: 'flex-start',
-                  gap: 10,
+                  gap: 'var(--space-10)',
                   padding: '12px 16px',
                   borderTop:
                     i > 0 ? '1px solid rgba(var(--fg-rgb),0.05)' : undefined,
@@ -83,7 +83,7 @@ export function TasksSheet({ detail }: TasksSheetProps) {
                 >
                   {taskMark(task)}
                 </span>
-                <div style={{ flex: 1, minWidth: 0 }}>
+                <div className="u-fill">
                   <div
                     style={{
                       fontSize: 14,
@@ -102,7 +102,7 @@ export function TasksSheet({ detail }: TasksSheetProps) {
                   >
                     {task.dueDate
                       ? `Срок: ${fmtDate(task.dueDate)}`
-                      : fmtDate(task.createdAt.slice(0, 10))}
+                      : fmtDate(momentDayKey(task.createdAt))}
                   </div>
                   {task.progress !== undefined && task.targetDays && (
                     <div
@@ -118,7 +118,7 @@ export function TasksSheet({ detail }: TasksSheetProps) {
                           flex: 1,
                           height: 4,
                           background: 'rgba(var(--fg-rgb),0.08)',
-                          borderRadius: 4,
+                          borderRadius: 'var(--r-4)',
                           overflow: 'hidden',
                         }}
                       >
@@ -127,7 +127,7 @@ export function TasksSheet({ detail }: TasksSheetProps) {
                             width: `${Math.min(task.progress / task.targetDays, 1) * 100}%`,
                             height: '100%',
                             background: 'var(--accent)',
-                            borderRadius: 4,
+                            borderRadius: 'var(--r-4)',
                           }}
                         />
                       </div>
@@ -152,7 +152,7 @@ export function TasksSheet({ detail }: TasksSheetProps) {
           style={{
             width: '100%',
             padding: '13px 0',
-            borderRadius: 14,
+            borderRadius: 'var(--r-14)',
             border: 'none',
             background: 'color-mix(in srgb, var(--accent) 15%, transparent)',
             color: 'var(--accent)',

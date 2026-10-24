@@ -76,3 +76,19 @@ describe('IntroSheetFlashcard — шаг виден сразу (правило �
     expect((textarea as HTMLTextAreaElement).value).toBe('два слова');
   });
 });
+
+// В7 дизайн-аудита 2026-08: вопрос был связан с полем только placeholder'ом,
+// который исчезает при вводе. Проверяем, что поле доступно по видимому
+// вопросу как по label — не только по placeholder.
+describe('IntroSheetFlashcard — вопрос связан с полем (В7)', () => {
+  it('textarea доступно по видимому вопросу как по label (не только по placeholder)', () => {
+    render(<Wrapper />);
+    // getByLabelText разрешает aria-labelledby так же, как <label for=…> —
+    // падает, если поле не связано программно с видимым вопросом.
+    const byLabel = screen.getByLabelText('Что запускает эту схему?');
+    const byPlaceholder = screen.getByPlaceholderText(
+      'Когда не отвечают на сообщения...',
+    );
+    expect(byLabel).toBe(byPlaceholder);
+  });
+});

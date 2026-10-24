@@ -17,9 +17,12 @@ export function HomeScreenSection() {
   const platform = homeScreenPlatform(getHost().platform);
 
   return (
-    <div style={{ marginBottom: 8 }}>
+    <div className="u-mb8">
       <SettingsLabel>ЗНАЧОК НА ЭКРАНЕ</SettingsLabel>
-      <div className="card" style={{ borderRadius: 16, padding: 14 }}>
+      <div
+        className="card"
+        style={{ borderRadius: 'var(--r-16)', padding: 14 }}
+      >
         <AddHomeScreenButton>Добавить значок на экран</AddHomeScreenButton>
         <div
           style={{

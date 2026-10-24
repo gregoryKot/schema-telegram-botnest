@@ -1,6 +1,5 @@
-// Чистый форматтер админского отчёта /stats. Вынесено из bot.analytics.service.ts
-// (правило №10). Форматтер покрыт тестом на населённом И пустом состоянии
-// (правило №8): на чистой БД отчёт не должен показывать NaN/undefined/мусор.
+// Чистый форматтер админского отчёта /stats (правило №10). Тест — на населённом
+// И пустом состоянии (правило №8): на чистой БД без NaN/undefined/мусора.
 
 export interface AdminStatsData {
   today: string;
@@ -21,7 +20,8 @@ export interface AdminStatsData {
   ret7: number;
   ret30: number;
   lowestNeed?: { needId: string; _avg: { value: number | null } };
-  bestDow: number;
+  /** 0 — вс … 6 — сб; null — за месяц не было ни одной записи. */
+  bestDow: number | null;
   activePairs: number;
 }
 
@@ -41,7 +41,10 @@ export function formatAdminStats(d: AdminStatsData): string {
     '',
     `👥 <b>Люди</b>`,
     `Всего людей: ${d.totalUsers} (новых за неделю: ${d.newUsers7}, за месяц: ${d.newUsers30})`,
-    `Выключили напоминания: ${d.notifyOff} · заблокировали бота: ${d.blockedUsers}`,
+    // «Бот не может им написать», а не «заблокировали бота»: в это число
+    // попадает и тот, у кого чат просто не нашёлся. Формулировка «заблокировали»
+    // читалась как выбор человека, хотя часто это была наша ошибка адресации.
+    `Выключили напоминания: ${d.notifyOff} · бот не может им написать: ${d.blockedUsers}`,
     '',
     `📔 <b>Дневник настроения</b>`,
     `Заполнили сегодня: ${d.todayCount} (это ${d.fillRate}% от тех, кто заходил за месяц)`,
@@ -56,7 +59,7 @@ export function formatAdminStats(d: AdminStatsData): string {
     d.lowestNeed
       ? `Людям больше всего не хватает: ${NEED_LABELS[d.lowestNeed.needId] ?? d.lowestNeed.needId} (в среднем ${d.lowestNeed._avg.value?.toFixed(1)} из 10)`
       : 'Пока мало данных о потребностях',
-    `Чаще всего заполняют: ${DOW[d.bestDow]}`,
+    `Чаще всего заполняют: ${d.bestDow === null ? 'пока мало записей, чтобы сказать' : DOW[d.bestDow]}`,
     '',
     `💑 <b>Пары</b> (кто ведёт дневник вдвоём)`,
     `Сейчас вместе: ${d.activePairs}`,

@@ -92,8 +92,9 @@ describe('e2e smoke: therapy ownership isolation (therapist ↔ client)', () => 
 
     const notes = await t1.get(`/api/therapy/notes/${C1_ID}`);
     expect(notes.status).toBe(200);
-    expect(notes.body).toHaveLength(1);
-    expect(notes.body[0].text).toBe('первая сессия: тревога, избегание');
+    expect(notes.body.notes).toHaveLength(1);
+    expect(notes.body.total).toBe(1);
+    expect(notes.body.notes[0].text).toBe('первая сессия: тревога, избегание');
 
     const savedConcept = await t1.post(
       `/api/therapy/conceptualization/${C1_ID}`,
@@ -222,7 +223,7 @@ describe('e2e smoke: therapy ownership isolation (therapist ↔ client)', () => 
     const t1 = agentAs(T1);
     const notes = await t1.get(`/api/therapy/notes/${C1_ID}`);
     expect(
-      notes.body.some(
+      notes.body.notes.some(
         (n: { text: string }) => n.text === 'заметка от чужого терапевта',
       ),
     ).toBe(false);
@@ -266,5 +267,80 @@ describe('e2e smoke: therapy ownership isolation (therapist ↔ client)', () => 
     const otherList = await t2.get('/api/therapy/custom-modes');
     expect(otherList.status).toBe(200);
     expect(otherList.body).toEqual([]);
+  });
+
+  // ─── Аудит терапевт↔клиент 2026-10 ────────────────────────────────────────
+  // T2: DELETE /relation от терапевта сносил всех его клиентов и приглашения.
+  // T3: клиент мог невидимо подключиться ко второму терапевту.
+  // Эти кейсы идут последними: они не меняют данные, на которых стоят
+  // сценарии выше (T3-кейс отказывает до изменения связи).
+
+  it('T3: клиент с активной связью не может принять код ДРУГОГО терапевта (409 already_connected)', async () => {
+    const t2 = agentAs(T2);
+    const c1 = agentAs(C1);
+    const invite = await t2.post('/api/therapy/invite');
+    expect(invite.status).toBeLessThan(300);
+
+    const join = await c1.post('/api/therapy/join', { code: invite.body.code });
+    expect(join.status).toBe(409);
+    expect(join.body.reason).toBe('already_connected');
+
+    // Код остался неиспользованным, у T2 клиентов не появилось.
+    const row = await prisma.therapyRelation.findFirst({
+      where: { code: invite.body.code },
+    });
+    expect(row?.clientId).toBeNull();
+    expect(row?.status).toBe('pending');
+    expect((await t2.get('/api/therapy/clients')).body).toEqual([]);
+  });
+
+  it('T2: терапевт, вызвавший DELETE /relation, не теряет клиентов и приглашения', async () => {
+    const t1 = agentAs(T1);
+    const invite = await t1.post('/api/therapy/invite');
+    expect(invite.status).toBeLessThan(300);
+
+    const res = await t1.delete('/api/therapy/relation');
+    expect(res.status).toBe(200);
+
+    const clients = await t1.get('/api/therapy/clients');
+    expect(clients.status).toBe(200);
+    expect(
+      clients.body.map((c: { telegramId: number }) => c.telegramId),
+    ).toEqual([C1_ID]);
+    const pendingInvite = await prisma.therapyRelation.findFirst({
+      where: { code: invite.body.code },
+    });
+    expect(pendingInvite?.therapistId).toBe(T1);
+    // Заметки по-прежнему доступны: связь жива.
+    expect((await t1.get(`/api/therapy/notes/${C1_ID}`)).status).toBe(200);
+  });
+
+  // Находка аудита 2026-10: take: 100 без признака «есть ещё». Шов — ответ
+  // уходит через HTTP: контроллер + сервис + Prisma (фейк и живой Postgres в
+  // джобе migrations) вместе отдают срез и общий счётчик.
+  it('101 заметка → GET отдаёт 100 и total (признак «есть ещё»), срез — самые поздние по дате', async () => {
+    const t1 = agentAs(T1);
+    const existing = (await t1.get(`/api/therapy/notes/${C1_ID}`)).body.total;
+    const base = Date.UTC(2026, 0, 1);
+    for (let i = 0; i < 101; i++) {
+      await prisma.therapistNote.create({
+        data: {
+          therapistId: T1,
+          clientId: C1,
+          date: new Date(base + i * 86_400_000).toISOString().slice(0, 10),
+          text: `срез-${i}`,
+        },
+      });
+    }
+    const res = await t1.get(`/api/therapy/notes/${C1_ID}`);
+    expect(res.status).toBe(200);
+    expect(res.body.notes).toHaveLength(100);
+    expect(res.body.total).toBe(existing + 101);
+    const dates = res.body.notes.map((n: { date: string }) => n.date);
+    expect([...dates].sort().reverse()).toEqual(dates);
+    // самая ранняя из 101 (2026-01-01) не пережила срез
+    expect(
+      res.body.notes.some((n: { text: string }) => n.text === 'срез-0'),
+    ).toBe(false);
   });
 });

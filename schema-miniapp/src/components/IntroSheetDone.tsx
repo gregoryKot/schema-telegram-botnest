@@ -19,7 +19,7 @@ interface Props<T extends Record<string, string>> {
 const BUTTON: CSSProperties = {
   width: '100%',
   padding: '13px 0',
-  borderRadius: 14,
+  borderRadius: 'var(--r-14)',
   border: 'none',
   fontFamily: 'inherit',
   fontSize: 15,
@@ -38,7 +38,7 @@ export function IntroSheetDone<T extends Record<string, string>>({
   const filled = questions.filter((q) => data[q.key]?.trim());
 
   return (
-    <div style={{ paddingTop: 4 }}>
+    <div className="u-pt4">
       <div style={{ textAlign: 'center', marginBottom: 18 }}>
         <div style={{ fontSize: 46, marginBottom: 8 }}>🌿</div>
         <div
@@ -59,7 +59,7 @@ export function IntroSheetDone<T extends Record<string, string>>({
       </div>
 
       {filled.map((q) => (
-        <div key={String(q.key)} style={{ marginBottom: 14 }}>
+        <div key={String(q.key)} className="u-mb14">
           <div
             style={{
               fontSize: 11,

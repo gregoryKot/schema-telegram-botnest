@@ -9,6 +9,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, cleanup, act, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { LandingPage } from './LandingPage';
+import { OPERATOR_INN, OPERATOR_STATUS } from '../legal/operator';
 
 vi.mock('../api', () => ({
   api: {
@@ -22,21 +23,67 @@ vi.mock('../api', () => ({
   },
 }));
 import { api } from '../api';
+
+// Пояс посетителя мокается: валюта цены берётся из него, а не из TZ раннера
+// (CI гоняет vitest и в UTC, и в Australia/Sydney). Дефолт — Москва, рубли.
+vi.mock('../../../shared/src/booking/clientTimeZone', async (orig) => ({
+  ...(await orig<typeof import('../../../shared/src/booking/clientTimeZone')>()),
+  resolveClientTimeZone: vi.fn(() => 'Europe/Moscow'),
+}));
+import { resolveClientTimeZone } from '../../../shared/src/booking/clientTimeZone';
+const mockTz = resolveClientTimeZone as unknown as ReturnType<typeof vi.fn>;
+// getByText сворачивает пробельные символы, а разряды ru-RU идут через неразрывный пробел.
+const RUB = (n: number) => (n.toLocaleString('ru-RU') + ' ₽').replace(/\s+/g, ' ');
+
+// Тесты лендинга — глазами анонимного посетителя: шлюз Метрики по умолчанию
+// считает «сессия возможна» и молчит (решение D-4), поэтому для целей
+// публичных страниц сессию объявляем отсутствующей явно.
+import { setMetrikaSessionPossible } from '../lib/metrikaGate';
+setMetrikaSessionPossible(false);
 const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
 
-// jsdom не реализует IntersectionObserver (useReveal) — минимальный мок,
-// как рекомендует сам хук в комментарии про failsafe.
+// jsdom не реализует IntersectionObserver (useReveal, useLandingGoals) —
+// минимальный мок, как рекомендует сам хук useReveal в комментарии про
+// failsafe. Инстансы и их callback сохраняются в статическом поле, чтобы
+// тесты на цель prices_view могли дёрнуть пересечение вручную.
 class MockIntersectionObserver {
-  observe() {}
-  disconnect() {}
+  static instances: MockIntersectionObserver[] = [];
+  callback: IntersectionObserverCallback;
+  elements: Element[] = [];
+  disconnected = false;
+  constructor(callback: IntersectionObserverCallback) {
+    this.callback = callback;
+    MockIntersectionObserver.instances.push(this);
+  }
+  observe(el: Element) { this.elements.push(el); }
+  disconnect() { this.disconnected = true; }
   unobserve() {}
 }
 vi.stubGlobal('IntersectionObserver', MockIntersectionObserver);
 
+// Имитирует реальное поведение браузера: после disconnect() колбэк больше
+// не вызывается (наш мок сам по себе этого не гарантирует — this.callback
+// вызывается тестом напрямую, а не движком).
+function fireIntersection(inst: MockIntersectionObserver, isIntersecting: boolean) {
+  if (inst.disconnected) return;
+  inst.callback([{ isIntersecting } as IntersectionObserverEntry], inst as unknown as IntersectionObserver);
+}
+
 beforeEach(() => {
   vi.clearAllMocks();
+  mockTz.mockReturnValue('Europe/Moscow');
   mockApi.getSiteContent.mockResolvedValue({ heroPhoto: null, marqueeTopicsA: [], marqueeTopicsB: [] });
   localStorage.clear();
+  sessionStorage.clear();
+  MockIntersectionObserver.instances = [];
+  // Метрика (lib/metrika) грузится реально, не мокается — booking_start
+  // проверяет именно дедуп «одна цель за сессию» из trackGoalOnce.
+  delete (window as unknown as { __ym_loaded?: boolean }).__ym_loaded;
+  delete (window as unknown as { ym?: unknown }).ym;
+  document.querySelectorAll('script[src*="mc.yandex.ru"]').forEach((s) => s.remove());
+  // jsdom не реализует scrollIntoView — глобальный дефолт-стаб; отдельные
+  // тесты ниже переопределяют его точечно на конкретном элементе.
+  Element.prototype.scrollIntoView = vi.fn();
 });
 
 afterEach(() => cleanup());
@@ -53,7 +100,7 @@ describe('LandingPage — цена сессии из реальных данны
   it('на чистом состоянии (пока API не ответил) показывает дефолт 4000 ₽, а не пусто/NaN', () => {
     mockApi.getBookingOptions.mockReturnValue(new Promise(() => {})); // не резолвится
     renderPage();
-    expect(screen.getByText('4 000 ₽')).toBeTruthy();
+    expect(screen.getByText(RUB(4000))).toBeTruthy();
   });
 
   it('после ответа API цена берётся из SESSION_50, а не из хардкода', async () => {
@@ -62,7 +109,7 @@ describe('LandingPage — цена сессии из реальных данны
     ]);
     await act(async () => { renderPage(); });
     expect(screen.getByText('5 500 ₽')).toBeTruthy();
-    expect(screen.queryByText('4 000 ₽')).toBeNull();
+    expect(screen.queryByText(RUB(4000))).toBeNull();
   });
 
   it('ответ без SESSION_50 не ломает рендер — остаётся дефолтная цена', async () => {
@@ -70,7 +117,115 @@ describe('LandingPage — цена сессии из реальных данны
       { type: 'INTRO_15', label: 'Знакомство', durationMin: 15, price: 0, note: '' },
     ]);
     await act(async () => { renderPage(); });
-    expect(screen.getByText('4 000 ₽')).toBeTruthy();
+    expect(screen.getByText(RUB(4000))).toBeTruthy();
+  });
+});
+
+// Решение владельца 2026-10-20: цена сессии по стране посетителя (часовой пояс):
+// Россия — рубли и онлайн-оплата, Израиль — шекели, Европа — евро, мир — доллары.
+const OPTIONS_BY_CURRENCY = [
+  { type: 'INTRO_15', label: 'Знакомство', durationMin: 15, price: 0, prices: { RUB: 0, ILS: 0, EUR: 0, USD: 0 }, note: '' },
+  { type: 'SESSION_50', label: 'Сессия', durationMin: 50, price: 4000, prices: { RUB: 4000, ILS: 200, EUR: 65, USD: 70 }, note: '' },
+];
+const FAQ_ROUBLES = /Оплата картой или СБП при записи/;
+const FAQ_ABROAD = /Об оплате договоримся после записи/;
+
+describe('LandingPage — цена по стране посетителя', () => {
+  it.each([
+    ['Europe/Moscow', RUB(4000)],
+    ['Asia/Jerusalem', '200 ₪'],
+    ['Europe/Berlin', '65 €'],
+    ['America/New_York', '70 $'],
+  ])('пояс %s: карточка «Сессия» показывает %s из prices ответа API', async (tz, text) => {
+    mockTz.mockReturnValue(tz);
+    mockApi.getBookingOptions.mockResolvedValue(OPTIONS_BY_CURRENCY);
+    await act(async () => { renderPage(); });
+    expect(screen.getByText(text)).toBeTruthy();
+  });
+
+  it('до ответа API у посетителя из Израиля — дефолт шекелей, а не рубли', () => {
+    mockTz.mockReturnValue('Asia/Jerusalem');
+    mockApi.getBookingOptions.mockReturnValue(new Promise(() => {}));
+    renderPage();
+    expect(screen.getByText('200 ₪')).toBeTruthy();
+    expect(screen.queryByText(RUB(4000))).toBeNull();
+  });
+
+  it('старый ответ без prices — рубли из price, даже если пояс зарубежный', async () => {
+    mockTz.mockReturnValue('America/New_York');
+    mockApi.getBookingOptions.mockResolvedValue([
+      { type: 'SESSION_50', label: 'Сессия', durationMin: 50, price: 5500, note: '' },
+    ]);
+    await act(async () => { renderPage(); });
+    expect(screen.getByText(RUB(5500))).toBeTruthy();
+  });
+
+  it('карточка знакомства — 0 в валюте посетителя', async () => {
+    mockTz.mockReturnValue('America/New_York');
+    mockApi.getBookingOptions.mockResolvedValue(OPTIONS_BY_CURRENCY);
+    await act(async () => { renderPage(); });
+    expect(screen.getByText('0 $')).toBeTruthy();
+  });
+
+  it('FAQ в рублях: про СБП и чек, цена со знаком валюты', async () => {
+    mockApi.getBookingOptions.mockResolvedValue(OPTIONS_BY_CURRENCY);
+    await act(async () => { renderPage(); });
+    const answer = screen.getByText(FAQ_ROUBLES);
+    expect(answer.textContent).toContain('(50 минут) – ' + (4000).toLocaleString('ru-RU') + ' ₽.');
+    expect(screen.queryByText(FAQ_ABROAD)).toBeNull();
+  });
+
+  it('FAQ вне рублей: «об оплате договоримся», без Robokassa/СБП/чека', async () => {
+    mockTz.mockReturnValue('Europe/Berlin');
+    mockApi.getBookingOptions.mockResolvedValue(OPTIONS_BY_CURRENCY);
+    await act(async () => { renderPage(); });
+    const answer = screen.getByText(FAQ_ABROAD);
+    expect(answer.textContent).toContain('(50 минут) – 65 €.');
+    expect(screen.queryByText(FAQ_ROUBLES)).toBeNull();
+    expect(screen.queryByText(/Мой налог/)).toBeNull();
+  });
+});
+
+// Решение владельца 2026-10-01: год практики назван в «Обо мне». Пояснение
+// под ценой («ниже, чем у коллег…») 2026-10-02 владелец убрал — цена в
+// карточке «Сессия» стоит без подписи.
+describe('LandingPage — год практики (цена и «Обо мне»)', () => {
+  it('под ценой сессии нет подписи про коллег — решение владельца 2026-10-02', async () => {
+    mockApi.getBookingOptions.mockResolvedValue([]);
+    await act(async () => { renderPage(); });
+    const price = screen.getByText(RUB(4000));
+    expect(price.nextElementSibling).toBeNull();
+    expect(screen.queryByText(/многолетним стажем/)).toBeNull();
+  });
+
+  it('«Обо мне»: частная практика с 2025 года, без «работаю самостоятельно»', async () => {
+    mockApi.getBookingOptions.mockResolvedValue([]);
+    await act(async () => { renderPage(); });
+    const about = document.getElementById('about')!;
+    expect(about.textContent).toContain('Веду частную практику с 2025 года и регулярно разбираю случаи с супервизором.');
+    expect(about.textContent).not.toContain('Работаю самостоятельно');
+    // Личная терапия — из прежнего абзаца, на месте.
+    expect(about.textContent).toContain('Шестой год прохожу личную терапию');
+  });
+});
+
+// Липкая панель и навигация первого экрана рисуют аватар одним компонентом
+// (AuthorAvatar): фото из админки доезжает в обе точки, без него — файл по умолчанию.
+describe('LandingPage — аватар в липкой панели', () => {
+  it('без фото из админки — /gregory.jpg', async () => {
+    mockApi.getBookingOptions.mockResolvedValue([]);
+    await act(async () => { renderPage(); });
+    const img = document.querySelector('.sticky-bar img') as HTMLImageElement;
+    expect(img.getAttribute('src')).toBe('/gregory.jpg');
+    expect(img.parentElement!.style.width).toBe('30px');
+  });
+
+  it('фото из админки доезжает и в липкую панель, и в навигацию первого экрана', async () => {
+    mockApi.getBookingOptions.mockResolvedValue([]);
+    mockApi.getSiteContent.mockResolvedValue({ heroPhoto: '/uploads/hero.jpg', marqueeTopicsA: [], marqueeTopicsB: [] });
+    await act(async () => { renderPage(); });
+    expect(document.querySelector('.sticky-bar img')!.getAttribute('src')).toBe('/uploads/hero.jpg');
+    expect(document.querySelector('a[href="#about"] img')!.getAttribute('src')).toBe('/uploads/hero.jpg');
   });
 });
 
@@ -100,6 +255,18 @@ describe('LandingPage — smoke', () => {
     const menuBtns = screen.getAllByLabelText('Открыть меню');
     fireEvent.click(menuBtns[0]);
     expect(screen.getByLabelText('Закрыть меню')).toBeTruthy();
+  });
+});
+
+describe('LandingPage — футер показывает реквизиты', () => {
+  it('в футере есть ИНН и статус самозанятого из общего источника реквизитов', async () => {
+    mockApi.getBookingOptions.mockResolvedValue([]);
+    await act(async () => { renderPage(); });
+    const footer = document.querySelector('footer');
+    expect(footer).toBeTruthy();
+    const text = footer?.textContent ?? '';
+    expect(text).toMatch(new RegExp(`ИНН\\s+${OPERATOR_INN}`));
+    expect(text).toMatch(new RegExp(OPERATOR_STATUS));
   });
 });
 
@@ -144,6 +311,37 @@ describe('LandingPage — «Записаться» ведёт на правил�
   });
 });
 
+// Регрессия (задача 2026-09-16): визитка практики крутит рекламу уже сейчас,
+// а продукт «Всё по схеме» / schemehappens.ru ещё не готов — до перезапуска
+// ссылок на продукт на визитке быть не должно (история сохранена в git,
+// правило про удаление, а не комментирование).
+describe('LandingPage — визитка без отсылок к приложению', () => {
+  it('не упоминает «Всё по схеме» и не показывает ссылку «Войти»', async () => {
+    mockApi.getBookingOptions.mockResolvedValue([]);
+    await act(async () => { renderPage(); });
+    expect(screen.queryByText(/Всё по схеме/)).toBeNull();
+    expect(screen.queryByText('Войти')).toBeNull();
+  });
+
+  it('нет ссылок на schemehappens.ru и нет бот-ссылок кроме t.me/kotlarewski', async () => {
+    mockApi.getBookingOptions.mockResolvedValue([]);
+    await act(async () => { renderPage(); });
+    expect(document.querySelectorAll('a[href*="schemehappens.ru"]').length).toBe(0);
+    const tgLinks = Array.from(document.querySelectorAll('a[href*="t.me/"]'));
+    expect(tgLinks.length).toBeGreaterThan(0);
+    for (const a of tgLinks) {
+      expect(a.getAttribute('href')).toBe('https://t.me/kotlarewski');
+    }
+  });
+
+  it('мобильное меню не показывает пункт «Всё по схеме»', async () => {
+    mockApi.getBookingOptions.mockResolvedValue([]);
+    await act(async () => { renderPage(); });
+    fireEvent.click(screen.getAllByLabelText('Открыть меню')[0]);
+    expect(screen.queryByText('Всё по схеме')).toBeNull();
+  });
+});
+
 describe('LandingPage — хэш-переход при первой загрузке (/#prices)', () => {
   const originalLocation = window.location;
 
@@ -162,10 +360,218 @@ describe('LandingPage — хэш-переход при первой загруз
       const scrollSpy = vi.fn();
       pricesSection.scrollIntoView = scrollSpy;
       act(() => { vi.runAllTimers(); });
-      expect(scrollSpy).toHaveBeenCalledWith({ behavior: 'auto', block: 'start' });
+      // instant, не auto/smooth: html{scroll-behavior:smooth} из LandingStyles
+      // превращал бы прыжок в анимацию на тысячи пикселей — см. useHashJump.
+      expect(scrollSpy).toHaveBeenCalledWith({ behavior: 'instant', block: 'start' });
     } finally {
       vi.useRealTimers();
       Object.defineProperty(window, 'location', { value: originalLocation, configurable: true, writable: true });
     }
+  });
+});
+
+// Регрессия (задача 2026-09-22): объявления Яндекс.Директа ведут прямо на
+// карточку темы («Отношения», «Тревога и контроль» и т.п.), а не на верх
+// блока — карточке нужен свой id и отступ прокрутки под липкую шапку.
+describe('LandingPage — якоря карточек «С чем я работаю» (для объявлений Директа)', () => {
+  it.each([
+    ['Отношения', 'relationships'],
+    ['Самооценка', 'self-esteem'],
+    ['Тревога и контроль', 'anxiety'],
+    ['Повторяющиеся паттерны', 'patterns'],
+    ['Жизнь после переезда', 'emigration'],
+    ['СДВГ и РАС у взрослых', 'neurodivergence'],
+  ])('у карточки «%s» есть id=%s и отступ прокрутки под липкую шапку', async (title, id) => {
+    mockApi.getBookingOptions.mockResolvedValue([]);
+    await act(async () => { renderPage(); });
+    const heading = screen.getByText(title);
+    const card = heading.closest('div[id]') as HTMLElement;
+    expect(card).toBeTruthy();
+    expect(card.id).toBe(id);
+    // Без scrollMarginTop карточка при переходе по якорю прячется под sticky-bar (58px).
+    expect(card.style.scrollMarginTop).toBe('72px');
+  });
+});
+
+describe('LandingPage — хэш-переход при первой загрузке (/#anxiety)', () => {
+  const originalLocation = window.location;
+
+  it('открытие ссылки с хэшем на карточку прокручивает к ней', async () => {
+    Object.defineProperty(window, 'location', {
+      value: { ...originalLocation, hash: '#anxiety', hostname: 'schemehappens.ru' },
+      configurable: true,
+      writable: true,
+    });
+    mockApi.getBookingOptions.mockResolvedValue([]);
+    vi.useFakeTimers({ toFake: ['setTimeout'] });
+    try {
+      let utils!: ReturnType<typeof renderPage>;
+      act(() => { utils = renderPage(); });
+      const anxietySection = utils.container.querySelector('#anxiety') as HTMLElement;
+      const scrollSpy = vi.fn();
+      anxietySection.scrollIntoView = scrollSpy;
+      act(() => { vi.runAllTimers(); });
+      // instant, не auto/smooth: та же причина, что у теста /#prices выше —
+      // smooth из LandingStyles съедал переход на восемь тысяч пикселей.
+      expect(scrollSpy).toHaveBeenCalledWith({ behavior: 'instant', block: 'start' });
+    } finally {
+      vi.useRealTimers();
+      Object.defineProperty(window, 'location', { value: originalLocation, configurable: true, writable: true });
+    }
+  });
+
+  it('после догрузки вёрстки прыжок повторяется (0/200/600мс)', async () => {
+    Object.defineProperty(window, 'location', {
+      value: { ...originalLocation, hash: '#anxiety', hostname: 'schemehappens.ru' },
+      configurable: true,
+      writable: true,
+    });
+    mockApi.getBookingOptions.mockResolvedValue([]);
+    vi.useFakeTimers({ toFake: ['setTimeout'] });
+    try {
+      let utils!: ReturnType<typeof renderPage>;
+      act(() => { utils = renderPage(); });
+      const anxietySection = utils.container.querySelector('#anxiety') as HTMLElement;
+      const scrollSpy = vi.fn();
+      anxietySection.scrollIntoView = scrollSpy;
+      act(() => { vi.runAllTimers(); });
+      // Один прыжок в начале не защищает от того, что карточка уедет вниз,
+      // пока догружаются картинки — нужен повтор, а не однократный вызов.
+      expect(scrollSpy.mock.calls.length).toBeGreaterThan(1);
+    } finally {
+      vi.useRealTimers();
+      Object.defineProperty(window, 'location', { value: originalLocation, configurable: true, writable: true });
+    }
+  });
+
+  it('позднее уезжание вёрстки (после 600мс) всё равно ловится растянутой лестницей', async () => {
+    Object.defineProperty(window, 'location', {
+      value: { ...originalLocation, hash: '#anxiety', hostname: 'schemehappens.ru' },
+      configurable: true,
+      writable: true,
+    });
+    mockApi.getBookingOptions.mockResolvedValue([]);
+    vi.useFakeTimers({ toFake: ['setTimeout'] });
+    try {
+      let utils!: ReturnType<typeof renderPage>;
+      act(() => { utils = renderPage(); });
+      const anxietySection = utils.container.querySelector('#anxiety') as HTMLElement;
+      const scrollSpy = vi.fn();
+      anxietySection.scrollIntoView = scrollSpy;
+      // Замер на проде 2026-09-22: карточка вставала на 44px вместо 72px —
+      // шрифты/картинки уводят вёрстку уже ПОСЛЕ 600мс, где кончалась старая
+      // лестница повторов. 700мс — только первые повторы (0/150/400).
+      act(() => { vi.advanceTimersByTime(700); });
+      const callsAt700ms = scrollSpy.mock.calls.length;
+      // Оставшиеся повторы растянутой лестницы (900/1600/2500) обязаны
+      // прыгнуть ЕЩЁ раз — именно они и ловят поздний сдвиг, который прежняя
+      // лестница на 600мс уже пропускала.
+      act(() => { vi.advanceTimersByTime(2000); });
+      expect(scrollSpy.mock.calls.length).toBeGreaterThan(callsAt700ms);
+    } finally {
+      vi.useRealTimers();
+      Object.defineProperty(window, 'location', { value: originalLocation, configurable: true, writable: true });
+    }
+  });
+
+  it('живой скролл пользователя (wheel) отменяет оставшиеся повторы', async () => {
+    Object.defineProperty(window, 'location', {
+      value: { ...originalLocation, hash: '#anxiety', hostname: 'schemehappens.ru' },
+      configurable: true,
+      writable: true,
+    });
+    mockApi.getBookingOptions.mockResolvedValue([]);
+    vi.useFakeTimers({ toFake: ['setTimeout'] });
+    try {
+      let utils!: ReturnType<typeof renderPage>;
+      act(() => { utils = renderPage(); });
+      const anxietySection = utils.container.querySelector('#anxiety') as HTMLElement;
+      const scrollSpy = vi.fn();
+      anxietySection.scrollIntoView = scrollSpy;
+      const callsAfterFirstJump = scrollSpy.mock.calls.length;
+      act(() => { window.dispatchEvent(new Event('wheel')); });
+      act(() => { vi.runAllTimers(); });
+      // Пользователь уже сам скроллит — оставшиеся 200/600мс не должны
+      // дёргать экран у него под рукой.
+      expect(scrollSpy.mock.calls.length).toBe(callsAfterFirstJump);
+    } finally {
+      vi.useRealTimers();
+      Object.defineProperty(window, 'location', { value: originalLocation, configurable: true, writable: true });
+    }
+  });
+});
+
+// Продуктовые цели лендинга (Яндекс.Метрика, владелец решил не ждать
+// согласия на баннере — см. lib/metrika). Гоняем на реальной очереди
+// window.ym.a, а не на моке '../lib/metrika': для booking_start важно
+// проверить именно дедуп «одна цель за сессию», который живёт в
+// trackGoalOnce — мок его не воспроизведёт.
+describe('LandingPage — цели Метрики', () => {
+  function ymQueue(): unknown[][] {
+    return (window as unknown as { ym?: { a?: unknown[][] } }).ym?.a ?? [];
+  }
+  function goalHits(name: string) {
+    return ymQueue().filter((c) => c[1] === 'reachGoal' && c[2] === name);
+  }
+
+  it('клик по ссылке t.me/kotlarewski шлёт цель tg_click (делегированный слушатель)', async () => {
+    mockApi.getBookingOptions.mockResolvedValue([]);
+    await act(async () => { renderPage(); });
+    const link = document.querySelector('a[href="https://t.me/kotlarewski"]') as HTMLAnchorElement;
+    expect(link).toBeTruthy();
+    // jsdom пытается «перейти» по реальной ссылке — гасим переход, тестируем
+    // только факт клика (как раньше в тесте баннера кабинета).
+    link.addEventListener('click', (e) => e.preventDefault());
+    fireEvent.click(link);
+    expect(goalHits('tg_click').length).toBe(1);
+  });
+
+  it('клик по кнопке записи шлёт booking_start, повторный клик по другой кнопке — уже нет (одна цель за сессию)', async () => {
+    mockApi.getBookingOptions.mockResolvedValue([]);
+    await act(async () => { renderPage(); });
+    fireEvent.click(screen.getAllByText('Записаться бесплатно →')[0]);
+    fireEvent.click(screen.getAllByText('Записаться на знакомство →')[0]);
+    expect(goalHits('booking_start').length).toBe(1);
+  });
+
+  it('пересечение блока #prices на 50% шлёт цель prices_view один раз', async () => {
+    mockApi.getBookingOptions.mockResolvedValue([]);
+    await act(async () => { renderPage(); });
+    const pricesEl = document.getElementById('prices')!;
+    const inst = MockIntersectionObserver.instances.find((i) => i.elements.includes(pricesEl));
+    expect(inst).toBeTruthy();
+    act(() => {
+      fireIntersection(inst!, true);
+      fireIntersection(inst!, true);
+    });
+    expect(goalHits('prices_view').length).toBe(1);
+  });
+});
+
+// Регрессия: эффект зеркалирования активной секции в адресную строку раньше
+// писал только pathname + hash и СРЕЗАЛ query — ссылка из Яндекс.Директа
+// (?utm_source=yandex&yclid=123) теряла параметры через миг после загрузки,
+// ещё до того, как tag.js успевал их прочитать.
+describe('LandingPage — UTM/yclid не теряются при скролле (регрессия)', () => {
+  afterEach(() => {
+    window.history.replaceState({}, '', '/');
+  });
+
+  it('utm_source и yclid остаются в адресной строке после скролла', async () => {
+    window.history.replaceState({}, '', '/?utm_source=yandex&yclid=123#booking');
+    mockApi.getBookingOptions.mockResolvedValue([]);
+    await act(async () => { renderPage(); });
+    // Первый scroll — служебный прогон скроллспая (firstRun), второй уже
+    // пишет activeSection и триггерит replaceState.
+    await act(async () => {
+      fireEvent.scroll(window);
+      await new Promise((r) => setTimeout(r, 20));
+    });
+    await act(async () => {
+      fireEvent.scroll(window);
+      await new Promise((r) => setTimeout(r, 20));
+    });
+    expect(window.location.search).toContain('utm_source=yandex');
+    expect(window.location.search).toContain('yclid=123');
   });
 });

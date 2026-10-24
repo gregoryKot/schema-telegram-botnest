@@ -35,19 +35,26 @@ export function SchemaInfoContent({
   const [tab, setTab] = useState<Tab>(initialTab ?? 'needs');
   return (
     <div>
-      <div style={{ marginBottom: 16 }}>
+      <div className="u-mb16">
         <SectionLabel purple mb={6}>
           Схема-терапия
         </SectionLabel>
-        <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--text)' }}>
+        <h2
+          style={{
+            fontSize: 20,
+            fontWeight: 700,
+            color: 'var(--text)',
+            margin: 0,
+          }}
+        >
           Как это работает
-        </div>
+        </h2>
       </div>
       <div
         style={{
           display: 'flex',
           background: 'rgba(var(--fg-rgb),0.06)',
-          borderRadius: 12,
+          borderRadius: 'var(--r-12)',
           padding: 3,
           marginBottom: 20,
         }}
@@ -62,7 +69,7 @@ export function SchemaInfoContent({
                 flex: 1,
                 padding: '8px 0',
                 border: 'none',
-                borderRadius: 10,
+                borderRadius: 'var(--r-10)',
                 background: active ? 'rgba(var(--fg-rgb),0.12)' : 'transparent',
                 color: active ? 'var(--text)' : 'var(--text-faint)',
                 fontSize: 13,
@@ -79,7 +86,7 @@ export function SchemaInfoContent({
       {tab === 'needs' && <NeedsTab />}
       {tab === 'schemas' && <SchemasTab highlight={highlight} />}
       {tab === 'modes' && <ModesTab />}
-      <div style={{ marginTop: 24 }}>
+      <div className="u-mt24">
         <TherapyNote />
       </div>
     </div>
@@ -116,7 +123,7 @@ export function SchemaInfoSheet({
   return (
     <>
       <BottomSheet onClose={onClose}>
-        <div style={{ paddingTop: 4 }}>
+        <div className="u-pt4">
           <SchemaInfoContent
             key={contentKey}
             initialTab={contentInitialTab}
@@ -143,17 +150,17 @@ export function SchemaInfoSheet({
                 style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: 10,
+                  gap: 'var(--space-10)',
                   background: 'rgba(251,191,36,0.08)',
                   border: '1px solid rgba(251,191,36,0.2)',
-                  borderRadius: 14,
+                  borderRadius: 'var(--r-14)',
                   padding: '12px 16px',
                   marginBottom: 12,
                   cursor: 'pointer',
                 }}
               >
                 <span style={{ fontSize: 18 }}>⏸</span>
-                <div style={{ flex: 1 }}>
+                <div className="u-flex1">
                   <div
                     style={{
                       fontSize: 13,
@@ -163,13 +170,7 @@ export function SchemaInfoSheet({
                   >
                     Незаконченный тест
                   </div>
-                  <div
-                    style={{
-                      fontSize: 12,
-                      color: 'var(--text-sub)',
-                      marginTop: 2,
-                    }}
-                  >
+                  <div className="u-sub12-mt2">
                     {tr(
                       'Нажми, чтобы продолжить с места остановки',
                       'Нажмите, чтобы продолжить с места остановки',
@@ -199,7 +200,7 @@ export function SchemaInfoSheet({
                   'color-mix(in srgb, var(--accent) 10%, transparent)',
                 border:
                   '1px solid color-mix(in srgb, var(--accent) 20%, transparent)',
-                borderRadius: 14,
+                borderRadius: 'var(--r-14)',
                 padding: '14px 16px',
                 cursor: 'pointer',
               }}

@@ -49,14 +49,17 @@ export class PlansController {
     const row = await this.practicesService.addPractice(
       uid(req),
       body.needId,
-      body.text.trim().slice(0, 200),
+      body.text.trim(),
     );
     return row;
   }
 
   @Delete('practices/:id')
   async deletePractice(@Req() req: AuthRequest, @Param('id') id: string) {
-    await this.practicesService.deletePractice(uid(req), parseId(id));
+    await this.practicesService.deletePractice(
+      uid(req),
+      parseId(id, { int32: true }),
+    );
     return { ok: true };
   }
 
@@ -108,7 +111,11 @@ export class PlansController {
     @Param('id') id: string,
     @Body() body: CheckinDto,
   ) {
-    await this.practicesService.checkinPlan(uid(req), parseId(id), body.done);
+    await this.practicesService.checkinPlan(
+      uid(req),
+      parseId(id, { int32: true }),
+      body.done,
+    );
     return { ok: true };
   }
 

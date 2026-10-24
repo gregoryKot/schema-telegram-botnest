@@ -20,7 +20,7 @@ import type { SchemaDomain } from '../types';
 export const SCHEMA_DOMAINS: SchemaDomain[] = [
   {
     id: 'rejection',
-    domain: 'Отчуждение и отвержение',
+    domain: 'Нарушение связи и отвержение',
     color: 'var(--accent-red)',
     schemas: [
       {
@@ -41,7 +41,7 @@ export const SCHEMA_DOMAINS: SchemaDomain[] = [
       },
       {
         id: 'mistrust',
-        name: 'Недоверие / Жестокое обращение',
+        name: 'Недоверие / Ожидание жестокого обращения',
         emoji: '🛡️',
         desc: 'Ожидание, что люди причинят боль, используют или обманут',
         libraryDesc:
@@ -51,23 +51,23 @@ export const SCHEMA_DOMAINS: SchemaDomain[] = [
         id: 'defectiveness',
         name: 'Дефективность / Стыд',
         emoji: '😶‍🌫️',
-        desc: 'Ощущение себя плохим, неполноценным — страх что отвергнут если узнают правду',
+        desc: 'Ощущение собственной неполноценности — страх, что отвергнут, если узнают правду',
         libraryDesc:
-          'Ощущение себя плохим, нежеланным, неполноценным — как будто, узнав правду, близкие отвернутся. Острая чувствительность к критике',
+          'Ощущение собственной неполноценности и нежеланности — как будто, узнав правду, близкие отвернутся. Острая чувствительность к критике',
       },
       {
         id: 'social_isolation',
         name: 'Социальная отчуждённость',
         emoji: '🌑',
-        desc: 'Ощущение чужим — другим, не вписывающимся ни в одну группу',
+        desc: 'Ощущение собственной инаковости и непринадлежности ни к какой группе',
         libraryDesc:
-          'Ощущение себя изолированным от людей, другим, не принадлежащим ни к одной группе или сообществу',
+          'Ощущение изоляции от людей, инаковости, непринадлежности ни к одной группе',
       },
     ],
   },
   {
     id: 'autonomy',
-    domain: 'Нарушение автономии',
+    domain: 'Нарушенная автономия',
     color: 'var(--accent-orange)',
     schemas: [
       {
@@ -106,7 +106,7 @@ export const SCHEMA_DOMAINS: SchemaDomain[] = [
   },
   {
     id: 'limits',
-    domain: 'Нарушение границ',
+    domain: 'Нарушенные границы',
     color: 'var(--accent-yellow)',
     schemas: [
       {
@@ -129,7 +129,7 @@ export const SCHEMA_DOMAINS: SchemaDomain[] = [
   },
   {
     id: 'other_directed',
-    domain: 'Ориентация на других',
+    domain: 'Направленность на других',
     color: 'var(--accent-green)',
     schemas: [
       {
@@ -160,7 +160,7 @@ export const SCHEMA_DOMAINS: SchemaDomain[] = [
   },
   {
     id: 'vigilance',
-    domain: 'Бдительность и подавление',
+    domain: 'Сверхбдительность и подавление эмоций',
     color: 'var(--accent-indigo)',
     schemas: [
       {

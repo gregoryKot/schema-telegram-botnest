@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useHistorySheet } from '../../hooks/useHistorySheet';
 import { GlyphArrowLeft } from '../exercises/ExScreen';
+import { DIARY_HUE, hueStyle } from '../../lib/tone';
+import '../../styles/sheet-diary.css';
 import { haptic } from '../../haptic';
 import { api } from '../../api';
 import { useTr } from '../../utils/addressForm';
@@ -44,8 +46,7 @@ export function ModeDoubtButton({
     <>
       <button
         type="button"
-        className="ex-btn ex-btn-ghost"
-        style={{ padding: '8px 12px' }}
+        className="ds-btn ds-btn--secondary ds-btn--sm"
         onClick={() => {
           haptic.tap();
           api.trackEvent(MODE_DOUBT_OPENED_EVENT, { modeId });
@@ -84,70 +85,39 @@ function ModeDoubtSheet({
   return (
     <div className="ex-screen">
       <div className="ex-topbar">
-        <button className="ex-back" onClick={goBack}>
+        <button className="ds-link sd-back" onClick={goBack}>
           <GlyphArrowLeft /> Назад
         </button>
       </div>
       <div className="page">
-        <div style={{ maxWidth: 640, margin: '0 auto', padding: '48px 24px 80px' }}>
-          <div
-            style={{
-              background: 'color-mix(in srgb, var(--accent-blue) 10%, transparent)',
-              border: '1px solid color-mix(in srgb, var(--accent-blue) 25%, transparent)',
-              borderRadius: 14,
-              padding: '10px 14px',
-              marginBottom: 14,
-            }}
-          >
-            <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div className="sd-doubt">
+          <div className="ds-card ds-card--row tone-soft sd-doubt-now" style={hueStyle(DIARY_HUE.mode)}>
+            <div className="sd-doubt-now-name">
               {mode && <IdentityDot color={mode.groupColor} />} {mode?.name ?? ''}
             </div>
-            <div style={{ fontSize: 12, color: 'var(--text-sub)' }}>
-              сейчас выбран
-            </div>
+            <div className="ds-sub">сейчас выбран</div>
           </div>
-          <p style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.5, marginBottom: 28 }}>
+          <p className="ds-sub sd-doubt-lede">
             Вот с чем его чаще всего путают — и как отличить.
           </p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div className="sd-doubt-list">
             {doubts.map((d) => {
               const other = getModeById(d.otherId);
               const leafLabel = getModeLeafLabel(d.otherId);
               return (
-                <div key={d.otherId} className="aside-card" style={{ margin: 0 }}>
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 8,
-                      fontSize: 14.5,
-                      fontWeight: 600,
-                      color: 'var(--text)',
-                    }}
-                  >
+                <div key={d.otherId} className="ds-card sd-doubt-card">
+                  <h3 className="ds-h3 sd-doubt-title">
                     {other && <IdentityDot color={other.groupColor} />}
                     {leafLabel ?? other?.name ?? d.otherId}
-                  </div>
-                  <div style={{ fontSize: 11.5, color: 'var(--text-faint)', marginBottom: 6 }}>
-                    → {other?.name ?? d.otherId}
-                  </div>
-                  <p className="body" style={{ marginBottom: 8 }}>{d.gist}</p>
-                  <div
-                    style={{
-                      background: 'color-mix(in srgb, var(--accent-blue) 8%, transparent)',
-                      borderRadius: 10,
-                      padding: '8px 10px',
-                      marginBottom: 10,
-                    }}
-                  >
-                    <div style={{ fontSize: 12.5, color: 'var(--text)', lineHeight: 1.5 }}>
-                      Проверить: {d.check}
-                    </div>
+                  </h3>
+                  <div className="ds-sub">→ {other?.name ?? d.otherId}</div>
+                  <p className="sd-doubt-gist">{d.gist}</p>
+                  <div className="sd-doubt-check tone-soft" style={hueStyle(DIARY_HUE.mode)}>
+                    Проверить: {d.check}
                   </div>
                   <button
                     type="button"
-                    className="ex-btn ex-btn-outline"
-                    style={{ width: '100%', minHeight: 44, justifyContent: 'center' }}
+                    className="ds-btn ds-btn--secondary sd-doubt-btn"
                     onClick={() => {
                       haptic.select();
                       api.trackEvent(MODE_DOUBT_SWITCHED_EVENT, {
@@ -167,23 +137,10 @@ function ModeDoubtSheet({
 
           <button
             type="button"
+            className="ds-btn sd-doubt-btn sd-doubt-keep"
             onClick={() => {
               haptic.tap();
               goBack();
-            }}
-            style={{
-              width: '100%',
-              marginTop: 20,
-              padding: 14,
-              borderRadius: 14,
-              border: 'none',
-              minHeight: 48,
-              background: 'linear-gradient(135deg, var(--accent), var(--accent-blue))',
-              color: '#fff',
-              fontSize: 15,
-              fontWeight: 600,
-              cursor: 'pointer',
-              fontFamily: 'inherit',
             }}
           >
             Оставляю: {mode?.name ?? ''}

@@ -3,6 +3,7 @@ import type { FlowNode } from './modeMapFlow';
 import type { ModeMapNode, ModeMapKind } from '../api';
 import { pickTips, useModeMapTips } from './modeMapTips';
 import { useTr } from '../utils/addressForm';
+import '../styles/sheet-modemap.css';
 import { MMIcon } from './modeMapIcons';
 
 interface Props {
@@ -102,18 +103,14 @@ export function ModeMapGuide({ nodes, kind, onAdd, onOpenNeed, onClose }: Props)
   const random = useMemo(() => pickTips(tips, kind, 3, []), [tips, kind, reroll]);
 
   return (
-    <div style={{
-      width: 264, maxHeight: 'calc(100vh - 300px)', overflowY: 'auto',
-      background: 'var(--bg-elev)', border: '1px solid var(--line)',
-      borderRadius: 12, padding: '12px 14px', boxShadow: 'var(--shadow-2)', fontSize: 12.5,
-    }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-        <span style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-faint)' }}>
+    <div className="ds-card mm2-guide">
+      <div className="mm2-guide-head">
+        <span className="ds-label">
           {kind === 'couple' ? 'Цикл-клэш пары' : kind === 'problem' ? 'Цепочка цикла' : 'Карта личности'}
         </span>
-        <button onClick={onClose} aria-label="Закрыть" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-faint)', padding: 0, display: 'flex' }}><MMIcon name="close" size={14} /></button>
+        <button onClick={onClose} aria-label="Закрыть" className="mm2-x"><MMIcon name="close" size={14} /></button>
       </div>
-      <div style={{ fontSize: 11, color: 'var(--text-faint)', marginBottom: 10, lineHeight: 1.4 }}>
+      <div className="mm2-guide-lead">
         {kind === 'couple'
           ? tr('Копинг А ранит Б → копинг Б ранит А — порочный круг. Помечай режимы партнёром (А/Б). Нажми на шаг, чтобы добавить его.', 'Копинг А ранит Б → копинг Б ранит А — порочный круг. Помечайте режимы партнёром (А/Б). Нажмите на шаг, чтобы добавить его.')
           : kind === 'problem'
@@ -122,31 +119,22 @@ export function ModeMapGuide({ nodes, kind, onAdd, onOpenNeed, onClose }: Props)
       </div>
 
       {/* Numbered steps with clinical descriptions */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+      <div>
         {steps.map((s, i) => {
           const clickable = !s.ok && (!!s.add || (!!s.action && s.actionReady));
           return (
             <button key={i} disabled={!clickable}
               onClick={() => { if (!clickable) return; if (s.add) onAdd(s.add); else s.action?.(); }}
               title={clickable ? (s.add ? 'Добавить на холст' : 'Открыть поле') : undefined}
-              style={{ display: 'flex', gap: 8, textAlign: 'left', width: '100%',
-                background: 'none', border: 'none', padding: '6px 5px', borderRadius: 6,
-                cursor: clickable ? 'pointer' : 'default', alignItems: 'flex-start' }}
-              onMouseEnter={e => { if (clickable) e.currentTarget.style.background = 'var(--surface-2)'; }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}>
-              <span style={{ flexShrink: 0, width: 18, height: 18, borderRadius: '50%', fontSize: 10.5, fontWeight: 600,
-                display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: 1,
-                background: s.ok ? 'var(--accent-green)' : clickable ? 'var(--accent-soft)' : 'var(--surface-3)',
-                color: s.ok ? '#fff' : clickable ? 'var(--accent)' : 'var(--text-faint)' }}>
+              className={`mm2-step${clickable ? ' is-click' : ''}`}>
+              <span className={`mm2-step-n${s.ok ? ' is-done' : clickable ? ' is-click' : ''}`}>
                 {s.ok ? '✓' : clickable ? (s.add ? '+' : '✎') : i + 1}
               </span>
-              <span style={{ flex: 1, minWidth: 0 }}>
-                <span style={{ fontSize: 12.5, fontWeight: 600, color: s.ok ? 'var(--text)' : 'var(--text-sub)' }}>
+              <span>
+                <span className={`mm2-step-t${s.ok ? ' is-done' : ''}`}>
                   {i + 1}. {s.label}
                 </span>
-                <span style={{ display: 'block', fontSize: 11, color: 'var(--text-faint)', lineHeight: 1.35, marginTop: 1 }}>
-                  {s.desc}
-                </span>
+                <span className="mm2-step-d">{s.desc}</span>
               </span>
             </button>
           );
@@ -155,38 +143,25 @@ export function ModeMapGuide({ nodes, kind, onAdd, onOpenNeed, onClose }: Props)
 
       {/* Contextual alerts — what THIS map needs right now (kept separate, colour-coded) */}
       {alerts.length > 0 && (
-        <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 6 }}>
-          {alerts.map((a, i) => {
-            const c = a.level === 'warn' ? 'var(--accent-red)' : 'var(--accent-orange)';
-            return (
-              <div key={i} style={{ display: 'flex', gap: 7, fontSize: 11.5, lineHeight: 1.4,
-                color: 'var(--text)', padding: '7px 9px', borderRadius: 7,
-                background: `color-mix(in srgb, ${c} 10%, transparent)`,
-                border: `1px solid color-mix(in srgb, ${c} 35%, transparent)` }}>
-                <span style={{ flexShrink: 0, color: c, fontWeight: 700 }}>{a.level === 'warn' ? '!' : 'i'}</span>
-                <span>{a.text}</span>
-              </div>
-            );
-          })}
+        <div className="mm2-alerts">
+          {alerts.map((a, i) => (
+            <div key={i} className={`mm2-alert${a.level === 'warn' ? ' is-warn' : ''}`}>
+              <b>{a.level === 'warn' ? '!' : 'i'}</b>
+              <span>{a.text}</span>
+            </div>
+          ))}
         </div>
       )}
 
       {/* Random tips from the knowledge base */}
-      <div style={{ borderTop: '1px solid var(--line)', marginTop: 10, paddingTop: 10 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 7 }}>
-          <span style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-faint)' }}>
-            Советы
-          </span>
-          <button onClick={() => setReroll(r => r + 1)} title="Другие советы" aria-label="Другие советы"
-            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-faint)', fontSize: 13, padding: 0, lineHeight: 1 }}>
-            ↻
-          </button>
+      <div className="mm2-tips">
+        <div className="mm2-tips-head">
+          <span className="ds-label">Советы</span>
+          <button onClick={() => setReroll(r => r + 1)} title="Другие советы" aria-label="Другие советы">↻</button>
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div>
           {random.map((t, i) => (
-            <div key={i} style={{ display: 'flex', gap: 8, fontSize: 11.5, color: 'var(--text-sub)', lineHeight: 1.4 }}>
-              <span style={{ flexShrink: 0, width: 5, height: 5, borderRadius: '50%', background: 'var(--accent-line)', marginTop: 6 }} /><span>{t}</span>
-            </div>
+            <div key={i} className="mm2-tip-row"><i /><span>{t}</span></div>
           ))}
         </div>
       </div>

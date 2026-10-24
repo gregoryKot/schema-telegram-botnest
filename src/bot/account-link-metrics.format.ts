@@ -6,6 +6,7 @@
 // Важен именно разрыв между «начали» и «довели до конца»: путь идёт через
 // внешний браузер, и если люди отваливаются посередине — это видно только тут.
 
+import { plural } from './plural';
 export interface AccountLinkMetrics {
   /** За месяц: сколько раз начинали перенос из мессенджера. */
   started30: number;
@@ -18,13 +19,6 @@ export interface AccountLinkMetrics {
   /** За месяц: сколько раз не вышло (код протух или ошибка). */
   failed30: number;
 }
-
-const plural = (n: number, one: string, few: string, many: string): string =>
-  n % 10 === 1 && n % 100 !== 11
-    ? one
-    : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14)
-      ? few
-      : many;
 
 /** Текстовый блок для /stats. Чистая функция. */
 export function formatAccountLinkMetrics(m: AccountLinkMetrics): string {

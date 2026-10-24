@@ -63,3 +63,43 @@ test.describe('браузерный smoke: публичные страницы �
     await page.waitForURL((url) => url.pathname !== unknown);
   });
 });
+
+// Регрессия 2026-09-16 (визитка kotlarewski.gr перед рекламной кампанией):
+// обёртка лендинга с overflowX: hidden внутри #root { display: flex; height:
+// 100vh } растягивалась на высоту экрана и становилась внутренним скроллером.
+// Страница «листалась», но window.scrollY оставался 0 — липкая панель с кнопкой
+// «Записаться», прогресс-бар и подсветка разделов не включались никогда.
+// jsdom раскладку не считает — это ловит только настоящий браузер.
+test.describe('визитка практики: прокручивается окно, а не внутренний блок', () => {
+  test('после прокрутки window.scrollY > 0 и липкая панель показана', async ({
+    page,
+  }) => {
+    await page.route('**/api/**', (r) =>
+      r.fulfill({ status: 200, contentType: 'application/json', body: '[]' }),
+    );
+    await page.goto('/?site=personal', { waitUntil: 'networkidle' });
+    await page.evaluate(() =>
+      localStorage.setItem('cookie_consent', 'necessary'),
+    );
+    const viewport = page.viewportSize()!;
+    await page.mouse.move(viewport.width / 2, viewport.height / 2);
+    await page.mouse.wheel(0, viewport.height * 2);
+    await expect
+      .poll(() => page.evaluate(() => window.scrollY), { timeout: 3000 })
+      .toBeGreaterThan(viewport.height);
+    // Липкая панель: fixed-блок высотой 58px с кнопкой «Записаться» уезжает
+    // за верхний край (translateY(-100%)) пока не прокрутили 75% экрана.
+    const bar = page.locator(
+      'div[style*="position: fixed"][style*="height: 58px"]',
+    );
+    await expect(bar).toHaveCSS('transform', 'matrix(1, 0, 0, 1, 0, 0)');
+    await expect(bar.getByRole('button', { name: 'Записаться' })).toBeVisible();
+    // Горизонтального переполнения нет: обёртка не шире окна.
+    const overflow = await page.evaluate(
+      () =>
+        document.documentElement.scrollWidth -
+        document.documentElement.clientWidth,
+    );
+    expect(overflow).toBe(0);
+  });
+});

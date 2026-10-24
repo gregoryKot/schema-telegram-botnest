@@ -20,16 +20,10 @@ export function NeedStep({
 }: NeedStepProps) {
   return (
     <BottomSheet onClose={onClose}>
-      <div style={{ paddingTop: 4 }}>
-        <div style={{ marginBottom: 16 }}>
-          <div style={{ fontSize: 17, fontWeight: 700, color: 'var(--text)' }}>
-            Что за этим стоит?
-          </div>
-          <div
-            style={{ fontSize: 12, color: 'var(--text-faint)', marginTop: 2 }}
-          >
-            Шаг 3 из 4 — нужда
-          </div>
+      <div className="u-pt4">
+        <div className="u-mb16">
+          <div className="u-h17">Что за этим стоит?</div>
+          <div className="u-faint12-mt2">Шаг 3 из 4 — нужда</div>
         </div>
         <ProgressBar stepIndex={stepIndex} />
         <div
@@ -46,7 +40,7 @@ export function NeedStep({
           style={{
             display: 'flex',
             flexDirection: 'column',
-            gap: 8,
+            gap: 'var(--space-8)',
             marginBottom: 16,
           }}
         >
@@ -59,7 +53,7 @@ export function NeedStep({
                 style={{
                   textAlign: 'left',
                   padding: '13px 16px',
-                  borderRadius: 14,
+                  borderRadius: 'var(--r-14)',
                   cursor: 'pointer',
                   border: `1px solid ${sel ? 'var(--accent)' : 'var(--border-color)'}`,
                   background: sel ? 'var(--surface-2)' : 'var(--surface)',
@@ -69,7 +63,7 @@ export function NeedStep({
                   fontFamily: 'inherit',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: 10,
+                  gap: 'var(--space-10)',
                 }}
               >
                 {n.label}
@@ -82,7 +76,7 @@ export function NeedStep({
           style={{
             width: 44,
             height: 44,
-            borderRadius: 12,
+            borderRadius: 'var(--r-12)',
             border: 'none',
             fontFamily: 'inherit',
             background: 'var(--surface-2)',
@@ -96,7 +90,7 @@ export function NeedStep({
         >
           ←
         </button>
-        <div style={{ marginTop: 20 }}>
+        <div className="u-mt20">
           <TherapyNote compact />
         </div>
       </div>

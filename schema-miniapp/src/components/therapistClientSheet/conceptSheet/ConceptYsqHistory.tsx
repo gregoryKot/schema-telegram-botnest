@@ -34,7 +34,7 @@ export function ConceptYsqHistory({ detail }: { detail: ClientDetail }) {
       style={{
         background: cm('var(--accent-blue)', 7),
         border: `1px solid ${cm('var(--accent-blue)', 20)}`,
-        borderRadius: 14,
+        borderRadius: 'var(--r-14)',
         padding: '12px 14px',
         marginBottom: 14,
       }}
@@ -60,7 +60,7 @@ export function ConceptYsqHistory({ detail }: { detail: ClientDetail }) {
 
       {/* Active schemas */}
       {activeScores.length > 0 && (
-        <div style={{ marginBottom: 10 }}>
+        <div className="u-mb10">
           <div
             style={{
               fontSize: 10,
@@ -74,7 +74,7 @@ export function ConceptYsqHistory({ detail }: { detail: ClientDetail }) {
             const meta = ALL_SCHEMAS.find((s) => s.id === score.id);
             const delta = getDelta(score.id);
             return (
-              <div key={score.id} style={{ marginBottom: 6 }}>
+              <div key={score.id} className="u-mb6">
                 <div
                   style={{
                     display: 'flex',
@@ -130,7 +130,7 @@ export function ConceptYsqHistory({ detail }: { detail: ClientDetail }) {
                   style={{
                     height: 3,
                     background: cm('var(--accent-blue)', 10),
-                    borderRadius: 2,
+                    borderRadius: 'var(--r-2)',
                   }}
                 >
                   <div
@@ -138,7 +138,7 @@ export function ConceptYsqHistory({ detail }: { detail: ClientDetail }) {
                       height: '100%',
                       width: `${score.pct5plus}%`,
                       background: cm('var(--accent-blue)', 60),
-                      borderRadius: 2,
+                      borderRadius: 'var(--r-2)',
                     }}
                   />
                 </div>
@@ -160,7 +160,9 @@ export function ConceptYsqHistory({ detail }: { detail: ClientDetail }) {
           >
             Остальные
           </div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+          <div
+            style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-4)' }}
+          >
             {inactiveScores.map((score) => {
               const meta = ALL_SCHEMAS.find((s) => s.id === score.id);
               const isNearBorder = score.pct5plus >= 30;
@@ -170,7 +172,7 @@ export function ConceptYsqHistory({ detail }: { detail: ClientDetail }) {
                   style={{
                     fontSize: 10,
                     padding: '2px 7px',
-                    borderRadius: 12,
+                    borderRadius: 'var(--r-12)',
                     background: 'rgba(var(--fg-rgb),0.05)',
                     color: isNearBorder
                       ? 'var(--text-sub)'
@@ -221,7 +223,7 @@ export function ConceptYsqHistory({ detail }: { detail: ClientDetail }) {
                 style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: 8,
+                  gap: 'var(--space-8)',
                   marginBottom: 4,
                 }}
               >
@@ -261,14 +263,7 @@ export function ConceptYsqHistory({ detail }: { detail: ClientDetail }) {
                     {entryDelta}
                   </span>
                 )}
-                <span
-                  style={{
-                    fontSize: 11,
-                    color: 'var(--text-faint)',
-                  }}
-                >
-                  {d}
-                </span>
+                <span className="u-faint11">{d}</span>
               </div>
             );
           })}

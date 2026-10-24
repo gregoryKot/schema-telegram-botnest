@@ -72,6 +72,39 @@ function handlerKey(h: Handler): string {
   return `${h.file}:${h.kind}:${h.name}`;
 }
 
+/** Индекс сразу за `}`, закрывающей блок, который открывает `{` на open. */
+function blockEnd(src: string, open: number): number {
+  let depth = 1;
+  let i = open + 1;
+  while (depth > 0 && i < src.length) {
+    if (src[i] === '{') depth++;
+    else if (src[i] === '}') depth--;
+    i++;
+  }
+  return i;
+}
+
+/**
+ * Хендлер отвечает на нажатие в try и снова — в catch. Второй ответ Telegram
+ * отклоняет (спиннер уже погашен), а staleUpdateGuard молча глотает ошибку:
+ * человек не видит исхода (аудит 2026-10). Исход сообщают editMessageText/reply
+ * (callback-failure.ts). Ищется ВНЕШНИЙ try тела хендлера.
+ */
+function repeatsAnswerInCatch(body: string): boolean {
+  const tryM = /\btry\s*\{/.exec(body);
+  if (!tryM) return false;
+  const tryOpen = tryM.index + tryM[0].length - 1;
+  const tryEnd = blockEnd(body, tryOpen);
+  const catchM = /^\s*catch\s*(?:\([^)]*\))?\s*\{/.exec(body.slice(tryEnd));
+  if (!catchM) return false;
+  const catchOpen = tryEnd + catchM[0].length - 1;
+  const catchBlock = body.slice(catchOpen, blockEnd(body, catchOpen));
+  return (
+    body.slice(tryOpen, tryEnd).includes('answerCbQuery') &&
+    catchBlock.includes('answerCbQuery')
+  );
+}
+
 describe('Telegram-хендлеры ↔ правило CLAUDE.md «Обработка ошибок»', () => {
   it('sanity: парсер находит хендлеры (регресс на «регекс сломался — 0 хендлеров, тест молча зелёный»)', () => {
     expect(allHandlers.length).toBeGreaterThanOrEqual(30);
@@ -118,6 +151,61 @@ describe('Telegram-хендлеры ↔ правило CLAUDE.md «Обрабо�
         }
         return [];
       });
+    expect(violations).toEqual([]);
+  });
+
+  it('answerCbQuery в try ⇒ в catch его нет: исход сбоя сообщается через editMessageText/reply', () => {
+    const violations = allHandlers
+      .filter((h) => h.kind === 'action' && repeatsAnswerInCatch(h.body))
+      .map(
+        (h) =>
+          `${h.file}: action(${h.name}) — повторный answerCbQuery в catch: ` +
+          `Telegram его отклонит, человек не увидит сбоя; ` +
+          `используй failCallback/failSettings (callback-failure.ts)`,
+      );
+    expect(violations).toEqual([]);
+  });
+
+  it('контроль: предикат краснеет на повторе и молчит на допустимых формах', () => {
+    const repeat = `{ try { await ctx.answerCbQuery(); await x(); } catch (e) { await ctx.answerCbQuery('x').catch(() => null); } }`;
+    expect(repeatsAnswerInCatch(repeat)).toBe(true);
+    // вложенные блоки до catch не сбивают поиск catch внешнего try
+    const nested = `{ try { await ctx.answerCbQuery(); if (a) { b(); } } catch { await ctx.answerCbQuery('x'); } }`;
+    expect(repeatsAnswerInCatch(nested)).toBe(true);
+    // quiz-форма: единственный ответ в try под .catch, в catch только лог
+    const quiz = `{ try { await ctx.answerCbQuery().catch(() => null); await go(); } catch (e) { this.logger.error('q', e); } }`;
+    expect(repeatsAnswerInCatch(quiz)).toBe(false);
+    // исход через reply — норма
+    const reply = `{ try { await ctx.answerCbQuery(); } catch (e) { await ctx.reply('x').catch(() => null); } }`;
+    expect(repeatsAnswerInCatch(reply)).toBe(false);
+    // ответ только в catch (первый и единственный) — не повтор
+    const onlyCatch = `{ try { await go(); } catch (e) { await ctx.answerCbQuery('x'); } }`;
+    expect(repeatsAnswerInCatch(onlyCatch)).toBe(false);
+  });
+
+  it('callback-failure.ts не зовёт answerCbQuery (иначе повтор спрятался бы в хелпере от инварианта)', () => {
+    expect(sources['callback-failure.ts']).toBeDefined();
+    const code = sources['callback-failure.ts'].replace(/\/\/.*$/gm, '');
+    expect(code).not.toContain('answerCbQuery');
+  });
+
+  // Разбор 2026-08-29: userId == telegramId верно только для телеграм-входа.
+  // У Google/почты/MAX номер лежит в веб-диапазоне, а после слияния аккаунтов
+  // строка User источника удаляется — и хендлер, взявший ctx.from.id как
+  // userId, пишет в несуществующий или заново созданный пустой аккаунт.
+  // Резолвер AccountService.canonicalUserId закрывает все нынешние места;
+  // трипваер нужен, чтобы СЛЕДУЮЩИЙ хендлер не завёл двадцать седьмое.
+  const RAW_ID_RE = /BigInt\(\s*(rawId|ctx\.from[?!]?\.id)\s*\)/;
+
+  it('ни один хендлер не берёт сырой telegramId за userId', () => {
+    const violations = Object.entries(sources)
+      .filter(([, src]) => RAW_ID_RE.test(src))
+      .map(
+        ([file]) =>
+          `${file}: BigInt(rawId) — сырой telegramId вместо ` +
+          `await this.accountService.canonicalUserId(rawId); ` +
+          `у слитого аккаунта это чужой (пустой) userId`,
+      );
     expect(violations).toEqual([]);
   });
 

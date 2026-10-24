@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { useTr } from '../utils/addressForm';
+import { BottomSheetShell } from './BottomSheetShell';
+import { ExternalLink } from '../host/ExternalLink';
+import '../styles/sheet-tasks.css';
 
 // Periodic in-app donate nudge (like a soft onboarding reminder). Shows at most
 // once every ~30 days, never to a brand-new user (skips the very first session),
@@ -40,25 +43,19 @@ function DonateNudgeSheet({ onClose }: { onClose: () => void }) {
   const tr = useTr();
   const goBack = useHistorySheet(onClose);
   const close = () => { localStorage.setItem(SHOWN_KEY, String(Date.now())); goBack(); };
-
   return (
-    <div onClick={close} role="button" tabIndex={0} aria-label="Закрыть"
-      onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); close(); } }}
-      style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
-      <div onClick={(e) => e.stopPropagation()} role="button" tabIndex={0}
-        onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); } }}
-        style={{ width: '100%', maxWidth: 440, background: 'var(--bg)', borderRadius: '18px 18px 0 0', padding: '28px 22px calc(28px + var(--safe-bottom))', textAlign: 'center', boxShadow: '0 -8px 40px rgba(0,0,0,0.25)' }}>
-        <h2 style={{ fontFamily: 'var(--serif)', fontSize: 24, fontWeight: 400, color: 'var(--text)', margin: '0 0 8px' }}>Поддержать проект</h2>
-        <p style={{ fontSize: 15, color: 'var(--text-sub)', lineHeight: 1.6, margin: '0 0 22px' }}>
+    <BottomSheetShell goBack={close} zIndex={200} maxWidth={440}>
+      <div className="sk-nudge">
+        <h2 className="ds-h2">Поддержать проект</h2>
+        <p className="sk-nudge-text">
           {tr('«Всё по схеме» бесплатное и без рекламы. Если оно тебе помогает — поддержи развитие любой суммой. Это правда помогает.', '«Всё по схеме» бесплатное и без рекламы. Если оно вам помогает — поддержите развитие любой суммой. Это правда помогает.')}
         </p>
-        <a href="/donate" onClick={close} style={{ display: 'block', width: '100%', boxSizing: 'border-box', padding: '14px', fontSize: 16, fontWeight: 700, background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: 12, textDecoration: 'none', marginBottom: 10 }}>
-          Поддержать
-        </a>
-        <button onClick={close} style={{ background: 'none', border: 'none', color: 'var(--text-faint)', fontSize: 14, fontFamily: 'inherit', cursor: 'pointer', padding: '6px' }}>
+        <ExternalLink href="/donate" onClick={close} className="ds-btn sk-wide-btn sk-nudge-link">
+          Поддержать</ExternalLink>
+        <button onClick={close} className="ds-link sk-nudge-later">
           Позже
         </button>
       </div>
-    </div>
+    </BottomSheetShell>
   );
 }

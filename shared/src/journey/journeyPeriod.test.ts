@@ -4,6 +4,7 @@
 // непустого дня). Проверяем именно границы: ровно 7 и ровно 30 дней назад.
 import { describe, it, expect } from 'vitest';
 import { filterJourneyByPeriod } from './journeyPeriod';
+import { forEachTimeZone } from '../utils/timeZone.test-helpers';
 
 const DAY = 86_400_000;
 
@@ -45,9 +46,9 @@ describe('filterJourneyByPeriod', () => {
     );
   });
 
-  it('дата без времени (YYYY-MM-DD) трактуется как полночь того дня', () => {
-    // Оба конца сравнения — полночь: 2026-07-14T00:00 ровно 7×24ч назад
-    // от 2026-07-21T00:00 → входит в неделю.
+  it('дата без времени (YYYY-MM-DD) трактуется как полночь UTC того дня', () => {
+    // Оба конца сравнения — полночь UTC: 2026-07-14T00:00Z ровно 7×24ч назад
+    // от 2026-07-21T00:00Z → входит в неделю.
     const midnight = new Date('2026-07-21T00:00:00.000Z');
     expect(
       filterJourneyByPeriod(
@@ -56,6 +57,30 @@ describe('filterJourneyByPeriod', () => {
         midnight,
       ),
     ).toHaveLength(1);
+  });
+
+  // Регрессия инцидента 2026-09-17: день разбирался как полночь ЗОНЫ МАШИНЫ,
+  // поэтому на UTC+3 запись уезжала на три часа назад и выпадала из окна.
+  // Прогон по зонам держит это в любом окружении, а не только под второй
+  // CI-джобой с TZ=Australia/Sydney.
+  it('выборка не зависит от зоны машины', () => {
+    const midnight = new Date('2026-07-21T00:00:00.000Z');
+    const items = [
+      { type: 'tracker_day', at: '2026-07-21' }, // сегодня
+      { type: 'note', at: '2026-07-15' }, // внутри недели
+      { type: 'note', at: '2026-07-14' }, // ровно на границе
+      { type: 'gratitude', at: '2026-07-13' }, // за границей
+    ];
+    forEachTimeZone((tz) => {
+      expect(
+        filterJourneyByPeriod(items, 'week', midnight).map((i) => i.at),
+        tz,
+      ).toEqual(['2026-07-21', '2026-07-15', '2026-07-14']);
+      expect(
+        filterJourneyByPeriod(items, 'month', midnight).map((i) => i.at),
+        tz,
+      ).toEqual(items.map((i) => i.at));
+    });
   });
 
   it('нечитаемая дата не проходит фильтр (не роняет, не считается свежей)', () => {

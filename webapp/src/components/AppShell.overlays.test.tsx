@@ -440,7 +440,7 @@ describe('AppShell — «Сегодня» кабинета терапевта и
   });
 });
 
-describe('AppShell — командная палитра: переход к клиенту и созданию записи дневника', () => {
+describe('AppShell — командная палитра: переход к клиенту и быстрые действия', () => {
   it('openClient из палитры ведёт в карточку клиента кабинета', async () => {
     renderAppShell('/today');
     await waitFor(() => expect(screen.getByTestId('today-section')).toBeTruthy());
@@ -450,13 +450,31 @@ describe('AppShell — командная палитра: переход к кл
     await waitFor(() => expect(screen.getByTestId('therapist-client-sheet')).toBeTruthy());
   });
 
-  it('newDiaryEntry из палитры ведёт в раздел «Дневник»', async () => {
+  it('быстрое действие «Трекер» из палитры открывает трекер тем же флагом, что и «+»', async () => {
     renderAppShell('/today');
     await waitFor(() => expect(screen.getByTestId('today-section')).toBeTruthy());
     fireEvent.keyDown(window, { key: 'k', metaKey: true });
     await waitFor(() => expect(screen.getByTestId('command-palette')).toBeTruthy());
-    fireEvent.click(screen.getByTestId('command-palette-newDiaryEntry'));
-    await waitFor(() => expect(screen.getByTestId('diary-section')).toBeTruthy());
+    fireEvent.click(screen.getByTestId('command-palette-quickTracker'));
+    await waitFor(() => expect(screen.getByTestId('tracker-overlay')).toBeTruthy());
+  });
+});
+
+describe('AppShell — кнопка «+» быстрых действий', () => {
+  it('в клиентском режиме «+» открывает лист, строка «Трекер потребностей» открывает трекер и закрывает лист', async () => {
+    renderAppShell('/today');
+    await waitFor(() => expect(screen.getByTestId('today-section')).toBeTruthy());
+    fireEvent.click(screen.getByRole('button', { name: 'Быстрое действие' }));
+    fireEvent.click(await screen.findByRole('button', { name: /Трекер потребностей/ }));
+    await waitFor(() => expect(screen.getByTestId('tracker-overlay')).toBeTruthy());
+    expect(screen.queryByRole('dialog', { name: 'Быстрое действие' })).toBeNull();
+  });
+
+  it('в кабинете терапевта «+» нет', async () => {
+    mockApi.getProfile.mockResolvedValueOnce({ role: 'THERAPIST', name: 'Др. Кто', mySchemaIds: [] });
+    renderAppShell('/cabinet');
+    await waitFor(() => expect(screen.getByTestId('therapist-client-sheet')).toBeTruthy());
+    expect(screen.queryByRole('button', { name: 'Быстрое действие' })).toBeNull();
   });
 });
 
@@ -500,7 +518,7 @@ describe('AppShell — карточка клиента в кабинете: rout
 
     fireEvent.click(screen.getByTestId('therapist-client-sheet-openClient'));
     await waitFor(() => {
-      expect(JSON.parse(screen.getByTestId('therapist-client-sheet-state').textContent ?? '{}')).toEqual({ view: 'client', openClientId: 42 });
+      expect(JSON.parse(screen.getByTestId('therapist-client-sheet-state').textContent ?? '{}')).toEqual({ view: 'client', openClientId: '42' });
     });
 
     fireEvent.click(screen.getByTestId('therapist-client-sheet-toList'));
@@ -509,13 +527,22 @@ describe('AppShell — карточка клиента в кабинете: rout
     });
   });
 
+  // Аудит 2026-10, X-1: id веб-клиента (> 2^53) из адреса остаётся строкой —
+  // parseInt округлил бы его, и кабинет открыл бы «соседнего» клиента.
+  it('адрес /cabinet/<веб-id> отдаёт в карточку точную строку', async () => {
+    mockApi.getProfile.mockResolvedValueOnce({ role: 'THERAPIST', name: 'Др. Кто', mySchemaIds: [] });
+    renderAppShell('/cabinet/1000000000000000123');
+    await waitFor(() => expect(screen.getByTestId('therapist-client-sheet')).toBeTruthy());
+    expect(JSON.parse(screen.getByTestId('therapist-client-sheet-state').textContent ?? '{}')).toEqual({ view: 'client', openClientId: '1000000000000000123' });
+  });
+
   it('onClientsChange реально долетает до сайдбара — новый клиент виден в списке', async () => {
     mockApi.getProfile.mockResolvedValueOnce({ role: 'THERAPIST', name: 'Др. Кто', mySchemaIds: [] });
     renderAppShell('/cabinet');
     await waitFor(() => expect(screen.getByTestId('therapist-client-sheet')).toBeTruthy());
     expect(screen.queryByText('А')).toBeNull();
     fireEvent.click(screen.getByTestId('therapist-client-sheet-clients'));
-    await waitFor(() => expect(screen.getByText('А')).toBeTruthy());
+    await waitFor(() => expect(screen.getByText('А', { selector: '.sb-client-name' })).toBeTruthy());
   });
 });
 

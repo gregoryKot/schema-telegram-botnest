@@ -7,6 +7,7 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { BecomeTherapistSection } from './BecomeTherapistSection';
+import * as LIM from '../../../../shared/src/limits/textLimits';
 
 // Часть 1/2 не зовёт api (статусы приходят пропом, форма ещё не отправляется)
 // — реальный api не нужен, но мокаем на случай побочного импорта модуля.
@@ -63,6 +64,16 @@ describe('BecomeTherapistSection — статусы заявки', () => {
       />,
     );
     expect(screen.getByText('Заявка отправлена')).toBeTruthy();
+    // Мини-апп бывает и в MAX, где бота Telegram нет, и после отказа не рисует
+    // статус `rejected` (снова кнопка подачи): ни «в боте», ни «появится здесь»
+    // обещать нельзя. Решение приходит сообщением — Telegram, почта или контакты.
+    expect(
+      screen.getByText(
+        'Сообщим о решении в Telegram, на почту или по контактам из заявки.',
+      ),
+    ).toBeTruthy();
+    expect(screen.queryByText(/в боте/)).toBeNull();
+    expect(screen.queryByText(/появится здесь/)).toBeNull();
   });
 
   it('therapistReq.status=approved — показывает «Заявка одобрена»', () => {
@@ -118,7 +129,7 @@ describe('BecomeTherapistSection — форма заявки', () => {
         {...baseProps({
           showReqForm: true,
           reqFullName: 'Анна Смирнова',
-          reqQual: 'Схема-терапевт',
+          reqQual: 'Психолог',
           reqContacts: '@anna',
         })}
       />,
@@ -162,5 +173,29 @@ describe('BecomeTherapistSection — форма заявки', () => {
       />,
     );
     expect(screen.getByText('Заявка уже отправлена')).toBeTruthy();
+  });
+});
+
+describe('BecomeTherapistSection — пределы длины (один источник с DTO сервера)', () => {
+  it('поля держат maxLength из shared; у сообщения есть счётчик остатка', () => {
+    render(
+      <BecomeTherapistSection
+        {...baseProps({
+          showReqForm: true,
+          reqMsg: 'x'.repeat(LIM.THERAPIST_REQUEST_MESSAGE_MAX - 5),
+        })}
+      />,
+    );
+    const max = (placeholder: string) =>
+      screen.getByPlaceholderText<HTMLInputElement>(placeholder).maxLength;
+    expect(max('Мария Иванова')).toBe(LIM.THERAPIST_REQUEST_NAME_MAX);
+    expect(max('Психолог, схема-терапия и КПТ, 5 лет практики')).toBe(
+      LIM.THERAPIST_REQUEST_QUAL_MAX,
+    );
+    expect(max('@telegram или email')).toBe(LIM.THERAPIST_REQUEST_CONTACTS_MAX);
+    expect(max('Расскажи о себе или своём подходе')).toBe(
+      LIM.THERAPIST_REQUEST_MESSAGE_MAX,
+    );
+    expect(screen.getByText('Осталось знаков: 5')).toBeTruthy();
   });
 });

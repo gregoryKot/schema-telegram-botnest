@@ -19,7 +19,6 @@ function renderLayout(overrides: Partial<Parameters<typeof MobileLayout>[0]> = {
   const handleChange = vi.fn();
   const props = {
     need: NEED,
-    color: '#f472b6',
     value: 5,
     needName: 'Привязанность',
     extra: { subtitle: 'Связь и доверие', desc: 'Описание потребности', question: 'Чувствовал ли ты сегодня близость?', examples: ['Позвонил другу', 'Обнял близкого'] } as never,

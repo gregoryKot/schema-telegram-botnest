@@ -1,4 +1,5 @@
 import { TherapyRelationInfo } from '../../api';
+import { todayCalendarDate } from '../../../../shared/src/utils/calendarDate';
 
 const MONTHS = [
   'янв',
@@ -29,9 +30,8 @@ export function NextSessionBanner({
     ? relation.nextSession.split('T')
     : [relation.nextSession, null];
   const [y, m, d] = datePart.split('-').map(Number);
-  const date = new Date(y, m - 1, d);
-  const label = `${DAYS[date.getDay()]}, ${d} ${MONTHS[m - 1]}${timePart ? ` · ${timePart}` : ''}`;
-  const isToday = datePart === new Date().toISOString().slice(0, 10);
+  const label = `${DAYS[new Date(y, m - 1, d).getDay()]}, ${d} ${MONTHS[m - 1]}${timePart ? ` · ${timePart}` : ''}`;
+  const isToday = datePart === todayCalendarDate();
 
   return (
     <div
@@ -44,7 +44,7 @@ export function NextSessionBanner({
           ? 'color-mix(in srgb, var(--accent-green) 10%, transparent)'
           : 'rgba(var(--fg-rgb),0.05)',
         border: `1px solid ${isToday ? 'color-mix(in srgb, var(--accent-green) 25%, transparent)' : 'rgba(var(--fg-rgb),0.1)'}`,
-        borderRadius: 20,
+        borderRadius: 'var(--r-20)',
         padding: '5px 12px',
       }}
     >

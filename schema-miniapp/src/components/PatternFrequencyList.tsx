@@ -8,6 +8,7 @@
 // цель, которую ты «не выполнил». У тех, что были, — мягкая полоска и «N дн.»
 // как наблюдение, а не оценка. Что не звучало — уходит вниз списка тихо.
 import { pressable } from '../utils/a11y';
+import { dayWord } from '../../../shared/src/pattern/weekPatternText';
 
 export const FREQ_WINDOW = 7;
 
@@ -26,16 +27,9 @@ export interface FreqGroup {
   items: FreqItem[];
 }
 
-function dayWord(n: number): string {
-  const m10 = n % 10,
-    m100 = n % 100;
-  if (m100 >= 11 && m100 <= 14) return 'дней';
-  if (m10 === 1) return 'день';
-  if (m10 >= 2 && m10 <= 4) return 'дня';
-  return 'дней';
-}
-
-function FreqBar({ freq }: { freq: number }) {
+/** Полоска недельной частоты — переиспользуется карточками «Мои схемы»/«Мои
+ *  режимы» вкладки «Я» (правило «одна механика — один компонент»). */
+export function FreqBar({ freq }: { freq: number }) {
   const w = 8 + Math.round((Math.min(freq, FREQ_WINDOW) / FREQ_WINDOW) * 30);
   return (
     <span
@@ -108,10 +102,7 @@ export function PatternFrequencyList({
                 {g.items.length}
               </span>
             </div>
-            <div
-              className="card"
-              style={{ borderRadius: 16, overflow: 'hidden' }}
-            >
+            <div className="card u-r16-clip">
               {items.map((it, i) => {
                 const active = it.id === selectedId;
                 const shown = it.freq > 0;
@@ -124,7 +115,7 @@ export function PatternFrequencyList({
                       minHeight: 60,
                       display: 'flex',
                       alignItems: 'center',
-                      gap: 10,
+                      gap: 'var(--space-10)',
                       padding: '14px 16px',
                       border: 'none',
                       borderTop:
@@ -138,7 +129,7 @@ export function PatternFrequencyList({
                       WebkitTapHighlightColor: 'transparent',
                     }}
                   >
-                    <span style={{ flex: 1, minWidth: 0 }}>
+                    <span className="u-fill">
                       <span
                         style={{
                           display: 'block',
@@ -215,7 +206,7 @@ export function PatternFrequencyList({
           padding: 15,
           background: 'transparent',
           border: '1.5px dashed var(--border-color)',
-          borderRadius: 14,
+          borderRadius: 'var(--r-14)',
           color: 'var(--text-sub)',
           fontSize: 14,
           fontWeight: 600,

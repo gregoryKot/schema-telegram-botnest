@@ -1,5 +1,8 @@
-import { pressable } from '../../utils/a11y';
+import { hitboxStyle } from '../../utils/hitbox';
 import { CrisisGate } from '../CrisisGate';
+
+// Крестик 16×16 в зоне 44×44; padding строки 14px вмещает выступ зоны.
+const x = hitboxStyle(16, 16);
 
 // Список доказательств (за/против) в проверке убеждения: строки с
 // удалением + поле добавления + кризисный гейт. Общий для обеих сторон —
@@ -24,15 +27,15 @@ export function EvidenceList({
   return (
     <>
       {items.length > 0 && (
-        <div style={{ marginBottom: 10 }}>
+        <div className="u-mb10">
           {items.map((f, i) => (
             <div
               key={i}
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: 8,
-                padding: '7px 0',
+                gap: 'var(--space-8)',
+                padding: '14px 0',
                 borderBottom: '1px solid rgba(var(--fg-rgb),0.05)',
               }}
             >
@@ -45,24 +48,19 @@ export function EvidenceList({
               >
                 • {f}
               </span>
-              <span
-                {...pressable(() =>
-                  setItems((l) => l.filter((_, j) => j !== i)),
-                )}
-                style={{
-                  fontSize: 16,
-                  color: 'var(--text-faint)',
-                  cursor: 'pointer',
-                  padding: '0 4px',
-                }}
+              <button
+                type="button"
+                aria-label="Удалить"
+                onClick={() => setItems((l) => l.filter((_, j) => j !== i))}
+                style={{ ...x.outer, color: 'var(--text-faint)', fontSize: 16 }}
               >
-                ×
-              </span>
+                <span style={x.inner}>×</span>
+              </button>
             </div>
           ))}
         </div>
       )}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
+      <div style={{ display: 'flex', gap: 'var(--space-8)', marginBottom: 14 }}>
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}
@@ -72,7 +70,7 @@ export function EvidenceList({
             flex: 1,
             background: 'rgba(var(--fg-rgb),0.04)',
             border: '1px solid rgba(var(--fg-rgb),0.1)',
-            borderRadius: 10,
+            borderRadius: 'var(--r-10)',
             padding: '10px 12px',
             color: 'var(--text)',
             fontSize: 14,
@@ -84,7 +82,7 @@ export function EvidenceList({
           onClick={onAdd}
           style={{
             padding: '10px 14px',
-            borderRadius: 10,
+            borderRadius: 'var(--r-10)',
             border: 'none',
             background: `color-mix(in srgb, ${accentColor} 15%, transparent)`,
             color: accentColor,

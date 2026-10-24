@@ -5,15 +5,19 @@
 // schema-miniapp/utils/todayConstants.ts) — оба фронтенда ре-экспортируют
 // отсюда, тест держим здесь же.
 import { describe, it, expect } from 'vitest';
-import { fillHistoryGaps, TODAY_DATE } from './todayConstants';
+import { fillHistoryGaps, TODAY_DATE, YESTERDAY_DATE } from './todayConstants';
+import { localDateStr } from './format';
 import type { DayHistory } from '../types';
 
-// Тот же способ форматирования даты, что и в реализации (UTC toISOString),
-// чтобы фикстуры совпадали с тем, что генерирует cursor внутри функции.
+// Тот же источник даты, что в реализации — localDateStr (локальная зона).
+// Раньше здесь стоял `toISOString()` (UTC), и в зонах, где локальная дата
+// уже другая, фикстуры описывали ДРУГИЕ сутки, чем считала функция: тест
+// краснел только в те часы, когда даты расходятся (джоба
+// TZ=Australia/Sydney после полудня UTC).
 function offsetDate(daysAgo: number): string {
   const d = new Date();
   d.setDate(d.getDate() - daysAgo);
-  return d.toISOString().split('T')[0];
+  return localDateStr(d);
 }
 
 const entry = (
@@ -78,5 +82,16 @@ describe('fillHistoryGaps', () => {
     const result = fillHistoryGaps(h);
     const mid = result.find((d) => d.date === offsetDate(1));
     expect(mid?.ratings).toEqual({ safety: 7 });
+  });
+
+  // Регресс: TODAY_DATE считался по локальной зоне, а курсор заполнения — по
+  // UTC. Проверка не на «какая сегодня дата», а на то, что источник даты у
+  // функции и у констант ОДИН: при расхождении зон первый день переставал
+  // быть TODAY_DATE, а второй — YESTERDAY_DATE, и сутки выпадали из
+  // календаря истории.
+  it('первые два дня — ровно TODAY_DATE и YESTERDAY_DATE (один источник даты)', () => {
+    const result = fillHistoryGaps([entry(0, { safety: 5 }), entry(3, {})]);
+    expect(result[0].date).toBe(TODAY_DATE);
+    expect(result[1].date).toBe(YESTERDAY_DATE);
   });
 });

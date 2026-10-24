@@ -22,6 +22,8 @@ import { ConflictException, Logger } from '@nestjs/common';
 import { createHash } from 'crypto';
 import { PaymentController } from './payment.controller';
 import { PaymentAmountMismatchError } from './booking.service';
+import { PaymentAfterCancelError } from './booking.transitions';
+import { ConfirmEffectsFailedError } from './booking.confirm-effects';
 import { RobokassaService } from './robokassa.service';
 import { DONATION_INVID_BASE } from '../donation/donation.service';
 import { SUBSCRIPTION_INVID_BASE } from '../subscription/subscription.service';
@@ -51,7 +53,10 @@ function makeController() {
     confirm: jest.fn(() => Promise.resolve({ ok: true })),
     getById: jest.fn(() => Promise.resolve({ cancelToken: 'ct-123' })),
   };
-  const notify = { alertAdmin: jest.fn(() => Promise.resolve(undefined)) };
+  const notify = {
+    alertAdmin: jest.fn(() => Promise.resolve(undefined)),
+    notifyAdminBoth: jest.fn(() => Promise.resolve(undefined)),
+  };
   const donation = {
     markPaidByInvId: jest.fn(() => Promise.resolve({ ok: true })),
   };
@@ -132,10 +137,13 @@ describe('PaymentController.handleResult — booking (обычный InvId-ди�
     expect(booking.confirm).not.toHaveBeenCalled();
   });
 
-  it('повторный (replay) callback по уже подтверждённой брони — confirm() бросает ConflictException, контроллер всё равно отвечает "OK" (идемпотентный ack, Robokassa перестаёт ретраить)', async () => {
-    const { controller, booking } = makeController();
+  // Сервис отвечает {ok:true} на повтор по CONFIRMED и ConflictException не бросает
+  // (аудит 2026-10-11) — ветка Conflict в контроллере живёт для остальных
+  // статусов без смысла подтверждать, например COMPLETED: поздний повтор.
+  it('ConflictException от статуса без смысла подтверждать (COMPLETED) — "OK" без алерта (Robokassa перестаёт ретраить)', async () => {
+    const { controller, booking, notify } = makeController();
     booking.confirm.mockRejectedValueOnce(
-      new ConflictException('Cannot confirm booking in status CONFIRMED'),
+      new ConflictException('Cannot confirm booking in status COMPLETED'),
     );
     const outSum = '4000.00';
     const invId = '7';
@@ -144,6 +152,76 @@ describe('PaymentController.handleResult — booking (обычный InvId-ди�
     const res = await controller.handleResult(outSum, invId, sig);
 
     expect(res).toBe('OK7');
+    expect(notify.alertAdmin).not.toHaveBeenCalled();
+    expect(notify.notifyAdminBoth).not.toHaveBeenCalled();
+  });
+
+  const paidAfterCancel = () =>
+    new PaymentAfterCancelError(
+      {
+        id: 7,
+        startsAt: new Date('2026-07-13T17:00:00Z'),
+        durationMin: 50,
+        type: 'SESSION_50',
+        clientName: 'Мария',
+        clientContact: '@maria',
+        message: null,
+        meetingUrl: null,
+        cancelToken: 'ct-123',
+      } as never,
+      4000,
+    );
+
+  it('оплата по отменённой/истёкшей брони → владельцу сигнал «деньги получены, а брони нет» в оба канала (бронь, сумма), ответ "OK" (повтор вебхука денег не вернёт)', async () => {
+    const { controller, booking, notify } = makeController();
+    booking.confirm.mockRejectedValueOnce(paidAfterCancel());
+    const outSum = '4000.00';
+    const invId = '7';
+    const sig = md5(`${outSum}:${invId}:${PASS2}`);
+
+    const res = await controller.handleResult(outSum, invId, sig);
+
+    expect(res).toBe('OK7');
+    expect(notify.notifyAdminBoth).toHaveBeenCalledTimes(1);
+    const [html, subject] = notify.notifyAdminBoth.mock.calls[0] as unknown as [
+      string,
+      string,
+    ];
+    expect(html).toContain('#7');
+    expect(html).toContain('Мария');
+    expect(html).toContain('4000 ₽');
+    expect(subject).toBe('Деньги получены, а брони #7 нет');
+    expect(notify.alertAdmin).not.toHaveBeenCalled(); // один сигнал, не два
+  });
+
+  it('оплата по отменённой брони логируется warn, а не error: error ушёл бы владельцу вторым DM через AlertLogger', async () => {
+    const { controller, booking } = makeController();
+    booking.confirm.mockRejectedValueOnce(paidAfterCancel());
+    const warn = jest.spyOn(Logger.prototype, 'warn');
+    const error = jest.spyOn(Logger.prototype, 'error');
+    const outSum = '4000.00';
+    const sig = md5(`${outSum}:7:${PASS2}`);
+
+    await controller.handleResult(outSum, '7', sig);
+
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('after cancel'));
+    expect(error).not.toHaveBeenCalled();
+    warn.mockRestore();
+    error.mockRestore();
+  });
+
+  it('сам сигнал владельцу не ушёл (исключение) → "FAIL": Robokassa повторит, повтор оповестит снова', async () => {
+    const { controller, booking, notify } = makeController();
+    booking.confirm.mockRejectedValueOnce(paidAfterCancel());
+    notify.notifyAdminBoth.mockRejectedValueOnce(new Error('tg down'));
+    const error = jest.spyOn(Logger.prototype, 'error').mockImplementation();
+    const outSum = '4000.00';
+    const sig = md5(`${outSum}:7:${PASS2}`);
+
+    const res = await controller.handleResult(outSum, '7', sig);
+
+    expect(res).toBe('FAIL7');
+    error.mockRestore();
   });
 
   it('расхождение суммы: BookingService.confirm бросает PaymentAmountMismatchError — контроллер отличает его от идемпотентного повтора и отвечает "FAIL" (не подтверждаем деньги, которые не сверились; Robokassa продолжит ретраить, админ уже заалерчен внутри BookingService.confirm)', async () => {
@@ -174,6 +252,36 @@ describe('PaymentController.handleResult — booking (обычный InvId-ди�
     expect(res).toBe('FAIL7');
     expect(notify.alertAdmin).toHaveBeenCalledTimes(1);
     expect(notify.alertAdmin.mock.calls[0][0]).toContain('#7');
+  });
+
+  // security#21: CAS прошёл — бронь CONFIRMED, не доехали ссылка и календарь.
+  // Алерт «не подтвердилась» был ложью, а ответ обязан остаться FAIL: повтор
+  // вебхука доделает эффекты.
+  it('бронь подтверждена, но эффекты не доехали → "FAIL" и честный алерт «повтор доделает», не «не подтвердилась»; warn, не error', async () => {
+    const { controller, booking, notify } = makeController();
+    booking.confirm.mockRejectedValueOnce(
+      new ConfirmEffectsFailedError(7, new Error('ECONNRESET')),
+    );
+    const warn = jest.spyOn(Logger.prototype, 'warn').mockImplementation();
+    const error = jest.spyOn(Logger.prototype, 'error').mockImplementation();
+    const outSum = '4000.00';
+    const sig = md5(`${outSum}:7:${PASS2}`);
+
+    const res = await controller.handleResult(outSum, '7', sig);
+
+    expect(res).toBe('FAIL7');
+    expect(notify.alertAdmin).toHaveBeenCalledTimes(1);
+    const text = String(notify.alertAdmin.mock.calls[0][0]);
+    expect(text).toContain('#7');
+    expect(text).toContain('оплачена и подтверждена');
+    expect(text).toContain('доделает');
+    expect(text).not.toContain('не подтвердилась');
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining('effects pending'),
+    );
+    expect(error).not.toHaveBeenCalled(); // error ушёл бы владельцу вторым DM
+    warn.mockRestore();
+    error.mockRestore();
   });
 });
 
@@ -272,11 +380,11 @@ describe('PaymentController.handleResult — деньги не немые ни �
   // Контрольный случай для той же таблицы: benign-повтор на booking-диапазоне
   // обязан остаться тихим. Без этого теста имплементация «алертить на любую
   // ошибку без разбора» тоже прошла бы it.each выше.
-  it('booking: ConflictException (повтор) — OK без алерта, это НЕ та же ошибка', async () => {
+  it('booking: ConflictException (поздний повтор) — OK без алерта, это НЕ та же ошибка', async () => {
     const m = makeController();
     const invId = 7;
     m.booking.confirm.mockRejectedValueOnce(
-      new ConflictException('Cannot confirm booking in status CONFIRMED'),
+      new ConflictException('Cannot confirm booking in status COMPLETED'),
     );
     const outSum = '4000.00';
     const sig = md5(`${outSum}:${invId}:${PASS2}`);

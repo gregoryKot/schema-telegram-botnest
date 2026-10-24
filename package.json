@@ -19,14 +19,17 @@
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
-    "rotate-encryption": "ts-node scripts/rotate-encryption-key.ts",
+    "rotate-encryption": "node dist/cli/rotate-encryption-key.js",
     "mutation": "stryker run",
     "smoke": "playwright test",
+    "mutation:golden-auth": "stryker run stryker.golden-auth.config.json",
+    "mutation:golden-payments": "stryker run stryker.golden-payments.config.json",
     "mutation:crisis": "stryker run stryker.crisis.config.json",
-    "mutation:outbox": "stryker run stryker.outbox.config.json"
+    "mutation:outbox": "stryker run stryker.outbox.config.json",
+    "check-phrases": "ts-node scripts/check-db-phrases.ts"
   },
   "dependencies": {
-    "@napi-rs/canvas": "^1.0.3",
+    "@napi-rs/canvas": "^1.0.8",
     "@nestjs/common": "^11.1.28",
     "@nestjs/config": "^4.0.3",
     "@nestjs/core": "^11.1.28",
@@ -34,8 +37,8 @@
     "@nestjs/schedule": "^6.1.1",
     "@nestjs/serve-static": "^5.0.5",
     "@nestjs/throttler": "^6.5.0",
-    "@prisma/adapter-pg": "^7.8.0",
-    "@prisma/client": "^7.8.0",
+    "@prisma/adapter-pg": "^7.10.0",
+    "@prisma/client": "^7.10.0",
     "@tma.js/init-data-node": "^2.0.8",
     "@types/cookie-parser": "^1.4.10",
     "@types/jsonwebtoken": "^9.0.10",
@@ -45,48 +48,49 @@
     "dotenv": "^17.3.1",
     "helmet": "^8.3.0",
     "https-proxy-agent": "^7.0.6",
-    "jose": "^6.2.3",
+    "jose": "^6.2.12",
     "jsonwebtoken": "^9.0.3",
     "otplib": "^12.0.1",
-    "pg": "^8.22.0",
-    "prisma": "^7.8.0",
+    "pg": "^8.23.0",
+    "prisma": "^7.10.0",
     "qrcode": "^1.5.4",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
     "telegraf": "^4.16.3",
-    "undici": "^8.9.0"
+    "undici": "^8.10.2"
   },
   "devDependencies": {
-    "@eslint/eslintrc": "^3.3.6",
+    "@axe-core/playwright": "^4.13.0",
+    "@eslint/eslintrc": "^3.3.7",
     "@eslint/js": "^10.0.1",
     "@nestjs/cli": "^11.0.24",
     "@nestjs/schematics": "^11.1.0",
     "@nestjs/testing": "^11.1.28",
-    "@playwright/test": "^1.62.1",
+    "@playwright/test": "^1.63.0",
     "@stryker-mutator/core": "^9.6.1",
     "@stryker-mutator/jest-runner": "^9.6.1",
     "@types/express": "^5.0.0",
     "@types/jest": "^30.0.0",
-    "@types/node": "^26.1.1",
+    "@types/node": "^26.5.0",
     "@types/qrcode": "^1.5.6",
     "@types/supertest": "^7.2.1",
-    "eslint": "^10.7.0",
+    "eslint": "^10.10.0",
     "eslint-config-prettier": "^10.0.1",
     "eslint-plugin-jsx-a11y": "^6.10.2",
     "eslint-plugin-prettier": "^5.5.6",
-    "globals": "^17.7.0",
-    "jest": "^30.0.0",
-    "jscpd": "^5.0.12",
-    "prettier": "^3.9.5",
-    "sharp": "^0.35.3",
+    "globals": "^17.12.0",
+    "jest": "^30.5.1",
+    "jscpd": "^5.2.0",
+    "prettier": "^3.9.6",
+    "sharp": "^0.35.4",
     "source-map-support": "^0.5.21",
     "supertest": "^7.0.0",
-    "ts-jest": "^29.2.5",
+    "ts-jest": "^29.4.12",
     "ts-loader": "^9.6.2",
     "ts-node": "^10.9.2",
     "tsconfig-paths": "^4.2.0",
     "typescript": "^6.0.3",
-    "typescript-eslint": "^8.64.0"
+    "typescript-eslint": "^8.70.0"
   },
   "overrides": {
     "babel-plugin-istanbul": "^8.0.0",
@@ -95,8 +99,10 @@
     "eslint-plugin-jsx-a11y": {
       "eslint": "$eslint"
     },
-    "fast-uri": "^3.1.5",
-    "deepmerge-ts": "^8.0.1"
+    "fast-uri": "^3.1.7",
+    "mysql2": "^3.24.3",
+    "deepmerge-ts": "^8.0.1",
+    "multer": "^2.3.0"
   },
   "jest": {
     "moduleFileExtensions": [
@@ -121,6 +127,9 @@
         "lines": 24
       }
     },
-    "testEnvironment": "node"
+    "testEnvironment": "node",
+    "setupFilesAfterEnv": [
+      "<rootDir>/test-support/exit-code-leak.setup.ts"
+    ]
   }
 }

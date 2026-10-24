@@ -2,6 +2,12 @@ import { useEffect, useState } from 'react';
 import { api, reportClientError } from '../api';
 import { useSetAddressForm } from '../utils/addressForm';
 import { useAddressFormChoice } from '../../../shared/src/settings/useAddressFormChoice';
+import {
+  shouldAskAddressForm,
+  markAddressFormAsked,
+} from '../../../shared/src/settings/addressFormPrompt';
+import { useHistorySheet } from '../hooks/useHistorySheet';
+import { Dialog } from './Dialog';
 
 /**
  * Выбор обращения («ты»/«вы») при первом входе — пока addressForm в настройках null.
@@ -16,58 +22,60 @@ import { useAddressFormChoice } from '../../../shared/src/settings/useAddressFor
  */
 export function AddressFormPicker() {
   const [show, setShow] = useState(false);
-  const setForm = useSetAddressForm();
 
   useEffect(() => {
-    if (sessionStorage.getItem('addr_form_asked')) return;
     api.getSettings()
-      .then(s => { if (!s.addressForm) setShow(true); })
+      .then(s => { if (shouldAskAddressForm(s.addressForm)) setShow(true); })
       .catch(() => {});
   }, []);
 
   function close() {
-    sessionStorage.setItem('addr_form_asked', '1');
+    markAddressFormAsked();
     setShow(false);
   }
 
+  if (!show) return null;
+  // Оверлей вынесен в отдельный компонент, чтобы useHistorySheet (правило
+  // CLAUDE.md — обязателен для fixed/inset:0 листов) вызывался только пока
+  // диалог реально смонтирован, а не на каждом рендере AddressFormPicker.
+  return <AddressFormPickerModal onClose={close} />;
+}
+
+function AddressFormPickerModal({ onClose }: { onClose: () => void }) {
+  const setForm = useSetAddressForm();
+  const goBack = useHistorySheet(onClose);
+  // onSaved зовётся goBack — успешное сохранение закрывает диалог тем же
+  // путём, что и «Назад» браузера (CLAUDE.md: «если лист закрывается после
+  // сохранения, тоже goBack()»).
   const { failed, choose } = useAddressFormChoice(
     setForm,
     api.updateSettings,
     reportClientError,
-    close,
+    goBack,
   );
 
-  if (!show) return null;
-
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
-      <div style={{ width: '100%', maxWidth: 380, background: 'var(--bg)', borderRadius: 20, padding: 28 }}>
-        <div style={{ fontSize: 17, fontWeight: 700, color: 'var(--text)', marginBottom: 8 }}>
-          Как удобнее общаться?
-        </div>
-        <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.6, marginBottom: 18 }}>
-          Поменять можно в любой момент в настройках.
-        </div>
-        <div style={{ display: 'flex', gap: 10, marginBottom: 10 }}>
-          <button onClick={() => choose('ty')}
-            style={{ flex: 1, padding: '13px 0', borderRadius: 12, border: 'none', background: 'var(--accent)', color: '#fff', fontSize: 15, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
-            На «ты»
-          </button>
-          <button onClick={() => choose('vy')}
-            style={{ flex: 1, padding: '13px 0', borderRadius: 12, border: 'none', background: 'rgba(var(--fg-rgb),0.08)', color: 'var(--text)', fontSize: 15, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
-            На «вы»
-          </button>
-        </div>
-        {failed && (
-          <div style={{ fontSize: 12.5, color: 'var(--danger, #e5484d)', lineHeight: 1.5, marginBottom: 10 }}>
-            Не удалось сохранить выбор. Проверить соединение и попробовать ещё раз — или «Позже».
-          </div>
-        )}
-        <button onClick={close}
-          style={{ width: '100%', padding: '9px 0', borderRadius: 10, border: 'none', background: 'transparent', color: 'var(--text-faint)', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>
-          Позже
+    <Dialog label="Как удобнее общаться?" zIndex={200}>
+      <h2 className="dialog-title">Как удобнее общаться?</h2>
+      <p className="dialog-text" style={{ marginBottom: 20 }}>
+        Поменять можно в любой момент в настройках.
+      </p>
+      <div className="dialog-actions" style={{ marginBottom: 10 }}>
+        <button className="btn-primary" onClick={() => choose('ty')}>
+          На «ты»
+        </button>
+        <button className="btn-outline" onClick={() => choose('vy')}>
+          На «вы»
         </button>
       </div>
-    </div>
+      {failed && (
+        <div className="dialog-error">
+          Не удалось сохранить выбор. Проверить соединение и попробовать ещё раз — или «Позже».
+        </div>
+      )}
+      <button className="dialog-link" onClick={goBack}>
+        Позже
+      </button>
+    </Dialog>
   );
 }

@@ -63,12 +63,12 @@ export function SparklineRow({
           : undefined
       }
       style={{
-        borderRadius: 16,
+        borderRadius: 'var(--r-16)',
         padding: '12px 14px',
         cursor: onClick ? 'pointer' : 'default',
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+      <div className="u-ac12">
         <div
           style={{
             width: 32,

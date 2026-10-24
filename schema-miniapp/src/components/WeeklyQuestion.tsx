@@ -5,9 +5,15 @@ import { useTr } from '../utils/addressForm';
 import { CrisisGate } from './CrisisGate';
 import { SaveErrorNote } from './SaveErrorNote';
 import { getWeekKey, getQuestion, shouldShow } from './weeklyQuestion.helpers';
+import {
+  ANSWER_FIELD_STYLE,
+  buildWeeklyNote,
+  weeklyAnswerMax,
+} from './weeklyAnswerLimit';
+import { LimitedTextarea } from '../../../shared/src/components/LimitedTextarea';
 
 interface Props {
-  date: string; // today's date YYYY-MM-DD
+  date: string /* сегодня, YYYY-MM-DD */;
   onDismiss: () => void;
 }
 
@@ -22,7 +28,7 @@ export function WeeklyQuestion({ date, onDismiss }: Props) {
     setSaving(true);
     setSaveError(false);
     try {
-      await api.saveNote(date, `[Вопрос недели] ${question}\n\n${text.trim()}`);
+      await api.saveNote(date, buildWeeklyNote(question, text));
       localStorage.setItem(getWeekKey(), '1');
       onDismiss();
     } catch (e) {
@@ -43,7 +49,7 @@ export function WeeklyQuestion({ date, onDismiss }: Props) {
         background:
           'linear-gradient(135deg, color-mix(in srgb, var(--accent) 12%, transparent), color-mix(in srgb, var(--accent-blue) 8%, transparent))',
         border: '1px solid color-mix(in srgb, var(--accent) 25%, transparent)',
-        borderRadius: 16,
+        borderRadius: 'var(--r-16)',
         padding: '16px 18px',
         marginBottom: 20,
       }}
@@ -59,30 +65,16 @@ export function WeeklyQuestion({ date, onDismiss }: Props) {
       >
         {question}
       </div>
-      <textarea
+      <LimitedTextarea
+        max={weeklyAnswerMax(question)}
         value={text}
         onChange={(e) => setText(e.target.value)}
         placeholder={tr(
           'Напиши, что приходит в голову...',
           'Напишите, что приходит в голову...',
         )}
-        maxLength={500}
         rows={3}
-        style={{
-          width: '100%',
-          background: 'rgba(var(--fg-rgb),0.06)',
-          border: '1px solid rgba(var(--fg-rgb),0.1)',
-          borderRadius: 10,
-          padding: '10px 12px',
-          color: 'var(--text)',
-          fontSize: 13,
-          lineHeight: 1.5,
-          resize: 'none',
-          outline: 'none',
-          boxSizing: 'border-box',
-          fontFamily: 'inherit',
-          marginBottom: 10,
-        }}
+        style={ANSWER_FIELD_STYLE}
       />
       <CrisisGate texts={[text]} surface="weekly" />
       {saveError && (
@@ -91,14 +83,14 @@ export function WeeklyQuestion({ date, onDismiss }: Props) {
           vy="Не сохранилось, попробуйте ещё раз"
         />
       )}
-      <div style={{ display: 'flex', gap: 8 }}>
+      <div className="u-row8">
         <button
           onClick={handleSkip}
           style={{
             flex: 1,
             padding: '9px 0',
             border: 'none',
-            borderRadius: 10,
+            borderRadius: 'var(--r-10)',
             background: 'rgba(var(--fg-rgb),0.06)',
             color: 'var(--text-sub)',
             fontSize: 12,
@@ -114,7 +106,7 @@ export function WeeklyQuestion({ date, onDismiss }: Props) {
             flex: 2,
             padding: '9px 0',
             border: 'none',
-            borderRadius: 10,
+            borderRadius: 'var(--r-10)',
             background: 'color-mix(in srgb, var(--accent) 12%, transparent)',
             color: 'var(--accent)',
             fontSize: 12,
