@@ -13,7 +13,8 @@
 // require-await в typed-линте.
 
 import { makeFakeExecuteRaw } from './fake-cron-lease';
-import { makeTable, withUserJoin, withDefaults } from './fake-prisma-engine';
+import { makeTable, withDefaults } from './fake-prisma-engine';
+import { withUserJoin } from './fake-user-join';
 import { withUpdatedAt } from './fake-updated-at';
 
 /** Собирает фейковый PrismaService, готовый к .overrideProvider(PrismaService). */

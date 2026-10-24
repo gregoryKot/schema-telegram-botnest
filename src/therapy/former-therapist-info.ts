@@ -10,8 +10,11 @@ import { therapistName } from './therapist-name';
 //
 // null, когда сообщение не нужно: у клиента есть живая связь (active или
 // pending — подключён новый терапевт) либо нет связи, завершённой отказом
-// терапевта от роли. Иначе — последняя такая связь. Строк у одного клиента —
-// по одной на бывшего терапевта, поэтому порядок считается здесь, а не в SQL:
+// терапевта от роли. Иначе — последняя такая связь. Терапевт, снова получивший
+// роль, бывшим не считается (фильтр в запросе, та же сверка, что в бэкфиле
+// миграции 20261022150000): «больше не работает» было бы неправдой, а
+// клиент не переподключился — лучше прежнее молчание. Строк у клиента — по
+// одной на бывшего терапевта, поэтому порядок считается здесь, а не в SQL:
 // NULLS LAST по endedAt (у старых связей даты нет) одинаков на Postgres и фейке.
 export interface FormerTherapistInfo {
   name: string;
@@ -27,7 +30,12 @@ export async function getFormerTherapistInfo(
   });
   if (live > 0) return null;
   const rows = await prisma.therapyRelation.findMany({
-    where: { clientId, status: 'ended', endReason: THERAPIST_RESIGNED },
+    where: {
+      clientId,
+      status: 'ended',
+      endReason: THERAPIST_RESIGNED,
+      therapist: { role: { not: 'THERAPIST' } },
+    },
     include: { therapist: { select: { firstName: true } } },
   });
   const latest = [...rows].sort(byLatestEnd)[0];

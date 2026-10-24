@@ -20,15 +20,29 @@ const names: Record<string, string | null> = {
   '2': 'Борис',
   '3': null,
 };
+// Текущая роль терапевтов; по умолчанию — CLIENT (отказались и не вернулись).
+let roles: Record<string, string> = {};
+const roleOf = (id: bigint) => roles[String(id)] ?? 'CLIENT';
+
+type Cond = { in?: unknown[]; not?: unknown };
 
 function matches(r: Row, where: Record<string, unknown>): boolean {
   return Object.entries(where).every(([k, cond]) => {
+    // Фильтр по связанной записи: therapist: { role: { not: … } }.
+    if (k === 'therapist') {
+      const role = (cond as { role: Cond }).role;
+      return roleOf(r.therapistId) !== role.not;
+    }
     const v = r[k as keyof Row];
     if (cond && typeof cond === 'object' && 'in' in cond)
-      return (cond as { in: unknown[] }).in.includes(v);
+      return (cond as Cond).in!.includes(v);
     return v === cond;
   });
 }
+
+beforeEach(() => {
+  roles = {};
+});
 
 function makePrisma(rows: Row[]) {
   const therapyRelation = {
@@ -107,6 +121,28 @@ describe('getFormerTherapistInfo', () => {
     expect(await getFormerTherapistInfo(makePrisma([old]), C)).toEqual({
       name: 'Борис',
       endedAt: null,
+    });
+  });
+
+  it('терапевт снова получил роль, клиент не переподключился → null', async () => {
+    roles = { '1': 'THERAPIST' };
+    expect(await getFormerTherapistInfo(makePrisma([row({})]), C)).toBeNull();
+  });
+
+  it('последний — вернувшийся терапевт, ранний — нет: показывается ранний', async () => {
+    roles = { '2': 'THERAPIST' };
+    const rows = [
+      row({ therapistId: 1n, endedAt: new Date('2026-10-01T00:00:00Z') }),
+      row({ therapistId: 2n, endedAt: new Date('2026-10-21T00:00:00Z') }),
+    ];
+    const prisma = makePrisma(rows);
+    expect((await getFormerTherapistInfo(prisma, C))?.name).toBe('Анна');
+    // Роль сверяется в самом запросе, а не после выборки.
+    const findMany = (
+      prisma as unknown as { therapyRelation: { findMany: jest.Mock } }
+    ).therapyRelation.findMany;
+    expect(findMany.mock.calls[0][0].where).toMatchObject({
+      therapist: { role: { not: 'THERAPIST' } },
     });
   });
 

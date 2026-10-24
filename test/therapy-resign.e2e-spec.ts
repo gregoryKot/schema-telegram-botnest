@@ -262,6 +262,8 @@ describe('e2e: отказ от роли терапевта завершает с
     expect(clients.body[0]).toMatchObject({ name: expect.any(String) });
     expect(await partnerOf(C)).toBeNull();
     expect(await statuses(T)).toEqual(AFTER_RESIGN);
+    // T снова терапевт: «больше не работает в приложении» было бы неправдой.
+    expect(await formerOf(C)).toBeNull();
   });
 
   it('новая связь — только через новое приглашение', async () => {
