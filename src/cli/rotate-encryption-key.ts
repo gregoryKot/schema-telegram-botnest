@@ -15,11 +15,14 @@
 // Перезапускаемо: повторный прогон безопасен.
 import { PrismaClient } from '@prisma/client';
 import { buildPrismaAdapter } from '../prisma/prisma.service';
+import { CLI_STATEMENT_TIMEOUT_MS } from '../prisma/statement-timeout';
 import { runRotation } from './rotate-encryption/run';
 
 runRotation({
   key: process.env.ENCRYPTION_KEY,
-  connect: () => new PrismaClient({ adapter: buildPrismaAdapter() }),
+  // Свой порог: ротация читает таблицы целиком (statement-timeout.ts).
+  connect: () =>
+    new PrismaClient({ adapter: buildPrismaAdapter(CLI_STATEMENT_TIMEOUT_MS) }),
   log: console.log,
 }).then(
   (code) => process.exit(code),

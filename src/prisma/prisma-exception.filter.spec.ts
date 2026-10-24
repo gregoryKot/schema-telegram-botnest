@@ -236,6 +236,46 @@ describe('PrismaExceptionFilter', () => {
     });
   });
 
+  // Таймаут запроса (statement_timeout, SQLSTATE 57014): строку владельцу с
+  // местом вызова пишет PrismaService, здесь только warn — без второго DM.
+  // Статус 500, не 503: на 503 мини-апп повторяет GET, а повтор запроса,
+  // упёршегося в предел, только нагрузил бы тормозящую базу.
+  it('таймаут запроса (57014 в meta адаптера) → 500 с понятным текстом, warn вместо error', () => {
+    const filter = new PrismaExceptionFilter();
+    const logger = (
+      filter as unknown as {
+        logger: {
+          error: (...a: unknown[]) => void;
+          warn: (...a: unknown[]) => void;
+        };
+      }
+    ).logger;
+    const error = jest.spyOn(logger, 'error').mockImplementation(() => {});
+    const warn = jest.spyOn(logger, 'warn').mockImplementation(() => {});
+    const { host, res, json } = makeHost('/api/stats?token=secret');
+    const timeout = new Prisma.PrismaClientKnownRequestError(
+      'Database error. Code: `57014`. Message: `canceling statement due to statement timeout`',
+      {
+        code: 'P2039',
+        clientVersion: '7.0.0',
+        meta: {
+          driverAdapterError: { cause: { originalCode: '57014' } },
+        },
+      },
+    );
+    filter.catch(timeout, host);
+
+    expect(res.status).toHaveBeenCalledWith(HttpStatus.INTERNAL_SERVER_ERROR);
+    expect(json).toHaveBeenCalledWith({
+      statusCode: 500,
+      error: 'Internal Server Error',
+      message: 'База данных не ответила вовремя',
+    });
+    expect(error).not.toHaveBeenCalled();
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(String(warn.mock.calls[0][0])).not.toContain('secret');
+  });
+
   it('req.url отсутствует → не падает, использует "?" вместо краша', () => {
     const filter = new PrismaExceptionFilter();
     const json = jest.fn();

@@ -188,6 +188,23 @@ P2 и P3 — это ~1,7 с из ~3,5 с отчёта, и оба лечатся 
 образцы к каждому исключению — похожий, но незаконный случай обязан остаться
 красным (правило №15 п.2).
 
+## Долгие пути под statement_timeout (2026-10-22)
+
+`statement_timeout` пула — 30 с на запрос (`src/prisma/statement-timeout.ts`).
+Что прод-порог не ломает долгие легитимные пути, на этой же синтетике
+проверяют два шага джобы `perf`: `/stats` в `run-plans.ts` (упавший блок
+бросает) и `test/perf/long-paths.ts` после замера — он сверяет, что сессия
+действительно на прод-пороге, и прогоняет пути, которые меняют данные. Замер
+2026-10-22, локальный Postgres 16:
+
+| Путь | Время |
+| --- | --- |
+| Самый долгий одиночный запрос `/stats` (`log_min_duration_statement`) | 465 мс |
+| Ночная чистка `AnalyticsEvent`: ~500 тысяч событий одним `DELETE` | 0,5–2,4 с |
+| Худший случай чистки: 1,5 млн из 2 млн (`EXPLAIN ANALYZE` с откатом) | 1,1 с |
+| Удаление аккаунта с самой длинной историей + `VACUUM ANALYZE "User"` | 111 мс |
+| Ротация ключа: чтение самой большой таблицы дневника целиком | 30 мс |
+
 ## Как прогнать локально
 
 Нужен локальный Postgres (сидер откажется работать с нелокальным хостом без
@@ -200,6 +217,7 @@ npx ts-node --compiler-options '{"module":"commonjs"}' test/perf/seed.ts
 npx ts-node --compiler-options '{"module":"commonjs"}' test/perf/run-plans.ts
 node scripts/check-query-plans.mjs            # --verbose — все запросы сценария
 node scripts/check-query-plans.mjs --update   # зафиксировать снижение страниц
+npx ts-node --compiler-options '{"module":"commonjs"}' test/perf/long-paths.ts  # удаляет данные — последним
 ```
 
 Postgres в Docker (в том числе service-контейнер GitHub Actions) получает по

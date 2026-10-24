@@ -30,6 +30,7 @@
 | Данные пользователя (доменная логика) | `src/bot/` — это НЕ Telegram-бот, а доменный слой: `src/bot/bot.service.ts`, `src/bot/bot.module.ts` | data |
 | Новая таблица с `userId` | `prisma/schema.prisma`, `src/bot/user-data-tables.ts`, `src/auth/user-owned-tables.ts`, `src/utils/encryption-policy.ts` | data, security |
 | Миграция | `prisma/migrations/<ГГГГММДДччммсс>_<имя>/migration.sql` | data |
+| Запрос упирается в таймаут БД, долгая операция | `src/prisma/statement-timeout.ts` (`withStatementTimeout`, `DB_STATEMENT_TIMEOUT_MS`) | data |
 | Команда или кнопка бота | `src/telegram/telegram.service.ts` и соседние `src/telegram/telegram.*.service.ts` (хендлеры регистрируются в `onModuleInit`) | telegram, texts |
 | Текст уведомления | `src/notification/notification.templates.ts`, форма ты/вы — `src/notification/address-form.ts` | texts |
 | Обращение ты/вы во фронте | `shared/src/utils/addressForm.ts` (`useTr`) | texts |
@@ -116,7 +117,7 @@
 | `src/therapy/` | Кабинет терапевта: связи, заметки, концептуализация, задания, заявки | backend-platform |
 | `src/booking/` | Запись, слоты, оплата, CalDAV, встречи, заявки с формы | backend-platform |
 | `src/infra/` | Аренда кронов, env-реестр, самопроверка, HTTP-края, бэкапы | backend-platform |
-| `src/prisma/` | `PrismaService` (глобальный), фильтр ошибок Prisma, волны дошифровки | backend-platform |
+| `src/prisma/` | `PrismaService` (глобальный), предел запроса `statement-timeout.ts`, фильтр ошибок Prisma, волны дошифровки | backend-platform |
 | `src/utils/` | Шифрование и его реестр, админ-алерты, лимиты текста, таймзоны | backend-platform |
 | `src/cli/` | Ротация `ENCRYPTION_KEY` | backend-platform |
 | `src/test-support/` | Хелперы jest, фейки Prisma/S3/Telegram; `src/test-support/gates/` — тесты гейтов | backend-platform |
