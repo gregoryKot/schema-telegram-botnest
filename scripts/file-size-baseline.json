@@ -1546,7 +1546,7 @@
   "src/test-support/fake-telegram-api.ts": 137,
   "src/test-support/gates/dependabot-coverage.ts": 137,
   "src/test-support/gates/deploy-needs-ci.ts": 126,
-  "src/test-support/gates/gate-sandbox.ts": 184,
+  "src/test-support/gates/gate-sandbox.ts": 149,
   "src/test-support/gates/job-timeouts.ts": 40,
   "src/test-support/gates/pattern-loader.ts": 109,
   "src/test-support/gates/workflow-yaml.ts": 59,
