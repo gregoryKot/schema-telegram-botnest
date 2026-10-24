@@ -22,6 +22,14 @@
   Пересборка нужна примерно раз в неделю и только PR мини-аппа и `shared` — её делает агент
   по п. (а) процедуры. Вернуться, если бот-PR мини-аппа начнут висеть дольше недели.
 
+**`check-coverage-ratchet.mjs` теряет FAIL упавшего jest** (найдено на #836, 2026-10-24).
+`scripts/check-coverage-ratchet.mjs:40-51` пишет весь `res.stdout`/`res.stderr` jest (на CI ~100 КБ
+логов Nest) и сразу `process.exit()`: в pipe доходят только первые 64 КБ, хвост с блоком FAIL и
+сводкой обрезается (проверено: `node -e` с 5 МБ в stdout и `process.exit(1)` отдаёт ровно 65 536
+байт). В логе шага видны «206 PASS, 0 FAIL» без сводки — так выглядел упавший `doc-pr-pointers.spec.ts`
+на #836 и, вероятно, бот-PR #748 и записи про Ubuntu 26 ниже (не проверено). Чинить: `process.exitCode = …`
+с `return` вместо `process.exit()`, либо `fs.writeSync(1, …)`; плюс спек гейта на большой вывод.
+
 **CI на Ubuntu 26 не переведён** (#789, 2026-10-20). На `ubuntu-latest` (с 2026-10-19 —
 Ubuntu 26) у трёх PR подряд падали `backend` → `check-coverage-ratchet.mjs` и `migrations` →
 «e2e перенос БД на VPS» (`test/transfer-db.e2e-spec.ts`), на `ubuntu-24.04` эти шаги
