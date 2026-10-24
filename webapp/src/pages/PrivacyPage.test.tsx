@@ -83,3 +83,20 @@ describe('PrivacyPage — получатели данных', () => {
     expect(screen.getByText(/Тепловые карты кликов и отслеживание переходов по ссылкам отключены/)).toBeTruthy();
   });
 });
+
+// Окно Google One Tap (2026-10-24): браузер обращается к Google уже при открытии
+// страницы входа, а скрипт Google может поставить там куку g_state. Политика
+// обязана это раскрывать — правка privacy/processors.ts или privacy/cookies.ts,
+// снявшая раскрытие, краснеет здесь.
+describe('PrivacyPage — окно «Продолжить как…» (Google One Tap)', () => {
+  it('Google: обращение при открытии страницы входа, данные учётной записи — при выборе входа', () => {
+    render(<PrivacyPage />);
+    expect(screen.getByText(/при открытии страницы входа – IP-адрес, сведения о браузере и cookie Google/)).toBeTruthy();
+    expect(screen.getByText(/данные учётной записи сайт получает, только если выбран этот способ входа/)).toBeTruthy();
+  });
+
+  it('кука g_state скрипта Google названа в главе о cookie', () => {
+    render(<PrivacyPage />);
+    expect(screen.getByText(/Cookie Google на странице входа \(g_state\)/)).toBeTruthy();
+  });
+});
