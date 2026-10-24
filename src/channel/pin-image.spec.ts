@@ -134,3 +134,25 @@ describe('pin-image', () => {
     });
   });
 });
+
+// @napi-rs/canvas 1.0.12 оборачивает CanvasRenderingContext2D.prototype.fill
+// при каждой загрузке index.js, а прототип нативного класса в процессе один.
+// jest грузит модуль заново в каждом тест-файле воркера: обёртки складываются,
+// и fill() без аргументов бросает «parameter 1 is not of type 'Path2D'» —
+// упало в pin-draw.ts:78 на CI #843 (2026-10-24), локально проходило, если
+// второй загрузки в воркере не было. Держим 1.0.11, тест ловит детерминированно.
+describe('@napi-rs/canvas: повторная загрузка модуля', () => {
+  it('не ломает fill() без аргументов', () => {
+    let canvas: typeof import('@napi-rs/canvas') | undefined;
+    jest.isolateModules(() => {
+      jest.requireActual('@napi-rs/canvas');
+    });
+    jest.isolateModules(() => {
+      canvas = jest.requireActual<typeof import('@napi-rs/canvas')>('@napi-rs/canvas');
+    });
+    const ctx = canvas!.createCanvas(10, 10).getContext('2d');
+    ctx.beginPath();
+    ctx.arc(5, 5, 2, 0, Math.PI * 2);
+    expect(() => ctx.fill()).not.toThrow();
+  });
+});
