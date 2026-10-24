@@ -100,6 +100,17 @@ export const RULES: Rule[] = [
     '/api/journey',
   ),
   simple('DELETE', /^\/api\/ysq-result$/, '/api/ysq-result'),
+  // «Удалить результаты теста» стирает итог, историю и прогресс; «Мой путь»
+  // (journey.service.ts) и профиль (profile.service.ts, ysq.*) читают их же.
+  simple(
+    'DELETE',
+    /^\/api\/ysq-data$/,
+    '/api/ysq-result',
+    '/api/ysq-history',
+    '/api/ysq-progress',
+    '/api/journey',
+    '/api/profile',
+  ),
   simple('POST', /^\/api\/profile\/name$/, '/api/profile'),
   simple('POST', /^\/api\/diary\/schema$/, '/api/diary/schema'),
   simple('DELETE', /^\/api\/diary\/schema\/\d+$/, '/api/diary/schema'),

@@ -82,3 +82,21 @@ describe('бывший терапевт: join и отключение сбрас
     );
   });
 });
+
+// Кнопка «Удалить результаты теста» (решение владельца 2026-10-22) стирает
+// итог, историю и прогресс: ни одна вкладка не должна ещё 15 секунд
+// показывать удалённый тест из кеша.
+describe('RULES: DELETE /api/ysq-data', () => {
+  it('сбрасывает итог, историю, прогресс, «Мой путь» и профиль', () => {
+    const rule = RULES.find(
+      (r) => r.method === 'DELETE' && r.pattern.test('/api/ysq-data'),
+    );
+    expect(rule?.targets?.(FAKE_MATCH, undefined)).toEqual([
+      '/api/ysq-result',
+      '/api/ysq-history',
+      '/api/ysq-progress',
+      '/api/journey',
+      '/api/profile',
+    ]);
+  });
+});

@@ -30,6 +30,7 @@
 | Данные пользователя (доменная логика) | `src/bot/` — это НЕ Telegram-бот, а доменный слой: `src/bot/bot.service.ts`, `src/bot/bot.module.ts` | data |
 | Новая таблица с `userId` | `prisma/schema.prisma`, `src/bot/user-data-tables.ts`, `src/auth/user-owned-tables.ts`, `src/utils/encryption-policy.ts` | data, security |
 | Миграция | `prisma/migrations/<ГГГГММДДччммсс>_<имя>/migration.sql` | data |
+| Запрос упирается в таймаут БД, долгая операция | `src/prisma/statement-timeout.ts` (`withStatementTimeout`, `DB_STATEMENT_TIMEOUT_MS`) | data |
 | Команда или кнопка бота | `src/telegram/telegram.service.ts` и соседние `src/telegram/telegram.*.service.ts` (хендлеры регистрируются в `onModuleInit`) | telegram, texts |
 | Текст уведомления | `src/notification/notification.templates.ts`, форма ты/вы — `src/notification/address-form.ts` | texts |
 | Обращение ты/вы во фронте | `shared/src/utils/addressForm.ts` (`useTr`) | texts |
@@ -39,7 +40,7 @@
 | Кабинет терапевта | `src/therapy/therapy-relations.service.ts` (`assertHasClient`), `shared/src/therapy/` | security |
 | Env-переменная | `src/infra/env-registry.ts` + `docs/ENV.md` | ops |
 | Внешняя интеграция | проба в `src/infra/self-check/registry.ts` | ops |
-| Хост, редирект, визитка | `src/practice-domain.middleware.ts`, `src/practice-domain.surface.ts`, `src/infra/canonical-host.ts` | backend-api |
+| Хост, редирект, визитка; что визитка показывает поисковикам | `src/practice-domain.middleware.ts`, `src/practice-domain.surface.ts`, `src/practice-domain.seo.ts` (robots, sitemap, `PRACTICE_INDEXED_PAGES`), `src/practice-index-html.ts` (canonical), `src/infra/canonical-host.ts` | backend-api |
 | Статья сайта | `src/articles/articles.seed.ts` (+ поднять `SEED_VERSION` в `src/articles/articles.service.ts`), [docs/ARTICLES.md](ARTICLES.md) | texts, telegram |
 | Фраза канала «Здоровый Взрослый» | `src/bot/healthy-adult.data.ts` + миграция; площадки — `src/channel/channel.providers.ts` | telegram, texts |
 | Красный CI | [architecture/gates.md](architecture/gates.md) → строка гейта → его шапка | gates |
@@ -116,7 +117,7 @@
 | `src/therapy/` | Кабинет терапевта: связи, заметки, концептуализация, задания, заявки | backend-platform |
 | `src/booking/` | Запись, слоты, оплата, CalDAV, встречи, заявки с формы | backend-platform |
 | `src/infra/` | Аренда кронов, env-реестр, самопроверка, HTTP-края, бэкапы | backend-platform |
-| `src/prisma/` | `PrismaService` (глобальный), фильтр ошибок Prisma, волны дошифровки | backend-platform |
+| `src/prisma/` | `PrismaService` (глобальный), предел запроса `statement-timeout.ts`, фильтр ошибок Prisma, волны дошифровки | backend-platform |
 | `src/utils/` | Шифрование и его реестр, админ-алерты, лимиты текста, таймзоны | backend-platform |
 | `src/cli/` | Ротация `ENCRYPTION_KEY` | backend-platform |
 | `src/test-support/` | Хелперы jest, фейки Prisma/S3/Telegram; `src/test-support/gates/` — тесты гейтов | backend-platform |

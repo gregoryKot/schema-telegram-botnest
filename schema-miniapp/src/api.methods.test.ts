@@ -269,6 +269,7 @@ const DELETE_CASES: [string, () => Promise<unknown>, string][] = [
   ['deleteBeliefCheck', () => api.deleteBeliefCheck(9), '/api/belief-checks/9'],
   ['deleteLetter', () => api.deleteLetter(9), '/api/letters/9'],
   ['deleteFlashcard', () => api.deleteFlashcard(9), '/api/flashcards/9'],
+  ['deleteYsqData', () => api.deleteYsqData(), '/api/ysq-data'],
 ];
 
 describe('api — DELETE-ручки шлют верный метод и URL', () => {

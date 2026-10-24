@@ -4,10 +4,16 @@ import {
   OnModuleInit,
   OnModuleDestroy,
 } from '@nestjs/common';
-import { PrismaClient } from '@prisma/client';
+import { Prisma, PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
+import {
+  statementTimeoutLogLine,
+  statementTimeoutMs,
+} from './statement-timeout';
 
-export function buildPrismaAdapter(): PrismaPg {
+export function buildPrismaAdapter(
+  statementTimeout: number = statementTimeoutMs(),
+): PrismaPg {
   return new PrismaPg({
     connectionString: process.env.DATABASE_URL ?? '',
     max: 15,
@@ -20,18 +26,32 @@ export function buildPrismaAdapter(): PrismaPg {
     // Evict connections idle longer than 5 min from the pool so they're
     // never handed out stale.
     idleTimeoutMillis: 300_000,
+    // Предел одного запроса — стартовый параметр каждой сессии пула
+    // (statement-timeout.ts). 0 — без лимита: pg тогда параметр не шлёт.
+    statement_timeout: statementTimeout,
   });
 }
 
 @Injectable()
 export class PrismaService
-  extends PrismaClient
+  extends PrismaClient<Prisma.PrismaClientOptions, 'error'>
   implements OnModuleInit, OnModuleDestroy
 {
   private readonly logger = new Logger(PrismaService.name);
 
   constructor() {
-    super({ adapter: buildPrismaAdapter() });
+    const limitMs = statementTimeoutMs();
+    super({
+      adapter: buildPrismaAdapter(limitMs),
+      log: [{ emit: 'event', level: 'error' }],
+    });
+    // Таймаут ловится здесь, а не в каждом вызывающем: крон, бот и HTTP
+    // получают одну строку с местом вызова. Прочие ошибки Prisma — забота
+    // вызывающего, как и раньше.
+    this.$on('error', (e) => {
+      const line = statementTimeoutLogLine(e.message, limitMs);
+      if (line) this.logger.error(line);
+    });
   }
 
   async onModuleInit() {
