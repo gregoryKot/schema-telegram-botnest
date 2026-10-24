@@ -4,7 +4,10 @@
 // image) указывал на продуктовый домен — визитка представлялась чужим адресом.
 import { readFileSync } from 'fs';
 import { join } from 'path';
-import { practiceIndexHtml } from './practice-index-html';
+import {
+  practiceIndexHtml,
+  practiceIndexMiddleware,
+} from './practice-index-html';
 
 const WEBAPP = join(__dirname, '..', 'webapp');
 const source = readFileSync(join(WEBAPP, 'index.html'), 'utf8');
@@ -98,5 +101,57 @@ describe('главная визитки kotlarewski.gr', () => {
     expect(html).not.toMatch(/психолог(?!ическ)/i);
     // Контроль: законная формула услуги по-прежнему на месте.
     expect(html).toMatch(/Психологическое консультирование/);
+  });
+});
+
+// Решение владельца 2026-10-24: /reviews визитки в поиске. Сырой HTML страницы
+// (его читают Telegram и поисковик без JS) обязан нести свой canonical, иначе
+// /reviews объявляет себя копией главной продукта и в выдачу не попадает.
+describe('practiceIndexMiddleware: страницы визитки в поиске', () => {
+  const run = (
+    hostname: string,
+    path: string,
+    page: string | null = source,
+  ) => {
+    const sent: { body?: string } = {};
+    let nextCalled = false;
+    const res = {
+      setHeader: () => undefined,
+      send: (body: string) => {
+        sent.body = body;
+      },
+    } as never;
+    practiceIndexMiddleware(page, new Set(['kotlarewski.gr']))(
+      { hostname, path } as never,
+      res,
+      () => {
+        nextCalled = true;
+      },
+    );
+    return {
+      canonical: /rel="canonical" href="([^"]+)"/.exec(sent.body ?? '')?.[1],
+      nextCalled,
+    };
+  };
+
+  it('/reviews и /reviews/ — canonical на саму страницу', () => {
+    expect(run('kotlarewski.gr', '/reviews').canonical).toBe(
+      'https://kotlarewski.gr/reviews',
+    );
+    expect(run('kotlarewski.gr', '/reviews/').canonical).toBe(
+      'https://kotlarewski.gr/reviews',
+    );
+  });
+
+  it('главная — canonical на главную визитки', () => {
+    expect(run('kotlarewski.gr', '/').canonical).toBe(
+      'https://kotlarewski.gr/',
+    );
+  });
+
+  it('продуктовый хост, страница вне поиска и нет сборки — дальше, к ServeStatic', () => {
+    expect(run('schemehappens.ru', '/reviews').nextCalled).toBe(true);
+    expect(run('kotlarewski.gr', '/book').nextCalled).toBe(true);
+    expect(run('kotlarewski.gr', '/reviews', null).nextCalled).toBe(true);
   });
 });
