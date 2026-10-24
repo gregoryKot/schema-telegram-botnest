@@ -12,14 +12,16 @@
 #  - minor + patch — одна недельная группа на пакет (не заваливать ревью);
 #  - major — группами по СЕМЕЙСТВАМ (Nest, Stryker, Vitest): члены семейства
 #    требуют друг друга и поодиночке не ставятся, одиночный PR красный по
-#    построению. Остальные мажоры — отдельными PR, они ломающие и требуют глаз.
+#    построению. Остальные мажоры — отдельными PR, они ломающие и требуют глаз;
+#  - мажор, который осознанно не берём, — в `ignore:` с причиной и условием
+#    возврата (решения владельца — docs/open/ci-tests.md, «Мажоры зависимостей»).
 #
 # ВАЖНО про зелёность бот-PR. CI красит их по построению, и это не поломка:
 #  - PR с правкой зависимостей мини-аппа красен на «dist устарел» — dist
 #    коммитится в git, а бот его не пересобирает;
 #  - PR с правкой зависимостей webapp/мини-аппа может упереться в бандл-храповик.
 # Гейты для бота не ослаблены (правило №15). Доводка — вручную, порядок в
-# docs/README.md, «Что осталось открытым» → «Dependabot: доводка бот-PR».
+# docs/open/audit-2026-10.md, «Dependabot: доводка бот-PR».
 #
 # Ошибка в этом файле CI не роняет: Dependabot молча перестаёт работать, а
 # причина видна только в Insights → Dependency graph → Dependabot. После
@@ -45,6 +47,18 @@ updates:
       stryker-major:
         patterns: ['@stryker-mutator/*']
         update-types: [major]
+    # Не берём (решение владельца 2026-10-22, docs/open/ci-tests.md):
+    #  - typescript 7 — нативный компилятор, typescript-eslint и ts-jest его ещё
+    #    не принимают; вернуть, когда объявят поддержку;
+    #  - https-proxy-agent 8+ — только ESM, а бэкенд собран в CommonJS (jest
+    #    падает на telegram.providers.spec.ts); вернуть при переезде на ESM.
+    ignore:
+      - dependency-name: typescript
+        update-types:
+          - version-update:semver-major
+      - dependency-name: https-proxy-agent
+        update-types:
+          - version-update:semver-major
 
   - package-ecosystem: npm
     directory: /webapp
@@ -59,6 +73,13 @@ updates:
       vitest-major:
         patterns: ['vitest', '@vitest/*']
         update-types: [major]
+    # TypeScript 7 (нативный компилятор) не берём, пока typescript-eslint и
+    # ts-jest его не принимают; версия компилятора едина во всех пакетах
+    # (решение владельца 2026-10-22, docs/open/ci-tests.md).
+    ignore:
+      - dependency-name: typescript
+        update-types:
+          - version-update:semver-major
 
   - package-ecosystem: npm
     directory: /schema-miniapp
@@ -72,6 +93,13 @@ updates:
       vitest-major:
         patterns: ['vitest', '@vitest/*']
         update-types: [major]
+    # TypeScript 7 (нативный компилятор) не берём, пока typescript-eslint и
+    # ts-jest его не принимают; версия компилятора едина во всех пакетах
+    # (решение владельца 2026-10-22, docs/open/ci-tests.md).
+    ignore:
+      - dependency-name: typescript
+        update-types:
+          - version-update:semver-major
 
   # shared/ собирается в оба фронтенда; его vitest и react разъезжаются с
   # фронтовыми, если бамп пришёл в одном пакете без пары.
@@ -87,6 +115,13 @@ updates:
       vitest-major:
         patterns: ['vitest', '@vitest/*']
         update-types: [major]
+    # TypeScript 7 (нативный компилятор) не берём, пока typescript-eslint и
+    # ts-jest его не принимают; версия компилятора едина во всех пакетах
+    # (решение владельца 2026-10-22, docs/open/ci-tests.md).
+    ignore:
+      - dependency-name: typescript
+        update-types:
+          - version-update:semver-major
 
   # Игра заморожена (CLAUDE.md, game/), но собирается в прод-образ (Dockerfile,
   # CI-джоба docker), а тестов у неё нет. Поэтому только патчи, один PR за раз.

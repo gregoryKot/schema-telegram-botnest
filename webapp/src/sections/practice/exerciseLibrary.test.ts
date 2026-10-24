@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { EXERCISES, LIBRARY_HUES, exerciseHue, fmtAgo, fmtCount } from './exerciseLibrary';
+import { EXERCISES, LIBRARY_HUES, exerciseHue, fmtCount } from './exerciseLibrary';
 
 describe('exerciseHue', () => {
   it('раскладывает палитру по кругу', () => {
@@ -12,14 +12,9 @@ describe('exerciseHue', () => {
   });
 });
 
+// fmtAgo здесь не тестируется: копия одна — shared/src/utils/format.ts, её
+// сьют гоняет все зоны. Подпись «пройдено» без даты — в ExerciseLibrary.test.tsx.
 describe('форматирование', () => {
-  const now = new Date('2026-10-15T12:00:00Z').getTime();
-  it('fmtAgo', () => {
-    expect(fmtAgo(null, now)).toBe('пройдено');
-    expect(fmtAgo('2026-10-15T08:00:00Z', now)).toBe('сегодня');
-    expect(fmtAgo('2026-10-14T08:00:00Z', now)).toBe('вчера');
-    expect(fmtAgo('2026-10-12T08:00:00Z', now)).toBe('3 дн. назад');
-  });
   it('fmtCount', () => {
     expect(fmtCount(1)).toBe('1 запись');
     expect(fmtCount(3)).toBe('3 записи');
