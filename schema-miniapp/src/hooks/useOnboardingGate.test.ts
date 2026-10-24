@@ -5,7 +5,6 @@
 // онбординг и согласие начинались заново.
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
-import { createLocalStorageMock } from '../utils/localStorageMock';
 
 const acceptDisclaimer = vi.fn(() => Promise.resolve());
 const getDisclaimer = vi.fn(() => Promise.resolve({ accepted: false }));
@@ -24,8 +23,10 @@ vi.mock('../useUserFlags', () => ({
 import { useOnboardingGate } from './useOnboardingGate';
 
 beforeEach(() => {
-  (globalThis as { localStorage: unknown }).localStorage =
-    createLocalStorageMock();
+  // Окружение jsdom: настоящий localStorage окна, перед каждым тестом пустой.
+  // Подмена `globalThis.localStorage = мок` с Vitest 5 падает: присваивание
+  // уходит в окно jsdom, где localStorage — свойство только с геттером.
+  localStorage.clear();
   // форма обращения уже спрошена (снуз «Позже» свежий, см.
   // shared/settings/addressFormPrompt)
   localStorage.setItem('addr_form_asked', String(Date.now()));
