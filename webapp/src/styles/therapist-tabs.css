@@ -45,7 +45,7 @@
 .tb-x:hover { color: var(--err); }
 
 /* ── Задания ──────────────────────────────────────────────────────────── */
-.tb-tasks { display: grid; grid-template-columns: minmax(0, 1fr) minmax(260px, 340px); align-items: start; gap: 48px; max-width: var(--tk-max, 1440px); }
+.tb-tasks { display: grid; grid-template-columns: minmax(0, 1fr) minmax(260px, 340px); align-items: start; gap: 48px; max-width: var(--tk-max); }
 @media (max-width: 1023px) { .tb-tasks { grid-template-columns: minmax(0, 1fr); gap: 40px; } }
 .tb-col { display: flex; flex-direction: column; gap: 28px; min-width: 0; }
 .tb-col--tight { gap: 12px; }
