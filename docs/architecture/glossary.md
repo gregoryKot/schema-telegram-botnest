@@ -7,6 +7,9 @@
 | Говорят | Что это | Бэкенд | Фронт |
 |---|---|---|---|
 | **Навигация** | | | |
+| «Приложение с сайта», «установить на телефон» | PWA кабинета (решение 2026-10-17: устанавливаемое приложение = кабинет сайта, мини-апп — для старых установок) | — | `webapp/public/manifest.webmanifest`, `webapp/src/components/HomeScreenOfferCard.tsx`, `webapp/src/components/installGuide/installSteps.ts`; план — `docs/PWA_PLAN.md` |
+| «версия для клиента» / «для терапевта» | роль `UserRole` (`CLIENT`/`THERAPIST`); на сайте терапевт = `/cabinet*` | `prisma/schema.prisma` (enum `UserRole`) | `webapp/src/components/AppShell.tsx` (режим по URL), `webapp/src/components/appShell/MobileNav.tsx` (меню по роли) |
+| «трекер настроения», «трекер режимов» | такого нет: трекер один — потребностей. Концепт простого клиента — `docs/design/CLIENT_SIMPLE_2026-10.md` | `src/api/tracker.controller.ts` | `webapp/src/components/TrackerOverlay.tsx` |
 | «Сегодня», главная | вкладка дня | — | `webapp/src/sections/TodaySection.tsx`, `schema-miniapp/src/sections/TodaySection.tsx` |
 | «Дневник» | вкладка сайта; в мини-аппе оверлей | `src/bot/diary.service.ts` | `webapp/src/sections/DiarySection.tsx`, `schema-miniapp/src/sections/DiarySection.tsx` |
 | «Паттерны», «Мои паттерны» | вкладка: Схемы / Режимы / Потребности | `src/bot/notes.service.ts` | `webapp/src/sections/SchemasSection.tsx`, `schema-miniapp/src/sections/SchemasSection.tsx` |
