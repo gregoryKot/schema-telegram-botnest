@@ -1,5 +1,6 @@
 import { BottomSheet } from '../BottomSheet';
 import { fmtDate, momentDayKey } from '../../utils/format';
+import { resolveTaskDisplayText } from '../../../../shared/src/tasks/taskTitle';
 import { ClientDetail } from './types';
 
 interface TasksSheetProps {
@@ -91,7 +92,7 @@ export function TasksSheet({ detail }: TasksSheetProps) {
                       lineHeight: 1.4,
                     }}
                   >
-                    {task.text}
+                    {resolveTaskDisplayText(task, 'full')}
                   </div>
                   <div
                     style={{

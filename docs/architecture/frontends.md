@@ -138,10 +138,10 @@
 | `shared/src/selfHelp/` | текст «Важное о самопомощи» |
 | `shared/src/settings/` | константы уведомлений, тексты, выбор ты/вы |
 | `shared/src/share/` | карточки шаринга (canvas), тексты, события шаринга |
-| `shared/src/tasks/` | `taskProgress`: прогресс стрик-задач |
+| `shared/src/tasks/` | `taskProgress`: прогресс стрик-задач; `taskTitle`: название задания по `type`/`text` (id схемы/режима → «Карточка режима: …») — единственный резолвер обеих площадок и обеих сторон |
 | `shared/src/test-support/` | `rtlCleanup`, `settleUnmountTimers` для тестов |
 | `shared/src/theme/` | `tokens.css`, `fonts.css`, `utilities.css` |
-| `shared/src/therapy/` | кабинет терапевта: join, заметки, концептуализация, `conceptGraph` |
+| `shared/src/therapy/` | кабинет терапевта: join, заметки, концептуализация, `conceptGraph`, `upcomingSession` (ближайшая сессия клиента: прошедшая `nextSession` → ближайший день встреч) |
 | `shared/src/today/` | блоки «Сегодня», фокус, кастомизация |
 | `shared/src/utils/` | addressForm(+Cache), format, storageKeys, crisisMarkers, drafts, a11y |
 | `shared/src/warmWords/` | «Тёплые слова»: сбор и хук |

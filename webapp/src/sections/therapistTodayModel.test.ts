@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import type { TherapyClientSummary } from '../api';
 import {
-  activityStatus, daysSinceActive, initials, latestIndex, needsAttention,
-  sessionsTodaySorted, sparkPoints, todayCounts, clientName,
+  activityStatus, daysSinceActive, hasSessionToday, initials, latestIndex, needsAttention,
+  sessionTime, sessionsTodaySorted, sparkPoints, todayCounts, clientName,
 } from './therapistTodayModel';
 
 const NOW = Date.parse('2026-10-15T12:00:00Z');
@@ -44,7 +44,7 @@ describe('therapistTodayModel', () => {
   });
 
   it('счётчики', () => {
-    const dow = new Date().getDay();
+    const dow = new Date().getUTCDay();
     const list = [
       c({ todayIndex: 7, meetingDays: [dow] }),
       c({ lastActiveDate: ago(5) }),
@@ -81,12 +81,20 @@ describe('therapistTodayModel', () => {
 
   it('сессии сегодня сортируются по времени, без времени в конце', () => {
     const d = new Date().toISOString().slice(0, 10);
-    const dow = new Date().getDay();
+    const dow = new Date().getUTCDay();
     const res = sessionsTodaySorted([
       c({ telegramId: 1 as never, meetingDays: [dow] }),
       c({ telegramId: 2 as never, nextSession: `${d}T16:00:00Z` }),
       c({ telegramId: 3 as never, nextSession: `${d}T09:00:00Z` }),
     ]);
     expect(res.map(x => x.telegramId)).toEqual([3, 2, 1]);
+  });
+
+  it('прошедшая nextSession не прячет встречу по дням: сегодня в списке, время прежнее', () => {
+    const dow = new Date().getUTCDay();
+    const stale = c({ nextSession: '2026-01-03T07:00', meetingDays: [dow] });
+    expect(hasSessionToday(stale)).toBe(true);
+    expect(sessionTime(stale)).toBe('07:00');
+    expect(hasSessionToday(c({ nextSession: '2026-01-03T07:00' }))).toBe(false);
   });
 });

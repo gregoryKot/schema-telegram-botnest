@@ -3,7 +3,7 @@ import { pressable } from '../../utils/a11y';
 import { fmtDate } from '../../utils/format';
 import type { UserTask } from '../../api';
 import { TaskProgressBar } from '../../components/TaskProgressBar';
-import { resolveTaskText } from './exerciseLibrary';
+import { resolveTaskDisplayText } from '../../../../shared/src/tasks/taskTitle';
 import { taskRowState } from './taskRowState';
 
 /** Строка задания/цели: название, срок, действие справа. */
@@ -27,7 +27,7 @@ export function TaskRow({ task, cta, mark, onOpen, onComplete }: {
       {st.doneToday && <span className="cp-task-check" aria-hidden="true">✓</span>}
       <div className="cp-task-body">
         {mark && !st.doneToday && <div className="ds-label cp-task-from">от терапевта</div>}
-        <div className="cp-task-title">{resolveTaskText(task)}</div>
+        <div className="cp-task-title">{resolveTaskDisplayText(task, 'compact')}</div>
         {st.streakNote && <div className="cp-task-note">Сделано сегодня — завтра снова</div>}
         <TaskProgressBar task={task} />
         {task.dueDate && <div className="ds-sub">до {fmtDate(task.dueDate)}</div>}

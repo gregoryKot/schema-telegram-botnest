@@ -150,3 +150,41 @@
   собранный из частей (`'был' + ' ' + x`) или с новым глаголом вне списка
   (`ST` в модуле), пройдёт мимо. Расширять список — по мере находок, с образцом
   в `gendered-forms.spec.ts`.
+
+**Карточка клиента у терапевта — остаток после общей колонки и ближайшей сессии** (2026-10):
+- **Клиент видит прошедшую встречу.** У терапевта прошедшая `nextSession` теперь
+  переезжает на ближайший день встреч (`shared/src/therapy/upcomingSession.ts`), а
+  клиенту `GET /api/therapy/relation` (`src/therapy/therapy-relation-info.ts`) отдаёт
+  одну `nextSession` без `meetingDays`. «Встреча с терапевтом» на сайте
+  (`MeetingCard` в `webapp/src/sections/today/TodayAside.tsx`, баннер в
+  `webapp/src/sections/PracticeSection.tsx`, `webapp/src/sections/profile/TherapistCard.tsx`)
+  и в мини-аппе (`schema-miniapp/src/sections/helpSection/NextSessionBanner.tsx`)
+  показывает прошедшую дату: ни один экран не сравнивает её с сегодняшней (чтение
+  кода). Чинится `meetingDays` в ответе relation и тем же `upcomingSession`.
+- **«Сегодня» и «Все клиенты» кабинета прижаты влево.** `.ds-page`
+  (`webapp/src/styles/cabinet.css`, `max-width: 1200px` без центрирования) оставляет
+  на широком экране пустую половину справа, как раньше у карточки клиента; карточка
+  теперь в колонке по центру (`--tk-center` в `webapp/src/styles/therapist-card.css`),
+  и при переходе из списка содержимое сдвигается. `.ds-page` общий с разделами
+  клиента — вид всех экранов без решения владельца не менял.
+- **Действия карточки повторяются.** «+ Задание»/«+ Заметка» в шапке
+  (`webapp/src/components/therapist/ClientHeader.tsx`) и «+ Задание»/«+ Заметка
+  сессии» в сайдбаре «Обзора» (`ClientOverviewSidebar.tsx`); дата сессии — и бейджем
+  шапки, и карточкой. Что оставить при правиле «одно главное действие на экран» —
+  решение владельца.
+- **На телефоне между панелью «+ Задание / + Заметка» и нижней навигацией щель
+  12px**, в неё при прокрутке видно содержимое: `.tk-actions-main` стоит на
+  `bottom: calc(76px + var(--safe-bottom))` (`webapp/src/styles/therapist-card.css`,
+  мобильный `@media`), а `.mobile-nav` — `min-height: 64px` (`webapp/src/index.css`).
+  Там же имя клиента режется многоточием («Первый клие…» при 390px): 26px шрифта и
+  «✕» в той же строке. Замерено браузером на 390×844 при проверке #867, до него
+  не трогалось.
+- **«Сегодня» кабинета сверяет дни встреч с днём по UTC.** С #867 `hasSessionToday`
+  (`webapp/src/sections/therapistTodayModel.ts`) берёт день недели из
+  `todayCalendarDate()`, как и дату `nextSession` (правило №25); раньше дни встреч
+  сверялись с локальным `getDay()`. В Москве с 00:00 до 03:00 экран показывает
+  встречи вчерашнего дня — вместе с уже существовавшим сравнением `nextSession`.
+- **Открытие задания старого формата ищет схему/режим своим кодом**:
+  `webapp/src/sections/practice/taskRowState.ts:6` и
+  `webapp/src/sections/PracticeSection.tsx:116-117` (`ALL_SCHEMAS.some`), хотя
+  мини-апп для того же берёт `findLegacyTaskTarget` из `shared/src/tasks/taskTitle.ts`.

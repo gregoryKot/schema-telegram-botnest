@@ -3,7 +3,8 @@ import { OverlayFrame } from '../../components/OverlayFrame';
 import { useHistorySheet } from '../../hooks/useHistorySheet';
 import { fmtDate, momentDayKey } from '../../utils/format';
 import { TaskProgressBar } from '../../components/TaskProgressBar';
-import { resolveTaskText, taskStatusMark } from './helpers';
+import { taskStatusMark } from './helpers';
+import { resolveTaskDisplayText } from '../../../../shared/src/tasks/taskTitle';
 
 // Оверлей «Все задания» экрана «Сегодня». Вынесено из TodaySection.tsx
 // (правило №10). Поведение не менялось.
@@ -23,7 +24,7 @@ export function AllTasksOverlay({ tasks, taskHistory, onClose, onTaskDone, onAdd
             <span className="sk-task-mark">{taskStatusMark(task.done)}</span>
             <div className="sk-task-main">
               {task.assignedBy !== null && <div className="ds-eyebrow">от терапевта</div>}
-              <div className="sk-task-text">{resolveTaskText(task)}</div>
+              <div className="sk-task-text">{resolveTaskDisplayText(task, 'compact')}</div>
               <TaskProgressBar task={task} />
               {task.dueDate && <div className="ds-sub">до {fmtDate(task.dueDate)}</div>}
             </div>
@@ -43,7 +44,7 @@ export function AllTasksOverlay({ tasks, taskHistory, onClose, onTaskDone, onAdd
               <div key={task.id} className="ds-card ds-card--row sk-task is-past">
                 <span className="sk-task-mark">{taskStatusMark(task.done)}</span>
                 <div className="sk-task-main">
-                  <div className="sk-task-text">{resolveTaskText(task)}</div>
+                  <div className="sk-task-text">{resolveTaskDisplayText(task, 'compact')}</div>
                   {task.completedAt && <div className="ds-sub">{fmtDate(momentDayKey(task.completedAt))}</div>}
                 </div>
               </div>

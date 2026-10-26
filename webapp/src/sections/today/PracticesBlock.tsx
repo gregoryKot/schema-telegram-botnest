@@ -1,7 +1,8 @@
 import type { UserTask } from '../../api';
 import { pressable } from '../../utils/a11y';
 import { useTr } from '../../utils/addressForm';
-import { resolveTaskText, taskStatusMark } from './helpers';
+import { taskStatusMark } from './helpers';
+import { resolveTaskDisplayText } from '../../../../shared/src/tasks/taskTitle';
 
 interface Props {
   tasks: UserTask[];
@@ -40,7 +41,7 @@ export function PracticesBlock({ tasks, taskError, onStart, onShowAll, onAddGoal
           >
             <span className="ct-task-box" aria-hidden>{active ? '' : taskStatusMark(task.done)}</span>
             <div className="ct-task-body">
-              <div className="ct-task-text">{resolveTaskText(task)}</div>
+              <div className="ct-task-text">{resolveTaskDisplayText(task, 'compact')}</div>
               {task.assignedBy !== null && !isDone && <div className="ct-from-therapist">от терапевта</div>}
             </div>
             {active && <span className="ct-task-cta">начать →</span>}

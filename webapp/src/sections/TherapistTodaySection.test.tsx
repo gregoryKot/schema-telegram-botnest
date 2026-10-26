@@ -122,7 +122,8 @@ describe('TherapistTodaySection — сессии сегодня', () => {
   });
 
   it('без явного nextSession, но с meetingDays на сегодня — клиент в "Сессии сегодня"', async () => {
-    const todayDow = new Date().getDay();
+    // День встреч — от календарного «сегодня» (UTC, правило №25), как в модели.
+    const todayDow = new Date(`${todayCalendarDate()}T00:00:00Z`).getUTCDay();
     mockApi.getTherapyClients.mockResolvedValue([
       client({ telegramId: 1, name: 'Клиент В', nextSession: null, meetingDays: [todayDow] }),
     ]);

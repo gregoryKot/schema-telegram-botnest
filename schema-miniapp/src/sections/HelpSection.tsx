@@ -11,7 +11,7 @@ import { CHILDHOOD_DONE_KEY } from '../utils/storageKeys';
 import { TaskCreateSheet } from '../components/TaskCreateSheet';
 import { api, UserTask, TherapyRelationInfo } from '../api';
 import { TaskRow } from '../components/tasks/TaskRow';
-import { findLegacyTaskTarget } from '../components/tasks/taskEmoji';
+import { findLegacyTaskTarget } from '../../../shared/src/tasks/taskTitle';
 import type { QuickPracticeId } from '../../../shared/src/practices/quickPractices';
 import { AllTasksSheet } from './helpSection/AllTasksSheet';
 import { HelpHeader } from './helpSection/HelpHeader';

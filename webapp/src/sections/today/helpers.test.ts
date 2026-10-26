@@ -1,13 +1,11 @@
 // @vitest-environment jsdom
-// helpers.ts экрана «Сегодня»: чистые функции приветствия/даты/резолва задач,
-// вынесенные из TodaySection.tsx (правило №10). До этого теста — 0% покрытия.
+// helpers.ts экрана «Сегодня»: чистые функции приветствия/даты/маркера
+// статуса задач, вынесенные из TodaySection.tsx (правило №10). До этого теста — 0% покрытия.
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import type { UserTask } from '../../api.types';
 import {
   greeting,
   formatHeaderDate,
   readLocalIds,
-  resolveTaskText,
   taskStatusMark,
 } from './helpers';
 
@@ -18,23 +16,6 @@ afterEach(() => {
 function setHour(h: number) {
   vi.useFakeTimers();
   vi.setSystemTime(new Date(2026, 5, 15, h, 0, 0));
-}
-
-function makeTask(overrides: Partial<UserTask> = {}): UserTask {
-  return {
-    id: 1,
-    userId: 1,
-    assignedBy: null,
-    type: 'custom',
-    text: 'что-то сделать',
-    targetDays: null,
-    needId: null,
-    dueDate: null,
-    done: null,
-    completedAt: null,
-    createdAt: '2026-08-01T00:00:00.000Z',
-    ...overrides,
-  };
 }
 
 describe('greeting', () => {
@@ -102,28 +83,6 @@ describe('readLocalIds', () => {
   it('битый JSON — не падает, возвращает пустой массив', () => {
     localStorage.setItem('broken_key', '{not json');
     expect(readLocalIds('broken_key')).toEqual([]);
-  });
-});
-
-describe('resolveTaskText', () => {
-  it('schema_intro — текст из getTaskDisplayText (display ≠ raw text, внешний if false)', () => {
-    const task = makeTask({ type: 'schema_intro', text: 'abandonment' });
-    expect(resolveTaskText(task)).toBe('Карточка схемы: Покинутость / Нестабильность');
-  });
-
-  it('нераспознанный type, text — валидный id схемы (легаси-задача без typed schema_intro)', () => {
-    const task = makeTask({ type: 'custom', text: 'abandonment' });
-    expect(resolveTaskText(task)).toBe('Покинутость / Нестабильность');
-  });
-
-  it('нераспознанный type, text — валидный id режима', () => {
-    const task = makeTask({ type: 'custom', text: 'vulnerable_child' });
-    expect(resolveTaskText(task)).toBe('Уязвимый Ребёнок');
-  });
-
-  it('нераспознанный type, text — не схема и не режим — возвращает text как есть', () => {
-    const task = makeTask({ type: 'custom', text: 'обычный текст задачи' });
-    expect(resolveTaskText(task)).toBe('обычный текст задачи');
   });
 });
 

@@ -142,27 +142,22 @@ vi.mock('../components/QuickPracticeSheet', () => ({
     </div>
   ),
 }));
-vi.mock('../components/TaskCreateSheet', async (importOriginal) => {
-  // getTaskDisplayText нужен реальным TaskRow-строкам (taskEmoji.ts его
-  // импортирует отсюда же) — подменяем только сам компонент листа.
-  const actual =
-    await importOriginal<typeof import('../components/TaskCreateSheet')>();
-  return {
-    ...actual,
-    TaskCreateSheet: ({
-      onCreated,
-      onClose,
-    }: {
-      onCreated: () => void;
-      onClose: () => void;
-    }) => (
-      <div data-testid="task-create">
-        <button onClick={onCreated}>task-create-created</button>
-        <button onClick={onClose}>task-create-close</button>
-      </div>
-    ),
-  };
-});
+// Название задания TaskRow берёт из shared/src/tasks/taskTitle, не из модуля
+// листа — подменяем лист целиком, реальные строки задач от этого не зависят.
+vi.mock('../components/TaskCreateSheet', () => ({
+  TaskCreateSheet: ({
+    onCreated,
+    onClose,
+  }: {
+    onCreated: () => void;
+    onClose: () => void;
+  }) => (
+    <div data-testid="task-create">
+      <button onClick={onCreated}>task-create-created</button>
+      <button onClick={onClose}>task-create-close</button>
+    </div>
+  ),
+}));
 
 // Даты — относительные к моменту запуска (не литералы): NextSessionBanner
 // сравнивает дату встречи с «сегодня», литерал в прошлом рано или поздно

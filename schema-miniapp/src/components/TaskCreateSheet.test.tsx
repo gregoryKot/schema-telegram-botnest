@@ -12,7 +12,7 @@ import {
   cleanup,
   waitFor,
 } from '@testing-library/react';
-import { TaskCreateSheet, getTaskDisplayText } from './TaskCreateSheet';
+import { TaskCreateSheet } from './TaskCreateSheet';
 import { SCHEMA_DOMAINS, ALL_MODES } from '../schemaTherapyData';
 import { CRISIS_HOTLINE_DISPLAY } from '../utils/crisisMarkers';
 
@@ -154,30 +154,6 @@ describe('TaskCreateSheet — дефолтный тип diary_streak и пуст
     expect(mockApi.createTask).toHaveBeenCalledWith(
       expect.objectContaining({ dueDate: '2026-09-01' }),
     );
-  });
-});
-
-describe('getTaskDisplayText — читаемое название по типу задания', () => {
-  it('schema_intro резолвит id в реальное название схемы', () => {
-    expect(getTaskDisplayText('schema_intro', FIRST_SCHEMA.id)).toBe(
-      `Карточка схемы: ${FIRST_SCHEMA.name}`,
-    );
-  });
-
-  it('schema_intro с неизвестным id — фолбэк без выдуманного названия', () => {
-    expect(getTaskDisplayText('schema_intro', 'not-a-real-id')).toBe(
-      'Карточка схемы',
-    );
-  });
-
-  it('mode_intro резолвит id в реальное название режима', () => {
-    expect(getTaskDisplayText('mode_intro', FIRST_MODE.id)).toBe(
-      `Карточка режима: ${FIRST_MODE.name}`,
-    );
-  });
-
-  it('прочие типы — текст как есть', () => {
-    expect(getTaskDisplayText('custom', 'Пить воду')).toBe('Пить воду');
   });
 });
 

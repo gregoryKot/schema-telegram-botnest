@@ -1,7 +1,7 @@
 import { OverlayFrame } from '../../components/OverlayFrame';
 import { useHistorySheet } from '../../hooks/useHistorySheet';
 import type { UserTask } from '../../api';
-import { resolveTaskText } from './exerciseLibrary';
+import { resolveTaskDisplayText } from '../../../../shared/src/tasks/taskTitle';
 import { TaskRow } from './TaskRow';
 
 export function AllGoalsOverlay({ tasks, taskHistory, onClose, onOpen, onComplete, onAdd }: {
@@ -24,7 +24,7 @@ export function AllGoalsOverlay({ tasks, taskHistory, onClose, onOpen, onComplet
           <div className="sk-list">
             {taskHistory.map(t => (
               <div key={t.id} className="ds-card ds-card--row sk-task is-past">
-                <div className="sk-task-main"><div className="sk-task-text">{resolveTaskText(t)}</div></div>
+                <div className="sk-task-main"><div className="sk-task-text">{resolveTaskDisplayText(t, 'compact')}</div></div>
                 <span className="ds-sub">{t.done === true ? 'готово' : 'отменено'}</span>
               </div>
             ))}
