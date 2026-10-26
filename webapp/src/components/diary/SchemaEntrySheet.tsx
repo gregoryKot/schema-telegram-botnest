@@ -3,7 +3,8 @@ import { ExScreen } from '../exercises/ExScreen';
 import { useHistorySheet } from '../../hooks/useHistorySheet';
 import { useTr } from '../../utils/addressForm';
 import { DIARY_HUE } from '../../lib/tone';
-import { DiaryAside, DiaryStepCard, DiaryStepQ, DiaryTicks } from './DiaryStepCard';
+import { DiaryStepCard, DiaryStepQ, DiaryTicks } from './DiaryStepCard';
+import { SchemaEntryAside } from './SchemaEntryAside';
 import { saveDraft, loadDraft, clearDraft } from '../../utils/drafts';
 import { detectCrisisAny } from '../../utils/crisisMarkers';
 import { CrisisCard } from '../CrisisCard';
@@ -133,16 +134,7 @@ export function SchemaEntrySheet({ activeSchemaIds, onClose, onSave }: Props) {
         'Что-то задело — приходи сюда. Обязательна только ситуация, остальное можно дополнить по шагам.',
         'Что-то задело — приходите сюда. Обязательна только ситуация, остальное можно дополнить по шагам.',
       )}
-      aside={
-        <DiaryAside hue={HUE} eyebrow="Совет" title="Не обязательно по порядку">
-          <p className="ds-sub">{tr('Если в моменте трудно – запиши только триггер и чувство. Остальное можно дополнить позже, или когда тебе кто-то поможет это разобрать.', 'Если в моменте трудно – запишите только триггер и чувство. Остальное можно дополнить позже, или когда вам кто-то поможет это разобрать.')}</p>
-          <ul className="sd-aside-list">
-            <li>Автосохранение на каждом шаге</li>
-            <li>Можно вернуться и продолжить</li>
-            <li>{tr('Никто кроме тебя не увидит', 'Никто кроме вас не увидит')}</li>
-          </ul>
-        </DiaryAside>
-      }
+      aside={<SchemaEntryAside hue={HUE} />}
     >
       <p className="ds-sub sd-explainer">{buildSchemaDiaryExplainer(tr)}</p>
 

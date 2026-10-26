@@ -22,7 +22,7 @@ export function MyTherapistSection({ rel, settings, patch }: {
         <div className="st-body-block">
           <div className="ds-h3">{therapyRelation.partnerName ?? 'Терапевт'} подключён</div>
           <div>
-            <SRow title="Карточки схем и режимов" sub="Личные карточки и заметки" right={<SmallToggle label="Карточки схем и режимов" on={!!settings.therapistShareCards} onClick={() => patch({ therapistShareCards: !settings.therapistShareCards })} />} />
+            <SRow title="Карточки схем и режимов" sub="Карточки, заметки и дневники" right={<SmallToggle label="Карточки схем и режимов" on={!!settings.therapistShareCards} onClick={() => patch({ therapistShareCards: !settings.therapistShareCards })} />} />
             <SRow title="Профиль и схемы" sub="Активные схемы и результаты теста" right={<SmallToggle label="Профиль и схемы" on={!!settings.therapistShareProfile} onClick={() => patch({ therapistShareProfile: !settings.therapistShareProfile })} />} />
           </div>
           <button className="ds-link st-link-danger" onClick={leaveTherapy}>Отключиться от терапевта</button>

@@ -1758,7 +1758,7 @@
   "webapp/src/components/diary/SaveEntryButton.tsx": 25,
   "webapp/src/components/diary/SchemaChipsStep.tsx": 64,
   "webapp/src/components/diary/SchemaEmotionsStep.tsx": 58,
-  "webapp/src/components/diary/SchemaEntrySheet.tsx": 209,
+  "webapp/src/components/diary/SchemaEntrySheet.tsx": 201,
   "webapp/src/components/DonateNudge.tsx": 61,
   "webapp/src/components/ErrorBoundary.tsx": 76,
   "webapp/src/components/exercises/beliefCheck/BeliefDoneScreen.tsx": 115,
