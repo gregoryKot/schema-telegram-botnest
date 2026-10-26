@@ -158,6 +158,34 @@ describe('TasksSheet — список заданий', () => {
   });
 });
 
+describe('TasksSheet — название задания', () => {
+  // Регрессия: терапевт видел сырой id режима «invincible_oc» вместо
+  // названия — лист рисовал task.text как есть.
+  it('mode_intro — название режима, сырой id не виден', () => {
+    render(
+      <TasksSheet
+        detail={makeDetail({
+          clientTasks: [
+            {
+              id: 7,
+              type: 'mode_intro',
+              text: 'invincible_oc',
+              done: null,
+              doneToday: false,
+              dueDate: null,
+              createdAt: '2026-08-01T00:00:00.000Z',
+            },
+          ] as unknown as ClientDetail['clientTasks'],
+        })}
+      />,
+    );
+    expect(
+      screen.getByText('Карточка режима: Неуязвимый Гиперконтролёр'),
+    ).toBeTruthy();
+    expect(screen.queryByText(/invincible_oc/)).toBeNull();
+  });
+});
+
 describe('TasksSheet — действия', () => {
   it('клик «Назначить задание» зовёт setShowAssign(true)', () => {
     const setShowAssign = vi.fn();

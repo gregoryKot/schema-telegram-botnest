@@ -2,6 +2,7 @@ import type { UserTask, UserId } from '../../api';
 import { fmtDate } from '../../utils/format';
 import { pressable } from '../../utils/a11y';
 import { Skeleton } from '../Skeleton';
+import { resolveTaskDisplayText } from '../../../../shared/src/tasks/taskTitle';
 import '../../styles/therapist-clients.css';
 
 interface Props {
@@ -64,7 +65,7 @@ export function KanbanView({ allTasks, loading, loadFailed, onRetry, onOpenClien
             {col.items.map(task => (
               <div key={task.id} className="ds-card ds-card--hover tc-task" {...pressable(() => onOpenClient(task.userId))}>
                 <div className={col.name}>{task.clientName}</div>
-                <div className="tc-task-text">{task.text}</div>
+                <div className="tc-task-text">{resolveTaskDisplayText(task, 'full')}</div>
                 {task.dueDate && <div className="tc-task-due">до {fmtDate(task.dueDate)}</div>}
               </div>
             ))}

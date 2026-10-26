@@ -1,6 +1,6 @@
 import { UserTask } from '../../api';
 import { fmtDate, momentDayKey } from '../../utils/format';
-import { resolveTaskDisplayText } from './taskEmoji';
+import { resolveTaskDisplayText } from '../../../../shared/src/tasks/taskTitle';
 
 interface Props {
   taskHistory: UserTask[];

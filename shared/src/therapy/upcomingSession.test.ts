@@ -10,17 +10,27 @@ const SAT = 6;
 
 describe('upcomingSession', () => {
   it('будущая и сегодняшняя дата остаются как есть, даже при днях встреч', () => {
-    expect(upcomingSession('2026-11-04T10:00', [SAT], TODAY)).toBe('2026-11-04T10:00');
-    expect(upcomingSession('2026-10-26T07:00', [SAT], TODAY)).toBe('2026-10-26T07:00');
+    expect(upcomingSession('2026-11-04T10:00', [SAT], TODAY)).toBe(
+      '2026-11-04T10:00',
+    );
+    expect(upcomingSession('2026-10-26T07:00', [SAT], TODAY)).toBe(
+      '2026-10-26T07:00',
+    );
   });
 
   it('прошедшая дата при еженедельной субботе — ближайшая суббота с тем же временем', () => {
-    expect(upcomingSession('2026-10-17T07:00', [SAT], TODAY)).toBe('2026-10-31T07:00');
+    expect(upcomingSession('2026-10-17T07:00', [SAT], TODAY)).toBe(
+      '2026-10-31T07:00',
+    );
   });
 
   it('берёт ближайший из нескольких дней; сегодняшний день встреч — сегодня', () => {
-    expect(upcomingSession('2026-10-17T07:00', [SAT, 3], TODAY)).toBe('2026-10-28T07:00');
-    expect(upcomingSession('2026-10-17T07:00', [1], TODAY)).toBe('2026-10-26T07:00');
+    expect(upcomingSession('2026-10-17T07:00', [SAT, 3], TODAY)).toBe(
+      '2026-10-28T07:00',
+    );
+    expect(upcomingSession('2026-10-17T07:00', [1], TODAY)).toBe(
+      '2026-10-26T07:00',
+    );
   });
 
   it('без сохранённой даты — ближайший день встреч без времени', () => {
@@ -35,7 +45,9 @@ describe('upcomingSession', () => {
 
   it('день недели не зависит от зоны машины', () => {
     forEachTimeZone((tz) => {
-      expect(upcomingSession('2026-10-17T07:00', [SAT], TODAY), tz).toBe('2026-10-31T07:00');
+      expect(upcomingSession('2026-10-17T07:00', [SAT], TODAY), tz).toBe(
+        '2026-10-31T07:00',
+      );
     });
   });
 });

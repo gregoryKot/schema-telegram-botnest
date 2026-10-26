@@ -130,7 +130,10 @@ describe('SessionCard — прошедшая следующая сессия (20
   it('без дней встреч не показывается — «следующая +»', () => {
     render(
       <SessionCard
-        {...baseProps({ today: '2026-10-26', selectedClient: makeClient(stale) })}
+        {...baseProps({
+          today: '2026-10-26',
+          selectedClient: makeClient(stale),
+        })}
       />,
     );
     expect(screen.getByText('следующая +')).toBeTruthy();

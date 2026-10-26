@@ -1,9 +1,6 @@
-import type { UserTask } from '../../api';
-import { getTaskDisplayText } from '../../components/taskDisplayText';
-import { ALL_SCHEMAS, ALL_MODES } from '../../schemaTherapyData';
-
-// Хелперы экрана «Сегодня» (приветствие, дата, резолв текста/эмодзи задач).
-// Вынесено из TodaySection.tsx (правило №10).
+// Хелперы экрана «Сегодня» (приветствие, дата, маркер статуса задач).
+// Вынесено из TodaySection.tsx (правило №10). Название задания —
+// resolveTaskDisplayText из shared/src/tasks/taskTitle.
 
 export function greeting(): string {
   const h = new Date().getHours();
@@ -28,17 +25,6 @@ export function formatHeaderDate(): string {
 
 export function readLocalIds(key: string): string[] {
   try { return JSON.parse(localStorage.getItem(key) ?? '[]'); } catch { return []; }
-}
-
-export function resolveTaskText(task: UserTask): string {
-  const text = getTaskDisplayText(task.type, task.text);
-  if (text === task.text) {
-    const schema = ALL_SCHEMAS.find(s => s.id === task.text);
-    if (schema) return schema.name;
-    const mode = ALL_MODES.find(m => m.id === task.text);
-    if (mode) return mode.name;
-  }
-  return text;
 }
 
 // Маркер состояния — типографика (правило "род/ты-вы/эмодзи" CLAUDE.md, R4):
