@@ -53,9 +53,10 @@
 /* ── Обзор ───────────────────────────────────────────────────────────────── */
 /* Основная колонка забирает ширину, сайдбар (сессия, дни, действия) — узкий.
    Две равные колонки делали сайдбар шириной с контент, а в основной колонке
-   переносились заголовки и режимы карты. Узко — одна колонка. */
+   переносились заголовки и режимы карты. Сайдбар — 30% в пределах 260–340px:
+   на среднем экране сжимается он, а не основная колонка. Узко — одна колонка. */
 .tk-ov {
-  display: grid; grid-template-columns: minmax(0, 1fr) minmax(260px, 340px); align-items: start;
+  display: grid; grid-template-columns: minmax(0, 1fr) clamp(260px, 30%, 340px); align-items: start;
   gap: 48px; padding: 40px var(--tk-gutter) 64px; max-width: var(--tk-max); box-sizing: border-box;
 }
 @media (max-width: 1023px) { .tk-ov { grid-template-columns: minmax(0, 1fr); gap: 40px; } }

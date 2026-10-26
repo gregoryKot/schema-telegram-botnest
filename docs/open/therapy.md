@@ -172,3 +172,19 @@
   сессии» в сайдбаре «Обзора» (`ClientOverviewSidebar.tsx`); дата сессии — и бейджем
   шапки, и карточкой. Что оставить при правиле «одно главное действие на экран» —
   решение владельца.
+- **На телефоне между панелью «+ Задание / + Заметка» и нижней навигацией щель
+  12px**, в неё при прокрутке видно содержимое: `.tk-actions-main` стоит на
+  `bottom: calc(76px + var(--safe-bottom))` (`webapp/src/styles/therapist-card.css`,
+  мобильный `@media`), а `.mobile-nav` — `min-height: 64px` (`webapp/src/index.css`).
+  Там же имя клиента режется многоточием («Первый клие…» при 390px): 26px шрифта и
+  «✕» в той же строке. Замерено браузером на 390×844 при проверке #867, до него
+  не трогалось.
+- **«Сегодня» кабинета сверяет дни встреч с днём по UTC.** С #867 `hasSessionToday`
+  (`webapp/src/sections/therapistTodayModel.ts`) берёт день недели из
+  `todayCalendarDate()`, как и дату `nextSession` (правило №25); раньше дни встреч
+  сверялись с локальным `getDay()`. В Москве с 00:00 до 03:00 экран показывает
+  встречи вчерашнего дня — вместе с уже существовавшим сравнением `nextSession`.
+- **Открытие задания старого формата ищет схему/режим своим кодом**:
+  `webapp/src/sections/practice/taskRowState.ts:6` и
+  `webapp/src/sections/PracticeSection.tsx:116-117` (`ALL_SCHEMAS.some`), хотя
+  мини-апп для того же берёт `findLegacyTaskTarget` из `shared/src/tasks/taskTitle.ts`.
