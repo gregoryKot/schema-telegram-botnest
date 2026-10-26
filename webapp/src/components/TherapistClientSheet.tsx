@@ -16,7 +16,6 @@ import { ClientSessionsTab } from './therapist/ClientSessionsTab';
 import { ClientTasksTab } from './therapist/ClientTasksTab';
 import { ClientCardFallback } from './therapist/ClientCardFallback';
 import { clientCardState } from './therapist/clientCardState';
-import { reloadKeepingShown } from '../../../shared/src/utils/reloadKeepingShown';
 import { sameId } from '../../../shared/src/utils/sameId';
 interface Props {
   view: 'list' | 'client';
@@ -98,7 +97,7 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
   const {
     selectedClient, clientSchemaNotesData, clientModeNotesData,
     clientDiary, clientData,
-    showAssign, setShowAssign, setClientTasks,
+    showAssign, setShowAssign,
     ysqRequested, ysqError, exportCopied,
     tabLoading, clientTab,
     ysqSchemaIds, selfSchemaIds,
@@ -208,10 +207,7 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
         <TaskCreateSheet
           clientId={selectedClient.telegramId}
           clientName={selectedClient.name ?? undefined}
-          onCreated={() => {
-            setShowAssign(false);
-            void reloadKeepingShown(() => api.getTherapyTasksForClient(selectedClient.telegramId), setClientTasks);
-          }}
+          onCreated={detail.onTaskAssigned}
           onClose={() => setShowAssign(false)}
         />
       )}

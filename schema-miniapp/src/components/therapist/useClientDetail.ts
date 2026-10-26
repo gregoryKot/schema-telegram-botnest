@@ -2,18 +2,18 @@ import { useRef, useState } from 'react';
 import { api, reportClientError, type UserId } from '../../api';
 import { sameId } from '../../../../shared/src/utils/sameId';
 import type { TherapyClientSummary, UserTask, ClientData } from '../../api';
-import { useNotesPage } from '../../../../shared/src/therapy/useNotesPage';
-import { todayStr } from '../../utils/format';
+import { useNoteComposer } from '../../../../shared/src/therapy/useNoteComposer';
 import { useCopyToClipboard } from '../../../../shared/src/utils/useCopyToClipboard';
 import { useYsqRequest } from '../../../../shared/src/therapy/useYsqRequest';
 import { removeClientConfirmCopy } from '../../../../shared/src/therapy/removeClientConfirm';
+import { reloadClientTasks } from '../../../../shared/src/therapy/reloadClientTasks';
 import {
   fetchClientDetail,
   type ClientSchemaNoteRow,
   type ClientModeNoteRow,
 } from './fetchClientDetail';
 import { useConceptEditing } from './useConceptEditing';
-import { useSessionAliasEditing } from './useSessionAliasEditing';
+import { useSessionAliasEditing } from '../../../../shared/src/therapy/useSessionAliasEditing';
 import { buildConceptExport } from './conceptExport';
 interface Params {
   switchView: (v: 'list' | 'client') => void;
@@ -22,10 +22,14 @@ interface Params {
 
 // Фасад карточки клиента терапевта (правило №10: 476 строк → композиция).
 // Форма возврата (ClientDetail = ReturnType) не изменилась; реализация:
-// useConceptEditing.ts (концептуализация), useSessionAliasEditing.ts
-// (сессии/алиас), conceptExport.ts (текст экспорта).
+// useConceptEditing.ts (концептуализация), shared useSessionAliasEditing.ts
+// (сессии/алиас, общий с сайтом), conceptExport.ts (текст экспорта).
+// Класс «состояние одного клиента протекает в другого» (инцидент 2026-10-26,
+// docs/INCIDENTS.md): черновики сбрасываются в openClient, ответы после смены
+// клиента его карточку не трогают — проверяет useClientDetail.switch.test.ts.
 export function useClientDetail({ switchView, setClients }: Params) {
   const openClientIdRef = useRef<UserId | null>(null);
+  const isOpen = (id: UserId) => sameId(openClientIdRef.current, id);
 
   // Selected client + all its data
   const [selectedClient, setSelectedClient] =
@@ -41,24 +45,26 @@ export function useClientDetail({ switchView, setClients }: Params) {
     ClientModeNoteRow[]
   >([]);
   const [clientTasks, setClientTasks] = useState<UserTask[]>([]);
-  const np = useNotesPage();
-  const [noteError, setNoteError] = useState('');
+  const notes = useNoteComposer(openClientIdRef, {
+    create: api.createTherapistNote,
+    remove: api.deleteTherapistNote,
+  });
   const [clientData, setClientData] = useState<ClientData | null>(null);
   // Хотя бы один из шести запросов карточки клиента упал (см.
   // fetchClientDetail) — терапевту нужно знать, что видимая пустота может
   // быть сбоем сети, а не «у клиента правда ничего нет».
   const [clientLoadError, setClientLoadError] = useState(false);
 
-  // Notes composer
-  const [newNoteText, setNewNoteText] = useState('');
-  const [noteSaving, setNoteSaving] = useState(false);
   const [showAssign, setShowAssign] = useState(false);
 
-  const conceptEditing = useConceptEditing(selectedClient);
+  const conceptEditing = useConceptEditing(selectedClient, openClientIdRef);
   const sessionAlias = useSessionAliasEditing({
     selectedClient,
     setSelectedClient,
     setClients,
+    openClientIdRef,
+    send: api,
+    sessionError: { text: 'Не удалось сохранить', clearAfterMs: 3000 },
   });
 
   // YSQ / Export
@@ -97,8 +103,8 @@ export function useClientDetail({ switchView, setClients }: Params) {
     setClientSchemaNotesData([]);
     setClientModeNotesData([]);
     setClientTasks([]);
-    np.resetNotesPage();
-    setNoteError('');
+    notes.resetNotes(); // черновик заметки — только своему клиенту
+    setShowAssign(false);
     setClientData(null);
     setClientLoadError(false);
     conceptEditing.resetConcept();
@@ -113,7 +119,7 @@ export function useClientDetail({ switchView, setClients }: Params) {
     if (!sameId(openClientIdRef.current, clientId)) return;
 
     setClientTasks(fetched.tasks);
-    np.setNotesPage(fetched.notesPage);
+    notes.setNotesPage(fetched.notesPage);
     conceptEditing.setConcept(fetched.concept);
     setClientData(fetched.clientData);
     setClientSchemaNotesData(fetched.schemaNotes);
@@ -134,7 +140,7 @@ export function useClientDetail({ switchView, setClients }: Params) {
       setClients((prev) =>
         prev.filter((c) => !sameId(c.telegramId, selectedClient.telegramId)),
       );
-      switchView('list');
+      if (isOpen(selectedClient.telegramId)) switchView('list');
     } catch {
       setDeleteError('Не удалось удалить клиента');
     } finally {
@@ -142,33 +148,15 @@ export function useClientDetail({ switchView, setClients }: Params) {
     }
   }
 
-  // ── Notes ──────────────────────────────────────────────────────────────────────
-  async function addNote() {
-    if (!selectedClient || !newNoteText.trim()) return;
-    setNoteSaving(true);
-    setNoteError('');
-    try {
-      const note = await api.createTherapistNote(
+  function onTaskAssigned() {
+    setShowAssign(false);
+    if (selectedClient)
+      reloadClientTasks(
         selectedClient.telegramId,
-        todayStr(),
-        newNoteText.trim(),
+        isOpen,
+        api.getTherapyTasksForClient,
+        setClientTasks,
       );
-      np.onNoteSaved(note);
-      setNewNoteText('');
-    } catch {
-      setNoteError('Не удалось сохранить заметку');
-    } finally {
-      setNoteSaving(false);
-    }
-  }
-
-  async function removeNote(noteId: number) {
-    try {
-      await api.deleteTherapistNote(noteId);
-      np.onNoteDeleted(noteId);
-    } catch {
-      setNoteError('Не удалось удалить заметку');
-    }
   }
 
   // ── Export ─────────────────────────────────────────────────────────────────────
@@ -209,10 +197,10 @@ export function useClientDetail({ switchView, setClients }: Params) {
     clientModeNotesData,
     clientTasks,
     setClientTasks,
-    notes: np.notesPage.notes,
-    notesPage: np.notesPage,
-    noteError,
-    setNoteError,
+    notes: notes.notesPage.notes,
+    notesPage: notes.notesPage,
+    noteError: notes.noteError,
+    setNoteError: notes.setNoteError,
     concept: conceptEditing.concept,
     clientData,
     clientLoadError,
@@ -224,9 +212,9 @@ export function useClientDetail({ switchView, setClients }: Params) {
     conceptError: conceptEditing.conceptError,
     showHistory: conceptEditing.showHistory,
     setShowHistory: conceptEditing.setShowHistory,
-    newNoteText,
-    setNewNoteText,
-    noteSaving,
+    newNoteText: notes.newNoteText,
+    setNewNoteText: notes.setNewNoteText,
+    noteSaving: notes.noteSaving,
     showAssign,
     setShowAssign,
     editingStartDate: sessionAlias.editingStartDate,
@@ -264,8 +252,9 @@ export function useClientDetail({ switchView, setClients }: Params) {
     // Handlers
     openClient,
     deleteClient,
-    addNote,
-    removeNote,
+    addNote: notes.addNote,
+    removeNote: notes.removeNote,
+    onTaskAssigned,
     patchConcept: conceptEditing.patchConcept,
     toggleSchemaId: conceptEditing.toggleSchemaId,
     toggleModeId: conceptEditing.toggleModeId,

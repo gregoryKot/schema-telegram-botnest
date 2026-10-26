@@ -3,6 +3,8 @@ import { SCHEMA_DOMAINS } from '../../../schemaTherapyData';
 import { IdentityDot } from '../../../../../shared/src/components/IdentityDot';
 import { ConceptModePicker } from '../../../../../shared/src/therapy/conceptGraph/ConceptModePicker';
 import { colorMix } from '../../../../../shared/src/utils/colorMix';
+import { LimitedTextarea } from '../../../../../shared/src/components/LimitedTextarea';
+import { CONCEPT_FIELD_TEXT_MAX } from '../../../../../shared/src/limits/textLimits';
 import { CONCEPT_FIELDS } from '../helpers';
 import type { ClientDetail } from '../types';
 
@@ -10,7 +12,8 @@ import type { ClientDetail } from '../types';
  * Вид «Поля» листа концептуализации: актуальные схемы (ЭДС), карта режимов и
  * текстовые поля. Вынесено из ConceptSheet (правило №10), поведение не
  * менялось. Подложки схем — color-mix: цвет домена — токен `var(--accent-*)`,
- * а склейка токена с hex-суффиксом альфы даёт невалидный CSS.
+ * а склейка токена с hex-суффиксом альфы даёт невалидный CSS. Текстовые поля —
+ * с пределом сервера и счётчиком (инцидент 2026-10-26, пара сайту).
  */
 export function ConceptFieldsView({ detail }: { detail: ClientDetail }) {
   const {
@@ -95,7 +98,8 @@ export function ConceptFieldsView({ detail }: { detail: ClientDetail }) {
             >
               {label}
             </div>
-            <textarea
+            <LimitedTextarea
+              max={CONCEPT_FIELD_TEXT_MAX}
               value={(localConcept[key] as string) ?? ''}
               onChange={(e) => patchConcept({ [key]: e.target.value })}
               placeholder={placeholder}

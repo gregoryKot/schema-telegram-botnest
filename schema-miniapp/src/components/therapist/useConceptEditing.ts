@@ -1,13 +1,27 @@
 import { useState } from 'react';
 import { useTr } from '../../utils/addressForm';
 import { api } from '../../api';
-import type { TherapyClientSummary, ClientConceptualization } from '../../api';
+import type {
+  TherapyClientSummary,
+  ClientConceptualization,
+  UserId,
+} from '../../api';
 import { conceptSaveBody } from '../../../../shared/src/therapy/conceptGraph/conceptSaveBody';
+import {
+  conceptOverLimitField,
+  conceptOverLimitText,
+} from '../../../../shared/src/therapy/conceptOverLimit';
+import { sameId } from '../../../../shared/src/utils/sameId';
 
 // Состояние и обработчики концептуализации клиента. Вынесено из
 // useClientDetail.ts (правило №10); публичная форма возврата хука-фасада
-// не изменилась.
-export function useConceptEditing(selectedClient: TherapyClientSummary | null) {
+// не изменилась. Инцидент 2026-10-26 (docs/INCIDENTS.md): ответ сохранения,
+// пришедший после перехода к другому клиенту, писался в ЕГО карточку —
+// следующее «Сохранить» отправило бы концептуализацию прежнего клиента новому.
+export function useConceptEditing(
+  selectedClient: TherapyClientSummary | null,
+  openClientIdRef: { readonly current: UserId | null },
+) {
   const tr = useTr();
   const [concept, setConcept] = useState<ClientConceptualization | null>(null);
   const [localConcept, setLocalConcept] = useState<
@@ -26,6 +40,7 @@ export function useConceptEditing(selectedClient: TherapyClientSummary | null) {
     setConcept(null);
     setLocalConcept({});
     setConceptDirty(false);
+    setConceptSaving(false);
     setConceptError('');
     setShowHistory(false);
   }
@@ -53,28 +68,35 @@ export function useConceptEditing(selectedClient: TherapyClientSummary | null) {
 
   async function saveConcept() {
     if (!selectedClient || !conceptDirty) return;
+    const clientId = selectedClient.telegramId;
+    const isOpen = () => sameId(openClientIdRef.current, clientId);
     setConceptSaving(true);
     setConceptError('');
     try {
       const saved = await api.saveConceptualization(
-        selectedClient.telegramId,
+        clientId,
         conceptSaveBody(localConcept),
       );
+      if (!isOpen()) return;
       setConcept(saved);
       setLocalConcept(saved);
       setConceptDirty(false);
     } catch (e: unknown) {
+      if (!isOpen()) return;
       const msg = e instanceof Error ? e.message : '';
+      const over = conceptOverLimitField(localConcept);
       setConceptError(
-        msg.startsWith('API')
-          ? tr(
-              'Ошибка сервера. Попробуй позже.',
-              'Ошибка сервера. Попробуйте позже.',
-            )
-          : msg || 'Ошибка сохранения',
+        over
+          ? conceptOverLimitText(over, tr)
+          : msg.startsWith('API')
+            ? tr(
+                'Ошибка сервера. Попробуй позже.',
+                'Ошибка сервера. Попробуйте позже.',
+              )
+            : msg || 'Ошибка сохранения',
       );
     } finally {
-      setConceptSaving(false);
+      if (isOpen()) setConceptSaving(false);
     }
   }
 

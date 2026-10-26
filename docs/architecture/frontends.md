@@ -141,9 +141,9 @@
 | `shared/src/tasks/` | `taskProgress`: прогресс стрик-задач; `taskTitle`: название задания по `type`/`text` (id схемы/режима → «Карточка режима: …») — единственный резолвер обеих площадок и обеих сторон |
 | `shared/src/test-support/` | `rtlCleanup`, `settleUnmountTimers` для тестов |
 | `shared/src/theme/` | `tokens.css`, `fonts.css`, `utilities.css` |
-| `shared/src/therapy/` | кабинет терапевта: join, заметки, концептуализация, `conceptGraph`, `upcomingSession` (ближайшая сессия клиента: прошедшая `nextSession` → ближайший день встреч; кабинет терапевта и «Встреча с терапевтом» у клиента — `today/TodayAside`, баннер «Практик», `profile/TherapistCard`, `helpSection/NextSessionBanner`) |
+| `shared/src/therapy/` | кабинет терапевта: join, карточка клиента обоих фронтов (`useNoteComposer` — «Новая заметка», `useSessionAliasEditing` — даты сессий и имя, `reloadClientTasks`), концептуализация (`conceptOverLimit` — какое поле длиннее предела сервера), `conceptGraph`, `upcomingSession` (ближайшая сессия клиента: прошедшая `nextSession` → ближайший день встреч; кабинет терапевта и «Встреча с терапевтом» у клиента — `today/TodayAside`, баннер «Практик», `profile/TherapistCard`, `helpSection/NextSessionBanner`) |
 | `shared/src/today/` | блоки «Сегодня», фокус, кастомизация |
-| `shared/src/utils/` | addressForm(+Cache), format, storageKeys, crisisMarkers, drafts, a11y |
+| `shared/src/utils/` | addressForm(+Cache), format, storageKeys, crisisMarkers, drafts, a11y; `usePendingSave` — единственная механика автосохранения с задержкой: правка привязана к владельцу (клиент, карта), досылка при смене владельца, `pagehide`, скрытии вкладки и размонтировании (keepalive — `shared/src/api/keepalive.ts`) |
 | `shared/src/warmWords/` | «Тёплые слова»: сбор и хук |
 
 - **Тесты:** vitest рядом с кодом, у каждого пакета свой (`npm test --prefix <пакет>`). jsdom включается директивой `// @vitest-environment jsdom` в самом файле, а не глобально.

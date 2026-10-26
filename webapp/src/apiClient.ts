@@ -16,6 +16,7 @@ import { cachedGet, isCacheableGetPath } from '../../shared/src/api/apiCache';
 import { applyMutationInvalidation } from '../../shared/src/api/apiCacheRules';
 import { readJsonBody } from '../../shared/src/api/readJsonBody';
 import { readErrorBody } from '../../shared/src/api/readErrorBody';
+import { withKeepalive } from '../../shared/src/api/keepalive';
 
 export const BASE_RAW = (import.meta.env.VITE_API_URL as string) ?? '';
 export const BASE = BASE_RAW && !BASE_RAW.startsWith('http') ? `https://${BASE_RAW}` : BASE_RAW;
@@ -104,14 +105,18 @@ export async function post(path: string, body: unknown): Promise<void> {
   if (!res.ok) throw await apiError(res);
 }
 
-export async function postJson<T>(path: string, body: unknown): Promise<T> {
-  const res = await authedFetch(path, { method: 'POST', body: JSON.stringify(body) });
+// Досылка автосохранения при уходе со страницы (shared/src/utils/usePendingSave.ts)
+// идёт keepalive-запросом — его браузер не обрывает вместе со страницей.
+export interface SendOptions { keepalive?: boolean }
+
+export async function postJson<T>(path: string, body: unknown, opts?: SendOptions): Promise<T> {
+  const res = await authedFetch(path, withKeepalive({ method: 'POST', body: JSON.stringify(body) }, opts));
   if (!res.ok) throw await apiError(res);
   return readJsonBody<T>(res);
 }
 
-export async function patchJson<T>(path: string, body: unknown): Promise<T> {
-  const res = await authedFetch(path, { method: 'PATCH', body: JSON.stringify(body) });
+export async function patchJson<T>(path: string, body: unknown, opts?: SendOptions): Promise<T> {
+  const res = await authedFetch(path, withKeepalive({ method: 'PATCH', body: JSON.stringify(body) }, opts));
   if (!res.ok) throw await apiError(res);
   return readJsonBody<T>(res);
 }

@@ -1,5 +1,7 @@
 import type { ReactElement } from 'react';
 import '../../styles/therapist-concept.css';
+import { LimitedTextarea } from '../../../../shared/src/components/LimitedTextarea';
+import { CONCEPT_FIELD_TEXT_MAX } from '../../../../shared/src/limits/textLimits';
 import { CONCEPT_FIELDS } from './clientSheetHelpers';
 import type { ClientDetail } from './clientSheetTypes';
 import { ConceptPickers } from './concept/ConceptPickers';
@@ -31,9 +33,11 @@ const FORMS: Record<string, (p: FieldProps) => ReactElement> = {
 
 // Единственное поле ввода концептуализации — его берут все формы разделов
 // (concept/ConceptSectionsText.tsx); различаются только класс и высота.
+// Предел — тот же, что `@MaxLength` сервера (инцидент 2026-10-26: без него
+// длинный текст молча не сохранялся и держал остальные поля).
 export function ConceptArea({ value, onChange, placeholder, rows = 4, className = 'ds-textarea' }: FieldProps & { rows?: number; className?: string }) {
   return (
-    <textarea className={className} rows={rows} value={value} placeholder={placeholder} onChange={(e) => onChange(e.target.value)} />
+    <LimitedTextarea max={CONCEPT_FIELD_TEXT_MAX} className={className} rows={rows} value={value} placeholder={placeholder} onChange={(e) => onChange(e.target.value)} />
   );
 }
 
@@ -63,7 +67,7 @@ export function ClientConceptFields({ detail }: { detail: ClientDetail }) {
           >
             <Form
               value={values[s.key] ?? ''}
-              onChange={(v) => patchConcept({ [s.key]: v })}
+              onChange={(v) => patchConcept({ [s.key]: v.slice(0, CONCEPT_FIELD_TEXT_MAX) })} // теги дописываются программно, мимо maxLength
               placeholder={m?.placeholder ?? ''}
             />
           </ConceptSectionShell>
