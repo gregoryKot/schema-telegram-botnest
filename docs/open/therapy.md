@@ -150,3 +150,25 @@
   собранный из частей (`'был' + ' ' + x`) или с новым глаголом вне списка
   (`ST` в модуле), пройдёт мимо. Расширять список — по мере находок, с образцом
   в `gendered-forms.spec.ts`.
+
+**Карточка клиента у терапевта — остаток после общей колонки и ближайшей сессии** (2026-10):
+- **Клиент видит прошедшую встречу.** У терапевта прошедшая `nextSession` теперь
+  переезжает на ближайший день встреч (`shared/src/therapy/upcomingSession.ts`), а
+  клиенту `GET /api/therapy/relation` (`src/therapy/therapy-relation-info.ts`) отдаёт
+  одну `nextSession` без `meetingDays`. «Встреча с терапевтом» на сайте
+  (`MeetingCard` в `webapp/src/sections/today/TodayAside.tsx`, баннер в
+  `webapp/src/sections/PracticeSection.tsx`, `webapp/src/sections/profile/TherapistCard.tsx`)
+  и в мини-аппе (`schema-miniapp/src/sections/helpSection/NextSessionBanner.tsx`)
+  показывает прошедшую дату: ни один экран не сравнивает её с сегодняшней (чтение
+  кода). Чинится `meetingDays` в ответе relation и тем же `upcomingSession`.
+- **«Сегодня» и «Все клиенты» кабинета прижаты влево.** `.ds-page`
+  (`webapp/src/styles/cabinet.css`, `max-width: 1200px` без центрирования) оставляет
+  на широком экране пустую половину справа, как раньше у карточки клиента; карточка
+  теперь в колонке по центру (`--tk-center` в `webapp/src/styles/therapist-card.css`),
+  и при переходе из списка содержимое сдвигается. `.ds-page` общий с разделами
+  клиента — вид всех экранов без решения владельца не менял.
+- **Действия карточки повторяются.** «+ Задание»/«+ Заметка» в шапке
+  (`webapp/src/components/therapist/ClientHeader.tsx`) и «+ Задание»/«+ Заметка
+  сессии» в сайдбаре «Обзора» (`ClientOverviewSidebar.tsx`); дата сессии — и бейджем
+  шапки, и карточкой. Что оставить при правиле «одно главное действие на экран» —
+  решение владельца.

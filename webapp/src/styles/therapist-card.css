@@ -4,14 +4,27 @@
    ───────────────────────────────────────────────────────────────────────── */
 
 /* ── Обёртка карточки ────────────────────────────────────────────────────── */
-.tk-sheet { background: var(--bg); }
+/* Шапка и все вкладки стоят в одной колонке --tk-max по центру рабочей
+   области (экран минус сайдбар). До 2026-10 «Обзор» и «Задания» прижимались
+   влево с пустой половиной экрана справа, кнопки шапки уезжали к правому краю,
+   а «Концептуализация» стояла по центру — у каждой вкладки была своя ширина.
+   --tk-center — отступ колонки слева; уже рабочей области — ноль. */
+.tk-sheet {
+  background: var(--bg);
+  --tk-max: 1440px; --tk-gutter: clamp(20px, 4vw, 48px);
+  --tk-center: max(0px, (100vw - var(--sidebar-w) - var(--tk-max)) / 2);
+}
 .tk-tabs-body { padding: 0; }
-.tk-load { padding: 40px clamp(20px, 4vw, 48px); display: flex; flex-direction: column; gap: 16px; max-width: 1240px; }
+.tk-load { padding: 40px var(--tk-gutter); display: flex; flex-direction: column; gap: 16px; max-width: var(--tk-max); box-sizing: border-box; }
+@media (min-width: 768px) {
+  .tk-tabs-body > .tk-ov, .tk-tabs-body > .tk-load, .tk-tabs-body > .ds-page { margin-left: var(--tk-center); padding-inline: var(--tk-gutter); }
+  .tk-tabs-body > .page-inner-wide { margin: 0 0 0 var(--tk-center); max-width: var(--tk-max); padding-inline: var(--tk-gutter); }
+}
 
 /* ── Шапка ───────────────────────────────────────────────────────────────── */
 .tk-head {
   background: var(--paper-tint); border-bottom: 1px solid var(--line);
-  padding: 28px clamp(20px, 4vw, 48px) 0; flex-shrink: 0;
+  padding: 28px calc(var(--tk-center) + var(--tk-gutter)) 0; flex-shrink: 0;
   display: flex; flex-direction: column; gap: 22px;
 }
 .tk-back { align-self: flex-start; background: none; border: none; padding: 0; cursor: pointer; font-family: inherit; white-space: nowrap; margin-bottom: -8px; }
@@ -35,13 +48,17 @@
 .tk-badges { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; white-space: nowrap; }
 .tk-actions { display: flex; gap: 8px; align-items: center; white-space: nowrap; }
 .tk-actions-main { display: flex; gap: 8px; }
-.tk-head .ds-tabs { margin: 0 calc(-1 * clamp(20px, 4vw, 48px)); padding: 0 clamp(20px, 4vw, 48px); }
+.tk-head .ds-tabs { margin: 0 calc(-1 * (var(--tk-center) + var(--tk-gutter))); padding: 0 calc(var(--tk-center) + var(--tk-gutter)); }
 
 /* ── Обзор ───────────────────────────────────────────────────────────────── */
+/* Основная колонка забирает ширину, сайдбар (сессия, дни, действия) — узкий.
+   Две равные колонки делали сайдбар шириной с контент, а в основной колонке
+   переносились заголовки и режимы карты. Узко — одна колонка. */
 .tk-ov {
-  display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
-  gap: 40px; padding: 40px clamp(20px, 4vw, 48px) 64px; max-width: 1240px; box-sizing: border-box;
+  display: grid; grid-template-columns: minmax(0, 1fr) minmax(260px, 340px); align-items: start;
+  gap: 48px; padding: 40px var(--tk-gutter) 64px; max-width: var(--tk-max); box-sizing: border-box;
 }
+@media (max-width: 1023px) { .tk-ov { grid-template-columns: minmax(0, 1fr); gap: 40px; } }
 .tk-col { display: flex; flex-direction: column; gap: 44px; min-width: 0; }
 .tk-block { display: flex; flex-direction: column; gap: 18px; }
 .tk-block--tight { gap: 14px; }
