@@ -286,6 +286,26 @@ describe('TherapyConnectionController.renameClient', () => {
     expect(relations.renameClient).toHaveBeenCalledWith(3n, 5n, 'Клиент А');
     expect(res).toEqual({ ok: true });
   });
+
+  // QA 2026-10-26: переименование удалённого офлайн-клиента отвечало 201.
+  it('связи нет (удалён/чужой) → 403, как у соседних ручек с :clientId', async () => {
+    const { controller, relations } = makeController();
+    relations.renameClient.mockRejectedValueOnce(
+      new Error('No active relation'),
+    );
+    await expect(
+      controller.renameClient(makeReq(3n), '-142', { alias: 'X' }),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+    expect(relations.renameClient).toHaveBeenCalledWith(3n, -142n, 'X');
+  });
+
+  it('прочая ошибка сервиса не маскируется под 403', async () => {
+    const { controller, relations } = makeController();
+    relations.renameClient.mockRejectedValueOnce(new Error('db down'));
+    await expect(
+      controller.renameClient(makeReq(3n), '5', { alias: 'X' }),
+    ).rejects.toThrow('db down');
+  });
 });
 
 describe('TherapyConnectionController.becomeTherapist', () => {

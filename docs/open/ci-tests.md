@@ -357,3 +357,12 @@ Ubuntu 26) у трёх PR подряд падали `backend` → `check-coverag
   тика, завершившегося ошибкой — не воспроизводилось, не трогал. Новый e2e,
   считающий `notifyAdmin`/почту при живом `AppModule`, обязан звать
   `stopCronJobs`; механизма принуждения нет, держится ревью.
+
+**Сверка карты инвалидации кеша видит только `shared/src/api/*`** (найдено 2026-10-26 на офлайн-клиентах терапевта):
+- `shared/src/api/apiCacheRules.coverage.test.ts` (`SOURCES`) собирает мутации из `sharedApi.ts`,
+  `ratingApi.ts`, `apiExercises.ts` и только вида `t.post(`. Мутации `webapp/src/api.ts` и
+  `schema-miniapp/src/api.ts` (голые `post(`/`postJson(`/`patchJson(`/`del(`) в сверку не попадают:
+  карты режимов и свои режимы терапевта жили без строки инвалидации (закрыто в
+  `shared/src/api/apiCacheRules.therapy.ts`), `booking/cancel/:token`, `subscription`, `donation` не
+  проверены. Чинить: оба `api.ts` в `SOURCES` с регэкспом без `t.`, найденное — правилом или
+  записью `NO_INVALIDATION` с причиной.

@@ -166,9 +166,7 @@ export function useClientDetail({ onOpenClient, switchView, setClients }: Params
     setConfirmingDelete(true);
   }
 
-  function cancelDeleteClient() {
-    setConfirmingDelete(false);
-  }
+  function cancelDeleteClient() { setConfirmingDelete(false); }
 
   async function deleteClient() {
     if (!selectedClient) return;
@@ -178,7 +176,8 @@ export function useClientDetail({ onOpenClient, switchView, setClients }: Params
     try {
       await api.removeClient(selectedClient.telegramId);
       setClients(prev => prev.filter(c => !sameId(c.telegramId, selectedClient.telegramId)));
-      switchView('list');
+      // Сброс выбранного: иначе «Назад» в браузере возвращал на /cabinet/<id> полную карточку удалённого (QA 2026-10-26).
+      openClientIdRef.current = null; setSelectedClient(null); switchView('list');
     } catch { setDeleteError('Не удалось удалить клиента'); } finally { setDeleteLoading(false); }
   }
 

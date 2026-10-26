@@ -147,7 +147,9 @@ describe('T4 — виртуальная ветка требует clientId: null
 
   it('renameClient(-realRel.id) не переименовывает реального клиента', async () => {
     const { service, rels } = make([{ ...realRel }, virtualRel]);
-    await service.renameClient(T1, -7n, 'теневой алиас');
+    await expect(
+      service.renameClient(T1, -7n, 'теневой алиас'),
+    ).rejects.toThrow('No active relation');
     expect((rels[0] as any).clientAlias).toBeUndefined();
     await service.renameClient(T1, -8n, 'виртуальный');
     expect((rels[1] as any).clientAlias).toBe('виртуальный');

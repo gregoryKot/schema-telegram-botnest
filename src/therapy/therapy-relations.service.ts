@@ -194,9 +194,12 @@ export class TherapyRelationsService {
     alias: string,
   ): Promise<void> {
     const encAlias = alias.trim() ? encrypt(alias.trim()) : null;
-    await this.prisma.therapyRelation.updateMany({
+    const { count } = await this.prisma.therapyRelation.updateMany({
       where: activeRelationWhere(therapistId, clientId),
       data: { clientAlias: encAlias },
     });
+    // 0 строк — связи нет (клиент удалён, чужой, выдуман): раньше это был
+    // тихий успех и «переименование» удалённого клиента (QA 2026-10-26).
+    if (count === 0) throw new Error('No active relation');
   }
 }

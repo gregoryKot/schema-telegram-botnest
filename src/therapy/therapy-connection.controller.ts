@@ -127,11 +127,14 @@ export class TherapyConnectionController {
     @Body() body: RenameClientDto,
   ) {
     await this.assertTherapist(req);
-    await this.relationsService.renameClient(
-      uid(req),
-      parseClientId(clientId),
-      body.alias,
-    );
+    // Нет активной связи — 403, как у остальных ручек с :clientId.
+    await this.relationsService
+      .renameClient(uid(req), parseClientId(clientId), body.alias)
+      .catch((e: unknown) => {
+        if (e instanceof Error && e.message === 'No active relation')
+          throw new ForbiddenException('No active relation with this client');
+        throw e;
+      });
     return { ok: true };
   }
 

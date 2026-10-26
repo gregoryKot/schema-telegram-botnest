@@ -1304,6 +1304,26 @@ describe('renameClient — псевдоним клиента (alias)', () => {
     expect(foreignVirtual.clientAlias).toBeUndefined(); // чужая связь не тронута
   });
 
+  // QA 2026-10-26: удалённого офлайн-клиента «переименовывали» — updateMany
+  // на 0 строк считался успехом, ручка отвечала 201.
+  it('удалённый офлайн-клиент или чужой клиент — бросает No active relation, ничего не пишет', async () => {
+    const foreign: FullRel = {
+      id: 2,
+      therapistId: T2,
+      clientId: CLIENT,
+      status: 'active',
+      code: 'BBB222',
+    };
+    const { service } = makeFullService([foreign]);
+    await expect(service.renameClient(T1, -142n, 'Имя')).rejects.toThrow(
+      'No active relation',
+    );
+    await expect(service.renameClient(T1, CLIENT, 'Имя')).rejects.toThrow(
+      'No active relation',
+    );
+    expect(foreign.clientAlias).toBeUndefined();
+  });
+
   it('пустой/пробельный alias — очищает clientAlias (null)', async () => {
     const rel: FullRel = {
       id: 1,

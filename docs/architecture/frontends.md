@@ -95,7 +95,7 @@
   - В обоих `api.ts`: `export const api = { ...buildSharedApi(transport), ...ratingApi, ...createPracticeSessionsApi(transport), …локальные методы }`.
   - Локальное: у webapp — booking, articles, admin, therapy и др.; у miniapp — `...exercisesApi` и другое.
   - Новый метод, нужный обоим фронтам, добавляется в `sharedApi.ts`.
-- **Вокруг API:** кеш GET (`shared/src/api/apiCache.ts`, `shared/src/api/apiCacheRules.ts`, `shared/src/api/apiCacheRules.data.ts`), `readJsonBody`, `readErrorBody`, `humanizeError` (текст ошибки для экрана: лимит, авария, сеть, служебный английский → запасной текст), `clientErrorReport`.
+- **Вокруг API:** кеш GET (`shared/src/api/apiCache.ts`, `shared/src/api/apiCacheRules.ts`, `shared/src/api/apiCacheRules.data.ts`; ручки `/api/therapy/*` — `shared/src/api/apiCacheRules.therapy.ts`, id офлайн-клиента в пути отрицательный), `readJsonBody`, `readErrorBody`, `humanizeError` (текст ошибки для экрана: лимит, авария, сеть, служебный английский → запасной текст), `clientErrorReport`.
 
 **`shared/src/*` — подкаталоги (44):**
 
