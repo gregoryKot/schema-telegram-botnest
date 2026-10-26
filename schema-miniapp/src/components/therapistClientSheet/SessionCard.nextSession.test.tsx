@@ -107,6 +107,37 @@ describe('SessionCard — следующая сессия (просмотр)', (
   });
 });
 
+describe('SessionCard — прошедшая следующая сессия (2026-10: «17 окт» при 26-м)', () => {
+  // 2026-10-26 — понедельник; 17 и 31 октября — субботы.
+  const stale = { nextSession: '2026-10-17T07:00' };
+
+  it('при днях встреч переезжает на ближайший день с тем же временем', () => {
+    const setLocalNextSession = vi.fn();
+    render(
+      <SessionCard
+        {...baseProps({
+          today: '2026-10-26',
+          selectedClient: makeClient({ ...stale, meetingDays: [6] }),
+          detail: makeDetail({ setLocalNextSession }),
+        })}
+      />,
+    );
+    expect(screen.getByText('Сб, 31 окт · 07:00')).toBeTruthy();
+    fireEvent.click(screen.getByText('след.'));
+    expect(setLocalNextSession).toHaveBeenCalledWith('2026-10-31T07:00');
+  });
+
+  it('без дней встреч не показывается — «следующая +»', () => {
+    render(
+      <SessionCard
+        {...baseProps({ today: '2026-10-26', selectedClient: makeClient(stale) })}
+      />,
+    );
+    expect(screen.getByText('следующая +')).toBeTruthy();
+    expect(screen.queryByText(/17 окт/)).toBeNull();
+  });
+});
+
 describe('SessionCard — редактирование следующей сессии', () => {
   it('клик «✓» сохраняет nextSession и закрывает редактор', async () => {
     const saveSessionInfo = vi.fn().mockResolvedValue(undefined);

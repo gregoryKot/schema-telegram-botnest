@@ -3,6 +3,7 @@ import { TherapyClientSummary } from '../../api';
 import { isVirtualId } from '../../../../shared/src/utils/sameId';
 import { fmtDate, momentDayKey } from '../../utils/format';
 import { DAY_NAMES, calcTherapyDuration, nextSessionLabel } from './helpers';
+import { upcomingSession } from '../../../../shared/src/therapy/upcomingSession';
 import { ClientDetail } from './types';
 interface SessionCardProps {
   selectedClient: TherapyClientSummary;
@@ -40,6 +41,11 @@ export function SessionCard({
   const effectiveStart =
     selectedClient.therapyStartDate ?? selectedClient.relationCreatedAt;
   const duration = effectiveStart ? calcTherapyDuration(effectiveStart) : null;
+  const upcoming = upcomingSession(
+    selectedClient.nextSession,
+    selectedClient.meetingDays,
+    today,
+  );
   const displayDays = editingDays
     ? localMeetingDays
     : (selectedClient.meetingDays ?? []);
@@ -375,20 +381,13 @@ export function SessionCard({
                 gap: 'var(--space-4)',
               }}
               {...pressable(() => {
-                setLocalNextSession(selectedClient.nextSession ?? '');
+                setLocalNextSession(upcoming ?? '');
                 setEditingNextSession(true);
               })}
             >
-              {selectedClient.nextSession ? (
+              {upcoming ? (
                 <>
-                  <span
-                    style={{
-                      fontSize: 11,
-                      color: 'var(--text-sub)',
-                    }}
-                  >
-                    след.
-                  </span>
+                  <span className="u-sub11-mt1">след.</span>
                   <span
                     style={{
                       fontSize: 13,
@@ -396,7 +395,7 @@ export function SessionCard({
                       color: 'rgba(var(--fg-rgb),0.7)',
                     }}
                   >
-                    {nextSessionLabel(selectedClient.nextSession)}
+                    {nextSessionLabel(upcoming)}
                   </span>
                   <span className="u-faint11">✎</span>
                 </>

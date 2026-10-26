@@ -1,5 +1,6 @@
 import type { TherapyClientSummary } from '../../api';
 import { fmtDate } from '../../utils/format';
+import { upcomingSession } from '../../../../shared/src/therapy/upcomingSession';
 import { DAY_NAMES, nextSessionLabel } from './clientSheetHelpers';
 import type { ClientDetail } from './clientSheetTypes';
 
@@ -12,6 +13,7 @@ interface Props {
 export function NextSessionCard({ selectedClient, detail }: Props) {
   const { editingNextSession, setEditingNextSession, localNextSession, setLocalNextSession, saveSessionInfo, sessionInfoSaving, sessionInfoError } = detail;
   const days = selectedClient.meetingDays ?? [];
+  const upcoming = upcomingSession(selectedClient.nextSession, days);
   return (
     <div className="ds-card ds-card--accent">
       <div className="tk-card-label">Следующая сессия</div>
@@ -29,9 +31,9 @@ export function NextSessionCard({ selectedClient, detail }: Props) {
         </div>
       ) : (
         <>
-          <div className="tk-next">{selectedClient.nextSession ? nextSessionLabel(selectedClient.nextSession) : 'Не установлена'}</div>
+          <div className="tk-next">{upcoming ? nextSessionLabel(upcoming) : 'Не установлена'}</div>
           {days.length > 0 && <div className="tk-next-sub">{days.map(d => DAY_NAMES[d]).join(', ')} еженедельно</div>}
-          <button className="tk-next-edit" onClick={() => { setEditingNextSession(true); setLocalNextSession(selectedClient.nextSession ?? ''); }}>Изменить →</button>
+          <button className="tk-next-edit" onClick={() => { setEditingNextSession(true); setLocalNextSession(upcoming ?? ''); }}>Изменить →</button>
         </>
       )}
     </div>
