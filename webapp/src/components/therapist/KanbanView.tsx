@@ -1,8 +1,9 @@
 import type { UserTask, UserId } from '../../api';
-import { fmtDate } from '../../utils/format';
+import { todayStr } from '../../utils/format';
 import { pressable } from '../../utils/a11y';
 import { Skeleton } from '../Skeleton';
 import { resolveTaskDisplayText } from '../../../../shared/src/tasks/taskTitle';
+import { STATUS_BADGE, STATUS_LABEL, isOpenStatus, orderTasks, taskMeta, taskStatus } from './taskModel';
 import '../../styles/therapist-clients.css';
 
 interface Props {
@@ -38,18 +39,22 @@ export function KanbanView({ allTasks, loading, loadFailed, onRetry, onOpenClien
     );
   }
 
-  const flat = allTasks.flatMap(group =>
-    group.tasks.map(t => ({ ...t, clientName: group.clientName }))
-  );
+  // Колонки — по той же модели статусов, что карточка клиента (taskModel):
+  // одно задание не может быть «Не вышло» на доске и «В работе» в карточке.
+  const today = todayStr();
+  const flat = orderTasks(
+    allTasks.flatMap(group => group.tasks.map(t => ({ ...t, clientName: group.clientName }))),
+    today,
+  ).map(t => ({ ...t, status: taskStatus(t, today) }));
 
   if (flat.length === 0) {
     return <div className="tc-empty">Назначенных заданий пока нет</div>;
   }
 
   const cols: { label: string; items: typeof flat; badge: string; name: string }[] = [
-    { label: 'Назначено', items: flat.filter(t => t.done === null), badge: 'ds-badge ds-badge--accent', name: 'tc-task-client' },
-    { label: 'Выполнено', items: flat.filter(t => t.done === true), badge: 'ds-badge ds-badge--ok', name: 'tc-task-client tc-task-client--ok' },
-    { label: 'Не вышло', items: flat.filter(t => t.done === false), badge: 'ds-badge ds-badge--warn', name: 'tc-task-client tc-task-client--err' },
+    { label: 'Назначено', items: flat.filter(t => isOpenStatus(t.status)), badge: 'ds-badge ds-badge--accent', name: 'tc-task-client' },
+    { label: 'Выполнено', items: flat.filter(t => t.status === 'done'), badge: 'ds-badge ds-badge--ok', name: 'tc-task-client tc-task-client--ok' },
+    { label: STATUS_LABEL.failed, items: flat.filter(t => t.status === 'failed'), badge: 'ds-badge ds-badge--warn', name: 'tc-task-client tc-task-client--err' },
   ];
 
   return (
@@ -66,7 +71,8 @@ export function KanbanView({ allTasks, loading, loadFailed, onRetry, onOpenClien
               <div key={task.id} className="ds-card ds-card--hover tc-task" {...pressable(() => onOpenClient(task.userId))}>
                 <div className={col.name}>{task.clientName}</div>
                 <div className="tc-task-text">{resolveTaskDisplayText(task, 'full')}</div>
-                {task.dueDate && <div className="tc-task-due">до {fmtDate(task.dueDate)}</div>}
+                <div className="tc-task-due">{taskMeta(task, task.status)}</div>
+                {(task.status === 'overdue' || task.status === 'soon') && <span className={`${STATUS_BADGE[task.status]} tc-task-flag`}>{STATUS_LABEL[task.status]}</span>}
               </div>
             ))}
           </div>

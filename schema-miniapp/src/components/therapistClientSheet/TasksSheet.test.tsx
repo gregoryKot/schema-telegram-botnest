@@ -2,10 +2,9 @@
 // TasksSheet — лист заданий клиента в кабинете терапевта (0% покрытия).
 // Проверяет: пустой список — реальное «Нет назначенных заданий», а не
 // пустой прямоугольник (правило CLAUDE.md против хардкод-заглушек); статус
-// задания (aria-label «Выполнено»/«Не выполнено»/«Ожидает выполнения») по
-// трём независимым полям задания; прогресс-бар рисуется только когда заданы
-// И progress, И targetDays — типичный источник NaN%, если забыть одно из
-// условий.
+// задания (aria-label «Выполнено»/«Не вышло»/«Ожидает выполнения») по
+// трём независимым полям задания; прогресс серии «N из M дней» виден только
+// когда заданы И progress, И targetDays — иначе он был бы выдуманным нулём.
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { TasksSheet } from './TasksSheet';
@@ -32,7 +31,9 @@ describe('TasksSheet — пустой список', () => {
 });
 
 describe('TasksSheet — список заданий', () => {
-  it('done=true — статус «Выполнено», показывает срок из dueDate', () => {
+  // У выполненного — дата выполнения, а не срок (QA 2026-10-26: «до …»
+  // у сделанного путало).
+  it('done=true — статус «Выполнено», подпись — дата выполнения, не срок', () => {
     render(
       <TasksSheet
         detail={makeDetail({
@@ -43,6 +44,7 @@ describe('TasksSheet — список заданий', () => {
               done: true,
               doneToday: false,
               dueDate: '2026-08-10',
+              completedAt: '2026-08-05T12:00:00.000Z',
               createdAt: '2026-08-01T00:00:00.000Z',
             },
           ] as unknown as ClientDetail['clientTasks'],
@@ -51,10 +53,12 @@ describe('TasksSheet — список заданий', () => {
     );
     expect(screen.getByLabelText('Выполнено')).toBeTruthy();
     expect(screen.getByText('Дневник схем')).toBeTruthy();
-    expect(screen.getByText(/Срок:/)).toBeTruthy();
+    expect(screen.getByText('выполнено 5 авг')).toBeTruthy();
+    expect(screen.queryByText(/до 10 авг/)).toBeNull();
   });
 
-  it('done=false — статус «Не выполнено»', () => {
+  // «Не вышло» — тот же статус, что на доске сайта (shared/taskStatus).
+  it('done=false — статус «Не вышло»', () => {
     render(
       <TasksSheet
         detail={makeDetail({
@@ -71,7 +75,7 @@ describe('TasksSheet — список заданий', () => {
         })}
       />,
     );
-    expect(screen.getByLabelText('Не выполнено')).toBeTruthy();
+    expect(screen.getByLabelText('Не вышло')).toBeTruthy();
   });
 
   it('done=null, doneToday=true — тоже «Выполнено» (выполнено сегодня, ещё не подтверждено)', () => {
@@ -114,7 +118,7 @@ describe('TasksSheet — список заданий', () => {
     expect(screen.getByLabelText('Ожидает выполнения')).toBeTruthy();
   });
 
-  it('заданы progress и targetDays — рисует прогресс-бар с дробью', () => {
+  it('заданы progress и targetDays — прогресс серии «N из M дней»', () => {
     render(
       <TasksSheet
         detail={makeDetail({
@@ -133,7 +137,7 @@ describe('TasksSheet — список заданий', () => {
         })}
       />,
     );
-    expect(screen.getByText('3/5')).toBeTruthy();
+    expect(screen.getByText(/3 из 5 дней/)).toBeTruthy();
   });
 
   it('задан только progress без targetDays — прогресс-бар НЕ рисуется (нет дробной части)', () => {
@@ -154,7 +158,7 @@ describe('TasksSheet — список заданий', () => {
         })}
       />,
     );
-    expect(screen.queryByText(/^3\//)).toBeNull();
+    expect(screen.queryByText(/из/)).toBeNull();
   });
 });
 

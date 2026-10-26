@@ -1,11 +1,11 @@
 import '../../styles/therapist-tabs.css';
 import { pressable } from '../../utils/a11y';
-import { fmtDate, todayStr } from '../../utils/format';
+import { todayStr } from '../../utils/format';
 import { pluralRu } from '../../../../shared/src/utils/pluralRu';
 import { resolveTaskDisplayText } from '../../../../shared/src/tasks/taskTitle';
 import { hueStyle } from '../../lib/tone';
 import type { ClientDetail } from './clientSheetTypes';
-import { STATUS_BADGE, STATUS_LABEL, taskStatus, templateHue } from './taskModel';
+import { STATUS_BADGE, STATUS_LABEL, isOpenStatus, orderTasks, taskMeta, taskStatus, templateHue } from './taskModel';
 
 interface Props {
   detail: ClientDetail;
@@ -21,9 +21,9 @@ const TEMPLATES = [
 export function ClientTasksTab({ detail }: Props) {
   const { clientTasks, setShowAssign } = detail;
   const today = todayStr();
-  const activeCount = clientTasks.filter(t => t.done !== true).length;
-  // В работе — сверху, выполненные — внизу; порядок внутри групп сохраняется.
-  const ordered = [...clientTasks.filter(t => t.done !== true), ...clientTasks.filter(t => t.done === true)];
+  // Активное — то, что ещё ждёт клиента; «не вышло» закрыто и не считается.
+  const activeCount = clientTasks.filter(t => isOpenStatus(taskStatus(t, today))).length;
+  const ordered = orderTasks(clientTasks, today);
 
   return (
     <div className="ds-page tb-page tb-tasks">
@@ -47,9 +47,7 @@ export function ClientTasksTab({ detail }: Props) {
             {ordered.map(t => {
               const status = taskStatus(t, today);
               const done = status === 'done';
-              const meta = done && t.completedAt
-                ? `выполнено ${fmtDate(t.completedAt.slice(0, 10))}`
-                : t.dueDate ? `до ${fmtDate(t.dueDate)}` : `назначено ${fmtDate(t.createdAt.slice(0, 10))}`;
+              const meta = taskMeta(t, status);
               return (
                 <div key={t.id} className={`ds-card ds-card--row tb-task${done ? ' is-done' : ''}`}>
                   <span className={`tb-check${done ? ' is-done' : ''}`} aria-hidden="true">{done ? '✓' : ''}</span>

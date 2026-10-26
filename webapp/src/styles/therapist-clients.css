@@ -77,6 +77,7 @@
 .tc-alert p { margin: 0 0 12px; font-size: 14px; color: var(--err); }
 .tc-task-text { font-size: 14px; line-height: 1.5; color: var(--text); }
 .tc-task-due { font-size: 11px; color: var(--text-faint); margin-top: 6px; }
+.tc-task-flag { display: inline-block; margin-top: 6px; }
 .tc-dash { padding: 20px 0; text-align: center; color: var(--text-faint); font-size: 13px; }
 
 @media (max-width: 767px) {

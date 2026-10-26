@@ -399,9 +399,10 @@ describe('TherapistClientSheet — вкладка «Концептуализац
 });
 
 describe('TherapistClientSheet — вкладка «Задания»', () => {
+  // В работе — `done: null`; `done: false` — закрыто «не вышло» (QA 2026-10-26).
   const taskFor7 = (over: Record<string, unknown>) => ({
     id: 1, userId: 7, assignedBy: 1, type: 'note', text: '', targetDays: null,
-    needId: null, dueDate: null, done: false, completedAt: null,
+    needId: null, dueDate: null, done: null, completedAt: null,
     createdAt: '2026-07-20T00:00:00.000Z', ...over,
   });
 
