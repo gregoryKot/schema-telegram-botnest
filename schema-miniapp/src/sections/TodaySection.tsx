@@ -14,7 +14,8 @@ import { api } from '../api';
 import { useSafeTop } from '../utils/safezone';
 import { MY_SCHEMA_IDS_KEY, MY_MODE_IDS_KEY } from '../utils/storageKeys';
 import { TaskCreateSheet } from '../components/TaskCreateSheet';
-import { momentDayLabel, momentIsToday, momentTime } from '../utils/format';
+import { momentDayLabel, momentTime } from '../utils/format';
+import { isDiaryToday } from '../../../shared/src/diary/diaryDay';
 import { HomeScreenOfferCard } from '../components/HomeScreenOfferCard';
 import { GearButton } from '../components/GearButton';
 import { TodayCustomizeSheet } from '../components/TodayCustomizeSheet';
@@ -128,9 +129,9 @@ export function TodaySection({
         setRecentDiaries(all.slice(0, 3));
         setCaseCount(mode.length);
         setTodayDone({
-          schema: schema.some((e) => momentIsToday(e.createdAt)),
-          mode: mode.some((e) => momentIsToday(e.createdAt)),
-          gratitude: gratitude.some((e) => momentIsToday(e.date)),
+          schema: schema.some((e) => isDiaryToday(e.createdAt)),
+          mode: mode.some((e) => isDiaryToday(e.createdAt)),
+          gratitude: gratitude.some((e) => isDiaryToday(e.date)),
         });
       })
       .catch((e) => console.error('diaries load failed', e))

@@ -191,3 +191,14 @@
 `CrisisCard` остались парными копиями во фронтендах, а сейчас обе стороны — тонкие
 реэкспорты из `shared/src/` (список пар — `PAIRS` в `scripts/check-paired-files.mjs`).
 Поправить текст README по `PAIRS`; гейта на этот документ нет.
+
+**«Сегодня» для календарного дня на экране «Сегодня» сверяется с гринвичским днём**
+(найдено при починке дня дневника, 2026-10-26): `momentIsToday`/`momentDayLabel`
+(`shared/src/utils/momentDate.ts`) сравнивают календарный день с `todayCalendarDate()` (UTC),
+а дата благодарности — местный день человека (`shared/src/diary/diaryDay.ts`), и дату оценки
+сервер пишет по `notifyTimezone` (`localDateString` в `src/bot/bot.service.ts`). В окно 00:00–03:00
+по Москве свежая благодарность в «Последних записях» подписана «27 окт», а не «Сегодня»
+(`webapp/src/sections/today/model.ts:82`, `schema-miniapp/src/sections/TodaySection.tsx:124`), а
+сегодняшняя оценка трекера не узнаётся в `webapp/src/sections/today/model.ts:40,43`. Не сделано в
+том PR: смена смысла `momentIsToday` для календарного дня задевает дни сервера у терапевта
+(`lastActiveDate`), нужен разбор каждого вызова; «сделано сегодня» дневников уже на `isDiaryToday`.

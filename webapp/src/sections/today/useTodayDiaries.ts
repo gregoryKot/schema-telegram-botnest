@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api, reportClientError } from '../../api';
-import { momentIsToday } from '../../utils/format';
+import { isDiaryToday } from '../../../../shared/src/diary/diaryDay';
 import { mergeRecentEntries, type RecentEntry } from './model';
 
 export interface TodayDone { schema: boolean; mode: boolean; gratitude: boolean }
@@ -31,11 +31,11 @@ export function useTodayDiaries(refreshKey: number | undefined) {
         if (ignore) return;
         setRecent(mergeRecentEntries({ schema, mode, gratitude }));
         setTodayDone({
-          schema: schema.some(e => momentIsToday(e.createdAt)),
-          mode: mode.some(e => momentIsToday(e.createdAt)),
-          gratitude: gratitude.some(e => momentIsToday(e.date)),
+          schema: schema.some(e => isDiaryToday(e.createdAt)),
+          mode: mode.some(e => isDiaryToday(e.createdAt)),
+          gratitude: gratitude.some(e => isDiaryToday(e.date)),
         });
-        setGratitudeToday(gratitude.find(e => momentIsToday(e.date))?.items);
+        setGratitudeToday(gratitude.find(e => isDiaryToday(e.date))?.items);
       })
       .catch(() => reportClientError({ message: 'today diaries background load failed', section: 'today' }))
       .finally(() => { if (!ignore) setDiariesLoaded(true); });

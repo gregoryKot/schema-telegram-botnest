@@ -14,6 +14,7 @@ import {
   waitFor,
 } from '@testing-library/react';
 import { DiarySection } from './DiarySection';
+import { todayStr } from '../utils/format';
 
 vi.mock('../api', () => ({
   api: {
@@ -141,8 +142,9 @@ describe('DiarySection — сбой загрузки (сбой ≠ пусто)',
 describe('DiarySection — сохранение записи благодарности (read-after-write)', () => {
   it('после сохранения новая запись сразу видна в списке дневника', async () => {
     // Дата берётся из текущего дня, а не литералом: компонент шлёт «сегодня»,
-    // и с захардкоженной датой тест жил ровно до следующих суток.
-    const today = new Date().toISOString().slice(0, 10);
+    // и с захардкоженной датой тест жил ровно до следующих суток. «Сегодня»
+    // дневника — местный день (shared/src/diary/diaryDay.ts), не UTC.
+    const today = todayStr();
     mockApi.createGratitudeDiary.mockResolvedValue({
       id: 42,
       date: today,
@@ -205,6 +207,50 @@ describe('DiarySection — сохранение записи благодарн�
     ).toBe('запись, которая не сохранится');
     // И в сохранённые запись не попала: счётчика записей нет.
     expect(screen.queryByText(/\d+\s+запис/)).toBeNull();
+  });
+});
+
+// Инцидент 2026-10-26: «сегодня» дневника было гринвичским днём на момент
+// загрузки бандла — благодарность в 00:19 по Москве получала дату 26.10.
+describe('DiarySection — благодарность пишется местным днём', () => {
+  let prevTz: string | undefined;
+  beforeEach(() => {
+    prevTz = process.env.TZ;
+    process.env.TZ = 'Europe/Moscow';
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-10-26T21:19:00Z')); // 00:19 27.10 по Москве
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+    if (prevTz === undefined) delete process.env.TZ;
+    else process.env.TZ = prevTz;
+  });
+
+  it('в 00:19 по Москве лист подписан «сегодня», запись уходит датой 27-го', async () => {
+    mockApi.createGratitudeDiary.mockResolvedValue({
+      id: 50,
+      date: '2026-10-27',
+      items: ['ночной чай'],
+      createdAt: '2026-10-26T21:19:00.000Z',
+    });
+    await renderLoaded();
+    fireEvent.click(screen.getByText('Дневник благодарности'));
+    await screen.findByText('Записать');
+    fireEvent.click(screen.getByText('Записать'));
+
+    expect(
+      await screen.findByText('Дневник благодарности · сегодня'),
+    ).toBeTruthy();
+    const first = await screen.findByPlaceholderText(
+      'Что-то хорошее, что произошло сегодня...',
+    );
+    fireEvent.change(first, { target: { value: 'ночной чай' } });
+    fireEvent.click(screen.getByText('Сохранить'));
+    await waitFor(() =>
+      expect(mockApi.createGratitudeDiary).toHaveBeenCalledWith('2026-10-27', [
+        'ночной чай',
+      ]),
+    );
   });
 });
 

@@ -1,6 +1,6 @@
 import { lazy, Suspense } from 'react';
 import { api } from '../../api';
-import { TODAY } from '../diary/dateHelpers';
+import { diaryToday } from '../../../../shared/src/diary/diaryDay';
 
 const SchemaEntrySheet = lazy(() => import('../../components/diary/SchemaEntrySheet').then(m => ({ default: m.SchemaEntrySheet })));
 const ModeEntrySheet = lazy(() => import('../../components/diary/ModeEntrySheet').then(m => ({ default: m.ModeEntrySheet })));
@@ -31,7 +31,7 @@ export function FocusEntrySheet({ kind, activeSchemaIds, gratitudeToday, onClose
             onSave={async data => { await api.createModeDiary(data); done(); }} />
         )}
         {kind === 'gratitude' && (
-          <GratitudeEntrySheet onClose={onClose} date={TODAY} existingItems={gratitudeToday}
+          <GratitudeEntrySheet onClose={onClose} date={diaryToday()} existingItems={gratitudeToday}
             onSave={async (date, items) => { await api.createGratitudeDiary(date, items); done(); }} />
         )}
       </Suspense>

@@ -1,4 +1,5 @@
 import type { DiaryType, SchemaDiaryEntry, ModeDiaryEntry, GratitudeDiaryEntry } from '../../types';
+import { diaryDayKey } from '../../../../shared/src/diary/diaryDay';
 
 // Чистая модель экрана «Дневник»: единый список записей, группировка по дням,
 // статистика месяца, серия дней подряд, счётчики фильтра.
@@ -10,8 +11,6 @@ export type AnyEntry =
 
 export type DiaryFilter = 'all' | DiaryType;
 
-const dayOf = (iso: string) => iso.slice(0, 10);
-
 /** Все записи трёх типов одним списком, новые сверху. */
 export function buildEntries(
   schema: SchemaDiaryEntry[],
@@ -19,8 +18,8 @@ export function buildEntries(
   gratitude: GratitudeDiaryEntry[],
 ): AnyEntry[] {
   const all: AnyEntry[] = [
-    ...schema.map((e) => ({ _type: 'schema' as const, sortKey: e.createdAt, dateKey: dayOf(e.createdAt), entry: e })),
-    ...mode.map((e) => ({ _type: 'mode' as const, sortKey: e.createdAt, dateKey: dayOf(e.createdAt), entry: e })),
+    ...schema.map((e) => ({ _type: 'schema' as const, sortKey: e.createdAt, dateKey: diaryDayKey(e.createdAt), entry: e })),
+    ...mode.map((e) => ({ _type: 'mode' as const, sortKey: e.createdAt, dateKey: diaryDayKey(e.createdAt), entry: e })),
     ...gratitude.map((e) => ({ _type: 'gratitude' as const, sortKey: e.date + 'T12:00:00', dateKey: e.date, entry: e })),
   ];
   return all.sort((a, b) => b.sortKey.localeCompare(a.sortKey));

@@ -10,7 +10,7 @@ import { DiaryLoadFailedBanner } from '../components/diary/DiaryLoadFailedBanner
 import { DiaryShareButton } from '../share/DiaryShareButton';
 import '../styles/client-diary.css';
 import { diaryRowMeta, trackerRowMeta } from '../../../shared/src/diary/diaryMeta';
-import { TODAY } from './diary/dateHelpers';
+import { diaryToday } from '../../../shared/src/diary/diaryDay';
 import { DiaryDraft } from './diary/DiaryDraft';
 import { DiaryHeader } from './diary/DiaryHeader';
 import { DiaryQuickAdd } from './diary/DiaryQuickAdd';
@@ -64,7 +64,8 @@ export function DiarySection({ onClose: _onClose, onOpenTracker }: { onClose?: (
 
   useEffect(() => { void load(); }, [load]);
 
-  const todayGratitude = gratitudeEntries.find(e => e.date === TODAY);
+  const today = diaryToday(); // местный день, на каждый рендер (не на загрузку)
+  const todayGratitude = gratitudeEntries.find(e => e.date === today);
 
   const handleDelete = async (type: DiaryType, id: number) => {
     if (type === 'schema')    { await api.deleteSchemaDiary(id);    setSchemaEntries(p => p.filter(e => e.id !== id)); }
@@ -78,8 +79,8 @@ export function DiarySection({ onClose: _onClose, onOpenTracker }: { onClose?: (
   );
   const groups = useMemo(() => groupByDay(filterEntries(allEntries, filter)), [allEntries, filter]);
   const counts = useMemo(() => filterCounts(allEntries), [allEntries]);
-  const { daysWithEntry, daysInMonth } = monthStats(allEntries, TODAY);
-  const streak = streakDays(allEntries, TODAY);
+  const { daysWithEntry, daysInMonth } = monthStats(allEntries, today);
+  const streak = streakDays(allEntries, today);
   const totalCount = allEntries.length;
 
   const hubMeta = loading || loadFailed ? undefined : {
@@ -120,7 +121,7 @@ export function DiarySection({ onClose: _onClose, onOpenTracker }: { onClose?: (
   if (newEntry === 'gratitude') return (
     <GratitudeEntrySheet
       onClose={() => setNewEntry(null)}
-      date={TODAY}
+      date={today}
       existingItems={todayGratitude?.items}
       onSave={async (date, items) => {
         const entry = await api.createGratitudeDiary(date, items);
