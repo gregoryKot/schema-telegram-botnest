@@ -3,7 +3,7 @@
 .qa-plus {
   position: fixed;
   right: var(--space-16);
-  bottom: calc(64px + var(--safe-bottom) + var(--space-16)); /* над панелью .mobile-nav (64px) */
+  bottom: calc(var(--mobile-nav-h) + var(--safe-bottom) + var(--space-16)); /* над панелью .mobile-nav */
   z-index: 48;
   width: 56px; height: 56px; padding: 0;
   display: flex; align-items: center; justify-content: center;

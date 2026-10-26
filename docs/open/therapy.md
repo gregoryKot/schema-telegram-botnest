@@ -163,8 +163,7 @@
   кода). Чинится `meetingDays` в ответе relation и тем же `upcomingSession`.
 - **Дата сессии — и бейджем шапки, и карточкой «Обзора» — оставлено осознанно.**
   Бейдж (`ClientHeaderBadges.tsx`) виден на всех вкладках карточки, карточка
-  (`ClientSessionInfoCards.tsx`) на «Обзоре» даёт правку даты; повторы кнопок
-  «+ Задание»/«+ Заметка» в сайдбаре убраны.
+  (`ClientSessionInfoCards.tsx`) на «Обзоре» даёт правку даты.
 - **«Сегодня» кабинета сверяет дни встреч с днём по UTC.** С #867 `hasSessionToday`
   (`webapp/src/sections/therapistTodayModel.ts`) берёт день недели из
   `todayCalendarDate()`, как и дату `nextSession` (правило №25); раньше дни встреч

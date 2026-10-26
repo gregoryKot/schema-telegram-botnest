@@ -212,7 +212,8 @@
   /* ── Layout ──────────────────────────────────────────────────────────── */
   --sidebar-w: 240px;
   /* Высота нижней навигации телефона без safe-area: по ней встают панели,
-     закреплённые над навигацией (кнопки карточки клиента). */
+     закреплённые над навигацией (кнопки карточки клиента, «+»). Равна
+     .mobile-nav-item (52px) + два паддинга --space-6 — меняешь их, меняй и её. */
   --mobile-nav-h: 64px;
 }
 
@@ -923,7 +924,7 @@ a { color: inherit; text-decoration: none; }
     flex-shrink: 0; min-height: auto;
     /* + 72px — запас под плавающую «+» (56px + отступ): последняя строка
        не прячется под кнопкой. */
-    padding-bottom: calc(64px + 72px + var(--safe-bottom));
+    padding-bottom: calc(var(--mobile-nav-h) + 72px + var(--safe-bottom));
   }
   .page { overflow: visible; height: auto; }
   /* Fixed fullscreen overlays (.ex-screen) need their own scroll — the global
