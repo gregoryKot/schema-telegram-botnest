@@ -142,6 +142,23 @@ describe('e2e: терапия и пары с веб-клиентом (выдум
       const asClient = await agentAs(WEB).get('/api/therapy/relation');
       expect(asClient.body.partnerId).toBe(Number(THERAPIST));
     });
+
+    // 2026-10-26: клиент видел прошедшую встречу как следующую — ближайшую
+    // его экраны считают сами, по дням встреч. Сохранил терапевт → нашёл клиент.
+    it('дни встреч, сохранённые терапевтом, клиент получает в GET /relation', async () => {
+      const saved = await agentAs(THERAPIST).post(
+        `/api/therapy/session-info/${WEB_STR}`,
+        { nextSession: '2026-10-17T07:00', meetingDays: [6] },
+      );
+      expect(saved.status).toBeLessThan(300);
+      const asClient = await agentAs(WEB).get('/api/therapy/relation');
+      expect(asClient.body).toMatchObject({
+        nextSession: '2026-10-17T07:00',
+        meetingDays: [6],
+      });
+      const asTherapist = await agentAs(THERAPIST).get('/api/therapy/relation');
+      expect(asTherapist.body.meetingDays).toEqual([]);
+    });
   });
 
   describe('пары друзей', () => {

@@ -4,6 +4,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, cleanup, waitFor } from '@testing-library/react';
 import type { TherapyRelationInfo } from '../../api';
+import { forEachTimeZone } from '../../../../shared/src/utils/timeZone.test-helpers';
 
 const getFormerTherapist = vi.hoisted(() => vi.fn());
 vi.mock('../../api', () => ({ api: { getFormerTherapist } }));
@@ -13,6 +14,7 @@ import { TherapistCard } from './TherapistCard';
 afterEach(() => {
   cleanup();
   getFormerTherapist.mockReset();
+  vi.useRealTimers();
 });
 
 const active: TherapyRelationInfo = {
@@ -46,5 +48,44 @@ describe('TherapistCard', () => {
     expect(screen.getByText('Мария')).toBeTruthy();
     expect(screen.queryByRole('note')).toBeNull();
     expect(getFormerTherapist).not.toHaveBeenCalled();
+  });
+});
+
+// Регрессия 2026-10-26: «Следующая сессия: Сб, 17 окт» при сегодняшнем 26-м —
+// nextSession после встречи никто не двигает. Карточка берёт ближайшую
+// встречу через shared upcomingSession.
+describe('TherapistCard — «Следующая сессия» не в прошлом', () => {
+  const SAT = 6;
+  function renderAt(rel: TherapyRelationInfo, check: (tz: string) => void) {
+    forEachTimeZone((tz) => {
+      vi.useFakeTimers({ toFake: ['Date'] });
+      vi.setSystemTime(new Date('2026-10-26T09:00:00Z')); // понедельник
+      const { unmount } = render(<TherapistCard relation={rel} />);
+      check(tz);
+      unmount();
+      vi.useRealTimers();
+    });
+  }
+
+  it('прошедшая дата + дни встреч → ближайшая суббота с тем же временем', () => {
+    renderAt({ ...active, nextSession: '2026-10-17T07:00', meetingDays: [SAT] }, (tz) => {
+      expect(screen.getByText('Сб, 31 окт · 07:00'), tz).toBeTruthy();
+      expect(screen.queryByText(/17 окт/), tz).toBeNull();
+    });
+  });
+
+  it('прошедшая дата без дней встреч → строки «Следующая сессия» нет', () => {
+    for (const meetingDays of [[], undefined]) {
+      renderAt({ ...active, nextSession: '2026-10-17T07:00', meetingDays }, (tz) => {
+        expect(screen.getByText('Мария'), tz).toBeTruthy();
+        expect(screen.queryByText('Следующая сессия'), tz).toBeNull();
+      });
+    }
+  });
+
+  it('будущая дата — как была', () => {
+    renderAt({ ...active, nextSession: '2026-11-04T10:00', meetingDays: [SAT] }, (tz) => {
+      expect(screen.getByText('Ср, 4 ноя · 10:00'), tz).toBeTruthy();
+    });
   });
 });

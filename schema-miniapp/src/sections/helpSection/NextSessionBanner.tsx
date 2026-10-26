@@ -1,5 +1,6 @@
 import { TherapyRelationInfo } from '../../api';
 import { todayCalendarDate } from '../../../../shared/src/utils/calendarDate';
+import { upcomingSession } from '../../../../shared/src/therapy/upcomingSession';
 
 const MONTHS = [
   'янв',
@@ -24,11 +25,14 @@ export function NextSessionBanner({
 }: {
   relation: TherapyRelationInfo | null | undefined;
 }) {
-  if (relation?.role !== 'client' || !relation.nextSession) return null;
+  if (relation?.role !== 'client') return null;
+  // Прошедшая встреча — ближайший день встреч, без дней — баннера нет.
+  const next = upcomingSession(relation.nextSession, relation.meetingDays);
+  if (!next) return null;
 
-  const [datePart, timePart] = relation.nextSession.includes('T')
-    ? relation.nextSession.split('T')
-    : [relation.nextSession, null];
+  const [datePart, timePart] = next.includes('T')
+    ? next.split('T')
+    : [next, null];
   const [y, m, d] = datePart.split('-').map(Number);
   const label = `${DAYS[new Date(y, m - 1, d).getDay()]}, ${d} ${MONTHS[m - 1]}${timePart ? ` · ${timePart}` : ''}`;
   const isToday = datePart === todayCalendarDate();

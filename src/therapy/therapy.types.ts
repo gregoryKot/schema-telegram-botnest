@@ -8,6 +8,7 @@ export interface TherapyRelationInfo {
   partnerId: bigint | null;
   code: string;
   nextSession: string | null;
+  meetingDays: number[]; // клиенту — дни встреч связи, терапевту — []
 }
 
 export interface TherapyClientSummary {

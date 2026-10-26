@@ -1,5 +1,6 @@
 import { indexLevel, type IndexLevel } from '../../lib/tone';
 import { momentDayLabel, momentIsToday, momentTime } from '../../utils/format';
+import { isCalendarDate } from '../../../../shared/src/utils/calendarDate';
 
 // Чистые вычисления экрана «Сегодня»: дельта к вчера, индекс дня, история и
 // столбики, последние записи, заголовок встречи.
@@ -97,14 +98,23 @@ function startOfDay(t: number): number {
   return d.getTime();
 }
 
-/** Заголовок карточки встречи: «Сегодня · 14:00», «Завтра · 14:00», «Сб, 17 октября · 14:00». */
+/** Момент встречи для показа. Только день (`2026-10-31` — дни встреч без
+ * времени) — местная полночь: `new Date('2026-10-31')` дал бы полночь UTC,
+ * то есть «· 03:00» в Москве и прошлый день западнее Гринвича. */
+export function sessionMoment(value: string): Date {
+  if (!isCalendarDate(value)) return new Date(value);
+  const [y, m, d] = value.split('-').map(Number);
+  return new Date(y, m - 1, d);
+}
+
+/** Заголовок карточки встречи: «Сегодня · 14:00», «Завтра · 14:00», «Сб, 17 октября · 14:00»; без времени — без « · ЧЧ:ММ». */
 export function meetingTitle(nextSession: string, now: number): string {
-  const at = new Date(nextSession);
-  const time = at.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+  const at = sessionMoment(nextSession);
+  const time = isCalendarDate(nextSession) ? '' : ` · ${at.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}`;
   const diff = Math.round((startOfDay(at.getTime()) - startOfDay(now)) / 86400000);
-  if (diff === 0) return `Сегодня · ${time}`;
-  if (diff === 1) return `Завтра · ${time}`;
+  if (diff === 0) return `Сегодня${time}`;
+  if (diff === 1) return `Завтра${time}`;
   const dow = at.toLocaleDateString('ru-RU', { weekday: 'short' });
   const date = at.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
-  return `${dow[0].toUpperCase()}${dow.slice(1)}, ${date} · ${time}`;
+  return `${dow[0].toUpperCase()}${dow.slice(1)}, ${date}${time}`;
 }

@@ -102,3 +102,52 @@ describe('NextSessionBanner — «сегодня» сверяется с кал�
     }
   });
 });
+
+// Регрессия 2026-10-26: клиент видел прошедшую встречу («Сб, 17 окт» при
+// сегодняшнем 26-м) — nextSession после встречи никто не двигает. Баннер
+// берёт ближайшую через shared upcomingSession: прошла — ближайший день
+// встреч с тем же временем, дней нет — баннера нет.
+describe('NextSessionBanner — ближайшая встреча, а не прошедшая', () => {
+  const SAT = 6;
+  function renderAt(
+    nextSession: string,
+    meetingDays: number[] | undefined,
+    check: (tz: string, container: HTMLElement) => void,
+  ) {
+    forEachTimeZone((tz) => {
+      vi.useFakeTimers({ toFake: ['Date'] });
+      vi.setSystemTime(new Date('2026-10-26T09:00:00Z')); // понедельник
+      const relation = {
+        role: 'client',
+        nextSession,
+        meetingDays,
+      } as unknown as TherapyRelationInfo;
+      const { unmount, container } = render(
+        <NextSessionBanner relation={relation} />,
+      );
+      check(tz, container);
+      unmount();
+      vi.useRealTimers();
+    });
+  }
+
+  it('прошедшая дата + дни встреч → ближайшая суббота с тем же временем', () => {
+    renderAt('2026-10-17T07:00', [SAT], (tz) => {
+      expect(screen.getByText('Встреча: Сб, 31 окт · 07:00'), tz).toBeTruthy();
+    });
+  });
+
+  it('прошедшая дата без дней встреч → баннера нет', () => {
+    for (const days of [[], undefined]) {
+      renderAt('2026-10-17T07:00', days, (tz, container) => {
+        expect(container.firstChild, tz).toBeNull();
+      });
+    }
+  });
+
+  it('будущая дата — как была', () => {
+    renderAt('2026-11-04T10:00', [SAT], (tz) => {
+      expect(screen.getByText('Встреча: Ср, 4 ноя · 10:00'), tz).toBeTruthy();
+    });
+  });
+});
