@@ -386,6 +386,7 @@ describe('getRelation — статус связи для терапевта и �
       partnerId: CLIENT,
       code: 'AAA111',
       nextSession: null,
+      meetingDays: [],
     });
     expect(spy).toHaveBeenCalledWith({
       where: { therapistId: T1, status: 'active' },
@@ -438,6 +439,7 @@ describe('getRelation — статус связи для терапевта и �
       partnerId: T1,
       code: 'AAA111',
       nextSession: '2026-08-01',
+      meetingDays: [],
     });
     // CLIENT терапевтом не выступает — связи со стороны терапевта не ищутся
     // вовсе (A-3): findFirst не зовётся, единственный запрос — findMany по
@@ -543,6 +545,7 @@ describe('getRelation — статус связи для терапевта и �
       partnerId: T2,
       code: 'NEW222',
       nextSession: '2026-11-01',
+      meetingDays: [],
     });
   });
 
@@ -584,6 +587,53 @@ describe('getRelation — статус связи для терапевта и �
     expect(info?.partnerName).toBeNull();
     expect(info?.partnerId).toBe(T1);
     expect(info?.nextSession).toBeNull();
+  });
+
+  // 2026-10-26: клиент видел прошедшую встречу («Сб, 17 октября» при 26-м) —
+  // nextSession после встречи никто не двигает. Ближайшую экраны клиента
+  // считают сами (shared upcomingSession), а для этого им нужны дни встреч.
+  it('клиент получает дни встреч своей связи, терапевт — пустой список', async () => {
+    const rel = {
+      id: 1,
+      therapistId: T1,
+      clientId: CLIENT,
+      status: 'active',
+      code: 'AAA111',
+      nextSession: '2026-10-17T07:00',
+      meetingDays: [6, 3],
+      createdAt: new Date(),
+    };
+    const users: FakeUser[] = [
+      { id: T1, firstName: 'Т', role: 'THERAPIST' },
+      { id: CLIENT, firstName: 'Аня' },
+    ];
+    const { service } = makeFullService([rel], users);
+    const asClient = await service.getRelation(CLIENT);
+    expect(asClient?.meetingDays).toEqual([6, 3]);
+    expect(asClient?.nextSession).toBe('2026-10-17T07:00'); // как в базе
+    expect((await service.getRelation(T1))?.meetingDays).toEqual([]);
+  });
+
+  it('битые дни встреч в Json-колонке: остаются только целые 0–6, не массив → []', async () => {
+    const withDays = (meetingDays: unknown) =>
+      makeFullService(
+        [
+          {
+            id: 1,
+            therapistId: T1,
+            clientId: CLIENT,
+            status: 'active',
+            code: 'AAA111',
+            meetingDays: meetingDays as number[],
+            createdAt: new Date(),
+          },
+        ],
+        [{ id: T1, firstName: 'Т', role: 'THERAPIST' }],
+      ).service.getRelation(CLIENT);
+    const garbage = [6, 7, -1, 2.5, '3', null, 0];
+    expect((await withDays(garbage))?.meetingDays).toEqual([6, 0]);
+    expect((await withDays({ 0: 1 }))?.meetingDays).toEqual([]);
+    expect((await withDays(null))?.meetingDays).toEqual([]);
   });
 
   // backend#33: строка, осиротевшая до статуса `ended` (терапевт вышел из

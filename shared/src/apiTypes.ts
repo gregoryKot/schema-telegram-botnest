@@ -93,6 +93,7 @@ export interface TherapyRelationInfo {
   partnerId: UserId | null;
   code: string;
   nextSession: string | null;
+  meetingDays?: number[]; // клиенту — для upcomingSession; нет у старого кэша
 }
 
 export interface TherapistNote {

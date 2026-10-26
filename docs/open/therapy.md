@@ -152,15 +152,6 @@
   в `gendered-forms.spec.ts`.
 
 **Карточка клиента у терапевта — остаток после общей колонки и ближайшей сессии** (2026-10):
-- **Клиент видит прошедшую встречу.** У терапевта прошедшая `nextSession` теперь
-  переезжает на ближайший день встреч (`shared/src/therapy/upcomingSession.ts`), а
-  клиенту `GET /api/therapy/relation` (`src/therapy/therapy-relation-info.ts`) отдаёт
-  одну `nextSession` без `meetingDays`. «Встреча с терапевтом» на сайте
-  (`MeetingCard` в `webapp/src/sections/today/TodayAside.tsx`, баннер в
-  `webapp/src/sections/PracticeSection.tsx`, `webapp/src/sections/profile/TherapistCard.tsx`)
-  и в мини-аппе (`schema-miniapp/src/sections/helpSection/NextSessionBanner.tsx`)
-  показывает прошедшую дату: ни один экран не сравнивает её с сегодняшней (чтение
-  кода). Чинится `meetingDays` в ответе relation и тем же `upcomingSession`.
 - **Дата сессии — и бейджем шапки, и карточкой «Обзора» — оставлено осознанно.**
   Бейдж (`ClientHeaderBadges.tsx`) виден на всех вкладках карточки, карточка
   (`ClientSessionInfoCards.tsx`) на «Обзоре» даёт правку даты.

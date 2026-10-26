@@ -1,5 +1,6 @@
 import type { TherapyRelationInfo } from '../../api';
 import { pressable } from '../../utils/a11y';
+import { upcomingSession } from '../../../../shared/src/therapy/upcomingSession';
 import { meetingTitle, type SparkBar } from './model';
 import { formatWeekDelta, weekDeltaTone } from './weekDeltaFormat';
 
@@ -38,10 +39,11 @@ export function IndexCard({ score, weekDelta, bars, onOpenHistory }: IndexProps)
 // «Встреча с терапевтом»: только когда есть терапевт (роль клиента).
 export function MeetingCard({ relation, now }: { relation: TherapyRelationInfo | null; now: number }) {
   if (!relation?.partnerName || relation.role !== 'client') return null;
+  const at = upcomingSession(relation.nextSession, relation.meetingDays);
   return (
     <div className="ds-card ds-card--accent ct-meeting">
       <div className="ds-label ct-on-accent">Встреча с терапевтом</div>
-      {relation.nextSession && <div className="ds-num ct-meeting-title">{meetingTitle(relation.nextSession, now)}</div>}
+      {at && <div className="ds-num ct-meeting-title">{meetingTitle(at, now)}</div>}
       <div className="ct-meeting-name">{relation.partnerName}</div>
       <a className="ct-write" href={`tg://user?id=${relation.partnerId}`}>Написать</a>
     </div>
