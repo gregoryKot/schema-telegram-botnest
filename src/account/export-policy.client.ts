@@ -68,7 +68,8 @@ export const CLIENT_EXPORT_POLICY: Record<string, ClientExportDecision> = {
       virtualClientName:
         'имя офлайн-клиента, которое задаёт терапевт, — пометка терапевта',
       therapyStartDate: 'рабочий реквизит терапевта, клиенту не показывается',
-      meetingDays: 'ритм встреч терапевта; клиент видит только ближайшую дату',
+      meetingDays:
+        'ритм встреч терапевта; клиенту приходит в /api/therapy/relation, на экране — только ближайшая дата',
     },
   },
   TherapistNote: {

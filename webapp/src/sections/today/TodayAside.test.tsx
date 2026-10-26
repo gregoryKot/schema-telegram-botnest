@@ -51,6 +51,13 @@ describe('MeetingCard — ближайшая встреча, а не проше�
     }
   });
 
+  it('даты нет, только дни встреч → ближайший такой день без выдуманного времени', () => {
+    renderAt(relation(null, [SAT]), (tz) => {
+      expect(screen.getByText('Сб, 31 октября'), tz).toBeTruthy();
+      expect(screen.queryByText(/· \d\d:\d\d/), tz).toBeNull();
+    });
+  });
+
   it('будущая дата показывается как была, даже если день встреч наступит раньше', () => {
     renderAt(relation('2026-11-04T10:00', [SAT]), (tz) => {
       expect(screen.getByText('Ср, 4 ноября · 10:00'), tz).toBeTruthy();

@@ -9,6 +9,7 @@ import {
   mergeRecentEntries,
   meetingTitle,
 } from './model';
+import { forEachTimeZone } from '../../../../shared/src/utils/timeZone.test-helpers';
 
 describe('deltaView', () => {
   it('рост и падение со стрелкой, целые без дробной части', () => {
@@ -90,5 +91,13 @@ describe('meetingTitle', () => {
   });
   it('дальше — день недели, дата и время', () => {
     expect(meetingTitle(new Date(2026, 9, 17, 14, 0).toISOString(), now)).toMatch(/^Сб, 17 октября · 14:00$/);
+  });
+  it('только день (дни встреч без времени) — без выдуманного времени и без сдвига дня в любой зоне', () => {
+    forEachTimeZone((tz) => {
+      const at = new Date(2026, 9, 15, 10, 0).getTime();
+      expect(meetingTitle('2026-10-17', at), tz).toBe('Сб, 17 октября');
+      expect(meetingTitle('2026-10-15', at), tz).toBe('Сегодня');
+      expect(meetingTitle('2026-10-16', at), tz).toBe('Завтра');
+    });
   });
 });

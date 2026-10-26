@@ -10,6 +10,7 @@ import type { UserTask, TherapyRelationInfo } from '../api';
 import { pressable } from '../utils/a11y';
 import { useTr } from '../utils/addressForm';
 import { useTaskActions } from './today/useTaskActions';
+import { sessionMoment } from './today/model';
 import { CrisisBlock } from './practice/CrisisBlock';
 import { HereAndNowBlock } from './practice/HereAndNowBlock';
 import { PracticeTopRow, HERE_BLOCK_ID, HELP_BLOCK_ID } from './practice/PracticeTopRow';
@@ -123,7 +124,7 @@ export function PracticeSection({ onOpenChildhoodWheel, onOpenPractices, onOpenP
     if (relation?.role !== 'client') return null;
     const at = upcomingSession(relation.nextSession, relation.meetingDays);
     if (!at) return null;
-    const label = new Date(at).toLocaleDateString('ru-RU', { weekday: 'short', day: 'numeric', month: 'short' });
+    const label = sessionMoment(at).toLocaleDateString('ru-RU', { weekday: 'short', day: 'numeric', month: 'short' });
     const isToday = at.slice(0, 10) === todayCalendarDate();
     return { label, isToday, partnerName: relation.partnerName };
   })();

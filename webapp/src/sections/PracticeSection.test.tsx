@@ -717,7 +717,7 @@ describe('PracticeSection — баннер ближайшей сессии: да
 // второй CI-прогон под TZ=Australia/Sydney.
 describe('PracticeSection — баннер ближайшей сессии: прошедшая дата', () => {
   const SAT = 6;
-  const relation = (nextSession: string, meetingDays?: number[]) => ({
+  const relation = (nextSession: string | null, meetingDays?: number[]) => ({
     role: 'client', status: 'active', partnerName: 'Игорь', partnerId: 2, code: 'y', nextSession, meetingDays,
   });
   beforeEach(() => {
@@ -739,6 +739,12 @@ describe('PracticeSection — баннер ближайшей сессии: пр
     await waitFor(() => expect(mockApi.getTherapyRelation).toHaveBeenCalled());
     await act(async () => {});
     expect(screen.queryByText(/встреча/)).toBeNull();
+  });
+
+  it('даты нет, только дни встреч → ближайшая суббота без сдвига дня', async () => {
+    mockApi.getTherapyRelation.mockResolvedValue(relation(null, [SAT]));
+    renderSection();
+    await screen.findByText(/Следующая встреча: сб,? 31 окт/i);
   });
 
   it('будущая дата — как была', async () => {
