@@ -1,5 +1,7 @@
 /* Экран «Сегодня» кабинета терапевта. Префикс tt-. */
 .tt-page { max-width: 1200px; }
+/* Колонка кабинета — та же, что у списка и карточки клиента (index.css). */
+@media (min-width: 768px) { .tt-page { margin-left: var(--tk-center); max-width: var(--tk-max); padding-inline: var(--tk-gutter); } }
 .tt-counters { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; }
 .tt-counter { border-radius: 18px; padding: 22px 24px; display: flex; flex-direction: column; }
 .tt-counter .ds-label { color: inherit; opacity: .75; }
@@ -9,7 +11,13 @@
 .tt-denom { font-size: 22px; font-style: italic; color: var(--on-ink-faint); }
 .tt-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr)); gap: 32px; align-items: start; }
 .tt-col { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
-.tt-empty { font-family: var(--serif); font-style: italic; font-size: 14px; color: var(--text-faint); }
+.tt-empty {
+  font-family: var(--serif); font-style: italic; font-size: 14px; color: var(--text-faint);
+  padding: 18px 20px; border: 1px dashed var(--line-strong); border-radius: 16px;
+}
+/* Второй раздел колонки («Требуют внимания» под «Сессиями») — отдельным блоком,
+   а не вплотную к пустому состоянию первого. */
+.tt-col > .ds-h2:not(:first-child) { margin-top: 24px; }
 .tt-reset { font: inherit; color: inherit; text-align: left; width: 100%; appearance: none; }
 .tt-session {
   display: grid; grid-template-columns: 64px 4px minmax(0, 1fr) auto; gap: 16px; align-items: center;

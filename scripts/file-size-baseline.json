@@ -1952,7 +1952,7 @@
   "webapp/src/components/therapist/ClientConceptFields.tsx": 74,
   "webapp/src/components/therapist/ClientConceptGraph.tsx": 53,
   "webapp/src/components/therapist/ClientConceptTab.tsx": 77,
-  "webapp/src/components/therapist/ClientHeader.tsx": 76,
+  "webapp/src/components/therapist/ClientHeader.tsx": 77,
   "webapp/src/components/therapist/ClientHeaderBadges.tsx": 21,
   "webapp/src/components/therapist/ClientListView.tsx": 153,
   "webapp/src/components/therapist/ClientNotesTab.tsx": 51,

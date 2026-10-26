@@ -5,6 +5,7 @@ import { ClientTabs } from './ClientTabs';
 import { clientInitials } from './clientOverviewModel';
 import type { ClientDetail } from './clientSheetTypes';
 import { ConfirmDialog } from '../ConfirmDialog';
+import { MMIcon } from '../modeMapIcons';
 import { CLIENT_NAME_MAX } from '../../../../shared/src/limits/textLimits';
 import { removeClientConfirmCopy } from '../../../../shared/src/therapy/removeClientConfirm';
 import { clientHue, hueStyle } from '../../lib/tone';
@@ -62,7 +63,7 @@ export function ClientHeader({ selectedClient, detail, switchView }: Props) {
             <button className="ds-btn ds-btn--secondary ds-btn--sm" onClick={() => setClientTab('sessions')}>+ Заметка</button>
           </div>
           <button className="ds-btn ds-btn--icon" onClick={requestDeleteClient} disabled={deleteLoading} title="Удалить клиента" aria-label="Удалить клиента">
-            {deleteLoading ? '…' : '✕'}
+            {deleteLoading ? '…' : <MMIcon name="trash" size={16} />}
           </button>
         </div>
       </div>

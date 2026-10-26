@@ -4,20 +4,16 @@
    ───────────────────────────────────────────────────────────────────────── */
 
 /* ── Обёртка карточки ────────────────────────────────────────────────────── */
-/* Шапка и все вкладки стоят в одной колонке --tk-max по центру рабочей
-   области (экран минус сайдбар). До 2026-10 «Обзор» и «Задания» прижимались
-   влево с пустой половиной экрана справа, кнопки шапки уезжали к правому краю,
-   а «Концептуализация» стояла по центру — у каждой вкладки была своя ширина.
-   --tk-center — отступ колонки слева; уже рабочей области — ноль. */
-.tk-sheet {
-  background: var(--bg);
-  --tk-max: 1440px; --tk-gutter: clamp(20px, 4vw, 48px);
-  --tk-center: max(0px, (100vw - var(--sidebar-w) - var(--tk-max)) / 2);
-}
+/* Шапка и все вкладки — в колонке кабинета (--tk-max, --tk-center, --tk-gutter
+   объявлены на .main--cabinet в index.css). До 2026-10 «Обзор» и «Задания»
+   прижимались влево с пустой половиной экрана справа, кнопки шапки уезжали к
+   правому краю, а «Концептуализация» стояла по центру. */
+.tk-sheet { background: var(--bg); }
 .tk-tabs-body { padding: 0; }
 .tk-load { padding: 40px var(--tk-gutter); display: flex; flex-direction: column; gap: 16px; max-width: var(--tk-max); box-sizing: border-box; }
 @media (min-width: 768px) {
   .tk-tabs-body > .tk-ov, .tk-tabs-body > .tk-load, .tk-tabs-body > .ds-page { margin-left: var(--tk-center); padding-inline: var(--tk-gutter); }
+  .therapist-scroll--list > .ds-page { margin-left: var(--tk-center); max-width: var(--tk-max); padding-inline: var(--tk-gutter); }
   .tk-tabs-body > .page-inner-wide { margin: 0 0 0 var(--tk-center); max-width: var(--tk-max); padding-inline: var(--tk-gutter); }
 }
 
@@ -68,12 +64,16 @@
 .tk-goal-text { font: 24px/1.4 var(--serif); color: var(--text); overflow-wrap: anywhere; }
 .tk-goal .ds-link { display: inline-block; margin-top: 14px; }
 .tk-goal .ds-label { margin-bottom: 10px; }
-.tk-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr)); gap: 12px; }
+.tk-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, max(220px, (100% - 24px) / 3)), 1fr)); gap: 12px; }
+/* Не больше трёх плиток в ряд; четыре домена — два ряда по две, а не 3 + 1. */
+.tk-tiles:has(> :nth-child(4):last-child) { grid-template-columns: repeat(auto-fill, minmax(min(100%, max(220px, (100% - 12px) / 2)), 1fr)); }
 .tk-tile { border-radius: 14px; padding: 16px 18px; display: flex; flex-direction: column; gap: 10px; }
 .tk-tile-title { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; font-weight: 700; }
 .tk-tile-item { font-size: 14px; font-weight: 500; display: flex; gap: 8px; align-items: center; }
 .tk-tile-item .ds-dot { width: 7px; height: 7px; border-radius: 2px; }
-.tk-modes { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+/* Шесть групп режимов: три колонки × два ряда (уже — две × три), без одинокой
+   группы в последнем ряду. */
+.tk-modes { display: grid; grid-template-columns: repeat(auto-fill, minmax(max(140px, (100% - 32px) / 3), 1fr)); gap: 20px 16px; }
 .tk-mode-col { border-top: 3px solid; padding-top: 12px; display: flex; flex-direction: column; gap: 6px; }
 .tk-mode-col > div { font-size: 14px; }
 .tk-mode-col .tk-tile-title { font-size: 11px; }
@@ -124,10 +124,13 @@
   .tk-head-row { gap: 12px; flex-wrap: nowrap; }
   .tk-avatar { width: 52px; height: 52px; font-size: 19px; }
   .tk-ident { min-width: 0; }
-  .tk-name { font-size: 26px; }
+  .tk-name {
+    font-size: 24px; white-space: normal; overflow-wrap: anywhere;
+    display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2;
+  }
   .tk-badges { gap: 6px; flex-wrap: wrap; }
   .tk-actions-main {
-    position: fixed; left: 0; right: 0; bottom: calc(76px + var(--safe-bottom)); z-index: 48;
+    position: fixed; left: 0; right: 0; bottom: calc(var(--mobile-nav-h) + var(--safe-bottom)); z-index: 48;
     display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 12px 20px;
     background: var(--bg); border-top: 1px solid var(--line);
   }
