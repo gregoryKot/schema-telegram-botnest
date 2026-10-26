@@ -75,14 +75,6 @@
     "reason": "Фиксированный фон-аврора с pointer-events: none: декор страницы мини-тестов, не оверлей и не лист.",
     "since": "docs/AUDIT_2026-10_FINDINGS.md"
   },
-  "webapp/src/sections/PracticeSection.tsx": {
-    "reason": "Класс u-sheet здесь — обёртка вокруг ModeEx, который сам вызывает useHistorySheet (FlashcardEx.tsx:148); обёртка только позиционирует.",
-    "since": "docs/AUDIT_2026-10_FINDINGS.md"
-  },
-  "webapp/src/sections/TodaySection.tsx": {
-    "reason": "Класс u-sheet здесь — обёртка вокруг ModeEx/SchemaEx, которые сами вызывают useHistorySheet (FlashcardEx.tsx:93, :148); обёртка только позиционирует.",
-    "since": "docs/AUDIT_2026-10_FINDINGS.md"
-  },
   "webapp/src/sections/schemas/ModeExOverlay.tsx": {
     "reason": "Класс u-sheet здесь — обёртка вокруг ModeEx, который сам вызывает useHistorySheet (FlashcardEx.tsx:148); обёртка только позиционирует.",
     "since": "docs/AUDIT_2026-10_FINDINGS.md"

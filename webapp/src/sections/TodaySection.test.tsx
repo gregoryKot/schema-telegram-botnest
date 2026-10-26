@@ -36,6 +36,19 @@ vi.mock('../components/caseFlow/CaseFlowHost', () => ({
 }));
 vi.mock('../components/HomeScreenOfferCard', () => ({ HomeScreenOfferCard: () => null }));
 
+// Упражнения, которые открывают задания (TaskExerciseHost): заглушка с
+// «Назад» и «Сохранить», чтобы видеть, ЧТО открылось и закрылось ли задание.
+const exStub = (id: string) => (p: { onBack?: () => void; onClose?: () => void; onComplete?: () => void }) => (
+  <div data-testid={id}>
+    <button onClick={p.onBack ?? p.onClose}>Назад</button>
+    <button onClick={() => p.onComplete?.()}>Сохранить упражнение</button>
+  </div>
+);
+vi.mock('../components/exercises/BeliefCheckEx', () => ({ BeliefCheckEx: exStub('belief-ex') }));
+vi.mock('../components/exercises/LetterEx', () => ({ LetterEx: exStub('letter-ex') }));
+vi.mock('../components/exercises/SafePlaceEx', () => ({ SafePlaceEx: exStub('safe-ex') }));
+vi.mock('../components/SchemaFlashcard', () => ({ SchemaFlashcard: exStub('flashcard-ex') }));
+
 vi.mock('../api', () => ({
   api: {
     getProfile: vi.fn(),
@@ -100,7 +113,6 @@ function renderSection(props: Partial<{ ratings: Record<string, number>; refresh
           refreshKey={props.refreshKey}
           onNavigate={onNavigate}
           onOpenSchema={vi.fn()}
-          onOpenAdvanced={vi.fn()}
           onOpenTracker={onOpenTracker}
           onOpenTrackerHistory={onOpenTrackerHistory}
           onOpenDiaries={onOpenDiaries}
@@ -269,7 +281,7 @@ describe('TodaySection — лента дня и плитка дневника', 
       <AddressFormContext.Provider value={{ form: 'ty', setForm: vi.fn() }}>
         <MemoryRouter>
           <TodaySection needs={NEEDS} ratings={{}} refreshKey={1} onNavigate={onNavigate} onOpenSchema={vi.fn()}
-            onOpenAdvanced={vi.fn()} onOpenTracker={onOpenTracker} onOpenDiaries={onOpenDiaries} onOpenChildhoodWheel={vi.fn()} />
+            onOpenTracker={onOpenTracker} onOpenDiaries={onOpenDiaries} onOpenChildhoodWheel={vi.fn()} />
         </MemoryRouter>
       </AddressFormContext.Provider>,
     );
@@ -341,7 +353,8 @@ describe('TodaySection — «Зачем это?» и первый вход', () 
 
 describe('TodaySection — задания терапевта', () => {
   it('назначенное задание — блок «От терапевта»; выполненное помечено и без «начать →»', async () => {
-    mockApi.getTasks.mockResolvedValue([task({ id: 1, assignedBy: 9, text: 'Письмо', done: null }), task({ id: 2, assignedBy: 9, text: 'Сделанное', done: true })]);
+    // Тип с упражнением: у «Своего задания» вместо «начать →» кнопка «Готово».
+    mockApi.getTasks.mockResolvedValue([task({ id: 1, assignedBy: 9, type: 'letter_to_self', text: 'Письмо', done: null }), task({ id: 2, assignedBy: 9, type: 'letter_to_self', text: 'Сделанное', done: true })]);
     renderSection();
     expect(await screen.findByText('От терапевта', { selector: 'h3' })).toBeTruthy();
     const section = screen.getByText('От терапевта', { selector: 'h3' }).closest('.ct-section') as HTMLElement;
@@ -365,13 +378,12 @@ describe('TodaySection — задания терапевта', () => {
 });
 
 describe('TodaySection — задания: каждый тип «начать →» открывает свой правильный экран', () => {
-  function renderWithHandlers(overrides: Partial<{ onOpenTracker: () => void; onOpenDiaries: () => void; onOpenChildhoodWheel: () => void; onOpenAdvanced: () => void }> = {}) {
+  function renderWithHandlers(overrides: Partial<{ onOpenTracker: () => void; onOpenDiaries: () => void; onOpenChildhoodWheel: () => void }> = {}) {
     return render(
       <AddressFormContext.Provider value={{ form: 'ty', setForm: vi.fn() }}>
         <MemoryRouter>
           <TodaySection
             needs={NEEDS} ratings={{}} onNavigate={vi.fn()} onOpenSchema={vi.fn()}
-            onOpenAdvanced={overrides.onOpenAdvanced ?? vi.fn()}
             onOpenTracker={overrides.onOpenTracker ?? vi.fn()}
             onOpenDiaries={overrides.onOpenDiaries ?? vi.fn()}
             onOpenChildhoodWheel={overrides.onOpenChildhoodWheel ?? vi.fn()}
@@ -382,7 +394,8 @@ describe('TodaySection — задания: каждый тип «начать �
   }
 
   async function clickTaskStart() {
-    const heading = await screen.findByText('Задания');
+    // Заголовок блока — «От терапевта», если задание назначено терапевтом.
+    const heading = await screen.findByText(/^(Задания|От терапевта)$/, { selector: 'h3' });
     const section = heading.closest('.ct-section')!;
     fireEvent.click(within(section).getByText('начать →'));
   }
@@ -411,16 +424,39 @@ describe('TodaySection — задания: каждый тип «начать �
     expect(onOpenChildhoodWheel).toHaveBeenCalledTimes(1);
   });
 
-  it('belief_check/letter_to_self/safe_place → onOpenAdvanced', async () => {
-    const onOpenAdvanced = vi.fn();
-    mockApi.getTasks.mockResolvedValue([task({ type: 'letter_to_self', text: 'Письмо себе' })]);
-    renderWithHandlers({ onOpenAdvanced });
+  // Инцидент 2026-10-26 (docs/INCIDENTS.md): три упражнения открывали
+  // экран настроек, «Разобрать ситуацию по шагам» — ничего. Колбэка настроек
+  // у «Сегодня» больше нет: задание ведёт только в своё упражнение.
+  it.each([
+    ['belief_check', 'Проверить убеждение', 'belief-ex'],
+    ['letter_to_self', 'Написать письмо Уязвимому Ребёнку', 'letter-ex'],
+    ['safe_place', 'Описать Безопасное место', 'safe-ex'],
+    ['flashcard', 'Разобрать сложную ситуацию по шагам', 'flashcard-ex'],
+  ])('%s → своё упражнение; сохранение закрывает задание', async (type, text, testId) => {
+    mockApi.getTasks.mockResolvedValue([task({ id: 7, assignedBy: 9, type, text })]);
+    mockApi.completeTask.mockResolvedValue({ ok: true });
+    renderWithHandlers();
     await clickTaskStart();
-    expect(onOpenAdvanced).toHaveBeenCalledTimes(1);
+
+    expect(await screen.findByTestId(testId)).toBeTruthy();
+    fireEvent.click(screen.getByText('Сохранить упражнение'));
+    await waitFor(() => expect(mockApi.completeTask).toHaveBeenCalledWith(7, true));
   });
 
-  it('schema_intro → открывает карточку схемы с реальным id из задания, завершение вызывает completeTask', async () => {
+  it('«Своё задание» от терапевта: на карточке «Готово», задание закрывается', async () => {
+    mockApi.getTasks.mockResolvedValue([task({ id: 8, assignedBy: 9, type: 'custom', text: 'Позвонить маме' })]);
+    mockApi.completeTask.mockResolvedValue({ ok: true });
+    renderWithHandlers();
+    const heading = await screen.findByText('От терапевта', { selector: 'h3' });
+    const section = heading.closest('.ct-section')! as HTMLElement;
+    expect(within(section).queryByText('начать →')).toBeNull();
+    fireEvent.click(await within(section).findByText('Готово'));
+    await waitFor(() => expect(mockApi.completeTask).toHaveBeenCalledWith(8, true));
+  });
+
+  it('schema_intro → открывает карточку схемы с реальным id из задания, сохранение вызывает completeTask', async () => {
     mockApi.getTasks.mockResolvedValue([task({ id: 5, type: 'schema_intro', text: 'abandonment' })]);
+    mockApi.completeTask.mockResolvedValue({ ok: true });
     renderWithHandlers();
     await clickTaskStart();
 
@@ -428,6 +464,8 @@ describe('TodaySection — задания: каждый тип «начать �
     fireEvent.click(screen.getByText('Завершить карточку схемы'));
 
     await waitFor(() => expect(mockApi.completeTask).toHaveBeenCalledWith(5, true));
+    // Карточка остаётся на экране «Готово», закрывает её «Назад».
+    fireEvent.click(screen.getByText('Назад'));
     await waitFor(() => expect(screen.queryByTestId('schema-ex')).toBeNull());
   });
 

@@ -188,6 +188,22 @@ describe('PracticeSection — задания от терапевта', () => {
     expect(onOpenDiaries).toHaveBeenCalled();
   });
 
+  // QA 2026-10-26 (docs/INCIDENTS.md): «Своё задание» от терапевта стояло в
+  // блоке без «Готово», а тап по нему не делал ничего — закрыть было нечем.
+  it('«Своё задание» от терапевта закрывается кнопкой «Готово»', async () => {
+    const onTasksChanged = vi.fn();
+    mockApi.getTasks
+      .mockResolvedValueOnce([task({ id: 12, assignedBy: 99, type: 'custom', text: 'Позвонить маме' })])
+      .mockResolvedValue([]);
+    mockApi.completeTask.mockResolvedValue(undefined);
+    renderSection({ onTasksChanged });
+
+    await screen.findByText('От терапевта');
+    fireEvent.click(screen.getByText('Готово'));
+    await waitFor(() => expect(mockApi.completeTask).toHaveBeenCalledWith(12, true));
+    await waitFor(() => expect(onTasksChanged).toHaveBeenCalledTimes(1));
+  });
+
   it('клик на задание "tracker_streak" открывает трекер (onOpenTracker)', async () => {
     const onOpenTracker = vi.fn();
     mockApi.getTasks.mockResolvedValue([task({ id: 1, assignedBy: 99, type: 'tracker_streak' })]);
@@ -250,7 +266,7 @@ describe('PracticeSection — мои цели', () => {
     renderSection();
 
     await screen.findByText('Моя цель');
-    expect(screen.getByText('1 активных')).toBeTruthy();
+    expect(screen.getByText('1 активная')).toBeTruthy();
   });
 
   it('клик "+ Поставить цель" открывает TaskCreateSheet', async () => {
@@ -300,7 +316,7 @@ describe('PracticeSection — своя цель: «Готово» и серия 
     renderSection();
     await screen.findByText('Сделано сегодня — завтра снова');
     expect(screen.queryByText('Готово')).toBeNull();
-    expect(screen.getByText('1 активных')).toBeTruthy();
+    expect(screen.getByText('1 активная')).toBeTruthy();
   });
 });
 

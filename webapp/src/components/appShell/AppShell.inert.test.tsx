@@ -59,12 +59,12 @@ describe('AppShell — inert на контейнере секций под от�
   });
 
   it('открыт SettingsSheet (внутри AppOverlays) → контейнер секций тоже inert, сам SettingsSheet — нет', async () => {
-    renderAppShell('/today');
-    await screen.findByTestId('today-section');
-    fireEvent.click(screen.getByTestId('today-section-advanced'));
+    renderAppShell('/more');
+    await screen.findByTestId('more-section');
+    fireEvent.click(screen.getByTestId('more-section-advanced'));
     const settingsSheet = await screen.findByTestId('settings-sheet');
 
-    expect(screen.getByTestId('today-section').closest('[inert]')).not.toBeNull();
+    expect(screen.getByTestId('more-section').closest('[inert]')).not.toBeNull();
     expect(settingsSheet.closest('[inert]')).toBeNull();
   });
 });

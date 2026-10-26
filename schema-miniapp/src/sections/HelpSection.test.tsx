@@ -260,6 +260,21 @@ describe('HelpSection — задачи от терапевта', () => {
     await renderReady();
     await screen.findByText('От терапевта');
   });
+
+  // Тот же класс, что QA 2026-10-26 нашёл на сайте: «Своё задание» в
+  // баннере терапевта стояло без «Готово».
+  it('«Своё задание» от терапевта закрывается «Готово» прямо в баннере', async () => {
+    mockApi.getTasks.mockResolvedValue([
+      task({ id: 11, assignedBy: 5, type: 'custom', text: 'Позвонить маме' }),
+    ]);
+    mockApi.completeTask.mockResolvedValue({ ok: true });
+    await renderReady();
+    await screen.findByText('От терапевта');
+    fireEvent.click(screen.getByText('Готово'));
+    await waitFor(() =>
+      expect(mockApi.completeTask).toHaveBeenCalledWith(11, true),
+    );
+  });
 });
 
 describe('HelpSection — инструменты открывают правильные листы', () => {

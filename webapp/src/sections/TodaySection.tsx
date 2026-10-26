@@ -1,19 +1,18 @@
-import { useState, lazy, Suspense } from 'react';
+import { useState } from 'react';
 import type { Need } from '../types';
-import type { UserTask } from '../api';
 import type { Section } from '../components/appShell/navigation';
 import { TaskCreateSheet } from '../components/TaskCreateSheet';
 import { HomeScreenOfferCard } from '../components/HomeScreenOfferCard';
 import { CaseFlowHost } from '../components/caseFlow/CaseFlowHost';
 import { WhySheet } from '../components/WhySheet';
 import '../styles/client-today.css';
-const SchemaEx = lazy(() => import('../components/exercises/FlashcardEx').then(m => ({ default: m.SchemaEx })));
-const ModeEx   = lazy(() => import('../components/exercises/FlashcardEx').then(m => ({ default: m.ModeEx })));
 import { AllTasksOverlay } from './today/AllTasksOverlay';
 import { PracticesBlock } from './today/PracticesBlock';
 import { HomeTiles } from './today/HomeTiles';
 import { TodayFeed } from './today/TodayFeed';
 import { useTaskActions } from './today/useTaskActions';
+import { useTaskLauncher } from './today/useTaskLauncher';
+import { TaskExerciseHost } from './today/TaskExerciseHost';
 import { useTodayData } from './today/useTodayData';
 import { useWhySheet } from './today/useWhySheet';
 import { trackHomeTile } from './today/trackHomeTile';
@@ -29,7 +28,6 @@ interface Props {
   ratings: Record<string, number>;
   onNavigate: (s: Section) => void;
   onOpenSchema: (opts?: { startTest?: boolean; tab?: 'needs'|'schemas'|'modes'; highlight?: string }) => void;
-  onOpenAdvanced: () => void;
   onOpenTracker: () => void;
   onOpenTrackerHistory?: () => void;
   onOpenDiaries: () => void;
@@ -41,7 +39,7 @@ interface Props {
 // Главная «Сегодня» (docs/design/CLIENT_SIMPLE_2026-10.md): три плитки — трекер, «Что случилось»,
 // дневник (лист QuickEntrySheet); задания терапевта, лента дня и выход к «Подышим».
 export function TodaySection({
-  needs, ratings, onNavigate, onOpenSchema, onOpenAdvanced, onOpenTracker, onOpenTrackerHistory,
+  needs, ratings, onNavigate, onOpenSchema, onOpenTracker, onOpenTrackerHistory,
   onOpenDiaries, onOpenChildhoodWheel, refreshKey, onTasksChanged,
 }: Props) {
   const data = useTodayData(refreshKey);
@@ -52,9 +50,6 @@ export function TodaySection({
   const [showDiaryTask,  setShowDiaryTask]  = useState(false);
   const [showAllTasks,   setShowAllTasks]   = useState(false);
   const [showTaskCreate, setShowTaskCreate] = useState(false);
-  const [introSchemaId,  setIntroSchemaId]  = useState<string | null>(null);
-  const [introModeId,    setIntroModeId]    = useState<string | null>(null);
-  const [activeTaskId,   setActiveTaskId]   = useState<number | null>(null);
 
   const tracker = trackerSummary(needs.map(n => n.id), ratings);
   const why = useWhySheet({
@@ -62,21 +57,9 @@ export function TodaySection({
     hasHistory: tracker.filled > 0 || lastAt !== null,
   });
 
-  function handleTaskComplete() {
-    if (activeTaskId === null) return;
-    const id = activeTaskId;
-    setActiveTaskId(null);
-    completeTask(id, onTasksChanged);
-  }
-
-  function handleTaskAction(task: UserTask) {
-    if (task.type === 'schema_intro')   { setIntroSchemaId(task.text); setActiveTaskId(task.id); return; }
-    if (task.type === 'mode_intro')     { setIntroModeId(task.text);   setActiveTaskId(task.id); return; }
-    if (task.type === 'tracker_streak') { onOpenTracker(); return; }
-    if (task.type === 'diary_streak')   { onOpenDiaries(); return; }
-    if (task.type === 'childhood_wheel'){ onOpenChildhoodWheel(); return; }
-    if (task.type === 'belief_check' || task.type === 'letter_to_self' || task.type === 'safe_place') { onOpenAdvanced(); return; }
-  }
+  // Задание открывает своё упражнение — та же маршрутизация, что у «Практики»
+  // (раньше здесь была своя копия, и упражнения открывали настройки).
+  const launcher = useTaskLauncher({ onOpenDiaries, onOpenTracker, onOpenChildhoodWheel, onTaskDone: id => completeTask(id, onTasksChanged) });
 
   const firstName = profile?.name?.split(' ')[0] ?? '';
   const hasTasks = tasks.length > 0 || taskError;
@@ -109,7 +92,8 @@ export function TodaySection({
           title={fromTherapist ? 'От терапевта' : 'Задания'}
           tasks={tasks}
           taskError={taskError}
-          onStart={handleTaskAction}
+          onStart={launcher.openTask}
+          onComplete={task => completeTask(task.id, onTasksChanged)}
           onShowAll={() => setShowAllTasks(true)}
           onAddGoal={() => setShowDiaryTask(true)}
         />
@@ -148,22 +132,13 @@ export function TodaySection({
           onClose={() => setShowTaskCreate(false)}
         />
       )}
-      {introSchemaId && (
-        <div className="u-sheet">
-          <Suspense fallback={null}><SchemaEx onBack={() => setIntroSchemaId(null)} initialSchemaId={introSchemaId} onComplete={() => { setIntroSchemaId(null); handleTaskComplete(); }} /></Suspense>
-        </div>
-      )}
-      {introModeId && (
-        <div className="u-sheet">
-          <Suspense fallback={null}><ModeEx onBack={() => setIntroModeId(null)} initialModeId={introModeId} onComplete={() => { setIntroModeId(null); handleTaskComplete(); }} /></Suspense>
-        </div>
-      )}
+      <TaskExerciseHost open={launcher.open} onBack={launcher.close} onComplete={launcher.complete} onOpenTracker={onOpenTracker} />
       {showAllTasks && (
         <AllTasksOverlay
           tasks={tasks}
           taskHistory={taskHistory}
           onClose={() => setShowAllTasks(false)}
-          onTaskDone={id => completeTask(id)}
+          onTaskDone={id => completeTask(id, onTasksChanged)}
           onAddTask={() => { setShowAllTasks(false); setShowTaskCreate(true); }}
         />
       )}
