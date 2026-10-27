@@ -23,6 +23,7 @@ export const SYNCED_PREF_KEYS = [
   'screen_order_profile',
   'screen_order_patterns',
   'screen_order_today',
+  'why_seen_v1',
 ] as const;
 
 export type SyncedPrefKey = (typeof SYNCED_PREF_KEYS)[number];

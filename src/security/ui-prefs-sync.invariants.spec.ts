@@ -58,8 +58,8 @@ describe('трипваер: SYNCED_PREF_KEYS фронта и бэка совпа
     expect(new Set(SYNCED_PREF_KEYS).size).toBe(SYNCED_PREF_KEYS.length);
   });
 
-  it('бэкендный реестр — ровно 14 ключей зафиксированного контракта', () => {
-    expect(SYNCED_PREF_KEYS.length).toBe(14);
+  it('бэкендный реестр — ровно 15 ключей зафиксированного контракта', () => {
+    expect(SYNCED_PREF_KEYS.length).toBe(15);
   });
 
   it('каждый ключ бэкенда есть на фронте', () => {

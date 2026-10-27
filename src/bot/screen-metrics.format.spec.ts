@@ -24,6 +24,7 @@ const FULL: ScreenMetrics = {
   ],
   movesByScreen: [],
   syncedUsers: 0,
+  homeTiles: [],
 };
 
 const EMPTY: ScreenMetrics = {
@@ -31,6 +32,7 @@ const EMPTY: ScreenMetrics = {
   hiddenByScreenBlock: [],
   movesByScreen: [],
   syncedUsers: 0,
+  homeTiles: [],
 };
 
 describe('formatScreenMetrics', () => {
@@ -170,5 +172,20 @@ describe('formatScreenMetrics — syncedUsers (серверное зеркало
       '🧩 Настройку экранов пока не трогали.\nНастройки синхронизированы: 5 человек',
     );
     expect(text).not.toMatch(/NaN|undefined/);
+  });
+});
+
+describe('formatScreenMetrics — плитки главной', () => {
+  it('строка плиток попадает в отчёт последней, после синхронизации', () => {
+    const text = formatScreenMetrics({
+      ...FULL,
+      syncedUsers: 2,
+      homeTiles: [{ tile: 'case', count: 4 }],
+    });
+    expect(text.split('\n').at(-1)).toBe('Главная: плитки — Что случилось 4');
+  });
+
+  it('на чистой БД плиток в отчёте нет', () => {
+    expect(formatScreenMetrics(EMPTY)).not.toMatch(/Главная/);
   });
 });

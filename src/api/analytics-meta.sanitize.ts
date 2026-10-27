@@ -19,6 +19,7 @@ import { sanitizeScreenMeta } from './analytics-meta.sanitize-screens';
 import { sanitizeCaseMeta } from './analytics-meta.sanitize-case';
 import { sanitizeQuickActionMeta } from './analytics-meta.sanitize-quick-actions';
 import { sanitizeLoginTicketMeta } from './analytics-meta.sanitize-login';
+import { sanitizeHomeTileMeta } from './analytics-meta.sanitize-home';
 import { sanitizeDataExportMeta } from './analytics-meta.sanitize-data-export';
 
 // Санитизация meta для POST /api/event (правило №7/№10): пропускаем ТОЛЬКО
@@ -75,12 +76,11 @@ export function sanitizeMeta(
     return undefined;
   }
   if (name === 'today_streak_toggle') {
-    const hidden = meta.hidden;
-    if (typeof hidden === 'boolean') {
-      return { hidden };
-    }
-    return undefined;
+    return typeof meta.hidden === 'boolean'
+      ? { hidden: meta.hidden }
+      : undefined;
   }
+  if (name === 'home_tile') return sanitizeHomeTileMeta(meta);
   if (name === 'web_banner_open' || name === 'web_banner_dismiss') {
     const banner = meta.banner;
     if (typeof banner === 'string' && WEB_BANNER_ID_SET.has(banner)) {

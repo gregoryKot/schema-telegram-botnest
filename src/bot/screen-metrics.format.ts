@@ -1,6 +1,7 @@
 // Блок «Настройка экранов «Профиль»/«Паттерны»» для /stats (правило №8).
 // Чистый форматтер, покрыт тестом (включая пустую БД). Язык — простой:
 // «открывали», «скрывают», без терминов и внутренних id.
+import { formatHomeTiles } from './home-tiles.format';
 
 export interface ScreenMetrics {
   /** За месяц: сколько раз открыли «Настроить экран», по экранам. */
@@ -15,6 +16,8 @@ export interface ScreenMetrics {
   movesByScreen: Array<{ screen: string; count: number }>;
   /** Всего: сколько юзеров хоть раз сохранили серверное зеркало настроек. */
   syncedUsers: number;
+  /** За месяц: нажатия плиток и ссылок на главной сайта, по плиткам. */
+  homeTiles: Array<{ tile: string; count: number }>;
 }
 
 // Человеческие подписи экранов и блоков — в отчёте не должно быть id.
@@ -124,5 +127,7 @@ export function formatScreenMetrics(m: ScreenMetrics): string {
   if (m.syncedUsers > 0) {
     out.push(`Настройки синхронизированы: ${m.syncedUsers} человек`);
   }
+  const tiles = formatHomeTiles(m.homeTiles);
+  if (tiles) out.push(tiles);
   return out.join('\n');
 }
