@@ -4,8 +4,12 @@
 import { useState } from 'react';
 import { TRACKER_ONBOARDING_KEY, TRACKER_ORIGIN_NOTE } from '../../../../shared/src/needs/trackerOnboarding';
 
+// Приватный режим: хранилища нет — строка покажется ещё раз, это не ошибка.
 const seen = (): boolean => {
   try { return !!localStorage.getItem(TRACKER_ONBOARDING_KEY); } catch { return false; }
+};
+const remember = (): void => {
+  try { localStorage.setItem(TRACKER_ONBOARDING_KEY, '1'); } catch { return; }
 };
 
 export function TrackerOriginNote({ eligible }: { eligible: boolean }) {
@@ -13,7 +17,7 @@ export function TrackerOriginNote({ eligible }: { eligible: boolean }) {
   const [open, setOpen] = useState(() => eligible && !seen());
   if (!open || !eligible) return null;
   const dismiss = () => {
-    try { localStorage.setItem(TRACKER_ONBOARDING_KEY, '1'); } catch { /* приватный режим: покажется ещё раз */ }
+    remember();
     setOpen(false);
   };
   return (
