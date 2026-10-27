@@ -84,11 +84,11 @@ export function TodaySection({
   return (
     <div className="ds-page ct-page">
       <header className="ct-head">
-        <div className="ct-head-text">
+        <div className="ct-head-top">
           <div className="ds-eyebrow">{formatGreetingDate()}</div>
-          <h1 className="ds-h1 ct-h1">{homeGreeting(firstName)}</h1>
+          <button type="button" className="ct-link ct-head-why" onClick={why.open}>Зачем это?</button>
         </div>
-        <button type="button" className="ct-link ct-head-why" onClick={why.open}>Зачем это?</button>
+        <h1 className="ds-h1 ct-h1">{homeGreeting(firstName)}</h1>
       </header>
 
       <HomeTiles

@@ -1,9 +1,11 @@
 /* Клиент · Сегодня (sections/TodaySection.tsx, sections/today/*). Префикс ct-.
    Одна колонка: шапка, три плитки, задания, лента дня. На десктопе — 600px. */
 .ct-page { max-width: 600px; gap: 24px; }
-.ct-head { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-12); }
-.ct-head-text { min-width: 0; }
-.ct-h1 { font-size: 34px; }
+/* Кнопка «Зачем это?» стоит в строке с датой, а не рядом с h1: иначе она
+   отнимает ширину у приветствия и «Привет, Имя» переносится на телефоне. */
+.ct-head { display: flex; flex-direction: column; gap: 4px; }
+.ct-head-top { display: flex; align-items: center; justify-content: space-between; gap: var(--space-12); }
+.ct-h1 { margin: 0; font-size: 34px; }
 .ct-link {
   min-height: 44px; padding: 0; display: inline-flex; align-items: center; background: none; border: 0;
   cursor: pointer; font: 600 14px var(--sans); color: var(--accent);
@@ -73,5 +75,5 @@
 
 @media (max-width: 767px) {
   .ct-tile { padding: 18px; }
-  .ct-head .ds-h1 { font-size: 34px; line-height: 1.08; }
+  .ct-h1 { line-height: 1.08; }
 }
