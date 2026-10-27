@@ -1,20 +1,9 @@
 import { isCalendarDate } from '../../../../shared/src/utils/calendarDate';
 
-// Чистые вычисления экрана «Сегодня»: дельта к вчера, индекс дня, типы
+// Чистые вычисления экрана «Сегодня»: индекс дня, типы
 // дневников, момент встречи. Лента дня и мета плиток — todayFeed.ts.
 
-// ── Потребности: дельта к вчера, индекс дня ─────────────────────────────────
-
-export interface DeltaView { text: string; up: boolean }
-
-/** Дельта оценки к вчера. Нет одной из оценок или разницы нет — нечего показывать. */
-export function deltaView(value: number | undefined, yesterday: number | undefined): DeltaView | null {
-  if (value === undefined || yesterday === undefined) return null;
-  const d = value - yesterday;
-  if (d === 0) return null;
-  const abs = Math.abs(d);
-  return { text: `${d > 0 ? '↑' : '↓'}${Number.isInteger(abs) ? abs : abs.toFixed(1)}`, up: d > 0 };
-}
+// ── Потребности: индекс дня ─────────────────────────────────
 
 /** Индекс дня — среднее по всем потребностям; пока не все оценены — null (не выдумываем число). */
 export function dayIndex(needIds: string[], ratings: Record<string, number>): number | null {

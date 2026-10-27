@@ -1,6 +1,4 @@
-import type { ReactNode } from 'react';
 import type { Need } from '../../types';
-import type { NeedExtra } from '../../needData';
 import type { StreakData } from '../../api';
 
 export interface Props {
@@ -12,25 +10,14 @@ export interface Props {
   onSaved: (needId: string, streak?: StreakData) => void;
   onClose: () => void;
   initialNeedId?: string | null;
+  /** «Заметка» на экране «Готово». */
   onOpenNote?: () => void;
+  /** Не используется с редизайна 2026-10 (кнопки «цель» в трекере нет); оставлен, пока AppShell его передаёт. */
   onOpenGoal?: () => void;
+  /** Открыть историю (экран «Готово», «История →»). */
   onOpenHistory?: () => void;
   yesterdayRatings?: Record<string, number>;
+  /** День бэкфилла (YYYY-MM-DD) из HistorySheet; нет — трекер за сегодня. */
   date?: string;
   onDone?: () => void;
-}
-
-/** Общие пропсы обеих раскладок (desktop / mobile). */
-export interface LayoutProps {
-  need: Need;
-  value: number;
-  needName: string;
-  extra: NeedExtra | undefined;
-  idx: number;
-  needsLength: number;
-  handleChange: (needId: string, v: number) => void;
-  setDetailNeed: (n: Need) => void;
-  yesterday?: number; // маркер на шкале (нет данных/бэкафилл — undefined)
-  delta?: { text: string; up: boolean } | null;
-  topbar: ReactNode; footer: ReactNode; steps: ReactNode; detailSheet: ReactNode; onboarding?: ReactNode;
 }

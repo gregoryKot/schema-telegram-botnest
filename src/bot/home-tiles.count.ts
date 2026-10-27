@@ -19,3 +19,13 @@ export async function countHomeTiles(
   );
   return HOME_TILES.map((tile, i) => ({ tile, count: counts[i] }));
 }
+
+/** «Пропустить» на вопросе трекера за период. Событие tracker_skip без meta. */
+export function countTrackerSkips(
+  prisma: PrismaService,
+  since: Date,
+): Promise<number> {
+  return prisma.analyticsEvent.count({
+    where: { name: 'tracker_skip', createdAt: { gte: since } },
+  });
+}

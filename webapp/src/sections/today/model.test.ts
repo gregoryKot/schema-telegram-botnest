@@ -1,20 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect } from 'vitest';
-import { deltaView, dayIndex, sessionMoment } from './model';
+import { dayIndex, sessionMoment } from './model';
 import { forEachTimeZone } from '../../../../shared/src/utils/timeZone.test-helpers';
-
-describe('deltaView', () => {
-  it('рост и падение со стрелкой, целые без дробной части', () => {
-    expect(deltaView(8, 5)).toEqual({ text: '↑3', up: true });
-    expect(deltaView(4, 6)).toEqual({ text: '↓2', up: false });
-    expect(deltaView(5.5, 5)).toEqual({ text: '↑0.5', up: true });
-  });
-  it('нет вчерашней или сегодняшней оценки, либо разницы — null', () => {
-    expect(deltaView(5, undefined)).toBeNull();
-    expect(deltaView(undefined, 5)).toBeNull();
-    expect(deltaView(5, 5)).toBeNull();
-  });
-});
 
 describe('dayIndex', () => {
   it('среднее, когда оценены все потребности', () => {

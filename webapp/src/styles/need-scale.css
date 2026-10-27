@@ -23,3 +23,23 @@
   .ns-seg { height: 16px; border-radius: 3px; }
   .ns-scale--lg .ns-seg { height: 32px; }
 }
+
+/* Вариант 'words': пять ответов во всю ширину, справа пять «пипсов» —
+   закрашено столько, сколько порядковый номер ответа, цветом потребности (--h). */
+.ns-words { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.ns-word {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  min-height: 56px; padding: 0 20px; border-radius: 18px; box-sizing: border-box;
+  background: var(--surface); border: 1px solid var(--line); color: var(--text);
+  font: 600 16px/1.2 var(--sans); text-align: left; cursor: pointer;
+}
+.ns-word:hover:not(.is-selected) { border-color: var(--line-strong); }
+.ns-word:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.ns-word.is-selected { background: var(--ink); border-color: var(--ink); color: var(--on-ink); }
+.ns-word-end { display: inline-flex; align-items: center; gap: 12px; flex-shrink: 0; }
+.ns-word-y { font-size: 12px; font-weight: 500; opacity: .65; }
+.ns-pips { display: inline-flex; gap: 4px; }
+.ns-pip { width: 8px; height: 8px; border-radius: 50%; background: var(--line-strong); }
+.ns-pip.is-on { background: oklch(0.58 0.12 var(--h)); }
+.ns-word.is-selected .ns-pip { background: color-mix(in srgb, var(--on-ink) 28%, transparent); }
+.ns-word.is-selected .ns-pip.is-on { background: oklch(0.78 0.13 var(--h)); }

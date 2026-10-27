@@ -37,6 +37,30 @@ describe('useRatingSaver', () => {
     expect(onSavedAt).toHaveBeenCalledOnce();
   });
 
+  // Автопереход трекера: «На главную» на экране «Готово» нажимают раньше 500 мс после
+  // последнего ответа — закрытие экрана не должно терять оценку.
+  it('закрытие экрана до конца debounce отправляет ждущую оценку, а не теряет её', async () => {
+    save.mockResolvedValue({ allDone: false });
+    const { result, unmount } = renderHook(() => useRatingSaver({ ...base }));
+    act(() => { result.current('play', 8); });
+    expect(save).not.toHaveBeenCalled();
+    unmount();
+    await act(async () => { await vi.advanceTimersByTimeAsync(0); });
+    expect(save).toHaveBeenCalledTimes(1);
+    expect(save).toHaveBeenCalledWith('play', 8);
+    await act(async () => { await vi.advanceTimersByTimeAsync(600); });
+    expect(save).toHaveBeenCalledTimes(1);
+  });
+
+  it('уже отправленная оценка при закрытии не уходит второй раз', async () => {
+    save.mockResolvedValue({ allDone: false });
+    const { result, unmount } = renderHook(() => useRatingSaver({ ...base }));
+    act(() => { result.current('play', 8); });
+    await flush();
+    unmount();
+    expect(save).toHaveBeenCalledTimes(1);
+  });
+
   it('стрик уходит наверх, когда оценены все потребности', async () => {
     const streak = { currentStreak: 3, totalDays: 5 };
     save.mockResolvedValue({ allDone: true, streak });

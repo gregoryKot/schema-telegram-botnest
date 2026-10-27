@@ -17,26 +17,45 @@ export function useRatingSaver({ date, isOffline = false, onSaved, onSavedAt, er
   section: string;
 }) {
   const timers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+  // Ждущие debounce значения: при закрытии экрана они уходят сразу, а не теряются —
+  // после автоперехода трекера «На главную» на экране «Готово» легко нажать раньше 500 мс.
+  const pending = useRef<Record<string, number>>({});
+  const latest = useRef({ date, onSaved, onSavedAt, errorMessage, section });
+  useEffect(() => {
+    latest.current = { date, onSaved, onSavedAt, errorMessage, section };
+  });
+
+  const send = useCallback(async (needId: string, value: number) => {
+    if (value === 0) return;
+    const c = latest.current;
+    try {
+      const res = c.date ? await api.saveRating(needId, value, c.date) : await api.saveRating(needId, value);
+      c.onSaved?.(needId, res.allDone ? res.streak : undefined);
+      c.onSavedAt?.();
+    } catch (e) {
+      // Сеть/5xx — в outbox (shared/api/ratingApi); сюда доходит только
+      // настоящая ошибка запроса (4xx) — она редкая, потому видимая.
+      console.error('saveRating failed', e);
+      reportClientError({ message: c.errorMessage, section: c.section });
+    }
+  }, []);
+
   useEffect(() => {
     const t = timers.current;
-    return () => Object.values(t).forEach(clearTimeout);
-  }, []);
+    const p = pending.current;
+    return () => {
+      Object.values(t).forEach(clearTimeout);
+      Object.entries(p).forEach(([needId, value]) => void send(needId, value));
+    };
+  }, [send]);
 
   return useCallback((needId: string, value: number) => {
     if (isOffline) return;
     clearTimeout(timers.current[needId]);
-    timers.current[needId] = setTimeout(async () => {
-      if (value === 0) return;
-      try {
-        const res = date ? await api.saveRating(needId, value, date) : await api.saveRating(needId, value);
-        onSaved?.(needId, res.allDone ? res.streak : undefined);
-        onSavedAt?.();
-      } catch (e) {
-        // Сеть/5xx — в outbox (shared/api/ratingApi); сюда доходит только
-        // настоящая ошибка запроса (4xx) — она редкая, потому видимая.
-        console.error('saveRating failed', e);
-        reportClientError({ message: errorMessage, section });
-      }
+    pending.current[needId] = value;
+    timers.current[needId] = setTimeout(() => {
+      delete pending.current[needId];
+      void send(needId, value);
     }, RATING_SAVE_DELAY_MS);
-  }, [date, isOffline, onSaved, onSavedAt, errorMessage, section]);
+  }, [isOffline, send]);
 }

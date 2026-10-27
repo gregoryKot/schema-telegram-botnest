@@ -61,4 +61,12 @@ describe('трипваер: HomeTile фронта и HOME_TILES бэка сов�
     expect(m).not.toBeNull();
     expect((HOME_EVENTS as readonly string[]).includes(m![1])).toBe(true);
   });
+
+  it('имя события пропуска на фронте (TRACKER_SKIP_EVENT) входит в HOME_EVENTS бэка', () => {
+    const m = readFrontend().match(
+      /TRACKER_SKIP_EVENT\s*=\s*['"]([a-z_]+)['"]/,
+    );
+    expect(m).not.toBeNull();
+    expect((HOME_EVENTS as readonly string[]).includes(m![1])).toBe(true);
+  });
 });

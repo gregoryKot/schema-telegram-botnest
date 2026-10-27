@@ -141,8 +141,9 @@
     `shared/src/therapy/conceptSnapshotRestore.ts`, мини-апп на нём же).
   - [x] офлайн-плашка на мобильной вёрстке (`OfflineBanner`) и повтор очереди
     оценок по `online` (`useOutboxFlushOnOnline`).
-  - [x] онбординг трекера, 3 карточки (`TrackerOnboarding`, контент —
-    `shared/src/needs/trackerOnboarding.ts`, мини-апп на нём же).
+  - [x] онбординг трекера, 3 карточки (контент —
+    `shared/src/needs/trackerOnboarding.ts`, мини-апп на нём же). Сайт с этапа 2
+    простого клиента показывает вместо карточек одну строку `TrackerOriginNote`.
   - [x] развёрнутое «О приложении» (`AboutWhy`, контент — `shared/src/about/aboutData.ts`).
 
 ### Этап 4. Ежедневные точки входа

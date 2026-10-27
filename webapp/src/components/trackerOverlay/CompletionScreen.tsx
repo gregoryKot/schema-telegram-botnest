@@ -1,6 +1,12 @@
 import type { Need } from '../../types';
 import { DayShareButton } from '../../share/DayShareButton';
+import { useNeedData } from '../../needData';
+import { formatDateString } from '../../../../shared/src/utils/calendarDate';
+import { fmtIndex } from '../../sections/today/todayFeed';
+import { DayBars } from './DayBars';
+import { lowestObservation, nextUnrated, summarizeDay } from './trackerFlow';
 
+/** Экран «Готово»: индекс дня, пять столбиков, одно наблюдение (если оценены все), куда дальше. */
 export function CompletionScreen({
   needs,
   effectiveRatings,
@@ -8,6 +14,9 @@ export function CompletionScreen({
   date,
   onDone,
   goBack,
+  onReview,
+  onOpenNote,
+  onOpenHistory,
 }: {
   needs: Need[];
   effectiveRatings: Record<string, number>;
@@ -16,24 +25,53 @@ export function CompletionScreen({
   date?: string;
   onDone?: () => void;
   goBack: () => void;
+  /** Вернуться к вопросам: «Поправить ответы» — к первому, «Дооценить» — к первому пустому. */
+  onReview: (idx: number) => void;
+  onOpenNote?: () => void;
+  onOpenHistory?: () => void;
 }) {
-  const allVals = needs.map((n) => effectiveRatings[n.id] ?? 0);
-  const avgIdx = allVals.reduce((a, b) => a + b, 0) / allVals.length;
+  const NEED_DATA = useNeedData();
+  const ids = needs.map((n) => n.id);
+  const { filled, total, index, lowestId } = summarizeDay(ids, effectiveRatings);
+  const complete = filled === total;
+  const nameOf = (n: Need) => NEED_DATA[n.id]?.name ?? n.chartLabel;
+  const lowest = needs.find((n) => n.id === lowestId);
+  const when = date ? formatDateString(date, { day: 'numeric', month: 'long' }) : 'сегодня';
+  const firstEmpty = nextUnrated(ids, effectiveRatings, -1, false);
+  const close = isBackfill ? (onDone ?? goBack) : goBack;
+
   return (
-    <div className="tk2-overlay tk2-done">
-      <div className="ds-card ds-card--ink tk2-done-card">
-        <div className="tk2-done-mark">✓</div>
-        <h2 className="ds-h2">Заполнено</h2>
-        <div>
-          <span className="ds-num tk2-done-idx">{avgIdx.toFixed(1)}</span>
-          <span className="tk2-done-unit">/10</span>
-        </div>
-        <div className="ds-label tk2-done-cap">индекс дня</div>
-        <div className="tk2-done-acts">
-          <button onClick={isBackfill ? (onDone ?? goBack) : goBack} className="ds-btn tk2-done-btn">
-            Готово
-          </button>
-          <DayShareButton needs={needs} ratings={effectiveRatings} date={date} />
+    <div className="tk2-overlay">
+      <div className="tq-body">
+        <div className="tq-inner tq-done">
+          <p className="tq-eyebrow">Трекер · {when}</p>
+          <div className="tq-index" aria-label={index === null ? 'Индекс дня не посчитан' : `Индекс дня ${fmtIndex(index)} из 10`}>
+            {index === null ? '—' : fmtIndex(index)}
+          </div>
+          <p className="tq-index-cap">индекс дня из 10</p>
+          {complete && lowest ? (
+            <p className="tq-obs">{lowestObservation(nameOf(lowest))}</p>
+          ) : (
+            <p className="tq-obs">Заполнено {filled} из {total} — остальное можно дооценить позже</p>
+          )}
+          <DayBars needs={needs} ratings={effectiveRatings} />
+          <div className="tq-acts">
+            <button type="button" className="tq-btn tq-btn--main" onClick={close}>
+              {isBackfill ? 'Готово' : 'На главную'}
+            </button>
+            <button type="button" className="tq-btn" onClick={() => onReview(complete ? 0 : (firstEmpty ?? 0))}>
+              {complete ? 'Поправить ответы' : 'Дооценить'}
+            </button>
+          </div>
+          <div className="tq-links">
+            {onOpenNote && !isBackfill && (
+              <button type="button" className="tq-link" onClick={onOpenNote}>Заметка</button>
+            )}
+            {onOpenHistory && (
+              <button type="button" className="tq-link" onClick={() => { onOpenHistory(); goBack(); }}>История →</button>
+            )}
+            <DayShareButton needs={needs} ratings={effectiveRatings} date={date} plain />
+          </div>
         </div>
       </div>
     </div>

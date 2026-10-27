@@ -22,3 +22,8 @@ export function formatHomeTiles(
     .map(([label, count]) => `${label} ${count}`);
   return parts.length > 0 ? `Главная: плитки — ${parts.join(', ')}` : null;
 }
+
+/** Строка «Трекер: пропусков N» или null, пока никто не нажимал «Пропустить». */
+export function formatTrackerSkips(count: number): string | null {
+  return count > 0 ? `Трекер: пропусков ${count}` : null;
+}
