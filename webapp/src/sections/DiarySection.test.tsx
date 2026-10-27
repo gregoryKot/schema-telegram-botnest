@@ -179,6 +179,12 @@ describe('DiarySection — сбой загрузки (сбой ≠ пусто)',
     renderSection();
     await screen.findByText('Видно несмотря на сбой');
     expect(screen.queryByRole('alert')).toBeNull();
+    // Сбой трекера ≠ «отметок нет»: об этом сказано, а «Повторить» перезапрашивает историю.
+    expect(screen.getByRole('status').textContent).toMatch(/Отметки трекера не загрузились/);
+    mockApi.history.mockResolvedValue([rated('2026-08-01', [8, 6, 7, 7, 8])]);
+    fireEvent.click(screen.getByRole('button', { name: 'Повторить' }));
+    await screen.findByText('Трекер — индекс 7,2');
+    expect(screen.queryByRole('status')).toBeNull();
   });
 });
 

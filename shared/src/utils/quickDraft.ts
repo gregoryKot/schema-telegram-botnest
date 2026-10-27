@@ -3,12 +3,14 @@
 // который потом превращается в запись схем, режимов или благодарности.
 export const QUICK_DRAFT_KEY = 'diary_draft_quick';
 
-export function saveQuickDraft(text: string) {
+/** Best-effort: хранилище может быть закрыто (приватное окно) — тогда false, экран работает без черновика. */
+export function saveQuickDraft(text: string): boolean {
   try {
     if (text.trim()) localStorage.setItem(QUICK_DRAFT_KEY, text);
     else localStorage.removeItem(QUICK_DRAFT_KEY);
+    return true;
   } catch {
-    /* best-effort: ошибку намеренно игнорируем */
+    return false;
   }
 }
 
@@ -20,10 +22,11 @@ export function loadQuickDraft(): string {
   }
 }
 
-export function clearQuickDraft() {
+export function clearQuickDraft(): boolean {
   try {
     localStorage.removeItem(QUICK_DRAFT_KEY);
+    return true;
   } catch {
-    /* best-effort */
+    return false;
   }
 }

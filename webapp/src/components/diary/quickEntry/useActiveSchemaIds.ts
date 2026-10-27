@@ -9,7 +9,7 @@ export function useActiveSchemaIds(enabled: boolean): string[] | undefined {
     let cancelled = false;
     api.getProfile()
       .then((p) => { if (!cancelled) setIds(p.ysq.activeSchemaIds); })
-      .catch(() => { /* профиль вспомогательный: без него просто показываем все схемы */ });
+      .catch(() => { if (!cancelled) setIds([]); }); // профиль вспомогательный: без него показываем все схемы
     return () => { cancelled = true; };
   }, [enabled, ids]);
   return ids;

@@ -37,6 +37,8 @@ export function DiarySection({ onClose: _onClose, onOpenTrackerHistory }: { onCl
   const [trackerDays,      setTrackerDays]      = useState<TrackerDay[]>([]);
   const [streak,           setStreak]           = useState(0);
   const [quickOpen,        setQuickOpen]        = useState(false);
+  // Сбой истории трекера ≠ «отметок нет»: строки трекера не появятся, и об этом говорим.
+  const [trackerFailed,    setTrackerFailed]    = useState(false);
   const [loading,          setLoading]          = useState(true);
   const [filter,           setFilter]           = useState<DiaryFilter>('all');
   const [newEntry,         setNewEntry]         = useState<DiaryType | null>(null);
@@ -44,13 +46,14 @@ export function DiarySection({ onClose: _onClose, onOpenTrackerHistory }: { onCl
   // Сбой ≠ пусто (пара к miniapp): предупреждение сверху, а не тихое [].
   const [loadFailed,       setLoadFailed]       = useState(false);
 
-  const load = useCallback(() =>
-    Promise.all([
+  const load = useCallback(() => {
+    setTrackerFailed(false);
+    return Promise.all([
       api.getSchemaDiary(),
       api.getModeDiary(),
       api.getGratitudeDiary(),
       api.getProfile().catch(() => null), // профиль и трекер вспомогательные, их отказ не «сбой дневника»
-      api.history(TRACKER_DAYS).catch(() => []),
+      api.history(TRACKER_DAYS).catch(() => { setTrackerFailed(true); return []; }),
     ]).then(([schema, mode, gratitude, profile, history]) => {
       setLoadFailed(false);
       setSchemaEntries(schema);
@@ -62,8 +65,8 @@ export function DiarySection({ onClose: _onClose, onOpenTrackerHistory }: { onCl
         setStreak(profile.streak);
       }
     }).catch((err) => { console.error(err); setLoadFailed(true); })
-      .finally(() => setLoading(false)),
-  []);
+      .finally(() => setLoading(false));
+  }, []);
 
   useEffect(() => { void load(); }, [load]);
 
@@ -154,6 +157,12 @@ export function DiarySection({ onClose: _onClose, onOpenTrackerHistory }: { onCl
           <DiaryShareButton emoji="📓" title="Мой дневник" color="var(--c-rose)" entries={[...schemaEntries, ...modeEntries, ...gratitudeEntries]} />
         )}
       </div>
+
+      {trackerFailed && !loadFailed && (
+        <p className="cd-streak" role="status">
+          Отметки трекера не загрузились. <button type="button" className="cd-retry" onClick={() => { void load(); }}>Повторить</button>
+        </p>
+      )}
 
       {loading && <DiaryTimelineSkeleton />}
 

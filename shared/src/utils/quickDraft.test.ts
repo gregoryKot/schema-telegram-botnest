@@ -51,7 +51,7 @@ describe('черновик «Дневника одной страницей»', 
       throw new Error('blocked');
     });
     expect(loadQuickDraft()).toBe('');
-    expect(() => saveQuickDraft('текст')).not.toThrow();
-    expect(() => clearQuickDraft()).not.toThrow();
+    expect(saveQuickDraft('текст')).toBe(false);
+    expect(clearQuickDraft()).toBe(false);
   });
 });
