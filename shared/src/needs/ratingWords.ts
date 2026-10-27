@@ -32,3 +32,22 @@ export function rangeCardIndex(v: number | null | undefined): number {
   const i = RATING_WORDS.indexOf(word);
   return i <= 1 ? 0 : i === 2 ? 1 : 2;
 }
+
+/**
+ * Подписи-якоря под словами шкалы из трёх диапазонов потребности (ranges):
+ * «Совсем нет» ← ranges[0], «Наполовину» ← ranges[1], «Полностью» ← ranges[2];
+ * «Мало» и «В основном да» стоят между якорями без подписи — иначе пять
+ * длинных строк съедают экран, а смысл шкалы задают три опоры.
+ */
+export function wordAnchorDescriptions(
+  ranges: readonly { description: string }[],
+): (string | undefined)[] {
+  const [low, mid, high] = ranges;
+  return [
+    low?.description,
+    undefined,
+    mid?.description,
+    undefined,
+    high?.description,
+  ];
+}

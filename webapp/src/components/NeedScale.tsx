@@ -21,13 +21,13 @@ interface Props {
   size?: 'md' | 'lg';
   /** Вчерашняя оценка — точка под сегментом (паритет с NeedRatingBar мини-аппа, В10 аудита 2026-08); в 'words' — пометка «вчера» на слове. */
   yesterday?: number;
-  variant?: 'ten' | 'words';
+  variant?: 'ten' | 'words'; sublabels?: (string | undefined)[]; // sublabels — только 'words': якоря «что означает ответ»
 }
 
 const SEGMENTS = Array.from({ length: NEED_SCALE_MAX }, (_, i) => i + 1);
 
-export function NeedScale({ value, hue, onChange, label, size = 'md', yesterday, variant = 'ten' }: Props) {
-  if (variant === 'words') return <WordScale value={value} hue={hue} onChange={onChange} label={label} yesterday={yesterday} />;
+export function NeedScale({ value, hue, onChange, label, size = 'md', yesterday, variant = 'ten', sublabels }: Props) {
+  if (variant === 'words') return <WordScale value={value} hue={hue} onChange={onChange} label={label} yesterday={yesterday} sublabels={sublabels} />;
   return (
     <div role="group" aria-label={label} className={`ns-scale ns-scale--${size}`} style={hueStyle(hue)}>
       {SEGMENTS.map(n => (
