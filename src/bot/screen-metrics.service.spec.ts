@@ -1,6 +1,7 @@
 // Агрегат настройки экранов: маппинг bigint→number, разбивка открытий по
 // экрану и скрытий по паре (экран, блок). Prisma мокается.
 import { ScreenMetricsService } from './screen-metrics.service';
+import { HOME_TILES } from '../analytics/home-events.constants';
 
 describe('ScreenMetricsService.getMetrics', () => {
   const build = (
@@ -15,8 +16,12 @@ describe('ScreenMetricsService.getMetrics', () => {
       .mockResolvedValueOnce(hidden)
       .mockResolvedValueOnce(moves)
       .mockResolvedValueOnce(synced);
-    const prisma = { $queryRaw: queryRaw } as never;
-    return { service: new ScreenMetricsService(prisma), queryRaw };
+    const count = jest.fn().mockResolvedValue(0);
+    const prisma = {
+      $queryRaw: queryRaw,
+      analyticsEvent: { count },
+    } as never;
+    return { service: new ScreenMetricsService(prisma), queryRaw, count };
   };
 
   it('собирает открытия по экрану и скрытия по (экран, блок)', async () => {
@@ -41,6 +46,7 @@ describe('ScreenMetricsService.getMetrics', () => {
       ],
       movesByScreen: [],
       syncedUsers: 0,
+      homeTiles: HOME_TILES.map((tile) => ({ tile, count: 0 })),
     });
   });
 
@@ -51,6 +57,7 @@ describe('ScreenMetricsService.getMetrics', () => {
       hiddenByScreenBlock: [],
       movesByScreen: [],
       syncedUsers: 0,
+      homeTiles: HOME_TILES.map((tile) => ({ tile, count: 0 })),
     });
   });
 
@@ -67,6 +74,7 @@ describe('ScreenMetricsService.getMetrics', () => {
       hiddenByScreenBlock: [],
       movesByScreen: [],
       syncedUsers: 0,
+      homeTiles: HOME_TILES.map((tile) => ({ tile, count: 0 })),
     });
   });
 
@@ -100,5 +108,22 @@ describe('ScreenMetricsService.getMetrics', () => {
     await expect(service.render()).resolves.toContain(
       'Профиль: открывали 5 раз',
     );
+  });
+
+  it('homeTiles — по счёту на каждую плитку из реестра, фильтр по JSON meta.tile', async () => {
+    const { service, count } = build([], []);
+    count.mockImplementation(
+      ({ where }: { where: { meta: { equals: string } } }) =>
+        Promise.resolve(where.meta.equals === 'diary' ? 7 : 0),
+    );
+    const m = await service.getMetrics();
+    expect(m.homeTiles).toHaveLength(HOME_TILES.length);
+    expect(m.homeTiles.find((t) => t.tile === 'diary')?.count).toBe(7);
+    expect(count).toHaveBeenCalledWith({
+      where: expect.objectContaining({
+        name: 'home_tile',
+        meta: { path: ['tile'], equals: 'tracker' },
+      }),
+    });
   });
 });

@@ -16,14 +16,15 @@ vi.mock('../api', () => ({
 }));
 import { api } from '../api';
 import { UiPrefsGate } from './UiPrefsGate';
-import { useTodayCustomization } from '../sections/today/useTodayCustomization';
+import { notifyPrefsChanged } from '../utils/uiPrefsSync';
+import { useTodayCustomization } from '../../../shared/src/today/useTodayCustomization';
 
 const getSettings = api.getSettings as unknown as ReturnType<typeof vi.fn>;
 const updateSettings = api.updateSettings as unknown as ReturnType<typeof vi.fn>;
 
-// «Сегодня» на сайте: серия показана или скрыта + кнопка, как у настоящего экрана.
+// Потребитель ключей кастомизации (общий хук с мини-аппом): серия показана или скрыта + кнопка.
 function TodayProbe() {
-  const t = useTodayCustomization();
+  const t = useTodayCustomization({ api, onChanged: notifyPrefsChanged });
   return (
     <div>
       <span data-testid="streak">{t.streakHidden ? 'hidden' : 'shown'}</span>

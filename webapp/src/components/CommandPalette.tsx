@@ -6,9 +6,9 @@ import type { TherapyClientSummary, UserId } from '../api';
 import { todayCalendarDate } from '../../../shared/src/utils/calendarDate';
 import { pressable } from '../utils/a11y';
 import { useDialogA11y } from '../../../shared/src/utils/dialogA11y';
+import type { Section } from './appShell/navigation';
 import '../styles/sheet-tasks.css';
 
-type Section = 'today' | 'diary' | 'schemas' | 'profile' | 'practice';
 
 interface Props {
   section: Section;
@@ -23,10 +23,11 @@ interface Props {
 
 const NAV_ITEMS: { id: Section; label: string; sub: string; hint: string }[] = [
   { id: 'today',   label: 'Сегодня',  sub: 'Главная',   hint: '⌘ 1' },
-  { id: 'diary',   label: 'Дневник',  sub: 'Записи',    hint: '⌘ 2' },
-  { id: 'schemas', label: 'Паттерны', sub: '20 схем',   hint: '⌘ 3' },
-  { id: 'profile', label: 'Профиль',  sub: 'Аккаунт',   hint: '⌘ 4' },
-  { id: 'practice', label: 'Практика', sub: 'Практики',  hint: '⌘ 5' },
+  { id: 'diary',   label: 'Записи',   sub: 'Дневники',  hint: '⌘ 2' },
+  { id: 'more',    label: 'Ещё',      sub: 'Всё остальное', hint: '⌘ 3' },
+  { id: 'schemas', label: 'Паттерны', sub: '20 схем',   hint: '' },
+  { id: 'profile', label: 'Профиль',  sub: 'Аккаунт',   hint: '' },
+  { id: 'practice', label: 'Практика', sub: 'Практики',  hint: '' },
 ];
 
 // ── Icons ──────────────────────────────────────────────────────────────────────

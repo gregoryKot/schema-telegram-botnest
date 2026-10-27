@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 // SharePillButton — примитив компактной кнопки «Поделиться», общий для
-// PhraseShareCard/DiaryShareButton/MonthShareButton (правило «одна механика
+// DiaryShareButton/MonthShareButton/ModeShareButton (правило «одна механика
 // — один компонент»).
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';

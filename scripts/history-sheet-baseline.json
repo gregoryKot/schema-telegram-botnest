@@ -87,10 +87,6 @@
     "reason": "Класс u-sheet здесь — обёртка вокруг ModeEx, который сам вызывает useHistorySheet (FlashcardEx.tsx:148); обёртка только позиционирует.",
     "since": "docs/AUDIT_2026-10_FINDINGS.md"
   },
-  "webapp/src/sections/today/FocusEntrySheet.tsx": {
-    "reason": "Класс u-sheet здесь — обёртка вокруг SchemaEntrySheet/ModeEntrySheet/GratitudeEntrySheet, которые сами вызывают useHistorySheet (SchemaEntrySheet.tsx:49, ModeEntrySheet.tsx:28, GratitudeEntrySheet.tsx:31); обёртка только позиционирует.",
-    "since": "docs/ONE_FRONTEND_PLAN.md"
-  },
   "webapp/src/sections/TodaySection.tsx": {
     "reason": "Класс u-sheet здесь — обёртка вокруг ModeEx/SchemaEx, которые сами вызывают useHistorySheet (FlashcardEx.tsx:93, :148); обёртка только позиционирует.",
     "since": "docs/AUDIT_2026-10_FINDINGS.md"
