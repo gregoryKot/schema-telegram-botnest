@@ -13,7 +13,7 @@
 - **Каталоги:**
   - `webapp/src/pages/` — страницы-роуты (`LoginPage`, `AccountPage`, `AdminPage` (lazy), `Booking*`, `Donate`, `Subscribe`, `Articles`, `LandingPage` и `ProductLandingPage`; подпапки `tests/`, `login/`, `admin/` и т.д.).
   - `webapp/src/sections/` — экраны кабинета: `Today`, `Diary`, `More`, `Schemas`, `Practice`, `Profile`, `TherapistToday` (+ подпапки).
-  - `webapp/src/components/` — весь остальной UI: шторки и оверлеи, `Dialog`, `Skeleton`, `booking/`, `therapist/`, `modeMap*`, `landing-kit.tsx`, `appShell/`.
+  - `webapp/src/components/` — весь остальной UI: шторки и оверлеи, `Dialog`, `Skeleton`, `booking/`, `therapist/`, `modeMap*`, `landing-kit.tsx`, `appShell/`, `therapy/` (мост к терапевту клиента: `TherapyLine`, `TalkSheet`, `TherapyNudgeCard`; логика — `shared/src/therapy/bridge/`).
   - `webapp/src/hooks/` — `useHistorySheet`, `useHostBackButton`, `useHostShell`, `useHostSafeTop`, `useAsyncData`, `useQuizRunner`, `useGoogleOneTap` (окно «Продолжить как…», только на экране входа; скрипт Google грузит `gsiScript.ts`, client id — `ARG VITE_GOOGLE_CLIENT_ID` в `Dockerfile`, сверка `src/test-support/gates/google-one-tap-build.spec.ts`), `useIsOffline`, `useOutboxFlushOnOnline`.
   - `webapp/src/utils/` — `addressForm.ts`, `AddressFormProvider.tsx`, `apiBase.ts`, `domainChrome.ts`, `theme.ts`, `uiPrefsSync.ts`, `chunkReload.ts`; часть файлов — реэкспорты из shared.
   - `webapp/src/auth/` — `AuthProvider`, `authContext`, `refreshSession` (refresh-кука и кросс-табный замок), `telegramWebAppAuth`, `loginConsent`, `clearLocalData`.
@@ -103,7 +103,7 @@
 |---|---|
 | `shared/src/about/` | тексты «Зачем это всё» и пяти потребностей |
 | `shared/src/account/` | ссылки аккаунтов, удаление с TOTP, экспорт данных |
-| `shared/src/analytics/` | трекинг показа кризисной карточки |
+| `shared/src/analytics/` | трекинг показа кризисной карточки; константы событий (`homeTile.ts`, `therapyNudge.ts` — «мост к терапевту») |
 | `shared/src/api/` | фабрики api, кеш GET, разбор ответов и ошибок |
 | `shared/src/auth/` | refresh сессии, кросс-табный замок, владелец данных, тикет входа |
 | `shared/src/booking/` | часовой пояс клиента, канал связи, региональная цена |
@@ -121,7 +121,7 @@
 | `shared/src/map/` | «Карта себя»: вью-модель и входы |
 | `shared/src/mode/` | режимы: карточки, тест, подсказки, пояснения потоков |
 | `shared/src/modeMap/` | контуры фигур карты режимов |
-| `shared/src/needs/` | тексты и цвета пяти потребностей (`needData`) |
+| `shared/src/needs/` | тексты и цвета пяти потребностей (`needData`), индекс дня (`dayIndex.ts` — одна формула для главной, трекера и сигнала моста) |
 | `shared/src/notes/` | типы карточек-заметок схем и режимов |
 | `shared/src/onboarding/` | согласия первого входа, пояснения онбординга |
 | `shared/src/pair/` | механика «пара»: тексты, вью, карточка партнёра |
@@ -141,7 +141,7 @@
 | `shared/src/tasks/` | `taskProgress`: прогресс стрик-задач; `taskTitle`: название задания по `type`/`text` (id схемы/режима → «Карточка режима: …») — единственный резолвер обеих площадок и обеих сторон |
 | `shared/src/test-support/` | `rtlCleanup`, `settleUnmountTimers` для тестов |
 | `shared/src/theme/` | `tokens.css`, `fonts.css`, `utilities.css` |
-| `shared/src/therapy/` | кабинет терапевта: join, заметки, концептуализация, `conceptGraph`, `upcomingSession` (ближайшая сессия клиента: прошедшая `nextSession` → ближайший день встреч; кабинет терапевта и «Встреча с терапевтом» у клиента — `today/TodayAside`, баннер «Практик», `profile/TherapistCard`, `helpSection/NextSessionBanner`) |
+| `shared/src/therapy/` | `bridge/` — «мост к терапевту» клиента (`therapySignal`, `therapyBridgeLinks`, `therapyBridgeTexts`, `therapyBridgeState`); кабинет терапевта: join, заметки, концептуализация, `conceptGraph`, `upcomingSession` (ближайшая сессия клиента: прошедшая `nextSession` → ближайший день встреч; кабинет терапевта и «Встреча с терапевтом» у клиента — `today/TodayAside`, баннер «Практик», `profile/TherapistCard`, `helpSection/NextSessionBanner`) |
 | `shared/src/today/` | блоки «Сегодня», фокус, кастомизация |
 | `shared/src/utils/` | addressForm(+Cache), format, storageKeys, crisisMarkers, drafts, a11y |
 | `shared/src/warmWords/` | «Тёплые слова»: сбор и хук |

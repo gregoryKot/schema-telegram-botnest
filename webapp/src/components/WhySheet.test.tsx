@@ -29,6 +29,7 @@ describe('WhySheet', () => {
     expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Три вещи, которые здесь можно делать');
     for (const t of ['Трекер', 'Что случилось', 'Дневник']) expect(screen.getByText(t)).toBeTruthy();
     expect(screen.getByText('Не нужно делать всё. Одно действие в день — уже работа.')).toBeTruthy();
+    expect(screen.getByText(/^Это самопомощь, не замена терапии\. Если станет тяжело подолгу, приложение само предложит поговорить с автором приложения, который работает в подходе схема-терапия\.$/)).toBeTruthy();
     const lead = document.querySelector('.cw-lead')!.textContent!;
     expect(lead.replace(/\s+/g, ' ')).toBe(
       'Всё строится на схема-терапии: у человека есть пять базовых потребностей — привязанность, автономия, '

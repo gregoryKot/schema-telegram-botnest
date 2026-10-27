@@ -13,6 +13,7 @@ import { DataExportMetricsService } from './data-export-metrics.service';
 import { EntryDeleteMetricsService } from './entry-delete-metrics.service';
 import { GameMetricsService } from './game-metrics.service';
 import { IntroLeadMetricsService } from './intro-lead-metrics.service';
+import { TherapyNudgeMetricsService } from './therapy-nudge-metrics.service';
 import { LoginTicketMetricsService } from './login-ticket-metrics.service';
 import { ModeCardMetricsService } from './mode-card-metrics.service';
 import { ModeDiaryMetricsService } from './mode-diary-metrics.service';
@@ -43,6 +44,7 @@ export const INTERNAL_PROVIDERS = [
   EntryDeleteMetricsService,
   GameMetricsService,
   IntroLeadMetricsService,
+  TherapyNudgeMetricsService,
   LoginTicketMetricsService,
   ModeCardMetricsService,
   ModeDiaryMetricsService,

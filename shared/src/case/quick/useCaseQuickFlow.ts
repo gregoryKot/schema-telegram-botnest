@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { haptic } from '../../host/haptic';
 import { useTr } from '../../utils/addressForm';
 import { detectCrisisAny } from '../../utils/crisisMarkers';
+import { noteCrisisSeen } from '../../therapy/bridge/therapyBridgeState';
 import { CASE_BODY_CHIPS } from '../caseBodyChips';
 import { CASE_IMPULSES } from '../caseImpulses';
 import {
@@ -116,6 +117,11 @@ export function useCaseQuickFlow(
     fields.bodyOwn,
     fields.impulseOwn,
   );
+
+  // След тяжёлого дня: поднимает на главной карточку «поговорить с кем-то» на неделю.
+  useEffect(() => {
+    if (crisis) noteCrisisSeen();
+  }, [crisis]);
 
   const goStep = (next: CaseQuickStep) => {
     haptic.tap();

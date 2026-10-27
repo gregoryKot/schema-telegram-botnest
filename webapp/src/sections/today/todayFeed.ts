@@ -1,6 +1,7 @@
 import { fmtAgo, momentIsToday, momentTime } from '../../utils/format';
 import { pluralRu } from '../../../../shared/src/utils/pluralRu';
-import { dayIndex, type DiaryKind } from './model';
+import { dayIndex } from '../../../../shared/src/needs/dayIndex';
+import type { DiaryKind } from './model';
 
 // Чистые вычисления главной «Сегодня»: лента дня и мета-строки трёх плиток.
 // Только реальные данные: нет оценок и записей — нет и строк.

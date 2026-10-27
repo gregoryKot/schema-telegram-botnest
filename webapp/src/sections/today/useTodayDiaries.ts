@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api, reportClientError } from '../../api';
+import type { ModeDiaryEntry } from '../../../../shared/src/types';
 import { buildDiaryFeed, casesTodayCount, lastEntryAt, type FeedEntry } from './todayFeed';
 
 interface DiariesState {
@@ -8,8 +9,10 @@ interface DiariesState {
   /** Разборов «Что случилось» за сегодня (записи режимов с fromCase). */
   casesToday: number;
   lastAt: string | null;
+  /** Все записи дневника режимов — сигнал моста к терапевту считает повторы. */
+  modeEntries: ModeDiaryEntry[];
 }
-const EMPTY: DiariesState = { feed: [], casesToday: 0, lastAt: null };
+const EMPTY: DiariesState = { feed: [], casesToday: 0, lastAt: null, modeEntries: [] };
 
 // Три дневника главной «Сегодня»: записи за сегодня для ленты, счётчики для
 // плиток. reloadDiaries перечитывает их после разбора, не сбрасывая профиль и
@@ -37,6 +40,7 @@ export function useTodayDiaries(refreshKey: number | undefined) {
           feed: buildDiaryFeed(src),
           casesToday: casesTodayCount(src),
           lastAt: lastEntryAt(src),
+          modeEntries: mode,
         });
       })
       .catch(() => reportClientError({ message: 'today diaries background load failed', section: 'today' }))

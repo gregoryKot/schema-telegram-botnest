@@ -2,6 +2,8 @@ import type { Need } from '../../types';
 import { DayShareButton } from '../../share/DayShareButton';
 import { useNeedData } from '../../needData';
 import { formatDateString } from '../../../../shared/src/utils/calendarDate';
+import { TherapyLine } from '../therapy/TherapyLine';
+import { useTherapyBridgeTexts } from '../therapy/useTherapyBridgeTexts';
 import { DayBars } from './DayBars';
 import { completionHeadline, lowestObservation, nextUnrated, summarizeDay } from './trackerFlow';
 
@@ -30,6 +32,7 @@ export function CompletionScreen({
   onOpenHistory?: () => void;
 }) {
   const NEED_DATA = useNeedData();
+  const bridge = useTherapyBridgeTexts();
   const ids = needs.map((n) => n.id);
   const { filled, total, index, lowestId } = summarizeDay(ids, effectiveRatings);
   const complete = filled === total;
@@ -70,6 +73,10 @@ export function CompletionScreen({
             )}
             <DayShareButton needs={needs} ratings={effectiveRatings} date={date} plain />
           </div>
+          <TherapyLine
+            place="tracker_done"
+            text={index !== null && index <= 4 ? bridge.lineTrackerLow : bridge.lineTracker}
+          />
         </div>
       </div>
     </div>

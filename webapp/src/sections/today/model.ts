@@ -1,15 +1,7 @@
 import { isCalendarDate } from '../../../../shared/src/utils/calendarDate';
 
-// Чистые вычисления экрана «Сегодня»: индекс дня, типы
-// дневников, момент встречи. Лента дня и мета плиток — todayFeed.ts.
-
-// ── Потребности: индекс дня ─────────────────────────────────
-
-/** Индекс дня — среднее по всем потребностям; пока не все оценены — null (не выдумываем число). */
-export function dayIndex(needIds: string[], ratings: Record<string, number>): number | null {
-  if (needIds.length === 0 || needIds.some(id => ratings[id] === undefined)) return null;
-  return needIds.reduce((s, id) => s + ratings[id], 0) / needIds.length;
-}
+// Чистые вычисления экрана «Сегодня»: типы дневников, момент встречи.
+// Индекс дня — shared/src/needs/dayIndex.ts; лента дня и мета плиток — todayFeed.ts.
 
 export type DiaryKind = 'schema' | 'mode' | 'gratitude';
 

@@ -177,6 +177,12 @@ const BACKEND_ONLY: Record<string, string> = {
     'api.trackEvent(DIARY_QUICK_SAVE_EVENT, { tag, detailed }) после ' +
     'сохранения записи «Дневника одной страницей» (простой клиент, ' +
     'этап 3); тот же приём, что у home_tile',
+  therapy_nudge:
+    'шлётся через импортируемую константу THERAPY_NUDGE_EVENT (shared/), ' +
+    'не строковым литералом — строки «это самопомощь, не замена терапии» ' +
+    'внизу экранов-итогов, карточка по сигналу на главной и лист «Поговорить ' +
+    'с кем-то» зовут api.trackEvent(THERAPY_NUDGE_EVENT, { place, action, ' +
+    'trigger? }) (мост к терапевту); тот же приём, что у home_tile',
   entry_deleted:
     'шлётся через импортируемую константу ENTRY_DELETED_EVENT ' +
     '(shared/src/share/analytics.ts), не строковым литералом — общий хук ' +
@@ -262,6 +268,7 @@ describe('трипваер: имена событий фронта ⊆ allow-lis
     // событие, как entry_deleted.
     // 33 — tracker_skip (2026-10, простой клиент, этап 2): тоже константа.
     // 34 — diary_quick_save (2026-10, простой клиент, этап 3): тоже константа.
-    expect(Object.keys(BACKEND_ONLY).length).toBeLessThanOrEqual(34);
+    // 35 — therapy_nudge (2026-10, мост к терапевту): тоже константа.
+    expect(Object.keys(BACKEND_ONLY).length).toBeLessThanOrEqual(35);
   });
 });

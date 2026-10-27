@@ -7,6 +7,7 @@ import {
   appendGratitudeItem, modeEntryInput, quickSaveTag, schemaEntryInput, type QuickTag,
 } from './quickEntryModel';
 import { detectCrisisAny } from '../../../utils/crisisMarkers';
+import { noteCrisisSeen } from '../../../../../shared/src/therapy/bridge/therapyBridgeState';
 import { trackQuickSave } from './trackQuickSave';
 
 export type QuickStage = 'write' | 'schema' | 'mode' | 'done';
@@ -30,7 +31,9 @@ export function useQuickEntry(onSaved?: () => void) {
   useEffect(() => { saveQuickDraft(text); }, [text]);
 
   const finish = (savedTag: QuickTag, detailed: boolean) => {
-    setCrisis(detectCrisisAny(text));
+    const hasCrisis = detectCrisisAny(text);
+    setCrisis(hasCrisis);
+    if (hasCrisis) noteCrisisSeen();
     clearQuickDraft();
     setText('');
     trackQuickSave(savedTag, detailed);

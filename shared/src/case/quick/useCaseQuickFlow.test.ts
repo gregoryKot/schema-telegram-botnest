@@ -184,6 +184,14 @@ describe('useCaseQuickFlow — «Своё…» и ворота', () => {
     act(() => h.result.current.patch({ scene: 'не хочу жить' }));
     expect(h.result.current.crisis).toBe(true);
   });
+
+  it('кризисный текст оставляет след для моста к терапевту; обычный — нет', () => {
+    const h = setup();
+    act(() => h.result.current.patch({ scene: 'Тишина в ответ' }));
+    expect(localStorage.getItem('therapy_crisis_seen_at')).toBeNull();
+    act(() => h.result.current.patch({ scene: 'не хочу жить' }));
+    expect(localStorage.getItem('therapy_crisis_seen_at')).not.toBeNull();
+  });
 });
 
 describe('useCaseQuickFlow — черновик', () => {

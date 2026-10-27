@@ -1,7 +1,7 @@
 // Чистая логика трекера «один вопрос на экран»: куда идти после ответа и
 // «Пропустить», что показать на экране «Готово». Тестируется отдельно от React.
 import { NEED_ORDER } from '../../../../shared/src/needs/types';
-import { dayIndex } from '../../sections/today/model';
+import { dayIndex } from '../../../../shared/src/needs/dayIndex';
 import { fmtIndex } from '../../sections/today/todayFeed';
 
 type Ratings = Record<string, number>;

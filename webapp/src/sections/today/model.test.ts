@@ -1,15 +1,18 @@
 // @vitest-environment jsdom
 import { describe, it, expect } from 'vitest';
-import { dayIndex, sessionMoment } from './model';
+import { sessionMoment } from './model';
+import { dayIndex as sharedDayIndex } from '../../../../shared/src/needs/dayIndex';
+import { trackerSummary } from './todayFeed';
+import { summarizeDay } from '../../components/trackerOverlay/trackerFlow';
 import { forEachTimeZone } from '../../../../shared/src/utils/timeZone.test-helpers';
 
-describe('dayIndex', () => {
-  it('среднее, когда оценены все потребности', () => {
-    expect(dayIndex(['a', 'b'], { a: 4, b: 7 })).toBe(5.5);
-  });
-  it('не все оценены или потребностей нет — null', () => {
-    expect(dayIndex(['a', 'b'], { a: 4 })).toBeNull();
-    expect(dayIndex([], {})).toBeNull();
+describe('индекс дня: паритет с shared/needs/dayIndex', () => {
+  it('главная, экран «Готово» трекера и общий модуль считают одну формулу', () => {
+    const ids = ['a', 'b', 'c'];
+    const ratings = { a: 3, b: 4, c: 8 };
+    expect(summarizeDay(ids, ratings).index).toBe(sharedDayIndex(ids, ratings));
+    expect(trackerSummary(ids, ratings).index).toBe(sharedDayIndex(ids, ratings));
+    expect(trackerSummary(ids, { a: 3 }).index).toBe(sharedDayIndex(ids, { a: 3 }));
   });
 });
 

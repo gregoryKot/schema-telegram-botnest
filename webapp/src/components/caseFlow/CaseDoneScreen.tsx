@@ -1,4 +1,6 @@
 import { ExScreen } from '../exercises/ExScreen';
+import { TherapyLine } from '../therapy/TherapyLine';
+import { useTherapyBridgeTexts } from '../therapy/useTherapyBridgeTexts';
 
 /** «Записано»: итог потока. Без примет — их нечем заполнить, пока разбор один. */
 export function CaseDoneScreen({
@@ -10,6 +12,7 @@ export function CaseDoneScreen({
   onOpenMap: () => void;
   onClose: () => void;
 }) {
+  const bridge = useTherapyBridgeTexts();
   return (
     <ExScreen
       onBack={onClose}
@@ -28,6 +31,7 @@ export function CaseDoneScreen({
           Карта себя
         </button>
       </div>
+      <TherapyLine place="case_done" text={bridge.lineCase} />
     </ExScreen>
   );
 }
