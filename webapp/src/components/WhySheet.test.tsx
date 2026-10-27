@@ -1,12 +1,10 @@
 // @vitest-environment jsdom
-// «Зачем это всё»: подпись по способу открытия, три действия, переиспользованные
-// тексты про потребности, «Понятно, начнём» закрывает лист.
+// «Зачем это всё»: подпись по способу открытия, три действия, короткое
+// вступление про пять потребностей, «Понятно, начнём» закрывает лист.
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup, act } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { WhySheet } from './WhySheet';
-import { TRACKER_ORIGIN_NOTE } from '../../../shared/src/needs/trackerOnboarding';
-import { NEEDS_EXPLAINER } from '../../../shared/src/about/aboutData';
 
 afterEach(cleanup);
 
@@ -26,14 +24,17 @@ describe('WhySheet', () => {
     expect(screen.queryByText('Первый раз здесь')).toBeNull();
   });
 
-  it('три действия, итоговая строка и тексты про потребности из общих источников', () => {
+  it('три действия, итоговая строка и короткое вступление про пять потребностей', () => {
     renderSheet();
     expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Три вещи, которые здесь можно делать');
     for (const t of ['Трекер', 'Что случилось', 'Дневник']) expect(screen.getByText(t)).toBeTruthy();
     expect(screen.getByText('Не нужно делать всё. Одно действие в день — уже работа.')).toBeTruthy();
     const lead = document.querySelector('.cw-lead')!.textContent!;
-    expect(lead).toContain(TRACKER_ORIGIN_NOTE);
-    for (const n of NEEDS_EXPLAINER) expect(lead).toContain(n.name.toLowerCase());
+    expect(lead.replace(/\s+/g, ' ')).toBe(
+      'Всё строится на схема-терапии: у человека есть пять базовых потребностей — привязанность, автономия, '
+      + 'выражение чувств, спонтанность, границы. Когда их долго не хватает, включаются старые паттерны. '
+      + 'Приложение помогает это замечать.',
+    );
   });
 
   it('это диалог на весь экран', () => {

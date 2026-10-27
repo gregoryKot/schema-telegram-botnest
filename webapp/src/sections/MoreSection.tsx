@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { Section } from '../components/appShell/navigation';
 import { JourneySheet } from '../components/JourneySheet';
 import { WhySheet } from '../components/WhySheet';
+import { trackHomeTile } from './today/trackHomeTile';
 import '../styles/client-more.css';
 
 interface Props {
@@ -21,17 +22,16 @@ export function MoreSection({ onNavigate, onOpenSchema, onOpenAdvanced, userRole
   const [journey, setJourney] = useState(false);
 
   const rows: Row[] = [
-    { id: 'why', title: 'Зачем это всё', sub: 'Откуда это и что даёт каждое действие', onClick: () => setWhy(true) },
+    { id: 'why', title: 'Зачем это всё', sub: 'Откуда это и что даёт каждое действие', onClick: () => { trackHomeTile('why'); setWhy(true); } },
     { id: 'schemas', title: 'Мои паттерны', sub: 'Схемы и режимы', onClick: () => onNavigate('schemas') },
     { id: 'practice', title: 'Практики', sub: 'Дыхание, упражнения, планы', onClick: () => onNavigate('practice') },
     { id: 'journey', title: 'Мой путь', sub: 'Всё, что уже собрано', onClick: () => setJourney(true) },
-    { id: 'therapist', title: 'Терапевт', sub: 'Связь и ближайшая встреча', onClick: () => onNavigate('profile') },
     ...(userRole === 'THERAPIST' && onOpenTherapistCabinet
       ? [{ id: 'cabinet', title: 'Кабинет терапевта', sub: 'Клиенты и сессии', onClick: onOpenTherapistCabinet }]
       : []),
     { id: 'test', title: 'Тест на схемы', sub: 'Какие схемы откликаются', onClick: () => onOpenSchema({ startTest: true }) },
     { id: 'settings', title: 'Настройки', sub: 'Напоминания, обращение, данные', onClick: onOpenAdvanced },
-    { id: 'profile', title: 'Профиль', sub: 'Имя, аккаунт, данные', onClick: () => onNavigate('profile') },
+    { id: 'profile', title: 'Профиль', sub: 'Портрет, терапевт, ближайшая встреча', onClick: () => onNavigate('profile') },
   ];
 
   return (

@@ -45,13 +45,11 @@ syncMotionAttr();
 
 // Три вкладки (редизайн 2026-10, docs/design/CLIENT_SIMPLE_2026-10.md):
 // «Паттерны», «Практика» и «Профиль» открываются из «Ещё» и по прямому URL.
-// Профиль на десктопе доступен ещё и из аккаунт-блока внизу сайдбара.
 const NAV_ITEMS: { id: Section; label: string }[] = [
   { id: 'today', label: 'Сегодня' },
   { id: 'diary', label: 'Записи' },
   { id: 'more',  label: 'Ещё' },
 ];
-const SIDEBAR_NAV_ITEMS = NAV_ITEMS;
 
 export function AppShell() {
   const { logout } = useAuth();
@@ -244,7 +242,7 @@ export function AppShell() {
         )}
 
         <nav className="sb-nav">
-          {!therapistMode && SIDEBAR_NAV_ITEMS.map(item => (
+          {!therapistMode && NAV_ITEMS.map(item => (
             <NavLink key={item.id} to={'/' + item.id}
                      className={({ isActive }) => `sb-item${isActive ? ' is-active' : ''}`}>
               <span className="sb-dot" style={hueStyle(SECTION_HUE[item.id])} />{item.label}
@@ -466,7 +464,7 @@ export function AppShell() {
       {/* ── Mobile bottom nav ──────────────────────────────────────────────── */}
       <MobileNav items={NAV_ITEMS} therapist={therapistMode} onSearch={() => ov.setCmdOpen(true)} />
 
-      <QuickActions ov={ov} showButton={!therapistMode} />
+      <QuickActions ov={ov} showButton={!therapistMode && section === 'diary'} />
       {/* ── Command palette ─────────────────────────────────────────────────── */}
       {ov.cmdOpen && (
         <CommandPalette

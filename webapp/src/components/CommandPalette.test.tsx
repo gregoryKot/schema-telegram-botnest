@@ -44,7 +44,7 @@ describe('CommandPalette — диалог (К4)', () => {
 describe('CommandPalette — навигация', () => {
   it('без ввода показывает все пункты навигации клиента', () => {
     renderPalette();
-    for (const label of ['Сегодня', 'Дневник', 'Ещё', 'Паттерны', 'Профиль', 'Практика']) {
+    for (const label of ['Сегодня', 'Записи', 'Ещё', 'Паттерны', 'Профиль', 'Практика']) {
       expect(screen.getByText(label)).toBeTruthy();
     }
   });
@@ -53,14 +53,14 @@ describe('CommandPalette — навигация', () => {
     const onNavigate = vi.fn();
     const onClose = vi.fn();
     renderPalette({ onNavigate, onClose });
-    fireEvent.click(screen.getByText('Дневник'));
+    fireEvent.click(screen.getByText('Записи'));
     expect(onNavigate).toHaveBeenCalledWith('diary');
     expect(onClose).toHaveBeenCalled();
   });
 
   it('в режиме кабинета терапевта (therapistMode) навигация клиента скрыта', () => {
     renderPalette({ therapistMode: true, userRole: 'THERAPIST' });
-    expect(screen.queryByText('Дневник')).toBeNull();
+    expect(screen.queryByText('Записи')).toBeNull();
   });
 });
 
@@ -68,7 +68,7 @@ describe('CommandPalette — поиск', () => {
   it('фильтрует пункты по подстроке запроса (регистронезависимо)', () => {
     renderPalette();
     fireEvent.change(screen.getByPlaceholderText('Найти клиента, страницу или действие…'), { target: { value: 'дневник' } });
-    expect(screen.getByText('Дневник')).toBeTruthy();
+    expect(screen.getByText('Записи')).toBeTruthy();
     expect(screen.queryByText('Сегодня')).toBeNull();
   });
 

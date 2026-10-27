@@ -152,13 +152,15 @@
   (ключи localStorage прежние), сайт — `webapp/src/sections/today/`
   (`TodayFocusBlock`, `TodayFocusCard`, `FocusPicker`, `FocusEntrySheet`,
   `useTodayFocusPrefs`); скрытие серии — `StreakSlot` в `TodayAside.tsx`.
+  С #872 эти компоненты с главной сайта убраны (главная — три плитки и лента
+  дня, см. `docs/open/frontend-ux.md`); «Фокус дня» остался в мини-аппе.
 - [x] Быстрые действия «+» на телефоне. Реестр, ключи настройки и порядок
   переехали в `shared/src/quickActions/` (мини-апп берёт оттуда же; общее
   состояние листа — `usePlusMenuState`). Сайт: кнопка и лист —
   `webapp/src/components/quickActions/{PlusButton,PlusMenuSheet,QuickActions}.tsx`,
   оверлеи действий — `QuickActionOverlays.tsx` (состояние в `useOverlays`:
   `quickAction`, `runQuickAction`), разбор ⇄ карта — общий
-  `caseFlow/CaseFlowHost.tsx` (им же пользуется `CaseEntryBlock`), настройка
+  `caseFlow/CaseFlowHost.tsx` (на сайте его открывает плитка «Что случилось» в `TodaySection`; `CaseEntryBlock` убран в #872), настройка
   видимости — `QuickActionCustomizeSheet.tsx` (те же ключи localStorage).
   Палитра ⌘K показывает те же действия строками. Аналитика — прежние
   `plus_open`/`plus_action`/`quick_action_toggle`. Не сделано: перестановка

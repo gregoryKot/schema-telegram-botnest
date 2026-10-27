@@ -468,8 +468,8 @@ describe('AppShell — командная палитра: переход к кл
 
 describe('AppShell — кнопка «+» быстрых действий', () => {
   it('в клиентском режиме «+» открывает лист, строка «Трекер потребностей» открывает трекер и закрывает лист', async () => {
-    renderAppShell('/today');
-    await waitFor(() => expect(screen.getByTestId('today-section')).toBeTruthy());
+    renderAppShell('/diary');
+    await waitFor(() => expect(screen.getByTestId('diary-section')).toBeTruthy());
     fireEvent.click(screen.getByRole('button', { name: 'Быстрое действие' }));
     fireEvent.click(await screen.findByRole('button', { name: /Трекер потребностей/ }));
     await waitFor(() => expect(screen.getByTestId('tracker-overlay')).toBeTruthy());

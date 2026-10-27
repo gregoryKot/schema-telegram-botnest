@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api, reportClientError } from '../../api';
-import { momentIsToday } from '../../utils/format';
 import { buildDiaryFeed, lastEntryAt, type FeedEntry } from './todayFeed';
 
 interface DiariesState {
@@ -8,10 +7,9 @@ interface DiariesState {
   feed: FeedEntry[];
   /** Всего разборов «Что случилось» (они пишутся в дневник режимов). */
   caseCount: number;
-  caseToday: number;
   lastAt: string | null;
 }
-const EMPTY: DiariesState = { feed: [], caseCount: 0, caseToday: 0, lastAt: null };
+const EMPTY: DiariesState = { feed: [], caseCount: 0, lastAt: null };
 
 // Три дневника главной «Сегодня»: записи за сегодня для ленты, счётчики для
 // плиток. reloadDiaries перечитывает их после разбора, не сбрасывая профиль и
@@ -38,7 +36,6 @@ export function useTodayDiaries(refreshKey: number | undefined) {
         setState({
           feed: buildDiaryFeed(src),
           caseCount: mode.length,
-          caseToday: mode.filter(e => momentIsToday(e.createdAt)).length,
           lastAt: lastEntryAt(src),
         });
       })

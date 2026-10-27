@@ -221,10 +221,12 @@ describe('TodaySection — лента дня и плитка дневника', 
     expect(await screen.findByText('Последняя запись — вчера')).toBeTruthy();
   });
 
-  it('сегодня уже был разбор — «Сегодня разобран 1» на плитке', async () => {
-    mockApi.getModeDiary.mockResolvedValue([{ id: 3, situation: 'разбор', createdAt: nowIso() }]);
+  it('в дневнике режимов есть запись за сегодня — плитка «Что случилось» без счёта, только обещание', async () => {
+    mockApi.getModeDiary.mockResolvedValue([{ id: 3, situation: 'запись', createdAt: nowIso() }]);
     renderSection();
-    expect(await screen.findByText('Сегодня разобран 1')).toBeTruthy();
+    expect(await screen.findByText('Сегодня 1 запись')).toBeTruthy();
+    expect(screen.getByText('≈3 мин · когда что-то зацепило')).toBeTruthy();
+    expect(screen.queryByText(/Сегодня разобран/)).toBeNull();
   });
 
   it('клик по плитке дневника и по строке ленты открывает дневники', async () => {
@@ -285,7 +287,8 @@ describe('TodaySection — «Что случилось»', () => {
     ]);
     fireEvent.click(screen.getByText('Закрыть разбор'));
     await waitFor(() => expect(screen.queryByTestId('case-flow')).toBeNull());
-    expect(await screen.findByText('Сегодня разобран 1')).toBeTruthy();
+    expect(await screen.findByText('только что')).toBeTruthy();
+    expect(screen.queryByText(/Сегодня разобран/)).toBeNull();
     expect(screen.getByText('только что')).toBeTruthy();
   });
 });

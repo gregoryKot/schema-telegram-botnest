@@ -1,6 +1,8 @@
 import { SkeletonLines } from './SkeletonLines';
 import { DIARY_KIND_LABEL } from './model';
-import type { FeedEntry } from './todayFeed';
+import type { FeedEntry, FeedKind } from './todayFeed';
+
+const FEED_KIND_LABEL: Record<FeedKind, string> = { ...DIARY_KIND_LABEL, tracker: 'Трекер' };
 
 interface Props {
   entries: FeedEntry[];
@@ -34,7 +36,7 @@ export function TodayFeed({ entries, loaded, onOpenDiaries, onOpenTrackerHistory
               >
                 <span className="ct-feed-time">{e.time}</span>
                 <span className="ct-feed-text">{e.text}</span>
-                {e.kind !== 'tracker' && <span className="ct-feed-kind">{DIARY_KIND_LABEL[e.kind]}</span>}
+                <span className="ct-feed-kind">{FEED_KIND_LABEL[e.kind]}</span>
               </button>
             </li>
           ))}

@@ -150,3 +150,18 @@ describe('AppShell — виджет «Сегодня» в сайдбаре (ре
     await waitFor(() => expect(screen.getByText('7.0')).toBeTruthy());
   });
 });
+
+describe('AppShell — плавающий «+»', () => {
+  it('виден только на «Записях», на «Сегодня» и «Ещё» его нет', async () => {
+    renderAppShell('/diary');
+    await waitFor(() => expect(screen.getByLabelText('Быстрое действие')).toBeTruthy());
+    cleanup();
+    renderAppShell('/today');
+    await waitFor(() => expect(screen.getByTestId('today-section')).toBeTruthy());
+    expect(screen.queryByLabelText('Быстрое действие')).toBeNull();
+    cleanup();
+    renderAppShell('/more');
+    await waitFor(() => expect(screen.getByTestId('more-section')).toBeTruthy());
+    expect(screen.queryByLabelText('Быстрое действие')).toBeNull();
+  });
+});

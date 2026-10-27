@@ -5,6 +5,9 @@ import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { MoreSection } from './MoreSection';
 
+const trackHomeTile = vi.hoisted(() => vi.fn());
+vi.mock('./today/trackHomeTile', () => ({ trackHomeTile }));
+
 vi.mock('../components/JourneySheet', () => ({
   JourneySheet: (p: { onClose: () => void }) => <div data-testid="journey"><button onClick={p.onClose}>закрыть путь</button></div>,
 }));
@@ -27,19 +30,17 @@ describe('MoreSection', () => {
   it('заголовок и все строки списка', () => {
     setup();
     expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Всё остальное');
-    for (const t of ['Зачем это всё', 'Мои паттерны', 'Практики', 'Мой путь', 'Терапевт', 'Тест на схемы', 'Настройки', 'Профиль', 'Мне очень плохо']) {
+    for (const t of ['Зачем это всё', 'Мои паттерны', 'Практики', 'Мой путь', 'Тест на схемы', 'Настройки', 'Профиль', 'Мне очень плохо']) {
       expect(row(t)).toBeTruthy();
     }
   });
 
-  it('переходы: паттерны, практики, терапевт и профиль — в свои разделы; «Мне очень плохо» — в практики', () => {
+  it('переходы: паттерны, практики, профиль (в нём же терапевт) — в свои разделы; «Мне очень плохо» — в практики', () => {
     const h = setup();
     fireEvent.click(row('Мои паттерны'));
     expect(h.onNavigate).toHaveBeenLastCalledWith('schemas');
     fireEvent.click(row('Практики'));
     expect(h.onNavigate).toHaveBeenLastCalledWith('practice');
-    fireEvent.click(row('Терапевт'));
-    expect(h.onNavigate).toHaveBeenLastCalledWith('profile');
     fireEvent.click(row('Профиль'));
     expect(h.onNavigate).toHaveBeenLastCalledWith('profile');
     fireEvent.click(row('Мне очень плохо'));
@@ -57,6 +58,7 @@ describe('MoreSection', () => {
   it('«Зачем это всё» и «Мой путь» открывают свои листы и закрываются', () => {
     setup();
     fireEvent.click(row('Зачем это всё'));
+    expect(trackHomeTile).toHaveBeenCalledWith('why');
     expect(screen.getByTestId('why').getAttribute('data-auto')).toBe('false');
     fireEvent.click(screen.getByText('закрыть зачем'));
     expect(screen.queryByTestId('why')).toBeNull();
@@ -64,6 +66,12 @@ describe('MoreSection', () => {
     expect(screen.getByTestId('journey')).toBeTruthy();
     fireEvent.click(screen.getByText('закрыть путь'));
     expect(screen.queryByTestId('journey')).toBeNull();
+  });
+
+  it('строки «Терапевт» нет: он внутри «Профиля», подпись об этом говорит', () => {
+    setup();
+    expect(screen.queryByRole('button', { name: /^Терапевт/ })).toBeNull();
+    expect(row('Профиль').textContent).toContain('Портрет, терапевт, ближайшая встреча');
   });
 
   it('кабинет терапевта: у клиента строки нет, у терапевта есть и ведёт в кабинет', () => {

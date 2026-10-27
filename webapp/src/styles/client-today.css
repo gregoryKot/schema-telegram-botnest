@@ -73,4 +73,5 @@
 
 @media (max-width: 767px) {
   .ct-tile { padding: 18px; }
+  .ct-head .ds-h1 { font-size: 34px; line-height: 1.08; }
 }

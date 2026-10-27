@@ -45,7 +45,7 @@ export function TodaySection({
   onOpenDiaries, onOpenChildhoodWheel, refreshKey, onTasksChanged,
 }: Props) {
   const data = useTodayData(refreshKey);
-  const { profile, feed, caseCount, caseToday, lastAt, diariesLoaded, reloadDiaries } = data;
+  const { profile, feed, caseCount, lastAt, diariesLoaded, reloadDiaries } = data;
   const { tasks, taskHistory, taskError, completeTask, afterCreate } = useTaskActions(refreshKey);
   const [caseOpen,       setCaseOpen]       = useState(false);
   const [showDiaryTask,  setShowDiaryTask]  = useState(false);
@@ -94,7 +94,7 @@ export function TodaySection({
       <HomeTiles
         ratings={ratings}
         trackerMeta={trackerTileMeta(tracker)}
-        caseMeta={caseTileMeta(caseToday)}
+        caseMeta={caseTileMeta()}
         diaryMeta={diaryTileMeta(diariesLoaded, feed.length, lastAt)}
         onTracker={() => { trackHomeTile('tracker'); onOpenTracker(); }}
         onCase={() => { trackHomeTile('case'); setCaseOpen(true); }}

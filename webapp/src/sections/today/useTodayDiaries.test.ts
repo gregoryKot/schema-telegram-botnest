@@ -27,10 +27,10 @@ describe('useTodayData — дневники главной', () => {
   it('чистый аккаунт: пустая лента, нули, без последней записи', async () => {
     const { result } = renderHook(() => useTodayData(0));
     await waitFor(() => expect(result.current.diariesLoaded).toBe(true));
-    expect(result.current).toMatchObject({ feed: [], caseCount: 0, caseToday: 0, lastAt: null });
+    expect(result.current).toMatchObject({ feed: [], caseCount: 0, lastAt: null });
   });
 
-  it('разбор — в дневнике режимов: считается всего и за сегодня; старая запись в ленту не идёт', async () => {
+  it('разбор — в дневнике режимов: считается всего; старая запись в ленту не идёт', async () => {
     m.getModeDiary.mockResolvedValue([
       { id: 1, createdAt: twoDaysAgo(), situation: 'давно' },
       { id: 2, createdAt: now(), situation: 'сегодня' },
@@ -38,7 +38,6 @@ describe('useTodayData — дневники главной', () => {
     const { result } = renderHook(() => useTodayData(0));
     await waitFor(() => expect(result.current.diariesLoaded).toBe(true));
     expect(result.current.caseCount).toBe(2);
-    expect(result.current.caseToday).toBe(1);
     expect(result.current.feed.map(e => e.text)).toEqual(['сегодня']);
   });
 

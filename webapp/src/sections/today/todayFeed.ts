@@ -88,8 +88,9 @@ export function trackerTileMeta({ filled, total, index }: TrackerSummary): strin
   return index === null ? 'Готово' : `Готово · индекс ${fmtIndex(index)}`;
 }
 
-export function caseTileMeta(caseToday: number): string {
-  return caseToday > 0 ? `Сегодня разобран ${caseToday}` : '≈3 мин · когда что-то зацепило';
+/** Всегда обещание: записи «Что случилось» неотличимы от ручных записей дневника режимов, считать их нечестно. */
+export function caseTileMeta(): string {
+  return '≈3 мин · когда что-то зацепило';
 }
 
 /** null — пока дневники грузятся (плитка показывает плашку-скелетон вместо выдуманного текста). */

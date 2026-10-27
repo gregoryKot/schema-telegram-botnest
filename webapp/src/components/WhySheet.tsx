@@ -1,6 +1,4 @@
 import { useHistorySheet } from '../hooks/useHistorySheet';
-import { NEEDS_EXPLAINER } from '../../../shared/src/about/aboutData';
-import { TRACKER_ORIGIN_NOTE } from '../../../shared/src/needs/trackerOnboarding';
 import '../styles/client-why.css';
 
 interface Props {
@@ -11,18 +9,18 @@ interface Props {
 
 // «Зачем это всё»: откуда взялись три действия и что даёт каждое. Правило
 // онбординга (frontend-visual.md): «откуда это и зачем» — на пути пользователя.
-// Фразы про потребности — из уже сведённых NEEDS_EXPLAINER и TRACKER_ORIGIN_NOTE.
+// Вступление короткое, чтобы все три карточки и кнопка помещались на экран телефона.
 export function WhySheet({ auto = false, onClose }: Props) {
   const goBack = useHistorySheet(onClose);
-  const needs = NEEDS_EXPLAINER.map(n => n.name.toLowerCase()).join(', ');
   return (
     <div className="u-sheet cw-sheet" role="dialog" aria-modal="true" aria-label="Зачем это всё">
       <div className="cw-inner">
         <div className="ds-eyebrow">{auto ? 'Первый раз здесь' : 'Зачем это всё'}</div>
         <h1 className="ds-h1 cw-h1">Три вещи, которые здесь можно делать</h1>
         <p className="cw-lead">
-          {TRACKER_ORIGIN_NOTE}{' '}
-          Это {needs}. Приложение помогает замечать, как с ними дела сегодня и что происходит, когда их не хватает.
+          Всё строится на схема-терапии: у человека есть пять базовых потребностей — привязанность, автономия,
+          выражение чувств, спонтанность, границы. Когда их долго не хватает, включаются старые паттерны.
+          Приложение помогает это замечать.
         </p>
         <ul className="cw-list">
           <li className="cw-item">
