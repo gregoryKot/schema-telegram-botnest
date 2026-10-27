@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
-  buildDiaryFeed, buildTodayFeed, trackerSummary, trackerTileMeta, caseTileMeta,
+  buildDiaryFeed, buildTodayFeed, casesTodayCount, trackerSummary, trackerTileMeta, caseTileMeta,
   diaryTileMeta, lastEntryAt, fmtIndex, type FeedEntry,
 } from './todayFeed';
 import { forEachTimeZone } from '../../../../shared/src/utils/timeZone.test-helpers';
@@ -34,6 +34,28 @@ describe('buildDiaryFeed — только сегодня', () => {
     });
     expect(feed.map(e => e.kind).sort()).toEqual(['gratitude', 'mode', 'schema']);
     expect(feed.find(e => e.kind === 'schema')?.text).toBe('Коллега не ответил');
+  });
+
+  it('запись режима с fromCase идёт в ленту как «case», обычная — как «mode»', () => {
+    const feed = buildDiaryFeed({
+      schema: [],
+      mode: [
+        { id: 1, situation: 'разбор', createdAt: noon(), fromCase: true },
+        { id: 2, situation: 'обычная', createdAt: earlier() },
+      ],
+      gratitude: [],
+    });
+    expect(feed.find(e => e.key === 'mode-1')?.kind).toBe('case');
+    expect(feed.find(e => e.key === 'mode-2')?.kind).toBe('mode');
+  });
+
+  it('casesTodayCount считает только сегодняшние разборы', () => {
+    expect(casesTodayCount({ mode: [
+      { id: 1, situation: 'с', createdAt: noon(), fromCase: true },
+      { id: 2, situation: 'с', createdAt: longAgo(), fromCase: true },
+      { id: 3, situation: 'с', createdAt: noon() },
+    ] })).toBe(1);
+    expect(casesTodayCount({ mode: [] })).toBe(0);
   });
 
   it('длинный текст режется, у пустой благодарности запасная подпись', () => {
@@ -97,6 +119,11 @@ describe('мета-строки плиток', () => {
   });
   it('что случилось: всегда обещание, без счёта разборов', () => {
     expect(caseTileMeta()).toBe('≈3 мин · когда что-то зацепило');
+    expect(caseTileMeta(0)).toBe('≈3 мин · когда что-то зацепило');
+    expect(caseTileMeta(1)).toBe('Сегодня: 1 разбор');
+    expect(caseTileMeta(2)).toBe('Сегодня: 2 разбора');
+    expect(caseTileMeta(5)).toBe('Сегодня: 5 разборов');
+    expect(caseTileMeta(21)).toBe('Сегодня: 21 разбор');
   });
   it('дневник: грузится — null; сегодня N; последняя; пусто', () => {
     expect(diaryTileMeta(false, 0, null)).toBeNull();

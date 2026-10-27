@@ -215,7 +215,7 @@ describe('DiarySection — реальные записи из api', () => {
   });
 });
 
-describe('DiarySection — сегмент «Все · Трекер · Дневник»', () => {
+describe('DiarySection — сегмент «Все · Трекер · Случаи · Дневник»', () => {
   const setup = () => {
     mockApi.getSchemaDiary.mockResolvedValue([schemaEntry({ trigger: 'Запись-схема' })]);
     mockApi.getModeDiary.mockResolvedValue([modeEntry({ situation: 'Запись-режим' })]);
@@ -227,7 +227,7 @@ describe('DiarySection — сегмент «Все · Трекер · Дневн
     renderSection();
     await screen.findByText('Запись-схема');
     const counts = [...document.querySelectorAll('.ds-seg-btn')].map(b => b.textContent);
-    expect(counts).toEqual(['Все4', 'Трекер2', 'Дневник2']);
+    expect(counts).toEqual(['Все4', 'Трекер2', 'Случаи0', 'Дневник2']);
   });
 
   it('в ленте за день — строка трекера: «индекс 7,2» при всех пяти оценках, «3 из 5» при неполных', async () => {
@@ -248,6 +248,32 @@ describe('DiarySection — сегмент «Все · Трекер · Дневн
     expect(screen.getByText('Запись-схема')).toBeTruthy();
     expect(screen.getByText('Запись-режим')).toBeTruthy();
     expect(screen.queryByText('Трекер — индекс 7,2')).toBeNull();
+  });
+
+  it('«Случаи» показывает только разборы (fromCase), «Дневник» их не показывает', async () => {
+    mockApi.getModeDiary.mockResolvedValue([
+      modeEntry({ id: 1, situation: 'Обычная запись режима' }),
+      { ...modeEntry({ id: 2, situation: 'Тишина в ответ' }), fromCase: true },
+    ]);
+    renderSection();
+    await screen.findByText('Тишина в ответ');
+    const counts = [...document.querySelectorAll('.ds-seg-btn')].map(b => b.textContent);
+    expect(counts).toEqual(['Все2', 'Трекер0', 'Случаи1', 'Дневник1']);
+    fireEvent.click(screen.getByRole('button', { name: /^Случаи/ }));
+    expect(screen.getByText('Тишина в ответ')).toBeTruthy();
+    expect(screen.queryByText('Обычная запись режима')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: /^Дневник/ }));
+    expect(screen.getByText('Обычная запись режима')).toBeTruthy();
+    expect(screen.queryByText('Тишина в ответ')).toBeNull();
+  });
+
+  it('пустые «Случаи» — объяснение, что такое разбор и откуда его начать', async () => {
+    mockApi.getSchemaDiary.mockResolvedValue([schemaEntry()]);
+    renderSection();
+    await waitFor(() => expect(mockApi.getSchemaDiary).toHaveBeenCalled());
+    fireEvent.click(screen.getByRole('button', { name: /^Случаи/ }));
+    await screen.findByText('Разборов пока нет');
+    expect(screen.getByText(/плитка «Что случилось» на главной/)).toBeTruthy();
   });
 
   it('сегмент без записей своего типа — честное «пока нет», а не пустота', async () => {

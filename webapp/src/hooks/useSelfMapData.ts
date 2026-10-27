@@ -24,6 +24,9 @@ export function useSelfMapData(refreshKey = 0): {
 
   useEffect(() => {
     let ignore = false;
+    // Карта читает ВСЕ записи режимов. Маркер `fromCase` (разбор из «Что случилось») появился
+    // в этапе 4 простого клиента; фильтровать ли карту по разборам — отдельное решение
+    // (docs/open/frontend-ux.md), здесь поведение не меняется.
     Promise.all([api.getModeDiary(), api.getModeNotes(), api.getProfile()])
       .then(([cases, notes, profile]) => {
         if (ignore) return;

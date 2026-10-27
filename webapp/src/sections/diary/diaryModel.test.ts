@@ -43,8 +43,36 @@ describe('diaryModel', () => {
   });
 
   it('счётчики сегмента сходятся с фильтром', () => {
-    expect(filterCounts(entries)).toEqual({ all: 6, tracker: 2, diary: 4 });
-    expect(filterCounts([])).toEqual({ all: 0, tracker: 0, diary: 0 });
+    expect(filterCounts(entries)).toEqual({ all: 6, tracker: 2, case: 0, diary: 4 });
+    expect(filterCounts([])).toEqual({ all: 0, tracker: 0, case: 0, diary: 0 });
+  });
+
+  describe('сегмент «Случаи» (маркер fromCase)', () => {
+    const withCases = buildEntries(
+      [s(1, '2026-10-15T09:00:00Z')],
+      [m(1, '2026-10-15T18:00:00Z'), { ...m(2, '2026-10-15T19:00:00Z'), fromCase: true }, { ...m(3, '2026-10-14T19:00:00Z'), fromCase: false }],
+      [g(1, '2026-10-14')],
+      tracker,
+    );
+
+    it('«Случаи» — только записи режимов из разбора', () => {
+      const cases = filterEntries(withCases, 'case');
+      expect(cases.map((e) => e._type)).toEqual(['mode']);
+      expect(cases[0]._type === 'mode' && cases[0].entry.id).toBe(2);
+    });
+
+    it('«Дневник» не включает разборы и трекер, а разборы идут в «Все»', () => {
+      const diary = filterEntries(withCases, 'diary');
+      expect(diary.some((e) => e._type === 'mode' && e.entry.id === 2)).toBe(false);
+      expect(diary.some((e) => e._type === 'tracker')).toBe(false);
+      expect(filterEntries(withCases, 'all')).toHaveLength(withCases.length);
+    });
+
+    it('счётчики делят список без остатка: Трекер + Случаи + Дневник = Все', () => {
+      const c = filterCounts(withCases);
+      expect(c).toEqual({ all: 7, tracker: 2, case: 1, diary: 4 });
+      expect(c.tracker + c.case + c.diary).toBe(c.all);
+    });
   });
 });
 

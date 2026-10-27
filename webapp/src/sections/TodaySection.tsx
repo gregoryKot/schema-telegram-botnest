@@ -43,7 +43,7 @@ export function TodaySection({
   onOpenDiaries, onOpenChildhoodWheel, refreshKey, onTasksChanged,
 }: Props) {
   const data = useTodayData(refreshKey);
-  const { profile, feed, caseCount, lastAt, diariesLoaded, reloadDiaries } = data;
+  const { profile, feed, casesToday, lastAt, diariesLoaded, reloadDiaries } = data;
   const { tasks, taskHistory, taskError, completeTask, afterCreate } = useTaskActions(refreshKey);
   const [caseOpen,       setCaseOpen]       = useState(false);
   const [quickOpen,      setQuickOpen]      = useState(false);
@@ -93,7 +93,7 @@ export function TodaySection({
       <HomeTiles
         ratings={ratings}
         trackerMeta={trackerTileMeta(tracker)}
-        caseMeta={caseTileMeta()}
+        caseMeta={caseTileMeta(casesToday)}
         diaryMeta={diaryTileMeta(diariesLoaded, feed.length, lastAt)}
         onTracker={() => { trackHomeTile('tracker'); onOpenTracker(); }}
         onCase={() => { trackHomeTile('case'); setCaseOpen(true); }}
@@ -130,7 +130,6 @@ export function TodaySection({
       {caseOpen && (
         <CaseFlowHost
           start="flow"
-          caseCount={caseCount}
           onClose={() => { setCaseOpen(false); reloadDiaries(); }}
           onOpenTracker={onOpenTracker}
           onOpenSchema={onOpenSchema}

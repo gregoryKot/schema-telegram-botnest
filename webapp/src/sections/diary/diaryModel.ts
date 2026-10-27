@@ -3,7 +3,7 @@ import { pluralRu } from '../../../../shared/src/utils/pluralRu';
 import type { TrackerDay } from './trackerEntries';
 
 // Чистая модель экрана «Записи»: единый список (дневники + строки трекера),
-// группировка по дням, счётчики сегмента «Все · Трекер · Дневник».
+// группировка по дням, счётчики сегмента «Все · Трекер · Случаи · Дневник».
 
 export type AnyEntry =
   | { _type: 'schema'; sortKey: string; dateKey: string; entry: SchemaDiaryEntry }
@@ -11,7 +11,10 @@ export type AnyEntry =
   | { _type: 'gratitude'; sortKey: string; dateKey: string; entry: GratitudeDiaryEntry }
   | { _type: 'tracker'; sortKey: string; dateKey: string; entry: TrackerDay };
 
-export type DiaryFilter = 'all' | 'tracker' | 'diary';
+export type DiaryFilter = 'all' | 'tracker' | 'case' | 'diary';
+
+/** Запись режима, рождённая потоком «Что случилось» (маркер fromCase, этап 4 простого клиента). */
+export const isCaseEntry = (e: AnyEntry): boolean => e._type === 'mode' && e.entry.fromCase === true;
 
 const dayOf = (iso: string) => iso.slice(0, 10);
 
@@ -35,7 +38,10 @@ export function buildEntries(
 export const entryKey = (e: AnyEntry) => e._type + '-' + (e._type === 'tracker' ? e.dateKey : e.entry.id);
 
 export function filterEntries(entries: AnyEntry[], filter: DiaryFilter): AnyEntry[] {
-  return filter === 'all' ? entries : entries.filter((e) => (e._type === 'tracker') === (filter === 'tracker'));
+  if (filter === 'all') return entries;
+  if (filter === 'tracker') return entries.filter((e) => e._type === 'tracker');
+  if (filter === 'case') return entries.filter(isCaseEntry);
+  return entries.filter((e) => e._type !== 'tracker' && !isCaseEntry(e));
 }
 
 /** Группы по дням в порядке следования записей (список уже отсортирован). */
@@ -51,7 +57,8 @@ export function groupByDay(entries: AnyEntry[]): { dateKey: string; items: AnyEn
 
 export function filterCounts(entries: AnyEntry[]): Record<DiaryFilter, number> {
   const tracker = entries.filter((e) => e._type === 'tracker').length;
-  return { all: entries.length, tracker, diary: entries.length - tracker };
+  const cases = entries.filter(isCaseEntry).length;
+  return { all: entries.length, tracker, case: cases, diary: entries.length - tracker - cases };
 }
 
 /** Превью черновика — первое осмысленное поле по типу записи. */

@@ -3,15 +3,14 @@ import { CaseChipGrid } from './CaseChipGrid';
 import { CaseFlowFoot } from './caseFlowUi';
 import { CASE_IMPULSES } from '../../../../shared/src/case/caseImpulses';
 
-/** Шаг 4 из 5 — порывы. Twin schema-miniapp CaseImpulseScreen.tsx. */
-export function CaseImpulseScreen({
+/** Шаг 3 из 3 — «Что хотелось сделать?»: порывы, до трёх, нужен хотя бы один. */
+export function CaseImpulseStep({
   selectedIds,
   ownValue,
   onToggle,
   onOwnChange,
   onBack,
   onNext,
-  onLater,
   crisis,
   onHardNow,
 }: {
@@ -21,16 +20,16 @@ export function CaseImpulseScreen({
   onOwnChange: (v: string) => void;
   onBack: () => void;
   onNext: () => void;
-  onLater: () => void;
   crisis: boolean;
   onHardNow: () => void;
 }) {
   return (
     <ExScreen
       onBack={onBack}
-      eyebrow="Разбор случая · Шаг 4 из 5"
-      title="Что потянуло сделать?"
-      lede="Не что вышло в итоге — куда тянуло."
+      backLabel="Назад"
+      eyebrow="Что случилось · 3 из 3"
+      title="Что хотелось сделать?"
+      lede="Не то, что получилось, а первый импульс."
     >
       <CaseChipGrid
         chips={CASE_IMPULSES}
@@ -40,11 +39,10 @@ export function CaseImpulseScreen({
         onOwnChange={onOwnChange}
         ownPlaceholder="Например: хотелось всё бросить"
       />
-
       <CaseFlowFoot
-        primaryLabel="Дальше"
+        primaryLabel="Что это было?"
+        primaryDisabled={selectedIds.length === 0}
         onPrimary={onNext}
-        onLater={onLater}
         crisis={crisis}
         onHardNow={onHardNow}
       />

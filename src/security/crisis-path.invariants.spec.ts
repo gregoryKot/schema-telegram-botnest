@@ -97,13 +97,6 @@ const NON_THERAPEUTIC_ALLOWLIST: Record<string, string> = {
   // через `<LimitedTextarea` (регэксп выше) и классифицируются поштучно.
   'shared/src/components/LimitedTextarea.tsx':
     'дочерний <textarea>-контрол с пределом длины, детекция у вызывающих',
-  // Разбор случая (webapp): сцена — поле общего shared-хука
-  // useCaseFlowState (crisis = detectCrisisAny(scene, bodyOwn, impulseOwn,
-  // alias)), CrisisCard рисует CaseFlowFoot на том же экране. Тот же приём,
-  // что у DiaryTextArea.tsx строкой выше — не выдуманное исключение
-  // (правило №15), а тот же класс «дочерний контрол».
-  'webapp/src/components/caseFlow/CaseSceneScreen.tsx':
-    'дочерний <textarea>-контрол потока разбора случая, детекция в общем shared/src/case/useCaseFlowState.ts',
 };
 
 // Файлы, где кризисная детекция ОБЯЗАНА появиться в рамках текущей задачи
@@ -141,6 +134,9 @@ const EXPECTED_CRISIS_FILES = [
   'webapp/src/components/diary/GratitudeEntrySheet.tsx',
   'webapp/src/components/diary/SchemaEntrySheet.tsx',
   'webapp/src/components/diary/quickEntry/QuickWriteStep.tsx',
+  // «Что случилось» в три шага (этап 4 простого клиента): поле сцены с
+  // детекцией прямо в файле; CaseSceneScreen (старый поток) удалён с сайта.
+  'webapp/src/components/caseFlow/CaseSceneStep.tsx',
   'schema-miniapp/src/components/diary/ModeEntrySheet.tsx',
   // Благодарность (#769): поля и детекция вынесены в GratitudeParts.tsx,
   // GratitudeEntrySheet.tsx остался оркестратором без <textarea>.
@@ -182,8 +178,11 @@ describe('трипваер: кризисная детекция для своб�
     // поля «Откуда режим / Как проявляется / Что делаем в терапии» в кабинете
     // терапевта, тот же класс, что соседние ClientConceptFields/ConceptFieldsView
     // (их записи переехали за <textarea>, не добавились).
+    // 20 → 19 (2026-10, простой клиент, этап 4): CaseSceneScreen.tsx удалён,
+    // новое поле сцены (CaseSceneStep.tsx) само зовёт detectCrisisAny и стоит
+    // в EXPECTED_CRISIS_FILES, а не в allowlist.
     expect(Object.keys(NON_THERAPEUTIC_ALLOWLIST).length).toBeLessThanOrEqual(
-      20,
+      19,
     );
   });
 

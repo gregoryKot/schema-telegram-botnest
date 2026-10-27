@@ -7,25 +7,20 @@ import { ModeGroupList } from '../diary/ModeGroupList';
 import { CaseFlowFoot } from './caseFlowUi';
 
 /**
- * Шаг «кто взял управление» (gate+candidate миниаппа объединены в один
- * экран) — переиспользует уже существующий webapp-механизм выбора режима
- * (ModeFeelingBrowse + ModeGroupList, тот же, что в ModeSelectScreen.tsx
- * дневника режимов): правило «одна механика — один компонент» запрещает
- * заново реализовывать выбор режима вторым способом только потому, что это
- * другой поток. gateId для CaseFlowFoot/CASE_BODY_CHIPS выводится из
- * modeId (useCaseFlowState.pickMode → gateIdForMode) — отдельного тапа по
- * «воротам» здесь нет, в отличие от миниаппа.
+ * «Не похоже — другие режимы»: выбор режима руками вместо предложенного.
+ * Переиспользует существующий webapp-механизм (ModeFeelingBrowse +
+ * ModeGroupList, тот же, что в ModeSelectScreen.tsx дневника режимов):
+ * правило «одна механика — один компонент». Выбранный режим возвращается на
+ * итог разбора.
  */
 export function CaseModeScreen({
   onBack,
   onPick,
-  onLater,
   crisis,
   onHardNow,
 }: {
   onBack: () => void;
   onPick: (modeId: string) => void;
-  onLater: () => void;
   crisis: boolean;
   onHardNow: () => void;
 }) {
@@ -35,14 +30,9 @@ export function CaseModeScreen({
   return (
     <ExScreen
       onBack={onBack}
-      eyebrow="Разбор случая · Шаг 2 из 5"
-      title={
-        <>
-          Кто сейчас
-          <br />
-          <span className="it">взял управление?</span>
-        </>
-      }
+      backLabel="Назад"
+      eyebrow="Что случилось"
+      title="Другие режимы"
       lede={tr(
         'Режим – состояние, которое сейчас «за рулём». Не знаешь названия – определим по чувству, в пару тапов.',
         'Режим – состояние, которое сейчас «за рулём». Не знаете названия – определим по чувству, в пару тапов.',
@@ -69,7 +59,7 @@ export function CaseModeScreen({
 
       {listOpen && <ModeGroupList modeId="" onPick={onPick} />}
 
-      <CaseFlowFoot onLater={onLater} crisis={crisis} onHardNow={onHardNow} />
+      <CaseFlowFoot crisis={crisis} onHardNow={onHardNow} />
     </ExScreen>
   );
 }

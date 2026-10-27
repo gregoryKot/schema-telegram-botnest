@@ -1,15 +1,15 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api, reportClientError } from '../../api';
-import { buildDiaryFeed, lastEntryAt, type FeedEntry } from './todayFeed';
+import { buildDiaryFeed, casesTodayCount, lastEntryAt, type FeedEntry } from './todayFeed';
 
 interface DiariesState {
   /** Записи трёх дневников за сегодня (без строки трекера). */
   feed: FeedEntry[];
-  /** Всего разборов «Что случилось» (они пишутся в дневник режимов). */
-  caseCount: number;
+  /** Разборов «Что случилось» за сегодня (записи режимов с fromCase). */
+  casesToday: number;
   lastAt: string | null;
 }
-const EMPTY: DiariesState = { feed: [], caseCount: 0, lastAt: null };
+const EMPTY: DiariesState = { feed: [], casesToday: 0, lastAt: null };
 
 // Три дневника главной «Сегодня»: записи за сегодня для ленты, счётчики для
 // плиток. reloadDiaries перечитывает их после разбора, не сбрасывая профиль и
@@ -35,7 +35,7 @@ export function useTodayDiaries(refreshKey: number | undefined) {
         const src = { schema, mode, gratitude };
         setState({
           feed: buildDiaryFeed(src),
-          caseCount: mode.length,
+          casesToday: casesTodayCount(src),
           lastAt: lastEntryAt(src),
         });
       })

@@ -108,7 +108,7 @@
 | `shared/src/auth/` | refresh сессии, кросс-табный замок, владелец данных, тикет входа |
 | `shared/src/booking/` | часовой пояс клиента, канал связи, региональная цена |
 | `shared/src/build/` | vite-плагин `requireBotUsername` |
-| `shared/src/case/` | поток «Что это было»: типы, состояние, сохранение |
+| `shared/src/case/` | поток «Что это было»: типы, состояние, сохранение (мини-апп); `quick/` — три шага сайта |
 | `shared/src/childhoodWheel/` | колесо детства: данные и примеры |
 | `shared/src/components/` | общие компоненты: CrisisCard, Celebration, TherapyNote, Ysq*, ConnectionTrouble |
 | `shared/src/diary/` | мета дневников, пояснения, благодарности |

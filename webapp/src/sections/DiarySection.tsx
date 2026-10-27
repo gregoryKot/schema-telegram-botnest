@@ -23,6 +23,7 @@ import {
 const FILTERS: { id: DiaryFilter; label: string }[] = [
   { id: 'all', label: 'Все' },
   { id: 'tracker', label: 'Трекер' },
+  { id: 'case', label: 'Случаи' },
   { id: 'diary', label: 'Дневник' },
 ];
 // Бэкенд отдаёт историю оценок не глубже 30 дней (tracker.controller.ts, GET /api/history).

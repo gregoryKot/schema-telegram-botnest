@@ -89,6 +89,7 @@ export function ModeEntry({ entry, onDelete }: { entry: ModeDiaryEntry; onDelete
   return (
     <EntryShell
       type="mode"
+      label={entry.fromCase ? 'Разбор' : undefined}
       title={mode ? mode.name : 'Дневник режимов'}
       time={fmtTime(entry.createdAt)}
       preview={entry.situation}
