@@ -46,27 +46,27 @@ export function DiarySection({ onClose: _onClose, onOpenTrackerHistory }: { onCl
   // Сбой ≠ пусто (пара к miniapp): предупреждение сверху, а не тихое [].
   const [loadFailed,       setLoadFailed]       = useState(false);
 
-  const load = useCallback(() => {
-    setTrackerFailed(false);
-    return Promise.all([
+  const load = useCallback(() =>
+    Promise.all([
       api.getSchemaDiary(),
       api.getModeDiary(),
       api.getGratitudeDiary(),
       api.getProfile().catch(() => null), // профиль и трекер вспомогательные, их отказ не «сбой дневника»
-      api.history(TRACKER_DAYS).catch(() => { setTrackerFailed(true); return []; }),
-    ]).then(([schema, mode, gratitude, profile, history]) => {
+      api.history(TRACKER_DAYS).then(days => ({ days, ok: true }), () => ({ days: [], ok: false })),
+    ]).then(([schema, mode, gratitude, profile, tracker]) => {
       setLoadFailed(false);
       setSchemaEntries(schema);
       setModeEntries(mode);
       setGratitudeEntries(gratitude);
-      setTrackerDays(buildTrackerDays(history));
+      setTrackerFailed(!tracker.ok);
+      setTrackerDays(buildTrackerDays(tracker.days));
       if (profile) {
         setActiveSchemaIds(profile.ysq.activeSchemaIds);
         setStreak(profile.streak);
       }
     }).catch((err) => { console.error(err); setLoadFailed(true); })
-      .finally(() => setLoading(false));
-  }, []);
+      .finally(() => setLoading(false)),
+  []);
 
   useEffect(() => { void load(); }, [load]);
 

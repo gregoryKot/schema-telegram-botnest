@@ -2158,7 +2158,7 @@
   "webapp/src/sections/diary/DiaryTimeline.tsx": 48,
   "webapp/src/sections/diary/EntryCards.tsx": 140,
   "webapp/src/sections/diary/entryRows.ts": 34,
-  "webapp/src/sections/DiarySection.tsx": 170,
+  "webapp/src/sections/DiarySection.tsx": 179,
   "webapp/src/sections/practice/AllGoalsOverlay.tsx": 39,
   "webapp/src/sections/practice/catalogCounts.ts": 41,
   "webapp/src/sections/practice/CatalogsBlock.tsx": 25,
