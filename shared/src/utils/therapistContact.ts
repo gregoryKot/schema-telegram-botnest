@@ -40,6 +40,13 @@ export function getTherapistContact(): TherapistContact {
   };
 }
 
+/** К пользователю подключён личный терапевт (а не «автор» по умолчанию). */
+export function hasConnectedTherapist(
+  contact: TherapistContact = getTherapistContact(),
+): boolean {
+  return contact.name !== AUTHOR_NAME;
+}
+
 // Готовая CTA-кнопка «написать терапевту». Главное — когда сам пользователь
 // является терапевтом (isTherapist), «Написать вам» бессмысленно: возвращаем
 // isSelf=true, и вызывающий не показывает кнопку «написать себе».

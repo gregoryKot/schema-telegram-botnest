@@ -17,7 +17,6 @@ describe('therapyBridgeLinks', () => {
       'diary_done',
       'more',
       'signal_card',
-      'why',
     ];
     const urls = places.map(bookingUrl);
     expect(new Set(urls).size).toBe(places.length);

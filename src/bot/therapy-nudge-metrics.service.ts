@@ -36,30 +36,42 @@ export class TherapyNudgeMetricsService {
           })),
         },
       });
-    const [shown, triggers, open, book, write, dismiss, introFromApp] =
-      await Promise.all([
-        Promise.all(
-          THERAPY_NUDGE_PLACES.map((place) =>
-            countMeta({ place, action: 'shown' }),
-          ),
+    const [
+      shown,
+      triggers,
+      open,
+      book,
+      write,
+      dismiss,
+      introFromApp,
+      bookingFromApp,
+    ] = await Promise.all([
+      Promise.all(
+        THERAPY_NUDGE_PLACES.map((place) =>
+          countMeta({ place, action: 'shown' }),
         ),
-        Promise.all(
-          THERAPY_NUDGE_TRIGGERS.map((trigger) =>
-            countMeta({ place: 'signal_card', action: 'shown', trigger }),
-          ),
+      ),
+      Promise.all(
+        THERAPY_NUDGE_TRIGGERS.map((trigger) =>
+          countMeta({ place: 'signal_card', action: 'shown', trigger }),
         ),
-        countMeta({ action: 'open' }),
-        countMeta({ action: 'book' }),
-        countMeta({ action: 'write' }),
-        countMeta({ action: 'dismiss' }),
-        // source хранится открыто (intro-lead.schema.ts), String? в schema.prisma.
-        this.prisma.introLead.count({
-          where: {
-            createdAt: { gte: since },
-            source: { contains: 'from=app' },
-          },
-        }),
-      ]);
+      ),
+      countMeta({ action: 'open' }),
+      countMeta({ action: 'book' }),
+      countMeta({ action: 'write' }),
+      countMeta({ action: 'dismiss' }),
+      // source хранится открыто (intro-lead.schema.ts), String? в schema.prisma.
+      this.prisma.introLead.count({
+        where: {
+          createdAt: { gte: since },
+          source: { contains: 'from=app' },
+        },
+      }),
+      // Booking.source — тоже открытое String? (атрибуция лида, не PII).
+      this.prisma.booking.count({
+        where: { createdAt: { gte: since }, source: { contains: 'from=app' } },
+      }),
+    ]);
     return {
       shownByPlace: THERAPY_NUDGE_PLACES.map((place, i) => ({
         place,
@@ -74,6 +86,7 @@ export class TherapyNudgeMetricsService {
       write,
       dismiss,
       introFromApp,
+      bookingFromApp,
     };
   }
 }

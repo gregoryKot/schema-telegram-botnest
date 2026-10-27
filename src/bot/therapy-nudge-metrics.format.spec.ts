@@ -19,6 +19,7 @@ function metrics(over: Partial<TherapyNudgeMetrics> = {}): TherapyNudgeMetrics {
     write: 0,
     dismiss: 0,
     introFromApp: 0,
+    bookingFromApp: 0,
     ...over,
   };
 }
@@ -97,6 +98,13 @@ describe('formatTherapyNudge', () => {
     const out = formatTherapyNudge(metrics({ book: 1 }));
     expect(out).toContain('Перешли к записи 1.');
     expect(out).not.toContain('открыли лист');
+  });
+
+  it('записи на слот из приложения: число показывается, ноль нет', () => {
+    const out = formatTherapyNudge(metrics({ bookingFromApp: 3 }));
+    expect(out).toContain('Записей на слот из приложения: 3.');
+    expect(out).not.toContain('Пока ничего');
+    expect(formatTherapyNudge(metrics())).not.toContain('Записей на слот');
   });
 
   it('заявки из приложения показываются, даже если событий ещё нет', () => {

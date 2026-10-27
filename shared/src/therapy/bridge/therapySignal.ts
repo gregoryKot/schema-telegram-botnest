@@ -104,11 +104,7 @@ export function detectTherapySignal(
   const until = parseMs(dismissedUntil);
   if (until !== null && until > nowMs) return null;
 
-  const ratedDays = history.filter(
-    (d) => Object.keys(ratedOnly(d.ratings)).length > 0,
-  );
-  if (ratedDays.length < MIN_RATED_DAYS) return null;
-
+  // Кризисный текст — повод поговорить и в первую неделю: гарда «новичок» нет.
   const crisisMs = parseMs(crisisSeenAt);
   if (
     crisisMs !== null &&
@@ -118,8 +114,16 @@ export function detectTherapySignal(
     return { trigger: 'crisis', eyebrow: 'После тяжёлого дня' };
   }
 
+  const ratedDays = history.filter(
+    (d) => Object.keys(ratedOnly(d.ratings)).length > 0,
+  );
+  if (ratedDays.length < MIN_RATED_DAYS) return null;
+
   if (hasLowIndexStreak(history)) {
-    return { trigger: 'low_index', eyebrow: 'Три дня подряд индекс не выше 4' };
+    return {
+      trigger: 'low_index',
+      eyebrow: 'Три последних заполненных дня: индекс не выше 4',
+    };
   }
 
   const repeat = repeatedMode(modeEntries, nowMs);

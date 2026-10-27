@@ -31,6 +31,22 @@ describe('leadSource', () => {
     expect(leadSource()).toBe('kotlarewski.gr/?from=app_signal_card#booking');
   });
 
+  it('чужие параметры (utm, токены) в источник не попадают, остаётся только from=app_…', () => {
+    stubLocation('kotlarewski.gr', '/', '#booking', '?utm_source=x&token=y&from=app_home');
+    stubReferrer('');
+    expect(leadSource()).toBe('kotlarewski.gr/?from=app_home#booking');
+    stubLocation('kotlarewski.gr', '/', '#booking', '?utm_source=x&token=y');
+    expect(leadSource()).toBe('kotlarewski.gr/#booking');
+  });
+
+  it('from без префикса app_ или с мусором отбрасывается', () => {
+    stubReferrer('');
+    for (const q of ['?from=site', '?from=app_', '?from=app_<script>', '?from=APP_home']) {
+      stubLocation('kotlarewski.gr', '/', '#booking', q);
+      expect(leadSource(), q).toBe('kotlarewski.gr/#booking');
+    }
+  });
+
   it('с referrer — «страница ← referrer»', () => {
     stubLocation('schemehappens.ru', '/booking', '#form');
     stubReferrer('https://google.com/search');

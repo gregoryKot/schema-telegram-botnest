@@ -36,7 +36,7 @@ describe('TherapyNudgeCard', () => {
   it('низкий индекс три дня: карточка с подписью и событием shown с trigger', async () => {
     history.mockResolvedValue(LOW);
     renderCard();
-    expect(await screen.findByText('Три дня подряд индекс не выше 4')).toBeTruthy();
+    expect(await screen.findByText('Три последних заполненных дня: индекс не выше 4')).toBeTruthy();
     expect(screen.getByText('Самопомощь помогает держаться. Нести это в одиночку не обязательно.')).toBeTruthy();
     expect(screen.getByText('Автор приложения работает в подходе схема-терапия и ведёт встречи онлайн.')).toBeTruthy();
     expect(track).toHaveBeenCalledWith('signal_card', 'shown', 'low_index');
@@ -81,7 +81,7 @@ describe('TherapyNudgeCard', () => {
     renderCard();
     fireEvent.click(await screen.findByRole('button', { name: 'Не сейчас' }));
     expect(track).toHaveBeenLastCalledWith('signal_card', 'dismiss', 'low_index');
-    expect(screen.queryByText('Три дня подряд индекс не выше 4')).toBeNull();
+    expect(screen.queryByText('Три последних заполненных дня: индекс не выше 4')).toBeNull();
     const until = Date.parse(localStorage.getItem('therapy_nudge_dismissed_until') ?? '');
     expect(until - Date.now()).toBeGreaterThan(13 * 86400000);
     cleanup();

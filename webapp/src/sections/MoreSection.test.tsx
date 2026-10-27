@@ -93,7 +93,7 @@ describe('MoreSection', () => {
     expect(titles[at + 1]).toMatch(/^Поговорить с кем-то/);
     expect(row('Поговорить с кем-то').textContent).toContain('Встреча с автором приложения');
     fireEvent.click(row('Поговорить с кем-то'));
-    expect(trackNudge).toHaveBeenCalledWith('more', 'open');
+    expect(trackNudge).toHaveBeenCalledWith('more', 'open', undefined);
     expect(screen.getByRole('dialog')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Назад' }));
   });
@@ -107,7 +107,7 @@ describe('MoreSection', () => {
     expect(link.getAttribute('href')).toBe('tg://user?id=42');
     expect(link.textContent).toContain('Связь с терапевтом');
     fireEvent.click(link);
-    expect(trackNudge).toHaveBeenCalledWith('more', 'write');
+    expect(trackNudge).toHaveBeenCalledWith('more', 'write', undefined);
   });
 
   it('пользователю-терапевту строки нет', () => {

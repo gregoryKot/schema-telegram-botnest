@@ -1,4 +1,4 @@
-import { getTherapistContact } from '../../../../shared/src/utils/therapistContact';
+import { getTherapistContact, hasConnectedTherapist } from '../../../../shared/src/utils/therapistContact';
 import type { TherapyNudgePlace, TherapyNudgeTrigger } from '../../../../shared/src/analytics/therapyNudge';
 import { bookingUrl, telegramUrl } from '../../../../shared/src/therapy/bridge/therapyBridgeLinks';
 import { ExternalLink } from '../../host/ExternalLink';
@@ -19,7 +19,7 @@ export function TalkSheet({ place, trigger, onClose }: Props) {
   const goBack = useHistorySheet(onClose);
   const t = useTherapyBridgeTexts();
   const contact = getTherapistContact();
-  const hasTherapist = contact.name !== 'автору';
+  const hasTherapist = hasConnectedTherapist(contact);
 
   return (
     <div className="u-sheet cw-sheet" role="dialog" aria-modal="true" aria-label={t.sheetEyebrow}>

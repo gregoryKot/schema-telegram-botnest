@@ -21,7 +21,7 @@ describe('TherapyLine', () => {
     expect(track).toHaveBeenCalledTimes(1);
     expect(track).toHaveBeenCalledWith('diary_done', 'shown');
     fireEvent.click(screen.getByRole('button', { name: 'Поговорить →' }));
-    expect(track).toHaveBeenLastCalledWith('diary_done', 'open');
+    expect(track).toHaveBeenLastCalledWith('diary_done', 'open', undefined);
     expect(screen.getByRole('dialog')).toBeTruthy();
     expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Нести это в одиночку не обязательно');
   });
@@ -33,7 +33,7 @@ describe('TherapyLine', () => {
     const link = screen.getByRole('link', { name: 'Написать терапевту →' });
     expect(link.getAttribute('href')).toBe('tg://user?id=42');
     fireEvent.click(link);
-    expect(track).toHaveBeenLastCalledWith('diary_done', 'write');
+    expect(track).toHaveBeenLastCalledWith('diary_done', 'write', undefined);
     expect(screen.queryByRole('dialog')).toBeNull();
   });
 

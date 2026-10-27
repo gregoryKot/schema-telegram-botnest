@@ -2,11 +2,9 @@ import { useState } from 'react';
 import type { Section } from '../components/appShell/navigation';
 import { JourneySheet } from '../components/JourneySheet';
 import { WhySheet } from '../components/WhySheet';
-import { TalkSheet } from '../components/therapy/TalkSheet';
-import { trackTherapyNudge } from '../components/therapy/trackTherapyNudge';
+import { useTherapyTarget } from '../components/therapy/useTherapyTarget';
 import { useTherapyBridgeTexts } from '../components/therapy/useTherapyBridgeTexts';
 import { ExternalLink } from '../host/ExternalLink';
-import { getTherapistContact } from '../../../shared/src/utils/therapistContact';
 import { trackHomeTile } from './today/trackHomeTile';
 import '../styles/client-more.css';
 
@@ -37,16 +35,14 @@ function RowBody({ row }: { row: Row }) {
 export function MoreSection({ onNavigate, onOpenSchema, onOpenAdvanced, userRole, onOpenTherapistCabinet }: Props) {
   const [why, setWhy] = useState(false);
   const [journey, setJourney] = useState(false);
-  const [talk, setTalk] = useState(false);
   const bridge = useTherapyBridgeTexts();
-  const contact = getTherapistContact();
-  const hasTherapist = contact.name !== 'автору';
+  const target = useTherapyTarget('more');
   // Терапевту строка «поговорить» не нужна. Подключён терапевт — сразу ссылка на него, иначе лист с записью к автору.
-  const talkRow: Row[] = userRole === 'THERAPIST' || contact.isTherapist
+  const talkRow: Row[] = userRole === 'THERAPIST' || target.hidden
     ? []
-    : hasTherapist
-      ? [{ id: 'talk', title: bridge.moreWriteTitle, sub: bridge.moreWriteSub, href: contact.url, onClick: () => trackTherapyNudge('more', 'write') }]
-      : [{ id: 'talk', title: bridge.moreTalkTitle, sub: bridge.moreTalkSub, onClick: () => { trackTherapyNudge('more', 'open'); setTalk(true); } }];
+    : target.write
+      ? [{ id: 'talk', title: bridge.moreWriteTitle, sub: bridge.moreWriteSub, href: target.write.url, onClick: target.write.onClick }]
+      : [{ id: 'talk', title: bridge.moreTalkTitle, sub: bridge.moreTalkSub, onClick: target.open }];
 
   const rows: Row[] = [
     { id: 'why', title: 'Зачем это всё', sub: 'Откуда это и что даёт каждое действие', onClick: () => { trackHomeTile('why'); setWhy(true); } },
@@ -88,7 +84,7 @@ export function MoreSection({ onNavigate, onOpenSchema, onOpenAdvanced, userRole
       <button type="button" className="cm-sos" onClick={() => onNavigate('practice')}>Мне очень плохо</button>
 
       {why && <WhySheet onClose={() => setWhy(false)} />}
-      {talk && <TalkSheet place="more" onClose={() => setTalk(false)} />}
+      {target.sheet}
       {journey && <JourneySheet onClose={() => setJourney(false)} />}
     </div>
   );

@@ -51,11 +51,30 @@ describe('detectTherapySignal', () => {
   });
 
   describe('общий гард', () => {
-    it('меньше 5 дней с оценками — ничего, даже при кризисе и низком индексе', () => {
+    it('меньше 5 дней с оценками — низкий индекс и повтор режима молчат', () => {
       const history = days([2, 2, 2, 2]);
+      const modeEntries = [1, 2, 3].map((i) => entry(i, 'punitive_critic', i));
+      expect(detectTherapySignal(input({ history, modeEntries }))).toBeNull();
+    });
+
+    it('кризис проходит и у новичка (гард «5 дней» его не касается), даже с пустой историей', () => {
+      const crisisSeenAt = NOW.toISOString();
+      for (const history of [days([2, 2]), []]) {
+        expect(
+          detectTherapySignal(input({ history, crisisSeenAt }))?.trigger,
+        ).toBe('crisis');
+      }
+    });
+
+    it('«Не сейчас» гасит и кризис у новичка', () => {
+      const dismissedUntil = new Date(NOW.getTime() + 86400000).toISOString();
       expect(
         detectTherapySignal(
-          input({ history, crisisSeenAt: NOW.toISOString() }),
+          input({
+            history: [],
+            crisisSeenAt: NOW.toISOString(),
+            dismissedUntil,
+          }),
         ),
       ).toBeNull();
     });
@@ -93,7 +112,7 @@ describe('detectTherapySignal', () => {
       const s = detectTherapySignal(input({ history: days([4, 3, 2, 8, 8]) }));
       expect(s).toEqual({
         trigger: 'low_index',
-        eyebrow: 'Три дня подряд индекс не выше 4',
+        eyebrow: 'Три последних заполненных дня: индекс не выше 4',
       });
     });
 

@@ -1,11 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import type { ModeDiaryEntry } from '../../../../shared/src/types';
-import { getTherapistContact } from '../../../../shared/src/utils/therapistContact';
 import { ExternalLink } from '../../host/ExternalLink';
-import { TalkSheet } from './TalkSheet';
 import { trackTherapyNudge } from './trackTherapyNudge';
 import { useTherapyBridgeTexts } from './useTherapyBridgeTexts';
 import { useTherapySignal } from './useTherapySignal';
+import { useTherapyTarget } from './useTherapyTarget';
 import '../../styles/therapy-bridge.css';
 
 /**
@@ -22,40 +21,27 @@ export function TherapyNudgeCard({
 }) {
   const t = useTherapyBridgeTexts();
   const { signal, dismiss } = useTherapySignal(refreshKey, modeEntries);
-  const [open, setOpen] = useState(false);
   const trigger = signal?.trigger;
+  const target = useTherapyTarget('signal_card', trigger);
 
   useEffect(() => {
     if (trigger) trackTherapyNudge('signal_card', 'shown', trigger);
   }, [trigger]);
 
   if (!signal) return null;
-  const contact = getTherapistContact();
-  const hasTherapist = contact.name !== 'автору';
 
   return (
     <section className="th-card" aria-label={t.cardTalk}>
       <div className="ds-eyebrow">{signal.eyebrow}</div>
       <h2 className="th-card-title">{t.cardTitle}</h2>
-      <p className="th-card-sub">{hasTherapist ? t.cardSubTherapist : t.cardSubAuthor}</p>
+      <p className="th-card-sub">{target.write ? t.cardSubTherapist : t.cardSubAuthor}</p>
       <div className="th-card-acts">
-        {hasTherapist ? (
-          <ExternalLink
-            className="ds-btn th-btn"
-            href={contact.url}
-            onClick={() => trackTherapyNudge('signal_card', 'write', signal.trigger)}
-          >
+        {target.write ? (
+          <ExternalLink className="ds-btn th-btn" href={target.write.url} onClick={target.write.onClick}>
             {t.cardWrite}
           </ExternalLink>
         ) : (
-          <button
-            type="button"
-            className="ds-btn th-btn"
-            onClick={() => {
-              trackTherapyNudge('signal_card', 'open', signal.trigger);
-              setOpen(true);
-            }}
-          >
+          <button type="button" className="ds-btn th-btn" onClick={target.open}>
             {t.cardTalk}
           </button>
         )}
@@ -70,7 +56,7 @@ export function TherapyNudgeCard({
           {t.cardLater}
         </button>
       </div>
-      {open && <TalkSheet place="signal_card" trigger={signal.trigger} onClose={() => setOpen(false)} />}
+      {target.sheet}
     </section>
   );
 }

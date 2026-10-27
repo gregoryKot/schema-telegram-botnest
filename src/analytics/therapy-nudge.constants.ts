@@ -17,7 +17,6 @@ export const THERAPY_NUDGE_PLACES = [
   'diary_done',
   'more',
   'signal_card',
-  'why',
 ] as const;
 export type TherapyNudgePlace = (typeof THERAPY_NUDGE_PLACES)[number];
 

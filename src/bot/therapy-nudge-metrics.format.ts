@@ -19,6 +19,8 @@ export interface TherapyNudgeMetrics {
   dismiss: number;
   /** Заявок с формы знакомства, пришедших из приложения. */
   introFromApp: number;
+  /** Записей на слот, пришедших из приложения. */
+  bookingFromApp: number;
 }
 
 // Подписи мест словами, без id. Порядок — как в реестре.
@@ -28,7 +30,6 @@ const PLACE_LABELS: Record<string, string> = {
   case_done: 'после разбора случая',
   diary_done: 'после дневника',
   more: 'в «Ещё»',
-  why: 'в «Зачем это»',
 };
 
 const TRIGGER_LABELS: Record<string, string> = {
@@ -71,12 +72,15 @@ export function formatTherapyNudge(m: TherapyNudgeMetrics): string {
   const lines: string[] = [];
   if (places.length > 0) lines.push(`Показали строку: ${places.join(', ')}.`);
   if (signalShown > 0) {
-    const why = triggers.length > 0 ? ` (${triggers.join(', ')})` : '';
-    lines.push(`Показали карточку по сигналу: ${signalShown}${why}.`);
+    const byTrigger = triggers.length > 0 ? ` (${triggers.join(', ')})` : '';
+    lines.push(`Показали карточку по сигналу: ${signalShown}${byTrigger}.`);
   }
   if (actions.length > 0) lines.push(`${capitalize(actions.join(', '))}.`);
   if (m.introFromApp > 0) {
     lines.push(`Заявок с формы знакомства из приложения: ${m.introFromApp}.`);
+  }
+  if (m.bookingFromApp > 0) {
+    lines.push(`Записей на слот из приложения: ${m.bookingFromApp}.`);
   }
   if (lines.length === 0) lines.push('Пока ничего.');
   return [title, ...lines].join('\n');

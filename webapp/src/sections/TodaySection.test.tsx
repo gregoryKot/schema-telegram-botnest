@@ -536,11 +536,11 @@ describe('TodaySection — мост к терапевту', () => {
   it('сигнал по трём низким дням: карточка стоит над лентой дня', async () => {
     mockApi.history.mockResolvedValue(lowDays);
     renderSection();
-    const eyebrow = await screen.findByText('Три дня подряд индекс не выше 4');
+    const eyebrow = await screen.findByText('Три последних заполненных дня: индекс не выше 4');
     const feedTitle = document.querySelector('.ct-feed')!;
     expect(eyebrow.compareDocumentPosition(feedTitle) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Не сейчас' }));
-    expect(screen.queryByText('Три дня подряд индекс не выше 4')).toBeNull();
+    expect(screen.queryByText('Три последних заполненных дня: индекс не выше 4')).toBeNull();
   });
 
   it('записи режимов из дневника доходят до сигнала: три раза один режим', async () => {
