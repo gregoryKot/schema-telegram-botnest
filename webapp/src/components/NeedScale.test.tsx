@@ -101,3 +101,21 @@ describe('NeedScale variant="words"', () => {
     expect(screen.getAllByRole('button')).toHaveLength(10);
   });
 });
+
+describe('NeedScale variant=words: подписи-якоря', () => {
+  it('подпись рисуется под словом по индексу, без подписи — только слово', () => {
+    render(
+      <NeedScale
+        variant="words"
+        value={undefined}
+        hue={28}
+        label="Привязанность"
+        onChange={() => {}}
+        sublabels={['ничего не было', undefined, 'что-то было', undefined, 'были моменты']}
+      />,
+    );
+    expect(screen.getByText('ничего не было')).toBeTruthy();
+    expect(screen.getByText('были моменты')).toBeTruthy();
+    expect(screen.getByRole('button', { name: /^Мало/ }).querySelector('.ns-word-sub')).toBeNull();
+  });
+});

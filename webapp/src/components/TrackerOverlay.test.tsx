@@ -94,9 +94,9 @@ describe('TrackerOverlay — вопрос', () => {
     expect(heading('Привязанность')).toBeTruthy();
   });
 
-  it('тап по названию-ссылке «Что считается…» открывает лист потребности', () => {
+  it('ссылка «Подробнее о потребности» открывает лист потребности', () => {
     renderOverlay();
-    fireEvent.click(screen.getByText('Что считается и как понять оценку'));
+    fireEvent.click(screen.getByText('Подробнее о потребности'));
     expect(screen.getByText('Назад к дневнику')).toBeTruthy();
   });
 

@@ -40,6 +40,19 @@
 .tq-eyebrow { margin: 0; font: 700 12px var(--sans); letter-spacing: .08em; text-transform: uppercase; }
 .tq-title { margin: 0; font: 400 clamp(30px, 7vw, 44px)/1.1 var(--serif); letter-spacing: -0.02em; color: var(--text); }
 .tq-question { margin: 0; font-size: 17px; line-height: 1.5; color: var(--text-sub); }
+/* «Что это за потребность» и примеры (NeedExplainer): описание всегда, примеры — нативный <details>. */
+.tq-desc { margin: calc(var(--space-8) * -1) 0 0; font-size: 15px; line-height: 1.5; color: var(--text-sub); }
+.tq-examples { margin: 0; border-radius: 14px; background: var(--paper-tint); padding: 0 var(--space-16); }
+.tq-examples-sum {
+  min-height: 44px; display: flex; align-items: center; cursor: pointer; list-style: none;
+  font: 600 14px var(--sans); color: var(--text-sub);
+}
+.tq-examples-sum::-webkit-details-marker { display: none; }
+.tq-examples-sum::after { content: '›'; margin-left: auto; font-size: 20px; line-height: 1; color: var(--text-faint); transition: transform .2s; }
+.tq-examples[open] .tq-examples-sum::after { transform: rotate(90deg); }
+.tq-examples-sum:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: var(--r-8); }
+.tq-examples-list { margin: 0; padding: 0 0 var(--space-12) var(--space-16); font-size: 14px; line-height: 1.5; color: var(--text-sub); }
+.tq-examples-list li + li { margin-top: var(--space-4); }
 .tq-hint { margin: 0; font-size: 13px; line-height: 1.4; color: var(--text-faint); }
 .tq-more {
   align-self: flex-start; min-height: 44px; padding: 0; background: none; border: none;
