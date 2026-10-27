@@ -1,5 +1,9 @@
-import { HOME_TILES } from '../analytics/home-events.constants';
 import {
+  DIARY_QUICK_TAGS,
+  HOME_TILES,
+} from '../analytics/home-events.constants';
+import {
+  formatDiaryQuickSaves,
   formatHomeTiles,
   formatTrackerSkips,
   HOME_TILE_LABELS,
@@ -38,5 +42,32 @@ describe('formatTrackerSkips — «Пропустить» в трекере', ()
 
   it('есть данные: счётчик словами', () => {
     expect(formatTrackerSkips(7)).toBe('Трекер: пропусков 7');
+  });
+});
+
+describe('formatDiaryQuickSaves — «Дневник одной страницей»', () => {
+  const tags = (c: Record<string, number>) =>
+    DIARY_QUICK_TAGS.map((tag) => ({ tag, count: c[tag] ?? 0 }));
+
+  it('пустая БД: строки нет, в ней нет «0» и NaN', () => {
+    expect(formatDiaryQuickSaves({ byTag: [], detailed: 0 })).toBeNull();
+    expect(formatDiaryQuickSaves({ byTag: tags({}), detailed: 0 })).toBeNull();
+  });
+
+  it('есть данные: подписи словами, нули не печатаются, «подробно» отдельно', () => {
+    const line = formatDiaryQuickSaves({
+      byTag: tags({ thought: 5, gratitude: 2, mode: 1 }),
+      detailed: 3,
+    });
+    expect(line).toBe(
+      'Дневник одной страницей: мыслей 5, режимов 1, благодарностей 2; подробно 3',
+    );
+    expect(line).not.toMatch(/thought|mode|gratitude|NaN|undefined/);
+  });
+
+  it('без подробных записей хвоста «подробно» нет', () => {
+    expect(
+      formatDiaryQuickSaves({ byTag: tags({ schema: 4 }), detailed: 0 }),
+    ).toBe('Дневник одной страницей: схем 4');
   });
 });

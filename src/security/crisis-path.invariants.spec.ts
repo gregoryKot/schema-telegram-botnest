@@ -140,6 +140,7 @@ const EXPECTED_CRISIS_FILES = [
   'webapp/src/components/diary/ModeEntryForm.tsx',
   'webapp/src/components/diary/GratitudeEntrySheet.tsx',
   'webapp/src/components/diary/SchemaEntrySheet.tsx',
+  'webapp/src/components/diary/quickEntry/QuickWriteStep.tsx',
   'schema-miniapp/src/components/diary/ModeEntrySheet.tsx',
   // Благодарность (#769): поля и детекция вынесены в GratitudeParts.tsx,
   // GratitudeEntrySheet.tsx остался оркестратором без <textarea>.

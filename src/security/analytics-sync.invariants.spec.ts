@@ -170,6 +170,13 @@ const BACKEND_ONLY: Record<string, string> = {
     'webapp/src/sections/today/trackHomeTile.ts зовёт ' +
     'api.trackEvent(TRACKER_SKIP_EVENT) по «Пропустить» на вопросе трекера ' +
     '(простой клиент, этап 2); тот же приём, что у home_tile',
+  diary_quick_save:
+    'шлётся через импортируемую константу DIARY_QUICK_SAVE_EVENT ' +
+    '(shared/src/analytics/homeTile.ts), не строковым литералом — ' +
+    'webapp/src/components/diary/quickEntry/trackQuickSave.ts зовёт ' +
+    'api.trackEvent(DIARY_QUICK_SAVE_EVENT, { tag, detailed }) после ' +
+    'сохранения записи «Дневника одной страницей» (простой клиент, ' +
+    'этап 3); тот же приём, что у home_tile',
   entry_deleted:
     'шлётся через импортируемую константу ENTRY_DELETED_EVENT ' +
     '(shared/src/share/analytics.ts), не строковым литералом — общий хук ' +
@@ -254,6 +261,7 @@ describe('трипваер: имена событий фронта ⊆ allow-lis
     // 32 — home_tile (2026-10, главная простого клиента, #872): константное
     // событие, как entry_deleted.
     // 33 — tracker_skip (2026-10, простой клиент, этап 2): тоже константа.
-    expect(Object.keys(BACKEND_ONLY).length).toBeLessThanOrEqual(33);
+    // 34 — diary_quick_save (2026-10, простой клиент, этап 3): тоже константа.
+    expect(Object.keys(BACKEND_ONLY).length).toBeLessThanOrEqual(34);
   });
 });

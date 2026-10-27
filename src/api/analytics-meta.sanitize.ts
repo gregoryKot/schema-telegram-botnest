@@ -19,7 +19,7 @@ import { sanitizeScreenMeta } from './analytics-meta.sanitize-screens';
 import { sanitizeCaseMeta } from './analytics-meta.sanitize-case';
 import { sanitizeQuickActionMeta } from './analytics-meta.sanitize-quick-actions';
 import { sanitizeLoginTicketMeta } from './analytics-meta.sanitize-login';
-import { sanitizeHomeTileMeta } from './analytics-meta.sanitize-home';
+import { sanitizeHomeMeta } from './analytics-meta.sanitize-home';
 import { sanitizeDataExportMeta } from './analytics-meta.sanitize-data-export';
 
 // Санитизация meta для POST /api/event (правило №7/№10): пропускаем ТОЛЬКО
@@ -80,9 +80,6 @@ export function sanitizeMeta(
       ? { hidden: meta.hidden }
       : undefined;
   }
-  if (name === 'home_tile') return sanitizeHomeTileMeta(meta);
-  // tracker_skip без полей: что бы ни прислали, в базу уходит пустой объект.
-  if (name === 'tracker_skip') return {};
   if (name === 'web_banner_open' || name === 'web_banner_dismiss') {
     const banner = meta.banner;
     if (typeof banner === 'string' && WEB_BANNER_ID_SET.has(banner)) {
@@ -283,5 +280,6 @@ export function sanitizeMeta(
   }
   // Без meta: breath_start / stop_start / journey_open / ysq_help_open / plus_open /
   // CONCEPT_EVENTS; серверные notify_queue_tick, therapist_resigned (подделке — без чисел).
-  return undefined;
+  // Главная простого клиента (home_tile, tracker_skip, diary_quick_save) — свой файл.
+  return sanitizeHomeMeta(name, meta);
 }

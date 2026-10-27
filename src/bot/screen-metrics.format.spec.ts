@@ -26,6 +26,7 @@ const FULL: ScreenMetrics = {
   syncedUsers: 0,
   homeTiles: [],
   trackerSkips: 0,
+  diaryQuick: { byTag: [], detailed: 0 },
 };
 
 const EMPTY: ScreenMetrics = {
@@ -35,6 +36,7 @@ const EMPTY: ScreenMetrics = {
   syncedUsers: 0,
   homeTiles: [],
   trackerSkips: 0,
+  diaryQuick: { byTag: [], detailed: 0 },
 };
 
 describe('formatScreenMetrics', () => {
@@ -207,5 +209,15 @@ describe('formatScreenMetrics — пропуски в трекере', () => {
       'Главная: плитки — Трекер 2',
       'Трекер: пропусков 5',
     ]);
+  });
+
+  it('строка «Дневник одной страницей» попадает в блок только при данных', () => {
+    expect(formatScreenMetrics(EMPTY)).not.toContain('Дневник одной страницей');
+    const text = formatScreenMetrics({
+      ...EMPTY,
+      opensByScreen: [{ screen: 'profile', count: 1 }],
+      diaryQuick: { byTag: [{ tag: 'thought', count: 2 }], detailed: 1 },
+    });
+    expect(text).toContain('Дневник одной страницей: мыслей 2; подробно 1');
   });
 });

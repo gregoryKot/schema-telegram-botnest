@@ -2,12 +2,17 @@
 // DiariesOverlay — тонкая обёртка вокруг DiarySection. К4 дизайн-аудита
 // 2026-08: оверлей размечен как диалог (useDialogA11y), без своего теста.
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { render, screen, cleanup } from '@testing-library/react';
+import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { DiariesOverlay } from './DiariesOverlay';
 
 vi.mock('../sections/DiarySection', () => ({
-  DiarySection: () => <div>Мои дневники</div>,
+  DiarySection: (p: { onOpenTrackerHistory?: () => void }) => (
+    <div>
+      Мои дневники
+      <button onClick={p.onOpenTrackerHistory}>история трекера</button>
+    </div>
+  ),
 }));
 
 afterEach(cleanup);
@@ -30,5 +35,16 @@ describe('DiariesOverlay', () => {
       </MemoryRouter>,
     );
     expect(screen.getByText('Мои дневники')).toBeTruthy();
+  });
+
+  it('передаёт в DiarySection переход к истории трекера', () => {
+    const onOpenTrackerHistory = vi.fn();
+    render(
+      <MemoryRouter>
+        <DiariesOverlay onClose={vi.fn()} onOpenTrackerHistory={onOpenTrackerHistory} />
+      </MemoryRouter>,
+    );
+    fireEvent.click(screen.getByText('история трекера'));
+    expect(onOpenTrackerHistory).toHaveBeenCalledTimes(1);
   });
 });
