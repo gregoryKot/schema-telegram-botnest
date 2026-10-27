@@ -34,7 +34,7 @@ describe('e2e: приглашение клиента терапевтом', () =
     return {
       get: (u: string) => send(http().get(u)),
       post: (u: string, body: object = {}) => send(http().post(u)).send(body),
-      del: (u: string) => send(http().delete(u)),
+      delete: (u: string) => send(http().delete(u)),
     };
   };
 
@@ -144,15 +144,15 @@ describe('e2e: приглашение клиента терапевтом', () =
     const theirs = await as(TH2).get('/api/therapy/invites');
     expect(theirs.status).toBe(200);
     expect(theirs.body).toEqual([]);
-    expect((await as(TH2).del(`/api/therapy/invites/${row!.id}`)).status).toBe(
-      404,
-    );
+    expect(
+      (await as(TH2).delete(`/api/therapy/invites/${row!.id}`)).status,
+    ).toBe(404);
     // Клиент списка не получает вовсе.
     expect((await as(A).get('/api/therapy/invites')).status).toBe(403);
 
-    expect((await as(TH).del(`/api/therapy/invites/${row!.id}`)).status).toBe(
-      200,
-    );
+    expect(
+      (await as(TH).delete(`/api/therapy/invites/${row!.id}`)).status,
+    ).toBe(200);
     expect((await as(TH).get('/api/therapy/invites')).body).toEqual([]);
     // Отозванным кодом не подключиться.
     const late = await as(B).post('/api/therapy/join', {

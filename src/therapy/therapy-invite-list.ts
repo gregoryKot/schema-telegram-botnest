@@ -1,5 +1,5 @@
 import { PrismaService } from '../prisma/prisma.service';
-import { decName } from './client-name';
+import { decryptName } from './client-name';
 import { therapistName } from './therapist-name';
 import {
   INVITE_TTL_MS,
@@ -40,7 +40,7 @@ export async function listTherapyInvites(
     id: r.id,
     code: r.code,
     url: inviteUrl(r.code),
-    alias: decName(r.clientAlias),
+    alias: decryptName(r.clientAlias),
     createdAt: r.createdAt.toISOString(),
     expiresAt: new Date(r.createdAt.getTime() + INVITE_TTL_MS).toISOString(),
   }));

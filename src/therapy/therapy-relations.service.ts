@@ -10,7 +10,7 @@ import {
 } from './therapy-invite-list';
 import { getRelationInfo, meetingDaysOf } from './therapy-relation-info';
 import { decryptJson } from '../utils/crypto';
-import { decName, encName } from './client-name';
+import { decryptName, encryptName } from './client-name';
 import { randomBytes } from 'crypto';
 import { activeRelationWhere } from './relation-where';
 import { TherapyRelationInfo, TherapyClientSummary } from './therapy.types';
@@ -137,7 +137,7 @@ export class TherapyRelationsService {
         return {
           telegramId: clientId,
           name: rel.client!.firstName,
-          clientAlias: decName(rel.clientAlias),
+          clientAlias: decryptName(rel.clientAlias),
           streak,
           lastActiveDate,
           todayIndex,
@@ -155,8 +155,8 @@ export class TherapyRelationsService {
       .filter((rel) => rel.client === null && rel.virtualClientName)
       .map((rel) => ({
         telegramId: -BigInt(rel.id),
-        name: decName(rel.virtualClientName) as string,
-        clientAlias: decName(rel.clientAlias),
+        name: decryptName(rel.virtualClientName) as string,
+        clientAlias: decryptName(rel.clientAlias),
         streak: 0,
         lastActiveDate: null,
         todayIndex: null,
@@ -182,7 +182,7 @@ export class TherapyRelationsService {
         therapistId,
         clientId: null,
         status: 'active',
-        virtualClientName: encName(name),
+        virtualClientName: encryptName(name),
       },
     });
     return this.getClients(therapistId);
@@ -213,7 +213,7 @@ export class TherapyRelationsService {
   ): Promise<void> {
     const { count } = await this.prisma.therapyRelation.updateMany({
       where: activeRelationWhere(therapistId, clientId),
-      data: { clientAlias: encName(alias) },
+      data: { clientAlias: encryptName(alias) },
     });
     // 0 строк — связи нет (клиент удалён, чужой, выдуман): раньше это был
     // тихий успех и «переименование» удалённого клиента (QA 2026-10-26).
