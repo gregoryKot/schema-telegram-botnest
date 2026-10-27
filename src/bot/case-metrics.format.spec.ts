@@ -9,6 +9,7 @@ import { formatCaseMetrics, CaseMetrics } from './case-metrics.format';
 
 const EMPTY: CaseMetrics = {
   started: 0,
+  saved: 0,
   finished: 0,
   sceneOwn: 0,
   sceneFrame: 0,
@@ -27,6 +28,7 @@ const EMPTY: CaseMetrics = {
 const filled = (over: Partial<CaseMetrics> = {}): CaseMetrics => ({
   ...EMPTY,
   started: 40,
+  saved: 29,
   finished: 31,
   sceneOwn: 25,
   sceneFrame: 15,
@@ -49,7 +51,18 @@ describe('formatCaseMetrics', () => {
     expect(out).toContain('Пока никто не начинал');
     expect(out).not.toMatch(/NaN|undefined|null/);
     expect(out).not.toContain('Начали 0');
-    expect(out.split('\n')).toHaveLength(2);
+    // Заголовок, «пока никто» и строка про fromCase (0 — честное число).
+    expect(out).toContain(
+      'Разборов сохранено (по полю fromCase): 0 за 30 дней',
+    );
+    expect(out.split('\n')).toHaveLength(3);
+  });
+
+  it('показывает число сохранённых разборов по fromCase рядом с воронкой', () => {
+    const out = formatCaseMetrics(filled({ saved: 29 }));
+    expect(out).toContain(
+      'Разборов сохранено (по полю fromCase): 29 за 30 дней',
+    );
   });
 
   it('показывает воронку, сцену, вердикты и людей', () => {

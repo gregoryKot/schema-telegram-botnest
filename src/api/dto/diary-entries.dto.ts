@@ -2,6 +2,7 @@ import {
   ArrayMaxSize,
   ArrayMinSize,
   IsArray,
+  IsBoolean,
   IsOptional,
   IsString,
   MaxLength,
@@ -113,6 +114,12 @@ export class ModeDiaryDto {
   @IsString()
   @MaxLength(DIARY_FIELD_MAX)
   healthyResponse?: string;
+
+  // Запись родилась из потока «Что случилось» (сайт): по ней «Записи» строят
+  // фильтр «Случаи», а /stats — счётчик разборов. Без поля — обычная запись.
+  @IsOptional()
+  @IsBoolean()
+  fromCase?: boolean;
 }
 
 export class GratitudeDiaryDto {

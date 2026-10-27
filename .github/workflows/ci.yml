@@ -102,6 +102,7 @@ jobs:
           test/body-limit test/login-csrf test/payment-webhook-practice-host
           test/text-limits test/therapy-ownership.e2e-spec.ts
           test/booking-admin-cancel test/exercise-delete-ownership test/max-auth
+          test/diary-mode-from-case
       # Security-гейт (этап 1.4): high/critical уязвимости в prod-зависимостях
       # блокируют мерж. dev-зависимости не гейтим: сборочная цепочка
       # исполняется на раннере, а не у пользователя, её несёт Dependabot.
@@ -587,6 +588,7 @@ jobs:
           test/booking-admin-cancel.e2e-spec.ts
           test/exercise-delete-ownership.e2e-spec.ts
           test/max-auth.e2e-spec.ts
+          test/diary-mode-from-case.e2e-spec.ts
         env:
           E2E_REAL_DB: '1'
       # Перенос БД на VPS (deploy/transfer-db.sh, docs/MIGRATION_VPS.md): настоящие

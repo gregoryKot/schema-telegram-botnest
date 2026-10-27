@@ -212,6 +212,22 @@ describe('DiaryService — дневник режимов: сохранил → �
     expect(entry.feelings).toBe('страх');
   });
 
+  it('fromCase: сохранил → нашёл; без поля запись не считается разбором', async () => {
+    const { svc } = makeService();
+    await svc.createModeDiaryEntry(USER_A, {
+      modeId: 'vulnerable_child',
+      situation: 'разбор',
+      fromCase: true,
+    });
+    await svc.createModeDiaryEntry(USER_A, {
+      modeId: 'vulnerable_child',
+      situation: 'обычная',
+    });
+    const rows = await svc.getModeDiaryEntries(USER_A);
+    expect(rows.find((r) => r.situation === 'разбор')?.fromCase).toBe(true);
+    expect(rows.find((r) => r.situation === 'обычная')?.fromCase).toBe(false);
+  });
+
   it('пользователь A не видит записи режимов пользователя B', async () => {
     const { svc } = makeService();
     await svc.createModeDiaryEntry(USER_A, {
