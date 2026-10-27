@@ -465,6 +465,7 @@ model ModeDiaryEntry {
   fromCase          Boolean  @default(false) // запись родилась из потока «Что случилось» (сайт, этап 4); старые — false
 
   @@index([userId, createdAt])
+  @@index([fromCase, createdAt]) // /stats: разборы за 30 дней (check-query-plans, stats-report)
 }
 
 model GratitudeDiaryEntry {
