@@ -39,7 +39,9 @@ describe('wordForValue', () => {
 
 describe('rangeCardIndex', () => {
   it('слова 0–1 → первая карточка, 2 → вторая, 3–4 → третья', () => {
-    expect([1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(rangeCardIndex)).toEqual([0, 0, 0, 0, 1, 1, 2, 2, 2, 2]);
+    expect([1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(rangeCardIndex)).toEqual([
+      0, 0, 0, 0, 1, 1, 2, 2, 2, 2,
+    ]);
   });
 
   it('нет оценки — -1, ни одна карточка не подсвечена', () => {
