@@ -14,7 +14,9 @@ function readFrontend(): string {
   try {
     return readFileSync(join(ROOT, FRONTEND_REL), 'utf8');
   } catch {
-    throw new Error(`Не найден файл ${FRONTEND_REL}: сверка HOME_TILES невозможна.`);
+    throw new Error(
+      `Не найден файл ${FRONTEND_REL}: сверка HOME_TILES невозможна.`,
+    );
   }
 }
 
@@ -44,7 +46,9 @@ describe('трипваер: HomeTile фронта и HOME_TILES бэка сов�
 
   it('каждая плитка фронта есть в allow-list бэка', () => {
     const backend = new Set<string>(HOME_TILES);
-    expect(extractFrontendTiles(readFrontend()).filter((t) => !backend.has(t))).toEqual([]);
+    expect(
+      extractFrontendTiles(readFrontend()).filter((t) => !backend.has(t)),
+    ).toEqual([]);
   });
 
   it('на фронте нет дублей плиток', () => {

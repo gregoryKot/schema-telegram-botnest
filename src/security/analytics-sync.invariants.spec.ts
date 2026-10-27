@@ -158,6 +158,12 @@ const BACKEND_ONLY: Record<string, string> = {
     'userId. Фронт его не шлёт: выгрузку запускает сам HTTP-запрос к ' +
     'эндпоинту, а не клиентское действие вроде клика — событие пишется в ' +
     'том же обработчике, что формирует файл',
+  home_tile:
+    'шлётся через импортируемую константу HOME_TILE_EVENT ' +
+    '(shared/src/analytics/homeTile.ts), не строковым литералом — ' +
+    'webapp/src/sections/today/trackHomeTile.ts зовёт ' +
+    'api.trackEvent(HOME_TILE_EVENT, { tile }) по тапу на плитку главной ' +
+    '(простой клиент, этап 1, #872); тот же приём, что у entry_deleted',
   entry_deleted:
     'шлётся через импортируемую константу ENTRY_DELETED_EVENT ' +
     '(shared/src/share/analytics.ts), не строковым литералом — общий хук ' +
@@ -239,6 +245,8 @@ describe('трипваер: имена событий фронта ⊆ allow-lis
     // уведомлений, пишет крон — у фронта такого действия нет по устройству.
     // 31 — therapist_resigned (решение владельца 2026-10-22): отказ терапевта
     // от роли — сам HTTP-запрос, событие пишет сервер после транзакции.
-    expect(Object.keys(BACKEND_ONLY).length).toBeLessThanOrEqual(31);
+    // 32 — home_tile (2026-10, главная простого клиента, #872): константное
+    // событие, как entry_deleted.
+    expect(Object.keys(BACKEND_ONLY).length).toBeLessThanOrEqual(32);
   });
 });

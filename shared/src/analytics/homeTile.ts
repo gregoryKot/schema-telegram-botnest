@@ -4,9 +4,4 @@
 export const HOME_TILE_EVENT = 'home_tile';
 
 export type HomeTile =
-  | 'tracker'
-  | 'case'
-  | 'diary'
-  | 'calm'
-  | 'why'
-  | 'feed_all';
+  'tracker' | 'case' | 'diary' | 'calm' | 'why' | 'feed_all';
