@@ -79,7 +79,6 @@ export function QuickEntrySheet({ onClose, onSaved }: Props) {
           tag={q.tag}
           saving={q.saving}
           error={q.error}
-          crisis={crisis}
           onText={q.setText}
           onTag={(t) => { q.setTag(t); q.setError(null); }}
           onSubmit={q.submit}

@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { haptic } from '../../../haptic';
 import { CrisisCard } from '../../CrisisCard';
+import { detectCrisisAny } from '../../../utils/crisisMarkers';
 import { LimitedTextarea } from '../../../../../shared/src/components/LimitedTextarea';
 import { DIARY_FIELD_MAX } from '../../../../../shared/src/limits/textLimits';
 import { QUICK_TAGS, hasSecondStep, type QuickTag } from './quickEntryModel';
@@ -11,7 +12,6 @@ interface Props {
   tag: QuickTag;
   saving: boolean;
   error: QuickError | null;
-  crisis: boolean;
   onText: (v: string) => void;
   onTag: (t: QuickTag) => void;
   onSubmit: () => void;
@@ -20,7 +20,9 @@ interface Props {
 }
 
 /** Первый экран «Дневника одной страницей»: поле «Что на уме?», необязательный тег, «Сохранить». */
-export function QuickWriteStep({ text, tag, saving, error, crisis, onText, onTag, onSubmit, onDetailed, onClose }: Props) {
+export function QuickWriteStep({ text, tag, saving, error, onText, onTag, onSubmit, onDetailed, onClose }: Props) {
+  // Правило №7: детекция прямо в файле с полем ввода (трипваер crisis-path.invariants).
+  const crisis = detectCrisisAny(text);
   const areaRef = useRef<HTMLTextAreaElement>(null);
   useEffect(() => { areaRef.current?.focus(); }, []);
   return (
