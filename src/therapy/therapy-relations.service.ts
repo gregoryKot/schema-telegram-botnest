@@ -2,13 +2,15 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { BotClientOverviewService } from '../bot/bot.client-overview.service';
 import { createTherapyInvite, joinTherapyAsClient } from './therapy-invite';
+import {
+  listTherapyInvites,
+  previewTherapyInvite,
+  revokeTherapyInvite,
+  TherapyInviteView,
+} from './therapy-invite-list';
 import { getRelationInfo, meetingDaysOf } from './therapy-relation-info';
-import { encrypt, decrypt, decryptJson } from '../utils/crypto';
-
-// Имена клиентов, введённые терапевтом (алиас и офлайн-клиент) — PII,
-// шифруются; легаси plaintext читается как есть (decrypt tolerant).
-const decName = (v: string | null): string | null =>
-  v == null ? null : (decrypt(v) ?? v);
+import { decryptJson } from '../utils/crypto';
+import { decName, encName } from './client-name';
 import { randomBytes } from 'crypto';
 import { activeRelationWhere } from './relation-where';
 import { TherapyRelationInfo, TherapyClientSummary } from './therapy.types';
@@ -27,8 +29,24 @@ export class TherapyRelationsService {
 
   // ─── Connection ─────────────────────────────────────────────────────────────
 
-  createInvite(therapistId: bigint): Promise<{ code: string; url: string }> {
-    return createTherapyInvite(this.prisma, therapistId);
+  // Каждый вызов — новый код; alias — имя из «Новый клиент» (therapy-invite.ts).
+  createInvite(
+    therapistId: bigint,
+    alias?: string,
+  ): Promise<{ code: string; url: string }> {
+    return createTherapyInvite(this.prisma, therapistId, alias);
+  }
+
+  listInvites(therapistId: bigint): Promise<TherapyInviteView[]> {
+    return listTherapyInvites(this.prisma, therapistId);
+  }
+
+  revokeInvite(therapistId: bigint, id: number): Promise<boolean> {
+    return revokeTherapyInvite(this.prisma, therapistId, id);
+  }
+
+  previewInvite(clientId: bigint, code: string) {
+    return previewTherapyInvite(this.prisma, clientId, code);
   }
 
   // true — подключён, false — код не подошёл; бросает ALREADY_CONNECTED_ERROR
@@ -164,7 +182,7 @@ export class TherapyRelationsService {
         therapistId,
         clientId: null,
         status: 'active',
-        virtualClientName: encrypt(name.trim()) ?? name.trim(),
+        virtualClientName: encName(name),
       },
     });
     return this.getClients(therapistId);
@@ -193,10 +211,9 @@ export class TherapyRelationsService {
     clientId: bigint,
     alias: string,
   ): Promise<void> {
-    const encAlias = alias.trim() ? encrypt(alias.trim()) : null;
     const { count } = await this.prisma.therapyRelation.updateMany({
       where: activeRelationWhere(therapistId, clientId),
-      data: { clientAlias: encAlias },
+      data: { clientAlias: encName(alias) },
     });
     // 0 строк — связи нет (клиент удалён, чужой, выдуман): раньше это был
     // тихий успех и «переименование» удалённого клиента (QA 2026-10-26).

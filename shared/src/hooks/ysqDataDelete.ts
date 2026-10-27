@@ -18,6 +18,7 @@
 // видимость кнопки — одна, `useHasYsqData`.
 import { useEffect, useState } from 'react';
 import { YSQ_PROGRESS_KEY, YSQ_RESULT_KEY } from './ysqStorageKeys';
+import { useConfirmedAction } from './useConfirmedAction';
 import type { Tr } from './ysqSchemas';
 
 export interface YsqDataDeleteApi {
@@ -32,30 +33,7 @@ export async function deleteAllYsqData(api: YsqDataDeleteApi): Promise<void> {
 
 /** Кнопка → подтверждение → удаление; при отказе подтверждение остаётся с ошибкой. */
 export function useYsqDataDelete(api: YsqDataDeleteApi, onDeleted: () => void) {
-  const [confirming, setConfirming] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const [failed, setFailed] = useState(false);
-
-  const ask = () => {
-    setFailed(false);
-    setConfirming(true);
-  };
-  const cancel = () => setConfirming(false);
-  const confirm = async () => {
-    setBusy(true);
-    setFailed(false);
-    try {
-      await deleteAllYsqData(api);
-      setConfirming(false);
-      onDeleted();
-    } catch {
-      setFailed(true);
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  return { confirming, busy, failed, ask, cancel, confirm };
+  return useConfirmedAction(() => deleteAllYsqData(api), onDeleted);
 }
 
 /** Есть ли на этом устройстве что-то от теста. */

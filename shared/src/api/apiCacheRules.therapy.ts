@@ -15,6 +15,7 @@ import { numStr, simple, type Rule } from './apiCacheRules.kit';
 
 const T = '/api/therapy';
 const FORMER = `${T}/former-therapist`;
+const INVITES = `${T}/invites`;
 const CLIENTS = `${T}/clients`;
 // Канбан «Задания» (tasks/all): имя клиента и его задания.
 const ALL_TASKS = `${T}/tasks/all`;
@@ -36,6 +37,11 @@ export const THERAPY_RULES: Rule[] = [
   // пропадает, отключился — может вернуться (former-therapist-info.ts).
   simple('POST', /^\/api\/therapy\/join$/, `${T}/relation`, FORMER),
   simple('DELETE', /^\/api\/therapy\/relation$/, `${T}/relation`, FORMER),
+  // Живые приглашения терапевта («Ждут подключения»): новое и отозванное
+  // меняют список сразу; принятое клиентом уходит из него на чужом запросе —
+  // его кеш у терапевта живёт 15 секунд, это допустимо.
+  simple('POST', /^\/api\/therapy\/invite$/, INVITES),
+  simple('DELETE', /^\/api\/therapy\/invites\/\d+$/, INVITES),
   simple('POST', /^\/api\/therapy\/clients\/virtual$/, CLIENTS),
   // Удаление стирает связь, заметки, концептуализацию, карты режимов, а у
   // офлайн-клиента и задания (remove-client.ts) — сбрасываем всё про клиента.
@@ -53,6 +59,7 @@ export const THERAPY_RULES: Rule[] = [
     /^\/api\/therapy\/therapist-role$/,
     '/api/user-flags',
     CLIENTS,
+    INVITES,
   ),
   {
     method: 'POST',

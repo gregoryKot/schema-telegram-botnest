@@ -12,7 +12,10 @@ import {
 import type { Request } from 'express';
 import { TherapyConnectionController } from './therapy-connection.controller';
 import { TherapyRelationsService } from './therapy-relations.service';
-import { ALREADY_CONNECTED_ERROR } from './therapy-invite';
+import {
+  ALREADY_CONNECTED_ERROR,
+  TOO_MANY_INVITES_ERROR,
+} from './therapy-invite';
 import { TherapyClientDataService } from './therapy-client-data.service';
 import { AccountService } from '../bot/account.service';
 import { TherapistRequestService } from './therapist-request.service';
@@ -128,7 +131,7 @@ describe('TherapyConnectionController — 403 для не-терапевта', (
   const cases: Array<
     [string, (c: TherapyConnectionController) => Promise<unknown>]
   > = [
-    ['createInvite', (c) => c.createInvite(makeReq())],
+    ['createInvite', (c) => c.createInvite(makeReq(), {})],
     ['getClients', (c) => c.getClients(makeReq())],
     ['removeClient', (c) => c.removeClient(makeReq(), '5')],
     ['addVirtualClient', (c) => c.addVirtualClient(makeReq(), { name: 'X' })],
@@ -147,11 +150,41 @@ describe('TherapyConnectionController — 403 для не-терапевта', (
 });
 
 describe('TherapyConnectionController.createInvite', () => {
-  it('терапевт → делегирует createInvite(therapistId) и возвращает результат', async () => {
+  it('терапевт → делегирует createInvite(therapistId, alias) и возвращает результат', async () => {
     const { controller, relations } = makeController();
-    const res = await controller.createInvite(makeReq(3n));
-    expect(relations.createInvite).toHaveBeenCalledWith(3n);
+    const res = await controller.createInvite(makeReq(3n), {
+      alias: 'Мария К.',
+    });
+    expect(relations.createInvite).toHaveBeenCalledWith(3n, 'Мария К.');
     expect(res).toEqual({ code: 'ABC123', url: 'https://t.me/x?startapp=y' });
+  });
+
+  it('без имени (настройки «Кабинет») → alias undefined', async () => {
+    const { controller, relations } = makeController();
+    await controller.createInvite(makeReq(3n), {});
+    expect(relations.createInvite).toHaveBeenCalledWith(3n, undefined);
+  });
+
+  it('предел живых приглашений → 409 { reason: too_many_invites }', async () => {
+    const relations = makeRelations();
+    relations.createInvite.mockRejectedValue(new Error(TOO_MANY_INVITES_ERROR));
+    const { controller } = makeController({ relations });
+    const err = await controller
+      .createInvite(makeReq(3n), {})
+      .catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(ConflictException);
+    expect((err as ConflictException).getResponse()).toMatchObject({
+      reason: 'too_many_invites',
+    });
+  });
+
+  it('прочая ошибка пробрасывается как есть', async () => {
+    const relations = makeRelations();
+    relations.createInvite.mockRejectedValue(new Error('db down'));
+    const { controller } = makeController({ relations });
+    await expect(controller.createInvite(makeReq(3n), {})).rejects.toThrow(
+      'db down',
+    );
   });
 });
 

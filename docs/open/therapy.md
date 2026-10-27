@@ -171,3 +171,34 @@
   `webapp/src/sections/practice/taskRowState.ts:6` и
   `webapp/src/sections/PracticeSection.tsx:116-117` (`ALL_SCHEMAS.some`), хотя
   мини-апп для того же берёт `findLegacyTaskTarget` из `shared/src/tasks/taskTitle.ts`.
+
+**Приглашение клиента терапевтом — остаток после инцидента 2026-10-26** (код из
+12 знаков при поле на 8, один код на два приглашения, дубль карточки):
+- **Офлайн-карточку нельзя превратить в карточку подключившегося клиента —
+  осознанно не сделано.** Заметки, концептуализация, карты режимов и задания
+  офлайн-клиента лежат на `-TherapyRelation.id` (`src/therapy/remove-client.ts`
+  перечисляет таблицы), а у `ClientConceptualization` уникальность по паре —
+  перенос на id аккаунта конфликтует с уже бывшей связью и требует переезда
+  данных в нескольких таблицах в одной транзакции. Поэтому «Новый клиент» с
+  приглашением офлайн-карточку больше не создаёт (имя едет в `clientAlias`
+  приглашения), а терапевт, который уже завёл офлайн-карточку и потом позвал
+  этого человека, получит вторую карточку. Решать — «перевести офлайн-клиента
+  в приглашение» как отдельная фича.
+- **Воронка «пригласил → подключился → отозвал» не считается в аналитике.**
+  Ни `POST /api/therapy/invite`, ни `join`, ни отзыв не пишут событие
+  (`src/analytics/analytics.constants.ts`), блока в `/stats` нет — сколько кодов
+  доходят до клиента, не видно.
+- **`POST /api/therapy/join` без лимита запросов, а предпросмотр того же кода —
+  с ним.** `src/therapy/therapy-connection.controller.ts`, `join` — без
+  `@Throttle`; `POST /api/therapy/invite/preview`
+  (`src/therapy/therapy-invites.controller.ts`) — `@PersistentThrottleLimit`.
+  Перебор 12 hex-знаков нереален, но правило №5 («кодовые ручки — счётчик в
+  Postgres») к `join` не применено.
+- **Кеш «Написать терапевту» после подключения обновляется только на сайте по
+  ссылке.** `cacheTherapistContact` зовут `webapp/src/components/appShell/EntryFlows.tsx`
+  (ссылка) и старт обоих приложений; подключение кодом в «Мой терапевт»
+  (`shared/src/therapy/useTherapyCodeJoin.ts`) и по ссылке в мини-аппе
+  (`schema-miniapp/src/components/JoinConfirmSheet.tsx`) его не обновляют —
+  кнопка появится после перезапуска.
+- **Мёртвое правило кеша `POST /api/therapy/clients/add`** в
+  `shared/src/api/apiCacheRules.data.ts`: ручки нет с удаления `addClientManually`.

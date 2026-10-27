@@ -2,33 +2,47 @@ import { api, UserSettings, TherapyRelationInfo } from '../../api';
 import { SkeletonLines } from '../Skeleton';
 import { SectionHeader } from './ui';
 import { TherapistPrivacyToggles } from './TherapistPrivacyToggles';
+import { LeaveTherapy } from './LeaveTherapy';
 import { useTr } from '../../utils/addressForm';
 import { FormerTherapistNote } from '../../../../shared/src/therapy/FormerTherapistNote';
+import { useTherapyCodeJoin } from '../../../../shared/src/therapy/useTherapyCodeJoin';
+import {
+  THERAPY_INVITE_CODE_PLACEHOLDER,
+  THERAPY_INVITE_INPUT_MAX,
+} from '../../../../shared/src/therapy/inviteCode';
+import {
+  joinDoneText,
+  therapistConnectedTitle,
+} from '../../../../shared/src/therapy/therapistLinkCopy';
 
 interface Props {
   therapyRelation: TherapyRelationInfo | null | undefined;
   setTherapyRelation: (v: TherapyRelationInfo | null) => void;
   settings: UserSettings;
   patch: (update: Partial<UserSettings>) => Promise<void>;
-  therapyJoinCode: string;
-  setTherapyJoinCode: (v: string) => void;
-  therapyJoinError: string;
-  setTherapyJoinError: (v: string) => void;
   onInfo: () => void;
 }
+
+// «Мой терапевт» в настройках мини-аппа. Инцидент 2026-10-26: поле пускало 8
+// знаков при коде из 12, кнопка звалась «Войти», статус был мужским родом,
+// «Отключиться» рвало связь одним тапом (теперь LeaveTherapy.tsx). Подключение
+// по коду — общий с сайтом хук (shared/src/therapy/useTherapyCodeJoin.ts),
+// пара — webapp TherapistSections.tsx.
+const smallText = {
+  fontSize: 12,
+  color: 'var(--text-faint)',
+  lineHeight: 1.6,
+} as const;
 
 export function TherapistClientSection({
   therapyRelation,
   setTherapyRelation,
   settings,
   patch,
-  therapyJoinCode,
-  setTherapyJoinCode,
-  therapyJoinError,
-  setTherapyJoinError,
   onInfo,
 }: Props) {
   const tr = useTr();
+  const join = useTherapyCodeJoin(api, setTherapyRelation);
   return (
     <div className="u-mb8">
       <SectionHeader onInfo={onInfo}>МОЙ ТЕРАПЕВТ</SectionHeader>
@@ -43,49 +57,30 @@ export function TherapistClientSection({
         ) : therapyRelation?.status === 'active' ? (
           <div>
             <div
-              style={{
-                fontSize: 14,
-                color: 'var(--text)',
-                marginBottom: 12,
-              }}
+              style={{ fontSize: 14, color: 'var(--text)', marginBottom: 12 }}
             >
-              {therapyRelation.partnerName ?? 'Терапевт'} подключён
+              {therapistConnectedTitle(therapyRelation.partnerName)}
             </div>
+            {join.joined && (
+              <div
+                role="status"
+                style={{
+                  ...smallText,
+                  color: 'var(--text-sub)',
+                  marginBottom: 12,
+                }}
+              >
+                {joinDoneText(therapyRelation.partnerName, tr)}
+              </div>
+            )}
 
             {/* Privacy toggles */}
             <TherapistPrivacyToggles settings={settings} patch={patch} />
-            <div
-              style={{
-                fontSize: 11,
-                color: 'var(--text-faint)',
-                lineHeight: 1.5,
-                marginBottom: 12,
-              }}
-            >
+            <div style={{ ...smallText, fontSize: 11, marginBottom: 12 }}>
               Трекер потребностей и задания терапевт всегда видит
             </div>
 
-            <button
-              onClick={() => {
-                api
-                  .leaveTherapy()
-                  .then(() => setTherapyRelation(null))
-                  .catch((e) => console.error('leaveTherapy failed', e));
-              }}
-              style={{
-                background:
-                  'color-mix(in srgb, var(--accent-red) 12%, transparent)',
-                border:
-                  '1px solid color-mix(in srgb, var(--accent-red) 25%, transparent)',
-                borderRadius: 'var(--r-10)',
-                padding: '8px 16px',
-                color: 'var(--accent-red)',
-                fontSize: 13,
-                cursor: 'pointer',
-              }}
-            >
-              Отключиться
-            </button>
+            <LeaveTherapy onLeft={() => setTherapyRelation(null)} />
           </div>
         ) : (
           <div>
@@ -103,34 +98,31 @@ export function TherapistClientSection({
               }}
             >
               {tr(
-                'Если терапевт дал код — введи его здесь',
-                'Если терапевт дал код — введите его здесь',
+                'Если терапевт дал код или ссылку — вставь сюда',
+                'Если терапевт дал код или ссылку — вставьте сюда',
               )}
             </div>
-            <div
-              style={{
-                fontSize: 12,
-                color: 'var(--text-faint)',
-                marginBottom: 10,
-                lineHeight: 1.6,
-              }}
-            >
+            <div style={{ ...smallText, marginBottom: 10 }}>
               Ввод кода — это согласие открыть терапевту доступ к своим записям:
               дневникам, заметкам и результатам опросников (объём настраивается
               после подключения, отключить терапевта можно в любой момент).
             </div>
             <div className="u-row8">
               <input
-                value={therapyJoinCode}
-                onChange={(e) =>
-                  setTherapyJoinCode(e.target.value.toUpperCase())
-                }
-                placeholder="ABCDEF"
-                maxLength={8}
+                value={join.code}
+                onChange={(e) => join.setCode(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && void join.submit()}
+                aria-label="Код от терапевта"
+                placeholder={THERAPY_INVITE_CODE_PLACEHOLDER}
+                maxLength={THERAPY_INVITE_INPUT_MAX}
+                autoComplete="off"
+                autoCapitalize="characters"
+                spellCheck={false}
                 style={{
                   flex: 1,
+                  minWidth: 0,
                   background: 'rgba(var(--fg-rgb),0.06)',
-                  border: `1px solid ${therapyJoinError ? 'var(--accent-red)' : 'rgba(var(--fg-rgb),0.12)'}`,
+                  border: `1px solid ${join.error ? 'var(--accent-red)' : 'rgba(var(--fg-rgb),0.12)'}`,
                   borderRadius: 'var(--r-10)',
                   padding: '9px 12px',
                   color: 'var(--text)',
@@ -138,18 +130,8 @@ export function TherapistClientSection({
                 }}
               />
               <button
-                onClick={async () => {
-                  if (!therapyJoinCode.trim()) return;
-                  setTherapyJoinError('');
-                  try {
-                    await api.joinTherapy(therapyJoinCode.trim());
-                    const rel = await api.getTherapyRelation();
-                    setTherapyRelation(rel);
-                    setTherapyJoinCode('');
-                  } catch {
-                    setTherapyJoinError('Неверный код');
-                  }
-                }}
+                onClick={() => void join.submit()}
+                disabled={join.busy}
                 style={{
                   background: 'var(--accent)',
                   border: 'none',
@@ -161,10 +143,10 @@ export function TherapistClientSection({
                   cursor: 'pointer',
                 }}
               >
-                Войти
+                {join.busy ? 'Подключаю…' : 'Подключиться'}
               </button>
             </div>
-            {therapyJoinError && (
+            {join.error && (
               <div
                 style={{
                   fontSize: 12,
@@ -172,7 +154,7 @@ export function TherapistClientSection({
                   marginTop: 6,
                 }}
               >
-                {therapyJoinError}
+                {join.error}
               </div>
             )}
           </div>

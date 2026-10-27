@@ -10,6 +10,7 @@ import { todayCalendarDate } from '../../../../shared/src/utils/calendarDate';
 import { Skeleton } from '../Skeleton';
 import { KanbanView } from './KanbanView';
 import { AddClientForm } from './AddClientForm';
+import { PendingInvitesList } from '../../../../shared/src/therapy/PendingInvitesList';
 import { ClientCard } from './ClientCard';
 import { filterRoster, sortRoster, type RosterStatus } from './rosterModel';
 import type { useAddClient } from './useAddClient';
@@ -82,6 +83,7 @@ export function ClientListView({
         </div>
 
         {formVisible && <AddClientForm addClient={addClient} onClose={() => setAddOpen(false)} />}
+        <PendingInvitesList pending={addClient.pending} className="tc-pending" />
 
         <div className="tc-toolbar">
           <div className="tc-modes">

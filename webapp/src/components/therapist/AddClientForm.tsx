@@ -1,6 +1,7 @@
 import { TherapistInviteShare } from '../../share/TherapistInviteShare';
 import { CLIENT_NAME_MAX } from '../../../../shared/src/limits/textLimits';
 import { CopyFailedHint } from '../../../../shared/src/components/CopyFailedHint';
+import { InviteCodeBox } from '../../../../shared/src/therapy/InviteCodeBox';
 import type { useAddClient } from './useAddClient';
 import '../../styles/therapist-clients.css';
 
@@ -20,23 +21,25 @@ export function AddClientForm({ addClient, onClose }: Props) {
   } = addClient;
 
   if (addCreated) {
+    const invite = addCreated.invite;
     return (
       <div className="tc-add">
         <div className="tc-add-done">
-          <div className="ds-eyebrow">Клиент добавлен</div>
+          <div className="ds-eyebrow">{invite ? 'Приглашение создано' : 'Клиент добавлен'}</div>
           <h2 className="tc-add-done-name">{addCreated.name}</h2>
-          {addCreated.inviteUrl ? (
+          {invite ? (
             <div>
               <div className="ds-label">Ссылка-приглашение</div>
               <div className="tc-invite">
-                <code>{addCreated.inviteUrl}</code>
+                <code>{invite.url}</code>
                 <button className="ds-btn ds-btn--sm" onClick={copyAddInvite}>
                   {addCopied ? '✓ Скопировано' : 'Скопировать'}
                 </button>
-                <TherapistInviteShare inviteUrl={addCreated.inviteUrl} />
+                <TherapistInviteShare inviteUrl={invite.url} />
               </div>
               <CopyFailedHint show={addCopyFailed} />
-              <p className="ds-sub">Клиент перейдёт по ссылке и автоматически подключится через бот</p>
+              <InviteCodeBox code={invite.code} />
+              <p className="ds-sub">Карточка с этим именем появится в списке, когда клиент подключится. До этого — в блоке «Ждут подключения».</p>
             </div>
           ) : (
             <p className="ds-sub">Добавлен как оффлайн-клиент — записи и концептуализация без привязки к боту.</p>
@@ -64,14 +67,14 @@ export function AddClientForm({ addClient, onClose }: Props) {
         maxLength={CLIENT_NAME_MAX}
       />
       <button className="ds-btn ds-btn--accent" onClick={submitAddClient} disabled={!addValid || addSubmitting}>
-        {addSubmitting ? '...' : 'Создать карточку'}
+        {addSubmitting ? '...' : withInvite ? 'Создать приглашение' : 'Создать карточку'}
       </button>
       <label className="tc-add-check">
         <input type="checkbox" checked={withInvite} onChange={e => setWithInvite(e.target.checked)} />
-        Сразу создать ссылку-приглашение в бот
+        Пригласить в приложение (ссылка и код)
       </label>
       {withInvite && (
-        <p className="tc-add-note">После добавления появится ссылка — клиент перейдёт по ней и подключится через Telegram-бот</p>
+        <p className="tc-add-note">Оффлайн-карточка не создаётся: карточка с этим именем появится, когда клиент подключится по ссылке или коду</p>
       )}
       {addError && <div className="tc-add-err">{addError}</div>}
     </div>

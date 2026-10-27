@@ -2,10 +2,16 @@
 //  T2 — DELETE /relation от терапевта сносил всех его клиентов и приглашения;
 //  T3 — клиент мог невидимо подключиться ко второму терапевту;
 //  T4 — -id связи РЕАЛЬНОГО клиента проходил как «виртуальный» клиент;
-//  T5 — код-приглашение без срока, неатомарный захват, новая строка на вызов.
+//  T5 — код-приглашение без срока, неатомарный захват; один код на два
+//       приглашения подряд — инцидент 2026-10-26 (предел живых вместо повтора).
 // Фейк Prisma (therapy.test-helpers.ts) честно разбирает `{ not }`, `{ gte }` и
 // `clientId: null` — мок, который их игнорирует, не проверял бы ни одно условие.
-import { ALREADY_CONNECTED_ERROR, INVITE_TTL_MS } from './therapy-invite';
+import {
+  ALREADY_CONNECTED_ERROR,
+  INVITE_TTL_MS,
+  MAX_LIVE_INVITES,
+  TOO_MANY_INVITES_ERROR,
+} from './therapy-invite';
 import { TherapyRelationsService } from './therapy-relations.service';
 import { Rel, makeRelationPrismaMock } from './therapy.test-helpers';
 
@@ -189,19 +195,52 @@ describe('T5 — коды-приглашения', () => {
     expect(invite.clientId).toBe(999n); // победитель не затёрт
   });
 
-  it('createInvite повторно отдаёт свежий неиспользованный код, новую строку не создаёт', async () => {
+  // Инцидент 2026-10-26: повторный вызов отдавал тот же свежий код — клиент
+  // Б получал ссылку клиента А и после подключения А упирался в «неверный
+  // код». Защита от бесконечных живых кодов — предел MAX_LIVE_INVITES.
+  it('createInvite: каждый вызов — новый код и новая строка', async () => {
     const { service, rels } = make([]);
     const first = await service.createInvite(T1);
     const second = await service.createInvite(T1);
-    expect(second.code).toBe(first.code);
-    expect(rels).toHaveLength(1);
+    expect(second.code).not.toBe(first.code);
+    expect(rels).toHaveLength(2);
   });
 
-  it('createInvite: код другого терапевта не переиспользуется', async () => {
-    const { service, rels } = make([pending({ therapistId: T2 })]);
-    const mine = await service.createInvite(T1);
-    expect(mine.code).not.toBe('FRESH1');
-    expect(rels).toHaveLength(2);
+  it('два приглашения подряд — оба клиента подключаются', async () => {
+    const { service, rels } = make([]);
+    const a = await service.createInvite(T1);
+    const b = await service.createInvite(T1);
+    await expect(service.joinAsClient(CLIENT, a.code)).resolves.toBe(true);
+    await expect(service.joinAsClient(CLIENT + 1n, b.code)).resolves.toBe(true);
+    expect(rels.map((r) => r.clientId)).toEqual([CLIENT, CLIENT + 1n]);
+  });
+
+  it('createInvite: живых приглашений не больше MAX_LIVE_INVITES', async () => {
+    const live = Array.from({ length: MAX_LIVE_INVITES }, (_, i) =>
+      pending({ id: i + 1, code: `LIVE${i}` }),
+    );
+    const { service, rels } = make(live);
+    await expect(service.createInvite(T1)).rejects.toThrow(
+      TOO_MANY_INVITES_ERROR,
+    );
+    expect(rels).toHaveLength(MAX_LIVE_INVITES);
+  });
+
+  it('предел считает только живые: просроченные, принятые и чужие не мешают', async () => {
+    const old = new Date(Date.now() - INVITE_TTL_MS - 60_000);
+    const rels = Array.from({ length: MAX_LIVE_INVITES }, (_, i) =>
+      pending({
+        id: i + 1,
+        code: `X${i}`,
+        ...(i % 3 === 0
+          ? { createdAt: old }
+          : i % 3 === 1
+            ? { status: 'active', clientId: 1000n + BigInt(i) }
+            : { therapistId: T2 }),
+      }),
+    );
+    const { service } = make(rels);
+    await expect(service.createInvite(T1)).resolves.toHaveProperty('code');
   });
 
   it('createInvite: просроченный или уже принятый код не переиспользуется', async () => {

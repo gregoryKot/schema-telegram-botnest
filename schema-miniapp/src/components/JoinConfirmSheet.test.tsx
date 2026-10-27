@@ -17,7 +17,12 @@ import { AddressFormContext } from '../utils/addressForm';
 import type { PairsData } from '../api';
 
 vi.mock('../api', () => ({
-  api: { joinPair: vi.fn(), joinTherapy: vi.fn(), getPair: vi.fn() },
+  api: {
+    joinPair: vi.fn(),
+    joinTherapy: vi.fn(),
+    getPair: vi.fn(),
+    previewTherapyInvite: vi.fn(),
+  },
 }));
 import { api } from '../api';
 const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
@@ -29,6 +34,7 @@ beforeEach(() => {
   mockApi.getPair.mockResolvedValue(PAIR);
   mockApi.joinPair.mockResolvedValue(undefined);
   mockApi.joinTherapy.mockResolvedValue(undefined);
+  mockApi.previewTherapyInvite.mockResolvedValue({ therapistName: 'Анна' });
 });
 afterEach(cleanup);
 
@@ -80,7 +86,9 @@ describe('JoinConfirmSheet — согласие перед присоедине�
     expect(onClose).toHaveBeenCalled();
   });
 
-  it('«Присоединиться» (терапия) джойнит кодом и закрывает, getPair не трогает', async () => {
+  // Инцидент 2026-10-26: шторка молча закрывалась — человек не знал, вышло ли
+  // и что теперь видит терапевт; до согласия не называлось, чей это код.
+  it('«Присоединиться» (терапия) джойнит кодом, показывает «Доступ открыт»; «Понятно» закрывает; getPair не трогает', async () => {
     const onClose = vi.fn();
     render(
       <JoinConfirmSheet
@@ -90,12 +98,65 @@ describe('JoinConfirmSheet — согласие перед присоедине�
         onPairJoined={noop}
       />,
     );
+    expect(
+      await screen.findByText('Приглашение от терапевта: Анна'),
+    ).toBeTruthy();
     fireEvent.click(screen.getByText('Присоединиться'));
     await waitFor(() =>
       expect(mockApi.joinTherapy).toHaveBeenCalledWith('XYZ'),
     );
-    await waitFor(() => expect(onClose).toHaveBeenCalled());
+    expect(await screen.findByText('Доступ открыт')).toBeTruthy();
+    expect(screen.getByRole('status').textContent).toMatch(
+      /^Терапевт Анна видит твой трекер потребностей и задания/,
+    );
+    expect(onClose).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByText('Понятно'));
+    expect(onClose).toHaveBeenCalledTimes(1);
     expect(mockApi.getPair).not.toHaveBeenCalled();
+  });
+
+  it('терапия: код уже не действует (400 на предпросмотре) — сказано сразу, «Присоединиться» нет', async () => {
+    mockApi.previewTherapyInvite.mockRejectedValue({ status: 400 });
+    render(
+      <JoinConfirmSheet
+        joinKind="therapy"
+        joinCode="OLD"
+        onClose={noop}
+        onPairJoined={noop}
+      />,
+    );
+    expect((await screen.findByRole('alert')).textContent).toMatch(
+      /больше не действует/,
+    );
+    expect(screen.queryByText('Присоединиться')).toBeNull();
+    expect(screen.getByText('Закрыть')).toBeTruthy();
+  });
+
+  it('терапия: имени в профиле нет — строки «от кого» нет; пара предпросмотр не зовёт', async () => {
+    mockApi.previewTherapyInvite.mockResolvedValue({ therapistName: null });
+    render(
+      <JoinConfirmSheet
+        joinKind="therapy"
+        joinCode="XYZ"
+        onClose={noop}
+        onPairJoined={noop}
+      />,
+    );
+    await waitFor(() =>
+      expect(mockApi.previewTherapyInvite).toHaveBeenCalledWith('XYZ'),
+    );
+    expect(screen.queryByText(/Приглашение от терапевта/)).toBeNull();
+    cleanup();
+    mockApi.previewTherapyInvite.mockClear();
+    render(
+      <JoinConfirmSheet
+        joinKind="pair"
+        joinCode="ABC"
+        onClose={noop}
+        onPairJoined={noop}
+      />,
+    );
+    expect(mockApi.previewTherapyInvite).not.toHaveBeenCalled();
   });
 
   it('ошибка джойна видна и НЕ закрывает (правило «ошибка API видна»)', async () => {

@@ -11,6 +11,8 @@ vi.mock('../../api', () => ({
   api: {
     createTherapyInvite: vi.fn(),
     addVirtualClient: vi.fn(),
+    getTherapyInvites: vi.fn(() => Promise.resolve([])),
+    revokeTherapyInvite: vi.fn(),
   },
 }));
 import { api } from '../../api';
@@ -27,20 +29,56 @@ function setup() {
 }
 
 describe('useAddClient — приглашение по ссылке', () => {
-  it('createInvite кладёт URL из ответа сервера', async () => {
-    mockApi.createTherapyInvite.mockResolvedValue({ url: 'https://t.me/xyz' });
+  it('createInvite кладёт ссылку и код из ответа сервера', async () => {
+    mockApi.createTherapyInvite.mockResolvedValue({
+      url: 'https://t.me/xyz',
+      code: '7F3A9C21B04E',
+    });
     const { result } = setup();
     await act(() => result.current.createInvite());
-    expect(result.current.inviteUrl).toBe('https://t.me/xyz');
+    expect(result.current.invite).toEqual({
+      url: 'https://t.me/xyz',
+      code: '7F3A9C21B04E',
+    });
     expect(result.current.inviteLoading).toBe(false);
+  });
+
+  // Инцидент 2026-10-26: имя едет в приглашении — после подключения одна
+  // карточка с этим именем, до него — строка в «Ждут подключения».
+  it('имя из поля уходит в приглашение, поле очищается, список ждущих перечитан', async () => {
+    mockApi.createTherapyInvite.mockResolvedValue({ url: 'u', code: 'c' });
+    const { result } = setup();
+    await act(async () => {}); // первая загрузка списка ждущих
+    act(() => result.current.setAddInput('  Мария К. '));
+    await act(() => result.current.createInvite());
+    expect(mockApi.createTherapyInvite).toHaveBeenCalledWith('Мария К.');
+    expect(result.current.addInput).toBe('');
+    expect(mockApi.getTherapyInvites).toHaveBeenCalledTimes(2);
+  });
+
+  it('без имени — приглашение без имени', async () => {
+    mockApi.createTherapyInvite.mockResolvedValue({ url: 'u', code: 'c' });
+    const { result } = setup();
+    await act(() => result.current.createInvite());
+    expect(mockApi.createTherapyInvite).toHaveBeenCalledWith(undefined);
   });
 
   it('createInvite упал — ошибка видна, а не тихо проглочена', async () => {
     mockApi.createTherapyInvite.mockRejectedValue(new Error('network'));
     const { result } = setup();
     await act(() => result.current.createInvite());
-    expect(result.current.addError).toBe('Не удалось создать ссылку');
-    expect(result.current.inviteUrl).toBe('');
+    expect(result.current.addError).toMatch(/Не удалось создать приглашение/);
+    expect(result.current.invite).toBeNull();
+  });
+
+  it('предел живых приглашений — текст с выходом', async () => {
+    mockApi.createTherapyInvite.mockRejectedValue({
+      status: 409,
+      reason: 'too_many_invites',
+    });
+    const { result } = setup();
+    await act(() => result.current.createInvite());
+    expect(result.current.addError).toMatch(/Отзови ненужные/);
   });
 });
 
@@ -66,7 +104,7 @@ describe('useAddClient — виртуальный клиент', () => {
 });
 
 describe('useAddClient — copyInvite', () => {
-  it('без inviteUrl ничего не делает', async () => {
+  it('без приглашения ничего не делает', async () => {
     const writeText = vi.fn();
     Object.assign(navigator, { clipboard: { writeText } });
     const { result } = setup();
@@ -78,7 +116,10 @@ describe('useAddClient — copyInvite', () => {
     vi.useFakeTimers();
     const writeText = vi.fn().mockResolvedValue(undefined);
     Object.assign(navigator, { clipboard: { writeText } });
-    mockApi.createTherapyInvite.mockResolvedValue({ url: 'https://t.me/abc' });
+    mockApi.createTherapyInvite.mockResolvedValue({
+      url: 'https://t.me/abc',
+      code: 'c',
+    });
     const { result } = setup();
     await act(() => result.current.createInvite());
     await act(() => result.current.copyInvite());
