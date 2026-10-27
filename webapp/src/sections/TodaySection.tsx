@@ -19,9 +19,8 @@ import { useWhySheet } from './today/useWhySheet';
 import { trackHomeTile } from './today/trackHomeTile';
 import { homeGreeting } from './today/helpers';
 import { formatGreetingDate } from './today/greetingDate';
-import {
-  buildTodayFeed, trackerSummary, trackerTileMeta, caseTileMeta, diaryTileMeta,
-} from './today/todayFeed';
+import { buildTodayFeed, trackerSummary, trackerTileMeta, caseTileMeta, diaryTileMeta } from './today/todayFeed';
+import { QuickEntrySheet } from '../components/diary/QuickEntrySheet';
 
 interface Props {
   needs: Need[];
@@ -37,9 +36,8 @@ interface Props {
   onTasksChanged?: () => void;
 }
 
-// Главная «Сегодня» (docs/design/CLIENT_SIMPLE_2026-10.md): три плитки —
-// трекер, «Что случилось», дневник; задания терапевта, лента дня и выход к
-// «Подышим». Настройки экрана, фокуса дня, серии и фразы на сайте нет.
+// Главная «Сегодня» (docs/design/CLIENT_SIMPLE_2026-10.md): три плитки — трекер, «Что случилось»,
+// дневник (лист QuickEntrySheet); задания терапевта, лента дня и выход к «Подышим».
 export function TodaySection({
   needs, ratings, onNavigate, onOpenSchema, onOpenAdvanced, onOpenTracker, onOpenTrackerHistory,
   onOpenDiaries, onOpenChildhoodWheel, refreshKey, onTasksChanged,
@@ -48,6 +46,7 @@ export function TodaySection({
   const { profile, feed, caseCount, lastAt, diariesLoaded, reloadDiaries } = data;
   const { tasks, taskHistory, taskError, completeTask, afterCreate } = useTaskActions(refreshKey);
   const [caseOpen,       setCaseOpen]       = useState(false);
+  const [quickOpen,      setQuickOpen]      = useState(false);
   const [showDiaryTask,  setShowDiaryTask]  = useState(false);
   const [showAllTasks,   setShowAllTasks]   = useState(false);
   const [showTaskCreate, setShowTaskCreate] = useState(false);
@@ -98,7 +97,7 @@ export function TodaySection({
         diaryMeta={diaryTileMeta(diariesLoaded, feed.length, lastAt)}
         onTracker={() => { trackHomeTile('tracker'); onOpenTracker(); }}
         onCase={() => { trackHomeTile('case'); setCaseOpen(true); }}
-        onDiary={() => { trackHomeTile('diary'); onOpenDiaries(); }}
+        onDiary={() => { trackHomeTile('diary'); setQuickOpen(true); }}
       />
 
       <HomeScreenOfferCard />
@@ -126,6 +125,7 @@ export function TodaySection({
         Тяжело прямо сейчас? Подышим →
       </button>
 
+      {quickOpen && <QuickEntrySheet onClose={() => setQuickOpen(false)} onSaved={reloadDiaries} />}
       {why.mode && <WhySheet auto={why.mode === 'auto'} onClose={why.close} />}
       {caseOpen && (
         <CaseFlowHost

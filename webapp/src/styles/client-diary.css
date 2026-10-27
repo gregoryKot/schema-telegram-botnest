@@ -1,26 +1,8 @@
-/* Экран «Дневник» клиента. Префикс cd-. */
+/* Экран «Записи» клиента (вкладка и лист «Дневники»). Префикс cd-. */
 .cd-page { max-width: 1100px; }
 .cd-head { align-items: flex-end; gap: 24px; }
-.cd-head-sub { margin-top: 8px; font-size: 14px; color: var(--text-sub); }
-.cd-stats { display: flex; gap: 28px; }
-.cd-stat { font-size: 40px; }
-.cd-stat span { font-size: 18px; color: var(--text-ghost); }
-.cd-stat--hot { color: var(--accent-hot); }
-.cd-stat-label { font-size: 12px; color: var(--text-faint); margin-top: 4px; }
 
-.cd-quick { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; }
-.cd-quick-card {
-  border-radius: 20px; padding: 20px; display: flex; flex-direction: column; gap: 10px;
-  cursor: pointer; min-height: 170px; box-sizing: border-box; transition: transform .12s;
-}
-.cd-quick-card:hover { transform: translateY(-2px); }
-.cd-quick-eyebrow { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; font-weight: 700; }
-.cd-quick-title { font-family: var(--serif); font-size: 26px; line-height: 1.1; color: var(--text); }
-.cd-quick-desc { font-size: 13px; line-height: 1.45; color: var(--text-sub); }
-.cd-quick-meta { font-size: 13px; line-height: 1.35; color: var(--text-muted); }
-.cd-quick-foot { margin-top: auto; display: flex; justify-content: space-between; gap: 8px; font-size: 13px; }
-.cd-quick-foot b { font-weight: 700; white-space: nowrap; }
-.cd-quick-foot span { color: var(--text-muted); white-space: nowrap; }
+.cd-write { align-self: flex-start; min-height: 48px; padding: 0 var(--space-24); border-radius: 24px; }
 
 .cd-drafts { display: flex; flex-direction: column; gap: 10px; }
 .cd-draft {
@@ -66,26 +48,10 @@
 .cd-grat-more { color: var(--text-faint); font-style: italic; }
 
 @media (max-width: 767px) {
-  /* Шапка как в мини-аппе: заголовок одной строкой, подпись, счётчики строкой */
+  /* Шапка: eyebrow, заголовок одной строкой */
   .cd-page { gap: var(--space-16); padding-top: var(--space-16); }
   .cd-head { flex-direction: column; align-items: stretch; gap: var(--space-8); }
-  .cd-head .ds-eyebrow { display: none; }
   .cd-head h1 { margin: 0; font-size: 28px; line-height: 1.15; }
-  .cd-head-sub { margin-top: var(--space-4); }
-  .cd-stats { gap: var(--space-16); flex-wrap: wrap; }
-  .cd-stats > div { display: flex; align-items: baseline; gap: var(--space-6); }
-  .cd-stat { font-size: 20px; }
-  .cd-stat span { font-size: 14px; }
-  .cd-stat-label { margin-top: 0; font-size: 13px; color: var(--text-muted); }
-
-  /* Три кнопки «записать» в ряд по ширине экрана, ничего не обрезается */
-  .cd-quick { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-8); }
-  .cd-quick-card { min-height: 96px; padding: var(--space-12) var(--space-8); gap: var(--space-4); border-radius: var(--r-16); }
-  .cd-quick-eyebrow { font-size: 11px; letter-spacing: 0; text-transform: none; line-height: 1.2; overflow-wrap: break-word; }
-  .cd-quick-title { font-size: 16px; line-height: 1.15; overflow-wrap: anywhere; }
-  .cd-quick-desc, .cd-quick-foot span { display: none; }
-  .cd-quick-meta { font-size: 12px; overflow-wrap: anywhere; }
-  .cd-quick-foot { font-size: 13px; }
 
   /* Чипы-фильтры: активный — тёмный (ink), лента скроллится от края до края */
   .cd-bar .ds-seg {
@@ -112,9 +78,6 @@
   .cd-day-date { font-size: 22px; }
 }
 
-/* Переход в трекер потребностей из хаба дневников */
-.cd-tracker { display: flex; flex-direction: column; gap: var(--space-8); margin-top: var(--space-16); }
-.cd-tracker-card { display: flex; align-items: center; gap: var(--space-16); min-height: 44px; }
-.cd-tracker-body { flex: 1; min-width: 0; }
-.cd-tracker-title { font-size: 15px; font-weight: 700; }
-.cd-tracker-meta { margin-top: var(--space-4); font-size: 13px; color: var(--text-muted); }
+/* Строка трекера в ленте дня и серия внизу */
+.cd-entry--tracker { flex-direction: row; align-items: center; gap: var(--space-12); min-height: 44px; font-size: 15px; font-weight: 600; }
+.cd-streak { margin: 0; font-size: 13px; line-height: 1.5; color: var(--text-faint); }

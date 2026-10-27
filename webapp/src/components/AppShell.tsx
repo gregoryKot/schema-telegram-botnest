@@ -429,7 +429,7 @@ export function AppShell() {
         {/* ── Diaries overlay ── */}
         {ov.showDiaries && (
           <Suspense fallback={null}>
-            <DiariesOverlay onClose={() => ov.setShowDiaries(false)} onOpenTracker={() => { ov.setShowDiaries(false); ov.setTrackerNeedId(null); ov.setShowTrackerOverlay(true); }} />
+            <DiariesOverlay onClose={() => ov.setShowDiaries(false)} onOpenTrackerHistory={() => { ov.setShowDiaries(false); ov.setTrackerTab('history'); ov.setShowTracker(true); }} />
           </Suspense>
         )}
 
@@ -462,7 +462,7 @@ export function AppShell() {
       {/* ── Mobile bottom nav ──────────────────────────────────────────────── */}
       <MobileNav items={NAV_ITEMS} therapist={therapistMode} onSearch={() => ov.setCmdOpen(true)} />
 
-      <QuickActions ov={ov} showButton={!therapistMode && section === 'diary'} />
+      <QuickActions ov={ov} />
       {/* ── Command palette ─────────────────────────────────────────────────── */}
       {ov.cmdOpen && (
         <CommandPalette

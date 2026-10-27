@@ -9,8 +9,7 @@ import { fmtTime, fmtDateKey, fmtDayMonth } from './dateHelpers';
 import { schemaEntryRows, modeEntryRows, type FieldRow } from './entryRows';
 import '../../styles/client-diary.css';
 
-// Карточки записей дневника (схема/режим/благодарность): бейдж типа в тоне
-// DIARY_HUE, заголовок, текст; клик раскрывает подробности и удаление.
+// Карточки записей дневника: бейдж типа в тоне DIARY_HUE, заголовок, текст; клик раскрывает детали и удаление.
 
 export function DeleteBtn({ onClick }: { onClick: () => void }) {
   const [confirm, setConfirm] = useState(false);
@@ -36,14 +35,14 @@ export function ExpandField({ label, text, accent }: { label: string; text: stri
 
 const TYPE_LABEL: Record<DiaryType, string> = { schema: 'Схема', mode: 'Режим', gratitude: 'Благодарность' };
 
-function EntryShell({ type, title, time, preview, children }: {
-  type: DiaryType; title: string; time?: string; preview: ReactNode; children?: (open: boolean) => ReactNode;
+function EntryShell({ type, label, title, time, preview, children }: {
+  type: DiaryType; label?: string; title: string; time?: string; preview: ReactNode; children?: (open: boolean) => ReactNode;
 }) {
   const [open, setOpen] = useState(false);
   return (
     <div className="ds-card ds-card--row ds-card--hover cd-entry" style={hueStyle(DIARY_HUE[type])} aria-expanded={open} {...pressable(() => setOpen(v => !v))}>
       <div className="cd-entry-head">
-        <span className="ds-chip ds-chip--sm tone-tint">{TYPE_LABEL[type]}</span>
+        <span className="ds-chip ds-chip--sm tone-tint">{label ?? TYPE_LABEL[type]}</span>
         <span className="cd-entry-title">{title}</span>
         {time && <span className="cd-entry-time">{time}</span>}
       </div>
@@ -54,7 +53,6 @@ function EntryShell({ type, title, time, preview, children }: {
 }
 
 const stop = (e: React.SyntheticEvent) => e.stopPropagation();
-
 function ExpandFields({ rows }: { rows: FieldRow[] }) {
   return <>{rows.filter(([, text]) => text).map(([label, text, accent]) => (
     <ExpandField key={label} label={label} text={text!} accent={accent} />
@@ -64,10 +62,12 @@ function ExpandFields({ rows }: { rows: FieldRow[] }) {
 export function SchemaEntry({ entry, onDelete }: { entry: SchemaDiaryEntry; onDelete: () => void }) {
   const schemas = entry.schemaIds.map(id => getSchemaById(id)).filter(Boolean);
   const emotions = EMOTIONS.filter(e => entry.emotions.some((em: EmotionEntry) => em.id === e.id));
+  const thought = schemas.length === 0 && entry.emotions.length === 0; // «Дневник одной страницей»: просто мысль
   return (
     <EntryShell
       type="schema"
-      title={schemas.length > 0 ? schemas.slice(0, 2).map(s => s!.name).join(' · ') : 'Дневник схем'}
+      label={thought ? 'Мысль' : undefined}
+      title={schemas.length > 0 ? schemas.slice(0, 2).map(s => s!.name).join(' · ') : thought ? 'Без схемы' : 'Дневник схем'}
       time={fmtTime(entry.createdAt)}
       preview={<>
         {entry.trigger}

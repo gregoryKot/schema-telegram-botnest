@@ -229,14 +229,17 @@ describe('TodaySection — лента дня и плитка дневника', 
     expect(screen.queryByText(/Сегодня разобран/)).toBeNull();
   });
 
-  it('клик по плитке дневника и по строке ленты открывает дневники', async () => {
+  it('плитка дневника открывает «Дневник одной страницей», а не список дневников; строка ленты — список', async () => {
     mockApi.getSchemaDiary.mockResolvedValue([{ id: 1, trigger: 'строка ленты', createdAt: nowIso() }]);
     renderSection();
     fireEvent.click(screen.getByRole('button', { name: /Дневник/ }));
-    expect(onOpenDiaries).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole('heading', { name: 'Что на уме?' })).toBeTruthy();
+    expect(onOpenDiaries).not.toHaveBeenCalled();
     expect(mockApi.trackEvent).toHaveBeenCalledWith('home_tile', { tile: 'diary' });
+    fireEvent.click(screen.getByRole('button', { name: 'Закрыть' }));
+    await waitFor(() => expect(screen.queryByRole('heading', { name: 'Что на уме?' })).toBeNull());
     fireEvent.click(await screen.findByText('строка ленты'));
-    expect(onOpenDiaries).toHaveBeenCalledTimes(2);
+    expect(onOpenDiaries).toHaveBeenCalledTimes(1);
   });
 
   it('«Все записи» ведёт в «Записи», «Подышим» — в практики; оба считаются', () => {
