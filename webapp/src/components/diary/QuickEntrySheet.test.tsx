@@ -91,6 +91,23 @@ describe('QuickEntrySheet — сохранение по тегам', () => {
     expect(onSaved).toHaveBeenCalled();
   });
 
+  it('«Записано»: под кнопками строка «самопомощь, не замена терапии» и «Поговорить →»; кризиса нет — следа нет', async () => {
+    setup();
+    type('Опять промолчал');
+    await press('Сохранить');
+    expect(screen.getByText(/Дневник — самопомощь, не замена терапии\. Если нужна терапия, есть с кем поговорить/)).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Поговорить →' })).toBeTruthy();
+    expect(m.trackEvent).toHaveBeenCalledWith('therapy_nudge', { place: 'diary_done', action: 'shown' });
+    expect(localStorage.getItem('therapy_crisis_seen_at')).toBeNull();
+  });
+
+  it('кризисный текст оставляет локальный след (поднимает карточку на главной)', async () => {
+    setup();
+    type('не хочу жить');
+    await press('Сохранить');
+    expect(localStorage.getItem('therapy_crisis_seen_at')).not.toBeNull();
+  });
+
   it('«Схема»: второй экран с чипами, выбор уходит в schemaIds', async () => {
     setup();
     type('Критика на встрече');

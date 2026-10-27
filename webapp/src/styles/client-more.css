@@ -6,7 +6,7 @@
 .cm-row {
   width: 100%; min-height: 64px; box-sizing: border-box; padding: 12px 4px;
   display: flex; align-items: center; justify-content: space-between; gap: 12px;
-  background: none; border: 0; cursor: pointer; text-align: left; color: var(--text); font-family: var(--sans);
+  background: none; border: 0; cursor: pointer; text-align: left; color: var(--text); font-family: var(--sans); text-decoration: none;
 }
 .cm-row:hover { background: var(--paper-tint); }
 .cm-row-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }

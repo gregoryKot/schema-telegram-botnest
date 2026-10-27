@@ -1,11 +1,13 @@
 // @vitest-environment jsdom
 // «Ещё»: каждая строка ведёт куда обещает; кабинет терапевта — только терапевту.
-import { describe, it, expect, vi, afterEach } from 'vitest';
+import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { MoreSection } from './MoreSection';
 
 const trackHomeTile = vi.hoisted(() => vi.fn());
+const trackNudge = vi.hoisted(() => vi.fn());
+vi.mock('../components/therapy/trackTherapyNudge', () => ({ trackTherapyNudge: trackNudge }));
 vi.mock('./today/trackHomeTile', () => ({ trackHomeTile }));
 
 vi.mock('../components/JourneySheet', () => ({
@@ -15,6 +17,7 @@ vi.mock('../components/WhySheet', () => ({
   WhySheet: (p: { onClose: () => void; auto?: boolean }) => <div data-testid="why" data-auto={String(!!p.auto)}><button onClick={p.onClose}>закрыть зачем</button></div>,
 }));
 
+beforeEach(() => { localStorage.clear(); trackNudge.mockClear(); });
 afterEach(cleanup);
 
 function setup(userRole: 'CLIENT' | 'THERAPIST' = 'CLIENT') {
@@ -30,7 +33,7 @@ describe('MoreSection', () => {
   it('заголовок и все строки списка', () => {
     setup();
     expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Всё остальное');
-    for (const t of ['Зачем это всё', 'Мои паттерны', 'Практики', 'Мой путь', 'Тест на схемы', 'Настройки', 'Профиль', 'Мне очень плохо']) {
+    for (const t of ['Зачем это всё', 'Мои паттерны', 'Практики', 'Мой путь', 'Поговорить с кем-то', 'Тест на схемы', 'Настройки', 'Профиль', 'Мне очень плохо']) {
       expect(row(t)).toBeTruthy();
     }
   });
@@ -81,5 +84,42 @@ describe('MoreSection', () => {
     const h = setup('THERAPIST');
     fireEvent.click(row('Кабинет терапевта'));
     expect(h.onOpenTherapistCabinet).toHaveBeenCalledTimes(1);
+  });
+
+  it('«Поговорить с кем-то» стоит сразу после «Мой путь» и открывает лист', () => {
+    setup();
+    const titles = screen.getAllByRole('button').map(b => b.textContent ?? '');
+    const at = titles.findIndex(t => t.startsWith('Мой путь'));
+    expect(titles[at + 1]).toMatch(/^Поговорить с кем-то/);
+    expect(row('Поговорить с кем-то').textContent).toContain('Встреча с автором приложения');
+    fireEvent.click(row('Поговорить с кем-то'));
+    expect(trackNudge).toHaveBeenCalledWith('more', 'open');
+    expect(screen.getByRole('dialog')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Назад' }));
+  });
+
+  it('терапевт подключён: строка «Написать терапевту» — ссылка на него, событие write', () => {
+    localStorage.setItem('therapy_contact_url', 'tg://user?id=42');
+    localStorage.setItem('therapy_contact_name', 'терапевту');
+    setup();
+    expect(screen.queryByRole('button', { name: /^Поговорить с кем-то/ })).toBeNull();
+    const link = screen.getByRole('link', { name: /^Написать терапевту/ });
+    expect(link.getAttribute('href')).toBe('tg://user?id=42');
+    expect(link.textContent).toContain('Связь с терапевтом');
+    fireEvent.click(link);
+    expect(trackNudge).toHaveBeenCalledWith('more', 'write');
+  });
+
+  it('пользователю-терапевту строки нет', () => {
+    localStorage.setItem('therapy_contact_url', 'tg://user?id=1');
+    localStorage.setItem('therapy_contact_name', 'вам');
+    localStorage.setItem('therapy_is_therapist', '1');
+    setup();
+    expect(screen.queryByText('Поговорить с кем-то')).toBeNull();
+    expect(screen.queryByText(/Написать терапевту/)).toBeNull();
+    cleanup();
+    localStorage.clear();
+    setup('THERAPIST');
+    expect(screen.queryByText('Поговорить с кем-то')).toBeNull();
   });
 });

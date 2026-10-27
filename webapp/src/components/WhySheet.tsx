@@ -1,4 +1,5 @@
 import { useHistorySheet } from '../hooks/useHistorySheet';
+import { useTherapyBridgeTexts } from './therapy/useTherapyBridgeTexts';
 import '../styles/client-why.css';
 
 interface Props {
@@ -12,6 +13,7 @@ interface Props {
 // Вступление короткое, чтобы все три карточки и кнопка помещались на экран телефона.
 export function WhySheet({ auto = false, onClose }: Props) {
   const goBack = useHistorySheet(onClose);
+  const bridge = useTherapyBridgeTexts();
   return (
     <div className="u-sheet cw-sheet" role="dialog" aria-modal="true" aria-label="Зачем это всё">
       <div className="cw-inner">
@@ -36,6 +38,7 @@ export function WhySheet({ auto = false, onClose }: Props) {
             <div className="cw-item-text">Одна мысль, схема, режим или спасибо. Записи собираются в одну картину: со временем видно, что повторяется.</div>
           </li>
         </ul>
+        <p className="cw-note">{bridge.whyNote}</p>
         <p className="cw-note">Не нужно делать всё. Одно действие в день — уже работа.</p>
         <button type="button" className="ds-btn cw-cta" onClick={goBack}>Понятно, начнём</button>
       </div>

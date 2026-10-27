@@ -5,8 +5,8 @@
 import { describe, it, expect, afterEach, vi } from 'vitest';
 import { leadSource } from './leadSource';
 
-function stubLocation(hostname: string, pathname: string, hash: string) {
-  vi.stubGlobal('location', { hostname, pathname, hash });
+function stubLocation(hostname: string, pathname: string, hash: string, search = '') {
+  vi.stubGlobal('location', { hostname, pathname, search, hash });
 }
 
 function stubReferrer(referrer: string) {
@@ -23,6 +23,12 @@ describe('leadSource', () => {
     stubLocation('schemehappens.ru', '/booking', '');
     stubReferrer('');
     expect(leadSource()).toBe('schemehappens.ru/booking');
+  });
+
+  it('метка источника из query (?from=app_…) доезжает до заявки', () => {
+    stubLocation('kotlarewski.gr', '/', '#booking', '?from=app_signal_card');
+    stubReferrer('');
+    expect(leadSource()).toBe('kotlarewski.gr/?from=app_signal_card#booking');
   });
 
   it('с referrer — «страница ← referrer»', () => {

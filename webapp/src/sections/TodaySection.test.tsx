@@ -42,6 +42,7 @@ vi.mock('../api', () => ({
     getSchemaDiary: vi.fn(),
     getModeDiary: vi.fn(),
     getGratitudeDiary: vi.fn(),
+    history: vi.fn(),
     getTasks: vi.fn(),
     getTaskHistory: vi.fn(),
     completeTask: vi.fn(),
@@ -122,6 +123,7 @@ beforeEach(() => {
   mockApi.getSchemaDiary.mockResolvedValue([]);
   mockApi.getModeDiary.mockResolvedValue([]);
   mockApi.getGratitudeDiary.mockResolvedValue([]);
+  mockApi.history.mockResolvedValue([]);
   mockApi.getTasks.mockResolvedValue([]);
   mockApi.getTaskHistory.mockResolvedValue([]);
   mockApi.completeTask.mockResolvedValue(undefined);
@@ -513,4 +515,38 @@ describe('TodaySection — день и время записи в зоне чи�
       });
     });
   }
+});
+
+// ── Мост к терапевту ─────────────────────────────────────────────────────────
+describe('TodaySection — мост к терапевту', () => {
+  const lowDays = ['26', '25', '24', '23', '22'].map(d => ({
+    date: `2026-10-${d}`,
+    ratings: { attachment: 3, autonomy: 3, expression: 3, play: 3, limits: 3 },
+  }));
+
+  it('внизу страницы тихая строка «самопомощь, не замена терапии» со ссылкой «Поговорить →»', async () => {
+    renderSection();
+    const line = await screen.findByText(/Приложение — самопомощь, не замена терапии/);
+    expect(line.textContent).toContain('Если нужна терапия, есть с кем поговорить.');
+    expect(screen.getByRole('button', { name: 'Поговорить →' })).toBeTruthy();
+    // Нет сигнала — нет карточки.
+    expect(screen.queryByText('Не сейчас')).toBeNull();
+  });
+
+  it('сигнал по трём низким дням: карточка стоит над лентой дня', async () => {
+    mockApi.history.mockResolvedValue(lowDays);
+    renderSection();
+    const eyebrow = await screen.findByText('Три дня подряд индекс не выше 4');
+    const feedTitle = document.querySelector('.ct-feed')!;
+    expect(eyebrow.compareDocumentPosition(feedTitle) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Не сейчас' }));
+    expect(screen.queryByText('Три дня подряд индекс не выше 4')).toBeNull();
+  });
+
+  it('записи режимов из дневника доходят до сигнала: три раза один режим', async () => {
+    mockApi.history.mockResolvedValue([6, 5, 4, 3, 2].map(i => ({ date: `2026-10-0${i}`, ratings: { attachment: 7, autonomy: 7, expression: 7, play: 7, limits: 7 } })));
+    mockApi.getModeDiary.mockResolvedValue([1, 2, 3].map(i => ({ id: i, modeId: 'punitive_critic', situation: 'x', createdAt: daysAgoIso(i) })));
+    renderSection();
+    expect(await screen.findByText(/3 раза за две недели/)).toBeTruthy();
+  });
 });

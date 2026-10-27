@@ -110,6 +110,7 @@ describe('CaseFlowScreen — три шага и итог', () => {
 
     click('Сохранить');
     await screen.findByText('Записано');
+    expect(screen.getByText(/Разбор — самопомощь, не замена терапии\. Если режим возвращается снова и снова/)).toBeTruthy();
     expect(p.onSave).toHaveBeenCalledWith(
       expect.objectContaining({
         modeId: 'avoidant_protector',

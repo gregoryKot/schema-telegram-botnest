@@ -21,6 +21,8 @@ import { homeGreeting } from './today/helpers';
 import { formatGreetingDate } from './today/greetingDate';
 import { buildTodayFeed, trackerSummary, trackerTileMeta, caseTileMeta, diaryTileMeta } from './today/todayFeed';
 import { QuickEntrySheet } from '../components/diary/QuickEntrySheet';
+import { TherapyNudgeCard } from '../components/therapy/TherapyNudgeCard';
+import { HomeTherapyLine } from './today/HomeTherapyLine';
 
 interface Props {
   needs: Need[];
@@ -43,7 +45,7 @@ export function TodaySection({
   onOpenDiaries, onOpenChildhoodWheel, refreshKey, onTasksChanged,
 }: Props) {
   const data = useTodayData(refreshKey);
-  const { profile, feed, casesToday, lastAt, diariesLoaded, reloadDiaries } = data;
+  const { profile, feed, casesToday, lastAt, diariesLoaded, reloadDiaries, modeEntries } = data;
   const { tasks, taskHistory, taskError, completeTask, afterCreate } = useTaskActions(refreshKey);
   const [caseOpen,       setCaseOpen]       = useState(false);
   const [quickOpen,      setQuickOpen]      = useState(false);
@@ -113,6 +115,8 @@ export function TodaySection({
         />
       )}
 
+      <TherapyNudgeCard refreshKey={refreshKey} modeEntries={modeEntries} />
+
       <TodayFeed
         entries={buildTodayFeed(feed, tracker)}
         loaded={diariesLoaded}
@@ -124,6 +128,8 @@ export function TodaySection({
       <button type="button" className="ct-link ct-calm" onClick={() => { trackHomeTile('calm'); onNavigate('practice'); }}>
         Тяжело прямо сейчас? Подышим →
       </button>
+
+      <HomeTherapyLine />
 
       {quickOpen && <QuickEntrySheet onClose={() => setQuickOpen(false)} onSaved={reloadDiaries} />}
       {why.mode && <WhySheet auto={why.mode === 'auto'} onClose={why.close} />}

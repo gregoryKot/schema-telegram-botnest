@@ -2,6 +2,8 @@ import {
   DIARY_QUICK_TAGS,
   HOME_TILES,
 } from '../analytics/home-events.constants';
+import { THERAPY_NUDGE_EVENT } from '../analytics/therapy-nudge.constants';
+import { sanitizeTherapyNudgeMeta } from './analytics-meta.sanitize-therapy-nudge';
 
 const TILE_SET = new Set<string>(HOME_TILES);
 const QUICK_TAG_SET = new Set<string>(DIARY_QUICK_TAGS);
@@ -33,6 +35,7 @@ export function sanitizeHomeMeta(
 ): Record<string, unknown> | undefined {
   if (name === 'home_tile') return sanitizeHomeTileMeta(meta);
   if (name === 'diary_quick_save') return sanitizeDiaryQuickMeta(meta);
+  if (name === THERAPY_NUDGE_EVENT) return sanitizeTherapyNudgeMeta(meta);
   // tracker_skip без полей: что бы ни прислали, в базу уходит пустой объект.
   if (name === 'tracker_skip') return {};
   return undefined;

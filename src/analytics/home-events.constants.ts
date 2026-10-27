@@ -11,10 +11,15 @@
 //               boolean } — detailed=true, если запись ушла через «Заполнить
 //               подробно» (старый мастер). Строка в /stats — «Дневник одной
 //               страницей: …».
+//   therapy_nudge — «Мост к терапевту»; реестр, meta и блок в /stats —
+//               therapy-nudge.constants.ts.
+import { THERAPY_NUDGE_EVENT } from './therapy-nudge.constants';
+
 export const HOME_EVENTS = [
   'home_tile',
   'tracker_skip',
   'diary_quick_save',
+  THERAPY_NUDGE_EVENT,
 ] as const;
 
 export const DIARY_QUICK_TAGS = [

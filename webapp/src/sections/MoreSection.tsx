@@ -2,6 +2,11 @@ import { useState } from 'react';
 import type { Section } from '../components/appShell/navigation';
 import { JourneySheet } from '../components/JourneySheet';
 import { WhySheet } from '../components/WhySheet';
+import { TalkSheet } from '../components/therapy/TalkSheet';
+import { trackTherapyNudge } from '../components/therapy/trackTherapyNudge';
+import { useTherapyBridgeTexts } from '../components/therapy/useTherapyBridgeTexts';
+import { ExternalLink } from '../host/ExternalLink';
+import { getTherapistContact } from '../../../shared/src/utils/therapistContact';
 import { trackHomeTile } from './today/trackHomeTile';
 import '../styles/client-more.css';
 
@@ -13,19 +18,42 @@ interface Props {
   onOpenTherapistCabinet?: () => void;
 }
 
-interface Row { id: string; title: string; sub: string; onClick: () => void }
+interface Row { id: string; title: string; sub: string; onClick: () => void; href?: string }
+
+function RowBody({ row }: { row: Row }) {
+  return (
+    <>
+      <span className="cm-row-body">
+        <span className="cm-row-title">{row.title}</span>
+        <span className="cm-row-sub">{row.sub}</span>
+      </span>
+      <span className="cm-row-arrow" aria-hidden="true">→</span>
+    </>
+  );
+}
 
 // «Ещё»: всё, что не входит в три действия главной (docs/design/CLIENT_SIMPLE_2026-10.md).
 // Разделы /schemas, /practice, /profile остаются на своих адресах — отсюда в них заходят.
 export function MoreSection({ onNavigate, onOpenSchema, onOpenAdvanced, userRole, onOpenTherapistCabinet }: Props) {
   const [why, setWhy] = useState(false);
   const [journey, setJourney] = useState(false);
+  const [talk, setTalk] = useState(false);
+  const bridge = useTherapyBridgeTexts();
+  const contact = getTherapistContact();
+  const hasTherapist = contact.name !== 'автору';
+  // Терапевту строка «поговорить» не нужна. Подключён терапевт — сразу ссылка на него, иначе лист с записью к автору.
+  const talkRow: Row[] = userRole === 'THERAPIST' || contact.isTherapist
+    ? []
+    : hasTherapist
+      ? [{ id: 'talk', title: bridge.moreWriteTitle, sub: bridge.moreWriteSub, href: contact.url, onClick: () => trackTherapyNudge('more', 'write') }]
+      : [{ id: 'talk', title: bridge.moreTalkTitle, sub: bridge.moreTalkSub, onClick: () => { trackTherapyNudge('more', 'open'); setTalk(true); } }];
 
   const rows: Row[] = [
     { id: 'why', title: 'Зачем это всё', sub: 'Откуда это и что даёт каждое действие', onClick: () => { trackHomeTile('why'); setWhy(true); } },
     { id: 'schemas', title: 'Мои паттерны', sub: 'Схемы и режимы', onClick: () => onNavigate('schemas') },
     { id: 'practice', title: 'Практики', sub: 'Дыхание, упражнения, планы', onClick: () => onNavigate('practice') },
     { id: 'journey', title: 'Мой путь', sub: 'Всё, что уже собрано', onClick: () => setJourney(true) },
+    ...talkRow,
     ...(userRole === 'THERAPIST' && onOpenTherapistCabinet
       ? [{ id: 'cabinet', title: 'Кабинет терапевта', sub: 'Клиенты и сессии', onClick: onOpenTherapistCabinet }]
       : []),
@@ -44,13 +72,15 @@ export function MoreSection({ onNavigate, onOpenSchema, onOpenAdvanced, userRole
       <ul className="cm-list">
         {rows.map(r => (
           <li key={r.id}>
-            <button type="button" className="cm-row" onClick={r.onClick}>
-              <span className="cm-row-body">
-                <span className="cm-row-title">{r.title}</span>
-                <span className="cm-row-sub">{r.sub}</span>
-              </span>
-              <span className="cm-row-arrow" aria-hidden="true">→</span>
-            </button>
+            {r.href ? (
+              <ExternalLink className="cm-row" href={r.href} onClick={r.onClick}>
+                <RowBody row={r} />
+              </ExternalLink>
+            ) : (
+              <button type="button" className="cm-row" onClick={r.onClick}>
+                <RowBody row={r} />
+              </button>
+            )}
           </li>
         ))}
       </ul>
@@ -58,6 +88,7 @@ export function MoreSection({ onNavigate, onOpenSchema, onOpenAdvanced, userRole
       <button type="button" className="cm-sos" onClick={() => onNavigate('practice')}>Мне очень плохо</button>
 
       {why && <WhySheet onClose={() => setWhy(false)} />}
+      {talk && <TalkSheet place="more" onClose={() => setTalk(false)} />}
       {journey && <JourneySheet onClose={() => setJourney(false)} />}
     </div>
   );
