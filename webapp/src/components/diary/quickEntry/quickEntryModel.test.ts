@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
-  QUICK_TAGS, GRATITUDE_MAX_ITEMS, appendGratitudeItem, hasSecondStep, mergeInitialItem, modeEntryInput, schemaEntryInput,
+  QUICK_TAGS, GRATITUDE_MAX_ITEMS, appendGratitudeItem, hasSecondStep, mergeInitialItem, modeEntryInput, quickSaveTag, schemaEntryInput,
 } from './quickEntryModel';
 
 describe('quickEntryModel', () => {
@@ -16,6 +16,14 @@ describe('quickEntryModel', () => {
   it('мысль — запись схем без схем и эмоций, текст обрезан по краям', () => {
     expect(schemaEntryInput('  Опять промолчал ')).toEqual({ trigger: 'Опять промолчал', emotions: [], schemaIds: [] });
     expect(schemaEntryInput('x', ['abandonment']).schemaIds).toEqual(['abandonment']);
+  });
+
+  it('quickSaveTag: «Схема» без выбранных схем уходит в аналитику как «Мысль», остальное без изменений', () => {
+    expect(quickSaveTag('schema', [])).toBe('thought');
+    expect(quickSaveTag('schema', ['abandonment'])).toBe('schema');
+    expect(quickSaveTag('thought', [])).toBe('thought');
+    expect(quickSaveTag('mode', [])).toBe('mode');
+    expect(quickSaveTag('gratitude', [])).toBe('gratitude');
   });
 
   it('режим — только modeId и ситуация, остальные поля не уходят', () => {

@@ -36,14 +36,14 @@ export function ExpandField({ label, text, accent }: { label: string; text: stri
 const TYPE_LABEL: Record<DiaryType, string> = { schema: 'Схема', mode: 'Режим', gratitude: 'Благодарность' };
 
 function EntryShell({ type, label, title, time, preview, children }: {
-  type: DiaryType; label?: string; title: string; time?: string; preview: ReactNode; children?: (open: boolean) => ReactNode;
+  type: DiaryType; label?: string; title?: string; time?: string; preview: ReactNode; children?: (open: boolean) => ReactNode;
 }) {
   const [open, setOpen] = useState(false);
   return (
     <div className="ds-card ds-card--row ds-card--hover cd-entry" style={hueStyle(DIARY_HUE[type])} aria-expanded={open} {...pressable(() => setOpen(v => !v))}>
       <div className="cd-entry-head">
         <span className="ds-chip ds-chip--sm tone-tint">{label ?? TYPE_LABEL[type]}</span>
-        <span className="cd-entry-title">{title}</span>
+        {title && <span className="cd-entry-title">{title}</span>}
         {time && <span className="cd-entry-time">{time}</span>}
       </div>
       <div className="cd-entry-text">{preview}</div>
@@ -67,7 +67,7 @@ export function SchemaEntry({ entry, onDelete }: { entry: SchemaDiaryEntry; onDe
     <EntryShell
       type="schema"
       label={thought ? 'Мысль' : undefined}
-      title={schemas.length > 0 ? schemas.slice(0, 2).map(s => s!.name).join(' · ') : thought ? 'Без схемы' : 'Дневник схем'}
+      title={schemas.length > 0 ? schemas.slice(0, 2).map(s => s!.name).join(' · ') : thought ? undefined : 'Дневник схем'}
       time={fmtTime(entry.createdAt)}
       preview={<>
         {entry.trigger}

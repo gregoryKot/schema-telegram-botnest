@@ -637,7 +637,6 @@
   "shared/src/components/YsqTestHeader.tsx": 99,
   "shared/src/components/YsqTherapyCta.tsx": 69,
   "shared/src/diary/diaryExplainers.ts": 77,
-  "shared/src/diary/diaryMeta.ts": 28,
   "shared/src/diary/diaryTrackerLink.ts": 9,
   "shared/src/diary/gratitudeInitialItems.ts": 41,
   "shared/src/diary/useGratitudeItems.ts": 79,

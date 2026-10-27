@@ -134,7 +134,7 @@
   - [x] прогресс стрик-цели `task.progress` (`TaskProgressBar`, расчёт —
     `shared/src/tasks/taskProgress.ts`, мини-апп на нём же).
   - [x] переход в трекер из хаба дневника (`DiaryTrackerLink`, текст —
-    `shared/src/diary/diaryTrackerLink.ts`); вводная пустого хаба на сайте уже была.
+    `shared/src/diary/diaryTrackerLink.ts`); вводная пустого хаба на сайте уже была. На сайте `DiaryTrackerLink` удалён в этапе 3 простого клиента.
   - [x] `SaveErrorNote` при провале сохранения схем/режимов: `useSaveFailure` в
     `useSchemasData`, плашка в `SchemasSection` (ты/вы).
   - [x] «Восстановить» версию концептуализации (`ConceptVersionHistory`, поля —
@@ -158,7 +158,7 @@
 - [x] Быстрые действия «+» на телефоне. Реестр, ключи настройки и порядок
   переехали в `shared/src/quickActions/` (мини-апп берёт оттуда же; общее
   состояние листа — `usePlusMenuState`). Сайт: кнопка и лист —
-  `webapp/src/components/quickActions/{PlusButton,PlusMenuSheet,QuickActions}.tsx`,
+  `webapp/src/components/quickActions/{PlusButton,PlusMenuSheet,QuickActions}.tsx` (кнопка и лист удалены в этапе 3 простого клиента),
   оверлеи действий — `QuickActionOverlays.tsx` (состояние в `useOverlays`:
   `quickAction`, `runQuickAction`), разбор ⇄ карта — общий
   `caseFlow/CaseFlowHost.tsx` (на сайте его открывает плитка «Что случилось» в `TodaySection`; `CaseEntryBlock` убран в #872), настройка

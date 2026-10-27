@@ -113,6 +113,35 @@ describe('QuickEntrySheet — сохранение по тегам', () => {
     await press('Дальше');
     await press('Пропустить');
     expect(m.createSchemaDiary).toHaveBeenCalledWith({ trigger: 'Что-то задело', emotions: [], schemaIds: [] });
+    expect(m.trackEvent).toHaveBeenCalledWith('diary_quick_save', { tag: 'thought', detailed: false });
+  });
+
+  it('кризисный текст: карточка видна на втором экране схемы и на «Записано»', async () => {
+    setup();
+    type('не хочу жить');
+    tag('Схема');
+    await press('Дальше');
+    expect(screen.getByRole('heading', { name: 'Какая схема сработала?' })).toBeTruthy();
+    expect(screen.getByText(CRISIS_HOTLINE_DISPLAY)).toBeTruthy();
+    await press('Пропустить');
+    expect(screen.getByRole('heading', { name: 'Записано' })).toBeTruthy();
+    expect(screen.getByText(CRISIS_HOTLINE_DISPLAY)).toBeTruthy();
+  });
+
+  it('кризисный текст: карточка видна на экране выбора режима', async () => {
+    setup();
+    type('не хочу жить');
+    tag('Режим');
+    await press('Дальше');
+    expect(screen.getByText(CRISIS_HOTLINE_DISPLAY)).toBeTruthy();
+  });
+
+  it('нейтральный текст: на втором экране карточки нет', async () => {
+    setup();
+    type('Тёплый чай вечером');
+    tag('Схема');
+    await press('Дальше');
+    expect(screen.queryByText(CRISIS_HOTLINE_DISPLAY)).toBeNull();
   });
 
   it('«Режим»: выбор режима → ситуация + modeId, остальные поля не уходят', async () => {

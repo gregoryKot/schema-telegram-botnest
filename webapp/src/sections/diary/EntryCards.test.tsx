@@ -62,6 +62,20 @@ describe('EntryCards — aria-expanded на раскрывашках (Ж7)', () 
   });
 });
 
+describe('EntryCards — «Мысль» без схем и эмоций', () => {
+  it('заголовка «Без схемы» нет: бейдж «Мысль» и сразу текст', () => {
+    render(<SchemaEntry entry={SCHEMA_ENTRY} onDelete={() => {}} />);
+    expect(screen.getByText('Мысль')).toBeTruthy();
+    expect(screen.queryByText('Без схемы')).toBeNull();
+    expect(screen.getByText('Созвон с командой')).toBeTruthy();
+  });
+
+  it('запись с эмоциями, но без схем, остаётся «Дневником схем»', () => {
+    render(<SchemaEntry entry={{ ...SCHEMA_ENTRY, emotions: [{ id: 'anxiety', intensity: 3 } as never] }} onDelete={() => {}} />);
+    expect(screen.getByText('Дневник схем')).toBeTruthy();
+  });
+});
+
 describe('EntryCards — все поля записи в раскрытой карточке (паритет с мини-аппом)', () => {
   it('SchemaEntry показывает чувства, схемы, происхождение и поля реакции', () => {
     const full: SchemaDiaryEntry = {

@@ -23,6 +23,14 @@ export function schemaEntryInput(text: string, schemaIds: string[] = []) {
   return { trigger: text.trim(), emotions: [], schemaIds };
 }
 
+/**
+ * Тег события diary_quick_save. «Схема» → «Пропустить» сохраняет запись без схем: в ленте
+ * она подписана «Мысль», и в /stats («схем N») она не должна считаться схемой.
+ */
+export function quickSaveTag(tag: QuickTag, schemaIds: readonly string[]): QuickTag {
+  return tag === 'schema' && schemaIds.length === 0 ? 'thought' : tag;
+}
+
 export function modeEntryInput(text: string, modeId: string) {
   return { modeId, situation: text.trim() };
 }

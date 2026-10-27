@@ -4,7 +4,7 @@ import { haptic } from '../../../haptic';
 import { todayStr } from '../../../utils/format';
 import { clearQuickDraft, loadQuickDraft, saveQuickDraft } from '../../../../../shared/src/utils/quickDraft';
 import {
-  appendGratitudeItem, modeEntryInput, schemaEntryInput, type QuickTag,
+  appendGratitudeItem, modeEntryInput, quickSaveTag, schemaEntryInput, type QuickTag,
 } from './quickEntryModel';
 import { detectCrisisAny } from '../../../utils/crisisMarkers';
 import { trackQuickSave } from './trackQuickSave';
@@ -38,14 +38,14 @@ export function useQuickEntry(onSaved?: () => void) {
     onSaved?.();
   };
 
-  const run = async (work: () => Promise<unknown>) => {
+  const run = async (work: () => Promise<unknown>, savedTag: QuickTag = tag) => {
     if (saving || !text.trim()) return;
     setSaving(true);
     setError(null);
     haptic.success();
     try {
       await work();
-      finish(tag, false);
+      finish(savedTag, false);
     } catch (e) {
       haptic.error();
       setError(e instanceof GratitudeFullError ? 'gratitudeFull' : 'failed');
@@ -64,7 +64,7 @@ export function useQuickEntry(onSaved?: () => void) {
     await api.createGratitudeDiary(date, items);
   };
 
-  const saveSchema = (ids: string[]) => run(() => api.createSchemaDiary(schemaEntryInput(text, ids)));
+  const saveSchema = (ids: string[]) => run(() => api.createSchemaDiary(schemaEntryInput(text, ids)), quickSaveTag(tag, ids));
   const saveMode = (modeId: string) => run(() => api.createModeDiary(modeEntryInput(text, modeId)));
 
   /** «Сохранить» на первом экране: мысль и благодарность уходят сразу, схема и режим — на второй экран. */

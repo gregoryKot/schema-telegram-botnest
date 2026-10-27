@@ -2,7 +2,7 @@
    оболочка и шапка — .tk2-overlay / .tq-* (sheet-tracker.css, tracker-question.css). */
 .qe-bar-title { text-align: center; }
 .qe-area {
-  box-sizing: border-box; width: 100%; min-height: 220px; resize: vertical;
+  box-sizing: border-box; width: 100%; min-height: 220px; resize: none; -webkit-appearance: none; appearance: none;
   padding: var(--space-16); border-radius: 18px;
   border: 1px solid var(--line-strong); background: var(--surface); color: var(--text);
   font: 400 19px/1.5 var(--serif);

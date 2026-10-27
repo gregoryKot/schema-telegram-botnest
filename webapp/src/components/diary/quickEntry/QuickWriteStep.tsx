@@ -1,6 +1,5 @@
 import { useEffect, useRef } from 'react';
 import { haptic } from '../../../haptic';
-import { detectCrisisAny } from '../../../utils/crisisMarkers';
 import { CrisisCard } from '../../CrisisCard';
 import { LimitedTextarea } from '../../../../../shared/src/components/LimitedTextarea';
 import { DIARY_FIELD_MAX } from '../../../../../shared/src/limits/textLimits';
@@ -12,6 +11,7 @@ interface Props {
   tag: QuickTag;
   saving: boolean;
   error: QuickError | null;
+  crisis: boolean;
   onText: (v: string) => void;
   onTag: (t: QuickTag) => void;
   onSubmit: () => void;
@@ -20,7 +20,7 @@ interface Props {
 }
 
 /** Первый экран «Дневника одной страницей»: поле «Что на уме?», необязательный тег, «Сохранить». */
-export function QuickWriteStep({ text, tag, saving, error, onText, onTag, onSubmit, onDetailed, onClose }: Props) {
+export function QuickWriteStep({ text, tag, saving, error, crisis, onText, onTag, onSubmit, onDetailed, onClose }: Props) {
   const areaRef = useRef<HTMLTextAreaElement>(null);
   useEffect(() => { areaRef.current?.focus(); }, []);
   return (
@@ -42,7 +42,7 @@ export function QuickWriteStep({ text, tag, saving, error, onText, onTag, onSubm
             placeholder="Можно одним предложением. Можно без точки."
             aria-label="Что на уме?"
           />
-          {detectCrisisAny(text) && <CrisisCard surface="schema" />}
+          {crisis && <CrisisCard surface="schema" />}
           <div className="qe-tags" role="radiogroup" aria-label="Тег записи">
             {QUICK_TAGS.map((t) => (
               <button

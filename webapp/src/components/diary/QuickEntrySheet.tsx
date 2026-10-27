@@ -9,6 +9,7 @@ import { ModeSelectScreen } from './ModeSelectScreen';
 import { QuickWriteStep } from './quickEntry/QuickWriteStep';
 import { QuickSchemaStep } from './quickEntry/QuickSchemaStep';
 import { QuickDone } from './quickEntry/QuickDone';
+import { detectCrisisAny } from '../../utils/crisisMarkers';
 import { useQuickEntry } from './quickEntry/useQuickEntry';
 import { useActiveSchemaIds } from './quickEntry/useActiveSchemaIds';
 import type { QuickTag } from './quickEntry/quickEntryModel';
@@ -29,6 +30,8 @@ interface Props {
 export function QuickEntrySheet({ onClose, onSaved }: Props) {
   const goBack = useHistorySheet(onClose);
   const q = useQuickEntry(onSaved);
+  // Правило №7: карточка не пропадает, пока текст не сохранён; на «Записано» поле уже пустое — берём q.crisis.
+  const crisis = detectCrisisAny(q.text);
   const [wizard, setWizard] = useState<QuickTag | null>(null);
   const wizardSaved = useRef(false);
   const activeSchemaIds = useActiveSchemaIds(q.stage === 'schema' || wizard === 'schema' || wizard === 'thought');
@@ -65,7 +68,7 @@ export function QuickEntrySheet({ onClose, onSaved }: Props) {
     />
   );
   if (q.stage === 'mode') {
-    return <ModeSelectScreen modeId="" onPick={q.saveMode} onBack={() => q.setStage('write')} />;
+    return <ModeSelectScreen modeId="" crisis={crisis} onPick={q.saveMode} onBack={() => q.setStage('write')} />;
   }
 
   return (
@@ -76,6 +79,7 @@ export function QuickEntrySheet({ onClose, onSaved }: Props) {
           tag={q.tag}
           saving={q.saving}
           error={q.error}
+          crisis={crisis}
           onText={q.setText}
           onTag={(t) => { q.setTag(t); q.setError(null); }}
           onSubmit={q.submit}
@@ -87,6 +91,7 @@ export function QuickEntrySheet({ onClose, onSaved }: Props) {
         <QuickSchemaStep
           activeSchemaIds={activeSchemaIds}
           saving={q.saving}
+          crisis={crisis}
           onBack={() => q.setStage('write')}
           onSave={q.saveSchema}
         />
