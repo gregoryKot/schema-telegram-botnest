@@ -109,7 +109,7 @@ export function TrackerOverlay({
     !!detailNeed || showCompletion,
   );
 
-  if (localLoading) return <QuestionSkeleton />;
+  if (localLoading) return <div className="tk2-overlay"><QuestionSkeleton /></div>;
 
   if (showCompletion) {
     return (
