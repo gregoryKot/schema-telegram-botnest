@@ -49,7 +49,7 @@ export async function countDiaryQuickSaves(
   const [byTag, detailed] = await Promise.all([
     Promise.all(
       DIARY_QUICK_TAGS.map(async (tag) => ({
-        tag: tag as string,
+        tag,
         count: await prisma.analyticsEvent.count({
           where: { ...base, meta: { path: ['tag'], equals: tag } },
         }),
