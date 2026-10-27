@@ -41,6 +41,8 @@ export interface ModeEntrySaveData {
   actualNeed?: string;
   childhoodMemories?: string;
   healthyResponse?: string;
+  /** Запись родилась из потока «Что случилось» (сайт); обычный дневник не шлёт. */
+  fromCase?: boolean;
 }
 
 export interface ModeDiaryStep {

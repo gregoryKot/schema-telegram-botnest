@@ -2,7 +2,7 @@ import { SkeletonLines } from './SkeletonLines';
 import { DIARY_KIND_LABEL } from './model';
 import type { FeedEntry, FeedKind } from './todayFeed';
 
-const FEED_KIND_LABEL: Record<FeedKind, string> = { ...DIARY_KIND_LABEL, tracker: 'Трекер' };
+const FEED_KIND_LABEL: Record<FeedKind, string> = { ...DIARY_KIND_LABEL, tracker: 'Трекер', case: 'Разбор' };
 
 interface Props {
   entries: FeedEntry[];

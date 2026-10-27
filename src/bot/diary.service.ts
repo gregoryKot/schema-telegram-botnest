@@ -112,6 +112,8 @@ export class DiaryService {
       actualNeed?: string;
       childhoodMemories?: string;
       healthyResponse?: string;
+      /** Запись из потока «Что случилось» (маркер для «Записей» и /stats). */
+      fromCase?: boolean;
     },
   ) {
     const row = await this.prisma.modeDiaryEntry.create({
@@ -127,6 +129,7 @@ export class DiaryService {
         actualNeed: encrypt(data.actualNeed),
         childhoodMemories: encrypt(data.childhoodMemories),
         healthyResponse: encrypt(data.healthyResponse),
+        fromCase: data.fromCase === true,
       },
     });
     // Return plaintext so caller doesn't receive encrypted strings

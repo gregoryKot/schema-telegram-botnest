@@ -5,7 +5,8 @@ import { dayIndex, type DiaryKind } from './model';
 // Чистые вычисления главной «Сегодня»: лента дня и мета-строки трёх плиток.
 // Только реальные данные: нет оценок и записей — нет и строк.
 
-export type FeedKind = 'tracker' | DiaryKind;
+/** 'case' — запись режима из потока «Что случилось» (fromCase), в ленте подписана «Разбор». */
+export type FeedKind = 'tracker' | 'case' | DiaryKind;
 export interface FeedEntry {
   key: string;
   kind: FeedKind;
@@ -18,7 +19,7 @@ export interface FeedEntry {
 
 export interface DiarySources {
   schema: Array<{ id: number; trigger: string; createdAt: string }>;
-  mode: Array<{ id: number; situation: string; createdAt: string }>;
+  mode: Array<{ id: number; situation: string; createdAt: string; fromCase?: boolean }>;
   gratitude: Array<{ id: number; items: string[]; date: string; createdAt: string }>;
 }
 
@@ -39,7 +40,7 @@ export function trackerSummary(needIds: string[], ratings: Record<string, number
   };
 }
 
-/** Записи трёх дневников за сегодня. Разбор «Что случилось» пишет в дневник режимов. */
+/** Записи трёх дневников за сегодня. Разбор «Что случилось» пишет в дневник режимов с маркером fromCase. */
 export function buildDiaryFeed({ schema, mode, gratitude }: DiarySources): FeedEntry[] {
   return [
     ...schema.filter(e => momentIsToday(e.createdAt)).map(e => ({
@@ -47,7 +48,7 @@ export function buildDiaryFeed({ schema, mode, gratitude }: DiarySources): FeedE
       text: e.trigger.slice(0, TEXT_MAX), sortKey: e.createdAt,
     })),
     ...mode.filter(e => momentIsToday(e.createdAt)).map(e => ({
-      key: `mode-${e.id}`, kind: 'mode' as const, time: momentTime(e.createdAt),
+      key: `mode-${e.id}`, kind: e.fromCase ? ('case' as const) : ('mode' as const), time: momentTime(e.createdAt),
       text: e.situation.slice(0, TEXT_MAX), sortKey: e.createdAt,
     })),
     ...gratitude.filter(e => momentIsToday(e.date)).map(e => ({
@@ -88,9 +89,15 @@ export function trackerTileMeta({ filled, total, index }: TrackerSummary): strin
   return index === null ? 'Готово' : `Готово · индекс ${fmtIndex(index)}`;
 }
 
-/** Всегда обещание: записи «Что случилось» неотличимы от ручных записей дневника режимов, считать их нечестно. */
-export function caseTileMeta(): string {
+/** Есть разборы за сегодня (запись режима с fromCase) — считаем их; нет — обещание. */
+export function caseTileMeta(casesToday = 0): string {
+  if (casesToday > 0) return `Сегодня: ${casesToday} ${pluralRu(casesToday, 'разбор', 'разбора', 'разборов')}`;
   return '≈3 мин · когда что-то зацепило';
+}
+
+/** Сколько разборов записано за сегодня. */
+export function casesTodayCount({ mode }: Pick<DiarySources, 'mode'>): number {
+  return mode.filter(e => e.fromCase && momentIsToday(e.createdAt)).length;
 }
 
 /** null — пока дневники грузятся (плитка показывает плашку-скелетон вместо выдуманного текста). */

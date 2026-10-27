@@ -27,9 +27,9 @@ vi.mock('../components/exercises/FlashcardEx', () => ({
   ),
 }));
 vi.mock('../components/caseFlow/CaseFlowHost', () => ({
-  CaseFlowHost: (p: { start: string; caseCount: number; onClose: () => void }) => (
+  CaseFlowHost: (p: { start: string; onClose: () => void }) => (
     <div data-testid="case-flow">
-      <span data-testid="case-flow-count">{p.caseCount}</span>
+      <span data-testid="case-flow-start">{p.start}</span>
       <button onClick={p.onClose}>Закрыть разбор</button>
     </div>
   ),
@@ -276,23 +276,24 @@ describe('TodaySection — лента дня и плитка дневника', 
 });
 
 describe('TodaySection — «Что случилось»', () => {
-  it('плитка открывает разбор с числом прошлых разборов; закрытие перечитывает дневники', async () => {
+  it('плитка открывает поток; закрытие перечитывает дневники, плитка считает разбор за сегодня', async () => {
     mockApi.getModeDiary.mockResolvedValue([{ id: 1, situation: 'давний', createdAt: daysAgoIso(3) }]);
     renderSection();
     await screen.findByText('Последняя запись — 3 дн. назад');
     fireEvent.click(screen.getByRole('button', { name: /Что случилось/ }));
-    expect((await screen.findByTestId('case-flow-count')).textContent).toBe('1');
+    expect((await screen.findByTestId('case-flow-start')).textContent).toBe('flow');
+    expect(screen.getByText('≈3 мин · когда что-то зацепило')).toBeTruthy();
     expect(mockApi.trackEvent).toHaveBeenCalledWith('home_tile', { tile: 'case' });
 
     mockApi.getModeDiary.mockResolvedValue([
       { id: 1, situation: 'давний', createdAt: daysAgoIso(3) },
-      { id: 2, situation: 'только что', createdAt: nowIso() },
+      { id: 2, situation: 'только что', createdAt: nowIso(), fromCase: true },
     ]);
     fireEvent.click(screen.getByText('Закрыть разбор'));
     await waitFor(() => expect(screen.queryByTestId('case-flow')).toBeNull());
     expect(await screen.findByText('только что')).toBeTruthy();
-    expect(screen.queryByText(/Сегодня разобран/)).toBeNull();
-    expect(screen.getByText('только что')).toBeTruthy();
+    expect(screen.getByText('Сегодня: 1 разбор')).toBeTruthy();
+    expect(screen.getByText('Разбор')).toBeTruthy();
   });
 });
 

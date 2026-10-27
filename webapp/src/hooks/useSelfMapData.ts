@@ -24,6 +24,7 @@ export function useSelfMapData(refreshKey = 0): {
 
   useEffect(() => {
     let ignore = false;
+    // Все записи режимов: `fromCase` появился в этапе 4 простого клиента, фильтрация — отдельное решение (docs/open/frontend-ux.md).
     Promise.all([api.getModeDiary(), api.getModeNotes(), api.getProfile()])
       .then(([cases, notes, profile]) => {
         if (ignore) return;

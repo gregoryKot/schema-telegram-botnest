@@ -27,6 +27,7 @@ describe('CaseMetricsService.getMetrics', () => {
     named: MetaRow[];
     people: bigint;
     returned: bigint;
+    saved?: number;
   }) => {
     const count = jest
       .fn()
@@ -40,11 +41,18 @@ describe('CaseMetricsService.getMetrics', () => {
       .mockResolvedValueOnce(opts.named)
       .mockResolvedValueOnce([{ c: opts.people }])
       .mockResolvedValueOnce([{ c: opts.returned }]);
+    const savedCount = jest.fn().mockResolvedValue(opts.saved ?? 0);
     const prisma = {
       analyticsEvent: { count },
+      modeDiaryEntry: { count: savedCount },
       $queryRaw: queryRaw,
     } as never;
-    return { service: new CaseMetricsService(prisma), count, queryRaw };
+    return {
+      service: new CaseMetricsService(prisma),
+      count,
+      queryRaw,
+      savedCount,
+    };
   };
 
   const FULL = {
@@ -85,6 +93,15 @@ describe('CaseMetricsService.getMetrics', () => {
     expect(m.namedOwn).toBe(14);
     expect(m.namedChip).toBe(9);
     expect(m.namedSkipped).toBe(8);
+  });
+
+  it('считает сохранённые разборы по полю fromCase за 30 дней', async () => {
+    const { service, savedCount } = build({ ...FULL, saved: 17 });
+    const m = await service.getMetrics();
+    expect(m.saved).toBe(17);
+    const where = savedCount.mock.calls[0][0].where;
+    expect(where.fromCase).toBe(true);
+    expect(where.createdAt.gte).toBeInstanceOf(Date);
   });
 
   it('читает булево «согласился» как строку JSON, а не как boolean', async () => {
