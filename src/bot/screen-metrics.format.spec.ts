@@ -25,6 +25,7 @@ const FULL: ScreenMetrics = {
   movesByScreen: [],
   syncedUsers: 0,
   homeTiles: [],
+  trackerSkips: 0,
 };
 
 const EMPTY: ScreenMetrics = {
@@ -33,6 +34,7 @@ const EMPTY: ScreenMetrics = {
   movesByScreen: [],
   syncedUsers: 0,
   homeTiles: [],
+  trackerSkips: 0,
 };
 
 describe('formatScreenMetrics', () => {
@@ -187,5 +189,23 @@ describe('formatScreenMetrics — плитки главной', () => {
 
   it('на чистой БД плиток в отчёте нет', () => {
     expect(formatScreenMetrics(EMPTY)).not.toMatch(/Главная/);
+  });
+});
+
+describe('formatScreenMetrics — пропуски в трекере', () => {
+  it('на чистой БД строки про пропуски нет', () => {
+    expect(formatScreenMetrics(EMPTY)).not.toMatch(/пропуск/);
+  });
+
+  it('строка пропусков идёт после плиток главной, последней', () => {
+    const text = formatScreenMetrics({
+      ...FULL,
+      homeTiles: [{ tile: 'tracker', count: 2 }],
+      trackerSkips: 5,
+    });
+    expect(text.split('\n').slice(-2)).toEqual([
+      'Главная: плитки — Трекер 2',
+      'Трекер: пропусков 5',
+    ]);
   });
 });

@@ -1,5 +1,9 @@
 import { HOME_TILES } from '../analytics/home-events.constants';
-import { formatHomeTiles, HOME_TILE_LABELS } from './home-tiles.format';
+import {
+  formatHomeTiles,
+  formatTrackerSkips,
+  HOME_TILE_LABELS,
+} from './home-tiles.format';
 
 describe('formatHomeTiles — нажатия плиток главной', () => {
   it('пустая БД: строки нет, в блоке нет «0», NaN и голых id', () => {
@@ -24,5 +28,15 @@ describe('formatHomeTiles — нажатия плиток главной', () =>
     for (const tile of HOME_TILES) {
       expect(HOME_TILE_LABELS[tile]).toBeTruthy();
     }
+  });
+});
+
+describe('formatTrackerSkips — «Пропустить» в трекере', () => {
+  it('пустая БД: строки нет, в ней нет «0» и NaN', () => {
+    expect(formatTrackerSkips(0)).toBeNull();
+  });
+
+  it('есть данные: счётчик словами', () => {
+    expect(formatTrackerSkips(7)).toBe('Трекер: пропусков 7');
   });
 });

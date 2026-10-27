@@ -1,51 +1,49 @@
-// TrackerOverlay.tsx – Variant C · PickerRail (editorial triptych)
+// TrackerOverlay: «один вопрос на экран» (простой клиент, этап 2,
+// docs/design/CLIENT_SIMPLE_2026-10.md). Ответ сохраняется сразу (useRatingSaver) и
+// через AUTO_ADVANCE_MS сам открывает следующую неоценённую потребность;
+// когда неоценённых нет — экран «Готово». Бэкфилл прошлого дня (`date`) идёт тем же путём.
 
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { useNeedData } from '../needData';
 import { NeedTodaySheet } from './NeedTodaySheet';
-import { api } from '../api';
 import { useRatingSaver } from '../hooks/useRatingSaver';
 import { useHistorySheet } from '../hooks/useHistorySheet';
-import { deltaView } from '../sections/today/model';
-import { TrackerSteps } from './trackerOverlay/TrackerChrome';
-import { buildChrome } from './trackerOverlay/buildChrome';
+import { trackTrackerSkip } from '../sections/today/trackHomeTile';
+import { NEED_HUE } from '../lib/tone';
+import type { NeedId } from '../../../shared/src/needs/types';
+import { formatDateString } from '../../../shared/src/utils/calendarDate';
 import '../styles/sheet-tracker.css';
+import '../styles/tracker-question.css';
 import type { Props } from './trackerOverlay/types';
-import { useIsDesktop } from './trackerOverlay/useIsDesktop';
 import { CompletionScreen } from './trackerOverlay/CompletionScreen';
-import { DesktopLayout } from './trackerOverlay/DesktopLayout';
-import { MobileLayout } from './trackerOverlay/MobileLayout';
+import { QuestionScreen } from './trackerOverlay/QuestionScreen';
+import { QuestionSkeleton } from './trackerOverlay/QuestionSkeleton';
+import { TrackerTopbar } from './trackerOverlay/TrackerTopbar';
+import { useSwipe } from './trackerOverlay/useSwipe';
+import { nextUnrated } from './trackerOverlay/trackerFlow';
+import { useAutoAdvance } from './trackerOverlay/useAutoAdvance';
+import { useBackfillRatings } from './trackerOverlay/useBackfillRatings';
 import type { Need } from '../types';
 
 export function TrackerOverlay({
   needs,
   ratings,
-  saved: _saved,
   isOffline,
   onChange,
   onSaved,
   onClose,
   initialNeedId,
   onOpenNote,
-  onOpenGoal: _onOpenGoal,
   onOpenHistory,
   yesterdayRatings = {},
   date,
   onDone,
 }: Props) {
   const goBack = useHistorySheet(onClose);
-  const isDesktop = useIsDesktop();
   const isBackfill = !!date;
+  const ids = needs.map((n) => n.id);
 
-  const [localRatings, setLocalRatings] = useState<Record<string, number>>({});
-  const [localLoading, setLocalLoading] = useState(isBackfill);
-  useEffect(() => {
-    if (!isBackfill) return;
-    api
-      .ratings(date)
-      .then((r) => setLocalRatings(r))
-      .finally(() => setLocalLoading(false));
-  }, [date, isBackfill]);
+  const { ratings: localRatings, setRatings: setLocalRatings, loading: localLoading } = useBackfillRatings(date);
 
   const effectiveRatings = isBackfill ? localRatings : ratings;
 
@@ -54,35 +52,24 @@ export function TrackerOverlay({
       const i = needs.findIndex((n) => n.id === initialNeedId);
       if (i >= 0) return i;
     }
-    if (!isBackfill) {
-      const f = needs.findIndex((n) => ratings[n.id] === undefined);
-      return f >= 0 ? f : 0;
-    }
-    return 0;
+    return isBackfill ? 0 : (nextUnrated(ids, ratings, -1, false) ?? 0);
   });
+  // Всё уже оценено и открыли «просто посмотреть» — сразу «Готово», а не первый вопрос.
+  const [showCompletion, setShowCompletion] = useState(
+    () => !isBackfill && !initialNeedId && nextUnrated(ids, ratings, -1, false) === null,
+  );
   const [detailNeed, setDetailNeed] = useState<Need | null>(null);
-  const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
-  const [showCompletion, setShowCompletion] = useState(false);
+  // Строка «откуда это» — только на первом вопросе и пока нет ни одной оценки (решается при открытии).
+  const [firstTime] = useState(() => !isBackfill && Object.keys(ratings).length === 0);
+  const [startIdx] = useState(idx);
 
-  const need = needs[idx];
-  const value = effectiveRatings[need.id] ?? 0;
-  const allRated = needs.every((n) => (effectiveRatings[n.id] ?? 0) > 0);
-  // Только реальные вчерашние оценки: нет данных — нет дельты (правило
-  // CLAUDE.md «Никаких хардкод-заглушек»; фолбэк на константу YESTERDAY —
-  // ровно инцидент из правила, miniapp-двойник всегда был чист).
-  const yval = yesterdayRatings[need.id];
-  const delta = isBackfill ? null : deltaView(value > 0 ? value : undefined, yval);
   const NEED_DATA = useNeedData();
-  const extra = NEED_DATA[need.id];
-  const needName = extra?.name ?? need.chartLabel;
+  const nameOf = (n: Need) => NEED_DATA[n.id]?.name ?? n.chartLabel;
 
-  const markSaved = useCallback(() => setLastSavedAt(new Date()), []);
-  // Бэкафилл пишет оценки прошлого дня: своя дата, без стрика и без офлайн-паузы.
   const save = useRatingSaver({
     date: isBackfill ? date : undefined,
     isOffline: !isBackfill && isOffline,
     onSaved: isBackfill ? undefined : onSaved,
-    onSavedAt: markSaved,
     errorMessage: isBackfill ? 'tracker backfill rating save failed' : 'tracker rating save failed',
     section: 'tracker',
   });
@@ -92,29 +79,37 @@ export function TrackerOverlay({
       else onChange(needId, v);
       save(needId, v);
     },
-    [onChange, isBackfill, save],
+    [onChange, isBackfill, save, setLocalRatings],
   );
 
-  const touchRef = useRef<{ x: number; y: number } | null>(null);
-  const onTS = (e: React.TouchEvent) => {
-    touchRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+  const { schedule, cancel: cancelAdvance } = useAutoAdvance();
+
+  const goTo = (i: number) => {
+    cancelAdvance();
+    setShowCompletion(false);
+    setIdx(i);
   };
-  const onTE = (e: React.TouchEvent) => {
-    if (!touchRef.current || detailNeed) return;
-    const dx = e.changedTouches[0].clientX - touchRef.current.x;
-    const dy = e.changedTouches[0].clientY - touchRef.current.y;
-    touchRef.current = null;
-    if (Math.abs(dx) < 90 || Math.abs(dy) > Math.abs(dx) * 0.5) return;
-    if (dx < 0 && idx < needs.length - 1) setIdx(idx + 1);
-    if (dx > 0 && idx > 0) setIdx(idx - 1);
+  const goNextOrDone = (to: number | null) => (to === null ? setShowCompletion(true) : setIdx(to));
+
+  const need = needs[idx];
+  const handleAnswer = (v: number) => {
+    handleChange(need.id, v);
+    const to = nextUnrated(ids, { ...effectiveRatings, [need.id]: v }, idx, true);
+    schedule(() => goNextOrDone(to));
+  };
+  const handleSkip = () => {
+    cancelAdvance();
+    trackTrackerSkip();
+    goNextOrDone(nextUnrated(ids, effectiveRatings, idx, false));
   };
 
-  if (localLoading)
-    return (
-      <div className="tk2-overlay tk2-done">
-        <div className="ds-sub">Загрузка...</div>
-      </div>
-    );
+  const swipe = useSwipe(
+    () => idx < needs.length - 1 && goTo(idx + 1),
+    () => idx > 0 && goTo(idx - 1),
+    !!detailNeed || showCompletion,
+  );
+
+  if (localLoading) return <div className="tk2-overlay"><QuestionSkeleton /></div>;
 
   if (showCompletion) {
     return (
@@ -125,56 +120,49 @@ export function TrackerOverlay({
         date={date}
         onDone={onDone}
         goBack={goBack}
+        onReview={goTo}
+        onOpenNote={onOpenNote}
+        onOpenHistory={onOpenHistory}
       />
     );
   }
 
-  const nameOf = (n: Need) => NEED_DATA[n.id]?.name ?? n.chartLabel;
-  const steps = <TrackerSteps needs={needs} idx={idx} ratings={effectiveRatings} onPick={setIdx} />;
-  const { topbar, footer, onboarding } = buildChrome({
-    isDesktop,
-    isBackfill,
-    date,
-    goBack,
-    onOpenNote,
-    onOpenHistory,
-    needs,
-    idx,
-    setIdx,
-    allRated,
-    lastSavedAt,
-    effectiveRatings,
-    ratings,
-    nameOf,
-    onFinish: () => setShowCompletion(true),
-  });
-
-  const DetailSheet = detailNeed ? (
-    <NeedTodaySheet
-      need={detailNeed}
-      value={effectiveRatings[detailNeed.id] ?? 0}
-      yesterdayValue={yesterdayRatings[detailNeed.id]}
-      onChange={(v) => handleChange(detailNeed.id, v)}
-      onClose={() => setDetailNeed(null)}
-    />
-  ) : null;
-
-  const shared = {
-    need,
-    value,
-    needName,
-    extra,
-    idx,
-    needsLength: needs.length,
-    handleChange,
-    setDetailNeed,
-    yesterday: isBackfill ? undefined : yval,
-    delta,
-    topbar,
-    footer,
-    steps,
-    detailSheet: DetailSheet,
-  };
-  if (isDesktop) return <DesktopLayout {...shared} />;
-  return <MobileLayout {...shared} onboarding={onboarding} onTS={onTS} onTE={onTE} />;
+  const value = effectiveRatings[need.id] ?? 0;
+  return (
+    <div className="tk2-overlay" {...swipe}>
+      <TrackerTopbar
+        needs={needs}
+        idx={idx}
+        ratings={effectiveRatings}
+        nameOf={nameOf}
+        onClose={goBack}
+        onPick={goTo}
+        onSkip={handleSkip}
+      />
+      <div className="tq-body">
+        <QuestionScreen
+          idx={idx}
+          total={needs.length}
+          name={nameOf(need)}
+          question={NEED_DATA[need.id]?.question ?? ''}
+          value={value}
+          hue={NEED_HUE[need.id as NeedId]}
+          yesterday={isBackfill ? undefined : yesterdayRatings[need.id]}
+          caption={date ? formatDateString(date, { day: 'numeric', month: 'long' }) : undefined}
+          showOriginNote={firstTime && idx === startIdx}
+          onAnswer={handleAnswer}
+          onMore={() => setDetailNeed(need)}
+        />
+      </div>
+      {detailNeed && (
+        <NeedTodaySheet
+          need={detailNeed}
+          value={effectiveRatings[detailNeed.id] ?? 0}
+          yesterdayValue={isBackfill ? undefined : yesterdayRatings[detailNeed.id]}
+          onChange={(v) => handleChange(detailNeed.id, v)}
+          onClose={() => setDetailNeed(null)}
+        />
+      )}
+    </div>
+  );
 }

@@ -56,15 +56,7 @@
     "since": "docs/AUDIT_2026-10_FINDINGS.md"
   },
   "webapp/src/components/trackerOverlay/CompletionScreen.tsx": {
-    "reason": "Часть TrackerOverlay: экран завершения рисуется внутри него, хук вызван в родителе (TrackerOverlay.tsx:35), «Назад» этого экрана — его goBack.",
-    "since": "docs/AUDIT_2026-10_FINDINGS.md"
-  },
-  "webapp/src/components/trackerOverlay/DesktopLayout.tsx": {
-    "reason": "Часть TrackerOverlay: раскладка для десктопа, хук вызван в родителе (TrackerOverlay.tsx:35) и приходит сюда пропом.",
-    "since": "docs/AUDIT_2026-10_FINDINGS.md"
-  },
-  "webapp/src/components/trackerOverlay/MobileLayout.tsx": {
-    "reason": "Часть TrackerOverlay: раскладка для телефона, хук вызван в родителе (TrackerOverlay.tsx:35) и приходит сюда пропом.",
+    "reason": "Часть TrackerOverlay: экран «Готово» рисуется внутри него, хук вызван в родителе (TrackerOverlay.tsx:42), «Назад» этого экрана — его goBack.",
     "since": "docs/AUDIT_2026-10_FINDINGS.md"
   },
   "webapp/src/components/ysq/YsqQuestion.tsx": {

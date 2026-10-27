@@ -106,13 +106,12 @@ vi.mock('../sections/TherapistTodaySection', () => ({
 
 vi.mock('./TrackerOverlay', () => ({
   TrackerOverlay: (p: ComponentProps<typeof TrackerOverlayT>) => (
-    <Btns testid="tracker-overlay" state={{ attachmentRating: p.ratings.attachment ?? null, attachmentSaved: p.saved.attachment ?? null }} map={{
+    <Btns testid="tracker-overlay" state={{ attachmentRating: p.ratings.attachment ?? null }} map={{
       close: () => p.onClose(),
       change: () => p.onChange('attachment', 5),
       saveWithStreak: () => p.onSaved('attachment', { currentStreak: 3, longestStreak: 3, totalDays: 6, todayDone: true, weekDots: [] }),
       saveNoStreak: () => p.onSaved('attachment', { currentStreak: 0, longestStreak: 2, totalDays: 1, todayDone: true, weekDots: [] }),
       note: () => p.onOpenNote?.(),
-      goal: () => p.onOpenGoal?.(),
       openHistory: () => p.onOpenHistory?.(),
     }} />
   ),

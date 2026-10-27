@@ -47,6 +47,7 @@ describe('ScreenMetricsService.getMetrics', () => {
       movesByScreen: [],
       syncedUsers: 0,
       homeTiles: HOME_TILES.map((tile) => ({ tile, count: 0 })),
+      trackerSkips: 0,
     });
   });
 
@@ -58,6 +59,7 @@ describe('ScreenMetricsService.getMetrics', () => {
       movesByScreen: [],
       syncedUsers: 0,
       homeTiles: HOME_TILES.map((tile) => ({ tile, count: 0 })),
+      trackerSkips: 0,
     });
   });
 
@@ -75,6 +77,7 @@ describe('ScreenMetricsService.getMetrics', () => {
       movesByScreen: [],
       syncedUsers: 0,
       homeTiles: HOME_TILES.map((tile) => ({ tile, count: 0 })),
+      trackerSkips: 0,
     });
   });
 
@@ -110,11 +113,23 @@ describe('ScreenMetricsService.getMetrics', () => {
     );
   });
 
+  it('trackerSkips — счёт события tracker_skip за месяц без фильтра по meta', async () => {
+    const { service, count } = build([], []);
+    count.mockImplementation(({ where }: { where: { name: string } }) =>
+      Promise.resolve(where.name === 'tracker_skip' ? 4 : 0),
+    );
+    const m = await service.getMetrics();
+    expect(m.trackerSkips).toBe(4);
+    expect(count).toHaveBeenCalledWith({
+      where: { name: 'tracker_skip', createdAt: { gte: expect.any(Date) } },
+    });
+  });
+
   it('homeTiles — по счёту на каждую плитку из реестра, фильтр по JSON meta.tile', async () => {
     const { service, count } = build([], []);
     count.mockImplementation(
-      ({ where }: { where: { meta: { equals: string } } }) =>
-        Promise.resolve(where.meta.equals === 'diary' ? 7 : 0),
+      ({ where }: { where: { meta?: { equals: string } } }) =>
+        Promise.resolve(where.meta?.equals === 'diary' ? 7 : 0),
     );
     const m = await service.getMetrics();
     expect(m.homeTiles).toHaveLength(HOME_TILES.length);

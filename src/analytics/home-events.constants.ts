@@ -4,7 +4,9 @@
 //
 //   home_tile — нажал плитку или ссылку на главной (meta.tile: HOME_TILES).
 //               Блок в /stats — «Главная: плитки» (screen-metrics.format.ts).
-export const HOME_EVENTS = ['home_tile'] as const;
+//   tracker_skip — «Пропустить» на вопросе трекера (простой клиент, этап 2),
+//               без meta. Строка в /stats — «Трекер: пропусков N».
+export const HOME_EVENTS = ['home_tile', 'tracker_skip'] as const;
 
 export const HOME_TILES = [
   'tracker',

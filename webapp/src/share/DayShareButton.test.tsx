@@ -31,6 +31,20 @@ describe('DayShareButton', () => {
     expect(screen.queryByText('Скопировать текст')).toBeNull();
   });
 
+  it('plain: текстовая кнопка без рамки, но с зоной нажатия 44px; обычная — с рамкой', () => {
+    const plain = render(
+      <MemoryRouter>
+        <DayShareButton needs={NEEDS} ratings={{ safety: 7 }} plain />
+      </MemoryRouter>,
+    );
+    const btn = screen.getByText('Поделиться днём').closest('button')!;
+    expect(btn.getAttribute('style')).not.toContain('1px solid');
+    expect(btn.style.minHeight).toBe('44px');
+    plain.unmount();
+    renderButton();
+    expect(screen.getByText('Поделиться днём').closest('button')!.getAttribute('style')).toMatch(/border:\s*1px solid/);
+  });
+
   it('клик по кнопке открывает шит карточки дня', () => {
     renderButton();
     fireEvent.click(screen.getByText('Поделиться днём'));

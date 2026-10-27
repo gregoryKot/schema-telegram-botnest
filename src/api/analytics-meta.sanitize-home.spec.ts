@@ -20,3 +20,16 @@ describe('home_tile: санитизация meta', () => {
     expect(sanitizeMeta('home_tile', undefined)).toBeUndefined();
   });
 });
+
+describe('tracker_skip: санитизация meta', () => {
+  it('любая присланная meta отбрасывается до пустого объекта', () => {
+    expect(sanitizeMeta('tracker_skip', { text: 'мой дневник', x: 1 })).toEqual(
+      {},
+    );
+    expect(sanitizeMeta('tracker_skip', {})).toEqual({});
+  });
+
+  it('без meta остаётся без meta', () => {
+    expect(sanitizeMeta('tracker_skip', undefined)).toBeUndefined();
+  });
+});

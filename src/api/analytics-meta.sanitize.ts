@@ -81,6 +81,8 @@ export function sanitizeMeta(
       : undefined;
   }
   if (name === 'home_tile') return sanitizeHomeTileMeta(meta);
+  // tracker_skip без полей: что бы ни прислали, в базу уходит пустой объект.
+  if (name === 'tracker_skip') return {};
   if (name === 'web_banner_open' || name === 'web_banner_dismiss') {
     const banner = meta.banner;
     if (typeof banner === 'string' && WEB_BANNER_ID_SET.has(banner)) {
