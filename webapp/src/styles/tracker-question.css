@@ -2,18 +2,20 @@
    Префикс tq-; оболочка — .tk2-overlay (sheet-tracker.css). Цвет потребности
    приходит через --h (hueStyle), цвета — только токены. */
 .tq-bar {
-  flex-shrink: 0; min-height: 56px; padding: 0 var(--space-8);
-  display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: var(--space-4);
+  flex-shrink: 0; min-height: 56px; padding: 0 var(--space-4);
+  display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 0;
   border-bottom: 1px solid var(--line);
 }
 .tq-bar-btn {
-  min-height: 44px; min-width: 44px; padding: 0 var(--space-12); background: none; border: none;
+  min-height: 44px; min-width: 44px; padding: 0 var(--space-4); background: none; border: none;
   font: 600 14px var(--sans); color: var(--text-sub); cursor: pointer; border-radius: var(--r-10);
 }
 .tq-bar-btn:focus-visible, .tq-dot-hit:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .tq-dots { display: flex; justify-content: center; }
+/* 40 по ширине, а не 44: пять точек (200px) + «Закрыть» и «Пропустить» должны поместиться в 360px; высота 44 держит
+   палец, как у NeedRatingBar мини-аппа (46 по высоте при ~30 по ширине, пять целей в строке). */
 .tq-dot-hit {
-  width: 28px; height: 44px; padding: 0; background: none; border: none; cursor: pointer;
+  width: 40px; height: 44px; padding: 0; background: none; border: none; cursor: pointer;
   display: flex; align-items: center; justify-content: center;
 }
 .tq-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--line); transition: background .2s; }
@@ -56,7 +58,10 @@
   display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-12);
 }
 .tq-bars li { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: var(--space-8); min-height: 120px; }
-.tq-bar-col { width: 100%; max-width: 40px; border-radius: 8px 8px 4px 4px; background: var(--line); }
+.tq-bar-col { width: 100%; max-width: 40px; border-radius: 8px 8px 4px 4px; }
+/* Серый только у неоценённого: и .tone-fill (cabinet.css), и этот класс весят одинаково, и тот, что
+   подключён позже, перебивал цвет потребности; тут их разводит :not. */
+.tq-bar-col:not(.tone-fill) { background: var(--line); }
 .tq-bar-cap { font-size: 11px; color: var(--text-faint); }
 .tq-acts { width: 100%; display: flex; flex-direction: column; gap: var(--space-8); }
 .tq-btn {

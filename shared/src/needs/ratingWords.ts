@@ -20,3 +20,15 @@ export function wordForValue(v: number | null | undefined): RatingWord | null {
   if (v === null || v === undefined || !(v >= 1)) return null;
   return RATING_WORDS[Math.min(RATING_WORDS.length, Math.ceil(v / 2)) - 1];
 }
+
+/**
+ * Три карточки «Как понять оценку» (ranges потребности) на пять слов шкалы:
+ * «Совсем нет»/«Мало» → 0, «Наполовину» → 1, «В основном да»/«Полностью» → 2.
+ * Оценки нет — -1 (ни одна карточка не подсвечена).
+ */
+export function rangeCardIndex(v: number | null | undefined): number {
+  const word = wordForValue(v);
+  if (!word) return -1;
+  const i = RATING_WORDS.indexOf(word);
+  return i <= 1 ? 0 : i === 2 ? 1 : 2;
+}

@@ -97,6 +97,22 @@ describe('NeedTodaySheet', () => {
     expect(screen.getByText('Хороший день – заметьте это')).toBeTruthy();
   });
 
+  it.each([
+    [1, 0], [2, 0], [3, 0], [4, 0], [5, 1], [6, 1], [7, 2], [10, 2],
+  ])('оценка %i подсвечивает карточку «Как понять оценку» №%i — по слову шкалы', (value, card) => {
+    const { container } = renderSheet({ value });
+    fireEvent.click(screen.getByText('Как понять оценку'));
+    const cards = Array.from(container.querySelectorAll('.tk2-opt:not(.ds-card--hover)'));
+    expect(cards.length).toBe(3);
+    expect(cards.map(c => c.classList.contains('is-active'))).toEqual([0, 1, 2].map(i => i === card));
+  });
+
+  it('оценки нет — ни одна карточка не подсвечена', () => {
+    const { container } = renderSheet({ value: 0 });
+    fireEvent.click(screen.getByText('Как понять оценку'));
+    expect(container.querySelectorAll('.tk2-opt:not(.ds-card--hover).is-active').length).toBe(0);
+  });
+
   it('оценка выше 3 НЕ показывает блок «Что с этим сделать?»', () => {
     renderSheet({ value: 6 });
     expect(screen.queryByText('Что с этим сделать?')).toBeNull();

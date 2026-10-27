@@ -2,11 +2,10 @@ import type { Need } from '../../types';
 import { DayShareButton } from '../../share/DayShareButton';
 import { useNeedData } from '../../needData';
 import { formatDateString } from '../../../../shared/src/utils/calendarDate';
-import { fmtIndex } from '../../sections/today/todayFeed';
 import { DayBars } from './DayBars';
-import { lowestObservation, nextUnrated, summarizeDay } from './trackerFlow';
+import { completionHeadline, lowestObservation, nextUnrated, summarizeDay } from './trackerFlow';
 
-/** Экран «Готово»: индекс дня, пять столбиков, одно наблюдение (если оценены все), куда дальше. */
+/** Экран «Готово»: индекс дня (или «N из M», пока оценены не все), пять столбиков, одно наблюдение (если оценены все), куда дальше. */
 export function CompletionScreen({
   needs,
   effectiveRatings,
@@ -37,6 +36,7 @@ export function CompletionScreen({
   const nameOf = (n: Need) => NEED_DATA[n.id]?.name ?? n.chartLabel;
   const lowest = needs.find((n) => n.id === lowestId);
   const when = date ? formatDateString(date, { day: 'numeric', month: 'long' }) : 'сегодня';
+  const headline = completionHeadline(filled, total, index);
   const firstEmpty = nextUnrated(ids, effectiveRatings, -1, false);
   const close = isBackfill ? (onDone ?? goBack) : goBack;
 
@@ -45,10 +45,8 @@ export function CompletionScreen({
       <div className="tq-body">
         <div className="tq-inner tq-done">
           <p className="tq-eyebrow">Трекер · {when}</p>
-          <div className="tq-index" aria-label={index === null ? 'Индекс дня не посчитан' : `Индекс дня ${fmtIndex(index)} из 10`}>
-            {index === null ? '—' : fmtIndex(index)}
-          </div>
-          <p className="tq-index-cap">индекс дня из 10</p>
+          <div className="tq-index" aria-label={headline.aria}>{headline.big}</div>
+          <p className="tq-index-cap">{headline.caption}</p>
           {complete && lowest ? (
             <p className="tq-obs">{lowestObservation(nameOf(lowest))}</p>
           ) : (

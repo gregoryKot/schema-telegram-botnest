@@ -21,7 +21,6 @@ export function useOverlays() {
   const [showTrackerOverlay, setShowTrackerOverlay] = useState(false);
   const [trackerNeedId, setTrackerNeedId] = useState<string | null>(null);
   const [trackerTab, setTrackerTab] = useState<TrackerTab>('today');
-  const [showTrackerGoal, setShowTrackerGoal] = useState(false);
   const [showDiaries, setShowDiaries] = useState(false);
   const [showChildhoodWheel, setShowChildhoodWheel] = useState(false);
   const [showTodayNote, setShowTodayNote] = useState(false);
@@ -54,7 +53,6 @@ export function useOverlays() {
     showTrackerOverlay, setShowTrackerOverlay,
     trackerNeedId, setTrackerNeedId,
     trackerTab, setTrackerTab,
-    showTrackerGoal, setShowTrackerGoal,
     showDiaries, setShowDiaries,
     showChildhoodWheel, setShowChildhoodWheel,
     showTodayNote, setShowTodayNote,

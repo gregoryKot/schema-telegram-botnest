@@ -4,7 +4,6 @@ import type { StreakData } from '../../api';
 export interface Props {
   needs: Need[];
   ratings: Record<string, number>;
-  saved: Record<string, boolean>;
   isOffline?: boolean;
   onChange: (needId: string, value: number) => void;
   onSaved: (needId: string, streak?: StreakData) => void;
@@ -12,8 +11,6 @@ export interface Props {
   initialNeedId?: string | null;
   /** «Заметка» на экране «Готово». */
   onOpenNote?: () => void;
-  /** Не используется с редизайна 2026-10 (кнопки «цель» в трекере нет); оставлен, пока AppShell его передаёт. */
-  onOpenGoal?: () => void;
   /** Открыть историю (экран «Готово», «История →»). */
   onOpenHistory?: () => void;
   yesterdayRatings?: Record<string, number>;

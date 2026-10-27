@@ -17,6 +17,7 @@ import '../styles/tracker-question.css';
 import type { Props } from './trackerOverlay/types';
 import { CompletionScreen } from './trackerOverlay/CompletionScreen';
 import { QuestionScreen } from './trackerOverlay/QuestionScreen';
+import { QuestionSkeleton } from './trackerOverlay/QuestionSkeleton';
 import { TrackerTopbar } from './trackerOverlay/TrackerTopbar';
 import { useSwipe } from './trackerOverlay/useSwipe';
 import { nextUnrated } from './trackerOverlay/trackerFlow';
@@ -27,14 +28,12 @@ import type { Need } from '../types';
 export function TrackerOverlay({
   needs,
   ratings,
-  saved: _saved,
   isOffline,
   onChange,
   onSaved,
   onClose,
   initialNeedId,
   onOpenNote,
-  onOpenGoal: _onOpenGoal,
   onOpenHistory,
   yesterdayRatings = {},
   date,
@@ -110,12 +109,7 @@ export function TrackerOverlay({
     !!detailNeed || showCompletion,
   );
 
-  if (localLoading)
-    return (
-      <div className="tk2-overlay tk2-done">
-        <div className="ds-sub">Загрузка...</div>
-      </div>
-    );
+  if (localLoading) return <QuestionSkeleton />;
 
   if (showCompletion) {
     return (

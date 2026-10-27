@@ -95,7 +95,7 @@ export function AppShell() {
   // Bootstrap data — needs/ratings/profile/role/therapist clients/… fetched
   // on mount; see useBootstrapLoad for the fetch + silent-failure reporting.
   const {
-    needs, ratings, setRatings, saved, setSaved, yesterdayRatings,
+    needs, ratings, setRatings, setSaved, yesterdayRatings,
     loading, error,
     userRole, setUserRole,
     displayName, setDisplayName,
@@ -204,7 +204,7 @@ export function AppShell() {
   // пока хоть один открыт (аудит 2026-09: «Помощь рядом» читалась сквозь каталог практик).
   const anyOverlayOpen = ov.showTrackerOverlay || ov.showTracker || ov.showDiaries
     || ov.showSchemaInfo || ov.showSettings || ov.showPractices || ov.showPlans
-    || ov.showChildhoodWheel || ov.showTodayNote || ov.showTrackerGoal
+    || ov.showChildhoodWheel || ov.showTodayNote
     || ov.showTherapistDisclaimer || ov.quickAction !== null || celebrationStreak !== null;
 
   if (loading) {
@@ -392,14 +392,12 @@ export function AppShell() {
             <TrackerOverlay
               needs={needs}
               ratings={ratings}
-              saved={saved}
               isOffline={isOffline}
               onChange={handleChange}
               onSaved={handleSaved}
               onClose={() => { ov.setShowTrackerOverlay(false); ov.setTrackerNeedId(null); }}
               initialNeedId={ov.trackerNeedId}
               onOpenNote={() => ov.setShowTodayNote(true)}
-              onOpenGoal={() => ov.setShowTrackerGoal(true)}
               onOpenHistory={() => { ov.setShowTrackerOverlay(false); ov.setTrackerNeedId(null); ov.setTrackerTab('history'); ov.setShowTracker(true); }}
               yesterdayRatings={yesterdayRatings}
             />

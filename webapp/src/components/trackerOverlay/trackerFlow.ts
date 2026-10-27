@@ -2,6 +2,7 @@
 // «Пропустить», что показать на экране «Готово». Тестируется отдельно от React.
 import { NEED_ORDER } from '../../../../shared/src/needs/types';
 import { dayIndex } from '../../sections/today/model';
+import { fmtIndex } from '../../sections/today/todayFeed';
 
 type Ratings = Record<string, number>;
 
@@ -50,4 +51,20 @@ export function summarizeDay(ids: string[], ratings: Ratings): DaySummary {
 /** Фраза-наблюдение под индексом дня. Название потребности — в нижнем регистре. */
 export function lowestObservation(needName: string): string {
   return `Ниже всего — ${needName.toLowerCase()}. Не вывод, а точка: посмотрим, повторится ли.`;
+}
+
+export interface CompletionHeadline {
+  /** Крупная строка: индекс дня или «N из M». */
+  big: string;
+  caption: string;
+  aria: string;
+}
+
+/** Заголовок экрана «Готово»: индекс — только когда оценены все, иначе сколько заполнено. */
+export function completionHeadline(filled: number, total: number, index: number | null): CompletionHeadline {
+  if (index === null) {
+    const big = `${filled} из ${total}`;
+    return { big, caption: 'заполнено', aria: `Заполнено ${big}` };
+  }
+  return { big: fmtIndex(index), caption: 'индекс дня из 10', aria: `Индекс дня ${fmtIndex(index)} из 10` };
 }

@@ -236,17 +236,6 @@ describe('AppShell — трекер: колбэки заметки/цели/ис
     await waitFor(() => expect(screen.getByTestId('note-sheet')).toBeTruthy());
   });
 
-  it('«goal» из трекера открывает TaskCreateSheet, закрытие/создание убирает его', async () => {
-    renderAppShell('/today');
-    await waitFor(() => expect(screen.getByTestId('today-section')).toBeTruthy());
-    fireEvent.click(screen.getByTestId('today-section-tracker'));
-    await waitFor(() => expect(screen.getByTestId('tracker-overlay')).toBeTruthy());
-    fireEvent.click(screen.getByTestId('tracker-overlay-goal'));
-    await waitFor(() => expect(screen.getByTestId('task-create-sheet')).toBeTruthy());
-    fireEvent.click(screen.getByTestId('task-create-sheet-created'));
-    await waitFor(() => expect(screen.queryByTestId('task-create-sheet')).toBeNull());
-  });
-
   it('«openHistory» из трекера закрывает трекер и открывает HistorySheet', async () => {
     renderAppShell('/today');
     await waitFor(() => expect(screen.getByTestId('today-section')).toBeTruthy());
@@ -500,17 +489,17 @@ describe('AppShell — настройки: выход из роли терапе
   });
 });
 
-describe('AppShell — трекер: изменение оценки реально приходит обратно в ratings/saved', () => {
-  it('onChange(needId, value) — ratings[needId] обновился, saved[needId] сброшен на false', async () => {
+describe('AppShell — трекер: изменение оценки реально приходит обратно в ratings', () => {
+  it('onChange(needId, value) — ratings[needId] обновился', async () => {
     renderAppShell('/today');
     await waitFor(() => expect(screen.getByTestId('today-section')).toBeTruthy());
     fireEvent.click(screen.getByTestId('today-section-tracker'));
     await waitFor(() => expect(screen.getByTestId('tracker-overlay')).toBeTruthy());
-    expect(JSON.parse(screen.getByTestId('tracker-overlay-state').textContent ?? '{}')).toEqual({ attachmentRating: null, attachmentSaved: null });
+    expect(JSON.parse(screen.getByTestId('tracker-overlay-state').textContent ?? '{}')).toEqual({ attachmentRating: null });
 
     fireEvent.click(screen.getByTestId('tracker-overlay-change'));
     await waitFor(() => {
-      expect(JSON.parse(screen.getByTestId('tracker-overlay-state').textContent ?? '{}')).toEqual({ attachmentRating: 5, attachmentSaved: false });
+      expect(JSON.parse(screen.getByTestId('tracker-overlay-state').textContent ?? '{}')).toEqual({ attachmentRating: 5 });
     });
   });
 });
@@ -573,17 +562,6 @@ describe('AppShell — заметка дня и цель трекера закр
     await waitFor(() => expect(screen.getByTestId('note-sheet')).toBeTruthy());
     fireEvent.click(screen.getByTestId('note-sheet-close'));
     await waitFor(() => expect(screen.queryByTestId('note-sheet')).toBeNull());
-  });
-
-  it('TaskCreateSheet close реально скрывает лист (без создания цели)', async () => {
-    renderAppShell('/today');
-    await waitFor(() => expect(screen.getByTestId('today-section')).toBeTruthy());
-    fireEvent.click(screen.getByTestId('today-section-tracker'));
-    await waitFor(() => expect(screen.getByTestId('tracker-overlay')).toBeTruthy());
-    fireEvent.click(screen.getByTestId('tracker-overlay-goal'));
-    await waitFor(() => expect(screen.getByTestId('task-create-sheet')).toBeTruthy());
-    fireEvent.click(screen.getByTestId('task-create-sheet-close'));
-    await waitFor(() => expect(screen.queryByTestId('task-create-sheet')).toBeNull());
   });
 });
 

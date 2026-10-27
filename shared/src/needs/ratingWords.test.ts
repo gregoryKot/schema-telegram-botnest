@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { RATING_WORDS, wordForValue } from './ratingWords';
+import { RATING_WORDS, rangeCardIndex, wordForValue } from './ratingWords';
 
 describe('wordForValue', () => {
   it('каждое значение 1–10 попадает в ближайшее слово парами', () => {
@@ -34,5 +34,15 @@ describe('wordForValue', () => {
       expect(w.value % 2).toBe(0);
       expect(wordForValue(w.value)).toBe(w);
     }
+  });
+});
+
+describe('rangeCardIndex', () => {
+  it('слова 0–1 → первая карточка, 2 → вторая, 3–4 → третья', () => {
+    expect([1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(rangeCardIndex)).toEqual([0, 0, 0, 0, 1, 1, 2, 2, 2, 2]);
+  });
+
+  it('нет оценки — -1, ни одна карточка не подсвечена', () => {
+    for (const v of [0, undefined, null]) expect(rangeCardIndex(v)).toBe(-1);
   });
 });

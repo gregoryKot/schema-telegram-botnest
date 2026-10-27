@@ -34,7 +34,6 @@ function Harness({ initial = {}, ...rest }: { initial?: Record<string, number> }
     <TrackerOverlay
       needs={NEEDS}
       ratings={ratings}
-      saved={{}}
       onChange={(id: string, v: number) => setRatings((r) => ({ ...r, [id]: v }))}
       onSaved={vi.fn()}
       onClose={vi.fn()}
@@ -196,7 +195,10 @@ describe('TrackerOverlay — «Пропустить»', () => {
     expect(screen.queryByText(/Ниже всего/)).toBeNull();
     expect(screen.getByRole('button', { name: 'Дооценить' })).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Поправить ответы' })).toBeNull();
-    expect(screen.getByText('—')).toBeTruthy();
+    expect(screen.getByText('1 из 2')).toBeTruthy();
+    expect(screen.getByText('заполнено')).toBeTruthy();
+    expect(screen.queryByText('индекс дня из 10')).toBeNull();
+    expect(screen.queryByText('—')).toBeNull();
   });
 
   it('«Дооценить» открывает первую пустую потребность', () => {
@@ -361,18 +363,31 @@ describe('TrackerOverlay — топбар', () => {
 });
 
 describe('TrackerOverlay — бэкафилл прошлой даты', () => {
-  it('подгружает оценки через api.ratings и показывает загрузку до ответа', () => {
+  it('подгружает оценки через api.ratings и показывает скелетон вопроса до ответа', () => {
     mockApi.ratings.mockReturnValue(new Promise(() => {}));
     renderOverlay({ date: '2026-07-10' });
-    expect(screen.getByText('Загрузка...')).toBeTruthy();
+    const sk = screen.getByRole('status', { name: 'Загружаются оценки дня' });
+    expect(sk.querySelectorAll('.skel').length).toBe(8);
+    expect(screen.queryByText('Загрузка...')).toBeNull();
     expect(mockApi.ratings).toHaveBeenCalledWith('2026-07-10');
+  });
+
+  it('api.ratings отклонён: скелетон уходит, день пустой, отказ уходит отчётом наверх', async () => {
+    mockApi.ratings.mockRejectedValue(new Error('network'));
+    renderOverlay({ date: '2026-07-10' });
+    await act(async () => {});
+    expect(screen.queryByRole('status', { name: 'Загружаются оценки дня' })).toBeNull();
+    expect(heading('Привязанность')).toBeTruthy();
+    expect(mockReportClientError).toHaveBeenCalledWith(
+      expect.objectContaining({ section: 'tracker', message: expect.stringContaining('backfill ratings load failed') }),
+    );
   });
 
   it('после загрузки показывает вопрос с датой и без вчерашних пометок и строки «откуда это»', async () => {
     mockApi.ratings.mockResolvedValue({ attachment: 4 });
     renderOverlay({ date: '2026-07-10', yesterdayRatings: { attachment: 3 } });
     await act(async () => {});
-    expect(screen.queryByText('Загрузка...')).toBeNull();
+    expect(screen.queryByRole('status', { name: 'Загружаются оценки дня' })).toBeNull();
     expect(heading('Привязанность')).toBeTruthy();
     expect(screen.getByText(/10 июля/)).toBeTruthy();
     expect(screen.queryByText(/вчера/)).toBeNull();

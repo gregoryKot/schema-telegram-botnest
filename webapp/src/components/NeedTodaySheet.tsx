@@ -9,7 +9,7 @@ import { useTr } from '../utils/addressForm';
 import { NeedScale } from './NeedScale';
 import { NEED_HUE, hueStyle } from '../lib/tone';
 import { NeedFold } from './NeedFold';
-import { wordForValue } from '../../../shared/src/needs/ratingWords';
+import { rangeCardIndex, wordForValue } from '../../../shared/src/needs/ratingWords';
 import '../styles/sheet-tracker.css';
 import type { NeedId } from '../../../shared/src/needs/types';
 
@@ -32,7 +32,7 @@ export function NeedTodaySheet({ need, value, yesterdayValue, onChange, onClose,
 
   const data = NEED_DATA[need.id];
   if (!data) return null;
-  const rangeIdx = value <= 3 ? 0 : value <= 6 ? 1 : 2;
+  const rangeIdx = rangeCardIndex(value);
   const RANGE_VALUES = [2, 6, 8]; // слова «Совсем нет» / «Наполовину» / «В основном да»
 
   const hue = NEED_HUE[need.id as NeedId];

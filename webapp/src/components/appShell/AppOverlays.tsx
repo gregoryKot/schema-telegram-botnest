@@ -10,7 +10,6 @@ import type { NavigateFunction } from 'react-router-dom';
 import { api } from '../../api';
 import type { useOverlays } from './useOverlays';
 import { NoteSheet } from '../NoteSheet';
-import { TaskCreateSheet } from '../TaskCreateSheet';
 
 const SettingsSheet   = lazy(() => import('../SettingsSheet').then(m => ({ default: m.SettingsSheet })));
 const PracticesScreen = lazy(() => import('../PracticesScreen').then(m => ({ default: m.PracticesScreen })));
@@ -101,13 +100,6 @@ export function AppOverlays({
         ov.setShowTodayNote(false);
         if (childhoodWheelPending) { setChildhoodWheelPending(false); ov.setShowChildhoodWheel(true); }
       }} />
-    )}
-    {ov.showTrackerGoal && (
-      <TaskCreateSheet
-        defaultType="tracker_streak"
-        onCreated={() => ov.setShowTrackerGoal(false)}
-        onClose={() => ov.setShowTrackerGoal(false)}
-      />
     )}
     {ov.showTherapistDisclaimer && (
       <Suspense fallback={null}>

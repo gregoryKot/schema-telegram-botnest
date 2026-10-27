@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { nextUnrated, summarizeDay, lowestObservation } from './trackerFlow';
+import { nextUnrated, summarizeDay, lowestObservation, completionHeadline } from './trackerFlow';
 
 const IDS = ['attachment', 'autonomy', 'expression', 'play', 'limits'];
 
@@ -54,5 +54,15 @@ describe('lowestObservation', () => {
     expect(lowestObservation('Привязанность')).toBe(
       'Ниже всего — привязанность. Не вывод, а точка: посмотрим, повторится ли.',
     );
+  });
+});
+
+describe('completionHeadline', () => {
+  it('оценены не все — «N из M» и подпись «заполнено», без индекса', () => {
+    expect(completionHeadline(4, 5, null)).toEqual({ big: '4 из 5', caption: 'заполнено', aria: 'Заполнено 4 из 5' });
+  });
+
+  it('оценены все — индекс с запятой и подпись «индекс дня из 10»', () => {
+    expect(completionHeadline(5, 5, 7.2)).toEqual({ big: '7,2', caption: 'индекс дня из 10', aria: 'Индекс дня 7,2 из 10' });
   });
 });
