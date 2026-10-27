@@ -41,9 +41,10 @@ export const DIARY_HUE: Record<'schema' | 'mode' | 'gratitude', number> = {
 };
 
 /** Разделы кабинета клиента — цветной квадрат в сайдбаре. */
-export const SECTION_HUE: Record<'today' | 'diary' | 'schemas' | 'practice' | 'profile', number> = {
+export const SECTION_HUE: Record<'today' | 'diary' | 'more' | 'schemas' | 'practice' | 'profile', number> = {
   today: 28,
   diary: 240,
+  more: 70,
   schemas: 310,
   practice: 145,
   profile: 70,

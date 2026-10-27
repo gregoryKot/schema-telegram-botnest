@@ -9,6 +9,7 @@ import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { AppShell } from './AppShell';
 
 import type { TodaySection as TodaySectionT } from '../sections/TodaySection';
+import type { MoreSection as MoreSectionT } from '../sections/MoreSection';
 import type { SchemasSection as SchemasSectionT } from '../sections/SchemasSection';
 import type { ProfileSection as ProfileSectionT } from '../sections/ProfileSection';
 import type { PracticeSection as PracticeSectionT } from '../sections/PracticeSection';
@@ -49,12 +50,20 @@ vi.mock('../sections/TodaySection', () => ({
     <Btns testid="today-section" map={{
       navigate: () => p.onNavigate('diary'),
       tracker: () => p.onOpenTracker(),
-      trackerAt: () => p.onOpenTrackerAt?.('attachment'),
       schema: () => p.onOpenSchema({ startTest: true, tab: 'schemas', highlight: 'abandonment' }),
       history: () => p.onOpenTrackerHistory?.(),
       diaries: () => p.onOpenDiaries(),
       childhood: () => p.onOpenChildhoodWheel(),
+      advanced: () => p.onOpenAdvanced(),
+    }} />
+  ),
+}));
+vi.mock('../sections/MoreSection', () => ({
+  MoreSection: (p: ComponentProps<typeof MoreSectionT>) => (
+    <Btns testid="more-section" state={{ userRole: p.userRole ?? null }} map={{
       cabinet: () => p.onOpenTherapistCabinet?.(),
+      toPractice: () => p.onNavigate('practice'),
+      test: () => p.onOpenSchema({ startTest: true }),
       advanced: () => p.onOpenAdvanced(),
     }} />
   ),

@@ -127,6 +127,7 @@ const appRoutes = [
         children: [
           { path: '/today',             element: null },
           { path: '/diary',             element: null },
+          { path: '/more',              element: null },
           { path: '/schemas',           element: null },
           { path: '/profile',           element: null },
           { path: '/practice',          element: null },

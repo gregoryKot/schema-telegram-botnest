@@ -75,11 +75,13 @@ describe('AppShell — командная палитра', () => {
     await waitFor(() => expect(screen.getByTestId('command-palette')).toBeTruthy());
   });
 
-  it('⌘2 переключает секцию на «Дневник» (быстрый доступ без палитры)', async () => {
+  it('⌘2 переключает секцию на «Записи», ⌘3 — на «Ещё» (быстрый доступ без палитры)', async () => {
     renderAppShell('/today');
     await waitFor(() => expect(screen.getByTestId('today-section')).toBeTruthy());
     fireEvent.keyDown(window, { key: '2', metaKey: true });
     await waitFor(() => expect(screen.getByTestId('diary-section')).toBeTruthy());
+    fireEvent.keyDown(window, { key: '3', metaKey: true });
+    await waitFor(() => expect(screen.getByTestId('more-section')).toBeTruthy());
   });
 
   it('палитра «Закрыть» реально закрывается', async () => {
@@ -287,13 +289,6 @@ describe('AppShell — прямая навигация и точечный тр�
     await waitFor(() => expect(screen.getByTestId('diary-section')).toBeTruthy());
   });
 
-  it('Today «trackerAt» открывает трекер сразу с конкретной потребностью (не с пустого списка)', async () => {
-    renderAppShell('/today');
-    await waitFor(() => expect(screen.getByTestId('today-section')).toBeTruthy());
-    fireEvent.click(screen.getByTestId('today-section-trackerAt'));
-    await waitFor(() => expect(screen.getByTestId('tracker-overlay')).toBeTruthy());
-  });
-
   it('Паттерны: «childhood» открывает колесо детства из раздела схем', async () => {
     renderAppShell('/schemas');
     await waitFor(() => expect(screen.getByTestId('schemas-section')).toBeTruthy());
@@ -343,11 +338,22 @@ describe('AppShell — Дневник напрямую (Today) и Практик
     await waitFor(() => expect(screen.queryByTestId('childhood-wheel')).toBeNull());
   });
 
-  it('Today «cabinet» переключает в режим терапевта (доступно из клиентского экрана)', async () => {
-    renderAppShell('/today');
-    await waitFor(() => expect(screen.getByTestId('today-section')).toBeTruthy());
-    fireEvent.click(screen.getByTestId('today-section-cabinet'));
+  it('«Ещё»: «cabinet» переключает в режим терапевта (ссылка живёт в «Ещё», на главной её нет)', async () => {
+    renderAppShell('/more');
+    await waitFor(() => expect(screen.getByTestId('more-section')).toBeTruthy());
+    fireEvent.click(screen.getByTestId('more-section-cabinet'));
     await waitFor(() => expect(screen.getByTestId('therapist-client-sheet')).toBeTruthy());
+  });
+
+  it('«Ещё»: переход в «Практики» и тест на схемы доходят до оболочки', async () => {
+    renderAppShell('/more');
+    await waitFor(() => expect(screen.getByTestId('more-section')).toBeTruthy());
+    fireEvent.click(screen.getByTestId('more-section-test'));
+    await waitFor(() => expect(screen.getByTestId('schema-info-sheet')).toBeTruthy());
+    expect(JSON.parse(screen.getByTestId('schema-info-sheet-state').textContent ?? '{}')).toMatchObject({ autoStartTest: true, initialTab: 'needs' });
+    fireEvent.click(screen.getByTestId('schema-info-sheet-close'));
+    fireEvent.click(screen.getByTestId('more-section-toPractice'));
+    await waitFor(() => expect(screen.getByTestId('practice-section')).toBeTruthy());
   });
 
   it('Практика: практики/планы/трекер/дневники/детство открывают соответствующие оверлеи', async () => {

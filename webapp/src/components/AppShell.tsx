@@ -43,15 +43,15 @@ import { parseRouteUserId } from '../../../shared/src/utils/sameId';
 applyCabinetLightTheme();
 syncMotionAttr();
 
+// Три вкладки (редизайн 2026-10, docs/design/CLIENT_SIMPLE_2026-10.md):
+// «Паттерны», «Практика» и «Профиль» открываются из «Ещё» и по прямому URL.
+// Профиль на десктопе доступен ещё и из аккаунт-блока внизу сайдбара.
 const NAV_ITEMS: { id: Section; label: string }[] = [
-  { id: 'today',    label: 'Сегодня' },
-  { id: 'diary',    label: 'Дневник' },
-  { id: 'schemas',  label: 'Паттерны' },
-  { id: 'practice', label: 'Практика' },
-  { id: 'profile',  label: 'Профиль' },
+  { id: 'today', label: 'Сегодня' },
+  { id: 'diary', label: 'Записи' },
+  { id: 'more',  label: 'Ещё' },
 ];
-// Desktop sidebar omits Profile — it's accessible via the footer account link
-const SIDEBAR_NAV_ITEMS = NAV_ITEMS.filter(i => i.id !== 'profile');
+const SIDEBAR_NAV_ITEMS = NAV_ITEMS;
 
 export function AppShell() {
   const { logout } = useAuth();
@@ -134,12 +134,12 @@ export function AppShell() {
   // Therapist cabinet navigation helpers (URL-based)
   const therapistBackHandlerRef = useRef<() => void>(() => navigate('/cabinet'));
 
-  // Global ⌘K + ⌘1–5 section shortcuts
+  // Global ⌘K + ⌘1–3 section shortcuts
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); ov.setCmdOpen(true); return; }
       if (!therapistMode && e.metaKey) {
-        const map: Record<string, Section> = { '1': 'today', '2': 'diary', '3': 'schemas', '4': 'practice' };
+        const map: Record<string, Section> = { '1': 'today', '2': 'diary', '3': 'more' };
         if (map[e.key]) { e.preventDefault(); setSection(map[e.key] as Section); }
       }
     }
@@ -366,14 +366,12 @@ export function AppShell() {
           сквозь открытый оверлей — AppSections получает inert=anyOverlayOpen.
         */}
         <AppSections
-          rating={{ onChange: handleChange, onSaved: handleSaved, isOffline }}
           inert={anyOverlayOpen}
           therapistMode={therapistMode}
           pathname={location.pathname}
           section={section}
           needs={needs}
           ratings={ratings}
-          yesterdayRatings={yesterdayRatings}
           displayName={displayName}
           navigate={navigate}
           openClientId={openClientId}

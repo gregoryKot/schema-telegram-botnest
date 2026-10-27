@@ -14,8 +14,8 @@ import type { Need } from '../../types';
 import type { TherapyClientSummary, UserId } from '../../api';
 import type { Section } from './navigation';
 import type { useOverlays } from './useOverlays';
-import type { TodayRating } from '../../sections/TodaySection';
 const TodaySection    = lazy(() => import('../../sections/TodaySection').then(m => ({ default: m.TodaySection })));
+const MoreSection    = lazy(() => import('../../sections/MoreSection').then(m => ({ default: m.MoreSection })));
 const DiarySection    = lazy(() => import('../../sections/DiarySection').then(m => ({ default: m.DiarySection })));
 const SchemasSection  = lazy(() => import('../../sections/SchemasSection').then(m => ({ default: m.SchemasSection })));
 const ProfileSection  = lazy(() => import('../../sections/ProfileSection').then(m => ({ default: m.ProfileSection })));
@@ -30,7 +30,6 @@ interface Props {
   section: Section;
   needs: Need[];
   ratings: Record<string, number>;
-  yesterdayRatings: Record<string, number>;
   displayName: string | null;
   navigate: NavigateFunction;
   openClientId: UserId | null;
@@ -45,15 +44,13 @@ interface Props {
   childhoodRatings: Record<string, number>;
   helpTasksKey: number;
   setHelpTasksKey: (updater: (k: number) => number) => void;
-  /** Оценка потребности со шкалы «Сегодня» — те же обработчики, что у трекера. */
-  rating: TodayRating;
 }
 
 export function AppSections({
-  inert, therapistMode, pathname, section, needs, ratings, yesterdayRatings,
+  inert, therapistMode, pathname, section, needs, ratings,
   displayName, navigate, openClientId, switchTherapistMode, therapistBackHandlerRef,
   setTherapistClients, setSection, ov, todayRefreshKey, userRole, profileRefreshKey,
-  childhoodRatings, helpTasksKey, setHelpTasksKey, rating,
+  childhoodRatings, helpTasksKey, setHelpTasksKey,
 }: Props) {
   return (
     // display:contents — обёртка не участвует в flex-раскладке canvas
@@ -92,25 +89,32 @@ export function AppSections({
           <TodaySection
             needs={needs}
             ratings={ratings}
-            yesterdayRatings={yesterdayRatings}
             onNavigate={setSection}
             onOpenSchema={(opts) => { ov.setSchemaAutoStartTest(!!opts?.startTest); ov.setSchemaInitialTab(opts?.tab ?? 'needs'); ov.setSchemaHighlight(opts?.highlight); ov.setShowSchemaInfo(true); }}
             onOpenAdvanced={() => ov.setShowSettings(true)}
             onOpenTracker={() => { ov.setTrackerNeedId(null); ov.setShowTrackerOverlay(true); }}
-            onOpenTrackerAt={(needId) => { ov.setTrackerNeedId(needId); ov.setShowTrackerOverlay(true); }}
             onOpenTrackerHistory={() => { ov.setTrackerTab('history'); ov.setShowTracker(true); }}
             onOpenDiaries={() => ov.setShowDiaries(true)}
             onOpenChildhoodWheel={() => ov.setShowChildhoodWheel(true)}
             refreshKey={todayRefreshKey}
-            userRole={userRole}
-            onOpenTherapistCabinet={() => { switchTherapistMode(true); }}
-            rating={rating}
+            onTasksChanged={() => setHelpTasksKey(k => k + 1)}
           />
           </ErrorBoundary>
         )}
         {section === 'diary' && (
           <ErrorBoundary section="Дневник" key="diary-boundary">
             <DiarySection onOpenTracker={() => { ov.setTrackerNeedId(null); ov.setShowTrackerOverlay(true); }} />
+          </ErrorBoundary>
+        )}
+        {section === 'more' && (
+          <ErrorBoundary section="Ещё" key="more-boundary">
+            <MoreSection
+              onNavigate={setSection}
+              onOpenSchema={(opts) => { ov.setSchemaAutoStartTest(!!opts?.startTest); ov.setSchemaInitialTab('needs'); ov.setSchemaHighlight(undefined); ov.setShowSchemaInfo(true); }}
+              onOpenAdvanced={() => ov.setShowSettings(true)}
+              userRole={userRole}
+              onOpenTherapistCabinet={() => { switchTherapistMode(true); }}
+            />
           </ErrorBoundary>
         )}
         {section === 'schemas' && (
