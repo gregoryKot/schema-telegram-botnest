@@ -425,6 +425,16 @@ describe('TherapistClientSheet — вкладка «Задания»', () => {
     fireEvent.click(screen.getByText('Задания'));
   }
 
+  // QA 2026-10-26: любой шаблон открывал лист с «Трекером потребностей».
+  it('шаблон «Письмо себе» открывает лист назначения с этим типом', async () => {
+    mockApi.getTherapyTasksForClient.mockResolvedValue([]);
+    await openAnnaTasks(true);
+    fireEvent.click(await screen.findByText('Письмо себе'));
+    await screen.findByText('Задание для Анна');
+    const card = screen.getAllByText('Письмо себе').map(n => n.closest('[aria-pressed]')).find(Boolean)!;
+    expect(card.getAttribute('aria-pressed')).toBe('true');
+  });
+
   it('без заданий — пустое состояние с призывом назначить, не выдуманный список', async () => {
     await openAnnaTasks();
     await screen.findByText(/Нет назначенных заданий/);

@@ -11,16 +11,28 @@ import { useTr } from '../utils/addressForm';
 import { hueStyle } from '../lib/tone';
 import { TASK_OPTIONS, STREAK_OPTIONS, type TaskType } from './taskCreate/taskOptions';
 import { SchemaPicker, ModePicker } from './taskCreate/TaskPickers';
+import { LimitedTextarea } from '../../../shared/src/components/LimitedTextarea';
+import { TASK_TEXT_MAX } from '../../../shared/src/limits/textLimits';
+import { taskPayloadText } from '../../../shared/src/tasks/taskPayload';
+import { assignLead, assignableOptions } from '../../../shared/src/tasks/assignCopy';
 import '../styles/sheet-tasks.css';
 
-interface Props { clientId?: UserId; clientName?: string; defaultType?: TaskType; onCreated: () => void; onClose: () => void }
+interface Props {
+  clientId?: UserId; clientName?: string;
+  /** Тип и текст, с которыми лист открывается (шаблоны «Назначить из шаблона»). */
+  defaultType?: TaskType; defaultText?: string;
+  onCreated: () => void; onClose: () => void;
+}
 
-export function TaskCreateSheet({ clientId, clientName, defaultType, onCreated, onClose }: Props) {
+export function TaskCreateSheet({ clientId, clientName, defaultType, defaultText, onCreated, onClose }: Props) {
   const goBack = useHistorySheet(onClose);
   const tr = useTr();
-  const [type, setType] = useState<TaskType>(defaultType ?? 'tracker_streak');
+  // Офлайн-клиенту — только «Своё задание» (shared/tasks/assignCopy).
+  const options = assignableOptions(TASK_OPTIONS, clientId);
+  const [type, setType] = useState<TaskType>(() =>
+    options.find(o => o.type === (defaultType ?? 'tracker_streak'))?.type ?? options[0].type);
   const [targetDays, setTargetDays] = useState(7);
-  const [text, setText] = useState('');
+  const [text, setText] = useState(defaultText ?? '');
   const [selectedSchemaId, setSelectedSchemaId] = useState('');
   const [selectedModeId, setSelectedModeId] = useState('');
   const [dueDate, setDueDate] = useState('');
@@ -35,27 +47,18 @@ export function TaskCreateSheet({ clientId, clientName, defaultType, onCreated, 
   }, [type]);
 
   useEffect(() => {
-    if (type === 'custom') customTextRef.current?.focus();
+    const el = customTextRef.current;
+    if (type !== 'custom' || !el) return;
+    el.focus();
+    // Шаблон с текстом: курсор в конец, дописать режим или детали.
+    el.setSelectionRange(el.value.length, el.value.length);
   }, [type]);
 
-  const selected = TASK_OPTIONS.find(o => o.type === type)!;
-
-  function getPayloadText(): string {
-    switch (type) {
-      case 'diary_streak':    return `Заполнять дневник ${targetDays} дней подряд`;
-      case 'tracker_streak':  return `Отмечать потребности ${targetDays} дней подряд`;
-      case 'schema_intro':    return selectedSchemaId;
-      case 'mode_intro':      return selectedModeId;
-      case 'belief_check':    return 'Проверить убеждение';
-      case 'letter_to_self':  return 'Написать письмо Уязвимому Ребёнку';
-      case 'safe_place':      return 'Описать Безопасное место';
-      case 'flashcard':       return 'Разобрать сложную ситуацию по шагам';
-      default:                return text;
-    }
-  }
+  const selected = options.find(o => o.type === type) ?? options[0];
+  const lead = assignLead(clientId);
 
   async function handleCreate() {
-    const finalText = getPayloadText().trim();
+    const finalText = taskPayloadText({ type, targetDays, schemaId: selectedSchemaId, modeId: selectedModeId, text }).trim();
     if (type === 'custom' && !finalText) { setError(tr('Введи описание задания', 'Введите описание задания')); return; }
     if (type === 'schema_intro' && !selectedSchemaId) { setError(tr('Выбери схему', 'Выберите схему')); return; }
     if (type === 'mode_intro' && !selectedModeId) { setError(tr('Выбери режим', 'Выберите режим')); return; }
@@ -64,6 +67,9 @@ export function TaskCreateSheet({ clientId, clientName, defaultType, onCreated, 
     try {
       await api.createTask({ type, text: finalText, targetDays: selected.hasStreak ? targetDays : undefined, dueDate: dueDate || undefined, clientId });
       onCreated();
+      // Лист закрывается через историю: иначе его запись оставалась, и первое
+      // «Назад» браузера после назначения ничего не делало (QA 2026-10-26).
+      goBack();
     } catch { haptic.error(); setError('Не удалось сохранить'); }
     finally { setSaving(false); }
   }
@@ -74,7 +80,7 @@ export function TaskCreateSheet({ clientId, clientName, defaultType, onCreated, 
     <div className="sk-sheet">
       <div className="sk-top">
         <button className="ds-link sk-back" onClick={goBack}>
-          <GlyphArrowLeft /> Назад к кабинету
+          <GlyphArrowLeft /> {clientId !== undefined ? 'Назад к кабинету' : 'Назад'}
         </button>
       </div>
 
@@ -85,11 +91,11 @@ export function TaskCreateSheet({ clientId, clientName, defaultType, onCreated, 
               {clientName ? `Задание для ${clientName}` : 'Новое задание'}
             </div>
             <h1 className="ds-h2 sk-title">{tr('Выбери', 'Выберите')}<br /><em className="sk-it">задание</em></h1>
-            <p className="ds-sub sk-lead">Появится у клиента в мини-аппе – он выполняет самостоятельно.</p>
+            {lead && <p className="ds-sub sk-lead">{lead}</p>}
           </div>
 
           <div className="sk-grid">
-            {TASK_OPTIONS.map(opt => {
+            {options.map(opt => {
               const isSelected = type === opt.type;
               return (
                 <div
@@ -140,8 +146,9 @@ export function TaskCreateSheet({ clientId, clientName, defaultType, onCreated, 
             {type === 'custom' && (
               <div className="sk-field">
                 <div className="ds-label">Описание задания</div>
-                <textarea
+                <LimitedTextarea
                   ref={customTextRef}
+                  max={TASK_TEXT_MAX}
                   value={text}
                   onChange={e => setText(e.target.value)}
                   placeholder="Например: позвонить другу раз в неделю"

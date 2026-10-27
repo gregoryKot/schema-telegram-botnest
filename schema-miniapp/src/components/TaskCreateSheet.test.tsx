@@ -15,6 +15,7 @@ import {
 import { TaskCreateSheet } from './TaskCreateSheet';
 import { SCHEMA_DOMAINS, ALL_MODES } from '../schemaTherapyData';
 import { CRISIS_HOTLINE_DISPLAY } from '../utils/crisisMarkers';
+import { TASK_TEXT_MAX } from '../../../shared/src/limits/textLimits';
 
 const FIRST_SCHEMA = SCHEMA_DOMAINS[0].schemas[0];
 const FIRST_MODE = ALL_MODES[0];
@@ -282,5 +283,50 @@ describe('TaskCreateSheet — срок появляется для custom-тип
     );
     expect(screen.getByText('Задание для Аня')).toBeTruthy();
     expect(screen.getByText('Срок (необязательно)')).toBeTruthy();
+  });
+});
+
+// Парно с webapp/src/components/TaskCreateSheet.test.tsx (QA 2026-10-26).
+describe('TaskCreateSheet — назначение терапевтом: склонение, подпись, офлайн, предел', () => {
+  it('серия на 3 дня сохраняется как «3 дня подряд»', async () => {
+    mockApi.createTask.mockResolvedValue({ id: 1 });
+    render(<TaskCreateSheet onCreated={vi.fn()} onClose={vi.fn()} />);
+    fireEvent.click(screen.getByText('3'));
+    fireEvent.click(screen.getByText('Создать задание'));
+    await waitFor(() =>
+      expect(mockApi.createTask).toHaveBeenCalledWith(
+        expect.objectContaining({
+          text: 'Заполнять дневник 3 дня подряд',
+          targetDays: 3,
+        }),
+      ),
+    );
+  });
+
+  it('клиенту с аккаунтом — подпись «в приложении», без «мини-аппа»', () => {
+    render(
+      <TaskCreateSheet clientId={42} onCreated={vi.fn()} onClose={vi.fn()} />,
+    );
+    expect(screen.getByText(/появится у клиента в приложении/)).toBeTruthy();
+    expect(screen.queryByText(/мини-апп/)).toBeNull();
+  });
+
+  it('офлайн-клиенту — честная подпись и только «Своё задание»', () => {
+    render(
+      <TaskCreateSheet clientId={-5} onCreated={vi.fn()} onClose={vi.fn()} />,
+    );
+    expect(screen.getByText(/Клиент не пользуется приложением/)).toBeTruthy();
+    expect(screen.queryByText('Трекер потребностей')).toBeNull();
+    expect(
+      screen.getByPlaceholderText('Например: позвонить другу раз в неделю'),
+    ).toBeTruthy();
+  });
+
+  it('«Своё задание» с пределом сервера (maxLength)', () => {
+    renderSheet();
+    const area = screen.getByPlaceholderText<HTMLTextAreaElement>(
+      'Например: позвонить другу раз в неделю',
+    );
+    expect(area.maxLength).toBe(TASK_TEXT_MAX);
   });
 });

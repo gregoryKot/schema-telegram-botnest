@@ -11,6 +11,7 @@ import {
   Min,
 } from 'class-validator';
 import { ClientIdField } from './client-id.decorator';
+import { TASK_TEXT_MAX } from '../../utils/text-limits';
 
 // Типы заданий из форм обоих фронтендов (TaskCreateSheet) плюс schema_diary/
 // mode_diary для стрик-прогресса; 'custom' — «своё задание» (T6: был любой строкой).
@@ -40,7 +41,7 @@ export class CreateTaskDto {
 
   @IsString()
   @IsNotEmpty()
-  @MaxLength(10000)
+  @MaxLength(TASK_TEXT_MAX)
   text!: string;
 
   @IsOptional()
