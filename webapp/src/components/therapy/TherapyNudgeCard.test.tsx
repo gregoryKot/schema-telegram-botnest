@@ -39,14 +39,16 @@ describe('TherapyNudgeCard', () => {
     expect(await screen.findByText('Три последних заполненных дня: индекс не выше 4')).toBeTruthy();
     expect(screen.getByText('Самопомощь помогает держаться. Нести это в одиночку не обязательно.')).toBeTruthy();
     expect(screen.getByText('Автор приложения работает в подходе схема-терапия и ведёт встречи онлайн.')).toBeTruthy();
-    expect(track).toHaveBeenCalledWith('signal_card', 'shown', 'low_index');
+    // Событие уходит из useEffect после коммита — ждём, а не читаем мок сразу.
+    await waitFor(() => expect(track).toHaveBeenCalledWith('signal_card', 'shown', 'low_index'));
   });
 
   it('повторяющийся режим', async () => {
     history.mockResolvedValue(CALM);
     renderCard(modes(3));
     expect(await screen.findByText(/3 раза за две недели/)).toBeTruthy();
-    expect(track).toHaveBeenCalledWith('signal_card', 'shown', 'repeat_mode');
+    // Событие уходит из useEffect после коммита — ждём, а не читаем мок сразу.
+    await waitFor(() => expect(track).toHaveBeenCalledWith('signal_card', 'shown', 'repeat_mode'));
   });
 
   it('кризисный след', async () => {
@@ -54,7 +56,8 @@ describe('TherapyNudgeCard', () => {
     localStorage.setItem('therapy_crisis_seen_at', new Date().toISOString());
     renderCard();
     expect(await screen.findByText('После тяжёлого дня')).toBeTruthy();
-    expect(track).toHaveBeenCalledWith('signal_card', 'shown', 'crisis');
+    // Событие уходит из useEffect после коммита — ждём, а не читаем мок сразу.
+    await waitFor(() => expect(track).toHaveBeenCalledWith('signal_card', 'shown', 'crisis'));
   });
 
   it('спокойные дни и новичок: карточки нет', async () => {
