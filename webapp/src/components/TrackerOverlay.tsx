@@ -144,7 +144,7 @@ export function TrackerOverlay({
           idx={idx}
           total={needs.length}
           name={nameOf(need)}
-          question={NEED_DATA[need.id]?.question ?? ''}
+          data={NEED_DATA[need.id]}
           value={value}
           hue={NEED_HUE[need.id as NeedId]}
           yesterday={isBackfill ? undefined : yesterdayRatings[need.id]}

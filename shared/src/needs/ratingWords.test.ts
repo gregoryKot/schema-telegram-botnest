@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { wordAnchorDescriptions } from './ratingWords';
 import { RATING_WORDS, rangeCardIndex, wordForValue } from './ratingWords';
 
 describe('wordForValue', () => {
@@ -46,5 +47,31 @@ describe('rangeCardIndex', () => {
 
   it('нет оценки — -1, ни одна карточка не подсвечена', () => {
     for (const v of [0, undefined, null]) expect(rangeCardIndex(v)).toBe(-1);
+  });
+});
+
+describe('wordAnchorDescriptions', () => {
+  const ranges = [
+    { description: 'низко' },
+    { description: 'средне' },
+    { description: 'высоко' },
+  ];
+  it('три диапазона встают якорями под первое, третье и пятое слово', () => {
+    expect(wordAnchorDescriptions(ranges)).toEqual([
+      'низко',
+      undefined,
+      'средне',
+      undefined,
+      'высоко',
+    ]);
+  });
+  it('без диапазонов — пять пустых подписей, шкала не ломается', () => {
+    expect(wordAnchorDescriptions([])).toEqual([
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+    ]);
   });
 });

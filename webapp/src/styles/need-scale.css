@@ -34,6 +34,10 @@
   font: 600 16px/1.2 var(--sans); text-align: left; cursor: pointer;
 }
 .ns-word:hover:not(.is-selected) { border-color: var(--line-strong); }
+/* Подпись под словом («что означает ответ»): якоря шкалы, трекер — этап простого клиента. */
+.ns-word-main { display: flex; flex-direction: column; gap: 3px; min-width: 0; padding: 10px 0; }
+.ns-word-sub { font: 400 12.5px/1.35 var(--sans); color: var(--text-faint); }
+.ns-word.is-selected .ns-word-sub { color: var(--on-ink-sub); }
 .ns-word:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .ns-word.is-selected { background: var(--ink); border-color: var(--ink); color: var(--on-ink); }
 .ns-word-end { display: inline-flex; align-items: center; gap: 12px; flex-shrink: 0; }
