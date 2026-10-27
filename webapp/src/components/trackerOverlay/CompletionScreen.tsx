@@ -50,7 +50,7 @@ export function CompletionScreen({
           {complete && lowest ? (
             <p className="tq-obs">{lowestObservation(nameOf(lowest))}</p>
           ) : (
-            <p className="tq-obs">Заполнено {filled} из {total} — остальное можно дооценить позже</p>
+            <p className="tq-obs">Остальное можно дооценить позже — хоть вечером, хоть завтра из истории.</p>
           )}
           <DayBars needs={needs} ratings={effectiveRatings} />
           <div className="tq-acts">

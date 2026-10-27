@@ -191,7 +191,7 @@ describe('TrackerOverlay — «Пропустить»', () => {
   it('на последней ведёт на «Готово» с «Заполнено N из 5» и «Дооценить»', () => {
     renderOverlay({ initial: { attachment: 6 } });
     fireEvent.click(screen.getByRole('button', { name: 'Пропустить' }));
-    expect(screen.getByText('Заполнено 1 из 2 — остальное можно дооценить позже')).toBeTruthy();
+    expect(screen.getByText(/Остальное можно дооценить позже/)).toBeTruthy();
     expect(screen.queryByText(/Ниже всего/)).toBeNull();
     expect(screen.getByRole('button', { name: 'Дооценить' })).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Поправить ответы' })).toBeNull();
