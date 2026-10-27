@@ -5,7 +5,11 @@
 // Файл фронта не найден или не разобран — тест падает громко, а не пропускается.
 import { readFileSync } from 'fs';
 import { join } from 'path';
-import { HOME_EVENTS, HOME_TILES } from '../analytics/home-events.constants';
+import {
+  DIARY_QUICK_TAGS,
+  HOME_EVENTS,
+  HOME_TILES,
+} from '../analytics/home-events.constants';
 
 const ROOT = join(__dirname, '..', '..');
 const FRONTEND_REL = 'shared/src/analytics/homeTile.ts';
@@ -68,5 +72,20 @@ describe('трипваер: HomeTile фронта и HOME_TILES бэка сов�
     );
     expect(m).not.toBeNull();
     expect((HOME_EVENTS as readonly string[]).includes(m![1])).toBe(true);
+  });
+
+  it('имя события дневника (DIARY_QUICK_SAVE_EVENT) входит в HOME_EVENTS бэка', () => {
+    const m = readFrontend().match(
+      /DIARY_QUICK_SAVE_EVENT\s*=\s*['"]([a-z_]+)['"]/,
+    );
+    expect(m).not.toBeNull();
+    expect((HOME_EVENTS as readonly string[]).includes(m![1])).toBe(true);
+  });
+
+  it('теги дневника на фронте (DiaryQuickTag) совпадают с DIARY_QUICK_TAGS бэка', () => {
+    const m = readFrontend().match(/export type DiaryQuickTag\s*=([^;]+);/);
+    expect(m).not.toBeNull();
+    const front = [...m![1].matchAll(/['"]([a-z]+)['"]/g)].map((x) => x[1]);
+    expect([...front].sort()).toEqual([...DIARY_QUICK_TAGS].sort());
   });
 });

@@ -1,7 +1,15 @@
 // Агрегат настройки экранов: маппинг bigint→number, разбивка открытий по
 // экрану и скрытий по паре (экран, блок). Prisma мокается.
 import { ScreenMetricsService } from './screen-metrics.service';
-import { HOME_TILES } from '../analytics/home-events.constants';
+import {
+  DIARY_QUICK_TAGS,
+  HOME_TILES,
+} from '../analytics/home-events.constants';
+
+const EMPTY_QUICK = {
+  byTag: DIARY_QUICK_TAGS.map((tag) => ({ tag, count: 0 })),
+  detailed: 0,
+};
 
 describe('ScreenMetricsService.getMetrics', () => {
   const build = (
@@ -48,6 +56,7 @@ describe('ScreenMetricsService.getMetrics', () => {
       syncedUsers: 0,
       homeTiles: HOME_TILES.map((tile) => ({ tile, count: 0 })),
       trackerSkips: 0,
+      diaryQuick: EMPTY_QUICK,
     });
   });
 
@@ -60,6 +69,7 @@ describe('ScreenMetricsService.getMetrics', () => {
       syncedUsers: 0,
       homeTiles: HOME_TILES.map((tile) => ({ tile, count: 0 })),
       trackerSkips: 0,
+      diaryQuick: EMPTY_QUICK,
     });
   });
 
@@ -78,6 +88,7 @@ describe('ScreenMetricsService.getMetrics', () => {
       syncedUsers: 0,
       homeTiles: HOME_TILES.map((tile) => ({ tile, count: 0 })),
       trackerSkips: 0,
+      diaryQuick: EMPTY_QUICK,
     });
   });
 
@@ -138,6 +149,32 @@ describe('ScreenMetricsService.getMetrics', () => {
       where: expect.objectContaining({
         name: 'home_tile',
         meta: { path: ['tile'], equals: 'tracker' },
+      }),
+    });
+  });
+
+  it('diaryQuick — по счёту на каждый тег и отдельно detailed=true, фильтр по JSON meta', async () => {
+    const { service, count } = build([], []);
+    count.mockImplementation(
+      ({
+        where,
+      }: {
+        where: { name: string; meta?: { path: string[]; equals: unknown } };
+      }) => {
+        if (where.name !== 'diary_quick_save') return Promise.resolve(0);
+        if (where.meta?.equals === 'mode') return Promise.resolve(2);
+        if (where.meta?.path[0] === 'detailed') return Promise.resolve(1);
+        return Promise.resolve(0);
+      },
+    );
+    const m = await service.getMetrics();
+    expect(m.diaryQuick.byTag).toHaveLength(DIARY_QUICK_TAGS.length);
+    expect(m.diaryQuick.byTag.find((t) => t.tag === 'mode')?.count).toBe(2);
+    expect(m.diaryQuick.detailed).toBe(1);
+    expect(count).toHaveBeenCalledWith({
+      where: expect.objectContaining({
+        name: 'diary_quick_save',
+        meta: { path: ['detailed'], equals: true },
       }),
     });
   });
