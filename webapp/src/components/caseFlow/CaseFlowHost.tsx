@@ -7,14 +7,8 @@
 import { lazy, Suspense, useState } from 'react';
 import { api } from '../../api';
 
-const CaseFlowScreen = lazy(() =>
-  import('./CaseFlowScreen').then((m) => ({ default: m.CaseFlowScreen })),
-);
-const SelfMapOverlay = lazy(() =>
-  import('../selfMap/SelfMapOverlay').then((m) => ({
-    default: m.SelfMapOverlay,
-  })),
-);
+const CaseFlowScreen = lazy(() => import('./CaseFlowScreen').then((m) => ({ default: m.CaseFlowScreen })));
+const SelfMapOverlay = lazy(() => import('../selfMap/SelfMapOverlay').then((m) => ({ default: m.SelfMapOverlay })));
 
 export type CaseFlowStart = 'flow' | 'map';
 
@@ -22,30 +16,17 @@ interface Props {
   start: CaseFlowStart;
   onClose: () => void;
   onOpenTracker: () => void;
-  onOpenSchema: (opts?: {
-    startTest?: boolean;
-    tab?: 'needs' | 'schemas' | 'modes';
-    highlight?: string;
-  }) => void;
+  onOpenSchema: (opts?: { startTest?: boolean; tab?: 'needs' | 'schemas' | 'modes'; highlight?: string }) => void;
 }
 
-export function CaseFlowHost({
-  start,
-  onClose,
-  onOpenTracker,
-  onOpenSchema,
-}: Props) {
+export function CaseFlowHost({ start, onClose, onOpenTracker, onOpenSchema }: Props) {
   const [view, setView] = useState<CaseFlowStart>(start);
   return (
     <Suspense fallback={null}>
       {view === 'flow' ? (
         <CaseFlowScreen
-          onSave={async (data) => {
-            await api.createModeDiary(data);
-          }}
-          onSaveCard={async (body) => {
-            await api.saveModeNote(body);
-          }}
+          onSave={async (data) => { await api.createModeDiary(data); }}
+          onSaveCard={async (body) => { await api.saveModeNote(body); }}
           onOpenMap={() => setView('map')}
           onClose={onClose}
         />
