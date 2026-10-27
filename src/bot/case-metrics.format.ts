@@ -51,7 +51,7 @@ const share = (part: number, whole: number): string =>
 /** Текстовый блок для /stats. Чистая функция. */
 export function formatCaseMetrics(m: CaseMetrics): string {
   const lines = ['🧭 <b>Разбор случая</b> (за месяц)'];
-  const savedLine = `Разборов сохранено (по полю fromCase): ${m.saved} за 30 дней`;
+  const savedLine = `Разборов записано с сайта: ${m.saved} за 30 дней`;
   if (m.started === 0) {
     lines.push('Пока никто не начинал');
     lines.push(savedLine);

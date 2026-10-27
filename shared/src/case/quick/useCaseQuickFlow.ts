@@ -204,18 +204,19 @@ export function useCaseQuickFlow(
     const candidate = pickCandidateMode(fields.gateId, fields.impulseChipIds);
     return persist(
       modeId,
+      () => props.onSave(buildQuickSaveData(fields, bodyChips, CASE_IMPULSES)),
       async () => {
-        await props.onSave(
-          buildQuickSaveData(fields, bodyChips, CASE_IMPULSES),
-        );
         // Барнум-индикатор /stats: согласился с предложенным или выбрал другое.
+        // Шлётся ПОСЛЕ успешной записи: сбой аналитики внутри write() показал бы
+        // «Не удалось сохранить» при уже созданной записи, а повтор дал бы дубль.
         deps.trackEvent('case_recognized', {
           modeId,
           agreed: modeId === candidate,
         });
+        await props.onSaveCard(
+          buildQuickCardBody(fields, bodyChips, CASE_IMPULSES),
+        );
       },
-      () =>
-        props.onSaveCard(buildQuickCardBody(fields, bodyChips, CASE_IMPULSES)),
     );
   };
 
