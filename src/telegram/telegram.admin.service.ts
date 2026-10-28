@@ -12,12 +12,11 @@ import { Telegraf, Context } from 'telegraf';
 import { TELEGRAF_BOT } from './telegram.constants';
 import { failCallback } from './callback-failure';
 import { describeBroadcastResult, runBroadcast } from './telegram.broadcast';
-import { replyLong } from './send-long-text';
 import { renderTemplate } from '../notification/notification.templates';
 import { BotAdminStatsService } from '../bot/bot.admin-stats.service';
 import { StatsReportService } from '../bot/stats-report.service';
 import { HealthyAdultService } from '../bot/healthy-adult.service';
-import { collectStatsMessages } from './stats-messages';
+import { registerStatsHandlers } from './stats-command';
 import { AccountService } from '../bot/account.service';
 import { TherapistRequestService } from '../therapy/therapist-request.service';
 import { ChannelPublisherService } from '../channel/channel-publisher.service';
@@ -63,29 +62,15 @@ export class TelegramAdminService implements OnModuleInit {
       }
     });
 
-    this.bot.command('stats', async (ctx) => {
-      try {
-        if (!isAdminSender(ctx.from)) {
-          await ctx.reply('⛔ Нет доступа');
-          return;
-        }
-        // Двумя сообщениями — отчёт длиннее лимита Telegram (4096); replyLong
-        // рубит рост отчёта разбиением, а не падением целиком.
-        const { first, second } = await collectStatsMessages(
-          {
-            adminStats: this.adminStatsService,
-            statsReport: this.statsReport,
-            healthyAdult: this.healthyAdult,
-          },
-          this.logger,
-        );
-        await replyLong(ctx, first, { parse_mode: 'HTML' });
-        await replyLong(ctx, second, { parse_mode: 'HTML' });
-      } catch (err) {
-        this.logger.error('stats command failed', err);
-        await ctx.reply(`❌ ${String(err).slice(0, 300)}`).catch(() => null);
-      }
-    });
+    registerStatsHandlers(
+      this.bot,
+      {
+        adminStats: this.adminStatsService,
+        statsReport: this.statsReport,
+        healthyAdult: this.healthyAdult,
+      },
+      this.logger,
+    );
 
     // Ручная публикация фразы «Здорового Взрослого» по всем настроенным
     // площадкам — проверка связки (env + права бота), т.к. по расписанию пост
