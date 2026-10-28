@@ -13,7 +13,17 @@ import {
 
 afterEach(() => cleanup());
 
-const at = new Date(2026, 9, 28, 14, 7); // 14:07 локального времени
+// 14:07 СЕГОДНЯШНЕГО локального дня: «в ЧЧ:ММ» рисуется только для того же
+// календарного дня, что и now. Фиксированная дата (28 окт.) ломала тест в любой
+// другой день и под Sydney уже после 14:00 UTC (там день сменился).
+const today = new Date();
+const at = new Date(
+  today.getFullYear(),
+  today.getMonth(),
+  today.getDate(),
+  14,
+  7,
+);
 
 describe('saveStatusText', () => {
   it('pending / saving / error — фиксированные нейтральные строки', () => {
@@ -37,7 +47,13 @@ describe('saveStatusText', () => {
     expect(savedAtLabel(at, at)).toBe('в 14:07');
     // Неделей раньше — явным локальным конструктором, не вычитанием миллисекунд:
     // через 7×86400000 перевод часов (DST) сдвинул бы время с 14:07.
-    const weekAgo = new Date(2026, 9, 21, 14, 7);
+    const weekAgo = new Date(
+      today.getFullYear(),
+      today.getMonth(),
+      today.getDate() - 7,
+      14,
+      7,
+    );
     const label = savedAtLabel(weekAgo, at);
     expect(label).toMatch(/^\d{1,2} \S+, 14:07$/);
     expect(label).not.toMatch(/^в /);
