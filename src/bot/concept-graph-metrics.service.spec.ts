@@ -9,6 +9,7 @@ function makeService(opts: {
   schemaLinked?: number;
   canvas?: number;
   fullscreen?: number;
+  saveRetry?: number;
   groups?: Array<{ userId: bigint | null }>;
 }) {
   const byName: Record<string, number> = {
@@ -17,6 +18,7 @@ function makeService(opts: {
     concept_schema_linked: opts.schemaLinked ?? 0,
     concept_canvas_open: opts.canvas ?? 0,
     concept_graph_fullscreen: opts.fullscreen ?? 0,
+    concept_save_retry: opts.saveRetry ?? 0,
   };
   const count = jest.fn(({ where }: { where: { name: string } }) =>
     Promise.resolve(byName[where.name]),
@@ -52,6 +54,7 @@ describe('ConceptGraphMetricsService', () => {
       schemaLinked30: 6,
       canvasOpen30: 4,
       fullscreen30: 5,
+      saveRetry30: 0,
     });
   });
 
@@ -74,6 +77,9 @@ describe('ConceptGraphMetricsService', () => {
     expect(count).toHaveBeenCalledWith({
       where: { name: 'concept_graph_fullscreen', createdAt: { gte: SINCE } },
     });
+    expect(count).toHaveBeenCalledWith({
+      where: { name: 'concept_save_retry', createdAt: { gte: SINCE } },
+    });
     expect(groupBy).toHaveBeenCalledTimes(1);
   });
 
@@ -86,6 +92,7 @@ describe('ConceptGraphMetricsService', () => {
       schemaLinked30: 0,
       canvasOpen30: 7,
       fullscreen30: 0,
+      saveRetry30: 0,
     });
     await expect(service.render()).resolves.toContain(
       'Переносили схему случая на холст 7 раз',
@@ -101,9 +108,26 @@ describe('ConceptGraphMetricsService', () => {
       schemaLinked30: 0,
       canvasOpen30: 0,
       fullscreen30: 6,
+      saveRetry30: 0,
     });
     await expect(service.render()).resolves.toContain(
       'Разворачивали схему на весь экран 6 раз',
+    );
+  });
+
+  it('повторы сохранения после ошибки считаются отдельно и видны в /stats (#879)', async () => {
+    const { service } = makeService({ saveRetry: 3 });
+    await expect(service.getMetrics()).resolves.toEqual({
+      opens30: 0,
+      therapists30: 0,
+      linked30: 0,
+      schemaLinked30: 0,
+      canvasOpen30: 0,
+      fullscreen30: 0,
+      saveRetry30: 3,
+    });
+    await expect(service.render()).resolves.toContain(
+      'Повторяли сохранение после ошибки 3 раз',
     );
   });
 
@@ -134,6 +158,7 @@ describe('ConceptGraphMetricsService', () => {
       schemaLinked30: 0,
       canvasOpen30: 0,
       fullscreen30: 0,
+      saveRetry30: 0,
     });
     const text = await service.render();
     expect(text).toContain('Пока никто из терапевтов не открывал');
@@ -152,6 +177,7 @@ describe('ConceptGraphMetricsService', () => {
     const text = await service.render();
     expect(text).toContain('Переносили схему случая на холст 5 раз');
     expect(text).toContain('Разворачивали схему на весь экран 4 раз');
+    expect(text).not.toContain('Повторяли сохранение'); // 0 повторов — строки нет
     expect(text).toContain('Открывали 6 раз, терапевтов: 2');
     expect(text).toContain('Связи режимов заполняли 2 раз');
     expect(text).toContain('Убеждения и опыт схем записывали 3 раз');

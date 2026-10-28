@@ -1,77 +1,35 @@
-import { SCHEMA_DOMAINS } from '../../schemaTherapyData';
 import type { ClientDetail } from './clientSheetTypes';
 import { ClientConceptFields } from './ClientConceptFields';
 import { ClientConceptGraph } from './ClientConceptGraph';
-import { ConceptVersionHistory } from './concept/ConceptVersionHistory';
+import { ConceptTabHead } from './concept/ConceptTabHead';
+import { ConceptFoldouts } from './concept/ConceptFoldouts';
 import '../../styles/therapist-concept.css';
-import { ConceptViewSwitch, useConceptView } from '../../../../shared/src/therapy/conceptGraph/ConceptViewSwitch';
+import { useConceptView } from '../../../../shared/src/therapy/conceptGraph/ConceptViewSwitch';
 
 interface Props { detail: ClientDetail; onOpenCanvas?: (mapId: number) => void }
 
+// Вкладка «Концептуализация» кабинета: шапка (ConceptTabHead), один из двух видов и
+// под ним свёрнутые сверка с YSQ и история версий (ConceptFoldouts) — одна колонка
+// в обоих видах. В виде «Схема» шапку рисует ClientConceptGraph (проп head): так
+// его действия (картинка, холст, весь экран) попадают в меню «⋯ Ещё», а данные
+// схемы и обработчики остаются в одном месте. Класс tcp--graph сужает
+// отступы вкладки, чтобы на ноутбуке схеме хватило 960px на четыре колонки.
 export function ClientConceptTab({ detail, onOpenCanvas }: Props) {
-  const {
-    saveStatus, exportCopied, handleExport, conceptError,
-    activeSchemaIds, activeModeIds,
-    ysqSchemaIds,
-  } = detail;
   // Вид выбирается один раз при открытии вкладки (см. useConceptView).
-  const [view, setView] = useConceptView(activeModeIds.length);
+  const [view, setView] = useConceptView(detail.activeModeIds.length);
+  const head = { detail, view, onView: setView };
 
   return (
-    <div className="page-inner-wide u-pt40">
-      <div className="ds-head-row tcp-head">
-        <div>
-          <h2 className="ds-h2">Концептуализация</h2>
-          <div className="ds-sub" style={{ marginTop: 4 }}>Схема-карта, цели терапии и связь с детским опытом</div>
-        </div>
-        <div className="tcp-head-actions">
-          <span className="tcp-save">
-            {saveStatus === 'saving' ? 'сохраняю…' : saveStatus === 'saved' ? '✓ сохранено' : saveStatus === 'pending' ? 'автосохранение' : ''}
-          </span>
-          <button type="button" className="ds-btn ds-btn--secondary ds-btn--sm" onClick={handleExport}>
-            ↗ Экспорт{exportCopied ? ' ✓' : ''}
-          </button>
-        </div>
-      </div>
-
-      <div style={{ marginBottom: 20 }}>
-        <ConceptViewSwitch view={view} onChange={setView} />
-      </div>
-
-      {conceptError && <div style={{ marginBottom: 16, padding: '10px 16px', borderRadius: 'var(--r-8)', background: 'color-mix(in srgb, var(--c-rose) 10%, transparent)', color: 'var(--c-rose)', fontSize: 13 }}>{conceptError}</div>}
-
-      <div className="doc-grid" style={view === 'graph' ? { gridTemplateColumns: 'minmax(0, 1fr)' } : undefined}>
-        {view === 'graph' ? (
-          <ClientConceptGraph detail={detail} onOpenCanvas={onOpenCanvas} />
-        ) : (
-          <ClientConceptFields detail={detail} />
-        )}
-
-        {/* Right sidebar */}
-        <aside>
-          {/* YSQ cross-reference */}
-          {ysqSchemaIds.length > 0 && (
-            <>
-              <hr style={{ border: 'none', borderTop: '1px solid var(--line)', margin: '28px 0' }} />
-              <div className="eyebrow u-mb14">Сверка с YSQ</div>
-              <div className="u-col8">
-                {ysqSchemaIds.slice(0, 6).map(id => {
-                  const s = SCHEMA_DOMAINS.flatMap(d => d.schemas).find(x => x.id === id);
-                  const inConcept = activeSchemaIds.includes(id);
-                  return (
-                    <div key={id} className="u-ac8">
-                      <span style={{ flex: 1, fontSize: 13, color: 'var(--text)' }}>{s?.name ?? id}</span>
-                      {!inConcept && <span style={{ fontSize: 11, color: 'var(--c-amber)', fontWeight: 500 }}>+ добавить?</span>}
-                    </div>
-                  );
-                })}
-              </div>
-            </>
-          )}
-
-          <ConceptVersionHistory detail={detail} />
-        </aside>
-      </div>
+    <div className={`page-inner-wide u-pt40${view === 'graph' ? ' tcp--graph' : ''}`}>
+      {view === 'graph' ? (
+        <ClientConceptGraph detail={detail} onOpenCanvas={onOpenCanvas} head={head} />
+      ) : (
+        <>
+          <ConceptTabHead {...head} />
+          <ClientConceptFields detail={detail} onGoToGraph={() => setView('graph')} />
+        </>
+      )}
+      <ConceptFoldouts detail={detail} />
     </div>
   );
 }

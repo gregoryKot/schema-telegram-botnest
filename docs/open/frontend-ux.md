@@ -240,3 +240,5 @@
 `items: enc` целиком (`src/bot/diary.service.ts:172-183`), без слияния и без проверки версии. Чтобы
 закрыть: эндпоинт «добавить пункт» (слияние на сервере в транзакции) или `expectedVersion`/`updatedAt`
 в теле с отказом 409 при расхождении; клиентам переехать на него и убрать чтение перед записью.
+- **Мини-апп: статус сохранения концептуализации прячет текст ошибки сервера.** `schema-miniapp/src/components/therapistClientSheet/conceptSheet/ConceptSaveBar.tsx` рисует общее «Не сохранилось · Повторить» (`SaveStatusLine`, #880), а `useConceptEditing.ts` по-прежнему формирует детальные тексты («Ошибка сервера. Попробуйте позже.») в `conceptError`, который теперь используется как флаг. Решить: либо `SaveStatusLine` принимает `errorText`, либо детальные тексты убрать.
+- **`#06d6a0` в кнопке экспорта мини-аппа** — `schema-miniapp/src/components/therapistClientSheet/ConceptSheet.tsx`, цвет вне токенов (сидит в бейслайне `check-color-drift`; найдено в #880, не трогали — задача другая).

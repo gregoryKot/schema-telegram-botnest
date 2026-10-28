@@ -9,6 +9,11 @@ import { ConceptSheet } from './ConceptSheet';
 import type { ClientDetail } from './types';
 import type { TherapyClientSummary } from '../../api';
 
+const trackEvent = vi.fn();
+vi.mock('../../api', () => ({
+  api: { trackEvent: (...a: unknown[]) => trackEvent(...a) },
+  reportClientError: vi.fn(),
+}));
 vi.mock('./conceptSheet/ConceptHistoryPanel', () => ({
   ConceptHistoryPanel: () => <div data-testid="history-panel" />,
 }));
@@ -76,7 +81,7 @@ describe('ConceptSheet — сохранение', () => {
     expect(btn.disabled).toBe(true);
   });
 
-  it('уже сохранено ранее (concept есть, не dirty) — показывает дату сохранения', () => {
+  it('уже сохранено ранее (concept есть, не dirty) — кнопка «Сохранено» неактивна, строка статуса с временем', () => {
     render(
       <ConceptSheet
         selectedClient={makeClient()}
@@ -87,7 +92,13 @@ describe('ConceptSheet — сохранение', () => {
         })}
       />,
     );
-    expect(screen.getByText(/✓ Сохранено/)).toBeTruthy();
+    const btn = screen.getByRole('button', { name: 'Сохранено' });
+    expect(btn.disabled).toBe(true);
+    // Лист открыт с давним updatedAt: статус показывает день, а не одно время
+    // (иначе «в 00:00» читалось бы как «сегодня»); зона читателя любая.
+    expect(screen.getByRole('status').textContent).toMatch(
+      /^✓ Сохранено \d{1,2} \S+, \d{2}:\d{2}$/,
+    );
   });
 
   it('conceptDirty=true — кнопка активна, клик зовёт saveConcept', () => {
@@ -104,25 +115,49 @@ describe('ConceptSheet — сохранение', () => {
     expect(saveConcept).toHaveBeenCalled();
   });
 
-  it('conceptSaving=true — кнопка показывает «Сохраняю...» и disabled', () => {
+  it('conceptSaving=true — кнопка disabled, строка статуса «Сохраняю…»', () => {
     render(
       <ConceptSheet
         selectedClient={makeClient()}
         detail={makeDetail({ conceptDirty: true, conceptSaving: true })}
       />,
     );
-    const btn = screen.getByText('Сохраняю...');
+    const btn = screen.getByText('Сохранить концептуализацию');
     expect(btn.disabled).toBe(true);
+    expect(screen.getByRole('status').textContent).toBe('Сохраняю…');
   });
 
-  it('conceptError задан — текст ошибки виден', () => {
+  it('conceptDirty без сохранения — строка статуса «Изменения ещё не сохранены»', () => {
     render(
       <ConceptSheet
         selectedClient={makeClient()}
-        detail={makeDetail({ conceptError: 'Не удалось сохранить' })}
+        detail={makeDetail({ conceptDirty: true })}
       />,
     );
-    expect(screen.getByText('Не удалось сохранить')).toBeTruthy();
+    expect(screen.getByRole('status').textContent).toBe(
+      'Изменения ещё не сохранены',
+    );
+  });
+
+  // Issue #879: ошибка сохранения — видимая строка «Не сохранилось» + «Повторить»
+  // (общий SaveStatusLine), повтор зовёт тот же saveConcept и шлёт concept_save_retry.
+  it('conceptError задан — «Не сохранилось», клик по «Повторить» зовёт saveConcept и шлёт concept_save_retry', () => {
+    const saveConcept = vi.fn();
+    render(
+      <ConceptSheet
+        selectedClient={makeClient()}
+        detail={makeDetail({
+          conceptDirty: true,
+          conceptError: 'Не удалось сохранить',
+          saveConcept,
+        })}
+      />,
+    );
+    expect(screen.getByRole('alert').textContent).toContain('Не сохранилось');
+    expect(trackEvent).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'Повторить' }));
+    expect(saveConcept).toHaveBeenCalledTimes(1);
+    expect(trackEvent).toHaveBeenCalledWith('concept_save_retry');
   });
 });
 
