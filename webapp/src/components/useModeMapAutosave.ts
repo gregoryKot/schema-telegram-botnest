@@ -14,10 +14,9 @@ import type { SaveStatus } from '../../../shared/src/therapy/SaveStatusLine';
 // fire-and-forget — setSaveStatus здесь звать уже некому. Отказ уходит в
 // телеметрию, а не молча (правило про тихий catch, CLAUDE.md).
 //
-// Issue #879 (шаг A): провал сохранения раньше молча возвращал 'idle' — терапевт
-// видел погасший индикатор и считал правку сохранённой. Теперь — 'error' с
-// отчётом в телеметрию, `retry()` повторяет отправку с текущими nodesRef/edgesRef,
-// а `savedAt` даёт строке статуса «✓ Сохранено в ЧЧ:ММ».
+// Issue #879 (шаг A): провал сохранения раньше молча возвращал 'idle' — терапевт видел погасший
+// индикатор и считал правку сохранённой. Теперь — 'error' с отчётом в телеметрию, `retry()` повторяет
+// отправку с текущими nodesRef/edgesRef, а `savedAt` даёт строке статуса «✓ Сохранено в ЧЧ:ММ».
 export function useModeMapAutosave(
   mapId: number,
   nodesRef: React.MutableRefObject<FlowNode[]>,
@@ -48,9 +47,10 @@ export function useModeMapAutosave(
     }, 1200);
   }, [save]);
 
-  // «Повторить» после ошибки: шлёт САМЫЕ свежие узлы и связи, а не аргументы
-  // последнего scheduleSave — иначе правки после провала потерялись бы.
+  // «Повторить» после ошибки: шлёт САМЫЕ свежие узлы и связи, а не аргументы последнего scheduleSave — иначе правки
+  // после провала потерялись бы. Событие — литералом, как в useClientDetail.retrySave (трипваер analytics-sync, src/security).
   const retry = useCallback(() => {
+    api.trackEvent('concept_save_retry');
     if (saveTimer.current) { clearTimeout(saveTimer.current); saveTimer.current = null; }
     void save(nodesRef.current, edgesRef.current);
   }, [save, nodesRef, edgesRef]);

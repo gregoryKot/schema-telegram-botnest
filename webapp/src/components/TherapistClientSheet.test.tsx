@@ -563,7 +563,8 @@ describe('TherapistClientSheet — насыщенная карточка кли�
   it('«Концептуализация» показывает историю версий и сверку с YSQ', async () => {
     await openAnna();
     fireEvent.click(screen.getByText('Концептуализация'));
-    await screen.findByText('История версий · 1');
+    // История — свёрнутая раскрывашка под содержанием (#879): заголовок с числом.
+    fireEvent.click(await screen.findByRole('button', { name: 'История версий · 1' }));
 
     fireEvent.click(screen.getByText('Версия 1'));
     await screen.findByText('старая версия');

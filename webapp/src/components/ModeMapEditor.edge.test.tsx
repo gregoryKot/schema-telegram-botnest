@@ -17,6 +17,7 @@ const updateModeMap = vi.fn();
 vi.mock('../api', () => ({
   api: {
     updateModeMap: (...a: unknown[]) => updateModeMap(...a),
+    trackEvent: vi.fn(),
     getConceptualization: vi.fn().mockResolvedValue(null),
     listCustomModes: vi.fn().mockResolvedValue([]),
     createCustomMode: vi.fn().mockResolvedValue({}),

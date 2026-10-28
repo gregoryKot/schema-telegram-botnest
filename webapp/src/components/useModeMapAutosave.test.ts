@@ -9,9 +9,13 @@ import { useModeMapAutosave } from './useModeMapAutosave';
 import type { FlowNode, FlowEdge } from './modeMapFlow';
 
 const updateModeMap = vi.fn();
+const trackEvent = vi.fn();
 const reportClientError = vi.fn();
 vi.mock('../api', () => ({
-  api: { updateModeMap: (...a: unknown[]) => updateModeMap(...a) },
+  api: {
+    updateModeMap: (...a: unknown[]) => updateModeMap(...a),
+    trackEvent: (...a: unknown[]) => trackEvent(...a),
+  },
   reportClientError: (...a: unknown[]) => reportClientError(...a),
 }));
 
@@ -72,6 +76,7 @@ describe('useModeMapAutosave — пока смонтирован, поведен
 
       nodesRef.current = [node('a'), node('b')]; // правка после провала — повтор обязан взять её
       await act(async () => { result.current.retry(); });
+      expect(trackEvent).toHaveBeenCalledWith('concept_save_retry'); // то же событие, что у вкладки и мини-аппа (#879)
       expect(updateModeMap).toHaveBeenCalledTimes(2);
       const body = updateModeMap.mock.calls[1][1] as { nodes: FlowNode[] };
       expect(body.nodes.map(n => n.id)).toEqual(['a', 'b']);

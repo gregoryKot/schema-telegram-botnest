@@ -35,7 +35,9 @@ describe('saveStatusText', () => {
 
   it('savedAtLabel: сегодня — «в ЧЧ:ММ», другой день — с датой', () => {
     expect(savedAtLabel(at, at)).toBe('в 14:07');
-    const weekAgo = new Date(at.getTime() - 7 * 86400000);
+    // Неделей раньше — явным локальным конструктором, не вычитанием миллисекунд:
+    // через 7×86400000 перевод часов (DST) сдвинул бы время с 14:07.
+    const weekAgo = new Date(2026, 9, 21, 14, 7);
     const label = savedAtLabel(weekAgo, at);
     expect(label).toMatch(/^\d{1,2} \S+, 14:07$/);
     expect(label).not.toMatch(/^в /);
@@ -77,6 +79,7 @@ describe('SaveStatusLine', () => {
     render(<SaveStatusLine status="error" onRetry={onRetry} />);
     const alert = screen.getByRole('alert');
     expect(alert.textContent).toContain('Не сохранилось');
+    expect(alert.getAttribute('aria-live')).toBeNull(); // alert сам assertive — polite рядом противоречил бы
     fireEvent.click(screen.getByRole('button', { name: 'Повторить' }));
     expect(onRetry).toHaveBeenCalledTimes(1);
   });

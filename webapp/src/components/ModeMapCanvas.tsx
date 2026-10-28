@@ -25,11 +25,8 @@ import {
 } from './modeMapFlow';
 import { MMIcon } from './modeMapIcons';
 import { useTr } from '../utils/addressForm';
-import {
-  TbBtn,
-  TbSep,
-  Dropdown,
-} from './modeMap/ToolbarControls';
+import { TbBtn, TbSep } from './modeMap/ToolbarControls';
+import { Dropdown } from './Dropdown';
 import { DownloadMenu } from './modeMap/DownloadMenu';
 import { useHubDrag } from './modeMap/useHubDrag';
 import { useGenerateFromConcept } from './modeMap/useGenerateFromConcept';

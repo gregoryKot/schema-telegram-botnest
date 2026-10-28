@@ -96,8 +96,11 @@ export function SaveStatusLine({
   return (
     <span
       className={className}
-      aria-live="polite"
-      role={isError ? 'alert' : 'status'}
+      // role="alert" сам по себе assertive — aria-live рядом с ним противоречил бы;
+      // вежливое объявление нужно только для status.
+      {...(isError
+        ? { role: 'alert' }
+        : { role: 'status', 'aria-live': 'polite' })}
       style={{
         display: 'inline-flex',
         alignItems: 'center',

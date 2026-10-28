@@ -118,7 +118,7 @@ export function useClientDetail({ onOpenClient, switchView, setClients }: Params
     setClientHistory([]);
     setClientDiary([]);
     setLocalConceptSynced({});
-    setSavedAt(null);
+    setSavedAt(null); setSaveStatus('idle'); if (autoSaveTimer.current) { clearTimeout(autoSaveTimer.current); autoSaveTimer.current = null; } // статус и таймер — состояние клиента: «Не сохранилось» и отложенное автосохранение прежнего не переезжают к новому (#879)
     setExpandedSnapshot(null);
     resetYsq();
     setRenamingAlias(false);

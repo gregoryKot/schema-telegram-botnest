@@ -145,6 +145,24 @@ describe('patchConcept / autoSave', () => {
     expect(mockApi.trackEvent).toHaveBeenCalledWith('concept_save_retry');
     expect(result.current.saveStatus).toBe('saved');
   });
+  // #879: статус сохранения — состояние клиента, а не вкладки: при смене клиента
+  // «Не сохранилось» гаснет, а взведённый таймер прежнего клиента не шлёт его правку.
+  it('открытие другого клиента после ошибки: статус idle, savedAt null, отложенное автосохранение прежнего не уходит', async () => {
+    mockApi.saveConceptualization.mockRejectedValueOnce(new Error('network'));
+    const { result } = await openedHook();
+    act(() => { result.current.toggleSchemaId('a'); });
+    await act(async () => { await vi.advanceTimersByTimeAsync(700); });
+    expect(result.current.saveStatus).toBe('error');
+
+    act(() => { result.current.toggleSchemaId('b'); }); // таймер взведён, до срабатывания — смена клиента
+    expect(result.current.saveStatus).toBe('pending');
+    await act(async () => { await result.current.openClient(makeClient({ telegramId: 2 })); });
+    expect(result.current.saveStatus).toBe('idle');
+    expect(result.current.savedAt).toBeNull();
+    await act(async () => { await vi.advanceTimersByTimeAsync(700); });
+    expect(mockApi.saveConceptualization).toHaveBeenCalledTimes(1); // только первый, упавший
+  });
+
   it('autoSave отправляет собранный payload со всеми полями конкретуализации', async () => {
     mockApi.saveConceptualization.mockResolvedValue({ id: 1 });
     const { result } = await openedHook();

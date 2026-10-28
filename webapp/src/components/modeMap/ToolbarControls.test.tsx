@@ -1,12 +1,10 @@
 // @vitest-environment jsdom
-// ToolbarControls (TbBtn/TbSep/Dropdown) — примитивы тулбара карты режимов
-// (0% покрытия). Проверяем: тултип появляется по hover и не у disabled
-// кнопки, disabled блокирует клик, Dropdown закрывается по фону и клампит
-// позицию, чтобы не вылезти за правый край экрана.
+// ToolbarControls (TbBtn/TbSep) — примитивы тулбара карты режимов. Проверяем:
+// тултип появляется по hover и не у disabled кнопки, disabled блокирует клик.
+// Выпадающее меню — общий components/Dropdown, его тесты рядом с ним.
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
-import { createRef } from 'react';
-import { TbBtn, TbSep, Dropdown } from './ToolbarControls';
+import { TbBtn, TbSep } from './ToolbarControls';
 
 afterEach(() => {
   cleanup();
@@ -42,38 +40,5 @@ describe('TbBtn', () => {
 describe('TbSep', () => {
   it('рендерится без падений', () => {
     expect(() => render(<TbSep />)).not.toThrow();
-  });
-});
-
-describe('Dropdown', () => {
-  it('клик по фону зовёт onClose', () => {
-    const onClose = vi.fn();
-    const ref = createRef<HTMLDivElement>();
-    render(
-      <div>
-        <div ref={ref} />
-        <Dropdown onClose={onClose} anchorRef={ref}><span>Пункт</span></Dropdown>
-      </div>,
-    );
-    fireEvent.click(screen.getByLabelText('Закрыть'));
-    expect(onClose).toHaveBeenCalled();
-  });
-
-  it('без anchorRef.current не падает (не позиционируется, но не крашится)', () => {
-    const ref = createRef<HTMLDivElement>();
-    expect(() =>
-      render(<Dropdown onClose={vi.fn()} anchorRef={ref}><span>Пункт</span></Dropdown>),
-    ).not.toThrow();
-  });
-
-  it('рендерит переданный контент, когда anchor существует', () => {
-    const ref = createRef<HTMLDivElement>();
-    render(
-      <div>
-        <div ref={ref} />
-        <Dropdown onClose={vi.fn()} anchorRef={ref}><span>Пункт меню</span></Dropdown>
-      </div>,
-    );
-    expect(screen.getByText('Пункт меню')).toBeTruthy();
   });
 });

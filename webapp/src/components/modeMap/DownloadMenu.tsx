@@ -2,7 +2,8 @@ import { useRef } from 'react';
 import type { FlowNode } from '../modeMapFlow';
 import { useModeMapExport } from '../useModeMapExport';
 import { MMIcon } from '../modeMapIcons';
-import { TbBtn, Dropdown } from './ToolbarControls';
+import { TbBtn } from './ToolbarControls';
+import { Dropdown } from '../Dropdown';
 
 interface Props {
   nodes: FlowNode[];
@@ -29,9 +30,7 @@ export function DownloadMenu({ nodes, open, onToggle, onClose }: Props) {
           <button disabled={exporting} onClick={() => onExportPng()} className="mm2-item">Картинка PNG</button>
           <button disabled={exporting} onClick={() => onExportPdf()} className="mm2-item">Документ PDF</button>
           {exportError && (
-            <div className="mm2-drop-note is-err">
-              Не удалось подготовить файл. Попробовать ещё раз
-            </div>
+            <div className="mm2-drop-note is-err">Не удалось подготовить файл. Попробовать ещё раз</div>
           )}
         </Dropdown>
       )}

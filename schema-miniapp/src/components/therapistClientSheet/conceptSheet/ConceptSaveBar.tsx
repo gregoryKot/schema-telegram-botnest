@@ -1,3 +1,4 @@
+import { api } from '../../../api';
 import { SaveStatusLine } from '../../../../../shared/src/therapy/SaveStatusLine';
 import type { SaveStatus } from '../../../../../shared/src/therapy/SaveStatusLine';
 import { cm } from '../../../sections/schemas/utils';
@@ -8,7 +9,9 @@ import type { ClientDetail } from '../types';
 // правках, иначе неактивная «Сохранено»); состояние — «Сохраняю…», «✓ Сохранено
 // в ЧЧ:ММ», «Не сохранилось» + «Повторить» — рисует общий SaveStatusLine, тот
 // же, что на вкладке сайта и на холсте карты режимов. Повтор зовёт тот же
-// saveConcept: после ошибки лист остаётся «грязным».
+// saveConcept: после ошибки лист остаётся «грязным» — и шлёт concept_save_retry
+// литералом (трипваер analytics-sync, src/security; константа
+// CONCEPT_SAVE_RETRY_EVENT — shared/src/share/analytics.ts).
 
 export function conceptSaveStatus(d: {
   conceptSaving: boolean;
@@ -31,6 +34,10 @@ export function ConceptSaveBar({ detail }: { detail: ClientDetail }) {
     conceptDirty,
     hasConcept: Boolean(concept),
   });
+  const retry = () => {
+    api.trackEvent('concept_save_retry');
+    void saveConcept();
+  };
   return (
     <>
       <button
@@ -61,7 +68,7 @@ export function ConceptSaveBar({ detail }: { detail: ClientDetail }) {
         <SaveStatusLine
           status={status}
           savedAt={concept?.updatedAt}
-          onRetry={saveConcept}
+          onRetry={retry}
         />
       </div>
     </>

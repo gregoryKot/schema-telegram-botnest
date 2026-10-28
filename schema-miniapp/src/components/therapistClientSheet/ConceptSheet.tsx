@@ -1,7 +1,5 @@
 import { BottomSheet } from '../BottomSheet';
 import { TherapyClientSummary } from '../../api';
-import { ALL_SCHEMAS } from '../../schemaTherapyData';
-import { IdentityDot } from '../../../../shared/src/components/IdentityDot';
 import { ClientDetail } from './types';
 import { ConceptFieldsView } from './conceptSheet/ConceptFieldsView';
 import { ConceptGraphView } from './conceptSheet/ConceptGraphView';
@@ -13,6 +11,7 @@ import { ConceptHistoryPanel } from './conceptSheet/ConceptHistoryPanel';
 import { ConceptYsqHistory } from './conceptSheet/ConceptYsqHistory';
 import { YsqRequestButton } from './conceptSheet/YsqRequestButton';
 import { ConceptSaveBar } from './conceptSheet/ConceptSaveBar';
+import { ConceptSelfSchemas } from './conceptSheet/ConceptSelfSchemas';
 interface ConceptSheetProps {
   selectedClient: TherapyClientSummary;
   detail: ClientDetail;
@@ -32,6 +31,7 @@ export function ConceptSheet({ selectedClient, detail }: ConceptSheetProps) {
   } = detail;
   // Вид выбирается один раз при открытии листа (см. useConceptView).
   const [view, setView] = useConceptView(activeModeIds.length);
+  const goToGraph = () => setView('graph'); // ссылка «привязать» из списка схем за режимами
 
   return (
     <BottomSheet
@@ -75,57 +75,14 @@ export function ConceptSheet({ selectedClient, detail }: ConceptSheetProps) {
         <ConceptHistoryPanel detail={detail} />
         <YsqRequestButton selectedClient={selectedClient} detail={detail} />
         <ConceptYsqHistory detail={detail} />
-        {selfSchemaIds.length > 0 && (
-          <div
-            style={{
-              background: 'rgba(var(--fg-rgb),0.03)',
-              border: '1px solid rgba(var(--fg-rgb),0.07)',
-              borderRadius: 'var(--r-14)',
-              padding: '10px 14px',
-              marginBottom: 14,
-            }}
-          >
-            <div
-              style={{
-                fontSize: 10,
-                fontWeight: 700,
-                letterSpacing: '0.07em',
-                color: 'var(--text-sub)',
-                textTransform: 'uppercase',
-                marginBottom: 8,
-              }}
-            >
-              Схемы клиента (самооценка)
-            </div>
-            <div className="u-wrap5">
-              {selfSchemaIds.map((id) => {
-                const schema = ALL_SCHEMAS.find((s) => s.id === id);
-                return schema ? (
-                  <span
-                    key={id}
-                    style={{
-                      fontSize: 11,
-                      padding: '3px 9px',
-                      borderRadius: 'var(--r-20)',
-                      background: 'rgba(var(--fg-rgb),0.07)',
-                      color: 'var(--text-sub)',
-                    }}
-                  >
-                    <IdentityDot color={schema.domainColor} size={7} />{' '}
-                    {schema.name}
-                  </span>
-                ) : null;
-              })}
-            </div>
-          </div>
-        )}
+        <ConceptSelfSchemas schemaIds={selfSchemaIds} />
         <div className="u-mb12">
           <ConceptViewSwitch view={view} onChange={setView} />
         </div>
         {view === 'graph' ? (
           <ConceptGraphView detail={detail} />
         ) : (
-          <ConceptFieldsView detail={detail} />
+          <ConceptFieldsView detail={detail} onGoToGraph={goToGraph} />
         )}
         <ConceptSaveBar detail={detail} />
         {concept && (

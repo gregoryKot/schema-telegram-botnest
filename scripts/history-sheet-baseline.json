@@ -43,8 +43,8 @@
     "reason": "Рамка экранов «Мне плохо» (класс u-sheet-grid; заменила отдельный экран FlashcardDoneScreen из прежней записи): goBack приходит пропом из SchemaFlashcard.tsx, где хук вызван один раз на весь поток шагов.",
     "since": "#746"
   },
-  "webapp/src/components/modeMap/ToolbarControls.tsx": {
-    "reason": "Невидимая подложка под выпадающим меню панели инструментов карты (поповер у кнопки): ловит клик снаружи. Это не лист.",
+  "webapp/src/components/Dropdown.tsx": {
+    "reason": "Невидимая подложка под выпадающим меню у кнопки (тулбар карты режимов, меню «⋯ Ещё» концептуализации): ловит клик снаружи. Это не лист.",
     "since": "docs/AUDIT_2026-10_FINDINGS.md"
   },
   "webapp/src/components/schemaSheets/SsSheet.tsx": {

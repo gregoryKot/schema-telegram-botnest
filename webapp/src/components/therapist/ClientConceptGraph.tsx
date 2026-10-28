@@ -5,15 +5,16 @@ import type { ClientDetail } from './clientSheetTypes';
 import { useClientConceptGraph } from './useClientConceptGraph';
 import { ConceptGraphToolbar } from './ConceptGraphToolbar';
 import { ConceptGraphFullscreen } from './ConceptGraphFullscreen';
+import { ConceptTabHead, type ConceptTabHeadProps } from './concept/ConceptTabHead';
 
-// Вид «Схема» вкладки концептуализации: схема случая (потребности в центре) в
-// потоке кабинета или, по «На весь экран», в листе на всё окно. Данные и
-// правки — useClientConceptGraph, одни на оба места. «Скачать картинкой»
-// только здесь: мини-апп файл из WebView Telegram не скачивает. «Открыть на холсте» —
-// тоже сайт (карты режимов в мини-аппе нет). Схеме нужна вся ширина (четыре
-// колонки от 960px), поэтому ClientConceptTab в виде «Схема» не ставит боковую
-// колонку рядом: сверка с YSQ и история версий уходят под схему.
-export function ClientConceptGraph({ detail, onOpenCanvas }: { detail: ClientDetail; onOpenCanvas?: (mapId: number) => void }) {
+// Вид «Схема»: схема случая в потоке или, по «На весь экран», в листе; данные и
+// правки — useClientConceptGraph, одни на оба места. Действия (картинка, весь экран,
+// холст) в потоке уходят в меню шапки (head рисуется здесь ради graph), в листе — панель.
+export function ClientConceptGraph({ detail, onOpenCanvas, head }: {
+  detail: ClientDetail;
+  onOpenCanvas?: (mapId: number) => void;
+  head: Omit<ConceptTabHeadProps, 'graph'>;
+}) {
   // Высота схемы в потоке, пока открыт лист (null — лист закрыт). Место держится
   // пустым, чтобы страница под листом не схлопнулась и после «Свернуть» не уехал скролл.
   const [held, setHeld] = useState<number | null>(null);
@@ -21,33 +22,32 @@ export function ClientConceptGraph({ detail, onOpenCanvas }: { detail: ClientDet
   const graphRef = useRef<HTMLDivElement>(null);
   const backRef = useRef<(() => void) | null>(null);
   const g = useClientConceptGraph(detail, graphRef, onOpenCanvas && ((id) => { backRef.current?.(); onOpenCanvas(id); }));
-  const graph = (
-    <div ref={graphRef} style={{ padding: 'var(--space-8)' }}>
-      <ConceptGraph {...g.graphProps} />
-    </div>
-  );
-  if (held !== null) {
-    return (
-      <>
-        <div aria-hidden style={{ height: held }} />
-        <ConceptGraphFullscreen
-          onClose={() => setHeld(null)}
-          backRef={backRef}
-          toolbar={<ConceptGraphToolbar compact image={g.image} canvas={g.canvas} />}
-        >
-          {graph}
-        </ConceptGraphFullscreen>
-      </>
-    );
-  }
   const expand = () => {
     api.trackEvent('concept_graph_fullscreen');
     setHeld(flowRef.current?.offsetHeight ?? 0);
   };
-  return (
-    <div ref={flowRef} style={{ minWidth: 0 }}>
-      <ConceptGraphToolbar image={g.image} canvas={g.canvas} onFullscreen={expand} />
-      {graph}
+  const graph = (
+    <div ref={graphRef} className="tcp-graph">
+      <ConceptGraph {...g.graphProps} />
     </div>
+  );
+  return (
+    <>
+      <ConceptTabHead {...head} graph={{ image: g.image, canvas: g.canvas, expand }} />
+      {held !== null ? (
+        <>
+          <div aria-hidden style={{ height: held }} />
+          <ConceptGraphFullscreen
+            onClose={() => setHeld(null)}
+            backRef={backRef}
+            toolbar={<ConceptGraphToolbar image={g.image} canvas={g.canvas} />}
+          >
+            {graph}
+          </ConceptGraphFullscreen>
+        </>
+      ) : (
+        <div ref={flowRef} style={{ minWidth: 0 }}>{graph}</div>
+      )}
+    </>
   );
 }
