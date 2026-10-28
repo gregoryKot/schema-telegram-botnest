@@ -2,6 +2,7 @@
 // Вынесено из TelegramAdminService (№10). Только админ (ADMIN_ID).
 import type { Context, Telegraf } from 'telegraf';
 import { isAdminSender } from '../utils/admin-alert';
+import { isMessageNotModified } from './callback-failure';
 import { replyLong, splitForTelegram } from './send-long-text';
 import { collectStatsMessages } from './stats-messages';
 import {
@@ -18,7 +19,6 @@ import {
 } from '../bot/stats-sections';
 
 const NO_ACCESS = '⛔ Нет доступа';
-const NOT_MODIFIED_RE = /message is not modified/i;
 
 interface StatsLogger {
   warn(msg: string): void;
@@ -42,7 +42,7 @@ async function showText(
     if (edit && i === 0) {
       await ctx.editMessageText(chunk, extra).catch((err: unknown) => {
         // Повторный тап по тому же разделу — не ошибка.
-        if (!NOT_MODIFIED_RE.test(String(err))) throw err;
+        if (!isMessageNotModified(err)) throw err;
         return null;
       });
     } else {
@@ -115,6 +115,7 @@ async function sendFullReport(
   await replyLong(ctx, second, { parse_mode: 'HTML' });
 }
 
+// Не failCallback: там другой ответ человеку, а «не изменено» уходит в log.
 async function failStats(
   ctx: Context,
   what: string,

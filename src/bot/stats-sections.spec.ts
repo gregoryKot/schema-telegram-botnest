@@ -41,6 +41,12 @@ describe('STATS_SECTIONS ↔ блоки отчёта', () => {
     }
   });
 
+  it('инфра-блоки и запас фраз лежат именно в «system»: их рисует только его ветка', () => {
+    const system = findStatsSection('system')?.blocks ?? [];
+    for (const b of infraBlocks()) expect(system).toContain(b.name);
+    expect(system).toContain(POOL_BLOCK_NAME);
+  });
+
   it('в разделах нет имён, которых нет в отчёте', () => {
     const known = new Set(allNames);
     const unknown = STATS_SECTIONS.flatMap((s) => s.blocks).filter(
@@ -71,6 +77,54 @@ describe('STATS_SECTIONS ↔ блоки отчёта', () => {
   it('findStatsSection: известный id находит, чужой — нет', () => {
     expect(findStatsSection('money')?.title).toContain('Деньги');
     expect(findStatsSection('nope')).toBeUndefined();
+  });
+});
+
+describe('StatsReportService.renderSection', () => {
+  type Mock = { render: jest.Mock };
+  const build = () => {
+    const mocks: Mock[] = Array.from(
+      { length: StatsReportService.length },
+      () => ({ render: jest.fn() }),
+    );
+    const service: StatsReportService = Reflect.construct(
+      StatsReportService,
+      mocks,
+    );
+    const blocks = statsBlocks(service);
+    for (const b of blocks) {
+      b.svc.render.mockResolvedValue(`тело ${b.name}`);
+    }
+    return { service, blocks };
+  };
+
+  it.each(STATS_SECTIONS.map((s) => [s.id, s] as const))(
+    'раздел %s: рендерятся ровно сервисы его блоков, заголовок первой строкой, порядок как в отчёте',
+    async (_id, section) => {
+      const { service, blocks } = build();
+      const out = await service.renderSection(section.id);
+
+      const mine = blocks.filter((b) => section.blocks.includes(b.name));
+      for (const b of blocks) {
+        expect(b.svc.render).toHaveBeenCalledTimes(mine.includes(b) ? 1 : 0);
+      }
+      expect(out.split('\n')[0]).toBe(`<b>${section.title}</b>`);
+      expect(out).toBe(
+        [`<b>${section.title}</b>`, ...mine.map((b) => `тело ${b.name}`)].join(
+          '\n\n',
+        ),
+      );
+    },
+  );
+
+  it('неизвестный раздел: ошибка, ни один сервис не вызван', async () => {
+    const { service, blocks } = build();
+    await expect(service.renderSection('nope')).rejects.toThrow(
+      'Нет раздела /stats «nope»',
+    );
+    for (const b of blocks) {
+      expect(b.svc.render).toHaveBeenCalledTimes(0);
+    }
   });
 });
 
