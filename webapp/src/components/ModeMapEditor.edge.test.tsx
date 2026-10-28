@@ -132,7 +132,9 @@ describe('ModeMapEditor — редактор ребра (read-after-write)', () 
 });
 
 describe('ModeMapEditor — сбой автосейва не роняет экран', () => {
-  it('провал api.updateModeMap возвращает статус в исходное состояние (idle), не крашится', async () => {
+  // Issue #879: раньше провал молча возвращал idle — теперь статус error
+  // (SaveStatusLine рисует «Не сохранилось» + «Повторить»), экран не падает.
+  it('провал api.updateModeMap переводит статус в error, не крашится', async () => {
     updateModeMap.mockRejectedValue(new Error('network'));
     renderEditorWithEdge();
     fireEvent.click(screen.getByText('выбрать ребро e1'));
@@ -140,9 +142,9 @@ describe('ModeMapEditor — сбой автосейва не роняет экр
     vi.useFakeTimers();
     try {
       fireEvent.click(screen.getByText('Удалить связь'));
-      await vi.advanceTimersByTimeAsync(1300);
+      await act(async () => { await vi.advanceTimersByTimeAsync(1300); });
       expect(updateModeMap).toHaveBeenCalled();
-      expect(screen.getByText('статус:idle')).toBeTruthy();
+      expect(screen.getByText('статус:error')).toBeTruthy();
     } finally {
       vi.useRealTimers();
     }
@@ -151,9 +153,10 @@ describe('ModeMapEditor — сбой автосейва не роняет экр
 
 // РЕГРЕССИЯ: фикс cleanup-эффекта размонтирования (см. ModeMapEditor.test.tsx)
 // не должен трогать поведение, пока экран открыт — статус по-прежнему
-// проходит idle → saving → saved ровно через 1200мс после правки.
+// проходит pending → saving → saved ровно через 1200мс после правки
+// (pending вместо прежнего idle — «Изменения ещё не сохранены», issue #879).
 describe('ModeMapEditor — пока смонтирован, автосейв работает как раньше', () => {
-  it('правка → 1200мс → статус idle → saving → saved', async () => {
+  it('правка → 1200мс → статус pending → saving → saved', async () => {
     let resolveUpdate: (v: unknown) => void = () => {};
     updateModeMap.mockImplementation(
       () => new Promise((resolve) => { resolveUpdate = resolve; }),
@@ -165,7 +168,7 @@ describe('ModeMapEditor — пока смонтирован, автосейв р
     try {
       expect(screen.getByText('статус:idle')).toBeTruthy();
       fireEvent.click(screen.getByText('ведёт к'));
-      expect(screen.getByText('статус:idle')).toBeTruthy(); // таймер ещё не сработал
+      expect(screen.getByText('статус:pending')).toBeTruthy(); // таймер ещё не сработал
 
       await act(async () => { await vi.advanceTimersByTimeAsync(1200); });
       expect(screen.getByText('статус:saving')).toBeTruthy(); // запрос ушёл, ответа ещё нет

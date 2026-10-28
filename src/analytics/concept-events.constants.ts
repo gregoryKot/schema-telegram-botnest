@@ -13,10 +13,14 @@
 //   concept_graph_fullscreen — развернул схему случая на весь экран («⤢ На весь
 //                           экран» над схемой). Одно событие на каждое разворачивание;
 //                           только сайт — у мини-аппа свой экран, разворачивать нечего.
+//   concept_save_retry    — повторяли сохранение концептуализации после ошибки
+//                           (кнопка «Повторить» в строке статуса SaveStatusLine, issue #879).
+//                           Оба фронтенда: автосохранение вкладки сайта и кнопка мини-аппа.
 export const CONCEPT_EVENTS = [
   'concept_graph_open',
   'concept_mode_linked',
   'concept_schema_linked',
   'concept_canvas_open',
   'concept_graph_fullscreen',
+  'concept_save_retry',
 ] as const;

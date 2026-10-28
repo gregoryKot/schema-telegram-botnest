@@ -5,12 +5,12 @@ import {
   type Connection, type NodeTypes, type Viewport,
   type useNodesState, type useEdgesState,
 } from '@xyflow/react';
-import type { ModeMapNode, ModeMapEdge, ModeMapKind, UserId } from '../api';
-import { api } from '../api';
+import { api, type ModeMapNode, type ModeMapEdge, type ModeMapKind, type UserId } from '../api';
 import { NODE_TYPES, EDGE_TYPES } from './modeMapRegistry';
 import { NODE_DEFAULT_SIZES, DRAG_TYPE } from './modeMapData';
 import { getSchemaById } from '../schemaTherapyData';
 import { hueStyle, DOMAIN_HUE } from '../lib/tone';
+import { SaveStatusLine, type SaveStatus } from '../../../shared/src/therapy/SaveStatusLine';
 import '../styles/sheet-modemap.css';
 import { ModeMapContextMenu, type MenuItem } from './ModeMapContextMenu';
 import { ModeMapLegend } from './ModeMapLegend';
@@ -44,7 +44,7 @@ export interface CanvasProps {
   setSelectedNodeId: (id: string | null) => void;
   setSelectedEdgeId: (id: string | null) => void;
   selectedNodeId: string | null;
-  saveStatus: 'idle' | 'saving' | 'saved';
+  saveStatus: SaveStatus; savedAt: Date | null; onRetrySave: () => void; // строка статуса — SaveStatusLine (issue #879)
   scheduleSave: (ns: FlowNode[], es: FlowEdge[]) => void;
   pushHistory: () => void;
   nodesRef: React.MutableRefObject<FlowNode[]>;
@@ -54,7 +54,7 @@ export interface CanvasProps {
 }
 
 export function ModeMapCanvas({ clientId, mapId, kind, nodes, edges, setNodes, setEdges, onNodesChange, onEdgesChange,
-  setSelectedNodeId, setSelectedEdgeId, selectedNodeId, saveStatus, scheduleSave,
+  setSelectedNodeId, setSelectedEdgeId, selectedNodeId, saveStatus, savedAt, onRetrySave, scheduleSave,
   pushHistory, nodesRef, edgesRef, onUndo, onRedo, canUndo, canRedo }: CanvasProps) {
   const { screenToFlowPosition, zoomIn, zoomOut, fitView, setViewport } = useReactFlow();
   const tr = useTr();
@@ -303,7 +303,7 @@ export function ModeMapCanvas({ clientId, mapId, kind, nodes, edges, setNodes, s
     <div style={{ flex: 1, position: 'relative', background: 'var(--surface)' }}>
       <div className="mm2-status">
         {fromConcept.failed ? <span role="alert" className="is-err">Не получилось собрать схему из концептуализации</span>
-          : saveStatus === 'saving' ? 'сохраняю…' : saveStatus === 'saved' ? '✓ сохранено' : ''}
+          : <SaveStatusLine status={saveStatus} savedAt={savedAt} onRetry={onRetrySave} align="right" />}
       </div>
       {nodes.length === 0 && (
         <div className="mm2-canvas-empty">

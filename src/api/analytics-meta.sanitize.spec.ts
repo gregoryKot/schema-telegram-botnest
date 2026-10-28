@@ -766,7 +766,7 @@ describe('sanitizeMeta', () => {
 
   // Графическая концептуализация: текст связей режима — клиническая запись
   // (правило №7), в событие не попадает ни он, ни id клиента.
-  it('concept_graph_open/concept_mode_linked/concept_schema_linked/concept_canvas_open/concept_graph_fullscreen: meta игнорируется', () => {
+  it('concept_graph_open/concept_mode_linked/concept_schema_linked/concept_canvas_open/concept_graph_fullscreen/concept_save_retry: meta игнорируется', () => {
     const leak = {
       clientId: '555',
       origin: 'Голос отца',
@@ -778,6 +778,7 @@ describe('sanitizeMeta', () => {
     expect(sanitizeMeta('concept_schema_linked', leak)).toBeUndefined();
     expect(sanitizeMeta('concept_canvas_open', leak)).toBeUndefined();
     expect(sanitizeMeta('concept_graph_fullscreen', leak)).toBeUndefined();
+    expect(sanitizeMeta('concept_save_retry', leak)).toBeUndefined();
   });
 
   // quiz_started/quiz_completed/practice_link_click несут meta по реестру

@@ -144,6 +144,9 @@ export const CONCEPT_SCHEMA_LINKED_EVENT = 'concept_schema_linked';
 // Только сайт: перенос на холст (шлёт useOpenConceptCanvas) и разворот на весь экран (ClientConceptGraph, литералом).
 export const CONCEPT_CANVAS_OPEN_EVENT = 'concept_canvas_open';
 export const CONCEPT_GRAPH_FULLSCREEN_EVENT = 'concept_graph_fullscreen';
+// Оба фронтенда: «Повторить» в строке статуса сохранения (SaveStatusLine) после ошибки — автосохранение
+// вкладки сайта (useClientDetail) и кнопка мини-аппа (ConceptSheet). Шлётся литералом (трипваер analytics-sync).
+export const CONCEPT_SAVE_RETRY_EVENT = 'concept_save_retry';
 
 // ── Разбор случая («Что это было») ─────────────────────────────────────────
 // Новая точка входа: человек за три минуты разбирает один случай и получает

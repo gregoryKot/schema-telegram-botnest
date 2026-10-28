@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { api, reportClientError } from '../api';
 import { fromFlowNodes, fromFlowEdges } from './modeMapFlow';
 import type { FlowNode, FlowEdge } from './modeMapFlow';
+import type { SaveStatus } from '../../../shared/src/therapy/SaveStatusLine';
 
 // Дебаунсит api.updateModeMap на 1200мс и следит за статусом сохранения.
 //
@@ -12,27 +13,47 @@ import type { FlowNode, FlowEdge } from './modeMapFlow';
 // который отменяет таймер и досылает несохранённое немедленно,
 // fire-and-forget — setSaveStatus здесь звать уже некому. Отказ уходит в
 // телеметрию, а не молча (правило про тихий catch, CLAUDE.md).
+//
+// Issue #879 (шаг A): провал сохранения раньше молча возвращал 'idle' — терапевт
+// видел погасший индикатор и считал правку сохранённой. Теперь — 'error' с
+// отчётом в телеметрию, `retry()` повторяет отправку с текущими nodesRef/edgesRef,
+// а `savedAt` даёт строке статуса «✓ Сохранено в ЧЧ:ММ».
 export function useModeMapAutosave(
   mapId: number,
   nodesRef: React.MutableRefObject<FlowNode[]>,
   edgesRef: React.MutableRefObject<FlowEdge[]>,
 ) {
-  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
+  const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
+  const [savedAt, setSavedAt] = useState<Date | null>(null);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isMounted = useRef(true);
 
+  const save = useCallback(async (ns: FlowNode[], es: FlowEdge[]) => {
+    if (isMounted.current) setSaveStatus('saving');
+    try {
+      await api.updateModeMap(mapId, { nodes: fromFlowNodes(ns), edges: fromFlowEdges(es) });
+      if (isMounted.current) { setSavedAt(new Date()); setSaveStatus('saved'); }
+    } catch {
+      reportClientError({ message: 'mode map save failed', section: 'modeMap' });
+      if (isMounted.current) setSaveStatus('error');
+    }
+  }, [mapId]);
+
   const scheduleSave = useCallback((ns: FlowNode[], es: FlowEdge[]) => {
     if (saveTimer.current) clearTimeout(saveTimer.current);
-    setSaveStatus('idle');
-    saveTimer.current = setTimeout(async () => {
+    setSaveStatus('pending');
+    saveTimer.current = setTimeout(() => {
       saveTimer.current = null; // сработал — больше не «взведён» для unmount-флаша
-      if (isMounted.current) setSaveStatus('saving');
-      try {
-        await api.updateModeMap(mapId, { nodes: fromFlowNodes(ns), edges: fromFlowEdges(es) });
-        if (isMounted.current) setSaveStatus('saved');
-      } catch { if (isMounted.current) setSaveStatus('idle'); }
+      void save(ns, es);
     }, 1200);
-  }, [mapId]);
+  }, [save]);
+
+  // «Повторить» после ошибки: шлёт САМЫЕ свежие узлы и связи, а не аргументы
+  // последнего scheduleSave — иначе правки после провала потерялись бы.
+  const retry = useCallback(() => {
+    if (saveTimer.current) { clearTimeout(saveTimer.current); saveTimer.current = null; }
+    void save(nodesRef.current, edgesRef.current);
+  }, [save, nodesRef, edgesRef]);
 
   useEffect(() => {
     return () => {
@@ -63,5 +84,5 @@ export function useModeMapAutosave(
     };
   }, [mapId, nodesRef, edgesRef]);
 
-  return { saveStatus, scheduleSave };
+  return { saveStatus, savedAt, retry, scheduleSave };
 }

@@ -24,5 +24,8 @@ export function formatConceptGraphMetrics(m: ConceptGraphMetrics): string {
   if (m.fullscreen30 > 0) {
     lines.push(`Разворачивали схему на весь экран ${m.fullscreen30} раз`);
   }
+  if (m.saveRetry30 > 0) {
+    lines.push(`Повторяли сохранение после ошибки ${m.saveRetry30} раз`);
+  }
   return lines.join('\n');
 }

@@ -82,6 +82,9 @@ describe('TherapyNudgeCard', () => {
   it('«Не сейчас» прячет карточку, пишет событие и запоминает на 14 дней', async () => {
     history.mockResolvedValue(LOW);
     renderCard();
+    // «shown» уходит из эффекта после коммита: без ожидания под нагрузкой CI он
+    // приходил ПОСЛЕ клика и затирал «последний вызов» (флейк на PR #880).
+    await waitFor(() => expect(track).toHaveBeenCalledWith('signal_card', 'shown', 'low_index'));
     fireEvent.click(await screen.findByRole('button', { name: 'Не сейчас' }));
     expect(track).toHaveBeenLastCalledWith('signal_card', 'dismiss', 'low_index');
     expect(screen.queryByText('Три последних заполненных дня: индекс не выше 4')).toBeNull();

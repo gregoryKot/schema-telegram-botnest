@@ -5,12 +5,13 @@ import { ClientConceptGraph } from './ClientConceptGraph';
 import { ConceptVersionHistory } from './concept/ConceptVersionHistory';
 import '../../styles/therapist-concept.css';
 import { ConceptViewSwitch, useConceptView } from '../../../../shared/src/therapy/conceptGraph/ConceptViewSwitch';
+import { SaveStatusLine } from '../../../../shared/src/therapy/SaveStatusLine';
 
 interface Props { detail: ClientDetail; onOpenCanvas?: (mapId: number) => void }
 
 export function ClientConceptTab({ detail, onOpenCanvas }: Props) {
   const {
-    saveStatus, exportCopied, handleExport, conceptError,
+    saveStatus, savedAt, retrySave, exportCopied, handleExport,
     activeSchemaIds, activeModeIds,
     ysqSchemaIds,
   } = detail;
@@ -25,9 +26,7 @@ export function ClientConceptTab({ detail, onOpenCanvas }: Props) {
           <div className="ds-sub" style={{ marginTop: 4 }}>Схема-карта, цели терапии и связь с детским опытом</div>
         </div>
         <div className="tcp-head-actions">
-          <span className="tcp-save">
-            {saveStatus === 'saving' ? 'сохраняю…' : saveStatus === 'saved' ? '✓ сохранено' : saveStatus === 'pending' ? 'автосохранение' : ''}
-          </span>
+          <SaveStatusLine className="tcp-save" status={saveStatus} savedAt={savedAt} onRetry={retrySave} align="right" />
           <button type="button" className="ds-btn ds-btn--secondary ds-btn--sm" onClick={handleExport}>
             ↗ Экспорт{exportCopied ? ' ✓' : ''}
           </button>
@@ -38,13 +37,11 @@ export function ClientConceptTab({ detail, onOpenCanvas }: Props) {
         <ConceptViewSwitch view={view} onChange={setView} />
       </div>
 
-      {conceptError && <div style={{ marginBottom: 16, padding: '10px 16px', borderRadius: 'var(--r-8)', background: 'color-mix(in srgb, var(--c-rose) 10%, transparent)', color: 'var(--c-rose)', fontSize: 13 }}>{conceptError}</div>}
-
       <div className="doc-grid" style={view === 'graph' ? { gridTemplateColumns: 'minmax(0, 1fr)' } : undefined}>
         {view === 'graph' ? (
           <ClientConceptGraph detail={detail} onOpenCanvas={onOpenCanvas} />
         ) : (
-          <ClientConceptFields detail={detail} />
+          <ClientConceptFields detail={detail} onGoToGraph={() => setView('graph')} />
         )}
 
         {/* Right sidebar */}

@@ -6,7 +6,6 @@ import { fmtDate, momentDayKey, todayStr } from '../../utils/format';
 import { SCHEMA_DOMAINS, MODE_GROUPS } from '../../schemaTherapyData';
 import { useCopyToClipboard } from '../../../../shared/src/utils/useCopyToClipboard';
 import { useYsqRequest } from '../../../../shared/src/therapy/useYsqRequest';
-import { useTr } from '../../utils/addressForm';
 import { conceptSaveBody } from '../../../../shared/src/therapy/conceptGraph/conceptSaveBody';
 import { formatConceptLinksExport } from '../../../../shared/src/therapy/conceptGraph/conceptLinksExport';
 type ClientTab = 'overview' | 'concept' | 'mode_map' | 'sessions' | 'tasks' | 'ysq' | 'client_notes';
@@ -18,7 +17,6 @@ interface Params {
 }
 
 export function useClientDetail({ onOpenClient, switchView, setClients }: Params) {
-  const tr = useTr();
   const openClientIdRef = useRef<UserId | null>(null);
   const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Зеркало localConcept, обновляется СИНХРОННО (setLocalConceptSynced ниже).
@@ -57,9 +55,9 @@ export function useClientDetail({ onOpenClient, switchView, setClients }: Params
       return next;
     });
   }
-  const [conceptError, setConceptError] = useState('');
+  const [savedAt, setSavedAt] = useState<Date | null>(null); // момент последнего удачного сохранения — для «✓ Сохранено в ЧЧ:ММ»
   const [expandedSnapshot, setExpandedSnapshot] = useState<number | null>(null);
-  const [saveStatus, setSaveStatus] = useState<'idle' | 'pending' | 'saving' | 'saved'>('idle');
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'pending' | 'saving' | 'saved' | 'error'>('idle');
 
   // Therapist notes composer
   const [newNoteText, setNewNoteText] = useState('');
@@ -120,7 +118,7 @@ export function useClientDetail({ onOpenClient, switchView, setClients }: Params
     setClientHistory([]);
     setClientDiary([]);
     setLocalConceptSynced({});
-    setConceptError('');
+    setSavedAt(null);
     setExpandedSnapshot(null);
     resetYsq();
     setRenamingAlias(false);
@@ -218,11 +216,13 @@ export function useClientDetail({ onOpenClient, switchView, setClients }: Params
     try {
       const saved = await api.saveConceptualization(selectedClient.telegramId, conceptSaveBody(c));
       setConcept(saved);
-      setConceptError('');
-      setSaveStatus('saved');
-      setTimeout(() => setSaveStatus('idle'), 2000);
-    } catch { setSaveStatus('idle'); setConceptError(tr('Не удалось сохранить изменения. Попробуй ещё раз.', 'Не удалось сохранить изменения. Попробуйте ещё раз.')); } // БАГ (найден тестом): раньше не сообщал об ошибке
+      setSavedAt(saved.updatedAt ? new Date(saved.updatedAt) : new Date());
+      setSaveStatus('saved'); // не гаснет: «✓ Сохранено в ЧЧ:ММ» висит до следующей правки (issue #879, шаг A)
+    } catch { setSaveStatus('error'); } // текст «Не сохранилось» и «Повторить» рисует SaveStatusLine; раньше тут был conceptError (регрессия в mutations.test)
   }
+  // «Повторить» после ошибки. Событие — литералом: так его видит трипваер analytics-sync (src/security);
+  // константа CONCEPT_SAVE_RETRY_EVENT — shared/src/share/analytics.ts, равенство сверяет ClientConceptTab.save.test.
+  function retrySave() { api.trackEvent('concept_save_retry'); void autoSave(); }
 
   function toggleSchemaId(id: string) {
     const current = (localConcept.schemaIds ?? concept?.schemaIds ?? []) as string[];
@@ -312,8 +312,8 @@ export function useClientDetail({ onOpenClient, switchView, setClients }: Params
     clientTasks, setClientTasks,
     notes: np.notesPage.notes, notesPage: np.notesPage, noteError,
     concept, clientData, clientHistory, clientDiary,
-    localConcept, conceptError, expandedSnapshot, setExpandedSnapshot,
-    saveStatus,
+    localConcept, savedAt, expandedSnapshot, setExpandedSnapshot,
+    saveStatus, retrySave,
     newNoteText, setNewNoteText, newNoteDate, setNewNoteDate,
     noteSaving, showAssign, setShowAssign,
     editingStartDate, setEditingStartDate,

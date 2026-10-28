@@ -1,6 +1,5 @@
 import { BottomSheet } from '../BottomSheet';
 import { TherapyClientSummary } from '../../api';
-import { fmtDate, momentDayKey } from '../../utils/format';
 import { ALL_SCHEMAS } from '../../schemaTherapyData';
 import { IdentityDot } from '../../../../shared/src/components/IdentityDot';
 import { ClientDetail } from './types';
@@ -13,7 +12,7 @@ import {
 import { ConceptHistoryPanel } from './conceptSheet/ConceptHistoryPanel';
 import { ConceptYsqHistory } from './conceptSheet/ConceptYsqHistory';
 import { YsqRequestButton } from './conceptSheet/YsqRequestButton';
-import { cm } from '../../sections/schemas/utils';
+import { ConceptSaveBar } from './conceptSheet/ConceptSaveBar';
 interface ConceptSheetProps {
   selectedClient: TherapyClientSummary;
   detail: ClientDetail;
@@ -22,8 +21,6 @@ export function ConceptSheet({ selectedClient, detail }: ConceptSheetProps) {
   const {
     concept,
     conceptDirty,
-    conceptSaving,
-    conceptError,
     showHistory,
     setShowHistory,
     setShowConceptSheet,
@@ -130,44 +127,7 @@ export function ConceptSheet({ selectedClient, detail }: ConceptSheetProps) {
         ) : (
           <ConceptFieldsView detail={detail} />
         )}
-        <button
-          onClick={saveConcept}
-          disabled={conceptSaving || !conceptDirty}
-          style={{
-            width: '100%',
-            padding: '13px 0',
-            borderRadius: 'var(--r-14)',
-            border: 'none',
-            background: conceptDirty
-              ? `linear-gradient(135deg, color-mix(in srgb, var(--accent) 30%, transparent), ${cm('var(--accent-blue)', 20)})`
-              : 'rgba(var(--fg-rgb),0.05)',
-            color: conceptDirty ? 'var(--text)' : 'rgba(var(--fg-rgb),0.25)',
-            fontSize: 14,
-            fontWeight: 600,
-            cursor: conceptDirty ? 'pointer' : 'default',
-            opacity: conceptSaving ? 0.6 : 1,
-          }}
-        >
-          {conceptSaving
-            ? 'Сохраняю...'
-            : conceptDirty
-              ? 'Сохранить концептуализацию'
-              : concept
-                ? `✓ Сохранено ${fmtDate(momentDayKey(concept.updatedAt))}`
-                : 'Нет изменений'}
-        </button>
-        {conceptError && (
-          <div
-            style={{
-              fontSize: 12,
-              color: 'var(--accent-red)',
-              textAlign: 'center',
-              marginTop: 6,
-            }}
-          >
-            {conceptError}
-          </div>
-        )}
+        <ConceptSaveBar detail={detail} />
         {concept && (
           <button
             onClick={handleExport}

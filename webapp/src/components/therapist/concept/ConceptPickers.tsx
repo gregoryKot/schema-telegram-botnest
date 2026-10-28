@@ -1,11 +1,12 @@
 import { SCHEMA_DOMAINS } from '../../../schemaTherapyData';
 import { DOMAIN_HUE, hueStyle } from '../../../lib/tone';
-import { ConceptModePicker } from '../../../../../shared/src/therapy/conceptGraph/ConceptModePicker';
 import type { ClientDetail } from '../clientSheetTypes';
+import { ConceptModeCard } from './ConceptModeCard';
 
-// Выбор актуальных схем и карта режимов (поведение прежнее, вид — карточки).
-export function ConceptPickers({ detail }: { detail: ClientDetail }) {
-  const { activeSchemaIds, toggleSchemaId, activeModeIds, toggleModeId } = detail;
+// Выбор актуальных схем и карта режимов (поведение прежнее, вид — карточки);
+// onGoToGraph — переход в вид «Схема» из карточки режимов.
+export function ConceptPickers({ detail, onGoToGraph }: { detail: ClientDetail; onGoToGraph?: () => void }) {
+  const { activeSchemaIds, toggleSchemaId } = detail;
   return (
     <div className="tcp-pickers">
       <section className="ds-card">
@@ -37,13 +38,7 @@ export function ConceptPickers({ detail }: { detail: ClientDetail }) {
           ))}
         </div>
       </section>
-      <section className="ds-card">
-        <div className="ds-head-row" style={{ marginBottom: 16 }}>
-          <h3 className="ds-h3">Карта режимов</h3>
-          <span className="ds-sub">{activeModeIds.length} в работе</span>
-        </div>
-        <ConceptModePicker activeModeIds={activeModeIds} onToggle={toggleModeId} />
-      </section>
+      <ConceptModeCard detail={detail} onGoToGraph={onGoToGraph} />
     </div>
   );
 }
