@@ -3,7 +3,9 @@
 // концептуализации сайта гасила «✓ сохранено» через 2 с, холст карты режимов
 // молчал об ошибке, мини-апп прятал дату в текст кнопки. Здесь статус не гаснет
 // («✓ Сохранено в 14:07» висит, пока не начнётся новая правка), а ошибка —
-// видимая, с кнопкой «Повторить». Тексты нейтральные: без обращения, без рода.
+// видимая, с кнопкой «Повторить». Свои тексты нейтральные: без обращения, без
+// рода; причину отказа (сеть, сервер) вызывающий хук отдаёт через `errorText`
+// (находка #880), форму ты/вы и род в ней снимает он же через `tr()`.
 // Цвета — токены, общие для webapp и мини-аппа (`--accent-red`, `--text-faint`;
 // `--err` есть только на сайте, поэтому его здесь нет).
 import type { CSSProperties } from 'react';
@@ -15,6 +17,7 @@ interface Props {
   /** Момент последнего успешного сохранения; показывается как «в ЧЧ:ММ» (локальное время). */
   savedAt?: Date | string | null;
   onRetry?: () => void;
+  errorText?: string; // причина вместо «Не сохранилось», только при status='error'
   className?: string;
   align?: 'left' | 'right';
 }
@@ -89,10 +92,13 @@ export function SaveStatusLine({
   status,
   savedAt,
   onRetry,
+  errorText,
   className,
   align = 'left',
 }: Props) {
   const isError = status === 'error';
+  const text =
+    isError && errorText ? errorText : saveStatusText(status, savedAt);
   return (
     <span
       className={className}
@@ -112,7 +118,7 @@ export function SaveStatusLine({
         color: isError ? 'var(--accent-red)' : 'var(--text-faint)',
       }}
     >
-      <span>{saveStatusText(status, savedAt)}</span>
+      <span>{text}</span>
       {isError && onRetry && (
         <button type="button" onClick={onRetry} style={retryStyle}>
           Повторить

@@ -15,7 +15,7 @@ export const SERVER_DOWN_TEXT = 'Сервер не ответил. Повтор�
 export const TOO_MANY_TEXT =
   'Слишком много попыток подряд. Повторить можно чуть позже';
 
-const HUMAN = /[А-Яа-яЁё]/;
+export const HUMAN = /[А-Яа-яЁё]/; // есть кириллица — текст писали для человека
 // fetch отклоняется TypeError с текстом движка: Chrome — «Failed to fetch»,
 // Safari — «Load failed», Firefox — «NetworkError when attempting to fetch
 // resource.». Любой другой TypeError — ошибка кода, а не сети: «нет связи» на
