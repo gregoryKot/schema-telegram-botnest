@@ -150,6 +150,9 @@ describe('ClientConceptTab: переключатель «Схема · Поля�
         .getByRole('button', { name: 'Схема' })
         .getAttribute('aria-pressed'),
     ).toBe('true');
+    // инструкция на заполненной схеме свёрнута — открывается «Как читать схему»
+    expect(screen.queryByText(/Схема случая: в центре базовые потребности/)).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: /Как читать схему/ }));
     expect(screen.getByText(/Схема случая: в центре базовые потребности/)).toBeTruthy();
     expect(screen.queryByText('Актуальные схемы')).toBeNull();
 
@@ -158,7 +161,7 @@ describe('ClientConceptTab: переключатель «Схема · Поля�
     expect(screen.getByText('Карта режимов')).toBeTruthy();
 
     fireEvent.click(screen.getByRole('button', { name: 'Схема' }));
-    expect(screen.getByText(/Схема случая: в центре базовые потребности/)).toBeTruthy();
+    expect(screen.getByRole('button', { name: /Как читать схему/ })).toBeTruthy();
   });
 
   it('«Скачать картинкой» есть в меню «⋯ Ещё» только в виде «Схема»', async () => {
@@ -179,6 +182,17 @@ describe('ClientConceptTab: переключатель «Схема · Поля�
     expect(saved().modeIds).toEqual(['vulnerable_child']);
     // и вид не перепрыгнул на схему посреди выбора
     expect(screen.getByText('Карта режимов')).toBeTruthy();
+  });
+
+  it('вид «Поля» с выбранными режимами: чипы только выбранных, «Изменить» открывает пикер, клик по режиму уходит в modeIds', async () => {
+    await openTab(concept());
+    fireEvent.click(screen.getByRole('button', { name: 'Поля' }));
+    expect(screen.queryByRole('button', { name: /Уязвимый Ребёнок/ })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: /Изменить: Карта режимов/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Уязвимый Ребёнок/ }));
+    await waitFor(() => expect(saved()).toBeTruthy(), { timeout: 2500 });
+    expect(saved().modeIds).toContain('vulnerable_child');
+    expect(screen.getByRole('button', { name: /Готово: Карта режимов/ })).toBeTruthy();
   });
 });
 

@@ -171,3 +171,4 @@
   `webapp/src/sections/practice/taskRowState.ts:6` и
   `webapp/src/sections/PracticeSection.tsx:116-117` (`ALL_SCHEMAS.some`), хотя
   мини-апп для того же берёт `findLegacyTaskTarget` из `shared/src/tasks/taskTitle.ts`.
+- **Мини-апп: вкладка «Поля» концептуализации по-прежнему показывает все 20 схем и все режимы сразу.** На сайте (#885) карточки «Актуальные схемы» и «Карта режимов» показывают только выбранное и раскрывают выбор по «Изменить» (`webapp/src/components/therapist/concept/ConceptPickCard.tsx`, `useEditToggle.ts`). В мини-аппе — `schema-miniapp/src/components/therapistClientSheet/conceptSheet/ConceptFieldsView.tsx`, `ConceptSchemaChips.tsx`. Не перенесено осознанно: кабинет терапевта переезжает на сайт (план одной версии, #754), а отзыв терапевта был про сайт. Перенести, если терапевты продолжат работать в мини-аппе: компонент карточки вынести в `shared/`.

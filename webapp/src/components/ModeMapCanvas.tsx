@@ -5,11 +5,9 @@ import {
   type Connection, type NodeTypes, type Viewport,
   type useNodesState, type useEdgesState,
 } from '@xyflow/react';
-import { api, type ModeMapNode, type ModeMapEdge, type ModeMapKind, type UserId } from '../api';
+import { type ModeMapNode, type ModeMapEdge, type ModeMapKind, type UserId } from '../api';
 import { NODE_TYPES, EDGE_TYPES } from './modeMapRegistry';
 import { NODE_DEFAULT_SIZES, DRAG_TYPE } from './modeMapData';
-import { getSchemaById } from '../schemaTherapyData';
-import { hueStyle, DOMAIN_HUE } from '../lib/tone';
 import { SaveStatusLine, type SaveStatus } from '../../../shared/src/therapy/SaveStatusLine';
 import '../styles/sheet-modemap.css';
 import { ModeMapContextMenu, type MenuItem } from './ModeMapContextMenu';
@@ -24,7 +22,6 @@ import {
   edgeColor, makeMarker, edgeStyle, toFlowNodes, toFlowEdges,
 } from './modeMapFlow';
 import { MMIcon } from './modeMapIcons';
-import { useTr } from '../utils/addressForm';
 import { TbBtn, TbSep } from './modeMap/ToolbarControls';
 import { Dropdown } from './Dropdown';
 import { DownloadMenu } from './modeMap/DownloadMenu';
@@ -40,7 +37,6 @@ export interface CanvasProps {
   onEdgesChange: ReturnType<typeof useEdgesState<FlowEdge>>[2];
   setSelectedNodeId: (id: string | null) => void;
   setSelectedEdgeId: (id: string | null) => void;
-  selectedNodeId: string | null;
   saveStatus: SaveStatus; savedAt: Date | null; onRetrySave: () => void; // строка статуса — SaveStatusLine (issue #879)
   scheduleSave: (ns: FlowNode[], es: FlowEdge[]) => void;
   pushHistory: () => void;
@@ -51,34 +47,26 @@ export interface CanvasProps {
 }
 
 export function ModeMapCanvas({ clientId, mapId, kind, nodes, edges, setNodes, setEdges, onNodesChange, onEdgesChange,
-  setSelectedNodeId, setSelectedEdgeId, selectedNodeId, saveStatus, savedAt, onRetrySave, scheduleSave,
+  setSelectedNodeId, setSelectedEdgeId, saveStatus, savedAt, onRetrySave, scheduleSave,
   pushHistory, nodesRef, edgesRef, onUndo, onRedo, canUndo, canRedo }: CanvasProps) {
   const { screenToFlowPosition, zoomIn, zoomOut, fitView, setViewport } = useReactFlow();
-  const tr = useTr();
 
   const [snap, setSnap] = useState(false);
   const [showLegend, setShowLegend] = useState(() => localStorage.getItem('modemap_legend') === '1');
-  const [showGuide, setShowGuide] = useState(() => localStorage.getItem('modemap_guide') !== '0');
+  // Сохранённый выбор — как есть; без него подсказки открыты только на почти пустой карте
+  // (карта приходит вместе с редактором, ключ — id карты: узлы известны на монтировании).
+  const [showGuide, setShowGuide] = useState(() => {
+    const saved = localStorage.getItem('modemap_guide');
+    return saved === null ? nodes.length < 3 : saved !== '0';
+  });
   const [showZones, setShowZones] = useState(() => localStorage.getItem('modemap_zones') === '1');
   const [tplOpen, setTplOpen] = useState(false);
   const [dlOpen, setDlOpen] = useState(false);
   const [keysOpen, setKeysOpen] = useState(false);
-  const [schemasOpen, setSchemasOpen] = useState(false);
-  const [clientSchemaIds, setClientSchemaIds] = useState<string[] | 'failed' | null>(null);
   const [menu, setMenu] = useState<{ x: number; y: number; items: MenuItem[] } | null>(null);
   const tplWrapRef = useRef<HTMLDivElement>(null);
   const keysWrapRef = useRef<HTMLDivElement>(null);
-  const schemasWrapRef = useRef<HTMLDivElement>(null);
 
-  // Схемы клиента грузятся при первом открытии панели; 'failed' ≠ пустой список
-  const openSchemas = useCallback(() => {
-    setSchemasOpen(o => !o); setTplOpen(false); setDlOpen(false);
-    if (clientSchemaIds === null) {
-      api.getConceptualization(clientId)
-        .then(c => setClientSchemaIds(Array.isArray(c?.schemaIds) ? c!.schemaIds : []))
-        .catch(() => setClientSchemaIds('failed')); // не [] — иначе «схем нет» вместо «не загрузилось»
-    }
-  }, [clientId, clientSchemaIds]);
   // Desktop (fine pointer) — keyboard hints only make sense there
   const isDesktop = typeof window !== 'undefined' && window.matchMedia('(min-width: 900px) and (pointer: fine)').matches;
 
@@ -363,31 +351,6 @@ export function ModeMapCanvas({ clientId, mapId, kind, nodes, edges, setNodes, s
                   <button onClick={() => { void fromConcept.generate(); setTplOpen(false); }} className="mm2-item">
                     Из концептуализации клиента
                   </button>
-                </Dropdown>
-              )}
-            </div>
-            <div ref={schemasWrapRef} className="mm2-tb">
-              <TbBtn label="Схемы клиента — привязать к выбранному режиму" onClick={openSchemas} active={schemasOpen} caret><MMIcon name="target" size={17} /></TbBtn>
-              {schemasOpen && (
-                <Dropdown anchorRef={schemasWrapRef} onClose={() => setSchemasOpen(false)}>
-                  <div className="mm2-drop-head">Схемы клиента</div>
-                  <div className="mm2-drop-note">
-                    {selectedNodeId ? tr('Нажми, чтобы привязать к выбранному режиму', 'Нажмите, чтобы привязать к выбранному режиму') : tr('Сначала выбери режим на холсте', 'Сначала выберите режим на холсте')}
-                  </div>
-                  {clientSchemaIds === null && <div className="mm2-drop-note">Загрузка…</div>}
-                  {clientSchemaIds === 'failed' ? <div className="mm2-drop-note is-err">Не удалось загрузить схемы клиента</div> : clientSchemaIds?.length === 0 && <div className="mm2-drop-note">У клиента пока нет отмеченных схем</div>}
-                  {Array.isArray(clientSchemaIds) && clientSchemaIds.map(sid => {
-                    const s = getSchemaById(sid);
-                    if (!s) return null;
-                    return (
-                      <button key={sid} disabled={!selectedNodeId}
-                        onClick={() => { if (selectedNodeId) { patchNodeData(selectedNodeId, { schemaId: sid }); setSchemasOpen(false); } }}
-                        className="mm2-item" style={hueStyle(DOMAIN_HUE[s.domainId])}>
-                        <i className="ds-dot tone-fill" />
-                        <span>{s.name}</span>
-                      </button>
-                    );
-                  })}
                 </Dropdown>
               )}
             </div>

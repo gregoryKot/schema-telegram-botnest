@@ -41,7 +41,8 @@
   border: none; border-bottom: 2px solid var(--accent); outline: none; width: 260px; max-width: 100%; padding: 1px 0;
 }
 .tk-error { font-size: 12px; color: var(--err); }
-.tk-badges { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; white-space: nowrap; }
+.tk-badges { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; align-items: center; white-space: nowrap; }
+.tk-meta { font-size: 13px; color: var(--text-sub); white-space: normal; }
 .tk-actions { display: flex; gap: 8px; align-items: center; white-space: nowrap; }
 .tk-actions-main { display: flex; gap: 8px; }
 .tk-head .ds-tabs { margin: 0 calc(-1 * (var(--tk-center) + var(--tk-gutter))); padding: 0 calc(var(--tk-center) + var(--tk-gutter)); }

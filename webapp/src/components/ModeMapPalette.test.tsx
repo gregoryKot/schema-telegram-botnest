@@ -16,6 +16,7 @@ import {
 import { ModeMapPalette } from './ModeMapPalette';
 import type { TherapistCustomMode } from '../api';
 import { AddressFormContext } from '../utils/addressForm';
+import { ModeMapConceptProvider } from './modeMap/ModeMapConceptProvider';
 
 const getConceptualization = vi.fn();
 const listCustomModes = vi.fn();
@@ -40,7 +41,9 @@ afterEach(() => cleanup());
 function renderPalette(onAdd = vi.fn(), onAddMany = vi.fn(), form: 'ty' | 'vy' = 'ty') {
   render(
     <AddressFormContext.Provider value={{ form, setForm: vi.fn() }}>
-      <ModeMapPalette onAdd={onAdd} onAddMany={onAddMany} clientId={7} />
+      <ModeMapConceptProvider clientId={7}>
+        <ModeMapPalette onAdd={onAdd} onAddMany={onAddMany} />
+      </ModeMapConceptProvider>
     </AddressFormContext.Provider>,
   );
   return { onAdd, onAddMany };

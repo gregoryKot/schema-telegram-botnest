@@ -2,13 +2,9 @@
 .tcp-fields { display: flex; flex-direction: column; gap: 52px; min-width: 0; max-width: 880px; }
 
 /* ── Прогресс и якоря ── */
-.tcp-progress { display: flex; flex-direction: column; gap: 12px; }
-.tcp-count { font-family: var(--serif); font-size: 30px; line-height: 1.2; margin-top: -8px; }
-.tcp-count span { font-size: 18px; color: var(--text-faint); }
-.tcp-bars { display: flex; gap: 3px; }
-.tcp-bars i { flex: 1; height: 5px; border-radius: 3px; background: var(--line-strong); }
-.tcp-bars i.is-on { background: var(--accent); }
-.tcp-anchors { display: flex; flex-wrap: wrap; gap: 4px; }
+.tcp-progress { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; }
+.tcp-fill { font-size: 13px; color: var(--text-sub); white-space: nowrap; }
+.tcp-anchors { display: flex; flex-wrap: wrap; gap: 4px; min-width: 0; }
 .tcp-anchor {
   display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 6px 10px;
   background: var(--paper-sunk); border: none; border-radius: 8px; cursor: pointer;
@@ -32,7 +28,16 @@
   background: var(--paper-tint); color: var(--text-muted); border: 1px solid var(--line);
   cursor: pointer; white-space: nowrap;
 }
-.tcp-schema-btn.is-on { font-weight: 600; color: #fff; border-color: transparent; }
+.tcp-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+/* Выбранная схема — насыщенный фон домена. Две классовые части в селекторе: иначе
+   фон .tcp-schema-btn (позже .tone-fill в каскаде) перебивает заливку и белый
+   текст остаётся на бледном. */
+.tcp-schema-btn.is-on { font-weight: 600; color: #fff; border-color: transparent; background: oklch(0.58 0.12 var(--h)); }
+.tcp-schema-btn--static { cursor: default; }
+/* Шапка карточки выбора: заголовок слева, «Изменить / Готово» справа. */
+.tcp-pick-head { align-items: center; margin-bottom: 16px; flex-wrap: nowrap; }
+.tcp-pick-title { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 12px; min-width: 0; }
+.tcp-pick-head .ds-btn { flex-shrink: 0; }
 
 /* ── Таймлайн раннего опыта ── */
 .tcp-timeline { display: grid; grid-template-columns: repeat(3, 1fr); position: relative; margin-bottom: 14px; }

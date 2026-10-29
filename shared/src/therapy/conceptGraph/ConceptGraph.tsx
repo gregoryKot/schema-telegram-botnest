@@ -8,7 +8,6 @@ import { useConceptGraphTracking } from './useConceptGraphTracking';
 import { ConceptDiagram } from './diagram/ConceptDiagram';
 import { ConceptAddPanel } from './ConceptAddPanel';
 import type { AddSection } from './diagram/diagramTypes';
-import { ConceptGaps } from './ConceptGaps';
 import { ConceptGraphIntro } from './ConceptGraphIntro';
 import { ConceptModeEditor } from './ConceptModeEditor';
 import { ConceptSchemaEditor } from './ConceptSchemaEditor';
@@ -79,7 +78,7 @@ export function ConceptGraph({
         gap: 'var(--space-12)',
       }}
     >
-      <ConceptGraphIntro />
+      <ConceptGraphIntro graph={graph} />
       <ConceptDiagram
         graph={graph}
         openId={
@@ -135,7 +134,6 @@ export function ConceptGraph({
           <b>Как режимы сменяют друг друга:</b> <span>{graph.sequence}</span>
         </p>
       )}
-      <ConceptGaps gaps={graph.gaps} />
     </div>
   );
 }

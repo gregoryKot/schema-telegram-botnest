@@ -50,7 +50,37 @@ const CASE = {
   ],
 };
 
+const guideButton = () =>
+  screen.getByRole('button', { name: /Как читать схему/ });
+const openGuide = () => fireEvent.click(guideButton());
+
 describe('ConceptGraph: общий вид', () => {
+  it('«Как читать схему»: на пустой схеме открыта, на заполненной свёрнута и открывается кликом, подсказки о пробелах внутри', () => {
+    const { unmount } = render(<Harness initial={{}} />);
+    expect(guideButton().getAttribute('aria-expanded')).toBe('true');
+    expect(
+      screen.getByText(/Схема случая: в центре базовые потребности/),
+    ).toBeTruthy();
+    unmount();
+
+    render(<Harness initial={{ modeIds: ['detached_protector'] }} />);
+    expect(guideButton().getAttribute('aria-expanded')).toBe('false');
+    expect(
+      screen.queryByText(/Схема случая: в центре базовые потребности/),
+    ).toBeNull();
+    expect(screen.queryByRole('note')).toBeNull();
+    openGuide();
+    expect(
+      screen.getByText(/Схема случая: в центре базовые потребности/),
+    ).toBeTruthy();
+    expect(screen.getAllByRole('note')[0].textContent).toMatch(/Копинги есть/);
+  });
+
+  it('пустая по режимам, но со схемой — не пустая: инструкция свёрнута', () => {
+    render(<Harness initial={{ schemaIds: ['emotional_deprivation'] }} />);
+    expect(guideButton().getAttribute('aria-expanded')).toBe('false');
+  });
+
   it('пустая концептуализация: вводный текст дословно, три заготовки, круг с пятью потребностями, ни линий, ни подсказок', () => {
     render(<Harness initial={{}} />);
     expect(
@@ -89,6 +119,7 @@ describe('ConceptGraph: общий вид', () => {
 
   it('форма «вы» меняет вводный текст и подсказку о связях', () => {
     render(<Harness initial={{ modeIds: ['vulnerable_child'] }} form="vy" />);
+    openGuide();
     expect(
       screen.getByText(
         'Нажмите на схему или режим, чтобы записать текст — он появится на схеме. Карта меняется вместе с терапией — прошлые версии остаются в истории.',
@@ -183,6 +214,7 @@ describe('ConceptGraph: общий вид', () => {
         }}
       />,
     );
+    openGuide();
     expect(screen.getAllByRole('note')[0].textContent).toMatch(
       /Копинги есть, а детского режима нет/,
     );

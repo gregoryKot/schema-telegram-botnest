@@ -1,5 +1,5 @@
 import { IdentityDot } from '../../components/IdentityDot';
-import { colorMix } from '../../utils/colorMix';
+import { conceptChipStyle } from './conceptChipStyle';
 
 /**
  * Пилюля-переключатель с точкой цвета: режимы, схемы, потребности в графе и в
@@ -14,34 +14,32 @@ export function ConceptToggleChip({
   active,
   onClick,
   title,
+  readOnly = false,
 }: {
   label: string;
   color: string;
   active: boolean;
-  onClick: () => void;
+  onClick?: () => void;
   title?: string;
+  /** Только показать: не кнопка, без зоны нажатия (спокойный вид «выбрано»). */
+  readOnly?: boolean;
 }) {
+  const style = conceptChipStyle(color, active, readOnly);
+  const content = (
+    <>
+      <IdentityDot color={color} size={7} /> {label}
+    </>
+  );
+  if (readOnly) return <span style={style}>{content}</span>;
   return (
     <button
       type="button"
       aria-pressed={active}
       title={title}
       onClick={onClick}
-      style={{
-        minHeight: 44,
-        padding: '5px 12px',
-        borderRadius: 'var(--r-20)',
-        border: 'none',
-        cursor: 'pointer',
-        background: active ? colorMix(color, 22) : 'rgba(var(--fg-rgb),0.05)',
-        boxShadow: active ? `inset 0 0 0 1.5px ${colorMix(color, 60)}` : 'none',
-        color: active ? 'var(--text)' : 'var(--text-sub)',
-        fontSize: 12,
-        fontWeight: active ? 600 : 400,
-        transition: 'all 0.15s ease',
-      }}
+      style={style}
     >
-      <IdentityDot color={color} size={7} /> {label}
+      {content}
     </button>
   );
 }

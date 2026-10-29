@@ -17,7 +17,7 @@ import { useModeMapAutosave } from './useModeMapAutosave';
 import { useIsMobile } from './useIsMobile';
 import { collapseBtnStyle } from './modeMap/paletteStyle';
 import { useSettleFresh } from './modeMap/useSettleFresh';
-
+import { ModeMapConceptProvider } from './modeMap/ModeMapConceptProvider';
 
 // ─── Public component ─────────────────────────────────────────────────────────
 
@@ -234,14 +234,14 @@ export function ModeMapEditor({ mapId, clientId, kind, initialNodes, initialEdge
 
   const paletteCol = (
     <div style={{ position: 'relative', display: 'flex' }}>
-      <ModeMapPalette onAdd={handleAddNode} onAddMany={handleAddMany} clientId={clientId} />
+      <ModeMapPalette onAdd={handleAddNode} onAddMany={handleAddMany} />
       <button onClick={() => setPaletteOpen(false)} title="Скрыть панель режимов" aria-label="Скрыть панель режимов"
         style={collapseBtnStyle('left')}>‹</button>
     </div>
   );
 
   return (
-    <ReactFlowProvider>
+    <ReactFlowProvider><ModeMapConceptProvider clientId={clientId}>
       <div style={{ display: 'flex', height: '100%', background: 'var(--bg)', position: 'relative' }}>
         {/* Palette: inline column (desktop) or floating drawer (mobile) */}
         {paletteOpen && !mobile && paletteCol}
@@ -256,7 +256,7 @@ export function ModeMapEditor({ mapId, clientId, kind, initialNodes, initialEdge
 
         <ModeMapCanvas clientId={clientId} mapId={mapId} kind={kind} nodes={nodes} edges={edges} setNodes={setNodes} setEdges={setEdges}
           onNodesChange={onNodesChange} onEdgesChange={onEdgesChange}
-          setSelectedNodeId={setSelectedNodeId} setSelectedEdgeId={setSelectedEdgeId} selectedNodeId={selectedNodeId}
+          setSelectedNodeId={setSelectedNodeId} setSelectedEdgeId={setSelectedEdgeId}
           saveStatus={saveStatus} savedAt={savedAt} onRetrySave={retrySave} scheduleSave={scheduleSave}
           pushHistory={pushHistory} nodesRef={nodesRef} edgesRef={edgesRef}
           onUndo={undo} onRedo={redo} canUndo={canUndo} canRedo={canRedo} />
@@ -267,9 +267,9 @@ export function ModeMapEditor({ mapId, clientId, kind, initialNodes, initialEdge
         {/* Mobile drawers */}
         {mobile && paletteOpen && overlay(
           <button onClick={() => setPaletteOpen(false)} title="Скрыть" aria-label="Скрыть" style={collapseBtnStyle('left')}>‹</button>,
-          <ModeMapPalette onAdd={handleAddNode} onAddMany={handleAddMany} clientId={clientId} />, 'left')}
+          <ModeMapPalette onAdd={handleAddNode} onAddMany={handleAddMany} />, 'left')}
         {mobile && (nodeEditor || edgeEditor) && overlay(null, nodeEditor || edgeEditor, 'right')}
       </div>
-    </ReactFlowProvider>
+    </ModeMapConceptProvider></ReactFlowProvider>
   );
 }
