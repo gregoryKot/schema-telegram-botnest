@@ -30,7 +30,7 @@
 | check-dto-string-bounds.mjs | строковое поле DTO без верхней границы длины | `scripts/dto-string-bounds-baseline.json` | нет | checks |
 | check-e2e-in-ci.mjs | `test/*.e2e-spec.ts`, который не запускается ни одним шагом workflow | — | нет | checks |
 | check-env-registry.mjs | чтение env мимо реестра и протухшие записи реестра | — (реестр `src/infra/env-registry.entries*.ts`) | нет | checks |
-| check-eslint-ratchet.mjs | рост числа ошибок и варнингов eslint | `scripts/eslint-baseline.json` | да | eslint |
+| check-eslint-ratchet.mjs | рост числа ошибок и варнингов eslint; полный режим — по каталогам верхнего уровня отдельными процессами (правила — `eslint-ratchet-rules.mjs`), локально `--changed` — только файлы против `origin/main` | `scripts/eslint-baseline.json` | да | eslint |
 | check-feature-parity.mjs | роут бэкенда, вызываемый только одним фронтендом | `scripts/feature-parity-baseline.json` | да | checks |
 | check-file-size-ratchet.mjs | рост файла из baseline, новый файл больше 300 строк | `scripts/file-size-baseline.json` | да | backend |
 | check-frontend-coverage-ratchet.mjs | просадка покрытия webapp, schema-miniapp, shared (`--package`) | `scripts/frontend-coverage-baseline.json` | да | webapp, shared, miniapp |
@@ -74,7 +74,8 @@ npx tsc --noEmit -p tsconfig.build.json            # типы бэкенда (т
 npx jest                                           # юнит-тесты; один файл: npx jest src/путь/x.spec.ts
 npm run test:cov                                   # jest --coverage; гейт: node scripts/check-coverage-ratchet.mjs
 npx eslint src --quiet                             # быстрый линт (README); npm run lint запускает eslint с --fix
-node scripts/check-eslint-ratchet.mjs              # eslint-храповик (нужен npm ci во всех пакетах + prisma generate)
+node scripts/check-eslint-ratchet.mjs              # eslint-храповик, полный (нужен npm ci во всех пакетах + prisma generate; ~4 мин)
+node scripts/check-eslint-ratchet.mjs --changed    # то же по файлам, отличающимся от origin/main (секунды; любая находка — красное)
 npm run build                                      # nest build; npm run start:dev — бэкенд с watch
 npm run build --prefix webapp                      # tsc -b && vite build (в прод-сборке нужен VITE_BOT_USERNAME)
 npm run typecheck --prefix schema-miniapp          # tsc --noEmit -p tsconfig.typecheck.json
