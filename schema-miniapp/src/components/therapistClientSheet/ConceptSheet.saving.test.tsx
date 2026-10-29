@@ -139,21 +139,24 @@ describe('ConceptSheet — сохранение', () => {
     );
   });
 
-  // Issue #879: ошибка сохранения — видимая строка «Не сохранилось» + «Повторить»
+  // Issue #879: ошибка сохранения — видимая строка с причиной + «Повторить»
   // (общий SaveStatusLine), повтор зовёт тот же saveConcept и шлёт concept_save_retry.
-  it('conceptError задан — «Не сохранилось», клик по «Повторить» зовёт saveConcept и шлёт concept_save_retry', () => {
+  // Находка #880: причина из conceptError видна на экране, а не общее «Не сохранилось».
+  it('conceptError задан — видна причина отказа, клик по «Повторить» зовёт saveConcept и шлёт concept_save_retry', () => {
     const saveConcept = vi.fn();
     render(
       <ConceptSheet
         selectedClient={makeClient()}
         detail={makeDetail({
           conceptDirty: true,
-          conceptError: 'Не удалось сохранить',
+          conceptError: 'Ошибка сервера. Попробуй позже.',
           saveConcept,
         })}
       />,
     );
-    expect(screen.getByRole('alert').textContent).toContain('Не сохранилось');
+    const alert = screen.getByRole('alert');
+    expect(alert.textContent).toContain('Ошибка сервера. Попробуй позже.');
+    expect(alert.textContent).not.toContain('Не сохранилось');
     expect(trackEvent).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole('button', { name: 'Повторить' }));
     expect(saveConcept).toHaveBeenCalledTimes(1);

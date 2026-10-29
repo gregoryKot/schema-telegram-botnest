@@ -6,12 +6,11 @@ import type { ClientDetail } from '../types';
 
 // Низ листа концептуализации: кнопка сохранения + строка статуса (issue #879,
 // шаг A). Кнопка — одно главное действие («Сохранить концептуализацию» при
-// правках, иначе неактивная «Сохранено»); состояние — «Сохраняю…», «✓ Сохранено
-// в ЧЧ:ММ», «Не сохранилось» + «Повторить» — рисует общий SaveStatusLine, тот
-// же, что на вкладке сайта и на холсте карты режимов. Повтор зовёт тот же
-// saveConcept: после ошибки лист остаётся «грязным» — и шлёт concept_save_retry
-// литералом (трипваер analytics-sync, src/security; константа
-// CONCEPT_SAVE_RETRY_EVENT — shared/src/share/analytics.ts).
+// правках, иначе неактивная «Сохранено»); статус — «Сохраняю…», «✓ Сохранено в
+// ЧЧ:ММ», причина отказа (conceptError) + «Повторить» — рисует общий
+// SaveStatusLine, тот же, что на сайте. Повтор зовёт тот же saveConcept (лист
+// после ошибки остаётся «грязным») и шлёт concept_save_retry литералом (трипваер
+// analytics-sync, src/security; константа — shared/src/share/analytics.ts).
 
 export function conceptSaveStatus(d: {
   conceptSaving: boolean;
@@ -68,6 +67,7 @@ export function ConceptSaveBar({ detail }: { detail: ClientDetail }) {
         <SaveStatusLine
           status={status}
           savedAt={concept?.updatedAt}
+          errorText={conceptError || undefined}
           onRetry={retry}
         />
       </div>
