@@ -522,7 +522,7 @@
   "scripts/check-dto-string-bounds.mjs": 141,
   "scripts/check-e2e-in-ci.mjs": 118,
   "scripts/check-env-registry.mjs": 162,
-  "scripts/check-eslint-ratchet.mjs": 142,
+  "scripts/check-eslint-ratchet.mjs": 138,
   "scripts/check-feature-parity.mjs": 111,
   "scripts/check-file-size-ratchet.mjs": 161,
   "scripts/check-frontend-coverage-ratchet.mjs": 164,

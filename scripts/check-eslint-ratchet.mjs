@@ -7,136 +7,132 @@
 // с закоммиченным бейслайном. Рост роняет CI; снижение приветствуется —
 // обнови бейслайн: node scripts/check-eslint-ratchet.mjs --update
 //
-// Требует установленных node_modules во всех трёх пакетах (корень, webapp,
-// schema-miniapp) и прогнанного prisma generate — иначе typed-линт видит
-// неразрешённые типы как any и счётчики уезжают вверх.
+// Режимы:
+//   (нет флагов) — полный: eslint по каждому каталогу верхнего уровня отдельным
+//     дочерним процессом (с кучей 4 ГБ: один src/ занимает ~3.2 ГБ), отчёты
+//     суммируются и сверяются с бейслайном. Так гоняет CI (джоба eslint).
+//   --changed — локальный частичный: только файлы, отличающиеся от origin/main
+//     (плюс неотслеживаемые). Бейслайн тут не применим — красным считается
+//     любая находка в изменённом файле; полную сумму по дереву сверяет CI.
+//
+// Требует установленных node_modules во всех четырёх пакетах (корень, webapp,
+// schema-miniapp, shared) и прогнанного prisma generate — иначе typed-линт
+// видит неразрешённые типы как any и счётчики уезжают вверх.
 import { spawnSync } from 'child_process';
-import { readFileSync, writeFileSync } from 'fs';
-import { join } from 'path';
+import { existsSync, readFileSync, readdirSync, writeFileSync } from 'fs';
+import { join, resolve } from 'path';
+import {
+  changedTargets,
+  lintShards,
+  summarize,
+  verdictChanged,
+  verdictFull,
+} from './eslint-ratchet-rules.mjs';
 
 const ROOT = join(import.meta.dirname, '..');
 const BASELINE_PATH = join(ROOT, 'scripts', 'eslint-baseline.json');
 const UPDATE = process.argv.includes('--update');
+const CHANGED = process.argv.includes('--changed');
+// Швы для теста гейта (src/test-support/gates/): eslint по всему дереву в
+// песочницу не поднять — ему нужен tsconfig, node_modules и сам бинарь.
+// RATCHET_REPORT_FILE подсовывает готовый отчёт вместо запуска;
+// RATCHET_ESLINT_BIN подменяет бинарь eslint (проверка нарезки и --changed).
+const REPORT_FILE = process.env.RATCHET_REPORT_FILE;
+const ESLINT_BIN = resolve(
+  ROOT,
+  process.env.RATCHET_ESLINT_BIN ?? 'node_modules/eslint/bin/eslint.js',
+);
 
-// Шов для теста гейта (src/test-support/gates/): eslint по всему дереву в
-// песочницу не поднять — ему нужен tsconfig, node_modules и сам бинарь. А
-// сломаться молча может как раз вторая половина скрипта: разбор отчёта и
-// сверка с бейслайном. RATCHET_REPORT_FILE подсовывает готовый отчёт вместо
-// запуска — логика сравнения дальше та же самая, что и в CI.
-const reportFile = process.env.RATCHET_REPORT_FILE;
-const res = reportFile
-  ? { stdout: readFileSync(reportFile, 'utf8'), stderr: '' }
-  : spawnSync(
-      'npx',
-      ['eslint', '.', '--format', 'json', '--ignore-pattern', 'game/**'],
-      { cwd: ROOT, encoding: 'utf8', maxBuffer: 512 * 1024 * 1024 },
-    );
-// eslint выходит с 1 при наличии ошибок — это норма; фатальны только сбои
-// самого запуска (нет бинаря, кривой конфиг → пустой/невалидный stdout).
-let report;
-try {
-  report = JSON.parse(res.stdout);
-} catch {
-  console.error(
-    '❌ eslint не отработал:\n' + (res.stderr || res.stdout).slice(0, 2000),
-  );
+function fail(msg) {
+  console.error(msg);
   process.exit(1);
 }
 
-let errors = 0;
-let warnings = 0;
-const byRule = {};
-for (const f of report) {
-  errors += f.errorCount;
-  warnings += f.warningCount;
-  for (const m of f.messages) {
-    const rule = m.ruleId ?? '(parse)';
-    byRule[rule] = (byRule[rule] || 0) + 1;
+// eslint выходит с 1 при наличии ошибок — это норма; фатальны только сбои
+// самого запуска (нет бинаря, кривой конфиг, OOM → пустой/невалидный stdout).
+function parseReport(res, what) {
+  try {
+    return JSON.parse(res.stdout);
+  } catch {
+    return fail(
+      `❌ eslint не отработал (${what}):\n` +
+        (res.stderr || res.stdout).slice(0, 2000),
+    );
   }
 }
-const total = errors + warnings;
+
+function runEslint(targets) {
+  const res = spawnSync(
+    process.execPath,
+    [
+      '--max-old-space-size=4096',
+      ESLINT_BIN,
+      ...targets,
+      '--format',
+      'json',
+      '--ignore-pattern',
+      'game/**',
+      // Каталог без линтуемых файлов (docs/, prisma/) и явно переданный
+      // игнорируемый файл — не ошибка и не варнинг в счётчике.
+      '--no-error-on-unmatched-pattern',
+      '--no-warn-ignored',
+    ],
+    { cwd: ROOT, encoding: 'utf8', maxBuffer: 512 * 1024 * 1024 },
+  );
+  return parseReport(res, targets.join(' '));
+}
+
+function git(...args) {
+  const res = spawnSync('git', args, { cwd: ROOT, encoding: 'utf8' });
+  if (res.status !== 0) fail(`❌ git ${args[0]} не отработал:\n${res.stderr}`);
+  return res.stdout;
+}
+
+function collectReport() {
+  if (REPORT_FILE)
+    return parseReport(
+      { stdout: readFileSync(REPORT_FILE, 'utf8') },
+      REPORT_FILE,
+    );
+  if (CHANGED) {
+    const targets = changedTargets(
+      git('diff', '--name-only', '--diff-filter=ACMR', 'origin/main'),
+      git('ls-files', '--others', '--exclude-standard'),
+    ).filter((p) => existsSync(join(ROOT, p)));
+    if (!targets.length) {
+      console.log('✓ eslint-храповик (--changed): изменённых файлов нет');
+      process.exit(0);
+    }
+    return runEslint(targets);
+  }
+  const report = [];
+  for (const shard of lintShards(readdirSync(ROOT, { withFileTypes: true }))) {
+    console.log(`  eslint ${shard.join(' ')}`);
+    report.push(...runEslint(shard));
+  }
+  return report;
+}
+
+const report = collectReport();
+const sum = summarize(report);
 
 if (UPDATE) {
-  writeFileSync(
-    BASELINE_PATH,
-    JSON.stringify({ total, errors, warnings, byRule }, null, 2) + '\n',
-  );
+  if (CHANGED) fail('--update обновляет бейслайн только в полном режиме.');
+  writeFileSync(BASELINE_PATH, JSON.stringify(sum, null, 2) + '\n');
   console.log(
-    `Бейслайн обновлён: ${total} (errors ${errors}, warnings ${warnings}).`,
+    `Бейслайн обновлён: ${sum.total} (errors ${sum.errors}, warnings ${sum.warnings}).`,
   );
   process.exit(0);
 }
+
+if (CHANGED) process.exit(verdictChanged(report, sum));
 
 let baseline;
 try {
   baseline = JSON.parse(readFileSync(BASELINE_PATH, 'utf8'));
 } catch {
-  console.error(
+  fail(
     'Нет бейслайна — сгенерируй: node scripts/check-eslint-ratchet.mjs --update',
   );
-  process.exit(1);
 }
-
-if (total > baseline.total) {
-  // Диагностика environment-расхождений: какой prettier резолвится и
-  // совпадает ли содержимое файла (см. инцидент PR #64).
-  try {
-    const { createRequire } = await import('module');
-    const req = createRequire(join(ROOT, 'package.json'));
-    const pPath = req.resolve('prettier/package.json');
-    const pVer = JSON.parse(readFileSync(pPath, 'utf8')).version;
-    let miniVer = '(нет)';
-    try {
-      const reqMini = createRequire(join(ROOT, 'schema-miniapp/package.json'));
-      const mp = reqMini.resolve('prettier/package.json');
-      miniVer = JSON.parse(readFileSync(mp, 'utf8')).version + ' @ ' + mp;
-    } catch {
-      /* prettier не установлен в miniapp — норм */
-    }
-    const { createHash } = await import('crypto');
-    const suspect = join(ROOT, 'schema-miniapp/src/components/YSQTestSheet.tsx');
-    const md5 = createHash('md5').update(readFileSync(suspect)).digest('hex');
-    console.error(
-      `   [diag] prettier(root) ${pVer} @ ${pPath}\n` +
-        `   [diag] prettier(miniapp) ${miniVer}\n` +
-        `   [diag] node ${process.version}, YSQTestSheet md5=${md5}`,
-    );
-  } catch (e) {
-    console.error('   [diag] не удалось: ' + e.message);
-  }
-  console.error(
-    `❌ eslint-храповик: счётчик вырос ${baseline.total} → ${total} ` +
-      `(errors ${baseline.errors} → ${errors}, warnings ${baseline.warnings} → ${warnings}).`,
-  );
-  console.error('Правила с ростом против бейслайна (и файлы с их вхождениями):');
-  for (const [rule, n] of Object.entries(byRule).sort((a, b) => b[1] - a[1])) {
-    const base = baseline.byRule?.[rule] ?? 0;
-    if (n <= base) continue;
-    console.error(`   ${rule}: ${base} → ${n}`);
-    for (const f of report) {
-      const hits = f.messages.filter((m) => (m.ruleId ?? '(parse)') === rule);
-      if (hits.length) {
-        console.error(`      ${f.filePath}: ${hits.length}`);
-        for (const m of hits.slice(0, 5))
-          console.error(
-            `         стр. ${m.line}: ${JSON.stringify(m.message ?? '').slice(0, 160)}`,
-          );
-      }
-    }
-  }
-  console.error(
-    'Правило №9 CLAUDE.md: ни один PR не увеличивает счётчик eslint.\n' +
-      'Почини свои вхождения (npx eslint <файл> покажет их); бейслайн\n' +
-      'обновляется только вниз: node scripts/check-eslint-ratchet.mjs --update',
-  );
-  process.exit(1);
-}
-
-if (total < baseline.total) {
-  console.log(
-    `✓ eslint-храповик: ${total} ≤ ${baseline.total} — стало лучше, ` +
-      'зафиксируй прогресс: node scripts/check-eslint-ratchet.mjs --update',
-  );
-} else {
-  console.log(`✓ eslint-храповик: ${total} (без роста)`);
-}
+process.exit(verdictFull(report, sum, baseline, ROOT));
