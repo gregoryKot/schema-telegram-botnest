@@ -21,10 +21,10 @@ export const NODE_DEFAULT_SIZES: Partial<Record<string, { width: number; height:
 export const DRAG_TYPE = 'application/modemap-node';
 
 export const GROUP_TO_TYPE: Record<string, { type: NodeType; color: string; copingSubtype?: 'over' | 'avoid' | 'surr' }> = {
-  child:                   { type: 'child',   color: 'var(--c-teal)' },
-  coping_surrender:        { type: 'coping',  color: 'var(--c-clay)', copingSubtype: 'surr' },
-  coping_avoidance:        { type: 'coping',  color: 'var(--c-clay)', copingSubtype: 'avoid' },
-  coping_overcompensation: { type: 'coping',  color: 'var(--c-clay)', copingSubtype: 'over' },
-  critic:                  { type: 'critic',  color: 'var(--c-rose)' },
-  healthy:                 { type: 'healthy', color: 'var(--c-moss)' },
+  child:                   { type: 'child',   color: TYPE_COLORS.child },
+  coping_surrender:        { type: 'coping',  color: TYPE_COLORS.coping, copingSubtype: 'surr' },
+  coping_avoidance:        { type: 'coping',  color: TYPE_COLORS.coping, copingSubtype: 'avoid' },
+  coping_overcompensation: { type: 'coping',  color: TYPE_COLORS.coping, copingSubtype: 'over' },
+  critic:                  { type: 'critic',  color: TYPE_COLORS.critic },
+  healthy:                 { type: 'healthy', color: TYPE_COLORS.healthy },
 };

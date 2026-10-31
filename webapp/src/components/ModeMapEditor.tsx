@@ -17,6 +17,7 @@ import { useModeMapAutosave } from './useModeMapAutosave';
 import { useIsMobile } from './useIsMobile';
 import { collapseBtnStyle } from './modeMap/paletteStyle';
 import { useSettleFresh } from './modeMap/useSettleFresh';
+import { useCanvasSpace } from './modeMap/useCanvasSpace';
 
 
 // ─── Public component ─────────────────────────────────────────────────────────
@@ -29,7 +30,12 @@ interface Props {
   initialEdges: ModeMapEdge[];
 }
 
-export function ModeMapEditor({ mapId, clientId, kind, initialNodes, initialEdges }: Props) {
+// Провайдер снаружи: добавлению фигур из палитры нужен вьюпорт холста (useCanvasSpace).
+export function ModeMapEditor(props: Props) {
+  return <ReactFlowProvider><EditorBody {...props} /></ReactFlowProvider>;
+}
+
+function EditorBody({ mapId, clientId, kind, initialNodes, initialEdges }: Props) {
   const [nodes, setNodes, onNodesChange] = useNodesState<FlowNode>(toFlowNodes(initialNodes));
   const [edges, setEdges, onEdgesChange] = useEdgesState<FlowEdge>(toFlowEdges(initialEdges));
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
@@ -61,27 +67,21 @@ export function ModeMapEditor({ mapId, clientId, kind, initialNodes, initialEdge
     nodesRef, edgesRef, setNodes, setEdges, scheduleSave, clearSelection,
   });
 
-  const handleAddNode = useCallback((partial: Omit<ModeMapNode, 'position'>) => {
-    const pos = { x: 220 + Math.random() * 280, y: 100 + Math.random() * 200 };
-    const defaultSize = NODE_DEFAULT_SIZES[partial.type] ?? {};
-    pushHistory();
-    const newNodes = [...nodes, { id: partial.id, type: partial.type, position: pos, data: partial.data as Record<string, unknown>, ...defaultSize }];
-    setNodes(newNodes); scheduleSave(newNodes, edges);
-  }, [nodes, edges, setNodes, scheduleSave, pushHistory]);
-
-  // Add several nodes at once (e.g. "вынести все режимы клиента") in a tidy grid.
+  // Фигуры из палитры (одна или «вынести все режимы клиента») ложатся на свободные
+  // места видимой области, а не случайно друг на друга (useCanvasSpace).
+  const { place } = useCanvasSpace();
   const handleAddMany = useCallback((partials: Omit<ModeMapNode, 'position'>[]) => {
     if (!partials.length) return;
     pushHistory();
-    const COLS = 4, GAPX = 210, GAPY = 150, x0 = 120, y0 = 80;
+    const spots = place(nodes, partials.length);
     const added = partials.map((p, i) => ({
-      id: p.id, type: p.type,
-      position: { x: x0 + (i % COLS) * GAPX, y: y0 + Math.floor(i / COLS) * GAPY },
+      id: p.id, type: p.type, position: spots[i],
       data: p.data as Record<string, unknown>, ...(NODE_DEFAULT_SIZES[p.type] ?? {}),
     }));
     const newNodes = [...nodes, ...added];
     setNodes(newNodes); scheduleSave(newNodes, edges);
-  }, [nodes, edges, setNodes, scheduleSave, pushHistory]);
+  }, [nodes, edges, setNodes, scheduleSave, pushHistory, place]);
+  const handleAddNode = useCallback((partial: Omit<ModeMapNode, 'position'>) => handleAddMany([partial]), [handleAddMany]);
 
   const handleNodeChange = useCallback((updated: ModeMapNode) => {
     pushHistory();
@@ -241,35 +241,33 @@ export function ModeMapEditor({ mapId, clientId, kind, initialNodes, initialEdge
   );
 
   return (
-    <ReactFlowProvider>
-      <div style={{ display: 'flex', height: '100%', background: 'var(--bg)', position: 'relative' }}>
-        {/* Palette: inline column (desktop) or floating drawer (mobile) */}
-        {paletteOpen && !mobile && paletteCol}
-        {!paletteOpen && (
-          <button onClick={() => setPaletteOpen(true)} title="Показать панель режимов" aria-label="Показать панель режимов"
-            style={mobile
-              ? { ...collapseBtnStyle('left'), position: 'absolute', top: 52, left: 8, zIndex: 30, borderRadius: 7, width: 30, height: 30, fontSize: 17 }
-              : { ...collapseBtnStyle('left'), position: 'static', borderRadius: '0 7px 7px 0', height: 'auto', alignSelf: 'stretch', width: 22 }}>
-            ›
-          </button>
-        )}
+    <div style={{ display: 'flex', height: '100%', background: 'var(--bg)', position: 'relative' }}>
+      {/* Palette: inline column (desktop) or floating drawer (mobile) */}
+      {paletteOpen && !mobile && paletteCol}
+      {!paletteOpen && (
+        <button onClick={() => setPaletteOpen(true)} title="Показать панель режимов" aria-label="Показать панель режимов"
+          style={mobile
+            ? { ...collapseBtnStyle('left'), position: 'absolute', top: 70, left: 8, zIndex: 30, borderRadius: 7, width: 30, height: 30, fontSize: 17 }
+            : { ...collapseBtnStyle('left'), position: 'static', borderRadius: '0 7px 7px 0', height: 'auto', alignSelf: 'stretch', width: 22 }}>
+          ›
+        </button>
+      )}
 
-        <ModeMapCanvas clientId={clientId} mapId={mapId} kind={kind} nodes={nodes} edges={edges} setNodes={setNodes} setEdges={setEdges}
-          onNodesChange={onNodesChange} onEdgesChange={onEdgesChange}
-          setSelectedNodeId={setSelectedNodeId} setSelectedEdgeId={setSelectedEdgeId} selectedNodeId={selectedNodeId}
-          saveStatus={saveStatus} savedAt={savedAt} onRetrySave={retrySave} scheduleSave={scheduleSave}
-          pushHistory={pushHistory} nodesRef={nodesRef} edgesRef={edgesRef}
-          onUndo={undo} onRedo={redo} canUndo={canUndo} canRedo={canRedo} />
+      <ModeMapCanvas clientId={clientId} mapId={mapId} kind={kind} nodes={nodes} edges={edges} setNodes={setNodes} setEdges={setEdges}
+        onNodesChange={onNodesChange} onEdgesChange={onEdgesChange}
+        setSelectedNodeId={setSelectedNodeId} setSelectedEdgeId={setSelectedEdgeId} selectedNodeId={selectedNodeId}
+        saveStatus={saveStatus} savedAt={savedAt} onRetrySave={retrySave} scheduleSave={scheduleSave}
+        pushHistory={pushHistory} nodesRef={nodesRef} edgesRef={edgesRef}
+        onUndo={undo} onRedo={redo} canUndo={canUndo} canRedo={canRedo} />
 
-        {/* Side editor: inline column (desktop) or floating drawer (mobile) */}
-        {!mobile && (nodeEditor || edgeEditor)}
+      {/* Side editor: inline column (desktop) or floating drawer (mobile) */}
+      {!mobile && (nodeEditor || edgeEditor)}
 
-        {/* Mobile drawers */}
-        {mobile && paletteOpen && overlay(
-          <button onClick={() => setPaletteOpen(false)} title="Скрыть" aria-label="Скрыть" style={collapseBtnStyle('left')}>‹</button>,
-          <ModeMapPalette onAdd={handleAddNode} onAddMany={handleAddMany} clientId={clientId} />, 'left')}
-        {mobile && (nodeEditor || edgeEditor) && overlay(null, nodeEditor || edgeEditor, 'right')}
-      </div>
-    </ReactFlowProvider>
+      {/* Mobile drawers */}
+      {mobile && paletteOpen && overlay(
+        <button onClick={() => setPaletteOpen(false)} title="Скрыть" aria-label="Скрыть" style={collapseBtnStyle('left')}>‹</button>,
+        <ModeMapPalette onAdd={handleAddNode} onAddMany={handleAddMany} clientId={clientId} />, 'left')}
+      {mobile && (nodeEditor || edgeEditor) && overlay(null, nodeEditor || edgeEditor, 'right')}
+    </div>
   );
 }

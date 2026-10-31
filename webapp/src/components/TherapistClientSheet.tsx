@@ -138,7 +138,7 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
       {/* ── CLIENT VIEW ────────────────────────────────────────────────────────── */}
       {view === 'client' && cardState !== 'card' && <ClientCardFallback state={cardState} onBack={() => switchView('list')} />}
       {view === 'client' && cardState === 'card' && selectedClient && (
-        <div className="therapist-scroll therapist-scroll--client" key={`client-${animKey}`} style={{ animation: 'fade-in 0.22s ease' }}>
+        <div className={`therapist-scroll therapist-scroll--client${clientTab === 'mode_map' ? ' is-canvas' : ''}`} key={`client-${animKey}`} style={{ animation: 'fade-in 0.22s ease' }}>
           <ClientHeader selectedClient={selectedClient} detail={detail} switchView={switchView} />
 
           {/* Tab content */}
@@ -160,7 +160,7 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
 
             {/* ── MODE MAP — keep mounted to preserve React Flow state across tab switches */}
             {selectedClient != null && clientTab === 'mode_map' && (
-              <div style={{ height: '100%', minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+              <div className="tk-mm">
                 <ModeMapSelector key={`${selectedClient.telegramId}-${canvasMapId}`} clientId={selectedClient.telegramId} initialMapId={canvasMapId ?? undefined} />
               </div>
             )}

@@ -113,8 +113,8 @@ export function NodeLabel({ id, data, light, hideSchema }: { id?: string; data: 
   const actions = useNodeActions();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(data.label);
-  const editRef = useRef<HTMLInputElement>(null);
-  useEffect(() => { if (editing) editRef.current?.focus(); }, [editing]);
+  const editRef = useRef<HTMLTextAreaElement>(null);
+  useEffect(() => { if (editing) editRef.current?.select(); }, [editing]);
 
   const display = data.display ?? 'full';
   const showNote = display !== 'name' && !!data.note;
@@ -131,16 +131,15 @@ export function NodeLabel({ id, data, light, hideSchema }: { id?: string; data: 
   return (
     <div style={{ textAlign: 'center', pointerEvents: 'all' }}>
       {editing ? (
-        <input ref={editRef} value={draft}
+        // Переносит строки, как подпись: узкий input прокручивался к концу и прятал начало («язвимый Ребёнок»).
+        <textarea ref={editRef} value={draft} rows={draft.length > 14 ? 2 : 1}
           onChange={e => setDraft(e.target.value)}
           onBlur={commit}
-          onKeyDown={e => { if (e.key === 'Enter') commit(); if (e.key === 'Escape') setEditing(false); e.stopPropagation(); }}
-          onClick={e => e.stopPropagation()}
-          onDoubleClick={e => e.stopPropagation()}
-          className="nodrag"
-          style={{ width: '90%', fontSize: fs, fontWeight: 600, textAlign: 'center',
-            border: '1px solid var(--accent)', borderRadius: 'var(--r-4)', background: 'var(--bg-elev)',
-            color: 'var(--text)', outline: 'none', padding: '1px 4px' }} />
+          onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); commit(); } if (e.key === 'Escape') setEditing(false); e.stopPropagation(); }}
+          onClick={e => e.stopPropagation()} onDoubleClick={e => e.stopPropagation()} className="nodrag"
+          style={{ width: '100%', fontSize: fs, fontWeight: 600, textAlign: 'center', lineHeight: 1.35, resize: 'none', fieldSizing: 'content',
+            border: '1px solid var(--accent)', borderRadius: 'var(--r-4)', background: 'var(--bg-elev)', fontFamily: 'inherit',
+            color: 'var(--text)', outline: 'none', padding: '1px 4px', boxSizing: 'border-box', overflow: 'hidden' }} />
       ) : (
         <div onDoubleClick={(e) => { e.stopPropagation(); startEdit(); }}
           style={{ fontSize: fs, fontWeight: 600, lineHeight: 1.35, wordBreak: 'break-word', cursor: id ? 'text' : 'default',

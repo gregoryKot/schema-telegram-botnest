@@ -58,7 +58,7 @@ export function ClientOverviewTab({ selectedClient, detail }: Props) {
           <section className="tk-block">
             <div className="ds-head-row">
               <h3 className="ds-h2">Карта режимов</h3>
-              <button className="ds-link" onClick={() => setClientTab('mode_map')}>Редактировать →</button>
+              <button className="ds-link" onClick={() => setClientTab('concept')}>Редактировать →</button>
             </div>
             <div className="tk-modes">
               {modeCols.map(g => (

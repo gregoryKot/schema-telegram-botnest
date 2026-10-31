@@ -10,6 +10,22 @@ export const canvasMapTitle = (at: Date = new Date()) =>
   `Схема случая · ${at.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}`;
 
 /**
+ * Каждое «Открыть на холсте» — новый снимок схемы (с несохранёнными правками),
+ * поэтому вторая карта за день получает номер: «… · 27 окт. (2)». Раньше все
+ * снимки дня звались одинаково, и в ряду карт их было не различить (QA 2026-10-26).
+ */
+export function distinctTitle(base: string, taken: string[]): string {
+  if (!taken.includes(base)) return base;
+  let n = 2;
+  while (taken.includes(`${base} (${n})`)) n++;
+  return `${base} (${n})`;
+}
+
+async function takenTitles(clientId: UserId): Promise<string[]> {
+  try { return (await api.listModeMaps(clientId)).map(m => m.title); } catch { return []; } // не узнали — имя без номера, карта всё равно откроется
+}
+
+/**
  * «Открыть на холсте»: схема случая, которую видит терапевт, становится новой
  * картой режимов, где фигуры можно двигать, дописывать и соединять. Граф
  * строится из того же `source`, что и сама схема (с несохранёнными правками), а
@@ -32,7 +48,7 @@ export function useOpenConceptCanvas({ clientId, source, onOpened }: {
     try {
       const graph = buildConceptGraph(source, (ty, vy) => pickForm(form, ty, vy));
       const { nodes, edges } = conceptToModeMap(graph);
-      created = (await api.createModeMap(clientId, canvasMapTitle(), 'personality')).id;
+      created = (await api.createModeMap(clientId, distinctTitle(canvasMapTitle(), await takenTitles(clientId)), 'personality')).id;
       await api.updateModeMap(created, { nodes, edges });
       api.trackEvent('concept_canvas_open');
       onOpened(created);

@@ -145,7 +145,23 @@
   .tk-quote { font-size: 40px; }
   .tk-goal-text { font-size: 18px; }
   .tk-alias-input { font-size: 22px; width: 100%; }
+  /* «Карта режимов» на телефоне. Карточка тут — обычный поток страницы, у
+     которого нет высоты, а холсту (React Flow) она нужна: без неё .react-flow
+     получал 0px, и узлы, палитра, тулбар были в DOM, но не на экране. Карточка
+     на этой вкладке занимает экран между верхом и двумя нижними панелями
+     (навигация 64px + «+ Задание/+ Заметка» 73px), шапка остаётся видна, холст
+     забирает остаток. min-height — чтобы на совсем низком экране холст не
+     ужимался в щель: тогда страница чуть прокручивается за шапку. */
+  .therapist-scroll--client.is-canvas {
+    display: flex; flex-direction: column;
+    height: calc(100dvh - var(--safe-top) - var(--mobile-nav-h) - var(--safe-bottom) - 73px);
+    min-height: 480px;
+  }
+  .is-canvas > .tk-head { flex-shrink: 0; }
+  .is-canvas > .tk-tabs-body { flex: 1; min-height: 0; padding-bottom: 0; display: flex; flex-direction: column; }
 }
+/* Обёртка вкладки «Карта режимов»: тянется на всю высоту тела вкладок. */
+.tk-mm { flex: 1; height: 100%; min-height: 0; display: flex; flex-direction: column; }
 .tk-delta { font-size: 12px; font-weight: 700; }
 .tk-needs { margin-top: 12px; }
 .tk-side .tk-hint { font-size: 11px; margin-top: 6px; }

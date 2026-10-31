@@ -16,6 +16,7 @@ import {
 import { ModeMapPalette } from './ModeMapPalette';
 import type { TherapistCustomMode } from '../api';
 import { AddressFormContext } from '../utils/addressForm';
+import { TYPE_COLORS } from './modeMapData';
 
 const getConceptualization = vi.fn();
 const listCustomModes = vi.fn();
@@ -130,6 +131,21 @@ describe('ModeMapPalette — поиск и добавление стандарт
         data: expect.objectContaining({ modeId: 'vulnerable_child' }),
       }),
     );
+  });
+});
+
+describe('ModeMapPalette — цвет группы = цвет узла на холсте', () => {
+  // QA 2026-10-26: детские режимы были красными в палитре (тон кабинета) и
+  // сине-зелёными на холсте (TYPE_COLORS), критикующие — фиолетовыми и красными.
+  it.each([
+    ['child', 'child'],
+    ['critic', 'critic'],
+    ['coping_avoidance', 'coping'],
+    ['healthy', 'healthy'],
+  ])('группа %s красится цветом узла типа %s', (groupId, type) => {
+    renderPalette();
+    const group = document.querySelector(`[data-group="${groupId}"]`) as HTMLElement;
+    expect(group.style.getPropertyValue('--gc')).toBe(TYPE_COLORS[type]);
   });
 });
 

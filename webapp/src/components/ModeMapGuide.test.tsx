@@ -122,6 +122,31 @@ describe('ModeMapGuide — советы и закрытие', () => {
   });
 });
 
+describe('ModeMapGuide — сворачивание (QA 2026-10-26: панель закрывала фигуры и статус)', () => {
+  afterEach(() => { localStorage.clear(); window.innerWidth = 1024; });
+
+  it('шапка сворачивает панель до строки с прогрессом и запоминает выбор', () => {
+    renderGuide({ kind: 'personality', nodes: [node('child')] });
+    expect(screen.getByText('Советы')).toBeTruthy();
+    fireEvent.click(screen.getByTitle('Свернуть подсказки'));
+    expect(screen.queryByText('Советы')).toBeNull();
+    expect(screen.getByText('1/4')).toBeTruthy();
+    expect(localStorage.getItem('modemap_guide_min')).toBe('1');
+    cleanup();
+    renderGuide({ kind: 'personality' });
+    expect(screen.queryByText('Советы')).toBeNull();
+    fireEvent.click(screen.getByTitle('Развернуть подсказки'));
+    expect(screen.getByText('Советы')).toBeTruthy();
+  });
+
+  it('на телефоне свёрнута сразу — узкий холст не закрыт', () => {
+    window.innerWidth = 390;
+    renderGuide({ kind: 'personality' });
+    expect(screen.queryByText('Советы')).toBeNull();
+    expect(screen.getByTitle('Развернуть подсказки')).toBeTruthy();
+  });
+});
+
 describe('ModeMapGuide — обращение ты/вы (правило CLAUDE.md, терапевт — тоже пользователь формы)', () => {
   it('форма «вы»: подсказка цикл-клэша, алерт и шаг «Потребность» звучат на «вы», без «ты»', () => {
     render(

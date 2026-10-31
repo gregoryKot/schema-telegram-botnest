@@ -106,7 +106,6 @@
   "webapp/src/components/BookingPicker.tsx": 2,
   "webapp/src/components/CookieBanner.tsx": 1,
   "webapp/src/components/modeMap/ShapePicker.tsx": 3,
-  "webapp/src/components/ModeMapCanvas.tsx": 5,
   "webapp/src/components/ModeMapEditor.tsx": 1,
   "webapp/src/components/ModeMapViewer.tsx": 2,
   "webapp/src/pages/admin/BookingSection.tsx": 2,
