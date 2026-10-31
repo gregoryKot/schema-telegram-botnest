@@ -100,16 +100,41 @@ describe('TwoFactorChallengePage — ввод кода', () => {
   });
 });
 
+// Аудит frontend-ux: резервный код — 10 символов hex с буквами a–f
+// (totp.service.ts), а цифровая клавиатура букв не даёт. Код из приложения —
+// цифровая клавиатура и one-time-code; резервный — буквенная, без автозамены.
+describe('TwoFactorChallengePage — клавиатура под каждый режим', () => {
+  it('код из приложения: цифровая клавиатура, one-time-code, буквы отбрасываются', () => {
+    renderAt('/auth/2fa?token=chal123');
+    const input = screen.getByLabelText('Код из приложения') as HTMLInputElement;
+    expect(input.getAttribute('inputmode')).toBe('numeric');
+    expect(input.getAttribute('autocomplete')).toBe('one-time-code');
+    fireEvent.change(input, { target: { value: '12a3b4' } });
+    expect(input.value).toBe('1234');
+  });
+
+  it('резервный код: буквенная клавиатура, без one-time-code и автозаглавной, буквы a–f проходят', () => {
+    renderAt('/auth/2fa?token=chal123');
+    fireEvent.click(screen.getByRole('button', { name: /recovery-код/ }));
+    const input = screen.getByLabelText('Recovery-код') as HTMLInputElement;
+    expect(input.getAttribute('inputmode')).toBe('text');
+    expect(input.getAttribute('autocomplete')).not.toBe('one-time-code');
+    expect(input.getAttribute('autocapitalize')).toBe('off');
+    fireEvent.change(input, { target: { value: '3fa9c0be17' } });
+    expect(input.value).toBe('3fa9c0be17');
+  });
+});
+
 describe('TwoFactorChallengePage — recovery-код', () => {
-  it('переключение на recovery-код принимает код не из шести цифр и отправляет как есть', async () => {
+  it('переключение на recovery-код принимает hex и отправляет без пробелов, дефисов и заглавных', async () => {
     fetchMock.mockResolvedValue(jsonResponse(200, { accessToken: 't', expiresIn: 900 }));
     const { container } = renderAt('/auth/2fa?token=chal123');
     fireEvent.click(screen.getByRole('button', { name: /recovery-код/ }));
-    fireEvent.change(screen.getByLabelText('Recovery-код'), { target: { value: 'ab12-cd34-ef56' } });
+    fireEvent.change(screen.getByLabelText('Recovery-код'), { target: { value: 'AB12 cd34-EF' } });
     fireEvent.submit(container.querySelector('form')!);
     await screen.findByText('today-page');
     const [, init] = fetchMock.mock.calls[0];
-    expect(JSON.parse((init as RequestInit).body as string).code).toBe('ab12-cd34-ef56');
+    expect(JSON.parse((init as RequestInit).body as string).code).toBe('ab12cd34ef');
   });
 });
 

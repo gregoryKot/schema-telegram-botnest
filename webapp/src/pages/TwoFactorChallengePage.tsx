@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/authContext';
 import { OtpCells } from './login/OtpCells';
+import { RecoveryCodeField } from './login/RecoveryCodeField';
 import '../styles/auth-login.css';
 import { TwoFactorIntro } from './login/TwoFactorIntro';
 import { humanizeThrown, readHumanError } from '../../../shared/src/api/humanizeError';
@@ -62,17 +63,7 @@ export function TwoFactorChallengePage() {
 
         <form onSubmit={submit} className="al-form">
           {recovery ? (
-            <input
-              ref={inputRef}
-              type="text"
-              className="ds-input"
-              autoComplete="one-time-code"
-              aria-label="Recovery-код"
-              value={code}
-              onChange={e => setCode(e.target.value)}
-              placeholder="recovery-код"
-              disabled={busy}
-            />
+            <RecoveryCodeField ref={inputRef} value={code} onChange={setCode} disabled={busy} />
           ) : (
             <OtpCells ref={inputRef} value={code} onChange={setCode} disabled={busy} label="Код из приложения" />
           )}
