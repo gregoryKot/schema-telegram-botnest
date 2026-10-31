@@ -184,6 +184,12 @@
   `/api/auth/telegram-oidc`) ловит только `registry-consumers.spec.ts` — и
   только для роутов провайдеров из `registry.ts`. Прочие роуты `src/auth/*`
   (2fa, ticket) паритетом не сверяются.
+- **`check-feature-parity.mjs` слеп и к `src/therapy/*.controller.ts`** — весь
+  кабинет терапевта (задания, заметки, концептуализация, карты режимов) живёт
+  там, а гейт смотрит только `src/api/**`. Паритет ручек кабинета держится
+  ревью: `DELETE /api/therapy/tasks/:id` (удаление задания терапевтом,
+  QA 2026-10-26) довезён до обеих площадок руками (`ClientTasksTab.tsx`,
+  `TasksSheet.tsx`), гейт бы не заметил одностороннего.
 - **Запасной код 2FA нельзя набрать на телефоне**:
   `webapp/src/pages/TwoFactorChallengePage.tsx:67` ставит `inputMode="numeric"`,
   а резервный код — 10 символов hex с буквами a–f

@@ -85,6 +85,36 @@ describe('CreateTaskDto — type/needId/dueDate (T6)', () => {
   });
 });
 
+// QA 2026-10-26: текст из одних пробелов и срок `2026-02-31` проходили.
+describe('CreateTaskDto — пустой по смыслу текст и ненастоящая дата', () => {
+  const VALID = { type: 'custom', text: 'позвонить другу' };
+
+  it('текст из одних пробелов — отказ', async () => {
+    await expect(
+      errorsFor(CreateTaskDto, { ...VALID, text: '   \n\t ' }),
+    ).resolves.toContain('text');
+  });
+
+  it('текст длиннее предела — отказ, на пределе — проходит', async () => {
+    await expect(
+      errorsFor(CreateTaskDto, { ...VALID, text: 'а'.repeat(10001) }),
+    ).resolves.toContain('text');
+    await expect(
+      errorsFor(CreateTaskDto, { ...VALID, text: 'а'.repeat(10000) }),
+    ).resolves.toEqual([]);
+  });
+
+  it('dueDate — настоящий календарный день', async () => {
+    for (const bad of ['2026-02-31', '2026-13-01', '0000-00-00'])
+      await expect(
+        errorsFor(CreateTaskDto, { ...VALID, dueDate: bad }),
+      ).resolves.toContain('dueDate');
+    await expect(
+      errorsFor(CreateTaskDto, { ...VALID, dueDate: '2028-02-29' }),
+    ).resolves.toEqual([]);
+  });
+});
+
 describe('CompleteTaskDto', () => {
   it('done обязателен и должен быть boolean', async () => {
     await expect(errorsFor(CompleteTaskDto, {})).resolves.toContain('done');

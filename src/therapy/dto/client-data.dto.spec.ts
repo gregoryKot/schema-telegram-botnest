@@ -36,6 +36,14 @@ describe('CreateSessionNoteDto', () => {
       }),
     ).resolves.toEqual([]);
   });
+
+  // QA 2026-10-26: заметка принимала `2026-13-45` и `0000-00-00`.
+  it('date — настоящий календарный день', async () => {
+    for (const bad of ['2026-13-45', '0000-00-00', '2026-02-30', '2026-7-1'])
+      await expect(
+        errorsFor(CreateSessionNoteDto, { date: bad, text: 'заметка' }),
+      ).resolves.toContain('date');
+  });
 });
 
 describe('SessionInfoDto', () => {
@@ -76,7 +84,12 @@ describe('SessionInfoDto — форматы (T6)', () => {
     await expect(
       errorsFor(SessionInfoDto, { therapyStartDate: '2026-01-31' }),
     ).resolves.toEqual([]);
-    for (const bad of ['31.01.2026', '2026-01-31T10:00', 'x'.repeat(5000)])
+    for (const bad of [
+      '31.01.2026',
+      '2026-01-31T10:00',
+      'x'.repeat(5000),
+      '2026-02-30',
+    ])
       await expect(
         errorsFor(SessionInfoDto, { therapyStartDate: bad }),
       ).resolves.toContain('therapyStartDate');

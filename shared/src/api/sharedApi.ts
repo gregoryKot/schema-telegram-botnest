@@ -223,6 +223,8 @@ export const buildSharedApi = (t: ApiTransport) => ({
   getTaskHistory: () => t.get<UserTask[]>('/api/therapy/tasks/history'),
   completeTask: (id: number, done: boolean) =>
     t.post(`/api/therapy/tasks/${id}/complete`, { done }),
+  /** Терапевт удаляет назначенное им задание текущему клиенту. */
+  deleteTherapyTask: (id: number) => t.del(`/api/therapy/tasks/${id}`),
   getTherapyTasksForClient: (clientId: UserId) =>
     t.get<UserTask[]>(`/api/therapy/tasks/client/${clientId}`),
   getTherapistNotes: (clientId: UserId) =>

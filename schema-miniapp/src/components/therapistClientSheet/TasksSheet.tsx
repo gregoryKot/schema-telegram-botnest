@@ -1,16 +1,30 @@
 import { BottomSheet } from '../BottomSheet';
+import { api } from '../../api';
 import { todayStr } from '../../utils/format';
 import { orderTasks } from '../../../../shared/src/tasks/taskStatus';
+import { useConfirmTap } from '../../hooks/useConfirmTap';
+import {
+  therapistClosesTask,
+  useTherapistTaskActions,
+} from '../../../../shared/src/therapy/useTherapistTaskActions';
 import { ClientDetail } from './types';
 import { TaskSheetRow } from './TaskSheetRow';
+import { ConfirmDeleteButton } from '../ConfirmDeleteButton';
 
 interface TasksSheetProps {
   detail: ClientDetail;
 }
 
 export function TasksSheet({ detail }: TasksSheetProps) {
-  const { clientTasks, setShowTasksSheet, setShowAssign } = detail;
+  const { clientTasks, setClientTasks, setShowTasksSheet, setShowAssign } =
+    detail;
   const today = todayStr();
+  // Удаление (два тапа) и отметка задания офлайн-клиента — общая с сайтом
+  // механика (QA 2026-10-26: задание нельзя было удалить).
+  const actions = useTherapistTaskActions(api, setClientTasks);
+  const { tap: tapDelete, isPending } = useConfirmTap<number>(
+    (id) => void actions.remove(id),
+  );
 
   return (
     <BottomSheet onClose={() => setShowTasksSheet(false)}>
@@ -52,10 +66,52 @@ export function TasksSheet({ detail }: TasksSheetProps) {
                 task={task}
                 today={today}
                 first={i === 0}
+                actions={
+                  <>
+                    {therapistClosesTask(task) && (
+                      <button
+                        onClick={() => void actions.markDone(task.id)}
+                        disabled={actions.busyId === task.id}
+                        style={{
+                          flexShrink: 0,
+                          minHeight: 44,
+                          padding: '0 12px',
+                          borderRadius: 'var(--r-10)',
+                          border: '1px solid rgba(var(--fg-rgb),0.12)',
+                          background: 'transparent',
+                          color: 'var(--text)',
+                          fontSize: 12,
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        Выполнено
+                      </button>
+                    )}
+                    <ConfirmDeleteButton
+                      pending={isPending(task.id)}
+                      onTap={() => tapDelete(task.id)}
+                      label="Удалить задание"
+                      disabled={actions.busyId === task.id}
+                    />
+                  </>
+                }
               />
             ))
           )}
         </div>
+        {actions.error && (
+          <div
+            role="alert"
+            style={{
+              fontSize: 13,
+              color: 'var(--accent-red)',
+              marginBottom: 12,
+            }}
+          >
+            {actions.error}
+          </div>
+        )}
         <button
           onClick={() => setShowAssign(true)}
           style={{

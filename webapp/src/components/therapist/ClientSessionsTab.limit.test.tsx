@@ -81,7 +81,7 @@ describe('ClientSessionsTab — композер и таймлайн', () => {
         total: 2,
       },
     });
-    expect(screen.getByText('Архив · 2 заметок')).toBeTruthy();
+    expect(screen.getByText('Архив · 2 заметки')).toBeTruthy();
     expect(screen.getByText('Сессия 2')).toBeTruthy();
     expect(screen.getByText('Сессия 1')).toBeTruthy();
   });

@@ -72,11 +72,24 @@ export const THERAPY_RULES: Rule[] = [
     },
   },
   // completeTask(id) — clientId владельца задачи неизвестен из одного id.
+  // Задание офлайн-клиента закрывает терапевт — меняется и доска (tasks/all).
   simple(
     'POST',
     /^\/api\/therapy\/tasks\/\d+\/complete$/,
     `${T}/tasks`,
     `${T}/tasks/history`,
+    ALL_TASKS,
+    { prefix: `${T}/tasks/client/` },
+  ),
+  // deleteTherapyTask(id) — терапевт удаляет задание; клиент задания из id
+  // неизвестен (офлайн-клиент — отрицательный id), сбрасываем задания всех
+  // клиентов кабинета, доску и списки самого клиента.
+  simple(
+    'DELETE',
+    /^\/api\/therapy\/tasks\/\d+$/,
+    `${T}/tasks`,
+    `${T}/tasks/history`,
+    ALL_TASKS,
     { prefix: `${T}/tasks/client/` },
   ),
   {

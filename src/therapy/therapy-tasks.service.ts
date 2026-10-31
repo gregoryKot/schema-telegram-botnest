@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { NotificationService } from '../notification/notification.service';
 import { encrypt, decrypt } from '../utils/crypto';
 import { localDate, localMidnightUTC } from '../utils/tz';
+import { completeOfflineTask, deleteAssignedTask } from './assigned-task';
 
 // Задачи пользователя (свои и назначенные терапевтом): создание, список,
 // завершение, стрик-прогресс и уведомление о назначении. Терапевтские
@@ -144,6 +145,20 @@ export class TherapyTasksService {
       data: { done, completedAt: new Date() },
     });
     return result.count > 0;
+  }
+
+  /** Терапевт: удалить своё задание текущему клиенту (assigned-task.ts). */
+  deleteAssignedTask(therapistId: bigint, taskId: number): Promise<boolean> {
+    return deleteAssignedTask(this.prisma, therapistId, taskId);
+  }
+
+  /** Терапевт: закрыть задание офлайн-клиента (assigned-task.ts). */
+  completeOfflineTask(
+    therapistId: bigint,
+    taskId: number,
+    done: boolean,
+  ): Promise<boolean> {
+    return completeOfflineTask(this.prisma, therapistId, taskId, done);
   }
 
   async checkStreakTasks(userId: bigint): Promise<void> {

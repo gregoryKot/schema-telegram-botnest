@@ -30,7 +30,6 @@
   "src/site-content/site-content-admin.dto.ts:MarqueeTopicDto.href": "Админский эндпоинт за ADMIN_BOOKING_KEY: ссылки бегущей строки вводит владелец сайта.",
   "src/site-content/site-content-admin.dto.ts:MarqueeTopicDto.label": "Админский эндпоинт за ADMIN_BOOKING_KEY: подписи бегущей строки вводит владелец сайта.",
   "src/subscription/subscription.dto.ts:SubscribeDto.website": "Honeypot: контроллер отвечает 400 на любое непустое значение, дальше поле не читается и нигде не хранится.",
-  "src/therapy/dto/client-data.dto.ts:CreateSessionNoteDto.date": "Календарный день: формат YYYY-MM-DD проверяется регэкспом в контроллере до записи, строка длиннее отвергается.",
   "src/therapy/dto/custom-mode.dto.ts:CustomModeDto.nodeType": "Сервис сверяет с allow-list и подставляет дефолт; значение из запроса в БД не пишется (см. шапку DTO).",
   "src/therapy/dto/mode-maps.dto.ts:CreateModeMapDto.kind": "mode-maps.service.ts сверяет с MODE_MAP_KINDS и подставляет дефолт; значение из запроса в БД не пишется."
 }

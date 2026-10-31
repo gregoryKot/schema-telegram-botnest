@@ -12,6 +12,7 @@ import {
 } from 'class-validator';
 import { ClientIdField } from './client-id.decorator';
 import { TASK_TEXT_MAX } from '../../utils/text-limits';
+import { IsCalendarDay } from '../../utils/calendar-day';
 
 // Типы заданий из форм обоих фронтендов (TaskCreateSheet) плюс schema_diary/
 // mode_diary для стрик-прогресса; 'custom' — «своё задание» (T6: был любой строкой).
@@ -39,8 +40,11 @@ export class CreateTaskDto {
   @IsIn(TASK_TYPES)
   type!: string;
 
+  // Текст из одних пробелов — не задание (QA 2026-10-26: IsNotEmpty без
+  // trim его пропускал).
   @IsString()
   @IsNotEmpty()
+  @Matches(/\S/)
   @MaxLength(TASK_TEXT_MAX)
   text!: string;
 
@@ -58,7 +62,7 @@ export class CreateTaskDto {
   @IsOptional()
   @IsString()
   @MaxLength(10)
-  @Matches(/^\d{4}-\d{2}-\d{2}$/)
+  @IsCalendarDay()
   dueDate?: string;
 
   @IsOptional()

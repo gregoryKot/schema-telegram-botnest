@@ -5,6 +5,7 @@ import { LimitedTextarea } from '../../../../shared/src/components/LimitedTextar
 import { SESSION_NOTE_MAX } from '../../../../shared/src/limits/textLimits';
 import { NOTE_FIELD_STYLE } from './noteFieldStyle';
 import { NoteCard } from './NoteCard';
+import { useConfirmTap } from '../../hooks/useConfirmTap';
 import { NotesTruncationHint } from '../../../../shared/src/therapy/NotesTruncationHint';
 
 interface NotesSheetProps {
@@ -25,6 +26,9 @@ export function NotesSheet({ detail }: NotesSheetProps) {
     addNote,
     setShowNotesSheet,
   } = detail;
+  const { tap: tapDelete, isPending } = useConfirmTap<number>(
+    (id) => void removeNote(id),
+  );
 
   return (
     <BottomSheet onClose={() => setShowNotesSheet(false)}>
@@ -56,7 +60,12 @@ export function NotesSheet({ detail }: NotesSheetProps) {
           </div>
         ) : (
           notes.map((note) => (
-            <NoteCard key={note.id} note={note} onRemove={removeNote} />
+            <NoteCard
+              key={note.id}
+              note={note}
+              pending={isPending(note.id)}
+              onTapDelete={() => tapDelete(note.id)}
+            />
           ))
         )}
         <div

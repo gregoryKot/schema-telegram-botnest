@@ -1,10 +1,14 @@
+import { useState } from 'react';
 import '../../styles/therapist-tabs.css';
+import { api, type UserTask } from '../../api';
 import { pressable } from '../../utils/a11y';
+import { ConfirmDialog } from '../ConfirmDialog';
 import { todayStr } from '../../utils/format';
 import { pluralRu } from '../../../../shared/src/utils/pluralRu';
 import { resolveTaskDisplayText } from '../../../../shared/src/tasks/taskTitle';
 import { ASSIGN_LEAD_OFFLINE } from '../../../../shared/src/tasks/assignCopy';
 import { isVirtualId } from '../../../../shared/src/utils/sameId';
+import { therapistClosesTask, useTherapistTaskActions } from '../../../../shared/src/therapy/useTherapistTaskActions';
 import { hueStyle } from '../../lib/tone';
 import type { ClientDetail } from './clientSheetTypes';
 import { STATUS_BADGE, STATUS_LABEL, isOpenStatus, orderTasks, taskMeta, taskStatus, templateHue } from './taskModel';
@@ -17,8 +21,11 @@ interface Props {
 }
 
 export function ClientTasksTab({ detail, onAssign }: Props) {
-  const { clientTasks, selectedClient } = detail;
+  const { clientTasks, setClientTasks, selectedClient } = detail;
   const today = todayStr();
+  // Удаление и отметка у офлайн-клиента — общая с мини-аппом механика.
+  const actions = useTherapistTaskActions(api, setClientTasks);
+  const [confirmDelete, setConfirmDelete] = useState<UserTask | null>(null);
   // Офлайн-клиенту назначается только «Своё задание»: шаблоны с упражнениями
   // приложения ему не подходят (shared/tasks/assignCopy).
   const offline = !!selectedClient && isVirtualId(selectedClient.telegramId);
@@ -56,11 +63,18 @@ export function ClientTasksTab({ detail, onAssign }: Props) {
                     <div className="tb-meta">{taskMeta(t, status)}</div>
                   </div>
                   <span className={STATUS_BADGE[status]}>{STATUS_LABEL[status]}</span>
+                  {therapistClosesTask(t) && (
+                    <button className="ds-btn ds-btn--sm ds-btn--secondary" disabled={actions.busyId === t.id} onClick={() => void actions.markDone(t.id)}>
+                      Выполнено
+                    </button>
+                  )}
+                  <button className="tb-x" aria-label="Удалить задание" disabled={actions.busyId === t.id} onClick={() => setConfirmDelete(t)}>✕</button>
                 </div>
               );
             })}
           </div>
         )}
+        {actions.error && !confirmDelete && <div className="tb-error" role="alert">{actions.error}</div>}
       </div>
 
       <div className="tb-col tb-col--tight">
@@ -79,6 +93,19 @@ export function ClientTasksTab({ detail, onAssign }: Props) {
         )}
         <button onClick={() => onAssign()} className="ds-btn ds-btn--secondary">+ Назначить</button>
       </div>
+
+      {confirmDelete && (
+        <ConfirmDialog
+          title="Удалить задание?"
+          message={`«${resolveTaskDisplayText(confirmDelete, 'full')}» ${offline ? 'пропадёт из карточки' : 'пропадёт у клиента и из карточки'}. Вернуть его нельзя.`}
+          confirmLabel="Удалить"
+          busyLabel="Удаляю…"
+          busy={actions.busyId === confirmDelete.id}
+          error={actions.error}
+          onConfirm={() => void actions.remove(confirmDelete.id).then(ok => { if (ok) setConfirmDelete(null); })}
+          onCancel={() => setConfirmDelete(null)}
+        />
+      )}
     </div>
   );
 }

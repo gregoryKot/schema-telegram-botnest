@@ -22,12 +22,16 @@ type TasksMock = Pick<
   | 'getTasks'
   | 'getTaskHistory'
   | 'completeTask'
+  | 'completeOfflineTask'
+  | 'deleteAssignedTask'
   | 'scheduleTaskNotification'
 > & {
   createTask: jest.Mock;
   getTasks: jest.Mock;
   getTaskHistory: jest.Mock;
   completeTask: jest.Mock;
+  completeOfflineTask: jest.Mock;
+  deleteAssignedTask: jest.Mock;
   scheduleTaskNotification: jest.Mock;
 };
 
@@ -53,6 +57,8 @@ function makeTasks(): TasksMock {
     getTasks: jest.fn().mockResolvedValue([{ id: 1 }]),
     getTaskHistory: jest.fn().mockResolvedValue([{ id: 2 }]),
     completeTask: jest.fn().mockResolvedValue(true),
+    completeOfflineTask: jest.fn().mockResolvedValue(false),
+    deleteAssignedTask: jest.fn().mockResolvedValue(true),
     scheduleTaskNotification: jest.fn().mockResolvedValue(undefined),
   };
 }
@@ -243,13 +249,30 @@ describe('TherapyTasksController.getTasksForClient', () => {
 });
 
 describe('TherapyTasksController.completeTask', () => {
-  it('задача не принадлежит юзеру (completeTask вернул false) → ForbiddenException', async () => {
+  it('задача не принадлежит юзеру и не офлайн-клиента терапевта → ForbiddenException', async () => {
     const { controller, tasks } = makeController();
     tasks.completeTask.mockResolvedValue(false);
     await expect(
       controller.completeTask(makeReq(7n), '9', { done: true }),
     ).rejects.toThrow('Task not found or not yours');
     expect(tasks.completeTask).toHaveBeenCalledWith(7n, 9, true);
+    expect(tasks.completeOfflineTask).toHaveBeenCalledWith(7n, 9, true);
+  });
+
+  // QA 2026-10-26: задание офлайн-клиента закрыть было некому.
+  it('задание офлайн-клиента закрывает назначивший терапевт', async () => {
+    const { controller, tasks } = makeController();
+    tasks.completeTask.mockResolvedValue(false);
+    tasks.completeOfflineTask.mockResolvedValue(true);
+    await expect(
+      controller.completeTask(makeReq(7n), '9', { done: true }),
+    ).resolves.toEqual({ ok: true });
+  });
+
+  it('своё задание клиента не доходит до ветки терапевта', async () => {
+    const { controller, tasks } = makeController();
+    await controller.completeTask(makeReq(7n), '9', { done: true });
+    expect(tasks.completeOfflineTask).not.toHaveBeenCalled();
   });
 
   it('задача принадлежит юзеру → { ok: true }', async () => {
@@ -259,5 +282,34 @@ describe('TherapyTasksController.completeTask', () => {
     });
     expect(tasks.completeTask).toHaveBeenCalledWith(7n, 9, false);
     expect(res).toEqual({ ok: true });
+  });
+});
+
+// QA 2026-10-26: задание нельзя было удалить ни в интерфейсе, ни в API.
+describe('TherapyTasksController.deleteTask', () => {
+  it('не терапевт → ForbiddenException, сервис не вызывается', async () => {
+    const { controller, tasks } = makeController({
+      account: makeAccount('CLIENT'),
+    });
+    await expect(controller.deleteTask(makeReq(7n), '9')).rejects.toThrow(
+      ForbiddenException,
+    );
+    expect(tasks.deleteAssignedTask).not.toHaveBeenCalled();
+  });
+
+  it('чужое или несуществующее задание → ForbiddenException', async () => {
+    const { controller, tasks } = makeController();
+    tasks.deleteAssignedTask.mockResolvedValue(false);
+    await expect(controller.deleteTask(makeReq(7n), '9')).rejects.toThrow(
+      'Task not found or not yours',
+    );
+    expect(tasks.deleteAssignedTask).toHaveBeenCalledWith(7n, 9);
+  });
+
+  it('своё задание → { ok: true }', async () => {
+    const { controller } = makeController();
+    await expect(controller.deleteTask(makeReq(7n), '9')).resolves.toEqual({
+      ok: true,
+    });
   });
 });
