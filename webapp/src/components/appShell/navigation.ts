@@ -6,11 +6,11 @@
 // найдена храповиком дублей).
 export { fillHistoryGaps } from '../../../../shared/src/utils/todayConstants';
 
-export type Section = 'today' | 'diary' | 'schemas' | 'profile' | 'practice';
+export type Section = 'today' | 'diary' | 'more' | 'schemas' | 'profile' | 'practice';
 
 export function sectionFromPath(path: string): Section {
   const seg = path.split('/').filter(Boolean)[0] ?? 'today';
-  if (['today','diary','schemas','profile','practice'].includes(seg)) return seg as Section;
+  if (['today','diary','more','schemas','profile','practice'].includes(seg)) return seg as Section;
   // Legacy redirects
   if (seg === 'help' || seg === 'exercises') return 'practice';
   return 'today';

@@ -17,8 +17,8 @@ vi.mock('../../api', () => ({
 }));
 import { api, reportClientError } from '../../api';
 vi.mock('../caseFlow/CaseFlowHost', () => ({
-  CaseFlowHost: (p: { caseCount: number; onClose: () => void }) => (
-    <button onClick={p.onClose}>case-host-{p.caseCount}</button>
+  CaseFlowHost: (p: { start: string; onClose: () => void }) => (
+    <button onClick={p.onClose}>case-host-{p.start}</button>
   ),
 }));
 vi.mock('../practice/QuickPracticeSheet', () => ({
@@ -44,9 +44,9 @@ describe('QuickActionOverlays', () => {
     expect(container.innerHTML).toBe('');
   });
 
-  it('разбор случая получает число прошлых разборов', async () => {
+  it('«Что случилось» открывает поток сразу на шагах, не на карте', async () => {
     render(<QuickActionOverlays active="case" {...base} />);
-    expect(await screen.findByText('case-host-2')).toBeTruthy();
+    expect(await screen.findByText('case-host-flow')).toBeTruthy();
   });
 
   it('дневник схем получает активные схемы профиля', async () => {

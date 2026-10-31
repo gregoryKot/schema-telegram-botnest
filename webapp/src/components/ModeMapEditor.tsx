@@ -53,7 +53,7 @@ export function ModeMapEditor({ mapId, clientId, kind, initialNodes, initialEdge
   const selectedNode = nodes.find(n => n.id === selectedNodeId) ?? null;
   const selectedEdge = edges.find(e => e.id === selectedEdgeId) ?? null;
 
-  const { saveStatus, scheduleSave } = useModeMapAutosave(mapId, nodesRef, edgesRef);
+  const { saveStatus, savedAt, retry: retrySave, scheduleSave } = useModeMapAutosave(mapId, nodesRef, edgesRef);
   useSettleFresh({ nodes, edgesRef, setNodes, scheduleSave }); // свежая схема случая: колонки по реальной высоте
 
   const clearSelection = useCallback(() => { setSelectedNodeId(null); setSelectedEdgeId(null); }, []);
@@ -257,7 +257,7 @@ export function ModeMapEditor({ mapId, clientId, kind, initialNodes, initialEdge
         <ModeMapCanvas clientId={clientId} mapId={mapId} kind={kind} nodes={nodes} edges={edges} setNodes={setNodes} setEdges={setEdges}
           onNodesChange={onNodesChange} onEdgesChange={onEdgesChange}
           setSelectedNodeId={setSelectedNodeId} setSelectedEdgeId={setSelectedEdgeId} selectedNodeId={selectedNodeId}
-          saveStatus={saveStatus} scheduleSave={scheduleSave}
+          saveStatus={saveStatus} savedAt={savedAt} onRetrySave={retrySave} scheduleSave={scheduleSave}
           pushHistory={pushHistory} nodesRef={nodesRef} edgesRef={edgesRef}
           onUndo={undo} onRedo={redo} canUndo={canUndo} canRedo={canRedo} />
 

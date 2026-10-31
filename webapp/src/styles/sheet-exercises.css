@@ -186,15 +186,8 @@
 }
 .ex2-chip:hover { border-color: var(--text-faint); color: var(--text); }
 .ex2-chip.is-selected { background: var(--ink); border-color: var(--ink); color: var(--on-ink); }
-.ex2-trait { margin-bottom: 12px; }
-.ex2-trait .ds-label { color: var(--on-ink-faint); margin-bottom: 2px; }
-.ex2-trait-text { font-size: 14px; line-height: 1.4; color: var(--on-ink); }
-.ex2-chain { margin-bottom: 20px; }
-.ex2-chain .ds-card, .ex2-chain.ds-card { padding: 20px 24px; }
 .ex2-support { margin-top: 20px; }
-.ex2-verdict { margin: 0 0 12px; font-size: 14px; line-height: 1.5; color: var(--accent); }
 .ex2-link-row { display: block; min-height: 44px; padding: 12px 0; text-align: left; }
-.ex2-frame { display: block; width: 100%; text-align: left; font: 14px/1.5 var(--sans); color: var(--text); }
 
 /* ── Портрет режима ───────────────────────────────────────────────────── */
 .ex2-portrait.ds-card { padding: 8px 24px; }
@@ -216,7 +209,3 @@
 .ex2-sheet-label { margin: 14px 0 8px; }
 .ds-card--warn .ex2-note-body, .ds-card--warn .ds-label { color: var(--warn-ink); }
 .ex2-gap-b { margin-bottom: 16px; }
-.ex2-chain.ds-card { padding: 20px 24px; margin-bottom: 20px; }
-.ex2-question.ds-card { margin-bottom: 12px; }
-.ex2-question-text { margin-bottom: 10px; font-size: 15px; line-height: 1.5; color: var(--text); }
-.ex2-chip--yn { min-width: 88px; justify-content: center; }

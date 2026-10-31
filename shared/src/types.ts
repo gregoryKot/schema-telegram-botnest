@@ -64,6 +64,8 @@ export interface ModeDiaryEntry {
   actualNeed?: string | null;
   childhoodMemories?: string | null;
   healthyResponse?: string | null;
+  /** Запись из потока «Что случилось»; старые записи — без поля или false. */
+  fromCase?: boolean;
 }
 
 export interface GratitudeDiaryEntry {

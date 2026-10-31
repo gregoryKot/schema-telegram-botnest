@@ -186,6 +186,8 @@
 .mm2-kind-card:disabled { opacity: .5; cursor: default; }
 .mm2-status { position: absolute; top: 12px; right: 12px; z-index: 10; font-size: 12px; color: var(--text-faint); pointer-events: none; }
 .mm2-status .is-err { color: var(--err); }
+/* Контейнер прозрачен для кликов (под ним холст), а «Повторить» из SaveStatusLine нажиматься обязан. */
+.mm2-status button { pointer-events: auto; }
 .mm2-canvas-empty { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none; z-index: 5; }
 
 /* ── Пара: подписи партнёров ── */

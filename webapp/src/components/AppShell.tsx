@@ -43,15 +43,13 @@ import { parseRouteUserId } from '../../../shared/src/utils/sameId';
 applyCabinetLightTheme();
 syncMotionAttr();
 
+// Три вкладки (редизайн 2026-10, docs/design/CLIENT_SIMPLE_2026-10.md):
+// «Паттерны», «Практика» и «Профиль» открываются из «Ещё» и по прямому URL.
 const NAV_ITEMS: { id: Section; label: string }[] = [
-  { id: 'today',    label: 'Сегодня' },
-  { id: 'diary',    label: 'Дневник' },
-  { id: 'schemas',  label: 'Паттерны' },
-  { id: 'practice', label: 'Практика' },
-  { id: 'profile',  label: 'Профиль' },
+  { id: 'today', label: 'Сегодня' },
+  { id: 'diary', label: 'Записи' },
+  { id: 'more',  label: 'Ещё' },
 ];
-// Desktop sidebar omits Profile — it's accessible via the footer account link
-const SIDEBAR_NAV_ITEMS = NAV_ITEMS.filter(i => i.id !== 'profile');
 
 export function AppShell() {
   const { logout } = useAuth();
@@ -97,7 +95,7 @@ export function AppShell() {
   // Bootstrap data — needs/ratings/profile/role/therapist clients/… fetched
   // on mount; see useBootstrapLoad for the fetch + silent-failure reporting.
   const {
-    needs, ratings, setRatings, saved, setSaved, yesterdayRatings,
+    needs, ratings, setRatings, setSaved, yesterdayRatings,
     loading, error,
     userRole, setUserRole,
     displayName, setDisplayName,
@@ -134,12 +132,12 @@ export function AppShell() {
   // Therapist cabinet navigation helpers (URL-based)
   const therapistBackHandlerRef = useRef<() => void>(() => navigate('/cabinet'));
 
-  // Global ⌘K + ⌘1–5 section shortcuts
+  // Global ⌘K + ⌘1–3 section shortcuts
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); ov.setCmdOpen(true); return; }
       if (!therapistMode && e.metaKey) {
-        const map: Record<string, Section> = { '1': 'today', '2': 'diary', '3': 'schemas', '4': 'practice' };
+        const map: Record<string, Section> = { '1': 'today', '2': 'diary', '3': 'more' };
         if (map[e.key]) { e.preventDefault(); setSection(map[e.key] as Section); }
       }
     }
@@ -206,7 +204,7 @@ export function AppShell() {
   // пока хоть один открыт (аудит 2026-09: «Помощь рядом» читалась сквозь каталог практик).
   const anyOverlayOpen = ov.showTrackerOverlay || ov.showTracker || ov.showDiaries
     || ov.showSchemaInfo || ov.showSettings || ov.showPractices || ov.showPlans
-    || ov.showChildhoodWheel || ov.showTodayNote || ov.showTrackerGoal
+    || ov.showChildhoodWheel || ov.showTodayNote
     || ov.showTherapistDisclaimer || ov.quickAction !== null || celebrationStreak !== null;
 
   if (loading) {
@@ -244,7 +242,7 @@ export function AppShell() {
         )}
 
         <nav className="sb-nav">
-          {!therapistMode && SIDEBAR_NAV_ITEMS.map(item => (
+          {!therapistMode && NAV_ITEMS.map(item => (
             <NavLink key={item.id} to={'/' + item.id}
                      className={({ isActive }) => `sb-item${isActive ? ' is-active' : ''}`}>
               <span className="sb-dot" style={hueStyle(SECTION_HUE[item.id])} />{item.label}
@@ -366,14 +364,12 @@ export function AppShell() {
           сквозь открытый оверлей — AppSections получает inert=anyOverlayOpen.
         */}
         <AppSections
-          rating={{ onChange: handleChange, onSaved: handleSaved, isOffline }}
           inert={anyOverlayOpen}
           therapistMode={therapistMode}
           pathname={location.pathname}
           section={section}
           needs={needs}
           ratings={ratings}
-          yesterdayRatings={yesterdayRatings}
           displayName={displayName}
           navigate={navigate}
           openClientId={openClientId}
@@ -396,14 +392,12 @@ export function AppShell() {
             <TrackerOverlay
               needs={needs}
               ratings={ratings}
-              saved={saved}
               isOffline={isOffline}
               onChange={handleChange}
               onSaved={handleSaved}
               onClose={() => { ov.setShowTrackerOverlay(false); ov.setTrackerNeedId(null); }}
               initialNeedId={ov.trackerNeedId}
               onOpenNote={() => ov.setShowTodayNote(true)}
-              onOpenGoal={() => ov.setShowTrackerGoal(true)}
               onOpenHistory={() => { ov.setShowTrackerOverlay(false); ov.setTrackerNeedId(null); ov.setTrackerTab('history'); ov.setShowTracker(true); }}
               yesterdayRatings={yesterdayRatings}
             />
@@ -435,7 +429,7 @@ export function AppShell() {
         {/* ── Diaries overlay ── */}
         {ov.showDiaries && (
           <Suspense fallback={null}>
-            <DiariesOverlay onClose={() => ov.setShowDiaries(false)} onOpenTracker={() => { ov.setShowDiaries(false); ov.setTrackerNeedId(null); ov.setShowTrackerOverlay(true); }} />
+            <DiariesOverlay onClose={() => ov.setShowDiaries(false)} onOpenTrackerHistory={() => { ov.setShowDiaries(false); ov.setTrackerTab('history'); ov.setShowTracker(true); }} />
           </Suspense>
         )}
 
@@ -468,7 +462,7 @@ export function AppShell() {
       {/* ── Mobile bottom nav ──────────────────────────────────────────────── */}
       <MobileNav items={NAV_ITEMS} therapist={therapistMode} onSearch={() => ov.setCmdOpen(true)} />
 
-      <QuickActions ov={ov} showButton={!therapistMode} />
+      <QuickActions ov={ov} />
       {/* ── Command palette ─────────────────────────────────────────────────── */}
       {ov.cmdOpen && (
         <CommandPalette

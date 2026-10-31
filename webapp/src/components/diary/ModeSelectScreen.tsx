@@ -6,6 +6,7 @@ import { DiaryAside } from './DiaryStepCard';
 import { haptic } from '../../haptic';
 import { ModeFeelingBrowse } from './ModeFeelingBrowse';
 import { ModeGroupList } from './ModeGroupList';
+import { CrisisCard } from '../CrisisCard';
 
 /**
  * Шаг 1 дневника режимов (webapp): выбор режима.
@@ -14,14 +15,11 @@ import { ModeGroupList } from './ModeGroupList';
  * кто знает точное название (ModeGroupList). Вынесено из ModeEntrySheet
  * (правило №10). Парный по смыслу с miniapp ModeSelectStep. listOpen — локален.
  */
-export function ModeSelectScreen({
-  modeId,
-  onPick,
-  onBack,
-}: {
+export function ModeSelectScreen({ modeId, onPick, onBack, crisis = false }: {
   modeId: string;
   onPick: (id: string) => void;
   onBack: () => void;
+  crisis?: boolean;
 }) {
   const tr = useTr();
   const [listOpen, setListOpen] = useState(false);
@@ -55,6 +53,7 @@ export function ModeSelectScreen({
         </DiaryAside>
       }
     >
+      {crisis && <CrisisCard surface="schema" />}
       {/* Главное действие: выбор по ощущению */}
       <div className="ds-sub sd-select-q">
         {tr(

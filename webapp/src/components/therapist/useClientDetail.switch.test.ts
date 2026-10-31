@@ -179,7 +179,7 @@ describe('уход со страницы в течение задержки ав
     act(() => { result.current.patchConcept({ goals: 'не долетело' }); });
     await act(async () => { window.dispatchEvent(new Event('pagehide')); });
 
-    expect(result.current.conceptError).not.toBe('');
+    expect(result.current.saveStatus).toBe('error'); // «Не сохранилось» + «Повторить» в SaveStatusLine
     expect(reportClientError).toHaveBeenCalledWith(expect.objectContaining({ section: 'therapist.clientDetail' }));
   });
 

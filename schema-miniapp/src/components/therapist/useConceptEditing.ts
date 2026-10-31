@@ -12,6 +12,7 @@ import {
   conceptOverLimitText,
 } from '../../../../shared/src/therapy/conceptOverLimit';
 import { sameId } from '../../../../shared/src/utils/sameId';
+import { conceptSaveErrorText } from './conceptSaveError';
 
 // Состояние и обработчики концептуализации клиента. Вынесено из
 // useClientDetail.ts (правило №10); публичная форма возврата хука-фасада
@@ -83,17 +84,11 @@ export function useConceptEditing(
       setConceptDirty(false);
     } catch (e: unknown) {
       if (!isOpen()) return;
-      const msg = e instanceof Error ? e.message : '';
+      // Причина уходит в строку статуса (ConceptSaveBar → SaveStatusLine.errorText).
+      // Поле длиннее предела сервера называется по имени — иначе повтор не поможет.
       const over = conceptOverLimitField(localConcept);
       setConceptError(
-        over
-          ? conceptOverLimitText(over, tr)
-          : msg.startsWith('API')
-            ? tr(
-                'Ошибка сервера. Попробуй позже.',
-                'Ошибка сервера. Попробуйте позже.',
-              )
-            : msg || 'Ошибка сохранения',
+        over ? conceptOverLimitText(over, tr) : conceptSaveErrorText(e, tr),
       );
     } finally {
       if (isOpen()) setConceptSaving(false);

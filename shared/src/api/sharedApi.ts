@@ -155,6 +155,8 @@ export const buildSharedApi = (t: ApiTransport) => ({
     actualNeed?: string;
     childhoodMemories?: string;
     healthyResponse?: string;
+    /** Запись из потока «Что случилось» (сайт). */
+    fromCase?: boolean;
   }) => t.postJson<ModeDiaryEntry>('/api/diary/mode', data),
   deleteModeDiary: (id: number) => t.del(`/api/diary/mode/${id}`),
   getGratitudeDiary: () => t.get<GratitudeDiaryEntry[]>('/api/diary/gratitude'),

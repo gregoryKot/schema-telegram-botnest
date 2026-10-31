@@ -1,23 +1,29 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api, reportClientError } from '../../api';
-import { isDiaryToday } from '../../../../shared/src/diary/diaryDay';
-import { mergeRecentEntries, type RecentEntry } from './model';
+import type { ModeDiaryEntry } from '../../../../shared/src/types';
+import { buildDiaryFeed, casesTodayCount, lastEntryAt, type FeedEntry } from './todayFeed';
 
-export interface TodayDone { schema: boolean; mode: boolean; gratitude: boolean }
-const NOTHING_DONE: TodayDone = { schema: false, mode: false, gratitude: false };
+interface DiariesState {
+  /** Записи трёх дневников за сегодня (без строки трекера). */
+  feed: FeedEntry[];
+  /** Разборов «Что случилось» за сегодня (записи режимов с fromCase). */
+  casesToday: number;
+  lastAt: string | null;
+  /** Все записи дневника режимов — сигнал моста к терапевту считает повторы. */
+  modeEntries: ModeDiaryEntry[];
+}
+const EMPTY: DiariesState = { feed: [], casesToday: 0, lastAt: null, modeEntries: [] };
 
-// Три дневника экрана «Сегодня»: последние записи и «сделано сегодня» для
-// фокус-карточки. reloadDiaries перечитывает их после записи, не сбрасывая
-// профиль и остальной экран в скелетон. Сбой источника — в reportClientError.
+// Три дневника главной «Сегодня»: записи за сегодня для ленты, счётчики для
+// плиток. reloadDiaries перечитывает их после разбора, не сбрасывая профиль и
+// остальной экран в скелетон. Сбой источника — в reportClientError, экран
+// остаётся с пустым состоянием.
 export function useTodayDiaries(refreshKey: number | undefined) {
-  const [recent, setRecent] = useState<RecentEntry[]>([]);
+  const [state, setState] = useState<DiariesState>(EMPTY);
   const [diariesLoaded, setDiariesLoaded] = useState(false);
-  const [todayDone, setTodayDone] = useState<TodayDone>(NOTHING_DONE);
-  // Пункты сегодняшней благодарности: «Ещё» в карточке дописывает, а не затирает.
-  const [gratitudeToday, setGratitudeToday] = useState<string[] | undefined>();
   const [tick, setTick] = useState(0);
 
-  // Сброс в загрузку по refreshKey — прямо в рендере, как в useTodayData.
+  // Сброс в загрузку по refreshKey — прямо в рендере, не в эффекте.
   const [seenRefresh, setSeenRefresh] = useState(refreshKey);
   if (refreshKey !== seenRefresh) {
     setSeenRefresh(refreshKey);
@@ -29,13 +35,13 @@ export function useTodayDiaries(refreshKey: number | undefined) {
     Promise.all([api.getSchemaDiary(), api.getModeDiary(), api.getGratitudeDiary()])
       .then(([schema, mode, gratitude]) => {
         if (ignore) return;
-        setRecent(mergeRecentEntries({ schema, mode, gratitude }));
-        setTodayDone({
-          schema: schema.some(e => isDiaryToday(e.createdAt)),
-          mode: mode.some(e => isDiaryToday(e.createdAt)),
-          gratitude: gratitude.some(e => isDiaryToday(e.date)),
+        const src = { schema, mode, gratitude };
+        setState({
+          feed: buildDiaryFeed(src),
+          casesToday: casesTodayCount(src),
+          lastAt: lastEntryAt(src),
+          modeEntries: mode,
         });
-        setGratitudeToday(gratitude.find(e => isDiaryToday(e.date))?.items);
       })
       .catch(() => reportClientError({ message: 'today diaries background load failed', section: 'today' }))
       .finally(() => { if (!ignore) setDiariesLoaded(true); });
@@ -44,5 +50,5 @@ export function useTodayDiaries(refreshKey: number | undefined) {
 
   const reloadDiaries = useCallback(() => setTick(t => t + 1), []);
 
-  return { recent, diariesLoaded, todayDone, gratitudeToday, reloadDiaries };
+  return { ...state, diariesLoaded, reloadDiaries };
 }

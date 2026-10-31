@@ -134,15 +134,16 @@
   - [x] прогресс стрик-цели `task.progress` (`TaskProgressBar`, расчёт —
     `shared/src/tasks/taskProgress.ts`, мини-апп на нём же).
   - [x] переход в трекер из хаба дневника (`DiaryTrackerLink`, текст —
-    `shared/src/diary/diaryTrackerLink.ts`); вводная пустого хаба на сайте уже была.
+    `shared/src/diary/diaryTrackerLink.ts`); вводная пустого хаба на сайте уже была. На сайте `DiaryTrackerLink` удалён в этапе 3 простого клиента.
   - [x] `SaveErrorNote` при провале сохранения схем/режимов: `useSaveFailure` в
     `useSchemasData`, плашка в `SchemasSection` (ты/вы).
   - [x] «Восстановить» версию концептуализации (`ConceptVersionHistory`, поля —
     `shared/src/therapy/conceptSnapshotRestore.ts`, мини-апп на нём же).
   - [x] офлайн-плашка на мобильной вёрстке (`OfflineBanner`) и повтор очереди
     оценок по `online` (`useOutboxFlushOnOnline`).
-  - [x] онбординг трекера, 3 карточки (`TrackerOnboarding`, контент —
-    `shared/src/needs/trackerOnboarding.ts`, мини-апп на нём же).
+  - [x] онбординг трекера, 3 карточки (контент —
+    `shared/src/needs/trackerOnboarding.ts`, мини-апп на нём же). Сайт с этапа 2
+    простого клиента показывает вместо карточек одну строку `TrackerOriginNote`.
   - [x] развёрнутое «О приложении» (`AboutWhy`, контент — `shared/src/about/aboutData.ts`).
 
 ### Этап 4. Ежедневные точки входа
@@ -152,13 +153,15 @@
   (ключи localStorage прежние), сайт — `webapp/src/sections/today/`
   (`TodayFocusBlock`, `TodayFocusCard`, `FocusPicker`, `FocusEntrySheet`,
   `useTodayFocusPrefs`); скрытие серии — `StreakSlot` в `TodayAside.tsx`.
+  С #872 эти компоненты с главной сайта убраны (главная — три плитки и лента
+  дня, см. `docs/open/frontend-ux.md`); «Фокус дня» остался в мини-аппе.
 - [x] Быстрые действия «+» на телефоне. Реестр, ключи настройки и порядок
   переехали в `shared/src/quickActions/` (мини-апп берёт оттуда же; общее
   состояние листа — `usePlusMenuState`). Сайт: кнопка и лист —
-  `webapp/src/components/quickActions/{PlusButton,PlusMenuSheet,QuickActions}.tsx`,
+  `webapp/src/components/quickActions/{PlusButton,PlusMenuSheet,QuickActions}.tsx` (кнопка и лист удалены в этапе 3 простого клиента),
   оверлеи действий — `QuickActionOverlays.tsx` (состояние в `useOverlays`:
   `quickAction`, `runQuickAction`), разбор ⇄ карта — общий
-  `caseFlow/CaseFlowHost.tsx` (им же пользуется `CaseEntryBlock`), настройка
+  `caseFlow/CaseFlowHost.tsx` (на сайте его открывает плитка «Что случилось» в `TodaySection`; `CaseEntryBlock` убран в #872), настройка
   видимости — `QuickActionCustomizeSheet.tsx` (те же ключи localStorage).
   Палитра ⌘K показывает те же действия строками. Аналитика — прежние
   `plus_open`/`plus_action`/`quick_action_toggle`. Не сделано: перестановка

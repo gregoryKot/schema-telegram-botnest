@@ -10,6 +10,7 @@ import {
   getTherapistContact,
   cacheTherapistContact,
   contactCta,
+  hasConnectedTherapist,
 } from './therapistContact';
 
 beforeEach(() => {
@@ -140,5 +141,25 @@ describe('contactCta', () => {
       myName: null,
     });
     expect(contactCta().label).toBe('Написать терапевту →');
+  });
+});
+
+describe('hasConnectedTherapist', () => {
+  it('автор по умолчанию — не подключён', () => {
+    expect(hasConnectedTherapist()).toBe(false);
+  });
+
+  it('клиент с терапевтом — подключён; сам терапевт (name «вам») тоже не «автор»', () => {
+    localStorage.setItem('therapy_contact_url', 'tg://user?id=42');
+    localStorage.setItem('therapy_contact_name', 'терапевту');
+    expect(hasConnectedTherapist()).toBe(true);
+    expect(
+      hasConnectedTherapist({
+        url: 'https://t.me/kotlarewski',
+        bookingUrl: 'https://kotlarewski.gr/#booking',
+        name: 'автору',
+        isTherapist: false,
+      }),
+    ).toBe(false);
   });
 });

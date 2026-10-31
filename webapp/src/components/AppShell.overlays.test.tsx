@@ -75,11 +75,13 @@ describe('AppShell — командная палитра', () => {
     await waitFor(() => expect(screen.getByTestId('command-palette')).toBeTruthy());
   });
 
-  it('⌘2 переключает секцию на «Дневник» (быстрый доступ без палитры)', async () => {
+  it('⌘2 переключает секцию на «Записи», ⌘3 — на «Ещё» (быстрый доступ без палитры)', async () => {
     renderAppShell('/today');
     await waitFor(() => expect(screen.getByTestId('today-section')).toBeTruthy());
     fireEvent.keyDown(window, { key: '2', metaKey: true });
     await waitFor(() => expect(screen.getByTestId('diary-section')).toBeTruthy());
+    fireEvent.keyDown(window, { key: '3', metaKey: true });
+    await waitFor(() => expect(screen.getByTestId('more-section')).toBeTruthy());
   });
 
   it('палитра «Закрыть» реально закрывается', async () => {
@@ -234,17 +236,6 @@ describe('AppShell — трекер: колбэки заметки/цели/ис
     await waitFor(() => expect(screen.getByTestId('note-sheet')).toBeTruthy());
   });
 
-  it('«goal» из трекера открывает TaskCreateSheet, закрытие/создание убирает его', async () => {
-    renderAppShell('/today');
-    await waitFor(() => expect(screen.getByTestId('today-section')).toBeTruthy());
-    fireEvent.click(screen.getByTestId('today-section-tracker'));
-    await waitFor(() => expect(screen.getByTestId('tracker-overlay')).toBeTruthy());
-    fireEvent.click(screen.getByTestId('tracker-overlay-goal'));
-    await waitFor(() => expect(screen.getByTestId('task-create-sheet')).toBeTruthy());
-    fireEvent.click(screen.getByTestId('task-create-sheet-created'));
-    await waitFor(() => expect(screen.queryByTestId('task-create-sheet')).toBeNull());
-  });
-
   it('«openHistory» из трекера закрывает трекер и открывает HistorySheet', async () => {
     renderAppShell('/today');
     await waitFor(() => expect(screen.getByTestId('today-section')).toBeTruthy());
@@ -285,13 +276,6 @@ describe('AppShell — прямая навигация и точечный тр�
     await waitFor(() => expect(screen.getByTestId('today-section')).toBeTruthy());
     fireEvent.click(screen.getByTestId('today-section-navigate'));
     await waitFor(() => expect(screen.getByTestId('diary-section')).toBeTruthy());
-  });
-
-  it('Today «trackerAt» открывает трекер сразу с конкретной потребностью (не с пустого списка)', async () => {
-    renderAppShell('/today');
-    await waitFor(() => expect(screen.getByTestId('today-section')).toBeTruthy());
-    fireEvent.click(screen.getByTestId('today-section-trackerAt'));
-    await waitFor(() => expect(screen.getByTestId('tracker-overlay')).toBeTruthy());
   });
 
   it('Паттерны: «childhood» открывает колесо детства из раздела схем', async () => {
@@ -343,11 +327,22 @@ describe('AppShell — Дневник напрямую (Today) и Практик
     await waitFor(() => expect(screen.queryByTestId('childhood-wheel')).toBeNull());
   });
 
-  it('Today «cabinet» переключает в режим терапевта (доступно из клиентского экрана)', async () => {
-    renderAppShell('/today');
-    await waitFor(() => expect(screen.getByTestId('today-section')).toBeTruthy());
-    fireEvent.click(screen.getByTestId('today-section-cabinet'));
+  it('«Ещё»: «cabinet» переключает в режим терапевта (ссылка живёт в «Ещё», на главной её нет)', async () => {
+    renderAppShell('/more');
+    await waitFor(() => expect(screen.getByTestId('more-section')).toBeTruthy());
+    fireEvent.click(screen.getByTestId('more-section-cabinet'));
     await waitFor(() => expect(screen.getByTestId('therapist-client-sheet')).toBeTruthy());
+  });
+
+  it('«Ещё»: переход в «Практики» и тест на схемы доходят до оболочки', async () => {
+    renderAppShell('/more');
+    await waitFor(() => expect(screen.getByTestId('more-section')).toBeTruthy());
+    fireEvent.click(screen.getByTestId('more-section-test'));
+    await waitFor(() => expect(screen.getByTestId('schema-info-sheet')).toBeTruthy());
+    expect(JSON.parse(screen.getByTestId('schema-info-sheet-state').textContent ?? '{}')).toMatchObject({ autoStartTest: true, initialTab: 'needs' });
+    fireEvent.click(screen.getByTestId('schema-info-sheet-close'));
+    fireEvent.click(screen.getByTestId('more-section-toPractice'));
+    await waitFor(() => expect(screen.getByTestId('practice-section')).toBeTruthy());
   });
 
   it('Практика: практики/планы/трекер/дневники/детство открывают соответствующие оверлеи', async () => {
@@ -450,7 +445,7 @@ describe('AppShell — командная палитра: переход к кл
     await waitFor(() => expect(screen.getByTestId('therapist-client-sheet')).toBeTruthy());
   });
 
-  it('быстрое действие «Трекер» из палитры открывает трекер тем же флагом, что и «+»', async () => {
+  it('быстрое действие «Трекер» из палитры открывает трекер (быстрые действия живы без кнопки «+»)', async () => {
     renderAppShell('/today');
     await waitFor(() => expect(screen.getByTestId('today-section')).toBeTruthy());
     fireEvent.keyDown(window, { key: 'k', metaKey: true });
@@ -460,17 +455,18 @@ describe('AppShell — командная палитра: переход к кл
   });
 });
 
-describe('AppShell — кнопка «+» быстрых действий', () => {
-  it('в клиентском режиме «+» открывает лист, строка «Трекер потребностей» открывает трекер и закрывает лист', async () => {
-    renderAppShell('/today');
-    await waitFor(() => expect(screen.getByTestId('today-section')).toBeTruthy());
-    fireEvent.click(screen.getByRole('button', { name: 'Быстрое действие' }));
-    fireEvent.click(await screen.findByRole('button', { name: /Трекер потребностей/ }));
+describe('AppShell — кнопки «+» быстрых действий нет', () => {
+  it('на «Записях» кнопки нет, а быстрое действие по-прежнему запускается из палитры ⌘K', async () => {
+    renderAppShell('/diary');
+    await waitFor(() => expect(screen.getByTestId('diary-section')).toBeTruthy());
+    expect(screen.queryByRole('button', { name: 'Быстрое действие' })).toBeNull();
+    fireEvent.keyDown(window, { key: 'k', metaKey: true });
+    await waitFor(() => expect(screen.getByTestId('command-palette')).toBeTruthy());
+    fireEvent.click(screen.getByTestId('command-palette-quickTracker'));
     await waitFor(() => expect(screen.getByTestId('tracker-overlay')).toBeTruthy());
-    expect(screen.queryByRole('dialog', { name: 'Быстрое действие' })).toBeNull();
   });
 
-  it('в кабинете терапевта «+» нет', async () => {
+  it('в кабинете терапевта «+» тоже нет', async () => {
     mockApi.getProfile.mockResolvedValueOnce({ role: 'THERAPIST', name: 'Др. Кто', mySchemaIds: [] });
     renderAppShell('/cabinet');
     await waitFor(() => expect(screen.getByTestId('therapist-client-sheet')).toBeTruthy());
@@ -494,17 +490,17 @@ describe('AppShell — настройки: выход из роли терапе
   });
 });
 
-describe('AppShell — трекер: изменение оценки реально приходит обратно в ratings/saved', () => {
-  it('onChange(needId, value) — ratings[needId] обновился, saved[needId] сброшен на false', async () => {
+describe('AppShell — трекер: изменение оценки реально приходит обратно в ratings', () => {
+  it('onChange(needId, value) — ratings[needId] обновился', async () => {
     renderAppShell('/today');
     await waitFor(() => expect(screen.getByTestId('today-section')).toBeTruthy());
     fireEvent.click(screen.getByTestId('today-section-tracker'));
     await waitFor(() => expect(screen.getByTestId('tracker-overlay')).toBeTruthy());
-    expect(JSON.parse(screen.getByTestId('tracker-overlay-state').textContent ?? '{}')).toEqual({ attachmentRating: null, attachmentSaved: null });
+    expect(JSON.parse(screen.getByTestId('tracker-overlay-state').textContent ?? '{}')).toEqual({ attachmentRating: null });
 
     fireEvent.click(screen.getByTestId('tracker-overlay-change'));
     await waitFor(() => {
-      expect(JSON.parse(screen.getByTestId('tracker-overlay-state').textContent ?? '{}')).toEqual({ attachmentRating: 5, attachmentSaved: false });
+      expect(JSON.parse(screen.getByTestId('tracker-overlay-state').textContent ?? '{}')).toEqual({ attachmentRating: 5 });
     });
   });
 });
@@ -567,17 +563,6 @@ describe('AppShell — заметка дня и цель трекера закр
     await waitFor(() => expect(screen.getByTestId('note-sheet')).toBeTruthy());
     fireEvent.click(screen.getByTestId('note-sheet-close'));
     await waitFor(() => expect(screen.queryByTestId('note-sheet')).toBeNull());
-  });
-
-  it('TaskCreateSheet close реально скрывает лист (без создания цели)', async () => {
-    renderAppShell('/today');
-    await waitFor(() => expect(screen.getByTestId('today-section')).toBeTruthy());
-    fireEvent.click(screen.getByTestId('today-section-tracker'));
-    await waitFor(() => expect(screen.getByTestId('tracker-overlay')).toBeTruthy());
-    fireEvent.click(screen.getByTestId('tracker-overlay-goal'));
-    await waitFor(() => expect(screen.getByTestId('task-create-sheet')).toBeTruthy());
-    fireEvent.click(screen.getByTestId('task-create-sheet-close'));
-    await waitFor(() => expect(screen.queryByTestId('task-create-sheet')).toBeNull());
   });
 });
 

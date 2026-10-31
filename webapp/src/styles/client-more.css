@@ -1,0 +1,20 @@
+/* «Ещё» (sections/MoreSection.tsx). Префикс cm-. */
+.cm-page { max-width: 600px; gap: 20px; }
+.cm-h1 { font-size: 34px; }
+.cm-list { margin: 0; padding: 0; list-style: none; border-top: 1px solid var(--line); }
+.cm-list > li { border-bottom: 1px solid var(--line); }
+.cm-row {
+  width: 100%; min-height: 64px; box-sizing: border-box; padding: 12px 4px;
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  background: none; border: 0; cursor: pointer; text-align: left; color: var(--text); font-family: var(--sans); text-decoration: none;
+}
+.cm-row:hover { background: var(--paper-tint); }
+.cm-row-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.cm-row-title { font-size: 16px; font-weight: 600; }
+.cm-row-sub { font-size: 13px; color: var(--text-muted); }
+.cm-row-arrow { color: var(--text-faint); font-size: 18px; flex-shrink: 0; }
+.cm-sos {
+  min-height: 56px; border-radius: 28px; border: 1px solid var(--accent); cursor: pointer;
+  background: var(--paper-tint); color: var(--accent); font: 700 16px var(--sans);
+}
+.cm-sos:hover { background: var(--accent); color: var(--on-ink); }

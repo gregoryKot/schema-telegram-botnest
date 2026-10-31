@@ -20,7 +20,7 @@ function renderWithForm(ui: ReactElement, form: AddressForm) {
 afterEach(cleanup);
 
 describe('DiaryEmptyExplainer (webapp) — пустой архив объясняет «зачем»', () => {
-  it('фильтр «Все»: общий зачин и карточки схем и режимов', () => {
+  it('сегмент «Все»: общий зачин и карточки схем и режимов', () => {
     const { container } = renderWithForm(
       <DiaryEmptyExplainer filter="all" />,
       'ty',
@@ -33,19 +33,27 @@ describe('DiaryEmptyExplainer (webapp) — пустой архив объясн�
     expect(text).toContain('3–5 записей'); // результат и срок
   });
 
-  it('фильтр по типу: только его карточка, честное «нет записей»', () => {
-    const { container } = renderWithForm(
-      <DiaryEmptyExplainer filter="mode" />,
-      'ty',
-    );
+  it('сегмент «Дневник»: карточки схем и режимов, честное «записей пока нет», кнопка «Записать»', () => {
+    const { container } = renderWithForm(<DiaryEmptyExplainer filter="diary" />, 'ty');
     const text = container.textContent ?? '';
-    expect(text).toContain('Нет записей этого типа');
+    expect(text).toContain('Записей дневника пока нет');
+    expect(text).toContain('Схема —');
     expect(text).toContain('Режим —');
+    expect(text).toContain('кнопка «Записать» выше');
+  });
+
+  it('сегмент «Трекер»: про трекер, без карточек дневников, первая отметка — на главной', () => {
+    const { container } = renderWithForm(<DiaryEmptyExplainer filter="tracker" />, 'ty');
+    const text = container.textContent ?? '';
+    expect(text).toContain('Отметок трекера пока нет');
+    expect(text).toContain('Трекер — пять коротких вопросов');
+    expect(text).toContain('плитка «Трекер» на главной');
     expect(text).not.toContain('Схема —');
+    expect(text).not.toContain('Режим —');
   });
 
   it('форма «вы»: без «ты»-форм во всех фильтрах', () => {
-    for (const filter of ['all', 'schema', 'mode', 'gratitude'] as const) {
+    for (const filter of ['all', 'diary', 'tracker'] as const) {
       const { container, unmount } = renderWithForm(
         <DiaryEmptyExplainer filter={filter} />,
         'vy',

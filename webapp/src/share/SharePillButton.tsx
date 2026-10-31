@@ -1,7 +1,7 @@
 // Компактная кнопка «Поделиться» (иконка), парная schema-miniapp/src/share/
 // SharePill.tsx (compact-режим) — правило №3, вёрстка per-frontend. Один
 // примитив на несколько кнопок шаринга (правило «одна механика — один
-// компонент»): PhraseShareCard, DiaryShareButton, MonthShareButton.
+// компонент»): DiaryShareButton, MonthShareButton, ModeShareButton, AchievementsShare.
 import { ShareIcon } from '../../../shared/src/share/ShareIcon';
 
 export function SharePillButton({ onClick, label }: { onClick: () => void; label: string }) {

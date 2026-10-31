@@ -1,8 +1,10 @@
 // Unified therapist contact: App.tsx writes to localStorage on init, components read from here.
 import type { UserId } from '../userId';
 
-const AUTHOR_TG = 'https://t.me/kotlarewski';
-const AUTHOR_BOOKING = 'https://kotlarewski.gr/#booking';
+export const AUTHOR_TG = 'https://t.me/kotlarewski';
+/** Визитка автора; запись — якорь #booking (с меткой источника — therapy/bridge/therapyBridgeLinks.ts). */
+export const AUTHOR_SITE = 'https://kotlarewski.gr/';
+const AUTHOR_BOOKING = `${AUTHOR_SITE}#booking`;
 const AUTHOR_NAME = 'автору';
 
 // name — НЕ личное имя, а нейтральная подпись в дательном падеже для CTA
@@ -36,6 +38,13 @@ export function getTherapistContact(): TherapistContact {
     name: AUTHOR_NAME,
     isTherapist: false,
   };
+}
+
+/** К пользователю подключён личный терапевт (а не «автор» по умолчанию). */
+export function hasConnectedTherapist(
+  contact: TherapistContact = getTherapistContact(),
+): boolean {
+  return contact.name !== AUTHOR_NAME;
 }
 
 // Готовая CTA-кнопка «написать терапевту». Главное — когда сам пользователь

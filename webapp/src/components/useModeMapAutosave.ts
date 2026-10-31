@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { api, reportClientError } from '../api';
 import { fromFlowNodes, fromFlowEdges } from './modeMapFlow';
 import type { FlowNode, FlowEdge } from './modeMapFlow';
+import type { SaveStatus } from '../../../shared/src/therapy/SaveStatusLine';
 import { usePendingSave } from '../../../shared/src/utils/usePendingSave';
 
 type Scheduled = { ns: FlowNode[]; es: FlowEdge[] };
@@ -16,12 +17,17 @@ type Scheduled = { ns: FlowNode[]; es: FlowEdge[] };
 // (гонка, обнажённая vitest --coverage: «unhandled rejection после teardown»).
 // Досылка при уходе — fire-and-forget без setSaveStatus (звать его уже
 // некому); отказ уходит в телеметрию, а не молча (правило про тихий catch).
+//
+// Issue #879 (шаг A): провал сохранения раньше молча возвращал 'idle' — терапевт видел погасший
+// индикатор и считал правку сохранённой. Теперь — 'error' с отчётом в телеметрию, `retry()` повторяет
+// отправку с текущими nodesRef/edgesRef, а `savedAt` даёт строке статуса «✓ Сохранено в ЧЧ:ММ».
 export function useModeMapAutosave(
   mapId: number,
   nodesRef: React.MutableRefObject<FlowNode[]>,
   edgesRef: React.MutableRefObject<FlowEdge[]>,
 ) {
-  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
+  const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
+  const [savedAt, setSavedAt] = useState<Date | null>(null);
   const isMounted = useRef(true);
   useEffect(() => {
     isMounted.current = true;
@@ -38,8 +44,11 @@ export function useModeMapAutosave(
     if (isMounted.current) setSaveStatus('saving');
     try {
       await api.updateModeMap(id, { nodes: fromFlowNodes(ns), edges: fromFlowEdges(es) });
-      if (isMounted.current) setSaveStatus('saved');
-    } catch { if (isMounted.current) setSaveStatus('idle'); }
+      if (isMounted.current) { setSavedAt(new Date()); setSaveStatus('saved'); }
+    } catch {
+      reportClientError({ message: 'mode map save failed', section: 'modeMap' });
+      if (isMounted.current) setSaveStatus('error');
+    }
   }
 
   const saver = usePendingSave<number, Scheduled>({
@@ -49,9 +58,18 @@ export function useModeMapAutosave(
   });
 
   const scheduleSave = useCallback((ns: FlowNode[], es: FlowEdge[]) => {
-    setSaveStatus('idle');
+    setSaveStatus('pending');
     saver.schedule(mapId, { ns, es });
   }, [mapId, saver]);
 
-  return { saveStatus, scheduleSave };
+  // «Повторить» после ошибки: шлёт САМЫЕ свежие узлы и связи, а не аргументы последнего scheduleSave — иначе правки
+  // после провала потерялись бы. Взведённый таймер заменяется и отправляется сразу (один вызов api).
+  // Событие — литералом, как в useClientDetail.retrySave (трипваер analytics-sync, src/security).
+  const retry = useCallback(() => {
+    api.trackEvent('concept_save_retry');
+    saver.schedule(mapId, { ns: nodesRef.current, es: edgesRef.current });
+    saver.flush();
+  }, [mapId, saver, nodesRef, edgesRef]);
+
+  return { saveStatus, savedAt, retry, scheduleSave };
 }

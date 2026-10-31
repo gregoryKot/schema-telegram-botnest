@@ -113,6 +113,26 @@
 }
 
 /* ── Шапка вкладки ── */
-.tcp-head { align-items: flex-end; margin-bottom: 28px; }
-.tcp-head-actions { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.tcp-head { align-items: center; margin-bottom: 28px; }
+.tcp-head-actions { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
 .tcp-save { font-size: 12px; color: var(--text-faint); min-width: 110px; text-align: right; }
+.tcp-more-btn { min-width: 44px; padding: 0 16px; }
+/* Пункт меню в две строки: название и подсказка под ним (ширина меню — 220px из .mm2-drop, подсказка переносится); тап-цель остаётся ≥44px. */
+.tcp-menu .mm2-item { min-height: 44px; font-size: 13px; flex-direction: column; align-items: flex-start; gap: 2px; padding: 8px 10px; line-height: 1.3; }
+.tcp-menu-hint { font-size: 11px; line-height: 1.35; color: var(--text-faint); white-space: normal; }
+/* Строка под шапкой: занятость или отказ действия из меню, «Текст скопирован». */
+.tcp-status { font-size: 13px; color: var(--text-sub); margin: -16px 0 20px; }
+.tcp-status.is-err { color: var(--err); }
+
+/* ── Схема и раскрывашки под содержанием ── */
+.tcp-graph { padding: var(--space-8) 0; }
+.tcp-folds { display: flex; flex-direction: column; gap: 12px; margin-top: 40px; max-width: 880px; }
+.tcp-folds .ds-label { font-size: 14px; }
+/* Вид «Схема»: четыре колонки схеме нужны от 960px (WIDE_MIN). Ноутбук 1280 минус
+   сайдбар 240 — 1040; с отступами --tk-gutter (48px с каждой стороны) оставалось
+   944 и схема падала в столбик. Здесь отступ 20px: 1040 − 40 = 1000 ≥ 960.
+   max-width остаётся --tk-max: на широком мониторе колонка стоит по центру,
+   как остальные экраны кабинета. Селектор специфичнее therapist-card.css. */
+@media (min-width: 768px) {
+  .tk-tabs-body > .page-inner-wide.tcp--graph { padding-inline: 20px; }
+}

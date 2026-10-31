@@ -1,8 +1,8 @@
 import type { DiaryType } from '../../types';
 import { Skeleton } from '../../components/Skeleton';
 import { dateRelLabel, fmtDayMonth, fmtWeekday } from './dateHelpers';
-import { SchemaEntry, ModeEntry, GratitudeEntry } from './EntryCards';
-import type { AnyEntry } from './diaryModel';
+import { EntryRow } from './EntryRow';
+import { entryKey, type AnyEntry } from './diaryModel';
 
 export function DiaryTimelineSkeleton() {
   return (
@@ -21,9 +21,11 @@ export function DiaryTimelineSkeleton() {
 }
 
 // Лента, сгруппированная по дням: слева дата и «сегодня/вчера», справа карточки записей.
-export function DiaryTimeline({ groups, onDelete }: {
+export function DiaryTimeline({ groups, onDelete, onOpenTrackerHistory }: {
   groups: { dateKey: string; items: AnyEntry[] }[];
   onDelete: (type: DiaryType, id: number) => void;
+  /** Тап по строке трекера; без него строка не нажимается (лист «Дневники» из практик). */
+  onOpenTrackerHistory?: () => void;
 }) {
   return (
     <div className="cd-timeline">
@@ -36,11 +38,7 @@ export function DiaryTimeline({ groups, onDelete }: {
               <div className="cd-day-rel">{rel ? `${rel} · ` : ''}{fmtWeekday(dateKey)}</div>
             </div>
             <div className="cd-day-items">
-              {items.map(item => item._type === 'schema'
-                ? <SchemaEntry key={'s-' + item.entry.id} entry={item.entry} onDelete={() => onDelete('schema', item.entry.id)} />
-                : item._type === 'mode'
-                  ? <ModeEntry key={'m-' + item.entry.id} entry={item.entry} onDelete={() => onDelete('mode', item.entry.id)} />
-                  : <GratitudeEntry key={'g-' + item.entry.id} entry={item.entry} onDelete={() => onDelete('gratitude', item.entry.id)} />)}
+              {items.map(item => <EntryRow key={entryKey(item)} item={item} onDelete={onDelete} onOpenTrackerHistory={onOpenTrackerHistory} />)}
             </div>
           </div>
         );

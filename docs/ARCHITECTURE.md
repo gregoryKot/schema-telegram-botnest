@@ -35,7 +35,7 @@
 | Текст уведомления | `src/notification/notification.templates.ts`, форма ты/вы — `src/notification/address-form.ts` | texts |
 | Обращение ты/вы во фронте | `shared/src/utils/addressForm.ts` (`useTr`) | texts |
 | Новый крон | `src/infra/cron-leader.service.ts` (`claimRun`), `scripts/cron-leader-baseline.json`, `src/infra/self-check/cron-lease-registry.ts`; обход, который доделывается после рестарта, — `finishRun` (`src/infra/cron-run-done.ts`) и `COMPLETING_LEASES` (`src/infra/self-check/cron-lease-done.ts`), образец — `src/telegram/telegram.midnight-planner.ts` | ops |
-| Событие аналитики и блок `/stats` | `src/analytics/analytics.constants.ts`, `src/api/analytics-meta.sanitize.ts`, `src/bot/stats-report.service.ts`, `shared/src/share/analytics.ts` | analytics |
+| Событие аналитики и блок `/stats` | `src/analytics/analytics.constants.ts`, `src/api/analytics-meta.sanitize.ts`, `src/bot/stats-report.service.ts`, `src/bot/stats-report.blocks.ts`, `src/bot/stats-sections.ts`, `shared/src/share/analytics.ts` | analytics |
 | Запись на консультацию, оплата | `src/booking/booking.service.ts`, `src/booking/slot.service.ts`, `src/booking/payment.controller.ts` | backend-api, data |
 | Кабинет терапевта | `src/therapy/therapy-relations.service.ts` (`assertHasClient`), `shared/src/therapy/` | security |
 | Env-переменная | `src/infra/env-registry.ts` + `docs/ENV.md` | ops |

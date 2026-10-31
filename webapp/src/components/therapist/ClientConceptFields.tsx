@@ -45,7 +45,7 @@ function GoalsForm(p: FieldProps) {
   return <ConceptArea {...p} rows={3} />;
 }
 
-export function ClientConceptFields({ detail }: { detail: ClientDetail }) {
+export function ClientConceptFields({ detail, onGoToGraph }: { detail: ClientDetail; onGoToGraph?: () => void }) {
   const { localConcept, patchConcept } = detail;
   const values = localConcept as ConceptValues;
   const meta = (key: string) => CONCEPT_FIELDS.find((f) => f.key === key);
@@ -53,7 +53,7 @@ export function ClientConceptFields({ detail }: { detail: ClientDetail }) {
   return (
     <div className="tcp-fields">
       <ConceptProgress values={values} />
-      <ConceptPickers detail={detail} />
+      <ConceptPickers detail={detail} onGoToGraph={onGoToGraph} />
       {CONCEPT_SECTIONS.map((s, i) => {
         const m = meta(s.key);
         const Form = FORMS[s.key] ?? GoalsForm;

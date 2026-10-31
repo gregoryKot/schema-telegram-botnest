@@ -6,7 +6,7 @@ import { reloadKeepingShown } from '../utils/reloadKeepingShown';
  * Задание назначено (TaskCreateSheet) — перечитать задания ЭТОГО клиента.
  * Ответ, пришедший после перехода к другому клиенту, его список не трогает:
  * иначе у второго клиента показались бы задания первого (инцидент 2026-10-26,
- * docs/INCIDENTS.md, класс 18). Сбой перечитывания показанное не стирает.
+ * docs/INCIDENTS.md, класс 19). Сбой перечитывания показанное не стирает.
  */
 export function reloadClientTasks(
   clientId: UserId,

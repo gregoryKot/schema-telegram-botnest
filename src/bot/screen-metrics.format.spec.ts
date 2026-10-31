@@ -24,6 +24,9 @@ const FULL: ScreenMetrics = {
   ],
   movesByScreen: [],
   syncedUsers: 0,
+  homeTiles: [],
+  trackerSkips: 0,
+  diaryQuick: { byTag: [], detailed: 0 },
 };
 
 const EMPTY: ScreenMetrics = {
@@ -31,6 +34,9 @@ const EMPTY: ScreenMetrics = {
   hiddenByScreenBlock: [],
   movesByScreen: [],
   syncedUsers: 0,
+  homeTiles: [],
+  trackerSkips: 0,
+  diaryQuick: { byTag: [], detailed: 0 },
 };
 
 describe('formatScreenMetrics', () => {
@@ -170,5 +176,48 @@ describe('formatScreenMetrics — syncedUsers (серверное зеркало
       '🧩 Настройку экранов пока не трогали.\nНастройки синхронизированы: 5 человек',
     );
     expect(text).not.toMatch(/NaN|undefined/);
+  });
+});
+
+describe('formatScreenMetrics — плитки главной', () => {
+  it('строка плиток попадает в отчёт последней, после синхронизации', () => {
+    const text = formatScreenMetrics({
+      ...FULL,
+      syncedUsers: 2,
+      homeTiles: [{ tile: 'case', count: 4 }],
+    });
+    expect(text.split('\n').at(-1)).toBe('Главная: плитки — Что случилось 4');
+  });
+
+  it('на чистой БД плиток в отчёте нет', () => {
+    expect(formatScreenMetrics(EMPTY)).not.toMatch(/Главная/);
+  });
+});
+
+describe('formatScreenMetrics — пропуски в трекере', () => {
+  it('на чистой БД строки про пропуски нет', () => {
+    expect(formatScreenMetrics(EMPTY)).not.toMatch(/пропуск/);
+  });
+
+  it('строка пропусков идёт после плиток главной, последней', () => {
+    const text = formatScreenMetrics({
+      ...FULL,
+      homeTiles: [{ tile: 'tracker', count: 2 }],
+      trackerSkips: 5,
+    });
+    expect(text.split('\n').slice(-2)).toEqual([
+      'Главная: плитки — Трекер 2',
+      'Трекер: пропусков 5',
+    ]);
+  });
+
+  it('строка «Дневник одной страницей» попадает в блок только при данных', () => {
+    expect(formatScreenMetrics(EMPTY)).not.toContain('Дневник одной страницей');
+    const text = formatScreenMetrics({
+      ...EMPTY,
+      opensByScreen: [{ screen: 'profile', count: 1 }],
+      diaryQuick: { byTag: [{ tag: 'thought', count: 2 }], detailed: 1 },
+    });
+    expect(text).toContain('Дневник одной страницей: мыслей 2; подробно 1');
   });
 });

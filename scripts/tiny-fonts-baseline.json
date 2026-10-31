@@ -17,7 +17,6 @@
   "schema-miniapp/src/components/therapistClientSheet/ClientCard.tsx": 1,
   "schema-miniapp/src/components/therapistClientSheet/ClientNotesSheet.tsx": 3,
   "schema-miniapp/src/components/therapistClientSheet/ClinicalSnapshot.tsx": 5,
-  "schema-miniapp/src/components/therapistClientSheet/ConceptSheet.tsx": 1,
   "schema-miniapp/src/components/therapistClientSheet/conceptSheet/ConceptYsqHistory.tsx": 5,
   "schema-miniapp/src/components/therapistClientSheet/StatCards.tsx": 1,
   "schema-miniapp/src/components/TrackerOverlay.tsx": 1,

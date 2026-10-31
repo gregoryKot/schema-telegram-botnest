@@ -201,7 +201,7 @@ export function useClientDetail({ onOpenClient, switchView, setClients }: Params
     notes: notes.notesPage.notes, notesPage: notes.notesPage, noteError: notes.noteError,
     concept, clientData, clientHistory, clientDiary,
     localConcept, conceptError: conceptSave.conceptError, expandedSnapshot, setExpandedSnapshot,
-    saveStatus: conceptSave.saveStatus,
+    saveStatus: conceptSave.saveStatus, savedAt: conceptSave.savedAt, retrySave: conceptSave.retrySave,
     newNoteText: notes.newNoteText, setNewNoteText: notes.setNewNoteText,
     newNoteDate: notes.newNoteDate, setNewNoteDate: notes.setNewNoteDate,
     noteSaving: notes.noteSaving, showAssign, setShowAssign,

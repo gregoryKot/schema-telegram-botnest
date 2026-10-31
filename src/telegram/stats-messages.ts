@@ -1,27 +1,17 @@
 import { settleBlocks } from '../bot/stats-settle';
-import { formatPoolStatus } from '../bot/healthy-adult.pool-alert';
-import type { BotAdminStatsService } from '../bot/bot.admin-stats.service';
-import type { StatsReportService } from '../bot/stats-report.service';
-import type { HealthyAdultService } from '../bot/healthy-adult.service';
+import { coreBlock, poolBlock, type StatsDeps } from './stats-screens';
 
-/** Два сообщения команды /stats. Каждая часть считается отдельно: упавшая
+/** Два сообщения `/stats all`. Каждая часть считается отдельно: упавшая
  * заменяется строкой-заглушкой, остальные доезжают (settleBlocks). */
 export async function collectStatsMessages(
-  deps: {
-    adminStats: BotAdminStatsService;
-    statsReport: StatsReportService;
-    healthyAdult: HealthyAdultService;
-  },
+  deps: StatsDeps,
   logger: { warn(msg: string): void },
 ): Promise<{ first: string; second: string }> {
   const [core, product, pool] = await settleBlocks(
     [
-      { name: 'Главные цифры', run: () => deps.adminStats.getAdminStats() },
+      coreBlock(deps),
       { name: 'Остальной отчёт', run: () => deps.statsReport.render() },
-      {
-        name: 'Запас фраз канала',
-        run: async () => formatPoolStatus(await deps.healthyAdult.poolStatus()),
-      },
+      poolBlock(deps),
     ],
     logger,
   );

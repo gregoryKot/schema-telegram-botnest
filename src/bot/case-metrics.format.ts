@@ -24,6 +24,8 @@ export interface CaseMetrics {
   started: number;
   /** Довели разбор до конца. */
   finished: number;
+  /** Записей режимов с меткой `fromCase` за 30 дней (с даты миграции). */
+  saved: number;
   /** Сцена своими словами против сцены от готовой рамки. */
   sceneOwn: number;
   sceneFrame: number;
@@ -49,12 +51,15 @@ const share = (part: number, whole: number): string =>
 /** Текстовый блок для /stats. Чистая функция. */
 export function formatCaseMetrics(m: CaseMetrics): string {
   const lines = ['🧭 <b>Разбор случая</b> (за месяц)'];
+  const savedLine = `Разборов записано с сайта: ${m.saved} за 30 дней`;
   if (m.started === 0) {
     lines.push('Пока никто не начинал');
+    lines.push(savedLine);
     return lines.join('\n');
   }
 
   lines.push(`Начали ${m.started} · дошли до конца ${m.finished}`);
+  lines.push(savedLine);
   lines.push(`Своими словами ${m.sceneOwn} · по готовой рамке ${m.sceneFrame}`);
   lines.push(
     `Похоже на часть ${m.verdictMode} · обычная досада ${m.verdictOrdinary} · не разобрать ${m.verdictBorderline}`,

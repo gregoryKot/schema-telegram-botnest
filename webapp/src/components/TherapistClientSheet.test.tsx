@@ -373,8 +373,8 @@ describe('TherapistClientSheet — вкладка «Схемы» (YSQ)', () => {
 // Регрессия (см. useClientDetail.mutations.test.ts): autoSave раньше молча
 // проглатывал ошибку api.saveConceptualization — терапевт не видел, что
 // правка не сохранилась. Тест на уровне компонента подтверждает, что
-// ClientConceptTab реально показывает conceptError, а не только внутренний
-// стейт хука.
+// ClientConceptTab реально показывает ошибку (SaveStatusLine: «Не сохранилось»
+// + «Повторить», issue #879), а не только внутренний стейт хука.
 describe('TherapistClientSheet — вкладка «Концептуализация»: ошибка автосохранения видна', () => {
   it('клик по схеме → автосохранение падает → баннер ошибки виден пользователю', async () => {
     mockApi.getTherapyClients.mockResolvedValue([client({ telegramId: 7, name: 'Анна' })]);
@@ -391,9 +391,10 @@ describe('TherapistClientSheet — вкладка «Концептуализац
     fireEvent.click(screen.getByText('Эмоциональная депривация'));
 
     await waitFor(
-      () => expect(screen.getByText(/Не удалось сохранить изменения/)).toBeTruthy(),
+      () => expect(screen.getByRole('alert').textContent).toContain('Не сохранилось'),
       { timeout: 2000 },
     );
+    expect(screen.getByRole('button', { name: 'Повторить' })).toBeTruthy();
   });
 });
 
@@ -581,7 +582,8 @@ describe('TherapistClientSheet — насыщенная карточка кли�
   it('«Концептуализация» показывает историю версий и сверку с YSQ', async () => {
     await openAnna();
     fireEvent.click(screen.getByText('Концептуализация'));
-    await screen.findByText('История версий · 1');
+    // История — свёрнутая раскрывашка под содержанием (#879): заголовок с числом.
+    fireEvent.click(await screen.findByRole('button', { name: 'История версий · 1' }));
 
     fireEvent.click(screen.getByText('Версия 1'));
     await screen.findByText('старая версия');

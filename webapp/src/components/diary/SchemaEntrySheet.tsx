@@ -31,39 +31,34 @@ import {
 import { buildSchemaDiaryExplainer } from '../../../../shared/src/schema/schemaFlowExplainers';
 import { collectFilledFields } from '../../../../shared/src/utils/diaryFields';
 
-// Визард дневника схем (правило онбординга «одно главное действие на экран»,
-// низкий порог для СДВГ) — стиль ModeEntryForm: ExScreen, tick-strip,
-// один вопрос на экран, ex-btn Назад/Дальше/Пропустить/Сохранить. Обязательна
-// только ситуация (trigger); можно сохранить с любого шага. Порядок и текст
-// шагов — из shared/schema/schemaDiarySteps (правило №3); чип-шаги (чувства,
-// схемы) — своя разметка webapp, вынесена в подкомпоненты рядом.
+// Визард дневника схем (одно главное действие на экран, низкий порог для СДВГ)
+// — стиль ModeEntryForm: ExScreen, tick-strip, один вопрос на экран. Обязательна
+// только ситуация (trigger); сохранить можно с любого шага. Порядок и текст
+// шагов — shared/schema/schemaDiarySteps (правило №3); чип-шаги — рядом.
 
 interface Props {
   activeSchemaIds?: string[];
+  /** Текст из «Дневника одной страницей»: встаёт в поле ситуации. */
+  initialTrigger?: string;
   onClose: () => void;
   onSave: (data: SchemaDiaryEntryInput) => Promise<void>;
 }
 
 const HUE = DIARY_HUE.schema;
 
-export function SchemaEntrySheet({ activeSchemaIds, onClose, onSave }: Props) {
+export function SchemaEntrySheet({ activeSchemaIds, initialTrigger, onClose, onSave }: Props) {
   const tr = useTr();
   const goBack = useHistorySheet(onClose);
   // Ключ и форма черновика ('schema', DraftData) не меняются — старые
   // черновики обязаны подхватываться. Состояние и переключатели — общий
   // хук для обоих фронтов (правило №3/№11 CLAUDE.md).
-  const existing = loadDraft<SchemaDiaryDraftData>('schema');
-  const d = existing?.data ?? null;
-  const {
-    values,
-    setField,
-    emotions,
-    toggleEmotion,
-    setIntensity,
-    schemaIds,
-    toggleSchema,
-  } = useSchemaDiaryDraftState(d, haptic);
+  const saved = loadDraft<SchemaDiaryDraftData>('schema')?.data ?? null;
+  const d = initialTrigger ? ({ ...saved, trigger: initialTrigger } as SchemaDiaryDraftData) : saved;
+  const { values, setField, emotions, toggleEmotion, setIntensity, schemaIds, toggleSchema } =
+    useSchemaDiaryDraftState(d, haptic);
   const [saving, setSaving] = useState(false);
+  // Отказ не закрывает лист: иначе он неотличим от успеха (пара к Mode/Gratitude).
+  const [saveError, setSaveError] = useState(false);
   const [showAllSchemas, setShowAllSchemas] = useState(false);
   const [stepIdx, setStepIdx] = useState(0);
   const areaRef = useRef<HTMLTextAreaElement>(null);
@@ -81,6 +76,7 @@ export function SchemaEntrySheet({ activeSchemaIds, onClose, onSave }: Props) {
 
   const handleSave = async () => {
     if (!canSave || saving) return;
+    setSaveError(false);
     haptic.success();
     setSaving(true);
     try {
@@ -91,11 +87,12 @@ export function SchemaEntrySheet({ activeSchemaIds, onClose, onSave }: Props) {
       );
       await onSave({ trigger: values.trigger, emotions, schemaIds, ...optional });
       clearDraft('schema');
+      goBack();
     } catch {
       haptic.error();
+      setSaveError(true);
     } finally {
       setSaving(false);
-      goBack();
     }
   };
 
@@ -128,7 +125,7 @@ export function SchemaEntrySheet({ activeSchemaIds, onClose, onSave }: Props) {
     <ExScreen
       onBack={goBack}
       backLabel="Назад к дневнику"
-      eyebrow={hasSchemaDiaryDraft(d) ? 'Дневник схем · продолжаем с того места' : 'Дневник схем · с чего начнём?'}
+      eyebrow={hasSchemaDiaryDraft(saved) ? 'Дневник схем · продолжаем с того места' : 'Дневник схем · с чего начнём?'}
       title={<>Записать<br /><span className="it">момент</span></>}
       lede={tr(
         'Что-то задело — приходи сюда. Обязательна только ситуация, остальное можно дополнить по шагам.',
@@ -157,11 +154,8 @@ export function SchemaEntrySheet({ activeSchemaIds, onClose, onSave }: Props) {
               showAllSchemas={showAllSchemas}
               onToggleShowAll={() => { haptic.tap(); setShowAllSchemas((v) => !v); }}
             />
-            {/* Свободный текст — здесь, а не в чип-компоненте: detectCrisisAny
-                ниже прогоняет его вместе с остальными полями (правило №7).
-                Своя aria-label (не flash-q выше — тот описывает чипы, а не
-                это поле): у schemaOrigin есть отдельный вопрос в контенте
-                (stepByKey.schemaOrigin.title), видимо он нигде не рендерится. */}
+            {/* Свободный текст — здесь, а не в SchemaChipsStep: detectCrisisAny ниже
+                прогоняет его вместе с остальными полями (правило №7). */}
             <LimitedTextarea max={DIARY_FIELD_MAX} className="ds-textarea sd-area-gap" rows={2}
               value={values.schemaOrigin}
               onChange={(e) => setField('schemaOrigin', e.target.value)}
@@ -184,6 +178,7 @@ export function SchemaEntrySheet({ activeSchemaIds, onClose, onSave }: Props) {
       </DiaryStepCard>
 
       {detectCrisisAny(...Object.values(values)) && <CrisisCard surface="schema" />}
+      {saveError && <div role="alert" className="sd-save-error">Не удалось сохранить. Текст остался черновиком — можно повторить</div>}
 
       <DiaryWizardFoot
         onBack={goPrev}

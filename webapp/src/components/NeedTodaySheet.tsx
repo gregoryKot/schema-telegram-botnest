@@ -9,6 +9,7 @@ import { useTr } from '../utils/addressForm';
 import { NeedScale } from './NeedScale';
 import { NEED_HUE, hueStyle } from '../lib/tone';
 import { NeedFold } from './NeedFold';
+import { rangeCardIndex, wordForValue } from '../../../shared/src/needs/ratingWords';
 import '../styles/sheet-tracker.css';
 import type { NeedId } from '../../../shared/src/needs/types';
 
@@ -31,11 +32,10 @@ export function NeedTodaySheet({ need, value, yesterdayValue, onChange, onClose,
 
   const data = NEED_DATA[need.id];
   if (!data) return null;
-  const rangeIdx = value <= 3 ? 0 : value <= 6 ? 1 : 2;
-  const RANGE_VALUES = [1, 4, 7];
+  const rangeIdx = rangeCardIndex(value);
+  const RANGE_VALUES = [2, 6, 8]; // слова «Совсем нет» / «Наполовину» / «В основном да»
 
   const hue = NEED_HUE[need.id as NeedId];
-  const diff = value - (yesterdayValue ?? 0);
 
   return (
     <ExScreen
@@ -47,33 +47,16 @@ export function NeedTodaySheet({ need, value, yesterdayValue, onChange, onClose,
       aside={
         <div className="ds-card tk2-aside" style={hueStyle(hue)}>
           <div className="ds-eyebrow tone-text">Сегодня</div>
-          <div className="tk2-aside-nums">
-            <span className="ds-num tone-text">{value}</span>
-            <span className="tk2-aside-unit">/10</span>
-          </div>
+          <div className="tk2-aside-word tone-text">{wordForValue(value)?.label ?? '—'}</div>
           <div className="u-mb12">
             <NeedScale
+              variant="words"
               value={value > 0 ? value : undefined}
               hue={hue}
               onChange={onChange}
               label={need.chartLabel}
-              size="lg"
               yesterday={yesterdayValue}
             />
-          </div>
-          <div className="tk2-aside-row">
-            <span>0</span>
-            {typeof yesterdayValue === 'number' && yesterdayValue > 0 ? (
-              <span className="u-faint">
-                вчера {yesterdayValue}
-                {diff !== 0 && (
-                  <span className="tone-text" style={{ fontWeight: 600 }}>
-                    {' '}{diff > 0 ? `+${diff}` : diff}
-                  </span>
-                )}
-              </span>
-            ) : <span>5</span>}
-            <span>10</span>
           </div>
           {rangeIdx === 2 && (
             <div className="tk2-note tone-tint">

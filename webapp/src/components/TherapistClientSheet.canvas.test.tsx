@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-// Проводка «Открыть на холсте» в кабинете терапевта: кнопка на вкладке
+// Проводка «Открыть на холсте» в кабинете терапевта: пункт меню «⋯ Ещё» на вкладке
 // «Концептуализация» создаёт карту, кабинет переключается на «Карту режимов» и
 // просит селектор открыть именно её (initialMapId). Сам селектор — стаб с
 // печатью пропсов: его выбор карты проверен в ModeMapSelector.test.tsx.
@@ -76,13 +76,14 @@ describe('TherapistClientSheet — «Открыть на холсте»', () => 
     fireEvent.click(await screen.findByText('Анна'));
     await screen.findByText('Обзор');
     fireEvent.click(screen.getByText('Концептуализация'));
-    fireEvent.click(await screen.findByRole('button', { name: 'Открыть на холсте' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Ещё действия' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Открыть на холсте' }));
 
     const stub = await screen.findByTestId('selector-stub');
     expect(stub.textContent).toBe('client:7 initial:55');
     // карта сначала сохранена, потом показана: на холсте не пусто
     expect(mockApi.updateModeMap).toHaveBeenCalledWith(55, expect.objectContaining({ nodes: expect.any(Array) }));
-    expect(screen.queryByRole('button', { name: 'Открыть на холсте' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Ещё действия' })).toBeNull();
   });
 
   it('отказ создания: остаёмся на вкладке с сообщением, селектор не открывается', async () => {
@@ -91,7 +92,8 @@ describe('TherapistClientSheet — «Открыть на холсте»', () => 
     fireEvent.click(await screen.findByText('Анна'));
     await screen.findByText('Обзор');
     fireEvent.click(screen.getByText('Концептуализация'));
-    fireEvent.click(await screen.findByRole('button', { name: 'Открыть на холсте' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Ещё действия' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Открыть на холсте' }));
 
     await waitFor(() => expect(screen.getByRole('alert')).toBeTruthy());
     expect(screen.queryByTestId('selector-stub')).toBeNull();

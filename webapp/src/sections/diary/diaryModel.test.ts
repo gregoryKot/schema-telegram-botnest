@@ -1,49 +1,46 @@
 import { describe, it, expect } from 'vitest';
-import {
-  buildEntries, filterEntries, groupByDay, filterCounts, monthStats, streakDays, pluralEntries,
-} from './diaryModel';
+import { buildEntries, filterEntries, groupByDay, filterCounts, streakLine } from './diaryModel';
+import { buildTrackerDays, trackerDayLabel } from './trackerEntries';
 import { withTimeZone } from '../../../../shared/src/utils/timeZone.test-helpers';
 
 const s = (id: number, createdAt: string) => ({ id, createdAt, trigger: 't', emotions: [], schemaIds: [] });
 const m = (id: number, createdAt: string) => ({ id, createdAt, modeId: 'x', situation: 's' });
 const g = (id: number, date: string) => ({ id, date, items: ['a'], createdAt: date + 'T20:00:00Z' });
+const all5 = (v: number) => ({ attachment: v, autonomy: v, expression: v, play: v, limits: v });
 
 describe('diaryModel', () => {
+  const tracker = buildTrackerDays([
+    { date: '2026-10-15', ratings: all5(7) },
+    { date: '2026-10-13', ratings: { attachment: 4, autonomy: 6 } },
+  ]);
   const entries = buildEntries(
     [s(1, '2026-10-15T09:00:00Z'), s(2, '2026-10-13T09:00:00Z')],
     [m(1, '2026-10-15T12:00:00Z')], // полдень UTC: тот же день и в Сиднее, и в Лос-Анджелесе
     [g(1, '2026-10-14')],
+    tracker,
   );
 
-  it('сортирует новые сверху', () => {
-    expect(entries.map((e) => e.dateKey)).toEqual(['2026-10-15', '2026-10-15', '2026-10-14', '2026-10-13']);
-    expect(entries[0]._type).toBe('mode');
-  });
-
-  it('группирует по дням и фильтрует по типу', () => {
-    const groups = groupByDay(entries);
-    expect(groups.map((x) => [x.dateKey, x.items.length])).toEqual([
-      ['2026-10-15', 2], ['2026-10-14', 1], ['2026-10-13', 1],
+  it('сортирует новые сверху, строка трекера идёт последней внутри своего дня', () => {
+    expect(entries.map((e) => e._type)).toEqual(['mode', 'schema', 'tracker', 'gratitude', 'schema', 'tracker']);
+    expect(entries.map((e) => e.dateKey)).toEqual([
+      '2026-10-15', '2026-10-15', '2026-10-15', '2026-10-14', '2026-10-13', '2026-10-13',
     ]);
-    expect(groupByDay(filterEntries(entries, 'schema')).length).toBe(2);
-    expect(filterEntries(entries, 'all').length).toBe(4);
   });
 
-  it('считает счётчики фильтра', () => {
-    expect(filterCounts(entries)).toEqual({ all: 4, schema: 2, mode: 1, gratitude: 1 });
+  it('без трекера работает как раньше (четвёртый аргумент необязателен)', () => {
+    expect(buildEntries([s(1, '2026-10-15T09:00:00Z')], [], []).map((e) => e._type)).toEqual(['schema']);
   });
 
-  it('статистика месяца: уникальные дни и длина месяца', () => {
-    expect(monthStats(entries, '2026-10-15')).toEqual({ daysWithEntry: 3, daysInMonth: 31 });
-    expect(monthStats(entries, '2026-11-02')).toEqual({ daysWithEntry: 0, daysInMonth: 30 });
+  it('группирует по дням', () => {
+    expect(groupByDay(entries).map((x) => [x.dateKey, x.items.length])).toEqual([
+      ['2026-10-15', 3], ['2026-10-14', 1], ['2026-10-13', 2],
+    ]);
   });
 
-  it('серия: подряд до сегодня, без сегодняшней записи считается от вчера, разрыв обрывает', () => {
-    expect(streakDays(entries, '2026-10-15')).toBe(3);
-    expect(streakDays(entries, '2026-10-16')).toBe(3);
-    expect(streakDays(entries, '2026-10-17')).toBe(0);
-    expect(streakDays(buildEntries([s(1, '2026-10-15T09:00:00Z'), s(2, '2026-10-12T09:00:00Z')], [], []), '2026-10-15')).toBe(1);
-    expect(streakDays([], '2026-10-15')).toBe(0);
+  it('сегмент «Трекер» оставляет только строки трекера, «Дневник» — всё остальное, «Все» — всё', () => {
+    expect(filterEntries(entries, 'tracker').map((e) => e._type)).toEqual(['tracker', 'tracker']);
+    expect(filterEntries(entries, 'diary').map((e) => e._type)).toEqual(['mode', 'schema', 'gratitude', 'schema']);
+    expect(filterEntries(entries, 'all')).toHaveLength(6);
   });
 
   it('день записи по createdAt — местный: 21:19 UTC 26.10 — это 27.10 по Москве (инцидент 2026-10-26)', () => {
@@ -53,7 +50,72 @@ describe('diaryModel', () => {
     });
   });
 
-  it('склоняет «запись»', () => {
-    expect([1, 3, 5, 0].map(pluralEntries)).toEqual(['1 запись', '3 записи', '5 записей', '0 записей']);
+  it('счётчики сегмента сходятся с фильтром', () => {
+    expect(filterCounts(entries)).toEqual({ all: 6, tracker: 2, case: 0, diary: 4 });
+    expect(filterCounts([])).toEqual({ all: 0, tracker: 0, case: 0, diary: 0 });
+  });
+
+  describe('сегмент «Случаи» (маркер fromCase)', () => {
+    const withCases = buildEntries(
+      [s(1, '2026-10-15T09:00:00Z')],
+      [m(1, '2026-10-15T18:00:00Z'), { ...m(2, '2026-10-15T19:00:00Z'), fromCase: true }, { ...m(3, '2026-10-14T19:00:00Z'), fromCase: false }],
+      [g(1, '2026-10-14')],
+      tracker,
+    );
+
+    it('«Случаи» — только записи режимов из разбора', () => {
+      const cases = filterEntries(withCases, 'case');
+      expect(cases.map((e) => e._type)).toEqual(['mode']);
+      expect(cases[0]._type === 'mode' && cases[0].entry.id).toBe(2);
+    });
+
+    it('«Дневник» не включает разборы и трекер, а разборы идут в «Все»', () => {
+      const diary = filterEntries(withCases, 'diary');
+      expect(diary.some((e) => e._type === 'mode' && e.entry.id === 2)).toBe(false);
+      expect(diary.some((e) => e._type === 'tracker')).toBe(false);
+      expect(filterEntries(withCases, 'all')).toHaveLength(withCases.length);
+    });
+
+    it('счётчики делят список без остатка: Трекер + Случаи + Дневник = Все', () => {
+      const c = filterCounts(withCases);
+      expect(c).toEqual({ all: 7, tracker: 2, case: 1, diary: 4 });
+      expect(c.tracker + c.case + c.diary).toBe(c.all);
+    });
+  });
+});
+
+describe('streakLine', () => {
+  it('склоняет «день» и подписывает «Сбиться — не страшно»', () => {
+    expect([1, 2, 5, 11, 21, 22].map(streakLine)).toEqual([
+      '1 день подряд. Сбиться — не страшно.',
+      '2 дня подряд. Сбиться — не страшно.',
+      '5 дней подряд. Сбиться — не страшно.',
+      '11 дней подряд. Сбиться — не страшно.',
+      '21 день подряд. Сбиться — не страшно.',
+      '22 дня подряд. Сбиться — не страшно.',
+    ]);
+  });
+
+  it('серии нет — строки нет (0, отрицательное, NaN)', () => {
+    expect([0, -1, NaN].map(streakLine)).toEqual([null, null, null]);
+  });
+});
+
+describe('buildTrackerDays / trackerDayLabel', () => {
+  it('пять оценок — индекс с запятой; неполный день — «N из 5»', () => {
+    const days = buildTrackerDays([
+      { date: '2026-10-15', ratings: { attachment: 8, autonomy: 6, expression: 7, play: 7, limits: 8 } },
+      { date: '2026-10-14', ratings: { attachment: 5, autonomy: 5, expression: 5 } },
+    ]);
+    expect(days.map(trackerDayLabel)).toEqual(['Трекер — индекс 7,2', 'Трекер: 3 из 5']);
+  });
+
+  it('день без единой оценки и пустая история не дают строк (нет данных — нет строки)', () => {
+    expect(buildTrackerDays([{ date: '2026-10-15', ratings: {} }])).toEqual([]);
+    expect(buildTrackerDays([])).toEqual([]);
+  });
+
+  it('чужие ключи в ratings не считаются оценками', () => {
+    expect(buildTrackerDays([{ date: '2026-10-15', ratings: { mystery: 9 } }])).toEqual([]);
   });
 });
