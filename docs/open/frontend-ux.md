@@ -155,11 +155,9 @@
   (Имя)…»), а тест `MergePage.test.tsx:81` подаёт `provider=Google` — тест на
   выдуманной фикстуре (правило №23). Нужен словарь `PROVIDER_NAMES` и тест на
   реальных `google`/`vk`.
-- **`PrivacyPage` объявляет куку `tg_pkce_verifier`, которой больше никто не
-  ставит** (`webapp/src/pages/PrivacyPage.tsx:189`, строка «OAuth-cookie
-  (oauth_state, tg_pkce_verifier)»): её ставил удалённый вход
-  `/api/auth/telegram-oidc`. Безопасно, но юридический текст неточен; правку
-  делает только владелец. Заодно владельцу: `SELECT count(*) FROM
+- **Вход Telegram OIDC удалён в #725 — сколько аккаунтов потеряли способ
+  входа, не проверено.** Куку `tg_pkce_verifier` этого входа политика больше не
+  объявляет (сверка 2026-10-22). Владельцу: `SELECT count(*) FROM
   "AuthProvider" WHERE provider='telegram-oidc'` — если не ноль, такие
   аккаунты потеряли этот способ входа (миграцию-чистку не делали: она
   разрушительна). Вернуть вход через Telegram OIDC можно из git, но сначала
