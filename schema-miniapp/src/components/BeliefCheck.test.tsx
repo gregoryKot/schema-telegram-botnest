@@ -154,6 +154,33 @@ describe('BeliefCheck — полный флоу: убеждение → за →
   });
 });
 
+// docs/open/frontend-ux.md: текст в поле доказательства, не добавленный «+»,
+// молча терялся при «Дальше →» — EvidenceStep не вызывал onAdd() перед переходом.
+describe('BeliefCheck — недобавленный текст не теряется при «Дальше»', () => {
+  it('текст в поле дописывается пунктом и уходит в сохранение; пробелы — нет', async () => {
+    const belief = await renderSheet();
+    fireEvent.change(belief, { target: { value: 'я всегда всё порчу' } });
+    fireEvent.click(screen.getByText('Дальше →')); // -> for
+    fireEvent.change(screen.getByPlaceholderText('Добавить...'), {
+      target: { value: ' забыт отчёт ' },
+    });
+    fireEvent.click(screen.getByText('Дальше →')); // -> against
+    fireEvent.change(screen.getByPlaceholderText('Добавить...'), {
+      target: { value: '   ' },
+    });
+    fireEvent.click(screen.getByText('Дальше →')); // -> reframe
+    fireEvent.click(screen.getByText('Сохранить'));
+    await waitFor(() =>
+      expect(mockApi.createBeliefCheck).toHaveBeenCalledWith(
+        expect.objectContaining({
+          evidenceFor: ['забыт отчёт'],
+          evidenceAgainst: [],
+        }),
+      ),
+    );
+  });
+});
+
 // Регрессия: api.createBeliefCheck().catch(()=>{}) молча глотал отказ, а
 // мастер всё равно уходил на финальный экран «Проверено» — прямая ложь при
 // отказе сети. localStorage пишется сразу (офлайн-первое сохранение), это

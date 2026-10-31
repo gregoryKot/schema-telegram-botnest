@@ -89,11 +89,11 @@
   `TrackerOverlay.tsx:185-198` (90 / 0.5) против
   `schema-miniapp/src/hooks/useSectionSwipe.ts:7-13` (72 / 0.6); общий
   `useHorizontalSwipe` в shared.
-- **Текст, не добавленный кнопкой «+», молча теряется при «Дальше»** в проверке
-  убеждения на обеих площадках (`beliefCheck/EvidenceStep`,
-  `webapp/.../beliefCheck/EviList`): `onAdd()` перед переходом не вызывается.
-  Там же расхождение поведения: в вебе «Дальше» требует доказательства за и
-  против, в мини-аппе нет.
+- **Проверка убеждения: «Дальше» на шагах доказательств ведёт себя по-разному.**
+  В вебе (`webapp/src/components/exercises/BeliefCheckEx.tsx`) кнопка требует
+  хотя бы одно доказательство за и против (или текст в поле), в мини-аппе
+  (`schema-miniapp/src/components/beliefCheck/EvidenceStep.tsx`) пускает с
+  пустым списком. Решение владельца: какой вариант общий.
 - **Гейт тап-целей не видит размеры из CSS-классов.**
   `scripts/tap-targets-rules.mjs` читает только инлайновый `style` в JSX, а
   размер `.evi-x` 22×22 (`webapp/src/index.css`; чинился: зона 44 через
