@@ -271,7 +271,10 @@ describe('TherapyTasksController.completeTask', () => {
 
   it('своё задание клиента не доходит до ветки терапевта', async () => {
     const { controller, tasks } = makeController();
-    await controller.completeTask(makeReq(7n), '9', { done: true });
+    await expect(
+      controller.completeTask(makeReq(7n), '9', { done: true }),
+    ).resolves.toEqual({ ok: true });
+    expect(tasks.completeTask).toHaveBeenCalledWith(7n, 9, true);
     expect(tasks.completeOfflineTask).not.toHaveBeenCalled();
   });
 

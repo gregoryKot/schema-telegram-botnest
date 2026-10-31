@@ -54,7 +54,7 @@ export function TaskSheetRow({
         style={{
           fontSize: 16,
           flexShrink: 0,
-          marginTop: 1,
+          marginTop: 'var(--space-2)',
           color: failed
             ? 'var(--text-faint)'
             : mark === '✓'
@@ -68,7 +68,13 @@ export function TaskSheetRow({
         <div style={{ fontSize: 14, color: 'var(--text)', lineHeight: 1.4 }}>
           {resolveTaskDisplayText(task, 'full')}
         </div>
-        <div style={{ fontSize: 12, color: 'var(--text-sub)', marginTop: 3 }}>
+        <div
+          style={{
+            fontSize: 12,
+            color: 'var(--text-sub)',
+            marginTop: 'var(--space-4)',
+          }}
+        >
           {taskMeta(task, status)}
         </div>
       </div>

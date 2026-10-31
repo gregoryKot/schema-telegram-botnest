@@ -27,7 +27,7 @@ export function ConfirmDeleteButton({
           flexShrink: 0,
           minHeight: 44,
           padding: '0 14px',
-          borderRadius: 9,
+          borderRadius: 'var(--r-10)',
           border: 'none',
           background: 'color-mix(in srgb, var(--accent-red) 16%, transparent)',
           color: 'var(--accent-red)',
@@ -49,7 +49,7 @@ export function ConfirmDeleteButton({
       <span
         style={{
           ...hitboxStyle(30, 30).inner,
-          borderRadius: 9,
+          borderRadius: 'var(--r-10)',
           background: 'color-mix(in srgb, var(--accent-red) 10%, transparent)',
           display: 'flex',
           alignItems: 'center',
