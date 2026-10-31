@@ -1,9 +1,9 @@
 // @vitest-environment jsdom
 // ConceptYsqHistory — история теста на схемы (YSQ) клиента у терапевта (0%
 // покрытия, 281 строка). Много арифметики без единого числового теста
-// раньше: порог «выраженная» схема (>50%, ровно 50% — уже «остальные»),
-// склонение «прохождение/-я/-й», дельта между последними двумя попытками
-// (порог значимости ≥5%, знак и цвет), таймлайн с пропуском нулевой дельты.
+// раньше: «выраженная» схема (флаг бэкенда, без него — общий критерий),
+// склонение «прохождение/-я/-й», дельта среднего балла между последними двумя
+// попытками (порог значимости ≥0.3, знак и цвет), таймлайн с пропуском нулевой дельты.
 import { describe, it, expect, afterEach } from 'vitest';
 import { render, screen, cleanup } from '@testing-library/react';
 import { ConceptYsqHistory } from './ConceptYsqHistory';
@@ -77,8 +77,10 @@ describe('ConceptYsqHistory — склонение «прохождение»', 
   });
 });
 
-describe('ConceptYsqHistory — выраженные vs остальные (порог 50%)', () => {
-  it('pct5plus=51 — «Выраженные», ровно 50 — «Остальные»', () => {
+describe('ConceptYsqHistory — выраженные vs остальные (флаг бэкенда)', () => {
+  // QA 2026-10-26: своё `pct5plus > 50` уводило в «Остальные» схему из
+  // сплошных «4» (0% ответов 5–6, средний 4), которую клиент видит выраженной.
+  it('выраженная по среднему баллу при 0% «5–6» — в «Выраженных», с баллом', () => {
     render(
       <ConceptYsqHistory
         detail={withHistory([
@@ -86,19 +88,34 @@ describe('ConceptYsqHistory — выраженные vs остальные (по
             id: 1,
             completedAt: '2026-08-01T00:00:00.000Z',
             scores: [
-              { id: 'emotional_deprivation', pct5plus: 51 },
-              { id: 'abandonment', pct5plus: 50 },
+              { id: 'self_sacrifice', pct5plus: 0, avg: 4, active: true },
+              { id: 'abandonment', pct5plus: 50, avg: 3.6, active: false },
             ],
           },
         ])}
       />,
     );
     expect(screen.getByText('Выраженные (1)')).toBeTruthy();
-    expect(screen.getByText(/Эмоциональная депривация/)).toBeTruthy();
+    expect(screen.getByText('4/6 · 0%')).toBeTruthy();
     expect(screen.getByText('Остальные')).toBeTruthy();
   });
 
-  it('несколько выраженных схем — сортированы по убыванию pct5plus', () => {
+  it('ответ без флага (кэш прошлой версии) — тот же критерий', () => {
+    render(
+      <ConceptYsqHistory
+        detail={withHistory([
+          {
+            id: 1,
+            completedAt: '2026-08-01T00:00:00.000Z',
+            scores: [{ id: 'emotional_deprivation', pct5plus: 51 }],
+          },
+        ])}
+      />,
+    );
+    expect(screen.getByText('Выраженные (1)')).toBeTruthy();
+  });
+
+  it('выраженные — по убыванию среднего балла, как у клиента', () => {
     render(
       <ConceptYsqHistory
         detail={withHistory([
@@ -106,59 +123,90 @@ describe('ConceptYsqHistory — выраженные vs остальные (по
             id: 1,
             completedAt: '2026-08-01T00:00:00.000Z',
             scores: [
-              { id: 'emotional_deprivation', pct5plus: 60 },
-              { id: 'abandonment', pct5plus: 90 },
+              {
+                id: 'emotional_deprivation',
+                pct5plus: 90,
+                avg: 4.2,
+                active: true,
+              },
+              { id: 'abandonment', pct5plus: 60, avg: 5.1, active: true },
             ],
           },
         ])}
       />,
     );
     const text = document.body.textContent ?? '';
-    // Схема с 90% должна упоминаться раньше по тексту, чем схема с 60%.
-    expect(text.indexOf('90%')).toBeLessThan(text.indexOf('60%'));
+    expect(text.indexOf('5.1/6')).toBeLessThan(text.indexOf('4.2/6'));
   });
 });
 
 describe('ConceptYsqHistory — дельта между последними двумя прохождениями', () => {
-  it('изменение ≥5% — показывает знак и процент', () => {
+  it('изменение среднего балла ≥0.3 — показывает знак и число', () => {
     render(
       <ConceptYsqHistory
         detail={withHistory([
           {
             id: 2,
             completedAt: '2026-08-01T00:00:00.000Z',
-            scores: [{ id: 'emotional_deprivation', pct5plus: 60 }],
+            scores: [
+              {
+                id: 'emotional_deprivation',
+                pct5plus: 60,
+                avg: 4.2,
+                active: true,
+              },
+            ],
           },
           {
             id: 1,
             completedAt: '2026-07-01T00:00:00.000Z',
-            scores: [{ id: 'emotional_deprivation', pct5plus: 80 }],
+            scores: [
+              {
+                id: 'emotional_deprivation',
+                pct5plus: 80,
+                avg: 5,
+                active: true,
+              },
+            ],
           },
         ])}
       />,
     );
-    // 60 - 80 = -20, показывается как «-20%»
-    expect(screen.getByText('-20%')).toBeTruthy();
+    expect(screen.getByText('-0.8')).toBeTruthy();
   });
 
-  it('изменение <5% — дельта не показывается (шум)', () => {
+  it('изменение <0.3 — дельта не показывается (шум)', () => {
     render(
       <ConceptYsqHistory
         detail={withHistory([
           {
             id: 2,
             completedAt: '2026-08-01T00:00:00.000Z',
-            scores: [{ id: 'emotional_deprivation', pct5plus: 62 }],
+            scores: [
+              {
+                id: 'emotional_deprivation',
+                pct5plus: 62,
+                avg: 4.2,
+                active: true,
+              },
+            ],
           },
           {
             id: 1,
             completedAt: '2026-07-01T00:00:00.000Z',
-            scores: [{ id: 'emotional_deprivation', pct5plus: 60 }],
+            scores: [
+              {
+                id: 'emotional_deprivation',
+                pct5plus: 60,
+                avg: 4.1,
+                active: true,
+              },
+            ],
           },
         ])}
       />,
     );
-    expect(screen.queryByText('+2%')).toBeNull();
+    expect(screen.queryByText('+0.1')).toBeNull();
   });
 
   it('схемы не было в прошлом прохождении — дельта null, не падает', () => {
@@ -168,7 +216,14 @@ describe('ConceptYsqHistory — дельта между последними д�
           {
             id: 2,
             completedAt: '2026-08-01T00:00:00.000Z',
-            scores: [{ id: 'emotional_deprivation', pct5plus: 60 }],
+            scores: [
+              {
+                id: 'emotional_deprivation',
+                pct5plus: 60,
+                avg: 4.5,
+                active: true,
+              },
+            ],
           },
           {
             id: 1,
@@ -178,7 +233,7 @@ describe('ConceptYsqHistory — дельта между последними д�
         ])}
       />,
     );
-    expect(screen.getByText('60%')).toBeTruthy();
+    expect(screen.getByText('4.5/6 · 60%')).toBeTruthy();
   });
 });
 

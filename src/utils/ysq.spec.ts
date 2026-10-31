@@ -180,3 +180,38 @@ describe('computeActiveSchemas', () => {
     expect(computeActiveSchemas(answers)).toHaveLength(20);
   });
 });
+
+// Флаг active у каждой схемы — тот же критерий, что computeActiveSchemas.
+// Фронты (таблица YSQ терапевта, «Сверка с YSQ») читают флаг, а не формулу:
+// до 2026-10 таблица смотрела только на % «5–6» и показывала 0% у схемы,
+// которую клиент видел выраженной по среднему баллу (QA 2026-10-26).
+describe('computeYsqScores — флаг active', () => {
+  it('сплошные «4»: 0% ответов 5–6, но средний 4 — схема выражена', () => {
+    const answers = buildAnswers({ 62: 4, 63: 4, 64: 4, 65: 4, 66: 4, 67: 4 });
+    const s = computeYsqScores(answers).find((x) => x.id === 'self_sacrifice')!;
+    expect(s).toMatchObject({ pct5plus: 0, avg: 4, active: true });
+  });
+
+  it('флаг совпадает с computeActiveSchemas на любом входе', () => {
+    const answers = buildAnswers({
+      1: 6,
+      2: 6,
+      3: 6,
+      6: 6,
+      7: 6,
+      8: 6,
+      9: 6,
+      62: 4,
+      63: 4,
+      64: 4,
+      65: 4,
+      66: 4,
+      67: 4,
+    });
+    const flagged = computeYsqScores(answers)
+      .filter((s) => s.active)
+      .map((s) => s.id);
+    expect(flagged).toEqual(computeActiveSchemas(answers));
+    expect(flagged).toContain('self_sacrifice');
+  });
+});

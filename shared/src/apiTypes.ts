@@ -164,7 +164,7 @@ export interface ConceptSnapshot {
 export interface YsqHistoryEntry {
   id: number;
   completedAt: string;
-  scores: { id: string; pct5plus: number; avg?: number }[];
+  scores: { id: string; pct5plus: number; avg?: number; active?: boolean }[];
 }
 
 export interface ClientData {

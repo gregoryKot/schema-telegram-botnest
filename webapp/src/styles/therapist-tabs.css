@@ -79,18 +79,23 @@
 .tb-ysq-empty { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 64px 0; text-align: center; }
 .tb-ysq-card { padding: 8px 24px; }
 .tb-ysq-row {
-  display: grid; grid-template-columns: minmax(110px, 240px) 1fr 56px 56px; gap: 16px;
+  display: grid; grid-template-columns: minmax(110px, 240px) 1fr 56px 48px 48px; gap: 16px;
   padding: 11px 0; border-bottom: 1px solid var(--paper-tint); align-items: center;
 }
 .tb-ysq-row:last-child { border-bottom: none; }
 .tb-ysq-head { font-size: 11px; padding: 12px 0; border-bottom: 1px solid var(--paper-sunk); }
-.tb-ysq-name { font-size: 14px; font-weight: 500; overflow-wrap: anywhere; }
-.tb-ysq-name.is-top { font-weight: 700; }
+.tb-ysq-name { font-size: 14px; font-weight: 500; overflow-wrap: anywhere; color: var(--text-sub); }
+/* Выраженная схема — как у клиента: имя и бар цветом домена, отметка «выражена». */
+.tb-ysq-row.is-active .tb-ysq-name { font-weight: 700; color: var(--text); }
+.tb-ysq-row:not(.is-active):not(.tb-ysq-head) .tb-bar-fill { background: var(--text-ghost); }
+.tb-ysq-mark { display: inline-block; margin-left: 8px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+.tb-ysq-note { padding: 12px 0 8px; font-size: 12px; color: var(--text-faint); }
 .tb-bar { position: relative; height: 14px; background: var(--paper-tint); border-radius: 7px; }
 .tb-bar-prev { position: absolute; left: 0; top: 0; bottom: 0; border-right: 2px solid var(--text-ghost); box-sizing: border-box; }
 .tb-bar-fill { position: absolute; left: 0; top: 3px; bottom: 3px; border-radius: 4px; }
 .tb-ysq-val { font-size: 14px; font-weight: 700; }
-.tb-ysq-val.is-high { color: var(--err); }
+.tb-ysq-pct { font-size: 13px; color: var(--text-sub); }
+.tb-ysq-row:not(.is-active) .tb-ysq-val { color: var(--text-sub); font-weight: 500; }
 .tb-ysq-delta { font-size: 13px; font-weight: 700; }
 .tb-ysq-delta.is-down { color: var(--ok); }
 .tb-ysq-delta.is-up { color: var(--err); }
@@ -116,7 +121,7 @@
   .tb-tl-row { grid-template-columns: 52px 1fr; gap: 14px; }
   .tb-tl-dot { width: 44px; height: 44px; font-size: 18px; }
   .tb-ysq-card { padding: 4px 16px; }
-  .tb-ysq-row { grid-template-columns: minmax(0, 1fr) 44px 44px; gap: 8px 10px; }
+  .tb-ysq-row { grid-template-columns: minmax(0, 1fr) 40px 40px 36px; gap: 8px 10px; }
   .tb-ysq-row > .tb-bar, .tb-ysq-head .tb-ysq-barcol { grid-row: 2; grid-column: 1 / -1; }
   .tb-ysq-head .tb-ysq-barcol { display: none; }
   .tb-fields { grid-template-columns: 1fr; }

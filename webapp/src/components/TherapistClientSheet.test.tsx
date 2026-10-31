@@ -557,8 +557,8 @@ describe('TherapistClientSheet — насыщенная карточка кли�
       name: 'Анна', mySchemaIds: [], myModeIds: [], ysqCompletedAt: '2026-07-15T00:00:00.000Z',
       ysqActiveSchemaIds: ['abandonment'],
       ysqHistory: [
-        { id: 2, completedAt: '2026-07-15T00:00:00.000Z', scores: [{ id: 'abandonment', pct5plus: 70 }, { id: 'emotional_deprivation', pct5plus: 40 }] },
-        { id: 1, completedAt: '2026-06-01T00:00:00.000Z', scores: [{ id: 'abandonment', pct5plus: 50 }, { id: 'emotional_deprivation', pct5plus: 30 }] },
+        { id: 2, completedAt: '2026-07-15T00:00:00.000Z', scores: [{ id: 'abandonment', pct5plus: 70, avg: 4.6, active: true }, { id: 'emotional_deprivation', pct5plus: 40, avg: 3.4, active: false }] },
+        { id: 1, completedAt: '2026-06-01T00:00:00.000Z', scores: [{ id: 'abandonment', pct5plus: 50, avg: 4.2, active: true }, { id: 'emotional_deprivation', pct5plus: 30, avg: 3.2, active: false }] },
       ],
     });
     mockApi.getTherapistNotes.mockResolvedValue({ notes: [
@@ -603,9 +603,12 @@ describe('TherapistClientSheet — насыщенная карточка кли�
   it('«Схемы» с двумя прохождениями рисует график динамики и таблицу с дельтой', async () => {
     await openAnna();
     fireEvent.click(screen.getByText('Схемы'));
-    await screen.findByText('Динамика топ-5 схем');
-    // 70% (текущее) против 50% (предыдущее) — дельта +20.
-    expect(screen.getByText('+20')).toBeTruthy();
+    await screen.findByText('Динамика топ-5 схем · средний балл');
+    // Средний балл 4.6 (текущее) против 4.2 (предыдущее) — дельта +0.4; обе меры критерия видны.
+    expect(screen.getByText('+0.4')).toBeTruthy();
+    expect(screen.getByText('4.6/6')).toBeTruthy();
+    expect(screen.getByText('70%')).toBeTruthy();
+    expect(screen.getByText('выражена')).toBeTruthy();
   });
 
   it('«Записи клиента» показывает схема- и режим-карточки терапевта', async () => {

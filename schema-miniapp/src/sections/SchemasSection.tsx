@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { api } from '../api';
 import { useSafeTop } from '../utils/safezone';
 import { SaveErrorNote } from '../components/SaveErrorNote';
+import { useYsqProgressListener } from '../../../shared/src/hooks/ysqProgressStore';
 import { SchemaPickerSheet } from '../components/SchemaPickerSheet';
 import { ModeIntroSheet } from '../components/ModeIntroSheet';
 import { INTRO_MODE_ID } from '../components/ModesHero';
@@ -70,6 +71,7 @@ export function SchemasSection({
   const [ysqProgressAnswered, setYsqProgressAnswered] = useState<number | null>(
     null,
   );
+  useYsqProgressListener(setYsqProgressAnswered); // после «✕» в тесте — «Продолжить», а не «Начать»
   const [weekSummary, setWeekSummary] = useState<WeekTopSummary | null>(null);
   const [modeSummary, setModeSummary] = useState<WeekTopSummary | null>(null);
   const [schemaFreq, setSchemaFreq] = useState<Record<string, number>>({});

@@ -1,7 +1,7 @@
-import { SCHEMA_DOMAINS } from '../../../schemaTherapyData';
 import { NeedFold } from '../../NeedFold';
 import type { ClientDetail } from '../clientSheetTypes';
 import { ConceptVersionHistory } from './ConceptVersionHistory';
+import { YsqCrossCheck } from './YsqCrossCheck';
 import { ysqFoldTitle } from './conceptHeadText';
 
 // Сверка с YSQ и история версий под содержанием вкладки, свёрнутые (#879). Раньше
@@ -9,7 +9,7 @@ import { ysqFoldTitle } from './conceptHeadText';
 // (четыре колонки — от 960px), а на телефоне правой колонки нет вовсе. Заголовок
 // раскрывашки несёт число, чтобы решать «открывать или нет», не открывая.
 export function ConceptFoldouts({ detail }: { detail: ClientDetail }) {
-  const { ysqSchemaIds, activeSchemaIds, concept } = detail;
+  const { ysqSchemaIds, activeSchemaIds, concept, clientData } = detail;
   const missing = ysqSchemaIds.filter(id => !activeSchemaIds.includes(id)).length;
   const versions = concept?.history?.length ?? 0;
   if (ysqSchemaIds.length === 0 && versions === 0) return null;
@@ -17,18 +17,7 @@ export function ConceptFoldouts({ detail }: { detail: ClientDetail }) {
     <div className="tcp-folds">
       {ysqSchemaIds.length > 0 && (
         <NeedFold title={ysqFoldTitle(missing)}>
-          <div className="u-col8" style={{ marginTop: 12 }}>
-            {ysqSchemaIds.slice(0, 6).map(id => {
-              const s = SCHEMA_DOMAINS.flatMap(d => d.schemas).find(x => x.id === id);
-              const inConcept = activeSchemaIds.includes(id);
-              return (
-                <div key={id} className="u-ac8">
-                  <span style={{ flex: 1, fontSize: 13, color: 'var(--text)' }}>{s?.name ?? id}</span>
-                  {!inConcept && <span style={{ fontSize: 11, color: 'var(--c-amber)', fontWeight: 500 }}>+ добавить?</span>}
-                </div>
-              );
-            })}
-          </div>
+          <YsqCrossCheck ysqActiveIds={ysqSchemaIds} latest={clientData?.ysqHistory?.[0]} conceptSchemaIds={activeSchemaIds} />
         </NeedFold>
       )}
       {versions > 0 && (

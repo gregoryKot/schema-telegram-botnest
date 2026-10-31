@@ -64,7 +64,7 @@ export interface YsqHistoryEntry {
   completedAt: string;
   // avg опционален: старые ответы сервера могли его не содержать —
   // тогда активность считается только по классике.
-  scores: { id: string; pct5plus: number; avg?: number }[];
+  scores: { id: string; pct5plus: number; avg?: number; active?: boolean }[];
 }
 
 /** Число выраженных схем в записи истории (оба критерия). */

@@ -18,6 +18,7 @@ import {
 } from './useYsqTest';
 import { SCHEMAS } from './ysqSchemas';
 import { computeScores } from './ysqScoring';
+import { YSQ_PROGRESS_EVENT } from './ysqProgressStore';
 
 function makeApi(overrides: Partial<YsqApi> = {}): YsqApi {
   return {
@@ -424,5 +425,56 @@ describe('useYsqTest — отложенный переход не пережив
     };
     expect(saved.page).toBe(0);
     expect(api.saveYsqProgress).not.toHaveBeenCalled();
+  });
+});
+
+// QA 2026-10-26: «Начать тест» → 5 ответов → «✕» → на интро только «Начать
+// тест» (hasProgress не знал о новых ответах) → тест с вопроса 1, и первый же
+// ответ затирал на сервере 5 сохранённых.
+describe('useYsqTest — прервал и вернулся: продолжение, а не начало заново', () => {
+  it('5 ответов → «✕» → «Продолжить (5 из 116)» → ответ на 6-й вопрос, на сервере 6', async () => {
+    vi.useFakeTimers();
+    const api = makeApi();
+    const seen: (number | null)[] = [];
+    const onProgress = (e: Event) =>
+      seen.push((e as CustomEvent<number | null>).detail);
+    window.addEventListener(YSQ_PROGRESS_EVENT, onProgress);
+    const { result } = renderHook(() => useYsqTest({ api, autoResume: true }));
+    act(() => result.current.handleStartFresh());
+    for (let q = 0; q < 5; q++) {
+      act(() => result.current.selectAnswer(q, 4));
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(200);
+      });
+    }
+
+    act(() => result.current.setPhase('intro')); // «✕» в вопросе
+    expect(result.current.hasProgress).toBe(true);
+    expect(result.current.progressAnswered).toBe(5);
+
+    act(() => result.current.handleContinue());
+    expect(result.current.phase).toBe('test');
+    expect(result.current.page).toBe(5);
+    act(() => result.current.selectAnswer(5, 4));
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(200);
+    });
+    const [answers, page] = vi.mocked(api.saveYsqProgress).mock.calls.at(-1)!;
+    expect(answers.filter((a) => a > 0)).toHaveLength(6);
+    expect(page).toBe(6);
+    // Экран «Мои паттерны» под тестом узнаёт число ответов без перезагрузки.
+    expect(seen.at(-1)).toBe(6);
+    window.removeEventListener(YSQ_PROGRESS_EVENT, onProgress);
+  });
+
+  it('сдал тест — экран под ним узнаёт, что незаконченного теста нет', () => {
+    const seen: (number | null)[] = [];
+    const onProgress = (e: Event) =>
+      seen.push((e as CustomEvent<number | null>).detail);
+    window.addEventListener(YSQ_PROGRESS_EVENT, onProgress);
+    const { result } = renderHook(() => useYsqTest({ api: makeApi() }));
+    act(() => result.current.handleRetake());
+    expect(seen).toEqual([null]);
+    window.removeEventListener(YSQ_PROGRESS_EVENT, onProgress);
   });
 });
