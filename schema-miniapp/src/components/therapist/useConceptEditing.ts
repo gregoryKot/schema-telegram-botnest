@@ -3,6 +3,7 @@ import { useTr } from '../../utils/addressForm';
 import { api } from '../../api';
 import type { TherapyClientSummary, ClientConceptualization } from '../../api';
 import { conceptSaveBody } from '../../../../shared/src/therapy/conceptGraph/conceptSaveBody';
+import { conceptSaveErrorText } from './conceptSaveError';
 
 // Состояние и обработчики концептуализации клиента. Вынесено из
 // useClientDetail.ts (правило №10); публичная форма возврата хука-фасада
@@ -64,15 +65,8 @@ export function useConceptEditing(selectedClient: TherapyClientSummary | null) {
       setLocalConcept(saved);
       setConceptDirty(false);
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : '';
-      setConceptError(
-        msg.startsWith('API')
-          ? tr(
-              'Ошибка сервера. Попробуй позже.',
-              'Ошибка сервера. Попробуйте позже.',
-            )
-          : msg || 'Ошибка сохранения',
-      );
+      // Причина уходит в строку статуса (ConceptSaveBar → SaveStatusLine.errorText).
+      setConceptError(conceptSaveErrorText(e, tr));
     } finally {
       setConceptSaving(false);
     }

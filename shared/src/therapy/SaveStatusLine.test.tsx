@@ -106,6 +106,32 @@ describe('SaveStatusLine', () => {
     expect(screen.queryByRole('button')).toBeNull();
   });
 
+  // Находка #880: причина отказа от хука встаёт вместо общего «Не сохранилось»,
+  // кнопка «Повторить» и role=alert остаются; вне ошибки errorText не виден.
+  it('error с errorText — причина вместо «Не сохранилось», «Повторить» на месте', () => {
+    const onRetry = vi.fn();
+    render(
+      <SaveStatusLine
+        status="error"
+        errorText="Нет связи. Проверь подключение и попробуй ещё раз."
+        onRetry={onRetry}
+      />,
+    );
+    const alert = screen.getByRole('alert');
+    expect(alert.textContent).toContain(
+      'Нет связи. Проверь подключение и попробуй ещё раз.',
+    );
+    expect(alert.textContent).not.toContain('Не сохранилось');
+    fireEvent.click(screen.getByRole('button', { name: 'Повторить' }));
+    expect(onRetry).toHaveBeenCalledTimes(1);
+  });
+
+  it('errorText при другом статусе не показывается', () => {
+    render(<SaveStatusLine status="saving" errorText="Ошибка сервера" />);
+    expect(screen.getByRole('status').textContent).toBe('Сохраняю…');
+    expect(screen.queryByText('Ошибка сервера')).toBeNull();
+  });
+
   it('className и align доезжают до контейнера', () => {
     render(<SaveStatusLine status="idle" className="x-save" align="right" />);
     const el = screen.getByRole('status');
