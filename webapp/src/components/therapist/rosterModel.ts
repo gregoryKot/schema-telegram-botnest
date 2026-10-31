@@ -9,16 +9,13 @@ import {
   isVirtualClient,
   nextSessionLabel,
 } from './clientSheetHelpers';
+import { upcomingSession } from '../../../../shared/src/therapy/upcomingSession';
 
 export type RosterStatus = 'all' | 'active' | 'wait' | 'virtual';
 
-const sessionDay = (nextSession: string): string => nextSession.split('T')[0];
-
-/** Ближайшая встреча не в прошлом — иначе null (прошедшую не показываем). */
-function upcomingSession(c: TherapyClientSummary, today: string): string | null {
-  if (!c.nextSession) return null;
-  return sessionDay(c.nextSession) >= today ? c.nextSession : null;
-}
+/** Явная встреча не в прошлом — иначе null; дни встреч список подписывает «по Вт». */
+const plannedSession = (c: TherapyClientSummary, today: string): string | null =>
+  upcomingSession(c.nextSession, [], today);
 
 const displayName = (c: TherapyClientSummary): string => c.clientAlias ?? c.name ?? '';
 
@@ -47,7 +44,7 @@ export function sortRoster(
   const withMeeting: { c: TherapyClientSummary; at: string }[] = [];
   const rest: TherapyClientSummary[] = [];
   for (const c of clients) {
-    const at = upcomingSession(c, today);
+    const at = plannedSession(c, today);
     if (at) withMeeting.push({ c, at });
     else rest.push(c);
   }
@@ -58,7 +55,7 @@ export function sortRoster(
 
 /** «Вт, 7 окт · 11:00», «по Вт, Чт» или null, если встреч нет. */
 export function meetingLabel(c: TherapyClientSummary, today: string): string | null {
-  const at = upcomingSession(c, today);
+  const at = plannedSession(c, today);
   if (at) return nextSessionLabel(at) || null;
   const days = [...new Set(c.meetingDays ?? [])].sort((a, b) => ((a + 6) % 7) - ((b + 6) % 7));
   if (days.length === 0) return null;

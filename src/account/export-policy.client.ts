@@ -47,7 +47,8 @@ export const CLIENT_EXPORT_POLICY: Record<string, ClientExportDecision> = {
     // Те же поля, что MODE_MAP_SCHEMA в src/therapy/mode-maps.service.ts.
     schema: { strings: ['title'], jsonArrays: ['nodes', 'edges'] },
   },
-  // Что клиент видит в «Мой терапевт»: кто, статус, ближайшая встреча.
+  // Что клиент видит в «Мой терапевт»: кто, статус, ближайшая встреча; у
+  // завершённой — когда и почему (сообщение о бывшем терапевте).
   TherapyRelation: {
     status: 'export',
     select: {
@@ -56,6 +57,8 @@ export const CLIENT_EXPORT_POLICY: Record<string, ClientExportDecision> = {
       status: true,
       nextSession: true,
       createdAt: true,
+      endedAt: true,
+      endReason: true,
     },
     omit: {
       code: 'одноразовый код приглашения — секрет входа в связь, как токены входа',
@@ -65,7 +68,7 @@ export const CLIENT_EXPORT_POLICY: Record<string, ClientExportDecision> = {
       virtualClientName:
         'имя офлайн-клиента, которое задаёт терапевт, — пометка терапевта',
       therapyStartDate: 'рабочий реквизит терапевта, клиенту не показывается',
-      meetingDays: 'рабочее расписание терапевта, клиенту не показывается',
+      meetingDays: 'ритм встреч терапевта; на экране клиента — ближайшая дата',
     },
   },
   TherapistNote: {

@@ -155,7 +155,10 @@ describe('TelegramAdminService — /stats падение аналитики', ()
       },
     });
     service.onModuleInit();
-    const ctx = await runCommand(fakeBot, 'stats', { from: { id: 999 } });
+    const ctx = await runCommand(fakeBot, 'stats', {
+      from: { id: 999 },
+      message: { text: '/stats all' },
+    });
     const [first, second] = replies(ctx);
     expect(first).toContain('Главные цифры');
     expect(first).toContain(BLOCK_FAILED_MARK);
@@ -178,7 +181,10 @@ describe('TelegramAdminService — /stats падение аналитики', ()
       },
     });
     service.onModuleInit();
-    const ctx = await runCommand(fakeBot, 'stats', { from: { id: 999 } });
+    const ctx = await runCommand(fakeBot, 'stats', {
+      from: { id: 999 },
+      message: { text: '/stats all' },
+    });
     const [first, second] = replies(ctx);
     expect(first).toBe('core stats');
     expect(second).toContain('продуктовые метрики');
@@ -194,7 +200,10 @@ describe('TelegramAdminService — /stats падение аналитики', ()
       statsReport: { render: jest.fn().mockRejectedValue(new Error('x')) },
     });
     service.onModuleInit();
-    const ctx = await runCommand(fakeBot, 'stats', { from: { id: 999 } });
+    const ctx = await runCommand(fakeBot, 'stats', {
+      from: { id: 999 },
+      message: { text: '/stats all' },
+    });
     const [first, second] = replies(ctx);
     expect(first).toBe('core stats');
     expect(second).toContain('Остальной отчёт');
@@ -206,6 +215,7 @@ describe('TelegramAdminService — /stats падение аналитики', ()
     service.onModuleInit();
     const ctx = await runCommand(fakeBot, 'stats', {
       from: { id: 999 },
+      message: { text: '/stats all' },
       reply: jest
         .fn()
         .mockRejectedValueOnce(new Error('tg down'))
@@ -238,7 +248,10 @@ describe('TelegramAdminService — /stats (только админ)', () => {
       },
     });
     service.onModuleInit();
-    const ctx = await runCommand(fakeBot, 'stats', { from: { id: 999 } });
+    const ctx = await runCommand(fakeBot, 'stats', {
+      from: { id: 999 },
+      message: { text: '/stats all' },
+    });
     expect(statsReport.render).toHaveBeenCalled();
     expect(ctx.reply).toHaveBeenNthCalledWith(1, 'core stats', {
       parse_mode: 'HTML',
@@ -270,7 +283,10 @@ describe('TelegramAdminService — /stats (только админ)', () => {
     });
     service.onModuleInit();
 
-    const ctx = await runCommand(fakeBot, 'stats', { from: { id: 999 } });
+    const ctx = await runCommand(fakeBot, 'stats', {
+      from: { id: 999 },
+      message: { text: '/stats all' },
+    });
 
     const calls = (ctx.reply as jest.Mock).mock.calls;
     expect(calls.length).toBeGreaterThan(2);

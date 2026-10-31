@@ -150,7 +150,7 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
             </div>
           )}
 
-          {relation && <TherapistCard relation={relation} />}
+          <TherapistCard relation={relation} />
         </>
       )}
 

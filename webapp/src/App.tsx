@@ -14,7 +14,6 @@ import { AccountPage } from './pages/AccountPage';
 import { MergePage } from './pages/MergePage';
 import { LinkDevicePage } from './pages/LinkDevicePage';
 import { TwoFactorChallengePage } from './pages/TwoFactorChallengePage';
-import { RecoveryPage } from './pages/RecoveryPage';
 import { AppShell } from './components/AppShell';
 import { CookieBanner } from './components/CookieBanner';
 import { RouteErrorScreen } from './components/RouteErrorScreen';
@@ -103,6 +102,9 @@ const appRoutes = [
   { path: '/tests/:quizId',  element: <QuizPage /> },
   { path: '/subscribe',      element: <Suspense fallback={null}><SubscribePage /></Suspense> },
   { path: '/donate',         element: <DonatePage /> },
+  // Юрстраницы — на обоих хостах (инцидент 2026-10-22); сверка: sitemap.middleware.spec.ts.
+  { path: '/privacy',        element: <PrivacyPage /> },
+  { path: '/offer',          element: <OfferPage /> },
   // Admin panel is gated by its own key (not the app login), so it's reachable
   // on the app domain too — otherwise /admin here falls through to the login/app.
   { path: '/admin',          element: <Suspense fallback={null}><AdminPage /></Suspense> },
@@ -113,8 +115,6 @@ const appRoutes = [
   { path: '/auth/confirm',   element: <AuthConfirmPage /> },
   { path: '/auth/telegram',  element: <TelegramWidgetCallback /> },
   { path: '/auth/2fa',       element: <TwoFactorChallengePage /> },
-  { path: '/auth/recovery',         element: <RecoveryPage /> },
-  { path: '/auth/recovery/confirm', element: <RecoveryPage /> },
   { path: '/auth/error',     element: <AuthErrorPage /> },
   { path: '/link',           element: <LinkDevicePage /> },
   {
@@ -127,6 +127,7 @@ const appRoutes = [
         children: [
           { path: '/today',             element: null },
           { path: '/diary',             element: null },
+          { path: '/more',              element: null },
           { path: '/schemas',           element: null },
           { path: '/profile',           element: null },
           { path: '/practice',          element: null },

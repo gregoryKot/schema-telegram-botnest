@@ -29,6 +29,9 @@
 //                   meta.tables/meta.rows.
 //   notify_queue_tick — итог прогона очереди уведомлений бота: только числа
 //                   (telegram.schedule-queue.tally.ts); пишет крон, userId = null.
+//   therapist_resigned — терапевт отказался от роли (TherapistExitService),
+//                   meta.clientsEnded. С клиента meta не принимается (ветки в
+//                   sanitizeMeta нет), /stats верит только строкам с числом.
 export const SERVER_EVENTS = [
   'auth_rejected',
   'auth_success',
@@ -36,4 +39,5 @@ export const SERVER_EVENTS = [
   'signup_source',
   'data_export',
   'notify_queue_tick',
+  'therapist_resigned',
 ] as const;

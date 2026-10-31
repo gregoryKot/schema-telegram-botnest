@@ -19,21 +19,6 @@ interface Props {
   onOpenSchema: React.ComponentProps<typeof CaseFlowHost>['onOpenSchema'];
 }
 
-// Число прошлых разборов нужно потоку для первой фразы; пока грузится — ничего
-// не показываем, ошибка читается как «первый разбор».
-function QuickCase({ onClose, onOpenTracker, onOpenSchema }: Omit<Props, 'active'>) {
-  const [count, setCount] = useState<number | null>(null);
-  useEffect(() => {
-    let alive = true;
-    api.getModeDiary()
-      .then((rows) => { if (alive) setCount(rows.length); })
-      .catch(() => { if (alive) setCount(0); });
-    return () => { alive = false; };
-  }, []);
-  if (count === null) return null;
-  return <CaseFlowHost start="flow" caseCount={count} onClose={onClose} onOpenTracker={onOpenTracker} onOpenSchema={onOpenSchema} />;
-}
-
 function QuickSchemaEntry({ onClose }: { onClose: () => void }) {
   const [activeSchemaIds, setIds] = useState<string[] | undefined>();
   useEffect(() => {
@@ -55,7 +40,7 @@ export function QuickActionOverlays({ active, ...rest }: Props) {
   const { onClose } = rest;
   switch (active) {
     case 'case':
-      return <Suspense fallback={null}><QuickCase {...rest} /></Suspense>;
+      return <CaseFlowHost start="flow" {...rest} />;
     case 'diary_schema':
       return <Suspense fallback={null}><QuickSchemaEntry onClose={onClose} /></Suspense>;
     case 'diary_mode':

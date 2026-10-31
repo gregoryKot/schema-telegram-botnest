@@ -86,8 +86,8 @@
 //                         (meta.screen + meta.block + meta.dir: 'up'|'down').
 //                         Единственное из трёх screen_*-событий, которое
 //                         реально шлётся с meta.screen='today'.
-//   auth_*/client_error/signup_source/data_export/notify_queue_tick —
-//                         СЕРВЕРНЫЕ события (пишет только бэкенд, не клиент)
+//   auth_*/client_error/signup_source/data_export/notify_queue_tick/therapist_resigned
+//                         — СЕРВЕРНЫЕ события (пишет только бэкенд, не клиент)
 //                         — реестр и описания каждого в server-events.constants.ts
 //                         (правило №10, тот же приём, что у CASE_EVENTS ниже).
 //   profile_pattern_open — открыл лист схемы/режима с редизайна вкладки «Я»
@@ -109,6 +109,7 @@
 import { CASE_EVENTS } from './case-steps.constants';
 import { CONCEPT_EVENTS } from './concept-events.constants';
 import { GAME_EVENTS } from './game-events.constants';
+import { HOME_EVENTS } from './home-events.constants';
 import { SERVER_EVENTS } from './server-events.constants';
 import { PUBLIC_CRISIS_EVENTS } from './public-crisis.constants';
 
@@ -164,6 +165,7 @@ export const ANALYTICS_EVENTS = [
   ...GAME_EVENTS,
   // Удалил запись из архива «Мой путь» — belief_check|letter|flashcard.
   'entry_deleted',
+  ...HOME_EVENTS,
 ] as const;
 export type AnalyticsEventName = (typeof ANALYTICS_EVENTS)[number];
 
@@ -311,8 +313,7 @@ export const TODAY_FOCUS_PRACTICES = [
 ] as const;
 export type TodayFocusPractice = (typeof TODAY_FOCUS_PRACTICES)[number];
 
-// WEB_BANNER_IDS/WebBannerId — вынесены в web-banner-ids.constants.ts
-// (правило №10, тот же приём, что у SIGNUP_SOURCES ниже).
+// WEB_BANNER_IDS/WebBannerId — вынесены в web-banner-ids.constants.ts (правило №10).
 export { WEB_BANNER_IDS, type WebBannerId } from './web-banner-ids.constants';
 
 // QUICK_ACTION_IDS/QuickActionId/QUICK_ACTION_SURFACES/QuickActionSurface —
@@ -337,12 +338,10 @@ export {
   type CustomizableScreen,
 } from './screen-blocks.constants';
 
-// SIGNUP_SOURCES/SignupSource — вынесены в signup-sources.constants.ts
-// (правило №10, тот же приём, что и с CRISIS_SURFACES выше).
+// SIGNUP_SOURCES/SignupSource — вынесены в signup-sources.constants.ts (правило №10).
 export { SIGNUP_SOURCES, type SignupSource } from './signup-sources.constants';
 
-// ENTRY_DELETE_TYPES/EntryDeleteType — вынесены в entry-delete.constants.ts
-// (правило №10, тот же приём, что и с SHARE_CARD_KINDS выше).
+// ENTRY_DELETE_TYPES/EntryDeleteType — вынесены в entry-delete.constants.ts (правило №10).
 export {
   ENTRY_DELETE_TYPES,
   type EntryDeleteType,

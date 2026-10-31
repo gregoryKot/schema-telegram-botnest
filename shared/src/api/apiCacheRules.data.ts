@@ -30,6 +30,8 @@ const str = (v: unknown): string | undefined =>
 const numStr = (v: unknown): string | undefined =>
   typeof v === 'number' || typeof v === 'string' ? String(v) : undefined;
 
+const FORMER = '/api/therapy/former-therapist';
+
 /** Мутация без зависимости от body/id — фиксированный набор ключей. */
 function simple(
   method: Rule['method'],
@@ -98,6 +100,17 @@ export const RULES: Rule[] = [
     '/api/journey',
   ),
   simple('DELETE', /^\/api\/ysq-result$/, '/api/ysq-result'),
+  // «Удалить результаты теста» стирает итог, историю и прогресс; «Мой путь»
+  // (journey.service.ts) и профиль (profile.service.ts, ysq.*) читают их же.
+  simple(
+    'DELETE',
+    /^\/api\/ysq-data$/,
+    '/api/ysq-result',
+    '/api/ysq-history',
+    '/api/ysq-progress',
+    '/api/journey',
+    '/api/profile',
+  ),
   simple('POST', /^\/api\/profile\/name$/, '/api/profile'),
   simple('POST', /^\/api\/diary\/schema$/, '/api/diary/schema'),
   simple('DELETE', /^\/api\/diary\/schema\/\d+$/, '/api/diary/schema'),
@@ -105,8 +118,15 @@ export const RULES: Rule[] = [
   simple('DELETE', /^\/api\/diary\/mode\/\d+$/, '/api/diary/mode'),
   simple('POST', /^\/api\/diary\/gratitude$/, '/api/diary/gratitude'),
   simple('DELETE', /^\/api\/diary\/gratitude\/\d+$/, '/api/diary/gratitude'),
-  simple('POST', /^\/api\/therapy\/join$/, '/api/therapy/relation'),
-  simple('DELETE', /^\/api\/therapy\/relation$/, '/api/therapy/relation'),
+  // Сообщение о бывшем терапевте зависит от живой связи: подключился по коду —
+  // пропадает, отключился — может вернуться (former-therapist-info.ts).
+  simple('POST', /^\/api\/therapy\/join$/, '/api/therapy/relation', FORMER),
+  simple(
+    'DELETE',
+    /^\/api\/therapy\/relation$/,
+    '/api/therapy/relation',
+    FORMER,
+  ),
   simple('POST', /^\/api\/therapy\/clients\/add$/, '/api/therapy/clients'),
   simple('POST', /^\/api\/therapy\/clients\/virtual$/, '/api/therapy/clients'),
   simple('DELETE', /^\/api\/therapy\/clients\/\d+$/, '/api/therapy/clients'),

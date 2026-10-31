@@ -13,11 +13,13 @@ import { DataExportMetricsService } from './data-export-metrics.service';
 import { EntryDeleteMetricsService } from './entry-delete-metrics.service';
 import { GameMetricsService } from './game-metrics.service';
 import { IntroLeadMetricsService } from './intro-lead-metrics.service';
+import { TherapyNudgeMetricsService } from './therapy-nudge-metrics.service';
 import { LoginTicketMetricsService } from './login-ticket-metrics.service';
 import { ModeCardMetricsService } from './mode-card-metrics.service';
 import { ModeDiaryMetricsService } from './mode-diary-metrics.service';
 import { MoneyMetricsService } from './money-metrics.service';
 import { NotifyQueueMetricsService } from './notify-queue-metrics.service';
+import { TherapistExitMetricsService } from './therapist-exit-metrics.service';
 import { PhraseCheckMetricsService } from './phrase-check-metrics.service';
 import { PlusMetricsService } from './plus-metrics.service';
 import { PracticeLinkMetricsService } from './practice-link-metrics.service';
@@ -42,11 +44,13 @@ export const INTERNAL_PROVIDERS = [
   EntryDeleteMetricsService,
   GameMetricsService,
   IntroLeadMetricsService,
+  TherapyNudgeMetricsService,
   LoginTicketMetricsService,
   ModeCardMetricsService,
   ModeDiaryMetricsService,
   MoneyMetricsService,
   NotifyQueueMetricsService,
+  TherapistExitMetricsService,
   PhraseCheckMetricsService,
   PlusMetricsService,
   PracticeLinkMetricsService,

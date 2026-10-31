@@ -39,11 +39,16 @@ function renderSheet(
 afterEach(() => cleanup());
 
 describe('NeedTodaySheet', () => {
-  it('клик по сегменту общей шкалы зовёт onChange с оценкой 1–10', () => {
+  it('тап по ответу общей шкалы словами зовёт onChange с его значением', () => {
     const onChange = vi.fn();
     renderSheet({ value: 5, onChange });
-    fireEvent.click(screen.getByRole('button', { name: '7 из 10' }));
-    expect(onChange).toHaveBeenCalledWith(7);
+    fireEvent.click(screen.getByRole('button', { name: /В основном да/ }));
+    expect(onChange).toHaveBeenCalledWith(8);
+  });
+
+  it('текущая оценка показана словом, старая 1–10 — ближайшим', () => {
+    renderSheet({ value: 5 });
+    expect(screen.getAllByText('Наполовину').length).toBeGreaterThan(0);
   });
 
   it('раскрывающийся блок «Как это выглядит в жизни» показывает примеры из needData', () => {
@@ -57,9 +62,9 @@ describe('NeedTodaySheet', () => {
     const onChange = vi.fn();
     renderSheet({ value: 5, onChange });
     fireEvent.click(screen.getByText('Как понять оценку'));
-    // Диапазон «7–10» — самая верхняя карточка (RANGE_VALUES[2] = 7).
+    // Диапазон «7–10» — самая верхняя карточка (RANGE_VALUES[2] = 8, «В основном да»).
     fireEvent.click(screen.getByText('7–10'));
-    expect(onChange).toHaveBeenCalledWith(7);
+    expect(onChange).toHaveBeenCalledWith(8);
   });
 
   it('низкая оценка (<=3) показывает CTA «Запланировать шаг на завтра» и открывает PlanSheet', async () => {
@@ -92,6 +97,22 @@ describe('NeedTodaySheet', () => {
     expect(screen.getByText('Хороший день – заметьте это')).toBeTruthy();
   });
 
+  it.each([
+    [1, 0], [2, 0], [3, 0], [4, 0], [5, 1], [6, 1], [7, 2], [10, 2],
+  ])('оценка %i подсвечивает карточку «Как понять оценку» №%i — по слову шкалы', (value, card) => {
+    const { container } = renderSheet({ value });
+    fireEvent.click(screen.getByText('Как понять оценку'));
+    const cards = Array.from(container.querySelectorAll('.tk2-opt:not(.ds-card--hover)'));
+    expect(cards.length).toBe(3);
+    expect(cards.map(c => c.classList.contains('is-active'))).toEqual([0, 1, 2].map(i => i === card));
+  });
+
+  it('оценки нет — ни одна карточка не подсвечена', () => {
+    const { container } = renderSheet({ value: 0 });
+    fireEvent.click(screen.getByText('Как понять оценку'));
+    expect(container.querySelectorAll('.tk2-opt:not(.ds-card--hover).is-active').length).toBe(0);
+  });
+
   it('оценка выше 3 НЕ показывает блок «Что с этим сделать?»', () => {
     renderSheet({ value: 6 });
     expect(screen.queryByText('Что с этим сделать?')).toBeNull();
@@ -102,11 +123,10 @@ describe('NeedTodaySheet — маркер «вчера» (В10 аудита 2026
   // Регрессия: yesterdayValue был объявлен в Props, но не деструктурирован —
   // пользователь сайта не видел маркер «вчера», который есть в miniapp
   // (NeedRatingBar). Паритет — не обязательно тот же DOM, тот же смысл.
-  it('yesterdayValue передан — виден текст «вчера N»', () => {
+  it('yesterdayValue передан — на ближайшем слове стоит пометка «вчера»', () => {
     renderSheet({ value: 5, yesterdayValue: 3 });
-    const hint = screen.getByText(/вчера/);
-    expect(hint.textContent).toContain('вчера');
-    expect(hint.textContent).toContain('3');
+    const marked = screen.getAllByRole('button').filter(b => b.textContent?.includes('вчера'));
+    expect(marked.map(b => b.getAttribute('aria-label'))).toEqual(['Мало — 4 из 10']);
   });
 
   it('yesterdayValue не передан — текста «вчера» нет', () => {

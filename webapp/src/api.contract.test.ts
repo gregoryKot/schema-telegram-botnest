@@ -31,6 +31,8 @@ const MOCKED_API_METHODS = [
   'trackEvent',
   // SettingsSheet.test.tsx
   'getSettings', 'getPair', 'getTherapyRelation', 'getTherapistRequest', 'getExport', 'deleteAllUserData',
+  // settingsSheet/DataSection.test.tsx
+  'deleteYsqData',
   // TrackerOverlay.test.tsx
   'ratings', 'saveRating',
   // BookingPicker.test.tsx
@@ -52,7 +54,7 @@ const MOCKED_API_METHODS = [
   'getProfile', 'getYsqHistory', 'getYsqProgress', 'updateSettings',
   // components/appShell/useBootstrapLoad.test.ts, AppShell.test-helpers.tsx
   'getUserFlags',
-  // components/PhraseShareCard.test.tsx, sections/TodaySection.test.tsx
+  // моков в webapp больше нет (карточка фразы осталась только в мини-аппе); метод держит паритет роута
   'getHealthyPhrase',
   // sections/TodaySection.test.tsx
   'getSchemaDiary', 'getModeDiary', 'getGratitudeDiary', 'history',

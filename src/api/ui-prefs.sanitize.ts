@@ -24,6 +24,7 @@ export const SYNCED_PREF_KEYS = [
   'screen_order_profile',
   'screen_order_patterns',
   'screen_order_today',
+  'why_seen_v1',
 ] as const;
 export type SyncedPrefKey = (typeof SYNCED_PREF_KEYS)[number];
 
@@ -34,6 +35,7 @@ const BOOLEAN_FLAG_KEYS: ReadonlySet<SyncedPrefKey> = new Set([
   'today_phrase_hidden',
   'today_secondary_hidden',
   'today_therapist_banner_hidden',
+  'why_seen_v1',
 ]);
 
 // mode: 'strict' — весь ключ отбрасывается, если хоть один элемент вне allow

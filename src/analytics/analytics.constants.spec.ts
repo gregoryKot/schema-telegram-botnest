@@ -107,6 +107,10 @@ describe('CONCEPT_EVENTS ⊆ ANALYTICS_EVENTS', () => {
   it('разворот на весь экран — событие реестра (concept_graph_fullscreen)', () => {
     expect(CONCEPT_EVENTS).toContain('concept_graph_fullscreen');
   });
+
+  it('повтор сохранения после ошибки — событие реестра (concept_save_retry, #879)', () => {
+    expect(CONCEPT_EVENTS).toContain('concept_save_retry');
+  });
 });
 
 describe('PUBLIC_ANALYTICS_EVENTS ⊆ ANALYTICS_EVENTS', () => {

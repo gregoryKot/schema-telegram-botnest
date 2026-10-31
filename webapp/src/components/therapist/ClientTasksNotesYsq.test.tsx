@@ -3,6 +3,8 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import { ClientTasksTab } from './ClientTasksTab';
 import { ClientNotesTab } from './ClientNotesTab';
+import { KanbanView } from './KanbanView';
+import type { UserTask } from '../../api';
 import type { ClientDetail } from './clientSheetTypes';
 
 afterEach(cleanup);
@@ -22,6 +24,24 @@ describe('ClientTasksTab', () => {
     expect(screen.getByText('Выполнено')).toBeTruthy();
     fireEvent.click(screen.getByText('Дневник режима'));
     expect(setShowAssign).toHaveBeenCalledWith(true);
+  });
+
+  // Регрессия: терапевт видел сырой id режима «invincible_oc» вместо
+  // названия — вкладка рисовала task.text как есть.
+  it('mode_intro — название режима, сырой id не виден', () => {
+    const detail = { clientTasks: [task(1, { type: 'mode_intro', text: 'invincible_oc' })], setShowAssign: vi.fn() };
+    render(<ClientTasksTab detail={detail as unknown as ClientDetail} />);
+    expect(screen.getByText('Карточка режима: Неуязвимый Гиперконтролёр')).toBeTruthy();
+    expect(screen.queryByText(/invincible_oc/)).toBeNull();
+  });
+});
+
+describe('KanbanView', () => {
+  it('mode_intro — название режима, сырой id не виден', () => {
+    const allTasks = [{ clientId: 1, clientName: 'Анна', tasks: [task(1, { type: 'mode_intro', text: 'invincible_oc' })] as UserTask[] }];
+    render(<KanbanView allTasks={allTasks} loading={false} loadFailed={false} onRetry={vi.fn()} onOpenClient={vi.fn()} />);
+    expect(screen.getByText('Карточка режима: Неуязвимый Гиперконтролёр')).toBeTruthy();
+    expect(screen.queryByText(/invincible_oc/)).toBeNull();
   });
 });
 

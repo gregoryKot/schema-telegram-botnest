@@ -1,5 +1,9 @@
 {
   "scenarios": {
+    "former-therapist": {
+      "blocks": 4,
+      "msCeiling": 500
+    },
     "history-30d": {
       "blocks": 98,
       "msCeiling": 500

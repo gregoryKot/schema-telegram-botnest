@@ -19,6 +19,7 @@ import { sanitizeScreenMeta } from './analytics-meta.sanitize-screens';
 import { sanitizeCaseMeta } from './analytics-meta.sanitize-case';
 import { sanitizeQuickActionMeta } from './analytics-meta.sanitize-quick-actions';
 import { sanitizeLoginTicketMeta } from './analytics-meta.sanitize-login';
+import { sanitizeHomeMeta } from './analytics-meta.sanitize-home';
 import { sanitizeDataExportMeta } from './analytics-meta.sanitize-data-export';
 
 // Санитизация meta для POST /api/event (правило №7/№10): пропускаем ТОЛЬКО
@@ -75,11 +76,9 @@ export function sanitizeMeta(
     return undefined;
   }
   if (name === 'today_streak_toggle') {
-    const hidden = meta.hidden;
-    if (typeof hidden === 'boolean') {
-      return { hidden };
-    }
-    return undefined;
+    return typeof meta.hidden === 'boolean'
+      ? { hidden: meta.hidden }
+      : undefined;
   }
   if (name === 'web_banner_open' || name === 'web_banner_dismiss') {
     const banner = meta.banner;
@@ -279,7 +278,8 @@ export function sanitizeMeta(
   if (name.startsWith('case_') || name === 'mode_renamed') {
     return sanitizeCaseMeta(name, meta);
   }
-  // breath_start / stop_start / journey_open / ysq_help_open / plus_open /
-  // CONCEPT_EVENTS (concept_graph_open … concept_graph_fullscreen) — без meta.
-  return undefined;
+  // Без meta: breath_start / stop_start / journey_open / ysq_help_open / plus_open /
+  // CONCEPT_EVENTS; серверные notify_queue_tick, therapist_resigned (подделке — без чисел).
+  // Главная простого клиента (home_tile, tracker_skip, diary_quick_save) — свой файл.
+  return sanitizeHomeMeta(name, meta);
 }

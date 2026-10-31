@@ -76,6 +76,7 @@ describe('AppShell — роутинг: URL решает, какая секция
   it.each([
     ['/today', 'today-section'],
     ['/diary', 'diary-section'],
+    ['/more', 'more-section'],
     ['/schemas', 'schemas-section'],
     ['/profile', 'profile-section'],
     ['/practice', 'practice-section'],
@@ -97,9 +98,19 @@ describe('AppShell — роутинг: URL решает, какая секция
   it('переход по нижней мобильной навигации меняет секцию', async () => {
     renderAppShell('/today');
     await waitFor(() => expect(screen.getByTestId('today-section')).toBeTruthy());
-    const diaryLinks = screen.getAllByRole('link', { name: /Дневник/ });
+    const diaryLinks = screen.getAllByRole('link', { name: /Записи/ });
     fireEvent.click(diaryLinks[0]);
     await waitFor(() => expect(screen.getByTestId('diary-section')).toBeTruthy());
+  });
+
+  it('в меню три вкладки — «Сегодня», «Записи», «Ещё»; «Паттерны», «Практика», «Профиль» из меню ушли', async () => {
+    renderAppShell('/today');
+    await waitFor(() => expect(screen.getByTestId('today-section')).toBeTruthy());
+    const nav = document.querySelector('.mobile-nav') as HTMLElement;
+    expect(Array.from(nav.querySelectorAll('a')).map(a => a.textContent)).toEqual(['Сегодня', 'Записи', 'Ещё']);
+    expect(Array.from(nav.querySelectorAll('a')).map(a => a.getAttribute('href'))).toEqual(['/today', '/diary', '/more']);
+    const side = document.querySelector('.sb-nav') as HTMLElement;
+    expect(Array.from(side.querySelectorAll('a')).map(a => a.textContent)).toEqual(['Сегодня', 'Записи', 'Ещё']);
   });
 });
 
@@ -137,5 +148,21 @@ describe('AppShell — виджет «Сегодня» в сайдбаре (ре
     renderAppShell('/today');
     // (8+6)/2 = 7.0 — ожидаем реально посчитанное значение, не хардкод.
     await waitFor(() => expect(screen.getByText('7.0')).toBeTruthy());
+  });
+});
+
+describe('AppShell — плавающего «+» нет', () => {
+  it('ни на «Записях», ни на «Сегодня», ни на «Ещё» (простой клиент, этап 3)', async () => {
+    renderAppShell('/diary');
+    await waitFor(() => expect(screen.getByTestId('diary-section')).toBeTruthy());
+    expect(screen.queryByLabelText('Быстрое действие')).toBeNull();
+    cleanup();
+    renderAppShell('/today');
+    await waitFor(() => expect(screen.getByTestId('today-section')).toBeTruthy());
+    expect(screen.queryByLabelText('Быстрое действие')).toBeNull();
+    cleanup();
+    renderAppShell('/more');
+    await waitFor(() => expect(screen.getByTestId('more-section')).toBeTruthy());
+    expect(screen.queryByLabelText('Быстрое действие')).toBeNull();
   });
 });

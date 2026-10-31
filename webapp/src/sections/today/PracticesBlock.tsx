@@ -1,9 +1,12 @@
 import type { UserTask } from '../../api';
 import { pressable } from '../../utils/a11y';
 import { useTr } from '../../utils/addressForm';
-import { resolveTaskText, taskStatusMark } from './helpers';
+import { taskStatusMark } from './helpers';
+import { resolveTaskDisplayText } from '../../../../shared/src/tasks/taskTitle';
 
 interface Props {
+  /** Заголовок блока: «От терапевта», если среди заданий есть назначенные терапевтом. */
+  title: string;
   tasks: UserTask[];
   taskError: boolean;
   onStart: (task: UserTask) => void;
@@ -11,14 +14,14 @@ interface Props {
   onAddGoal: () => void;
 }
 
-// «Практики на сегодня»: карточки-задачи; у заданий терапевта — метка «от терапевта».
-export function PracticesBlock({ tasks, taskError, onStart, onShowAll, onAddGoal }: Props) {
+// Задания на сегодня: карточки-задачи; у заданий терапевта — метка «от терапевта».
+export function PracticesBlock({ title, tasks, taskError, onStart, onShowAll, onAddGoal }: Props) {
   const tr = useTr();
   const activeCount = tasks.filter(t => t.done === null).length;
   return (
     <section className="ct-section ct-block">
       <div className="ds-head-row">
-        <h3 className="ds-h2">Практики на сегодня</h3>
+        <h3 className="ds-h2">{title}</h3>
         {activeCount > 0 && <span className="ds-sub">{activeCount} активных</span>}
       </div>
       {taskError && (
@@ -40,7 +43,7 @@ export function PracticesBlock({ tasks, taskError, onStart, onShowAll, onAddGoal
           >
             <span className="ct-task-box" aria-hidden>{active ? '' : taskStatusMark(task.done)}</span>
             <div className="ct-task-body">
-              <div className="ct-task-text">{resolveTaskText(task)}</div>
+              <div className="ct-task-text">{resolveTaskDisplayText(task, 'compact')}</div>
               {task.assignedBy !== null && !isDone && <div className="ct-from-therapist">от терапевта</div>}
             </div>
             {active && <span className="ct-task-cta">начать →</span>}

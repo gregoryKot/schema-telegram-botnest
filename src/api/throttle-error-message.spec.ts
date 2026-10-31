@@ -1,5 +1,5 @@
 // Срок в тексте 429 берётся из счётчика, а не пишется «через минуту»: окна
-// троттлинга бывают от секунды до суток (src/auth/auth-throttles.ts).
+// троттлинга бывают от секунды до суток (см. шапку throttle-error-message.ts).
 import { throttleErrorMessage } from './throttle-error-message';
 
 const HEAD = 'Слишком много попыток подряд. Повторить можно';

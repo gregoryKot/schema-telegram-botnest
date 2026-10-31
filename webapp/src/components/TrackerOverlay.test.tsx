@@ -1,26 +1,19 @@
 // @vitest-environment jsdom
-// Компонентные тесты TrackerOverlay (webapp): открытие, выбор потребности,
-// сохранение оценки (debounce автосейва), пустое состояние, ошибка API.
-// Образец сетапа: schema-miniapp/src/components/TrackerOverlay.test.tsx
-// (мок '../api', vi.useFakeTimers для debounce) + webapp/src/utils/addressForm.test.tsx
-// (jsdom-окружение, мок api-модуля).
+// Компонентные тесты TrackerOverlay (webapp, «один вопрос на экран»): вопрос,
+// ответ словами, автопереход, «Пропустить», экран «Готово», бэкфилл, сохранение
+// (debounce автосейва), ошибка API. Образец сетапа: мок '../api', vi.useFakeTimers.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import {
-  render,
-  screen,
-  fireEvent,
-  act,
-  cleanup,
-} from '@testing-library/react';
+import { render, screen, fireEvent, act, cleanup } from '@testing-library/react';
+import { useState } from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { TrackerOverlay } from './TrackerOverlay';
+import { AUTO_ADVANCE_MS } from './trackerOverlay/trackerFlow';
+import { TRACKER_ONBOARDING_KEY, TRACKER_ORIGIN_NOTE } from '../../../shared/src/needs/trackerOnboarding';
 import type { Need } from '../types';
 
-// useHistorySheet (внутри TrackerOverlay) требует react-router-контекст
-// (useNavigate/useLocation) — оборачиваем в MemoryRouter (CLAUDE.md: не
-// эмулировать историю напрямую).
+// useHistorySheet (внутри TrackerOverlay) требует react-router-контекст.
 vi.mock('../api', () => ({
-  api: { ratings: vi.fn(), saveRating: vi.fn() },
+  api: { ratings: vi.fn(), saveRating: vi.fn(), trackEvent: vi.fn() },
   reportClientError: vi.fn(),
 }));
 import { api, reportClientError } from '../api';
@@ -32,29 +25,39 @@ const NEEDS: Need[] = [
   { id: 'autonomy', emoji: '🧭', title: 'Автономия', chartLabel: 'Автон.' },
 ];
 
-function baseProps(overrides: Record<string, unknown> = {}) {
-  return {
-    needs: NEEDS,
-    ratings: {},
-    saved: {},
-    onChange: vi.fn(),
-    onSaved: vi.fn(),
-    onClose: vi.fn(),
-    ...overrides,
-  };
+type Over = Record<string, unknown>;
+
+// Родитель держит оценки, как AppShell: ответ меняет ratings, автопереход смотрит на них.
+function Harness({ initial = {}, ...rest }: { initial?: Record<string, number> } & Over) {
+  const [ratings, setRatings] = useState(initial);
+  return (
+    <TrackerOverlay
+      needs={NEEDS}
+      ratings={ratings}
+      onChange={(id: string, v: number) => setRatings((r) => ({ ...r, [id]: v }))}
+      onSaved={vi.fn()}
+      onClose={vi.fn()}
+      {...rest}
+    />
+  );
 }
 
-function renderOverlay(overrides: Record<string, unknown> = {}) {
+function renderOverlay(props: Over = {}) {
   return render(
     <MemoryRouter>
-      <TrackerOverlay {...baseProps(overrides)} />
+      <Harness {...props} />
     </MemoryRouter>,
   );
 }
 
+const answer = (label: RegExp | string) => fireEvent.click(screen.getByRole('button', { name: label }));
+const advance = (ms: number) => act(async () => { await vi.advanceTimersByTimeAsync(ms); });
+const heading = (name: string) => screen.getByRole('heading', { level: 1, name });
+
 beforeEach(() => {
   vi.clearAllMocks();
   vi.useFakeTimers();
+  localStorage.clear();
   mockApi.saveRating.mockResolvedValue({ ok: true, allDone: false });
 });
 
@@ -63,45 +66,234 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-describe('TrackerOverlay — открытие', () => {
-  it('показывает название и вопрос дня текущей потребности', () => {
+describe('TrackerOverlay — вопрос', () => {
+  it('показывает номер, название, вопрос про сегодня и пять ответов словами', () => {
     renderOverlay();
-    // Заголовок потребности (attachment: 'Привязанность') рендерится кнопкой.
-    expect(
-      screen.getByRole('button', { name: 'Привязанность' }),
-    ).toBeTruthy();
+    expect(screen.getByText('Потребность 1 из 2')).toBeTruthy();
+    expect(heading('Привязанность')).toBeTruthy();
+    expect(screen.getByText(/Были ли сегодня конкретные моменты близости/)).toBeTruthy();
+    expect(screen.getByText('Выбор сохраняется сразу и сам открывает следующий вопрос.')).toBeTruthy();
+    expect(screen.getByRole('group', { name: 'Привязанность' }).querySelectorAll('button')).toHaveLength(5);
   });
 
   it('открывает нужную потребность по initialNeedId, а не первую в списке', () => {
     renderOverlay({ initialNeedId: 'autonomy' });
-    expect(screen.getByRole('button', { name: 'Автономия' })).toBeTruthy();
+    expect(heading('Автономия')).toBeTruthy();
+  });
+
+  it('открывается на первой неоценённой', () => {
+    renderOverlay({ initial: { attachment: 6 } });
+    expect(heading('Автономия')).toBeTruthy();
+  });
+
+  it('тап по точке прогресса переключает потребность', () => {
+    renderOverlay();
+    fireEvent.click(screen.getByRole('button', { name: 'Автономия' }));
+    expect(heading('Автономия')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Привязанность' }));
+    expect(heading('Привязанность')).toBeTruthy();
+  });
+
+  it('ссылка «Подробнее о потребности» открывает лист потребности', () => {
+    renderOverlay();
+    fireEvent.click(screen.getByText('Подробнее о потребности'));
+    expect(screen.getByText('Назад к дневнику')).toBeTruthy();
+  });
+
+  it('свайп влево переключает на следующую потребность, вправо — назад', () => {
+    const { container } = renderOverlay();
+    const root = container.firstElementChild as HTMLElement;
+    fireEvent.touchStart(root, { touches: [{ clientX: 300, clientY: 100 }] });
+    fireEvent.touchEnd(root, { changedTouches: [{ clientX: 100, clientY: 100 }] });
+    expect(heading('Автономия')).toBeTruthy();
+    fireEvent.touchStart(root, { touches: [{ clientX: 100, clientY: 100 }] });
+    fireEvent.touchEnd(root, { changedTouches: [{ clientX: 300, clientY: 100 }] });
+    expect(heading('Привязанность')).toBeTruthy();
+  });
+
+  it('вертикальный жест не листает', () => {
+    const { container } = renderOverlay();
+    const root = container.firstElementChild as HTMLElement;
+    fireEvent.touchStart(root, { touches: [{ clientX: 300, clientY: 100 }] });
+    fireEvent.touchEnd(root, { changedTouches: [{ clientX: 150, clientY: 400 }] });
+    expect(heading('Привязанность')).toBeTruthy();
   });
 });
 
-describe('TrackerOverlay — выбор потребности', () => {
-  it('клик по точке шага переключает отображаемую потребность', () => {
+describe('TrackerOverlay — ответ и автопереход', () => {
+  it('ответ сразу пробрасывается наверх (onChange) значением слова', () => {
+    const onChange = vi.fn();
+    renderOverlay({ onChange });
+    answer(/В основном да/);
+    expect(onChange).toHaveBeenCalledWith('attachment', 8);
+  });
+
+  it('следующий вопрос открывается через ~250 мс, а не мгновенно', async () => {
     renderOverlay();
-    expect(screen.getByRole('button', { name: 'Привязанность' })).toBeTruthy();
+    answer(/В основном да/);
+    expect(heading('Привязанность')).toBeTruthy();
+    await advance(AUTO_ADVANCE_MS - 10);
+    expect(heading('Привязанность')).toBeTruthy();
+    await advance(20);
+    expect(heading('Автономия')).toBeTruthy();
+  });
 
-    const dots = screen.getAllByLabelText('Автон.');
-    fireEvent.click(dots[0]);
+  it('последний ответ ведёт на «Готово» с индексом и наблюдением про самое низкое', async () => {
+    renderOverlay();
+    answer(/В основном да/);
+    await advance(AUTO_ADVANCE_MS);
+    answer(/Мало/);
+    await advance(AUTO_ADVANCE_MS);
+    expect(screen.getByText('Трекер · сегодня')).toBeTruthy();
+    expect(screen.getByText('6,0')).toBeTruthy();
+    expect(screen.getByText('Ниже всего — автономия. Не вывод, а точка: посмотрим, повторится ли.')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Поправить ответы' })).toBeTruthy();
+  });
 
-    expect(screen.getByRole('button', { name: 'Автономия' })).toBeTruthy();
-    expect(screen.queryByRole('button', { name: 'Привязанность' })).toBeNull();
+  it('ответ на более раннюю потребность возвращает к пропущенной, а не завершает', async () => {
+    renderOverlay({ initialNeedId: 'autonomy' });
+    answer(/Полностью/);
+    await advance(AUTO_ADVANCE_MS);
+    expect(heading('Привязанность')).toBeTruthy();
+  });
+
+  it('новый ответ внутри окна автоперехода не плодит переходы', async () => {
+    renderOverlay();
+    answer(/Мало/);
+    await advance(100);
+    answer(/В основном да/);
+    await advance(AUTO_ADVANCE_MS);
+    expect(heading('Автономия')).toBeTruthy();
+    await advance(1000);
+    expect(heading('Автономия')).toBeTruthy();
+  });
+
+  it('точка во время ожидания отменяет автопереход', async () => {
+    renderOverlay();
+    answer(/Мало/);
+    fireEvent.click(screen.getByRole('button', { name: 'Автономия' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Привязанность' }));
+    await advance(AUTO_ADVANCE_MS * 2);
+    expect(heading('Привязанность')).toBeTruthy();
+  });
+});
+
+describe('TrackerOverlay — «Пропустить»', () => {
+  it('идёт к следующей неоценённой без сохранения и шлёт tracker_skip', async () => {
+    renderOverlay();
+    fireEvent.click(screen.getByRole('button', { name: 'Пропустить' }));
+    expect(heading('Автономия')).toBeTruthy();
+    expect(mockApi.trackEvent).toHaveBeenCalledWith('tracker_skip');
+    await advance(1000);
+    expect(mockApi.saveRating).not.toHaveBeenCalled();
+  });
+
+  it('на последней ведёт на «Готово» с «Заполнено N из 5» и «Дооценить»', () => {
+    renderOverlay({ initial: { attachment: 6 } });
+    fireEvent.click(screen.getByRole('button', { name: 'Пропустить' }));
+    expect(screen.getByText(/Остальное можно дооценить позже/)).toBeTruthy();
+    expect(screen.queryByText(/Ниже всего/)).toBeNull();
+    expect(screen.getByRole('button', { name: 'Дооценить' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Поправить ответы' })).toBeNull();
+    expect(screen.getByText('1 из 2')).toBeTruthy();
+    expect(screen.getByText('заполнено')).toBeTruthy();
+    expect(screen.queryByText('индекс дня из 10')).toBeNull();
+    expect(screen.queryByText('—')).toBeNull();
+  });
+
+  it('«Дооценить» открывает первую пустую потребность', () => {
+    renderOverlay({ initial: { autonomy: 6 } });
+    fireEvent.click(screen.getByRole('button', { name: 'Пропустить' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Дооценить' }));
+    expect(heading('Привязанность')).toBeTruthy();
+  });
+});
+
+describe('TrackerOverlay — экран «Готово»', () => {
+  it('всё оценено при открытии — сразу «Готово»; «Поправить ответы» ведёт к первому вопросу', () => {
+    renderOverlay({ initial: { attachment: 4, autonomy: 8 } });
+    expect(screen.getByText('Трекер · сегодня')).toBeTruthy();
+    expect(screen.getByText('Ниже всего — привязанность. Не вывод, а точка: посмотрим, повторится ли.')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Поправить ответы' }));
+    expect(heading('Привязанность')).toBeTruthy();
+  });
+
+  it('с initialNeedId не перескакивает на «Готово»', () => {
+    renderOverlay({ initial: { attachment: 4, autonomy: 8 }, initialNeedId: 'autonomy' });
+    expect(heading('Автономия')).toBeTruthy();
+  });
+
+  it('столбики по потребностям подписаны словом оценки', () => {
+    renderOverlay({ initial: { attachment: 4, autonomy: 8 } });
+    expect(screen.getByLabelText('Привязанность: Мало')).toBeTruthy();
+    expect(screen.getByLabelText('Автономия: В основном да')).toBeTruthy();
+  });
+
+  it('«На главную» закрывает трекер', () => {
+    const onClose = vi.fn();
+    renderOverlay({ initial: { attachment: 4, autonomy: 8 }, onClose });
+    fireEvent.click(screen.getByRole('button', { name: 'На главную' }));
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('«История →» открывает историю и закрывает трекер; без onOpenHistory ссылки нет', () => {
+    const onOpenHistory = vi.fn();
+    const onClose = vi.fn();
+    renderOverlay({ initial: { attachment: 4, autonomy: 8 }, onOpenHistory, onClose });
+    fireEvent.click(screen.getByRole('button', { name: 'История →' }));
+    expect(onOpenHistory).toHaveBeenCalledTimes(1);
+    expect(onClose).toHaveBeenCalledTimes(1);
+    cleanup();
+    renderOverlay({ initial: { attachment: 4, autonomy: 8 } });
+    expect(screen.queryByRole('button', { name: 'История →' })).toBeNull();
+  });
+
+  it('«Заметка» зовёт onOpenNote; рядом кнопка «Поделиться днём»', () => {
+    const onOpenNote = vi.fn();
+    renderOverlay({ initial: { attachment: 4, autonomy: 8 }, onOpenNote });
+    fireEvent.click(screen.getByRole('button', { name: 'Заметка' }));
+    expect(onOpenNote).toHaveBeenCalledTimes(1);
+    expect(screen.getByText('Поделиться днём')).toBeTruthy();
+  });
+});
+
+describe('TrackerOverlay — строка «откуда это»', () => {
+  it('первый раз (нет оценок, флага нет): строка над вопросом; «Понятно» закрывает и ставит флаг', () => {
+    renderOverlay();
+    expect(screen.getByText(TRACKER_ORIGIN_NOTE)).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Понятно' }));
+    expect(screen.queryByText(TRACKER_ORIGIN_NOTE)).toBeNull();
+    expect(localStorage.getItem(TRACKER_ONBOARDING_KEY)).toBe('1');
+  });
+
+  it('строка не убегает из-под пальца при первом ответе и уходит вместе с первым вопросом', async () => {
+    renderOverlay();
+    answer(/Мало/);
+    expect(screen.getByText(TRACKER_ORIGIN_NOTE)).toBeTruthy();
+    await advance(AUTO_ADVANCE_MS);
+    expect(screen.queryByText(TRACKER_ORIGIN_NOTE)).toBeNull();
+  });
+
+  it('уже есть оценки или флаг стоит — строки нет', () => {
+    renderOverlay({ initial: { attachment: 6 } });
+    expect(screen.queryByText(TRACKER_ORIGIN_NOTE)).toBeNull();
+    cleanup();
+    localStorage.setItem(TRACKER_ONBOARDING_KEY, '1');
+    renderOverlay();
+    expect(screen.queryByText(TRACKER_ORIGIN_NOTE)).toBeNull();
+  });
+
+  it('трёх шагов старого онбординга нет', () => {
+    renderOverlay();
+    expect(screen.queryByText('Далее →')).toBeNull();
+    expect(screen.queryByText(/по дуге/)).toBeNull();
   });
 });
 
 describe('TrackerOverlay — сохранение оценки', () => {
-  it('клик по сегменту шкалы сразу пробрасывает значение наверх (onChange)', () => {
-    const onChange = vi.fn();
-    renderOverlay({ onChange });
-    fireEvent.click(screen.getByRole('button', { name: '7 из 10' }));
-    expect(onChange).toHaveBeenCalledWith('attachment', 7);
-  });
-
   it('api.saveRating вызывается только после паузы 500мс (debounce)', () => {
     renderOverlay();
-    fireEvent.click(screen.getByRole('button', { name: '7 из 10' }));
+    answer(/В основном да/);
     expect(mockApi.saveRating).not.toHaveBeenCalled();
   });
 
@@ -109,260 +301,126 @@ describe('TrackerOverlay — сохранение оценки', () => {
     mockApi.saveRating.mockResolvedValue({ ok: true, allDone: true, streak: { count: 3 } });
     const onSaved = vi.fn();
     renderOverlay({ onSaved });
-    fireEvent.click(screen.getByRole('button', { name: '7 из 10' }));
-
-    await act(async () => {
-      await vi.advanceTimersByTimeAsync(500);
-    });
-
-    expect(mockApi.saveRating).toHaveBeenCalledWith('attachment', 7);
+    answer(/В основном да/);
+    await advance(500);
+    expect(mockApi.saveRating).toHaveBeenCalledWith('attachment', 8);
     expect(onSaved).toHaveBeenCalledWith('attachment', { count: 3 });
   });
-});
 
-describe('TrackerOverlay — пустое состояние', () => {
-  it('без оценок кнопка действия ведёт «к незаполненным», а не «готово»', () => {
-    renderOverlay({ initialNeedId: 'autonomy' });
-    // Автономия — последняя потребность в списке, ничего не оценено:
-    // nextNeed нет, allRated=false -> кнопка "К незаполненным".
-    expect(
-      screen.getByRole('button', { name: /К незаполненным/ }),
-    ).toBeTruthy();
-    expect(screen.queryByRole('button', { name: /Готово/ })).toBeNull();
+  it('оценка последнего вопроса не теряется, если «На главную» нажали раньше debounce', async () => {
+    renderOverlay({ initial: { attachment: 6 } });
+    answer(/Полностью/);
+    await advance(AUTO_ADVANCE_MS);
+    expect(screen.getByText('Трекер · сегодня')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'На главную' }));
+    cleanup();
+    await advance(10);
+    expect(mockApi.saveRating).toHaveBeenCalledWith('autonomy', 10);
   });
 
-  it('когда все потребности оценены — кнопка действия «Готово»', () => {
-    renderOverlay({
-      initialNeedId: 'autonomy',
-      ratings: { attachment: 5, autonomy: 6 },
-    });
-    expect(screen.getByRole('button', { name: /Готово/ })).toBeTruthy();
+  it('офлайн: isOffline=true не вызывает api.saveRating после debounce', async () => {
+    renderOverlay({ isOffline: true });
+    answer(/В основном да/);
+    await advance(500);
+    expect(mockApi.saveRating).not.toHaveBeenCalled();
   });
-});
 
-describe('TrackerOverlay — ошибка API', () => {
-  it('ошибка api.saveRating не роняет компонент и не вызывает onSaved', async () => {
+  it('ошибка api.saveRating не роняет компонент, не вызывает onSaved и уходит отчётом наверх (section: tracker)', async () => {
     mockApi.saveRating.mockRejectedValue(new Error('network'));
     const onSaved = vi.fn();
     renderOverlay({ onSaved });
-    fireEvent.click(screen.getByRole('button', { name: '7 из 10' }));
-
-    await act(async () => {
-      await vi.advanceTimersByTimeAsync(500);
-    });
-
+    answer(/В основном да/);
+    await advance(500);
     expect(onSaved).not.toHaveBeenCalled();
-    // Компонент по-прежнему смонтирован и реагирует на дальнейшие клики.
-    expect(screen.getByRole('button', { name: 'Привязанность' })).toBeTruthy();
-  });
-
-  // Регрессия (правило CLAUDE.md №14): в webapp нет outbox-очереди (в отличие
-  // от мини-аппа), поэтому сбой сохранения оценки терял её без следа и без
-  // сигнала наверх. Теперь catch обязан отчитаться через reportClientError.
-  it('ошибка api.saveRating отправляет отчёт наверх с section: tracker', async () => {
-    mockApi.saveRating.mockRejectedValue(new Error('network'));
-    renderOverlay();
-    fireEvent.click(screen.getByRole('button', { name: '7 из 10' }));
-
-    await act(async () => {
-      await vi.advanceTimersByTimeAsync(500);
-    });
-
+    expect(heading('Автономия')).toBeTruthy();
     expect(mockReportClientError).toHaveBeenCalledWith(
-      expect.objectContaining({
-        section: 'tracker',
-        message: expect.stringContaining('rating save failed'),
-      }),
+      expect.objectContaining({ section: 'tracker', message: expect.stringContaining('rating save failed') }),
     );
   });
 });
 
-describe('TrackerOverlay — бэкафилл прошлой даты', () => {
-  it('при наличии date подгружает оценки через api.ratings и показывает загрузку до ответа', async () => {
-    mockApi.ratings.mockReturnValue(new Promise(() => {})); // никогда не резолвится
-    renderOverlay({ date: '2026-07-10' });
-    expect(screen.getByText('Загрузка...')).toBeTruthy();
-    expect(mockApi.ratings).toHaveBeenCalledWith('2026-07-10');
-  });
-
-  it('после загрузки оценок за прошлую дату убирает спиннер и показывает потребность', async () => {
-    mockApi.ratings.mockResolvedValue({ attachment: 4 });
-    renderOverlay({ date: '2026-07-10' });
-    await act(async () => {});
-    expect(screen.queryByText('Загрузка...')).toBeNull();
-    expect(screen.getByRole('button', { name: 'Привязанность' })).toBeTruthy();
-  });
-});
-
-// Регрессия (аудит 3.3, правило «Никаких хардкод-заглушек»): при отсутствии
-// РЕАЛЬНОЙ вчерашней оценки потребности дельта «вчера ±N» не рисуется вовсе.
-// До фикса фолбэк на константу YESTERDAY выдавал выдуманную дельту на чистом
-// аккаунте (тот же инцидент, что описан в правиле; miniapp-двойник был чист).
-describe('дельта «вчера» — только из реальных данных', () => {
-  // Дельта рисуется только в DesktopLayout — форсим десктоп через ширину
-  // окна (useIsDesktop читает window.innerWidth при маунте), иначе оба
-  // кейса тривиально-зелёные (в мобильном лейауте блока «вчера» нет вовсе).
-  beforeEach(() => {
-    Object.defineProperty(window, 'innerWidth', {
-      configurable: true,
-      value: 1200,
-    });
-  });
-  afterEach(() => {
-    Object.defineProperty(window, 'innerWidth', {
-      configurable: true,
-      value: 1024,
-    });
-  });
-  it('без вчерашних оценок блока «вчера» нет, даже когда сегодня оценка стоит', () => {
-    renderOverlay({
-      ratings: { attachment: 5 },
-      yesterdayRatings: {},
-      initialNeedId: 'attachment',
-    });
+// Только реальные вчерашние оценки (правило «Никаких хардкод-заглушек»): нет данных — нет пометки.
+describe('«вчера» — только из реальных данных', () => {
+  it('без вчерашних оценок пометки нет, даже когда сегодня оценка стоит', () => {
+    renderOverlay({ initial: { attachment: 5 }, initialNeedId: 'attachment', yesterdayRatings: {} });
     expect(screen.queryByText(/вчера/i)).toBeNull();
   });
 
-  it('с реальной вчерашней оценкой дельта показывается', () => {
-    renderOverlay({
-      ratings: { attachment: 5 },
-      yesterdayRatings: { attachment: 3 },
-      initialNeedId: 'attachment',
-    });
-    expect(screen.queryByText(/вчера/i)).toBeTruthy();
+  it('с реальной вчерашней оценкой слово помечено «вчера»', () => {
+    renderOverlay({ initial: { attachment: 5 }, initialNeedId: 'attachment', yesterdayRatings: { attachment: 3 } });
+    const marked = screen.getAllByRole('button').filter((b) => b.textContent?.includes('вчера'));
+    expect(marked.map((b) => b.getAttribute('aria-label'))).toEqual(['Мало — 4 из 10']);
   });
 });
 
-describe('TrackerOverlay — навигация по футеру', () => {
-  it('«←» переключает на предыдущую потребность и неактивна на первой', () => {
-    renderOverlay({ initialNeedId: 'autonomy' });
-    expect(screen.getByRole('button', { name: 'Автономия' })).toBeTruthy();
-    const prevBtn = screen.getByText('←').closest('button')!;
-    fireEvent.click(prevBtn);
-    expect(screen.getByRole('button', { name: 'Привязанность' })).toBeTruthy();
-    expect(prevBtn.hasAttribute('disabled')).toBe(true);
-  });
-
-  it('«далее: …» переключает на следующую нерасчитанную потребность', () => {
-    renderOverlay();
-    fireEvent.click(screen.getByText(/далее:/));
-    expect(screen.getByRole('button', { name: 'Автономия' })).toBeTruthy();
-  });
-
-  it('когда всё оценено — «Готово» открывает экран завершения с итоговым индексом', () => {
-    renderOverlay({ ratings: { attachment: 5, autonomy: 7 } });
-    fireEvent.click(screen.getByText(/Готово/));
-    expect(screen.getByText('Заполнено')).toBeTruthy();
-  });
-
-  it('«К незаполненным» прыгает на первую неоценённую потребность', () => {
-    renderOverlay({ initialNeedId: 'autonomy', ratings: { autonomy: 4 } });
-    fireEvent.click(screen.getByText(/К незаполненным/));
-    expect(screen.getByRole('button', { name: 'Привязанность' })).toBeTruthy();
-  });
-});
-
-describe('TrackerOverlay — топбар: заметка/история', () => {
-  it('кнопка «Заметка» вызывает onOpenNote', () => {
-    const onOpenNote = vi.fn();
-    renderOverlay({ onOpenNote });
-    fireEvent.click(screen.getByLabelText('Заметка'));
-    expect(onOpenNote).toHaveBeenCalledTimes(1);
-  });
-
-  it('кнопка «История» одновременно открывает историю и закрывает трекер', () => {
-    const onOpenHistory = vi.fn();
+describe('TrackerOverlay — топбар', () => {
+  it('«Закрыть» закрывает трекер', () => {
     const onClose = vi.fn();
-    renderOverlay({ onOpenHistory, onClose });
-    fireEvent.click(screen.getByLabelText('История'));
-    expect(onOpenHistory).toHaveBeenCalledTimes(1);
+    renderOverlay({ onClose });
+    fireEvent.click(screen.getByRole('button', { name: 'Закрыть' }));
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 });
 
-describe('TrackerOverlay — детальный лист потребности', () => {
-  it('клик по заголовку потребности открывает NeedTodaySheet поверх трекера', () => {
-    renderOverlay();
-    fireEvent.click(screen.getByRole('button', { name: 'Привязанность' }));
-    expect(screen.getByText('Назад к дневнику')).toBeTruthy();
+describe('TrackerOverlay — бэкафилл прошлой даты', () => {
+  it('подгружает оценки через api.ratings и показывает скелетон вопроса до ответа', () => {
+    mockApi.ratings.mockReturnValue(new Promise(() => {}));
+    renderOverlay({ date: '2026-07-10' });
+    const sk = screen.getByRole('status', { name: 'Загружаются оценки дня' });
+    expect(sk.querySelectorAll('.skel').length).toBe(8);
+    expect(screen.queryByText('Загрузка...')).toBeNull();
+    expect(mockApi.ratings).toHaveBeenCalledWith('2026-07-10');
   });
-});
 
-describe('TrackerOverlay — офлайн: не пытается сохранить', () => {
-  it('isOffline=true не вызывает api.saveRating после debounce', async () => {
-    renderOverlay({ isOffline: true });
-    fireEvent.click(screen.getByRole('button', { name: '7 из 10' }));
-    await act(async () => {
-      await vi.advanceTimersByTimeAsync(500);
-    });
-    expect(mockApi.saveRating).not.toHaveBeenCalled();
-  });
-});
-
-describe('TrackerOverlay — бэкафилл: сохранение оценки прошлого дня', () => {
-  it('оценка во время бэкафилла сохраняется через api.saveRating(needId, v, date)', async () => {
-    mockApi.ratings.mockResolvedValue({});
+  it('api.ratings отклонён: скелетон уходит, день пустой, отказ уходит отчётом наверх', async () => {
+    mockApi.ratings.mockRejectedValue(new Error('network'));
     renderOverlay({ date: '2026-07-10' });
     await act(async () => {});
-    fireEvent.click(screen.getByRole('button', { name: '6 из 10' }));
-    await act(async () => {
-      await vi.advanceTimersByTimeAsync(500);
-    });
-    expect(mockApi.saveRating).toHaveBeenCalledWith('attachment', 6, '2026-07-10');
-  });
-
-  it('ошибка сохранения оценки бэкафилла не роняет экран', async () => {
-    mockApi.ratings.mockResolvedValue({});
-    mockApi.saveRating.mockRejectedValue(new Error('network'));
-    renderOverlay({ date: '2026-07-10' });
-    await act(async () => {});
-    fireEvent.click(screen.getByRole('button', { name: '6 из 10' }));
-    await act(async () => {
-      await vi.advanceTimersByTimeAsync(500);
-    });
-    expect(screen.getByRole('button', { name: 'Привязанность' })).toBeTruthy();
-  });
-
-  // Регрессия (правило CLAUDE.md №14), ветка isBackfill — та же потеря
-  // оценки, что и в обычной ветке, только для прошлой даты.
-  it('ошибка сохранения оценки бэкафилла отправляет отчёт наверх с section: tracker', async () => {
-    mockApi.ratings.mockResolvedValue({});
-    mockApi.saveRating.mockRejectedValue(new Error('network'));
-    renderOverlay({ date: '2026-07-10' });
-    await act(async () => {});
-    fireEvent.click(screen.getByRole('button', { name: '6 из 10' }));
-    await act(async () => {
-      await vi.advanceTimersByTimeAsync(500);
-    });
-
+    expect(screen.queryByRole('status', { name: 'Загружаются оценки дня' })).toBeNull();
+    expect(heading('Привязанность')).toBeTruthy();
     expect(mockReportClientError).toHaveBeenCalledWith(
-      expect.objectContaining({
-        section: 'tracker',
-        message: expect.stringContaining('backfill rating save failed'),
-      }),
+      expect.objectContaining({ section: 'tracker', message: expect.stringContaining('backfill ratings load failed') }),
     );
   });
-});
 
-describe('TrackerOverlay — мобильная раскладка', () => {
-  beforeEach(() => {
-    Object.defineProperty(window, 'innerWidth', { configurable: true, value: 375 });
-  });
-  afterEach(() => {
-    Object.defineProperty(window, 'innerWidth', { configurable: true, value: 1024 });
-  });
-
-  it('на узком экране рендерит мобильный лейаут (без десктопных трёх колонок)', () => {
-    renderOverlay();
-    expect(screen.getByRole('button', { name: 'Привязанность' })).toBeTruthy();
-    expect(screen.getByText('вопрос дня')).toBeTruthy();
+  it('после загрузки показывает вопрос с датой и без вчерашних пометок и строки «откуда это»', async () => {
+    mockApi.ratings.mockResolvedValue({ attachment: 4 });
+    renderOverlay({ date: '2026-07-10', yesterdayRatings: { attachment: 3 } });
+    await act(async () => {});
+    expect(screen.queryByRole('status', { name: 'Загружаются оценки дня' })).toBeNull();
+    expect(heading('Привязанность')).toBeTruthy();
+    expect(screen.getByText(/10 июля/)).toBeTruthy();
+    expect(screen.queryByText(/вчера/)).toBeNull();
+    expect(screen.queryByText(TRACKER_ORIGIN_NOTE)).toBeNull();
   });
 
-  it('свайп влево переключает на следующую потребность', () => {
-    const { container } = renderOverlay();
-    const root = container.firstElementChild as HTMLElement;
-    fireEvent.touchStart(root, { touches: [{ clientX: 300, clientY: 100 }] });
-    fireEvent.touchEnd(root, { changedTouches: [{ clientX: 100, clientY: 100 }] });
-    expect(screen.getByRole('button', { name: 'Автономия' })).toBeTruthy();
+  it('ответ сохраняется с датой, автопереход и «Готово» работают так же, «Готово» зовёт onDone', async () => {
+    mockApi.ratings.mockResolvedValue({});
+    const onDone = vi.fn();
+    renderOverlay({ date: '2026-07-10', onDone });
+    await act(async () => {});
+    answer(/Наполовину/);
+    await advance(AUTO_ADVANCE_MS);
+    expect(heading('Автономия')).toBeTruthy();
+    answer(/Полностью/);
+    await advance(AUTO_ADVANCE_MS);
+    expect(mockApi.saveRating).toHaveBeenCalledWith('attachment', 6, '2026-07-10');
+    expect(screen.getByText('Трекер · 10 июля')).toBeTruthy();
+    expect(screen.getByText('8,0')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Готово' }));
+    expect(onDone).toHaveBeenCalledTimes(1);
+  });
+
+  it('ошибка сохранения бэкафилла не роняет экран и уходит отчётом наверх', async () => {
+    mockApi.ratings.mockResolvedValue({});
+    mockApi.saveRating.mockRejectedValue(new Error('network'));
+    renderOverlay({ date: '2026-07-10' });
+    await act(async () => {});
+    answer(/Наполовину/);
+    await advance(500);
+    expect(heading('Автономия')).toBeTruthy();
+    expect(mockReportClientError).toHaveBeenCalledWith(
+      expect.objectContaining({ section: 'tracker', message: expect.stringContaining('backfill rating save failed') }),
+    );
   });
 });

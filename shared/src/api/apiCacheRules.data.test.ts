@@ -64,3 +64,44 @@ describe('RULES: tasks с clientId веб-клиента', () => {
     expect(targets).toContain('/api/therapy/tasks/client/1000000000000000123');
   });
 });
+
+// Сообщение о бывшем терапевте (решение владельца 2026-10-22) зависит от живой
+// связи: после подключения по коду и после отключения кеш обязан сброситься,
+// иначе сообщение висит 15 секунд поверх нового «Мой терапевт».
+describe('бывший терапевт: join и отключение сбрасывают сообщение', () => {
+  const targetsOf = (method: string, path: string) => {
+    const rule = RULES.find(
+      (r) => r.method === method && r.pattern.test(path),
+    )!;
+    return rule.targets?.(path.match(rule.pattern)!, undefined) ?? [];
+  };
+  it.each([
+    ['POST', '/api/therapy/join'],
+    ['DELETE', '/api/therapy/relation'],
+  ])('%s %s', (method, path) => {
+    expect(targetsOf(method, path)).toEqual(
+      expect.arrayContaining([
+        '/api/therapy/relation',
+        '/api/therapy/former-therapist',
+      ]),
+    );
+  });
+});
+
+// Кнопка «Удалить результаты теста» (решение владельца 2026-10-22) стирает
+// итог, историю и прогресс: ни одна вкладка не должна ещё 15 секунд
+// показывать удалённый тест из кеша.
+describe('RULES: DELETE /api/ysq-data', () => {
+  it('сбрасывает итог, историю, прогресс, «Мой путь» и профиль', () => {
+    const rule = RULES.find(
+      (r) => r.method === 'DELETE' && r.pattern.test('/api/ysq-data'),
+    );
+    expect(rule?.targets?.(FAKE_MATCH, undefined)).toEqual([
+      '/api/ysq-result',
+      '/api/ysq-history',
+      '/api/ysq-progress',
+      '/api/journey',
+      '/api/profile',
+    ]);
+  });
+});

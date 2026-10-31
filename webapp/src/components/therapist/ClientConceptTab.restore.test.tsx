@@ -134,6 +134,7 @@ afterEach(() => cleanup());
 
 async function openVersion() {
   await openTab(concept({ modeIds: [], modeLinks: [], schemaIds: [], history: [OLD] }));
+  fireEvent.click(screen.getByRole('button', { name: 'История версий · 1' }));
   fireEvent.click(screen.getByText('Версия 1'));
   fireEvent.click(screen.getByRole('button', { name: 'Восстановить эту версию' }));
 }

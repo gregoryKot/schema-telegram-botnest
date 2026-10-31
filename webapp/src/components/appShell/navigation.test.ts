@@ -16,9 +16,16 @@ describe('sectionFromPath', () => {
   it('распознаёт известные разделы, включая вложенный путь', () => {
     expect(sectionFromPath('/today')).toBe('today');
     expect(sectionFromPath('/diary')).toBe('diary');
+    expect(sectionFromPath('/more')).toBe('more');
     expect(sectionFromPath('/schemas/abandonment')).toBe('schemas');
     expect(sectionFromPath('/practice')).toBe('practice');
     expect(sectionFromPath('/profile')).toBe('profile');
+  });
+
+  it('разделы, которых нет в меню, по-прежнему открываются по адресу', () => {
+    for (const s of ['schemas', 'practice', 'profile'] as const) {
+      expect(sectionFromPath('/' + s)).toBe(s);
+    }
   });
 
   it('легаси-пути /help и /exercises редиректят на «практика»', () => {

@@ -4,14 +4,23 @@
    ───────────────────────────────────────────────────────────────────────── */
 
 /* ── Обёртка карточки ────────────────────────────────────────────────────── */
+/* Шапка и все вкладки — в колонке кабинета (--tk-max, --tk-center, --tk-gutter
+   объявлены на .main--cabinet в index.css). До 2026-10 «Обзор» и «Задания»
+   прижимались влево с пустой половиной экрана справа, кнопки шапки уезжали к
+   правому краю, а «Концептуализация» стояла по центру. */
 .tk-sheet { background: var(--bg); }
 .tk-tabs-body { padding: 0; }
-.tk-load { padding: 40px clamp(20px, 4vw, 48px); display: flex; flex-direction: column; gap: 16px; max-width: 1240px; }
+.tk-load { padding: 40px var(--tk-gutter); display: flex; flex-direction: column; gap: 16px; max-width: var(--tk-max); box-sizing: border-box; }
+@media (min-width: 768px) {
+  .tk-tabs-body > .tk-ov, .tk-tabs-body > .tk-load, .tk-tabs-body > .ds-page { margin-left: var(--tk-center); padding-inline: var(--tk-gutter); }
+  .therapist-scroll--list > .ds-page { margin-left: var(--tk-center); max-width: var(--tk-max); padding-inline: var(--tk-gutter); }
+  .tk-tabs-body > .page-inner-wide { margin: 0 0 0 var(--tk-center); max-width: var(--tk-max); padding-inline: var(--tk-gutter); }
+}
 
 /* ── Шапка ───────────────────────────────────────────────────────────────── */
 .tk-head {
   background: var(--paper-tint); border-bottom: 1px solid var(--line);
-  padding: 28px clamp(20px, 4vw, 48px) 0; flex-shrink: 0;
+  padding: 28px calc(var(--tk-center) + var(--tk-gutter)) 0; flex-shrink: 0;
   display: flex; flex-direction: column; gap: 22px;
 }
 .tk-back { align-self: flex-start; background: none; border: none; padding: 0; cursor: pointer; font-family: inherit; white-space: nowrap; margin-bottom: -8px; }
@@ -35,13 +44,18 @@
 .tk-badges { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; white-space: nowrap; }
 .tk-actions { display: flex; gap: 8px; align-items: center; white-space: nowrap; }
 .tk-actions-main { display: flex; gap: 8px; }
-.tk-head .ds-tabs { margin: 0 calc(-1 * clamp(20px, 4vw, 48px)); padding: 0 clamp(20px, 4vw, 48px); }
+.tk-head .ds-tabs { margin: 0 calc(-1 * (var(--tk-center) + var(--tk-gutter))); padding: 0 calc(var(--tk-center) + var(--tk-gutter)); }
 
 /* ── Обзор ───────────────────────────────────────────────────────────────── */
+/* Основная колонка забирает ширину, сайдбар (сессия, дни, действия) — узкий.
+   Две равные колонки делали сайдбар шириной с контент, а в основной колонке
+   переносились заголовки и режимы карты. Сайдбар — 30% в пределах 260–340px:
+   на среднем экране сжимается он, а не основная колонка. Узко — одна колонка. */
 .tk-ov {
-  display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
-  gap: 40px; padding: 40px clamp(20px, 4vw, 48px) 64px; max-width: 1240px; box-sizing: border-box;
+  display: grid; grid-template-columns: minmax(0, 1fr) clamp(260px, 30%, 340px); align-items: start;
+  gap: 48px; padding: 40px var(--tk-gutter) 64px; max-width: var(--tk-max); box-sizing: border-box;
 }
+@media (max-width: 1023px) { .tk-ov { grid-template-columns: minmax(0, 1fr); gap: 40px; } }
 .tk-col { display: flex; flex-direction: column; gap: 44px; min-width: 0; }
 .tk-block { display: flex; flex-direction: column; gap: 18px; }
 .tk-block--tight { gap: 14px; }
@@ -50,12 +64,16 @@
 .tk-goal-text { font: 24px/1.4 var(--serif); color: var(--text); overflow-wrap: anywhere; }
 .tk-goal .ds-link { display: inline-block; margin-top: 14px; }
 .tk-goal .ds-label { margin-bottom: 10px; }
-.tk-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr)); gap: 12px; }
+.tk-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, max(220px, (100% - 24px) / 3)), 1fr)); gap: 12px; }
+/* Не больше трёх плиток в ряд; четыре домена — два ряда по две, а не 3 + 1. */
+.tk-tiles:has(> :nth-child(4):last-child) { grid-template-columns: repeat(auto-fill, minmax(min(100%, max(220px, (100% - 12px) / 2)), 1fr)); }
 .tk-tile { border-radius: 14px; padding: 16px 18px; display: flex; flex-direction: column; gap: 10px; }
 .tk-tile-title { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; font-weight: 700; }
 .tk-tile-item { font-size: 14px; font-weight: 500; display: flex; gap: 8px; align-items: center; }
 .tk-tile-item .ds-dot { width: 7px; height: 7px; border-radius: 2px; }
-.tk-modes { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+/* Шесть групп режимов: три колонки × два ряда (уже — две × три), без одинокой
+   группы в последнем ряду. */
+.tk-modes { display: grid; grid-template-columns: repeat(auto-fill, minmax(max(140px, (100% - 32px) / 3), 1fr)); gap: 20px 16px; }
 .tk-mode-col { border-top: 3px solid; padding-top: 12px; display: flex; flex-direction: column; gap: 6px; }
 .tk-mode-col > div { font-size: 14px; }
 .tk-mode-col .tk-tile-title { font-size: 11px; }
@@ -106,10 +124,13 @@
   .tk-head-row { gap: 12px; flex-wrap: nowrap; }
   .tk-avatar { width: 52px; height: 52px; font-size: 19px; }
   .tk-ident { min-width: 0; }
-  .tk-name { font-size: 26px; }
+  .tk-name {
+    font-size: 24px; white-space: normal; overflow-wrap: anywhere;
+    display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2;
+  }
   .tk-badges { gap: 6px; flex-wrap: wrap; }
   .tk-actions-main {
-    position: fixed; left: 0; right: 0; bottom: calc(76px + var(--safe-bottom)); z-index: 48;
+    position: fixed; left: 0; right: 0; bottom: calc(var(--mobile-nav-h) + var(--safe-bottom)); z-index: 48;
     display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 12px 20px;
     background: var(--bg); border-top: 1px solid var(--line);
   }

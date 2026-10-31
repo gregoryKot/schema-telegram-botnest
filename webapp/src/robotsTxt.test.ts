@@ -71,14 +71,14 @@ function appRoutes(): { open: string[]; authed: string[] } {
 
 // Роуты вне RequireAuth, которые обязаны индексироваться. Остальные вне
 // RequireAuth закрываются явно — новый роут без классификации роняет тест.
-const PUBLIC = ['/', '/articles', '/articles/x', '/tests', '/tests/x', '/subscribe', '/donate', '/login'];
+const PUBLIC = ['/', '/articles', '/articles/x', '/tests', '/tests/x', '/subscribe', '/donate', '/privacy', '/offer', '/login'];
 const CLOSED = ['/admin', '/booking-admin', '/articles-admin', '/link'];
 const CLOSED_PREFIXES = ['/auth/'];
 // Не роуты SPA: оболочка мини-аппа (в том числе ссылка запуска с query) и
 // диагностика.
 const CLOSED_EXTRA = ['/app', '/app/', '/app?startapp=x', '/app/today', '/app/assets/index.js', '/max-probe.html'];
 // Контроль: префиксы закрытого не задевают соседей.
-const PUBLIC_EXTRA = ['/apple-touch-icon.png', '/llms.txt', '/sitemap.xml', '/privacy', '/offer'];
+const PUBLIC_EXTRA = ['/apple-touch-icon.png', '/llms.txt', '/sitemap.xml'];
 // API, из которого публичные страницы рисуют контент. Googlebot и YandexBot
 // рендерят SPA и соблюдают robots.txt для fetch: закрытый /api/ отдал бы
 // индексу «Не удалось загрузить статью» и пустой список мини-тестов (ревью

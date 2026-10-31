@@ -1,8 +1,6 @@
 // Каталог упражнений раздела «Практика»: данные карточек и чистые функции
-// форматирования. Экраны самих упражнений — components/exercises/*.
-import { ALL_SCHEMAS, ALL_MODES } from '../../schemaTherapyData';
-import { getTaskDisplayText } from '../../components/taskDisplayText';
-import type { UserTask } from '../../api';
+// форматирования. «Давность» карточки — fmtAgo из shared (utils/format), своей
+// копии здесь нет (правило №11). Экраны самих упражнений — components/exercises/*.
 
 export type ExId = 'belief' | 'schema' | 'mode' | 'letter' | 'safe' | 'wheel' | 'warm' | 'phrase';
 export interface ExStats { count: number; lastDone: string | null; }
@@ -27,26 +25,8 @@ export function exerciseHue(index: number): number {
   return LIBRARY_HUES[((index % n) + n) % n];
 }
 
-export function fmtAgo(d: string | null, now: number = Date.now()): string {
-  if (!d) return 'пройдено';
-  const days = Math.floor((now - new Date(d).getTime()) / 86400000);
-  if (days === 0) return 'сегодня';
-  if (days === 1) return 'вчера';
-  if (days < 7) return `${days} дн. назад`;
-  return new Date(d).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
-}
-
 export function fmtCount(n: number): string {
   if (n === 1) return `1 запись`;
   if (n < 5) return `${n} записи`;
   return `${n} записей`;
-}
-
-export function resolveTaskText(task: UserTask): string {
-  const text = getTaskDisplayText(task.type, task.text);
-  if (text === task.text) {
-    const s = ALL_SCHEMAS.find(s => s.id === task.text); if (s) return s.name;
-    const m = ALL_MODES.find(m => m.id === task.text);   if (m) return m.name;
-  }
-  return text;
 }

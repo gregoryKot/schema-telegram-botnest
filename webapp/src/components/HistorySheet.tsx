@@ -96,7 +96,7 @@ export function HistorySheet({
       {backfillDate && (
         <Suspense fallback={null}>
           <TrackerOverlay
-            needs={needs} ratings={{}} saved={{}}
+            needs={needs} ratings={{}}
             onChange={() => {}} onSaved={() => {}}
             date={backfillDate}
             onClose={() => setBackfillDate(null)}

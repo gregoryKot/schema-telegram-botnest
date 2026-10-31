@@ -11,14 +11,14 @@ interface Props {
 }
 
 export function ClientOverviewSidebar({ selectedClient, detail }: Props) {
-  const { clientHistory, setClientTab, setShowAssign, exportCopied, handleExport } = detail;
+  const { clientHistory, setClientTab, exportCopied, handleExport } = detail;
   const todayIndex = selectedClient.todayIndex;
   const bars = clientHistory.length >= 3 ? indexSparkBars(clientHistory) : [];
   const delta = todayIndex != null ? weekDelta(clientHistory, todayIndex) : null;
   const needs = needBars(clientHistory[0]?.ratings);
+  // «+ Задание» и «+ Заметка» — в шапке карточки (на телефоне — панель над
+  // навигацией); здесь только действия, которых в шапке нет.
   const actions: [string, () => void][] = [
-    ['+ Заметка сессии', () => setClientTab('sessions')],
-    ['+ Задание', () => setShowAssign(true)],
     ['Запросить YSQ', () => setClientTab('ysq')],
     [`Экспорт концепта${exportCopied ? ' ✓' : ''}`, handleExport],
   ];

@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { BotClientOverviewService } from '../bot/bot.client-overview.service';
 import { createTherapyInvite, joinTherapyAsClient } from './therapy-invite';
-import { getRelationInfo } from './therapy-relation-info';
+import { getRelationInfo, meetingDaysOf } from './therapy-relation-info';
 import { encrypt, decrypt, decryptJson } from '../utils/crypto';
 
 // Имена клиентов, введённые терапевтом (алиас и офлайн-клиент) — PII,
@@ -127,7 +127,7 @@ export class TherapyRelationsService {
           relationCreatedAt: rel.createdAt.toISOString(),
           therapyStartDate: rel.therapyStartDate ?? null,
           nextSession: rel.nextSession ?? null,
-          meetingDays: (rel.meetingDays as number[]) ?? [],
+          meetingDays: meetingDaysOf(rel.meetingDays),
           schemaIds: conceptMap.get(String(clientId)) ?? [],
         };
       });
@@ -146,7 +146,7 @@ export class TherapyRelationsService {
         relationCreatedAt: rel.createdAt.toISOString(),
         therapyStartDate: rel.therapyStartDate ?? null,
         nextSession: rel.nextSession ?? null,
-        meetingDays: (rel.meetingDays as number[]) ?? [],
+        meetingDays: meetingDaysOf(rel.meetingDays),
         schemaIds: conceptMap.get(String(-rel.id)) ?? [],
       }));
 

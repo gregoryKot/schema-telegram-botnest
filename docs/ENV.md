@@ -34,7 +34,7 @@
 |---|---|---|---|
 | `ENCRYPTION_KEY` | **обязательна** | hex32 | Ключ AES-256-GCM (заметки, дневники) и HMAC ключа комнаты клиента (ClientMeeting.clientKey); без него прод не стартует (utils/crypto.ts). |
 | `ENCRYPTION_KEY_OLD` | опциональна | any | Старые ключи на время ротации (через запятую) — для расшифровки и поиска комнаты клиента; новое всегда пишется текущим ключом. |
-| `GOOGLE_CLIENT_ID` | опциональна | nonEmpty | OAuth client id входа через Google — без него кнопка «Войти через Google» недоступна. |
+| `GOOGLE_CLIENT_ID` | опциональна | nonEmpty | OAuth client id входа через Google — без него кнопка «Войти через Google» недоступна. Тот же id зашит в сборку сайта для окна «Продолжить как…» (`ARG VITE_GOOGLE_CLIENT_ID` в Dockerfile) — менять в обоих местах. |
 | `GOOGLE_CLIENT_SECRET` | опциональна | nonEmpty | OAuth client secret Google — без него обмен кода на токен падает. |
 | `GOOGLE_REDIRECT_URI` | опциональна | httpsUrl | Адрес возврата Google после входа — обязан вести на канонический хост (инцидент 2026-09-16: старый хост давал ERR_TOO_MANY_REDIRECTS). |
 | `JWT_SECRET` | **обязательна** | secret32 | Подписывает access/refresh/merge/2FA-challenge JWT и state входа сайта, из него выводится PKCE-verifier VK — без него вход через Google/VK и merge аккаунтов не работает. Не короче 32 символов, не заглушка (`secret`, `changeme`, повтор одного символа); генерация: `node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"`. |
@@ -115,6 +115,7 @@
 | `BACKUP_S3_REGION` | опциональна | nonEmpty | Регион в подписи запросов к хранилищу — по умолчанию auto (так требует R2); менять только при переезде на другое S3-хранилище. |
 | `BACKUP_S3_SECRET_ACCESS_KEY` | опциональна | accessKey | Secret Access Key API-токена R2 — вместе с BACKUP_S3_ACCESS_KEY_ID, BACKUP_S3_ENDPOINT, BACKUP_S3_BUCKET и BACKUP_ENCRYPTION_KEY включает бэкапы БД. |
 | `DATABASE_URL` | **обязательна** | nonEmpty | Строка подключения к Postgres — без неё Prisma не подключается, приложение не работает. |
+| `DB_STATEMENT_TIMEOUT_MS` | опциональна | целое 0…2147483647 | Предел одного запроса к базе в миллисекундах (по умолчанию 30 000) — дольше запрос прерывается с ошибкой; 0 выключает предел. Рубильник без выкладки кода (src/prisma/statement-timeout.ts). |
 | `DEPLOY_TARGET` | опциональна | oneOf(amvera, vps) | Площадка: «vps» (задаёт deploy/vps/docker-compose.yml) — там pgdata единственная копия базы, и бэкапы в R2 обязательны; не задана или «amvera» — бэкапы платформы, R2 по желанию. |
 | `SITE_URL` | опциональна | url | Адрес сайта для ссылок в уведомлениях о записи — дефолт kotlarewski.gr. |
 | `STARTUP_CRASHES_DAY` | опциональна | целое ≥ 0 | Падений приложения за сутки в этом контейнере — ставит `deploy/entrypoint.mjs` (`deploy/crash-window.mjs`), вручную не задаётся. Число попадает в DM о перезапуске. |

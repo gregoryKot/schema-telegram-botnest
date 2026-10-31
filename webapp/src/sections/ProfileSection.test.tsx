@@ -19,6 +19,8 @@ vi.mock('../api', () => ({
     getInsights: vi.fn(),
     history: vi.fn(),
     getTherapyRelation: vi.fn(),
+    // Связи нет → карточка спрашивает бывшего терапевта (TherapistCard.test.tsx).
+    getFormerTherapist: vi.fn(() => Promise.resolve(null)),
     getSchemaDiary: vi.fn(),
     getModeDiary: vi.fn(),
     getGratitudeDiary: vi.fn(),
@@ -221,15 +223,23 @@ describe('ProfileSection — реальные данные пользовате�
 
 describe('ProfileSection — терапевт: следующая сессия', () => {
   it('клиент с активной связью и датой сессии видит форматированную дату/время', async () => {
-    mockApi.getTherapyRelation.mockResolvedValue({
-      role: 'client', status: 'active', partnerName: 'Анна', partnerId: 1, code: 'x',
-      nextSession: '2026-09-03T14:30:00',
-    });
-    await act(async () => { renderSection(); });
-    expect(screen.getByText('Терапевт')).toBeTruthy();
-    expect(screen.getByText('Анна')).toBeTruthy();
-    // Чт, 3 сен · 14:30 (2026-09-03 — четверг).
-    expect(screen.getByText(/Чт, 3 сен · 14:30/)).toBeTruthy();
+    // Прошедшую дату карточка уже не показывает (upcomingSession, 2026-10-26) —
+    // «сегодня» зафиксировано до встречи, иначе литерал однажды становится прошлым.
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-09-01T09:00:00Z'));
+    try {
+      mockApi.getTherapyRelation.mockResolvedValue({
+        role: 'client', status: 'active', partnerName: 'Анна', partnerId: 1, code: 'x',
+        nextSession: '2026-09-03T14:30:00',
+      });
+      await act(async () => { renderSection(); });
+      expect(screen.getByText('Терапевт')).toBeTruthy();
+      expect(screen.getByText('Анна')).toBeTruthy();
+      // Чт, 3 сен · 14:30 (2026-09-03 — четверг).
+      expect(screen.getByText(/Чт, 3 сен · 14:30/)).toBeTruthy();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('без даты сессии блок терапевта показан, но строка "Следующая сессия" — нет', async () => {

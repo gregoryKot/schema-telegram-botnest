@@ -43,8 +43,8 @@
     "reason": "Рамка экранов «Мне плохо» (класс u-sheet-grid; заменила отдельный экран FlashcardDoneScreen из прежней записи): goBack приходит пропом из SchemaFlashcard.tsx, где хук вызван один раз на весь поток шагов.",
     "since": "#746"
   },
-  "webapp/src/components/modeMap/ToolbarControls.tsx": {
-    "reason": "Невидимая подложка под выпадающим меню панели инструментов карты (поповер у кнопки): ловит клик снаружи. Это не лист.",
+  "webapp/src/components/Dropdown.tsx": {
+    "reason": "Невидимая подложка под выпадающим меню у кнопки (тулбар карты режимов, меню «⋯ Ещё» концептуализации): ловит клик снаружи. Это не лист.",
     "since": "docs/AUDIT_2026-10_FINDINGS.md"
   },
   "webapp/src/components/schemaSheets/SsSheet.tsx": {
@@ -56,15 +56,7 @@
     "since": "docs/AUDIT_2026-10_FINDINGS.md"
   },
   "webapp/src/components/trackerOverlay/CompletionScreen.tsx": {
-    "reason": "Часть TrackerOverlay: экран завершения рисуется внутри него, хук вызван в родителе (TrackerOverlay.tsx:35), «Назад» этого экрана — его goBack.",
-    "since": "docs/AUDIT_2026-10_FINDINGS.md"
-  },
-  "webapp/src/components/trackerOverlay/DesktopLayout.tsx": {
-    "reason": "Часть TrackerOverlay: раскладка для десктопа, хук вызван в родителе (TrackerOverlay.tsx:35) и приходит сюда пропом.",
-    "since": "docs/AUDIT_2026-10_FINDINGS.md"
-  },
-  "webapp/src/components/trackerOverlay/MobileLayout.tsx": {
-    "reason": "Часть TrackerOverlay: раскладка для телефона, хук вызван в родителе (TrackerOverlay.tsx:35) и приходит сюда пропом.",
+    "reason": "Часть TrackerOverlay: экран «Готово» рисуется внутри него, хук вызван в родителе (TrackerOverlay.tsx:42), «Назад» этого экрана — его goBack.",
     "since": "docs/AUDIT_2026-10_FINDINGS.md"
   },
   "webapp/src/components/ysq/YsqQuestion.tsx": {
@@ -86,10 +78,6 @@
   "webapp/src/sections/PracticeSection.tsx": {
     "reason": "Класс u-sheet здесь — обёртка вокруг ModeEx, который сам вызывает useHistorySheet (FlashcardEx.tsx:148); обёртка только позиционирует.",
     "since": "docs/AUDIT_2026-10_FINDINGS.md"
-  },
-  "webapp/src/sections/today/FocusEntrySheet.tsx": {
-    "reason": "Класс u-sheet здесь — обёртка вокруг SchemaEntrySheet/ModeEntrySheet/GratitudeEntrySheet, которые сами вызывают useHistorySheet (SchemaEntrySheet.tsx:49, ModeEntrySheet.tsx:28, GratitudeEntrySheet.tsx:31); обёртка только позиционирует.",
-    "since": "docs/ONE_FRONTEND_PLAN.md"
   },
   "webapp/src/sections/TodaySection.tsx": {
     "reason": "Класс u-sheet здесь — обёртка вокруг ModeEx/SchemaEx, которые сами вызывают useHistorySheet (FlashcardEx.tsx:93, :148); обёртка только позиционирует.",

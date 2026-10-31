@@ -102,6 +102,7 @@ jobs:
           test/body-limit test/login-csrf test/payment-webhook-practice-host
           test/text-limits test/therapy-ownership.e2e-spec.ts
           test/booking-admin-cancel test/exercise-delete-ownership test/max-auth
+          test/diary-mode-from-case
       # Security-гейт (этап 1.4): high/critical уязвимости в prod-зависимостях
       # блокируют мерж. dev-зависимости не гейтим: сборочная цепочка
       # исполняется на раннере, а не у пользователя, её несёт Dependabot.
@@ -547,6 +548,11 @@ jobs:
           npx jest --config ./test/jest-e2e.json --runInBand
           test/raw-sql-live-stats.e2e-spec.ts test/raw-sql-live-infra.e2e-spec.ts
           test/raw-sql-live-admin-stats.e2e-spec.ts
+      # Аудит 2026-10: statement_timeout пула — параметр доходит до каждой
+      # сессии, база отвечает 57014, ожидание замка входит в лимит, SET LOCAL
+      # исключения не протекает в пул. Свойства драйвера, мок их не видит.
+      - name: e2e таймаут запроса к БД на реальном Postgres
+        run: npx jest --config ./test/jest-e2e.json --runInBand test/statement-timeout.e2e-spec.ts
       # Инцидент 2026-09-13: троттлинг денежных/заявочных ручек в Postgres —
       # атомарность ON CONFLICT DO UPDATE (правило №18) проверяется только тут.
       - name: e2e троттлинг на реальном Postgres (Postgres-хранилище + HTTP)
@@ -582,6 +588,7 @@ jobs:
           test/booking-admin-cancel.e2e-spec.ts
           test/exercise-delete-ownership.e2e-spec.ts
           test/max-auth.e2e-spec.ts
+          test/diary-mode-from-case.e2e-spec.ts
         env:
           E2E_REAL_DB: '1'
       # Перенос БД на VPS (deploy/transfer-db.sh, docs/MIGRATION_VPS.md): настоящие
@@ -680,6 +687,11 @@ jobs:
       - name: EXPLAIN (ANALYZE, BUFFERS) по горячим путям
         run: npx ts-node --compiler-options '{"module":"commonjs"}' test/perf/run-plans.ts
       - run: node scripts/check-query-plans.mjs
+      # После замера: шаги удаляют данные. Ночная чистка событий и удаление
+      # самого тяжёлого аккаунта (с VACUUM) на объёме роста под прод-порогом
+      # statement_timeout — запрос сверх порога роняет джобу.
+      - name: долгие пути под прод-порогом statement_timeout
+        run: npx ts-node --compiler-options '{"module":"commonjs"}' test/perf/long-paths.ts
       # Отчёт с планами — артефактом: по красной джобе должно быть видно, какой
       # именно запрос и какой план, не переспрашивая CI.
       - name: отчёт замера артефактом

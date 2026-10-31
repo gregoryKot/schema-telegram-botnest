@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { pressable } from '../../utils/a11y';
 import { UserTask } from '../../api';
 import { fmtDate } from '../../utils/format';
-import { resolveTaskDisplayText } from './taskEmoji';
+import { resolveTaskDisplayText } from '../../../../shared/src/tasks/taskTitle';
 import { TaskProgressBar } from './TaskProgressBar';
 
 interface Props {

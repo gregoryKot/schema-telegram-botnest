@@ -2,6 +2,7 @@ import '../../styles/therapist-tabs.css';
 import { pressable } from '../../utils/a11y';
 import { fmtDate, todayStr } from '../../utils/format';
 import { pluralRu } from '../../../../shared/src/utils/pluralRu';
+import { resolveTaskDisplayText } from '../../../../shared/src/tasks/taskTitle';
 import { hueStyle } from '../../lib/tone';
 import type { ClientDetail } from './clientSheetTypes';
 import { STATUS_BADGE, STATUS_LABEL, taskStatus, templateHue } from './taskModel';
@@ -53,7 +54,7 @@ export function ClientTasksTab({ detail }: Props) {
                 <div key={t.id} className={`ds-card ds-card--row tb-task${done ? ' is-done' : ''}`}>
                   <span className={`tb-check${done ? ' is-done' : ''}`} aria-hidden="true">{done ? '✓' : ''}</span>
                   <div className="tb-task-main">
-                    <div className="tb-task-text">{t.text}</div>
+                    <div className="tb-task-text">{resolveTaskDisplayText(t, 'full')}</div>
                     <div className="tb-meta">{meta}</div>
                   </div>
                   <span className={STATUS_BADGE[status]}>{STATUS_LABEL[status]}</span>

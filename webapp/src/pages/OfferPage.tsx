@@ -1,6 +1,6 @@
 import { OPERATOR_NAME, OPERATOR_INN, OPERATOR_EMAIL } from '../legal/operator';
 
-const EFFECTIVE_DATE = '22 октября 2026 г.';
+const EFFECTIVE_DATE = '31 октября 2026 г.';
 
 export function OfferPage() {
   return (

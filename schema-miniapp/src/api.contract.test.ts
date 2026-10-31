@@ -37,6 +37,9 @@ const MOCKED_API_METHODS = [
   'saveYsqResult',
   'deleteYsqProgress',
   'deleteYsqResult',
+  // settingsSheet/DataOverlays.test.tsx
+  'deleteYsqData',
+  'deleteAllUserData',
   // SchemaIntroSheet.test.tsx
   'getSchemaNotes',
   'saveSchemaNote',

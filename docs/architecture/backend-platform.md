@@ -58,14 +58,15 @@
 Кабинет терапевта: связь терапевт↔клиент (код-приглашение, виртуальные офлайн-клиенты), заметки по сессиям, концептуализация, карты режимов, задания клиенту, заявка на роль терапевта (`therapist-request.*`).
 - Входы:
   - `src/therapy/therapy-relations.service.ts` — связи; `assertHasClient`/`assertRelation` (барьер доступа)
-  - `src/therapy/therapy-connection.controller.ts` — invite/join/clients/request/become-therapist
+  - `src/therapy/therapy-connection.controller.ts` — invite/join/relation/former-therapist/clients/request/become-therapist/therapist-role
   - `src/therapy/therapy-client-data.service.ts` — данные клиента для терапевта, запрос YSQ
   - `src/therapy/therapy-tasks.service.ts` — задачи (свои и назначенные), стрик-прогресс
   - `src/therapy/therapist-request.service.ts` — заявка на роль терапевта
+  - `src/therapy/therapist-exit.service.ts` — отказ от роли (`DELETE therapist-role`, событие `therapist_resigned`) и бывший терапевт клиента (`GET former-therapist`, `former-therapist-info.ts`)
 - Связи: Prisma (TherapyRelation, TherapistNote, ClientConceptualization, ModeMap, TherapistCustomMode, UserTask, TherapistRequest); импортирует Bot/Notification/Auth/Analytics; сервисы зовут `src/api/` (diary, tracker → TherapyTasksService) и `src/telegram/`; все 5 контроллеров — `/api/therapy/*` под `TelegramAuthGuard`.
 - Подводные камни:
   - Доступ терапевта к чужим клиническим данным закрыт только `assertHasClient`; виртуальный клиент = отрицательный id `-TherapyRelation.id` (`clientId: null`, `src/therapy/relation-where.ts`), его `UserTask` лежат с отрицательным userId без FK и чистятся вручную (`src/therapy/remove-client.ts`).
-  - `RelationStatus`: pending/active/ended — `ended` (отказ от роли, `src/therapy/end-therapist-relations.ts`) не оживает; срок кода-приглашения считается по `createdAt` (колонки expiresAt нет), захват кода атомарный (`src/therapy/therapy-invite-claim.ts`).
+  - `RelationStatus`: pending/active/ended — `ended` (отказ от роли, `src/therapy/end-therapist-relations.ts`, с `endedAt`/`endReason`, `src/therapy/relation-end-reason.ts`) не оживает; карты и задания бывшего терапевта остаются у клиента как история; срок кода-приглашения считается по `createdAt` (колонки expiresAt нет), захват кода атомарный (`src/therapy/therapy-invite-claim.ts`).
 
 ### `src/booking/`
 Запись на консультации и деньги: слоты, бронь, оплата Robokassa, .ics, админка записи, календарь CalDAV, ссылки на встречи (Zoom/Jitsi), подписки/донаты, заявки с формы знакомства (IntroLead).
@@ -104,7 +105,8 @@
 ### `src/prisma/`
 Доступ к Postgres: глобальный PrismaService (Prisma + driver-adapter pg), фильтр Prisma-ошибок → 4xx, одноразовые «волны» дошифровки старых строк при старте. Схема и миграции — вне src: `prisma/schema.prisma`, `prisma/migrations/`.
 - Входы:
-  - `src/prisma/prisma.service.ts` — PrismaClient + пул pg (keepAlive, ретраи connect)
+  - `src/prisma/prisma.service.ts` — PrismaClient + пул pg (keepAlive, ретраи connect, `statement_timeout`), строка владельцу о таймауте (`$on('error')`)
+  - `src/prisma/statement-timeout.ts` — порог 30 с и рубильник `DB_STATEMENT_TIMEOUT_MS`, распознавание 57014, исключение `withStatementTimeout`
   - `src/prisma/prisma.module.ts` — @Global, экспортирует PrismaService
   - `src/prisma/prisma-exception.filter.ts` — коды Prisma → дружелюбные 4xx
   - `src/prisma/http-exception-body.ts` — тело HttpException в форме Nest (строка → `{ statusCode, message }`)
@@ -113,6 +115,7 @@
 - Связи: используется почти всеми модулями (PrismaModule глобальный); фильтр подключён в `src/main.ts` (`useGlobalFilters`); волны шифруют через `src/utils/encrypt-if-plain.ts` и хранят флаг-гард в `BookingSetting`.
 - Подводные камни:
   - Волны идемпотентны и не роняют старт при ошибке (флаг не ставится — повтор на следующем старте); wave3 обновляет условно (`where` со старым значением), чтобы не затереть свежую запись приложения.
+  - Предел — на каждый запрос, параметр сессии пула, а не `DATABASE_URL`: `prisma migrate deploy` его не получает. Свой `PrismaClient` вне `PrismaService` берёт `buildPrismaAdapter(порог)`; VACUUM в `withStatementTimeout` не обернуть (в транзакции запрещён).
   - В `logger.error` фильтра идёт только маскированный путь (`src/prisma/safe-request-path.ts`) + код ошибки: первый аргумент уходит в DM админу (AlertLogger), сырой `req.url` и `exception.message` туда нельзя.
 
 ### `src/utils/`
@@ -149,7 +152,7 @@
   - `src/test-support/cron-source-scan.ts` — сканер пар `@Cron` + `claimRun` в исходниках
   - `src/test-support/fake-s3.ts` — поддельный S3/R2, сверяет подпись SigV4
   - `src/test-support/fake-telegram-api.ts` — поддельный Bot API для шовных тестов поллинга
-- Прочее: `src/test-support/load-with-keys.ts` (модули под заданными ENCRYPTION_KEY), `src/test-support/recorded-fixture.ts` (читает `test/fixtures/recorded/**`), `src/test-support/memory-throttle-reset.ts` (сброс троттлера между e2e), `src/test-support/exit-code-leak.ts` (спек, оставивший `process.exitCode`, краснеет), `src/test-support/subscription-update-many.ts`, `src/test-support/run-script.ts`, `src/test-support/vps-bootstrap-sandbox.ts`
+- Прочее: `src/test-support/load-with-keys.ts` (модули под заданными ENCRYPTION_KEY), `src/test-support/recorded-fixture.ts` (читает `test/fixtures/recorded/**`), `src/test-support/memory-throttle-reset.ts` (сброс троттлера между e2e), `src/test-support/exit-code-leak.ts` (спек, оставивший `process.exitCode`, краснеет), `src/test-support/esm-to-cjs.transform.cjs` (переводит пакеты `@nestjs/*` 12-й версии — только ESM — в CommonJS для jest на Node 22; подключён трансформером `transform` + списком `transformIgnorePatterns` в `package.json` (jest) и `test/jest-e2e.json`; список пакетов в четырёх местах сверяет `esm-to-cjs.transform.spec.ts`; удалить вместе с обоими списками, когда CI перейдёт на Node 24.9+, где jest сам грузит ESM через require; прод на Node 22.12+ грузит их штатно через `require(esm)`), `src/test-support/subscription-update-many.ts`, `src/test-support/run-script.ts`, `src/test-support/vps-bootstrap-sandbox.ts`
 - Связи: спеки всего `src/**`; `src/security/*.invariants.spec.ts` берут `route-method-auth.ts`, `src/infra/self-check/cron-lease-registry.spec.ts` — `cron-source-scan.ts`; e2e на реальном Postgres и их `fake-prisma` лежат вне src, в `test/e2e-support/`.
 - Подводные камни:
   - `GUARD_NAMES` в `src/test-support/route-method-auth.ts` — единственный список гардов: по нему идёт и разбор по методу, и файловый `GUARD_RE`.

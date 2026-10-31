@@ -1,7 +1,8 @@
 import { OPERATOR_NAME, OPERATOR_INN, OPERATOR_EMAIL } from '../legal/operator';
 import { FOREIGN_PROCESSORS, METRIKA_PROCESSOR, processorLine } from './privacy/processors';
+import { ANALYTICS_COOKIES, TECHNICAL_COOKIES } from './privacy/cookies';
 
-const EFFECTIVE_DATE = '22 октября 2026 г.';
+const EFFECTIVE_DATE = '31 октября 2026 г.';
 const SITE_URL       = 'schemehappens.ru';
 
 export function PrivacyPage() {
@@ -186,14 +187,9 @@ export function PrivacyPage() {
 
           <Chapter n="10" title="Cookie-файлы" id="cookies">
             <P><strong>Обязательные (технические) cookie – не требуют согласия:</strong></P>
-            <Table rows={[
-              ['Refresh-token cookie (refresh_token, refresh_cross)', 'Автоматическое обновление сессии. Хранится до 30 дней или до выхода из системы.'],
-              ['Cookie шагов входа (oauth_state, tg_link_user, link_token)', 'Временные: действуют только на время входа через Google или VK ID либо привязки Telegram или другого устройства к учётной записи. Живут не дольше 10 минут.'],
-            ]} />
+            <Table rows={[...TECHNICAL_COOKIES]} />
             <p style={{ fontSize: 15, color: 'var(--text-sub)', lineHeight: 1.8, margin: '16px 0 0' }}><strong>Аналитические cookie:</strong></p>
-            <Table rows={[
-              ['Яндекс Метрика (_ym_uid, _ym_d и др.)', 'Статистика посещений только на публичных страницах сайта (главная, статьи, тесты, оплата, юридические страницы). В приложении и личном кабинете счётчик не работает, а вошедшему в учётную запись пользователю не загружается вовсе. Запись действий на странице (Вебвизор) ведётся только на страницах сайта практики kotlarewski.gr; содержимое полей ввода при этом не записывается. Тепловые карты кликов и отслеживание переходов по ссылкам отключены. Устанавливаются при первом визите; отказаться можно средствами браузера — заблокировать сторонние скрипты и cookie или очистить данные сайта.'],
-            ]} />
+            <Table rows={[...ANALYTICS_COOKIES]} />
             <P>
               Рекламные и маркетинговые cookie-файлы на сайте <strong>не используются</strong>.
             </P>

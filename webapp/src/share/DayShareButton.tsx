@@ -13,9 +13,11 @@ interface Props {
   ratings: Record<string, number>;
   /** Дата карточки (YYYY-MM-DD); по умолчанию сегодня */
   date?: string;
+  /** Текстовая кнопка без рамки — для экранов, где «Поделиться» не главное действие. */
+  plain?: boolean;
 }
 
-export function DayShareButton({ needs, ratings, date }: Props) {
+export function DayShareButton({ needs, ratings, date, plain }: Props) {
   const [open, setOpen] = useState(false);
   const share = useDayShare(needs, ratings, date, botShortUrl);
 
@@ -28,12 +30,13 @@ export function DayShareButton({ needs, ratings, date }: Props) {
           alignItems: 'center',
           justifyContent: 'center',
           gap: 'var(--space-8)',
-          padding: '13px 28px',
+          padding: plain ? '0 12px' : '13px 28px',
+          minHeight: plain ? 44 : undefined,
           borderRadius: 'var(--r-10)',
-          border: '1px solid var(--line)',
+          border: plain ? 'none' : '1px solid var(--line)',
           background: 'transparent',
-          color: 'var(--text)',
-          fontSize: 15,
+          color: plain ? 'var(--text-sub)' : 'var(--text)',
+          fontSize: plain ? 14 : 15,
           fontWeight: 600,
           fontFamily: 'inherit',
           cursor: 'pointer',

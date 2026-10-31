@@ -21,6 +21,7 @@ function makeController(overrides: Partial<YsqService> = {}) {
     getYsqResult: jest.fn().mockResolvedValue(null),
     saveYsqResult: jest.fn().mockResolvedValue(undefined),
     deleteYsqResult: jest.fn().mockResolvedValue(undefined),
+    deleteAllYsqData: jest.fn().mockResolvedValue(undefined),
     getYsqHistory: jest.fn().mockResolvedValue([]),
     ...overrides,
   } as unknown as YsqService;
@@ -145,6 +146,19 @@ describe('YsqController.getYsqResult/deleteYsqResult', () => {
     const { controller, ysqService } = makeController();
     const res = await controller.deleteYsqResult(makeReq(15n));
     expect(ysqService.deleteYsqResult).toHaveBeenCalledWith(15n);
+    expect(res).toEqual({ ok: true });
+  });
+});
+
+describe('YsqController.deleteAllYsqData (DELETE /api/ysq-data)', () => {
+  it('стирает всё про тест под userId из подписи, чужой userId в теле не слушает', async () => {
+    const { controller, ysqService } = makeController();
+    const req = { ...makeReq(16n), body: { userId: 999 } };
+    const res = await controller.deleteAllYsqData(req);
+    expect(ysqService.deleteAllYsqData).toHaveBeenCalledWith(16n);
+    expect(ysqService.deleteAllYsqData).toHaveBeenCalledTimes(1);
+    // Всё стирает одна транзакция сервиса, отдельного удаления итога нет.
+    expect(ysqService.deleteYsqResult).not.toHaveBeenCalled();
     expect(res).toEqual({ ok: true });
   });
 });

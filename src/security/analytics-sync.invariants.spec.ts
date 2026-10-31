@@ -158,6 +158,31 @@ const BACKEND_ONLY: Record<string, string> = {
     'userId. Фронт его не шлёт: выгрузку запускает сам HTTP-запрос к ' +
     'эндпоинту, а не клиентское действие вроде клика — событие пишется в ' +
     'том же обработчике, что формирует файл',
+  home_tile:
+    'шлётся через импортируемую константу HOME_TILE_EVENT ' +
+    '(shared/src/analytics/homeTile.ts), не строковым литералом — ' +
+    'webapp/src/sections/today/trackHomeTile.ts зовёт ' +
+    'api.trackEvent(HOME_TILE_EVENT, { tile }) по тапу на плитку главной ' +
+    '(простой клиент, этап 1, #872); тот же приём, что у entry_deleted',
+  tracker_skip:
+    'шлётся через импортируемую константу TRACKER_SKIP_EVENT ' +
+    '(shared/src/analytics/homeTile.ts), не строковым литералом — ' +
+    'webapp/src/sections/today/trackHomeTile.ts зовёт ' +
+    'api.trackEvent(TRACKER_SKIP_EVENT) по «Пропустить» на вопросе трекера ' +
+    '(простой клиент, этап 2); тот же приём, что у home_tile',
+  diary_quick_save:
+    'шлётся через импортируемую константу DIARY_QUICK_SAVE_EVENT ' +
+    '(shared/src/analytics/homeTile.ts), не строковым литералом — ' +
+    'webapp/src/components/diary/quickEntry/trackQuickSave.ts зовёт ' +
+    'api.trackEvent(DIARY_QUICK_SAVE_EVENT, { tag, detailed }) после ' +
+    'сохранения записи «Дневника одной страницей» (простой клиент, ' +
+    'этап 3); тот же приём, что у home_tile',
+  therapy_nudge:
+    'шлётся через импортируемую константу THERAPY_NUDGE_EVENT (shared/), ' +
+    'не строковым литералом — строки «это самопомощь, не замена терапии» ' +
+    'внизу экранов-итогов, карточка по сигналу на главной и лист «Поговорить ' +
+    'с кем-то» зовут api.trackEvent(THERAPY_NUDGE_EVENT, { place, action, ' +
+    'trigger? }) (мост к терапевту); тот же приём, что у home_tile',
   entry_deleted:
     'шлётся через импортируемую константу ENTRY_DELETED_EVENT ' +
     '(shared/src/share/analytics.ts), не строковым литералом — общий хук ' +
@@ -169,6 +194,12 @@ const BACKEND_ONLY: Record<string, string> = {
     '(src/telegram/telegram.schedule-queue.tally.ts), userId = null, meta — ' +
     'только числа прогона. Клиентского действия за ним нет вовсе: это итог ' +
     'отправки напоминаний, отчёт /stats считает строки с userId IS NULL',
+  therapist_resigned:
+    'серверное событие: пишет только TherapistExitService.resign после ' +
+    'транзакции отказа от роли (DELETE /api/therapy/therapist-role), meta — ' +
+    'число завершённых связей с клиентами. Фронт его не шлёт: отказ — сам ' +
+    'HTTP-запрос, а /stats считает только строки с числом в meta, которое ' +
+    'клиентский путь не пропускает (у события нет ветки в sanitizeMeta)',
   home_screen_offer:
     'шлётся не литералом trackEvent(...), а через колбэк track(...) общего ' +
     'хука shared/src/host/useHomeScreenOffer.ts (мини-апп и карточка ' +
@@ -231,6 +262,13 @@ describe('трипваер: имена событий фронта ⊆ allow-lis
     // вместе с баннером кабинета, событие осталось на колбэке общего хука.
     // 30 — notify_queue_tick (аудит 2026-10, ответ 429): итог прогона очереди
     // уведомлений, пишет крон — у фронта такого действия нет по устройству.
-    expect(Object.keys(BACKEND_ONLY).length).toBeLessThanOrEqual(30);
+    // 31 — therapist_resigned (решение владельца 2026-10-22): отказ терапевта
+    // от роли — сам HTTP-запрос, событие пишет сервер после транзакции.
+    // 32 — home_tile (2026-10, главная простого клиента, #872): константное
+    // событие, как entry_deleted.
+    // 33 — tracker_skip (2026-10, простой клиент, этап 2): тоже константа.
+    // 34 — diary_quick_save (2026-10, простой клиент, этап 3): тоже константа.
+    // 35 — therapy_nudge (2026-10, мост к терапевту): тоже константа.
+    expect(Object.keys(BACKEND_ONLY).length).toBeLessThanOrEqual(35);
   });
 });

@@ -12,9 +12,10 @@ import { defineConfig, devices, webkit } from '@playwright/test';
 // флагу окружения — так конфиг работает в обоих местах без правок.
 const PREINSTALLED_CHROMIUM =
   '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
-const executablePath = existsSync(PREINSTALLED_CHROMIUM)
-  ? PREINSTALLED_CHROMIUM
-  : undefined;
+// PW_CHROMIUM_PATH — локальный путь к браузеру (в CI не задан, конфиг не меняется).
+const executablePath =
+  process.env.PW_CHROMIUM_PATH ||
+  (existsSync(PREINSTALLED_CHROMIUM) ? PREINSTALLED_CHROMIUM : undefined);
 
 // Тот же приём для WebKit (аудит тестовых практик, п.2: iOS-Телеграм и MAX —
 // это WKWebView, движок Safari; до этого CI ни разу не проверял мобильную

@@ -1,0 +1,15 @@
+/* Лист «Зачем это всё» (components/WhySheet.tsx). Префикс cw-. */
+.cw-sheet { display: flex; justify-content: center; }
+.cw-inner {
+  box-sizing: border-box; width: 100%; max-width: 560px;
+  padding: 40px 20px calc(32px + env(safe-area-inset-bottom));
+  display: flex; flex-direction: column; gap: 20px;
+}
+.cw-h1 { font-size: 34px; margin: 0; }
+.cw-lead { margin: 0; font-size: 16px; line-height: 1.6; color: var(--text-sub); }
+.cw-list { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 12px; }
+.cw-item { padding: 16px 18px; border-radius: 18px; background: var(--surface); border: 1px solid var(--line); }
+.cw-item-title { font-family: var(--serif); font-size: 20px; line-height: 1.25; color: var(--text); }
+.cw-item-text { margin-top: 6px; font-size: 14px; line-height: 1.55; color: var(--text-sub); }
+.cw-note { margin: 0; font-size: 15px; line-height: 1.5; color: var(--text); }
+.cw-cta { min-height: 52px; width: 100%; border-radius: 26px; font-size: 16px; }

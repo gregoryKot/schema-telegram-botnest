@@ -3,6 +3,7 @@
 // TherapyClientSummary, который экран уже получает.
 import type { TherapyClientSummary } from '../api';
 import { todayCalendarDate } from '../../../shared/src/utils/calendarDate';
+import { upcomingSession } from '../../../shared/src/therapy/upcomingSession';
 import { indexLevel, type IndexLevel } from '../lib/tone';
 
 const DAY_MS = 86400000;
@@ -25,17 +26,15 @@ export function daysSinceActive(c: TherapyClientSummary, now: number): number | 
   return Math.max(0, Math.floor((now - new Date(c.lastActiveDate).getTime()) / DAY_MS));
 }
 
-/** Есть ли у клиента сессия сегодня: явный nextSession важнее meetingDays. */
-export function hasSessionToday(c: TherapyClientSummary): boolean {
-  if (c.nextSession) return c.nextSession.slice(0, 10) === todayCalendarDate();
-  return c.meetingDays.includes(new Date().getDay());
-}
+/** Ближайшая встреча сегодня: будущий nextSession важнее дней, прошедший — нет. */
+const sessionToday = (c: TherapyClientSummary): string | null => {
+  const at = upcomingSession(c.nextSession, c.meetingDays);
+  return at?.slice(0, 10) === todayCalendarDate() ? at : null;
+};
+export const hasSessionToday = (c: TherapyClientSummary): boolean => sessionToday(c) !== null;
 
-/** HH:MM из nextSession, если сессия сегодня; иначе пустая строка. */
-export function sessionTime(c: TherapyClientSummary): string {
-  if (!c.nextSession || c.nextSession.slice(0, 10) !== todayCalendarDate()) return '';
-  return c.nextSession.includes('T') ? c.nextSession.split('T')[1].slice(0, 5) : '';
-}
+/** HH:MM сегодняшней встречи; без времени или не сегодня — пустая строка. */
+export const sessionTime = (c: TherapyClientSummary): string => sessionToday(c)?.split('T')[1]?.slice(0, 5) ?? '';
 
 /** Сессии сегодня по времени; без времени — в конце. */
 export function sessionsTodaySorted(clients: TherapyClientSummary[]): TherapyClientSummary[] {

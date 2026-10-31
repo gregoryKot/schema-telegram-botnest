@@ -61,7 +61,7 @@ describe('practiceDomainMiddleware', () => {
     expect(sent.redirect).toEqual([301, 'https://kotlarewski.gr/']);
   });
 
-  it('kotlarewski.gr/sitemap.xml отдаёт мини-sitemap только с главной', () => {
+  it('kotlarewski.gr/sitemap.xml отдаёт мини-sitemap визитки, без продукта', () => {
     const { sent, nextCalled } = run('kotlarewski.gr', '/sitemap.xml');
     expect(sent.type).toBe('application/xml');
     expect(sent.body).toContain('<loc>https://kotlarewski.gr/</loc>');

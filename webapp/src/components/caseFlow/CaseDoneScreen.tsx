@@ -1,58 +1,37 @@
 import { ExScreen } from '../exercises/ExScreen';
-import { buildDiaryPayoff } from '../../../../shared/src/case/caseRecognition';
-import { modeDisplayName } from '../../../../shared/src/mode/modeDisplayName';
-import type { CaseTraits, Tr } from '../../../../shared/src/case/caseTypes';
+import { TherapyLine } from '../therapy/TherapyLine';
+import { useTherapyBridgeTexts } from '../therapy/useTherapyBridgeTexts';
 
-/** Нет реальных данных → «—», а не выдуманная строка (правило CLAUDE.md про
- *  хардкод-заглушки — тело/порыв могли остаться пустыми). */
-function TraitRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="ex2-trait">
-      <div className="ds-label">{label}</div>
-      <div className="ex2-trait-text">{value || '—'}</div>
-    </div>
-  );
-}
-
-/** Итог потока. Twin schema-miniapp CaseDoneScreen.tsx. */
+/** «Записано»: итог потока. Без примет — их нечем заполнить, пока разбор один. */
 export function CaseDoneScreen({
-  modeId,
-  alias,
-  traits,
+  name,
   onOpenMap,
   onClose,
-  tr,
 }: {
-  modeId: string;
-  alias: string;
-  traits: CaseTraits;
+  name: string;
   onOpenMap: () => void;
   onClose: () => void;
-  tr: Tr;
 }) {
+  const bridge = useTherapyBridgeTexts();
   return (
     <ExScreen
       onBack={onClose}
       backLabel="Закрыть"
-      eyebrow="Разбор случая"
-      title={modeDisplayName(modeId, alias)}
+      eyebrow="Записано"
+      title={name}
     >
-      <div className="ds-card ds-card--ink ex2-chain">
-        <TraitRow label="Ранний сигнал" value={traits.body} />
-        <TraitRow label="Приходит, когда" value={traits.trigger} />
-        <TraitRow label="Тянет" value={traits.impulse} />
-      </div>
-
-      <p className="ds-sub ex2-gap-b">{buildDiaryPayoff(tr)}</p>
-
+      <p className="ds-sub ex2-gap-b">
+        Теперь это есть в записях. Через 2–3 разбора видно, что повторяется.
+      </p>
       <div className="ex2-foot">
-        <button type="button" className="ds-btn" onClick={onOpenMap}>
-          Открыть карту
+        <button type="button" className="ds-btn" onClick={onClose}>
+          На главную
         </button>
-        <button type="button" className="ds-btn ex2-ghost" onClick={onClose}>
-          Готово
+        <button type="button" className="ds-btn ex2-ghost" onClick={onOpenMap}>
+          Карта себя
         </button>
       </div>
+      <TherapyLine place="case_done" text={bridge.lineCase} />
     </ExScreen>
   );
 }

@@ -711,6 +711,49 @@ describe('PracticeSection — баннер ближайшей сессии: да
   });
 });
 
+// Регрессия 2026-10-26: клиент видел прошедшую встречу как следующую —
+// nextSession после встречи никто не двигает. Баннер берёт ближайшую через
+// shared upcomingSession. Время фиксировано (понедельник 26-го), зоны —
+// второй CI-прогон под TZ=Australia/Sydney.
+describe('PracticeSection — баннер ближайшей сессии: прошедшая дата', () => {
+  const SAT = 6;
+  const relation = (nextSession: string | null, meetingDays?: number[]) => ({
+    role: 'client', status: 'active', partnerName: 'Игорь', partnerId: 2, code: 'y', nextSession, meetingDays,
+  });
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-10-26T09:00:00Z'));
+  });
+  afterEach(() => vi.useRealTimers());
+
+  it('прошедшая дата + дни встреч → ближайшая суббота', async () => {
+    mockApi.getTherapyRelation.mockResolvedValue(relation('2026-10-17T07:00', [SAT]));
+    renderSection();
+    await screen.findByText(/Следующая встреча: \S+ 31 окт/);
+    expect(screen.queryByText(/17 окт/)).toBeNull();
+  });
+
+  it('прошедшая дата без дней встреч → баннера нет', async () => {
+    mockApi.getTherapyRelation.mockResolvedValue(relation('2026-10-17T07:00', []));
+    renderSection();
+    await waitFor(() => expect(mockApi.getTherapyRelation).toHaveBeenCalled());
+    await act(async () => {});
+    expect(screen.queryByText(/встреча/)).toBeNull();
+  });
+
+  it('даты нет, только дни встреч → ближайшая суббота без сдвига дня', async () => {
+    mockApi.getTherapyRelation.mockResolvedValue(relation(null, [SAT]));
+    renderSection();
+    await screen.findByText(/Следующая встреча: сб,? 31 окт/i);
+  });
+
+  it('будущая дата — как была', async () => {
+    mockApi.getTherapyRelation.mockResolvedValue(relation('2026-11-04T10:00', [SAT]));
+    renderSection();
+    await screen.findByText(/Следующая встреча: \S+ 4 нояб?/);
+  });
+});
+
 describe('PracticeSection — создание цели обновляет список read-after-write, «все цели» открывает выбранную', () => {
   it('после успешного создания цели список задач перезапрашивается', async () => {
     const onTasksChanged = vi.fn();

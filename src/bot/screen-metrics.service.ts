@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { ScreenMetrics, formatScreenMetrics } from './screen-metrics.format';
+import { countHomeMetrics } from './home-tiles.count';
 
 // Счётчики настройки экранов «Профиль»/«Паттерны»/«Сегодня» для /stats:
 // события screen_customize_open/screen_block_toggle/screen_block_move из
@@ -48,6 +49,7 @@ export class ScreenMetricsService {
         SELECT count(*)::bigint AS c FROM "User" WHERE "uiPrefs" IS NOT NULL`,
     ]);
     return {
+      ...(await countHomeMetrics(this.prisma, since30)),
       opensByScreen: opensRows
         .filter((r): r is { screen: string; c: bigint } => r.screen != null)
         .map((r) => ({ screen: r.screen, count: Number(r.c) })),

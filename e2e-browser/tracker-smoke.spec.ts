@@ -57,41 +57,38 @@ test.describe('браузерный smoke: приложение открывае
     // «сохраняет оценку» без единого теста на это (проверено при разведке).
     await page.goto('/today');
 
-    // Бутстрап AppShell фетчит needs/ratings и держит спиннер, пока не
-    // ответят все три — ждём кнопку из «Потребности сегодня», а не
-    // фиксированную паузу.
-    const openTracker = page.getByRole('button', { name: 'Изменить →' });
-    await openTracker.waitFor();
-    await openTracker.click();
+    // Бутстрап AppShell фетчит needs/ratings и держит скелетон, пока не
+    // ответят все три — ждём плитку «Трекер» на главной, а не фиксированную паузу.
+    // На чистом аккаунте (стаб без записей) сверху сам открывается лист
+    // «Зачем это всё» — он перекрывает плитки, закрываем его.
+    await page.getByRole('button', { name: 'Понятно, начнём' }).click();
+    const tile = page.getByRole('button', { name: /^Трекер/ });
+    await tile.click();
 
     // Ни одна потребность ещё не оценена (fixture ratings пуст) — оверлей
-    // открывается на первой из STUB_NEEDS («Привязанность»). Шкала —
-    // единственный контрол оценки NeedScale (правило «одна механика — один
-    // компонент»): десять кнопок без текста, имя каждой — aria-label
-    // «N из 10». Та же шкала стоит и на «Сегодня» под оверлеем, поэтому
-    // кнопку ищем внутри оверлея, иначе локатор совпал бы с шестью кнопками.
+    // открывается на первом вопросе («Привязанность»). Шкала — единственный
+    // контрол оценки NeedScale (правило «одна механика — один компонент»),
+    // вариант «словами»: пять кнопок, имя каждой — «Слово — N из 10».
     const overlay = page.locator('.tk2-overlay');
-    const rateSeven = overlay
-      .getByRole('group', { name: 'Привязанность' })
-      .getByRole('button', { name: '7 из 10', exact: true });
-    await rateSeven.waitFor();
+    const answer = overlay.getByRole('button', { name: /В основном да/ });
+    await answer.waitFor();
 
     const saved = page.waitForResponse(
       (res) =>
         res.url().includes('/api/rating') && res.request().method() === 'POST',
     );
-    await rateSeven.click();
+    await answer.click();
     await saved;
 
     await page.reload();
 
-    // Возвращаемся на «Сегодня»: оценка первой потребности («attachment»)
-    // должна прийти из фикстуры-стаба, куда её записал POST выше, а не
-    // отрисоваться заново с нуля — сегмент «7» нажат, рядом стоит число.
-    const todayScale = page.getByRole('group', { name: 'Привязанность' });
-    await expect(
-      todayScale.getByRole('button', { name: '7 из 10', exact: true }),
-    ).toHaveAttribute('aria-pressed', 'true');
-    await expect(page.locator('.ct-need-row').first()).toContainText('7');
+    // Возвращаемся на главную: оценка первой потребности пришла из
+    // фикстуры-стаба, куда её записал POST выше, а не нарисована с нуля —
+    // в мета плитки «Трекер» стоит «Заполнено 1 из 5».
+    // Плитка — по классу: после первой оценки в ленте появляется ещё одна
+    // кнопка «Трекер: 1 из 5», и роль+имя находят обе (strict mode violation).
+    await expect(page.locator('.ct-tile--tracker')).toContainText(
+      'Заполнено 1 из 5',
+    );
   });
 });

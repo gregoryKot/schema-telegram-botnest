@@ -91,6 +91,8 @@
 .cpf-therapist-body .ds-label { color: var(--on-ink-faint); }
 .cpf-therapist-name { font-family: var(--serif); font-size: 22px; margin-top: 2px; }
 .cpf-therapist-next { display: flex; flex-direction: column; gap: 2px; font-size: 14px; color: var(--on-ink-sub); }
+/* Бывший терапевт (FormerTherapistNote): сообщение вместо карточки «Терапевт». */
+.cpf-former { padding: 22px 24px; border-radius: 20px; }
 
 .cpf-link-row { display: flex; align-items: center; justify-content: space-between; width: 100%; min-height: 48px; padding: 0 20px; background: none; border: none; border-bottom: 1px solid var(--line); color: var(--text); font: 15px var(--sans); cursor: pointer; text-align: left; }
 .cpf-link-row:last-child { border-bottom: none; }
@@ -100,7 +102,7 @@
 .cpf-delete-link { color: var(--err); cursor: pointer; font-size: 13px; display: inline-flex; align-items: center; min-height: 44px; }
 
 @media (max-width: 767px) {
-  .cpf-card { padding: 16px; border-radius: 18px; }
+  .cpf-card, .cpf-former { padding: 16px; border-radius: 18px; }
   .cpf-avatar { width: 56px; height: 56px; font-size: 20px; }
   .cpf-head { gap: 14px; }
   .cpf-counters { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }

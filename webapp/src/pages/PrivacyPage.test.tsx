@@ -104,6 +104,23 @@ describe('PrivacyPage — бэкапы и cookie', () => {
     expect(screen.queryByText(/tg_pkce_verifier/)).toBeNull();
     expect(screen.queryByText(/Сессионные cookie/)).toBeNull();
     expect(screen.getByText('Refresh-token cookie (refresh_token, refresh_cross)')).toBeTruthy();
-    expect(screen.getByText('Cookie шагов входа (oauth_state, tg_link_user, link_token)')).toBeTruthy();
+    expect(screen.getByText('Cookie шагов входа (oauth_state, gsi_nonce, tg_link_user, link_token)')).toBeTruthy();
+  });
+});
+
+// Окно Google One Tap (2026-10-24): браузер обращается к Google уже при открытии
+// страницы входа, а скрипт Google может поставить там куку g_state. Политика
+// обязана это раскрывать — правка privacy/processors.ts или privacy/cookies.ts,
+// снявшая раскрытие, краснеет здесь.
+describe('PrivacyPage — окно «Продолжить как…» (Google One Tap)', () => {
+  it('Google: обращение при открытии страницы входа, данные учётной записи — при выборе входа', () => {
+    render(<PrivacyPage />);
+    expect(screen.getByText(/при открытии страницы входа – IP-адрес, сведения о браузере и cookie Google/)).toBeTruthy();
+    expect(screen.getByText(/данные учётной записи сайт получает, только если выбран этот способ входа/)).toBeTruthy();
+  });
+
+  it('кука g_state скрипта Google названа в главе о cookie', () => {
+    render(<PrivacyPage />);
+    expect(screen.getByText(/Cookie Google на странице входа \(g_state\)/)).toBeTruthy();
   });
 });

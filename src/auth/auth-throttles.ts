@@ -15,9 +15,3 @@ export const STRICT_THROTTLE = {
   short: { limit: 3, ttl: 60_000 },
   long: { limit: 10, ttl: 3_600_000 },
 } as const;
-
-/** 3 в минуту и 10 в сутки: письмо восстановления на произвольный адрес. */
-export const DAILY_MAIL_THROTTLE = {
-  short: { limit: 3, ttl: 60_000 },
-  long: { limit: 10, ttl: 24 * 3_600_000 },
-} as const;

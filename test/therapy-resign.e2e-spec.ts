@@ -13,9 +13,14 @@
 // нет стороны клиента, а Step D слияния аккаунтов удаляет концептуализации
 // виртуальных клиентов без active-связи.
 //
+// После отказа клиент видит сообщение о бывшем терапевте (GET
+// /api/therapy/former-therapist), а карты режимов и задания терапевта остаются
+// у него как история (решение владельца 2026-10-22).
+//
 // Действующие лица: терапевт T (отказывается), клиент C (только у T), клиент
 // X (у T и у T2 — строка второго терапевта пишется в БД напрямую, через API её
-// больше не создать, T3), терапевт T2 с клиентом D (контроль: его связь жива).
+// больше не создать, T3), терапевт T2 с клиентом D (контроль: его связь жива),
+// клиент Y (у T, после отказа подключается к T2 по приглашению).
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import { INestApplication } from '@nestjs/common';
@@ -25,23 +30,25 @@ import { signAccessToken } from './e2e-support/jwt';
 import { cleanupOwnershipFixtures } from './e2e-support/cleanup-fixtures';
 import { MergeService } from '../src/auth/merge.service';
 import { TherapistRequestService } from '../src/therapy/therapist-request.service';
+import { TherapistExitMetricsService } from '../src/bot/therapist-exit-metrics.service';
 
 const ADMIN = 4_400_000_000_009n;
 process.env.ADMIN_ID = ADMIN.toString();
-const [T, T2, C, X, D, Z, K] = [1n, 2n, 3n, 4n, 5n, 6n, 7n].map(
+const [T, T2, C, X, D, Z, K, Y] = [1n, 2n, 3n, 4n, 5n, 6n, 7n, 8n].map(
   (n) => 4_400_000_000_000n + n,
 );
-const ALL = [T, T2, C, X, D, Z, K, ADMIN];
+const ALL = [T, T2, C, X, D, Z, K, Y, ADMIN];
 jest.setTimeout(60_000);
 
 describe('e2e: отказ от роли терапевта завершает связи', () => {
   let app: INestApplication;
   let prisma: TestApp['prisma'];
   let staleCode = '';
-  // C, X — ended; приглашение (null:ended) — ended; офлайн-клиент V (null:active) жив.
+  // C, X, Y — ended; приглашение (null:ended) — ended; офлайн-клиент V (null:active) жив.
   const AFTER_RESIGN = [
     `${C}:ended`,
     `${X}:ended`,
+    `${Y}:ended`,
     'null:ended',
     'null:active',
   ].sort();
@@ -82,6 +89,12 @@ describe('e2e: отказ от роли терапевта завершает с
   // GET relation без связи отдаёт null (пустое тело) — partnerId тогда undefined.
   const partnerOf = async (who: bigint) =>
     (await act(who).get('/api/therapy/relation')).body.partnerId ?? null;
+  // null сервер отдаёт пустым телом — тогда body = {}.
+  const formerOf = async (who: bigint) => {
+    const r = await act(who).get('/api/therapy/former-therapist');
+    expect(r.status).toBe(200);
+    return r.body?.name === undefined ? null : r.body;
+  };
   const statuses = async (therapistId: bigint) =>
     (await prisma.therapyRelation.findMany({ where: { therapistId } }))
       .map((r) => `${r.clientId ?? 'null'}:${r.status}`)
@@ -99,6 +112,7 @@ describe('e2e: отказ от роли терапевта завершает с
     await becomeTherapist(T2);
     await connect(T, C);
     await connect(T, X);
+    await connect(T, Y);
     await connect(T2, D);
     await prisma.therapyRelation.create({
       data: {
@@ -119,6 +133,12 @@ describe('e2e: отказ от роли терапевта завершает с
       title: 'карта',
     });
     expect(map.status).toBeLessThan(300);
+    const task = await act(T).post('/api/therapy/tasks', {
+      type: 'custom',
+      text: 'задание терапевта',
+      clientId: String(C),
+    });
+    expect(task.status).toBeLessThan(300);
   });
 
   afterAll(async () => {
@@ -129,8 +149,9 @@ describe('e2e: отказ от роли терапевта завершает с
     await app.close();
   });
 
-  it('до отказа: клиент C видит терапевта T', async () => {
+  it('до отказа: клиент C видит терапевта T, сообщения о бывшем нет', async () => {
     expect(await partnerOf(C)).toBe(Number(T));
+    expect(await formerOf(C)).toBeNull();
   });
 
   it('DELETE therapist-role: роль CLIENT, связи T с клиентами и приглашение ended, офлайн-клиент и чужие живы', async () => {
@@ -146,6 +167,63 @@ describe('e2e: отказ от роли терапевта завершает с
   it('клиент C больше не видит «Мой терапевт»', async () => {
     expect((await act(C).get('/api/therapy/relation')).status).toBe(200);
     expect(await partnerOf(C)).toBeNull();
+  });
+
+  it('вместо него — сообщение: имя бывшего терапевта и дата окончания', async () => {
+    const former = await formerOf(C);
+    expect(former).toEqual({ name: `u${T}`, endedAt: expect.any(String) });
+    expect(Number.isNaN(Date.parse(former.endedAt))).toBe(false);
+  });
+
+  it('событие therapist_resigned: число завершённых связей с клиентами (C, X, Y)', async () => {
+    const events = await prisma.analyticsEvent.findMany({
+      where: { userId: T, name: 'therapist_resigned' },
+    });
+    expect(events.map((e: { meta: unknown }) => e.meta)).toEqual([
+      { clientsEnded: 3 },
+    ]);
+  });
+
+  // Сохранил → нашёл (правило №4): записанное отказом видно в блоке /stats
+  // «Терапевты уходят» — тем же сервисом, которым его строит отчёт
+  // (buildStatsReport, test/e2e-support/stats-report.factory.ts).
+  it('блок /stats «Терапевты уходят» видит этот отказ: 1 терапевт, 3 клиента', async () => {
+    const metrics = new TherapistExitMetricsService(prisma);
+    const totals = { therapists: 1, clients: 3 };
+    expect(await metrics.getMetrics()).toEqual({
+      window: totals,
+      month: totals,
+    });
+    expect(await metrics.render()).toContain(
+      'отказались от роли терапевта: 1 человек, клиентов это коснулось: 3.',
+    );
+  });
+
+  it('карты режимов и задания бывшего терапевта остаются у клиента как история', async () => {
+    const maps = await act(C).get('/api/therapy/my-mode-maps');
+    expect(maps.status).toBe(200);
+    expect(maps.body.map((m: { title: string }) => m.title)).toEqual(['карта']);
+    const tasks = await act(C).get('/api/therapy/tasks');
+    expect(tasks.status).toBe(200);
+    expect(
+      tasks.body.map((t: { text: string; assignedBy: number }) => [
+        t.text,
+        t.assignedBy,
+      ]),
+    ).toEqual([['задание терапевта', Number(T)]]);
+  });
+
+  it('у клиента другого терапевта (не отказывался) сообщения нет', async () => {
+    expect(await formerOf(D)).toBeNull();
+    // X подключён ко второму терапевту — «Мой терапевт» на месте, сообщения нет.
+    expect(await formerOf(X)).toBeNull();
+  });
+
+  it('клиент подключился к новому терапевту по приглашению — сообщение уходит', async () => {
+    expect((await formerOf(Y))?.name).toBe(`u${T}`);
+    await connect(T2, Y);
+    expect(await partnerOf(Y)).toBe(Number(T2));
+    expect(await formerOf(Y)).toBeNull();
   });
 
   it('клиент X видит только второго терапевта T2', async () => {
@@ -200,11 +278,14 @@ describe('e2e: отказ от роли терапевта завершает с
     expect(clients.body[0]).toMatchObject({ name: expect.any(String) });
     expect(await partnerOf(C)).toBeNull();
     expect(await statuses(T)).toEqual(AFTER_RESIGN);
+    // T снова терапевт: «больше не работает в приложении» было бы неправдой.
+    expect(await formerOf(C)).toBeNull();
   });
 
   it('новая связь — только через новое приглашение', async () => {
     await connect(T, C);
     expect(await partnerOf(C)).toBe(Number(T));
+    expect(await formerOf(C)).toBeNull();
     const clients = await act(T).get('/api/therapy/clients');
     expect(
       clients.body.map((c: { telegramId: number | null }) => c.telegramId),
@@ -252,12 +333,58 @@ describe('e2e: отказ от роли терапевта завершает с
         [`${K}:ended`, 'null:ended', 'null:active'].sort(),
       );
       // Контроль: связи действующего терапевта T2 (role THERAPIST) не тронуты.
-      expect(await statuses(T2)).toEqual([`${D}:active`, `${X}:active`].sort());
+      expect(await statuses(T2)).toEqual(
+        [`${D}:active`, `${X}:active`, `${Y}:active`].sort(),
+      );
       // Идемпотентность: повторный прогон ничего не меняет.
       await prisma.$executeRawUnsafe(sql);
       expect(await statuses(Z)).toEqual(
         [`${K}:ended`, 'null:ended', 'null:active'].sort(),
       );
+    },
+  );
+
+  // Бэкфил причины окончания (20261022150000): связи, завершённые до колонки
+  // endReason, получают therapist_resigned, только если терапевт сейчас не
+  // THERAPIST. Дубль пары действующего терапевта (дедуп 20261016100000 тоже
+  // ставил `ended`) не превращается в «терапевт больше не работает». Идёт
+  // после бэкфила статусов выше: связи Z уже `ended`, причины у них нет.
+  liveOnly(
+    'миграция-бэкфил причины: отказ от роли — да, дубль действующего терапевта — нет',
+    async () => {
+      const sql = readFileSync(
+        join(
+          __dirname,
+          '../prisma/migrations/20261022150000_therapy_relation_end/migration.sql',
+        ),
+        'utf8',
+      );
+      await prisma.therapyRelation.create({
+        data: {
+          code: `DUP-${T2}-${D}`,
+          therapistId: T2,
+          clientId: D,
+          status: 'ended',
+        },
+      });
+      const reasons = async (therapistId: bigint) =>
+        (
+          await prisma.therapyRelation.findMany({
+            where: { therapistId, status: 'ended' },
+          })
+        ).map((r: { endReason: string | null }) => r.endReason);
+      expect(await formerOf(K)).toBeNull();
+      await prisma.$executeRawUnsafe(sql);
+      expect(await reasons(Z)).toEqual([
+        'therapist_resigned',
+        'therapist_resigned',
+      ]);
+      expect(await reasons(T2)).toEqual([null]);
+      // Клиент K бывшего терапевта Z теперь видит сообщение (даты нет).
+      expect(await formerOf(K)).toEqual({ name: `u${Z}`, endedAt: null });
+      // Повторный прогон ничего не меняет.
+      await prisma.$executeRawUnsafe(sql);
+      expect(await reasons(T2)).toEqual([null]);
     },
   );
 });

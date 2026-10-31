@@ -6,6 +6,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { act, renderHook } from '@testing-library/react';
 import { useClientDetail } from './useClientDetail';
+import { HttpStatusError } from '../../apiClient';
 
 vi.mock('../../api', () => ({
   api: {
@@ -187,8 +188,9 @@ describe('saveConcept', () => {
     expect(result.current.conceptSaving).toBe(false);
   });
 
-  it('ошибка вида "API ..." подменяется дружелюбным сообщением', async () => {
-    mockApi.saveConceptualization.mockRejectedValue(new Error('API 500'));
+  // Тексты причин — conceptSaveError.test.ts; здесь — что хук кладёт их в conceptError.
+  it('5xx от сервера — «Ошибка сервера. Попробуй позже.» (форма «ты» по умолчанию)', async () => {
+    mockApi.saveConceptualization.mockRejectedValue(new HttpStatusError(500));
     const { result } = await openedHook();
     act(() => {
       result.current.toggleSchemaId('a');
@@ -199,9 +201,9 @@ describe('saveConcept', () => {
     expect(result.current.conceptError).toBe('Ошибка сервера. Попробуй позже.');
   });
 
-  it('прочая ошибка Error показывается как есть', async () => {
+  it('обрыв сети — «Нет связи…», а не «Failed to fetch» как есть', async () => {
     mockApi.saveConceptualization.mockRejectedValue(
-      new Error('validation failed'),
+      new TypeError('Failed to fetch'),
     );
     const { result } = await openedHook();
     act(() => {
@@ -210,10 +212,12 @@ describe('saveConcept', () => {
     await act(async () => {
       await result.current.saveConcept();
     });
-    expect(result.current.conceptError).toBe('validation failed');
+    expect(result.current.conceptError).toBe(
+      'Нет связи. Проверь подключение и попробуй ещё раз.',
+    );
   });
 
-  it('ошибка без сообщения (не Error) — фолбэк "Ошибка сохранения"', async () => {
+  it('служебная ошибка без русского текста — фолбэк «Не удалось сохранить»', async () => {
     mockApi.saveConceptualization.mockRejectedValue('boom');
     const { result } = await openedHook();
     act(() => {
@@ -222,11 +226,10 @@ describe('saveConcept', () => {
     await act(async () => {
       await result.current.saveConcept();
     });
-    expect(result.current.conceptError).toBe('Ошибка сохранения');
+    expect(result.current.conceptError).toBe('Не удалось сохранить');
   });
 });
 
-// ── Алиас ─────────────────────────────────────────────────────────────────────
 describe('saveAlias', () => {
   it('сохраняет trim-алиас и обновляет selectedClient + список клиентов', async () => {
     mockApi.renameClient.mockResolvedValue(undefined);
