@@ -1,1 +1,1 @@
-var e=1e4,t=1e4,n=1e3,r=1e3,i=1e3;function a(e,t,n=!1){if(!n&&e<Math.floor(t*.8))return null;let r=Math.max(0,t-e);return{left:r,atLimit:r===0}}export{i as a,e as i,r as n,a as o,t as r,n as t};
+var e=1e4,t=1e4,n=5e3,r=1e3,i=1e3,a=1e3;function o(e,t,n=!1){if(!n&&e<Math.floor(t*.8))return null;let r=Math.max(0,t-e);return{left:r,atLimit:r===0}}export{e as a,t as i,r as n,a as o,i as r,o as s,n as t};
