@@ -13,6 +13,7 @@ import {
   type NoteFieldSource,
   type NoteCardField,
 } from '../share/cards/noteCard';
+import { noteValues } from '../notes/useSavedNoteValues';
 
 export type MyCardsKind = 'schema' | 'mode';
 
@@ -47,11 +48,7 @@ function toItem(
   if (!meta) return null;
   const cardFields = noteCardFields(order, note);
   if (cardFields.length === 0) return null;
-  const values: Record<string, string> = {};
-  for (const key of order) {
-    const text = note[key]?.trim();
-    if (text) values[key] = text;
-  }
+  const values = noteValues(note, order);
   return { id, ...meta, excerpt: cardFields[0].text, cardFields, values };
 }
 
