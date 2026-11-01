@@ -61,7 +61,7 @@
 | «Статьи» | блог | `src/articles/articles.service.ts` | `webapp/src/pages/ArticlesPage.tsx` |
 | «Визитка» | `kotlarewski.gr`, отдаёт только свои страницы | `src/practice-domain.middleware.ts`, `src/practice-domain.surface.ts` | `webapp/src/pages/LandingPage.tsx`, `webapp/src/App.tsx` |
 | «Вход», логин | Google, VK, Telegram, почта | `src/auth/auth.controller.ts`, `src/auth/auth-oauth.controller.ts` | `webapp/src/pages/LoginPage.tsx`, `schema-miniapp/src/components/LoginScreen.tsx` |
-| «Привязать Telegram», слияние аккаунтов | merge двух userId | `src/auth/merge.service.ts` | `webapp/src/pages/MergePage.tsx`, `webapp/src/pages/AccountPage.tsx` |
+| «Привязать Telegram», слияние аккаунтов, `/link` | merge двух userId; подтверждение привязки мессенджера по коду | `src/auth/merge.service.ts` | `webapp/src/pages/MergePage.tsx`, `webapp/src/pages/LinkDevicePage.tsx`, `webapp/src/pages/AccountPage.tsx`; общие куски — `pages/merge/AckCheck.tsx` (галочка «я понимаю»), `pages/merge/useLinkTicket.ts`, `pages/service/TicketDenied.tsx` («Это не я») |
 | «Удалить аккаунт», «выгрузить данные» | удаление и экспорт | `src/bot/account.delete.ts`, `src/account/data-export.service.ts` | `webapp/src/sections/profile/DeleteAccountDialog.tsx`, `shared/src/account/useDataExport.ts` |
 | бот, команды | `/start` `/tests` `/settings` `/donate` `/about` | `src/telegram/telegram.service.ts` | — |
 | напоминания, уведомления | очередь, планировщик, тихие часы | `src/notification/notification.planner.service.ts`, `src/telegram/telegram.schedule.service.ts` | `webapp/src/components/settingsSheet/NotificationsSection.tsx`, `schema-miniapp/src/components/settingsSheet/NotificationsSection.tsx` |
