@@ -21,8 +21,6 @@ import { PracticeBrand } from './components/PracticeBrand';
 import { RequireAuth } from './components/RequireAuth';
 import { LandingPage } from './pages/LandingPage';
 import { ProductLandingPage } from './pages/ProductLandingPage';
-import { PrivacyPage } from './pages/PrivacyPage';
-import { OfferPage } from './pages/OfferPage';
 import { ArticlesListPage, ArticlePage } from './pages/ArticlesPage';
 import { TestsPage } from './pages/tests/TestsPage';
 import { QuizPage } from './pages/tests/QuizPage';
@@ -33,6 +31,8 @@ import { DonatePage } from './pages/DonatePage';
 import { BookingPaidRoute } from './components/booking/BookingPaidRoute';
 const BookingLinkPage = lazy(() => import('./pages/BookingLinkPage').then(m => ({ default: m.BookingLinkPage }))); // не в главном чанке: страница по ссылке
 const SubscribePage = lazy(() => import('./pages/SubscribePage').then(m => ({ default: m.SubscribePage }))); // не в главном чанке: редкая страница по ссылке
+const PrivacyPage = lazy(() => import('./pages/PrivacyPage').then(m => ({ default: m.PrivacyPage }))); // юридические тексты — редкие страницы, ~20 КБ текста
+const OfferPage = lazy(() => import('./pages/OfferPage').then(m => ({ default: m.OfferPage })));
 
 // Apply saved theme before first render
 if (localStorage.getItem('app_theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
@@ -77,8 +77,8 @@ const personalRoutes = [
       // что у /booking/paid: путь переименовывать нельзя, туда редиректит
       // Робокасса, а новая capability-ссылка ведёт на другой путь.
       { path: '/booking/manage', element: <BookingPaidRoute /> },
-      { path: '/privacy',        element: <PrivacyPage /> },
-      { path: '/offer',          element: <OfferPage /> },
+      { path: '/privacy',        element: <Suspense fallback={null}><PrivacyPage /></Suspense> },
+      { path: '/offer',          element: <Suspense fallback={null}><OfferPage /></Suspense> },
     ],
   },
   // Вне бренда визитки — осознанно:

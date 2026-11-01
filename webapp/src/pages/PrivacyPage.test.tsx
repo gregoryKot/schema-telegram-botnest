@@ -41,6 +41,9 @@ describe('PrivacyPage', () => {
     // что строка в документе вообще есть и называет срок.
     render(<PrivacyPage />);
     expect(screen.getAllByText(/через 12 месяцев после даты консультации/).length).toBeGreaterThan(0);
+    // Заявка с формы знакомства без консультации обезличивается по дате подачи
+    // (src/booking/intro-lead-retention.service.ts, отсчёт от createdAt).
+    expect(screen.getAllByText(/или подачи заявки, если консультации не было/).length).toBeGreaterThan(0);
   });
 
   it('явно фиксирует, что дневники и опросники шифруются AES-256-GCM', () => {
@@ -68,7 +71,7 @@ describe('PrivacyPage', () => {
 describe('PrivacyPage — получатели данных', () => {
   it('называет Telegram, Google, Resend, iCloud, Zoom и Яндекс Метрику с назначением', () => {
     render(<PrivacyPage />);
-    for (const name of ['Telegram (Telegram', 'Google LLC', 'Resend', 'Apple iCloud', 'Zoom', 'Яндекс Метрика (ООО']) {
+    for (const name of ['Telegram (Telegram', 'Google LLC', 'Resend', 'Apple iCloud', 'Zoom', 'Cloudflare R2 (Cloudflare', 'Яндекс Метрика (ООО']) {
       expect(screen.getAllByText(new RegExp(name.replace(/[()]/g, '\\$&'))).length).toBeGreaterThan(0);
     }
     expect(screen.getByText(/ссылки для входа и восстановления доступа/)).toBeTruthy();
@@ -81,6 +84,27 @@ describe('PrivacyPage — получатели данных', () => {
     expect(screen.getAllByText(/В приложении и личном кабинете счётчик не работает/).length).toBeGreaterThan(0);
     // Старое обещание «тепловые карты» снято — карта кликов выключена.
     expect(screen.getByText(/Тепловые карты кликов и отслеживание переходов по ссылкам отключены/)).toBeTruthy();
+  });
+});
+
+// Сверка 2026-10-22: документ совпадает с тем, что делает сайт.
+describe('PrivacyPage — бэкапы и cookie', () => {
+  it('резервные копии: хранятся в Cloudflare R2, зашифрованы, не дольше 30 дней', () => {
+    // Срок держит scripts/backup-upload.sh (потолок BACKUP_RETENTION_MAX_DAYS);
+    // число с кодом сверяет src/test-support/gates/backup-retention-policy.spec.ts.
+    render(<PrivacyPage />);
+    expect(screen.getByText(/резервные копии базы данных хранятся в облачном хранилище Cloudflare R2/)).toBeTruthy();
+    expect(screen.getByText(/Резервные копии базы данных хранятся в\s+зашифрованном виде не дольше 30 дней/)).toBeTruthy();
+  });
+
+  it('cookie — только те, что ставит бэкенд; удалённых нет', () => {
+    // tg_pkce_verifier ставил вход /api/auth/telegram-oidc, удалённый в #725;
+    // сессионной cookie нет вовсе — токен доступа живёт в памяти страницы.
+    render(<PrivacyPage />);
+    expect(screen.queryByText(/tg_pkce_verifier/)).toBeNull();
+    expect(screen.queryByText(/Сессионные cookie/)).toBeNull();
+    expect(screen.getByText('Refresh-token cookie (refresh_token, refresh_cross)')).toBeTruthy();
+    expect(screen.getByText('Cookie шагов входа (oauth_state, gsi_nonce, tg_link_user, link_token)')).toBeTruthy();
   });
 });
 

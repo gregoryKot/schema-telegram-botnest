@@ -21,6 +21,7 @@ const ROOT = resolve(__dirname, '..', '..', '..');
 
 const PRIVACY_PAGE = 'webapp/src/pages/PrivacyPage.tsx';
 const EXPORT_SERVICE = 'src/account/data-export.service.ts';
+const INTRO_LEAD_SERVICE = 'src/booking/intro-lead-retention.service.ts';
 
 function read(rel: string): string {
   return readFileSync(join(ROOT, rel), 'utf8');
@@ -42,6 +43,20 @@ describe('срок обезличивания броней: код ↔ обещ�
     // срок человеку, который записался на консультацию.
     expect(text).toContain('Данные формы записи');
     expect(text).toContain(TERM);
+  });
+
+  it(`${PRIVACY_PAGE}: заявка без консультации — отсчёт от подачи, как в коде`, () => {
+    // Заявка с формы знакомства (IntroLead) обезличивается тем же сроком, но
+    // от createdAt: даты консультации у неё нет. Политика обязана это назвать.
+    expect(read(PRIVACY_PAGE).replace(/\s+/g, ' ')).toContain(
+      'после даты консультации или подачи заявки, если консультации не было',
+    );
+    const leads = read(INTRO_LEAD_SERVICE);
+    expect(leads).toContain('createdAt: { lt: anonymizeCutoff(now) }');
+    // Срок — общий с бронями, а не своя константа.
+    expect(leads).toContain(
+      "import { anonymizeCutoff } from './booking-retention.service';",
+    );
   });
 
   it(`${EXPORT_SERVICE}: причина невыдачи называет тот же срок`, () => {
