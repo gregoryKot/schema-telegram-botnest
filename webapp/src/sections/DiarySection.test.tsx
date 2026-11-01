@@ -293,9 +293,11 @@ describe('DiarySection — сегмент «Все · Трекер · Случа
     expect(onOpenTrackerHistory).toHaveBeenCalledTimes(1);
   });
 
-  it('история запрашивается на 30 дней — глубже бэкенд не отдаёт', async () => {
+  // До 2026-11 лента брала 30 дней: дневники видны за всё время, а строки
+  // трекера старше месяца пропадали. Год — потолок эндпоинта.
+  it('история трекера запрашивается за год, а не за месяц', async () => {
     renderSection();
-    await waitFor(() => expect(mockApi.history).toHaveBeenCalledWith(30));
+    await waitFor(() => expect(mockApi.history).toHaveBeenCalledWith(365));
   });
 
   it('«Дневник»: кнопка «Поделиться дневником» есть при записях; на «Все» её нет', async () => {

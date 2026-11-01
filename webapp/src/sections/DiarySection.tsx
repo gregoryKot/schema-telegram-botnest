@@ -26,8 +26,8 @@ const FILTERS: { id: DiaryFilter; label: string }[] = [
   { id: 'case', label: 'Случаи' },
   { id: 'diary', label: 'Дневник' },
 ];
-// Бэкенд отдаёт историю оценок не глубже 30 дней (tracker.controller.ts, GET /api/history).
-const TRACKER_DAYS = 30;
+// Год — потолок GET /api/history (HISTORY_MAX_DAYS, src/api/dto/history-query.dto.ts).
+const TRACKER_DAYS = 365;
 const DRAFT_TYPES: DiaryType[] = ['schema', 'mode', 'gratitude'];
 
 export function DiarySection({ onClose: _onClose, onOpenTrackerHistory }: { onClose?: () => void; onOpenTrackerHistory?: () => void } = {}) {

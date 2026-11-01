@@ -19,6 +19,7 @@ import { TherapyTasksService } from '../therapy/therapy-tasks.service';
 import { TelegramAuthGuard } from './telegram-auth.guard';
 import { SaveRatingDto } from './dto/ratings.dto';
 import { SaveNoteDto } from './dto/notes.dto';
+import { historyDays, HistoryQueryDto } from './dto/history-query.dto';
 
 interface AuthRequest extends Request {
   webUser: { userId: bigint };
@@ -88,9 +89,8 @@ export class TrackerController {
   }
 
   @Get('history')
-  async getHistory(@Req() req: AuthRequest, @Query('days') days?: string) {
-    const n = Math.min(Number(days) || 7, 30);
-    return this.analyticsService.getHistoryRatings(uid(req), n);
+  async getHistory(@Req() req: AuthRequest, @Query() q: HistoryQueryDto) {
+    return this.analyticsService.getHistoryRatings(uid(req), historyDays(q));
   }
 
   @Get('streak')
