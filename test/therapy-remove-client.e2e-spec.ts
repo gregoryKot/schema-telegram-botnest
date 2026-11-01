@@ -408,10 +408,20 @@ describe('e2e: терапевт удаляет клиента (все сцена
             (await act(t).get(`/api/therapy/${route}/${ID(C)}`)).status,
           ).toBe(403);
     });
-    it('у клиента все данные целы, а карты терапевтов он продолжает видеть в my-mode-maps', async () => {
+    // Было: карты отключённых терапевтов оставались в my-mode-maps — фильтр
+    // шёл только по clientId (реестр docs/open/backend.md). Строки карт лежат
+    // в базе (выше), но клиенту без связи с автором не отдаются ни списком, ни
+    // по id. Отказ терапевта от роли — другое: карты остаются историей
+    // (test/therapy-resign.e2e-spec.ts, решение владельца 2026-10-22).
+    it('у клиента собственные данные целы, а карт отключённых терапевтов в my-mode-maps нет', async () => {
       expect(await cOwn()).toEqual(C_OWN);
       const maps = await act(C).get('/api/therapy/my-mode-maps');
-      expect(maps.body).toHaveLength(2);
+      expect([maps.status, maps.body]).toEqual([200, []]);
+      const row = await prisma.modeMap.findFirst({
+        where: { therapistId: B, clientId: C },
+      });
+      const one = await act(C).get(`/api/therapy/my-mode-maps/${row!.id}`);
+      expect(one.status).toBe(403);
     });
     it('терапевт, вызвавший тот же DELETE /relation, НЕ теряет виртуального клиента и его данные (аудит 2026-10, T2)', async () => {
       const vf = await addVirtual(F, 'VF');

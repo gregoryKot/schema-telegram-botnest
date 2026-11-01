@@ -32,7 +32,9 @@ function makeDb(rels: Rel[], maps: any[] = []) {
             (m) =>
               (where.clientId === undefined || m.clientId === where.clientId) &&
               (where.therapistId === undefined ||
-                m.therapistId === where.therapistId),
+                (where.therapistId.in
+                  ? where.therapistId.in.includes(m.therapistId)
+                  : m.therapistId === where.therapistId)),
           ),
         ),
       ),
@@ -173,6 +175,47 @@ describe('ModeMapsService — клиентский read-only доступ к с�
     );
     const mine = await service.listMyModeMaps(CLIENT_A);
     expect(mine.map((m: any) => m.title)).toEqual(['A']);
+  });
+
+  // Находка реестра (docs/open/backend.md): клиент, отключившийся сам, видел
+  // карты терапевта — фильтр был только по clientId, связь не сверялась.
+  it('связи с автором нет (клиент отключился) — карты нет ни в списке, ни по id', async () => {
+    const { service, maps } = makeService([]);
+    maps.push(mkMap(30, 'После отключения'));
+    await expect(service.listMyModeMaps(CLIENT_A)).resolves.toEqual([]);
+    await expect(service.getMyModeMap(CLIENT_A, 30)).rejects.toThrow(
+      'Not found',
+    );
+  });
+
+  it('видны карты только тех терапевтов, с кем связь жива; pending не в счёт', async () => {
+    const pendingT2: Rel = {
+      ...relA,
+      id: 2,
+      therapistId: T2,
+      status: 'pending',
+      code: 'P',
+    };
+    const { service, maps } = makeService([relA, pendingT2]);
+    maps.push(mkMap(31, 'Живая'), mkMap(32, 'Чужая', { therapistId: T2 }));
+    const mine = await service.listMyModeMaps(CLIENT_A);
+    expect(mine.map((m: any) => m.title)).toEqual(['Живая']);
+    await expect(service.getMyModeMap(CLIENT_A, 32)).rejects.toThrow(
+      'Not found',
+    );
+  });
+
+  // Решение владельца 2026-10-22 (#865): терапевт отказался от роли — связь
+  // `ended`, карты остаются у клиента как история.
+  it('терапевт отказался от роли (связь ended) — карты остаются у клиента', async () => {
+    const ended: Rel = { ...relA, status: 'ended' };
+    const { service, maps } = makeService([ended]);
+    maps.push(mkMap(33, 'История'));
+    const mine = await service.listMyModeMaps(CLIENT_A);
+    expect(mine.map((m: any) => m.title)).toEqual(['История']);
+    await expect(service.getMyModeMap(CLIENT_A, 33)).resolves.toMatchObject({
+      title: 'История',
+    });
   });
 
   it('getMyModeMap: клиент B не может прочитать карту клиента A по id — "Not found"', async () => {

@@ -1707,7 +1707,7 @@
   "src/therapy/therapy-tasks.service.ts": 244,
   "src/therapy/therapy.controller.ts": 111,
   "src/therapy/therapy.module.ts": 55,
-  "src/therapy/therapy.test-helpers.ts": 97,
+  "src/therapy/therapy.test-helpers.ts": 94,
   "src/therapy/therapy.types.ts": 27,
   "src/therapy/ysq-request.ts": 39,
   "src/unified-frontend.middleware.ts": 65,

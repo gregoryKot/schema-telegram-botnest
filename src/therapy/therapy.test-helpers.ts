@@ -12,19 +12,16 @@ export interface Rel {
   clientAlias?: string | null;
 }
 
-// where-условие поля: значение, null или оператор Prisma (`not`, `gte`).
+// where-условие поля: значение, null или оператор Prisma (`not`, `gte`, `in`).
 // Нужен реальный разбор операторов: мок, игнорирующий `{ not }` и `clientId:
 // null`, пропускал бы ровно те условия, на которых держатся T3/T4 (аудит
 // 2026-10) — тест зеленел бы при выброшенной проверке.
 function fieldMatches(actual: unknown, cond: unknown): boolean {
   if (cond === undefined) return true;
-  if (
-    cond !== null &&
-    typeof cond === 'object' &&
-    !(cond instanceof Date) &&
-    typeof cond !== 'bigint'
-  ) {
-    const c = cond as { not?: unknown; gte?: Date };
+  // typeof bigint — 'bigint', не 'object': отдельная проверка не нужна.
+  if (cond !== null && typeof cond === 'object' && !(cond instanceof Date)) {
+    const c = cond as { not?: unknown; gte?: Date; in?: unknown[] };
+    if ('in' in c) return (c.in ?? []).includes(actual);
     if ('not' in c) return actual !== c.not;
     if ('gte' in c) return (actual as Date) >= (c.gte as Date);
   }
