@@ -195,3 +195,37 @@ describe('ModeMapCanvas — экспорт (клики не роняют хол�
     ).not.toThrow();
   });
 });
+
+describe('ModeMapCanvas — подсказки не висят всегда', () => {
+  const nodes = (n: number) => Array.from({ length: n }, (_, i) => mmNode(`n${i}`, 'trigger', { label: `Триггер ${i}` }));
+  const guideOpen = () => screen.queryByText('1. Триггер') !== null;
+
+  it('без сохранённого выбора на карте из 3+ узлов подсказки закрыты', () => {
+    renderCanvas({ initialNodes: nodes(3) });
+    expect(guideOpen()).toBe(false);
+  });
+
+  it('без сохранённого выбора на карте меньше 3 узлов подсказки открыты', () => {
+    renderCanvas({ initialNodes: nodes(2) });
+    expect(guideOpen()).toBe(true);
+  });
+
+  it('сохранённое «1» держит подсказки открытыми даже на большой карте', () => {
+    localStorage.setItem('modemap_guide', '1');
+    renderCanvas({ initialNodes: nodes(5) });
+    expect(guideOpen()).toBe(true);
+  });
+
+  it('сохранённое «0» держит подсказки закрытыми даже на пустой карте', () => {
+    localStorage.setItem('modemap_guide', '0');
+    renderCanvas({ initialNodes: [] });
+    expect(guideOpen()).toBe(false);
+  });
+
+  it('третий узел, добавленный при открытых подсказках, их не закрывает', () => {
+    const { container } = renderCanvas({ initialNodes: nodes(2) });
+    fireEvent.click(screen.getByText('2. Уязвимый Ребёнок').closest('button')!);
+    expect(readModel(container).nodes).toHaveLength(3);
+    expect(guideOpen()).toBe(true);
+  });
+});

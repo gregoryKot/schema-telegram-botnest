@@ -141,6 +141,11 @@ describe('ConceptSheet: «Схема · Поля»', () => {
         .getByRole('button', { name: 'Схема' })
         .getAttribute('aria-pressed'),
     ).toBe('true');
+    // инструкция свёрнута, пока на схеме что-то есть
+    expect(
+      screen.queryByText(/Схема случая: в центре базовые потребности/),
+    ).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: /Как читать схему/ }));
     expect(
       screen.getByText(/Схема случая: в центре базовые потребности/),
     ).toBeTruthy();
@@ -150,6 +155,11 @@ describe('ConceptSheet: «Схема · Поля»', () => {
   it('переключение на «Схему»: карточка режима, без кнопки скачивания картинки', async () => {
     await openSheet(concept({ modeIds: [] }));
     fireEvent.click(screen.getByRole('button', { name: 'Схема' }));
+    // инструкция свёрнута, пока на схеме что-то есть
+    expect(
+      screen.queryByText(/Схема случая: в центре базовые потребности/),
+    ).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: /Как читать схему/ }));
     expect(
       screen.getByText(/Схема случая: в центре базовые потребности/),
     ).toBeTruthy();
