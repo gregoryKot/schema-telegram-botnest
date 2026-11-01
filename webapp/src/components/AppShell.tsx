@@ -16,6 +16,7 @@ import { EntryFlows } from './appShell/EntryFlows';
 import { AppSections } from './appShell/AppSections';
 import { type Section, sectionFromPath, fillHistoryGaps } from './appShell/navigation';
 import { MobileNav } from './appShell/MobileNav';
+import { ModeSwitch } from './appShell/ModeSwitch';
 import { QuickActions } from './quickActions/QuickActions';
 import { useDesktopAppLaunch } from '../hooks/useDesktopAppLaunch';
 import { useHostShell } from '../hooks/useHostShell';
@@ -233,12 +234,7 @@ export function AppShell() {
         </div>
 
         {userRole === 'THERAPIST' && (
-          <div className="sb-mode-switch">
-            <button className={`sb-mode-btn${!therapistMode ? ' is-active' : ''}`}
-                    onClick={() => switchTherapistMode(false)}>Клиент</button>
-            <button className={`sb-mode-btn${therapistMode ? ' is-active' : ''}`}
-                    onClick={() => switchTherapistMode(true)}>Терапевт</button>
-          </div>
+          <ModeSwitch variant="sidebar" value={therapistMode} onChange={(on) => switchTherapistMode(on)} />
         )}
 
         <nav className="sb-nav">
@@ -460,7 +456,7 @@ export function AppShell() {
       </div>{/* end main */}
 
       {/* ── Mobile bottom nav ──────────────────────────────────────────────── */}
-      <MobileNav items={NAV_ITEMS} therapist={therapistMode} onSearch={() => ov.setCmdOpen(true)} />
+      <MobileNav items={NAV_ITEMS} therapist={therapistMode} onSearch={() => ov.setCmdOpen(true)} onProfile={() => ov.setShowSettings(true)} />
 
       <QuickActions ov={ov} />
       {/* ── Command palette ─────────────────────────────────────────────────── */}

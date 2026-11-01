@@ -5,19 +5,19 @@ import { SSection, SRow, Toggle } from './ui';
 
 interface Props {
   userRole?: 'CLIENT' | 'THERAPIST';
-  therapistMode?: boolean;
-  onToggleTherapistMode?: () => void;
   onResignTherapist?: () => Promise<void> | void;
   onSaved: () => void;
 }
 
 // Раздел «Оформление» — вынесен из SettingsSheet.tsx (правило №10). Тумблера
 // темы здесь больше нет: кабинет только светлый (редизайн 2026-10), тема
-// переключается только на лендинге. Подтверждение снятия роли специалиста
+// переключается только на лендинге. Режима «клиент/терапевт» здесь тоже нет:
+// с #902 он — первый блок листа (ModeSection), «Оформление» не место для
+// роли. Подтверждение снятия роли специалиста
 // живёт внутри секции; «Сохранено ✓» после переключения
 // «Меньше движения» — общий тост в шапке родителя, поэтому единственное, что
 // секция отдаёт наружу, — колбэк onSaved.
-export function AppearanceSection({ userRole, therapistMode, onToggleTherapistMode, onResignTherapist, onSaved }: Props) {
+export function AppearanceSection({ userRole, onResignTherapist, onSaved }: Props) {
   const tr = useTr();
   const motion = useReducedMotionPref(onSaved);
   const [resignConfirm, setResignConfirm] = useState(false);
@@ -31,13 +31,6 @@ export function AppearanceSection({ userRole, therapistMode, onToggleTherapistMo
         sub={motion.sub}
         right={<Toggle on={motion.reduced} onClick={motion.toggle} label="Меньше движения" />}
       />
-      {userRole === 'THERAPIST' && onToggleTherapistMode && (
-        <SRow
-          title="Режим специалиста"
-          sub={therapistMode ? 'Кабинет терапевта' : 'Режим клиента'}
-          right={<Toggle on={!!therapistMode} onClick={onToggleTherapistMode} label="Режим специалиста" />}
-        />
-      )}
       {userRole === 'THERAPIST' && onResignTherapist && (
         !resignConfirm ? (
           <div className="st-body-block">

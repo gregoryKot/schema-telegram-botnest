@@ -46,7 +46,7 @@ export function AppOverlays({
           onNameChanged={setDisplayName}
           onOpenTherapistCabinet={() => { ov.setShowSettings(false); navigate('/cabinet'); }}
           therapistMode={therapistMode}
-          onToggleTherapistMode={() => switchTherapistMode(!therapistMode)}
+          onSetTherapistMode={(on) => switchTherapistMode(on)}
           onResignTherapist={async () => {
             await api.resignTherapist();
             setUserRole('CLIENT');

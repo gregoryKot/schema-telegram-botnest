@@ -15,7 +15,7 @@ import {
   waitFor,
   act,
 } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { AuthContext, type AuthState } from '../auth/authContext';
 import { AccountPage } from './AccountPage';
 
@@ -518,5 +518,43 @@ describe('AccountPage — выход', () => {
 
     expect(screen.queryByRole('dialog')).toBeNull();
     expect(logout).not.toHaveBeenCalled();
+  });
+});
+
+// #902: терапевт с телефона приходит сюда из кабинета (лист настроек → «Аккаунт и
+// способы входа»). «← Назад» возвращает в дом режима: клиентское «Сегодня» для
+// него — лишний прыжок, бутстрап сразу вернул бы его в кабинет.
+describe('AccountPage — «← Назад» ведёт в дом текущего режима', () => {
+  afterEach(() => localStorage.removeItem('therapist_mode'));
+
+  async function renderWithHomes() {
+    render(
+      <MemoryRouter initialEntries={['/account']}>
+        <AuthContext.Provider value={authValue()}>
+          <Routes>
+            <Route path="/account" element={<AccountPage />} />
+            <Route path="/cabinet" element={<div>дом кабинета</div>} />
+            <Route path="/today" element={<div>дом клиента</div>} />
+          </Routes>
+        </AuthContext.Provider>
+      </MemoryRouter>,
+    );
+    await screen.findByText('Аккаунт');
+  }
+
+  it('режим терапевта (therapist_mode=1) — в /cabinet', async () => {
+    localStorage.setItem('therapist_mode', '1');
+    await renderWithHomes();
+    fireEvent.click(screen.getByText('← Назад'));
+    expect(await screen.findByText('дом кабинета')).toBeTruthy();
+    expect(screen.queryByText('дом клиента')).toBeNull();
+  });
+
+  it.each([['0'], [null]])('режим клиента (therapist_mode=%s) — в /today', async (flag) => {
+    if (flag !== null) localStorage.setItem('therapist_mode', flag);
+    await renderWithHomes();
+    fireEvent.click(screen.getByText('← Назад'));
+    expect(await screen.findByText('дом клиента')).toBeTruthy();
+    expect(screen.queryByText('дом кабинета')).toBeNull();
   });
 });

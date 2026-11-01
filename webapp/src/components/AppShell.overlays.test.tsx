@@ -403,12 +403,12 @@ describe('AppShell — Настройки: доп. переходы (кабин�
     await waitFor(() => expect(screen.getByTestId('therapist-client-sheet')).toBeTruthy());
   });
 
-  it('«toggleTherapist» из настроек переключает режим на терапевта', async () => {
+  it('onSetTherapistMode(true) из настроек переключает режим на терапевта', async () => {
     renderAppShell('/today');
     await waitFor(() => expect(screen.getByTestId('today-section')).toBeTruthy());
     fireEvent.click(screen.getByTestId('today-section-advanced'));
     await waitFor(() => expect(screen.getByTestId('settings-sheet')).toBeTruthy());
-    fireEvent.click(screen.getByTestId('settings-sheet-toggleTherapist'));
+    fireEvent.click(screen.getByTestId('settings-sheet-setTherapist'));
     await waitFor(() => expect(screen.getByTestId('therapist-client-sheet')).toBeTruthy());
   });
 });
