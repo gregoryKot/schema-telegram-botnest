@@ -14,7 +14,7 @@ import {
   type OverlayQuickActionId,
 } from './plusMenu/QuickActionOverlays';
 import { UseSheetsReturn } from '../hooks/useSheets';
-import { TODAY_DATE } from '../utils/todayConstants';
+import { diaryToday } from '../../../shared/src/diary/diaryDay';
 import type { QuickActionId } from '../../../shared/src/quickActions/quickActions';
 
 interface Props {
@@ -102,7 +102,7 @@ export function AppDiaryNav({
       {newDiaryEntry === 'gratitude' && (
         <GratitudeEntrySheet
           onClose={() => setNewDiaryEntry(null)}
-          date={TODAY_DATE}
+          date={diaryToday()}
           onSave={async (date, items, base) => {
             await api.createGratitudeDiary(date, items, base);
           }}

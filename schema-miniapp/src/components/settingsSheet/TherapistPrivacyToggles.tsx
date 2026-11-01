@@ -34,7 +34,7 @@ export function TherapistPrivacyToggles({ settings, patch }: Props) {
           >
             Карточки схем и режимов
           </div>
-          <div className="u-sub11-mt1">Личные карточки и заметки</div>
+          <div className="u-sub11-mt1">Карточки, заметки и дневники</div>
         </div>
         <div
           onClick={() =>

@@ -339,22 +339,33 @@ describe('DiaryService — дневник благодарности: сохра
   });
 });
 
-// Находка для отчёта (не баг-фикс): createSchemaDiaryEntry() возвращает
-// schemaIds НЕ расшифрованным — взят «сырой» JSON из prisma.create, а не
-// data.schemaIds (emotions переопределён плейнтекстом, schemaIds — нет).
-// diary.controller.ts отдаёт этот же объект клиенту как есть: на POST
-// /diary/schema фронт получит schemaIds строкой вида '["abandonment"]',
-// а не массивом, хотя GET-путь (getSchemaDiaryEntries) отдаёт корректный
-// массив. См. отчёт.
-describe('DiaryService — create() отличается от чтения (находка)', () => {
-  it('create() возвращает schemaIds НЕ как исходный массив (сырую JSON-строку)', async () => {
+// Регресс инцидента 2026-10-26 (docs/INCIDENTS.md): create() отдавал
+// schemaIds/modeId строкой из БД — на проде шифротекстом, и сайт ронял раздел
+// на `schemaIds.map`. Раньше здесь это поведение было закреплено как
+// «находка». Ключа в этом спеке нет (encrypt — passthrough), поэтому видна
+// только форма; шифротекст с настоящим ключом ловит
+// src/utils/encrypted-write-response.spec.ts.
+describe('DiaryService — ответ create() совпадает с чтением', () => {
+  it('schemaIds — массив, ответ записи равен записи из GET', async () => {
     const { svc } = makeService();
     const created = await svc.createSchemaDiaryEntry(USER_A, {
       ...baseSchema,
       trigger: 'триггер',
       schemaIds: ['abandonment'],
     });
-    expect(created.schemaIds).not.toEqual(['abandonment']);
-    expect(created.schemaIds).toBe(JSON.stringify(['abandonment']));
+    expect(created.schemaIds).toEqual(['abandonment']);
+    const [read] = await svc.getSchemaDiaryEntries(USER_A);
+    expect(created).toEqual(read);
+  });
+
+  it('modeId — id режима, ответ записи равен записи из GET', async () => {
+    const { svc } = makeService();
+    const created = await svc.createModeDiaryEntry(USER_A, {
+      modeId: 'vulnerable_child',
+      situation: 'ситуация',
+    });
+    expect(created.modeId).toBe('vulnerable_child');
+    const [read] = await svc.getModeDiaryEntries(USER_A);
+    expect(created).toEqual(read);
   });
 });

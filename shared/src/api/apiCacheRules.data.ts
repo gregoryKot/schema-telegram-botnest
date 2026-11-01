@@ -13,33 +13,9 @@
 // Данные вынесены из apiCacheRules.ts (движок применения) — правило №10
 // CLAUDE.md: гейт размера файла упёрся бы в потолок 300 строк на одном списке
 // правил, движок держит только логику (по образцу gendered-forms-patterns.mjs).
-import type { InvalidationTarget } from './apiCache';
-
-type Body = Record<string, unknown> | undefined;
-
-export interface Rule {
-  method: 'POST' | 'DELETE' | 'PATCH';
-  pattern: RegExp;
-  /** true — мутация меняет учётную запись целиком (напр. удаление аккаунта). */
-  clearAll?: true;
-  targets?: (match: RegExpMatchArray, body: Body) => InvalidationTarget[];
-}
-
-const str = (v: unknown): string | undefined =>
-  typeof v === 'string' ? v : undefined;
-const numStr = (v: unknown): string | undefined =>
-  typeof v === 'number' || typeof v === 'string' ? String(v) : undefined;
-
-const FORMER = '/api/therapy/former-therapist';
-
-/** Мутация без зависимости от body/id — фиксированный набор ключей. */
-function simple(
-  method: Rule['method'],
-  pattern: RegExp,
-  ...targets: InvalidationTarget[]
-): Rule {
-  return { method, pattern, targets: () => targets };
-}
+// Ручки /api/therapy/* — в apiCacheRules.therapy.ts, кирпичи — в .kit.ts.
+import { simple, str, type Rule } from './apiCacheRules.kit';
+import { THERAPY_RULES } from './apiCacheRules.therapy';
 
 export const RULES: Rule[] = [
   { method: 'DELETE', pattern: /^\/api\/user$/, clearAll: true },
@@ -118,74 +94,8 @@ export const RULES: Rule[] = [
   simple('DELETE', /^\/api\/diary\/mode\/\d+$/, '/api/diary/mode'),
   simple('POST', /^\/api\/diary\/gratitude$/, '/api/diary/gratitude'),
   simple('DELETE', /^\/api\/diary\/gratitude\/\d+$/, '/api/diary/gratitude'),
-  // Сообщение о бывшем терапевте зависит от живой связи: подключился по коду —
-  // пропадает, отключился — может вернуться (former-therapist-info.ts).
-  simple('POST', /^\/api\/therapy\/join$/, '/api/therapy/relation', FORMER),
-  simple(
-    'DELETE',
-    /^\/api\/therapy\/relation$/,
-    '/api/therapy/relation',
-    FORMER,
-  ),
-  simple('POST', /^\/api\/therapy\/clients\/add$/, '/api/therapy/clients'),
-  simple('POST', /^\/api\/therapy\/clients\/virtual$/, '/api/therapy/clients'),
-  simple('DELETE', /^\/api\/therapy\/clients\/\d+$/, '/api/therapy/clients'),
-  simple(
-    'POST',
-    /^\/api\/therapy\/rename-client\/\d+$/,
-    '/api/therapy/clients',
-  ),
-  simple('POST', /^\/api\/therapy\/become-therapist$/, '/api/therapy/request'),
-  simple('POST', /^\/api\/therapy\/request$/, '/api/therapy/request'),
-  simple('POST', /^\/api\/therapy\/therapist-view$/, '/api/user-flags'),
-  simple(
-    'DELETE',
-    /^\/api\/therapy\/therapist-role$/,
-    '/api/user-flags',
-    '/api/therapy/clients',
-  ),
-  {
-    method: 'POST',
-    pattern: /^\/api\/therapy\/tasks$/,
-    targets: (_m, body) => {
-      const clientId = numStr(body?.clientId);
-      return clientId
-        ? ['/api/therapy/tasks', `/api/therapy/tasks/client/${clientId}`]
-        : ['/api/therapy/tasks'];
-    },
-  },
-  // completeTask(id) — clientId владельца задачи неизвестен из одного id.
-  simple(
-    'POST',
-    /^\/api\/therapy\/tasks\/\d+\/complete$/,
-    '/api/therapy/tasks',
-    '/api/therapy/tasks/history',
-    { prefix: '/api/therapy/tasks/client/' },
-  ),
-  {
-    method: 'POST',
-    pattern: /^\/api\/therapy\/notes\/(\d+)$/,
-    targets: (m) => [`/api/therapy/notes/${m[1]}`],
-  },
-  // deleteTherapistNote(noteId) — clientId заметки неизвестен из noteId.
-  simple('DELETE', /^\/api\/therapy\/notes\/\d+$/, {
-    prefix: '/api/therapy/notes/',
-  }),
-  {
-    method: 'POST',
-    pattern: /^\/api\/therapy\/session-info\/(\d+)$/,
-    targets: (m) => [
-      `/api/therapy/client-data/${m[1]}`,
-      '/api/therapy/clients',
-    ],
-  },
   simple('POST', /^\/api\/schema-notes$/, '/api/schema-notes'),
   simple('POST', /^\/api\/mode-notes$/, '/api/mode-notes'),
-  {
-    method: 'POST',
-    pattern: /^\/api\/therapy\/conceptualization\/(\d+)$/,
-    targets: (m) => [`/api/therapy/conceptualization/${m[1]}`],
-  },
   // Быстрые практики «Здесь и сейчас» (мини-апп).
   simple('POST', /^\/api\/practice-session$/, '/api/practice-sessions'),
   // Дневниковые инструменты (apiExercises.ts, оба фронтенда).
@@ -199,4 +109,5 @@ export const RULES: Rule[] = [
   simple('POST', /^\/api\/phrase-checks$/, '/api/phrase-checks'),
   simple('DELETE', /^\/api\/phrase-checks\/\d+$/, '/api/phrase-checks'),
   simple('PATCH', /^\/api\/phrase-checks\/\d+$/, '/api/phrase-checks'),
+  ...THERAPY_RULES,
 ];

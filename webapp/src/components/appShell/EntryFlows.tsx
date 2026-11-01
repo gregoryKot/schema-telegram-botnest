@@ -23,7 +23,9 @@ export function EntryFlows({ ov }: { ov: ReturnType<typeof useOverlays> }) {
   });
 
   const onJoined = useCallback((kind: 'pair' | 'therapy') => {
-    setJoin(null);
+    // Пара закрывается сразу; терапевт — после «Понятно» на экране «Доступ
+    // открыт» (JoinConfirmSheet, инцидент 2026-10-26: окно закрывалось молча).
+    if (kind === 'pair') setJoin(null);
     // Связь с терапевтом кэшируется для «Написать терапевту»; пара читается
     // листом настроек при каждом открытии, держать копию негде.
     if (kind === 'therapy') {

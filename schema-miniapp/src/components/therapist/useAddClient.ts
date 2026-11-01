@@ -2,6 +2,10 @@ import { useRef, useState } from 'react';
 import { useTr } from '../../utils/addressForm';
 import { api } from '../../api';
 import { useCopyToClipboard } from '../../../../shared/src/utils/useCopyToClipboard';
+import {
+  inviteCreateErrorText,
+  usePendingInvites,
+} from '../../../../shared/src/therapy/therapyInvites';
 import type { TherapyClientSummary } from '../../api';
 
 export type AddMode = null | 'invite' | 'virtual';
@@ -10,15 +14,25 @@ interface Params {
   setClients: React.Dispatch<React.SetStateAction<TherapyClientSummary[]>>;
 }
 
+// Добавление клиента в кабинете мини-аппа: «Ссылка» — приглашение (имя
+// необязательно: с ним человек виден в «Ждут подключения», а после
+// подключения карточка называется так), «Оффлайн» — карточка без аккаунта.
+// Инцидент 2026-10-26: «Создать новую» отдавало тот же код — второй клиент
+// получал ссылку первого; теперь каждое приглашение — свой код, список живых
+// (`pending`) перечитывается после создания. Пара на сайте —
+// webapp/src/components/therapist/useAddClient.ts.
 export function useAddClient({ setClients }: Params) {
   const tr = useTr();
   const [addMode, setAddMode] = useState<AddMode>(null);
   const [addInput, setAddInput] = useState('');
   const [addLoading, setAddLoading] = useState(false);
   const [addError, setAddError] = useState('');
-  const [inviteUrl, setInviteUrl] = useState('');
+  const [invite, setInvite] = useState<{ url: string; code: string } | null>(
+    null,
+  );
   const [inviteLoading, setInviteLoading] = useState(false);
   const inviteInputRef = useRef<HTMLInputElement>(null);
+  const pending = usePendingInvites(api);
   const {
     copied: inviteCopied,
     failed: inviteCopyFailed,
@@ -29,25 +43,27 @@ export function useAddClient({ setClients }: Params) {
     setAddMode(mode);
     setAddInput('');
     setAddError('');
-    setInviteUrl('');
+    setInvite(null);
   }
 
   async function createInvite() {
     setInviteLoading(true);
+    setAddError('');
     try {
-      const { url } = await api.createTherapyInvite();
-      setInviteUrl(url);
-    } catch {
-      setAddError('Не удалось создать ссылку');
+      setInvite(await api.createTherapyInvite(addInput.trim() || undefined));
+      setAddInput('');
+      pending.reload();
+    } catch (e) {
+      setAddError(inviteCreateErrorText(e, tr));
     } finally {
       setInviteLoading(false);
     }
   }
 
   async function copyInvite() {
-    if (!inviteUrl) return;
-    // Буфер недоступен — код и так на экране в поле, выделяем для ручного копирования.
-    const ok = await doCopyInvite(inviteUrl);
+    if (!invite) return;
+    // Буфер недоступен — ссылка и так на экране в поле, выделяем для ручного копирования.
+    const ok = await doCopyInvite(invite.url);
     if (!ok) inviteInputRef.current?.select();
   }
 
@@ -80,12 +96,13 @@ export function useAddClient({ setClients }: Params) {
     addLoading,
     addError,
     setAddError,
-    inviteUrl,
-    setInviteUrl,
+    invite,
+    setInvite,
     inviteCopied,
     inviteCopyFailed,
     inviteLoading,
     inviteInputRef,
+    pending,
     openAddMode,
     createInvite,
     copyInvite,

@@ -12,8 +12,7 @@ import { SchemaEntrySheet } from '../components/diary/SchemaEntrySheet';
 import { ModeEntrySheet } from '../components/diary/ModeEntrySheet';
 import { GratitudeEntrySheet } from '../components/diary/GratitudeEntrySheet';
 import { useTr } from '../utils/addressForm';
-
-const TODAY = new Date().toISOString().split('T')[0];
+import { diaryToday } from '../../../shared/src/diary/diaryDay';
 
 interface Props {
   onClose?: () => void;
@@ -88,7 +87,8 @@ export function DiarySection({ onClose, onOpenTracker }: Props = {}) {
     }
   };
 
-  const todayGratitude = gratitudeEntries.find((e) => e.date === TODAY);
+  const today = diaryToday(); // местный день, на каждый рендер (не на загрузку)
+  const todayGratitude = gratitudeEntries.find((e) => e.date === today);
 
   return (
     <div style={{ minHeight: '100vh' }}>
@@ -190,7 +190,7 @@ export function DiarySection({ onClose, onOpenTracker }: Props = {}) {
       {newEntry === 'gratitude' && (
         <GratitudeEntrySheet
           onClose={() => setNewEntry(null)}
-          date={TODAY}
+          date={today}
           existingItems={todayGratitude?.items}
           onSave={async (date, items, base) => {
             const entry = await api.createGratitudeDiary(date, items, base);

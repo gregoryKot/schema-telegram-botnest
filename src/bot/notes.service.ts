@@ -79,7 +79,7 @@ export class NotesService {
     });
     // Заполненная карточка = схема в коллекции юзера, иначе её не найти в «Моих записях».
     await addToMyList(this.prisma, userId, 'mySchemaIds', schemaId);
-    return res;
+    return decryptRecord(res, SCHEMA_NOTE_SCHEMA); // как GET (encrypted-write-response.spec.ts)
   }
 
   async getModeNote(userId: bigint, modeId: string) {
@@ -112,7 +112,7 @@ export class NotesService {
       create: { userId, modeId, ...enc },
     });
     await addToMyList(this.prisma, userId, 'myModeIds', modeId);
-    return res;
+    return decryptRecord(res, MODE_NOTE_SCHEMA);
   }
 }
 // Доступ терапевта к карточкам клиента жил здесь дублем (без расшифровки!) — единственная

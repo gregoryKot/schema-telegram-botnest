@@ -2,6 +2,7 @@ import { useRef, useState } from 'react';
 import { api } from '../../api';
 import { useTr } from '../../utils/addressForm';
 import { useCopyToClipboard } from '../../../../shared/src/utils/useCopyToClipboard';
+import { inviteCreateErrorText, usePendingInvites } from '../../../../shared/src/therapy/therapyInvites';
 import type { TherapyClientSummary } from '../../api';
 
 interface Params {
@@ -10,9 +11,18 @@ interface Params {
 
 export interface AddClientCreated {
   name: string;
-  inviteUrl: string | null;
+  /** Есть — создано приглашение (карточка появится после подключения). */
+  invite: { url: string; code: string } | null;
 }
 
+// «+ Новый клиент» в кабинете. Две разные вещи, а не одна с довеском
+// (инцидент 2026-10-26): без галочки — офлайн-карточка (записи без аккаунта
+// клиента); с галочкой — только приглашение с этим именем. Раньше галочка
+// создавала И офлайн-карточку, И независимое приглашение, и после подключения
+// в списке было две карточки одного человека. Данные офлайн-карточки висят на
+// -TherapyRelation.id и в связь с аккаунтом не переезжают, поэтому карточка
+// для приглашённого — та, что появится после подключения, с именем отсюда; до
+// подключения он виден в блоке «Ждут подключения» (`pending`).
 export function useAddClient({ setClients }: Params) {
   const tr = useTr();
   const [name, setName] = useState('');
@@ -22,6 +32,7 @@ export function useAddClient({ setClients }: Params) {
   const [error, setError] = useState('');
   const { copied, failed: copyFailed, copy } = useCopyToClipboard();
   const inputRef = useRef<HTMLInputElement>(null);
+  const pending = usePendingInvites(api);
 
   const valid = name.trim().length >= 2;
 
@@ -31,20 +42,22 @@ export function useAddClient({ setClients }: Params) {
     setSubmitting(true);
     setError('');
     try {
-      const updated = await api.addVirtualClient(trimmed);
-      setClients(updated);
-      let inviteUrl: string | null = null;
       if (withInvite) {
-        const { url } = await api.createTherapyInvite();
-        inviteUrl = url;
+        const invite = await api.createTherapyInvite(trimmed);
+        pending.reload();
+        setCreated({ name: trimmed, invite });
+      } else {
+        setClients(await api.addVirtualClient(trimmed));
+        setCreated({ name: trimmed, invite: null });
       }
-      setCreated({ name: trimmed, inviteUrl });
       setName('');
     } catch (e: unknown) {
       setError(
-        e instanceof Error
-          ? e.message
-          : tr('Ошибка. Попробуй ещё раз.', 'Ошибка. Попробуйте ещё раз.'),
+        withInvite
+          ? inviteCreateErrorText(e, tr)
+          : e instanceof Error
+            ? e.message
+            : tr('Ошибка. Попробуй ещё раз.', 'Ошибка. Попробуйте ещё раз.'),
       );
     } finally {
       setSubmitting(false);
@@ -59,15 +72,15 @@ export function useAddClient({ setClients }: Params) {
   }
 
   async function copyInvite() {
-    if (!created?.inviteUrl) return;
-    await copy(created.inviteUrl);
+    if (!created?.invite) return;
+    await copy(created.invite.url);
   }
 
   return {
     name, setName,
     withInvite, setWithInvite,
     created, submitting, error, copied, copyFailed, valid,
-    inputRef,
+    inputRef, pending,
     submit, reset, copyInvite,
   };
 }

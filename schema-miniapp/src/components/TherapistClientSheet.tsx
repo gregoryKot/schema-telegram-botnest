@@ -5,7 +5,6 @@ import { todayCalendarDate } from '../../../shared/src/utils/calendarDate';
 import { useSafeTop } from '../utils/safezone';
 import { useClientDetail } from './therapist/useClientDetail';
 import { useAddClient } from './therapist/useAddClient';
-import { reloadKeepingShown } from '../../../shared/src/utils/reloadKeepingShown';
 import { ClientListView } from './therapistClientSheet/ClientListView';
 import { ClientDetailView } from './therapistClientSheet/ClientDetailView';
 import { TasksSheet } from './therapistClientSheet/TasksSheet';
@@ -109,7 +108,6 @@ export function TherapistClientSheet({
     showClientNotesSheet,
     showAssign,
     setShowAssign,
-    setClientTasks,
     renamingAlias,
     editingStartDate,
     editingNextSession,
@@ -193,13 +191,7 @@ export function TherapistClientSheet({
         <TaskCreateSheet
           clientId={selectedClient.telegramId}
           clientName={selectedClient.name ?? undefined}
-          onCreated={() => {
-            setShowAssign(false);
-            void reloadKeepingShown(
-              () => api.getTherapyTasksForClient(selectedClient.telegramId),
-              setClientTasks,
-            );
-          }}
+          onCreated={detail.onTaskAssigned}
           onClose={() => setShowAssign(false)}
         />
       )}

@@ -205,6 +205,11 @@ TypeScript проверит имена (`_VerifyTables`), а spec-сверка �
 const MY_SCHEMA: EncryptSchema = { strings: ['text', 'note'], jsonArrays: ['items'] };
 ```
 Использовать `encryptRecord(data, MY_SCHEMA)` при записи и `decryptRecord(row, MY_SCHEMA)` при чтении.
+Ответ ручки записи (create/upsert/update) — через ту же функцию расшифровки, что GET,
+а не пересборкой полей вручную: инцидент 2026-10-26 — POST дневника отдавал `schemaIds`
+шифротекстом, раздел сайта падал. Сверку «ответ записи = GET» с настоящим ключом держит
+`src/utils/encrypted-write-response.spec.ts` — новая модель с шифрованным полем
+получает там случай или причину, почему строка наружу не уходит.
 Не шифровать: `id`, `userId`, `createdAt`, `updatedAt`, типы-перечисления (modeId, schemaId, needId).
 
 Механизм принуждения: `src/utils/encryption-coverage.spec.ts` — реестр решений

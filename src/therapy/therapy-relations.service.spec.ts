@@ -253,6 +253,8 @@ function makeFullPrisma(
         rels
           .filter((r) => relMatches(r, where))
           .map((r) => withIncludes(r, include)),
+      count: async ({ where }: any) =>
+        rels.filter((r) => relMatches(r, where)).length,
       create: async ({ data }: any) => {
         const rel: FullRel = {
           clientId: null,
@@ -347,6 +349,32 @@ describe('createInvite — генерация кода приглашения', 
     } finally {
       spy.mockClear();
     }
+  });
+});
+
+// Инцидент 2026-10-26: «+ Новый клиент» с галочкой приглашения создавал
+// офлайн-карточку «Мария К.» и независимое приглашение — после подключения в
+// списке было две карточки. Теперь имя едет в приглашении, офлайн-карточки нет.
+describe('приглашение из «Новый клиент» — после подключения одна карточка с именем терапевта', () => {
+  it('createInvite(alias) → клиент подключился → getClients: ровно одна карточка, clientAlias = введённое имя', async () => {
+    const { service, rels } = makeFullService(
+      [],
+      [{ id: CLIENT, firstName: 'Мария', role: 'CLIENT' }],
+    );
+    const { code } = await service.createInvite(T1, 'Мария К.');
+    // До подключения карточки нет — приглашение ждёт в списке приглашений.
+    await expect(service.getClients(T1)).resolves.toEqual([]);
+    // Захват кода — как claimTherapyInvite (этот фейк не разбирает `{ not }`;
+    // подключение через HTTP целиком — test/therapy-invite.e2e-spec.ts).
+    const invite = rels.find((r) => r.code === code)!;
+    Object.assign(invite, { clientId: CLIENT, status: 'active' });
+    const clients = await service.getClients(T1);
+    expect(clients).toHaveLength(1);
+    expect(clients[0]).toMatchObject({
+      telegramId: CLIENT,
+      name: 'Мария',
+      clientAlias: 'Мария К.',
+    });
   });
 });
 
@@ -1304,6 +1332,26 @@ describe('renameClient — псевдоним клиента (alias)', () => {
     expect(foreignVirtual.clientAlias).toBeUndefined(); // чужая связь не тронута
   });
 
+  // QA 2026-10-26: удалённого офлайн-клиента «переименовывали» — updateMany
+  // на 0 строк считался успехом, ручка отвечала 201.
+  it('удалённый офлайн-клиент или чужой клиент — бросает No active relation, ничего не пишет', async () => {
+    const foreign: FullRel = {
+      id: 2,
+      therapistId: T2,
+      clientId: CLIENT,
+      status: 'active',
+      code: 'BBB222',
+    };
+    const { service } = makeFullService([foreign]);
+    await expect(service.renameClient(T1, -142n, 'Имя')).rejects.toThrow(
+      'No active relation',
+    );
+    await expect(service.renameClient(T1, CLIENT, 'Имя')).rejects.toThrow(
+      'No active relation',
+    );
+    expect(foreign.clientAlias).toBeUndefined();
+  });
+
   it('пустой/пробельный alias — очищает clientAlias (null)', async () => {
     const rel: FullRel = {
       id: 1,
@@ -1355,7 +1403,7 @@ describe('renameClient — псевдоним клиента (alias)', () => {
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
-// Реальное шифрование PII (decName / virtualClientName) — мутанты L10/L213
+// Реальное шифрование PII (decryptName / virtualClientName) — мутанты L10/L213
 // (`decrypt(v) ?? v` / `encrypt(x) ?? x`, заменённые на `&&`). Весь остальной
 // файл намеренно работает в дев-режиме без ENCRYPTION_KEY, где encrypt()
 // тождественна ("Ключ шифрования не задан" в шапке файла) — там decrypt(v)
@@ -1395,6 +1443,15 @@ function loadWithRealEncryption(): {
 }
 
 describe('расшифровка PII при реально настроенном ENCRYPTION_KEY', () => {
+  it('createInvite(alias): имя в приглашении сохраняется ЗАШИФРОВАННЫМ', async () => {
+    const { Service, crypto } = loadWithRealEncryption();
+    const rels: FullRel[] = [];
+    const service = new Service(makeFullPrisma(rels, [], []) as any, {} as any);
+    await service.createInvite(T1, 'Мария К.');
+    expect(rels[0].clientAlias).not.toBe('Мария К.');
+    expect(crypto.decrypt(rels[0].clientAlias ?? null)).toBe('Мария К.');
+  });
+
   it('getClients: clientAlias — расшифрованное значение, а не сырой шифротекст', async () => {
     const { Service, crypto } = loadWithRealEncryption();
     const ciphertext = crypto.encrypt('Настоящий алиас');

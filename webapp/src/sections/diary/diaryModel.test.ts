@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { buildEntries, filterEntries, groupByDay, filterCounts, streakLine } from './diaryModel';
 import { buildTrackerDays, trackerDayLabel } from './trackerEntries';
+import { withTimeZone } from '../../../../shared/src/utils/timeZone.test-helpers';
 
 const s = (id: number, createdAt: string) => ({ id, createdAt, trigger: 't', emotions: [], schemaIds: [] });
 const m = (id: number, createdAt: string) => ({ id, createdAt, modeId: 'x', situation: 's' });
@@ -14,7 +15,7 @@ describe('diaryModel', () => {
   ]);
   const entries = buildEntries(
     [s(1, '2026-10-15T09:00:00Z'), s(2, '2026-10-13T09:00:00Z')],
-    [m(1, '2026-10-15T18:00:00Z')],
+    [m(1, '2026-10-15T12:00:00Z')], // полдень UTC: тот же день и в Сиднее, и в Лос-Анджелесе
     [g(1, '2026-10-14')],
     tracker,
   );
@@ -40,6 +41,13 @@ describe('diaryModel', () => {
     expect(filterEntries(entries, 'tracker').map((e) => e._type)).toEqual(['tracker', 'tracker']);
     expect(filterEntries(entries, 'diary').map((e) => e._type)).toEqual(['mode', 'schema', 'gratitude', 'schema']);
     expect(filterEntries(entries, 'all')).toHaveLength(6);
+  });
+
+  it('день записи по createdAt — местный: 21:19 UTC 26.10 — это 27.10 по Москве (инцидент 2026-10-26)', () => {
+    withTimeZone('Europe/Moscow', () => {
+      const night = buildEntries([s(1, '2026-10-26T21:19:00Z')], [], [g(1, '2026-10-27')]);
+      expect(groupByDay(night).map((x) => [x.dateKey, x.items.length])).toEqual([['2026-10-27', 2]]);
+    });
   });
 
   it('счётчики сегмента сходятся с фильтром', () => {

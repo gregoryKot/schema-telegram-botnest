@@ -176,6 +176,8 @@ describe('deleteClient', () => {
     expect(switchView).toHaveBeenCalledWith('list');
     const updater = setClients.mock.calls.at(-1)![0];
     expect(updater([{ telegramId: 5 }, { telegramId: 6 }])).toEqual([{ telegramId: 6 }]);
+    // QA 2026-10-26: выбранный не сбрасывался — «Назад» в браузере снова открывал карточку удалённого.
+    expect(result.current.selectedClient).toBeNull();
   });
   it('при ошибке api выставляет deleteError и не переключает вид', async () => {
     mockApi.removeClient.mockRejectedValue(new Error('fail'));

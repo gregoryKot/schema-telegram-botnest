@@ -95,7 +95,7 @@
   - В обоих `api.ts`: `export const api = { ...buildSharedApi(transport), ...ratingApi, ...createPracticeSessionsApi(transport), …локальные методы }`.
   - Локальное: у webapp — booking, articles, admin, therapy и др.; у miniapp — `...exercisesApi` и другое.
   - Новый метод, нужный обоим фронтам, добавляется в `sharedApi.ts`.
-- **Вокруг API:** кеш GET (`shared/src/api/apiCache.ts`, `shared/src/api/apiCacheRules.ts`, `shared/src/api/apiCacheRules.data.ts`), `readJsonBody`, `readErrorBody`, `humanizeError` (текст ошибки для экрана: лимит, авария, сеть, служебный английский → запасной текст), `clientErrorReport`.
+- **Вокруг API:** кеш GET (`shared/src/api/apiCache.ts`, `shared/src/api/apiCacheRules.ts`, `shared/src/api/apiCacheRules.data.ts`; ручки `/api/therapy/*` — `shared/src/api/apiCacheRules.therapy.ts`, id офлайн-клиента в пути отрицательный), `readJsonBody`, `readErrorBody`, `humanizeError` (текст ошибки для экрана: лимит, авария, сеть, служебный английский → запасной текст), `clientErrorReport`.
 
 **`shared/src/*` — подкаталоги (44):**
 
@@ -111,10 +111,10 @@
 | `shared/src/case/` | поток «Что это было»: типы, состояние, сохранение (мини-апп); `quick/` — три шага сайта |
 | `shared/src/childhoodWheel/` | колесо детства: данные и примеры |
 | `shared/src/components/` | общие компоненты: CrisisCard, Celebration, TherapyNote, Ysq*, ConnectionTrouble |
-| `shared/src/diary/` | мета дневников, пояснения, благодарности |
+| `shared/src/diary/` | мета дневников, пояснения, благодарности; `diaryDay` — «сегодня» дневника = местный день человека; `diaryPrivacy` + `useDiaryAccess` — «кто увидит записи» по связи с терапевтом и его доступу |
 | `shared/src/flashcard/` | контент карточки схемы: режимы, потребности, шаги |
 | `shared/src/history/` | CTA «Записаться» в истории |
-| `shared/src/hooks/` | useYsqTest и YSQ-скоринг, useConfetti, useLongPress, useDragReorder, `useHorizontalSwipe` (свайп трекера; касание внутри `[role="group"]` — шкала — не листает) |
+| `shared/src/hooks/` | useYsqTest и YSQ-скоринг, useConfetti, useLongPress, useDragReorder, `useConfirmedAction` (действие только после подтверждения), `useHorizontalSwipe` (свайп трекера; касание внутри `[role="group"]` — шкала — не листает) |
 | `shared/src/host/` | абстракция хоста: telegram, max, web (`getHost`, safezone) |
 | `shared/src/journey/` | «Мой путь»: лента активности, периоды, детали |
 | `shared/src/limits/` | `textLimits`: зеркало лимитов длины текста бэка |
@@ -141,9 +141,9 @@
 | `shared/src/tasks/` | `taskProgress`: прогресс стрик-задач; `taskTitle`: название задания по `type`/`text` (id схемы/режима → «Карточка режима: …») — единственный резолвер обеих площадок и обеих сторон |
 | `shared/src/test-support/` | `rtlCleanup`, `settleUnmountTimers` для тестов |
 | `shared/src/theme/` | `tokens.css`, `fonts.css`, `utilities.css` |
-| `shared/src/therapy/` | `bridge/` — «мост к терапевту» клиента (`therapySignal`, `therapyBridgeLinks`, `therapyBridgeTexts`, `therapyBridgeState`); кабинет терапевта: join, заметки, концептуализация, `conceptGraph`, `upcomingSession` (ближайшая сессия клиента: прошедшая `nextSession` → ближайший день встреч; кабинет терапевта и «Встреча с терапевтом» у клиента — `today/TodayAside`, баннер «Практик», `profile/TherapistCard`, `helpSection/NextSessionBanner`) |
+| `shared/src/therapy/` | `bridge/` — «мост к терапевту» клиента (`therapySignal`, `therapyBridgeLinks`, `therapyBridgeTexts`, `therapyBridgeState`); кабинет терапевта: join, карточка клиента обоих фронтов (`useNoteComposer` — «Новая заметка», `useSessionAliasEditing` — даты сессий и имя, `reloadClientTasks`), концептуализация (`conceptOverLimit` — какое поле длиннее предела сервера), `conceptGraph`, `upcomingSession` (ближайшая сессия клиента: прошедшая `nextSession` → ближайший день встреч; кабинет терапевта и «Встреча с терапевтом» у клиента — баннер «Практик», `profile/TherapistCard`, `helpSection/NextSessionBanner`) |
 | `shared/src/today/` | блоки «Сегодня», фокус, кастомизация |
-| `shared/src/utils/` | addressForm(+Cache), format, storageKeys, crisisMarkers, drafts, a11y |
+| `shared/src/utils/` | addressForm(+Cache), format, storageKeys, crisisMarkers, drafts, a11y; `usePendingSave` — единственная механика автосохранения с задержкой: правка привязана к владельцу (клиент, карта), досылка при смене владельца, `pagehide`, скрытии вкладки и размонтировании (keepalive — `shared/src/api/keepalive.ts`) |
 | `shared/src/warmWords/` | «Тёплые слова»: сбор и хук |
 
 - **Тесты:** vitest рядом с кодом, у каждого пакета свой (`npm test --prefix <пакет>`). jsdom включается директивой `// @vitest-environment jsdom` в самом файле, а не глобально.

@@ -1,7 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { encrypt, decrypt, encryptJson, decryptJson } from '../utils/crypto';
+import { encrypt, encryptJson } from '../utils/crypto';
 import { deleteOwned } from '../utils/require-affected';
+import {
+  readBeliefCheck,
+  readFlashcard,
+  readLetter,
+  readSafePlace,
+} from './encrypted-rows';
+
 // Упражнения: письма, безопасное место, флешкарты, проверка убеждений
 // (belief checks) — самостоятельные user-owned инструменты без общей схемы.
 @Injectable()
@@ -16,13 +23,7 @@ export class ExercisesService {
       orderBy: { createdAt: 'desc' },
       take: 30,
     });
-    return rows.map((r) => ({
-      ...r,
-      belief: decrypt(r.belief) ?? r.belief,
-      evidenceFor: decryptJson<string[]>(r.evidenceFor) ?? [],
-      evidenceAgainst: decryptJson<string[]>(r.evidenceAgainst) ?? [],
-      reframe: decrypt(r.reframe),
-    }));
+    return rows.map(readBeliefCheck);
   }
 
   async createBeliefCheck(
@@ -34,7 +35,7 @@ export class ExercisesService {
       reframe?: string;
     },
   ) {
-    return this.prisma.userBeliefCheck.create({
+    const row = await this.prisma.userBeliefCheck.create({
       data: {
         userId,
         belief: encrypt(data.belief) ?? data.belief,
@@ -46,6 +47,7 @@ export class ExercisesService {
         reframe: encrypt(data.reframe),
       },
     });
+    return readBeliefCheck(row);
   }
 
   async deleteBeliefCheck(userId: bigint, id: number) {
@@ -60,14 +62,14 @@ export class ExercisesService {
       orderBy: { createdAt: 'desc' },
       take: 30,
     });
-    return rows.map((r) => ({ ...r, text: decrypt(r.text) ?? r.text }));
+    return rows.map(readLetter);
   }
 
   async createLetter(userId: bigint, text: string) {
     const row = await this.prisma.userLetter.create({
       data: { userId, text: encrypt(text) ?? text },
     });
-    return { ...row, text };
+    return readLetter(row);
   }
 
   async deleteLetter(userId: bigint, id: number) {
@@ -80,8 +82,7 @@ export class ExercisesService {
     const row = await this.prisma.userSafePlace.findUnique({
       where: { userId },
     });
-    if (!row) return null;
-    return { ...row, description: decrypt(row.description) ?? row.description };
+    return row ? readSafePlace(row) : null;
   }
 
   async upsertSafePlace(userId: bigint, description: string) {
@@ -91,7 +92,7 @@ export class ExercisesService {
       update: { description: enc },
       create: { userId, description: enc },
     });
-    return { ...row, description };
+    return readSafePlace(row);
   }
 
   // ── Flashcards ────────────────────────────────────────────────────────────────
@@ -102,11 +103,7 @@ export class ExercisesService {
       orderBy: { createdAt: 'desc' },
       take: 30,
     });
-    return rows.map((r) => ({
-      ...r,
-      reflection: decrypt(r.reflection),
-      action: decrypt(r.action),
-    }));
+    return rows.map(readFlashcard);
   }
 
   async createFlashcard(
@@ -127,11 +124,7 @@ export class ExercisesService {
         action: encrypt(data.action),
       },
     });
-    return {
-      ...row,
-      reflection: data.reflection ?? null,
-      action: data.action ?? null,
-    };
+    return readFlashcard(row);
   }
 
   async deleteFlashcard(userId: bigint, id: number) {

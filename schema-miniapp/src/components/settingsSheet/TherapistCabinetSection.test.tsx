@@ -1,9 +1,9 @@
 // @vitest-environment jsdom
 // TherapistCabinetSection — вход в кабинет терапевта + создание ссылки-
-// приглашения. Read-after-write: показанный (обрезанный) URL — это URL ИЗ
-// ОТВЕТА сервера, а не выдуманный. Открытие кабинета — отдельный клик, не
-// путается с кнопкой приглашения.
-import { useState } from 'react';
+// приглашения. Read-after-write: показанные ссылка и код — ИЗ ОТВЕТА сервера,
+// а не выдуманные. Открытие кабинета — отдельный клик, не путается с кнопкой
+// приглашения. Инцидент 2026-10-26: код виден отдельно от ссылки; каждый тап —
+// новое приглашение.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
   render,
@@ -11,6 +11,7 @@ import {
   fireEvent,
   cleanup,
   act,
+  waitFor,
 } from '@testing-library/react';
 import { TherapistCabinetSection } from './TherapistCabinetSection';
 
@@ -22,113 +23,97 @@ const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
 
 beforeEach(() => {
   vi.clearAllMocks();
-  Object.assign(navigator, { clipboard: { writeText: vi.fn() } });
+  Object.assign(navigator, {
+    clipboard: { writeText: vi.fn().mockResolvedValue(undefined) },
+  });
 });
 
 afterEach(() => {
   cleanup();
 });
 
+async function tapInvite() {
+  await act(async () => {
+    fireEvent.click(screen.getByText('+ Создать приглашение клиенту'));
+  });
+}
+
 describe('TherapistCabinetSection — открытие кабинета', () => {
   it('клик по строке зовёт onOpenTherapistCabinet', () => {
     const onOpen = vi.fn();
-    render(
-      <TherapistCabinetSection
-        onOpenTherapistCabinet={onOpen}
-        therapyInviteUrl=""
-        setTherapyInviteUrl={() => {}}
-      />,
-    );
+    render(<TherapistCabinetSection onOpenTherapistCabinet={onOpen} />);
     fireEvent.click(screen.getByText('Открыть кабинет'));
     expect(onOpen).toHaveBeenCalled();
   });
 });
 
 describe('TherapistCabinetSection — приглашение клиента', () => {
-  it('без сохранённого url подсказка «Скопировано» не показывается', () => {
-    render(
-      <TherapistCabinetSection
-        therapyInviteUrl=""
-        setTherapyInviteUrl={() => {}}
-      />,
-    );
-    expect(screen.queryByText(/Скопировано/)).toBeNull();
+  it('до тапа ни ссылки, ни кода нет', () => {
+    render(<TherapistCabinetSection />);
+    expect(screen.queryByText(/Ссылка/)).toBeNull();
+    expect(screen.queryByText('Скопировать код')).toBeNull();
   });
 
-  it('успешный запрос кладёт URL ИЗ ОТВЕТА сервера (read-after-write)', async () => {
+  it('ссылка и код — ИЗ ОТВЕТА сервера (read-after-write); код отдельно с подсказкой', async () => {
     mockApi.createTherapyInvite.mockResolvedValue({
-      url: 'https://t.me/schema_bot?start=invite_abc123',
+      url: 'https://t.me/schema_bot?startapp=therapy_7F3A9C21B04E',
+      code: '7F3A9C21B04E',
     });
-    const setTherapyInviteUrl = vi.fn();
-    render(
-      <TherapistCabinetSection
-        therapyInviteUrl=""
-        setTherapyInviteUrl={setTherapyInviteUrl}
-      />,
+    render(<TherapistCabinetSection />);
+    await tapInvite();
+    await waitFor(() =>
+      expect(screen.getByText(/Ссылка скопирована:/)).toBeTruthy(),
     );
-    await act(async () => {
-      fireEvent.click(screen.getByText('+ Создать приглашение клиенту'));
-      await Promise.resolve();
-      await Promise.resolve();
-    });
-    expect(setTherapyInviteUrl).toHaveBeenCalledWith(
-      'https://t.me/schema_bot?start=invite_abc123',
-    );
+    expect(
+      screen.getByText(/therapy_7F3A9C21B04E$/, { selector: 'div' }),
+    ).toBeTruthy();
+    expect(screen.getByText('7F3A9C21B04E')).toBeTruthy();
+    expect(screen.getByText(/«Мой терапевт»/)).toBeTruthy();
   });
 
-  it('провал createTherapyInvite виден на кнопке, а не молчит (regression: check-silent-catch)', async () => {
+  it('каждый тап — новый запрос и новый код на экране', async () => {
+    mockApi.createTherapyInvite
+      .mockResolvedValueOnce({ url: 'u1', code: 'AAAAAAAAAAAA' })
+      .mockResolvedValueOnce({ url: 'u2', code: 'BBBBBBBBBBBB' });
+    render(<TherapistCabinetSection />);
+    await tapInvite();
+    expect(screen.getByText('AAAAAAAAAAAA')).toBeTruthy();
+    await tapInvite();
+    expect(screen.getByText('BBBBBBBBBBBB')).toBeTruthy();
+    expect(mockApi.createTherapyInvite).toHaveBeenCalledTimes(2);
+  });
+
+  it('провал createTherapyInvite виден, а не молчит (regression: check-silent-catch)', async () => {
     mockApi.createTherapyInvite.mockRejectedValue(new Error('network'));
-    render(
-      <TherapistCabinetSection
-        therapyInviteUrl=""
-        setTherapyInviteUrl={() => {}}
-      />,
+    render(<TherapistCabinetSection />);
+    await tapInvite();
+    expect(screen.getByRole('alert').textContent).toMatch(
+      /Не удалось создать приглашение/,
     );
-    await act(async () => {
-      fireEvent.click(screen.getByText('+ Создать приглашение клиенту'));
-      await Promise.resolve();
-      await Promise.resolve();
-    });
-    expect(screen.getByText('Не получилось')).toBeTruthy();
   });
 
-  it('клипборд падает — URL создан, но подпись «Не скопировалось» (был: молча проглочен)', async () => {
+  it('предел живых приглашений — текст с выходом', async () => {
+    mockApi.createTherapyInvite.mockRejectedValue({
+      status: 409,
+      reason: 'too_many_invites',
+    });
+    render(<TherapistCabinetSection />);
+    await tapInvite();
+    expect(screen.getByRole('alert').textContent).toMatch(/Отзови ненужные/);
+  });
+
+  it('клипборд падает — ссылка видна целиком с подписью «Ссылка не скопировалась» (был: молча проглочен)', async () => {
     Object.assign(navigator, {
       clipboard: { writeText: vi.fn().mockRejectedValue(new Error('denied')) },
     });
     mockApi.createTherapyInvite.mockResolvedValue({
-      url: 'https://t.me/schema_bot?start=invite_denied',
+      url: 'https://t.me/schema_bot?startapp=therapy_DENIED000000',
+      code: 'DENIED000000',
     });
-
-    function Host() {
-      const [url, setUrl] = useState('');
-      return (
-        <TherapistCabinetSection
-          therapyInviteUrl={url}
-          setTherapyInviteUrl={setUrl}
-        />
-      );
-    }
-    render(<Host />);
-    await act(async () => {
-      fireEvent.click(screen.getByText('+ Создать приглашение клиенту'));
-      await Promise.resolve();
-      await Promise.resolve();
-      await Promise.resolve();
-    });
-    expect(screen.getByText(/Не скопировалось:/)).toBeTruthy();
-  });
-
-  it('уже сохранённый url показывается обрезанным', () => {
-    const longUrl = 'https://t.me/schema_bot?start=' + 'x'.repeat(60);
-    render(
-      <TherapistCabinetSection
-        therapyInviteUrl={longUrl}
-        setTherapyInviteUrl={() => {}}
-      />,
+    render(<TherapistCabinetSection />);
+    await tapInvite();
+    await waitFor(() =>
+      expect(screen.getByText(/Ссылка не скопировалась:/)).toBeTruthy(),
     );
-    expect(
-      screen.getByText(`Скопировано: ${longUrl.slice(0, 50)}...`),
-    ).toBeTruthy();
   });
 });

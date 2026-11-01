@@ -1,8 +1,54 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { encrypt, decrypt, encryptJson, decryptJson } from '../utils/crypto';
+import {
+  encrypt,
+  encryptJson,
+  decryptRecord,
+  type EncryptSchema,
+} from '../utils/crypto';
 import { deleteOwned } from '../utils/require-affected';
 import { saveGratitudeDay } from './gratitude-merge';
+
+// Расшифровка записи — одна на чтение (GET) и на ответ записи (POST).
+// Инцидент 2026-10-26: create возвращал строку из БД, расшифровав поля
+// списком вручную, и пропустил schemaIds/modeId — сайт получал шифротекст
+// вместо массива и ронял раздел на `schemaIds.map`. Сверка «ответ записи =
+// GET той же записи» с настоящим ключом — encrypted-write-response.spec.ts.
+const SCHEMA_DIARY_SCHEMA: EncryptSchema = {
+  model: 'schemaDiaryEntry',
+  strings: [
+    'trigger',
+    'thoughts',
+    'bodyFeelings',
+    'actualBehavior',
+    'schemaOrigin',
+    'healthyView',
+    'realProblems',
+    'excessiveReactions',
+    'healthyBehavior',
+  ],
+  // Метки схем и эмоции — зашифрованный JSON; легаси-строки с массивом
+  // (Prisma Json) decryptRecord отдаёт как есть.
+  jsonArrays: ['emotions', 'schemaIds'],
+};
+const MODE_DIARY_SCHEMA: EncryptSchema = {
+  model: 'modeDiaryEntry',
+  strings: [
+    'modeId',
+    'situation',
+    'thoughts',
+    'feelings',
+    'bodyFeelings',
+    'actions',
+    'actualNeed',
+    'childhoodMemories',
+    'healthyResponse',
+  ],
+};
+const GRATITUDE_DIARY_SCHEMA: EncryptSchema = {
+  model: 'gratitudeDiaryEntry',
+  jsonArrays: ['items'],
+};
 
 export interface EmotionEntry {
   id: string;
@@ -39,8 +85,7 @@ export class DiaryService {
         thoughts: encrypt(data.thoughts),
         bodyFeelings: encrypt(data.bodyFeelings),
         actualBehavior: encrypt(data.actualBehavior),
-        // Clinical labels — encrypted JSON string. decryptRecord-style
-        // helper isn't used here because the schema is small enough.
+        // Метки схем — зашифрованная JSON-строка (читает SCHEMA_DIARY_SCHEMA).
         schemaIds:
           encryptJson(data.schemaIds) ?? JSON.stringify(data.schemaIds),
         schemaOrigin: encrypt(data.schemaOrigin),
@@ -50,20 +95,7 @@ export class DiaryService {
         healthyBehavior: encrypt(data.healthyBehavior),
       },
     });
-    // Return plaintext so caller doesn't receive encrypted strings
-    return {
-      ...row,
-      trigger: data.trigger,
-      emotions: data.emotions,
-      thoughts: data.thoughts ?? null,
-      bodyFeelings: data.bodyFeelings ?? null,
-      actualBehavior: data.actualBehavior ?? null,
-      schemaOrigin: data.schemaOrigin ?? null,
-      healthyView: data.healthyView ?? null,
-      realProblems: data.realProblems ?? null,
-      excessiveReactions: data.excessiveReactions ?? null,
-      healthyBehavior: data.healthyBehavior ?? null,
-    };
+    return decryptRecord(row, SCHEMA_DIARY_SCHEMA);
   }
 
   async getSchemaDiaryEntries(userId: bigint, limit = 30) {
@@ -72,27 +104,7 @@ export class DiaryService {
       orderBy: { createdAt: 'desc' },
       take: limit,
     });
-    return rows.map((r) => ({
-      ...r,
-      trigger: decrypt(r.trigger) ?? r.trigger,
-      emotions:
-        decryptJson<EmotionEntry[]>(r.emotions as unknown as string) ??
-        r.emotions,
-      thoughts: decrypt(r.thoughts),
-      bodyFeelings: decrypt(r.bodyFeelings),
-      actualBehavior: decrypt(r.actualBehavior),
-      // Legacy plaintext returns as already-deserialised array (Prisma Json);
-      // new encrypted form returns as string → decrypt+parse.
-      schemaIds:
-        typeof r.schemaIds === 'string'
-          ? (decryptJson<string[]>(r.schemaIds) ?? r.schemaIds)
-          : r.schemaIds,
-      schemaOrigin: decrypt(r.schemaOrigin),
-      healthyView: decrypt(r.healthyView),
-      realProblems: decrypt(r.realProblems),
-      excessiveReactions: decrypt(r.excessiveReactions),
-      healthyBehavior: decrypt(r.healthyBehavior),
-    }));
+    return rows.map((r) => decryptRecord(r, SCHEMA_DIARY_SCHEMA));
   }
 
   deleteSchemaDiaryEntry(userId: bigint, id: number) {
@@ -133,18 +145,7 @@ export class DiaryService {
         fromCase: data.fromCase === true,
       },
     });
-    // Return plaintext so caller doesn't receive encrypted strings
-    return {
-      ...row,
-      situation: data.situation,
-      thoughts: data.thoughts ?? null,
-      feelings: data.feelings ?? null,
-      bodyFeelings: data.bodyFeelings ?? null,
-      actions: data.actions ?? null,
-      actualNeed: data.actualNeed ?? null,
-      childhoodMemories: data.childhoodMemories ?? null,
-      healthyResponse: data.healthyResponse ?? null,
-    };
+    return decryptRecord(row, MODE_DIARY_SCHEMA);
   }
 
   async getModeDiaryEntries(userId: bigint, limit = 30) {
@@ -153,18 +154,7 @@ export class DiaryService {
       orderBy: { createdAt: 'desc' },
       take: limit,
     });
-    return rows.map((r) => ({
-      ...r,
-      modeId: decrypt(r.modeId) ?? r.modeId,
-      situation: decrypt(r.situation) ?? r.situation,
-      thoughts: decrypt(r.thoughts),
-      feelings: decrypt(r.feelings),
-      bodyFeelings: decrypt(r.bodyFeelings),
-      actions: decrypt(r.actions),
-      actualNeed: decrypt(r.actualNeed),
-      childhoodMemories: decrypt(r.childhoodMemories),
-      healthyResponse: decrypt(r.healthyResponse),
-    }));
+    return rows.map((r) => decryptRecord(r, MODE_DIARY_SCHEMA));
   }
 
   deleteModeDiaryEntry(userId: bigint, id: number) {
@@ -189,10 +179,7 @@ export class DiaryService {
       orderBy: { date: 'desc' },
       take: limit,
     });
-    return rows.map((r) => ({
-      ...r,
-      items: decryptJson<string[]>(r.items as unknown as string) ?? r.items,
-    }));
+    return rows.map((r) => decryptRecord(r, GRATITUDE_DIARY_SCHEMA));
   }
 
   deleteGratitudeDiaryEntry(userId: bigint, id: number) {

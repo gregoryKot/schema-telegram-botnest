@@ -10,7 +10,7 @@ vi.mock('../../../../shared/src/host', () => ({
 vi.mock('../../api', () => ({
   api: {
     getDisclaimer: vi.fn(), acceptDisclaimer: vi.fn(), trackEvent: vi.fn(),
-    joinPair: vi.fn(), joinTherapy: vi.fn(), getTherapyRelation: vi.fn(),
+    joinPair: vi.fn(), joinTherapy: vi.fn(), getTherapyRelation: vi.fn(), previewTherapyInvite: vi.fn(),
   },
   reportClientError: vi.fn(),
 }));
@@ -40,6 +40,7 @@ beforeEach(() => {
   m.acceptDisclaimer.mockResolvedValue(undefined);
   m.joinTherapy.mockResolvedValue(undefined);
   m.getTherapyRelation.mockResolvedValue({ partnerId: '7', partnerName: 'Т' });
+  m.previewTherapyInvite.mockResolvedValue({ therapistName: 'Анна' });
 });
 afterEach(cleanup);
 
@@ -52,7 +53,11 @@ describe('EntryFlows', () => {
     fireEvent.click(screen.getByText('Присоединиться'));
     await waitFor(() => expect(m.joinTherapy).toHaveBeenCalledWith('ABC'));
     await waitFor(() => expect(cacheTherapistContact).toHaveBeenCalledTimes(1));
-    await waitFor(() => expect(screen.queryByText('Открыть доступ терапевту?')).toBeNull());
+    // Инцидент 2026-10-26: окно молча закрывалось — теперь «Доступ открыт»
+    // с именем терапевта, закрывается по «Понятно».
+    expect(await screen.findByText(/Терапевт Анна видит/)).toBeTruthy();
+    fireEvent.click(screen.getByText('Понятно'));
+    await waitFor(() => expect(screen.queryByText('Доступ открыт')).toBeNull());
   });
 
   it('tracker открывает трекер', async () => {

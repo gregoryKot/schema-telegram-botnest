@@ -1,13 +1,33 @@
 import { TherapistInviteShare } from '../../../share/TherapistInviteShare';
 import { CopyFailedHint } from '../../../../../shared/src/components/CopyFailedHint';
+import { InviteCodeBox } from '../../../../../shared/src/therapy/InviteCodeBox';
+import { CLIENT_NAME_MAX } from '../../../../../shared/src/limits/textLimits';
 import { AddClient } from '../types';
 
-// Панель «пригласить по ссылке»: генерация кода, шаринг и копирование.
-// Вынесено из ClientListView.tsx (правило №10).
+// Панель «пригласить по ссылке»: имя (необязательно), генерация кода, ссылка,
+// код отдельно с подсказкой, куда его вводить, шаринг и копирование.
+// Вынесено из ClientListView.tsx (правило №10). Инцидент 2026-10-26: код
+// виден отдельно (раньше — только внутри ссылки t.me), «Создать новую» даёт
+// новый код (раньше — тот же, и второй клиент получал ссылку первого).
+const fieldStyle = {
+  width: '100%',
+  boxSizing: 'border-box',
+  marginBottom: 10,
+  background: 'rgba(var(--fg-rgb),0.05)',
+  border: '1px solid rgba(var(--fg-rgb),0.1)',
+  borderRadius: 'var(--r-10)',
+  padding: '9px 12px',
+  outline: 'none',
+  color: 'var(--text)',
+  fontSize: 14,
+} as const;
+
 export function InvitePanel({ addClient }: { addClient: AddClient }) {
   const {
-    inviteUrl,
-    setInviteUrl,
+    invite,
+    setInvite,
+    addInput,
+    setAddInput,
     inviteCopied,
     inviteCopyFailed,
     inviteLoading,
@@ -15,9 +35,17 @@ export function InvitePanel({ addClient }: { addClient: AddClient }) {
     createInvite,
     copyInvite,
   } = addClient;
-  return (
-    <>
-      {!inviteUrl ? (
+  if (!invite)
+    return (
+      <>
+        <input
+          value={addInput}
+          onChange={(e) => setAddInput(e.target.value)}
+          placeholder="Имя клиента (необязательно)"
+          aria-label="Имя клиента"
+          maxLength={CLIENT_NAME_MAX}
+          style={fieldStyle}
+        />
         <button
           onClick={createInvite}
           disabled={inviteLoading}
@@ -36,67 +64,65 @@ export function InvitePanel({ addClient }: { addClient: AddClient }) {
         >
           {inviteLoading ? 'Создаю...' : 'Создать ссылку'}
         </button>
-      ) : (
-        <>
-          <input
-            ref={inviteInputRef}
-            readOnly
-            value={inviteUrl}
-            onClick={() => inviteInputRef.current?.select()}
-            style={{
-              width: '100%',
-              boxSizing: 'border-box',
-              marginBottom: 10,
-              background: 'rgba(var(--fg-rgb),0.05)',
-              border: '1px solid rgba(var(--fg-rgb),0.1)',
-              borderRadius: 'var(--r-10)',
-              padding: '9px 12px',
-              outline: 'none',
-              cursor: 'text',
-              color: 'var(--text-sub)',
-              fontSize: 12,
-              fontFamily: 'monospace',
-            }}
-          />
-          <div className="u-row8">
-            <button
-              onClick={copyInvite}
-              style={{
-                flex: 1,
-                padding: '10px 0',
-                borderRadius: 'var(--r-10)',
-                border: 'none',
-                background: inviteCopied
-                  ? 'color-mix(in srgb, var(--accent-green) 15%, transparent)'
-                  : 'rgba(var(--fg-rgb),0.07)',
-                color: inviteCopied ? '#06d6a0' : 'rgba(var(--fg-rgb),0.6)',
-                fontSize: 13,
-                fontWeight: 600,
-                cursor: 'pointer',
-              }}
-            >
-              {inviteCopied ? '✓ Скопировано' : 'Скопировать'}
-            </button>
-            <TherapistInviteShare inviteUrl={inviteUrl} />
-          </div>
-          <CopyFailedHint show={inviteCopyFailed} />
-          <button
-            onClick={() => setInviteUrl('')}
-            style={{
-              width: '100%',
-              marginTop: 8,
-              background: 'none',
-              border: 'none',
-              color: 'var(--text-faint)',
-              fontSize: 12,
-              cursor: 'pointer',
-              padding: '4px 0',
-            }}
-          >
-            Создать новую
-          </button>
-        </>
-      )}
+        <div style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 6 }}>
+          С именем клиент виден в «Ждут подключения», а после подключения
+          карточка называется так же
+        </div>
+      </>
+    );
+  return (
+    <>
+      <input
+        ref={inviteInputRef}
+        readOnly
+        value={invite.url}
+        onClick={() => inviteInputRef.current?.select()}
+        style={{
+          ...fieldStyle,
+          cursor: 'text',
+          color: 'var(--text-sub)',
+          fontSize: 12,
+          fontFamily: 'monospace',
+        }}
+      />
+      <div className="u-row8">
+        <button
+          onClick={copyInvite}
+          style={{
+            flex: 1,
+            padding: '10px 0',
+            borderRadius: 'var(--r-10)',
+            border: 'none',
+            background: inviteCopied
+              ? 'color-mix(in srgb, var(--accent-green) 15%, transparent)'
+              : 'rgba(var(--fg-rgb),0.07)',
+            color: inviteCopied ? '#06d6a0' : 'rgba(var(--fg-rgb),0.6)',
+            fontSize: 13,
+            fontWeight: 600,
+            cursor: 'pointer',
+          }}
+        >
+          {inviteCopied ? '✓ Скопировано' : 'Скопировать'}
+        </button>
+        <TherapistInviteShare inviteUrl={invite.url} />
+      </div>
+      <CopyFailedHint show={inviteCopyFailed} />
+      <InviteCodeBox code={invite.code} />
+      <button
+        onClick={() => setInvite(null)}
+        style={{
+          width: '100%',
+          marginTop: 8,
+          background: 'none',
+          border: 'none',
+          color: 'var(--text-faint)',
+          fontSize: 12,
+          cursor: 'pointer',
+          padding: '4px 0',
+        }}
+      >
+        Создать новую
+      </button>
     </>
   );
 }

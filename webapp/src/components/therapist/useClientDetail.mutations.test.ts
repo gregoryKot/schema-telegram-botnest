@@ -146,21 +146,27 @@ describe('patchConcept / autoSave', () => {
     expect(result.current.saveStatus).toBe('saved');
   });
   // #879: статус сохранения — состояние клиента, а не вкладки: при смене клиента
-  // «Не сохранилось» гаснет, а взведённый таймер прежнего клиента не шлёт его правку.
-  it('открытие другого клиента после ошибки: статус idle, savedAt null, отложенное автосохранение прежнего не уходит', async () => {
+  // «Не сохранилось» гаснет. Взведённая правка прежнего клиента не теряется и не
+  // переезжает к новому: она сразу уходит ПРЕЖНЕМУ, с его данными (usePendingSave,
+  // инцидент 2026-10-26; весь класс — useClientDetail.switch.test.ts).
+  it('открытие другого клиента после ошибки: статус idle, savedAt null, отложенная правка уходит прежнему клиенту', async () => {
     mockApi.saveConceptualization.mockRejectedValueOnce(new Error('network'));
     const { result } = await openedHook();
     act(() => { result.current.toggleSchemaId('a'); });
     await act(async () => { await vi.advanceTimersByTimeAsync(700); });
     expect(result.current.saveStatus).toBe('error');
 
+    mockApi.saveConceptualization.mockResolvedValue({ id: 1 });
     act(() => { result.current.toggleSchemaId('b'); }); // таймер взведён, до срабатывания — смена клиента
     expect(result.current.saveStatus).toBe('pending');
     await act(async () => { await result.current.openClient(makeClient({ telegramId: 2 })); });
     expect(result.current.saveStatus).toBe('idle');
     expect(result.current.savedAt).toBeNull();
     await act(async () => { await vi.advanceTimersByTimeAsync(700); });
-    expect(mockApi.saveConceptualization).toHaveBeenCalledTimes(1); // только первый, упавший
+    expect(mockApi.saveConceptualization).toHaveBeenCalledTimes(2); // упавший и досылка прежнему, новому — ничего
+    expect(mockApi.saveConceptualization.mock.calls[1][0]).toBe(1);
+    expect(mockApi.saveConceptualization.mock.calls[1][1]).toMatchObject({ schemaIds: ['a', 'b'] });
+    expect(result.current.saveStatus).toBe('idle'); // ответ прежнему клиенту карточку нового не трогает
   });
 
   it('autoSave отправляет собранный payload со всеми полями конкретуализации', async () => {

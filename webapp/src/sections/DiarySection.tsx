@@ -10,7 +10,7 @@ import { DiaryLoadFailedBanner } from '../components/diary/DiaryLoadFailedBanner
 import { QuickEntrySheet } from '../components/diary/QuickEntrySheet';
 import { DiaryShareButton } from '../share/DiaryShareButton';
 import '../styles/client-diary.css';
-import { TODAY } from './diary/dateHelpers';
+import { diaryToday } from '../../../shared/src/diary/diaryDay';
 import { DiaryDraft } from './diary/DiaryDraft';
 import { DiaryHeader } from './diary/DiaryHeader';
 import { DiaryTimeline, DiaryTimelineSkeleton } from './diary/DiaryTimeline';
@@ -71,7 +71,8 @@ export function DiarySection({ onClose: _onClose, onOpenTrackerHistory }: { onCl
 
   useEffect(() => { void load(); }, [load]);
 
-  const todayGratitude = gratitudeEntries.find(e => e.date === TODAY);
+  const today = diaryToday(); // местный день, на каждый рендер (не на загрузку)
+  const todayGratitude = gratitudeEntries.find(e => e.date === today);
 
   const handleDelete = async (type: DiaryType, id: number) => {
     if (type === 'schema')    { await api.deleteSchemaDiary(id);    setSchemaEntries(p => p.filter(e => e.id !== id)); }
@@ -112,7 +113,7 @@ export function DiarySection({ onClose: _onClose, onOpenTrackerHistory }: { onCl
   if (newEntry === 'gratitude') return (
     <GratitudeEntrySheet
       onClose={() => setNewEntry(null)}
-      date={TODAY}
+      date={today}
       existingItems={todayGratitude?.items}
       onSave={async (date, items, base) => {
         const entry = await api.createGratitudeDiary(date, items, base);

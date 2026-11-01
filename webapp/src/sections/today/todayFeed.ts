@@ -1,10 +1,13 @@
-import { fmtAgo, momentIsToday, momentTime } from '../../utils/format';
+import { fmtAgo, momentTime } from '../../utils/format';
+import { isDiaryToday } from '../../../../shared/src/diary/diaryDay';
 import { pluralRu } from '../../../../shared/src/utils/pluralRu';
 import { dayIndex } from '../../../../shared/src/needs/dayIndex';
 import type { DiaryKind } from './model';
 
 // Чистые вычисления главной «Сегодня»: лента дня и мета-строки трёх плиток.
 // Только реальные данные: нет оценок и записей — нет и строк.
+// «Сегодня» дневников — местный день человека (`isDiaryToday`): дату
+// благодарности пишут местным днём, гринвичский день её теряет в 00:00–03:00 МСК.
 
 /** 'case' — запись режима из потока «Что случилось» (fromCase), в ленте подписана «Разбор». */
 export type FeedKind = 'tracker' | 'case' | DiaryKind;
@@ -44,15 +47,15 @@ export function trackerSummary(needIds: string[], ratings: Record<string, number
 /** Записи трёх дневников за сегодня. Разбор «Что случилось» пишет в дневник режимов с маркером fromCase. */
 export function buildDiaryFeed({ schema, mode, gratitude }: DiarySources): FeedEntry[] {
   return [
-    ...schema.filter(e => momentIsToday(e.createdAt)).map(e => ({
+    ...schema.filter(e => isDiaryToday(e.createdAt)).map(e => ({
       key: `schema-${e.id}`, kind: 'schema' as const, time: momentTime(e.createdAt),
       text: e.trigger.slice(0, TEXT_MAX), sortKey: e.createdAt,
     })),
-    ...mode.filter(e => momentIsToday(e.createdAt)).map(e => ({
+    ...mode.filter(e => isDiaryToday(e.createdAt)).map(e => ({
       key: `mode-${e.id}`, kind: e.fromCase ? ('case' as const) : ('mode' as const), time: momentTime(e.createdAt),
       text: e.situation.slice(0, TEXT_MAX), sortKey: e.createdAt,
     })),
-    ...gratitude.filter(e => momentIsToday(e.date)).map(e => ({
+    ...gratitude.filter(e => isDiaryToday(e.date)).map(e => ({
       key: `gratitude-${e.id}`, kind: 'gratitude' as const, time: momentTime(e.createdAt),
       text: (e.items[0] ?? 'Благодарность').slice(0, TEXT_MAX), sortKey: e.createdAt,
     })),
@@ -98,7 +101,7 @@ export function caseTileMeta(casesToday = 0): string {
 
 /** Сколько разборов записано за сегодня. */
 export function casesTodayCount({ mode }: Pick<DiarySources, 'mode'>): number {
-  return mode.filter(e => e.fromCase && momentIsToday(e.createdAt)).length;
+  return mode.filter(e => e.fromCase && isDiaryToday(e.createdAt)).length;
 }
 
 /** null — пока дневники грузятся (плитка показывает плашку-скелетон вместо выдуманного текста). */
