@@ -192,8 +192,8 @@ export function DiarySection({ onClose, onOpenTracker }: Props = {}) {
           onClose={() => setNewEntry(null)}
           date={TODAY}
           existingItems={todayGratitude?.items}
-          onSave={async (date, items) => {
-            const entry = await api.createGratitudeDiary(date, items);
+          onSave={async (date, items, base) => {
+            const entry = await api.createGratitudeDiary(date, items, base);
             setGratitudeEntries((prev) => {
               const filtered = prev.filter((e) => e.date !== date);
               return [entry, ...filtered].sort((a, b) =>

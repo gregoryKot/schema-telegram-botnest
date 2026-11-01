@@ -1,6 +1,5 @@
 import {
   ArrayMaxSize,
-  ArrayMinSize,
   IsArray,
   IsBoolean,
   IsOptional,
@@ -10,8 +9,8 @@ import {
 import { DIARY_FIELD_MAX } from '../../utils/text-limits';
 
 /**
- * DTO для дневников (схема/режим/благодарность) в diary.controller.ts —
- * аудит 2026-07, 2г / правило №6 CLAUDE.md. Лимит свободного текста один,
+ * DTO дневников схем и режимов в diary.controller.ts (благодарность —
+ * `gratitude-diary.dto.ts`) — аудит 2026-07, 2г / правило №6 CLAUDE.md. Лимит свободного текста один,
  * здесь: превышение — 400, а не обрезка в контроллере (backend#29).
  * `emotions` — массив {id, intensity}, контроллер форму элементов не
  * проверяет — оставляем как есть, только ограничение количества.
@@ -120,16 +119,4 @@ export class ModeDiaryDto {
   @IsOptional()
   @IsBoolean()
   fromCase?: boolean;
-}
-
-export class GratitudeDiaryDto {
-  @IsString()
-  date!: string;
-
-  @IsArray()
-  @ArrayMinSize(1)
-  @ArrayMaxSize(20)
-  @IsString({ each: true })
-  @MaxLength(DIARY_FIELD_MAX, { each: true })
-  items!: string[];
 }

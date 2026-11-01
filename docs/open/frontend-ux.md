@@ -228,15 +228,6 @@
 реэкспорты из `shared/src/` (список пар — `PAIRS` в `scripts/check-paired-files.mjs`).
 Поправить текст README по `PAIRS`; гейта на этот документ нет.
 
-**Благодарность: запись из другой вкладки теряется между чтением и записью дня** (простой клиент,
-этап 3). «Дневник одной страницей» (`webapp/src/components/diary/quickEntry/useQuickEntry.ts`,
-`saveGratitude`) и мастер `GratitudeEntrySheet` читают пункты дня (`getGratitudeDiary`), дописывают
-свой и перезаписывают день целиком. Если между чтением и записью пункт добавили с другой вкладки
-или площадки, он пропадает без ошибки. Доказано кодом: `POST /api/diary/gratitude` отдаёт `body.items`
-в `upsertGratitudeDiaryEntry` (`src/api/diary.controller.ts:117-121`), а тот в `update` кладёт
-`items: enc` целиком (`src/bot/diary.service.ts:172-183`), без слияния и без проверки версии. Чтобы
-закрыть: эндпоинт «добавить пункт» (слияние на сервере в транзакции) или `expectedVersion`/`updatedAt`
-в теле с отказом 409 при расхождении; клиентам переехать на него и убрать чтение перед записью.
 - **Сайт: автосохранение концептуализации при отказе показывает только «Не сохранилось».** `webapp/src/components/therapist/useClientDetail.ts` в `autoSave` глушит причину (`catch { setSaveStatus('error') }`), хотя `SaveStatusLine` уже принимает `errorText` (мини-апп отдаёт причину через `conceptSaveError.ts`). Осознанно не сделано в PR по находке #880: файл сидит в `scripts/file-size-baseline.json` на 340 строках и может только уменьшаться, а общий маппер потребовал бы класса статуса ответа в `shared/` (у webapp свой клиент API). Закрыть вместе с дроблением хука: маппер причины — в `shared/src/api/`, оба фронтенда берут его оттуда.
 - **`#06d6a0` в кнопке экспорта мини-аппа** — `schema-miniapp/src/components/therapistClientSheet/ConceptSheet.tsx`, цвет вне токенов (сидит в бейслайне `check-color-drift`; найдено в #880, не трогали — задача другая).
 - **«В мои схемы» из карточки схемы глушит отказ записи, включая 409 «не читается».** `toggleSchema` в `webapp/src/components/SchemaDetailSheet.tsx` (`.catch(() => {})`) и `schema-miniapp/src/components/SchemaDetailSheet.tsx` (`.catch(logErr(...))`) шлют `updateSettings({ mySchemaIds })` без плашки: при 409 `unreadable_data` данные на сервере целы (бэкенд не пишет), но человек не узнаёт, что выбор не сохранился. На экране «Мои паттерны» отказ уже виден (`SelectionSaveNote` в обоих фронтендах, `shared/src/api/unwritableError.ts`). Не сделано в PR защиты настроек: файл мини-аппа на 313 строках в бейслайне размера и может только уменьшаться. Закрыть: тот же `isUnwritableError` + `SaveErrorNote` в листе (или общий хук сохранения выбора для листа и экрана).

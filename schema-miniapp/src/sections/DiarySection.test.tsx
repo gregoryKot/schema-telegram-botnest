@@ -163,9 +163,11 @@ describe('DiarySection — сохранение записи благодарн�
     fireEvent.click(screen.getByText('Сохранить'));
 
     await waitFor(() =>
-      expect(mockApi.createGratitudeDiary).toHaveBeenCalledWith(today, [
-        'сегодня было солнечно',
-      ]),
+      expect(mockApi.createGratitudeDiary).toHaveBeenCalledWith(
+        today,
+        ['сегодня было солнечно'],
+        [],
+      ),
     );
 
     // Лист закрылся, мы обратно на списке дневника — запись должна быть видна.

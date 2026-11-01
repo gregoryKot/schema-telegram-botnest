@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { encrypt, decrypt, encryptJson, decryptJson } from '../utils/crypto';
 import { deleteOwned } from '../utils/require-affected';
+import { saveGratitudeDay } from './gratitude-merge';
 
 export interface EmotionEntry {
   id: string;
@@ -172,18 +173,14 @@ export class DiaryService {
 
   // ─── Gratitude Diary ──────────────────────────────────────────────────────
 
-  async upsertGratitudeDiaryEntry(
+  // С `base` — слияние с днём на сервере, без него — замена (gratitude-merge.ts).
+  upsertGratitudeDiaryEntry(
     userId: bigint,
     date: string,
     items: string[],
+    base?: string[],
   ) {
-    const enc = encryptJson(items) ?? JSON.stringify(items);
-    const row = await this.prisma.gratitudeDiaryEntry.upsert({
-      where: { userId_date: { userId, date } },
-      create: { userId, date, items: enc },
-      update: { items: enc },
-    });
-    return { ...row, items }; // return plaintext items
+    return saveGratitudeDay(this.prisma, userId, date, items, base);
   }
 
   async getGratitudeDiaryEntries(userId: bigint, limit = 30) {

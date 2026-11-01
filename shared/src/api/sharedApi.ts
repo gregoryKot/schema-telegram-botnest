@@ -159,8 +159,13 @@ export const buildSharedApi = (t: ApiTransport) => ({
   }) => t.postJson<ModeDiaryEntry>('/api/diary/mode', data),
   deleteModeDiary: (id: number) => t.del(`/api/diary/mode/${id}`),
   getGratitudeDiary: () => t.get<GratitudeDiaryEntry[]>('/api/diary/gratitude'),
-  createGratitudeDiary: (date: string, items: string[]) =>
-    t.postJson<GratitudeDiaryEntry>('/api/diary/gratitude', { date, items }),
+  // base — день до правки: сервер сливает с ним (src/bot/gratitude-merge.ts).
+  createGratitudeDiary: (date: string, items: string[], base?: string[]) =>
+    t.postJson<GratitudeDiaryEntry>('/api/diary/gratitude', {
+      date,
+      items,
+      base,
+    }),
   deleteGratitudeDiary: (id: number) => t.del(`/api/diary/gratitude/${id}`),
   createTherapyInvite: () =>
     t.postJson<{ code: string; url: string }>('/api/therapy/invite', {}),

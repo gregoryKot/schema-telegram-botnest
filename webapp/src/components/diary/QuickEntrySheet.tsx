@@ -64,7 +64,7 @@ export function QuickEntrySheet({ onClose, onSaved }: Props) {
       date={todayStr()}
       initialItem={q.text}
       onClose={closeWizard}
-      onSave={async (date, items) => { await api.createGratitudeDiary(date, items); onWizardSaved(); }}
+      onSave={async (date, items, base) => { await api.createGratitudeDiary(date, items, base); onWizardSaved(); }}
     />
   );
   if (q.stage === 'mode') {
