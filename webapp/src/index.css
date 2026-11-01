@@ -68,7 +68,8 @@
    установленном приложении содержимое уходило под статус-бар. */
 :root {
   --safe-bottom: env(safe-area-inset-bottom, 0px);
-  --safe-top: max(env(safe-area-inset-top, 0px), var(--host-safe-top, 0px));
+  --host-safe-top: 0px; /* инлайн на <html> от useHostSafeTop сильнее этого объявления */
+  --safe-top: max(env(safe-area-inset-top, 0px), var(--host-safe-top));
 }
 
 :root, html[data-theme="light"], .light-lock {
