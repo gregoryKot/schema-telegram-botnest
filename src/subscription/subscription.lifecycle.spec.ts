@@ -196,6 +196,21 @@ describe('SubscriptionService — pricing', () => {
     expect(await service.getPrice('month')).toBe(SUB_DEFAULT_PRICE.month);
   });
 
+  // Раньше getPrice читал строку через parseInt: '1e+22' становился 1 ₽,
+  // '12abc' — 12 ₽. Теперь — строгий разбор (whole-price.ts), мусор → дефолт.
+  it('getPrice: экспонента, дробь, хвост, минус и сверх потолка — дефолт, не цена', async () => {
+    const { service, prisma } = makeService();
+    for (const raw of ['1e+22', '1e3', '499.9', '12abc', '-5', '1000001', '']) {
+      prisma.settings.set('sub:month', raw);
+      expect([raw, await service.getPrice('month')]).toEqual([
+        raw,
+        SUB_DEFAULT_PRICE.month,
+      ]);
+    }
+    prisma.settings.set('sub:month', ' 700 ');
+    expect(await service.getPrice('month')).toBe(700);
+  });
+
   it('getOptions: обе опции с ценами', async () => {
     const { service } = makeService();
     const options = await service.getOptions();

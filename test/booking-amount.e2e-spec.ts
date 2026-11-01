@@ -168,6 +168,22 @@ describe('e2e: сумма счёта брони — цена на момент �
     expect(await optionPrice()).toBe(3200);
   });
 
+  // Знакомство бесплатно по типу (isFree в booking.service.ts), цена в
+  // BookingSetting на него не влияет — API её не принимает вовсе.
+  it('PATCH цены бесплатного знакомства (INTRO_15) — 400 INTRO_IS_FREE, строка не пишется', async () => {
+    for (const amount of [0, 1500]) {
+      const res = await setPrice(amount, 'INTRO_15');
+      expect([amount, res.status, res.body.message]).toEqual([
+        amount,
+        400,
+        'INTRO_IS_FREE',
+      ]);
+    }
+    expect(
+      await prisma.bookingSetting.count({ where: { key: 'price:INTRO_15' } }),
+    ).toBe(0);
+  });
+
   it('мусор в BookingSetting ("1e+22", "0") не становится ценой: /options отдаёт дефолт', async () => {
     for (const value of ['1e+22', '0']) {
       await prisma.bookingSetting.upsert({

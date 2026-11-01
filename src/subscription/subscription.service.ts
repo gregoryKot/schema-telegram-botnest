@@ -12,7 +12,8 @@ import { RobokassaService } from '../booking/robokassa.service';
 import { assertPaymentAvailable } from '../booking/payment-guard';
 import { BookingNotifyService } from '../booking/booking-notify.service';
 import { encryptRecord, EncryptSchema } from '../utils/crypto';
-import { SUB_DEFAULT_PRICE, SubPeriod } from '../booking/booking.config';
+import { SubPeriod } from '../booking/booking.config';
+import { subPriceOrDefault } from './subscription-price';
 import { normalizeBaseUrl } from '../utils/url';
 import { randomUUID } from 'crypto';
 import {
@@ -72,8 +73,7 @@ export class SubscriptionService {
     const row = await this.prisma.bookingSetting.findUnique({
       where: { key: this.priceKey(period) },
     });
-    const n = row ? parseInt(row.value, 10) : NaN;
-    return Number.isFinite(n) && n > 0 ? n : SUB_DEFAULT_PRICE[period];
+    return subPriceOrDefault(period, row?.value);
   }
 
   async setPrice(period: SubPeriod, amount: number): Promise<void> {
