@@ -167,17 +167,17 @@ export class TelegramScheduleService implements OnModuleInit, OnModuleDestroy {
   async scheduleDailyReminders() {
     if (!this.bot) return;
     // Аренда: без неё второй инстанс спланирует тот же день повторно (дубли).
+    // Окно — час, не сутки: см. заголовок telegram.midnight-planner.ts.
     const at = new Date();
     if (
-      await this.cronLeader.claimRun('midnightPlanner', LEASE_WINDOW.daily, at)
+      await this.cronLeader.claimRun('midnightPlanner', LEASE_WINDOW.hourly, at)
     )
       await this.midnight.run(at);
     else this.logger.log('Midnight planner: аренду уже взял другой прогон');
   }
 
   async catchUpAfterStart() {
-    if (this.bot)
-      await this.midnight.catchUp(() => this.scheduleDailyReminders());
+    if (this.bot) await this.midnight.catchUp();
   }
 
   /** Трекер заполнен: сводка, вехи, напарник — см. telegram.diary-complete.ts. */

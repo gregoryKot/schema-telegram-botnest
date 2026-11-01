@@ -37,5 +37,5 @@ export const CRON_LEASE_REGISTRY: Record<
   bookingReminders: { window: 'fiveMinutes', cron: '*/5 * * * *' },
   bookingExpireHolds: { window: 'everyMinute', cron: '* * * * *' },
   notificationQueue: { window: 'fiveMinutes', cron: '*/5 * * * *' },
-  midnightPlanner: { window: 'daily', cron: '0 0 * * *' },
+  midnightPlanner: { window: 'hourly', cron: '0 0 * * *' },
 };
