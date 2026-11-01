@@ -289,6 +289,8 @@ const INPUT_CHILD_CONTROLS: Record<string, { detector: string; why: string }> =
 // (C2) Короткое поле не о переживаниях. Сокращать можно, добавлять — с ревью.
 const SHORT_INPUT_ALLOWLIST: Record<string, string> = {
   // Имя, контакт, код — у поля свой формат, о себе там не пишут.
+  'webapp/src/pages/login/RecoveryCodeField.tsx':
+    'резервный код входа 2FA (hex), о переживаниях там не пишут',
   'webapp/src/components/settingsSheet/NameAddressSections.tsx':
     'имя пользователя, до 50 символов',
   'schema-miniapp/src/components/settingsSheet/MiscSections.tsx':
@@ -355,9 +357,9 @@ describe('трипваер: кризисная детекция для <input> �
   });
 
   it('allowlist коротких полей не разросся (может только сокращаться)', () => {
-    // 23 (2026-11, первый обход <input>): имена, коды, поиск, терапевтская
-    // сторона, подписи карты режимов, админка.
-    expect(Object.keys(SHORT_INPUT_ALLOWLIST).length).toBeLessThanOrEqual(23);
+    // 24 (2026-11, первый обход <input>): имена, коды (в т.ч. резервный код
+    // 2FA из #897), поиск, терапевтская сторона, подписи карты режимов, админка.
+    expect(Object.keys(SHORT_INPUT_ALLOWLIST).length).toBeLessThanOrEqual(24);
   });
 
   it('записи <input>-классификации не протухли: в файле ещё есть свободное поле', () => {
