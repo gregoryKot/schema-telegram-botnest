@@ -178,3 +178,32 @@ describe('TwoFactorChallengePage — лимит, авария и сеть не �
     expect(container.textContent).not.toMatch(/Load failed|TypeError/);
   });
 });
+
+// Аудит 2026-10: протухший вызов (5 минут, src/auth/totp-challenge.ts) сервер
+// отдавал тем же 401, что неверный код, и экран писал «Неверный код» — человек
+// вводил код снова и снова. Тело — как отдаёт прод (ChallengeExpiredException).
+describe('TwoFactorChallengePage — вход устарел', () => {
+  const submit401 = (body: unknown, code: string) => {
+    fetchMock.mockResolvedValue(new Response(JSON.stringify(body), { status: 401 }));
+    const view = renderAt('/auth/2fa?token=chal123');
+    fireEvent.change(screen.getByPlaceholderText('123456'), { target: { value: code } });
+    fireEvent.submit(view.container.querySelector('form')!);
+    return view.container;
+  };
+
+  it('401 с reason challenge_expired — «Вход устарел» и путь на вход, не «Неверный код»', async () => {
+    const container = submit401({ message: 'Invalid or expired 2FA challenge token', reason: 'challenge_expired' }, '482913');
+    await screen.findByText(/Вход устарел/);
+    expect(container.textContent).not.toMatch(/Неверный код|Invalid/);
+    expect(screen.queryByPlaceholderText('123456')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Войти заново' }));
+    await screen.findByText('login-page');
+  });
+
+  it('контроль: 401 неверного кода (без reason) — «Неверный код», форма на месте', async () => {
+    submit401({ statusCode: 401, message: 'Invalid 2FA code', error: 'Unauthorized' }, '000000');
+    await screen.findByText('Неверный код');
+    expect(screen.queryByText(/Вход устарел/)).toBeNull();
+    expect(screen.getByPlaceholderText('123456')).toBeTruthy();
+  });
+});
