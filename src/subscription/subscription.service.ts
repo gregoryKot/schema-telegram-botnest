@@ -22,6 +22,8 @@ import {
   type ChargeDeps,
 } from './subscription.charges';
 import { SUBSCRIPTION_INVID_BASE } from './subscription.constants';
+import { findActiveByTelegram } from './subscription-views';
+import { CronLeaderService, LEASE_WINDOW } from '../infra/cron-leader.service';
 
 // Прежний путь импорта константы сохранён ре-экспортом.
 export { SUBSCRIPTION_INVID_BASE };
@@ -47,6 +49,7 @@ export class SubscriptionService {
     private readonly robokassa: RobokassaService,
     private readonly notify: BookingNotifyService,
     config: ConfigService,
+    private readonly cronLeader: CronLeaderService,
   ) {
     this.appUrl = normalizeBaseUrl(
       config.get<string>('APP_URL'),
@@ -185,25 +188,22 @@ export class SubscriptionService {
 
   /** Active subscription for a Telegram user (for bot management). */
   async findActiveByTelegram(telegramId: bigint) {
-    const sub = await this.prisma.subscription.findFirst({
-      where: { telegramId, status: { in: ['active', 'past_due'] } },
-      orderBy: { createdAt: 'desc' },
-    });
-    return sub
-      ? {
-          id: sub.id,
-          status: sub.status,
-          period: sub.period,
-          amount: sub.amount,
-          nextChargeAt: sub.nextChargeAt,
-          cancelToken: sub.cancelToken,
-        }
-      : null;
+    return findActiveByTelegram(this.prisma, telegramId);
   }
 
   /** Charge subscriptions whose next charge is due. Runs hourly. */
   @Cron('0 * * * *')
   async chargeDue() {
+    // Дешёвые гарды до аренды: выключенная подписка не забирает тик. Аренда —
+    // второй барьер поверх построчного захвата в chargeDue (правило №17).
+    if (!this.enabled || !this.robokassa.enabled) return;
+    if (
+      !(await this.cronLeader.claimRun(
+        'subscriptionChargeDue',
+        LEASE_WINDOW.hourly,
+      ))
+    )
+      return;
     return chargeDue(this.chargeDeps());
   }
 

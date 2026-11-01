@@ -1,6 +1,6 @@
 import type { PrismaService } from '../../prisma/prisma.service';
 import { lastClaimDbFailureAt } from '../cron-claim-failures';
-import { CRON_LEASE_REGISTRY } from './cron-lease-registry';
+import { expectedLeases } from './cron-lease-expected';
 import { leaseRowProblem } from './cron-lease-done';
 import { Probe } from './types';
 
@@ -23,7 +23,7 @@ export function cronLeasesProbe(
     title: 'Крон-аренды',
     critical: false,
     async run() {
-      const names = Object.keys(CRON_LEASE_REGISTRY);
+      const names = expectedLeases(); // крон за выключенной фичей не судим
       const now = Date.now();
       const rows = await prisma.cronLease.findMany({
         where: { name: { in: names } },

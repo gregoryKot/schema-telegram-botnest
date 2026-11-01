@@ -29,6 +29,7 @@
     "src/booking/booking-data.ts",
     "src/subscription/subscription.service.ts",
     "src/subscription/subscription-price.ts",
+    "src/subscription/subscription-views.ts",
     "src/booking/slot.service.ts",
     "src/booking/pricing.service.ts",
     "src/booking/price-rules.ts",

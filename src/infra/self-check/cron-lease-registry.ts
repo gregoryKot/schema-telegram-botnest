@@ -6,10 +6,9 @@ const MSK = 'Europe/Moscow';
 /**
  * Имя аренды (первый аргумент `claimRun`) → окно `LEASE_WINDOW`, cron-строка
  * её крона и часовой пояс (`timeZone` из `@Cron`; нет — зона процесса). Ручной
- * реестр по правилу №4 CLAUDE.md: все поля сверяются с исходниками через
- * сканер `cron-source-scan.ts` тестом cron-lease-registry.spec.ts — новый
- * leader-крон, разъехавшаяся cron-строка или зона красят тест, а не остаются
- * невидимыми для пробы аренд (cron-lease-verdict.ts).
+ * реестр по правилу №4 CLAUDE.md: поля сверяются с исходниками (сканер
+ * `cron-source-scan.ts`, cron-lease-registry.spec.ts) — новый leader-крон или
+ * разъехавшаяся cron-строка/зона красят тест, а не прячутся от пробы аренд.
  */
 export const CRON_LEASE_REGISTRY: Record<
   string,
@@ -38,4 +37,5 @@ export const CRON_LEASE_REGISTRY: Record<
   bookingExpireHolds: { window: 'everyMinute', cron: '* * * * *' },
   notificationQueue: { window: 'fiveMinutes', cron: '*/5 * * * *' },
   midnightPlanner: { window: 'hourly', cron: '0 0 * * *' },
+  subscriptionChargeDue: { window: 'hourly', cron: '0 * * * *' },
 };

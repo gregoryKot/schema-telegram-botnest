@@ -2,11 +2,12 @@
 // (cron-lease-verdict.ts) + настоящая память отказов claimRun
 // (cron-claim-failures.ts); подделана только `prisma.cronLease.findMany`.
 import { cronLeasesProbe } from './probe-cron-leases';
-import { CRON_LEASE_REGISTRY } from './cron-lease-registry';
+import { expectedLeases } from './cron-lease-expected';
 import { noteClaimFailure } from '../cron-claim-failures';
 import type { PrismaService } from '../../prisma/prisma.service';
 
-const NAMES = Object.keys(CRON_LEASE_REGISTRY);
+// Аренды кронов за выключенными фичами (подписка) проба не судит.
+const NAMES = expectedLeases();
 const at = (s: string) => new Date(s).getTime();
 const noFailures = () => undefined;
 

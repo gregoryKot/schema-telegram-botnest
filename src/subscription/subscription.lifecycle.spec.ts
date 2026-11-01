@@ -163,6 +163,7 @@ function makeService(
     robokassa as any,
     notify as any,
     config as any,
+    { claimRun: jest.fn().mockResolvedValue(true) } as any, // аренда крона — своя
   );
   return { service, prisma, robokassa, notify, calls };
 }

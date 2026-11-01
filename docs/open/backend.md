@@ -229,8 +229,7 @@ NestJS 12, 2026-10-24): `src/api/memory-throttle-storage.ts` заменял шт
   (`src/subscription/subscription.charge-activate.ts`,
   `subscription-paid-after-cancel.ts`). Отзыв списания не сделан сознательно:
   рекуррентный API Robokassa отзыва не даёт; деньги возвращает владелец
-  вручную. Часовой `chargeDue` по-прежнему без `claimRun` (правило №17) —
-  отдельная тема.
+  вручную.
 - Секция `subscription` отчёта об ошибке отмены подписки
   (`webapp/src/pages/subscribe/useSubscriptionCancel.ts`) в
   `src/api/client-error-section.ts` не заведена и оседает в бакете `other`
