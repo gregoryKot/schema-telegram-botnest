@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api';
 import { useSafeTop } from '../utils/safezone';
-import { SaveErrorNote } from '../components/SaveErrorNote';
+import { SelectionSaveNote } from './schemas/SelectionSaveNote';
 import { SchemaPickerSheet } from '../components/SchemaPickerSheet';
 import { ModeIntroSheet } from '../components/ModeIntroSheet';
 import { INTRO_MODE_ID } from '../components/ModesHero';
@@ -156,15 +156,15 @@ export function SchemasSection({
             </button>
           ))}
         </div>
-        {((tab === 'schemas' && schemaSaveError) ||
-          (tab === 'modes' && modeSaveError)) && (
-          <div className="u-mt8">
-            <SaveErrorNote
-              ty="Не удалось сохранить выбор на сервере. Здесь применилось, но на другом устройстве может не появиться — попробуй ещё раз."
-              vy="Не удалось сохранить выбор на сервере. Здесь применилось, но на другом устройстве может не появиться — попробуйте ещё раз."
-            />
-          </div>
-        )}
+        <SelectionSaveNote
+          error={
+            tab === 'schemas'
+              ? schemaSaveError
+              : tab === 'modes'
+                ? modeSaveError
+                : null
+          }
+        />
       </div>
 
       <div

@@ -1,10 +1,10 @@
-// Данные экрана «Мои паттерны»: профиль, последний результат YSQ, прогресс
-// теста, число карт режимов от терапевта и сохранение ручных выборов.
+// Данные экрана «Мои паттерны»: профиль, последний результат YSQ, прогресс теста, число карт режимов от терапевта и сохранение ручных выборов.
 import { useEffect, useState } from 'react';
 import { api, reportClientError } from '../../api';
 import { MY_SCHEMA_IDS_KEY, MY_MODE_IDS_KEY } from '../../utils/storageKeys';
 import { readLocalIds, type YsqScore } from './schemasModel';
 import { useSaveFailure } from '../../hooks/useSaveFailure';
+import { isUnwritableError } from '../../../../shared/src/api/unwritableError';
 
 export function useSchemasData() {
   const [manualSchemaIds, setManualSchemaIds] = useState<string[]>(() => readLocalIds(localStorage.getItem(MY_SCHEMA_IDS_KEY)));
@@ -66,7 +66,7 @@ export function useSchemasData() {
 
   return {
     loading, manualSchemaIds, myModeIds, ysqSchemaIds, ysqScores,
-    ysqProgressAnswered, ysqCompletedAt, myMapCount, saveSchemas, saveModes,
-    saveFailed: save.failed,
+    ysqProgressAnswered, ysqCompletedAt, myMapCount, saveSchemas, saveModes, saveFailed: save.failed,
+    saveBlocked: save.failed && isUnwritableError(save.error), // 409: прежний список не читается — повтор не поможет
   };
 }

@@ -6,7 +6,7 @@ import { SchemaDetailSheet } from '../components/SchemaDetailSheet';
 import { NeedDetailSheet } from '../components/NeedDetailSheet';
 import '../styles/client-schemas.css';
 import { useSchemasData } from './schemas/useSchemasData';
-import { SaveErrorNote } from '../components/SaveErrorNote';
+import { SelectionSaveNote } from './schemas/SelectionSaveNote';
 import { PatternsModesPane } from './schemas/PatternsModesPane';
 import { ModeMapBanner, MyModeMapSheet } from './schemas/ModeMapBanner';
 import { NeedsBlock } from './schemas/NeedsBlock';
@@ -49,9 +49,7 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
     <div className="ds-page cs-page">
       <PatternsHeader mobile={mobile} onOpenLibrary={() => onOpenSchema()} onCustomize={blocks.openByGear} />
       {mobile && <PatternsTabsBar tab={tab} onChange={setTab} />}
-      {d.saveFailed && (
-        <SaveErrorNote ty="Выбор сохранён только на этом устройстве — проверь связь и попробуй ещё раз" vy="Выбор сохранён только на этом устройстве — проверьте связь и попробуйте ещё раз" />
-      )}
+      <SelectionSaveNote failed={d.saveFailed} blocked={d.saveBlocked} />
 
       {show.hero && (
         <PatternsTopStack
