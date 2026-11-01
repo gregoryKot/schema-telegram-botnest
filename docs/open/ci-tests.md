@@ -336,13 +336,6 @@ Ubuntu 26) у трёх PR подряд падали `backend` → `check-coverag
   перевод на локальный день сдвинет ключ группировки относительно календарного
   дня благодарности, который приходит с сервера в UTC (правило №25). Решать
   вместе с тем, в какой системе координат живёт лента дневника.
-- Флак `webapp/src/pages/admin/PhotoSection.test.tsx`, тест «реальное
-  heroPhoto из API отображается как текущее»: `findByAltText('Текущее фото')`
-  находит `<img>` с фолбэком `/gregory.jpg` (`PhotoSection.tsx:55` рисует его до
-  ответа `getSiteContent`) и сразу сверяет `src` — под нагрузкой машины (load 18,
-  полный прогон vitest webapp) читает фолбэк вместо `data:image/jpeg;base64,REAL`.
-  Поодиночке зелёный. Лечится `await waitFor(() => expect(img.src)…)`; найден
-  попутно при починке Вебвизора, не чинился (правило №20).
 - **e2e на `AppModule` живут с настоящими `@Cron`** (`ScheduleModule.forRoot()`
   тикает после `app.init()`). `test/payment-webhooks.e2e-spec.ts` с 2026-10-16
   гасит их `stopCronJobs(app)` (`test/e2e-support/stop-cron-jobs.ts`): тик
