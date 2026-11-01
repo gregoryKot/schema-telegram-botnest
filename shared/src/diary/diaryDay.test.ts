@@ -59,13 +59,23 @@ describe('isDiaryToday', () => {
 // QA 2026-10-26): дневник не держит своей копии — тот же ответ, что у
 // todayStr/momentIsToday, которыми считают встречи и подписи «Сегодня».
 describe('дневник и общий «местный сегодня» — один ответ', () => {
-  const values = ['2026-10-26', '2026-10-27', NIGHT.toISOString(), '2026-10-27T10:00:00Z', 'мусор'];
+  const values = [
+    '2026-10-26',
+    '2026-10-27',
+    NIGHT.toISOString(),
+    '2026-10-27T10:00:00Z',
+    'мусор',
+  ];
 
   it('в каждой зоне diaryToday = todayStr, isDiaryToday = momentIsToday', () => {
     forEachTimeZone((tz) => {
       expect([tz, diaryToday(NIGHT)]).toEqual([tz, todayStr(NIGHT)]);
       for (const v of values) {
-        expect([tz, v, isDiaryToday(v, NIGHT)]).toEqual([tz, v, momentIsToday(v, NIGHT)]);
+        expect([tz, v, isDiaryToday(v, NIGHT)]).toEqual([
+          tz,
+          v,
+          momentIsToday(v, NIGHT),
+        ]);
       }
     });
   });
