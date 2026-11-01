@@ -1,6 +1,6 @@
 // GET /api/history?days=N — query приходит строкой; DTO приводит к числу и
 // держит потолок в год (правило №6). Раньше контроллер молча резал до 30.
-import { readdirSync, readFileSync } from 'fs';
+import { readFileSync } from 'fs';
 import { join } from 'path';
 import { ValidationPipe, BadRequestException } from '@nestjs/common';
 import {
@@ -8,6 +8,7 @@ import {
   HistoryQueryDto,
   historyDays,
 } from './history-query.dto';
+import { collectSourceFiles } from '../../security/collect-source-files';
 
 // Тот же пайп, что глобально в main.ts: проверяем и приведение строки.
 const pipe = new ValidationPipe({ whitelist: true, transform: true });
@@ -28,20 +29,16 @@ const depthsIn = (src: string): number[] =>
 
 function frontendHistoryDepths(): { file: string; days: number }[] {
   const root = join(__dirname, '..', '..', '..');
-  const out: { file: string; days: number }[] = [];
-  const walk = (dir: string): void => {
-    for (const e of readdirSync(dir, { withFileTypes: true })) {
-      const p = join(dir, e.name);
-      if (e.isDirectory()) walk(p);
-      else if (/\.tsx?$/.test(e.name) && !/\.test\.tsx?$/.test(e.name)) {
-        for (const days of depthsIn(readFileSync(p, 'utf8')))
-          out.push({ file: p.slice(root.length + 1), days });
-      }
-    }
-  };
-  for (const pkg of ['webapp/src', 'schema-miniapp/src', 'shared/src'])
-    walk(join(root, pkg));
-  return out;
+  const files = ['webapp/src', 'schema-miniapp/src', 'shared/src'].flatMap(
+    (pkg) =>
+      collectSourceFiles(join(root, pkg), { extensions: ['.ts', '.tsx'] }),
+  );
+  return files.flatMap((p) =>
+    depthsIn(readFileSync(p, 'utf8')).map((days) => ({
+      file: p.slice(root.length + 1),
+      days,
+    })),
+  );
 }
 
 describe('HistoryQueryDto', () => {
