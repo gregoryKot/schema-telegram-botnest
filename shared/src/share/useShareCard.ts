@@ -3,7 +3,7 @@
 // текста и текстовый фолбэк, когда системный шэр недоступен или упал.
 // Вёрстка остаётся в каждом фронтенде своя (BottomSheet у них разный).
 import { useCallback, useEffect, useState } from 'react';
-import { shareCanvasImage } from './shareImage';
+import { shareButtonLabel, shareOutcome } from './shareOutcome';
 import {
   SHARE_CARD_EVENT,
   SHARE_RESULT_EVENT,
@@ -27,6 +27,7 @@ export interface ShareCardState {
   copied: boolean;
   /** Копирование в буфер не удалось — кнопка должна показать отказ. */
   failed: boolean;
+  shareLabel: string; // «Поделиться» / «Готовлю картинку…» / «Картинка сохранена»
   /** Системный шэр не сработал: показываем текст, который можно скопировать. */
   showText: boolean;
   closeText: () => void;
@@ -45,7 +46,7 @@ export function useShareCard(
   o: ShareCardOpts,
 ): ShareCardState {
   const [sharing, setSharing] = useState(false);
-  const [showText, setShowText] = useState(false);
+  const [outcome, setOutcome] = useState<string | null>(null); // итог шэра
   const { copied, failed, copy } = useCopyToClipboard();
   const text = o.fallbackText ?? o.shareText;
 
@@ -64,28 +65,26 @@ export function useShareCard(
   const share = useCallback(async () => {
     if (!canvasRef.current) return;
     setSharing(true);
-    try {
-      await shareCanvasImage(canvasRef.current, o.shareText, o.filename, {
-        downloadFallback: true,
-      });
-      o.track(SHARE_CARD_EVENT, { kind: o.eventKind });
-      o.track(SHARE_RESULT_EVENT, { kind: o.eventKind, ok: true });
-    } catch {
-      // Шэр не удался — копируем текст и показываем его шитом
+    const how = await shareOutcome(canvasRef.current, o.shareText, o.filename);
+    setOutcome(how);
+    if (how === 'failed') {
+      // Шэр не удался — копируем текст и показываем его шитом; отмена — не сбой
       o.track(SHARE_RESULT_EVENT, { kind: o.eventKind, ok: false });
       await doCopy();
-      setShowText(true);
-    } finally {
-      setSharing(false);
+    } else if (how !== 'cancelled') {
+      o.track(SHARE_CARD_EVENT, { kind: o.eventKind });
+      o.track(SHARE_RESULT_EVENT, { kind: o.eventKind, ok: true });
     }
+    setSharing(false);
   }, [o, doCopy, canvasRef]);
 
   return {
     sharing,
     copied,
     failed,
-    showText,
-    closeText: () => setShowText(false),
+    shareLabel: shareButtonLabel(sharing, outcome === 'downloaded'),
+    showText: outcome === 'failed',
+    closeText: () => setOutcome(null),
     text,
     share,
     copy: doCopy,

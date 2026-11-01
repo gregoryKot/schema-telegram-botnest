@@ -1,11 +1,13 @@
 import { OPERATOR_NAME, OPERATOR_INN, OPERATOR_EMAIL } from '../legal/operator';
+import { Doc, Chapter, P, Ul, Table } from '../legal/LegalLayout';
+import { column, backLink, eyebrow, h1, lead, inlineLink } from '../legal/legalStyles';
 
 const EFFECTIVE_DATE = '31 октября 2026 г.';
 
 export function OfferPage() {
   return (
     <div style={{ background: 'var(--bg)', color: 'var(--text)', minHeight: '100dvh' }}>
-      <div style={{ maxWidth: 780, margin: '0 auto', padding: '64px 40px 96px' }}>
+      <div style={column}>
         <a href="/" style={backLink}>← На главную</a>
 
         <p style={eyebrow}>Редакция от {EFFECTIVE_DATE}</p>
@@ -276,52 +278,3 @@ export function OfferPage() {
     </div>
   );
 }
-
-// ─── Layout components ────────────────────────────────────────────────────────
-function Doc({ children }: { children: React.ReactNode }) {
-  return <div style={{ display: 'flex', flexDirection: 'column', gap: 40, marginTop: 48 }}>{children}</div>;
-}
-function Chapter({ n, title, children }: { n: string; title: string; children: React.ReactNode }) {
-  return (
-    <section>
-      <h2 style={{ fontFamily: 'var(--serif)', fontSize: 22, fontWeight: 400, color: 'var(--text)', margin: '0 0 20px', letterSpacing: '-.01em', paddingBottom: 12, borderBottom: '1px solid var(--line)' }}>
-        <span style={{ color: 'var(--accent)', marginRight: 10, fontSize: 14, fontFamily: 'inherit', fontStyle: 'normal' }}>{n}.</span>{title}
-      </h2>
-      <div className="u-col12">{children}</div>
-    </section>
-  );
-}
-function P({ children }: { children: React.ReactNode }) {
-  return <p style={{ fontSize: 15, color: 'var(--text-sub)', lineHeight: 1.8, margin: 0 }}>{children}</p>;
-}
-function Ul({ items }: { items: string[] }) {
-  return (
-    <ul style={{ margin: 0, paddingLeft: 20, display: 'flex', flexDirection: 'column', gap: 6 }}>
-      {items.map((item, i) => (
-        <li key={i} style={{ fontSize: 15, color: 'var(--text-sub)', lineHeight: 1.7 }}>{item}</li>
-      ))}
-    </ul>
-  );
-}
-function Table({ rows }: { rows: [string, string][] }) {
-  return (
-    <div style={{ border: '1px solid var(--line)', borderRadius: 'var(--r-12)', overflow: 'hidden' }}>
-      {rows.map(([label, value], i) => (
-        <div key={i} style={{
-          display: 'grid', gridTemplateColumns: '220px 1fr',
-          borderBottom: i < rows.length - 1 ? '1px solid var(--line)' : 'none',
-        }}>
-          <div style={{ padding: '12px 16px', background: 'rgba(var(--fg-rgb),.03)', fontSize: 13, fontWeight: 600, color: 'var(--text-faint)', borderRight: '1px solid var(--line)' }}>{label}</div>
-          <div style={{ padding: '12px 16px', fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.6 }}>{value}</div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-// ─── Shared styles ────────────────────────────────────────────────────────────
-const backLink: React.CSSProperties = { fontSize: 13, color: 'var(--text-faint)', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 6, marginBottom: 48 };
-const eyebrow: React.CSSProperties = { fontSize: 12, fontWeight: 600, letterSpacing: '.12em', textTransform: 'uppercase', color: 'var(--text-faint)', margin: '0 0 12px' };
-const h1: React.CSSProperties = { fontFamily: 'var(--serif)', fontSize: 'clamp(32px, 5vw, 54px)', fontWeight: 400, lineHeight: 1.1, margin: '0 0 20px', letterSpacing: '-.01em' };
-const lead: React.CSSProperties = { fontSize: 16, color: 'var(--text-sub)', lineHeight: 1.8, margin: 0, maxWidth: 680 };
-const inlineLink: React.CSSProperties = { color: 'var(--accent)', textDecoration: 'none' };

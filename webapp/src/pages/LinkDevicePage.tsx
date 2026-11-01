@@ -8,14 +8,10 @@ import { ServiceRows } from './service/ServiceRows';
 import { TicketDenied } from './service/TicketDenied';
 import { AckCheck } from './merge/AckCheck';
 import { linkAckText, useLinkTicket } from './merge/useLinkTicket';
+import { providerName } from './account/providerNames';
 import { Skeleton } from '../components/Skeleton';
 import { TwoFactorLossNote } from '../components/TwoFactorLossNote';
 import { AddressFormProvider } from '../utils/AddressFormProvider';
-
-const PROVIDER_NAMES: Record<string, string> = {
-  max: 'MAX',
-  telegram: 'Telegram',
-};
 
 // Подтверждение привязки из мессенджера: сюда человек попадает по ссылке из
 // мини-аппа (device authorization grant, RFC 8628).
@@ -58,7 +54,7 @@ function LinkDeviceContent({ code }: { code: string }) {
   const [acknowledged, setAcknowledged] = useState(false);
   const done = phase === 'done';
 
-  const messenger = preview ? PROVIDER_NAMES[preview.provider] ?? preview.provider : '';
+  const messenger = preview ? providerName(preview.provider) ?? preview.provider : '';
   const total = preview ? sumItems(preview.summary) : 0;
 
   if (phase === 'denied') {

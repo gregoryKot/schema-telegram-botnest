@@ -8,6 +8,7 @@ import { ServicePage } from './service/ServicePage';
 import { ServiceRows } from './service/ServiceRows';
 import { SourceTotpField } from './merge/SourceTotpField';
 import { AckCheck } from './merge/AckCheck';
+import { providerName } from './account/providerNames';
 
 export function MergePage() {
   const [params] = useSearchParams();
@@ -17,7 +18,8 @@ export function MergePage() {
 
   const token = params.get('token') ?? '';
   const summaryStr = params.get('summary') ?? '{}';
-  const providerName = params.get('provider') ?? 'провайдер';
+  // В адресе — id провайдера (google, vk…); показываем имя, неизвестный id не показываем.
+  const provider = providerName(params.get('provider'));
   const otherName = params.get('name') ?? '';
   const twoFactorLost = params.get('twofa') === '1';
 
@@ -36,18 +38,14 @@ export function MergePage() {
         <div className="ds-eyebrow">Аккаунт</div>
         <h1 className="ds-h2">Объединить аккаунты?</h1>
         <p className="as-lead">
-          Аккаунт <b>{providerName}</b>{otherName ? ` (${otherName})` : ''} уже существует со своими данными.{' '}{tr('Если объединить – все они переедут в твой текущий аккаунт.', 'Если объединить – все они переедут в ваш текущий аккаунт.')}
+          {provider ? <>Аккаунт <b>{provider}</b></> : 'Другой аккаунт'}{otherName ? ` (${otherName})` : ''} уже существует со своими данными.{' '}{tr('Если объединить – все они переедут в твой текущий аккаунт.', 'Если объединить – все они переедут в ваш текущий аккаунт.')}
         </p>
 
         <div className="as-sec-head">
           <div className="ds-label">В переносимом аккаунте</div>
           {totalItems > 0 && <span className="ds-sub">{totalItems} {totalItems === 1 ? 'запись' : totalItems < 5 ? 'записи' : 'записей'}</span>}
         </div>
-        {totalItems === 0 ? (
-          <p className="as-lead">Нет данных – объединение пройдёт без переноса.</p>
-        ) : (
-          <ServiceRows summary={summary} />
-        )}
+        {totalItems === 0 ? <p className="as-lead">Нет данных – объединение пройдёт без переноса.</p> : <ServiceRows summary={summary} />}
 
         <p className="as-warn">
           Если в обоих аккаунтах есть пересекающиеся записи (одна и та же оценка за один день, например) – версия текущего аккаунта остаётся, дубль из второго удаляется. <b>Действие необратимо.</b>

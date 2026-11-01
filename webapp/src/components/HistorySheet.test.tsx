@@ -86,12 +86,15 @@ describe('HistorySheet', () => {
     await waitFor(() => expect(screen.getByText('Пусто.')).toBeTruthy());
   });
 
-  it('«Оценить →» одновременно открывает трекер и закрывает лист', async () => {
-    const onOpenTracker = vi.fn();
-    renderSheet({ onOpenTracker });
+  it('«Оценить →» сначала закрывает лист, затем открывает трекер', async () => {
+    // В одном такте go(-1) закрываемого и пуш открываемого запись трекера
+    // терялась (Chromium, createBrowserRouter): трекер на экране, а «Назад»
+    // уводил со страницы. Трекер открывается в onClose, после снятия записи.
+    const log: string[] = [];
+    renderSheet({ onClose: () => log.push('close'), onOpenTracker: () => log.push('tracker') });
     await waitFor(() => expect(screen.getByText('Пусто.')).toBeTruthy());
     fireEvent.click(screen.getByText('Оценить →'));
-    expect(onOpenTracker).toHaveBeenCalledTimes(1);
+    expect(log).toEqual(['close', 'tracker']);
   });
 
   it('просроченный план практики (scheduledDate < todayDate) показывает CheckInSheet', async () => {
@@ -146,13 +149,13 @@ describe('HistorySheet', () => {
     expect(screen.queryByText(/Практика-призрак/)).toBeNull();
   });
 
-  it('«Заполнить сегодня» (пустая история) одновременно открывает трекер и закрывает лист', async () => {
-    const onOpenTracker = vi.fn();
-    renderSheet({ onOpenTracker, history: [] });
+  it('«Заполнить сегодня» (пустая история) сначала закрывает лист, затем открывает трекер', async () => {
+    const log: string[] = [];
+    renderSheet({ onClose: () => log.push('close'), onOpenTracker: () => log.push('tracker'), history: [] });
     await waitFor(() =>
       expect(screen.getByText('Заполнить сегодня')).toBeTruthy(),
     );
     fireEvent.click(screen.getByText('Заполнить сегодня'));
-    expect(onOpenTracker).toHaveBeenCalledTimes(1);
+    expect(log).toEqual(['close', 'tracker']);
   });
 });

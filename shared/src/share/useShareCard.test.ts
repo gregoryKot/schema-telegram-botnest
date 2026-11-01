@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
 // Тесты логики шита шаринга: успешный шэр шлёт оба события аналитики,
 // упавший — помечает ok:false, копирует текст в буфер и показывает его
-// пользователю (иначе поделиться нечем).
+// пользователю (иначе поделиться нечем). Отмена системной шторки — не сбой;
+// скачанная вместо шэра картинка — видимое «сохранена».
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createRef } from 'react';
 import { act, renderHook } from '@testing-library/react';
@@ -93,5 +94,44 @@ describe('useShareCard', () => {
 
     expect(hook.result.current.failed).toBe(true);
     expect(hook.result.current.copied).toBe(false);
+  });
+
+  it('отмена системной шторки (AbortError) — тихий выход: ни фолбэка, ни ok:false', async () => {
+    shareCanvasImage.mockRejectedValue(
+      new DOMException('Share canceled', 'AbortError'),
+    );
+    const { hook, track } = setup();
+
+    await act(() => hook.result.current.share());
+
+    expect(track).not.toHaveBeenCalled();
+    expect(writeText).not.toHaveBeenCalled();
+    expect(hook.result.current.showText).toBe(false);
+    expect(hook.result.current.copied).toBe(false);
+    expect(hook.result.current.shareLabel).toBe('Поделиться');
+    expect(hook.result.current.sharing).toBe(false);
+  });
+
+  it('шэра нет, картинка скачана (downloaded) — «Картинка сохранена» и успех в аналитике', async () => {
+    shareCanvasImage.mockResolvedValue('downloaded');
+    const { hook, track } = setup();
+
+    await act(() => hook.result.current.share());
+
+    expect(hook.result.current.shareLabel).toBe('✓ Картинка сохранена');
+    expect(hook.result.current.showText).toBe(false);
+    expect(track).toHaveBeenCalledWith('share_result', {
+      kind: 'day',
+      ok: true,
+    });
+  });
+
+  it('системный шэр (shared) — подпись остаётся «Поделиться»', async () => {
+    shareCanvasImage.mockResolvedValue('shared');
+    const { hook } = setup();
+
+    await act(() => hook.result.current.share());
+
+    expect(hook.result.current.shareLabel).toBe('Поделиться');
   });
 });

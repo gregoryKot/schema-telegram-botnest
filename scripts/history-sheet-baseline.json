@@ -7,10 +7,6 @@
     "reason": "Оболочка нижней шторки: «Назад» приходит пропом goBack, который вызывающий считает через useHistorySheet (шапка файла); хук в оболочке дал бы вторую запись истории на один лист. Соблюдение этого гейт у потребителей не проверяет: NeedAdviceModal передаёт локальный onClose (мини-модалка поверх листа, CLAUDE.md допускает) — слепая зона записана в docs/README.md, «Гейт оверлеев webapp».",
     "since": "docs/AUDIT_2026-10_FINDINGS.md"
   },
-  "webapp/src/components/CommandPalette.tsx": {
-    "reason": "ДОЛГ, ждёт решения: палитра открывается и с мобильной нижней панели (MobileNav, кнопка поиска), закрывается своим Escape (useDialogA11y) и тапом; записи истории нет, «Назад» браузера уводит со страницы. Помехи для хука после #723 нет: Escape, погашенный палитрой, useHistorySheet пропускает (e.defaultPrevented); не поставлен, чтобы не смешивать с этой починкой. Строка в docs/README.md, «Что осталось открытым».",
-    "since": "docs/AUDIT_2026-10_FINDINGS.md"
-  },
   "webapp/src/components/Dialog.tsx": {
     "reason": "Оболочка диалога: запись истории — забота потребителя (useHistorySheet и goBack как onClose). Так делают AchievementDetail и AddressFormPicker; AchievementsDialog, CelebrationDialog, DeleteAccountDialog и подтверждения в AccountPage/ClientHeader закрываются только своими кнопками и Escape, «Назад» браузера закрывает лист под ними. Потребителей рамки гейт не видит — слепая зона записана в docs/README.md, «Гейт оверлеев webapp».",
     "since": "docs/AUDIT_2026-10_FINDINGS.md"

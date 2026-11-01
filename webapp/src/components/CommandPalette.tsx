@@ -6,6 +6,7 @@ import type { TherapyClientSummary, UserId } from '../api';
 import { todayCalendarDate } from '../../../shared/src/utils/calendarDate';
 import { pressable } from '../utils/a11y';
 import { useDialogA11y } from '../../../shared/src/utils/dialogA11y';
+import { useHistorySheet } from '../hooks/useHistorySheet';
 import type { Section } from './appShell/navigation';
 import '../styles/sheet-tasks.css';
 
@@ -65,12 +66,11 @@ export function CommandPalette({ onNavigate, onClose, userRole, therapistMode, o
   const [sel, setSel] = useState(0);
   const [clients, setClients] = useState<TherapyClientSummary[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
-  // Escape — через стек диалогов: поверх палитры он закроет только верхнее окно.
-  const dialogA11y = useDialogA11y({ onEscape: onClose });
-
-  // Reset the highlighted row to the top whenever the query changes. Adjusting
-  // state during render (not in an effect) is the documented pattern for
-  // deriving state from a changing value.
+  // «Назад» браузера закрывает палитру; действие строки — goBack(action), после снятия
+  // записи. Escape — через стек диалогов: поверх палитры закроет только верхнее окно.
+  const goBack = useHistorySheet(onClose);
+  const dialogA11y = useDialogA11y({ onEscape: goBack });
+  // Выделение — на первую строку при смене запроса (состояние в рендере, не в эффекте).
   const [prevQ, setPrevQ] = useState(q);
   if (q !== prevQ) { setPrevQ(q); setSel(0); }
 
@@ -130,15 +130,15 @@ export function CommandPalette({ onNavigate, onClose, userRole, therapistMode, o
     function onKey(e: KeyboardEvent) {
       if (e.key === 'ArrowDown') { e.preventDefault(); setSel(s => Math.min(rows.length - 1, s + 1)); }
       if (e.key === 'ArrowUp')   { e.preventDefault(); setSel(s => Math.max(0, s - 1)); }
-      if (e.key === 'Enter')     { e.preventDefault(); rows[sel]?.action(); onClose(); }
+      if (e.key === 'Enter')     { e.preventDefault(); goBack(rows[sel]?.action); }
     }
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [rows, sel, onClose]);
+  }, [rows, sel, goBack]);
 
   return (
-    <div className="sk-cmd-bg" onClick={onClose} role="button" tabIndex={0} aria-label="Закрыть"
-      onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClose(); } }}>
+    <div className="sk-cmd-bg" onClick={goBack} role="button" tabIndex={0} aria-label="Закрыть"
+      onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); goBack(); } }}>
       {/* onClick/onKeyDown — stopPropagation: клик или Enter/Space (печатая в
           поиске) не должны всплыть до бэкдропа и закрыть палитру. role="dialog"
           не входит в «интерактивные» роли jsx-a11y — ложное срабатывание. */}
@@ -169,7 +169,7 @@ export function CommandPalette({ onNavigate, onClose, userRole, therapistMode, o
               key={i}
               className={`ds-list-row ds-list-row--hover sk-cmd-row${i === sel ? ' is-sel' : ''}`}
               onMouseEnter={() => setSel(i)}
-              {...pressable(() => { row.action(); onClose(); })}
+              {...pressable(() => goBack(row.action))}
             >
               <span className="sk-cmd-ic">
                 {row.type === 'client' ? <IconPerson /> : row.type === 'nav' ? <IconArrow /> : <IconBolt />}

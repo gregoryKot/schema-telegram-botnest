@@ -11,7 +11,8 @@ import { AccountFooter } from './account/AccountFooter';
 import { accountInitials } from './account/accountMethods';
 import { emailLinkErrorMessage } from './account/emailLinkError';
 import { useAccountData } from './account/useAccountData';
-import { PROVIDER_LABELS, useProviderActions } from './account/useProviderActions';
+import { useProviderActions } from './account/useProviderActions';
+import { PROVIDER_NAMES } from './account/providerNames';
 import '../styles/auth-account.css';
 
 export function AccountPage() {
@@ -59,10 +60,7 @@ export function AccountPage() {
           <div className="aa-col">
             <TwoFactorSection accessToken={accessToken} totp={totp} onChanged={refresh} />
             <TherapistRequestSection accessToken={accessToken} />
-            <div className="ds-card aa-sub">
-              <div className="aa-sub-title">Подписка</div>
-              <Link to="/subscribe">Управлять →</Link>
-            </div>
+            <div className="ds-card aa-sub"><div className="aa-sub-title">Подписка</div><Link to="/subscribe">Управлять →</Link></div>
           </div>
         </div>
 
@@ -71,7 +69,7 @@ export function AccountPage() {
 
       {unlinkProvider && (
         <ConfirmDialog
-          title={`Отвязать ${PROVIDER_LABELS[unlinkProvider]}?`}
+          title={`Отвязать ${PROVIDER_NAMES[unlinkProvider]}?`}
           message="Понадобится другой способ входа в аккаунт."
           confirmLabel="Отвязать"
           busy={actions.busy}

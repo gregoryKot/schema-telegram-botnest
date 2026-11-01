@@ -14,7 +14,7 @@ import {
 } from '../cardKit';
 import { getMilestoneText, pluralDays } from '../../utils/celebrationText';
 
-const MILESTONES = [3, 7, 14, 21, 30, 60, 100];
+export const MILESTONES = [3, 7, 14, 21, 30, 60, 100];
 const MED_R = 44;
 // Отступы композиции сверху вниз: медальон → число → подпись → плашка вехи
 const TOP_PAD = 40;

@@ -45,12 +45,11 @@ export function SelfMapOverlay({
       next={next}
       onBack={goBack}
       onPickMode={goBack}
-      onNextStep={(id) => {
-        goBack();
+      onNextStep={(id) => goBack(() => {
         if (id === 'ysq_test') onOpenSchema({ startTest: true });
         else if (id === 'needs_week') onOpenTracker();
         else onStartCase();
-      }}
+      })}
     />
   );
 }

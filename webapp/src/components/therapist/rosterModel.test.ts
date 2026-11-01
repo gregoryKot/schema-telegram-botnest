@@ -165,6 +165,13 @@ describe('clientCaption', () => {
     expect(clientCaption(client({}), TODAY)).toBe('нет активности');
   });
 
+  it('нечитаемая дата активности — «нет активности», а не «активность » с хвостом', () => {
+    expect(clientCaption(client({ lastActiveDate: 'мусор' }), TODAY)).toBe('нет активности');
+    expect(clientCaption(client({ lastActiveDate: 'мусор', streak: 3 }), TODAY)).toBe(
+      'нет активности · стрик 3 дн.',
+    );
+  });
+
   it('ни в одной ветке активности нет мужского рода о клиенте', () => {
     const captions = [
       clientCaption(client({ lastActiveDate: TODAY, streak: 2 }), TODAY),

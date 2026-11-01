@@ -64,7 +64,7 @@ export function ShareCardSheet({
           className="ds-btn sd-wide"
         >
           <ShareIcon size={17} />
-          {s.sharing ? 'Готовлю картинку…' : 'Поделиться'}
+          {s.shareLabel}
         </button>
         <button
           onClick={() => void s.copy()}

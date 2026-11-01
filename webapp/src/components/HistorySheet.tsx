@@ -49,7 +49,7 @@ export function HistorySheet({
         <button className="ex-back" onClick={goBack}>
           <GlyphArrowLeft /> Назад к трекеру
         </button>
-        <button onClick={() => { onOpenTracker(); goBack(); }} className="ds-btn ds-btn--sm">
+        <button onClick={() => goBack(onOpenTracker)} className="ds-btn ds-btn--sm">
           Оценить →
         </button>
       </div>
@@ -70,7 +70,7 @@ export function HistorySheet({
                 childhoodRatings={childhoodRatings}
                 onOpenSchemas={onOpenSchemas}
                 onOpenChildhoodWheel={onOpenChildhoodWheel}
-                onGoToToday={() => { onOpenTracker(); goBack(); }}
+                onGoToToday={() => goBack(onOpenTracker)}
                 onBackfill={(date) => setBackfillDate(date)}
               />
             </Suspense>
