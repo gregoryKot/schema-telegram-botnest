@@ -53,9 +53,12 @@ const CASE = {
 const guideButton = () =>
   screen.getByRole('button', { name: /Как читать схему/ });
 const openGuide = () => fireEvent.click(guideButton());
+const gapsButton = () =>
+  screen.getByRole('button', { name: /Подсказки по схеме/ });
+const skipped = (el: Element) => el.closest('[data-export-skip]') !== null;
 
 describe('ConceptGraph: общий вид', () => {
-  it('«Как читать схему»: на пустой схеме открыта, на заполненной свёрнута и открывается кликом, подсказки о пробелах внутри', () => {
+  it('«Как читать схему»: на пустой схеме открыта, на заполненной свёрнута и открывается кликом; подсказки о пробелах — не в ней', () => {
     const { unmount } = render(<Harness initial={{}} />);
     expect(guideButton().getAttribute('aria-expanded')).toBe('true');
     expect(
@@ -73,7 +76,25 @@ describe('ConceptGraph: общий вид', () => {
     expect(
       screen.getByText(/Схема случая: в центре базовые потребности/),
     ).toBeTruthy();
+    expect(screen.queryByRole('note')).toBeNull();
+    fireEvent.click(gapsButton());
     expect(screen.getAllByRole('note')[0].textContent).toMatch(/Копинги есть/);
+  });
+
+  it('подсказки о пробелах — под схемой и свёрнуты; ни они, ни инструкция в картинку не идут', () => {
+    render(<Harness initial={{ modeIds: ['detached_protector'] }} />);
+    const fold = gapsButton();
+    expect(fold.getAttribute('aria-expanded')).toBe('false');
+    expect(fold.textContent).toMatch(/Подсказки по схеме · \d/);
+    // Под фигурами, а не над ними: плашка, появившаяся после тапа в выборе
+    // «+ режим», не сдвигает схему и выбор под пальцем.
+    const order = modeFigure('Отстранённый Защитник').compareDocumentPosition(fold);
+    expect(order & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(skipped(guideButton())).toBe(true);
+    expect(skipped(fold)).toBe(true);
+    fireEvent.click(fold);
+    expect(skipped(screen.getAllByRole('note')[0])).toBe(true);
+    expect(skipped(modeFigure('Отстранённый Защитник'))).toBe(false);
   });
 
   it('пустая по режимам, но со схемой — не пустая: инструкция свёрнута', () => {
@@ -125,6 +146,7 @@ describe('ConceptGraph: общий вид', () => {
         'Нажмите на схему или режим, чтобы записать текст — он появится на схеме. Карта меняется вместе с терапией — прошлые версии остаются в истории.',
       ),
     ).toBeTruthy();
+    fireEvent.click(gapsButton());
     expect(
       screen.getByText(
         /нажмите на фигуру режима, чтобы связать его со схемами/,
@@ -214,7 +236,7 @@ describe('ConceptGraph: общий вид', () => {
         }}
       />,
     );
-    openGuide();
+    fireEvent.click(gapsButton());
     expect(screen.getAllByRole('note')[0].textContent).toMatch(
       /Копинги есть, а детского режима нет/,
     );

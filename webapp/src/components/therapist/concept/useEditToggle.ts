@@ -3,9 +3,16 @@ import { useState } from 'react';
 // Свёрнутость карточек выбора вида «Поля»: ничего не выбрано — выбор открыт
 // сразу и кнопки нет (прятать нечего); выбрано — спокойный вид, «Изменить»
 // раскрывает. Открытый выбор не сворачивается сам: первый клик из пустого
-// состояния оставляет перечень под пальцем.
+// состояния оставляет перечень под пальцем — в том числе когда выбор опустел
+// уже после открытия вкладки (сняли последний чип, восстановили версию без
+// схем). Подстройка состояния при смене пропа — в рендере, по образцу React.
 export function useEditToggle(hasSelection: boolean) {
   const [open, setOpen] = useState(!hasSelection);
+  const [prevHas, setPrevHas] = useState(hasSelection);
+  if (prevHas !== hasSelection) {
+    setPrevHas(hasSelection);
+    if (!hasSelection) setOpen(true);
+  }
   return {
     editing: open || !hasSelection,
     canToggle: hasSelection,

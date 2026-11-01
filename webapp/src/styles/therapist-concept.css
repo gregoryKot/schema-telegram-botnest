@@ -32,7 +32,7 @@
 /* Выбранная схема — насыщенный фон домена. Две классовые части в селекторе: иначе
    фон .tcp-schema-btn (позже .tone-fill в каскаде) перебивает заливку и белый
    текст остаётся на бледном. */
-.tcp-schema-btn.is-on { font-weight: 600; color: #fff; border-color: transparent; background: oklch(0.58 0.12 var(--h)); }
+.tcp-schema-btn.is-on { font-weight: 600; color: #fff; border-color: transparent; background: oklch(0.52 0.12 var(--h)); }
 .tcp-schema-btn--static { cursor: default; }
 /* Шапка карточки выбора: заголовок слева, «Изменить / Готово» справа. */
 .tcp-pick-head { align-items: center; margin-bottom: 16px; flex-wrap: nowrap; }

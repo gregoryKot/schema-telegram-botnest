@@ -9,9 +9,9 @@ import { ConceptDiagram } from './diagram/ConceptDiagram';
 import { ConceptAddPanel } from './ConceptAddPanel';
 import type { AddSection } from './diagram/diagramTypes';
 import { ConceptGraphIntro } from './ConceptGraphIntro';
+import { ConceptGraphFooter } from './ConceptGraphFooter';
 import { ConceptModeEditor } from './ConceptModeEditor';
 import { ConceptSchemaEditor } from './ConceptSchemaEditor';
-import { hintStyle } from './graphStyles';
 import { useTr } from '../../utils/addressForm';
 
 type Open = { kind: 'mode' | 'schema'; id: string } | null;
@@ -129,11 +129,7 @@ export function ConceptGraph({
           onClose={() => setOpen(null)}
         />
       )}
-      {graph.sequence && (
-        <p style={{ ...hintStyle, margin: 0 }}>
-          <b>Как режимы сменяют друг друга:</b> <span>{graph.sequence}</span>
-        </p>
-      )}
+      <ConceptGraphFooter graph={graph} />
     </div>
   );
 }

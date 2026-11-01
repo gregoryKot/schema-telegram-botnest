@@ -68,7 +68,9 @@ function selection(schemas: string[], modes: string[]): ClientDetail {
     activeModeIds: modes,
     toggleModeId: vi.fn(),
     localConcept: {},
-    concept: { modeLinks: [] },
+    // Свои имена у режимов: тогда «Схемы за режимами» показывает их, и название
+    // режима на экране может прийти только из чипа выбранного режима.
+    concept: { modeLinks: modes.map((modeId, i) => ({ modeId, alias: `Часть ${i + 1}`, schemaIds: [], needIds: [], origin: '', manifest: '', strategy: '' })) },
   } as unknown as ClientDetail;
 }
 const SCHEMAS = ['failure', 'mistrust', 'emotional_deprivation', 'self_sacrifice'];
@@ -80,7 +82,9 @@ describe('ConceptPickers: только выбранное', () => {
     render(<ConceptPickers detail={selection(SCHEMAS, MODES)} />);
     expect(screen.getByText('Неуспешность')).toBeTruthy();
     expect(screen.queryByText('Эмоциональная скованность')).toBeNull();
-    expect(screen.getAllByText(/Карающий Критик/).length).toBeGreaterThan(0);
+    for (const name of ['Карающий Критик', 'Уязвимый Ребёнок', 'Здоровый Взрослый', 'Отстранённый Защитник']) {
+      expect(screen.getAllByText(name)).toHaveLength(1);
+    }
     expect(screen.queryByText(/Сердитый Ребёнок/)).toBeNull();
     expect(screen.queryByRole('button', { name: /Карающий Критик/ })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Неуспешность' })).toBeNull();
@@ -116,6 +120,16 @@ describe('ConceptPickers: только выбранное', () => {
     expect(screen.getByRole('button', { name: 'Неуспешность' })).toBeTruthy();
     expect(screen.getByRole('button', { name: /Сердитый Ребёнок/ })).toBeTruthy();
     expect(screen.queryByRole('button', { name: /Изменить|Готово/ })).toBeNull();
+  });
+
+  it('выбор опустел после открытия вкладки (восстановили версию без схем) — первый клик не сворачивает перечень', () => {
+    const { rerender } = render(<ConceptPickers detail={selection(['failure'], [])} />);
+    expect(edit('Актуальные схемы').getAttribute('aria-expanded')).toBe('false');
+    rerender(<ConceptPickers detail={selection([], [])} />);
+    expect(screen.getByRole('button', { name: 'Эмоциональная скованность' })).toBeTruthy();
+    rerender(<ConceptPickers detail={selection(['failure'], [])} />);
+    expect(screen.getByRole('button', { name: 'Эмоциональная скованность' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /Готово: Актуальные схемы/ })).toBeTruthy();
   });
 
   it('первый выбор из пустого состояния не сворачивает выбор под пальцем', () => {

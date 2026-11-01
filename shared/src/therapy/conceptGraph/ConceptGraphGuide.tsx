@@ -1,19 +1,11 @@
-import type { ReactNode } from 'react';
 import { useTr } from '../../utils/addressForm';
 import { hintStyle } from './graphStyles';
 
-/** Два абзаца инструкции к схеме случая; children — подсказки под ними. */
-export function ConceptGraphGuide({ children }: { children?: ReactNode }) {
+/** Два абзаца инструкции к схеме случая. */
+export function ConceptGraphGuide() {
   const tr = useTr();
   return (
-    <div
-      style={{
-        ...hintStyle,
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 'var(--space-12)',
-      }}
-    >
+    <div style={hintStyle}>
       <div>
         <p style={{ margin: '0 0 var(--space-4)' }}>
           Схема случая: в центре базовые потребности. Слева схемы — во что
@@ -29,7 +21,6 @@ export function ConceptGraphGuide({ children }: { children?: ReactNode }) {
           )}
         </p>
       </div>
-      {children}
     </div>
   );
 }
