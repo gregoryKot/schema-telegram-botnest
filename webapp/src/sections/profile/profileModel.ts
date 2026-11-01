@@ -11,7 +11,6 @@ const HEAT_GAP = 3;
 // Поля вокруг сетки на телефоне: поля страницы 2×16 + карточка 2×16 + рамка 2 + колонка подписей дней 22.
 const HEAT_PHONE_CHROME = 88;
 export const MONTH_SHORT = ['янв', 'фев', 'мар', 'апр', 'май', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'];
-const WEEKDAY_SHORT = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
 
 /** Календарный день YYYY-MM-DD в UTC — так же, как история дней на сервере и
  *  «сегодня» приложения (правило №25 CLAUDE.md, shared/src/utils/calendarDate). */
@@ -96,14 +95,6 @@ export function achievementProgress(id: string, earned: boolean, currentStreak: 
   if (!t) return null;
   const v = t.kind === 'streak' ? currentStreak : totalDays;
   return v > 0 ? `${v}/${t.goal}` : null;
-}
-
-/** «Чт, 3 сен · 14:30» из '2026-09-03T14:30:00' или '2026-09-03'. */
-export function formatNextSession(raw: string): string {
-  const [datePart, timePart] = raw.includes('T') ? raw.split('T') : [raw, null];
-  const [y, m, d] = datePart.split('-').map(Number);
-  const date = new Date(y, m - 1, d);
-  return `${WEEKDAY_SHORT[date.getDay()]}, ${d} ${MONTH_SHORT[m - 1]}${timePart ? ' · ' + timePart : ''}`;
 }
 
 /** Инициалы для аватара: первая буква имени (пусто → '•'). */

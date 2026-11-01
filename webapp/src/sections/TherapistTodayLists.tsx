@@ -4,9 +4,9 @@ import {
   activityStatus, clientName, daysSinceActive, initials, latestIndex, sessionTime, sparkPoints,
 } from './therapistTodayModel';
 
-interface RowProps { client: TherapyClientSummary; now: number; onOpen: (id: UserId) => void }
+interface RowProps { client: TherapyClientSummary; onOpen: (id: UserId) => void }
 
-export function SessionRow({ client, now, onOpen }: RowProps) {
+export function SessionRow({ client, onOpen }: RowProps) {
   const time = sessionTime(client);
   return (
     <button type="button" className="ds-card ds-card--row ds-card--hover tt-session tt-reset"
@@ -15,16 +15,16 @@ export function SessionRow({ client, now, onOpen }: RowProps) {
       <span className="tt-bar tone-fill" style={hueStyle(clientHue(client.telegramId))} />
       <span>
         <span className="tt-name" style={{ display: 'block' }}>{clientName(client)}</span>
-        <span className="tt-row-sub" style={{ display: 'block' }}>{activityStatus(client, now).text}</span>
+        <span className="tt-row-sub" style={{ display: 'block' }}>{activityStatus(client).text}</span>
       </span>
       <span className="tt-arrow">→</span>
     </button>
   );
 }
 
-export function ActivityRow({ client, now, onOpen }: RowProps) {
+export function ActivityRow({ client, onOpen }: RowProps) {
   const name = clientName(client);
-  const status = activityStatus(client, now);
+  const status = activityStatus(client);
   const idx = latestIndex(client);
   const level = indexLevel(idx);
   return (
@@ -46,9 +46,9 @@ export function ActivityRow({ client, now, onOpen }: RowProps) {
   );
 }
 
-export function AttentionRow({ client, now, onOpen }: RowProps) {
+export function AttentionRow({ client, onOpen }: RowProps) {
   const name = clientName(client);
-  const days = daysSinceActive(client, now);
+  const days = daysSinceActive(client);
   return (
     <button type="button" className="ds-card ds-card--row ds-card--warn tt-attn tt-reset"
       onClick={() => onOpen(client.telegramId)}>

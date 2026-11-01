@@ -214,8 +214,18 @@ interface FakeConcept {
 interface Overview {
   streak: number;
   daysSince: number;
+  lastDate: string | null;
+  recentDays: string[];
   history: Array<{ date: string; ratings: Record<string, number> }>;
 }
+
+/** 14 календарных дней клиента от его «сегодня» назад — как ClientOverview. */
+const recentDaysFrom = (today: string): string[] =>
+  Array.from({ length: 14 }, (_, i) =>
+    new Date(Date.parse(`${today}T00:00:00Z`) - i * 86400000)
+      .toISOString()
+      .slice(0, 10),
+  );
 
 function relMatches(r: FullRel, where: any = {}): boolean {
   if (where.OR) return (where.OR as any[]).some((cond) => relMatches(r, cond));
@@ -868,6 +878,8 @@ describe('getClients — список клиентов терапевта', () =
         {
           streak: 3,
           daysSince: 0,
+          lastDate: today,
+          recentDays: recentDaysFrom(today),
           history: [
             {
               date: today,
@@ -908,6 +920,7 @@ describe('getClients — список клиентов терапевта', () =
     expect(client.name).toBe('Аня');
     expect(client.streak).toBe(3);
     expect(client.lastActiveDate).toBe(today);
+    expect(client.daysSinceActive).toBe(0);
     expect(client.todayIndex).toBe(7); // (5+6+7+8+9)/5 = 7
     expect(client.recentIndexHistory[0]).toBe(7);
     expect(client.recentIndexHistory[1]).toBeNull();
@@ -935,20 +948,20 @@ describe('getClients — список клиентов терапевта', () =
     ]);
   });
 
-  // Мутационное усиление (L145/L153, ArithmeticOperator): при daysSince=0
-  // "вчера-минус" и "вчера-плюс" дают одну и ту же дату (умножение на 0),
-  // мутанты `+`/`/` вместо `-`/`*` не отличимы. Нужен ненулевой daysSince и
-  // непустая точка в истории на ненулевом смещении.
-  it('lastActiveDate и история 14 дней считаются от daysSince, а не «сегодня» (граница ненулевого смещения)', async () => {
-    const twoDaysAgo = new Date(Date.now() - 2 * 86400000)
-      .toISOString()
-      .slice(0, 10);
+  // lastActiveDate и точки истории берутся из дней клиента (lastDate,
+  // recentDays), а не пересчитываются от Date.now(): ненулевое смещение
+  // проверяет, что индекс i истории — это recentDays[i], а не «сегодня».
+  it('lastActiveDate, daysSinceActive и история 14 дней — из дней клиента (ненулевое смещение)', async () => {
+    const today = '2026-10-27';
+    const twoDaysAgo = '2026-10-25';
     const overviews = new Map<string, Overview>([
       [
         String(CLIENT),
         {
           streak: 1,
           daysSince: 2, // клиент последний раз отмечался 2 дня назад
+          lastDate: twoDaysAgo,
+          recentDays: recentDaysFrom(today),
           history: [
             {
               date: twoDaysAgo,
@@ -980,10 +993,12 @@ describe('getClients — список клиентов терапевта', () =
       overviews,
     );
     const [client] = await service.getClients(T1);
-    expect(client.lastActiveDate).toBe(twoDaysAgo); // Date.now() - 2*86400000, не + и не /
+    expect(client.lastActiveDate).toBe(twoDaysAgo);
+    expect(client.daysSinceActive).toBe(2);
     expect(client.recentIndexHistory[2]).toBe(10); // индекс дня 2 дня назад найден по правильной дате
     expect(client.recentIndexHistory[0]).toBeNull(); // сегодня оценок нет
     expect(client.recentIndexHistory[1]).toBeNull(); // 1 день назад — тоже пусто
+    expect(client.todayIndex).toBeNull();
   });
 
   it('реальный клиент без записи в overview-карте — дефолты (streak 0, daysSince -1 → lastActiveDate null)', async () => {
@@ -1003,7 +1018,9 @@ describe('getClients — список клиентов терапевта', () =
     const [client] = await service.getClients(T1);
     expect(client.streak).toBe(0);
     expect(client.lastActiveDate).toBeNull();
+    expect(client.daysSinceActive).toBeNull();
     expect(client.todayIndex).toBeNull();
+    expect(client.recentIndexHistory).toEqual(Array(14).fill(null));
     expect(client.meetingDays).toEqual([]); // rel.meetingDays не задан
     expect(client.nextSession).toBeNull();
     expect(client.schemaIds).toEqual([]); // конспектуализации нет
@@ -1017,6 +1034,8 @@ describe('getClients — список клиентов терапевта', () =
         {
           streak: 1,
           daysSince: 0,
+          lastDate: today,
+          recentDays: recentDaysFrom(today),
           history: [{ date: today, ratings: { attachment: 5, autonomy: 6 } }],
         },
       ],

@@ -1,14 +1,22 @@
 // Тест объединённой версии format.ts (правило №3 CLAUDE.md, волна 2 —
 // webapp/format.ts и schema-miniapp/format.ts были почти-парой, различались
 // только форматированием кода; единственная копия теперь в shared/src/utils).
-import { describe, it, expect, vi, afterEach } from 'vitest';
+import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { fmtDate, fmtDateLong, todayStr } from './format';
 
 afterEach(() => {
   vi.useRealTimers();
 });
 
+// fmtDate показывает год, если он не текущий — «текущий» берётся от часов,
+// поэтому часы в этих тестах закреплены за 2026 годом.
+const pin2026 = () => {
+  vi.useFakeTimers({ toFake: ['Date'] });
+  vi.setSystemTime(new Date('2026-06-15T12:00:00Z'));
+};
+
 describe('fmtDate', () => {
+  beforeEach(pin2026);
   it('форматирует дату как "<день> <короткий месяц>" без сдвига часового пояса', () => {
     expect(fmtDate('2026-04-07')).toBe('7 апр');
     expect(fmtDate('2026-12-31')).toBe('31 дек');

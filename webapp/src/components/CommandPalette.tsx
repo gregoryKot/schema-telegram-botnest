@@ -3,7 +3,7 @@ import { api } from '../api';
 import { useTr } from '../utils/addressForm';
 import { buildPlusActions, type QuickActionId } from '../../../shared/src/quickActions/quickActions';
 import type { TherapyClientSummary, UserId } from '../api';
-import { todayCalendarDate } from '../../../shared/src/utils/calendarDate';
+import { isActiveToday } from '../../../shared/src/therapy/clientSheetHelpers';
 import { pressable } from '../utils/a11y';
 import { useDialogA11y } from '../../../shared/src/utils/dialogA11y';
 import type { Section } from './appShell/navigation';
@@ -87,13 +87,12 @@ export function CommandPalette({ onNavigate, onClose, userRole, therapistMode, o
   interface Row { type: RowType; label: string; sub?: string; activeToday?: boolean; hint?: string; action: () => void }
 
   const rows = useMemo<Row[]>(() => {
-    const today = todayCalendarDate();
     const term = q.trim().toLowerCase();
 
     const clientRows: Row[] = clients.map(c => ({
       type: 'client' as const,
       label: c.clientAlias ?? c.name ?? `ID ${c.telegramId}`,
-      ...(c.lastActiveDate === today ? { sub: 'Активность сегодня', activeToday: true } : { sub: 'Клиент' }),
+      ...(isActiveToday(c) ? { sub: 'Активность сегодня', activeToday: true } : { sub: 'Клиент' }),
       hint: 'Открыть карточку',
       action: () => onOpenClient?.(c.telegramId),
     }));

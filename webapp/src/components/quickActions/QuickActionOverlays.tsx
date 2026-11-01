@@ -54,7 +54,7 @@ export function QuickActionOverlays({ active, ...rest }: Props) {
         <Suspense fallback={null}>
           <GratitudeEntrySheet
             onClose={onClose}
-            date={diaryToday()}
+            date={diaryToday() /* день человека, не UTC: в 00:10 по Москве UTC ещё вчера */}
             onSave={async (date, items) => { await api.createGratitudeDiary(date, items); }}
           />
         </Suspense>

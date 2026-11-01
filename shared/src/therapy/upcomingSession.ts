@@ -4,15 +4,22 @@
 // прошедшую как «следующую» (2026-10: «Сб, 17 окт» при сегодняшнем 26-м), а
 // экран «Сегодня» из-за неё не видел встречу по дням. Прошла — переносим на
 // ближайший день встреч с тем же временем; дней нет — встречи нет (null).
-// Календарный день — полночь UTC (правило №25).
-import { dateStringMs, todayCalendarDate } from '../utils/calendarDate';
+//
+// nextSession — настенное время, которое терапевт ввёл по своим часам
+// (`2026-10-27T10:00`, без зоны), поэтому «сегодня» здесь — местный день того,
+// кто смотрит (todayStr), а не день UTC: в 00:10 по Москве UTC ещё во вчера, и
+// вчерашняя встреча считалась предстоящей (QA 2026-10-26, правило №25).
+// Арифметика дней — календарная: dateStringMs + getUTCDay верны для любой
+// строки дня.
+import { dateStringMs } from '../utils/calendarDate';
+import { todayStr } from '../utils/format';
 
 const DAY_MS = 86_400_000;
 
 export function upcomingSession(
   nextSession: string | null | undefined,
   meetingDays: readonly number[] | null | undefined,
-  today: string = todayCalendarDate(),
+  today: string = todayStr(),
 ): string | null {
   if (nextSession && nextSession.slice(0, 10) >= today) return nextSession;
   const days = meetingDays ?? [];
@@ -24,4 +31,12 @@ export function upcomingSession(
     return time ? `${ymd}T${time}` : ymd;
   }
   return null;
+}
+
+/** Встреча (день или день со временем) — сегодня у того, кто смотрит. */
+export function isSessionToday(
+  at: string | null | undefined,
+  today: string = todayStr(),
+): boolean {
+  return !!at && at.slice(0, 10) === today;
 }

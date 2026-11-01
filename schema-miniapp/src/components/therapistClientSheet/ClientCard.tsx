@@ -2,21 +2,19 @@ import { pressable } from '../../utils/a11y';
 import { TherapyClientSummary } from '../../api';
 import { idBucket } from '../../../../shared/src/utils/sameId';
 import { fmtDate } from '../../utils/format';
-import { indexColor } from './helpers';
+import { indexColor, isActiveToday } from './helpers';
 import { isVirtualClient } from '../../../../shared/src/therapy/clientSheetHelpers';
 import { RosterSparkline } from '../../../../shared/src/components/Sparklines';
 // Строка клиента в списке терапевта (аватар, активность, спарклайн индекса,
 // индекс дня). Вынесено из ClientListView.tsx (правило №10).
 export function ClientCard({
   client: c,
-  today,
   onOpen,
 }: {
   client: TherapyClientSummary;
-  today: string;
   onOpen: (c: TherapyClientSummary) => void;
 }) {
-  const isToday = c.lastActiveDate === today;
+  const isToday = isActiveToday(c);
   const isVirtual = isVirtualClient(c);
   const displayName =
     c.clientAlias ?? c.name ?? (isVirtual ? 'Оффлайн' : `ID ${c.telegramId}`);

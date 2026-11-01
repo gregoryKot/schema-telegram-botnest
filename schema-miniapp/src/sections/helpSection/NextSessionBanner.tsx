@@ -1,25 +1,12 @@
 import { TherapyRelationInfo } from '../../api';
-import { todayCalendarDate } from '../../../../shared/src/utils/calendarDate';
-import { upcomingSession } from '../../../../shared/src/therapy/upcomingSession';
-
-const MONTHS = [
-  'янв',
-  'фев',
-  'мар',
-  'апр',
-  'май',
-  'июн',
-  'июл',
-  'авг',
-  'сен',
-  'окт',
-  'ноя',
-  'дек',
-];
-const DAYS = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
+import { nextSessionLabel } from '../../../../shared/src/therapy/clientSheetHelpers';
+import {
+  isSessionToday,
+  upcomingSession,
+} from '../../../../shared/src/therapy/upcomingSession';
 
 // Баннер «следующая встреча» для клиентов терапевта. Вынесено из
-// HelpSection.tsx (правило №10, храповик размера файла). Поведение не менялось.
+// HelpSection.tsx (правило №10, храповик размера файла).
 export function NextSessionBanner({
   relation,
 }: {
@@ -30,12 +17,11 @@ export function NextSessionBanner({
   const next = upcomingSession(relation.nextSession, relation.meetingDays);
   if (!next) return null;
 
-  const [datePart, timePart] = next.includes('T')
-    ? next.split('T')
-    : [next, null];
-  const [y, m, d] = datePart.split('-').map(Number);
-  const label = `${DAYS[new Date(y, m - 1, d).getDay()]}, ${d} ${MONTHS[m - 1]}${timePart ? ` · ${timePart}` : ''}`;
-  const isToday = datePart === todayCalendarDate();
+  // Подпись — общая с карточкой терапевта («Пн, 26 мая · 10:00»; год — если
+  // не текущий). «Сегодня» — местный день клиента: nextSession — настенное
+  // время, а не день UTC (QA 2026-10-26).
+  const label = nextSessionLabel(next);
+  const isToday = isSessionToday(next);
 
   return (
     <div

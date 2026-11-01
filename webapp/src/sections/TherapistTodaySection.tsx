@@ -5,20 +5,8 @@ import type { TherapyClientSummary, UserId } from '../api';
 import '../styles/therapist-today.css';
 import { AttentionRow, ActivityRow, SessionRow } from './TherapistTodayLists';
 import { needsAttention, sessionsTodaySorted, todayCounts } from './therapistTodayModel';
-
-const DAY_NAMES_RU = ['Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'];
-const MONTHS_RU = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
-
-function todayLabel() {
-  const now = new Date();
-  return `${DAY_NAMES_RU[now.getDay()]}, ${now.getDate()} ${MONTHS_RU[now.getMonth()]}`;
-}
-
-function greeting(name: string | null) {
-  const h = new Date().getHours();
-  const salutation = h < 12 ? 'Доброе утро' : h < 17 ? 'Добрый день' : 'Добрый вечер';
-  return name ? `${salutation}, ${name}` : salutation;
-}
+import { homeGreeting } from './today/helpers';
+import { formatGreetingDate } from './today/greetingDate';
 
 interface Props {
   displayName: string | null;
@@ -28,24 +16,21 @@ interface Props {
 export function TherapistTodaySection({ displayName, onOpenClient }: Props) {
   const [clients, setClients] = useState<TherapyClientSummary[]>([]);
   const [loading, setLoading] = useState(true);
-  // «Сейчас» фиксируется при монтировании: Date.now() в теле рендера
-  // недетерминирован (react-hooks/purity), а данные всё равно грузятся на
-  // маунте. Значения — дневного масштаба, замер на маунте достаточен.
-  const [now] = useState(() => Date.now());
 
   useEffect(() => {
     api.getTherapyClients().then(setClients).catch(() => {}).finally(() => setLoading(false));
   }, []);
 
-  const counts = todayCounts(clients, now);
+  const counts = todayCounts(clients);
   const sessions = sessionsTodaySorted(clients);
-  const attention = clients.filter(c => needsAttention(c, now));
+  const attention = clients.filter(needsAttention);
 
   return (
     <div className="ds-page tt-page animate-fade">
       <div>
-        <div className="ds-eyebrow">{todayLabel()}</div>
-        <h1 className="ds-h1">{greeting(displayName)}</h1>
+        {/* Приветствие и дата — те же, что у клиентского «Сегодня» (одна механика). */}
+        <div className="ds-eyebrow">{formatGreetingDate()}</div>
+        <h1 className="ds-h1">{homeGreeting(displayName ?? '')}</h1>
       </div>
 
       {!loading && clients.length > 0 && (
@@ -73,13 +58,13 @@ export function TherapistTodaySection({ displayName, onOpenClient }: Props) {
           ) : sessions.length === 0 ? (
             <div className="tt-empty">Сессий не запланировано</div>
           ) : (
-            sessions.map(c => <SessionRow key={c.telegramId} client={c} now={now} onOpen={onOpenClient} />)
+            sessions.map(c => <SessionRow key={c.telegramId} client={c} onOpen={onOpenClient} />)
           )}
           {!loading && attention.length > 0 && (
             <>
               <h2 className="ds-h2">Требуют внимания</h2>
               <div className="tt-attn-list">
-                {attention.map(c => <AttentionRow key={c.telegramId} client={c} now={now} onOpen={onOpenClient} />)}
+                {attention.map(c => <AttentionRow key={c.telegramId} client={c} onOpen={onOpenClient} />)}
               </div>
             </>
           )}
@@ -93,7 +78,7 @@ export function TherapistTodaySection({ displayName, onOpenClient }: Props) {
             <div className="tt-empty">Нет клиентов</div>
           ) : (
             <div className="ds-card ds-card--flush" style={{ borderRadius: 16 }}>
-              {clients.map(c => <ActivityRow key={c.telegramId} client={c} now={now} onOpen={onOpenClient} />)}
+              {clients.map(c => <ActivityRow key={c.telegramId} client={c} onOpen={onOpenClient} />)}
             </div>
           )}
         </div>

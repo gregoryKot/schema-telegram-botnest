@@ -15,9 +15,8 @@ import {
   momentDayLabel,
   momentTime,
 } from './momentDate';
-import { todayCalendarDate } from './calendarDate';
 import { fmtDate, todayStr } from './format';
-import { forEachTimeZone } from './timeZone.test-helpers';
+import { forEachTimeZone, withTimeZone } from './timeZone.test-helpers';
 
 // 23:30Z — в Australia/Sydney уже следующие сутки; 00:30Z — в
 // America/Los_Angeles ещё предыдущие. Оба конца расхождения покрыты.
@@ -112,11 +111,33 @@ describe('momentIsToday — обе стороны в одних координа
     }
   });
 
-  it('календарный день сервера сверяется с календарным «сегодня»', () => {
+  // QA 2026-10-26: день оценки или записи дневника — местный день самого
+  // человека; сверка с днём UTC в 00:10 по Москве делала сегодняшнюю запись
+  // вчерашней, а вчерашнюю — «Сегодня».
+  it('календарный день сверяется с местным «сегодня» читателя', () => {
     frozenAt(LATE_UTC, (tz) => {
-      expect(momentIsToday(todayCalendarDate()), tz).toBe(true);
+      expect(momentIsToday(todayStr()), tz).toBe(true);
       expect(momentIsToday('2026-07-21'), tz).toBe(false);
     });
+  });
+
+  it('00:10 по Москве (21:10 UTC): 27-е — сегодня, 26-е — нет', () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-10-26T21:10:00Z'));
+    try {
+      withTimeZone('Europe/Moscow', () => {
+        expect(momentIsToday('2026-10-27')).toBe(true);
+        expect(momentIsToday('2026-10-26')).toBe(false);
+        expect(momentDayLabel('2026-10-27')).toBe('Сегодня');
+        expect(momentDayLabel('2026-10-26')).toBe('26 окт');
+      });
+      withTimeZone('America/Los_Angeles', () => {
+        expect(momentIsToday('2026-10-26')).toBe(true);
+        expect(momentIsToday('2026-10-27')).toBe(false);
+      });
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
 

@@ -24,8 +24,7 @@ import { useCatalogCounts } from './practice/catalogCounts';
 import { usePracticeTools } from './practice/usePracticeTools';
 import { CatalogsBlock } from './practice/CatalogsBlock';
 import { pluralRu as plural } from '../../../shared/src/utils/pluralRu';
-import { todayCalendarDate } from '../../../shared/src/utils/calendarDate';
-import { upcomingSession } from '../../../shared/src/therapy/upcomingSession';
+import { isSessionToday, upcomingSession } from '../../../shared/src/therapy/upcomingSession';
 import '../styles/client-practice.css';
 
 const ToolsCustomizeSheet = lazy(() => import('../components/quickActions/ToolsCustomizeSheet').then(m => ({ default: m.ToolsCustomizeSheet })));
@@ -86,7 +85,7 @@ export function PracticeSection({ onOpenChildhoodWheel, onOpenPractices, onOpenP
     const at = upcomingSession(relation.nextSession, relation.meetingDays);
     if (!at) return null;
     const label = sessionMoment(at).toLocaleDateString('ru-RU', { weekday: 'short', day: 'numeric', month: 'short' });
-    const isToday = at.slice(0, 10) === todayCalendarDate();
+    const isToday = isSessionToday(at);
     return { label, isToday, partnerName: relation.partnerName };
   })();
 

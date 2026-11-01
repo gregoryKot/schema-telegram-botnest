@@ -1,14 +1,10 @@
 import { TherapyClientSummary } from '../../api';
+import { isActiveToday } from '../../../../shared/src/therapy/clientSheetHelpers';
 
 // Три стат-карточки над списком клиентов (клиентов / активных / оценили).
-// Вынесено из ClientListView (правило №10 — файл-храповик).
-export function StatCards({
-  clients,
-  today,
-}: {
-  clients: TherapyClientSummary[];
-  today: string;
-}) {
+// Вынесено из ClientListView (правило №10 — файл-храповик). «Активных» —
+// по календарю каждого клиента (isActiveToday), не по дню терапевта.
+export function StatCards({ clients }: { clients: TherapyClientSummary[] }) {
   return (
     <div
       style={{
@@ -21,7 +17,7 @@ export function StatCards({
       {[
         { value: clients.length, label: 'КЛИЕНТОВ' },
         {
-          value: clients.filter((c) => c.lastActiveDate === today).length,
+          value: clients.filter(isActiveToday).length,
           label: 'АКТИВНЫХ',
         },
         {

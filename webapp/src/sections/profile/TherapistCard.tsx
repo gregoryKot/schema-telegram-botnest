@@ -2,7 +2,8 @@ import { api } from '../../api';
 import type { TherapyRelationInfo } from '../../api';
 import { FormerTherapistNote } from '../../../../shared/src/therapy/FormerTherapistNote';
 import { upcomingSession } from '../../../../shared/src/therapy/upcomingSession';
-import { avatarInitial, formatNextSession } from './profileModel';
+import { nextSessionLabel } from '../../../../shared/src/therapy/clientSheetHelpers';
+import { avatarInitial } from './profileModel';
 
 // Карточка «Терапевт» профиля. Связи нет, а терапевт отказался от роли — вместо
 // пустоты сообщение о бывшем терапевте (решение владельца 2026-10-22).
@@ -20,7 +21,7 @@ export function TherapistCard({ relation }: { relation: TherapyRelationInfo | nu
       {next && (
         <div className="cpf-therapist-next">
           <span className="cpf-therapist-label">Следующая сессия</span>
-          <span>{formatNextSession(next)}</span>
+          <span>{nextSessionLabel(next)}</span>
         </div>
       )}
     </section>

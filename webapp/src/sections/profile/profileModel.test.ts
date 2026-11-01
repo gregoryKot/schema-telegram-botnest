@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { forEachTimeZone } from '../../../../shared/src/utils/timeZone.test-helpers';
 import {
   utcDateStr, dayLevel, buildLevelMap, buildHeatWeeks, monthLabels, daysWord,
-  achievementProgress, formatNextSession, avatarInitial, trendKind, heatWeeksForWidth, patternBarPercent,
+  achievementProgress, avatarInitial, trendKind, heatWeeksForWidth, patternBarPercent,
 } from './profileModel';
 
 describe('dayLevel', () => {
@@ -75,10 +75,6 @@ describe('мелкие функции', () => {
     expect(achievementProgress('streak_7', false, 0, 20)).toBeNull();
     expect(achievementProgress('streak_7', true, 5, 20)).toBeNull();
     expect(achievementProgress('growth', false, 5, 20)).toBeNull();
-  });
-  it('formatNextSession', () => {
-    expect(formatNextSession('2026-09-03T14:30:00')).toBe('Чт, 3 сен · 14:30:00');
-    expect(formatNextSession('2026-09-03')).toBe('Чт, 3 сен');
   });
   it('avatarInitial / trendKind', () => {
     expect(avatarInitial(' анна')).toBe('А');

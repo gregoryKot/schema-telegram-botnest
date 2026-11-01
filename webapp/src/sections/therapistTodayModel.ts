@@ -1,12 +1,12 @@
 // Чистые вычисления экрана «Сегодня» кабинета терапевта: счётчики, статус
 // активности клиента, точки спарклайна. Всё считается только из
-// TherapyClientSummary, который экран уже получает.
+// TherapyClientSummary, который экран уже получает. Два разных «сегодня»
+// (QA 2026-10-26): активность — по календарю КЛИЕНТА (daysSinceActive и
+// todayIndex считает сервер в его зоне), сессии — по местному дню терапевта
+// (nextSession — его настенное время).
 import type { TherapyClientSummary } from '../api';
-import { todayCalendarDate } from '../../../shared/src/utils/calendarDate';
-import { upcomingSession } from '../../../shared/src/therapy/upcomingSession';
+import { isSessionToday, upcomingSession } from '../../../shared/src/therapy/upcomingSession';
 import { indexLevel, type IndexLevel } from '../lib/tone';
-
-const DAY_MS = 86400000;
 /** С какого числа дней без активности клиент попадает в «Требуют внимания». */
 export const ATTENTION_DAYS = 3;
 
@@ -20,16 +20,15 @@ export function initials(name: string): string {
   return letters.join('') || '?';
 }
 
-/** Целых дней с lastActiveDate до now; null — активности не было. */
-export function daysSinceActive(c: TherapyClientSummary, now: number): number | null {
-  if (!c.lastActiveDate) return null;
-  return Math.max(0, Math.floor((now - new Date(c.lastActiveDate).getTime()) / DAY_MS));
+/** Дней от последней оценки до сегодня клиента (его календарь); null — не было. */
+export function daysSinceActive(c: TherapyClientSummary): number | null {
+  return c.daysSinceActive ?? null;
 }
 
 /** Ближайшая встреча сегодня: будущий nextSession важнее дней, прошедший — нет. */
 const sessionToday = (c: TherapyClientSummary): string | null => {
   const at = upcomingSession(c.nextSession, c.meetingDays);
-  return at?.slice(0, 10) === todayCalendarDate() ? at : null;
+  return isSessionToday(at) ? at : null;
 };
 export const hasSessionToday = (c: TherapyClientSummary): boolean => sessionToday(c) !== null;
 
@@ -44,28 +43,28 @@ export function sessionsTodaySorted(clients: TherapyClientSummary[]): TherapyCli
 }
 
 /** Не заполнили сегодня и молчат 3+ дня (или записей не было вовсе). */
-export function needsAttention(c: TherapyClientSummary, now: number): boolean {
+export function needsAttention(c: TherapyClientSummary): boolean {
   if (c.todayIndex != null) return false;
-  const days = daysSinceActive(c, now);
+  const days = daysSinceActive(c);
   return days == null || days >= ATTENTION_DAYS;
 }
 
 export interface TodayCounts { active: number; total: number; sessions: number; attention: number }
 
-export function todayCounts(clients: TherapyClientSummary[], now: number): TodayCounts {
+export function todayCounts(clients: TherapyClientSummary[]): TodayCounts {
   return {
     active: clients.filter(c => c.todayIndex != null).length,
     total: clients.length,
     sessions: clients.filter(hasSessionToday).length,
-    attention: clients.filter(c => needsAttention(c, now)).length,
+    attention: clients.filter(needsAttention).length,
   };
 }
 
 export interface ActivityStatus { text: string; tone: 'ok' | 'warn' | 'none' }
 
-export function activityStatus(c: TherapyClientSummary, now: number): ActivityStatus {
+export function activityStatus(c: TherapyClientSummary): ActivityStatus {
   if (c.todayIndex != null) return { text: 'активность сегодня', tone: 'ok' };
-  const days = daysSinceActive(c, now);
+  const days = daysSinceActive(c);
   if (days == null) return { text: 'нет данных', tone: 'warn' };
   if (days === 0) return { text: 'активность сегодня', tone: 'ok' };
   if (days === 1) return { text: 'активность вчера', tone: 'none' };

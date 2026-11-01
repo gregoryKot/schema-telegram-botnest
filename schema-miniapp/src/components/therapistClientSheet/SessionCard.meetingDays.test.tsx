@@ -4,7 +4,7 @@
 // SessionCard.test.tsx, следующая сессия/ошибка — в
 // SessionCard.nextSession.test.tsx. Гейт «дни встреч скрывают форму
 // следующей сессии, пока открыты» проверяется здесь же (обе части рядом).
-import { describe, it, expect, vi, afterEach } from 'vitest';
+import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import {
   render,
   screen,
@@ -74,11 +74,23 @@ function baseProps(overrides: Partial<Parameters<typeof SessionCard>[0]> = {}) {
 }
 
 describe('SessionCard — бейдж активности', () => {
-  it('lastActiveDate = today — «● сегодня»', () => {
+  // fmtDate показывает год, если он не текущий: часы закреплены за 2026.
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-08-05T12:00:00Z'));
+  });
+  afterEach(() => vi.useRealTimers());
+
+  // «Сегодня» — по календарю клиента (daysSinceActive от сервера), не по
+  // today терапевта: в 00:10 по Москве у них разные числа (QA 2026-10-26).
+  it('daysSinceActive = 0 — «● сегодня»', () => {
     render(
       <SessionCard
         {...baseProps({
-          selectedClient: makeClient({ lastActiveDate: '2026-08-05' }),
+          selectedClient: makeClient({
+            lastActiveDate: '2026-08-06',
+            daysSinceActive: 0,
+          }),
           today: '2026-08-05',
         })}
       />,
@@ -86,16 +98,20 @@ describe('SessionCard — бейдж активности', () => {
     expect(screen.getByText('● сегодня')).toBeTruthy();
   });
 
-  it('lastActiveDate ≠ today — показывает дату последней активности', () => {
+  it('отмечался не сегодня — дата последней активности, даже если она равна today терапевта', () => {
     render(
       <SessionCard
         {...baseProps({
-          selectedClient: makeClient({ lastActiveDate: '2026-08-01' }),
+          selectedClient: makeClient({
+            lastActiveDate: '2026-08-05',
+            daysSinceActive: 1,
+          }),
           today: '2026-08-05',
         })}
       />,
     );
     expect(screen.queryByText('● сегодня')).toBeNull();
+    expect(screen.getByText('5 авг')).toBeTruthy();
   });
 
   it('telegramId ≤ 0 (тестовый/системный клиент) — бейдж активности не рендерится', () => {

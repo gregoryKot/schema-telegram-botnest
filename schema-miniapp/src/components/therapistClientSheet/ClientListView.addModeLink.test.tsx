@@ -91,7 +91,6 @@ function baseProps(
   return {
     clients: [] as TherapyClientSummary[],
     loading: false,
-    today: '2026-08-05',
     safeTop: 0,
     animKey: 0,
     onClose: vi.fn(),

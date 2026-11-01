@@ -5,5 +5,6 @@ export {
   calcTherapyDuration,
   nextSessionLabel,
   indexColor,
+  isActiveToday,
   CONCEPT_FIELDS,
 } from '../../../../shared/src/therapy/clientSheetHelpers';

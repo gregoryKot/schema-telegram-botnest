@@ -104,7 +104,18 @@ describe('BotClientOverviewService.getClientOverviews', () => {
       { date: day(3), ratings: { play: 4 } },
     ]);
 
-    expect(map.get('3')).toEqual({ streak: 0, daysSince: -1, history: [] });
+    expect(map.get('3')).toMatchObject({
+      streak: 0,
+      daysSince: -1,
+      lastDate: null,
+      history: [],
+    });
+    // Дни клиента: [0] — его сегодня (Москва), дальше по одному назад.
+    expect(map.get('1')!.recentDays).toHaveLength(14);
+    expect(map.get('1')!.recentDays[0]).toBe(day(0));
+    expect(map.get('1')!.recentDays[3]).toBe(day(3));
+    expect(map.get('1')!.lastDate).toBe(day(0));
+    expect(map.get('2')!.lastDate).toBe(day(3));
   });
 
   it('ровно 3 запроса независимо от числа клиентов', async () => {
@@ -216,6 +227,11 @@ describe('getClientOverviews — перенос из analytics-спека (#177)
     });
     const svc = new BotClientOverviewService(prisma as never);
     const out = await svc.getClientOverviews([3n]);
-    expect(out.get('3')).toEqual({ streak: 0, daysSince: -1, history: [] });
+    expect(out.get('3')).toMatchObject({
+      streak: 0,
+      daysSince: -1,
+      lastDate: null,
+      history: [],
+    });
   });
 });

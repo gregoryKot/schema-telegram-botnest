@@ -29,41 +29,50 @@ const offline = (over: Partial<TherapyClientSummary> = {}) =>
 
 describe('filterRoster', () => {
   const online = client({ telegramId: 1, name: 'Аня' });
-  const activeOnline = client({ telegramId: 2, name: 'Вера', lastActiveDate: TODAY });
+  // «Активна сегодня» — по календарю клиента: daysSinceActive отдаёт сервер.
+  const activeOnline = client({ telegramId: 2, name: 'Вера', lastActiveDate: TODAY, daysSinceActive: 0 });
   const off = offline();
   const all = [online, activeOnline, off];
 
   it('all: без фильтров возвращает всех', () => {
-    expect(filterRoster(all, '', 'all', TODAY)).toHaveLength(3);
+    expect(filterRoster(all, '', 'all')).toHaveLength(3);
   });
 
   it('active: только активные сегодня', () => {
-    expect(filterRoster(all, '', 'active', TODAY)).toEqual([activeOnline]);
+    expect(filterRoster(all, '', 'active')).toEqual([activeOnline]);
   });
 
   it('wait: офлайн-клиент с непустым name не попадает в «Ждут»', () => {
-    expect(filterRoster(all, '', 'wait', TODAY)).toEqual([online]);
+    expect(filterRoster(all, '', 'wait')).toEqual([online]);
   });
 
   it('virtual: определяется по отрицательному telegramId, а не по name', () => {
-    expect(filterRoster(all, '', 'virtual', TODAY)).toEqual([off]);
+    expect(filterRoster(all, '', 'virtual')).toEqual([off]);
   });
 
   it('поиск идёт по clientAlias, затем по name, без учёта регистра и пробелов', () => {
     const aliased = client({ telegramId: 3, name: 'Игорь', clientAlias: 'Пётр' });
-    expect(filterRoster([aliased], ' пёт ', 'all', TODAY)).toEqual([aliased]);
-    expect(filterRoster([aliased], 'игор', 'all', TODAY)).toEqual([]);
-    expect(filterRoster(all, 'ВЕР', 'all', TODAY)).toEqual([activeOnline]);
+    expect(filterRoster([aliased], ' пёт ', 'all')).toEqual([aliased]);
+    expect(filterRoster([aliased], 'игор', 'all')).toEqual([]);
+    expect(filterRoster(all, 'ВЕР', 'all')).toEqual([activeOnline]);
   });
 
   it('поиск и статус работают вместе', () => {
-    expect(filterRoster(all, 'бор', 'wait', TODAY)).toEqual([]);
-    expect(filterRoster(all, 'бор', 'virtual', TODAY)).toEqual([off]);
+    expect(filterRoster(all, 'бор', 'wait')).toEqual([]);
+    expect(filterRoster(all, 'бор', 'virtual')).toEqual([off]);
+  });
+
+  // QA 2026-10-26: lastActiveDate — день КЛИЕНТА; совпадение с днём терапевта
+  // ничего не значит (в 00:10 по Москве у клиента из Москвы уже другое число).
+  it('active: совпадение lastActiveDate с днём терапевта — не «сегодня» без daysSinceActive === 0', () => {
+    const yesterdayForClient = client({ telegramId: 4, lastActiveDate: TODAY, daysSinceActive: 1 });
+    expect(filterRoster([yesterdayForClient], '', 'active')).toEqual([]);
+    expect(filterRoster([yesterdayForClient], '', 'wait')).toEqual([yesterdayForClient]);
   });
 
   it('не мутирует исходный массив', () => {
     const copy = [...all];
-    filterRoster(all, '', 'all', TODAY);
+    filterRoster(all, '', 'all');
     expect(all).toEqual(copy);
   });
 });
@@ -101,6 +110,10 @@ describe('sortRoster', () => {
 });
 
 describe('meetingLabel', () => {
+  // fmtDate показывает год, если он не текущий: часы закреплены за 2026.
+  beforeEach(() => { vi.useFakeTimers({ toFake: ['Date'] }); vi.setSystemTime(new Date(`${TODAY}T12:00:00Z`)); });
+  afterEach(() => vi.useRealTimers());
+
   it('будущая встреча: день недели, дата и время', () => {
     // 2026-10-07 — среда
     expect(meetingLabel(client({ nextSession: '2026-10-07T11:00' }), TODAY)).toBe('Ср, 7 окт · 11:00');
@@ -135,31 +148,33 @@ describe('meetingLabel', () => {
 describe('clientCaption', () => {
   beforeEach(() => {
     vi.useFakeTimers();
-    vi.setSystemTime(new Date('2026-10-03T06:00:00Z'));
+    // 12:00 UTC — 3 октября во всех зонах прогона (срок считается от местного дня).
+    vi.setSystemTime(new Date('2026-10-03T12:00:00Z'));
   });
   afterEach(() => vi.useRealTimers());
 
   // Аудит 2026-10: подписи были в мужском роде («активен сегодня», «был
   // недавно», «не активен») о человеке, чей пол неизвестен.
   it('Telegram-клиент: активность сегодня', () => {
-    expect(clientCaption(client({ lastActiveDate: TODAY }), TODAY)).toBe('активность сегодня');
+    expect(clientCaption(client({ lastActiveDate: TODAY, daysSinceActive: 0 }))).toBe('активность сегодня');
+    expect(clientCaption(client({ lastActiveDate: TODAY, daysSinceActive: 1 }))).toBe('активность недавно');
   });
 
   it('Telegram-клиент: активность недавно + стрик', () => {
-    expect(clientCaption(client({ lastActiveDate: '2026-10-01', streak: 4 }), TODAY)).toBe(
+    expect(clientCaption(client({ lastActiveDate: '2026-10-01', streak: 4 }))).toBe(
       'активность недавно · стрик 4 дн.',
     );
   });
 
   it('Telegram-клиент: нет активности, без стрика', () => {
-    expect(clientCaption(client({}), TODAY)).toBe('нет активности');
+    expect(clientCaption(client({}))).toBe('нет активности');
   });
 
   it('ни в одной ветке активности нет мужского рода о клиенте', () => {
     const captions = [
-      clientCaption(client({ lastActiveDate: TODAY, streak: 2 }), TODAY),
-      clientCaption(client({ lastActiveDate: '2026-09-01' }), TODAY),
-      clientCaption(client({}), TODAY),
+      clientCaption(client({ lastActiveDate: TODAY, daysSinceActive: 0, streak: 2 })),
+      clientCaption(client({ lastActiveDate: '2026-09-01' })),
+      clientCaption(client({})),
     ];
     for (const caption of captions) {
       expect(caption).not.toMatch(/активен|был|заходил/);
@@ -167,24 +182,24 @@ describe('clientCaption', () => {
   });
 
   it('офлайн без даты начала — подписи нет', () => {
-    expect(clientCaption(offline(), TODAY)).toBeNull();
+    expect(clientCaption(offline())).toBeNull();
   });
 
   it('срок работы', () => {
-    expect(clientCaption(offline({ therapyStartDate: '2026-07-03' }), TODAY)).toBe('в работе 3 месяца');
-    expect(clientCaption(offline({ therapyStartDate: '2026-10-01' }), TODAY)).toBe('в работе 2 дня');
+    expect(clientCaption(offline({ therapyStartDate: '2026-07-03' }))).toBe('в работе 3 месяца');
+    expect(clientCaption(offline({ therapyStartDate: '2026-10-01' }))).toBe('в работе 2 дня');
   });
 
   it('начали сегодня', () => {
-    expect(clientCaption(offline({ therapyStartDate: TODAY }), TODAY)).toBe('с сегодняшнего дня');
+    expect(clientCaption(offline({ therapyStartDate: TODAY }))).toBe('с сегодняшнего дня');
   });
 
   it('офлайн: стрик и активность не показываются, даже если поля заполнены', () => {
-    expect(clientCaption(offline({ streak: 5, lastActiveDate: TODAY }), TODAY)).toBeNull();
+    expect(clientCaption(offline({ streak: 5, lastActiveDate: TODAY }))).toBeNull();
   });
 
   it('офлайн с непарсящейся датой начала — подписи нет', () => {
-    expect(clientCaption(offline({ therapyStartDate: 'мусор' }), TODAY)).toBeNull();
+    expect(clientCaption(offline({ therapyStartDate: 'мусор' }))).toBeNull();
   });
 });
 

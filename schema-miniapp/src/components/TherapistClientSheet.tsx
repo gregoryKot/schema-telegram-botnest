@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { api, reportClientError, TherapyClientSummary } from '../api';
 import { TaskCreateSheet } from './TaskCreateSheet';
-import { todayCalendarDate } from '../../../shared/src/utils/calendarDate';
+import { todayStr } from '../utils/format';
 import { useSafeTop } from '../utils/safezone';
 import { useClientDetail } from './therapist/useClientDetail';
 import { useAddClient } from './therapist/useAddClient';
@@ -115,7 +115,7 @@ export function TherapistClientSheet({
 
   const { addMode } = addClient;
 
-  const today = todayCalendarDate();
+  const today = todayStr(); // местный: nextSession — настенное время терапевта
 
   // ─── Autofocus via refs (jsx-a11y/no-autofocus) ──────────────────────────────
   const virtualInputRef = useRef<HTMLInputElement>(null);
@@ -146,7 +146,6 @@ export function TherapistClientSheet({
           clients={clients}
           loading={loading}
           loadFailed={loadFailed}
-          today={today}
           safeTop={safeTop}
           animKey={animKey}
           onClose={onClose}

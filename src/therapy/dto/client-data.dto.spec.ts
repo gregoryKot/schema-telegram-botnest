@@ -9,6 +9,7 @@ import {
   CreateSessionNoteDto,
   SessionInfoDto,
 } from './client-data.dto';
+import { latestTodayOnEarth } from './not-future-day';
 
 async function errorsFor(
   cls: new () => object,
@@ -114,5 +115,47 @@ describe('SessionInfoDto — форматы (T6)', () => {
       await expect(
         errorsFor(SessionInfoDto, { meetingDays: bad }),
       ).resolves.toContain('meetingDays');
+  });
+});
+
+// QA 2026-10-26: «Начало терапии» принимало дату в будущем — карточка
+// показывала «в работе сегодня», список — «с сегодняшнего дня». Граница —
+// самый поздний местный «сегодня» на Земле (UTC+14): день терапевта сервер
+// не знает, а законный сегодняшний день не должен отсекаться ни в одной зоне.
+describe('SessionInfoDto — начало терапии не в будущем', () => {
+  beforeAll(() => {
+    jest.useFakeTimers({ doNotFake: ['nextTick', 'setImmediate'] });
+    // 21:10 UTC 26-го: в Москве уже 27-е, на Киритимати (UTC+14) — 27-е 11:10.
+    jest.setSystemTime(new Date('2026-10-26T21:10:00Z'));
+  });
+  afterAll(() => jest.useRealTimers());
+
+  it('прошлое и местное сегодня восточнее UTC — проходят', async () => {
+    for (const ok of ['2025-09-26', '2026-10-26', '2026-10-27'])
+      await expect(
+        errorsFor(SessionInfoDto, { therapyStartDate: ok }),
+      ).resolves.toEqual([]);
+  });
+
+  it('день, который ещё нигде не наступил, — отказ', async () => {
+    for (const bad of ['2026-10-28', '2026-11-26', '2027-01-01'])
+      await expect(
+        errorsFor(SessionInfoDto, { therapyStartDate: bad }),
+      ).resolves.toContain('therapyStartDate');
+  });
+
+  it('null (сброс) по-прежнему проходит', async () => {
+    await expect(
+      errorsFor(SessionInfoDto, { therapyStartDate: null }),
+    ).resolves.toEqual([]);
+  });
+
+  it('latestTodayOnEarth: граница сдвигается в 10:00 UTC', () => {
+    expect(latestTodayOnEarth(Date.parse('2026-10-26T09:59:59Z'))).toBe(
+      '2026-10-26',
+    );
+    expect(latestTodayOnEarth(Date.parse('2026-10-26T10:00:00Z'))).toBe(
+      '2026-10-27',
+    );
   });
 });

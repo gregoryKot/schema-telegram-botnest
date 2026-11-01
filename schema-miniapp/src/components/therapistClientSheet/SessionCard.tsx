@@ -1,9 +1,17 @@
 import { pressable } from '../../utils/a11y';
 import { TherapyClientSummary } from '../../api';
 import { isVirtualId } from '../../../../shared/src/utils/sameId';
-import { fmtDate, momentDayKey } from '../../utils/format';
+import { fmtDate, momentDayKey, todayStr } from '../../utils/format';
 import { DAY_NAMES, calcTherapyDuration, nextSessionLabel } from './helpers';
+import { isActiveToday } from '../../../../shared/src/therapy/clientSheetHelpers';
 import { upcomingSession } from '../../../../shared/src/therapy/upcomingSession';
+import { SessionDateTimeFields } from '../../../../shared/src/therapy/SessionDateTimeFields';
+import {
+  sessionInputHint,
+  sessionToSave,
+  startDateHint,
+} from '../../../../shared/src/therapy/sessionInput';
+import { INLINE_FIELD_STYLE, InlineEditRow } from './InlineEditRow';
 import { ClientDetail } from './types';
 interface SessionCardProps {
   selectedClient: TherapyClientSummary;
@@ -46,6 +54,12 @@ export function SessionCard({
     selectedClient.meetingDays,
     today,
   );
+  const activeToday = isActiveToday(selectedClient);
+  const startHint = editingStartDate ? startDateHint(localStartDate) : null;
+  const sessionHint = editingNextSession
+    ? sessionInputHint(localNextSession)
+    : null;
+  const hint = startHint ?? sessionHint;
   const displayDays = editingDays
     ? localMeetingDays
     : (selectedClient.meetingDays ?? []);
@@ -63,65 +77,25 @@ export function SessionCard({
       <div className="u-between-mb10">
         <div>
           {editingStartDate ? (
-            <div
-              style={{
-                display: 'flex',
-                gap: 6,
-                alignItems: 'center',
+            <InlineEditRow
+              onSave={async () => {
+                await saveSessionInfo({
+                  therapyStartDate: localStartDate || null,
+                });
+                setEditingStartDate(false);
               }}
+              onCancel={() => setEditingStartDate(false)}
+              saveDisabled={sessionInfoSaving || startHint !== null}
             >
               <input
                 type="date"
+                max={todayStr()}
                 value={localStartDate}
                 onChange={(e) => setLocalStartDate(e.target.value)}
                 ref={startDateInputRef}
-                style={{
-                  background: 'rgba(var(--fg-rgb),0.07)',
-                  border: '1px solid rgba(var(--fg-rgb),0.15)',
-                  borderRadius: 'var(--r-8)',
-                  padding: '5px 8px',
-                  outline: 'none',
-                  color: 'var(--text)',
-                  fontSize: 13,
-                }}
+                style={INLINE_FIELD_STYLE}
               />
-              <button
-                onClick={async () => {
-                  await saveSessionInfo({
-                    therapyStartDate: localStartDate || null,
-                  });
-                  setEditingStartDate(false);
-                }}
-                disabled={sessionInfoSaving}
-                aria-label="Сохранить"
-                style={{
-                  padding: '5px 10px',
-                  borderRadius: 'var(--r-8)',
-                  border: 'none',
-                  background: 'var(--accent)',
-                  color: 'var(--on-accent)',
-                  fontSize: 12,
-                  cursor: 'pointer',
-                }}
-              >
-                ✓
-              </button>
-              <button
-                onClick={() => setEditingStartDate(false)}
-                aria-label="Отменить"
-                style={{
-                  padding: '5px 8px',
-                  borderRadius: 'var(--r-8)',
-                  border: 'none',
-                  background: 'rgba(var(--fg-rgb),0.08)',
-                  color: 'var(--text-sub)',
-                  fontSize: 12,
-                  cursor: 'pointer',
-                }}
-              >
-                ✕
-              </button>
-            </div>
+            </InlineEditRow>
           ) : (
             <div
               style={{
@@ -156,19 +130,15 @@ export function SessionCard({
             <span
               style={{
                 fontSize: 11,
-                color:
-                  selectedClient.lastActiveDate === today
-                    ? '#06d6a0'
-                    : 'rgba(var(--fg-rgb),0.3)',
-                background:
-                  selectedClient.lastActiveDate === today
-                    ? 'color-mix(in srgb, var(--accent-green) 10%, transparent)'
-                    : 'rgba(var(--fg-rgb),0.05)',
+                color: activeToday ? '#06d6a0' : 'rgba(var(--fg-rgb),0.3)',
+                background: activeToday
+                  ? 'color-mix(in srgb, var(--accent-green) 10%, transparent)'
+                  : 'rgba(var(--fg-rgb),0.05)',
                 padding: '3px 8px',
                 borderRadius: 'var(--r-20)',
               }}
             >
-              {selectedClient.lastActiveDate === today
+              {activeToday
                 ? '● сегодня'
                 : fmtDate(selectedClient.lastActiveDate)}
             </span>
@@ -311,66 +281,24 @@ export function SessionCard({
         {/* Next session */}
         {!editingDays &&
           (editingNextSession ? (
-            <div
-              style={{
-                display: 'flex',
-                gap: 6,
-                alignItems: 'center',
-                marginLeft: 'auto',
+            <InlineEditRow
+              onSave={async () => {
+                await saveSessionInfo({
+                  nextSession: sessionToSave(localNextSession),
+                });
+                setEditingNextSession(false);
               }}
+              onCancel={() => setEditingNextSession(false)}
+              saveDisabled={sessionInfoSaving || sessionHint !== null}
+              style={{ marginLeft: 'auto' }}
             >
-              <input
-                type="datetime-local"
+              <SessionDateTimeFields
                 value={localNextSession}
-                onChange={(e) => setLocalNextSession(e.target.value)}
-                ref={nextSessionInputRef}
-                style={{
-                  background: 'rgba(var(--fg-rgb),0.07)',
-                  border: '1px solid rgba(var(--fg-rgb),0.15)',
-                  borderRadius: 'var(--r-8)',
-                  padding: '5px 8px',
-                  outline: 'none',
-                  color: 'var(--text)',
-                  fontSize: 13,
-                }}
+                onChange={setLocalNextSession}
+                dateRef={nextSessionInputRef}
+                style={INLINE_FIELD_STYLE}
               />
-              <button
-                onClick={async () => {
-                  await saveSessionInfo({
-                    nextSession: localNextSession || null,
-                  });
-                  setEditingNextSession(false);
-                }}
-                disabled={sessionInfoSaving}
-                aria-label="Сохранить"
-                style={{
-                  padding: '5px 10px',
-                  borderRadius: 'var(--r-8)',
-                  border: 'none',
-                  background: 'var(--accent)',
-                  color: 'var(--on-accent)',
-                  fontSize: 12,
-                  cursor: 'pointer',
-                }}
-              >
-                ✓
-              </button>
-              <button
-                onClick={() => setEditingNextSession(false)}
-                aria-label="Отменить"
-                style={{
-                  padding: '5px 8px',
-                  borderRadius: 'var(--r-8)',
-                  border: 'none',
-                  background: 'rgba(var(--fg-rgb),0.08)',
-                  color: 'var(--text-sub)',
-                  fontSize: 12,
-                  cursor: 'pointer',
-                }}
-              >
-                ✕
-              </button>
-            </div>
+            </InlineEditRow>
           ) : (
             <div
               style={{
@@ -413,8 +341,9 @@ export function SessionCard({
             </div>
           ))}
       </div>
-      {sessionInfoError && (
+      {(hint ?? sessionInfoError) && (
         <div
+          role="alert"
           style={{
             fontSize: 11,
             color: 'var(--accent-red)',
@@ -422,7 +351,7 @@ export function SessionCard({
             textAlign: 'center',
           }}
         >
-          {sessionInfoError}
+          {hint ?? sessionInfoError}
         </div>
       )}
     </div>

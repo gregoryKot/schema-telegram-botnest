@@ -12,6 +12,7 @@ import {
 } from 'class-validator';
 import { CLIENT_NAME_MAX, SESSION_NOTE_MAX } from '../../utils/text-limits';
 import { IsCalendarDay } from '../../utils/calendar-day';
+import { NotFutureDay } from './not-future-day';
 
 /**
  * DTO для работы терапевта с клиентскими данными (аудит 2026-07, 2г /
@@ -35,12 +36,12 @@ export class CreateSessionNoteDto {
   text!: string;
 }
 
-// therapyStartDate/nextSession принимают строку, null (сброс) или undefined
-// (не менять) — ValidateIf пропускает проверку типа для null.
-// Формат (аудит 2026-10, T6): строки уходят в БД и в карточки клиента как есть.
-// therapyStartDate — настоящий календарный день (IsCalendarDay). nextSession —
-// день либо момент `YYYY-MM-DDTHH:mm[:ss]` (поле <input type="datetime-local">
-// сайта шлёт именно его; строгая дата сломала бы «следующую сессию» с временем).
+// therapyStartDate/nextSession: строка, null (сброс) или undefined (не менять).
+// Формат (аудит 2026-10, T6) уходит в БД и карточки как есть: therapyStartDate —
+// настоящий календарный день (IsCalendarDay) не в будущем (NotFutureDay);
+// nextSession — день или настенное время терапевта `YYYY-MM-DDTHH:mm[:ss]`
+// (поле datetime-local сайта шлёт именно его; день без времени — законная
+// встреча «в этот день»).
 const DAY_OR_MOMENT_RE = /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}(:\d{2})?)?$/;
 
 export class SessionInfoDto {
@@ -49,6 +50,7 @@ export class SessionInfoDto {
   @IsString()
   @MaxLength(10)
   @IsCalendarDay()
+  @NotFutureDay()
   therapyStartDate?: string | null;
 
   @IsOptional()

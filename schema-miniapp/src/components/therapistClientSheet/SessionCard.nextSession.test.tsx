@@ -4,7 +4,7 @@
 // встреч/бейдж активности — в SessionCard.meetingDays.test.tsx. Общий сетап
 // (makeClient/makeDetail/baseProps) дублируется во всех трёх частях —
 // осознанно, чтобы каждый файл был самодостаточным и запускался независимо.
-import { describe, it, expect, vi, afterEach } from 'vitest';
+import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import {
   render,
   screen,
@@ -108,6 +108,13 @@ describe('SessionCard — следующая сессия (просмотр)', (
 });
 
 describe('SessionCard — прошедшая следующая сессия (2026-10: «17 окт» при 26-м)', () => {
+  // fmtDate показывает год, если он не текущий: часы закреплены за 2026.
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-10-26T12:00:00Z'));
+  });
+  afterEach(() => vi.useRealTimers());
+
   // 2026-10-26 — понедельник; 17 и 31 октября — субботы.
   const stale = { nextSession: '2026-10-17T07:00' };
 
@@ -220,5 +227,69 @@ describe('SessionCard — ошибка сохранения', () => {
   it('sessionInfoError пуст — блока ошибки нет', () => {
     render(<SessionCard {...baseProps()} />);
     expect(screen.queryByText('Не удалось сохранить')).toBeNull();
+  });
+});
+
+// QA 2026-10-26: одно поле datetime-local отдаёт '' на день без времени —
+// уходило {nextSession: null}, и сохранённая сессия молча стиралась. Теперь
+// день и время — два поля (shared SessionDateTimeFields).
+describe('SessionCard — день без времени и время без дня', () => {
+  it('редактор — два поля: день и необязательное время', () => {
+    render(
+      <SessionCard
+        {...baseProps({
+          detail: makeDetail({
+            editingNextSession: true,
+            localNextSession: '2026-08-12T09:00:00',
+          }),
+        })}
+      />,
+    );
+    expect(screen.getByLabelText<HTMLInputElement>('День сессии').value).toBe(
+      '2026-08-12',
+    );
+    expect(
+      screen.getByLabelText<HTMLInputElement>('Время сессии, необязательно')
+        .value,
+    ).toBe('09:00');
+  });
+
+  it('только день — сохраняется днём, а не null', async () => {
+    const saveSessionInfo = vi.fn().mockResolvedValue(undefined);
+    render(
+      <SessionCard
+        {...baseProps({
+          detail: makeDetail({
+            editingNextSession: true,
+            localNextSession: '2026-08-12',
+            saveSessionInfo,
+          }),
+        })}
+      />,
+    );
+    fireEvent.click(screen.getByLabelText('Сохранить'));
+    await waitFor(() =>
+      expect(saveSessionInfo).toHaveBeenCalledWith({
+        nextSession: '2026-08-12',
+      }),
+    );
+  });
+
+  it('время без дня — «✓» недоступна, подсказка видна', () => {
+    const saveSessionInfo = vi.fn();
+    render(
+      <SessionCard
+        {...baseProps({
+          detail: makeDetail({
+            editingNextSession: true,
+            localNextSession: 'T09:00',
+            saveSessionInfo,
+          }),
+        })}
+      />,
+    );
+    const btn = screen.getByLabelText<HTMLButtonElement>('Сохранить');
+    expect(btn.disabled).toBe(true);
+    expect(screen.getByRole('alert').textContent).toMatch(/день встречи/);
   });
 });

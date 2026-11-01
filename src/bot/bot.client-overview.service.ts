@@ -6,6 +6,19 @@ import { localDate } from '../utils/tz';
 // Батч-обзор клиентов терапевта (стрик, давность, история за 14 дней) одним
 // набором запросов. Вынесено из BotAnalyticsService (правило №10): единственный
 // потребитель — терапевтская сторона (TherapyRelationsService).
+//
+// Все дни — по календарю КЛИЕНТА (notifyTimezone, по умолчанию Москва): в нём
+// POST /api/rating без даты кладёт оценку. recentDays[0] — сегодня клиента;
+// терапевт сверяет оценки с этими днями, а не со своим или UTC-днём (QA
+// 2026-10-26: в 00:10 по Москве сегодняшняя оценка клиента пропадала).
+export interface ClientOverview {
+  streak: number;
+  daysSince: number; // -1 — оценок не было
+  lastDate: string | null; // день последней оценки
+  recentDays: string[]; // 14 дней клиента, [0] — его сегодня
+  history: Array<{ date: string; ratings: Partial<Record<NeedId, number>> }>;
+}
+
 @Injectable()
 export class BotClientOverviewService {
   constructor(private readonly prisma: PrismaService) {}
@@ -14,30 +27,10 @@ export class BotClientOverviewService {
     return localDate(tz, base);
   }
 
-  async getClientOverviews(userIds: bigint[]): Promise<
-    Map<
-      string,
-      {
-        streak: number;
-        daysSince: number;
-        history: Array<{
-          date: string;
-          ratings: Partial<Record<NeedId, number>>;
-        }>;
-      }
-    >
-  > {
-    const out = new Map<
-      string,
-      {
-        streak: number;
-        daysSince: number;
-        history: Array<{
-          date: string;
-          ratings: Partial<Record<NeedId, number>>;
-        }>;
-      }
-    >();
+  async getClientOverviews(
+    userIds: bigint[],
+  ): Promise<Map<string, ClientOverview>> {
+    const out = new Map<string, ClientOverview>();
     if (userIds.length === 0) return out;
 
     // 1) Таймзоны всех клиентов одним запросом.
@@ -109,25 +102,25 @@ export class BotClientOverviewService {
       }
 
       let daysSince = -1;
-      if (dates.size > 0) {
-        const maxDate = [...dates].sort().at(-1)!;
+      const lastDate = dates.size > 0 ? [...dates].sort().at(-1)! : null;
+      if (lastDate) {
         const today = this.localDateString(tz);
         daysSince = Math.floor(
           (Date.parse(today + 'T00:00:00Z') -
-            Date.parse(maxDate + 'T00:00:00Z')) /
+            Date.parse(lastDate + 'T00:00:00Z')) /
             86_400_000,
         );
       }
 
-      const recent = recentDatesByUser.get(key)!;
-      const history = recent
+      const recentDays = recentDatesByUser.get(key)!;
+      const history = recentDays
         .filter((d) => ratingsByUserDate.has(`${key}|${d}`))
         .map((d) => ({
           date: d,
           ratings: ratingsByUserDate.get(`${key}|${d}`)!,
         }));
 
-      out.set(key, { streak, daysSince, history });
+      out.set(key, { streak, daysSince, lastDate, recentDays, history });
     }
     return out;
   }

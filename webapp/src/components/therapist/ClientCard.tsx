@@ -17,7 +17,7 @@ interface Props {
 export function ClientCard({ client, today, onOpen }: Props) {
   const name = rosterName(client);
   const status = clientStatus(client);
-  const caption = clientCaption(client, today);
+  const caption = clientCaption(client);
   const meeting = meetingLabel(client, today);
   return (
     <div className="ds-card ds-card--flush ds-card--hover tc-card" {...pressable(() => onOpen(client))}>

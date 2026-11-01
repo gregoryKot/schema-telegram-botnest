@@ -17,6 +17,7 @@ import { createRef } from 'react';
 import { SessionCard } from './SessionCard';
 import type { ClientDetail } from './types';
 import type { TherapyClientSummary } from '../../api';
+import { todayStr } from '../../utils/format';
 
 afterEach(() => {
   cleanup();
@@ -143,9 +144,8 @@ describe('SessionCard — редактирование даты начала', (
         })}
       />,
     );
-    const input = document.querySelector(
-      'input[type="date"]',
-    ) as HTMLInputElement;
+    const input =
+      document.querySelector<HTMLInputElement>('input[type="date"]')!;
     expect(input.value).toBe('2026-02-01');
   });
 
@@ -224,5 +224,45 @@ describe('SessionCard — редактирование даты начала', (
     );
     const btn = screen.getByLabelText('Сохранить');
     expect(btn.disabled).toBe(true);
+  });
+});
+
+// QA 2026-10-26: «Начало терапии» принимало будущий день — карточка писала
+// «в работе сегодня». Будущее не пускаем: max у поля и подсказка с
+// недоступной «✓» (сервер тоже откажет). «Сегодня» — местный день терапевта.
+describe('SessionCard — начало терапии не в будущем', () => {
+  afterEach(() => vi.useRealTimers());
+
+  it('у поля max = местный сегодняшний день', () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-10-26T21:10:00Z'));
+    render(
+      <SessionCard
+        {...baseProps({
+          detail: makeDetail({ editingStartDate: true, localStartDate: '' }),
+        })}
+      />,
+    );
+    const input =
+      document.querySelector<HTMLInputElement>('input[type="date"]')!;
+    expect(input.max).toBe(todayStr());
+  });
+
+  it('будущий день — «✓» недоступна, подсказка видна', () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-10-26T12:00:00Z'));
+    render(
+      <SessionCard
+        {...baseProps({
+          detail: makeDetail({
+            editingStartDate: true,
+            localStartDate: '2026-11-26',
+          }),
+        })}
+      />,
+    );
+    const btn = screen.getByLabelText<HTMLButtonElement>('Сохранить');
+    expect(btn.disabled).toBe(true);
+    expect(screen.getByRole('alert').textContent).toMatch(/в будущем/);
   });
 });

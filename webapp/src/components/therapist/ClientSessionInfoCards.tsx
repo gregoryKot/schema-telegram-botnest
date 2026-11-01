@@ -1,6 +1,8 @@
 import type { TherapyClientSummary } from '../../api';
-import { fmtDate } from '../../utils/format';
+import { fmtDate, todayStr } from '../../utils/format';
 import { upcomingSession } from '../../../../shared/src/therapy/upcomingSession';
+import { SessionDateTimeFields } from '../../../../shared/src/therapy/SessionDateTimeFields';
+import { sessionInputHint, sessionToSave, startDateHint } from '../../../../shared/src/therapy/sessionInput';
 import { DAY_NAMES, nextSessionLabel } from './clientSheetHelpers';
 import type { ClientDetail } from './clientSheetTypes';
 
@@ -14,20 +16,21 @@ export function NextSessionCard({ selectedClient, detail }: Props) {
   const { editingNextSession, setEditingNextSession, localNextSession, setLocalNextSession, saveSessionInfo, sessionInfoSaving, sessionInfoError } = detail;
   const days = selectedClient.meetingDays ?? [];
   const upcoming = upcomingSession(selectedClient.nextSession, days);
+  const hint = sessionInputHint(localNextSession);
   return (
     <div className="ds-card ds-card--accent">
       <div className="tk-card-label">Следующая сессия</div>
       {editingNextSession ? (
         <div className="tk-edit-form">
-          <input className="ds-input" type="datetime-local" value={localNextSession} onChange={e => setLocalNextSession(e.target.value)} />
+          <SessionDateTimeFields className="ds-input" value={localNextSession} onChange={setLocalNextSession} />
           <div className="tk-edit-actions">
-            <button className="ds-btn ds-btn--secondary ds-btn--sm" disabled={sessionInfoSaving}
-              onClick={async () => { if (await saveSessionInfo({ nextSession: localNextSession || null })) setEditingNextSession(false); }}>
+            <button className="ds-btn ds-btn--secondary ds-btn--sm" disabled={sessionInfoSaving || hint !== null}
+              onClick={async () => { if (await saveSessionInfo({ nextSession: sessionToSave(localNextSession) })) setEditingNextSession(false); }}>
               {sessionInfoSaving ? '...' : 'Сохранить'}
             </button>
             <button className="ds-btn ds-btn--secondary ds-btn--sm" onClick={() => setEditingNextSession(false)}>Отмена</button>
           </div>
-          {sessionInfoError && <div role="alert" className="tk-next-sub">{sessionInfoError}</div>}
+          {(hint ?? sessionInfoError) && <div role="alert" className="tk-next-sub">{hint ?? sessionInfoError}</div>}
         </div>
       ) : (
         <>
@@ -43,20 +46,21 @@ export function NextSessionCard({ selectedClient, detail }: Props) {
 /** «Начало терапии» с редактированием даты. */
 export function StartDateCard({ selectedClient, detail }: Props) {
   const { editingStartDate, setEditingStartDate, localStartDate, setLocalStartDate, saveSessionInfo, sessionInfoSaving, sessionInfoError } = detail;
+  const hint = startDateHint(localStartDate);
   return (
     <div className="ds-card">
       <div className="tk-card-label">Начало терапии</div>
       {editingStartDate ? (
         <div className="tk-edit-form">
-          <input className="ds-input" type="date" value={localStartDate} onChange={e => setLocalStartDate(e.target.value)} />
+          <input className="ds-input" type="date" max={todayStr()} value={localStartDate} onChange={e => setLocalStartDate(e.target.value)} />
           <div className="tk-edit-actions">
-            <button className="ds-btn ds-btn--sm" disabled={sessionInfoSaving}
+            <button className="ds-btn ds-btn--sm" disabled={sessionInfoSaving || hint !== null}
               onClick={async () => { if (await saveSessionInfo({ therapyStartDate: localStartDate || null })) setEditingStartDate(false); }}>
               {sessionInfoSaving ? '...' : 'Сохранить'}
             </button>
             <button className="ds-btn ds-btn--secondary ds-btn--sm" onClick={() => setEditingStartDate(false)}>Отмена</button>
           </div>
-          {sessionInfoError && <div role="alert" className="tk-error">{sessionInfoError}</div>}
+          {(hint ?? sessionInfoError) && <div role="alert" className="tk-error">{hint ?? sessionInfoError}</div>}
         </div>
       ) : (
         <div className="tk-start">
