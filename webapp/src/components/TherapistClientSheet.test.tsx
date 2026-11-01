@@ -40,6 +40,7 @@ vi.mock('../api', () => ({
     removeClient: vi.fn(),
     createTask: vi.fn(),
     trackEvent: vi.fn(),
+    listModeMaps: vi.fn(() => new Promise(() => {})),
   },
   reportClientError: vi.fn(),
 }));
@@ -228,6 +229,28 @@ describe('TherapistClientSheet — открытие карточки клиен�
     } finally {
       vi.useRealTimers();
     }
+  });
+});
+
+// РЕГРЕССИЯ (QA 2026-10-26): на телефоне холст «Карты режимов» был высотой 0px —
+// карточка клиента шла обычным потоком без высоты. Высоту даёт класс is-canvas
+// (therapist-card.css: карточка во весь экран между верхом и нижними панелями);
+// jsdom раскладку не считает, поэтому тест держит сам переключатель класса.
+describe('TherapistClientSheet — вкладка «Карта режимов» на телефоне', () => {
+  it('карточка получает is-canvas только на вкладке холста', async () => {
+    mockApi.getTherapyClients.mockResolvedValue([client({ telegramId: 7, name: 'Анна' })]);
+    renderSheet();
+    await screen.findByText('Анна');
+    fireEvent.click(screen.getByText('Анна'));
+    await screen.findByText('Обзор');
+    const card = () => document.querySelector('.therapist-scroll--client');
+    expect(card()?.classList.contains('is-canvas')).toBe(false);
+
+    fireEvent.click(screen.getByText('Карта режимов'));
+    await waitFor(() => expect(card()?.classList.contains('is-canvas')).toBe(true));
+
+    fireEvent.click(screen.getByText('Обзор'));
+    await waitFor(() => expect(card()?.classList.contains('is-canvas')).toBe(false));
   });
 });
 
