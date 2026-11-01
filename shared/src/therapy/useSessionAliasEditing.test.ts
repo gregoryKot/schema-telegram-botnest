@@ -158,7 +158,9 @@ describe('useSessionAliasEditing — даты сессий', () => {
     expect(result.current.edit.sessionInfoError).toBe(
       'Не удалось сохранить дату',
     );
-    act(() => vi.advanceTimersByTime(3000));
+    act(() => {
+      vi.advanceTimersByTime(3000);
+    });
     expect(result.current.edit.sessionInfoError).toBe('');
   });
 
