@@ -111,10 +111,10 @@
 | `shared/src/case/` | поток «Что это было»: типы, состояние, сохранение (мини-апп); `quick/` — три шага сайта |
 | `shared/src/childhoodWheel/` | колесо детства: данные и примеры |
 | `shared/src/components/` | общие компоненты: CrisisCard, Celebration, TherapyNote, Ysq*, ConnectionTrouble |
-| `shared/src/diary/` | мета дневников, пояснения, благодарности |
+| `shared/src/diary/` | мета дневников, пояснения, благодарности; `diaryDay` — «сегодня» дневника = местный день человека; `diaryPrivacy` + `useDiaryAccess` — «кто увидит записи» по связи с терапевтом и его доступу |
 | `shared/src/flashcard/` | контент карточки схемы: режимы, потребности, шаги |
 | `shared/src/history/` | CTA «Записаться» в истории |
-| `shared/src/hooks/` | useYsqTest и YSQ-скоринг, useConfetti, useLongPress, useDragReorder |
+| `shared/src/hooks/` | useYsqTest и YSQ-скоринг, useConfetti, useLongPress, useDragReorder, `useConfirmedAction` (действие только после подтверждения) |
 | `shared/src/host/` | абстракция хоста: telegram, max, web (`getHost`, safezone) |
 | `shared/src/journey/` | «Мой путь»: лента активности, периоды, детали |
 | `shared/src/limits/` | `textLimits`: зеркало лимитов длины текста бэка |

@@ -1687,7 +1687,7 @@
   "src/therapy/therapist-request.notify.ts": 160,
   "src/therapy/therapist-request.service.ts": 220,
   "src/therapy/therapy-client-data.service.ts": 281,
-  "src/therapy/therapy-connection.controller.ts": 208,
+  "src/therapy/therapy-connection.controller.ts": 213,
   "src/therapy/therapy-invite-claim.ts": 34,
   "src/therapy/therapy-invite.ts": 130,
   "src/therapy/therapy-notes.controller.ts": 156,

@@ -125,6 +125,7 @@
 - Входы:
   - `src/utils/crypto.ts` — encrypt/decrypt; ключи `ENCRYPTION_KEY` + `ENCRYPTION_KEY_OLD`
   - `src/utils/crypto-record.ts` — encryptRecord/decryptRecord по `EncryptSchema`
+  - `src/bot/encrypted-rows.ts` — `decryptRecord`/`read*` для ответа ручек записи: ответ create = GET той же записи, без шифротекста (сверка — `src/utils/encrypted-write-response.spec.ts`)
   - `src/utils/encryption-policy.ts` — `FIELD_POLICY`: каждое поле Prisma — enc или plain
   - `src/utils/admin-alert.ts` — notifyAdminWithFallback: Telegram, затем e-mail
   - `src/utils/text-limits.ts` — пределы длины текста (лимит только в DTO `@MaxLength`)

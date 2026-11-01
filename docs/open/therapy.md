@@ -198,13 +198,9 @@
 - **Воронка «пригласил → подключился → отозвал» не считается в аналитике.**
   Ни `POST /api/therapy/invite`, ни `join`, ни отзыв не пишут событие
   (`src/analytics/analytics.constants.ts`), блока в `/stats` нет — сколько кодов
-  доходят до клиента, не видно.
-- **`POST /api/therapy/join` без лимита запросов, а предпросмотр того же кода —
-  с ним.** `src/therapy/therapy-connection.controller.ts`, `join` — без
-  `@Throttle`; `POST /api/therapy/invite/preview`
-  (`src/therapy/therapy-invites.controller.ts`) — `@PersistentThrottleLimit`.
-  Перебор 12 hex-знаков нереален, но правило №5 («кодовые ручки — счётчик в
-  Postgres») к `join` не применено.
+  доходят до клиента, не видно. Не сделано в #896 осознанно: это события
+  уже существовавшей фичи «связь с терапевтом» (без событий и до QA), а #896 —
+  починка; события и блок `/stats` — отдельный PR по правилу №8.
 - **Кеш «Написать терапевту» после подключения обновляется только на сайте по
   ссылке.** `cacheTherapistContact` зовут `webapp/src/components/appShell/EntryFlows.tsx`
   (ссылка) и старт обоих приложений; подключение кодом в «Мой терапевт»

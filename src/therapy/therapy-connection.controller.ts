@@ -79,7 +79,12 @@ export class TherapyConnectionController {
     return this.exit.formerTherapist(uid(req));
   }
 
+  // Проверяет код, как invite/preview, — счётчик в Postgres (правило №5).
   @Post('join')
+  @PersistentThrottleLimit({
+    short: { limit: 10, ttl: 60_000 },
+    long: { limit: 100, ttl: 24 * 3_600_000 },
+  })
   async join(@Req() req: AuthRequest, @Body() body: JoinTherapyDto) {
     if (!body.code) throw new BadRequestException('code required');
     let ok: boolean;
