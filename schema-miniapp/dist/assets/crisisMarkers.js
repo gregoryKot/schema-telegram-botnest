@@ -1,1 +1,1 @@
-import"./CrisisCard.js";
+import"./textLimits.js";
