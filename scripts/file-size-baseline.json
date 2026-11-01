@@ -2314,7 +2314,7 @@
   "webapp/src/pages/tests/TestsPage.tsx": 73,
   "webapp/src/pages/TwoFactorChallengePage.tsx": 75,
   "webapp/src/schemaTherapyData.ts": 23,
-  "webapp/src/sections/diary/dateHelpers.ts": 26,
+  "webapp/src/sections/diary/dateHelpers.ts": 23,
   "webapp/src/sections/diary/DiaryDraft.tsx": 28,
   "webapp/src/sections/diary/DiaryHeader.tsx": 12,
   "webapp/src/sections/diary/diaryModel.ts": 75,

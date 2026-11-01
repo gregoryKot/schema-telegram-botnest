@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type { TherapyClientSummary } from '../../api';
 import { SCHEMA_DOMAINS } from '../../schemaTherapyData';
+import { forEachTimeZone } from '../../../../shared/src/utils/timeZone.test-helpers';
 import { filterRoster, sortRoster, meetingLabel, clientCaption, clientStatus, domainBar, schemaChips, rosterName, rosterInitials } from './rosterModel';
 
 const TODAY = '2026-10-03';
@@ -145,10 +146,19 @@ describe('clientCaption', () => {
     expect(clientCaption(client({ lastActiveDate: TODAY }), TODAY)).toBe('активность сегодня');
   });
 
-  it('Telegram-клиент: активность недавно + стрик', () => {
+  it('Telegram-клиент: давность активности + стрик', () => {
     expect(clientCaption(client({ lastActiveDate: '2026-10-01', streak: 4 }), TODAY)).toBe(
-      'активность недавно · стрик 4 дн.',
+      'активность 2 дн. назад · стрик 4 дн.',
     );
+    expect(clientCaption(client({ lastActiveDate: '2026-10-02' }), TODAY)).toBe('активность вчера');
+  });
+
+  // Раньше любая не сегодняшняя дата читалась «активность недавно» — и для
+  // месячной давности тоже; мини-апп в той же роли показывает дату.
+  it('месячная давность — дата, а не «недавно», в любой зоне', () => {
+    forEachTimeZone((tz) => {
+      expect(clientCaption(client({ lastActiveDate: '2026-09-01' }), TODAY), tz).toBe('активность 1 сен');
+    });
   });
 
   it('Telegram-клиент: нет активности, без стрика', () => {
