@@ -4,15 +4,11 @@ import { markSheetOpen } from './openSheets';
 import { PAGE_LIFE, backDepth, pushSheetState, sheetStackOf } from './historySheetStack';
 
 /**
- * Pushes a history entry via React Router when a sheet mounts so the
- * browser back button closes the sheet instead of navigating away.
- *
- * Uses useNavigate/useLocation so React Router knows about the entry –
- * bypassing the router with history.pushState caused both the sheet to
- * close AND the router to navigate back simultaneously.
- *
- * Returns a `goBack` function – use it for ALL close/back actions inside
- * the sheet so that history entries are never orphaned.
+ * Запись листа в истории через React Router (history.pushState в обход роутера
+ * закрывал лист И уводил назад): «Назад» браузера закрывает лист. `goBack` — для
+ * ВСЕХ закрытий в листе; `goBack(then)` — «закрыть свой и открыть соседний»: then
+ * идёт после onClose, когда снятие записи дошло до истории (пуш соседа в одном
+ * такте с go(-1) терялся в Chromium). onClick={goBack} даёт событие — не then.
  */
 // Ж5 дизайн-аудита 2026-08: webapp не слушал Escape вовсе (miniapp — слушал).
 // Стек id смонтированных листов — модульный, не state хука: Escape с общего
@@ -35,12 +31,10 @@ export function useHistorySheet(onClose: () => void) {
   // жизни страницы: запись истории переживает перезагрузку, счётчик useId — нет.
   const id = PAGE_LIFE + useId();
   const ready = useRef(false);
+  const then = useRef<(() => void) | null>(null);
 
   useEffect(() => {
-    navigate(location.pathname + location.search + location.hash, {
-      replace: false,
-      state: pushSheetState(location.state, id),
-    });
+    navigate(location.pathname + location.search + location.hash, { replace: false, state: pushSheetState(location.state, id) });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -50,8 +44,10 @@ export function useHistorySheet(onClose: () => void) {
       if (sheetStackOf(location.state).includes(id)) ready.current = true;
       return;
     }
-    // Our entry is gone from history (user pressed back) – close the sheet
-    if (!sheetStackOf(location.state).includes(id)) ref.current();
+    // Запись ушла из истории («Назад» или goBack) — закрываем лист, затем then.
+    if (sheetStackOf(location.state).includes(id)) return;
+    const next = then.current; then.current = null;
+    ref.current(); next?.();
   }, [location, id]);
 
   useEffect(() => {
@@ -77,5 +73,8 @@ export function useHistorySheet(onClose: () => void) {
 
   // goBack закрывает СВОЙ лист: снимает его запись и всё, что легло сверху
   // (запись ребёнка, в том числе брошенную без goBack), — не одну верхнюю.
-  return () => navigate(-backDepth(loc.current.state, id));
+  return (next?: unknown) => {
+    then.current = typeof next === 'function' ? (next as () => void) : null;
+    navigate(-backDepth(loc.current.state, id));
+  };
 }

@@ -5,7 +5,9 @@
 // «кабинет терапевта» — денормализованная сборка rows обязана отражать
 // therapistMode/userRole без рассинхрона.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, cleanup } from '@testing-library/react';
+import { useEffect, useState } from 'react';
+import { render, screen, fireEvent, cleanup, act } from '@testing-library/react';
+import { MemoryRouter, useNavigate } from 'react-router-dom';
 import { CommandPalette } from './CommandPalette';
 import { Dialog } from './Dialog';
 import type { TherapyClientSummary } from '../api';
@@ -27,8 +29,11 @@ afterEach(() => {
 });
 
 function renderPalette(props: Partial<Parameters<typeof CommandPalette>[0]> = {}) {
+  // Палитра кладёт запись истории (useHistorySheet) — нужен роутер.
   return render(
-    <CommandPalette onNavigate={vi.fn()} onClose={vi.fn()} {...props} />,
+    <MemoryRouter>
+      <CommandPalette onNavigate={vi.fn()} onClose={vi.fn()} {...props} />
+    </MemoryRouter>,
   );
 }
 
@@ -91,12 +96,12 @@ describe('CommandPalette — клавиатура', () => {
     const onClose = vi.fn();
     const onCloseDialog = vi.fn();
     render(
-      <>
+      <MemoryRouter>
         <CommandPalette onNavigate={vi.fn()} onClose={onClose} />
         <Dialog label="Подтверждение" closeOnEscape onClose={onCloseDialog}>
           <button>ок</button>
         </Dialog>
-      </>,
+      </MemoryRouter>,
     );
     fireEvent.keyDown(window, { key: 'Escape' });
     expect(onCloseDialog).toHaveBeenCalledTimes(1);
@@ -212,5 +217,43 @@ describe('CommandPalette — быстрые действия («+» на тел�
   it('в кабинете терапевта клиентских действий нет', () => {
     renderPalette({ therapistMode: true });
     expect(screen.queryByText('Дыхание 4-4-6')).toBeNull();
+  });
+});
+
+// Запись истории (docs/open/one-frontend.md, бейслайн history-sheet): палитра
+// открывается и с мобильной нижней панели, и «Назад» браузера уводил со
+// страницы. Хост здесь настоящий — убирает палитру по onClose, как AppShell.
+describe('CommandPalette — «Назад» браузера и запись истории', () => {
+  const nav: { back: () => void } = { back: () => {} };
+  function BackSpy() {
+    const navigate = useNavigate();
+    useEffect(() => { nav.back = () => navigate(-1); });
+    return null;
+  }
+  function Host({ onNavigate = vi.fn() }: { onNavigate?: (s: string) => void }) {
+    const [open, setOpen] = useState(true);
+    return open
+      ? <CommandPalette onNavigate={onNavigate} onClose={() => setOpen(false)} />
+      : <div>PALETTE-CLOSED</div>;
+  }
+
+  it('«Назад» браузера закрывает палитру, а не уводит со страницы', () => {
+    render(<MemoryRouter><BackSpy /><Host /></MemoryRouter>);
+    expect(screen.getByRole('dialog')).toBeTruthy();
+    act(() => nav.back());
+    expect(screen.getByText('PALETTE-CLOSED')).toBeTruthy();
+  });
+
+  it('действие строки идёт после закрытия палитры (запись уже снята)', () => {
+    const log: string[] = [];
+    function LoggingHost() {
+      const [open, setOpen] = useState(true);
+      return open
+        ? <CommandPalette onNavigate={(s) => log.push('navigate:' + s)} onClose={() => { log.push('close'); setOpen(false); }} />
+        : null;
+    }
+    render(<MemoryRouter><LoggingHost /></MemoryRouter>);
+    fireEvent.click(screen.getByText('Записи'));
+    expect(log).toEqual(['close', 'navigate:diary']);
   });
 });
