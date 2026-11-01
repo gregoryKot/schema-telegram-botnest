@@ -43,7 +43,7 @@ export function ChildhoodIntro({
         </button>
         <span className="ex2-spacer" />
         <button type="button" className="ds-btn" onClick={onStart}>
-          Оценить детство – 2 минуты <GlyphArrowRight />
+          Оценить детство – 8–12 минут <GlyphArrowRight />
         </button>
       </div>
     </ExScreen>

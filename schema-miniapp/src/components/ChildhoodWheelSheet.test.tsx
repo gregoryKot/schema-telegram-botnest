@@ -35,9 +35,29 @@ vi.mock('./childhoodWheelSheet/IntroPhase', () => ({
   ),
 }));
 vi.mock('./childhoodWheelSheet/FillPhase', () => ({
-  FillPhase: ({ onSave, saving }: { onSave: () => void; saving: boolean }) => (
+  FillPhase: ({
+    onSave,
+    saving,
+    unrated,
+    onRate,
+  }: {
+    onSave: () => void;
+    saving: boolean;
+    unrated: string[];
+    onRate: (id: string, v: number) => void;
+  }) => (
     <div data-testid="fill-phase">
       <span>saving-{String(saving)}</span>
+      <span>unrated-{unrated.length}</span>
+      <button
+        onClick={() =>
+          ['attachment', 'autonomy', 'expression', 'play', 'limits'].forEach(
+            (id, i) => onRate(id, i + 1),
+          )
+        }
+      >
+        rate-all
+      </button>
       <button onClick={onSave}>save</button>
     </div>
   ),
@@ -126,19 +146,60 @@ describe('ChildhoodWheelSheet — переходы intro → fill → result', (
       />,
     );
     fireEvent.click(screen.getByText('start'));
+    fireEvent.click(screen.getByText('rate-all'));
     fireEvent.click(screen.getByText('save'));
     expect(screen.getByTestId('result-phase')).toBeTruthy();
     expect(localStorage.getItem(CHILDHOOD_DONE_KEY)).toBe('1');
     expect(onSaved).toHaveBeenCalledTimes(1);
     await waitFor(() =>
-      expect(mockApi.saveChildhoodRatings).toHaveBeenCalledTimes(1),
+      expect(mockApi.saveChildhoodRatings).toHaveBeenCalledWith({
+        attachment: 1,
+        autonomy: 2,
+        expression: 3,
+        play: 4,
+        limits: 5,
+      }),
     );
+  });
+
+  // BACKLOG «Колесо детства»: ничего не тронув, человек сохранял 5/5/5/5/5.
+  it('новый человек: пять «не оценено», сохранение без оценок ничего не пишет', () => {
+    const onSaved = vi.fn();
+    render(
+      <ChildhoodWheelSheet
+        onClose={() => {}}
+        onOpenSchemas={() => {}}
+        onSaved={onSaved}
+      />,
+    );
+    fireEvent.click(screen.getByText('start'));
+    expect(screen.getByText('unrated-5')).toBeTruthy();
+    fireEvent.click(screen.getByText('save'));
+    expect(screen.getByTestId('fill-phase')).toBeTruthy();
+    expect(onSaved).not.toHaveBeenCalled();
+    expect(mockApi.saveChildhoodRatings).not.toHaveBeenCalled();
+    expect(localStorage.getItem(CHILDHOOD_DONE_KEY)).toBeNull();
+  });
+
+  it('сохранённое колесо при правке оценено целиком', async () => {
+    localStorage.setItem(CHILDHOOD_DONE_KEY, '1');
+    mockApi.getChildhoodRatings.mockResolvedValue({
+      attachment: 2,
+      autonomy: 8,
+      expression: 6,
+      play: 9,
+      limits: 7,
+    });
+    render(<ChildhoodWheelSheet onClose={() => {}} onOpenSchemas={() => {}} />);
+    fireEvent.click(await screen.findByText('edit'));
+    expect(screen.getByText('unrated-0')).toBeTruthy();
   });
 
   it('сбой фоновой синхронизации api.saveChildhoodRatings не откатывает UI назад в fill', async () => {
     mockApi.saveChildhoodRatings.mockRejectedValue(new Error('network'));
     render(<ChildhoodWheelSheet onClose={() => {}} onOpenSchemas={() => {}} />);
     fireEvent.click(screen.getByText('start'));
+    fireEvent.click(screen.getByText('rate-all'));
     fireEvent.click(screen.getByText('save'));
     await waitFor(() =>
       expect(mockApi.saveChildhoodRatings).toHaveBeenCalledTimes(1),

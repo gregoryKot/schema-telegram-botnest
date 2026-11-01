@@ -10,6 +10,7 @@ import { ChildhoodIntro } from './childhoodWheel/ChildhoodIntro';
 import { ChildhoodFill } from './childhoodWheel/ChildhoodFill';
 import { ChildhoodResult } from './childhoodWheel/ChildhoodResult';
 import type { ChildhoodRatings } from '../../../../shared/src/childhoodWheel/childhoodWheel';
+import { useChildhoodDraft } from '../../../../shared/src/childhoodWheel/useChildhoodDraft';
 import '../../styles/sheet-childhood.css';
 
 const TITLE = (
@@ -67,13 +68,7 @@ export function ChildhoodWheelEx({ onBack, onSaved, onOpenSchemas }: Props) {
   );
 }
 
-function Flow({
-  initial,
-  hasSaved,
-  goBack,
-  onSaved,
-  onOpenSchemas,
-}: {
+function Flow({ initial, hasSaved, goBack, onSaved, onOpenSchemas }: {
   initial: ChildhoodRatings;
   hasSaved: boolean;
   goBack: () => void;
@@ -81,14 +76,16 @@ function Flow({
   onOpenSchemas?: () => void;
 }) {
   const [phase, setPhase] = useState<'intro' | 'fill' | 'result'>(hasSaved ? 'result' : 'intro');
-  const [ratings, setRatings] = useState<Record<string, number>>(initial);
-  const [saved, setSaved] = useState<Record<string, number> | null>(hasSaved ? initial : null);
+  // Новый человек выставляет каждую потребность сам: пятёрки старта — не ответ.
+  const { ratings, unrated, rate, load } = useChildhoodDraft(initial, hasSaved);
+  const [saved, setSaved] = useState<ChildhoodRatings | null>(hasSaved ? initial : null);
   const [schemaId, setSchemaId] = useState<string | null>(null);
 
   // Сбой saveChildhoodRatings не прячем: без индикации и защиты от двойного
   // нажатия человек уходил бы с уверенностью, что колесо сохранено.
   const { saving, error, run, reset } = useSavingAction();
   async function save() {
+    if (unrated.length > 0) return;
     const ok = await run(() => api.saveChildhoodRatings(ratings));
     if (ok) {
       setSaved(ratings);
@@ -98,7 +95,7 @@ function Flow({
   }
 
   function cancelEdit() {
-    if (saved) setRatings(saved);
+    if (saved) load(saved, true);
     reset();
     setPhase('result');
   }
@@ -112,7 +109,8 @@ function Flow({
         <ChildhoodFill
           title={TITLE}
           ratings={ratings}
-          onChange={(id, v) => setRatings((r) => ({ ...r, [id]: v }))}
+          unrated={unrated}
+          onChange={rate}
           onBack={goBack}
           onCancel={saved ? cancelEdit : undefined}
           onSave={save}

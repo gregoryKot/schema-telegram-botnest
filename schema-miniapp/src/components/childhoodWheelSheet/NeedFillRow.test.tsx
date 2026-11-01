@@ -22,7 +22,7 @@ const META: NeedMetaEntry = {
 };
 
 function setup(
-  value: number,
+  value: number | undefined,
   overrides: Partial<Parameters<typeof NeedFillRow>[0]> = {},
 ) {
   const onChange = vi.fn();
@@ -60,6 +60,13 @@ describe('NeedFillRow — якоря шкалы', () => {
   it('текущее значение отображается рядом со шкалой /10', () => {
     setup(7);
     expect(screen.getByText('7')).toBeTruthy();
+  });
+
+  it('не оценено: «—» и подпись вместо /10, якоря не подсвечены', () => {
+    setup(undefined);
+    expect(screen.getByText('—')).toBeTruthy();
+    expect(screen.getByText(/не оценено/)).toBeTruthy();
+    expect(screen.queryByText('/10')).toBeNull();
   });
 });
 

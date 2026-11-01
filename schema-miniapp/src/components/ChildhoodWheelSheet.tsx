@@ -1,10 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useTr } from '../utils/addressForm';
 import { api } from '../api';
-import {
-  defaultChildhoodRatings,
-  readSavedRatings,
-} from '../../../shared/src/childhoodWheel/childhoodWheel';
+import { readSavedRatings } from '../../../shared/src/childhoodWheel/childhoodWheel';
+import { useChildhoodDraft } from '../../../shared/src/childhoodWheel/useChildhoodDraft';
 import { BottomSheet } from './BottomSheet';
 import {
   CHILDHOOD_DONE_KEY,
@@ -12,7 +10,6 @@ import {
   type ActiveSchema,
   type NeedId,
   type Phase,
-  type Ratings,
 } from './childhoodWheelSheet/types';
 import { buildNeedMeta } from './childhoodWheelSheet/needMeta';
 import { IntroPhase } from './childhoodWheelSheet/IntroPhase';
@@ -38,7 +35,8 @@ export function ChildhoodWheelSheet({
   const alreadyDone = !!localStorage.getItem(CHILDHOOD_DONE_KEY);
   const [phase, setPhase] = useState<Phase>(alreadyDone ? 'result' : 'intro');
   const [activeSchema, setActiveSchema] = useState<ActiveSchema | null>(null);
-  const [ratings, setRatings] = useState<Ratings>(defaultChildhoodRatings);
+  // Каждая потребность выставляется руками: пятёрки старта — положение ползунка, не ответ.
+  const { ratings, unrated, rate, load } = useChildhoodDraft();
   const [saving, setSaving] = useState(false);
   const [openExampleId, setOpenExampleId] = useState<NeedId | null>(null);
   const [openExampleIdx, setOpenExampleIdx] = useState<number | null>(null);
@@ -49,14 +47,15 @@ export function ChildhoodWheelSheet({
     api
       .getChildhoodRatings()
       .then((saved) => {
-        setRatings(readSavedRatings(saved).ratings);
+        const r = readSavedRatings(saved);
+        load(r.ratings, r.hasSaved);
         setResult({ loaded: true, error: false });
       })
       .catch(() => setResult({ loaded: true, error: true }));
   }, []);
 
   function handleSave() {
-    if (saving) return;
+    if (saving || unrated.length > 0) return;
     setSaving(true);
     localStorage.setItem(CHILDHOOD_DONE_KEY, '1');
     onSaved?.(ratings);
@@ -85,7 +84,8 @@ export function ChildhoodWheelSheet({
           <FillPhase
             NEED_META={NEED_META}
             ratings={ratings}
-            setRatings={setRatings}
+            unrated={unrated}
+            onRate={rate}
             openExampleId={openExampleId}
             setOpenExampleId={setOpenExampleId}
             openExampleIdx={openExampleIdx}

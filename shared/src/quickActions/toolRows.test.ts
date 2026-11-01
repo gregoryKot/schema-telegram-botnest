@@ -110,7 +110,7 @@ describe('buildToolRows — динамические sub', () => {
   it('childhoodDone переключает подпись «Колесо детства»', () => {
     const notDone = buildToolRows({ ...BASE_PROPS, childhoodDone: false });
     expect(notDone.find((r) => r.id === 'childhood_wheel')?.sub).toBe(
-      'Займёт 2 минуты',
+      'Займёт 8–12 минут',
     );
     const done = buildToolRows({ ...BASE_PROPS, childhoodDone: true });
     expect(done.find((r) => r.id === 'childhood_wheel')?.sub).toBe(
