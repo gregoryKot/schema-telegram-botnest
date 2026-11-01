@@ -17,13 +17,8 @@ export default defineConfig({
       // scripts/check-frontend-coverage-ratchet.mjs (по образцу webapp/miniapp).
       reporter: ['text', 'json-summary'],
       include: ['src/**'],
-      // *.test-helpers.ts — тестовая обвязка (зоны, смена клиента), не код
-      // продукта: её зовут тесты фронтов, а сьюта shared — нет.
-      exclude: [
-        'src/**/*.test.ts',
-        'src/**/*.test.tsx',
-        'src/**/*.test-helpers.ts',
-      ],
+      // *.test-helpers.ts — тестовая обвязка фронтов, не код продукта.
+      exclude: ['src/**/*.test.{ts,tsx}', 'src/**/*.test-helpers.ts'],
     },
   },
 });

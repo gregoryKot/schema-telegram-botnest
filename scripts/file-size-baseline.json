@@ -1012,7 +1012,7 @@
   "shared/src/utils/useCopyToClipboard.ts": 55,
   "shared/src/warmWords/collectWarmWords.ts": 79,
   "shared/src/warmWords/useWarmWords.ts": 64,
-  "shared/vitest.config.ts": 23,
+  "shared/vitest.config.ts": 24,
   "src/account/data-export.client-side.ts": 56,
   "src/account/data-export.service.ts": 155,
   "src/account/export-decrypt.ts": 19,
