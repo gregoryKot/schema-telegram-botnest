@@ -196,6 +196,9 @@ describe('TwoFactorChallengePage — вход устарел', () => {
     await screen.findByText(/Вход устарел/);
     expect(container.textContent).not.toMatch(/Неверный код|Invalid/);
     expect(screen.queryByPlaceholderText('123456')).toBeNull();
+    // Шапка «Код из приложения-аутентификатора» над «Войти заново» сбивала бы с толку.
+    expect(screen.queryByText('Двухфакторная проверка')).toBeNull();
+    expect(container.textContent).not.toMatch(/Код из приложения/);
     fireEvent.click(screen.getByRole('button', { name: 'Войти заново' }));
     await screen.findByText('login-page');
   });
@@ -205,5 +208,6 @@ describe('TwoFactorChallengePage — вход устарел', () => {
     await screen.findByText('Неверный код');
     expect(screen.queryByText(/Вход устарел/)).toBeNull();
     expect(screen.getByPlaceholderText('123456')).toBeTruthy();
+    expect(screen.getByText('Двухфакторная проверка')).toBeTruthy();
   });
 });

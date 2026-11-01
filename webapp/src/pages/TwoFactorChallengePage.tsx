@@ -50,7 +50,7 @@ export function TwoFactorChallengePage() {
   return (
     <div className="light-lock al-2fa">
       <div className="al-2fa-in">
-        <TwoFactorIntro />
+        {!expired && <TwoFactorIntro /> /* протух: «код из приложения» над «войти заново» сбивает */}
 
         {expired ? <TwoFactorExpired /> : <form onSubmit={submit} className="al-form">
           {recovery ? (

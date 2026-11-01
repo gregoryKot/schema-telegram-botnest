@@ -18,7 +18,8 @@ export function rejectedRequestText(
   tr: (ty: string, vy: string) => string,
 ): string | null {
   if (req?.status !== 'rejected') return null;
-  const reason = req.rejectReason?.trim();
+  // Точку ставит шаблон: хвостовая пунктуация причины дала бы «..» или «!.».
+  const reason = req.rejectReason?.trim().replace(/[.!?…\s]+$/u, '');
   return (
     `Прошлая заявка отклонена${reason ? `: ${reason}` : ''}. ` +
     tr('Можешь подать новую.', 'Можете подать новую.')

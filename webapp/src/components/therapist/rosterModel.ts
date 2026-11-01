@@ -1,6 +1,5 @@
-// Чистая логика списка клиентов терапевта: фильтры, порядок, подписи.
-// Календарные дни — строки 'YYYY-MM-DD', today приходит параметром
-// (правило №25: никакой локальной полуночи машины).
+// Чистая логика списка клиентов терапевта: фильтры, порядок, подписи. Календарные
+// дни — 'YYYY-MM-DD', today приходит параметром (правило №25: без локальной полуночи).
 import type { TherapyClientSummary } from '../../api';
 import { SCHEMA_DOMAINS } from '../../schemaTherapyData';
 import {
@@ -69,7 +68,8 @@ export function clientCaption(c: TherapyClientSummary, today: string): string | 
   if (duration === 'сегодня') return 'с сегодняшнего дня';
   if (duration) return `в работе ${duration}`;
   if (isVirtualClient(c)) return null;
-  const activity = c.lastActiveDate ? `активность ${calendarAgoLabel(c.lastActiveDate, today)}` : 'нет активности';
+  const ago = c.lastActiveDate ? calendarAgoLabel(c.lastActiveDate, today) : ''; // мусор → ''
+  const activity = ago ? `активность ${ago}` : 'нет активности';
   return c.streak > 0 ? `${activity} · стрик ${c.streak} дн.` : activity;
 }
 
