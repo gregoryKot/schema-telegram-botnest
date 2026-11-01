@@ -62,9 +62,6 @@ export function SettingsSheet({
   const [therapyRelation, setTherapyRelation] = useState<
     TherapyRelationInfo | null | undefined
   >(undefined);
-  const [therapyJoinCode, setTherapyJoinCode] = useState('');
-  const [therapyJoinError, setTherapyJoinError] = useState('');
-  const [therapyInviteUrl, setTherapyInviteUrl] = useState('');
   const [therapistReq, setTherapistReq] = useState<
     | { id: number; status: string; rejectReason: string | null }
     | null
@@ -281,10 +278,6 @@ export function SettingsSheet({
                   setTherapyRelation={setTherapyRelation}
                   settings={settings}
                   patch={patch}
-                  therapyJoinCode={therapyJoinCode}
-                  setTherapyJoinCode={setTherapyJoinCode}
-                  therapyJoinError={therapyJoinError}
-                  setTherapyJoinError={setTherapyJoinError}
                   onInfo={() => setShowTherapistInfo(true)}
                 />
               )}
@@ -313,8 +306,6 @@ export function SettingsSheet({
               {userRole === 'THERAPIST' && (
                 <TherapistCabinetSection
                   onOpenTherapistCabinet={onOpenTherapistCabinet}
-                  therapyInviteUrl={therapyInviteUrl}
-                  setTherapyInviteUrl={setTherapyInviteUrl}
                 />
               )}
 

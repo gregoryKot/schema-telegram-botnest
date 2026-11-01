@@ -59,6 +59,9 @@
   "src/subscription/subscription.charges.ts": {
     "reason": "Вынесен из subscription.service.ts (правило №10) до появления гейта мутационной зоны; в `mutate` не включён, мутации списаний подписки не измеряются — долг волны, а не решение. Сюда же `subscription.charge-failed.ts` (пометка failed, выделена из этого файла): ту же причину не измеряем, юнит `subscription.charge-failed.spec.ts` и живой кейс в `test/payment-webhooks.e2e-spec.ts` её пока держат вместо мутаций."
   },
+  "src/therapy/therapy-invite-list.ts": {
+    "reason": "Вынесен рядом с therapy-relations.service.ts при починке инцидента 2026-10-26 (список живых приглашений, отзыв, предпросмотр кода) — правило №10; в `mutate` не включён без прогона Stryker, мутации списка и отзыва приглашений не измеряются, держат юнит-спек и e2e therapy-invite — долг волны, а не решение."
+  },
   "src/therapy/therapy-relation-info.ts": {
     "reason": "Вынесен из therapy-relations.service.ts (правило №10) до появления гейта мутационной зоны; в `mutate` не включён, мутации статуса связи терапевт-клиент не измеряются — долг волны, а не решение."
   }

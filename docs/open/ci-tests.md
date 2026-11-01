@@ -336,13 +336,6 @@ Ubuntu 26) у трёх PR подряд падали `backend` → `check-coverag
   перевод на локальный день сдвинет ключ группировки относительно календарного
   дня благодарности, который приходит с сервера в UTC (правило №25). Решать
   вместе с тем, в какой системе координат живёт лента дневника.
-- Флак `webapp/src/pages/admin/PhotoSection.test.tsx`, тест «реальное
-  heroPhoto из API отображается как текущее»: `findByAltText('Текущее фото')`
-  находит `<img>` с фолбэком `/gregory.jpg` (`PhotoSection.tsx:55` рисует его до
-  ответа `getSiteContent`) и сразу сверяет `src` — под нагрузкой машины (load 18,
-  полный прогон vitest webapp) читает фолбэк вместо `data:image/jpeg;base64,REAL`.
-  Поодиночке зелёный. Лечится `await waitFor(() => expect(img.src)…)`; найден
-  попутно при починке Вебвизора, не чинился (правило №20).
 - **e2e на `AppModule` живут с настоящими `@Cron`** (`ScheduleModule.forRoot()`
   тикает после `app.init()`). `test/payment-webhooks.e2e-spec.ts` с 2026-10-16
   гасит их `stopCronJobs(app)` (`test/e2e-support/stop-cron-jobs.ts`): тик
@@ -356,6 +349,15 @@ Ubuntu 26) у трёх PR подряд падали `backend` → `check-coverag
   тика, завершившегося ошибкой — не воспроизводилось, не трогал. Новый e2e,
   считающий `notifyAdmin`/почту при живом `AppModule`, обязан звать
   `stopCronJobs`; механизма принуждения нет, держится ревью.
+
+**Сверка карты инвалидации кеша видит только `shared/src/api/*`** (найдено 2026-10-26 на офлайн-клиентах терапевта):
+- `shared/src/api/apiCacheRules.coverage.test.ts` (`SOURCES`) собирает мутации из `sharedApi.ts`,
+  `ratingApi.ts`, `apiExercises.ts` и только вида `t.post(`. Мутации `webapp/src/api.ts` и
+  `schema-miniapp/src/api.ts` (голые `post(`/`postJson(`/`patchJson(`/`del(`) в сверку не попадают:
+  карты режимов и свои режимы терапевта жили без строки инвалидации (закрыто в
+  `shared/src/api/apiCacheRules.therapy.ts`), `booking/cancel/:token`, `subscription`, `donation` не
+  проверены. Чинить: оба `api.ts` в `SOURCES` с регэкспом без `t.`, найденное — правилом или
+  записью `NO_INVALIDATION` с причиной.
 
 - **Браузерный смок трекера (`e2e-browser/tracker-smoke.spec.ts`) в PR-CI не идёт.** Проверено
   `grep -c playwright .github/workflows/ci.yml` → 0; `npx playwright test` есть только в

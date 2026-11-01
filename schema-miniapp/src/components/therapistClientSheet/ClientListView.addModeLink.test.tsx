@@ -19,7 +19,11 @@ import type { ClientDetail, AddClient } from './types';
 import type { TherapyClientSummary } from '../../api';
 
 vi.mock('../../api', () => ({
-  api: { createTherapyInvite: vi.fn() },
+  api: {
+    createTherapyInvite: vi.fn(),
+    getTherapyInvites: vi.fn(() => Promise.resolve([])),
+    revokeTherapyInvite: vi.fn(),
+  },
 }));
 import { api } from '../../api';
 const mockApi = api as unknown as {
@@ -53,8 +57,14 @@ function makeAddClient(overrides: Partial<AddClient> = {}): AddClient {
     setAddInput: vi.fn(),
     addError: '',
     setAddError: vi.fn(),
-    inviteUrl: '',
-    setInviteUrl: vi.fn(),
+    invite: null,
+    setInvite: vi.fn(),
+    pending: {
+      invites: [],
+      reload: vi.fn(),
+      revoke: vi.fn(),
+      revokeFailed: null,
+    },
     inviteCopied: false,
     inviteCopyFailed: false,
     inviteLoading: false,
@@ -93,7 +103,7 @@ function baseProps(
 }
 
 describe('ClientListView — режим «Ссылка»', () => {
-  it('нет inviteUrl — кнопка «Создать ссылку» зовёт createInvite', () => {
+  it('нет приглашения — кнопка «Создать ссылку» зовёт createInvite', () => {
     const createInvite = vi.fn();
     render(
       <ClientListView
@@ -117,13 +127,13 @@ describe('ClientListView — режим «Ссылка»', () => {
     expect(screen.getByText('Создаю...')).toBeTruthy();
   });
 
-  it('inviteUrl задан — показывает поле ссылки, кнопки копирования и «Создать новую»', () => {
+  it('приглашение создано — поле ссылки, код отдельно, кнопки копирования и «Создать новую»', () => {
     render(
       <ClientListView
         {...baseProps({
           addClient: makeAddClient({
             addMode: 'invite',
-            inviteUrl: 'https://t.me/bot?x=1',
+            invite: { url: 'https://t.me/bot?x=1', code: '7F3A9C21B04E' },
           }),
         })}
       />,
@@ -131,6 +141,10 @@ describe('ClientListView — режим «Ссылка»', () => {
     expect(screen.getByDisplayValue('https://t.me/bot?x=1')).toBeTruthy();
     expect(screen.getByText('Скопировать')).toBeTruthy();
     expect(screen.getByTestId('invite-share')).toBeTruthy();
+    // Инцидент 2026-10-26: код был только внутри ссылки t.me.
+    expect(screen.getByText('7F3A9C21B04E')).toBeTruthy();
+    expect(screen.getByText('Скопировать код')).toBeTruthy();
+    expect(screen.getByText(/«Мой терапевт»/)).toBeTruthy();
   });
 
   it('клик «Скопировать» зовёт copyInvite', () => {
@@ -140,7 +154,7 @@ describe('ClientListView — режим «Ссылка»', () => {
         {...baseProps({
           addClient: makeAddClient({
             addMode: 'invite',
-            inviteUrl: 'https://t.me/bot?x=1',
+            invite: { url: 'https://t.me/bot?x=1', code: '7F3A9C21B04E' },
             copyInvite,
           }),
         })}
@@ -150,21 +164,21 @@ describe('ClientListView — режим «Ссылка»', () => {
     expect(copyInvite).toHaveBeenCalled();
   });
 
-  it('клик «Создать новую» сбрасывает inviteUrl', () => {
-    const setInviteUrl = vi.fn();
+  it('клик «Создать новую» сбрасывает приглашение (новое — со своим кодом)', () => {
+    const setInvite = vi.fn();
     render(
       <ClientListView
         {...baseProps({
           addClient: makeAddClient({
             addMode: 'invite',
-            inviteUrl: 'https://t.me/bot?x=1',
-            setInviteUrl,
+            invite: { url: 'https://t.me/bot?x=1', code: '7F3A9C21B04E' },
+            setInvite,
           }),
         })}
       />,
     );
     fireEvent.click(screen.getByText('Создать новую'));
-    expect(setInviteUrl).toHaveBeenCalledWith('');
+    expect(setInvite).toHaveBeenCalledWith(null);
   });
 
   it('inviteCopyFailed=true — виден отказ (был: молча проглочен)', () => {
@@ -173,13 +187,56 @@ describe('ClientListView — режим «Ссылка»', () => {
         {...baseProps({
           addClient: makeAddClient({
             addMode: 'invite',
-            inviteUrl: 'https://t.me/bot?x=1',
+            invite: { url: 'https://t.me/bot?x=1', code: '7F3A9C21B04E' },
             inviteCopyFailed: true,
           }),
         })}
       />,
     );
     expect(screen.getByText(/Не удалось скопировать/)).toBeTruthy();
+  });
+
+  it('имя в поле приглашения — необязательное, ведётся через addInput', () => {
+    const setAddInput = vi.fn();
+    render(
+      <ClientListView
+        {...baseProps({
+          addClient: makeAddClient({ addMode: 'invite', setAddInput }),
+        })}
+      />,
+    );
+    fireEvent.change(screen.getByLabelText('Имя клиента'), {
+      target: { value: 'Мария К.' },
+    });
+    expect(setAddInput).toHaveBeenCalledWith('Мария К.');
+  });
+
+  it('живые приглашения — блок «Ждут подключения» с именем', () => {
+    render(
+      <ClientListView
+        {...baseProps({
+          addClient: makeAddClient({
+            pending: {
+              invites: [
+                {
+                  id: 1,
+                  code: '7F3A9C21B04E',
+                  url: 'https://t.me/b?startapp=therapy_7F3A9C21B04E',
+                  alias: 'Мария К.',
+                  createdAt: '2026-10-26T10:00:00.000Z',
+                  expiresAt: '2026-11-02T10:00:00.000Z',
+                },
+              ],
+              reload: vi.fn(),
+              revoke: vi.fn(),
+              revokeFailed: null,
+            },
+          }),
+        })}
+      />,
+    );
+    expect(screen.getByText('Ждут подключения · 1')).toBeTruthy();
+    expect(screen.getByText('Мария К.')).toBeTruthy();
   });
 
   // РЕГРЕССИЯ (парный баг webapp/AddClientForm.test.tsx): ссылка-приглашение
@@ -194,6 +251,7 @@ describe('ClientListView — режим «Ссылка»', () => {
   it('реальный useAddClient: клипборд падает — надпись видна на экране', async () => {
     mockApi.createTherapyInvite.mockResolvedValue({
       url: 'https://t.me/bot?x=real',
+      code: '7F3A9C21B04E',
     });
     Object.defineProperty(navigator, 'clipboard', {
       value: { writeText: vi.fn().mockRejectedValue(new Error('denied')) },

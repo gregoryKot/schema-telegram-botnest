@@ -16,6 +16,7 @@ export const DAY_NOTE_MAX = 500; // заметка к дню в трекере (
 export const DIARY_FIELD_MAX = 10000; // поле записи дневника / пункт благодарности
 export const PRACTICE_TEXT_MAX = 200; // своя практика в плане
 export const MODE_MAP_TITLE_MAX = 120; // название карты режимов
+export const CONCEPT_FIELD_TEXT_MAX = 5000; // концептуализация, вид «Поля»: каждое текстовое поле (цели, ранний опыт, триггеры…)
 export const CONCEPT_MODE_ALIAS_MAX = 80; // графическая концептуализация: как режим называет клиент
 export const CONCEPT_MODE_TEXT_MAX = 1000; // графическая концептуализация: истоки / проявления / работа с режимом
 export const CONCEPT_SCHEMA_TEXT_MAX = 1000; // графическая концептуализация: убеждение схемы / как нарушалась потребность

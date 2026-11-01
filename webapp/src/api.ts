@@ -15,8 +15,7 @@ import {
   authedFetch,
   get,
   post,
-  postJson,
-  patchJson,
+  postJson, patchJson, type SendOptions,
   del,
   setTokenProvider,
   setRefreshHandler,
@@ -147,7 +146,7 @@ export const api = {
     get<{ quizzes: QuizDto[] }>(`/api/quizzes${form === 'vy' ? '?form=vy' : ''}`),
   getAllTherapyTasks:       () => get<{ clientId: UserId; clientName: string; tasks: UserTask[] }[]>('/api/therapy/tasks/all'),
   getConceptualization: (clientId: UserId) => get<ClientConceptualization | null>(`/api/therapy/conceptualization/${clientId}`),
-  saveConceptualization: (clientId: UserId, body: Partial<Omit<ClientConceptualization, 'id' | 'therapistId' | 'clientId' | 'history' | 'updatedAt'>>) => postJson<ClientConceptualization>(`/api/therapy/conceptualization/${clientId}`, body),
+  saveConceptualization: (clientId: UserId, body: Partial<Omit<ClientConceptualization, 'id' | 'therapistId' | 'clientId' | 'history' | 'updatedAt'>>, opts?: SendOptions) => postJson<ClientConceptualization>(`/api/therapy/conceptualization/${clientId}`, body, opts),
   getTherapyClientHistory: (clientId: UserId) => get<{ date: string; index: number | null; ratings: Record<string, number> }[]>(`/api/therapy/client-history/${clientId}`),
   // Разборы фразы («Критик или забота?», теперь на обоих фронтендах — раньше
   // miniapp-only решение (PR #261), сайту тоже нужны write-методы, не только GET для «Тёплых слов»).
@@ -235,7 +234,7 @@ export const api = {
   listModeMaps:   (clientId: UserId) => get<ModeMapMeta[]>(`/api/therapy/mode-maps/${clientId}`),
   getModeMap:     (mapId: number)    => get<ModeMapFull>(`/api/therapy/mode-maps/map/${mapId}`),
   createModeMap:  (clientId: UserId, title: string, kind: ModeMapKind = 'problem') => postJson<ModeMapFull>(`/api/therapy/mode-maps/${clientId}`, { title, kind }),
-  updateModeMap:  (mapId: number, body: Partial<Pick<ModeMapFull, 'title' | 'nodes' | 'edges'>>) => patchJson<ModeMapFull>(`/api/therapy/mode-maps/map/${mapId}`, body),
+  updateModeMap:  (mapId: number, body: Partial<Pick<ModeMapFull, 'title' | 'nodes' | 'edges'>>, opts?: SendOptions) => patchJson<ModeMapFull>(`/api/therapy/mode-maps/map/${mapId}`, body, opts),
   deleteModeMap:  (mapId: number) => del(`/api/therapy/mode-maps/map/${mapId}`),
   // Client read-only view of their own maps
   listMyModeMaps: () => get<ModeMapMeta[]>('/api/therapy/my-mode-maps'),

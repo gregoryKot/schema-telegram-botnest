@@ -17,6 +17,8 @@ import { forEachTimeZone } from '../../../shared/src/utils/timeZone.test-helpers
 vi.mock('../api', () => ({
   api: {
     getTherapyClients: vi.fn(),
+    getTherapyInvites: vi.fn(() => Promise.resolve([])),
+    revokeTherapyInvite: vi.fn(),
     getTherapyTasksForClient: vi.fn(),
     getTherapistNotes: vi.fn(),
     getConceptualization: vi.fn(),
@@ -97,6 +99,23 @@ function Wrapper() {
 function renderSheet() {
   return render(<Wrapper />);
 }
+
+// Инцидент 2026-10-26: приглашение из «Новый клиент» больше не создаёт
+// офлайн-карточку — до подключения человек виден в «Ждут подключения».
+describe('TherapistClientSheet — «Ждут подключения»', () => {
+  it('живое приглашение видно с именем терапевта и кодом; карточкой клиента оно не становится', async () => {
+    mockApi.getTherapyClients.mockResolvedValue([]);
+    mockApi.getTherapyInvites.mockResolvedValueOnce([{
+      id: 5, code: '7F3A9C21B04E', url: 'https://t.me/b/diary?startapp=therapy_7F3A9C21B04E',
+      alias: 'Мария К.', createdAt: '2026-10-26T10:00:00.000Z', expiresAt: '2026-11-02T10:00:00.000Z',
+    }]);
+    renderSheet();
+    expect(await screen.findByText('Ждут подключения · 1')).toBeTruthy();
+    expect(screen.getByText('Мария К.')).toBeTruthy();
+    expect(screen.getByText('7F3A9C21B04E')).toBeTruthy();
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Клиенты');
+  });
+});
 
 describe('TherapistClientSheet — список клиентов: загрузка и пустое состояние', () => {
   it('пока getTherapyClients не резолвнулся — скелетоны карточек, а не онбординг', async () => {

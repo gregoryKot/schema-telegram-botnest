@@ -514,12 +514,26 @@ describe('SettingsSheet — «Отключиться от терапевта»: 
     mockApi.getTherapyRelation.mockResolvedValue({ role: 'client', status: 'active', partnerName: 'Анна', partnerId: 1, code: 'X', nextSession: null });
     mockApi.leaveTherapy.mockRejectedValue(new Error('network down'));
     await renderSheet();
-    await screen.findByText('Анна подключён');
+    await screen.findByText('Терапевт: Анна');
 
+    // Инцидент 2026-10-26: один тап рвал связь — теперь сначала вопрос.
     fireEvent.click(screen.getByText('Отключиться от терапевта'));
+    expect(mockApi.leaveTherapy).not.toHaveBeenCalled();
+    fireEvent.click(await screen.findByText('Отключиться', { selector: 'button' }));
     await screen.findByText(/Не удалось отключиться/);
     // Всё ещё подключены — не откатились на форму ввода кода молча.
-    expect(screen.getByText('Анна подключён')).toBeTruthy();
+    expect(screen.getByText('Терапевт: Анна')).toBeTruthy();
+  });
+
+  it('подтверждение → связь снята, видна форма кода', async () => {
+    mockApi.getTherapyRelation.mockResolvedValue({ role: 'client', status: 'active', partnerName: 'Анна', partnerId: 1, code: 'X', nextSession: null });
+    mockApi.leaveTherapy.mockResolvedValue(undefined);
+    await renderSheet();
+    await screen.findByText('Терапевт: Анна');
+    fireEvent.click(screen.getByText('Отключиться от терапевта'));
+    fireEvent.click(await screen.findByText('Отключиться', { selector: 'button' }));
+    await screen.findByLabelText('Код от терапевта');
+    expect(mockApi.leaveTherapy).toHaveBeenCalledTimes(1);
   });
 });
 
@@ -532,7 +546,7 @@ describe('SettingsSheet — приглашение клиенту (терапе�
   });
 
   it('регресс: клипборд падает — раньше «Скопировано ✓» показывалось всё равно, теперь видна сама ссылка', async () => {
-    mockApi.createTherapyInvite.mockResolvedValue({ url: 'https://t.me/bot?start=abc' });
+    mockApi.createTherapyInvite.mockResolvedValue({ url: 'https://t.me/bot?start=abc', code: '7F3A9C21B04E' });
     Object.defineProperty(navigator, 'clipboard', {
       value: { writeText: vi.fn().mockRejectedValue(new Error('denied')) }, configurable: true, writable: true,
     });
@@ -544,11 +558,14 @@ describe('SettingsSheet — приглашение клиенту (терапе�
   });
 
   it('клипборд успевает — показывает «Скопировано ✓»', async () => {
-    mockApi.createTherapyInvite.mockResolvedValue({ url: 'https://t.me/bot?start=abc' });
+    mockApi.createTherapyInvite.mockResolvedValue({ url: 'https://t.me/bot?start=abc', code: '7F3A9C21B04E' });
     mockClipboard();
     await renderSheet('THERAPIST');
     fireEvent.click(screen.getByText('+ Создать приглашение клиенту'));
-    await screen.findByText('Скопировано ✓');
+    await screen.findByText('Ссылка скопирована ✓');
+    // Код — отдельной строкой, для клиента на сайте (инцидент 2026-10-26).
+    expect(screen.getByText('7F3A9C21B04E')).toBeTruthy();
+    expect(screen.getByText('Скопировать код')).toBeTruthy();
   });
 });
 
@@ -926,7 +943,7 @@ describe('SettingsSheet — приватность карточек терапе
   it('переключение «Карточки схем и режимов» и «Профиль и схемы» шлёт patch с реальным значением', async () => {
     mockApi.getTherapyRelation.mockResolvedValue({ role: 'client', status: 'active', partnerName: 'Анна', partnerId: 1, code: 'X', nextSession: null });
     await renderSheet();
-    await screen.findByText('Анна подключён');
+    await screen.findByText('Терапевт: Анна');
 
     fireEvent.click(toggleForRow('Карточки схем и режимов'));
     await waitFor(() =>
@@ -940,42 +957,47 @@ describe('SettingsSheet — приватность карточек терапе
 });
 
 describe('SettingsSheet — вход по коду терапевта (клиент): успех подключает связь', () => {
-  it('код в верхнем регистре уходит в joinTherapy, успех показывает подключённого терапевта', async () => {
+  // Инцидент 2026-10-26: поле пускало 8 знаков при коде из 12 — вставленный
+  // код обрезался, и подключиться не мог никто.
+  it('код из 12 знаков строчными с пробелами уходит в joinTherapy целиком; успех — кто и что видит', async () => {
     mockApi.getTherapyRelation
       .mockResolvedValueOnce(null)
       .mockResolvedValueOnce({ role: 'client', status: 'active', partnerName: 'Игорь', partnerId: 2, code: 'Y', nextSession: null });
     mockApi.joinTherapy.mockResolvedValue(undefined);
     await renderSheet();
-    fireEvent.change(screen.getByPlaceholderText('ABCDEF'), { target: { value: 'code12' } });
-    expect(screen.getByPlaceholderText('ABCDEF')).toHaveProperty('value', 'CODE12');
-    fireEvent.click(screen.getByText('Войти', { selector: 'button' }));
+    const input = await screen.findByLabelText('Код от терапевта');
+    fireEvent.change(input, { target: { value: ' 7f3a9c21b04e ' } });
+    expect(input).toHaveProperty('value', '7F3A9C21B04E');
+    fireEvent.click(screen.getByText('Подключиться', { selector: 'button' }));
 
-    await screen.findByText('Игорь подключён');
+    await screen.findByText('Терапевт: Игорь');
+    expect(mockApi.joinTherapy).toHaveBeenCalledWith('7F3A9C21B04E');
+    expect(screen.getByRole('status').textContent).toMatch(/Терапевт Игорь видит/);
   });
 
   // 409 { reason: 'already_connected' }: код верный, мешает действующее
-  // подключение — «Неверный код» вводил бы в заблуждение.
-  it('409 already_connected — текст про действующее подключение, а не «Неверный код»', async () => {
+  // подключение — «Код не подошёл» вводил бы в заблуждение.
+  it('409 already_connected — текст про действующее подключение, а не «Код не подошёл»', async () => {
     mockApi.getTherapyRelation.mockResolvedValue(null);
     mockApi.joinTherapy.mockRejectedValue(
       Object.assign(new Error('already'), { status: 409, reason: 'already_connected' }),
     );
     await renderSheet();
-    fireEvent.change(screen.getByPlaceholderText('ABCDEF'), { target: { value: 'code12' } });
-    fireEvent.click(screen.getByText('Войти', { selector: 'button' }));
+    fireEvent.change(await screen.findByLabelText('Код от терапевта'), { target: { value: 'code12' } });
+    fireEvent.click(screen.getByText('Подключиться', { selector: 'button' }));
 
     await screen.findByText(/У тебя уже есть подключение к терапевту/);
-    expect(screen.queryByText('Неверный код')).toBeNull();
+    expect(screen.queryByText(/Код не подошёл/)).toBeNull();
   });
 
-  it('любой другой отказ — прежний «Неверный код»', async () => {
+  it('любой другой отказ — «Код не подошёл» с выходом', async () => {
     mockApi.getTherapyRelation.mockResolvedValue(null);
     mockApi.joinTherapy.mockRejectedValue(Object.assign(new Error('nf'), { status: 404 }));
     await renderSheet();
-    fireEvent.change(screen.getByPlaceholderText('ABCDEF'), { target: { value: 'code12' } });
-    fireEvent.click(screen.getByText('Войти', { selector: 'button' }));
+    fireEvent.change(await screen.findByLabelText('Код от терапевта'), { target: { value: 'code12' } });
+    fireEvent.click(screen.getByText('Подключиться', { selector: 'button' }));
 
-    await screen.findByText('Неверный код');
+    await screen.findByText(/Код не подошёл. Проверь его или попроси у терапевта новый/);
   });
 });
 

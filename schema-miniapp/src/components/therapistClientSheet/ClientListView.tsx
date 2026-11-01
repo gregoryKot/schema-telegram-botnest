@@ -10,6 +10,7 @@ import { ListEmptyState } from './ListEmptyState';
 import { InvitePanel } from './addPanels/InvitePanel';
 import { VirtualClientPanel } from './addPanels/VirtualClientPanel';
 import { AddModeTabs } from './addPanels/AddModeTabs';
+import { PendingInvitesList } from '../../../../shared/src/therapy/PendingInvitesList';
 
 interface ClientListViewProps {
   clients: TherapyClientSummary[];
@@ -211,6 +212,9 @@ export function ClientListView({
             )}
           </div>
         )}
+
+        {/* Приглашения, которые ждут клиента (инцидент 2026-10-26) */}
+        <PendingInvitesList pending={addClient.pending} className="u-mb16" />
 
         {/* Client list */}
         {loading ? (

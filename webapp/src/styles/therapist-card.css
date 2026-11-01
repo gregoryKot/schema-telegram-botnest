@@ -11,6 +11,9 @@
 .tk-sheet { background: var(--bg); }
 .tk-tabs-body { padding: 0; }
 .tk-load { padding: 40px var(--tk-gutter); display: flex; flex-direction: column; gap: 16px; max-width: var(--tk-max); box-sizing: border-box; }
+/* Клиента нет (удалён, чужой, выдуманный id) — ClientCardFallback.tsx. */
+.tk-missing { align-items: flex-start; }
+.tk-missing-text { margin: 0; font-size: 15px; line-height: 1.5; }
 @media (min-width: 768px) {
   .tk-tabs-body > .tk-ov, .tk-tabs-body > .tk-load, .tk-tabs-body > .ds-page { margin-left: var(--tk-center); padding-inline: var(--tk-gutter); }
   .therapist-scroll--list > .ds-page { margin-left: var(--tk-center); max-width: var(--tk-max); padding-inline: var(--tk-gutter); }

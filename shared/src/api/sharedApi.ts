@@ -29,6 +29,7 @@ import type {
   Insights,
 } from '../apiTypes';
 import type { FormerTherapistInfo } from '../therapy/formerTherapist';
+import type { TherapyInvite } from '../therapy/therapyInvites';
 import type {
   UserSchemaNote,
   UserModeNote,
@@ -162,8 +163,21 @@ export const buildSharedApi = (t: ApiTransport) => ({
   createGratitudeDiary: (date: string, items: string[]) =>
     t.postJson<GratitudeDiaryEntry>('/api/diary/gratitude', { date, items }),
   deleteGratitudeDiary: (id: number) => t.del(`/api/diary/gratitude/${id}`),
-  createTherapyInvite: () =>
-    t.postJson<{ code: string; url: string }>('/api/therapy/invite', {}),
+  // Каждый вызов — новый код; alias — имя из «Новый клиент» (карточка после
+  // подключения называется так). Живые приглашения — списком, их можно отозвать.
+  createTherapyInvite: (alias?: string) =>
+    t.postJson<{ code: string; url: string }>(
+      '/api/therapy/invite',
+      alias ? { alias } : {},
+    ),
+  getTherapyInvites: () => t.get<TherapyInvite[]>('/api/therapy/invites'),
+  revokeTherapyInvite: (id: number) => t.del(`/api/therapy/invites/${id}`),
+  // Чей код — до согласия клиента (экран JoinConfirmSheet).
+  previewTherapyInvite: (code: string) =>
+    t.postJson<{ therapistName: string | null }>(
+      '/api/therapy/invite/preview',
+      { code },
+    ),
   getTherapyRelation: () =>
     t.get<TherapyRelationInfo | null>('/api/therapy/relation'),
   // Терапевт отказался от роли — сообщение вместо «Мой терапевт».

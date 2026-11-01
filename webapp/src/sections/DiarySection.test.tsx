@@ -8,6 +8,7 @@ import { render, screen, fireEvent, cleanup, waitFor } from '@testing-library/re
 import { MemoryRouter } from 'react-router-dom';
 import { DiarySection } from './DiarySection';
 import { saveDraft, clearDraft } from '../utils/drafts';
+import { todayStr } from '../utils/format';
 
 // SchemaEntrySheet/ModeEntrySheet/GratitudeEntrySheet используют
 // useHistorySheet (нужен Router) — оборачиваем все рендеры.
@@ -383,7 +384,8 @@ describe('DiarySection — мастера по черновику («Продо�
 
   it('черновик благодарности: лист открывается с пунктами сегодняшнего дня (existingItems), сохранение добавляет запись', async () => {
     saveDraft('gratitude', { items: ['Черновик-пункт'] });
-    const today = new Date().toISOString().slice(0, 10);
+    // «Сегодня» дневника — местный день (shared/src/diary/diaryDay.ts), не UTC.
+    const today = todayStr();
     mockApi.getGratitudeDiary.mockResolvedValue([gratitudeEntry({ date: today, items: ['Уже записано'] })]);
     mockApi.createGratitudeDiary.mockResolvedValue(gratitudeEntry({ id: 97, date: today, items: ['Новый пункт'] }));
     renderSection();
@@ -459,5 +461,56 @@ describe('DiarySection — группировка по дате', () => {
       const rel = document.querySelector('.cd-day-rel');
       expect(rel?.textContent).toContain('сегодня');
     });
+  });
+});
+
+// Инцидент 2026-10-26: «сегодня» дневника было гринвичским днём на момент
+// загрузки бандла. Благодарность, записанная в 00:19 по Москве, получала 26.10,
+// а архив подписывал запись вторника «сегодня · понедельник».
+describe('DiarySection — «сегодня» по местному дню, а не по UTC', () => {
+  const NIGHT = new Date('2026-10-26T21:19:00Z'); // 00:19 27.10 по Москве
+  let prevTz: string | undefined;
+  beforeEach(() => {
+    prevTz = process.env.TZ;
+    process.env.TZ = 'Europe/Moscow';
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(NIGHT);
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+    clearDraft('gratitude');
+    if (prevTz === undefined) delete process.env.TZ;
+    else process.env.TZ = prevTz;
+  });
+
+  it('благодарность в 00:19 по Москве сохраняется датой 27-го', async () => {
+    saveDraft('gratitude', { items: ['Черновик-пункт'] });
+    mockApi.createGratitudeDiary.mockResolvedValue(gratitudeEntry({ id: 5, date: '2026-10-27', items: ['Новый пункт'] }));
+    renderSection();
+    fireEvent.click(await screen.findByText('Продолжить →'));
+    fireEvent.click(await screen.findByText('Сохранить благодарность'));
+    await waitFor(() => expect(mockApi.createGratitudeDiary).toHaveBeenCalledWith('2026-10-27', ['Новый пункт']));
+  });
+
+  it('уже записанная за 27-е благодарность открывается своими пунктами, вчерашняя — нет', async () => {
+    saveDraft('gratitude', { items: ['Черновик-пункт'] });
+    mockApi.getGratitudeDiary.mockResolvedValue([
+      gratitudeEntry({ id: 2, date: '2026-10-27', items: ['Чай с мятой'] }),
+      gratitudeEntry({ id: 1, date: '2026-10-26', items: ['Вчерашнее'] }),
+    ]);
+    renderSection();
+    await screen.findByText('Чай с мятой');
+    fireEvent.click(await screen.findByText('Продолжить →'));
+    expect((await screen.findByTestId('gratitude-existing')).textContent).toBe(JSON.stringify(['Чай с мятой']));
+  });
+
+  it('лента: запись схемы в 00:19 и благодарность 27-го — одна группа «27 октября · сегодня · вторник»', async () => {
+    mockApi.getGratitudeDiary.mockResolvedValue([gratitudeEntry({ id: 3, date: '2026-10-27', items: ['Тёплый плед'] })]);
+    mockApi.getSchemaDiary.mockResolvedValue([schemaEntry({ id: 4, createdAt: NIGHT.toISOString() })]);
+    renderSection();
+    await screen.findByText('Тёплый плед');
+    const days = [...document.querySelectorAll('.cd-day-date')].map((n) => n.textContent);
+    expect(days).toEqual(['27 октября']);
+    expect(document.querySelector('.cd-day-rel')?.textContent).toBe('сегодня · вторник');
   });
 });

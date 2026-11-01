@@ -232,13 +232,20 @@ describe('checkEnv', () => {
       expect(ids).toContain('backupKeyDistinctFromEncryptionKey');
     });
 
-    it('BACKUP_RETENTION_DAYS: 3 — неверный формат, 90 — верный', () => {
-      const bad = checkEnv({ ...ALL_VALID, BACKUP_RETENTION_DAYS: '3' });
-      expect(bad.invalid.map((i) => i.name)).toContain('BACKUP_RETENTION_DAYS');
-      const ok = checkEnv({ ...ALL_VALID, BACKUP_RETENTION_DAYS: '90' });
-      expect(ok.invalid.map((i) => i.name)).not.toContain(
-        'BACKUP_RETENTION_DAYS',
-      );
+    it('BACKUP_RETENTION_DAYS: 3 и 31 — неверный формат, 7 и 30 — верный', () => {
+      // Потолок 30 — обещание политики конфиденциальности (глава 6).
+      for (const value of ['3', '31', '90']) {
+        const bad = checkEnv({ ...ALL_VALID, BACKUP_RETENTION_DAYS: value });
+        expect(bad.invalid.map((i) => i.name)).toContain(
+          'BACKUP_RETENTION_DAYS',
+        );
+      }
+      for (const value of ['7', '30']) {
+        const ok = checkEnv({ ...ALL_VALID, BACKUP_RETENTION_DAYS: value });
+        expect(ok.invalid.map((i) => i.name)).not.toContain(
+          'BACKUP_RETENTION_DAYS',
+        );
+      }
     });
 
     it('ENCRYPTION_KEY_OLD содержит текущий ENCRYPTION_KEY — проблема', () => {

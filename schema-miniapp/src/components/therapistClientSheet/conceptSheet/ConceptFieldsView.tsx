@@ -2,6 +2,8 @@ import { SectionLabel } from '../../SectionLabel';
 import { ConceptSchemaChips } from './ConceptSchemaChips';
 import { ConceptModePicker } from '../../../../../shared/src/therapy/conceptGraph/ConceptModePicker';
 import { ModeSchemasList } from '../../../../../shared/src/therapy/conceptGraph/ModeSchemasList';
+import { LimitedTextarea } from '../../../../../shared/src/components/LimitedTextarea';
+import { CONCEPT_FIELD_TEXT_MAX } from '../../../../../shared/src/limits/textLimits';
 import { CONCEPT_FIELDS } from '../helpers';
 import type { ClientDetail } from '../types';
 
@@ -11,7 +13,8 @@ import type { ClientDetail } from '../types';
  * чипами режимов — схемы за режимами (общий ModeSchemasList, как в
  * ConceptModeCard сайта, правило №3): черновик `localConcept.modeLinks` сильнее
  * серверного; связи здесь только читаются, редактируются в виде «Схема» — туда
- * ведёт onGoToGraph.
+ * ведёт onGoToGraph. Текстовые поля — с пределом сервера и счётчиком
+ * (инцидент 2026-10-26, пара сайту).
  */
 export function ConceptFieldsView({
   detail,
@@ -65,7 +68,8 @@ export function ConceptFieldsView({
             >
               {label}
             </div>
-            <textarea
+            <LimitedTextarea
+              max={CONCEPT_FIELD_TEXT_MAX}
               value={(localConcept[key] as string) ?? ''}
               onChange={(e) => patchConcept({ [key]: e.target.value })}
               placeholder={placeholder}
