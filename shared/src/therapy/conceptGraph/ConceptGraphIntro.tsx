@@ -1,28 +1,19 @@
-import { useTr } from '../../utils/addressForm';
-import { hintStyle } from './graphStyles';
+import { Disclosure } from '../../components/Disclosure';
+import { ConceptGraphGuide } from './ConceptGraphGuide';
+import type { ConceptGraphModel } from './conceptGraphTypes';
 
 /**
- * Ответ на «откуда это и зачем» прямо над схемой, а не в спрятанном разделе
- * (CLAUDE.md, «Онбординг и очевидность»): как читать схему случая и что
- * нажимать.
+ * Как читать схему (CLAUDE.md, «Онбординг и очевидность»): свёрнуто, открыто
+ * само только на пустой схеме. В «Скачать картинкой» не идёт (data-export-skip):
+ * это подсказка интерфейса, а не схема случая. Подсказки о пробелах — под схемой.
  */
-export function ConceptGraphIntro() {
-  const tr = useTr();
+export function ConceptGraphIntro({ graph }: { graph: ConceptGraphModel }) {
+  const empty = graph.modeCount === 0 && graph.schemas.length === 0;
   return (
-    <div style={hintStyle}>
-      <p style={{ margin: '0 0 var(--space-4)' }}>
-        Схема случая: в центре базовые потребности. Слева схемы — во что человек
-        верит и какой детский опыт их сформировал; ✗ отмечает потребность,
-        которую схема блокирует. Ещё левее режимы, которые эти схемы включают.
-        Справа Здоровый Взрослый: ✓ — потребности, о которых он уже умеет
-        заботиться.
-      </p>
-      <p style={{ margin: 0 }}>
-        {tr(
-          'Нажми на схему или режим, чтобы записать текст — он появится на схеме. Карта меняется вместе с терапией — прошлые версии остаются в истории.',
-          'Нажмите на схему или режим, чтобы записать текст — он появится на схеме. Карта меняется вместе с терапией — прошлые версии остаются в истории.',
-        )}
-      </p>
+    <div data-export-skip>
+      <Disclosure title="Как читать схему" defaultOpen={empty}>
+        <ConceptGraphGuide />
+      </Disclosure>
     </div>
   );
 }
