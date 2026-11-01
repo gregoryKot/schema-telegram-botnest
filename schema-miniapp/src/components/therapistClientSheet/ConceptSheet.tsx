@@ -7,11 +7,16 @@ import {
   ConceptViewSwitch,
   useConceptView,
 } from '../../../../shared/src/therapy/conceptGraph/ConceptViewSwitch';
+import {
+  ConceptDigest,
+  useConceptDigest,
+} from '../../../../shared/src/therapy/conceptGraph/ConceptDigest';
 import { ConceptHistoryPanel } from './conceptSheet/ConceptHistoryPanel';
 import { ConceptYsqHistory } from './conceptSheet/ConceptYsqHistory';
 import { YsqRequestButton } from './conceptSheet/YsqRequestButton';
 import { ConceptSaveBar } from './conceptSheet/ConceptSaveBar';
 import { ConceptSelfSchemas } from './conceptSheet/ConceptSelfSchemas';
+import { ConceptExportButton } from './conceptSheet/ConceptExportButton';
 interface ConceptSheetProps {
   selectedClient: TherapyClientSummary;
   detail: ClientDetail;
@@ -19,6 +24,7 @@ interface ConceptSheetProps {
 export function ConceptSheet({ selectedClient, detail }: ConceptSheetProps) {
   const {
     concept,
+    localConcept,
     conceptDirty,
     showHistory,
     setShowHistory,
@@ -32,6 +38,8 @@ export function ConceptSheet({ selectedClient, detail }: ConceptSheetProps) {
   // Вид выбирается один раз при открытии листа (см. useConceptView).
   const [view, setView] = useConceptView(activeModeIds.length);
   const goToGraph = () => setView('graph'); // ссылка «привязать» из списка схем за режимами
+  // Сводка «Коротко» (#902) — над переключателем вида, из тех же данных, что и схема.
+  const digestRows = useConceptDigest(concept, localConcept);
 
   return (
     <BottomSheet
@@ -76,6 +84,7 @@ export function ConceptSheet({ selectedClient, detail }: ConceptSheetProps) {
         <YsqRequestButton selectedClient={selectedClient} detail={detail} />
         <ConceptYsqHistory detail={detail} />
         <ConceptSelfSchemas schemaIds={selfSchemaIds} />
+        <ConceptDigest rows={digestRows} />
         <div className="u-mb12">
           <ConceptViewSwitch view={view} onChange={setView} />
         </div>
@@ -86,25 +95,7 @@ export function ConceptSheet({ selectedClient, detail }: ConceptSheetProps) {
         )}
         <ConceptSaveBar detail={detail} />
         {concept && (
-          <button
-            onClick={handleExport}
-            style={{
-              width: '100%',
-              marginTop: 8,
-              padding: '11px 0',
-              borderRadius: 'var(--r-14)',
-              border: '1px solid rgba(var(--fg-rgb),0.1)',
-              background: exportCopied
-                ? 'color-mix(in srgb, var(--accent-green) 10%, transparent)'
-                : 'transparent',
-              color: exportCopied ? '#06d6a0' : 'rgba(var(--fg-rgb),0.4)',
-              fontSize: 13,
-              fontWeight: 500,
-              cursor: 'pointer',
-            }}
-          >
-            {exportCopied ? '✓ Скопировано' : '↗ Экспорт / Поделиться'}
-          </button>
+          <ConceptExportButton copied={exportCopied} onClick={handleExport} />
         )}
       </div>
     </BottomSheet>

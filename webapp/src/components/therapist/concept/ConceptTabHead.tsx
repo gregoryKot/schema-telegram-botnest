@@ -12,7 +12,7 @@ import { CANVAS_HINT, EXPAND_HINT, actionStatusText, type GraphActions } from '.
 // одно меню «⋯ Ещё»: шапка из пяти кнопок читалась как панель инструментов, и
 // терапевт не находил главного. Меню закрывается по выбору пункта, поэтому
 // занятость и отказ действия показываются строкой под шапкой (ActionStatus),
-// а не внутри меню.
+// а не внутри меню. Телефон (#902): заголовок и слово «Ещё» прячет therapist-concept.css.
 export interface ConceptTabHeadProps {
   detail: ClientDetail;
   view: ConceptView;
@@ -26,7 +26,7 @@ export function ConceptTabHead({ detail, view, onView, graph }: ConceptTabHeadPr
   return (
     <>
       <div className="ds-head-row tcp-head">
-        <div>
+        <div className="tcp-head-title">
           <h2 className="ds-h2">Концептуализация</h2>
           <div className="ds-sub" style={{ marginTop: 4 }}>Схема-карта, цели терапии и связь с детским опытом</div>
         </div>
@@ -55,7 +55,7 @@ function MoreMenu({ onExport, graph }: { onExport: () => void; graph?: GraphActi
         aria-expanded={open}
         onClick={() => setOpen(o => !o)}
       >
-        ⋯ Ещё
+        ⋯ <span className="tcp-more-txt">Ещё</span>
       </button>
       {open && (
         <Dropdown anchorRef={wrapRef} onClose={() => setOpen(false)} role="menu" label="Ещё действия" className="tcp-menu">

@@ -60,9 +60,16 @@
 
 /* Безопасные зоны. Снизу — вырез iOS через env() (парно с
    schema-miniapp/src/index.css, там ещё страховка переменными Telegram). Сверху —
-   плавающие кнопки Telegram/MAX в полноэкранном Mini App: значение ставит
-   useHostSafeTop на <html>, в браузере остаётся 0. */
-:root { --safe-bottom: env(safe-area-inset-bottom, 0px); --safe-top: 0px; }
+   большее из двух (#902): статус-бар установленного с сайта приложения
+   (standalone, viewport-fit=cover в index.html; в браузере Safari inset сверху
+   0) и полоса плавающих кнопок Telegram/MAX в полноэкранном Mini App — её
+   useHostSafeTop пишет инлайн на <html> в --host-safe-top (в браузере 0px).
+   Хук не пишет сам --safe-top: инлайн-0px перекрывал бы env(), и в
+   установленном приложении содержимое уходило под статус-бар. */
+:root {
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-top: max(env(safe-area-inset-top, 0px), var(--host-safe-top, 0px));
+}
 
 :root, html[data-theme="light"], .light-lock {
   /* .light-lock — поддерево, которое держит светлую тему при любом
@@ -931,6 +938,9 @@ a { color: inherit; text-decoration: none; }
      overflow:visible override above would clip content behind ex-screen's
      overflow:hidden. Re-enable scroll for .page inside fixed overlays. */
   .ex-screen .page { overflow-y: auto !important; }
+  /* Старый экран упражнения — тоже полноэкранный корень: статус-бар установленного
+     приложения (#902; новые листы отступают в styles/sheet-*.css). */
+  .ex-screen { padding-top: var(--safe-top); }
 }
 @media (min-width: 768px) {
   .mobile-nav { display: none !important; }

@@ -81,7 +81,17 @@
 .st-chev-arrow { color: var(--text-faint); font-size: 16px; }
 .st-row-name { display: flex; align-items: center; gap: 12px; padding: 8px 0; }
 
-/* Тумблер */
+/* Переключатель режима «Клиент · Терапевт» на листе (#902) — светлый вариант
+   .sb-mode-switch из index.css (тёмный — сайдбар, на телефоне скрыт). Трек —
+   та же подложка, что у .st-hour/.st-opt; активная кнопка — цвет карточки;
+   тап-цели ≥44: на телефоне это путь из кабинета в режим клиента. */
+.sb-mode-switch--sheet { background: var(--paper-sunk); font-size: 14px; }
+.sb-mode-switch--sheet .sb-mode-btn { min-height: 44px; color: var(--text-sub); }
+.sb-mode-switch--sheet .sb-mode-btn:hover { color: var(--text); }
+.sb-mode-switch--sheet .sb-mode-btn.is-active {
+  background: var(--surface); color: var(--text);
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--ink) 12%, transparent);
+}
 
 /* Подвиды выбора */
 .st-hours { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
@@ -114,6 +124,7 @@
 .st-form { display: flex; flex-direction: column; gap: 10px; }
 
 @media (max-width: 767px) {
+  .st-overlay { padding-top: var(--safe-top); } /* статус-бар установленного приложения (#902) */
   .st-head { padding: 0 16px; min-height: 56px; }
   .st-inner { padding: 16px 16px 80px; gap: 16px; }
   .st-row { gap: 12px; }

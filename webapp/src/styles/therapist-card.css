@@ -139,6 +139,9 @@
     background: var(--bg); border-top: 1px solid var(--line);
   }
   .tk-actions-main .ds-btn { height: 48px; border-radius: 24px; font-weight: 700; }
+  /* «Концептуализация» и «Карта режимов» (#902): там работают со схемой, панель
+     только отъедала экран — модификатор ставит ClientHeader (clientHeaderClass.ts). */
+  .tk-head--quiet-actions .tk-actions-main { display: none; }
   .tk-tabs-body { padding-bottom: 96px; }
   .tk-ov { padding: 20px 16px 24px; gap: 24px; }
   .tk-col { gap: 28px; }
