@@ -52,7 +52,7 @@
   "schema-miniapp/src/components/caseFlow/caseFlowUi.tsx": 104,
   "schema-miniapp/src/components/caseFlow/CaseHookScreen.tsx": 54,
   "schema-miniapp/src/components/caseFlow/CaseImpulseScreen.tsx": 48,
-  "schema-miniapp/src/components/caseFlow/CaseNameScreen.tsx": 121,
+  "schema-miniapp/src/components/caseFlow/CaseNameScreen.tsx": 120,
   "schema-miniapp/src/components/caseFlow/CaseRecognitionScreen.tsx": 124,
   "schema-miniapp/src/components/caseFlow/CaseSceneScreen.tsx": 113,
   "schema-miniapp/src/components/caseFlow/CaseSupportFoot.tsx": 46,

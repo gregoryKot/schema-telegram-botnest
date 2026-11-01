@@ -14,7 +14,6 @@ import { CaseNameScreen } from './CaseNameScreen';
 import { CaseDoneScreen } from './CaseDoneScreen';
 import { useCaseFlow, type CaseFlowSheetProps } from './useCaseFlow';
 import { buildSecondDoorNote } from '../../../../shared/src/case/caseImpulses';
-
 export type { CaseFlowSheetProps } from './useCaseFlow';
 
 /**
@@ -130,6 +129,7 @@ export function CaseFlowSheet(props: CaseFlowSheetProps) {
           <CaseNameScreen
             impulseChipIds={f.fields.impulseChipIds}
             saving={f.saving}
+            crisisShown={f.crisis}
             onConfirm={f.confirmName}
             tr={f.tr}
           />
