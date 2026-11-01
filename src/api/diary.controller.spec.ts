@@ -162,6 +162,22 @@ describe('DiaryController gratitude diary', () => {
       2n,
       '2026-07-17',
       ['a'.repeat(600), 'короткий'],
+      undefined,
+    );
+  });
+
+  it('base из тела доходит до сервиса (слияние дня на сервере)', async () => {
+    const { controller, diaryService } = makeController();
+    await controller.createGratitudeDiary(makeReq(2n), {
+      date: '2026-07-17',
+      items: ['новый'],
+      base: ['старый'],
+    });
+    expect(diaryService.upsertGratitudeDiaryEntry).toHaveBeenCalledWith(
+      2n,
+      '2026-07-17',
+      ['новый'],
+      ['старый'],
     );
   });
 

@@ -7,6 +7,7 @@ import {
   type EncryptSchema,
 } from '../utils/crypto';
 import { deleteOwned } from '../utils/require-affected';
+import { saveGratitudeDay } from './gratitude-merge';
 
 // Расшифровка записи — одна на чтение (GET) и на ответ записи (POST).
 // Инцидент 2026-10-26: create возвращал строку из БД, расшифровав поля
@@ -162,18 +163,14 @@ export class DiaryService {
 
   // ─── Gratitude Diary ──────────────────────────────────────────────────────
 
-  async upsertGratitudeDiaryEntry(
+  // С `base` — слияние с днём на сервере, без него — замена (gratitude-merge.ts).
+  upsertGratitudeDiaryEntry(
     userId: bigint,
     date: string,
     items: string[],
+    base?: string[],
   ) {
-    const enc = encryptJson(items) ?? JSON.stringify(items);
-    const row = await this.prisma.gratitudeDiaryEntry.upsert({
-      where: { userId_date: { userId, date } },
-      create: { userId, date, items: enc },
-      update: { items: enc },
-    });
-    return decryptRecord(row, GRATITUDE_DIARY_SCHEMA);
+    return saveGratitudeDay(this.prisma, userId, date, items, base);
   }
 
   async getGratitudeDiaryEntries(userId: bigint, limit = 30) {

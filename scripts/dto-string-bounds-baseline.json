@@ -1,7 +1,7 @@
 {
-  "src/api/dto/diary-entries.dto.ts:GratitudeDiaryDto.date": "Календарный день: формат YYYY-MM-DD проверяется регэкспом в контроллере до записи, строка длиннее отвергается.",
   "src/api/dto/diary-entries.dto.ts:ModeDiaryDto.modeId": "ДОЛГ (docs/README.md, «Что осталось открытым»): modeId дневника режимов хранится и проверяется только на непустоту; нужен @MaxLength или @Matches.",
   "src/api/dto/diary-entries.dto.ts:SchemaDiaryDto.schemaIds": "ДОЛГ (docs/README.md, «Что осталось открытым»): до 50 id схем хранятся без длины каждого; нужен @MaxLength(N, { each: true }).",
+  "src/api/dto/gratitude-diary.dto.ts:GratitudeDiaryDto.date": "Календарный день: формат YYYY-MM-DD проверяется регэкспом в контроллере до записи, строка длиннее отвергается.",
   "src/api/dto/misc.dto.ts:InitDto.timezone": "Сверяется с VALID_TIMEZONES в account.service.ts; неизвестное значение не сохраняется, строка в БД не попадает.",
   "src/api/dto/misc.dto.ts:SaveDraftDto.startedAt": "ISO-момент проверяется регэкспом `...Z$` в api.controller.ts до записи; строка длиннее формата отвергается 400.",
   "src/api/dto/notes.dto.ts:ModeNoteDto.modeId": "Идентификатор режима: notes.controller.ts проверяет `[a-z_]{1,64}` (ID_RE) до записи.",

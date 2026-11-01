@@ -10,10 +10,12 @@ import { Logger } from '@nestjs/common';
 
 const getMeMock = jest.fn();
 const useMock = jest.fn();
+const catchMock = jest.fn();
 jest.mock('telegraf', () => ({
   Telegraf: jest.fn().mockImplementation((token: string) => ({
     __token: token,
     use: useMock,
+    catch: catchMock,
     telegram: { getMe: getMeMock },
   })),
 }));
@@ -58,6 +60,14 @@ describe('TELEGRAM_PROVIDERS[TELEGRAF_BOT] — useFactory', () => {
     expect(useMock).toHaveBeenCalledTimes(2);
     expect(useMock).toHaveBeenNthCalledWith(2, expect.any(Function));
     expect(useMock.mock.calls[1][0]).not.toBe(privateChatOnly);
+  });
+
+  it('ставит свой bot.catch — ошибка апдейта не уходит в handleError Telegraf по умолчанию', async () => {
+    getMeMock.mockResolvedValue({ username: 'b' });
+    catchMock.mockClear();
+    await factoryEntry.useFactory(makeConfig('123:ABC'));
+    expect(catchMock).toHaveBeenCalledTimes(1);
+    expect(catchMock).toHaveBeenCalledWith(expect.any(Function));
   });
 
   it('BOT_TOKEN отсутствует — бросает и логирует ошибку, Telegraf не конструируется', async () => {

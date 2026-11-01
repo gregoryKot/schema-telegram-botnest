@@ -15,11 +15,8 @@ import { uid, parseId } from './request-utils';
 import { TelegramAuthGuard } from './telegram-auth.guard';
 import { DiaryService } from '../bot/diary.service';
 import { TherapyTasksService } from '../therapy/therapy-tasks.service';
-import {
-  SchemaDiaryDto,
-  ModeDiaryDto,
-  GratitudeDiaryDto,
-} from './dto/diary-entries.dto';
+import { SchemaDiaryDto, ModeDiaryDto } from './dto/diary-entries.dto';
+import { GratitudeDiaryDto } from './dto/gratitude-diary.dto';
 
 interface AuthRequest extends Request {
   telegramUserId: number;
@@ -118,6 +115,7 @@ export class DiaryController {
       uid(req),
       body.date,
       body.items,
+      body.base,
     );
     this.tasksService
       .checkStreakTasks(uid(req))

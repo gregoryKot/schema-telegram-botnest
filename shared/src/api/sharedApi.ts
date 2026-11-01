@@ -160,8 +160,11 @@ export const buildSharedApi = (t: ApiTransport) => ({
   }) => t.postJson<ModeDiaryEntry>('/api/diary/mode', data),
   deleteModeDiary: (id: number) => t.del(`/api/diary/mode/${id}`),
   getGratitudeDiary: () => t.get<GratitudeDiaryEntry[]>('/api/diary/gratitude'),
-  createGratitudeDiary: (date: string, items: string[]) =>
-    t.postJson<GratitudeDiaryEntry>('/api/diary/gratitude', { date, items }),
+  // base — день до правки: сервер сливает с ним (src/bot/gratitude-merge.ts).
+  createGratitudeDiary: (date: string, items: string[], base?: string[]) => {
+    const body = { date, items, base };
+    return t.postJson<GratitudeDiaryEntry>('/api/diary/gratitude', body);
+  },
   deleteGratitudeDiary: (id: number) => t.del(`/api/diary/gratitude/${id}`),
   // Каждый вызов — новый код; alias — имя из «Новый клиент» (карточка после
   // подключения называется так). Живые приглашения — списком, их можно отозвать.

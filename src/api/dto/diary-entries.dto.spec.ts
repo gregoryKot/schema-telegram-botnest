@@ -2,11 +2,8 @@
 // (аудит 2026-07, 2г / правило №6 CLAUDE.md).
 import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
-import {
-  SchemaDiaryDto,
-  ModeDiaryDto,
-  GratitudeDiaryDto,
-} from './diary-entries.dto';
+import { SchemaDiaryDto, ModeDiaryDto } from './diary-entries.dto';
+import { GratitudeDiaryDto } from './gratitude-diary.dto';
 
 async function errorsFor(
   cls: new () => object,
@@ -74,5 +71,32 @@ describe('GratitudeDiaryDto', () => {
     await expect(
       errorsFor(GratitudeDiaryDto, { date: '2026-07-14', items }),
     ).resolves.toContain('items');
+  });
+
+  it('base — необязательный список строк: пустой проходит, не-строки — отказ', async () => {
+    await expect(
+      errorsFor(GratitudeDiaryDto, {
+        date: '2026-07-14',
+        items: ['а'],
+        base: [],
+      }),
+    ).resolves.toEqual([]);
+    await expect(
+      errorsFor(GratitudeDiaryDto, {
+        date: '2026-07-14',
+        items: ['а'],
+        base: [1],
+      }),
+    ).resolves.toContain('base');
+  });
+
+  it('base длиннее лимита в пункте — отказ (верхняя граница строки)', async () => {
+    await expect(
+      errorsFor(GratitudeDiaryDto, {
+        date: '2026-07-14',
+        items: ['а'],
+        base: ['x'.repeat(100_000)],
+      }),
+    ).resolves.toContain('base');
   });
 });

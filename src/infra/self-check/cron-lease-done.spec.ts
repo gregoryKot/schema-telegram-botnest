@@ -5,7 +5,7 @@ import {
   UNFINISHED_GRACE_MS,
   unfinishedRunProblem,
 } from './cron-lease-done';
-import { RESUME_WINDOW_MS } from '../../telegram/telegram.midnight-planner';
+import { RESUME_WINDOW_MS } from '../../telegram/telegram.midnight-lease';
 
 const RUN = new Date('2026-10-18T00:00:00Z').getTime();
 const H = 3_600_000;

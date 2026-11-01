@@ -2,15 +2,15 @@ import { useEffect, useState } from 'react';
 import { api } from '../../api';
 import { MY_SCHEMA_IDS_KEY, MY_MODE_IDS_KEY } from '../../utils/storageKeys';
 import { readLocalIds } from './utils';
+import { isUnwritableError } from '../../../../shared/src/api/unwritableError';
 
 // «Мои схемы»/«мои режимы» — ручной выбор пользователя (SchemaPickerSheet/
 // ModePickerSheet), не тест YSQ. Локально (localStorage + state) пишется
-// сразу, оптимистично; api.updateSettings — фоновая синхронизация. Раньше
-// её сбой глушился `.catch(() => {})`: пользователь видел, что выбор
-// применился (лист закрылся), а при следующем visite профиль подтягивался
-// с сервера и молча откатывал выбор к старому значению — ни ошибки, ни
-// объяснения. Теперь сбой ловится флагом *SaveError, который экран может
-// показать рядом с соответствующей вкладкой.
+// сразу, оптимистично; api.updateSettings — фоновая синхронизация. Раньше её
+// сбой глушился `.catch(() => {})`: выбор молча откатывался при следующем
+// заходе. Теперь сбой — флаг *SaveError у вкладки: 'blocked' — 409
+// unreadable_data (прежний список не читается, сервер не дал его стереть).
+export type SaveErr = null | 'failed' | 'blocked';
 export function useMySelections() {
   const [manualSchemaIds, setManualSchemaIds] = useState<string[]>(() =>
     readLocalIds(MY_SCHEMA_IDS_KEY),
@@ -21,8 +21,8 @@ export function useMySelections() {
   const [ysqSchemaIds, setYsqSchemaIds] = useState<string[]>([]);
   const [ysqCompletedAt, setYsqCompletedAt] = useState<string | null>(null);
   const [profileLoading, setProfileLoading] = useState(true);
-  const [schemaSaveError, setSchemaSaveError] = useState(false);
-  const [modeSaveError, setModeSaveError] = useState(false);
+  const [schemaSaveError, setSchemaSaveError] = useState<SaveErr>(null);
+  const [modeSaveError, setModeSaveError] = useState<SaveErr>(null);
 
   useEffect(() => {
     api
@@ -52,20 +52,20 @@ export function useMySelections() {
   function saveSchemas(ids: string[]) {
     localStorage.setItem(MY_SCHEMA_IDS_KEY, JSON.stringify(ids));
     setManualSchemaIds(ids);
-    setSchemaSaveError(false);
+    setSchemaSaveError(null);
     api.updateSettings({ mySchemaIds: ids }).catch((e) => {
       console.error('updateSettings mySchemaIds failed', e);
-      setSchemaSaveError(true);
+      setSchemaSaveError(isUnwritableError(e) ? 'blocked' : 'failed');
     });
   }
 
   function saveModes(ids: string[]) {
     localStorage.setItem(MY_MODE_IDS_KEY, JSON.stringify(ids));
     setMyModeIds(ids);
-    setModeSaveError(false);
+    setModeSaveError(null);
     api.updateSettings({ myModeIds: ids }).catch((e) => {
       console.error('updateSettings myModeIds failed', e);
-      setModeSaveError(true);
+      setModeSaveError(isUnwritableError(e) ? 'blocked' : 'failed');
     });
   }
 

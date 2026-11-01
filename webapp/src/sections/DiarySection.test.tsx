@@ -40,10 +40,10 @@ vi.mock('../components/diary/ModeEntrySheet', () => ({
   ),
 }));
 vi.mock('../components/diary/GratitudeEntrySheet', () => ({
-  GratitudeEntrySheet: (p: { onClose: () => void; date: string; existingItems?: string[]; onSave: (date: string, items: string[]) => Promise<void> }) => (
+  GratitudeEntrySheet: (p: { onClose: () => void; date: string; existingItems?: string[]; onSave: (date: string, items: string[], base: string[]) => Promise<void> }) => (
     <div data-testid="gratitude-entry-sheet">
       <div data-testid="gratitude-existing">{JSON.stringify(p.existingItems ?? null)}</div>
-      <button onClick={() => p.onSave(p.date, ['Новый пункт'])}>Сохранить благодарность</button>
+      <button onClick={() => p.onSave(p.date, ['Новый пункт'], p.existingItems ?? [])}>Сохранить благодарность</button>
       <button onClick={p.onClose}>Закрыть лист благодарности</button>
     </div>
   ),
@@ -395,6 +395,8 @@ describe('DiarySection — мастера по черновику («Продо�
     fireEvent.click(screen.getByText('Сохранить благодарность'));
     await waitFor(() => expect(screen.queryByTestId('gratitude-entry-sheet')).toBeNull());
     await screen.findByText('Новый пункт');
+    // base листа доходит до API: сервер сливает сохранение с днём, а не заменяет его.
+    expect(mockApi.createGratitudeDiary).toHaveBeenCalledWith(today, ['Новый пункт'], ['Уже записано']);
     clearDraft('gratitude');
   });
 
@@ -489,7 +491,7 @@ describe('DiarySection — «сегодня» по местному дню, а �
     renderSection();
     fireEvent.click(await screen.findByText('Продолжить →'));
     fireEvent.click(await screen.findByText('Сохранить благодарность'));
-    await waitFor(() => expect(mockApi.createGratitudeDiary).toHaveBeenCalledWith('2026-10-27', ['Новый пункт']));
+    await waitFor(() => expect(mockApi.createGratitudeDiary).toHaveBeenCalledWith('2026-10-27', ['Новый пункт'], []));
   });
 
   it('уже записанная за 27-е благодарность открывается своими пунктами, вчерашняя — нет', async () => {

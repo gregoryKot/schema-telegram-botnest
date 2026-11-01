@@ -2,30 +2,19 @@ import type { Logger } from '@nestjs/common';
 import type { AccountService } from '../bot/account.service';
 import type { NotificationPlannerService } from '../notification/notification.planner.service';
 import type { CronLeaderService } from '../infra/cron-leader.service';
+import {
+  catchUpClaimWindowMs,
+  RESUME_WINDOW_MS,
+} from './telegram.midnight-lease';
 
 // Полуночный обход пользователей. Крон с арендой — в
-// TelegramScheduleService.scheduleDailyReminders; обход вынесен сюда, потому
-// что сервис на потолке размера (правило №10).
-//
-// Аренда `midnightPlanner` берётся на 23 часа ДО цикла. Деплой посреди обхода
-// обрывал хвост, а catch-up нового процесса упирался в свежую аренду — хвост
-// оставался без напоминаний до следующей полуночи (аудит 2026-10). Теперь:
-// - прогон, дошедший до конца, отмечается `finishRun` (src/infra/cron-run-done.ts);
-// - старт процесса видит незавершённый прогон и доделывает его с тем же
-//   `runAt`: тот же локальный день и то же время отправки, что у оборванного;
-// - повтор для уже обойдённого человека дублей не даёт — день забирается
-//   атомарно в planDay (claimPlanDay, notification.cadence-store.ts);
-// - проба cronLeases краснеет, если прогон не доделал никто (cron-lease-done.ts).
-
-/**
- * Сколько после начала оборванного прогона его ещё доделывать. Доделка идёт с
- * `now = runAt`, и время отправки, которое к старту уже прошло, очередь
- * отправляет на ближайшем тике. Доделка через 20 часов дала бы человеку
- * «сегодняшнее» напоминание за пару часов до завтрашнего — поэтому окно 6 ч,
- * а не всё окно аренды (23 ч). Позже доделки нет: остаток — до полуночи, и его
- * видит проба cronLeases (2 ч, cron-lease-done.ts).
- */
-export const RESUME_WINDOW_MS = 6 * 3_600_000;
+// TelegramScheduleService.scheduleDailyReminders (сервис на потолке размера).
+// Аренда `midnightPlanner` берётся ДО цикла; деплой посреди обхода обрывал хвост
+// до следующей полуночи (аудит 2026-10). Поэтому: прогон, дошедший до конца,
+// отмечается `finishRun` (cron-run-done.ts); старт процесса доделывает
+// незавершённый с тем же `runAt`; повтор дублей не даёт — день забирается
+// атомарно (claimPlanDay); проба cronLeases краснеет, если не доделал никто.
+// Окна доделки и захвата при старте — telegram.midnight-lease.ts.
 
 export class MidnightPlanner {
   private stopping = false;
@@ -37,7 +26,7 @@ export class MidnightPlanner {
     private readonly planner: Pick<NotificationPlannerService, 'planDay'>,
     private readonly leases: Pick<
       CronLeaderService,
-      'finishRun' | 'unfinishedRun'
+      'claimRun' | 'finishRun' | 'unfinishedRun'
     >,
     private readonly logger: Pick<Logger, 'log' | 'warn' | 'error'>,
   ) {}
@@ -94,14 +83,13 @@ export class MidnightPlanner {
 
   /**
    * Старт процесса: доделать оборванный прогон, а если доделывать нечего —
-   * `claimAndRun` (полночь пропущена, пока процесса не было). Только при
+   * захватить пропущенную полночь (`catchUpClaimWindowMs`). Только при
    * старте, не на тике: иначе второй инстанс в 00:00 обходил бы параллельно
    * лидеру. Сбой — warn: следующая попытка — полночь, админа не будим.
-   * Обход уже идёт в этом процессе (старт в 23:59, тик в 00:00 успел раньше) —
-   * второй параллельный не нужен: дублей не дал бы захват дня, но нагрузка
-   * удвоилась бы.
+   * Обход уже идёт в этом процессе (старт в 23:59, тик успел раньше) — второй
+   * не нужен: дублей не дал бы захват дня, но нагрузка удвоилась бы.
    */
-  async catchUp(claimAndRun: () => Promise<void>): Promise<void> {
+  async catchUp(at: Date = new Date()): Promise<void> {
     if (this.running) {
       this.logger.log(
         'Midnight planner: обход уже идёт, доделка при старте не нужна',
@@ -113,7 +101,7 @@ export class MidnightPlanner {
         'midnightPlanner',
         RESUME_WINDOW_MS,
       );
-      if (!runAt) return await claimAndRun();
+      if (!runAt) return await this.claimMissed(at);
       this.logger.log(
         `Midnight planner: доделываю обход от ${runAt.toISOString()}`,
       );
@@ -123,5 +111,16 @@ export class MidnightPlanner {
         `Startup planner catch-up failed (non-critical, retries at midnight): ${(e as Error).message}`,
       );
     }
+  }
+
+  /** null-окно — последний час до 00:00 UTC: обход сделает тик. */
+  private async claimMissed(at: Date): Promise<void> {
+    const windowMs = catchUpClaimWindowMs(at);
+    if (
+      windowMs !== null &&
+      (await this.leases.claimRun('midnightPlanner', windowMs, at))
+    )
+      return this.run(at);
+    this.logger.log('Midnight planner: при старте обход не нужен');
   }
 }

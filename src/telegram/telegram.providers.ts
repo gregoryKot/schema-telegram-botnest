@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { Telegraf } from 'telegraf';
 import { TELEGRAF_BOT } from './telegram.constants';
 import { telegramAgent } from './telegram-agent';
-import { installUpdateGuards } from './telegram.stale-updates';
+import { installUpdateSafety } from './telegram.bot-catch';
 
 const logger = new Logger('TelegramProviders');
 
@@ -20,8 +20,8 @@ export const TELEGRAM_PROVIDERS: Provider[] = [
       const bot = new Telegraf(token, {
         telegram: { agent: telegramAgent() },
       });
-      // До любых хендлеров: группы не обслуживаем, хвост очереди после деплоя режем.
-      installUpdateGuards(bot);
+      // До хендлеров: группы не обслуживаем, хвост очереди режем, ошибки ловим.
+      installUpdateSafety(bot);
       try {
         const me = await bot.telegram.getMe();
         logger.log(`Bot authorized: @${me.username ?? me.id}`);

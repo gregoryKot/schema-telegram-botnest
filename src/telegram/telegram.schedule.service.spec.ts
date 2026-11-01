@@ -6,7 +6,10 @@
 import { Logger } from '@nestjs/common';
 import { TelegramScheduleService } from './telegram.schedule.service';
 import { LEASE_WINDOW } from '../infra/cron-leader.service';
-import { RESUME_WINDOW_MS } from './telegram.midnight-planner';
+import {
+  catchUpClaimWindowMs,
+  RESUME_WINDOW_MS,
+} from './telegram.midnight-lease';
 
 function makeService(
   opts: {
@@ -128,7 +131,7 @@ describe('scheduleDailyReminders', () => {
     await expect(service.scheduleDailyReminders()).resolves.toBeUndefined();
     expect(claimRun).toHaveBeenCalledWith(
       'midnightPlanner',
-      LEASE_WINDOW.daily,
+      LEASE_WINDOW.hourly,
       expect.any(Date),
     );
     expect(accountService.getAllUsersWithSettings).not.toHaveBeenCalled();
@@ -152,7 +155,7 @@ describe('scheduleDailyReminders', () => {
     await expect(service.scheduleDailyReminders()).resolves.toBeUndefined();
     expect(claimRun).toHaveBeenCalledWith(
       'midnightPlanner',
-      LEASE_WINDOW.daily,
+      LEASE_WINDOW.hourly,
       expect.any(Date),
     );
     expect(cronLeader.unfinishedRun).not.toHaveBeenCalled();
@@ -186,6 +189,7 @@ describe('catchUpAfterStart — старт процесса', () => {
   });
 
   it('доделывать нечего — пробует пропущенную полночь через claimRun', async () => {
+    jest.useFakeTimers({ now: new Date('2026-10-22T10:00:00Z') });
     const planDay = jest.fn().mockResolvedValue(undefined);
     const { service, claimRun } = makeService({
       users: [{ id: 1n }],
@@ -193,10 +197,11 @@ describe('catchUpAfterStart — старт процесса', () => {
       unfinishedRun: null,
     });
     await service.catchUpAfterStart();
+    jest.useRealTimers();
     expect(claimRun).toHaveBeenCalledWith(
       'midnightPlanner',
-      LEASE_WINDOW.daily,
-      expect.any(Date),
+      catchUpClaimWindowMs(new Date('2026-10-22T10:00:00Z')),
+      new Date('2026-10-22T10:00:00Z'),
     );
     expect(planDay).toHaveBeenCalledWith({ id: 1n }, claimRun.mock.calls[0][2]);
   });

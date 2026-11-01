@@ -19,7 +19,7 @@ export function NeedFillRow({
 }: {
   id: NeedId;
   meta: NeedMetaEntry;
-  value: number;
+  value: number | undefined;
   onChange: (v: number) => void;
   openExampleId: NeedId | null;
   setOpenExampleId: React.Dispatch<React.SetStateAction<NeedId | null>>;
@@ -27,8 +27,8 @@ export function NeedFillRow({
   setOpenExampleIdx: React.Dispatch<React.SetStateAction<number | null>>;
 }) {
   const color = COLORS[id] ?? '#888';
-  const showLow = value <= 5;
-  const showHigh = value >= 5;
+  const showLow = value !== undefined && value <= 5;
+  const showHigh = value !== undefined && value >= 5;
   return (
     <div className="u-mb28">
       <div
@@ -122,7 +122,7 @@ export function NeedFillRow({
               textAlign: 'right',
             }}
           >
-            {value}
+            {value ?? '—'}
             <span
               style={{
                 fontSize: 11,
@@ -130,7 +130,7 @@ export function NeedFillRow({
                 color: 'var(--text-sub)',
               }}
             >
-              /10
+              {value === undefined ? ' не оценено' : '/10'}
             </span>
           </div>
         </div>
@@ -150,13 +150,13 @@ export function NeedFillRow({
         }}
       >
         <AnchorCard
-          active={showLow && value <= LOW_NEED_MAX}
+          active={showLow && (value ?? 0) <= LOW_NEED_MAX}
           color="var(--accent-red)"
           title="0 — дефицит"
           text={meta.anchorLow}
         />
         <AnchorCard
-          active={showHigh && value >= 8}
+          active={showHigh && (value ?? 0) >= 8}
           color="var(--accent-green)"
           title="10 — насыщение"
           text={meta.anchorHigh}

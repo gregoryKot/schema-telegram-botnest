@@ -22,15 +22,15 @@ interface Props {
   onClose: () => void;
   date: string;
   existingItems?: string[];
-  onSave: (date: string, items: string[]) => Promise<void>;
+  onSave: (date: string, items: string[], base: string[]) => Promise<void>;
 }
 
 export function GratitudeEntrySheet({ initialItem, onClose, date, existingItems, onSave }: Props) {
   const goBack = useHistorySheet(onClose);
-  // Форма сама поднимает сохранённый день: сервер заменяет пункты дня целиком,
-  // и вход без existingItems («плюс») иначе стирал бы прежнюю запись
-  // (инцидент 2026-10-18, docs/INCIDENTS.md).
-  const { items, setItems, status, retry } = useGratitudeItems({
+  // Форма сама поднимает сохранённый день (инцидент 2026-10-18), а base — то,
+  // с чего она начала: сервер сливает с ним сохранение и не теряет пункт,
+  // добавленный с другой вкладки (src/bot/gratitude-merge.ts).
+  const { items, setItems, base, status, retry } = useGratitudeItems({
     date,
     existingItems,
     load: () => api.getGratitudeDiary(),
@@ -56,7 +56,7 @@ export function GratitudeEntrySheet({ initialItem, onClose, date, existingItems,
     haptic.success();
     setSaving(true);
     try {
-      await onSave(date, filled);
+      await onSave(date, filled, base);
       clearDraft('gratitude');
       goBack();
     } catch {

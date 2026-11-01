@@ -98,11 +98,12 @@ describe('AppDiaryNav — вход в благодарность из «плюс
     });
     fireEvent.click(screen.getByRole('button', { name: /Сохранить/ }));
     await waitFor(() =>
-      expect(api.createGratitudeDiary).toHaveBeenCalledWith(TODAY_DATE, [
-        'Утренний кофе',
-        'Звонок маме',
-        'Вечерняя прогулка',
-      ]),
+      expect(api.createGratitudeDiary).toHaveBeenCalledWith(
+        TODAY_DATE,
+        ['Утренний кофе', 'Звонок маме', 'Вечерняя прогулка'],
+        // base: сервер сливает с этим днём и не теряет пункт с другой вкладки
+        ['Утренний кофе', 'Звонок маме'],
+      ),
     );
   });
 });

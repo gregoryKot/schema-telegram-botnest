@@ -58,13 +58,13 @@ export function useQuickEntry(onSaved?: () => void) {
     }
   };
 
-  // Сервер заменяет пункты дня целиком: сначала читаем сегодняшние, потом дописываем.
+  // Чтение — ради лимита в пять пунктов; base даёт серверу слить день с пунктами другой вкладки.
   const saveGratitude = async () => {
     const date = todayStr();
-    const entries = await api.getGratitudeDiary();
-    const items = appendGratitudeItem(entries.find((e) => e.date === date)?.items ?? [], text);
+    const base = (await api.getGratitudeDiary()).find((e) => e.date === date)?.items ?? [];
+    const items = appendGratitudeItem(base, text);
     if (!items) throw new GratitudeFullError();
-    await api.createGratitudeDiary(date, items);
+    await api.createGratitudeDiary(date, items, base);
   };
 
   const saveSchema = (ids: string[]) => run(() => api.createSchemaDiary(schemaEntryInput(text, ids)), quickSaveTag(tag, ids));

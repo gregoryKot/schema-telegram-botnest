@@ -29,6 +29,7 @@ describe('useGratitudeItems', () => {
     );
     expect(result.current.status).toBe('ready');
     expect(result.current.items).toEqual(['а']);
+    expect(result.current.base).toEqual(['а']);
     expect(load).not.toHaveBeenCalled();
   });
 
@@ -45,6 +46,8 @@ describe('useGratitudeItems', () => {
     expect(result.current.status).toBe('loading');
     await waitFor(() => expect(result.current.status).toBe('ready'));
     expect(result.current.items).toEqual(['утро', '', '']);
+    // base — сохранённый день без пустых полей формы: с ним сервер сливает запись.
+    expect(result.current.base).toEqual(['утро']);
   });
 
   it('записи за день нет — три пустых поля или черновик', async () => {
@@ -55,6 +58,8 @@ describe('useGratitudeItems', () => {
     );
     await waitFor(() => expect(result.current.status).toBe('ready'));
     expect(result.current.items).toEqual(['чай']);
+    // Черновик сервер не видел — в base его нет, иначе он считался бы удалённым.
+    expect(result.current.base).toEqual([]);
   });
 
   it('запись есть и черновик с новым пунктом — запись плюс черновик', async () => {
@@ -111,6 +116,7 @@ describe('useGratitudeItems', () => {
     rerender({ existing: ['утро'] });
     await waitFor(() => expect(result.current.status).toBe('ready'));
     expect(result.current.items).toEqual(['утро']);
+    expect(result.current.base).toEqual(['утро']);
   });
 
   it('уже готовую форму смена existingItems не перезаписывает', () => {
@@ -127,6 +133,8 @@ describe('useGratitudeItems', () => {
     act(() => result.current.setItems(['а', 'новое']));
     rerender({ existing: ['а', 'б'] });
     expect(result.current.items).toEqual(['а', 'новое']);
+    // base — то, с чего форма начала, а не поздний снимок точки входа.
+    expect(result.current.base).toEqual(['а']);
   });
 
   it('черновик не пишется, пока день грузится, и пишется после загрузки', async () => {

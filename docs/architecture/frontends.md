@@ -114,7 +114,7 @@
 | `shared/src/diary/` | мета дневников, пояснения, благодарности; `diaryDay` — «сегодня» дневника = местный день человека; `diaryPrivacy` + `useDiaryAccess` — «кто увидит записи» по связи с терапевтом и его доступу |
 | `shared/src/flashcard/` | контент карточки схемы: режимы, потребности, шаги |
 | `shared/src/history/` | CTA «Записаться» в истории |
-| `shared/src/hooks/` | useYsqTest и YSQ-скоринг, useConfetti, useLongPress, useDragReorder, `useConfirmedAction` (действие только после подтверждения) |
+| `shared/src/hooks/` | useYsqTest и YSQ-скоринг, useConfetti, useLongPress, useDragReorder, `useConfirmedAction` (действие только после подтверждения), `useHorizontalSwipe` (свайп трекера; касание внутри `[role="group"]` — шкала — не листает) |
 | `shared/src/host/` | абстракция хоста: telegram, max, web (`getHost`, safezone) |
 | `shared/src/journey/` | «Мой путь»: лента активности, периоды, детали |
 | `shared/src/limits/` | `textLimits`: зеркало лимитов длины текста бэка |
@@ -122,7 +122,7 @@
 | `shared/src/mode/` | режимы: карточки, тест, подсказки, пояснения потоков |
 | `shared/src/modeMap/` | контуры фигур карты режимов |
 | `shared/src/needs/` | тексты и цвета пяти потребностей (`needData`), индекс дня (`dayIndex.ts` — одна формула для главной, трекера и сигнала моста) |
-| `shared/src/notes/` | типы карточек-заметок схем и режимов |
+| `shared/src/notes/` | типы карточек-заметок схем и режимов; `useSavedNoteValues` — опросник карточки грузит сохранённое, а не открывается пустым |
 | `shared/src/onboarding/` | согласия первого входа, пояснения онбординга |
 | `shared/src/pair/` | механика «пара»: тексты, вью, карточка партнёра |
 | `shared/src/pattern/` | «Паттерны»: мета, статус, мои карточки, шаринг |

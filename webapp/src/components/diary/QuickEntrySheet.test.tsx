@@ -180,8 +180,18 @@ describe('QuickEntrySheet — сохранение по тегам', () => {
     type('Солнце');
     tag('Благодарность');
     await press('Сохранить');
-    expect(m.createGratitudeDiary).toHaveBeenCalledWith(todayStr(), ['Чай', 'Солнце']);
+    // base — прочитанный день: сервер сливает с ним и не теряет пункт с другой вкладки.
+    expect(m.createGratitudeDiary).toHaveBeenCalledWith(todayStr(), ['Чай', 'Солнце'], ['Чай']);
     expect(m.trackEvent).toHaveBeenCalledWith('diary_quick_save', { tag: 'gratitude', detailed: false });
+  });
+
+  it('«Благодарность» в пустой день: base пустой, пункт уходит один', async () => {
+    m.getGratitudeDiary.mockResolvedValue([{ id: 1, date: '2000-01-01', items: ['Вчера'] }]);
+    setup();
+    type('Солнце');
+    tag('Благодарность');
+    await press('Сохранить');
+    expect(m.createGratitudeDiary).toHaveBeenCalledWith(todayStr(), ['Солнце'], []);
   });
 
   it('«Благодарность», когда пунктов уже пять: сообщение, ничего не уходит, «Записать как мысль» переключает тег', async () => {

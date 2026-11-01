@@ -80,20 +80,18 @@
   `schema-miniapp/src/components/WizardProgress.tsx:34-39` — сегменты 4px с
   `onSelect={setStep}` из `IntroSheetShell.tsx:107-114`. Ни подписи, ни
   `aria-label`. Решение владельца: хитбокс 44 с `aria-label` или убрать прыжок.
-- **Свайп трекера перехватывает движение пальца по шкале оценки.**
-  `webapp/src/components/TrackerOverlay.tsx:123-135` + `trackerOverlay/MobileLayout.tsx:34-35`
-  (весь fullscreen слушает touch), мини-апп `TrackerOverlay.tsx:184-198`: при
-  `dx ≥ 90` уезжает на другую потребность, а шкала ждёт тап. Заплатка —
-  не начинать свайп, если `touchstart` попал в `closest('[role="group"]')`.
-  Свайп написан трижды: `webapp/.../TrackerOverlay.tsx:124-136` и мини-апп
-  `TrackerOverlay.tsx:185-198` (90 / 0.5) против
-  `schema-miniapp/src/hooks/useSectionSwipe.ts:7-13` (72 / 0.6); общий
-  `useHorizontalSwipe` в shared.
-- **Текст, не добавленный кнопкой «+», молча теряется при «Дальше»** в проверке
-  убеждения на обеих площадках (`beliefCheck/EvidenceStep`,
-  `webapp/.../beliefCheck/EviList`): `onAdd()` перед переходом не вызывается.
-  Там же расхождение поведения: в вебе «Дальше» требует доказательства за и
-  против, в мини-аппе нет.
+- **Свайп разделов мини-аппа не исключает касания по контролам.**
+  `schema-miniapp/src/hooks/useSectionSwipe.ts` (72 / 0.6) — отдельная от
+  трекерного `shared/src/hooks/useHorizontalSwipe.ts` реализация без проверки
+  `closest('[role="group"]')`. Сейчас безвредно: шкала `NeedRatingBar` живёт
+  только в оверлеях (`TrackerOverlay`, `NeedTodaySheet`), где свайп разделов
+  выключен (`App.tsx`, `disabled: anyOverlayOpen`). Шкала или слайдер прямо в
+  разделе — перевести на общий хук.
+- **Проверка убеждения: «Дальше» на шагах доказательств ведёт себя по-разному.**
+  В вебе (`webapp/src/components/exercises/BeliefCheckEx.tsx`) кнопка требует
+  хотя бы одно доказательство за и против (или текст в поле), в мини-аппе
+  (`schema-miniapp/src/components/beliefCheck/EvidenceStep.tsx`) пускает с
+  пустым списком. Решение владельца: какой вариант общий.
 - **Гейт тап-целей не видит размеры из CSS-классов.**
   `scripts/tap-targets-rules.mjs` читает только инлайновый `style` в JSX, а
   размер `.evi-x` 22×22 (`webapp/src/index.css`; чинился: зона 44 через
@@ -184,11 +182,6 @@
   `/api/auth/telegram-oidc`) ловит только `registry-consumers.spec.ts` — и
   только для роутов провайдеров из `registry.ts`. Прочие роуты `src/auth/*`
   (2fa, ticket) паритетом не сверяются.
-- **Запасной код 2FA нельзя набрать на телефоне**:
-  `webapp/src/pages/TwoFactorChallengePage.tsx:67` ставит `inputMode="numeric"`,
-  а резервный код — 10 символов hex с буквами a–f
-  (`totp.service.spec.ts:163`). Соседний `SourceTotpField.tsx:4-5` про это прямо
-  предупреждает.
 - **Названия схем в опроснике YSQ расходятся с реестром**
   (`shared/src/hooks/ysqSchemasContent.ts` — «Социальная отчужденность» против
   «отчуждённость», слэши без пробелов). Имя служит ключом `SCHEMA_NAME_TO_ID`,
@@ -248,14 +241,7 @@
 терапевте. Не тронуто: маркетинговый текст и текст пары вне задачи про дневник, формулировку
 выбирает владелец.
 
-**Благодарность: запись из другой вкладки теряется между чтением и записью дня** (простой клиент,
-этап 3). «Дневник одной страницей» (`webapp/src/components/diary/quickEntry/useQuickEntry.ts`,
-`saveGratitude`) и мастер `GratitudeEntrySheet` читают пункты дня (`getGratitudeDiary`), дописывают
-свой и перезаписывают день целиком. Если между чтением и записью пункт добавили с другой вкладки
-или площадки, он пропадает без ошибки. Доказано кодом: `POST /api/diary/gratitude` отдаёт `body.items`
-в `upsertGratitudeDiaryEntry` (`src/api/diary.controller.ts:117-121`), а тот в `update` кладёт
-`items: enc` целиком (`src/bot/diary.service.ts:172-183`), без слияния и без проверки версии. Чтобы
-закрыть: эндпоинт «добавить пункт» (слияние на сервере в транзакции) или `expectedVersion`/`updatedAt`
-в теле с отказом 409 при расхождении; клиентам переехать на него и убрать чтение перед записью.
 - **Сайт: автосохранение концептуализации при отказе сети или сервера показывает только «Не сохранилось».** `webapp/src/components/therapist/useConceptAutosave.ts` (`send`, catch) отдаёт в `SaveStatusLine` причину (`conceptError` → `errorText`) только для поля длиннее предела сервера (`shared/src/therapy/conceptOverLimit.ts`); отказ сети, 5xx и прочие 4xx идут без причины, хотя мини-апп её называет (`schema-miniapp/src/components/therapist/conceptSaveError.ts`). Осознанно не сделано в PR по находке #880: общий маппер потребовал бы класса статуса ответа в `shared/` (у webapp свой клиент API). Закрыть: маппер причины — в `shared/src/api/`, оба фронтенда берут его оттуда.
 - **`#06d6a0` в кнопке экспорта мини-аппа** — `schema-miniapp/src/components/therapistClientSheet/ConceptSheet.tsx`, цвет вне токенов (сидит в бейслайне `check-color-drift`; найдено в #880, не трогали — задача другая).
+- **«В мои схемы» из карточки схемы глушит отказ записи, включая 409 «не читается».** `toggleSchema` в `webapp/src/components/SchemaDetailSheet.tsx` (`.catch(() => {})`) и `schema-miniapp/src/components/SchemaDetailSheet.tsx` (`.catch(logErr(...))`) шлют `updateSettings({ mySchemaIds })` без плашки: при 409 `unreadable_data` данные на сервере целы (бэкенд не пишет), но человек не узнаёт, что выбор не сохранился. На экране «Мои паттерны» отказ уже виден (`SelectionSaveNote` в обоих фронтендах, `shared/src/api/unwritableError.ts`). Не сделано в PR защиты настроек: файл мини-аппа на 313 строках в бейслайне размера и может только уменьшаться. Закрыть: тот же `isUnwritableError` + `SaveErrorNote` в листе (или общий хук сохранения выбора для листа и экрана).
+- **После 409 на «моих схемах/режимах» перезагрузка показывает пустой список.** `useSchemasData` (сайт) и `useMySelections` (мини-апп) при загрузке ставят в state `mySchemaIds` с сервера, а для нечитаемого списка сервер отдаёт `[]`: выбор человека остаётся в `localStorage`, но на экран не возвращается. Данные на сервере целы (409 не дал их стереть); честнее было бы отдавать в `GET /api/settings`/профиле флаг «не читается» и не затирать локальный выбор. Не сделано: нужен контракт ответа на обе площадки, вне задачи защиты записи.

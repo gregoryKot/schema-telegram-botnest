@@ -95,7 +95,7 @@ describe('useMySelections', () => {
       result.current.saveSchemas(['abandonment']);
     });
 
-    await waitFor(() => expect(result.current.schemaSaveError).toBe(true));
+    await waitFor(() => expect(result.current.schemaSaveError).toBe('failed'));
     expect(result.current.manualSchemaIds).toEqual(['abandonment']);
     expect(JSON.parse(localStorage.getItem(MY_SCHEMA_IDS_KEY)!)).toEqual([
       'abandonment',
@@ -113,14 +113,14 @@ describe('useMySelections', () => {
     await act(async () => {
       result.current.saveSchemas(['abandonment']);
     });
-    await waitFor(() => expect(result.current.schemaSaveError).toBe(true));
+    await waitFor(() => expect(result.current.schemaSaveError).toBe('failed'));
 
     mockApi.updateSettings.mockResolvedValue(undefined);
     await act(async () => {
       result.current.saveSchemas(['abandonment', 'mistrust']);
     });
 
-    await waitFor(() => expect(result.current.schemaSaveError).toBe(false));
+    await waitFor(() => expect(result.current.schemaSaveError).toBeNull());
     expect(result.current.manualSchemaIds).toEqual(['abandonment', 'mistrust']);
   });
 
@@ -133,11 +133,50 @@ describe('useMySelections', () => {
       result.current.saveModes(['vulnerable_child']);
     });
 
-    await waitFor(() => expect(result.current.modeSaveError).toBe(true));
-    expect(result.current.schemaSaveError).toBe(false);
+    await waitFor(() => expect(result.current.modeSaveError).toBe('failed'));
+    expect(result.current.schemaSaveError).toBeNull();
     expect(result.current.myModeIds).toEqual(['vulnerable_child']);
     expect(mockApi.updateSettings).toHaveBeenCalledWith({
       myModeIds: ['vulnerable_child'],
     });
+  });
+
+  // 409 unreadable_data: прежний список на сервере не читается, сервер не дал
+  // его стереть. Флаг 'blocked' — экран показывает свой текст, а не «повтори».
+  const unwritable = Object.assign(new Error('Правка не сохранена'), {
+    status: 409,
+    reason: 'unreadable_data',
+  });
+
+  it('409 unreadable_data на схемах → флаг blocked, выбор остался локально', async () => {
+    mockApi.updateSettings.mockRejectedValue(unwritable);
+    const { result } = renderHook(() => useMySelections());
+    await waitFor(() => expect(result.current.profileLoading).toBe(false));
+
+    await act(async () => {
+      result.current.saveSchemas(['abandonment']);
+    });
+
+    await waitFor(() => expect(result.current.schemaSaveError).toBe('blocked'));
+    expect(result.current.manualSchemaIds).toEqual(['abandonment']);
+    expect(JSON.parse(localStorage.getItem(MY_SCHEMA_IDS_KEY)!)).toEqual([
+      'abandonment',
+    ]);
+  });
+
+  it('409 unreadable_data на режимах → blocked только у режимов', async () => {
+    mockApi.updateSettings.mockRejectedValue(unwritable);
+    const { result } = renderHook(() => useMySelections());
+    await waitFor(() => expect(result.current.profileLoading).toBe(false));
+
+    await act(async () => {
+      result.current.saveModes(['vulnerable_child']);
+    });
+
+    await waitFor(() => expect(result.current.modeSaveError).toBe('blocked'));
+    expect(result.current.schemaSaveError).toBeNull();
+    expect(JSON.parse(localStorage.getItem(MY_MODE_IDS_KEY)!)).toEqual([
+      'vulnerable_child',
+    ]);
   });
 });

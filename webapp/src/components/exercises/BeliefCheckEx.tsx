@@ -67,18 +67,11 @@ export function BeliefCheckEx({
     reframe.trim() ? 3 : -1,
   ].filter((x) => x >= 0);
 
-  function addFor() {
-    const v = forInput.trim();
-    if (!v) return;
-    setForList((l) => [...l, v]);
-    setForInput('');
-  }
-  function addAgainst() {
-    const v = againstInput.trim();
-    if (!v) return;
-    setAgainstList((l) => [...l, v]);
-    setAgainstInput('');
-  }
+  function addFor() { const v = forInput.trim(); if (v) { setForList((l) => [...l, v]); setForInput(''); } }
+  function addAgainst() { const v = againstInput.trim(); if (v) { setAgainstList((l) => [...l, v]); setAgainstInput(''); } }
+  // Текст в поле, не добавленный «+», — тоже доказательство: любой переход шага
+  // (кнопки и полоса шагов) дописывает его в список, а не теряет молча.
+  function goTo(n: number) { addFor(); addAgainst(); setStep(n); }
 
   async function saveAll() {
     setSaving(true); setSaveError(false);
@@ -147,7 +140,7 @@ export function BeliefCheckEx({
         steps={STEPS}
         current={step}
         completed={completed}
-        onJump={setStep}
+        onJump={goTo}
       />
 
       {step === 0 && (
@@ -181,7 +174,7 @@ export function BeliefCheckEx({
             <button
               className="ds-btn"
               disabled={!belief.trim()}
-              onClick={() => setStep(1)}
+              onClick={() => goTo(1)}
             >
               Дальше · доказательства за <GlyphArrowRight />
             </button>
@@ -214,14 +207,14 @@ export function BeliefCheckEx({
           />
           {detectCrisisAny(forInput, ...forList) && <CrisisCard surface="belief_check" />}
           <div className="ex2-foot">
-            <button className="ds-btn ex2-ghost" onClick={() => setStep(0)}>
+            <button className="ds-btn ex2-ghost" onClick={() => goTo(0)}>
               <GlyphArrowLeft /> Назад
             </button>
             <span className="ex2-spacer" />
             <button
               className="ds-btn"
-              disabled={forList.length === 0}
-              onClick={() => setStep(2)}
+              disabled={forList.length === 0 && !forInput.trim()}
+              onClick={() => goTo(2)}
             >
               Дальше · доказательства против <GlyphArrowRight />
             </button>
@@ -256,14 +249,14 @@ export function BeliefCheckEx({
           />
           {detectCrisisAny(againstInput, ...againstList) && <CrisisCard surface="belief_check" />}
           <div className="ex2-foot">
-            <button className="ds-btn ex2-ghost" onClick={() => setStep(1)}>
+            <button className="ds-btn ex2-ghost" onClick={() => goTo(1)}>
               <GlyphArrowLeft /> Назад
             </button>
             <span className="ex2-spacer" />
             <button
               className="ds-btn"
-              disabled={againstList.length === 0}
-              onClick={() => setStep(3)}
+              disabled={againstList.length === 0 && !againstInput.trim()}
+              onClick={() => goTo(3)}
             >
               Дальше · переформулировка <GlyphArrowRight />
             </button>
@@ -312,7 +305,7 @@ export function BeliefCheckEx({
           {detectCrisisAny(reframe) && <CrisisCard surface="belief_check" />}
           {saveError && <div role="alert" className="ex2-err">{tr('Не удалось сохранить. Проверь связь и попробуй ещё раз', 'Не удалось сохранить. Проверьте связь и попробуйте ещё раз')}</div>}
           <div className="ex2-foot">
-            <button className="ds-btn ex2-ghost" onClick={() => setStep(2)}>
+            <button className="ds-btn ex2-ghost" onClick={() => goTo(2)}>
               <GlyphArrowLeft /> Назад
             </button>
             <span className="ex2-spacer" />

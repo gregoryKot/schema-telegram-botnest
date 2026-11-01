@@ -115,8 +115,8 @@ export function DiarySection({ onClose: _onClose, onOpenTrackerHistory }: { onCl
       onClose={() => setNewEntry(null)}
       date={today}
       existingItems={todayGratitude?.items}
-      onSave={async (date, items) => {
-        const entry = await api.createGratitudeDiary(date, items);
+      onSave={async (date, items, base) => {
+        const entry = await api.createGratitudeDiary(date, items, base);
         setGratitudeEntries(prev => {
           const rest = prev.filter(e => e.date !== date);
           return [entry, ...rest].sort((a, b) => b.date.localeCompare(a.date));

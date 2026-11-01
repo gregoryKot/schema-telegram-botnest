@@ -200,3 +200,89 @@ describe('NotesService.addToMyList — денормализованная кол
     expect(settings.mySchemaIds).toEqual(['defectiveness']);
   });
 });
+
+// Инцидент 2026-10-31 (docs/INCIDENTS.md): «Познакомиться →» на сайте открывал
+// опросник пустым, а опросник шлёт все поля разом — повторное сохранение
+// затирало карточку пустыми строками. Сервер больше не пишет пустое поверх
+// написанного, какой бы клиент ни прислал форму.
+describe('NotesService — пустое поле не затирает сохранённое', () => {
+  it('схема: сохранил A → сохранил пустую форму → A на месте', async () => {
+    const db = makeDb({ mySchemaIds: [], myModeIds: [] });
+    const svc = new NotesService(db);
+
+    await svc.upsertSchemaNote(1n, 'defectiveness', {
+      triggers: 'когда критикуют',
+      reality: 'меня ценят',
+    });
+    await svc.upsertSchemaNote(1n, 'defectiveness', {
+      triggers: '',
+      feelings: '',
+      thoughts: '   ',
+      origins: '',
+      reality: '',
+      healthyView: '',
+      behavior: undefined,
+    });
+
+    const note = await svc.getSchemaNote(1n, 'defectiveness');
+    expect(note!.triggers).toBe('когда критикуют');
+    expect(note!.reality).toBe('меня ценят');
+  });
+
+  it('схема: непустое поле по-прежнему обновляется, пустые соседи не трогаются', async () => {
+    const db = makeDb({ mySchemaIds: [], myModeIds: [] });
+    const svc = new NotesService(db);
+
+    await svc.upsertSchemaNote(1n, 'defectiveness', {
+      triggers: 'старое',
+      thoughts: 'мысль',
+    });
+    await svc.upsertSchemaNote(1n, 'defectiveness', {
+      triggers: 'новое',
+      thoughts: '',
+    });
+
+    const note = await svc.getSchemaNote(1n, 'defectiveness');
+    expect(note!.triggers).toBe('новое');
+    expect(note!.thoughts).toBe('мысль');
+  });
+
+  it('режим: сохранил A → сохранил пустую форму → A на месте (включая alias/fear)', async () => {
+    const db = makeDb({ mySchemaIds: [], myModeIds: [] });
+    const svc = new NotesService(db);
+
+    await svc.upsertModeNote(1n, 'vulnerable_child', {
+      feelings: 'страшно',
+      alias: 'Малыш',
+      fear: 'останусь один',
+    });
+    await svc.upsertModeNote(1n, 'vulnerable_child', {
+      triggers: '',
+      feelings: '',
+      needs: '',
+      modeFunction: '',
+      needsMet: '',
+      alias: '',
+      fear: '',
+    });
+
+    const note = await svc.getModeNote(1n, 'vulnerable_child');
+    expect(note!.feelings).toBe('страшно');
+    expect(note!.alias).toBe('Малыш');
+    expect(note!.fear).toBe('останусь один');
+  });
+
+  it('пустые поля не уходят в Prisma ни в update, ни в create', async () => {
+    const db = makeDb({ mySchemaIds: [], myModeIds: [] });
+    const svc = new NotesService(db);
+
+    await svc.upsertSchemaNote(1n, 'defectiveness', {
+      triggers: '',
+      thoughts: 'мысль',
+    });
+
+    const arg = (db.userSchemaNote.upsert as jest.Mock).mock.calls[0][0];
+    expect(Object.keys(arg.update)).toEqual(['thoughts']);
+    expect('triggers' in arg.create).toBe(false);
+  });
+});
