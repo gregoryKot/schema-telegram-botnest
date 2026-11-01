@@ -47,7 +47,7 @@
   - `CMD ["node","deploy/entrypoint.mjs"]`.
 
 **`deploy/entrypoint.mjs`** (супервизор, PID 1) по порядку:
-1. `front-server.mjs` сразу занимает публичный порт 3000: это TCP-проброс на `APP_PORT` (3001) или страница `maintenance.html`, пока приложение не поднялось или упало.
+1. `front-server.mjs` сразу занимает публичный порт 3000: это TCP-проброс на `APP_PORT` (3001) или, пока приложение не поднялось или упало, страница `maintenance.html`. Исключение — хост визитки (`kotlarewski.gr`, сюда идёт реклама): ему front отдаёт `webapp/dist` с диска (`front-static.mjs`), техработы видят только продукт, API, `/app` и `/health`.
 2. `wait-for-db.mjs` ждёт TCP-порт БД из `DATABASE_URL`, до 120 с.
 3. `RECOVER_CMD`, по умолчанию `npx prisma db execute --file prisma/recover-p3009.sql || true`.
 4. `MIGRATE_CMD`, по умолчанию `npx prisma migrate deploy`, 3 попытки. Если не прошло, остаются техработы навсегда и приложение не стартует.
