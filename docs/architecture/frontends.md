@@ -114,7 +114,7 @@
 | `shared/src/diary/` | мета дневников, пояснения, благодарности; `diaryDay` — «сегодня» дневника = местный день человека; `diaryPrivacy` + `useDiaryAccess` — «кто увидит записи» по связи с терапевтом и его доступу |
 | `shared/src/flashcard/` | контент карточки схемы: режимы, потребности, шаги |
 | `shared/src/history/` | CTA «Записаться» в истории |
-| `shared/src/hooks/` | useYsqTest и YSQ-скоринг, useConfetti, useLongPress, useDragReorder, `useConfirmedAction` (действие только после подтверждения) |
+| `shared/src/hooks/` | useYsqTest и YSQ-скоринг, `ysqProgressStore` (незаконченный тест YSQ: запись прогресса + событие окну — «Продолжить (N из 116)» без перезагрузки), useConfetti, useLongPress, useDragReorder, `useConfirmedAction` (действие только после подтверждения) |
 | `shared/src/host/` | абстракция хоста: telegram, max, web (`getHost`, safezone) |
 | `shared/src/journey/` | «Мой путь»: лента активности, периоды, детали |
 | `shared/src/limits/` | `textLimits`: зеркало лимитов длины текста бэка |
@@ -138,12 +138,12 @@
 | `shared/src/selfHelp/` | текст «Важное о самопомощи» |
 | `shared/src/settings/` | константы уведомлений, тексты, выбор ты/вы |
 | `shared/src/share/` | карточки шаринга (canvas), тексты, события шаринга |
-| `shared/src/tasks/` | `taskProgress`: прогресс стрик-задач; `taskTitle`: название задания по `type`/`text` (id схемы/режима → «Карточка режима: …») — единственный резолвер обеих площадок и обеих сторон |
+| `shared/src/tasks/` | `taskProgress`: прогресс стрик-задач; `taskTitle`: название задания по `type`/`text` (id схемы/режима → «Карточка режима: …») — единственный резолвер обеих площадок и обеих сторон; `taskRoute`: что открывает задание по тапу (одна маршрутизация «Сегодня», «Практики» и «Помощи»); `taskStatus`: статус задания у терапевта (`done`/`failed`/`overdue`/`soon`/`active`) для карточки клиента и доски; `assignCopy`: что форма «Новое задание» обещает терапевту (онлайн- и офлайн-клиент); `taskPayload`: текст, который форма сохраняет в задание (со склонением) |
 | `shared/src/test-support/` | `rtlCleanup`, `settleUnmountTimers` для тестов |
 | `shared/src/theme/` | `tokens.css`, `fonts.css`, `utilities.css` |
-| `shared/src/therapy/` | `bridge/` — «мост к терапевту» клиента (`therapySignal`, `therapyBridgeLinks`, `therapyBridgeTexts`, `therapyBridgeState`); кабинет терапевта: join, карточка клиента обоих фронтов (`useNoteComposer` — «Новая заметка», `useSessionAliasEditing` — даты сессий и имя, `reloadClientTasks`), концептуализация (`conceptOverLimit` — какое поле длиннее предела сервера), `conceptGraph`, `upcomingSession` (ближайшая сессия клиента: прошедшая `nextSession` → ближайший день встреч; кабинет терапевта и «Встреча с терапевтом» у клиента — баннер «Практик», `profile/TherapistCard`, `helpSection/NextSessionBanner`) |
+| `shared/src/therapy/` | `bridge/` — «мост к терапевту» клиента (`therapySignal`, `therapyBridgeLinks`, `therapyBridgeTexts`, `therapyBridgeState`); кабинет терапевта: join, карточка клиента обоих фронтов (`useNoteComposer` — «Новая заметка», `useSessionAliasEditing` — даты сессий и имя, `reloadClientTasks`, `useTherapistTaskActions` — удаление и отметка задания терапевтом, `sessionInput` + `SessionDateTimeFields` — ввод дня и необязательного времени сессии по местному дню, `clientSheetHelpers.isActiveToday` — «активность сегодня» по календарю клиента из `daysSinceActive`), концептуализация (`conceptOverLimit` — какое поле длиннее предела сервера), `conceptGraph`, `ysqExpression` (выраженность схем YSQ у терапевта по флагу `active` бэкенда, порядок как у клиента), `upcomingSession` (ближайшая сессия клиента: прошедшая `nextSession` → ближайший день встреч, `isSessionToday` — встреча сегодня у смотрящего; кабинет терапевта и «Встреча с терапевтом» у клиента — баннер «Практик», `profile/TherapistCard`, `helpSection/NextSessionBanner`) |
 | `shared/src/today/` | блоки «Сегодня», фокус, кастомизация |
-| `shared/src/utils/` | addressForm(+Cache), format, storageKeys, crisisMarkers, drafts, a11y; `usePendingSave` — единственная механика автосохранения с задержкой: правка привязана к владельцу (клиент, карта), досылка при смене владельца, `pagehide`, скрытии вкладки и размонтировании (keepalive — `shared/src/api/keepalive.ts`) |
+| `shared/src/utils/` | addressForm(+Cache), format (`todayStr` — местный день человека; день UTC — `calendarDate.todayCalendarDate`, №25), `momentDate.momentIsToday`, storageKeys, crisisMarkers, drafts, a11y; `usePendingSave` — единственная механика автосохранения с задержкой: правка привязана к владельцу (клиент, карта), досылка при смене владельца, `pagehide`, скрытии вкладки и размонтировании (keepalive — `shared/src/api/keepalive.ts`) |
 | `shared/src/warmWords/` | «Тёплые слова»: сбор и хук |
 
 - **Тесты:** vitest рядом с кодом, у каждого пакета свой (`npm test --prefix <пакет>`). jsdom включается директивой `// @vitest-environment jsdom` в самом файле, а не глобально.

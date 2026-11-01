@@ -62,6 +62,8 @@
   - `src/therapy/therapy-invites.controller.ts` — живые приглашения терапевта (`GET invites`, `DELETE invites/:id`) и предпросмотр кода для экрана согласия (`POST invite/preview`); логика — `src/therapy/therapy-invite-list.ts`
   - `src/therapy/therapy-client-data.service.ts` — данные клиента для терапевта, запрос YSQ
   - `src/therapy/therapy-tasks.service.ts` — задачи (свои и назначенные), стрик-прогресс
+  - `src/therapy/assigned-task.ts` — удаление и отметка «выполнено» задания терапевтом (офлайн-клиенту выполнить его некому); доступ — задание назначено этим терапевтом и связь активна, иначе 403
+  - `src/therapy/dto/not-future-day.ts` — валидатор `NotFutureDay`: «начало терапии» не позже самого позднего «сегодня» на Земле (UTC+14)
   - `src/therapy/therapist-request.service.ts` — заявка на роль терапевта
   - `src/therapy/therapist-exit.service.ts` — отказ от роли (`DELETE therapist-role`, событие `therapist_resigned`) и бывший терапевт клиента (`GET former-therapist`, `former-therapist-info.ts`)
 - Связи: Prisma (TherapyRelation, TherapistNote, ClientConceptualization, ModeMap, TherapistCustomMode, UserTask, TherapistRequest); импортирует Bot/Notification/Auth/Analytics; сервисы зовут `src/api/` (diary, tracker → TherapyTasksService) и `src/telegram/`; все 6 контроллеров — `/api/therapy/*` под `TelegramAuthGuard`.
@@ -129,6 +131,8 @@
   - `src/utils/encryption-policy.ts` — `FIELD_POLICY`: каждое поле Prisma — enc или plain
   - `src/utils/admin-alert.ts` — notifyAdminWithFallback: Telegram, затем e-mail
   - `src/utils/text-limits.ts` — пределы длины текста (лимит только в DTO `@MaxLength`)
+  - `src/utils/calendar-day.ts` — валидатор `IsCalendarDay`: настоящий день `YYYY-MM-DD` в DTO (не `2026-02-31`), разбор в UTC (№25)
+  - `src/utils/ysq.ts` — скоринг YSQ; `isYsqScoreActive` — единственный критерий «схема выражена» (средний от 4 или больше половины «5–6»), флаг `active` у каждой схемы в ответе — его читают экраны терапевта (`shared/src/therapy/ysqExpression.ts`)
 - Связи: crypto/crypto-record/encryption-policy используют сервисы с PII (therapy/, booking/, auth/, bot/); `src/account/data-export.service.ts` читает `FIELD_POLICY` в рантайме; `src/utils/encrypt-migration.ts` запускает `src/main.ts` (статус → `src/infra/self-check/clinical-labels-status.ts`); `src/utils/admin-alert.ts` зовут `src/auth/security-log.service.ts` и `src/infra/self-check/`.
 - Подводные камни:
   - В проде без валидного `ENCRYPTION_KEY` (64 hex) процесс не стартует; вне prod шифрование молча пропускается; `decrypt()` на нераспознанном ключе возвращает вход как есть, поэтому «decrypt(v)===v» не признак plaintext (`src/utils/encrypt-migration.rows.ts`).
