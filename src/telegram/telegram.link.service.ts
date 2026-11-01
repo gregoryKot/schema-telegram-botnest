@@ -27,6 +27,7 @@ import { t, type AddressForm } from '../notification/address-form';
 import { BadCodeCounter } from './bad-code-counter';
 import { handleTicketDeny, withConfirmingUser } from './ticket-actions';
 import { viewerTelegramId } from './viewer-id';
+import { failCallback } from './callback-failure';
 import { trackLinkConfirmed, trackLinkFailed } from './telegram.link-outcome';
 
 @Injectable()
@@ -122,10 +123,7 @@ export class TelegramLinkService implements OnModuleInit {
             'Если такую ссылку кто-то прислал, лучше её больше не открывать.',
         );
       } catch (err) {
-        this.logger.error(
-          `tglink:no failed: ${(err as Error).message}`,
-          (err as Error).stack,
-        );
+        await failCallback(this.logger, ctx, 'tglink:no', err);
       }
     });
   }

@@ -54,15 +54,18 @@ describe('TelegramNotifyActionsService — catch-блоки', () => {
     expect(ctx.reply).toHaveBeenCalledWith(ERROR_RETRY);
   });
 
-  it('notify:pause:cancel: answerCbQuery сам падает — ошибка залогирована, не бросает наружу', async () => {
-    jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
+  it('notify:pause:cancel: answerCbQuery сам падает — человек получает исход, не бросает наружу', async () => {
+    const logged = jest
+      .spyOn(Logger.prototype, 'error')
+      .mockImplementation(() => undefined);
     const { service, fakeBot } = makeService({});
     service.onModuleInit();
-    await expect(
-      runAction(fakeBot, 'notify:pause:cancel', {
-        answerCbQuery: jest.fn().mockRejectedValue(new Error('expired query')),
-      }),
-    ).resolves.toBeDefined();
+    const ctx = await runAction(fakeBot, 'notify:pause:cancel', {
+      answerCbQuery: jest.fn().mockRejectedValue(new Error('expired query')),
+    });
+    // Раньше catch только писал в лог: человек не видел ничего (аудит 2026-10).
+    expect(ctx.reply).toHaveBeenCalledWith(ERROR_RETRY);
+    expect(logged).toHaveBeenCalled();
   });
 
   it('notify:slower: cadenceService.slower падает — сообщение об ошибке', async () => {
