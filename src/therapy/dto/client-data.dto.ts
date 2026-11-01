@@ -38,10 +38,8 @@ export class CreateSessionNoteDto {
 
 // therapyStartDate/nextSession: строка, null (сброс) или undefined (не менять).
 // Формат (аудит 2026-10, T6) уходит в БД и карточки как есть: therapyStartDate —
-// настоящий календарный день (IsCalendarDay) не в будущем (NotFutureDay);
-// nextSession — день или настенное время терапевта `YYYY-MM-DDTHH:mm[:ss]`
-// (поле datetime-local сайта шлёт именно его; день без времени — законная
-// встреча «в этот день»).
+// настоящий день (IsCalendarDay) не в будущем; nextSession — день или настенное
+// время терапевта `YYYY-MM-DDTHH:mm[:ss]` (день без времени — встреча «в этот день»).
 const DAY_OR_MOMENT_RE = /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}(:\d{2})?)?$/;
 
 export class SessionInfoDto {

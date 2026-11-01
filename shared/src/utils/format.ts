@@ -52,9 +52,7 @@ export function localDateStr(d: Date): string {
   return `${y}-${m}-${day}`;
 }
 
-/** YYYY-MM-DD сегодняшнего МЕСТНОГО дня человека — единственное «местное
- *  сегодня» фронтов (дневник, встречи, оценки, срок терапии). `now` — для
- *  тестов и для вызова с уже зафиксированным моментом. */
+/** YYYY-MM-DD местного дня человека — единственное «местное сегодня» фронтов (`now` — для тестов). */
 export function todayStr(now: Date = new Date()): string {
   return localDateStr(now);
 }
