@@ -72,18 +72,6 @@ NestJS 12, 2026-10-24): `src/api/memory-throttle-storage.ts` заменял шт
   складывать дни в зоне события (нужен TZID в `eventEnd`) и добавить в тест
   конца события случай через `forEachTimeZone` с переводом часов.
 
-**Границы строковых полей DTO** (гейт `scripts/check-dto-string-bounds.mjs`, исключения —
-`scripts/dto-string-bounds-baseline.json`, у каждого причина):
-- **Два поля дневника хранятся без верхней границы.** `ModeDiaryDto.modeId` и
-  `SchemaDiaryDto.schemaIds` (до 50 id, длина каждого не ограничена) в
-  `src/api/dto/diary-entries.dto.ts`: контроллер проверяет `modeId` только на
-  непустоту (`src/api/diary.controller.ts:84`), `schemaIds` не проверяет вовсе,
-  обе записи шифруются и ложатся в `ModeDiaryEntry`/`SchemaDiaryEntry`. Тело
-  запроса до 256 КБ, так что строка такой длины сохранится. Чинить как соседние
-  идентификаторы: `@Matches` на `[a-z_]{1,64}` плюс `@MaxLength(64)` и
-  `@MaxLength(64, { each: true })`; записи в бейслайне гейта тогда протухнут и
-  уйдут. Не делалось в починке имени клиента: там правило №20 (один класс, один PR).
-
 **Нечитаемые шифрованные данные — остаток после D-8** (проба `encryptionReadable`,
 `src/utils/crypto-record.ts`):
 - **Мутационная зона крипто-ядра держится на допуске.** `crypto.ts` дал 89.14%

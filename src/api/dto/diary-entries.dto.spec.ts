@@ -1,5 +1,7 @@
 // DTO-рефактор inline-типов @Body() в diary.controller.ts
 // (аудит 2026-07, 2г / правило №6 CLAUDE.md).
+import { readFileSync } from 'fs';
+import { join } from 'path';
 import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
 import { SchemaDiaryDto, ModeDiaryDto } from './diary-entries.dto';
@@ -47,6 +49,78 @@ describe('ModeDiaryDto', () => {
     await expect(
       errorsFor(ModeDiaryDto, { modeId: 'vulnerable_child', situation: 'x' }),
     ).resolves.toEqual([]);
+  });
+
+  // Реестр docs/open/backend.md: modeId проверялся только на непустоту и
+  // ложился в базу любой длины (тело запроса — до 256 КБ).
+  it.each([
+    ['длиннее 64', 'a'.repeat(65)],
+    ['не формат каталога', 'Vulnerable-Child'],
+    ['разметка', '<b>x</b>'],
+    ['пусто', ''],
+    ['не строка', 5],
+  ])('modeId %s — отказ', async (_, modeId) => {
+    await expect(
+      errorsFor(ModeDiaryDto, { modeId, situation: 'x' }),
+    ).resolves.toContain('modeId');
+  });
+
+  it('modeId ровно 64 знака — проходит (граница включительно)', async () => {
+    await expect(
+      errorsFor(ModeDiaryDto, { modeId: 'a'.repeat(64), situation: 'x' }),
+    ).resolves.toEqual([]);
+  });
+});
+
+describe('SchemaDiaryDto.schemaIds — граница каждого id', () => {
+  const body = (schemaIds: unknown[]) => ({
+    trigger: 't',
+    emotions: [],
+    schemaIds,
+  });
+
+  it.each([
+    ['id длиннее 64', ['abandonment', 'a'.repeat(65)]],
+    ['id не формата каталога', ['abandonment', 'Bad Id']],
+    ['больше 50 id', Array.from({ length: 51 }, () => 'abandonment')],
+  ])('%s — отказ', async (_, ids) => {
+    await expect(errorsFor(SchemaDiaryDto, body(ids))).resolves.toContain(
+      'schemaIds',
+    );
+  });
+});
+
+// Правило №4: формат id в DTO и каталог, из которого фронты берут id
+// (MODE_GROUPS, SCHEMA_DOMAINS), обязаны совпадать — иначе запись настоящего
+// режима или схемы получала бы 400.
+describe('каталог схем и режимов проходит DTO', () => {
+  const CONTENT = join(__dirname, '../../../shared/src/schemaTherapy/content');
+  const idsOf = (file: string) =>
+    [
+      ...readFileSync(join(CONTENT, file), 'utf8').matchAll(/\bid: '([^']*)'/g),
+    ].map((m) => m[1]);
+
+  it('каждый id из modeGroups.ts — валидный modeId', async () => {
+    const ids = idsOf('modeGroups.ts');
+    expect(ids.length).toBeGreaterThan(20);
+    for (const modeId of ids)
+      expect([
+        modeId,
+        await errorsFor(ModeDiaryDto, { modeId, situation: 'x' }),
+      ]).toEqual([modeId, []]);
+  });
+
+  it('все id из schemaDomains.ts — валидные schemaIds', async () => {
+    const ids = idsOf('schemaDomains.ts');
+    expect(ids.length).toBeGreaterThan(18);
+    for (let i = 0; i < ids.length; i += 50)
+      await expect(
+        errorsFor(SchemaDiaryDto, {
+          trigger: 't',
+          emotions: [],
+          schemaIds: ids.slice(i, i + 50),
+        }),
+      ).resolves.toEqual([]);
   });
 });
 
