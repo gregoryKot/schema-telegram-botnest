@@ -133,7 +133,7 @@ describe('компоненты с секретами: DOM под ym-hide-content
   it('BookingPaidPage: после загрузки по токену управление записью — под скрытым узлом', async () => {
     window.history.pushState({}, '', `/booking/manage?token=${TOKEN}`);
     vi.mocked(api.getBookingByToken).mockResolvedValue({
-      status: 'CONFIRMED', type: 'SESSION_50', startsAt, endsAt: startsAt, durationMin: 50,
+      status: 'CONFIRMED', paid: true, type: 'SESSION_50', startsAt, endsAt: startsAt, durationMin: 50,
     } as never);
     const { container } = render(<BookingPaidPage />);
     await screen.findByText('Оплата прошла');
