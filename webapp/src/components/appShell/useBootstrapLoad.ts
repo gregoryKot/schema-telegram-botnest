@@ -4,6 +4,7 @@ import { api, reportClientError } from '../../api';
 import type { PracticePlan, TherapyClientSummary } from '../../api';
 import type { Need } from '../../types';
 import { cacheTherapistContact } from '../../utils/therapistContact';
+import { humanizeThrown } from '../../../../shared/src/api/humanizeError';
 import { MY_SCHEMA_IDS_KEY, CHILDHOOD_DONE_KEY, YSQ_PROGRESS_KEY } from '../../utils/storageKeys';
 
 // Константы дат — из shared (правило №3); ре-экспорт для потребителей AppShell.
@@ -62,11 +63,9 @@ export function useBootstrapLoad({ navigate, initialPathname }: Params) {
         const initialSaved: Record<string, boolean> = {};
         for (const key of Object.keys(r)) initialSaved[key] = true;
         setSaved(initialSaved);
-        if (n.length > 0 && n.every((need: Need) => r[need.id] !== undefined)) {
-          localStorage.setItem(TODAY_KEY, '1');
-        }
+        if (n.length > 0 && n.every((need: Need) => r[need.id] !== undefined)) localStorage.setItem(TODAY_KEY, '1');
       })
-      .catch((e) => { setError(String(e)); fail('needs/ratings'); })
+      .catch((e) => { setError(humanizeThrown(e, 'Не удалось загрузить потребности и оценки')); fail('needs/ratings'); })
       .finally(() => setLoading(false));
 
     const plansPromise = api.getPendingPlans().then(setPendingPlans).catch(() => fail('задания'));

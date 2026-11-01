@@ -168,13 +168,23 @@ describe('AccountPage — загрузка', () => {
     expect(screen.getByText('U')).toBeTruthy();
   });
 
-  it('ошибка /api/auth/me показывает сообщение об ошибке, а не тишину', async () => {
+  // Аудит 2026-10, «сырой текст на экранах аккаунта»: раньше здесь стояли
+  // «Error: Failed to load account» и «TypeError: Failed to fetch».
+  it('500 от /api/auth/me — человеческий текст об ошибке, а не тишина и не «Failed to load account»', async () => {
     meFails = true;
-    renderPage();
+    const { container } = renderPage();
 
-    await waitFor(() =>
-      expect(screen.getByText(/Failed to load account/)).toBeTruthy(),
-    );
+    await screen.findByText('Сервер не ответил. Повторить можно чуть позже');
+    expect(container.textContent).not.toMatch(/Failed|Error/);
+  });
+
+  it('обрыв сети на /api/auth/me — «Нет связи с сервером», не «TypeError: Failed to fetch»', async () => {
+    fetchMock.mockImplementation((url: string, init?: RequestInit) =>
+      url.includes('/api/auth/me') ? Promise.reject(new TypeError('Failed to fetch')) : routeFetch(url, init));
+    const { container } = renderPage();
+
+    await screen.findByText('Нет связи с сервером');
+    expect(container.textContent).not.toMatch(/TypeError|Failed to fetch/);
   });
 });
 

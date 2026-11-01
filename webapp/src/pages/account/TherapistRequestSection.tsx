@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { API_BASE } from '../../utils/apiBase'; import { useTr } from '../../utils/addressForm';
 import { LimitedTextarea } from '../../../../shared/src/components/LimitedTextarea';
 import * as LIM from '../../../../shared/src/limits/textLimits';
+import { humanizeThrown, readHumanError } from '../../../../shared/src/api/humanizeError';
 
 // Секция «Роль психолога» (заявка терапевта). Вынесено из AccountPage.tsx
 // (правило №10).
@@ -50,14 +51,11 @@ export function TherapistRequestSection({ accessToken }: { accessToken: string |
           message: message.trim() || undefined,
         }),
       });
-      if (!r.ok) {
-        const body = await r.json().catch(() => ({ message: 'Ошибка' }));
-        throw new Error(body.message ?? 'Ошибка');
-      }
+      if (!r.ok) throw new Error((await readHumanError(r, 'Не удалось отправить заявку')).message);
       setReq({ id: 0, status: 'pending', rejectReason: null, createdAt: new Date().toISOString(), reviewedAt: null });
       setOpen(false);
     } catch (e) {
-      setErr(String(e));
+      setErr(humanizeThrown(e, 'Не удалось отправить заявку'));
     } finally {
       setBusy(false);
     }
