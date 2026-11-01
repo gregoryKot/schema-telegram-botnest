@@ -46,6 +46,7 @@
 - Входы:
   - `src/security/controller-classification.ts` — контроллеры: guarded / admin-key / PUBLIC_BY_DESIGN
   - `src/security/anonymous-routes.ts` — анонимные методы внутри guarded-контроллеров
+  - `src/test-support/free-text-inputs.ts` — признак однострочного поля свободного текста для трипваера `crisis-path.invariants.spec.ts` (правило №7)
   - `src/security/helmet-config.ts` — CSP и заголовки helmet (подключает main.ts)
   - `src/security/embedders.ts` — площадки-iframe: CSP frame-ancestors и SameSite=None
   - `src/security/collect-source-files.ts` — единственный обход дерева исходников
@@ -58,6 +59,7 @@
 Кабинет терапевта: связь терапевт↔клиент (код-приглашение, виртуальные офлайн-клиенты), заметки по сессиям, концептуализация, карты режимов, задания клиенту, заявка на роль терапевта (`therapist-request.*`).
 - Входы:
   - `src/therapy/therapy-relations.service.ts` — связи; `assertHasClient`/`assertRelation` (барьер доступа)
+  - `src/therapy/client-map-authors.ts` — кого из авторов карт режимов клиент видит: связь `active` или `ended` (терапевт отказался от роли, #865); отключился сам — карт нет
   - `src/therapy/therapy-connection.controller.ts` — invite/join/relation/former-therapist/clients/request/become-therapist/therapist-role
   - `src/therapy/therapy-invites.controller.ts` — живые приглашения терапевта (`GET invites`, `DELETE invites/:id`) и предпросмотр кода для экрана согласия (`POST invite/preview`); логика — `src/therapy/therapy-invite-list.ts`
   - `src/therapy/therapy-client-data.service.ts` — данные клиента для терапевта, запрос YSQ
@@ -74,6 +76,7 @@
 Запись на консультации и деньги: слоты, бронь, оплата Robokassa, .ics, админка записи, календарь CalDAV, ссылки на встречи (Zoom/Jitsi), подписки/донаты, заявки с формы знакомства (IntroLead).
 - Входы:
   - `src/booking/booking.service.ts` — бронь: создание, подтверждение, отмена, cron `expireHolds`
+  - `src/booking/whole-price.ts` — строгий разбор целой цены (`1e+22`, мусор → отказ); на нём `parsePrice` и `src/subscription/subscription-price.ts`
   - `src/booking/booking.transitions.ts` — переходы статуса брони (CAS)
   - `src/booking/slot.service.ts` — свободные слоты: правила, брони, override, CalDAV
   - `src/booking/payment.controller.ts` — вебхук Robokassa: брони, донаты, подписки

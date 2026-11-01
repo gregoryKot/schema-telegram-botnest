@@ -3,6 +3,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/authContext';
 import { useTr } from '../utils/addressForm';
 import { ServicePage } from './service/ServicePage';
+import { TicketDenied } from './service/TicketDenied';
 import { formatUserCode } from '../../../shared/src/auth/loginTicketCode';
 
 const API_BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? '';
@@ -106,21 +107,7 @@ export function AuthConfirmPage() {
     );
   }
 
-  if (phase === 'denied') {
-    return (
-      <ServicePage>
-        <div className="as-body">
-          <h1 className="ds-h2">Доступ никто не получил</h1>
-          <p className="as-lead">
-            {tr(
-              'Если этот код пришёл со стороны, всё правильно — подтверждать его не стоило.',
-              'Если этот код пришёл со стороны, всё правильно — подтверждать его не стоило.',
-            )}
-          </p>
-        </div>
-      </ServicePage>
-    );
-  }
+  if (phase === 'denied') return <TicketDenied />;
 
   return (
     <ServicePage>

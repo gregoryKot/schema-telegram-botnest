@@ -223,7 +223,10 @@ function relMatches(r: FullRel, where: any = {}): boolean {
     (where.id === undefined || r.id === where.id) &&
     (where.therapistId === undefined || r.therapistId === where.therapistId) &&
     (where.clientId === undefined || r.clientId === where.clientId) &&
-    (where.status === undefined || r.status === where.status)
+    (where.status === undefined ||
+      (where.status.in
+        ? where.status.in.includes(r.status)
+        : r.status === where.status))
   );
 }
 
@@ -760,6 +763,35 @@ describe('disconnect — клиент разрывает свои связи', (
     ]);
     await service.disconnect(T1);
     expect(rels).toEqual([relAsTherapist, unrelated]);
+  });
+
+  // Связь, завершённая отказом терапевта от роли, остаётся: по ней клиент
+  // видит карты бывшего терапевта как историю (решение владельца 2026-10-22).
+  it('связь ended (терапевт отказался от роли) не удаляется, живая и pending — удаляются', async () => {
+    const ended: FullRel = {
+      id: 1,
+      therapistId: T1,
+      clientId: CLIENT,
+      status: 'ended',
+      code: 'E1',
+    };
+    const live: FullRel = {
+      id: 2,
+      therapistId: T2,
+      clientId: CLIENT,
+      status: 'active',
+      code: 'L1',
+    };
+    const pending: FullRel = {
+      id: 3,
+      therapistId: T2,
+      clientId: CLIENT,
+      status: 'pending',
+      code: 'P1',
+    };
+    const { service, rels } = makeFullService([ended, live, pending]);
+    await service.disconnect(CLIENT);
+    expect(rels).toEqual([ended]);
   });
 });
 

@@ -1,5 +1,6 @@
 import { BadRequestException } from '@nestjs/common';
 import { SessionType } from '@prisma/client';
+import { parseWholePrice } from './whole-price';
 
 /**
  * Границы цены сессии, рубли. Потолок — защита от мусорного ввода ('1e+22'
@@ -19,15 +20,14 @@ export function parsePrice(
   type: SessionType,
   raw: string | undefined,
 ): number | null {
-  if (raw === undefined) return null;
-  const text = raw.trim();
-  if (!/^\d+$/.test(text)) return null;
-  const n = Number(text);
-  return n >= minPrice(type) && n <= PRICE_MAX ? n : null;
+  return parseWholePrice(raw, minPrice(type), PRICE_MAX);
 }
 
-/** Цена из админки перед записью: округление и границы, иначе 400. */
+/** Цена из админки перед записью: округление и границы, иначе 400. Знакомство
+ * бесплатно по типу — его цену не пишем вовсе (форма «Цены» её и не показывает). */
 export function validPrice(type: SessionType, amount: number): number {
+  if (type === SessionType.INTRO_15)
+    throw new BadRequestException('INTRO_IS_FREE');
   const n = Math.round(amount);
   if (!Number.isFinite(n) || n < minPrice(type) || n > PRICE_MAX) {
     throw new BadRequestException('INVALID_PRICE');

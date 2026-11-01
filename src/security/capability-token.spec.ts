@@ -100,6 +100,7 @@ describe('subscription getPublicByToken — без PII', () => {
       {} as any,
       {} as any,
       config({ SUBSCRIPTION_ENABLED: 'true' }),
+      {} as any,
     );
     const res = (await svc.getPublicByToken('secret')) as Record<
       string,

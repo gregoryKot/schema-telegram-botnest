@@ -1,29 +1,16 @@
-import { useCallback, useEffect, useState } from 'react';
-import { Navigate, useSearchParams } from 'react-router-dom';
+import { useState } from 'react';
+import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../auth/authContext';
 import { totalItems as sumItems } from '../utils/mergeLabels';
-import { api } from '../api';
 import { useTr } from '../utils/addressForm';
 import { ServicePage } from './service/ServicePage';
 import { ServiceRows } from './service/ServiceRows';
+import { TicketDenied } from './service/TicketDenied';
+import { AckCheck } from './merge/AckCheck';
+import { linkAckText, useLinkTicket } from './merge/useLinkTicket';
 import { Skeleton } from '../components/Skeleton';
 import { TwoFactorLossNote } from '../components/TwoFactorLossNote';
 import { AddressFormProvider } from '../utils/AddressFormProvider';
-import { humanizeThrown, readHumanError } from '../../../shared/src/api/humanizeError';
-import {
-  ACCOUNT_LINK_CONFIRMED_EVENT,
-  type AccountLinkHost,
-} from '../../../shared/src/share/analytics';
-
-const API_BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? '';
-
-interface Preview {
-  provider: string;
-  displayName: string | null;
-  sameAccount: boolean;
-  summary: Record<string, number>;
-  twoFactorLost: boolean;
-}
 
 const PROVIDER_NAMES: Record<string, string> = {
   max: 'MAX',
@@ -64,51 +51,26 @@ export function LinkDevicePage() {
 
 function LinkDeviceContent({ code }: { code: string }) {
   const tr = useTr();
-  const [preview, setPreview] = useState<Preview | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
-  const [done, setDone] = useState(false);
-
-  const call = useCallback(async (path: string) => {
-    const res = await fetch(`${API_BASE}/api/auth/ticket/${path}`, {
-      method: 'POST',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json', 'x-requested-with': 'webapp' },
-      body: JSON.stringify({ code }),
-    });
-    if (!res.ok) throw new Error((await readHumanError(res, 'Не получилось')).message);
-    return res.json().catch(() => ({})) as Promise<unknown>;
-  }, [code]);
-
-  useEffect(() => {
-    let alive = true;
-    call('preview')
-      .then((p) => { if (alive) setPreview(p as Preview); })
-      .catch((e: unknown) => { if (alive) setError(humanizeThrown(e, 'Не получилось')); });
-    return () => { alive = false; };
-  }, [call]);
-
-  const approve = async () => {
-    setBusy(true);
-    setError(null);
-    try {
-      const res = (await call('approve')) as { merged?: boolean; repeat?: boolean };
-      // Успех считает именно этот экран (мини-апп ещё ждёт и не знает) —
-      // ровно один раз: повтор из второй вкладки уже посчитан первым.
-      if (!res.repeat) api.trackEvent(ACCOUNT_LINK_CONFIRMED_EVENT, {
-        host: (preview?.provider ?? 'max') as AccountLinkHost,
-        merged: res.merged === true,
-      });
-      setDone(true);
-    } catch (e) {
-      setError(humanizeThrown(e, 'Не получилось'));
-    } finally {
-      setBusy(false);
-    }
-  };
+  const navigate = useNavigate();
+  const { preview, error, busy, phase, approve, deny } = useLinkTicket(code);
+  // Эффект тот же, что у MergePage (второй аккаунт вливается и удаляется), —
+  // и подтверждение то же: без галочки кнопка недоступна.
+  const [acknowledged, setAcknowledged] = useState(false);
+  const done = phase === 'done';
 
   const messenger = preview ? PROVIDER_NAMES[preview.provider] ?? preview.provider : '';
   const total = preview ? sumItems(preview.summary) : 0;
+
+  if (phase === 'denied') {
+    return (
+      <TicketDenied>
+        <p className="as-lead">
+          Код не подтверждён: приложение в {messenger} не получило доступ к аккаунту, данные остались на месте.
+        </p>
+        <button className="ds-btn ds-btn--secondary" onClick={() => navigate('/account')}>В аккаунт</button>
+      </TicketDenied>
+    );
+  }
 
   return (
     <ServicePage>
@@ -144,7 +106,7 @@ function LinkDeviceContent({ code }: { code: string }) {
 
             <p className="as-warn">
               {tr('Подтверждай, только если код запрошен тобой в этом приложении.', 'Подтверждайте, только если код запрошен вами в этом приложении.')}{' '}
-              {tr('Если код прислали со стороны — закрой эту страницу: так отдают доступ к аккаунту чужому.', 'Если код прислали со стороны — закройте эту страницу: так отдают доступ к аккаунту чужому.')}
+              {tr('Если код прислали со стороны — нажми «Это не я»: подтверждённый чужой код отдаёт аккаунт постороннему.', 'Если код прислали со стороны — нажмите «Это не я»: подтверждённый чужой код отдаёт аккаунт постороннему.')}
             </p>
 
             {!preview.sameAccount && total > 0 && (
@@ -156,9 +118,18 @@ function LinkDeviceContent({ code }: { code: string }) {
 
             {preview.twoFactorLost && <TwoFactorLossNote />}
 
-            <button className="ds-btn" onClick={() => void approve()} disabled={busy}>
-              {busy ? 'Привязываю…' : 'Разрешить доступ'}
-            </button>
+            <AckCheck checked={acknowledged} onChange={setAcknowledged} disabled={busy !== null}>
+              {linkAckText(messenger, preview.sameAccount)}
+            </AckCheck>
+
+            <div className="as-actions-row">
+              <button className="ds-btn" onClick={() => void approve()} disabled={busy !== null || !acknowledged}>
+                {busy === 'approve' ? 'Привязываю…' : 'Разрешить доступ'}
+              </button>
+              <button className="ds-btn ds-btn--secondary" onClick={() => void deny()} disabled={busy !== null}>
+                Это не я
+              </button>
+            </div>
           </>
         )}
       </div>

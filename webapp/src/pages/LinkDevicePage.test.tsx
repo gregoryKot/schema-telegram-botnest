@@ -55,6 +55,11 @@ const PREVIEW = {
 
 let fetchMock: ReturnType<typeof vi.fn>;
 
+// Галочка «я понимаю» — без неё «Разрешить доступ» недоступна (как в MergePage).
+function confirmAck() {
+  fireEvent.click(screen.getByRole('checkbox'));
+}
+
 function renderAt(url: string) {
   return render(
     <MemoryRouter initialEntries={[url]}>
@@ -99,7 +104,7 @@ describe('что показано до подтверждения', () => {
   it('называет мессенджер, имя и перечисляет переезжающие данные', async () => {
     renderAt('/link?code=ABCD2345');
 
-    await waitFor(() => expect(screen.getByText(/MAX/)).toBeTruthy());
+    await waitFor(() => expect(screen.getByText(/Приложение в MAX/)).toBeTruthy());
     expect(screen.getByText(/Гриша/)).toBeTruthy();
     expect(screen.getByText('оценки потребностей')).toBeTruthy();
     expect(screen.getByText('письма себе')).toBeTruthy();
@@ -117,7 +122,7 @@ describe('что показано до подтверждения', () => {
       screen.getByText(/менять и удалять все ваши данные/),
     ).toBeTruthy();
     // Анти-фишинг: код, пришедший со стороны, подтверждать нельзя.
-    expect(screen.getByText(/закройте эту страницу/)).toBeTruthy();
+    expect(screen.getByText(/нажмите «Это не я»/)).toBeTruthy();
   });
 
   it('тот же аккаунт — про перенос не врёт', async () => {
@@ -149,6 +154,7 @@ describe('подтверждение', () => {
     await waitFor(() => expect(screen.getByText('Разрешить доступ')).toBeTruthy());
 
     fetchMock.mockResolvedValue(jsonResponse(200, { merged: true }));
+    confirmAck();
     fireEvent.click(screen.getByText('Разрешить доступ'));
 
     await waitFor(() => expect(screen.getByText('Готово')).toBeTruthy());
@@ -167,6 +173,7 @@ describe('подтверждение', () => {
     await waitFor(() => expect(screen.getByText('Разрешить доступ')).toBeTruthy());
 
     fetchMock.mockResolvedValue(jsonResponse(200, { merged: true }));
+    confirmAck();
     fireEvent.click(screen.getByText('Разрешить доступ'));
 
     await waitFor(() => expect(screen.getByText('Готово')).toBeTruthy());
@@ -181,6 +188,7 @@ describe('подтверждение', () => {
     await waitFor(() => expect(screen.getByText('Разрешить доступ')).toBeTruthy());
 
     fetchMock.mockResolvedValue(jsonResponse(200, { merged: false }));
+    confirmAck();
     fireEvent.click(screen.getByText('Разрешить доступ'));
 
     await waitFor(() => expect(screen.getByText('Готово')).toBeTruthy());
@@ -197,6 +205,7 @@ describe('подтверждение', () => {
     fetchMock.mockResolvedValue(
       jsonResponse(200, { merged: false, repeat: true }),
     );
+    confirmAck();
     fireEvent.click(screen.getByText('Разрешить доступ'));
 
     await waitFor(() => expect(screen.getByText('Готово')).toBeTruthy());
@@ -208,6 +217,7 @@ describe('подтверждение', () => {
     await waitFor(() => expect(screen.getByText('Разрешить доступ')).toBeTruthy());
 
     fetchMock.mockResolvedValue(jsonResponse(400, { message: 'Код истёк' }));
+    confirmAck();
     fireEvent.click(screen.getByText('Разрешить доступ'));
 
     await waitFor(() => expect(screen.getByText('Код истёк')).toBeTruthy());
@@ -221,6 +231,7 @@ describe('подтверждение', () => {
     fetchMock.mockResolvedValue(
       jsonResponse(400, { message: 'Не удалось объединить аккаунты' }),
     );
+    confirmAck();
     fireEvent.click(screen.getByText('Разрешить доступ'));
 
     await waitFor(() =>
@@ -255,10 +266,87 @@ describe('ошибки человеческим текстом', () => {
     await waitFor(() => expect(screen.getByText('Разрешить доступ')).toBeTruthy());
 
     fetchMock.mockImplementation(() => Promise.resolve(new Response('<html>502</html>', { status: 502 })));
+    confirmAck();
     fireEvent.click(screen.getByText('Разрешить доступ'));
 
     await waitFor(() =>
       expect(screen.getByText('Сервер не ответил. Повторить можно чуть позже')).toBeTruthy());
     expect(screen.queryByText('Готово')).toBeNull();
+  });
+});
+
+// BACKLOG «/link»: эффект тот же, что у MergePage (второй аккаунт вливается и
+// удаляется), — значит и подтверждение то же: галочка и «Это не я».
+describe('галочка «я понимаю»', () => {
+  it('без галочки подтвердить нельзя; с ней — можно', async () => {
+    renderAt('/link?code=ABCD2345');
+    const btn = await screen.findByRole('button', { name: 'Разрешить доступ' });
+    expect((btn as HTMLButtonElement).disabled).toBe(true);
+    confirmAck();
+    expect((btn as HTMLButtonElement).disabled).toBe(false);
+  });
+
+  it('называет реальный эффект: доступ, необратимый перенос, удаление прежнего аккаунта', async () => {
+    renderAt('/link?code=ABCD2345');
+    await screen.findByRole('checkbox');
+    expect(screen.getByText(
+      'Я понимаю, что приложение в MAX получит полный доступ к этому аккаунту, его данные необратимо переедут сюда, а прежний аккаунт приложения будет удалён.',
+    )).toBeTruthy();
+  });
+
+  it('тот же аккаунт — галочка только про доступ, про удаление не врёт', async () => {
+    fetchMock.mockResolvedValue(
+      jsonResponse(200, { ...PREVIEW, sameAccount: true, summary: {} }),
+    );
+    renderAt('/link?code=ABCD2345');
+    await screen.findByRole('checkbox');
+    expect(screen.getByText('Я понимаю, что приложение в MAX получит полный доступ к этому аккаунту.')).toBeTruthy();
+    expect(screen.queryByText(/будет удалён/)).toBeNull();
+  });
+});
+
+describe('«Это не я»', () => {
+  it('гасит билет, не подтверждая, и говорит, что доступ никто не получил', async () => {
+    renderAt('/link?code=ABCD2345');
+    await screen.findByText('Это не я');
+
+    fetchMock.mockResolvedValue(jsonResponse(200, { ok: true }));
+    fireEvent.click(screen.getByText('Это не я'));
+
+    await waitFor(() => expect(screen.getByText('Доступ никто не получил')).toBeTruthy());
+    expect(screen.getByText(/Код не подтверждён: приложение в MAX не получило доступ/)).toBeTruthy();
+    const urls = fetchMock.mock.calls.map((c) => String(c[0]));
+    expect(urls.some((u) => u.endsWith('/deny-login'))).toBe(true);
+    expect(urls.some((u) => u.endsWith('/approve'))).toBe(false);
+    const denyCall = fetchMock.mock.calls.find((c) => String(c[0]).endsWith('/deny-login'))!;
+    expect(JSON.parse(String((denyCall[1] as RequestInit).body))).toEqual({ code: 'ABCD2345' });
+    // Отказ — сработавшая защита, а не провал переноса: событий нет.
+    expect(api.trackEvent).not.toHaveBeenCalled();
+  });
+
+  it('галочка для отказа не нужна', async () => {
+    renderAt('/link?code=ABCD2345');
+    const deny = await screen.findByRole('button', { name: 'Это не я' });
+    expect((deny as HTMLButtonElement).disabled).toBe(false);
+  });
+
+  it('запрос отказа не долетел — исход тот же: код никто не подтвердил', async () => {
+    renderAt('/link?code=ABCD2345');
+    await screen.findByText('Это не я');
+
+    fetchMock.mockImplementation(() => Promise.reject(new TypeError('Failed to fetch')));
+    fireEvent.click(screen.getByText('Это не я'));
+
+    await waitFor(() => expect(screen.getByText('Доступ никто не получил')).toBeTruthy());
+  });
+
+  it('после отказа — дорога в аккаунт', async () => {
+    renderAt('/link?code=ABCD2345');
+    await screen.findByText('Это не я');
+    fetchMock.mockResolvedValue(jsonResponse(200, { ok: true }));
+    fireEvent.click(screen.getByText('Это не я'));
+
+    fireEvent.click(await screen.findByText('В аккаунт'));
+    expect(screen.getByText('АККАУНТ')).toBeTruthy();
   });
 });

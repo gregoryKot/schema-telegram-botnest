@@ -61,7 +61,9 @@ describe('VkProvider.buildAuthUrl', () => {
     expect(p.get('state')).toBe(toVkState('state-1'));
     expect(p.get('code_challenge_method')).toBe('s256');
     expect(p.get('code_challenge')).toBeTruthy();
-    expect(p.get('scope')).toBe('email phone');
+    // Телефон не запрашиваем: код его не читает (минимизация, 152-ФЗ).
+    expect(p.get('scope')).toBe('email');
+    expect(p.get('scope')).not.toContain('phone');
   });
 
   // 2026-10-03: VK вырезает из state всё, кроме [A-Za-z0-9_-] — точки JWT

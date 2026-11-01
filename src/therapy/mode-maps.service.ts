@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { TherapyRelationsService } from './therapy-relations.service';
 import { encryptRecord, decryptRecord, EncryptSchema } from '../utils/crypto';
 import { guardOverwrite } from '../utils/crypto-record';
+import { clientMapAuthors, clientSeesMap } from './client-map-authors';
 
 // Declarative encryption schemas — single source of truth, so a newly added
 // free-text field can't silently end up in plaintext (just add it here).
@@ -128,8 +129,9 @@ export class ModeMapsService {
   // ─── Client's read-only view of their own maps ───────────────────────────────
 
   async listMyModeMaps(userId: bigint) {
+    const authors = await clientMapAuthors(this.prisma, userId);
     const rows = await this.prisma.modeMap.findMany({
-      where: { clientId: userId },
+      where: { clientId: userId, therapistId: { in: authors } },
       orderBy: { updatedAt: 'desc' },
       select: { id: true, title: true, kind: true, updatedAt: true },
     });
@@ -137,10 +139,8 @@ export class ModeMapsService {
   }
 
   async getMyModeMap(userId: bigint, mapId: number) {
-    const row = await this.prisma.modeMap.findUnique({
-      where: { id: mapId },
-    });
-    if (!row || row.clientId.toString() !== userId.toString())
+    const row = await this.prisma.modeMap.findUnique({ where: { id: mapId } });
+    if (!row || !(await clientSeesMap(this.prisma, userId, row)))
       throw new Error('Not found');
     return decryptRecord(row, MODE_MAP_SCHEMA);
   }
