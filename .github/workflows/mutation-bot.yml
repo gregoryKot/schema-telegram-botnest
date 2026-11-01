@@ -1,0 +1,48 @@
+# Недельный mutation-замер семейства src/bot. Жил вторым кроном в nightly.yml
+# и ломал два наблюдателя: воскресный прогон гонял только эту джобу, её
+# зелёный закрывал issue `ci-alarm` от красных будних джоб, а проба `ciRuns`
+# (src/infra/self-check/probe-ci-runs.ts берёт последний прогон воркфлоу на
+# main) докладывала «nightly зелёный». Один воркфлоу — одно расписание.
+#
+# Джобы alarm здесь нет: храповика у замера пока нет (см. ниже), красный —
+# это таймаут или падение Stryker, он виден в Actions. Пробел записан в
+# docs/open/ci-tests.md.
+name: Недельный mutation src/bot
+
+on:
+  schedule:
+    - cron: '0 4 * * 0'
+  workflow_dispatch:
+
+jobs:
+  # Тяжёлый mutation-замер семейства src/bot — ОТДЕЛЬНО и раз в неделю, а не
+  # вместе с золотыми зонами nightly.yml. Причина простая: bot.service с
+  # соседями дают ~950 мутантов, и каждый перегоняет свой срез из 3100 тестов.
+  # Замер на локальной машине шёл со скоростью 2.5 мутанта в минуту — пять
+  # часов; в ночную джобу такое не помещается, а раздутая джоба, падающая по
+  # таймауту, ничем не отличается от выключенной.
+  #
+  # Храповика здесь пока НЕТ намеренно: пола не существует, пока не получен
+  # первый полный прогон. Джоба печатает таблицу и выкладывает отчёт артефактом;
+  # как только появится честное число — заводим scripts/mutation-baseline-bot.json
+  # и добавляем сюда шаг сверки (скрипт умеет --report/--baseline).
+  mutation-bot:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 330
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx prisma generate
+      - name: Stryker по семейству src/bot
+        run: npx stryker run stryker.bot.config.json
+      - name: отчёт артефактом
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: mutation-bot-report
+          path: reports/mutation/
+          retention-days: 14

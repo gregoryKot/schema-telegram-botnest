@@ -14,17 +14,15 @@ name: Nightly flaky-детекция
 
 on:
   schedule:
-    # Ежедневно — флаки и mutation золотых зон.
+    # Ежедневно — флаки и mutation золотых зон. Недельный mutation семейства
+    # src/bot живёт в mutation-bot.yml: один воркфлоу — одно расписание, иначе
+    # воскресный зелёный прогон закрывал issue ci-alarm от красных будних и
+    # обманывал пробу ciRuns (она берёт последний прогон воркфлоу).
     - cron: '0 3 * * *'
-    # По воскресеньям — тяжёлый mutation семейства src/bot (см. mutation-bot).
-    - cron: '0 4 * * 0'
   workflow_dispatch:
 
 jobs:
   backend-flaky:
-    # На воскресном запуске крутится только тяжёлый mutation-bot: гонять
-    # ещё и ежедневные джобы вторым заходом незачем.
-    if: github.event.schedule != '0 4 * * 0'
     runs-on: ubuntu-24.04
     # Установка (~1 мин) + сумма timeout-minutes шагов ниже: зависший шаг
     # падает сам, со своей причиной, раньше, чем джобу снимут целиком
@@ -71,9 +69,6 @@ jobs:
         run: node scripts/jest-exit-guard.mjs --budget 600 --exit-grace 60 -- npx jest --detectOpenHandles
 
   frontend-flaky:
-    # На воскресном запуске крутится только тяжёлый mutation-bot: гонять
-    # ещё и ежедневные джобы вторым заходом незачем.
-    if: github.event.schedule != '0 4 * * 0'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
@@ -149,9 +144,6 @@ jobs:
   # (4 vCPU, 16 ГБ) простаивала. Замер на одном куске кода: 87 с → 46 с.
   # Память воркера доходит до ~2,8 ГБ — четыре помещаются.
   mutation-golden-auth:
-    # На воскресном запуске крутится только тяжёлый mutation-bot: гонять
-    # ещё и ежедневные джобы вторым заходом незачем.
-    if: github.event.schedule != '0 4 * * 0'
     runs-on: ubuntu-24.04
     # Волна А (docs/TEST_TRUST_PLAN.md) — 9 файлов входа/шифрования/приватности
     # (crypto, crypto-record, auth.service, merge.service, merge-relations,
@@ -184,7 +176,6 @@ jobs:
           retention-days: 14
 
   mutation-golden-payments:
-    if: github.event.schedule != '0 4 * * 0'
     runs-on: ubuntu-24.04
     # Волна Б — 9 файлов денег/бронирования/напоминаний (tz, robokassa,
     # booking, subscription, slot, pricing, payment.controller, donation,
@@ -247,9 +238,6 @@ jobs:
   # не подключает третий проект; здесь он появляется, потому что бинарь
   # реально ставится шагом ниже.
   browser-smoke:
-    # На воскресном запуске крутится только тяжёлый mutation-bot: гонять
-    # ещё и ежедневные джобы вторым заходом незачем.
-    if: github.event.schedule != '0 4 * * 0'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     env:
@@ -302,7 +290,6 @@ jobs:
   # и схемы. Щит обязан уметь краснеть — последние два шага портят
   # файл/ключ и требуют, чтобы restore упал.
   backup-restore:
-    if: github.event.schedule != '0 4 * * 0'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     services:
@@ -411,39 +398,6 @@ jobs:
           fi
           echo "OK: restore упал с неверным ключом, как и должен"
 
-  # Тяжёлый mutation-замер семейства src/bot — ОТДЕЛЬНОЙ джобой и раз в неделю,
-  # а не вместе с золотыми зонами. Причина простая: bot.service с соседями дают
-  # ~950 мутантов, и каждый перегоняет свой срез из 3100 тестов. Замер на
-  # локальной машине шёл со скоростью 2.5 мутанта в минуту — пять часов; в
-  # ночную джобу такое не помещается, а раздутая джоба, падающая по таймауту,
-  # ничем не отличается от выключенной.
-  #
-  # Храповика здесь пока НЕТ намеренно: пола не существует, пока не получен
-  # первый полный прогон. Джоба печатает таблицу и выкладывает отчёт артефактом;
-  # как только появится честное число — заводим scripts/mutation-baseline-bot.json
-  # и добавляем сюда шаг сверки (скрипт умеет --report/--baseline).
-  mutation-bot:
-    if: github.event_name == 'workflow_dispatch' || github.event.schedule == '0 4 * * 0'
-    runs-on: ubuntu-24.04
-    timeout-minutes: 330
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
-        with:
-          node-version: 22
-          cache: npm
-      - run: npm ci
-      - run: npx prisma generate
-      - name: Stryker по семейству src/bot
-        run: npx stryker run stryker.bot.config.json
-      - name: отчёт артефактом
-        if: always()
-        uses: actions/upload-artifact@v7
-        with:
-          name: mutation-bot-report
-          path: reports/mutation/
-          retention-days: 14
-
   # Уязвимости в prod-зависимостях всех пакетов (аудит 2026-10). PR-CI видит
   # новую advisory только при следующем PR, а она появляется без правки кода:
   # ночной прогон приносит её владельцу через alarm. Список пакетов — из
@@ -451,7 +405,6 @@ jobs:
   # шагов ci.yml: dev-цепочку не гейтим. Шаг исполняется в
   # src/test-support/gates/lockfile-audit.spec.ts с подменённым npm.
   npm-audit:
-    if: github.event.schedule != '0 4 * * 0'
     runs-on: ubuntu-24.04
     timeout-minutes: 18
     steps:
@@ -514,7 +467,6 @@ jobs:
       - mutation-golden-payments
       - browser-smoke
       - backup-restore
-      - mutation-bot
       - npm-audit
     if: always()
     runs-on: ubuntu-24.04
@@ -523,8 +475,7 @@ jobs:
       issues: write
     steps:
       # needs.*.result — 'success'/'failure'/'cancelled'/'skipped'. Джобы,
-      # пропущенные штатно (воскресный if: github.event.schedule != '0 4 * * 0'
-      # /будний if у mutation-bot) — 'skipped', не авария, в алярм не идут.
+      # пропущенные штатно ('skipped'), — не авария, в алярм не идут.
       - name: собрать список упавших джоб
         id: collect
         env:
