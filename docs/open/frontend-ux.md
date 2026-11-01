@@ -156,14 +156,6 @@
   разрушительна). Вернуть вход через Telegram OIDC можно из git, но сначала
   `sub` → `telegramId` нужно доказать записанным ответом oauth.telegram.org
   (правило №23).
-- **`/privacy` и `/offer` шире экрана телефона на обоих хостах**: при ширине 390px
-  `document.documentElement.scrollWidth` — 482 (schemehappens.ru) и 487 (визитка),
-  текст режется справа. Причина — таблица реквизитов `Table` с
-  `gridTemplateColumns: '220px 1fr'` (`webapp/src/pages/PrivacyPage.tsx:274`,
-  `webapp/src/pages/OfferPage.tsx:311`, две копии одной механики): колонка подписи
-  фиксирована, длинные неразрывные значения раздвигают сетку. Замер — headless
-  Chromium по сборке webapp: с `overflow-wrap: anywhere; min-width: 0` на тексте
-  страница укладывается в 390px. Найдено при починке #860 (юрстраницы на продукте).
 - **Ссылки `href` в компонентах не сверяются с роутами своего хоста** (класс 16 в
   `docs/INCIDENTS.md`). Инцидент с `/privacy` жил в ссылках `LoginPage`, `ConsentScreen`,
   `CookieBanner`, `AppShell`, `ProductLandingPage`: путь был роутом, но только у визитки.

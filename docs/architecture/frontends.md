@@ -20,7 +20,7 @@
   - `webapp/src/host/` — поведение внутри WebView Telegram/MAX: `initHost`, `ExternalLink`, `useHostId`. Само определение хоста лежит в `shared/src/host/`.
   - `webapp/src/styles/` — 34 css по экранам и шторкам. `webapp/src/index.css` сам импортирует только `cabinet.css` и `touch-fixes.css`, остальные подключаются из компонентов (`import '../styles/…css'`).
   - `webapp/src/lib/` — Метрика (`metrika*.ts`, `webvisorRoutes.ts`) и `tone.ts` (оттенки разделов).
-  - `webapp/src/legal/` — `operator.ts`: реквизиты оператора (оферта, политика, футер визитки).
+  - `webapp/src/legal/` — `operator.ts`: реквизиты оператора (оферта, политика, футер визитки); `LegalLayout.tsx` + `legalStyles.ts`: разметка и стили обеих страниц (глава, таблица реквизитов, поля).
   - `webapp/src/share/` — кнопки и шторка шаринга (`DayShareButton`, `DiaryShareButton`, `ShareCardSheet`, `SharePillButton`, `TherapistInviteShare`).
   - `webapp/src/security/` — только тест-инвариант XSS (`xss.invariants.test.ts`).
   - `webapp/src/assets/` — `hero.png`, `vite.svg`.
