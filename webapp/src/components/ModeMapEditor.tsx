@@ -241,7 +241,7 @@ export function ModeMapEditor({ mapId, clientId, kind, initialNodes, initialEdge
   );
 
   return (
-    <ReactFlowProvider><ModeMapConceptProvider clientId={clientId}>
+    <ReactFlowProvider><ModeMapConceptProvider clientId={clientId} kind={kind} nodes={nodes}>
       <div style={{ display: 'flex', height: '100%', background: 'var(--bg)', position: 'relative' }}>
         {/* Palette: inline column (desktop) or floating drawer (mobile) */}
         {paletteOpen && !mobile && paletteCol}

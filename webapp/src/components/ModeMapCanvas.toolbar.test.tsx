@@ -202,9 +202,11 @@ describe('ModeMapCanvas — схемы клиента', () => {
   // Привязка схемы к режиму живёт в редакторе узла (ModeMapNodeEditor), а выбор схем
   // клиента — в палитре («Схемы клиента»); мишени в тулбаре больше нет.
   it('в тулбаре нет кнопки «Схемы клиента — привязать к выбранному режиму»', () => {
-    renderCanvas({ initialNodes: [mmNode('n1', 'trigger', { label: 'Триггер' })] });
-    expect(screen.queryByLabelText('Схемы клиента — привязать к выбранному режиму')).toBeNull();
-    expect(screen.queryByText('Схемы клиента — привязать к выбранному режиму')).toBeNull();
+    const { container } = renderCanvas({ initialNodes: [mmNode('n1', 'trigger', { label: 'Триггер' })] });
+    // Подпись кнопки тулбара появляется только по наведению — ищем наведением,
+    // как остальные тесты файла; соседняя кнопка тем же способом находится.
+    expect(() => clickToolbarButton(container, 'Схемы клиента — привязать к выбранному режиму')).toThrow();
+    expect(() => clickToolbarButton(container, 'Легенда: формы и цвета')).not.toThrow();
   });
 
   it('холст сам не грузит концептуализацию клиента (её грузит редактор один раз)', async () => {

@@ -1,16 +1,13 @@
 import { getSchemaById } from '../../schemaTherapyData';
 import { IdentityDot } from '../../../../shared/src/components/IdentityDot';
-import { useModeMapConcept } from './clientConceptContext';
-import { MAX_SCHEMA_PILLS, nodeSchemaIds } from './nodeSchemaIds';
+import { useModeMapConcept, useSchemasOnCanvas } from './clientConceptContext';
+import { MAX_SCHEMA_PILLS, linkedSchemaIds, nodeSchemaIds } from './nodeSchemaIds';
 
 interface Props { modeId?: string; schemaId?: string; light?: boolean; fontSize: number }
 
 /** Таблетки схем под текстом узла: максимум три, остальные — «+N». Только чтение. */
 export function SchemaPills({ modeId, schemaId, light, fontSize }: Props) {
-  const concept = useModeMapConcept();
-  const linked = modeId && concept && concept !== 'failed'
-    ? concept.modeLinks.find(l => l.modeId === modeId)?.schemaIds ?? [] : [];
-  const ids = nodeSchemaIds(schemaId, linked);
+  const ids = nodeSchemaIds(schemaId, linkedSchemaIds(useModeMapConcept(), modeId, useSchemasOnCanvas()));
   if (ids.length === 0) return null;
   const rest = ids.length - MAX_SCHEMA_PILLS;
   const pill: React.CSSProperties = {

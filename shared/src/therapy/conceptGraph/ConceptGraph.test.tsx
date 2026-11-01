@@ -88,7 +88,9 @@ describe('ConceptGraph: общий вид', () => {
     expect(fold.textContent).toMatch(/Подсказки по схеме · \d/);
     // Под фигурами, а не над ними: плашка, появившаяся после тапа в выборе
     // «+ режим», не сдвигает схему и выбор под пальцем.
-    const order = modeFigure('Отстранённый Защитник').compareDocumentPosition(fold);
+    const order = modeFigure('Отстранённый Защитник').compareDocumentPosition(
+      fold,
+    );
     expect(order & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(skipped(guideButton())).toBe(true);
     expect(skipped(fold)).toBe(true);

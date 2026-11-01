@@ -10,3 +10,8 @@ export type ClientConceptState = ClientConcept | null | 'failed';
 export const ModeMapConceptContext = createContext<ClientConceptState>(null);
 
 export const useModeMapConcept = (): ClientConceptState => useContext(ModeMapConceptContext);
+
+/** Схемы, уже стоящие на холсте фигурой, — ключ из schemasOnCanvasKey (через пробел). */
+export const SchemasOnCanvasContext = createContext<string>('');
+
+export const useSchemasOnCanvas = (): ReadonlySet<string> => new Set(useContext(SchemasOnCanvasContext).split(' ').filter(Boolean));

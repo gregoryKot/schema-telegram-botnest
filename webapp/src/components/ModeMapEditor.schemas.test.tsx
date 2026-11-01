@@ -21,15 +21,17 @@ vi.mock('../api', () => ({
 
 const CHILD: ModeMapNode = { id: 'n1', type: 'child', position: { x: 0, y: 0 }, data: { label: 'Уязвимый Ребёнок', modeId: 'vulnerable_child' } };
 const CONCEPT = {
-  schemaIds: ['abandonment', 'mistrust'], modeIds: [],
+  schemaIds: ['abandonment', 'mistrust'], modeIds: ['vulnerable_child'],
   modeLinks: [{ modeId: 'vulnerable_child', alias: '', schemaIds: ['abandonment'], needIds: [], origin: '', manifest: '', strategy: '' }],
 };
 
-async function renderEditor(nodes: ModeMapNode[]) {
+async function renderEditor(nodes: ModeMapNode[], kind: 'problem' | 'couple' = 'problem') {
   await act(async () => {
-    render(<ModeMapEditor mapId={1} clientId={7} kind="problem" initialNodes={nodes} initialEdges={[]} />);
+    render(<ModeMapEditor mapId={1} clientId={7} kind={kind} initialNodes={nodes} initialEdges={[]} />);
   });
 }
+// Таблетки ищем внутри узла режима: названия схем клиента есть и в палитре.
+const childNodeText = () => document.querySelector('.react-flow__node[data-id="n1"]')?.textContent ?? '';
 
 beforeEach(() => {
   installFlowTestPolyfills();
@@ -47,6 +49,26 @@ describe('ModeMapEditor — схемы клиента', () => {
     const pill = screen.getAllByText('Покинутость / Нестабильность').find(el => el.closest('.react-flow__node'));
     expect(pill).toBeTruthy();
     expect(getConceptualization).toHaveBeenCalledTimes(1);
+  });
+
+  it('режим снят с концептуализации — спящая связь на узле не показывается', async () => {
+    getConceptualization.mockResolvedValue({ ...CONCEPT, modeIds: [] });
+    await renderEditor([CHILD]);
+    expect(childNodeText()).toContain('Уязвимый Ребёнок');
+    expect(childNodeText()).not.toContain('Покинутость');
+  });
+
+  it('схема уже стоит на холсте фигурой — на узле режима её таблетки нет', async () => {
+    const SCHEMA: ModeMapNode = { id: 's1', type: 'schema', position: { x: 400, y: 0 }, data: { label: 'Покинутость / Нестабильность', schemaId: 'abandonment' } };
+    await renderEditor([CHILD, SCHEMA]);
+    expect(childNodeText()).toContain('Уязвимый Ребёнок');
+    expect(childNodeText()).not.toContain('Покинутость');
+  });
+
+  it('карта пары — связи клиента на узлах режимов не показываются', async () => {
+    await renderEditor([CHILD], 'couple');
+    expect(childNodeText()).toContain('Уязвимый Ребёнок');
+    expect(childNodeText()).not.toContain('Покинутость');
   });
 
   it('клик по схеме клиента в палитре ставит на холст узел «схема»', async () => {
