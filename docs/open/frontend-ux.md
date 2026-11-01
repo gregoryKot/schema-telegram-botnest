@@ -80,15 +80,13 @@
   `schema-miniapp/src/components/WizardProgress.tsx:34-39` — сегменты 4px с
   `onSelect={setStep}` из `IntroSheetShell.tsx:107-114`. Ни подписи, ни
   `aria-label`. Решение владельца: хитбокс 44 с `aria-label` или убрать прыжок.
-- **Свайп трекера перехватывает движение пальца по шкале оценки.**
-  `webapp/src/components/TrackerOverlay.tsx:123-135` + `trackerOverlay/MobileLayout.tsx:34-35`
-  (весь fullscreen слушает touch), мини-апп `TrackerOverlay.tsx:184-198`: при
-  `dx ≥ 90` уезжает на другую потребность, а шкала ждёт тап. Заплатка —
-  не начинать свайп, если `touchstart` попал в `closest('[role="group"]')`.
-  Свайп написан трижды: `webapp/.../TrackerOverlay.tsx:124-136` и мини-апп
-  `TrackerOverlay.tsx:185-198` (90 / 0.5) против
-  `schema-miniapp/src/hooks/useSectionSwipe.ts:7-13` (72 / 0.6); общий
-  `useHorizontalSwipe` в shared.
+- **Свайп разделов мини-аппа не исключает касания по контролам.**
+  `schema-miniapp/src/hooks/useSectionSwipe.ts` (72 / 0.6) — отдельная от
+  трекерного `shared/src/hooks/useHorizontalSwipe.ts` реализация без проверки
+  `closest('[role="group"]')`. Сейчас безвредно: шкала `NeedRatingBar` живёт
+  только в оверлеях (`TrackerOverlay`, `NeedTodaySheet`), где свайп разделов
+  выключен (`App.tsx`, `disabled: anyOverlayOpen`). Шкала или слайдер прямо в
+  разделе — перевести на общий хук.
 - **Проверка убеждения: «Дальше» на шагах доказательств ведёт себя по-разному.**
   В вебе (`webapp/src/components/exercises/BeliefCheckEx.tsx`) кнопка требует
   хотя бы одно доказательство за и против (или текст в поле), в мини-аппе
