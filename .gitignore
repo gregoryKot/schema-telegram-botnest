@@ -69,7 +69,9 @@ webapp/dist/
 # schema-miniapp: track BOTH source and the built dist. Docker copies dist for a
 # fast build; rebuild dist locally (`npm run build --prefix schema-miniapp`) and
 # commit it whenever the mini-app source changes.
-schema-miniapp/node_modules/
+# Без косой черты в конце: шаблон ловит и ссылку на node_modules (рабочая копия
+# через git worktree), а не только папку — ссылка уже уезжала в коммит (#887).
+schema-miniapp/node_modules
 
 # vitest coverage artefacts (schema-miniapp не имеет своего .gitignore, в
 # отличие от webapp) — генерятся scripts/check-frontend-coverage-ratchet.mjs.
@@ -77,7 +79,7 @@ schema-miniapp/coverage/
 
 # shared: не npm-workspace (README.md), поэтому /node_modules и /coverage
 # корневого .gitignore его не покрывают — свой пакет, свои артефакты.
-shared/node_modules/
+shared/node_modules
 shared/coverage/
 
 

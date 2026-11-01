@@ -217,7 +217,7 @@ describe('TherapistClientSheet — открытие карточки клиен�
           vi.setSystemTime(new Date(moment));
           const [row] = screen.getAllByText('Анна');
           fireEvent.click(row);
-          expect(screen.getByText('активность сегодня')).toBeTruthy();
+          expect(document.querySelector('.tk-meta')?.textContent).toContain('активность сегодня');
           fireEvent.click(screen.getByText('← Все клиенты'));
         });
 

@@ -199,140 +199,20 @@ describe('ModeMapCanvas — шаблоны', () => {
 });
 
 describe('ModeMapCanvas — схемы клиента', () => {
-  // Клик по «Схемы клиента» дёргает api.getConceptualization, и обновление
-  // списка схем прилетает из-под await, вне act — опрос findByText
-  // (timeout 8000) с этим обновлением иногда расходится. clickToolbarButton
-  // ищет кнопку по всплывающей подсказке (наведение → проверка текста →
-  // уход курсора), и это само по себе синхронная последовательность рендеров:
-  // если завернуть весь вызов в act(async), React откладывает их флаш до
-  // конца колбэка, и подсказка для queryByText внутри хелпера ещё не
-  // существует — кнопка «не находится». Поэтому клик остаётся как есть, а
-  // ждём именно то, чего не хватало: `await act(async () => {})` сливает
-  // очередь промисов и синхронизирует состояние перед ассертом.
-  it('без выбранного узла кнопки схем неактивны и не патчат узел', async () => {
-    getConceptualization.mockResolvedValue({ schemaIds: ['abandonment'] });
-    const { container } = renderCanvas({
-      initialNodes: [mmNode('n1', 'trigger', { label: 'Триггер' })],
-    });
-    clickToolbarButton(
-      container,
-      'Схемы клиента — привязать к выбранному режиму',
-    );
-    await act(async () => {});
-    expect(screen.getByText('Покинутость / Нестабильность')).toBeTruthy();
-    fireEvent.click(screen.getByText('Покинутость / Нестабильность'));
-    expect(readModel(container).nodes[0]).not.toHaveProperty('schemaId');
+  // Привязка схемы к режиму живёт в редакторе узла (ModeMapNodeEditor), а выбор схем
+  // клиента — в палитре («Схемы клиента»); мишени в тулбаре больше нет.
+  it('в тулбаре нет кнопки «Схемы клиента — привязать к выбранному режиму»', () => {
+    const { container } = renderCanvas({ initialNodes: [mmNode('n1', 'trigger', { label: 'Триггер' })] });
+    // Подпись кнопки тулбара появляется только по наведению — ищем наведением,
+    // как остальные тесты файла; соседняя кнопка тем же способом находится.
+    expect(() => clickToolbarButton(container, 'Схемы клиента — привязать к выбранному режиму')).toThrow();
+    expect(() => clickToolbarButton(container, 'Легенда: формы и цвета')).not.toThrow();
   });
 
-  it('с выбранным узлом клик по схеме пишет её в узел (виден бейдж названия схемы)', async () => {
-    getConceptualization.mockResolvedValue({ schemaIds: ['abandonment'] });
-    const { container } = renderCanvas({
-      initialNodes: [mmNode('n1', 'trigger', { label: 'Триггер' })],
-    });
-    fireEvent.click(screen.getByText('Триггер').closest('.react-flow__node')!);
-    clickToolbarButton(
-      container,
-      'Схемы клиента — привязать к выбранному режиму',
-    );
+  it('холст сам не грузит концептуализацию клиента (её грузит редактор один раз)', async () => {
+    renderCanvas({ initialNodes: [mmNode('n1', 'trigger', { label: 'Триггер' })] });
     await act(async () => {});
-    fireEvent.click(screen.getByText('Покинутость / Нестабильность'));
-    // Бейдж со схемой рисуется прямо в узле (NodeLabel) — видимое следствие патча.
-    expect(
-      screen.getAllByText('Покинутость / Нестабильность').length,
-    ).toBeGreaterThan(0);
-  });
-
-  it('пустой список схем клиента — заглушка «нет отмеченных схем»', async () => {
-    getConceptualization.mockResolvedValue({ schemaIds: [] });
-    const { container } = renderCanvas({
-      initialNodes: [mmNode('n1', 'trigger')],
-    });
-    clickToolbarButton(
-      container,
-      'Схемы клиента — привязать к выбранному режиму',
-    );
-    await act(async () => {});
-    expect(
-      screen.getByText('У клиента пока нет отмеченных схем'),
-    ).toBeTruthy();
-  });
-
-  // Сбой загрузки раньше подставлял пустой список, и панель уверяла терапевта,
-  // что у клиента не отмечено ни одной схемы. Это не «пусто», это «неизвестно»:
-  // терапевт видит клиническую неправду о своём клиенте и не может отличить её
-  // от настоящего пустого списка (CLAUDE.md: никаких заглушек вместо данных).
-  it('сбой загрузки схем клиента — говорит «не удалось», а не «схем нет»', async () => {
-    getConceptualization.mockRejectedValue(new Error('offline'));
-    const { container } = renderCanvas({
-      initialNodes: [mmNode('n1', 'trigger')],
-    });
-    clickToolbarButton(
-      container,
-      'Схемы клиента — привязать к выбранному режиму',
-    );
-    await act(async () => {});
-    expect(screen.getByText('Не удалось загрузить схемы клиента')).toBeTruthy();
-    expect(screen.queryByText('У клиента пока нет отмеченных схем')).toBeNull();
-  });
-
-  it('подсказка без выбранного узла звучит на «ты»/«вы»', async () => {
-    getConceptualization.mockResolvedValue({ schemaIds: [] });
-    const { container } = renderCanvas(
-      { initialNodes: [mmNode('n1', 'trigger')] },
-      'ty',
-    );
-    clickToolbarButton(
-      container,
-      'Схемы клиента — привязать к выбранному режиму',
-    );
-    await act(async () => {});
-    expect(screen.getByText('Сначала выбери режим на холсте')).toBeTruthy();
-    cleanup();
-
-    getConceptualization.mockResolvedValue({ schemaIds: [] });
-    const { container: container2 } = renderCanvas(
-      { initialNodes: [mmNode('n1', 'trigger')] },
-      'vy',
-    );
-    clickToolbarButton(
-      container2,
-      'Схемы клиента — привязать к выбранному режиму',
-    );
-    await act(async () => {});
-    expect(screen.getByText('Сначала выберите режим на холсте')).toBeTruthy();
-  });
-
-  it('подсказка с выбранным узлом звучит на «ты»/«вы»', async () => {
-    getConceptualization.mockResolvedValue({ schemaIds: [] });
-    const { container } = renderCanvas(
-      { initialNodes: [mmNode('n1', 'trigger', { label: 'Триггер' })] },
-      'ty',
-    );
-    fireEvent.click(screen.getByText('Триггер').closest('.react-flow__node')!);
-    clickToolbarButton(
-      container,
-      'Схемы клиента — привязать к выбранному режиму',
-    );
-    await act(async () => {});
-    expect(
-      screen.getByText('Нажми, чтобы привязать к выбранному режиму'),
-    ).toBeTruthy();
-    cleanup();
-
-    getConceptualization.mockResolvedValue({ schemaIds: [] });
-    const { container: container2 } = renderCanvas(
-      { initialNodes: [mmNode('n1', 'trigger', { label: 'Триггер' })] },
-      'vy',
-    );
-    fireEvent.click(screen.getByText('Триггер').closest('.react-flow__node')!);
-    clickToolbarButton(
-      container2,
-      'Схемы клиента — привязать к выбранному режиму',
-    );
-    await act(async () => {});
-    expect(
-      screen.getByText('Нажмите, чтобы привязать к выбранному режиму'),
-    ).toBeTruthy();
+    expect(getConceptualization).not.toHaveBeenCalled();
   });
 });
 
