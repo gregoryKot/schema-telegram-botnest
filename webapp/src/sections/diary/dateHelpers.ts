@@ -1,26 +1,24 @@
 // Хелперы дат таймлайна дневника. Вынесено из DiarySection.tsx (правило №10).
+// «Сегодня» и день записи — местный день человека (shared/src/diary/diaryDay.ts).
+import { dateStringMs, dateStringParts } from '../../../../shared/src/utils/calendarDate';
+import { fmtDateLong } from '../../../../shared/src/utils/format';
+import { diaryDayKey, diaryToday } from '../../../../shared/src/diary/diaryDay';
 
-export const TODAY = new Date().toISOString().split('T')[0];
+const WEEKDAYS = ['воскресенье','понедельник','вторник','среда','четверг','пятница','суббота'];
+
 export function fmtTime(iso: string) {
   return new Date(iso).toLocaleTimeString('ru', { hour: '2-digit', minute: '2-digit' });
 }
-export function fmtDateKey(iso: string) {
-  return iso.slice(0, 10);
-}
-export function fmtDayMonth(dateStr: string) {
-  const d = new Date(dateStr + 'T12:00:00');
-  const day = d.getDate();
-  const months = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
-  return `${day} ${months[d.getMonth()]}`;
-}
+/** День записи по моменту `createdAt` — местный, а не гринвичский срез строки. */
+export const fmtDateKey = diaryDayKey;
+/** «27 октября» из календарного дня `YYYY-MM-DD`. */
+export const fmtDayMonth = fmtDateLong;
 export function fmtWeekday(dateStr: string) {
-  const d = new Date(dateStr + 'T12:00:00');
-  return ['воскресенье','понедельник','вторник','среда','четверг','пятница','суббота'][d.getDay()];
+  const parts = dateStringParts(dateStr);
+  return parts ? WEEKDAYS[parts.weekday] : '';
 }
-export function dateRelLabel(dateStr: string) {
-  const today = new Date(TODAY + 'T12:00:00');
-  const d = new Date(dateStr + 'T12:00:00');
-  const diff = Math.round((today.getTime() - d.getTime()) / 86400000);
+export function dateRelLabel(dateStr: string, today: string = diaryToday()) {
+  const diff = Math.round((dateStringMs(today) - dateStringMs(dateStr)) / 86400000);
   if (diff === 0) return 'сегодня';
   if (diff === 1) return 'вчера';
   if (diff < 7) return `${diff} дн. назад`;

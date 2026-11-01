@@ -1,4 +1,5 @@
 import type { DiaryType, SchemaDiaryEntry, ModeDiaryEntry, GratitudeDiaryEntry } from '../../types';
+import { diaryDayKey } from '../../../../shared/src/diary/diaryDay';
 import { pluralRu } from '../../../../shared/src/utils/pluralRu';
 import type { TrackerDay } from './trackerEntries';
 
@@ -16,8 +17,6 @@ export type DiaryFilter = 'all' | 'tracker' | 'case' | 'diary';
 /** Запись режима, рождённая потоком «Что случилось» (маркер fromCase, этап 4 простого клиента). */
 export const isCaseEntry = (e: AnyEntry): boolean => e._type === 'mode' && e.entry.fromCase === true;
 
-const dayOf = (iso: string) => iso.slice(0, 10);
-
 /** Все записи одним списком, новые сверху; строка трекера идёт последней внутри своего дня. */
 export function buildEntries(
   schema: SchemaDiaryEntry[],
@@ -26,8 +25,8 @@ export function buildEntries(
   tracker: TrackerDay[] = [],
 ): AnyEntry[] {
   const all: AnyEntry[] = [
-    ...schema.map((e) => ({ _type: 'schema' as const, sortKey: e.createdAt, dateKey: dayOf(e.createdAt), entry: e })),
-    ...mode.map((e) => ({ _type: 'mode' as const, sortKey: e.createdAt, dateKey: dayOf(e.createdAt), entry: e })),
+    ...schema.map((e) => ({ _type: 'schema' as const, sortKey: e.createdAt, dateKey: diaryDayKey(e.createdAt), entry: e })),
+    ...mode.map((e) => ({ _type: 'mode' as const, sortKey: e.createdAt, dateKey: diaryDayKey(e.createdAt), entry: e })),
     ...gratitude.map((e) => ({ _type: 'gratitude' as const, sortKey: e.date + 'T12:00:00', dateKey: e.date, entry: e })),
     ...tracker.map((e) => ({ _type: 'tracker' as const, sortKey: e.date + 'T00:00:00', dateKey: e.date, entry: e })),
   ];

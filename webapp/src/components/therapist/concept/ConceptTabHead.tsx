@@ -22,7 +22,7 @@ export interface ConceptTabHeadProps {
 }
 
 export function ConceptTabHead({ detail, view, onView, graph }: ConceptTabHeadProps) {
-  const { saveStatus, savedAt, retrySave, exportCopied, handleExport } = detail;
+  const { saveStatus, savedAt, retrySave, conceptError, exportCopied, handleExport } = detail;
   return (
     <>
       <div className="ds-head-row tcp-head">
@@ -31,7 +31,7 @@ export function ConceptTabHead({ detail, view, onView, graph }: ConceptTabHeadPr
           <div className="ds-sub" style={{ marginTop: 4 }}>Схема-карта, цели терапии и связь с детским опытом</div>
         </div>
         <div className="tcp-head-actions">
-          <SaveStatusLine className="tcp-save" status={saveStatus} savedAt={savedAt} onRetry={retrySave} align="right" />
+          <SaveStatusLine className="tcp-save" status={saveStatus} savedAt={savedAt} onRetry={retrySave} errorText={conceptError || undefined} align="right" />
           <ConceptViewSwitch view={view} onChange={onView} />
           <MoreMenu onExport={handleExport} graph={graph} />
         </div>

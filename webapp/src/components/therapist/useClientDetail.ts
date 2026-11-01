@@ -1,13 +1,15 @@
 import { useRef, useState } from 'react';
-import { api, reportClientError, type TherapyClientSummary, type UserTask, type ClientConceptualization, type ClientData, type UserId } from '../../api';
-import { useNotesPage } from '../../../../shared/src/therapy/useNotesPage';
+import { api, reportClientError, type TherapyClientSummary, type UserTask, type ClientData, type UserId } from '../../api';
+import { useNoteComposer } from '../../../../shared/src/therapy/useNoteComposer';
+import { useSessionAliasEditing } from '../../../../shared/src/therapy/useSessionAliasEditing';
 import { sameId } from '../../../../shared/src/utils/sameId';
 import { fmtDate, momentDayKey, todayStr } from '../../utils/format';
 import { SCHEMA_DOMAINS, MODE_GROUPS } from '../../schemaTherapyData';
 import { useCopyToClipboard } from '../../../../shared/src/utils/useCopyToClipboard';
 import { useYsqRequest } from '../../../../shared/src/therapy/useYsqRequest';
-import { conceptSaveBody } from '../../../../shared/src/therapy/conceptGraph/conceptSaveBody';
 import { formatConceptLinksExport } from '../../../../shared/src/therapy/conceptGraph/conceptLinksExport';
+import { reloadClientTasks } from '../../../../shared/src/therapy/reloadClientTasks';
+import { useConceptAutosave } from './useConceptAutosave';
 type ClientTab = 'overview' | 'concept' | 'mode_map' | 'sessions' | 'tasks' | 'ysq' | 'client_notes';
 
 interface Params {
@@ -16,14 +18,13 @@ interface Params {
   setClients: React.Dispatch<React.SetStateAction<TherapyClientSummary[]>>;
 }
 
+// Класс «состояние одного клиента протекает в другого» (инцидент 2026-10-26,
+// docs/INCIDENTS.md): каждый черновик ввода сбрасывается в openClient, а
+// ответ сохранения, пришедший после смены клиента, state карточки не трогает
+// (isOpen). Всё, что хук отдаёт с сеттером, проверяет useClientDetail.switch.test.ts.
 export function useClientDetail({ onOpenClient, switchView, setClients }: Params) {
   const openClientIdRef = useRef<UserId | null>(null);
-  const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  // Зеркало localConcept, обновляется СИНХРОННО (setLocalConceptSynced ниже).
-  // Нужно autoSave: setTimeout(autoSave, 700) в patchConcept захватывает
-  // autoSave текущего рендера, т.е. ДО коммита setState в следующем рендере —
-  // раньше autoSave читал state и слал значение на один патч позади (баг).
-  const localConceptRef = useRef<Partial<ClientConceptualization>>({});
+  const isOpen = (id: UserId) => sameId(openClientIdRef.current, id);
 
   // Selected client + all its data
   const [selectedClient, setSelectedClient] = useState<TherapyClientSummary | null>(null);
@@ -37,47 +38,20 @@ export function useClientDetail({ onOpenClient, switchView, setClients }: Params
     modeFunction: string; needsMet: string;
   }>>([]);
   const [clientTasks, setClientTasks] = useState<UserTask[]>([]);
-  const np = useNotesPage();
-  const [noteError, setNoteError] = useState('');
-  const [concept, setConcept] = useState<ClientConceptualization | null>(null);
+  const notes = useNoteComposer(openClientIdRef, { create: api.createTherapistNote, remove: api.deleteTherapistNote });
+  const conceptSave = useConceptAutosave(openClientIdRef);
+  const { concept, localConcept, activeSchemaIds, activeModeIds } = conceptSave;
   const [clientData, setClientData] = useState<ClientData | null>(null);
   const [clientHistory, setClientHistory] = useState<{ date: string; index: number | null; ratings: Record<string, number> }[]>([]);
   const [clientDiary, setClientDiary] = useState<{ type: 'schema' | 'mode' | 'gratitude'; date: string; schemaIds?: string[]; modeId?: string; excerpt: string }[]>([]);
-  const [localConcept, setLocalConcept] = useState<Partial<ClientConceptualization>>({});
-  // Пишет и в state (для рендера/деривативов), и синхронно в localConceptRef
-  // (для autoSave) — см. комментарий у объявления localConceptRef выше.
-  function setLocalConceptSynced(
-    value: Partial<ClientConceptualization> | ((prev: Partial<ClientConceptualization>) => Partial<ClientConceptualization>),
-  ) {
-    setLocalConcept(prev => {
-      const next = typeof value === 'function' ? value(prev) : value;
-      localConceptRef.current = next;
-      return next;
-    });
-  }
-  const [savedAt, setSavedAt] = useState<Date | null>(null); // момент последнего удачного сохранения — для «✓ Сохранено в ЧЧ:ММ»
   const [expandedSnapshot, setExpandedSnapshot] = useState<number | null>(null);
-  const [saveStatus, setSaveStatus] = useState<'idle' | 'pending' | 'saving' | 'saved' | 'error'>('idle');
 
-  // Therapist notes composer
-  const [newNoteText, setNewNoteText] = useState('');
-  const [newNoteDate, setNewNoteDate] = useState('');
-  const [noteSaving, setNoteSaving] = useState(false);
   const [showAssign, setShowAssign] = useState(false);
-
-  // Session info editing
-  const [editingStartDate, setEditingStartDate] = useState(false);
-  const [localStartDate, setLocalStartDate] = useState('');
-  const [editingNextSession, setEditingNextSession] = useState(false);
-  const [localNextSession, setLocalNextSession] = useState('');
-  const [sessionInfoSaving, setSessionInfoSaving] = useState(false);
-  const [sessionInfoError, setSessionInfoError] = useState('');
-
-  // Alias editing
-  const [renamingAlias, setRenamingAlias] = useState(false);
-  const [aliasInput, setAliasInput] = useState('');
-  const [aliasSaving, setAliasSaving] = useState(false);
-  const [aliasError, setAliasError] = useState('');
+  // Даты сессий и имя — общий хук обоих фронтов (shared/src/therapy/useSessionAliasEditing.ts)
+  const sa = useSessionAliasEditing({
+    selectedClient, setSelectedClient, setClients, openClientIdRef,
+    send: api, sessionError: { text: 'Не удалось сохранить дату' },
+  });
 
   // YSQ / Export
   const { ysqRequested, ysqError, resetYsq, handleRequestYsq } = useYsqRequest(
@@ -97,37 +71,28 @@ export function useClientDetail({ onOpenClient, switchView, setClients }: Params
   const [clientTab, setClientTab] = useState<ClientTab>('overview');
 
   // ── Derived ────────────────────────────────────────────────────────────────────
-  const activeSchemaIds = (localConcept.schemaIds ?? concept?.schemaIds ?? []) as string[];
-  const activeModeIds = (localConcept.modeIds ?? concept?.modeIds ?? []) as string[];
   const ysqSchemaIds = clientData?.ysqActiveSchemaIds ?? [];
   const selfSchemaIds = clientData?.mySchemaIds ?? [];
 
   // ── Open client ────────────────────────────────────────────────────────────────
   async function openClient(client: TherapyClientSummary) {
     const clientId = client.telegramId;
+    conceptSave.resetForClient(); // ожидающая правка уходит ПРЕЖНЕМУ клиенту, с его данными
     openClientIdRef.current = clientId;
 
     setSelectedClient(client);
     setClientSchemaNotesData([]);
     setClientModeNotesData([]);
     setClientTasks([]);
-    np.resetNotesPage();
-    setNoteError('');
-    setConcept(null);
+    notes.resetNotes(); // черновик заметки (текст, дата) — только своему клиенту
+    setShowAssign(false);
     setClientData(null);
     setClientHistory([]);
     setClientDiary([]);
-    setLocalConceptSynced({});
-    setSavedAt(null); setSaveStatus('idle'); if (autoSaveTimer.current) { clearTimeout(autoSaveTimer.current); autoSaveTimer.current = null; } // статус и таймер — состояние клиента: «Не сохранилось» и отложенное автосохранение прежнего не переезжают к новому (#879)
     setExpandedSnapshot(null);
     resetYsq();
-    setRenamingAlias(false);
-    setAliasError('');
+    sa.resetSessionAlias(client);
     setDeleteError('');
-    setEditingStartDate(false);
-    setEditingNextSession(false);
-    setLocalNextSession(client.nextSession ?? '');
-    setLocalStartDate(client.therapyStartDate ?? '');
     setClientTab('overview');
     setTabLoading(true);
     onOpenClient?.(clientId);
@@ -148,14 +113,13 @@ export function useClientDetail({ onOpenClient, switchView, setClients }: Params
 
     setTabLoading(false);
     setClientTasks(tasks);
-    if (fetchedNotes) np.setNotesPage(fetchedNotes); else np.resetNotesPage();
-    setConcept(fetchedConcept);
+    if (fetchedNotes) notes.setNotesPage(fetchedNotes); else notes.resetNotesPage();
+    conceptSave.loadConcept(fetchedConcept);
     setClientData(fetchedData);
     setClientSchemaNotesData(sn);
     setClientModeNotesData(mn);
     setClientHistory(hist);
     setClientDiary(diary);
-    if (fetchedConcept) setLocalConceptSynced(fetchedConcept);
   }
 
   // ── Delete ─────────────────────────────────────────────────────────────────────
@@ -164,9 +128,7 @@ export function useClientDetail({ onOpenClient, switchView, setClients }: Params
     setConfirmingDelete(true);
   }
 
-  function cancelDeleteClient() {
-    setConfirmingDelete(false);
-  }
+  function cancelDeleteClient() { setConfirmingDelete(false); }
 
   async function deleteClient() {
     if (!selectedClient) return;
@@ -176,90 +138,16 @@ export function useClientDetail({ onOpenClient, switchView, setClients }: Params
     try {
       await api.removeClient(selectedClient.telegramId);
       setClients(prev => prev.filter(c => !sameId(c.telegramId, selectedClient.telegramId)));
-      switchView('list');
+      // Удалённый — тот, что открыт: сбрасываем выбранного, иначе «Назад» в
+      // браузере возвращал на /cabinet/<id> полную карточку удалённого (QA 2026-10-26).
+      if (isOpen(selectedClient.telegramId)) { openClientIdRef.current = null; setSelectedClient(null); switchView('list'); }
     } catch { setDeleteError('Не удалось удалить клиента'); } finally { setDeleteLoading(false); }
   }
 
-  // ── Therapist notes ────────────────────────────────────────────────────────────
-  async function addNote() {
-    if (!selectedClient || !newNoteText.trim()) return;
-    setNoteSaving(true);
-    setNoteError('');
-    try {
-      const date = newNoteDate || todayStr();
-      const note = await api.createTherapistNote(selectedClient.telegramId, date, newNoteText.trim());
-      np.onNoteSaved(note);
-      setNewNoteText('');
-      setNewNoteDate('');
-    } catch { setNoteError('Не удалось сохранить заметку'); } finally { setNoteSaving(false); }
-  }
-
-  async function removeNote(noteId: number) {
-    try {
-      await api.deleteTherapistNote(noteId);
-      np.onNoteDeleted(noteId);
-    } catch { setNoteError('Не удалось удалить заметку'); }
-  }
-
-  // ── Conceptualization ──────────────────────────────────────────────────────────
-  function patchConcept(patch: Partial<ClientConceptualization>) {
-    setLocalConceptSynced(prev => ({ ...prev, ...patch }));
-    setSaveStatus('pending');
-    if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
-    autoSaveTimer.current = setTimeout(autoSave, 700);
-  }
-
-  async function autoSave() {
-    if (!selectedClient) return;
-    setSaveStatus('saving');
-    const c = localConceptRef.current; // не state — см. комментарий у localConceptRef
-    try {
-      const saved = await api.saveConceptualization(selectedClient.telegramId, conceptSaveBody(c));
-      setConcept(saved);
-      setSavedAt(saved.updatedAt ? new Date(saved.updatedAt) : new Date());
-      setSaveStatus('saved'); // не гаснет: «✓ Сохранено в ЧЧ:ММ» висит до следующей правки (issue #879, шаг A)
-    } catch { setSaveStatus('error'); } // текст «Не сохранилось» и «Повторить» рисует SaveStatusLine; раньше тут был conceptError (регрессия в mutations.test)
-  }
-  // «Повторить» после ошибки. Событие — литералом: так его видит трипваер analytics-sync (src/security);
-  // константа CONCEPT_SAVE_RETRY_EVENT — shared/src/share/analytics.ts, равенство сверяет ClientConceptTab.save.test.
-  function retrySave() { api.trackEvent('concept_save_retry'); void autoSave(); }
-
-  function toggleSchemaId(id: string) {
-    const current = (localConcept.schemaIds ?? concept?.schemaIds ?? []) as string[];
-    const next = current.includes(id) ? current.filter(x => x !== id) : [...current, id];
-    patchConcept({ schemaIds: next });
-  }
-
-  function toggleModeId(id: string) {
-    const current = (localConcept.modeIds ?? concept?.modeIds ?? []) as string[];
-    const next = current.includes(id) ? current.filter(x => x !== id) : [...current, id];
-    patchConcept({ modeIds: next });
-  }
-
-  // ── Alias ──────────────────────────────────────────────────────────────────────
-  async function saveAlias() {
-    if (!selectedClient) return;
-    setAliasSaving(true);
-    setAliasError('');
-    try {
-      await api.renameClient(selectedClient.telegramId, aliasInput);
-      const updated = { ...selectedClient, clientAlias: aliasInput.trim() || null };
-      setSelectedClient(updated);
-      setClients(prev => prev.map(c => sameId(c.telegramId, selectedClient.telegramId) ? updated : c));
-      setRenamingAlias(false);
-    } catch { setAliasError('Не удалось сохранить имя'); } finally { setAliasSaving(false); }
-  }
-
-  // ── Session info (catch раньше глушил ошибку — кнопка закрывала поле как будто сохранилось; теперь исход возвращается явно) ──
-  async function saveSessionInfo(patch: { therapyStartDate?: string | null; nextSession?: string | null; meetingDays?: number[] }) {
-    if (!selectedClient) return false;
-    setSessionInfoSaving(true); setSessionInfoError('');
-    try {
-      await api.updateSessionInfo(selectedClient.telegramId, patch);
-      const updated = { ...selectedClient, ...patch }; if (patch.meetingDays !== undefined) updated.meetingDays = patch.meetingDays;
-      setSelectedClient(updated); setClients(prev => prev.map(c => sameId(c.telegramId, selectedClient.telegramId) ? updated : c));
-      return true;
-    } catch { setSessionInfoError('Не удалось сохранить дату'); return false; } finally { setSessionInfoSaving(false); }
+  // ── Задание назначено (TaskCreateSheet) — перечитать задания ЭТОГО клиента ──
+  function onTaskAssigned() {
+    setShowAssign(false);
+    if (selectedClient) reloadClientTasks(selectedClient.telegramId, isOpen, api.getTherapyTasksForClient, setClientTasks);
   }
 
   // ── Export ─────────────────────────────────────────────────────────────────────
@@ -310,20 +198,21 @@ export function useClientDetail({ onOpenClient, switchView, setClients }: Params
     selectedClient, setSelectedClient,
     clientSchemaNotesData, clientModeNotesData,
     clientTasks, setClientTasks,
-    notes: np.notesPage.notes, notesPage: np.notesPage, noteError,
+    notes: notes.notesPage.notes, notesPage: notes.notesPage, noteError: notes.noteError,
     concept, clientData, clientHistory, clientDiary,
-    localConcept, savedAt, expandedSnapshot, setExpandedSnapshot,
-    saveStatus, retrySave,
-    newNoteText, setNewNoteText, newNoteDate, setNewNoteDate,
-    noteSaving, showAssign, setShowAssign,
-    editingStartDate, setEditingStartDate,
-    localStartDate, setLocalStartDate,
-    editingNextSession, setEditingNextSession,
-    localNextSession, setLocalNextSession,
-    sessionInfoSaving, sessionInfoError,
-    renamingAlias, setRenamingAlias,
-    aliasInput, setAliasInput,
-    aliasSaving, aliasError,
+    localConcept, conceptError: conceptSave.conceptError, expandedSnapshot, setExpandedSnapshot,
+    saveStatus: conceptSave.saveStatus, savedAt: conceptSave.savedAt, retrySave: conceptSave.retrySave,
+    newNoteText: notes.newNoteText, setNewNoteText: notes.setNewNoteText,
+    newNoteDate: notes.newNoteDate, setNewNoteDate: notes.setNewNoteDate,
+    noteSaving: notes.noteSaving, showAssign, setShowAssign,
+    editingStartDate: sa.editingStartDate, setEditingStartDate: sa.setEditingStartDate,
+    localStartDate: sa.localStartDate, setLocalStartDate: sa.setLocalStartDate,
+    editingNextSession: sa.editingNextSession, setEditingNextSession: sa.setEditingNextSession,
+    localNextSession: sa.localNextSession, setLocalNextSession: sa.setLocalNextSession,
+    sessionInfoSaving: sa.sessionInfoSaving, sessionInfoError: sa.sessionInfoError,
+    renamingAlias: sa.renamingAlias, setRenamingAlias: sa.setRenamingAlias,
+    aliasInput: sa.aliasInput, setAliasInput: sa.setAliasInput,
+    aliasSaving: sa.aliasSaving, aliasError: sa.aliasError,
     ysqRequested, ysqError,
     exportCopied,
     deleteLoading, deleteError, confirmingDelete,
@@ -332,9 +221,9 @@ export function useClientDetail({ onOpenClient, switchView, setClients }: Params
     activeSchemaIds, activeModeIds, ysqSchemaIds, selfSchemaIds,
     // Handlers
     openClient, deleteClient, requestDeleteClient, cancelDeleteClient,
-    addNote, removeNote,
-    patchConcept, toggleSchemaId, toggleModeId,
-    saveAlias, saveSessionInfo,
+    addNote: notes.addNote, removeNote: notes.removeNote, onTaskAssigned,
+    patchConcept: conceptSave.patchConcept, toggleSchemaId: conceptSave.toggleSchemaId, toggleModeId: conceptSave.toggleModeId,
+    saveAlias: sa.saveAlias, saveSessionInfo: sa.saveSessionInfo,
     handleRequestYsq, handleExport,
   };
 }

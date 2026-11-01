@@ -18,7 +18,11 @@ import { parseClientId } from '../api/parse-user-id';
 import { SubmitTherapistRequestDto } from './therapist-request.dto';
 import { TelegramAuthGuard } from '../api/telegram-auth.guard';
 import { TherapyRelationsService } from './therapy-relations.service';
-import { ALREADY_CONNECTED_ERROR } from './therapy-invite';
+import {
+  ALREADY_CONNECTED_ERROR,
+  TOO_MANY_INVITES_ERROR,
+} from './therapy-invite';
+import { CreateInviteDto } from './dto/invite.dto';
 import { TherapyClientDataService } from './therapy-client-data.service';
 import { TherapistRequestService } from './therapist-request.service';
 import { AccountService } from '../bot/account.service';
@@ -47,10 +51,21 @@ export class TherapyConnectionController {
 
   // ─── Connection ─────────────────────────────────────────────────────────────
 
+  // Каждый вызов — новый код (инцидент 2026-10-26); живых не больше
+  // MAX_LIVE_INVITES — сверх предела 409 с машиночитаемой причиной.
   @Post('invite')
-  async createInvite(@Req() req: AuthRequest) {
+  async createInvite(@Req() req: AuthRequest, @Body() body: CreateInviteDto) {
     await this.assertTherapist(req);
-    return this.relationsService.createInvite(uid(req));
+    try {
+      return await this.relationsService.createInvite(uid(req), body.alias);
+    } catch (e) {
+      if (e instanceof Error && e.message === TOO_MANY_INVITES_ERROR)
+        throw new ConflictException({
+          message: 'Too many live invites',
+          reason: 'too_many_invites',
+        });
+      throw e;
+    }
   }
 
   @Get('relation')
@@ -64,7 +79,12 @@ export class TherapyConnectionController {
     return this.exit.formerTherapist(uid(req));
   }
 
+  // Проверяет код, как invite/preview, — счётчик в Postgres (правило №5).
   @Post('join')
+  @PersistentThrottleLimit({
+    short: { limit: 10, ttl: 60_000 },
+    long: { limit: 100, ttl: 24 * 3_600_000 },
+  })
   async join(@Req() req: AuthRequest, @Body() body: JoinTherapyDto) {
     if (!body.code) throw new BadRequestException('code required');
     let ok: boolean;
@@ -127,11 +147,14 @@ export class TherapyConnectionController {
     @Body() body: RenameClientDto,
   ) {
     await this.assertTherapist(req);
-    await this.relationsService.renameClient(
-      uid(req),
-      parseClientId(clientId),
-      body.alias,
-    );
+    // Нет активной связи — 403, как у остальных ручек с :clientId.
+    await this.relationsService
+      .renameClient(uid(req), parseClientId(clientId), body.alias)
+      .catch((e: unknown) => {
+        if (e instanceof Error && e.message === 'No active relation')
+          throw new ForbiddenException('No active relation with this client');
+        throw e;
+      });
     return { ok: true };
   }
 

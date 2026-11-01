@@ -1,9 +1,10 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, afterEach, vi } from 'vitest';
 import {
   buildDiaryFeed, buildTodayFeed, casesTodayCount, trackerSummary, trackerTileMeta, caseTileMeta,
   diaryTileMeta, lastEntryAt, fmtIndex, type FeedEntry,
 } from './todayFeed';
-import { forEachTimeZone } from '../../../../shared/src/utils/timeZone.test-helpers';
+import { forEachTimeZone, withTimeZone } from '../../../../shared/src/utils/timeZone.test-helpers';
+import { diaryToday } from '../../../../shared/src/diary/diaryDay';
 
 const NEEDS = ['a', 'b', 'c', 'd', 'e'];
 const hoursAgo = (h: number) => new Date(Date.now() - h * 3_600_000).toISOString();
@@ -30,7 +31,7 @@ describe('buildDiaryFeed — только сегодня', () => {
         { id: 2, trigger: 'Старое', createdAt: longAgo() },
       ],
       mode: [{ id: 3, situation: 'Критик громко', createdAt: earlier() }],
-      gratitude: [{ id: 4, items: ['чай'], date: new Date().toISOString().slice(0, 10), createdAt: hoursAgo(0) }],
+      gratitude: [{ id: 4, items: ['чай'], date: diaryToday(), createdAt: hoursAgo(0) }],
     });
     expect(feed.map(e => e.kind).sort()).toEqual(['gratitude', 'mode', 'schema']);
     expect(feed.find(e => e.kind === 'schema')?.text).toBe('Коллега не ответил');
@@ -62,7 +63,7 @@ describe('buildDiaryFeed — только сегодня', () => {
     const feed = buildDiaryFeed({
       schema: [{ id: 1, trigger: 'я'.repeat(200), createdAt: noon() }],
       mode: [],
-      gratitude: [{ id: 2, items: [], date: new Date().toISOString().slice(0, 10), createdAt: noon() }],
+      gratitude: [{ id: 2, items: [], date: diaryToday(), createdAt: noon() }],
     });
     expect(feed.find(e => e.kind === 'schema')?.text).toHaveLength(80);
     expect(feed.find(e => e.kind === 'gratitude')?.text).toBe('Благодарность');
@@ -77,6 +78,29 @@ describe('buildDiaryFeed — только сегодня', () => {
       });
       expect(feed.map(e => e.key), tz).toEqual(['schema-1']);
     });
+  });
+});
+
+// Инцидент 2026-10-26: в 00:19 по Москве (21:19 UTC) «сегодня» — уже 27-е.
+// Благодарность пишется местным днём (shared/src/diary/diaryDay.ts) — так её
+// и узнаёт лента дня; гринвичское 26-е — уже вчера.
+describe('buildDiaryFeed — благодарность сегодня по местному дню', () => {
+  afterEach(() => { vi.useRealTimers(); });
+  const at = (date: string) => withTimeZone('Europe/Moscow', () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-10-26T21:19:00Z'));
+    return buildDiaryFeed({
+      schema: [], mode: [],
+      gratitude: [{ id: 3, items: ['чай'], date, createdAt: '2026-10-26T21:18:00Z' }],
+    }).map(e => e.key);
+  });
+
+  it('запись 27-го — в ленте сегодня', () => {
+    expect(at('2026-10-27')).toEqual(['gratitude-3']);
+  });
+
+  it('запись 26-го (гринвичское «сегодня») — уже вчера', () => {
+    expect(at('2026-10-26')).toEqual([]);
   });
 });
 

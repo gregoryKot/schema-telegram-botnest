@@ -3,15 +3,17 @@
 // компонент, на который ориентировались остальные 5 (см. CrisisCard.test.tsx,
 // NoteSheet.test.tsx и др.). Проверяем основное поле "trigger".
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, cleanup } from '@testing-library/react';
+import { render, screen, fireEvent, cleanup, waitFor, act } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { SchemaEntrySheet } from './SchemaEntrySheet';
 import { CRISIS_HOTLINE_DISPLAY } from '../../utils/crisisMarkers';
 import { DIARY_FIELD_MAX } from '../../../../shared/src/limits/textLimits';
 
 vi.mock('../../api', () => ({
-  api: { trackEvent: vi.fn() },
+  api: { trackEvent: vi.fn(), getTherapyRelation: vi.fn(), getSettings: vi.fn() },
 }));
+import { api } from '../../api';
+const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
 
 function renderSheet() {
   return render(
@@ -24,6 +26,8 @@ function renderSheet() {
 beforeEach(() => {
   vi.clearAllMocks();
   localStorage.clear();
+  mockApi.getTherapyRelation.mockResolvedValue(null);
+  mockApi.getSettings.mockResolvedValue({ therapistShareCards: true });
 });
 
 afterEach(() => {
@@ -141,3 +145,38 @@ describe('SchemaEntrySheet — предел длины поля', () => {
     expect(screen.getByText(/Осталось знаков: 7/)).toBeTruthy();
   });
 });
+
+// 2026-10-26: «Никто кроме вас не увидит» висело и при подключённом терапевте,
+// который видел записи. Строка — по правилу сервера (shared/src/diary/diaryPrivacy.ts).
+describe('SchemaEntrySheet — кто увидит записи', () => {
+  const client = { role: 'client', status: 'active', partnerName: 'Анна', partnerId: 42, code: 'A', nextSession: null };
+
+  it('терапевта нет — «Никто кроме тебя не увидит»', async () => {
+    renderSheet();
+    expect(await screen.findByText('Никто кроме тебя не увидит')).toBeTruthy();
+  });
+
+  it('терапевт подключён, доступ открыт — сказано, что терапевт видит, без «никто»', async () => {
+    mockApi.getTherapyRelation.mockResolvedValue(client);
+    renderSheet();
+    expect(await screen.findByText('Записи видит и твой терапевт — закрыть можно в настройках, «Мой терапевт»')).toBeTruthy();
+    expect(screen.queryByText(/Никто кроме/)).toBeNull();
+  });
+
+  it('терапевт подключён, «Карточки схем и режимов» выключены — терапевт не видит', async () => {
+    mockApi.getTherapyRelation.mockResolvedValue(client);
+    mockApi.getSettings.mockResolvedValue({ therapistShareCards: false });
+    renderSheet();
+    expect(await screen.findByText('Никто кроме тебя не увидит: терапевту доступ к записям закрыт в настройках')).toBeTruthy();
+  });
+
+  it('связь не загрузилась — обещания нет вовсе', async () => {
+    mockApi.getTherapyRelation.mockRejectedValue(new Error('offline'));
+    renderSheet();
+    await waitFor(() => expect(mockApi.getTherapyRelation).toHaveBeenCalled());
+    await act(async () => {});
+    expect(screen.queryByText(/Никто кроме|терапевт —/)).toBeNull();
+    expect(screen.getByText('Можно вернуться и продолжить')).toBeTruthy();
+  });
+});
+

@@ -9,6 +9,7 @@ export interface Rel {
   status: string;
   code: string;
   createdAt?: Date;
+  clientAlias?: string | null;
 }
 
 // where-условие поля: значение, null или оператор Prisma (`not`, `gte`).
@@ -51,6 +52,14 @@ export function makeRelationPrismaMock(rels: Rel[]) {
     therapyRelation: {
       findFirst: async ({ where }: any) =>
         rels.find((r) => relMatches(r, where)) ?? null,
+      // orderBy не разбирается: тестам списка приглашений порядок вставки
+      // известен, сортировку держит живой Postgres (test/therapy-invite.e2e-spec.ts).
+      findMany: async ({ where }: any) =>
+        rels
+          .filter((r) => relMatches(r, where))
+          .map((r) => ({ createdAt: new Date(), ...r })),
+      count: async ({ where }: any) =>
+        rels.filter((r) => relMatches(r, where)).length,
       // createdAt по умолчанию «сейчас» — как @default(now()) в схеме.
       findUnique: async ({ where }: any) => {
         const r = rels.find((x) => x.code === where.code);

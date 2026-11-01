@@ -1,22 +1,29 @@
 import { useState } from 'react';
 import { api } from '../../api';
+import { useTr } from '../../utils/addressForm';
 import { useCopyToClipboard } from '../../../../shared/src/utils/useCopyToClipboard';
+import { InviteCodeBox } from '../../../../shared/src/therapy/InviteCodeBox';
+import { inviteCreateErrorText } from '../../../../shared/src/therapy/therapyInvites';
 import { SettingsLabel } from './ui';
 
 interface Props {
   onOpenTherapistCabinet?: () => void;
-  therapyInviteUrl: string;
-  setTherapyInviteUrl: (v: string) => void;
 }
 
-export function TherapistCabinetSection({
-  onOpenTherapistCabinet,
-  therapyInviteUrl,
-  setTherapyInviteUrl,
-}: Props) {
-  const [inviteError, setInviteError] = useState(false);
-  const { failed: inviteCopyFailed, copy: copyInviteUrl } =
-    useCopyToClipboard();
+// «Кабинет терапевта» в настройках мини-аппа: вход в кабинет и быстрое
+// приглашение. Инцидент 2026-10-26: каждый тап — новый код (раньше тот же, и
+// второй клиент получал ссылку первого), код виден отдельно от ссылки.
+export function TherapistCabinetSection({ onOpenTherapistCabinet }: Props) {
+  const tr = useTr();
+  const [invite, setInvite] = useState<{ url: string; code: string } | null>(
+    null,
+  );
+  const [inviteError, setInviteError] = useState('');
+  const {
+    copied: inviteCopied,
+    failed: inviteCopyFailed,
+    copy: copyInviteUrl,
+  } = useCopyToClipboard();
   return (
     <div className="u-mb8">
       <SettingsLabel>КАБИНЕТ ТЕРАПЕВТА</SettingsLabel>
@@ -58,13 +65,13 @@ export function TherapistCabinetSection({
           <button
             onClick={async () => {
               try {
-                const { url } = await api.createTherapyInvite();
-                setTherapyInviteUrl(url);
-                setInviteError(false);
-                await copyInviteUrl(url);
+                const created = await api.createTherapyInvite();
+                setInvite(created);
+                setInviteError('');
+                await copyInviteUrl(created.url);
               } catch (e) {
                 console.error('createTherapyInvite', e);
-                setInviteError(true);
+                setInviteError(inviteCreateErrorText(e, tr));
               }
             }}
             style={{
@@ -78,22 +85,37 @@ export function TherapistCabinetSection({
               cursor: 'pointer',
             }}
           >
-            {inviteError ? 'Не получилось' : '+ Создать приглашение клиенту'}
+            + Создать приглашение клиенту
           </button>
-          {therapyInviteUrl && (
+          {inviteError && (
             <div
-              style={{
-                fontSize: 12,
-                color: inviteCopyFailed
-                  ? 'var(--accent-red)'
-                  : 'var(--text-sub)',
-                marginTop: 8,
-                wordBreak: 'break-all',
-              }}
+              role="alert"
+              style={{ fontSize: 12, color: 'var(--accent-red)', marginTop: 8 }}
             >
-              {inviteCopyFailed ? 'Не скопировалось: ' : 'Скопировано: '}
-              {therapyInviteUrl.slice(0, 50)}...
+              {inviteError}
             </div>
+          )}
+          {invite && (
+            <>
+              <div
+                style={{
+                  fontSize: 12,
+                  color: inviteCopyFailed
+                    ? 'var(--accent-red)'
+                    : 'var(--text-sub)',
+                  marginTop: 8,
+                  wordBreak: 'break-all',
+                }}
+              >
+                {inviteCopyFailed
+                  ? 'Ссылка не скопировалась: '
+                  : inviteCopied
+                    ? 'Ссылка скопирована: '
+                    : 'Ссылка: '}
+                {invite.url}
+              </div>
+              <InviteCodeBox code={invite.code} />
+            </>
           )}
         </div>
       </div>

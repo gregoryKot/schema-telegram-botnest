@@ -86,36 +86,34 @@ function baseProps(
     setTherapyRelation: vi.fn(),
     settings: settings(),
     patch: vi.fn().mockResolvedValue(undefined),
-    therapyJoinCode: '',
-    setTherapyJoinCode: vi.fn(),
-    therapyJoinError: '',
-    setTherapyJoinError: vi.fn(),
     onInfo: vi.fn(),
     ...overrides,
   };
 }
 
 describe('TherapistClientSection — загрузка', () => {
-  it('therapyRelation=undefined — скелетон, не текст «Войти»', () => {
+  it('therapyRelation=undefined — скелетон, не кнопка «Подключиться»', () => {
     render(
       <TherapistClientSection {...baseProps({ therapyRelation: undefined })} />,
     );
-    expect(screen.queryByText('Войти')).toBeNull();
+    expect(screen.queryByText('Подключиться')).toBeNull();
   });
 });
 
 describe('TherapistClientSection — терапевт подключён', () => {
-  it('показывает имя терапевта, кнопку «Отключиться»', () => {
+  // Инцидент 2026-10-26: «Мария Иванова подключён» — мужской род при любом имени.
+  it('показывает имя терапевта без рода, кнопку «Отключиться от терапевта»', () => {
     render(
       <TherapistClientSection
         {...baseProps({ therapyRelation: activeRelation() })}
       />,
     );
-    expect(screen.getByText(/Мария Иванова подключён/)).toBeTruthy();
-    expect(screen.getByText('Отключиться')).toBeTruthy();
+    expect(screen.getByText('Терапевт: Мария Иванова')).toBeTruthy();
+    expect(screen.queryByText(/подключён/)).toBeNull();
+    expect(screen.getByText('Отключиться от терапевта')).toBeTruthy();
   });
 
-  it('без имени партнёра — подпись «Терапевт подключён»', () => {
+  it('без имени партнёра — нейтральная подпись, имя не выдумывается', () => {
     render(
       <TherapistClientSection
         {...baseProps({
@@ -123,7 +121,7 @@ describe('TherapistClientSection — терапевт подключён', () =>
         })}
       />,
     );
-    expect(screen.getByText(/Терапевт подключён/)).toBeTruthy();
+    expect(screen.getByText('Подключение к терапевту активно')).toBeTruthy();
   });
 
   it('переключатель «Карточки схем и режимов» патчит ТОЛЬКО therapistShareCards', () => {
@@ -184,7 +182,8 @@ describe('TherapistClientSection — терапевт подключён', () =>
     expect(switches[1].getAttribute('aria-checked')).toBe('false');
   });
 
-  it('клик «Отключиться» зовёт api.leaveTherapy и затем setTherapyRelation(null)', async () => {
+  // Инцидент 2026-10-26: связь удалялась одним тапом, без вопроса.
+  it('«Отключиться от терапевта» сначала спрашивает; подтверждение — leaveTherapy и setTherapyRelation(null)', async () => {
     mockApi.leaveTherapy.mockResolvedValue(undefined);
     const setTherapyRelation = vi.fn();
     render(
@@ -195,38 +194,70 @@ describe('TherapistClientSection — терапевт подключён', () =>
         })}
       />,
     );
+    fireEvent.click(screen.getByText('Отключиться от терапевта'));
+    expect(mockApi.leaveTherapy).not.toHaveBeenCalled();
+    expect(screen.getByText('Отключиться от терапевта?')).toBeTruthy();
     fireEvent.click(screen.getByText('Отключиться'));
     await waitFor(() => expect(setTherapyRelation).toHaveBeenCalledWith(null));
+    expect(mockApi.leaveTherapy).toHaveBeenCalledTimes(1);
+  });
+
+  it('«Остаться» — связь не трогаем; отказ сервера виден в подтверждении (форма «вы»)', async () => {
+    mockApi.leaveTherapy.mockRejectedValue(new Error('net'));
+    const setTherapyRelation = vi.fn();
+    renderWithForm(
+      <TherapistClientSection
+        {...baseProps({
+          therapyRelation: activeRelation(),
+          setTherapyRelation,
+        })}
+      />,
+      'vy',
+    );
+    fireEvent.click(screen.getByText('Отключиться от терапевта'));
+    fireEvent.click(screen.getByText('Остаться'));
+    expect(mockApi.leaveTherapy).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByText('Отключиться от терапевта'));
+    expect(screen.getByText(/ваш трекер/)).toBeTruthy();
+    fireEvent.click(screen.getByText('Отключиться'));
+    expect((await screen.findByRole('alert')).textContent).toMatch(
+      /Проверьте связь/,
+    );
+    expect(setTherapyRelation).not.toHaveBeenCalled();
   });
 });
 
 describe('TherapistClientSection — нет терапевта, ввод кода (регрессия ты/вы)', () => {
-  it('форма «ты»: подводка «введи его здесь»', () => {
+  it('форма «ты»: подводка «вставь сюда»', () => {
     renderWithForm(<TherapistClientSection {...baseProps()} />, 'ty');
-    expect(screen.getByText(/введи его здесь/)).toBeTruthy();
+    expect(screen.getByText(/вставь сюда/)).toBeTruthy();
   });
 
-  it('форма «вы»: подводка «введите его здесь», без остаточных «ты»-форм', () => {
+  it('форма «вы»: подводка «вставьте сюда», без остаточных «ты»-форм', () => {
     const { container } = renderWithForm(
       <TherapistClientSection {...baseProps()} />,
       'vy',
     );
-    expect(screen.getByText(/введите его здесь/)).toBeTruthy();
+    expect(screen.getByText(/вставьте сюда/)).toBeTruthy();
     expect(hasTyForms(container.textContent ?? '')).toBe(false);
   });
 
-  it('ввод кода приводится к верхнему регистру', () => {
-    const setTherapyJoinCode = vi.fn();
-    render(<TherapistClientSection {...baseProps({ setTherapyJoinCode })} />);
-    fireEvent.change(screen.getByPlaceholderText('ABCDEF'), {
-      target: { value: 'abcdef' },
+  // Инцидент 2026-10-26: maxLength={8} при коде из 12 — вставка обрезалась.
+  it('код из 12 знаков строчными с пробелами и ссылка целиком — в поле код целиком', () => {
+    render(<TherapistClientSection {...baseProps()} />);
+    const input = screen.getByLabelText<HTMLInputElement>('Код от терапевта');
+    expect(input.placeholder).toHaveLength(12);
+    fireEvent.change(input, { target: { value: ' 7f3a9c21b04e ' } });
+    expect(input.value).toBe('7F3A9C21B04E');
+    fireEvent.change(input, {
+      target: { value: 'https://t.me/b/diary?startapp=therapy_7f3a9c21b04e' },
     });
-    expect(setTherapyJoinCode).toHaveBeenCalledWith('ABCDEF');
+    expect(input.value).toBe('7F3A9C21B04E');
   });
 
-  it('пустой код — клик «Войти» не зовёт api.joinTherapy', () => {
-    render(<TherapistClientSection {...baseProps({ therapyJoinCode: '' })} />);
-    fireEvent.click(screen.getByText('Войти'));
+  it('пустой код — клик «Подключиться» не зовёт api.joinTherapy', () => {
+    render(<TherapistClientSection {...baseProps()} />);
+    fireEvent.click(screen.getByText('Подключиться'));
     expect(mockApi.joinTherapy).not.toHaveBeenCalled();
   });
 
@@ -234,51 +265,43 @@ describe('TherapistClientSection — нет терапевта, ввод код�
     mockApi.joinTherapy.mockResolvedValue(undefined);
     mockApi.getTherapyRelation.mockResolvedValue(activeRelation());
     const setTherapyRelation = vi.fn();
-    const setTherapyJoinCode = vi.fn();
-    render(
-      <TherapistClientSection
-        {...baseProps({
-          therapyJoinCode: 'ABCDEF',
-          setTherapyRelation,
-          setTherapyJoinCode,
-        })}
-      />,
-    );
-    fireEvent.click(screen.getByText('Войти'));
+    render(<TherapistClientSection {...baseProps({ setTherapyRelation })} />);
+    const input = screen.getByLabelText<HTMLInputElement>('Код от терапевта');
+    fireEvent.change(input, { target: { value: '7F3A9C21B04E' } });
+    fireEvent.click(screen.getByText('Подключиться'));
     await waitFor(() =>
       expect(setTherapyRelation).toHaveBeenCalledWith(activeRelation()),
     );
-    expect(mockApi.joinTherapy).toHaveBeenCalledWith('ABCDEF');
-    expect(setTherapyJoinCode).toHaveBeenCalledWith('');
+    expect(mockApi.joinTherapy).toHaveBeenCalledWith('7F3A9C21B04E');
+    expect(input.value).toBe('');
   });
 
-  it('неверный код: joinTherapy падает — показывает «Неверный код», не трогает relation', async () => {
+  it('неверный код: «Код не подошёл» под полем, relation не трогается', async () => {
     mockApi.joinTherapy.mockRejectedValue(new Error('bad code'));
-    const setTherapyJoinError = vi.fn();
     const setTherapyRelation = vi.fn();
-    render(
-      <TherapistClientSection
-        {...baseProps({
-          therapyJoinCode: 'BADCODE',
-          setTherapyJoinError,
-          setTherapyRelation,
-        })}
-      />,
-    );
-    fireEvent.click(screen.getByText('Войти'));
-    await waitFor(() =>
-      expect(setTherapyJoinError).toHaveBeenCalledWith('Неверный код'),
-    );
+    render(<TherapistClientSection {...baseProps({ setTherapyRelation })} />);
+    fireEvent.change(screen.getByLabelText('Код от терапевта'), {
+      target: { value: 'BADC0DE' },
+    });
+    fireEvent.click(screen.getByText('Подключиться'));
+    expect(await screen.findByText(/Код не подошёл/)).toBeTruthy();
     expect(setTherapyRelation).not.toHaveBeenCalled();
   });
 
-  it('therapyJoinError задан — текст ошибки виден под полем', () => {
-    render(
-      <TherapistClientSection
-        {...baseProps({ therapyJoinError: 'Неверный код' })}
-      />,
-    );
-    expect(screen.getByText('Неверный код')).toBeTruthy();
+  // Раньше мини-апп на 409 писал «Неверный код» (сайт — свой текст).
+  it('409 already_connected — текст про действующее подключение, как на сайте', async () => {
+    mockApi.joinTherapy.mockRejectedValue({
+      status: 409,
+      reason: 'already_connected',
+    });
+    render(<TherapistClientSection {...baseProps()} />);
+    fireEvent.change(screen.getByLabelText('Код от терапевта'), {
+      target: { value: '7F3A9C21B04E' },
+    });
+    fireEvent.click(screen.getByText('Подключиться'));
+    expect(
+      await screen.findByText(/уже есть подключение к терапевту/),
+    ).toBeTruthy();
   });
 });
 
@@ -305,7 +328,7 @@ describe('TherapistClientSection — бывший терапевт', () => {
       ),
     ).toBeTruthy();
     expect(screen.getByRole('note').textContent).toContain('остаётся у вас');
-    expect(screen.getByText('Войти')).toBeTruthy();
+    expect(screen.getByText('Подключиться')).toBeTruthy();
   });
 
   it('сервер отдал null — сообщения нет, форма кода на месте', async () => {
@@ -314,7 +337,7 @@ describe('TherapistClientSection — бывший терапевт', () => {
       expect(mockApi.getFormerTherapist).toHaveBeenCalledTimes(1),
     );
     expect(screen.queryByRole('note')).toBeNull();
-    expect(screen.getByText('Войти')).toBeTruthy();
+    expect(screen.getByText('Подключиться')).toBeTruthy();
   });
 
   it('терапевт подключён — бывшего не спрашиваем и не показываем', () => {

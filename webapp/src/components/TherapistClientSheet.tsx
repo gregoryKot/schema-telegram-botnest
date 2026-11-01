@@ -14,7 +14,8 @@ import { ClientOverviewTab } from './therapist/ClientOverviewTab';
 import { ClientConceptTab } from './therapist/ClientConceptTab';
 import { ClientSessionsTab } from './therapist/ClientSessionsTab';
 import { ClientTasksTab } from './therapist/ClientTasksTab';
-import { reloadKeepingShown } from '../../../shared/src/utils/reloadKeepingShown';
+import { ClientCardFallback } from './therapist/ClientCardFallback';
+import { clientCardState } from './therapist/clientCardState';
 import { sameId } from '../../../shared/src/utils/sameId';
 interface Props {
   view: 'list' | 'client';
@@ -96,18 +97,18 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
   const {
     selectedClient, clientSchemaNotesData, clientModeNotesData,
     clientDiary, clientData,
-    showAssign, setShowAssign, setClientTasks,
+    showAssign, setShowAssign,
     ysqRequested, ysqError, exportCopied,
     tabLoading, clientTab,
     ysqSchemaIds, selfSchemaIds,
     handleRequestYsq, handleExport,
   } = detail;
+  const cardState = clientCardState({ loading, loadFailed, clients, selected: selectedClient, openClientId: openClientIdProp });
 
   // ─── Render ───────────────────────────────────────────────────────────────────
 
   return (
     <div className="therapist-sheet tk-sheet">
-
       {/* ── LIST VIEW ──────────────────────────────────────────────────────────── */}
       {view === 'list' && (
         <ClientListView
@@ -133,9 +134,9 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
       )}
 
       {/* ── CLIENT VIEW ────────────────────────────────────────────────────────── */}
-      {view === 'client' && selectedClient && (
+      {view === 'client' && cardState !== 'card' && <ClientCardFallback state={cardState} onBack={() => switchView('list')} />}
+      {view === 'client' && cardState === 'card' && selectedClient && (
         <div className="therapist-scroll therapist-scroll--client" key={`client-${animKey}`} style={{ animation: 'fade-in 0.22s ease' }}>
-
           <ClientHeader selectedClient={selectedClient} detail={detail} switchView={switchView} />
 
           {/* Tab content */}
@@ -197,21 +198,16 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
             )}
 
             </> /* end tabLoading ternary */}
-
           </div>
         </div>
       )}
 
       {/* ── ASSIGN TASK MODAL ─────────────────────────────────────────────────── */}
-
       {showAssign && selectedClient && (
         <TaskCreateSheet
           clientId={selectedClient.telegramId}
           clientName={selectedClient.name ?? undefined}
-          onCreated={() => {
-            setShowAssign(false);
-            void reloadKeepingShown(() => api.getTherapyTasksForClient(selectedClient.telegramId), setClientTasks);
-          }}
+          onCreated={detail.onTaskAssigned}
           onClose={() => setShowAssign(false)}
         />
       )}

@@ -3,7 +3,7 @@
 // «+» и ⌘K открывали одно и то же. Всё ленивое: чанки грузятся по тапу.
 import { lazy, Suspense, useEffect, useState } from 'react';
 import { api, reportClientError } from '../../api';
-import { todayCalendarDate } from '../../../../shared/src/utils/calendarDate';
+import { diaryToday } from '../../../../shared/src/diary/diaryDay';
 import { CaseFlowHost } from '../caseFlow/CaseFlowHost';
 import { QuickPracticeSheet } from '../practice/QuickPracticeSheet';
 import type { OverlayQuickActionId } from './quickActionRouting';
@@ -54,7 +54,7 @@ export function QuickActionOverlays({ active, ...rest }: Props) {
         <Suspense fallback={null}>
           <GratitudeEntrySheet
             onClose={onClose}
-            date={todayCalendarDate()}
+            date={diaryToday()}
             onSave={async (date, items) => { await api.createGratitudeDiary(date, items); }}
           />
         </Suspense>
