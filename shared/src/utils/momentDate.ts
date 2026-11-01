@@ -36,9 +36,9 @@ export function momentDayKey(value: string): string {
  * Сегодня ли эта строка у того, кто смотрит: момент — его днём, календарный
  * день — как есть; оба сверяются с его местным «сегодня».
  */
-export function momentIsToday(value: string): boolean {
+export function momentIsToday(value: string, now: Date = new Date()): boolean {
   const key = momentDayKey(value);
-  return key !== '' && key === todayStr();
+  return key !== '' && key === todayStr(now);
 }
 
 /** Подпись дня: «Сегодня» либо дата («18 сен»). Нечитаемая строка — пустая. */

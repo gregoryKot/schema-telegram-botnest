@@ -2,6 +2,8 @@
 // благодарность в 00:19 по Москве получала гринвичское 26-е).
 import { describe, expect, it } from 'vitest';
 import { diaryDayKey, diaryToday, isDiaryToday } from './diaryDay';
+import { todayStr } from '../utils/format';
+import { momentIsToday } from '../utils/momentDate';
 import { forEachTimeZone, withTimeZone } from '../utils/timeZone.test-helpers';
 
 // 00:19 27 октября по Москве = 21:19 26 октября по Гринвичу.
@@ -50,5 +52,21 @@ describe('isDiaryToday', () => {
 
   it('нечитаемая строка — не сегодня', () => {
     expect(isDiaryToday('мусор', NIGHT)).toBe(false);
+  });
+});
+
+// «Местный сегодня» один на фронты (сведение партии дневника с партией дат,
+// QA 2026-10-26): дневник не держит своей копии — тот же ответ, что у
+// todayStr/momentIsToday, которыми считают встречи и подписи «Сегодня».
+describe('дневник и общий «местный сегодня» — один ответ', () => {
+  const values = ['2026-10-26', '2026-10-27', NIGHT.toISOString(), '2026-10-27T10:00:00Z', 'мусор'];
+
+  it('в каждой зоне diaryToday = todayStr, isDiaryToday = momentIsToday', () => {
+    forEachTimeZone((tz) => {
+      expect([tz, diaryToday(NIGHT)]).toEqual([tz, todayStr(NIGHT)]);
+      for (const v of values) {
+        expect([tz, v, isDiaryToday(v, NIGHT)]).toEqual([tz, v, momentIsToday(v, NIGHT)]);
+      }
+    });
   });
 });

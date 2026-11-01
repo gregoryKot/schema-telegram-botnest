@@ -52,9 +52,11 @@ export function localDateStr(d: Date): string {
   return `${y}-${m}-${day}`;
 }
 
-/** YYYY-MM-DD for today in the local browser timezone */
-export function todayStr(): string {
-  return localDateStr(new Date());
+/** YYYY-MM-DD сегодняшнего МЕСТНОГО дня человека — единственное «местное
+ *  сегодня» фронтов (дневник, встречи, оценки, срок терапии). `now` — для
+ *  тестов и для вызова с уже зафиксированным моментом. */
+export function todayStr(now: Date = new Date()): string {
+  return localDateStr(now);
 }
 
 /** «сегодня» / «вчера» / «N дн. назад» / «3 авг.» для момента времени.

@@ -72,6 +72,15 @@ describe('todayStr', () => {
     const now = new Date();
     expect(s.slice(0, 4)).toBe(String(now.getFullYear()));
   });
+
+  it('с моментом — местный день этого момента: 21:19 UTC 26-го в Москве — 27-е', () => {
+    withTimeZone('Europe/Moscow', () => {
+      expect(todayStr(new Date('2026-10-26T21:19:00Z'))).toBe('2026-10-27');
+    });
+    withTimeZone('UTC', () => {
+      expect(todayStr(new Date('2026-10-26T21:19:00Z'))).toBe('2026-10-26');
+    });
+  });
 });
 
 // fmtAgo считает разницу двух МОМЕНТОВ в миллисекундах, поэтому «сегодня /
