@@ -35,7 +35,7 @@ export function PracticesBlock({ title, tasks, taskError, onStart, onComplete, o
     <section className="ct-section ct-block">
       <div className="ds-head-row">
         <h3 className="ds-h2">{title}</h3>
-        {activeCount > 0 && <span className="ds-sub">{activeCount} {pluralRu(activeCount, 'активная', 'активных', 'активных')}</span>}
+        {activeCount > 0 && <span className="ds-sub">{activeCount} {pluralRu(activeCount, 'активная', 'активные', 'активных')}</span>}
       </div>
       {taskError && (
         <div role="alert" className="ct-alert">

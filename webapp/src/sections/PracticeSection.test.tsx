@@ -269,6 +269,15 @@ describe('PracticeSection — мои цели', () => {
     expect(screen.getByText('1 активная')).toBeTruthy();
   });
 
+  it.each([
+    [2, '2 активные'],
+    [5, '5 активных'],
+  ])('счётчик своих целей: %i → «%s» (форма слова по числу)', async (n, text) => {
+    mockApi.getTasks.mockResolvedValue(Array.from({ length: n }, (_, i) => task({ id: i + 1, assignedBy: null, text: `Цель ${i + 1}` })));
+    renderSection();
+    await screen.findByText(text);
+  });
+
   it('клик "+ Поставить цель" открывает TaskCreateSheet', async () => {
     renderSection();
     await screen.findByText('нет активных');

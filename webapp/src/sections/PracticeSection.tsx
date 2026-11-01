@@ -160,7 +160,7 @@ export function PracticeSection({ onOpenChildhoodWheel, onOpenPractices, onOpenP
       {tools.isShown('tasks') && <section className="cp-block">
         <div className="ds-head-row">
           <h3 className="ds-h2">Мои цели</h3>
-          <span className="ds-sub">{myGoals.length === 0 ? 'нет активных' : `${myGoals.length} ${plural(myGoals.length, 'активная', 'активных', 'активных')}`}</span>
+          <span className="ds-sub">{myGoals.length === 0 ? 'нет активных' : `${myGoals.length} ${plural(myGoals.length, 'активная', 'активные', 'активных')}`}</span>
         </div>
         {myGoals.length === 0 ? (
           <div className="cp-empty">
