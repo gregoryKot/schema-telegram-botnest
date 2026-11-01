@@ -124,16 +124,6 @@
 - **Гейта «`chat_id` из `userId` вне `telegram-identity`/`account.service`» нет.**
   До этой починки `therapist-request.notify.ts` был последним сырым
   `sendTg(userId)`; трипваер класса #456 — отдельный PR.
-- **Отказ по заявке виден не везде сразу.** Страница /account сайта показывает «Прошлая заявка
-  отклонена» и причину только внутри раскрытой формы подачи
-  (`webapp/src/pages/account/TherapistRequestSection.tsx`, ветка `rejected`
-  внутри `open`; настройки сайта, `webapp/src/components/settingsSheet/BecomeTherapistSection.tsx`,
-  показывают отказ сразу), мини-апп (`schema-miniapp/src/components/settingsSheet/BecomeTherapistSection.tsx`)
-  не рисует `rejected` вовсе: после отказа там та же кнопка «Я психолог — подать
-  заявку», что и до заявки. Письмо об отказе теперь называет эту кнопку, так что
-  человек не потеряется, но причину в самом приложении он не прочтёт. Не чинилось:
-  это экран на двух фронтендах (правило №3, нужен общий блок в `shared/` с
-  «откуда и зачем»), а не доставка решения.
 
 **Подписи активности клиента — остаток после правила `status-label-m`**
 (`scripts/gendered-forms-status-patterns.mjs`):

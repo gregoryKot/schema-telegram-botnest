@@ -64,9 +64,8 @@ describe('BecomeTherapistSection — статусы заявки', () => {
       />,
     );
     expect(screen.getByText('Заявка отправлена')).toBeTruthy();
-    // Мини-апп бывает и в MAX, где бота Telegram нет, и после отказа не рисует
-    // статус `rejected` (снова кнопка подачи): ни «в боте», ни «появится здесь»
-    // обещать нельзя. Решение приходит сообщением — Telegram, почта или контакты.
+    // Мини-апп бывает и в MAX, где бота Telegram нет: «в боте» обещать нельзя.
+    // Решение приходит сообщением — Telegram, почта или контакты.
     expect(
       screen.getByText(
         'Сообщим о решении в Telegram, на почту или по контактам из заявки.',
@@ -85,6 +84,31 @@ describe('BecomeTherapistSection — статусы заявки', () => {
       />,
     );
     expect(screen.getByText('✓ Заявка одобрена')).toBeTruthy();
+  });
+
+  // До 2026-11 мини-апп отказ не рисовал: после него — та же кнопка подачи,
+  // что и до заявки, причину в приложении было не прочесть.
+  it('therapistReq.status=rejected — причина отказа над кнопкой новой заявки', () => {
+    render(
+      <BecomeTherapistSection
+        {...baseProps({
+          therapistReq: {
+            id: 1,
+            status: 'rejected',
+            rejectReason: 'нет диплома',
+          },
+        })}
+      />,
+    );
+    expect(screen.getByRole('note').textContent).toBe(
+      'Прошлая заявка отклонена: нет диплома. Можешь подать новую.',
+    );
+    expect(screen.getByText(/Я психолог/)).toBeTruthy();
+  });
+
+  it('therapistReq=null — отказа нет', () => {
+    render(<BecomeTherapistSection {...baseProps()} />);
+    expect(screen.queryByRole('note')).toBeNull();
   });
 
   it('therapistReq=null, showReqForm=false — кнопка «Я психолог — подать заявку»', () => {

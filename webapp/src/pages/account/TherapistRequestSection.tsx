@@ -3,6 +3,7 @@ import { API_BASE } from '../../utils/apiBase'; import { useTr } from '../../uti
 import { LimitedTextarea } from '../../../../shared/src/components/LimitedTextarea';
 import * as LIM from '../../../../shared/src/limits/textLimits';
 import { humanizeThrown, readHumanError } from '../../../../shared/src/api/humanizeError';
+import { TherapistRequestRejectedNote } from '../../../../shared/src/therapy/TherapistRequestRejectedNote';
 
 // Секция «Роль психолога» (заявка терапевта). Вынесено из AccountPage.tsx
 // (правило №10).
@@ -64,6 +65,7 @@ export function TherapistRequestSection({ accessToken }: { accessToken: string |
   return (
     <div className="ds-card ds-card--ink aa-role">
       <div className="aa-role-label">Роль психолога</div>
+      <TherapistRequestRejectedNote request={req} className="aa-role-note" />
       {req?.status === 'pending' ? (
         <div className="aa-role-note">
           {tr('Твоя заявка на рассмотрении. О решении сообщим в Telegram, на почту или по контактам из заявки; здесь тоже обновится статус.', 'Ваша заявка на рассмотрении. О решении сообщим в Telegram, на почту или по контактам из заявки; здесь тоже обновится статус.')}
@@ -81,11 +83,6 @@ export function TherapistRequestSection({ accessToken }: { accessToken: string |
         </>
       ) : (
         <div className="aa-role-form">
-          {req?.status === 'rejected' && (
-            <div className="aa-role-note">
-              Прошлая заявка отклонена{req.rejectReason ? `: ${req.rejectReason}` : ''}. {tr('Можешь подать новую.', 'Можете подать новую.')}
-            </div>
-          )}
           <input value={fullName} onChange={e => setFullName(e.target.value)} placeholder="ФИО" maxLength={LIM.THERAPIST_REQUEST_NAME_MAX} className="ds-input" />
           <LimitedTextarea max={LIM.THERAPIST_REQUEST_QUAL_MAX} value={qualification} onChange={e => setQualification(e.target.value)} rows={3}
             placeholder="Квалификация: образование, направление, опыт, сертификаты" className="ds-textarea" />
