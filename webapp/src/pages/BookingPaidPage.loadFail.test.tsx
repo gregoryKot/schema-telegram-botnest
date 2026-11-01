@@ -37,6 +37,7 @@ afterEach(() => {
 
 const NOT_FOUND = 'Запись по этой ссылке не найдена';
 const CHECK_FAILED = 'Не удалось проверить оплату';
+const REFRESH_FAILED = /Не удалось обновить статус записи/;
 
 describe('BookingPaidPage — отказ загрузки брони по виду ошибки', () => {
   const cases: Array<[string, () => unknown, string]> = [
@@ -157,5 +158,49 @@ describe('BookingPaidPage — отказ повторной проверки н�
     // Цикл ожидания продолжается и дотягивает до честного таймаута.
     await tick(POLL_LIMIT_MS + POLL_INTERVAL_MS);
     expect(screen.getByText('Подтверждение задерживается')).toBeTruthy();
+  });
+
+  // Аудит 2026-10: отказ повтора при показанной брони проходил молча — ни
+  // отчёта наверх, ни видимой реакции на «Проверить ещё раз».
+  it('отказ повтора виден строкой «не удалось обновить» и шлёт один отчёт без токена', async () => {
+    vi.useFakeTimers();
+    getBookingByToken.mockResolvedValue(held());
+    render(<BookingPaidPage />);
+    await tick(POLL_LIMIT_MS + POLL_INTERVAL_MS);
+    expect(screen.queryByText(REFRESH_FAILED)).toBeNull();
+    getBookingByToken.mockRejectedValue(new ApiError(500, 'Internal'));
+    await act(async () => { fireEvent.click(screen.getByText('Проверить ещё раз')); });
+    await tick(0);
+    expect(screen.getByText(REFRESH_FAILED)).toBeTruthy();
+    await tick(POLL_INTERVAL_MS * 3);
+    const reports = reportClientError.mock.calls.map(([a]) => a as { message: string; section: string });
+    const refreshReports = reports.filter((r) => r.message.includes('обновить'));
+    expect(refreshReports).toHaveLength(1);
+    expect(refreshReports[0].section).toBe('booking');
+    expect(refreshReports[0].message).toContain('HTTP 500');
+    expect(refreshReports[0].message).not.toContain(TOKEN);
+  });
+
+  it('«Повторить» после отказа: удачный ответ убирает строку и показывает подтверждение', async () => {
+    vi.useFakeTimers();
+    getBookingByToken.mockResolvedValueOnce(held()).mockRejectedValueOnce(new TypeError('Failed to fetch'));
+    render(<BookingPaidPage />);
+    await tick(0);
+    await tick(POLL_INTERVAL_MS);
+    expect(screen.getByText(REFRESH_FAILED)).toBeTruthy();
+    getBookingByToken.mockResolvedValue(booking());
+    await act(async () => { fireEvent.click(screen.getByText('Повторить')); });
+    await tick(0);
+    expect(screen.getByText('Оплата прошла')).toBeTruthy();
+    expect(screen.queryByText(REFRESH_FAILED)).toBeNull();
+  });
+
+  it('контрольный: удачные повторы строку не рисуют и отчётов не шлют', async () => {
+    vi.useFakeTimers();
+    getBookingByToken.mockResolvedValue(held());
+    render(<BookingPaidPage />);
+    await tick(POLL_INTERVAL_MS * 3);
+    expect(screen.queryByText(REFRESH_FAILED)).toBeNull();
+    expect(reportClientError).not.toHaveBeenCalled();
   });
 });
