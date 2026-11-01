@@ -7,6 +7,7 @@ import { useMergeConfirm } from './merge/useMergeConfirm';
 import { ServicePage } from './service/ServicePage';
 import { ServiceRows } from './service/ServiceRows';
 import { SourceTotpField } from './merge/SourceTotpField';
+import { AckCheck } from './merge/AckCheck';
 
 export function MergePage() {
   const [params] = useSearchParams();
@@ -58,15 +59,9 @@ export function MergePage() {
 
         {error && <div className="ds-card as-err">{error}</div>}
 
-        <label className="as-check">
-          <input
-            type="checkbox"
-            checked={acknowledged}
-            onChange={e => setAcknowledged(e.target.checked)}
-            disabled={busy}
-          />
-          <span>Я понимаю что данные второго аккаунта необратимо переедут, а сам тот аккаунт будет удалён.</span>
-        </label>
+        <AckCheck checked={acknowledged} onChange={setAcknowledged} disabled={busy}>
+          Я понимаю, что данные второго аккаунта необратимо переедут, а сам тот аккаунт будет удалён.
+        </AckCheck>
 
         <div className="as-actions-row">
           <button disabled={busy || !acknowledged || (needCode && code.trim().length < 6)} onClick={confirm} className="ds-btn">

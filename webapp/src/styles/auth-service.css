@@ -25,6 +25,7 @@
 .as-row > span:first-child { flex: 1; }
 .as-row-n { font-family: var(--serif); }
 .as-sec-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.as-actions-row, .as-actions { display: flex; gap: 10px; flex-wrap: wrap; }
 .as-check { display: flex; gap: 10px; align-items: flex-start; font-size: 13px; line-height: 1.5; min-height: 44px; }
 .as-check input { margin-top: 3px; width: 18px; height: 18px; accent-color: var(--accent); flex-shrink: 0; }
 .as-totp { width: 220px; max-width: 100%; font-family: ui-monospace, monospace; font-size: 20px; letter-spacing: .2em; }
