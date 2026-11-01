@@ -124,24 +124,9 @@
 - **Гейта «`chat_id` из `userId` вне `telegram-identity`/`account.service`» нет.**
   До этой починки `therapist-request.notify.ts` был последним сырым
   `sendTg(userId)`; трипваер класса #456 — отдельный PR.
-- **Отказ по заявке виден не везде сразу.** Страница /account сайта показывает «Прошлая заявка
-  отклонена» и причину только внутри раскрытой формы подачи
-  (`webapp/src/pages/account/TherapistRequestSection.tsx`, ветка `rejected`
-  внутри `open`; настройки сайта, `webapp/src/components/settingsSheet/BecomeTherapistSection.tsx`,
-  показывают отказ сразу), мини-апп (`schema-miniapp/src/components/settingsSheet/BecomeTherapistSection.tsx`)
-  не рисует `rejected` вовсе: после отказа там та же кнопка «Я психолог — подать
-  заявку», что и до заявки. Письмо об отказе теперь называет эту кнопку, так что
-  человек не потеряется, но причину в самом приложении он не прочтёт. Не чинилось:
-  это экран на двух фронтендах (правило №3, нужен общий блок в `shared/` с
-  «откуда и зачем»), а не доставка решения.
 
 **Подписи активности клиента — остаток после правила `status-label-m`**
 (`scripts/gendered-forms-status-patterns.mjs`):
-- **«активность недавно» на сайте неточна.** `clientCaption`
-  (`webapp/src/components/therapist/rosterModel.ts`) пишет «недавно» для любого
-  `lastActiveDate`, кроме сегодняшнего, даже месячной давности; мини-апп в той же
-  роли показывает дату (`fmtDate` в `therapistClientSheet/ClientCard.tsx`). Род
-  починен, смысл не трогали: это смена содержания подписи, а не рода.
 - **Правило видит закрытый список слов в начале короткого литерала.** Статус,
   собранный из частей (`'был' + ' ' + x`) или с новым глаголом вне списка
   (`ST` в модуле), пройдёт мимо. Расширять список — по мере находок, с образцом
@@ -158,11 +143,16 @@
 - **Дата сессии — и бейджем шапки, и карточкой «Обзора» — оставлено осознанно.**
   Бейдж (`ClientHeaderBadges.tsx`) виден на всех вкладках карточки, карточка
   (`ClientSessionInfoCards.tsx`) на «Обзоре» даёт правку даты.
-- **«Сегодня» кабинета сверяет дни встреч с днём по UTC.** С #867 `hasSessionToday`
-  (`webapp/src/sections/therapistTodayModel.ts`) берёт день недели из
-  `todayCalendarDate()`, как и дату `nextSession` (правило №25); раньше дни встреч
-  сверялись с локальным `getDay()`. В Москве с 00:00 до 03:00 экран показывает
-  встречи вчерашнего дня — вместе с уже существовавшим сравнением `nextSession`.
+- **«Прошла ли встреча» везде, кроме экрана «Сегодня», решается по дню UTC.**
+  `upcomingSession` (`shared/src/therapy/upcomingSession.ts`) по умолчанию берёт
+  `todayCalendarDate()`, а `nextSession` — стенные часы терапевта
+  (`datetime-local` без зоны). Экран «Сегодня» с 2026-11 передаёт местный день
+  (`webapp/src/sections/therapistTodayModel.ts`), а список клиентов
+  (`rosterModel.ts`, `today` из `ClientListView.tsx`), бейдж и карточки сессии,
+  `PracticeSection`, `TherapistCard` и мини-апп — нет: в МСК с 00:00 до 03:00
+  вчерашняя встреча ещё числится ближайшей. Не тронуто: список сравнивает тем же
+  `today` календарные `lastActiveDate`, ему нужны два «сегодня», а это правка
+  семи экранов на двух фронтендах.
 - **Сбой загрузки концептуализации неотличим от «её нет», и первая правка
   затирает сохранённое.** `openClient` на отказ `getConceptualization` кладёт
   `null` (сайт — `webapp/src/components/therapist/useClientDetail.ts`, мини-апп —

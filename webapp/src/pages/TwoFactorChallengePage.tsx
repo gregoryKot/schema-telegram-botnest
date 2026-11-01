@@ -5,7 +5,8 @@ import { OtpCells } from './login/OtpCells';
 import { RecoveryCodeField } from './login/RecoveryCodeField';
 import '../styles/auth-login.css';
 import { TwoFactorIntro } from './login/TwoFactorIntro';
-import { humanizeThrown, readHumanError } from '../../../shared/src/api/humanizeError';
+import { TwoFactorExpired } from './login/TwoFactorExpired';
+import { submitTwoFactorCode } from './login/twoFactorSubmit';
 
 const API_BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? '';
 
@@ -20,6 +21,7 @@ export function TwoFactorChallengePage() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [recovery, setRecovery] = useState(false);
+  const [expired, setExpired] = useState(false);
   const challengeToken = params.get('token') ?? '';
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -33,24 +35,13 @@ export function TwoFactorChallengePage() {
     if (busy || !code.trim()) return;
     setBusy(true);
     setError(null);
-    try {
-      const res = await fetch(`${API_BASE}/api/auth/2fa/challenge`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json', 'x-requested-with': 'webapp' },
-        body: JSON.stringify({ challengeToken, code: code.trim() }),
-      });
-      // 401 сервера — «Invalid 2FA code»; лимит и авария — свой текст, не «Неверный код».
-      if (!res.ok) throw new Error((await readHumanError(res, 'Неверный код')).message);
-      const { accessToken, expiresIn } = await res.json() as { accessToken: string; expiresIn: number };
-      setAccessToken(accessToken, expiresIn);
-      navigate('/today', { replace: true });
-    } catch (err) {
-      setError(humanizeThrown(err, 'Не получилось войти'));
-      setBusy(false);
-      setCode('');
-      inputRef.current?.focus();
-    }
+    const out = await submitTwoFactorCode(API_BASE, challengeToken, code.trim());
+    if (out.kind === 'ok') { setAccessToken(out.accessToken, out.expiresIn); navigate('/today', { replace: true }); return; }
+    setBusy(false);
+    setCode('');
+    if (out.kind === 'expired') { setExpired(true); return; }
+    setError(out.message);
+    inputRef.current?.focus();
   };
 
   const switchMode = () => { setRecovery(r => !r); setCode(''); setError(null); };
@@ -61,7 +52,7 @@ export function TwoFactorChallengePage() {
       <div className="al-2fa-in">
         <TwoFactorIntro />
 
-        <form onSubmit={submit} className="al-form">
+        {expired ? <TwoFactorExpired /> : <form onSubmit={submit} className="al-form">
           {recovery ? (
             <RecoveryCodeField ref={inputRef} value={code} onChange={setCode} disabled={busy} />
           ) : (
@@ -77,7 +68,7 @@ export function TwoFactorChallengePage() {
               {recovery ? 'Ввести код из приложения' : 'Ввести recovery-код'}
             </button>
           </p>
-        </form>
+        </form>}
       </div>
     </div>
   );

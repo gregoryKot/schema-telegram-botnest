@@ -1,7 +1,6 @@
 // Горячие пути, у которых меряется план. Состав — из аудита (D-4 в
 // docs/archive/PROJECT_AUDIT_ADDENDUM.md: «первый кандидат в узкое место») и
-// из перечня, названного владельцем: список клиентов терапевта, история
-// 30 дней, админский отчёт /stats.
+// из перечня владельца: клиенты терапевта, история трекера, отчёт /stats.
 //
 // Сценарий — это вызов РЕАЛЬНОГО сервиса, а не SQL-строка: что именно уйдёт в
 // базу, решает код прода, и записывается это драйвером (record-sql.ts). Так
@@ -61,12 +60,13 @@ export const SCENARIOS: Scenario[] = [
         new BotClientOverviewService(prisma),
       ).getClients(therapistId),
   },
-  {
-    name: 'history-30d',
-    title: 'История трекера за 30 дней (GET /api/tracker/history)',
-    run: ({ prisma, heavyUserId }) =>
-      new BotAnalyticsService(prisma).getHistoryRatings(heavyUserId, 30),
-  },
+  // 30 — экран истории; 365 — лента «Записи», потолок HISTORY_MAX_DAYS.
+  ...[30, 365].map((days) => ({
+    name: `history-${days}d`,
+    title: `История трекера за ${days} дн. (GET /api/history?days=${days})`,
+    run: ({ prisma, heavyUserId }: ScenarioContext) =>
+      new BotAnalyticsService(prisma).getHistoryRatings(heavyUserId, days),
+  })),
   {
     name: 'former-therapist',
     title: 'Бывший терапевт клиента (GET /api/therapy/former-therapist)',

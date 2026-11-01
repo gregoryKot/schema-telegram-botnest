@@ -194,7 +194,13 @@ NestJS 12, 2026-10-24): `src/api/memory-throttle-storage.ts` заменял шт
   стриком в SQL (gaps-and-islands по `date` на клиента) или потолком на
   клиента; живой спек с двумя клиентами по ≥2500 дней. Не сделано в починке
   `/stats` (правило №20).
-- FAQPage в JSON-LD `webapp/index.html` расходится с FAQ визитки (`webapp/src/pages/landing/constants.ts` → `FAQ_ITEMS`): нет вопросов «Сколько встреч понадобится?» и «Что, если мы не подойдём друг другу?», зато есть «Что такое «Всё по схеме»?», которого визитка не показывает, а разметка одна на оба домена. Сверки тестом нет (правило №4) — либо собирать FAQPage из `FAQ_ITEMS` в `domainChrome.ts` для визитки, либо пин-тест на совпадение вопросов. Там же цена: четыре статические копии `3000` (`index.html:120,158`, `webapp/public/llms.txt:14`, `OfferPage.tsx:109`) при источнике правды `BookingSetting`/`SESSION_DEFAULT_PRICE`; `OfferPage.test.tsx:38` проверяет регэкспом «3 000», а не источник ([AUDIT_2026-10, «Голос и контент»](../AUDIT_2026-10_FINDINGS.md#голос-и-контент)).
+- **Статика визитки не видит цену из админки.** JSON-LD `webapp/index.html`
+  (оффер и ответ FAQPage) и `webapp/public/llms.txt` держат цену числом; сверка
+  `webapp/src/pages/landing/staticCopies.sync.test.ts` сводит их с
+  `SESSION_DEFAULT_PRICE` и последней миграцией `price:SESSION_50`, но правка
+  `BookingSetting` в админке до статики не доходит. Цена вне рублей в разметке
+  не указана вовсе. Чинится подстановкой при отдаче `index.html` (как
+  `ArticleSeoMiddleware`) — не сделано: цена меняется раз в квартал миграцией.
 - **`DELETE /api/therapy/relation` у клиента с двумя терапевтами рвёт обе связи**:
   `therapy-relations.service.ts:49-53` удаляет по `clientId` (терапевт клиентов
   **не** теряет — A-2 закрыто, пин `test/therapy-remove-client.e2e-spec.ts:411`).

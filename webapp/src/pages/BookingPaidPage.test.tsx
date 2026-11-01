@@ -168,3 +168,33 @@ describe('BookingPaidPage — отмена записи', () => {
     expect(screen.getByText(/не позднее чем за 24 часа/)).toBeTruthy();
   });
 });
+
+// Аудит 2026-10: бесплатная вводная на /booking/manage говорила «Оплата
+// прошла… Чек придёт», хотя оплаты у неё нет, а подтверждение — личное.
+describe('BookingPaidPage — подтверждённая бронь без оплаты', () => {
+  beforeEach(() => window.history.pushState({}, '', '/booking/manage?token=tok'));
+
+  it('INTRO_15: знакомство бесплатное, ни «Оплата прошла», ни чека', async () => {
+    getBookingByToken.mockResolvedValue({ ...BOOKING, type: 'INTRO_15', paid: false, durationMin: 15 });
+    render(<BookingPaidPage />);
+    expect(await screen.findByText('Знакомство записано')).toBeTruthy();
+    expect(screen.getByText(/без подтверждения она не состоится/)).toBeTruthy();
+    expect(screen.queryByText('Оплата прошла')).toBeNull();
+    expect(screen.queryByText(/Чек|Мой налог/)).toBeNull();
+  });
+
+  it('SESSION_50 без онлайн-оплаты: «Встреча подтверждена», без чека', async () => {
+    getBookingByToken.mockResolvedValue({ ...BOOKING, paid: false });
+    render(<BookingPaidPage />);
+    expect(await screen.findByText('Встреча подтверждена')).toBeTruthy();
+    expect(screen.queryByText('Оплата прошла')).toBeNull();
+    expect(screen.queryByText(/Чек|Мой налог/)).toBeNull();
+  });
+
+  it('контрольный: оплаченная сессия — «Оплата прошла» и чек', async () => {
+    getBookingByToken.mockResolvedValue(BOOKING);
+    render(<BookingPaidPage />);
+    expect(await screen.findByText('Оплата прошла')).toBeTruthy();
+    expect(screen.getByText(/Чек придёт от «Мой налог»/)).toBeTruthy();
+  });
+});

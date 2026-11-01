@@ -55,7 +55,7 @@ describe('BecomeTherapistSection — статусы заявки', () => {
   it('status=rejected — видна причина отказа и можно подать снова', async () => {
     mockApi.getTherapistRequest.mockResolvedValue({ status: 'rejected', rejectReason: 'нет диплома' });
     renderWithForm();
-    await screen.findByText(/Заявка отклонена: нет диплома/);
+    await screen.findByText(/Прошлая заявка отклонена: нет диплома/);
     expect(screen.getByText('Я психолог — подать заявку')).toBeTruthy();
   });
 

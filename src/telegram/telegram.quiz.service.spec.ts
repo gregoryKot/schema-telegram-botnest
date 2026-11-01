@@ -3,6 +3,7 @@
 // (правило №8), и устойчивость к мусорному callback_data.
 import { Logger } from '@nestjs/common';
 import { TelegramQuizService } from './telegram.quiz.service';
+import { ERROR_RETRY } from './telegram.constants';
 import {
   makeFakeBot,
   runAction,
@@ -149,4 +150,36 @@ describe('TelegramQuizService', () => {
     expect(warnSpy).toHaveBeenCalledWith('quiz getForm failed', dbError);
     warnSpy.mockRestore();
   });
+
+  // Аудит 2026-10: catch квиза только писал в лог — человек нажимал кнопку
+  // и не видел ничего. Теперь исход приходит сообщением (failCallback).
+  it.each([
+    ['command', 'tests'],
+    ['action', 'qz:list'],
+    ['action', 'qz:i:critic'],
+    ['action', 'qz:q:critic:0:'],
+  ])(
+    'сбой резолвера аккаунта (%s %s) — человек получает исход',
+    async (kind, name) => {
+      fakeBot = makeFakeBot();
+      const errSpy = jest
+        .spyOn(Logger.prototype, 'error')
+        .mockImplementation(() => undefined);
+      new TelegramQuizService(
+        fakeBot.bot,
+        { getUserSettings: jest.fn() } as any,
+        { track: jest.fn() } as any,
+        {
+          canonicalUserId: jest.fn().mockRejectedValue(new Error('db down')),
+        } as any,
+      ).onModuleInit();
+      const ctx =
+        kind === 'command'
+          ? await runCommand(fakeBot, name)
+          : await runAction(fakeBot, name);
+      expect(ctx.reply).toHaveBeenCalledWith(ERROR_RETRY);
+      expect(errSpy).toHaveBeenCalled();
+      errSpy.mockRestore();
+    },
+  );
 });

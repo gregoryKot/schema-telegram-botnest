@@ -170,7 +170,7 @@ export class TelegramNotifyActionsService implements OnModuleInit {
         await ctx.answerCbQuery('Ок, без паузы');
         await ctx.editMessageReplyMarkup(undefined).catch(() => null);
       } catch (err) {
-        this.logger.error('notify:pause:cancel failed', err);
+        await failCallback(this.logger, ctx, 'notify:pause:cancel', err);
       }
     });
 

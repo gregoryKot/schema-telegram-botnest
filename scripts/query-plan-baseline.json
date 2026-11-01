@@ -8,6 +8,10 @@
       "blocks": 98,
       "msCeiling": 500
     },
+    "history-365d": {
+      "blocks": 20,
+      "msCeiling": 500
+    },
     "stats-report": {
       "blocks": 68472,
       "msCeiling": 10000

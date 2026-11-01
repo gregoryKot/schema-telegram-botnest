@@ -222,20 +222,16 @@ describe('TrackerController.saveRating', () => {
 describe('TrackerController.getHistory', () => {
   it('без параметра days — дефолт 7', async () => {
     const { controller, analyticsService } = makeController();
-    await controller.getHistory(makeReq());
+    await controller.getHistory(makeReq(), {});
     expect(analyticsService.getHistoryRatings).toHaveBeenCalledWith(1n, 7);
   });
 
-  it('days зажимается сверху в 30', async () => {
+  // До 2026-11 эндпоинт резал days до 30: строки трекера старше месяца
+  // пропадали из ленты «Записи», карта активности (112 дней) пустела.
+  it('год истории отдаётся целиком, а не месяц', async () => {
     const { controller, analyticsService } = makeController();
-    await controller.getHistory(makeReq(), '365');
-    expect(analyticsService.getHistoryRatings).toHaveBeenCalledWith(1n, 30);
-  });
-
-  it('нечисловое days трактуется как дефолт (7)', async () => {
-    const { controller, analyticsService } = makeController();
-    await controller.getHistory(makeReq(), 'garbage');
-    expect(analyticsService.getHistoryRatings).toHaveBeenCalledWith(1n, 7);
+    await controller.getHistory(makeReq(), { days: 365 });
+    expect(analyticsService.getHistoryRatings).toHaveBeenCalledWith(1n, 365);
   });
 });
 

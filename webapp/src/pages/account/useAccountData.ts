@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
 import { API_BASE } from '../../utils/apiBase';
 import type { AccountProvider } from './ProviderRows';
+import { humanizeThrown, readHumanError } from '../../../../shared/src/api/humanizeError';
 
 export interface TotpState { enabled: boolean; recoveryCodesLeft: number }
+const LOAD_FAILED = 'Не удалось загрузить способы входа';
 
 /** Загрузка /api/auth/me: способы входа и состояние 2FA. */
 export function useAccountData(accessToken: string | null) {
@@ -16,7 +18,7 @@ export function useAccountData(accessToken: string | null) {
     const res = await fetch(`${API_BASE}/api/auth/me`, {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
-    if (!res.ok) throw new Error('Failed to load account');
+    if (!res.ok) throw new Error((await readHumanError(res, LOAD_FAILED)).message);
     return await res.json() as { providers: AccountProvider[]; totp?: TotpState };
   }, [accessToken]);
 
@@ -26,11 +28,8 @@ export function useAccountData(accessToken: string | null) {
       const data = await loadAccount();
       setProviders(data.providers);
       if (data.totp) setTotp(data.totp);
-    } catch (e) {
-      setError(String(e));
-    } finally {
-      setLoading(false);
-    }
+    } catch (e) { setError(humanizeThrown(e, LOAD_FAILED)); }
+    finally { setLoading(false); }
   };
 
   // Смена токена — снова «загрузка» (правка во время рендера, не в эффекте).
@@ -41,7 +40,7 @@ export function useAccountData(accessToken: string | null) {
     let alive = true;
     loadAccount()
       .then((data) => { if (alive) { setProviders(data.providers); if (data.totp) setTotp(data.totp); } })
-      .catch((e) => { if (alive) setError(String(e)); })
+      .catch((e) => { if (alive) setError(humanizeThrown(e, LOAD_FAILED)); })
       .finally(() => { if (alive) setLoading(false); });
     return () => { alive = false; };
   }, [loadAccount]);

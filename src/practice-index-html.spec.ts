@@ -87,17 +87,20 @@ describe('главная визитки kotlarewski.gr', () => {
     expect(faq['@id']).toBe('https://kotlarewski.gr/#faq');
   });
 
-  it('schemehappens — только канал в sameAs и приложение в FAQ', () => {
+  // FAQPage в разметке дословно равен видимому FAQ (FAQ_ITEMS, #900):
+  // вопрос «Что такое «Всё по схеме»?» жил только в JSON-LD — Google требует,
+  // чтобы разметка FAQ совпадала с текстом на странице.
+  it('schemehappens — только канал в sameAs', () => {
     const hits = html.match(/\S*schemehappens\S*/gi) ?? [];
-    expect(hits).toEqual([
-      '"https://t.me/SchemeHappens"',
-      'schemehappens.ru."',
-    ]);
-    expect(html).toContain('Доступно на schemehappens.ru.');
+    expect(hits).toEqual(['"https://t.me/SchemeHappens"']);
   });
 
   it('нет самоназвания «психолог»/«терапевт» (правило №12)', () => {
-    expect(html).not.toMatch(/терапевт/i);
+    // Направление к ДРУГОМУ врачу из ответа FAQ законно (правило №12:
+    // слово про других — можно); вырезаем ровно эту фразу, остальное — запрет.
+    const REFERRAL = 'психотерапевту с медицинским дипломом';
+    expect(html).toContain(REFERRAL);
+    expect(html.split(REFERRAL).join('')).not.toMatch(/терапевт/i);
     expect(html).not.toMatch(/психолог(?!ическ)/i);
     // Контроль: законная формула услуги по-прежнему на месте.
     expect(html).toMatch(/Психологическое консультирование/);

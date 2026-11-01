@@ -1,8 +1,7 @@
 // Чистые вычисления экрана «Сегодня» кабинета терапевта: счётчики, статус
-// активности клиента, точки спарклайна. Всё считается только из
-// TherapyClientSummary, который экран уже получает.
+// активности, спарклайн — только из TherapyClientSummary, который уже есть.
 import type { TherapyClientSummary } from '../api';
-import { todayCalendarDate } from '../../../shared/src/utils/calendarDate';
+import { momentDayKey, momentTime, todayStr } from '../utils/format';
 import { upcomingSession } from '../../../shared/src/therapy/upcomingSession';
 import { indexLevel, type IndexLevel } from '../lib/tone';
 
@@ -26,15 +25,16 @@ export function daysSinceActive(c: TherapyClientSummary, now: number): number | 
   return Math.max(0, Math.floor((now - new Date(c.lastActiveDate).getTime()) / DAY_MS));
 }
 
-/** Ближайшая встреча сегодня: будущий nextSession важнее дней, прошедший — нет. */
+/** Встреча сегодня — по МЕСТНОМУ дню терапевта (правило №25): встреча — момент
+ *  (datetime-local без зоны), по UTC в МСК 00–03 «сегодня» показывало вчерашние. */
 const sessionToday = (c: TherapyClientSummary): string | null => {
-  const at = upcomingSession(c.nextSession, c.meetingDays);
-  return at?.slice(0, 10) === todayCalendarDate() ? at : null;
+  const today = todayStr();
+  const at = upcomingSession(c.nextSession, c.meetingDays, today);
+  return at && momentDayKey(at) === today ? at : null;
 };
 export const hasSessionToday = (c: TherapyClientSummary): boolean => sessionToday(c) !== null;
-
-/** HH:MM сегодняшней встречи; без времени или не сегодня — пустая строка. */
-export const sessionTime = (c: TherapyClientSummary): string => sessionToday(c)?.split('T')[1]?.slice(0, 5) ?? '';
+/** HH:MM сегодняшней встречи в зоне терапевта; без времени или не сегодня — ''. */
+export const sessionTime = (c: TherapyClientSummary): string => momentTime(sessionToday(c) ?? '');
 
 /** Сессии сегодня по времени; без времени — в конце. */
 export function sessionsTodaySorted(clients: TherapyClientSummary[]): TherapyClientSummary[] {

@@ -84,6 +84,23 @@ function blockEnd(src: string, open: number): number {
   return i;
 }
 
+/** Блоки ВНЕШНЕГО try и его catch в теле хендлера (null — нет пары). */
+function outerTryCatch(
+  body: string,
+): { tryBlock: string; catchBlock: string } | null {
+  const tryM = /\btry\s*\{/.exec(body);
+  if (!tryM) return null;
+  const tryOpen = tryM.index + tryM[0].length - 1;
+  const tryEnd = blockEnd(body, tryOpen);
+  const catchM = /^\s*catch\s*(?:\([^)]*\))?\s*\{/.exec(body.slice(tryEnd));
+  if (!catchM) return null;
+  const catchOpen = tryEnd + catchM[0].length - 1;
+  return {
+    tryBlock: body.slice(tryOpen, tryEnd),
+    catchBlock: body.slice(catchOpen, blockEnd(body, catchOpen)),
+  };
+}
+
 /**
  * Хендлер отвечает на нажатие в try и снова — в catch. Второй ответ Telegram
  * отклоняет (спиннер уже погашен), а staleUpdateGuard молча глотает ошибку:
@@ -91,19 +108,36 @@ function blockEnd(src: string, open: number): number {
  * (callback-failure.ts). Ищется ВНЕШНИЙ try тела хендлера.
  */
 function repeatsAnswerInCatch(body: string): boolean {
-  const tryM = /\btry\s*\{/.exec(body);
-  if (!tryM) return false;
-  const tryOpen = tryM.index + tryM[0].length - 1;
-  const tryEnd = blockEnd(body, tryOpen);
-  const catchM = /^\s*catch\s*(?:\([^)]*\))?\s*\{/.exec(body.slice(tryEnd));
-  if (!catchM) return false;
-  const catchOpen = tryEnd + catchM[0].length - 1;
-  const catchBlock = body.slice(catchOpen, blockEnd(body, catchOpen));
+  const pair = outerTryCatch(body);
   return (
-    body.slice(tryOpen, tryEnd).includes('answerCbQuery') &&
-    catchBlock.includes('answerCbQuery')
+    !!pair &&
+    pair.tryBlock.includes('answerCbQuery') &&
+    pair.catchBlock.includes('answerCbQuery')
   );
 }
+
+// Исход сбоя человеку: хелпер callback-failure.ts или прямой ответ в чат.
+const OUTCOME_RE =
+  /\b(failCallback|failSettings)\(|\bctx\s*\.\s*(reply\w*|editMessageText)\(/;
+
+/**
+ * catch внешнего try без исхода — только лог. Спиннер уже погашен
+ * answerCbQuery, и человек, не увидев ничего, решает, что нажатие сработало
+ * (аудит 2026-10: квиз и `notify:pause:cancel`).
+ */
+function catchWithoutOutcome(body: string): boolean {
+  const pair = outerTryCatch(body);
+  return !!pair && !OUTCOME_RE.test(pair.catchBlock);
+}
+
+// Кнопки, которые больше никто не шлёт (их нет ни в одной клавиатуре — только
+// под старыми сообщениями): сбой там — отказ удалить/перерисовать старое
+// сообщение, а «попробовать ещё раз» упрётся в тот же отказ. Список может
+// только сокращаться; новую кнопку сюда не добавлять.
+const NO_OUTCOME_ALLOWLIST = [
+  "telegram.service.ts:action:'cancel'",
+  "telegram.service.ts:action:'back:welcome'",
+];
 
 describe('Telegram-хендлеры ↔ правило CLAUDE.md «Обработка ошибок»', () => {
   it('sanity: парсер находит хендлеры (регресс на «регекс сломался — 0 хендлеров, тест молча зелёный»)', () => {
@@ -181,6 +215,35 @@ describe('Telegram-хендлеры ↔ правило CLAUDE.md «Обрабо�
     // ответ только в catch (первый и единственный) — не повтор
     const onlyCatch = `{ try { await go(); } catch (e) { await ctx.answerCbQuery('x'); } }`;
     expect(repeatsAnswerInCatch(onlyCatch)).toBe(false);
+  });
+
+  it('в catch каждого bot.action есть исход для человека, а не только лог', () => {
+    const violations = allHandlers
+      .filter((h) => h.kind === 'action' && catchWithoutOutcome(h.body))
+      .filter((h) => !NO_OUTCOME_ALLOWLIST.includes(handlerKey(h)))
+      .map(
+        (h) =>
+          `${h.file}: action(${h.name}) — catch только пишет в лог, человек ` +
+          `не видит исхода; используй failCallback/failSettings (callback-failure.ts)`,
+      );
+    expect(violations).toEqual([]);
+  });
+
+  it('аллоулист «без исхода» указывает на живые хендлеры и только сокращается', () => {
+    const keys = allHandlers.map(handlerKey);
+    for (const k of NO_OUTCOME_ALLOWLIST) expect(keys).toContain(k);
+    expect(NO_OUTCOME_ALLOWLIST.length).toBeLessThanOrEqual(2);
+  });
+
+  it('контроль: «без исхода» краснеет на голом логе и молчит на исходе', () => {
+    const logOnly = `{ try { await ctx.answerCbQuery(); await go(); } catch (err) { this.logger.error('x', err); } }`;
+    expect(catchWithoutOutcome(logOnly)).toBe(true);
+    const helper = `{ try { await go(); } catch (err) { await failCallback(this.logger, ctx, 'x', err); } }`;
+    expect(catchWithoutOutcome(helper)).toBe(false);
+    const edit = `{ try { await go(); } catch (err) { await ctx\n  .editMessageText(ERROR_RETRY).catch(() => null); } }`;
+    expect(catchWithoutOutcome(edit)).toBe(false);
+    const reply = `{ try { await go(); } catch { await ctx.reply('x'); } }`;
+    expect(catchWithoutOutcome(reply)).toBe(false);
   });
 
   it('callback-failure.ts не зовёт answerCbQuery (иначе повтор спрятался бы в хелпере от инварианта)', () => {

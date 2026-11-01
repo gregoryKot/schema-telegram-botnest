@@ -1,11 +1,12 @@
 // Общий хвост «это не я» для обеих карточек сверки.
 import { Logger } from '@nestjs/common';
 import { handleTicketDeny } from './ticket-actions';
+import { ERROR_RETRY } from './telegram.constants';
 
 function makeDeps() {
   const tickets = { deny: jest.fn().mockResolvedValue(undefined) } as any;
   const securityLog = { log: jest.fn() } as any;
-  const logger = { error: jest.fn() } as unknown as Logger;
+  const logger = { error: jest.fn(), log: jest.fn() } as unknown as Logger;
   return { tickets, securityLog, logger };
 }
 
@@ -13,6 +14,7 @@ const makeCtx = () =>
   ({
     from: { id: 42 },
     editMessageText: jest.fn().mockResolvedValue(undefined),
+    reply: jest.fn().mockResolvedValue(undefined),
   }) as any;
 
 describe('handleTicketDeny', () => {
@@ -39,9 +41,12 @@ describe('handleTicketDeny', () => {
 
     expect(ctx.editMessageText).not.toHaveBeenCalled();
     expect(deps.logger.error).toHaveBeenCalledWith(
-      expect.stringContaining('БД легла'),
-      expect.any(String),
+      'ticket deny (user_denied) failed',
+      expect.objectContaining({ message: 'БД легла' }),
     );
+    // Исход сбоя — новым сообщением: кнопки карточки остаются, можно нажать
+    // ещё раз. Раньше человек не видел ничего (аудит 2026-10).
+    expect(ctx.reply).toHaveBeenCalledWith(ERROR_RETRY);
   });
 
   it('не роняет хендлер, если сообщение уже нельзя отредактировать', async () => {

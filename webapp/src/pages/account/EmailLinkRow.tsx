@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from 'react';
 import { API_BASE } from '../../utils/apiBase';
 import { useTr } from '../../utils/addressForm';
 import { EmailIcon, ProviderRow } from './ProviderRows';
+import { humanizeThrown, readHumanError } from '../../../../shared/src/api/humanizeError';
 
 export function EmailLinkRow({
   accessToken,
@@ -49,13 +50,10 @@ export function EmailLinkRow({
         },
         body: JSON.stringify({ email: value }),
       });
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({ message: 'Ошибка' }));
-        throw new Error(body.message ?? `Ошибка ${res.status}`);
-      }
+      if (!res.ok) throw new Error((await readHumanError(res, 'Не удалось отправить письмо')).message);
       setSent(true);
     } catch (e) {
-      onError(String(e).replace('Error: ', ''));
+      onError(humanizeThrown(e, 'Не удалось отправить письмо'));
     } finally {
       setSending(false);
     }

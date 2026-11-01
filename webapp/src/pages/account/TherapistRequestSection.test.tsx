@@ -62,13 +62,15 @@ describe('TherapistRequestSection — статусы существующей з
     await screen.findByText(/Заявка одобрена/);
   });
 
-  it('rejected — открытие формы показывает причину отказа', async () => {
+  // До 2026-11 причина была видна только внутри раскрытой формы.
+  it('rejected — причина видна сразу и остаётся при открытой форме', async () => {
     fetchMock.mockResolvedValue(jsonResponse(200, { id: 1, status: 'rejected', rejectReason: 'Не хватает подтверждения квалификации', createdAt: '2026-07-01', reviewedAt: '2026-07-02' }));
     render(<TherapistRequestSection accessToken="tok" />);
-    const btn = await screen.findByText('Я психолог — подать заявку');
-    fireEvent.click(btn);
-
     await screen.findByText(/Не хватает подтверждения квалификации/);
+    fireEvent.click(screen.getByText('Я психолог — подать заявку'));
+
+    await screen.findByPlaceholderText('ФИО');
+    expect(screen.getByText(/Не хватает подтверждения квалификации/)).toBeTruthy();
   });
 });
 

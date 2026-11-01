@@ -10,6 +10,7 @@ import {
   nextSessionLabel,
 } from './clientSheetHelpers';
 import { upcomingSession } from '../../../../shared/src/therapy/upcomingSession';
+import { calendarAgoLabel } from '../../../../shared/src/utils/calendarAgo';
 
 export type RosterStatus = 'all' | 'active' | 'wait' | 'virtual';
 
@@ -68,8 +69,7 @@ export function clientCaption(c: TherapyClientSummary, today: string): string | 
   if (duration === 'сегодня') return 'с сегодняшнего дня';
   if (duration) return `в работе ${duration}`;
   if (isVirtualClient(c)) return null;
-  const activity =
-    c.lastActiveDate === today ? 'активность сегодня' : c.lastActiveDate ? 'активность недавно' : 'нет активности';
+  const activity = c.lastActiveDate ? `активность ${calendarAgoLabel(c.lastActiveDate, today)}` : 'нет активности';
   return c.streak > 0 ? `${activity} · стрик ${c.streak} дн.` : activity;
 }
 

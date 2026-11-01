@@ -1,4 +1,6 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
+import { localDateStr } from '../../../shared/src/utils/format';
+import { forEachTimeZone } from '../../../shared/src/utils/timeZone.test-helpers';
 import type { TherapyClientSummary } from '../api';
 import {
   activityStatus, daysSinceActive, hasSessionToday, initials, latestIndex, needsAttention,
@@ -44,7 +46,7 @@ describe('therapistTodayModel', () => {
   });
 
   it('счётчики', () => {
-    const dow = new Date().getUTCDay();
+    const dow = new Date().getDay(); // дни встреч — по местному дню терапевта
     const list = [
       c({ todayIndex: 7, meetingDays: [dow] }),
       c({ lastActiveDate: ago(5) }),
@@ -79,22 +81,47 @@ describe('therapistTodayModel', () => {
     expect(latestIndex(c())).toBeNull();
   });
 
-  it('сессии сегодня сортируются по времени, без времени в конце', () => {
-    const d = new Date().toISOString().slice(0, 10);
-    const dow = new Date().getUTCDay();
-    const res = sessionsTodaySorted([
-      c({ telegramId: 1 as never, meetingDays: [dow] }),
-      c({ telegramId: 2 as never, nextSession: `${d}T16:00:00Z` }),
-      c({ telegramId: 3 as never, nextSession: `${d}T09:00:00Z` }),
-    ]);
-    expect(res.map(x => x.telegramId)).toEqual([3, 2, 1]);
+  // Встреча — стенные часы терапевта (datetime-local без зоны), «сегодня» —
+  // его местный день (правило №25). По UTC в МСК с 00:00 до 03:00 экран
+  // показывал вчерашние встречи. 22:30Z — в Иерусалиме и Сиднее уже завтра.
+  const LATE_UTC = Date.parse('2026-10-15T22:30:00Z');
+  const atLocal = (fn: (today: string, yesterday: string, dow: number) => void) => {
+    vi.useFakeTimers({ now: LATE_UTC, toFake: ['Date'] });
+    try {
+      const now = new Date();
+      fn(localDateStr(now), localDateStr(new Date(now.getTime() - 86400000)), now.getDay());
+    } finally {
+      vi.useRealTimers();
+    }
+  };
+
+  it('сессии сегодня сортируются по времени, без времени в конце — в любой зоне', () => {
+    forEachTimeZone(() => atLocal((today, _y, dow) => {
+      const res = sessionsTodaySorted([
+        c({ telegramId: 1 as never, meetingDays: [dow] }),
+        c({ telegramId: 2 as never, nextSession: `${today}T16:00` }),
+        c({ telegramId: 3 as never, nextSession: `${today}T09:00` }),
+      ]);
+      expect(res.map(x => x.telegramId)).toEqual([3, 2, 1]);
+    }));
+  });
+
+  it('вчерашняя по местному дню встреча не «сегодня», даже если по UTC ещё вчера', () => {
+    forEachTimeZone((tz) => atLocal((today, yesterday) => {
+      const past = c({ nextSession: `${yesterday}T19:00` });
+      expect(hasSessionToday(past), tz).toBe(false);
+      const now = c({ nextSession: `${today}T10:00` });
+      expect(hasSessionToday(now), tz).toBe(true);
+      expect(sessionTime(now), tz).toBe('10:00');
+    }));
   });
 
   it('прошедшая nextSession не прячет встречу по дням: сегодня в списке, время прежнее', () => {
-    const dow = new Date().getUTCDay();
-    const stale = c({ nextSession: '2026-01-03T07:00', meetingDays: [dow] });
-    expect(hasSessionToday(stale)).toBe(true);
-    expect(sessionTime(stale)).toBe('07:00');
-    expect(hasSessionToday(c({ nextSession: '2026-01-03T07:00' }))).toBe(false);
+    forEachTimeZone((tz) => atLocal((_t, _y, dow) => {
+      const stale = c({ nextSession: '2026-01-03T07:00', meetingDays: [dow] });
+      expect(hasSessionToday(stale), tz).toBe(true);
+      expect(sessionTime(stale), tz).toBe('07:00');
+      expect(hasSessionToday(c({ nextSession: '2026-01-03T07:00' })), tz).toBe(false);
+    }));
   });
 });
