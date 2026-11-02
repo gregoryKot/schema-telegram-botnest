@@ -9,6 +9,8 @@ import { useEffect, useRef } from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 
 vi.mock('../../api', () => ({
   api: {
@@ -242,5 +244,21 @@ describe('ширина под схему', () => {
     const dialog = screen.getByRole('dialog', { name: 'Схема случая' });
     expect(within(dialog).getByRole('button', { name: /Скачать картинкой/ })).toBeTruthy();
     expect(within(dialog).getByRole('button', { name: 'Открыть на холсте' }).title).toMatch(/Новая карта режимов/);
+  });
+});
+
+// Телефон (#902): вкладка над шапкой уже называется «Концептуализация», поэтому
+// заголовок с подписью и слово «Ещё» прячет CSS по классам; кнопка меню остаётся
+// 44×44 с aria-label. Сверка: классы в разметке и в мобильном блоке CSS одни и те же.
+describe('шапка на телефоне (#902)', () => {
+  it('блок заголовка и слово «Ещё» несут классы, которые прячет мобильный блок therapist-concept.css', async () => {
+    await openTab();
+    expect(screen.getByText('Концептуализация').closest('.tcp-head-title')).toBeTruthy();
+    expect(within(more()).getByText('Ещё').classList.contains('tcp-more-txt')).toBe(true);
+    const css = readFileSync(join(__dirname, '../../styles/therapist-concept.css'), 'utf8');
+    const phone = css.match(/@media \(max-width: 767px\) \{[\s\S]*?\n\}/g)?.join('\n') ?? '';
+    expect(phone).toMatch(/\.tcp-head-title \{[^}]*display: none/);
+    expect(phone).toMatch(/\.tcp-more-txt \{[^}]*display: none/);
+    expect(phone).toMatch(/\.tcp-more-btn \{[^}]*width: 44px; height: 44px/);
   });
 });

@@ -128,6 +128,20 @@
 /* Строка под шапкой: занятость или отказ действия из меню, «Текст скопирован». */
 .tcp-status { font-size: 13px; color: var(--text-sub); margin: -16px 0 20px; }
 .tcp-status.is-err { color: var(--err); }
+/* Телефон (#902): вкладка над шапкой уже называется «Концептуализация» —
+   заголовок и подпись не показываются; одна строка управления: «Схема · Поля»
+   слева, «⋯» без слова (44×44, aria-label остаётся) справа; статус сохранения —
+   своей строкой ниже, мелко, слева. justify-content с !important: SaveStatusLine
+   (shared) ставит выравнивание инлайн по пропу align="right", нужному ноутбуку. */
+@media (max-width: 767px) {
+  .tcp-head { margin-bottom: 16px; }
+  .tcp-status { margin: -4px 0 16px; } /* на телефоне шапка ниже на 16px: отрицательный отступ строки статуса не должен съедать весь зазор */
+  .tcp-head-title { display: none; }
+  .tcp-head-actions { flex: 1; gap: 8px 12px; justify-content: space-between; }
+  .tcp-save { order: 1; width: 100%; min-width: 0; text-align: left; justify-content: flex-start !important; }
+  .tcp-more-btn { width: 44px; height: 44px; min-width: 44px; padding: 0; }
+  .tcp-more-txt { display: none; }
+}
 
 /* ── Схема и раскрывашки под содержанием ── */
 .tcp-graph { padding: var(--space-8) 0; }

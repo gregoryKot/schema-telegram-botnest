@@ -2,13 +2,16 @@
 // «+ Задание» и «+ Заметка» живут только в шапке карточки (на телефоне — панель
 // над навигацией): дубли в сайдбаре «Обзора» убраны, чтобы на экране было одно
 // место для главного действия. Тест держит оба конца: шапка ведёт куда надо,
-// сайдбар дубль не вернул.
+// сайдбар дубль не вернул. Телефон (#902): на «Концептуализации» и «Карте режимов»
+// панель спрятана — модификатор на корне шапки по clientTab, CSS в therapist-card.css.
 import { describe, it, expect, vi, afterEach } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { ClientHeader } from './ClientHeader';
 import { ClientOverviewSidebar } from './ClientOverviewSidebar';
-import type { ClientDetail } from './clientSheetTypes';
+import type { ClientDetail, ClientTab } from './clientSheetTypes';
 import type { TherapyClientSummary } from '../../api';
 
 afterEach(cleanup);
@@ -45,5 +48,33 @@ describe('действия карточки клиента', () => {
     expect(screen.queryByRole('button', { name: /Заметка/ })).toBeNull();
     expect(screen.getByRole('button', { name: 'Запросить YSQ' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Экспорт концепта' })).toBeTruthy();
+  });
+});
+
+describe('панель «+ Задание / + Заметка» на телефоне (#902)', () => {
+  const headClassFor = (clientTab: ClientTab) => {
+    const { container, unmount } = render(
+      <MemoryRouter>
+        <ClientHeader selectedClient={client} detail={detailOf({ clientTab })} switchView={vi.fn()} />
+      </MemoryRouter>,
+    );
+    const cls = container.querySelector('.tk-head')!.className;
+    unmount();
+    return cls;
+  };
+
+  it('на «Концептуализации» и «Карте режимов» корень шапки несёт модификатор, на остальных вкладках — нет', () => {
+    expect(headClassFor('concept')).toContain('tk-head--quiet-actions');
+    expect(headClassFor('mode_map')).toContain('tk-head--quiet-actions');
+    for (const tab of ['overview', 'sessions', 'tasks', 'ysq', 'client_notes'] as const) {
+      expect(headClassFor(tab), tab).not.toContain('tk-head--quiet-actions');
+    }
+  });
+
+  it('модификатор прячет панель только в мобильном блоке therapist-card.css', () => {
+    const css = readFileSync(join(__dirname, '../../styles/therapist-card.css'), 'utf8');
+    const phone = css.match(/@media \(max-width: 767px\) \{([\s\S]*?)\n\}/)?.[1] ?? '';
+    expect(phone).toMatch(/\.tk-head--quiet-actions \.tk-actions-main \{[^}]*display: none/);
+    expect(css.replace(phone, '')).not.toContain('.tk-head--quiet-actions');
   });
 });

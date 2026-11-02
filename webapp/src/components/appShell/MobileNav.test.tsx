@@ -24,6 +24,8 @@ describe('MobileNav', () => {
     expect(screen.getByText('Сегодня').closest('a')?.getAttribute('href')).toBe('/cabinet/today');
     expect(screen.queryByText('Записи')).toBeNull();
     expect(screen.getByText('Клиенты').closest('a')?.className).toContain('active');
+    // без onProfile «Профиль» — ссылка на страницу аккаунта, как до #902
+    expect(screen.getByText('Профиль').closest('a')?.getAttribute('href')).toBe('/account');
   });
 
   it('терапевт: «Поиск» открывает палитру команд', () => {
@@ -31,6 +33,27 @@ describe('MobileNav', () => {
     render(<MemoryRouter><MobileNav items={ITEMS} therapist onSearch={onSearch} /></MemoryRouter>);
     fireEvent.click(screen.getByText('Поиск'));
     expect(onSearch).toHaveBeenCalledOnce();
+  });
+
+  // #902: лист настроек — единственное место с переключателем режима, а сайдбар
+  // на телефоне скрыт; со ссылкой на /account из кабинета в режим клиента не вернуться.
+  it('терапевт: «Профиль» открывает настройки — кнопка, ссылки на /account нет', () => {
+    const onProfile = vi.fn();
+    const { container } = render(<MemoryRouter><MobileNav items={ITEMS} therapist onProfile={onProfile} /></MemoryRouter>);
+    const profile = screen.getByText('Профиль');
+    expect(profile.closest('button')).not.toBeNull();
+    expect(profile.closest('a')).toBeNull();
+    expect(container.querySelector('a[href="/account"]')).toBeNull();
+    fireEvent.click(profile);
+    expect(onProfile).toHaveBeenCalledOnce();
+    // порядок и состав пунктов от onProfile не зависят
+    expect(Array.from(container.querySelectorAll('.mobile-nav-item')).map(n => n.textContent))
+      .toEqual(['Сегодня', 'Клиенты', 'Поиск', 'Профиль']);
+  });
+
+  it('клиент: onProfile раздел «Профиль» в его панель не добавляет', () => {
+    render(<MemoryRouter><MobileNav items={ITEMS} onProfile={vi.fn()} /></MemoryRouter>);
+    expect(screen.queryByText('Профиль')).toBeNull();
   });
 
   it('над экранной клавиатурой панель скрыта, после ухода из поля вернулась', () => {

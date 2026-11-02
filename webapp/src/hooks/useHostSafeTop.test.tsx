@@ -1,10 +1,13 @@
 // @vitest-environment jsdom
+// Хук пишет --host-safe-top, а не --safe-top: итоговый --safe-top считает
+// index.css как max() из этой переменной и env(safe-area-inset-top) (#902) —
+// сверка имени переменной с CSS живёт в styles/safeTop.test.ts.
 import { describe, it, expect, afterEach } from 'vitest';
 import { renderHook, cleanup } from '@testing-library/react';
 import { useHostSafeTop } from './useHostSafeTop';
 import { installTelegram, removeTelegram } from '../host/tgStub.test-helpers';
 
-const read = () => document.documentElement.style.getPropertyValue('--safe-top');
+const read = () => document.documentElement.style.getPropertyValue('--host-safe-top');
 
 afterEach(() => {
   removeTelegram();
@@ -12,10 +15,11 @@ afterEach(() => {
 });
 
 describe('useHostSafeTop', () => {
-  it('в браузере пишет --safe-top: 0px', () => {
+  it('в браузере пишет --host-safe-top: 0px и не трогает --safe-top', () => {
     removeTelegram();
     renderHook(() => useHostSafeTop());
     expect(read()).toBe('0px');
+    expect(document.documentElement.style.getPropertyValue('--safe-top')).toBe('');
   });
 
   it('в Telegram отступ положительный, при размонтировании переменная снимается', () => {

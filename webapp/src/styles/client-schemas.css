@@ -71,6 +71,7 @@
 .cs-sheet-body { flex: 1; min-height: 0; }
 
 @media (max-width: 767px) {
+  .cs-sheet { padding-top: var(--safe-top); } /* статус-бар установленного приложения (#902) */
   .cs-page { gap: var(--space-16); }
   /* Шапка как в мини-аппе: заголовок ~28px и подпись слева, «Библиотека» справа в той же строке. */
   .cs-head { flex-wrap: nowrap; align-items: center; gap: var(--space-12); }

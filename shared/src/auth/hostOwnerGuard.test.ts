@@ -9,6 +9,7 @@ let fakeHost: { id: HostId; user: () => { id: string } | null };
 vi.mock('../host', () => ({ getHost: () => fakeHost }));
 
 import { DATA_OWNER_KEY } from './dataOwnerGuard';
+import { THERAPIST_MODE_KEY } from '../utils/storageKeys';
 import {
   HOST_OWNER_KEY,
   ensureHostOwner,
@@ -32,11 +33,11 @@ describe('ensureHostOwner', () => {
     useHost('telegram', '222');
     localStorage.setItem(HOST_OWNER_KEY, 'telegram:111');
     localStorage.setItem('rating_outbox_v1', '[1]');
-    localStorage.setItem('therapist_mode', '1');
+    localStorage.setItem(THERAPIST_MODE_KEY, '1');
     localStorage.setItem('app_theme', 'dark');
     expect(ensureHostOwner()).toBe(true);
     expect(localStorage.getItem('rating_outbox_v1')).toBeNull();
-    expect(localStorage.getItem('therapist_mode')).toBeNull();
+    expect(localStorage.getItem(THERAPIST_MODE_KEY)).toBeNull();
     expect(localStorage.getItem('app_theme')).toBe('dark');
     expect(localStorage.getItem(HOST_OWNER_KEY)).toBe('telegram:222');
   });

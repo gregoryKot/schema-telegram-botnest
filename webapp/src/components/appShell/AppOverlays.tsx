@@ -8,6 +8,7 @@
 import { lazy, Suspense } from 'react';
 import type { NavigateFunction } from 'react-router-dom';
 import { api } from '../../api';
+import { THERAPIST_MODE_KEY } from '../../utils/storageKeys';
 import type { useOverlays } from './useOverlays';
 import { NoteSheet } from '../NoteSheet';
 
@@ -46,13 +47,12 @@ export function AppOverlays({
           onNameChanged={setDisplayName}
           onOpenTherapistCabinet={() => { ov.setShowSettings(false); navigate('/cabinet'); }}
           therapistMode={therapistMode}
-          onToggleTherapistMode={() => switchTherapistMode(!therapistMode)}
+          onSetTherapistMode={(on) => switchTherapistMode(on)}
           onResignTherapist={async () => {
             await api.resignTherapist();
             setUserRole('CLIENT');
-            localStorage.setItem('therapist_mode', '0');
-            ov.setShowSettings(false);
-            navigate('/today');
+            localStorage.setItem(THERAPIST_MODE_KEY, '0');
+            ov.setShowSettings(false); navigate('/today');
           }}
         />
       </Suspense>

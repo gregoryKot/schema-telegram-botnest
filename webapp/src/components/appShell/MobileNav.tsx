@@ -7,47 +7,45 @@ import { useTextEntryFocus } from '../../hooks/useTextEntryFocus';
 // (правило №10: файл в храповике размера растёт только дроблением).
 // В режиме терапевта — свои четыре пункта (редизайн 2026-10): раньше на
 // телефоне терапевт видел разделы клиента и не мог попасть в кабинет.
-const THERAPIST_ITEMS: { to: string; icon: MobileNavIconId; label: string; end?: boolean }[] = [
+// «Профиль» с onProfile открывает лист настроек, а не /account (#902): в нём
+// единственный переключатель режима и остальные настройки, а сайдбар на
+// телефоне скрыт — иначе из кабинета нельзя вернуться в режим клиента.
+type Item = { to: string; icon: MobileNavIconId; label: string; end?: boolean };
+const THERAPIST_ITEMS: Item[] = [
   { to: '/cabinet/today', icon: 'today', label: 'Сегодня' },
   { to: '/cabinet', icon: 'clients', label: 'Клиенты', end: true },
   { to: '/account', icon: 'profile', label: 'Профиль' },
 ];
 
 const itemClass = ({ isActive }: { isActive: boolean }) => `mobile-nav-item${isActive ? ' active' : ''}`;
+const link = (i: Item) => (
+  <NavLink key={i.to} to={i.to} end={i.end} className={itemClass}>
+    <MobileNavIcon id={i.icon} />{i.label}
+  </NavLink>
+);
+const action = (icon: MobileNavIconId, label: string, onClick?: () => void) => (
+  <button type="button" className="mobile-nav-item" onClick={onClick}>
+    <MobileNavIcon id={icon} />{label}
+  </button>
+);
 
-export function MobileNav({ items, therapist = false, onSearch }: {
+export function MobileNav({ items, therapist = false, onSearch, onProfile }: {
   items: { id: Section; label: string }[];
   therapist?: boolean;
   onSearch?: () => void;
+  onProfile?: () => void;
 }) {
   // Над экранной клавиатурой панель не нужна и закрывает поле ввода.
   const typing = useTextEntryFocus();
   if (typing) return null;
   if (therapist) {
     const [today, clients, profile] = THERAPIST_ITEMS;
-    const link = (i: typeof today) => (
-      <NavLink key={i.to} to={i.to} end={i.end} className={itemClass}>
-        <MobileNavIcon id={i.icon} />{i.label}
-      </NavLink>
-    );
     return (
       <nav className="mobile-nav">
-        {link(today)}{link(clients)}
-        <button type="button" className="mobile-nav-item" onClick={onSearch}>
-          <MobileNavIcon id="search" />Поиск
-        </button>
-        {link(profile)}
+        {link(today)}{link(clients)}{action('search', 'Поиск', onSearch)}
+        {onProfile ? action('profile', profile.label, onProfile) : link(profile)}
       </nav>
     );
   }
-  return (
-    <nav className="mobile-nav">
-      {items.map(item => (
-        <NavLink key={item.id} to={'/' + item.id} className={itemClass}>
-          <MobileNavIcon id={item.id} />
-          {item.label}
-        </NavLink>
-      ))}
-    </nav>
-  );
+  return <nav className="mobile-nav">{items.map(i => link({ to: '/' + i.id, icon: i.id, label: i.label }))}</nav>;
 }

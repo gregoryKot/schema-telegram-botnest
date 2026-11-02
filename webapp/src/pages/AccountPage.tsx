@@ -13,6 +13,7 @@ import { emailLinkErrorMessage } from './account/emailLinkError';
 import { useAccountData } from './account/useAccountData';
 import { useProviderActions } from './account/useProviderActions';
 import { PROVIDER_NAMES } from './account/providerNames';
+import { accountBackPathFromStorage } from './account/accountBackPath';
 import '../styles/auth-account.css';
 
 export function AccountPage() {
@@ -30,13 +31,11 @@ export function AccountPage() {
   return (
     <div className="aa-root light-lock">
       <div className="aa-page">
-        <button className="aa-back" onClick={() => navigate('/today')}>← Назад</button>
+        <button className="aa-back" onClick={() => navigate(accountBackPathFromStorage())}>← Назад</button>
 
         <div className="aa-head">
           {initials && (
-            <div className="ds-avatar ds-avatar--serif aa-avatar" style={hueStyle(clientHue(initials))} aria-hidden>
-              {initials}
-            </div>
+            <div className="ds-avatar ds-avatar--serif aa-avatar" style={hueStyle(clientHue(initials))} aria-hidden>{initials}</div>
           )}
           <div>
             <h1 className="aa-h1">Аккаунт</h1>

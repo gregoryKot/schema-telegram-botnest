@@ -3,6 +3,7 @@ import type { TherapyClientSummary } from '../../api';
 import { ClientHeaderBadges } from './ClientHeaderBadges';
 import { ClientTabs } from './ClientTabs';
 import { clientInitials } from './clientOverviewModel';
+import { clientHeaderClass } from './clientHeaderClass';
 import type { ClientDetail } from './clientSheetTypes';
 import { ConfirmDialog } from '../ConfirmDialog';
 import { MMIcon } from '../modeMapIcons';
@@ -19,20 +20,18 @@ interface Props {
 
 export function ClientHeader({ selectedClient, detail, switchView }: Props) {
   const {
-    setShowAssign, setClientTab,
+    clientTab, setShowAssign, setClientTab,
     renamingAlias, setRenamingAlias, aliasInput, setAliasInput, aliasSaving, aliasError,
     deleteClient, requestDeleteClient, cancelDeleteClient, confirmingDelete, deleteLoading, deleteError, saveAlias,
   } = detail;
 
   const removeCopy = removeClientConfirmCopy(selectedClient);
   const aliasInputRef = useRef<HTMLInputElement>(null);
-  useEffect(() => {
-    if (renamingAlias) aliasInputRef.current?.focus();
-  }, [renamingAlias]);
+  useEffect(() => { if (renamingAlias) aliasInputRef.current?.focus(); }, [renamingAlias]);
   const displayName = selectedClient.clientAlias ?? selectedClient.name ?? `ID ${selectedClient.telegramId}`;
 
   return (
-    <div className="tk-head">
+    <div className={clientHeaderClass(clientTab)}>
       <button className="ds-sub tk-back" onClick={() => switchView('list')}>← Все клиенты</button>
       <div className="tk-head-row">
         <div className="ds-avatar ds-avatar--serif tk-avatar" style={hueStyle(clientHue(selectedClient.telegramId))}>

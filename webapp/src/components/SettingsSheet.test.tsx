@@ -5,6 +5,7 @@
 // Образец сетапа: SubscribePage.test.tsx (мок '../api'), NoteSheet.test.tsx
 // (MemoryRouter — useHistorySheet требует useNavigate/useLocation),
 // AuthCallback.test.tsx (подмена window.location для window.location.reload).
+import { useEffect, useState } from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
   render,
@@ -15,7 +16,7 @@ import {
   waitFor,
   within,
 } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, useLocation } from 'react-router-dom';
 import { SettingsSheet } from './SettingsSheet';
 import {
   withAddressForm,
@@ -797,19 +798,116 @@ describe('SettingsSheet — блок уведомлений: пауза и за�
   });
 });
 
-// ── Кабинет терапевта: доступ и приглашение — сфера видимости (терапевт видит SRow) ──
-describe('SettingsSheet — режим терапевта (userRole=THERAPIST): переключатель и «Открыть кабинет»', () => {
-  it('«Режим специалиста» вызывает onToggleTherapistMode из пропа', async () => {
-    const onToggle = vi.fn();
+// ── Кабинет терапевта: режим, доступ и приглашение — сфера видимости (терапевт видит SRow) ──
+describe('SettingsSheet — режим терапевта (userRole=THERAPIST): блок «Режим» и «Открыть кабинет»', () => {
+  // #902: на телефоне сайдбар с переключателем скрыт — режим выбирается первым
+  // блоком настроек; выбор другого режима закрывает лист (goBack), чтобы
+  // человек оказался в выбранном режиме, а не остался в настройках.
+  async function renderTherapist(therapistMode: boolean) {
+    const onClose = vi.fn();
+    const onSet = vi.fn();
     render(
       <MemoryRouter>
-        <SettingsSheet onClose={vi.fn()} userRole="THERAPIST" therapistMode={false} onToggleTherapistMode={onToggle} />
+        <SettingsSheet onClose={onClose} userRole="THERAPIST" therapistMode={therapistMode} onSetTherapistMode={onSet} />
       </MemoryRouter>,
     );
     await screen.findByText('Настройки');
-    const row = screen.getByText('Режим специалиста').parentElement!.parentElement!;
-    fireEvent.click(within(row).getByRole('switch'));
-    expect(onToggle).toHaveBeenCalledTimes(1);
+    return { onClose, onSet };
+  }
+  const modeGroup = () => screen.getByRole('group', { name: 'Режим' });
+
+  it('первым блоком главного вида — группа «Режим» с «Клиент»/«Терапевт», нажат текущий режим', async () => {
+    await renderTherapist(true);
+    const group = modeGroup();
+    expect(within(group).getByRole('button', { name: 'Клиент' }).getAttribute('aria-pressed')).toBe('false');
+    expect(within(group).getByRole('button', { name: 'Терапевт' }).getAttribute('aria-pressed')).toBe('true');
+    expect(screen.getByText(/Кабинет терапевта — клиенты и концептуализации/)).toBeTruthy();
+    const firstSection = document.querySelector('.st-inner .st-section')!;
+    expect(firstSection.contains(group)).toBe(true);
+    expect(screen.getByText('Режим', { selector: 'button' })).toBeTruthy(); // пункт бокового оглавления
+  });
+
+  it('«Клиент» зовёт обработчик с false и закрывает лист — сначала закрытие, затем переключение', async () => {
+    const { onClose, onSet } = await renderTherapist(true);
+    fireEvent.click(within(modeGroup()).getByRole('button', { name: 'Клиент' }));
+    await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
+    expect(onSet).toHaveBeenCalledTimes(1);
+    expect(onSet).toHaveBeenCalledWith(false);
+    expect(onSet.mock.invocationCallOrder[0]).toBeGreaterThan(onClose.mock.invocationCallOrder[0]);
+  });
+
+  it('«Терапевт» из режима клиента зовёт обработчик с true и закрывает лист', async () => {
+    const { onClose, onSet } = await renderTherapist(false);
+    fireEvent.click(within(modeGroup()).getByRole('button', { name: 'Терапевт' }));
+    await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
+    expect(onSet).toHaveBeenCalledWith(true);
+  });
+
+  it('тап по текущему режиму ничего не делает: лист открыт, обработчик не зван', async () => {
+    const { onClose, onSet } = await renderTherapist(true);
+    fireEvent.click(within(modeGroup()).getByRole('button', { name: 'Терапевт' }));
+    expect(onSet).not.toHaveBeenCalled();
+    expect(onClose).not.toHaveBeenCalled();
+    expect(screen.getByText('Настройки')).toBeTruthy();
+  });
+
+  // #902: /account вне AppShell, а с телефона из кабинета другого пути к нему нет —
+  // под переключателем режима строка-вход. Как и выбор режима, она сначала
+  // закрывает лист (goBack), и только потом переходит.
+  it('под переключателем режима — строка «Аккаунт и способы входа» с подписью, в том же блоке', async () => {
+    await renderTherapist(true);
+    const row = screen.getByRole('button', { name: /Аккаунт и способы входа/ });
+    expect(within(row).getByText('Привязки, двухфакторная защита, выход')).toBeTruthy();
+    expect(modeGroup().closest('.st-section')!.contains(row)).toBe(true);
+  });
+
+  it('клик по строке закрывает лист и только затем ведёт на /account', async () => {
+    const log: string[] = [];
+    // Как в AppOverlays: onClose размонтирует лист (иначе хук истории видит вторую
+    // смену адреса — уже /account — и зовёт закрытие повторно).
+    function Host() {
+      const [open, setOpen] = useState(true);
+      return open ? (
+        <SettingsSheet onClose={() => { log.push('close'); setOpen(false); }} userRole="THERAPIST" therapistMode onSetTherapistMode={vi.fn()} />
+      ) : null;
+    }
+    function PathProbe() {
+      const { pathname } = useLocation();
+      useEffect(() => { if (pathname === '/account') log.push('navigate /account'); }, [pathname]);
+      return <output data-testid="path">{pathname}</output>;
+    }
+    render(<MemoryRouter><Host /><PathProbe /></MemoryRouter>);
+    await screen.findByText('Настройки');
+    expect(screen.getByTestId('path').textContent).toBe('/');
+    fireEvent.click(screen.getByRole('button', { name: /Аккаунт и способы входа/ }));
+    await waitFor(() => expect(screen.getByTestId('path').textContent).toBe('/account'));
+    expect(log).toEqual(['close', 'navigate /account']);
+    expect(screen.queryByText('Настройки')).toBeNull();
+  });
+
+  it('тумблера «Режим специалиста» в «Оформлении» больше нет (одно место для режима)', async () => {
+    await renderTherapist(false);
+    expect(screen.queryByText('Режим специалиста')).toBeNull();
+    expect(screen.queryByRole('switch', { name: 'Режим специалиста' })).toBeNull();
+  });
+
+  it('без обработчика режима блока нет (терапевт без переключения — как раньше)', async () => {
+    await renderSheet('THERAPIST');
+    expect(screen.queryByRole('group', { name: 'Режим' })).toBeNull();
+    expect(screen.queryByText('Аккаунт и способы входа')).toBeNull();
+  });
+
+  it('у клиента (userRole=CLIENT) группы «Режим» нет даже с обработчиком', async () => {
+    render(
+      <MemoryRouter>
+        <SettingsSheet onClose={vi.fn()} userRole="CLIENT" therapistMode={false} onSetTherapistMode={vi.fn()} />
+      </MemoryRouter>,
+    );
+    await screen.findByText('Настройки');
+    expect(screen.queryByRole('group', { name: 'Режим' })).toBeNull();
+    expect(screen.queryByText('Режим специалиста')).toBeNull();
+    // у клиента вход на /account уже есть в его разделе «Профиль» («Аккаунт и привязки»)
+    expect(screen.queryByText('Аккаунт и способы входа')).toBeNull();
   });
 
   it('«Открыть кабинет» вызывает onOpenTherapistCabinet', async () => {
