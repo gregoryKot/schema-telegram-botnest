@@ -96,7 +96,7 @@ describe('ClientConceptTab: сводка «Коротко»', () => {
     expect(value('Схемы')).toBe('Неуспешность');
     expect(value('Режимы')).toBe('Судья (Карающий Критик) → Здоровый Взрослый');
     expect(value('Цикл')).toBe('Критика → Судья → уход в себя');
-    expect(value('Потребности')).toBe('✗ Автономия · ✓ Границы');
+    expect(value('Потребности')).toBe('✗ блокированы: Автономия · ✓ есть опора: Границы');
     expect(value('Цель')).toBe('Снизить тревогу перед работой');
     const figure = screen.getByRole('button', { name: 'Карающий Критик: связи' });
     expect(isBefore(head(), digest())).toBe(true);

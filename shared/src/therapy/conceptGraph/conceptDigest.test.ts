@@ -6,6 +6,7 @@ import type { ConceptGraphSource } from './conceptGraphTypes';
 import { emptyModeLink } from './modeLinks';
 import { emptySchemaLink } from './schemaLinks';
 import {
+  CYCLE_CLIP,
   GOAL_CLIP,
   buildConceptDigest,
   clip,
@@ -70,7 +71,7 @@ describe('buildConceptDigest', () => {
     expect(text(rows, 'cycle')).toBe('Критика → Судья → уход в себя');
     // объединение по схемам и по здоровым режимам, порядок NEED_ORDER
     expect(text(rows, 'needs')).toBe(
-      '✗ Привязанность · Автономия · ✓ Привязанность · Границы',
+      '✗ блокированы: Привязанность · Автономия · ✓ есть опора: Привязанность · Границы',
     );
     expect(text(rows, 'goal')).toBe('Снизить тревогу');
   });
@@ -104,6 +105,18 @@ describe('buildConceptDigest', () => {
     );
   });
 
+  it('цикл длиннее CYCLE_CLIP режется по слову с «…», короткий — как есть', () => {
+    const long = Array.from({ length: 60 }, (_, i) => `шаг${i}`).join(' → ');
+    const cycle =
+      text(digest({ ...RICH, modeTransitions: long }, null), 'cycle') ?? '';
+    expect(cycle.endsWith('…')).toBe(true);
+    expect(cycle.length).toBeLessThanOrEqual(CYCLE_CLIP + 1);
+    expect(cycle).not.toContain('шаг59');
+    expect(text(digest(RICH, null), 'cycle')).toBe(
+      'Критика → Судья → уход в себя',
+    );
+  });
+
   it('потребности: только блокируемые → одна часть «✗», только здоровые → одна часть «✓»', () => {
     const blockedOnly = digest({
       schemaIds: ['failure'],
@@ -111,7 +124,9 @@ describe('buildConceptDigest', () => {
         { ...emptySchemaLink('failure'), needIds: ['limits', 'play'] },
       ],
     });
-    expect(text(blockedOnly, 'needs')).toBe('✗ Спонтанность · Границы');
+    expect(text(blockedOnly, 'needs')).toBe(
+      '✗ блокированы: Спонтанность · Границы',
+    );
 
     const metOnly = digest({
       modeIds: ['healthy_adult'],
@@ -119,7 +134,7 @@ describe('buildConceptDigest', () => {
         { ...emptyModeLink('healthy_adult'), needIds: ['expression'] },
       ],
     });
-    expect(text(metOnly, 'needs')).toBe('✓ Выражение чувств');
+    expect(text(metOnly, 'needs')).toBe('✓ есть опора: Выражение чувств');
 
     // схема есть, но потребности не отмечены — строки нет
     expect(text(digest({ schemaIds: ['failure'] }), 'needs')).toBeUndefined();

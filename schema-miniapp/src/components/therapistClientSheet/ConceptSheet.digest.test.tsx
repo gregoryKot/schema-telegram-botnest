@@ -109,7 +109,7 @@ describe('ConceptSheet — сводка «Коротко»', () => {
     expect(value('Схемы')).toBe('Неуспешность');
     expect(value('Режимы')).toBe('Судья (Карающий Критик) → Здоровый Взрослый');
     expect(value('Цикл')).toBe('Критика → Судья');
-    expect(value('Потребности')).toBe('✗ Автономия');
+    expect(value('Потребности')).toBe('✗ блокированы: Автономия');
     expect(value('Цель')).toBe('Вернуть злость');
     const switcher = screen.getByRole('group', {
       name: 'Вид концептуализации',

@@ -135,6 +135,7 @@
    (shared) ставит выравнивание инлайн по пропу align="right", нужному ноутбуку. */
 @media (max-width: 767px) {
   .tcp-head { margin-bottom: 16px; }
+  .tcp-status { margin: -4px 0 16px; } /* на телефоне шапка ниже на 16px: отрицательный отступ строки статуса не должен съедать весь зазор */
   .tcp-head-title { display: none; }
   .tcp-head-actions { flex: 1; gap: 8px 12px; justify-content: space-between; }
   .tcp-save { order: 1; width: 100%; min-width: 0; text-align: left; justify-content: flex-start !important; }

@@ -19,6 +19,8 @@ export const DIGEST_TITLE = 'Коротко';
 
 /** Предел строки «Цель»: длиннее — обрезка по слову с «…». */
 export const GOAL_CLIP = 160;
+/** «Цикл» — свободный текст до 5000 знаков; в сводке — только начало, целиком он под схемой и в «Полях». */
+export const CYCLE_CLIP = 200;
 
 const ORDER: DigestKey[] = ['schemas', 'modes', 'cycle', 'needs', 'goal'];
 
@@ -58,7 +60,7 @@ function modesText({ lanes }: ConceptGraphModel): string {
   return `${main} → ${healthy}`;
 }
 
-/** «✗» — блокируемые схемами, «✓» — о которых заботятся здоровые режимы; порядок NEED_ORDER. */
+/** «✗ блокированы» — схемами, «✓ есть опора» — здоровые режимы заботятся; порядок NEED_ORDER. Слова, не только знаки: легенда схемы свёрнута. */
 function needsText({ schemas, lanes }: ConceptGraphModel): string {
   const data = getNeedData('ty');
   const names = (ids: Set<string>): string =>
@@ -69,7 +71,7 @@ function needsText({ schemas, lanes }: ConceptGraphModel): string {
   const met = names(
     new Set(lanes.healthy.flatMap((m) => m.needs.map((n) => n.id))),
   );
-  return [blocked && `✗ ${blocked}`, met && `✓ ${met}`]
+  return [blocked && `✗ блокированы: ${blocked}`, met && `✓ есть опора: ${met}`]
     .filter(Boolean)
     .join(SEP);
 }
@@ -81,7 +83,7 @@ export function buildConceptDigest(
   const texts: Record<DigestKey, string> = {
     schemas: graph.schemas.map((s) => s.name).join(SEP),
     modes: modesText(graph),
-    cycle: graph.sequence,
+    cycle: clip(graph.sequence, CYCLE_CLIP),
     needs: needsText(graph),
     goal: clip(goals ?? '', GOAL_CLIP),
   };
