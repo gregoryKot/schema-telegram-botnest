@@ -45,10 +45,13 @@ function hasRule(block: string, cls: string, decl: string): boolean {
 // Корни полноэкранных листов сайта (position: fixed; inset: 0 — grep по
 // styles/*.css и index.css). Подложки модалок и поповеров (.sheet-modal,
 // .sk-cmd-bg, .sk-dialog-backdrop, .mm2-backdrop) и спиннер .sk-loader--full
-// сюда не входят: их содержимое не у верхней кромки.
-const OVERLAY_ROOTS: [string, string[]][] = [
+// сюда не входят: их содержимое не у верхней кромки. У экрана упражнения
+// отступ стоит на липкой шапке .ex2-top, а не на корне: sticky top: 0
+// считается от края скролл-контейнера, и padding корня уезжает при скролле.
+// Третий элемент: кто несёт отступ вместо корня (липкая шапка).
+const OVERLAY_ROOTS: [string, string[], Record<string, string>?][] = [
   ['styles/sheet-settings.css', ['.st-overlay']],
-  ['styles/sheet-exercises.css', ['.ex2-screen']],
+  ['styles/sheet-exercises.css', ['.ex2-screen'], { '.ex2-screen': '.ex2-top' }],
   ['styles/sheet-schemas.css', ['.ss-sheet', '.ss-test']],
   ['styles/sheet-tracker.css', ['.tk2-overlay']],
   ['styles/sheet-tasks.css', ['.sk-sheet', '.sk-overlay', '.sk-priv']],
@@ -74,12 +77,19 @@ describe('безопасная зона сверху (--safe-top)', () => {
     expect(hasRule(phoneBlocks(read('index.css')), '.app-shell', 'padding-top: var(--safe-top)')).toBe(true);
   });
 
-  it.each(OVERLAY_ROOTS)('%s: корни полноэкранных листов отступают на --safe-top на телефоне', (file, roots) => {
+  it.each(OVERLAY_ROOTS)('%s: корни полноэкранных листов отступают на --safe-top на телефоне', (file, roots, paddedBy = {}) => {
     const css = read(file);
     const phone = phoneBlocks(css);
     for (const root of roots) {
       expect(css, `${root} — корень на весь экран`).toMatch(new RegExp(`${root.replace('.', '\\.')}\\s*\\{[^}]*position: fixed; inset: 0`));
-      expect(hasRule(phone, root, 'padding-top: var(--safe-top)'), `${root} в ${file}`).toBe(true);
+      const carrier = paddedBy[root] ?? root;
+      expect(hasRule(phone, carrier, 'padding-top: var(--safe-top)'), `${carrier} в ${file}`).toBe(true);
+      if (carrier !== root) {
+        // Липкая шапка: sticky top: 0 считается от края скролл-контейнера, и
+        // padding корня уехал бы при первом скролле — отступ только на шапке.
+        expect(css, `${carrier} — липкая шапка`).toMatch(new RegExp(`${carrier.replace('.', '\\.')}\\s*\\{[^}]*position: sticky; top: 0`));
+        expect(hasRule(phone, root, 'padding-top: var(--safe-top)'), `${root} не должен нести отступ`).toBe(false);
+      }
     }
   });
 });
