@@ -7,6 +7,7 @@ import { screen, waitFor, cleanup, fireEvent } from '@testing-library/react';
 import { renderAppShell, mockLogout } from './AppShell.test-helpers';
 import { api } from '../api';
 import { todayStr } from '../utils/format';
+import { THERAPIST_MODE_KEY } from '../utils/storageKeys';
 import type { DayHistory } from '../types';
 
 const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
@@ -97,7 +98,7 @@ describe('AppShell — командная палитра', () => {
 describe('AppShell — режим терапевта: переключение и поиск по клиентам', () => {
   it('переключатель «Терапевт» в сайдбаре ведёт в кабинет', async () => {
     mockApi.getProfile.mockResolvedValueOnce({ role: 'THERAPIST', name: 'Др. Кто', mySchemaIds: [] });
-    localStorage.setItem('therapist_mode', '0'); // старт клиентом, чтобы проверить именно клик по переключателю
+    localStorage.setItem(THERAPIST_MODE_KEY, '0'); // старт клиентом, чтобы проверить именно клик по переключателю
     renderAppShell('/today');
     await waitFor(() => expect(screen.getByTestId('today-section')).toBeTruthy());
     fireEvent.click(screen.getByRole('button', { name: 'Терапевт' }));
@@ -486,7 +487,7 @@ describe('AppShell — настройки: выход из роли терапе
 
     await waitFor(() => expect(mockApi.resignTherapist).toHaveBeenCalledTimes(1));
     await waitFor(() => expect(screen.getByTestId('today-section')).toBeTruthy());
-    expect(localStorage.getItem('therapist_mode')).toBe('0');
+    expect(localStorage.getItem(THERAPIST_MODE_KEY)).toBe('0');
   });
 });
 

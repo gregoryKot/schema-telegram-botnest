@@ -17,6 +17,7 @@ import {
 } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { AuthContext, type AuthState } from '../auth/authContext';
+import { THERAPIST_MODE_KEY } from '../utils/storageKeys';
 import { AccountPage } from './AccountPage';
 
 interface Provider {
@@ -525,7 +526,7 @@ describe('AccountPage — выход', () => {
 // способы входа»). «← Назад» возвращает в дом режима: клиентское «Сегодня» для
 // него — лишний прыжок, бутстрап сразу вернул бы его в кабинет.
 describe('AccountPage — «← Назад» ведёт в дом текущего режима', () => {
-  afterEach(() => localStorage.removeItem('therapist_mode'));
+  afterEach(() => localStorage.removeItem(THERAPIST_MODE_KEY));
 
   async function renderWithHomes() {
     render(
@@ -543,7 +544,7 @@ describe('AccountPage — «← Назад» ведёт в дом текущег
   }
 
   it('режим терапевта (therapist_mode=1) — в /cabinet', async () => {
-    localStorage.setItem('therapist_mode', '1');
+    localStorage.setItem(THERAPIST_MODE_KEY, '1');
     await renderWithHomes();
     fireEvent.click(screen.getByText('← Назад'));
     expect(await screen.findByText('дом кабинета')).toBeTruthy();
@@ -551,7 +552,7 @@ describe('AccountPage — «← Назад» ведёт в дом текущег
   });
 
   it.each([['0'], [null]])('режим клиента (therapist_mode=%s) — в /today', async (flag) => {
-    if (flag !== null) localStorage.setItem('therapist_mode', flag);
+    if (flag !== null) localStorage.setItem(THERAPIST_MODE_KEY, flag);
     await renderWithHomes();
     fireEvent.click(screen.getByText('← Назад'));
     expect(await screen.findByText('дом клиента')).toBeTruthy();

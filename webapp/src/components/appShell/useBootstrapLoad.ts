@@ -1,12 +1,10 @@
 import { useEffect, useState } from 'react';
 import type { NavigateFunction } from 'react-router-dom';
-import { api, reportClientError } from '../../api';
-import type { PracticePlan, TherapyClientSummary } from '../../api';
+import { api, reportClientError, type PracticePlan, type TherapyClientSummary } from '../../api';
 import type { Need } from '../../types';
 import { cacheTherapistContact } from '../../utils/therapistContact';
 import { humanizeThrown } from '../../../../shared/src/api/humanizeError';
-import { MY_SCHEMA_IDS_KEY, CHILDHOOD_DONE_KEY, YSQ_PROGRESS_KEY } from '../../utils/storageKeys';
-
+import { MY_SCHEMA_IDS_KEY, CHILDHOOD_DONE_KEY, YSQ_PROGRESS_KEY, THERAPIST_MODE_KEY } from '../../utils/storageKeys';
 // Константы дат — из shared (правило №3); ре-экспорт для потребителей AppShell.
 export { TODAY_DATE, TODAY_KEY } from '../../../../shared/src/utils/todayConstants';
 import { TODAY_KEY, YESTERDAY_DATE } from '../../../../shared/src/utils/todayConstants';
@@ -106,19 +104,21 @@ export function useBootstrapLoad({ navigate, initialPathname }: Params) {
       // браузер видит терапевта впервые, сделанный на другой площадке
       // (мини-апп) — тот же аккаунт, серверный therapistMode===false.
       if (p.role === 'THERAPIST') {
-        const pref = localStorage.getItem('therapist_mode');
+        const pref = localStorage.getItem(THERAPIST_MODE_KEY);
         const wantsCabinet = pref !== null ? pref !== '0' : serverFlags.therapistMode !== false;
-        const onDefaultLanding =
-          initialPathname === '/' || initialPathname === '/today';
+        const onDefaultLanding = initialPathname === '/' || initialPathname === '/today';
         if (wantsCabinet && !initialPathname.startsWith('/cabinet') && onDefaultLanding) {
-          localStorage.setItem('therapist_mode', '1');
+          localStorage.setItem(THERAPIST_MODE_KEY, '1');
           navigate('/cabinet');
         } else if (pref === null) {
-          localStorage.setItem('therapist_mode', wantsCabinet ? '1' : '0');
+          localStorage.setItem(THERAPIST_MODE_KEY, wantsCabinet ? '1' : '0');
         }
-      }
-      if (p.role !== 'THERAPIST' && initialPathname.startsWith('/cabinet')) {
-        navigate('/today');
+      } else {
+        // Не терапевт: флаг '1' мог остаться от снятой роли (её сняли на другой площадке) —
+        // сбрасываем, иначе «← Назад» с /account ведёт в /cabinet. replace: запись /cabinet
+        // не остаётся в истории, и браузерный «Назад» не вернёт клиента в кабинет.
+        if (localStorage.getItem(THERAPIST_MODE_KEY) === '1') localStorage.setItem(THERAPIST_MODE_KEY, '0');
+        if (initialPathname.startsWith('/cabinet')) navigate('/today', { replace: true });
       }
       if (p.name) setDisplayName(p.name);
       if (p.mySchemaIds?.length > 0) {

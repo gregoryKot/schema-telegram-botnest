@@ -8,6 +8,7 @@
 import { lazy, Suspense } from 'react';
 import type { NavigateFunction } from 'react-router-dom';
 import { api } from '../../api';
+import { THERAPIST_MODE_KEY } from '../../utils/storageKeys';
 import type { useOverlays } from './useOverlays';
 import { NoteSheet } from '../NoteSheet';
 
@@ -50,9 +51,8 @@ export function AppOverlays({
           onResignTherapist={async () => {
             await api.resignTherapist();
             setUserRole('CLIENT');
-            localStorage.setItem('therapist_mode', '0');
-            ov.setShowSettings(false);
-            navigate('/today');
+            localStorage.setItem(THERAPIST_MODE_KEY, '0');
+            ov.setShowSettings(false); navigate('/today');
           }}
         />
       </Suspense>

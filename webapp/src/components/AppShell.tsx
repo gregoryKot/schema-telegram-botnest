@@ -6,7 +6,7 @@ import { api } from '../api';
 import type { DayHistory } from '../types';
 import { applyCabinetLightTheme } from '../utils/theme';
 import { syncMotionAttr } from '../utils/reducedMotion';
-import { shouldShowChildhoodWheel } from '../utils/storageKeys';
+import { shouldShowChildhoodWheel, THERAPIST_MODE_KEY } from '../utils/storageKeys';
 import { CommandPalette } from './CommandPalette';
 import { Loader } from './Loader';
 import { useBootstrapLoad, TODAY_DATE, TODAY_KEY } from './appShell/useBootstrapLoad';
@@ -78,7 +78,7 @@ export function AppShell() {
   }, [location.pathname, therapistMode]);
 
   const switchTherapistMode = useCallback((on: boolean, persist = true) => {
-    localStorage.setItem('therapist_mode', on ? '1' : '0');
+    localStorage.setItem(THERAPIST_MODE_KEY, on ? '1' : '0');
     // Запоминаем стартовое предпочтение на сервере (source of truth, единое с
     // мини-аппом). Сервер принимает флаг только у THERAPIST — эндпоинт вернёт
     // 403 для клиента, поэтому просто глушим ошибку.

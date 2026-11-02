@@ -6,7 +6,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { screen, waitFor, cleanup, fireEvent } from '@testing-library/react';
 import { renderAppShell } from './AppShell.test-helpers';
 import { api } from '../api';
-import { MY_SCHEMA_IDS_KEY, YSQ_PROGRESS_KEY, CHILDHOOD_DONE_KEY } from '../utils/storageKeys';
+import { MY_SCHEMA_IDS_KEY, YSQ_PROGRESS_KEY, CHILDHOOD_DONE_KEY, THERAPIST_MODE_KEY } from '../utils/storageKeys';
 
 const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
 
@@ -74,11 +74,11 @@ describe('AppShell — роль пользователя решает, куда 
     mockApi.getProfile.mockResolvedValueOnce({ role: 'THERAPIST', name: 'Др. Кто', mySchemaIds: [] });
     renderAppShell('/today');
     await waitFor(() => expect(screen.getByTestId('therapist-client-sheet')).toBeTruthy());
-    expect(localStorage.getItem('therapist_mode')).toBe('1');
+    expect(localStorage.getItem(THERAPIST_MODE_KEY)).toBe('1');
   });
 
   it('THERAPIST, ЯВНО выбравший клиентский режим (therapist_mode=0), остаётся клиентом', async () => {
-    localStorage.setItem('therapist_mode', '0');
+    localStorage.setItem(THERAPIST_MODE_KEY, '0');
     mockApi.getProfile.mockResolvedValueOnce({ role: 'THERAPIST', name: 'Др. Кто', mySchemaIds: [] });
     renderAppShell('/today');
     await waitFor(() => expect(screen.getByTestId('today-section')).toBeTruthy());
