@@ -7,6 +7,7 @@ import { GratitudeShare } from '../../components/diary/GratitudeShare';
 import { DIARY_HUE, hueStyle } from '../../lib/tone';
 import { fmtTime, fmtDateKey, fmtDayMonth } from './dateHelpers';
 import { schemaEntryRows, modeEntryRows, type FieldRow } from './entryRows';
+import { EntryPreviewText } from './EntryPreviewText';
 import '../../styles/client-diary.css';
 
 // Карточки записей дневника: бейдж типа в тоне DIARY_HUE, заголовок, текст; клик раскрывает детали и удаление.
@@ -35,8 +36,11 @@ export function ExpandField({ label, text, accent }: { label: string; text: stri
 
 const TYPE_LABEL: Record<DiaryType, string> = { schema: 'Схема', mode: 'Режим', gratitude: 'Благодарность' };
 
-function EntryShell({ type, label, title, time, preview, children }: {
-  type: DiaryType; label?: string; title?: string; time?: string; preview: ReactNode; children?: (open: boolean) => ReactNode;
+function EntryShell({ type, label, title, time, text, preview, children }: {
+  type: DiaryType; label?: string; title?: string; time?: string;
+  /** Текст записи: длинный в закрытой карточке обрезается (EntryPreviewText). */
+  text?: string | null;
+  preview?: ReactNode; children?: (open: boolean) => ReactNode;
 }) {
   const [open, setOpen] = useState(false);
   return (
@@ -46,7 +50,7 @@ function EntryShell({ type, label, title, time, preview, children }: {
         {title && <span className="cd-entry-title">{title}</span>}
         {time && <span className="cd-entry-time">{time}</span>}
       </div>
-      <div className="cd-entry-text">{preview}</div>
+      <div className="cd-entry-text">{text && <EntryPreviewText text={text} open={open} />}{preview}</div>
       {children?.(open)}
     </div>
   );
@@ -69,10 +73,8 @@ export function SchemaEntry({ entry, onDelete }: { entry: SchemaDiaryEntry; onDe
       label={thought ? 'Мысль' : undefined}
       title={schemas.length > 0 ? schemas.slice(0, 2).map(s => s!.name).join(' · ') : thought ? undefined : 'Дневник схем'}
       time={fmtTime(entry.createdAt)}
-      preview={<>
-        {entry.trigger}
-        {emotions.length > 0 && <div className="cd-entry-meta">{emotions.slice(0, 4).map(e => e.label).join(' · ')}</div>}
-      </>}
+      text={entry.trigger}
+      preview={emotions.length > 0 && <div className="cd-entry-meta">{emotions.slice(0, 4).map(e => e.label).join(' · ')}</div>}
     >
       {open => open && (
         <div className="cd-entry-more" role="presentation" onClick={stop}>
@@ -92,7 +94,7 @@ export function ModeEntry({ entry, onDelete }: { entry: ModeDiaryEntry; onDelete
       label={entry.fromCase ? 'Разбор' : undefined}
       title={mode ? mode.name : 'Дневник режимов'}
       time={fmtTime(entry.createdAt)}
-      preview={entry.situation}
+      text={entry.situation}
     >
       {open => open ? (
         <div className="cd-entry-more" role="presentation" onClick={stop}>
@@ -118,7 +120,6 @@ export function GratitudeEntry({ entry, onDelete }: { entry: GratitudeDiaryEntry
     <EntryShell
       type="gratitude"
       title={`${n} ${n === 1 ? 'пункт' : n < 5 ? 'пункта' : 'пунктов'}`}
-      preview={null}
     >
       {open => (
         <>
