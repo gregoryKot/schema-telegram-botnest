@@ -203,7 +203,7 @@ export function AppShell() {
   const anyOverlayOpen = ov.showTrackerOverlay || ov.showTracker || ov.showDiaries
     || ov.showSchemaInfo || ov.showSettings || ov.showPractices || ov.showPlans
     || ov.showChildhoodWheel || ov.showTodayNote
-    || ov.showTherapistDisclaimer || ov.quickAction !== null || celebrationStreak !== null;
+    || ov.showTherapistDisclaimer || ov.showSosCard || ov.quickAction !== null || celebrationStreak !== null;
 
   if (loading) return <AppShellSkeleton section={section} therapistMode={therapistMode} />;
 
@@ -243,7 +243,7 @@ export function AppShell() {
           {isOffline && <span className="topbar-offline">офлайн</span>}
           {!therapistMode && (
             <button className="topbar-sos tone-tint" style={hueStyle(28)}
-                    onClick={() => navigate('/practice', { state: { openFlashcard: true } })}>Мне плохо</button>
+                    onClick={() => ov.setShowSosCard(true)}>Мне плохо</button>
           )}
           <button className="search-pill" onClick={() => ov.setCmdOpen(true)}>
             <span>Перейти к…</span>

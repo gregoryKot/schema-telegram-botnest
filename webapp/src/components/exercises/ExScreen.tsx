@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { pressable } from '../../utils/a11y';
+import { useExBackLabel } from './exBackLabel';
 import '../../styles/sheet-exercises.css';
 
 // ── Shared SVG icons ─────────────────────────────────────────────────────────
@@ -43,6 +44,7 @@ export function GlyphX() {
 // Шапка — общая ds-sheet-head/ds-back (#906): .ex2-top держит sticky и --safe-top
 // (safeTop.test.ts). Стрелка — SVG, подпись без «←»: имя кнопки («Назад», «Закрыть»,
 // «Назад к упражнениям») ищут по тексту тесты десятков потребителей ExScreen.
+// Без backLabel подпись задаёт хост упражнений (exBackLabel.ts).
 interface ExScreenProps {
   onBack: () => void;
   backLabel?: string;
@@ -55,10 +57,11 @@ interface ExScreenProps {
 }
 
 export function ExScreen({ onBack, backLabel, eyebrow, title, lede, aside, foot, children }: ExScreenProps) {
+  const hostBackLabel = useExBackLabel();
   return (
     <div className="ex2-screen">
       <div className="ds-sheet-head ex2-top">
-        <button type="button" className="ds-back" onClick={onBack}><GlyphArrowLeft />{backLabel ?? 'Назад к упражнениям'}</button>
+        <button type="button" className="ds-back" onClick={onBack}><GlyphArrowLeft />{backLabel ?? hostBackLabel}</button>
       </div>
       <div className={'ex2-body' + (aside ? '' : ' ex2-body--single')}>
         <div className="ex2-main">

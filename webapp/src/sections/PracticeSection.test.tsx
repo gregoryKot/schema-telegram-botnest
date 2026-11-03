@@ -599,19 +599,6 @@ describe('PracticeSection — открытие карточки схемы по 
   });
 });
 
-describe('PracticeSection — флешкарта «Мне плохо» по навигационному state (кнопка топбара)', () => {
-  it('location.state.openFlashcard открывает SchemaFlashcard сразу', async () => {
-    render(
-      <AddressFormContext.Provider value={{ form: 'ty', setForm: vi.fn() }}>
-        <MemoryRouter initialEntries={[{ pathname: '/practice', state: { openFlashcard: true } }]}>
-          <PracticeSection {...noopProps} />
-        </MemoryRouter>
-      </AddressFormContext.Provider>,
-    );
-    await screen.findByText('Стало чуть лучше – разобраться →');
-  });
-});
-
 describe('PracticeSection — задания терапевта: остальные типы открывают правильное упражнение', () => {
   it('belief_check → открывает «Проверка убеждения», завершение обновляет список и вызывает onTasksChanged', async () => {
     const onTasksChanged = vi.fn();

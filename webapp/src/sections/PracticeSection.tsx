@@ -60,13 +60,10 @@ export function PracticeSection({ onOpenChildhoodWheel, onOpenPractices, onOpenP
     goalsCount: tasks.filter(t => t.assignedBy === null).length, catalog, childhoodDone, onOpenPractices, onOpenPlans,
   });
 
-  // Detect openSchemaEx state from navigation
+  // Detect openSchemaEx state from navigation. «Мне плохо» топбара сюда больше
+  // не ведёт — карточка открывается поверх текущего раздела (AppOverlays).
   useEffect(() => {
-    const state = location.state as { openSchemaEx?: string; openFlashcard?: boolean } | null;
-    if (state?.openFlashcard === true) {
-      openFlashcard();
-      window.history.replaceState({}, '', '/practice');
-    }
+    const state = location.state as { openSchemaEx?: string } | null;
     if (state?.openSchemaEx) {
       launcher.openExercise({ ex: 'schema', id: state.openSchemaEx });
       window.history.replaceState({}, '', '/practice');

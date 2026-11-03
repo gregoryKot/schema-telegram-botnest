@@ -27,6 +27,7 @@ import type { NoteSheet as NoteSheetT } from './NoteSheet';
 import type { Celebration as CelebrationT } from './Celebration';
 import type { TaskCreateSheet as TaskCreateSheetT } from './TaskCreateSheet';
 import type { CommandPalette as CommandPaletteT } from './CommandPalette';
+import type { SchemaFlashcard as SchemaFlashcardT } from './SchemaFlashcard';
 import type { ChildhoodWheelEx as ChildhoodWheelExT } from './exercises/ChildhoodWheelEx';
 
 /** Заглушка мокнутого экрана: кнопка на каждый колбэк из `map`, плюс
@@ -205,6 +206,11 @@ vi.mock('./CommandPalette', () => ({
       openClient: () => p.onOpenClient?.(9),
       quickTracker: () => p.onQuickAction?.('tracker'),
     }} />
+  ),
+}));
+vi.mock('./SchemaFlashcard', () => ({
+  SchemaFlashcard: (p: ComponentProps<typeof SchemaFlashcardT>) => (
+    <Btns testid="sos-card" map={{ close: () => p.onClose(), tracker: () => p.onOpenTracker?.() }} />
   ),
 }));
 vi.mock('./DonateNudge', () => ({ DonateNudge: () => null }));
