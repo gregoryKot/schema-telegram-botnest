@@ -83,3 +83,29 @@ describe('therapist-card.css: тихая карточка клиента (#906)'
     expect(css).not.toMatch(/\.tk-side \.ds-card--accent/);
   });
 });
+
+// QA 2026-11: длинное имя клиента рвалось посреди слова («Константинопо/льская»),
+// длинное слово заметки сессии уезжало за правый край карточки на телефоне,
+// две кнопки сайдбара на 1280 падали в два ряда разной ширины.
+describe('therapist-card.css: имя, заметка, действия сайдбара (QA 2026-11)', () => {
+  it('имя не рвётся посреди слова: без overflow-wrap: anywhere; ноутбук — строка с многоточием, телефон — две строки', () => {
+    for (const d of [decls(css, '.tk-name'), decls(phone, '.tk-name')]) {
+      expect(d).not.toContain('anywhere');
+      expect(d).not.toContain('word-break');
+    }
+    expect(decls(css, '.tk-name')).toContain('white-space: nowrap');
+    expect(decls(css, '.tk-name')).toContain('overflow: hidden');
+    expect(decls(phone, '.tk-name')).toContain('-webkit-line-clamp: 2');
+  });
+
+  it('заметка сессии на «Обзоре» переносит длинное слово, как .tb-note-text', () => {
+    expect(decls(css, '.tk-note-text')).toMatch(/overflow-wrap: (anywhere|break-word)/);
+  });
+
+  it('действия узкого сайдбара (две колонки «Обзора», от 1024) — столбцом, не рядом с переносом', () => {
+    const wide = block(css, '@media (min-width: 1024px)');
+    expect(decls(wide, '.tk-side .tk-quick')).toContain('flex-direction: column');
+    // На одну колонку (<1024) правило не распространяется: там кнопки в ряд.
+    expect(decls(block(css, '@media (max-width: 1023px)'), '.tk-side .tk-quick')).toBe('');
+  });
+});

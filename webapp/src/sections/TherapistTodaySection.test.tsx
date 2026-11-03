@@ -98,6 +98,19 @@ describe('TherapistTodaySection — реальные данные клиенто
     await waitFor(() => expect(screen.getAllByText('#555').length).toBeGreaterThanOrEqual(1));
   });
 
+  // QA 2026-11: имя в сетке строки — в колонке .tt-who (min-width: 0,
+  // therapist-today.css), иначе одна строка с многоточием распирает трек.
+  it('имя в строках «Сессии» и «Активность» лежит в колонке .tt-who', async () => {
+    const today = localDateStr(new Date());
+    mockApi.getTherapyClients.mockResolvedValue([client({ telegramId: 7, name: 'Вера', nextSession: `${today}T14:30` })]);
+    render(<TherapistTodaySection displayName={null} onOpenClient={vi.fn()} />);
+
+    await waitFor(() => expect(screen.getAllByText('Вера').length).toBeGreaterThanOrEqual(2));
+    const names = [...document.querySelectorAll('.tt-session .tt-name, .tt-act .tt-act-name')];
+    expect(names).toHaveLength(2);
+    for (const n of names) expect(n.parentElement?.className).toBe('tt-who');
+  });
+
   it('клик по клиенту вызывает onOpenClient с его telegramId', async () => {
     const onOpenClient = vi.fn();
     mockApi.getTherapyClients.mockResolvedValue([client({ telegramId: 42, name: 'Пётр' })]);

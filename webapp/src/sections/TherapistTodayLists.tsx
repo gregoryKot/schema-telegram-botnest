@@ -13,7 +13,7 @@ export function SessionRow({ client, onOpen }: RowProps) {
       onClick={() => onOpen(client.telegramId)}>
       <span className="tt-time">{time || '—'}</span>
       <span className="tt-bar tone-fill" style={hueStyle(clientHue(client.telegramId))} />
-      <span>
+      <span className="tt-who">
         <span className="tt-name" style={{ display: 'block' }}>{clientName(client)}</span>
         <span className="tt-row-sub" style={{ display: 'block' }}>{activityStatus(client).text}</span>
       </span>
@@ -31,7 +31,7 @@ export function ActivityRow({ client, onOpen }: RowProps) {
     <button type="button" className="ds-list-row ds-list-row--hover tt-act tt-reset"
       onClick={() => onOpen(client.telegramId)}>
       <span className="ds-avatar" style={hueStyle(clientHue(client.telegramId))}>{initials(name)}</span>
-      <span>
+      <span className="tt-who">
         <span className="tt-act-name" style={{ display: 'block' }}>{name}</span>
         <span className={`tt-act-status is-${status.tone}`} style={{ display: 'block' }}>{status.text}</span>
       </span>
