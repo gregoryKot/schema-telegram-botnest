@@ -498,7 +498,7 @@ describe('TodaySection — «+ Поставить цель» открывает 
     fireEvent.click(await screen.findByText('+ Поставить цель'));
     await screen.findByText('Новое задание');
 
-    // Своя цель клиента: «Назад», не «Назад к кабинету» (кабинет — у терапевта).
+    // Своя цель клиента: просто «Назад» (у терапевта — «Назад к карточке»).
     fireEvent.click(screen.getByText('Назад'));
     await waitFor(() => expect(screen.queryByText('Новое задание')).toBeNull());
   });

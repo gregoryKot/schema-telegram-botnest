@@ -1,5 +1,5 @@
 import { NotificationService, PROACTIVE_TYPES } from './notification.service';
-import { decryptPayload } from './notification-payload.crypto';
+import { decryptPayload, encryptPayload } from './notification-payload.crypto';
 import { createFakeTable } from '../test-support/fake-prisma.spec-helper';
 
 function makePrisma() {
@@ -191,6 +191,77 @@ describe('NotificationService', () => {
       prisma.scheduledNotification.count.mockResolvedValue(1);
       const svc = new NotificationService(prisma);
       expect(await svc.hasPending(BigInt(1), 'reminder')).toBe(true);
+    });
+  });
+
+  // Читает признак «запрос YSQ висит» карточки клиента (ysqRequestPending,
+  // QA 2026-11): схема → payload расшифрован; отправленные, отменённые, чужой
+  // тип и чужой пользователь не попадают.
+  describe('pendingPayloads', () => {
+    it('отдаёт расшифрованные payload только неотправленных и неотменённых', async () => {
+      const base = { sendAt: new Date('2026-11-03T10:00:00Z') };
+      const rows: Row[] = [
+        {
+          id: 1,
+          userId: 7n,
+          type: 'ysq_requested',
+          sentAt: null,
+          cancelledAt: null,
+          payload: encryptPayload({ therapistId: '1' }),
+          ...base,
+        },
+        {
+          id: 2,
+          userId: 7n,
+          type: 'ysq_requested',
+          sentAt: new Date(),
+          cancelledAt: null,
+          payload: encryptPayload({ therapistId: '2' }),
+          ...base,
+        },
+        {
+          id: 3,
+          userId: 7n,
+          type: 'ysq_requested',
+          sentAt: null,
+          cancelledAt: new Date(),
+          payload: encryptPayload({ therapistId: '3' }),
+          ...base,
+        },
+        {
+          id: 4,
+          userId: 7n,
+          type: 'reminder',
+          sentAt: null,
+          cancelledAt: null,
+          payload: encryptPayload({ therapistId: '4' }),
+          ...base,
+        },
+        {
+          id: 5,
+          userId: 8n,
+          type: 'ysq_requested',
+          sentAt: null,
+          cancelledAt: null,
+          payload: encryptPayload({ therapistId: '5' }),
+          ...base,
+        },
+      ];
+      const svc = new NotificationService(makeStatefulPrisma(rows));
+      expect(await svc.pendingPayloads(7n, 'ysq_requested')).toEqual([
+        { therapistId: '1' },
+      ]);
+    });
+
+    it('схема → pendingPayloads: тот же payload, что ушёл в schedule', async () => {
+      const svc = new NotificationService(makeStatefulPrisma([]));
+      await svc.schedule(7n, 'ysq_requested', new Date(), {
+        therapistName: 'Анна',
+        therapistId: '42',
+      });
+      expect(await svc.pendingPayloads(7n, 'ysq_requested')).toEqual([
+        { therapistName: 'Анна', therapistId: '42' },
+      ]);
     });
   });
 

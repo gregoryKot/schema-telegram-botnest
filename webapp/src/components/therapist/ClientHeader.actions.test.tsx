@@ -7,8 +7,8 @@
 // удаления — прежний ConfirmDialog. Ширина экрана — window.innerWidth (useIsMobile).
 import { useState } from 'react';
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
-import { render, screen, fireEvent, cleanup, within } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { render, screen, fireEvent, cleanup, within, act } from '@testing-library/react';
+import { MemoryRouter, useLocation, useNavigate, type NavigateFunction } from 'react-router-dom';
 import { ClientHeader } from './ClientHeader';
 import { ClientOverviewTab } from './ClientOverviewTab';
 import { ClientOverviewSidebar } from './ClientOverviewSidebar';
@@ -80,11 +80,32 @@ describe('«+ Задание / + Заметка»', () => {
   });
 
   it('сайдбар «Обзора» не повторяет действия шапки', () => {
-    render(<ClientOverviewSidebar selectedClient={client} detail={detailOf()} />);
+    const online = { ...client, telegramId: 7 } as TherapyClientSummary;
+    render(<ClientOverviewSidebar selectedClient={online} detail={detailOf()} />);
     expect(screen.queryByRole('button', { name: /Задание/ })).toBeNull();
     expect(screen.queryByRole('button', { name: /Заметка/ })).toBeNull();
     expect(screen.getByRole('button', { name: 'Запросить YSQ' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Экспорт концепта' })).toBeTruthy();
+  });
+
+  // QA 2026-11: офлайн-клиенту кнопка вела во вкладку с «YSQ недоступен».
+  it('сайдбар: офлайн-клиенту «Запросить YSQ» не показан, экспорт остаётся', () => {
+    render(<ClientOverviewSidebar selectedClient={client} detail={detailOf()} />);
+    expect(screen.queryByRole('button', { name: 'Запросить YSQ' })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Экспорт концепта' })).toBeTruthy();
+  });
+
+  // QA 2026-11: на пустом концепте «Экспорт концепта» молча ничего не делал.
+  it('сайдбар: пустой концепт — экспорт недоступен, причина строкой под кнопками', () => {
+    const handleExport = vi.fn();
+    render(<ClientOverviewSidebar selectedClient={client} detail={detailOf({ exportEmpty: true, handleExport })} />);
+    const btn = screen.getByRole('button', { name: 'Экспорт концепта' }) as HTMLButtonElement;
+    expect(btn.disabled).toBe(true);
+    expect(screen.getByText('В концепте пока пусто — экспортировать нечего')).toBeTruthy();
+    cleanup();
+    render(<ClientOverviewSidebar selectedClient={client} detail={detailOf({ exportEmpty: false })} />);
+    expect((screen.getByRole('button', { name: 'Экспорт концепта' }) as HTMLButtonElement).disabled).toBe(false);
+    expect(screen.queryByText(/экспортировать нечего/)).toBeNull();
   });
 });
 
@@ -144,6 +165,57 @@ describe('меню «⋯» шапки', () => {
     expect(within(dialog).getByText('Удалить клиента «Анна»?')).toBeTruthy();
     fireEvent.click(within(dialog).getByRole('button', { name: 'Удалить' }));
     expect(deleteClient).toHaveBeenCalled();
+  });
+});
+
+// QA 2026-11: «Назад» браузера на «Удалить клиента?» уводил из карточки —
+// диалог не писал запись в историю. Теперь «Назад» закрывает только диалог.
+describe('подтверждение удаления и «Назад» браузера', () => {
+  const nav: { go?: NavigateFunction; path?: string } = {};
+  function Harness({ deleteClient = vi.fn() }: { deleteClient?: () => void }) {
+    const [confirming, setConfirming] = useState(true);
+    nav.go = useNavigate();
+    nav.path = useLocation().pathname;
+    return (
+      <ClientHeader selectedClient={client} switchView={vi.fn()}
+        detail={detailOf({ confirmingDelete: confirming, cancelDeleteClient: () => setConfirming(false), deleteClient })} />
+    );
+  }
+  const renderAt = (deleteClient?: () => void) => render(
+    <MemoryRouter initialEntries={['/cabinet', '/cabinet/-1']} initialIndex={1}><Harness deleteClient={deleteClient} /></MemoryRouter>,
+  );
+  const back = () => act(() => { void nav.go!(-1); });
+
+  it('«Назад» закрывает диалог, карточка остаётся на месте, удаления нет', () => {
+    const deleteClient = vi.fn();
+    renderAt(deleteClient);
+    expect(screen.getByRole('dialog')).toBeTruthy();
+    back();
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(nav.path).toBe('/cabinet/-1');
+    expect(deleteClient).not.toHaveBeenCalled();
+    back(); // следующий «Назад» — уже из карточки, без «мёртвой» записи
+    expect(nav.path).toBe('/cabinet');
+  });
+
+  it('«Удалить» снимает запись диалога и удаляет; «Отмена» — закрывает без удаления', () => {
+    const deleteClient = vi.fn();
+    renderAt(deleteClient);
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Удалить' }));
+    expect(deleteClient).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole('dialog')).toBeNull();
+    back();
+    expect(nav.path).toBe('/cabinet');
+    cleanup();
+
+    const other = vi.fn();
+    renderAt(other);
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Отмена' }));
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(nav.path).toBe('/cabinet/-1');
+    expect(other).not.toHaveBeenCalled();
+    back();
+    expect(nav.path).toBe('/cabinet');
   });
 });
 

@@ -8,7 +8,11 @@ import {
   inviteInvalidText,
   joinDoneText,
   leaveTherapyCopy,
+  SHARE_CARDS_TOGGLE,
+  SHARE_PROFILE_TOGGLE,
+  taskSheetTitle,
   therapistConnectedTitle,
+  therapistNameLine,
 } from './therapistLinkCopy';
 
 const ty = (a: string) => a;
@@ -28,6 +32,22 @@ describe('therapistConnectedTitle', () => {
   });
 });
 
+// QA 2026-11: «Задание для Ольга», «с Анна Терапевт» — имя после предлога
+// требует падежа, а склонять его нечем. Формула без падежа: «роль: имя» или «·».
+describe('имя без падежа', () => {
+  it('«Терапевт: имя» — одна формула для статуса и баннера встречи', () => {
+    expect(therapistNameLine('Анна Терапевт')).toBe('Терапевт: Анна Терапевт');
+    expect(therapistConnectedTitle('Анна')).toBe(therapistNameLine('Анна'));
+  });
+
+  it('заголовок листа задания: с клиентом — «Задание · имя», без — «Новое задание»', () => {
+    expect(taskSheetTitle('Ольга')).toBe('Задание · Ольга');
+    expect(taskSheetTitle(undefined)).toBe('Новое задание');
+    expect(taskSheetTitle(null)).toBe('Новое задание');
+    expect(taskSheetTitle('Ольга')).not.toMatch(/(^|\s)(для|с|у|от)\s+Ольга/);
+  });
+});
+
 describe('joinDoneText', () => {
   it('называет терапевта и что он видит; обе формы', () => {
     expect(joinDoneText('Анна', ty)).toMatch(
@@ -36,7 +56,17 @@ describe('joinDoneText', () => {
     expect(joinDoneText('Анна', vy)).toMatch(
       /^Терапевт Анна видит ваш трекер потребностей и задания/,
     );
-    expect(joinDoneText('Анна', vy)).toMatch(/откроете/);
+  });
+
+  // QA 2026-11: текст обещал «только то, что откроешь», а оба тумблера по
+  // умолчанию включены (`?? true`, src/api/settings.controller.ts).
+  it('говорит правду о значении по умолчанию и где закрыть', () => {
+    for (const tr of [ty, vy]) {
+      const t = joinDoneText('Анна', tr);
+      expect(t).toMatch(/по умолчанию ещё дневники/);
+      expect(t).toMatch(/Закрыть их можно в настройках, раздел «Мой терапевт»/);
+      expect(t).not.toMatch(/только то, что откро/);
+    }
   });
 
   it('без имени — просто «Терапевт»', () => {
@@ -46,6 +76,22 @@ describe('joinDoneText', () => {
   it('без маркеров рода («сам», «сама»)', () => {
     for (const tr of [ty, vy])
       expect(joinDoneText('Анна', tr)).not.toMatch(/\bсама?\b/);
+  });
+});
+
+// Названия тумблеров — ровно то, что закрывает сервер
+// (src/therapy/therapy-client-data.service.ts): therapistShareCards гасит
+// дневники и карточки, therapistShareProfile — «Мои схемы/режимы» и тест.
+describe('тумблеры «Мой терапевт»', () => {
+  it('тумблер дневников называет дневники', () => {
+    expect(SHARE_CARDS_TOGGLE.title).toMatch(/^Дневники/);
+    expect(SHARE_CARDS_TOGGLE.sub).toMatch(/дневник/);
+    expect(SHARE_CARDS_TOGGLE.sub).toMatch(/карточки схем и режимов/);
+  });
+
+  it('тумблер профиля не обещает спрятать имя: называет схемы и тест', () => {
+    expect(SHARE_PROFILE_TOGGLE.title).not.toMatch(/Профиль/);
+    expect(SHARE_PROFILE_TOGGLE.sub).toMatch(/схем и режимов.*теста/);
   });
 });
 

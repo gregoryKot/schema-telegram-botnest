@@ -6,6 +6,7 @@ import type { ClientDetail } from '../clientSheetTypes';
 import { ConceptViewSwitch, type ConceptView } from '../../../../../shared/src/therapy/conceptGraph/ConceptViewSwitch';
 import { SaveStatusLine } from '../../../../../shared/src/therapy/SaveStatusLine';
 import { CANVAS_HINT, EXPAND_HINT, actionStatusText, type GraphActions } from './conceptHeadText';
+import { CONCEPT_EXPORT_EMPTY } from '../../../../../shared/src/therapy/conceptExport';
 
 // Шапка вкладки «Концептуализация» (#879, тест с терапевтом): в ней остаются
 // только переключатель «Схема · Поля» и статус сохранения. Экспорт, картинка,
@@ -24,20 +25,20 @@ export interface ConceptTabHeadProps {
 }
 
 export function ConceptTabHead({ detail, view, onView, graph }: ConceptTabHeadProps) {
-  const { saveStatus, savedAt, retrySave, conceptError, exportCopied, handleExport } = detail;
+  const { saveStatus, savedAt, retrySave, conceptError, exportCopied, exportEmpty, handleExport } = detail;
   return (
     <>
       <div className="tcp-head">
         <ConceptViewSwitch view={view} onChange={onView} />
         <SaveStatusLine className="tcp-save" status={saveStatus} savedAt={savedAt} onRetry={retrySave} errorText={conceptError || undefined} align="right" />
-        <MoreMenu onExport={handleExport} graph={graph} />
+        <MoreMenu onExport={handleExport} exportEmpty={exportEmpty} graph={graph} />
       </div>
       <ActionStatus graph={graph} exportCopied={exportCopied} />
     </>
   );
 }
 
-function MoreMenu({ onExport, graph }: { onExport: () => void; graph?: GraphActions }) {
+function MoreMenu({ onExport, exportEmpty, graph }: { onExport: () => void; exportEmpty: boolean; graph?: GraphActions }) {
   const { open, setOpen, btnRef, pick } = useMenuPick();
   const wrapRef = useRef<HTMLDivElement>(null);
   return (
@@ -54,7 +55,7 @@ function MoreMenu({ onExport, graph }: { onExport: () => void; graph?: GraphActi
       </button>
       {open && (
         <Dropdown anchorRef={wrapRef} onClose={() => setOpen(false)} role="menu" label="Ещё действия" className="tcp-menu">
-          <MenuItem onClick={pick(onExport)}>↗ Экспорт текстом</MenuItem>
+          <MenuItem disabled={exportEmpty} hint={exportEmpty ? CONCEPT_EXPORT_EMPTY : undefined} onClick={pick(onExport)}>↗ Экспорт текстом</MenuItem>
           {graph && (
             <>
               <MenuItem disabled={graph.image.busy} onClick={pick(graph.image.download)}>↓ Скачать картинкой</MenuItem>

@@ -3,14 +3,11 @@ import { api, reportClientError, type TherapyClientSummary, type UserTask, type 
 import { useNoteComposer } from '../../../../shared/src/therapy/useNoteComposer';
 import { useSessionAliasEditing } from '../../../../shared/src/therapy/useSessionAliasEditing';
 import { sameId } from '../../../../shared/src/utils/sameId';
-import { fmtDate, momentDayKey, todayStr } from '../../utils/format';
-import { SCHEMA_DOMAINS, MODE_GROUPS } from '../../schemaTherapyData';
-import { useCopyToClipboard } from '../../../../shared/src/utils/useCopyToClipboard';
 import { useYsqRequest } from '../../../../shared/src/therapy/useYsqRequest';
-import { formatConceptLinksExport } from '../../../../shared/src/therapy/conceptGraph/conceptLinksExport';
+import { useConceptExport } from '../../../../shared/src/therapy/useConceptExport';
 import { reloadClientTasks } from '../../../../shared/src/therapy/reloadClientTasks';
 import { useConceptAutosave } from './useConceptAutosave';
-type ClientTab = 'overview' | 'concept' | 'mode_map' | 'sessions' | 'tasks' | 'ysq' | 'client_notes';
+import type { ClientTab } from './clientSheetTypes';
 
 interface Params {
   onOpenClient?: (id: UserId) => void;
@@ -55,10 +52,12 @@ export function useClientDetail({ onOpenClient, switchView, setClients }: Params
 
   // YSQ / Export
   const { ysqRequested, ysqError, resetYsq, handleRequestYsq } = useYsqRequest(
-    selectedClient?.telegramId, (id) => api.requestYsq(id));
-  const { copied: exportCopied, copy: copyExport } = useCopyToClipboard({
-    onError: () => reportClientError({ message: 'client detail export clipboard write failed', section: 'therapist.clientDetail' }),
-  });
+    selectedClient?.telegramId, (id) => api.requestYsq(id), clientData?.ysqRequestPending);
+  // Экспорт концепта — общий с мини-аппом (shared/src/therapy/useConceptExport.ts).
+  const { exportCopied, exportEmpty, handleExport } = useConceptExport(
+    { client: selectedClient, concept, localConcept, activeSchemaIds, activeModeIds },
+    (message) => reportClientError({ message: `client detail ${message}`, section: 'therapist.clientDetail' }),
+  );
 
   // Delete — Ж4 (аудит 2026-08): нативный confirm() заменён на ConfirmDialog
   // (рендерится в ClientHeader); confirmingDelete переключает его видимость.
@@ -74,8 +73,8 @@ export function useClientDetail({ onOpenClient, switchView, setClients }: Params
   const ysqSchemaIds = clientData?.ysqActiveSchemaIds ?? [];
   const selfSchemaIds = clientData?.mySchemaIds ?? [];
 
-  // ── Open client ────────────────────────────────────────────────────────────────
-  async function openClient(client: TherapyClientSummary) {
+  // ── Open client (tab — с какой вкладки: задание с доски открывает «Задания») ──
+  async function openClient(client: TherapyClientSummary, tab: ClientTab = 'overview') {
     const clientId = client.telegramId;
     conceptSave.resetForClient(); // ожидающая правка уходит ПРЕЖНЕМУ клиенту, с его данными
     openClientIdRef.current = clientId;
@@ -93,7 +92,7 @@ export function useClientDetail({ onOpenClient, switchView, setClients }: Params
     resetYsq();
     sa.resetSessionAlias(client);
     setDeleteError('');
-    setClientTab('overview');
+    setClientTab(tab);
     setTabLoading(true);
     onOpenClient?.(clientId);
     switchView('client');
@@ -150,48 +149,6 @@ export function useClientDetail({ onOpenClient, switchView, setClients }: Params
     if (selectedClient) reloadClientTasks(selectedClient.telegramId, isOpen, api.getTherapyTasksForClient, setClientTasks);
   }
 
-  // ── Export ─────────────────────────────────────────────────────────────────────
-  function buildExportText(): string {
-    if (!selectedClient || !concept) return '';
-    const clientName = selectedClient.clientAlias ?? selectedClient.name ?? `ID ${selectedClient.telegramId}`;
-    const date = concept.updatedAt ? fmtDate(momentDayKey(concept.updatedAt)) : todayStr();
-    const c = { ...concept, ...localConcept };
-    const schemaNames = activeSchemaIds.map(id => {
-      const s = SCHEMA_DOMAINS.flatMap(d => d.schemas).find(x => x.id === id);
-      return s ? s.name : id;
-    });
-    const modeNames = activeModeIds.map(id => {
-      const m = MODE_GROUPS.flatMap(g => g.items).find(x => x.id === id);
-      return m ? m.name : id;
-    });
-    const row = (label: string, value: string | null | undefined) => `${label}\n${value?.trim() || '–'}\n`;
-    const div = '─'.repeat(44);
-    const links = formatConceptLinksExport(activeSchemaIds, activeModeIds, c);
-    return [
-      `Клиент: ${clientName}   Дата: ${date}`,
-      '', '══════ КРАТКАЯ КОНЦЕПТУАЛИЗАЦИЯ ══════', '',
-      div, row('АКТУАЛЬНЫЕ СХЕМЫ (ЭДС)', schemaNames.join(' · ') || null),
-      div, row('КАРТА РЕЖИМОВ', modeNames.join(' · ') || null),
-      ...(links ? [div, `${links}\n`] : []),
-      div, row('РАННИЙ ДИСФУНКЦИОНАЛЬНЫЙ ОПЫТ', c.earlyExperience as string),
-      div, row('НЕУДОВЛЕТВОРЁННЫЕ БАЗОВЫЕ ПОТРЕБНОСТИ', c.unmetNeeds as string),
-      div, row('СХЕМНЫЕ ТРИГГЕРЫ', c.triggers as string),
-      div, row('ДЕЗАДАПТИВНЫЕ КОПИНГИ', c.copingStyles as string),
-      div, row('АКТУАЛЬНЫЕ ПРОБЛЕМЫ И СИМПТОМЫ', c.currentProblems as string),
-      div, row('ЦЕЛИ СХЕМА-ТЕРАПИИ', c.goals as string),
-      div, '', '@SchemeHappens · Всё по схеме',
-    ].join('\n');
-  }
-
-  async function handleExport() {
-    const text = buildExportText();
-    if (!text) return;
-    try {
-      if (navigator.share) { await navigator.share({ text }); return; }
-    } catch { /* fallthrough */ }
-    await copyExport(text);
-  }
-
   return {
     openClientIdRef,
     // State
@@ -214,7 +171,7 @@ export function useClientDetail({ onOpenClient, switchView, setClients }: Params
     aliasInput: sa.aliasInput, setAliasInput: sa.setAliasInput,
     aliasSaving: sa.aliasSaving, aliasError: sa.aliasError,
     ysqRequested, ysqError,
-    exportCopied,
+    exportCopied, exportEmpty,
     deleteLoading, deleteError, confirmingDelete,
     tabLoading, clientTab, setClientTab,
     // Derived

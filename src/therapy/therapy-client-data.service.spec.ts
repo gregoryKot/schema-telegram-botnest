@@ -12,6 +12,7 @@ import { TherapyRelationsService } from './therapy-relations.service';
 import { Rel, makeRelationPrismaMock } from './therapy.test-helpers';
 import { encrypt, encryptJson } from '../utils/crypto';
 import { NotificationService } from '../notification/notification.service';
+import { isOwnYsqRequestPending } from './ysq-request';
 
 const blank = { triggers: '', feelings: '', thoughts: '', behavior: '' };
 const blankSchemaNote = { ...blank, origins: '', reality: '', healthyView: '' };
@@ -151,6 +152,7 @@ function makeService(rels: Rel[]) {
   const notificationService = {
     schedule: jest.fn(() => Promise.resolve(undefined)),
     hasPending: jest.fn(() => Promise.resolve(false)),
+    pendingPayloads: jest.fn(() => Promise.resolve([])),
   } as any;
   const svc = new TherapyClientDataService(
     t.db,
@@ -427,6 +429,8 @@ describe('TherapyClientDataService — виртуальный клиент (id<0
       myModeIds: [],
       ysqCompletedAt: null,
       ysqActiveSchemaIds: [],
+      ysqHistory: [],
+      ysqRequestPending: false,
     });
     expect(db.user.findUnique).not.toHaveBeenCalled();
   });
@@ -557,7 +561,7 @@ describe('TherapyClientDataService — requestYsq для реального кл
       CLIENT_A,
       'ysq_requested',
       expect.any(Date),
-      { therapistName: 'Доктор Иванова' },
+      { therapistName: 'Доктор Иванова', therapistId: String(T1) },
     );
   });
 
@@ -568,7 +572,7 @@ describe('TherapyClientDataService — requestYsq для реального кл
       CLIENT_A,
       'ysq_requested',
       expect.any(Date),
-      { therapistName: null },
+      { therapistName: null, therapistId: String(T1) },
     );
   });
 });
@@ -583,7 +587,13 @@ describe('TherapyClientDataService — requestYsq: дедуп очереди (ш
     type: string;
     sentAt: Date | null;
     cancelledAt: Date | null;
+    payload?: unknown;
   };
+  const pending = (where: Partial<Row>) => (r: Row) =>
+    r.userId === where.userId &&
+    r.type === where.type &&
+    (where.sentAt === null ? r.sentAt === null : true) &&
+    (where.cancelledAt === null ? r.cancelledAt === null : true);
   function makeSeam() {
     const { db, users } = makeService([relA]);
     const queue: Row[] = [];
@@ -593,15 +603,10 @@ describe('TherapyClientDataService — requestYsq: дедуп очереди (ш
         return Promise.resolve(undefined);
       }),
       count: jest.fn(({ where }: { where: Partial<Row> }) =>
-        Promise.resolve(
-          queue.filter(
-            (r) =>
-              r.userId === where.userId &&
-              r.type === where.type &&
-              (where.sentAt === null ? r.sentAt === null : true) &&
-              (where.cancelledAt === null ? r.cancelledAt === null : true),
-          ).length,
-        ),
+        Promise.resolve(queue.filter(pending(where)).length),
+      ),
+      findMany: jest.fn(({ where }: { where: Partial<Row> }) =>
+        Promise.resolve(queue.filter(pending(where))),
       ),
     };
     const notifications = new NotificationService({
@@ -615,7 +620,7 @@ describe('TherapyClientDataService — requestYsq: дедуп очереди (ш
     );
     users.push(mkUser(T1, 'Доктор Иванова', []));
     const ysqRows = () => queue.filter((r) => r.type === 'ysq_requested');
-    return { svc, queue, ysqRows };
+    return { svc, queue, ysqRows, users, notifications };
   }
 
   it('два запроса подряд, пока первый в очереди → одна строка', async () => {
@@ -665,6 +670,52 @@ describe('TherapyClientDataService — requestYsq: дедуп очереди (ш
     });
     await svc.requestYsq(T1, CID_A);
     expect(ysqRows().filter((r) => r.userId === CLIENT_A)).toHaveLength(1);
+  });
+
+  // QA 2026-11: «запрос отправлен» жил только в state кнопки и пропадал после
+  // перезагрузки. Read-after-write: запрос → карточка клиента видит, что он
+  // висит; ушёл или отменён — уже нет. Признак тот же, что у дедупа выше.
+  it('запрос → getClientData отдаёт ysqRequestPending, после отправки — false', async () => {
+    const { svc, ysqRows } = makeSeam();
+    expect((await svc.getClientData(T1, CID_A)).ysqRequestPending).toBe(false);
+    await svc.requestYsq(T1, CID_A);
+    expect((await svc.getClientData(T1, CID_A)).ysqRequestPending).toBe(true);
+    ysqRows()[0].sentAt = new Date();
+    expect((await svc.getClientData(T1, CID_A)).ysqRequestPending).toBe(false);
+  });
+
+  // Дедуп по клиенту, а признак — по паре: чужой висящий запрос не выдаёт
+  // второму терапевту, что у клиента есть другой (docs/open/therapy.md).
+  it('висящий запрос другого терапевта этого клиента — не «свой», ysqRequestPending false', async () => {
+    const { svc, ysqRows, notifications } = makeSeam();
+    await svc.requestYsq(T1, CID_A);
+    expect(ysqRows()).toHaveLength(1);
+    expect(await isOwnYsqRequestPending(notifications, T2, CLIENT_A)).toBe(
+      false,
+    );
+    expect(await isOwnYsqRequestPending(notifications, T1, CLIENT_A)).toBe(
+      true,
+    );
+  });
+
+  // Запросы, поставленные до этого поля (payload без therapistId), ничьими не
+  // считаются: кнопка вернётся, а дедуп по клиенту не даст отправить второй.
+  it('висящий запрос без therapistId (до деплоя) — не «свой» ни для кого', async () => {
+    const notifications = {
+      pendingPayloads: jest.fn(async () => [{ therapistName: 'Анна' }, null]),
+    };
+    expect(await isOwnYsqRequestPending(notifications, T1, CLIENT_A)).toBe(
+      false,
+    );
+  });
+
+  it('профиль скрыт клиентом — свой висящий запрос терапевт всё равно видит', async () => {
+    const { svc, users } = makeSeam();
+    users.push(mkUser(CLIENT_A, 'Аня', ['abandonment'], false));
+    await svc.requestYsq(T1, CID_A);
+    const data = await svc.getClientData(T1, CID_A);
+    expect(data.mySchemaIds).toEqual([]);
+    expect(data.ysqRequestPending).toBe(true);
   });
 });
 

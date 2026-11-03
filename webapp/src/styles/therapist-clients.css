@@ -43,7 +43,9 @@
 .tc-top { display: flex; align-items: flex-start; gap: 14px; }
 .tc-avatar { width: 48px; height: 48px; font-size: 18px; }
 .tc-who { flex: 1; min-width: 0; }
-.tc-name { font: 23px/1.15 var(--serif); overflow-wrap: anywhere; }
+/* Имя — одна строка с многоточием: overflow-wrap: anywhere рвал его посреди
+   слова в 3–4 строки. */
+.tc-name { font: 23px/1.15 var(--serif); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .tc-meta { display: flex; gap: 8px; align-items: center; margin-top: 6px; font-size: 12px; color: var(--text-sub); flex-wrap: wrap; }
 .tc-meeting {
   display: flex; justify-content: space-between; align-items: center; gap: 12px;

@@ -23,11 +23,15 @@
 }
 .tt-time { font-family: var(--serif); font-size: 26px; }
 .tt-bar { height: 40px; border-radius: 2px; }
-.tt-name { font-size: 16px; font-weight: 600; overflow-wrap: anywhere; }
+/* Колонка «имя + подпись» в сетке строки: min-width: 0, иначе имя в одну
+   строку распирает трек. Имена — одна строка с многоточием (не anywhere:
+   тот рвал имя посреди слова). */
+.tt-who { min-width: 0; }
+.tt-name { font-size: 16px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .tt-row-sub { font-size: 13px; color: var(--text-sub); margin-top: 2px; }
 .tt-act { grid-template-columns: 36px minmax(0, 1fr) minmax(48px, 120px) 44px auto; min-height: 44px; background: none; border-top: none; border-left: none; border-right: none; }
 .tt-act .ds-avatar { width: 36px; height: 36px; font-size: 12px; }
-.tt-act-name { font-size: 14px; font-weight: 600; overflow-wrap: anywhere; }
+.tt-act-name { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .tt-act-status { font-size: 12px; margin-top: 2px; color: var(--text-muted); }
 .tt-act-status.is-ok { color: var(--ok); }
 .tt-act-status.is-warn { color: var(--warn-ink); }
@@ -48,6 +52,9 @@
   .tt-denom { font-size: 14px; }
   .tt-cols { gap: 24px; }
   .tt-session { grid-template-columns: 56px 4px minmax(0, 1fr) auto; gap: 12px; }
+  /* Спарклайн — на минимум 48: трек minmax(48px, 120px) добирал свои 120
+     раньше, чем доля 1fr имени, и имени оставалось ~38px. */
+  .tt-act { grid-template-columns: 36px minmax(0, 1fr) 48px 44px auto; gap: 10px; }
   .tt-time { font-size: 21px; }
   .tt-bar { height: 36px; }
   .tt-name { font-size: 15px; font-weight: 700; }

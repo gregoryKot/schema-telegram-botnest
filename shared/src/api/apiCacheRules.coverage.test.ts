@@ -29,8 +29,6 @@ const NO_INVALIDATION: Record<string, string> = {
   'POST /api/public-event': 'аналитика анонимного посетителя, см. выше',
   'POST /api/therapy/invite/preview':
     'только читает приглашение (чей код) — ничего не меняет, кешируемых GET у него нет',
-  'POST /api/therapy/request-ysq/1':
-    'просит клиента пройти YSQ — планирует ему уведомление и больше ничего; у терапевта в кеше от этого не меняется ни один GET (src/therapy/therapy-client-data.service.ts requestYsq)',
   'POST /api/activity':
     'отметка «заходил сегодня» — читается только серверными отчётами (/stats), кешируемого GET у неё нет',
 };

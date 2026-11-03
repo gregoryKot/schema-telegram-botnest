@@ -43,6 +43,23 @@ describe('ClientTasksTab', () => {
     expect(screen.getByText(/Клиент не пользуется приложением/)).toBeTruthy();
   });
 
+  // QA 2026-11: квадрат 22×22 с рамкой акцента слева выглядел чекбоксом, но
+  // на нажатие не отвечал — терапевт задание клиента не отмечает. Статус — один
+  // бейдж ds-badge справа, нажимаемого на вид квадрата нет.
+  it('статус задания — один бейдж ds-badge, квадрата-«чекбокса» нет', () => {
+    const detail = { clientTasks: [task(1, {}), task(2, { done: true, completedAt: '2026-10-05T10:00:00Z' })], setShowAssign: vi.fn() };
+    const { container } = render(<ClientTasksTab detail={detail as unknown as ClientDetail} />);
+    expect(container.querySelector('.tb-check')).toBeNull();
+    const rows = [...container.querySelectorAll('.tb-task')];
+    expect(rows).toHaveLength(2);
+    for (const row of rows) {
+      expect(row.querySelectorAll('.ds-badge')).toHaveLength(1);
+      expect(row.querySelector('[role="checkbox"], input[type="checkbox"]')).toBeNull();
+      expect(row.firstElementChild?.className).toBe('tb-task-main');
+    }
+    expect(rows.map(r => r.querySelector('.ds-badge')?.textContent)).toEqual(['В работе', 'Выполнено']);
+  });
+
   // Регрессия: терапевт видел сырой id режима «invincible_oc» вместо
   // названия — вкладка рисовала task.text как есть.
   it('mode_intro — название режима, сырой id не виден', () => {
@@ -159,6 +176,18 @@ describe('вкладки без заголовков, пустые состоя�
     expect(screen.queryByText('Опросник схем YSQ')).toBeNull();
     expect(screen.getByText(/1 прохождение · последнее/)).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Экспорт' })).toBeTruthy();
+    expect(screen.queryByText(/экспортировать нечего/)).toBeNull();
+  });
+
+  it('YSQ с прохождениями, пустой концепт: «Экспорт» недоступен, причина строкой', () => {
+    const run = { id: 1, completedAt: '2026-10-01T10:00:00Z', scores: [{ id: 'failure', pct5plus: 70 }] };
+    const clientData = { ysqHistory: [run], ysqCompletedAt: '2026-10-01T10:00:00Z' } as unknown as ClientData;
+    render(<ClientYSQTab
+      clientData={clientData} selectedClient={{ telegramId: 7 } as unknown as TherapyClientSummary} selfSchemaIds={[]} ysqSchemaIds={[]}
+      ysqRequested={false} ysqError="" exportCopied={false} exportEmpty handleRequestYsq={vi.fn()} handleExport={vi.fn()}
+    />);
+    expect((screen.getByRole('button', { name: 'Экспорт' }) as HTMLButtonElement).disabled).toBe(true);
+    expect(screen.getByText('В концепте пока пусто — экспортировать нечего')).toBeTruthy();
   });
 
   it('YSQ без прохождений: ds-empty без засечного заголовка, кнопка запроса и чипы схем', () => {

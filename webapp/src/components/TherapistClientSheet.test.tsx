@@ -97,8 +97,9 @@ function Wrapper() {
   return <TherapistClientSheet view={view} onViewChange={setView} onClose={vi.fn()} />;
 }
 
+// Router: подтверждение удаления клиента пишет запись в историю (HistoryConfirmDialog).
 function renderSheet() {
-  return render(<Wrapper />);
+  return render(<MemoryRouter><Wrapper /></MemoryRouter>);
 }
 
 // Инцидент 2026-10-26: приглашение из «Новый клиент» больше не создаёт
@@ -359,11 +360,11 @@ describe('TherapistClientSheet — вкладка «Схемы» (YSQ)', () => {
     await screen.findByText('✓ Запрос отправлен');
   });
 
-  it('оффлайн-клиент (telegramId < 0) не может запросить YSQ — кнопки нет вообще', async () => {
-    mockApi.getTherapyClients.mockResolvedValue([client({ telegramId: -5, name: null, clientAlias: 'Оффлайн Клиент' })]);
+  it('офлайн-клиент (telegramId < 0) не может запросить YSQ — кнопки нет вообще', async () => {
+    mockApi.getTherapyClients.mockResolvedValue([client({ telegramId: -5, name: null, clientAlias: 'Офлайн Клиент' })]);
     renderSheet();
-    await screen.findByText('Оффлайн Клиент');
-    fireEvent.click(screen.getByText('Оффлайн Клиент'));
+    await screen.findByText('Офлайн Клиент');
+    fireEvent.click(screen.getByText('Офлайн Клиент'));
     await screen.findByText('Обзор');
 
     fireEvent.click(screen.getByText('Схемы'));
@@ -432,7 +433,7 @@ describe('TherapistClientSheet — вкладка «Задания»', () => {
     mockApi.getTherapyTasksForClient.mockResolvedValue([]);
     await openAnnaTasks(true);
     fireEvent.click(await screen.findByText('Письмо себе'));
-    await screen.findByText('Задание для Анна');
+    await screen.findByText('Задание · Анна');
     const card = screen.getAllByText('Письмо себе').map(n => n.closest('[aria-pressed]')).find(Boolean)!;
     expect(card.getAttribute('aria-pressed')).toBe('true');
   });
@@ -785,18 +786,18 @@ describe('TherapistClientSheet — поиск и фильтр в списке к
     expect(screen.getByText('Ничего не найдено')).toBeTruthy();
   });
 
-  it('фильтр «Оффлайн» показывает только клиентов без Telegram (name: null)', async () => {
+  it('фильтр «Офлайн» показывает только клиентов без Telegram (name: null)', async () => {
     mockApi.getTherapyClients.mockResolvedValue([
       client({ telegramId: 1, name: 'Анна' }),
-      client({ telegramId: -2, name: null, clientAlias: 'Оффлайн-клиент' }),
+      client({ telegramId: -2, name: null, clientAlias: 'Офлайн-клиент' }),
     ]);
     renderSheet();
     await screen.findByText('Анна');
 
-    fireEvent.click(screen.getByText('Оффлайн'));
+    fireEvent.click(screen.getByText('Офлайн'));
 
     expect(screen.queryByText('Анна')).toBeNull();
-    expect(screen.getByText('Оффлайн-клиент')).toBeTruthy();
+    expect(screen.getByText('Офлайн-клиент')).toBeTruthy();
   });
 });
 

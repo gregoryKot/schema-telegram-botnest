@@ -58,6 +58,7 @@
 | check-schema-terms.mjs | неканонические термины схема-терапии в текстах | — | нет | checks |
 | check-second-person.mjs | захардкоженные императивы и «вы»-формы вне tr(), тексты бэкенда | `scripts/second-person-baseline.json` | да | webapp |
 | check-silent-catch.mjs | `.catch(() => {})`, глушащий ошибку сети | `scripts/silent-catch-baseline.json` | да | backend |
+| check-spelling.mjs | орфография видимых строк («оффлайн» → «офлайн»); комментарии и тесты не смотрит | — | нет | checks |
 | check-tap-targets.mjs | интерактивный элемент с инлайн-размером обеих сторон меньше 44px | `scripts/tap-targets-baseline.json` | да | webapp |
 | check-tiny-fonts.mjs | инлайн `fontSize` ниже 11px | `scripts/tiny-fonts-baseline.json` | да | webapp |
 | check-token-contract.mjs | расхождение дизайн-токенов webapp и мини-аппа (`tokens.css`) | — | нет | webapp |

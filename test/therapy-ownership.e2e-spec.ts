@@ -118,6 +118,18 @@ describe('e2e smoke: therapy ownership isolation (therapist ↔ client)', () => 
     expect(data.body.mySchemaIds).toEqual([]);
   });
 
+  // QA 2026-11: «запрос отправлен» переживает перезагрузку — признак приходит
+  // в client-data своего терапевта (сохранил → нашёл через HTTP).
+  it('T1 запрашивает YSQ у C1 → client-data отдаёт ysqRequestPending', async () => {
+    const t1 = agentAs(T1);
+    const before = await t1.get(`/api/therapy/client-data/${C1_ID}`);
+    expect(before.body.ysqRequestPending).toBe(false);
+    const req = await t1.post(`/api/therapy/request-ysq/${C1_ID}`, {});
+    expect(req.status).toBeLessThan(300);
+    const after = await t1.get(`/api/therapy/client-data/${C1_ID}`);
+    expect(after.body.ysqRequestPending).toBe(true);
+  });
+
   it('T1 назначает задачу C1 и видит её через tasks/client/:clientId', async () => {
     const t1 = agentAs(T1);
     const task = await t1.post('/api/therapy/tasks', {

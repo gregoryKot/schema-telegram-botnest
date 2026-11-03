@@ -1038,16 +1038,16 @@ describe('SettingsSheet — «Напоминание»: тумблер сохр�
 });
 
 describe('SettingsSheet — приватность карточек терапевту: тумблеры видимы, когда есть активная связь', () => {
-  it('переключение «Карточки схем и режимов» и «Профиль и схемы» шлёт patch с реальным значением', async () => {
+  it('переключение «Дневники и карточки» и «Мои схемы и тест» шлёт patch с реальным значением', async () => {
     mockApi.getTherapyRelation.mockResolvedValue({ role: 'client', status: 'active', partnerName: 'Анна', partnerId: 1, code: 'X', nextSession: null });
     await renderSheet();
     await screen.findByText('Терапевт: Анна');
 
-    fireEvent.click(toggleForRow('Карточки схем и режимов'));
+    fireEvent.click(toggleForRow('Дневники и карточки'));
     await waitFor(() =>
       expect(mockApi.updateSettings).toHaveBeenCalledWith({ therapistShareCards: false }),
     );
-    fireEvent.click(toggleForRow('Профиль и схемы'));
+    fireEvent.click(toggleForRow('Мои схемы и тест'));
     await waitFor(() =>
       expect(mockApi.updateSettings).toHaveBeenCalledWith({ therapistShareProfile: false }),
     );

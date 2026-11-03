@@ -4,6 +4,7 @@ import { useTr } from '../utils/addressForm';
 import { buildPlusActions, type QuickActionId } from '../../../shared/src/quickActions/quickActions';
 import type { TherapyClientSummary, UserId } from '../api';
 import { isActiveToday } from '../../../shared/src/therapy/clientSheetHelpers';
+import { matchesSearch } from '../../../shared/src/utils/searchNormalize';
 import { pressable } from '../utils/a11y';
 import { useDialogA11y } from '../../../shared/src/utils/dialogA11y';
 import { useHistorySheet } from '../hooks/useHistorySheet';
@@ -87,8 +88,6 @@ export function CommandPalette({ onNavigate, onClose, userRole, therapistMode, o
   interface Row { type: RowType; label: string; sub?: string; activeToday?: boolean; hint?: string; action: () => void }
 
   const rows = useMemo<Row[]>(() => {
-    const term = q.trim().toLowerCase();
-
     const clientRows: Row[] = clients.map(c => ({
       type: 'client' as const,
       label: c.clientAlias ?? c.name ?? `ID ${c.telegramId}`,
@@ -121,8 +120,8 @@ export function CommandPalette({ onNavigate, onClose, userRole, therapistMode, o
     ];
 
     const all: Row[] = [...clientRows, ...navRows, ...actionRows];
-    if (!term) return all;
-    return all.filter(r => (r.label + ' ' + (r.sub ?? '')).toLowerCase().includes(term));
+    // Регистр и «ё/е» не различаются — тот же поиск, что в списке клиентов.
+    return all.filter(r => matchesSearch(`${r.label} ${r.sub ?? ''}`, q));
   }, [q, clients, userRole, therapistMode, onNavigate, onOpenClient, onToggleMode, onQuickAction, tr]);
 
   useEffect(() => {

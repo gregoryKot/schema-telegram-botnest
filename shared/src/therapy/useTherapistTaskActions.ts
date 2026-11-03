@@ -14,6 +14,7 @@ import { isVirtualId } from '../utils/sameId';
 // офлайн-клиента — закрыть (выполнить его в приложении некому). Подтверждение
 // удаления у площадок своё (диалог сайта, двойной тап мини-аппа), запросы и
 // список — здесь. API приходит параметром — хук не знает, чей он фронтенд.
+// `onChanged` — после успеха: сайт перечитывает доску «Задания» всех клиентов.
 
 export interface TherapistTaskApi {
   deleteTherapyTask: (id: number) => Promise<unknown>;
@@ -27,6 +28,7 @@ export const therapistClosesTask = (t: Pick<UserTask, 'userId' | 'done'>) =>
 export function useTherapistTaskActions(
   api: TherapistTaskApi,
   setClientTasks: Dispatch<SetStateAction<UserTask[]>>,
+  onChanged?: () => void,
 ) {
   const [busyId, setBusyId] = useState<number | null>(null);
   const [error, setError] = useState('');
@@ -41,6 +43,7 @@ export function useTherapistTaskActions(
       try {
         await apiRef.current.deleteTherapyTask(id);
         setClientTasks((prev) => prev.filter((t) => t.id !== id));
+        onChanged?.();
         return true;
       } catch {
         setError('Не удалось удалить задание');
@@ -49,7 +52,7 @@ export function useTherapistTaskActions(
         setBusyId(null);
       }
     },
-    [setClientTasks],
+    [setClientTasks, onChanged],
   );
 
   const markDone = useCallback(
@@ -64,13 +67,14 @@ export function useTherapistTaskActions(
             t.id === id ? { ...t, done: true, completedAt: at } : t,
           ),
         );
+        onChanged?.();
       } catch {
         setError('Не удалось отметить задание');
       } finally {
         setBusyId(null);
       }
     },
-    [setClientTasks],
+    [setClientTasks, onChanged],
   );
 
   return { busyId, error, remove, markDone };

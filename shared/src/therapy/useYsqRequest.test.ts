@@ -50,37 +50,31 @@ describe('useYsqRequest', () => {
     expect(result.current.ysqError).toBe('');
   });
 
-  it('второй успех подряд: таймер первого не гасит «отправлено» раньше срока', async () => {
+  // QA 2026-11: флаг гас через 3 с, хотя запрос висел на сервере (повтор — no-op
+  // дедупа), и терялся после перезагрузки.
+  it('«отправлено» держится, пока открыт тот же клиент', async () => {
     const send = vi.fn().mockResolvedValue(undefined);
     const { result } = renderHook(() => useYsqRequest(7, send));
     await act(() => result.current.handleRequestYsq());
     act(() => {
-      vi.advanceTimersByTime(2000);
-    });
-    await act(() => result.current.handleRequestYsq());
-    act(() => {
-      vi.advanceTimersByTime(1500);
+      vi.advanceTimersByTime(60_000);
     });
     expect(result.current.ysqRequested).toBe(true);
-    act(() => {
-      vi.advanceTimersByTime(1500);
-    });
-    expect(result.current.ysqRequested).toBe(false);
+    expect(vi.getTimerCount()).toBe(0);
   });
 
-  it('ysqRequested гаснет через 3 с', async () => {
-    const send = vi.fn().mockResolvedValue(undefined);
-    const { result } = renderHook(() => useYsqRequest(7, send));
-    await act(() => result.current.handleRequestYsq());
+  it('serverPending: висящий на сервере запрос виден без нажатия, reset его не гасит', () => {
+    const send = vi.fn();
+    const { result, rerender } = renderHook(
+      ({ pending }: { pending: boolean }) => useYsqRequest(7, send, pending),
+      { initialProps: { pending: true } },
+    );
     expect(result.current.ysqRequested).toBe(true);
-    act(() => {
-      vi.advanceTimersByTime(2999);
-    });
+    act(() => result.current.resetYsq());
     expect(result.current.ysqRequested).toBe(true);
-    act(() => {
-      vi.advanceTimersByTime(1);
-    });
+    rerender({ pending: false });
     expect(result.current.ysqRequested).toBe(false);
+    expect(send).not.toHaveBeenCalled();
   });
 
   it('нет клиента → ничего не отправляется', async () => {
@@ -97,21 +91,17 @@ describe('useYsqRequest', () => {
     expect(send).toHaveBeenCalledWith(0);
   });
 
-  it('resetYsq гасит флаг, ошибку и висящий таймер', async () => {
-    const send = vi.fn().mockResolvedValue(undefined);
+  it('resetYsq (смена клиента) гасит флаг и ошибку', async () => {
+    const send = vi
+      .fn()
+      .mockResolvedValueOnce(undefined)
+      .mockRejectedValueOnce(new Error('fail'));
     const { result } = renderHook(() => useYsqRequest(7, send));
+    await act(() => result.current.handleRequestYsq());
     await act(() => result.current.handleRequestYsq());
     act(() => result.current.resetYsq());
     expect(result.current.ysqRequested).toBe(false);
-    expect(vi.getTimerCount()).toBe(0);
-  });
-
-  it('размонтирование гасит таймер', async () => {
-    const send = vi.fn().mockResolvedValue(undefined);
-    const { result, unmount } = renderHook(() => useYsqRequest(7, send));
-    await act(() => result.current.handleRequestYsq());
-    unmount();
-    expect(vi.getTimerCount()).toBe(0);
+    expect(result.current.ysqError).toBe('');
   });
 
   it('смена клиента при запросе в полёте: тап на новом уходит, поздний ответ прежнего игнорируется', async () => {

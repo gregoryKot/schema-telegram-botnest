@@ -4,9 +4,9 @@ import {
   isSessionToday,
   upcomingSession,
 } from '../../../../shared/src/therapy/upcomingSession';
+import { therapistNameLine } from '../../../../shared/src/therapy/therapistLinkCopy';
 
-// Баннер «следующая встреча» для клиентов терапевта. Вынесено из
-// HelpSection.tsx (правило №10, храповик размера файла).
+// Баннер «следующая встреча» у клиента терапевта (вынесен из HelpSection.tsx).
 export function NextSessionBanner({
   relation,
 }: {
@@ -50,7 +50,7 @@ export function NextSessionBanner({
       </span>
       {relation.partnerName && (
         <span style={{ fontSize: 11, color: 'var(--text-sub)' }}>
-          с {relation.partnerName}
+          {therapistNameLine(relation.partnerName)}
         </span>
       )}
     </div>

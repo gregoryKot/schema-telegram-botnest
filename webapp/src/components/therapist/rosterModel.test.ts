@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type { TherapyClientSummary } from '../../api';
 import { SCHEMA_DOMAINS } from '../../schemaTherapyData';
 import { forEachTimeZone } from '../../../../shared/src/utils/timeZone.test-helpers';
-import { filterRoster, sortRoster, meetingLabel, clientCaption, clientStatus, domainBar, schemaChips, rosterName, rosterInitials } from './rosterModel';
+import { filterRoster, sortRoster, meetingLabel, clientCaption, clientStatus, domainBar, schemaChips, rosterName } from './rosterModel';
 
 const TODAY = '2026-10-03';
 
@@ -56,6 +56,14 @@ describe('filterRoster', () => {
     expect(filterRoster([aliased], ' пёт ', 'all')).toEqual([aliased]);
     expect(filterRoster([aliased], 'игор', 'all')).toEqual([]);
     expect(filterRoster(all, 'ВЕР', 'all')).toEqual([activeOnline]);
+  });
+
+  // QA 2026-11: «е» не находила «ё» и наоборот — терапевт набирает как привык.
+  it('поиск не различает «е» и «ё» в обе стороны', () => {
+    const pyotr = client({ telegramId: 3, clientAlias: 'Пётр' });
+    const alena = client({ telegramId: 5, name: 'Алена' });
+    expect(filterRoster([pyotr, alena], 'петр', 'all')).toEqual([pyotr]);
+    expect(filterRoster([pyotr, alena], 'Алёна', 'all')).toEqual([alena]);
   });
 
   it('поиск и статус работают вместе', () => {
@@ -233,7 +241,7 @@ describe('clientStatus', () => {
     expect(clientStatus(client({}))).toEqual({ label: 'в боте', inBot: true });
   });
   it('офлайн по отрицательному id, а не по name', () => {
-    expect(clientStatus(offline())).toEqual({ label: 'оффлайн', inBot: false });
+    expect(clientStatus(offline())).toEqual({ label: 'офлайн', inBot: false });
   });
 });
 
@@ -259,14 +267,9 @@ describe('domainBar / schemaChips', () => {
   });
 });
 
-describe('rosterName / rosterInitials', () => {
+describe('rosterName', () => {
   it('алиас важнее имени, без обоих — ID', () => {
     expect(rosterName(client({ clientAlias: 'А.К.', name: 'Аня' }))).toBe('А.К.');
     expect(rosterName(client({ name: null }))).toBe('ID 1');
-  });
-  it('инициалы: две буквы, пустое имя — «?»', () => {
-    expect(rosterInitials('анна к.')).toBe('АК');
-    expect(rosterInitials('Борис')).toBe('Б');
-    expect(rosterInitials('  ')).toBe('?');
   });
 });

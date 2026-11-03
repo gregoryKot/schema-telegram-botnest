@@ -62,6 +62,10 @@
   gap: 48px; padding: 40px var(--tk-gutter) 64px; max-width: var(--tk-max); box-sizing: border-box;
 }
 @media (max-width: 1023px) { .tk-ov { grid-template-columns: minmax(0, 1fr); gap: 40px; } }
+/* Действия узкого сайдбара («Запросить YSQ», «Экспорт концепта») — столбцом во
+   всю ширину: в ряд им нужно ~314px, и в 260–313 вторая кнопка падала вниз
+   другой ширины. В одну колонку (<1024) сайдбар широкий — кнопки в ряд. */
+@media (min-width: 1024px) { .tk-side .tk-quick { flex-direction: column; } }
 .tk-col { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
 .tk-quick { display: flex; gap: 8px; flex-wrap: wrap; }
 .tk-card-head { margin-bottom: 12px; }
@@ -75,7 +79,7 @@
 .tk-entry > .ds-sub { white-space: nowrap; }
 .tk-entry-body { min-width: 0; }
 .tk-entry-excerpt { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.tk-note-text { font-size: 14px; line-height: 1.7; color: var(--text-sub); max-width: 720px; white-space: pre-wrap; }
+.tk-note-text { font-size: 14px; line-height: 1.7; color: var(--text-sub); max-width: 720px; white-space: pre-wrap; overflow-wrap: anywhere; }
 .tk-note-date { margin-top: 6px; }
 
 /* ── Сайдбар Обзора ──────────────────────────────────────────────────────── */
@@ -110,8 +114,10 @@
   .tk-head-row { gap: 12px; flex-wrap: nowrap; }
   .tk-avatar { width: 44px; height: 44px; font-size: 17px; }
   .tk-ident { min-width: 0; }
+  /* Две строки по пробелам; слово длиннее строки — многоточием, не разрывом
+     посреди слова (overflow-wrap: anywhere давал «Константинопо/льская»). */
   .tk-name {
-    white-space: normal; overflow-wrap: anywhere;
+    white-space: normal;
     display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2;
   }
   .tk-badges { gap: 6px; }

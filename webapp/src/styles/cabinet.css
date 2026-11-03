@@ -248,18 +248,25 @@ button.ds-list-row, a.ds-list-row { width: 100%; box-sizing: border-box; border:
 .ds-idx-none { color: var(--text-ghost); }
 
 /* ── Адаптив ─────────────────────────────────────────────────────────────── */
+/* Раскладка телефона: отступы, кегли, прокрутка сегмента. */
 @media (max-width: 767px) {
   .ds-page { padding: 20px 16px 40px; gap: 24px; }
   .ds-h1 { font-size: 32px; }
   .ds-h2 { font-size: 22px; }
   .ds-sheet-head { padding: 0 16px; }
-  .ds-btn--icon { width: 44px; height: 44px; }
-  .ds-seg-btn { min-height: 44px; }
-  .ds-btn--sm { height: 44px; } /* тап 44 у всех малых кнопок на телефоне */
   .ds-seg--scroll { display: flex; width: 100%; box-sizing: border-box; }
   .ds-seg--scroll > .ds-seg-btn { flex: 0 0 auto; }
   .ds-seg--scroll::after { content: ''; flex: 0 0 20px; }
   .ds-input, .ds-textarea { font-size: 16px; } /* iOS Safari увеличивает экран при фокусе на поле мельче 16px */
+}
+/* Тап-цели 44 — один блок на телефон и на любой экран под пальцем (планшет:
+   pointer: coarse при ширине больше 767). Десктоп с мышью остаётся компактным:
+   вкладка ~35, сегмент 30, ссылка 20, малая кнопка 40. */
+@media (pointer: coarse), (max-width: 767px) {
+  .ds-tab { min-height: 44px; }
+  .ds-btn--icon { width: 44px; height: 44px; }
+  .ds-seg-btn { min-height: 44px; }
+  .ds-btn--sm { height: 44px; }
   .ds-input--search { height: 44px; border-radius: 22px; }
   .ds-input--sm { height: 44px; }
   .ds-chip--toggle { min-height: 44px; }

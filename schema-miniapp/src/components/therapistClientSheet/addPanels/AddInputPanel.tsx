@@ -2,7 +2,7 @@ import { AddClient } from '../types';
 import { AddSubmitButton } from './AddSubmitButton';
 
 // Панель добавления клиента одним полем: ввод + кнопка + подпись.
-// Общая для «Telegram ID» и «оффлайн-клиента» — механика одна, различаются
+// Общая для «Telegram ID» и «офлайн-клиента» — механика одна, различаются
 // подпись, плейсхолдер и цвет кнопки (правило «одна механика — один
 // компонент»; вынесено из ClientListView.tsx по правилу №10).
 export function AddInputPanel({

@@ -104,6 +104,13 @@ export const THERAPY_RULES: Rule[] = [
     pattern: /^\/api\/therapy\/session-info\/(-?\d+)$/,
     targets: (m) => [`${T}/client-data/${m[1]}`, CLIENTS],
   },
+  // Данные клиента несут ysqRequestPending: после запроса YSQ карточка,
+  // открытая заново, обязана показать «запрос отправлен» (QA 2026-11).
+  {
+    method: 'POST',
+    pattern: /^\/api\/therapy\/request-ysq\/(-?\d+)$/,
+    targets: (m) => [`${T}/client-data/${m[1]}`],
+  },
   // Список клиентов несёт схемы из концептуализации (getClients, schemaIds).
   {
     method: 'POST',

@@ -6,8 +6,8 @@ import type { TherapyRelationInfo } from '../apiTypes';
 //
 // Правило то же, что у сервера (`getClientDiaryEntries`,
 // src/therapy/therapy-client-data.service.ts): терапевт видит дневники при
-// активной связи, пока клиент не выключил в настройках «Карточки схем и
-// режимов» (`therapistShareCards === false`). Пока связь или настройки не
+// активной связи, пока клиент не выключил в настройках «Дневники и
+// карточки» (`therapistShareCards === false`). Пока связь или настройки не
 // загрузились — обещания нет совсем (null): лучше промолчать, чем соврать.
 
 type Tr = (ty: string, vy: string) => string;

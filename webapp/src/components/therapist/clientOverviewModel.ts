@@ -119,13 +119,6 @@ export function diaryPreview(entries: readonly DiaryEntryLike[], limit = 5): Dia
   });
 }
 
-/** Инициалы для аватара: первые буквы до двух слов. */
-export function clientInitials(name: string): string {
-  const words = name.trim().split(/\s+/).filter(Boolean);
-  if (words.length === 0) return '?';
-  return words.slice(0, 2).map((w) => Array.from(w)[0]).join('').toUpperCase();
-}
-
 /**
  * Отличие индекса сегодня от среднего за предыдущие дни (index 0 = сегодня).
  * Нужно ≥7 записей истории и хотя бы одна оценка до сегодня; иначе null — не выдумываем.

@@ -174,6 +174,8 @@ export interface ClientData {
   ysqCompletedAt: string | null;
   ysqActiveSchemaIds: string[];
   ysqHistory: YsqHistoryEntry[];
+  /** Запрос YSQ терапевта ещё не ушёл клиенту (src/therapy/ysq-request.ts). */
+  ysqRequestPending?: boolean;
 }
 
 export interface Insights {

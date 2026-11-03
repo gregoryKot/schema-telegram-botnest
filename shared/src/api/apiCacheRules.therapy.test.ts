@@ -13,11 +13,10 @@ import { cachedGet, clearApiCache, type InvalidationTarget } from './apiCache';
 
 const THERAPY_DIR = join(__dirname, '..', '..', '..', 'src', 'therapy');
 
-/** Мутации с id клиента в пути, которым сбрасывать нечего, — с причиной. */
-const NO_RULE: Record<string, string> = {
-  'POST /api/therapy/request-ysq/:clientId':
-    'только планирует клиенту уведомление, у терапевта не меняется ни один GET (NO_INVALIDATION в apiCacheRules.coverage.test.ts)',
-};
+/** Мутации с id клиента в пути, которым сбрасывать нечего, — с причиной.
+ *  request-ysq здесь был до QA 2026-11: теперь он меняет client-data
+ *  (ysqRequestPending) и сбрасывает её. */
+const NO_RULE: Record<string, string> = {};
 
 function clientIdMutations(): { key: string; method: string; path: string }[] {
   const found: { key: string; method: string; path: string }[] = [];
@@ -124,6 +123,20 @@ describe('applyMutationInvalidation: офлайн-клиент сохранил 
       '/api/therapy/notes/-57': 2,
       '/api/therapy/client/-57/diary': 2,
       '/api/therapy/notes/57': 1,
+    });
+  });
+
+  it('запрос YSQ -57: данные клиента -57 сброшены (ysqRequestPending), соседний 57 цел', async () => {
+    const f = await seed([
+      '/api/therapy/client-data/-57',
+      '/api/therapy/client-data/57',
+      '/api/therapy/clients',
+    ]);
+    applyMutationInvalidation('POST', '/api/therapy/request-ysq/-57', '{}');
+    expect(await refetched(f)).toEqual({
+      '/api/therapy/client-data/-57': 2,
+      '/api/therapy/client-data/57': 1,
+      '/api/therapy/clients': 1,
     });
   });
 

@@ -7,17 +7,16 @@ import '../../styles/therapist-clients.css';
 
 interface Props {
   addClient: ReturnType<typeof useAddClient>;
-  /** «к списку» после создания: родитель сворачивает форму. */
-  onClose?: () => void;
 }
 
-export function AddClientForm({ addClient, onClose }: Props) {
+// Открыта ли форма, решает useAddClient (`open`): «Добавить ещё» её оставляет, «к списку» сворачивает.
+export function AddClientForm({ addClient }: Props) {
   const {
     name: addName, setName: setAddName,
     withInvite, setWithInvite,
     created: addCreated, submitting: addSubmitting, error: addError, copied: addCopied, copyFailed: addCopyFailed, valid: addValid,
     inputRef: addInputRef,
-    submit: submitAddClient, reset: resetAddClient, copyInvite: copyAddInvite,
+    submit: submitAddClient, reset: resetAddClient, close: closeAddClient, copyInvite: copyAddInvite,
   } = addClient;
 
   if (addCreated) {
@@ -42,11 +41,11 @@ export function AddClientForm({ addClient, onClose }: Props) {
               <p className="ds-sub">Карточка с этим именем появится в списке, когда клиент подключится. До этого — в блоке «Ждут подключения».</p>
             </div>
           ) : (
-            <p className="ds-sub">Добавлен как оффлайн-клиент — записи и концептуализация без привязки к боту.</p>
+            <p className="ds-sub">Добавлен как офлайн-клиент — записи и концептуализация без привязки к боту.</p>
           )}
           <div className="tc-actions">
             <button className="ds-btn ds-btn--sm" onClick={resetAddClient}>Добавить ещё</button>
-            <button className="ds-btn ds-btn--sm ds-btn--secondary" onClick={() => { resetAddClient(); onClose?.(); }}>к списку</button>
+            <button className="ds-btn ds-btn--sm ds-btn--secondary" onClick={closeAddClient}>к списку</button>
           </div>
         </div>
       </div>
@@ -74,7 +73,7 @@ export function AddClientForm({ addClient, onClose }: Props) {
         Пригласить в приложение (ссылка и код)
       </label>
       {withInvite && (
-        <p className="tc-add-note">Оффлайн-карточка не создаётся: карточка с этим именем появится, когда клиент подключится по ссылке или коду</p>
+        <p className="tc-add-note">Офлайн-карточка не создаётся: карточка с этим именем появится, когда клиент подключится по ссылке или коду</p>
       )}
       {addError && <div className="tc-add-err">{addError}</div>}
     </div>
