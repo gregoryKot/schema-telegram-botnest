@@ -29,7 +29,7 @@ describe('diaryAccess — по правилу сервера (therapy-client-dat
     expect(diaryAccess(rel('client'), true)).toBe('therapist-sees');
   });
 
-  it('терапевт подключён, «Карточки схем и режимов» выключены — не видит', () => {
+  it('терапевт подключён, «Дневники и карточки» выключены — не видит', () => {
     expect(diaryAccess(rel('client'), false)).toBe('therapist-hidden');
   });
 

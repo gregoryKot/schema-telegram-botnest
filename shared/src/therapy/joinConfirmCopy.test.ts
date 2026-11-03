@@ -16,6 +16,17 @@ describe('joinConfirmCopy', () => {
       );
     }
   });
+  // QA 2026-11: «по твоему выбору в настройках» читалось как «закрыто, пока не
+  // откроешь», а оба тумблера по умолчанию включены (settings.controller.ts).
+  it('терапевт: по умолчанию открыто всё, закрыть — в «Мой терапевт»', () => {
+    for (const f of ['ty', 'vy'] as const) {
+      const t = joinConfirmExplain(false, trFor(f));
+      expect(t).toMatch(/Трекер потребностей и задания терапевт видит всегда/);
+      expect(t).toMatch(/по умолчанию ещё дневники/);
+      expect(t).toMatch(/закрыть в настройках, раздел «Мой терапевт»/);
+      expect(t).not.toMatch(/по (твоему|вашему) выбору/);
+    }
+  });
   it('форма обращения разводится в обоих видах', () => {
     expect(joinConfirmExplain(true, trFor('vy'))).not.toMatch(
       /\bтвой|\bтебя\b/,

@@ -124,7 +124,9 @@ describe('TherapistClientSection — терапевт подключён', () =>
     expect(screen.getByText('Подключение к терапевту активно')).toBeTruthy();
   });
 
-  it('переключатель «Карточки схем и режимов» патчит ТОЛЬКО therapistShareCards', () => {
+  // Тумблер therapistShareCards закрывает и дневники (сервер:
+  // getClientDiaryEntries) — название обязано их называть (QA 2026-11).
+  it('переключатель «Дневники и карточки» патчит ТОЛЬКО therapistShareCards', () => {
     const patch = vi.fn().mockResolvedValue(undefined);
     render(
       <TherapistClientSection
@@ -138,15 +140,19 @@ describe('TherapistClientSection — терапевт подключён', () =>
         })}
       />,
     );
-    const switches = screen.getAllByRole('switch');
-    fireEvent.click(switches[0]);
+    expect(
+      screen.getByText('Записи дневников, карточки схем и режимов'),
+    ).toBeTruthy();
+    fireEvent.click(
+      screen.getByRole('switch', { name: 'Дневники и карточки' }),
+    );
     expect(patch).toHaveBeenCalledWith({ therapistShareCards: true });
     expect(patch).not.toHaveBeenCalledWith(
       expect.objectContaining({ therapistShareProfile: expect.anything() }),
     );
   });
 
-  it('переключатель «Профиль и схемы» патчит ТОЛЬКО therapistShareProfile', () => {
+  it('переключатель «Мои схемы и тест» патчит ТОЛЬКО therapistShareProfile', () => {
     const patch = vi.fn().mockResolvedValue(undefined);
     render(
       <TherapistClientSection
@@ -160,8 +166,7 @@ describe('TherapistClientSection — терапевт подключён', () =>
         })}
       />,
     );
-    const switches = screen.getAllByRole('switch');
-    fireEvent.click(switches[1]);
+    fireEvent.click(screen.getByRole('switch', { name: 'Мои схемы и тест' }));
     expect(patch).toHaveBeenCalledWith({ therapistShareProfile: true });
   });
 

@@ -163,7 +163,7 @@ describe('SchemaEntrySheet — кто увидит записи', () => {
     expect(screen.queryByText(/Никто кроме/)).toBeNull();
   });
 
-  it('терапевт подключён, «Карточки схем и режимов» выключены — терапевт не видит', async () => {
+  it('терапевт подключён, «Дневники и карточки» выключены — терапевт не видит', async () => {
     mockApi.getTherapyRelation.mockResolvedValue(client);
     mockApi.getSettings.mockResolvedValue({ therapistShareCards: false });
     renderSheet();
