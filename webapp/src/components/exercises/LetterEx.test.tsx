@@ -10,11 +10,14 @@ vi.mock('../../api', () => ({
   api: {
     getLetters: vi.fn(),
     createLetter: vi.fn(),
+    updateLetter: vi.fn(),
     trackEvent: vi.fn(),
   },
 }));
 import { api } from '../../api';
 const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
+
+const SEALED = { id: 1, text: '', createdAt: new Date().toISOString() };
 
 function renderSheet() {
   return render(
@@ -44,7 +47,7 @@ describe('LetterEx — приветствие без мужского рода',
   });
 
   it('запечатанное письмо показывает тот же текст и то же приветствие', async () => {
-    mockApi.createLetter.mockResolvedValue({});
+    mockApi.createLetter.mockResolvedValue(SEALED);
     renderSheet();
     fireEvent.change(screen.getByRole('textbox'), {
       target: { value: 'Тебе тогда очень нужна была поддержка.' },
@@ -58,10 +61,10 @@ describe('LetterEx — приветствие без мужского рода',
   });
 
   it('прошлые письма показываются, а только что написанное в них не дублируется', async () => {
-    mockApi.createLetter.mockResolvedValue({});
+    mockApi.createLetter.mockResolvedValue(SEALED);
     mockApi.getLetters.mockResolvedValue([
-      { text: 'сегодняшнее', createdAt: new Date().toISOString() },
-      { text: 'прошлое письмо', createdAt: new Date().toISOString() },
+      { id: 1, text: 'сегодняшнее', createdAt: new Date().toISOString() },
+      { id: 2, text: 'прошлое письмо', createdAt: new Date().toISOString() },
     ]);
     renderSheet();
     fireEvent.change(screen.getByRole('textbox'), {
@@ -72,10 +75,11 @@ describe('LetterEx — приветствие без мужского рода',
     expect(await screen.findByText(/прошлое письмо/)).toBeTruthy();
     // «сегодняшнее» есть на бумаге письма, но не продублировано в списке прошлых
     expect(screen.queryByText(/«сегодняшнее…»/)).toBeNull();
+    expect(screen.getByText('Прошлые письма · 1')).toBeTruthy();
   });
 
   it('«Изменить» возвращает к черновику с сохранённым текстом', async () => {
-    mockApi.createLetter.mockResolvedValue({});
+    mockApi.createLetter.mockResolvedValue(SEALED);
     renderSheet();
     fireEvent.change(screen.getByRole('textbox'), {
       target: { value: 'мой текст' },
@@ -84,6 +88,45 @@ describe('LetterEx — приветствие без мужского рода',
     fireEvent.click(await screen.findByRole('button', { name: 'Изменить' }));
 
     expect((screen.getByRole('textbox') as HTMLTextAreaElement).value).toBe('мой текст');
+  });
+});
+
+describe('LetterEx — правка запечатанного письма и подписи', () => {
+  // QA клиента 2026-11, З4: «Изменить» → «Запечатать» создавало второе письмо
+  // («Прошлые письма · 2», старая версия оставалась).
+  it('«Изменить» → «Запечатать» правит то же письмо, второго не создаёт', async () => {
+    mockApi.createLetter.mockResolvedValue({ ...SEALED, id: 7 });
+    mockApi.updateLetter.mockResolvedValue({ ...SEALED, id: 7 });
+    const onComplete = vi.fn();
+    render(
+      <MemoryRouter>
+        <LetterEx onBack={vi.fn()} onComplete={onComplete} />
+      </MemoryRouter>,
+    );
+    const seal = () => fireEvent.click(screen.getByRole('button', { name: /Запечатать письмо/ }));
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: 'Первая версия письма' } });
+    seal();
+    fireEvent.click(await screen.findByRole('button', { name: 'Изменить' }));
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: 'Исправленная версия письма' } });
+    seal();
+
+    expect(await screen.findByText('Исправленная версия письма')).toBeTruthy();
+    expect(mockApi.createLetter).toHaveBeenCalledTimes(1);
+    expect(mockApi.updateLetter).toHaveBeenCalledWith(7, 'Исправленная версия письма');
+    expect(onComplete).toHaveBeenCalledTimes(1);
+  });
+
+  it('число слов склоняется: «3 слова»', () => {
+    renderSheet();
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: 'мне очень жаль' } });
+    expect(screen.getByText('3 слова')).toBeTruthy();
+  });
+
+  // QA клиента 2026-11, З14: «Сохраняется в дневнике», а в «Записях» письма нет.
+  it('подпись говорит, где письмо искать потом', () => {
+    renderSheet();
+    expect(screen.getByText('Письма хранятся в разделе «Мой путь»')).toBeTruthy();
+    expect(screen.queryByText(/в дневнике/)).toBeNull();
   });
 });
 
@@ -136,7 +179,7 @@ describe('LetterEx — сбой сохранения не теряет пись�
   it('повторная попытка после отказа успешна — письмо запечатано', async () => {
     mockApi.createLetter
       .mockRejectedValueOnce(new Error('offline'))
-      .mockResolvedValue({});
+      .mockResolvedValue(SEALED);
     renderSheet();
     fireEvent.change(screen.getByRole('textbox'), {
       target: { value: 'Второй заход.' },
