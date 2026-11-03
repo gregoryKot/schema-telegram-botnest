@@ -58,6 +58,14 @@ describe('filterRoster', () => {
     expect(filterRoster(all, 'ВЕР', 'all')).toEqual([activeOnline]);
   });
 
+  // QA 2026-11: «е» не находила «ё» и наоборот — терапевт набирает как привык.
+  it('поиск не различает «е» и «ё» в обе стороны', () => {
+    const pyotr = client({ telegramId: 3, clientAlias: 'Пётр' });
+    const alena = client({ telegramId: 5, name: 'Алена' });
+    expect(filterRoster([pyotr, alena], 'петр', 'all')).toEqual([pyotr]);
+    expect(filterRoster([pyotr, alena], 'Алёна', 'all')).toEqual([alena]);
+  });
+
   it('поиск и статус работают вместе', () => {
     expect(filterRoster(all, 'бор', 'wait')).toEqual([]);
     expect(filterRoster(all, 'бор', 'virtual')).toEqual([off]);

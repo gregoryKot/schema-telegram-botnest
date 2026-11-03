@@ -12,6 +12,7 @@ import {
 } from './clientSheetHelpers';
 import { upcomingSession } from '../../../../shared/src/therapy/upcomingSession';
 import { serverAgoLabel } from '../../../../shared/src/utils/calendarAgo';
+import { matchesSearch } from '../../../../shared/src/utils/searchNormalize';
 
 export type RosterStatus = 'all' | 'active' | 'wait' | 'virtual';
 
@@ -26,9 +27,8 @@ export function filterRoster(
   query: string,
   status: RosterStatus,
 ): TherapyClientSummary[] {
-  const q = query.toLowerCase().trim();
   return clients.filter((c) => {
-    if (q && !displayName(c).toLowerCase().includes(q)) return false;
+    if (!matchesSearch(displayName(c), query)) return false;
     const activeToday = isActiveToday(c);
     if (status === 'active') return activeToday;
     if (status === 'wait') return !isVirtualClient(c) && !activeToday;
