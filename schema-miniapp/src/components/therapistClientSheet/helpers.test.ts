@@ -1,7 +1,7 @@
 // Хелперы кабинета терапевта: длительность терапии, метка следующей сессии,
 // цвет индекса. Много ветвлений с русской плюрализацией (день/дня/дней,
 // месяц/месяца/месяцев) — регресс здесь незаметен глазом, только тестом.
-import { describe, it, expect, vi, afterEach } from 'vitest';
+import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { calcTherapyDuration, nextSessionLabel, indexColor } from './helpers';
 
 afterEach(() => {
@@ -47,15 +47,20 @@ describe('calcTherapyDuration', () => {
 });
 
 describe('nextSessionLabel', () => {
+  // fmtDate показывает год, если он не текущий: часы закреплены за 2026.
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-08-01T12:00:00Z'));
+  });
+  afterEach(() => vi.useRealTimers());
+
   it('форматирует дату без времени', () => {
     // 2026-08-10 — понедельник
     expect(nextSessionLabel('2026-08-10')).toBe('Пн, 10 авг');
   });
 
-  it('форматирует дату со временем через ISO-строку', () => {
-    expect(nextSessionLabel('2026-08-10T15:30:00')).toBe(
-      'Пн, 10 авг · 15:30:00',
-    );
+  it('форматирует дату со временем: часы и минуты, без секунд', () => {
+    expect(nextSessionLabel('2026-08-10T15:30:00')).toBe('Пн, 10 авг · 15:30');
   });
 });
 

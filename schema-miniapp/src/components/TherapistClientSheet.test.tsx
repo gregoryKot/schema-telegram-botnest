@@ -16,7 +16,7 @@ import {
 import { useRef, useState } from 'react';
 import { TherapistClientSheet } from './TherapistClientSheet';
 import type { TherapyClientSummary } from '../api';
-import { todayCalendarDate } from '../../../shared/src/utils/calendarDate';
+import { todayStr } from '../utils/format';
 
 vi.mock('../api', () => ({
   api: {
@@ -37,14 +37,7 @@ const mockReportClientError = reportClientError as unknown as ReturnType<
 >;
 
 vi.mock('./therapistClientSheet/ClientListView', () => ({
-  ClientListView: ({
-    clients,
-    loading,
-    loadFailed,
-    onClose,
-    detail,
-    today,
-  }: any) => (
+  ClientListView: ({ clients, loading, loadFailed, onClose, detail }: any) => (
     <div data-testid="list-view">
       <span>
         {loading
@@ -53,19 +46,6 @@ vi.mock('./therapistClientSheet/ClientListView', () => ({
             ? 'сбой-загрузки'
             : `Клиентов: ${clients.length}`}
       </span>
-      {/* Тот же расчёт, что StatCards — проверяет проводку today в контейнере,
-          не переизобретает компонент (см. TherapistClientSheet — «сегодня»
-          ниже). */}
-      {!loading && (
-        <span>
-          АКТИВНЫХ:{' '}
-          {
-            clients.filter(
-              (c: TherapyClientSummary) => c.lastActiveDate === today,
-            ).length
-          }
-        </span>
-      )}
       <button onClick={onClose}>close-sheet</button>
       {clients[0] && (
         <button onClick={() => detail.openClient(clients[0])}>
@@ -77,9 +57,10 @@ vi.mock('./therapistClientSheet/ClientListView', () => ({
 }));
 
 vi.mock('./therapistClientSheet/ClientDetailView', () => ({
-  ClientDetailView: ({ selectedClient, detail }: any) => (
+  ClientDetailView: ({ selectedClient, detail, today }: any) => (
     <div data-testid="detail-view">
       <span>Клиент: {selectedClient.name}</span>
+      <span>today: {today}</span>
       <span>Задач: {detail.clientTasks.length}</span>
       <button onClick={() => detail.setShowTasksSheet(true)}>open-tasks</button>
       <button onClick={() => detail.setShowNotesSheet(true)}>open-notes</button>
@@ -322,17 +303,15 @@ describe('TherapistClientSheet — каскад аппаратной кнопк�
   });
 });
 
-// Регрессия инцидента 2026-09-17: `today` считался локальной зоной машины
-// (todayStr()), а `lastActiveDate` приходит от сервера календарным днём в
-// UTC — терапевт с UTC+10 после полудня видел «активных» ноль. Моменты
-// зафиксированы там, где локальная дата машины заведомо расходится с UTC,
-// поэтому тест краснеет в любой час прогона, а не только когда TZ раннера
-// разошёлся с UTC. TZ ставится вручную вокруг всего await-блока (а не через
-// forEachTimeZone) — зона обязана оставаться выставленной, пока идёт
-// асинхронная догрузка списка клиентов и повторный рендер после неё;
-// forEachTimeZone сбрасывает её сразу после синхронного вызова fn, не
-// дожидаясь промиса.
-describe('TherapistClientSheet — «сегодня» у today считается календарным днём сервера', () => {
+// `today` контейнера уходит в карточку клиента (SessionCard) и сравнивается
+// там с nextSession — настенным временем, которое терапевт ввёл по своим
+// часам. Значит, это местный день, а не день UTC (QA 2026-10-26: в 00:10 по
+// Москве вчерашняя встреча считалась предстоящей). Активность клиента сюда
+// больше не завязана — её день знает только сервер (isActiveToday,
+// StatCards.test). Моменты — там, где местный день расходится с UTC. TZ
+// ставится вручную вокруг всего await-блока: forEachTimeZone сбросил бы её
+// раньше асинхронной догрузки списка.
+describe('TherapistClientSheet — today для карточки клиента — местный день', () => {
   const ZONES = [
     'UTC',
     'Asia/Jerusalem',
@@ -344,7 +323,7 @@ describe('TherapistClientSheet — «сегодня» у today считаетс�
     vi.useRealTimers();
   });
 
-  it('клиент с lastActiveDate = todayCalendarDate() — «АКТИВНЫХ: 1» в любой зоне', async () => {
+  it('в карточку уходит местный сегодняшний день в любой зоне', async () => {
     for (const at of ['2026-09-18T23:30:00Z', '2026-09-19T00:30:00Z']) {
       for (const tz of ZONES) {
         const prevTz = process.env.TZ;
@@ -352,16 +331,13 @@ describe('TherapistClientSheet — «сегодня» у today считаетс�
         try {
           vi.useFakeTimers({ toFake: ['Date'] });
           vi.setSystemTime(new Date(at));
-          mockApi.getTherapyClients.mockResolvedValue([
-            { ...client, lastActiveDate: todayCalendarDate() },
-          ]);
+          mockApi.getTherapyClients.mockResolvedValue([client]);
           const { unmount } = render(<Harness />);
-          await waitFor(() =>
-            expect(
-              screen.getByText('АКТИВНЫХ: 1'),
-              `${at} / ${tz}`,
-            ).toBeTruthy(),
-          );
+          fireEvent.click(await screen.findByText('open-501'));
+          expect(
+            screen.getByText(`today: ${todayStr()}`),
+            `${at} / ${tz}`,
+          ).toBeTruthy();
           unmount();
         } finally {
           vi.useRealTimers();

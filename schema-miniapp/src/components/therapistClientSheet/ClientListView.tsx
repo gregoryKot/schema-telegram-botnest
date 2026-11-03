@@ -16,7 +16,6 @@ interface ClientListViewProps {
   clients: TherapyClientSummary[];
   loading: boolean;
   loadFailed?: boolean;
-  today: string;
   safeTop: number;
   animKey: number;
   onClose: () => void;
@@ -29,7 +28,6 @@ export function ClientListView({
   clients,
   loading,
   loadFailed = false,
-  today,
   safeTop,
   animKey,
   onClose,
@@ -157,7 +155,7 @@ export function ClientListView({
         </div>
 
         {/* Stat cards — вынесены в StatCards (правило №10) */}
-        {!loading && <StatCards clients={clients} today={today} />}
+        {!loading && <StatCards clients={clients} />}
 
         {/* Полная версия кабинета — на сайте (скрываемый баннер) */}
         {!loading && (
@@ -223,12 +221,7 @@ export function ClientListView({
           <ListEmptyState failed={loadFailed} />
         ) : (
           clients.map((c) => (
-            <ClientCard
-              key={c.telegramId}
-              client={c}
-              today={today}
-              onOpen={openClient}
-            />
+            <ClientCard key={c.telegramId} client={c} onOpen={openClient} />
           ))
         )}
 

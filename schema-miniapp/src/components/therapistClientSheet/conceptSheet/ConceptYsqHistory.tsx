@@ -2,20 +2,19 @@ import { ALL_SCHEMAS } from '../../../schemaTherapyData';
 import { IdentityDot } from '../../../../../shared/src/components/IdentityDot';
 import { ClientDetail } from '../types';
 import { cm } from '../../../sections/schemas/utils';
+import * as ysqx from '../../../../../shared/src/therapy/ysqExpression';
 // Блок истории теста на схемы (YSQ) клиента: выраженные/остальные схемы,
 // дельты и таймлайн прохождений. Вынесено из ConceptSheet.tsx (правило №10).
+// «Выражена» и порядок — shared/src/therapy/ysqExpression.ts (флаг бэкенда).
 export function ConceptYsqHistory({ detail }: { detail: ClientDetail }) {
   const { clientData } = detail;
   if (!((clientData?.ysqHistory?.length ?? 0) > 0)) return null;
   const hist = clientData!.ysqHistory;
   const latest = hist[0];
   const prev = hist[1] ?? null;
-  const activeScores = latest.scores
-    .filter((s) => s.pct5plus > 50)
-    .sort((a, b) => b.pct5plus - a.pct5plus);
-  const inactiveScores = latest.scores
-    .filter((s) => s.pct5plus <= 50)
-    .sort((a, b) => b.pct5plus - a.pct5plus);
+  const sorted = ysqx.sortByExpression(latest.scores);
+  const activeScores = sorted.filter(ysqx.isServerScoreActive);
+  const inactiveScores = sorted.filter((s) => !ysqx.isServerScoreActive(s));
   const latestDate = new Date(latest.completedAt).toLocaleDateString('ru-RU', {
     day: 'numeric',
     month: 'short',
@@ -23,11 +22,11 @@ export function ConceptYsqHistory({ detail }: { detail: ClientDetail }) {
   });
   const getDelta = (id: string) => {
     if (!prev) return null;
-    const p = prev.scores.find((s) => s.id === id);
-    if (p == null) return null;
-    const d =
-      (latest.scores.find((s) => s.id === id)?.pct5plus ?? 0) - p.pct5plus;
-    return Math.abs(d) >= 5 ? d : null;
+    const p = prev.scores.find((s) => s.id === id)?.avg;
+    const now = latest.scores.find((s) => s.id === id)?.avg;
+    if (!p || !now) return null;
+    const d = Math.round((now - p) * 10) / 10; // по среднему баллу
+    return Math.abs(d) >= 0.3 ? d : null;
   };
   return (
     <div
@@ -112,7 +111,7 @@ export function ConceptYsqHistory({ detail }: { detail: ClientDetail }) {
                         }}
                       >
                         {delta > 0 ? '+' : ''}
-                        {delta}%
+                        {delta}
                       </span>
                     )}
                     <span
@@ -122,7 +121,7 @@ export function ConceptYsqHistory({ detail }: { detail: ClientDetail }) {
                         color: cm('var(--accent-blue)', 90),
                       }}
                     >
-                      {score.pct5plus}%
+                      {ysqx.ysqAvgLabel(score.avg)} · {score.pct5plus}%
                     </span>
                   </div>
                 </div>
@@ -136,7 +135,7 @@ export function ConceptYsqHistory({ detail }: { detail: ClientDetail }) {
                   <div
                     style={{
                       height: '100%',
-                      width: `${score.pct5plus}%`,
+                      width: `${ysqx.avgBarPct(score.avg ?? 0)}%`,
                       background: cm('var(--accent-blue)', 60),
                       borderRadius: 'var(--r-2)',
                     }}
@@ -165,7 +164,8 @@ export function ConceptYsqHistory({ detail }: { detail: ClientDetail }) {
           >
             {inactiveScores.map((score) => {
               const meta = ALL_SCHEMAS.find((s) => s.id === score.id);
-              const isNearBorder = score.pct5plus >= 30;
+              const isNearBorder =
+                (score.avg ?? 0) >= 3.5 || score.pct5plus >= 30;
               return (
                 <span
                   key={score.id}
@@ -179,7 +179,7 @@ export function ConceptYsqHistory({ detail }: { detail: ClientDetail }) {
                       : 'var(--text-faint)',
                   }}
                 >
-                  {meta?.name ?? score.id} {score.pct5plus}%
+                  {meta?.name ?? score.id} {ysqx.ysqAvgLabel(score.avg)}
                 </span>
               );
             })}
@@ -206,12 +206,12 @@ export function ConceptYsqHistory({ detail }: { detail: ClientDetail }) {
           </div>
           {hist.map((entry, idx) => {
             const entryActive = entry.scores.filter(
-              (s) => s.pct5plus > 50,
+              ysqx.isServerScoreActive,
             ).length;
             const prevItem = hist[idx + 1];
             const entryDelta = prevItem
               ? entryActive -
-                prevItem.scores.filter((s) => s.pct5plus > 50).length
+                prevItem.scores.filter(ysqx.isServerScoreActive).length
               : null;
             const d = new Date(entry.completedAt).toLocaleDateString('ru-RU', {
               day: 'numeric',

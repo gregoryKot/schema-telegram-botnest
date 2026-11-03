@@ -4,7 +4,7 @@ const MONTHS_SHORT = [
   'фев',
   'мар',
   'апр',
-  'май',
+  'мая',
   'июн',
   'июл',
   'авг',
@@ -28,10 +28,11 @@ const MONTHS_LONG = [
   'декабря',
 ];
 
-/** "7 апр" from "2026-04-07" — safe, no timezone shift */
+/** «7 апр», «26 мая»; год не текущий у смотрящего — «26 сен 2025» (QA 2026-10-26). */
 export function fmtDate(dateStr: string): string {
-  const [, m, d] = dateStr.split('-');
-  return `${parseInt(d)} ${MONTHS_SHORT[parseInt(m) - 1]}`;
+  const [y, m, d] = dateStr.split('-');
+  const base = `${parseInt(d)} ${MONTHS_SHORT[parseInt(m) - 1]}`;
+  return y === todayStr().slice(0, 4) ? base : `${base} ${parseInt(y)}`;
 }
 
 /** "7 апреля" from "2026-04-07" — safe, no timezone shift */
@@ -51,9 +52,9 @@ export function localDateStr(d: Date): string {
   return `${y}-${m}-${day}`;
 }
 
-/** YYYY-MM-DD for today in the local browser timezone */
-export function todayStr(): string {
-  return localDateStr(new Date());
+/** YYYY-MM-DD местного дня человека — единственное «местное сегодня» фронтов (`now` — для тестов). */
+export function todayStr(now: Date = new Date()): string {
+  return localDateStr(now);
 }
 
 /** «сегодня» / «вчера» / «N дн. назад» / «3 авг.» для момента времени.

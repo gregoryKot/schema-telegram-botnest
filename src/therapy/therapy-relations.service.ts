@@ -105,27 +105,17 @@ export class TherapyRelationsService {
       .filter((rel) => rel.client !== null)
       .map((rel) => {
         const clientId = rel.client!.id;
-        const { streak, daysSince, history } = overviews.get(
-          String(clientId),
-        ) ?? {
-          streak: 0,
-          daysSince: -1,
-          history: [],
-        };
-        const lastActiveDate =
-          daysSince >= 0
-            ? new Date(Date.now() - daysSince * 86400000)
-                .toISOString()
-                .slice(0, 10)
-            : null;
-        const byDate = new Map(history.map((d) => [d.date, d.ratings]));
+        // Дни — по календарю клиента (ClientOverview): в 00:10 по Москве
+        // UTC-день ещё вчерашний, и сегодняшняя оценка выпадала (QA 2026-10-26).
+        const ov = overviews.get(String(clientId));
+        const streak = ov?.streak ?? 0;
+        const byDate = new Map(
+          (ov?.history ?? []).map((d) => [d.date, d.ratings]),
+        );
         const recentIndexHistory: (number | null)[] = Array.from(
           { length: 14 },
           (_, i) => {
-            const d = new Date(Date.now() - i * 86400000)
-              .toISOString()
-              .slice(0, 10);
-            const r = byDate.get(d);
+            const r = byDate.get(ov?.recentDays[i] ?? '');
             if (!r) return null;
             const vals = Object.values(r);
             return vals.length === 5
@@ -139,7 +129,8 @@ export class TherapyRelationsService {
           name: rel.client!.firstName,
           clientAlias: decryptName(rel.clientAlias),
           streak,
-          lastActiveDate,
+          lastActiveDate: ov?.lastDate ?? null,
+          daysSinceActive: ov && ov.daysSince >= 0 ? ov.daysSince : null,
           todayIndex,
           recentIndexHistory,
           relationCreatedAt: rel.createdAt.toISOString(),
@@ -159,6 +150,7 @@ export class TherapyRelationsService {
         clientAlias: decryptName(rel.clientAlias),
         streak: 0,
         lastActiveDate: null,
+        daysSinceActive: null,
         todayIndex: null,
         recentIndexHistory: Array(14).fill(null) as null[],
         relationCreatedAt: rel.createdAt.toISOString(),

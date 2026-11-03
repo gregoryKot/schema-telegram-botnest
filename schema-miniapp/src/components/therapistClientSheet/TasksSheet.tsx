@@ -1,31 +1,30 @@
 import { BottomSheet } from '../BottomSheet';
-import { fmtDate, momentDayKey } from '../../utils/format';
-import { resolveTaskDisplayText } from '../../../../shared/src/tasks/taskTitle';
+import { api } from '../../api';
+import { todayStr } from '../../utils/format';
+import { orderTasks } from '../../../../shared/src/tasks/taskStatus';
+import { useConfirmTap } from '../../hooks/useConfirmTap';
+import {
+  therapistClosesTask,
+  useTherapistTaskActions,
+} from '../../../../shared/src/therapy/useTherapistTaskActions';
 import { ClientDetail } from './types';
+import { TaskSheetRow } from './TaskSheetRow';
+import { ConfirmDeleteButton } from '../ConfirmDeleteButton';
 
 interface TasksSheetProps {
   detail: ClientDetail;
 }
 
-type Task = ClientDetail['clientTasks'][number];
-const taskMark = (t: Task) =>
-  t.done === true || t.doneToday ? '✓' : t.done === false ? '×' : '·';
-const taskMarkColor = (t: Task) =>
-  t.done === false
-    ? 'var(--text-faint)'
-    : taskMark(t) === '✓'
-      ? 'var(--text)'
-      : undefined;
-// Иконка-глиф '✓'/'×'/'·' не несёт смысла для скринридера — подписываем.
-const taskMarkLabel = (t: Task) =>
-  t.done === true || t.doneToday
-    ? 'Выполнено'
-    : t.done === false
-      ? 'Не выполнено'
-      : 'Ожидает выполнения';
-
 export function TasksSheet({ detail }: TasksSheetProps) {
-  const { clientTasks, setShowTasksSheet, setShowAssign } = detail;
+  const { clientTasks, setClientTasks, setShowTasksSheet, setShowAssign } =
+    detail;
+  const today = todayStr();
+  // Удаление (два тапа) и отметка задания офлайн-клиента — общая с сайтом
+  // механика (QA 2026-10-26: задание нельзя было удалить).
+  const actions = useTherapistTaskActions(api, setClientTasks);
+  const { tap: tapDelete, isPending } = useConfirmTap<number>(
+    (id) => void actions.remove(id),
+  );
 
   return (
     <BottomSheet onClose={() => setShowTasksSheet(false)}>
@@ -61,93 +60,58 @@ export function TasksSheet({ detail }: TasksSheetProps) {
               Нет назначенных заданий
             </div>
           ) : (
-            clientTasks.map((task, i) => (
-              <div
+            orderTasks(clientTasks, today).map((task, i) => (
+              <TaskSheetRow
                 key={task.id}
-                style={{
-                  display: 'flex',
-                  alignItems: 'flex-start',
-                  gap: 'var(--space-10)',
-                  padding: '12px 16px',
-                  borderTop:
-                    i > 0 ? '1px solid rgba(var(--fg-rgb),0.05)' : undefined,
-                }}
-              >
-                <span
-                  aria-label={taskMarkLabel(task)}
-                  style={{
-                    fontSize: 16,
-                    flexShrink: 0,
-                    marginTop: 1,
-                    color: taskMarkColor(task),
-                  }}
-                >
-                  {taskMark(task)}
-                </span>
-                <div className="u-fill">
-                  <div
-                    style={{
-                      fontSize: 14,
-                      color: 'var(--text)',
-                      lineHeight: 1.4,
-                    }}
-                  >
-                    {resolveTaskDisplayText(task, 'full')}
-                  </div>
-                  <div
-                    style={{
-                      fontSize: 12,
-                      color: 'var(--text-sub)',
-                      marginTop: 3,
-                    }}
-                  >
-                    {task.dueDate
-                      ? `Срок: ${fmtDate(task.dueDate)}`
-                      : fmtDate(momentDayKey(task.createdAt))}
-                  </div>
-                  {task.progress !== undefined && task.targetDays && (
-                    <div
-                      style={{
-                        marginTop: 6,
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 6,
-                      }}
-                    >
-                      <div
+                task={task}
+                today={today}
+                first={i === 0}
+                actions={
+                  <>
+                    {therapistClosesTask(task) && (
+                      <button
+                        onClick={() => void actions.markDone(task.id)}
+                        disabled={actions.busyId === task.id}
                         style={{
-                          flex: 1,
-                          height: 4,
-                          background: 'rgba(var(--fg-rgb),0.08)',
-                          borderRadius: 'var(--r-4)',
-                          overflow: 'hidden',
-                        }}
-                      >
-                        <div
-                          style={{
-                            width: `${Math.min(task.progress / task.targetDays, 1) * 100}%`,
-                            height: '100%',
-                            background: 'var(--accent)',
-                            borderRadius: 'var(--r-4)',
-                          }}
-                        />
-                      </div>
-                      <span
-                        style={{
-                          fontSize: 11,
-                          color: 'var(--text-sub)',
                           flexShrink: 0,
+                          minHeight: 44,
+                          padding: '0 12px',
+                          borderRadius: 'var(--r-10)',
+                          border: '1px solid rgba(var(--fg-rgb),0.12)',
+                          background: 'transparent',
+                          color: 'var(--text)',
+                          fontSize: 12,
+                          fontWeight: 600,
+                          cursor: 'pointer',
                         }}
                       >
-                        {task.progress}/{task.targetDays}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              </div>
+                        Выполнено
+                      </button>
+                    )}
+                    <ConfirmDeleteButton
+                      pending={isPending(task.id)}
+                      onTap={() => tapDelete(task.id)}
+                      label="Удалить задание"
+                      disabled={actions.busyId === task.id}
+                    />
+                  </>
+                }
+              />
             ))
           )}
         </div>
+        {actions.error && (
+          <div
+            role="alert"
+            style={{
+              fontSize: 13,
+              color: 'var(--accent-red)',
+              marginBottom: 12,
+            }}
+          >
+            {actions.error}
+          </div>
+        )}
         <button
           onClick={() => setShowAssign(true)}
           style={{

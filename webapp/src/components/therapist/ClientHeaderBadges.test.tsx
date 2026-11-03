@@ -17,10 +17,19 @@ const meta = (c: HTMLElement) => c.querySelector('.tk-meta')?.textContent ?? nul
 describe('ClientHeaderBadges', () => {
   it('в боте + активность сегодня + серия — одной строкой через « · », не плашками', () => {
     const { container } = render(
-      <ClientHeaderBadges client={client({ lastActiveDate: todayCalendarDate(), streak: 12 })} />,
+      <ClientHeaderBadges client={client({ daysSinceActive: 0, streak: 12 })} />,
     );
     expect(meta(container)).toBe('в боте · активность сегодня · 12 дн. подряд');
     expect(container.querySelector('.ds-badge')).toBeNull();
+  });
+
+  it('«активность сегодня» — по календарю клиента (daysSinceActive), не по дню терапевта (№25)', () => {
+    // У клиента в другой зоне уже завтра: lastActiveDate совпадает с «сегодня» терапевта,
+    // но сервер посчитал в зоне клиента — вчера. Строка не врёт про «сегодня».
+    const { container } = render(
+      <ClientHeaderBadges client={client({ lastActiveDate: todayCalendarDate(), daysSinceActive: 1 })} />,
+    );
+    expect(meta(container)).toBe('в боте');
   });
 
   it('пустые части пропускаются: без активности, серии и срока остаётся «в боте»', () => {

@@ -3,10 +3,9 @@ import { useTr } from '../../utils/addressForm';
 import { api } from '../../api';
 import type { TherapyClientSummary, UserTask, UserId } from '../../api';
 import { sameId } from '../../../../shared/src/utils/sameId';
-// Не todayStr(): дни клиентов приезжают из API календарными (полночь UTC),
-// и локальная дата машины с ними не совпадает в половине зон — см. шапку
-// shared/src/utils/calendarDate.ts.
-import { todayCalendarDate } from '../../../../shared/src/utils/calendarDate';
+// Местный день: с ним сравнивается nextSession — настенное время терапевта.
+// Активность клиента — по его календарю (isActiveToday), не по этому дню.
+import { todayStr } from '../../utils/format';
 import { Skeleton } from '../Skeleton';
 import { KanbanView } from './KanbanView';
 import { AddClientForm } from './AddClientForm';
@@ -66,8 +65,8 @@ export function ClientListView({
     api.getAllTherapyTasks().then(setAllTasks).catch(() => setAllTasksFailed(true)).finally(() => setAllTasksLoading(false));
   };
 
-  const today = todayCalendarDate();
-  const filtered = sortRoster(filterRoster(clients, searchQuery, filterStatus, today), today);
+  const today = todayStr();
+  const filtered = sortRoster(filterRoster(clients, searchQuery, filterStatus), today);
 
   return (
     <div className="therapist-scroll therapist-scroll--list" key={`list-${animKey}`} style={{ animation: 'fade-in 0.22s ease' }}>

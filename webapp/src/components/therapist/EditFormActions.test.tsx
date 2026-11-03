@@ -35,4 +35,17 @@ describe('EditFormActions', () => {
     render(<EditFormActions saving error="" onSave={vi.fn()} onCancel={vi.fn()} />);
     expect((screen.getByRole('button', { name: '...' }) as HTMLButtonElement).disabled).toBe(true);
   });
+
+  it('подсказка к вводу: «Сохранить» недоступна, подсказка стоит на месте ошибки', () => {
+    const onSave = vi.fn();
+    const { rerender } = render(<EditFormActions saving={false} error="Ошибка сети" hint="Укажи время встречи" onSave={onSave} onCancel={vi.fn()} />);
+    const save = screen.getByRole('button', { name: 'Сохранить' }) as HTMLButtonElement;
+    expect(save.disabled).toBe(true);
+    fireEvent.click(save);
+    expect(onSave).not.toHaveBeenCalled();
+    expect(screen.getByRole('alert').textContent).toBe('Укажи время встречи');
+    rerender(<EditFormActions saving={false} error="Ошибка сети" hint={null} onSave={onSave} onCancel={vi.fn()} />);
+    expect((screen.getByRole('button', { name: 'Сохранить' }) as HTMLButtonElement).disabled).toBe(false);
+    expect(screen.getByRole('alert').textContent).toBe('Ошибка сети');
+  });
 });

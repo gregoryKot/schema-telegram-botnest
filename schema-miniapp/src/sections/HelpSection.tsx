@@ -1,5 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
-import { useHelpOverlays } from './helpSection/useHelpOverlays';
+import {
+  useHelpOverlays,
+  type HelpOverlayId,
+} from './helpSection/useHelpOverlays';
 import { HelpOverlays } from './helpSection/HelpOverlays';
 import { HereAndNow } from './helpSection/HereAndNow';
 import { useSafeTop } from '../utils/safezone';
@@ -11,11 +14,22 @@ import { CHILDHOOD_DONE_KEY } from '../utils/storageKeys';
 import { TaskCreateSheet } from '../components/TaskCreateSheet';
 import { api, UserTask, TherapyRelationInfo } from '../api';
 import { TaskRow } from '../components/tasks/TaskRow';
-import { findLegacyTaskTarget } from '../../../shared/src/tasks/taskTitle';
+import {
+  completesOnSave,
+  taskRoute,
+  type TaskExercise,
+} from '../../../shared/src/tasks/taskRoute';
 import type { QuickPracticeId } from '../../../shared/src/practices/quickPractices';
 import { AllTasksSheet } from './helpSection/AllTasksSheet';
 import { HelpHeader } from './helpSection/HelpHeader';
 import { ToolsList } from './helpSection/ToolsList';
+
+const EXERCISE_OVERLAY: Record<TaskExercise, HelpOverlayId> = {
+  belief_check: 'beliefCheck',
+  letter_to_self: 'letterToSelf',
+  safe_place: 'safePlace',
+  flashcard: 'flashcard',
+};
 
 interface Props {
   onOpenChildhoodWheel: () => void;
@@ -105,46 +119,27 @@ export function HelpSection({
 
   const therapistTasks = tasks.filter((t) => t.assignedBy !== null);
 
+  // Куда ведёт задание — общий маршрут с «Сегодня» и «Практикой» сайта
+  // (shared/taskRoute); здесь только оверлеи мини-аппа.
   function openTask(task: UserTask) {
     setShowAllTasks(false);
-    if (task.assignedBy !== null && task.type !== 'custom') {
-      setActiveTaskId(task.id);
-    }
-    switch (task.type) {
-      case 'diary_streak':
-        onOpenDiaries();
-        break;
-      case 'tracker_streak':
-        onOpenTracker();
-        break;
-      case 'belief_check':
-        overlays.show('beliefCheck');
-        break;
-      case 'letter_to_self':
-        overlays.show('letterToSelf');
-        break;
-      case 'safe_place':
-        overlays.show('safePlace');
-        break;
+    const route = taskRoute(task);
+    setActiveTaskId(completesOnSave(route) ? task.id : null);
+    switch (route.kind) {
+      case 'diary':
+        return onOpenDiaries();
+      case 'tracker':
+        return onOpenTracker();
       case 'childhood_wheel':
-        onOpenChildhoodWheel();
-        break;
-      case 'flashcard':
-        overlays.show('flashcard');
-        break;
-      case 'schema_intro':
-        if (task.text) overlays.setIntroSchemaId(task.text);
-        break;
-      case 'mode_intro':
-        if (task.text) overlays.setIntroModeId(task.text);
-        break;
-      default: {
-        // Fallback: raw schema/mode ID stored as text (old task format)
-        const legacy = findLegacyTaskTarget(task.text);
-        if (legacy?.type === 'schema') overlays.setIntroSchemaId(legacy.id);
-        else if (legacy?.type === 'mode') overlays.setIntroModeId(legacy.id);
-        break;
-      }
+        return onOpenChildhoodWheel();
+      case 'exercise':
+        return overlays.show(EXERCISE_OVERLAY[route.exercise]);
+      case 'schema':
+        if (route.id) overlays.setIntroSchemaId(route.id);
+        return;
+      case 'mode':
+        if (route.id) overlays.setIntroModeId(route.id);
+        return;
     }
   }
 
@@ -160,14 +155,18 @@ export function HelpSection({
       .catch((e) => console.error('refreshTasks failed', e));
   }
 
-  function handleTaskComplete() {
-    if (activeTaskId === null) return;
-    const taskId = activeTaskId;
-    setActiveTaskId(null);
+  function completeTask(taskId: number) {
     api
       .completeTask(taskId, true)
       .then(() => refreshTasks())
       .catch((e) => console.error('completeTask failed', e));
+  }
+
+  function handleTaskComplete() {
+    if (activeTaskId === null) return;
+    const taskId = activeTaskId;
+    setActiveTaskId(null);
+    completeTask(taskId);
   }
 
   return (
@@ -225,6 +224,7 @@ export function HelpSection({
                   key={task.id}
                   task={task}
                   onOpen={() => openTask(task)}
+                  onComplete={() => completeTask(task.id)}
                 />
               ))}
           </div>

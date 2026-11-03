@@ -2,10 +2,12 @@
 // Отказ записи «моих схем/режимов» с 409 unreadable_data: прежний список на
 // сервере не читается, и сервер не дал его стереть. Экран отличает этот отказ
 // от обрыва связи (saveBlocked), а выбор человека остаётся на устройстве.
+// Второй блок — прогресс теста YSQ живой (QA 2026-10-26).
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
 import { useSchemasData } from './useSchemasData';
 import { MY_SCHEMA_IDS_KEY, MY_MODE_IDS_KEY } from '../../utils/storageKeys';
+import { clearYsqProgress, writeYsqProgress } from '../../../../shared/src/hooks/ysqProgressStore';
 
 vi.mock('../../api', () => ({
   api: {
@@ -78,5 +80,31 @@ describe('useSchemasData — отказ записи поверх нечитае
 
     await waitFor(() => expect(result.current.saveFailed).toBe(false));
     expect(result.current.saveBlocked).toBe(false);
+  });
+});
+
+// «Мои паттерны» под открытым тестом YSQ (QA 2026-10-26): после «✕» карточка
+// звала «Начать тест», а «Продолжить (N из 116)» появлялось только после
+// перезагрузки — прогресс грузился один раз при открытии экрана.
+describe('useSchemasData — прогресс теста YSQ живой', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    vi.clearAllMocks();
+    mockApi.getProfile.mockResolvedValue({ mySchemaIds: [], myModeIds: [], ysq: null });
+    mockApi.getYsqHistory.mockResolvedValue([]);
+    mockApi.getYsqProgress.mockResolvedValue(null);
+    mockApi.listMyModeMaps.mockResolvedValue([]);
+    mockApi.updateSettings.mockResolvedValue({});
+  });
+
+  it('ответы в тесте поверх экрана — «продолжить (5 из 116)» без перезагрузки; сдал — снова «начать»', async () => {
+    const { result } = await mounted();
+    expect(result.current.ysqProgressAnswered).toBeNull();
+
+    act(() => writeYsqProgress([4, 4, 4, 4, 4, ...Array(111).fill(0)], 5));
+    expect(result.current.ysqProgressAnswered).toBe(5);
+
+    act(() => clearYsqProgress());
+    expect(result.current.ysqProgressAnswered).toBeNull();
   });
 });

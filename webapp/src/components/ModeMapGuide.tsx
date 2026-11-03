@@ -1,10 +1,10 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import type { FlowNode } from './modeMapFlow';
 import type { ModeMapNode, ModeMapKind } from '../api';
-import { pickTips, useModeMapTips } from './modeMapTips';
 import { useTr } from '../utils/addressForm';
 import '../styles/sheet-modemap.css';
 import { MMIcon } from './modeMapIcons';
+import { GuideTips } from './modeMap/GuideTips';
 
 interface Props {
   nodes: FlowNode[];
@@ -87,8 +87,12 @@ export function ModeMapGuide({ nodes, kind, onAdd, onOpenNeed, onClose }: Props)
           add: mk('healthy', 'Здоровый Взрослый') },
       ];
 
+  // Свёрнутая панель — одна строка с прогрессом: развёрнутая закрывала фигуры и
+  // статус сохранения (QA 2026-10-26). На телефоне холст узкий — свёрнута сразу.
+  const [min, setMin] = useState(() => window.innerWidth < 768 || localStorage.getItem('modemap_guide_min') === '1');
+  const toggleMin = () => setMin(m => { localStorage.setItem('modemap_guide_min', m ? '0' : '1'); return !m; });
+
   // ── Advice — contextual ALERTS (state-specific) kept apart from random tips ──
-  const [reroll, setReroll] = useState(0);
   type Alert = { text: string; level: 'warn' | 'info' };
   const alerts: Alert[] = [];
   if (nodes.length > 12)
@@ -97,19 +101,17 @@ export function ModeMapGuide({ nodes, kind, onAdd, onOpenNeed, onClose }: Props)
     alerts.push({ text: 'За копингом обычно прячется боль Уязвимого Ребёнка. Какую эмоцию он транслирует?', level: 'info' });
   if (kind === 'problem' && hasChild && hasCoping && !hasNeed)
     alerts.push({ text: tr('Назови потребность ребёнка — именно она становится целью терапии.', 'Назовите потребность ребёнка — именно она становится целью терапии.'), level: 'info' });
-  // Fresh random picks — new set each time the panel opens or you reroll
-  const tips = useModeMapTips();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const random = useMemo(() => pickTips(tips, kind, 3, []), [tips, kind, reroll]);
-
   return (
-    <div className="ds-card mm2-guide">
+    <div className={`ds-card mm2-guide${min ? ' is-min' : ''}`}>
       <div className="mm2-guide-head">
-        <span className="ds-label">
-          {kind === 'couple' ? 'Цикл-клэш пары' : kind === 'problem' ? 'Цепочка цикла' : 'Карта личности'}
-        </span>
+        <button onClick={toggleMin} aria-expanded={!min} title={min ? 'Развернуть подсказки' : 'Свернуть подсказки'} className="mm2-guide-toggle">
+          <span className="ds-label">{kind === 'couple' ? 'Цикл-клэш пары' : kind === 'problem' ? 'Цепочка цикла' : 'Карта личности'}</span>
+          <span className="mm2-guide-n">{steps.filter(s => s.ok).length}/{steps.length}</span>
+          <MMIcon name="caret" size={12} className={min ? 'mm2-guide-caret is-min' : 'mm2-guide-caret'} />
+        </button>
         <button onClick={onClose} aria-label="Закрыть" className="mm2-x"><MMIcon name="close" size={14} /></button>
       </div>
+      {!min && <>
       <div className="mm2-guide-lead">
         {kind === 'couple'
           ? tr('Копинг А ранит Б → копинг Б ранит А — порочный круг. Помечай режимы партнёром (А/Б). Нажми на шаг, чтобы добавить его.', 'Копинг А ранит Б → копинг Б ранит А — порочный круг. Помечайте режимы партнёром (А/Б). Нажмите на шаг, чтобы добавить его.')
@@ -153,18 +155,8 @@ export function ModeMapGuide({ nodes, kind, onAdd, onOpenNeed, onClose }: Props)
         </div>
       )}
 
-      {/* Random tips from the knowledge base */}
-      <div className="mm2-tips">
-        <div className="mm2-tips-head">
-          <span className="ds-label">Советы</span>
-          <button onClick={() => setReroll(r => r + 1)} title="Другие советы" aria-label="Другие советы">↻</button>
-        </div>
-        <div>
-          {random.map((t, i) => (
-            <div key={i} className="mm2-tip-row"><i /><span>{t}</span></div>
-          ))}
-        </div>
-      </div>
+      <GuideTips kind={kind} />
+      </>}
     </div>
   );
 }

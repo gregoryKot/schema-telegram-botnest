@@ -1,15 +1,22 @@
 import { fmtDate } from '../../utils/format';
 import type { ClientDetail } from './types';
+import { ConfirmDeleteButton } from '../ConfirmDeleteButton';
 
 type Note = ClientDetail['notes'][number];
 
-/** Карточка одной заметки сессии: дата, удалить, текст. */
+/**
+ * Карточка одной заметки сессии: дата, удалить, текст. Удаление — в два тапа
+ * (QA 2026-10-26: заметку стирал один тап по «×»).
+ */
 export function NoteCard({
   note,
-  onRemove,
+  pending,
+  onTapDelete,
 }: {
   note: Note;
-  onRemove: (id: number) => void;
+  /** Первый тап по «×» уже был — ждём подтверждения. */
+  pending: boolean;
+  onTapDelete: () => void;
 }) {
   return (
     <div
@@ -32,21 +39,11 @@ export function NoteCard({
         <span style={{ fontSize: 11, color: 'var(--text-sub)' }}>
           {fmtDate(note.date)}
         </span>
-        <button
-          onClick={() => onRemove(note.id)}
-          aria-label="Удалить заметку"
-          style={{
-            background: 'none',
-            border: 'none',
-            color: 'var(--accent-red)',
-            fontSize: 18,
-            cursor: 'pointer',
-            padding: '0 2px',
-            lineHeight: 1,
-          }}
-        >
-          ×
-        </button>
+        <ConfirmDeleteButton
+          pending={pending}
+          onTap={onTapDelete}
+          label="Удалить заметку"
+        />
       </div>
       <div
         style={{

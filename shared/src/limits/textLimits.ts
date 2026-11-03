@@ -28,6 +28,7 @@ export const BOOKING_CONTACT_MAX = 100; // заявка с сайта: конт�
 export const BOOKING_MESSAGE_MAX = 500; // заявка с сайта: запрос
 export const BOOKING_SOURCE_MAX = 200; // заявка с сайта: откуда (leadSource())
 export const CLIENT_NAME_MAX = 100; // имя/псевдоним клиента у терапевта (добавление офлайн-клиента и переименование)
+export const TASK_TEXT_MAX = 10000; // «Своё задание»: текст задания (терапевта клиенту или своей цели)
 
 /** С какой доли заполнения показывать остаток: до этого счётчик — шум. */
 export const COUNTER_FROM_RATIO = 0.8;

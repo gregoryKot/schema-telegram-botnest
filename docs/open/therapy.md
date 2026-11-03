@@ -143,16 +143,19 @@
 - **Дата сессии — и бейджем шапки, и карточкой «Обзора» — оставлено осознанно.**
   Бейдж (`ClientHeaderBadges.tsx`) виден на всех вкладках карточки, карточка
   (`ClientSessionInfoCards.tsx`) на «Обзоре» даёт правку даты.
-- **«Прошла ли встреча» везде, кроме экрана «Сегодня», решается по дню UTC.**
-  `upcomingSession` (`shared/src/therapy/upcomingSession.ts`) по умолчанию берёт
-  `todayCalendarDate()`, а `nextSession` — стенные часы терапевта
-  (`datetime-local` без зоны). Экран «Сегодня» с 2026-11 передаёт местный день
-  (`webapp/src/sections/therapistTodayModel.ts`), а список клиентов
-  (`rosterModel.ts`, `today` из `ClientListView.tsx`), бейдж и карточки сессии,
-  `PracticeSection`, `TherapistCard` и мини-апп — нет: в МСК с 00:00 до 03:00
-  вчерашняя встреча ещё числится ближайшей. Не тронуто: список сравнивает тем же
-  `today` календарные `lastActiveDate`, ему нужны два «сегодня», а это правка
-  семи экранов на двух фронтендах.
+- **`nextSession` хранится без зоны — у клиента в другой зоне время встречи
+  чужое.** Терапевт вводит настенное время по своим часам (`2026-10-27T10:00`),
+  клиент видит те же «10:00» по своим (`NextSessionBanner`, `PracticeSection`,
+  `TherapistCard`). «Сегодня» с QA-прохода 2026-10-26 сверяется с местным днём
+  смотрящего (`isSessionToday`), но если терапевт в Москве, а клиент во
+  Владивостоке, час встречи у клиента неверный. Починка — хранить зону
+  терапевта рядом со временем (или момент), решение владельца.
+- **«Сегодня» оценок на сервере — по `notifyTimezone`, по умолчанию Москва.**
+  `POST /api/rating` без даты кладёт `localDate(notifyTimezone ?? 'Europe/Moscow')`
+  (`src/bot/bot.service.ts`), а фронт сверяет дни оценок с местным днём
+  устройства (`momentIsToday`, `shared/src/utils/momentDate.ts`). У человека вне
+  Москвы без выбранной зоны уведомлений день оценки и день экрана расходятся
+  ночью. Тот же день клиента отдаёт терапевту `daysSinceActive`.
 - **Сбой загрузки концептуализации неотличим от «её нет», и первая правка
   затирает сохранённое.** `openClient` на отказ `getConceptualization` кладёт
   `null` (сайт — `webapp/src/components/therapist/useClientDetail.ts`, мини-апп —
@@ -168,10 +171,6 @@
   Механика досылки есть (`shared/src/utils/usePendingSave.ts`), но подключить её
   значит сохранять без нажатия кнопки, то есть сменить модель «сохраняю сам» —
   решение владельца (инцидент 2026-10-26).
-- **Открытие задания старого формата ищет схему/режим своим кодом**:
-  `webapp/src/sections/practice/taskRowState.ts:6` и
-  `webapp/src/sections/PracticeSection.tsx:116-117` (`ALL_SCHEMAS.some`), хотя
-  мини-апп для того же берёт `findLegacyTaskTarget` из `shared/src/tasks/taskTitle.ts`.
 - **Мини-апп: вкладка «Поля» концептуализации по-прежнему показывает все 20 схем и все режимы сразу.** На сайте (#885) карточки «Актуальные схемы» и «Карта режимов» показывают только выбранное и раскрывают выбор по «Изменить» (`webapp/src/components/therapist/concept/ConceptPickCard.tsx`, `useEditToggle.ts`). В мини-аппе — `schema-miniapp/src/components/therapistClientSheet/conceptSheet/ConceptFieldsView.tsx`, `ConceptSchemaChips.tsx`. Не перенесено осознанно: кабинет терапевта переезжает на сайт (план одной версии, #754), а отзыв терапевта был про сайт. Перенести, если терапевты продолжат работать в мини-аппе: компонент карточки вынести в `shared/`.
 - **Четыре раскрывашки на одну механику.** `shared/src/components/Disclosure.tsx` (#885, общий, им свёрнута инструкция к схеме случая), `webapp/src/components/NeedFold.tsx` (сверка с YSQ, история версий, трекер), `webapp/src/sections/schemas/SchemaMapFold.tsx`, `schema-miniapp/src/components/needToday/CollapsibleSection.tsx`. Новый появился в shared, потому что shared не может импортировать webapp. Свести три остальных к `Disclosure` (стили карточки — пропом или классом), правило «одна механика — один компонент».
 - **Холст «Карта режимов»: таблетки схем на вручную собранной карте увеличивают узел режима.** С #887 узел режима показывает схемы из связей концептуализации (`webapp/src/components/modeMap/SchemaPills.tsx`), кроме тех, что уже стоят на холсте фигурой, — поэтому карты «Открыть на холсте» не растут. На карте, собранной из палитры, узел с 2–3 таблетками вырастает примерно на 45–65 px и может коснуться фигуры, поставленной вплотную снизу. Не двигаем сами осознанно: раскладку такой карты держит терапевт, автосдвиг его фигур — хуже наложения. Пересмотреть, если терапевты пожалуются на наложения.
@@ -206,8 +205,8 @@
 терапевтических отношений и приватности, а не формулировки):
 - **Связь стирается целиком, клиент об этом не узнаёт.** Терапевт убирает
   клиента — `DELETE /api/therapy/clients/:clientId` → `removeTherapistClient`
-  (`src/therapy/remove-client.ts:24-41`) удаляет строку `TherapyRelation` в одной
-  транзакции с заметками и концептуализацией; клиент отключается сам —
+  (`src/therapy/remove-client.ts:25-43`) удаляет строку `TherapyRelation` в
+  одной транзакции с заметками и концептуализацией; клиент отключается сам —
   `DELETE /api/therapy/relation` → `disconnect`
   (`src/therapy/therapy-relations.service.ts:67-71`), `deleteMany` по
   active/pending. Статуса `ended` с причиной, как при отказе терапевта от роли
@@ -222,10 +221,10 @@
   клиента с аккаунтом `removeTherapistClient` задания не трогает (удаляет их
   только у офлайн-клиента, `cid < 0`), а метка ставится по `assignedBy !== null`
   без сверки с живой связью: `webapp/src/sections/today/AllTasksOverlay.tsx:26`,
-  `webapp/src/sections/today/PracticesBlock.tsx:47`, заголовок блока
-  `webapp/src/sections/TodaySection.tsx:83,109`; мини-апп —
+  `webapp/src/sections/today/PracticesBlock.tsx:62`, заголовок блока
+  `webapp/src/sections/TodaySection.tsx:66,92`; мини-апп —
   `schema-miniapp/src/components/tasks/TaskRow.tsx:45,204`,
-  `schema-miniapp/src/sections/HelpSection.tsx:106`.
+  `schema-miniapp/src/sections/HelpSection.tsx:120`.
 - **Что решить владельцу:** ставить ли `ended` с причиной (терапевт убрал
   клиента / клиент отключился) вместо удаления; сообщать ли клиенту и чем (бот,
   строка в «Мой терапевт»); что делать с открытыми заданиями — закрыть, снять

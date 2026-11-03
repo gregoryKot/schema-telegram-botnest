@@ -107,9 +107,10 @@ export interface TherapyClientSummary {
   name: string | null;
   clientAlias: string | null;
   streak: number;
-  lastActiveDate: string | null;
+  lastActiveDate: string | null; // день по календарю клиента, не терапевта
+  daysSinceActive?: number | null; // до сегодня клиента, считает сервер (isActiveToday); нет у старого кэша
   todayIndex: number | null;
-  recentIndexHistory: (number | null)[]; // 14 значений, index 0 = сегодня
+  recentIndexHistory: (number | null)[]; // 14 дней клиента, index 0 = его сегодня
   relationCreatedAt: string;
   therapyStartDate: string | null;
   nextSession: string | null;

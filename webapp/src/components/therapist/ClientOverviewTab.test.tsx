@@ -3,8 +3,11 @@
 // ds-label, без плиток с заливкой, кавычки-глифа и заголовков второго кегля;
 // схемы и режимы — строками с точкой тона, пустые группы режимов не рисуются;
 // записи клиента — строки ds-list-row; пустой «Обзор» — ds-empty.
+// «Карта режимов» показывает режимы из концептуализации, поэтому «Редактировать →»
+// ведёт туда, где их правят, — во вкладку «Концептуализация», а не на холст
+// (QA 2026-10-26: ссылка открывала пустой холст).
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { render, screen, cleanup, within } from '@testing-library/react';
+import { render, screen, cleanup, within, fireEvent } from '@testing-library/react';
 import { ClientOverviewTab } from './ClientOverviewTab';
 import type { ClientDetail } from './clientSheetTypes';
 import type { TherapyClientSummary } from '../../api';
@@ -69,5 +72,13 @@ describe('ClientOverviewTab', () => {
     expect(col.querySelector('.ds-empty')!.textContent).toContain('концептуализацию');
     within(col).getByRole('button', { name: 'Открыть концептуализацию' }).click();
     expect(setClientTab).toHaveBeenCalledWith('concept');
+  });
+
+  it('«Карта режимов» → «Редактировать →» открывает концептуализацию, а не холст', () => {
+    const setClientTab = vi.fn();
+    render(<ClientOverviewTab selectedClient={client} detail={detailOf({ setClientTab, activeModeIds: ['vulnerable_child', 'punitive_critic'] })} />);
+    fireEvent.click(screen.getByText('Редактировать →'));
+    expect(setClientTab).toHaveBeenCalledWith('concept');
+    expect(setClientTab).not.toHaveBeenCalledWith('mode_map');
   });
 });

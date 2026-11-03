@@ -7,7 +7,9 @@
 // полночью UTC: до инцидента 2026-09-17 день читался в зоне машины, и «1 месяц
 // в терапии» на западном смещении превращался в «2 месяца».
 import { dateStringMs, dateStringParts } from '../utils/calendarDate';
-import { fmtDate } from '../utils/format';
+import { fmtDate, todayStr } from '../utils/format';
+import { momentDayKey } from '../utils/momentDate';
+import { pluralRu } from '../utils/pluralRu';
 import { isVirtualId } from '../utils/sameId';
 import type { UserId } from '../userId';
 
@@ -22,41 +24,38 @@ export function isVirtualClient(c: { telegramId: UserId }): boolean {
   return isVirtualId(c.telegramId);
 }
 
-export function calcTherapyDuration(startDateStr: string): string {
-  const start = dateStringParts(startDateStr);
-  if (!start) return '';
-  const now = new Date();
+/** Срок «в работе» до местного сегодня (дату начала терапевт вводит по своим
+ *  часам). Месяц — когда прошёл целиком: число дошло до числа начала (31-е в
+ *  коротком месяце — последний день), 30 сен → 26 окт — «26 дней». Начало в
+ *  будущем — пусто: срока ещё нет. */
+export function calcTherapyDuration(
+  startDateStr: string,
+  today: string = todayStr(),
+): string {
+  const startDay = momentDayKey(startDateStr);
+  const s = dateStringParts(startDay);
+  const t = dateStringParts(today);
+  if (!s || !t || startDay > today) return '';
+  const monthEnd = new Date(Date.UTC(t.year, t.month, 0)).getUTCDate();
   const months =
-    (now.getFullYear() - start.year) * 12 + (now.getMonth() + 1 - start.month);
-  if (months < 1) {
-    const days = Math.floor(
-      (now.getTime() - dateStringMs(startDateStr)) / 86400000,
-    );
-    if (days < 1) return 'сегодня';
-    const m10 = days % 10,
-      m100 = days % 100;
-    const w =
-      m100 >= 11 && m100 <= 19
-        ? 'дней'
-        : m10 === 1
-          ? 'день'
-          : m10 >= 2 && m10 <= 4
-            ? 'дня'
-            : 'дней';
-    return `${days} ${w}`;
-  }
-  const m10 = months % 10,
-    m100 = months % 100;
-  const w =
-    m100 >= 11 && m100 <= 19
-      ? 'месяцев'
-      : m10 === 1
-        ? 'месяц'
-        : m10 >= 2 && m10 <= 4
-          ? 'месяца'
-          : 'месяцев';
-  return `${months} ${w}`;
+    (t.year - s.year) * 12 +
+    (t.month - s.month) -
+    (t.day < Math.min(s.day, monthEnd) ? 1 : 0);
+  if (months >= 1)
+    return `${months} ${pluralRu(months, 'месяц', 'месяца', 'месяцев')}`;
+  const days = Math.round(
+    (dateStringMs(today) - dateStringMs(startDay)) / 86400000,
+  );
+  return days < 1
+    ? 'сегодня'
+    : `${days} ${pluralRu(days, 'день', 'дня', 'дней')}`;
 }
+
+/** Отмечался сегодня по СВОЕМУ календарю: daysSinceActive сервер считает в
+ *  зоне клиента. «Сегодня клиента» терапевт не знает (QA 2026-10-26). */
+export const isActiveToday = (c: {
+  daysSinceActive?: number | null;
+}): boolean => c.daysSinceActive === 0;
 
 export function nextSessionLabel(dateStr: string): string {
   const [datePart, timePart] = dateStr.includes('T')
@@ -64,9 +63,10 @@ export function nextSessionLabel(dateStr: string): string {
     : [dateStr, null];
   const parts = dateStringParts(datePart);
   if (!parts) return '';
-  // Число и месяц — через fmtDate: копию списка месяцев тут держать нечего.
+  // Число, месяц и (если не текущий) год — через fmtDate: копию списка
+  // месяцев тут держать нечего. Время — часы и минуты, без секунд.
   const base = `${DAY_NAMES[parts.weekday]}, ${fmtDate(datePart)}`;
-  return timePart ? `${base} · ${timePart}` : base;
+  return timePart ? `${base} · ${timePart.slice(0, 5)}` : base;
 }
 
 /** Цвет индекса дня клиента; согласован с цветами RosterSparkline. */

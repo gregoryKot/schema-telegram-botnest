@@ -54,7 +54,6 @@ vi.mock('../sections/TodaySection', () => ({
       history: () => p.onOpenTrackerHistory?.(),
       diaries: () => p.onOpenDiaries(),
       childhood: () => p.onOpenChildhoodWheel(),
-      advanced: () => p.onOpenAdvanced(),
     }} />
   ),
 }));

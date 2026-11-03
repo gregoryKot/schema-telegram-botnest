@@ -32,3 +32,4 @@ export const BOOKING_MESSAGE_MAX = 500; // заявка с сайта: запр�
 export const BOOKING_SOURCE_MAX = 200; // заявка с сайта: откуда (leadSource())
 export const BOOKING_SLOT_MESSAGE_MAX = 2000; // запись на слот (/api/booking/book): запрос
 export const CLIENT_NAME_MAX = 100; // имя/псевдоним клиента у терапевта (добавление офлайн-клиента и переименование)
+export const TASK_TEXT_MAX = 10000; // «Своё задание»: текст задания (терапевта клиенту или своей цели)

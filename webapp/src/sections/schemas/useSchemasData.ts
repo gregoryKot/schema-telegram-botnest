@@ -4,6 +4,7 @@ import { api, reportClientError } from '../../api';
 import { MY_SCHEMA_IDS_KEY, MY_MODE_IDS_KEY } from '../../utils/storageKeys';
 import { readLocalIds, type YsqScore } from './schemasModel';
 import { useSaveFailure } from '../../hooks/useSaveFailure';
+import { useYsqProgressListener } from '../../../../shared/src/hooks/ysqProgressStore';
 import { isUnwritableError } from '../../../../shared/src/api/unwritableError';
 
 export function useSchemasData() {
@@ -12,6 +13,7 @@ export function useSchemasData() {
   const [ysqSchemaIds, setYsqSchemaIds] = useState<string[]>([]);
   const [ysqScores, setYsqScores] = useState<Record<string, YsqScore>>({});
   const [ysqProgressAnswered, setYsqProgressAnswered] = useState<number | null>(null);
+  useYsqProgressListener(setYsqProgressAnswered); // тест открыт поверх экрана — карточка «Продолжить (N из 116)» живая
   const [ysqCompletedAt, setYsqCompletedAt] = useState<string | null>(null);
   const [myMapCount, setMyMapCount] = useState(0);
   const [loading, setLoading] = useState(true);

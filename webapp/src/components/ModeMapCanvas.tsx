@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ReactFlow, Background, BackgroundVariant, Panel,
-  addEdge, useReactFlow, ConnectionMode,
+  addEdge, useReactFlow, useNodesInitialized, ConnectionMode,
   type Connection, type NodeTypes, type Viewport,
   type useNodesState, type useEdgesState,
 } from '@xyflow/react';
@@ -27,6 +27,8 @@ import { Dropdown } from './Dropdown';
 import { DownloadMenu } from './modeMap/DownloadMenu';
 import { useHubDrag } from './modeMap/useHubDrag';
 import { useGenerateFromConcept } from './modeMap/useGenerateFromConcept';
+import { CanvasEmpty } from './modeMap/CanvasEmpty';
+import { useCanvasSpace } from './modeMap/useCanvasSpace';
 
 export interface CanvasProps {
   clientId: UserId; mapId: number; kind: ModeMapKind;
@@ -49,7 +51,8 @@ export interface CanvasProps {
 export function ModeMapCanvas({ clientId, mapId, kind, nodes, edges, setNodes, setEdges, onNodesChange, onEdgesChange,
   setSelectedNodeId, setSelectedEdgeId, saveStatus, savedAt, onRetrySave, scheduleSave,
   pushHistory, nodesRef, edgesRef, onUndo, onRedo, canUndo, canRedo }: CanvasProps) {
-  const { screenToFlowPosition, zoomIn, zoomOut, fitView, setViewport } = useReactFlow();
+  const { screenToFlowPosition, zoomIn, zoomOut, setViewport } = useReactFlow();
+  const space = useCanvasSpace(); // свободное место и «Показать всё» с учётом панелей
 
   const [snap, setSnap] = useState(false);
   const [showLegend, setShowLegend] = useState(() => localStorage.getItem('modemap_legend') === '1');
@@ -83,17 +86,21 @@ export function ModeMapCanvas({ clientId, mapId, kind, nodes, edges, setNodes, s
   // ── Viewport persistence (per map, localStorage) ────────────────────────────
   const vpKey = `modemap_vp_${mapId}`;
   const restoredVp = useRef(false);
+  const nodesReady = useNodesInitialized();
   const onMoveEnd = useCallback((_: unknown, vp: Viewport) => {
     try { localStorage.setItem(vpKey, JSON.stringify(vp)); } catch { /* ignore */ }
   }, [vpKey]);
+  // Открытие карты: сохранённый вид, иначе «Показать всё» с отступами под панели
+  // (у fitView-пропа их нет — подсказки справа закрывали фигуры). Пустую карту
+  // не подгоняем: первая фигура ложится на свободное место без зума.
   useEffect(() => {
     if (restoredVp.current) return;
-    restoredVp.current = true;
-    try {
-      const saved = localStorage.getItem(vpKey);
-      if (saved) { const vp = JSON.parse(saved); setTimeout(() => setViewport(vp), 0); }
-    } catch { /* ignore */ }
-  }, [vpKey, setViewport]);
+    let saved: Viewport | null = null;
+    try { saved = JSON.parse(localStorage.getItem(vpKey) ?? 'null'); } catch { /* ignore */ }
+    if (saved) { const vp = saved; restoredVp.current = true; setTimeout(() => setViewport(vp), 0); }
+    else if (nodes.length === 0) restoredVp.current = true;
+    else if (nodesReady) { restoredVp.current = true; space.fit(0); }
+  }, [vpKey, setViewport, nodesReady, nodes.length, space]);
 
   const isValidConnection = useCallback((conn: Connection | FlowEdge) => {
     // Prevent self-connections
@@ -129,17 +136,14 @@ export function ModeMapCanvas({ clientId, mapId, kind, nodes, edges, setNodes, s
     } catch { /* ignore */ }
   }, [nodes, edges, setNodes, scheduleSave, screenToFlowPosition, pushHistory]);
 
-  // Add a node from the guidance panel — drop it near the viewport centre
+  // Add a node from the guidance panel — on a free spot of the visible area
   const addNodeFromGuide = useCallback((partial: Omit<ModeMapNode, 'position'>) => {
-    const el = document.querySelector('.react-flow') as HTMLElement | null;
-    const r = el?.getBoundingClientRect();
-    const pos = r ? screenToFlowPosition({ x: r.left + r.width / 2 + (Math.random() * 80 - 40), y: r.top + r.height / 2 + (Math.random() * 80 - 40) })
-      : { x: 200 + Math.random() * 200, y: 150 };
+    const [pos] = space.place(nodesRef.current);
     const defaultSize = NODE_DEFAULT_SIZES[partial.type] ?? {};
     pushHistory();
     const newNodes = [...nodesRef.current, { id: partial.id, type: partial.type, position: pos, data: partial.data as Record<string, unknown>, ...defaultSize }];
     setNodes(newNodes); scheduleSave(newNodes, edgesRef.current);
-  }, [screenToFlowPosition, setNodes, scheduleSave, pushHistory, nodesRef, edgesRef]);
+  }, [space, setNodes, scheduleSave, pushHistory, nodesRef, edgesRef]);
 
   // Open the unmet-need field on the Vulnerable Child node (from the guide's step 6)
   const onOpenNeed = useCallback(() => {
@@ -204,8 +208,8 @@ export function ModeMapCanvas({ clientId, mapId, kind, nodes, edges, setNodes, s
       : showZones ? layoutByZones(nodes) : autoLayout(nodes, edges);
     setNodes(laid); scheduleSave(laid, edges);
     // Only zoom out to fit — never magnify (maxZoom 1) so layout doesn't blow up the scale
-    setTimeout(() => fitView({ padding: 0.2, duration: 400, maxZoom: 1 }), 50);
-  }, [nodes, edges, setNodes, scheduleSave, pushHistory, fitView, showZones, kind]);
+    setTimeout(() => space.fit(400), 50);
+  }, [nodes, edges, setNodes, scheduleSave, pushHistory, space, showZones, kind]);
 
   // ── Node actions (toolbar + context menu) ────────────────────────────────────
   const duplicateNode = useCallback((id: string) => {
@@ -260,8 +264,8 @@ export function ModeMapCanvas({ clientId, mapId, kind, nodes, edges, setNodes, s
     const newEdges = [...edgesRef.current, ...flowEs];
     setNodes(newNodes); setEdges(newEdges);
     scheduleSave(newNodes, newEdges);
-    setTimeout(() => fitView({ padding: 0.2, duration: 400, maxZoom: 1 }), 50);
-  }, [setNodes, setEdges, scheduleSave, pushHistory, nodesRef, edgesRef, fitView]);
+    setTimeout(() => space.fit(400), 50);
+  }, [setNodes, setEdges, scheduleSave, pushHistory, nodesRef, edgesRef, space]);
 
   const fromConcept = useGenerateFromConcept({ clientId, nodesRef, edgesRef, insert: insertGraph });
   const hubDrag = useHubDrag({ nodesRef, setNodes });
@@ -271,9 +275,9 @@ export function ModeMapCanvas({ clientId, mapId, kind, nodes, edges, setNodes, s
     e.preventDefault();
     setMenu({ x: (e as MouseEvent).clientX, y: (e as MouseEvent).clientY, items: [
       { label: 'Авто-расположение', onClick: onAutoLayout },
-      { label: 'Показать всё', onClick: () => fitView({ padding: 0.2, duration: 300 }) },
+      { label: 'Показать всё', onClick: () => space.fit() },
     ] });
-  }, [onAutoLayout, fitView]);
+  }, [onAutoLayout, space]);
 
   const onNodeContextMenu = useCallback((e: React.MouseEvent, node: FlowNode) => {
     e.preventDefault();
@@ -285,19 +289,12 @@ export function ModeMapCanvas({ clientId, mapId, kind, nodes, edges, setNodes, s
   }, [nodeActions, duplicateNode, removeNode]);
 
   return (
-    <div style={{ flex: 1, position: 'relative', background: 'var(--surface)' }}>
+    <div className="mm2-canvas" style={{ flex: 1, position: 'relative', background: 'var(--surface)' }}>
       <div className="mm2-status">
         {fromConcept.failed ? <span role="alert" className="is-err">Не получилось собрать схему из концептуализации</span>
           : <SaveStatusLine status={saveStatus} savedAt={savedAt} onRetry={onRetrySave} align="right" />}
       </div>
-      {nodes.length === 0 && (
-        <div className="mm2-canvas-empty">
-          <p className="ds-empty">Карта режимов пуста</p>
-          <p className="ds-empty">
-            Кликай по режиму в панели слева или перетащи его на холст
-          </p>
-        </div>
-      )}
+      {nodes.length === 0 && <CanvasEmpty />}
       <NodeActionsContext.Provider value={nodeActions}>
       <ReactFlow nodes={nodes} edges={edges} nodeTypes={NODE_TYPES as NodeTypes} edgeTypes={EDGE_TYPES}
         onNodesChange={onNodesChangeWithSave} onEdgesChange={onEdgesChange}
@@ -315,7 +312,7 @@ export function ModeMapCanvas({ clientId, mapId, kind, nodes, edges, setNodes, s
         snapToGrid={snap} snapGrid={[20, 20]}
         selectionKeyCode="Shift" multiSelectionKeyCode={['Meta', 'Shift']}
         zoomOnPinch panOnScroll={false}
-        fitView fitViewOptions={{ padding: 0.2 }} deleteKeyCode={null}
+        deleteKeyCode={null}
         nodesDraggable nodeDragThreshold={1}
       >
         <Background variant={BackgroundVariant.Dots} color="rgba(var(--fg-rgb),0.16)" gap={snap ? 20 : 22} size={1.5} />
@@ -331,7 +328,7 @@ export function ModeMapCanvas({ clientId, mapId, kind, nodes, edges, setNodes, s
             {/* Zoom */}
             <TbBtn label="Отдалить" onClick={() => zoomOut()}><MMIcon name="minus" size={17} /></TbBtn>
             <TbBtn label="Приблизить" onClick={() => zoomIn()}><MMIcon name="plus" size={17} /></TbBtn>
-            <TbBtn label="Показать всё" onClick={() => fitView({ padding: 0.2 })}><MMIcon name="fit" size={17} /></TbBtn>
+            <TbBtn label="Показать всё" onClick={() => space.fit()}><MMIcon name="fit" size={17} /></TbBtn>
             <TbSep />
             {/* Tools */}
             <TbBtn label="Разложить автоматически" onClick={onAutoLayout} disabled={nodes.length === 0}><MMIcon name="auto" size={17} /></TbBtn>

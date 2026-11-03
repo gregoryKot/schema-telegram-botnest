@@ -54,8 +54,10 @@ describe('NotesSheet — список заметок', () => {
     expect(screen.getByText('Обсудили паттерн избегания')).toBeTruthy();
   });
 
-  it('клик по «×» зовёт removeNote с id заметки', () => {
-    const removeNote = vi.fn();
+  // QA 2026-10-26: заметку стирал один тап по «×» — теперь второй тап
+  // подтверждает («Точно удалить?»), как у практик.
+  it('первый тап по «×» спрашивает, второй зовёт removeNote с id заметки', () => {
+    const removeNote = vi.fn().mockResolvedValue(undefined);
     render(
       <NotesSheet
         detail={makeDetail({
@@ -67,6 +69,8 @@ describe('NotesSheet — список заметок', () => {
       />,
     );
     fireEvent.click(screen.getByLabelText('Удалить заметку'));
+    expect(removeNote).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByText('Точно удалить?'));
     expect(removeNote).toHaveBeenCalledWith(42);
   });
 });

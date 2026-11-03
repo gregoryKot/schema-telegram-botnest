@@ -3,6 +3,7 @@ import { ClientConceptFields } from './ClientConceptFields';
 import { ClientConceptGraph } from './ClientConceptGraph';
 import { ConceptTabHead } from './concept/ConceptTabHead';
 import { ConceptFoldouts } from './concept/ConceptFoldouts';
+import { ConceptModeIdsContext } from './concept/modeChain';
 import { CONCEPT_SITE_SKIN } from './concept/conceptSiteSkin';
 import { ConceptSkinContext } from '../../../../shared/src/therapy/conceptGraph/conceptSkin';
 import '../../styles/therapist-concept.css';
@@ -24,7 +25,10 @@ export function ClientConceptTab({ detail, onOpenCanvas }: Props) {
         <>
           <ConceptTabHead {...head} />
           {digest}
-          <ClientConceptFields detail={detail} onGoToGraph={() => setView('graph')} />
+          {/* Цепочка «Переключение режимов» — из режимов клиента (modeChain.ts). */}
+          <ConceptModeIdsContext.Provider value={detail.activeModeIds}>
+            <ClientConceptFields detail={detail} onGoToGraph={() => setView('graph')} />
+          </ConceptModeIdsContext.Provider>
         </>
       )}
       <ConceptFoldouts detail={detail} />

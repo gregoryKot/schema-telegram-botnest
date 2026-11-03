@@ -19,6 +19,7 @@ import { computeScores, type Phase, type YsqHistoryEntry } from './ysqScoring';
 // потребители `from './useYsqTest'` не заметили переезда.
 import { YSQ_RESULT_KEY, YSQ_PROGRESS_KEY } from './ysqStorageKeys';
 export { YSQ_RESULT_KEY, YSQ_PROGRESS_KEY };
+import { clearYsqProgress, writeYsqProgress } from './ysqProgressStore';
 
 // Типы и сборка результата переехали в соседние модули (правило №10);
 // ре-экспорт держит прежний путь импорта у потребителей.
@@ -87,13 +88,7 @@ export function useYsqTest({ api, autoResume }: UseYsqTestOptions) {
           Array.isArray(serverProgress.answers) &&
           serverProgress.answers.length === QUESTIONS.length;
         if (serverHasProgress) {
-          localStorage.setItem(
-            YSQ_PROGRESS_KEY,
-            JSON.stringify({
-              answers: serverProgress.answers,
-              page: serverProgress.page,
-            }),
-          );
+          writeYsqProgress(serverProgress.answers, serverProgress.page);
           setHasProgress(true);
         }
         if (autoResume && serverHasProgress) {
@@ -179,12 +174,7 @@ export function useYsqTest({ api, autoResume }: UseYsqTestOptions) {
     }
   }, []);
 
-  const saveProgress = (newAnswers: number[], newPage: number) => {
-    localStorage.setItem(
-      YSQ_PROGRESS_KEY,
-      JSON.stringify({ answers: newAnswers, page: newPage }),
-    );
-  };
+  const saveProgress = writeYsqProgress;
 
   const handleContinue = () => {
     userStartedRef.current = true;
@@ -208,17 +198,20 @@ export function useYsqTest({ api, autoResume }: UseYsqTestOptions) {
 
   const handleStartFresh = () => {
     userStartedRef.current = true;
-    localStorage.removeItem(YSQ_PROGRESS_KEY);
+    clearYsqProgress();
     setAnswers(Array(QUESTIONS.length).fill(0));
     setPage(0);
     setHasProgress(false);
     setPhase('test');
   };
 
+  // Ответ = незаконченный тест: после «✕» интро обязано звать «Продолжить», а
+  // не «Начать тест», который затирал прогресс (QA 2026-10-26).
   const handleAnswer = (qIndex: number, value: number) => {
     const next = [...answers];
     next[qIndex] = value;
     setAnswers(next);
+    setHasProgress(true);
     saveProgress(next, page);
   };
 
@@ -263,7 +256,7 @@ export function useYsqTest({ api, autoResume }: UseYsqTestOptions) {
               .catch((e) => console.error('deleteYsqProgress failed', e));
           })
           .catch(() => setResultSaveError(true));
-        localStorage.removeItem(YSQ_PROGRESS_KEY);
+        clearYsqProgress();
         setAnswers(newAnswers);
         setCompletedAt(dateStr);
         setPhase('result');
@@ -299,7 +292,7 @@ export function useYsqTest({ api, autoResume }: UseYsqTestOptions) {
 
   const handleRetake = () => {
     localStorage.removeItem(YSQ_RESULT_KEY);
-    localStorage.removeItem(YSQ_PROGRESS_KEY);
+    clearYsqProgress();
     api.deleteYsqResult().catch((e) => console.error('deleteYsqResult', e));
     api.deleteYsqProgress().catch((e) => console.error('deleteYsqProgress', e));
     setAnswers(Array(QUESTIONS.length).fill(0));

@@ -395,9 +395,9 @@ describe('AppShell — Дневник напрямую (Today) и Практик
 
 describe('AppShell — Настройки: доп. переходы (кабинет терапевта, переключение режима)', () => {
   it('«cabinet» из настроек закрывает лист и ведёт в /cabinet', async () => {
-    renderAppShell('/today');
-    await waitFor(() => expect(screen.getByTestId('today-section')).toBeTruthy());
-    fireEvent.click(screen.getByTestId('today-section-advanced'));
+    renderAppShell('/more');
+    await waitFor(() => expect(screen.getByTestId('more-section')).toBeTruthy());
+    fireEvent.click(screen.getByTestId('more-section-advanced'));
     await waitFor(() => expect(screen.getByTestId('settings-sheet')).toBeTruthy());
     fireEvent.click(screen.getByTestId('settings-sheet-cabinet'));
     await waitFor(() => expect(screen.queryByTestId('settings-sheet')).toBeNull());
@@ -405,9 +405,9 @@ describe('AppShell — Настройки: доп. переходы (кабин�
   });
 
   it('onSetTherapistMode(true) из настроек переключает режим на терапевта', async () => {
-    renderAppShell('/today');
-    await waitFor(() => expect(screen.getByTestId('today-section')).toBeTruthy());
-    fireEvent.click(screen.getByTestId('today-section-advanced'));
+    renderAppShell('/more');
+    await waitFor(() => expect(screen.getByTestId('more-section')).toBeTruthy());
+    fireEvent.click(screen.getByTestId('more-section-advanced'));
     await waitFor(() => expect(screen.getByTestId('settings-sheet')).toBeTruthy());
     fireEvent.click(screen.getByTestId('settings-sheet-setTherapist'));
     await waitFor(() => expect(screen.getByTestId('therapist-client-sheet')).toBeTruthy());
