@@ -2113,7 +2113,7 @@
   "webapp/src/components/therapist/clientSheetHelpers.ts": 12,
   "webapp/src/components/therapist/clientSheetTypes.ts": 7,
   "webapp/src/components/therapist/ClientTabs.tsx": 25,
-  "webapp/src/components/therapist/ClientTasksTab.tsx": 79,
+  "webapp/src/components/therapist/ClientTasksTab.tsx": 111,
   "webapp/src/components/therapist/ClientYSQTab.tsx": 91,
   "webapp/src/components/therapist/concept/ConceptFoldouts.tsx": 30,
   "webapp/src/components/therapist/concept/conceptHeadText.ts": 34,
