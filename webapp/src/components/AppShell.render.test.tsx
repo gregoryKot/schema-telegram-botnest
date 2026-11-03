@@ -6,11 +6,8 @@
 // AppShell: какой экран показан по URL, что видно, пока грузятся данные, и
 // что видно, если загрузка упала.
 //
-// НАЙДЕННЫЙ ДЕФЕКТ (не правим — это ревью существующего прод-кода, а не наша
-// задача, только фиксируем тестом факт): AppShell.tsx рендерит на загрузке
-// `<Loader minHeight="100vh">` — обычный спиннер, а не скелетон по форме
-// экрана. Правило «Загрузка: скелетоны по форме контента» (CLAUDE.md) для
-// этого экрана нарушено; тест ниже фиксирует РЕАЛЬНОЕ (не желаемое) поведение.
+// Загрузка — силуэт кабинета (сайдбар, топбар, раздел по форме), а не спиннер
+// на пустом экране (QA 2026-11, B-З8; правило «скелетоны по форме контента»).
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { screen, waitFor, cleanup, fireEvent } from '@testing-library/react';
 import { renderAppShell } from './AppShell.test-helpers';
@@ -36,11 +33,21 @@ afterEach(() => {
 });
 
 describe('AppShell — состояние загрузки', () => {
-  it('пока начальные данные не пришли — показывает спиннер (не скелетон по форме, см. комментарий выше)', () => {
+  it('пока начальные данные не пришли — силуэт: сайдбар с логотипом и плитки «Сегодня», спиннера нет', () => {
     const { container } = renderAppShell('/today');
     // Проверяем СРАЗУ после рендера, до того как промисы резолвнутся —
     // именно в этот момент компонент обязан показать состояние загрузки.
-    expect(container.querySelector('.spinner')).toBeTruthy();
+    expect(screen.getByTestId('app-shell-skeleton')).toBeTruthy();
+    expect(container.querySelector('.sidebar .sb-brand')).toBeTruthy();
+    expect(screen.getByTestId('today-skeleton')).toBeTruthy();
+    expect(container.querySelector('.spinner')).toBeNull();
+  });
+
+  it('другой раздел — общий силуэт экрана, не плитки «Сегодня»', () => {
+    const { container } = renderAppShell('/diary');
+    expect(screen.getByTestId('app-shell-skeleton')).toBeTruthy();
+    expect(screen.queryByTestId('today-skeleton')).toBeNull();
+    expect(container.querySelector('.canvas .skel')).toBeTruthy();
   });
 
   it('после загрузки спиннер уходит и появляется секция «Сегодня»', async () => {
@@ -130,13 +137,13 @@ describe('AppShell — офлайн-индикатор (реальное browser
 
 describe('AppShell — виджет «Сегодня» в сайдбаре (реальные данные, не заглушка)', () => {
   // Правило «никаких хардкод-заглушек»: индекс дня либо посчитан из РЕАЛЬНЫХ
-  // ratings, либо (на чистом аккаунте) показывает CTA «Заполнить дневник»,
-  // а не выдуманное число.
-  it('без оценок — CTA «Заполнить дневник», а не число', async () => {
+  // ratings, либо (на чистом аккаунте) показывает вход в трекер, а не
+  // выдуманное число. Подпись — «трекер»: открывается он (QA 2026-11, A-З9).
+  it('без оценок — CTA «Заполнить трекер», а не число', async () => {
     mockApi.needs.mockResolvedValueOnce([{ id: 'safety', emoji: '🛡️', title: 'Безопасность', chartLabel: 'Без.' }]);
     mockApi.ratings.mockResolvedValueOnce({}).mockResolvedValueOnce({});
     renderAppShell('/today');
-    await waitFor(() => expect(screen.getByText('Заполнить дневник →')).toBeTruthy());
+    await waitFor(() => expect(screen.getByText('Заполнить трекер →')).toBeTruthy());
   });
 
   it('когда все потребности оценены — считает индекс из реальных ratings', async () => {
