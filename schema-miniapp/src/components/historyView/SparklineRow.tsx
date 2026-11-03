@@ -1,35 +1,29 @@
-import { Need, DayHistory, COLORS } from '../../types';
+import { Need, DayHistory, NEED_COLORS } from '../../types';
 import { IdentityDot } from '../../../../shared/src/components/IdentityDot';
+import { pressable } from '../../utils/a11y';
+import {
+  SPARK_H,
+  SPARK_W,
+  sparklineGeometry,
+} from '../../../../shared/src/history/sparkline';
 
+// Геометрия и окно дней — shared/src/history/sparkline.ts (общие с сайтом).
 export function SparklineRow({
   need,
-  history,
-  selectedIdx,
+  days,
   selectedRatings,
   onClick,
 }: {
   need: Need;
-  history: DayHistory[];
-  selectedIdx: number;
+  /** Окно «За N дней» (weekWindow): выбранный день первым. */
+  days: DayHistory[];
   selectedRatings: Record<string, number>;
   onClick?: () => void;
 }) {
-  const color = COLORS[need.id] ?? '#888';
-  const W = 100,
-    H = 28;
-  const reversed = [...history].reverse();
-  const n = reversed.length;
-  const xStep = n > 1 ? W / (n - 1) : W / 2;
-  const yFor = (v: number) =>
-    v === 0 ? H - 1 : 25 - ((Math.min(v, 10) - 1) / 9) * 23;
-  const pts = reversed.map((day, i) => ({
-    x: i * xStep,
-    y: yFor(day.ratings[need.id] ?? 0),
-  }));
-  const dotIdx = Math.max(0, Math.min(n - 1 - selectedIdx, n - 1));
-  const dot = pts[dotIdx];
+  const color = NEED_COLORS[need.id] ?? '#888';
+  const g = sparklineGeometry(days, need.id);
   const score = selectedRatings[need.id] ?? 0;
-  const prevScore = history[selectedIdx + 1]?.ratings[need.id] ?? score;
+  const prevScore = days[1]?.ratings[need.id] ?? score;
   const delta = score - prevScore;
   const trendColor =
     delta > 0
@@ -38,30 +32,11 @@ export function SparklineRow({
         ? 'var(--accent-red)'
         : 'var(--text-faint)';
   const trendArrow = delta > 0 ? '↑' : delta < 0 ? '↓' : '—';
-  const linePath = pts
-    .map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`)
-    .join(' ');
-  const areaPath = `${linePath} L ${pts[n - 1].x.toFixed(1)} ${H} L 0 ${H} Z`;
-  const polyStr = pts
-    .map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`)
-    .join(' ');
 
   return (
     <div
-      onClick={onClick}
       className="card"
-      role={onClick ? 'button' : undefined}
-      tabIndex={onClick ? 0 : undefined}
-      onKeyDown={
-        onClick
-          ? (e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                onClick();
-              }
-            }
-          : undefined
-      }
+      {...(onClick ? pressable(onClick) : {})}
       style={{
         borderRadius: 'var(--r-16)',
         padding: '12px 14px',
@@ -94,34 +69,49 @@ export function SparklineRow({
         >
           {need.chartLabel}
         </span>
-        <svg
-          style={{ flex: 1, height: 28, display: 'block', overflow: 'visible' }}
-          viewBox={`0 0 ${W} ${H}`}
-          preserveAspectRatio="none"
-        >
-          <defs>
-            <linearGradient id={`ag-${need.id}`} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor={color} stopOpacity={0.22} />
-              <stop offset="100%" stopColor={color} stopOpacity={0} />
-            </linearGradient>
-          </defs>
-          <path d={areaPath} fill={`url(#ag-${need.id})`} />
-          <polyline
-            points={polyStr}
-            fill="none"
-            stroke={color}
-            strokeWidth={2}
-            strokeLinecap="round"
-            strokeLinejoin="round"
+        {/* Маркер — HTML поверх растянутого svg: в svg круг сплющивался. */}
+        <div style={{ flex: 1, minWidth: 0, position: 'relative' }}>
+          <svg
+            style={{
+              width: '100%',
+              height: 28,
+              display: 'block',
+              overflow: 'visible',
+            }}
+            viewBox={`0 0 ${SPARK_W} ${SPARK_H}`}
+            preserveAspectRatio="none"
+          >
+            <defs>
+              <linearGradient id={`ag-${need.id}`} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={color} stopOpacity={0.22} />
+                <stop offset="100%" stopColor={color} stopOpacity={0} />
+              </linearGradient>
+            </defs>
+            <path d={g.area} fill={`url(#ag-${need.id})`} />
+            <polyline
+              points={g.points}
+              fill="none"
+              stroke={color}
+              strokeWidth={2}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              vectorEffect="non-scaling-stroke"
+            />
+          </svg>
+          <span
+            style={{
+              position: 'absolute',
+              left: `${g.dot.left}%`,
+              top: `${g.dot.top}%`,
+              width: 7,
+              height: 7,
+              borderRadius: '50%',
+              background: color,
+              transform: 'translate(-50%, -50%)',
+              transition: 'left 150ms ease, top 150ms ease',
+            }}
           />
-          <circle
-            cx={dot.x}
-            cy={dot.y}
-            r={3.5}
-            fill={color}
-            style={{ transition: 'cx 150ms ease, cy 150ms ease' }}
-          />
-        </svg>
+        </div>
         <div
           style={{
             display: 'flex',

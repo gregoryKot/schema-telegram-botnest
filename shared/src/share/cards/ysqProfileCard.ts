@@ -21,7 +21,7 @@ import {
   progressBar,
   measureWrap,
 } from '../cardKit';
-import { COLORS } from '../../types';
+import { NEED_COLORS } from '../../needs/needColors';
 import { SCHEMAS, DOMAIN_ORDER, NEED_LABELS } from '../../hooks/ysqSchemas';
 import { isSchemaScoreActive, avgBarPct } from '../../hooks/ysqScoring';
 
@@ -34,7 +34,7 @@ export interface YsqProfileRow {
 export interface YsqProfileDomain {
   needId: string;
   label: string;
-  /** hex-цвет потребности (COLORS) — общий для шапки группы и её баров. */
+  /** hex-цвет потребности (NEED_COLORS) — общий для шапки группы и её баров. */
   color: string;
   rows: YsqProfileRow[];
 }
@@ -71,7 +71,7 @@ export function buildYsqProfile(
   return DOMAIN_ORDER.map((needId) => ({
     needId,
     label: NEED_LABELS[needId],
-    color: COLORS[needId] ?? '#a78bfa',
+    color: NEED_COLORS[needId] ?? '#a78bfa',
     rows: SCHEMAS.filter((s) => s.needId === needId)
       .map((s) => {
         const sc = scores[s.name] ?? { pct5plus: 0, avg: 0 };

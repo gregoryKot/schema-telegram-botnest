@@ -3,7 +3,7 @@ import { PRACTICE_TEXT_MAX } from '../../../shared/src/limits/textLimits';
 import { useState } from 'react';
 import { PracticesList } from './PracticesList';
 import { useSafeTop } from '../utils/safezone';
-import { COLORS } from '../types';
+import { NEED_COLORS } from '../../../shared/src/needs/needColors';
 import { useTr } from '../utils/addressForm';
 import { pressable } from '../utils/a11y';
 import { detectCrisisAny } from '../utils/crisisMarkers';
@@ -45,7 +45,7 @@ export function PracticesScreen({ onClose, onOpenTracker }: Props) {
   }
 
   const needId = NEED_IDS[needIdx];
-  const needColor = COLORS[needId] ?? 'var(--accent)';
+  const needColor = NEED_COLORS[needId] ?? 'var(--accent)';
   const todayScore = ratings[needId];
   const isLow = todayScore !== undefined && todayScore <= 4;
   const isMid = todayScore !== undefined && todayScore > 4 && todayScore <= 7;
@@ -160,7 +160,7 @@ export function PracticesScreen({ onClose, onOpenTracker }: Props) {
           }}
         >
           {NEED_IDS.map((id, i) => {
-            const color = COLORS[id] ?? '#888';
+            const color = NEED_COLORS[id] ?? '#888';
             const active = i === needIdx;
             const score = ratings[id];
             return (

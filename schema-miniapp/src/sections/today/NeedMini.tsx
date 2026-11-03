@@ -1,4 +1,4 @@
-import { Need, COLORS } from '../../types';
+import { Need, NEED_COLORS } from '../../types';
 import { useNeedData } from '../../needData';
 import { IdentityDot } from '../../../../shared/src/components/IdentityDot';
 import { hexToRgb } from './helpers';
@@ -17,7 +17,7 @@ export function NeedMini({
   onTap: () => void;
 }) {
   const NEED_DATA = useNeedData();
-  const color = COLORS[need.id] ?? '#888';
+  const color = NEED_COLORS[need.id] ?? '#888';
   const rgb = hexToRgb(color);
   const filled = value !== undefined && value !== null;
   const delta = filled && yesterday !== undefined ? value - yesterday : null;

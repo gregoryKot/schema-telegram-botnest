@@ -1,6 +1,7 @@
 import { Need } from '../../types';
 import { SummaryDonut } from './SummaryDonut';
 import { DayShareButton } from '../../share/DayShareButton';
+import { fmtIndex } from '../../../../shared/src/needs/dayIndex';
 
 // Нижняя сводка «день заполнен»: индекс дня + пончик, кнопка «Готово»,
 // шэр карточки дня. Вынесено из TrackerOverlay.tsx (правило №10).
@@ -45,7 +46,7 @@ export function TrackerDoneSummary({
             Индекс дня · среднее из пяти оценок
           </div>
           <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--text)' }}>
-            {avg.toFixed(1)}
+            {fmtIndex(avg)}
             <span className="u-sub13">/10</span>
           </div>
         </div>

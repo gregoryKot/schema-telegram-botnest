@@ -11,21 +11,11 @@ export interface DayHistory {
   ratings: Record<string, number>;
 }
 
-export const COLORS: Record<string, string> = {
-  attachment: '#f472b6',
-  autonomy: '#4fa3f7',
-  expression: '#f59e0b',
-  play: '#10b981',
-  limits: '#a78bfa',
-};
-
-export const YESTERDAY: Record<string, number> = {
-  attachment: 5,
-  autonomy: 6,
-  expression: 4,
-  play: 7,
-  limits: 6,
-};
+// Цвет потребности — только shared/src/needs/needColors.ts; здесь реэкспорт
+// для импортов `from '../types'`. Тут жила вторая, старая палитра COLORS:
+// колесо истории, карточки шаринга и весь мини-апп красили ею привязанность
+// в розовый, остальные экраны — тоном hue (QA 2026-11, B-З7).
+export { NEED_COLORS } from './needs/needColors';
 
 // ─── Diary types ──────────────────────────────────────────────────────────────
 
