@@ -1,5 +1,9 @@
 import { useTr } from '../utils/addressForm';
 import { hasAuthSeen } from '../../../shared/src/auth/authSeen';
+import {
+  ACCOUNT_DELETED_TEXT,
+  useAccountDeletedNotice,
+} from '../../../shared/src/account/accountDeletion';
 import { useSafeTop } from '../utils/safezone';
 import { buildWhyItWorks } from '../aboutData';
 import { LoginProviderButtons } from './loginScreen/LoginProviderButtons';
@@ -27,6 +31,7 @@ export function LoginScreen() {
   // сессия. Для второго «Войдите, чтобы продолжить» — это молчание о том, что
   // произошло: жалоба звучала как «приложение не сообщает, просто выкидывает».
   const returning = hasAuthSeen();
+  const deleted = useAccountDeletedNotice(); // сразу после удаления (К2)
 
   return (
     <div
@@ -42,7 +47,17 @@ export function LoginScreen() {
         </h1>
       </div>
 
-      {returning ? (
+      {deleted ? (
+        <div
+          className="card"
+          role="status"
+          style={{ padding: '14px 18px', marginBottom: 12 }}
+        >
+          <p style={{ fontSize: 14, lineHeight: 1.7, margin: 0 }}>
+            {ACCOUNT_DELETED_TEXT}
+          </p>
+        </div>
+      ) : returning ? (
         <div
           className="card"
           style={{ padding: '14px 18px', marginBottom: 12 }}

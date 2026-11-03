@@ -174,10 +174,10 @@ describe('DataSection', () => {
     expect(onPrivacy).toHaveBeenCalledTimes(1);
   });
 
-  it('клик «Удалить все данные» вызывает onDelete', () => {
+  it('клик «Удалить аккаунт» вызывает onDelete', () => {
     const onDelete = vi.fn();
     render(<DataSection onPrivacy={() => {}} onDelete={onDelete} />);
-    fireEvent.click(screen.getByText('Удалить все данные'));
+    fireEvent.click(screen.getByText('Удалить аккаунт'));
     expect(onDelete).toHaveBeenCalledTimes(1);
   });
 });

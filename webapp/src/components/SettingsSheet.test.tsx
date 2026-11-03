@@ -138,7 +138,7 @@ describe('SettingsSheet — удаление аккаунта: подтверж�
     await renderSheet();
     openDeleteSheet();
 
-    expect(screen.getByText('Необратимо.', { exact: false })).toBeTruthy();
+    expect(screen.getByText(/аккаунт целиком/)).toBeTruthy();
     expect(screen.getByText('Отмена')).toBeTruthy();
     expect(mockApi.deleteAllUserData).not.toHaveBeenCalled();
   });
@@ -433,24 +433,24 @@ describe('SettingsSheet — пара: вход по коду', () => {
 
 // ── Удаление аккаунта: отказ теперь виден пользователю (не только «сброс») ──
 describe('SettingsSheet — удаление аккаунта: отказ показывает сообщение', () => {
-  it('после ошибки видно "Не удалось удалить данные" на первом шаге, а не тишина', async () => {
+  it('после ошибки видно «Не удалось удалить аккаунт» на первом шаге, а не тишина', async () => {
     mockApi.deleteAllUserData.mockRejectedValue(new Error('network down'));
     await renderSheet();
     confirmAccountDeletion();
 
-    await screen.findByText(/Не удалось удалить данные/i);
+    await screen.findByText(/Не удалось удалить аккаунт/i);
   });
 
   it('повторное открытие листа удаления сбрасывает прошлую ошибку', async () => {
     mockApi.deleteAllUserData.mockRejectedValue(new Error('network down'));
     await renderSheet();
     confirmAccountDeletion();
-    await screen.findByText(/Не удалось удалить данные/i);
+    await screen.findByText(/Не удалось удалить аккаунт/i);
 
     fireEvent.click(screen.getByText('Отмена'));
     openDeleteSheet();
 
-    expect(screen.queryByText(/Не удалось удалить данные/i)).toBeNull();
+    expect(screen.queryByText(/Не удалось удалить аккаунт/i)).toBeNull();
   });
 
   it('ты/вы: сообщение об отказе звучит в обеих формах', async () => {
@@ -458,7 +458,7 @@ describe('SettingsSheet — удаление аккаунта: отказ пок
     await renderSheetWithForm('ty');
     confirmAccountDeletion();
     await screen.findByText(
-      'Не удалось удалить данные. Проверь связь и попробуй ещё раз',
+      'Не удалось удалить аккаунт. Данные на месте — проверь соединение и попробуй ещё раз.',
     );
     cleanup();
 
@@ -466,7 +466,7 @@ describe('SettingsSheet — удаление аккаунта: отказ пок
     await renderSheetWithForm('vy');
     confirmAccountDeletion();
     await screen.findByText(
-      'Не удалось удалить данные. Проверьте связь и попробуйте ещё раз',
+      'Не удалось удалить аккаунт. Данные на месте — проверьте соединение и попробуйте ещё раз.',
     );
   });
 });
@@ -1186,10 +1186,10 @@ describe('SettingsSheet — удаление аккаунта: закрытие 
     fireEvent.click(screen.getByRole('button', { name: 'Удалить' }));
     await screen.findByText('Точно? Восстановить невозможно.');
 
-    fireEvent.click(screen.getByLabelText('Закрыть'));
+    fireEvent.click(document.querySelector('.sk-dialog-backdrop')!);
     await waitFor(() => expect(screen.queryByText('Точно? Восстановить невозможно.')).toBeNull());
     // Модалка закрылась целиком, не откатилась на первый шаг.
-    expect(screen.queryByText('Необратимо.', { exact: false })).toBeNull();
+    expect(screen.queryByText(/аккаунт целиком/)).toBeNull();
   });
 });
 
