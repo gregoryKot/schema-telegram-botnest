@@ -24,3 +24,13 @@ export function agoLabelFromDays(days: number, day: string): string {
   if (days > 1 && days < 7) return `${days} дн. назад`;
   return Number.isNaN(dateStringMs(day)) ? '' : fmtDate(day);
 }
+
+/** Давность чужой активности: число дней считает сервер по календарю того
+ *  человека (`daysSinceActive`); у кэша без числа — только дата. Мусор — ''. */
+export function serverAgoLabel(
+  day: string | null | undefined,
+  days: number | null | undefined,
+): string {
+  if (!day || Number.isNaN(dateStringMs(day))) return '';
+  return days != null ? agoLabelFromDays(days, day) : fmtDate(day);
+}

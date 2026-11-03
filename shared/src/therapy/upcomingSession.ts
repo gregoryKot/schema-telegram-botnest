@@ -34,8 +34,7 @@ export function upcomingSession(
   return null;
 }
 
-/** Встреча (день или день со временем) — сегодня у того, кто смотрит; та же
- *  проверка, что у экрана «Сегодня» кабинета (momentDayKey, therapistTodayModel). */
+/** Встреча (день или день со временем) — сегодня у того, кто смотрит (momentDayKey, как «Сегодня» кабинета). */
 export function isSessionToday(
   at: string | null | undefined,
   today: string = todayStr(),

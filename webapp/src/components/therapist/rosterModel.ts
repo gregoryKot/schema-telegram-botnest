@@ -1,7 +1,6 @@
 // Чистая логика списка клиентов терапевта: фильтры, порядок, подписи. today —
-// местный день терапевта 'YYYY-MM-DD' (nextSession — его настенное время);
-// активность — по календарю клиента: isActiveToday и daysSinceActive от
-// сервера (QA 2026-10-26, №25).
+// местный день терапевта (nextSession — его настенное время); активность — по
+// календарю клиента, isActiveToday/daysSinceActive от сервера (QA 2026-10-26).
 import type { TherapyClientSummary } from '../../api';
 import { SCHEMA_DOMAINS } from '../../schemaTherapyData';
 import {
@@ -12,9 +11,7 @@ import {
   nextSessionLabel,
 } from './clientSheetHelpers';
 import { upcomingSession } from '../../../../shared/src/therapy/upcomingSession';
-import { agoLabelFromDays } from '../../../../shared/src/utils/calendarAgo';
-import { dateStringMs } from '../../../../shared/src/utils/calendarDate';
-import { fmtDate } from '../../../../shared/src/utils/format';
+import { serverAgoLabel } from '../../../../shared/src/utils/calendarAgo';
 
 export type RosterStatus = 'all' | 'active' | 'wait' | 'virtual';
 
@@ -72,10 +69,7 @@ export function clientCaption(c: TherapyClientSummary): string | null {
   if (duration === 'сегодня') return 'с сегодняшнего дня';
   if (duration) return `в работе ${duration}`;
   if (isVirtualClient(c)) return null;
-  // Давность — по календарю клиента (daysSinceActive от сервера), не по дню
-  // терапевта; у старого кэша без неё — только дата, без «сегодня». Мусор → ''.
-  const day = c.lastActiveDate && !Number.isNaN(dateStringMs(c.lastActiveDate)) ? c.lastActiveDate : null;
-  const ago = !day ? '' : c.daysSinceActive != null ? agoLabelFromDays(c.daysSinceActive, day) : fmtDate(day);
+  const ago = serverAgoLabel(c.lastActiveDate, c.daysSinceActive); // по календарю клиента, не терапевта
   const activity = ago ? `активность ${ago}` : 'нет активности';
   return c.streak > 0 ? `${activity} · стрик ${c.streak} дн.` : activity;
 }

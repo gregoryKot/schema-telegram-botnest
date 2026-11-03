@@ -1,8 +1,6 @@
-// Чистые вычисления экрана «Сегодня» кабинета терапевта: счётчики, статус
-// активности, спарклайн — только из TherapyClientSummary, который уже есть.
-// Два разных «сегодня» (QA 2026-10-26): активность — по календарю КЛИЕНТА
-// (daysSinceActive и todayIndex считает сервер в его зоне), сессии — по
-// местному дню терапевта (nextSession — его настенное время).
+// Чистые вычисления экрана «Сегодня» кабинета терапевта из TherapyClientSummary:
+// счётчики, статус активности (по календарю КЛИЕНТА — daysSinceActive и todayIndex
+// считает сервер), спарклайн; сессии — по местному дню терапевта (QA 2026-10-26).
 import type { TherapyClientSummary } from '../api';
 import { momentDayKey, momentTime, todayStr } from '../utils/format';
 import { upcomingSession } from '../../../shared/src/therapy/upcomingSession';
