@@ -357,3 +357,39 @@ describe('AccountService — адрес в Telegram', () => {
     expect(map.get('1000000000000777')).toBe(42n);
   });
 });
+
+// QA 2026-11, З5: экран настроек спрашивает «дойдут ли уведомления» у того же
+// адреса, по которому их шлёт очередь, — а не у своей копии правила.
+describe('AccountService.isNotifyReachable', () => {
+  const row = (id: bigint, providers: { providerId: string }[]) => ({
+    id,
+    notifyTimezone: 'Europe/Moscow',
+    notifyQuietStart: 22,
+    notifyQuietEnd: 8,
+    addressForm: null,
+    authProviders: providers,
+  });
+
+  it('веб-аккаунт без Telegram — некуда (очередь снимет уведомление)', async () => {
+    const prisma = makePrisma();
+    prisma.user.findMany.mockResolvedValue([row(1_000_000_000_000_005n, [])]);
+    const service = new AccountService(prisma);
+    expect(await service.isNotifyReachable(1_000_000_000_000_005n)).toBe(false);
+  });
+
+  it('веб-аккаунт с привязанным Telegram и старый пользователь бота — доходят', async () => {
+    const prisma = makePrisma();
+    prisma.user.findMany.mockResolvedValueOnce([
+      row(1_000_000_000_000_006n, [{ providerId: '777' }]),
+    ]);
+    prisma.user.findMany.mockResolvedValueOnce([row(42n, [])]);
+    const service = new AccountService(prisma);
+    expect(await service.isNotifyReachable(1_000_000_000_000_006n)).toBe(true);
+    expect(await service.isNotifyReachable(42n)).toBe(true);
+  });
+
+  it('строки пользователя нет — некуда', async () => {
+    const service = new AccountService(makePrisma());
+    expect(await service.isNotifyReachable(5n)).toBe(false);
+  });
+});

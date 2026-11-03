@@ -145,7 +145,8 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                 <AppearanceSection userRole={userRole} onResignTherapist={onResignTherapist} onSaved={flashSaved} />
                 {homeMode && <HomeScreenSection mode={homeMode} />}
                 <NameSection value={editName} onChange={setEditName} displayName={displayName} onNameChanged={onNameChanged} onSaved={flashSaved} />
-                <NotificationsSection settings={settings} tzLabel={tzLabel} patch={patch} openSubView={setSubView} />
+                <NotificationsSection settings={settings} tzLabel={tzLabel} patch={patch} openSubView={setSubView}
+                  onOpenAccount={() => goBack(() => navigate('/account'))} />
                 <AddressSection settings={settings} patch={patch} />
                 {!isTherapist && <MyTherapistSection rel={therapy} settings={settings} patch={patch} />}
                 {!isTherapist && <BecomeTherapistSection />}

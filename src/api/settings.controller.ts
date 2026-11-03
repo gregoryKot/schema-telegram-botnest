@@ -26,7 +26,10 @@ export class SettingsController {
 
   @Get('settings')
   async getSettings(@Req() req: AuthRequest) {
-    const s = await this.botService.getUserSettings(uid(req));
+    const [s, notifyReachable] = await Promise.all([
+      this.botService.getUserSettings(uid(req)),
+      this.accountService.isNotifyReachable(uid(req)),
+    ]);
     return {
       notifyEnabled: s?.notifyEnabled ?? true,
       notifyLocalHour: s?.notifyLocalHour ?? 21,
@@ -49,6 +52,9 @@ export class SettingsController {
       // в колонке лежит устаревшая/битая форма (например ключ, выведенный
       // из SYNCED_PREF_KEYS в более старой версии контракта).
       uiPrefs: sanitizeUiPrefs(s?.uiPrefs) ?? {},
+      // Есть ли куда слать уведомления (Telegram) — экран не обещает
+      // напоминаний, которые не придут (QA 2026-11, З5).
+      notifyReachable,
     };
   }
 
