@@ -793,7 +793,7 @@ describe('TherapistClientSheet — поиск и фильтр в списке к
     renderSheet();
     await screen.findByText('Анна');
 
-    fireEvent.click(screen.getByText('Оффлайн'));
+    fireEvent.click(screen.getByText('Офлайн'));
 
     expect(screen.queryByText('Анна')).toBeNull();
     expect(screen.getByText('Оффлайн-клиент')).toBeTruthy();

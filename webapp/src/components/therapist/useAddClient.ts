@@ -1,9 +1,9 @@
 import { useRef, useState } from 'react';
-import { api } from '../../api';
+import { api, type TherapyClientSummary } from '../../api';
 import { useTr } from '../../utils/addressForm';
 import { useCopyToClipboard } from '../../../../shared/src/utils/useCopyToClipboard';
+import { useSingleFlight } from '../../../../shared/src/utils/useSingleFlight';
 import { inviteCreateErrorText, usePendingInvites } from '../../../../shared/src/therapy/therapyInvites';
-import type { TherapyClientSummary } from '../../api';
 
 interface Params {
   setClients: React.Dispatch<React.SetStateAction<TherapyClientSummary[]>>;
@@ -23,8 +23,12 @@ export interface AddClientCreated {
 // -TherapyRelation.id и в связь с аккаунтом не переезжают, поэтому карточка
 // для приглашённого — та, что появится после подключения, с именем отсюда; до
 // подключения он виден в блоке «Ждут подключения» (`pending`).
+// QA 2026-11: двойной Enter создавал двух клиентов — submit под useSingleFlight;
+// «Добавить ещё» после первого клиента прятало форму — `open` живёт здесь.
 export function useAddClient({ setClients }: Params) {
   const tr = useTr();
+  const once = useSingleFlight();
+  const [open, setOpen] = useState(false);
   const [name, setName] = useState('');
   const [withInvite, setWithInvite] = useState(false);
   const [created, setCreated] = useState<AddClientCreated | null>(null);
@@ -39,8 +43,7 @@ export function useAddClient({ setClients }: Params) {
   async function submit() {
     if (!valid) { inputRef.current?.focus(); return; }
     const trimmed = name.trim();
-    setSubmitting(true);
-    setError('');
+    setSubmitting(true); setError('');
     try {
       if (withInvite) {
         const invite = await api.createTherapyInvite(trimmed);
@@ -64,11 +67,9 @@ export function useAddClient({ setClients }: Params) {
     }
   }
 
-  function reset() {
-    setCreated(null);
-    setWithInvite(false);
-    setError('');
-    setTimeout(() => inputRef.current?.focus(), 30);
+  function reset(keepOpen = true) { // «Добавить ещё» — форма открыта, «к списку» (close) — свёрнута
+    setCreated(null); setWithInvite(false); setError(''); setOpen(keepOpen);
+    if (keepOpen) setTimeout(() => inputRef.current?.focus(), 30);
   }
 
   async function copyInvite() {
@@ -77,10 +78,9 @@ export function useAddClient({ setClients }: Params) {
   }
 
   return {
-    name, setName,
-    withInvite, setWithInvite,
+    name, setName, withInvite, setWithInvite, open, setOpen,
     created, submitting, error, copied, copyFailed, valid,
     inputRef, pending,
-    submit, reset, copyInvite,
+    submit: once(submit), reset: () => reset(), close: () => reset(false), copyInvite,
   };
 }

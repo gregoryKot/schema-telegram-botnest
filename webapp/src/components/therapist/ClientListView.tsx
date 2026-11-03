@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { useTr } from '../../utils/addressForm';
 import type { TherapyClientSummary } from '../../api';
 import { sameId } from '../../../../shared/src/utils/sameId';
@@ -20,7 +19,7 @@ const FILTERS: { key: RosterStatus; label: string }[] = [
   { key: 'all', label: 'Все' },
   { key: 'active', label: 'Активны' },
   { key: 'wait', label: 'Ждут' },
-  { key: 'virtual', label: 'Оффлайн' },
+  { key: 'virtual', label: 'Офлайн' },
 ];
 
 interface Props {
@@ -45,11 +44,10 @@ export function ClientListView({
   filterStatus, setFilterStatus, board, openClient, addClient,
 }: Props) {
   const tr = useTr();
-  const [addOpen, setAddOpen] = useState(false);
   // Пустой список — онбординг: форма открыта сразу. Созданного клиента не
   // прячем, пока терапевт не увидел ссылку-приглашение (created).
   const noClients = !loading && !loadFailed && clients.length === 0;
-  const formVisible = addOpen || noClients || addClient.created !== null;
+  const formVisible = addClient.open || noClients || addClient.created !== null;
 
   const today = todayStr();
   const filtered = sortRoster(filterRoster(clients, searchQuery, filterStatus), today);
@@ -62,12 +60,12 @@ export function ClientListView({
             <div className="ds-eyebrow">Практика</div>
             <h1 className="ds-h1">Клиенты{clients.length > 0 && <> <span className="tc-count">{clients.length}</span></>}</h1>
           </div>
-          <button className="ds-btn" aria-expanded={formVisible} onClick={() => { setAddOpen(v => !v); }}>
+          <button className="ds-btn" aria-expanded={formVisible} onClick={() => addClient.setOpen(v => !v)}>
             + Новый клиент
           </button>
         </div>
 
-        {formVisible && <AddClientForm addClient={addClient} onClose={() => setAddOpen(false)} />}
+        {formVisible && <AddClientForm addClient={addClient} />}
         <PendingInvitesList pending={addClient.pending} className="tc-pending" />
 
         <div className="tc-toolbar">

@@ -1,14 +1,15 @@
 import { useRef, useState } from 'react';
 import { useTr } from '../../utils/addressForm';
-import { api } from '../../api';
+import { api, type TherapyClientSummary } from '../../api';
 import { useCopyToClipboard } from '../../../../shared/src/utils/useCopyToClipboard';
+import { useSingleFlight } from '../../../../shared/src/utils/useSingleFlight';
 import {
   inviteCreateErrorText,
   usePendingInvites,
 } from '../../../../shared/src/therapy/therapyInvites';
-import type { TherapyClientSummary } from '../../api';
 
 export type AddMode = null | 'invite' | 'virtual';
+type Invite = { url: string; code: string };
 
 interface Params {
   setClients: React.Dispatch<React.SetStateAction<TherapyClientSummary[]>>;
@@ -18,18 +19,17 @@ interface Params {
 // необязательно: с ним человек виден в «Ждут подключения», а после
 // подключения карточка называется так), «Оффлайн» — карточка без аккаунта.
 // Инцидент 2026-10-26: «Создать новую» отдавало тот же код — второй клиент
-// получал ссылку первого; теперь каждое приглашение — свой код, список живых
-// (`pending`) перечитывается после создания. Пара на сайте —
-// webapp/src/components/therapist/useAddClient.ts.
+// получал ссылку первого; теперь у приглашения свой код, `pending` перечитан.
+// QA 2026-11: создание под useSingleFlight — двойной тап не даёт двух клиентов.
+// Пара на сайте — webapp/src/components/therapist/useAddClient.ts.
 export function useAddClient({ setClients }: Params) {
   const tr = useTr();
+  const once = useSingleFlight();
   const [addMode, setAddMode] = useState<AddMode>(null);
   const [addInput, setAddInput] = useState('');
   const [addLoading, setAddLoading] = useState(false);
   const [addError, setAddError] = useState('');
-  const [invite, setInvite] = useState<{ url: string; code: string } | null>(
-    null,
-  );
+  const [invite, setInvite] = useState<Invite | null>(null);
   const [inviteLoading, setInviteLoading] = useState(false);
   const inviteInputRef = useRef<HTMLInputElement>(null);
   const pending = usePendingInvites(api);
@@ -104,8 +104,8 @@ export function useAddClient({ setClients }: Params) {
     inviteInputRef,
     pending,
     openAddMode,
-    createInvite,
+    createInvite: once(createInvite),
     copyInvite,
-    addVirtualClient,
+    addVirtualClient: once(addVirtualClient),
   };
 }
