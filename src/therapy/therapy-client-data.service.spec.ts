@@ -698,6 +698,17 @@ describe('TherapyClientDataService — requestYsq: дедуп очереди (ш
     );
   });
 
+  // Запросы, поставленные до этого поля (payload без therapistId), ничьими не
+  // считаются: кнопка вернётся, а дедуп по клиенту не даст отправить второй.
+  it('висящий запрос без therapistId (до деплоя) — не «свой» ни для кого', async () => {
+    const notifications = {
+      pendingPayloads: jest.fn(async () => [{ therapistName: 'Анна' }, null]),
+    };
+    expect(await isOwnYsqRequestPending(notifications, T1, CLIENT_A)).toBe(
+      false,
+    );
+  });
+
   it('профиль скрыт клиентом — свой висящий запрос терапевт всё равно видит', async () => {
     const { svc, users } = makeSeam();
     users.push(mkUser(CLIENT_A, 'Аня', ['abandonment'], false));

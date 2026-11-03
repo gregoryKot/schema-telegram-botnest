@@ -315,7 +315,8 @@ const SHORT_INPUT_ALLOWLIST: Record<string, string> = {
   'schema-miniapp/src/components/settingsSheet/TherapistClientSection.tsx':
     'код приглашения терапевта',
   // Поиск по готовому списку (клиенты, режимы, команды) — текст никуда не сохраняется.
-  'webapp/src/components/AppShell.tsx': 'поиск клиента в шапке кабинета',
+  'webapp/src/components/appShell/SidebarClients.tsx':
+    'поиск клиента в шапке кабинета',
   'webapp/src/components/CommandPalette.tsx':
     'поиск по клиентам, страницам и действиям',
   'webapp/src/components/therapist/ClientListView.tsx':

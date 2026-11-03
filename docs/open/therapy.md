@@ -96,6 +96,19 @@
   зашифрован, по имени терапевта фильтровать нельзя. Второму ответ тот же
   `{ ok: true }` — и так должно остаться: отличающийся ответ (409, «уже
   запрошено») выдал бы ему, что у клиента есть другой терапевт.
+- **`ysqRequestPending` в `getClientData` — запрос не под гейтом планов.**
+  `GET /api/therapy/client-data/:id` (`src/therapy/therapy-client-data.service.ts`)
+  с #911 читает висящие `ScheduledNotification` клиента: `isOwnYsqRequestPending` →
+  `NotificationService.pendingPayloads`. Фильтр в базе — по
+  `(userId, type, sentAt)`, под него есть индекс `@@index([userId, type, sentAt])`.
+  Payload зашифрован, поэтому по `therapistId` фильтрует код. Сценария в
+  `test/perf/scenarios.ts` нет: сидер (`test/perf/seed.ts`) не засевает
+  `ScheduledNotification`, и замер прошёл бы по пустой таблице. Если засеять
+  уведомления — сценарий `therapist-client-data` на худшего клиента худшего
+  терапевта.
+- **Три подтверждения в карточке клиента уводят по «Назад»** — «Удалить
+  задание?», «Удалить заметку?», «Восстановить версию?». Подробности и путь
+  починки — `docs/open/one-frontend.md` (`HistoryConfirmDialog`).
 - **Гонка двух параллельных запросов не закрыта атомарно.** Оба видят «в очереди
   пусто» и ставят по строке. Закрыть можно `Serializable`-транзакцией «проверка +
   вставка» с ретраем (образец `src/auth/unlink-provider.ts`) или частичным
