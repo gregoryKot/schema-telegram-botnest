@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
 import { api, reportClientError } from '../api';
-import type { TherapyClientSummary, UserTask, UserId } from '../api';
+import type { TherapyClientSummary, UserId } from '../api';
 import { TaskCreateSheet } from './TaskCreateSheet';
 import { SkeletonCard } from './Skeleton';
 import { ClientNotesTab } from './therapist/ClientNotesTab';
 import { ClientYSQTab } from './therapist/ClientYSQTab';
 import { useClientDetail } from './therapist/useClientDetail';
 import { useAddClient } from './therapist/useAddClient';
+import { useTasksBoard } from './therapist/useTasksBoard';
 import { ModeMapSelector } from './ModeMapSelector';
 import { ClientListView } from './therapist/ClientListView';
 import { ClientHeader } from './therapist/ClientHeader';
@@ -38,11 +39,8 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
   const [listTab, setListTab] = useState<'clients' | 'kanban'>('clients');
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'wait' | 'virtual'>('all');
-  const [allTasks, setAllTasks] = useState<{ clientId: UserId; clientName: string; tasks: UserTask[] }[] | null>(null);
-  const [allTasksLoading, setAllTasksLoading] = useState(false);
-  // Сбой ≠ пусто: канбан «Задания» не должен показать терапевту пустую доску
-  // на отказе запроса (см. ClientListView.loadAllTasks).
-  const [allTasksFailed, setAllTasksFailed] = useState(false);
+  // Доска «Задания»: любое изменение заданий в карточке её перечитывает.
+  const board = useTasksBoard();
   const [animKey, setAnimKey] = useState(0);
   const [canvasMapId, setCanvasMapId] = useState<number | null>(null); // карта, созданная кнопкой «Открыть на холсте»
   const [assignPreset, setAssignPreset] = useState<AssignPreset | undefined>(undefined); // шаблон «Назначить из шаблона»
@@ -124,12 +122,7 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
           setSearchQuery={setSearchQuery}
           filterStatus={filterStatus}
           setFilterStatus={setFilterStatus}
-          allTasks={allTasks}
-          allTasksLoading={allTasksLoading}
-          allTasksFailed={allTasksFailed}
-          setAllTasks={setAllTasks}
-          setAllTasksLoading={setAllTasksLoading}
-          setAllTasksFailed={setAllTasksFailed}
+          board={board}
           openClient={detail.openClient}
           addClient={addClient}
         />
@@ -172,7 +165,7 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
 
             {/* ── TASKS ────────────────────────────────────────────────────────── */}
             {clientTab === 'tasks' && (
-              <ClientTasksTab detail={detail} onAssign={preset => { setAssignPreset(preset); setShowAssign(true); }} />
+              <ClientTasksTab detail={detail} onAssign={preset => { setAssignPreset(preset); setShowAssign(true); }} onTasksChanged={board.invalidate} />
             )}
 
             {/* ── YSQ ──────────────────────────────────────────────────────────── */}
@@ -184,7 +177,7 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
                 ysqSchemaIds={ysqSchemaIds}
                 ysqRequested={ysqRequested}
                 ysqError={ysqError}
-                exportCopied={exportCopied}
+                exportCopied={exportCopied} exportEmpty={detail.exportEmpty}
                 handleRequestYsq={handleRequestYsq}
                 handleExport={handleExport}
               />
@@ -211,7 +204,7 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
           clientName={selectedClient.name ?? undefined}
           defaultType={assignPreset?.type}
           defaultText={assignPreset?.text}
-          onCreated={() => { setAssignPreset(undefined); detail.onTaskAssigned(); }}
+          onCreated={() => { setAssignPreset(undefined); detail.onTaskAssigned(); board.invalidate(); }}
           onClose={() => { setShowAssign(false); setAssignPreset(undefined); }}
         />
       )}

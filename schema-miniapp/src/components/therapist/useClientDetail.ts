@@ -3,7 +3,6 @@ import { api, reportClientError, type UserId } from '../../api';
 import { sameId } from '../../../../shared/src/utils/sameId';
 import type { TherapyClientSummary, UserTask, ClientData } from '../../api';
 import { useNoteComposer } from '../../../../shared/src/therapy/useNoteComposer';
-import { useCopyToClipboard } from '../../../../shared/src/utils/useCopyToClipboard';
 import { useYsqRequest } from '../../../../shared/src/therapy/useYsqRequest';
 import { removeClientConfirmCopy } from '../../../../shared/src/therapy/removeClientConfirm';
 import { reloadClientTasks } from '../../../../shared/src/therapy/reloadClientTasks';
@@ -14,7 +13,8 @@ import {
 } from './fetchClientDetail';
 import { useConceptEditing } from './useConceptEditing';
 import { useSessionAliasEditing } from '../../../../shared/src/therapy/useSessionAliasEditing';
-import { buildConceptExport } from './conceptExport';
+import { useConceptExport } from '../../../../shared/src/therapy/useConceptExport';
+import { getHost } from '../../../../shared/src/host';
 interface Params {
   switchView: (v: 'list' | 'client') => void;
   setClients: React.Dispatch<React.SetStateAction<TherapyClientSummary[]>>;
@@ -23,7 +23,7 @@ interface Params {
 // Фасад карточки клиента терапевта (правило №10: 476 строк → композиция).
 // Форма возврата (ClientDetail = ReturnType) не изменилась; реализация:
 // useConceptEditing.ts (концептуализация), shared useSessionAliasEditing.ts
-// (сессии/алиас, общий с сайтом), conceptExport.ts (текст экспорта).
+// (сессии/алиас, общий с сайтом), shared useConceptExport.ts (экспорт).
 // Класс «состояние одного клиента протекает в другого» (инцидент 2026-10-26,
 // docs/INCIDENTS.md): черновики сбрасываются в openClient, ответы после смены
 // клиента его карточку не трогают — проверяет useClientDetail.switch.test.ts.
@@ -74,14 +74,23 @@ export function useClientDetail({ switchView, setClients }: Params) {
     setYsqRequested,
     resetYsq,
     handleRequestYsq,
-  } = useYsqRequest(selectedClient?.telegramId, (id) => api.requestYsq(id));
-  const { copied: exportCopied, copy: copyExport } = useCopyToClipboard({
-    onError: () =>
-      reportClientError({
-        message: 'export clipboard failed',
-        section: 'therapist.clientDetail',
-      }),
-  });
+  } = useYsqRequest(
+    selectedClient?.telegramId,
+    (id) => api.requestYsq(id),
+    clientData?.ysqRequestPending,
+  );
+  const { exportCopied, exportEmpty, handleExport } = useConceptExport(
+    {
+      client: selectedClient,
+      concept: conceptEditing.concept,
+      localConcept: conceptEditing.localConcept,
+      activeSchemaIds: conceptEditing.activeSchemaIds,
+      activeModeIds: conceptEditing.activeModeIds,
+      therapistName: getHost().user()?.firstName ?? 'Терапевт',
+    },
+    (message) =>
+      reportClientError({ message, section: 'therapist.clientDetail' }),
+  );
   // Delete
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [deleteError, setDeleteError] = useState('');
@@ -159,27 +168,6 @@ export function useClientDetail({ switchView, setClients }: Params) {
       );
   }
 
-  // ── Export ─────────────────────────────────────────────────────────────────────
-  async function handleExport() {
-    const text = buildConceptExport({
-      selectedClient,
-      concept: conceptEditing.concept,
-      localConcept: conceptEditing.localConcept,
-      activeSchemaIds: conceptEditing.activeSchemaIds,
-      activeModeIds: conceptEditing.activeModeIds,
-    });
-    if (!text) return;
-    try {
-      if (navigator.share) {
-        await navigator.share({ text });
-        return;
-      }
-    } catch {
-      /* fallthrough */
-    }
-    await copyExport(text);
-  }
-
   return {
     openClientIdRef,
     // State
@@ -242,6 +230,7 @@ export function useClientDetail({ switchView, setClients }: Params) {
     setYsqRequested,
     ysqError,
     exportCopied,
+    exportEmpty,
     deleteLoading,
     deleteError,
     // Derived

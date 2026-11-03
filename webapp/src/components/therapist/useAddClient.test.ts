@@ -197,3 +197,46 @@ describe('useAddClient', () => {
     expect(navigator.clipboard.writeText).not.toHaveBeenCalled();
   });
 });
+
+// QA 2026-11: двойной Enter в поле имени создавал двух клиентов — submit не
+// проверял, что запрос уже идёт; «Добавить ещё» после первого клиента прятало
+// форму (open жил в списке и оставался false).
+describe('useAddClient — двойной Enter и «Добавить ещё»', () => {
+  it('два submit в одном кадре — один клиент', async () => {
+    let resolve!: (v: unknown[]) => void;
+    mockApi.addVirtualClient.mockReturnValue(new Promise(r => { resolve = r; }));
+    const { result } = renderHook(() => useAddClient({ setClients: makeSetClients() }));
+    act(() => { result.current.setName('Анна К.'); });
+    let first!: Promise<unknown>;
+    act(() => {
+      first = result.current.submit();
+      void result.current.submit();
+    });
+    await act(async () => { resolve([]); await first; });
+    expect(mockApi.addVirtualClient).toHaveBeenCalledTimes(1);
+  });
+
+  it('после ответа следующий клиент добавляется', async () => {
+    mockApi.addVirtualClient.mockResolvedValue([]);
+    const { result } = renderHook(() => useAddClient({ setClients: makeSetClients() }));
+    act(() => { result.current.setName('Анна К.'); });
+    await act(async () => { await result.current.submit(); });
+    act(() => { result.current.reset(); result.current.setName('Борис'); });
+    await act(async () => { await result.current.submit(); });
+    expect(mockApi.addVirtualClient).toHaveBeenCalledTimes(2);
+  });
+
+  it('«Добавить ещё» (reset) держит форму открытой, «к списку» (close) — сворачивает', async () => {
+    mockApi.addVirtualClient.mockResolvedValue([]);
+    const { result } = renderHook(() => useAddClient({ setClients: makeSetClients() }));
+    expect(result.current.open).toBe(false);
+    act(() => { result.current.setName('Анна К.'); });
+    await act(async () => { await result.current.submit(); });
+    act(() => { result.current.reset(); });
+    expect(result.current.open).toBe(true);
+    expect(result.current.created).toBeNull();
+    act(() => { result.current.close(); });
+    expect(result.current.open).toBe(false);
+    expect(result.current.created).toBeNull();
+  });
+});

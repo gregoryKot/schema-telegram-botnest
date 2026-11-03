@@ -299,15 +299,24 @@ describe('saveSessionInfo', () => {
 describe('handleRequestYsq', () => {
   beforeEach(() => { vi.useFakeTimers(); });
 
-  it('выставляет ysqRequested и сбрасывает его через 3с', async () => {
+  // QA 2026-11: флаг гас через 3 с, хотя запрос висел на сервере, и терялся после F5.
+  it('выставляет ysqRequested и держит его, пока открыт тот же клиент', async () => {
     mockApi.requestYsq.mockResolvedValue(undefined);
     const { result } = await openedHook({ telegramId: 4 });
     await act(async () => { await result.current.handleRequestYsq(); });
     expect(mockApi.requestYsq).toHaveBeenCalledWith(4);
     expect(result.current.ysqRequested).toBe(true);
 
-    await act(async () => { await vi.advanceTimersByTimeAsync(3000); });
-    expect(result.current.ysqRequested).toBe(false);
+    await act(async () => { await vi.advanceTimersByTimeAsync(60_000); });
+    expect(result.current.ysqRequested).toBe(true);
+  });
+  it('висящий на сервере запрос (ysqRequestPending) виден сразу при открытии карточки', async () => {
+    mockApi.getTherapyClientData.mockResolvedValue({
+      name: null, mySchemaIds: [], myModeIds: [], ysqCompletedAt: null, ysqActiveSchemaIds: [], ysqHistory: [], ysqRequestPending: true,
+    });
+    const { result } = await openedHook({ telegramId: 4 });
+    expect(result.current.ysqRequested).toBe(true);
+    expect(mockApi.requestYsq).not.toHaveBeenCalled();
   });
   it('второй тап, пока первый запрос в полёте → api.requestYsq вызван один раз', async () => {
     let resolve!: () => void;
@@ -341,10 +350,23 @@ describe('handleExport', () => {
       value: { writeText: vi.fn().mockResolvedValue(undefined) }, configurable: true, writable: true,
     });
   });
-  it('без концептуализации ничего не делает (пустой текст)', async () => {
+  // QA 2026-11: пустой концепт — не тишина, а exportEmpty (кнопки недоступны с подсказкой).
+  it('без концептуализации: exportEmpty, буфер не трогается', async () => {
     const { result } = await openedHook();
+    expect(result.current.exportEmpty).toBe(true);
     await act(async () => { await result.current.handleExport(); });
     expect(navigator.clipboard.writeText).not.toHaveBeenCalled();
+  });
+  it('текст — из общего билдера: подписи формы и «Переключение режимов»', async () => {
+    mockApi.getConceptualization.mockResolvedValue({
+      id: 1, schemaIds: [], modeIds: [], copingStyles: 'избегание', modeTransitions: 'Критик → Ребёнок', updatedAt: '2026-01-05T00:00:00.000Z',
+    });
+    const { result } = await openedHook();
+    expect(result.current.exportEmpty).toBe(false);
+    await act(async () => { await result.current.handleExport(); });
+    const text = (navigator.clipboard.writeText as ReturnType<typeof vi.fn>).mock.calls[0][0];
+    expect(text).toContain('СТИЛИ СОВЛАДАНИЯ\nизбегание');
+    expect(text).toContain('ПЕРЕКЛЮЧЕНИЕ РЕЖИМОВ\nКритик → Ребёнок');
   });
   it('копирует текст в буфер и сбрасывает exportCopied через 2.5с, когда navigator.share недоступен', async () => {
     mockApi.getConceptualization.mockResolvedValue({

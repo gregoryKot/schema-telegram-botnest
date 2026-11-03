@@ -6,7 +6,7 @@ import { ClientQuickActions } from './ClientQuickActions';
 import { ClientTabs } from './ClientTabs';
 import { clientInitials } from '../../../../shared/src/therapy/clientInitials';
 import type { ClientDetail } from './clientSheetTypes';
-import { ConfirmDialog } from '../ConfirmDialog';
+import { HistoryConfirmDialog } from '../HistoryConfirmDialog';
 import { useIsMobile } from '../useIsMobile';
 import { CLIENT_NAME_MAX } from '../../../../shared/src/limits/textLimits';
 import { removeClientConfirmCopy } from '../../../../shared/src/therapy/removeClientConfirm';
@@ -65,7 +65,7 @@ export function ClientHeader({ selectedClient, detail, switchView }: Props) {
       <ClientTabs detail={detail} />
       {deleteError && <div className="tk-error" role="alert">{deleteError}</div>}
       {confirmingDelete && (
-        <ConfirmDialog title={removeCopy.title} message={removeCopy.message} confirmLabel="Удалить" onConfirm={deleteClient} onCancel={cancelDeleteClient} />
+        <HistoryConfirmDialog title={removeCopy.title} message={removeCopy.message} confirmLabel="Удалить" onConfirm={deleteClient} onCancel={cancelDeleteClient} />
       )}
     </div>
   );

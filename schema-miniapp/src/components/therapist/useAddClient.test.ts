@@ -6,6 +6,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { act, renderHook } from '@testing-library/react';
 import { useAddClient } from './useAddClient';
+import type { TherapyClientSummary } from '../../api';
 
 vi.mock('../../api', () => ({
   api: {
@@ -130,5 +131,51 @@ describe('useAddClient — copyInvite', () => {
     });
     expect(result.current.inviteCopied).toBe(false);
     vi.useRealTimers();
+  });
+});
+
+// QA 2026-11 (пара — webapp/useAddClient.test.ts): двойной Enter или тап,
+// пока запрос в полёте, создавал второго клиента / второе приглашение.
+describe('useAddClient — повтор, пока запрос в полёте', () => {
+  it('два «Создать» офлайн-клиента в одном кадре — один запрос', async () => {
+    let resolve!: (v: TherapyClientSummary[]) => void;
+    mockApi.addVirtualClient.mockReturnValue(
+      new Promise((r) => {
+        resolve = r;
+      }),
+    );
+    const { result, setClients } = setup();
+    act(() => result.current.setAddInput('Анна К.'));
+    let first!: Promise<unknown>;
+    act(() => {
+      first = result.current.addVirtualClient();
+      void result.current.addVirtualClient();
+    });
+    await act(async () => {
+      resolve([]);
+      await first;
+    });
+    expect(mockApi.addVirtualClient).toHaveBeenCalledTimes(1);
+    expect(setClients).toHaveBeenCalledTimes(1);
+  });
+
+  it('два «Создать приглашение» в одном кадре — одно приглашение', async () => {
+    let resolve!: (v: { url: string; code: string }) => void;
+    mockApi.createTherapyInvite.mockReturnValue(
+      new Promise((r) => {
+        resolve = r;
+      }),
+    );
+    const { result } = setup();
+    let first!: Promise<unknown>;
+    act(() => {
+      first = result.current.createInvite();
+      void result.current.createInvite();
+    });
+    await act(async () => {
+      resolve({ url: 'https://t.me/x', code: 'c' });
+      await first;
+    });
+    expect(mockApi.createTherapyInvite).toHaveBeenCalledTimes(1);
   });
 });

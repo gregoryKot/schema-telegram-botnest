@@ -129,6 +129,15 @@ describe('шапка: меню «⋯ Ещё»', () => {
     expect(within(menu()!).getAllByRole('menuitem').map(itemLabel)).toEqual(['↗ Экспорт текстом']);
   });
 
+  // QA 2026-11: на пустом концепте экспорт молча ничего не делал.
+  it('пустой концепт — «Экспорт текстом» недоступен, причина строкой под названием', async () => {
+    await openTab(null);
+    openMore();
+    const item = within(menu()!).getByRole('menuitem', { name: /Экспорт текстом/ }) as HTMLButtonElement;
+    expect(item.disabled).toBe(true);
+    expect(item.textContent).toContain('В концепте пока пусто — экспортировать нечего');
+  });
+
   it('«Экспорт текстом» зовёт прежний экспорт: текст в буфере, под шапкой «Текст скопирован»', async () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
     Object.defineProperty(navigator, 'share', { value: undefined, configurable: true, writable: true });

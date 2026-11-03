@@ -6,6 +6,7 @@ import { fmtDate, momentDayKey } from '../../utils/format';
 import type { ClientData, TherapyClientSummary } from '../../api';
 import { isVirtualId } from '../../../../shared/src/utils/sameId';
 import { pluralRu } from '../../../../shared/src/utils/pluralRu';
+import { CONCEPT_EXPORT_EMPTY } from '../../../../shared/src/therapy/conceptExport';
 import { buildYsqRows, YSQ_TOP_N } from './ysqRows';
 import { YSQTable } from './YSQTable';
 import { YSQDynamics } from './YSQDynamics';
@@ -18,11 +19,12 @@ interface Props {
   ysqRequested: boolean;
   ysqError: string;
   exportCopied: boolean;
+  exportEmpty?: boolean; // пустой концепт: экспорт недоступен, подсказка строкой
   handleRequestYsq: () => void;
   handleExport: () => void;
 }
 
-export function ClientYSQTab({ clientData, selectedClient, selfSchemaIds, ysqRequested, ysqError, exportCopied, handleRequestYsq, handleExport }: Props) {
+export function ClientYSQTab({ clientData, selectedClient, selfSchemaIds, ysqRequested, ysqError, exportCopied, exportEmpty = false, handleRequestYsq, handleExport }: Props) {
   const tr = useTr();
   const virtual = isVirtualId(selectedClient.telegramId);
 
@@ -50,9 +52,7 @@ export function ClientYSQTab({ clientData, selectedClient, selfSchemaIds, ysqReq
               {selfSchemaIds.map(id => {
                 const s = SCHEMA_DOMAINS.flatMap(d => d.schemas).find(x => x.id === id);
                 const domain = SCHEMA_DOMAINS.find(d => d.schemas.some(x => x.id === id));
-                return (
-                  <span key={id} className="ds-chip tone-tint" style={hueStyle(domain ? DOMAIN_HUE[domain.id] : undefined)}>{s?.name ?? id}</span>
-                );
+                return <span key={id} className="ds-chip tone-tint" style={hueStyle(domain ? DOMAIN_HUE[domain.id] : undefined)}>{s?.name ?? id}</span>;
               })}
             </div>
           </div>
@@ -72,7 +72,7 @@ export function ClientYSQTab({ clientData, selectedClient, selfSchemaIds, ysqReq
           {hist.length} {pluralRu(hist.length, 'прохождение', 'прохождения', 'прохождений')} · последнее {clientData.ysqCompletedAt ? fmtDate(momentDayKey(clientData.ysqCompletedAt)) : '–'}
         </div>
         <div className="tb-actions">
-          <button onClick={handleExport} className="ds-btn ds-btn--sm ds-btn--secondary">
+          <button onClick={handleExport} disabled={exportEmpty} className="ds-btn ds-btn--sm ds-btn--secondary">
             {exportCopied ? '✓ Скопировано' : 'Экспорт'}
           </button>
           {!virtual && (
@@ -82,6 +82,7 @@ export function ClientYSQTab({ clientData, selectedClient, selfSchemaIds, ysqReq
           )}
         </div>
       </div>
+      {exportEmpty && <div className="tb-meta">{CONCEPT_EXPORT_EMPTY}</div>}
       {ysqError && <div className="tb-error">{ysqError}</div>}
 
       <YSQTable rows={rows} hasPrev={hist.length > 1} />

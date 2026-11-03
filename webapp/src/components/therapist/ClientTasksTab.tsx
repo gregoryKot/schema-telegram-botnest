@@ -19,16 +19,16 @@ interface Props {
   detail: ClientDetail;
   /** Открыть лист назначения; шаблон передаёт тип и текст. */
   onAssign: (preset?: AssignPreset) => void;
+  onTasksChanged?: () => void;
 }
 
-export function ClientTasksTab({ detail, onAssign }: Props) {
+export function ClientTasksTab({ detail, onAssign, onTasksChanged }: Props) {
   const { clientTasks, setClientTasks, selectedClient } = detail;
   const today = todayStr();
-  // Удаление и отметка у офлайн-клиента — общая с мини-аппом механика.
-  const actions = useTherapistTaskActions(api, setClientTasks);
+  // Удаление и отметка у офлайн-клиента — общая с мини-аппом механика; успех перечитывает доску «Задания».
+  const actions = useTherapistTaskActions(api, setClientTasks, onTasksChanged);
   const [confirmDelete, setConfirmDelete] = useState<UserTask | null>(null);
-  // Офлайн-клиенту назначается только «Своё задание»: шаблоны с упражнениями
-  // приложения ему не подходят (shared/tasks/assignCopy).
+  // Офлайн-клиенту — только «Своё задание»: упражнения приложения ему не подходят (shared/tasks/assignCopy).
   const offline = !!selectedClient && isVirtualId(selectedClient.telegramId);
   // Активное — то, что ещё ждёт клиента; «не вышло» закрыто и не считается.
   const activeCount = clientTasks.filter(t => isOpenStatus(taskStatus(t, today))).length;

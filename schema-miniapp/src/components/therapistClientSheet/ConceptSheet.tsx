@@ -29,11 +29,9 @@ export function ConceptSheet({ selectedClient, detail }: ConceptSheetProps) {
     showHistory,
     setShowHistory,
     setShowConceptSheet,
-    exportCopied,
     selfSchemaIds,
     activeModeIds,
     saveConcept,
-    handleExport,
   } = detail;
   // Вид выбирается один раз при открытии листа (см. useConceptView).
   const [view, setView] = useConceptView(activeModeIds.length);
@@ -94,9 +92,7 @@ export function ConceptSheet({ selectedClient, detail }: ConceptSheetProps) {
           <ConceptFieldsView detail={detail} onGoToGraph={goToGraph} />
         )}
         <ConceptSaveBar detail={detail} />
-        {concept && (
-          <ConceptExportButton copied={exportCopied} onClick={handleExport} />
-        )}
+        <ConceptExportButton detail={detail} />
       </div>
     </BottomSheet>
   );

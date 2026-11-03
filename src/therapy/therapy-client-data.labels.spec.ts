@@ -16,7 +16,13 @@ function makeService(userRow: Record<string, unknown> | null) {
     ysqResultHistory: { findMany: jest.fn(async () => []) },
   };
   const relations: any = { assertHasClient: jest.fn(async () => undefined) };
-  return new TherapyClientDataService(prisma, {} as any, {} as any, relations);
+  const notifications: any = { pendingPayloads: jest.fn(async () => []) };
+  return new TherapyClientDataService(
+    prisma,
+    {} as any,
+    notifications,
+    relations,
+  );
 }
 
 describe('getClientData — расшифровка ярлыков профиля (F2)', () => {
