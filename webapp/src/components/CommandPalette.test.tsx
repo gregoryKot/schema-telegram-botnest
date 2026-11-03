@@ -139,6 +139,23 @@ describe('CommandPalette — клиенты терапевта', () => {
     expect(await screen.findByText('Иван')).toBeTruthy();
   });
 
+  // QA 2026-11: «Семен» не находил «Семёна» — поиск общий с кабинетом (searchNormalize).
+  it('поиск клиента не различает «е» и «ё» в обе стороны', async () => {
+    getTherapyClients.mockResolvedValue([
+      { ...CLIENT, telegramId: 1, name: 'Семён' },
+      { ...CLIENT, telegramId: 2, name: 'Алена' },
+    ]);
+    renderPalette({ userRole: 'THERAPIST', therapistMode: true });
+    await screen.findByText('Семён');
+    const search = screen.getByPlaceholderText('Найти клиента, страницу или действие…');
+    fireEvent.change(search, { target: { value: 'семен' } });
+    expect(screen.getByText('Семён')).toBeTruthy();
+    expect(screen.queryByText('Алена')).toBeNull();
+    fireEvent.change(search, { target: { value: 'Алёна' } });
+    expect(screen.getByText('Алена')).toBeTruthy();
+    expect(screen.queryByText('Семён')).toBeNull();
+  });
+
   it('для роли CLIENT не запрашивает список клиентов', () => {
     renderPalette({ userRole: 'CLIENT' });
     expect(getTherapyClients).not.toHaveBeenCalled();

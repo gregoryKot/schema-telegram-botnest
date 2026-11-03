@@ -4,7 +4,7 @@ import { api } from '../api';
 import type { TherapyClientSummary, UserId } from '../api';
 import '../styles/therapist-today.css';
 import { AttentionRow, ActivityRow, SessionRow } from './TherapistTodayLists';
-import { needsAttention, sessionsTodaySorted, todayCounts } from './therapistTodayModel';
+import { needsAttention, sessionsTodaySorted, todayCounts, trackedClients } from './therapistTodayModel';
 import { homeGreeting } from './today/helpers';
 import { formatGreetingDate } from './today/greetingDate';
 
@@ -74,11 +74,11 @@ export function TherapistTodaySection({ displayName, onOpenClient }: Props) {
           <h2 className="ds-h2">Активность клиентов</h2>
           {loading ? (
             <Skeleton height={192} radius={16} />
-          ) : clients.length === 0 ? (
-            <p className="ds-empty">Нет клиентов</p>
+          ) : counts.total === 0 ? (
+            <p className="ds-empty">{clients.length === 0 ? 'Нет клиентов' : 'Активность видна у клиентов, подключённых к боту'}</p>
           ) : (
             <div className="ds-card ds-card--row ds-card--flush">
-              {clients.map(c => <ActivityRow key={c.telegramId} client={c} onOpen={onOpenClient} />)}
+              {trackedClients(clients).map(c => <ActivityRow key={c.telegramId} client={c} onOpen={onOpenClient} />)}
             </div>
           )}
         </div>

@@ -226,7 +226,21 @@ describe('TherapistTodaySection — требуют внимания', () => {
     render(<TherapistTodaySection displayName={null} onOpenClient={vi.fn()} />);
 
     await screen.findByRole('heading', { name: 'Требуют внимания' });
-    expect(screen.getAllByText('нет данных').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('нет активности').length).toBeGreaterThanOrEqual(1);
+  });
+
+  // QA 2026-11: после недели тишины «Требуют внимания» писало «нет активности
+  // 12 дн.», а список клиентов — «активность 1 авг». Подпись одна на кабинет.
+  it('неделя без активности — та же подпись с датой, что и в списке клиентов', async () => {
+    mockApi.getTherapyClients.mockResolvedValue([
+      client({ telegramId: 12, name: 'Давний клиент', ...activeDaysAgo(12) }),
+    ]);
+    render(<TherapistTodaySection displayName={null} onOpenClient={vi.fn()} />);
+
+    await screen.findByRole('heading', { name: 'Требуют внимания' });
+    // «Активность клиентов» и «Требуют внимания» — одна и та же строка.
+    expect(screen.getAllByText(/^активность 1 авг( 2026)?$/)).toHaveLength(2);
+    expect(screen.queryByText(/нет активности/)).toBeNull();
   });
 
   it('активный сегодня клиент НЕ попадает в "Требуют внимания"', async () => {
@@ -236,6 +250,48 @@ describe('TherapistTodaySection — требуют внимания', () => {
     render(<TherapistTodaySection displayName={null} onOpenClient={vi.fn()} />);
 
     await waitFor(() => expect(screen.getAllByText('Активный').length).toBeGreaterThanOrEqual(1));
+    expect(screen.queryByRole('heading', { name: 'Требуют внимания' })).toBeNull();
+  });
+});
+
+// QA 2026-11: офлайн-клиент (отрицательный id, без аккаунта) активности не
+// ведёт — daysSinceActive у него всегда null, и он вечно «требовал внимания»,
+// а в «Активны сегодня N / M» раздувал знаменатель. Встреча с ним — настоящая.
+describe('TherapistTodaySection — офлайн-клиенты', () => {
+  const offline = (o: Parameters<typeof client>[0] = {}) =>
+    client({ telegramId: -3, name: 'Ольга офлайн', ...o });
+
+  it('не требует внимания и не входит в «Активны» и список активности', async () => {
+    mockApi.getTherapyClients.mockResolvedValue([
+      client({ telegramId: 1, name: 'Иван', todayIndex: 7 }),
+      offline(),
+    ]);
+    render(<TherapistTodaySection displayName={null} onOpenClient={vi.fn()} />);
+
+    await screen.findByText('Иван');
+    expect(screen.queryByRole('heading', { name: 'Требуют внимания' })).toBeNull();
+    expect(screen.getByText('Активны сегодня').parentElement!.textContent).toBe('Активны сегодня1 / 1');
+    expect(screen.getByText('Требуют внимания').parentElement!.textContent).toBe('Требуют внимания0');
+    expect(screen.queryByText('Ольга офлайн')).toBeNull();
+  });
+
+  it('встреча с офлайн-клиентом — в «Сессиях сегодня», без подписи «нет активности»', async () => {
+    const todayDow = new Date().getDay(); // местный день терапевта, как в модели
+    mockApi.getTherapyClients.mockResolvedValue([offline({ meetingDays: [todayDow] })]);
+    render(<TherapistTodaySection displayName={null} onOpenClient={vi.fn()} />);
+
+    await screen.findByText('Ольга офлайн');
+    expect(screen.getByText('Сессий сегодня').parentElement!.textContent).toBe('Сессий сегодня1');
+    expect(screen.queryByText(/нет активности|нет данных/)).toBeNull();
+  });
+
+  it('только офлайн-клиенты — список активности объясняет, почему он пуст', async () => {
+    mockApi.getTherapyClients.mockResolvedValue([offline()]);
+    render(<TherapistTodaySection displayName={null} onOpenClient={vi.fn()} />);
+
+    const note = await screen.findByText('Активность видна у клиентов, подключённых к боту');
+    expect(note.classList.contains('ds-empty')).toBe(true);
+    expect(screen.queryByText('Нет клиентов')).toBeNull();
     expect(screen.queryByRole('heading', { name: 'Требуют внимания' })).toBeNull();
   });
 });

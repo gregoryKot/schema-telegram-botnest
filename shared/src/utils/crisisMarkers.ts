@@ -5,6 +5,8 @@
 // на телефон доверия (дёшево), а пропуск реального кризисного текста —
 // катастрофа. Паттерны сознательно расширяются, но остаются словарными
 // («убить время», «умираю со смеху» — не должны срабатывать).
+// Регистр и «ё/е» снимает общий нормализатор поиска — одна копия на продукт.
+import { normalizeSearchText } from './searchNormalize';
 
 // Экспорт ради теста, осознанно: спек сверяет, что у каждого паттерна есть
 // живая фраза в корпусе. Без сверки новый паттерн приезжает без теста — так
@@ -61,10 +63,6 @@ const LATIN_HOMOGLYPHS: Record<string, string> = {
   h: 'н',
 };
 
-function normalize(text: string): string {
-  return text.toLowerCase().replace(/ё/g, 'е');
-}
-
 /**
  * Заменяет латинские гомоглифы на кириллические аналоги. Применяется ОТДЕЛЬНО
  * от обычной нормализации: если гонять по ней и англоязычные паттерны
@@ -77,7 +75,7 @@ function toHomoglyphNormalized(text: string): string {
 
 export function detectCrisis(text: string | null | undefined): boolean {
   if (!text) return false;
-  const normalized = normalize(text);
+  const normalized = normalizeSearchText(text);
   const homoglyphNormalized = toHomoglyphNormalized(normalized);
   return CRISIS_PATTERNS.some(
     (re) => re.test(normalized) || re.test(homoglyphNormalized),

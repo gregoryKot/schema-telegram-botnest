@@ -3,9 +3,9 @@
   "packageManager": "npm",
   "testRunner": "command",
   "commandRunner": {
-    "command": "npm --prefix shared test -- src/utils/crisisMarkers.test.ts"
+    "command": "npm --prefix shared test -- src/utils/crisisMarkers.test.ts src/utils/searchNormalize.test.ts"
   },
-  "mutate": ["shared/src/utils/crisisMarkers.ts"],
+  "mutate": ["shared/src/utils/crisisMarkers.ts", "shared/src/utils/searchNormalize.ts"],
   "mutator": {
     "excludedMutations": ["CallExpression"]
   },

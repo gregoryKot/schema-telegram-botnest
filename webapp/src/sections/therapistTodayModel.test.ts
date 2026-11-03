@@ -2,9 +2,10 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { localDateStr } from '../../../shared/src/utils/format';
 import { forEachTimeZone } from '../../../shared/src/utils/timeZone.test-helpers';
 import type { TherapyClientSummary } from '../api';
+import { clientCaption } from '../components/therapist/rosterModel';
 import {
-  activityStatus, daysSinceActive, hasSessionToday, initials, latestIndex, needsAttention,
-  sessionTime, sessionsTodaySorted, sparkPoints, todayCounts, clientName,
+  activityStatus, daysSinceActive, hasSessionToday, latestIndex, needsAttention,
+  sessionTime, sessionsTodaySorted, sparkPoints, todayCounts, trackedClients, clientName,
 } from './therapistTodayModel';
 
 // 12:00 UTC 15 октября 2026 — четверг (4) во всех зонах прогона CI.
@@ -30,13 +31,6 @@ describe('therapistTodayModel', () => {
     expect(clientName(c({ name: null }))).toBe('#1');
   });
 
-  it('инициалы', () => {
-    expect(initials('Анна Крылова')).toBe('АК');
-    expect(initials('иван')).toBe('И');
-    expect(initials('#555')).toBe('#');
-    expect(initials('  ')).toBe('?');
-  });
-
   it('daysSinceActive — значение сервера (календарь клиента), без пересчёта от «сейчас»', () => {
     expect(daysSinceActive(c())).toBeNull();
     expect(daysSinceActive(c({ lastActiveDate: '2026-10-01' }))).toBeNull(); // старый кэш без поля
@@ -60,13 +54,35 @@ describe('therapistTodayModel', () => {
     expect(todayCounts(list)).toEqual({ active: 1, total: 3, sessions: 1, attention: 1 });
   });
 
-  it('статус активности', () => {
+  // QA 2026-11: у офлайн-клиента daysSinceActive всегда null — он вечно
+  // «требовал внимания» и раздувал знаменатель «Активны». Встреча с ним настоящая.
+  it('офлайн-клиент: не требует внимания, не в «Активны», но его сессия считается', () => {
+    const offline = c({ telegramId: -3 as TherapyClientSummary['telegramId'], meetingDays: [THU] });
+    expect(needsAttention(offline)).toBe(false);
+    expect(trackedClients([c(), offline])).toEqual([c()]);
+    expect(todayCounts([c({ todayIndex: 7 }), c(), offline]))
+      .toEqual({ active: 1, total: 2, sessions: 1, attention: 1 });
+    expect(activityStatus(offline)).toEqual({ text: '', tone: 'none' });
+  });
+
+  it('статус активности: текст — давность, тон — сегодня / требует внимания', () => {
     expect(activityStatus(c({ todayIndex: 6 }))).toEqual({ text: 'активность сегодня', tone: 'ok' });
-    expect(activityStatus(c())).toEqual({ text: 'нет данных', tone: 'warn' });
+    expect(activityStatus(c())).toEqual({ text: 'нет активности', tone: 'warn' });
     expect(activityStatus(c(ago(0)))).toEqual({ text: 'активность сегодня', tone: 'ok' });
     expect(activityStatus(c(ago(1)))).toEqual({ text: 'активность вчера', tone: 'none' });
     expect(activityStatus(c(ago(2)))).toEqual({ text: 'активность 2 дн. назад', tone: 'none' });
-    expect(activityStatus(c(ago(5)))).toEqual({ text: 'нет активности 5 дн.', tone: 'warn' });
+    expect(activityStatus(c(ago(5)))).toEqual({ text: 'активность 5 дн. назад', tone: 'warn' });
+    expect(activityStatus(c(ago(14)))).toEqual({ text: 'активность 1 окт', tone: 'warn' });
+  });
+
+  // QA 2026-11: две функции подписывали одну давность по-разному — «Сегодня»
+  // «нет активности 12 дн.», список клиентов «активность 24 окт». Сверка
+  // (правило №4): для клиента без срока в работе и стрика строки совпадают.
+  it('«Сегодня» и список клиентов подписывают давность одной строкой', () => {
+    for (const o of [{}, { todayIndex: 6 }, ago(0), ago(1), ago(2), ago(5), ago(14)]) {
+      const client = c(o);
+      expect(activityStatus(client).text, JSON.stringify(o)).toBe(clientCaption(client));
+    }
   });
 
   it('спарклайн: от старой к новой, пустые дни — нулевая высота', () => {

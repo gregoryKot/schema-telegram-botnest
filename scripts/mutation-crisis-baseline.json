@@ -1,6 +1,7 @@
 {
   "total": 100,
   "files": {
-    "shared/src/utils/crisisMarkers.ts": 100
+    "shared/src/utils/crisisMarkers.ts": 100,
+    "shared/src/utils/searchNormalize.ts": 100
   }
 }
