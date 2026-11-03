@@ -4,6 +4,7 @@
 import type { TherapyClientSummary } from '../api';
 import { momentDayKey, momentTime, todayStr } from '../utils/format';
 import { upcomingSession } from '../../../shared/src/therapy/upcomingSession';
+import { clientActivityLabel } from '../../../shared/src/therapy/clientActivity';
 import { indexLevel, type IndexLevel } from '../lib/tone';
 
 /** С какого числа дней без активности клиент попадает в «Требуют внимания». */
@@ -55,14 +56,11 @@ export function todayCounts(clients: TherapyClientSummary[]): TodayCounts {
 
 export interface ActivityStatus { text: string; tone: 'ok' | 'warn' | 'none' }
 
+/** Текст — общая подпись кабинета (clientActivityLabel), тон — сегодня / требует внимания. */
 export function activityStatus(c: TherapyClientSummary): ActivityStatus {
-  if (c.todayIndex != null) return { text: 'активность сегодня', tone: 'ok' };
-  const days = daysSinceActive(c);
-  if (days == null) return { text: 'нет данных', tone: 'warn' };
-  if (days === 0) return { text: 'активность сегодня', tone: 'ok' };
-  if (days === 1) return { text: 'активность вчера', tone: 'none' };
-  if (days < ATTENTION_DAYS) return { text: `активность ${days} дн. назад`, tone: 'none' };
-  return { text: `нет активности ${days} дн.`, tone: 'warn' };
+  const text = clientActivityLabel(c) ?? '';
+  if (c.todayIndex != null || daysSinceActive(c) === 0) return { text, tone: 'ok' };
+  return { text, tone: needsAttention(c) ? 'warn' : 'none' };
 }
 
 export interface SparkPoint { height: number; level: IndexLevel }

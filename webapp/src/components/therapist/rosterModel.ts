@@ -11,7 +11,7 @@ import {
   nextSessionLabel,
 } from './clientSheetHelpers';
 import { upcomingSession } from '../../../../shared/src/therapy/upcomingSession';
-import { serverAgoLabel } from '../../../../shared/src/utils/calendarAgo';
+import { clientActivityLabel } from '../../../../shared/src/therapy/clientActivity';
 import { matchesSearch } from '../../../../shared/src/utils/searchNormalize';
 
 export type RosterStatus = 'all' | 'active' | 'wait' | 'virtual';
@@ -63,14 +63,13 @@ export function meetingLabel(c: TherapyClientSummary, today: string): string | n
   return `по ${days.map((d) => DAY_NAMES[d]).join(', ')}`;
 }
 
-/** Подпись под именем: срок в работе или (для бот-клиента) активность. */
+/** Подпись под именем: срок в работе или (для бот-клиента) активность — та же, что на «Сегодня». */
 export function clientCaption(c: TherapyClientSummary): string | null {
   const duration = c.therapyStartDate ? calcTherapyDuration(c.therapyStartDate) : '';
   if (duration === 'сегодня') return 'с сегодняшнего дня';
   if (duration) return `в работе ${duration}`;
-  if (isVirtualClient(c)) return null;
-  const ago = serverAgoLabel(c.lastActiveDate, c.daysSinceActive); // по календарю клиента, не терапевта
-  const activity = ago ? `активность ${ago}` : 'нет активности';
+  const activity = clientActivityLabel(c); // офлайн-клиент — null
+  if (!activity) return null;
   return c.streak > 0 ? `${activity} · стрик ${c.streak} дн.` : activity;
 }
 

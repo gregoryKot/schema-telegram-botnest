@@ -213,7 +213,21 @@ describe('TherapistTodaySection — требуют внимания', () => {
     render(<TherapistTodaySection displayName={null} onOpenClient={vi.fn()} />);
 
     await screen.findByRole('heading', { name: 'Требуют внимания' });
-    expect(screen.getAllByText('нет данных').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('нет активности').length).toBeGreaterThanOrEqual(1);
+  });
+
+  // QA 2026-11: после недели тишины «Требуют внимания» писало «нет активности
+  // 12 дн.», а список клиентов — «активность 1 авг». Подпись одна на кабинет.
+  it('неделя без активности — та же подпись с датой, что и в списке клиентов', async () => {
+    mockApi.getTherapyClients.mockResolvedValue([
+      client({ telegramId: 12, name: 'Давний клиент', ...activeDaysAgo(12) }),
+    ]);
+    render(<TherapistTodaySection displayName={null} onOpenClient={vi.fn()} />);
+
+    await screen.findByRole('heading', { name: 'Требуют внимания' });
+    // «Активность клиентов» и «Требуют внимания» — одна и та же строка.
+    expect(screen.getAllByText(/^активность 1 авг( 2026)?$/)).toHaveLength(2);
+    expect(screen.queryByText(/нет активности/)).toBeNull();
   });
 
   it('активный сегодня клиент НЕ попадает в "Требуют внимания"', async () => {

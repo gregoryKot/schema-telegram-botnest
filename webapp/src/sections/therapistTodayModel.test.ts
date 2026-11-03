@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { localDateStr } from '../../../shared/src/utils/format';
 import { forEachTimeZone } from '../../../shared/src/utils/timeZone.test-helpers';
 import type { TherapyClientSummary } from '../api';
+import { clientCaption } from '../components/therapist/rosterModel';
 import {
   activityStatus, daysSinceActive, hasSessionToday, latestIndex, needsAttention,
   sessionTime, sessionsTodaySorted, sparkPoints, todayCounts, clientName,
@@ -53,13 +54,24 @@ describe('therapistTodayModel', () => {
     expect(todayCounts(list)).toEqual({ active: 1, total: 3, sessions: 1, attention: 1 });
   });
 
-  it('статус активности', () => {
+  it('статус активности: текст — давность, тон — сегодня / требует внимания', () => {
     expect(activityStatus(c({ todayIndex: 6 }))).toEqual({ text: 'активность сегодня', tone: 'ok' });
-    expect(activityStatus(c())).toEqual({ text: 'нет данных', tone: 'warn' });
+    expect(activityStatus(c())).toEqual({ text: 'нет активности', tone: 'warn' });
     expect(activityStatus(c(ago(0)))).toEqual({ text: 'активность сегодня', tone: 'ok' });
     expect(activityStatus(c(ago(1)))).toEqual({ text: 'активность вчера', tone: 'none' });
     expect(activityStatus(c(ago(2)))).toEqual({ text: 'активность 2 дн. назад', tone: 'none' });
-    expect(activityStatus(c(ago(5)))).toEqual({ text: 'нет активности 5 дн.', tone: 'warn' });
+    expect(activityStatus(c(ago(5)))).toEqual({ text: 'активность 5 дн. назад', tone: 'warn' });
+    expect(activityStatus(c(ago(14)))).toEqual({ text: 'активность 1 окт', tone: 'warn' });
+  });
+
+  // QA 2026-11: две функции подписывали одну давность по-разному — «Сегодня»
+  // «нет активности 12 дн.», список клиентов «активность 24 окт». Сверка
+  // (правило №4): для клиента без срока в работе и стрика строки совпадают.
+  it('«Сегодня» и список клиентов подписывают давность одной строкой', () => {
+    for (const o of [{}, { todayIndex: 6 }, ago(0), ago(1), ago(2), ago(5), ago(14)]) {
+      const client = c(o);
+      expect(activityStatus(client).text, JSON.stringify(o)).toBe(clientCaption(client));
+    }
   });
 
   it('спарклайн: от старой к новой, пустые дни — нулевая высота', () => {
