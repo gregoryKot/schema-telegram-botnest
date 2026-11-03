@@ -239,4 +239,5 @@
     height: max(320px, calc(100dvh - var(--mm2-chrome)));
   }
   .mm2-center { height: auto; min-height: 100%; padding: 24px 16px; }
+  .mm2-item { min-height: 44px; } /* пункт общего меню Dropdown — тап-цель 44 (#906) */
 }

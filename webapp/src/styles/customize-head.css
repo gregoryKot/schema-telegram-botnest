@@ -1,8 +1,3 @@
-/* Входы в «Настроить экран» из шапок «Сегодня», «Профиля» и «Паттернов»: шестерёнка (телефон) и ссылка (десктоп). */
-.cz-gear {
-  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
-  width: 44px; height: 44px; padding: 0; cursor: pointer;
-  border-radius: var(--r-14); border: 1px solid var(--line);
-  background: var(--surface); color: var(--text-sub);
-}
+/* Ссылка «Настроить экран» в шапках «Профиля», «Паттернов» и «Практики» (components/customize/CustomizeGear.tsx).
+   Шестерёнка «Настройки» рядом с ней — ds-btn ds-btn--icon из cabinet.css, своего класса у неё нет. */
 .cz-link { min-height: 44px; display: inline-flex; align-items: center; flex-shrink: 0; white-space: nowrap; }

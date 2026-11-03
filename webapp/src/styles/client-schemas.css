@@ -1,7 +1,12 @@
 /* Экран «Мои паттерны» кабинета клиента. Префикс cs-. */
 .cs-page { max-width: 1100px; gap: 40px; }
-.cs-head { align-items: flex-end; gap: 24px; }
-.cs-head-sub { font-size: 14px; margin-top: 8px; }
+/* Шапка (#906), один состав на любой ширине: надпись / заголовок / подпись, справа
+   «Настроить экран», шестерёнка «Настройки» и «Библиотека»; на телефоне действия
+   переносятся второй строкой. */
+.cs-head { align-items: flex-end; gap: 16px 24px; }
+.cs-head-text { flex: 1 1 240px; min-width: 0; }
+.cs-head-sub { margin-top: 8px; }
+.cs-head-actions { display: flex; align-items: center; gap: 12px; margin-left: auto; }
 .ds-h1 i { font-style: italic; }
 .cs-top { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); gap: 16px; }
 .cs-expressed { display: flex; flex-direction: column; gap: 14px; }
@@ -73,12 +78,7 @@
 @media (max-width: 767px) {
   .cs-sheet { padding-top: var(--safe-top); } /* статус-бар установленного приложения (#902) */
   .cs-page { gap: var(--space-16); }
-  /* Шапка как в мини-аппе: заголовок ~28px и подпись слева, «Библиотека» справа в той же строке. */
-  .cs-head { flex-wrap: nowrap; align-items: center; gap: var(--space-12); }
-  .cs-head-text { min-width: 0; }
-  .cs-head .ds-h1 { margin: 0; font-size: 28px; line-height: 1.15; }
-  .cs-head-sub { margin-top: var(--space-4); font-size: 13px; color: var(--text-sub); }
-  .cs-head .ds-btn { flex-shrink: 0; padding: 0 var(--space-16); }
+  .cs-head { gap: var(--space-12) var(--space-16); }
 
   /* Сегмент «Схемы / Режимы / Потребности» во всю ширину. */
   .cs-seg { display: flex; width: 100%; box-sizing: border-box; padding: var(--space-4); border-radius: var(--r-16); }
@@ -118,7 +118,6 @@
 .cs-row-name { font-size: 16px; font-weight: 600; line-height: 1.25; }
 .cs-row-sub { font-size: 13px; color: var(--text-sub); }
 .cs-row .cs-freq { font-size: 13px; opacity: 1; color: var(--text-sub); flex-shrink: 0; }
-.cs-add { width: 100%; min-height: 56px; border: 1.5px dashed var(--line-strong); border-radius: var(--r-16); background: none; color: var(--text); font: 600 16px var(--sans); cursor: pointer; }
 
 /* «Все 20 схем ›» — свёрнуто по умолчанию. */
 .cs-fold { display: flex; flex-direction: column; gap: var(--space-16); }

@@ -58,7 +58,7 @@ export function ClientHeader({ selectedClient, detail, switchView }: Props) {
           <ClientHeaderBadges client={selectedClient} />
         </div>
         <div className="tk-actions">
-          {!phone && <ClientQuickActions detail={detail} />}
+          {!phone && <ClientQuickActions detail={detail} primary />}
           <ClientHeaderMenu onRename={startRename} onDelete={requestDeleteClient} deleteBusy={deleteLoading} />
         </div>
       </div>

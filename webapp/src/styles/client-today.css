@@ -5,7 +5,7 @@
    отнимает ширину у приветствия и «Привет, Имя» переносится на телефоне. */
 .ct-head { display: flex; flex-direction: column; gap: 4px; }
 .ct-head-top { display: flex; align-items: center; justify-content: space-between; gap: var(--space-12); }
-.ct-h1 { margin: 0; font-size: 34px; }
+.ct-h1 { margin: 0; }
 .ct-link {
   min-height: 44px; padding: 0; display: inline-flex; align-items: center; background: none; border: 0;
   cursor: pointer; font: 600 14px var(--sans); color: var(--accent);
@@ -17,7 +17,7 @@
 /* Плитки */
 .ct-tiles { display: flex; flex-direction: column; gap: 12px; }
 .ct-tile {
-  min-height: 124px; box-sizing: border-box; width: 100%; padding: 20px; border-radius: 22px;
+  min-height: 124px; box-sizing: border-box; width: 100%; padding: 20px; border-radius: 20px;
   display: flex; align-items: center; gap: 18px; cursor: pointer; text-align: left;
   border: 1px solid var(--line); font-family: var(--sans);
 }
@@ -75,5 +75,4 @@
 
 @media (max-width: 767px) {
   .ct-tile { padding: 18px; }
-  .ct-h1 { line-height: 1.08; }
 }

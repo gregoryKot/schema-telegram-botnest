@@ -62,7 +62,6 @@
   margin-top: auto; padding-top: 14px; border-top: 1px dashed var(--line-input);
   display: flex; justify-content: flex-end; min-height: 20px;
 }
-.tc-empty { padding: 24px 0; font-size: 14px; color: var(--text-faint); }
 .tc-error { padding: 24px 0; font-size: 14px; color: var(--err); }
 
 /* ── Задания (канбан) ────────────────────────────────────────────────────── */

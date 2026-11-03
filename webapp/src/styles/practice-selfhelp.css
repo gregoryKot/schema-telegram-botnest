@@ -1,14 +1,15 @@
-/* ── «Здесь и сейчас»: значок и лист «Важное о самопомощи» ────────────── */
-.cp-head-row { display: flex; align-items: center; gap: var(--space-8); }
-.cp-head-row .ds-h1 { min-width: 0; }
+/* ── Шапка «Практики»: ряд заголовка, значок «Важное о самопомощи» и его лист ── */
+/* Ряд: заголовок, значок, справа ссылка «Настроить инструменты». На телефоне
+   ссылка не помещается рядом с заголовком и переносится второй строкой, вправо. */
+.cp-head-row { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-8) var(--space-12); margin-top: var(--space-8); }
+.cp-head-row .ds-h1 { margin: 0; min-width: 0; }
 .cp-head-end { margin-left: auto; display: flex; }
-.cp-selfhelp {
-  flex-shrink: 0; width: 44px; height: 44px; border: none; border-radius: 50%;
-  display: grid; place-items: center; cursor: pointer; color: var(--warn-ink);
-  background: color-mix(in srgb, var(--warn) 16%, transparent);
-  -webkit-tap-highlight-color: transparent;
-}
-.cp-selfhelp:hover { background: color-mix(in srgb, var(--warn) 26%, transparent); }
+.cp-head-sub { margin: var(--space-8) 0 0; line-height: 1.5; }
+.cp-head-banner { margin-top: var(--space-8); }
+.cp-head-banner.is-today { color: var(--ok-ink); }
+/* Значок — та же иконочная кнопка, что шестерёнка и остальные действия в шапке
+   (ds-btn ds-btn--icon); предупреждение задаёт только цвет, без заливки --warn. */
+.ds-btn--icon.cp-selfhelp, .ds-btn--icon.cp-selfhelp:hover { color: var(--warn-ink); -webkit-tap-highlight-color: transparent; }
 
 .sh-title { margin: 0 0 var(--space-12); }
 .sh-text { margin: 0 0 var(--space-12); font-size: 14px; line-height: 1.65; color: var(--text-sub); }

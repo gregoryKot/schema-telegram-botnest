@@ -50,6 +50,9 @@ describe('TherapistTodaySection — пустой аккаунт (без хард
 
     await waitFor(() => expect(screen.getByText('Сессий не запланировано')).toBeTruthy());
     expect(screen.getByText('Нет клиентов')).toBeTruthy();
+    // Пустые состояния — общий ds-empty (#906), не курсив в пунктирной рамке.
+    expect(screen.getByText('Сессий не запланировано').classList.contains('ds-empty')).toBe(true);
+    expect(screen.getByText('Нет клиентов').classList.contains('ds-empty')).toBe(true);
     // Блок сводной статистики скрыт вовсе на пустом списке — не «0/0».
     expect(screen.queryByText('Активны сегодня')).toBeNull();
   });
@@ -78,6 +81,14 @@ describe('TherapistTodaySection — реальные данные клиенто
     expect(screen.getByText('7.2')).toBeTruthy();
     expect(screen.getByText('активность сегодня')).toBeTruthy();
     expect(screen.getByText('активность вчера')).toBeTruthy();
+    // Счётчики — ds-card--row с подписью ds-label (#906), без своего радиуса;
+    // список активности — та же карточка-строка, радиус не инлайном.
+    const counter = screen.getByText('Активны сегодня');
+    expect(counter.classList.contains('ds-label')).toBe(true);
+    expect(counter.closest('.ds-card')!.classList.contains('ds-card--row')).toBe(true);
+    const list = screen.getByText('Активность клиентов').parentElement!.querySelector('.ds-card--flush')!;
+    expect(list.classList.contains('ds-card--row')).toBe(true);
+    expect(list.getAttribute('style')).toBeNull();
   });
 
   it('клиентов без clientAlias/name показывает как "#telegramId" — не пустую строку', async () => {

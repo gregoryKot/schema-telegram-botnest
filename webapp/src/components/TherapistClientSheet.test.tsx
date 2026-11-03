@@ -611,7 +611,7 @@ describe('TherapistClientSheet — насыщенная карточка кли�
 // Редкие действия шапки — переименовать и удалить — в меню «⋯» (#906): открыть
 // меню, выбрать пункт.
 function pickHeaderAction(name: string) {
-  fireEvent.click(screen.getByRole('button', { name: 'Ещё действия' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Действия с карточкой' }));
   fireEvent.click(screen.getByRole('menuitem', { name }));
 }
 

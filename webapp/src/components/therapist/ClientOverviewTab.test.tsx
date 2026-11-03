@@ -46,7 +46,7 @@ describe('ClientOverviewTab', () => {
     expect(screen.getByText('2 в работе').className).toBe('ds-sub');
     const schemas = screen.getByText('Активные схемы').closest('.ds-card') as HTMLElement;
     expect(schemas.querySelectorAll('.tk-item .ds-dot.tone-fill').length).toBe(2);
-    expect(within(schemas).getByText('Разрыв связи и отвержение').className).toBe('ds-sub');
+    expect(within(schemas).getByText('Нарушение связи и отвержение').className).toBe('ds-sub');
     // Режимы: только группа с активными режимами, пустых групп с «—» нет.
     const modes = screen.getByText('Карта режимов').closest('.ds-card') as HTMLElement;
     expect(modes.querySelectorAll('.tk-group').length).toBe(1);

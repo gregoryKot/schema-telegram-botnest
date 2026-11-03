@@ -16,7 +16,7 @@ interface Props {
 
 /**
  * «Мои схемы / Мои режимы» на телефоне, как в мини-аппе: группы подписью капсом со счётчиком,
- * внутри строки «название + статус карточки + частота», внизу «+ Добавить» пунктиром.
+ * внутри строки «название + статус карточки + частота», внизу «+ Добавить» (ds-btn--secondary ds-btn--lg, #906).
  * Одна механика на схемы и режимы.
  */
 export function MineGroupsList({ kind, groups, nameOf, addLabel, onAdd, onOpen, statusFor, freq }: Props) {
@@ -43,7 +43,7 @@ export function MineGroupsList({ kind, groups, nameOf, addLabel, onAdd, onOpen, 
           </div>
         </div>
       ))}
-      <button className="cs-add" onClick={onAdd}>{addLabel}</button>
+      <button type="button" className="ds-btn ds-btn--secondary ds-btn--lg" onClick={onAdd}>{addLabel}</button>
     </section>
   );
 }

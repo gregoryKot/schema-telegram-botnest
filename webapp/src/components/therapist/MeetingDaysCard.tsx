@@ -3,6 +3,7 @@ import type { TherapyClientSummary } from '../../api';
 import { MEETING_DAYS_ORDER, toggleMeetingDay, sortMeetingDays } from '../../../../shared/src/therapy/meetingDays';
 import { DAY_NAMES } from './clientSheetHelpers';
 import type { ClientDetail } from './clientSheetTypes';
+import { EditFormActions } from './EditFormActions';
 
 /** «Дни встреч» — еженедельные дни сессий; правка как в мини-аппе (SessionCard). */
 export function MeetingDaysCard({ selectedClient, detail }: { selectedClient: TherapyClientSummary; detail: ClientDetail }) {
@@ -24,14 +25,8 @@ export function MeetingDaysCard({ selectedClient, detail }: { selectedClient: Th
               </button>
             ))}
           </div>
-          <div className="tk-edit-actions">
-            <button className="ds-btn ds-btn--sm" disabled={sessionInfoSaving}
-              onClick={async () => { if (await saveSessionInfo({ meetingDays: local })) setEditing(false); }}>
-              {sessionInfoSaving ? '...' : 'Сохранить'}
-            </button>
-            <button className="ds-btn ds-btn--secondary ds-btn--sm" onClick={() => setEditing(false)}>Отмена</button>
-          </div>
-          {sessionInfoError && <div role="alert" className="tk-error">{sessionInfoError}</div>}
+          <EditFormActions saving={sessionInfoSaving} error={sessionInfoError} onCancel={() => setEditing(false)}
+            onSave={async () => { if (await saveSessionInfo({ meetingDays: local })) setEditing(false); }} />
         </div>
       ) : (
         <div className="tk-start">

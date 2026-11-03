@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 // Шапка вкладки «Концептуализация» после теста с терапевтом (#879): одно главное —
-// заголовок, статус сохранения, «Схема · Поля»; остальное в меню «⋯ Ещё». Сверка
-// с YSQ и история версий — свёрнутые раскрывашки под содержанием, а не правая
-// колонка. В виде «Схема» корень вкладки несёт класс tcp--graph (узкие отступы,
+// статус сохранения и «Схема · Поля»; остальное в меню «⋯». Заголовка у вкладки
+// нет (#906): имя уже во вкладке шапки карточки. Сверка с YSQ и история версий —
+// свёрнутые раскрывашки под содержанием (общий ds-fold), а не правая колонка. В виде «Схема» корень вкладки несёт класс tcp--graph (узкие отступы,
 // чтобы на ноутбуке схеме хватило ширины на четыре колонки). Поверх НАСТОЯЩЕГО
 // useClientDetail, мок только сети.
 import { useEffect, useRef } from 'react';
@@ -73,13 +73,13 @@ async function openTab(server: unknown = concept(), ysq: string[] = ['failure', 
   mockApi.getConceptualization.mockResolvedValue(server);
   mockApi.getTherapyClientData.mockResolvedValue({ ysqActiveSchemaIds: ysq, mySchemaIds: [] });
   render(<MemoryRouter><Harness /></MemoryRouter>);
-  await screen.findByText('Концептуализация');
+  await screen.findByRole('button', { name: 'Ещё действия' });
 }
 
 const more = () => screen.getByRole('button', { name: 'Ещё действия' });
 const openMore = () => fireEvent.click(more());
 const menu = () => screen.queryByRole('menu', { name: 'Ещё действия' });
-const root = () => screen.getByText('Концептуализация').closest('.page-inner-wide')!;
+const root = () => more().closest('.page-inner-wide')!;
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -247,18 +247,36 @@ describe('ширина под схему', () => {
   });
 });
 
-// Телефон (#902): вкладка над шапкой уже называется «Концептуализация», поэтому
-// заголовок с подписью и слово «Ещё» прячет CSS по классам; кнопка меню остаётся
-// 44×44 с aria-label. Сверка: классы в разметке и в мобильном блоке CSS одни и те же.
-describe('шапка на телефоне (#902)', () => {
-  it('блок заголовка и слово «Ещё» несут классы, которые прячет мобильный блок therapist-concept.css', async () => {
+// #906: заголовка у вкладки нет ни на одном экране — имя уже во вкладке шапки
+// (решение #902 для телефона распространено на все); кнопка меню — круглая «⋯»
+// (ds-btn--icon: 40, на телефоне 44) с aria-label, без слова «Ещё». Верхний
+// отступ — как у ds-page: класс tcp-page (40 на ноутбуке, 20 на телефоне из
+// .page-inner-wide), а не u-pt40, который держал 40 и на телефоне.
+describe('шапка без заголовка, «⋯» — иконочная кнопка (#906)', () => {
+  it('h2 «Концептуализация» не рендерится, кнопка меню — ds-btn--icon без слова «Ещё»', async () => {
     await openTab();
-    expect(screen.getByText('Концептуализация').closest('.tcp-head-title')).toBeTruthy();
-    expect(within(more()).getByText('Ещё').classList.contains('tcp-more-txt')).toBe(true);
+    expect(root().querySelector('h2')).toBeNull();
+    expect(root().querySelector('.tcp-head-title')).toBeNull();
+    expect(screen.queryByText('Концептуализация')).toBeNull();
+    expect(more().classList.contains('ds-btn--icon')).toBe(true);
+    expect(more().textContent?.trim()).toBe('⋯');
+    expect(root().classList.contains('tcp-page')).toBe(true);
+    expect(root().classList.contains('u-pt40')).toBe(false);
     const css = readFileSync(join(__dirname, '../../styles/therapist-concept.css'), 'utf8');
-    const phone = css.match(/@media \(max-width: 767px\) \{[\s\S]*?\n\}/g)?.join('\n') ?? '';
-    expect(phone).toMatch(/\.tcp-head-title \{[^}]*display: none/);
-    expect(phone).toMatch(/\.tcp-more-txt \{[^}]*display: none/);
-    expect(phone).toMatch(/\.tcp-more-btn \{[^}]*width: 44px; height: 44px/);
+    expect(css).not.toMatch(/\.tcp-head-title|\.tcp-more-btn|\.tcp-more-txt/);
+    expect(css).toMatch(/\.tcp-page \{[^}]*padding-top: 40px/);
+  });
+
+  it('раскрывашки — общий ds-fold: кнопка ds-fold-btn с подписью ds-label, тело ds-fold-body только у открытой', async () => {
+    await openTab();
+    const hist = screen.getByRole('button', { name: 'История версий · 2' });
+    expect(hist.classList.contains('ds-fold-btn')).toBe(true);
+    expect(hist.parentElement?.classList.contains('ds-fold')).toBe(true);
+    expect(within(hist).getByText('История версий · 2').classList.contains('ds-label')).toBe(true);
+    expect(hist.parentElement?.querySelector('.ds-fold-body')).toBeNull();
+    fireEvent.click(hist);
+    expect(hist.parentElement?.querySelector('.ds-fold-body')).toBeTruthy();
+    // Поднятого до 14px ds-label у раскрывашек больше нет — кегль общий.
+    expect(readFileSync(join(__dirname, '../../styles/therapist-concept.css'), 'utf8')).not.toMatch(/\.tcp-folds \.ds-label/);
   });
 });

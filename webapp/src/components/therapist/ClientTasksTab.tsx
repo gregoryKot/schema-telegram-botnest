@@ -37,9 +37,9 @@ export function ClientTasksTab({ detail }: Props) {
 
         {clientTasks.length === 0 ? (
           <div>
-            <div className="tb-empty">
+            <p className="ds-empty">
               Нет назначенных заданий. Домашние практики помогают закрепить работу между сессиями.
-            </div>
+            </p>
             <button onClick={() => setShowAssign(true)} className="ds-btn tb-mt16">Назначить первое задание</button>
           </div>
         ) : (

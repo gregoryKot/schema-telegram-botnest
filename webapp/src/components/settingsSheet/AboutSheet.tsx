@@ -25,7 +25,7 @@ export function AboutSheet({ onClose }: { onClose: () => void }) {
         </div>
         <div className="st-fine">Это образовательный инструмент — не медицинский и не психологический сервис.</div>
       </div>
-      <button type="button" className="ds-btn st-done" onClick={goBack}>Закрыть</button>
+      <button type="button" className="ds-btn ds-btn--lg st-done" onClick={goBack}>Закрыть</button>
     </BottomSheetShell>
   );
 }

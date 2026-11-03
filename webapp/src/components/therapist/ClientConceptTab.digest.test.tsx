@@ -66,7 +66,7 @@ function Harness() {
 async function openTab(server: unknown) {
   mockApi.getConceptualization.mockResolvedValue(server);
   render(<MemoryRouter><Harness /></MemoryRouter>);
-  await screen.findByText('Концептуализация');
+  await screen.findByRole('button', { name: 'Ещё действия' }); // шапка вкладки без заголовка (#906)
 }
 
 const digest = () => screen.getByRole('region', { name: 'Коротко' });

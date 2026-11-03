@@ -77,6 +77,9 @@
 .ds-card--hover:hover { border-color: var(--line-hover); box-shadow: 0 12px 30px -18px rgba(60, 40, 20, .4); }
 .ds-card--ink { background: var(--ink); border-color: var(--ink); color: var(--on-ink); }
 .ds-card--accent { background: var(--accent); border-color: var(--accent); color: #fff; }
+/* На акцентной заливке подпись, подпись-строка и ссылка — светлые (ниже они красятся для бумаги). */
+.ds-card--accent .ds-label, .ds-card--accent .ds-sub, .ds-card--accent .ds-link { color: var(--on-ink); }
+.ds-card--accent .ds-label, .ds-card--accent .ds-sub { opacity: .85; }
 .ds-card--warn { background: var(--warn-bg); border-color: var(--warn-bg); color: var(--warn-ink); }
 .ds-list-row {
   display: grid; align-items: center; gap: 14px;
@@ -144,6 +147,7 @@
 }
 .ds-sheet-head > .ds-h1, .ds-sheet-head > .ds-h2, .ds-sheet-head > .ds-h3 { margin: 0; flex: 1; min-width: 0; }
 .ds-sheet-head > :last-child { margin-left: auto; }
+.ds-sheet-head > .ds-back:first-child { margin-left: 0; } /* одинокий «← Назад» остаётся слева */
 .ds-back {
   display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0;
   border: none; background: none; font: 600 13px var(--sans); color: var(--accent);
@@ -176,6 +180,8 @@
   display: flex; align-items: center; justify-content: center; font-weight: 700;
 }
 .ds-avatar--serif { font-family: var(--serif); font-weight: 400; }
+/* tint-аватар: .ds-avatar объявлен после .tone-* и иначе перекрывает tint сплошной заливкой. */
+.ds-avatar.tone-tint { background: oklch(0.94 0.035 var(--h)); color: oklch(0.38 0.1 var(--h)); }
 .ds-dot { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
 
 /* ── Тумблер (role="switch") ─────────────────────────────────────────────── */

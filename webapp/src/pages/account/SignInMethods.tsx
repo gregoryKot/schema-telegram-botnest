@@ -21,9 +21,9 @@ export function SignInMethods({
 
   return (
     <div className="ds-card aa-card">
-      <div className="aa-card-title">
-        Способы входа
-        {!loading && <span className="aa-count">{linked} из {total}</span>}
+      <div className="aa-card-head">
+        <h2 className="ds-h3">Способы входа</h2>
+        {!loading && <span className="ds-sub">{linked} из {total}</span>}
       </div>
       {loading ? (
         // Силуэт будущих строк: иконка, название, кнопка (не крутилка).

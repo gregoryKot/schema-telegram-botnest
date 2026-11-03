@@ -1192,3 +1192,17 @@ describe('SettingsSheet — удаление аккаунта: закрытие 
     expect(screen.queryByText('Необратимо.', { exact: false })).toBeNull();
   });
 });
+
+// #906: шапка листа — общая ds-sheet-head/ds-back/ds-h2 из cabinet.css, своих
+// .st-head/.st-title нет; «← Закрыть» на главном виде, «← Назад» — в подвиде.
+describe('SettingsSheet — шапка листа (#906)', () => {
+  it('«← Закрыть» — ds-back внутри ds-sheet-head рядом с заголовком ds-h2', async () => {
+    await renderSheet();
+    const back = screen.getByRole('button', { name: '← Закрыть' });
+    expect(back.className).toBe('ds-back');
+    const head = back.parentElement!;
+    expect(head.className).toBe('ds-sheet-head');
+    expect(head.querySelector('h2.ds-h2')?.textContent).toBe('Настройки');
+    expect(document.querySelector('.st-head, .st-title')).toBeNull();
+  });
+});

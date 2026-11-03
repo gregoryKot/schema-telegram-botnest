@@ -559,3 +559,18 @@ describe('AccountPage — «← Назад» ведёт в дом текущег
     expect(screen.queryByText('дом кабинета')).toBeNull();
   });
 });
+
+// #906: шапка страницы — общая ds-sheet-head/ds-back, заголовок — eyebrow «Аккаунт»
+// над ds-h1, своих .aa-back/.aa-h1 нет; «Выйти со всех устройств» — ds-link.
+describe('AccountPage — шапка и заголовок (#906)', () => {
+  it('«← Назад» — ds-back внутри ds-sheet-head; eyebrow «Аккаунт» над ds-h1', async () => {
+    renderPage();
+    await screen.findByText('Аккаунт');
+    const back = screen.getByRole('button', { name: '← Назад' });
+    expect(back.className).toBe('ds-back');
+    expect(back.parentElement!.className).toBe('ds-sheet-head');
+    expect(screen.getByText('Аккаунт').className).toBe('ds-eyebrow');
+    expect(screen.getByRole('heading', { level: 1 }).classList.contains('ds-h1')).toBe(true);
+    expect(screen.getByText('Выйти со всех устройств').className).toBe('ds-link');
+  });
+});

@@ -111,11 +111,11 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
       <div {...dialogA11y} className="settings-overlay st-overlay">
 
         {/* ── Header ── */}
-        <div className="st-head">
-          <button className="ds-link" onClick={subView !== 'main' ? () => setSubView('main') : goBack}>
+        <div className="ds-sheet-head">
+          <button type="button" className="ds-back" onClick={subView !== 'main' ? () => setSubView('main') : goBack}>
             ← {subView !== 'main' ? 'Назад' : 'Закрыть'}
           </button>
-          <h2 className="ds-h2 st-title">{SUB_TITLES[subView]}</h2>
+          <h2 className="ds-h2">{SUB_TITLES[subView]}</h2>
           <span className={`ds-badge ${saveError ? 'st-toast is-err' : 'ds-badge--ok st-toast'}${savedToast || saveError ? ' is-on' : ''}`}>
             {saveError ? 'Не сохранилось' : 'Сохранено ✓'}
           </span>

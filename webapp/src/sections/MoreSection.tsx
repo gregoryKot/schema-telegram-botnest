@@ -31,7 +31,7 @@ function RowBody({ row }: { row: Row }) {
 }
 
 // «Ещё»: всё, что не входит в три действия главной (docs/design/CLIENT_SIMPLE_2026-10.md).
-// Разделы /schemas, /practice, /profile остаются на своих адресах — отсюда в них заходят.
+// Разделы /schemas, /practice, /profile остаются на своих адресах — отсюда в них заходят. Кризисный вход «Мне очень плохо» — ds-btn--secondary ds-btn--lg (#906).
 export function MoreSection({ onNavigate, onOpenSchema, onOpenAdvanced, userRole, onOpenTherapistCabinet }: Props) {
   const [why, setWhy] = useState(false);
   const [journey, setJourney] = useState(false);
@@ -62,7 +62,7 @@ export function MoreSection({ onNavigate, onOpenSchema, onOpenAdvanced, userRole
     <div className="ds-page cm-page">
       <header>
         <div className="ds-eyebrow">Ещё</div>
-        <h1 className="ds-h1 cm-h1">Всё остальное</h1>
+        <h1 className="ds-h1">Всё остальное</h1>
       </header>
 
       <ul className="cm-list">
@@ -81,7 +81,7 @@ export function MoreSection({ onNavigate, onOpenSchema, onOpenAdvanced, userRole
         ))}
       </ul>
 
-      <button type="button" className="cm-sos" onClick={() => onNavigate('practice')}>Мне очень плохо</button>
+      <button type="button" className="ds-btn ds-btn--secondary ds-btn--lg" onClick={() => onNavigate('practice')}>Мне очень плохо</button>
 
       {why && <WhySheet onClose={() => setWhy(false)} />}
       {target.sheet}

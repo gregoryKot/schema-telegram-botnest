@@ -149,3 +149,21 @@ describe('cabinet.css: примитивы листов (#906)', () => {
     expect(decls(phone, '.ds-h1--compact')).toContain('font-size: 26px');
   });
 });
+
+describe('cabinet.css: поправки координатора волны 1 (#906)', () => {
+  it('одинокий «← Назад» в .ds-sheet-head остаётся слева: правило :first-child сильнее «последний ребёнок — вправо»', () => {
+    expect(decls(top, '.ds-sheet-head > .ds-back:first-child')).toContain('margin-left: 0');
+    expect(decls(top, '.ds-sheet-head > :last-child')).toContain('margin-left: auto');
+  });
+  it('.ds-avatar.tone-tint — tint-аватар с тёмными инициалами (иначе .ds-avatar перекрывает .tone-tint заливкой)', () => {
+    const tint = decls(top, '.ds-avatar.tone-tint');
+    expect(tint).toContain('background: oklch(0.94 0.035 var(--h))');
+    expect(tint).toContain('color: oklch(0.38 0.1 var(--h))');
+    expect(top.indexOf('.ds-avatar.tone-tint')).toBeGreaterThan(top.indexOf('.ds-avatar {'));
+  });
+  it('на акцентной карточке подпись, подпись-строка и ссылка — светлые токеном --on-ink', () => {
+    for (const sel of ['.ds-card--accent .ds-label', '.ds-card--accent .ds-sub', '.ds-card--accent .ds-link']) {
+      expect(decls(top, sel), sel).toContain('color: var(--on-ink)');
+    }
+  });
+});

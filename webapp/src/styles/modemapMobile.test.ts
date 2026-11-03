@@ -83,6 +83,10 @@ describe('холст карты режимов на телефоне (sheet-mode
     for (const v of ['--mobile-nav-h', '--safe-top', '--safe-bottom']) expect(root, v).toMatch(new RegExp(`(^|;)\\s*${v}:`));
   });
 
+  it('пункт общего меню Dropdown (.mm2-item) на ≤767 — тап-цель 44, одним правилом для всех меню «⋯»', () => {
+    expect(values(modemap, PHONE, '.mm2-item', 'min-height')).toEqual(['44px']);
+  });
+
   it('цвета новых правил — токенами, без hex/rgb-литералов', () => {
     const fresh = modemap.filter((r) => r.group === PHONE || r.selectors.some((s) => s.startsWith('.mm2-skel')));
     expect(fresh.length).toBeGreaterThan(0);

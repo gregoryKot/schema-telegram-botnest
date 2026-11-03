@@ -72,7 +72,7 @@ async function openTab(props: { withHandler?: boolean; form?: AddressForm } = {}
       <Harness withHandler={props.withHandler} />
     </AddressFormContext.Provider>,
   );
-  await screen.findByText('Концептуализация');
+  await screen.findByRole('button', { name: 'Ещё действия' }); // шапка вкладки без заголовка (#906)
 }
 
 // Действие живёт в меню «⋯ Ещё» шапки (#879); выбор пункта закрывает меню,

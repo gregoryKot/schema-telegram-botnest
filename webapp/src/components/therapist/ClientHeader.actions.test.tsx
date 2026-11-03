@@ -47,6 +47,7 @@ describe('«+ Задание / + Заметка»', () => {
     const setClientTab = vi.fn();
     const detail = detailOf({ setShowAssign, setClientTab });
     renderHeader(detail);
+    expect(screen.getByRole('button', { name: '+ Задание' }).className).toBe('ds-btn ds-btn--sm');
     fireEvent.click(screen.getByRole('button', { name: '+ Задание' }));
     expect(setShowAssign).toHaveBeenCalledWith(true);
     fireEvent.click(screen.getByRole('button', { name: '+ Заметка' }));
@@ -93,7 +94,7 @@ describe('меню «⋯» шапки', () => {
     const requestDeleteClient = vi.fn();
     renderHeader(detailOf({ setRenamingAlias, setAliasInput, requestDeleteClient }));
     expect(screen.queryByRole('menu')).toBeNull();
-    const more = screen.getByRole('button', { name: 'Ещё действия' });
+    const more = screen.getByRole('button', { name: 'Действия с карточкой' });
     expect(more.className).toContain('ds-btn--icon');
     fireEvent.click(more);
     expect(screen.getAllByRole('menuitem').map(el => el.textContent)).toEqual(['Переименовать', 'Удалить клиента']);
@@ -111,7 +112,7 @@ describe('меню «⋯» шапки', () => {
     renderHeader(detailOf({ deleteLoading: true }));
     expect(screen.queryByRole('button', { name: 'Переименовать' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Удалить клиента' })).toBeNull();
-    fireEvent.click(screen.getByRole('button', { name: 'Ещё действия' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Действия с карточкой' }));
     expect((screen.getByRole('menuitem', { name: 'Удалить клиента' }) as HTMLButtonElement).disabled).toBe(true);
   });
 

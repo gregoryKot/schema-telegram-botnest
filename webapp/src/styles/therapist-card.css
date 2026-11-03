@@ -34,9 +34,6 @@
 .tk-head > .ds-back { align-self: flex-start; margin-bottom: -8px; }
 .tk-head-row { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
 .tk-avatar { width: 56px; height: 56px; font-size: 21px; }
-/* cabinet.css объявляет .ds-avatar после .tone-* и перекрывает tint сплошной
-   заливкой; тот же tint-тон, что у .tone-tint, — через два класса. */
-.tk-avatar.tone-tint { background: oklch(0.94 0.035 var(--h)); color: oklch(0.38 0.1 var(--h)); }
 .tk-ident { flex: 1; min-width: 260px; }
 /* Кегль имени — ds-h2; здесь только перенос: одна строка с многоточием. */
 .tk-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; color: var(--text); }
@@ -52,8 +49,7 @@
    подложки списка клиентов: акцент здесь только у даты. */
 .tk-head .tc-meeting { flex-basis: 100%; justify-content: flex-start; gap: 10px; background: none; padding: 0; }
 .tk-actions { display: flex; gap: 8px; align-items: center; white-space: nowrap; }
-/* Пункты меню «⋯» — тап-цель 44 (общий .mm2-item — 36). */
-.tk-menu .mm2-item { min-height: 44px; font-size: 13px; }
+.tk-menu .mm2-item { font-size: 13px; } /* тап-цель 44 на телефоне — у общего .mm2-item */
 .tk-head .ds-tabs { margin: 0 calc(-1 * (var(--tk-center) + var(--tk-gutter))); padding: 0 calc(var(--tk-center) + var(--tk-gutter)); }
 
 /* ── Обзор ───────────────────────────────────────────────────────────────── */
@@ -84,10 +80,6 @@
 
 /* ── Сайдбар Обзора ──────────────────────────────────────────────────────── */
 .tk-side { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
-/* На акцентной заливке подпись, подпись-строка и ссылка — светлые (cabinet.css
-   красит их для бумаги). */
-.tk-side .ds-card--accent .ds-label, .tk-side .ds-card--accent .ds-sub, .tk-side .ds-card--accent .ds-link { color: var(--on-ink); }
-.tk-side .ds-card--accent .ds-label, .tk-side .ds-card--accent .ds-sub { opacity: .85; }
 .tk-next { margin-top: 6px; overflow-wrap: anywhere; }
 .tk-edit-form { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
 .tk-edit-actions { display: flex; gap: 8px; flex-wrap: wrap; }
@@ -102,7 +94,6 @@
 .tk-need-bar > div { height: 100%; border-radius: 3px; }
 .tk-need b { text-align: right; }
 .tk-need b.is-low { color: var(--err); }
-.tk-actions-grid { display: flex; flex-wrap: wrap; gap: 8px; }
 .tk-start { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
 .tk-days { display: flex; flex-wrap: wrap; gap: var(--space-6); }
 .tk-day {

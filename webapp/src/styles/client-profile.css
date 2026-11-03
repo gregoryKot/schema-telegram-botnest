@@ -5,12 +5,15 @@
 .cpf-error { font-size: 13px; color: var(--err); }
 .cpf-label { margin-bottom: 10px; }
 
-.cpf-head { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
+/* Шапка (#906), один состав на любой ширине: аватар, надпись / заголовок / подпись,
+   справа «Настроить экран» и шестерёнка «Настройки». Действия переносятся второй
+   строкой, когда не помещаются рядом с текстом (телефон). */
+.cpf-head { display: flex; align-items: center; gap: 16px 20px; flex-wrap: wrap; }
 .cpf-avatar { width: 80px; height: 80px; font-size: 30px; }
-.cpf-head-text { flex: 1; min-width: 200px; }
-.cpf-head-sub { font-size: 14px; color: var(--text-sub); margin-top: 6px; }
+.cpf-head-text { flex: 1 1 200px; min-width: 0; }
+.cpf-head-sub { margin-top: 8px; }
 .cpf-head .ds-h1 i { font-style: italic; color: var(--accent); }
-.cpf-head-mob, .cpf-head-settings { display: none; }
+.cpf-head-actions { display: flex; align-items: center; gap: 12px; margin-left: auto; }
 .cpf-heat-days { display: none; }
 
 .cpf-counters { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
@@ -104,7 +107,7 @@
 @media (max-width: 767px) {
   .cpf-card, .cpf-former { padding: 16px; border-radius: 18px; }
   .cpf-avatar { width: 56px; height: 56px; font-size: 20px; }
-  .cpf-head { gap: 14px; }
+  .cpf-head { gap: 12px 14px; }
   .cpf-counters { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
   .cpf-counter { padding: 12px; border-radius: 14px; }
   .cpf-counter-num { font-size: 30px; }

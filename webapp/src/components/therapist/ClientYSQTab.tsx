@@ -66,12 +66,10 @@ export function ClientYSQTab({ clientData, selectedClient, selfSchemaIds, ysqReq
 
   return (
     <div className="ds-page tb-page tb-page--ysq">
-      <div className="ds-head-row tb-ysq-head-row">
-        <div>
-          <h2 className="tb-h32">Опросник схем YSQ</h2>
-          <div className="tb-sub">
-            {hist.length} {pluralRu(hist.length, 'прохождение', 'прохождения', 'прохождений')} · последнее {clientData.ysqCompletedAt ? fmtDate(momentDayKey(clientData.ysqCompletedAt)) : '–'}
-          </div>
+      {/* Заголовка нет (#906): имя уже во вкладке шапки. */}
+      <div className="ds-head-row">
+        <div className="ds-sub">
+          {hist.length} {pluralRu(hist.length, 'прохождение', 'прохождения', 'прохождений')} · последнее {clientData.ysqCompletedAt ? fmtDate(momentDayKey(clientData.ysqCompletedAt)) : '–'}
         </div>
         <div className="tb-actions">
           <button onClick={handleExport} className="ds-btn ds-btn--sm ds-btn--secondary">

@@ -40,6 +40,9 @@ export function GlyphX() {
 }
 
 // ── Shared exercise wrapper ───────────────────────────────────────────────────
+// Шапка — общая ds-sheet-head/ds-back (#906): .ex2-top держит sticky и --safe-top
+// (safeTop.test.ts). Стрелка — SVG, подпись без «←»: имя кнопки («Назад», «Закрыть»,
+// «Назад к упражнениям») ищут по тексту тесты десятков потребителей ExScreen.
 interface ExScreenProps {
   onBack: () => void;
   backLabel?: string;
@@ -54,11 +57,8 @@ interface ExScreenProps {
 export function ExScreen({ onBack, backLabel, eyebrow, title, lede, aside, foot, children }: ExScreenProps) {
   return (
     <div className="ex2-screen">
-      <div className="ex2-top">
-        <button className="ds-link ex2-back" onClick={onBack}>
-          <GlyphArrowLeft />
-          {backLabel ?? 'Назад к упражнениям'}
-        </button>
+      <div className="ds-sheet-head ex2-top">
+        <button type="button" className="ds-back" onClick={onBack}><GlyphArrowLeft />{backLabel ?? 'Назад к упражнениям'}</button>
       </div>
       <div className={'ex2-body' + (aside ? '' : ' ex2-body--single')}>
         <div className="ex2-main">

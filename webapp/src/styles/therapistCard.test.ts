@@ -36,7 +36,7 @@ const phone = block(css, '@media (max-width: 767px)');
 const GONE = [
   '.tk-actions-main', '.tk-head--quiet-actions', '.tk-back', '.tk-edit', '.tk-name-row',
   '.tk-tile', '.tk-tile-title', '.tk-tile-item', '.tk-tiles', '.tk-quote', '.tk-goal-text', '.tk-mode-col', '.tk-modes',
-  '.tk-card-label', '.tk-next-edit', '.tk-next-sub', '.tk-action', '.tk-hint', '.tk-block',
+  '.tk-card-label', '.tk-next-edit', '.tk-next-sub', '.tk-action', '.tk-actions-grid', '.tk-hint', '.tk-block',
 ];
 
 describe('therapist-card.css: тихая карточка клиента (#906)', () => {
@@ -59,19 +59,17 @@ describe('therapist-card.css: тихая карточка клиента (#906)'
     expect(decls(phone, '.tk-name')).toContain('-webkit-line-clamp: 2');
   });
 
-  it('аватар — tint тона клиента с тёмными инициалами, на телефоне 44×44', () => {
-    const tint = decls(css, '.tk-avatar.tone-tint');
-    expect(tint).toContain('background: oklch(0.94 0.035 var(--h))');
-    expect(tint).toContain('color: oklch(0.38 0.1 var(--h))');
+  it('аватар — tint тона клиента держит примитив .ds-avatar.tone-tint (cabinet.css), локальной копии нет; на телефоне 44×44', () => {
+    expect(decls(css, '.tk-avatar.tone-tint')).toBe('');
     expect(decls(phone, '.tk-avatar')).toContain('width: 44px');
     expect(decls(phone, '.tk-avatar')).toContain('height: 44px');
   });
 
-  it('строка «Встреча» в шапке — без подложки списка, своей строкой; пункты меню «⋯» — тап-цель 44', () => {
+  it('строка «Встреча» в шапке — без подложки списка, своей строкой; тап-цель пунктов меню «⋯» — у общего .mm2-item, не здесь', () => {
     const line = decls(css, '.tk-head .tc-meeting');
     expect(line).toContain('background: none');
     expect(line).toContain('flex-basis: 100%');
-    expect(decls(css, '.tk-menu .mm2-item')).toContain('min-height: 44px');
+    expect(decls(css, '.tk-menu .mm2-item')).not.toContain('min-height');
   });
 
   it('цель терапии — Manrope 15 обычным текстом; цвета — только токенами и тонами', () => {
@@ -81,9 +79,7 @@ describe('therapist-card.css: тихая карточка клиента (#906)'
     expect(css).not.toMatch(/#[0-9a-f]{3,8}\b|rgba?\(/i);
   });
 
-  it('на акцентной карточке сайдбара подпись, подпись-строка и ссылка светлые', () => {
-    for (const sel of ['.tk-side .ds-card--accent .ds-label', '.tk-side .ds-card--accent .ds-sub', '.tk-side .ds-card--accent .ds-link']) {
-      expect(decls(css, sel), sel).toContain('color: var(--on-ink)');
-    }
+  it('текст на акцентной карточке красит примитив .ds-card--accent (cabinet.css) — локальных правил нет', () => {
+    expect(css).not.toMatch(/\.tk-side \.ds-card--accent/);
   });
 });

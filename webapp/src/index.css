@@ -1063,18 +1063,6 @@ html[data-theme="dark"] .sheet-modal-box { box-shadow: 0 24px 64px -16px rgba(0,
   display: grid; grid-template-rows: auto 1fr;
   overflow: hidden;
 }
-.ex-topbar {
-  height: 52px; padding: 0 32px;
-  display: flex; align-items: center; gap: var(--space-16);
-  background: var(--bg); border-bottom: 1px solid var(--line); flex-shrink: 0;
-}
-.ex-back {
-  display: inline-flex; align-items: center; gap: var(--space-8);
-  font-size: 13px; color: var(--text-sub);
-  cursor: pointer; padding: 5px 8px; border-radius: 5px;
-  transition: background .1s, color .1s; background: none; border: none;
-}
-.ex-back:hover { background: var(--surface-2); color: var(--text); }
 
 /* Prompt */
 /* Prompt – shared by exercises and diary flows */

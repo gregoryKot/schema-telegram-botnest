@@ -3,6 +3,7 @@ import { fmtDate } from '../../utils/format';
 import { upcomingSession } from '../../../../shared/src/therapy/upcomingSession';
 import { DAY_NAMES, nextSessionLabel } from './clientSheetHelpers';
 import type { ClientDetail } from './clientSheetTypes';
+import { EditFormActions } from './EditFormActions';
 
 interface Props {
   selectedClient: TherapyClientSummary;
@@ -20,14 +21,8 @@ export function NextSessionCard({ selectedClient, detail }: Props) {
       {editingNextSession ? (
         <div className="tk-edit-form">
           <input className="ds-input" type="datetime-local" value={localNextSession} onChange={e => setLocalNextSession(e.target.value)} />
-          <div className="tk-edit-actions">
-            <button className="ds-btn ds-btn--secondary ds-btn--sm" disabled={sessionInfoSaving}
-              onClick={async () => { if (await saveSessionInfo({ nextSession: localNextSession || null })) setEditingNextSession(false); }}>
-              {sessionInfoSaving ? '...' : 'Сохранить'}
-            </button>
-            <button className="ds-btn ds-btn--secondary ds-btn--sm" onClick={() => setEditingNextSession(false)}>Отмена</button>
-          </div>
-          {sessionInfoError && <div role="alert" className="ds-sub">{sessionInfoError}</div>}
+          <EditFormActions saving={sessionInfoSaving} error={sessionInfoError} onAccent onCancel={() => setEditingNextSession(false)}
+            onSave={async () => { if (await saveSessionInfo({ nextSession: localNextSession || null })) setEditingNextSession(false); }} />
         </div>
       ) : (
         <>
@@ -52,14 +47,8 @@ export function StartDateCard({ selectedClient, detail }: Props) {
       {editingStartDate ? (
         <div className="tk-edit-form">
           <input className="ds-input" type="date" value={localStartDate} onChange={e => setLocalStartDate(e.target.value)} />
-          <div className="tk-edit-actions">
-            <button className="ds-btn ds-btn--sm" disabled={sessionInfoSaving}
-              onClick={async () => { if (await saveSessionInfo({ therapyStartDate: localStartDate || null })) setEditingStartDate(false); }}>
-              {sessionInfoSaving ? '...' : 'Сохранить'}
-            </button>
-            <button className="ds-btn ds-btn--secondary ds-btn--sm" onClick={() => setEditingStartDate(false)}>Отмена</button>
-          </div>
-          {sessionInfoError && <div role="alert" className="tk-error">{sessionInfoError}</div>}
+          <EditFormActions saving={sessionInfoSaving} error={sessionInfoError} onCancel={() => setEditingStartDate(false)}
+            onSave={async () => { if (await saveSessionInfo({ therapyStartDate: localStartDate || null })) setEditingStartDate(false); }} />
         </div>
       ) : (
         <div className="tk-start">

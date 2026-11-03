@@ -103,7 +103,7 @@ function Harness() {
 async function openTab(server: unknown) {
   mockApi.getConceptualization.mockResolvedValue(server);
   render(<Harness />);
-  await screen.findByText('Концептуализация');
+  await screen.findByRole('button', { name: 'Ещё действия' }); // шапка вкладки без заголовка (#906)
 }
 
 const saved = () => mockApi.saveConceptualization.mock.calls.at(-1)?.[1];

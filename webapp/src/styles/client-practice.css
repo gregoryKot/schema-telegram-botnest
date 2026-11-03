@@ -57,17 +57,13 @@
 .cp-ex-state { margin-top: auto; font-size: 12px; color: var(--text-sub); }
 
 /* ── Телефон (.cp-page--phone ставит PracticeSection по useIsMobile) ──────────
-   Ориентир — экран «Помощь» мини-аппа: компактная шапка, дыхание первым,
-   инструменты строками (название + одна строка подписи + шеврон), а не
-   цветными плитками; заголовки блоков — малые подписи капсом. */
+   Ориентир — экран «Помощь» мини-аппа: дыхание первым, инструменты строками
+   (название + одна строка подписи + шеврон), а не цветными плитками. Шапка и
+   заголовки блоков — те же, что на ноутбуке (ds-eyebrow + ds-h1 + ds-sub,
+   секции — Literata ds-h2; #906). */
 .cp-page--phone { gap: var(--space-20); padding-top: var(--space-16); }
-.cp-page--phone .ds-h1 { margin: 0; font-size: 28px; line-height: 1.15; }
-.cp-phone-sub { margin: var(--space-4) 0 0; font-size: 14px; color: var(--text-sub); }
 .cp-here-lead { margin: 0; font-size: 14px; line-height: 1.5; }
 .cp-page--phone .cp-block { gap: var(--space-10); }
-.cp-page--phone .ds-head-row .ds-h2 {
-  font: 600 12px var(--sans); letter-spacing: .08em; text-transform: uppercase; color: var(--text-faint);
-}
 
 /* Дыхание: светлая карточка; главная кнопка — тёмная пилюля сайта (.btn-primary).
    !important — только против inline-стиля общей вёрстки BreathingSiteView. */
