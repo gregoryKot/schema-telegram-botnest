@@ -55,7 +55,7 @@ export class VkProvider implements AuthProviderHandler {
       state: toVkState(state),
       code_challenge: challenge,
       code_challenge_method: 's256',
-      scope: 'email phone',
+      scope: 'email', // телефон не нужен: минимизация, ч. 5 ст. 5 152-ФЗ
     });
     return `https://id.vk.com/authorize?${params}`;
   }

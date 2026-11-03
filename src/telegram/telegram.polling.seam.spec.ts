@@ -10,13 +10,17 @@
 //     offset) не обнуляет счётчик подряд идущих неудач;
 //   * stop() посреди попытки запуска: поллинг после остановки не поднимается
 //     (иначе цикл ретраит мёртвый адрес вечно и держит процесс — ночной jest
-//     не выходил после всех тестов, ci-alarm #672).
+//     не выходил после всех тестов, ci-alarm #672);
+//   * хендлер бросает мимо своего try/catch → bot.catch пишет error, цикл
+//     поллинга не рвётся (ни одной неудачи у BotLauncher), следующий апдейт
+//     обработан.
 import { Logger } from '@nestjs/common';
 import { Telegraf, Context } from 'telegraf';
 import type { Update } from 'telegraf/types';
 import { pollingStatus } from '../infra/self-check/polling-status';
 import { BotLauncher } from './telegram.launch';
 import { staleUpdateGuard } from './telegram.stale-updates';
+import { installBotCatch } from './telegram.bot-catch';
 import { TelegramService } from './telegram.service';
 import {
   FakeTelegramApi,
@@ -165,6 +169,31 @@ describe('поллинг на шве: настоящий Telegraf против �
     );
     expect(syncs.length).toBeGreaterThanOrEqual(4);
     expect(pollingStatus.get().state).toBe('failed');
+  });
+
+  it('хендлер бросает: bot.catch пишет error, поллинг не рвётся, следующий апдейт обработан', async () => {
+    await boot(['ok']);
+    installBotCatch(bot, new Logger('t'));
+    bot.use((ctx, next) => {
+      if (ctx.update.update_id === 20) throw new Error('хендлер упал');
+      return next();
+    });
+    api.enqueue(message(20));
+    launcher = new BotLauncher(bot, new Logger('t'), [20]);
+    launcher.start();
+
+    await until(() => error.mock.calls.length === 1);
+    expect(String(error.mock.calls[0][0])).toContain('message (update_id 20)');
+    api.enqueue(message(21));
+    await until(() => handled.includes(21));
+
+    // Обработчик Telegraf по умолчанию рвал бы цикл: BotLauncher увидел бы
+    // неудачу (warn «Bot polling не работает»), а launch() — новую попытку.
+    expect(warn).not.toHaveBeenCalledWith(
+      expect.stringContaining('Bot polling не работает'),
+    );
+    expect(api.deleteWebhookBodies).toHaveLength(1);
+    expect(pollingStatus.get().state).toBe('running');
   });
 
   it('stop() посреди попытки запуска (deleteWebhook в полёте): long-poll после остановки не уходит', async () => {

@@ -1,4 +1,6 @@
-/* Вкладки карточки клиента: Сессии, Задания, YSQ, Записи клиента (префикс tb-). */
+/* Вкладки карточки клиента: Сессии, Задания, YSQ, Записи клиента (префикс tb-).
+   Заголовка у вкладки нет (#906): имя уже во вкладке шапки. Пустые состояния —
+   ds-empty, иконочные кнопки — ds-btn--icon (cabinet.css); здесь только раскладка. */
 .tb-page { gap: 28px; }
 .tb-page--narrow { max-width: 900px; }
 .tb-page--ysq { max-width: 1000px; }
@@ -7,23 +9,14 @@
 .tb-nowrap { white-space: nowrap; }
 .tb-r { text-align: right; }
 .tb-error { font-size: 13px; color: var(--err); }
-.tb-empty { font-size: 15px; line-height: 1.6; color: var(--text-sub); }
-.tb-empty--center { padding: 80px 0; text-align: center; color: var(--text-faint); font-size: 14px; }
 .tb-mt16 { margin-top: 16px; }
 .tb-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-.tb-h32 { margin: 0; font-family: var(--serif); font-weight: 400; font-size: 32px; line-height: 1.15; }
-.tb-sub { font-size: 14px; color: var(--text-sub); margin-top: 6px; }
 .tb-tags { display: flex; flex-wrap: wrap; gap: 8px; }
 
 /* ── Сессии ───────────────────────────────────────────────────────────── */
 .tb-composer { display: flex; flex-direction: column; gap: 14px; }
 .tb-composer-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
-.tb-composer-head .ds-h3 { font-size: 22px; }
-.tb-date-pill {
-  font: 600 13px var(--sans); color: var(--text); background: var(--bg);
-  border: none; border-radius: 10px; padding: 5px 12px; min-height: 32px; box-sizing: border-box;
-}
-.tb-composer-area { font-size: 15px; line-height: 1.65; min-height: 120px; }
+.tb-composer-area { line-height: 1.65; min-height: 120px; }
 .tb-composer-foot { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
 .tb-archive-label { margin-bottom: 20px; }
 .tb-tl-row { display: grid; grid-template-columns: 80px 1fr; gap: 24px; }
@@ -35,14 +28,13 @@
 .tb-tl-line { flex: 1; width: 2px; background: var(--line-input); margin: 8px 0; }
 .tb-tl-row:last-child .tb-tl-line { visibility: hidden; }
 .tb-tl-body { padding-bottom: 36px; min-width: 0; }
-.tb-tl-head { display: flex; gap: 12px; align-items: baseline; }
+.tb-tl-head { display: flex; gap: 12px; align-items: center; }
 .tb-tl-date { font-size: 16px; font-weight: 700; }
 .tb-tl-text { font-size: 15px; line-height: 1.7; color: var(--text-sub); margin-top: 8px; max-width: 640px; white-space: pre-wrap; overflow-wrap: anywhere; }
-.tb-x {
-  margin-left: auto; min-width: 44px; min-height: 44px; margin-block: -14px; background: none; border: none;
-  font-size: 12px; color: var(--text-ghost); cursor: pointer; border-radius: 8px;
-}
-.tb-x:hover { color: var(--err); }
+/* «Удалить заметку» — ds-btn--icon (круг 40, на телефоне 44). Отрицательные
+   поля по вертикали не дают кругу растянуть строку даты — та же идея, что у
+   hitboxStyle: зона нажатия ≥44 без роста разметки. */
+.tb-tl-del { margin-left: auto; margin-block: -8px; }
 
 /* ── Задания ──────────────────────────────────────────────────────────── */
 .tb-tasks { display: grid; grid-template-columns: minmax(0, 1fr) clamp(260px, 30%, 340px); align-items: start; gap: 48px; max-width: var(--tk-max); }
@@ -75,8 +67,6 @@
 .tb-tpl-sub { font-size: 13px; line-height: 1.45; color: var(--text-sub); }
 
 /* ── YSQ ──────────────────────────────────────────────────────────────── */
-.tb-ysq-head-row { align-items: flex-end; }
-.tb-ysq-empty { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 64px 0; text-align: center; }
 .tb-ysq-card { padding: 8px 24px; }
 .tb-ysq-row {
   display: grid; grid-template-columns: minmax(110px, 240px) 1fr 56px 48px 48px; gap: 16px;
@@ -106,16 +96,18 @@
 .tb-legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-sub); }
 
 /* ── Записи клиента ───────────────────────────────────────────────────── */
+/* Фильтр стоит первым в колонке ds-page: на ноутбуке — по ширине кнопок, на
+   телефоне — во всю ширину, как сегмент списка клиентов (.tc-toolbar). */
 .tb-notes { display: flex; flex-direction: column; gap: 14px; }
 .tb-note { display: flex; flex-direction: column; gap: 10px; }
 .tb-note-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
-.tb-note-title { font-size: 15px; font-weight: 700; flex: 1; min-width: 0; overflow-wrap: anywhere; }
+/* Заголовок переносится по слову (break-word), а не в любом месте (anywhere). */
+.tb-note-title { font-size: 15px; font-weight: 700; flex: 1; min-width: 0; overflow-wrap: break-word; }
 .tb-note-text { font-size: 14px; line-height: 1.6; color: var(--text-sub); white-space: pre-wrap; overflow-wrap: anywhere; }
 .tb-note-text.is-clamped { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 .tb-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 24px; padding-top: 12px; border-top: 1px dashed var(--line-input); }
 .tb-field-label { font-size: 11px; }
 .tb-field-val { font-size: 14px; margin-top: 3px; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; }
-.tb-seg-n { margin-left: 6px; font-weight: 500; opacity: .6; }
 
 @media (max-width: 767px) {
   .tb-tl-row { grid-template-columns: 52px 1fr; gap: 14px; }
@@ -125,5 +117,9 @@
   .tb-ysq-row > .tb-bar, .tb-ysq-head .tb-ysq-barcol { grid-row: 2; grid-column: 1 / -1; }
   .tb-ysq-head .tb-ysq-barcol { display: none; }
   .tb-fields { grid-template-columns: 1fr; }
-  .tb-h32 { font-size: 26px; }
+  /* Заголовок записи — своей строкой под чипом и датой: рядом с ними ему
+     оставалось ~150px, и слово рвалось посередине («Благодарност/ь»). */
+  .tb-note-head { gap: 8px 12px; }
+  .tb-note-title { flex-basis: 100%; order: 1; }
+  .tb-note-date { margin-left: auto; }
 }

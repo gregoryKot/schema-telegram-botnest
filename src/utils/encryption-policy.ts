@@ -143,7 +143,7 @@ export const FIELD_POLICY: Record<string, Record<string, Policy>> = {
     childhoodMemories: enc(`${BOT}/diary.service.ts`),
     healthyResponse: enc(`${BOT}/diary.service.ts`),
   },
-  GratitudeDiaryEntry: { date: DATE, items: enc(`${BOT}/diary.service.ts`) },
+  GratitudeDiaryEntry: { date: DATE, items: enc(`${BOT}/gratitude-merge.ts`) },
   AppActivity: { date: DATE },
   AnalyticsEvent: {
     name: plain('allow-list имён событий (правило №8)'),

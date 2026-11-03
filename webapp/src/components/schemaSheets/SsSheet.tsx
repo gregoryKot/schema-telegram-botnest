@@ -15,8 +15,8 @@ interface Props {
 export function SsSheet({ onBack, backLabel = 'Назад', zIndex, barRight, narrow, children }: Props) {
   return (
     <div className="ss-sheet" style={zIndex ? { zIndex } : undefined}>
-      <div className="ss-bar">
-        <button className="ds-link ss-back" onClick={onBack}>
+      <div className="ds-sheet-head">
+        <button type="button" className="ds-back" onClick={onBack}>
           <GlyphArrowLeft /> {backLabel}
         </button>
         {barRight}

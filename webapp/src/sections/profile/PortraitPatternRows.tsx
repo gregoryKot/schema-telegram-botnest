@@ -24,16 +24,16 @@ export function PortraitPatternRows({ kind, ids, freq, filled, statusFor, onOpen
   return (
     <section className="ds-card cpf-card">
       <h3 className="ds-h3">{kind === 'schema' ? 'Мои схемы' : 'Мои режимы'}</h3>
-      <div className="cpf-prows">
+      <div>
         {rows.map((r) => (
-          <button key={r.id} type="button" className="cpf-prow" onClick={() => onOpen(r.id)}>
+          <button key={r.id} type="button" className="ds-list-row ds-list-row--inset ds-list-row--hover cpf-prow" onClick={() => onOpen(r.id)}>
             <IdentityDot color={r.meta.color} size={10} />
-            <span className="cpf-prow-main">
-              <span className="cpf-prow-name">{kind === 'schema' ? shortName(r.meta.name) : r.meta.name}</span>
-              {statusFor && <span className="cpf-prow-status">{statusFor(r.id)}</span>}
+            <span className="ds-list-body">
+              <span className="ds-list-title">{kind === 'schema' ? shortName(r.meta.name) : r.meta.name}</span>
+              {statusFor && <span className="ds-list-sub">{statusFor(r.id)}</span>}
             </span>
             {freq && <FreqMark freq={freq[r.id] ?? 0} />}
-            <span aria-hidden className="cpf-chev">›</span>
+            <span className="ds-chev" aria-hidden="true" />
           </button>
         ))}
       </div>

@@ -6,12 +6,6 @@
   position: fixed; inset: 0; z-index: 200; background: var(--bg);
   display: flex; flex-direction: column; overflow: hidden;
 }
-.ss-bar {
-  display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-shrink: 0;
-  min-height: 56px; padding: 6px clamp(12px, 3vw, 32px);
-  background: var(--bg); border-bottom: 1px solid var(--line);
-}
-.ss-back { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 8px; }
 .ss-scroll { flex: 1; min-height: 0; overflow-y: auto; }
 .ss-inner { max-width: 720px; margin: 0 auto; padding: 40px clamp(16px, 4vw, 24px) 80px; display: flex; flex-direction: column; gap: 24px; box-sizing: border-box; }
 .ss-inner--narrow { max-width: 580px; }
@@ -87,7 +81,6 @@
 .ss-pick-desc { font-size: 12.5px; line-height: 1.45; color: var(--text-sub); }
 .ss-pick-check { color: var(--surface); flex-shrink: 0; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
 .ss-pick.is-selected { border-color: oklch(0.58 0.12 var(--h)); }
-.ss-bar-actions { display: flex; align-items: center; gap: 8px; }
 
 /* ── Тест YSQ ───────────────────────────────────────────────────────────── */
 .ss-test { position: fixed; inset: 0; z-index: 300; background: var(--bg); display: flex; flex-direction: column; }
@@ -158,6 +151,7 @@
 .ss-confirm .ds-btn { flex: 1; }
 
 @media (max-width: 767px) {
+  .ss-sheet, .ss-test { padding-top: var(--safe-top); } /* статус-бар установленного приложения (#902) */
   .ss-title { font-size: 28px; }
   .ss-inner { padding-top: 24px; }
   .ss-q { padding: 20px 18px; }

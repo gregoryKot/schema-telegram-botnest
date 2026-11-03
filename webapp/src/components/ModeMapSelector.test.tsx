@@ -122,6 +122,18 @@ describe('ModeMapSelector — пустое состояние', () => {
 });
 
 describe('ModeMapSelector — список карт и переключение', () => {
+  it('вкладки карт — ds-seg-btn с aria-pressed у активной (#906)', async () => {
+    listModeMaps.mockResolvedValue([meta(1, 'Карта А'), meta(2, 'Карта Б')]);
+    getModeMap.mockResolvedValue(full(1, 'Карта А'));
+    await act(async () => {
+      render(<ModeMapSelector clientId={5} />);
+    });
+    const a = screen.getByText('Карта А');
+    expect(a.classList.contains('ds-seg-btn')).toBe(true);
+    expect(a.getAttribute('aria-pressed')).toBe('true');
+    expect(screen.getByText('Карта Б').getAttribute('aria-pressed')).toBe('false');
+  });
+
   it('загружает карты клиента и автоматически открывает первую', async () => {
     listModeMaps.mockResolvedValue([meta(1, 'Карта А'), meta(2, 'Карта Б')]);
     getModeMap.mockResolvedValue(full(1, 'Карта А'));
@@ -310,5 +322,22 @@ describe('ModeMapSelector — смена клиента сбрасывает и 
     });
     expect(screen.getByText('Карта клиента 2')).toBeTruthy();
     expect(listModeMaps).toHaveBeenCalledWith(2);
+  });
+});
+
+// #906 (волна 1): пока грузится список карт, на месте холста — его силуэт
+// (ModeMapSkeleton), а не текст «Загрузка…» — правило «скелетон по форме
+// контента» (.claude/rules/frontend.md).
+describe('ModeMapSelector — загрузка', () => {
+  it('пока карты грузятся — силуэт холста, не текст «Загрузка…»; после ответа силуэт уходит', async () => {
+    let done!: (maps: ModeMapMeta[]) => void;
+    listModeMaps.mockReturnValue(new Promise<ModeMapMeta[]>((r) => { done = r; }));
+    render(<ModeMapSelector clientId={1} />);
+    expect(screen.getByTestId('mm-skeleton')).toBeTruthy();
+    expect(screen.queryByText(/Загрузка/)).toBeNull();
+
+    await act(async () => { done([]); });
+    expect(screen.queryByTestId('mm-skeleton')).toBeNull();
+    expect(screen.getByText('Нет карт режимов')).toBeTruthy();
   });
 });

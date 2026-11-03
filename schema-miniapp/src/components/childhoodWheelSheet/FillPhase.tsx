@@ -1,5 +1,6 @@
-import { useTr } from '../../utils/addressForm';
 import { NeedFillRow } from './NeedFillRow';
+import { IdealizationNote } from './IdealizationNote';
+import { unratedHint } from '../../../../shared/src/childhoodWheel/useChildhoodDraft';
 import {
   NEED_IDS,
   type NeedId,
@@ -10,7 +11,8 @@ import {
 export function FillPhase({
   NEED_META,
   ratings,
-  setRatings,
+  unrated,
+  onRate,
   openExampleId,
   setOpenExampleId,
   openExampleIdx,
@@ -20,7 +22,9 @@ export function FillPhase({
 }: {
   NEED_META: Record<NeedId, NeedMetaEntry>;
   ratings: Ratings;
-  setRatings: React.Dispatch<React.SetStateAction<Ratings>>;
+  /** Ещё не выставленные руками — «не оценено», сохранить нельзя. */
+  unrated: NeedId[];
+  onRate: (id: NeedId, v: number) => void;
   openExampleId: NeedId | null;
   setOpenExampleId: React.Dispatch<React.SetStateAction<NeedId | null>>;
   openExampleIdx: number | null;
@@ -28,62 +32,10 @@ export function FillPhase({
   saving: boolean;
   onSave: () => void;
 }) {
-  const tr = useTr();
+  const blocked = saving || unrated.length > 0;
   return (
     <div>
-      {/* Idealization warning */}
-      <div
-        style={{
-          background: 'rgba(251,191,36,0.08)',
-          border: '1px solid rgba(251,191,36,0.2)',
-          borderRadius: 'var(--r-14)',
-          padding: '12px 14px',
-          marginBottom: 20,
-        }}
-      >
-        <div
-          style={{
-            fontSize: 12,
-            fontWeight: 600,
-            color: 'var(--accent-yellow)',
-            marginBottom: 4,
-          }}
-        >
-          ⚠️ Осторожно: защитная идеализация
-        </div>
-        <div
-          style={{
-            fontSize: 12,
-            color: 'var(--text-sub)',
-            lineHeight: 1.65,
-          }}
-        >
-          Психика защищает нас от боли — поэтому мы склонны помнить хорошее и не
-          замечать систематические паттерны.
-          {tr('Оценивай', 'Оценивайте')} <em>не отдельные моменты</em>, а то{' '}
-          <em>как было в целом, большую часть времени</em>. Под каждым ползунком
-          — описания крайностей, а по кнопке{' '}
-          <span
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              width: 16,
-              height: 16,
-              borderRadius: '50%',
-              background: 'rgba(var(--fg-rgb),0.12)',
-              fontSize: 10,
-              fontWeight: 700,
-              color: 'var(--text-sub)',
-              verticalAlign: 'middle',
-            }}
-          >
-            ?
-          </span>{' '}
-          — реальные примеры из жизни.{' '}
-          {tr('Сравни с ними.', 'Сравните с ними.')}
-        </div>
-      </div>
+      <IdealizationNote />
 
       <div
         style={{
@@ -101,8 +53,8 @@ export function FillPhase({
           key={id}
           id={id}
           meta={NEED_META[id]}
-          value={ratings[id]}
-          onChange={(v) => setRatings((prev) => ({ ...prev, [id]: v }))}
+          value={unrated.includes(id) ? undefined : ratings[id]}
+          onChange={(v) => onRate(id, v)}
           openExampleId={openExampleId}
           setOpenExampleId={setOpenExampleId}
           openExampleIdx={openExampleIdx}
@@ -110,21 +62,30 @@ export function FillPhase({
         />
       ))}
 
+      {unrated.length > 0 && (
+        <div
+          role="status"
+          className="u-sub12-lh15"
+          style={{ textAlign: 'center', marginBottom: 10 }}
+        >
+          {unratedHint(unrated.length)}
+        </div>
+      )}
       <button
         onClick={onSave}
-        disabled={saving}
+        disabled={blocked}
         style={{
           width: '100%',
           padding: '15px 0',
           borderRadius: 'var(--r-14)',
           border: 'none',
-          background: saving
+          background: blocked
             ? 'rgba(var(--fg-rgb),0.1)'
             : 'linear-gradient(135deg, var(--accent), var(--accent-hi))',
           color: 'var(--text)',
           fontSize: 16,
           fontWeight: 600,
-          cursor: saving ? 'default' : 'pointer',
+          cursor: blocked ? 'default' : 'pointer',
         }}
       >
         {saving ? '...' : 'Посмотреть результат'}

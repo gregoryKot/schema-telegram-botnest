@@ -15,26 +15,31 @@ afterEach(cleanup);
 const [a, b] = SCHEMA_DOMAINS[0].schemas;
 
 describe('PatternsHeader', () => {
-  it('телефон: «Паттерны», подпись, без надписи капсом; «Библиотека» открывает библиотеку', () => {
+  // Один состав на любой ширине (#906): надпись, ds-h1, подпись; «Настроить экран» — ссылка,
+  // шестерёнка — общие «Настройки», «Библиотека» — кнопка. Телефон меняет только слова.
+  it.each([
+    [true, 'Паттерны', 'Привычные реакции родом из детства'],
+    [false, 'Мои паттерны', 'Схемы, режимы, потребности'],
+  ])('mobile=%s: надпись, заголовок «%s», подпись; каждое действие зовёт свой обработчик', (mobile, title, sub) => {
     const open = vi.fn();
     const customize = vi.fn();
-    render(<PatternsHeader mobile onOpenLibrary={open} onCustomize={customize} />);
-    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Паттерны');
-    expect(screen.getByText('Привычные реакции родом из детства')).toBeTruthy();
-    expect(screen.queryByText('Схема-терапия')).toBeNull();
+    const settings = vi.fn();
+    render(<PatternsHeader mobile={mobile} onOpenLibrary={open} onCustomize={customize} onOpenSettings={settings} />);
+    expect(screen.getByText('Схема-терапия', { selector: '.ds-eyebrow' })).toBeTruthy();
+    const h1 = screen.getByRole('heading', { level: 1 });
+    expect(h1.textContent).toBe(title);
+    expect(h1.className).toContain('ds-h1');
+    expect(screen.getByText(sub)).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Библиотека' }));
-    expect(open).toHaveBeenCalledTimes(1);
     fireEvent.click(screen.getByRole('button', { name: 'Настроить экран' }));
-    expect(customize).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByRole('button', { name: 'Настройки' }));
     expect(open).toHaveBeenCalledTimes(1);
+    expect(customize).toHaveBeenCalledTimes(1);
+    expect(settings).toHaveBeenCalledTimes(1);
   });
-  it('десктоп: надпись и «Мои паттерны», «Настроить экран» ссылкой', () => {
-    const customize = vi.fn();
-    render(<PatternsHeader mobile={false} onOpenLibrary={vi.fn()} onCustomize={customize} />);
-    fireEvent.click(screen.getByRole('button', { name: 'Настроить экран' }));
-    expect(customize).toHaveBeenCalledTimes(1);
-    expect(screen.getByText('Схема-терапия')).toBeTruthy();
-    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Мои паттерны');
+  it('без обработчика настроек шестерёнки нет', () => {
+    render(<PatternsHeader mobile onOpenLibrary={vi.fn()} onCustomize={vi.fn()} />);
+    expect(screen.queryByRole('button', { name: 'Настройки' })).toBeNull();
   });
 });
 

@@ -93,7 +93,7 @@ export function PlansScreen({ onClose, onOpenTracker }: Props) {
               )}
             </p>
             {onOpenTracker && (
-              <button onClick={() => { onOpenTracker?.(); goBack(); }} className="ds-link">
+              <button onClick={() => goBack(onOpenTracker)} className="ds-link">
                 Открыть трекер →
               </button>
             )}

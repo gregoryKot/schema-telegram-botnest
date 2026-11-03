@@ -192,6 +192,38 @@ describe('e2e smoke: ownership isolation sweep (tracker/diary/plans/exercises/ys
     expect(ratings.body).toEqual({ attachment: 9 });
   });
 
+  // docs/open/frontend-ux.md (P0): сохранение дня благодарности заменяло пункты
+  // целиком — пункт с другой вкладки терялся. С `base` сервер сливает день в
+  // транзакции Serializable; на живой БД (E2E_REAL_DB=1) это проходит через
+  // настоящий upsert по составному ключу, а чужой день остаётся нетронутым.
+  it('diary/gratitude: base сливает день — пункт с другой вкладки не теряется, чужой день не тронут', async () => {
+    const a = agentAs(USER_A);
+    const b = agentAs(USER_B);
+    const date = '2099-01-03';
+
+    await b.post('/api/diary/gratitude', { date, items: ['чужое'] });
+    await a.post('/api/diary/gratitude', { date, items: ['A'], base: [] });
+    const merged = await a.post('/api/diary/gratitude', {
+      date,
+      items: ['B'],
+      base: [],
+    });
+    expect(merged.status).toBeLessThan(300);
+    expect(merged.body.items).toEqual(['A', 'B']);
+
+    const own = await a.get('/api/diary/gratitude');
+    const day = (own.body as { date: string; items: string[] }[]).find(
+      (e) => e.date === date,
+    );
+    expect(day?.items).toEqual(['A', 'B']);
+
+    const other = await b.get('/api/diary/gratitude');
+    const otherDay = (other.body as { date: string; items: string[] }[]).find(
+      (e) => e.date === date,
+    );
+    expect(otherDay?.items).toEqual(['чужое']);
+  });
+
   it('practice-sessions: user B counts stay at 0 while user A racks up a practice', async () => {
     const a = agentAs(USER_A);
     const b = agentAs(USER_B);

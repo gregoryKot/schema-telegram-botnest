@@ -59,14 +59,14 @@ export class TherapyRelationsService {
     return getRelationInfo(this.prisma, userId);
   }
 
-  // Разрывает связи, где userId — КЛИЕНТ. Раньше удалялись и связи, где он
-  // терапевт: один вызов DELETE /api/therapy/relation от терапевта сносил всех
-  // его клиентов, офлайн-клиентов и приглашения, а заметки и карты оставались
-  // сиротами (аудит 2026-10, T2). Терапевт убирает клиентов по одному через
-  // DELETE clients/:clientId (removeClient).
+  // Разрывает живые связи, где userId — КЛИЕНТ; `ended` (терапевт отказался от
+  // роли) остаётся историей (client-map-authors.ts). Связи в роли терапевта не
+  // трогаются: раньше DELETE /api/therapy/relation от терапевта сносил всех его
+  // клиентов и приглашения, а заметки и карты оставались сиротами (аудит
+  // 2026-10, T2). Терапевт убирает клиентов по одному (removeClient).
   async disconnect(userId: bigint): Promise<void> {
     await this.prisma.therapyRelation.deleteMany({
-      where: { clientId: userId },
+      where: { clientId: userId, status: { in: ['active', 'pending'] } },
     });
   }
 

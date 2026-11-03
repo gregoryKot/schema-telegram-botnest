@@ -120,3 +120,31 @@ test.describe('визитка практики: прокручивается о�
     expect(overflow).toBe(0);
   });
 });
+
+// Регрессия 2026-11: при ширине 390px /privacy и /offer были шире экрана —
+// `scrollWidth` 482 на продукте и 487 на визитке. Таблица реквизитов держала
+// колонку подписи в 220px, а длинные неразрывные значения раздвигали сетку
+// (`webapp/src/legal/LegalLayout.tsx`). jsdom ширину не меряет — ловит только
+// настоящий браузер.
+test.describe('юридические страницы укладываются в экран телефона', () => {
+  for (const route of PUBLIC_ROUTES.filter((r) =>
+    ['/privacy', '/offer'].includes(r.path),
+  )) {
+    test(`${route.name}: нет горизонтального скролла при 390px`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width: 390, height: 844 });
+      await page.route('**/api/**', (r) =>
+        r.fulfill({ status: 200, contentType: 'application/json', body: '{}' }),
+      );
+      await page.goto(route.path + (route.query ?? ''));
+      await expect(page.locator('h1').first()).toBeVisible();
+      const overflow = await page.evaluate(
+        () =>
+          document.documentElement.scrollWidth -
+          document.documentElement.clientWidth,
+      );
+      expect(overflow, `лишняя ширина ${route.path}`).toBe(0);
+    });
+  }
+});

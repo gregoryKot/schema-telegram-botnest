@@ -53,12 +53,12 @@ export function HistoryDayView(p: Props) {
       )}
 
       {p.onBackfill && !p.isToday && (
-        <div className="ds-card ds-card--row ds-card--hover sd-backfill" {...pressable(() => p.onBackfill?.(p.date))}>
-          <div>
-            <div className="sd-backfill-title">{p.ratedCount === 0 ? 'Заполнить этот день' : 'Дополнить оценки'}</div>
+        <div className="ds-card ds-card--row ds-card--nav ds-card--hover sd-backfill" {...pressable(() => p.onBackfill?.(p.date))}>
+          <div className="ds-list-body">
+            <div className="ds-list-title">{p.ratedCount === 0 ? 'Заполнить этот день' : 'Дополнить оценки'}</div>
             <div className="ds-sub">{p.ratedCount === 0 ? 'Оценки не заполнены' : `Заполнено ${p.ratedCount} из ${p.needs.length}`}</div>
           </div>
-          <span className="ds-sub">→</span>
+          <span className="ds-chev" aria-hidden="true" />
         </div>
       )}
 
@@ -88,9 +88,9 @@ export function HistoryDayView(p: Props) {
         </div>
       )}
 
-      <div className="ds-card ds-card--row ds-card--hover sd-note" {...pressable(p.onOpenNote)}>
+      <div className="ds-card ds-card--row ds-card--nav ds-card--hover sd-note" {...pressable(p.onOpenNote)}>
         <span className={'sd-note-text' + (p.noteText ? '' : ' is-empty')}>{p.noteText || 'Добавить заметку к этому дню'}</span>
-        {p.noteText && <span className="ds-sub">›</span>}
+        {p.noteText && <span className="ds-chev" aria-hidden="true" />}
       </div>
       {p.noteTags.length > 0 && (
         <div className="sd-tags">

@@ -21,7 +21,7 @@ export function BookingPaidPage() {
   const [token] = useState<string | null>(() => new URLSearchParams(window.location.search).get('token'));
   const [failed] = useState<boolean>(() => new URLSearchParams(window.location.search).get('fail') === '1');
 
-  const { booking, loaded, timedOut, loadError, reload } = useBookingByToken(token);
+  const { booking, loaded, timedOut, loadError, refreshFailed, reload } = useBookingByToken(token);
   const [cancelledByClient, setCancelledByClient] = useState(false);
 
   // The token is a capability (view + cancel). Drop it from the visible URL so
@@ -51,7 +51,7 @@ export function BookingPaidPage() {
   } else if (booking && phase === 'confirmed') {
     body = <BookingConfirmedView booking={booking} token={token} onCancelled={() => setCancelledByClient(true)} />;
   } else if (booking && phase === 'pending') {
-    body = <BookingPaidPending booking={booking} timedOut={timedOut} onRetry={reload} />;
+    body = <BookingPaidPending booking={booking} timedOut={timedOut} refreshFailed={refreshFailed} onRetry={reload} />;
   } else if (booking && phase === 'completed') {
     body = <BookingCompletedView booking={booking} />;
   } else if (loadError) {

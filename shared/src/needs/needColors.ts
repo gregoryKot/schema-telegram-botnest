@@ -1,3 +1,5 @@
+import { NEED_HUE, toneHex } from '../theme/entityHue';
+
 /**
  * Цвет пяти базовых потребностей — один источник на оба фронтенда.
  *
@@ -8,17 +10,11 @@
  * палитра лежала в четырёх файлах (по два в каждом фронтенде), и они уже
  * начали расходиться.
  *
+ * Цвет берётся из таблицы hue (#906), прежняя hex-палитра ушла.
+ *
  * Цвет — не единственный носитель: рядом всегда есть название потребности,
  * иначе экран не читался бы при цветовой слепоте.
  */
-export const NEED_COLORS: Record<string, string> = {
-  attachment: '#ff6b9d',
-  autonomy: '#4fa3f7',
-  expression: '#facc15',
-  play: '#06d6a0',
-  limits: '#a78bfa',
-};
-
 /** Порядок потребностей — совпадает с NEED_ORDER контент-реестров. */
 export const NEED_COLOR_ORDER = [
   'attachment',
@@ -27,6 +23,10 @@ export const NEED_COLOR_ORDER = [
   'play',
   'limits',
 ] as const;
+
+export const NEED_COLORS: Record<string, string> = Object.fromEntries(
+  NEED_COLOR_ORDER.map((id) => [id, toneHex(NEED_HUE[id])]),
+);
 
 /**
  * Цвет потребности с нейтральным фолбэком: неизвестный id не должен красить

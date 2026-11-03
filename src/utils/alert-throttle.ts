@@ -8,14 +8,13 @@
 // админский чат, и в шквале потонула бы настоящая подделка подписи. Отсюда
 // AlertThrottle: один слот на ключ за окно, остальное копится счётчиком.
 //
-// Но единственный слот на окно — неверная модель для РЕДКИХ событий:
-// `merge_confirmed`, `role_changed`, `therapist_request_submitted` — каждое
-// само по себе важно, и два разных пользователя, слившие аккаунты с разницей
-// в 5 минут, обязаны дать ДВА DM, а не один. AlertBudget — вторая половина
-// того же примитива: бюджет K алертов на ключ за окно, а не единственный
-// слот. Редкие события (меньше K в окне) доставляются все; шквал
-// схлопывается ровно в K DM, дальше глушится счётчиком, который сообщает
-// о себе в первом алерте следующего окна.
+// Но единственный слот на окно — неверная модель для РЕДКИХ событий
+// (`merge_confirmed`, `role_changed`): двое, слившие аккаунты с разницей в
+// 5 минут, обязаны дать ДВА DM. AlertBudget — бюджет K алертов на ключ за
+// окно: редкие события доставляются все, шквал схлопывается ровно в K DM,
+// остальное — счётчиком в первом алерте следующего окна.
+
+import { evictOldest } from './evict-oldest';
 
 export interface AlertDecision {
   allow: boolean;
@@ -46,6 +45,7 @@ export class AlertThrottle {
     }
     // Окно закрылось — пропускаем алерт и сообщаем, сколько попыток проглотили.
     const suppressed = entry?.suppressed ?? 0;
+    this.seen.delete(key);
     this.seen.set(key, { firstAt: now, suppressed: 0 });
     this.prune(now, key);
     return { allow: true, suppressed };
@@ -58,8 +58,7 @@ export class AlertThrottle {
       if (k !== keep && now - v.firstAt >= this.windowMs * 2)
         this.seen.delete(k);
     }
-    // Аварийный потолок: распределённый перебор с тысяч IP не должен съесть память.
-    if (this.seen.size > this.maxKeys) this.seen.clear();
+    evictOldest(this.seen, this.maxKeys, keep);
   }
 }
 
@@ -88,6 +87,7 @@ export class AlertBudget {
       // Новое окно — бюджет обнулился. Переносим счётчик подавленных из
       // ПРЕДЫДУЩЕГО окна, чтобы шквал не потерялся бесследно.
       const carried = entry?.suppressed ?? 0;
+      this.windows.delete(key);
       this.windows.set(key, { windowStart: now, count: 1, suppressed: 0 });
       this.prune(now, key);
       return { allow: true, suppressed: carried };
@@ -105,6 +105,6 @@ export class AlertBudget {
       if (k !== keep && now - v.windowStart >= this.windowMs * 2)
         this.windows.delete(k);
     }
-    if (this.windows.size > this.maxKeys) this.windows.clear();
+    evictOldest(this.windows, this.maxKeys, keep);
   }
 }

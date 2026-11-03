@@ -227,3 +227,53 @@ describe('BeliefCheckEx — сохранение: отказ сети виден
     );
   });
 });
+
+// docs/open/frontend-ux.md: текст, набранный в поле доказательства, но не
+// добавленный «⏎ добавить», молча терялся при «Дальше» — onAdd() перед
+// переходом не вызывался. Теперь переход шага дописывает его в список.
+const BELIEF_PH = 'Например: я всегда всё порчу, меня никто не любит…';
+function toForStep() {
+  renderSheet();
+  fireEvent.change(screen.getByPlaceholderText(BELIEF_PH), { target: { value: 'Я всегда всё порчу' } });
+  fireEvent.click(screen.getByText(/Дальше · доказательства за/));
+}
+
+describe('BeliefCheckEx — недобавленный текст не теряется при переходе', () => {
+  it('«Дальше» доступна с одним текстом в поле и дописывает его как доказательство', async () => {
+    mockApi.createBeliefCheck.mockResolvedValue(undefined);
+    toForStep();
+    fireEvent.change(screen.getByPlaceholderText('Добавить доказательство…'), { target: { value: '  Забыт отчёт  ' } });
+    const nextFor = screen.getByText(/Дальше · доказательства против/).closest('button')!;
+    expect(nextFor.disabled).toBe(false);
+    fireEvent.click(nextFor);
+
+    fireEvent.change(screen.getByPlaceholderText('Добавить контр-доказательство…'), { target: { value: 'Проект сдан' } });
+    fireEvent.click(screen.getByText(/Дальше · переформулировка/));
+    fireEvent.change(
+      screen.getByPlaceholderText('Иногда я действительно ошибаюсь, но это не значит что я всегда всё порчу…'),
+      { target: { value: 'Иногда ошибаюсь' } },
+    );
+    fireEvent.click(screen.getByText(/Сохранить и закрыть/));
+
+    await screen.findByText('Готово.');
+    expect(mockApi.createBeliefCheck).toHaveBeenCalledWith(expect.objectContaining({
+      evidenceFor: ['Забыт отчёт'],
+      evidenceAgainst: ['Проект сдан'],
+    }));
+  });
+
+  it('контроль: одни пробелы в поле и пустой список — «Дальше» недоступна', () => {
+    toForStep();
+    fireEvent.change(screen.getByPlaceholderText('Добавить доказательство…'), { target: { value: '   ' } });
+    expect(screen.getByText(/Дальше · доказательства против/).closest('button')!.disabled).toBe(true);
+  });
+
+  it('«Назад» тоже дописывает текст: вернувшись, он виден в списке, поле пустое', () => {
+    toForStep();
+    fireEvent.change(screen.getByPlaceholderText('Добавить доказательство…'), { target: { value: 'Опоздание' } });
+    fireEvent.click(screen.getByRole('button', { name: /^Назад$/ }));
+    fireEvent.click(screen.getByText(/Дальше · доказательства за/));
+    expect(screen.getByText('Опоздание')).toBeTruthy();
+    expect((screen.getByPlaceholderText('Добавить доказательство…') as HTMLInputElement).value).toBe('');
+  });
+});

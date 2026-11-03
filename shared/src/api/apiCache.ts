@@ -192,11 +192,11 @@ export function clearApiCache(): void {
   keyEpochs.clear();
 }
 
-// /api/auth/* и health — обязаны быть свежими всегда, кешу тут не место.
-// На практике эти пути и так не идут через cachedGet() (см. apiClient.ts
-// обоих фронтендов), проверка здесь — подстраховка на будущее.
-const NON_CACHEABLE_PATH_PATTERNS = [/^\/api\/auth\//, /^\/health(\/|$)/];
+// Обязаны быть свежими всегда: /api/auth/*, health и опрос брони по токену
+// после оплаты (`useBookingByToken`: из кеша он 15 с видел прежний HELD вместо
+// CONFIRMED, аудит 2026-10). apiClient.ts обоих фронтендов идёт мимо cachedGet().
+const NO_CACHE = /^\/(api\/auth\/|health(\/|$)|api\/booking\/by-token\/)/;
 
 export function isCacheableGetPath(path: string): boolean {
-  return !NON_CACHEABLE_PATH_PATTERNS.some((re) => re.test(path));
+  return !NO_CACHE.test(path);
 }

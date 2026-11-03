@@ -5,7 +5,10 @@ import { cm } from '../../sections/schemas/utils';
 // Шаг сбора доказательств проверки убеждения. Один компонент на обе стороны
 // («за» и «против»): они различались только цветом, заголовком, подсказкой,
 // парой состояний и следующим шагом — код был скопирован целиком.
-// Вынесено из BeliefCheck.tsx (правило №10 + «одна механика — один компонент»).
+// Текст в поле, не добавленный «+», — тоже доказательство: «Дальше» дописывает
+// его (onAdd сам пропускает пустое), а не теряет молча.
+const TITLE = { fontSize: 12, fontWeight: 600, marginBottom: 4 };
+
 export function EvidenceStep({
   accent,
   title,
@@ -38,16 +41,7 @@ export function EvidenceStep({
           marginBottom: 14,
         }}
       >
-        <div
-          style={{
-            fontSize: 12,
-            color: accent,
-            fontWeight: 600,
-            marginBottom: 4,
-          }}
-        >
-          {title}
-        </div>
+        <div style={{ ...TITLE, color: accent }}>{title}</div>
         <div className="u-sub12-lh15">{hint}</div>
       </div>
       <EvidenceList
@@ -60,7 +54,10 @@ export function EvidenceStep({
         surface="belief_check"
       />
       <button
-        onClick={onNext}
+        onClick={() => {
+          onAdd();
+          onNext();
+        }}
         style={{
           width: '100%',
           padding: '13px 0',

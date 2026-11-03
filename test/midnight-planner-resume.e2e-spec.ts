@@ -35,6 +35,7 @@ import {
   CronLeaderService,
   LEASE_WINDOW,
 } from '../src/infra/cron-leader.service';
+import { catchUpClaimWindowMs } from '../src/telegram/telegram.midnight-lease';
 
 const TZ = 'Europe/Moscow';
 // Телеграмный диапазон (ниже WEB_USER_ID_MIN): getAllUsersWithSettings берёт их
@@ -244,6 +245,34 @@ describe('Полуночный обход: обрыв рестартом и до
       where: { name: 'midnightPlanner' },
     });
     expect(done?.doneRunAt?.getTime()).toBe(cut?.runAt.getTime());
+  });
+
+  // Захват при старте и тик в 00:00 — тем же SQL, что в проде: окно старта
+  // (catchUpClaimWindowMs) и окно тика (LEASE_WINDOW.hourly). Раньше оба
+  // брали 23 ч, и захват в 23:30 давал тику в 00:00 «0 строк».
+  it('старт в 23:30 не захватывает, тик в 00:00 следующих суток захватывает; пропущенная полночь — оба', async () => {
+    const name = 'e2eMidnightNext';
+    await prisma.cronLease.deleteMany({ where: { name } });
+    const claimStart = (iso: string) => {
+      const at = new Date(iso);
+      const windowMs = catchUpClaimWindowMs(at);
+      return windowMs === null
+        ? Promise.resolve(false)
+        : leader.claimRun(name, windowMs, at);
+    };
+    const claimTick = (iso: string) =>
+      leader.claimRun(name, LEASE_WINDOW.hourly, new Date(iso));
+
+    expect(await claimTick('2026-10-22T00:00:00.010Z')).toBe(true);
+    expect(await claimStart('2026-10-22T10:00:00Z')).toBe(false);
+    expect(await claimStart('2026-10-22T23:30:00Z')).toBe(false);
+    expect(await claimTick('2026-10-22T00:00:00.500Z')).toBe(false);
+    expect(await claimTick('2026-10-23T00:00:00.010Z')).toBe(true);
+
+    // Полночь 24-го пропущена: старт в 05:00 забирает обход, тик 25-го — тоже.
+    expect(await claimStart('2026-10-24T05:00:00Z')).toBe(true);
+    expect(await claimTick('2026-10-25T00:00:00Z')).toBe(true);
+    await prisma.cronLease.deleteMany({ where: { name } });
   });
 
   it('отметка завершения: захват → не завершён → finishRun → завершён; старый runAt не метит новый прогон', async () => {

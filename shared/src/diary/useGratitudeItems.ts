@@ -5,10 +5,12 @@ import { loadDraft, saveDraft } from '../utils/drafts';
 
 // Пункты формы благодарности + загрузка сохранённого дня (инцидент 2026-10-18).
 // Инвариант «открытая форма показывает то, что уже сохранено за этот день»
-// держит сама форма, а не точка входа: сервер заменяет пункты дня целиком, и
+// держит сама форма, а не точка входа: до слияния на сервере день заменялся целиком, и
 // вход без `existingItems` (например, из «плюса») иначе затирал бы утреннюю
 // запись. Пока записи не загрузились (`loading`) или загрузка упала (`error`),
-// сохранять нельзя — это решает форма по `status`.
+// сохранять нельзя — это решает форма по `status`. `base` — пункты дня, с
+// которых форма начала: с ними сервер сливает сохранение и не теряет пункт с
+// другой вкладки (src/bot/gratitude-merge.ts).
 
 export type GratitudeLoadStatus = 'loading' | 'ready' | 'error';
 
@@ -30,6 +32,7 @@ export function useGratitudeItems({ date, existingItems, load }: Options) {
   const [items, setItems] = useState<string[]>(() =>
     hasExisting ? existingItems : pickGratitudeInitialItems(null, draftItems),
   );
+  const [base, setBase] = useState<string[]>(() => existingItems ?? []);
   const [status, setStatus] = useState<GratitudeLoadStatus>(
     hasExisting ? 'ready' : 'loading',
   );
@@ -46,6 +49,7 @@ export function useGratitudeItems({ date, existingItems, load }: Options) {
       // Уже готовую форму не трогаем: человек мог начать печатать.
       if (statusRef.current !== 'ready') {
         setItems(existingItems);
+        setBase(existingItems);
         setStatus('ready');
       }
       return;
@@ -58,6 +62,7 @@ export function useGratitudeItems({ date, existingItems, load }: Options) {
         if (cancelled) return;
         const saved = entries.find((e) => e.date === date)?.items ?? null;
         setItems(pickGratitudeInitialItems(saved, draftItems));
+        setBase(saved ?? []);
         setStatus('ready');
       })
       .catch(() => {
@@ -75,5 +80,5 @@ export function useGratitudeItems({ date, existingItems, load }: Options) {
 
   const retry = useCallback(() => setAttempt((n) => n + 1), []);
 
-  return { items, setItems, status, retry };
+  return { items, setItems, base, status, retry };
 }

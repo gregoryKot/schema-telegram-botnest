@@ -13,9 +13,16 @@ import { AddressFormContext, type AddressForm } from '../utils/addressForm';
 import { hasTyForms } from '../../../shared/src/utils/tyFormsSweep';
 import { Celebration } from './Celebration';
 
-vi.mock('../../../shared/src/share/cards/streakCard', () => ({
-  drawStreakCard: vi.fn(),
-}));
+// Вехи (MILESTONES) — настоящие: по ним Celebration решает, веха ли стрик.
+vi.mock(
+  '../../../shared/src/share/cards/streakCard',
+  async (importOriginal) => ({
+    ...(await importOriginal<
+      typeof import('../../../shared/src/share/cards/streakCard')
+    >()),
+    drawStreakCard: vi.fn(),
+  }),
+);
 vi.mock('../../../shared/src/share/shareImage', () => ({
   shareCanvasImage: vi.fn(),
 }));

@@ -100,16 +100,41 @@ describe('TwoFactorChallengePage — ввод кода', () => {
   });
 });
 
+// Аудит frontend-ux: резервный код — 10 символов hex с буквами a–f
+// (totp.service.ts), а цифровая клавиатура букв не даёт. Код из приложения —
+// цифровая клавиатура и one-time-code; резервный — буквенная, без автозамены.
+describe('TwoFactorChallengePage — клавиатура под каждый режим', () => {
+  it('код из приложения: цифровая клавиатура, one-time-code, буквы отбрасываются', () => {
+    renderAt('/auth/2fa?token=chal123');
+    const input = screen.getByLabelText('Код из приложения') as HTMLInputElement;
+    expect(input.getAttribute('inputmode')).toBe('numeric');
+    expect(input.getAttribute('autocomplete')).toBe('one-time-code');
+    fireEvent.change(input, { target: { value: '12a3b4' } });
+    expect(input.value).toBe('1234');
+  });
+
+  it('резервный код: буквенная клавиатура, без one-time-code и автозаглавной, буквы a–f проходят', () => {
+    renderAt('/auth/2fa?token=chal123');
+    fireEvent.click(screen.getByRole('button', { name: /recovery-код/ }));
+    const input = screen.getByLabelText('Recovery-код') as HTMLInputElement;
+    expect(input.getAttribute('inputmode')).toBe('text');
+    expect(input.getAttribute('autocomplete')).not.toBe('one-time-code');
+    expect(input.getAttribute('autocapitalize')).toBe('off');
+    fireEvent.change(input, { target: { value: '3fa9c0be17' } });
+    expect(input.value).toBe('3fa9c0be17');
+  });
+});
+
 describe('TwoFactorChallengePage — recovery-код', () => {
-  it('переключение на recovery-код принимает код не из шести цифр и отправляет как есть', async () => {
+  it('переключение на recovery-код принимает hex и отправляет без пробелов, дефисов и заглавных', async () => {
     fetchMock.mockResolvedValue(jsonResponse(200, { accessToken: 't', expiresIn: 900 }));
     const { container } = renderAt('/auth/2fa?token=chal123');
     fireEvent.click(screen.getByRole('button', { name: /recovery-код/ }));
-    fireEvent.change(screen.getByLabelText('Recovery-код'), { target: { value: 'ab12-cd34-ef56' } });
+    fireEvent.change(screen.getByLabelText('Recovery-код'), { target: { value: 'AB12 cd34-EF' } });
     fireEvent.submit(container.querySelector('form')!);
     await screen.findByText('today-page');
     const [, init] = fetchMock.mock.calls[0];
-    expect(JSON.parse((init as RequestInit).body as string).code).toBe('ab12-cd34-ef56');
+    expect(JSON.parse((init as RequestInit).body as string).code).toBe('ab12cd34ef');
   });
 });
 
@@ -151,5 +176,38 @@ describe('TwoFactorChallengePage — лимит, авария и сеть не �
     const container = await submitWith(() => Promise.reject(new TypeError('Load failed')));
     await screen.findByText('Нет связи с сервером');
     expect(container.textContent).not.toMatch(/Load failed|TypeError/);
+  });
+});
+
+// Аудит 2026-10: протухший вызов (5 минут, src/auth/totp-challenge.ts) сервер
+// отдавал тем же 401, что неверный код, и экран писал «Неверный код» — человек
+// вводил код снова и снова. Тело — как отдаёт прод (ChallengeExpiredException).
+describe('TwoFactorChallengePage — вход устарел', () => {
+  const submit401 = (body: unknown, code: string) => {
+    fetchMock.mockResolvedValue(new Response(JSON.stringify(body), { status: 401 }));
+    const view = renderAt('/auth/2fa?token=chal123');
+    fireEvent.change(screen.getByPlaceholderText('123456'), { target: { value: code } });
+    fireEvent.submit(view.container.querySelector('form')!);
+    return view.container;
+  };
+
+  it('401 с reason challenge_expired — «Вход устарел» и путь на вход, не «Неверный код»', async () => {
+    const container = submit401({ message: 'Invalid or expired 2FA challenge token', reason: 'challenge_expired' }, '482913');
+    await screen.findByText(/Вход устарел/);
+    expect(container.textContent).not.toMatch(/Неверный код|Invalid/);
+    expect(screen.queryByPlaceholderText('123456')).toBeNull();
+    // Шапка «Код из приложения-аутентификатора» над «Войти заново» сбивала бы с толку.
+    expect(screen.queryByText('Двухфакторная проверка')).toBeNull();
+    expect(container.textContent).not.toMatch(/Код из приложения/);
+    fireEvent.click(screen.getByRole('button', { name: 'Войти заново' }));
+    await screen.findByText('login-page');
+  });
+
+  it('контроль: 401 неверного кода (без reason) — «Неверный код», форма на месте', async () => {
+    submit401({ statusCode: 401, message: 'Invalid 2FA code', error: 'Unauthorized' }, '000000');
+    await screen.findByText('Неверный код');
+    expect(screen.queryByText(/Вход устарел/)).toBeNull();
+    expect(screen.getByPlaceholderText('123456')).toBeTruthy();
+    expect(screen.getByText('Двухфакторная проверка')).toBeTruthy();
   });
 });

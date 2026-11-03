@@ -25,7 +25,7 @@ export function CompletionScreen({
   /** Дата backfill-дня (YYYY-MM-DD); undefined = сегодня */
   date?: string;
   onDone?: () => void;
-  goBack: () => void;
+  goBack: (then?: unknown) => void; // then-функция — соседний лист после закрытия
   /** Вернуться к вопросам: «Поправить ответы» — к первому, «Дооценить» — к первому пустому. */
   onReview: (idx: number) => void;
   onOpenNote?: () => void;
@@ -69,7 +69,7 @@ export function CompletionScreen({
               <button type="button" className="tq-link" onClick={onOpenNote}>Заметка</button>
             )}
             {onOpenHistory && (
-              <button type="button" className="tq-link" onClick={() => { onOpenHistory(); goBack(); }}>История →</button>
+              <button type="button" className="tq-link" onClick={() => goBack(onOpenHistory)}>История →</button>
             )}
             <DayShareButton needs={needs} ratings={effectiveRatings} date={date} plain />
           </div>

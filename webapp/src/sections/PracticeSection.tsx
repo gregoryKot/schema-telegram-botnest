@@ -128,7 +128,7 @@ export function PracticeSection({ onOpenChildhoodWheel, onOpenPractices, onOpenP
           )}
           <div className="cp-tasks">
             {therapistTasks.map(task => (
-              <TaskRow key={task.id} task={task} mark cta="начать →" onOpen={() => launcher.openTask(task)} onComplete={() => completeTask(task.id, onTasksChanged)} />
+              <TaskRow key={task.id} task={task} mark compact={phone} cta="начать →" onOpen={() => launcher.openTask(task)} onComplete={() => completeTask(task.id, onTasksChanged)} />
             ))}
           </div>
         </section>
@@ -151,7 +151,7 @@ export function PracticeSection({ onOpenChildhoodWheel, onOpenPractices, onOpenP
             <div key={item.label} className="ds-card ds-card--hover cp-tool" {...pressable(item.onClick)}>
               <div className="cp-tool-title">{item.label}</div>
               <div className="cp-tool-sub">{item.sub}</div>
-              <span className="ds-link">начать →</span>
+              {phone ? <span className="ds-chev" aria-hidden="true" /> : <span className="ds-link">начать →</span>}
             </div>
           ))}
         </div>
@@ -163,13 +163,13 @@ export function PracticeSection({ onOpenChildhoodWheel, onOpenPractices, onOpenP
           <span className="ds-sub">{myGoals.length === 0 ? 'нет активных' : `${myGoals.length} ${plural(myGoals.length, 'активная', 'активные', 'активных')}`}</span>
         </div>
         {myGoals.length === 0 ? (
-          <div className="cp-empty">
+          <p className="ds-empty">
             {tr('Поставь цель и иди к ней маленькими шагами.', 'Поставьте цель и идите к ней маленькими шагами.')}
-          </div>
+          </p>
         ) : (
           <div className="cp-tasks">
             {myGoals.slice(0, 4).map(task => (
-              <TaskRow key={task.id} task={task} cta="открыть →" onOpen={() => launcher.openTask(task)} onComplete={() => completeTask(task.id, onTasksChanged)} />
+              <TaskRow key={task.id} task={task} compact={phone} cta="открыть →" onOpen={() => launcher.openTask(task)} onComplete={() => completeTask(task.id, onTasksChanged)} />
             ))}
           </div>
         )}
@@ -181,7 +181,7 @@ export function PracticeSection({ onOpenChildhoodWheel, onOpenPractices, onOpenP
         </div>
       </section>}
 
-      <CatalogsBlock rows={catalogRows} />
+      <CatalogsBlock rows={catalogRows} compact={phone} />
 
       {/* Overlays */}
       {showCustomize && <Suspense fallback={null}><ToolsCustomizeSheet tools={tools} onClose={() => setShowCustomize(false)} /></Suspense>}

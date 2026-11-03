@@ -98,7 +98,7 @@ export function IntroPhase({
           marginBottom: 10,
         }}
       >
-        Оценить детство — 2 минуты
+        Оценить детство — 8–12 минут
       </button>
       <button
         onClick={onSkip}

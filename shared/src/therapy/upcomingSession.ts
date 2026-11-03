@@ -13,6 +13,7 @@
 // строки дня.
 import { dateStringMs } from '../utils/calendarDate';
 import { todayStr } from '../utils/format';
+import { momentDayKey } from '../utils/momentDate';
 
 const DAY_MS = 86_400_000;
 
@@ -33,10 +34,11 @@ export function upcomingSession(
   return null;
 }
 
-/** Встреча (день или день со временем) — сегодня у того, кто смотрит. */
+/** Встреча (день или день со временем) — сегодня у того, кто смотрит; та же
+ *  проверка, что у экрана «Сегодня» кабинета (momentDayKey, therapistTodayModel). */
 export function isSessionToday(
   at: string | null | undefined,
   today: string = todayStr(),
 ): boolean {
-  return !!at && at.slice(0, 10) === today;
+  return !!at && momentDayKey(at) === today;
 }

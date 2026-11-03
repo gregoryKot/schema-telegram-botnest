@@ -6,7 +6,7 @@ export function DiaryHeader({ onWrite }: { onWrite: () => void }) {
         <div className="ds-eyebrow">Записи</div>
         <h1 className="ds-h1">Что было</h1>
       </div>
-      <button type="button" className="ds-btn cd-write" onClick={onWrite}>Записать</button>
+      <button type="button" className="ds-btn ds-btn--lg cd-write" onClick={onWrite}>Записать</button>
     </>
   );
 }

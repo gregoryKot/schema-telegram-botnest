@@ -13,10 +13,10 @@ afterEach(() => {
 
 describe('SRow — без onClick', () => {
   it('не кликабельна: нет role="button", нет стрелки-плейсхолдера', () => {
-    render(<SRow title="Просто строка" />);
+    const { container } = render(<SRow title="Просто строка" />);
     expect(screen.queryByRole('button')).toBeNull();
     expect(screen.getByText('Просто строка')).toBeTruthy();
-    expect(screen.queryByText('›')).toBeNull();
+    expect(container.querySelector('.ds-chev')).toBeNull();
   });
 
   it('без sub — подписи нет', () => {
@@ -50,18 +50,18 @@ describe('SRow — с onClick', () => {
   });
 
   it('без явного right — рисует стрелку-плейсхолдер ›', () => {
-    render(<SRow title="Со стрелкой" onClick={() => {}} />);
-    expect(screen.getByText('›')).toBeTruthy();
+    const { container } = render(<SRow title="Со стрелкой" onClick={() => {}} />);
+    expect(container.querySelector('.ds-chev[aria-hidden="true"]')).toBeTruthy();
   });
 });
 
 describe('SRow — right', () => {
   it('явный right побеждает стрелку-плейсхолдер', () => {
-    render(
+    const { container } = render(
       <SRow title="С кастомным right" onClick={() => {}} right={<span>кастом</span>} />,
     );
     expect(screen.getByText('кастом')).toBeTruthy();
-    expect(screen.queryByText('›')).toBeNull();
+    expect(container.querySelector('.ds-chev')).toBeNull();
   });
 });
 
@@ -142,15 +142,15 @@ describe('SmallToggle', () => {
 
 describe('ChevronVal', () => {
   it('small не задан — текст и стрелка рендерятся', () => {
-    render(<ChevronVal text="Значение" />);
+    const { container } = render(<ChevronVal text="Значение" />);
     expect(screen.getByText('Значение')).toBeTruthy();
-    expect(screen.getByText('›')).toBeTruthy();
+    expect(container.querySelector('.ds-chev')).toBeTruthy();
   });
 
   it('small=true — текст и стрелка тоже рендерятся (проверяем контент, не размер шрифта)', () => {
-    render(<ChevronVal text="Малое значение" small />);
+    const { container } = render(<ChevronVal text="Малое значение" small />);
     expect(screen.getByText('Малое значение')).toBeTruthy();
-    expect(screen.getByText('›')).toBeTruthy();
+    expect(container.querySelector('.ds-chev')).toBeTruthy();
   });
 });
 

@@ -59,12 +59,12 @@ vi.mock('./diary/GratitudeEntrySheet', () => ({
     onSave,
     onClose,
   }: {
-    onSave: (date: string, items: string[]) => void;
+    onSave: (date: string, items: string[], base: string[]) => void;
     onClose: () => void;
   }) => (
     <div>
       <span>GratitudeEntrySheet</span>
-      <button onClick={() => onSave('2026-08-03', ['a'])}>
+      <button onClick={() => onSave('2026-08-03', ['a'], ['b'])}>
         save-gratitude
       </button>
       <button onClick={onClose}>close-gratitude</button>
@@ -204,13 +204,15 @@ describe('AppDiaryNav — сохранение записей дневника',
     );
   });
 
-  it('newDiaryEntry=gratitude — onSave зовёт createGratitudeDiary(date, items)', async () => {
+  it('newDiaryEntry=gratitude — onSave зовёт createGratitudeDiary(date, items, base)', async () => {
     render(<AppDiaryNav {...baseProps()} newDiaryEntry="gratitude" />);
     fireEvent.click(await screen.findByText('save-gratitude'));
     await waitFor(() =>
-      expect(api.createGratitudeDiary).toHaveBeenCalledWith('2026-08-03', [
-        'a',
-      ]),
+      expect(api.createGratitudeDiary).toHaveBeenCalledWith(
+        '2026-08-03',
+        ['a'],
+        ['b'],
+      ),
     );
   });
 

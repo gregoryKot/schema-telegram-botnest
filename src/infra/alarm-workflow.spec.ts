@@ -101,7 +101,7 @@ const SECRETS = { BOT_TOKEN: 'fake-token', ADMIN_ID: '42' };
 describe.each([
   ['prod-smoke.yml', 'created', { NOTIFY: 'created' }],
   ['prod-smoke.yml', 'reminder', { NOTIFY: 'reminder' }],
-  ['nightly.yml', 'провал джоб', { FAILED: 'browser-smoke,mutation-bot' }],
+  ['nightly.yml', 'провал джоб', { FAILED: 'browser-smoke,npm-audit' }],
 ])('%s: шаг «DM владельцу» (%s)', (file, _label, extra) => {
   const step = dmStep(file);
 

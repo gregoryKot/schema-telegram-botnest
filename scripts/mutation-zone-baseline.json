@@ -29,6 +29,9 @@
   "src/auth/refresh-reuse.ts": {
     "reason": "Вынесен из auth.service.ts (правило №10) до появления гейта мутационной зоны; в `mutate` не включён, мутации разбора повтора refresh-токена не измеряются — долг волны, а не решение."
   },
+  "src/auth/totp-challenge.ts": {
+    "reason": "Класс исключения и тип вызова 2FA без ветвлений: мутировать нечего, кроме литералов; причину `challenge_expired` пинит auth.service.spec.ts (протухший и битый вызов), экран — TwoFactorChallengePage.test.tsx."
+  },
   "src/auth/unlink-provider.ts": {
     "reason": "Вынесен из auth.service.ts (правило №10) до появления гейта мутационной зоны; в `mutate` не включён, мутации отвязки способа входа не измеряются — долг волны, а не решение."
   },

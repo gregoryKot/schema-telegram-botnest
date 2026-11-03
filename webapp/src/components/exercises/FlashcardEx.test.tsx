@@ -12,9 +12,13 @@ vi.mock('../../api', () => ({
   api: {
     saveSchemaNote: vi.fn().mockResolvedValue(undefined),
     saveModeNote: vi.fn().mockResolvedValue(undefined),
+    getSchemaNotes: vi.fn().mockResolvedValue([]),
+    getModeNotes: vi.fn().mockResolvedValue([]),
     trackEvent: vi.fn(),
   },
 }));
+import { api } from '../../api';
+const mockedApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
 // modeCards (портреты режимов) — контракт параллельной задачи, ещё не
 // подключён на момент написания теста. По умолчанию «нет карточки» →
 // ModeEx сразу открывает вопросы (как раньше); портрет — отдельный блок
@@ -37,6 +41,9 @@ function renderSheet() {
 beforeEach(() => {
   vi.clearAllMocks();
   mockGetModeCard.mockReturnValue(undefined);
+  mockedApi.getSchemaNotes.mockResolvedValue([]);
+  mockedApi.getModeNotes.mockResolvedValue([]);
+  mockedApi.saveSchemaNote.mockResolvedValue(undefined);
 });
 
 afterEach(() => {
@@ -44,17 +51,18 @@ afterEach(() => {
 });
 
 describe('FlashcardEx (SchemaEx) — кризисная детекция', () => {
-  it('кризисная фраза в ответе показывает CrisisCard', () => {
+  it('кризисная фраза в ответе показывает CrisisCard', async () => {
     renderSheet();
-    const textarea = screen.getByRole('textbox');
+    const textarea = await screen.findByRole('textbox');
     fireEvent.change(textarea, { target: { value: 'не хочу жить' } });
     expect(screen.getByRole('status')).toBeTruthy();
     expect(screen.getByText(CRISIS_HOTLINE_DISPLAY)).toBeTruthy();
   });
 
   // Аудит 2026-10, «Доступность»: тики вопросов были pressable()-div без имени.
-  it('тик назван номером вопроса, ведёт к нему и помечает текущий', () => {
+  it('тик назван номером вопроса, ведёт к нему и помечает текущий', async () => {
     renderSheet();
+    expect((await screen.findByRole('button', { name: 'Вопрос 1' })).getAttribute('aria-current')).toBe('step');
     expect(screen.getByRole('button', { name: 'Вопрос 1' }).getAttribute('aria-current')).toBe('step');
     fireEvent.click(screen.getByRole('button', { name: 'Вопрос 2' }));
     expect(screen.getByText(/^Вопрос 2 из/)).toBeTruthy();
@@ -62,9 +70,9 @@ describe('FlashcardEx (SchemaEx) — кризисная детекция', () =>
     expect(screen.getByRole('button', { name: 'Вопрос 1' }).getAttribute('aria-current')).toBeNull();
   });
 
-  it('нейтральный текст не показывает CrisisCard', () => {
+  it('нейтральный текст не показывает CrisisCard', async () => {
     renderSheet();
-    const textarea = screen.getByRole('textbox');
+    const textarea = await screen.findByRole('textbox');
     fireEvent.change(textarea, { target: { value: 'Обычно это молчание в переписке' } });
     expect(screen.queryByRole('status')).toBeNull();
   });
@@ -74,8 +82,8 @@ describe('FlashcardEx (SchemaEx) — кризисная детекция', () =>
 // не защищал от двойного нажатия и молчал при ошибке. Навигация до
 // последнего вопроса (7 вопросов SCHEMA_QUESTIONS) — заполняем первый,
 // остальные пропускаем, чтобы дойти до кнопки «Сохранить карточку».
-function goToLastStep() {
-  const textarea = screen.getByRole('textbox');
+async function goToLastStep() {
+  const textarea = await screen.findByRole('textbox');
   fireEvent.change(textarea, { target: { value: 'Пример ответа' } });
   for (let i = 0; i < 6; i++) {
     fireEvent.click(screen.getByRole('button', { name: /Дальше|Пропустить/ }));
@@ -88,7 +96,7 @@ describe('FlashcardEx (SchemaEx) — сохранение: состояние о
     let resolveSave: () => void = () => {};
     mockApi.saveSchemaNote.mockImplementation(() => new Promise<void>((res) => { resolveSave = res; }));
     renderSheet();
-    goToLastStep();
+    await goToLastStep();
 
     const saveBtn = screen.getByRole('button', { name: /Сохранить карточку/ }) as HTMLButtonElement;
     fireEvent.click(saveBtn);
@@ -103,7 +111,7 @@ describe('FlashcardEx (SchemaEx) — сохранение: состояние о
     const mockApi = (await import('../../api')).api as unknown as Record<string, ReturnType<typeof vi.fn>>;
     mockApi.saveSchemaNote.mockImplementation(() => new Promise<void>(() => {})); // никогда не резолвится
     renderSheet();
-    goToLastStep();
+    await goToLastStep();
 
     const saveBtn = screen.getByRole('button', { name: /Сохранить карточку/ });
     fireEvent.click(saveBtn);
@@ -116,7 +124,7 @@ describe('FlashcardEx (SchemaEx) — сохранение: состояние о
     const mockApi = (await import('../../api')).api as unknown as Record<string, ReturnType<typeof vi.fn>>;
     mockApi.saveSchemaNote.mockRejectedValue(new Error('offline'));
     renderSheet();
-    goToLastStep();
+    await goToLastStep();
 
     fireEvent.click(screen.getByRole('button', { name: /Сохранить карточку/ }));
     expect(await screen.findByRole('alert')).toBeTruthy();
@@ -161,16 +169,16 @@ describe('FlashcardEx (ModeEx) — портрет режима: первый п�
     expect(screen.getByText(CARD.about)).toBeTruthy();
   });
 
-  it('«Заполнить карточку» открывает форму; «Про режим» возвращает к портрету и обратно', () => {
+  it('«Заполнить карточку» открывает форму; «Про режим» возвращает к портрету и обратно', async () => {
     renderModeEx();
     fireEvent.click(screen.getByText('Заполнить свою карточку →'));
-    expect(screen.getByRole('textbox')).toBeTruthy();
+    expect(await screen.findByRole('textbox')).toBeTruthy();
 
     fireEvent.click(screen.getByText('ⓘ Про режим'));
     expect(screen.getByText('Назад к вопросам →')).toBeTruthy();
 
     fireEvent.click(screen.getByText('Назад к вопросам →'));
-    expect(screen.getByRole('textbox')).toBeTruthy();
+    expect(await screen.findByRole('textbox')).toBeTruthy();
   });
 });
 
@@ -184,5 +192,70 @@ describe('FlashcardEx (SchemaEx) — initialData', () => {
       </MemoryRouter>,
     );
     expect((screen.getByRole('textbox') as HTMLTextAreaElement).value).toBe('Когда молчат');
+    // Значения пришли готовыми — второй запрос за той же заметкой не нужен.
+    expect(mockedApi.getSchemaNotes).not.toHaveBeenCalled();
+  });
+});
+
+// «Познакомиться →» (SchemaDetailSheet), «Практика», задачи терапевта, плитки
+// «Карта режимов» открывают опросник без initialData. Раньше форма стартовала
+// пустой и сохранение затирало карточку (docs/INCIDENTS.md, 2026-10-31) —
+// теперь написанное грузится внутри упражнения, а до ответа стоит скелетон.
+describe('FlashcardEx — вход без initialData грузит сохранённую заметку', () => {
+  it('SchemaEx: пока заметка грузится — скелетон, потом поля с написанным', async () => {
+    let resolveNotes: (v: unknown) => void = () => {};
+    mockedApi.getSchemaNotes.mockImplementation(() => new Promise((res) => { resolveNotes = res; }));
+    const { container } = renderSheet();
+
+    expect(container.querySelector('[aria-busy="true"]')).not.toBeNull();
+    expect(screen.queryByRole('textbox')).toBeNull();
+
+    resolveNotes([
+      { schemaId: 'abandonment', triggers: 'чужая' },
+      { schemaId: 'emotional_deprivation', triggers: 'Когда молчат', feelings: 'Пусто', reality: null },
+    ]);
+    const textarea = (await screen.findByRole('textbox')) as HTMLTextAreaElement;
+    expect(textarea.value).toBe('Когда молчат');
+    expect(container.querySelector('[aria-busy="true"]')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Вопрос 2' }));
+    expect((screen.getByRole('textbox') as HTMLTextAreaElement).value).toBe('Пусто');
+  });
+
+  it('SchemaEx: сохранение после загрузки шлёт написанное, а не пустые строки', async () => {
+    mockedApi.getSchemaNotes.mockResolvedValue([
+      { schemaId: 'emotional_deprivation', triggers: 'Когда молчат', healthyView: 'Я справляюсь' },
+    ]);
+    renderSheet();
+    await screen.findByDisplayValue('Когда молчат');
+    for (let i = 0; i < 6; i++) fireEvent.click(screen.getByRole('button', { name: /Дальше|Пропустить/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Сохранить карточку/ }));
+    await screen.findByText(/Карточка сохранена/);
+    expect(mockedApi.saveSchemaNote).toHaveBeenCalledWith(expect.objectContaining({
+      schemaId: 'emotional_deprivation', triggers: 'Когда молчат', healthyView: 'Я справляюсь',
+    }));
+  });
+
+  it('SchemaEx: заметки нет — пустая форма', async () => {
+    renderSheet();
+    expect(((await screen.findByRole('textbox')) as HTMLTextAreaElement).value).toBe('');
+  });
+
+  it('SchemaEx: ошибка загрузки — форма всё равно открывается', async () => {
+    mockedApi.getSchemaNotes.mockRejectedValue(new Error('offline'));
+    renderSheet();
+    expect(((await screen.findByRole('textbox')) as HTMLTextAreaElement).value).toBe('');
+    // Пустая форма без объяснения читалась бы как «написанное пропало».
+    expect(screen.getByRole('alert').textContent).toMatch(/Не получилось загрузить/);
+  });
+
+  it('ModeEx: поля стартуют с сохранённой карточки режима', async () => {
+    mockedApi.getModeNotes.mockResolvedValue([{ modeId: 'vulnerable_child', triggers: 'Когда не отвечают' }]);
+    render(
+      <MemoryRouter>
+        <ModeEx onBack={vi.fn()} initialModeId="vulnerable_child" />
+      </MemoryRouter>,
+    );
+    expect(((await screen.findByRole('textbox')) as HTMLTextAreaElement).value).toBe('Когда не отвечают');
+    expect(mockedApi.getModeNotes).toHaveBeenCalledTimes(1);
   });
 });

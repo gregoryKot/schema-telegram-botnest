@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type { TherapyClientSummary } from '../../api';
 import { SCHEMA_DOMAINS } from '../../schemaTherapyData';
+import { forEachTimeZone } from '../../../../shared/src/utils/timeZone.test-helpers';
 import { filterRoster, sortRoster, meetingLabel, clientCaption, clientStatus, domainBar, schemaChips, rosterName, rosterInitials } from './rosterModel';
 
 const TODAY = '2026-10-03';
@@ -155,19 +156,43 @@ describe('clientCaption', () => {
 
   // Аудит 2026-10: подписи были в мужском роде («активен сегодня», «был
   // недавно», «не активен») о человеке, чей пол неизвестен.
-  it('Telegram-клиент: активность сегодня', () => {
+  // «Сегодня/вчера/N дн. назад» — по календарю клиента: daysSinceActive отдаёт
+  // сервер (QA 2026-10-26, №25); день терапевта в подпись не входит.
+  it('Telegram-клиент: активность сегодня — только при daysSinceActive === 0', () => {
     expect(clientCaption(client({ lastActiveDate: TODAY, daysSinceActive: 0 }))).toBe('активность сегодня');
-    expect(clientCaption(client({ lastActiveDate: TODAY, daysSinceActive: 1 }))).toBe('активность недавно');
+    // у терапевта уже 3-е, у клиента (западнее) ещё вчера по его календарю — «вчера», не «сегодня»
+    expect(clientCaption(client({ lastActiveDate: TODAY, daysSinceActive: 1 }))).toBe('активность вчера');
   });
 
-  it('Telegram-клиент: активность недавно + стрик', () => {
-    expect(clientCaption(client({ lastActiveDate: '2026-10-01', streak: 4 }))).toBe(
-      'активность недавно · стрик 4 дн.',
+  it('Telegram-клиент: давность активности + стрик', () => {
+    expect(clientCaption(client({ lastActiveDate: '2026-10-01', daysSinceActive: 2, streak: 4 }))).toBe(
+      'активность 2 дн. назад · стрик 4 дн.',
     );
+    expect(clientCaption(client({ lastActiveDate: '2026-10-02', daysSinceActive: 1 }))).toBe('активность вчера');
+  });
+
+  // Раньше любая не сегодняшняя дата читалась «активность недавно» — и для
+  // месячной давности тоже; мини-апп в той же роли показывает дату.
+  it('месячная давность — дата, а не «недавно», в любой зоне', () => {
+    forEachTimeZone((tz) => {
+      expect(clientCaption(client({ lastActiveDate: '2026-09-01', daysSinceActive: 32 })), tz).toBe('активность 1 сен');
+    });
+  });
+
+  it('старый кэш без daysSinceActive — дата, без «сегодня» по дню терапевта', () => {
+    expect(clientCaption(client({ lastActiveDate: TODAY }))).toBe('активность 3 окт');
+    expect(clientCaption(client({ lastActiveDate: '2026-09-01' }))).toBe('активность 1 сен');
   });
 
   it('Telegram-клиент: нет активности, без стрика', () => {
     expect(clientCaption(client({}))).toBe('нет активности');
+  });
+
+  it('нечитаемая дата активности — «нет активности», а не «активность » с хвостом', () => {
+    expect(clientCaption(client({ lastActiveDate: 'мусор' }))).toBe('нет активности');
+    expect(clientCaption(client({ lastActiveDate: 'мусор', daysSinceActive: 0, streak: 3 }))).toBe(
+      'нет активности · стрик 3 дн.',
+    );
   });
 
   it('ни в одной ветке активности нет мужского рода о клиенте', () => {

@@ -6,7 +6,7 @@ import '../styles/sheet-tasks.css';
 export function OverlayFrame({ title, onBack, children }: { title: string; onBack: () => void; children: ReactNode }) {
   return (
     <div className="sk-overlay">
-      <div className="sk-top"><button className="ds-link sk-back" onClick={onBack}><GlyphArrowLeft /> Назад</button></div>
+      <div className="ds-sheet-head"><button type="button" className="ds-back" onClick={onBack}><GlyphArrowLeft /> Назад</button></div>
       <div className="sk-scroll">
         <div className="sk-page sk-page--narrow">
           <h1 className="ds-h2">{title}</h1>

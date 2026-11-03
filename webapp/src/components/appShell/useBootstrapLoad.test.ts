@@ -6,6 +6,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { act, renderHook } from '@testing-library/react';
 import { useBootstrapLoad } from './useBootstrapLoad';
+import { THERAPIST_MODE_KEY } from '../../utils/storageKeys';
 
 vi.mock('../../api', () => ({
   api: {
@@ -140,7 +141,7 @@ describe('useBootstrapLoad — дефолтный роутинг терапев�
     const { navigate } = setup('/today');
     await flush();
     expect(navigate).not.toHaveBeenCalledWith('/cabinet');
-    expect(localStorage.getItem('therapist_mode')).toBe('0');
+    expect(localStorage.getItem(THERAPIST_MODE_KEY)).toBe('0');
   });
 
   it('пустой localStorage + сервер отдал therapistMode:true — уводит в кабинет (как раньше)', async () => {
@@ -160,11 +161,44 @@ describe('useBootstrapLoad — дефолтный роутинг терапев�
   });
 
   it('явный локальный выбор «клиент» (therapist_mode=0) перекрывает сервер', async () => {
-    localStorage.setItem('therapist_mode', '0');
+    localStorage.setItem(THERAPIST_MODE_KEY, '0');
     mockApi.getProfile.mockResolvedValue({ role: 'THERAPIST', name: 'Др. Кто', mySchemaIds: [] });
     mockApi.getUserFlags.mockResolvedValue({ therapistMode: true });
     const { navigate } = setup('/today');
     await flush();
     expect(navigate).not.toHaveBeenCalledWith('/cabinet');
+  });
+});
+
+// Не-терапевт с устаревшим флагом режима: роль сняли на другой площадке (мини-апп),
+// а localStorage сайта никто не чистит. Флаг '1' вёл «← Назад» с /account в /cabinet,
+// откуда бутстрап отбрасывал обычным navigate: запись /cabinet оставалась в истории,
+// и браузерный «Назад» снова показывал клиенту кабинет.
+describe('useBootstrapLoad — не-терапевт с устаревшим флагом режима «кабинет»', () => {
+  beforeEach(() => {
+    mockApi.getProfile.mockResolvedValue({ role: 'CLIENT', name: null, mySchemaIds: [] });
+  });
+
+  it('CLIENT + флаг «1» + старт на /cabinet — флаг сброшен в «0», отскок на /today заменяет запись истории', async () => {
+    localStorage.setItem(THERAPIST_MODE_KEY, '1');
+    const { navigate } = setup('/cabinet');
+    await flush();
+    expect(localStorage.getItem(THERAPIST_MODE_KEY)).toBe('0');
+    expect(navigate).toHaveBeenCalledWith('/today', { replace: true });
+  });
+
+  it('CLIENT + флаг «1» на /today — флаг сброшен в «0», навигации нет', async () => {
+    localStorage.setItem(THERAPIST_MODE_KEY, '1');
+    const { navigate } = setup('/today');
+    await flush();
+    expect(localStorage.getItem(THERAPIST_MODE_KEY)).toBe('0');
+    expect(navigate).not.toHaveBeenCalled();
+  });
+
+  it('CLIENT без флага — ключ не создаётся: явное «0» перекрыло бы серверный выбор, если аккаунт станет терапевтом', async () => {
+    const { navigate } = setup('/today');
+    await flush();
+    expect(localStorage.getItem(THERAPIST_MODE_KEY)).toBeNull();
+    expect(navigate).not.toHaveBeenCalled();
   });
 });

@@ -106,7 +106,7 @@ describe('ToolsList — плюрализация и пустые состоян�
 
   it('колесо детства: подпись меняется от того, пройдено ли оно', () => {
     renderList({ childhoodDone: false });
-    expect(screen.getByText('Займёт 2 минуты')).toBeTruthy();
+    expect(screen.getByText('Займёт 8–12 минут')).toBeTruthy();
     cleanup();
     renderList({ childhoodDone: true });
     expect(screen.getByText('Паттерны из прошлого')).toBeTruthy();

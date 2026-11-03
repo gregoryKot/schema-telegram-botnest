@@ -1,13 +1,10 @@
 import { SCHEMA_DOMAINS } from '../../schemaTherapy/schemaTherapyData';
 import { ConceptToggleChip } from './ConceptToggleChip';
-import { hintStyle } from './graphStyles';
+import { ConceptGroupLabel } from './ConceptGroupLabel';
+import { DOMAIN_LABEL } from './conceptInlineStyles';
+import { DOMAIN_HUE } from '../../theme/entityHue';
 
-/**
- * Выбор схем: пилюли по доменам. Единственная копия на «+ схема» схемы случая
- * и на поле «Какие схемы включают режим» (правило «одна механика — один
- * компонент»). `onlyIds` — показать только эти схемы (поле режима по умолчанию
- * показывает схемы концептуализации); `domainTitles` — подписи доменов.
- */
+/** Выбор схем по доменам: одна копия на «+ схема» и на поле режима. */
 export function ConceptSchemaPicker({
   activeIds,
   onToggle,
@@ -26,12 +23,13 @@ export function ConceptSchemaPicker({
           (s) => !onlyIds || onlyIds.has(s.id),
         );
         if (schemas.length === 0) return null;
+        const hue = DOMAIN_HUE[domain.id];
         return (
           <div key={domain.id} style={{ marginBottom: 'var(--space-6)' }}>
             {domainTitles && (
-              <div style={{ ...hintStyle, marginBottom: 4 }}>
+              <ConceptGroupLabel hue={hue} fallback={DOMAIN_LABEL}>
                 {domain.domain}
-              </div>
+              </ConceptGroupLabel>
             )}
             <div
               style={{
@@ -45,6 +43,7 @@ export function ConceptSchemaPicker({
                   key={s.id}
                   label={s.name}
                   color={domain.color}
+                  hue={hue}
                   active={activeIds.includes(s.id)}
                   onClick={() => onToggle(s.id)}
                 />

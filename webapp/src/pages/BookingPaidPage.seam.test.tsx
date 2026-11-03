@@ -7,6 +7,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, cleanup } from '@testing-library/react';
 import { BookingPaidPage } from './BookingPaidPage';
+import { api } from '../api';
 import { clearApiCache } from '../../../shared/src/api/apiCache';
 
 const fetchMock = vi.fn();
@@ -71,5 +72,28 @@ describe('BookingPaidPage на шве fetch → api → хук → страни�
         : json(200, {}));
     render(<BookingPaidPage />);
     expect(await screen.findByText('Оплата прошла')).toBeTruthy();
+  });
+});
+
+// Опрос статуса брони идёт через настоящий get → cachedGet: при кеше второй
+// запрос в окне 15 с отдавал прежний HELD, хотя вебхук уже перевёл бронь в
+// CONFIRMED (аудит 2026-10), и «Проверить ещё раз» не доходило до сервера.
+describe('api.getBookingByToken на шве с настоящим cachedGet', () => {
+  const booking = (status: string) =>
+    ({ status, paid: status === 'CONFIRMED', type: 'SESSION_50', startsAt: '2099-08-10T10:00:00Z', endsAt: '2099-08-10T10:50:00Z', durationMin: 50 });
+
+  it('повторный запрос идёт в сеть и видит новый статус', async () => {
+    const statuses = ['HELD', 'CONFIRMED'];
+    fetchMock.mockImplementation(async () => json(200, booking(statuses.shift() ?? 'CONFIRMED')));
+    expect((await api.getBookingByToken('abc')).status).toBe('HELD');
+    expect((await api.getBookingByToken('abc')).status).toBe('CONFIRMED');
+    expect(byTokenCalls()).toHaveLength(2);
+  });
+
+  it('контрольный: обычный GET в том же окне берётся из кеша', async () => {
+    fetchMock.mockImplementation(async () => json(200, { text: 'фраза' }));
+    await api.getHealthyPhrase();
+    await api.getHealthyPhrase();
+    expect(fetchMock.mock.calls.filter(([u]) => String(u).includes('/api/healthy-phrase'))).toHaveLength(1);
   });
 });

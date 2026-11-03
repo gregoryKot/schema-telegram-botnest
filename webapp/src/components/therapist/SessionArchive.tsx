@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { fmtDate } from '../../utils/format';
+import { MMIcon } from '../modeMapIcons';
 import { sessionNumbers } from './sessionNumbers';
 import { ConfirmDialog } from '../ConfirmDialog';
 import { pluralRu } from '../../../../shared/src/utils/pluralRu';
@@ -23,19 +24,16 @@ export function SessionArchive({ page, removeNote }: { page: TherapistNotesPage;
       <div className="ds-label tb-archive-label">Архив · {total} {pluralRu(total, 'заметка', 'заметки', 'заметок')}</div>
       <NotesTruncationHint page={page} />
       {notes.length === 0 ? (
-        <div className="tb-empty">Заметок пока нет</div>
+        <p className="ds-empty">Заметок пока нет</p>
       ) : (
         notes.map(note => (
           <div key={note.id} className="tb-tl-row">
-            <div className="tb-tl-rail">
-              <div className="tb-tl-dot">{numbers.get(note.id)}</div>
-              <div className="tb-tl-line" />
-            </div>
+            <div className="tb-tl-rail"><div className="tb-tl-dot">{numbers.get(note.id)}</div><div className="tb-tl-line" /></div>
             <div className="tb-tl-body">
               <div className="tb-tl-head">
                 <span className="tb-tl-date">{fmtDate(note.date)}</span>
                 <span className="tb-meta">Сессия {numbers.get(note.id)}</span>
-                <button onClick={() => setConfirmId(note.id)} aria-label="Удалить заметку" className="tb-x">✕</button>
+                <button type="button" onClick={() => setConfirmId(note.id)} aria-label="Удалить заметку" className="ds-btn ds-btn--icon tb-tl-del"><MMIcon name="trash" size={16} /></button>
               </div>
               <div className="tb-tl-text">{note.text}</div>
             </div>

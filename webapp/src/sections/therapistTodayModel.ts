@@ -1,12 +1,13 @@
 // Чистые вычисления экрана «Сегодня» кабинета терапевта: счётчики, статус
-// активности клиента, точки спарклайна. Всё считается только из
-// TherapyClientSummary, который экран уже получает. Два разных «сегодня»
-// (QA 2026-10-26): активность — по календарю КЛИЕНТА (daysSinceActive и
-// todayIndex считает сервер в его зоне), сессии — по местному дню терапевта
-// (nextSession — его настенное время).
+// активности, спарклайн — только из TherapyClientSummary, который уже есть.
+// Два разных «сегодня» (QA 2026-10-26): активность — по календарю КЛИЕНТА
+// (daysSinceActive и todayIndex считает сервер в его зоне), сессии — по
+// местному дню терапевта (nextSession — его настенное время).
 import type { TherapyClientSummary } from '../api';
-import { isSessionToday, upcomingSession } from '../../../shared/src/therapy/upcomingSession';
+import { momentDayKey, momentTime, todayStr } from '../utils/format';
+import { upcomingSession } from '../../../shared/src/therapy/upcomingSession';
 import { indexLevel, type IndexLevel } from '../lib/tone';
+
 /** С какого числа дней без активности клиент попадает в «Требуют внимания». */
 export const ATTENTION_DAYS = 3;
 
@@ -25,15 +26,16 @@ export function daysSinceActive(c: TherapyClientSummary): number | null {
   return c.daysSinceActive ?? null;
 }
 
-/** Ближайшая встреча сегодня: будущий nextSession важнее дней, прошедший — нет. */
+/** Встреча сегодня — по МЕСТНОМУ дню терапевта (правило №25): встреча — момент
+ *  (datetime-local без зоны), по UTC в МСК 00–03 «сегодня» показывало вчерашние. */
 const sessionToday = (c: TherapyClientSummary): string | null => {
-  const at = upcomingSession(c.nextSession, c.meetingDays);
-  return isSessionToday(at) ? at : null;
+  const today = todayStr();
+  const at = upcomingSession(c.nextSession, c.meetingDays, today);
+  return at && momentDayKey(at) === today ? at : null;
 };
 export const hasSessionToday = (c: TherapyClientSummary): boolean => sessionToday(c) !== null;
-
-/** HH:MM сегодняшней встречи; без времени или не сегодня — пустая строка. */
-export const sessionTime = (c: TherapyClientSummary): string => sessionToday(c)?.split('T')[1]?.slice(0, 5) ?? '';
+/** HH:MM сегодняшней встречи в зоне терапевта; без времени или не сегодня — ''. */
+export const sessionTime = (c: TherapyClientSummary): string => momentTime(sessionToday(c) ?? '');
 
 /** Сессии сегодня по времени; без времени — в конце. */
 export function sessionsTodaySorted(clients: TherapyClientSummary[]): TherapyClientSummary[] {

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { api } from '../../api';
 import { useTr } from '../../utils/addressForm';
 import { ConfirmDialog } from '../../components/ConfirmDialog';
+import { useHistorySheet } from '../../hooks/useHistorySheet';
 
 // Подтверждение удаления аккаунта. Вынесено из ProfileSection (файл-должник
 // сверх 300 строк — правило №10 CLAUDE.md: он обязан таять, а не пухнуть) и
@@ -9,16 +10,15 @@ import { ConfirmDialog } from '../../components/ConfirmDialog';
 //
 // Ключевое здесь — видимая ошибка. Раньше провал запроса только возвращал
 // кнопку в исходное состояние: человек нажал «Удалить», ничего не произошло,
-// и понять, удалён аккаунт или нет, было невозможно. Для операции без отмены
-// это худший из возможных исходов, поэтому текст ошибки прямо говорит, что
-// данные на месте.
+// и понять, удалён аккаунт или нет, было невозможно — для операции без отмены
+// худший исход, поэтому текст ошибки прямо говорит, что данные на месте.
 //
-// Ж4 (аудит 2026-08): сама разметка диалога/фокус-трап/Escape переехали в
-// общий ConfirmDialog (был первым таким полноценным диалогом в проекте, три
-// window.confirm()-места переведены на него же) — здесь остаётся только
-// специфика удаления аккаунта: busy/error-состояние и вызов api.
+// Ж4 (аудит 2026-08): разметка/фокус-трап/Escape — общий ConfirmDialog; здесь
+// busy/error-состояние, вызов api и запись истории: «Назад» браузера закрывает
+// диалог, а не профиль под ним (успех перезагружает страницу — запись уходит).
 export function DeleteAccountDialog({ onClose }: { onClose: () => void }) {
   const tr = useTr();
+  const goBack = useHistorySheet(onClose);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState('');
 
@@ -50,7 +50,7 @@ export function DeleteAccountDialog({ onClose }: { onClose: () => void }) {
       busy={deleting}
       error={error}
       onConfirm={confirm}
-      onCancel={onClose}
+      onCancel={goBack}
     />
   );
 }

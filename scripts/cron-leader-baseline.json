@@ -64,8 +64,8 @@
     "reason": "deleteMany идемпотентен, второй инстанс на том же тике удалит 0 строк (уже удалены), дублирования наружу нет."
   },
   "src/subscription/subscription.service.ts::chargeDue": {
-    "status": "exempt",
-    "reason": "Сериализация построчная и более сильная: атомарный захват UPDATE Subscription SET nextChargeAt … WHERE nextChargeAt <= now() (src/subscription/subscription.charges.ts)."
+    "status": "leader",
+    "reason": "Рекуррентные списания в Robokassa — второй инстанс на том же тике повторил бы выборку должников и pending-алерты владельцу; построчный захват UPDATE Subscription SET nextChargeAt (subscription.charges.ts) остаётся вторым барьером."
   },
   "src/telegram/telegram.schedule.service.ts::processQueue": {
     "status": "leader",

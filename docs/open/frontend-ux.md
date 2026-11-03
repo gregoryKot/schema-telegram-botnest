@@ -27,10 +27,6 @@
   `Permissions-Policy: microphone=()` (`src/security/permissions-policy.ts`). Пересмотреть, если
   появится распознавание на устройстве: тогда `microphone=(self)` с тестом на оба исхода, кнопка
   только там, где API есть, текст через `detectCrisisAny`, строка в политике приватности.
-- **История трекера в «Записях» — 30 дней**: `GET /api/history` режет `days` до 30
-  (`src/api/tracker.controller.ts`), поэтому строки трекера старше месяца в ленте не появляются, хотя
-  дневниковые записи видны за всё время. Решить: поднять потолок эндпоинта или добавлять строки по
-  страницам.
 - **Этапы 4–5** («Что случилось» в три шага и остальное) — в разделе «Порядок внедрения» концепта.
   «Зачем это всё» (экран «Первый раз») сделан в этапе 1 (`webapp/src/components/WhySheet.tsx`),
   «Записи» и дневник одной страницей — в этапе 3.
@@ -80,20 +76,18 @@
   `schema-miniapp/src/components/WizardProgress.tsx:34-39` — сегменты 4px с
   `onSelect={setStep}` из `IntroSheetShell.tsx:107-114`. Ни подписи, ни
   `aria-label`. Решение владельца: хитбокс 44 с `aria-label` или убрать прыжок.
-- **Свайп трекера перехватывает движение пальца по шкале оценки.**
-  `webapp/src/components/TrackerOverlay.tsx:123-135` + `trackerOverlay/MobileLayout.tsx:34-35`
-  (весь fullscreen слушает touch), мини-апп `TrackerOverlay.tsx:184-198`: при
-  `dx ≥ 90` уезжает на другую потребность, а шкала ждёт тап. Заплатка —
-  не начинать свайп, если `touchstart` попал в `closest('[role="group"]')`.
-  Свайп написан трижды: `webapp/.../TrackerOverlay.tsx:124-136` и мини-апп
-  `TrackerOverlay.tsx:185-198` (90 / 0.5) против
-  `schema-miniapp/src/hooks/useSectionSwipe.ts:7-13` (72 / 0.6); общий
-  `useHorizontalSwipe` в shared.
-- **Текст, не добавленный кнопкой «+», молча теряется при «Дальше»** в проверке
-  убеждения на обеих площадках (`beliefCheck/EvidenceStep`,
-  `webapp/.../beliefCheck/EviList`): `onAdd()` перед переходом не вызывается.
-  Там же расхождение поведения: в вебе «Дальше» требует доказательства за и
-  против, в мини-аппе нет.
+- **Свайп разделов мини-аппа не исключает касания по контролам.**
+  `schema-miniapp/src/hooks/useSectionSwipe.ts` (72 / 0.6) — отдельная от
+  трекерного `shared/src/hooks/useHorizontalSwipe.ts` реализация без проверки
+  `closest('[role="group"]')`. Сейчас безвредно: шкала `NeedRatingBar` живёт
+  только в оверлеях (`TrackerOverlay`, `NeedTodaySheet`), где свайп разделов
+  выключен (`App.tsx`, `disabled: anyOverlayOpen`). Шкала или слайдер прямо в
+  разделе — перевести на общий хук.
+- **Проверка убеждения: «Дальше» на шагах доказательств ведёт себя по-разному.**
+  В вебе (`webapp/src/components/exercises/BeliefCheckEx.tsx`) кнопка требует
+  хотя бы одно доказательство за и против (или текст в поле), в мини-аппе
+  (`schema-miniapp/src/components/beliefCheck/EvidenceStep.tsx`) пускает с
+  пустым списком. Решение владельца: какой вариант общий.
 - **Гейт тап-целей не видит размеры из CSS-классов.**
   `scripts/tap-targets-rules.mjs` читает только инлайновый `style` в JSX, а
   размер `.evi-x` 22×22 (`webapp/src/index.css`; чинился: зона 44 через
@@ -126,12 +120,6 @@
   закрывает лист, как при успехе. В `GratitudeEntrySheet` и вебовском
   `ModeEntryForm` этот класс уже закрыт шаблоном `saveError` — осталось
   перенести на три места.
-- **Отмена системного диалога шаринга трактуется как сбой.**
-  `shared/src/share/useShareCard.ts:73-78`: `AbortError` попадает в `catch`,
-  текст молча копируется в буфер и открывается шторка. Где `navigator.share`
-  нет, `shareCanvasImage` возвращает `'downloaded'`, который вызывающий код
-  игнорирует, — человек жмёт «Поделиться» и не видит ничего.
-  `BookingSaveBlock.tsx:53` отмену уже отличает.
 - **Шаг имени в разборе не проходит кризисную детекцию, пока человек печатает**
   (правило №7). Осталось только в мини-аппе: на сайте шага имени после #877 нет,
   детекция идёт по `scene`/`bodyOwn`/`impulseOwn` во время ввода (сверка 2026-10-31).
@@ -150,10 +138,12 @@
   тот же `handleSkip`, что у «Позже», id добавляется в `skipped` повторно
   (в localStorage дубли), шаг остаётся отложенным. Сайтовой копии виджета
   больше нет (убрана в #872).
-- **`MergePage` показывает технический id провайдера** («Аккаунт **google**
-  (Имя)…»), а тест `MergePage.test.tsx:81` подаёт `provider=Google` — тест на
-  выдуманной фикстуре (правило №23). Нужен словарь `PROVIDER_NAMES` и тест на
-  реальных `google`/`vk`.
+- **Второй словарь имён провайдеров — `PROVIDER_NAMES` в
+  `shared/src/components/LoginTicketWait.tsx`** (на сайте один —
+  `webapp/src/pages/account/providerNames.ts`). Осознанно не сведены: в шторке
+  билета имя стоит в предложном падеже («вход в Telegram», `email: 'почте'`), и
+  правка `shared/` тянет пересборку `schema-miniapp/dist`. Сводить — когда
+  словарь понадобится мини-аппу: перенести `providerNames.ts` в `shared/`.
 - **Вход Telegram OIDC удалён в #725 — сколько аккаунтов потеряли способ
   входа, не проверено.** Куку `tg_pkce_verifier` этого входа политика больше не
   объявляет (сверка 2026-10-22). Владельцу: `SELECT count(*) FROM
@@ -162,14 +152,6 @@
   разрушительна). Вернуть вход через Telegram OIDC можно из git, но сначала
   `sub` → `telegramId` нужно доказать записанным ответом oauth.telegram.org
   (правило №23).
-- **`/privacy` и `/offer` шире экрана телефона на обоих хостах**: при ширине 390px
-  `document.documentElement.scrollWidth` — 482 (schemehappens.ru) и 487 (визитка),
-  текст режется справа. Причина — таблица реквизитов `Table` с
-  `gridTemplateColumns: '220px 1fr'` (`webapp/src/pages/PrivacyPage.tsx:274`,
-  `webapp/src/pages/OfferPage.tsx:311`, две копии одной механики): колонка подписи
-  фиксирована, длинные неразрывные значения раздвигают сетку. Замер — headless
-  Chromium по сборке webapp: с `overflow-wrap: anywhere; min-width: 0` на тексте
-  страница укладывается в 390px. Найдено при починке #860 (юрстраницы на продукте).
 - **Ссылки `href` в компонентах не сверяются с роутами своего хоста** (класс 16 в
   `docs/INCIDENTS.md`). Инцидент с `/privacy` жил в ссылках `LoginPage`, `ConsentScreen`,
   `CookieBanner`, `AppShell`, `ProductLandingPage`: путь был роутом, но только у визитки.
@@ -190,11 +172,6 @@
   ревью: `DELETE /api/therapy/tasks/:id` (удаление задания терапевтом,
   QA 2026-10-26) довезён до обеих площадок руками (`ClientTasksTab.tsx`,
   `TasksSheet.tsx`), гейт бы не заметил одностороннего.
-- **Запасной код 2FA нельзя набрать на телефоне**:
-  `webapp/src/pages/TwoFactorChallengePage.tsx:67` ставит `inputMode="numeric"`,
-  а резервный код — 10 символов hex с буквами a–f
-  (`totp.service.spec.ts:163`). Соседний `SourceTotpField.tsx:4-5` про это прямо
-  предупреждает.
 - **Названия схем в опроснике YSQ расходятся с реестром**
   (`shared/src/hooks/ysqSchemasContent.ts` — «Социальная отчужденность» против
   «отчуждённость», слэши без пробелов). Имя служит ключом `SCHEMA_NAME_TO_ID`,
@@ -244,26 +221,32 @@
 терапевте. Не тронуто: маркетинговый текст и текст пары вне задачи про дневник, формулировку
 выбирает владелец.
 
-**Благодарность: запись из другой вкладки теряется между чтением и записью дня** (простой клиент,
-этап 3). «Дневник одной страницей» (`webapp/src/components/diary/quickEntry/useQuickEntry.ts`,
-`saveGratitude`) и мастер `GratitudeEntrySheet` читают пункты дня (`getGratitudeDiary`), дописывают
-свой и перезаписывают день целиком. Если между чтением и записью пункт добавили с другой вкладки
-или площадки, он пропадает без ошибки. Доказано кодом: `POST /api/diary/gratitude` отдаёт `body.items`
-в `upsertGratitudeDiaryEntry` (`src/api/diary.controller.ts:117-121`), а тот в `update` кладёт
-`items: enc` целиком (`src/bot/diary.service.ts:172-183`), без слияния и без проверки версии. Чтобы
-закрыть: эндпоинт «добавить пункт» (слияние на сервере в транзакции) или `expectedVersion`/`updatedAt`
-в теле с отказом 409 при расхождении; клиентам переехать на него и убрать чтение перед записью.
 - **Сайт: автосохранение концептуализации при отказе сети или сервера показывает только «Не сохранилось».** `webapp/src/components/therapist/useConceptAutosave.ts` (`send`, catch) отдаёт в `SaveStatusLine` причину (`conceptError` → `errorText`) только для поля длиннее предела сервера (`shared/src/therapy/conceptOverLimit.ts`); отказ сети, 5xx и прочие 4xx идут без причины, хотя мини-апп её называет (`schema-miniapp/src/components/therapist/conceptSaveError.ts`). Осознанно не сделано в PR по находке #880: общий маппер потребовал бы класса статуса ответа в `shared/` (у webapp свой клиент API). Закрыть: маппер причины — в `shared/src/api/`, оба фронтенда берут его оттуда.
-- **`#06d6a0` в кнопке экспорта мини-аппа** — `schema-miniapp/src/components/therapistClientSheet/ConceptSheet.tsx`, цвет вне токенов (сидит в бейслайне `check-color-drift`; найдено в #880, не трогали — задача другая).
+- **«В мои схемы» из карточки схемы глушит отказ записи, включая 409 «не читается».** `toggleSchema` в `webapp/src/components/SchemaDetailSheet.tsx` (`.catch(() => {})`) и `schema-miniapp/src/components/SchemaDetailSheet.tsx` (`.catch(logErr(...))`) шлют `updateSettings({ mySchemaIds })` без плашки: при 409 `unreadable_data` данные на сервере целы (бэкенд не пишет), но человек не узнаёт, что выбор не сохранился. На экране «Мои паттерны» отказ уже виден (`SelectionSaveNote` в обоих фронтендах, `shared/src/api/unwritableError.ts`). Не сделано в PR защиты настроек: файл мини-аппа на 313 строках в бейслайне размера и может только уменьшаться. Закрыть: тот же `isUnwritableError` + `SaveErrorNote` в листе (или общий хук сохранения выбора для листа и экрана).
+- **После 409 на «моих схемах/режимах» перезагрузка показывает пустой список.** `useSchemasData` (сайт) и `useMySelections` (мини-апп) при загрузке ставят в state `mySchemaIds` с сервера, а для нечитаемого списка сервер отдаёт `[]`: выбор человека остаётся в `localStorage`, но на экран не возвращается. Данные на сервере целы (409 не дал их стереть); честнее было бы отдавать в `GET /api/settings`/профиле флаг «не читается» и не затирать локальный выбор. Не сделано: нужен контракт ответа на обе площадки, вне задачи защиты записи.
+- **Полноэкранные оверлеи с инлайн `position: fixed; inset: 0` не учитывают статус-бар установленного приложения.** CSS-листы получили `padding-top: var(--safe-top)` на телефоне (#902), инлайновые — нет: `webapp/src/components/therapist/ConceptGraphFullscreen.tsx:33` (лист схемы на весь экран — его шапка с «Закрыть» уходит под статус-бар), `webapp/src/pages/landing/nav.tsx:58` и `webapp/src/pages/landing/ProductMobileMenu.tsx:33` (мобильные меню лендингов), `shared/src/components/Celebration.tsx:41` (контент по центру, не критично). Закрыть: `paddingTop: 'var(--safe-top)'` на корне каждого + тест-сверка списка с `scripts/history-sheet-baseline.json`; проверить в установленном приложении на iPhone.
+- **Кнопка «Перестать быть специалистом» стоит в разделе «Оформление» листа настроек** (`webapp/src/components/settingsSheet/AppearanceSection.tsx`, проп `onResignTherapist`): после #902 у терапевта первым блоком идёт «Режим» (`settingsSheet/ModeSection.tsx`), и отказ от роли по смыслу принадлежит ему, а не оформлению. Перенести в `ModeSection` вместе с подтверждением; видно на скриншоте листа с телефона (#902).
+- **Событий для #904 не добавляли осознанно** (правило №8): сводка «Коротко» — показ без действия, открытие схемы уже считает `concept_graph_open`; переключение режима с телефона — второй вход в прежнее действие, итог пишет сервер (`POST /api/therapy/therapist-view`). Если понадобится мерить путь «Профиль → Клиент» с телефона — событие `therapist_mode_switched` с `meta.surface` и полный пайплайн №8 отдельным PR.
+- **Префикс `cw-` делят два css: `client-why.css` («Зачем это всё», «Поговорить») и `sheet-childhood.css` (колесо детства).** `.cw-note` был объявлен в обоих, побеждал порядок загрузки модулей; на стороне «Зачем» переименован в `.cw-tip` (#906), колесу детства нужен свой префикс (например `chw-`); гейта «один префикс — один файл» нет.
+- **Остатки «один стиль» → волна 3 #906** (осознанно не сделано в волне 2): три счётчика «Сегодня» с тремя заливками ink/plain/warn на одном экране (`webapp/src/sections/TherapistTodaySection.tsx:53-61`) против «один акцент на экран»; кандидаты примитивов, которые срезы пока держат локально: `.ds-hero` (eyebrow + h1 + sub), `.ds-list-row--stack`, `.ds-card--compact`, `.ds-btn--icon.is-warn`, `.ds-btn--on-ink:disabled`, `u-self-start` (сейчас инлайн `alignSelf` в `therapist/ClientYSQTab.tsx`), общий набор SVG-иконок кабинета (корзина сейчас из `modeMapIcons.tsx`).
+- **`.ds-link` на телефоне (min-height 44, inline-flex) вытаскивает ссылку из строки абзаца.** `webapp/src/components/PracticesScreen.tsx:100` («Что-то просело? <span class=ds-link>Открой трекер →</span>»); проверить также `exercises/childhoodWheel/SchemaHints.tsx:63`, `history/HistoryDayView.tsx:47-51`, `ConsentScreen.tsx:69`. Доказано: grep в отчётах срезов; на снимках `c0x` не видно. Исключение для ссылки в потоке (`ds-link--inline`) или кнопка отдельной строкой — волна 3.
+- **`ds-seg` без модификатора (не `--full`/`--scroll`) остался**: `TaskCreateSheet.tsx:125`, `HistoryView.tsx:88,96`, `PracticesScreen.tsx:110`, `ClientListView.tsx:90,100`, `NameAddressSections.tsx:47`, `DiarySection.tsx:147` (webapp/src/components, sections); решить, какой из вариантов нужен, — волна 3.
+- **Локальный `font-size` перебивает 16px полей на телефоне:** `webapp/src/styles/sheet-modemap.css` (`.mm2-pal-search .ds-input` 12.5px, `.mm2-add-form .ds-input` 12.5px, `.mm2-panel .ds-input/.ds-textarea/select.ds-input` 13px); iOS приближает экран при фокусе. Доказано: grep по css.
+- **`sections/schemas/MineGroupsList.tsx` — единственный остаток `.cs-row*`** (`webapp/src/styles/client-schemas.css`): перевести на `button.ds-list-row ds-list-row--nav` и удалить локальные правила.
+- **Локальные копии `ds-link`-вида:** `.st-pc-write`, `.st-pc-leave`, `.st-links a`, `.st-pc-confirm .ds-btn` (`webapp/src/styles/sheet-settings.css`), `.ps-pill`, `.st-link-danger` — убрать после `ds-link--danger`; проп `small` у `ChevronVal` (`settingsSheet/ui.tsx`) больше ничего не делает — убрать вместе с вызовами.
+- **`AllGoalsOverlay` рисует `TaskRow` без `compact`** — на телефоне стрелка «→», а не `ds-chev` (`webapp/src/components/`); волна 3.
+- **Проверить глазами на экране:** `ConceptDigest` со skin оставляет инлайн flex/margin у `dd`/`h3` и может спорить с `ds-label` (`shared/src/therapy/conceptGraph/ConceptDigest.tsx`); у `.ds-sheet-head` с `position: sticky; top: 0` в `HistorySheet`/`JourneySheet` шапка при прокрутке может уйти под статус-бар; `PortraitPatternRows` без `freq` ставит шеврон в третью колонку grid (`webapp/src/sections/profile/PortraitPatternRows.tsx`); поле `ds-input--search` в `CommandPalette.tsx` без `flex:1/min-width:0` рядом с Esc; сегмент вкладок карт в `ModeMapSelector.tsx` без `ds-seg--scroll` (нет маски края); `ActivityRow` в `TherapistTodayLists.tsx` единственная строка списка со стрелкой.
+- **Теги триггеров `ConceptSectionsText.tsx` (`ds-chip--toggle is-on` без `--h`)** красятся только если предок задаёт `--h` (фолбэка в примитиве нет — гейт `check-token-contract`); сверить на экране t05 и при нейтральном виде задать `--h` у потребителя.
+- **Мини-апп перекрасился на единую таблицу hue** (`shared/src/theme/entityHue.ts`): Автономия теперь янтарная H70, потребности и группы режимов — по таблице; решение принято, мини-апп удаляется (#908).
+- **Шапки переведённых листов на широком экране не совпадают с отступом тела.** `.ds-sheet-head` на мобильном — `padding: 0 16px` (`webapp/src/styles/cabinet.css`, ~233), прежние `.sk-top`/`.ss-bar` брали `clamp(12-16px, 3-4vw, 32-56px)`, как тело (`.sk-page`, `.ss-inner`) у `OverlayFrame`, `TaskCreateSheet`, `SchemaFlashcardTopbar`, `SsSheet`. Доказано: удалённые правила в диффе волны 1; скриншотом на ширине >1000 не проверялось. Выровнять в волне 2.
+- **«Встреча» как `ds-label` вне секции** — `webapp/src/components/therapist/ClientHeaderBadges.test.tsx:55`, `NextSessionLine.test.tsx:13`: подпись не сделана заголовком осознанно (не секция, а строка шапки). Если скринридеру нужна структура — решить вместе с шапкой карточки.
+- **Флешкарты (`SchemaFlashcardTopbar`) переведены на `ds-sheet-head` целиком** хотя это верх экрана упражнения; подпись «Закрыть» сохранена. Если упражнения получат общий `ExScreen`-бар — свести в один примитив (волна 2).
+- **Тест на фокус меню «⋯» вкладки «Концептуализация» не написан**: `MoreMenu` в `webapp/src/components/therapist/concept/ConceptTabHead.tsx` использует общий `useMenuPick` и покрыт кейсом `ClientHeader.actions.test.tsx`; отдельный кейс — при расхождении механики.
+- **Мини-апп: цвета сущностей (`toneHex`, L .58) как цвет мелкого текста — контраст ниже 4.5:1 в обеих темах** (пример: `schema-miniapp/src/components/PlanCard.tsx:123` — 12px, `color: needColor`; на светлом фоне 3.3-4.5:1, на тёмном 3.7-4.5:1; посчитано по WCAG). Закрывается удалением мини-аппа (#908); если удаление отложат — светлый вариант тона для тёмной темы и тёмный для светлой.
 
-**Карта режимов и YSQ терапевта — хвосты QA 2026-10-26** (починка багов карты и YSQ, сделано
+**Карта режимов терапевта — хвост QA 2026-10-26** (починка багов карты и YSQ, сделано
 в той же ветке; здесь — увиденное попутно и не тронутое):
-- **График «Динамика топ-5 схем» красит линии и легенду `domainColor` из `SCHEMA_DOMAINS`**
-  (`webapp/src/components/therapist/YSQDynamics.tsx`, `colorOf`), а бары таблицы над ним — тоном
-  `DOMAIN_HUE` (`lib/tone.ts`): один домен — два разных цвета на одном экране, тот же класс, что
-  палитра карты режимов против узлов холста. Свести на один источник (тон), проверить глазами.
 - **На телефоне выдвижная палитра карты режимов не закрывается после выбора режима**
   (`webapp/src/components/ModeMapEditor.tsx`, `overlay(...)` слева): фигура ложится на свободное
   место холста, но его закрывает сама палитра, пока её не свернуть «‹». Не тронуто: закрывать
   после каждого тапа мешает добавлять несколько режимов подряд — нужен выбор поведения.
-

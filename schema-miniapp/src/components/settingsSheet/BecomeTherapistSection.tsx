@@ -8,12 +8,9 @@ import {
   THERAPIST_REQUEST_NAME_MAX,
   THERAPIST_REQUEST_QUAL_MAX,
 } from '../../../../shared/src/limits/textLimits';
+import { TherapistRequestRejectedNote } from '../../../../shared/src/therapy/TherapistRequestRejectedNote';
 
-type TherapistReq = {
-  id: number;
-  status: string;
-  rejectReason: string | null;
-};
+type TherapistReq = { id: number; status: string; rejectReason: string | null };
 
 interface Props {
   therapistReq: TherapistReq | null | undefined;
@@ -81,6 +78,7 @@ export function BecomeTherapistSection({
 
   return (
     <div className="u-mb8">
+      <TherapistRequestRejectedNote request={therapistReq} className="u-mb8" />
       {therapistReq === undefined ? null : therapistReq?.status ===
         'pending' ? (
         <div className="card" style={{ borderRadius: 16, padding: 16 }}>

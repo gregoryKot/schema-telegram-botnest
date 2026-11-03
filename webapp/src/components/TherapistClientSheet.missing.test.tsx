@@ -91,8 +91,8 @@ describe('карточка клиента, которого нет', () => {
     mockApi.getTherapyClients.mockResolvedValue([offline]);
     mockApi.removeClient.mockResolvedValue(undefined);
     renderAt('/cabinet/-142');
-    await screen.findByRole('button', { name: 'Удалить клиента' });
-    fireEvent.click(screen.getByRole('button', { name: 'Удалить клиента' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Действия с карточкой' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Удалить клиента' }));
     await act(async () => { fireEvent.click(screen.getByRole('button', { name: 'Удалить' })); });
     expect(mockApi.removeClient).toHaveBeenCalledWith(-142);
     expect(screen.getByTestId('path').textContent).toBe('/cabinet');
@@ -100,6 +100,6 @@ describe('карточка клиента, которого нет', () => {
     await act(async () => { fireEvent.click(screen.getByRole('button', { name: 'браузер: назад' })); });
     expect(screen.getByTestId('path').textContent).toBe('/cabinet/-142');
     expect(screen.getByText('Клиент не найден')).toBeTruthy();
-    expect(screen.queryByRole('button', { name: 'Переименовать' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Действия с карточкой' })).toBeNull();
   });
 });

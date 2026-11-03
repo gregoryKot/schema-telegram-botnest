@@ -26,8 +26,8 @@ const FILTERS: { id: DiaryFilter; label: string }[] = [
   { id: 'case', label: 'Случаи' },
   { id: 'diary', label: 'Дневник' },
 ];
-// Бэкенд отдаёт историю оценок не глубже 30 дней (tracker.controller.ts, GET /api/history).
-const TRACKER_DAYS = 30;
+// Год — потолок GET /api/history (HISTORY_MAX_DAYS, src/api/dto/history-query.dto.ts).
+const TRACKER_DAYS = 365;
 const DRAFT_TYPES: DiaryType[] = ['schema', 'mode', 'gratitude'];
 
 export function DiarySection({ onClose: _onClose, onOpenTrackerHistory }: { onClose?: () => void; onOpenTrackerHistory?: () => void } = {}) {
@@ -115,8 +115,8 @@ export function DiarySection({ onClose: _onClose, onOpenTrackerHistory }: { onCl
       onClose={() => setNewEntry(null)}
       date={today}
       existingItems={todayGratitude?.items}
-      onSave={async (date, items) => {
-        const entry = await api.createGratitudeDiary(date, items);
+      onSave={async (date, items, base) => {
+        const entry = await api.createGratitudeDiary(date, items, base);
         setGratitudeEntries(prev => {
           const rest = prev.filter(e => e.date !== date);
           return [entry, ...rest].sort((a, b) => b.date.localeCompare(a.date));
@@ -144,7 +144,7 @@ export function DiarySection({ onClose: _onClose, onOpenTrackerHistory }: { onCl
       </div>
 
       <div className="cd-bar">
-        <div className="ds-seg" role="group" aria-label="Тип записей">
+        <div className="ds-seg ds-seg--scroll" role="group" aria-label="Тип записей">
           {FILTERS.map(f => (
             <button
               key={f.id}

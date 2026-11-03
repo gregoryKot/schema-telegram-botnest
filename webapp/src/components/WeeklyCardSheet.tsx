@@ -93,7 +93,7 @@ export function WeeklyCardSheet({ needs, history, onClose }: Props) {
       lede={tr('Сводка потребностей за неделю в виде карточки – сохрани или отправь терапевту.', 'Сводка потребностей за неделю в виде карточки – сохраните или отправьте терапевту.')}
     >
       {history.length === 0 ? (
-        <div className="sd-weekly-empty">Нет данных за неделю</div>
+        <p className="ds-empty">Нет данных за неделю</p>
       ) : (
         <>
           <div className="ds-card ds-card--flush sd-canvas">

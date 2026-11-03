@@ -29,7 +29,7 @@ export interface SegItem {
 
 export function SegRow({ items }: { items: SegItem[] }) {
   return (
-    <div className="ds-seg mm2-seg">
+    <div className="ds-seg ds-seg--full mm2-seg">
       {items.map(it => (
         <button key={it.key} onClick={it.onPick} style={it.style} title={it.hint} aria-label={it.hint}
           className={`ds-seg-btn${it.lead ? ' is-icon' : ''}${it.active ? ' is-active' : ''}${it.className ? ` ${it.className}` : ''}`}>

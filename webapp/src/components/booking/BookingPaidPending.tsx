@@ -4,16 +4,15 @@ import type { PublicBooking } from './useBookingByToken';
 import { CANCEL_SUPPORT_LINK, CANCEL_SUPPORT_HANDLE } from './cancelPolicy';
 import { h1, sub } from './bookingPageStyles';
 import { icon, ghostBtn } from './bookingPaidStyles';
+import { BookingRefreshFailedNote } from './BookingRefreshFailedNote';
 
 /**
  * Оплата принята (подписанный редирект Robokassa), а вебхук ещё не перевёл
  * бронь в CONFIRMED. «Встреча подтверждена» тут нельзя: вебхук мог не прийти
  * или отказать по сумме, и через 15 минут холд отменится (аудит 2026-10-11).
  */
-export function BookingPaidPending({ booking, timedOut, onRetry }: {
-  booking: PublicBooking;
-  timedOut: boolean;
-  onRetry: () => void;
+export function BookingPaidPending({ booking, timedOut, refreshFailed, onRetry }: {
+  booking: PublicBooking; timedOut: boolean; refreshFailed: boolean; onRetry: () => void;
 }) {
   return (
     <>
@@ -29,6 +28,7 @@ export function BookingPaidPending({ booking, timedOut, onRetry }: {
       )}
 
       <BookingSessionCard type={booking.type} durationMin={booking.durationMin} startsAt={booking.startsAt} />
+      {refreshFailed && <BookingRefreshFailedNote showRetry={!timedOut} onRetry={onRetry} />}
 
       {timedOut
         ? <button onClick={onRetry} style={ghostBtn}>Проверить ещё раз</button>

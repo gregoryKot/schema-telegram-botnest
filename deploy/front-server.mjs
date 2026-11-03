@@ -6,7 +6,8 @@
 //     (без разбора HTTP: keep-alive, chunked, стриминг, большие тела, любые
 //     заголовки — всё течёт как есть, ноль риска для боевого трафика);
 //   • приложение ещё не подняло APP_PORT (окно старта: recover + migrate + буст
-//     Nest) ИЛИ упало/крашлупит → сами отдаём страницу техработ.
+//     Nest) ИЛИ упало/крашлупит → хосту визитки — статика webapp/dist с диска,
+//     остальным (продукт, API) — страница техработ (deploy/front-static.mjs).
 //
 // Почему front, а не «поднять техработы только при падении» (прежний подход):
 // в окне старта порт 3000 был пустым до `app.listen`, и всё это время (десятки
@@ -22,6 +23,11 @@
 import { createServer as createTcpServer, connect } from 'node:net';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import {
+  answerWhileDown,
+  DEFAULT_DIST_DIR,
+  rawResponse,
+} from './front-static.mjs';
 
 const PORT =
   process.env.PORT !== undefined && process.env.PORT !== ''
@@ -44,25 +50,19 @@ export function loadMaintenancePage() {
   }
 }
 
-// Сырой HTTP-ответ страницей техработ. Статус 200 (не 503) — намеренно: если
-// прокси Amvera перехватывает 5xx и подменяет своей generic-ошибкой, наша
-// страница до пользователя не дойдёт. С 200 прокси гарантированно отдаёт наш
-// ответ. Перепроверку доступности делает сама страница (<meta refresh>).
-// Connection: close — ответ самодостаточен, читать запрос клиента не требуется.
-function maintenanceResponse(bodyBuf) {
-  const head =
-    'HTTP/1.1 200 OK\r\n' +
-    'Content-Type: text/html; charset=utf-8\r\n' +
-    `Content-Length: ${bodyBuf.length}\r\n` +
-    'Cache-Control: no-store, must-revalidate\r\n' +
-    'Connection: close\r\n' +
-    '\r\n';
-  return Buffer.concat([Buffer.from(head, 'utf8'), bodyBuf]);
-}
-
-export function startFront({ port = PORT, appPort = APP_PORT } = {}) {
-  const bodyBuf = Buffer.from(loadMaintenancePage(), 'utf8');
-  const maintenance = maintenanceResponse(bodyBuf);
+export function startFront({
+  port = PORT,
+  appPort = APP_PORT,
+  distDir = DEFAULT_DIST_DIR,
+} = {}) {
+  // Страница техработ. Статус 200 (не 503) — намеренно: если прокси Amvera
+  // перехватывает 5xx и подменяет своей generic-ошибкой, наша страница до
+  // пользователя не дойдёт. Перепроверку делает сама страница (<meta refresh>).
+  const maintenance = rawResponse({
+    type: 'text/html; charset=utf-8',
+    body: Buffer.from(loadMaintenancePage(), 'utf8'),
+    cache: 'no-store, must-revalidate',
+  });
 
   const server = createTcpServer((client) => {
     const upstream = connect({ port: appPort, host: '127.0.0.1' });
@@ -83,10 +83,10 @@ export function startFront({ port = PORT, appPort = APP_PORT } = {}) {
       upstream.pipe(client);
     });
     upstream.on('error', () => {
-      // До connect: приложение не поднято → страница техработ.
+      // До connect: приложение не поднято → визитка или страница техработ.
       // После connect: обрыв апстрима на лету → закрываем обе стороны.
       if (piped) killBoth();
-      else client.end(maintenance);
+      else answerWhileDown(client, maintenance, distDir);
     });
   });
 

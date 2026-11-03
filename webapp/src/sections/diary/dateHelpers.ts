@@ -1,6 +1,7 @@
 // Хелперы дат таймлайна дневника. Вынесено из DiarySection.tsx (правило №10).
 // «Сегодня» и день записи — местный день человека (shared/src/diary/diaryDay.ts).
-import { dateStringMs, dateStringParts } from '../../../../shared/src/utils/calendarDate';
+import { dateStringParts } from '../../../../shared/src/utils/calendarDate';
+import { calendarAgoLabel, calendarDaysAgo } from '../../../../shared/src/utils/calendarAgo';
 import { fmtDateLong } from '../../../../shared/src/utils/format';
 import { diaryDayKey, diaryToday } from '../../../../shared/src/diary/diaryDay';
 
@@ -17,10 +18,6 @@ export function fmtWeekday(dateStr: string) {
   const parts = dateStringParts(dateStr);
   return parts ? WEEKDAYS[parts.weekday] : '';
 }
-export function dateRelLabel(dateStr: string, today: string = diaryToday()) {
-  const diff = Math.round((dateStringMs(today) - dateStringMs(dateStr)) / 86400000);
-  if (diff === 0) return 'сегодня';
-  if (diff === 1) return 'вчера';
-  if (diff < 7) return `${diff} дн. назад`;
-  return null;
-}
+/** «сегодня» / «вчера» / «N дн. назад» в пределах недели, дальше — null. */
+export const dateRelLabel = (dateStr: string, today: string = diaryToday()) =>
+  calendarDaysAgo(dateStr, today) < 7 ? calendarAgoLabel(dateStr, today) : null;

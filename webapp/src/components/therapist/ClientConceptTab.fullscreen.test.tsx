@@ -90,7 +90,7 @@ async function openTab(withHandler = true) {
       </AddressFormContext.Provider>
     </MemoryRouter>,
   );
-  await screen.findByText('Концептуализация');
+  await screen.findByRole('button', { name: 'Ещё действия' }); // шапка вкладки без заголовка (#906)
   await flushEffects();
 }
 

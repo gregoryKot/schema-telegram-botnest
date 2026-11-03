@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
-// «Зачем это всё»: подпись по способу открытия, три действия, короткое
-// вступление про пять потребностей, «Понятно, начнём» закрывает лист.
+// «Зачем это всё»: подпись по способу открытия, три действия строками одной карточки,
+// короткое вступление про пять потребностей, «← Закрыть» в шапке и «Понятно, начнём»
+// закрывают лист; кнопка стоит выше оговорки про самопомощь (#906: видна на телефоне).
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup, act } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
@@ -27,7 +28,8 @@ describe('WhySheet', () => {
   it('три действия, итоговая строка и короткое вступление про пять потребностей', () => {
     renderSheet();
     expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Три вещи, которые здесь можно делать');
-    for (const t of ['Трекер', 'Что случилось', 'Дневник']) expect(screen.getByText(t)).toBeTruthy();
+    const rows = document.querySelectorAll('.cw-list .ds-list-row .ds-list-title');
+    expect([...rows].map(r => r.textContent)).toEqual(['Трекер', 'Что случилось', 'Дневник']);
     expect(screen.getByText('Не нужно делать всё. Одно действие в день — уже работа.')).toBeTruthy();
     expect(screen.getByText(/^Это самопомощь, не замена терапии\. Если станет тяжело подолгу, приложение само предложит поговорить с автором приложения, который работает в подходе схема-терапия\.$/)).toBeTruthy();
     const lead = document.querySelector('.cw-lead')!.textContent!;
@@ -38,17 +40,29 @@ describe('WhySheet', () => {
     );
   });
 
-  it('это диалог на весь экран', () => {
+  it('это диалог на весь экран с шапкой листа', () => {
     renderSheet();
     const dlg = screen.getByRole('dialog');
     expect(dlg.className).toContain('u-sheet');
     expect(dlg.getAttribute('aria-modal')).toBe('true');
+    expect(dlg.querySelector('.ds-sheet-head .ds-back')?.textContent).toBe('← Закрыть');
   });
 
-  it('«Понятно, начнём» закрывает лист', async () => {
+  it('«Понятно, начнём» стоит выше оговорки про самопомощь и закрывает лист', async () => {
+    const onClose = renderSheet();
+    const cta = screen.getByText('Понятно, начнём');
+    expect(cta.className).toContain('ds-btn--lg');
+    const foot = screen.getByText(/^Это самопомощь/);
+    expect(cta.compareDocumentPosition(foot) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    await act(async () => { await Promise.resolve(); });
+    fireEvent.click(cta);
+    await vi.waitFor(() => expect(onClose).toHaveBeenCalled());
+  });
+
+  it('«← Закрыть» в шапке закрывает лист', async () => {
     const onClose = renderSheet();
     await act(async () => { await Promise.resolve(); });
-    fireEvent.click(screen.getByText('Понятно, начнём'));
+    fireEvent.click(screen.getByRole('button', { name: '← Закрыть' }));
     await vi.waitFor(() => expect(onClose).toHaveBeenCalled());
   });
 });

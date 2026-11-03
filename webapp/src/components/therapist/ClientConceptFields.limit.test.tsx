@@ -54,7 +54,7 @@ function Harness() {
 async function openFields(server: unknown) {
   mockApi.getConceptualization.mockResolvedValue(server);
   render(<Harness />);
-  await screen.findByText('Концептуализация');
+  await screen.findByRole('button', { name: 'Ещё действия' }); // шапка вкладки без заголовка (#906)
 }
 const field = (key: string) =>
   screen.getByPlaceholderText(CONCEPT_FIELDS.find(f => f.key === key)!.placeholder) as HTMLTextAreaElement;

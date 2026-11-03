@@ -3,6 +3,7 @@ import '../../styles/therapist-tabs.css';
 import { api, type UserTask } from '../../api';
 import { pressable } from '../../utils/a11y';
 import { ConfirmDialog } from '../ConfirmDialog';
+import { MMIcon } from '../modeMapIcons';
 import { todayStr } from '../../utils/format';
 import { pluralRu } from '../../../../shared/src/utils/pluralRu';
 import { resolveTaskDisplayText } from '../../../../shared/src/tasks/taskTitle';
@@ -45,9 +46,9 @@ export function ClientTasksTab({ detail, onAssign }: Props) {
 
         {clientTasks.length === 0 ? (
           <div>
-            <div className="tb-empty">
+            <p className="ds-empty">
               Нет назначенных заданий. Домашние практики помогают закрепить работу между сессиями.
-            </div>
+            </p>
             <button onClick={() => onAssign()} className="ds-btn tb-mt16">Назначить первое задание</button>
           </div>
         ) : (
@@ -68,7 +69,7 @@ export function ClientTasksTab({ detail, onAssign }: Props) {
                       Выполнено
                     </button>
                   )}
-                  <button className="tb-x" aria-label="Удалить задание" disabled={actions.busyId === t.id} onClick={() => setConfirmDelete(t)}>✕</button>
+                  <button type="button" className="ds-btn ds-btn--icon" aria-label="Удалить задание" disabled={actions.busyId === t.id} onClick={() => setConfirmDelete(t)}><MMIcon name="trash" size={16} /></button>
                 </div>
               );
             })}

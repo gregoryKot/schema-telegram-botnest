@@ -17,7 +17,7 @@ export function SessionRow({ client, onOpen }: RowProps) {
         <span className="tt-name" style={{ display: 'block' }}>{clientName(client)}</span>
         <span className="tt-row-sub" style={{ display: 'block' }}>{activityStatus(client).text}</span>
       </span>
-      <span className="tt-arrow">→</span>
+      <span className="ds-chev" aria-hidden="true" />
     </button>
   );
 }
@@ -41,7 +41,7 @@ export function ActivityRow({ client, onOpen }: RowProps) {
             style={{ height: p.height ? `${p.height}%` : undefined }} />
         ))}
       </span>
-      <span className={`tt-idx ds-idx-${level}`}>{idx != null ? idx.toFixed(1) : '—'}</span>
+      <span className={`tt-idx ds-idx-${level}`}>{idx != null ? idx.toFixed(1) : '—'}</span><span className="ds-chev" aria-hidden="true" />
     </button>
   );
 }
@@ -50,7 +50,7 @@ export function AttentionRow({ client, onOpen }: RowProps) {
   const name = clientName(client);
   const days = daysSinceActive(client);
   return (
-    <button type="button" className="ds-card ds-card--row ds-card--warn tt-attn tt-reset"
+    <button type="button" className="ds-card ds-card--row tt-attn tt-reset"
       onClick={() => onOpen(client.telegramId)}>
       <span className="ds-avatar" style={hueStyle(clientHue(client.telegramId))}>{initials(name)}</span>
       <span className="tt-attn-body">
@@ -59,7 +59,7 @@ export function AttentionRow({ client, onOpen }: RowProps) {
           {days == null ? 'нет данных' : `нет активности ${days} дн.`}
         </span>
       </span>
-      <span className="tt-arrow">→</span>
+      <span className="ds-chev" aria-hidden="true" />
     </button>
   );
 }

@@ -17,12 +17,12 @@ export function YsqCrossCheck({ ysqActiveIds, latest, conceptSchemaIds }: {
   if (items.length === 0) return null;
   const shown = all ? items : items.slice(0, SHOWN);
   return (
-    <div className="u-col8" style={{ marginTop: 12 }}>
+    <div className="u-col8">
       {shown.map(it => (
         <div key={it.id} className="u-ac8">
-          <span style={{ flex: 1, fontSize: 13, color: 'var(--text)' }}>{it.name}</span>
-          <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>{it.valueLabel}</span>
-          {!it.inConcept && <span style={{ fontSize: 11, color: 'var(--c-amber)', fontWeight: 500 }}>+ добавить?</span>}
+          <span className="u-fill">{it.name}</span>
+          <span className="ds-sub">{it.valueLabel}</span>
+          {!it.inConcept && <span className="ds-badge ds-badge--warn">+ добавить?</span>}
         </div>
       ))}
       {items.length > SHOWN && (

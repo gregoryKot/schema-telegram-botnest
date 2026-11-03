@@ -22,7 +22,7 @@ export function SchemaPills({ modeId, schemaId, light, fontSize }: Props) {
           <div key={id} style={{ ...pill,
             background: light ? 'rgba(255,255,255,0.18)' : `color-mix(in srgb, ${s.domainColor} 14%, transparent)`,
             border: `1px solid ${light ? 'rgba(255,255,255,0.3)' : `color-mix(in srgb, ${s.domainColor} 40%, transparent)`}`,
-            color: light ? 'rgba(255,255,255,0.92)' : s.domainColor }}>
+            color: light ? 'rgba(255,255,255,0.92)' : `color-mix(in srgb, ${s.domainColor} 60%, var(--text))` }}>
             <IdentityDot color={s.domainColor} size={7} />
             <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.name}</span>
           </div>

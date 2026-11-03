@@ -22,6 +22,10 @@ import { resolveReuse } from './refresh-reuse';
 import { revokeFamilyQuiet } from './refresh-logout';
 import { unlinkProviderSafely } from './unlink-provider';
 import { verifyTelegramInitData } from './telegram-init-data';
+import {
+  ChallengeExpiredException,
+  type TotpChallenge,
+} from './totp-challenge';
 
 function isValidEmail(s: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s) && s.length <= 254;
@@ -299,11 +303,7 @@ export class AuthService {
     );
   }
 
-  verifyTotpChallengeToken(token: string): {
-    userId: bigint;
-    ip: string | null;
-    ua: string;
-  } {
+  verifyTotpChallengeToken(token: string): TotpChallenge {
     const secret = this.config.getOrThrow<string>('JWT_SECRET');
     try {
       const p = jwt.verify(token, secret, {
@@ -314,7 +314,7 @@ export class AuthService {
       if (p.kind !== 'totp_challenge') throw new Error('Wrong token kind');
       return { userId: BigInt(p.sub), ip: p.ip ?? null, ua: p.ua ?? '' };
     } catch {
-      throw new UnauthorizedException('Invalid or expired 2FA challenge token');
+      throw new ChallengeExpiredException();
     }
   }
 

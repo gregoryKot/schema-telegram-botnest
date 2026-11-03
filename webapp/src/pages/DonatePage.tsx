@@ -7,6 +7,7 @@ const PRESETS = [200, 500, 1000, 2000];
 // Публичная /donate (и возврат Robokassa ?donation=ok|fail): вне RequireAuth/AddressFormProvider,
 // из Telegram/MAX открывается во внешнем браузере, на визитке — гость. Форма обращения неизвестна
 // по построению → тексты безличные, без useTr (как SubscribeForm.tsx); useTr тут всегда дал бы «ты».
+// Страница прижата к верху: шапка «← На главную» (ds-sheet-head/ds-back), eyebrow + ds-h1 + ds-sub (#906).
 export function DonatePage() {
   const params = new URLSearchParams(window.location.search);
   const ret = params.get('donation'); // 'ok' | 'fail' | null
@@ -26,37 +27,32 @@ export function DonatePage() {
   };
 
   return (
-    <div className="light-lock ap-page ap-page--center">
-      <div className="ds-card ap-donate">
-        {ret === 'ok' ? (
-          <div className="ap-thanks">
-            <h1 className="ap-h1 ap-h1--sm">Спасибо за поддержку!</h1>
-            <p className="ap-lead">Это очень помогает развивать проект.</p>
-          </div>
-        ) : (
-          <>
-            <div className="ds-eyebrow">Разовая поддержка</div>
-            <h1 className="ap-h1">Поддержать <i>проект</i></h1>
-            <p className="ap-lead">«Всё по схеме» бесплатно. Если приложение полезно, его развитие можно поддержать любой суммой.</p>
-            {ret === 'fail' && <p className="ap-err" role="alert">Оплата не прошла. Можно попробовать снова.</p>}
-
-            <div className="ap-amounts">
+    <div className="light-lock ap-page">
+      <div className="ds-sheet-head"><a href="/" className="ds-back">← На главную</a></div>
+      <div className="ds-page ap-main">
+        <div className="ap-hero">
+          <div className="ds-eyebrow">Разовая поддержка</div>
+          <h1 className="ds-h1">{ret === 'ok' ? 'Спасибо за поддержку!' : <>Поддержать <i>проект</i></>}</h1>
+          <p className="ds-sub ap-lead">{ret === 'ok' ? 'Это очень помогает развивать проект.' : '«Всё по схеме» бесплатно. Если приложение полезно, его развитие можно поддержать любой суммой.'}</p>
+          {ret === 'fail' && <p className="ap-err" role="alert">Оплата не прошла. Можно попробовать снова.</p>}
+        </div>
+        {ret !== 'ok' && (
+          <div className="ds-card ap-donate">
+            <div className="ds-seg ds-seg--full" role="group" aria-label="Сумма">
               {PRESETS.map((p) => (
-                <button key={p} type="button" aria-pressed={amount === p} onClick={() => setAmount(p)} className={`ap-amount${amount === p ? ' is-on' : ''}`}>{p} ₽</button>
+                <button key={p} type="button" aria-pressed={amount === p} onClick={() => setAmount(p)} className={`ds-seg-btn${amount === p ? ' is-active' : ''}`}>{p} ₽</button>
               ))}
             </div>
-            <input type="number" className="ym-disable-keys ds-input ap-input" min={10} max={100000} value={amount} onChange={(e) => setAmount(Math.max(0, Math.round(Number(e.target.value))))} placeholder="Своя сумма, ₽" />
-            <input type="email" className="ym-disable-keys ds-input ap-input" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email для чека (необязательно)" />
+            <input type="number" className="ym-disable-keys ds-input" min={10} max={100000} value={amount} onChange={(e) => setAmount(Math.max(0, Math.round(Number(e.target.value))))} placeholder="Своя сумма, ₽" />
+            <input type="email" className="ym-disable-keys ds-input" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email для чека (необязательно)" />
             <input type="text" tabIndex={-1} autoComplete="off" value={website} onChange={(e) => setWebsite(e.target.value)} aria-hidden="true" className="ap-honey" />
-
             {(status === 'error' || status === 'unavailable') && <p className="ap-err" role="alert">{status === 'unavailable' ? 'Оплата сейчас недоступна: сбой на стороне сайта, о нём уже знают. Повторять бесполезно, лучше вернуться позже.' : 'Не получилось. Попробовать ещё раз.'}</p>}
-            <button type="button" onClick={submit} disabled={status === 'loading' || amount < 10} className="ds-btn ds-btn--accent ap-donate-cta">
+            <button type="button" onClick={submit} disabled={status === 'loading' || amount < 10} className="ds-btn ds-btn--accent ds-btn--lg">
               {status === 'loading' ? 'Перехожу к оплате…' : `Поддержать ${amount.toLocaleString('ru-RU')} ₽`}
             </button>
             <p className="ap-fine">Оплата картой или СБП через Robokassa.<br />Добровольное пожертвование, возврату не подлежит.</p>
-          </>
+          </div>
         )}
-        <a href="/" className="ap-back">← На главную</a>
       </div>
     </div>
   );

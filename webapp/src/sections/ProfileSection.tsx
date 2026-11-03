@@ -114,7 +114,7 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
             <section {...pressable(() => setJourneyOpen(true))} className="ds-card ds-card--hover cpf-card cpf-journey">
               <div className="ds-head-row">
                 <h2 className="ds-h3">Мой путь</h2>
-                <span className="ds-sub">→</span>
+                <span className="ds-chev" aria-hidden="true" />
               </div>
               <div className="ds-sub">
                 {tr(

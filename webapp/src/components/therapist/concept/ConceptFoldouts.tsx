@@ -22,9 +22,7 @@ export function ConceptFoldouts({ detail }: { detail: ClientDetail }) {
       )}
       {versions > 0 && (
         <NeedFold title={`История версий · ${versions}`}>
-          <div style={{ marginTop: 12 }}>
-            <ConceptVersionHistory detail={detail} />
-          </div>
+          <ConceptVersionHistory detail={detail} />
         </NeedFold>
       )}
     </div>

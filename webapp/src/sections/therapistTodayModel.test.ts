@@ -1,10 +1,11 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { localDateStr } from '../../../shared/src/utils/format';
+import { forEachTimeZone } from '../../../shared/src/utils/timeZone.test-helpers';
 import type { TherapyClientSummary } from '../api';
 import {
   activityStatus, daysSinceActive, hasSessionToday, initials, latestIndex, needsAttention,
   sessionTime, sessionsTodaySorted, sparkPoints, todayCounts, clientName,
 } from './therapistTodayModel';
-import { withTimeZone } from '../../../shared/src/utils/timeZone.test-helpers';
 
 // 12:00 UTC 15 октября 2026 — четверг (4) во всех зонах прогона CI.
 const NOW = '2026-10-15T12:00:00Z';
@@ -85,36 +86,47 @@ describe('therapistTodayModel', () => {
     expect(latestIndex(c())).toBeNull();
   });
 
-  it('сессии сегодня сортируются по времени, без времени в конце', () => {
-    const res = sessionsTodaySorted([
-      c({ telegramId: 1 as never, meetingDays: [THU] }),
-      c({ telegramId: 2 as never, nextSession: '2026-10-15T16:00' }),
-      c({ telegramId: 3 as never, nextSession: '2026-10-15T09:00' }),
-    ]);
-    expect(res.map(x => x.telegramId)).toEqual([3, 2, 1]);
+  // Встреча — стенные часы терапевта (datetime-local без зоны), «сегодня» —
+  // его местный день (правило №25). По UTC в МСК с 00:00 до 03:00 экран
+  // показывал вчерашние встречи. 22:30Z — в Иерусалиме и Сиднее уже завтра.
+  const LATE_UTC = Date.parse('2026-10-15T22:30:00Z');
+  const atLocal = (fn: (today: string, yesterday: string, dow: number) => void) => {
+    vi.useFakeTimers({ now: LATE_UTC, toFake: ['Date'] });
+    try {
+      const now = new Date();
+      fn(localDateStr(now), localDateStr(new Date(now.getTime() - 86400000)), now.getDay());
+    } finally {
+      vi.useRealTimers();
+    }
+  };
+
+  it('сессии сегодня сортируются по времени, без времени в конце — в любой зоне', () => {
+    forEachTimeZone(() => atLocal((today, _y, dow) => {
+      const res = sessionsTodaySorted([
+        c({ telegramId: 1 as never, meetingDays: [dow] }),
+        c({ telegramId: 2 as never, nextSession: `${today}T16:00` }),
+        c({ telegramId: 3 as never, nextSession: `${today}T09:00` }),
+      ]);
+      expect(res.map(x => x.telegramId)).toEqual([3, 2, 1]);
+    }));
   });
 
-  // QA 2026-10-26, 00:10 по Москве (21:10 UTC): «Сессии сегодня» сверялись с
-  // днём UTC — вчерашняя 23:00 была в списке, сегодняшняя 15:00 пропадала.
-  it('сессии сегодня — по местному дню терапевта, не по UTC', () => {
-    vi.setSystemTime(new Date('2026-10-26T21:10:00Z'));
-    const yesterday = c({ nextSession: '2026-10-26T23:00' });
-    const today = c({ nextSession: '2026-10-27T15:00' });
-    withTimeZone('Europe/Moscow', () => {
-      expect(hasSessionToday(yesterday)).toBe(false);
-      expect(hasSessionToday(today)).toBe(true);
-      expect(sessionTime(today)).toBe('15:00');
-    });
-    withTimeZone('America/Los_Angeles', () => {
-      expect(hasSessionToday(yesterday)).toBe(true);
-      expect(hasSessionToday(today)).toBe(false);
-    });
+  it('вчерашняя по местному дню встреча не «сегодня», даже если по UTC ещё вчера', () => {
+    forEachTimeZone((tz) => atLocal((today, yesterday) => {
+      const past = c({ nextSession: `${yesterday}T19:00` });
+      expect(hasSessionToday(past), tz).toBe(false);
+      const now = c({ nextSession: `${today}T10:00` });
+      expect(hasSessionToday(now), tz).toBe(true);
+      expect(sessionTime(now), tz).toBe('10:00');
+    }));
   });
 
   it('прошедшая nextSession не прячет встречу по дням: сегодня в списке, время прежнее', () => {
-    const stale = c({ nextSession: '2026-01-03T07:00', meetingDays: [THU] });
-    expect(hasSessionToday(stale)).toBe(true);
-    expect(sessionTime(stale)).toBe('07:00');
-    expect(hasSessionToday(c({ nextSession: '2026-01-03T07:00' }))).toBe(false);
+    forEachTimeZone((tz) => atLocal((_t, _y, dow) => {
+      const stale = c({ nextSession: '2026-01-03T07:00', meetingDays: [dow] });
+      expect(hasSessionToday(stale), tz).toBe(true);
+      expect(sessionTime(stale), tz).toBe('07:00');
+      expect(hasSessionToday(c({ nextSession: '2026-01-03T07:00' })), tz).toBe(false);
+    }));
   });
 });

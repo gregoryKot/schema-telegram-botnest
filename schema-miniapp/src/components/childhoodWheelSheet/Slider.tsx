@@ -1,14 +1,13 @@
 import { useCallback, useEffect, useRef } from 'react';
 
-// В9 дизайн-аудита 2026-08: чисто pointer-based слайдер был недоступен с
-// клавиатуры полностью — единственный способ поставить значение в
-// упражнении «Колесо детства». `NeedRatingBar` (10 нативных кнопок) решает
-// ту же механику 0–10, но здесь непрерывный drag-трек с другим визуальным
-// языком (заливка + бегунок) — часть визуальной идентичности этого
-// упражнения, замена на дискретные кнопки была бы переверсткой, а не
-// точечным фиксом (см. prC-notes.md). Поэтому клавиатура добавлена в этот
-// же компонент: role="slider" + aria-value* + стрелки, без изменения
-// внешнего вида ни на пиксель.
+// В9 дизайн-аудита 2026-08: pointer-only слайдер был недоступен с клавиатуры —
+// единственный способ поставить значение в «Колесе детства». `NeedRatingBar`
+// (10 нативных кнопок) решает ту же механику 0–10, но непрерывный drag-трек
+// (заливка + бегунок) — часть визуальной идентичности упражнения, замена на
+// кнопки была бы переверсткой (см. prC-notes.md). Поэтому клавиатура — в этом
+// же компоненте: role="slider" + aria-value* + стрелки, вид тот же.
+// `value` нет — не оценено: ни заливки, ни бегунка, читалка слышит «не оценено»,
+// стрелки стартуют с середины; сохранить колесо так нельзя (FillPhase).
 const MIN = 0;
 const MAX = 10;
 
@@ -18,7 +17,7 @@ export function Slider({
   onChange,
   label,
 }: {
-  value: number;
+  value: number | undefined;
   color: string;
   onChange: (v: number) => void;
   /** Доступное имя слайдера — что именно оцениваем (название потребности). */
@@ -32,7 +31,7 @@ export function Slider({
     el.addEventListener('touchstart', prevent, { passive: false });
     return () => el.removeEventListener('touchstart', prevent);
   }, []);
-  const pct = value * 10;
+  const pct = (value ?? 0) * 10;
 
   const calcValue = useCallback(
     (clientX: number) => {
@@ -67,7 +66,7 @@ export function Slider({
   const onKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLDivElement>) => {
       const step = (d: number) =>
-        onChange(Math.max(MIN, Math.min(MAX, value + d)));
+        onChange(Math.max(MIN, Math.min(MAX, (value ?? 5) + d)));
       switch (e.key) {
         case 'ArrowRight':
         case 'ArrowUp':
@@ -111,7 +110,7 @@ export function Slider({
       aria-valuemin={MIN}
       aria-valuemax={MAX}
       aria-valuenow={value}
-      aria-valuetext={`${value} из ${MAX}`}
+      aria-valuetext={value === undefined ? 'не оценено' : `${value} из ${MAX}`}
       onKeyDown={onKeyDown}
       onPointerDown={onPtrDown}
       onPointerMove={onPtrMove}
@@ -142,6 +141,7 @@ export function Slider({
       </div>
       <div
         style={{
+          display: value === undefined ? 'none' : undefined,
           position: 'absolute',
           left: `${pct}%`,
           top: '50%',

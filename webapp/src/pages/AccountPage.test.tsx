@@ -15,8 +15,9 @@ import {
   waitFor,
   act,
 } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { AuthContext, type AuthState } from '../auth/authContext';
+import { THERAPIST_MODE_KEY } from '../utils/storageKeys';
 import { AccountPage } from './AccountPage';
 
 interface Provider {
@@ -168,13 +169,23 @@ describe('AccountPage — загрузка', () => {
     expect(screen.getByText('U')).toBeTruthy();
   });
 
-  it('ошибка /api/auth/me показывает сообщение об ошибке, а не тишину', async () => {
+  // Аудит 2026-10, «сырой текст на экранах аккаунта»: раньше здесь стояли
+  // «Error: Failed to load account» и «TypeError: Failed to fetch».
+  it('500 от /api/auth/me — человеческий текст об ошибке, а не тишина и не «Failed to load account»', async () => {
     meFails = true;
-    renderPage();
+    const { container } = renderPage();
 
-    await waitFor(() =>
-      expect(screen.getByText(/Failed to load account/)).toBeTruthy(),
-    );
+    await screen.findByText('Сервер не ответил. Повторить можно чуть позже');
+    expect(container.textContent).not.toMatch(/Failed|Error/);
+  });
+
+  it('обрыв сети на /api/auth/me — «Нет связи с сервером», не «TypeError: Failed to fetch»', async () => {
+    fetchMock.mockImplementation((url: string, init?: RequestInit) =>
+      url.includes('/api/auth/me') ? Promise.reject(new TypeError('Failed to fetch')) : routeFetch(url, init));
+    const { container } = renderPage();
+
+    await screen.findByText('Нет связи с сервером');
+    expect(container.textContent).not.toMatch(/TypeError|Failed to fetch/);
   });
 });
 
@@ -508,5 +519,58 @@ describe('AccountPage — выход', () => {
 
     expect(screen.queryByRole('dialog')).toBeNull();
     expect(logout).not.toHaveBeenCalled();
+  });
+});
+
+// #902: терапевт с телефона приходит сюда из кабинета (лист настроек → «Аккаунт и
+// способы входа»). «← Назад» возвращает в дом режима: клиентское «Сегодня» для
+// него — лишний прыжок, бутстрап сразу вернул бы его в кабинет.
+describe('AccountPage — «← Назад» ведёт в дом текущего режима', () => {
+  afterEach(() => localStorage.removeItem(THERAPIST_MODE_KEY));
+
+  async function renderWithHomes() {
+    render(
+      <MemoryRouter initialEntries={['/account']}>
+        <AuthContext.Provider value={authValue()}>
+          <Routes>
+            <Route path="/account" element={<AccountPage />} />
+            <Route path="/cabinet" element={<div>дом кабинета</div>} />
+            <Route path="/today" element={<div>дом клиента</div>} />
+          </Routes>
+        </AuthContext.Provider>
+      </MemoryRouter>,
+    );
+    await screen.findByText('Аккаунт');
+  }
+
+  it('режим терапевта (therapist_mode=1) — в /cabinet', async () => {
+    localStorage.setItem(THERAPIST_MODE_KEY, '1');
+    await renderWithHomes();
+    fireEvent.click(screen.getByText('← Назад'));
+    expect(await screen.findByText('дом кабинета')).toBeTruthy();
+    expect(screen.queryByText('дом клиента')).toBeNull();
+  });
+
+  it.each([['0'], [null]])('режим клиента (therapist_mode=%s) — в /today', async (flag) => {
+    if (flag !== null) localStorage.setItem(THERAPIST_MODE_KEY, flag);
+    await renderWithHomes();
+    fireEvent.click(screen.getByText('← Назад'));
+    expect(await screen.findByText('дом клиента')).toBeTruthy();
+    expect(screen.queryByText('дом кабинета')).toBeNull();
+  });
+});
+
+// #906: шапка страницы — общая ds-sheet-head/ds-back, заголовок — eyebrow «Аккаунт»
+// над ds-h1, своих .aa-back/.aa-h1 нет; «Выйти со всех устройств» — ds-link.
+describe('AccountPage — шапка и заголовок (#906)', () => {
+  it('«← Назад» — ds-back внутри ds-sheet-head; eyebrow «Аккаунт» над ds-h1', async () => {
+    renderPage();
+    await screen.findByText('Аккаунт');
+    const back = screen.getByRole('button', { name: '← Назад' });
+    expect(back.className).toBe('ds-back');
+    expect(back.parentElement!.className).toBe('ds-sheet-head');
+    expect(screen.getByText('Аккаунт').className).toBe('ds-eyebrow');
+    expect(screen.getByRole('heading', { level: 1 }).classList.contains('ds-h1')).toBe(true);
+    expect(screen.getByText('Выйти со всех устройств').className).toBe('ds-link');
   });
 });

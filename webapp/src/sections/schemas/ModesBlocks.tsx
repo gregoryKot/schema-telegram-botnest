@@ -32,7 +32,7 @@ export function ModesBlocks({ loading, myModeIds, onAdd, onOpenMode, onOpenPatte
             {[90, 110, 80].map((w, i) => <Skeleton key={i} height={32} width={w} radius={16} />)}
           </div>
         ) : myModes.length === 0 ? (
-          <p className="cs-empty">{tr('Добавь режимы которые узнаёшь у себя', 'Добавьте режимы которые узнаёте у себя')}</p>
+          <p className="ds-empty">{tr('Добавь режимы которые узнаёшь у себя', 'Добавьте режимы которые узнаёте у себя')}</p>
         ) : (
           <>
           {modeFreq && <FreqHint kind="mode" freq={modeFreq} />}

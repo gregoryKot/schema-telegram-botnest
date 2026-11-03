@@ -64,6 +64,15 @@ function makeDb() {
       }),
     },
     gratitudeDiaryEntry: {
+      findUnique: jest.fn(({ where }: any) =>
+        Promise.resolve(
+          gratitudeRows.find(
+            (r) =>
+              r.userId === where.userId_date.userId &&
+              r.date === where.userId_date.date,
+          ) ?? null,
+        ),
+      ),
       upsert: jest.fn(({ where, create, update }: any) => {
         const existing = gratitudeRows.find(
           (r) =>
@@ -93,6 +102,7 @@ function makeDb() {
       }),
     },
   };
+  db.$transaction = jest.fn((fn: (tx: any) => unknown) => fn(db));
   return { db, schemaRows, modeRows, gratitudeRows };
 }
 
@@ -287,6 +297,38 @@ describe('DiaryService — дневник благодарности: сохра
     const entriesA = await svc.getGratitudeDiaryEntries(USER_A);
     expect(entriesA).toHaveLength(1);
     expect(entriesA[0].items).toEqual(['А']);
+  });
+
+  // docs/open/frontend-ux.md (P0): пункт с другой вкладки терялся, потому что
+  // сохранение заменяло день целиком.
+  it('в дне [A]; клиент со старым состоянием [] добавляет B → в дне [A, B]', async () => {
+    const { svc, db } = makeService();
+    await svc.upsertGratitudeDiaryEntry(USER_A, '2026-07-16', ['A'], []);
+    const saved = await svc.upsertGratitudeDiaryEntry(
+      USER_A,
+      '2026-07-16',
+      ['B'],
+      [],
+    );
+    expect(saved.items).toEqual(['A', 'B']);
+    const [entry] = await svc.getGratitudeDiaryEntries(USER_A);
+    expect(entry.items).toEqual(['A', 'B']);
+    expect(db.$transaction).toHaveBeenCalledWith(expect.any(Function), {
+      isolationLevel: 'Serializable',
+    });
+  });
+
+  it('удаление и правка пункта со слиянием работают: клиент видел [A, K], сохраняет [K2]', async () => {
+    const { svc } = makeService();
+    await svc.upsertGratitudeDiaryEntry(USER_A, '2026-07-16', ['A', 'K']);
+    await svc.upsertGratitudeDiaryEntry(
+      USER_A,
+      '2026-07-16',
+      ['K2'],
+      ['A', 'K'],
+    );
+    const [entry] = await svc.getGratitudeDiaryEntries(USER_A);
+    expect(entry.items).toEqual(['K2']);
   });
 
   it('пустой массив items сохраняется и читается как пустой массив (не null/фолбэк)', async () => {

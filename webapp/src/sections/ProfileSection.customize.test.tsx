@@ -54,7 +54,7 @@ afterEach(cleanup);
 describe('ProfileSection × «Настроить экран»', () => {
   it('«Настроить» открывает лист с блоками профиля и шлёт screen_customize_open', async () => {
     await renderProfile();
-    fireEvent.click(screen.getByRole('button', { name: 'Настроить экран профиля' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Настроить экран' }));
     expect(await screen.findByRole('dialog', { name: 'Настроить экран' })).toBeTruthy();
     expect(screen.getAllByRole('switch')).toHaveLength(7);
     expect(track()).toHaveBeenCalledWith('screen_customize_open', { screen: 'profile', via: 'gear' });
@@ -63,7 +63,7 @@ describe('ProfileSection × «Настроить экран»', () => {
   it('тумблер в листе прячет блок на экране, запоминает выбор и сообщает синхронизации; повторный — возвращает', async () => {
     await renderProfile();
     expect(screen.getByText('Достижения', { selector: 'h2' })).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: 'Настроить экран профиля' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Настроить экран' }));
     const sw = await screen.findByRole('switch', { name: 'Достижения' });
     fireEvent.click(sw);
     expect(screen.queryByText('Достижения', { selector: 'h2' })).toBeNull();
@@ -99,7 +99,7 @@ describe('ProfileSection × «Настроить экран»', () => {
 
   it('ручка «≡» в листе переставляет блок: порядок сохраняется и сразу виден на экране', async () => {
     await renderProfile();
-    fireEvent.click(screen.getByRole('button', { name: 'Настроить экран профиля' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Настроить экран' }));
     fireEvent.keyDown(await screen.findByRole('button', { name: 'Переставить: Серия дней' }), { key: 'ArrowUp' });
     expect(blockVar(document.querySelector('.cpf-streak-card'))).toBe('3');
     expect(blockVar(document.querySelector('.cpf-journey'))).toBe('4');

@@ -135,7 +135,7 @@ vi.mock('./SettingsSheet', () => ({
     <Btns testid="settings-sheet" map={{
       close: () => p.onClose(),
       cabinet: () => p.onOpenTherapistCabinet?.(),
-      toggleTherapist: () => p.onToggleTherapistMode?.(),
+      setTherapist: () => p.onSetTherapistMode?.(true),
       resign: () => { void p.onResignTherapist?.(); },
     }} />
   ),

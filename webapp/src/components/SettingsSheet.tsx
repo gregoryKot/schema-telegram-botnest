@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import '../styles/sheet-settings.css';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { api, type UserSettings } from '../api';
@@ -12,6 +13,7 @@ import { TIMEZONES } from '../../../shared/src/settings/constants';
 import { useSitePair } from './settingsSheet/useSitePair';
 import { useTherapyRelationSettings } from './settingsSheet/useTherapyRelationSettings';
 import { AppearanceSection } from './settingsSheet/AppearanceSection';
+import { ModeSection } from './settingsSheet/ModeSection';
 import { BecomeTherapistSection } from './settingsSheet/BecomeTherapistSection';
 import { DataSection } from './settingsSheet/DataSection';
 import { SettingsSubView, type SubView } from './settingsSheet/SubViews';
@@ -42,12 +44,14 @@ interface Props {
   onNameChanged?: (name: string) => void;
   onOpenTherapistCabinet?: () => void;
   therapistMode?: boolean;
-  onToggleTherapistMode?: () => void;
+  /** Выбор режима (true — кабинет); лист закрывается до переключения — goBack(then), см. useHistorySheet (#902). */
+  onSetTherapistMode?: (on: boolean) => void;
   onResignTherapist?: () => Promise<void> | void;
 }
 
-export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, onOpenTherapistCabinet, therapistMode, onToggleTherapistMode, onResignTherapist }: Props) {
+export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, onOpenTherapistCabinet, therapistMode, onSetTherapistMode, onResignTherapist }: Props) {
   const goBack = useHistorySheet(onClose);
+  const navigate = useNavigate();
   const dialogA11y = useDialogA11y();
   const [subView, setSubView] = useState<SubView>('main');
   const [settings, setSettings] = useState<UserSettings | null>(null);
@@ -70,13 +74,12 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
     catch { setSettings(prev); flashSaveError(); }
   }
 
-  const scrollTo = (id: string) => {
-    scrollIntoViewSafe(document.getElementById(id), { block: 'start' });
-  };
+  const scrollTo = (id: string) => scrollIntoViewSafe(document.getElementById(id), { block: 'start' });
 
   const isTherapist = userRole === 'THERAPIST';
   const homeMode = homeIconMode();
   const navItems = [
+    ...(isTherapist && onSetTherapistMode ? [{ id: 's-mode', label: 'Режим' }] : []),
     { id: 's-appearance', label: 'Оформление' },
     ...(homeMode ? [{ id: 's-home', label: 'Значок на экране' }] : []),
     { id: 's-name', label: 'Имя' },
@@ -108,11 +111,11 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
       <div {...dialogA11y} className="settings-overlay st-overlay">
 
         {/* ── Header ── */}
-        <div className="st-head">
-          <button className="ds-link" onClick={subView !== 'main' ? () => setSubView('main') : goBack}>
+        <div className="ds-sheet-head">
+          <button type="button" className="ds-back" onClick={subView !== 'main' ? () => setSubView('main') : goBack}>
             ← {subView !== 'main' ? 'Назад' : 'Закрыть'}
           </button>
-          <h2 className="ds-h2 st-title">{SUB_TITLES[subView]}</h2>
+          <h2 className="ds-h2">{SUB_TITLES[subView]}</h2>
           <span className={`ds-badge ${saveError ? 'st-toast is-err' : 'ds-badge--ok st-toast'}${savedToast || saveError ? ' is-on' : ''}`}>
             {saveError ? 'Не сохранилось' : 'Сохранено ✓'}
           </span>
@@ -137,13 +140,9 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
               )}
 
               {subView === 'main' && (<>
-                <AppearanceSection
-                  userRole={userRole}
-                  therapistMode={therapistMode}
-                  onToggleTherapistMode={onToggleTherapistMode}
-                  onResignTherapist={onResignTherapist}
-                  onSaved={() => { flashSaved(); }}
-                />
+                {isTherapist && onSetTherapistMode && <ModeSection therapistMode={!!therapistMode}
+                  onSelect={(on) => goBack(() => onSetTherapistMode(on))} onOpenAccount={() => goBack(() => navigate('/account'))} />}
+                <AppearanceSection userRole={userRole} onResignTherapist={onResignTherapist} onSaved={flashSaved} />
                 {homeMode && <HomeScreenSection mode={homeMode} />}
                 <NameSection value={editName} onChange={setEditName} displayName={displayName} onNameChanged={onNameChanged} onSaved={flashSaved} />
                 <NotificationsSection settings={settings} tzLabel={tzLabel} patch={patch} openSubView={setSubView} />

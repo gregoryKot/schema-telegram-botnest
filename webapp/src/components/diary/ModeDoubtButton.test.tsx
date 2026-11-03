@@ -71,6 +71,8 @@ describe('ModeDoubtButton (webapp)', () => {
     openSheet();
     expect(screen.getByText('сейчас выбран')).toBeTruthy();
     const back = screen.getByText('Назад');
+    expect(back.className).toBe('ds-back'); // шапка листа — общая ds-sheet-head/ds-back (#906)
+    expect(back.parentElement!.classList.contains('ds-sheet-head')).toBe(true);
     fireEvent.click(back);
     expect(screen.queryByText('сейчас выбран')).toBeNull();
   });

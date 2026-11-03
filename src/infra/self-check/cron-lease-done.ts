@@ -1,4 +1,4 @@
-import { RESUME_WINDOW_MS } from '../../telegram/telegram.midnight-planner';
+import { RESUME_WINDOW_MS } from '../../telegram/telegram.midnight-lease';
 import { CRON_LEASE_REGISTRY } from './cron-lease-registry';
 import { hhmm, leaseProblem, type LeaseFacts } from './cron-lease-verdict';
 

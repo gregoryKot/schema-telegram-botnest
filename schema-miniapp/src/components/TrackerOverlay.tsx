@@ -26,6 +26,7 @@ import { api, StreakData } from '../api';
 import { OnboardingOverlay } from './trackerOverlay/OnboardingOverlay';
 import { TrackerDoneSummary } from './trackerOverlay/TrackerDoneSummary';
 import { SAVE_DEBOUNCE_MS } from './trackerOverlay/saveDebounce';
+import { useHorizontalSwipe } from '../../../shared/src/hooks/useHorizontalSwipe';
 
 interface Props {
   needs: Need[];
@@ -181,21 +182,12 @@ export function TrackerOverlay({
     [onChange, onSaved, isOffline, isBackfill, date],
   );
 
-  // Swipe between needs — high threshold to avoid accidental triggers
-  const touchRef = useRef<{ x: number; y: number } | null>(null);
-  function onTS(e: React.TouchEvent) {
-    touchRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
-  }
-  function onTE(e: React.TouchEvent) {
-    if (touchRef.current === null || detailNeed) return;
-    const dx = e.changedTouches[0].clientX - touchRef.current.x;
-    const dy = e.changedTouches[0].clientY - touchRef.current.y;
-    touchRef.current = null;
-    // Only swipe if clearly horizontal (dx much larger than dy) and long enough
-    if (Math.abs(dx) < 90 || Math.abs(dy) > Math.abs(dx) * 0.5) return;
-    if (dx < 0 && idx < needs.length - 1) setIdx(idx + 1);
-    if (dx > 0 && idx > 0) setIdx(idx - 1);
-  }
+  // Свайп между потребностями — общий с сайтом; жест по шкале оценки не листает.
+  const swipe = useHorizontalSwipe(
+    () => idx < needs.length - 1 && setIdx(idx + 1),
+    () => idx > 0 && setIdx(idx - 1),
+    !!detailNeed,
+  );
 
   if (localLoading) {
     return (
@@ -236,8 +228,7 @@ export function TrackerOverlay({
         display: 'flex',
         flexDirection: 'column',
       }}
-      onTouchStart={onTS}
-      onTouchEnd={onTE}
+      {...swipe}
     >
       {/* Header */}
       <div

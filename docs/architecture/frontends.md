@@ -20,7 +20,7 @@
   - `webapp/src/host/` — поведение внутри WebView Telegram/MAX: `initHost`, `ExternalLink`, `useHostId`. Само определение хоста лежит в `shared/src/host/`.
   - `webapp/src/styles/` — 34 css по экранам и шторкам. `webapp/src/index.css` сам импортирует только `cabinet.css` и `touch-fixes.css`, остальные подключаются из компонентов (`import '../styles/…css'`).
   - `webapp/src/lib/` — Метрика (`metrika*.ts`, `webvisorRoutes.ts`) и `tone.ts` (оттенки разделов).
-  - `webapp/src/legal/` — `operator.ts`: реквизиты оператора (оферта, политика, футер визитки).
+  - `webapp/src/legal/` — `operator.ts`: реквизиты оператора (оферта, политика, футер визитки); `LegalLayout.tsx` + `legalStyles.ts`: разметка и стили обеих страниц (глава, таблица реквизитов, поля).
   - `webapp/src/share/` — кнопки и шторка шаринга (`DayShareButton`, `DiaryShareButton`, `ShareCardSheet`, `SharePillButton`, `TherapistInviteShare`).
   - `webapp/src/security/` — только тест-инвариант XSS (`xss.invariants.test.ts`).
   - `webapp/src/assets/` — `hero.png`, `vite.svg`.
@@ -114,7 +114,7 @@
 | `shared/src/diary/` | мета дневников, пояснения, благодарности; `diaryDay` — «сегодня» дневника = местный день человека; `diaryPrivacy` + `useDiaryAccess` — «кто увидит записи» по связи с терапевтом и его доступу |
 | `shared/src/flashcard/` | контент карточки схемы: режимы, потребности, шаги |
 | `shared/src/history/` | CTA «Записаться» в истории |
-| `shared/src/hooks/` | useYsqTest и YSQ-скоринг, `ysqProgressStore` (незаконченный тест YSQ: запись прогресса + событие окну — «Продолжить (N из 116)» без перезагрузки), useConfetti, useLongPress, useDragReorder, `useConfirmedAction` (действие только после подтверждения) |
+| `shared/src/hooks/` | useYsqTest и YSQ-скоринг, `ysqProgressStore` (незаконченный тест YSQ: запись прогресса + событие окну — «Продолжить (N из 116)» без перезагрузки), useConfetti, useLongPress, useDragReorder, `useConfirmedAction` (действие только после подтверждения), `useHorizontalSwipe` (свайп трекера; касание внутри `[role="group"]` — шкала — не листает) |
 | `shared/src/host/` | абстракция хоста: telegram, max, web (`getHost`, safezone) |
 | `shared/src/journey/` | «Мой путь»: лента активности, периоды, детали |
 | `shared/src/limits/` | `textLimits`: зеркало лимитов длины текста бэка |
@@ -122,7 +122,7 @@
 | `shared/src/mode/` | режимы: карточки, тест, подсказки, пояснения потоков |
 | `shared/src/modeMap/` | контуры фигур карты режимов |
 | `shared/src/needs/` | тексты и цвета пяти потребностей (`needData`), индекс дня (`dayIndex.ts` — одна формула для главной, трекера и сигнала моста) |
-| `shared/src/notes/` | типы карточек-заметок схем и режимов |
+| `shared/src/notes/` | типы карточек-заметок схем и режимов; `useSavedNoteValues` — опросник карточки грузит сохранённое, а не открывается пустым |
 | `shared/src/onboarding/` | согласия первого входа, пояснения онбординга |
 | `shared/src/pair/` | механика «пара»: тексты, вью, карточка партнёра |
 | `shared/src/pattern/` | «Паттерны»: мета, статус, мои карточки, шаринг |

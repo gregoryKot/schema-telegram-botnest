@@ -78,8 +78,8 @@ export function TaskCreateSheet({ clientId, clientName, defaultType, defaultText
 
   return (
     <div className="sk-sheet">
-      <div className="sk-top">
-        <button className="ds-link sk-back" onClick={goBack}>
+      <div className="ds-sheet-head">
+        <button type="button" className="ds-back" onClick={goBack}>
           <GlyphArrowLeft /> {clientId !== undefined ? 'Назад к кабинету' : 'Назад'}
         </button>
       </div>

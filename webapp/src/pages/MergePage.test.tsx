@@ -78,7 +78,7 @@ describe('MergePage — сводка переносимых данных', () =>
   it('показывает реальные счётчики из ?summary, а не выдуманные', async () => {
     const summary = JSON.stringify({ Rating: 12, Note: 3 });
     renderAt(
-      `/merge?token=abc&summary=${encodeURIComponent(summary)}&provider=Google&name=user%40gmail.com`,
+      `/merge?token=abc&summary=${encodeURIComponent(summary)}&provider=google&name=user%40gmail.com`,
     );
 
     await screen.findByText('оценки потребностей');
@@ -92,6 +92,32 @@ describe('MergePage — сводка переносимых данных', () =>
     renderAt('/merge?token=abc');
 
     await screen.findByText('Нет данных – объединение пройдёт без переноса.');
+  });
+});
+
+describe('MergePage — имя провайдера', () => {
+  // Бэкенд кладёт в адрес id провайдера в нижнем регистре
+  // (src/auth/auth-flow.service.ts, finishOAuthRedirect) — тест на настоящих
+  // значениях, а не на выдуманном «Google» (правило №23).
+  it.each([
+    ['google', 'Google'],
+    ['vk', 'ВКонтакте'],
+    ['telegram', 'Telegram'],
+    ['max', 'MAX'],
+  ])('provider=%s → «Аккаунт %s», без технического id', async (id, name) => {
+    renderAt(`/merge?token=abc&provider=${id}&name=Ann`);
+    await screen.findByText('Объединить аккаунты?');
+    const bold = screen.getByText(name);
+    expect(bold.tagName).toBe('B');
+    expect(bold.parentElement?.textContent).toContain(`Аккаунт ${name} (Ann) уже существует`);
+    if (id !== name) expect(screen.queryByText(id)).toBeNull();
+  });
+
+  it('неизвестный id не выводится — «Другой аккаунт»', async () => {
+    renderAt('/merge?token=abc&provider=some-new-idp');
+    await screen.findByText('Объединить аккаунты?');
+    expect(screen.queryByText('some-new-idp')).toBeNull();
+    expect(screen.getByText(/Другой аккаунт уже существует/)).toBeTruthy();
   });
 });
 

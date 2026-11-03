@@ -24,6 +24,7 @@
 | Код или контент для обоих фронтендов | `shared/src/<область>/`; фронты импортируют относительным путём | frontend |
 | Метод API для обоих фронтендов | `shared/src/api/sharedApi.ts` (`buildSharedApi`) | frontend |
 | Полноэкранный лист сайта | `webapp/src/hooks/useHistorySheet.ts` | frontend |
+| Вид экрана сайта «в одном стиле» (шапка листа и «Назад», кнопки, карточки с ярлыком, строки-переходы, раскрывашки, пустые состояния) | примитивы `ds-*` в `webapp/src/styles/cabinet.css` (тест-сверка `webapp/src/styles/dsPrimitives.test.ts`), токены и кегли — `docs/design/REDESIGN_2026-10.md`, принципы тишины — issue #906; цвета сущностей — `shared/src/theme/entityHue.ts` (`DOMAIN_HUE`, `MODE_GROUP_HUE`, `NEED_HUE`, `toneHex`; на сайте реэкспорт `webapp/src/lib/tone.ts`); вид общих компонентов концептуализации на сайте — контекст `shared/src/therapy/conceptGraph/conceptSkin.ts` + `webapp/src/components/therapist/concept/conceptSiteSkin.ts` | frontend-visual |
 | Новый эндпоинт | контроллер в `src/api/api.module.ts`, гард `src/api/telegram-auth.guard.ts`, `uid(req)` из `src/api/request-utils.ts`, DTO; e2e-смок ownership в `test/` | backend-api, tests |
 | Публичная ручка без входа | `src/security/controller-classification.ts` (`PUBLIC_BY_DESIGN`) | backend-api, security |
 | Вход, сессии, привязка, слияние | `src/auth/auth-flow.service.ts`, `src/auth/providers/registry.ts`, `src/auth/merge.service.ts` | security |

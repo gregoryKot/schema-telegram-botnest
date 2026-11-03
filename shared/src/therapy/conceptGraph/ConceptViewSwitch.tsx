@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { SEG_GROUP, segBtn } from './conceptInlineStyles';
+import { useConceptSkin } from './conceptSkin';
 
 export type ConceptView = 'graph' | 'fields';
 
@@ -31,17 +33,13 @@ export function ConceptViewSwitch({
   view: ConceptView;
   onChange: (v: ConceptView) => void;
 }) {
+  const skin = useConceptSkin();
   return (
     <div
       role="group"
       aria-label="Вид концептуализации"
-      style={{
-        display: 'inline-flex',
-        gap: 'var(--space-4)',
-        padding: 'var(--space-4)',
-        borderRadius: 'var(--r-14)',
-        background: 'rgba(var(--fg-rgb),0.06)',
-      }}
+      className={skin?.seg.group}
+      style={skin ? undefined : SEG_GROUP}
     >
       {OPTIONS.map((o) => {
         const active = view === o.view;
@@ -51,18 +49,10 @@ export function ConceptViewSwitch({
             type="button"
             aria-pressed={active}
             onClick={() => onChange(o.view)}
-            style={{
-              minHeight: 44,
-              minWidth: 72,
-              padding: '0 16px',
-              borderRadius: 'var(--r-10)',
-              border: 'none',
-              cursor: 'pointer',
-              background: active ? 'var(--surface)' : 'transparent',
-              color: active ? 'var(--text)' : 'var(--text-sub)',
-              fontSize: 13,
-              fontWeight: active ? 700 : 500,
-            }}
+            className={
+              skin ? skin.seg.btn + (active ? ' is-active' : '') : undefined
+            }
+            style={skin ? undefined : segBtn(active)}
           >
             {o.label}
           </button>

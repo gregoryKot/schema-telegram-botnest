@@ -1,15 +1,9 @@
 import { useState } from 'react';
 import { API_BASE } from '../../utils/apiBase';
 import type { ProviderId } from './ProviderRows';
+import { humanizeThrown, readHumanError } from '../../../../shared/src/api/humanizeError';
 
-// Подписи провайдеров для диалога отвязки (Ж4): по реальному провайдеру.
-export const PROVIDER_LABELS: Record<ProviderId, string> = {
-  google: 'Google',
-  telegram: 'Telegram',
-  vk: 'ВКонтакте',
-  max: 'MAX',
-  email: 'Email',
-};
+const UNLINK_FAILED = 'Не удалось отвязать способ входа';
 
 /** Привязка (link-token кука → редирект) и отвязка провайдеров. */
 export function useProviderActions(
@@ -45,13 +39,10 @@ export function useProviderActions(
         credentials: 'include',
         headers: { 'x-requested-with': 'webapp', Authorization: `Bearer ${accessToken}` },
       });
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({ message: 'Unlink failed' }));
-        throw new Error(body.message ?? 'Unlink failed');
-      }
+      if (!res.ok) throw new Error((await readHumanError(res, UNLINK_FAILED)).message);
       await refresh();
     } catch (e) {
-      setError(String(e));
+      setError(humanizeThrown(e, UNLINK_FAILED));
     } finally {
       setBusy(false);
     }

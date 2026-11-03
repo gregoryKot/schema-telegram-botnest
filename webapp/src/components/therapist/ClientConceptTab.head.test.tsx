@@ -1,14 +1,16 @@
 // @vitest-environment jsdom
 // Шапка вкладки «Концептуализация» после теста с терапевтом (#879): одно главное —
-// заголовок, статус сохранения, «Схема · Поля»; остальное в меню «⋯ Ещё». Сверка
-// с YSQ и история версий — свёрнутые раскрывашки под содержанием, а не правая
-// колонка. В виде «Схема» корень вкладки несёт класс tcp--graph (узкие отступы,
+// статус сохранения и «Схема · Поля»; остальное в меню «⋯». Заголовка у вкладки
+// нет (#906): имя уже во вкладке шапки карточки. Сверка с YSQ и история версий —
+// свёрнутые раскрывашки под содержанием (общий ds-fold), а не правая колонка. В виде «Схема» корень вкладки несёт класс tcp--graph (узкие отступы,
 // чтобы на ноутбуке схеме хватило ширины на четыре колонки). Поверх НАСТОЯЩЕГО
 // useClientDetail, мок только сети.
 import { useEffect, useRef } from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 
 vi.mock('../../api', () => ({
   api: {
@@ -71,13 +73,13 @@ async function openTab(server: unknown = concept(), ysq: string[] = ['failure', 
   mockApi.getConceptualization.mockResolvedValue(server);
   mockApi.getTherapyClientData.mockResolvedValue({ ysqActiveSchemaIds: ysq, mySchemaIds: [] });
   render(<MemoryRouter><Harness /></MemoryRouter>);
-  await screen.findByText('Концептуализация');
+  await screen.findByRole('button', { name: 'Ещё действия' });
 }
 
 const more = () => screen.getByRole('button', { name: 'Ещё действия' });
 const openMore = () => fireEvent.click(more());
 const menu = () => screen.queryByRole('menu', { name: 'Ещё действия' });
-const root = () => screen.getByText('Концептуализация').closest('.page-inner-wide')!;
+const root = () => more().closest('.page-inner-wide')!;
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -234,6 +236,16 @@ describe('ширина под схему', () => {
     expect(root().classList.contains('tcp--graph')).toBe(true);
   });
 
+  it('провайдер сайта: сегмент ds-seg, активный вид ds-seg-btn is-active, сводка ds-card', async () => {
+    await openTab();
+    const group = screen.getByRole('group', { name: 'Вид концептуализации' });
+    expect(group.classList.contains('ds-seg')).toBe(true);
+    const active = within(group).getByRole('button', { name: 'Схема' });
+    expect(active.classList.contains('ds-seg-btn')).toBe(true);
+    expect(active.classList.contains('is-active')).toBe(true);
+    expect(screen.getByRole('region', { name: 'Коротко' }).classList.contains('ds-card')).toBe(true);
+  });
+
   it('над схемой нет панели действий: кнопки только в листе «На весь экран»', async () => {
     await openTab();
     expect(screen.queryByRole('button', { name: /Скачать картинкой/ })).toBeNull();
@@ -242,5 +254,39 @@ describe('ширина под схему', () => {
     const dialog = screen.getByRole('dialog', { name: 'Схема случая' });
     expect(within(dialog).getByRole('button', { name: /Скачать картинкой/ })).toBeTruthy();
     expect(within(dialog).getByRole('button', { name: 'Открыть на холсте' }).title).toMatch(/Новая карта режимов/);
+  });
+});
+
+// #906: заголовка у вкладки нет ни на одном экране — имя уже во вкладке шапки
+// (решение #902 для телефона распространено на все); кнопка меню — круглая «⋯»
+// (ds-btn--icon: 40, на телефоне 44) с aria-label, без слова «Ещё». Верхний
+// отступ — как у ds-page: класс tcp-page (40 на ноутбуке, 20 на телефоне из
+// .page-inner-wide), а не u-pt40, который держал 40 и на телефоне.
+describe('шапка без заголовка, «⋯» — иконочная кнопка (#906)', () => {
+  it('h2 «Концептуализация» не рендерится, кнопка меню — ds-btn--icon без слова «Ещё»', async () => {
+    await openTab();
+    expect(root().querySelector('h2')).toBeNull();
+    expect(root().querySelector('.tcp-head-title')).toBeNull();
+    expect(screen.queryByText('Концептуализация')).toBeNull();
+    expect(more().classList.contains('ds-btn--icon')).toBe(true);
+    expect(more().textContent?.trim()).toBe('⋯');
+    expect(root().classList.contains('tcp-page')).toBe(true);
+    expect(root().classList.contains('u-pt40')).toBe(false);
+    const css = readFileSync(join(__dirname, '../../styles/therapist-concept.css'), 'utf8');
+    expect(css).not.toMatch(/\.tcp-head-title|\.tcp-more-btn|\.tcp-more-txt/);
+    expect(css).toMatch(/\.tcp-page \{[^}]*padding-top: 40px/);
+  });
+
+  it('раскрывашки — общий ds-fold: кнопка ds-fold-btn с подписью ds-label, тело ds-fold-body только у открытой', async () => {
+    await openTab();
+    const hist = screen.getByRole('button', { name: 'История версий · 2' });
+    expect(hist.classList.contains('ds-fold-btn')).toBe(true);
+    expect(hist.parentElement?.classList.contains('ds-fold')).toBe(true);
+    expect(within(hist).getByText('История версий · 2').classList.contains('ds-label')).toBe(true);
+    expect(hist.parentElement?.querySelector('.ds-fold-body')).toBeNull();
+    fireEvent.click(hist);
+    expect(hist.parentElement?.querySelector('.ds-fold-body')).toBeTruthy();
+    // Поднятого до 14px ds-label у раскрывашек больше нет — кегль общий.
+    expect(readFileSync(join(__dirname, '../../styles/therapist-concept.css'), 'utf8')).not.toMatch(/\.tcp-folds \.ds-label/);
   });
 });

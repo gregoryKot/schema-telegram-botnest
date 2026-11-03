@@ -6,7 +6,7 @@ import { api } from '../api';
 import type { DayHistory } from '../types';
 import { applyCabinetLightTheme } from '../utils/theme';
 import { syncMotionAttr } from '../utils/reducedMotion';
-import { shouldShowChildhoodWheel } from '../utils/storageKeys';
+import { shouldShowChildhoodWheel, THERAPIST_MODE_KEY } from '../utils/storageKeys';
 import { CommandPalette } from './CommandPalette';
 import { Loader } from './Loader';
 import { useBootstrapLoad, TODAY_DATE, TODAY_KEY } from './appShell/useBootstrapLoad';
@@ -16,6 +16,7 @@ import { EntryFlows } from './appShell/EntryFlows';
 import { AppSections } from './appShell/AppSections';
 import { type Section, sectionFromPath, fillHistoryGaps } from './appShell/navigation';
 import { MobileNav } from './appShell/MobileNav';
+import { ModeSwitch } from './appShell/ModeSwitch';
 import { QuickActions } from './quickActions/QuickActions';
 import { useDesktopAppLaunch } from '../hooks/useDesktopAppLaunch';
 import { useHostShell } from '../hooks/useHostShell';
@@ -77,7 +78,7 @@ export function AppShell() {
   }, [location.pathname, therapistMode]);
 
   const switchTherapistMode = useCallback((on: boolean, persist = true) => {
-    localStorage.setItem('therapist_mode', on ? '1' : '0');
+    localStorage.setItem(THERAPIST_MODE_KEY, on ? '1' : '0');
     // Запоминаем стартовое предпочтение на сервере (source of truth, единое с
     // мини-аппом). Сервер принимает флаг только у THERAPIST — эндпоинт вернёт
     // 403 для клиента, поэтому просто глушим ошибку.
@@ -233,12 +234,7 @@ export function AppShell() {
         </div>
 
         {userRole === 'THERAPIST' && (
-          <div className="sb-mode-switch">
-            <button className={`sb-mode-btn${!therapistMode ? ' is-active' : ''}`}
-                    onClick={() => switchTherapistMode(false)}>Клиент</button>
-            <button className={`sb-mode-btn${therapistMode ? ' is-active' : ''}`}
-                    onClick={() => switchTherapistMode(true)}>Терапевт</button>
-          </div>
+          <ModeSwitch variant="sidebar" value={therapistMode} onChange={(on) => switchTherapistMode(on)} />
         )}
 
         <nav className="sb-nav">
@@ -460,7 +456,7 @@ export function AppShell() {
       </div>{/* end main */}
 
       {/* ── Mobile bottom nav ──────────────────────────────────────────────── */}
-      <MobileNav items={NAV_ITEMS} therapist={therapistMode} onSearch={() => ov.setCmdOpen(true)} />
+      <MobileNav items={NAV_ITEMS} therapist={therapistMode} onSearch={() => ov.setCmdOpen(true)} onProfile={() => ov.setShowSettings(true)} />
 
       <QuickActions ov={ov} />
       {/* ── Command palette ─────────────────────────────────────────────────── */}

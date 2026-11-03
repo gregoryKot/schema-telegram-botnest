@@ -24,7 +24,7 @@ export function TodayFeed({ entries, loaded, onOpenDiaries, onOpenTrackerHistory
       {!loaded ? (
         <SkeletonLines />
       ) : entries.length === 0 ? (
-        <p className="ds-sub ct-empty">Пока ничего. Любая кнопка выше подойдёт для начала.</p>
+        <p className="ds-empty">Пока ничего. Любая кнопка выше подойдёт для начала.</p>
       ) : (
         <ul className="ct-feed-list">
           {entries.map(e => (

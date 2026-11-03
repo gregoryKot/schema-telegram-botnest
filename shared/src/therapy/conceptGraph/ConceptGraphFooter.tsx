@@ -1,6 +1,7 @@
 import { Disclosure } from '../../components/Disclosure';
 import { ConceptGaps } from './ConceptGaps';
 import type { ConceptGraphModel } from './conceptGraphTypes';
+import { useFoldClasses } from './conceptSkin';
 import { hintStyle } from './graphStyles';
 
 /**
@@ -11,6 +12,7 @@ import { hintStyle } from './graphStyles';
  * В картинку подсказки не идут — это повод для разговора, а не схема случая.
  */
 export function ConceptGraphFooter({ graph }: { graph: ConceptGraphModel }) {
+  const classes = useFoldClasses();
   return (
     <>
       {graph.sequence && (
@@ -20,7 +22,10 @@ export function ConceptGraphFooter({ graph }: { graph: ConceptGraphModel }) {
       )}
       {graph.gaps.length > 0 && (
         <div data-export-skip>
-          <Disclosure title={`Подсказки по схеме · ${graph.gaps.length}`}>
+          <Disclosure
+            title={`Подсказки по схеме · ${graph.gaps.length}`}
+            classes={classes}
+          >
             <ConceptGaps gaps={graph.gaps} />
           </Disclosure>
         </div>

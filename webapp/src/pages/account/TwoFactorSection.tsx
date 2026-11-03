@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { API_BASE } from '../../utils/apiBase'; import { useTr } from '../../utils/addressForm';
 import { TwoFactorScopeNote } from './TwoFactorScopeNote';
+import { humanizeThrown, readHumanError } from '../../../../shared/src/api/humanizeError';
 
-// Секция двухфакторной аутентификации (TOTP). Вынесено из AccountPage.tsx
-// (правило №10).
+// Секция двухфакторной аутентификации (TOTP), вынесена из AccountPage.tsx (правило №10).
 export function TwoFactorSection({
   accessToken, totp, onChanged,
 }: {
@@ -28,12 +28,12 @@ export function TwoFactorSection({
     setBusy(true); setError(null);
     try {
       const res = await fetch(`${API_BASE}/api/auth/2fa/setup`, { method: 'POST', credentials: 'include', headers: csrfHeaders() });
-      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).message ?? 'Не удалось начать настройку');
+      if (!res.ok) throw new Error((await readHumanError(res, 'Не удалось начать настройку')).message);
       const data = await res.json() as { qrDataUrl: string; otpauthUrl: string };
       setQrDataUrl(data.qrDataUrl);
       setOtpauthUrl(data.otpauthUrl);
       setSetupOpen(true);
-    } catch (e) { setError(String(e).replace('Error: ', '')); }
+    } catch (e) { setError(humanizeThrown(e, 'Не удалось начать настройку')); }
     finally { setBusy(false); }
   };
 
@@ -44,13 +44,13 @@ export function TwoFactorSection({
         method: 'POST', credentials: 'include', headers: csrfHeaders(),
         body: JSON.stringify({ code: code.trim() }),
       });
-      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).message ?? 'Неверный код');
+      if (!res.ok) throw new Error((await readHumanError(res, 'Неверный код')).message);
       const data = await res.json() as { recoveryCodes: string[] };
       setRecoveryCodes(data.recoveryCodes);
       setCode('');
       setQrDataUrl(null);
       onChanged();
-    } catch (e) { setError(String(e).replace('Error: ', '')); }
+    } catch (e) { setError(humanizeThrown(e, 'Не получилось проверить код')); }
     finally { setBusy(false); }
   };
 
@@ -61,11 +61,11 @@ export function TwoFactorSection({
         method: 'POST', credentials: 'include', headers: csrfHeaders(),
         body: JSON.stringify({ code: code.trim() }),
       });
-      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).message ?? 'Неверный код');
+      if (!res.ok) throw new Error((await readHumanError(res, 'Неверный код')).message);
       setCode('');
       setDisableMode(false);
       onChanged();
-    } catch (e) { setError(String(e).replace('Error: ', '')); }
+    } catch (e) { setError(humanizeThrown(e, 'Не получилось проверить код')); }
     finally { setBusy(false); }
   };
 

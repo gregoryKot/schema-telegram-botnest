@@ -88,7 +88,7 @@ describe('Slider — расчёт значения по указателю', () 
 // В9 дизайн-аудита 2026-08: слайдер был чисто pointer-based, недоступен с
 // клавиатуры полностью. role="slider" + aria-value* + стрелки.
 describe('Slider — клавиатура (В9)', () => {
-  function renderSlider(value: number, onChange = vi.fn()) {
+  function renderSlider(value: number | undefined, onChange = vi.fn()) {
     const { container } = render(
       <Slider
         value={value}
@@ -153,5 +153,14 @@ describe('Slider — клавиатура (В9)', () => {
     const { track, onChange } = renderSlider(0);
     fireEvent.keyDown(track, { key: 'ArrowLeft' });
     expect(onChange).toHaveBeenCalledWith(0);
+  });
+
+  it('не оценено: читалка слышит «не оценено», бегунка нет, стрелка стартует с середины', () => {
+    const { track, onChange } = renderSlider(undefined);
+    expect(track.getAttribute('aria-valuetext')).toBe('не оценено');
+    const thumb = track.children[1] as HTMLElement;
+    expect(thumb.style.display).toBe('none'); // бегунка не видно
+    fireEvent.keyDown(track, { key: 'ArrowRight' });
+    expect(onChange).toHaveBeenCalledWith(6);
   });
 });

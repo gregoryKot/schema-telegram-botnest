@@ -180,9 +180,13 @@ describe('isCacheableGetPath', () => {
     expect(isCacheableGetPath('/health/db')).toBe(false);
   });
 
+  it('опрос брони по токену не кешируется: статус меняет вебхук оплаты', () => {
+    expect(isCacheableGetPath('/api/booking/by-token/abc')).toBe(false);
+  });
+
   it('обычные пользовательские GET кешируемы', () => {
     expect(isCacheableGetPath('/api/streak')).toBe(true);
-    expect(isCacheableGetPath('/api/booking/by-token/abc')).toBe(true);
+    expect(isCacheableGetPath('/api/booking/slots')).toBe(true);
   });
 });
 

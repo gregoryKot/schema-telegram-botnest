@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import { haptic } from '../../haptic';
+import { CrisisGate } from '../CrisisGate';
 import { PrimaryAction } from '../diary/diaryFlowUi';
 import { TertiaryLink } from './caseFlowUi';
 import { CASE_ALIAS_CHIPS } from '../../../../shared/src/case/caseAliasChips';
 import type { Tr } from '../../../../shared/src/case/caseTypes';
 
-/** Ограничение DTO — src/api/dto/notes.dto.ts, поле alias. */
-const ALIAS_MAX = 64;
+const ALIAS_MAX = 64; // ограничение DTO — src/api/dto/notes.dto.ts, поле alias
 
 /** Экран имени части. Три равноценных выхода: чип-заготовка (мгновенный
  *  выбор), своё слово (требует явного подтверждения — свободный текст) или
@@ -14,15 +14,18 @@ const ALIAS_MAX = 64;
 export function CaseNameScreen({
   impulseChipIds,
   saving,
+  crisisShown,
   onConfirm,
   tr,
 }: {
   impulseChipIds: string[];
   saving: boolean;
+  crisisShown: boolean; // карточка уже стоит внизу листа (детекция потока)
   onConfirm: (alias: string, source: 'chip' | 'own' | 'skipped') => void;
   tr: Tr;
 }) {
   const [own, setOwn] = useState('');
+  const title = tr('Как назовёшь эту часть?', 'Как назовёте эту часть?');
   const suggestions = Array.from(
     new Set(
       impulseChipIds
@@ -33,9 +36,7 @@ export function CaseNameScreen({
 
   return (
     <div>
-      <div className="d-display u-e21">
-        {tr('Как назовёшь эту часть?', 'Как назовёте эту часть?')}
-      </div>
+      <div className="d-display u-e21">{title}</div>
       <div
         style={{
           fontSize: 14,
@@ -44,10 +45,7 @@ export function CaseNameScreen({
           marginBottom: 20,
         }}
       >
-        {tr(
-          'Своим словом — так её проще узнавать.',
-          'Своим словом — так её проще узнавать.',
-        )}
+        Своим словом — так её проще узнавать.
       </div>
 
       {suggestions.length > 0 && (
@@ -89,7 +87,7 @@ export function CaseNameScreen({
         value={own}
         onChange={(e) => setOwn(e.target.value)}
         placeholder="Своё слово"
-        aria-label={tr('Как назовёшь эту часть?', 'Как назовёте эту часть?')}
+        aria-label={title}
         maxLength={ALIAS_MAX}
         className="field-input"
         style={{
@@ -104,6 +102,7 @@ export function CaseNameScreen({
           marginBottom: 16,
         }}
       />
+      {!crisisShown && <CrisisGate texts={[own]} surface="case" />}
 
       <PrimaryAction
         label={saving ? 'Сохраняю…' : 'Назвать'}

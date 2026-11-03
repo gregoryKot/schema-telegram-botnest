@@ -120,7 +120,7 @@ export function AppSections({
           <ErrorBoundary section="Паттерны" key="schemas-boundary">
             <SchemasSection
               onOpenSchema={(opts) => { ov.setSchemaAutoStartTest(!!opts?.startTest); ov.setSchemaInitialTab(opts?.tab ?? 'needs'); ov.setSchemaHighlight(opts?.highlight); ov.setShowSchemaInfo(true); }}
-              childhoodRatings={childhoodRatings}
+              childhoodRatings={childhoodRatings} onOpenSettings={() => ov.setShowSettings(true)}
               onOpenChildhoodWheel={() => ov.setShowChildhoodWheel(true)}
             />
           </ErrorBoundary>

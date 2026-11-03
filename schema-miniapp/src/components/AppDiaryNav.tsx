@@ -103,8 +103,8 @@ export function AppDiaryNav({
         <GratitudeEntrySheet
           onClose={() => setNewDiaryEntry(null)}
           date={diaryToday()}
-          onSave={async (date, items) => {
-            await api.createGratitudeDiary(date, items);
+          onSave={async (date, items, base) => {
+            await api.createGratitudeDiary(date, items, base);
           }}
         />
       )}

@@ -213,6 +213,16 @@ describe('e2e: отказ от роли терапевта завершает с
     ).toEqual([['задание терапевта', Number(T)]]);
   });
 
+  // Карты клиенту видны только при связи с автором (client-map-authors.ts),
+  // поэтому DELETE /relation не трогает `ended`: иначе одно нажатие стёрло бы
+  // историю бывшего терапевта.
+  it('клиент сам отключается — карты и сообщение о бывшем терапевте остаются', async () => {
+    expect((await act(C).del('/api/therapy/relation')).status).toBe(200);
+    const maps = await act(C).get('/api/therapy/my-mode-maps');
+    expect(maps.body.map((m: { title: string }) => m.title)).toEqual(['карта']);
+    expect((await formerOf(C))?.name).toBe(`u${T}`);
+  });
+
   it('у клиента другого терапевта (не отказывался) сообщения нет', async () => {
     expect(await formerOf(D)).toBeNull();
     // X подключён ко второму терапевту — «Мой терапевт» на месте, сообщения нет.

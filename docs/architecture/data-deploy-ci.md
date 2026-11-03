@@ -47,7 +47,7 @@
   - `CMD ["node","deploy/entrypoint.mjs"]`.
 
 **`deploy/entrypoint.mjs`** (супервизор, PID 1) по порядку:
-1. `front-server.mjs` сразу занимает публичный порт 3000: это TCP-проброс на `APP_PORT` (3001) или страница `maintenance.html`, пока приложение не поднялось или упало.
+1. `front-server.mjs` сразу занимает публичный порт 3000: это TCP-проброс на `APP_PORT` (3001) или, пока приложение не поднялось или упало, страница `maintenance.html`. Исключение — хост визитки (`kotlarewski.gr`, сюда идёт реклама): ему front отдаёт `webapp/dist` с диска (`front-static.mjs`), техработы видят только продукт, API, `/app` и `/health`.
 2. `wait-for-db.mjs` ждёт TCP-порт БД из `DATABASE_URL`, до 120 с.
 3. `RECOVER_CMD`, по умолчанию `npx prisma db execute --file prisma/recover-p3009.sql || true`.
 4. `MIGRATE_CMD`, по умолчанию `npx prisma migrate deploy`, 3 попытки. Если не прошло, остаются техработы навсегда и приложение не стартует.
@@ -84,16 +84,17 @@ SIGTERM/SIGINT пробрасываются приложению.
 
 Шаги npm audit всех джоб зовут обёртку `scripts/npm-audit.mjs <каталог>`: голый `npm audit` висел на реестре до таймаута шага (регресс #814). Попытка до 45 с, до трёх попыток; high/critical — код 4 сразу (не 1: его node отдаёт на упавшем скрипте), «реестр не ответил» — код 2 и отдельный `::error::`, «npm не может проверить» (нет lock-файла) — код 3 без повторов; реестр и `--offline=false` заданы флагами, env и `.npmrc` их не перекрывают. Разбор ответа npm — `scripts/npm-audit-report.mjs`. Шаг засчитывается гейтом, только если скрипт `run:` — одна команда (так, как его склеят YAML и `\`-продолжения shell, — `src/test-support/gates/step-script.ts`) и вызов — её исход: без `||`, `;`, `&`, `|` после него, без `exit`/`trap`/`set +e`, без своего `shell:` и `continue-on-error` с любым значением, кроме `false`. Исполняется с поддельным npm в `src/test-support/gates/npm-audit.spec.ts`.
 
-**nightly.yml** (cron `0 3 * * *` ежедневно и `0 4 * * 0` по воскресеньям, плюс dispatch). Красный nightly не блокирует PR.
+**nightly.yml** (cron `0 3 * * *` ежедневно, плюс dispatch; второе расписание — только своим воркфлоу, гейт `alarm-needs.spec.ts`). Красный nightly не блокирует PR.
 - `backend-flaky` — jest три раза подряд через `jest-exit-guard.mjs`, затем `--detectOpenHandles`.
 - `frontend-flaky` — vitest webapp ×3, miniapp ×3, shared ×1.
 - `mutation-golden-auth` — Stryker, волна А, затем `check-mutation-ratchet`.
 - `mutation-golden-payments` — Stryker, волна Б, затем кризис и outbox, каждый с храповиком.
 - `browser-smoke` — build webapp, `playwright test` (Chromium + WebKit).
 - `backup-restore` — репетиция: зашифрованный бэкап, restore во вторую БД, `migrate diff`, пробы с порчей файла и неверным ключом.
-- `mutation-bot` — Stryker по `src/bot`, только воскресенье или dispatch.
 - `npm-audit` — `scripts/npm-audit.mjs` (`npm audit --omit=dev --audit-level=high` с таймером на попытку и повторами) по каждому lock-файлу из `git ls-files`, под alarm.
 - `alarm` — issue `ci-alarm` и DM в Telegram, если упала любая джоба.
+
+**mutation-bot.yml** (cron `0 4 * * 0` по воскресеньям, плюс dispatch): `mutation-bot` — Stryker по `src/bot`, отчёт артефактом, храповика и `alarm` нет.
 
 **prod-smoke.yml** (cron `*/15 * * * *`, фактический шаг GitHub 3–7 ч, плюс dispatch):
 - `prod-smoke` — curl живого schemehappens.ru: `/health` (`status=ok`, `db=up`, самопроверка, `check-deploy-lag`), `/`, `/app/`, `/game/` по маркерам.

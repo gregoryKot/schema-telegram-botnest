@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { encryptRecord, decryptRecord, EncryptSchema } from '../utils/crypto';
 import { addToMyList } from './notes-my-list';
+import { withoutEmptyFields } from './notes-partial';
 
 // Поля, общие для карточки схемы и карточки режима — не копипастим список
 // дважды (правило №4/№10 CLAUDE.md). Различаются только doc-специфичные
@@ -70,7 +71,7 @@ export class NotesService {
     schemaId: string,
     data: CommonNoteFields & { reality?: string },
   ) {
-    const enc = encryptRecord(data, SCHEMA_NOTE_SCHEMA);
+    const enc = encryptRecord(withoutEmptyFields(data), SCHEMA_NOTE_SCHEMA);
     const res = await this.prisma.userSchemaNote.upsert({
       where: { userId_schemaId: { userId, schemaId } },
       update: enc,
@@ -104,7 +105,7 @@ export class NotesService {
       fear?: string;
     },
   ) {
-    const enc = encryptRecord(data, MODE_NOTE_SCHEMA);
+    const enc = encryptRecord(withoutEmptyFields(data), MODE_NOTE_SCHEMA);
     const res = await this.prisma.userModeNote.upsert({
       where: { userId_modeId: { userId, modeId } },
       update: enc,
@@ -114,6 +115,5 @@ export class NotesService {
     return decryptRecord(res, MODE_NOTE_SCHEMA);
   }
 }
-// Доступ терапевта к карточкам клиента жил здесь дублем (без расшифровки!) —
-// единственная реализация теперь в therapy-client-data.service (assertHasClient
-// + therapistShareCards + decryptRecord).
+// Доступ терапевта к карточкам клиента жил здесь дублем (без расшифровки!) — единственная
+// реализация теперь в therapy-client-data.service (assertHasClient + therapistShareCards + decryptRecord).

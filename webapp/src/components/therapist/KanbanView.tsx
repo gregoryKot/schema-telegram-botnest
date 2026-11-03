@@ -48,7 +48,7 @@ export function KanbanView({ allTasks, loading, loadFailed, onRetry, onOpenClien
   ).map(t => ({ ...t, status: taskStatus(t, today) }));
 
   if (flat.length === 0) {
-    return <div className="tc-empty">Назначенных заданий пока нет</div>;
+    return <p className="ds-empty">Назначенных заданий пока нет</p>;
   }
 
   const cols: { label: string; items: typeof flat; badge: string; name: string }[] = [

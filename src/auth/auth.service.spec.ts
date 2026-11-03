@@ -1192,6 +1192,41 @@ describe('AuthService — 2FA challenge токены', () => {
     expect(decoded.ua).toHaveLength(120);
     expect(decoded.ua).toBe(longUa.slice(0, 120));
   });
+
+  // Аудит 2026-10: протухший вызов отвечал тем же 401, что неверный код, и
+  // экран 2FA показывал «Неверный код» — человек вводил код снова и снова.
+  const reasonOf = (fn: () => unknown): unknown => {
+    try {
+      fn();
+    } catch (err) {
+      expect(err).toBeInstanceOf(UnauthorizedException);
+      return (
+        (err as UnauthorizedException).getResponse() as { reason?: unknown }
+      ).reason;
+    }
+    throw new Error('verifyTotpChallengeToken не бросил');
+  };
+
+  it('вызов старше 5 минут → 401 с reason challenge_expired', () => {
+    const { svc } = makeService();
+    jest.useFakeTimers({ now: new Date('2026-10-01T10:00:00Z') });
+    try {
+      const token = svc.buildTotpChallengeToken(1n);
+      jest.setSystemTime(new Date('2026-10-01T10:05:01Z'));
+      expect(reasonOf(() => svc.verifyTotpChallengeToken(token))).toBe(
+        'challenge_expired',
+      );
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it('битый токен вызова — та же причина: начать вход заново', () => {
+    const { svc } = makeService();
+    expect(reasonOf(() => svc.verifyTotpChallengeToken('not-a-jwt'))).toBe(
+      'challenge_expired',
+    );
+  });
 });
 
 describe('AuthService — verifyLinkToken: невалидные токены', () => {

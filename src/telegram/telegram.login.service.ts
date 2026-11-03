@@ -34,6 +34,7 @@ import { t } from '../notification/address-form';
 import { BadCodeCounter } from './bad-code-counter';
 import { handleTicketDeny, withConfirmingUser } from './ticket-actions';
 import { viewerTelegramId } from './viewer-id';
+import { failCallback } from './callback-failure';
 
 @Injectable()
 export class TelegramLoginService implements OnModuleInit {
@@ -113,10 +114,7 @@ export class TelegramLoginService implements OnModuleInit {
             'кто-то прислал, лучше её больше не открывать.',
         );
       } catch (err) {
-        this.logger.error(
-          `tglogin:no failed: ${(err as Error).message}`,
-          (err as Error).stack,
-        );
+        await failCallback(this.logger, ctx, 'tglogin:no', err);
       }
     });
   }

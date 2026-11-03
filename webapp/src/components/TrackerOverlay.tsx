@@ -19,7 +19,7 @@ import { CompletionScreen } from './trackerOverlay/CompletionScreen';
 import { QuestionScreen } from './trackerOverlay/QuestionScreen';
 import { QuestionSkeleton } from './trackerOverlay/QuestionSkeleton';
 import { TrackerTopbar } from './trackerOverlay/TrackerTopbar';
-import { useSwipe } from './trackerOverlay/useSwipe';
+import { useHorizontalSwipe } from '../../../shared/src/hooks/useHorizontalSwipe';
 import { nextUnrated } from './trackerOverlay/trackerFlow';
 import { useAutoAdvance } from './trackerOverlay/useAutoAdvance';
 import { useBackfillRatings } from './trackerOverlay/useBackfillRatings';
@@ -103,7 +103,7 @@ export function TrackerOverlay({
     goNextOrDone(nextUnrated(ids, effectiveRatings, idx, false));
   };
 
-  const swipe = useSwipe(
+  const swipe = useHorizontalSwipe(
     () => idx < needs.length - 1 && goTo(idx + 1),
     () => idx > 0 && goTo(idx - 1),
     !!detailNeed || showCompletion,
