@@ -460,7 +460,7 @@ describe('TodaySection — «+ Поставить цель» открывает 
     fireEvent.click(await screen.findByText('+ Поставить цель'));
     await screen.findByText('Новое задание');
 
-    fireEvent.click(screen.getByText('Назад к кабинету'));
+    fireEvent.click(screen.getByRole('button', { name: 'Назад' }));
     await waitFor(() => expect(screen.queryByText('Новое задание')).toBeNull());
   });
 });
