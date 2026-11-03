@@ -95,6 +95,11 @@ const NON_THERAPEUTIC_ALLOWLIST: Record<string, string> = {
   // TherapistRequestSection; сам AccountPage больше без свободного текста.
   'webapp/src/pages/account/TherapistRequestSection.tsx':
     'анкета заявки терапевта, не дневник',
+  // Переименование узла на холсте переехало с <input> на <textarea> (перенос
+  // строк): запись переехала между списками, а не добавилась по смыслу —
+  // тот же класс, что ModeMapNodeEditor строкой ниже.
+  'webapp/src/components/modeMap/nodeParts.tsx':
+    'карта режимов: переименование узла',
   'webapp/src/components/ModeMapNodeEditor.tsx':
     'подпись узла карты режимов — короткая метка, не рефлексия',
   // Терапевтская сторона — заметки специалиста о клиенте, не собственный
@@ -211,8 +216,10 @@ describe('трипваер: кризисная детекция для своб�
     // 20 → 19 (2026-10, простой клиент, этап 4): CaseSceneScreen.tsx удалён,
     // новое поле сцены (CaseSceneStep.tsx) само зовёт detectCrisisAny и стоит
     // в EXPECTED_CRISIS_FILES, а не в allowlist.
+    // 19 → 20 (2026-11, карта режимов): modeMap/nodeParts.tsx — переименование
+    // узла стало <textarea> (перенос строк), запись переехала из списка <input>.
     expect(Object.keys(NON_THERAPEUTIC_ALLOWLIST).length).toBeLessThanOrEqual(
-      19,
+      20,
     );
   });
 
@@ -336,8 +343,6 @@ const SHORT_INPUT_ALLOWLIST: Record<string, string> = {
   'webapp/src/components/ModeMapSelector.tsx': 'карта режимов: название карты',
   'webapp/src/components/modeMap/ModeMapEdgeEditor.tsx':
     'карта режимов: подпись стрелки',
-  'webapp/src/components/modeMap/nodeParts.tsx':
-    'карта режимов: переименование узла',
   // Админка — текст пишет владелец проекта.
   'webapp/src/pages/admin/MarqueeSection.tsx': 'админская бегущая строка',
 };
