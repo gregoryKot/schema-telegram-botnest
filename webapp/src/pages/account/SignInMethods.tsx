@@ -1,5 +1,5 @@
 import { Skeleton } from '../../components/Skeleton';
-import { countMethods } from './accountMethods';
+import { canUnlink, countMethods } from './accountMethods';
 import { EmailLinkRow } from './EmailLinkRow';
 import { GoogleIcon, MaxIcon, ProviderRow, TelegramIcon, VkIcon, type AccountProvider, type ProviderId } from './ProviderRows';
 
@@ -18,6 +18,7 @@ export function SignInMethods({
   const find = (id: ProviderId) => providers.find((p) => p.provider === id);
   const { linked, total } = countMethods(providers);
   const vk = find('vk');
+  const only = (id: ProviderId) => !canUnlink(providers, id);
 
   return (
     <div className="ds-card aa-card">
@@ -39,23 +40,23 @@ export function SignInMethods({
       ) : (
         <div className="aa-methods">
           <ProviderRow icon={<GoogleIcon />} title="Google" linked={!!find('google')} busy={busy}
-            subtitle={find('google')?.email}
+            subtitle={find('google')?.email} unlinkBlocked={only('google')}
             onLink={onLink.google} onUnlink={() => onUnlink('google')} />
           <ProviderRow icon={<TelegramIcon />} title="Telegram" linked={!!find('telegram')} busy={busy}
-            subtitle={find('telegram')?.displayName ?? 'привязан'}
+            subtitle={find('telegram')?.displayName ?? 'привязан'} unlinkBlocked={only('telegram')}
             onLink={onLink.telegram} onUnlink={() => onUnlink('telegram')} />
           <ProviderRow icon={<VkIcon />} title="ВКонтакте" linked={!!vk} busy={busy}
-            subtitle={vk?.displayName ?? vk?.email ?? 'привязан'}
+            subtitle={vk?.displayName ?? vk?.email ?? 'привязан'} unlinkBlocked={only('vk')}
             onLink={onLink.vk} onUnlink={() => onUnlink('vk')} />
           {/* MAX: своего входа для сайтов у площадки нет — привязка начинается
               в самом приложении, поэтому кнопки «Привязать» здесь быть не может. */}
           {find('max') && (
             <ProviderRow icon={<MaxIcon />} title="MAX" linked busy={busy}
-              subtitle={find('max')?.displayName ?? 'привязан'}
+              subtitle={find('max')?.displayName ?? 'привязан'} unlinkBlocked={only('max')}
               onUnlink={() => onUnlink('max')} />
           )}
           <EmailLinkRow accessToken={accessToken} linked={!!find('email')} busy={busy}
-            email={find('email')?.email}
+            email={find('email')?.email} unlinkBlocked={only('email')}
             onUnlink={() => onUnlink('email')} onError={onError} />
         </div>
       )}
