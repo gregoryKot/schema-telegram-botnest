@@ -177,7 +177,7 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
                 ysqSchemaIds={ysqSchemaIds}
                 ysqRequested={ysqRequested}
                 ysqError={ysqError}
-                exportCopied={exportCopied}
+                exportCopied={exportCopied} exportEmpty={detail.exportEmpty}
                 handleRequestYsq={handleRequestYsq}
                 handleExport={handleExport}
               />

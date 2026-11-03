@@ -1,16 +1,20 @@
+import { CONCEPT_EXPORT_EMPTY } from '../../../../../shared/src/therapy/conceptExport';
+import type { ClientDetail } from '../types';
+
 // Низ листа концептуализации: «↗ Экспорт / Поделиться» (вынесена из ConceptSheet
 // по правилу №10 вместе со сводкой «Коротко», #902). После копирования подпись
-// «✓ Скопировано» зелёным токеном, не литералом (check-color-drift).
+// «✓ Скопировано» зелёным токеном, не литералом (check-color-drift). Пустой
+// концепт: кнопка недоступна, а подпись объясняет почему (QA 2026-11).
 export function ConceptExportButton({
-  copied,
-  onClick,
+  detail,
 }: {
-  copied: boolean;
-  onClick: () => void;
+  detail: Pick<ClientDetail, 'exportCopied' | 'exportEmpty' | 'handleExport'>;
 }) {
+  const { exportCopied: copied, exportEmpty: empty, handleExport } = detail;
   return (
     <button
-      onClick={onClick}
+      onClick={handleExport}
+      disabled={empty}
       style={{
         width: '100%',
         marginTop: 8,
@@ -23,10 +27,14 @@ export function ConceptExportButton({
         color: copied ? 'var(--accent-green)' : 'rgba(var(--fg-rgb),0.4)',
         fontSize: 13,
         fontWeight: 500,
-        cursor: 'pointer',
+        cursor: empty ? 'default' : 'pointer',
       }}
     >
-      {copied ? '✓ Скопировано' : '↗ Экспорт / Поделиться'}
+      {empty
+        ? CONCEPT_EXPORT_EMPTY
+        : copied
+          ? '✓ Скопировано'
+          : '↗ Экспорт / Поделиться'}
     </button>
   );
 }

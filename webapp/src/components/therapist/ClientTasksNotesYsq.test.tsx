@@ -159,6 +159,18 @@ describe('вкладки без заголовков, пустые состоя�
     expect(screen.queryByText('Опросник схем YSQ')).toBeNull();
     expect(screen.getByText(/1 прохождение · последнее/)).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Экспорт' })).toBeTruthy();
+    expect(screen.queryByText(/экспортировать нечего/)).toBeNull();
+  });
+
+  it('YSQ с прохождениями, пустой концепт: «Экспорт» недоступен, причина строкой', () => {
+    const run = { id: 1, completedAt: '2026-10-01T10:00:00Z', scores: [{ id: 'failure', pct5plus: 70 }] };
+    const clientData = { ysqHistory: [run], ysqCompletedAt: '2026-10-01T10:00:00Z' } as unknown as ClientData;
+    render(<ClientYSQTab
+      clientData={clientData} selectedClient={{ telegramId: 7 } as unknown as TherapyClientSummary} selfSchemaIds={[]} ysqSchemaIds={[]}
+      ysqRequested={false} ysqError="" exportCopied={false} exportEmpty handleRequestYsq={vi.fn()} handleExport={vi.fn()}
+    />);
+    expect((screen.getByRole('button', { name: 'Экспорт' }) as HTMLButtonElement).disabled).toBe(true);
+    expect(screen.getByText('В концепте пока пусто — экспортировать нечего')).toBeTruthy();
   });
 
   it('YSQ без прохождений: ds-empty без засечного заголовка, кнопка запроса и чипы схем', () => {

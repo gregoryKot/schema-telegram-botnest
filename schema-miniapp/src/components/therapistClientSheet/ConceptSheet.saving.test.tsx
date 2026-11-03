@@ -165,11 +165,23 @@ describe('ConceptSheet — сохранение', () => {
 });
 
 describe('ConceptSheet — экспорт', () => {
-  it('нет concept — кнопки экспорта нет', () => {
+  // QA 2026-11: пустой концепт экспорт молча игнорировал — теперь кнопка
+  // недоступна, а подпись объясняет почему.
+  it('пустой концепт — кнопка недоступна и подписана, handleExport не зовётся', () => {
+    const handleExport = vi.fn();
     render(
-      <ConceptSheet selectedClient={makeClient()} detail={makeDetail()} />,
+      <ConceptSheet
+        selectedClient={makeClient()}
+        detail={makeDetail({ exportEmpty: true, handleExport })}
+      />,
     );
-    expect(screen.queryByText(/Экспорт/)).toBeNull();
+    const btn = screen.getByRole('button', {
+      name: 'В концепте пока пусто — экспортировать нечего',
+    }) as HTMLButtonElement;
+    expect(btn.disabled).toBe(true);
+    fireEvent.click(btn);
+    expect(handleExport).not.toHaveBeenCalled();
+    expect(screen.queryByText('↗ Экспорт / Поделиться')).toBeNull();
   });
 
   it('concept есть — клик по экспорту зовёт handleExport', () => {

@@ -5,6 +5,7 @@ import { NextSessionCard, StartDateCard } from './ClientSessionInfoCards';
 import { MeetingDaysCard } from './MeetingDaysCard';
 import { needBars } from './clientOverviewModel';
 import type { ClientDetail } from './clientSheetTypes';
+import { CONCEPT_EXPORT_EMPTY } from '../../../../shared/src/therapy/conceptExport';
 
 interface Props {
   selectedClient: TherapyClientSummary;
@@ -15,15 +16,12 @@ interface Props {
 // акцентная заливка — только у «Следующей сессии» (одна CTA на экран). Действия
 // внизу — строка кнопок без карточки: рамка вокруг рамочных кнопок — шум.
 export function ClientOverviewSidebar({ selectedClient, detail }: Props) {
-  const { clientHistory, setClientTab, exportCopied, handleExport } = detail;
+  const { clientHistory, setClientTab, exportCopied, exportEmpty, handleExport } = detail;
   const todayIndex = selectedClient.todayIndex;
   const needs = needBars(clientHistory[0]?.ratings);
-  // «+ Задание» и «+ Заметка» — в шапке (ноутбук) или первой строкой «Обзора»
-  // (телефон, ClientQuickActions); здесь только действия, которых там нет.
-  const actions: [string, () => void][] = [
-    ['Запросить YSQ', () => setClientTab('ysq')],
-    [`Экспорт концепта${exportCopied ? ' ✓' : ''}`, handleExport],
-  ];
+  // «+ Задание» и «+ Заметка» — в шапке (ноутбук) или первой строкой «Обзора» (телефон,
+  // ClientQuickActions); здесь только остальные. Пустой концепт — экспорт недоступен с подсказкой.
+  const btn = 'ds-btn ds-btn--secondary ds-btn--sm';
 
   return (
     <aside className="tk-side">
@@ -49,10 +47,10 @@ export function ClientOverviewSidebar({ selectedClient, detail }: Props) {
       )}
 
       <div className="tk-quick">
-        {actions.map(([label, run]) => (
-          <button key={label} className="ds-btn ds-btn--secondary ds-btn--sm" onClick={run}>{label}</button>
-        ))}
+        <button className={btn} onClick={() => setClientTab('ysq')}>Запросить YSQ</button>
+        <button className={btn} onClick={handleExport} disabled={exportEmpty}>Экспорт концепта{exportCopied ? ' ✓' : ''}</button>
       </div>
+      {exportEmpty && <p className="ds-sub">{CONCEPT_EXPORT_EMPTY}</p>}
     </aside>
   );
 }

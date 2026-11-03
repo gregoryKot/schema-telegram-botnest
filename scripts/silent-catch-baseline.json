@@ -1,6 +1,5 @@
 {
   "schema-miniapp/src/components/settingsSheet/MiscSections.tsx": 1,
-  "schema-miniapp/src/components/therapist/useClientDetail.ts": 1,
   "schema-miniapp/src/sections/DiarySection.tsx": 1,
   "schema-miniapp/src/useUserFlags.ts": 3,
   "schema-miniapp/src/utils/initDataShape.ts": 1,
@@ -28,7 +27,6 @@
   "webapp/src/components/ModeMapCoupleLanes.tsx": 1,
   "webapp/src/components/PracticesScreen.tsx": 1,
   "webapp/src/components/SchemaDetailSheet.tsx": 1,
-  "webapp/src/components/therapist/useClientDetail.ts": 1,
   "webapp/src/hooks/useQuizzes.ts": 1,
   "webapp/src/pages/account/TherapistRequestSection.tsx": 1,
   "webapp/src/pages/admin/MarqueeSection.tsx": 1,

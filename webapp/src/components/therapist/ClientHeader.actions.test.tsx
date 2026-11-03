@@ -86,6 +86,19 @@ describe('«+ Задание / + Заметка»', () => {
     expect(screen.getByRole('button', { name: 'Запросить YSQ' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Экспорт концепта' })).toBeTruthy();
   });
+
+  // QA 2026-11: на пустом концепте «Экспорт концепта» молча ничего не делал.
+  it('сайдбар: пустой концепт — экспорт недоступен, причина строкой под кнопками', () => {
+    const handleExport = vi.fn();
+    render(<ClientOverviewSidebar selectedClient={client} detail={detailOf({ exportEmpty: true, handleExport })} />);
+    const btn = screen.getByRole('button', { name: 'Экспорт концепта' }) as HTMLButtonElement;
+    expect(btn.disabled).toBe(true);
+    expect(screen.getByText('В концепте пока пусто — экспортировать нечего')).toBeTruthy();
+    cleanup();
+    render(<ClientOverviewSidebar selectedClient={client} detail={detailOf({ exportEmpty: false })} />);
+    expect((screen.getByRole('button', { name: 'Экспорт концепта' }) as HTMLButtonElement).disabled).toBe(false);
+    expect(screen.queryByText(/экспортировать нечего/)).toBeNull();
+  });
 });
 
 describe('меню «⋯» шапки', () => {

@@ -341,10 +341,23 @@ describe('handleExport', () => {
       value: { writeText: vi.fn().mockResolvedValue(undefined) }, configurable: true, writable: true,
     });
   });
-  it('без концептуализации ничего не делает (пустой текст)', async () => {
+  // QA 2026-11: пустой концепт — не тишина, а exportEmpty (кнопки недоступны с подсказкой).
+  it('без концептуализации: exportEmpty, буфер не трогается', async () => {
     const { result } = await openedHook();
+    expect(result.current.exportEmpty).toBe(true);
     await act(async () => { await result.current.handleExport(); });
     expect(navigator.clipboard.writeText).not.toHaveBeenCalled();
+  });
+  it('текст — из общего билдера: подписи формы и «Переключение режимов»', async () => {
+    mockApi.getConceptualization.mockResolvedValue({
+      id: 1, schemaIds: [], modeIds: [], copingStyles: 'избегание', modeTransitions: 'Критик → Ребёнок', updatedAt: '2026-01-05T00:00:00.000Z',
+    });
+    const { result } = await openedHook();
+    expect(result.current.exportEmpty).toBe(false);
+    await act(async () => { await result.current.handleExport(); });
+    const text = (navigator.clipboard.writeText as ReturnType<typeof vi.fn>).mock.calls[0][0];
+    expect(text).toContain('СТИЛИ СОВЛАДАНИЯ\nизбегание');
+    expect(text).toContain('ПЕРЕКЛЮЧЕНИЕ РЕЖИМОВ\nКритик → Ребёнок');
   });
   it('копирует текст в буфер и сбрасывает exportCopied через 2.5с, когда navigator.share недоступен', async () => {
     mockApi.getConceptualization.mockResolvedValue({
