@@ -177,6 +177,30 @@ describe('applyMutationInvalidation: офлайн-клиент сохранил 
     });
   });
 
+  // QA 2026-10-26: задание нельзя было удалить; удалённое не должно висеть в
+  // карточке клиента (в том числе офлайн, -57) и на доске до 2 минут.
+  it('удаление и отметка задания терапевтом сбрасывают задания клиентов и доску', async () => {
+    for (const [method, path] of [
+      ['DELETE', '/api/therapy/tasks/9'],
+      ['POST', '/api/therapy/tasks/9/complete'],
+    ]) {
+      clearApiCache();
+      const f = await seed([
+        '/api/therapy/tasks/client/-57',
+        '/api/therapy/tasks/client/57',
+        '/api/therapy/tasks/all',
+        '/api/therapy/clients',
+      ]);
+      applyMutationInvalidation(method, path, undefined);
+      expect(await refetched(f)).toEqual({
+        '/api/therapy/tasks/client/-57': 2,
+        '/api/therapy/tasks/client/57': 2,
+        '/api/therapy/tasks/all': 2,
+        '/api/therapy/clients': 1,
+      });
+    }
+  });
+
   it('правка карты режимов (PATCH по mapId) сбрасывает карту и список карт клиента', async () => {
     const f = await seed([
       '/api/therapy/mode-maps/-57',

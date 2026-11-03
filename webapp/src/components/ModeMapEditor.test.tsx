@@ -80,6 +80,23 @@ describe('ModeMapEditor — палитра → холст', () => {
     expect(screen.getByText('Триггер')).toBeTruthy();
   });
 
+  it('два клика по палитре — две фигуры на разных местах, не друг на друге (QA 2026-10-26)', async () => {
+    renderEditor();
+    await act(async () => {});
+    vi.useFakeTimers();
+    try {
+      fireEvent.click(screen.getByText('Триггер / Ситуация'));
+      fireEvent.click(screen.getByText('Поведение / Последствие'));
+      await vi.advanceTimersByTimeAsync(1300);
+      const body = updateModeMap.mock.calls.at(-1)![1] as { nodes: ModeMapNode[] };
+      expect(body.nodes).toHaveLength(2);
+      const [a, b] = body.nodes.map(n => n.position);
+      expect(Math.abs(a.x - b.x) + Math.abs(a.y - b.y)).toBeGreaterThan(0);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('кнопка «Скрыть панель режимов» прячет палитру, «Показать» возвращает', () => {
     renderEditor();
     expect(screen.getByPlaceholderText('Поиск режима…')).toBeTruthy();

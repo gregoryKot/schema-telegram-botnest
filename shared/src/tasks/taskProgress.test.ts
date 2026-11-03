@@ -1,8 +1,39 @@
 // Тест на computeTaskProgress — вычисление прогресса стрик-задачи, общее
 // для HelpSection и TodaySection (свип дублей 2026-07, «виджет задач»).
 import { describe, it, expect } from 'vitest';
-import { computeTaskProgress } from './taskProgress';
+import { computeTaskProgress, taskProgressLabel } from './taskProgress';
 import type { UserTask } from '../apiTypes';
+
+// QA 2026-10-26: терапевт видел у серии только «В работе», клиент — «1/7».
+describe('taskProgressLabel', () => {
+  it('серия с прогрессом с сервера — «N из M дней»', () => {
+    expect(taskProgressLabel(makeTask({ progress: 1, targetDays: 7 }))).toBe(
+      '1 из 7 дней',
+    );
+    expect(taskProgressLabel(makeTask({ progress: 3, targetDays: 3 }))).toBe(
+      '3 из 3 дней',
+    );
+    expect(taskProgressLabel(makeTask({ progress: 0, targetDays: 21 }))).toBe(
+      '0 из 21 дня',
+    );
+  });
+
+  it('прогресс больше цели не выходит за цель', () => {
+    expect(taskProgressLabel(makeTask({ progress: 9, targetDays: 7 }))).toBe(
+      '7 из 7 дней',
+    );
+  });
+
+  it('без прогресса с сервера и у не-серий — null, а не выдуманный ноль', () => {
+    expect(taskProgressLabel(makeTask({ targetDays: 7 }))).toBeNull();
+    expect(
+      taskProgressLabel(makeTask({ type: 'custom', progress: 1 })),
+    ).toBeNull();
+    expect(
+      taskProgressLabel(makeTask({ targetDays: null, progress: 1 })),
+    ).toBeNull();
+  });
+});
 
 function makeTask(overrides: Partial<UserTask> = {}): UserTask {
   return {

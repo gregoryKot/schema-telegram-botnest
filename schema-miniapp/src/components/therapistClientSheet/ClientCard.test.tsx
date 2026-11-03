@@ -37,7 +37,6 @@ describe('ClientCard — отображаемое имя (цепочка фол�
     render(
       <ClientCard
         client={makeClient({ clientAlias: 'Клиент А', name: 'Настоящее имя' })}
-        today="2026-08-03"
         onOpen={() => {}}
       />,
     );
@@ -47,22 +46,14 @@ describe('ClientCard — отображаемое имя (цепочка фол�
 
   it('нет алиаса — показывает имя из Telegram', () => {
     render(
-      <ClientCard
-        client={makeClient({ name: 'Иван' })}
-        today="2026-08-03"
-        onOpen={() => {}}
-      />,
+      <ClientCard client={makeClient({ name: 'Иван' })} onOpen={() => {}} />,
     );
     expect(screen.getByText('Иван')).toBeTruthy();
   });
 
   it('виртуальный клиент (telegramId < 0) без имени — «Оффлайн»', () => {
     render(
-      <ClientCard
-        client={makeClient({ telegramId: -1 })}
-        today="2026-08-03"
-        onOpen={() => {}}
-      />,
+      <ClientCard client={makeClient({ telegramId: -1 })} onOpen={() => {}} />,
     );
     expect(screen.getByText('Оффлайн')).toBeTruthy();
     expect(screen.getByText('Без Telegram')).toBeTruthy();
@@ -70,11 +61,7 @@ describe('ClientCard — отображаемое имя (цепочка фол�
 
   it('реальный клиент без имени и алиаса — «ID N»', () => {
     render(
-      <ClientCard
-        client={makeClient({ telegramId: 555 })}
-        today="2026-08-03"
-        onOpen={() => {}}
-      />,
+      <ClientCard client={makeClient({ telegramId: 555 })} onOpen={() => {}} />,
     );
     expect(screen.getByText('ID 555')).toBeTruthy();
   });
@@ -87,13 +74,29 @@ describe('ClientCard — метка активности', () => {
         client={makeClient({
           name: 'Иван',
           lastActiveDate: '2026-08-03',
+          daysSinceActive: 0,
           streak: 4,
         })}
-        today="2026-08-03"
         onOpen={() => {}}
       />,
     );
     expect(screen.getByText(/Сегодня · Стрик 4 дн/)).toBeTruthy();
+  });
+
+  // lastActiveDate — день КЛИЕНТА; «сегодня» по его календарю отдаёт сервер.
+  it('отмечался вчера по своему календарю — дата, не «Сегодня»', () => {
+    render(
+      <ClientCard
+        client={makeClient({
+          name: 'Иван',
+          lastActiveDate: '2026-08-03',
+          daysSinceActive: 1,
+        })}
+        onOpen={() => {}}
+      />,
+    );
+    expect(screen.queryByText(/Сегодня/)).toBeNull();
+    expect(screen.getByText(/3 авг/)).toBeTruthy();
   });
 
   // Аудит 2026-10: было «Не активен» — мужской род о клиенте неизвестного пола.
@@ -101,7 +104,6 @@ describe('ClientCard — метка активности', () => {
     render(
       <ClientCard
         client={makeClient({ name: 'Иван', lastActiveDate: null })}
-        today="2026-08-03"
         onOpen={() => {}}
       />,
     );
@@ -115,7 +117,6 @@ describe('ClientCard — индекс дня', () => {
     render(
       <ClientCard
         client={makeClient({ name: 'Иван', todayIndex: null })}
-        today="2026-08-03"
         onOpen={() => {}}
       />,
     );
@@ -126,7 +127,6 @@ describe('ClientCard — индекс дня', () => {
     render(
       <ClientCard
         client={makeClient({ name: 'Иван', todayIndex: 6.5 })}
-        today="2026-08-03"
         onOpen={() => {}}
       />,
     );
@@ -139,7 +139,7 @@ describe('ClientCard — клик открывает клиента', () => {
   it('клик по строке вызывает onOpen с самим клиентом', () => {
     const onOpen = vi.fn();
     const client = makeClient({ name: 'Иван' });
-    render(<ClientCard client={client} today="2026-08-03" onOpen={onOpen} />);
+    render(<ClientCard client={client} onOpen={onOpen} />);
     fireEvent.click(screen.getByText('Иван'));
     expect(onOpen).toHaveBeenCalledWith(client);
   });

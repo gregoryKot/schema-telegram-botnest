@@ -91,7 +91,6 @@ export function AppSections({
             ratings={ratings}
             onNavigate={setSection}
             onOpenSchema={(opts) => { ov.setSchemaAutoStartTest(!!opts?.startTest); ov.setSchemaInitialTab(opts?.tab ?? 'needs'); ov.setSchemaHighlight(opts?.highlight); ov.setShowSchemaInfo(true); }}
-            onOpenAdvanced={() => ov.setShowSettings(true)}
             onOpenTracker={() => { ov.setTrackerNeedId(null); ov.setShowTrackerOverlay(true); }}
             onOpenTrackerHistory={() => { ov.setTrackerTab('history'); ov.setShowTracker(true); }}
             onOpenDiaries={() => ov.setShowDiaries(true)}

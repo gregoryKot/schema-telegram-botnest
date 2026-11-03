@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   ForbiddenException,
   Get,
   Param,
@@ -28,7 +29,8 @@ interface AuthRequest extends Request {
 const parseId = (raw: string): number =>
   parseIdShared(raw, { allowNegative: true });
 
-// Задачи терапевта клиенту: создание, список, история, отметка выполнения.
+// Задачи терапевта клиенту: создание, список, история, отметка выполнения,
+// удаление терапевтом.
 @Controller('api/therapy')
 @UseGuards(TelegramAuthGuard)
 export class TherapyTasksController {
@@ -114,12 +116,31 @@ export class TherapyTasksController {
     @Param('id') id: string,
     @Body() body: CompleteTaskDto,
   ) {
-    const owned = await this.tasksService.completeTask(
+    const taskId = parseId(id);
+    // Своё задание закрывает сам клиент; задание офлайн-клиента (у него нет
+    // приложения) — назначивший его терапевт (assigned-task.ts).
+    const owned =
+      (await this.tasksService.completeTask(uid(req), taskId, body.done)) ||
+      (await this.tasksService.completeOfflineTask(
+        uid(req),
+        taskId,
+        body.done,
+      ));
+    if (!owned) throw new ForbiddenException('Task not found or not yours');
+    return { ok: true };
+  }
+
+  // Терапевт удаляет назначенное им задание текущему клиенту. Тела нет —
+  // DTO не нужен; чужое, несуществующее и задание бывшего клиента → 403.
+  @Delete('tasks/:id')
+  async deleteTask(@Req() req: AuthRequest, @Param('id') id: string) {
+    const role = await this.accountService.getUserRole(uid(req));
+    if (role !== 'THERAPIST') throw new ForbiddenException('Therapist only');
+    const deleted = await this.tasksService.deleteAssignedTask(
       uid(req),
       parseId(id),
-      body.done,
     );
-    if (!owned) throw new ForbiddenException('Task not found or not yours');
+    if (!deleted) throw new ForbiddenException('Task not found or not yours');
     return { ok: true };
   }
 }

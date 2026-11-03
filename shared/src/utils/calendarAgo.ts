@@ -12,10 +12,25 @@ export const calendarDaysAgo = (day: string, today: string): number =>
 
 /** «сегодня» / «вчера» / «N дн. назад» (до недели) / «3 окт»; мусор — ''. */
 export function calendarAgoLabel(day: string, today: string): string {
-  const days = calendarDaysAgo(day, today);
+  return agoLabelFromDays(calendarDaysAgo(day, today), day);
+}
+
+/** То же по готовому числу дней — когда «сегодня» чужое и его посчитал сервер
+ *  (`daysSinceActive` — по календарю клиента, №25); day нужен для даты старше недели. */
+export function agoLabelFromDays(days: number, day: string): string {
   if (Number.isNaN(days)) return '';
   if (days === 0) return 'сегодня';
   if (days === 1) return 'вчера';
   if (days > 1 && days < 7) return `${days} дн. назад`;
-  return fmtDate(day);
+  return Number.isNaN(dateStringMs(day)) ? '' : fmtDate(day);
+}
+
+/** Давность чужой активности: число дней считает сервер по календарю того
+ *  человека (`daysSinceActive`); у кэша без числа — только дата. Мусор — ''. */
+export function serverAgoLabel(
+  day: string | null | undefined,
+  days: number | null | undefined,
+): string {
+  if (!day || Number.isNaN(dateStringMs(day))) return '';
+  return days != null ? agoLabelFromDays(days, day) : fmtDate(day);
 }

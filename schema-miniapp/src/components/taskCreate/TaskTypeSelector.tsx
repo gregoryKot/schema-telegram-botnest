@@ -4,9 +4,12 @@ import { TASK_OPTIONS, type TaskType } from './options';
 // Выбор типа задания — карточки каталога. Вынесено из TaskCreateSheet.tsx
 // (правило №10).
 export function TaskTypeSelector({
+  options = TASK_OPTIONS,
   type,
   onPick,
 }: {
+  /** Доступные типы (офлайн-клиенту — только «Своё задание»). */
+  options?: typeof TASK_OPTIONS;
   type: TaskType;
   onPick: (t: TaskType) => void;
 }) {
@@ -19,7 +22,7 @@ export function TaskTypeSelector({
         marginBottom: 20,
       }}
     >
-      {TASK_OPTIONS.map((opt) => (
+      {options.map((opt) => (
         <div
           key={opt.type}
           {...pressable(() => onPick(opt.type))}

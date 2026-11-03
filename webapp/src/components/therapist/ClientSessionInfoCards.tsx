@@ -1,6 +1,8 @@
 import type { TherapyClientSummary } from '../../api';
-import { fmtDate } from '../../utils/format';
+import { fmtDate, todayStr } from '../../utils/format';
 import { upcomingSession } from '../../../../shared/src/therapy/upcomingSession';
+import { SessionDateTimeFields } from '../../../../shared/src/therapy/SessionDateTimeFields';
+import { sessionInputHint, sessionToSave, startDateHint } from '../../../../shared/src/therapy/sessionInput';
 import { DAY_NAMES, nextSessionLabel } from './clientSheetHelpers';
 import type { ClientDetail } from './clientSheetTypes';
 import { EditFormActions } from './EditFormActions';
@@ -15,14 +17,15 @@ export function NextSessionCard({ selectedClient, detail }: Props) {
   const { editingNextSession, setEditingNextSession, localNextSession, setLocalNextSession, saveSessionInfo, sessionInfoSaving, sessionInfoError } = detail;
   const days = selectedClient.meetingDays ?? [];
   const upcoming = upcomingSession(selectedClient.nextSession, days);
+  const hint = sessionInputHint(localNextSession);
   return (
     <div className="ds-card ds-card--row ds-card--accent">
       <h2 className="ds-label">Следующая сессия</h2>
       {editingNextSession ? (
         <div className="tk-edit-form">
-          <input className="ds-input" type="datetime-local" value={localNextSession} onChange={e => setLocalNextSession(e.target.value)} />
-          <EditFormActions saving={sessionInfoSaving} error={sessionInfoError} onAccent onCancel={() => setEditingNextSession(false)}
-            onSave={async () => { if (await saveSessionInfo({ nextSession: localNextSession || null })) setEditingNextSession(false); }} />
+          <SessionDateTimeFields className="ds-input" value={localNextSession} onChange={setLocalNextSession} />
+          <EditFormActions saving={sessionInfoSaving} error={sessionInfoError} hint={hint} onAccent onCancel={() => setEditingNextSession(false)}
+            onSave={async () => { if (await saveSessionInfo({ nextSession: sessionToSave(localNextSession) })) setEditingNextSession(false); }} />
         </div>
       ) : (
         <>
@@ -41,13 +44,14 @@ export function NextSessionCard({ selectedClient, detail }: Props) {
 export function StartDateCard({ selectedClient, detail }: Props) {
   const { editingStartDate, setEditingStartDate, localStartDate, setLocalStartDate, saveSessionInfo, sessionInfoSaving, sessionInfoError } = detail;
   const start = selectedClient.therapyStartDate;
+  const hint = startDateHint(localStartDate);
   return (
     <div className="ds-card ds-card--row">
       <h2 className="ds-label">Начало терапии</h2>
       {editingStartDate ? (
         <div className="tk-edit-form">
-          <input className="ds-input" type="date" value={localStartDate} onChange={e => setLocalStartDate(e.target.value)} />
-          <EditFormActions saving={sessionInfoSaving} error={sessionInfoError} onCancel={() => setEditingStartDate(false)}
+          <input className="ds-input" type="date" max={todayStr()} value={localStartDate} onChange={e => setLocalStartDate(e.target.value)} />
+          <EditFormActions saving={sessionInfoSaving} error={sessionInfoError} hint={hint} onCancel={() => setEditingStartDate(false)}
             onSave={async () => { if (await saveSessionInfo({ therapyStartDate: localStartDate || null })) setEditingStartDate(false); }} />
         </div>
       ) : (

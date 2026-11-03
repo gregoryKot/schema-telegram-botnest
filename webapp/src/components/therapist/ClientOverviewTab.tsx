@@ -49,7 +49,7 @@ export function ClientOverviewTab({ selectedClient, detail }: Props) {
 
         {groups.length > 0 && (
           <ToneGroupsCard label="Карта режимов" groups={groups}
-            action={<button className="ds-link" onClick={() => setClientTab('mode_map')}>Редактировать →</button>} />
+            action={<button className="ds-link" onClick={() => setClientTab('concept')}>Редактировать →</button>} />
         )}
 
         {notes.length > 0 && (

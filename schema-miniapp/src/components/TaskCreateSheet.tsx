@@ -16,6 +16,13 @@ import {
 } from './taskCreate/options';
 import { TaskEntityPicker } from './taskCreate/TaskEntityPicker';
 import { TaskTypeSelector } from './taskCreate/TaskTypeSelector';
+import { LimitedTextarea } from '../../../shared/src/components/LimitedTextarea';
+import { TASK_TEXT_MAX } from '../../../shared/src/limits/textLimits';
+import { taskPayloadText } from '../../../shared/src/tasks/taskPayload';
+import {
+  assignLead,
+  assignableOptions,
+} from '../../../shared/src/tasks/assignCopy';
 
 // Тип задания переехал в taskCreate/options вместе с каталогом —
 // ре-экспорт держит прежний путь импорта у потребителей.
@@ -37,7 +44,13 @@ export function TaskCreateSheet({
   onClose,
 }: Props) {
   const tr = useTr();
-  const [type, setType] = useState<TaskType>(defaultType ?? 'diary_streak');
+  // Офлайн-клиенту — только «Своё задание» (shared/tasks/assignCopy).
+  const options = assignableOptions(TASK_OPTIONS, clientId);
+  const [type, setType] = useState<TaskType>(
+    () =>
+      options.find((o) => o.type === (defaultType ?? 'diary_streak'))?.type ??
+      options[0].type,
+  );
   const [targetDays, setTargetDays] = useState(7);
   const [text, setText] = useState('');
   const [selectedSchemaId, setSelectedSchemaId] = useState('');
@@ -59,33 +72,17 @@ export function TaskCreateSheet({
     }
   }, [type]);
 
-  const selected = TASK_OPTIONS.find((o) => o.type === type)!;
-
-  function getPayloadText(): string {
-    switch (type) {
-      case 'diary_streak':
-        return `Заполнять дневник ${targetDays} дней подряд`;
-      case 'tracker_streak':
-        return `Отмечать потребности ${targetDays} дней подряд`;
-      case 'schema_intro':
-        return selectedSchemaId;
-      case 'mode_intro':
-        return selectedModeId;
-      case 'belief_check':
-        return 'Проверить убеждение';
-      case 'letter_to_self':
-        return 'Написать письмо Уязвимому Ребёнку';
-      case 'safe_place':
-        return 'Описать Безопасное место';
-      case 'flashcard':
-        return 'Разобрать сложную ситуацию по шагам';
-      default:
-        return text;
-    }
-  }
+  const selected = options.find((o) => o.type === type) ?? options[0];
+  const lead = assignLead(clientId);
 
   async function handleCreate() {
-    const finalText = getPayloadText().trim();
+    const finalText = taskPayloadText({
+      type,
+      targetDays,
+      schemaId: selectedSchemaId,
+      modeId: selectedModeId,
+      text,
+    }).trim();
     if (type === 'custom' && !finalText) {
       setError(tr('Введи описание задания', 'Введите описание задания'));
       return;
@@ -124,7 +121,19 @@ export function TaskCreateSheet({
 
       {/* Type selector */}
       {/* Выбор типа задания */}
-      <TaskTypeSelector type={type} onPick={setType} />
+      {lead && (
+        <div
+          style={{
+            fontSize: 13,
+            color: 'var(--text-sub)',
+            lineHeight: 1.5,
+            marginBottom: 16,
+          }}
+        >
+          {lead}
+        </div>
+      )}
+      <TaskTypeSelector options={options} type={type} onPick={setType} />
       {/* Streak day picker */}
       {selected.hasStreak && (
         <div className="u-mb20">
@@ -185,7 +194,8 @@ export function TaskCreateSheet({
       {type === 'custom' && (
         <div className="u-mb20">
           <SectionLabel mb={8}>Описание задания</SectionLabel>
-          <textarea
+          <LimitedTextarea
+            max={TASK_TEXT_MAX}
             value={text}
             onChange={(e) => setText(e.target.value)}
             placeholder="Например: позвонить другу раз в неделю"

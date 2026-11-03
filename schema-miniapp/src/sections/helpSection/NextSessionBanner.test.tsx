@@ -6,8 +6,11 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, cleanup } from '@testing-library/react';
 import { NextSessionBanner } from './NextSessionBanner';
 import type { TherapyRelationInfo } from '../../api';
-import { todayCalendarDate } from '../../../../shared/src/utils/calendarDate';
-import { forEachTimeZone } from '../../../../shared/src/utils/timeZone.test-helpers';
+import { todayStr } from '../../utils/format';
+import {
+  forEachTimeZone,
+  withTimeZone,
+} from '../../../../shared/src/utils/timeZone.test-helpers';
 
 afterEach(() => {
   cleanup();
@@ -60,7 +63,7 @@ describe('NextSessionBanner — содержимое', () => {
       nextSession: '2026-08-10T15:30:00',
     } as unknown as TherapyRelationInfo;
     render(<NextSessionBanner relation={relation} />);
-    expect(screen.getByText('Встреча: Пн, 10 авг · 15:30:00')).toBeTruthy();
+    expect(screen.getByText('Встреча: Пн, 10 авг · 15:30')).toBeTruthy();
   });
 
   it('показывает имя партнёра/терапевта, если оно передано', () => {
@@ -76,20 +79,21 @@ describe('NextSessionBanner — содержимое', () => {
   });
 });
 
-describe('NextSessionBanner — «сегодня» сверяется с календарным днём UTC, а не зоной машины (инцидент 2026-09-17)', () => {
-  // Моменты зафиксированы там, где локальная дата машины заведомо расходится
-  // с UTC: в Сиднее это уже 19-е, в Лос-Анджелесе ещё 18-е — тест краснеет
-  // в любой час прогона, а не только когда TZ раннера случайно не совпал с UTC.
-  it('nextSession на сегодняшний календарный день сервера — «Сегодня встреча» в любой зоне', () => {
+// nextSession — настенное время, которое терапевт ввёл по своим часам, поэтому
+// «сегодня» — местный день того, кто смотрит (QA 2026-10-26). До этого баннер
+// сверялся с днём UTC: в 00:10 по Москве вчерашняя встреча была «сегодня», а
+// сегодняшняя — «завтра»; во Владивостоке так до 10:00 каждый день.
+describe('NextSessionBanner — «сегодня» по местному дню, а не по UTC', () => {
+  // Моменты, где местный день расходится с UTC: в Сиднее уже 19-е, в
+  // Лос-Анджелесе ещё 18-е — тест краснеет в любой час прогона.
+  it('nextSession на местный сегодняшний день — «Сегодня встреча» в любой зоне', () => {
     for (const at of ['2026-09-18T23:30:00Z', '2026-09-19T00:30:00Z']) {
-      // Зона ставится раньше системного времени — тем же порядком, что и в
-      // shared/src/utils/calendarDate.test.ts.
       forEachTimeZone((tz) => {
         vi.useFakeTimers({ toFake: ['Date'] });
         vi.setSystemTime(new Date(at));
         const relation = {
           role: 'client',
-          nextSession: todayCalendarDate(),
+          nextSession: `${todayStr()}T15:00`,
         } as unknown as TherapyRelationInfo;
         const { unmount } = render(<NextSessionBanner relation={relation} />);
         expect(
@@ -100,6 +104,36 @@ describe('NextSessionBanner — «сегодня» сверяется с кал�
         vi.useRealTimers();
       });
     }
+  });
+
+  it('00:10 по Москве: встреча 27-го — сегодня, вчерашняя 23:00 — прошла', () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-10-26T21:10:00Z'));
+    withTimeZone('Europe/Moscow', () => {
+      const today = render(
+        <NextSessionBanner
+          relation={
+            {
+              role: 'client',
+              nextSession: '2026-10-27T15:00',
+            } as unknown as TherapyRelationInfo
+          }
+        />,
+      );
+      expect(screen.getByText('Сегодня встреча')).toBeTruthy();
+      today.unmount();
+      const past = render(
+        <NextSessionBanner
+          relation={
+            {
+              role: 'client',
+              nextSession: '2026-10-26T23:00',
+            } as unknown as TherapyRelationInfo
+          }
+        />,
+      );
+      expect(past.container.firstChild).toBeNull();
+    });
   });
 });
 

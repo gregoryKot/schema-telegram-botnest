@@ -3,7 +3,7 @@ import { LoadErrorBanner } from './LoadErrorBanner';
 import { UserPractice } from '../api';
 import { useTr } from '../utils/addressForm';
 import { useConfirmTap } from '../hooks/useConfirmTap';
-import { hitboxStyle } from '../utils/hitbox';
+import { ConfirmDeleteButton } from './ConfirmDeleteButton';
 
 // Список практик — вынесено из PracticesScreen.tsx (правило №10, файл был
 // над потолком в 300 строк). Три состояния: сбой загрузки (LoadErrorBanner —
@@ -74,49 +74,11 @@ export function PracticesList({
           >
             {p.text}
           </div>
-          {isPending(p.id) ? (
-            <button
-              onClick={() => tapDelete(p.id)}
-              style={{
-                flexShrink: 0,
-                minHeight: 44,
-                padding: '0 14px',
-                borderRadius: 9,
-                border: 'none',
-                background:
-                  'color-mix(in srgb, var(--accent-red) 16%, transparent)',
-                color: 'var(--accent-red)',
-                fontSize: 12,
-                fontWeight: 600,
-                cursor: 'pointer',
-              }}
-            >
-              Точно удалить?
-            </button>
-          ) : (
-            <button
-              onClick={() => tapDelete(p.id)}
-              aria-label="Удалить практику"
-              style={{ ...hitboxStyle(30, 30).outer, flexShrink: 0 }}
-            >
-              <span
-                style={{
-                  ...hitboxStyle(30, 30).inner,
-                  borderRadius: 9,
-                  background:
-                    'color-mix(in srgb, var(--accent-red) 10%, transparent)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: 16,
-                  color:
-                    'color-mix(in srgb, var(--accent-red) 50%, transparent)',
-                }}
-              >
-                ×
-              </span>
-            </button>
-          )}
+          <ConfirmDeleteButton
+            pending={isPending(p.id)}
+            onTap={() => tapDelete(p.id)}
+            label="Удалить практику"
+          />
         </div>
       ))}
     </div>

@@ -12,7 +12,6 @@ import { ConceptPaletteItems } from './modeMap/ConceptPaletteItems';
 import { ClientSchemasPalette } from './modeMap/ClientSchemasPalette';
 import { useModeMapConcept } from './modeMap/clientConceptContext';
 import { findModeMeta } from './modeMap/modeNodeMeta';
-import { hueStyle, MODE_GROUP_HUE } from '../lib/tone';
 import '../styles/sheet-modemap.css';
 
 // Clinical display order: child → critic → coping(×3) → healthy
@@ -172,9 +171,10 @@ export function ModeMapPalette({ onAdd, onAddMany }: Props) {
           if (q && items.length === 0) return null;
           const isOpen = q ? true : openGroups.has(group.id);
           return (
-            <div key={group.id} style={hueStyle(MODE_GROUP_HUE[group.id])}>
+            // Цвет группы = цвет её узла на холсте (GROUP_TO_TYPE ← TYPE_COLORS), не тон кабинета.
+            <div key={group.id} data-group={group.id} style={{ '--gc': meta.color } as React.CSSProperties}>
               <button onClick={() => !q && toggleGroup(group.id)} className={`mm2-pal-head${q ? ' is-static' : ''}`}>
-                <i className="ds-dot tone-fill" />
+                <i className="ds-dot mm2-gdot" />
                 <span className="mm2-pal-head-name">{group.group}</span>
                 {!q && <span className="mm2-pal-head-n">{isOpen ? '▲' : `▼ ${group.items.length}`}</span>}
               </button>
@@ -183,7 +183,7 @@ export function ModeMapPalette({ onAdd, onAddMany }: Props) {
                   onClick={() => onAdd(makeNode(item.id, meta.type, item.name, meta.copingSubtype ? { copingSubtype: meta.copingSubtype } : {}))}
                   draggable onDragStart={e => onDragStart(e, makeNode(item.id, meta.type, item.name, meta.copingSubtype ? { copingSubtype: meta.copingSubtype } : {}))}
                   className="mm2-pal-item is-tone" title={item.short}>
-                  <i className="ds-dot tone-fill" />
+                  <i className="ds-dot mm2-gdot" />
                   <span className="mm2-pal-item-name">{item.name}</span>
                 </button>
               ))}

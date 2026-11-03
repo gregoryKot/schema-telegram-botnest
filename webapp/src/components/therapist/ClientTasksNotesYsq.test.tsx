@@ -16,24 +16,85 @@ const task = (id: number, over: Record<string, unknown>) => ({
 });
 
 describe('ClientTasksTab', () => {
-  it('считает активные, склоняет подпись, шаблон открывает назначение', () => {
-    const setShowAssign = vi.fn();
-    const detail = { clientTasks: [task(1, {}), task(2, {}), task(3, { done: true, completedAt: '2026-10-05T10:00:00Z' })], setShowAssign };
-    render(<ClientTasksTab detail={detail as unknown as ClientDetail} />);
+  it('считает активные, склоняет подпись', () => {
+    const detail = { clientTasks: [task(1, {}), task(2, {}), task(3, { done: true, completedAt: '2026-10-05T10:00:00Z' })] };
+    render(<ClientTasksTab detail={detail as unknown as ClientDetail} onAssign={vi.fn()} />);
     expect(screen.getByText('2')).toBeTruthy();
     expect(screen.getByText('активных домашних задания')).toBeTruthy();
     expect(screen.getByText('Выполнено')).toBeTruthy();
+  });
+
+  // QA 2026-10-26: все четыре шаблона открывали лист с «Трекером потребностей».
+  it('шаблон открывает назначение со своим типом и текстом', () => {
+    const onAssign = vi.fn();
+    render(<ClientTasksTab detail={{ clientTasks: [], selectedClient: { telegramId: 7 } } as unknown as ClientDetail} onAssign={onAssign} />);
+    fireEvent.click(screen.getByText('Письмо себе'));
+    expect(onAssign).toHaveBeenLastCalledWith({ type: 'letter_to_self' });
     fireEvent.click(screen.getByText('Дневник режима'));
-    expect(setShowAssign).toHaveBeenCalledWith(true);
+    expect(onAssign).toHaveBeenLastCalledWith(expect.objectContaining({ type: 'custom', text: expect.stringContaining('Дневник режима') }));
+    fireEvent.click(screen.getByText('+ Назначить'));
+    expect(onAssign).toHaveBeenLastCalledWith();
+    expect(screen.queryByText('Imagery rescripting')).toBeNull();
+  });
+
+  it('офлайн-клиенту — без шаблонов упражнений, с объяснением', () => {
+    render(<ClientTasksTab detail={{ clientTasks: [], selectedClient: { telegramId: -3 } } as unknown as ClientDetail} onAssign={vi.fn()} />);
+    expect(screen.queryByText('Назначить из шаблона')).toBeNull();
+    expect(screen.getByText(/Клиент не пользуется приложением/)).toBeTruthy();
   });
 
   // Регрессия: терапевт видел сырой id режима «invincible_oc» вместо
   // названия — вкладка рисовала task.text как есть.
   it('mode_intro — название режима, сырой id не виден', () => {
     const detail = { clientTasks: [task(1, { type: 'mode_intro', text: 'invincible_oc' })], setShowAssign: vi.fn() };
-    render(<ClientTasksTab detail={detail as unknown as ClientDetail} />);
+    render(<ClientTasksTab detail={detail as unknown as ClientDetail} onAssign={vi.fn()} />);
     expect(screen.getByText('Карточка режима: Неуязвимый Гиперконтролёр')).toBeTruthy();
     expect(screen.queryByText(/invincible_oc/)).toBeNull();
+  });
+});
+
+// QA 2026-10-26: серия «Трекер 3 дн» просрочилась, бэкенд закрыл её
+// (done=false). Доска показывала «Не вышло», а карточка — «1 активное … В
+// работе». Теперь обе берут одну модель статусов (shared/tasks/taskStatus).
+describe('ClientTasksTab — «не вышло» и прогресс серии', () => {
+  it('закрытая серия — «Не вышло», в активные не считается, стоит после открытых', () => {
+    const detail = {
+      clientTasks: [
+        task(1, { type: 'tracker_streak', text: 'Отмечать потребности 3 дня подряд', targetDays: 3, progress: 1, done: false, completedAt: '2026-10-05T12:00:00Z' }),
+        task(2, { text: 'открытое' }),
+      ],
+      setShowAssign: vi.fn(),
+    };
+    render(<ClientTasksTab detail={detail as unknown as ClientDetail} onAssign={vi.fn()} />);
+    expect(screen.getByText('активное домашнее задание')).toBeTruthy();
+    expect(screen.getByText('Не вышло')).toBeTruthy();
+    expect(screen.getByText('закрыто 5 окт · 1 из 3 дней')).toBeTruthy();
+    const rows = screen.getAllByText(/открытое|Отмечать потребности/).map(n => n.textContent);
+    expect(rows).toEqual(['открытое', 'Отмечать потребности 3 дня подряд']);
+  });
+
+  it('серия в работе — прогресс «1 из 7 дней», как у клиента «1/7»', () => {
+    const detail = {
+      clientTasks: [task(1, { type: 'diary_streak', text: 'Заполнять дневник 7 дней подряд', targetDays: 7, progress: 1 })],
+      setShowAssign: vi.fn(),
+    };
+    render(<ClientTasksTab detail={detail as unknown as ClientDetail} onAssign={vi.fn()} />);
+    expect(screen.getByText(/1 из 7 дней/)).toBeTruthy();
+  });
+});
+
+describe('KanbanView — та же модель статусов', () => {
+  it('«не вышло» в своей колонке, у выполненного — дата выполнения, просроченное помечено', () => {
+    const allTasks = [{ clientId: 1, clientName: 'Анна', tasks: [
+      task(1, { text: 'сделано', done: true, dueDate: '2026-10-20', completedAt: '2026-10-05T12:00:00Z' }),
+      task(2, { text: 'не вышло', done: false, completedAt: '2026-10-06T12:00:00Z' }),
+      task(3, { text: 'просрочено', dueDate: '2020-01-01' }),
+    ] as UserTask[] }];
+    render(<KanbanView allTasks={allTasks} loading={false} loadFailed={false} onRetry={vi.fn()} onOpenClient={vi.fn()} />);
+    expect(screen.getByText('выполнено 5 окт')).toBeTruthy();
+    expect(screen.queryByText('до 20 окт')).toBeNull();
+    expect(screen.getByText('закрыто 6 окт')).toBeTruthy();
+    expect(screen.getByText('Просрочено')).toBeTruthy();
   });
 });
 

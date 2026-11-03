@@ -14,6 +14,7 @@ import { ClientOverviewTab } from './therapist/ClientOverviewTab';
 import { ClientConceptTab } from './therapist/ClientConceptTab';
 import { ClientSessionsTab } from './therapist/ClientSessionsTab';
 import { ClientTasksTab } from './therapist/ClientTasksTab';
+import type { AssignPreset } from './therapist/assignTemplates';
 import { ClientCardFallback } from './therapist/ClientCardFallback';
 import { clientCardState } from './therapist/clientCardState';
 import { sameId } from '../../../shared/src/utils/sameId';
@@ -44,6 +45,7 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
   const [allTasksFailed, setAllTasksFailed] = useState(false);
   const [animKey, setAnimKey] = useState(0);
   const [canvasMapId, setCanvasMapId] = useState<number | null>(null); // карта, созданная кнопкой «Открыть на холсте»
+  const [assignPreset, setAssignPreset] = useState<AssignPreset | undefined>(undefined); // шаблон «Назначить из шаблона»
 
   function switchView(v: 'list' | 'client') {
     setAnimKey(k => k + 1);
@@ -170,7 +172,7 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
 
             {/* ── TASKS ────────────────────────────────────────────────────────── */}
             {clientTab === 'tasks' && (
-              <ClientTasksTab detail={detail} />
+              <ClientTasksTab detail={detail} onAssign={preset => { setAssignPreset(preset); setShowAssign(true); }} />
             )}
 
             {/* ── YSQ ──────────────────────────────────────────────────────────── */}
@@ -207,8 +209,10 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
         <TaskCreateSheet
           clientId={selectedClient.telegramId}
           clientName={selectedClient.name ?? undefined}
-          onCreated={detail.onTaskAssigned}
-          onClose={() => setShowAssign(false)}
+          defaultType={assignPreset?.type}
+          defaultText={assignPreset?.text}
+          onCreated={() => { setAssignPreset(undefined); detail.onTaskAssigned(); }}
+          onClose={() => { setShowAssign(false); setAssignPreset(undefined); }}
         />
       )}
     </div>

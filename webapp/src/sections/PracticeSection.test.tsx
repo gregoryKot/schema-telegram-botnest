@@ -8,8 +8,8 @@ import { render, screen, fireEvent, cleanup, waitFor, within, act } from '@testi
 import { MemoryRouter } from 'react-router-dom';
 import { AddressFormContext } from '../utils/addressForm';
 import { PracticeSection } from './PracticeSection';
-import { todayCalendarDate } from '../../../shared/src/utils/calendarDate';
-import { forEachTimeZone } from '../../../shared/src/utils/timeZone.test-helpers';
+import { todayStr } from '../utils/format';
+import { forEachTimeZoneAsync } from '../../../shared/src/utils/timeZone.test-helpers';
 
 // Мок фабрики `../api` возвращает только `{ api: {...} }` по умолчанию, но
 // хук useTaskActions (используемый внутри PracticeSection) импортирует ещё и
@@ -188,6 +188,22 @@ describe('PracticeSection — задания от терапевта', () => {
     expect(onOpenDiaries).toHaveBeenCalled();
   });
 
+  // QA 2026-10-26 (docs/INCIDENTS.md): «Своё задание» от терапевта стояло в
+  // блоке без «Готово», а тап по нему не делал ничего — закрыть было нечем.
+  it('«Своё задание» от терапевта закрывается кнопкой «Готово»', async () => {
+    const onTasksChanged = vi.fn();
+    mockApi.getTasks
+      .mockResolvedValueOnce([task({ id: 12, assignedBy: 99, type: 'custom', text: 'Позвонить маме' })])
+      .mockResolvedValue([]);
+    mockApi.completeTask.mockResolvedValue(undefined);
+    renderSection({ onTasksChanged });
+
+    await screen.findByText('От терапевта');
+    fireEvent.click(screen.getByText('Готово'));
+    await waitFor(() => expect(mockApi.completeTask).toHaveBeenCalledWith(12, true));
+    await waitFor(() => expect(onTasksChanged).toHaveBeenCalledTimes(1));
+  });
+
   it('клик на задание "tracker_streak" открывает трекер (onOpenTracker)', async () => {
     const onOpenTracker = vi.fn();
     mockApi.getTasks.mockResolvedValue([task({ id: 1, assignedBy: 99, type: 'tracker_streak' })]);
@@ -250,7 +266,16 @@ describe('PracticeSection — мои цели', () => {
     renderSection();
 
     await screen.findByText('Моя цель');
-    expect(screen.getByText('1 активных')).toBeTruthy();
+    expect(screen.getByText('1 активная')).toBeTruthy();
+  });
+
+  it.each([
+    [2, '2 активные'],
+    [5, '5 активных'],
+  ])('счётчик своих целей: %i → «%s» (форма слова по числу)', async (n, text) => {
+    mockApi.getTasks.mockResolvedValue(Array.from({ length: n }, (_, i) => task({ id: i + 1, assignedBy: null, text: `Цель ${i + 1}` })));
+    renderSection();
+    await screen.findByText(text);
   });
 
   it('клик "+ Поставить цель" открывает TaskCreateSheet', async () => {
@@ -300,7 +325,7 @@ describe('PracticeSection — своя цель: «Готово» и серия 
     renderSection();
     await screen.findByText('Сделано сегодня — завтра снова');
     expect(screen.queryByText('Готово')).toBeNull();
-    expect(screen.getByText('1 активных')).toBeTruthy();
+    expect(screen.getByText('1 активная')).toBeTruthy();
   });
 });
 
@@ -323,7 +348,8 @@ describe('PracticeSection — баннер ближайшей сессии', () 
   it('клиент с сессией сегодня видит "Сегодня встреча"', async () => {
     mockApi.getTherapyRelation.mockResolvedValue({
       role: 'client', status: 'active', partnerName: 'Анна', partnerId: 1, code: 'x',
-      nextSession: new Date().toISOString(),
+      // Настенное время терапевта без зоны, как в базе: «сегодня» — местный день.
+      nextSession: `${todayStr()}T10:00`,
     });
     renderSection();
 
@@ -331,38 +357,25 @@ describe('PracticeSection — баннер ближайшей сессии', () 
     expect(screen.getByText(/с Анна/)).toBeTruthy();
   });
 
-  // РЕГРЕССИЯ (TZ-класс, инцидент 2026-09-17): isToday сравнивал календарный
-  // день `nextSession` с «сегодня» через `new Date().toISOString().slice(0,10)`
-  // — уже UTC, но инлайн-копией; теперь общий todayCalendarDate(). Моменты
-  // зафиксированы там, где зоны заведомо расходятся с UTC. Данные грузятся
-  // асинхронно (api.getTherapyRelation), поэтому первичная загрузка идёт под
-  // текущей зоной процесса, а проверка по зонам — синхронный `rerender`, чтобы
-  // момент смены TZ совпадал с моментом пересчёта isToday.
-  it('сессия на сегодняшний календарный день сервера — «Сегодня встреча» в любой зоне', async () => {
+  // РЕГРЕССИЯ (TZ-класс, инцидент 2026-09-17, QA 2026-10-26): isToday
+  // сравнивал день `nextSession` с днём UTC. nextSession — настенное время,
+  // которое терапевт ввёл по своим часам, поэтому «сегодня» — местный день
+  // (isSessionToday). Моменты — там, где местный день расходится с UTC; в
+  // каждой зоне — своя загрузка, потому что «сегодня» в зонах разное.
+  it('сессия на местный сегодняшний день — «Сегодня встреча» в любой зоне', async () => {
     vi.useFakeTimers({ toFake: ['Date'] });
     try {
       for (const moment of ['2026-09-18T23:30:00Z', '2026-09-19T00:30:00Z']) {
-        vi.setSystemTime(new Date(moment));
-        mockApi.getTherapyRelation.mockResolvedValue({
-          role: 'client', status: 'active', partnerName: 'Анна', partnerId: 1, code: 'x',
-          nextSession: `${todayCalendarDate()}T10:00:00Z`,
-        });
-        const { unmount, rerender } = renderSection();
-        await screen.findByText('● Сегодня встреча');
-
-        forEachTimeZone(() => {
+        await forEachTimeZoneAsync(async (tz) => {
           vi.setSystemTime(new Date(moment));
-          rerender(
-            <AddressFormContext.Provider value={{ form: 'ty', setForm: vi.fn() }}>
-              <MemoryRouter>
-                <PracticeSection {...noopProps} />
-              </MemoryRouter>
-            </AddressFormContext.Provider>,
-          );
-          expect(screen.getByText('● Сегодня встреча')).toBeTruthy();
+          mockApi.getTherapyRelation.mockResolvedValue({
+            role: 'client', status: 'active', partnerName: 'Анна', partnerId: 1, code: 'x',
+            nextSession: `${todayStr()}T10:00`,
+          });
+          const { unmount } = renderSection();
+          expect(await screen.findByText('● Сегодня встреча'), `${moment} / ${tz}`).toBeTruthy();
+          unmount();
         });
-
-        unmount();
       }
     } finally {
       vi.useRealTimers();

@@ -15,6 +15,7 @@ import {
   act,
 } from '@testing-library/react';
 import { SchemasSection } from './SchemasSection';
+import { writeYsqProgress } from '../../../shared/src/hooks/ysqProgressStore';
 
 vi.mock('../api', () => ({
   api: {
@@ -165,6 +166,19 @@ describe('SchemasSection — сохранение выбора схем (read-af
     expect(mockApi.updateSettings).toHaveBeenCalledWith({
       mySchemaIds: ['abandonment'],
     });
+  });
+});
+
+// QA 2026-10-26: тест YSQ открыт поверх экрана; после «✕» карточка звала
+// «Начать», а число ответов появлялось только после перезагрузки.
+describe('SchemasSection — прогресс теста YSQ без перезагрузки', () => {
+  it('ответы в тесте поверх экрана сразу видны на карточке теста', async () => {
+    mockApi.getYsqProgress.mockResolvedValue(null);
+    await renderReady();
+    act(() => writeYsqProgress([4, 4, 4, 4, 4, ...Array(111).fill(0)], 5));
+    await waitFor(() =>
+      expect(screen.getByText(/Продолжить тест \(5 из 116\)/)).toBeTruthy(),
+    );
   });
 });
 

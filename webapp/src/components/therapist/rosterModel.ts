@@ -1,15 +1,17 @@
-// Чистая логика списка клиентов терапевта: фильтры, порядок, подписи. Календарные
-// дни — 'YYYY-MM-DD', today приходит параметром (правило №25: без локальной полуночи).
+// Чистая логика списка клиентов терапевта: фильтры, порядок, подписи. today —
+// местный день терапевта (nextSession — его настенное время); активность — по
+// календарю клиента, isActiveToday/daysSinceActive от сервера (QA 2026-10-26).
 import type { TherapyClientSummary } from '../../api';
 import { SCHEMA_DOMAINS } from '../../schemaTherapyData';
 import {
   DAY_NAMES,
   calcTherapyDuration,
+  isActiveToday,
   isVirtualClient,
   nextSessionLabel,
 } from './clientSheetHelpers';
 import { upcomingSession } from '../../../../shared/src/therapy/upcomingSession';
-import { calendarAgoLabel } from '../../../../shared/src/utils/calendarAgo';
+import { serverAgoLabel } from '../../../../shared/src/utils/calendarAgo';
 
 export type RosterStatus = 'all' | 'active' | 'wait' | 'virtual';
 
@@ -23,12 +25,11 @@ export function filterRoster(
   clients: TherapyClientSummary[],
   query: string,
   status: RosterStatus,
-  today: string,
 ): TherapyClientSummary[] {
   const q = query.toLowerCase().trim();
   return clients.filter((c) => {
     if (q && !displayName(c).toLowerCase().includes(q)) return false;
-    const activeToday = c.lastActiveDate === today;
+    const activeToday = isActiveToday(c);
     if (status === 'active') return activeToday;
     if (status === 'wait') return !isVirtualClient(c) && !activeToday;
     if (status === 'virtual') return isVirtualClient(c);
@@ -63,12 +64,12 @@ export function meetingLabel(c: TherapyClientSummary, today: string): string | n
 }
 
 /** Подпись под именем: срок в работе или (для бот-клиента) активность. */
-export function clientCaption(c: TherapyClientSummary, today: string): string | null {
+export function clientCaption(c: TherapyClientSummary): string | null {
   const duration = c.therapyStartDate ? calcTherapyDuration(c.therapyStartDate) : '';
   if (duration === 'сегодня') return 'с сегодняшнего дня';
   if (duration) return `в работе ${duration}`;
   if (isVirtualClient(c)) return null;
-  const ago = c.lastActiveDate ? calendarAgoLabel(c.lastActiveDate, today) : ''; // мусор → ''
+  const ago = serverAgoLabel(c.lastActiveDate, c.daysSinceActive); // по календарю клиента, не терапевта
   const activity = ago ? `активность ${ago}` : 'нет активности';
   return c.streak > 0 ? `${activity} · стрик ${c.streak} дн.` : activity;
 }
