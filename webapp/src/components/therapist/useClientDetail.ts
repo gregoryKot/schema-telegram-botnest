@@ -10,7 +10,7 @@ import { useYsqRequest } from '../../../../shared/src/therapy/useYsqRequest';
 import { formatConceptLinksExport } from '../../../../shared/src/therapy/conceptGraph/conceptLinksExport';
 import { reloadClientTasks } from '../../../../shared/src/therapy/reloadClientTasks';
 import { useConceptAutosave } from './useConceptAutosave';
-type ClientTab = 'overview' | 'concept' | 'mode_map' | 'sessions' | 'tasks' | 'ysq' | 'client_notes';
+import type { ClientTab } from './clientSheetTypes';
 
 interface Params {
   onOpenClient?: (id: UserId) => void;
@@ -74,8 +74,8 @@ export function useClientDetail({ onOpenClient, switchView, setClients }: Params
   const ysqSchemaIds = clientData?.ysqActiveSchemaIds ?? [];
   const selfSchemaIds = clientData?.mySchemaIds ?? [];
 
-  // ── Open client ────────────────────────────────────────────────────────────────
-  async function openClient(client: TherapyClientSummary) {
+  // ── Open client (tab — с какой вкладки: задание с доски открывает «Задания») ──
+  async function openClient(client: TherapyClientSummary, tab: ClientTab = 'overview') {
     const clientId = client.telegramId;
     conceptSave.resetForClient(); // ожидающая правка уходит ПРЕЖНЕМУ клиенту, с его данными
     openClientIdRef.current = clientId;
@@ -93,7 +93,7 @@ export function useClientDetail({ onOpenClient, switchView, setClients }: Params
     resetYsq();
     sa.resetSessionAlias(client);
     setDeleteError('');
-    setClientTab('overview');
+    setClientTab(tab);
     setTabLoading(true);
     onOpenClient?.(clientId);
     switchView('client');

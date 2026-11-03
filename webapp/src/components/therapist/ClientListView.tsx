@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useTr } from '../../utils/addressForm';
-import { api } from '../../api';
-import type { TherapyClientSummary, UserTask, UserId } from '../../api';
+import type { TherapyClientSummary } from '../../api';
 import { sameId } from '../../../../shared/src/utils/sameId';
 // Местный день: с ним сравнивается nextSession — настенное время терапевта.
 // Активность клиента — по его календарю (isActiveToday), не по этому дню.
@@ -13,8 +12,9 @@ import { PendingInvitesList } from '../../../../shared/src/therapy/PendingInvite
 import { ClientCard } from './ClientCard';
 import { filterRoster, sortRoster, type RosterStatus } from './rosterModel';
 import type { useAddClient } from './useAddClient';
+import type { TasksBoard } from './useTasksBoard';
+import type { ClientTab } from './clientSheetTypes';
 import '../../styles/therapist-clients.css';
-type AllTasks = { clientId: UserId; clientName: string; tasks: UserTask[] }[] | null;
 
 const FILTERS: { key: RosterStatus; label: string }[] = [
   { key: 'all', label: 'Все' },
@@ -34,20 +34,15 @@ interface Props {
   setSearchQuery: React.Dispatch<React.SetStateAction<string>>;
   filterStatus: RosterStatus;
   setFilterStatus: React.Dispatch<React.SetStateAction<RosterStatus>>;
-  allTasks: AllTasks;
-  allTasksLoading: boolean;
-  allTasksFailed: boolean;
-  setAllTasks: React.Dispatch<React.SetStateAction<AllTasks>>;
-  setAllTasksLoading: React.Dispatch<React.SetStateAction<boolean>>;
-  setAllTasksFailed: React.Dispatch<React.SetStateAction<boolean>>;
-  openClient: (client: TherapyClientSummary) => void;
+  /** Доска «Задания» — её держит лист кабинета (useTasksBoard). */
+  board: TasksBoard;
+  openClient: (client: TherapyClientSummary, tab?: ClientTab) => void;
   addClient: ReturnType<typeof useAddClient>;
 }
 
 export function ClientListView({
   animKey, clients, loading, loadFailed, listTab, setListTab, searchQuery, setSearchQuery,
-  filterStatus, setFilterStatus, allTasks, allTasksLoading, allTasksFailed, setAllTasks, setAllTasksLoading, setAllTasksFailed,
-  openClient, addClient,
+  filterStatus, setFilterStatus, board, openClient, addClient,
 }: Props) {
   const tr = useTr();
   const [addOpen, setAddOpen] = useState(false);
@@ -55,15 +50,6 @@ export function ClientListView({
   // прячем, пока терапевт не увидел ссылку-приглашение (created).
   const noClients = !loading && !loadFailed && clients.length === 0;
   const formVisible = addOpen || noClients || addClient.created !== null;
-
-  // Сбой ≠ пусто: канбан не должен показать терапевту пустую доску без
-  // заданий на отказе запроса. Вынесено в функцию — переиспользуется и
-  // первым кликом по вкладке, и кнопкой повтора внутри KanbanView.
-  const loadAllTasks = () => {
-    setAllTasksFailed(false);
-    setAllTasksLoading(true);
-    api.getAllTherapyTasks().then(setAllTasks).catch(() => setAllTasksFailed(true)).finally(() => setAllTasksLoading(false));
-  };
 
   const today = todayStr();
   const filtered = sortRoster(filterRoster(clients, searchQuery, filterStatus), today);
@@ -90,10 +76,7 @@ export function ClientListView({
               <button role="tab" aria-selected={listTab === 'clients'} className={`ds-seg-btn ${listTab === 'clients' ? 'is-active' : ''}`}
                       onClick={() => setListTab('clients')}>Клиенты</button>
               <button role="tab" aria-selected={listTab === 'kanban'} className={`ds-seg-btn ${listTab === 'kanban' ? 'is-active' : ''}`}
-                      onClick={() => {
-                        setListTab('kanban');
-                        if (!allTasks && !allTasksLoading) loadAllTasks();
-                      }}>Задания</button>
+                      onClick={() => { setListTab('kanban'); board.open(); }}>Задания</button>
             </div>
             {listTab === 'clients' && (
               <div className="ds-seg">
@@ -112,13 +95,14 @@ export function ClientListView({
 
         {listTab === 'kanban' && (
           <KanbanView
-            allTasks={allTasks}
-            loading={allTasksLoading}
-            loadFailed={allTasksFailed}
-            onRetry={loadAllTasks}
+            allTasks={board.tasks}
+            loading={board.loading}
+            loadFailed={board.failed}
+            onRetry={board.load}
+            // Клик по заданию ведёт к заданиям клиента, а не на «Обзор».
             onOpenClient={(clientId) => {
               const client = clients.find(c => sameId(c.telegramId, clientId));
-              if (client) openClient(client);
+              if (client) openClient(client, 'tasks');
             }}
           />
         )}

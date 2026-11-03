@@ -26,10 +26,14 @@ const task = (id: number, over: Partial<UserTask> = {}): UserTask => ({
   ...over,
 });
 
-function setup(api: TherapistTaskApi, initial: UserTask[]) {
+function setup(
+  api: TherapistTaskApi,
+  initial: UserTask[],
+  onChanged?: () => void,
+) {
   return renderHook(() => {
     const [tasks, setTasks] = useState(initial);
-    return { tasks, ...useTherapistTaskActions(api, setTasks) };
+    return { tasks, ...useTherapistTaskActions(api, setTasks, onChanged) };
   });
 }
 
@@ -73,6 +77,37 @@ describe('useTherapistTaskActions', () => {
     expect(api.completeTask).toHaveBeenCalledWith(3, true);
     expect(result.current.tasks[0].done).toBe(true);
     expect(result.current.tasks[0].completedAt).toBeTruthy();
+  });
+});
+
+// QA 2026-11: доска «Задания» сайта жила старой после отметки и удаления в
+// карточке. onChanged — сигнал «задания изменились»: только после успеха.
+describe('useTherapistTaskActions — onChanged', () => {
+  it('успешные удаление и отметка зовут onChanged, сбой — нет', async () => {
+    const onChanged = vi.fn();
+    const api = {
+      deleteTherapyTask: vi
+        .fn()
+        .mockResolvedValueOnce({ ok: true })
+        .mockRejectedValueOnce(new Error('403')),
+      completeTask: vi.fn().mockResolvedValue({ ok: true }),
+    };
+    const { result } = setup(
+      api,
+      [task(1), task(2), task(3, { userId: -5 })],
+      onChanged,
+    );
+    await act(async () => {
+      await result.current.remove(1);
+    });
+    await act(async () => {
+      await result.current.markDone(3);
+    });
+    expect(onChanged).toHaveBeenCalledTimes(2);
+    await act(async () => {
+      await result.current.remove(2);
+    });
+    expect(onChanged).toHaveBeenCalledTimes(2);
   });
 });
 
