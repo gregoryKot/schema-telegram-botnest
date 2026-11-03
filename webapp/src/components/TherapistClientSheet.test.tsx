@@ -97,8 +97,9 @@ function Wrapper() {
   return <TherapistClientSheet view={view} onViewChange={setView} onClose={vi.fn()} />;
 }
 
+// Router: подтверждение удаления клиента пишет запись в историю (HistoryConfirmDialog).
 function renderSheet() {
-  return render(<Wrapper />);
+  return render(<MemoryRouter><Wrapper /></MemoryRouter>);
 }
 
 // Инцидент 2026-10-26: приглашение из «Новый клиент» больше не создаёт

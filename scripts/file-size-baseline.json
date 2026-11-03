@@ -1951,6 +1951,7 @@
   "webapp/src/components/history/historyMath.ts": 31,
   "webapp/src/components/history/HistoryWeekView.tsx": 43,
   "webapp/src/components/history/SparklineRow.tsx": 44,
+  "webapp/src/components/HistoryConfirmDialog.tsx": 19,
   "webapp/src/components/HistorySheet.tsx": 114,
   "webapp/src/components/HistorySheetSkeleton.tsx": 28,
   "webapp/src/components/HistoryView.tsx": 138,

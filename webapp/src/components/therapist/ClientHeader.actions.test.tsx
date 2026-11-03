@@ -7,8 +7,8 @@
 // удаления — прежний ConfirmDialog. Ширина экрана — window.innerWidth (useIsMobile).
 import { useState } from 'react';
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
-import { render, screen, fireEvent, cleanup, within } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { render, screen, fireEvent, cleanup, within, act } from '@testing-library/react';
+import { MemoryRouter, useLocation, useNavigate, type NavigateFunction } from 'react-router-dom';
 import { ClientHeader } from './ClientHeader';
 import { ClientOverviewTab } from './ClientOverviewTab';
 import { ClientOverviewSidebar } from './ClientOverviewSidebar';
@@ -165,6 +165,57 @@ describe('меню «⋯» шапки', () => {
     expect(within(dialog).getByText('Удалить клиента «Анна»?')).toBeTruthy();
     fireEvent.click(within(dialog).getByRole('button', { name: 'Удалить' }));
     expect(deleteClient).toHaveBeenCalled();
+  });
+});
+
+// QA 2026-11: «Назад» браузера на «Удалить клиента?» уводил из карточки —
+// диалог не писал запись в историю. Теперь «Назад» закрывает только диалог.
+describe('подтверждение удаления и «Назад» браузера', () => {
+  const nav: { go?: NavigateFunction; path?: string } = {};
+  function Harness({ deleteClient = vi.fn() }: { deleteClient?: () => void }) {
+    const [confirming, setConfirming] = useState(true);
+    nav.go = useNavigate();
+    nav.path = useLocation().pathname;
+    return (
+      <ClientHeader selectedClient={client} switchView={vi.fn()}
+        detail={detailOf({ confirmingDelete: confirming, cancelDeleteClient: () => setConfirming(false), deleteClient })} />
+    );
+  }
+  const renderAt = (deleteClient?: () => void) => render(
+    <MemoryRouter initialEntries={['/cabinet', '/cabinet/-1']} initialIndex={1}><Harness deleteClient={deleteClient} /></MemoryRouter>,
+  );
+  const back = () => act(() => { void nav.go!(-1); });
+
+  it('«Назад» закрывает диалог, карточка остаётся на месте, удаления нет', () => {
+    const deleteClient = vi.fn();
+    renderAt(deleteClient);
+    expect(screen.getByRole('dialog')).toBeTruthy();
+    back();
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(nav.path).toBe('/cabinet/-1');
+    expect(deleteClient).not.toHaveBeenCalled();
+    back(); // следующий «Назад» — уже из карточки, без «мёртвой» записи
+    expect(nav.path).toBe('/cabinet');
+  });
+
+  it('«Удалить» снимает запись диалога и удаляет; «Отмена» — закрывает без удаления', () => {
+    const deleteClient = vi.fn();
+    renderAt(deleteClient);
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Удалить' }));
+    expect(deleteClient).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole('dialog')).toBeNull();
+    back();
+    expect(nav.path).toBe('/cabinet');
+    cleanup();
+
+    const other = vi.fn();
+    renderAt(other);
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Отмена' }));
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(nav.path).toBe('/cabinet/-1');
+    expect(other).not.toHaveBeenCalled();
+    back();
+    expect(nav.path).toBe('/cabinet');
   });
 });
 
