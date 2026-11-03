@@ -130,6 +130,46 @@ describe('JoinConfirmSheet — согласие перед присоедине�
     );
     expect(screen.queryByText('Присоединиться')).toBeNull();
     expect(screen.getByText('Закрыть')).toBeTruthy();
+    // QA 2026-11, М1: у недействительной ссылки нет заголовка согласия.
+    expect(screen.queryByText('Открыть доступ терапевту?')).toBeNull();
+  });
+
+  // QA 2026-11, М1: подключение к другому терапевту видно до нажатия.
+  it('терапия: подключены к другому терапевту — сказано сразу, «Присоединиться» нет', async () => {
+    mockApi.previewTherapyInvite.mockResolvedValue({
+      therapistName: 'Анна',
+      connection: 'other',
+    });
+    render(
+      <JoinConfirmSheet
+        joinKind="therapy"
+        joinCode="B"
+        onClose={noop}
+        onPairJoined={noop}
+      />,
+    );
+    expect((await screen.findByRole('alert')).textContent).toMatch(
+      /подключение к другому терапевту/,
+    );
+    expect(screen.queryByText('Присоединиться')).toBeNull();
+  });
+
+  it('терапия: ссылка своего терапевта при живой связи — «Подключение уже есть»', async () => {
+    mockApi.previewTherapyInvite.mockResolvedValue({
+      therapistName: 'Анна',
+      connection: 'same',
+    });
+    render(
+      <JoinConfirmSheet
+        joinKind="therapy"
+        joinCode="A"
+        onClose={noop}
+        onPairJoined={noop}
+      />,
+    );
+    expect(await screen.findByText('Подключение уже есть')).toBeTruthy();
+    expect(screen.queryByText('Присоединиться')).toBeNull();
+    expect(screen.getByText('Понятно')).toBeTruthy();
   });
 
   it('терапия: имени в профиле нет — строки «от кого» нет; пара предпросмотр не зовёт', async () => {

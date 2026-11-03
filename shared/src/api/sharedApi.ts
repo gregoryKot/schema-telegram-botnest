@@ -177,10 +177,10 @@ export const buildSharedApi = (t: ApiTransport) => ({
   revokeTherapyInvite: (id: number) => t.del(`/api/therapy/invites/${id}`),
   // Чей код — до согласия клиента (экран JoinConfirmSheet).
   previewTherapyInvite: (code: string) =>
-    t.postJson<{ therapistName: string | null }>(
-      '/api/therapy/invite/preview',
-      { code },
-    ),
+    t.postJson<{
+      therapistName: string | null;
+      connection?: 'none' | 'same' | 'other';
+    }>('/api/therapy/invite/preview', { code }),
   getTherapyRelation: () =>
     t.get<TherapyRelationInfo | null>('/api/therapy/relation'),
   // Терапевт отказался от роли — сообщение вместо «Мой терапевт».

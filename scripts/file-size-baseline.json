@@ -1958,7 +1958,7 @@
   "webapp/src/components/HomeScreenOfferCard.tsx": 34,
   "webapp/src/components/IndexInfoSheet.tsx": 30,
   "webapp/src/components/installGuide/installSteps.ts": 46,
-  "webapp/src/components/JoinConfirmSheet.tsx": 72,
+  "webapp/src/components/JoinConfirmSheet.tsx": 73,
   "webapp/src/components/journey/WebJourneyHero.tsx": 38,
   "webapp/src/components/journey/webJourneyHeroes.ts": 8,
   "webapp/src/components/JourneySheet.tsx": 89,

@@ -1,10 +1,10 @@
 import { api } from '../api';
 import { useTr } from '../utils/addressForm';
 import { Dialog } from './Dialog';
-import { joinConfirmExplain, joinConfirmTitle } from '../../../shared/src/therapy/joinConfirmCopy';
+import { joinSheetView } from '../../../shared/src/therapy/joinSheetView';
 import { useJoinConfirm } from '../../../shared/src/therapy/useJoinConfirm';
 import { useInvitePreview } from '../../../shared/src/therapy/useInvitePreview';
-import { inviteFromLine, inviteInvalidText, JOIN_DONE_TITLE, joinDoneText } from '../../../shared/src/therapy/therapistLinkCopy';
+import { inviteFromLine, JOIN_DONE_TITLE, joinDoneText } from '../../../shared/src/therapy/therapistLinkCopy';
 import '../styles/entry-flows.css';
 
 interface Props {
@@ -48,20 +48,21 @@ export function JoinConfirmSheet({ joinKind, joinCode, onClose, onJoined }: Prop
     );
   }
 
-  const title = joinConfirmTitle(isPair);
-  const invalid = preview.state === 'invalid';
+  // Согласие — только когда присоединиться можно; иначе одна причина (М1).
+  const view = joinSheetView(isPair, preview, tr);
+  const notice = view.notice;
   return (
-    <Dialog label={title} onClose={busy ? undefined : onClose} closeOnEscape={!busy} zIndex={350}>
-      <h2 className="ds-h2 sk-dialog-title">{title}</h2>
+    <Dialog label={view.title} onClose={busy ? undefined : onClose} closeOnEscape={!busy} zIndex={350}>
+      <h2 className="ds-h2 sk-dialog-title">{view.title}</h2>
       {name && <p className="sk-dialog-text"><strong>{inviteFromLine(name)}</strong></p>}
-      <p className="sk-dialog-text">{joinConfirmExplain(isPair, tr)}</p>
-      {invalid && <p role="alert" className="ef-error">{inviteInvalidText(tr)}</p>}
+      {view.explain && <p className="sk-dialog-text">{view.explain}</p>}
+      {notice && <p role={notice.role} className={notice.role === 'alert' ? 'ef-error' : 'sk-dialog-text'}>{notice.text}</p>}
       {failMsg && <p role="alert" className="ef-error">{failMsg}</p>}
       <div className="sk-dialog-actions">
         <button type="button" className="ds-btn ds-btn--secondary" onClick={onClose} disabled={busy}>
-          {invalid ? 'Закрыть' : 'Не сейчас'}
+          {view.closeLabel}
         </button>
-        {!invalid && (
+        {view.canJoin && (
           <button type="button" className="ds-btn" onClick={confirm} disabled={busy}>
             {busy ? 'Присоединяю…' : 'Присоединиться'}
           </button>
