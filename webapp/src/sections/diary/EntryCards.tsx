@@ -7,22 +7,10 @@ import { GratitudeShare } from '../../components/diary/GratitudeShare';
 import { DIARY_HUE, hueStyle } from '../../lib/tone';
 import { fmtTime, fmtDateKey, fmtDayMonth } from './dateHelpers';
 import { schemaEntryRows, modeEntryRows, type FieldRow } from './entryRows';
+import { DeleteBtn } from './DeleteBtn';
 import '../../styles/client-diary.css';
 
 // Карточки записей дневника: бейдж типа в тоне DIARY_HUE, заголовок, текст; клик раскрывает детали и удаление.
-
-export function DeleteBtn({ onClick }: { onClick: () => void }) {
-  const [confirm, setConfirm] = useState(false);
-  if (!confirm) return (
-    <button className="ds-btn ds-btn--sm ds-btn--secondary cd-del" onClick={e => { e.stopPropagation(); setConfirm(true); }}>Удалить</button>
-  );
-  return (
-    <div className="cd-del-row" role="presentation" onClick={e => e.stopPropagation()}>
-      <button className="ds-btn ds-btn--sm ds-btn--accent" onClick={onClick}>Удалить навсегда</button>
-      <button className="ds-btn ds-btn--sm ds-btn--secondary" onClick={() => setConfirm(false)}>Отмена</button>
-    </div>
-  );
-}
 
 export function ExpandField({ label, text, accent }: { label: string; text: string; accent?: boolean }) {
   return (
@@ -59,7 +47,7 @@ function ExpandFields({ rows }: { rows: FieldRow[] }) {
   ))}</>;
 }
 
-export function SchemaEntry({ entry, onDelete }: { entry: SchemaDiaryEntry; onDelete: () => void }) {
+export function SchemaEntry({ entry, onDelete }: { entry: SchemaDiaryEntry; onDelete: () => void | Promise<void> }) {
   const schemas = entry.schemaIds.map(id => getSchemaById(id)).filter(Boolean);
   const emotions = EMOTIONS.filter(e => entry.emotions.some((em: EmotionEntry) => em.id === e.id));
   const thought = schemas.length === 0 && entry.emotions.length === 0; // «Дневник одной страницей»: просто мысль
@@ -84,7 +72,7 @@ export function SchemaEntry({ entry, onDelete }: { entry: SchemaDiaryEntry; onDe
   );
 }
 
-export function ModeEntry({ entry, onDelete }: { entry: ModeDiaryEntry; onDelete: () => void }) {
+export function ModeEntry({ entry, onDelete }: { entry: ModeDiaryEntry; onDelete: () => void | Promise<void> }) {
   const mode = getModeById(entry.modeId);
   return (
     <EntryShell
@@ -112,7 +100,7 @@ export function ModeEntry({ entry, onDelete }: { entry: ModeDiaryEntry; onDelete
   );
 }
 
-export function GratitudeEntry({ entry, onDelete }: { entry: GratitudeDiaryEntry; onDelete: () => void }) {
+export function GratitudeEntry({ entry, onDelete }: { entry: GratitudeDiaryEntry; onDelete: () => void | Promise<void> }) {
   const n = entry.items.length;
   return (
     <EntryShell

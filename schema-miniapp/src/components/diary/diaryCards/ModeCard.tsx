@@ -3,7 +3,8 @@ import { pressable } from '../../../utils/a11y';
 import { ModeDiaryEntry } from '../../../types';
 import { getModeById } from '../../../schemaTherapyData';
 import { ModeEntryShare } from '../ModeEntryShare';
-import { formatDt, Field, DeleteBtn } from './shared';
+import { formatDt, Field } from './shared';
+import { DeleteBtn } from './DeleteBtn';
 
 // Карточка записи дневника режимов. Вынесено из DiaryListView.tsx (правило №10).
 export function ModeCard({
@@ -13,7 +14,7 @@ export function ModeCard({
 }: {
   entry: ModeDiaryEntry;
   color: string;
-  onDelete: () => void;
+  onDelete: () => void | Promise<void>;
 }) {
   const [open, setOpen] = useState(false);
   const mode = getModeById(entry.modeId);

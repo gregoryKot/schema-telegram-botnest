@@ -23,7 +23,7 @@ export function DiaryTimelineSkeleton() {
 // Лента, сгруппированная по дням: слева дата и «сегодня/вчера», справа карточки записей.
 export function DiaryTimeline({ groups, onDelete, onOpenTrackerHistory }: {
   groups: { dateKey: string; items: AnyEntry[] }[];
-  onDelete: (type: DiaryType, id: number) => void;
+  onDelete: (type: DiaryType, id: number) => Promise<void>;
   /** Тап по строке трекера; без него строка не нажимается (лист «Дневники» из практик). */
   onOpenTrackerHistory?: () => void;
 }) {
