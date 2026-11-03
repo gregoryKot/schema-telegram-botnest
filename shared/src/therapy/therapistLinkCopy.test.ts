@@ -8,7 +8,9 @@ import {
   inviteInvalidText,
   joinDoneText,
   leaveTherapyCopy,
+  taskSheetTitle,
   therapistConnectedTitle,
+  therapistNameLine,
 } from './therapistLinkCopy';
 
 const ty = (a: string) => a;
@@ -25,6 +27,22 @@ describe('therapistConnectedTitle', () => {
     const t = therapistConnectedTitle(null);
     expect(t).not.toMatch(/подключён|подключен\b/);
     expect(t).toBe('Подключение к терапевту активно');
+  });
+});
+
+// QA 2026-11: «Задание для Ольга», «с Анна Терапевт» — имя после предлога
+// требует падежа, а склонять его нечем. Формула без падежа: «роль: имя» или «·».
+describe('имя без падежа', () => {
+  it('«Терапевт: имя» — одна формула для статуса и баннера встречи', () => {
+    expect(therapistNameLine('Анна Терапевт')).toBe('Терапевт: Анна Терапевт');
+    expect(therapistConnectedTitle('Анна')).toBe(therapistNameLine('Анна'));
+  });
+
+  it('заголовок листа задания: с клиентом — «Задание · имя», без — «Новое задание»', () => {
+    expect(taskSheetTitle('Ольга')).toBe('Задание · Ольга');
+    expect(taskSheetTitle(undefined)).toBe('Новое задание');
+    expect(taskSheetTitle(null)).toBe('Новое задание');
+    expect(taskSheetTitle('Ольга')).not.toMatch(/(^|\s)(для|с|у|от)\s+Ольга/);
   });
 });
 

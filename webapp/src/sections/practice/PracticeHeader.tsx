@@ -1,12 +1,12 @@
 import { useTr } from '../../utils/addressForm';
 import { SelfHelpEntry } from './SelfHelpEntry';
 import { CustomizeLink } from '../../components/customize/CustomizeGear';
+import { therapistNameLine } from '../../../../shared/src/therapy/therapistLinkCopy';
 import '../../styles/practice-selfhelp.css';
 
 export interface SessionBannerInfo { label: string; isToday: boolean; partnerName?: string | null }
 
-/**
- * Шапка «Практики» — один состав на любой ширине (#906): надпись, заголовок со
+/** Шапка «Практики» — один состав на любой ширине (#906): надпись, заголовок со
  * значком «Важное о самопомощи», ссылка «Настроить инструменты», подпись.
  * Телефон меняет только слова: там страница начинается с «Здесь и сейчас»
  * (дыхание первым, как «Помощь» в мини-аппе), и заголовок зовётся так же.
@@ -29,7 +29,7 @@ export function PracticeHeader({ phone, banner, onCustomize }: { phone: boolean;
       {banner && (
         <div className={'ds-sub cp-head-banner' + (banner.isToday ? ' is-today' : '')}>
           {banner.isToday ? '● Сегодня встреча' : `Следующая встреча: ${banner.label}`}
-          {banner.partnerName && <span> · с {banner.partnerName}</span>}
+          {banner.partnerName && <span> · {therapistNameLine(banner.partnerName)}</span>}
         </div>
       )}
     </div>

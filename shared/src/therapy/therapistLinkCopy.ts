@@ -14,9 +14,22 @@ type Tr = (ty: string, vy: string) => string;
 export const INVITE_CODE_HINT =
   'По ссылке приложение откроется в Telegram. На сайте и в MAX код вводят вручную: Профиль → Настройки → «Мой терапевт» (в мини-приложении вместо «Профиля» — вкладка «Я»).';
 
+// Имя — только в формуле «роль: имя» или через «·»: имя склонять нечем, а
+// «Задание для Ольга», «с Анна Терапевт» ломались на любом имени (QA 2026-11).
+
+/** «Терапевт: имя» — статус «Мой терапевт», баннер ближайшей встречи. */
+export function therapistNameLine(name: string): string {
+  return `Терапевт: ${name}`;
+}
+
+/** Заголовок листа «новое задание»; у терапевта — с именем клиента. */
+export function taskSheetTitle(clientName?: string | null): string {
+  return clientName ? `Задание · ${clientName}` : 'Новое задание';
+}
+
 /** Заголовок «Мой терапевт» при живой связи: имя, если оно есть в профиле. */
 export function therapistConnectedTitle(name: string | null): string {
-  return name ? `Терапевт: ${name}` : 'Подключение к терапевту активно';
+  return name ? therapistNameLine(name) : 'Подключение к терапевту активно';
 }
 
 export const JOIN_DONE_TITLE = 'Доступ открыт';

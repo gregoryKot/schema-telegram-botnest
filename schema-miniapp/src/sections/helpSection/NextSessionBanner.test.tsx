@@ -63,7 +63,7 @@ describe('NextSessionBanner — содержимое', () => {
     expect(screen.getByText('Встреча: Пн, 10 авг · 15:30:00')).toBeTruthy();
   });
 
-  it('показывает имя партнёра/терапевта, если оно передано', () => {
+  it('показывает имя терапевта без падежа: «Терапевт: имя», не «с имя»', () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-08-01T09:00:00Z'));
     const relation = {
@@ -72,7 +72,8 @@ describe('NextSessionBanner — содержимое', () => {
       partnerName: 'Анна Петровна',
     } as unknown as TherapyRelationInfo;
     render(<NextSessionBanner relation={relation} />);
-    expect(screen.getByText('с Анна Петровна')).toBeTruthy();
+    expect(screen.getByText('Терапевт: Анна Петровна')).toBeTruthy();
+    expect(screen.queryByText(/с Анна/)).toBeNull();
   });
 });
 

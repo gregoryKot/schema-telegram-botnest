@@ -280,7 +280,7 @@ describe('TaskCreateSheet — срок появляется для custom-тип
         onClose={vi.fn()}
       />,
     );
-    expect(screen.getByText('Задание для Аня')).toBeTruthy();
+    expect(screen.getByText('Задание · Аня')).toBeTruthy();
     expect(screen.getByText('Срок (необязательно)')).toBeTruthy();
   });
 });
