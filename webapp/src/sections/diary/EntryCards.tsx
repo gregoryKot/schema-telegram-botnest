@@ -8,6 +8,7 @@ import { DIARY_HUE, hueStyle } from '../../lib/tone';
 import { fmtTime, fmtDateKey, fmtDayMonth } from './dateHelpers';
 import { schemaEntryRows, modeEntryRows, type FieldRow } from './entryRows';
 import { DeleteBtn } from './DeleteBtn';
+import { ENTRY_KIND_LABEL, modeEntryKind, schemaEntryKind, type EntryKind } from './entryKind';
 import '../../styles/client-diary.css';
 
 // Карточки записей дневника: бейдж типа в тоне DIARY_HUE, заголовок, текст; клик раскрывает детали и удаление.
@@ -21,16 +22,15 @@ export function ExpandField({ label, text, accent }: { label: string; text: stri
   );
 }
 
-const TYPE_LABEL: Record<DiaryType, string> = { schema: 'Схема', mode: 'Режим', gratitude: 'Благодарность' };
-
-function EntryShell({ type, label, title, time, preview, children }: {
-  type: DiaryType; label?: string; title?: string; time?: string; preview: ReactNode; children?: (open: boolean) => ReactNode;
+// type — тон карточки (дневник), kind — ярлык (общий с лентой «Сегодня»).
+function EntryShell({ type, kind, title, time, preview, children }: {
+  type: DiaryType; kind: EntryKind; title?: string; time?: string; preview: ReactNode; children?: (open: boolean) => ReactNode;
 }) {
   const [open, setOpen] = useState(false);
   return (
     <div className="ds-card ds-card--row ds-card--hover cd-entry" style={hueStyle(DIARY_HUE[type])} aria-expanded={open} {...pressable(() => setOpen(v => !v))}>
       <div className="cd-entry-head">
-        <span className="ds-chip ds-chip--sm tone-tint">{label ?? TYPE_LABEL[type]}</span>
+        <span className="ds-chip ds-chip--sm tone-tint">{ENTRY_KIND_LABEL[kind]}</span>
         {title && <span className="cd-entry-title">{title}</span>}
         {time && <span className="cd-entry-time">{time}</span>}
       </div>
@@ -50,12 +50,12 @@ function ExpandFields({ rows }: { rows: FieldRow[] }) {
 export function SchemaEntry({ entry, onDelete }: { entry: SchemaDiaryEntry; onDelete: () => void | Promise<void> }) {
   const schemas = entry.schemaIds.map(id => getSchemaById(id)).filter(Boolean);
   const emotions = EMOTIONS.filter(e => entry.emotions.some((em: EmotionEntry) => em.id === e.id));
-  const thought = schemas.length === 0 && entry.emotions.length === 0; // «Дневник одной страницей»: просто мысль
+  const kind = schemaEntryKind(entry);
   return (
     <EntryShell
       type="schema"
-      label={thought ? 'Мысль' : undefined}
-      title={schemas.length > 0 ? schemas.slice(0, 2).map(s => s!.name).join(' · ') : thought ? undefined : 'Дневник схем'}
+      kind={kind}
+      title={schemas.length > 0 ? schemas.slice(0, 2).map(s => s!.name).join(' · ') : kind === 'thought' ? undefined : 'Дневник схем'}
       time={fmtTime(entry.createdAt)}
       preview={<>
         {entry.trigger}
@@ -77,7 +77,7 @@ export function ModeEntry({ entry, onDelete }: { entry: ModeDiaryEntry; onDelete
   return (
     <EntryShell
       type="mode"
-      label={entry.fromCase ? 'Разбор' : undefined}
+      kind={modeEntryKind(entry)}
       title={mode ? mode.name : 'Дневник режимов'}
       time={fmtTime(entry.createdAt)}
       preview={entry.situation}
@@ -105,6 +105,7 @@ export function GratitudeEntry({ entry, onDelete }: { entry: GratitudeDiaryEntry
   return (
     <EntryShell
       type="gratitude"
+      kind="gratitude"
       title={`${n} ${n === 1 ? 'пункт' : n < 5 ? 'пункта' : 'пунктов'}`}
       preview={null}
     >

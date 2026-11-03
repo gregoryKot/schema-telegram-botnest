@@ -1,13 +1,8 @@
 import { isCalendarDate } from '../../../../shared/src/utils/calendarDate';
 
-// Чистые вычисления экрана «Сегодня»: типы дневников, момент встречи.
-// Индекс дня — shared/src/needs/dayIndex.ts; лента дня и мета плиток — todayFeed.ts.
-
-export type DiaryKind = 'schema' | 'mode' | 'gratitude';
-
-export const DIARY_KIND_LABEL: Record<DiaryKind, string> = {
-  schema: 'Схема', mode: 'Режим', gratitude: 'Благодарность',
-};
+// Чистые вычисления экрана «Сегодня»: момент встречи. Индекс дня —
+// shared/src/needs/dayIndex.ts; лента дня и мета плиток — todayFeed.ts;
+// тип записи и ярлык — sections/diary/entryKind.ts.
 
 // ── Встреча с терапевтом ────────────────────────────────────────────────────
 
