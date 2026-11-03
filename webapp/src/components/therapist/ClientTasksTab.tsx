@@ -58,7 +58,6 @@ export function ClientTasksTab({ detail, onAssign }: Props) {
               const done = status === 'done';
               return (
                 <div key={t.id} className={`ds-card ds-card--row tb-task${done ? ' is-done' : ''}`}>
-                  <span className={`tb-check${done ? ' is-done' : ''}`} aria-hidden="true">{done ? '✓' : ''}</span>
                   <div className="tb-task-main">
                     <div className="tb-task-text">{resolveTaskDisplayText(t, 'full')}</div>
                     <div className="tb-meta">{taskMeta(t, status)}</div>
