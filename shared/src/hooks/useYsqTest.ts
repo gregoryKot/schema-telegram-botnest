@@ -20,6 +20,7 @@ import { computeScores, type Phase, type YsqHistoryEntry } from './ysqScoring';
 import { YSQ_RESULT_KEY, YSQ_PROGRESS_KEY } from './ysqStorageKeys';
 export { YSQ_RESULT_KEY, YSQ_PROGRESS_KEY };
 import { clearYsqProgress, writeYsqProgress } from './ysqProgressStore';
+import { notifyTasksChanged } from '../tasks/tasksChanged';
 
 // Типы и сборка результата переехали в соседние модули (правило №10);
 // ре-экспорт держит прежний путь импорта у потребителей.
@@ -215,6 +216,27 @@ export function useYsqTest({ api, autoResume }: UseYsqTestOptions) {
     saveProgress(next, page);
   };
 
+  // Итог — на сервер (и при повторе после сбоя). Прогресс на сервере
+  // удаляется только после подтверждения; задания перечитываются: сервер
+  // закрыл запрос терапевта пройти тест (tasks/tasksChanged.ts, QA 2026-11).
+  const persistResult = (final: number[]) =>
+    api
+      .saveYsqResult(final)
+      .then(() => {
+        setResultSaveError(false);
+        notifyTasksChanged();
+        api
+          .getYsqHistory()
+          .then((h) => {
+            if (h) setHistory(h);
+          })
+          .catch((e) => console.error('getYsqHistory failed', e));
+        api
+          .deleteYsqProgress()
+          .catch((e) => console.error('deleteYsqProgress failed', e));
+      })
+      .catch(() => setResultSaveError(true));
+
   // Выбор ответа на текущий вопрос: сохраняет ответ сразу, а через
   // ANSWER_ADVANCE_DELAY переходит к следующему вопросу либо (на последнем
   // вопросе) сабмитит результат.
@@ -241,21 +263,7 @@ export function useYsqTest({ api, autoResume }: UseYsqTestOptions) {
         );
         // Локальный результат уже показан вне зависимости от ответа
         // сервера — resultSaveError показывает баннер с кнопкой повтора.
-        api
-          .saveYsqResult(newAnswers)
-          .then(() => {
-            setResultSaveError(false);
-            api
-              .getYsqHistory()
-              .then((h) => {
-                if (h) setHistory(h);
-              })
-              .catch((e) => console.error('getYsqHistory failed', e));
-            api
-              .deleteYsqProgress()
-              .catch((e) => console.error('deleteYsqProgress failed', e));
-          })
-          .catch(() => setResultSaveError(true));
+        void persistResult(newAnswers);
         clearYsqProgress();
         setAnswers(newAnswers);
         setCompletedAt(dateStr);
@@ -265,17 +273,7 @@ export function useYsqTest({ api, autoResume }: UseYsqTestOptions) {
   };
 
   // Повтор отправки после сбоя — локальные ответы уже верны.
-  const retrySaveResult = () => {
-    api
-      .saveYsqResult(answers)
-      .then(() => {
-        setResultSaveError(false);
-        api
-          .deleteYsqProgress()
-          .catch((e) => console.error('deleteYsqProgress failed', e));
-      })
-      .catch(() => setResultSaveError(true));
-  };
+  const retrySaveResult = () => void persistResult(answers);
 
   const handleBack = () => {
     if (page > 0) {

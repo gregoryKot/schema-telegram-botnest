@@ -59,6 +59,11 @@ describe('taskRoute', () => {
     expect(route('note', 'что-то')).toEqual({ kind: 'none' });
     expect(route('childhood_wheel')).toEqual({ kind: 'childhood_wheel' });
   });
+
+  // QA 2026-11, К1: запрос терапевта пройти тест — задание ysq_test.
+  it('«Пройти тест на схемы» от терапевта ведёт в тест', () => {
+    expect(route('ysq_test', 'Пройти тест на схемы')).toEqual({ kind: 'ysq' });
+  });
 });
 
 describe('completesOnSave', () => {
@@ -74,5 +79,7 @@ describe('completesOnSave', () => {
     expect(completesOnSave(route('diary_streak'))).toBe(false);
     expect(completesOnSave(route('custom', 'позвонить другу'))).toBe(false);
     expect(completesOnSave(route('note'))).toBe(false);
+    // Тест закрывает задание на сервере, когда итог сохранён.
+    expect(completesOnSave(route('ysq_test'))).toBe(false);
   });
 });

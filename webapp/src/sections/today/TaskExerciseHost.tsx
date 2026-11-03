@@ -15,6 +15,7 @@ const SafePlaceEx = lazy(() => import('../../components/exercises/SafePlaceEx').
 const WarmWordsEx = lazy(() => import('../../components/exercises/WarmWordsEx').then(m => ({ default: m.WarmWordsEx })));
 const PhraseCheckEx = lazy(() => import('../../components/exercises/PhraseCheckEx').then(m => ({ default: m.PhraseCheckEx })));
 const SchemaFlashcard = lazy(() => import('../../components/SchemaFlashcard').then(m => ({ default: m.SchemaFlashcard })));
+const YSQTestSheet = lazy(() => import('../../components/YSQTestSheet').then(m => ({ default: m.YSQTestSheet })));
 
 export function TaskExerciseHost({ open, onBack, onComplete, onOpenTracker }: {
   open: OpenExercise | null;
@@ -33,6 +34,7 @@ export function TaskExerciseHost({ open, onBack, onComplete, onOpenTracker }: {
       {open.ex === 'warm' && <WarmWordsEx onBack={onBack} />}
       {open.ex === 'phrase' && <PhraseCheckEx onBack={onBack} onComplete={onComplete} />}
       {open.ex === 'flashcard' && <SchemaFlashcard onClose={onBack} onOpenTracker={onOpenTracker} onComplete={onComplete} />}
+      {open.ex === 'ysq' && <YSQTestSheet onClose={onBack} autoResume />}
     </Suspense>
   );
 }

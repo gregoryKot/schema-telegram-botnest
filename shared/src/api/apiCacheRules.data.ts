@@ -67,13 +67,16 @@ export const RULES: Rule[] = [
   simple('DELETE', /^\/api\/pair$/, '/api/pair'),
   simple('POST', /^\/api\/childhood-ratings$/, '/api/childhood-ratings'),
   // saveYsqResult пишет ysqResultHistory (journey.service.ts фид) — история и
-  // журей читают тот же результат.
+  // журей читают тот же результат. Та же транзакция закрывает задание
+  // «пройти тест» от терапевта (QA 2026-11, К1) — список заданий тоже.
   simple(
     'POST',
     /^\/api\/ysq-result$/,
     '/api/ysq-result',
     '/api/ysq-history',
     '/api/journey',
+    '/api/therapy/tasks',
+    '/api/therapy/tasks/history',
   ),
   simple('DELETE', /^\/api\/ysq-result$/, '/api/ysq-result'),
   // «Удалить результаты теста» стирает итог, историю и прогресс; «Мой путь»

@@ -19,6 +19,7 @@ import {
 import { SCHEMAS } from './ysqSchemas';
 import { computeScores } from './ysqScoring';
 import { YSQ_PROGRESS_EVENT } from './ysqProgressStore';
+import { TASKS_CHANGED_EVENT } from '../tasks/tasksChanged';
 
 function makeApi(overrides: Partial<YsqApi> = {}): YsqApi {
   return {
@@ -312,6 +313,39 @@ describe('useYsqTest — сетевые сбои не должны молчат�
 
     expect(result.current.resultSaveError).toBe(false);
     expect(api.deleteYsqProgress).toHaveBeenCalled();
+  });
+
+  // QA 2026-11, К1: сохранённый тест закрывает на сервере запрос терапевта
+  // (задание). Экран с заданиями узнаёт об этом только после ответа сервера:
+  // сбой — сигнала нет (задание не закрыто), повтор удался — сигнал есть.
+  it('итог сохранён → сигнал «перечитай задания»; сбой — без сигнала, повтор — с ним', async () => {
+    vi.useFakeTimers();
+    const onTasks = vi.fn();
+    window.addEventListener(TASKS_CHANGED_EVENT, onTasks);
+    const saveYsqResult = vi
+      .fn()
+      .mockRejectedValueOnce(new Error('network'))
+      .mockResolvedValueOnce(undefined);
+    localStorage.setItem(
+      YSQ_PROGRESS_KEY,
+      JSON.stringify({
+        answers: Array(QUESTIONS.length).fill(3),
+        page: TOTAL_PAGES - 1,
+      }),
+    );
+    const api = makeApi({ saveYsqResult });
+    const { result } = renderHook(() => useYsqTest({ api, autoResume: true }));
+    act(() => result.current.selectAnswer(TOTAL_PAGES - 1, 6));
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(200);
+    });
+    expect(onTasks).not.toHaveBeenCalled();
+    await act(async () => {
+      result.current.retrySaveResult();
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    expect(onTasks).toHaveBeenCalledTimes(1);
+    window.removeEventListener(TASKS_CHANGED_EVENT, onTasks);
   });
 
   it('провал проверки сохранённого на сервере прогресса при монтировании — resumeCheckFailed=true, phase остаётся intro', async () => {

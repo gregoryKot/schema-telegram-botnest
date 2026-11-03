@@ -21,6 +21,9 @@ export type TaskRoute =
   /** Карточка схемы/режима; без id — выбор из списка. */
   | { kind: 'schema'; id?: string }
   | { kind: 'mode'; id?: string }
+  /** Тест на схемы по запросу терапевта: задание закрывает сервер, когда
+   * тест сохранён (src/bot/ysq.service.ts), а не сохранение упражнения. */
+  | { kind: 'ysq' }
   /** «Своё задание»: делается вне приложения, закрывается кнопкой «Готово». */
   | { kind: 'self' }
   | { kind: 'none' };
@@ -40,6 +43,7 @@ export function taskRoute(task: Pick<UserTask, 'type' | 'text'>): TaskRoute {
   const { type, text } = task;
   if (DIARY_TYPES.includes(type)) return { kind: 'diary' };
   if (type === 'tracker_streak') return { kind: 'tracker' };
+  if (type === 'ysq_test') return { kind: 'ysq' };
   if (type === 'childhood_wheel') return { kind: 'childhood_wheel' };
   if (EXERCISES.includes(type))
     return { kind: 'exercise', exercise: type as TaskExercise };

@@ -105,11 +105,16 @@ export const THERAPY_RULES: Rule[] = [
     targets: (m) => [`${T}/client-data/${m[1]}`, CLIENTS],
   },
   // Данные клиента несут ysqRequestPending: после запроса YSQ карточка,
-  // открытая заново, обязана показать «запрос отправлен» (QA 2026-11).
+  // открытая заново, обязана показать «запрос отправлен» (QA 2026-11). Сам
+  // запрос — задание клиенту: оно сразу видно в его заданиях и на доске.
   {
     method: 'POST',
     pattern: /^\/api\/therapy\/request-ysq\/(-?\d+)$/,
-    targets: (m) => [`${T}/client-data/${m[1]}`],
+    targets: (m) => [
+      `${T}/client-data/${m[1]}`,
+      `${T}/tasks/client/${m[1]}`,
+      ALL_TASKS,
+    ],
   },
   // Список клиентов несёт схемы из концептуализации (getClients, schemaIds).
   {

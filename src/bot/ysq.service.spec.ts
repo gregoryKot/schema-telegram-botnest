@@ -12,6 +12,7 @@ function makeDb() {
     ysqProgress: createFakeTable(),
     ysqResult: createFakeTable(),
     ysqResultHistory: createFakeTable(),
+    userTask: createFakeTable(),
     // saveYsqResult вызывает $transaction с массивом промисов (batch-форма).
     $transaction: jest.fn((ops: Promise<unknown>[]) => Promise.all(ops)),
   };
@@ -102,13 +103,36 @@ describe('YsqService.saveYsqResult — история накапливается
     // Голое toHaveBeenCalledTimes(1) прошло бы и если из транзакции
     // «выпала» одна из двух операций (result или history) — счётчик
     // вызовов $transaction не изменился бы. Проверяем форму аргумента:
-    // ровно 2 промиса (upsert результата + create истории).
+    // ровно 3 промиса (upsert результата + create истории + закрытие
+    // запроса терапевта).
     expect(db.$transaction).toHaveBeenCalledTimes(1);
     const opsArg = db.$transaction.mock.calls[0][0];
     expect(Array.isArray(opsArg)).toBe(true);
-    expect(opsArg).toHaveLength(2);
+    expect(opsArg).toHaveLength(3);
     expect(db.ysqResult.upsert).toHaveBeenCalledTimes(1);
     expect(db.ysqResultHistory.create).toHaveBeenCalledTimes(1);
+    expect(db.userTask.updateMany).toHaveBeenCalledTimes(1);
+  });
+
+  // QA 2026-11, К1: запрос терапевта — задание ysq_test. Пройденный тест
+  // закрывает его, с какого бы экрана тест ни проходили; чужие задания и
+  // задания другого типа не трогаются.
+  it('закрывает открытые задания «пройти тест» этого человека, и только их', async () => {
+    const db = makeDb();
+    const open = { type: 'ysq_test', done: null, completedAt: null };
+    db.userTask = createFakeTable([
+      { id: 1, userId: 1n, assignedBy: 7n, ...open },
+      { id: 2, userId: 1n, assignedBy: 7n, ...open, type: 'custom' },
+      { id: 3, userId: 2n, assignedBy: 7n, ...open },
+      { id: 4, userId: 1n, assignedBy: 8n, ...open, done: false },
+    ]);
+    await new YsqService(db).saveYsqResult(1n, [1]);
+    const done = async (id: number) =>
+      (await db.userTask.findUnique({ where: { id } }))?.done;
+    expect(await done(1)).toBe(true);
+    expect(await done(2)).toBeNull();
+    expect(await done(3)).toBeNull();
+    expect(await done(4)).toBe(false);
   });
 
   it('deleteYsqResult убирает текущий результат, но не трогает историю прохождений', async () => {
