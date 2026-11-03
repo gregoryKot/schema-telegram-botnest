@@ -63,14 +63,19 @@ export class NotesController {
   async upsertModeNote(@Req() req: AuthRequest, @Body() body: ModeNoteDto) {
     if (!ID_RE.test(body.modeId))
       throw new BadRequestException('invalid modeId');
-    return this.notesService.upsertModeNote(uid(req), body.modeId, {
-      ...trimFields(body),
-      needs: body.needs?.trim(),
-      modeFunction: body.modeFunction?.trim(),
-      needsMet: body.needsMet?.trim(),
-      alias: body.alias?.trim(),
-      fear: body.fear?.trim(),
-    });
+    return this.notesService.upsertModeNote(
+      uid(req),
+      body.modeId,
+      {
+        ...trimFields(body),
+        needs: body.needs?.trim(),
+        modeFunction: body.modeFunction?.trim(),
+        needsMet: body.needsMet?.trim(),
+        alias: body.alias?.trim(),
+        fear: body.fear?.trim(),
+      },
+      body.fillIfEmpty,
+    );
   }
 }
 // Маршруты therapy/client/:clientId/{schema,mode}-notes здесь были дублем
