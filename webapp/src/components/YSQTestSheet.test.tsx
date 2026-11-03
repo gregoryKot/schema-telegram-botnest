@@ -73,6 +73,14 @@ describe('YSQTestSheet — интро: пусто vs сохранённый пр
     expect(screen.getByText(QUESTIONS[0])).toBeTruthy();
   });
 
+  // QA 2026-11 (B-М11): над утверждением стояло название шкалы
+  // («Эмоциональная депривация») — подсказка, что измеряет вопрос.
+  it('над утверждением нет названия шкалы', () => {
+    renderSheet();
+    fireEvent.click(screen.getByText('Начать тест'));
+    expect(screen.queryByText(/Эмоциональная депривация/i)).toBeNull();
+  });
+
   it('«Продолжить» возвращает на СОХРАНЁННУЮ страницу, а не на первый вопрос', () => {
     const answers = Array(QUESTIONS.length).fill(0);
     answers[0] = 4;

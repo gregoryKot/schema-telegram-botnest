@@ -7,7 +7,8 @@
 // эти строки внутри вилки-подстановки. Теперь единственный источник —
 // `buildYsqSchemas(tr)`, обе формы разведены в одном месте на схему.
 import { describe, it, expect } from 'vitest';
-import { SCHEMAS, getYsqSchemas, buildYsqSchemas } from './ysqSchemas';
+import { SCHEMAS, SCHEMA_NAME_TO_ID, getYsqSchemas, buildYsqSchemas } from './ysqSchemas';
+import { SCHEMA_DOMAINS } from '../schemaTherapy/content/schemaDomains';
 
 // Остаточные «ты»-формы (местоимения/императивы) — грубая проверка гейта
 // check-second-person.mjs на резолвленном тексте формы «вы», и наоборот.
@@ -70,5 +71,27 @@ describe('ysqSchemas: buildYsqSchemas(tr)', () => {
       return ty;
     });
     expect(calls).toBe(20);
+  });
+});
+
+// QA 2026-11 (B-М11): в результатах теста стояло «Социальная отчужденность»
+// без «ё» и «Покинутость/Нестабильность» без пробелов, а в реестре схем и в
+// docs/TERMINOLOGY.md — «отчуждённость» и «Покинутость / Нестабильность».
+// Имя — ключ SCHEMA_NAME_TO_ID и подсветки схемы в «Библиотеке» (SchemasTab
+// сравнивает по имени): «Посмотреть схему» из результата её не находила.
+describe('ysqSchemas: имена совпадают с реестром схем (правило №4)', () => {
+  const registry = new Map(
+    SCHEMA_DOMAINS.flatMap((d) => d.schemas.map((s) => [s.id, s.name] as const)),
+  );
+
+  it.each(SCHEMAS.map((s) => [s.name] as const))('«%s» — как в SCHEMA_DOMAINS', (name) => {
+    const id = SCHEMA_NAME_TO_ID[name];
+    expect(id).toBeDefined();
+    expect(registry.get(id)).toBe(name);
+  });
+
+  it('у каждого ключа SCHEMA_NAME_TO_ID есть схема в опроснике', () => {
+    const names = new Set(SCHEMAS.map((s) => s.name));
+    expect(Object.keys(SCHEMA_NAME_TO_ID).filter((n) => !names.has(n))).toEqual([]);
   });
 });
