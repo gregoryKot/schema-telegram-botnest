@@ -35,11 +35,13 @@ import { useHostBackButton } from './hooks/useHostBackButton';
 import { TherapistBottomNav } from './components/TherapistBottomNav';
 import { TrackerHistoryOverlay } from './components/TrackerHistoryOverlay';
 import {
-  TODAY_KEY,
   HAS_HISTORY,
   YESTERDAY_DATE,
   fillHistoryGaps,
 } from './utils/todayConstants';
+import { celebratedKey } from '../../shared/src/utils/todayConstants';
+import { useDayRatings } from '../../shared/src/today/useDayRatings';
+import { deviceTimeZone } from '../../shared/src/utils/timeZoneNames';
 import { AppSections } from './components/AppSections';
 import { AppOverlays } from './components/AppOverlays';
 import { preloadOtherSections } from './utils/preloadSections';
@@ -211,15 +213,21 @@ export default function App() {
     if (serverFlags.childhoodWheelDone)
       localStorage.setItem(CHILDHOOD_DONE_KEY, '1');
   }, [serverFlags.childhoodWheelDone]);
-  const [needs, setNeeds] = useState<Need[]>([]);
-  const [ratings, setRatings] = useState<Record<string, number>>({});
-  const [saved, setSaved] = useState<Record<string, boolean>>({});
-  const [yesterdayRatings, setYesterdayRatings] = useState<
-    Record<string, number>
-  >({});
+  const [error, setError] = useState<string | null>(null);
+  // Оценки дня — общая с сайтом механика (shared/today/useDayRatings): день
+  // устройства явной датой, перечитывание в полночь, офлайн-очередь поверх.
+  const day = useDayRatings<Need>(api, {
+    onLoaded: ({ yesterdayRatings: yR }) => {
+      if (!yesterdayBannerDismissed && HAS_HISTORY && !Object.keys(yR).length)
+        setShowYesterdayBanner(true);
+    },
+    onError: (e, initial) =>
+      initial ? setError(String(e)) : logErr('ratings на смене дня')(e),
+  });
+  const { needs, ratings, setRatings, saved, setSaved, yesterdayRatings } = day;
+  const { loading, today } = day;
   const [history, setHistory] = useState<DayHistory[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
-  const [loading, setLoading] = useState(true);
   // Прогрев ДАННЫХ чужих вкладок и чанков дневниковых шитов — только когда
   // данные первого экрана уже приехали (loading=false). Прогрев с маунта
   // толкался с needs/ratings и чанком TodaySection за канал: замер
@@ -240,7 +248,6 @@ export default function App() {
     // догружаются той же idle-очередью, чтобы первое нажатие «+» не ждало сеть.
     preloadDiarySheets();
   }, [loading]);
-  const [error, setError] = useState<string | null>(null);
   const isOffline = useOutboxFlush();
 
   // Overlay states (open over current tab)
@@ -261,9 +268,8 @@ export default function App() {
     // час Telegram ту же initData не обновит, и без этой куки приложение умирало.
     void ensureSession();
     if (!sessionStorage.getItem('init_done')) {
-      const tzOffset = Math.round(-new Date().getTimezoneOffset() / 60);
       api
-        .init(tzOffset)
+        .init(deviceTimeZone())
         .then(() => sessionStorage.setItem('init_done', '1'))
         .catch(logErr('api.init'));
     }
@@ -274,27 +280,6 @@ export default function App() {
       .getPlanHistory(30)
       .then((p) => setHelpPlanCount(p.length))
       .catch(() => setHelpPlanCount(0));
-    Promise.all([api.needs(), api.ratings(), api.ratings(YESTERDAY_DATE)])
-      .then(([n, r, yR]) => {
-        setNeeds(n);
-        setRatings(r);
-        setYesterdayRatings(yR);
-        const initialSaved: Record<string, boolean> = {};
-        for (const key of Object.keys(r)) initialSaved[key] = true;
-        setSaved(initialSaved);
-        if (n.length > 0 && n.every((need) => r[need.id] !== undefined)) {
-          localStorage.setItem(TODAY_KEY, '1');
-        }
-        if (
-          !yesterdayBannerDismissed &&
-          HAS_HISTORY &&
-          Object.keys(yR).length === 0
-        ) {
-          setShowYesterdayBanner(true);
-        }
-      })
-      .catch((e) => setError(String(e)))
-      .finally(() => setLoading(false));
     api
       .getPair()
       .then(setPairData)
@@ -500,25 +485,31 @@ export default function App() {
     disabled: anyOverlayOpen,
   });
 
-  const handleChange = useCallback((needId: string, value: number) => {
-    setRatings((prev) => ({ ...prev, [needId]: value }));
-    setSaved((prev) => ({ ...prev, [needId]: false }));
-  }, []);
+  const handleChange = useCallback(
+    (needId: string, value: number) => {
+      setRatings((prev) => ({ ...prev, [needId]: value }));
+      setSaved((prev) => ({ ...prev, [needId]: false }));
+    },
+    [setRatings, setSaved],
+  );
 
-  const handleSaved = useCallback((needId: string, streak?: StreakData) => {
-    setSaved((prev) => ({ ...prev, [needId]: true }));
-    if (streak && !localStorage.getItem(TODAY_KEY)) {
-      localStorage.setItem(TODAY_KEY, '1');
-      if (streak.currentStreak > 0) {
-        setCelebrationStreak(streak.currentStreak);
-      } else {
-        sheets.open('todayNote');
+  const handleSaved = useCallback(
+    (needId: string, streak?: StreakData) => {
+      setSaved((prev) => ({ ...prev, [needId]: true }));
+      if (streak && !localStorage.getItem(celebratedKey(today))) {
+        localStorage.setItem(celebratedKey(today), '1');
+        if (streak.currentStreak > 0) {
+          setCelebrationStreak(streak.currentStreak);
+        } else {
+          sheets.open('todayNote');
+        }
+        if (streak.totalDays >= 5 && shouldShowChildhoodWheel()) {
+          setChildhoodWheelPending(true);
+        }
       }
-      if (streak.totalDays >= 5 && shouldShowChildhoodWheel()) {
-        setChildhoodWheelPending(true);
-      }
-    }
-  }, []);
+    },
+    [today, setSaved],
+  );
 
   if (loading) {
     // Скелетон по форме будущего экрана вместо полноэкранного спиннера

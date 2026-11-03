@@ -8,6 +8,7 @@ vi.mock('../api', () => ({
 }));
 import { api, reportClientError } from '../api';
 import { useRatingSaver } from './useRatingSaver';
+import { todayStr } from '../../../shared/src/utils/format';
 
 const save = api.saveRating as unknown as ReturnType<typeof vi.fn>;
 const base = { errorMessage: 'rating save failed', section: 'today' };
@@ -32,7 +33,7 @@ describe('useRatingSaver', () => {
     expect(save).not.toHaveBeenCalled();
     await flush();
     expect(save).toHaveBeenCalledTimes(1);
-    expect(save).toHaveBeenCalledWith('play', 6);
+    expect(save).toHaveBeenCalledWith('play', 6, todayStr());
     expect(onSaved).toHaveBeenCalledWith('play', undefined);
     expect(onSavedAt).toHaveBeenCalledOnce();
   });
@@ -47,7 +48,7 @@ describe('useRatingSaver', () => {
     unmount();
     await act(async () => { await vi.advanceTimersByTimeAsync(0); });
     expect(save).toHaveBeenCalledTimes(1);
-    expect(save).toHaveBeenCalledWith('play', 8);
+    expect(save).toHaveBeenCalledWith('play', 8, todayStr());
     await act(async () => { await vi.advanceTimersByTimeAsync(600); });
     expect(save).toHaveBeenCalledTimes(1);
   });
@@ -79,14 +80,23 @@ describe('useRatingSaver', () => {
     expect(save).toHaveBeenCalledWith('play', 4, '2026-10-14');
   });
 
-  it('0 («не оценено») и офлайн не сохраняются', async () => {
-    const { result, rerender } = renderHook((p: { off: boolean }) => useRatingSaver({ ...base, isOffline: p.off }), { initialProps: { off: false } });
+  it('0 («не оценено») не сохраняется', async () => {
+    const { result } = renderHook(() => useRatingSaver({ ...base }));
     act(() => { result.current('play', 0); });
     await flush();
-    rerender({ off: true });
-    act(() => { result.current('play', 5); });
-    await flush();
     expect(save).not.toHaveBeenCalled();
+  });
+
+  // QA 2026-11-03, К3: тап в последние полсекунды дня уезжал в завтра —
+  // дата бралась в момент отправки, после задержки.
+  it('день оценки — день касания, даже если отправка случилась после полуночи', async () => {
+    vi.setSystemTime(new Date(2026, 10, 3, 23, 59, 59, 800));
+    save.mockResolvedValue({ allDone: false });
+    const { result } = renderHook(() => useRatingSaver({ ...base }));
+    act(() => { result.current('play', 7); });
+    await flush();
+    expect(todayStr()).toBe('2026-11-04');
+    expect(save).toHaveBeenCalledWith('play', 7, '2026-11-03');
   });
 
   it('сбой сохранения уходит в reportClientError со своей секцией', async () => {

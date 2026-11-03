@@ -100,3 +100,10 @@ export function formatDateString(
 export function todayCalendarDate(): string {
   return new Date().toISOString().slice(0, 10);
 }
+
+/** Календарный день со сдвигом на `delta` суток («вчера» дня `day` — `-1`). */
+export function shiftCalendarDay(day: string, delta: number): string {
+  return new Date(dateStringMs(day) + delta * 86_400_000)
+    .toISOString()
+    .slice(0, 10);
+}

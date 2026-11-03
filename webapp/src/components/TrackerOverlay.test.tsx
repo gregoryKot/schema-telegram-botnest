@@ -10,6 +10,7 @@ import { TrackerOverlay } from './TrackerOverlay';
 import { AUTO_ADVANCE_MS } from './trackerOverlay/trackerFlow';
 import { TRACKER_ONBOARDING_KEY, TRACKER_ORIGIN_NOTE } from '../../../shared/src/needs/trackerOnboarding';
 import type { Need } from '../types';
+import { todayStr } from '../../../shared/src/utils/format';
 
 // useHistorySheet (внутри TrackerOverlay) требует react-router-контекст.
 vi.mock('../api', () => ({
@@ -303,7 +304,7 @@ describe('TrackerOverlay — сохранение оценки', () => {
     renderOverlay({ onSaved });
     answer(/В основном да/);
     await advance(500);
-    expect(mockApi.saveRating).toHaveBeenCalledWith('attachment', 8);
+    expect(mockApi.saveRating).toHaveBeenCalledWith('attachment', 8, todayStr());
     expect(onSaved).toHaveBeenCalledWith('attachment', { count: 3 });
   });
 
@@ -315,14 +316,18 @@ describe('TrackerOverlay — сохранение оценки', () => {
     fireEvent.click(screen.getByRole('button', { name: 'На главную' }));
     cleanup();
     await advance(10);
-    expect(mockApi.saveRating).toHaveBeenCalledWith('autonomy', 10);
+    expect(mockApi.saveRating).toHaveBeenCalledWith('autonomy', 10, todayStr());
   });
 
-  it('офлайн: isOffline=true не вызывает api.saveRating после debounce', async () => {
+  // Плашка «Нет сети» обещает: оценки сохранятся на устройстве и уйдут
+  // позже. Раньше без сети запрос не делался вовсе — оценка пропадала с
+  // перезагрузкой. Теперь он уходит и, упав, кладёт оценку в офлайн-очередь
+  // (shared/api/ratingApi).
+  it('офлайн: оценка всё равно уходит в api.saveRating (оттуда — в офлайн-очередь)', async () => {
     renderOverlay({ isOffline: true });
     answer(/В основном да/);
     await advance(500);
-    expect(mockApi.saveRating).not.toHaveBeenCalled();
+    expect(mockApi.saveRating).toHaveBeenCalledWith('attachment', 8, todayStr());
   });
 
   it('ошибка api.saveRating не роняет компонент, не вызывает onSaved и уходит отчётом наверх (section: tracker)', async () => {

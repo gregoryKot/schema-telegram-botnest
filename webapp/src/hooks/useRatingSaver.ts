@@ -1,16 +1,20 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { api, reportClientError } from '../api';
 import type { StreakData } from '../api';
+import { todayStr } from '../../../shared/src/utils/format';
 
 export const RATING_SAVE_DELAY_MS = 500;
 
 // Сохранение оценки потребности — одно на сайт (правило «одна механика — один
 // компонент»): им пользуются и трекер, и шкала на экране «Сегодня». Серия
 // быстрых кликов по одной потребности даёт один запрос; 0 — «не оценено», не
-// сохраняется; офлайн — не шлём (оценка остаётся локальной до синка).
-export function useRatingSaver({ date, isOffline = false, onSaved, onSavedAt, errorMessage, section }: {
+// сохраняется. День оценки — день касания, а не отправки: тап в 23:59:59 не
+// уезжает в завтра через полсекунды задержки (QA 2026-11-03, К3).
+// Без сети запрос всё равно уходит: упав, он кладёт оценку в офлайн-очередь
+// (shared/api/ratingApi), как и обещает плашка «Нет сети». Раньше без сети
+// оценка не сохранялась нигде и пропадала с перезагрузкой.
+export function useRatingSaver({ date, onSaved, onSavedAt, errorMessage, section }: {
   date?: string;
-  isOffline?: boolean;
   onSaved?: (needId: string, streak?: StreakData) => void;
   onSavedAt?: () => void;
   errorMessage: string;
@@ -19,17 +23,17 @@ export function useRatingSaver({ date, isOffline = false, onSaved, onSavedAt, er
   const timers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
   // Ждущие debounce значения: при закрытии экрана они уходят сразу, а не теряются —
   // после автоперехода трекера «На главную» на экране «Готово» легко нажать раньше 500 мс.
-  const pending = useRef<Record<string, number>>({});
+  const pending = useRef<Record<string, { value: number; day: string }>>({});
   const latest = useRef({ date, onSaved, onSavedAt, errorMessage, section });
   useEffect(() => {
     latest.current = { date, onSaved, onSavedAt, errorMessage, section };
   });
 
-  const send = useCallback(async (needId: string, value: number) => {
+  const send = useCallback(async (needId: string, value: number, day: string) => {
     if (value === 0) return;
     const c = latest.current;
     try {
-      const res = c.date ? await api.saveRating(needId, value, c.date) : await api.saveRating(needId, value);
+      const res = await api.saveRating(needId, value, day);
       c.onSaved?.(needId, res.allDone ? res.streak : undefined);
       c.onSavedAt?.();
     } catch (e) {
@@ -45,17 +49,17 @@ export function useRatingSaver({ date, isOffline = false, onSaved, onSavedAt, er
     const p = pending.current;
     return () => {
       Object.values(t).forEach(clearTimeout);
-      Object.entries(p).forEach(([needId, value]) => void send(needId, value));
+      Object.entries(p).forEach(([needId, { value, day }]) => void send(needId, value, day));
     };
   }, [send]);
 
   return useCallback((needId: string, value: number) => {
-    if (isOffline) return;
     clearTimeout(timers.current[needId]);
-    pending.current[needId] = value;
+    const day = latest.current.date ?? todayStr();
+    pending.current[needId] = { value, day };
     timers.current[needId] = setTimeout(() => {
       delete pending.current[needId];
-      void send(needId, value);
+      void send(needId, value, day);
     }, RATING_SAVE_DELAY_MS);
-  }, [isOffline, send]);
+  }, [send]);
 }

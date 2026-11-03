@@ -5,9 +5,11 @@ import type { Need } from '../../types';
 import { cacheTherapistContact } from '../../utils/therapistContact';
 import { humanizeThrown } from '../../../../shared/src/api/humanizeError';
 import { MY_SCHEMA_IDS_KEY, CHILDHOOD_DONE_KEY, YSQ_PROGRESS_KEY, THERAPIST_MODE_KEY } from '../../utils/storageKeys';
-// Константы дат — из shared (правило №3); ре-экспорт для потребителей AppShell.
+import { useDayRatings } from '../../../../shared/src/today/useDayRatings';
+import { deviceTimeZone } from '../../../../shared/src/utils/timeZoneNames';
+// Ре-экспорт для AppShell. Это день ЗАГРУЗКИ бандла; живой день, который
+// сменяется в полночь, — `todayDate` из хука ниже.
 export { TODAY_DATE, TODAY_KEY } from '../../../../shared/src/utils/todayConstants';
-import { TODAY_KEY, YESTERDAY_DATE } from '../../../../shared/src/utils/todayConstants';
 
 interface Params {
   navigate: NavigateFunction;
@@ -22,12 +24,26 @@ interface Params {
 // имена упавших источников копим и шлём ОДНИМ отчётом на монтирование
 // (троттлинг: авария валит всё разом, отчёт на каждый источник = шум).
 export function useBootstrapLoad({ navigate, initialPathname }: Params) {
-  const [needs, setNeeds] = useState<Need[]>([]);
-  const [ratings, setRatings] = useState<Record<string, number>>({});
-  const [saved, setSaved] = useState<Record<string, boolean>>({});
-  const [yesterdayRatings, setYesterdayRatings] = useState<Record<string, number>>({});
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // Оценки дня: день устройства явной датой, перечитывание в полночь, офлайн-
+  // очередь поверх ответа — shared/today/useDayRatings (одна механика с мини-аппом).
+  // Исход первой загрузки идёт в общий отчёт ниже (один отчёт на монтирование).
+  const [dayLoad] = useState(() => {
+    let resolve: (ok: boolean) => void = () => {};
+    const promise = new Promise<boolean>((r) => { resolve = r; });
+    return { promise, resolve };
+  });
+  const day = useDayRatings<Need>(api, {
+    onLoaded: () => dayLoad.resolve(true),
+    onError: (e, initial) => {
+      if (!initial) {
+        reportClientError({ message: 'appshell: оценки нового дня не загрузились', section: 'appshell.bootstrap' });
+        return;
+      }
+      setError(humanizeThrown(e, 'Не удалось загрузить потребности и оценки'));
+      dayLoad.resolve(false);
+    },
+  });
   const [userRole, setUserRole] = useState<'CLIENT' | 'THERAPIST'>('CLIENT');
   const [displayName, setDisplayName] = useState<string | null>(null);
   const [pendingPlans, setPendingPlans] = useState<PracticePlan[]>([]);
@@ -39,7 +55,7 @@ export function useBootstrapLoad({ navigate, initialPathname }: Params) {
     const fail = (name: string) => { failed.push(name); };
 
     const initPromise = !sessionStorage.getItem('init_done')
-      ? api.init(Math.round(-new Date().getTimezoneOffset() / 60))
+      ? api.init(deviceTimeZone())
           .then(() => sessionStorage.setItem('init_done', '1'))
           .catch(() => fail('init'))
       : Promise.resolve();
@@ -53,18 +69,7 @@ export function useBootstrapLoad({ navigate, initialPathname }: Params) {
     // Согласия (getDisclaimer/acceptDisclaimer) — hooks/useConsentGate: молча
     // принимать их нельзя, нужен экран.
 
-    const needsRatingsPromise = Promise.all([api.needs(), api.ratings(), api.ratings(YESTERDAY_DATE)])
-      .then(([n, r, yR]) => {
-        setNeeds(n);
-        setRatings(r);
-        setYesterdayRatings(yR);
-        const initialSaved: Record<string, boolean> = {};
-        for (const key of Object.keys(r)) initialSaved[key] = true;
-        setSaved(initialSaved);
-        if (n.length > 0 && n.every((need: Need) => r[need.id] !== undefined)) localStorage.setItem(TODAY_KEY, '1');
-      })
-      .catch((e) => { setError(humanizeThrown(e, 'Не удалось загрузить потребности и оценки')); fail('needs/ratings'); })
-      .finally(() => setLoading(false));
+    const needsRatingsPromise = dayLoad.promise.then((ok) => { if (!ok) fail('needs/ratings'); });
 
     const plansPromise = api.getPendingPlans().then(setPendingPlans).catch(() => fail('задания'));
 
@@ -147,8 +152,10 @@ export function useBootstrapLoad({ navigate, initialPathname }: Params) {
   }, []);
 
   return {
-    needs, ratings, setRatings, saved, setSaved, yesterdayRatings,
-    loading, error,
+    needs: day.needs, ratings: day.ratings, setRatings: day.setRatings,
+    saved: day.saved, setSaved: day.setSaved, yesterdayRatings: day.yesterdayRatings,
+    todayDate: day.today,
+    loading: day.loading, error,
     userRole, setUserRole,
     displayName, setDisplayName,
     pendingPlans, setPendingPlans,
