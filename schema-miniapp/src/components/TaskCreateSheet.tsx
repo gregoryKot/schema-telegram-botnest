@@ -8,6 +8,7 @@ import { detectCrisisAny } from '../utils/crisisMarkers';
 import { CrisisCard } from './CrisisCard';
 import { useTr } from '../utils/addressForm';
 import { scrollIntoViewSafe } from '../../../shared/src/utils/scrollIntoView';
+import { taskSheetTitle } from '../../../shared/src/therapy/therapistLinkCopy';
 import {
   STREAK_OPTIONS,
   TASK_OPTIONS,
@@ -116,10 +117,9 @@ export function TaskCreateSheet({
   return (
     <BottomSheet onClose={onClose} zIndex={200}>
       <SectionLabel purple mb={16} as="h2">
-        {clientName ? `Задание для ${clientName}` : 'Новое задание'}
+        {taskSheetTitle(clientName)}
       </SectionLabel>
 
-      {/* Type selector */}
       {/* Выбор типа задания */}
       {lead && (
         <div

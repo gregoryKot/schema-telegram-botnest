@@ -177,3 +177,26 @@ describe('TaskCreateSheet — назначение терапевтом (QA 2026
     expect(screen.getByText('Осталось знаков: 5')).toBeTruthy();
   });
 });
+
+// QA 2026-11: у терапевта подпись была «Назад к кабинету», а goBack ведёт туда,
+// откуда лист открыт — в карточку клиента; у клиента — на его же экран.
+describe('TaskCreateSheet — подпись «Назад» говорит, куда ведёт', () => {
+  it('терапевт (clientId задан) — «Назад к карточке», закрытие ведёт обратно', async () => {
+    const onClose = vi.fn();
+    render(
+      <MemoryRouter>
+        <TaskCreateSheet clientId={42} clientName="Ольга" onCreated={vi.fn()} onClose={onClose} />
+      </MemoryRouter>,
+    );
+    expect(screen.getByText('Задание · Ольга')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Назад к карточке' }));
+    await waitFor(() => expect(onClose).toHaveBeenCalled());
+    expect(screen.queryByText(/кабинет/i)).toBeNull();
+  });
+
+  it('клиент (без clientId) — просто «Назад», без обещания кабинета', () => {
+    renderSheet();
+    expect(screen.getByRole('button', { name: 'Назад' })).toBeTruthy();
+    expect(screen.queryByText(/Назад к/)).toBeNull();
+  });
+});

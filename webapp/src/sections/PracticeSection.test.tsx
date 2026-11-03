@@ -354,7 +354,9 @@ describe('PracticeSection — баннер ближайшей сессии', () 
     renderSection();
 
     await screen.findByText('● Сегодня встреча');
-    expect(screen.getByText(/с Анна/)).toBeTruthy();
+    // Имя без падежа («с Анна» ломалось на любом имени) — формула «Терапевт: имя».
+    expect(screen.getByText(/Терапевт: Анна/)).toBeTruthy();
+    expect(screen.queryByText(/с Анна/)).toBeNull();
   });
 
   // РЕГРЕССИЯ (TZ-класс, инцидент 2026-09-17, QA 2026-10-26): isToday

@@ -17,7 +17,7 @@ export function ClientCard({
   const isToday = isActiveToday(c);
   const isVirtual = isVirtualClient(c);
   const displayName =
-    c.clientAlias ?? c.name ?? (isVirtual ? 'Оффлайн' : `ID ${c.telegramId}`);
+    c.clientAlias ?? c.name ?? (isVirtual ? 'Офлайн' : `ID ${c.telegramId}`);
   const initials = displayName
     .split(' ')
     .map((w: string) => w[0])

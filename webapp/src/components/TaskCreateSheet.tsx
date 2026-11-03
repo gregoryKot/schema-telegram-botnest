@@ -8,6 +8,7 @@ import { detectCrisisAny } from '../utils/crisisMarkers';
 import { CrisisCard } from './CrisisCard';
 import { scrollIntoViewSafe } from '../../../shared/src/utils/scrollIntoView';
 import { useTr } from '../utils/addressForm';
+import { taskSheetTitle } from '../../../shared/src/therapy/therapistLinkCopy';
 import { hueStyle } from '../lib/tone';
 import { TASK_OPTIONS, STREAK_OPTIONS, type TaskType } from './taskCreate/taskOptions';
 import { SchemaPicker, ModePicker } from './taskCreate/TaskPickers';
@@ -80,16 +81,14 @@ export function TaskCreateSheet({ clientId, clientName, defaultType, defaultText
     <div className="sk-sheet">
       <div className="ds-sheet-head">
         <button type="button" className="ds-back" onClick={goBack}>
-          <GlyphArrowLeft /> {clientId !== undefined ? 'Назад к кабинету' : 'Назад'}
+          <GlyphArrowLeft /> {clientId !== undefined ? 'Назад к карточке' : 'Назад'}
         </button>
       </div>
 
       <div className="sk-scroll">
         <div className="sk-page">
           <div>
-            <div className="ds-eyebrow">
-              {clientName ? `Задание для ${clientName}` : 'Новое задание'}
-            </div>
+            <div className="ds-eyebrow">{taskSheetTitle(clientName)}</div>
             <h1 className="ds-h2 sk-title">{tr('Выбери', 'Выберите')}<br /><em className="sk-it">задание</em></h1>
             {lead && <p className="ds-sub sk-lead">{lead}</p>}
           </div>

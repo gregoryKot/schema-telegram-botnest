@@ -3,7 +3,7 @@ import type { UserSettings } from '../../api';
 import { FormerTherapistNote } from '../../../../shared/src/therapy/FormerTherapistNote';
 import { InviteCodeBox } from '../../../../shared/src/therapy/InviteCodeBox';
 import { THERAPY_INVITE_CODE_PLACEHOLDER, THERAPY_INVITE_INPUT_MAX } from '../../../../shared/src/therapy/inviteCode';
-import { joinDoneText, leaveTherapyCopy, therapistConnectedTitle } from '../../../../shared/src/therapy/therapistLinkCopy';
+import { joinDoneText, leaveTherapyCopy, SHARE_CARDS_TOGGLE as CARDS, SHARE_PROFILE_TOGGLE as PROFILE, therapistConnectedTitle } from '../../../../shared/src/therapy/therapistLinkCopy';
 import { useTr } from '../../utils/addressForm';
 import { ConfirmDialog } from '../ConfirmDialog';
 import { SSection, SRow, SmallToggle } from './ui';
@@ -31,8 +31,8 @@ export function MyTherapistSection({ rel, settings, patch }: {
           <div className="ds-h3">{therapistConnectedTitle(therapyRelation.partnerName)}</div>
           {join.joined && <p className="st-text" role="status">{joinDoneText(therapyRelation.partnerName, tr)}</p>}
           <div>
-            <SRow title="Карточки схем и режимов" sub="Карточки, заметки и дневники" right={<SmallToggle label="Карточки схем и режимов" on={!!settings.therapistShareCards} onClick={() => patch({ therapistShareCards: !settings.therapistShareCards })} />} />
-            <SRow title="Профиль и схемы" sub="Активные схемы и результаты теста" right={<SmallToggle label="Профиль и схемы" on={!!settings.therapistShareProfile} onClick={() => patch({ therapistShareProfile: !settings.therapistShareProfile })} />} />
+            <SRow title={CARDS.title} sub={CARDS.sub} right={<SmallToggle label={CARDS.title} on={!!settings.therapistShareCards} onClick={() => patch({ therapistShareCards: !settings.therapistShareCards })} />} />
+            <SRow title={PROFILE.title} sub={PROFILE.sub} right={<SmallToggle label={PROFILE.title} on={!!settings.therapistShareProfile} onClick={() => patch({ therapistShareProfile: !settings.therapistShareProfile })} />} />
           </div>
           <button className="ds-link st-link-danger" onClick={leave.ask}>{leaveCopy.button}</button>
           {leave.confirming && (

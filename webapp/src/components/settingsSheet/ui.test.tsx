@@ -109,30 +109,30 @@ describe('Toggle', () => {
 
 describe('SmallToggle', () => {
   it('label становится именем switch для скринридера', () => {
-    render(<SmallToggle label="Профиль и схемы" on={true} onClick={() => {}} />);
-    expect(screen.getByRole('switch', { name: 'Профиль и схемы' }).getAttribute('aria-checked')).toBe('true');
+    render(<SmallToggle label="Мои схемы и тест" on={true} onClick={() => {}} />);
+    expect(screen.getByRole('switch', { name: 'Мои схемы и тест' }).getAttribute('aria-checked')).toBe('true');
   });
 
   it('on=false — aria-checked false', () => {
-    render(<SmallToggle label="Профиль и схемы" on={false} onClick={() => {}} />);
+    render(<SmallToggle label="Мои схемы и тест" on={false} onClick={() => {}} />);
     expect(screen.getByRole('switch').getAttribute('aria-checked')).toBe('false');
   });
 
   it('on=true — aria-checked true', () => {
-    render(<SmallToggle label="Профиль и схемы" on={true} onClick={() => {}} />);
+    render(<SmallToggle label="Мои схемы и тест" on={true} onClick={() => {}} />);
     expect(screen.getByRole('switch').getAttribute('aria-checked')).toBe('true');
   });
 
   it('клик зовёт onClick', () => {
     const onClick = vi.fn();
-    render(<SmallToggle label="Профиль и схемы" on={false} onClick={onClick} />);
+    render(<SmallToggle label="Мои схемы и тест" on={false} onClick={onClick} />);
     fireEvent.click(screen.getByRole('switch'));
     expect(onClick).toHaveBeenCalledTimes(1);
   });
 
   it('Enter/Space зовут onClick', () => {
     const onClick = vi.fn();
-    render(<SmallToggle label="Профиль и схемы" on={true} onClick={onClick} />);
+    render(<SmallToggle label="Мои схемы и тест" on={true} onClick={onClick} />);
     fireEvent.keyDown(screen.getByRole('switch'), { key: 'Enter' });
     expect(onClick).toHaveBeenCalledTimes(1);
     fireEvent.keyDown(screen.getByRole('switch'), { key: ' ' });

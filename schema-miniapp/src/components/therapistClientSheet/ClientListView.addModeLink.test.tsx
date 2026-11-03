@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 // ClientListView — часть 2/3 (правило №10 — файл ≤300 строк): режимы
 // добавления клиента «Ссылка». Общий контейнер и режим
-// «Оффлайн»/ошибки — в ClientListView.test.tsx и
+// «Офлайн»/ошибки — в ClientListView.test.tsx и
 // ClientListView.addModeOffline.test.tsx. Дочерние карточки/статы/баннеры
 // покрыты своими тестами — мокаем.
 import { describe, it, expect, vi, afterEach } from 'vitest';

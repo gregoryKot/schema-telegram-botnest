@@ -432,7 +432,7 @@ describe('TherapistClientSheet — вкладка «Задания»', () => {
     mockApi.getTherapyTasksForClient.mockResolvedValue([]);
     await openAnnaTasks(true);
     fireEvent.click(await screen.findByText('Письмо себе'));
-    await screen.findByText('Задание для Анна');
+    await screen.findByText('Задание · Анна');
     const card = screen.getAllByText('Письмо себе').map(n => n.closest('[aria-pressed]')).find(Boolean)!;
     expect(card.getAttribute('aria-pressed')).toBe('true');
   });

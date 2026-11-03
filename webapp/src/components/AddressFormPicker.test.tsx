@@ -9,7 +9,7 @@
 // Тесты «сохранение отказало» ниже — регрессия именно этого сценария.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { act, render, screen, fireEvent, cleanup } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, useNavigate, type NavigateFunction } from 'react-router-dom';
 import { AddressFormPicker } from './AddressFormPicker';
 import { AddressFormContext } from '../utils/addressForm';
 
@@ -205,5 +205,58 @@ describe('AddressFormPicker — useHistorySheet (браузерная «Наза
     ).not.toThrow(); // сам компонент рендерится синхронно без Router — упадёт только внутренний AddressFormPickerModal, после resolve getSettings()
     await expect(act(async () => {})).rejects.toThrow();
     errorSpy.mockRestore();
+  });
+});
+
+// QA 2026-11: любой navigate с replace (разбор ссылки запуска в useStartParam,
+// редирект бутстрапа /cabinet → /today) снимал запись истории листа —
+// useHistorySheet звал onClose, и это считалось ответом: ставился снуз
+// «спросили», addressForm оставался null. Ответ — только «Позже», выбор,
+// Escape и «Назад» браузера (шаг назад, POP); чужой push/replace — нет.
+describe('AddressFormPicker — чужая навигация не считается ответом', () => {
+  let nav: NavigateFunction;
+  function NavProbe() {
+    nav = useNavigate();
+    return null;
+  }
+  function renderWithNav() {
+    return render(
+      <MemoryRouter initialEntries={['/cabinet']}>
+        <AddressFormContext.Provider value={{ form: 'ty', setForm: vi.fn() }}>
+          <AddressFormPicker />
+          <NavProbe />
+        </AddressFormContext.Provider>
+      </MemoryRouter>,
+    );
+  }
+  beforeEach(() => {
+    getSettings.mockResolvedValue({ addressForm: null });
+  });
+
+  it.each([
+    ['replace', { replace: true }],
+    ['push', {}],
+  ] as const)('navigate (%s) из чужого кода — вопрос остаётся, снуза нет', async (_kind, opts) => {
+    renderWithNav();
+    await act(async () => {});
+    expect(screen.getByText('Как удобнее общаться?')).toBeTruthy();
+
+    await act(async () => { nav('/today', opts); });
+    expect(screen.getByText('Как удобнее общаться?')).toBeTruthy();
+    expect(localStorage.getItem('addr_form_asked')).toBeNull();
+
+    // Переоткрытый вопрос живой: «Позже» по-прежнему закрывает и ставит снуз.
+    fireEvent.click(screen.getByText('Позже'));
+    await act(async () => {});
+    expect(screen.queryByText('Как удобнее общаться?')).toBeNull();
+    expect(Number(localStorage.getItem('addr_form_asked'))).toBeGreaterThan(0);
+  });
+
+  it('«Назад» браузера (шаг назад) — это ответ «позже»: закрывает и ставит снуз', async () => {
+    renderWithNav();
+    await act(async () => {});
+    await act(async () => { nav(-1); });
+    expect(screen.queryByText('Как удобнее общаться?')).toBeNull();
+    expect(Number(localStorage.getItem('addr_form_asked'))).toBeGreaterThan(0);
   });
 });
