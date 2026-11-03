@@ -35,7 +35,7 @@ export function ClientOverviewSidebar({ selectedClient, detail }: Props) {
 
       {needs.length > 0 && (
         <div className="ds-card ds-card--row">
-          <div className="ds-label">Потребности сегодня</div>
+          <h2 className="ds-label">Потребности сегодня</h2>
           <div className="tk-needs">
             {needs.map(n => (
               <div key={n.id} className="tk-need">

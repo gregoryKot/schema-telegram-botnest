@@ -25,7 +25,7 @@ export function ToneGroupsCard({ label, sub, action, groups }: Props) {
   return (
     <section className="ds-card">
       <div className="ds-head-row tk-card-head">
-        <span className="ds-label">{label}</span>
+        <h2 className="ds-label">{label}</h2>
         {sub && <span className="ds-sub">{sub}</span>}
         {action}
       </div>

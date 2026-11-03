@@ -24,9 +24,9 @@ export function MyModeMapSheet({ onClose }: { onClose: () => void }) {
   const goBack = useHistorySheet(onClose);
   return (
     <div className="cs-sheet">
-      <div className="cs-sheet-head">
-        <button onClick={goBack} aria-label="Назад" className="cs-sheet-back"><GlyphArrowLeft /></button>
-        <span className="ds-h3">Карта режимов</span>
+      <div className="ds-sheet-head">
+        <button type="button" onClick={goBack} className="ds-back"><GlyphArrowLeft /> Назад</button>
+        <h2 className="ds-h2">Карта режимов</h2>
       </div>
       <div className="cs-sheet-body">
         <Suspense fallback={null}><ModeMapViewer /></Suspense>

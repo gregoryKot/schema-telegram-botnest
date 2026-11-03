@@ -286,3 +286,23 @@ describe('SubscribePage — шапка и кнопки (#906)', () => {
     expect(screen.getByRole('button', { name: /Оформить за/ }).className).toContain('ds-btn ds-btn--accent ds-btn--lg');
   });
 });
+
+describe('SubscribePage — возврат с оплаты (?sub=ok|fail)', () => {
+  it('?sub=ok: благодарность и «На главную», формы и alert нет', async () => {
+    window.history.pushState({}, '', '/subscribe?sub=ok');
+    render(<SubscribePage />);
+    expect((await screen.findByRole('heading', { level: 1 })).textContent).toBe('Спасибо за поддержку!');
+    expect(screen.getByText(/Подписка оформлена/)).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'На главную' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: /Оформить за/ })).toBeNull();
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
+  it('?sub=fail: alert «Оплата не прошла», форма подписки на месте', async () => {
+    window.history.pushState({}, '', '/subscribe?sub=fail');
+    await renderLoaded();
+    expect(screen.getByRole('alert').textContent).toContain('Оплата не прошла');
+    expect(screen.getByRole('button', { name: /Оформить за/ })).toBeTruthy();
+    expect(screen.queryByText('Спасибо за поддержку!')).toBeNull();
+  });
+});

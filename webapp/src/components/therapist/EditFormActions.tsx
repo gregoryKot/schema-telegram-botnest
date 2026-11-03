@@ -10,7 +10,7 @@ interface Props {
 // «Сохранить / Отмена» и ошибка формы правки в карточках сайдбара «Обзора» —
 // следующая сессия, начало терапии, дни встреч (#906): одна механика на три
 // карточки. На акцентной карточке «Сохранить» — secondary, ошибка — ds-sub
-// (светлая через .tk-side .ds-card--accent .ds-sub в therapist-card.css).
+// (светлая через .ds-card--accent .ds-sub в cabinet.css).
 export function EditFormActions({ saving, error, onSave, onCancel, onAccent = false }: Props) {
   return (
     <>

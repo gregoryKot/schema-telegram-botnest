@@ -37,7 +37,7 @@ export function ClientOverviewTab({ selectedClient, detail }: Props) {
 
         {goals && (
           <section className="ds-card tk-goal">
-            <div className="ds-label">Цель терапии</div>
+            <h2 className="ds-label">Цель терапии</h2>
             <p className="tk-text">{goals}</p>
             <button className="ds-link" onClick={() => setClientTab('concept')}>Открыть концептуализацию →</button>
           </section>
@@ -55,7 +55,7 @@ export function ClientOverviewTab({ selectedClient, detail }: Props) {
         {notes.length > 0 && (
           <section className="ds-card">
             <div className="ds-head-row tk-card-head">
-              <span className="ds-label">Заметка сессии</span>
+              <h2 className="ds-label">Заметка сессии</h2>
               <button className="ds-link" onClick={() => setClientTab('sessions')}>Все заметки →</button>
             </div>
             <div className="tk-note-text">{notes[0].text}</div>
@@ -66,7 +66,7 @@ export function ClientOverviewTab({ selectedClient, detail }: Props) {
         {entries.length > 0 && (
           <section className="ds-card">
             <div className="ds-head-row tk-card-head">
-              <span className="ds-label">Последние записи</span>
+              <h2 className="ds-label">Последние записи</h2>
               <button className="ds-link" onClick={() => setClientTab('client_notes')}>Все записи →</button>
             </div>
             {entries.map((e, i) => (

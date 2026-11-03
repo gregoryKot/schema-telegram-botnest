@@ -23,7 +23,7 @@ const detailOf = (o: Partial<ClientDetail> = {}) =>
 const labels = (root: HTMLElement) => Array.from(root.querySelectorAll('.tk-col .ds-label')).map(el => el.textContent);
 
 describe('ClientOverviewTab', () => {
-  it('цель, схемы, режимы, заметка и записи — карточки с подписью; плиток, глифов и заголовков нет', () => {
+  it('цель, схемы, режимы, заметка и записи — карточки с подписью; плиток и глифов нет, подписи — заголовки h2', () => {
     const { container } = render(
       <ClientOverviewTab selectedClient={client} detail={detailOf({
         localConcept: { goals: 'Меньше самокритики' },
@@ -35,7 +35,7 @@ describe('ClientOverviewTab', () => {
     );
     const col = container.querySelector('.tk-col') as HTMLElement;
     expect(labels(col)).toEqual(['Цель терапии', 'Активные схемы', 'Карта режимов', 'Заметка сессии', 'Последние записи']);
-    expect(col.querySelectorAll('h2, h3').length).toBe(0);
+    expect(within(col).getAllByRole('heading', { level: 2 }).map(h => h.textContent)).toEqual(['Цель терапии', 'Активные схемы', 'Карта режимов', 'Заметка сессии', 'Последние записи']);
     expect(col.querySelector('.tk-tile, .tk-quote, .tk-mode-col, .tone-soft, .tone-border')).toBeNull();
     expect(col.querySelectorAll(':scope > .ds-card').length).toBe(5);
     // Цель — обычный текст, без кавычки-глифа.

@@ -10,7 +10,7 @@
    цвет несёт только число «требуют внимания», и только когда оно больше нуля. */
 .tt-counter .ds-num { font-size: 52px; margin-top: 12px; }
 .tt-counter--warn .ds-num { color: var(--warn-ink); }
-.tt-denom { font-size: 22px; font-style: italic; color: var(--on-ink-faint); }
+.tt-denom { font-size: 22px; font-style: italic; color: var(--text-faint); }
 .tt-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr)); gap: 32px; align-items: start; }
 .tt-col { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
 /* Второй раздел колонки («Требуют внимания» под «Сессиями») — отдельным блоком,

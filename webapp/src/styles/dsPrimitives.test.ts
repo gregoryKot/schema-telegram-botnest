@@ -140,13 +140,14 @@ describe('cabinet.css: примитивы листов (#906)', () => {
     expect(d).toContain('font-weight: 600');
   });
 
-  it('на телефоне: иконочная кнопка 44×44, сегмент 44 высотой, ds-h1 32 и компактный 26', () => {
+  it('на телефоне: иконочная кнопка 44×44, сегмент 44 высотой, ds-h1 32, малая кнопка 44 (вне блока 40)', () => {
     expect(phone).not.toBe('');
     expect(decls(phone, '.ds-btn--icon')).toContain('width: 44px');
     expect(decls(phone, '.ds-btn--icon')).toContain('height: 44px');
     expect(decls(phone, '.ds-seg-btn')).toContain('min-height: 44px');
     expect(decls(phone, '.ds-h1')).toContain('font-size: 32px');
-    expect(decls(phone, '.ds-h1--compact')).toContain('font-size: 26px');
+    expect(decls(phone, '.ds-btn--sm')).toContain('height: 44px');
+    expect(decls(top, '.ds-btn--sm')).toContain('height: 40px');
   });
 });
 

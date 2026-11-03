@@ -1,5 +1,6 @@
-import { useId, useRef, useState, type ButtonHTMLAttributes, type ReactNode } from 'react';
+import { useId, useRef, type ButtonHTMLAttributes, type ReactNode } from 'react';
 import { Dropdown } from '../../Dropdown';
+import { useMenuPick } from '../../useMenuPick';
 import { useTr } from '../../../utils/addressForm';
 import type { ClientDetail } from '../clientSheetTypes';
 import { ConceptViewSwitch, type ConceptView } from '../../../../../shared/src/therapy/conceptGraph/ConceptViewSwitch';
@@ -37,13 +38,12 @@ export function ConceptTabHead({ detail, view, onView, graph }: ConceptTabHeadPr
 }
 
 function MoreMenu({ onExport, graph }: { onExport: () => void; graph?: GraphActions }) {
-  const [open, setOpen] = useState(false);
+  const { open, setOpen, btnRef, pick } = useMenuPick();
   const wrapRef = useRef<HTMLDivElement>(null);
-  const pick = (fn: () => void) => () => { setOpen(false); fn(); };
   return (
     <div ref={wrapRef} className="tcp-more">
       <button
-        type="button"
+        ref={btnRef} type="button"
         className="ds-btn ds-btn--icon"
         aria-label="Ещё действия"
         aria-haspopup="menu"

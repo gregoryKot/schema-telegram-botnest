@@ -5,6 +5,7 @@
 // больше нет — решение владельца 2026-11-02 по скриншоту). Редкие действия —
 // переименовать и удалить — в меню «⋯» шапки, иконок в шапке нет; подтверждение
 // удаления — прежний ConfirmDialog. Ширина экрана — window.innerWidth (useIsMobile).
+import { useState } from 'react';
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { render, screen, fireEvent, cleanup, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
@@ -106,6 +107,26 @@ describe('меню «⋯» шапки', () => {
     fireEvent.click(screen.getByRole('menuitem', { name: 'Удалить клиента' }));
     expect(requestDeleteClient).toHaveBeenCalledTimes(1);
     expect(screen.queryByRole('menu')).toBeNull();
+  });
+
+  it('фокус: «Отмена» в диалоге удаления возвращает его на «Действия с карточкой»', () => {
+    function Harness() {
+      const [confirming, setConfirming] = useState(false);
+      return (
+        <MemoryRouter>
+          <ClientHeader selectedClient={client} switchView={vi.fn()}
+            detail={detailOf({ confirmingDelete: confirming, requestDeleteClient: () => setConfirming(true), cancelDeleteClient: () => setConfirming(false) })} />
+        </MemoryRouter>
+      );
+    }
+    render(<Harness />);
+    const more = screen.getByRole('button', { name: 'Действия с карточкой' });
+    more.focus();
+    fireEvent.click(more);
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Удалить клиента' }));
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Отмена' }));
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Действия с карточкой' }));
   });
 
   it('иконок карандаша и корзины в шапке нет; пока удаление идёт, пункт недоступен', () => {

@@ -14,7 +14,7 @@ export function MeetingDaysCard({ selectedClient, detail }: { selectedClient: Th
 
   return (
     <div className="ds-card ds-card--row">
-      <div className="ds-label">Дни встреч</div>
+      <h2 className="ds-label">Дни встреч</h2>
       {editing ? (
         <div className="tk-edit-form">
           <div className="tk-days" role="group" aria-label="Дни встреч">

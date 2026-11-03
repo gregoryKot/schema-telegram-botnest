@@ -17,7 +17,7 @@ export function NextSessionCard({ selectedClient, detail }: Props) {
   const upcoming = upcomingSession(selectedClient.nextSession, days);
   return (
     <div className="ds-card ds-card--row ds-card--accent">
-      <div className="ds-label">Следующая сессия</div>
+      <h2 className="ds-label">Следующая сессия</h2>
       {editingNextSession ? (
         <div className="tk-edit-form">
           <input className="ds-input" type="datetime-local" value={localNextSession} onChange={e => setLocalNextSession(e.target.value)} />
@@ -43,7 +43,7 @@ export function StartDateCard({ selectedClient, detail }: Props) {
   const start = selectedClient.therapyStartDate;
   return (
     <div className="ds-card ds-card--row">
-      <div className="ds-label">Начало терапии</div>
+      <h2 className="ds-label">Начало терапии</h2>
       {editingStartDate ? (
         <div className="tk-edit-form">
           <input className="ds-input" type="date" value={localStartDate} onChange={e => setLocalStartDate(e.target.value)} />

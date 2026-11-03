@@ -15,7 +15,7 @@ export function ClientIndexCard({ todayIndex, history }: Props) {
   const delta = weekDelta(history, todayIndex);
   return (
     <div className="ds-card ds-card--row">
-      <div className="ds-label">Индекс сегодня</div>
+      <h2 className="ds-label">Индекс сегодня</h2>
       <div className="tk-index">
         <span className={`ds-num ds-idx-${indexLevel(todayIndex)}`}>{todayIndex.toFixed(1)}</span>
         {delta != null && (

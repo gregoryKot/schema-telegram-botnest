@@ -1,5 +1,7 @@
-import { useRef, useState } from 'react';
+import { useRef } from 'react';
 import { Dropdown } from '../Dropdown';
+import { useMenuPick } from '../useMenuPick';
+
 
 interface Props {
   onRename: () => void;
@@ -14,12 +16,11 @@ interface Props {
 // Dropdown с role="menu", пункты .mm2-item (тап-цель 44 — .tk-menu). Обработчики
 // приходят из ClientHeader; удаление — прежний путь requestDeleteClient → ConfirmDialog.
 export function ClientHeaderMenu({ onRename, onDelete, deleteBusy }: Props) {
-  const [open, setOpen] = useState(false);
+  const { open, setOpen, btnRef, pick } = useMenuPick();
   const wrapRef = useRef<HTMLDivElement>(null);
-  const pick = (fn: () => void) => () => { setOpen(false); fn(); };
   return (
     <div ref={wrapRef}>
-      <button type="button" className="ds-btn ds-btn--icon" aria-label="Действия с карточкой" aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen(o => !o)}>⋯</button>
+      <button ref={btnRef} type="button" className="ds-btn ds-btn--icon" aria-label="Действия с карточкой" aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen(o => !o)}>⋯</button>
       {open && (
         <Dropdown anchorRef={wrapRef} onClose={() => setOpen(false)} role="menu" label="Действия с карточкой" className="tk-menu">
           <button type="button" role="menuitem" className="mm2-item" onClick={pick(onRename)}>Переименовать</button>

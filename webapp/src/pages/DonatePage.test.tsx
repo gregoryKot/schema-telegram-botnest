@@ -197,3 +197,24 @@ describe('DonatePage — шапка и кнопки (#906)', () => {
     expect(container.querySelector('.ap-page--center, .ap-card, .ap-btn, .ap-donate-cta')).toBeNull();
   });
 });
+
+describe('DonatePage — возврат с оплаты (?donation=ok|fail)', () => {
+  it('?donation=ok: благодарность и ссылка на главную, формы нет', () => {
+    window.history.pushState({}, '', '/donate?donation=ok');
+    render(<DonatePage />);
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Спасибо за поддержку!');
+    expect(screen.getByRole('link', { name: '← На главную' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: '1000 ₽' })).toBeNull();
+    expect(screen.queryByRole('button', { name: /Поддержать/ })).toBeNull();
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
+  it('?donation=fail: alert об отказе, заголовок и форма на месте', () => {
+    window.history.pushState({}, '', '/donate?donation=fail');
+    render(<DonatePage />);
+    expect(screen.getByRole('alert').textContent).toContain('Оплата не прошла');
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Поддержать проект');
+    expect(screen.getByRole('button', { name: '1000 ₽' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /Поддержать 500/ })).toBeTruthy();
+  });
+});

@@ -136,7 +136,7 @@
 .ds-btn--icon:hover { background: var(--paper-tint); color: var(--text); }
 
 /* ── Шапка листа и «Назад» ───────────────────────────────────────────────── */
-/* [ds-back][ds-h2 или ds-h1--compact][правый слот]: заголовок растягивается
+/* [ds-back][ds-h2][правый слот]: заголовок растягивается
    (flex: 1), последний ребёнок — статус «Сохранено», кнопка — прижат к правому
    краю (margin-left: auto) и тогда, когда заголовок обёрнут в div без flex: 1.
    Липкость (position: sticky; top: 0) и отступ --safe-top — у класса листа. */
@@ -229,9 +229,9 @@
 @media (max-width: 767px) {
   .ds-page { padding: 20px 16px 40px; gap: 24px; }
   .ds-h1 { font-size: 32px; }
-  .ds-h1--compact { font-size: 26px; line-height: 1.15; } /* шапка с действиями в той же строке */
   .ds-h2 { font-size: 22px; }
   .ds-sheet-head { padding: 0 16px; }
   .ds-btn--icon { width: 44px; height: 44px; }
   .ds-seg-btn { min-height: 44px; }
+  .ds-btn--sm { height: 44px; } /* тап 44 у всех малых кнопок на телефоне */
 }
