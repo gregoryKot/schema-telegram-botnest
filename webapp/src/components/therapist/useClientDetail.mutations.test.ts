@@ -299,15 +299,24 @@ describe('saveSessionInfo', () => {
 describe('handleRequestYsq', () => {
   beforeEach(() => { vi.useFakeTimers(); });
 
-  it('выставляет ysqRequested и сбрасывает его через 3с', async () => {
+  // QA 2026-11: флаг гас через 3 с, хотя запрос висел на сервере, и терялся после F5.
+  it('выставляет ysqRequested и держит его, пока открыт тот же клиент', async () => {
     mockApi.requestYsq.mockResolvedValue(undefined);
     const { result } = await openedHook({ telegramId: 4 });
     await act(async () => { await result.current.handleRequestYsq(); });
     expect(mockApi.requestYsq).toHaveBeenCalledWith(4);
     expect(result.current.ysqRequested).toBe(true);
 
-    await act(async () => { await vi.advanceTimersByTimeAsync(3000); });
-    expect(result.current.ysqRequested).toBe(false);
+    await act(async () => { await vi.advanceTimersByTimeAsync(60_000); });
+    expect(result.current.ysqRequested).toBe(true);
+  });
+  it('висящий на сервере запрос (ysqRequestPending) виден сразу при открытии карточки', async () => {
+    mockApi.getTherapyClientData.mockResolvedValue({
+      name: null, mySchemaIds: [], myModeIds: [], ysqCompletedAt: null, ysqActiveSchemaIds: [], ysqHistory: [], ysqRequestPending: true,
+    });
+    const { result } = await openedHook({ telegramId: 4 });
+    expect(result.current.ysqRequested).toBe(true);
+    expect(mockApi.requestYsq).not.toHaveBeenCalled();
   });
   it('второй тап, пока первый запрос в полёте → api.requestYsq вызван один раз', async () => {
     let resolve!: () => void;

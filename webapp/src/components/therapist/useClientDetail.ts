@@ -52,7 +52,7 @@ export function useClientDetail({ onOpenClient, switchView, setClients }: Params
 
   // YSQ / Export
   const { ysqRequested, ysqError, resetYsq, handleRequestYsq } = useYsqRequest(
-    selectedClient?.telegramId, (id) => api.requestYsq(id));
+    selectedClient?.telegramId, (id) => api.requestYsq(id), clientData?.ysqRequestPending);
   // Экспорт концепта — общий с мини-аппом (shared/src/therapy/useConceptExport.ts).
   const { exportCopied, exportEmpty, handleExport } = useConceptExport(
     { client: selectedClient, concept, localConcept, activeSchemaIds, activeModeIds },

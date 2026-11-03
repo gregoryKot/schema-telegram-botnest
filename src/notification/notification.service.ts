@@ -141,6 +141,15 @@ export class NotificationService {
     return count > 0;
   }
 
+  /** Расшифрованные payload неотправленных уведомлений типа — по полям payload SQL не ищет: он зашифрован. */
+  async pendingPayloads(userId: bigint, type: NotificationType) {
+    const rows = await this.prisma.scheduledNotification.findMany({
+      where: { userId, type, sentAt: null, cancelledAt: null },
+      select: { payload: true },
+    });
+    return rows.map((r) => decryptPayload(r.payload));
+  }
+
   /** True если уведомление данного типа уже было отправлено или стоит в очереди (включая отменённые) */
   async hasEver(userId: bigint, type: NotificationType): Promise<boolean> {
     const count = await this.prisma.scheduledNotification.count({

@@ -80,10 +80,18 @@ describe('«+ Задание / + Заметка»', () => {
   });
 
   it('сайдбар «Обзора» не повторяет действия шапки', () => {
-    render(<ClientOverviewSidebar selectedClient={client} detail={detailOf()} />);
+    const online = { ...client, telegramId: 7 } as TherapyClientSummary;
+    render(<ClientOverviewSidebar selectedClient={online} detail={detailOf()} />);
     expect(screen.queryByRole('button', { name: /Задание/ })).toBeNull();
     expect(screen.queryByRole('button', { name: /Заметка/ })).toBeNull();
     expect(screen.getByRole('button', { name: 'Запросить YSQ' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Экспорт концепта' })).toBeTruthy();
+  });
+
+  // QA 2026-11: офлайн-клиенту кнопка вела во вкладку с «YSQ недоступен».
+  it('сайдбар: офлайн-клиенту «Запросить YSQ» не показан, экспорт остаётся', () => {
+    render(<ClientOverviewSidebar selectedClient={client} detail={detailOf()} />);
+    expect(screen.queryByRole('button', { name: 'Запросить YSQ' })).toBeNull();
     expect(screen.getByRole('button', { name: 'Экспорт концепта' })).toBeTruthy();
   });
 

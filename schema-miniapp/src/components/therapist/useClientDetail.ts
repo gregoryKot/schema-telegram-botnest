@@ -74,7 +74,11 @@ export function useClientDetail({ switchView, setClients }: Params) {
     setYsqRequested,
     resetYsq,
     handleRequestYsq,
-  } = useYsqRequest(selectedClient?.telegramId, (id) => api.requestYsq(id));
+  } = useYsqRequest(
+    selectedClient?.telegramId,
+    (id) => api.requestYsq(id),
+    clientData?.ysqRequestPending,
+  );
   const { exportCopied, exportEmpty, handleExport } = useConceptExport(
     {
       client: selectedClient,

@@ -8,22 +8,23 @@
 // Защита привязана к клиенту: при смене clientId запрос в полёте у прежнего
 // клиента отпускает флаг, а его поздний ответ игнорируется (иначе тап на новой
 // карточке молча терялся, а «✓ Запрос отправлен» всплывал не на той карточке).
+// QA 2026-11: «✓ Запрос отправлен» гас через 3 с и пропадал после
+// перезагрузки, хотя запрос висел на сервере, а повтор был no-op дедупа.
+// Теперь отправленный держится до смены клиента, а висящий на сервере
+// (`serverPending` — ysqRequestPending из данных клиента) виден и после F5.
 import { useEffect, useRef, useState } from 'react';
 
-const SENT_MS = 3000;
 export const YSQ_REQUEST_ERROR = 'Не удалось отправить запрос';
 
 export function useYsqRequest<Id>(
   clientId: Id | null | undefined,
   send: (clientId: Id) => Promise<unknown>,
+  serverPending = false,
 ) {
-  const [ysqRequested, setYsqRequested] = useState(false);
+  const [sent, setYsqRequested] = useState(false);
   const [ysqError, setYsqError] = useState('');
   const inFlight = useRef(false);
   const generation = useRef(0);
-  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-
-  useEffect(() => () => clearTimeout(timer.current), []);
 
   useEffect(() => {
     generation.current += 1;
@@ -31,7 +32,6 @@ export function useYsqRequest<Id>(
   }, [clientId]);
 
   function resetYsq() {
-    clearTimeout(timer.current);
     setYsqRequested(false);
     setYsqError('');
   }
@@ -43,10 +43,7 @@ export function useYsqRequest<Id>(
     setYsqError('');
     try {
       await send(clientId);
-      if (mine !== generation.current) return;
-      setYsqRequested(true);
-      clearTimeout(timer.current);
-      timer.current = setTimeout(() => setYsqRequested(false), SENT_MS);
+      if (mine === generation.current) setYsqRequested(true);
     } catch {
       if (mine === generation.current) setYsqError(YSQ_REQUEST_ERROR);
     } finally {
@@ -55,7 +52,7 @@ export function useYsqRequest<Id>(
   }
 
   return {
-    ysqRequested,
+    ysqRequested: sent || serverPending,
     ysqError,
     setYsqRequested,
     resetYsq,

@@ -5,7 +5,7 @@ import { BotAnalyticsService } from '../bot/bot.analytics.service';
 import { NotificationService } from '../notification/notification.service';
 import { TherapyRelationsService } from './therapy-relations.service';
 import { removeTherapistClient } from './remove-client';
-import { requestYsq } from './ysq-request';
+import { isOwnYsqRequestPending, requestYsq } from './ysq-request';
 import { activeRelationWhere } from './relation-where';
 import { decrypt, decryptJson, decryptRecord } from '../utils/crypto';
 import { computeActiveSchemas, computeYsqScores } from '../utils/ysq';
@@ -13,6 +13,16 @@ import { decodeYsqAnswers } from '../bot/ysq.service';
 // Схемы шифрования — общий источник правды с NotesService (правило №4
 // CLAUDE.md: не копипастить список полей, иначе рассинхрон при новом поле).
 import { SCHEMA_NOTE_SCHEMA, MODE_NOTE_SCHEMA } from '../bot/notes.service';
+
+// Профиль, которого терапевт не видит: офлайн-клиент (Telegram нет — и запрос
+// YSQ не висит) или профиль скрыт клиентом (свой запрос YSQ терапевт видит).
+const HIDDEN = {
+  mySchemaIds: [] as string[],
+  myModeIds: [] as string[],
+  ysqCompletedAt: null,
+  ysqActiveSchemaIds: [] as string[],
+  ysqHistory: [],
+};
 
 // Данные клиента для терапевта: профиль/YSQ, история, дневники, заметки,
 // запрос YSQ, инфо о сессии и удаление клиента. Кроме удаления — везде
@@ -28,17 +38,10 @@ export class TherapyClientDataService {
 
   async getClientData(therapistId: bigint, clientId: bigint) {
     await this.relationsService.assertHasClient(therapistId, clientId);
-    if (clientId < 0n) {
-      return {
-        name: null,
-        mySchemaIds: [],
-        myModeIds: [],
-        ysqCompletedAt: null,
-        ysqActiveSchemaIds: [],
-      };
-    }
+    if (clientId < 0n)
+      return { name: null, ...HIDDEN, ysqRequestPending: false };
     const uid = clientId;
-    const [user, ysq, rawHistory] = await Promise.all([
+    const [user, ysq, rawHistory, ysqRequestPending] = await Promise.all([
       this.prisma.user.findUnique({
         where: { id: uid },
         select: {
@@ -54,17 +57,11 @@ export class TherapyClientDataService {
         orderBy: { completedAt: 'desc' },
         take: 20,
       }),
+      isOwnYsqRequestPending(this.notificationService, therapistId, uid),
     ]);
 
     if (user?.therapistShareProfile === false) {
-      return {
-        name: user?.firstName ?? null,
-        mySchemaIds: [],
-        myModeIds: [],
-        ysqCompletedAt: null,
-        ysqActiveSchemaIds: [],
-        ysqHistory: [],
-      };
+      return { name: user?.firstName ?? null, ...HIDDEN, ysqRequestPending };
     }
 
     const ysqActiveSchemaIds = ysq?.answers
@@ -89,6 +86,7 @@ export class TherapyClientDataService {
       ysqCompletedAt: ysq?.completedAt?.toISOString() ?? null,
       ysqActiveSchemaIds,
       ysqHistory,
+      ysqRequestPending,
     };
   }
 

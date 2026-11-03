@@ -6,6 +6,7 @@ import { MeetingDaysCard } from './MeetingDaysCard';
 import { needBars } from './clientOverviewModel';
 import type { ClientDetail } from './clientSheetTypes';
 import { CONCEPT_EXPORT_EMPTY } from '../../../../shared/src/therapy/conceptExport';
+import { isVirtualClient } from '../../../../shared/src/therapy/clientSheetHelpers';
 
 interface Props {
   selectedClient: TherapyClientSummary;
@@ -20,7 +21,8 @@ export function ClientOverviewSidebar({ selectedClient, detail }: Props) {
   const todayIndex = selectedClient.todayIndex;
   const needs = needBars(clientHistory[0]?.ratings);
   // «+ Задание» и «+ Заметка» — в шапке (ноутбук) или первой строкой «Обзора» (телефон,
-  // ClientQuickActions); здесь только остальные. Пустой концепт — экспорт недоступен с подсказкой.
+  // ClientQuickActions); здесь только остальные. Пустой концепт — экспорт недоступен с подсказкой;
+  // офлайн-клиенту YSQ не запросить (нет Telegram) — кнопки нет, а не путь в «YSQ недоступен».
   const btn = 'ds-btn ds-btn--secondary ds-btn--sm';
 
   return (
@@ -47,7 +49,7 @@ export function ClientOverviewSidebar({ selectedClient, detail }: Props) {
       )}
 
       <div className="tk-quick">
-        <button className={btn} onClick={() => setClientTab('ysq')}>Запросить YSQ</button>
+        {!isVirtualClient(selectedClient) && <button className={btn} onClick={() => setClientTab('ysq')}>Запросить YSQ</button>}
         <button className={btn} onClick={handleExport} disabled={exportEmpty}>Экспорт концепта{exportCopied ? ' ✓' : ''}</button>
       </div>
       {exportEmpty && <p className="ds-sub">{CONCEPT_EXPORT_EMPTY}</p>}
