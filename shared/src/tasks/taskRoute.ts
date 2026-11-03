@@ -8,6 +8,7 @@
 // выбор «что открыть» и «закрывает ли упражнение задание» живёт только здесь.
 import type { UserTask } from '../apiTypes';
 import { findLegacyTaskTarget } from './taskTitle';
+import { YSQ_TASK_TYPE } from './ysqRequestMark';
 
 /** Упражнения, у которых есть `onComplete`: сохранение закрывает задание. */
 export type TaskExercise =
@@ -43,7 +44,7 @@ export function taskRoute(task: Pick<UserTask, 'type' | 'text'>): TaskRoute {
   const { type, text } = task;
   if (DIARY_TYPES.includes(type)) return { kind: 'diary' };
   if (type === 'tracker_streak') return { kind: 'tracker' };
-  if (type === 'ysq_test') return { kind: 'ysq' };
+  if (type === YSQ_TASK_TYPE) return { kind: 'ysq' };
   if (type === 'childhood_wheel') return { kind: 'childhood_wheel' };
   if (EXERCISES.includes(type))
     return { kind: 'exercise', exercise: type as TaskExercise };
