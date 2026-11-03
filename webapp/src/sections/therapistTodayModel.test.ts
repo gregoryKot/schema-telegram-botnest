@@ -5,7 +5,7 @@ import type { TherapyClientSummary } from '../api';
 import { clientCaption } from '../components/therapist/rosterModel';
 import {
   activityStatus, daysSinceActive, hasSessionToday, latestIndex, needsAttention,
-  sessionTime, sessionsTodaySorted, sparkPoints, todayCounts, clientName,
+  sessionTime, sessionsTodaySorted, sparkPoints, todayCounts, trackedClients, clientName,
 } from './therapistTodayModel';
 
 // 12:00 UTC 15 октября 2026 — четверг (4) во всех зонах прогона CI.
@@ -52,6 +52,17 @@ describe('therapistTodayModel', () => {
       c(ago(1)),
     ];
     expect(todayCounts(list)).toEqual({ active: 1, total: 3, sessions: 1, attention: 1 });
+  });
+
+  // QA 2026-11: у офлайн-клиента daysSinceActive всегда null — он вечно
+  // «требовал внимания» и раздувал знаменатель «Активны». Встреча с ним настоящая.
+  it('офлайн-клиент: не требует внимания, не в «Активны», но его сессия считается', () => {
+    const offline = c({ telegramId: -3 as TherapyClientSummary['telegramId'], meetingDays: [THU] });
+    expect(needsAttention(offline)).toBe(false);
+    expect(trackedClients([c(), offline])).toEqual([c()]);
+    expect(todayCounts([c({ todayIndex: 7 }), c(), offline]))
+      .toEqual({ active: 1, total: 2, sessions: 1, attention: 1 });
+    expect(activityStatus(offline)).toEqual({ text: '', tone: 'none' });
   });
 
   it('статус активности: текст — давность, тон — сегодня / требует внимания', () => {

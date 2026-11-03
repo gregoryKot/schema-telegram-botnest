@@ -5,6 +5,7 @@ import type { TherapyClientSummary } from '../api';
 import { momentDayKey, momentTime, todayStr } from '../utils/format';
 import { upcomingSession } from '../../../shared/src/therapy/upcomingSession';
 import { clientActivityLabel } from '../../../shared/src/therapy/clientActivity';
+import { isVirtualClient } from '../../../shared/src/therapy/clientSheetHelpers';
 import { indexLevel, type IndexLevel } from '../lib/tone';
 
 /** С какого числа дней без активности клиент попадает в «Требуют внимания». */
@@ -36,21 +37,28 @@ export function sessionsTodaySorted(clients: TherapyClientSummary[]): TherapyCli
     .sort((a, b) => (sessionTime(a) || '99:99').localeCompare(sessionTime(b) || '99:99'));
 }
 
-/** Не заполнили сегодня и молчат 3+ дня (или записей не было вовсе). */
+/** Клиенты с аккаунтом: у офлайн-клиента активности не бывает, и он не входит ни
+ *  в «Активны N / M», ни в «Требуют внимания», ни в «Активность клиентов» (QA 2026-11). */
+export const trackedClients = (clients: TherapyClientSummary[]): TherapyClientSummary[] =>
+  clients.filter(c => !isVirtualClient(c));
+
+/** Не заполнили сегодня и молчат 3+ дня (или записей не было вовсе); офлайн — никогда. */
 export function needsAttention(c: TherapyClientSummary): boolean {
-  if (c.todayIndex != null) return false;
+  if (isVirtualClient(c) || c.todayIndex != null) return false;
   const days = daysSinceActive(c);
   return days == null || days >= ATTENTION_DAYS;
 }
 
 export interface TodayCounts { active: number; total: number; sessions: number; attention: number }
 
+/** Сессии — по всем клиентам (встреча с офлайн-клиентом настоящая), остальное — по trackedClients. */
 export function todayCounts(clients: TherapyClientSummary[]): TodayCounts {
+  const tracked = trackedClients(clients);
   return {
-    active: clients.filter(c => c.todayIndex != null).length,
-    total: clients.length,
+    active: tracked.filter(c => c.todayIndex != null).length,
+    total: tracked.length,
     sessions: clients.filter(hasSessionToday).length,
-    attention: clients.filter(needsAttention).length,
+    attention: tracked.filter(needsAttention).length,
   };
 }
 

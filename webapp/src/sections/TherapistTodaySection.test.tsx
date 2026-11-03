@@ -241,6 +241,48 @@ describe('TherapistTodaySection — требуют внимания', () => {
   });
 });
 
+// QA 2026-11: офлайн-клиент (отрицательный id, без аккаунта) активности не
+// ведёт — daysSinceActive у него всегда null, и он вечно «требовал внимания»,
+// а в «Активны сегодня N / M» раздувал знаменатель. Встреча с ним — настоящая.
+describe('TherapistTodaySection — офлайн-клиенты', () => {
+  const offline = (o: Parameters<typeof client>[0] = {}) =>
+    client({ telegramId: -3, name: 'Ольга офлайн', ...o });
+
+  it('не требует внимания и не входит в «Активны» и список активности', async () => {
+    mockApi.getTherapyClients.mockResolvedValue([
+      client({ telegramId: 1, name: 'Иван', todayIndex: 7 }),
+      offline(),
+    ]);
+    render(<TherapistTodaySection displayName={null} onOpenClient={vi.fn()} />);
+
+    await screen.findByText('Иван');
+    expect(screen.queryByRole('heading', { name: 'Требуют внимания' })).toBeNull();
+    expect(screen.getByText('Активны сегодня').parentElement!.textContent).toBe('Активны сегодня1 / 1');
+    expect(screen.getByText('Требуют внимания').parentElement!.textContent).toBe('Требуют внимания0');
+    expect(screen.queryByText('Ольга офлайн')).toBeNull();
+  });
+
+  it('встреча с офлайн-клиентом — в «Сессиях сегодня», без подписи «нет активности»', async () => {
+    const todayDow = new Date().getDay(); // местный день терапевта, как в модели
+    mockApi.getTherapyClients.mockResolvedValue([offline({ meetingDays: [todayDow] })]);
+    render(<TherapistTodaySection displayName={null} onOpenClient={vi.fn()} />);
+
+    await screen.findByText('Ольга офлайн');
+    expect(screen.getByText('Сессий сегодня').parentElement!.textContent).toBe('Сессий сегодня1');
+    expect(screen.queryByText(/нет активности|нет данных/)).toBeNull();
+  });
+
+  it('только офлайн-клиенты — список активности объясняет, почему он пуст', async () => {
+    mockApi.getTherapyClients.mockResolvedValue([offline()]);
+    render(<TherapistTodaySection displayName={null} onOpenClient={vi.fn()} />);
+
+    const note = await screen.findByText('Активность видна у клиентов, подключённых к боту');
+    expect(note.classList.contains('ds-empty')).toBe(true);
+    expect(screen.queryByText('Нет клиентов')).toBeNull();
+    expect(screen.queryByRole('heading', { name: 'Требуют внимания' })).toBeNull();
+  });
+});
+
 // QA 2026-10-26: в 00:05 кабинет терапевта говорил «Доброе утро» (h < 12),
 // а клиентский «Сегодня» того же человека в ту же минуту — «Доброй ночи».
 // Теперь оба экрана берут одну функцию (today/helpers.homeGreeting): с #872

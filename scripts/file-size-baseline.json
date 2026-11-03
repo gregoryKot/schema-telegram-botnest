@@ -2432,7 +2432,7 @@
   "webapp/src/sections/schemas/YsqTestRow.tsx": 23,
   "webapp/src/sections/SchemasSection.tsx": 108,
   "webapp/src/sections/TherapistTodayLists.tsx": 62,
-  "webapp/src/sections/therapistTodayModel.ts": 81,
+  "webapp/src/sections/therapistTodayModel.ts": 89,
   "webapp/src/sections/TherapistTodaySection.tsx": 88,
   "webapp/src/sections/today/AllTasksOverlay.tsx": 60,
   "webapp/src/sections/today/greetingDate.ts": 9,
