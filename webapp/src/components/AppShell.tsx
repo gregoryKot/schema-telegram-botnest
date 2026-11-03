@@ -17,6 +17,7 @@ import { AppSections } from './appShell/AppSections';
 import { type Section, sectionFromPath, fillHistoryGaps } from './appShell/navigation';
 import { MobileNav } from './appShell/MobileNav';
 import { ModeSwitch } from './appShell/ModeSwitch';
+import { SidebarClients } from './appShell/SidebarClients';
 import { QuickActions } from './quickActions/QuickActions';
 import { useDesktopAppLaunch } from '../hooks/useDesktopAppLaunch';
 import { useHostShell } from '../hooks/useHostShell';
@@ -27,7 +28,7 @@ import { OfflineBanner } from './OfflineBanner';
 import { Celebration } from './Celebration';
 import { todayInsightPhrase } from '../utils/todayInsight';
 import { DonateNudge } from './DonateNudge';
-import { SECTION_HUE, clientHue, hueStyle } from '../lib/tone';
+import { SECTION_HUE, hueStyle } from '../lib/tone';
 
 // – lazy: heavy overlays –
 // SettingsSheet/PracticesScreen/PlansScreen/SchemaInfoSheet/ChildhoodWheelEx/
@@ -126,9 +127,6 @@ export function AppShell() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- ov.setShowTherapistDisclaimer стабильный сеттер useState (как и остальные поля ov); сам объект ov — новый на каждый рендер, добавление его в deps перезапускало бы эффект от любого несвязанного оверлея
   }, [therapistMode, userRole]);
-
-  // Therapist clients search (client list itself comes from useBootstrapLoad)
-  const [clientSearch, setClientSearch] = useState('');
 
   // Therapist cabinet navigation helpers (URL-based)
   const therapistBackHandlerRef = useRef<() => void>(() => navigate('/cabinet'));
@@ -253,33 +251,8 @@ export function AppShell() {
                      className={({ isActive }) => `sb-item${isActive ? ' is-active' : ''}`}>
               <span>Все клиенты</span><span className="badge">{therapistClients.length || ''}</span>
             </NavLink>
-            {therapistClients.length > 0 && (
-              <div className="sb-clients">
-                <div className="sb-section-label">Клиенты</div>
-                {therapistClients.length > 4 && (
-                  <input className="sb-search" value={clientSearch} placeholder="Поиск клиента…"
-                         onChange={e => setClientSearch(e.target.value)} />
-                )}
-                {therapistClients
-                  .filter(c => {
-                    if (!clientSearch.trim()) return true;
-                    const name = (c.clientAlias ?? c.name ?? '').toLowerCase();
-                    return name.includes(clientSearch.toLowerCase());
-                  })
-                  .map(c => {
-                    const name = c.clientAlias ?? c.name ?? `#${c.telegramId}`;
-                    const activeToday = c.todayIndex != null;
-                    return (
-                      <NavLink key={c.telegramId} to={`/cabinet/${c.telegramId}`}
-                               className={({ isActive }) => `sb-item sb-client-item${isActive ? ' is-active' : ''}`}>
-                        <span className="sb-client-av" style={hueStyle(clientHue(c.telegramId))}>{name.slice(0, 2).toUpperCase()}</span>
-                        <span className="sb-client-name">{name}</span>
-                        {activeToday && <span className="sb-active-dot" />}
-                      </NavLink>
-                    );
-                  })}
-              </div>
-            )}
+            {/* Клиенты — порядок, поиск и инициалы как в «Все клиенты» (appShell/SidebarClients). */}
+            <SidebarClients clients={therapistClients} />
           </>)}
         </nav>
 
