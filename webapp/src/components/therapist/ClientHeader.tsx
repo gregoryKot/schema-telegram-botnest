@@ -1,12 +1,13 @@
 import { useEffect, useRef } from 'react';
 import type { TherapyClientSummary } from '../../api';
 import { ClientHeaderBadges } from './ClientHeaderBadges';
+import { ClientHeaderMenu } from './ClientHeaderMenu';
+import { ClientQuickActions } from './ClientQuickActions';
 import { ClientTabs } from './ClientTabs';
 import { clientInitials } from './clientOverviewModel';
-import { clientHeaderClass } from './clientHeaderClass';
 import type { ClientDetail } from './clientSheetTypes';
 import { ConfirmDialog } from '../ConfirmDialog';
-import { MMIcon } from '../modeMapIcons';
+import { useIsMobile } from '../useIsMobile';
 import { CLIENT_NAME_MAX } from '../../../../shared/src/limits/textLimits';
 import { removeClientConfirmCopy } from '../../../../shared/src/therapy/removeClientConfirm';
 import { clientHue, hueStyle } from '../../lib/tone';
@@ -18,23 +19,27 @@ interface Props {
   switchView: (v: 'list' | 'client') => void;
 }
 
+// Шапка карточки клиента (#906, волна 1): аватар tint с тёмными инициалами,
+// имя ds-h2, строка-мета и «Встреча» + дата; редкие действия (переименовать,
+// удалить) — в меню «⋯». «+ Задание / + Заметка» здесь только на ноутбуке: на
+// телефоне они первой строкой «Обзора», закреплённой панели над навигацией нет.
 export function ClientHeader({ selectedClient, detail, switchView }: Props) {
   const {
-    clientTab, setShowAssign, setClientTab,
     renamingAlias, setRenamingAlias, aliasInput, setAliasInput, aliasSaving, aliasError,
     deleteClient, requestDeleteClient, cancelDeleteClient, confirmingDelete, deleteLoading, deleteError, saveAlias,
   } = detail;
-
+  const phone = useIsMobile();
   const removeCopy = removeClientConfirmCopy(selectedClient);
   const aliasInputRef = useRef<HTMLInputElement>(null);
   useEffect(() => { if (renamingAlias) aliasInputRef.current?.focus(); }, [renamingAlias]);
   const displayName = selectedClient.clientAlias ?? selectedClient.name ?? `ID ${selectedClient.telegramId}`;
+  const startRename = () => { setRenamingAlias(true); setAliasInput(selectedClient.clientAlias ?? selectedClient.name ?? ''); };
 
   return (
-    <div className={clientHeaderClass(clientTab)}>
-      <button className="ds-sub tk-back" onClick={() => switchView('list')}>← Все клиенты</button>
+    <div className="tk-head">
+      <button className="ds-back" onClick={() => switchView('list')}>← Все клиенты</button>
       <div className="tk-head-row">
-        <div className="ds-avatar ds-avatar--serif tk-avatar" style={hueStyle(clientHue(selectedClient.telegramId))}>
+        <div className="ds-avatar ds-avatar--serif tone-tint tk-avatar" style={hueStyle(clientHue(selectedClient.telegramId))}>
           {clientInitials(displayName)}
         </div>
         <div className="tk-ident">
@@ -48,22 +53,13 @@ export function ClientHeader({ selectedClient, detail, switchView }: Props) {
               {aliasError && <span className="tk-error">{aliasError}</span>}
             </div>
           ) : (
-            <div className="tk-name-row">
-              <span className="tk-name">{displayName}</span>
-              <button className="tk-edit" title="Переименовать" aria-label="Переименовать"
-                onClick={() => { setRenamingAlias(true); setAliasInput(selectedClient.clientAlias ?? selectedClient.name ?? ''); }}>✎</button>
-            </div>
+            <h1 className="ds-h2 tk-name">{displayName}</h1>
           )}
           <ClientHeaderBadges client={selectedClient} />
         </div>
         <div className="tk-actions">
-          <div className="tk-actions-main">
-            <button className="ds-btn ds-btn--sm" onClick={() => setShowAssign(true)}>+ Задание</button>
-            <button className="ds-btn ds-btn--secondary ds-btn--sm" onClick={() => setClientTab('sessions')}>+ Заметка</button>
-          </div>
-          <button className="ds-btn ds-btn--icon" onClick={requestDeleteClient} disabled={deleteLoading} title="Удалить клиента" aria-label="Удалить клиента">
-            {deleteLoading ? '…' : <MMIcon name="trash" size={16} />}
-          </button>
+          {!phone && <ClientQuickActions detail={detail} primary />}
+          <ClientHeaderMenu onRename={startRename} onDelete={requestDeleteClient} deleteBusy={deleteLoading} />
         </div>
       </div>
       <ClientTabs detail={detail} />

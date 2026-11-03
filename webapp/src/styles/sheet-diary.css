@@ -55,7 +55,6 @@
 .sd-trend { font: 600 11px var(--sans); color: var(--text-faint); }
 .sd-trend.is-up { color: var(--ok); }
 .sd-trend.is-down { color: var(--err); }
-.sd-topbar { justify-content: space-between; }
 .sd-head { padding: 40px clamp(16px, 4vw, 32px) 24px; max-width: 1100px; margin: 0 auto; width: 100%; box-sizing: border-box; }
 
 /* ── Мастер записи: прогресс, шаг, подвал ─────────────────────────────── */
@@ -81,7 +80,6 @@
 .sd-foot { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
 .sd-spacer { flex: 1; }
 .sd-save-error { flex-basis: 100%; margin-top: 8px; font-size: 13px; line-height: 1.5; color: var(--err); }
-.sd-back { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; }
 .sd-example { margin: 4px 0 12px; display: flex; flex-direction: column; gap: 6px; }
 .sd-example-text { font-size: 14px; font-style: italic; color: var(--text-sub); line-height: 1.55; }
 
@@ -179,7 +177,8 @@
 .sd-weekly-empty { text-align: center; color: var(--text-sub); padding: 48px 0; font-size: 15px; }
 .sd-journey-inner { max-width: 680px; margin: 0 auto; padding: 24px clamp(16px, 4vw, 20px) 80px; }
 .sd-journey-head { align-items: center; margin-bottom: 8px; }
-.sd-journey-title { margin: 0; font-size: 36px; }
+.sd-journey-title { margin: 0; } /* кегль — ds-h1, без локального (#906) */
+/* Шапка листа («Мой путь», сомнение в режиме) — общая .ds-sheet-head/.ds-back из cabinet.css. */
 .sd-skel-gap { height: 8px; }
 .sd-hero { margin-top: 12px; }
 .sd-hero-num { font-size: 56px; margin-top: 8px; }

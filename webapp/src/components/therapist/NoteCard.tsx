@@ -9,7 +9,7 @@ export function NoteCard({ item, expanded, onToggle }: { item: NoteItem; expande
       <div className="tb-note-head">
         <span className="ds-chip ds-chip--sm tone-tint tb-nowrap" style={hueStyle(DIARY_HUE[item.kind])}>{item.typeLabel}</span>
         <span className="tb-note-title">{item.title}</span>
-        {item.date && <span className="tb-meta tb-nowrap">{fmtDate(item.date)}</span>}
+        {item.date && <span className="tb-meta tb-nowrap tb-note-date">{fmtDate(item.date)}</span>}
       </div>
       {item.excerpt && <div className={`tb-note-text${expanded ? '' : ' is-clamped'}`}>{item.excerpt}</div>}
       {expanded && item.fields.length > 0 && (

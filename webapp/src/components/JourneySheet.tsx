@@ -36,6 +36,7 @@ export function JourneySheet({ onClose }: { onClose: () => void }) {
 
   return (
     <div className="u-sheet sd-journey">
+      {!detail.item && <div className="ds-sheet-head sd-top"><button type="button" className="ds-back" onClick={goBack}>← Назад</button></div>}
       <div className="sd-journey-inner">
         {detail.item ? (
           <JourneyDetailPane
@@ -47,10 +48,6 @@ export function JourneySheet({ onClose }: { onClose: () => void }) {
           />
         ) : (
           <>
-            <button onClick={goBack} className="ds-link sd-back">
-              ← Назад
-            </button>
-
             <div className="ds-head-row sd-journey-head">
               <h1 className="ds-h1 sd-journey-title">Мой путь</h1>
               {j.total > 0 && (

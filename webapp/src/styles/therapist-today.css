@@ -3,18 +3,16 @@
 /* Колонка кабинета — та же, что у списка и карточки клиента (index.css). */
 @media (min-width: 768px) { .tt-page { margin-left: var(--tk-center); max-width: var(--tk-max); padding-inline: var(--tk-gutter); } }
 .tt-counters { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; }
-.tt-counter { border-radius: 18px; padding: 22px 24px; display: flex; flex-direction: column; }
-.tt-counter .ds-label { color: inherit; opacity: .75; }
+/* Счётчик — ds-card--row с подписью ds-label (#906): радиус и отступы от
+   примитива, здесь только порядок подписи и числа. */
+.tt-counter { display: flex; flex-direction: column; }
+/* Три счётчика — одинаковые карточки на бумаге (один акцент на экран, #906):
+   цвет несёт только число «требуют внимания», и только когда оно больше нуля. */
 .tt-counter .ds-num { font-size: 52px; margin-top: 12px; }
-.tt-counter--plain .ds-label { color: var(--text-faint); opacity: 1; }
-.tt-counter--warn .ds-label { font-weight: 600; }
-.tt-denom { font-size: 22px; font-style: italic; color: var(--on-ink-faint); }
+.tt-counter--warn .ds-num { color: var(--warn-ink); }
+.tt-denom { font-size: 22px; font-style: italic; color: var(--text-faint); }
 .tt-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr)); gap: 32px; align-items: start; }
 .tt-col { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
-.tt-empty {
-  font-family: var(--serif); font-style: italic; font-size: 14px; color: var(--text-faint);
-  padding: 18px 20px; border: 1px dashed var(--line-strong); border-radius: 16px;
-}
 /* Второй раздел колонки («Требуют внимания» под «Сессиями») — отдельным блоком,
    а не вплотную к пустому состоянию первого. */
 .tt-col > .ds-h2:not(:first-child) { margin-top: 24px; }
@@ -43,10 +41,12 @@
 .tt-attn-list { display: flex; flex-direction: column; gap: 8px; }
 
 @media (max-width: 767px) {
-  .tt-counters { grid-template-columns: repeat(3, 1fr); gap: 8px; }
-  .tt-counter { border-radius: 14px; padding: 12px; flex-direction: column-reverse; }
+  /* Три счётчика в ряд — ~115px на карточку: отступ уже, чем у ds-card--row,
+     капитель подписи остаётся и ложится в две строки. */
+  .tt-counters { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  .tt-counter { padding: 12px; flex-direction: column-reverse; }
   .tt-counter .ds-num { font-size: 28px; margin-top: 0; }
-  .tt-counter .ds-label { font-size: 11px; letter-spacing: 0; text-transform: none; margin-top: 6px; }
+  .tt-counter .ds-label { margin-top: 6px; }
   .tt-denom { font-size: 14px; }
   .tt-cols { gap: 24px; }
   .tt-session { grid-template-columns: 56px 4px minmax(0, 1fr) auto; gap: 12px; }

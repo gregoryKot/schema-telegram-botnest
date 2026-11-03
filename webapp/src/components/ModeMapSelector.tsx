@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { api, type ModeMapMeta, type ModeMapFull, type ModeMapKind, type UserId } from '../api';
 import { ModeMapEditor } from './ModeMapEditor';
+import { ModeMapSkeleton } from './modeMap/ModeMapSkeleton';
 import { MMIcon } from './modeMapIcons';
 import { useTr } from '../utils/addressForm';
 import '../styles/sheet-modemap.css';
@@ -36,9 +37,8 @@ export function ModeMapSelector({ clientId, initialMapId }: Props) {
     setPickKind(o => !o);
   }
 
-  // Reset to the loading state when the viewed client changes. Adjusting state
-  // during render (not in an effect) is the documented pattern for deriving
-  // fresh state from a changing prop — no set-state-in-effect needed.
+  // Reset to the loading state when the viewed client changes: adjusting state
+  // during render (not in an effect) is the documented pattern for a changing prop.
   const [seenClient, setSeenClient] = useState(clientId);
   if (clientId !== seenClient) { setSeenClient(clientId); setLoading(true); }
 
@@ -178,7 +178,7 @@ export function ModeMapSelector({ clientId, initialMapId }: Props) {
 
       {/* Editor area */}
       <div className="mm2-body">
-        {loading && <div className="mm2-loading">Загрузка…</div>}
+        {loading && <ModeMapSkeleton />}
         {!loading && maps.length === 0 && (
           <div className="mm2-center">
             <div className="mm2-empty-ico"><MMIcon name="map" size={26} /></div>

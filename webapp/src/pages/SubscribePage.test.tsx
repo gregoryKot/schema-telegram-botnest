@@ -262,3 +262,47 @@ describe('SubscribePage — отмена подписки (отказ не гл�
     expect(screen.queryByRole('alert')).toBeNull();
   });
 });
+
+// #906: страница прижата к верху — шапка «← На главную» на ds-sheet-head/ds-back,
+// eyebrow + ds-h1 слева, кнопки — ds-btn--lg; центрирующего .ap-page--center нет.
+describe('SubscribePage — шапка и кнопки (#906)', () => {
+  it('служебное состояние: «← На главную» — ds-back в ds-sheet-head, заголовок ds-h1, кнопка ds-btn--lg', async () => {
+    mockApi.getSubscriptionOptions.mockResolvedValue({ enabled: false, options: [] });
+    const { container } = render(<SubscribePage />);
+    await screen.findByText('Подписка скоро');
+    const back = screen.getByRole('link', { name: '← На главную' });
+    expect(back.className).toBe('ds-back');
+    expect(back.parentElement!.className).toBe('ds-sheet-head');
+    expect(screen.getByRole('heading', { level: 1 }).classList.contains('ds-h1')).toBe(true);
+    expect(screen.getByRole('link', { name: 'Разовый донат' }).className).toBe('ds-btn ds-btn--lg');
+    expect(container.querySelector('.ap-page--center, .ap-card, .ap-btn')).toBeNull();
+  });
+
+  it('форма: та же шапка над сплитом, CTA — ds-btn--accent ds-btn--lg', async () => {
+    await renderLoaded();
+    const back = screen.getByRole('link', { name: '← На главную' });
+    expect(back.className).toBe('ds-back');
+    expect(back.parentElement!.className).toBe('ds-sheet-head');
+    expect(screen.getByRole('button', { name: /Оформить за/ }).className).toContain('ds-btn ds-btn--accent ds-btn--lg');
+  });
+});
+
+describe('SubscribePage — возврат с оплаты (?sub=ok|fail)', () => {
+  it('?sub=ok: благодарность и «На главную», формы и alert нет', async () => {
+    window.history.pushState({}, '', '/subscribe?sub=ok');
+    render(<SubscribePage />);
+    expect((await screen.findByRole('heading', { level: 1 })).textContent).toBe('Спасибо за поддержку!');
+    expect(screen.getByText(/Подписка оформлена/)).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'На главную' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: /Оформить за/ })).toBeNull();
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
+  it('?sub=fail: alert «Оплата не прошла», форма подписки на месте', async () => {
+    window.history.pushState({}, '', '/subscribe?sub=fail');
+    await renderLoaded();
+    expect(screen.getByRole('alert').textContent).toContain('Оплата не прошла');
+    expect(screen.getByRole('button', { name: /Оформить за/ })).toBeTruthy();
+    expect(screen.queryByText('Спасибо за поддержку!')).toBeNull();
+  });
+});

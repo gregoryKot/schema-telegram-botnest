@@ -26,9 +26,10 @@ interface Props {
   onOpenSchema: (opts?: { startTest?: boolean; tab?: 'needs'|'schemas'|'modes'; highlight?: string }) => void;
   childhoodRatings?: Record<string, number>;
   onOpenChildhoodWheel?: () => void;
+  onOpenSettings?: () => void;
 }
 
-export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChildhoodWheel }: Props) {
+export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChildhoodWheel, onOpenSettings }: Props) {
   const d = useSchemasData();
   const blocks = useScreenBlocks('patterns');
   const [showSchemaPicker, setShowSchemaPicker] = useState(false);
@@ -42,12 +43,11 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
   useEffect(() => { writeStoredTab(tab); }, [tab]);
   const show = visibleBlocks(tab, mobile);
   const startTest = () => onOpenSchema({ startTest: true });
-
   const allSchemaIds = [...new Set([...d.ysqSchemaIds, ...d.manualSchemaIds])];
 
   return (
     <div className="ds-page cs-page">
-      <PatternsHeader mobile={mobile} onOpenLibrary={() => onOpenSchema()} onCustomize={blocks.openByGear} />
+      <PatternsHeader mobile={mobile} onOpenLibrary={() => onOpenSchema()} onCustomize={blocks.openByGear} onOpenSettings={onOpenSettings} />
       {mobile && <PatternsTabsBar tab={tab} onChange={setTab} />}
       <SelectionSaveNote failed={d.saveFailed} blocked={d.saveBlocked} />
 

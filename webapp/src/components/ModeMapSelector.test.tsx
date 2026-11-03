@@ -312,3 +312,20 @@ describe('ModeMapSelector — смена клиента сбрасывает и 
     expect(listModeMaps).toHaveBeenCalledWith(2);
   });
 });
+
+// #906 (волна 1): пока грузится список карт, на месте холста — его силуэт
+// (ModeMapSkeleton), а не текст «Загрузка…» — правило «скелетон по форме
+// контента» (.claude/rules/frontend.md).
+describe('ModeMapSelector — загрузка', () => {
+  it('пока карты грузятся — силуэт холста, не текст «Загрузка…»; после ответа силуэт уходит', async () => {
+    let done!: (maps: ModeMapMeta[]) => void;
+    listModeMaps.mockReturnValue(new Promise<ModeMapMeta[]>((r) => { done = r; }));
+    render(<ModeMapSelector clientId={1} />);
+    expect(screen.getByTestId('mm-skeleton')).toBeTruthy();
+    expect(screen.queryByText(/Загрузка/)).toBeNull();
+
+    await act(async () => { done([]); });
+    expect(screen.queryByTestId('mm-skeleton')).toBeNull();
+    expect(screen.getByText('Нет карт режимов')).toBeTruthy();
+  });
+});

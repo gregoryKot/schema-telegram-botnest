@@ -18,7 +18,7 @@ export function ClientNotesTab({ clientSchemaNotesData, clientModeNotesData, cli
   if (all.length === 0) {
     return (
       <div className="ds-page tb-page tb-page--narrow">
-        <div className="tb-empty tb-empty--center">Клиент ещё не заполнял дневник</div>
+        <p className="ds-empty">Клиент ещё не заполнял дневник</p>
       </div>
     );
   }
@@ -28,19 +28,17 @@ export function ClientNotesTab({ clientSchemaNotesData, clientModeNotesData, cli
 
   return (
     <div className="ds-page tb-page tb-page--narrow">
-      <div className="ds-head-row tb-ysq-head-row">
-        <h2 className="tb-h32">Записи клиента</h2>
-        <div className="ds-seg" role="tablist">
-          {FILTERS.map(f => (
-            <button key={f.id} role="tab" aria-selected={filter === f.id}
-              className={`ds-seg-btn${filter === f.id ? ' is-active' : ''}`} onClick={() => setFilter(f.id)}>
-              {f.label}<span className="tb-seg-n">{counts[f.id]}</span>
-            </button>
-          ))}
-        </div>
+      {/* Заголовка нет (#906): имя уже во вкладке шапки — первым идёт фильтр. */}
+      <div className="ds-seg tb-filter" role="tablist">
+        {FILTERS.map(f => (
+          <button key={f.id} role="tab" aria-selected={filter === f.id}
+            className={`ds-seg-btn${filter === f.id ? ' is-active' : ''}`} onClick={() => setFilter(f.id)}>
+            {f.label}<span className="tb-seg-n">{counts[f.id]}</span>
+          </button>
+        ))}
       </div>
       <div className="tb-notes">
-        {shown.length === 0 && <div className="tb-empty">В этой категории записей нет</div>}
+        {shown.length === 0 && <p className="ds-empty">В этой категории записей нет</p>}
         {shown.map(item => (
           <NoteCard key={item.key} item={item} expanded={openKey === item.key}
             onToggle={() => setOpenKey(openKey === item.key ? null : item.key)} />

@@ -11,7 +11,7 @@ export function SelfHelpEntry() {
   const [open, setOpen] = useState(false);
   return (
     <>
-      <button type="button" className="cp-selfhelp" aria-label="Важное о самопомощи" onClick={() => setOpen(true)}>
+      <button type="button" className="ds-btn ds-btn--icon cp-selfhelp" aria-label="Важное о самопомощи" onClick={() => setOpen(true)}>
         <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
           <path d="M12 3.5 2.8 19.5h18.4L12 3.5Z" />
           <path d="M12 10v4.5M12 17.2v.1" />

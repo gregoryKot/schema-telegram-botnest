@@ -84,8 +84,8 @@ function ModeDoubtSheet({
 
   return (
     <div className="ex-screen">
-      <div className="ex-topbar">
-        <button className="ds-link sd-back" onClick={goBack}>
+      <div className="ds-sheet-head sd-top">
+        <button type="button" className="ds-back" onClick={goBack}>
           <GlyphArrowLeft /> Назад
         </button>
       </div>

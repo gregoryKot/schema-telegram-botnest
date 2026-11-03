@@ -608,6 +608,13 @@ describe('TherapistClientSheet — насыщенная карточка кли�
   });
 });
 
+// Редкие действия шапки — переименовать и удалить — в меню «⋯» (#906): открыть
+// меню, выбрать пункт.
+function pickHeaderAction(name: string) {
+  fireEvent.click(screen.getByRole('button', { name: 'Действия с карточкой' }));
+  fireEvent.click(screen.getByRole('menuitem', { name }));
+}
+
 describe('TherapistClientSheet — переименование клиента (алиас)', () => {
   it('сохранение нового имени вызывает api.renameClient и обновляет шапку', async () => {
     mockApi.getTherapyClients.mockResolvedValue([client({ telegramId: 7, name: 'Иван Петров' })]);
@@ -617,7 +624,7 @@ describe('TherapistClientSheet — переименование клиента (
     fireEvent.click(screen.getByText('Иван Петров'));
     await screen.findByText('Обзор');
 
-    fireEvent.click(screen.getByLabelText('Переименовать'));
+    pickHeaderAction('Переименовать');
     const input = screen.getByDisplayValue('Иван Петров') as HTMLInputElement;
     fireEvent.change(input, { target: { value: 'И.П.' } });
     fireEvent.click(screen.getByText('OK'));
@@ -634,7 +641,7 @@ describe('TherapistClientSheet — переименование клиента (
     fireEvent.click(screen.getByText('Иван Петров'));
     await screen.findByText('Обзор');
 
-    fireEvent.click(screen.getByLabelText('Переименовать'));
+    pickHeaderAction('Переименовать');
     fireEvent.change(screen.getByDisplayValue('Иван Петров'), { target: { value: 'Новое имя' } });
     fireEvent.click(screen.getByText('OK'));
 
@@ -648,16 +655,16 @@ describe('TherapistClientSheet — переименование клиента (
 
 describe('TherapistClientSheet — удаление клиента', () => {
   // Ж4 (аудит 2026-08): нативный window.confirm() заменён на ConfirmDialog —
-  // клик по кнопке-корзине открывает диалог, удаление подтверждается его
-  // собственной кнопкой «Удалить».
-  it('клик по кнопке-корзине открывает диалог, api не вызывается сразу', async () => {
+  // пункт «Удалить клиента» в меню «⋯» открывает диалог, удаление подтверждается
+  // его собственной кнопкой «Удалить».
+  it('пункт «Удалить клиента» в меню «⋯» открывает диалог, api не вызывается сразу', async () => {
     mockApi.getTherapyClients.mockResolvedValue([client({ telegramId: 7, name: 'Иван Петров' })]);
     renderSheet();
     await screen.findByText('Иван Петров');
     fireEvent.click(screen.getByText('Иван Петров'));
     await screen.findByText('Обзор');
 
-    fireEvent.click(screen.getByLabelText('Удалить клиента'));
+    pickHeaderAction('Удалить клиента');
 
     const dialog = screen.getByRole('dialog');
     expect(dialog.getAttribute('aria-modal')).toBe('true');
@@ -676,7 +683,7 @@ describe('TherapistClientSheet — удаление клиента', () => {
     fireEvent.click(screen.getByText('Иван Петров'));
     await screen.findByText('Обзор');
 
-    fireEvent.click(screen.getByLabelText('Удалить клиента'));
+    pickHeaderAction('Удалить клиента');
 
     const dialog = screen.getByRole('dialog');
     expect(within(dialog).getByText(/Карточка, заметки по сессиям, концептуализация, карты режимов/)).toBeTruthy();
@@ -691,7 +698,7 @@ describe('TherapistClientSheet — удаление клиента', () => {
     fireEvent.click(screen.getByText('Иван Петров'));
     await screen.findByText('Обзор');
 
-    fireEvent.click(screen.getByLabelText('Удалить клиента'));
+    pickHeaderAction('Удалить клиента');
     fireEvent.click(within(screen.getByRole('dialog')).getByText('Удалить'));
 
     await waitFor(() => expect(mockApi.removeClient).toHaveBeenCalledWith(7));
@@ -705,7 +712,7 @@ describe('TherapistClientSheet — удаление клиента', () => {
     fireEvent.click(screen.getByText('Иван Петров'));
     await screen.findByText('Обзор');
 
-    fireEvent.click(screen.getByLabelText('Удалить клиента'));
+    pickHeaderAction('Удалить клиента');
     fireEvent.click(within(screen.getByRole('dialog')).getByText('Отмена'));
 
     expect(screen.queryByRole('dialog')).toBeNull();

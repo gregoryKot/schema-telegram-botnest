@@ -474,10 +474,10 @@ describe('PracticeSection — «Инструменты»: скрытие и по
     ]);
   });
 
-  it('шестерёнка (телефон) открывает лист со всеми десятью пунктами', async () => {
+  it('«Настроить инструменты» (телефон) открывает лист со всеми десятью пунктами', async () => {
     setWidth(390);
     renderSection();
-    fireEvent.click(screen.getByRole('button', { name: 'Какие инструменты показывать' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Настроить инструменты' }));
     expect(await screen.findByRole('heading', { name: 'Какие инструменты показывать' })).toBeTruthy();
     expect(screen.getAllByRole('switch')).toHaveLength(10);
   });
@@ -498,7 +498,7 @@ describe('PracticeSection — «Инструменты»: скрытие и по
   it('лист: ручки «≡» только у карточек; у разделов страницы — одни тумблеры', async () => {
     setWidth(390);
     renderSection();
-    fireEvent.click(screen.getByRole('button', { name: 'Какие инструменты показывать' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Настроить инструменты' }));
     await screen.findByText('Разделы страницы');
     expect(document.querySelectorAll('.cz-handle')).toHaveLength(6);
     expect(screen.getByText('Разделы страницы')).toBeTruthy();

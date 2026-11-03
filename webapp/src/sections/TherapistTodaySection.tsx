@@ -50,15 +50,15 @@ export function TherapistTodaySection({ displayName, onOpenClient }: Props) {
 
       {!loading && clients.length > 0 && (
         <div className="tt-counters">
-          <div className="tt-counter ds-card ds-card--ink">
+          <div className="tt-counter ds-card ds-card--row">
             <div className="ds-label">Активны сегодня</div>
             <div className="ds-num">{counts.active}<span className="tt-denom"> / {counts.total}</span></div>
           </div>
-          <div className="tt-counter tt-counter--plain ds-card">
+          <div className="tt-counter ds-card ds-card--row">
             <div className="ds-label">Сессий сегодня</div>
             <div className="ds-num">{counts.sessions}</div>
           </div>
-          <div className="tt-counter tt-counter--warn ds-card ds-card--warn">
+          <div className={`tt-counter ds-card ds-card--row${counts.attention > 0 ? ' tt-counter--warn' : ''}`}>
             <div className="ds-label">Требуют внимания</div>
             <div className="ds-num">{counts.attention}</div>
           </div>
@@ -71,7 +71,7 @@ export function TherapistTodaySection({ displayName, onOpenClient }: Props) {
           {loading ? (
             [0, 1].map(i => <Skeleton key={i} height={74} radius={16} />)
           ) : sessions.length === 0 ? (
-            <div className="tt-empty">Сессий не запланировано</div>
+            <p className="ds-empty">Сессий не запланировано</p>
           ) : (
             sessions.map(c => <SessionRow key={c.telegramId} client={c} now={now} onOpen={onOpenClient} />)
           )}
@@ -90,9 +90,9 @@ export function TherapistTodaySection({ displayName, onOpenClient }: Props) {
           {loading ? (
             <Skeleton height={192} radius={16} />
           ) : clients.length === 0 ? (
-            <div className="tt-empty">Нет клиентов</div>
+            <p className="ds-empty">Нет клиентов</p>
           ) : (
-            <div className="ds-card ds-card--flush" style={{ borderRadius: 16 }}>
+            <div className="ds-card ds-card--row ds-card--flush">
               {clients.map(c => <ActivityRow key={c.telegramId} client={c} now={now} onOpen={onOpenClient} />)}
             </div>
           )}

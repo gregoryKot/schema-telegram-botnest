@@ -44,12 +44,12 @@ export function HistorySheet({
 
   return (
     <div {...dialogA11y} className="u-sheet-grid">
-      {/* ExScreen-style topbar */}
-      <div className="ex-topbar sd-topbar">
-        <button className="ex-back" onClick={goBack}>
+      {/* Шапка листа — ds-sheet-head/ds-back, «Оценить →» в правом слоте (#906) */}
+      <div className="ds-sheet-head">
+        <button type="button" className="ds-back" onClick={goBack}>
           <GlyphArrowLeft /> Назад к трекеру
         </button>
-        <button onClick={() => goBack(onOpenTracker)} className="ds-btn ds-btn--sm">
+        <button type="button" onClick={() => goBack(onOpenTracker)} className="ds-btn ds-btn--sm">
           Оценить →
         </button>
       </div>

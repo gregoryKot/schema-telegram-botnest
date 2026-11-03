@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-// Телефонная раскладка профиля: шапка с «Настроить», плитка «ещё N» у достижений,
+// Профиль: шапка одного состава на любой ширине (#906), плитка «ещё N» у достижений,
 // таблетки и полосы паттернов. Видимость на ≤767px решает css, здесь — разметка и данные.
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
@@ -13,11 +13,24 @@ vi.mock('../../components/useIsMobile', () => ({ useIsMobile: () => phone.value 
 afterEach(() => { cleanup(); phone.value = true; });
 
 describe('ProfileHeader', () => {
-  it('телефон: «Настроить» открывает настройку экрана, шестерёнка — общие настройки; без обработчика шестерёнки нет', () => {
+  // Один состав на любой ширине (#906): надпись, «Мой путь», подпись с именем и днями,
+  // ссылка «Настроить экран» и шестерёнка «Настройки» — телефон ничего не выбрасывает.
+  it.each([true, false])('телефон=%s: надпись и ds-h1 «Мой путь», имя и дни — в подписи', (mobile) => {
+    phone.value = mobile;
+    const { container } = render(<ProfileHeader displayName="Аня" totalDays={21} onCustomize={() => {}} />);
+    expect(screen.getByText('Профиль', { selector: '.ds-eyebrow' })).toBeTruthy();
+    const h1 = screen.getByRole('heading', { level: 1 });
+    expect(h1.textContent).toBe('Мой путь');
+    expect(h1.className).toContain('ds-h1');
+    expect(container.querySelector('.cpf-head-sub')?.textContent).toBe('Аня · 21 день с тобой в приложении');
+  });
+
+  it.each([true, false])('телефон=%s: «Настроить экран» зовёт onCustomize, шестерёнка — onOpenSettings; без обработчика шестерёнки нет', (mobile) => {
+    phone.value = mobile;
     const onCustomize = vi.fn();
     const onOpen = vi.fn();
     const { rerender } = render(<ProfileHeader displayName="Аня" totalDays={23} onCustomize={onCustomize} onOpenSettings={onOpen} />);
-    fireEvent.click(screen.getByRole('button', { name: 'Настроить экран профиля' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Настроить экран' }));
     expect(onCustomize).toHaveBeenCalledTimes(1);
     expect(onOpen).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole('button', { name: 'Настройки' }));
@@ -26,21 +39,12 @@ describe('ProfileHeader', () => {
     expect(screen.queryByRole('button', { name: 'Настройки' })).toBeNull();
   });
 
-  it('десктоп: вместо плашки и шестерёнки — ссылка «Настроить экран»', () => {
-    phone.value = false;
-    const onCustomize = vi.fn();
-    render(<ProfileHeader displayName="Аня" totalDays={23} onCustomize={onCustomize} onOpenSettings={vi.fn()} />);
-    fireEvent.click(screen.getByRole('button', { name: 'Настроить экран' }));
-    expect(onCustomize).toHaveBeenCalledTimes(1);
-    expect(screen.queryByRole('button', { name: 'Настройки' })).toBeNull();
-  });
-
-  it('имя и число дней склоняются; без имени заголовок «Я», без дней подписи нет', () => {
-    const { container, rerender } = render(<ProfileHeader displayName="Аня" totalDays={21} onCustomize={() => {}} />);
-    expect(container.querySelector('.cpf-head-mob')?.textContent).toBe('Аня');
-    expect(container.querySelector('.cpf-head-sub')?.textContent).toContain('21 день');
+  it('дни склоняются; без имени — только дни, без дней — только имя, без того и другого подписи нет', () => {
+    const { container, rerender } = render(<ProfileHeader displayName={null} totalDays={2} onCustomize={() => {}} />);
+    expect(container.querySelector('.cpf-head-sub')?.textContent).toBe('2 дня с тобой в приложении');
+    rerender(<ProfileHeader displayName="Аня" totalDays={0} onCustomize={() => {}} />);
+    expect(container.querySelector('.cpf-head-sub')?.textContent).toBe('Аня');
     rerender(<ProfileHeader displayName={null} totalDays={0} onCustomize={() => {}} />);
-    expect(container.querySelector('.cpf-head-mob')?.textContent).toBe('Я');
     expect(container.querySelector('.cpf-head-sub')).toBeNull();
   });
 });

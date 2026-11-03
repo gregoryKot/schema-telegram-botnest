@@ -17,7 +17,7 @@ export function ConceptFoldouts({ detail }: { detail: ClientDetail }) {
     <div className="tcp-folds">
       {ysqSchemaIds.length > 0 && (
         <NeedFold title={ysqFoldTitle(missing)}>
-          <div className="u-col8" style={{ marginTop: 12 }}>
+          <div className="u-col8">
             {ysqSchemaIds.slice(0, 6).map(id => {
               const s = SCHEMA_DOMAINS.flatMap(d => d.schemas).find(x => x.id === id);
               const inConcept = activeSchemaIds.includes(id);
@@ -33,9 +33,7 @@ export function ConceptFoldouts({ detail }: { detail: ClientDetail }) {
       )}
       {versions > 0 && (
         <NeedFold title={`История версий · ${versions}`}>
-          <div style={{ marginTop: 12 }}>
-            <ConceptVersionHistory detail={detail} />
-          </div>
+          <ConceptVersionHistory detail={detail} />
         </NeedFold>
       )}
     </div>

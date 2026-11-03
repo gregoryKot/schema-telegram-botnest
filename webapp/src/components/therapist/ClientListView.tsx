@@ -136,11 +136,11 @@ export function ClientListView({
               {tr('Не удалось загрузить клиентов. Проверь соединение и обнови страницу', 'Не удалось загрузить клиентов. Проверьте соединение и обновите страницу')}
             </div>
           ) : clients.length === 0 ? (
-            <div className="tc-empty">
+            <p className="ds-empty">
               {tr('Введи имя клиента выше, чтобы добавить первую карточку', 'Введите имя клиента выше, чтобы добавить первую карточку')}
-            </div>
+            </p>
           ) : filtered.length === 0 ? (
-            <div className="tc-empty">Ничего не найдено</div>
+            <p className="ds-empty">Ничего не найдено</p>
           ) : (
             <div className="tc-grid">
               {filtered.map(client => (

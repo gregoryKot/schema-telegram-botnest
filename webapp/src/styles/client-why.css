@@ -1,15 +1,25 @@
-/* Лист «Зачем это всё» (components/WhySheet.tsx). Префикс cw-. */
-.cw-sheet { display: flex; justify-content: center; }
+/* Листы «Зачем это всё» (components/WhySheet.tsx) и «Поговорить с кем-то»
+   (components/therapy/TalkSheet.tsx). Префикс cw-. Кегли — ds-h1/ds-sub из cabinet.css. */
+.cw-sheet { display: flex; flex-direction: column; align-items: center; }
+/* Шапка листа — ds-sheet-head во всю ширину; одинокий «← Закрыть» держит слева сам примитив. */
+.cw-head { width: 100%; }
 .cw-inner {
   box-sizing: border-box; width: 100%; max-width: 560px;
-  padding: 40px 20px calc(32px + env(safe-area-inset-bottom));
-  display: flex; flex-direction: column; gap: 20px;
+  padding: 24px 20px calc(32px + env(safe-area-inset-bottom));
+  display: flex; flex-direction: column; gap: 16px;
 }
-.cw-h1 { font-size: 34px; margin: 0; }
-.cw-lead { margin: 0; font-size: 16px; line-height: 1.6; color: var(--text-sub); }
-.cw-list { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 12px; }
-.cw-item { padding: 16px 18px; border-radius: 18px; background: var(--surface); border: 1px solid var(--line); }
-.cw-item-title { font-family: var(--serif); font-size: 20px; line-height: 1.25; color: var(--text); }
-.cw-item-text { margin-top: 6px; font-size: 14px; line-height: 1.55; color: var(--text-sub); }
-.cw-note { margin: 0; font-size: 15px; line-height: 1.5; color: var(--text); }
-.cw-cta { min-height: 52px; width: 100%; border-radius: 26px; font-size: 16px; }
+/* Заголовок прямо в колонке с gap (TalkSheet): без верхнего отступа ds-h1. */
+.cw-h1 { margin: 0; }
+.cw-lead { margin: 0; font-size: 15px; line-height: 1.6; color: var(--text-sub); }
+/* Три действия — строки одной карточки: название Manrope 600, пояснение 14px. */
+.cw-list { margin: 0; padding: 0; list-style: none; }
+.cw-item { grid-template-columns: minmax(0, 1fr); gap: 2px; }
+.cw-item-text { font-size: 14px; line-height: 1.5; color: var(--text-sub); }
+/* Ободряющая фраза перед кнопкой. Не .cw-note: это имя занято колесом детства (sheet-childhood.css). */
+.cw-tip { margin: 0; font-size: 14px; line-height: 1.5; color: var(--text); }
+.cw-foot { margin: 0; line-height: 1.5; }
+
+@media (max-width: 767px) {
+  .cw-sheet { padding-top: var(--safe-top); } /* статус-бар установленного приложения (#902) */
+  .cw-inner { padding: 20px 16px calc(24px + env(safe-area-inset-bottom)); }
+}

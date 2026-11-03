@@ -95,10 +95,13 @@ describe('JourneySheet — список', () => {
     expect(shareSummary).toHaveBeenCalled();
   });
 
-  it('«Назад» зовёт onClose (через useHistorySheet)', () => {
+  it('«Назад» зовёт onClose (через useHistorySheet); кнопка — ds-back в шапке ds-sheet-head (#906)', () => {
     const onClose = vi.fn();
     renderSheet(onClose);
-    fireEvent.click(screen.getByText('← Назад'));
+    const back = screen.getByText('← Назад');
+    expect(back.className).toBe('ds-back');
+    expect(back.parentElement!.classList.contains('ds-sheet-head')).toBe(true);
+    fireEvent.click(back);
     expect(onClose).toHaveBeenCalled();
   });
 });

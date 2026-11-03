@@ -1,5 +1,6 @@
-import { useId, useRef, useState, type ButtonHTMLAttributes, type ReactNode } from 'react';
+import { useId, useRef, type ButtonHTMLAttributes, type ReactNode } from 'react';
 import { Dropdown } from '../../Dropdown';
+import { useMenuPick } from '../../useMenuPick';
 import { useTr } from '../../../utils/addressForm';
 import type { ClientDetail } from '../clientSheetTypes';
 import { ConceptViewSwitch, type ConceptView } from '../../../../../shared/src/therapy/conceptGraph/ConceptViewSwitch';
@@ -7,12 +8,13 @@ import { SaveStatusLine } from '../../../../../shared/src/therapy/SaveStatusLine
 import { CANVAS_HINT, EXPAND_HINT, actionStatusText, type GraphActions } from './conceptHeadText';
 
 // Шапка вкладки «Концептуализация» (#879, тест с терапевтом): в ней остаются
-// только заголовок, статус сохранения и переключатель «Схема · Поля». Экспорт,
-// картинка, лист на весь экран и холст — второстепенные действия, они собраны в
-// одно меню «⋯ Ещё»: шапка из пяти кнопок читалась как панель инструментов, и
-// терапевт не находил главного. Меню закрывается по выбору пункта, поэтому
-// занятость и отказ действия показываются строкой под шапкой (ActionStatus),
-// а не внутри меню. Телефон (#902): заголовок и слово «Ещё» прячет therapist-concept.css.
+// только переключатель «Схема · Поля» и статус сохранения. Экспорт, картинка,
+// лист на весь экран и холст — второстепенные действия, они собраны в одно
+// меню «⋯»: шапка из пяти кнопок читалась как панель инструментов, и терапевт
+// не находил главного. Меню закрывается по выбору пункта, поэтому занятость и
+// отказ действия показываются строкой под шапкой (ActionStatus), а не внутри
+// меню. Заголовка у вкладки нет (#906): имя уже во вкладке шапки карточки;
+// кнопка меню — круглая иконочная (ds-btn--icon), подпись — aria-label.
 export interface ConceptTabHeadProps {
   detail: ClientDetail;
   view: ConceptView;
@@ -25,16 +27,10 @@ export function ConceptTabHead({ detail, view, onView, graph }: ConceptTabHeadPr
   const { saveStatus, savedAt, retrySave, conceptError, exportCopied, handleExport } = detail;
   return (
     <>
-      <div className="ds-head-row tcp-head">
-        <div className="tcp-head-title">
-          <h2 className="ds-h2">Концептуализация</h2>
-          <div className="ds-sub" style={{ marginTop: 4 }}>Схема-карта, цели терапии и связь с детским опытом</div>
-        </div>
-        <div className="tcp-head-actions">
-          <SaveStatusLine className="tcp-save" status={saveStatus} savedAt={savedAt} onRetry={retrySave} errorText={conceptError || undefined} align="right" />
-          <ConceptViewSwitch view={view} onChange={onView} />
-          <MoreMenu onExport={handleExport} graph={graph} />
-        </div>
+      <div className="tcp-head">
+        <ConceptViewSwitch view={view} onChange={onView} />
+        <SaveStatusLine className="tcp-save" status={saveStatus} savedAt={savedAt} onRetry={retrySave} errorText={conceptError || undefined} align="right" />
+        <MoreMenu onExport={handleExport} graph={graph} />
       </div>
       <ActionStatus graph={graph} exportCopied={exportCopied} />
     </>
@@ -42,20 +38,19 @@ export function ConceptTabHead({ detail, view, onView, graph }: ConceptTabHeadPr
 }
 
 function MoreMenu({ onExport, graph }: { onExport: () => void; graph?: GraphActions }) {
-  const [open, setOpen] = useState(false);
+  const { open, setOpen, btnRef, pick } = useMenuPick();
   const wrapRef = useRef<HTMLDivElement>(null);
-  const pick = (fn: () => void) => () => { setOpen(false); fn(); };
   return (
     <div ref={wrapRef} className="tcp-more">
       <button
-        type="button"
-        className="ds-btn ds-btn--secondary tcp-more-btn"
+        ref={btnRef} type="button"
+        className="ds-btn ds-btn--icon"
         aria-label="Ещё действия"
         aria-haspopup="menu"
         aria-expanded={open}
         onClick={() => setOpen(o => !o)}
       >
-        ⋯ <span className="tcp-more-txt">Ещё</span>
+        ⋯
       </button>
       {open && (
         <Dropdown anchorRef={wrapRef} onClose={() => setOpen(false)} role="menu" label="Ещё действия" className="tcp-menu">

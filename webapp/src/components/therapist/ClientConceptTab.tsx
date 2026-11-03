@@ -19,7 +19,7 @@ export function ClientConceptTab({ detail, onOpenCanvas }: Props) {
   const digest = <ConceptDigest rows={useConceptDigest(detail.concept, detail.localConcept)} />;
 
   return (
-    <div className={`page-inner-wide u-pt40${view === 'graph' ? ' tcp--graph' : ''}`}>
+    <div className={`page-inner-wide tcp-page${view === 'graph' ? ' tcp--graph' : ''}`}>
       {view === 'graph' ? (
         <ClientConceptGraph detail={detail} onOpenCanvas={onOpenCanvas} head={head} digest={digest} />
       ) : (

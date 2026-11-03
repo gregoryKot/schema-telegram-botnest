@@ -55,9 +55,10 @@ beforeEach(() => {
 afterEach(cleanup);
 
 describe('PracticeSection на телефоне', () => {
-  it('компактная шапка: «Здесь и сейчас», без капса и большого заголовка', async () => {
+  it('шапка того же состава, что на ноутбуке (#906): надпись «Практика» и ds-h1 «Здесь и сейчас»', async () => {
     renderPhone();
-    expect(screen.getByRole('heading', { level: 1, name: 'Здесь и сейчас' })).toBeTruthy();
+    expect(screen.getByText('Практика', { selector: '.ds-eyebrow' })).toBeTruthy();
+    expect(screen.getByRole('heading', { level: 1, name: 'Здесь и сейчас' }).className).toContain('ds-h1');
     expect(screen.queryByText('Упражнения')).toBeNull();
     expect(screen.queryByText(/Восемь практик/)).toBeNull();
     await waitFor(() => expect(mockApi.getTasks).toHaveBeenCalled());
