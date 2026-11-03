@@ -67,7 +67,7 @@ export function MyTherapistSection({ rel, settings, patch }: {
               onKeyDown={e => e.key === 'Enter' && void join.submit()}
               placeholder={THERAPY_INVITE_CODE_PLACEHOLDER} maxLength={THERAPY_INVITE_INPUT_MAX}
               autoComplete="off" autoCapitalize="characters" spellCheck={false} />
-            <button className="ds-btn" onClick={() => void join.submit()} disabled={join.busy}>
+            <button className="ds-btn" onClick={() => void join.submit()} disabled={!join.canSubmit}>
               {join.busy ? 'Подключаю…' : 'Подключиться'}
             </button>
           </div>

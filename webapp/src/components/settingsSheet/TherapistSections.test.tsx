@@ -26,7 +26,7 @@ function rel(
 ): Rel {
   return {
     therapyRelation,
-    join: { code: '', setCode: vi.fn(), error: '', busy: false, joined: false, submit: vi.fn(), ...over.join },
+    join: { code: '', setCode: vi.fn(), error: '', busy: false, joined: false, submit: vi.fn(), canSubmit: true, ...over.join },
     leave: { confirming: false, busy: false, failed: false, ask: vi.fn(), cancel: vi.fn(), confirm: vi.fn(), ...over.leave },
     invite: null,
     inviteCopied: false,
@@ -83,6 +83,13 @@ describe('MyTherapistSection — подключение и отключение'
     expect(r.join.setCode).toHaveBeenCalledWith(' 7f3a9c21b04e ');
     fireEvent.click(screen.getByText('Подключиться'));
     expect(r.join.submit).toHaveBeenCalledTimes(1);
+  });
+
+  // QA 2026-11, М6: пустое поле — кнопка молча ничего не делала.
+  it('нечего отправлять (canSubmit=false) — «Подключиться» недоступна', () => {
+    getFormerTherapist.mockResolvedValue(null);
+    render(<MyTherapistSection rel={rel(null, { join: { canSubmit: false } })} settings={settings} patch={patch} />);
+    expect((screen.getByText('Подключиться') as HTMLButtonElement).disabled).toBe(true);
   });
 
   it('статус без рода: «Терапевт: Анна Терапевт», не «… подключён»', () => {

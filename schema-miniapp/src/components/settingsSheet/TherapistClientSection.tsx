@@ -131,7 +131,7 @@ export function TherapistClientSection({
               />
               <button
                 onClick={() => void join.submit()}
-                disabled={join.busy}
+                disabled={!join.canSubmit}
                 style={{
                   background: 'var(--accent)',
                   border: 'none',
@@ -140,7 +140,8 @@ export function TherapistClientSection({
                   color: 'var(--text)',
                   fontSize: 13,
                   fontWeight: 600,
-                  cursor: 'pointer',
+                  cursor: join.canSubmit ? 'pointer' : 'default',
+                  opacity: join.canSubmit || join.busy ? 1 : 0.5,
                 }}
               >
                 {join.busy ? 'Подключаю…' : 'Подключиться'}

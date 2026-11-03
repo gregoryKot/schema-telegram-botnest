@@ -19,6 +19,17 @@ describe('joinConfirmFailText', () => {
     );
   });
 
+  // QA 2026-11, З1: обрыв связи — не повод «проверять ссылку».
+  it('нет сети или 500 — честная причина и для терапевта, и для пары', () => {
+    const offline = new TypeError('Failed to fetch');
+    expect(joinConfirmFailText(offline, false, trFor('ty'))).toMatch(
+      /Нет связи/,
+    );
+    expect(joinConfirmFailText({ status: 500 }, true, trFor('ty'))).toMatch(
+      /Сервер не ответил/,
+    );
+  });
+
   it('пара: даже 409 already_connected не меняет текст', () => {
     expect(joinConfirmFailText(conflict, true, trFor('vy'))).toMatch(
       /Проверьте ссылку/,
