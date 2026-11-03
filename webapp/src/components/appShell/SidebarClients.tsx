@@ -1,5 +1,5 @@
 // Клиенты в сайдбаре кабинета. Порядок и поиск — те же, что у «Все клиенты»
-// (sortRoster/filterRoster: сначала ближайшие встречи, «е» находит «ё»),
+// (therapist/rosterOrder: сначала ближайшие встречи, «е» находит «ё»),
 // инициалы — общий clientInitials. QA 2026-11: сайдбар шёл в порядке сервера,
 // искал по точной подстроке и резал имя slice(0, 2) («Анна Крылова» → «АН»).
 import { useState } from 'react';
@@ -7,7 +7,7 @@ import { NavLink } from 'react-router-dom';
 import type { TherapyClientSummary } from '../../api';
 import { clientHue, hueStyle } from '../../lib/tone';
 import { todayStr } from '../../utils/format';
-import { filterRoster, sortRoster } from '../therapist/rosterModel';
+import { matchesRosterSearch, sortRoster } from '../therapist/rosterOrder';
 import { clientInitials } from '../../../../shared/src/therapy/clientInitials';
 
 /** С какого числа клиентов в сайдбаре появляется поиск. */
@@ -17,7 +17,7 @@ export function SidebarClients({ clients }: { clients: TherapyClientSummary[] })
   const [search, setSearch] = useState('');
   if (clients.length === 0) return null;
   // Местный день терапевта: с ним sortRoster сравнивает nextSession (его настенное время).
-  const shown = sortRoster(filterRoster(clients, search, 'all'), todayStr());
+  const shown = sortRoster(clients.filter(c => matchesRosterSearch(c, search)), todayStr());
   return (
     <div className="sb-clients">
       <div className="sb-section-label">Клиенты</div>

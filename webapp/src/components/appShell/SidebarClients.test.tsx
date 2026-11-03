@@ -1,12 +1,12 @@
 // @vitest-environment jsdom
-// Сайдбар кабинета (QA 2026-11): порядок как у «Все клиенты» (sortRoster),
+// Сайдбар кабинета (QA 2026-11): порядок как у «Все клиенты» (rosterOrder.sortRoster),
 // поиск без учёта «ё/е», инициалы из двух слов, а не две буквы имени.
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import type { TherapyClientSummary } from '../../api';
 import { SidebarClients } from './SidebarClients';
-import { sortRoster } from '../therapist/rosterModel';
+import { sortRoster } from '../therapist/rosterOrder';
 import { todayStr } from '../../utils/format';
 import { localDateStr } from '../../../../shared/src/utils/format';
 import { forEachTimeZone } from '../../../../shared/src/utils/timeZone.test-helpers';

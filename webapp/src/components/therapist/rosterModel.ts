@@ -10,17 +10,13 @@ import {
   isVirtualClient,
   nextSessionLabel,
 } from './clientSheetHelpers';
-import { upcomingSession } from '../../../../shared/src/therapy/upcomingSession';
 import { clientActivityLabel } from '../../../../shared/src/therapy/clientActivity';
-import { matchesSearch } from '../../../../shared/src/utils/searchNormalize';
+import { matchesRosterSearch, plannedSession } from './rosterOrder';
+
+// Порядок списка — rosterOrder (общий с сайдбаром кабинета).
+export { sortRoster } from './rosterOrder';
 
 export type RosterStatus = 'all' | 'active' | 'wait' | 'virtual';
-
-/** Явная встреча не в прошлом — иначе null; дни встреч список подписывает «по Вт». */
-const plannedSession = (c: TherapyClientSummary, today: string): string | null =>
-  upcomingSession(c.nextSession, [], today);
-
-const displayName = (c: TherapyClientSummary): string => c.clientAlias ?? c.name ?? '';
 
 export function filterRoster(
   clients: TherapyClientSummary[],
@@ -28,30 +24,13 @@ export function filterRoster(
   status: RosterStatus,
 ): TherapyClientSummary[] {
   return clients.filter((c) => {
-    if (!matchesSearch(displayName(c), query)) return false;
+    if (!matchesRosterSearch(c, query)) return false;
     const activeToday = isActiveToday(c);
     if (status === 'active') return activeToday;
     if (status === 'wait') return !isVirtualClient(c) && !activeToday;
     if (status === 'virtual') return isVirtualClient(c);
     return true;
   });
-}
-
-/** Сначала у кого скоро встреча (по возрастанию), затем остальные по имени. */
-export function sortRoster(
-  clients: TherapyClientSummary[],
-  today: string,
-): TherapyClientSummary[] {
-  const withMeeting: { c: TherapyClientSummary; at: string }[] = [];
-  const rest: TherapyClientSummary[] = [];
-  for (const c of clients) {
-    const at = plannedSession(c, today);
-    if (at) withMeeting.push({ c, at });
-    else rest.push(c);
-  }
-  withMeeting.sort((a, b) => a.at.localeCompare(b.at));
-  rest.sort((a, b) => displayName(a).localeCompare(displayName(b), 'ru'));
-  return [...withMeeting.map((x) => x.c), ...rest];
 }
 
 /** «Вт, 7 окт · 11:00», «по Вт, Чт» или null, если встреч нет. */
