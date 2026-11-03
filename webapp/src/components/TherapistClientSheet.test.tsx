@@ -359,11 +359,11 @@ describe('TherapistClientSheet — вкладка «Схемы» (YSQ)', () => {
     await screen.findByText('✓ Запрос отправлен');
   });
 
-  it('оффлайн-клиент (telegramId < 0) не может запросить YSQ — кнопки нет вообще', async () => {
-    mockApi.getTherapyClients.mockResolvedValue([client({ telegramId: -5, name: null, clientAlias: 'Оффлайн Клиент' })]);
+  it('офлайн-клиент (telegramId < 0) не может запросить YSQ — кнопки нет вообще', async () => {
+    mockApi.getTherapyClients.mockResolvedValue([client({ telegramId: -5, name: null, clientAlias: 'Офлайн Клиент' })]);
     renderSheet();
-    await screen.findByText('Оффлайн Клиент');
-    fireEvent.click(screen.getByText('Оффлайн Клиент'));
+    await screen.findByText('Офлайн Клиент');
+    fireEvent.click(screen.getByText('Офлайн Клиент'));
     await screen.findByText('Обзор');
 
     fireEvent.click(screen.getByText('Схемы'));
@@ -785,18 +785,18 @@ describe('TherapistClientSheet — поиск и фильтр в списке к
     expect(screen.getByText('Ничего не найдено')).toBeTruthy();
   });
 
-  it('фильтр «Оффлайн» показывает только клиентов без Telegram (name: null)', async () => {
+  it('фильтр «Офлайн» показывает только клиентов без Telegram (name: null)', async () => {
     mockApi.getTherapyClients.mockResolvedValue([
       client({ telegramId: 1, name: 'Анна' }),
-      client({ telegramId: -2, name: null, clientAlias: 'Оффлайн-клиент' }),
+      client({ telegramId: -2, name: null, clientAlias: 'Офлайн-клиент' }),
     ]);
     renderSheet();
     await screen.findByText('Анна');
 
-    fireEvent.click(screen.getByText('Оффлайн'));
+    fireEvent.click(screen.getByText('Офлайн'));
 
     expect(screen.queryByText('Анна')).toBeNull();
-    expect(screen.getByText('Оффлайн-клиент')).toBeTruthy();
+    expect(screen.getByText('Офлайн-клиент')).toBeTruthy();
   });
 });
 

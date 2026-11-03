@@ -42,7 +42,7 @@ export function AddClientForm({ addClient, onClose }: Props) {
               <p className="ds-sub">Карточка с этим именем появится в списке, когда клиент подключится. До этого — в блоке «Ждут подключения».</p>
             </div>
           ) : (
-            <p className="ds-sub">Добавлен как оффлайн-клиент — записи и концептуализация без привязки к боту.</p>
+            <p className="ds-sub">Добавлен как офлайн-клиент — записи и концептуализация без привязки к боту.</p>
           )}
           <div className="tc-actions">
             <button className="ds-btn ds-btn--sm" onClick={resetAddClient}>Добавить ещё</button>
@@ -74,7 +74,7 @@ export function AddClientForm({ addClient, onClose }: Props) {
         Пригласить в приложение (ссылка и код)
       </label>
       {withInvite && (
-        <p className="tc-add-note">Оффлайн-карточка не создаётся: карточка с этим именем появится, когда клиент подключится по ссылке или коду</p>
+        <p className="tc-add-note">Офлайн-карточка не создаётся: карточка с этим именем появится, когда клиент подключится по ссылке или коду</p>
       )}
       {addError && <div className="tc-add-err">{addError}</div>}
     </div>

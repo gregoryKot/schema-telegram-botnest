@@ -20,7 +20,7 @@ const FILTERS: { key: RosterStatus; label: string }[] = [
   { key: 'all', label: 'Все' },
   { key: 'active', label: 'Активны' },
   { key: 'wait', label: 'Ждут' },
-  { key: 'virtual', label: 'Оффлайн' },
+  { key: 'virtual', label: 'Офлайн' },
 ];
 
 interface Props {
