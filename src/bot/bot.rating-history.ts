@@ -18,7 +18,7 @@ export class RatingHistoryMetrics {
    * Раньше getClients делал ~6 SQL на каждого клиента (стрик, давность,
    * история — каждый с отдельным чтением таймзоны): 50 клиентов ≈ 300
    * запросов. Теперь 3 запроса на весь список. Семантика полей идентична
-   * getConsecutiveDays / getDaysSinceLastFill / getHistoryRatings(14).
+   * серии по оценкам / getDaysSinceLastFill / getHistoryRatings(14).
    */
   async getHistoryRatings(
     userId: bigint,
@@ -67,23 +67,6 @@ export class RatingHistoryMetrics {
         needRows.length === days && needRows.every((r) => r.value < threshold)
       );
     });
-  }
-
-  async getConsecutiveDays(userId: bigint, tzArg?: string): Promise<number> {
-    const tz = await this.tzOf(userId, tzArg);
-    const rows = await this.prisma.rating.findMany({
-      where: { userId },
-      select: { date: true },
-      distinct: ['date'],
-    });
-    const dates = new Set(rows.map((r) => r.date));
-    let count = 0;
-    while (true) {
-      const dateStr = localDate(tz, new Date(Date.now() - count * 86_400_000));
-      if (!dates.has(dateStr)) break;
-      count++;
-    }
-    return count;
   }
 
   async getTotalDaysFilled(userId: bigint): Promise<number> {

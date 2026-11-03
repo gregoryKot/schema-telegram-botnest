@@ -80,6 +80,11 @@ export class BotService {
     return localDate(tz, base);
   }
 
+  /** Сегодня юзера — в его поясе уведомлений (у сайта и мини-аппа это пояс устройства). */
+  async userToday(userId: bigint): Promise<string> {
+    return this.localDateString(await this.userTimezone(userId));
+  }
+
   private async userTimezone(userId: bigint): Promise<string> {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },

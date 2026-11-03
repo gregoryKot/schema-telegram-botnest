@@ -36,8 +36,9 @@ export class BotAnalyticsService {
     return this.history.getLowStreakNeeds(userId, threshold, days, tzArg);
   }
 
+  // Серия — по тем же активным дням, что у сайта и мини-аппа (bot.activity-streak.ts).
   getConsecutiveDays(userId: bigint, tzArg?: string): Promise<number> {
-    return this.history.getConsecutiveDays(userId, tzArg);
+    return this.activity.getCurrentStreak(userId, tzArg);
   }
 
   getTotalDaysFilled(userId: bigint): Promise<number> {
