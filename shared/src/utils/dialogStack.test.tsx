@@ -14,18 +14,39 @@ function Modal() {
 }
 
 function Probe() {
-  return <span data-testid="probe">{useAnyDialogOpen() ? 'open' : 'closed'}</span>;
+  return (
+    <span data-testid="probe">{useAnyDialogOpen() ? 'open' : 'closed'}</span>
+  );
 }
 
 describe('useAnyDialogOpen', () => {
   it('диалог открыт — true; оба закрыты — снова false', () => {
-    const { rerender } = render(<><Probe /></>);
+    const { rerender } = render(
+      <>
+        <Probe />
+      </>,
+    );
     expect(screen.getByTestId('probe').textContent).toBe('closed');
-    rerender(<><Modal /><Modal /><Probe /></>);
+    rerender(
+      <>
+        <Modal />
+        <Modal />
+        <Probe />
+      </>,
+    );
     expect(screen.getByTestId('probe').textContent).toBe('open');
-    rerender(<><Modal /><Probe /></>);
+    rerender(
+      <>
+        <Modal />
+        <Probe />
+      </>,
+    );
     expect(screen.getByTestId('probe').textContent).toBe('open');
-    rerender(<><Probe /></>);
+    rerender(
+      <>
+        <Probe />
+      </>,
+    );
     expect(screen.getByTestId('probe').textContent).toBe('closed');
   });
 });

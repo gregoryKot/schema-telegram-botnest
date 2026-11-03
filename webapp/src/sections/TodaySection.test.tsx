@@ -443,6 +443,24 @@ describe('TodaySection — задания: каждый тип «начать �
     await waitFor(() => expect(mockApi.completeTask).toHaveBeenCalledWith(7, true));
   });
 
+  // QA 2026-11 (A-З8): «Все задания» были тупиком — шестое задание и дальше
+  // нельзя было открыть. Теперь строка списка ведёт тем же маршрутом.
+  it('шестое задание открывается из «Все задания» тем же упражнением; сохранение закрывает его', async () => {
+    const five = Array.from({ length: 5 }, (_, i) => task({ id: i + 1, assignedBy: 9, type: 'custom', text: `Задача ${i + 1}` }));
+    mockApi.getTasks.mockResolvedValue([...five, task({ id: 6, assignedBy: 9, type: 'belief_check', text: '' })]);
+    mockApi.completeTask.mockResolvedValue({ ok: true });
+    renderWithHandlers();
+    fireEvent.click(await screen.findByText('Все задания (6) →'));
+    const overlay = (await screen.findByText('Все задания', { selector: 'h1' })).closest('.sk-overlay') as HTMLElement;
+    await act(async () => {});
+    fireEvent.click(within(overlay).getByText('начать →'));
+
+    expect(await screen.findByTestId('belief-ex')).toBeTruthy();
+    expect(screen.queryByText('Все задания', { selector: 'h1' })).toBeNull();
+    fireEvent.click(screen.getByText('Сохранить упражнение'));
+    await waitFor(() => expect(mockApi.completeTask).toHaveBeenCalledWith(6, true));
+  });
+
   it('«Своё задание» от терапевта: на карточке «Готово», задание закрывается', async () => {
     mockApi.getTasks.mockResolvedValue([task({ id: 8, assignedBy: 9, type: 'custom', text: 'Позвонить маме' })]);
     mockApi.completeTask.mockResolvedValue({ ok: true });

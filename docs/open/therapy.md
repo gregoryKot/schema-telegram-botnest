@@ -247,7 +247,7 @@
 - **Задания бывшего терапевта остаются открытыми с плашкой «От терапевта».** У
   клиента с аккаунтом `removeTherapistClient` задания не трогает (удаляет их
   только у офлайн-клиента, `cid < 0`), а метка ставится по `assignedBy !== null`
-  без сверки с живой связью: `webapp/src/sections/today/AllTasksOverlay.tsx:26`,
+  без сверки с живой связью: `webapp/src/sections/today/AllTasksOverlay.tsx` (`mark` у `TaskRow`),
   `webapp/src/sections/today/PracticesBlock.tsx:62`, заголовок блока
   `webapp/src/sections/TodaySection.tsx:66,92`; мини-апп —
   `schema-miniapp/src/components/tasks/TaskRow.tsx:45,204`,

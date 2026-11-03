@@ -286,7 +286,7 @@ describe('PracticeSection — мои цели', () => {
     await screen.findByText('Новое задание');
   });
 
-  it('"все цели →" открывает AllGoalsOverlay со списком целей и историей', async () => {
+  it('"все цели →" открывает общий список заданий (AllTasksOverlay) с целями и историей', async () => {
     mockApi.getTasks.mockResolvedValue([
       task({ id: 1, text: 'Цель 1' }), task({ id: 2, text: 'Цель 2' }),
       task({ id: 3, text: 'Цель 3' }), task({ id: 4, text: 'Цель 4' }), task({ id: 5, text: 'Цель 5' }),
@@ -300,7 +300,8 @@ describe('PracticeSection — мои цели', () => {
     await screen.findByText('Все цели');
     expect(screen.getByText('Цель 5')).toBeTruthy();
     expect(screen.getByText('Готовая цель')).toBeTruthy();
-    expect(screen.getByText('готово')).toBeTruthy();
+    // Статус — тот же бейдж, что у «Все задания» на «Сегодня» (QA 2026-11, A-З8).
+    expect(screen.getByText('Выполнено', { selector: '.ds-badge' })).toBeTruthy();
   });
 });
 
@@ -786,7 +787,7 @@ describe('PracticeSection — создание цели обновляет сп�
     await screen.findByText('Новая цель');
   });
 
-  it('открытие цели из AllGoalsOverlay закрывает оверлей и открывает нужное упражнение', async () => {
+  it('открытие цели из «Все цели» закрывает оверлей и открывает нужное упражнение', async () => {
     mockApi.getTasks.mockResolvedValue([
       task({ id: 1, type: 'belief_check', text: 'Цель 1' }), task({ id: 2, text: 'Цель 2' }),
       task({ id: 3, text: 'Цель 3' }), task({ id: 4, text: 'Цель 4' }), task({ id: 5, text: 'Цель 5' }),
@@ -801,7 +802,7 @@ describe('PracticeSection — создание цели обновляет сп�
     await waitFor(() => expect(screen.queryByText('Библиотека')).toBeNull());
   });
 
-  it('«+ Поставить цель» внутри AllGoalsOverlay открывает TaskCreateSheet поверх', async () => {
+  it('«+ Поставить цель» внутри «Все цели» открывает TaskCreateSheet поверх', async () => {
     mockApi.getTasks.mockResolvedValue([
       task({ id: 1, text: 'Цель 1' }), task({ id: 2, text: 'Цель 2' }),
       task({ id: 3, text: 'Цель 3' }), task({ id: 4, text: 'Цель 4' }), task({ id: 5, text: 'Цель 5' }),

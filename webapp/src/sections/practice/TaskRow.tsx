@@ -3,12 +3,15 @@ import { pressable } from '../../utils/a11y';
 import { fmtDate } from '../../utils/format';
 import type { UserTask } from '../../api';
 import { TaskProgressBar } from '../../components/TaskProgressBar';
+import { TaskStatusBadge } from '../../components/TaskStatusBadge';
+import type { TaskStatus } from '../../../../shared/src/tasks/taskStatus';
 import { resolveTaskDisplayText } from '../../../../shared/src/tasks/taskTitle';
 import { taskRowState } from './taskRowState';
+import '../../styles/client-practice.css';
 
-/** Строка задания/цели: название, срок, действие справа. */
-export function TaskRow({ task, cta, mark, compact, onOpen, onComplete }: {
-  task: UserTask; cta: string; mark?: boolean; compact?: boolean; onOpen: () => void;
+/** Строка задания/цели: название, срок, действие справа; в полном списке — бейдж статуса. */
+export function TaskRow({ task, cta, mark, compact, status, onOpen, onComplete }: {
+  task: UserTask; cta: string; mark?: boolean; compact?: boolean; status?: TaskStatus; onOpen: () => void;
   /** Закрыть цель без упражнения; промис нужен, чтобы вернуть кнопку при сбое. */
   onComplete?: () => void | Promise<unknown>;
 }) {
@@ -31,6 +34,7 @@ export function TaskRow({ task, cta, mark, compact, onOpen, onComplete }: {
         {st.streakNote && <div className="cp-task-note">Сделано сегодня — завтра снова</div>}
         <TaskProgressBar task={task} />
         {task.dueDate && <div className="ds-sub">до {fmtDate(task.dueDate)}</div>}
+        {status && <TaskStatusBadge status={status} className="cp-task-status" />}
       </div>
       {st.showComplete && (
         <button

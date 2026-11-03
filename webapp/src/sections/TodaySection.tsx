@@ -135,11 +135,13 @@ export function TodaySection({
       <TaskExerciseHost open={launcher.open} onBack={launcher.close} onComplete={launcher.complete} onOpenTracker={onOpenTracker} />
       {showAllTasks && (
         <AllTasksOverlay
+          title="Все задания"
           tasks={tasks}
           taskHistory={taskHistory}
           onClose={() => setShowAllTasks(false)}
-          onTaskDone={id => completeTask(id, onTasksChanged)}
-          onAddTask={() => { setShowAllTasks(false); setShowTaskCreate(true); }}
+          onOpen={launcher.openTask}
+          onComplete={task => completeTask(task.id, onTasksChanged)}
+          onAdd={() => setShowTaskCreate(true)}
         />
       )}
     </div>

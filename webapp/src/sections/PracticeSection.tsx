@@ -18,7 +18,7 @@ import { PhoneHelpRows } from './practice/PhoneHelpRows';
 import { useIsMobile } from '../components/useIsMobile';
 import { ExerciseLibrary } from './practice/ExerciseLibrary';
 import { TaskRow } from './practice/TaskRow';
-import { AllGoalsOverlay } from './practice/AllGoalsOverlay';
+import { AllTasksOverlay } from './today/AllTasksOverlay';
 import { useExerciseStats } from './practice/useExerciseStats';
 import { useCatalogCounts } from './practice/catalogCounts';
 import { usePracticeTools } from './practice/usePracticeTools';
@@ -192,13 +192,14 @@ export function PracticeSection({ onOpenChildhoodWheel, onOpenPractices, onOpenP
         />
       )}
       {showAllGoals && (
-        <AllGoalsOverlay
+        <AllTasksOverlay
+          title="Все цели"
           tasks={tasks}
           taskHistory={taskHistory}
           onClose={() => setShowAllGoals(false)}
-          onOpen={t => { setShowAllGoals(false); launcher.openTask(t); }}
+          onOpen={launcher.openTask}
           onComplete={t => completeTask(t.id, onTasksChanged)}
-          onAdd={() => { setShowAllGoals(false); setShowTaskCreate(true); }}
+          onAdd={() => setShowTaskCreate(true)}
         />
       )}
     </div>
