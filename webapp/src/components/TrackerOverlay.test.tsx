@@ -97,7 +97,9 @@ describe('TrackerOverlay — вопрос', () => {
   it('ссылка «Подробнее о потребности» открывает лист потребности', () => {
     renderOverlay();
     fireEvent.click(screen.getByText('Подробнее о потребности'));
-    expect(screen.getByText('Назад к дневнику')).toBeTruthy();
+    // Лист открыт из трекера — и кнопка ведёт назад в трекер (QA 2026-11, B-М8).
+    expect(screen.getByText('Назад к трекеру')).toBeTruthy();
+    expect(screen.queryByText('Назад к дневнику')).toBeNull();
   });
 
   it('свайп влево переключает на следующую потребность, вправо — назад', () => {
