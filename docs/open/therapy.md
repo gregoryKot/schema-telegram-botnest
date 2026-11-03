@@ -200,3 +200,33 @@
   (`shared/src/therapy/useTherapyCodeJoin.ts`) и по ссылке в мини-аппе
   (`schema-miniapp/src/components/JoinConfirmSheet.tsx`) его не обновляют —
   кнопка появится после перезапуска.
+
+**Отвязка клиента от терапевта — ждёт решения владельца, осознанно не чинилось**
+(QA 2026-11; в PR с текстами «Мой терапевт» сюда не трогали: вопрос
+терапевтических отношений и приватности, а не формулировки):
+- **Связь стирается целиком, клиент об этом не узнаёт.** Терапевт убирает
+  клиента — `DELETE /api/therapy/clients/:clientId` → `removeTherapistClient`
+  (`src/therapy/remove-client.ts:24-41`) удаляет строку `TherapyRelation` в одной
+  транзакции с заметками и концептуализацией; клиент отключается сам —
+  `DELETE /api/therapy/relation` → `disconnect`
+  (`src/therapy/therapy-relations.service.ts:67-71`), `deleteMany` по
+  active/pending. Статуса `ended` с причиной, как при отказе терапевта от роли
+  (`src/therapy/end-therapist-relations.ts`), нет; уведомления клиенту нет ни в
+  одном из путей (ни сервис, ни контроллер `therapy-connection.controller.ts`
+  не зовут `NotificationService`).
+- **`FormerTherapistNote` такую отвязку не видит.** `getFormerTherapistInfo`
+  (`src/therapy/former-therapist-info.ts:27-38`) ищет только `status: 'ended'` с
+  `endReason: THERAPIST_RESIGNED`; удалённой строки нет — «Мой терапевт» молча
+  показывает форму кода, как будто терапевта не было.
+- **Задания бывшего терапевта остаются открытыми с плашкой «От терапевта».** У
+  клиента с аккаунтом `removeTherapistClient` задания не трогает (удаляет их
+  только у офлайн-клиента, `cid < 0`), а метка ставится по `assignedBy !== null`
+  без сверки с живой связью: `webapp/src/sections/today/AllTasksOverlay.tsx:26`,
+  `webapp/src/sections/today/PracticesBlock.tsx:47`, заголовок блока
+  `webapp/src/sections/TodaySection.tsx:83,109`; мини-апп —
+  `schema-miniapp/src/components/tasks/TaskRow.tsx:45,204`,
+  `schema-miniapp/src/sections/HelpSection.tsx:106`.
+- **Что решить владельцу:** ставить ли `ended` с причиной (терапевт убрал
+  клиента / клиент отключился) вместо удаления; сообщать ли клиенту и чем (бот,
+  строка в «Мой терапевт»); что делать с открытыми заданиями — закрыть, снять
+  метку или оставить личными.
