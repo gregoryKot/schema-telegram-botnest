@@ -1,6 +1,6 @@
 import { AddMode } from '../../therapist/useAddClient';
 
-// Переключатель способа добавления клиента (ссылка / оффлайн).
+// Переключатель способа добавления клиента (ссылка / офлайн).
 // Вынесено из ClientListView.tsx (правило №10).
 export function AddModeTabs({
   addMode,
@@ -14,7 +14,7 @@ export function AddModeTabs({
       {(
         [
           ['invite', 'Ссылка'],
-          ['virtual', 'Оффлайн'],
+          ['virtual', 'Офлайн'],
         ] as [AddMode, string][]
       ).map(([mode, label]) => (
         <button

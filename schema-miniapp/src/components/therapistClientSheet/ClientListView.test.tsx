@@ -2,7 +2,7 @@
 // ClientListView — часть 1/3 (правило №10 — файл ≤300 строк): контейнер
 // (загрузка/пустой список/список клиентов) + кнопка «+» + переключение
 // режимов добавления. Режим «Ссылка» —
-// ClientListView.addModeLink.test.tsx, «Оффлайн»/ошибка/выход —
+// ClientListView.addModeLink.test.tsx, «Офлайн»/ошибка/выход —
 // ClientListView.addModeOffline.test.tsx. Переключение стейтом addMode
 // обязано сбрасывать addInput/addError, иначе ошибка/ввод одного режима
 // протекает в другой; пустой список — честное сообщение, не нули.
@@ -231,7 +231,7 @@ describe('ClientListView — кнопка «+» (открыть форму до�
 });
 
 describe('ClientListView — переключение режимов добавления', () => {
-  it('клик по «Оффлайн» сбрасывает addInput/addError и переключает режим', () => {
+  it('клик по «Офлайн» сбрасывает addInput/addError и переключает режим', () => {
     const setAddMode = vi.fn();
     const setAddInput = vi.fn();
     const setAddError = vi.fn();
@@ -247,7 +247,7 @@ describe('ClientListView — переключение режимов добав�
         })}
       />,
     );
-    fireEvent.click(screen.getByText('Оффлайн'));
+    fireEvent.click(screen.getByText('Офлайн'));
     expect(setAddMode).toHaveBeenCalledWith('virtual');
     expect(setAddInput).toHaveBeenCalledWith('');
     expect(setAddError).toHaveBeenCalledWith('');
@@ -255,7 +255,7 @@ describe('ClientListView — переключение режимов добав�
 
   // Аудит 2026-10: вкладка «Telegram ID» била в роут-заглушку (403) и снята;
   // реальный клиент подключается только по ссылке.
-  it('в открытой панели ровно два способа: «Ссылка» и «Оффлайн»', () => {
+  it('в открытой панели ровно два способа: «Ссылка» и «Офлайн»', () => {
     render(
       <ClientListView
         {...baseProps({
@@ -264,7 +264,7 @@ describe('ClientListView — переключение режимов добав�
       />,
     );
     expect(screen.getByText('Ссылка')).toBeTruthy();
-    expect(screen.getByText('Оффлайн')).toBeTruthy();
+    expect(screen.getByText('Офлайн')).toBeTruthy();
     expect(screen.queryByText('Telegram ID')).toBeNull();
   });
 });

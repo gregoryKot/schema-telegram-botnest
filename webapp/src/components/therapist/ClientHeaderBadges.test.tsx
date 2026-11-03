@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 // Шапка клиента: «в боте / активность / срок / серия» — одна строка текста,
-// «оффлайн» — плашка, ближайшая встреча — строка «Встреча» + дата (#906), не
+// «офлайн» — плашка, ближайшая встреча — строка «Встреча» + дата (#906), не
 // заливной бейдж.
 import { describe, it, expect, afterEach } from 'vitest';
 import { cleanup, render } from '@testing-library/react';
@@ -35,15 +35,15 @@ describe('ClientHeaderBadges', () => {
     expect(meta(container)).toMatch(/^в боте · в работе .+ · 3 дн\. подряд$/);
   });
 
-  it('оффлайн — плашка ds-badge, «в боте» нет', () => {
+  it('офлайн — плашка ds-badge, «в боте» нет', () => {
     const { container, getByText } = render(
       <ClientHeaderBadges client={client({ telegramId: -5, streak: 2 })} />,
     );
-    expect(getByText('оффлайн').className).toBe('ds-badge');
+    expect(getByText('офлайн').className).toBe('ds-badge');
     expect(meta(container)).toBe('2 дн. подряд');
   });
 
-  it('оффлайн без данных — строки нет совсем', () => {
+  it('офлайн без данных — строки нет совсем', () => {
     const { container } = render(<ClientHeaderBadges client={client({ telegramId: -5 })} />);
     expect(meta(container)).toBeNull();
   });

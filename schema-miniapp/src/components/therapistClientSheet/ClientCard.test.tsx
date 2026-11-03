@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 // ClientCard — строка клиента в списке терапевта. Проверяет цепочку
-// фолбэков имени (алиас → имя → «Оффлайн»/«ID N»), метку активности
+// фолбэков имени (алиас → имя → «Офлайн»/«ID N»), метку активности
 // (сегодня/дата/«Нет активности») и что индекс дня скрыт, когда клиент его не
 // поставил (пусто, а не выдуманный 0 — правило «никаких хардкод-заглушек»).
 import { describe, it, expect, vi, afterEach } from 'vitest';
@@ -56,7 +56,7 @@ describe('ClientCard — отображаемое имя (цепочка фол�
     expect(screen.getByText('Иван')).toBeTruthy();
   });
 
-  it('виртуальный клиент (telegramId < 0) без имени — «Оффлайн»', () => {
+  it('виртуальный клиент (telegramId < 0) без имени — «Офлайн»', () => {
     render(
       <ClientCard
         client={makeClient({ telegramId: -1 })}
@@ -64,7 +64,7 @@ describe('ClientCard — отображаемое имя (цепочка фол�
         onOpen={() => {}}
       />,
     );
-    expect(screen.getByText('Оффлайн')).toBeTruthy();
+    expect(screen.getByText('Офлайн')).toBeTruthy();
     expect(screen.getByText('Без Telegram')).toBeTruthy();
   });
 

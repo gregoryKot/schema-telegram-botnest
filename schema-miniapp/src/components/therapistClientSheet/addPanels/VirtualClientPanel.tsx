@@ -2,7 +2,7 @@ import { AddClient } from '../types';
 import { AddInputPanel } from './AddInputPanel';
 import { CLIENT_NAME_MAX } from '../../../../../shared/src/limits/textLimits';
 
-// Панель «оффлайн-клиент»: одно поле с именем. Предел длины — тот же, что у
+// Панель «офлайн-клиент»: одно поле с именем. Предел длины — тот же, что у
 // сервера (`VirtualClientDto.name`): без него набранное длинное имя вернулось
 // бы 400 на «Создать». Вынесено из ClientListView.tsx (правило №10).
 export function VirtualClientPanel({
