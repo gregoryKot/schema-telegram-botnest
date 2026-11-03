@@ -32,8 +32,11 @@ function decls(src: string, sel: string): string {
 }
 
 const phone = block(css, '@media (max-width: 767px)');
-/** Всё вне телефонного блока: там каждый примитив объявлен один раз. */
-const top = css.replace(phone, '');
+/** Тап-цели 44: один блок на телефон и на экран под пальцем (планшет). */
+const TAP_MEDIA = '@media (pointer: coarse), (max-width: 767px)';
+const tap = block(css, TAP_MEDIA);
+/** Всё вне медиа-блоков (десктоп с мышью): там каждый примитив объявлен один раз. */
+const top = css.replace(phone, '').replace(tap, '');
 
 /** Сколько правил вне медиа-блоков объявляют ровно селектор `sel`. */
 function declaredTimes(sel: string): number {
@@ -140,14 +143,34 @@ describe('cabinet.css: примитивы листов (#906)', () => {
     expect(d).toContain('font-weight: 600');
   });
 
-  it('на телефоне: иконочная кнопка 44×44, сегмент 44 высотой, ds-h1 32, малая кнопка 44 (вне блока 40)', () => {
+  it('на телефоне и под пальцем: иконочная кнопка 44×44, сегмент 44 высотой, малая кнопка 44 (вне блока 40); ds-h1 32 — только телефон', () => {
     expect(phone).not.toBe('');
-    expect(decls(phone, '.ds-btn--icon')).toContain('width: 44px');
-    expect(decls(phone, '.ds-btn--icon')).toContain('height: 44px');
-    expect(decls(phone, '.ds-seg-btn')).toContain('min-height: 44px');
+    expect(tap).not.toBe('');
+    expect(decls(tap, '.ds-btn--icon')).toContain('width: 44px');
+    expect(decls(tap, '.ds-btn--icon')).toContain('height: 44px');
+    expect(decls(tap, '.ds-seg-btn')).toContain('min-height: 44px');
     expect(decls(phone, '.ds-h1')).toContain('font-size: 32px');
-    expect(decls(phone, '.ds-btn--sm')).toContain('height: 44px');
+    expect(decls(tap, '.ds-btn--sm')).toContain('height: 44px');
     expect(decls(top, '.ds-btn--sm')).toContain('height: 40px');
+  });
+
+  // QA 2026-11: вкладки карточки клиента были ~35px (padding 0 0 14px без
+  // min-height) на любом экране, ссылки/сегменты/малые кнопки на планшете —
+  // 20/30/40: блок телефона по ширине пальца на планшете не видел.
+  it('.ds-tab — 44 на телефоне и под пальцем (pointer: coarse); десктоп с мышью не меняется', () => {
+    expect(decls(tap, '.ds-tab')).toContain('min-height: 44px');
+    expect(decls(top, '.ds-tab')).not.toContain('min-height');
+    for (const sel of ['.ds-tab', '.ds-link', '.ds-seg-btn', '.ds-btn--sm']) {
+      expect(decls(tap, sel), sel).toMatch(/(min-)?height: 44px/);
+    }
+  });
+
+  it('тап-цели живут в одном блоке: в блоке раскладки телефона их нет, второго блока pointer: coarse нет', () => {
+    expect(css.split(TAP_MEDIA)).toHaveLength(2);
+    expect(css.match(/@media[^{]*pointer: coarse/g)).toHaveLength(1);
+    for (const sel of ['.ds-tab', '.ds-btn--icon', '.ds-seg-btn', '.ds-btn--sm', '.ds-input--search', '.ds-input--sm', '.ds-chip--toggle', '.ds-link']) {
+      expect(decls(phone, sel), sel).toBe('');
+    }
   });
 });
 
@@ -194,18 +217,18 @@ describe('cabinet.css: примитивы волны 2 (#906)', () => {
   it('поля: поиск и компактное, 16px на телефоне, resize: none остаётся', () => {
     expect(decls(top, '.ds-input--search')).toContain('height: 40px');
     expect(decls(top, '.ds-input--search')).toContain('border-radius: 20px');
-    expect(decls(phone, '.ds-input--search')).toContain('height: 44px');
-    expect(decls(phone, '.ds-input--search')).toContain('border-radius: 22px');
+    expect(decls(tap, '.ds-input--search')).toContain('height: 44px');
+    expect(decls(tap, '.ds-input--search')).toContain('border-radius: 22px');
     expect(decls(top, '.ds-input--sm')).toContain('width: auto');
     expect(decls(top, '.ds-input--sm')).toContain('height: 40px');
-    expect(decls(phone, '.ds-input--sm')).toContain('height: 44px');
+    expect(decls(tap, '.ds-input--sm')).toContain('height: 44px');
     expect(decls(phone, '.ds-input')).toContain('font-size: 16px');
     expect(decls(phone, '.ds-textarea')).toContain('font-size: 16px');
     expect(decls(top, '.ds-textarea')).toContain('resize: none');
   });
   it('чип-переключатель: 36 → 44, выбранный — tint по --h без tone-fill', () => {
     expect(decls(top, '.ds-chip--toggle')).toContain('min-height: 36px');
-    expect(decls(phone, '.ds-chip--toggle')).toContain('min-height: 44px');
+    expect(decls(tap, '.ds-chip--toggle')).toContain('min-height: 44px');
     const on = decls(top, '.ds-chip--toggle.is-on');
     expect(on).toMatch(/oklch\([^)]*var\(--h\)\)/);
     expect(on).not.toContain('tone-fill');
@@ -224,15 +247,15 @@ describe('cabinet.css: примитивы волны 2 (#906)', () => {
     expect(crisis).toContain('--h: 28');
     expect(crisis).not.toContain('var(--err)');
   });
-  it('.ds-link: тап 44 только на телефоне; один телефонный блок', () => {
-    expect(decls(phone, '.ds-link')).toContain('min-height: 44px');
+  it('.ds-link: тап 44 на телефоне и под пальцем, не у мыши; один телефонный блок', () => {
+    expect(decls(tap, '.ds-link')).toContain('min-height: 44px');
     expect(decls(top, '.ds-link')).not.toContain('min-height');
     expect(css.match(/@media \(max-width: 767px\)/g)).toHaveLength(1);
   });
-  it('.ds-link--inline: объявлен один раз вне медиа, на телефоне остаётся в строке текста', () => {
+  it('.ds-link--inline: объявлен один раз вне медиа, под пальцем остаётся в строке текста', () => {
     expect(declaredTimes('.ds-link--inline')).toBe(1);
     expect(decls(top, '.ds-link--inline')).toContain('display: inline');
-    expect(decls(phone, '.ds-link--inline')).toContain('display: inline');
-    expect(decls(phone, '.ds-link--inline')).toContain('min-height: 0');
+    expect(decls(tap, '.ds-link--inline')).toContain('display: inline');
+    expect(decls(tap, '.ds-link--inline')).toContain('min-height: 0');
   });
 });
