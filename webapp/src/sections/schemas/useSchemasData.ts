@@ -4,7 +4,7 @@ import { api, reportClientError } from '../../api';
 import { MY_SCHEMA_IDS_KEY, MY_MODE_IDS_KEY } from '../../utils/storageKeys';
 import { readLocalIds, type YsqScore } from './schemasModel';
 import { useSaveFailure } from '../../hooks/useSaveFailure';
-import { useYsqProgressListener } from '../../../../shared/src/hooks/ysqProgressStore';
+import { useYsqProgressListener, useYsqResultVersion } from '../../../../shared/src/hooks/ysqProgressStore';
 import { isUnwritableError } from '../../../../shared/src/api/unwritableError';
 
 export function useSchemasData() {
@@ -19,13 +19,13 @@ export function useSchemasData() {
   const [loading, setLoading] = useState(true);
   // Отказ записи виден человеку (SaveErrorNote в SchemasSection), не только телеметрии.
   const save = useSaveFailure();
+  const ysqVersion = useYsqResultVersion(); // тест сдан поверх экрана — перечитать профиль без F5 (QA 2026-11)
 
   useEffect(() => {
     Promise.all([
       api.getProfile(),
       api.getYsqHistory(),
-      // Прогресс незаконченного теста — необязательная подпись на карточке:
-      // без него экран работает, но сбой виден в отчётах.
+      // Прогресс теста — необязательная подпись карточки: без него экран работает, сбой — в отчётах.
       api.getYsqProgress().catch(() => {
         reportClientError({ message: 'schemas ysq progress load failed', section: 'schemas' });
         return null;
@@ -52,7 +52,7 @@ export function useSchemasData() {
     }).catch(() => setLoading(false));
     api.listMyModeMaps().then(list => setMyMapCount(list.length))
       .catch(() => reportClientError({ message: 'schemas mode-map count load failed', section: 'schemas' }));
-  }, []);
+  }, [ysqVersion]);
 
   function saveSchemas(ids: string[]) {
     localStorage.setItem(MY_SCHEMA_IDS_KEY, JSON.stringify(ids));
