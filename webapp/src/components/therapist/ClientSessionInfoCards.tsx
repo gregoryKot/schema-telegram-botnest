@@ -9,14 +9,14 @@ interface Props {
   detail: ClientDetail;
 }
 
-/** «Следующая сессия» (акцентная карточка) с редактированием даты. */
+/** «Следующая сессия» — единственная акцентная карточка «Обзора» (#906) — с редактированием даты. */
 export function NextSessionCard({ selectedClient, detail }: Props) {
   const { editingNextSession, setEditingNextSession, localNextSession, setLocalNextSession, saveSessionInfo, sessionInfoSaving, sessionInfoError } = detail;
   const days = selectedClient.meetingDays ?? [];
   const upcoming = upcomingSession(selectedClient.nextSession, days);
   return (
-    <div className="ds-card ds-card--accent">
-      <div className="tk-card-label">Следующая сессия</div>
+    <div className="ds-card ds-card--row ds-card--accent">
+      <div className="ds-label">Следующая сессия</div>
       {editingNextSession ? (
         <div className="tk-edit-form">
           <input className="ds-input" type="datetime-local" value={localNextSession} onChange={e => setLocalNextSession(e.target.value)} />
@@ -27,13 +27,15 @@ export function NextSessionCard({ selectedClient, detail }: Props) {
             </button>
             <button className="ds-btn ds-btn--secondary ds-btn--sm" onClick={() => setEditingNextSession(false)}>Отмена</button>
           </div>
-          {sessionInfoError && <div role="alert" className="tk-next-sub">{sessionInfoError}</div>}
+          {sessionInfoError && <div role="alert" className="ds-sub">{sessionInfoError}</div>}
         </div>
       ) : (
         <>
-          <div className="tk-next">{upcoming ? nextSessionLabel(upcoming) : 'Не установлена'}</div>
-          {days.length > 0 && <div className="tk-next-sub">{days.map(d => DAY_NAMES[d]).join(', ')} еженедельно</div>}
-          <button className="tk-next-edit" onClick={() => { setEditingNextSession(true); setLocalNextSession(upcoming ?? ''); }}>Изменить →</button>
+          <div className="ds-h3 tk-next">{upcoming ? nextSessionLabel(upcoming) : 'Не установлена'}</div>
+          {days.length > 0 && <div className="ds-sub">{days.map(d => DAY_NAMES[d]).join(', ')} еженедельно</div>}
+          <div className="tk-start">
+            <button className="ds-link" onClick={() => { setEditingNextSession(true); setLocalNextSession(upcoming ?? ''); }}>Изменить →</button>
+          </div>
         </>
       )}
     </div>
@@ -43,9 +45,10 @@ export function NextSessionCard({ selectedClient, detail }: Props) {
 /** «Начало терапии» с редактированием даты. */
 export function StartDateCard({ selectedClient, detail }: Props) {
   const { editingStartDate, setEditingStartDate, localStartDate, setLocalStartDate, saveSessionInfo, sessionInfoSaving, sessionInfoError } = detail;
+  const start = selectedClient.therapyStartDate;
   return (
-    <div className="ds-card">
-      <div className="tk-card-label">Начало терапии</div>
+    <div className="ds-card ds-card--row">
+      <div className="ds-label">Начало терапии</div>
       {editingStartDate ? (
         <div className="tk-edit-form">
           <input className="ds-input" type="date" value={localStartDate} onChange={e => setLocalStartDate(e.target.value)} />
@@ -60,8 +63,8 @@ export function StartDateCard({ selectedClient, detail }: Props) {
         </div>
       ) : (
         <div className="tk-start">
-          <span>{selectedClient.therapyStartDate ? fmtDate(selectedClient.therapyStartDate) : <span className="tk-hint">Не указана</span>}</span>
-          <button className="ds-link" onClick={() => { setEditingStartDate(true); setLocalStartDate(selectedClient.therapyStartDate ?? ''); }}>изменить</button>
+          <span>{start ? fmtDate(start) : <span className="ds-empty">Не указана</span>}</span>
+          <button className="ds-link" onClick={() => { setEditingStartDate(true); setLocalStartDate(start ?? ''); }}>{start ? 'Изменить →' : 'Указать →'}</button>
         </div>
       )}
     </div>

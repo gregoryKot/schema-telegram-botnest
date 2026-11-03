@@ -10,14 +10,16 @@ interface Props {
   detail: ClientDetail;
 }
 
+// Сайдбар «Обзора» (#906): карточки-строки ds-card--row с подписью ds-label;
+// акцентная заливка — только у «Следующей сессии» (одна CTA на экран).
 export function ClientOverviewSidebar({ selectedClient, detail }: Props) {
   const { clientHistory, setClientTab, exportCopied, handleExport } = detail;
   const todayIndex = selectedClient.todayIndex;
   const bars = clientHistory.length >= 3 ? indexSparkBars(clientHistory) : [];
   const delta = todayIndex != null ? weekDelta(clientHistory, todayIndex) : null;
   const needs = needBars(clientHistory[0]?.ratings);
-  // «+ Задание» и «+ Заметка» — в шапке карточки (на телефоне — панель над
-  // навигацией); здесь только действия, которых в шапке нет.
+  // «+ Задание» и «+ Заметка» — в шапке (ноутбук) или первой строкой «Обзора»
+  // (телефон, ClientQuickActions); здесь только действия, которых там нет.
   const actions: [string, () => void][] = [
     ['Запросить YSQ', () => setClientTab('ysq')],
     [`Экспорт концепта${exportCopied ? ' ✓' : ''}`, handleExport],
@@ -30,8 +32,8 @@ export function ClientOverviewSidebar({ selectedClient, detail }: Props) {
       <StartDateCard selectedClient={selectedClient} detail={detail} />
 
       {todayIndex != null && (
-        <div className="ds-card">
-          <div className="tk-card-label">Индекс сегодня</div>
+        <div className="ds-card ds-card--row">
+          <div className="ds-label">Индекс сегодня</div>
           <div className="tk-index">
             <span className={`ds-num ds-idx-${indexLevel(todayIndex)}`}>{todayIndex.toFixed(1)}</span>
             {delta != null && (
@@ -45,15 +47,15 @@ export function ClientOverviewSidebar({ selectedClient, detail }: Props) {
                   <i key={i} className={b.level === 'none' ? undefined : `is-${b.level}`} style={{ height: b.heightPct > 0 ? `${b.heightPct}%` : undefined }} />
                 ))}
               </div>
-              <div className="tk-hint">{bars.length} дн.</div>
+              <div className="ds-sub tk-spark-sub">{bars.length} дн.</div>
             </>
           )}
         </div>
       )}
 
       {needs.length > 0 && (
-        <div className="ds-card">
-          <div className="tk-card-label">Потребности сегодня</div>
+        <div className="ds-card ds-card--row">
+          <div className="ds-label">Потребности сегодня</div>
           <div className="tk-needs">
             {needs.map(n => (
               <div key={n.id} className="tk-need">
@@ -66,9 +68,9 @@ export function ClientOverviewSidebar({ selectedClient, detail }: Props) {
         </div>
       )}
 
-      <div className="ds-card tk-actions-grid">
+      <div className="ds-card ds-card--row tk-actions-grid">
         {actions.map(([label, run]) => (
-          <button key={label} className="tk-action" onClick={run}>{label}</button>
+          <button key={label} className="ds-btn ds-btn--secondary ds-btn--sm" onClick={run}>{label}</button>
         ))}
       </div>
     </aside>

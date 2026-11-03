@@ -12,8 +12,8 @@ export function MeetingDaysCard({ selectedClient, detail }: { selectedClient: Th
   const saved = sortMeetingDays(selectedClient.meetingDays ?? []);
 
   return (
-    <div className="ds-card">
-      <div className="tk-card-label">Дни встреч</div>
+    <div className="ds-card ds-card--row">
+      <div className="ds-label">Дни встреч</div>
       {editing ? (
         <div className="tk-edit-form">
           <div className="tk-days" role="group" aria-label="Дни встреч">
@@ -35,8 +35,8 @@ export function MeetingDaysCard({ selectedClient, detail }: { selectedClient: Th
         </div>
       ) : (
         <div className="tk-start">
-          <span>{saved.length > 0 ? saved.map(d => DAY_NAMES[d]).join(', ') : <span className="tk-hint">Не указаны</span>}</span>
-          <button className="ds-link" onClick={() => { setLocal(saved); setEditing(true); }}>{saved.length > 0 ? 'изменить' : 'указать'}</button>
+          <span>{saved.length > 0 ? saved.map(d => DAY_NAMES[d]).join(', ') : <span className="ds-empty">Не указаны</span>}</span>
+          <button className="ds-link" onClick={() => { setLocal(saved); setEditing(true); }}>{saved.length > 0 ? 'Изменить →' : 'Указать →'}</button>
         </div>
       )}
     </div>

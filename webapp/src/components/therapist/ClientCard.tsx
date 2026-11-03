@@ -1,6 +1,7 @@
 import { pressable } from '../../utils/a11y';
 import type { TherapyClientSummary } from '../../api';
 import { DOMAIN_HUE, clientHue, hueStyle } from '../../lib/tone';
+import { NextSessionLine } from './NextSessionLine';
 import {
   clientCaption, clientStatus, domainBar, meetingLabel, rosterInitials, rosterName, schemaChips,
 } from './rosterModel';
@@ -12,8 +13,9 @@ interface Props {
 }
 
 // Карточка клиента в сетке «Все клиенты»: полоса доменов схем, аватар, статус,
-// ближайшая встреча, чипы всех схем. Счётчиков сессий/заданий в сводке клиента
-// нет — футер без них (показываем только реальные данные).
+// ближайшая встреча (NextSessionLine — та же строка, что в шапке карточки),
+// чипы всех схем. Счётчиков сессий/заданий в сводке клиента нет — футер без
+// них (показываем только реальные данные).
 export function ClientCard({ client, today, onOpen }: Props) {
   const name = rosterName(client);
   const status = clientStatus(client);
@@ -39,12 +41,7 @@ export function ClientCard({ client, today, onOpen }: Props) {
             </div>
           </div>
         </div>
-        <div className="tc-meeting">
-          <span className="ds-label">Встреча</span>
-          <span className={meeting ? 'tc-meeting-val' : 'tc-meeting-val tc-meeting-val--none'}>
-            {meeting ?? 'не назначена'}
-          </span>
-        </div>
+        <NextSessionLine label={meeting} />
         {client.schemaIds.length > 0 && (
           <div className="tc-chips">
             {schemaChips(client.schemaIds).map((ch) => (

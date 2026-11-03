@@ -1,7 +1,8 @@
 /* ─────────────────────────────────────────────────────────────────────────
    Редизайн кабинетов 2026-10 — общие примитивы (ds-*) и тона по hue.
    Значения цветов — токены из index.css (светлый блок). Здесь только то, из
-   чего собираются экраны: карточки, кнопки, сегмент-фильтр, чипы, заголовки.
+   чего собираются экраны: карточки, кнопки, сегмент-фильтр, чипы, заголовки,
+   шапка листа и «Назад», строка-переход, раскрывашка, пустое состояние (#906).
    Экранный компонент не пишет свои цвета/радиусы инлайном — берёт класс.
 
    Тона: элемент задаёт `--h` (оттенок oklch, см. webapp/src/lib/tone.ts —
@@ -46,7 +47,7 @@
 }
 .ds-label {
   font-size: 12px; letter-spacing: .08em; text-transform: uppercase;
-  color: var(--text-faint);
+  color: var(--text-faint); font-weight: 600;
 }
 .ds-h1 {
   margin: 8px 0 0; font-family: var(--serif); font-weight: 400;
@@ -55,13 +56,15 @@
 .ds-h2 { margin: 0; font-family: var(--serif); font-weight: 400; font-size: 26px; line-height: 1.2; }
 .ds-h3 { margin: 0; font-family: var(--serif); font-weight: 400; font-size: 22px; line-height: 1.25; }
 .ds-num { font-family: var(--serif); font-weight: 400; line-height: 1; }
-.ds-sub { font-size: 13px; color: var(--text-muted); }
+.ds-sub, .ds-list-sub { font-size: 13px; color: var(--text-muted); }
 .ds-head-row { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
 .ds-link {
   font-size: 13px; color: var(--accent); font-weight: 600; cursor: pointer;
   background: none; border: none; padding: 0; font-family: inherit; white-space: nowrap;
 }
 .ds-link:hover { color: var(--accent-hi); }
+/* Пустое состояние списка/карточки: обычный текст, без рамки и курсива. */
+.ds-empty { margin: 0; padding: 0; font: 400 14px/1.5 var(--sans); font-style: normal; color: var(--text-muted); text-align: left; }
 
 /* ── Карточки ────────────────────────────────────────────────────────────── */
 .ds-card {
@@ -82,6 +85,32 @@
 .ds-list-row:last-child { border-bottom: none; }
 .ds-list-row--hover { cursor: pointer; }
 .ds-list-row--hover:hover { background: color-mix(in srgb, var(--paper-tint) 60%, var(--surface)); }
+.ds-list-title { font-size: 14px; font-weight: 600; color: var(--text); }
+/* Правый слот строки-перехода: один глиф «›». Пустой <span class="ds-chev" aria-hidden>
+   получает глиф из ::before; span с «›» внутри (старая разметка) рисуется так же. */
+.ds-chev { flex-shrink: 0; margin-left: auto; font-size: 18px; line-height: 1; color: var(--text-faint); }
+.ds-chev:empty::before { content: '›'; }
+
+/* ── Раскрывашка ─────────────────────────────────────────────────────────── */
+/* <div class="ds-fold"><button class="ds-fold-btn" aria-expanded="…"><span class="ds-label">…</span>
+   <span class="ds-fold-chev" aria-hidden></span></button><div class="ds-fold-body">…</div></div>
+   Контейнер = ds-card--row без отступов; шеврон — тот же глиф «›», повёрнутый вниз,
+   при aria-expanded="true" переворачивается вверх. Span шеврона пустой.
+   Без overflow: hidden — кольцо фокуса кнопки во всю ширину (outline-offset
+   3px, index.css) рисуется снаружи её рамки и обрезалось бы. */
+.ds-fold { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; box-sizing: border-box; min-width: 0; }
+.ds-fold-btn {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  width: 100%; min-height: 48px; padding: 0 16px; box-sizing: border-box;
+  border: none; background: transparent; color: inherit; font-family: inherit; text-align: left; cursor: pointer;
+}
+.ds-fold-chev {
+  flex-shrink: 0; width: 18px; height: 18px; display: inline-flex; align-items: center; justify-content: center;
+  font-size: 18px; line-height: 1; color: var(--text-faint); transition: transform .15s;
+}
+.ds-fold-chev::before { content: '›'; display: block; transform: rotate(90deg); }
+.ds-fold-btn[aria-expanded="true"] .ds-fold-chev { transform: rotate(180deg); }
+.ds-fold-body { padding: 0 16px 16px; }
 
 /* ── Кнопки ──────────────────────────────────────────────────────────────── */
 .ds-btn {
@@ -95,12 +124,32 @@
 .ds-btn:disabled { opacity: .5; cursor: default; }
 .ds-btn:disabled:hover { background: var(--ink); }
 .ds-btn--sm { height: 40px; padding: 0 18px; border-radius: 20px; }
+.ds-btn--lg { height: auto; min-height: 48px; width: 100%; border-radius: 24px; font-size: 15px; }
 .ds-btn--secondary { background: var(--surface); color: var(--text); border: 1px solid var(--line-strong); }
 .ds-btn--secondary:hover { background: var(--surface); border-color: var(--text-faint); }
 .ds-btn--accent { background: var(--accent); color: #fff; }
 .ds-btn--accent:hover { background: var(--accent-hi); }
 .ds-btn--icon { width: 40px; height: 40px; padding: 0; border-radius: 50%; background: transparent; color: var(--text-faint); border: 1px solid var(--line-strong); }
 .ds-btn--icon:hover { background: var(--paper-tint); color: var(--text); }
+
+/* ── Шапка листа и «Назад» ───────────────────────────────────────────────── */
+/* [ds-back][ds-h2 или ds-h1--compact][правый слот]: заголовок растягивается
+   (flex: 1), последний ребёнок — статус «Сохранено», кнопка — прижат к правому
+   краю (margin-left: auto) и тогда, когда заголовок обёрнут в div без flex: 1.
+   Липкость (position: sticky; top: 0) и отступ --safe-top — у класса листа. */
+.ds-sheet-head {
+  display: flex; align-items: center; gap: 12px; flex-shrink: 0;
+  min-height: 56px; padding: 0 24px; box-sizing: border-box;
+  border-bottom: 1px solid var(--line); background: var(--bg);
+}
+.ds-sheet-head > .ds-h1, .ds-sheet-head > .ds-h2, .ds-sheet-head > .ds-h3 { margin: 0; flex: 1; min-width: 0; }
+.ds-sheet-head > :last-child { margin-left: auto; }
+.ds-back {
+  display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0;
+  border: none; background: none; font: 600 13px var(--sans); color: var(--accent);
+  cursor: pointer; white-space: nowrap; text-decoration: none;
+}
+.ds-back:hover { color: var(--accent-hi); }
 
 /* ── Сегмент-фильтр ──────────────────────────────────────────────────────── */
 .ds-seg { display: inline-flex; gap: 4px; background: var(--paper-sunk); border-radius: 20px; padding: 3px; max-width: 100%; overflow-x: auto; scrollbar-width: none; }
@@ -174,5 +223,9 @@
 @media (max-width: 767px) {
   .ds-page { padding: 20px 16px 40px; gap: 24px; }
   .ds-h1 { font-size: 32px; }
+  .ds-h1--compact { font-size: 26px; line-height: 1.15; } /* шапка с действиями в той же строке */
   .ds-h2 { font-size: 22px; }
+  .ds-sheet-head { padding: 0 16px; }
+  .ds-btn--icon { width: 44px; height: 44px; }
+  .ds-seg-btn { min-height: 44px; }
 }

@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 // Шапка клиента: «в боте / активность / срок / серия» — одна строка текста,
-// «оффлайн» и сессия — плашки.
+// «оффлайн» — плашка, ближайшая встреча — строка «Встреча» + дата (#906), не
+// заливной бейдж.
 import { describe, it, expect, afterEach } from 'vitest';
 import { cleanup, render } from '@testing-library/react';
 import { ClientHeaderBadges } from './ClientHeaderBadges';
@@ -45,5 +46,20 @@ describe('ClientHeaderBadges', () => {
   it('оффлайн без данных — строки нет совсем', () => {
     const { container } = render(<ClientHeaderBadges client={client({ telegramId: -5 })} />);
     expect(meta(container)).toBeNull();
+  });
+
+  it('ближайшая встреча — ярлык «Встреча» и дата акцентом, заливного бейджа нет', () => {
+    const { container, getByText } = render(
+      <ClientHeaderBadges client={client({ nextSession: '2999-01-05T10:00', meetingDays: [] })} />,
+    );
+    expect(getByText('Встреча').className).toBe('ds-label');
+    expect(container.querySelector('.tc-meeting-val')!.textContent).toContain('10:00');
+    expect(container.querySelector('.ds-badge--accent')).toBeNull();
+    expect(container.textContent).not.toContain('Сессия ·');
+  });
+
+  it('встречи нет — строки «Встреча» нет', () => {
+    const { container } = render(<ClientHeaderBadges client={client()} />);
+    expect(container.querySelector('.tc-meeting')).toBeNull();
   });
 });

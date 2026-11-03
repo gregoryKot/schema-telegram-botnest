@@ -1,6 +1,7 @@
 /* Обрамление карты режимов (префикс mm2-): тулбар, палитра, редакторы узла и
-   связи, меню, гид, легенда, селектор карт. Фигуры узлов, их геометрия,
-   рёбра и раскладка сюда не входят — они живут в nodeParts/ModeMapNodes. */
+   связи, меню, гид, легенда, селектор карт, скелетон холста и высота холста
+   на телефоне (блок в конце). Фигуры узлов, их геометрия, рёбра и раскладка
+   сюда не входят — они живут в nodeParts/ModeMapNodes. */
 
 /* ── Тулбар и выпадающие меню ── */
 .ds-card.mm2-toolbar { display: flex; flex-wrap: nowrap; align-items: center; gap: 4px; padding: 4px; border-radius: 12px; }
@@ -201,7 +202,41 @@
 .mm2-fill { display: flex; flex-direction: column; height: 100%; }
 .mm2-body { flex: 1; overflow: hidden; }
 .mm2-loading { display: flex; align-items: center; justify-content: center; height: 100%; color: var(--text-faint); }
+/* Скелетон холста (ModeMapSkeleton): силуэт тулбара там, где стоит Panel
+   top-left (отступ 15px — margin панели React Flow), и плашки-узлы; плашки —
+   общий .skel, их положение задаёт компонент. */
+.mm2-skel { position: relative; height: 100%; overflow: hidden; background: var(--surface); }
+.mm2-skel-bar { position: absolute; top: 15px; left: 15px; display: flex; gap: 4px; padding: 4px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
 .mm2-arrow { font-size: 16px; line-height: 1; }
 
 /* Подсказка под полем редактора узла (#743): текст не уходит в концептуализацию. */
 .mm2-field-hint { margin-top: 4px; line-height: 1.4; }
+
+/* ── Телефон (≤767): явная высота холста ───────────────────────────────────
+   На ноутбуке высоту даёт цепочка flex от .therapist-sheet (index.css, блок
+   ≥768); на телефоне страница течёт блоком, .mm2-fill { height: 100% } и
+   .mm2-body { flex: 1 } наследуют auto, и вкладка схлопывалась в 0 — ни
+   холста, ни тулбара, ни пустого состояния (#906). min-height не лечит:
+   процентные высоты внутри (корень редактора, .react-flow) считаются только
+   от явной height, а flex: 1 в колонке без высоты даёт размер по содержимому.
+   Поэтому flex: none и высота = экран минус то, что над и под холстом:
+   статус-бар (--safe-top), нижняя навигация с её safe-area (--mobile-nav-h,
+   --safe-bottom) и хром карточки: шапка .tk-head на телефоне
+   (therapist-card.css — отступ 6, «← Все клиенты» 44, строка аватара с именем
+   в одну-две строки и встречей ≈ 50–80, вкладки ≈ 34, два зазора по 12,
+   линия 1 → ≈ 160–190) плюс полоса карт .mm2-bar (57) ≈ 217–247 → 240px.
+   Своей переменной высоты у шапки нет (она меняется с содержимым), поэтому
+   оценка; промах на десяток пикселей доскролливает страница (.canvas держит
+   нижний отступ). max(320px, …) — пол для низких окон; 100vh — запасной
+   вариант для браузера без dvh.
+   Пустое состояние в фиксированной высоте не центрируется насильно, а
+   растёт, и .mm2-body прокручивает его, если не влезло. */
+@media (max-width: 767px) {
+  .mm2-body {
+    --mm2-chrome: calc(var(--safe-top) + var(--safe-bottom) + var(--mobile-nav-h) + 240px);
+    flex: none; overflow: auto;
+    height: max(320px, calc(100vh - var(--mm2-chrome)));
+    height: max(320px, calc(100dvh - var(--mm2-chrome)));
+  }
+  .mm2-center { height: auto; min-height: 100%; padding: 24px 16px; }
+}

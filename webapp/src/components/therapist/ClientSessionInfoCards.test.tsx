@@ -1,10 +1,10 @@
 // @vitest-environment jsdom
-// «Следующая сессия» и бейдж шапки не показывают прошедшую дату: при днях
+// «Следующая сессия» и строка «Встреча» в шапке не показывают прошедшую дату: при днях
 // встреч она переезжает на ближайший такой день (2026-10: «Сб, 17 окт» при
 // сегодняшнем 26-м). Логика переноса — shared/src/therapy/upcomingSession.
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
-import { NextSessionCard } from './ClientSessionInfoCards';
+import { NextSessionCard, StartDateCard } from './ClientSessionInfoCards';
 import { ClientHeaderBadges } from './ClientHeaderBadges';
 import type { ClientDetail } from './clientSheetTypes';
 import type { TherapyClientSummary } from '../../api';
@@ -27,15 +27,29 @@ describe('ближайшая сессия в карточке клиента', (
     expect(setLocal).toHaveBeenCalledWith('2026-10-31T07:00');
   });
 
-  it('прошедшая дата без дней встреч — «Не установлена», бейджа нет', () => {
+  it('прошедшая дата без дней встреч — «Не установлена», строки «Встреча» в шапке нет', () => {
     const c = client({ nextSession: '2026-10-17T07:00' });
     render(<><NextSessionCard selectedClient={c} detail={detail()} /><ClientHeaderBadges client={c} /></>);
-    expect(screen.getByText('Не установлена')).toBeTruthy();
-    expect(screen.queryByText(/Сессия ·/)).toBeNull();
+    expect(screen.getByText('Не установлена').className).toContain('ds-h3');
+    expect(screen.queryByText('Встреча')).toBeNull();
   });
 
-  it('бейдж шапки показывает ту же ближайшую дату', () => {
+  it('строка «Встреча» в шапке показывает ту же ближайшую дату', () => {
     render(<ClientHeaderBadges client={client({ nextSession: '2026-10-17T07:00', meetingDays: [6] })} />);
-    expect(screen.getByText('Сессия · Сб, 31 окт · 07:00')).toBeTruthy();
+    expect(screen.getByText('Встреча')).toBeTruthy();
+    expect(screen.getByText('Сб, 31 окт · 07:00')).toBeTruthy();
+  });
+
+  it('«Начало терапии»: без даты — «Не указана» и «Указать →», с датой — «Изменить →»', () => {
+    const setLocal = vi.fn();
+    const d = { editingStartDate: false, setEditingStartDate: vi.fn(), setLocalStartDate: setLocal } as unknown as ClientDetail;
+    const { unmount } = render(<StartDateCard selectedClient={client({ therapyStartDate: null })} detail={d} />);
+    expect(screen.getByText('Не указана').className).toBe('ds-empty');
+    fireEvent.click(screen.getByText('Указать →'));
+    expect(setLocal).toHaveBeenCalledWith('');
+    unmount();
+    render(<StartDateCard selectedClient={client({ therapyStartDate: '2026-01-15' })} detail={d} />);
+    fireEvent.click(screen.getByText('Изменить →'));
+    expect(setLocal).toHaveBeenCalledWith('2026-01-15');
   });
 });
