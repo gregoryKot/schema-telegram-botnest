@@ -7,8 +7,8 @@ import { resolveTaskDisplayText } from '../../../../shared/src/tasks/taskTitle';
 import { taskRowState } from './taskRowState';
 
 /** Строка задания/цели: название, срок, действие справа. */
-export function TaskRow({ task, cta, mark, onOpen, onComplete }: {
-  task: UserTask; cta: string; mark?: boolean; onOpen: () => void;
+export function TaskRow({ task, cta, mark, compact, onOpen, onComplete }: {
+  task: UserTask; cta: string; mark?: boolean; compact?: boolean; onOpen: () => void;
   /** Закрыть цель без упражнения; промис нужен, чтобы вернуть кнопку при сбое. */
   onComplete?: () => void | Promise<unknown>;
 }) {
@@ -20,7 +20,7 @@ export function TaskRow({ task, cta, mark, onOpen, onComplete }: {
   };
   return (
     <div
-      className={'ds-card ds-card--row cp-task' + (st.openable ? ' ds-card--hover' : '') + (st.doneToday ? ' cp-task--done' : '')}
+      className={'ds-card ds-card--row ds-card--nav cp-task' + (st.openable ? ' ds-card--hover' : '') + (st.doneToday ? ' cp-task--done' : '')}
       {...(st.openable ? pressable(onOpen) : {})}
     >
       {mark && !st.doneToday && <span className="cp-task-bar" />}
@@ -41,7 +41,7 @@ export function TaskRow({ task, cta, mark, onOpen, onComplete }: {
           {completing ? '...' : 'Готово'}
         </button>
       )}
-      {st.showCta && <span className="ds-link">{cta}</span>}
+      {st.showCta && (compact ? <span className="ds-chev" aria-hidden="true" /> : <span className="ds-link">{cta}</span>)}
     </div>
   );
 }

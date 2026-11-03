@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { DOMAIN_HUE, MODE_GROUP_HUE, toneHex } from '../../theme/entityHue';
 import { buildConceptGraph } from './conceptGraphModel';
 import type { ConceptGraphSource } from './conceptGraphTypes';
 import { emptyModeLink } from './modeLinks';
@@ -64,7 +65,7 @@ describe('раскладка по клеткам', () => {
     );
     const [coping] = g.lanes.coping;
     expect(coping.copingKind).toBe('avoidance');
-    expect(coping.color).toBe('var(--accent)');
+    expect(coping.color).toBe(toneHex(MODE_GROUP_HUE.coping_avoidance));
     expect(coping.strategyHint).toMatch(/^Обходить, а не ломать/);
     expect(g.lanes.child[0].copingKind).toBeUndefined();
     expect(g.lanes.child[0].strategyHint).toMatch(
@@ -154,7 +155,7 @@ describe('схемы на схеме случая', () => {
     expect(g.schemas[0]).toMatchObject({
       name: 'Эмоциональная депривация',
       domain: 'Нарушение связи и отвержение',
-      color: 'var(--accent-red)',
+      color: toneHex(DOMAIN_HUE.rejection),
     });
   });
 

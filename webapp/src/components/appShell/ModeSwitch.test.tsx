@@ -44,9 +44,10 @@ describe('ModeSwitch', () => {
     expect(onChange).not.toHaveBeenCalled();
   });
 
-  it('вариант sheet получает модификатор светлого вида, sidebar — нет', () => {
+  it('вариант sheet — общий сегмент ds-seg, sidebar — sb-mode-switch', () => {
     const { rerender } = render(<ModeSwitch value variant="sheet" onChange={() => {}} />);
-    expect(screen.getByRole('group', { name: 'Режим' }).className).toBe('sb-mode-switch sb-mode-switch--sheet');
+    expect(screen.getByRole('group', { name: 'Режим' }).className).toBe('ds-seg ds-seg--full');
+    expect(screen.getByRole('button', { name: 'Клиент' }).className).toContain('ds-seg-btn');
     rerender(<ModeSwitch value variant="sidebar" onChange={() => {}} />);
     expect(screen.getByRole('group', { name: 'Режим' }).className).toBe('sb-mode-switch');
   });

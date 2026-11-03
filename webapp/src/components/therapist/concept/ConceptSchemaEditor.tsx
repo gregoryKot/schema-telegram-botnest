@@ -1,13 +1,16 @@
 import { SCHEMA_DOMAINS } from '../../../schemaTherapyData';
 import { DOMAIN_HUE, hueStyle } from '../../../lib/tone';
 
-// Полный выбор актуальных схем: чипы всех 20 по доменам; выбранные — цветом домена.
+// Полный выбор актуальных схем: чипы всех 20 по доменам; выбранные — tint и рамка цвета домена (--h на обёртке).
 export function ConceptSchemaEditor({ activeIds, onToggle }: { activeIds: string[]; onToggle: (id: string) => void }) {
   return (
     <div className="tcp-pickers">
       {SCHEMA_DOMAINS.map((domain) => (
         <div key={domain.id} style={hueStyle(DOMAIN_HUE[domain.id])}>
-          <div className="tcp-domain tone-text">{domain.domain}</div>
+          <div className="ds-label tcp-domain">
+            <span className="ds-dot tone-fill" />
+            {domain.domain}
+          </div>
           <div className="tcp-chips">
             {domain.schemas.map((s) => {
               const on = activeIds.includes(s.id);
@@ -17,7 +20,7 @@ export function ConceptSchemaEditor({ activeIds, onToggle }: { activeIds: string
                   type="button"
                   aria-pressed={on}
                   onClick={() => onToggle(s.id)}
-                  className={`tcp-schema-btn${on ? ' is-on tone-fill' : ''}`}
+                  className={`ds-chip ds-chip--toggle${on ? ' is-on' : ''}`}
                 >
                   {s.name}
                 </button>

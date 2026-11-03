@@ -15,24 +15,24 @@ export function PhoneHelpRows({ onSteps }: { onSteps?: () => void }) {
   return (
     <>
       {onSteps && (
-        <div className="ds-card ds-card--row ds-card--hover cp-task cp-task--crisis" {...pressable(onSteps)}>
+        <div className="ds-card ds-card--row ds-card--nav ds-card--crisis ds-card--hover cp-task" {...pressable(onSteps)}>
           <div className="cp-task-body">
-            <div className="cp-task-title">Мне плохо</div>
+            <div className="ds-list-title">Мне плохо</div>
             <div className="ds-sub">пять шагов: разобраться и успокоиться</div>
           </div>
-          <span className="cp-chev" aria-hidden="true">›</span>
+          <span className="ds-chev" aria-hidden="true" />
         </div>
       )}
       <div
-        className="ds-card ds-card--row ds-card--hover cp-task"
+        className="ds-card ds-card--row ds-card--nav ds-card--crisis ds-card--hover cp-task"
         aria-expanded={crisisOpen}
         {...pressable(() => setCrisisOpen(v => !v))}
       >
         <div className="cp-task-body">
-          <div className="cp-task-title cp-task-title--crisis">Мне очень плохо</div>
+          <div className="ds-list-title">Мне очень плохо</div>
           <div className="ds-sub">контакты помощи прямо сейчас</div>
         </div>
-        <span className={'cp-chev' + (crisisOpen ? ' is-open' : '')} aria-hidden="true">›</span>
+        <span className="ds-chev" aria-hidden="true" />
       </div>
       {crisisOpen && <div id={HELP_BLOCK_ID}><CrisisBlock /></div>}
     </>

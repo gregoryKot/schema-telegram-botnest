@@ -1,9 +1,9 @@
 import { MODE_GROUPS, SCHEMA_DOMAINS } from '../../../schemaTherapyData';
-import { DOMAIN_HUE, hueStyle } from '../../../lib/tone';
+import { DOMAIN_HUE, MODE_GROUP_HUE, hueStyle } from '../../../lib/tone';
 import { ConceptToggleChip } from '../../../../../shared/src/therapy/conceptGraph/ConceptToggleChip';
 
 // Спокойный вид карточек «Поля»: только выбранное, без кнопок-переключателей.
-// Схемы — цветом домена (как в полном выборе), режимы — цветом группы.
+// Схемы — tint домена (как в полном выборе), режимы — tint группы.
 export function SelectedSchemas({ ids }: { ids: string[] }) {
   return (
     <div className="tcp-chips">
@@ -11,7 +11,7 @@ export function SelectedSchemas({ ids }: { ids: string[] }) {
         domain.schemas
           .filter((s) => ids.includes(s.id))
           .map((s) => (
-            <span key={s.id} className="tcp-schema-btn tcp-schema-btn--static is-on tone-fill" style={hueStyle(DOMAIN_HUE[domain.id])}>
+            <span key={s.id} className="ds-chip tone-tint" style={hueStyle(DOMAIN_HUE[domain.id])}>
               {s.name}
             </span>
           )),
@@ -26,7 +26,7 @@ export function SelectedModes({ ids }: { ids: string[] }) {
       {MODE_GROUPS.flatMap((group) =>
         group.items
           .filter((m) => ids.includes(m.id))
-          .map((m) => <ConceptToggleChip key={m.id} readOnly active label={m.name} color={group.color} />),
+          .map((m) => <ConceptToggleChip key={m.id} readOnly active label={m.name} color={group.color} hue={MODE_GROUP_HUE[group.id]} />),
       )}
     </div>
   );

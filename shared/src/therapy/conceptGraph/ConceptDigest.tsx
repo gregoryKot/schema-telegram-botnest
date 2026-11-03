@@ -1,4 +1,10 @@
-import { useId, useMemo, type CSSProperties } from 'react';
+import { useId, useMemo } from 'react';
+import {
+  DIGEST_CAPS as CAPS,
+  DIGEST_CARD,
+  DIGEST_VALUE,
+} from './conceptInlineStyles';
+import { useConceptSkin } from './conceptSkin';
 import { buildConceptGraph } from './conceptGraphModel';
 import {
   conceptGraphSource,
@@ -41,38 +47,24 @@ export function useConceptDigest(
   }, [concept, local]);
 }
 
-const CAPS: CSSProperties = {
-  fontSize: 11,
-  fontWeight: 700,
-  letterSpacing: '0.07em',
-  textTransform: 'uppercase',
-  color: 'var(--text-sub)',
-};
-
-const CARD: CSSProperties = {
-  border: '1px solid var(--line)',
-  borderRadius: 'var(--r-12)',
-  background: 'var(--surface)',
-  padding: 'var(--space-12) var(--space-14)',
-  marginBottom: 'var(--space-16)',
-};
-
-const VALUE: CSSProperties = {
-  flex: '1 1 260px',
-  minWidth: 0,
-  margin: 0,
-  fontSize: 14,
-  lineHeight: 1.45,
-  color: 'var(--text)',
-};
-
 /** Карточка сводки; при пустом списке строк не рендерится. */
 export function ConceptDigest({ rows }: { rows: DigestRow[] }) {
   const id = useId();
+  const skin = useConceptSkin();
   if (rows.length === 0) return null;
+  const caps = skin ? undefined : CAPS;
   return (
-    <section data-export-skip aria-labelledby={id} style={CARD}>
-      <h3 id={id} style={{ ...CAPS, margin: '0 0 var(--space-8)' }}>
+    <section
+      data-export-skip
+      aria-labelledby={id}
+      className={skin?.card}
+      style={skin ? undefined : DIGEST_CARD}
+    >
+      <h3
+        id={id}
+        className={skin?.label}
+        style={{ ...caps, margin: '0 0 var(--space-8)' }}
+      >
         {DIGEST_TITLE}
       </h3>
       <dl style={{ margin: 0, display: 'grid', gap: 'var(--space-6)' }}>
@@ -81,10 +73,21 @@ export function ConceptDigest({ rows }: { rows: DigestRow[] }) {
             key={r.key}
             style={{ display: 'flex', flexWrap: 'wrap', gap: '2px 12px' }}
           >
-            <dt style={{ ...CAPS, flex: '0 0 96px', lineHeight: '20px' }}>
+            <dt
+              className={skin?.label}
+              style={{ ...caps, flex: '0 0 96px', lineHeight: '20px' }}
+            >
               {r.label}
             </dt>
-            <dd style={VALUE}>{r.text}</dd>
+            <dd
+              style={
+                skin
+                  ? { flex: '1 1 260px', minWidth: 0, margin: 0 }
+                  : DIGEST_VALUE
+              }
+            >
+              {r.text}
+            </dd>
           </div>
         ))}
       </dl>

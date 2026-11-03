@@ -92,4 +92,11 @@ describe('безопасная зона сверху (--safe-top)', () => {
       }
     }
   });
+
+  it('shared/utilities.css: на телефоне .u-sheet и .u-sheet-grid отступают на --safe-top', () => {
+    const css = readFileSync(join(__dirname, '..', '..', '..', 'shared/src/theme/utilities.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+    const phone = phoneBlocks(css);
+    expect(hasRule(phone, '.u-sheet.u-sheet', 'padding-top: var(--safe-top')).toBe(true);
+    expect(hasRule(phone, '.u-sheet-grid.u-sheet-grid', 'padding-top: var(--safe-top')).toBe(true);
+  });
 });

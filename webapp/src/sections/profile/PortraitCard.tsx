@@ -32,7 +32,7 @@ export function PortraitCard({ portrait, ysqCompletedAt, onOpenSheet, onTakeTest
     <section {...pressable(onOpenSheet)} aria-label={txt.title} className="ds-card ds-card--hover cpf-card">
       <div className="ds-head-row">
         <h2 className="ds-h3">{txt.title}</h2>
-        <span className="ds-sub">{hasData ? `${portraitTotalsText(portrait)} →` : '→'}</span>
+        <span className="ds-sub">{hasData && <>{portraitTotalsText(portrait)} </>}<span className="ds-chev" aria-hidden="true" /></span>
       </div>
       <div className="cpf-hint">{txt.hint}</div>
 

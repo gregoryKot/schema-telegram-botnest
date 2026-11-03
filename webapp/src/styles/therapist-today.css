@@ -25,8 +25,7 @@
 .tt-bar { height: 40px; border-radius: 2px; }
 .tt-name { font-size: 16px; font-weight: 600; overflow-wrap: anywhere; }
 .tt-row-sub { font-size: 13px; color: var(--text-sub); margin-top: 2px; }
-.tt-arrow { font-size: 18px; color: var(--accent); font-weight: 600; white-space: nowrap; }
-.tt-act { grid-template-columns: 36px minmax(0, 1fr) minmax(48px, 120px) 44px; min-height: 44px; background: none; border-top: none; border-left: none; border-right: none; }
+.tt-act { grid-template-columns: 36px minmax(0, 1fr) minmax(48px, 120px) 44px auto; min-height: 44px; background: none; border-top: none; border-left: none; border-right: none; }
 .tt-act .ds-avatar { width: 36px; height: 36px; font-size: 12px; }
 .tt-act-name { font-size: 14px; font-weight: 600; overflow-wrap: anywhere; }
 .tt-act-status { font-size: 12px; margin-top: 2px; color: var(--text-muted); }
@@ -37,7 +36,6 @@
 .tt-attn .ds-avatar { width: 36px; height: 36px; font-size: 12px; }
 .tt-attn-body { flex: 1; min-width: 0; }
 .tt-attn .tt-row-sub { color: var(--warn-ink); font-size: 12px; }
-.tt-attn .tt-arrow { color: var(--warn-ink); }
 .tt-attn-list { display: flex; flex-direction: column; gap: 8px; }
 
 @media (max-width: 767px) {

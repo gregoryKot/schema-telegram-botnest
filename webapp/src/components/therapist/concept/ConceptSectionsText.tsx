@@ -78,7 +78,7 @@ export function ConceptTriggers({ value, onChange, placeholder }: FieldProps) {
             key={t}
             type="button"
             aria-pressed={hasTag(value, t)}
-            className={`tcp-tag${hasTag(value, t) ? ' is-on' : ''}`}
+            className={`ds-chip ds-chip--toggle${hasTag(value, t) ? ' is-on' : ''}`}
             onClick={() => onChange(appendTag(value, t))}
           >
             {t}

@@ -14,8 +14,8 @@ export function StreakCard({ streak, onOpenTracker }: Props) {
       <h2 className="ds-h3 cpf-streak-title">Стрик</h2>
       <div className="cpf-streak-top">
         <div className="cpf-streak-main">
-          <div className={`ds-num cpf-streak-num${currentStreak === 0 ? ' is-zero' : todayDone ? ' is-done' : ''}`}>
-            {currentStreak > 0 ? currentStreak : '–'}
+          <div className={`ds-num cpf-streak-num${todayDone && currentStreak > 0 ? ' is-done' : ''}`}>
+            {currentStreak}
           </div>
           <div className="cpf-streak-cap">{caption}</div>
         </div>

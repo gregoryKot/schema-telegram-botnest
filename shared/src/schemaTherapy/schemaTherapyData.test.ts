@@ -3,6 +3,7 @@
 // в 5 доменах, 35 режимов в 6 группах, и производные реестры/хелперы не
 // расходятся с исходными группами.
 import { describe, it, expect } from 'vitest';
+import { DOMAIN_HUE, MODE_GROUP_HUE, toneHex } from '../theme/entityHue';
 import {
   EMOTIONS,
   INTENSITY_LABELS,
@@ -33,14 +34,14 @@ describe('schemaTherapyData', () => {
   it('ALL_SCHEMAS несёт domainId/domainColor из своего домена', () => {
     const schema = ALL_SCHEMAS.find((s) => s.id === 'abandonment');
     expect(schema?.domainId).toBe('rejection');
-    expect(schema?.domainColor).toBe('var(--accent-red)');
+    expect(schema?.domainColor).toBe(toneHex(DOMAIN_HUE.rejection));
   });
 
   it('ALL_MODES несёт groupId/groupColor/groupName из своей группы', () => {
     const mode = ALL_MODES.find((m) => m.id === 'healthy_adult');
     expect(mode?.groupId).toBe('healthy');
     expect(mode?.groupName).toBe('Здоровые режимы');
-    expect(mode?.groupColor).toBe('var(--accent-green)');
+    expect(mode?.groupColor).toBe(toneHex(MODE_GROUP_HUE.healthy));
   });
 
   it('getSchemaById/getModeById находят реальные записи и не находят чужие', () => {

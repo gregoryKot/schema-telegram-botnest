@@ -1,13 +1,7 @@
 /* Экран «Все клиенты» кабинета терапевта (префикс tc-). Цвета — токены. */
 .tc-count { font-size: 36px; color: var(--text-ghost); }
 .tc-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
-.tc-search {
-  width: 240px; max-width: 100%; height: 36px; border-radius: 18px; padding: 0 16px;
-  border: 1px solid var(--line-input); background: var(--surface);
-  font: 14px var(--sans); color: var(--text); box-sizing: border-box;
-}
-.tc-search:focus { outline: none; border-color: var(--accent); }
-.tc-search::placeholder { color: var(--text-ghost); }
+.tc-search { width: 240px; max-width: 100%; }
 .tc-modes { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
 
 /* ── Форма «Новый клиент» ────────────────────────────────────────────────── */
@@ -81,6 +75,5 @@
 @media (max-width: 767px) {
   .tc-count { font-size: 24px; }
   .tc-add { grid-template-columns: 1fr; padding: 20px; }
-  .tc-search { width: 100%; height: 44px; border-radius: 22px; }
-  .tc-toolbar > .ds-seg { width: 100%; }
+  .tc-search { width: 100%; }
 }

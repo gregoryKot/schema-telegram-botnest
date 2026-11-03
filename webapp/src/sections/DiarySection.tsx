@@ -144,7 +144,7 @@ export function DiarySection({ onClose: _onClose, onOpenTrackerHistory }: { onCl
       </div>
 
       <div className="cd-bar">
-        <div className="ds-seg" role="group" aria-label="Тип записей">
+        <div className="ds-seg ds-seg--scroll" role="group" aria-label="Тип записей">
           {FILTERS.map(f => (
             <button
               key={f.id}

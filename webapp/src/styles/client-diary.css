@@ -20,7 +20,6 @@
 .cd-draft-preview { flex-basis: 100%; font-size: 13px; line-height: 1.45; color: var(--text-sub); overflow-wrap: anywhere; }
 
 .cd-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
-.cd-bar .ds-seg-btn { min-height: 44px; }
 
 .cd-timeline { display: flex; flex-direction: column; gap: 28px; }
 .cd-day { display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: 20px; }
@@ -52,20 +51,6 @@
   /* Кегль заголовка — ds-h1 (#906); .cd-head — обычный блок, своих flex-правил нет. */
   .cd-page { gap: var(--space-16); padding-top: var(--space-16); }
 
-  /* Чипы-фильтры: активный — тёмный (ink), лента скроллится от края до края */
-  .cd-bar .ds-seg {
-    display: flex; flex: 0 0 auto; box-sizing: border-box; max-width: none;
-    width: calc(100% + 2 * var(--space-16)); margin: 0 calc(-1 * var(--space-16)); padding: 0 var(--space-16);
-    background: none; border-radius: 0; gap: var(--space-8);
-    scroll-snap-type: x proximity; scroll-padding: 0 var(--space-16);
-  }
-  .cd-bar .ds-seg-btn {
-    flex: 0 0 auto; scroll-snap-align: start; padding: 0 var(--space-12); border-radius: var(--r-20);
-    background: var(--paper-sunk); color: var(--text-muted);
-  }
-  .cd-bar .ds-seg-btn.is-active { background: var(--ink); color: var(--on-ink); }
-  .cd-bar .ds-count { margin-left: var(--space-4); padding: 0; background: none; font-size: 12px; color: inherit; opacity: .75; }
-
   /* Записи: бейдж и время в одной строке, заголовок на всю ширину под ним */
   .cd-entry-head { flex-wrap: wrap; row-gap: var(--space-4); }
   .cd-entry-head .ds-chip { order: 1; }
@@ -78,6 +63,6 @@
 }
 
 /* Строка трекера в ленте дня и серия внизу */
-.cd-entry--tracker { flex-direction: row; align-items: center; gap: var(--space-12); min-height: 44px; font-size: 15px; font-weight: 600; }
+.cd-entry--tracker { flex-direction: row; align-items: center; font-size: 15px; font-weight: 600; }
 .cd-retry { min-height: 44px; padding: 0 var(--space-8); background: none; border: none; cursor: pointer; font: 600 13px var(--sans); color: var(--accent); }
 .cd-streak { margin: 0; font-size: 13px; line-height: 1.5; color: var(--text-faint); }

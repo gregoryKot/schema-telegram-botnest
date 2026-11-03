@@ -100,8 +100,8 @@ describe('ProfileSection — чистый аккаунт (без хардкод-
   it('на чистом аккаунте показывает реальные нули, а не выдуманные цифры стрика', async () => {
     await act(async () => { renderSection(); });
     expect(screen.getByText('Прогресс')).toBeTruthy();
-    // Стрик = 0 → «–», не число из константы.
-    expect(screen.getByText('–')).toBeTruthy();
+    // Стрик = 0 — настоящий ноль, не прочерк.
+    expect(document.querySelector('.cpf-streak-num')?.textContent).toBe('0');
     // В исходнике текст с литеральным '\n' — testing-library нормализует
     // пробелы в один при сопоставлении.
     expect(screen.getByText('пока не начато')).toBeTruthy();
@@ -150,7 +150,7 @@ describe('ProfileSection — реальные данные пользовате�
     expect(screen.getByText('Достижения')).toBeTruthy();
     // "{n} из {m} →" рендерится как несколько текстовых узлов — сверяем
     // целиком по textContent родителя, а не точным совпадением строки.
-    expect(screen.getByText((_, node) => node?.textContent === '2 из 3 →')).toBeTruthy();
+    expect(screen.getByText((_, node) => node?.textContent?.trim() === '2 из 3')).toBeTruthy();
     expect(screen.getByText('Первый шаг')).toBeTruthy();
   });
 

@@ -1,5 +1,7 @@
 import '../../styles/therapist-tabs.css';
 import { SCHEMA_DOMAINS } from '../../schemaTherapyData';
+import { useTr } from '../../utils/addressForm';
+import { DOMAIN_HUE, hueStyle } from '../../lib/tone';
 import { fmtDate, momentDayKey } from '../../utils/format';
 import type { ClientData, TherapyClientSummary } from '../../api';
 import { isVirtualId } from '../../../../shared/src/utils/sameId';
@@ -21,19 +23,20 @@ interface Props {
 }
 
 export function ClientYSQTab({ clientData, selectedClient, selfSchemaIds, ysqRequested, ysqError, exportCopied, handleRequestYsq, handleExport }: Props) {
+  const tr = useTr();
   const virtual = isVirtualId(selectedClient.telegramId);
 
   if (!clientData?.ysqHistory || clientData.ysqHistory.length === 0) {
     return (
       <div className="ds-page tb-page tb-page--ysq">
-        <div className="tb-ysq-empty">
-          <div className="ds-h2">YSQ ещё не проходился</div>
+        <div className="u-col8">
+          <p className="ds-empty">YSQ ещё не проходился</p>
           {virtual ? (
             <div className="tb-meta">Клиент без Telegram – YSQ недоступен</div>
           ) : (
             <>
-              <div className="ds-sub">Запроси тест – клиент получит уведомление в боте</div>
-              <button onClick={handleRequestYsq} disabled={ysqRequested} className="ds-btn">
+              <div className="ds-sub">{tr('Запроси тест – клиент получит уведомление в боте', 'Запросите тест – клиент получит уведомление в боте')}</div>
+              <button onClick={handleRequestYsq} disabled={ysqRequested} className="ds-btn ds-btn--sm" style={{ alignSelf: 'flex-start' }}>
                 {ysqRequested ? '✓ Запрос отправлен' : 'Запросить тест на схемы'}
               </button>
               {ysqError && <div className="tb-error">{ysqError}</div>}
@@ -48,10 +51,7 @@ export function ClientYSQTab({ clientData, selectedClient, selfSchemaIds, ysqReq
                 const s = SCHEMA_DOMAINS.flatMap(d => d.schemas).find(x => x.id === id);
                 const domain = SCHEMA_DOMAINS.find(d => d.schemas.some(x => x.id === id));
                 return (
-                  <div key={id} className="tag-mini">
-                    <span className="swatch" style={{ background: domain?.color ?? 'var(--accent)' }} />
-                    {s?.name ?? id}
-                  </div>
+                  <span key={id} className="ds-chip tone-tint" style={hueStyle(domain ? DOMAIN_HUE[domain.id] : undefined)}>{s?.name ?? id}</span>
                 );
               })}
             </div>

@@ -1,6 +1,8 @@
 import { MODE_GROUPS } from '../../schemaTherapy/schemaTherapyData';
 import { ConceptToggleChip } from './ConceptToggleChip';
-import { colorMix } from '../../utils/colorMix';
+import { ConceptGroupLabel } from './ConceptGroupLabel';
+import { groupLabel } from './conceptInlineStyles';
+import { MODE_GROUP_HUE } from '../../theme/entityHue';
 
 /**
  * Выбор режимов в концептуализации: пилюли по группам. Единственная копия на
@@ -32,19 +34,12 @@ export function ConceptModePicker({
     <>
       {groups.map((group) => (
         <div key={group.id} style={{ marginBottom: 'var(--space-8)' }}>
-          <div
-            style={{
-              fontSize: 11,
-              fontWeight: 700,
-              letterSpacing: '0.07em',
-              color: colorMix(group.color, 67),
-              textTransform: 'uppercase',
-              marginBottom: 'var(--space-6)',
-              paddingLeft: 2,
-            }}
+          <ConceptGroupLabel
+            hue={MODE_GROUP_HUE[group.id]}
+            fallback={groupLabel(group.color)}
           >
             {group.group}
-          </div>
+          </ConceptGroupLabel>
           <div
             style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-6)' }}
           >
@@ -53,6 +48,7 @@ export function ConceptModePicker({
                 key={mode.id}
                 label={mode.name}
                 color={group.color}
+                hue={MODE_GROUP_HUE[group.id]}
                 active={activeModeIds.includes(mode.id)}
                 onClick={() => onToggle(mode.id)}
               />

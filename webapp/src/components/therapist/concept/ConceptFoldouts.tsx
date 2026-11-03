@@ -23,8 +23,8 @@ export function ConceptFoldouts({ detail }: { detail: ClientDetail }) {
               const inConcept = activeSchemaIds.includes(id);
               return (
                 <div key={id} className="u-ac8">
-                  <span style={{ flex: 1, fontSize: 13, color: 'var(--text)' }}>{s?.name ?? id}</span>
-                  {!inConcept && <span style={{ fontSize: 11, color: 'var(--c-amber)', fontWeight: 500 }}>+ добавить?</span>}
+                  <span className="u-fill">{s?.name ?? id}</span>
+                  {!inConcept && <span className="ds-badge ds-badge--warn">+ добавить?</span>}
                 </div>
               );
             })}

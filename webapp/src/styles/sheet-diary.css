@@ -25,9 +25,6 @@
 .sd-toolbar .ds-seg-btn { min-height: 36px; }
 .sd-toolbar-hint { font-size: 12px; color: var(--text-faint); font-style: italic; }
 .sd-links { display: flex; justify-content: center; flex-wrap: wrap; gap: 8px 24px; }
-.sd-links .ds-link { min-height: 44px; }
-.sd-backfill { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.sd-backfill-title { font-size: 14px; font-weight: 600; }
 .sd-need-row { grid-template-columns: auto minmax(0, 1fr) auto auto; min-height: 56px; }
 .sd-need-name { font-size: 15px; min-width: 0; overflow-wrap: anywhere; }
 .sd-need-level { font-size: 11px; font-weight: 600; }
@@ -36,14 +33,12 @@
 .sd-low { display: flex; flex-direction: column; gap: 4px; }
 .sd-low-name { font-size: 15px; font-weight: 600; }
 .sd-low-text { font-size: 13px; line-height: 1.65; color: var(--text-sub); margin-bottom: 6px; }
-.sd-note { display: flex; align-items: center; gap: 12px; }
 .sd-note-text { flex: 1; min-width: 0; font-size: 13px; color: var(--text-sub); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .sd-note-text.is-empty { color: var(--text-faint); font-style: italic; }
 .sd-tags { display: flex; flex-wrap: wrap; gap: 6px; }
 .sd-hint { text-align: center; font-size: 13px; color: var(--text-faint); padding: 8px 0; font-style: italic; }
-.sd-empty { margin: 24px clamp(16px, 4vw, 32px); text-align: center; padding: 40px 24px; display: flex; flex-direction: column; align-items: center; gap: 12px; }
-.sd-empty-title { font-style: italic; color: var(--text-sub); }
-.sd-empty-text { font-size: 14px; line-height: 1.7; color: var(--text-sub); margin-bottom: 8px; }
+.sd-empty { margin: 24px clamp(16px, 4vw, 32px); display: flex; flex-direction: column; align-items: flex-start; gap: 12px; }
+.sd-explainer-stack { display: flex; flex-direction: column; gap: 12px; }
 
 .sd-spark-row { grid-template-columns: 110px minmax(0, 1fr) auto; min-height: 56px; }
 .sd-spark-name { font-size: 14px; font-weight: 500; }
@@ -152,12 +147,8 @@
 .sd-doubt-check { border-radius: 10px; padding: 8px 12px; font-size: 13px; line-height: 1.5; margin-bottom: 6px; }
 .sd-doubt-btn { width: 100%; }
 .sd-doubt-keep { margin-top: 20px; }
-.sd-explainer-wrap { padding: 40px 0 60px; max-width: 640px; margin: 0 auto; display: flex; flex-direction: column; gap: 12px; }
-.sd-explainer-title { text-align: center; font-style: italic; color: var(--text-sub); }
-.sd-explainer-intro { font-size: 14px; line-height: 1.65; color: var(--text-sub); text-align: center; margin-bottom: 12px; }
-.sd-explainer-card { font-size: 13.5px; line-height: 1.65; }
+.sd-explainer-card { line-height: 1.65; }
 .sd-explainer-why { margin-top: 8px; }
-.sd-explainer-foot { font-size: 13px; color: var(--text-faint); text-align: center; margin-top: 6px; }
 .sd-banner { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; border-color: var(--err); font-size: 13px; line-height: 1.5; }
 
 /* ── Заметка, кризисная карточка, шаринг, «Мой путь» ──────────────────── */
@@ -174,7 +165,6 @@
 .sd-wide-gap { margin-top: 10px; }
 .sd-wide.is-ok, .sd-btn-ok { background: var(--ok-bg); color: var(--ok-ink); border-color: var(--ok-bg); }
 .sd-wide.is-err { color: var(--err); }
-.sd-weekly-empty { text-align: center; color: var(--text-sub); padding: 48px 0; font-size: 15px; }
 .sd-journey-inner { max-width: 680px; margin: 0 auto; padding: 24px clamp(16px, 4vw, 20px) 80px; }
 .sd-journey-head { align-items: center; margin-bottom: 8px; }
 .sd-journey-title { margin: 0; } /* кегль — ds-h1, без локального (#906) */

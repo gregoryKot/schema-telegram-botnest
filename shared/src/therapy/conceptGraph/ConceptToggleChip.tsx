@@ -1,16 +1,12 @@
 import { IdentityDot } from '../../components/IdentityDot';
-import { conceptChipStyle } from './conceptChipStyle';
+import { conceptChipLook } from './conceptChipStyle';
+import { useConceptSkin } from './conceptSkin';
 
-/**
- * Пилюля-переключатель с точкой цвета: режимы, схемы, потребности в графе и в
- * форме концептуализации — одна механика (правило «одна механика — один
- * компонент»). Текст выбранной пилюли — основной цвет, а не цвет группы:
- * жёлтый домен или потребность на светлой бумаге не читались бы. Цвет несёт
- * точка и кольцо, название всегда стоит рядом.
- */
+/** Чип-переключатель: на сайте ds-chip с tint по `hue`, в мини-аппе пилюля с точкой. */
 export function ConceptToggleChip({
   label,
   color,
+  hue,
   active,
   onClick,
   title,
@@ -18,26 +14,30 @@ export function ConceptToggleChip({
 }: {
   label: string;
   color: string;
+  hue?: number;
   active: boolean;
   onClick?: () => void;
   title?: string;
   /** Только показать: не кнопка, без зоны нажатия (спокойный вид «выбрано»). */
   readOnly?: boolean;
 }) {
-  const style = conceptChipStyle(color, active, readOnly);
-  const content = (
+  const skin = useConceptSkin();
+  const look = conceptChipLook(skin, color, active, readOnly, hue);
+  const content = skin ? (
+    label
+  ) : (
     <>
       <IdentityDot color={color} size={7} /> {label}
     </>
   );
-  if (readOnly) return <span style={style}>{content}</span>;
+  if (readOnly) return <span {...look}>{content}</span>;
   return (
     <button
       type="button"
       aria-pressed={active}
       title={title}
       onClick={onClick}
-      style={style}
+      {...look}
     >
       {content}
     </button>

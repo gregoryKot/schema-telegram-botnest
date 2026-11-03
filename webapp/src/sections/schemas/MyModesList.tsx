@@ -22,7 +22,7 @@ export function MyModesList({ loading, ids, onAdd, onOpenMode, statusFor, freq }
   return (
     <>
       {ids.length === 0 && (
-        <p className="cs-empty">{tr('Добавь режимы, которые узнаёшь у себя', 'Добавьте режимы, которые узнаёте у себя')}</p>
+        <p className="ds-empty">{tr('Добавь режимы, которые узнаёшь у себя', 'Добавьте режимы, которые узнаёте у себя')}</p>
       )}
       <MineGroupsList
         kind="mode" groups={groupMineByModeGroup(MODE_GROUPS, ids)} nameOf={nameOf}

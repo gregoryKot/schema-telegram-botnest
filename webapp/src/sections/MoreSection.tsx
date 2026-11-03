@@ -18,20 +18,21 @@ interface Props {
 
 interface Row { id: string; title: string; sub: string; onClick: () => void; href?: string }
 
+const ROW_CLASS = 'ds-list-row ds-list-row--nav ds-list-row--hover';
 function RowBody({ row }: { row: Row }) {
   return (
     <>
-      <span className="cm-row-body">
-        <span className="cm-row-title">{row.title}</span>
-        <span className="cm-row-sub">{row.sub}</span>
+      <span className="ds-list-body">
+        <span className="ds-list-title">{row.title}</span>
+        <span className="ds-list-sub">{row.sub}</span>
       </span>
-      <span className="cm-row-arrow" aria-hidden="true">→</span>
+      <span className="ds-chev" aria-hidden="true" />
     </>
   );
 }
 
 // «Ещё»: всё, что не входит в три действия главной (docs/design/CLIENT_SIMPLE_2026-10.md).
-// Разделы /schemas, /practice, /profile остаются на своих адресах — отсюда в них заходят. Кризисный вход «Мне очень плохо» — ds-btn--secondary ds-btn--lg (#906).
+// Разделы /schemas, /practice, /profile остаются на своих адресах — отсюда в них заходят. Кризисный вход «Мне очень плохо» — ds-card--crisis (#906).
 export function MoreSection({ onNavigate, onOpenSchema, onOpenAdvanced, userRole, onOpenTherapistCabinet }: Props) {
   const [why, setWhy] = useState(false);
   const [journey, setJourney] = useState(false);
@@ -65,23 +66,22 @@ export function MoreSection({ onNavigate, onOpenSchema, onOpenAdvanced, userRole
         <h1 className="ds-h1">Всё остальное</h1>
       </header>
 
-      <ul className="cm-list">
-        {rows.map(r => (
-          <li key={r.id}>
-            {r.href ? (
-              <ExternalLink className="cm-row" href={r.href} onClick={r.onClick}>
-                <RowBody row={r} />
-              </ExternalLink>
-            ) : (
-              <button type="button" className="cm-row" onClick={r.onClick}>
-                <RowBody row={r} />
-              </button>
-            )}
-          </li>
+      <div className="ds-card ds-card--flush">
+        {rows.map(r => r.href ? (
+          <ExternalLink key={r.id} className={ROW_CLASS} href={r.href} onClick={r.onClick}>
+            <RowBody row={r} />
+          </ExternalLink>
+        ) : (
+          <button key={r.id} type="button" className={ROW_CLASS} onClick={r.onClick}>
+            <RowBody row={r} />
+          </button>
         ))}
-      </ul>
+      </div>
 
-      <button type="button" className="ds-btn ds-btn--secondary ds-btn--lg" onClick={() => onNavigate('practice')}>Мне очень плохо</button>
+      <button type="button" className="ds-card ds-card--row ds-card--nav ds-card--crisis ds-card--hover" onClick={() => onNavigate('practice')}>
+        <span className="ds-list-title">Мне очень плохо</span>
+        <span className="ds-chev" aria-hidden="true" />
+      </button>
 
       {why && <WhySheet onClose={() => setWhy(false)} />}
       {target.sheet}

@@ -155,7 +155,7 @@ export function CommandPalette({ onNavigate, onClose, userRole, therapistMode, o
           </svg>
           <input
             ref={inputRef}
-            className="ds-input sk-cmd-input"
+            className="ds-input ds-input--search"
             value={q}
             onChange={e => setQ(e.target.value)}
             placeholder="Найти клиента, страницу или действие…"
@@ -163,7 +163,7 @@ export function CommandPalette({ onNavigate, onClose, userRole, therapistMode, o
           <span className="kbd">Esc</span>
         </div>
         <div className="sk-cmd-list">
-          {rows.length === 0 && <div className="ds-list-row sk-cmd-empty ds-sub">Ничего не найдено</div>}
+          {rows.length === 0 && <p className="ds-empty sk-cmd-empty">Ничего не найдено</p>}
           {rows.map((row, i) => (
             <div
               key={i}
@@ -182,7 +182,7 @@ export function CommandPalette({ onNavigate, onClose, userRole, therapistMode, o
                   </span>
                 )}
               </span>
-              {row.hint && <span className="kbd">{row.hint}</span>}
+              {row.hint && <span className="ds-sub">{row.hint}</span>}
             </div>
           ))}
         </div>

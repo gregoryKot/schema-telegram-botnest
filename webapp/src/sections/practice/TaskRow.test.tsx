@@ -40,6 +40,15 @@ describe('taskRowState', () => {
 });
 
 describe('TaskRow', () => {
+  it('compact: шеврон вместо текста cta, клик по строке открывает задание', () => {
+    const onOpen = vi.fn();
+    const { container } = render(<TaskRow task={task({ type: 'belief_check' })} cta="начать →" compact onOpen={onOpen} />);
+    expect(container.querySelector('.ds-chev')).toBeTruthy();
+    expect(screen.queryByText('начать →')).toBeNull();
+    fireEvent.click(screen.getByText('Позвонить другу'));
+    expect(onOpen).toHaveBeenCalledTimes(1);
+  });
+
   it('«Готово» вызывает onComplete и не открывает строку', async () => {
     const onOpen = vi.fn();
     const onComplete = vi.fn().mockResolvedValue(undefined);

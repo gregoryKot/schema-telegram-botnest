@@ -5,8 +5,8 @@
    шапка листа и «Назад», строка-переход, раскрывашка, пустое состояние (#906).
    Экранный компонент не пишет свои цвета/радиусы инлайном — берёт класс.
 
-   Тона: элемент задаёт `--h` (оттенок oklch, см. webapp/src/lib/tone.ts —
-   там же соответствие домен/группа режимов/тип записи → hue), класс .tone-*
+   Тона: элемент задаёт `--h` (оттенок oklch; таблица hue сущностей — в
+   shared/src/theme/entityHue.ts, webapp/src/lib/tone.ts её реэкспортирует), класс .tone-*
    считает цвет. L/C общие на всю гамму — домены различаются только оттенком.
    ───────────────────────────────────────────────────────────────────────── */
 
@@ -72,6 +72,7 @@
   border-radius: 20px; padding: 22px 24px; box-sizing: border-box; min-width: 0;
 }
 .ds-card--row { border-radius: 16px; padding: 16px 20px; }
+.ds-card--nav { display: flex; align-items: center; gap: 12px; min-height: 44px; box-sizing: border-box; width: 100%; text-align: left; font: inherit; color: inherit; text-decoration: none; }
 .ds-card--flush { padding: 0; overflow: hidden; }
 .ds-card--hover { cursor: pointer; transition: border-color .12s, box-shadow .12s; }
 .ds-card--hover:hover { border-color: var(--line-hover); box-shadow: 0 12px 30px -18px rgba(60, 40, 20, .4); }
@@ -81,6 +82,10 @@
 .ds-card--accent .ds-label, .ds-card--accent .ds-sub, .ds-card--accent .ds-link { color: var(--on-ink); }
 .ds-card--accent .ds-label, .ds-card--accent .ds-sub { opacity: .85; }
 .ds-card--warn { background: var(--warn-bg); border-color: var(--warn-bg); color: var(--warn-ink); }
+/* Кризисный вход: tint D1 (hue 28), без заливки --err. */
+.ds-card--crisis { --h: 28; background: oklch(0.94 0.035 var(--h)); border-color: oklch(0.88 0.05 var(--h)); color: oklch(0.38 0.1 var(--h)); }
+.ds-card--crisis .ds-list-title, .ds-card--crisis .ds-sub, .ds-card--crisis .ds-chev { color: inherit; }
+.ds-card--crisis .ds-sub { opacity: .85; }
 .ds-list-row {
   display: grid; align-items: center; gap: 14px;
   padding: 14px 18px; border-bottom: 1px solid var(--paper-sunk);
@@ -89,10 +94,17 @@
 .ds-list-row--hover { cursor: pointer; }
 .ds-list-row--hover:hover { background: color-mix(in srgb, var(--paper-tint) 60%, var(--surface)); }
 .ds-list-title { font-size: 14px; font-weight: 600; color: var(--text); }
+.ds-list-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1 1 auto; }
+.ds-list-row--nav { grid-template-columns: minmax(0, 1fr) auto; min-height: 44px; box-sizing: border-box; }
+.ds-list-row--inset { padding-left: 0; padding-right: 0; }
+.ds-list-row--inset.ds-list-row--hover:hover { background: none; }
+.ds-list-row--inset.ds-list-row--hover:hover .ds-list-title { color: var(--accent); }
+button.ds-list-row, a.ds-list-row { width: 100%; box-sizing: border-box; border: none; border-bottom: 1px solid var(--paper-sunk); background: none; font: inherit; color: inherit; text-align: left; text-decoration: none; }
 /* Правый слот строки-перехода: один глиф «›». Пустой <span class="ds-chev" aria-hidden>
    получает глиф из ::before; span с «›» внутри (старая разметка) рисуется так же. */
-.ds-chev { flex-shrink: 0; margin-left: auto; font-size: 18px; line-height: 1; color: var(--text-faint); }
+.ds-chev { flex-shrink: 0; margin-left: auto; font-size: 18px; line-height: 1; color: var(--text-faint); transition: transform .15s; }
 .ds-chev:empty::before { content: '›'; }
+[aria-expanded='true'] > .ds-chev { transform: rotate(90deg); }
 
 /* ── Раскрывашка ─────────────────────────────────────────────────────────── */
 /* <div class="ds-fold"><button class="ds-fold-btn" aria-expanded="…"><span class="ds-label">…</span>
@@ -164,10 +176,16 @@
   background: transparent; color: var(--text-muted);
 }
 .ds-seg-btn.is-active { background: var(--ink); color: var(--on-ink); }
+.ds-seg-btn .ds-count { margin-left: 4px; padding: 0; background: none; color: inherit; opacity: .7; font-size: 12px; }
+.ds-seg--full { display: flex; width: 100%; box-sizing: border-box; }
+.ds-seg--full > .ds-seg-btn { flex: 1 1 0; min-width: 0; padding-left: 8px; padding-right: 8px; overflow: hidden; text-overflow: ellipsis; }
+.ds-page > .ds-seg { align-self: flex-start; }
 
 /* ── Чипы, бейджи, аватары ───────────────────────────────────────────────── */
 .ds-chip { display: inline-flex; align-items: center; gap: 6px; border-radius: 8px; padding: 5px 10px; font-size: 12.5px; font-weight: 500; }
 .ds-chip--sm { font-size: 11px; font-weight: 700; padding: 4px 9px; }
+.ds-chip--toggle { min-height: 36px; box-sizing: border-box; border: 1px solid var(--line); background: var(--paper-tint); color: var(--text-muted); font-family: inherit; cursor: pointer; }
+.ds-chip--toggle.is-on { background: oklch(0.94 0.035 var(--h)); color: oklch(0.38 0.1 var(--h)); border-color: oklch(0.58 0.12 var(--h)); font-weight: 600; }
 .ds-badge { display: inline-block; border-radius: 10px; padding: 3px 10px; font-size: 12px; font-weight: 600; white-space: nowrap; background: var(--paper-sunk); color: var(--text-sub); }
 .ds-badge--ok { background: var(--ok-bg); color: var(--ok-ink); }
 .ds-badge--warn { background: var(--warn-bg); color: var(--warn-ink); }
@@ -201,6 +219,8 @@
   padding: 12px 14px; font: 14px/1.5 var(--sans); color: var(--text); box-sizing: border-box; width: 100%;
 }
 .ds-textarea { resize: none; }
+.ds-input--search { height: 40px; padding: 0 16px; border-radius: 20px; }
+.ds-input--sm { width: auto; height: 40px; padding: 0 12px; }
 .ds-input:focus, .ds-textarea:focus { outline: none; border-color: var(--accent); }
 .ds-input::placeholder, .ds-textarea::placeholder { color: var(--text-ghost); }
 
@@ -234,4 +254,12 @@
   .ds-btn--icon { width: 44px; height: 44px; }
   .ds-seg-btn { min-height: 44px; }
   .ds-btn--sm { height: 44px; } /* тап 44 у всех малых кнопок на телефоне */
+  .ds-seg--scroll { display: flex; width: 100%; box-sizing: border-box; -webkit-mask-image: linear-gradient(to right, black calc(100% - 24px), transparent); mask-image: linear-gradient(to right, black calc(100% - 24px), transparent); }
+  .ds-seg--scroll > .ds-seg-btn { flex: 0 0 auto; }
+  .ds-seg--scroll::after { content: ''; flex: 0 0 20px; }
+  .ds-input, .ds-textarea { font-size: 16px; } /* iOS Safari увеличивает экран при фокусе на поле мельче 16px */
+  .ds-input--search { height: 44px; border-radius: 22px; }
+  .ds-input--sm { height: 44px; }
+  .ds-chip--toggle { min-height: 44px; }
+  .ds-link { min-height: 44px; display: inline-flex; align-items: center; }
 }

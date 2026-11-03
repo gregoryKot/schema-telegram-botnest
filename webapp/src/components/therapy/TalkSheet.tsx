@@ -23,9 +23,12 @@ export function TalkSheet({ place, trigger, onClose }: Props) {
 
   return (
     <div className="u-sheet cw-sheet" role="dialog" aria-modal="true" aria-label={t.sheetEyebrow}>
+      <div className="ds-sheet-head cw-head">
+        <button type="button" className="ds-back" onClick={goBack}><span aria-hidden="true">←</span>{t.sheetBack}</button>
+      </div>
       <div className="cw-inner">
         <div className="ds-eyebrow">{hasTherapist ? t.sheetTherapistEyebrow : t.sheetEyebrow}</div>
-        <h1 className="ds-h1 cw-h1">{hasTherapist ? t.sheetTherapistTitle : t.sheetTitle}</h1>
+        <h1 className="ds-h1">{hasTherapist ? t.sheetTherapistTitle : t.sheetTitle}</h1>
         {hasTherapist ? (
           <p className="cw-lead">{t.sheetTherapistP}</p>
         ) : (
@@ -38,7 +41,7 @@ export function TalkSheet({ place, trigger, onClose }: Props) {
         <div className="th-sheet-acts">
           {hasTherapist ? (
             <ExternalLink
-              className="ds-btn th-btn"
+              className="ds-btn ds-btn--lg"
               href={contact.url}
               onClick={() => trackTherapyNudge(place, 'write', trigger)}
             >
@@ -47,14 +50,14 @@ export function TalkSheet({ place, trigger, onClose }: Props) {
           ) : (
             <>
               <ExternalLink
-                className="ds-btn th-btn"
+                className="ds-btn ds-btn--lg"
                 href={bookingUrl(place)}
                 onClick={() => trackTherapyNudge(place, 'book', trigger)}
               >
                 {t.sheetBook}
               </ExternalLink>
               <ExternalLink
-                className="ds-btn th-btn th-btn--ghost"
+                className="ds-btn ds-btn--secondary ds-btn--lg"
                 href={telegramUrl()}
                 onClick={() => trackTherapyNudge(place, 'write', trigger)}
               >
@@ -62,9 +65,6 @@ export function TalkSheet({ place, trigger, onClose }: Props) {
               </ExternalLink>
             </>
           )}
-          <button type="button" className="th-back" onClick={goBack}>
-            {t.sheetBack}
-          </button>
         </div>
       </div>
     </div>

@@ -6,6 +6,18 @@ import { describe, it, expect } from 'vitest';
 import { render, renderHook, screen, within } from '@testing-library/react';
 import { ConceptDigest, useConceptDigest } from './ConceptDigest';
 import type { DigestRow } from './conceptDigest';
+import { ConceptSkinContext, type ConceptSkin } from './conceptSkin';
+
+const SKIN: ConceptSkin = {
+  seg: { group: 'sk-seg', btn: 'sk-seg-btn' },
+  chip: 'sk-chip',
+  tag: 'sk-tag',
+  dot: 'sk-dot',
+  label: 'sk-label',
+  link: 'sk-link',
+  card: 'sk-card',
+  fold: { root: 'f-root', btn: 'f-btn', chev: 'f-chev', body: 'f-body' },
+};
 
 const ROWS: DigestRow[] = [
   { key: 'schemas', label: 'Схемы', text: 'Неуспешность' },
@@ -26,6 +38,25 @@ describe('ConceptDigest', () => {
       .map((el) => el.textContent);
     expect(values).toEqual(['Неуспешность', 'Снизить тревогу']);
     expect(within(card).queryByRole('button')).toBeNull();
+  });
+
+  it('со skin: классы карточки и ярлыков, инлайн-вида нет', () => {
+    render(
+      <ConceptSkinContext.Provider value={SKIN}>
+        <ConceptDigest rows={ROWS} />
+      </ConceptSkinContext.Provider>,
+    );
+    const card = screen.getByRole('region', { name: 'Коротко' });
+    expect(card.className).toBe('sk-card');
+    expect(card.getAttribute('style')).toBeNull();
+    expect(screen.getByRole('heading', { name: 'Коротко' }).className).toBe(
+      'sk-label',
+    );
+    for (const t of within(card).getAllByRole('term'))
+      expect(t.className).toBe('sk-label');
+    const value = within(card).getAllByRole('definition')[0];
+    expect(value.style.fontSize).toBe('');
+    expect(value.style.color).toBe('');
   });
 
   it('пустой список строк — карточки нет', () => {

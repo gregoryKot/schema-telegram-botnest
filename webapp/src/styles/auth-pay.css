@@ -2,7 +2,8 @@
    Страницы живут вне AppShell (и на визитке практики): корень сам красит экран.
    Шапка «← На главную» — общая .ds-sheet-head/.ds-back, заголовок — ds-eyebrow +
    ds-h1 + ds-sub слева, страница прижата к верху, кнопки — ds-btn (#906).
-   Суммы доната (.ap-amount) и поля (.ap-input, .ap-field) — волна 2. */
+   Суммы доната — ds-seg, поля доната — ds-input (#906). .ap-field на тёмной
+   панели подписки — волна 3. */
 .ap-page {
   flex: 1; width: 100%; box-sizing: border-box; min-height: 100dvh; display: flex; flex-direction: column;
   background: var(--bg); color: var(--text); font-family: var(--sans);
@@ -73,14 +74,6 @@
 /* ── Донат ───────────────────────────────────────────────────────────────── */
 /* Единственная модальная карточка r28 по документу; остальные радиусы — шкала ds-*. */
 .ap-donate { max-width: 560px; border-radius: 28px; padding: 32px; display: flex; flex-direction: column; gap: 18px; }
-.ap-amounts { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
-.ap-amount {
-  height: 56px; border-radius: 14px; border: 1px solid var(--line-input); background: var(--bg); color: var(--text);
-  font: 700 16px var(--sans); cursor: pointer; white-space: nowrap;
-}
-.ap-amount:hover { border-color: var(--line-hover); }
-.ap-amount.is-on { background: var(--ink); color: var(--on-ink); border-color: var(--ink); }
-.ap-input { height: 52px; border-radius: 14px; padding: 0 18px; font-size: 16px; background: var(--bg); }
 
 /* ── Мобильный ───────────────────────────────────────────────────────────── */
 @media (max-width: 767px) {
@@ -99,6 +92,4 @@
   .ap-consent { font-size: 12px; }
   .ap-cta { margin-top: auto; }
   .ap-donate { padding: 20px 16px; gap: 14px; }
-  .ap-amounts { grid-template-columns: 1fr 1fr; }
-  .ap-amount { height: 52px; font-size: 15px; }
 }

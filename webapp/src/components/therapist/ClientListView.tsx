@@ -107,7 +107,7 @@ export function ClientListView({
           </div>
           {listTab === 'clients' && (
             <input value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
-                   placeholder="Найти клиента" aria-label="Найти клиента" className="tc-search" />
+                   placeholder="Найти клиента" aria-label="Найти клиента" className="ds-input ds-input--search tc-search" />
           )}
         </div>
 

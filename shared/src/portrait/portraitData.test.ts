@@ -6,6 +6,7 @@
 // Группировка — по пяти базовым потребностям (не по клиническим доменам
 // схема-терапии, см. комментарий в portraitData.ts).
 import { describe, it, expect } from 'vitest';
+import { NEED_HUE, toneHex } from '../theme/entityHue';
 import {
   buildPortrait,
   hasPortraitData,
@@ -63,7 +64,7 @@ describe('buildPortrait — потребности: порядок, подпис
     const attachment = p.needs.find((n) => n.id === 'attachment')!;
     expect(attachment.label).toBe('Привязанность');
     expect(attachment.emoji).toBe('🤝');
-    expect(attachment.color).toBe('#ff6b9d');
+    expect(attachment.color).toBe(toneHex(NEED_HUE.attachment));
   });
 
   it('у каждой из пяти потребностей есть непустая подпись и эмодзи — реестры не разъехались', () => {

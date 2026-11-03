@@ -4,7 +4,10 @@ import {
   getModeById,
   getSchemaById,
 } from '../../schemaTherapy/schemaTherapyData';
-import { colorMix } from '../../utils/colorMix';
+import { DOMAIN_HUE, MODE_GROUP_HUE } from '../../theme/entityHue';
+import { hueVar } from './conceptChipStyle';
+import { EYEBROW, LINK_BTN, MODE_NAME, schemaTag } from './conceptInlineStyles';
+import { useConceptSkin } from './conceptSkin';
 import { findModeLink, normalizeModeLinks } from './modeLinks';
 
 /**
@@ -15,16 +18,6 @@ import { findModeLink, normalizeModeLinks } from './modeLinks';
  * компонент»); без связей — честное «схемы не привязаны» и ссылка туда.
  * Режим с неизвестным id пропускается, имя — alias из связи, иначе из реестра.
  */
-const EYEBROW = {
-  fontSize: 11,
-  fontWeight: 700,
-  letterSpacing: '0.07em',
-  textTransform: 'uppercase',
-  color: 'var(--text-sub)',
-  marginBottom: 'var(--space-6)',
-  paddingLeft: 2,
-} as const;
-
 export function ModeSchemasList({
   activeModeIds,
   modeLinks,
@@ -34,6 +27,7 @@ export function ModeSchemasList({
   modeLinks: ConceptModeLink[] | undefined;
   onGoToGraph?: () => void;
 }) {
+  const skin = useConceptSkin();
   if (activeModeIds.length === 0) return null;
   const links = normalizeModeLinks(modeLinks);
   const rows = activeModeIds.flatMap((id) => {
@@ -49,7 +43,12 @@ export function ModeSchemasList({
 
   return (
     <div style={{ marginTop: 'var(--space-8)' }}>
-      <div style={EYEBROW}>Схемы за режимами</div>
+      <div
+        className={skin?.label}
+        style={skin ? { marginBottom: 'var(--space-6)' } : EYEBROW}
+      >
+        Схемы за режимами
+      </div>
       <ul
         style={{
           listStyle: 'none',
@@ -72,29 +71,27 @@ export function ModeSchemasList({
               lineHeight: 1.4,
             }}
           >
-            <span
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 6,
-                fontWeight: 600,
-                color: 'var(--text)',
-              }}
-            >
-              <IdentityDot color={mode.groupColor} size={7} />
+            <span style={MODE_NAME}>
+              {skin ? (
+                <span
+                  className={skin.dot}
+                  style={hueVar(MODE_GROUP_HUE[mode.groupId])}
+                />
+              ) : (
+                <IdentityDot color={mode.groupColor} size={7} />
+              )}
               {label}
             </span>
             {schemas.length > 0 ? (
               schemas.map((s) => (
                 <span
                   key={s.id}
-                  style={{
-                    padding: '2px 8px',
-                    borderRadius: 'var(--r-20)',
-                    fontSize: 12,
-                    color: 'var(--text)',
-                    background: colorMix(s.domainColor, 14),
-                  }}
+                  className={skin?.tag}
+                  style={
+                    skin
+                      ? hueVar(DOMAIN_HUE[s.domainId])
+                      : schemaTag(s.domainColor)
+                  }
                 >
                   {s.name}
                 </span>
@@ -108,16 +105,8 @@ export function ModeSchemasList({
                   <button
                     type="button"
                     onClick={onGoToGraph}
-                    style={{
-                      minHeight: 44,
-                      padding: '0 var(--space-6)',
-                      border: 'none',
-                      background: 'transparent',
-                      color: 'var(--accent)',
-                      fontSize: 13,
-                      cursor: 'pointer',
-                      textDecoration: 'underline',
-                    }}
+                    className={skin?.link}
+                    style={skin ? undefined : LINK_BTN}
                   >
                     привязать в виде «Схема»
                   </button>

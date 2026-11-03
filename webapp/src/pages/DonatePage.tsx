@@ -38,13 +38,13 @@ export function DonatePage() {
         </div>
         {ret !== 'ok' && (
           <div className="ds-card ap-donate">
-            <div className="ap-amounts">
+            <div className="ds-seg ds-seg--full" role="group" aria-label="Сумма">
               {PRESETS.map((p) => (
-                <button key={p} type="button" aria-pressed={amount === p} onClick={() => setAmount(p)} className={`ap-amount${amount === p ? ' is-on' : ''}`}>{p} ₽</button>
+                <button key={p} type="button" aria-pressed={amount === p} onClick={() => setAmount(p)} className={`ds-seg-btn${amount === p ? ' is-active' : ''}`}>{p} ₽</button>
               ))}
             </div>
-            <input type="number" className="ym-disable-keys ds-input ap-input" min={10} max={100000} value={amount} onChange={(e) => setAmount(Math.max(0, Math.round(Number(e.target.value))))} placeholder="Своя сумма, ₽" />
-            <input type="email" className="ym-disable-keys ds-input ap-input" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email для чека (необязательно)" />
+            <input type="number" className="ym-disable-keys ds-input" min={10} max={100000} value={amount} onChange={(e) => setAmount(Math.max(0, Math.round(Number(e.target.value))))} placeholder="Своя сумма, ₽" />
+            <input type="email" className="ym-disable-keys ds-input" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email для чека (необязательно)" />
             <input type="text" tabIndex={-1} autoComplete="off" value={website} onChange={(e) => setWebsite(e.target.value)} aria-hidden="true" className="ap-honey" />
             {(status === 'error' || status === 'unavailable') && <p className="ap-err" role="alert">{status === 'unavailable' ? 'Оплата сейчас недоступна: сбой на стороне сайта, о нём уже знают. Повторять бесполезно, лучше вернуться позже.' : 'Не получилось. Попробовать ещё раз.'}</p>}
             <button type="button" onClick={submit} disabled={status === 'loading' || amount < 10} className="ds-btn ds-btn--accent ds-btn--lg">
