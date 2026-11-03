@@ -26,7 +26,13 @@ import { stripComments } from './gate-strip-comments.mjs';
 const ROOT = join(import.meta.dirname, '..');
 
 // Тексты продукта: бэкенд (бот, уведомления, письма), оба фронтенда, shared, игра.
-const SCAN_DIRS = ['src', 'webapp/src', 'schema-miniapp/src', 'shared/src', 'game/src'];
+const SCAN_DIRS = [
+  'src',
+  'webapp/src',
+  'schema-miniapp/src',
+  'shared/src',
+  'game/src',
+];
 const EXT_RE = /\.(ts|tsx|js|mjs)$/;
 const SKIP_FILE_RE = /\.(spec|test)\.(ts|tsx|js|mjs)$|\.d\.ts$/;
 // Инфраструктура тестов: фикстуры и хелперы, пользователю не показываются.
@@ -106,7 +112,9 @@ function main() {
     process.exit(1);
   }
 
-  console.log(`✓ орфография видимых строк: ошибок нет (${files.length} файлов).`);
+  console.log(
+    `✓ орфография видимых строк: ошибок нет (${files.length} файлов).`,
+  );
 }
 
 if (resolve(process.argv[1] ?? '') === fileURLToPath(import.meta.url)) main();
