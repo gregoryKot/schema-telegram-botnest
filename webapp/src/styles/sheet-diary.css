@@ -147,8 +147,8 @@
 .sd-doubt-check { border-radius: 10px; padding: 8px 12px; font-size: 13px; line-height: 1.5; margin-bottom: 6px; }
 .sd-doubt-btn { width: 100%; }
 .sd-doubt-keep { margin-top: 20px; }
-.sd-explainer-card { line-height: 1.65; }
-.sd-explainer-why { margin-top: 8px; }
+.sd-explainer-card { font-size: 14px; line-height: 1.65; }
+.sd-explainer-why { margin-top: 8px; font-size: 13px; }
 .sd-banner { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; border-color: var(--err); font-size: 13px; line-height: 1.5; }
 
 /* ── Заметка, кризисная карточка, шаринг, «Мой путь» ──────────────────── */

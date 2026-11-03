@@ -47,6 +47,10 @@ describe('Записи и история', () => {
     }
     expect(selectors(sheetDiary)).not.toContain('.sd-links .ds-link');
   });
+  it('карточки-объяснялки пустого дневника — 14px, не кегль карточки по умолчанию', () => {
+    expect(sheetDiary).toMatch(/\.sd-explainer-card\s*\{[^}]*font-size:\s*14px/);
+    expect(sheetDiary).toMatch(/\.sd-explainer-why\s*\{[^}]*font-size:\s*13px/);
+  });
   it('пустые состояния дневника и истории без курсива', () => {
     for (const [sels, body] of rulesOf(sheetDiary)) {
       if (sels.some((s) => /\.sd-(explainer|empty)/.test(s))) expect(body).not.toMatch(/font-style:\s*italic/);

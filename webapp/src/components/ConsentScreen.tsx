@@ -66,7 +66,7 @@ export function ConsentScreen({ onAccept, failed }: Props) {
           ? CONSENT_PRIVACY_PARAGRAPHS.map((p) => <p key={p}>{p}</p>)
           : <p>{CONSENT_NOT_THERAPY_TEXT}</p>}
         {isPrivacy && (
-          <a className="ds-link" href="/privacy" target="_blank" rel="noopener noreferrer">
+          <a className="ds-link ds-link--inline" href="/privacy" target="_blank" rel="noopener noreferrer">
             Политика конфиденциальности →
           </a>
         )}

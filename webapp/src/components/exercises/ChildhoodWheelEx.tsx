@@ -53,7 +53,7 @@ export function ChildhoodWheelEx({ onBack, onSaved, onOpenSchemas }: Props) {
       {state.status === 'error' ? (
         <div role="alert" className="ex2-err">
           Не удалось загрузить сохранённый результат.{' '}
-          <button type="button" className="ds-link" onClick={retry}>
+          <button type="button" className="ds-link ds-link--inline" onClick={retry}>
             Повторить
           </button>
         </div>

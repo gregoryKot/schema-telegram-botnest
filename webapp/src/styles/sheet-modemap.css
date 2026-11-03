@@ -227,4 +227,7 @@
   }
   .mm2-center { height: auto; min-height: 100%; padding: 24px 16px; }
   .mm2-item { min-height: 44px; } /* пункт общего меню Dropdown — тап-цель 44 (#906) */
+  /* Поля холста: локальные 12.5–13px перебивали общие 16px, а iOS увеличивает экран при фокусе на поле мельче 16px. */
+  .mm2-pal-search .ds-input, .mm2-add-form .ds-input, .mm2-panel .ds-input, .mm2-panel .ds-textarea, .mm2-panel select.ds-input,
+  .ds-input.mm2-add-emoji, .ds-input.mm2-lane-input { font-size: 16px; }
 }

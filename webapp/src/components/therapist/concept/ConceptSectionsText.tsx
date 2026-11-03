@@ -72,7 +72,7 @@ export function ConceptNeeds({ value, onChange, placeholder }: FieldProps) {
 export function ConceptTriggers({ value, onChange, placeholder }: FieldProps) {
   return (
     <div className="ds-card tcp-trig">
-      <div className="tcp-tags">
+      <div className="tcp-tags" style={hueStyle(undefined)}>
         {TRIGGER_TAGS.map((t) => (
           <button
             key={t}

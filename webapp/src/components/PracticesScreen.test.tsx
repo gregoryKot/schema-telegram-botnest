@@ -226,7 +226,7 @@ describe('PracticesScreen — кризисная детекция поля «д�
 describe('PracticesScreen — ты/вы', () => {
   it('форма «ты»: подсказка про трекер обращается на «ты»', async () => {
     renderScreen('ty');
-    expect(await screen.findByText('Открой трекер →')).toBeTruthy();
+    expect((await screen.findByText('Открой трекер →')).className).toContain('ds-link--inline');
   });
 
   it('форма «вы»: подсказка про трекер обращается на «вы», без остаточного «ты»', async () => {

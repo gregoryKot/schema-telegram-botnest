@@ -94,6 +94,7 @@
 .st-form { display: flex; flex-direction: column; gap: 10px; }
 
 @media (max-width: 767px) {
+  .ds-input.st-code--center { font-size: 16px; } /* iOS не увеличивает экран при фокусе (#906) */
   .st-overlay { padding-top: var(--safe-top); } /* статус-бар установленного приложения (#902) */
   .st-inner { padding: 16px 16px 80px; gap: 16px; }
 }

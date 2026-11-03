@@ -183,7 +183,8 @@ describe('cabinet.css: примитивы волны 2 (#906)', () => {
     expect(decls(top, '.ds-seg--full')).toContain('width: 100%');
     expect(decls(top, '.ds-seg--full > .ds-seg-btn')).toContain('flex: 1 1 0');
     expect(top).not.toContain('.ds-seg--scroll');
-    expect(decls(phone, '.ds-seg--scroll')).toContain('mask-image');
+    expect(decls(phone, '.ds-seg--scroll')).not.toContain('mask-image');
+    expect(decls(top, '.ds-seg-btn .ds-count')).not.toContain('opacity');
     expect(decls(phone, '.ds-seg--scroll > .ds-seg-btn')).toContain('flex: 0 0 auto');
     const count = decls(top, '.ds-seg-btn .ds-count');
     expect(count).toContain('background: none');
@@ -227,5 +228,11 @@ describe('cabinet.css: примитивы волны 2 (#906)', () => {
     expect(decls(phone, '.ds-link')).toContain('min-height: 44px');
     expect(decls(top, '.ds-link')).not.toContain('min-height');
     expect(css.match(/@media \(max-width: 767px\)/g)).toHaveLength(1);
+  });
+  it('.ds-link--inline: объявлен один раз вне медиа, на телефоне остаётся в строке текста', () => {
+    expect(declaredTimes('.ds-link--inline')).toBe(1);
+    expect(decls(top, '.ds-link--inline')).toContain('display: inline');
+    expect(decls(phone, '.ds-link--inline')).toContain('display: inline');
+    expect(decls(phone, '.ds-link--inline')).toContain('min-height: 0');
   });
 });
