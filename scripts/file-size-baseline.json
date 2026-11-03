@@ -1031,7 +1031,7 @@
   "shared/src/utils/tyFormsSweep.ts": 19,
   "shared/src/utils/useBlockOrder.ts": 66,
   "shared/src/utils/useCopyToClipboard.ts": 55,
-  "shared/src/utils/useSingleFlight.ts": 25,
+  "shared/src/utils/useSingleFlight.ts": 26,
   "shared/src/warmWords/collectWarmWords.ts": 79,
   "shared/src/warmWords/useWarmWords.ts": 64,
   "shared/vitest.config.ts": 24,

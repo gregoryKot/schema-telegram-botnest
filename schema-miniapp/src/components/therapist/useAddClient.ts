@@ -104,8 +104,8 @@ export function useAddClient({ setClients }: Params) {
     inviteInputRef,
     pending,
     openAddMode,
-    createInvite: once(createInvite),
+    createInvite: () => once(createInvite),
     copyInvite,
-    addVirtualClient: once(addVirtualClient),
+    addVirtualClient: () => once(addVirtualClient),
   };
 }

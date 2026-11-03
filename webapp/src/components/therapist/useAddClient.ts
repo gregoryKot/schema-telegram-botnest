@@ -81,6 +81,6 @@ export function useAddClient({ setClients }: Params) {
     name, setName, withInvite, setWithInvite, open, setOpen,
     created, submitting, error, copied, copyFailed, valid,
     inputRef, pending,
-    submit: once(submit), reset: () => reset(), close: () => reset(false), copyInvite,
+    submit: () => once(submit), reset: () => reset(), close: () => reset(false), copyInvite,
   };
 }

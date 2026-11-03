@@ -175,9 +175,9 @@ describe('ConceptSheet — экспорт', () => {
         detail={makeDetail({ exportEmpty: true, handleExport })}
       />,
     );
-    const btn = screen.getByRole('button', {
+    const btn = screen.getByRole<HTMLButtonElement>('button', {
       name: 'В концепте пока пусто — экспортировать нечего',
-    }) as HTMLButtonElement;
+    });
     expect(btn.disabled).toBe(true);
     fireEvent.click(btn);
     expect(handleExport).not.toHaveBeenCalled();

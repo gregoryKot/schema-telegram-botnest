@@ -10,12 +10,11 @@ describe('useSingleFlight', () => {
     let resolve!: (v: string) => void;
     const fn = vi.fn(() => new Promise<string>((r) => (resolve = r)));
     const { result } = renderHook(() => useSingleFlight());
-    const run = result.current(fn);
     let first!: Promise<string | undefined>;
     let second!: Promise<string | undefined>;
     act(() => {
-      first = run();
-      second = run();
+      first = result.current(fn);
+      second = result.current(fn);
     });
     expect(fn).toHaveBeenCalledTimes(1);
     await act(async () => resolve('готово'));
@@ -30,15 +29,15 @@ describe('useSingleFlight', () => {
     const { result } = renderHook(() => useSingleFlight());
     let pending!: Promise<void | undefined>;
     act(() => {
-      pending = result.current(a)();
-      void result.current(b)();
+      pending = result.current(a);
+      void result.current(b);
     });
     expect(b).not.toHaveBeenCalled();
     await act(async () => {
       resolve();
       await pending;
     });
-    await act(() => result.current(b)());
+    await act(() => result.current(b));
     expect(b).toHaveBeenCalledTimes(1);
   });
 
@@ -48,15 +47,9 @@ describe('useSingleFlight', () => {
       .mockRejectedValueOnce(new Error('offline'))
       .mockResolvedValueOnce('ok');
     const { result } = renderHook(() => useSingleFlight());
-    const run = result.current(fn as () => Promise<string>);
+    const run = () => result.current(fn as () => Promise<string>);
     await expect(run()).rejects.toThrow('offline');
     await expect(run()).resolves.toBe('ok');
     expect(fn).toHaveBeenCalledTimes(2);
-  });
-
-  it('аргументы доходят до действия', async () => {
-    const fn = vi.fn((x: number, y: string) => Promise.resolve(`${x}${y}`));
-    const { result } = renderHook(() => useSingleFlight());
-    await expect(result.current(fn)(1, 'а')).resolves.toBe('1а');
   });
 });
