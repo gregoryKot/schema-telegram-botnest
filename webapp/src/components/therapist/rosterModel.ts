@@ -73,9 +73,9 @@ export function clientCaption(c: TherapyClientSummary): string | null {
   return c.streak > 0 ? `${activity} · стрик ${c.streak} дн.` : activity;
 }
 
-/** Статус карточки: клиент в боте (ok) или оффлайн-карточка без бота. */
+/** Статус карточки: клиент в боте (ok) или офлайн-карточка без бота. */
 export function clientStatus(c: TherapyClientSummary): { label: string; inBot: boolean } {
-  return isVirtualClient(c) ? { label: 'оффлайн', inBot: false } : { label: 'в боте', inBot: true };
+  return isVirtualClient(c) ? { label: 'офлайн', inBot: false } : { label: 'в боте', inBot: true };
 }
 
 export interface DomainSegment { domainId: string; count: number }

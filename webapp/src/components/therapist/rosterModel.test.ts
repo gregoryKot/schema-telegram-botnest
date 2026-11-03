@@ -241,7 +241,7 @@ describe('clientStatus', () => {
     expect(clientStatus(client({}))).toEqual({ label: 'в боте', inBot: true });
   });
   it('офлайн по отрицательному id, а не по name', () => {
-    expect(clientStatus(offline())).toEqual({ label: 'оффлайн', inBot: false });
+    expect(clientStatus(offline())).toEqual({ label: 'офлайн', inBot: false });
   });
 });
 
