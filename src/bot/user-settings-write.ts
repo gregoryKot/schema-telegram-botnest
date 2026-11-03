@@ -38,6 +38,9 @@ export async function writeUserSettings(
 ): Promise<void> {
   await guardListOverwrite(prisma, userId, data);
   const enc = encryptRecord(data as Record<string, unknown>, LISTS_SCHEMA);
+  // Пояс из настроек (сайт, мини-апп, кнопки бота) — выбор человека: пояс
+  // устройства его больше не подменяет (src/bot/device-timezone.ts).
+  if (data.notifyTimezone !== undefined) enc.notifyTimezoneChosen = true;
   await prisma.user.update({ where: { id: userId }, data: enc });
 }
 

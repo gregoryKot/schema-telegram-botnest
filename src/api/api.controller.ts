@@ -4,6 +4,7 @@ import {
   Controller,
   Delete,
   Get,
+  Logger,
   Param,
   Post,
   Req,
@@ -19,6 +20,7 @@ import { TelegramAuthGuard } from './telegram-auth.guard';
 import { PrismaService } from '../prisma/prisma.service';
 import { Prisma } from '@prisma/client';
 import { AuthService } from '../auth/auth.service';
+import { TelegramScheduleService } from '../telegram/telegram.schedule.service';
 import { SaveDraftDto, UpdateNameDto, InitDto } from './dto/misc.dto';
 import { UserFlagsDto } from './dto/user-flags.dto';
 import { encryptJson, decryptJson } from '../utils/crypto';
@@ -65,7 +67,10 @@ export class ApiController {
     private readonly profileService: ProfileService,
     private readonly prisma: PrismaService,
     private readonly authService: AuthService,
+    private readonly scheduleService: TelegramScheduleService,
   ) {}
+
+  private readonly logger = new Logger(ApiController.name);
 
   // ─── Link token for mini-app users ────────────────────────────────────────
   //
@@ -199,13 +204,20 @@ export class ApiController {
     return { ok: true };
   }
 
+  // body.timezone — пояс устройства; пока человек не выбрал пояс сам, он
+  // становится поясом уведомлений, и напоминание переносится на новый час.
   @Post('init')
   async init(@Req() req: AuthRequest, @Body() body: InitDto) {
-    await this.accountService.registerUser(
+    const tzChanged = await this.accountService.registerUser(
       uid(req),
       req.telegramFirstName,
       body.timezone,
     );
+    if (tzChanged) {
+      await this.scheduleService
+        .rescheduleForUser(uid(req))
+        .catch((err) => this.logger.error('init: reschedule failed', err));
+    }
     return { ok: true };
   }
 

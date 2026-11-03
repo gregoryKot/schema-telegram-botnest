@@ -117,6 +117,28 @@ describe('BotService.updateUserSettings — запись поверх нечит
 });
 
 // Правило №4: фронтенды узнают отказ по коду из shared/src/api/unwritableError.ts.
+// Пояс, выбранный руками, больше не подменяется поясом устройства (/api/init,
+// AccountService.adoptDeviceTimezone) — признак ставит сама запись настроек,
+// через неё идут сайт, мини-апп и кнопки бота.
+describe('BotService.updateUserSettings — пояс из настроек помечается выбранным', () => {
+  it('notifyTimezone в правке → notifyTimezoneChosen: true', async () => {
+    const { db, user } = makeDb({});
+    await new BotService(db).updateUserSettings(7n, {
+      notifyTimezone: 'Europe/Moscow',
+    });
+    expect(user).toMatchObject({
+      notifyTimezone: 'Europe/Moscow',
+      notifyTimezoneChosen: true,
+    });
+  });
+
+  it('контроль: правка без пояса признак не трогает', async () => {
+    const { db, user } = makeDb({});
+    await new BotService(db).updateUserSettings(7n, { notifyLocalHour: 9 });
+    expect(user).not.toHaveProperty('notifyTimezoneChosen');
+  });
+});
+
 describe('UNWRITABLE_REASON совпадает со shared', () => {
   it('тот же машинный код в shared/src/api/unwritableError.ts', () => {
     const shared = readFileSync(

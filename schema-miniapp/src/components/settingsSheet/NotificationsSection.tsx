@@ -1,13 +1,8 @@
 import { UserSettings } from '../../api';
 import { botUrl, botHandle } from '../../utils/botConfig';
 import { Row, Toggle, RowRight, SectionHeader } from './ui';
-import {
-  TIMEZONES,
-  FREQ_LABELS,
-  pad,
-  quietLabel,
-  hourInQuiet,
-} from './constants';
+import { FREQ_LABELS, pad, quietLabel, hourInQuiet } from './constants';
+import { timezoneLabel } from '../../../../shared/src/settings/timezones';
 import { View } from './types';
 
 interface Props {
@@ -24,9 +19,7 @@ export function NotificationsSection({
   onInfo,
 }: Props) {
   const localHour = settings.notifyLocalHour;
-  const tzLabel =
-    TIMEZONES.find((t) => t.iana === settings.notifyTimezone)?.label ??
-    settings.notifyTimezone;
+  const tzLabel = timezoneLabel(settings.notifyTimezone);
 
   return (
     <div className="u-mb8">

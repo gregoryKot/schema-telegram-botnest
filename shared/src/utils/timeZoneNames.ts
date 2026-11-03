@@ -89,6 +89,16 @@ export function isValidTimeZone(tz: string): boolean {
   }
 }
 
+/** Пояс устройства (Intl); не определился — undefined, а не догадка. */
+export function deviceTimeZone(): string | undefined {
+  try {
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    return tz && isValidTimeZone(tz) ? tz : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 /** Последний сегмент IANA-идентификатора как читаемое название («Asia/Krasnoyarsk» → «Krasnoyarsk»). */
 function lastSegmentLabel(tz: string): string {
   const segment = tz.split('/').pop() ?? tz;

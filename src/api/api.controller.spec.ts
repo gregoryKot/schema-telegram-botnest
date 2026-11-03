@@ -12,6 +12,7 @@ import type { BotService } from '../bot/bot.service';
 import type { AccountService } from '../bot/account.service';
 import type { ProfileService } from '../bot/profile.service';
 import type { AuthService } from '../auth/auth.service';
+import type { TelegramScheduleService } from '../telegram/telegram.schedule.service';
 
 function makeReq(userId = 1n, extra: Record<string, unknown> = {}) {
   return { webUser: { userId }, ...extra } as any;
@@ -27,6 +28,7 @@ function makeController(
     accountService?: Partial<AccountService>;
     profileService?: Partial<ProfileService>;
     authService?: Partial<AuthService>;
+    scheduleService?: Partial<TelegramScheduleService>;
     userRows?: Record<string, unknown>[];
     draftRows?: Record<string, unknown>[];
   } = {},
@@ -50,6 +52,10 @@ function makeController(
     buildLinkToken: jest.fn().mockReturnValue('link-token-abc'),
     ...overrides.authService,
   } as unknown as AuthService;
+  const scheduleService = {
+    rescheduleForUser: jest.fn().mockResolvedValue(undefined),
+    ...overrides.scheduleService,
+  } as unknown as TelegramScheduleService;
   const userTable = createFakeTable(overrides.userRows ?? []);
   const draftTable = createFakeTable(overrides.draftRows ?? [], {
     idField: 'id',
@@ -61,9 +67,11 @@ function makeController(
     profileService,
     prisma,
     authService,
+    scheduleService,
   );
   return {
     controller,
+    scheduleService,
     botService,
     accountService,
     profileService,
@@ -303,6 +311,32 @@ describe('ApiController profile / name / init / disclaimer', () => {
       'Олег',
       'Europe/Moscow',
     );
+  });
+
+  it('init: пояс устройства сменил пояс уведомлений → напоминание перепланируется', async () => {
+    const { controller, scheduleService } = makeController({
+      accountService: { registerUser: jest.fn().mockResolvedValue(true) },
+    });
+    await controller.init(makeReq(2n), { timezone: 'Asia/Vladivostok' });
+    expect(scheduleService.rescheduleForUser).toHaveBeenCalledWith(2n);
+  });
+
+  it('init: пояс не сменился — расписание не трогается; сбой перепланирования init не роняет', async () => {
+    const same = makeController({
+      accountService: { registerUser: jest.fn().mockResolvedValue(false) },
+    });
+    await same.controller.init(makeReq(2n), { timezone: 'Europe/Moscow' });
+    expect(same.scheduleService.rescheduleForUser).not.toHaveBeenCalled();
+
+    const failing = makeController({
+      accountService: { registerUser: jest.fn().mockResolvedValue(true) },
+      scheduleService: {
+        rescheduleForUser: jest.fn().mockRejectedValue(new Error('queue down')),
+      },
+    });
+    await expect(
+      failing.controller.init(makeReq(2n), { timezone: 'Asia/Omsk' }),
+    ).resolves.toEqual({ ok: true });
   });
 
   it('disclaimer GET/POST делегируют с userId из req', async () => {
