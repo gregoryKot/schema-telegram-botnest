@@ -11,6 +11,7 @@ import { useBootstrapLoad, TODAY_DATE, TODAY_KEY } from './appShell/useBootstrap
 import { useOverlays } from './appShell/useOverlays';
 import { AppOverlays } from './appShell/AppOverlays';
 import { EntryFlows } from './appShell/EntryFlows';
+import { EntryFlowsDoneContext } from './appShell/entryQueue';
 import { AppSections } from './appShell/AppSections';
 import { AppShellSkeleton } from './appShell/AppShellSkeleton';
 import { Sidebar } from './appShell/Sidebar';
@@ -112,6 +113,7 @@ export function AppShell() {
   const [childhoodWheelPending, setChildhoodWheelPending] = useState(false);
   const [todayRefreshKey, setTodayRefreshKey] = useState(0);
   const [profileRefreshKey, setProfileRefreshKey] = useState(0);
+  const [entryDone, setEntryDone] = useState(false);
 
   // Overlay state (флаги видимости и их сеттеры — appShell/useOverlays.ts)
   const ov = useOverlays();
@@ -261,6 +263,8 @@ export function AppShell() {
           Аудит 2026-09: тот же фон оставался доступным таба/скринридеру
           сквозь открытый оверлей — AppSections получает inert=anyOverlayOpen.
         */}
+        {/* Автопоказы секций (WhySheet «Сегодня») ждут конца очереди входов — EntryFlows ниже. */}
+        <EntryFlowsDoneContext.Provider value={entryDone}>
         <AppSections
           inert={anyOverlayOpen}
           therapistMode={therapistMode}
@@ -283,6 +287,7 @@ export function AppShell() {
           helpTasksKey={helpTasksKey}
           setHelpTasksKey={setHelpTasksKey}
         />
+        </EntryFlowsDoneContext.Provider>
 
         {/* ── TrackerOverlay ── */}
         {ov.showTrackerOverlay && (
@@ -332,7 +337,7 @@ export function AppShell() {
         )}
 
         {/* Согласия и ссылки-приглашения (EntryFlows), затем шторки (AppOverlays, правило №10) */}
-        <EntryFlows ov={ov} />
+        <EntryFlows ov={ov} onDone={setEntryDone} />
         <AppOverlays
           ov={ov}
           userRole={userRole}

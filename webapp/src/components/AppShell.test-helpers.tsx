@@ -7,6 +7,7 @@ import type { ComponentProps } from 'react';
 import { render } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { AppShell } from './AppShell';
+import { useEntryFlowsDone } from './appShell/entryQueue';
 
 import type { TodaySection as TodaySectionT } from '../sections/TodaySection';
 import type { MoreSection as MoreSectionT } from '../sections/MoreSection';
@@ -45,9 +46,10 @@ function Btns({ testid, map, state }: { testid: string; map: Record<string, () =
 vi.mock('../auth/authContext', () => ({ useAuth: () => ({ logout: mockLogout }) }));
 export const mockLogout = vi.fn();
 
+// state — конец очереди входов (EntryFlows): по нему секция открывает автопоказы.
 vi.mock('../sections/TodaySection', () => ({
   TodaySection: (p: ComponentProps<typeof TodaySectionT>) => (
-    <Btns testid="today-section" map={{
+    <Btns testid="today-section" state={{ entryDone: useEntryFlowsDone() }} map={{
       navigate: () => p.onNavigate('diary'),
       tracker: () => p.onOpenTracker(),
       schema: () => p.onOpenSchema({ startTest: true, tab: 'schemas', highlight: 'abandonment' }),
