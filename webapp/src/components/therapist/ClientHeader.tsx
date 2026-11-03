@@ -4,7 +4,7 @@ import { ClientHeaderBadges } from './ClientHeaderBadges';
 import { ClientHeaderMenu } from './ClientHeaderMenu';
 import { ClientQuickActions } from './ClientQuickActions';
 import { ClientTabs } from './ClientTabs';
-import { clientInitials } from './clientOverviewModel';
+import { clientInitials } from '../../../../shared/src/therapy/clientInitials';
 import type { ClientDetail } from './clientSheetTypes';
 import { ConfirmDialog } from '../ConfirmDialog';
 import { useIsMobile } from '../useIsMobile';

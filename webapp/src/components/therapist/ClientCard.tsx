@@ -2,9 +2,8 @@ import { pressable } from '../../utils/a11y';
 import type { TherapyClientSummary } from '../../api';
 import { DOMAIN_HUE, clientHue, hueStyle } from '../../lib/tone';
 import { NextSessionLine } from './NextSessionLine';
-import {
-  clientCaption, clientStatus, domainBar, meetingLabel, rosterInitials, rosterName, schemaChips,
-} from './rosterModel';
+import { clientCaption, clientStatus, domainBar, meetingLabel, rosterName, schemaChips } from './rosterModel';
+import { clientInitials } from '../../../../shared/src/therapy/clientInitials';
 
 interface Props {
   client: TherapyClientSummary;
@@ -31,7 +30,7 @@ export function ClientCard({ client, today, onOpen }: Props) {
       <div className="tc-body">
         <div className="tc-top">
           <div className="ds-avatar ds-avatar--serif tc-avatar" style={hueStyle(clientHue(client.telegramId))}>
-            {rosterInitials(name)}
+            {clientInitials(name)}
           </div>
           <div className="tc-who">
             <div className="tc-name">{name}</div>

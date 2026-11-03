@@ -1,8 +1,7 @@
 import type { TherapyClientSummary, UserId } from '../api';
 import { clientHue, hueStyle, indexLevel } from '../lib/tone';
-import {
-  activityStatus, clientName, daysSinceActive, initials, latestIndex, sessionTime, sparkPoints,
-} from './therapistTodayModel';
+import { clientInitials } from '../../../shared/src/therapy/clientInitials';
+import { activityStatus, clientName, daysSinceActive, latestIndex, sessionTime, sparkPoints } from './therapistTodayModel';
 
 interface RowProps { client: TherapyClientSummary; onOpen: (id: UserId) => void }
 
@@ -30,7 +29,7 @@ export function ActivityRow({ client, onOpen }: RowProps) {
   return (
     <button type="button" className="ds-list-row ds-list-row--hover tt-act tt-reset"
       onClick={() => onOpen(client.telegramId)}>
-      <span className="ds-avatar" style={hueStyle(clientHue(client.telegramId))}>{initials(name)}</span>
+      <span className="ds-avatar" style={hueStyle(clientHue(client.telegramId))}>{clientInitials(name)}</span>
       <span>
         <span className="tt-act-name" style={{ display: 'block' }}>{name}</span>
         <span className={`tt-act-status is-${status.tone}`} style={{ display: 'block' }}>{status.text}</span>
@@ -52,7 +51,7 @@ export function AttentionRow({ client, onOpen }: RowProps) {
   return (
     <button type="button" className="ds-card ds-card--row tt-attn tt-reset"
       onClick={() => onOpen(client.telegramId)}>
-      <span className="ds-avatar" style={hueStyle(clientHue(client.telegramId))}>{initials(name)}</span>
+      <span className="ds-avatar" style={hueStyle(clientHue(client.telegramId))}>{clientInitials(name)}</span>
       <span className="tt-attn-body">
         <span className="tt-name" style={{ display: 'block' }}>{name}</span>
         <span className="tt-row-sub" style={{ display: 'block' }}>

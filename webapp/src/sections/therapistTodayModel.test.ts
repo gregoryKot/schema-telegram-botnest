@@ -3,7 +3,7 @@ import { localDateStr } from '../../../shared/src/utils/format';
 import { forEachTimeZone } from '../../../shared/src/utils/timeZone.test-helpers';
 import type { TherapyClientSummary } from '../api';
 import {
-  activityStatus, daysSinceActive, hasSessionToday, initials, latestIndex, needsAttention,
+  activityStatus, daysSinceActive, hasSessionToday, latestIndex, needsAttention,
   sessionTime, sessionsTodaySorted, sparkPoints, todayCounts, clientName,
 } from './therapistTodayModel';
 
@@ -28,13 +28,6 @@ describe('therapistTodayModel', () => {
   it('имя: алиас важнее имени, иначе #id', () => {
     expect(clientName(c({ clientAlias: 'А', name: 'Б' }))).toBe('А');
     expect(clientName(c({ name: null }))).toBe('#1');
-  });
-
-  it('инициалы', () => {
-    expect(initials('Анна Крылова')).toBe('АК');
-    expect(initials('иван')).toBe('И');
-    expect(initials('#555')).toBe('#');
-    expect(initials('  ')).toBe('?');
   });
 
   it('daysSinceActive — значение сервера (календарь клиента), без пересчёта от «сейчас»', () => {

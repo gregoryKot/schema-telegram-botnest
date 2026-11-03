@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type { TherapyClientSummary } from '../../api';
 import { SCHEMA_DOMAINS } from '../../schemaTherapyData';
 import { forEachTimeZone } from '../../../../shared/src/utils/timeZone.test-helpers';
-import { filterRoster, sortRoster, meetingLabel, clientCaption, clientStatus, domainBar, schemaChips, rosterName, rosterInitials } from './rosterModel';
+import { filterRoster, sortRoster, meetingLabel, clientCaption, clientStatus, domainBar, schemaChips, rosterName } from './rosterModel';
 
 const TODAY = '2026-10-03';
 
@@ -267,14 +267,9 @@ describe('domainBar / schemaChips', () => {
   });
 });
 
-describe('rosterName / rosterInitials', () => {
+describe('rosterName', () => {
   it('алиас важнее имени, без обоих — ID', () => {
     expect(rosterName(client({ clientAlias: 'А.К.', name: 'Аня' }))).toBe('А.К.');
     expect(rosterName(client({ name: null }))).toBe('ID 1');
-  });
-  it('инициалы: две буквы, пустое имя — «?»', () => {
-    expect(rosterInitials('анна к.')).toBe('АК');
-    expect(rosterInitials('Борис')).toBe('Б');
-    expect(rosterInitials('  ')).toBe('?');
   });
 });

@@ -102,9 +102,3 @@ export function schemaChips(schemaIds: string[]): SchemaChip[] {
 /** Имя клиента для карточки: алиас → имя → ID. */
 export const rosterName = (c: TherapyClientSummary): string =>
   c.clientAlias ?? c.name ?? `ID ${c.telegramId}`;
-
-/** Две первые буквы слов имени для аватара; пусто → «?». */
-export function rosterInitials(name: string): string {
-  const letters = name.trim().split(/\s+/).slice(0, 2).map((w) => Array.from(w)[0]?.toUpperCase() ?? '');
-  return letters.join('') || '?';
-}

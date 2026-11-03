@@ -12,13 +12,6 @@ export const ATTENTION_DAYS = 3;
 export const clientName = (c: TherapyClientSummary): string =>
   c.clientAlias ?? c.name ?? `#${c.telegramId}`;
 
-/** Инициалы для аватара: до двух первых букв слов имени; «#123» -> «#». */
-export function initials(name: string): string {
-  const words = name.trim().split(/\s+/).filter(Boolean);
-  const letters = words.slice(0, 2).map(w => Array.from(w)[0]?.toUpperCase() ?? '');
-  return letters.join('') || '?';
-}
-
 /** Дней от последней оценки до сегодня клиента (его календарь); null — не было. */
 export function daysSinceActive(c: TherapyClientSummary): number | null {
   return c.daysSinceActive ?? null;
