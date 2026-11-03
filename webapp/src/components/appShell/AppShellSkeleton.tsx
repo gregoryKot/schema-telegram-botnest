@@ -8,15 +8,18 @@ import type { Section } from './navigation';
 // Skeleton.tsx (правило «скелетоны по форме контента»).
 
 const SIDEBAR_BAR = { background: 'var(--ink-2)' };
+// Раскладка «Сегодня» (client-today.css: колонка 600px, шапка, плитки 124px)
+// инлайном: стили раздела приезжают с его ленивым чанком, а силуэт нужен до него.
+const COLUMN = { display: 'flex', flexDirection: 'column' } as const;
 
 function TodaySkeleton() {
   return (
-    <div className="ds-page ct-page" data-testid="today-skeleton">
-      <div className="ct-head">
+    <div className="ds-page" style={{ maxWidth: 600, gap: 24 }} data-testid="today-skeleton">
+      <div style={{ ...COLUMN, gap: 8 }}>
         <Skeleton width={140} height={12} />
         <Skeleton width="60%" height={34} radius={10} />
       </div>
-      <div className="ct-tiles">
+      <div style={{ ...COLUMN, gap: 12 }}>
         {[0, 1, 2].map(i => <Skeleton key={i} height={124} radius={20} />)}
       </div>
       <Skeleton width="40%" height={20} />
@@ -30,7 +33,7 @@ export function AppShellSkeleton({ section, therapistMode }: { section: Section;
       <aside className="sidebar" aria-hidden="true">
         <SidebarBrand />
         <div className="sb-nav">
-          {[0, 1, 2].map(i => <Skeleton key={i} height={36} style={SIDEBAR_BAR} />)}
+          {[0, 1, 2].map(i => <Skeleton key={i} height={44} style={SIDEBAR_BAR} />)}
         </div>
         <div className="sb-foot-wrap">
           <Skeleton height={96} radius={14} style={SIDEBAR_BAR} />
