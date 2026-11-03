@@ -92,4 +92,12 @@ describe('холст карты режимов на телефоне (sheet-mode
     expect(fresh.length).toBeGreaterThan(0);
     for (const r of fresh) expect(r.body, r.selectors.join(',')).not.toMatch(/#[0-9a-f]{3,8}\b|rgba?\(/i);
   });
+
+  it('поля холста на ≤767 — 16px (iOS не увеличивает экран при фокусе), на ноутбуке прежние', () => {
+    const sels = ['.mm2-pal-search .ds-input', '.mm2-add-form .ds-input', '.mm2-panel .ds-input', '.mm2-panel .ds-textarea',
+      '.mm2-panel select.ds-input', '.ds-input.mm2-add-emoji', '.ds-input.mm2-lane-input'];
+    for (const sel of sels) expect(values(modemap, PHONE, sel, 'font-size'), sel).toEqual(['16px']);
+    expect(values(modemap, null, '.mm2-pal-search .ds-input', 'font-size')).toEqual(['12.5px']);
+    expect(values(modemap, null, '.mm2-panel .ds-input', 'font-size')).toEqual(['13px']);
+  });
 });

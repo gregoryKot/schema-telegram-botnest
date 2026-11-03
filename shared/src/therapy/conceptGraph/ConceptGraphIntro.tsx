@@ -1,17 +1,15 @@
 import { Disclosure } from '../../components/Disclosure';
+import { useFoldClasses } from './conceptSkin';
 import { ConceptGraphGuide } from './ConceptGraphGuide';
 import type { ConceptGraphModel } from './conceptGraphTypes';
 
-/**
- * Как читать схему (CLAUDE.md, «Онбординг и очевидность»): свёрнуто, открыто
- * само только на пустой схеме. В «Скачать картинкой» не идёт (data-export-skip):
- * это подсказка интерфейса, а не схема случая. Подсказки о пробелах — под схемой.
- */
+/** Как читать схему: свёрнуто, открыто само на пустой; в картинку не идёт. */
 export function ConceptGraphIntro({ graph }: { graph: ConceptGraphModel }) {
+  const f = useFoldClasses();
   const empty = graph.modeCount === 0 && graph.schemas.length === 0;
   return (
     <div data-export-skip>
-      <Disclosure title="Как читать схему" defaultOpen={empty}>
+      <Disclosure title="Как читать схему" defaultOpen={empty} classes={f}>
         <ConceptGraphGuide />
       </Disclosure>
     </div>

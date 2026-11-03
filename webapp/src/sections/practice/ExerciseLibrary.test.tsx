@@ -10,6 +10,13 @@ import { EXERCISES } from './exerciseLibrary';
 afterEach(cleanup);
 
 describe('ExerciseLibrary', () => {
+  it('phone: карточки ds-card без tone-tint, у каждой шеврон', () => {
+    const { container } = render(<ExerciseLibrary stats={{}} onOpen={vi.fn()} phone />);
+    expect(container.querySelectorAll('.cp-ex')).toHaveLength(8);
+    expect(container.querySelector('.tone-tint')).toBeNull();
+    expect(container.querySelectorAll('.cp-ex > .ds-chev')).toHaveLength(8);
+  });
+
   it('без статистики все карточки «не начато» с is-new', () => {
     render(<ExerciseLibrary stats={{}} onOpen={vi.fn()} />);
     const states = screen.getAllByText('не начато');

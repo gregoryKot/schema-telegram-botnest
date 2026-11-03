@@ -1,5 +1,27 @@
 import type { CSSProperties } from 'react';
 import { colorMix } from '../../utils/colorMix';
+import type { ConceptSkin } from './conceptSkin';
+
+/** Цвет сущности для классов сайта: число hue в `--h` (без hue — нейтральный тон). */
+export function hueVar(hue: number | undefined): CSSProperties | undefined {
+  return hue === undefined ? undefined : ({ '--h': hue } as CSSProperties);
+}
+
+/** Классы и стиль чипа: со skin — ds-chip (цвет несёт --h), без — пилюля мини-аппа. */
+export function conceptChipLook(
+  skin: ConceptSkin | null,
+  color: string,
+  active: boolean,
+  readOnly: boolean,
+  hue?: number,
+): { className?: string; style?: CSSProperties } {
+  if (!skin) return { style: conceptChipStyle(color, active, readOnly) };
+  if (readOnly) return { className: skin.tag, style: hueVar(hue) };
+  return {
+    className: skin.chip + (active ? ' is-on' : ''),
+    style: hueVar(hue),
+  };
+}
 
 /** Вид пилюли-переключателя; readOnly — та же пилюля как подпись, без зоны нажатия. */
 export function conceptChipStyle(

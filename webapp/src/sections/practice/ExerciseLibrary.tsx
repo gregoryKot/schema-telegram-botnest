@@ -22,17 +22,15 @@ export function ExerciseLibrary({ stats, onOpen, phone = false, items = EXERCISE
         {items.map((ex, i) => {
           const s = stats[ex.id];
           return (
-            <div key={ex.id} className="cp-ex tone-tint" style={hueStyle(exerciseHue(i))} {...pressable(() => onOpen(ex.id))}>
-              <div className="cp-ex-top">
-                <span className="ds-num cp-ex-num">{ex.num}</span>
-                <span className="cp-ex-time">{ex.time}</span>
-              </div>
+            <div key={ex.id} className={phone ? 'ds-card ds-card--row ds-card--hover cp-ex' : 'cp-ex tone-tint'} style={phone ? undefined : hueStyle(exerciseHue(i))} {...pressable(() => onOpen(ex.id))}>
+              <div className="cp-ex-top"><span className="ds-num cp-ex-num">{ex.num}</span><span className="cp-ex-time">{ex.time}</span></div>
               <div className="cp-ex-eyebrow">{ex.eyebrow}</div>
               <div className="cp-ex-title">{ex.title}</div>
               <div className="cp-ex-desc">{ex.desc}</div>
               <div className={'cp-ex-state' + (s ? '' : ' is-new')}>
                 {s ? `${fmtCount(s.count)} · ${s.lastDone ? fmtAgo(s.lastDone) : 'пройдено'}` : 'не начато'}
               </div>
+              {phone && <span className="ds-chev" aria-hidden="true" />}
             </div>
           );
         })}

@@ -16,11 +16,7 @@
 /* ── Сессии ───────────────────────────────────────────────────────────── */
 .tb-composer { display: flex; flex-direction: column; gap: 14px; }
 .tb-composer-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
-.tb-date-pill {
-  font: 600 13px var(--sans); color: var(--text); background: var(--bg);
-  border: none; border-radius: 10px; padding: 5px 12px; min-height: 32px; box-sizing: border-box;
-}
-.tb-composer-area { font-size: 15px; line-height: 1.65; min-height: 120px; }
+.tb-composer-area { line-height: 1.65; min-height: 120px; }
 .tb-composer-foot { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
 .tb-archive-label { margin-bottom: 20px; }
 .tb-tl-row { display: grid; grid-template-columns: 80px 1fr; gap: 24px; }
@@ -71,7 +67,6 @@
 .tb-tpl-sub { font-size: 13px; line-height: 1.45; color: var(--text-sub); }
 
 /* ── YSQ ──────────────────────────────────────────────────────────────── */
-.tb-ysq-empty { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 64px 0; text-align: center; }
 .tb-ysq-card { padding: 8px 24px; }
 .tb-ysq-row {
   display: grid; grid-template-columns: minmax(110px, 240px) 1fr 56px 56px; gap: 16px;
@@ -98,7 +93,6 @@
 /* ── Записи клиента ───────────────────────────────────────────────────── */
 /* Фильтр стоит первым в колонке ds-page: на ноутбуке — по ширине кнопок, на
    телефоне — во всю ширину, как сегмент списка клиентов (.tc-toolbar). */
-.tb-filter { align-self: flex-start; }
 .tb-notes { display: flex; flex-direction: column; gap: 14px; }
 .tb-note { display: flex; flex-direction: column; gap: 10px; }
 .tb-note-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
@@ -109,7 +103,6 @@
 .tb-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 24px; padding-top: 12px; border-top: 1px dashed var(--line-input); }
 .tb-field-label { font-size: 11px; }
 .tb-field-val { font-size: 14px; margin-top: 3px; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; }
-.tb-seg-n { margin-left: 6px; font-weight: 500; opacity: .6; }
 
 @media (max-width: 767px) {
   .tb-tl-row { grid-template-columns: 52px 1fr; gap: 14px; }
@@ -119,7 +112,6 @@
   .tb-ysq-row > .tb-bar, .tb-ysq-head .tb-ysq-barcol { grid-row: 2; grid-column: 1 / -1; }
   .tb-ysq-head .tb-ysq-barcol { display: none; }
   .tb-fields { grid-template-columns: 1fr; }
-  .tb-filter { align-self: stretch; }
   /* Заголовок записи — своей строкой под чипом и датой: рядом с ними ему
      оставалось ~150px, и слово рвалось посередине («Благодарност/ь»). */
   .tb-note-head { gap: 8px 12px; }

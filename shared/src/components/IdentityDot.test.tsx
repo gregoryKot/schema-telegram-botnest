@@ -7,6 +7,7 @@
 import { describe, it, expect, afterEach } from 'vitest';
 import { render, cleanup } from '@testing-library/react';
 import { IdentityDot } from './IdentityDot';
+import { NEED_HUE, toneHex } from '../theme/entityHue';
 
 afterEach(() => cleanup());
 
@@ -19,7 +20,9 @@ function dot(el: HTMLElement): HTMLSpanElement {
 describe('IdentityDot', () => {
   it('по id потребности берёт цвет из общего реестра', () => {
     const { container } = render(<IdentityDot id="attachment" />);
-    expect(dot(container).style.background).toContain('rgb(255, 107, 157)');
+    const probe = document.createElement('span');
+    probe.style.background = toneHex(NEED_HUE.attachment);
+    expect(dot(container).style.background).toBe(probe.style.background);
   });
 
   it('готовый цвет сильнее id — режимы передают цвет своей группы', () => {

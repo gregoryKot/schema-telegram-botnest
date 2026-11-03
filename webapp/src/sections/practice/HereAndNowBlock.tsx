@@ -56,13 +56,13 @@ export function HereAndNowBlock({ compact = false, extraRows }: { compact?: bool
     <>
       <HereAndNowIntro compact={compact} />
 
-      {compact ? <div className="cp-breath"><BreathingCard /></div> : <BreathingCard />}
+      <BreathingCard />
 
       <div className="ds-label">Если нужно больше</div>
       {ROWS.map((row) => (
         <div
           key={row.id}
-          className="ds-card ds-card--row ds-card--hover cp-task"
+          className="ds-card ds-card--row ds-card--nav ds-card--hover cp-task"
           {...pressable(() => setActive(row.id))}
         >
           <div className="cp-task-body">
@@ -72,7 +72,7 @@ export function HereAndNowBlock({ compact = false, extraRows }: { compact?: bool
             </div>
           </div>
           {compact
-            ? <span className="cp-chev" aria-hidden="true">›</span>
+            ? <span className="ds-chev" aria-hidden="true" />
             : <span className="ds-link">начать →</span>}
         </div>
       ))}

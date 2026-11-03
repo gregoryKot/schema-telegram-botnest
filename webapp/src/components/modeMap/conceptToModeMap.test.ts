@@ -9,6 +9,7 @@ import { needColor } from '../../../../shared/src/needs/needColors';
 import { RICH, source } from '../../../../shared/src/therapy/conceptGraph/diagram/diagram.test-helpers';
 import type { ConceptGraphSource } from '../../../../shared/src/therapy/conceptGraph/conceptGraphTypes';
 import type { ModeMapEdge, ModeMapNode } from '../../api';
+import { DOMAIN_HUE, toneHex } from '../../../../shared/src/theme/entityHue';
 import { getSchemaById } from '../../schemaTherapyData';
 import { conceptToModeMap } from './conceptToModeMap';
 
@@ -75,7 +76,7 @@ describe('conceptToModeMap — богатый случай', () => {
     const s = nodes.find((n) => n.type === 'schema' && n.data.schemaId === 'emotional_deprivation')!;
     expect(s.data.label).toContain(getSchemaById('emotional_deprivation')!.name);
     expect(s.data.note).toBe('Я верю, что мои переживания не имеют смысла');
-    expect(s.data.customColor).toMatch(/^var\(--/);
+    expect(s.data.customColor).toBe(toneHex(DOMAIN_HUE.rejection));
   });
 
   it('опыт: подпись «Как нарушалась потребность», текст в заметке, schemaId своей схемы', () => {

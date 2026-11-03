@@ -29,11 +29,11 @@ export function ClientNotesTab({ clientSchemaNotesData, clientModeNotesData, cli
   return (
     <div className="ds-page tb-page tb-page--narrow">
       {/* Заголовка нет (#906): имя уже во вкладке шапки — первым идёт фильтр. */}
-      <div className="ds-seg tb-filter" role="tablist">
+      <div className="ds-seg ds-seg--scroll" role="tablist">
         {FILTERS.map(f => (
           <button key={f.id} role="tab" aria-selected={filter === f.id}
             className={`ds-seg-btn${filter === f.id ? ' is-active' : ''}`} onClick={() => setFilter(f.id)}>
-            {f.label}<span className="tb-seg-n">{counts[f.id]}</span>
+            {f.label}<span className="ds-count">{counts[f.id]}</span>
           </button>
         ))}
       </div>

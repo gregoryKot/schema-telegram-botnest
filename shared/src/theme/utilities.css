@@ -80,7 +80,6 @@
 .u-mt24.u-mt24 { margin-top: var(--space-24); }
 .u-pt4.u-pt4 { padding-top: var(--space-4); }
 .u-pt8.u-pt8 { padding-top: var(--space-8); }
-.u-pt40.u-pt40 { padding-top: var(--space-40); }
 
 /* ── Текст ─────────────────────────────────────────────────────────────── */
 .u-tc.u-tc { text-align: center; }
@@ -156,4 +155,12 @@
   display: grid;
   grid-template-rows: auto 1fr;
   overflow: hidden;
+}
+
+/* Листы JourneySheet, PlansScreen, HistorySheet, DiariesOverlay, PracticesScreen,
+   PatternSheet, FlashcardFrame и ModeExOverlay уходили под статус-бар
+   установленного приложения. Мини-апп --safe-top не задаёт: объявление
+   недействительно в момент вычисления, и отступ равен 0. */
+@media (max-width: 767px) {
+  .u-sheet.u-sheet, .u-sheet-grid.u-sheet-grid { padding-top: var(--safe-top); }
 }

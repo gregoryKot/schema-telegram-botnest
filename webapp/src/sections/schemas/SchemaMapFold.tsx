@@ -4,11 +4,11 @@ import { useState, type ReactNode } from 'react';
 export function SchemaMapFold({ label, children }: { label: string; children: ReactNode }) {
   const [open, setOpen] = useState(false);
   return (
-    <div className="cs-fold">
-      <button className="cs-fold-btn" aria-expanded={open} onClick={() => setOpen(o => !o)}>
-        <span>{label}</span><span className={`cs-fold-chev${open ? ' is-open' : ''}`} aria-hidden>›</span>
+    <div className="ds-fold">
+      <button type="button" className="ds-fold-btn" aria-expanded={open} onClick={() => setOpen(o => !o)}>
+        <span className="ds-label">{label}</span><span className="ds-fold-chev" aria-hidden="true" />
       </button>
-      {open && children}
+      {open && <div className="ds-fold-body">{children}</div>}
     </div>
   );
 }

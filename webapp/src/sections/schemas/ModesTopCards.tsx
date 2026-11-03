@@ -23,14 +23,14 @@ interface Props {
 
 function ToolRows({ rows }: { rows: (ModesHeroRow & { onClick: () => void })[] }) {
   return (
-    <div className="cs-tools">
+    <div className="ds-card ds-card--flush">
       {rows.map((r) => (
-        <button key={r.label} className="cs-row" onClick={r.onClick}>
-          <span className="cs-row-text">
-            <span className="cs-row-name">{r.label}</span>
-            <span className="cs-row-sub">{r.sub}</span>
+        <button key={r.label} type="button" className="ds-list-row ds-list-row--nav ds-list-row--hover" onClick={r.onClick}>
+          <span className="ds-list-body">
+            <span className="ds-list-title">{r.label}</span>
+            <span className="ds-list-sub">{r.sub}</span>
           </span>
-          <span className="cs-fold-chev" aria-hidden>›</span>
+          <span className="ds-chev" aria-hidden="true" />
         </button>
       ))}
     </div>

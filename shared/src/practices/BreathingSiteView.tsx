@@ -1,20 +1,11 @@
-// Вёрстка дыхания 4-4-6 для сайта: editorial — без плашки,
-// между двумя тонкими линиями; эйбрау, serif-заголовок, подпись слева, круг —
-// тонкий контур справа, главная кнопка — чёрная пилюля сайта (.btn-primary).
-// Без blur/backdrop-filter и цветов мини-аппа. Логика — useBreathingSession.
+// Вёрстка дыхания 4-4-6 для сайта: карточка ds-card — ds-label, заголовок
+// ds-h3, подпись ds-sub, круг справа, кнопки ds-btn (не .btn-primary). Без
+// blur/backdrop-filter и цветов мини-аппа. Логика — useBreathingSession.
 import { BREATH_PHASE_LABEL } from './breathing';
 import {
   BREATHE_IDLE_KEYFRAMES,
   type BreathingViewProps,
 } from './createBreathingCard';
-
-const SERIF_28 = {
-  fontFamily: 'var(--serif)',
-  fontWeight: 400,
-  fontSize: 28,
-  lineHeight: 1.15,
-  color: 'var(--text)',
-} as const;
 
 export function BreathingSiteView({
   tr,
@@ -26,31 +17,21 @@ export function BreathingSiteView({
 }: BreathingViewProps) {
   return (
     <div
+      className="ds-card"
       style={{
-        borderTop: '1px solid var(--line)',
-        borderBottom: '1px solid var(--line)',
-        padding: '28px 0',
         display: 'flex',
-        flexWrap: 'wrap',
         alignItems: 'center',
-        gap: 'var(--space-24)',
+        gap: 'var(--space-16)',
       }}
     >
-      <div style={{ flex: '1 1 240px', minWidth: 0 }}>
-        <div className="eyebrow">Дыхание 4-4-6</div>
-        <div style={{ ...SERIF_28, marginTop: 'var(--space-8)' }}>
+      <div style={{ flex: '1 1 0', minWidth: 0 }}>
+        <div className="ds-label">Дыхание 4-4-6</div>
+        <div className="ds-h3" style={{ marginTop: 'var(--space-8)' }}>
           {active
             ? BREATH_PHASE_LABEL[st.phase]
             : tr('Дыши со мной', 'Дышите со мной')}
         </div>
-        <div
-          style={{
-            fontSize: 14,
-            color: 'var(--text-sub)',
-            marginTop: 'var(--space-8)',
-            lineHeight: 1.6,
-          }}
-        >
+        <div className="ds-sub" style={{ marginTop: 'var(--space-8)' }}>
           {active ? (
             <>круг {st.cycle} · вдох 4 · задержка 4 · выдох 6</>
           ) : (
@@ -62,30 +43,17 @@ export function BreathingSiteView({
           )}
         </div>
         <button
-          className={active ? undefined : 'btn btn-primary'}
+          className={active ? 'ds-btn ds-btn--secondary' : 'ds-btn'}
           onClick={active ? stop : start}
-          style={{
-            marginTop: 'var(--space-16)',
-            minHeight: 44,
-            padding: '0 24px',
-            borderRadius: 999,
-            fontSize: 14,
-            fontFamily: 'inherit',
-            cursor: 'pointer',
-            ...(active && {
-              background: 'transparent',
-              color: 'var(--text)',
-              border: '1px solid var(--line-strong)',
-            }),
-          }}
+          style={{ marginTop: 'var(--space-16)' }}
         >
           {active ? 'Достаточно' : 'Начать дыхание'}
         </button>
       </div>
       <div
         style={{
-          width: 88,
-          height: 88,
+          width: 'clamp(64px, 18vw, 88px)',
+          height: 'clamp(64px, 18vw, 88px)',
           flexShrink: 0,
           borderRadius: '50%',
           border: '1.5px solid var(--accent)',
@@ -94,7 +62,7 @@ export function BreathingSiteView({
           alignItems: 'center',
           justifyContent: 'center',
           fontFamily: 'var(--serif)',
-          fontSize: 32,
+          fontSize: 'clamp(24px, 6vw, 32px)',
           color: 'var(--text)',
           fontVariantNumeric: 'tabular-nums',
           ...pulse,

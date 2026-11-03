@@ -72,13 +72,13 @@ export function ConceptNeeds({ value, onChange, placeholder }: FieldProps) {
 export function ConceptTriggers({ value, onChange, placeholder }: FieldProps) {
   return (
     <div className="ds-card tcp-trig">
-      <div className="tcp-tags">
+      <div className="tcp-tags" style={hueStyle(undefined)}>
         {TRIGGER_TAGS.map((t) => (
           <button
             key={t}
             type="button"
             aria-pressed={hasTag(value, t)}
-            className={`tcp-tag${hasTag(value, t) ? ' is-on' : ''}`}
+            className={`ds-chip ds-chip--toggle${hasTag(value, t) ? ' is-on' : ''}`}
             onClick={() => onChange(appendTag(value, t))}
           >
             {t}

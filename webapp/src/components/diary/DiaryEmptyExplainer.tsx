@@ -31,18 +31,16 @@ export function DiaryEmptyExplainer({ filter }: { filter: DiaryFilter }) {
   const types = filter === 'tracker' || filter === 'case' ? [] : (['schema', 'mode'] as const);
 
   return (
-    <div className="sd-explainer-wrap">
-      <div className="ds-h2 sd-explainer-title">{TITLE[filter]}</div>
-      {filter !== 'diary' && <div className="sd-explainer-intro">{INTRO[filter]}</div>}
+    <div className="sd-explainer-stack">
+      <p className="ds-list-title">{TITLE[filter]}</p>
+      {filter !== 'diary' && <p className="ds-empty">{INTRO[filter]}</p>}
       {types.map((type) => (
         <div key={type} className="ds-card ds-card--row tone-soft sd-explainer-card" style={hueStyle(DIARY_HUE[type])}>
           <div>{explainers[type].what}</div>
           <div className="ds-sub sd-explainer-why">{explainers[type].why}</div>
         </div>
       ))}
-      <div className="sd-explainer-foot">
-        {FOOT[filter]}
-      </div>
+      <p className="ds-empty">{FOOT[filter]}</p>
     </div>
   );
 }

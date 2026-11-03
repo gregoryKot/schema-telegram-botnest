@@ -27,7 +27,7 @@ export function MySchemasBlock({ loading, ids, onAdd, onOpenSchema, statusFor, f
           {[80, 100, 90, 110].map((w, i) => <Skeleton key={i} height={32} width={w} radius={16} />)}
         </div>
       ) : ids.length === 0 ? (
-        <p className="cs-empty">{tr('Пройди тест на схемы или добавь вручную', 'Пройдите тест на схемы или добавьте вручную')}</p>
+        <p className="ds-empty">{tr('Пройди тест на схемы или добавь вручную', 'Пройдите тест на схемы или добавьте вручную')}</p>
       ) : (
         <>
         {freq && <FreqHint kind="schema" freq={freq} />}

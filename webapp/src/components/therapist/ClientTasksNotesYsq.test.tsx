@@ -100,6 +100,19 @@ describe('вкладки без заголовков, пустые состоя�
     expect(screen.getByRole('button', { name: 'Экспорт' })).toBeTruthy();
   });
 
+  it('YSQ без прохождений: ds-empty без засечного заголовка, кнопка запроса и чипы схем', () => {
+    const selectedClient = { telegramId: 7 } as unknown as TherapyClientSummary;
+    const { container } = render(<ClientYSQTab
+      clientData={null} selectedClient={selectedClient} selfSchemaIds={['failure']} ysqSchemaIds={[]}
+      ysqRequested={false} ysqError="" exportCopied={false} handleRequestYsq={vi.fn()} handleExport={vi.fn()}
+    />);
+    expect(screen.getByText('YSQ ещё не проходился').classList.contains('ds-empty')).toBe(true);
+    expect(container.querySelector('.ds-h2')).toBeNull();
+    expect(screen.getByText(/Запроси(те)? тест/)).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Запросить тест на схемы' })).toBeTruthy();
+    expect(container.querySelector('.ds-chip.tone-tint')).not.toBeNull();
+  });
+
   it('«Задания» без заданий — ds-empty', () => {
     render(<ClientTasksTab detail={{ clientTasks: [], setShowAssign: vi.fn() } as unknown as ClientDetail} />);
     expect(screen.getByText(/Нет назначенных заданий/).classList.contains('ds-empty')).toBe(true);

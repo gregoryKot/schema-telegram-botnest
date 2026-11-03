@@ -168,3 +168,71 @@ describe('cabinet.css: поправки координатора волны 1 (#
     }
   });
 });
+
+describe('cabinet.css: примитивы волны 2 (#906)', () => {
+  const WAVE2 = [
+    '.ds-seg--full', '.ds-input--search', '.ds-input--sm', '.ds-chip--toggle', '.ds-list-body',
+    '.ds-list-row--nav', '.ds-list-row--inset', '.ds-card--nav', '.ds-card--crisis',
+  ];
+  it.each(WAVE2)('%s объявлен один раз вне медиа и красится токенами', (cls) => {
+    expect(declaredTimes(cls)).toBe(1);
+    expect(decls(css, cls)).not.toMatch(/#[0-9a-f]{3,8}\b|rgba?\(/i);
+  });
+  it('сегмент: --full равные кнопки, --scroll только на телефоне с маской, счётчик без пилюли', () => {
+    expect(decls(top, '.ds-seg--full')).toContain('display: flex');
+    expect(decls(top, '.ds-seg--full')).toContain('width: 100%');
+    expect(decls(top, '.ds-seg--full > .ds-seg-btn')).toContain('flex: 1 1 0');
+    expect(top).not.toContain('.ds-seg--scroll');
+    expect(decls(phone, '.ds-seg--scroll')).not.toContain('mask-image');
+    expect(decls(top, '.ds-seg-btn .ds-count')).not.toContain('opacity');
+    expect(decls(phone, '.ds-seg--scroll > .ds-seg-btn')).toContain('flex: 0 0 auto');
+    const count = decls(top, '.ds-seg-btn .ds-count');
+    expect(count).toContain('background: none');
+    expect(count).toContain('color: inherit');
+    expect(decls(top, '.ds-page > .ds-seg')).toContain('align-self: flex-start');
+  });
+  it('поля: поиск и компактное, 16px на телефоне, resize: none остаётся', () => {
+    expect(decls(top, '.ds-input--search')).toContain('height: 40px');
+    expect(decls(top, '.ds-input--search')).toContain('border-radius: 20px');
+    expect(decls(phone, '.ds-input--search')).toContain('height: 44px');
+    expect(decls(phone, '.ds-input--search')).toContain('border-radius: 22px');
+    expect(decls(top, '.ds-input--sm')).toContain('width: auto');
+    expect(decls(top, '.ds-input--sm')).toContain('height: 40px');
+    expect(decls(phone, '.ds-input--sm')).toContain('height: 44px');
+    expect(decls(phone, '.ds-input')).toContain('font-size: 16px');
+    expect(decls(phone, '.ds-textarea')).toContain('font-size: 16px');
+    expect(decls(top, '.ds-textarea')).toContain('resize: none');
+  });
+  it('чип-переключатель: 36 → 44, выбранный — tint по --h без tone-fill', () => {
+    expect(decls(top, '.ds-chip--toggle')).toContain('min-height: 36px');
+    expect(decls(phone, '.ds-chip--toggle')).toContain('min-height: 44px');
+    const on = decls(top, '.ds-chip--toggle.is-on');
+    expect(on).toMatch(/oklch\([^)]*var\(--h\)\)/);
+    expect(on).not.toContain('tone-fill');
+  });
+  it('строка-переход и шеврон', () => {
+    expect(decls(top, '.ds-list-row--nav')).toContain('grid-template-columns: minmax(0, 1fr) auto');
+    expect(decls(top, '.ds-chev')).toContain('transition');
+    expect(decls(top, "[aria-expanded='true'] > .ds-chev")).toContain('rotate(90deg)');
+  });
+  it('карточки: --nav раньше цветных модификаторов, --crisis без --err', () => {
+    const nav = top.indexOf('.ds-card--nav {');
+    expect(nav).toBeGreaterThan(-1);
+    expect(nav).toBeLessThan(top.indexOf('.ds-card--ink'));
+    expect(nav).toBeLessThan(top.indexOf('.ds-card--accent'));
+    const crisis = decls(top, '.ds-card--crisis');
+    expect(crisis).toContain('--h: 28');
+    expect(crisis).not.toContain('var(--err)');
+  });
+  it('.ds-link: тап 44 только на телефоне; один телефонный блок', () => {
+    expect(decls(phone, '.ds-link')).toContain('min-height: 44px');
+    expect(decls(top, '.ds-link')).not.toContain('min-height');
+    expect(css.match(/@media \(max-width: 767px\)/g)).toHaveLength(1);
+  });
+  it('.ds-link--inline: объявлен один раз вне медиа, на телефоне остаётся в строке текста', () => {
+    expect(declaredTimes('.ds-link--inline')).toBe(1);
+    expect(decls(top, '.ds-link--inline')).toContain('display: inline');
+    expect(decls(phone, '.ds-link--inline')).toContain('display: inline');
+    expect(decls(phone, '.ds-link--inline')).toContain('min-height: 0');
+  });
+});

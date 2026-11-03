@@ -742,9 +742,6 @@ a { color: inherit; text-decoration: none; }
   flex-shrink: 0;
 }
 
-/* ─── Empty state ────────────────────────────────────────────────────────── */
-.empty { padding: 60px 20px; text-align: center; color: var(--text-faint); font-size: 14px; line-height: 1.7; }
-
 /* ─── Layout helpers ─────────────────────────────────────────────────────── */
 .flex  { display: flex; }
 .col   { display: flex; flex-direction: column; }

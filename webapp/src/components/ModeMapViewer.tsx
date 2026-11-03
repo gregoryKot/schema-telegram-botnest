@@ -6,6 +6,7 @@ import { NODE_TYPES } from './modeMapRegistry';
 import { EDGE_TYPES } from './modeMapRegistry';
 import { toFlowNodes, toFlowEdges } from './modeMapFlow';
 import { ModeMapLegend } from './ModeMapLegend';
+import { ModeMapSkeleton } from './modeMap/ModeMapSkeleton';
 import { MMIcon } from './modeMapIcons';
 import '../styles/sheet-modemap.css';
 
@@ -59,11 +60,8 @@ export function ModeMapViewer() {
   if (!loading && maps.length === 0) {
     return (
       <div className="mm2-center">
-        <div className="mm2-empty-ico"><MMIcon name="map" size={26} /></div>
-        <div className="mm2-empty-title">Карты режимов пока нет</div>
-        <div className="mm2-empty-sub">
-          Терапевт создаёт её на сессии — она появится здесь.
-        </div>
+        <p className="ds-empty">Карты режимов пока нет</p>
+        <p className="ds-empty">Терапевт создаёт её на сессии — она появится здесь.</p>
       </div>
     );
   }
@@ -72,16 +70,18 @@ export function ModeMapViewer() {
     <div className="mm2-fill">
       {maps.length > 1 && (
         <div className="mm2-bar">
+          <div className="ds-seg" role="group" aria-label="Карты режимов">
           {maps.map(m => (
-            <button key={m.id} onClick={() => select(m.id)}
-              className={`ds-card mm2-map mm2-map-btn${active?.id === m.id ? ' is-active' : ''}`}>
+            <button key={m.id} type="button" onClick={() => select(m.id)} aria-pressed={active?.id === m.id}
+              className={`ds-seg-btn${active?.id === m.id ? ' is-active' : ''}`}>
               {m.title}
             </button>
           ))}
+          </div>
         </div>
       )}
       <div style={{ flex: 1, minHeight: 0, position: 'relative' }}>
-        {loading && <div className="mm2-loading" style={{ position: 'absolute', inset: 0 }}>Загрузка…</div>}
+        {loading && <div style={{ position: 'absolute', inset: 0 }}><ModeMapSkeleton /></div>}
         {active && (
           <ReactFlowProvider>
             <div style={{ width: '100%', height: '100%' }}><Canvas key={active.id} map={active} /></div>

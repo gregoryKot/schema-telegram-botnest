@@ -74,7 +74,7 @@ describe('HistorySheet', () => {
 
   it('пока historyLoading=true — скелетон по форме колеса потребностей, а не спиннер/пустота', () => {
     const { container } = renderSheet({ historyLoading: true });
-    expect(screen.queryByText('Пусто.')).toBeNull();
+    expect(screen.queryByText(/трекер сегодня/)).toBeNull();
     // Правило CLAUDE.md «скелетоны по форме, не спиннеры»: круглый силуэт
     // колеса потребностей + строки списка, не .spinner.
     expect(container.querySelectorAll('.skel').length).toBeGreaterThan(0);
@@ -83,7 +83,7 @@ describe('HistorySheet', () => {
 
   it('после загрузки рендерит HistoryView (лениво, через Suspense)', async () => {
     renderSheet({ historyLoading: false, history: [] });
-    await waitFor(() => expect(screen.getByText('Пусто.')).toBeTruthy());
+    await waitFor(() => expect(screen.getByText(/трекер сегодня/)).toBeTruthy());
   });
 
   it('«Оценить →» сначала закрывает лист, затем открывает трекер', async () => {
@@ -92,7 +92,7 @@ describe('HistorySheet', () => {
     // уводил со страницы. Трекер открывается в onClose, после снятия записи.
     const log: string[] = [];
     renderSheet({ onClose: () => log.push('close'), onOpenTracker: () => log.push('tracker') });
-    await waitFor(() => expect(screen.getByText('Пусто.')).toBeTruthy());
+    await waitFor(() => expect(screen.getByText(/трекер сегодня/)).toBeTruthy());
     fireEvent.click(screen.getByText('Оценить →'));
     expect(log).toEqual(['close', 'tracker']);
   });

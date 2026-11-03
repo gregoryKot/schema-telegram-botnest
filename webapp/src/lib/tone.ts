@@ -1,37 +1,11 @@
-// Оттенки редизайна кабинетов 2026-10 — единственное место, где сущность
-// (домен схем, группа режимов, потребность, тип записи) получает цвет.
+// Оттенки редизайна кабинетов 2026-10. Таблицы домен/группа режимов/потребность
+// и toneHex живут в shared/src/theme/entityHue.ts (одна на сайт и мини-апп),
+// здесь реэкспорт; тип записи, раздел и нейтральный тон — локально.
 // Компонент кладёт число в `--h` и берёт класс .tone-* из styles/cabinet.css;
 // L/C у всей гаммы общие, так что домены различаются только оттенком.
 import type { CSSProperties } from 'react';
-import type { NeedId } from '../../../shared/src/needs/types';
 
-/** Домены схем → hue (порядок SCHEMA_DOMAINS, D1…D5). */
-export const DOMAIN_HUE: Record<string, number> = {
-  rejection: 28,
-  autonomy: 70,
-  limits: 135,
-  other_directed: 240,
-  vigilance: 310,
-};
-
-/** Группы режимов (id из MODE_GROUPS). Три копинговые — один «копинговый» тон. */
-export const MODE_GROUP_HUE: Record<string, number> = {
-  child: 28,
-  critic: 310,
-  coping_surrender: 240,
-  coping_avoidance: 240,
-  coping_overcompensation: 240,
-  healthy: 145,
-};
-
-/** Потребность → hue домена, который она питает. */
-export const NEED_HUE: Record<NeedId, number> = {
-  attachment: 28,
-  autonomy: 70,
-  limits: 135,
-  expression: 240,
-  play: 310,
-};
+export { DOMAIN_HUE, MODE_GROUP_HUE, NEED_HUE, toneHex } from '../../../shared/src/theme/entityHue';
 
 /** Тип записи дневника. */
 export const DIARY_HUE: Record<'schema' | 'mode' | 'gratitude', number> = {

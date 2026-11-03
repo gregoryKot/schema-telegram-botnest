@@ -118,38 +118,37 @@ export function ModeMapSelector({ clientId, initialMapId }: Props) {
     <div className="mm2-fill">
       {/* Map selector bar — pill-style tabs */}
       <div className="mm2-bar">
-        {maps.map(m => (
-          <div key={m.id} className="mm2-tb">
-            {editingId === m.id ? (
-              <input
-                ref={titleRef} maxLength={MODE_MAP_TITLE_MAX}
-                value={editTitle}
-                onChange={e => setEditTitle(e.target.value)}
-                onBlur={() => renameMap(m.id, editTitle)}
-                onKeyDown={e => { if (e.key === 'Enter') renameMap(m.id, editTitle); if (e.key === 'Escape') setEditingId(null); }}
-                className="ds-input mm2-rename"
-              />
-            ) : (
-              <div className={`ds-card mm2-map${activeId === m.id ? ' is-active' : ''}`}>
-                <button
-                  onClick={() => selectMap(m.id)}
-                  onDoubleClick={() => startEdit(m)}
-                  title={`${KIND_META[m.kind]?.label ?? ''} · двойной клик — переименовать`}
-                  className={`mm2-map-btn${maps.length > 1 && activeId === m.id ? ' has-x' : ''}`}
-                >
-                  {m.title}
-                </button>
-                {maps.length > 1 && activeId === m.id && (
-                  <button onClick={() => setDeleteTargetId(m.id)} title="Удалить карту" aria-label="Удалить карту" className="mm2-map-x">
-                    <MMIcon name="close" size={12} />
-                  </button>
-                )}
-              </div>
-            )}
-          </div>
-        ))}
+        <div className="ds-seg" role="group" aria-label="Карты режимов">
+          {maps.map(m => editingId === m.id ? (
+            <input
+              key={m.id}
+              ref={titleRef} maxLength={MODE_MAP_TITLE_MAX}
+              value={editTitle}
+              onChange={e => setEditTitle(e.target.value)}
+              onBlur={() => renameMap(m.id, editTitle)}
+              onKeyDown={e => { if (e.key === 'Enter') renameMap(m.id, editTitle); if (e.key === 'Escape') setEditingId(null); }}
+              className="ds-input ds-input--sm mm2-rename"
+            />
+          ) : (
+            <button
+              key={m.id} type="button"
+              aria-pressed={activeId === m.id}
+              onClick={() => selectMap(m.id)}
+              onDoubleClick={() => startEdit(m)}
+              title={`${KIND_META[m.kind]?.label ?? ''} · двойной клик — переименовать`}
+              className={`ds-seg-btn${activeId === m.id ? ' is-active' : ''}`}
+            >
+              {m.title}
+            </button>
+          ))}
+        </div>
+        {maps.length > 1 && activeId !== null && (
+          <button type="button" onClick={() => setDeleteTargetId(activeId)} title="Удалить карту" aria-label="Удалить карту" className="ds-btn ds-btn--icon">
+            <MMIcon name="trash" size={16} />
+          </button>
+        )}
         <button ref={newBtnRef} onClick={openKindPicker} disabled={creating}
-          className={`ds-btn ds-btn--secondary mm2-new${pickKind ? ' is-active' : ''}`}>
+          className={`ds-btn ds-btn--secondary ds-btn--sm mm2-new${pickKind ? ' is-active' : ''}`}>
           {creating ? '…' : (
             <span>
               <MMIcon name="plus" size={13} />Новая карта<MMIcon name="caret" size={11} className="mm2-tb-caret" />
@@ -181,11 +180,8 @@ export function ModeMapSelector({ clientId, initialMapId }: Props) {
         {loading && <ModeMapSkeleton />}
         {!loading && maps.length === 0 && (
           <div className="mm2-center">
-            <div className="mm2-empty-ico"><MMIcon name="map" size={26} /></div>
-            <div className="mm2-empty-title">Нет карт режимов</div>
-            <div className="mm2-empty-sub">
-              {tr('Выбери тип первой карты', 'Выберите тип первой карты')}
-            </div>
+            <p className="ds-empty">Нет карт режимов</p>
+            <p className="ds-empty">{tr('Выбери тип первой карты', 'Выберите тип первой карты')}</p>
             <div className="mm2-kinds">
               {KINDS.map(k => (
                 <button key={k} onClick={() => createMap(k)} disabled={creating} className="ds-card ds-card--hover mm2-kind-card">

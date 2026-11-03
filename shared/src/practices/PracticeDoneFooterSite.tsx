@@ -1,5 +1,5 @@
 // Подвал завершённой практики для сайта:
-// подпись счётчика слева, «поделиться →» текстовой ссылкой цветом --accent.
+// подпись счётчика слева (ds-sub), «поделиться →» ссылкой ds-link.
 // Тот же контракт, что у PracticeDoneFooter (мини-апп); выбирает площадка.
 import { useEffect } from 'react';
 import { pluralRu } from '../utils/pluralRu';
@@ -26,24 +26,15 @@ export function PracticeDoneFooterSite({
       }}
     >
       {count != null && count > 0 && (
-        <div style={{ fontSize: 13, color: 'var(--text-sub)' }}>
+        <div className="ds-sub">
           Пройдено уже {count} {pluralRu(count, 'раз', 'раза', 'раз')}
         </div>
       )}
       <button
+        type="button"
+        className="ds-link"
         onClick={onShare}
-        style={{
-          border: 'none',
-          background: 'none',
-          color: 'var(--accent)',
-          fontSize: 13,
-          fontWeight: 500,
-          padding: 0,
-          minHeight: 44,
-          marginLeft: 'auto',
-          cursor: 'pointer',
-          fontFamily: 'inherit',
-        }}
+        style={{ marginLeft: 'auto' }}
       >
         поделиться →
       </button>

@@ -33,7 +33,7 @@
 }
 .st-hint { font-size: 12px; color: var(--text-faint); margin-top: 4px; line-height: 1.5; }
 .st-body-block { padding: 12px 0; display: flex; flex-direction: column; gap: 12px; }
-.st-body-block + .st-row, .st-row + .st-body-block { border-top: 1px solid var(--paper-sunk); }
+.st-body-block + .ds-list-row { border-top: 1px solid var(--paper-sunk); } /* после строки линия уже есть — её нижняя граница */
 .st-text { font-size: 13px; color: var(--text-sub); line-height: 1.6; margin: 0; }
 .st-text--faint { font-size: 12px; color: var(--text-faint); }
 .st-text--ok { color: var(--ok-ink); }
@@ -58,34 +58,10 @@
 .st-links a b { color: var(--accent); font-weight: 600; }
 .st-fine { font-size: 11px; color: var(--text-faint); line-height: 1.5; }
 
-/* Строка: заголовок/подпись | контрол */
-.st-row {
-  display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 16px;
-  padding: 13px 0; border-bottom: 1px solid var(--paper-sunk); min-height: 44px;
-}
-.st-row:last-child { border-bottom: none; }
-.st-row--click { cursor: pointer; }
-.st-row--click:hover .st-row-title { color: var(--accent); }
-.st-row-title { font-size: 14px; color: var(--text); }
-.st-row--danger .st-row-title { color: var(--accent-red); }
-.st-row-sub { font-size: 12px; color: var(--text-faint); margin-top: 3px; line-height: 1.4; }
+/* Строка: заголовок/подпись | контрол — общий ds-list-row (cabinet.css) */
+.st-row--danger .ds-list-title { color: var(--accent-red); }
 .st-row-right { display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0; }
-.st-chev { font-size: 14px; color: var(--text-sub); text-align: right; max-width: 200px; }
-.st-chev--sm { font-size: 12px; }
-.st-chev-arrow { color: var(--text-faint); font-size: 16px; }
 .st-row-name { display: flex; align-items: center; gap: 12px; padding: 8px 0; }
-
-/* Переключатель режима «Клиент · Терапевт» на листе (#902) — светлый вариант
-   .sb-mode-switch из index.css (тёмный — сайдбар, на телефоне скрыт). Трек —
-   та же подложка, что у .st-hour/.st-opt; активная кнопка — цвет карточки;
-   тап-цели ≥44: на телефоне это путь из кабинета в режим клиента. */
-.sb-mode-switch--sheet { background: var(--paper-sunk); font-size: 14px; }
-.sb-mode-switch--sheet .sb-mode-btn { min-height: 44px; color: var(--text-sub); }
-.sb-mode-switch--sheet .sb-mode-btn:hover { color: var(--text); }
-.sb-mode-switch--sheet .sb-mode-btn.is-active {
-  background: var(--surface); color: var(--text);
-  box-shadow: 0 1px 2px color-mix(in srgb, var(--ink) 12%, transparent);
-}
 
 /* Подвиды выбора */
 .st-hours { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
@@ -118,18 +94,16 @@
 .st-form { display: flex; flex-direction: column; gap: 10px; }
 
 @media (max-width: 767px) {
+  .ds-input.st-code--center { font-size: 16px; } /* iOS не увеличивает экран при фокусе (#906) */
   .st-overlay { padding-top: var(--safe-top); } /* статус-бар установленного приложения (#902) */
   .st-inner { padding: 16px 16px 80px; gap: 16px; }
-  .st-row { gap: 12px; }
 }
 .st-block { width: 100%; }
 .st-center { text-align: center; }
 .st-mb10 { margin-bottom: 10px; }
 .st-mb20 { margin-bottom: 20px; }
-.st-body-block .ds-seg-btn { min-height: 44px; padding: 0 18px; }
 .st-row-name .ds-input { flex: 1; min-width: 0; }
 .st-body-block > .ds-link { align-self: flex-start; }
-.st-section .ds-link, .st-pause .ds-link { min-height: 44px; display: inline-flex; align-items: center; }
 .ds-link.is-ok { color: var(--ok-ink); }
 
 /* Карточка партнёра в паре (PartnerCard.tsx): индекс дня, недельные бары.

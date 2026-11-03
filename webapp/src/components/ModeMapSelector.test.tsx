@@ -122,6 +122,18 @@ describe('ModeMapSelector — пустое состояние', () => {
 });
 
 describe('ModeMapSelector — список карт и переключение', () => {
+  it('вкладки карт — ds-seg-btn с aria-pressed у активной (#906)', async () => {
+    listModeMaps.mockResolvedValue([meta(1, 'Карта А'), meta(2, 'Карта Б')]);
+    getModeMap.mockResolvedValue(full(1, 'Карта А'));
+    await act(async () => {
+      render(<ModeMapSelector clientId={5} />);
+    });
+    const a = screen.getByText('Карта А');
+    expect(a.classList.contains('ds-seg-btn')).toBe(true);
+    expect(a.getAttribute('aria-pressed')).toBe('true');
+    expect(screen.getByText('Карта Б').getAttribute('aria-pressed')).toBe('false');
+  });
+
   it('загружает карты клиента и автоматически открывает первую', async () => {
     listModeMaps.mockResolvedValue([meta(1, 'Карта А'), meta(2, 'Карта Б')]);
     getModeMap.mockResolvedValue(full(1, 'Карта А'));

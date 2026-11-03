@@ -3,6 +3,7 @@
 // список потребностей и их цвета обязаны совпадать с порядком реестра, а
 // неизвестный id не имеет права покраситься в чужой цвет.
 import { describe, it, expect } from 'vitest';
+import { NEED_HUE, toneHex } from '../theme/entityHue';
 import { NEED_COLORS, NEED_COLOR_ORDER, needColor } from './needColors';
 
 describe('needColors', () => {
@@ -20,7 +21,7 @@ describe('needColors', () => {
   });
 
   it('неизвестная потребность получает нейтральный токен, а не чужой цвет', () => {
-    expect(needColor('attachment')).toBe('#ff6b9d');
+    expect(needColor('attachment')).toBe(toneHex(NEED_HUE.attachment));
     expect(needColor('nope')).toBe('var(--muted)');
   });
 });

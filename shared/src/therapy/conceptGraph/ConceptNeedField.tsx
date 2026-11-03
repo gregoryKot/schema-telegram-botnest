@@ -1,12 +1,10 @@
 import { NEED_ORDER, useNeedData } from '../../needs/needData';
 import { needColor } from '../../needs/needColors';
 import { ConceptToggleChip } from './ConceptToggleChip';
+import { NEED_HUE } from '../../theme/entityHue';
 import { labelStyle } from './graphStyles';
 
-/**
- * Пять базовых потребностей чипами. Подпись говорит, что значит выбор: у схемы
- * это ✗ («блокирует»), у Здорового Взрослого — ✓ («уже умеет заботиться»).
- */
+/** Пять потребностей чипами: у схемы ✗ «блокирует», у Здорового Взрослого ✓ «уже умеет». */
 export function ConceptNeedField({
   label,
   needIds,
@@ -30,6 +28,7 @@ export function ConceptNeedField({
             key={id}
             label={needData[id].name}
             color={needColor(id)}
+            hue={NEED_HUE[id]}
             active={needIds.includes(id)}
             onClick={() => toggle(id)}
           />

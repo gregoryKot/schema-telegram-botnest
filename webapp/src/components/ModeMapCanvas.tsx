@@ -292,11 +292,10 @@ export function ModeMapCanvas({ clientId, mapId, kind, nodes, edges, setNodes, s
       </div>
       {nodes.length === 0 && (
         <div className="mm2-canvas-empty">
-          <div className="mm2-empty-ico"><MMIcon name="map" size={26} /></div>
-          <div className="mm2-empty-title">Карта режимов пуста</div>
-          <div className="mm2-empty-sub">
+          <p className="ds-empty">Карта режимов пуста</p>
+          <p className="ds-empty">
             Кликай по режиму в панели слева или перетащи его на холст
-          </div>
+          </p>
         </div>
       )}
       <NodeActionsContext.Provider value={nodeActions}>

@@ -69,6 +69,12 @@ describe('SchemaPills — схемы клиента на узле режима',
     expect(screen.getByText('Недоверие / Ожидание жестокого обращения')).toBeTruthy();
   });
 
+  it('текст таблетки — тон домена, подмешанный к --text (контраст ≥4.5:1 в обеих темах)', () => {
+    renderPills(concept([link('vulnerable_child', ['abandonment'])]));
+    const pill = screen.getByText('Покинутость / Нестабильность').parentElement as HTMLElement;
+    expect(pill.getAttribute('style')).toMatch(/color: color-mix\(in srgb, #[0-9a-f]{6} 60%, var\(--text\)\)/i);
+  });
+
   it('связи другого режима не показываются', () => {
     const { container } = renderPills(concept([link('angry_child', ['abandonment'])]));
     expect(container.textContent).toBe('');

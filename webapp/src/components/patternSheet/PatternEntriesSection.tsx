@@ -21,7 +21,7 @@ export function PatternEntriesSection({ kind, entries, onDeleteEntry, emptyText 
     <section className="ps-block">
       <div className="ds-label">Записи дневника</div>
       {entries.length === 0 ? (
-        <p className="ps-empty">{emptyText}</p>
+        <p className="ds-empty">{emptyText}</p>
       ) : (
         <div className="ps-entries">
           {kind === 'schema'
