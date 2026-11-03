@@ -208,16 +208,16 @@ vi.mock('./CommandPalette', () => ({
 }));
 vi.mock('./DonateNudge', () => ({ DonateNudge: () => null }));
 
-// Дефолтные резолвы api — покрывают все вызовы начального эффекта AppShell;
-// переопределяются через mockResolvedValueOnce в конкретных тестах. vi.mock
-// обязан быть на верхнем уровне (не в функции) — иначе попадёт под hoisting
-// позже статического `import { AppShell }` и подтянется настоящий '../api'.
+// Дефолтные резолвы api — покрывают все вызовы начального эффекта AppShell; переопределяются через
+// mockResolvedValueOnce в тестах. vi.mock обязан быть на верхнем уровне (не в функции) — иначе попадёт
+// под hoisting позже статического `import { AppShell }` и подтянется настоящий '../api'.
 vi.mock('../api', () => ({
   api: {
     init: vi.fn().mockResolvedValue(undefined),
     recordActivity: vi.fn().mockResolvedValue(undefined),
     flushOutbox: vi.fn().mockResolvedValue(undefined),
     getDisclaimer: vi.fn().mockResolvedValue({ accepted: true }),
+    getSettings: vi.fn().mockResolvedValue({ addressForm: 'ty' }), // вопрос «ты/вы» в EntryFlows не всплывает
     acceptDisclaimer: vi.fn().mockResolvedValue(undefined),
     needs: vi.fn().mockResolvedValue([]),
     ratings: vi.fn().mockResolvedValue({}),

@@ -2025,7 +2025,7 @@
   "webapp/src/components/quickActions/quickActionRouting.ts": 19,
   "webapp/src/components/quickActions/QuickActions.tsx": 23,
   "webapp/src/components/quickActions/ToolsCustomizeSheet.tsx": 42,
-  "webapp/src/components/RequireAuth.tsx": 19,
+  "webapp/src/components/RequireAuth.tsx": 17,
   "webapp/src/components/RouteErrorScreen.tsx": 55,
   "webapp/src/components/SaveErrorNote.tsx": 14,
   "webapp/src/components/SchemaDetailSheet.tsx": 136,
