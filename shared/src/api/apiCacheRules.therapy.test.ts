@@ -126,16 +126,24 @@ describe('applyMutationInvalidation: офлайн-клиент сохранил 
     });
   });
 
-  it('запрос YSQ -57: данные клиента -57 сброшены (ysqRequestPending), соседний 57 цел', async () => {
+  // QA 2026-11, К1: запрос YSQ — задание клиенту, его видно в заданиях
+  // клиента и на доске сразу, а не через 15 секунд кеша.
+  it('запрос YSQ -57: данные и задания клиента -57 и доска сброшены, соседний 57 цел', async () => {
     const f = await seed([
       '/api/therapy/client-data/-57',
       '/api/therapy/client-data/57',
+      '/api/therapy/tasks/client/-57',
+      '/api/therapy/tasks/client/57',
+      '/api/therapy/tasks/all',
       '/api/therapy/clients',
     ]);
     applyMutationInvalidation('POST', '/api/therapy/request-ysq/-57', '{}');
     expect(await refetched(f)).toEqual({
       '/api/therapy/client-data/-57': 2,
       '/api/therapy/client-data/57': 1,
+      '/api/therapy/tasks/client/-57': 2,
+      '/api/therapy/tasks/client/57': 1,
+      '/api/therapy/tasks/all': 2,
       '/api/therapy/clients': 1,
     });
   });

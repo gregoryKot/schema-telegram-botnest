@@ -149,7 +149,7 @@ export function PairPanel({
             : createError
               ? 'Не получилось — попробовать ещё раз'
               : data.partners.length > 0
-                ? 'Пригласить ещё друга'
+                ? 'Позвать ещё одного человека'
                 : 'Создать приглашение'}
         </button>
       )}

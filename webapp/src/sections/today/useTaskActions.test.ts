@@ -8,6 +8,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
 import { useTaskActions } from './useTaskActions';
+import { notifyTasksChanged } from '../../../../shared/src/tasks/tasksChanged';
 
 vi.mock('../../api', () => ({
   api: {
@@ -44,6 +45,20 @@ describe('useTaskActions — начальная загрузка', () => {
     await waitFor(() => expect(mockReport).toHaveBeenCalledTimes(1));
     expect(result.current.taskError).toBe(false);
     expect(result.current.tasks).toEqual([]);
+  });
+});
+
+// QA 2026-11, К1: тест на схемы по запросу терапевта проходят поверх
+// «Сегодня»; задание закрывает сервер. Без сигнала строка «Пройти тест на
+// схемы» висела до перезагрузки.
+describe('useTaskActions — задания поменялись на сервере', () => {
+  it('сигнал tasks-changed перечитывает список', async () => {
+    const { result } = renderHook(() => useTaskActions(0));
+    await waitFor(() => expect(mockApi.getTasks).toHaveBeenCalledTimes(1));
+    mockApi.getTasks.mockResolvedValue([task({ id: 7 })]);
+    act(() => notifyTasksChanged());
+    await waitFor(() => expect(result.current.tasks).toHaveLength(1));
+    expect(mockApi.getTasks).toHaveBeenCalledTimes(2);
   });
 });
 

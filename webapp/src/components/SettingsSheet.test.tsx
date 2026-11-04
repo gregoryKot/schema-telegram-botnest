@@ -133,12 +133,25 @@ describe('SettingsSheet — диалог (К4)', () => {
   });
 });
 
+// QA 2026-11, М10: раздел «Обращение» был в контенте, а в оглавлении слева —
+// нет. Оглавление и разделы — два места, обязанные совпадать (правило №4).
+describe('SettingsSheet — оглавление совпадает с разделами', () => {
+  it.each(['CLIENT', 'THERAPIST'] as const)('%s: у каждого раздела есть строка в оглавлении', async (role) => {
+    await renderSheet(role);
+    const sections = document.querySelectorAll('.settings-content-inner [id^="s-"]');
+    const nav = document.querySelectorAll('.settings-sidenav .settings-sidenav-item');
+    expect(sections.length).toBeGreaterThan(5);
+    expect(nav.length).toBe(sections.length);
+    expect(screen.getByRole('button', { name: 'Обращение' })).toBeTruthy();
+  });
+});
+
 describe('SettingsSheet — удаление аккаунта: подтверждение обязательно', () => {
   it('первый клик открывает предупреждение с кнопками «Отмена»/«Удалить», без вызова api', async () => {
     await renderSheet();
     openDeleteSheet();
 
-    expect(screen.getByText('Необратимо.', { exact: false })).toBeTruthy();
+    expect(screen.getByText(/аккаунт целиком/)).toBeTruthy();
     expect(screen.getByText('Отмена')).toBeTruthy();
     expect(mockApi.deleteAllUserData).not.toHaveBeenCalled();
   });
@@ -375,7 +388,7 @@ describe('SettingsSheet — пара: создание приглашения', 
     await renderSheet();
 
     fireEvent.click(
-      within(partnerSectionContent()).getByText('Пригласить друга'),
+      within(partnerSectionContent()).getByText('Позвать в пару'),
     );
 
     await screen.findByText('https://schemehappens.ru/p/ABC123');
@@ -433,24 +446,24 @@ describe('SettingsSheet — пара: вход по коду', () => {
 
 // ── Удаление аккаунта: отказ теперь виден пользователю (не только «сброс») ──
 describe('SettingsSheet — удаление аккаунта: отказ показывает сообщение', () => {
-  it('после ошибки видно "Не удалось удалить данные" на первом шаге, а не тишина', async () => {
+  it('после ошибки видно «Не удалось удалить аккаунт» на первом шаге, а не тишина', async () => {
     mockApi.deleteAllUserData.mockRejectedValue(new Error('network down'));
     await renderSheet();
     confirmAccountDeletion();
 
-    await screen.findByText(/Не удалось удалить данные/i);
+    await screen.findByText(/Не удалось удалить аккаунт/i);
   });
 
   it('повторное открытие листа удаления сбрасывает прошлую ошибку', async () => {
     mockApi.deleteAllUserData.mockRejectedValue(new Error('network down'));
     await renderSheet();
     confirmAccountDeletion();
-    await screen.findByText(/Не удалось удалить данные/i);
+    await screen.findByText(/Не удалось удалить аккаунт/i);
 
     fireEvent.click(screen.getByText('Отмена'));
     openDeleteSheet();
 
-    expect(screen.queryByText(/Не удалось удалить данные/i)).toBeNull();
+    expect(screen.queryByText(/Не удалось удалить аккаунт/i)).toBeNull();
   });
 
   it('ты/вы: сообщение об отказе звучит в обеих формах', async () => {
@@ -458,7 +471,7 @@ describe('SettingsSheet — удаление аккаунта: отказ пок
     await renderSheetWithForm('ty');
     confirmAccountDeletion();
     await screen.findByText(
-      'Не удалось удалить данные. Проверь связь и попробуй ещё раз',
+      'Не удалось удалить аккаунт. Данные на месте — проверь соединение и попробуй ещё раз.',
     );
     cleanup();
 
@@ -466,7 +479,7 @@ describe('SettingsSheet — удаление аккаунта: отказ пок
     await renderSheetWithForm('vy');
     confirmAccountDeletion();
     await screen.findByText(
-      'Не удалось удалить данные. Проверьте связь и попробуйте ещё раз',
+      'Не удалось удалить аккаунт. Данные на месте — проверьте соединение и попробуйте ещё раз.',
     );
   });
 });
@@ -605,7 +618,7 @@ describe('SettingsSheet — загрузка партнёра: отказ не �
 
     mockApi.getPair.mockResolvedValue({ partners: [], pendingCode: null });
     fireEvent.click(screen.getByText('Повторить'));
-    await screen.findByText('Пригласить друга');
+    await screen.findByText('Позвать в пару');
   });
 });
 
@@ -973,14 +986,14 @@ describe('SettingsSheet — «Перестать быть специалисто
 describe('SettingsSheet — «Поделиться»: приглашение в приложение открывает карточку', () => {
   it('клик по «Пригласить друга» в разделе «Поделиться» открывает ShareCardSheet с приглашением', async () => {
     await renderSheet();
-    // Тот же текст встречается и в разделе «Партнёр» — берём второе вхождение
-    // (строка «Поделиться» идёт в разметке позже).
+    // QA 2026-11, М7: «Пригласить друга» — одна строка; кнопка пары
+    // называется «Позвать в пару» (раньше два одинаковых ярлыка).
     const buttonsBefore = screen.getAllByText('Пригласить друга');
-    expect(buttonsBefore.length).toBe(2);
-    fireEvent.click(buttonsBefore[buttonsBefore.length - 1]);
+    expect(buttonsBefore.length).toBe(1);
+    fireEvent.click(buttonsBefore[0]);
     // ShareCardSheet рендерит свой заголовок с тем же текстом — после
     // открытия совпадений на один больше (карточка реально появилась).
-    await waitFor(() => expect(screen.getAllByText('Пригласить друга').length).toBe(3));
+    await waitFor(() => expect(screen.getAllByText('Пригласить друга').length).toBe(2));
   });
 });
 
@@ -1135,7 +1148,7 @@ describe('SettingsSheet — пара: копирование ссылки-при
       .mockResolvedValueOnce({ partners: [], pendingCode: null })
       .mockResolvedValueOnce({ partners: [], pendingCode: 'ABC123' });
     await renderSheet();
-    fireEvent.click(within(partnerSectionContent()).getByText('Пригласить друга'));
+    fireEvent.click(within(partnerSectionContent()).getByText('Позвать в пару'));
     await screen.findByText('https://schemehappens.ru/p/ABC123');
 
     fireEvent.click(within(partnerSectionContent()).getByText('Скопировать ссылку'));
@@ -1148,7 +1161,7 @@ describe('SettingsSheet — пара: копирование ссылки-при
     await screen.findByPlaceholderText('Код');
 
     fireEvent.click(within(partnerSectionContent()).getByText('← Назад'));
-    expect(within(partnerSectionContent()).getByText('Пригласить друга')).toBeTruthy();
+    expect(within(partnerSectionContent()).getByText('Позвать в пару')).toBeTruthy();
     expect(within(partnerSectionContent()).queryByPlaceholderText('Код')).toBeNull();
   });
 });
@@ -1186,10 +1199,10 @@ describe('SettingsSheet — удаление аккаунта: закрытие 
     fireEvent.click(screen.getByRole('button', { name: 'Удалить' }));
     await screen.findByText('Точно? Восстановить невозможно.');
 
-    fireEvent.click(screen.getByLabelText('Закрыть'));
+    fireEvent.click(document.querySelector('.sk-dialog-backdrop')!);
     await waitFor(() => expect(screen.queryByText('Точно? Восстановить невозможно.')).toBeNull());
     // Модалка закрылась целиком, не откатилась на первый шаг.
-    expect(screen.queryByText('Необратимо.', { exact: false })).toBeNull();
+    expect(screen.queryByText(/аккаунт целиком/)).toBeNull();
   });
 });
 

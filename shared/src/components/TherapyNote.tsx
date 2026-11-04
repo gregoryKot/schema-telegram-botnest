@@ -37,7 +37,7 @@ export function TherapyNote({ compact }: { compact?: boolean }) {
                 'Вы работаете как терапевт — поддержка рядом.',
               )
             : 'Инструмент самоисследования, не замена психологу.'}{' '}
-          {!contact.isTherapist && (
+          {!contact.isTherapist && contact.url && (
             <a
               href={contact.url}
               target="_blank"
@@ -80,21 +80,25 @@ export function TherapyNote({ compact }: { compact?: boolean }) {
                 'Это инструмент самоисследования — не клиническая диагностика и не замена работе с психологом. Если чувствуете, что нужно разобраться глубже — терапия — это место, где безопасно.',
               )}
         </div>
-        <a
-          href={contact.url}
-          target="_blank"
-          rel="noopener noreferrer"
-          style={{
-            display: 'inline-block',
-            marginTop: 6,
-            fontSize: 12,
-            color: 'var(--accent)',
-            textDecoration: 'none',
-            fontWeight: 500,
-          }}
-        >
-          {linkLabel}
-        </a>
+        {/* Канала нет (терапевт с веб-аккаунтом, QA 2026-11 З6) — ссылки
+            «Написать терапевту» тоже нет: tg:// на веб-номер вёл в никуда. */}
+        {contact.url && (
+          <a
+            href={contact.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              display: 'inline-block',
+              marginTop: 6,
+              fontSize: 12,
+              color: 'var(--accent)',
+              textDecoration: 'none',
+              fontWeight: 500,
+            }}
+          >
+            {linkLabel}
+          </a>
+        )}
       </div>
     </div>
   );

@@ -21,6 +21,7 @@ import {
   notifyYsqResultChanged,
   writeYsqProgress,
 } from './ysqProgressStore';
+import { notifyTasksChanged } from '../tasks/tasksChanged';
 
 // Типы и сборка результата — соседние модули; ре-экспорт держит старый путь.
 import type { UseYsqTestOptions } from './ysqTest.types';
@@ -263,6 +264,9 @@ export function useYsqTest({ api, autoResume }: UseYsqTestOptions) {
       .saveYsqResult(a)
       .then(() => {
         setResultSaveError(false);
+        // Сервер закрыл задание терапевта «пройти тест» в той же транзакции —
+        // списки заданий перечитываются (tasks/tasksChanged.ts, QA 2026-11).
+        notifyTasksChanged();
         onSaved?.();
         void api
           .deleteYsqProgress()

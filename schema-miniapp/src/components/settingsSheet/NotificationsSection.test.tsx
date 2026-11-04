@@ -290,3 +290,36 @@ describe('NotificationsSection — кнопка пояснения', () => {
     expect(onInfo).toHaveBeenCalled();
   });
 });
+
+// QA 2026-11, З5: без Telegram (MAX без привязки) уведомления включены, но
+// очередь их снимает — тумблеры обещали то, чего не будет.
+describe('NotificationsSection — уведомлениям некуда прийти', () => {
+  it('вместо тумблеров — причина и где привязать Telegram', () => {
+    render(
+      <NotificationsSection
+        settings={baseSettings({ notifyEnabled: true, notifyReachable: false })}
+        patch={vi.fn()}
+        setView={vi.fn()}
+        onInfo={vi.fn()}
+      />,
+    );
+    expect(screen.getByRole('note').textContent).toMatch(
+      /приходят в Telegram.*не привязан.*schemehappens\.ru/,
+    );
+    expect(screen.queryByText('Итоги дня')).toBeNull();
+    expect(screen.queryByText('Время')).toBeNull();
+  });
+
+  it('ответ без признака (старый сервер) — тумблеры как раньше', () => {
+    render(
+      <NotificationsSection
+        settings={baseSettings()}
+        patch={vi.fn()}
+        setView={vi.fn()}
+        onInfo={vi.fn()}
+      />,
+    );
+    expect(screen.getByText('Итоги дня')).toBeTruthy();
+    expect(screen.queryByRole('note')).toBeNull();
+  });
+});

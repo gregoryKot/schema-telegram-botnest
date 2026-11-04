@@ -1,42 +1,48 @@
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationService } from '../notification/notification.service';
 import { TherapyRelationsService } from './therapy-relations.service';
+import { encrypt } from '../utils/crypto';
 
-const TYPE = 'ysq_requested';
-
-// Запрос терапевта «пройдите тест на схемы» (YSQ): клиенту уходит одно
-// сообщение в личку. Аудит 2026-10: на каждый тап создавалась новая строка
-// ScheduledNotification, очередь не дедуплицирует, и клиент получал пять
-// одинаковых DM. Пока предыдущий запрос не отправлен (обычно до 5 минут, пока
-// его не разберёт крон; в тихие часы клиента — до утра, ysq_requested не в
-// QUIET_EXEMPT_TYPES), повтор — тихий no-op: клиент всё равно получит ровно
-// одно сообщение. После отправки или отмены (клиент без Telegram) запрос снова
-// ставится — дедуп не превращается в вечный запрет.
+// Запрос терапевта «пройдите тест на схемы» (YSQ) — это задание клиенту
+// (`UserTask`, type `ysq_test`, assignedBy = терапевт). QA 2026-11 (К1): раньше
+// запрос был только сообщением Telegram-бота, у аккаунта без Telegram очередь
+// его отменяла, а терапевт видел «✓ Запрос отправлен». Задание видно клиенту на
+// обеих площадках (блок «От терапевта»), ведёт в тест и закрывается само, когда
+// тест сохранён (`YsqService.saveYsqResult`, та же транзакция). Сообщение в
+// Telegram осталось вторым каналом — кому есть куда его доставить.
 //
-// Дедуп по клиенту, а не по паре с терапевтом: payload зашифрован, фильтровать
-// по имени терапевта нельзя. Остаточную гонку (два параллельных запроса оба
-// видят «пусто») сужают защита кнопки на фронте и лимит на маршруте со
-// счётчиком в Postgres; почему не атомарно — docs/README.md, «Запрос YSQ».
+// Один источник правды о запросе — открытое задание пары «терапевт → клиент»:
+// по нему и дедуп (повтор, пока тест не пройден, — тихий no-op), и признак
+// `ysqRequestPending` в карточке клиента. Второй терапевт клиента чужого
+// задания не видит: фильтр по assignedBy. Терапевт снимает запрос, удалив
+// задание (assigned-task.ts).
+//
+// Сообщение в личку дедуплицируется по клиенту: пока предыдущее не отправлено,
+// второе не ставится (аудит 2026-10: на каждый тап уходило новое DM).
+// Остаточную гонку двух параллельных запросов (оба видят «пусто») сужают
+// защита кнопки на фронте и лимит на маршруте со счётчиком в Postgres
+// (docs/open/therapy.md, «Запрос YSQ»).
 
-/**
- * СВОЙ запрос терапевта висит: сообщение клиенту ещё не ушло. Отдаёт карточка
- * клиента (`ysqRequestPending` в getClientData) — после перезагрузки терапевт
- * видит «запрос отправлен», а не кнопку заново (QA 2026-11). Дедуп ниже — по
- * клиенту, а этот признак — по паре: payload несёт therapistId, иначе второй
- * терапевт клиента увидел бы чужой запрос и узнал бы, что у клиента есть другой
- * терапевт (docs/open/therapy.md, «Дедуп по клиенту, а не по паре»).
- */
+/** UserTask.type задания «пройти тест на схемы». */
+export const YSQ_TASK_TYPE = 'ysq_test';
+const YSQ_TASK_TEXT = 'Пройти тест на схемы';
+const NOTIFY_TYPE = 'ysq_requested';
+
+/** Открытое задание YSQ этого терапевта этому клиенту — запрос висит. */
 export async function isOwnYsqRequestPending(
-  notifications: Pick<NotificationService, 'pendingPayloads'>,
+  prisma: Pick<PrismaService, 'userTask'>,
   therapistId: bigint,
   clientId: bigint,
 ): Promise<boolean> {
-  const payloads = await notifications.pendingPayloads(clientId, TYPE);
-  return payloads.some(
-    (p) =>
-      (p as { therapistId?: unknown } | null)?.therapistId ===
-      String(therapistId),
-  );
+  const open = await prisma.userTask.count({
+    where: {
+      userId: clientId,
+      assignedBy: therapistId,
+      type: YSQ_TASK_TYPE,
+      done: null,
+    },
+  });
+  return open > 0;
 }
 
 export interface YsqRequestDeps {
@@ -51,14 +57,22 @@ export async function requestYsq(
   clientId: bigint,
 ): Promise<void> {
   await relations.assertHasClient(therapistId, clientId);
-  if (clientId < 0n) return; // Виртуальный клиент: нет Telegram, слать некуда
-  if (await notifications.hasPending(clientId, TYPE)) return;
+  if (clientId < 0n) return; // Офлайн-клиент: аккаунта нет, тест пройти негде
+  if (await isOwnYsqRequestPending(prisma, therapistId, clientId)) return;
+  await prisma.userTask.create({
+    data: {
+      userId: clientId,
+      assignedBy: therapistId,
+      type: YSQ_TASK_TYPE,
+      text: encrypt(YSQ_TASK_TEXT) ?? YSQ_TASK_TEXT,
+    },
+  });
+  if (await notifications.hasPending(clientId, NOTIFY_TYPE)) return;
   const therapist = await prisma.user.findUnique({
     where: { id: therapistId },
     select: { firstName: true },
   });
-  await notifications.schedule(clientId, TYPE, new Date(), {
+  await notifications.schedule(clientId, NOTIFY_TYPE, new Date(), {
     therapistName: therapist?.firstName ?? null,
-    therapistId: String(therapistId), // чей запрос — isOwnYsqRequestPending
   });
 }

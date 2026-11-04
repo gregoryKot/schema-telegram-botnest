@@ -217,6 +217,17 @@ export class AccountService {
   }
 
   /**
+   * Доходят ли до человека уведомления: тот же адрес, по которому их шлёт
+   * очередь (getSendSettingsFor → chatId). QA 2026-11 (З5): веб-клиент без
+   * Telegram видел включённые тумблеры, а очередь снимала его уведомления
+   * как «доставить некому».
+   */
+  async isNotifyReachable(userId: bigint): Promise<boolean> {
+    const s = await this.getSendSettingsFor([userId]);
+    return (s.get(userId.toString())?.chatId ?? null) !== null;
+  }
+
+  /**
    * Полное удаление аккаунта — тело транзакции в account.delete.ts
    * (правило №10: два десятка таблиц не живут внутри сервиса).
    */

@@ -102,6 +102,13 @@ beforeEach(() => {
 // клик по «Отвязать» в строке провайдера открывает диалог, подтверждение
 // нажимается отдельно на его собственной кнопке «Отвязать» (в этот момент
 // на экране их две — строка и диалог, различаем через within(dialog)).
+// «Отвязать» у способа входа по названию строки: у единственного способа
+// кнопка недоступна (QA 2026-11, М2), поэтому в тестах отвязки их два.
+function unlinkBtn(title: string): HTMLElement {
+  const row = screen.getByText(title).closest('.aa-row') as HTMLElement;
+  return within(row).getByText('Отвязать');
+}
+
 function confirmUnlink() {
   const dialog = screen.getByRole('dialog');
   fireEvent.click(within(dialog).getByText('Отвязать'));
@@ -214,14 +221,17 @@ describe('AccountPage — реальные данные провайдеров',
   });
 
   it('успешная отвязка VK вызывает POST /api/auth/unlink/vk', async () => {
-    meProviders = [{ provider: 'vk', email: null, displayName: null }];
+    meProviders = [
+      { provider: 'vk', email: null, displayName: null },
+      { provider: 'telegram', email: null, displayName: '@petya' },
+    ];
     renderPage();
     await screen.findByText('привязан');
-    fireEvent.click(screen.getByText('Отвязать'));
+    fireEvent.click(unlinkBtn('ВКонтакте'));
     confirmUnlink();
-    meProviders = [];
+    meProviders = [{ provider: 'telegram', email: null, displayName: '@petya' }];
 
-    await waitFor(() => expect(screen.queryByText('Отвязать')).toBeNull());
+    await waitFor(() => expect(screen.queryByText('@petya')).toBeTruthy());
     expect(
       fetchMock.mock.calls.some(([url]: [string]) =>
         url.includes('/api/auth/unlink/vk'),
@@ -234,11 +244,12 @@ describe('AccountPage — отвязка провайдера', () => {
   it('клик по «Отвязать» открывает диалог подтверждения (не бьёт по api сразу)', async () => {
     meProviders = [
       { provider: 'google', email: 'user@gmail.com', displayName: null },
+      { provider: 'telegram', email: null, displayName: '@petya' },
     ];
     renderPage();
-    await screen.findByText('Отвязать');
+    await screen.findAllByText('Отвязать');
 
-    fireEvent.click(screen.getByText('Отвязать'));
+    fireEvent.click(unlinkBtn('Google'));
     const dialog = screen.getByRole('dialog');
     expect(dialog.getAttribute('aria-modal')).toBe('true');
     expect(within(dialog).getByText('Отвязать Google?')).toBeTruthy();
@@ -252,16 +263,17 @@ describe('AccountPage — отвязка провайдера', () => {
   it('успешная отвязка вызывает POST /api/auth/unlink/:provider и обновляет список через refresh', async () => {
     meProviders = [
       { provider: 'google', email: 'user@gmail.com', displayName: null },
+      { provider: 'telegram', email: null, displayName: '@petya' },
     ];
     renderPage();
-    await screen.findByText('Отвязать');
+    await screen.findAllByText('Отвязать');
 
-    fireEvent.click(screen.getByText('Отвязать'));
+    fireEvent.click(unlinkBtn('Google'));
     confirmUnlink();
-    // После unlink следующий /api/auth/me должен вернуть пустой список.
-    meProviders = [];
+    // После unlink следующий /api/auth/me вернёт только Telegram.
+    meProviders = [{ provider: 'telegram', email: null, displayName: '@petya' }];
 
-    await waitFor(() => expect(screen.queryByText('Отвязать')).toBeNull());
+    await waitFor(() => expect(screen.queryByText('user@gmail.com')).toBeNull());
     const unlinkCall = fetchMock.mock.calls.find(([url]: [string]) =>
       url.includes('/api/auth/unlink/google'),
     );
@@ -275,11 +287,12 @@ describe('AccountPage — отвязка провайдера', () => {
   it('отмена в диалоге не вызывает api', async () => {
     meProviders = [
       { provider: 'google', email: 'user@gmail.com', displayName: null },
+      { provider: 'telegram', email: null, displayName: '@petya' },
     ];
     renderPage();
-    await screen.findByText('Отвязать');
+    await screen.findAllByText('Отвязать');
 
-    fireEvent.click(screen.getByText('Отвязать'));
+    fireEvent.click(unlinkBtn('Google'));
     const dialog = screen.getByRole('dialog');
     fireEvent.click(within(dialog).getByText('Отмена'));
     await act(async () => {});
@@ -295,11 +308,12 @@ describe('AccountPage — отвязка провайдера', () => {
   it('Escape в диалоге закрывает его без вызова api', async () => {
     meProviders = [
       { provider: 'google', email: 'user@gmail.com', displayName: null },
+      { provider: 'telegram', email: null, displayName: '@petya' },
     ];
     renderPage();
-    await screen.findByText('Отвязать');
+    await screen.findAllByText('Отвязать');
 
-    fireEvent.click(screen.getByText('Отвязать'));
+    fireEvent.click(unlinkBtn('Google'));
     fireEvent.keyDown(document, { key: 'Escape' });
 
     expect(screen.queryByRole('dialog')).toBeNull();
@@ -313,6 +327,7 @@ describe('AccountPage — отвязка провайдера', () => {
   it('ошибка API при отвязке показывает причину и оставляет провайдер привязанным', async () => {
     meProviders = [
       { provider: 'google', email: 'user@gmail.com', displayName: null },
+      { provider: 'telegram', email: null, displayName: '@petya' },
     ];
     fetchMock = vi.fn((url: string, init?: RequestInit) => {
       if (url.includes('/api/auth/unlink/'))
@@ -326,14 +341,14 @@ describe('AccountPage — отвязка провайдера', () => {
     vi.stubGlobal('fetch', fetchMock);
 
     renderPage();
-    await screen.findByText('Отвязать');
-    fireEvent.click(screen.getByText('Отвязать'));
+    await screen.findAllByText('Отвязать');
+    fireEvent.click(unlinkBtn('Google'));
     confirmUnlink();
 
     await screen.findByText(/Нельзя отвязать последний способ входа/);
     // Провайдер остался привязанным — отвязка не «тихо прошла».
     expect(screen.getByText('user@gmail.com')).toBeTruthy();
-    expect(screen.getByText('Отвязать')).toBeTruthy();
+    expect(unlinkBtn('Google')).toBeTruthy();
   });
 });
 

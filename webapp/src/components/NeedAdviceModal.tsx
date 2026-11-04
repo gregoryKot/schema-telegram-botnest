@@ -18,8 +18,8 @@ export function NeedAdviceModal({ onClose }: { onClose: () => void }) {
         {DISCLAIMER_CONTENT.map((p, i) => (
           <p key={i} style={{ fontSize: 15, color: 'var(--text-sub)', lineHeight: 1.7, marginBottom: 14 }}>{p}</p>
         ))}
-        {/* Терапевту не предлагаем ссылку на самого себя. */}
-        {!contact.isTherapist && (
+        {/* Терапевту не предлагаем ссылку на самого себя; без канала — некуда (З6). */}
+        {!contact.isTherapist && contact.url && (
           <ExternalLink href={contact.url} style={{ display: 'inline-block', fontSize: 14, color: 'var(--accent)', textDecoration: 'none', fontWeight: 500 }}>
             → Записаться на консультацию</ExternalLink>
         )}

@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { joinTherapyErrorText, isAlreadyConnectedError } from './joinErrorText';
+import {
+  codeJoinErrorText,
+  isAlreadyConnectedError,
+  joinTherapyErrorText,
+  joinTransportErrorText,
+} from './joinErrorText';
 import { pickForm } from '../utils/addressForm';
 
 const trFor = (form: 'ty' | 'vy') => (ty: string, vy: string) =>
@@ -32,5 +37,39 @@ describe('joinTherapyErrorText', () => {
   ])('%s — null (вызывающий оставляет дефолт)', (_n, err) => {
     expect(joinTherapyErrorText(err, trFor('ty'))).toBeNull();
     expect(isAlreadyConnectedError(err)).toBe(false);
+  });
+});
+
+// QA 2026-11, З1: «Код не подошёл» — только когда сервер отказал по коду.
+describe('codeJoinErrorText', () => {
+  const ty = trFor('ty');
+  it.each([
+    ['400', { status: 400 }, /^Код не подошёл\. Проверь/],
+    ['404', { status: 404 }, /^Код не подошёл/],
+    ['409', conflict, /^У тебя уже есть подключение/],
+    ['нет сети', new TypeError('Load failed'), /^Нет связи с сервером/],
+    ['429', { status: 429 }, /^Слишком много попыток/],
+    ['503', { status: 503 }, /^Сервер не ответил/],
+    [
+      'ошибка кода, не сеть',
+      new TypeError('x is not a function'),
+      /^Не получилось подключиться/,
+    ],
+  ])('%s', (_n, err, text) => {
+    expect(codeJoinErrorText(err, ty)).toMatch(text);
+  });
+
+  it('форма «вы»', () => {
+    expect(codeJoinErrorText({ status: 400 }, trFor('vy'))).toMatch(
+      /Проверьте/,
+    );
+    expect(
+      codeJoinErrorText(new TypeError('Failed to fetch'), trFor('vy')),
+    ).toMatch(/Попробуйте/);
+  });
+
+  it('ответ по существу (4xx) — не сбой связи', () => {
+    expect(joinTransportErrorText({ status: 400 }, ty)).toBeNull();
+    expect(joinTransportErrorText(conflict, ty)).toBeNull();
   });
 });

@@ -4,6 +4,7 @@
 // сводки (успех/ошибка буфера обмена), удаление результатов теста только
 // когда они есть в localStorage, двухшаговое подтверждение полного удаления
 // аккаунта и восстановление после ошибки API (не должно выглядеть как успех).
+import { useState } from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
   render,
@@ -258,6 +259,32 @@ describe('DeleteOverlay', () => {
     expect(setDeleteConfirm).toHaveBeenCalledWith(false);
     expect(reloadSpy).not.toHaveBeenCalled();
     expect(localStorage.getItem('some_other_key')).toBe('still-here');
+  });
+
+  // QA 2026-11: сбой раньше молча возвращал к первому шагу — не понять,
+  // удалён аккаунт или нет. И текст обязан говорить, что уходит аккаунт целиком.
+  it('ошибка API — на первом шаге видно, что данные на месте; текст — про аккаунт целиком', async () => {
+    mockApi.deleteAllUserData.mockRejectedValue(new Error('network down'));
+    function Host() {
+      const [confirm, setConfirm] = useState(true);
+      const [deleting, setDeleting] = useState(false);
+      return (
+        <DeleteOverlay
+          deleteConfirm={confirm}
+          setDeleteConfirm={setConfirm}
+          deleting={deleting}
+          setDeleting={setDeleting}
+          onBackdropClose={() => {}}
+          onCancel={() => {}}
+        />
+      );
+    }
+    render(<Host />);
+    expect(screen.getByText(/аккаунт целиком/)).toBeTruthy();
+    fireEvent.click(screen.getByText('Да, удалить всё навсегда'));
+    const alert = await screen.findByRole('alert');
+    expect(alert.textContent).toMatch(/Данные на месте/);
+    expect(reloadSpy).not.toHaveBeenCalled();
   });
 
   // B-13 (аудит 2026-10): при включённом 2FA сервер отвечает 403 totp_required —

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { api } from '../../api';
 import { BottomSheet } from '../BottomSheet';
 // Из лёгкого общего модуля (shared/src/hooks/ysqDataDelete.ts), не из
@@ -6,6 +7,10 @@ import { BottomSheet } from '../BottomSheet';
 import { YsqDataDelete } from './YsqDataDelete';
 import { ConfirmButtons } from './ConfirmButtons';
 import { DeleteAccountConfirm } from '../../../../shared/src/components/DeleteAccountConfirm';
+import {
+  deleteAccountCopy,
+  wipeAfterAccountDeletion,
+} from '../../../../shared/src/account/accountDeletion';
 import { useTr } from '../../utils/addressForm';
 import {
   privacyStorageText,
@@ -173,6 +178,9 @@ export function DeleteOverlay({
   onCancel: () => void;
 }) {
   const tr = useTr();
+  const copy = deleteAccountCopy(tr);
+  // Сбой удаления раньше просто возвращал к первому шагу — молча (QA 2026-11).
+  const [failed, setFailed] = useState(false);
   return (
     <BottomSheet onClose={onBackdropClose} zIndex={300}>
       <div className="u-pt4">
@@ -184,7 +192,7 @@ export function DeleteOverlay({
             marginBottom: 8,
           }}
         >
-          Удалить все данные
+          {copy.title}
         </div>
         <div
           style={{
@@ -194,10 +202,20 @@ export function DeleteOverlay({
             marginBottom: 20,
           }}
         >
-          Дневники, оценки, практики, колесо детства, результаты тестов,
-          заметки, задания, связи с терапевтом — всё удалится с сервера. Это
-          действие необратимо.
+          {copy.body}
         </div>
+        {failed && !deleteConfirm && (
+          <div
+            role="alert"
+            style={{
+              fontSize: 13,
+              color: 'var(--accent-red)',
+              marginBottom: 12,
+            }}
+          >
+            {copy.failed}
+          </div>
+        )}
         {!deleteConfirm ? (
           <ConfirmButtons
             confirmLabel="Удалить"
@@ -210,12 +228,12 @@ export function DeleteOverlay({
             deleting={deleting}
             setDeleting={setDeleting}
             deleteAllUserData={api.deleteAllUserData}
-            onFailed={() => setDeleteConfirm(false)}
+            onFailed={() => {
+              setFailed(true);
+              setDeleteConfirm(false);
+            }}
             onDeleted={() => {
-              const theme = localStorage.getItem('app_theme');
-              localStorage.clear();
-              sessionStorage.clear();
-              if (theme) localStorage.setItem('app_theme', theme);
+              wipeAfterAccountDeletion();
               window.location.reload();
             }}
           />

@@ -92,6 +92,25 @@ describe('JoinConfirmSheet (M1: согласие до присоединения
       expect((await screen.findByRole('alert')).textContent).toMatch(/больше не действует/);
       expect(screen.queryByText('Присоединиться')).toBeNull();
       expect(screen.getByText('Закрыть')).toBeTruthy();
+      // QA 2026-11, М1: у недействительной ссылки нет заголовка согласия.
+      expect(screen.queryByText('Открыть доступ терапевту?')).toBeNull();
+    });
+
+    it('уже подключены к этому терапевту — «Подключение уже есть», без «попросите новую»', async () => {
+      m.previewTherapyInvite.mockResolvedValue({ therapistName: 'Анна', connection: 'same' });
+      setup('therapy');
+      expect((await screen.findByRole('status')).textContent).toMatch(/уже есть/);
+      expect(screen.getByText('Подключение уже есть')).toBeTruthy();
+      expect(screen.queryByText('Присоединиться')).toBeNull();
+      expect(screen.queryByText(/Попроси/)).toBeNull();
+    });
+
+    it('подключены к другому терапевту — сказано до нажатия, «Присоединиться» нет', async () => {
+      m.previewTherapyInvite.mockResolvedValue({ therapistName: 'Анна', connection: 'other' });
+      setup('therapy');
+      expect((await screen.findByRole('alert')).textContent).toMatch(/подключение к другому терапевту/);
+      expect(screen.queryByText('Присоединиться')).toBeNull();
+      expect(m.joinTherapy).not.toHaveBeenCalled();
     });
 
     it('после согласия — «Доступ открыт»: кто и что видит; «Понятно» закрывает', async () => {

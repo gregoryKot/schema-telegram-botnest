@@ -6,6 +6,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render, screen, cleanup } from '@testing-library/react';
 import { AddressFormContext } from '../utils/addressForm';
 import { LoginScreen } from './LoginScreen';
+import { wipeAfterAccountDeletion } from '../../../shared/src/account/accountDeletion';
 
 // cleanup — в afterEach, не только перед тестом: после ПОСЛЕДНЕГО теста экран
 // оставался смонтированным, и отложенные чтения хоста из useSafeTop
@@ -93,6 +94,16 @@ describe('LoginScreen — новичок против истёкшей сесс�
     render(<LoginScreen />);
     expect(screen.getByText(/Вход устарел/)).toBeTruthy();
     expect(screen.getByText(/Данные на месте/)).toBeTruthy();
+  });
+
+  // QA 2026-11, К2: сразу после удаления аккаунта — не «данные на месте».
+  it('сразу после удаления аккаунта — «Аккаунт удалён», а не «вход устарел»', () => {
+    localStorage.setItem('auth_seen', '1');
+    wipeAfterAccountDeletion();
+    render(<LoginScreen />);
+    expect(screen.getByText(/^Аккаунт удалён/)).toBeTruthy();
+    expect(screen.queryByText(/Вход устарел/)).toBeNull();
+    expect(localStorage.getItem('account_deleted')).toBeNull();
   });
 
   it('приглашение тоже разное, и оба варианта звучат в обеих формах', () => {

@@ -27,6 +27,7 @@ function makeController(
   } as unknown as BotService;
   const accountService = {
     setAdaptiveLevel: jest.fn().mockResolvedValue(undefined),
+    isNotifyReachable: jest.fn().mockResolvedValue(true),
     ...overrides.accountService,
   } as unknown as AccountService;
   const scheduleService = {
@@ -62,7 +63,19 @@ describe('SettingsController.getSettings', () => {
       therapistShareCards: true,
       therapistShareProfile: true,
       uiPrefs: {},
+      notifyReachable: true,
     });
+  });
+
+  // QA 2026-11, З5: веб-клиент без Telegram видел включённые уведомления,
+  // которые очередь снимала как «доставить некому».
+  it('notifyReachable — от адреса очереди уведомлений этого человека', async () => {
+    const { controller, accountService } = makeController({
+      accountService: { isNotifyReachable: jest.fn().mockResolvedValue(false) },
+    });
+    const res = await controller.getSettings(makeReq(7n));
+    expect(res.notifyReachable).toBe(false);
+    expect(accountService.isNotifyReachable).toHaveBeenCalledWith(7n);
   });
 
   it('запрашивает настройки под userId из req', async () => {

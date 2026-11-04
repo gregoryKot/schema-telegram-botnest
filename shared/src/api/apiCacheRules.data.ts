@@ -69,6 +69,8 @@ export const RULES: Rule[] = [
   // saveYsqResult пишет ysqResult и ysqResultHistory: их читают история,
   // «Мой путь» (journey.service.ts) и профиль (profile.service.ts, ysq.*) —
   // по профилю «Мои паттерны» рисуют выраженные схемы (QA 2026-11, B-З5).
+  // Та же транзакция закрывает задание терапевта «пройти тест» (К1) —
+  // список заданий тоже.
   simple(
     'POST',
     /^\/api\/ysq-result$/,
@@ -76,6 +78,8 @@ export const RULES: Rule[] = [
     '/api/ysq-history',
     '/api/journey',
     '/api/profile',
+    '/api/therapy/tasks',
+    '/api/therapy/tasks/history',
   ),
   // «Пройти заново» стирает итог: профиль и «Мой путь» читают его же.
   simple(

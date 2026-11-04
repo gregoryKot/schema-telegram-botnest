@@ -10,6 +10,7 @@ import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { SchemaInfoSheet } from './SchemaInfoSheet';
 import { YSQ_RESULT_KEY, YSQ_PROGRESS_KEY } from '../utils/storageKeys';
+import { api } from '../api';
 
 vi.mock('./YSQTestSheet', () => ({
   YSQTestSheet: ({ onClose }: { onClose: () => void }) => (
@@ -116,6 +117,18 @@ describe('SchemaInfoSheet — CTA теста YSQ (состояние из localS
     renderSheet();
     expect(screen.getByText('Мои результаты теста')).toBeTruthy();
     expect(screen.queryByText('Незаконченный тест')).toBeNull();
+  });
+
+  // QA 2026-11, К1: запрос терапевта — задание ysq_test; у входа в тест
+  // о нём сказано, а не только в блоке «От терапевта».
+  it('открытое задание «пройти тест» от терапевта — подпись «Терапевт просит пройти»', async () => {
+    vi.spyOn(api, 'getTasks').mockResolvedValue([
+      { id: 1, userId: 1, assignedBy: 9, type: 'ysq_test', text: 'Пройти тест на схемы', targetDays: null,
+        needId: null, dueDate: null, done: null, completedAt: null, createdAt: '2026-11-01T00:00:00Z' },
+    ]);
+    renderSheet();
+    expect(await screen.findByText(/^Терапевт просит пройти/)).toBeTruthy();
+    vi.restoreAllMocks();
   });
 
   it('клик по CTA открывает (замоканный) YSQTestSheet, закрытие возвращает к листу', async () => {

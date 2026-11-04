@@ -11,6 +11,7 @@ import { TelegramRetry } from './login/TelegramRetry';
 import { exchangeErrorText } from './login/exchangeError';
 import { humanizeThrown } from '../../../shared/src/api/humanizeError';
 import { hasAuthSeen } from '../../../shared/src/auth/authSeen';
+import { ACCOUNT_DELETED_TEXT, useAccountDeletedNotice } from '../../../shared/src/account/accountDeletion';
 import { useTr } from '../utils/addressForm';
 import { useLoginConsentMark } from '../hooks/useLoginConsentMark';
 import '../styles/auth-login.css';
@@ -33,6 +34,7 @@ export function LoginPage() {
       : null,
   );
   const isTelegramContext = !!getHost().sessionExchange();
+  const deleted = useAccountDeletedNotice(); // сразу после удаления — не «вход устарел» (К2)
 
   useEffect(() => {
     if (isAuthenticated) navigate('/today', { replace: true });
@@ -90,8 +92,8 @@ export function LoginPage() {
           <h1 className="al-title">Всё по схеме</h1>
           {/* Новичку и человеку с истёкшей сессией нужно сказать разное
               (парная правка к LoginScreen мини-аппа, правило №3). */}
-          <p className="al-sub">
-            {hasAuthSeen()
+          <p className="al-sub" role={deleted ? 'status' : undefined}>
+            {deleted ? ACCOUNT_DELETED_TEXT : hasAuthSeen()
               ? 'Вход устарел — данные на месте, нужно войти заново'
               : 'Войдите, чтобы продолжить. Telegram даёт тот же аккаунт, что в боте и мини-аппе'}
           </p>

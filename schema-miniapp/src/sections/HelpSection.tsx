@@ -1,8 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
-import {
-  useHelpOverlays,
-  type HelpOverlayId,
-} from './helpSection/useHelpOverlays';
+import { useHelpOverlays } from './helpSection/useHelpOverlays';
+import { openTaskRoute } from './helpSection/openTaskRoute';
+import { useTasksChanged } from '../../../shared/src/tasks/tasksChanged';
 import { HelpOverlays } from './helpSection/HelpOverlays';
 import { HereAndNow } from './helpSection/HereAndNow';
 import { useSafeTop } from '../utils/safezone';
@@ -17,19 +16,11 @@ import { TaskRow } from '../components/tasks/TaskRow';
 import {
   completesOnSave,
   taskRoute,
-  type TaskExercise,
 } from '../../../shared/src/tasks/taskRoute';
 import type { QuickPracticeId } from '../../../shared/src/practices/quickPractices';
 import { AllTasksSheet } from './helpSection/AllTasksSheet';
 import { HelpHeader } from './helpSection/HelpHeader';
 import { ToolsList } from './helpSection/ToolsList';
-
-const EXERCISE_OVERLAY: Record<TaskExercise, HelpOverlayId> = {
-  belief_check: 'beliefCheck',
-  letter_to_self: 'letterToSelf',
-  safe_place: 'safePlace',
-  flashcard: 'flashcard',
-};
 
 interface Props {
   onOpenChildhoodWheel: () => void;
@@ -37,6 +28,8 @@ interface Props {
   onOpenPlans: () => void;
   onOpenTracker: () => void;
   onOpenDiaries: () => void;
+  /** Тест на схемы — задание «пройти тест» от терапевта (QA 2026-11, К1). */
+  onOpenYsq: () => void;
   practiceCount?: number | null;
   planCount?: number | null;
   refreshKey?: number;
@@ -52,6 +45,7 @@ export function HelpSection({
   onOpenPlans,
   onOpenTracker,
   onOpenDiaries,
+  onOpenYsq,
   practiceCount,
   planCount,
   refreshKey,
@@ -125,22 +119,8 @@ export function HelpSection({
     setShowAllTasks(false);
     const route = taskRoute(task);
     setActiveTaskId(completesOnSave(route) ? task.id : null);
-    switch (route.kind) {
-      case 'diary':
-        return onOpenDiaries();
-      case 'tracker':
-        return onOpenTracker();
-      case 'childhood_wheel':
-        return onOpenChildhoodWheel();
-      case 'exercise':
-        return overlays.show(EXERCISE_OVERLAY[route.exercise]);
-      case 'schema':
-        if (route.id) overlays.setIntroSchemaId(route.id);
-        return;
-      case 'mode':
-        if (route.id) overlays.setIntroModeId(route.id);
-        return;
-    }
+    const targets = { onOpenDiaries, onOpenTracker, onOpenChildhoodWheel };
+    openTaskRoute(route, { ...targets, onOpenYsq, overlays });
   }
 
   // Общий рефетч списка задач — раньше три копии этого Promise.all глушили
@@ -154,6 +134,8 @@ export function HelpSection({
       })
       .catch((e) => console.error('refreshTasks failed', e));
   }
+  // Задание закрыл сервер (пройденный тест на схемы) — перечитать список.
+  useTasksChanged(() => void refreshTasks());
 
   function completeTask(taskId: number) {
     api

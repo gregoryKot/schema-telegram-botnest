@@ -88,6 +88,24 @@ describe('бывший терапевт: join и отключение сбрас
   });
 });
 
+// QA 2026-11, К1: сохранённый тест закрывает задание «пройти тест» от
+// терапевта — список заданий не должен 15 секунд показывать его открытым.
+describe('RULES: POST /api/ysq-result', () => {
+  it('сбрасывает итог, историю, «Мой путь», профиль и задания', () => {
+    const rule = RULES.find(
+      (r) => r.method === 'POST' && r.pattern.test('/api/ysq-result'),
+    );
+    expect(rule?.targets?.(FAKE_MATCH, undefined)).toEqual([
+      '/api/ysq-result',
+      '/api/ysq-history',
+      '/api/journey',
+      '/api/profile',
+      '/api/therapy/tasks',
+      '/api/therapy/tasks/history',
+    ]);
+  });
+});
+
 // Кнопка «Удалить результаты теста» (решение владельца 2026-10-22) стирает
 // итог, историю и прогресс: ни одна вкладка не должна ещё 15 секунд
 // показывать удалённый тест из кеша.
