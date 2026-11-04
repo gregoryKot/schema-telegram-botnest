@@ -103,7 +103,7 @@ describe('LoginScreen — новичок против истёкшей сесс�
     render(<LoginScreen />);
     expect(screen.getByText(/^Аккаунт удалён/)).toBeTruthy();
     expect(screen.queryByText(/Вход устарел/)).toBeNull();
-    expect(sessionStorage.getItem('account_deleted')).toBeNull();
+    expect(localStorage.getItem('account_deleted')).toBeNull();
   });
 
   it('приглашение тоже разное, и оба варианта звучат в обеих формах', () => {

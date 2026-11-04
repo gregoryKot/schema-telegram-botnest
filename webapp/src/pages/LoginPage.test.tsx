@@ -85,7 +85,7 @@ describe('LoginPage — сразу после удаления аккаунта'
     renderPage();
     expect(screen.getByText(/^Аккаунт удалён/)).toBeTruthy();
     expect(screen.queryByText(/данные на месте/)).toBeNull();
-    expect(sessionStorage.getItem('account_deleted')).toBeNull();
+    expect(localStorage.getItem('account_deleted')).toBeNull();
   });
 });
 

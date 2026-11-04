@@ -10,6 +10,8 @@
 // Строки с обращением — внутри tr() (гейты check-second-person/address-form).
 import { useEffect, useState } from 'react';
 import type { Tr } from './accountLinkText';
+import { clearLocalData } from '../auth/clearLocalData';
+import { readLocal, removeLocal, writeLocal } from '../utils/safeLocalStorage';
 
 export function deleteAccountCopy(tr: Tr) {
   return {
@@ -31,48 +33,28 @@ export function deleteAccountCopy(tr: Tr) {
 export const ACCOUNT_DELETED_TEXT =
   'Аккаунт удалён: записи, способы входа и связь с терапевтом стёрты с сервера. Новый вход создаст пустой аккаунт.';
 
-// Переживают удаление осознанно: тема оформления и согласие на cookie — про
-// устройство, а не про человека.
-const KEEP = ['app_theme', 'cookie_consent'];
 const DELETED_FLAG = 'account_deleted';
 
 /**
- * Аккаунт удалён на сервере: стереть всё локальное (настройки, кеш контакта
- * терапевта, отметку «уже входил») и оставить экрану входа отметку на одну
- * вкладку. Перезагрузку страницы делает вызывающий.
+ * Аккаунт удалён на сервере: стереть всё локальное — та же уборка, что при
+ * выходе (clearLocalData: настройки, кеш контакта терапевта, отметка «уже
+ * входил»; тема и согласие на cookie остаются), — и оставить экрану входа
+ * отметку. Перезагрузку страницы делает вызывающий. Отказ хранилища
+ * (приватный режим) — забота одного примитива, safeLocalStorage.
  */
 export function wipeAfterAccountDeletion(): void {
-  try {
-    const kept = KEEP.map((k) => [k, localStorage.getItem(k)] as const);
-    localStorage.clear();
-    for (const [k, v] of kept) if (v !== null) localStorage.setItem(k, v);
-  } catch {
-    // Хранилище недоступно (приватный режим) — стирать в нём и нечего.
-  }
-  try {
-    sessionStorage.clear();
-    sessionStorage.setItem(DELETED_FLAG, '1');
-  } catch {
-    // Без отметки экран входа покажет обычный текст — аккаунт всё равно удалён.
-  }
+  clearLocalData();
+  writeLocal(DELETED_FLAG, '1');
 }
 
 /** Экран входа после удаления аккаунта? Чтение без побочных эффектов. */
 export function isAccountJustDeleted(): boolean {
-  try {
-    return sessionStorage.getItem(DELETED_FLAG) === '1';
-  } catch {
-    return false;
-  }
+  return readLocal(DELETED_FLAG) === '1';
 }
 
 /** Отметка показана — снять, чтобы она не всплыла на следующем входе. */
 export function clearAccountDeletedMark(): void {
-  try {
-    sessionStorage.removeItem(DELETED_FLAG);
-  } catch {
-    // Хранилище недоступно — и отметки там нет.
-  }
+  removeLocal(DELETED_FLAG);
 }
 
 /** Экран входа: показать «Аккаунт удалён» один раз — отметка снимается. */
