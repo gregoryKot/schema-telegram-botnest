@@ -15,7 +15,8 @@ import {
 import type { ComponentType } from 'react';
 import { BreathingCard, type BreathingCardProps } from './BreathingCard';
 import { BreathingSiteCard } from './BreathingSiteCard';
-import { BREATH_CYCLE_S } from './breathing';
+import { BREATH_CYCLE_S, BREATH_SESSION_S } from './breathing';
+import { AddressFormContext } from '../utils/addressForm';
 import type { ShareCardSheetProps } from '../share/shareCardSheetProps';
 
 const mockApi = {
@@ -107,6 +108,91 @@ describe('BreathingCard — засчитывание прохождения', ()
     renderCard();
     fireEvent.click(screen.getByText('Начать дыхание'));
     expect(mockApi.trackEvent).toHaveBeenCalledWith('breath_start');
+  });
+});
+
+// QA 2026-11, М10: карточка обещает «Одна минута — и станет легче», а круги
+// шли бесконечно («круг 10» через две минуты), и засчитывала только кнопка.
+describe('BreathingCard — минута по обещанию', () => {
+  it.each([
+    ['мини-апп', BreathingCard],
+    ['сайт', BreathingSiteCard],
+  ] as const)(
+    '%s: через минуту — итог, засчитано без кнопки, круги стоят',
+    async (_, Card) => {
+      renderCard(Card);
+      fireEvent.click(screen.getByText('Начать дыхание'));
+      expect(screen.getByText((c) => c.includes('круг 1 из 4'))).toBeTruthy();
+      act(() => {
+        vi.advanceTimersByTime(BREATH_SESSION_S * 1000);
+      });
+      await flush();
+      expect(screen.getByText('Минута позади')).toBeTruthy();
+      expect(screen.getByText('4 круга вдоха и выдоха.')).toBeTruthy();
+      expect(mockApi.recordPracticeSession).toHaveBeenCalledTimes(1);
+      act(() => {
+        vi.advanceTimersByTime(60_000);
+      });
+      expect(screen.queryByText((c) => c.includes('круг 5'))).toBeNull();
+      expect(screen.getByText('Минута позади')).toBeTruthy();
+    },
+  );
+
+  it('«Ещё минуту» — по желанию: дыхание с первого круга, повторно не пишется', async () => {
+    renderCard();
+    fireEvent.click(screen.getByText('Начать дыхание'));
+    act(() => {
+      vi.advanceTimersByTime(BREATH_SESSION_S * 1000);
+    });
+    await flush();
+    fireEvent.click(screen.getByText('Ещё минуту'));
+    expect(screen.getByText('Вдох')).toBeTruthy();
+    expect(screen.getByText((c) => c.includes('круг 1 из 4'))).toBeTruthy();
+    act(() => {
+      vi.advanceTimersByTime(BREATH_SESSION_S * 1000);
+    });
+    await flush();
+    expect(screen.getByText('Минута позади')).toBeTruthy();
+    expect(mockApi.recordPracticeSession).toHaveBeenCalledTimes(1);
+  });
+
+  it('ушёл со страницы после полного круга — засчитано; до круга — нет', async () => {
+    const early = renderCard();
+    fireEvent.click(screen.getByText('Начать дыхание'));
+    act(() => {
+      vi.advanceTimersByTime((BREATH_CYCLE_S - 1) * 1000);
+    });
+    early.unmount();
+    await flush();
+    expect(mockApi.recordPracticeSession).not.toHaveBeenCalled();
+
+    const late = renderCard();
+    fireEvent.click(screen.getByText('Начать дыхание'));
+    act(() => {
+      vi.advanceTimersByTime(BREATH_CYCLE_S * 1000);
+    });
+    late.unmount();
+    await flush();
+    expect(mockApi.recordPracticeSession).toHaveBeenCalledTimes(1);
+  });
+
+  it('итог на «вы» — для формы «вы»', async () => {
+    render(
+      <AddressFormContext.Provider value={{ form: 'vy', setForm: vi.fn() }}>
+        <BreathingSiteCard
+          api={fakeApi}
+          ShareCardSheet={FakeShareCardSheet}
+          botShortUrl="https://t.me/test_bot"
+        />
+      </AddressFormContext.Provider>,
+    );
+    fireEvent.click(screen.getByText('Начать дыхание'));
+    act(() => {
+      vi.advanceTimersByTime(BREATH_SESSION_S * 1000);
+    });
+    await flush();
+    expect(screen.getByText(/Заметьте, как сейчас дышится/)).toBeTruthy();
+    expect(screen.queryByText(/Заметь,/)).toBeNull();
   });
 });
 

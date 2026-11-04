@@ -106,12 +106,14 @@
 | `shared/src/analytics/` | трекинг показа кризисной карточки; константы событий (`homeTile.ts`, `therapyNudge.ts` — «мост к терапевту») |
 | `shared/src/api/` | фабрики api, кеш GET, разбор ответов и ошибок |
 | `shared/src/auth/` | refresh сессии, кросс-табный замок, владелец данных, тикет входа |
+| `shared/src/beliefCheck/` | «Проверка убеждения»: форма мастера с черновиком (`useBeliefCheckForm`) — сайт и мини-апп |
 | `shared/src/booking/` | часовой пояс клиента, канал связи, региональная цена |
 | `shared/src/build/` | vite-плагин `requireBotUsername` |
 | `shared/src/case/` | поток «Что это было»: типы, состояние, сохранение (мини-апп); `quick/` — три шага сайта |
-| `shared/src/childhoodWheel/` | колесо детства: данные и примеры |
+| `shared/src/childhoodWheel/` | колесо детства: данные и примеры; `useRatingSlider` — ползунок 0–10 (указатель, клавиатура, aria) обеих площадок |
 | `shared/src/components/` | общие компоненты: CrisisCard, Celebration, TherapyNote, Ysq*, ConnectionTrouble |
 | `shared/src/diary/` | мета дневников, пояснения, благодарности; `diaryDay` — «сегодня» дневника = местный день человека; `diaryPrivacy` + `useDiaryAccess` — «кто увидит записи» по связи с терапевтом и его доступу |
+| `shared/src/exercises/` | `exerciseCatalog`: каталог упражнений — рубрика и срок для библиотеки, шапок упражнений, «Поставить цель» и «Инструментов» |
 | `shared/src/flashcard/` | контент карточки схемы: режимы, потребности, шаги |
 | `shared/src/history/` | CTA «Записаться» в истории |
 | `shared/src/hooks/` | useYsqTest и YSQ-скоринг, `ysqProgressStore` (незаконченный тест YSQ: запись прогресса + событие окну — «Продолжить (N из 116)» без перезагрузки), useConfetti, useLongPress, useDragReorder, `useConfirmedAction` (действие только после подтверждения), `useHorizontalSwipe` (свайп трекера; касание внутри `[role="group"]` — шкала — не листает) |
@@ -143,7 +145,7 @@
 | `shared/src/theme/` | `tokens.css`, `fonts.css`, `utilities.css` |
 | `shared/src/therapy/` | `bridge/` — «мост к терапевту» клиента (`therapySignal`, `therapyBridgeLinks`, `therapyBridgeTexts`, `therapyBridgeState`); кабинет терапевта: join, карточка клиента обоих фронтов (`useNoteComposer` — «Новая заметка», `useSessionAliasEditing` — даты сессий и имя, `reloadClientTasks`, `useTherapistTaskActions` — удаление и отметка задания терапевтом, `sessionInput` + `SessionDateTimeFields` — ввод дня и необязательного времени сессии по местному дню, `clientSheetHelpers.isActiveToday` — «активность сегодня» по календарю клиента из `daysSinceActive`; `clientActivity.clientActivityLabel` — одна подпись давности «активность вчера / 24 окт» для «Сегодня» и списка клиентов; `clientInitials` — инициалы аватара во всём кабинете), концептуализация (`conceptOverLimit` — какое поле длиннее предела сервера), `conceptGraph`, `ysqExpression` (выраженность схем YSQ у терапевта по флагу `active` бэкенда, порядок как у клиента), `upcomingSession` (ближайшая сессия клиента: прошедшая `nextSession` → ближайший день встреч, `isSessionToday` — встреча сегодня у смотрящего; кабинет терапевта и «Встреча с терапевтом» у клиента — баннер «Практик», `profile/TherapistCard`, `helpSection/NextSessionBanner`) |
 | `shared/src/today/` | блоки «Сегодня», фокус, кастомизация |
-| `shared/src/utils/` | addressForm(+Cache), format (`todayStr` — местный день человека; день UTC — `calendarDate.todayCalendarDate`, №25), `momentDate.momentIsToday`, storageKeys, crisisMarkers, `searchNormalize` (`matchesSearch` — поиск без регистра и «ё/е»: клиенты в списке, сайдбаре и ⌘K; им же нормализует crisisMarkers), drafts, a11y; `usePendingSave` — единственная механика автосохранения с задержкой: правка привязана к владельцу (клиент, карта), досылка при смене владельца, `pagehide`, скрытии вкладки и размонтировании (keepalive — `shared/src/api/keepalive.ts`) |
+| `shared/src/utils/` | addressForm(+Cache), format (`todayStr` — местный день человека; день UTC — `calendarDate.todayCalendarDate`, №25), `momentDate.momentIsToday`, storageKeys, crisisMarkers, `searchNormalize` (`matchesSearch` — поиск без регистра и «ё/е»: клиенты в списке, сайдбаре и ⌘K; им же нормализует crisisMarkers), drafts (`useDraftAutosave` — черновик формы упражнения: восстановить, автосохранить, стереть после сохранения), a11y; `usePendingSave` — единственная механика автосохранения с задержкой: правка привязана к владельцу (клиент, карта), досылка при смене владельца, `pagehide`, скрытии вкладки и размонтировании (keepalive — `shared/src/api/keepalive.ts`) |
 | `shared/src/warmWords/` | «Тёплые слова»: сбор и хук |
 
 - **Тесты:** vitest рядом с кодом, у каждого пакета свой (`npm test --prefix <пакет>`). jsdom включается директивой `// @vitest-environment jsdom` в самом файле, а не глобально.

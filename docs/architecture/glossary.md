@@ -54,7 +54,7 @@
 | «Пара», партнёр | видны индексы дня друг друга | `src/bot/pairs.service.ts` | `webapp/src/components/settingsSheet/PartnerSection.tsx`, `schema-miniapp/src/components/PairSheet.tsx` |
 | «Достижения», «серия» | награды, дни подряд | `src/bot/bot.insight-metrics.ts`, `src/bot/bot.activity-streak.ts` | `webapp/src/sections/profile/AchievementsCard.tsx`, `schema-miniapp/src/sections/profile/AchievementsCard.tsx` |
 | «Поделиться», карточка-картинка | шаринг | — | `webapp/src/share/ShareCardSheet.tsx`, `schema-miniapp/src/share/ShareCardSheet.tsx` |
-| «Черновики» | незавершённые записи | `src/api/api.controller.ts` | `webapp/src/utils/drafts.ts`, `schema-miniapp/src/utils/drafts.ts` |
+| «Черновики» | незавершённые записи дневников и упражнений с текстом | `src/api/api.controller.ts` | `shared/src/utils/drafts.ts`, упражнения — `shared/src/utils/useDraftAutosave.ts` |
 | «Телефон доверия», кризисная карточка | при тревожных маркерах | `src/bot/crisis-metrics.ts` | `shared/src/components/CrisisCard.tsx` |
 | игра, котик Мистер | отдельный пакет `game/` | `src/bot/game-metrics.service.ts` | `game/src/main.ts` |
 | **Сайт, вход, бот, канал** | | | |

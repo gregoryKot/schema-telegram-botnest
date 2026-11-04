@@ -8,6 +8,9 @@ import { detectCrisisAny } from '../../utils/crisisMarkers';
 import { CrisisCard } from '../CrisisCard';
 import { hueStyle, NEED_HUE } from '../../lib/tone';
 import { wordsLabel } from './letterWords';
+import { EXERCISE_DRAFT_KEYS } from '../../utils/drafts';
+import { restoreDraft, useDraftAutosave } from '../../../../shared/src/utils/useDraftAutosave';
+import { exerciseCard } from '../../../../shared/src/exercises/exerciseCatalog';
 
 export function LetterEx({
   onBack,
@@ -18,7 +21,7 @@ export function LetterEx({
 }) {
   const tr = useTr();
   const goBack = useHistorySheet(onBack);
-  const [text, setText] = useState('');
+  const [text, setText] = useState(() => restoreDraft<{ text: string }>(EXERCISE_DRAFT_KEYS.letter)?.text ?? '');
   const [done, setDone] = useState(false);
   const [sealing, setSealing] = useState(false);
   const [sealError, setSealError] = useState(false);
@@ -26,6 +29,7 @@ export function LetterEx({
   const [sealedId, setSealedId] = useState<number | null>(null);
   const [pastLetters, setPastLetters] = useState<Awaited<ReturnType<typeof api.getLetters>>>([]);
   const textRef = useRef<HTMLTextAreaElement>(null);
+  const clearDraft = useDraftAutosave(EXERCISE_DRAFT_KEYS.letter, { text });
 
   useEffect(() => {
     if (!done) textRef.current?.focus();
@@ -52,6 +56,7 @@ export function LetterEx({
         setSealedId((await api.createLetter(text)).id);
         onComplete?.();
       } else await api.updateLetter(sealedId, text);
+      clearDraft();
       setDone(true);
     } catch {
       setSealError(true);
@@ -125,7 +130,7 @@ export function LetterEx({
   return (
     <ExScreen
       onBack={goBack}
-      eyebrow="№ 04 · Эмоциональная работа"
+      eyebrow={exerciseCard('letter').eyebrow}
       title={
         <>
           Письмо

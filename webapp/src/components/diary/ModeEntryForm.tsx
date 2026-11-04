@@ -102,7 +102,7 @@ export function ModeEntryForm({ selectedMode, modeId, values, set, healthyRespon
             {/* Пример-ориентир голоса Здорового Взрослого — зелёная плашка, явно «пример», не ответ. */}
             <div className="ds-card ds-card--row tone-soft sd-example" style={hueStyle(MODE_GROUP_HUE.healthy)}>
               <div className="ds-label tone-ink">Например, можно сказать себе:</div>
-              <div className="sd-example-text">«{hint}»</div>
+              <div className="sd-example-text">{hint}</div>
             </div>
             <LimitedTextarea max={DIARY_FIELD_MAX} ref={areaRef} className="ds-textarea"
               rows={4}

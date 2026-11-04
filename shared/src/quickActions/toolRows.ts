@@ -1,12 +1,13 @@
 import { getQuickAction, type QuickActionId } from './quickActions';
 import { pluralRu as plural } from '../utils/pluralRu';
+import { exerciseCard } from '../exercises/exerciseCatalog';
 
 // Данные 10 строк «Инструментов» — единственный источник для мини-аппа
 // (ToolsList.tsx), сайта («Практика») и листа настройки видимости
 // (QuickActionCustomizeSheet, правило «одна механика — один компонент»).
 // Тексты (label/sub статичных строк) берутся из общего реестра
 // quickActions.ts — здесь только порядок строк и динамические
-// счётчики (цели/практики/планы, «Займёт 8–12 минут» колеса детства), которых
+// счётчики (цели/практики/планы, срок колеса детства из каталога упражнений), которых
 // в реестре нет. Без эмодзи (фидбек владельца): в листах настройки выбирают
 // по смыслу.
 
@@ -60,7 +61,9 @@ function rowSub(
           ? 'История пуста'
           : `${props.planCount} ${plural(props.planCount, 'план', 'плана', 'планов')}`;
     case 'childhood_wheel':
-      return props.childhoodDone ? 'Паттерны из прошлого' : 'Займёт 8–12 минут';
+      return props.childhoodDone
+        ? 'Паттерны из прошлого'
+        : `Займёт ${exerciseCard('wheel').time}`;
     default:
       return staticSub;
   }

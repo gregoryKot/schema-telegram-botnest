@@ -1,5 +1,6 @@
 import { ExScreen, GlyphArrowRight } from '../ExScreen';
 import { useTr } from '../../../utils/addressForm';
+import { exerciseCard } from '../../../../../shared/src/exercises/exerciseCatalog';
 import '../../../styles/sheet-childhood.css';
 
 /**
@@ -19,7 +20,7 @@ export function ChildhoodIntro({
   return (
     <ExScreen
       onBack={onBack}
-      eyebrow="№ 06 · Истоки"
+      eyebrow={exerciseCard('wheel').eyebrow}
       title={title}
       lede="Те же пять потребностей – но про детство."
     >
@@ -43,7 +44,7 @@ export function ChildhoodIntro({
         </button>
         <span className="ex2-spacer" />
         <button type="button" className="ds-btn" onClick={onStart}>
-          Оценить детство – 8–12 минут <GlyphArrowRight />
+          Оценить детство – {exerciseCard('wheel').time} <GlyphArrowRight />
         </button>
       </div>
     </ExScreen>

@@ -16,6 +16,8 @@ import { detectCrisisAny } from '../../utils/crisisMarkers';
 import { CrisisCard } from '../CrisisCard';
 import { hueStyle } from '../../lib/tone';
 import { HUE_STRAIN, HUE_CARE } from './exHue';
+import { useBeliefCheckForm } from '../../../../shared/src/beliefCheck/useBeliefCheckForm';
+import { exerciseCard } from '../../../../shared/src/exercises/exerciseCatalog';
 
 const STEPS = [
   'Убеждение',
@@ -35,13 +37,9 @@ export function BeliefCheckEx({
   const tr = useTr();
   const SIDE_HINTS = buildSideHints(tr);
   const goBack = useHistorySheet(onBack);
-  const [step, setStep] = useState(0);
-  const [belief, setBelief] = useState('');
-  const [forList, setForList] = useState<string[]>([]);
-  const [againstList, setAgainstList] = useState<string[]>([]);
-  const [reframe, setReframe] = useState('');
-  const [forInput, setForInput] = useState('');
-  const [againstInput, setAgainstInput] = useState('');
+  const form = useBeliefCheckForm(); // текст и шаг живут в черновике: F5 и «Назад» их не стирают
+  const { step, setStep, belief, setBelief, forList, setForList, againstList, setAgainstList } = form;
+  const { reframe, setReframe, forInput, setForInput, againstInput, setAgainstInput, addFor, addAgainst } = form;
   const [done, setDone] = useState(false); const [saving, setSaving] = useState(false); const [saveError, setSaveError] = useState(false); // createBeliefCheck раньше глотало отказ и всё равно показывало «Готово»
   const [history, setHistory] = useState<Awaited<ReturnType<typeof api.getBeliefChecks>>>([]);
   const beliefRef = useRef<HTMLTextAreaElement>(null);
@@ -67,8 +65,6 @@ export function BeliefCheckEx({
     reframe.trim() ? 3 : -1,
   ].filter((x) => x >= 0);
 
-  function addFor() { const v = forInput.trim(); if (v) { setForList((l) => [...l, v]); setForInput(''); } }
-  function addAgainst() { const v = againstInput.trim(); if (v) { setAgainstList((l) => [...l, v]); setAgainstInput(''); } }
   // Текст в поле, не добавленный «+», — тоже доказательство: любой переход шага
   // (кнопки и полоса шагов) дописывает его в список, а не теряет молча.
   function goTo(n: number) { addFor(); addAgainst(); setStep(n); }
@@ -77,6 +73,7 @@ export function BeliefCheckEx({
     setSaving(true); setSaveError(false);
     try {
       await api.createBeliefCheck({ belief, evidenceFor: forList, evidenceAgainst: againstList, reframe });
+      form.clearDraft();
       onComplete?.();
       setDone(true);
     } catch { setSaveError(true); }
@@ -97,11 +94,7 @@ export function BeliefCheckEx({
         pastChecks={pastChecks}
         onRestart={() => {
           setDone(false);
-          setStep(0);
-          setBelief('');
-          setForList([]);
-          setAgainstList([]);
-          setReframe('');
+          form.reset();
         }}
       />
     );
@@ -111,7 +104,7 @@ export function BeliefCheckEx({
   return (
     <ExScreen
       onBack={goBack}
-      eyebrow="№ 01 · Когнитивная работа"
+      eyebrow={exerciseCard('belief').eyebrow}
       title={
         <>
           Проверка

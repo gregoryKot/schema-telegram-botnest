@@ -29,6 +29,9 @@ function renderSheet() {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  // Черновик письма живёт в localStorage (useDraftAutosave): без очистки
+  // текст одного теста приезжал бы в поле следующего.
+  localStorage.clear();
   mockApi.getLetters.mockResolvedValue([]);
 });
 
