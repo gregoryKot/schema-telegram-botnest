@@ -21,7 +21,7 @@ import {
   notifyYsqResultChanged,
   writeYsqProgress,
 } from './ysqProgressStore';
-import { notifyTasksChanged } from '../tasks/tasksChanged';
+import { submitYsqResult } from './ysqSubmitResult';
 
 // Типы и сборка результата — соседние модули; ре-экспорт держит старый путь.
 import type { UseYsqTestOptions } from './ysqTest.types';
@@ -257,24 +257,8 @@ export function useYsqTest({ api, autoResume }: UseYsqTestOptions) {
     }, ANSWER_ADVANCE_DELAY);
   };
 
-  // Итог на сервере: прогресс там больше не нужен. Экраны под тестом
-  // («Мои паттерны») узнают об итоге, когда прогресса уже нет (QA 2026-11).
-  function submitResult(a: number[], onSaved?: () => unknown) {
-    api
-      .saveYsqResult(a)
-      .then(() => {
-        setResultSaveError(false);
-        // Сервер закрыл задание терапевта «пройти тест» в той же транзакции —
-        // списки заданий перечитываются (tasks/tasksChanged.ts, QA 2026-11).
-        notifyTasksChanged();
-        onSaved?.();
-        void api
-          .deleteYsqProgress()
-          .catch((e) => console.error('deleteYsqProgress failed', e))
-          .finally(notifyYsqResultChanged);
-      })
-      .catch(() => setResultSaveError(true));
-  }
+  const submitResult = (a: number[], onSaved?: () => unknown) =>
+    submitYsqResult(api, a, setResultSaveError, onSaved);
   // Повтор отправки после сбоя — локальные ответы уже верны.
   const retrySaveResult = () => submitResult(answers);
 

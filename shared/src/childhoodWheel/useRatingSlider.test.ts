@@ -32,7 +32,13 @@ describe('ratingKeyValue', () => {
 });
 
 // Сам хук — через настоящий элемент: роль и aria, клавиши, указатель.
-function Track({ initial, onChange = () => {} }: { initial?: number; onChange?: (v: number) => void }) {
+function Track({
+  initial,
+  onChange = () => {},
+}: {
+  initial?: number;
+  onChange?: (v: number) => void;
+}) {
   const [value, setValue] = useState<number | undefined>(initial);
   const props = useRatingSlider({
     value,
@@ -50,7 +56,17 @@ function mountTrack(initial?: number) {
   render(createElement(Track, { initial, onChange }));
   const el = screen.getByRole('slider', { name: 'Безопасность' });
   // jsdom не раскладывает: трек 0…100px, значит 10px — один шаг шкалы.
-  el.getBoundingClientRect = () => ({ left: 0, width: 100, top: 0, height: 10, right: 100, bottom: 10, x: 0, y: 0, toJSON: () => ({}) });
+  el.getBoundingClientRect = () => ({
+    left: 0,
+    width: 100,
+    top: 0,
+    height: 10,
+    right: 100,
+    bottom: 10,
+    x: 0,
+    y: 0,
+    toJSON: () => ({}),
+  });
   el.setPointerCapture = vi.fn();
   return { el, onChange };
 }
