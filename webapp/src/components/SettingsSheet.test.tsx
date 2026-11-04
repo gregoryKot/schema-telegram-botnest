@@ -133,6 +133,19 @@ describe('SettingsSheet — диалог (К4)', () => {
   });
 });
 
+// QA 2026-11, М10: раздел «Обращение» был в контенте, а в оглавлении слева —
+// нет. Оглавление и разделы — два места, обязанные совпадать (правило №4).
+describe('SettingsSheet — оглавление совпадает с разделами', () => {
+  it.each(['CLIENT', 'THERAPIST'] as const)('%s: у каждого раздела есть строка в оглавлении', async (role) => {
+    await renderSheet(role);
+    const sections = document.querySelectorAll('.settings-content-inner [id^="s-"]');
+    const nav = document.querySelectorAll('.settings-sidenav .settings-sidenav-item');
+    expect(sections.length).toBeGreaterThan(5);
+    expect(nav.length).toBe(sections.length);
+    expect(screen.getByRole('button', { name: 'Обращение' })).toBeTruthy();
+  });
+});
+
 describe('SettingsSheet — удаление аккаунта: подтверждение обязательно', () => {
   it('первый клик открывает предупреждение с кнопками «Отмена»/«Удалить», без вызова api', async () => {
     await renderSheet();
