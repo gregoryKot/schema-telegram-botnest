@@ -54,7 +54,7 @@ export function HereAndNowBlock({ compact = false, extraRows }: { compact?: bool
     <>
       <HereAndNowIntro compact={compact} />
 
-      <BreathingCard />
+      <div className="cp-open-card"><BreathingCard /></div>
 
       <div className="ds-label">Если нужно больше</div>
       {ROWS.map((row) => (

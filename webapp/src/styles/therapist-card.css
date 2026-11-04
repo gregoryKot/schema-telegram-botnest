@@ -81,6 +81,23 @@
 .tk-note-text { font-size: 14px; line-height: 1.7; color: var(--text-sub); max-width: 720px; white-space: pre-wrap; overflow-wrap: anywhere; }
 .tk-note-date { margin-top: 6px; }
 
+/* Компьютер (≥768): раскладка макета дизайнера (REDESIGN_2026-10, «Обзор») —
+   цель крупным текстом с засечками, схемы плитками до трёх в ряд, режимы
+   колонками по группам. Строки в одной карточке — только телефон (ниже).
+   Тон — тонкая подложка плитки и верхняя черта колонки, сплошной заливки нет. */
+@media (min-width: 768px) {
+  .tk-goal .tk-text { font: 400 24px/1.4 var(--serif); margin-top: 12px; }
+  .tk-groups { display: grid; gap: 12px; }
+  .tk-groups--tiles { grid-template-columns: repeat(auto-fill, minmax(min(100%, max(200px, (100% - 24px) / 3)), 1fr)); }
+  .tk-groups--cols { grid-template-columns: repeat(auto-fill, minmax(max(140px, (100% - 32px) / 3), 1fr)); gap: 20px 16px; }
+  .tk-groups--tiles .tk-group {
+    gap: 10px; padding: 16px 18px; border-radius: 14px;
+    background: oklch(0.97 0.02 var(--h)); border: 1px solid oklch(0.9 0.04 var(--h));
+  }
+  .tk-groups--cols .tk-group { gap: 6px; padding-top: 12px; border-top: 3px solid oklch(0.58 0.12 var(--h)); }
+  .tk-group > .ds-sub { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+}
+
 /* ── Сайдбар Обзора ──────────────────────────────────────────────────────── */
 .tk-side { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
 .tk-next { margin-top: 6px; overflow-wrap: anywhere; }

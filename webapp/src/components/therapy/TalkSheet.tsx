@@ -23,7 +23,7 @@ export function TalkSheet({ place, trigger, onClose }: Props) {
 
   return (
     <div className="u-sheet cw-sheet" role="dialog" aria-modal="true" aria-label={t.sheetEyebrow}>
-      <div className="ds-sheet-head cw-head">
+      <div className="ds-sheet-head ds-sheet-head--page cw-head">
         <button type="button" className="ds-back" onClick={goBack}><span aria-hidden="true">←</span>{t.sheetBack}</button>
       </div>
       <div className="cw-inner">

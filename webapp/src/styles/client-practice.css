@@ -1,5 +1,6 @@
 /* Раздел «Практика» кабинета клиента. Префикс cp-. */
 .cp-page { max-width: 1100px; }
+.cp-open-card { display: contents; } /* обёртка не участвует в flex-gap .cp-block (телефон как в main) */
 .cp-block { display: flex; flex-direction: column; gap: 14px; scroll-margin-top: 16px; }
 .cp-block .section { margin: 0; }
 
@@ -84,4 +85,13 @@
 .cp-page--phone .cp-tool {
   position: relative; border-top-width: 1px; border-top-color: var(--line);
   padding: var(--space-12) var(--space-40) var(--space-12) var(--space-16); gap: var(--space-2);
+}
+
+/* Компьютер: «Дышите со мной» — открытый блок между двумя линиями, без подложки (вид до волн);
+   на телефоне — карточка ds-card как есть. Правило на прямом ребёнке обёртки. */
+@media (min-width: 768px) {
+  .cp-open-card > .ds-card {
+    background: none; border: 0; border-radius: 0; padding: 28px 0;
+    border-top: 1px solid var(--paper-sunk); border-bottom: 1px solid var(--paper-sunk);
+  }
 }

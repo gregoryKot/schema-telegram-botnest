@@ -1,5 +1,6 @@
 /* Вкладки карточки клиента: Сессии, Задания, YSQ, Записи клиента (префикс tb-).
-   Заголовка у вкладки нет (#906): имя уже во вкладке шапки. Пустые состояния —
+   Заголовок вкладки (TabTitle) — на компьютере; на телефоне его нет (#906): имя
+   уже во вкладке шапки, подпись у «Схем» остаётся. Пустые состояния —
    ds-empty, иконочные кнопки — ds-btn--icon (cabinet.css); здесь только раскладка. */
 .tb-page--narrow { max-width: 900px; }
 .tb-page--ysq { max-width: 1000px; }
@@ -9,6 +10,7 @@
 .tb-r { text-align: right; }
 .tb-error { font-size: 13px; color: var(--err); }
 .tb-mt16 { margin-top: 16px; }
+@media (min-width: 768px) { .tb-tab-title .ds-sub { margin-top: 4px; } }
 .tb-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .tb-tags { display: flex; flex-wrap: wrap; gap: 8px; }
 
@@ -106,6 +108,8 @@
 .tb-field-val { font-size: 14px; margin-top: 3px; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; }
 
 @media (max-width: 767px) {
+  .tb-tab-h, .tb-tab-title--desk { display: none; }
+  .tb-notes-head { display: contents; } /* фильтр — прямой ребёнок страницы, как без заголовка */
   .tb-tl-row { grid-template-columns: 52px 1fr; gap: 14px; }
   .tb-tl-dot { width: 44px; height: 44px; font-size: 18px; }
   .tb-ysq-card { padding: 4px 16px; }

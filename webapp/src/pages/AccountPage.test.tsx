@@ -583,9 +583,10 @@ describe('AccountPage — шапка и заголовок (#906)', () => {
     await screen.findByText('Аккаунт');
     const back = screen.getByRole('button', { name: '← Назад' });
     expect(back.className).toBe('ds-back');
-    expect(back.parentElement!.className).toBe('ds-sheet-head');
+    expect(back.parentElement!.className).toBe('ds-sheet-head ds-sheet-head--page');
     expect(screen.getByText('Аккаунт').className).toBe('ds-eyebrow');
     expect(screen.getByRole('heading', { level: 1 }).classList.contains('ds-h1')).toBe(true);
+    expect(document.querySelector('.aa-lead')!.className).toBe('ds-sub aa-lead'); // подзаголовок как в main, общего ds-lead нет
     expect(screen.getByText('Выйти со всех устройств').className).toBe('ds-link');
   });
 });

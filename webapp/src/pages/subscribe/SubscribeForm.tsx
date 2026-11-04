@@ -22,8 +22,8 @@ export function SubscribeForm(p: Props) {
   const discount = yearDiscountPercent(p.opts);
   const blocked = p.status === 'loading' || !price || !p.consent;
   return (
-    <div className="light-lock ap-page">
-      <div className="ds-sheet-head"><a href="/" className="ds-back">← На главную</a></div>
+    <div className="light-lock ap-page ap-page--form">
+      <div className="ds-sheet-head ds-sheet-head--page"><a href="/" className="ds-back">← На главную</a></div>
       <div className="ap-split">
         <section className="ap-info">
           <div className="ds-eyebrow">Подписка</div>
@@ -34,7 +34,7 @@ export function SubscribeForm(p: Props) {
             <li><span aria-hidden="true">✓</span>Отписаться можно в любой момент</li>
             <li><span aria-hidden="true">✓</span>Оплата картой через Robokassa, автосписание раз в {periodLabel(p.period)}</li>
             <li><span aria-hidden="true">✓</span>Чек — от «Мой налог»</li>
-          </ul>
+          </ul><a href="/" className="ap-home">← На главную</a>
         </section>
 
         <section className="ap-pay">

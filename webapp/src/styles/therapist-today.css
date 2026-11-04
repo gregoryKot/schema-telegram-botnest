@@ -42,6 +42,15 @@
 .tt-attn .tt-row-sub { color: var(--warn-ink); font-size: 12px; }
 .tt-attn-list { display: flex; flex-direction: column; gap: 8px; }
 
+/* Компьютер (≥768): переход — акцентная стрелка «→» справа (как до волн), а не
+   телефонный шеврон «›»; у строки активности стрелки не было. */
+@media (min-width: 768px) {
+  .tt-session > .ds-chev:empty::before, .tt-attn > .ds-chev:empty::before { content: '→'; }
+  .tt-session > .ds-chev, .tt-attn > .ds-chev { font-size: 18px; font-weight: 600; color: var(--accent); white-space: nowrap; }
+  .tt-attn > .ds-chev { color: var(--warn-ink); }
+  .tt-act > .ds-chev { display: none; }
+}
+
 @media (max-width: 767px) {
   /* Три счётчика в ряд — ~115px на карточку: отступ уже, чем у ds-card--row,
      капитель подписи остаётся и ложится в две строки. */
