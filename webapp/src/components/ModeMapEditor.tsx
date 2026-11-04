@@ -228,7 +228,7 @@ function EditorBody({ mapId, clientId, kind, initialNodes, initialEdges }: Props
     <div style={{ position: 'relative', display: 'flex' }}>
       <ModeMapPalette onAdd={handleAddNode} onAddMany={handleAddMany} />
       <button onClick={() => setPaletteOpen(false)} title="Скрыть панель режимов" aria-label="Скрыть панель режимов"
-        style={collapseBtnStyle('left')}>‹</button>
+        className="mm2-ear" style={collapseBtnStyle('left')}>‹</button>
     </div>
   );
 
@@ -238,7 +238,7 @@ function EditorBody({ mapId, clientId, kind, initialNodes, initialEdges }: Props
       {paletteOpen && !mobile && paletteCol}
       {!paletteOpen && (
         <button onClick={() => setPaletteOpen(true)} title="Показать панель режимов" aria-label="Показать панель режимов"
-          style={mobile
+          className="mm2-ear" style={mobile
             ? { ...collapseBtnStyle('left'), position: 'absolute', top: 70, left: 8, zIndex: 30, borderRadius: 7, width: 30, height: 30, fontSize: 17 }
             : { ...collapseBtnStyle('left'), position: 'static', borderRadius: '0 7px 7px 0', height: 'auto', alignSelf: 'stretch', width: 22 }}>
           ›
@@ -258,7 +258,7 @@ function EditorBody({ mapId, clientId, kind, initialNodes, initialEdges }: Props
       {/* Mobile drawers */}
       {mobile && paletteOpen && (
         <MobileDrawer side="left" onClose={() => setPaletteOpen(false)}
-          sideBtn={goBack => <button onClick={() => goBack()} title="Скрыть" aria-label="Скрыть" style={collapseBtnStyle('left')}>‹</button>}
+          sideBtn={goBack => <button onClick={() => goBack()} title="Скрыть" aria-label="Скрыть" className="mm2-ear" style={collapseBtnStyle('left')}>‹</button>}
           content={() => <ModeMapPalette onAdd={handleAddNode} onAddMany={handleAddMany} />} />
       )}
       {mobile && (selectedNode || selectedEdge) && (

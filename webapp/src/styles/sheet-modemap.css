@@ -184,6 +184,7 @@
 /* ── Селектор карт и вьюер ── */
 .mm2-bar { display: flex; align-items: center; gap: 6px; padding: 8px 12px; border-bottom: 1px solid var(--line); overflow-x: auto; flex-shrink: 0; min-height: 56px; }
 .mm2-rename { width: 140px; flex-shrink: 0; }
+.mm2-bar > .ds-btn--icon { flex-shrink: 0; }
 .ds-btn.mm2-new { flex-shrink: 0; white-space: nowrap; margin-left: 2px; }
 .mm2-new > span { display: flex; align-items: center; gap: 5px; }
 .ds-btn.mm2-new.is-active { color: var(--accent); background: var(--paper-tint); }
@@ -246,4 +247,25 @@
   /* Поля холста: локальные 12.5–13px перебивали общие 16px, а iOS увеличивает экран при фокусе на поле мельче 16px. */
   .mm2-pal-search .ds-input, .mm2-add-form .ds-input, .mm2-panel .ds-input, .mm2-panel .ds-textarea, .mm2-panel select.ds-input,
   .ds-input.mm2-add-emoji, .ds-input.mm2-lane-input { font-size: 16px; }
+}
+
+/* Касание: тап-цели холста карты режимов ≥ 44×44 (QA 2026-11, T-5). Мышь не
+   меняется. Размеры задаёт экран под пальцем, а не ширина окна: планшет тоже
+   нажимает пальцем. Часть кнопок холста — с инлайн-размерами (ушки палитры,
+   кнопки над узлом), их перебивает !important. Цвета не трогаем. */
+@media (pointer: coarse), (max-width: 767px) {
+  .ds-btn.mm2-tb-btn { min-width: 44px; height: 44px; }
+  .mm2-tb-sep { margin-block: 8px; }
+  .mm2-pal-item, .mm2-pal-head { min-height: 44px; }
+  .ds-btn.mm2-pal-add { height: 44px; }
+  .mm2-mine-del { width: 44px; height: 44px; }
+  .mm2-add-form .ds-btn { height: 44px; }
+  .mm2-add-form .ds-btn--icon { width: 44px; }
+  .mm2-step, .mm2-hint-q, .mm2-guide-toggle { min-height: 44px; }
+  .mm2-swatch { width: 44px; height: 44px; border-width: 10px; }
+  .mm2-nt-btn { min-width: 44px; min-height: 44px; }
+  .mm2-x, .mm2-mine-plus { width: 44px; height: 44px; }
+  .ds-btn.mm2-del { height: 44px; }
+  .mm2-panel .ds-input, .mm2-panel .ds-btn, .mm2-panel select.ds-input, .mm2-add-form .ds-input, .mm2-pal-search .ds-input { min-height: 44px; }
+  .mm2-ear { width: 44px !important; height: 44px !important; font-size: 18px !important; }
 }
