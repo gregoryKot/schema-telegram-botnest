@@ -148,6 +148,21 @@ describe('LetterEx — кризисная детекция', () => {
     fireEvent.change(textarea, { target: { value: 'Дорогой я, всё будет хорошо.' } });
     expect(screen.queryByRole('status')).toBeNull();
   });
+
+  // Правка запечатанного письма (PATCH /api/letters/:id, QA 2026-11, З4) —
+  // тот же свободный текст, и карточка обязана появиться на повторном вводе.
+  it('«Изменить» после «Запечатать»: кризисная фраза в правке показывает CrisisCard', async () => {
+    mockApi.createLetter.mockResolvedValue({ ...SEALED, id: 7 });
+    renderSheet();
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: 'Тебе тогда было трудно.' } });
+    fireEvent.click(screen.getByRole('button', { name: /Запечатать письмо/ }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Изменить' }));
+    expect(screen.queryByRole('status')).toBeNull();
+
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: 'не хочу жить' } });
+    expect(screen.getByRole('status')).toBeTruthy();
+    expect(screen.getByText('8-800-100-49-94')).toBeTruthy();
+  });
 });
 
 describe('LetterEx — сбой сохранения не теряет письмо', () => {
