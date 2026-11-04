@@ -3,6 +3,7 @@
 // теперь метод описан ОДИН раз здесь. Фронт отличается только транспортом (webapp —
 // JWT Bearer, мини-апп — initData) и платформенными методами своего api.ts (booking/
 // статьи/админка — сайт; exercises, saveRating с outbox-датой, conceptualization — локально).
+import { THERAPY_RELATION_PATH } from '../therapy/freshRelation';
 import type {
   Need,
   UserProfile,
@@ -182,7 +183,7 @@ export const buildSharedApi = (t: ApiTransport) => ({
       connection?: 'none' | 'same' | 'other';
     }>('/api/therapy/invite/preview', { code }),
   getTherapyRelation: () =>
-    t.get<TherapyRelationInfo | null>('/api/therapy/relation'),
+    t.get<TherapyRelationInfo | null>(THERAPY_RELATION_PATH),
   // Терапевт отказался от роли — сообщение вместо «Мой терапевт».
   getFormerTherapist: () =>
     t.get<FormerTherapistInfo | null>('/api/therapy/former-therapist'),
