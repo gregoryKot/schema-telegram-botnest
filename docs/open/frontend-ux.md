@@ -240,8 +240,7 @@
 
 **QA клиента 2026-11 — трекер, история, тест на схемы: увиденное попутно и не тронутое**
 - **Индекс дня с точкой вне общего `fmtIndex`** (`shared/src/needs/dayIndex.ts`, «6,4», нет
-  данных — «—»): сайдбар `webapp/src/components/AppShell.tsx:271` (`idx.toFixed(1)`, а индекс
-  считается инлайном на `:263-264` — нужен `dayIndex` + `fmtIndex`); карточка партнёра
+  данных — «—»): карточка партнёра
   `webapp/src/components/settingsSheet/PartnerCard.tsx:36`, `schema-miniapp/src/components/pairSheet/PartnerCard.tsx:69`;
   кабинет терапевта `webapp/src/components/therapist/ClientIndexCard.tsx:20`,
   `webapp/src/sections/TherapistTodayLists.tsx:44`, `schema-miniapp/src/components/therapistClientSheet/ClientCard.tsx:102`;
@@ -297,15 +296,7 @@
 ### «Сегодня» клиента через полночь и офлайн-оценки (QA клиента 2026-11-03, остаток К3/З9)
 
 Оценки дня у обоих фронтендов живут в `shared/src/today/useDayRatings.ts` (день устройства явной
-датой, перечитывание в полночь, офлайн-очередь поверх ответа сервера). Не дошло до трёх мест:
-- **`webapp/src/components/AppShell.tsx` берёт день загрузки бандла** (`TODAY_DATE`, `TODAY_KEY` из
-  `appShell/useBootstrapLoad.ts`): `todayDate` листа истории и заметки дня, ключ праздника в
-  `handleSaved`. После полуночи в открытой вкладке заметка дня пишется во вчера, праздник нового
-  дня не показывается. Починка — три строки: взять `todayDate` из `useBootstrapLoad()` и
-  `celebratedKey(todayDate)` (`shared/src/utils/todayConstants.ts`). Не тронуто: в файле параллельно
-  работал другой агент; у мини-аппа то же уже сделано (`App.tsx`, `AppOverlays.tsx`,
-  `TrackerHistoryOverlay.tsx`). Проп `isOffline` у `TrackerOverlay` сайта больше не читается —
-  убрать вместе с этой правкой.
+датой, перечитывание в полночь, офлайн-очередь поверх ответа сервера). Что ещё не сведено:
 - **Подсветка «сегодня» в недельной полосе стрика заморожена при загрузке** — `TODAY_DOW_IDX`
   (`webapp/src/sections/profile/streakConst.ts`, `schema-miniapp/src/sections/profile/constants.ts`).
   Мелочь: профиль перечитывается при каждом заходе, но открытый через полночь подсвечивает вчера.

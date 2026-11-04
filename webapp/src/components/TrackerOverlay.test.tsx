@@ -326,7 +326,7 @@ describe('TrackerOverlay — сохранение оценки', () => {
   // перезагрузкой. Теперь он уходит и, упав, кладёт оценку в офлайн-очередь
   // (shared/api/ratingApi).
   it('офлайн: оценка всё равно уходит в api.saveRating (оттуда — в офлайн-очередь)', async () => {
-    renderOverlay({ isOffline: true });
+    renderOverlay(); // TrackerOverlay не смотрит на сеть: запрос уходит всегда
     answer(/В основном да/);
     await advance(500);
     expect(mockApi.saveRating).toHaveBeenCalledWith('attachment', 8, todayStr());

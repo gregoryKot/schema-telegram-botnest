@@ -7,7 +7,8 @@ import { applyCabinetLightTheme } from '../utils/theme';
 import { syncMotionAttr } from '../utils/reducedMotion';
 import { shouldShowChildhoodWheel, THERAPIST_MODE_KEY } from '../utils/storageKeys';
 import { CommandPalette } from './CommandPalette';
-import { useBootstrapLoad, TODAY_DATE, TODAY_KEY } from './appShell/useBootstrapLoad';
+import { useBootstrapLoad } from './appShell/useBootstrapLoad';
+import { celebratedKey } from '../../../shared/src/utils/todayConstants';
 import { useOverlays } from './appShell/useOverlays';
 import { AppOverlays } from './appShell/AppOverlays';
 import { EntryFlows } from './appShell/EntryFlows';
@@ -102,6 +103,7 @@ export function AppShell() {
     pendingPlans, setPendingPlans,
     childhoodRatings, setChildhoodRatings,
     therapistClients, setTherapistClients,
+    todayDate,
   } = useBootstrapLoad({ navigate, initialPathname: location.pathname });
 
   const [history, setHistory] = useState<DayHistory[]>([]);
@@ -188,14 +190,16 @@ export function AppShell() {
 
   const handleSaved = useCallback((needId: string, streak?: StreakData) => {
     setSaved(prev => ({ ...prev, [needId]: true }));
-    if (streak && !localStorage.getItem(TODAY_KEY)) {
-      localStorage.setItem(TODAY_KEY, '1');
+    // День праздника — живой день устройства (todayDate сменяется в полночь), а не день загрузки бандла.
+    const key = celebratedKey(todayDate);
+    if (streak && !localStorage.getItem(key)) {
+      localStorage.setItem(key, '1');
       if (streak.currentStreak > 0) setCelebrationStreak(streak.currentStreak);
       else ov.setShowTodayNote(true);
       if (streak.totalDays >= 5 && shouldShowChildhoodWheel()) setChildhoodWheelPending(true);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- ov.setShowTodayNote стабильный сеттер useState; ov как объект не нужен в deps
-  }, [setSaved]);
+  }, [setSaved, todayDate]);
 
   // Сиблинги контейнера секций ниже (Tracker/History/Diaries/Celebration/
   // AppOverlays) — `inert` на контейнере прячет фон от таба/скринридера,
@@ -295,7 +299,6 @@ export function AppShell() {
             <TrackerOverlay
               needs={needs}
               ratings={ratings}
-              isOffline={isOffline}
               onChange={handleChange}
               onSaved={handleSaved}
               onClose={() => { ov.setShowTrackerOverlay(false); ov.setTrackerNeedId(null); }}
@@ -317,7 +320,7 @@ export function AppShell() {
               ratings={ratings}
               childhoodRatings={childhoodRatings}
               pendingPlans={pendingPlans}
-              todayDate={TODAY_DATE}
+              todayDate={todayDate}
               historyDays={historyDays}
               onClose={() => { ov.setShowTracker(false); ov.setTrackerTab('today'); }}
               onOpenTracker={() => { ov.setTrackerTab('today'); ov.setTrackerNeedId(null); ov.setShowTrackerOverlay(true); }}
@@ -351,7 +354,7 @@ export function AppShell() {
           setChildhoodRatings={setChildhoodRatings}
           childhoodWheelPending={childhoodWheelPending}
           setChildhoodWheelPending={setChildhoodWheelPending}
-          todayDate={TODAY_DATE}
+          todayDate={todayDate}
         />
 
         {/* ── Celebration ── */}
