@@ -82,7 +82,6 @@ export function InfoModal({ children, onClose }: { children: React.ReactNode; on
         onClick={e => e.stopPropagation()}
         onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); } }}
       >
-        <div className="sheet-modal-handle" />
         {children}
         {/* Закрыть можно было только кликом мимо или Escape — у «Сводки для
             терапевта» и пояснений не было кнопки (QA 2026-11, М11). */}
