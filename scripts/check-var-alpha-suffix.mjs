@@ -39,7 +39,7 @@ const ROOT = join(import.meta.dirname, '..');
 
 // .css обязателен: тот же класс возможен в webapp/src/index.css, а до сих
 // пор туда смотрел не каждый гейт (check-color-drift.mjs — только .ts/.tsx).
-const SCAN_DIRS = ['webapp/src', 'schema-miniapp/src', 'shared/src'];
+const SCAN_DIRS = ['webapp/src', 'shared/src'];
 
 function walk(dir, acc = []) {
   let entries;

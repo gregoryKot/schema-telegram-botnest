@@ -39,16 +39,16 @@ describe('check-scale-drift.mjs', () => {
   it('рост счётчика в известном файле — exit 1 с "было → стало"', () => {
     const res = runGate('check-scale-drift.mjs', {
       'scripts/scale-drift-baseline.json': JSON.stringify({
-        'schema-miniapp/src/known.tsx': 1,
+        'webapp/src/known.tsx': 1,
       }),
-      'schema-miniapp/src/known.tsx': [
+      'webapp/src/known.tsx': [
         'const a = { gap: 7 };',
         'const b = { gap: 9 };',
         '',
       ].join('\n'),
     });
     expect(res.status).toBe(1);
-    expect(res.stderr).toContain('schema-miniapp/src/known.tsx: 1 → 2');
+    expect(res.stderr).toContain('webapp/src/known.tsx: 1 → 2');
   });
 
   it('снижение счётчика — exit 0, предлагает зафиксировать --update', () => {

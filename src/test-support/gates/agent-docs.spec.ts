@@ -279,20 +279,17 @@ describe('check-agent-docs.mjs: 4. карта называет каждый ка
     expect(res.stderr).toContain('в карте нет каталога assets/');
   });
 
-  it('каталоги корней webapp/src, schema-miniapp/src, shared/src тоже читаются', () => {
+  it('каталоги корней webapp/src, shared/src тоже читаются', () => {
     const files = {
       'webapp/src/pages/Home.tsx': 'export {};\n',
-      'schema-miniapp/src/hooks/useX.ts': 'export {};\n',
       'shared/src/about/aboutData.ts': 'export {};\n',
     };
     const res = gate(files);
     expect(res.status).toBe(1);
     for (const d of [
       'webapp/',
-      'schema-miniapp/',
       'shared/',
       'webapp/src/pages/',
-      'schema-miniapp/src/hooks/',
       'shared/src/about/',
     ]) {
       expect(res.stderr).toContain(`в карте нет каталога ${d}`);
@@ -301,7 +298,7 @@ describe('check-agent-docs.mjs: 4. карта называет каждый ка
       ...files,
       'docs/ARCHITECTURE.md':
         MAP +
-        '`webapp/` `webapp/src/` `webapp/src/pages/` `schema-miniapp/` `schema-miniapp/src/hooks/`' +
+        '`webapp/` `webapp/src/` `webapp/src/pages/`' +
         ' `shared/` `shared/src/about/`\n',
     });
     expect(mapped.stderr).not.toContain('webapp/src/pages/');

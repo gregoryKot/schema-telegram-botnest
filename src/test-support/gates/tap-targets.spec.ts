@@ -229,11 +229,11 @@ describe('check-tap-targets.mjs', () => {
 
     it('рост сверх бейслайна — exit 1 с "было → стало"', () => {
       const res = runGate(GATE, {
-        [BASELINE]: JSON.stringify({ 'schema-miniapp/src/known.tsx': 1 }),
-        'schema-miniapp/src/known.tsx': SMALL + SMALL,
+        [BASELINE]: JSON.stringify({ 'webapp/src/known.tsx': 1 }),
+        'webapp/src/known.tsx': SMALL + SMALL,
       });
       expect(res.status).toBe(1);
-      expect(res.stderr).toContain('schema-miniapp/src/known.tsx: 1 → 2');
+      expect(res.stderr).toContain('webapp/src/known.tsx: 1 → 2');
     });
 
     it('снижение — exit 0, предлагает зафиксировать --update', () => {

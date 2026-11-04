@@ -9,9 +9,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 // 2026-08 (К3) нашёл голое удаление без подтверждения в PracticesList —
 // хитбокс 30×30 и один тап стирали практику безвозвратно. Переехал в shared,
 // когда та же механика понадобилась в JourneyDeleteButton «Моего пути».
-// Потребители: schema-miniapp/src/components/PracticesList.tsx (через тонкий
-// ре-экспорт schema-miniapp/src/hooks/useConfirmTap.ts) и
-// shared/src/journey/JourneyDeleteButton.tsx.
+// Потребитель: shared/src/journey/JourneyDeleteButton.tsx.
 
 const CONFIRM_MS = 3000;
 

@@ -1,1 +1,0 @@
-import{p as e}from"./a11y.js";import{r as t}from"./needColors.js";var n=e();function r({id:e,color:r,size:i=10}){return(0,n.jsx)(`span`,{"aria-hidden":`true`,style:{display:`inline-block`,verticalAlign:`middle`,width:i,height:i,borderRadius:`50%`,flexShrink:0,background:r??(e?t(e):`var(--muted)`)}})}export{r as t};

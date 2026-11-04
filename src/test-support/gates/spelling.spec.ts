@@ -25,12 +25,11 @@ describe('check-spelling.mjs', () => {
 
   it('строковый литерал с заглавной в мини-аппе и в бэкенде — exit 1', () => {
     const res = runGate(GATE, {
-      'schema-miniapp/src/b.tsx':
-        "export const tabs = [['virtual', 'Оффлайн']];\n",
+      'webapp/src/b.tsx': "export const tabs = [['virtual', 'Оффлайн']];\n",
       'src/bot/c.ts': "export const t = 'ОФФЛАЙН-режим';\n",
     });
     expect(res.status).toBe(1);
-    expect(res.stderr).toContain('schema-miniapp/src/b.tsx:1');
+    expect(res.stderr).toContain('webapp/src/b.tsx:1');
     expect(res.stderr).toContain('src/bot/c.ts:1');
   });
 

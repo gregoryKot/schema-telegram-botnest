@@ -4,7 +4,7 @@
 // (makeFakeNpx), реальный vitest в песочнице не поднимаем.
 //
 // Гоняем только с --package webapp, чтобы не создавать фикстуры для
-// schema-miniapp/shared — поведение гейта на них идентично.
+// shared — поведение гейта на них идентично.
 import { makeFakeNpx } from './fake-npx';
 import { runGate } from './gate-sandbox';
 

@@ -15,13 +15,12 @@ describe('check-legacy-name.mjs', () => {
     expect(res.stderr).toContain('webapp/src/pages/About.tsx:1');
   });
 
-  it('старое имя в schema-miniapp/src (дефис/кириллица) — exit 1', () => {
+  it('старое имя в webapp/src (дефис/кириллица) — exit 1', () => {
     const res = runGate('check-legacy-name.mjs', {
-      'schema-miniapp/src/share.ts':
-        "export const text = 'Раньше — Схема-лаб';\n",
+      'webapp/src/share.ts': "export const text = 'Раньше — Схема-лаб';\n",
     });
     expect(res.status).toBe(1);
-    expect(res.stderr).toContain('schema-miniapp/src/share.ts:1');
+    expect(res.stderr).toContain('webapp/src/share.ts:1');
   });
 
   it('чистые исходники, включая легитимное "схема-терапия" — exit 0', () => {

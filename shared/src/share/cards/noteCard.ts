@@ -32,7 +32,7 @@ export type NoteFieldKey =
  * Подписи полей от первого лица: без обращения к читателю и без рода —
  * поэтому вилка форм обращения им не нужна вовсе. Формулировки
  * совпадают по смыслу с вопросами, которые видел человек при заполнении:
- * SchemaIntroSheet.QUESTIONS (schema-miniapp) и buildModeIntroQuestions
+ * SchemaIntroSheet.QUESTIONS и buildModeIntroQuestions
  * (shared/src/mode/modeIntroQuestions.ts).
  */
 export const NOTE_FIELD_LABELS: Record<NoteFieldKey, string> = {

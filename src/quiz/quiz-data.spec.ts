@@ -98,7 +98,7 @@ describe('quiz-data: контент мини-тестов', () => {
   });
 
   it('resultId «батарейки» совпадают с needId трекера потребностей', () => {
-    // Синхрон с NEED_ORDER (webapp/schema-miniapp needData.ts): результат
+    // Синхрон с NEED_ORDER (webapp needData.ts): результат
     // теста должен уметь вести в трекер той же потребности.
     const battery = buildQuizzes('ty').find((q) => q.id === 'battery');
     expect(battery?.results.map((r) => r.id).sort()).toEqual(

@@ -5,7 +5,6 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 // Дефолта нет (аудит 2026-10, infra#18): раньше пустая переменная молча давала
 // 'SchemaLabBot'. Пустое значение в production-сборке роняет её на сборке
 // (shared/src/build/requireBotUsername.test.ts), здесь — поведение модуля.
-// Парный файл: schema-miniapp/src/utils/botConfig.test.ts (правило №3).
 async function loadConfig(username: string | undefined) {
   vi.resetModules();
   vi.unstubAllEnvs();

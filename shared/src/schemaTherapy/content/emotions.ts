@@ -2,7 +2,7 @@ import type { Emotion } from '../types';
 
 // Единственный источник контента схема-терапии (правило №3 CLAUDE.md):
 // раньше дублировался построчно в webapp/src/schemaTherapyData.ts и
-// schema-miniapp/src/schemaTherapyData.ts, оба фронтенда берут его отсюда.
+// удалённом мини-аппе; сайт берёт его отсюда.
 
 // ─── Emotions (Plutchik + ST-relevant) ─────────────────────────────────────
 

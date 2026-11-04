@@ -60,28 +60,10 @@ describe('sanitizeMeta', () => {
     expect(sanitizeMeta('outbox_flush', { count: 0 })).toBeUndefined();
   });
 
-  it('today_focus_change: practice из allow-list', () => {
-    expect(
-      sanitizeMeta('today_focus_change', { practice: 'gratitude' }),
-    ).toEqual({ practice: 'gratitude' });
-    expect(
-      sanitizeMeta('today_focus_change', { practice: 'evil' }),
-    ).toBeUndefined();
-  });
-
   it('today_streak_toggle: boolean hidden', () => {
     expect(sanitizeMeta('today_streak_toggle', { hidden: true })).toEqual({
       hidden: true,
     });
-  });
-
-  it('web_banner_open/dismiss: banner из allow-list', () => {
-    expect(
-      sanitizeMeta('web_banner_open', { banner: 'mode_map', extra: 'pii' }),
-    ).toEqual({ banner: 'mode_map' });
-    expect(
-      sanitizeMeta('web_banner_dismiss', { banner: 'evil' }),
-    ).toBeUndefined();
   });
 
   it('breath_start: meta игнорируется (событие без meta)', () => {
@@ -353,28 +335,6 @@ describe('sanitizeMeta', () => {
     ).toEqual({ type: 'letter' });
   });
 
-  it('plus_action: action из allow-list проходит', () => {
-    expect(sanitizeMeta('plus_action', { action: 'tracker' })).toEqual({
-      action: 'tracker',
-    });
-    expect(sanitizeMeta('plus_action', { action: 'plans' })).toEqual({
-      action: 'plans',
-    });
-  });
-
-  it('plus_action: неизвестный action → отброшено', () => {
-    expect(sanitizeMeta('plus_action', { action: 'evil' })).toBeUndefined();
-  });
-
-  it('plus_action: лишние поля срезаются', () => {
-    expect(
-      sanitizeMeta('plus_action', {
-        action: 'breathing',
-        note: 'секретный текст',
-      }),
-    ).toEqual({ action: 'breathing' });
-  });
-
   it('quick_action_toggle: валидные action + hidden + surface проходят', () => {
     expect(
       sanitizeMeta('quick_action_toggle', {
@@ -438,10 +398,6 @@ describe('sanitizeMeta', () => {
         note: 'секретный текст пользователя',
       }),
     ).toEqual({ action: 'plans', hidden: true, surface: 'plus' });
-  });
-
-  it('plus_open: meta игнорируется (событие без meta)', () => {
-    expect(sanitizeMeta('plus_open', { junk: 'x' })).toBeUndefined();
   });
 
   it('quick_action_move: валидные action + surface + dir проходят', () => {
@@ -676,40 +632,6 @@ describe('sanitizeMeta', () => {
     ).toEqual({ step: 'privacy' });
   });
 
-  it('today_block_toggle: block + hidden из allow-list проходят', () => {
-    expect(
-      sanitizeMeta('today_block_toggle', { block: 'phrase', hidden: true }),
-    ).toEqual({ block: 'phrase', hidden: true });
-  });
-
-  it('today_block_toggle: неизвестный block → отброшено целиком', () => {
-    expect(
-      sanitizeMeta('today_block_toggle', { block: 'evil', hidden: true }),
-    ).toBeUndefined();
-  });
-
-  it('today_block_toggle: hidden не boolean → отброшено', () => {
-    expect(
-      sanitizeMeta('today_block_toggle', { block: 'streak', hidden: 'yes' }),
-    ).toBeUndefined();
-    expect(
-      sanitizeMeta('today_block_toggle', { block: 'streak' }),
-    ).toBeUndefined();
-  });
-
-  it('today_customize_open: via из allow-list проходит', () => {
-    expect(sanitizeMeta('today_customize_open', { via: 'longpress' })).toEqual({
-      via: 'longpress',
-    });
-  });
-
-  it('today_customize_open: неизвестный/отсутствующий via → отброшено', () => {
-    expect(
-      sanitizeMeta('today_customize_open', { via: 'evil' }),
-    ).toBeUndefined();
-    expect(sanitizeMeta('today_customize_open', {})).toBeUndefined();
-  });
-
   it('home_screen_offer: action + surface из allow-list проходят', () => {
     expect(
       sanitizeMeta('home_screen_offer', {
@@ -757,11 +679,11 @@ describe('sanitizeMeta', () => {
   });
 
   // ── Deny-list-by-default: события без meta не пропускают вообще ничего ──
-  it('stop_start/journey_open/ysq_help_open/plus_open: meta игнорируется', () => {
+
+  it('stop_start/journey_open/ysq_help_open: meta игнорируется', () => {
     expect(sanitizeMeta('stop_start', { junk: 'x' })).toBeUndefined();
     expect(sanitizeMeta('journey_open', { junk: 'x' })).toBeUndefined();
     expect(sanitizeMeta('ysq_help_open', { junk: 'x' })).toBeUndefined();
-    expect(sanitizeMeta('plus_open', { junk: 'x' })).toBeUndefined();
   });
 
   // Графическая концептуализация: текст связей режима — клиническая запись
@@ -832,7 +754,6 @@ describe('sanitizeMeta', () => {
   it('огромная строка вместо enum-значения не проходит (не DoS-хранится)', () => {
     const huge = 'a'.repeat(100_000);
     expect(sanitizeMeta('share_card', { kind: huge })).toBeUndefined();
-    expect(sanitizeMeta('web_banner_open', { banner: huge })).toBeUndefined();
   });
 
   it('meta с email/телефоном в незнакомых полях полностью отбрасывается', () => {

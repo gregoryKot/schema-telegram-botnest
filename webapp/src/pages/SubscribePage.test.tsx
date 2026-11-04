@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 // Компонентные тесты SubscribePage: сабмит формы подписки, honeypot-поле,
 // обязательное согласие (consent), ошибка API. Мок '../api' — образец сетапа
-// webapp/src/utils/addressForm.test.tsx / schema-miniapp TrackerOverlay.test.tsx.
+// webapp TrackerOverlay.test.tsx.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, act, cleanup } from '@testing-library/react';
 import { SubscribePage } from './SubscribePage';

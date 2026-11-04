@@ -1,7 +1,6 @@
 // «Моя карточка» внутри экрана паттерна: заполнена — ответы и кнопки
 // «Дополнить»/«Поделиться»; пусто — объяснение «откуда и зачем» и одна кнопка
-// «Заполнить карточку» (правило онбординга). Парный по смыслу с
-// schema-miniapp/src/components/patternSheet/PatternCardSection.tsx.
+// «Заполнить карточку» (правило онбординга).
 import { Skeleton } from '../Skeleton';
 import type { NoteCardField } from '../../../../shared/src/share/cards/noteCard';
 

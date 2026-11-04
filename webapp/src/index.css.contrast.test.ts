@@ -80,21 +80,6 @@ function overlay(fg: Rgb, alpha: number, bg: Rgb): Rgb {
 const LIGHT = extractBlock(CSS, ':root, html[data-theme="light"]');
 const DARK = extractBlock(CSS, 'html[data-theme="dark"]');
 
-// Мини-апп читается ТЕМ ЖЕ тестом, а не копией помощников рядом (правило №11
-// CLAUDE.md — повторённый блок выносится, а не дублируется; здесь проще
-// параметризовать один файл, чем городить общий модуль-помощник, у которого
-// не будет прод-потребителя). У мини-аппа темы разложены наоборот: голый
-// `:root` держит ТЁМНЫЕ значения, светлые — в `html[data-theme='light']`
-// (см. комментарий в его index.css).
-const MINIAPP_CSS = readFileSync(
-  join(__dirname, '..', '..', 'schema-miniapp', 'src', 'index.css'),
-  'utf8',
-);
-// Маркер — заголовок комментария перед блоком, а не `:root {`: голых `:root`
-// в файле два (первый — только --safe-bottom), и по имени блоки не отличить.
-const MINIAPP_DARK = extractBlock(MINIAPP_CSS, '── Dark theme (default)');
-const MINIAPP_LIGHT = extractBlock(MINIAPP_CSS, "html[data-theme='light']");
-
 describe('a11y: цвета токенов --kbd-text / --c-rose-strong держат ≥4.5:1', () => {
   it.each([
     ['light', LIGHT],
@@ -137,10 +122,8 @@ describe('a11y: цвета токенов --kbd-text / --c-rose-strong держ�
 // в комментарии.
 describe('a11y: текст на залитом --accent-red держит ≥4.5:1 в обеих темах', () => {
   it.each([
-    ['webapp light', LIGHT],
-    ['webapp dark', DARK],
-    ['miniapp light', MINIAPP_LIGHT],
-    ['miniapp dark', MINIAPP_DARK],
+    ['light', LIGHT],
+    ['dark', DARK],
   ] as const)('--on-accent-red на --accent-red — %s', (_label, block) => {
     const fill = parseColor(resolveToken(block, '--accent-red'));
     const ink = parseColor(resolveToken(block, '--on-accent-red'));

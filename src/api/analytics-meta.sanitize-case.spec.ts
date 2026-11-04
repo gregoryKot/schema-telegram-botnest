@@ -42,19 +42,6 @@ describe('sanitizeCaseMeta', () => {
     });
   });
 
-  describe('case_criterion', () => {
-    it('пропускает три известных вердикта', () => {
-      for (const verdict of ['mode', 'ordinary', 'borderline']) {
-        expect(call('case_criterion', { verdict })).toEqual({ verdict });
-      }
-    });
-
-    it('чужой вердикт не проходит', () => {
-      expect(call('case_criterion', { verdict: 'maybe' })).toBeUndefined();
-      expect(call('case_criterion', { verdict: true })).toBeUndefined();
-    });
-  });
-
   describe('case_recognized', () => {
     it('пропускает modeId и флаг согласия', () => {
       expect(
@@ -95,23 +82,6 @@ describe('sanitizeCaseMeta', () => {
       expect(
         call('case_recognized', { modeId: 'angry_child' }),
       ).toBeUndefined();
-    });
-  });
-
-  describe('mode_renamed', () => {
-    it('пропускает три известных источника имени', () => {
-      for (const source of ['chip', 'own', 'skipped']) {
-        expect(call('mode_renamed', { source })).toEqual({ source });
-      }
-    });
-
-    it('само имя не проходит', () => {
-      const out = call('mode_renamed', { source: 'own', alias: 'Гонщик' });
-      expect(out).toEqual({ source: 'own' });
-    });
-
-    it('чужой источник обнуляет мету', () => {
-      expect(call('mode_renamed', { source: 'auto' })).toBeUndefined();
     });
   });
 

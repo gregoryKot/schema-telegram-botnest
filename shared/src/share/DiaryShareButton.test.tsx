@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
-// Кнопка шаринга дневника (webapp ↔ miniapp, правило №3) — логика и разметка
+// Кнопка шаринга дневника (правило №3) — логика и разметка
 // общие, кнопка и ShareCardSheet приходят инъекцией. Тут — сам компонент с
 // поддельными ShareCardSheet/renderButton, площадочные обёртки
-// (webapp/schema-miniapp share/DiaryShareButton.tsx) проверяют свою инъекцию.
+// (webapp share/DiaryShareButton.tsx) проверяют свою инъекцию.
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { DiaryShareButton } from './DiaryShareButton';

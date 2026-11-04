@@ -156,8 +156,7 @@ jobs:
   # node:fs/node:path, без единой npm-зависимости — не нуждаются в npm ci
   # и node_modules. Вынесены из backend-джобы, чтобы не ждать полную
   # установку зависимостей ради двух быстрых проверок по grep-принципу.
-  # check-address-form.mjs и check-paired-files.mjs НЕ трогаем — они уже
-  # живут в джобе webapp.
+  # check-address-form.mjs НЕ трогаем — он уже живёт в джобе webapp.
   checks:
     runs-on: ubuntu-24.04
     # Потолок на джобу — страховка от зависшего шага (правило №24): без него
@@ -201,20 +200,8 @@ jobs:
       - run: node scripts/check-legacy-name.mjs
       # Мёртвые файлы: у каждого исходника должен быть потребитель в прод-коде.
       # Найдено этим гейтом: вторая копия prisma-exception.filter (правки в неё
-      # не доезжали до прода) и два неподключённых компонента мини-аппа.
+      # не доезжали до прода) и два неподключённых компонента.
       - run: node scripts/check-dead-files.mjs
-      # Паритет фич между фронтендами (правило №3, расследование 2026-08-21):
-      # check-paired-files.mjs (джоба webapp) видит только файлы из жёсткого
-      # списка PAIRS — файл, которого в списке нет, гейт не видит вообще, и
-      # PhraseCheck-упражнение/DiaryShareButton/.ics-экспорт жили только в
-      # мини-аппе незамеченными. check-dead-files.mjs выше считает единицей
-      # учёта ФАЙЛ — живой api.ts прикрывает собой мёртвый метод внутри
-      # (deleteBeliefCheck/deleteFlashcard/deleteLetter объявлены в обоих
-      # фронтендах и не вызываются НИОТКУДА, кроме тестов). Источник истины —
-      # роуты бэкенда (src/api/**/*.controller.ts, общие для обеих площадок):
-      # гейт проверяет, что каждый роут реально доступен с обеих площадок или
-      # осознанно заведён в scripts/feature-parity-baseline.json с причиной.
-      - run: node scripts/check-feature-parity.mjs
       # Leader-election кронов: крон без него дублируется на втором инстансе
       # (второй под, перекатывающийся деплой Amvera) — два процесса шлют одно и
       # то же сообщение дважды. Гейт не ищет признак «похоже на безопасное», а
@@ -728,9 +715,7 @@ jobs:
           VITE_BOT_USERNAME: SchemeHappensBot
       # Байт-храповик размера бандлов (аудит 2026-07, пункт №5): сборка выше
       # печатает «chunks larger than 400 kB» и это молча игнорировалось —
-      # гейт меряет байты webapp/dist (свежесобран шагом выше) и уже
-      # закоммиченного schema-miniapp/dist (checkout принёс его вместе с
-      # репозиторием — джоба не собирает мини-апп отдельно). Шаг стоит СРАЗУ
+      # гейт меряет байты webapp/dist (свежесобран шагом выше). Шаг стоит СРАЗУ
       # после сборки: гейту нужен готовый webapp/dist, иначе он падает с
       # понятной подсказкой «сначала собери».
       - run: node scripts/check-bundle-size-ratchet.mjs
@@ -764,9 +749,6 @@ jobs:
       # `fontSize: N` ниже 11px — нижний читаемый порог. fs-only, тот же
       # принцип, что у check-second-person.mjs выше.
       - run: node scripts/check-tiny-fonts.mjs
-      # Драйв-гард парных файлов (правило №3): канонические пары
-      # webapp ↔ miniapp обязаны быть побайтово идентичны.
-      - run: node scripts/check-paired-files.mjs
       # Контракт дизайн-токенов (дизайн-аудит 2026-08, В11): оба index.css
       # обязаны импортировать shared/src/theme/tokens.css (акцент+шрифты) и
       # объявлять одни и те же имена для токенов, чьё значение намеренно
@@ -809,7 +791,7 @@ jobs:
       # jsx-a11y/control-has-associated-label глиф считает подписью, а роль из
       # спреда pressable() не видит — эту половину держит гейт. AST через
       # typescript из webapp/node_modules. Абсолютный, без бейслайна;
-      # webapp/src и shared/src, мини-апп не покрыт (ONE_FRONTEND_PLAN.md).
+      # webapp/src и shared/src.
       - run: node scripts/check-glyph-controls.mjs
       # Оверлей на весь экран обязан жить в истории браузера (находка аудита
       # 2026-10: чек-ин в ModesTab закрывал справочник целиком). `.tsx` с
@@ -830,9 +812,9 @@ jobs:
         timeout-minutes: 4
         run: node scripts/npm-audit.mjs webapp
 
-  # shared/ — общий пакет двух фронтендов (этап 2.2 TEST_IMPROVEMENT_PLAN.md):
+  # shared/ — общий пакет (этап 2.2 TEST_IMPROVEMENT_PLAN.md):
   # до этой джобы 3431 строка shared-кода тестировалась только транзитивно
-  # через тесты webapp/miniapp — свои тесты и свой coverage-храповик не
+  # через тесты webapp — свои тесты и свой coverage-храповик не
   # существовали. Джоба гоняет vitest пакета через тот же
   # check-frontend-coverage-ratchet.mjs (--package shared).
   shared:
@@ -882,12 +864,10 @@ jobs:
           cache-dependency-path: |
             package-lock.json
             webapp/package-lock.json
-            schema-miniapp/package-lock.json
             shared/package-lock.json
       - run: npm ci
       - run: npx prisma generate
       - run: npm ci --prefix webapp
-      - run: npm ci --prefix schema-miniapp
       # shared тоже линтуется храповиком, а зависимости ему не ставили —
       # правила, зависящие от типов (no-unnecessary-type-assertion и родня),
       # без node_modules разрешают TS иначе, чем локально. Итог: файл
@@ -897,43 +877,3 @@ jobs:
       # верить.
       - run: npm ci --prefix shared
       - run: node scripts/check-eslint-ratchet.mjs
-
-  miniapp:
-    runs-on: ubuntu-24.04
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
-        with:
-          node-version: 22
-          cache: npm
-          cache-dependency-path: schema-miniapp/package-lock.json
-      - run: npm ci --prefix schema-miniapp
-      # build мини-аппа — голый `vite build` (без tsc, чтобы пересборка dist
-      # оставалась быстрой). Типы гоняем отдельным шагом через
-      # tsconfig.typecheck.json — иначе TS-ошибки в исходнике мини-аппа
-      # доезжают до прода (webapp имеет гейт через `tsc -b`).
-      - run: npm run typecheck --prefix schema-miniapp
-      - run: npm run build --prefix schema-miniapp
-      # Фронтенд-coverage-храповик (TEST_IMPROVEMENT_PLAN.md, этап 2.1) —
-      # см. комментарий в джобе webapp; здесь гоняет только свой пакет.
-      - run: node scripts/check-frontend-coverage-ratchet.mjs --package schema-miniapp
-      # Второй прогон под НЕ-UTC зоной — см. комментарий в джобе shared
-      # (инцидент 2026-09-17).
-      - name: vitest под не-UTC таймзоной
-        run: npm test --prefix schema-miniapp
-        env:
-          TZ: Australia/Sydney
-      # dist коммитится в git (Docker его только копирует) — проверяем,
-      # что закоммиченный dist не разошёлся с исходником.
-      - name: dist актуален
-        run: |
-          if [ -n "$(git status --porcelain schema-miniapp/dist)" ]; then
-            echo '::error::schema-miniapp/dist устарел — пересобери: npm run build --prefix schema-miniapp и закоммить dist'
-            git status --short schema-miniapp/dist
-            exit 1
-          fi
-      # См. шаг audit в джобе backend.
-      - name: npm audit — schema-miniapp
-        timeout-minutes: 4
-        run: node scripts/npm-audit.mjs schema-miniapp

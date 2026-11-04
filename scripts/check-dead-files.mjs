@@ -28,7 +28,7 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const BASELINE = join(ROOT, 'scripts', 'dead-files-baseline.json');
 const update = process.argv.includes('--update');
 
-const TREES = ['src', 'webapp/src', 'schema-miniapp/src', 'shared/src'];
+const TREES = ['src', 'webapp/src', 'shared/src'];
 const CODE = /\.(ts|tsx)$/;
 const TEST = /\.(spec|test)\.(ts|tsx)$/;
 

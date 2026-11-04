@@ -1,6 +1,5 @@
 // Шаринг ВСЕХ достижений из диалога профиля: кнопка + карточка-картинка со
-// счётом «получено из всех». Отрисовка и текст — shared/src/share (те же, что
-// в мини-аппе, schema-miniapp/.../AchievementsSheet.tsx); видна, только когда
+// счётом «получено из всех». Отрисовка и текст — shared/src/share; видна, только когда
 // есть что показать (ни одного — делиться нечем).
 import { useCallback, useState } from 'react';
 import type { Achievement } from '../../api';
@@ -15,7 +14,7 @@ export function AchievementsShare({ achievements }: { achievements: Achievement[
   const [open, setOpen] = useState(false);
   const earned = achievements.filter((a) => a.earned).length;
   const draw = useCallback(
-    // Эмодзи в мете нет — карточка рисует пустой медальон (как в мини-аппе).
+    // Эмодзи в мете нет — карточка рисует пустой медальон.
     (canvas: HTMLCanvasElement) => drawAchievementsCard(canvas, achievements.filter((a) => ACHIEVEMENT_META[a.id]).map((a) => ({ emoji: '', earned: a.earned }))),
     [achievements],
   );

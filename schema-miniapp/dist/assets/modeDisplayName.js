@@ -1,1 +1,0 @@
-import{r as e}from"./modeFeelGates.js";function t(e){let t=(e??``).trim();return t.length>0?t:null}function n(n,r){return t(r)??e(n)??n}function r(t){return e(t)??t}export{n,r as t};

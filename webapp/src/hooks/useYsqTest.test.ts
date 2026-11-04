@@ -1,15 +1,10 @@
 // @vitest-environment jsdom
 // Тест общей логики теста на схемы (этап 3 REMEDIATION_PLAN — вынос дублированной
-// логики webapp/schema-miniapp в парный хук). Правило CLAUDE.md о
+// логики webapp в парный хук). Правило CLAUDE.md о
 // read-after-write: прогресс и результат кэшируются в localStorage
 // (денормализованное состояние, зеркалящее сервер) — поэтому кроме «сохранился
 // ли ответ» здесь проверяется и «виден ли он после повторного монтирования».
-//
-// Канонический байт-в-байт парный файл с webapp/src/hooks/useYsqTest.test.ts
-// (см. scripts/check-paired-files.mjs, правило №3 CLAUDE.md; источник
-// useYsqTest.ts уже был в этом списке). Импорт бэкендового src/utils/ysq
-// резолвится одинаково из обоих деревьев — webapp/src/hooks и
-// schema-miniapp/src/hooks на одинаковой глубине от корня репозитория.
+
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { act, renderHook } from '@testing-library/react';
 import {

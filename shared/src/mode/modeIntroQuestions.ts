@@ -3,9 +3,9 @@
  * проработки режима: к семи вопросам (паритет с карточкой схемы —
  * SCHEMA_QUESTIONS, webapp/src/components/exercises/flashcardQuestions.ts)
  * добавлены «какая у режима функция» (modeFunction) и «даёт ли поведение то,
- * что нужно» (needsMet). Общий источник для обоих фронтендов (правило №3/№11
+ * что нужно» (needsMet). Общий источник (правило №3/№11
  * CLAUDE.md) — раньше вопросы дублировались (QUESTIONS в
- * schema-miniapp/src/components/ModeIntroSheet.tsx и MODE_QUESTIONS в
+ * удалённом мини-аппе и MODE_QUESTIONS в
  * webapp/src/components/exercises/flashcardQuestions.ts, только 5 штук).
  *
  * Плейсхолдер каждого вопроса — конкретный пример ИМЕННО для этого режима, из

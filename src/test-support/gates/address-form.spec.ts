@@ -5,12 +5,11 @@ import { runGate } from './gate-sandbox';
 import { loadRegexList } from './pattern-loader';
 
 // Скрипт (walk()) падает с ENOENT, если директории из SCAN_DIRS нет вообще
-// (в отличие от check-legacy-name.mjs, здесь нет try/catch) — поэтому все
-// три дерева должны физически существовать в песочнице в каждом тесте,
+// (в отличие от check-legacy-name.mjs, здесь нет try/catch) — поэтому оба
+// дерева должны физически существовать в песочнице в каждом тесте,
 // даже когда фикстура интересуется только одним из них.
 const SCAN_DIR_STUBS = {
   'webapp/src/.keep.ts': '',
-  'schema-miniapp/src/.keep.ts': '',
   'shared/src/.keep.ts': '',
 };
 
@@ -46,7 +45,7 @@ describe('check-address-form.mjs', () => {
     const res = runGate('check-address-form.mjs', {
       ...SCAN_DIR_STUBS,
       'scripts/address-form-baseline.json': JSON.stringify({}),
-      'schema-miniapp/src/pages/Foo.tsx':
+      'webapp/src/pages/Foo.tsx':
         "const msg = tr('Привет, ты справишься', 'Привет, вы справитесь');\n",
     });
     expect(res.status).toBe(0);

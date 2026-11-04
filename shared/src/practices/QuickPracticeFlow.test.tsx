@@ -4,7 +4,7 @@
 // проверяется сама связка. Правило №8: stop_start уходит РОВНО один раз и
 // только у «Стопа». Read-after-write: прохождение записывается один раз,
 // счётчик на done-экране — из ответа POST. StepFlow — настоящий
-// StepFlowBody (не заглушка), чтобы флоу проходил по-честному.
+// StepFlowBody ниже (на настоящем useStepFlow), чтобы флоу проходил по-честному.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
   render,
@@ -17,12 +17,43 @@ import {
   QuickPracticeFlow,
   type QuickPracticeFlowProps,
 } from './QuickPracticeFlow';
-import { StepFlowBody } from './StepFlowBody';
+import { useStepFlow } from './useStepFlow';
+import type { StepFlowProps } from './stepFlowTypes';
 import { PracticeDoneFooter } from './PracticeDoneFooter';
 import type { QuickPracticeId } from './quickPractices';
 import type { ShareCardSheetProps } from '../share/shareCardSheetProps';
 
-// api площадки приходит инъекцией (webapp — JWT, мини-апп — initData) — сам
+// Минимальная вёрстка листа на настоящем useStepFlow: шаги по одному,
+// done-экран в конце. Площадочный лист (сайт) приходит инъекцией.
+function StepFlowBody({
+  title,
+  subtitle,
+  steps,
+  done,
+  repeatLabel,
+  doneExtra,
+  onClose,
+}: StepFlowProps) {
+  const [, isDone, cur, nextLabel, onNext] = useStepFlow(
+    steps,
+    done,
+    repeatLabel,
+  );
+  return (
+    <div>
+      <div>{title}</div>
+      <div>{subtitle}</div>
+      <div>{cur.emoji}</div>
+      <div>{cur.title}</div>
+      <div>{cur.hint}</div>
+      {isDone && doneExtra}
+      <button onClick={onClose}>Закрыть</button>
+      <button onClick={onNext}>{nextLabel}</button>
+    </div>
+  );
+}
+
+// api площадки приходит инъекцией (webapp — JWT) — сам
 // объект стабилен между рендерами одного открытия практики (уходит в
 // зависимости эффекта stop_start и useQuickPractice).
 const mockApi = {

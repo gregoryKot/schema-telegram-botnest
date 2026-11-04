@@ -1,7 +1,6 @@
 // @vitest-environment jsdom
 // PatternSheet (сайт) — единый экран паттерна: тап по «Моим схемам/режимам»
-// больше не уводит сразу в упражнение или справку. Парный по смыслу с
-// schema-miniapp/src/components/patternSheet/PatternSheet.test.tsx.
+// больше не уводит сразу в упражнение или справку.
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';

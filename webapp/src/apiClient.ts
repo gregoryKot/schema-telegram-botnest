@@ -1,7 +1,6 @@
 // HTTP-инфраструктура сайта: базовый URL, заголовки, обёртки get/post/
 // postJson/patchJson/del с таймаутом и перевыпуском сессии на 401 (доменные
-// методы — в api.ts). Зеркало schema-miniapp/src/apiClient.ts (правило №3
-// CLAUDE.md) — то же имя файла и то же назначение на обоих фронтендах.
+// методы — в api.ts).
 //
 // Диагностика «постоянно нужно логиниться заново» (2026-08-21, пункт 4): у
 // сайта не было ни одной попытки перевыпустить сессию на 401 обычного
@@ -52,8 +51,7 @@ export async function fetchWithTimeout(input: string, init: RequestInit, ms = 15
 }
 
 // Ошибка HTTP-ответа со статусом ПОЛЕМ, а не подстрокой в message: потребители
-// (ArticlePage: «настоящий 404 или сеть?») ветвятся по `status`. Зеркало
-// HttpStatusError мини-аппа (apiClient.ts, правило №3).
+// (ArticlePage: «настоящий 404 или сеть?») ветвятся по `status`.
 export class ApiError extends Error {
   status: number;
   reason?: string; // машинный код причины из тела (`already_connected`)
@@ -71,8 +69,7 @@ async function apiError(res: Response): Promise<ApiError> {
 }
 
 // Единственная точка отправки. На 401 перевыпускает сессию (через
-// setRefreshHandler) один раз и повторяет запрос — зеркало
-// schema-miniapp/src/apiClient.ts:authedFetch.
+// setRefreshHandler) один раз и повторяет запрос.
 export async function authedFetch(path: string, init: RequestInit = {}): Promise<Response> {
   const send = () => fetchWithTimeout(`${BASE}${path}`, { ...init, headers: authHeaders() });
   const res = await send();

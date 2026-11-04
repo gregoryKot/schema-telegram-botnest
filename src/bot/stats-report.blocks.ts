@@ -16,7 +16,6 @@ export interface StatsBlockDeps {
   entryDelete: Renderable;
   accountLink: Renderable;
   plus: Renderable;
-  webBanner: Renderable;
   siteInstall: Renderable;
   screen: Renderable;
   profilePattern: Renderable;
@@ -51,7 +50,6 @@ export function statsBlocks(d: StatsBlockDeps): StatsBlock[] {
     { name: 'Удаление своих записей', svc: d.entryDelete },
     { name: 'Перенос данных из другого приложения', svc: d.accountLink },
     { name: 'Кнопка плюс', svc: d.plus },
-    { name: 'Баннеры-переходы', svc: d.webBanner },
     { name: 'Установка с сайта', svc: d.siteInstall },
     { name: 'Настройка экранов', svc: d.screen },
     { name: 'Паттерны со вкладки Я', svc: d.profilePattern },

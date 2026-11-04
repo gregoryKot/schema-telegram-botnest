@@ -1,5 +1,5 @@
 // Идентификаторы пунктов универсального меню «плюс» (meta.action для
-// plus_action/quick_action_toggle). Парный реестр — на фронте та же строка в
+// quick_action_toggle/quick_action_move). Парный реестр — на фронте та же строка в
 // строку копия живёт в shared/src/quickActions/quickActions.ts (константа
 // QUICK_ACTION_IDS, по одному id в строке); сверку держит
 // src/security/quick-actions-sync.invariants.spec.ts. Вынесено из

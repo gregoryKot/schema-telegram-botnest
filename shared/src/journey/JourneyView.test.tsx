@@ -6,7 +6,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import { JourneyView, type JourneyViewProps } from './JourneyView';
-import { MINIAPP_JOURNEY_HEROES } from './miniappJourneyHeroes';
+import type { JourneyHeroes } from './journeyHeroes';
 import type { JourneyState } from './useJourney';
 import type { JourneyItem } from './journeyMeta';
 
@@ -17,11 +17,27 @@ afterEach(() => {
 });
 
 // Героя передаёт обёртка площадки пропсом (journeyHeroes.ts) — как
-// JourneySheet мини-аппа; по умолчанию тесты берут его вёрстку.
+// JourneySheet сайта; здесь — минимальная заглушка с теми же текстами.
+const STUB_HEROES: JourneyHeroes = {
+  Hero: ({ total, onShareFeed }) => (
+    <div>
+      <span>{total}</span>
+      <span>шагов заботы о себе</span>
+      <button onClick={onShareFeed}>Поделиться лентой шагов</button>
+    </div>
+  ),
+  EmptyHero: ({ explainer }) => (
+    <div>
+      <div>Путь ещё впереди</div>
+      <div>{explainer}</div>
+    </div>
+  ),
+};
+
 const View = (
   p: Omit<JourneyViewProps, 'heroes'> &
     Partial<Pick<JourneyViewProps, 'heroes'>>,
-) => <JourneyView heroes={MINIAPP_JOURNEY_HEROES} {...p} />;
+) => <JourneyView heroes={STUB_HEROES} {...p} />;
 
 function baseState(overrides: Partial<JourneyState> = {}): JourneyState {
   return {
@@ -118,14 +134,6 @@ describe('JourneyView — герой от площадки', () => {
     cleanup();
     render(view(0, heroes));
     expect(screen.getByText(/свой пустой: Всё, чт/)).toBeTruthy();
-  });
-
-  it('мини-апп: MINIAPP_JOURNEY_HEROES — градиентный герой с компасом', () => {
-    render(view(4, MINIAPP_JOURNEY_HEROES));
-    expect(screen.getByText('шагов заботы о себе')).toBeTruthy();
-    cleanup();
-    render(view(0, MINIAPP_JOURNEY_HEROES));
-    expect(screen.getByText('🧭')).toBeTruthy();
   });
 });
 

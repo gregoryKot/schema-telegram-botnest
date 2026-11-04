@@ -20,7 +20,6 @@
 | Задача | Начни с | Правило темы |
 |---|---|---|
 | Новый раздел кабинета сайта | `webapp/src/App.tsx` (`appRoutes`, роут с `element: null`) + `webapp/src/components/appShell/navigation.ts` + `webapp/src/sections/` | frontend, frontend-visual, texts |
-| Новая шторка или экран мини-аппа | `schema-miniapp/src/App.tsx`, `schema-miniapp/src/hooks/useSheets.ts`, ключ в `schema-miniapp/src/hooks/anyOverlayOpen.ts` + closer в `schema-miniapp/src/hooks/overlayClosers.ts` | frontend |
 | Код или контент для обоих фронтендов | `shared/src/<область>/`; фронты импортируют относительным путём | frontend |
 | Метод API для обоих фронтендов | `shared/src/api/sharedApi.ts` (`buildSharedApi`) | frontend |
 | Полноэкранный лист сайта | `webapp/src/hooks/useHistorySheet.ts` | frontend |
@@ -57,12 +56,12 @@
 
 ## Как устроено целиком
 
-- **Один бэкенд, два фронтенда.** NestJS в `src/` отдаёт `/api/*` и статику: сайт (сборка webapp) на `/`, мини-апп `schema-miniapp/dist` на `/app/`, игру на `/game/`. Telegram-бот (Telegraf, long polling) живёт в том же процессе.
-- **Путь запроса:** компонент → `api.метод()` (`webapp/src/api.ts` или `schema-miniapp/src/api.ts`, общая часть — `shared/src/api/sharedApi.ts`) → `authedFetch` → `/api/...` → гард `src/api/telegram-auth.guard.ts` (Bearer JWT или initData Telegram/MAX) → контроллер → сервис → Prisma.
+- **Один бэкенд, один фронтенд.** NestJS в `src/` отдаёт `/api/*` и статику: сайт (сборка webapp) на `/` — в Telegram и MAX кнопки бота открывают его же, старый адрес мини-аппа `/app/*` отвечает 302 в `/today` (`src/unified-frontend.middleware.ts`); игру на `/game/`. Telegram-бот (Telegraf, long polling) живёт в том же процессе.
+- **Путь запроса:** компонент → `api.метод()` (`webapp/src/api.ts`, общая часть — `shared/src/api/sharedApi.ts`) → `authedFetch` → `/api/...` → гард `src/api/telegram-auth.guard.ts` (Bearer JWT или initData Telegram/MAX) → контроллер → сервис → Prisma.
 - **Данные общие, если совпадает `userId`.** Вход через Telegram на сайте и мини-апп дают один и тот же `userId = telegramId`. Вход через Google/VK/MAX/почту — отдельный веб-`userId`; данные мини-аппа подтягиваются после «Привязать Telegram» в `/account` и подтверждённого слияния (`src/auth/merge.service.ts` переносит строки по всем `USER_OWNED_TABLES` в транзакции).
 - **Слои:** логика — в `src/bot/` (доменный слой), Telegram-UI — в `src/telegram/`. Не смешивай: новая функциональность — сначала логика в `src/bot/bot.service.ts` (или соседнем сервисе), потом UI в `src/telegram/telegram.service.ts`.
 - **Хосты:** приложение — только `schemehappens.ru`; `kotlarewski.gr` — визитка практики (allow-list в `src/practice-domain.surface.ts`), всё остальное с неё 301 на канонический хост.
-- **Деплой:** push в `main` = деплой. Amvera собирает `Dockerfile` (webapp и игра собираются в образе, `schema-miniapp/dist` берётся из git); контейнер стартует `deploy/entrypoint.mjs`: ждёт БД → `prisma/recover-p3009.sql` → `prisma migrate deploy` → приложение.
+- **Деплой:** push в `main` = деплой. Amvera собирает `Dockerfile` (webapp и игра собираются в образе); контейнер стартует `deploy/entrypoint.mjs`: ждёт БД → `prisma/recover-p3009.sql` → `prisma migrate deploy` → приложение.
 
 ## Харнесс агентов
 
@@ -84,7 +83,6 @@
 |---|---|
 | `src/` | NestJS-бэкенд и бот; модули — таблица ниже |
 | `webapp/` | Сайт schemehappens.ru и визитка (React + Vite, react-router); сборка webapp живёт только в Docker-образе |
-| `schema-miniapp/` | Мини-апп Telegram/MAX на `/app/` (React + Vite, без роутера); `dist/` коммитится |
 | `shared/` | Общий код обоих фронтендов: типы, логика, хуки, контент, компоненты, CSS-токены (не npm-пакет) |
 | `prisma/` | `prisma/schema.prisma`, миграции, `prisma/recover-p3009.sql` |
 | `test/` | e2e бэкенда (`test/*.e2e-spec.ts`), `test/e2e-support/`, записанные ответы площадок `test/fixtures/recorded/`, замер планов `test/perf/` |
@@ -130,7 +128,6 @@
 Подробно, включая все подкаталоги `shared/src/*/`, — [architecture/frontends.md](architecture/frontends.md).
 
 - **webapp:** `webapp/src/App.tsx` — все роуты (`personalRoutes` для визитки, `appRoutes` для продукта); `webapp/src/pages/` — страницы-роуты; `webapp/src/sections/` — разделы кабинета; `webapp/src/components/` — остальной UI; `webapp/src/hooks/`, `webapp/src/utils/`, `webapp/src/auth/`, `webapp/src/host/`, `webapp/src/styles/`.
-- **schema-miniapp:** `schema-miniapp/src/App.tsx` — секции на `useState`, нижнее меню, шторки; `schema-miniapp/src/sections/`, `schema-miniapp/src/components/`, `schema-miniapp/src/hooks/`, `schema-miniapp/src/utils/`, `schema-miniapp/src/share/`.
 - **shared:** `shared/src/<область>/` — по каталогу на фичу (`shared/src/therapy/`, `shared/src/journey/`, `shared/src/practices/`…), `shared/src/theme/` — CSS-токены, `shared/src/api/` — общий API.
 
 ## Команды
@@ -138,8 +135,7 @@
 ```bash
 npx tsc --noEmit -p tsconfig.build.json   # типы бэкенда (голый tsc из корня падает на e2e-browser/ — норма)
 npx jest src/путь/x.spec.ts               # один спек; npx jest — все
-npm test --prefix webapp                  # vitest; так же --prefix schema-miniapp, --prefix shared
-npm run build --prefix schema-miniapp     # после правки мини-аппа или shared — и закоммитить dist
+npm test --prefix webapp                  # vitest; так же --prefix shared
 node scripts/check-<имя>.mjs              # любой гейт; список — architecture/gates.md
 npx prisma generate                       # после правки prisma/schema.prisma
 ```

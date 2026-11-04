@@ -1,5 +1,4 @@
-// Прогресс стрик-цели («дневник 7 дней подряд») — паритет с мини-аппом
-// (schema-miniapp/.../TaskProgressBar.tsx). Число берётся с сервера
+// Прогресс стрик-цели («дневник 7 дней подряд»). Число берётся с сервера
 // (task.progress — реальные выполненные дни), считает shared/computeTaskProgress.
 import type { UserTask } from '../api';
 import '../styles/task-progress.css';

@@ -27,7 +27,7 @@ const res = reportFile
   : spawnSync(
   'npx',
   [
-    'jscpd', 'src', 'webapp/src', 'schema-miniapp/src', 'shared/src',
+    'jscpd', 'src', 'webapp/src', 'shared/src',
     '--min-tokens', '70',
     '--reporters', 'json',
     '--output', out,

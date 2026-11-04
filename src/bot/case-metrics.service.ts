@@ -10,7 +10,7 @@ import { CaseMetrics } from './case-metrics.format';
 // (миграция 20261027120000_mode_diary_from_case) такая запись помечена
 // `fromCase`, и «сохранено разборов» берётся прямо из ModeDiaryEntry; записи
 // до этой даты помечены false, поэтому на ретро-срез это число не опирается.
-// События остаются источником воронки (начали/сцена/вердикт) — по ним видно
+// События остаются источником воронки (начали/сцена/узнавание) — по ним видно
 // и тех, кто не дошёл до записи. Сайт/мини-апп по строкам — backend-core.md.
 //
 // «Вернулись за вторым разбором» считаем по людям, а не по событиям: один
@@ -44,9 +44,7 @@ export class CaseMetricsService {
       started,
       finished,
       scene,
-      verdict,
       recognized,
-      named,
       peopleRows,
       returnedRows,
       saved,
@@ -54,9 +52,7 @@ export class CaseMetricsService {
       count('case_started'),
       count('case_finished'),
       byMetaKey('case_scene', 'source'),
-      byMetaKey('case_criterion', 'verdict'),
       byMetaKey('case_recognized', 'agreed'),
-      byMetaKey('mode_renamed', 'source'),
       this.prisma.$queryRaw<Array<{ c: bigint }>>`
         SELECT count(DISTINCT "userId")::bigint AS c FROM "AnalyticsEvent"
         WHERE "name" = 'case_started' AND "createdAt" >= ${since30}`,
@@ -77,15 +73,9 @@ export class CaseMetricsService {
       saved,
       sceneOwn: scene('own'),
       sceneFrame: scene('frame'),
-      verdictMode: verdict('mode'),
-      verdictOrdinary: verdict('ordinary'),
-      verdictBorderline: verdict('borderline'),
       // meta->>'agreed' отдаёт булев JSON как строку 'true'/'false'.
       recognizedAgreed: recognized('true'),
       recognizedDoubted: recognized('false'),
-      namedOwn: named('own'),
-      namedChip: named('chip'),
-      namedSkipped: named('skipped'),
       people: Number(peopleRows[0]?.c ?? 0),
       peopleReturned: Number(returnedRows[0]?.c ?? 0),
     };

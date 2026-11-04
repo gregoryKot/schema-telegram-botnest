@@ -2,10 +2,10 @@
 // 5-4-3-2-1, техника «Стоп») — общий источник для листа-практики и карточки
 // шаринга (правило №3 CLAUDE.md: один контент вместо двух копий, которые
 // разъедутся при правке). stop/grounding — дословный перенос текста и вилок
-// tr('ты','вы') из schema-miniapp/src/components/StopSheet.tsx и
+// tr('ты','вы') из удалённого мини-аппа и
 // GroundingSheet.tsx (сами компоненты не менялись, переехал только контент).
 // breathing — новый контент по фактической механике
-// schema-miniapp/src/utils/breathing.ts: BREATH_IN_S=4, BREATH_HOLD_S=4,
+// удалённого мини-аппа: BREATH_IN_S=4, BREATH_HOLD_S=4,
 // BREATH_OUT_S=6 (вдох 4 — задержка 4 — выдох 6, отсюда «Дыхание 4-4-6»).
 
 export type QuickPracticeId = 'breathing' | 'grounding' | 'stop';

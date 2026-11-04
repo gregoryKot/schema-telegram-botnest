@@ -11,8 +11,7 @@ import {
 // сначала общий ConfirmDialog сайта, потом стирается всё про тест — итог,
 // история, прогресс. Видна, если тест есть здесь или на сервере. Состояние,
 // видимость, тексты и порядок «сервер → localStorage» —
-// shared/src/hooks/ysqDataDelete.ts, пара в мини-аппе —
-// schema-miniapp/src/components/settingsSheet/YsqDataDelete.tsx.
+// shared/src/hooks/ysqDataDelete.ts.
 export function YsqDataDeleteButton({ onDeleted }: { onDeleted: () => void }) {
   const copy = buildYsqDataDeleteCopy(useTr());
   const del = useYsqDataDelete(api, onDeleted);

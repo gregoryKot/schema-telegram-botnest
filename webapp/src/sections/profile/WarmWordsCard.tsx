@@ -2,7 +2,7 @@
 // Список целиком — существующий экран WarmWordsEx (тот же, что в разделе
 // «Практика»; он грузит слова сам и трекает открытие). Данные превью уже
 // собраны хуком useAboutMe — второй раз их не запрашиваем. Пусто — карточки
-// нет (не выдуманная фраза). Парна schema-miniapp/.../WarmWordsCard.tsx.
+// нет (не выдуманная фраза).
 import { lazy, Suspense, useState } from 'react';
 import { pressable } from '../../utils/a11y';
 import { pluralRu } from '../../../../shared/src/utils/pluralRu';

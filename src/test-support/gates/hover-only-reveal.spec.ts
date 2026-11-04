@@ -37,14 +37,14 @@ describe('check-hover-only-reveal.mjs — красные образцы', () => 
 
   it('visibility: hidden вместо opacity — exit 1', () => {
     const res = run(
-      'schema-miniapp/src/a.css',
+      'webapp/src/a.css',
       css(
         '.x { visibility: hidden; }',
         '.row:hover .x { visibility: visible; }',
       ),
     );
     expect(res.status).toBe(1);
-    expect(res.stderr).toContain('schema-miniapp/src/a.css:1');
+    expect(res.stderr).toContain('webapp/src/a.css:1');
   });
 
   it('hover на самом элементе — exit 1', () => {

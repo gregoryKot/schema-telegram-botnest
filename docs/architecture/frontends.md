@@ -1,4 +1,4 @@
-# Карта: фронтенды — webapp, schema-miniapp, shared, game
+# Карта: фронтенды — webapp, shared, game
 
 > Подробности к [docs/ARCHITECTURE.md](../ARCHITECTURE.md). Читай раздел нужной площадки
 > (`grep -n '^### ' docs/architecture/frontends.md`), а не весь файл. Карта врёт или
@@ -8,7 +8,7 @@
 - **Вход:** `webapp/src/main.tsx` подключает `webapp/src/index.css`, затем `shared/src/theme/utilities.css` (порядок важен), ставит `installChunkReloadListener()` и рендерит `App`.
 - **Роутинг:** все роуты в `webapp/src/App.tsx` (react-router-dom 7, `createBrowserRouter`), отдельного файла роутов нет. Два набора роутов, выбор по `isPersonalSite`:
   - `personalRoutes` — визитка практики: хост `kotlarewski.*` (`isPracticeHost`, `webapp/src/utils/domainChrome.ts`) или `?site=personal`. Роуты: `/`, `/articles`, `/reviews`, `/admin`, `/book`, `/booking/paid|manage`, `/subscribe`, `/donate`, `/privacy`, `/offer`. Продукта «Всё по схеме» здесь нет, сессия не поднимается (`AuthProvider bootstrapSession={!isPersonalSite}`).
-  - `appRoutes` — продукт: лендинг, `/tests`, `/login`, `/auth/*`, `/link`. Юрстраницы `/privacy` и `/offer` — в обоих наборах: на них ведут вход, согласие, подвалы и мини-апп; карта сайта сверяется с `appRoutes` (`src/articles/sitemap.middleware.spec.ts`). Закрытая часть идёт через layout `RequireAuth` → `/account`, `/account/merge` и `AppShell`.
+  - `appRoutes` — продукт: лендинг, `/tests`, `/login`, `/auth/*`, `/link`. Юрстраницы `/privacy` и `/offer` — в обоих наборах: на них ведут вход, согласие и подвалы; карта сайта сверяется с `appRoutes` (`src/articles/sitemap.middleware.spec.ts`). Закрытая часть идёт через layout `RequireAuth` → `/account`, `/account/merge` и `AppShell`.
 - **Разделы кабинета:** роуты `/today /diary /more /schemas /profile /practice /cabinet[/:clientId]` заданы с `element: null`. Реально разделы рисует `webapp/src/components/AppShell.tsx` по `sectionFromPath` (`webapp/src/components/appShell/navigation.ts`, тип `Section = today|diary|more|schemas|profile|practice`) через `webapp/src/components/appShell/AppSections.tsx`. Вкладки меню — `NAV_ITEMS`/`SIDEBAR_NAV_ITEMS` в `AppShell.tsx`: «Сегодня», «Записи» (`/diary`), «Ещё» (`/more`, `webapp/src/sections/MoreSection.tsx`); `schemas`, `practice` и `profile` в меню нет — открываются из «Ещё» и по прямому URL. Оверлеи: `webapp/src/components/appShell/useOverlays.ts`, `webapp/src/components/appShell/AppOverlays.tsx`, `webapp/src/components/appShell/EntryFlows.tsx`. Сайдбар десктопа (меню, виджет «Сегодня» с индексом дня, подвал) — `webapp/src/components/appShell/Sidebar.tsx`; силуэт первой загрузки кабинета — `webapp/src/components/appShell/AppShellSkeleton.tsx`.
 - **Каталоги:**
   - `webapp/src/pages/` — страницы-роуты (`LoginPage`, `AccountPage`, `AdminPage` (lazy), `Booking*`, `Donate`, `Subscribe`, `Articles`, `LandingPage` и `ProductLandingPage`; подпапки `tests/`, `login/`, `admin/` и т.д.).
@@ -39,62 +39,30 @@
   - Инфраструктура одна, в `shared/src/utils/addressForm.ts`: `AddressFormContext`, `useAddressForm`, `useSetAddressForm`, `useTr()` (`tr('текст на ты','текст на вы')`), `pickForm`.
   - `webapp/src/utils/addressForm.ts` — реэкспорт.
   - `webapp/src/utils/AddressFormProvider.tsx` грузит `api.getSettings().addressForm` через `shared/src/utils/addressFormCache.ts` (`useAddressFormValue`). Старт идёт из localStorage `address_form`, чтобы не было вспышки «ты».
-  - Провайдер смонтирован внутри `RequireAuth`, `webapp/src/components/AddressFormPicker.tsx` — первый шаг очереди `webapp/src/components/appShell/EntryFlows.tsx` (порядок — `appShell/entryQueue.ts`): вопрос «ты/вы» → согласия → ссылка-приглашение, один слой за раз, как в мини-аппе. Конец очереди — контекст `EntryFlowsDoneContext`, его ждёт автопоказ «Первый раз здесь» (`sections/today/useWhySheet.ts`); баннер куки ждёт закрытия диалогов и листов (`useAnyDialogOpen` из `shared/src/utils/dialogStack.ts` + `useAnySheetOpen`). Закрытие чужим `navigate` (push/replace) ответом не считается — вопрос переоткрывается. Публичные страницы получают дефолт `'ты'` из контекста.
+  - Провайдер смонтирован внутри `RequireAuth`, `webapp/src/components/AddressFormPicker.tsx` — первый шаг очереди `webapp/src/components/appShell/EntryFlows.tsx` (порядок — `appShell/entryQueue.ts`): вопрос «ты/вы» → согласия → ссылка-приглашение, один слой за раз. Конец очереди — контекст `EntryFlowsDoneContext`, его ждёт автопоказ «Первый раз здесь» (`sections/today/useWhySheet.ts`); баннер куки ждёт закрытия диалогов и листов (`useAnyDialogOpen` из `shared/src/utils/dialogStack.ts` + `useAnySheetOpen`). Закрытие чужим `navigate` (push/replace) ответом не считается — вопрос переоткрывается. Публичные страницы получают дефолт `'ты'` из контекста.
   - Логика пикера — `shared/src/settings/useAddressFormChoice.ts` и `shared/src/settings/addressFormPrompt.ts`.
 - **`useHistorySheet`:** `webapp/src/hooks/useHistorySheet.ts`, стек листов в `webapp/src/hooks/historySheetStack.ts`, реестр открытых — `webapp/src/hooks/openSheets.ts`.
   - Хук делает `navigate()` через react-router и кладёт стек id в `location.state.__sheetStack`. Прямой `history.pushState` запрещён.
   - Лист закрывается, когда его id пропал из стека. Escape закрывает верхний лист. Возвращаемый `goBack` используется для всех закрытий листа.
 
-### `schema-miniapp/` (Telegram/MAX mini app, `/app/`, initData-аутентификация)
-- **Вход:** `schema-miniapp/src/main.tsx`:
-  - `ensureHostOwner()` и редирект установленного PWA на десктопе в кабинет (`schema-miniapp/src/utils/desktopLaunch.ts`);
-  - дальше `ErrorBoundary` → `AddressFormProvider` → `App`, плюс `UpdateToast` и `PerfHud`.
-  - `schema-miniapp/src/App.tsx` — 660 строк, на файл действует храповик размера (`scripts/check-file-size-ratchet.mjs`: рост запрещён, выноси в `hooks/` и `utils/`).
-- **Навигация без роутера:**
-  - Секции — `useState<Section>`: `today | help | schemas | profile`. Стартовая берётся из `?section=` или localStorage (`schema-miniapp/src/utils/defaultSectionKey.ts`). Нижнее меню — `schema-miniapp/src/components/BottomNav.tsx`, рендерится из `schema-miniapp/src/components/AppDiaryNav.tsx`. У терапевта вместо него `TherapistBottomNav` и состояние `cabinetView: 'list'|'client'`.
-  - Секции ленивые: `schema-miniapp/src/components/LazySections.tsx`, `schema-miniapp/src/utils/sectionLoaders.ts`, `schema-miniapp/src/utils/preloadSections.ts`, `KeepMountedSection`. Есть свайп между вкладками (`schema-miniapp/src/hooks/useSectionSwipe.ts`).
-  - Шторки и оверлеи: реестр `schema-miniapp/src/hooks/useSheets.ts` (редьюсер, порядок открытия `openOrder`). Список ключей — `OVERLAY_SHEET_KEYS` в `schema-miniapp/src/hooks/anyOverlayOpen.ts`. Пока оверлей открыт, секции получают `inert`, свайп выключен.
-  - «Назад»: `schema-miniapp/src/hooks/useHostBackButton.ts` берёт верхний лист (`topOverlayKey`, `schema-miniapp/src/hooks/sheetsStack.ts`) и закрывает его тем же closer'ом, что и крестик (`schema-miniapp/src/hooks/overlayClosers.ts`, `buildOverlayClosers`). Новый ключ в `OVERLAY_SHEET_KEYS` без записи в closers не компилируется.
-  - Локальные оверлеи внутри листа (например чек-ин) ставят слой через `schema-miniapp/src/hooks/backLayers.ts` (`pushBackLayer` / `useBackLayer`); он закрывается раньше листа.
-  - У web-хоста своей кнопки «Назад» нет: роль играет история браузера через `schema-miniapp/src/hooks/useHostHistoryBack.ts` (прямой `pushState` и `popstate`, react-router в miniapp нет).
-- **Каталоги:**
-  - `schema-miniapp/src/components/` — UI, шторки, `Skeleton`, `Lazy*`.
-  - `schema-miniapp/src/sections/` — `Today`, `Help`, `Schemas`, `Profile`, `Diary` и подпапки.
-  - `schema-miniapp/src/hooks/` — шторки, «Назад», онбординг-гейт, outbox, свайп.
-  - `schema-miniapp/src/utils/` — константы и загрузчики секций, перф-лог, safezone, storageKeys, тема.
-  - `schema-miniapp/src/share/` — шторка и кнопки шаринга, `cards/`.
-  - `schema-miniapp/src/test-support/` — `App.test-fixtures.ts`, `App.test-helpers.tsx`, `mockApi.ts`, `rtlCleanup.ts`.
-  - В корне `schema-miniapp/src/`: `api*.ts`, `session*.ts`, `sw.ts`, `registerServiceWorker.ts`, `logout.ts`, `useUserFlags.ts`.
-  - Страниц (`pages/`) и `auth/` нет; вместо `auth/` — `session*.ts`.
-- **API-клиент:** `schema-miniapp/src/apiClient.ts` (зеркало webapp-версии), доменные методы в `schema-miniapp/src/api.ts` и `schema-miniapp/src/apiExercises.ts`, типы в `schema-miniapp/src/apiTypes.ts`.
-- **Сессия** (`schema-miniapp/src/session.ts`, `schema-miniapp/src/sessionRenew.ts`):
-  - `authHeaders()` отдаёт `Authorization: Bearer`, если токен свежий. Иначе берёт заголовок хоста из `getHost().authHeaders()`: `x-telegram-init-data` (Telegram), `x-max-init-data` (MAX), для web-хоста пусто.
-  - initData один раз меняется на access (в памяти, ~15 мин) + refresh-куку через `getHost().sessionExchange()` (например `/api/auth/telegram/webapp`).
-  - На 401 один раз выполняется `renewSession` и запрос повторяется.
-- **Сборка** (`schema-miniapp/vite.config.ts`):
-  - `base: '/app/'`, плагин `VitePWA` в режиме `injectManifest` (`schema-miniapp/src/sw.ts`).
-  - Имена ассетов без хеша (`[name].js` в `schema-miniapp/dist/assets/`).
-  - `schema-miniapp/dist/` закоммичен. Команда: `npm run build --prefix schema-miniapp`, затем коммит `dist`.
-  - `Dockerfile` не собирает мини-апп, а копирует `schema-miniapp/dist/` в `dist/app/` собранного webapp; `.dockerignore` исходник мини-аппа исключает.
-  - CI-джоба `miniapp` (`.github/workflows/ci.yml`) пересобирает и падает, если `schema-miniapp/dist` не совпал с коммитом; инварианты имён проверяет `src/test-support/gates/miniapp-dist.spec.ts`.
-  - При слиянии драйвер `scripts/merge-miniapp-dist.mjs` гасит конфликт `dist`, а хук `post-merge` (ставит `scripts/setup-merge-drivers.mjs`) пересобирает его.
-  - `schema-miniapp/src/registerServiceWorker.ts` сейчас не регистрирует SW, а снимает установленный и чистит кеши (эксперимент 2026-08-25, см. шапку файла).
+### Мини-апп Telegram/MAX (каталога нет)
+- Отдельный каталог мини-аппа удалён целиком (решения владельца 2026-10-17 и 2026-11-04, #908). Кнопки бота (`web_app`) в Telegram и MAX открывают сайт — кабинет `/today`; вход по подписи мессенджера (`x-telegram-init-data` / `x-max-init-data`) обрабатывает `webapp/`. Старый адрес `/app/*` навсегда отвечает 302 → `/today` (`src/unified-frontend.middleware.ts`).
 
 ### `shared/`
-- **Что здесь:** единственная копия общего кода обоих фронтендов — типы, чистая логика, хуки, тексты и контент, общие компоненты, CSS-токены.
+- **Что здесь:** единственная копия общего кода (сайт и игра) — типы, чистая логика, хуки, тексты и контент, общие компоненты, CSS-токены.
   - Корневые файлы: `shared/src/types.ts`, `shared/src/apiTypes.ts`, `shared/src/userId.ts` (id может быть строкой больше 2^53).
-  - Правило №3: новый общий код сразу сюда, а не копипастой.
+  - Правило №3: общий код живёт здесь, одна механика — один модуль.
 - **Как подключается:**
-  - Не собирается сам и не npm-пакет: фронты импортируют относительными путями `../../shared/src/...` (например `schema-miniapp/src/main.tsx` импортирует `shared/src/host/`, `shared/src/auth/`, `shared/src/theme/utilities.css`).
+  - Не собирается сам и не npm-пакет: фронт импортирует относительными путями `../../shared/src/...` (например `webapp/src/main.tsx` импортирует `shared/src/theme/utilities.css`).
   - В vite нужны `server.fs.allow: ['..']` и `resolve.dedupe: ['react','react-dom']`.
   - Свои `shared/package.json` и `shared/vitest.config.ts` только для тестов.
 - **Общий API:**
-  - `shared/src/api/sharedApi.ts` — `buildSharedApi(transport)`. `ApiTransport = {get, post, postJson, del}`, транспорт даёт `apiClient.ts` своего фронта.
+  - `shared/src/api/sharedApi.ts` — `buildSharedApi(transport)`. `ApiTransport = {get, post, postJson, del}`, транспорт даёт `webapp/src/apiClient.ts`.
   - `createRatingApi(authedFetch, trackEvent)` (`shared/src/api/ratingApi.ts`) — оценки с оффлайн-outbox.
   - `createPracticeSessionsApi(transport)` (`shared/src/api/practiceSessionsApi.ts`).
-  - В обоих `api.ts`: `export const api = { ...buildSharedApi(transport), ...ratingApi, ...createPracticeSessionsApi(transport), …локальные методы }`.
-  - Локальное: у webapp — booking, articles, admin, therapy и др.; у miniapp — `...exercisesApi` и другое.
-  - Новый метод, нужный обоим фронтам, добавляется в `sharedApi.ts`.
+  - В `webapp/src/api.ts`: `export const api = { ...buildSharedApi(transport), ...ratingApi, ...createPracticeSessionsApi(transport), …локальные методы }`.
+  - Локальное: booking, articles, admin, therapy и др.
+  - Метод, нужный и сайту, и игре, добавляется в `sharedApi.ts`.
 - **Вокруг API:** кеш GET (`shared/src/api/apiCache.ts`, `shared/src/api/apiCacheRules.ts`, `shared/src/api/apiCacheRules.data.ts`; ручки `/api/therapy/*` — `shared/src/api/apiCacheRules.therapy.ts`, id офлайн-клиента в пути отрицательный), `readJsonBody`, `readErrorBody`, `humanizeError` (текст ошибки для экрана: лимит, авария, сеть, служебный английский → запасной текст), `clientErrorReport`.
 
 **`shared/src/*` — подкаталоги (44):**
@@ -106,10 +74,10 @@
 | `shared/src/analytics/` | трекинг показа кризисной карточки; константы событий (`homeTile.ts`, `therapyNudge.ts` — «мост к терапевту») |
 | `shared/src/api/` | фабрики api, кеш GET, разбор ответов и ошибок |
 | `shared/src/auth/` | refresh сессии, кросс-табный замок, владелец данных, тикет входа |
-| `shared/src/beliefCheck/` | «Проверка убеждения»: форма мастера с черновиком (`useBeliefCheckForm`) — сайт и мини-апп |
+| `shared/src/beliefCheck/` | «Проверка убеждения»: форма мастера с черновиком (`useBeliefCheckForm`) |
 | `shared/src/booking/` | часовой пояс клиента, канал связи, региональная цена |
 | `shared/src/build/` | vite-плагин `requireBotUsername` |
-| `shared/src/case/` | поток «Что это было»: типы, состояние, сохранение (мини-апп); `quick/` — три шага сайта |
+| `shared/src/case/` | поток «Что это было»: типы, состояние, сохранение; `quick/` — три шага сайта |
 | `shared/src/childhoodWheel/` | колесо детства: данные и примеры; `useRatingSlider` — ползунок 0–10 (указатель, клавиатура, aria) обеих площадок |
 | `shared/src/components/` | общие компоненты: CrisisCard, Celebration, TherapyNote, Ysq*, ConnectionTrouble |
 | `shared/src/diary/` | мета дневников, пояснения, благодарности; `diaryDay` — «сегодня» дневника = местный день человека; `diaryPrivacy` + `useDiaryAccess` — «кто увидит записи» по связи с терапевтом и его доступу |
@@ -155,37 +123,25 @@
 - Исключена из гейтов размера файла и аналогичных. Не трогать без прямой просьбы. Номер телефона доверия в ней продублирован вручную (сверка тестом `src/test-support/gates/game-crisis-hotline.spec.ts`).
 
 ### Как фронт ходит в бэк
-- Компонент → `api.метод()` (`webapp/src/api.ts` или `schema-miniapp/src/api.ts`) → `get/post/postJson/patchJson/del` из `apiClient.ts` → `authedFetch` → `fetchWithTimeout` (15 с) → `${BASE}/api/...`.
+- Компонент → `api.метод()` (`webapp/src/api.ts`) → `get/post/postJson/patchJson/del` из `apiClient.ts` → `authedFetch` → `fetchWithTimeout` (15 с) → `${BASE}/api/...`.
   - `BASE` берётся из `VITE_API_URL`; пусто означает тот же origin.
   - В dev у webapp vite проксирует `/api` на `localhost:3000` (`webapp/vite.config.ts`).
-  - Бэкенд — NestJS в `src/`; он же раздаёт собранный webapp на `/`, мини-апп на `/app/` и игру на `/game`.
-- Авторизация: webapp — `Authorization: Bearer` плюс `credentials:'include'` для refresh-куки; miniapp — Bearer, а если токена нет, заголовок хоста (`x-telegram-init-data` / `x-max-init-data`). 401 → один refresh и повтор запроса.
+  - Бэкенд — NestJS в `src/`; он же раздаёт собранный webapp на `/` и игру на `/game`; `/app/*` → 302 на `/today`.
+- Авторизация: `Authorization: Bearer` плюс `credentials:'include'` для refresh-куки; внутри Telegram/MAX, пока токена нет, — заголовок хоста (`x-telegram-init-data` / `x-max-init-data`). 401 → один refresh и повтор запроса.
 - GET кешируются (дедуп и stale-while-revalidate, `shared/src/api/apiCache.ts`). Мутации инвалидируют кеш по `shared/src/api/apiCacheRules.ts`. `/api/auth/*` в кеш не попадают.
 - Аналитика: `api.trackEvent(name, meta)` → `POST /api/event`, fire-and-forget, ошибки глотаются (`shared/src/api/sharedApi.ts`).
   - Для анонимов есть `api.trackPublicEvent` → `/api/public-event`.
   - Имена событий — allow-list на бэке `src/analytics/analytics.constants.ts`; типы и константы на фронте — `shared/src/share/analytics.ts`.
-- Ошибки клиента: `reportClientError` (`createClientErrorReporter(BASE, 'webapp'|'miniapp')`, `shared/src/api/clientErrorReport.ts`).
+- Ошибки клиента: `reportClientError` (`createClientErrorReporter(BASE, 'webapp')`, `shared/src/api/clientErrorReport.ts`).
 
 ### Подводные камни
-1. **Парные файлы.** `scripts/check-paired-files.mjs` (список `PAIRS`) требует побайтового совпадения `webapp/src/<p>` и `schema-miniapp/src/<p>` (пути ниже относительно этих каталогов):
-   - `types.ts`, `utils/{addressForm,AddressFormProvider,format,storageKeys,a11y,reducedMotion,telemetryUrl,crisisMarkers,drafts,todayInsight,therapistContact}.ts(x)`;
-   - `components/CrisisCard.tsx`, `hooks/{useYsqTest,useReducedMotionPref}.ts`;
-   - `components/schemaFlashcard/{constants,types}.ts`, `test-support/rtlCleanup.ts`.
-   Правишь одну сторону — правь вторую в том же PR.
-   - Многие из них, а также `needData.ts`, `haptic.ts`, `modeChainVm.ts`, `schemaTherapyData.ts`, — тонкие реэкспорты (1–23 строки). Логику менять в `shared/src/...`, не в заглушке.
-   - Пары не по байтам, а по смыслу: `apiClient.ts`, `api.ts`, `Skeleton.tsx`, `Celebration.tsx`.
-   - Раздел про «парные копии» в `shared/README.md` частично устарел: `addressForm` и `CrisisCard` теперь реэкспорты.
-2. **`shared/` не должен импортировать фронт-специфику** (`../api`, роутер и т.п.). Зависимости передаются параметрами: `createRatingApi(authedFetch, trackEvent)`, `useAddressFormValue(loadForm)`, `buildSharedApi(transport)`.
+1. **`shared/` не должен импортировать фронт-специфику** (`../api`, роутер и т.п.). Зависимости передаются параметрами: `createRatingApi(authedFetch, trackEvent)`, `useAddressFormValue(loadForm)`, `buildSharedApi(transport)`.
    - `api.trackEvent` внутри `ratingApi` вызывается лениво (замыкание), иначе TDZ.
-3. **Правка `shared/` или `schema-miniapp/src/` меняет бандл мини-аппа:** `schema-miniapp/src/main.tsx` и `schema-miniapp/src/App.tsx` импортируют `../../shared/src/...`. Нужно пересобрать `schema-miniapp/dist/`, закоммитить его вместе с исходником и не править руками.
-   - В бандл нельзя класть `new Date()` и хеши: CI сверяет сборку с закоммиченным `dist`.
-   - `schema-miniapp/index.html` жёстко ссылается на `/app/assets/TodaySection.js`, поэтому имена ассетов должны оставаться стабильными.
-4. **Токены и CSS.** Общие токены (акцент, шрифты Manrope + Spectral, шкалы `--r-*`, `--space-*`, класс `.skel`) лежат в `shared/src/theme/tokens.css` и импортируются первой строкой `webapp/src/index.css` и `schema-miniapp/src/index.css`. Остальное (`--bg`, `--surface`, цвета текста и статусов, тема) — локально в каждом `index.css`.
+2. **Токены и CSS.** Общие токены (акцент, шрифты Manrope + Spectral, шкалы `--r-*`, `--space-*`, класс `.skel`) лежат в `shared/src/theme/tokens.css` и импортируются первой строкой `webapp/src/index.css`. Остальное (`--bg`, `--surface`, цвета текста и статусов, тема) — в нём же.
    - Гейт `scripts/check-token-contract.mjs` сверяет только набор имён токенов, не значения.
    - `var(--x, fallback)` запрещён.
-   - `shared/src/theme/utilities.css` подключается в `main.tsx` обоих фронтов строго после `index.css`.
+   - `shared/src/theme/utilities.css` подключается в `webapp/src/main.tsx` строго после `index.css`.
    - В webapp светлая тема кабинета фиксируется классом `.light-lock` (`webapp/src/index.css`); тёмная для кабинетов не нарисована.
-5. **Skeleton-примитивы двух фронтов не байт-пара и с разными пропсами:** `webapp/src/components/Skeleton.tsx` (`width`, `height`) и `schema-miniapp/src/components/Skeleton.tsx` (`w`, `h`, `circle`, `SkeletonCard/Lines/List`, `TodayScreenSkeleton`, `ScreenSkeleton`). Стиль `.skel` у обоих общий, из `shared/src/theme/tokens.css`. Правило проекта: скелетон по форме контента, не спиннер.
-6. **webapp — два сайта в одном бандле:** выбор `personalRoutes` или `appRoutes` делается один раз при загрузке модуля `webapp/src/App.tsx` по хосту или `?site=personal`.
+3. **webapp — два сайта в одном бандле:** выбор `personalRoutes` или `appRoutes` делается один раз при загрузке модуля `webapp/src/App.tsx` по хосту или `?site=personal`.
    - Правки `<head>` и фавиконок для визитки делает `webapp/src/utils/domainChrome.ts` из JS (`webapp/index.html` один на оба домена).
    - Новый раздел кабинета требует правок в `appRoutes` (роут с `element: null`) и в `webapp/src/components/appShell/navigation.ts`, а не только компонента.

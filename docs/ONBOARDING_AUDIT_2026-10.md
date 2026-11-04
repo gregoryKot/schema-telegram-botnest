@@ -77,7 +77,7 @@ CLAUDE.md.
 они живут в компонентах, которых на второй площадке просто нет:
 
 - **Трекер потребностей.** Строка «Пять базовых эмоциональных потребностей — из
-  схема-терапии» есть только в `schema-miniapp/.../trackerOverlay/OnboardingOverlay.tsx:62`.
+  схема-терапии» есть только в `OnboardingOverlay.tsx:62` (мини-апп, удалён).
   В вебе ни источника, ни срока «через 3–5 дней виден паттерн» — нет вообще.
   → *исправлено в этом PR* (статичная строка; перенос `OnboardingOverlay` в
   `shared` остаётся предложением).
@@ -97,7 +97,7 @@ CLAUDE.md.
 
 `shared/src/utils/hitbox.ts` (`hitboxStyle(visualW, visualH, hitSize = 44)`)
 родился из дизайн-аудита 2026-08, пункт К3. Использований — семь, **все в
-`schema-miniapp`**; в `webapp/src` ни одного. К3 помечен «done · #397», гейта
+мини-апп (удалён, #908)**; в `webapp/src` ни одного. К3 помечен «done · #397», гейта
 классу не оставили — и класс вернулся ровно туда, куда починка не дошла.
 Худшие случаи на главном пути:
 
@@ -111,7 +111,7 @@ CLAUDE.md.
 - `shared/src/components/CrisisCard.tsx:49-62` — телефон доверия: `<a>` без
   паддинга, ≈24px. Самая важная цель в продукте, в состоянии, когда попасть
   пальцем труднее всего. → *исправлено*.
-- `schema-miniapp/.../NeedHistorySheet.tsx:254` и `webapp/.../NeedHistorySheet.tsx:130`
+- `NeedHistorySheet.tsx:254` (мини-апп, удалён) и `webapp/.../NeedHistorySheet.tsx:130`
   — «?» объяснения совета **16×16**; `childhoodWheelSheet/NeedFillRow.tsx:84` —
   единственный вход к примерам **24×24**; `webapp/src/sections/ProfileSection.tsx:388`
   — «?» про «лучший день» **18×18**.
@@ -146,7 +146,7 @@ CLAUDE.md.
 
 - **Полоски-шаги кликабельны.** `webapp/src/index.css:1545` `.tick` — 3px,
   прыгает на шаг визарда дневника (`SchemaEntrySheet.tsx:154`,
-  `ModeEntryForm.tsx:101`); `schema-miniapp/src/components/WizardProgress.tsx:34-39`
+  `ModeEntryForm.tsx:101`); `WizardProgress.tsx:34-39` (мини-апп, удалён)
   — сегменты 4px, `onSelect={setStep}` из `IntroSheetShell.tsx:107-114`;
   `webapp/.../FlashcardEx.tsx:61` — то же. Ни подписи, ни `aria-label`, ни
   шанса попасть пальцем. Либо хитбокс 44 с `aria-label="Шаг N"`, либо убрать
@@ -208,7 +208,7 @@ CLAUDE.md.
 Не находка про онбординг-копирайт, а дефект согласия, найденный на первом же
 экране аудита. Исправлен здесь же.
 
-- `schema-miniapp/src/components/Disclaimer.tsx:52` — `blocked = !canAdvance(stepId, ready)`,
+- `Disclaimer.tsx:52` (мини-апп, удалён) — `blocked = !canAdvance(stepId, ready)`,
   а `canAdvance` (`disclaimer/steps.ts:43-45`) возвращает `consentReady` **только**
   для шага `not_therapy`.
 - Точки-пагинатор звали `setStep(i)` напрямую (`Disclaimer.tsx:70`). Тап по

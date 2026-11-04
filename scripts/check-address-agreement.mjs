@@ -14,7 +14,7 @@ import { join, resolve } from 'path';
 import { fileURLToPath } from 'url';
 
 const ROOT = join(import.meta.dirname, '..');
-const SCAN = ['src', 'webapp/src', 'schema-miniapp/src', 'shared/src'];
+const SCAN = ['src', 'webapp/src', 'shared/src'];
 
 // \b в JS не работает по кириллице — границы через lookaround.
 const B = '(?<![А-Яа-яЁё])';

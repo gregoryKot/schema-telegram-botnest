@@ -97,7 +97,6 @@
 | Код вне `src/`, который исполняется в браузере | `scripts/check-public-scripts.mjs` |
 | Мёртвые файлы и вторые копии живого кода | `scripts/check-dead-files.mjs` |
 | Дублирование логики | `scripts/check-jscpd-ratchet.mjs` |
-| Разъезд парных файлов двух фронтендов | `scripts/check-paired-files.mjs` |
 | Раздувание файлов | `scripts/check-file-size-ratchet.mjs` |
 | Отслеживаемый файл, который запрещает `.gitignore` (правило не снимает уже отслеживаемое: 466 файлов `test/.jest-cache` жили в индексе с #243) | `scripts/check-ignored-tracked.mjs` — `git ls-files -ci --exclude-per-directory=.gitignore`, без бейслайна; тест в песочнице на настоящем индексе, `src/test-support/gates/ignored-tracked.spec.ts` |
 | Просадка покрытия (бэк и три фронт-пакета) | `check-coverage-ratchet.mjs`, `check-frontend-coverage-ratchet.mjs` |
@@ -138,10 +137,10 @@
 | Ветка, зависящая от конфигурации, деградирует МОЛЧА (не хватает одной env-переменной — фича просто не работает, никто не узнаёт) | `src/infra/capability-report.ts` (реестр) + `capability-boot-log.ts` (ERROR при старте, если сигнализация мертва) + блок «Настройки» в `/stats` + `scripts/check-capability-registry.mjs` |
 | Клиентский свидетель есть, пишет, и на него никто не смотрит (`POST /api/client-errors` только логировался — разные поломки схлопывались в один DM за счёт постоянного первого аргумента у `AlertLogger`, а в `/stats` поломки клиента не было вовсе) | событие `client_error` (`userId = null`, троттлинг по source+section+ip — `src/api/client-errors.controller.ts`, `src/api/client-error-section.ts`) + блок «Поломки на клиенте» (`client-error-metrics.service.ts`/`.format.ts`), отдельной строкой выделяет поломки входа |
 | Пользователь с формой «вы» видит «ты» (и наоборот) в тексте, живущем вне `tr()`/`t()`/`pickForm()` — императивы без местоимения рядом, зеркальные «вы»-формы, письма бэкенда | `scripts/check-second-person.mjs` |
-| Косметическая строка стоит кадров: `backdrop-filter`/`filter: blur` в установленном на телефон приложении считаются программно (~1.4с на кадр — неделя жалоб «тормозит», замеры 2026-08-26) | `scripts/check-render-poison.mjs` + панель замеров `PerfHud` с тумблерами A/B на устройстве (`schema-miniapp/src/utils/perfExperiments.ts`) |
+| Косметическая строка стоит кадров: `backdrop-filter`/`filter: blur` в установленном на телефон приложении считаются программно (~1.4с на кадр — неделя жалоб «тормозит», замеры 2026-08-26) | `scripts/check-render-poison.mjs` + панель замеров `PerfHud` с тумблерами A/B на устройстве (`perfExperiments.ts` (мини-апп, удалён)) |
 | Фолбэк-контент (`src/bot/healthy-adult.data.ts`) правится, а сопровождающая миграция для живого пула в БД — нет: читатели канала получают старую версию | `scripts/check-pool-sync.mjs` |
 | Отказ загрузки, молча превращённый в пустое состояние (catch-to-empty: сетевой сбой рисовал «404» на существующей статье, «статей нет», «планов нет», стёртый дневник) | храповик `scripts/check-silent-catch.mjs` (только вниз; PR #369/#371/#373) + канонические механизмы `useAsyncData.failed` (webapp) и `LoadErrorBanner` (мини-апп) |
-| Критичный UI-путь живёт только в юнитах — между юнитом и пользователем сборка, минификация, код-сплиттинг (кризисная карточка, сохранение оценки) | `e2e-browser/crisis-smoke.spec.ts`, `tracker-smoke.spec.ts` (webapp) и `miniapp-smoke.spec.ts` (настоящий `schema-miniapp/dist` через вендорный `telegram-web-app.js` и hash-запуск — непрерывно перепроверяет фикс инцидента 2026-08-08) — nightly-джоба `browser-smoke` |
+| Критичный UI-путь живёт только в юнитах — между юнитом и пользователем сборка, минификация, код-сплиттинг (кризисная карточка, сохранение оценки) | `e2e-browser/crisis-smoke.spec.ts`, `tracker-smoke.spec.ts` (webapp; смок мини-аппа с вендорным `telegram-web-app.js` ушёл вместе с ним, #908) — nightly-джоба `browser-smoke` |
 | Слабый тест сигнального/данные-хранящего пути не отличим от сильного чтением (класс «тест обосновывал защиту, которой нет») — для офлайн-очереди оценок | `stryker.outbox.config.json` + `scripts/mutation-outbox-baseline.json` (nightly-ратчет, 96.3%, ratingApi 100%) — второй command-runner-таргет после кризисной детекции |
 | Файл, выделенный из файла мутационной зоны, выпадает из `mutate` молча (инцидент 2026-10: `redact()` ушёл из `security-log.service.ts` в `security-log-redact.ts` и перестал измеряться, #614); спек, грузящий файл статическим импортом, не засчитывается Stryker'у при `ignoreStatic` | `scripts/check-mutation-zone.mjs` (классификация в `scripts/mutation-zone-baseline.json`, без `--update`); спеки зоны грузят код уровня модуля через `jest.isolateModules` внутри теста (`security-log.service.spec.ts`, `security-log-redact.spec.ts`, `crypto.spec.ts`) |
 | Деньги входят через дверь без спека; падение INSERT доната молчало (500 клиенту, ноль алертов, ноль строк в БД) | `src/donation/donation.controller.spec.ts` (honeypot, троттлинг-метаданные, контракт с сервисом) + `try/catch`→`alertAdmin`→rethrow в `donation.service.ts` с тестом-мутантом |
@@ -218,9 +217,9 @@
   без числа и без тренда. Теперь число и тренд есть.
 - **Живого клиента мессенджера в CI по-прежнему нет — но зазор сузился до
   самого вебвью.** С 2026-08-16 headless Chromium в nightly открывает и
-  собранный бандл webapp (`crisis-smoke`, `tracker-smoke`), и настоящий
-  `schema-miniapp/dist` через вендорный `telegram-web-app.js` с hash-запуском
-  (`miniapp-smoke`) — сборка и запуск бандла теперь под наблюдателем.
+  собранный бандл webapp (`crisis-smoke`, `tracker-smoke`; смок мини-аппа с вендорным
+  `telegram-web-app.js` и hash-запуском ушёл вместе с ним, #908) — сборка и запуск
+  бандла webapp под наблюдателем.
   Непокрытым остаётся ровно вебвью площадки: WebView Телеграма/MAX — не
   headless Chromium (другие движки/версии/ограничения), и деплой-шов между
   CI и прод-сайтом закрывает только `prod-smoke.yml`.

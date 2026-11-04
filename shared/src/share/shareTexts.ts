@@ -1,4 +1,4 @@
-// Тексты для шаринга — чистые билдеры (тесты в schema-miniapp/src/share).
+// Тексты для шаринга — чистые билдеры (тесты — shareTexts.test.ts).
 // Формулировки от 1-го лица или безличные: не зависят ни от ты/вы, ни от рода.
 // link — ссылка на бота (botShortUrl конкретного фронтенда).
 import { pluralDays } from '../utils/celebrationText';
@@ -38,7 +38,7 @@ export function modeShareText(name: string, link: string): string {
   return `🎭 Изучаю режим «${name}» в схема-терапии.\n\n${link}`;
 }
 
-/** Приглашение в пару: код + deep-link мини-аппа (miniappDeepLink фронта). */
+/** Приглашение в пару: код + deep-link (ссылку строит фронт). */
 export function pairInviteShareText(code: string, deepLink: string): string {
   return `🤝 Присоединяйся — отслеживаем эмоциональные потребности вместе.\n\nКод пары: ${code}\n${deepLink}`;
 }

@@ -29,7 +29,7 @@ const BASELINE_PATH = join(ROOT, 'scripts', 'color-drift-baseline.json');
 const UPDATE = process.argv.includes('--update');
 const VERBOSE = process.argv.includes('--verbose');
 
-const SCAN_DIRS = ['webapp/src', 'schema-miniapp/src', 'shared/src'];
+const SCAN_DIRS = ['webapp/src', 'shared/src'];
 
 // Ровно валидные CSS-hex длины (3/4/6/8 цифр) — 5 и 7 цифр цветом не бывают,
 // а номера PR (`#516`) гасит уже вырезание комментариев. Держим длины

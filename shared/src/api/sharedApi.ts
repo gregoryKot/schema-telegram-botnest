@@ -1,7 +1,7 @@
-// Общие методы API обоих фронтендов (webapp ↔ schema-miniapp, правило №3).
+// Общие методы API (webapp, правило №3).
 // До 2026-08 эндпоинты жили копией в двух api.ts, и фиксы доезжали до одного;
-// теперь метод описан ОДИН раз здесь. Фронт отличается только транспортом (webapp —
-// JWT Bearer, мини-апп — initData) и платформенными методами своего api.ts (booking/
+// теперь метод описан ОДИН раз здесь. Сайт добавляет только транспорт (webapp —
+// JWT Bearer) и платформенные методы своего api.ts (booking/
 // статьи/админка — сайт; exercises, saveRating с outbox-датой, conceptualization — локально).
 import { THERAPY_RELATION_PATH } from '../therapy/freshRelation';
 import type {
@@ -255,7 +255,7 @@ export const buildSharedApi = (t: ApiTransport) => ({
     t.post('/api/schema-notes', body),
   getModeNotes: () => t.get<UserModeNote[]>('/api/mode-notes'),
   saveModeNote: (body: SaveModeNoteBody) => t.post('/api/mode-notes', body),
-  // Разборы фразы (упражнение «Критик или забота?» живёт в мини-аппе) — сайту
+  // Разборы фразы (упражнение «Критик или забота?») — сайту
   // нужны для «Тёплых слов»: в коллекцию идут помеченные inWarmWords.
   getClientSchemaNotes: (clientId: UserId) =>
     t.get<UserSchemaNote[]>(`/api/therapy/client/${clientId}/schema-notes`),

@@ -2,14 +2,14 @@ import { telemetryUrl } from '../utils/telemetryUrl';
 
 // Отправка пойманной ErrorBoundary ошибки на бэкенд (best-practice «видимость
 // прода», 2026-07) — единственная копия для обоих фронтендов (правило №3,
-// раньше жила дословным дублем в webapp/src/api.ts и schema-miniapp/src/api.ts).
+// раньше жила дословным дублем в webapp).
 // Без auth, fire-and-forget, keepalive — долетает даже при краше на выгрузке;
 // сама никогда не бросает: телеметрия не мешает UI.
 //
 // H0 (аудит 2026-07-20): в url — ТОЛЬКО путь, без query/fragment. Во фрагменте
-// живут секреты обоих фронтендов: у вебаппа после логина
+// живут секреты: у сайта после логина
 // `/auth/callback#access_token=<JWT>` (TTL 15 мин, хеш чистится лишь в
-// useEffect), у мини-аппа — initData (`#tgWebAppData=…&hash=…`, реплей 1 ч =
+// useEffect), в удалённом мини-аппе был initData (`#tgWebAppData=…&hash=…`, реплей 1 ч =
 // имперсонация). Краш на фазе рендера успевал отправить секрет в логи сервера
 // и в DM админа — поэтому срезает telemetryUrl, а не сами фронтенды.
 export function createClientErrorReporter(

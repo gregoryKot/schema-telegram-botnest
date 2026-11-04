@@ -5,8 +5,8 @@
  * Полный CaseAnswers собирается из этих полей только когда gateId/modeId уже
  * гарантированно заданы (caseFlowMappers.ts → buildAnswers).
  *
- * Один источник для webapp/schema-miniapp (правило №3 CLAUDE.md) — вынесено
- * из schema-miniapp/src/components/caseFlow/caseFlowTypes.ts 2026-08:
+ * Общий модуль (правило №3 CLAUDE.md) — вынесен
+ * из удалённого мини-аппа 2026-08:
  * ни хук состояния, ни эти типы не были завязаны ни на один платформенный
  * модуль (BottomSheet/haptic/api), только на shared. webapp подключает те же
  * типы, платформенные хуки (useCaseFlowState/useCaseFlowSave) у каждой
@@ -35,9 +35,8 @@ export interface CaseCardBody {
   fillIfEmpty: ModeNoteField[];
 }
 
-/** Пропсы оркестратора потока — общая форма для CaseFlowSheet (miniapp) и
- *  CaseFlowScreen (webapp): каждая площадка сама решает, чем сохранять и
- *  куда вести дальше, форма контракта одна. */
+/** Пропсы оркестратора потока — общая форма для CaseFlowScreen (webapp): экран сам
+ *  решает, чем сохранять и куда вести дальше. */
 export interface CaseFlowSheetProps {
   /** Сколько разборов уже было ДО этого — 0 показывает термин «режим». */
   caseCount: number;

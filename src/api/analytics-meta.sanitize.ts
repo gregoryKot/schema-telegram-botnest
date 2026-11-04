@@ -2,11 +2,7 @@ import type { AnalyticsEventName } from '../analytics/analytics.constants';
 import {
   SHARE_CARD_KIND_SET,
   CRISIS_SURFACE_SET,
-  TODAY_FOCUS_PRACTICE_SET,
-  WEB_BANNER_ID_SET,
   ONBOARDING_STEP_SET,
-  TODAY_BLOCK_SET,
-  CUSTOMIZE_ENTRY_SET,
   HOME_SCREEN_ACTION_SET,
   HOME_SCREEN_SURFACE_SET,
   ACCOUNT_LINK_HOST_SET,
@@ -65,51 +61,15 @@ export function sanitizeMeta(
     }
     return undefined;
   }
-  if (name === 'today_focus_change') {
-    const practice = meta.practice;
-    if (
-      typeof practice === 'string' &&
-      TODAY_FOCUS_PRACTICE_SET.has(practice)
-    ) {
-      return { practice };
-    }
-    return undefined;
-  }
   if (name === 'today_streak_toggle') {
     return typeof meta.hidden === 'boolean'
       ? { hidden: meta.hidden }
       : undefined;
   }
-  if (name === 'web_banner_open' || name === 'web_banner_dismiss') {
-    const banner = meta.banner;
-    if (typeof banner === 'string' && WEB_BANNER_ID_SET.has(banner)) {
-      return { banner };
-    }
-    return undefined;
-  }
   if (name === 'onboarding_step') {
     const step = meta.step;
     if (typeof step === 'string' && ONBOARDING_STEP_SET.has(step)) {
       return { step };
-    }
-    return undefined;
-  }
-  if (name === 'today_block_toggle') {
-    const block = meta.block;
-    const hidden = meta.hidden;
-    if (
-      typeof block === 'string' &&
-      TODAY_BLOCK_SET.has(block) &&
-      typeof hidden === 'boolean'
-    ) {
-      return { block, hidden };
-    }
-    return undefined;
-  }
-  if (name === 'today_customize_open') {
-    const via = meta.via;
-    if (typeof via === 'string' && CUSTOMIZE_ENTRY_SET.has(via)) {
-      return { via };
     }
     return undefined;
   }
@@ -188,11 +148,7 @@ export function sanitizeMeta(
     }
     return undefined;
   }
-  if (
-    name === 'plus_action' ||
-    name === 'quick_action_toggle' ||
-    name === 'quick_action_move'
-  ) {
+  if (name === 'quick_action_toggle' || name === 'quick_action_move') {
     return sanitizeQuickActionMeta(name, meta);
   }
   if (name === 'login_ticket_step') return sanitizeLoginTicketMeta(meta);
@@ -275,10 +231,10 @@ export function sanitizeMeta(
     }
     return undefined;
   }
-  if (name.startsWith('case_') || name === 'mode_renamed') {
+  if (name.startsWith('case_')) {
     return sanitizeCaseMeta(name, meta);
   }
-  // Без meta: breath_start / stop_start / journey_open / ysq_help_open / plus_open /
+  // Без meta: breath_start / stop_start / journey_open / ysq_help_open /
   // CONCEPT_EVENTS; серверные notify_queue_tick, therapist_resigned (подделке — без чисел).
   // Главная простого клиента (home_tile, tracker_skip, diary_quick_save) — свой файл.
   return sanitizeHomeMeta(name, meta);

@@ -6,7 +6,6 @@
 //
 // Один источник опций для webapp/eslint.config.js и блока shared/src в
 // корневом eslint.config.mjs (оба файла под храповиком размера, правило №10).
-// Мини-апп не покрыт: он удаляется (docs/ONE_FRONTEND_PLAN.md).
 
 export const controlLabelRule = {
   'jsx-a11y/control-has-associated-label': [

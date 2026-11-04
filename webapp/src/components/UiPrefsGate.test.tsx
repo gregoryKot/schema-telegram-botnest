@@ -1,8 +1,9 @@
 // @vitest-environment jsdom
-// Read-after-write: настройка, сделанная в мини-аппе (лежит на сервере),
+// Read-after-write: настройка, сделанная на другом устройстве (лежит на сервере),
 // должна дойти до экрана «Сегодня» на сайте, а запись на сайте — не стереть
 // ключи, которых на этом устройстве нет. Идём через настоящие: шлюз, общий
-// синхронизатор и хук настройки «Сегодня»; подменены только сеть и localStorage-фон.
+// синхронизатор и хранилище настройки «Сегодня»; подменены только сеть и localStorage-фон.
+import { useState } from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 
@@ -17,18 +18,31 @@ vi.mock('../api', () => ({
 import { api } from '../api';
 import { UiPrefsGate } from './UiPrefsGate';
 import { notifyPrefsChanged } from '../utils/uiPrefsSync';
-import { useTodayCustomization } from '../../../shared/src/today/useTodayCustomization';
+import {
+  isSecondaryHidden,
+  isStreakHidden,
+  setSecondaryHidden,
+} from '../../../shared/src/today/todayFocus';
 
 const getSettings = api.getSettings as unknown as ReturnType<typeof vi.fn>;
 const updateSettings = api.updateSettings as unknown as ReturnType<typeof vi.fn>;
 
-// Потребитель ключей кастомизации (общий хук с мини-аппом): серия показана или скрыта + кнопка.
+// Потребитель ключей настройки «Сегодня»: серия показана или скрыта + кнопка,
+// которая переключает блок и сообщает синхронизатору об изменении.
 function TodayProbe() {
-  const t = useTodayCustomization({ api, onChanged: notifyPrefsChanged });
+  const [, bump] = useState(0);
   return (
     <div>
-      <span data-testid="streak">{t.streakHidden ? 'hidden' : 'shown'}</span>
-      <button onClick={t.toggleSecondary}>toggle</button>
+      <span data-testid="streak">{isStreakHidden() ? 'hidden' : 'shown'}</span>
+      <button
+        onClick={() => {
+          setSecondaryHidden(!isSecondaryHidden());
+          notifyPrefsChanged();
+          bump((n) => n + 1);
+        }}
+      >
+        toggle
+      </button>
     </div>
   );
 }
@@ -67,7 +81,7 @@ describe('UiPrefsGate + «Сегодня»', () => {
     await waitFor(() => expect(screen.getByTestId('streak').textContent).toBe('shown'));
   });
 
-  it('изменение на сайте уходит на сервер вместе с ключами из мини-аппа, а не вместо них', async () => {
+  it('изменение на сайте уходит на сервер вместе с ключами с других устройств, а не вместо них', async () => {
     getSettings.mockResolvedValue({
       uiPrefs: { today_streak_hidden: '1', screen_order_today: '["phrase","focus"]' },
     });

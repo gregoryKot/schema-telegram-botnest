@@ -1,7 +1,7 @@
 /**
  * Форма карточек-заметок (схема/режим), как их отдаёт и принимает бэкенд
  * (UserSchemaNote/UserModeNote в schema.prisma, notes.dto.ts). Единый
- * источник для типов `webapp/src/api.ts` и `schema-miniapp/src/api.ts` —
+ * источник для типов `webapp/src/api.ts` (с удалённым мини-аппом) —
  * раньше это были два независимых, почти дословно продублированных
  * inline-интерфейса (правило №3 CLAUDE.md).
  */

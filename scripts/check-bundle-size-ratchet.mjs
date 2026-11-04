@@ -11,10 +11,6 @@
 // PR. Вместо этого — агрегаты:
 //   webapp:total-js       — сумма байт всех webapp/dist/assets/*.js
 //   webapp:largest-chunk  — байт самого тяжёлого JS-чанка webapp
-//   miniapp:index.js      — байт schema-miniapp/dist/assets/index.js
-//                            (имя БЕЗ хеша — правило №13 CLAUDE.md, поэтому
-//                            здесь ключ = реальное имя файла, это осознанно)
-//   miniapp:total-js      — сумма байт всех schema-miniapp/dist/assets/*.js
 //
 //   node scripts/check-bundle-size-ratchet.mjs            # проверка
 //   node scripts/check-bundle-size-ratchet.mjs --update   # зафиксировать
@@ -33,7 +29,7 @@ const UPDATE = process.argv.includes('--update');
 // достаточно, чтобы не флеймить CI на шум.
 const TOLERANCE_BYTES = 512;
 
-/** Байты всех *.js в каталоге (без рекурсии — assets/ у обеих сборок плоский). */
+/** Байты всех *.js в каталоге (без рекурсии — assets/ плоский). */
 function jsFiles(dir) {
   if (!existsSync(dir)) return null;
   return readdirSync(dir)
@@ -62,33 +58,12 @@ function main() {
     fail('❌ бандл-храповик: webapp/dist/assets пуст — сборка не дала ни одного JS-файла.');
   }
 
-  const miniappDir = join(ROOT, 'schema-miniapp', 'dist', 'assets');
-  const miniappFiles = jsFiles(miniappDir);
-  if (miniappFiles === null) {
-    fail(
-      '❌ бандл-храповик: schema-miniapp/dist/assets не найден — dist мини-аппа\n' +
-        'коммитится в git (правило деплоя CLAUDE.md), каталог обязан быть в дереве.\n' +
-        'Пересобери: npm run build --prefix schema-miniapp',
-    );
-  }
-  const miniappIndex = miniappFiles.find((f) => f.name === 'index.js');
-  if (!miniappIndex) {
-    fail(
-      '❌ бандл-храповик: schema-miniapp/dist/assets/index.js не найден.\n' +
-        'Ассеты мини-аппа именуются БЕЗ хеша (правило №13 CLAUDE.md, vite.config.ts) —\n' +
-        'ожидается файл с этим именем. Пересобери: npm run build --prefix schema-miniapp',
-    );
-  }
-
   const webappTotal = webappFiles.reduce((s, f) => s + f.bytes, 0);
   const webappLargest = webappFiles.reduce((m, f) => (f.bytes > m.bytes ? f : m));
-  const miniappTotal = miniappFiles.reduce((s, f) => s + f.bytes, 0);
 
   const metrics = {
     'webapp:total-js': webappTotal,
     'webapp:largest-chunk': webappLargest.bytes,
-    'miniapp:index.js': miniappIndex.bytes,
-    'miniapp:total-js': miniappTotal,
   };
   // Только для человекочитаемого вывода — в бейслайн не идёт (имя чанка
   // webapp несёт хеш и меняется при каждой правке, см. шапку файла).

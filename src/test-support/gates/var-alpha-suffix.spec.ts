@@ -28,11 +28,10 @@ describe('check-var-alpha-suffix.mjs', () => {
 
   it('borderColor: var(--c-moss)40 — exit 1 (рамка кривая, а не отсутствует)', () => {
     const res = runGate('check-var-alpha-suffix.mjs', {
-      'schema-miniapp/src/Panel.tsx':
-        "const s = { borderColor: 'var(--c-moss)40' };\n",
+      'webapp/src/Panel.tsx': "const s = { borderColor: 'var(--c-moss)40' };\n",
     });
     expect(res.status).toBe(1);
-    expect(res.stderr).toContain('schema-miniapp/src/Panel.tsx:1');
+    expect(res.stderr).toContain('webapp/src/Panel.tsx:1');
     expect(res.stderr).toContain('var(--c-moss)40');
   });
 
@@ -93,7 +92,7 @@ describe('check-var-alpha-suffix.mjs', () => {
         'const f = { background: `var(--c-rose)${alpha}` };',
         '',
       ].join('\n'),
-      'schema-miniapp/src/clean.css': [
+      'webapp/src/clean.css': [
         '.card {',
         '  background: var(--surface);',
         '  border: 1px solid var(--c-moss);',

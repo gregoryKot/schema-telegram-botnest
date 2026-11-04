@@ -2,8 +2,7 @@
  * Третичная строка-ссылка потока «Разбор случая» («Сегодня ровный день →»,
  * «Пропустить →» и т.п.) — вынесена из caseFlowUi.tsx в файл без импортов из
  * соседей по каталогу: её берут и CaseFlowFoot (caseFlowUi), и
- * CaseSupportFoot, а импорт из caseFlowUi дал бы цикл модулей. Twin по
- * смыслу с schema-miniapp caseFlowUi TertiaryLink: тактильный отклик
+ * CaseSupportFoot, а импорт из caseFlowUi дал бы цикл модулей. Тактильный отклик
  * внутри (haptic.tap), вызывающему экрану достаточно onClick; разметка —
  * webapp-идиома «link».
  */

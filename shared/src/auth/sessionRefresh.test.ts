@@ -1,7 +1,7 @@
 // Регресс «постоянно нужно логиниться заново» (диагностика 2026-08-21):
 // временная ошибка refresh-эндпоинта (сеть/5xx/429) не должна выглядеть как
 // «сессия истекла». Здесь — чистая классификация и цикл ретраев, без React и
-// без сети, общие для webapp/AuthProvider и schema-miniapp/session.
+// без сети, общие для webapp.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
   classifyRefreshFailure,

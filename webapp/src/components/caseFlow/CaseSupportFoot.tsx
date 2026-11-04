@@ -11,8 +11,7 @@ import { useSupportCardReveal } from '../../../../shared/src/case/useCaseSupport
  * выбрасывал человека из разбора на главную вместо помощи. Теперь hardNow
  * живёт в shared useHardNowSupport (внутри useCaseFlowState), а сюда
  * приезжает контекстом: экраны между CaseFlowScreen и CaseFlowFoot передают
- * свои пропсы как раньше, ничего нового не прокидывают. Twin schema-miniapp
- * CaseSupportFoot.tsx — там оркестратор один, контекст не нужен.
+ * свои пропсы как раньше, ничего нового не прокидывают.
  */
 interface CaseSupportState {
   hardNow: boolean;

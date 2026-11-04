@@ -36,7 +36,6 @@
   - `npm ci --prefix webapp` и `npm ci --prefix game`;
   - `COPY . .`, затем `BUILD_INFO` (`date -u`), `npx prisma generate`, `npm run build` (nest, `dist/`);
   - `VITE_BOT_USERNAME=SchemeHappensBot` и `npm run build --prefix webapp` (webapp/dist);
-  - мини-апп не собирается, `cp -r schema-miniapp/dist/*` в webapp/dist/app/ (dist лежит в git);
   - `npm run build --prefix game` (`prebuild` = `i18n:check`), копия в webapp/dist/game/;
   - `npm prune --production`.
 - Стадия runtime:
@@ -80,16 +79,15 @@ SIGTERM/SIGINT пробрасываются приложению.
 | webapp | build, bundle-size, vitest+coverage, vitest под TZ Sydney, UI-гейты, npm audit |
 | shared | coverage-храповик и vitest под TZ Sydney для `shared/`, npm audit |
 | eslint | `check-eslint-ratchet.mjs` (ставит зависимости всех пакетов, prisma generate) |
-| miniapp | typecheck, build, coverage-храповик, vitest под TZ Sydney, «dist актуален», npm audit |
 
 Шаги npm audit всех джоб зовут обёртку `scripts/npm-audit.mjs <каталог>`: голый `npm audit` висел на реестре до таймаута шага (регресс #814). Попытка до 45 с, до трёх попыток; high/critical — код 4 сразу (не 1: его node отдаёт на упавшем скрипте), «реестр не ответил» — код 2 и отдельный `::error::`, «npm не может проверить» (нет lock-файла) — код 3 без повторов; реестр и `--offline=false` заданы флагами, env и `.npmrc` их не перекрывают. Разбор ответа npm — `scripts/npm-audit-report.mjs`. Шаг засчитывается гейтом, только если скрипт `run:` — одна команда (так, как его склеят YAML и `\`-продолжения shell, — `src/test-support/gates/step-script.ts`) и вызов — её исход: без `||`, `;`, `&`, `|` после него, без `exit`/`trap`/`set +e`, без своего `shell:` и `continue-on-error` с любым значением, кроме `false`. Исполняется с поддельным npm в `src/test-support/gates/npm-audit.spec.ts`.
 
 **nightly.yml** (cron `0 3 * * *` ежедневно, плюс dispatch; второе расписание — только своим воркфлоу, гейт `alarm-needs.spec.ts`). Красный nightly не блокирует PR.
 - `backend-flaky` — jest три раза подряд через `jest-exit-guard.mjs`, затем `--detectOpenHandles`.
-- `frontend-flaky` — vitest webapp ×3, miniapp ×3, shared ×1.
+- `frontend-flaky` — vitest webapp ×3, shared ×1.
 - `mutation-golden-auth` — Stryker, волна А, затем `check-mutation-ratchet`.
 - `mutation-golden-payments` — Stryker, волна Б, затем кризис и outbox, каждый с храповиком.
-- `browser-smoke` — build webapp, `playwright test` (Chromium + WebKit).
+- `browser-smoke` — build webapp, `playwright test` (Chromium).
 - `backup-restore` — репетиция: зашифрованный бэкап, restore во вторую БД, `migrate diff`, пробы с порчей файла и неверным ключом.
 - `npm-audit` — `scripts/npm-audit.mjs` (`npm audit --omit=dev --audit-level=high` с таймером на попытку и повторами) по каждому lock-файлу из `git ls-files`, под alarm.
 - `alarm` — issue `ci-alarm` и DM в Telegram, если упала любая джоба.
@@ -107,6 +105,6 @@ SIGTERM/SIGINT пробрасываются приложению.
 - **`test/e2e-support/`** (16 файлов): `build-test-app`, `build-real-db-test-app`, `fake-prisma` (+`-engine`), `fake-bot`, `fake-cron-lease`, `jwt`, `cleanup-fixtures`, `throttle-reset.setup`, `jose.stub` и др.
 - **`test/fixtures/recorded/`**: записанные ответы внешних площадок (iCloud PROPFIND, S3 ListObjectsV2, AWS SigV4, OAuth, VK ID) и соседний `*.meta.json` (`source`, `recordedAt`, `how`, `redacted`). Контролирует `check-recorded-fixtures`.
 - **`test/perf/`**: `seed.ts`, `run-plans.ts`, `scenarios.ts`, `explain.ts`, `record-sql.ts`, `seed-profile.ts` для джобы `perf`. Нужен Postgres после `migrate deploy`: `npx ts-node --compiler-options '{"module":"commonjs"}' test/perf/seed.ts`, затем `.../run-plans.ts`, затем `node scripts/check-query-plans.mjs`.
-- **Фронтенды (vitest):** `*.test.ts(x)` рядом с кодом в `webapp/src`, `schema-miniapp/src`, `shared/src` (1021 файл). jsdom включается pragma `// @vitest-environment jsdom` в самом файле. Запуск: `npm test --prefix webapp` (так же `schema-miniapp` и `shared`; везде `vitest run`). Покрытие: `node scripts/check-frontend-coverage-ratchet.mjs --package webapp` (также `schema-miniapp`, `shared`). CI второй раз гоняет vitest с `TZ=Australia/Sydney`.
-- **Playwright:** `e2e-browser/` (`a11y-smoke`, `crisis-smoke`, `miniapp-smoke`, `public-pages`, `tracker-smoke`, `a11y-baseline.json`, `support/{miniappStaticServer.mjs,stubApi.ts,stubMiniApp.ts}`). Проекты `webapp` (`vite preview` на :4173), `miniapp` (статик-сервер `schema-miniapp/dist` на :4174) и `miniapp-webkit` (только если есть WebKit или `PW_WEBKIT=1`). Локально: `VITE_BOT_USERNAME=SchemeHappensBot npm run build --prefix webapp`, затем `npm run smoke` (= `playwright test`). В CI гоняется только в nightly `browser-smoke`.
+- **Фронтенды (vitest):** `*.test.ts(x)` рядом с кодом в `webapp/src`, `shared/src` (1021 файл). jsdom включается pragma `// @vitest-environment jsdom` в самом файле. Запуск: `npm test --prefix webapp` (так же `shared`; везде `vitest run`). Покрытие: `node scripts/check-frontend-coverage-ratchet.mjs --package webapp` (также `shared`). CI второй раз гоняет vitest с `TZ=Australia/Sydney`.
+- **Playwright:** `e2e-browser/` (`a11y-smoke`, `crisis-smoke`, `public-pages`, `tracker-smoke`, `a11y-baseline.json`, `support/stubApi.ts`). Проект `webapp` (`vite preview` на :4173). Локально: `VITE_BOT_USERNAME=SchemeHappensBot npm run build --prefix webapp`, затем `npm run smoke` (= `playwright test`). В CI гоняется только в nightly `browser-smoke`.
 - **Mutation (nightly):** `npm run mutation`, `mutation:golden-auth`, `mutation:golden-payments`, `mutation:crisis`, `mutation:outbox`.

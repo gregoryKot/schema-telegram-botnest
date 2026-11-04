@@ -79,15 +79,14 @@ describe('decisionMessage', () => {
     expect(ok).not.toContain('заново');
   });
 
-  // Подпись кнопки живёт в трёх местах фронтов (правило №3 и №4): страница
-  // /account сайта, настройки сайта и настройки мини-аппа. Письмо и сообщение в
+  // Подпись кнопки живёт в двух местах сайта (правило №4): страница
+  // /account и настройки. Письмо и сообщение в
   // Telegram называют её дословно — переименуют кнопку, человека поведёт «не туда».
   // Строка подписи должна стоять сама по себе (текст кнопки), а не мелькать в
   // комментарии рядом: иначе пин зелёный и после удаления кнопки.
   const BUTTON_SOURCES = [
     'webapp/src/pages/account/TherapistRequestSection.tsx',
     'webapp/src/components/settingsSheet/BecomeTherapistSection.tsx',
-    'schema-miniapp/src/components/settingsSheet/BecomeTherapistSection.tsx',
   ];
   const hasButton = (src: string) =>
     new RegExp(`^\\s*${mod.APPLY_BUTTON}\\s*$`, 'm').test(src);
