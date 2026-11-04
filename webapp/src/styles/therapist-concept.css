@@ -47,7 +47,8 @@
 .tcp-chain { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
 .tcp-chain-item { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .tcp-arrow { color: var(--text-faint); font-size: 20px; width: 20px; text-align: center; flex-shrink: 0; }
-.tcp-chain-item:first-child .tcp-node {
+.tcp-chain-item:first-child .tcp-node { margin-left: 0; }
+.tcp-node {
   flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; padding: 12px 14px;
   border: 1px solid var(--line); border-radius: 14px; background: var(--surface);
 }
