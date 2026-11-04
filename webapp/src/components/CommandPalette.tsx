@@ -4,13 +4,13 @@ import { useTr } from '../utils/addressForm';
 import { buildPlusActions, type QuickActionId } from '../../../shared/src/quickActions/quickActions';
 import type { TherapyClientSummary, UserId } from '../api';
 import { isActiveToday } from '../../../shared/src/therapy/clientSheetHelpers';
+import { clientStatus } from './therapist/rosterOrder';
 import { matchesSearch } from '../../../shared/src/utils/searchNormalize';
 import { pressable } from '../utils/a11y';
 import { useDialogA11y } from '../../../shared/src/utils/dialogA11y';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import type { Section } from './appShell/navigation';
 import '../styles/sheet-tasks.css';
-
 
 interface Props {
   section: Section;
@@ -91,7 +91,7 @@ export function CommandPalette({ onNavigate, onClose, userRole, therapistMode, o
     const clientRows: Row[] = clients.map(c => ({
       type: 'client' as const,
       label: c.clientAlias ?? c.name ?? `ID ${c.telegramId}`,
-      ...(isActiveToday(c) ? { sub: 'Активность сегодня', activeToday: true } : { sub: 'Клиент' }),
+      ...(isActiveToday(c) ? { sub: 'Активность сегодня', activeToday: true } : { sub: clientStatus(c).label }),
       hint: 'Открыть карточку',
       action: () => onOpenClient?.(c.telegramId),
     }));

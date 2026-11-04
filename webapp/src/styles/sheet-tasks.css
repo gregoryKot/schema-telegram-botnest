@@ -75,6 +75,9 @@
 .sk-danger:hover { color: var(--err); opacity: .8; }
 .sk-add { display: flex; gap: 8px; max-width: 600px; flex-wrap: wrap; }
 .sk-add .ds-input { flex: 1; min-width: 200px; }
+/* «Задание · имя» — одна строка с многоточием: длинное имя одним словом
+   обрезалось краем экрана (498px текста при 328 места). */
+.sk-eyebrow-one { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 
 /* ── Палитра команд ── */
 .sk-cmd-bg { position: fixed; inset: 0; z-index: 200; background: color-mix(in srgb, var(--ink) 30%, transparent); display: grid; place-items: flex-start center; padding-top: 14vh; }
@@ -84,9 +87,12 @@
 .sk-cmd-list { max-height: 50vh; overflow-y: auto; padding: 6px; }
 .sk-cmd-row { display: flex; gap: 10px; padding: 8px 12px; border-bottom: none; border-radius: 10px; font-size: 13px; color: var(--text-sub); min-height: 44px; box-sizing: border-box; }
 .sk-cmd-row.is-sel { background: var(--paper-tint); color: var(--text); }
-.sk-cmd-main { flex: 1; min-width: 0; }
-.sk-cmd-label { color: var(--text); }
-.sk-cmd-sub { margin-left: 8px; font-size: 11px; color: var(--text-faint); }
+/* Имя — одна строка с многоточием, как .tc-name (#911): слово без пробелов
+   наезжало на «Открыть карточку» и выходило за панель. Подпись не влезла
+   рядом — уходит строкой ниже. */
+.sk-cmd-main { flex: 1; min-width: 0; display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 8px; }
+.sk-cmd-label { color: var(--text); min-width: 0; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sk-cmd-sub { font-size: 11px; color: var(--text-faint); white-space: nowrap; }
 .sk-cmd-sub.is-ok { color: var(--ok); }
 .sk-cmd-empty { padding: 24px 20px; }
 

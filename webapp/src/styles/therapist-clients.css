@@ -35,7 +35,8 @@
 }
 
 /* ── Сетка карточек ──────────────────────────────────────────────────────── */
-.tc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr)); gap: 18px; }
+/* --tc-card-h — высота скелетона карточки (ClientListView): на телефоне карточка компактнее. */
+.tc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr)); gap: 18px; --tc-card-h: 260px; }
 .tc-card { display: flex; flex-direction: column; }
 .tc-bar { display: flex; height: 6px; gap: 2px; background: var(--paper-sunk); }
 .tc-bar > i { display: block; }
@@ -58,6 +59,7 @@
   margin-top: auto; padding-top: 14px; border-top: 1px dashed var(--line-input);
   display: flex; justify-content: flex-end; min-height: 20px;
 }
+.tc-chev { display: none; }
 .tc-error { padding: 24px 0; font-size: 14px; color: var(--err); }
 
 /* ── Задания (канбан) ────────────────────────────────────────────────────── */
@@ -79,4 +81,16 @@
   .tc-count { font-size: 24px; }
   .tc-add { grid-template-columns: 1fr; padding: 20px; }
   .tc-search { width: 100%; }
+  /* Компактная карточка: было 2–3 клиента на экран и 8345px прокрутки у 30
+     клиентов (QA 2026-11). Данные те же; футер «Открыть →» (с тап-зоной 44 —
+     ещё ~77px) заменяет шеврон в строке имени, карточка нажимается целиком. */
+  .tc-grid { gap: 10px; --tc-card-h: 132px; }
+  .tc-body { padding: 14px 16px; gap: 10px; }
+  .tc-top { gap: 12px; align-items: center; }
+  .tc-avatar { width: 40px; height: 40px; font-size: 15px; }
+  .tc-name { font-size: 20px; }
+  .tc-meta { margin-top: 4px; }
+  .tc-card .tc-meeting { padding: 8px 12px; }
+  .tc-foot { display: none; }
+  .tc-chev { display: block; }
 }
