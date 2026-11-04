@@ -7,7 +7,7 @@ const PRESETS = [200, 500, 1000, 2000];
 // Публичная /donate (и возврат Robokassa ?donation=ok|fail): вне RequireAuth/AddressFormProvider,
 // из Telegram/MAX открывается во внешнем браузере, на визитке — гость. Форма обращения неизвестна
 // по построению → тексты безличные, без useTr (как SubscribeForm.tsx); useTr тут всегда дал бы «ты».
-// Страница прижата к верху: шапка «← На главную» (ds-sheet-head/ds-back), eyebrow + ds-h1 + ds-lead (#906); на ≥768 — колонка листа «Зачем это всё».
+// Страница прижата к верху: шапка «← На главную» (ds-sheet-head/ds-back), eyebrow + ds-h1 + ds-sub (#906).
 export function DonatePage() {
   const params = new URLSearchParams(window.location.search);
   const ret = params.get('donation'); // 'ok' | 'fail' | null
@@ -29,11 +29,11 @@ export function DonatePage() {
   return (
     <div className="light-lock ap-page ap-page--donate">
       <div className="ds-sheet-head ds-sheet-head--page"><a href="/" className="ds-back">← На главную</a></div>
-      <div className="ds-page ap-main">
+      <div className="ds-page ap-main"><div className="ap-donate-shell">
         <div className="ap-hero">
           <div className="ds-eyebrow">Разовая поддержка</div>
           <h1 className="ds-h1">{ret === 'ok' ? 'Спасибо за поддержку!' : <>Поддержать <i>проект</i></>}</h1>
-          <p className="ds-lead ap-lead">{ret === 'ok' ? 'Это очень помогает развивать проект.' : '«Всё по схеме» бесплатно. Если приложение полезно, его развитие можно поддержать любой суммой.'}</p>
+          <p className="ds-sub ap-lead">{ret === 'ok' ? 'Это очень помогает развивать проект.' : '«Всё по схеме» бесплатно. Если приложение полезно, его развитие можно поддержать любой суммой.'}</p>
           {ret === 'fail' && <p className="ap-err" role="alert">Оплата не прошла. Можно попробовать снова.</p>}
         </div>
         {ret !== 'ok' && (
@@ -53,7 +53,7 @@ export function DonatePage() {
             <p className="ap-fine">Оплата картой или СБП через Robokassa.<br />Добровольное пожертвование, возврату не подлежит.</p>
           </div>
         )}
-      </div>
+        <a href="/" className="ap-home">← На главную</a></div></div>
     </div>
   );
 }

@@ -58,8 +58,6 @@
 .ds-h3 { margin: 0; font-family: var(--serif); font-weight: 400; font-size: 22px; line-height: 1.25; }
 .ds-num { font-family: var(--serif); font-weight: 400; line-height: 1; }
 .ds-sub, .ds-list-sub { font-size: 13px; color: var(--text-muted); }
-/* Абзац под заголовком страницы или листа: один кегль на всех экранах. */
-.ds-lead { margin: 0; font-size: 15px; line-height: 1.6; color: var(--text-sub); }
 .ds-head-row { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
 .ds-link {
   font-size: 13px; color: var(--accent); font-weight: 600; cursor: pointer;

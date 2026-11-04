@@ -9,13 +9,13 @@ type Sub = { status: string; period: string; amount: number; nextChargeAt: strin
 
 const fmtDate = (iso: string) => new Intl.DateTimeFormat('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(iso));
 
-// Заголовок служебного состояния: eyebrow + ds-h1 + ds-lead слева, страница прижата к верху (#906).
+// Заголовок служебного состояния: eyebrow + ds-h1 + ds-sub слева, страница прижата к верху (#906).
 function Hero({ eyebrow = 'Подписка', title, lead }: { eyebrow?: string; title: string; lead: React.ReactNode }) {
   return (
     <div className="ap-hero">
       <div className="ds-eyebrow">{eyebrow}</div>
       <h1 className="ds-h1">{title}</h1>
-      <p className="ds-lead ap-lead">{lead}</p>
+      <p className="ds-sub ap-lead">{lead}</p>
     </div>
   );
 }
@@ -120,7 +120,7 @@ export function SubscribePage() {
   return (
     <div className="light-lock ap-page ap-page--state">
       <div className="ds-sheet-head ds-sheet-head--page"><a href="/" className="ds-back">← На главную</a></div>
-      <div className="ds-page ap-main ap-main--state">{body}</div>
+      <div className="ds-page ap-main ap-main--state">{body}{(token || ret !== 'ok') && <a href="/" className="ap-home">← На главную</a>}</div>
     </div>
   );
 }

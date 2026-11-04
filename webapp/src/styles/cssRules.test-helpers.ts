@@ -42,6 +42,17 @@ export function unscopedPhone(rules: Rule[], selector: string, decl: RegExp): st
 export const hasDesktopRule = (rules: Rule[], selector: string, exact = false): boolean =>
   rules.some((r) => isDesktop(r.media) && r.selectors.some((s) => (exact ? s === selector : s.includes(selector))));
 
+/** «Телефон как в main, компьютер своё»: у sel вне медиа ровно одно своё правило, и в нём base; desk встречается
+ *  у sel (и у «предок sel») только под ≥768 и хотя бы раз. null — проверки нет. Пустой ответ — зелёное. */
+export function phoneBaseDesk(rules: Rule[], sel: string, base: RegExp | null, desk: RegExp | null): string[] {
+  const mine = rules.filter((r) => r.selectors.some((s) => s === sel || s.endsWith(` ${sel}`)));
+  const own = mine.filter((r) => r.media === '' && r.selectors.includes(sel));
+  const out = base && !(own.length === 1 && base.test(own[0].body)) ? [`${sel}: вне медиа не одно правило с ${base}`] : [];
+  if (!desk) return out;
+  out.push(...mine.filter((r) => desk.test(r.body) && !isDesktop(r.media)).map((r) => `${r.media || '(без медиа)'} ${sel}: ${desk} вне ≥768`));
+  return mine.some((r) => isDesktop(r.media) && desk.test(r.body)) ? out : [...out, `${sel}: под ≥768 нет ${desk}`];
+}
+
 export const cssDir = __dirname;
 export const readCss = (name: string): Rule[] => parseRules(readFileSync(join(cssDir, name), 'utf8')).map((r) => ({ ...r, f: name }));
 export const allCssRules = (): Rule[] => readdirSync(cssDir).filter((f) => f.endsWith('.css')).flatMap(readCss);

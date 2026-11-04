@@ -1,7 +1,7 @@
 /* Подписка и донат (/subscribe, /donate). Префикс ap-.
    Страницы живут вне AppShell (и на визитке практики): корень сам красит экран.
    Шапка «← На главную» — общая .ds-sheet-head/.ds-back, заголовок — ds-eyebrow +
-   ds-h1 + ds-lead слева, страница прижата к верху, кнопки — ds-btn (#906).
+   ds-h1 + ds-sub слева, страница прижата к верху, кнопки — ds-btn (#906).
    Суммы доната — ds-seg, поля доната — ds-input (#906); поле email — ds-input--on-panel. */
 .ap-page {
   --sheet-col: 640px; --sheet-pad: clamp(20px, 4vw, 56px);
@@ -11,7 +11,7 @@
 .ds-page.ap-main { max-width: 640px; }
 .ap-hero { display: flex; flex-direction: column; align-items: flex-start; }
 .ap-hero > .ds-btn { margin-top: 16px; }
-.ds-lead.ap-lead { margin: 10px 0 0; } /* только отступ: кегль и цвет — у ds-lead */
+.ap-lead { margin: 10px 0 0; line-height: 1.5; max-width: 480px; }
 .ap-err { margin: 0; font-size: 14px; line-height: 1.5; color: var(--err); }
 .ap-hero > .ap-err, .ap-info > .ap-err { margin-top: 12px; }
 .ap-fine { margin: 0; font-size: 13px; line-height: 1.5; color: var(--text-faint); }
@@ -88,22 +88,34 @@
 }
 
 /* ── Компьютер ───────────────────────────────────────────────────────────
-   Служебные состояния подписки и донат — в стиле листа «Зачем это всё»: колонка 560 с отступом 20 по центру окна,
-   страница прижата к верху, всё влево, «← На главную» над колонкой, кнопка ds-btn--lg во всю колонку.
-   Форма подписки — сплит на весь экран, шапка на ≥768 скрыта. Телефон (≤767) выше не затронут. */
-.ap-page--state, .ap-page--donate { --sheet-col: 560px; --sheet-pad: 20px; }
+   Страницы по центру, как до #906: служебные состояния подписки — блок 400, донат — карточка 560,
+   форма подписки — сплит на весь экран. Шапки нет, «← На главную» внизу: под кнопкой, последней строкой
+   карточки, внизу левой колонки формы. Телефон (≤767) выше не затронут. */
+.ap-page--state { --sheet-col: 400px; --sheet-pad: 0px; }
+.ap-page--donate { --sheet-col: 560px; --sheet-pad: 0px; }
 .ap-page--form { --sheet-col: 100%; --sheet-pad: 56px; }
-.ap-home { display: none; } /* ссылка «← На главную» внизу левой колонки формы — только на компьютере, на телефоне она в шапке */
+.ap-home { display: none; } /* ссылка «← На главную» внизу — только на компьютере (state, donate, форма), на телефоне она в шапке */
+.ap-donate-shell { display: contents; } /* на телефоне обёртки нет: hero и карточка — прямые дети страницы */
 @media (min-width: 768px) {
-  .ds-page.ap-main--state, .ap-page--donate .ds-page.ap-main { max-width: 560px; margin: 0 auto; padding-left: 20px; padding-right: 20px; }
+  .ds-page.ap-main--state { max-width: 400px; margin: auto; padding-left: 0; padding-right: 0; align-items: center; text-align: center; }
+  .ap-main--state .ap-hero { align-items: center; }
+  .ap-main--state .ap-lead { margin-left: auto; margin-right: auto; }
   .ap-main--state .ds-btn--lg, .ap-donate .ds-btn--lg, .ap-pay .ds-btn--lg { width: 100%; }
-  .ap-main--state > button { min-height: 44px; }
-  .ap-page--form .ds-sheet-head--page { display: none; }
-  .ap-page--form .ap-info { padding-top: 88px; } /* 56 + 32, как до волн: шапка скрыта, отступ держит колонка */
-  .ap-page--form .ap-home {
-    display: inline-flex; align-items: center; align-self: flex-start; margin-top: auto; min-height: 44px;
+  .ap-page--donate .ds-page.ap-main { max-width: 560px; margin: auto; padding-left: 0; padding-right: 0; }
+  .ap-main--state > button { min-height: 44px; } /* «Отменить подписку»: по центру кнопка уже не растягивается */
+  .ap-page--state .ds-sheet-head--page, .ap-page--donate .ds-sheet-head--page, .ap-page--form .ds-sheet-head--page { display: none; }
+  .ap-page--state .ap-home, .ap-page--donate .ap-home, .ap-page--form .ap-home {
+    display: inline-flex; align-items: center; justify-content: center; align-self: center; min-height: 44px;
     font-size: 13px; color: var(--text-muted); text-decoration: none;
   }
-  .ap-page--form .ap-home:hover { color: var(--accent); }
+  .ap-page--form .ap-home { align-self: flex-start; margin-top: auto; } /* сплит на весь экран: ссылка внизу левой колонки */
+  .ap-page--form .ap-info { padding-top: 88px; } /* шапка скрыта: верхний отступ держит колонка, 56 + 32 как до волн */
+  .ap-page--state .ap-home:hover, .ap-page--donate .ap-home:hover, .ap-page--form .ap-home:hover { color: var(--accent); }
+  .ap-donate-shell {
+    display: flex; flex-direction: column; gap: 24px; padding: 40px; border-radius: 28px;
+    background: var(--surface); border: 1px solid var(--line);
+  }
+  .ap-page--donate .ap-donate { max-width: none; padding: 0; border: none; border-radius: 0; background: none; }
   .ap-page--donate .ap-seg { display: flex; }
+  .ap-page--donate .ap-fine { text-align: center; }
 }

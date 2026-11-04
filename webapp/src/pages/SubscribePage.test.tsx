@@ -169,6 +169,8 @@ describe('SubscribePage — управление подпиской по ток�
 
     await screen.findByText('Подписка');
     expect(screen.queryByText(/Не удалось загрузить подписку/)).toBeNull();
+    // Кнопки «На главную» в управлении нет — на компьютере ссылка внизу (A9: token || ret !== 'ok').
+    expect(screen.getAllByRole('link', { name: '← На главную' }).map((a) => a.className)).toEqual(['ds-back', 'ap-home']);
   });
 });
 
@@ -273,9 +275,8 @@ describe('SubscribePage — шапка и кнопки (#906)', () => {
     const back = screen.getAllByRole('link', { name: '← На главную' })[0];
     expect(back.className).toBe('ds-back');
     expect(back.parentElement!.className).toBe('ds-sheet-head ds-sheet-head--page');
-    expect(screen.getAllByRole('link', { name: '← На главную' })).toHaveLength(1); // нижней ссылки нет
-    expect(container.querySelector('.ap-home')).toBeNull();
-    expect(container.querySelector('.ap-lead')?.classList.contains('ds-lead')).toBe(true);
+    expect(screen.getAllByRole('link', { name: '← На главную' })[1].className).toBe('ap-home'); // на компьютере — под кнопкой
+    expect(container.querySelector('.ap-lead')!.className).toBe('ds-sub ap-lead'); // подзаголовок как в main
     expect(screen.getByRole('heading', { level: 1 }).classList.contains('ds-h1')).toBe(true);
     expect(screen.getByRole('link', { name: 'Разовый донат' }).className).toBe('ds-btn ds-btn--lg');
     expect(container.querySelector('.ap-page--center, .ap-card, .ap-btn')).toBeNull();
@@ -298,6 +299,7 @@ describe('SubscribePage — возврат с оплаты (?sub=ok|fail)', () =
     expect((await screen.findByRole('heading', { level: 1 })).textContent).toBe('Спасибо за поддержку!');
     expect(screen.getByText(/Подписка оформлена/)).toBeTruthy();
     expect(screen.getByRole('link', { name: 'На главную' })).toBeTruthy();
+    expect(screen.getAllByRole('link', { name: /На главную/ }).filter((a) => a.className === 'ap-home')).toHaveLength(0); // под кнопкой не дублируется
     expect(screen.queryByRole('button', { name: /Оформить за/ })).toBeNull();
     expect(screen.queryByRole('alert')).toBeNull();
   });

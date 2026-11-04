@@ -28,7 +28,7 @@ export function SubscribeForm(p: Props) {
         <section className="ap-info">
           <div className="ds-eyebrow">Подписка</div>
           <h1 className="ds-h1">Поддержать <i>подпиской</i></h1>
-          <p className="ds-lead ap-lead">«Всё по схеме» бесплатно. Регулярная поддержка помогает развивать проект.</p>
+          <p className="ds-sub ap-lead">«Всё по схеме» бесплатно. Регулярная поддержка помогает развивать проект.</p>
           {p.failed && <p className="ap-err" role="alert">Оплата не прошла. Можно попробовать снова.</p>}
           <ul className="ap-checks">
             <li><span aria-hidden="true">✓</span>Отписаться можно в любой момент</li>

@@ -5,7 +5,7 @@
 // у примитива-полосы/растяжения есть правило для ≥768. CSS в jsdom не исполняется — читаем исходники.
 import { describe, it, expect } from 'vitest';
 import { join } from 'node:path';
-import { parseRules, isPhone, isTouch, isDesktop, unscopedPhone, hasDesktopRule, allCssRules, readCss, indexCssRules, tsxUsing, cssDir, type Rule } from './cssRules.test-helpers';
+import { parseRules, isPhone, isTouch, isDesktop, unscopedPhone, hasDesktopRule, phoneBaseDesk, allCssRules, readCss, indexCssRules, tsxUsing, cssDir, type Rule } from './cssRules.test-helpers';
 
 const all = allCssRules();
 const WIDE = /(^|;|\s)width:\s*100%/;
@@ -15,6 +15,13 @@ const PHONE_ONLY: [string, RegExp][] = [['.ds-btn--lg', WIDE], ['.ds-seg--full',
 const NEED_DESKTOP = ['.ds-sheet-head--page:cabinet.css', '.ds-seg--full:cabinet.css', '.cw-list', '.cw-item', '.sd-explainer-stack', '.cm-page > .ds-card--flush', '.ap-main--state'];
 /** Скрытие телефонных элементов: display: none только под точным ≤767. */
 const PHONE_HIDDEN: [string, string][] = [['therapist-concept.css', '.tcp-head-title'], ['therapist-concept.css', '.tcp-more-txt']];
+/** Обёртки и правила компьютера, при которых телефон обязан остаться как в main: [селектор, вне медиа, только под ≥768]. */
+const C = /display:\s*contents/;
+const PHONE_SAME: [string, RegExp | null, RegExp | null][] = [
+  ['.cp-open-card', C, null], ['.cp-open-card > .ds-card', null, /background:\s*none/], // дыхание: обёртка не в flex-gap
+  ['.tcp-head-actions', C, /display:\s*inline-flex/], ['.tb-tab-title .ds-sub', null, /margin/],
+  ['.ap-home', /display:\s*none/, /display:\s*inline-flex/], ['.ap-donate-shell', C, /display:\s*flex/],
+];
 
 /** Каждый потребитель ds-btn--lg решает ширину на ≥768: own — своё width: 100%, stretch — колонка растягивает, content — по содержимому. */
 const LG: Record<string, ['own' | 'stretch' | 'content', string]> = {
@@ -24,8 +31,8 @@ const LG: Record<string, ['own' | 'stretch' | 'content', string]> = {
   'sections/schemas/MineGroupsList.tsx': ['stretch', '.cs-block'],
   'sections/diary/DiaryHeader.tsx': ['content', '.cd-write'],
   'pages/subscribe/SubscribeForm.tsx': ['own', '.ap-pay .ds-btn--lg'],
-  'pages/DonatePage.tsx': ['own', '.ap-donate .ds-btn--lg'], // во всю колонку 560, как «Понятно, начнём» у листа
-  'pages/SubscribePage.tsx': ['own', '.ap-main--state .ds-btn--lg'],
+  'pages/DonatePage.tsx': ['own', '.ap-donate .ds-btn--lg'], // во всю карточку 560
+  'pages/SubscribePage.tsx': ['own', '.ap-main--state .ds-btn--lg'], // во всю колонку 400
 };
 function lgDecisionOk(rules: Rule[], kind: 'own' | 'stretch' | 'content', sel: string): boolean {
   const mine = rules.filter((r) => r.selectors.includes(sel) && !isPhone(r.media) && !isTouch(r.media));
@@ -47,6 +54,9 @@ describe('компьютер ≥768 не наследует телефонную
     expect(hid.length).toBeGreaterThan(0);
     expect(hid.filter((r) => !isPhone(r.media))).toEqual([]);
   });
+  it.each(PHONE_SAME)('%s: телефон как в main, компьютерное — только под ≥768', (sel, base, desk) => {
+    expect(phoneBaseDesk(all, sel, base, desk)).toEqual([]);
+  });
   it('пункты сайдбара 44 — только под палец; на мыши не меньше 24 (WCAG 2.5.8)', () => {
     const idx = indexCssRules();
     for (const sel of ['.sb-nav > .sb-item', '.sb-links .sb-item', '.sb-legal a']) {
@@ -66,43 +76,24 @@ describe('компьютер ≥768 не наследует телефонную
 
 describe('auth-pay.css: страницы подписки и доната на компьютере', () => {
   const ap = readCss('auth-pay.css');
-  const decl = (r: Rule) => r.body.replace(/\s+/g, ' ');
-  it('state и donate на ≥768: колонка 560, margin 0 auto, боковой padding 20, без центрирования', () => {
-    for (const sel of ['.ds-page.ap-main--state', '.ap-page--donate .ds-page.ap-main']) {
-      const r = ap.find((x) => isDesktop(x.media) && x.selectors.includes(sel));
-      const d = r ? decl(r) : '';
-      expect(d).toMatch(/max-width:\s*560px/);
-      expect(d).toMatch(/margin:\s*0 auto/);
-      expect(d).toMatch(/padding-left:\s*20px/);
-      expect(d).toMatch(/padding-right:\s*20px/);
+  const desk = (sel: string) => ap.find((x) => isDesktop(x.media) && x.selectors.includes(sel))?.body.replace(/\s+/g, ' ') ?? '';
+  it('на ≥768 state — колонка 400 и всё по центру, donate — карточка 560; боковой padding 0 (иначе .ds-page съедает колонку)', () => {
+    for (const [sel, w] of [['.ds-page.ap-main--state', 400], ['.ap-page--donate .ds-page.ap-main', 560]] as const) {
+      for (const re of [new RegExp(`max-width: ${w}px`), /margin: auto/, /padding-left: 0/, /padding-right: 0/]) expect(desk(sel)).toMatch(re);
     }
-    expect(ap.filter((r) => /text-align:\s*center|align-items:\s*center/.test(r.body) && r.selectors.some((s) => /ap-main|ap-hero|ap-page--(state|donate)/.test(s)))).toEqual([]);
+    expect(desk('.ds-page.ap-main--state')).toMatch(/align-items: center; text-align: center/);
+    expect(desk('.ap-donate-shell')).toMatch(/padding: 40px; border-radius: 28px/);
   });
-  it('колонка листа: --sheet-col 560 и --sheet-pad 20 у state и donate', () => {
-    const r = ap.find((x) => x.media === '' && x.selectors.includes('.ap-page--state') && x.selectors.includes('.ap-page--donate'));
-    expect(r && decl(r)).toMatch(/--sheet-col:\s*560px;\s*--sheet-pad:\s*20px/);
-  });
-  it('.ap-home: скрыт вне медиа, показан только в ≥768 и только у формы; .ap-donate-shell удалён', () => {
-    const base = ap.filter((r) => r.selectors.includes('.ap-home'));
-    expect(base).toHaveLength(1);
-    expect(base[0].media).toBe('');
-    expect(base[0].body).toMatch(/display:\s*none/);
-    const shown = ap.filter((r) => /display:\s*inline-flex/.test(r.body) && r.selectors.some((s) => s.includes('.ap-home')));
-    expect(shown.length).toBeGreaterThan(0);
-    for (const r of shown) expect(isDesktop(r.media) && r.selectors.every((s) => s.startsWith('.ap-page--form'))).toBe(true);
-    expect(ap.flatMap((r) => r.selectors).filter((s) => s.includes('ap-donate-shell'))).toEqual([]);
-  });
-  it('шапка .ds-sheet-head--page скрыта на ≥768 только у формы (state и donate — шапка видна)', () => {
+  it('на ≥768 у state, donate и form шапка скрыта, «← На главную» показан внизу', () => {
+    const pages = ['state', 'donate', 'form'];
     const hid = ap.filter((r) => r.selectors.some((s) => s.includes('.ds-sheet-head--page')) && /display:\s*none/.test(r.body));
-    expect(hid.length).toBeGreaterThan(0);
-    for (const r of hid) {
-      expect(isDesktop(r.media)).toBe(true);
-      expect(r.selectors.every((s) => /\.ap-page--form\b/.test(s))).toBe(true);
-    }
+    expect(hid.every((r) => isDesktop(r.media))).toBe(true);
+    expect(hid.flatMap((r) => r.selectors).sort()).toEqual(pages.map((p) => `.ap-page--${p} .ds-sheet-head--page`).sort());
+    const shown = ap.filter((r) => isDesktop(r.media) && /display:\s*inline-flex/.test(r.body)).flatMap((r) => r.selectors);
+    for (const p of pages) expect(shown).toContain(`.ap-page--${p} .ap-home`);
   });
-  it('форма на ≥768: у левой колонки .ap-info верхний отступ 88 (шапка скрыта)', () => {
-    const r = ap.find((x) => isDesktop(x.media) && x.selectors.includes('.ap-page--form .ap-info'));
-    expect(r && decl(r)).toMatch(/padding-top:\s*88px/);
+  it('форма на ≥768: у левой колонки .ap-info верхний отступ 88 (шапка скрыта, 56 + 32 как до волн)', () => {
+    expect(desk('.ap-page--form .ap-info')).toMatch(/padding-top: 88px/);
   });
   it('client-more.css: правила .cm-page — только через ребёнка (.cm-page > …), листы внутри страницы не затрагиваются', () => {
     const leaks = readCss('client-more.css').flatMap((r) => r.selectors).filter((s) => /\.cm-page\s+[^>\s]/.test(s));
@@ -137,5 +128,14 @@ describe('сверка ловит нарушение и пропускает и�
     expect(bad('.x { display: none; }')).toHaveLength(1);
     expect(bad('@media (pointer: coarse), (max-width: 767px) { .x { display: none; } }')).toHaveLength(1);
     expect(bad('@media (max-width: 767px) { .x { display: none; } }')).toEqual([]);
+  });
+  it('телефон как в main: обёртка без contents или компьютерное объявление вне ≥768 — красное; под ≥768 — зелёное', () => {
+    const v = (css: string, sel: string, base: RegExp | null, d: RegExp | null) => phoneBaseDesk(parseRules(css), sel, base, d);
+    expect(v('.a { display: block; }', '.a', C, null)).not.toEqual([]);
+    expect(v('.a { display: contents; }', '.a', C, null)).toEqual([]);
+    expect(v('.a { display: contents; } @media (max-width: 767px) { .a { display: inline-flex; } }', '.a', C, /inline-flex/)).not.toEqual([]);
+    expect(v('.a { display: contents; } @media (min-width: 768px) { .a { display: inline-flex; } }', '.a', C, /inline-flex/)).toEqual([]);
+    expect(v('.t .s { margin-top: 4px; }', '.t .s', null, /margin/)).not.toEqual([]);
+    expect(v('@media (min-width: 768px) { .t .s { margin-top: 4px; } }', '.t .s', null, /margin/)).toEqual([]);
   });
 });
