@@ -7,6 +7,7 @@ import { WheelSvg } from './WheelSvg';
 import { NeedExamples } from './NeedExamples';
 import type { NeedId } from '../../../../../shared/src/needs/types';
 import { previewRatings, unratedHint } from '../../../../../shared/src/childhoodWheel/useChildhoodDraft';
+import { exerciseCard } from '../../../../../shared/src/exercises/exerciseCatalog';
 
 /** Ввод оценок: пять ползунков с примерами, предпросмотр колеса, сохранение. Неоценённая потребность — «—», сохранить можно, когда выставлены все. */
 export function ChildhoodFill({
@@ -36,7 +37,7 @@ export function ChildhoodFill({
   return (
     <ExScreen
       onBack={onBack}
-      eyebrow="№ 06 · Истоки"
+      eyebrow={exerciseCard('wheel').eyebrow}
       title={title}
       lede="Оцени пять базовых потребностей в детстве. Не отдельные моменты, а как было «в целом, большую часть времени» – там, где формировались схемы."
       aside={

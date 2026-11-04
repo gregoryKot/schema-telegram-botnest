@@ -1,4 +1,5 @@
 import { useTr } from '../../utils/addressForm';
+import { exerciseCard } from '../../../../shared/src/exercises/exerciseCatalog';
 
 export function IntroPhase({
   onStart,
@@ -98,7 +99,7 @@ export function IntroPhase({
           marginBottom: 10,
         }}
       >
-        Оценить детство — 8–12 минут
+        Оценить детство — {exerciseCard('wheel').time}
       </button>
       <button
         onClick={onSkip}

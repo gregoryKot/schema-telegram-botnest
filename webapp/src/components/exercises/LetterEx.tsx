@@ -7,6 +7,7 @@ import { fmtAgo } from '../../utils/format';
 import { detectCrisisAny } from '../../utils/crisisMarkers';
 import { CrisisCard } from '../CrisisCard';
 import { hueStyle, NEED_HUE } from '../../lib/tone';
+import { exerciseCard } from '../../../../shared/src/exercises/exerciseCatalog';
 
 export function LetterEx({
   onBack,
@@ -120,7 +121,7 @@ export function LetterEx({
   return (
     <ExScreen
       onBack={goBack}
-      eyebrow="№ 04 · Эмоциональная работа"
+      eyebrow={exerciseCard('letter').eyebrow}
       title={
         <>
           Письмо

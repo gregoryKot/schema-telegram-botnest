@@ -16,6 +16,7 @@ import { detectCrisisAny } from '../../utils/crisisMarkers';
 import { CrisisCard } from '../CrisisCard';
 import { hueStyle } from '../../lib/tone';
 import { HUE_STRAIN, HUE_CARE } from './exHue';
+import { exerciseCard } from '../../../../shared/src/exercises/exerciseCatalog';
 
 const STEPS = [
   'Убеждение',
@@ -111,7 +112,7 @@ export function BeliefCheckEx({
   return (
     <ExScreen
       onBack={goBack}
-      eyebrow="№ 01 · Когнитивная работа"
+      eyebrow={exerciseCard('belief').eyebrow}
       title={
         <>
           Проверка

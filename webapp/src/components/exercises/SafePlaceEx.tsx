@@ -7,6 +7,7 @@ import { useTr } from '../../utils/addressForm';
 import { detectCrisisAny } from '../../utils/crisisMarkers';
 import { CrisisCard } from '../CrisisCard';
 import { hueStyle, DIARY_HUE } from '../../lib/tone';
+import { exerciseCard } from '../../../../shared/src/exercises/exerciseCatalog';
 
 // Безопасное место — ресурс, тон «здорового» (зелёный) как у благодарности.
 const SAFE_HUE = DIARY_HUE.gratitude;
@@ -131,7 +132,7 @@ export function SafePlaceEx({
   return (
     <ExScreen
       onBack={goBack}
-      eyebrow="№ 05 · Ресурс"
+      eyebrow={exerciseCard('safe').eyebrow}
       title={
         <>
           Безопасное
