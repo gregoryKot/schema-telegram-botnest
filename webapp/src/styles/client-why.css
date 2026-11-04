@@ -17,8 +17,16 @@
 /* Ободряющая фраза перед кнопкой. Не .cw-note: это имя занято колесом детства (sheet-childhood.css). */
 .cw-tip { margin: 0; font-size: 14px; line-height: 1.5; color: var(--text); }
 .cw-foot { margin: 0; line-height: 1.5; }
+/* «Понятно, начнём» прилипает к низу листа: на реальной высоте телефона (390×664, 360×640) кнопка стояла за
+   краем (QA мобильной версии 2026-11, М4). Сплошной фон под ней — текст за кнопкой не просвечивает. */
+.cw-cta {
+  position: sticky; bottom: 0; z-index: 1;
+  margin: 0 -20px; padding: 12px 20px calc(12px + env(safe-area-inset-bottom)); background: var(--bg);
+}
+.cw-cta > .ds-btn { width: 100%; }
 
 @media (max-width: 767px) {
   .cw-sheet { padding-top: var(--safe-top); } /* статус-бар установленного приложения (#902) */
   .cw-inner { padding: 20px 16px calc(24px + env(safe-area-inset-bottom)); }
+  .cw-cta { margin: 0 -16px; padding-inline: 16px; }
 }
