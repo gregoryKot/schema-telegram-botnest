@@ -147,11 +147,11 @@ describe('e2e smoke: therapy ownership isolation (therapist ↔ client)', () => 
 
     const list = await t1.get(`/api/therapy/tasks/client/${C1_ID}`);
     expect(list.status).toBe(200);
-    // Плюс задание «пройти тест на схемы» из запроса YSQ шагом выше.
-    expect(list.body.map((t: { text: string }) => t.text)).toEqual([
-      'Пройти тест на схемы',
-      'заполнить дневник схем',
-    ]);
+    // Плюс задание «пройти тест на схемы» из запроса YSQ шагом выше. Порядок
+    // — createdAt desc на живой базе; фейк его не держит, поэтому сортируем.
+    expect(list.body.map((t: { text: string }) => t.text).sort()).toEqual(
+      ['Пройти тест на схемы', 'заполнить дневник схем'].sort(),
+    );
   });
 
   it('T1 создаёт карту режимов для C1 и видит её в списке', async () => {
