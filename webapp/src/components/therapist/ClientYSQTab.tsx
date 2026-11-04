@@ -69,9 +69,7 @@ export function ClientYSQTab({ clientData, selectedClient, selfSchemaIds, ysqReq
     <div className="ds-page tb-page--ysq">
       <div className="ds-head-row">
         <TabTitle title="Опросник схем YSQ">
-          <div className="ds-sub">
-            {hist.length} {pluralRu(hist.length, 'прохождение', 'прохождения', 'прохождений')} · последнее {clientData.ysqCompletedAt ? fmtDate(momentDayKey(clientData.ysqCompletedAt)) : '–'}
-          </div>
+          <div className="ds-sub">{hist.length} {pluralRu(hist.length, 'прохождение', 'прохождения', 'прохождений')} · последнее {clientData.ysqCompletedAt ? fmtDate(momentDayKey(clientData.ysqCompletedAt)) : '–'}</div>
         </TabTitle>
         <div className="tb-actions">
           <button onClick={handleExport} disabled={exportEmpty} className="ds-btn ds-btn--sm ds-btn--secondary">

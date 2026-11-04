@@ -30,12 +30,12 @@ export function TalkSheet({ place, trigger, onClose }: Props) {
         <div className="ds-eyebrow">{hasTherapist ? t.sheetTherapistEyebrow : t.sheetEyebrow}</div>
         <h1 className="ds-h1">{hasTherapist ? t.sheetTherapistTitle : t.sheetTitle}</h1>
         {hasTherapist ? (
-          <p className="cw-lead">{t.sheetTherapistP}</p>
+          <p className="ds-lead">{t.sheetTherapistP}</p>
         ) : (
           <>
-            <p className="cw-lead">{t.sheetP1}</p>
-            <p className="cw-lead">{t.sheetP2}</p>
-            <p className="cw-lead">{t.sheetP3}</p>
+            <p className="ds-lead">{t.sheetP1}</p>
+            <p className="ds-lead">{t.sheetP2}</p>
+            <p className="ds-lead">{t.sheetP3}</p>
           </>
         )}
         <div className="th-sheet-acts">

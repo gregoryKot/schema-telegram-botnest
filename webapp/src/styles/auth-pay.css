@@ -93,7 +93,7 @@
 .ap-page--state { --sheet-col: 400px; --sheet-pad: 0px; }
 .ap-page--donate { --sheet-col: 560px; --sheet-pad: 0px; }
 .ap-page--form { --sheet-col: 100%; --sheet-pad: 56px; }
-.ap-home { display: none; } /* ссылка «← На главную» внизу — только на компьютере, на телефоне она в шапке */
+.ap-home { display: none; } /* ссылка «← На главную» внизу — только на компьютере (state, donate, форма), на телефоне она в шапке */
 .ap-donate-shell { display: contents; } /* на телефоне обёртки нет: hero и карточка — прямые дети страницы */
 @media (min-width: 768px) {
   .ds-page.ap-main--state { max-width: 400px; margin: auto; padding-left: 0; padding-right: 0; align-items: center; text-align: center; }
@@ -101,12 +101,14 @@
   .ap-main--state .ap-lead { margin-left: auto; margin-right: auto; }
   .ap-main--state .ds-btn--lg, .ap-donate .ds-btn--lg, .ap-pay .ds-btn--lg { width: 100%; }
   .ap-page--donate .ds-page.ap-main { max-width: 560px; margin: auto; padding-left: 0; padding-right: 0; }
-  .ap-page--state .ds-sheet-head--page, .ap-page--donate .ds-sheet-head--page { display: none; }
-  .ap-page--state .ap-home, .ap-page--donate .ap-home {
+  .ap-main--state > button { min-height: 44px; } /* «Отменить подписку»: по центру кнопка уже не растягивается */
+  .ap-page--state .ds-sheet-head--page, .ap-page--donate .ds-sheet-head--page, .ap-page--form .ds-sheet-head--page { display: none; }
+  .ap-page--state .ap-home, .ap-page--donate .ap-home, .ap-page--form .ap-home {
     display: inline-flex; align-items: center; justify-content: center; align-self: center; min-height: 44px;
     font-size: 13px; color: var(--text-muted); text-decoration: none;
   }
-  .ap-page--state .ap-home:hover, .ap-page--donate .ap-home:hover { color: var(--accent); }
+  .ap-page--form .ap-home { align-self: flex-start; margin-top: auto; } /* сплит на весь экран: ссылка внизу левой колонки */
+  .ap-page--state .ap-home:hover, .ap-page--donate .ap-home:hover, .ap-page--form .ap-home:hover { color: var(--accent); }
   .ap-donate-shell {
     display: flex; flex-direction: column; gap: 24px; padding: 40px; border-radius: 28px;
     background: var(--surface); border: 1px solid var(--line);

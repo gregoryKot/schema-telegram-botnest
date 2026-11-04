@@ -13,9 +13,8 @@ import { CONCEPT_EXPORT_EMPTY } from '../../../../../shared/src/therapy/conceptE
 // только переключатель «Схема · Поля» и статус сохранения. Экспорт, картинка,
 // лист на весь экран и холст — второстепенные действия, они собраны в одно
 // меню «⋯»: шапка из пяти кнопок читалась как панель инструментов, и терапевт
-// не находил главного. Меню закрывается по выбору пункта, поэтому занятость и
-// отказ действия показываются строкой под шапкой (ActionStatus), а не внутри
-// меню. Заголовок, подпись и слово «Ещё» — на ≥768; на телефоне (#906) их прячет CSS.
+// не находил главного. Меню закрывается по выбору пункта, поэтому занятость и отказ
+// действия — строкой под шапкой (ActionStatus). Заголовок и «Ещё» — на ≥768 (на телефоне их прячет CSS).
 export interface ConceptTabHeadProps {
   detail: ClientDetail;
   view: ConceptView;
@@ -30,9 +29,11 @@ export function ConceptTabHead({ detail, view, onView, graph }: ConceptTabHeadPr
     <>
       <div className="tcp-head">
         <TabTitle title="Концептуализация" className="tcp-head-title"><div className="ds-sub">Схема-карта, цели терапии и связь с детским опытом</div></TabTitle>
-        <SaveStatusLine className="tcp-save" status={saveStatus} savedAt={savedAt} onRetry={retrySave} errorText={conceptError || undefined} align="right" />
-        <ConceptViewSwitch view={view} onChange={onView} />
-        <MoreMenu onExport={handleExport} exportEmpty={exportEmpty} graph={graph} />
+        <div className="tcp-head-actions">
+          <SaveStatusLine className="tcp-save" status={saveStatus} savedAt={savedAt} onRetry={retrySave} errorText={conceptError || undefined} align="right" />
+          <ConceptViewSwitch view={view} onChange={onView} />
+          <MoreMenu onExport={handleExport} exportEmpty={exportEmpty} graph={graph} />
+        </div>
       </div>
       <ActionStatus graph={graph} exportCopied={exportCopied} />
     </>

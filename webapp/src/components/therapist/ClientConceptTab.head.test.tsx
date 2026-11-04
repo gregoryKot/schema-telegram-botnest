@@ -284,10 +284,28 @@ describe('шапка: компьютер с заголовком, телефон
     expect(phone).toMatch(/\.tcp-head-title, \.tcp-more-txt \{ display: none; \}/);
     // вне телефонного блока скрытия нет
     expect(css.replace(phone.slice(0, phone.indexOf('\n}\n') + 3), '')).not.toMatch(/\.tcp-(head-title|more-txt)[^{]*\{[^}]*display: none/);
-    expect(css).toMatch(/@media \(min-width: 768px\) \{\s*\.tcp-save \{ order: 1[^}]*\}[\s\S]*?\.tcp-more \.ds-btn--icon \{[^}]*width: auto/);
+    expect(css).toMatch(/@media \(min-width: 768px\) \{\s*\.tcp-save \{ margin-left: 0; \}[\s\S]*?\.tcp-more \.ds-btn--icon \{[^}]*width: auto/);
+    // на компьютере order не нужен: порядок в DOM = видимому (B1), order у статуса — только на телефоне
+    expect(css.slice(0, css.indexOf('@media (max-width: 767px) {\n  .tcp-head'))).not.toMatch(/\.tcp-(save|more)[^{]*\{[^}]*order:|\.tcp-head > \.ds-seg \{[^}]*order/);
+    // группа действий: вне медиа растворена (телефон как раньше), на ≥768 неразрывная; принудительного переноса заголовка нет
+    expect(css).toMatch(/\n\.tcp-head-actions \{ display: contents; \}/);
+    expect(css).toMatch(/@media \(min-width: 768px\) \{\s*\.tcp-head-actions \{ display: inline-flex;[^}]*margin-left: auto/);
+    expect(css).not.toMatch(/\.tcp-head-title \{ flex-basis/);
     // раскрывашка «Как читать схему» на компьютере — по содержимому, не полоса
     expect(css).toMatch(/@media \(min-width: 768px\) \{\s*\.tcp-graph \[data-export-skip\] > \.ds-fold \{ width: fit-content/);
     expect(css).toMatch(/\.tcp-page \{[^}]*padding-top: 40px/);
+  });
+
+  it('порядок в DOM шапки = видимому: заголовок, статус сохранения, «Схема · Поля», «⋯» (Tab слева направо)', async () => {
+    await openTab();
+    const head = root().querySelector('.tcp-head')!;
+    expect(head.children[0].matches('.tcp-head-title')).toBe(true);
+    const kids = Array.from(head.querySelector(':scope > .tcp-head-actions')!.children);
+    const idx = (sel: string) => kids.findIndex(k => k.matches(sel));
+    expect(kids).toHaveLength(3);
+    expect(idx('.tcp-save')).toBe(0);
+    expect(idx('.ds-seg')).toBe(1);
+    expect(idx('.tcp-more')).toBe(2);
   });
 
   it('раскрывашки — общий ds-fold: кнопка ds-fold-btn с подписью ds-label, тело ds-fold-body только у открытой', async () => {

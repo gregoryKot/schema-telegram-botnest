@@ -6,6 +6,8 @@ import { ClientNotesTab } from './ClientNotesTab';
 import { ClientYSQTab } from './ClientYSQTab';
 import { KanbanView } from './KanbanView';
 import type { ClientData, TherapyClientSummary, UserTask } from '../../api';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import type { ClientDetail } from './clientSheetTypes';
 
 afterEach(cleanup);
@@ -146,17 +148,28 @@ describe('ClientNotesTab', () => {
 // вкладке шапки (решение #902 для «Концептуализации» распространено на все);
 // пустые состояния — общий ds-empty, а не свой курсив/центровка.
 describe('вкладки без заголовков, пустые состояния — ds-empty (#906)', () => {
-  it('«Записи клиента»: h2 нет, первым идёт фильтр; пустая категория — ds-empty', () => {
+  it('«Записи клиента»: h2 для компьютера, рядом фильтр; пустая категория — ds-empty', () => {
     const { container } = render(<ClientNotesTab
       clientDiary={[{ type: 'gratitude', date: '2026-10-02', excerpt: 'спасибо за день' }]}
       clientModeNotesData={[]}
       clientSchemaNotesData={[]}
     />);
-    expect(container.querySelector('h2')).toBeNull();
-    expect(screen.queryByText('Записи клиента')).toBeNull();
-    expect(container.querySelector('.ds-page')!.firstElementChild!.getAttribute('role')).toBe('tablist');
+    // h2 в разметке (на ≥768 виден, на телефоне его прячет CSS); фильтр — в одной строке с ним
+    const head = container.querySelector('.ds-page > .tb-notes-head')!;
+    expect(head.children[0].querySelector('h2.tb-tab-h')?.textContent).toBe('Записи клиента');
+    expect(head.children[0].classList.contains('tb-tab-title--desk')).toBe(true);
+    expect(head.children[1].getAttribute('role')).toBe('tablist');
     fireEvent.click(screen.getByRole('tab', { name: /Схемы/ }));
     expect(screen.getByText('В этой категории записей нет').classList.contains('ds-empty')).toBe(true);
+  });
+
+  it('therapist-tabs.css: заголовок вкладки скрыт только под max-width: 767px', () => {
+    const css = readFileSync(join(__dirname, '../../styles/therapist-tabs.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+    const at = css.indexOf('@media (max-width: 767px)');
+    const phone = css.slice(at);
+    expect(phone).toMatch(/\.tb-tab-h, \.tb-tab-title--desk \{ display: none; \}/);
+    expect(phone).toMatch(/\.tb-notes-head \{ display: contents; \}/);
+    expect(css.slice(0, at)).not.toMatch(/\.tb-(tab-h|tab-title--desk|notes-head)[^{]*\{[^}]*display/);
   });
 
   it('«Записи клиента» без единой записи — ds-empty', () => {
@@ -164,7 +177,7 @@ describe('вкладки без заголовков, пустые состоя�
     expect(screen.getByText('Клиент ещё не заполнял дневник').classList.contains('ds-empty')).toBe(true);
   });
 
-  it('YSQ с прохождениями: h2 «Опросник схем YSQ» нет, строка прохождений и действия остаются', () => {
+  it('YSQ с прохождениями: h2 «Опросник схем YSQ» для компьютера, строка прохождений и действия остаются', () => {
     const run = { id: 1, completedAt: '2026-10-01T10:00:00Z', scores: [{ id: 'failure', pct5plus: 70 }] };
     const clientData = { ysqHistory: [run], ysqCompletedAt: '2026-10-01T10:00:00Z' } as unknown as ClientData;
     const selectedClient = { telegramId: 7 } as unknown as TherapyClientSummary;
@@ -172,8 +185,9 @@ describe('вкладки без заголовков, пустые состоя�
       clientData={clientData} selectedClient={selectedClient} selfSchemaIds={[]} ysqSchemaIds={['failure']}
       ysqRequested={false} ysqError="" exportCopied={false} handleRequestYsq={vi.fn()} handleExport={vi.fn()}
     />);
-    expect(container.querySelector('h2')).toBeNull();
-    expect(screen.queryByText('Опросник схем YSQ')).toBeNull();
+    expect(container.querySelector('h2.tb-tab-h')?.textContent).toBe('Опросник схем YSQ');
+    // подпись видна и на телефоне: wrapper заголовка целиком не прячется
+    expect(container.querySelector('.tb-tab-title')!.classList.contains('tb-tab-title--desk')).toBe(false);
     expect(screen.getByText(/1 прохождение · последнее/)).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Экспорт' })).toBeTruthy();
     expect(screen.queryByText(/экспортировать нечего/)).toBeNull();

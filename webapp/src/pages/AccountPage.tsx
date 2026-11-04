@@ -39,7 +39,7 @@ export function AccountPage() {
           <div>
             <div className="ds-eyebrow">Аккаунт</div>
             <h1 className="ds-h1">Вход и <i>защита</i></h1>
-            <p className="ds-sub aa-lead">
+            <p className="ds-lead aa-lead">
               {tr('Привязывай несколько способов входа – заходи откуда удобно', 'Привязывайте несколько способов входа – заходите откуда удобно')}
             </p>
           </div>

@@ -8,8 +8,6 @@
   padding: 24px 20px calc(32px + env(safe-area-inset-bottom));
   display: flex; flex-direction: column; gap: 16px;
 }
-/* Заголовок прямо в колонке с gap (TalkSheet): без верхнего отступа ds-h1. */
-.cw-lead { margin: 0; font-size: 15px; line-height: 1.6; color: var(--text-sub); }
 /* Три действия — строки одной карточки: название Manrope 600, пояснение 14px. */
 .cw-list { margin: 0; padding: 0; list-style: none; }
 .cw-item { grid-template-columns: minmax(0, 1fr); gap: 2px; }

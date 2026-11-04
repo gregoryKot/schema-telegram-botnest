@@ -123,7 +123,7 @@ describe('therapist-card.css: имя, заметка, действия сайд�
 describe('therapist-card.css: «Обзор» — компьютер и телефон (регрессия 2026-11-04)', () => {
   const desk = block(css, '@media (min-width: 768px) {\n  .tk-goal');
 
-  it('на ≥768: цель — 24px с засечками, схемы — плитки до 3 в ряд, режимы — колонки с верхней чертой', () => {
+  it('на ≥768: цель — 24px с засечками (макет REDESIGN_2026-10: Literata 24px), схемы — плитки до 3 в ряд, режимы — колонки с верхней чертой', () => {
     expect(decls(desk, '.tk-goal .tk-text')).toMatch(/24px\/1\.4 var\(--serif\)/);
     expect(decls(desk, '.tk-groups')).toContain('display: grid');
     expect(decls(desk, '.tk-groups--tiles')).toContain('/ 3)');

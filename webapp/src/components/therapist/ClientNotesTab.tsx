@@ -13,7 +13,6 @@ interface Props {
 export function ClientNotesTab({ clientSchemaNotesData, clientModeNotesData, clientDiary }: Props) {
   const [filter, setFilter] = useState<NoteFilter>('all');
   const [openKey, setOpenKey] = useState<string | null>(null);
-
   const all = buildNoteItems(clientDiary, clientSchemaNotesData, clientModeNotesData);
 
   if (all.length === 0) {
@@ -23,18 +22,15 @@ export function ClientNotesTab({ clientSchemaNotesData, clientModeNotesData, cli
       </div>
     );
   }
-
   const counts = countByFilter(all);
   const shown = filterNotes(all, filter);
-
   return (
     <div className="ds-page tb-page--narrow">
       <div className="ds-head-row tb-notes-head">
         <TabTitle title="Записи клиента" className="tb-tab-title--desk" />
         <div className="ds-seg ds-seg--scroll" role="tablist">
           {FILTERS.map(f => (
-            <button key={f.id} role="tab" aria-selected={filter === f.id}
-              className={`ds-seg-btn${filter === f.id ? ' is-active' : ''}`} onClick={() => setFilter(f.id)}>
+            <button key={f.id} role="tab" aria-selected={filter === f.id} className={`ds-seg-btn${filter === f.id ? ' is-active' : ''}`} onClick={() => setFilter(f.id)}>
               {f.label}<span className="ds-count">{counts[f.id]}</span>
             </button>
           ))}

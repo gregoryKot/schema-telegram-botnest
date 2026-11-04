@@ -281,9 +281,10 @@ describe('SubscribePage — шапка и кнопки (#906)', () => {
 
   it('форма: та же шапка над сплитом, CTA — ds-btn--accent ds-btn--lg', async () => {
     await renderLoaded();
-    const back = screen.getByRole('link', { name: '← На главную' });
+    const back = screen.getAllByRole('link', { name: '← На главную' })[0];
     expect(back.className).toBe('ds-back');
     expect(back.parentElement!.className).toBe('ds-sheet-head ds-sheet-head--page');
+    expect(screen.getAllByRole('link', { name: '← На главную' })[1].className).toBe('ap-home'); // на компьютере — внизу левой колонки, шапка скрыта
     expect(screen.getByRole('button', { name: /Оформить за/ }).className).toContain('ds-btn ds-btn--accent ds-btn--lg');
   });
 });
@@ -295,6 +296,7 @@ describe('SubscribePage — возврат с оплаты (?sub=ok|fail)', () =
     expect((await screen.findByRole('heading', { level: 1 })).textContent).toBe('Спасибо за поддержку!');
     expect(screen.getByText(/Подписка оформлена/)).toBeTruthy();
     expect(screen.getByRole('link', { name: 'На главную' })).toBeTruthy();
+    expect(screen.getAllByRole('link', { name: /На главную/ }).filter((a) => a.className === 'ap-home')).toHaveLength(0); // под кнопкой не дублируется
     expect(screen.queryByRole('button', { name: /Оформить за/ })).toBeNull();
     expect(screen.queryByRole('alert')).toBeNull();
   });

@@ -65,3 +65,12 @@
   .aa-foot .ds-link { align-self: center; }
 }
 .aa-role .ds-btn--secondary { background: transparent; color: var(--on-panel); border-color: var(--panel-line); }
+
+/* Компьютер: карточка «Подписка» — «Управлять →» акцентом справа, как до волн (телефон: серый «Управлять» и «›»).
+   Правила на прямом ребёнке колонки. */
+@media (min-width: 768px) {
+  .aa-col > .ds-card--nav .ds-list-body { flex-direction: row; align-items: center; justify-content: space-between; gap: 12px; }
+  .aa-col > .ds-card--nav .ds-sub { font-size: 13px; font-weight: 700; color: var(--accent); }
+  .aa-col > .ds-card--nav .ds-chev { margin-left: 0; color: var(--accent); }
+  .aa-col > .ds-card--nav .ds-chev:empty::before { content: '→'; }
+}
