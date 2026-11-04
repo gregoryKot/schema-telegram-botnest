@@ -4,7 +4,8 @@
 // зовёт свой обработчик.
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
-import { HomeTiles, trackerCta } from './HomeTiles';
+import { HomeTiles } from './HomeTiles';
+import { trackerCta } from './trackerCta';
 
 vi.mock('../../haptic', () => ({ haptic: { tap: vi.fn() } }));
 

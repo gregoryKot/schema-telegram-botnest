@@ -2,6 +2,7 @@ import { haptic } from '../../haptic';
 import type { TrackerSummary } from './todayFeed';
 import { NeedGarden, RippleArt, LeafArt } from './HomeArt';
 import { HomeTileRow } from './HomeTileRow';
+import { trackerCta } from './trackerCta';
 
 interface Props {
   ratings: Record<string, number>;
@@ -13,13 +14,6 @@ interface Props {
   onTracker: () => void;
   onCase: () => void;
   onDiary: () => void;
-}
-
-/** Подпись единственной кнопки экрана — по состоянию трекера за сегодня. */
-export function trackerCta({ filled, total }: TrackerSummary): string {
-  if (filled === 0 || total === 0) return 'Заполнить за минуту';
-  if (filled < total) return 'Продолжить';
-  return 'Посмотреть сегодня';
 }
 
 // Главная «Сегодня» (docs/design/CLIENT_SIMPLE_2026-10.md): одна главная плитка — трекер,
