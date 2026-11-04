@@ -5,7 +5,9 @@
    отнимает ширину у приветствия и «Привет, Имя» переносится на телефоне. */
 .ct-head { display: flex; flex-direction: column; gap: 4px; }
 .ct-head-top { display: flex; align-items: center; justify-content: space-between; gap: var(--space-12); }
-.ct-h1 { margin: 0; }
+/* Имя из почты или ника без пробелов резалось краем экрана посреди слова (QA мобильной 2026-11, М5):
+   одна строка с многоточием, как имена кабинета в #911, без overflow-wrap: anywhere. */
+.ct-h1 { margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ct-link {
   min-height: 44px; padding: 0; display: inline-flex; align-items: center; background: none; border: 0;
   cursor: pointer; font: 600 14px var(--sans); color: var(--accent);
