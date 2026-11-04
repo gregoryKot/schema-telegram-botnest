@@ -98,7 +98,8 @@ describe('CrisisCardView — аналитика (правило №8)', () => {
 describe('CrisisCardView — compact (C-К1)', () => {
   it('только заголовок и обе линии: без лида и сноски', () => {
     render(<CrisisCardView standing compact tr={tr} track={vi.fn()} />);
-    for (const h of CRISIS_HOTLINES) expect(screen.getByText(h.display)).toBeTruthy();
+    for (const h of CRISIS_HOTLINES)
+      expect(screen.getByText(h.display)).toBeTruthy();
     expect(screen.queryByText(/Круглосуточно/)).toBeNull();
     expect(screen.queryByText(/выслушают/)).toBeNull();
   });
@@ -112,12 +113,20 @@ describe('CrisisCardView — прокрутка над клавиатурой (C
   });
   afterEach(() => {
     vi.restoreAllMocks();
-    Object.defineProperty(window, 'visualViewport', { value: undefined, configurable: true });
+    Object.defineProperty(window, 'visualViewport', {
+      value: undefined,
+      configurable: true,
+    });
   });
   const setVv = (height: number) =>
-    Object.defineProperty(window, 'visualViewport', { value: { offsetTop: 0, height }, configurable: true });
+    Object.defineProperty(window, 'visualViewport', {
+      value: { offsetTop: 0, height },
+      configurable: true,
+    });
   const rectBottom = (bottom: number) =>
-    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue({ top: bottom - 200, bottom } as DOMRect);
+    vi
+      .spyOn(HTMLElement.prototype, 'getBoundingClientRect')
+      .mockReturnValue({ top: bottom - 200, bottom } as DOMRect);
 
   it('карточка по детекции ниже видимой высоты visualViewport прокручивается в видимую область', () => {
     setVv(400);

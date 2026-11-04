@@ -59,7 +59,9 @@ export function CrisisCardView({
         {copy.title}
       </div>
       {!compact && (
-        <div style={{ fontSize: 13, color: 'var(--text-sub)', marginBottom: 10 }}>
+        <div
+          style={{ fontSize: 13, color: 'var(--text-sub)', marginBottom: 10 }}
+        >
           {copy.lead}
         </div>
       )}
