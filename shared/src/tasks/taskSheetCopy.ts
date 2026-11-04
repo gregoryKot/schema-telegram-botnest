@@ -21,7 +21,11 @@ export interface TaskSheetCopy {
 
 type Tr = (ty: string, vy: string) => string;
 
-export function taskSheetCopy(clientId: UserId | undefined, clientName: string | null | undefined, tr: Tr): TaskSheetCopy {
+export function taskSheetCopy(
+  clientId: UserId | undefined,
+  clientName: string | null | undefined,
+  tr: Tr,
+): TaskSheetCopy {
   if (clientId === undefined) {
     return {
       title: 'Новая цель',
