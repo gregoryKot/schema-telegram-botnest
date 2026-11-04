@@ -41,7 +41,7 @@ export function DiaryStepCard({ hue, stepIdx, total, required, filled, filledCou
 export function DiaryStepQ({ id, title, hint }: { id?: string; title: ReactNode; hint?: ReactNode }) {
   return (
     <>
-      <h2 id={id} className="ds-h2 sd-step-q">{title}</h2>
+      <h2 id={id} className="ds-h2">{title}</h2>
       {hint && <div className="ds-sub sd-step-hint">{hint}</div>}
     </>
   );

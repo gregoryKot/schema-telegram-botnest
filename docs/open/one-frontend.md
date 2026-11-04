@@ -216,7 +216,7 @@
   родитель» и очередь записей; делать, когда такая пара станет частой. Зафиксировано
   в `useHistorySheet.test.tsx` («смонтированы в одном коммите»).
 - Лист, убранный из дерева мимо своего `goBack()` (`SchemaInfoSheet`
-  `handleViewSchemas` → `setShowTest(false)`; `AllGoalsOverlay`,
+  `handleViewSchemas` → `setShowTest(false)`;
   `PracticesScreen` → трекер через `AppOverlays`), оставляет
   брошенную запись: следующее системное «Назад» уходит вхолостую. `goBack()` и
   Escape листа под ней её снимают (`backDepth` в `historySheetStack.ts`),

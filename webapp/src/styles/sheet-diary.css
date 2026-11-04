@@ -67,7 +67,6 @@
 .sd-step-flag { font-size: 12px; color: var(--text-faint); }
 .sd-step-flag.is-required { color: var(--accent); font-weight: 600; }
 .sd-step-count { margin-left: auto; font-size: 12px; color: var(--text-faint); }
-.sd-step-q { font-size: 22px; }
 .sd-step-hint { line-height: 1.5; }
 .sd-area-gap { margin-top: 12px; }
 .sd-aside { position: sticky; top: 40px; display: flex; flex-direction: column; gap: 8px; }
@@ -94,7 +93,7 @@
   border-color: oklch(0.58 0.12 var(--h)); font-weight: 600;
 }
 .sd-show-all { min-height: 44px; }
-.sd-int-list { margin-top: 12px; padding-top: 8px; border-top: 1px solid var(--line); }
+.sd-int-list { margin-top: 12px; padding-top: 8px; border-top: 1px solid var(--paper-sunk); }
 .sd-int { display: grid; grid-template-columns: minmax(90px, 1fr) 2fr minmax(70px, 1fr); align-items: center; gap: 10px; padding: 6px 0; }
 .sd-int-name { font-size: 13px; }
 .sd-int-bar { display: flex; gap: 3px; }
@@ -143,7 +142,7 @@
 .sd-doubt-lede { line-height: 1.5; margin: 0 0 24px; }
 .sd-doubt-list { display: flex; flex-direction: column; gap: 12px; }
 .sd-doubt-card { display: flex; flex-direction: column; gap: 6px; }
-.sd-doubt-title { display: flex; align-items: center; gap: 8px; font-size: 17px; }
+.sd-doubt-title { display: flex; align-items: center; gap: 8px; }
 .sd-doubt-gist { margin: 4px 0; font-size: 14px; line-height: 1.55; color: var(--text-sub); }
 .sd-doubt-check { border-radius: 10px; padding: 8px 12px; font-size: 13px; line-height: 1.5; margin-bottom: 6px; }
 .sd-doubt-btn { width: 100%; }

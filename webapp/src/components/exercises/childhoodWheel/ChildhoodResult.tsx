@@ -87,16 +87,16 @@ export function ChildhoodResult({
           onOpenSchemas={onOpenSchemas}
         />
       ) : (
-        <div className="ds-card cw-good">
-          <div className="cw-good-title">Хорошее детство по всем зонам</div>
-          <p className="cw-good-body">
+        <div className="ds-card chw-good">
+          <div className="chw-good-title">Хорошее детство по всем зонам</div>
+          <p className="chw-good-body">
             Все потребности выше 4/10 – это редкость и ресурс. Если сейчас что-то низкое, скорее
             всего это ситуативное, а не схема.
           </p>
         </div>
       )}
 
-      <div className="cw-note">
+      <div className="chw-note">
         <TherapyNote compact />
       </div>
 

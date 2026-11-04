@@ -62,4 +62,14 @@ describe('MeetingDaysCard', () => {
     expect(save).not.toHaveBeenCalled();
     expect(screen.getByText('Пн')).toBeTruthy();
   });
+
+  it('выбранный день — ds-chip--toggle is-on, --h задан у предка (иначе чип не красится)', () => {
+    render(<MeetingDaysCard selectedClient={client([1])} detail={detailOf()} />);
+    fireEvent.click(screen.getByText('Изменить →'));
+    const on = screen.getByRole('button', { name: 'Пн' });
+    expect(on.className).toContain('ds-chip--toggle');
+    expect(on.className).toContain('is-on');
+    expect(screen.getByRole('button', { name: 'Вт' }).className).not.toContain('is-on');
+    expect(on.closest<HTMLElement>('[style*="--h"]')?.style.getPropertyValue('--h')).not.toBe('');
+  });
 });

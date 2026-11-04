@@ -12,9 +12,9 @@ interface ListProps {
 export function FlashcardHistoryList({ cards, modes, needs, onBack, onOpen }: ListProps) {
   return (
     <FlashcardFrame onBack={onBack} label="Назад">
-      <h1 className="ds-h1 sk-fc-h1-sm">История карточек</h1>
+      <h1 className="ds-h2 sk-fc-h1-sm">История карточек</h1>
       {cards.length === 0 ? (
-        <div className="ds-sub sk-fc-empty">Пока нет сохранённых карточек</div>
+        <p className="ds-empty">Пока нет сохранённых карточек</p>
       ) : cards.map(card => {
         const m = modes.find(x => x.id === card.mode);
         const n = needs.find(x => x.id === card.needId);
@@ -23,7 +23,7 @@ export function FlashcardHistoryList({ cards, modes, needs, onBack, onOpen }: Li
             onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen(card); } }}
             className="ds-card ds-card--row ds-card--hover sk-fc-hist">
             <div className="ds-label">{card.date}</div>
-            <div className="ds-h3 sk-fc-hist-title">
+            <div className="ds-list-title">
               {m?.label ?? card.mode}
               {n ? ` · ${n.label}` : ''}
             </div>

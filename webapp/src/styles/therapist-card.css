@@ -3,7 +3,7 @@
    Примитивы (ds-*) и тона — styles/cabinet.css; здесь только раскладка.
    Тихая карточка (#906, волна 1): один акцент на экран — дата встречи и tint
    аватара; секция «Обзора» = ds-card с подписью ds-label, без плиток с
-   заливкой; редкие действия — в меню «⋯» (ClientHeaderMenu.tsx); закреплённой
+   заливкой; редкие действия — в меню «⋯» (RenameDeleteMenu.tsx); закреплённой
    панели «+ Задание / + Заметка» на телефоне нет (решение владельца
    2026-11-02) — кнопки первой строкой «Обзора» (ClientQuickActions.tsx).
    ───────────────────────────────────────────────────────────────────────── */
@@ -47,9 +47,8 @@
 .tk-meta { font-size: 13px; color: var(--text-sub); white-space: normal; }
 /* Строка «Встреча» (NextSessionLine) в шапке — своей строкой под метой, без
    подложки списка клиентов: акцент здесь только у даты. */
-.tk-head .tc-meeting { flex-basis: 100%; justify-content: flex-start; gap: 10px; background: none; padding: 0; }
+.tk-head .tc-meeting { flex-basis: 100%; }
 .tk-actions { display: flex; gap: 8px; align-items: center; white-space: nowrap; }
-.tk-menu .mm2-item { font-size: 13px; } /* тап-цель 44 на телефоне — у общего .mm2-item */
 .tk-head .ds-tabs { margin: 0 calc(-1 * (var(--tk-center) + var(--tk-gutter))); padding: 0 calc(var(--tk-center) + var(--tk-gutter)); }
 
 /* ── Обзор ───────────────────────────────────────────────────────────────── */
@@ -66,7 +65,7 @@
    всю ширину: в ряд им нужно ~314px, и в 260–313 вторая кнопка падала вниз
    другой ширины. В одну колонку (<1024) сайдбар широкий — кнопки в ряд. */
 @media (min-width: 1024px) { .tk-side .tk-quick { flex-direction: column; } }
-.tk-col { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+.tk-col { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
 .tk-quick { display: flex; gap: 8px; flex-wrap: wrap; }
 .tk-card-head { margin-bottom: 12px; }
 .tk-text { margin: 10px 0 0; font: 400 15px/1.6 var(--sans); color: var(--text); overflow-wrap: anywhere; }
@@ -83,7 +82,7 @@
 .tk-note-date { margin-top: 6px; }
 
 /* ── Сайдбар Обзора ──────────────────────────────────────────────────────── */
-.tk-side { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.tk-side { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
 .tk-next { margin-top: 6px; overflow-wrap: anywhere; }
 .tk-edit-form { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
 .tk-edit-actions { display: flex; gap: 8px; flex-wrap: wrap; }
@@ -100,11 +99,6 @@
 .tk-need b.is-low { color: var(--err); }
 .tk-start { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
 .tk-days { display: flex; flex-wrap: wrap; gap: var(--space-6); }
-.tk-day {
-  min-width: 44px; min-height: 44px; padding: 0 var(--space-10); border-radius: var(--r-20); border: none; cursor: pointer;
-  background: var(--paper-sunk); color: var(--text-sub); font: 600 13px var(--sans);
-}
-.tk-day.is-on { background: var(--ink); color: var(--on-ink); }
 
 /* ── Мобильный (<768): компактная шапка, «Обзор» в одну колонку ──────────── */
 @media (max-width: 767px) {
@@ -122,6 +116,5 @@
   }
   .tk-badges { gap: 6px; }
   .tk-ov { padding: 20px 16px 24px; gap: 24px; }
-  .tk-col { gap: 16px; }
   .tk-alias-input { font-size: 22px; width: 100%; }
 }

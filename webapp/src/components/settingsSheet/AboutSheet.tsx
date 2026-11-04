@@ -18,10 +18,10 @@ export function AboutSheet({ onClose }: { onClose: () => void }) {
           Инструмент самопознания на основе схема-терапии: трекер потребностей, дневники схем и режимов, тесты, практики и пространство для работы с терапевтом.
         </p>
         <div className="st-links">
-          <ExternalLink href="https://t.me/SchemeHappens">Канал о схема-терапии → <b>@SchemeHappens</b></ExternalLink>
-          <ExternalLink href="https://t.me/kotlarewski">Записаться на сессию → <b>@kotlarewski</b></ExternalLink>
+          <ExternalLink className="ds-link" href="https://t.me/SchemeHappens">Канал о схема-терапии → <b>@SchemeHappens</b></ExternalLink>
+          <ExternalLink className="ds-link" href="https://t.me/kotlarewski">Записаться на сессию → <b>@kotlarewski</b></ExternalLink>
           {/* Подписка скрыта до подключения рекуррента у Robokassa — вернуть ссылку на /subscribe, когда заработает */}
-          <ExternalLink href="/donate">Поддержать проект → <b>разовый донат</b></ExternalLink>
+          <ExternalLink className="ds-link" href="/donate">Поддержать проект → <b>разовый донат</b></ExternalLink>
         </div>
         <div className="st-fine">Это образовательный инструмент — не медицинский и не психологический сервис.</div>
       </div>

@@ -107,7 +107,7 @@ export function PracticesScreen({ onClose, onOpenTracker }: Props) {
           </div>
         </div>
 
-        <div className="ds-seg">
+        <div className="ds-seg ds-seg--scroll">
           {NEED_IDS.map((id, i) => {
             const score = ratings[id];
             return (
@@ -143,13 +143,13 @@ export function PracticesScreen({ onClose, onOpenTracker }: Props) {
           ) : !practices ? (
             <Loader minHeight="20vh" />
           ) : practices.length === 0 ? (
-            <div className="ds-sub">{tr('Пока пусто — добавь первую практику ниже.', 'Пока пусто — добавьте первую практику ниже.')}</div>
+            <p className="ds-empty">{tr('Пока пусто — добавь первую практику ниже.', 'Пока пусто — добавьте первую практику ниже.')}</p>
           ) : (
             <div className="sk-list">
               {practices.map(p => (
                 <div key={p.id} className="ds-card ds-card--row sk-practice">
                   <div className="sk-practice-text">{p.text}</div>
-                  <button onClick={() => tapDelete(p.id as number)} className="ds-link sk-danger">
+                  <button onClick={() => tapDelete(p.id as number)} className="ds-link ds-link--danger">
                     {deletePending(p.id as number) ? 'Точно удалить?' : 'удалить'}
                   </button>
                 </div>

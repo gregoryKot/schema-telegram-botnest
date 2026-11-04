@@ -70,7 +70,7 @@ export function ModeMapViewer() {
     <div className="mm2-fill">
       {maps.length > 1 && (
         <div className="mm2-bar">
-          <div className="ds-seg" role="group" aria-label="Карты режимов">
+          <div className="ds-seg ds-seg--scroll" role="group" aria-label="Карты режимов">
           {maps.map(m => (
             <button key={m.id} type="button" onClick={() => select(m.id)} aria-pressed={active?.id === m.id}
               className={`ds-seg-btn${active?.id === m.id ? ' is-active' : ''}`}>

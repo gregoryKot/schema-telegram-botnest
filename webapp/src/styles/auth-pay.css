@@ -2,8 +2,7 @@
    Страницы живут вне AppShell (и на визитке практики): корень сам красит экран.
    Шапка «← На главную» — общая .ds-sheet-head/.ds-back, заголовок — ds-eyebrow +
    ds-h1 + ds-sub слева, страница прижата к верху, кнопки — ds-btn (#906).
-   Суммы доната — ds-seg, поля доната — ds-input (#906). .ap-field на тёмной
-   панели подписки — волна 3. */
+   Суммы доната — ds-seg, поля доната — ds-input (#906); поле email — ds-input--on-ink. */
 .ap-page {
   flex: 1; width: 100%; box-sizing: border-box; min-height: 100dvh; display: flex; flex-direction: column;
   background: var(--bg); color: var(--text); font-family: var(--sans);
@@ -47,13 +46,6 @@
 .ap-plan-price { font-family: var(--serif); font-size: 44px; line-height: 1; }
 .ap-plan-per { font-size: 14px; opacity: .7; }
 .ap-badge { margin-left: auto; font-size: 12px; font-weight: 700; background: var(--accent-hot); color: #fff; border-radius: 10px; padding: 3px 9px; white-space: nowrap; }
-
-.ap-field {
-  width: 100%; box-sizing: border-box; min-height: 48px; padding: 0 16px; border-radius: 14px;
-  border: 1px solid var(--ink-line); background: var(--ink-2); color: var(--on-ink); font: 15px var(--sans);
-}
-.ap-field::placeholder { color: var(--on-ink-faint); }
-.ap-field:focus { outline: none; border-color: var(--on-ink-sub); }
 
 .ap-consent { position: relative; display: flex; gap: 10px; align-items: flex-start; font-size: 13px; line-height: 1.5; color: var(--on-ink-sub); cursor: pointer; min-height: 44px; margin-top: 6px; }
 .ap-box {

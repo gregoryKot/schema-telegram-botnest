@@ -17,7 +17,7 @@
   color: var(--text); text-align: left; font-family: inherit;
   -webkit-tap-highlight-color: transparent;
 }
-.cz-card > .cz-row, .cz-card > .cz-block { border-top: 1px solid var(--line); }
+.cz-card > .cz-row, .cz-card > .cz-block { border-top: 1px solid var(--paper-sunk); }
 .cz-card > :first-child { border-top: none; }
 .cz-pick {
   width: 100%; border: none; background: none; cursor: pointer;

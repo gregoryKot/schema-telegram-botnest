@@ -36,7 +36,7 @@ const phone = block(css, '@media (max-width: 767px)');
 const GONE = [
   '.tk-actions-main', '.tk-head--quiet-actions', '.tk-back', '.tk-edit', '.tk-name-row',
   '.tk-tile', '.tk-tile-title', '.tk-tile-item', '.tk-tiles', '.tk-quote', '.tk-goal-text', '.tk-mode-col', '.tk-modes',
-  '.tk-card-label', '.tk-next-edit', '.tk-next-sub', '.tk-action', '.tk-actions-grid', '.tk-hint', '.tk-block',
+  '.tk-card-label', '.tk-next-edit', '.tk-next-sub', '.tk-action', '.tk-actions-grid', '.tk-hint', '.tk-block', '.tk-day',
 ];
 
 describe('therapist-card.css: тихая карточка клиента (#906)', () => {
@@ -65,11 +65,18 @@ describe('therapist-card.css: тихая карточка клиента (#906)'
     expect(decls(phone, '.tk-avatar')).toContain('height: 44px');
   });
 
-  it('строка «Встреча» в шапке — без подложки списка, своей строкой; тап-цель пунктов меню «⋯» — у общего .mm2-item, не здесь', () => {
-    const line = decls(css, '.tk-head .tc-meeting');
-    expect(line).toContain('background: none');
-    expect(line).toContain('flex-basis: 100%');
-    expect(decls(css, '.tk-menu .mm2-item')).not.toContain('min-height');
+  it('Встреча в шапке — та же форма, что в списке: у .tc-meeting нет background, у .tk-head .tc-meeting только flex-basis; в therapist-card.css нет .mm2-item и .tk-menu', () => {
+    const list = readFileSync(join(__dirname, 'therapist-clients.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+    expect(decls(list, '.tc-meeting')).not.toContain('background');
+    expect(decls(css, '.tk-head .tc-meeting').replace(/\s/g, '')).toBe('flex-basis:100%;');
+    expect(css).not.toContain('.mm2-item');
+    expect(css).not.toContain('.tk-menu');
+  });
+
+  it('шаг стопки карточек — 16: у .tk-side и .tk-col, без телефонного переопределения', () => {
+    expect(decls(css, '.tk-side')).toContain('gap: 16px');
+    expect(decls(css, '.tk-col')).toContain('gap: 16px');
+    expect(decls(phone, '.tk-col')).toBe('');
   });
 
   it('цель терапии — Manrope 15 обычным текстом; цвета — только токенами и тонами', () => {

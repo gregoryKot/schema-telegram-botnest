@@ -1,7 +1,6 @@
 /* Вкладки карточки клиента: Сессии, Задания, YSQ, Записи клиента (префикс tb-).
    Заголовка у вкладки нет (#906): имя уже во вкладке шапки. Пустые состояния —
    ds-empty, иконочные кнопки — ds-btn--icon (cabinet.css); здесь только раскладка. */
-.tb-page { gap: 28px; }
 .tb-page--narrow { max-width: 900px; }
 .tb-page--ysq { max-width: 1000px; }
 .tb-hint { font-size: 12px; color: var(--text-faint); }
@@ -37,8 +36,8 @@
 .tb-tl-del { margin-left: auto; margin-block: -8px; }
 
 /* ── Задания ──────────────────────────────────────────────────────────── */
-.tb-tasks { display: grid; grid-template-columns: minmax(0, 1fr) clamp(260px, 30%, 340px); align-items: start; gap: 48px; max-width: var(--tk-max); }
-@media (max-width: 1023px) { .tb-tasks { grid-template-columns: minmax(0, 1fr); gap: 40px; } }
+.tb-tasks { display: grid; grid-template-columns: minmax(0, 1fr) clamp(260px, 30%, 340px); align-items: start; column-gap: 48px; max-width: var(--tk-max); }
+@media (max-width: 1023px) { .tb-tasks { grid-template-columns: minmax(0, 1fr); } }
 .tb-col { display: flex; flex-direction: column; gap: 28px; min-width: 0; }
 .tb-col--tight { gap: 12px; }
 .tb-big { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
@@ -67,7 +66,7 @@
 .tb-ysq-card { padding: 8px 24px; }
 .tb-ysq-row {
   display: grid; grid-template-columns: minmax(110px, 240px) 1fr 56px 48px 48px; gap: 16px;
-  padding: 11px 0; border-bottom: 1px solid var(--paper-tint); align-items: center;
+  padding: 11px 0; border-bottom: 1px solid var(--paper-sunk); align-items: center;
 }
 .tb-ysq-row:last-child { border-bottom: none; }
 .tb-ysq-head { font-size: 11px; padding: 12px 0; border-bottom: 1px solid var(--paper-sunk); }
@@ -102,7 +101,7 @@
 .tb-note-title { font-size: 15px; font-weight: 700; flex: 1; min-width: 0; overflow-wrap: break-word; }
 .tb-note-text { font-size: 14px; line-height: 1.6; color: var(--text-sub); white-space: pre-wrap; overflow-wrap: anywhere; }
 .tb-note-text.is-clamped { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
-.tb-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 24px; padding-top: 12px; border-top: 1px dashed var(--line-input); }
+.tb-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 24px; padding-top: 12px; border-top: 1px solid var(--paper-sunk); }
 .tb-field-label { font-size: 11px; }
 .tb-field-val { font-size: 14px; margin-top: 3px; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; }
 

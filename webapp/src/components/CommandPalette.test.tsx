@@ -206,6 +206,14 @@ describe('CommandPalette — клиенты терапевта', () => {
   });
 });
 
+describe('CommandPalette — вид', () => {
+  it('нет плашки «Esc» (на телефоне такой клавиши нет), панель — .cmd-panel', () => {
+    renderPalette();
+    expect(screen.queryByText('Esc')).toBeNull();
+    expect(screen.getByRole('dialog').classList.contains('cmd-panel')).toBe(true);
+  });
+});
+
 describe('CommandPalette — фон', () => {
   it('клик по затемнённому фону закрывает палитру', () => {
     const onClose = vi.fn();

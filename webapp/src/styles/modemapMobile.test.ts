@@ -83,8 +83,13 @@ describe('холст карты режимов на телефоне (sheet-mode
     for (const v of ['--mobile-nav-h', '--safe-top', '--safe-bottom']) expect(root, v).toMatch(new RegExp(`(^|;)\\s*${v}:`));
   });
 
-  it('пункт общего меню Dropdown (.mm2-item) на ≤767 — тап-цель 44, одним правилом для всех меню «⋯»', () => {
-    expect(values(modemap, PHONE, '.mm2-item', 'min-height')).toEqual(['44px']);
+  it('в sheet-modemap.css нет правил меню — .mm2-item, .mm2-drop, .mm2-backdrop: меню общее, ds-menu в cabinet.css', () => {
+    const all = modemap.flatMap((r) => r.selectors).join(' ');
+    expect(all).not.toMatch(/\.mm2-(item|drop|backdrop)(?![-\w])/);
+  });
+
+  it('полоса карт .mm2-bar — боковой отступ 16 (один отступ на телефоне)', () => {
+    expect(values(modemap, null, '.mm2-bar', 'padding')).toEqual(['8px 16px']);
   });
 
   it('цвета новых правил — токенами, без hex/rgb-литералов', () => {
@@ -94,10 +99,9 @@ describe('холст карты режимов на телефоне (sheet-mode
   });
 
   it('поля холста на ≤767 — 16px (iOS не увеличивает экран при фокусе), на ноутбуке прежние', () => {
-    const sels = ['.mm2-pal-search .ds-input', '.mm2-add-form .ds-input', '.mm2-panel .ds-input', '.mm2-panel .ds-textarea',
+    const sels = ['.mm2-add-form .ds-input', '.mm2-panel .ds-input', '.mm2-panel .ds-textarea',
       '.mm2-panel select.ds-input', '.ds-input.mm2-add-emoji', '.ds-input.mm2-lane-input'];
     for (const sel of sels) expect(values(modemap, PHONE, sel, 'font-size'), sel).toEqual(['16px']);
-    expect(values(modemap, null, '.mm2-pal-search .ds-input', 'font-size')).toEqual(['12.5px']);
     expect(values(modemap, null, '.mm2-panel .ds-input', 'font-size')).toEqual(['13px']);
   });
 });

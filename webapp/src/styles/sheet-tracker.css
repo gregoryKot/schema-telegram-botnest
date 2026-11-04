@@ -17,7 +17,7 @@
 .tk2-aside-unit { font-size: 14px; color: var(--text-faint); }
 .tk2-note { padding: 10px 12px; border-radius: 10px; font-size: 12px; line-height: 1.5; }
 .tk2-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
-.tk2-bars { display: flex; gap: 3px; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line); }
+.tk2-bars { display: flex; gap: 3px; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--paper-sunk); }
 .tk2-bars > i { flex: 1; height: 4px; border-radius: 2px; background: var(--paper-sunk); }
 .tk2-bars > i.is-on { background: oklch(0.58 0.12 var(--h)); }
 .tk2-trend { font: 400 32px/1.1 var(--serif); letter-spacing: -0.01em; margin: 4px 0 2px; }
@@ -30,7 +30,7 @@
 .tk2-dot-pt { fill: oklch(0.58 0.12 var(--h)); }
 .tk2-ref { stroke: oklch(0.58 0.12 var(--h)); stroke-opacity: .45; stroke-dasharray: 4 3; }
 .tk2-ref-t { font-size: 8px; fill: oklch(0.58 0.12 var(--h)); fill-opacity: .7; }
-.tk2-child { padding-top: 14px; border-top: 1px solid var(--line); }
+.tk2-child { padding-top: 14px; border-top: 1px solid var(--paper-sunk); }
 .tk2-help { margin-left: -8px; vertical-align: middle; display: inline-flex; }
 .tk2-help-in {
   display: inline-flex; align-items: center; justify-content: center; border-radius: 50%;

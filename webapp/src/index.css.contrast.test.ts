@@ -168,3 +168,25 @@ describe('a11y: .landing-personal-brand — текст на залитом --acc
     expect(contrastRatio(ink.rgb, fill.rgb)).toBeGreaterThanOrEqual(4.5);
   });
 });
+
+// Опасные действия (ds-link--danger, ds-list-row--danger, ds-menu-item.is-danger)
+// красятся --accent-red: у него есть тёмный вариант. Страницы вне AppShell
+// (/account) бывают в тёмной теме, а --err определён только в светлой: на тёмных
+// --bg/--surface он давал 3.11:1 и 2.84:1.
+describe('a11y: красный текст опасных действий на --bg и --surface ≥4.5:1 в обеих темах', () => {
+  it.each([
+    ['light', LIGHT],
+    ['dark', DARK],
+  ] as const)('--accent-red на --bg и --surface — тема %s', (_label, block) => {
+    const fg = parseColor(resolveToken(block, '--accent-red'));
+    for (const bgToken of ['--bg', '--surface']) {
+      const bg = parseColor(resolveToken(block, bgToken));
+      expect(contrastRatio(fg.rgb, bg.rgb), bgToken).toBeGreaterThanOrEqual(4.5);
+    }
+  });
+  it('опасные правила cabinet.css не берут --err (нет тёмного варианта)', () => {
+    const cabinet = readFileSync(join(__dirname, 'styles', 'cabinet.css'), 'utf8');
+    const bad = [...cabinet.matchAll(/([^{}]*danger[^{}]*)\{([^{}]*)\}/g)].filter((m) => /var\(--err\)/.test(m[2])).map((m) => m[1].trim());
+    expect(bad).toEqual([]);
+  });
+});

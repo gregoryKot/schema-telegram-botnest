@@ -1,6 +1,7 @@
 import { ExScreen } from '../exercises/ExScreen';
 import { CaseChipGrid } from './CaseChipGrid';
 import { CaseFlowFoot } from './caseFlowUi';
+import { hueStyle } from '../../lib/tone';
 import { FEEL_GATES } from '../../../../shared/src/mode/modeFeelGates';
 import type { CaseChip } from '../../../../shared/src/case/caseBodyChips';
 import type { CaseGateId } from '../../../../shared/src/case/caseTypes';
@@ -44,15 +45,13 @@ export function CaseFeelStep({
       title="Что внутри?"
       lede="Тело замечает раньше головы."
     >
-      <div className="ex2-chips" role="group" aria-label="Что внутри">
+      <div className="ex2-chips" style={hueStyle(undefined)} role="group" aria-label="Что внутри">
         {FEEL_GATES.map((g) => (
           <button
             key={g.id}
             type="button"
             aria-pressed={gateId === g.id}
-            className={
-              'ds-chip ex2-chip' + (gateId === g.id ? ' is-selected' : '')
-            }
+            className={'ds-chip ds-chip--toggle' + (gateId === g.id ? ' is-on' : '')}
             onClick={() => onGate(g.id as CaseGateId)}
           >
             {g.title}

@@ -9,7 +9,7 @@ import { pressable } from '../utils/a11y';
 import { useDialogA11y } from '../../../shared/src/utils/dialogA11y';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import type { Section } from './appShell/navigation';
-import '../styles/sheet-tasks.css';
+import '../styles/command-palette.css';
 
 
 interface Props {
@@ -135,7 +135,7 @@ export function CommandPalette({ onNavigate, onClose, userRole, therapistMode, o
   }, [rows, sel, goBack]);
 
   return (
-    <div className="sk-cmd-bg" onClick={goBack} role="button" tabIndex={0} aria-label="Закрыть"
+    <div className="cmd-backdrop" onClick={goBack} role="button" tabIndex={0} aria-label="Закрыть"
       onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); goBack(); } }}>
       {/* onClick/onKeyDown — stopPropagation: клик или Enter/Space (печатая в
           поиске) не должны всплыть до бэкдропа и закрыть палитру. role="dialog"
@@ -143,12 +143,12 @@ export function CommandPalette({ onNavigate, onClose, userRole, therapistMode, o
       {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions */}
       <div
         {...dialogA11y}
-        className="ds-card ds-card--flush sk-cmd-panel"
+        className="ds-card ds-card--flush cmd-panel"
         onClick={e => e.stopPropagation()}
         onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); } }}
       >
-        <div className="sk-cmd-search">
-          <svg viewBox="0 0 24 24" width={16} height={16} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="sk-cmd-ic">
+        <div className="cmd-search">
+          <svg viewBox="0 0 24 24" width={16} height={16} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="cmd-icon">
             <path d="M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16zM21 21l-4.35-4.35" />
           </svg>
           <input
@@ -158,24 +158,23 @@ export function CommandPalette({ onNavigate, onClose, userRole, therapistMode, o
             onChange={e => setQ(e.target.value)}
             placeholder="Найти клиента, страницу или действие…"
           />
-          <span className="kbd">Esc</span>
         </div>
-        <div className="sk-cmd-list">
-          {rows.length === 0 && <p className="ds-empty sk-cmd-empty">Ничего не найдено</p>}
+        <div className="cmd-list">
+          {rows.length === 0 && <p className="ds-empty cmd-empty">Ничего не найдено</p>}
           {rows.map((row, i) => (
             <div
               key={i}
-              className={`ds-list-row ds-list-row--hover sk-cmd-row${i === sel ? ' is-sel' : ''}`}
+              className={`ds-list-row ds-list-row--hover cmd-row${i === sel ? ' is-sel' : ''}`}
               onMouseEnter={() => setSel(i)}
               {...pressable(() => goBack(row.action))}
             >
-              <span className="sk-cmd-ic">
+              <span className="cmd-icon">
                 {row.type === 'client' ? <IconPerson /> : row.type === 'nav' ? <IconArrow /> : <IconBolt />}
               </span>
-              <span className="sk-cmd-main">
-                <span className="sk-cmd-label">{row.label}</span>
+              <span className="cmd-main">
+                <span className="cmd-label">{row.label}</span>
                 {row.sub && (
-                  <span className={'sk-cmd-sub' + (row.activeToday ? ' is-ok' : '')}>
+                  <span className={'ds-sub cmd-sub' + (row.activeToday ? ' is-ok' : '')}>
                     {row.sub}
                   </span>
                 )}
