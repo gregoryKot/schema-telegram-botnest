@@ -778,6 +778,15 @@ a { color: inherit; text-decoration: none; }
 .animate-slide { animation: slide-up .22s ease backwards; }
 
 /* ─── Cookie consent banner – editorial: сплошная бумага, тонкая рамка ───── */
+.cookie-banner-wrap {
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 9999;
+  padding: 0 16px calc(20px + var(--safe-bottom)); pointer-events: none;
+}
+/* На странице с нижней навигацией баннер стоит НАД ней, а не закрывает её
+   пункты (QA 2026-11, C-З1: центры «Сегодня/Записи/Ещё» попадали в баннер). */
+@media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
+  body:has(.mobile-nav) .cookie-banner-wrap { bottom: calc(var(--mobile-nav-h) + var(--safe-bottom)); padding-bottom: var(--space-12); }
+}
 .cookie-banner {
   background: var(--bg-elev);
   border: 1px solid var(--line-strong);
