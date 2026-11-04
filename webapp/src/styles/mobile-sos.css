@@ -1,7 +1,7 @@
 /* Плавающая «Мне плохо» на телефоне (components/appShell/MobileSosButton.tsx).
    Выше нижней панели, правый край; на десктопе есть .topbar-sos. */
 .mobile-sos { display: none; }
-@media (max-width: 767px) {
+@media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
   .mobile-sos {
     display: inline-flex; align-items: center; justify-content: center;
     position: fixed; right: 12px; z-index: 48;
