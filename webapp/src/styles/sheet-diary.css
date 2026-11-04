@@ -174,3 +174,10 @@
 .sd-hero-num { font-size: 56px; margin-top: 8px; }
 .sd-hero-text { margin: 12px 0 0; font-size: 14px; line-height: 1.6; max-width: 460px; }
 .sd-hero-link { margin-top: 12px; min-height: 44px; font-size: 14px; }
+
+/* Компьютер: пустой дневник — блок до 640 по центру, текст по центру (до #907). */
+@media (min-width: 768px) {
+  .sd-explainer-stack { width: 100%; max-width: 640px; margin: 0 auto; text-align: center; }
+  .sd-explainer-stack .ds-list-title { font: italic 400 24px/1.25 var(--serif); }
+  .sd-explainer-stack .ds-empty { text-align: center; }
+}

@@ -116,3 +116,32 @@ describe('therapist-card.css: имя, заметка, действия сайд�
     expect(decls(block(css, '@media (max-width: 1023px)'), '.tk-side .tk-quick')).toBe('');
   });
 });
+
+// Регрессия 2026-11-04: «сайт выглядел как компьютерная версия, а стал как
+// мобильник». «Обзор» на ≥768 возвращает раскладку макета; строки в одной
+// карточке и 15px — только телефон.
+describe('therapist-card.css: «Обзор» — компьютер и телефон (регрессия 2026-11-04)', () => {
+  const desk = block(css, '@media (min-width: 768px) {\n  .tk-goal');
+
+  it('на ≥768: цель — 24px с засечками, схемы — плитки до 3 в ряд, режимы — колонки с верхней чертой', () => {
+    expect(decls(desk, '.tk-goal .tk-text')).toMatch(/24px\/1\.4 var\(--serif\)/);
+    expect(decls(desk, '.tk-groups')).toContain('display: grid');
+    expect(decls(desk, '.tk-groups--tiles')).toContain('/ 3)');
+    expect(decls(desk, '.tk-groups--cols')).toContain('/ 3)');
+    expect(decls(desk, '.tk-groups--cols .tk-group')).toContain('border-top: 3px solid');
+  });
+
+  it('сплошных заливок нет: плитка — тонкая подложка и рамка, не tone-fill/tone-soft', () => {
+    expect(css).not.toMatch(/tone-soft|tone-fill/);
+    expect(decls(desk, '.tk-groups--tiles .tk-group')).toContain('border: 1px solid');
+  });
+
+  it('сетка групп и крупная цель объявлены только под ≥768; в базе и на телефоне — строки и 15px', () => {
+    const outside = css.replace(desk, '');
+    expect(outside).not.toMatch(/\.tk-groups--|grid-template-columns: repeat\(auto-fill/);
+    expect(decls(outside, '.tk-groups')).toContain('flex-direction: column');
+    expect(decls(outside, '.tk-text')).toContain('15px');
+    expect(decls(phone, '.tk-goal .tk-text')).toBe('');
+    expect(decls(phone, '.tk-groups')).toBe('');
+  });
+});

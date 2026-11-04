@@ -266,23 +266,27 @@ describe('ширина под схему', () => {
   });
 });
 
-// #906: заголовка у вкладки нет ни на одном экране — имя уже во вкладке шапки
-// (решение #902 для телефона распространено на все); кнопка меню — круглая «⋯»
-// (ds-btn--icon: 40, на телефоне 44) с aria-label, без слова «Ещё». Верхний
-// отступ — как у ds-page: класс tcp-page (40 на ноутбуке, 20 на телефоне из
-// .page-inner-wide), а не u-pt40, который держал 40 и на телефоне.
-describe('шапка без заголовка, «⋯» — иконочная кнопка (#906)', () => {
-  it('h2 «Концептуализация» не рендерится, кнопка меню — ds-btn--icon без слова «Ещё»', async () => {
+// Шапка вкладки: заголовок, подпись и слово «Ещё» есть в разметке и показываются
+// на компьютере (≥768); на телефоне (#906) их прячет CSS под @media (max-width:
+// 767px) — разметка общая, useIsMobile не нужен. Верхний отступ — класс tcp-page
+// (40 на ноутбуке, 20 на телефоне из .page-inner-wide), а не u-pt40.
+describe('шапка: компьютер с заголовком, телефон без (#906)', () => {
+  it('h2 «Концептуализация» и слово «Ещё» в разметке; прячутся только под ≤767, показ на ≥768', async () => {
     await openTab();
-    expect(root().querySelector('h2')).toBeNull();
-    expect(root().querySelector('.tcp-head-title')).toBeNull();
-    expect(screen.queryByText('Концептуализация')).toBeNull();
+    expect(root().querySelector('.tcp-head-title h2')?.textContent).toBe('Концептуализация');
+    expect(root().querySelector('.tcp-head-title .ds-sub')?.textContent).toMatch(/Схема-карта/);
     expect(more().classList.contains('ds-btn--icon')).toBe(true);
-    expect(more().textContent?.trim()).toBe('⋯');
+    expect(more().textContent?.replace(/\s/g, '')).toBe('⋯Ещё');
     expect(root().classList.contains('tcp-page')).toBe(true);
     expect(root().classList.contains('u-pt40')).toBe(false);
-    const css = readFileSync(join(__dirname, '../../styles/therapist-concept.css'), 'utf8');
-    expect(css).not.toMatch(/\.tcp-head-title|\.tcp-more-btn|\.tcp-more-txt/);
+    const css = readFileSync(join(__dirname, '../../styles/therapist-concept.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+    const phone = css.slice(css.indexOf('@media (max-width: 767px) {\n  .tcp-head'));
+    expect(phone).toMatch(/\.tcp-head-title, \.tcp-more-txt \{ display: none; \}/);
+    // вне телефонного блока скрытия нет
+    expect(css.replace(phone.slice(0, phone.indexOf('\n}\n') + 3), '')).not.toMatch(/\.tcp-(head-title|more-txt)[^{]*\{[^}]*display: none/);
+    expect(css).toMatch(/@media \(min-width: 768px\) \{\s*\.tcp-save \{ order: 1[^}]*\}[\s\S]*?\.tcp-more \.ds-btn--icon \{[^}]*width: auto/);
+    // раскрывашка «Как читать схему» на компьютере — по содержимому, не полоса
+    expect(css).toMatch(/@media \(min-width: 768px\) \{\s*\.tcp-graph \[data-export-skip\] > \.ds-fold \{ width: fit-content/);
     expect(css).toMatch(/\.tcp-page \{[^}]*padding-top: 40px/);
   });
 

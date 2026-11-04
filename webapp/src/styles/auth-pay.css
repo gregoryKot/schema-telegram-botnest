@@ -4,6 +4,7 @@
    ds-h1 + ds-sub слева, страница прижата к верху, кнопки — ds-btn (#906).
    Суммы доната — ds-seg, поля доната — ds-input (#906); поле email — ds-input--on-panel. */
 .ap-page {
+  --sheet-col: 640px; --sheet-pad: clamp(20px, 4vw, 56px);
   flex: 1; width: 100%; box-sizing: border-box; min-height: 100dvh; display: flex; flex-direction: column;
   background: var(--bg); color: var(--text); font-family: var(--sans);
 }
@@ -84,4 +85,24 @@
   .ap-consent { font-size: 12px; }
   .ap-cta { margin-top: auto; }
   .ap-donate { padding: 20px 16px; gap: 14px; }
+}
+
+/* ── Компьютер ───────────────────────────────────────────────────────────
+   Страницы по центру, как до #906: служебные состояния подписки — блок 400, донат — карточка 560,
+   форма подписки — сплит на весь экран. Телефон (≤767) выше не затронут. */
+.ap-page--state { --sheet-col: 400px; --sheet-pad: 0px; }
+.ap-page--donate { --sheet-col: 560px; --sheet-pad: 0px; }
+.ap-page--form { --sheet-col: 100%; --sheet-pad: 56px; }
+@media (min-width: 768px) {
+  .ds-page.ap-main--state { max-width: 400px; margin: auto; align-items: center; text-align: center; }
+  .ap-main--state .ap-hero { align-items: center; }
+  .ap-main--state .ap-lead { margin-left: auto; margin-right: auto; }
+  .ap-main--state .ds-btn--lg, .ap-donate .ds-btn--lg, .ap-pay .ds-btn--lg { width: 100%; }
+  .ap-page--donate .ds-page.ap-main {
+    max-width: 560px; margin: auto; padding: 32px; border-radius: 28px;
+    background: var(--surface); border: 1px solid var(--line);
+  }
+  .ap-page--donate .ap-donate { max-width: none; padding: 0; border: none; border-radius: 0; background: none; }
+  .ap-page--donate .ap-seg { display: flex; }
+  .ap-page--donate .ap-fine { text-align: center; }
 }

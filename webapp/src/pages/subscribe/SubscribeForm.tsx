@@ -22,8 +22,8 @@ export function SubscribeForm(p: Props) {
   const discount = yearDiscountPercent(p.opts);
   const blocked = p.status === 'loading' || !price || !p.consent;
   return (
-    <div className="light-lock ap-page">
-      <div className="ds-sheet-head"><a href="/" className="ds-back">← На главную</a></div>
+    <div className="light-lock ap-page ap-page--form">
+      <div className="ds-sheet-head ds-sheet-head--page"><a href="/" className="ds-back">← На главную</a></div>
       <div className="ap-split">
         <section className="ap-info">
           <div className="ds-eyebrow">Подписка</div>

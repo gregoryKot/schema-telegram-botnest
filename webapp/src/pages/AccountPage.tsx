@@ -30,7 +30,7 @@ export function AccountPage() {
 
   return (
     <div className="aa-root light-lock">
-      <div className="ds-sheet-head">
+      <div className="ds-sheet-head ds-sheet-head--page">
         <button type="button" className="ds-back" onClick={() => navigate(accountBackPathFromStorage())}>← Назад</button>
       </div>
       <div className="aa-page">
