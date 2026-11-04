@@ -13,7 +13,7 @@
 .mm2-tb-sep { width: 1px; background: var(--line); margin: 4px 2px; }
 .mm2-tip {
   position: absolute; top: 42px; left: 50%; transform: translateX(-50%); z-index: 40;
-  background: var(--ink); color: var(--on-ink); font-size: 11px; padding: 3px 8px; border-radius: 6px;
+  background: var(--text); color: var(--bg); font-size: 11px; padding: 3px 8px; border-radius: 6px;
   white-space: nowrap; pointer-events: none;
 }
 .mm2-drop-head { padding: 6px 10px 4px; }
@@ -98,7 +98,7 @@
 .mm2-panel select.ds-input { cursor: pointer; }
 .mm2-seg { margin-bottom: 14px; }
 .mm2-seg .ds-seg-btn.is-icon { display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 9px; padding: 7px 2px; border-radius: 14px; }
-.mm2-seg .ds-seg-btn.is-icon.is-active i { background: var(--on-ink); }
+.mm2-seg .ds-seg-btn.is-icon.is-active i { background: var(--text); }
 .mm2-seg .ds-seg-btn i { display: block; width: 26px; border-radius: 4px; background: var(--text-sub); }
 .mm2-shape-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-bottom: 14px; }
 .mm2-shape-grid .mm2-pick { height: 50px; }

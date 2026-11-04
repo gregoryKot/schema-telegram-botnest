@@ -44,13 +44,13 @@ describe('«Поля» без цветных плиток', () => {
     cleanup();
   });
 
-  it('режимы — без .ds-card--ink, у узла цепочки есть ds-dot', () => {
+  it('режимы — без .ds-card--panel, у узла цепочки есть ds-dot', () => {
     const { container } = render(
       <ConceptModeIdsContext.Provider value={['angry_child', 'detached_protector']}>
         <ConceptModes {...props} />
       </ConceptModeIdsContext.Provider>,
     );
-    expect(container.querySelector('.ds-card--ink')).toBeNull();
+    expect(container.querySelector('.ds-card--panel')).toBeNull();
     expect(container.querySelector('.tcp-node .ds-dot')).not.toBeNull();
     cleanup();
   });

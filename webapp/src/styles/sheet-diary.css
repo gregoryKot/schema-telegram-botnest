@@ -11,12 +11,12 @@
   background: var(--surface); color: var(--text); font-family: inherit; cursor: pointer;
   display: flex; flex-direction: column; align-items: center; gap: 3px;
 }
-.sd-day.is-active { background: var(--ink); border-color: var(--ink); color: var(--on-ink); }
+.sd-day.is-active { background: var(--accent-soft); border-color: var(--accent); color: var(--accent-hi); }
 .sd-day-dow { font-size: 10px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: var(--text-faint); }
-.sd-day.is-active .sd-day-dow { color: var(--on-ink-sub); }
+.sd-day.is-active .sd-day-dow { color: var(--accent); }
 .sd-day-num { font-family: var(--serif); font-size: 18px; line-height: 1; }
 .sd-day-bar { width: 22px; height: 3px; border-radius: 2px; background: var(--paper-sunk); overflow: hidden; display: block; }
-.sd-day.is-active .sd-day-bar { background: var(--ink-3); }
+.sd-day.is-active .sd-day-bar { background: var(--accent-line); }
 .sd-day-bar > i { display: block; height: 100%; border-radius: 2px; background: var(--line); }
 .sd-day-bar > i.is-ok { background: var(--ok); }
 .sd-day-bar > i.is-warn { background: var(--warn); }
@@ -120,7 +120,7 @@
 .sd-mode-card.is-selected .sd-mode-check { opacity: 1; }
 .sd-done { margin: 0 0 16px; }
 .sd-done:empty { display: none; }
-.sd-done .sd-share-note { color: var(--on-ink-sub); }
+.sd-done .sd-share-note { color: var(--on-panel-sub); }
 .sd-done-btn { margin-top: 16px; }
 .sd-share { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
 .sd-share-full { display: flex; flex-direction: column; gap: 4px; align-items: flex-start; }

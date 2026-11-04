@@ -63,7 +63,7 @@ export function TherapistRequestSection({ accessToken }: { accessToken: string |
   };
 
   return (
-    <div className="ds-card ds-card--ink aa-role">
+    <div className="ds-card ds-card--panel aa-role">
       <div className="aa-role-label">Роль психолога</div>
       <TherapistRequestRejectedNote request={req} className="aa-role-note" />
       {req?.status === 'pending' ? (

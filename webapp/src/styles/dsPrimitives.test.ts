@@ -186,9 +186,9 @@ describe('cabinet.css: поправки координатора волны 1 (#
     expect(av).not.toMatch(/#fff/i);
     expect(css).not.toContain('.ds-avatar.tone-tint');
   });
-  it('на акцентной карточке подпись, подпись-строка и ссылка — светлые токеном --on-ink', () => {
+  it('на акцентной карточке подпись, подпись-строка и ссылка — светлые токеном --on-accent', () => {
     for (const sel of ['.ds-card--accent .ds-label', '.ds-card--accent .ds-sub', '.ds-card--accent .ds-link']) {
-      expect(decls(top, sel), sel).toContain('color: var(--on-ink)');
+      expect(decls(top, sel), sel).toContain('color: var(--on-accent)');
     }
   });
 });
@@ -242,7 +242,7 @@ describe('cabinet.css: примитивы волны 2 (#906)', () => {
   it('карточки: --nav раньше цветных модификаторов, --crisis без --err', () => {
     const nav = top.indexOf('.ds-card--nav {');
     expect(nav).toBeGreaterThan(-1);
-    expect(nav).toBeLessThan(top.indexOf('.ds-card--ink'));
+    expect(nav).toBeLessThan(top.indexOf('.ds-card--panel'));
     expect(nav).toBeLessThan(top.indexOf('.ds-card--accent'));
     const crisis = decls(top, '.ds-card--crisis');
     expect(crisis).toContain('--h: 28');
@@ -262,7 +262,7 @@ describe('cabinet.css: примитивы волны 2 (#906)', () => {
 });
 
 describe('cabinet.css: примитивы волны 3 (#906)', () => {
-  const WAVE3 = ['.ds-link--danger', '.ds-input--on-ink', '.ds-menu', '.ds-menu-item', '.ds-backdrop'];
+  const WAVE3 = ['.ds-link--danger', '.ds-input--on-panel', '.ds-menu', '.ds-menu-item', '.ds-backdrop'];
   it.each(WAVE3)('%s объявлен один раз вне медиа и красится токенами', (cls) => {
     expect(declaredTimes(cls)).toBe(1);
     expect(decls(css, cls)).not.toMatch(/#[0-9a-f]{3,8}\b|rgba?\(/i);
@@ -285,11 +285,11 @@ describe('cabinet.css: примитивы волны 3 (#906)', () => {
     expect(decls(top, '.ds-link--danger:hover')).toContain('color: var(--accent-red)');
     expect(decls(top, '.ds-list-row--danger .ds-list-title')).toContain('color: var(--accent-red)');
   });
-  it('поле на тёмной панели: токены ink, объявлено после .ds-input:focus', () => {
-    const f = decls(top, '.ds-input--on-ink');
-    expect(f).toContain('background: var(--ink-2)');
-    expect(f).toContain('border-color: var(--ink-line)');
-    expect(f).toContain('color: var(--on-ink)');
-    expect(top.indexOf('.ds-input--on-ink {')).toBeGreaterThan(top.indexOf('.ds-input:focus'));
+  it('поле на песочной панели: белая бумага с контуром --panel-line, объявлено после .ds-input:focus', () => {
+    const f = decls(top, '.ds-input--on-panel');
+    expect(f).toContain('background: var(--surface)');
+    expect(f).toContain('border-color: var(--panel-line)');
+    expect(f).toContain('color: var(--text)');
+    expect(top.indexOf('.ds-input--on-panel {')).toBeGreaterThan(top.indexOf('.ds-input:focus'));
   });
 });

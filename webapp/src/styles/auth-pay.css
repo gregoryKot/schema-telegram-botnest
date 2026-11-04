@@ -2,7 +2,7 @@
    Страницы живут вне AppShell (и на визитке практики): корень сам красит экран.
    Шапка «← На главную» — общая .ds-sheet-head/.ds-back, заголовок — ds-eyebrow +
    ds-h1 + ds-sub слева, страница прижата к верху, кнопки — ds-btn (#906).
-   Суммы доната — ds-seg, поля доната — ds-input (#906); поле email — ds-input--on-ink. */
+   Суммы доната — ds-seg, поля доната — ds-input (#906); поле email — ds-input--on-panel. */
 .ap-page {
   flex: 1; width: 100%; box-sizing: border-box; min-height: 100dvh; display: flex; flex-direction: column;
   background: var(--bg); color: var(--text); font-family: var(--sans);
@@ -28,40 +28,40 @@
 .ap-checks span { color: var(--ok); font-weight: 700; }
 
 .ap-pay {
-  background: var(--ink); color: var(--on-ink); padding: 56px; box-sizing: border-box; min-width: 0;
+  background: var(--panel); color: var(--on-panel); padding: 56px; box-sizing: border-box; min-width: 0;
   display: flex; flex-direction: column; justify-content: center; gap: 14px;
 }
 .ap-plans { display: flex; flex-direction: column; gap: 14px; }
 .ap-plan {
   position: relative; display: block; box-sizing: border-box; cursor: pointer;
-  padding: 20px 22px; border-radius: 18px; border: 2px solid var(--ink-line); background: var(--ink-2); color: var(--on-ink);
+  padding: 20px 22px; border-radius: 18px; border: 2px solid var(--panel-line); background: var(--panel-2); color: var(--on-panel);
 }
-.ap-plan.is-on { background: var(--on-ink); color: var(--ink); border-color: var(--accent-hot); }
-.ap-plan:focus-within { outline: 2px solid var(--on-ink-sub); outline-offset: 2px; }
+.ap-plan.is-on { background: var(--surface); color: var(--text); border-color: var(--accent); }
+.ap-plan:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
 .ap-plan-top { display: flex; justify-content: space-between; align-items: center; }
 .ap-plan-name { font-size: 16px; font-weight: 700; }
-.ap-radio { width: 22px; height: 22px; border-radius: 50%; box-sizing: border-box; border: 2px solid var(--on-ink-faint); }
-.ap-plan.is-on .ap-radio { border-color: var(--accent-hot); background: var(--accent-hot); box-shadow: inset 0 0 0 4px var(--on-ink); }
+.ap-radio { width: 22px; height: 22px; border-radius: 50%; box-sizing: border-box; border: 2px solid var(--on-panel-faint); }
+.ap-plan.is-on .ap-radio { border-color: var(--accent-hot); background: var(--accent-hot); box-shadow: inset 0 0 0 4px var(--surface); }
 .ap-plan-bottom { display: flex; align-items: baseline; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
 .ap-plan-price { font-family: var(--serif); font-size: 44px; line-height: 1; }
 .ap-plan-per { font-size: 14px; opacity: .7; }
 .ap-badge { margin-left: auto; font-size: 12px; font-weight: 700; background: var(--accent-hot); color: #fff; border-radius: 10px; padding: 3px 9px; white-space: nowrap; }
 
-.ap-consent { position: relative; display: flex; gap: 10px; align-items: flex-start; font-size: 13px; line-height: 1.5; color: var(--on-ink-sub); cursor: pointer; min-height: 44px; margin-top: 6px; }
+.ap-consent { position: relative; display: flex; gap: 10px; align-items: flex-start; font-size: 13px; line-height: 1.5; color: var(--on-panel-sub); cursor: pointer; min-height: 44px; margin-top: 6px; }
 .ap-box {
-  width: 22px; height: 22px; border-radius: 6px; flex-shrink: 0; box-sizing: border-box; border: 2px solid var(--on-ink-faint);
+  width: 22px; height: 22px; border-radius: 6px; flex-shrink: 0; box-sizing: border-box; border: 2px solid var(--on-panel-faint);
   display: flex; align-items: center; justify-content: center; color: #fff; font-size: 12px;
 }
 .ap-native:checked + .ap-box { background: var(--accent-hot); border-color: var(--accent-hot); }
-.ap-native:focus-visible + .ap-box { outline: 2px solid var(--on-ink-sub); outline-offset: 2px; }
-.ap-err--ink { color: var(--on-ink); background: var(--ink-2); border-radius: 12px; padding: 10px 14px; }
+.ap-native:focus-visible + .ap-box { outline: 2px solid var(--on-panel-sub); outline-offset: 2px; }
+.ap-err--panel { color: var(--on-panel); background: var(--panel-2); border-radius: 12px; padding: 10px 14px; }
 
-/* CTA — ds-btn--accent ds-btn--lg; неактивная кнопка на тёмной панели — --ink-3
+/* CTA — ds-btn--accent ds-btn--lg; неактивная кнопка на панели — --panel-3
    (REDESIGN_2026-10, «Подписка»), а не полупрозрачный акцент. */
 .ap-cta { margin-top: 4px; }
-.ap-pay .ds-btn:disabled, .ap-pay .ds-btn:disabled:hover { background: var(--ink-3); color: var(--on-ink-faint); opacity: 1; }
-.ap-alt { margin: 0; font-size: 13px; color: var(--on-ink-faint); }
-.ap-alt a { color: var(--on-ink-sub); display: inline-block; padding: 12px 4px; }
+.ap-pay .ds-btn:disabled, .ap-pay .ds-btn:disabled:hover { background: var(--panel-3); color: var(--on-panel-faint); opacity: 1; }
+.ap-alt { margin: 0; font-size: 13px; color: var(--on-panel-faint); }
+.ap-alt a { color: var(--on-panel-sub); display: inline-block; padding: 12px 4px; }
 
 /* ── Донат ───────────────────────────────────────────────────────────────── */
 /* Единственная модальная карточка r28 по документу; остальные радиусы — шкала ds-*. */

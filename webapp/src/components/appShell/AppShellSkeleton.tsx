@@ -7,7 +7,7 @@ import type { Section } from './navigation';
 // без сайдбара, и человек 2–3 секунды не видел, куда попал. Примитивы — общий
 // Skeleton.tsx (правило «скелетоны по форме контента»).
 
-const SIDEBAR_BAR = { background: 'var(--ink-2)' };
+const SIDEBAR_BAR = { background: 'var(--panel-2)' };
 // Раскладка «Сегодня» (client-today.css: колонка 600px, шапка, плитки 124px; ритм —
 // от ds-page) инлайном: стили раздела приезжают с ленивым чанком, а силуэт нужен до него.
 const COLUMN = { display: 'flex', flexDirection: 'column' } as const;

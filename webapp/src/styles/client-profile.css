@@ -87,12 +87,12 @@
 .cpf-help-dot { display: flex; align-items: center; justify-content: center; border-radius: 50%; background: var(--paper-sunk); color: var(--text-sub); font-size: 11px; font-weight: 600; }
 
 .cpf-therapist { display: flex; flex-direction: row; gap: 18px; align-items: center; flex-wrap: wrap; border-radius: 20px; padding: 22px 24px; }
-.cpf-therapist-ava { width: 48px; height: 48px; border-radius: 50%; background: var(--on-ink); color: var(--ink); font-weight: 700; font-size: 18px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.cpf-therapist-ava { width: 48px; height: 48px; border-radius: 50%; background: var(--accent-soft); color: var(--accent-hi); font-weight: 700; font-size: 18px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .cpf-therapist-body { flex: 1; min-width: 160px; }
-.cpf-therapist-label { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--on-ink-faint); }
-.cpf-therapist-body .ds-label { color: var(--on-ink-faint); }
+.cpf-therapist-label { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--on-panel-faint); }
+.cpf-therapist-body .ds-label { color: var(--on-panel-faint); }
 .cpf-therapist-name { font-family: var(--serif); font-size: 22px; margin-top: 2px; }
-.cpf-therapist-next { display: flex; flex-direction: column; gap: 2px; font-size: 14px; color: var(--on-ink-sub); }
+.cpf-therapist-next { display: flex; flex-direction: column; gap: 2px; font-size: 14px; color: var(--on-panel-sub); }
 /* Бывший терапевт (FormerTherapistNote): сообщение вместо карточки «Терапевт». */
 .cpf-former { padding: 22px 24px; border-radius: 20px; }
 
