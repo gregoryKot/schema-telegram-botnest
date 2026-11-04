@@ -4,17 +4,17 @@ import type { UserTask } from '../../api';
 import { resolveTaskDisplayText } from '../../../../shared/src/tasks/taskTitle';
 import { TaskRow } from './TaskRow';
 
-export function AllGoalsOverlay({ tasks, taskHistory, onClose, onOpen, onComplete, onAdd }: {
+export function AllGoalsOverlay({ tasks, taskHistory, onClose, onOpen, onComplete, onAdd, compact }: {
   tasks: UserTask[]; taskHistory: UserTask[];
   onClose: () => void; onOpen: (t: UserTask) => void;
-  onComplete: (t: UserTask) => void | Promise<unknown>; onAdd: () => void;
+  onComplete: (t: UserTask) => void | Promise<unknown>; onAdd: () => void; compact?: boolean;
 }) {
   const goBack = useHistorySheet(onClose);
   return (
     <OverlayFrame title="Все цели" onBack={goBack}>
       <div className="sk-list">
         {tasks.map(t => (
-          <TaskRow key={t.id} task={t} mark={t.assignedBy !== null} cta="открыть →"
+          <TaskRow key={t.id} task={t} mark={t.assignedBy !== null} cta="открыть →" compact={compact}
             onOpen={() => onOpen(t)} onComplete={() => onComplete(t)} />
         ))}
       </div>

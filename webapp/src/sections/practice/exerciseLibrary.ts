@@ -16,15 +16,6 @@ export const EXERCISES: { id: ExId; num: string; eyebrow: string; title: string;
   { id: 'phrase', num: '08', eyebrow: 'Внутренний голос',      title: 'Критик или забота?',         desc: 'Разобрать фразу внутреннего голоса по девяти приметам, переписать её.', time: '6–10 мин' },
 ];
 
-/** Небольшая палитра оттенков библиотеки (hue из гаммы кабинета). */
-export const LIBRARY_HUES = [28, 70, 135, 240, 310, 190] as const;
-
-/** Оттенок карточки по порядку в библиотеке: палитра по кругу, без выдуманных данных. */
-export function exerciseHue(index: number): number {
-  const n = LIBRARY_HUES.length;
-  return LIBRARY_HUES[((index % n) + n) % n];
-}
-
 export function fmtCount(n: number): string {
   if (n === 1) return `1 запись`;
   if (n < 5) return `${n} записи`;

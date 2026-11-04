@@ -82,8 +82,6 @@
 .ex2-group-h { margin: 24px 0 10px; }
 .ex2-picklist { display: flex; flex-direction: column; gap: 8px; }
 .ex2-pick { display: grid; grid-template-columns: 10px minmax(0, 1fr) auto; gap: 16px; align-items: center; min-height: 44px; }
-.ex2-pick-name { font-family: var(--serif); font-size: 20px; line-height: 1.2; color: var(--text); margin-bottom: 2px; }
-.ex2-pick-arrow { font-size: 22px; color: var(--text-ghost); }
 
 /* ── Карточка-вопрос (FlashcardEx) ────────────────────────────────────── */
 .ex2-ticks { display: flex; gap: 6px; margin-bottom: 20px; }
@@ -183,12 +181,6 @@
 
 /* ── Разбор случая ────────────────────────────────────────────────────── */
 .ex2-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
-.ex2-chip {
-  min-height: 44px; padding: 8px 16px; border: 1px solid var(--line-strong); background: var(--surface);
-  color: var(--text-sub); font: 500 13.5px var(--sans); cursor: pointer; border-radius: 12px;
-}
-.ex2-chip:hover { border-color: var(--text-faint); color: var(--text); }
-.ex2-chip.is-selected { background: var(--ink); border-color: var(--ink); color: var(--on-ink); }
 .ex2-support { margin-top: 20px; }
 .ex2-link-row { display: block; min-height: 44px; padding: 12px 0; text-align: left; }
 
@@ -200,7 +192,6 @@
 .ex2-portrait-cta { margin-top: 22px; width: 100%; min-height: 48px; }
 
 /* ── Тёплые слова ─────────────────────────────────────────────────────── */
-.ex2-empty.ds-card { text-align: center; padding: 20px 16px; font-size: 14px; line-height: 1.6; color: var(--text-sub); }
 .ex2-count.ds-sub { margin-bottom: 14px; }
 .ex2-warm-head { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
 .ex2-warm-mode { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; }

@@ -13,7 +13,7 @@
 .aa-col { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
 .aa-card { padding: 8px 22px; }
 .aa-card-head { display: flex; align-items: baseline; gap: 8px; padding: 14px 0 8px; }
-.aa-methods > * + * { border-top: 1px solid var(--paper-tint); }
+.aa-methods > * + * { border-top: 1px solid var(--paper-sunk); }
 .aa-row { display: flex; align-items: center; gap: 14px; padding: 14px 0; min-height: 44px; }
 .aa-row-main { display: flex; align-items: center; gap: 14px; flex: 1; min-width: 0; }
 .aa-row-text { min-width: 0; }
@@ -54,7 +54,7 @@
 .aa-foot { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; border-top: 1px solid var(--line); padding-top: 20px; }
 
 @media (max-width: 767px) {
-  .aa-page { padding: 16px 16px 40px; gap: 14px; }
+  .aa-page { padding: 20px 16px 40px; gap: 24px; }
   .aa-avatar { width: 56px; height: 56px; font-size: 20px; }
   .aa-head { gap: 14px; }
   .aa-card { padding: 4px 16px; }

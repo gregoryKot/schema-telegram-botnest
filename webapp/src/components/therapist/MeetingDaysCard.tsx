@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { TherapyClientSummary } from '../../api';
 import { MEETING_DAYS_ORDER, toggleMeetingDay, sortMeetingDays } from '../../../../shared/src/therapy/meetingDays';
+import { hueStyle } from '../../lib/tone';
 import { DAY_NAMES } from './clientSheetHelpers';
 import type { ClientDetail } from './clientSheetTypes';
 import { EditFormActions } from './EditFormActions';
@@ -17,10 +18,9 @@ export function MeetingDaysCard({ selectedClient, detail }: { selectedClient: Th
       <h2 className="ds-label">Дни встреч</h2>
       {editing ? (
         <div className="tk-edit-form">
-          <div className="tk-days" role="group" aria-label="Дни встреч">
+          <div className="tk-days" role="group" aria-label="Дни встреч" style={hueStyle(undefined)}>
             {MEETING_DAYS_ORDER.map(d => (
-              <button key={d} type="button" className={`tk-day${local.includes(d) ? ' is-on' : ''}`} aria-pressed={local.includes(d)}
-                onClick={() => setLocal(prev => toggleMeetingDay(prev, d))}>
+              <button key={d} type="button" className={`ds-chip ds-chip--toggle${local.includes(d) ? ' is-on' : ''}`} aria-pressed={local.includes(d)} onClick={() => setLocal(prev => toggleMeetingDay(prev, d))}>
                 {DAY_NAMES[d]}
               </button>
             ))}

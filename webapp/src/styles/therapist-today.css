@@ -12,7 +12,7 @@
 .tt-counter--warn .ds-num { color: var(--warn-ink); }
 .tt-denom { font-size: 22px; font-style: italic; color: var(--text-faint); }
 .tt-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr)); gap: 32px; align-items: start; }
-.tt-col { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.tt-col { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
 /* Второй раздел колонки («Требуют внимания» под «Сессиями») — отдельным блоком,
    а не вплотную к пустому состоянию первого. */
 .tt-col > .ds-h2:not(:first-child) { margin-top: 24px; }

@@ -59,7 +59,7 @@ export function SubscribeForm(p: Props) {
             })}
           </div>
 
-          <input type="email" className="ym-disable-keys ap-field" value={p.email} onChange={(e) => p.setEmail(e.target.value)} placeholder="Email для чека (необязательно)" />
+          <input type="email" className="ym-disable-keys ds-input ds-input--on-ink" value={p.email} onChange={(e) => p.setEmail(e.target.value)} placeholder="Email для чека (необязательно)" />
           <input type="text" tabIndex={-1} autoComplete="off" value={p.website} onChange={(e) => p.setWebsite(e.target.value)} aria-hidden="true" className="ap-honey" />
 
           <label className="ap-consent">

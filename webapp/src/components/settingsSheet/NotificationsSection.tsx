@@ -30,10 +30,10 @@ export function NotificationsSection({ settings, tzLabel, patch, openSubView }: 
       <SRow title="Напоминание" sub="Заполнить трекер вечером" right={<Toggle label="Напоминание" on={!!settings.notifyReminderEnabled} onClick={() => patch({ notifyReminderEnabled: !settings.notifyReminderEnabled })} />} />
       {(settings.notifyEnabled || settings.notifyReminderEnabled) && (<>
         <SRow title="Время" right={<ChevronVal text={`${pad(localHour)}:00`} />} onClick={() => openSubView('time')} />
-        <SRow title="Частота" right={<ChevronVal text={FREQ_LABELS[settings.notifyFrequency ?? 0]} small />} onClick={() => openSubView('freq')} />
+        <SRow title="Частота" right={<ChevronVal text={FREQ_LABELS[settings.notifyFrequency ?? 0]} />} onClick={() => openSubView('freq')} />
         <SRow title="Игровой режим" sub="Серии и «ещё день до вехи»" right={<Toggle label="Игровой режим" on={!!settings.notifyGamified} onClick={() => patch({ notifyGamified: !settings.notifyGamified })} />} />
-        <SRow title="Тихие часы" right={<ChevronVal text={quietLabel(settings.notifyQuietStart, settings.notifyQuietEnd)} small />} onClick={() => openSubView('quiet')} />
-        <SRow title="Часовой пояс" right={<ChevronVal text={tzLabel} small />} onClick={() => openSubView('tz')} />
+        <SRow title="Тихие часы" right={<ChevronVal text={quietLabel(settings.notifyQuietStart, settings.notifyQuietEnd)} />} onClick={() => openSubView('quiet')} />
+        <SRow title="Часовой пояс" right={<ChevronVal text={tzLabel} />} onClick={() => openSubView('tz')} />
         {hourInQuiet(localHour, settings.notifyQuietStart, settings.notifyQuietEnd) && (
           <div className="st-text--warn">
             Время уведомления попадает в тихие часы — сообщение придёт после их окончания

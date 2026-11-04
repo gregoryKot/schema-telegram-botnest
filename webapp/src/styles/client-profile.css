@@ -97,7 +97,6 @@
 .cpf-former { padding: 22px 24px; border-radius: 20px; }
 
 .cpf-delete { padding-top: 20px; border-top: 1px solid var(--line); }
-.cpf-delete-link { color: var(--err); cursor: pointer; font-size: 13px; display: inline-flex; align-items: center; min-height: 44px; }
 
 @media (max-width: 767px) {
   .cpf-card, .cpf-former { padding: 16px; border-radius: 18px; }
@@ -132,7 +131,7 @@
 .cpf-sheet-empty { margin: 0 0 var(--space-16); line-height: 1.6; }
 .cpf-sheet-lists { display: flex; flex-direction: column; gap: var(--space-16); }
 .cpf-prow { grid-template-columns: auto minmax(0, 1fr) auto auto; }
-.cpf-danger { color: var(--err); }
+.cpf-prow > .ds-chev { grid-column: -1; }
 .cpf-dlg-count { margin-right: auto; }
 @media (max-width: 767px) {
   .cpf-bar-name { width: 148px; font-size: 14px; white-space: nowrap; }

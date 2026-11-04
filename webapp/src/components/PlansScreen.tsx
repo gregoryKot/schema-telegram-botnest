@@ -84,16 +84,16 @@ export function PlansScreen({ onClose, onOpenTracker }: Props) {
         ) : !plans ? (
           <Loader minHeight="30vh" />
         ) : plans.length === 0 ? (
-          <div className="sk-empty">
-            <h2 className="ds-h2">Планов пока нет</h2>
-            <p className="ds-sub sk-empty-text">
+          <div className="sk-group">
+            <p className="ds-empty">Планов пока нет</p>
+            <p className="ds-empty">
               {tr(
                 'Планы создаются в трекере — выбери потребность с низкой оценкой и нажми «Запланировать практику»',
                 'Планы создаются в трекере — выберите потребность с низкой оценкой и нажмите «Запланировать практику»',
               )}
             </p>
             {onOpenTracker && (
-              <button onClick={() => goBack(onOpenTracker)} className="ds-link">
+              <button onClick={() => goBack(onOpenTracker)} className="ds-link sk-self-start">
                 Открыть трекер →
               </button>
             )}

@@ -16,31 +16,20 @@
   background: var(--ink); color: var(--on-ink); font-size: 11px; padding: 3px 8px; border-radius: 6px;
   white-space: nowrap; pointer-events: none;
 }
-.mm2-backdrop { position: fixed; inset: 0; }
-.ds-card.mm2-drop { position: fixed; z-index: 40; width: 220px; padding: 4px; border-radius: 12px; box-shadow: 0 12px 30px -18px rgba(60, 40, 20, .4); }
-.mm2-drop-head { padding: 6px 10px 4px; font-size: 10.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--text-faint); }
-.mm2-drop-note { padding: 0 10px 6px; font-size: 11px; line-height: 1.35; color: var(--text-faint); }
+.mm2-drop-head { padding: 6px 10px 4px; }
+.mm2-drop-note { padding: 0 10px 6px; }
 .mm2-drop-note.is-err { color: var(--err); }
 .mm2-drop-sep { height: 1px; background: var(--line); margin: 4px 0; }
 .mm2-kbd-row { display: flex; justify-content: space-between; gap: 14px; padding: 5px 10px; font-size: 12px; color: var(--text-sub); }
 .mm2-kbd { font-family: inherit; font-size: 11.5px; color: var(--text); background: var(--paper-sunk); padding: 1px 6px; border-radius: 4px; white-space: nowrap; }
 
-/* ── Строка меню (дропдауны, контекстное меню, выбор типа карты) ── */
-.mm2-item {
-  display: flex; align-items: center; gap: 8px; width: 100%; min-height: 36px; padding: 7px 10px;
-  border: none; border-radius: 8px; background: none; text-align: left; cursor: pointer;
-  font: 12.5px var(--sans); color: var(--text);
-}
-.mm2-item:hover:not(:disabled) { background: color-mix(in srgb, var(--paper-tint) 60%, var(--surface)); }
-.mm2-item:disabled { opacity: .55; cursor: default; }
-.mm2-item.is-danger { color: var(--err); }
-.ds-card.mm2-ctx { position: fixed; z-index: 1000; min-width: 170px; padding: 4px; border-radius: 12px; }
-.mm2-ctx-back { position: fixed; inset: 0; z-index: 999; }
+/* Меню общее: ds-menu, ds-menu-item, ds-backdrop из cabinet.css; здесь только место и размер. */
+.ds-menu.mm2-ctx { z-index: 1000; width: auto; min-width: 170px; }
+.mm2-ctx-back { z-index: 999; }
 
 /* ── Палитра режимов ── */
 .ds-card.mm2-pal { width: 220px; flex-shrink: 0; display: flex; flex-direction: column; border-radius: 0; border-width: 0 1px 0 0; padding: 0; background: var(--surface); }
 .mm2-pal-search { padding: 10px; border-bottom: 1px solid var(--line); flex-shrink: 0; }
-.mm2-pal-search .ds-input { padding: 8px 12px; font-size: 12.5px; border-radius: 10px; }
 .mm2-pal-scroll { flex: 1; overflow-y: auto; }
 .mm2-pal-head {
   display: flex; align-items: center; gap: 8px; width: 100%; min-height: 40px; padding: 6px 12px;
@@ -66,7 +55,7 @@
 .ds-btn.mm2-pal-add { flex-shrink: 0; white-space: nowrap; height: 32px; padding: 0 12px; font-size: 11px; gap: 3px; }
 .mm2-pal-sub { padding: 4px 12px 10px; font-size: 11.5px; line-height: 1.4; color: var(--text-faint); }
 .mm2-pal-sub.is-err { color: var(--err); }
-.mm2-pal-empty { padding: 20px 14px; font-size: 12.5px; color: var(--text-faint); text-align: center; }
+.mm2-pal-empty { padding: 20px 14px; }
 .mm2-mine { border-top: 1px solid var(--line); margin-top: 4px; }
 .mm2-mine-head { display: flex; align-items: center; padding: 6px 12px; }
 .mm2-mine-head .mm2-pal-head-name { font-size: 11.5px; }
@@ -182,13 +171,14 @@
 .mm2-legend-chip { display: inline-flex; align-items: center; gap: 8px; width: fit-content; padding: 3px 9px 3px 5px; border-radius: 8px; font-size: 12px; background: var(--paper-tint); color: var(--text-sub); }
 
 /* ── Селектор карт и вьюер ── */
-.mm2-bar { display: flex; align-items: center; gap: 6px; padding: 8px 12px; border-bottom: 1px solid var(--line); overflow-x: auto; flex-shrink: 0; min-height: 56px; }
+.mm2-bar { display: flex; align-items: center; gap: 6px; padding: 8px 16px; border-bottom: 1px solid var(--line); overflow-x: auto; flex-shrink: 0; min-height: 56px; }
 .mm2-rename { width: 140px; flex-shrink: 0; }
+.mm2-bar > .ds-seg { flex: 1 1 auto; min-width: 0; }
 .ds-btn.mm2-new { flex-shrink: 0; white-space: nowrap; margin-left: 2px; }
 .mm2-new > span { display: flex; align-items: center; gap: 5px; }
 .ds-btn.mm2-new.is-active { color: var(--accent); background: var(--paper-tint); }
-.ds-card.mm2-kind-menu { position: fixed; z-index: 61; width: 290px; padding: 6px; border-radius: 16px; }
-.mm2-kind-menu .mm2-item { flex-direction: column; align-items: flex-start; gap: 3px; padding: 10px 12px; border-radius: 12px; }
+.ds-menu.mm2-kind-menu { z-index: 61; width: 290px; }
+.mm2-kind-menu .ds-menu-item { flex-direction: column; align-items: flex-start; gap: 3px; padding: 10px 12px; border-radius: 12px; }
 .mm2-kind-name { font: 700 13px var(--sans); }
 .mm2-kind-hint { font-size: 11.5px; line-height: 1.35; color: var(--text-sub); }
 .mm2-center { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; gap: 12px; color: var(--text-sub); text-align: center; }
@@ -247,8 +237,7 @@
     height: max(320px, calc(100dvh - var(--mm2-chrome)));
   }
   .mm2-center { height: auto; min-height: 100%; padding: 24px 16px; }
-  .mm2-item { min-height: 44px; } /* пункт общего меню Dropdown — тап-цель 44 (#906) */
   /* Поля холста: локальные 12.5–13px перебивали общие 16px, а iOS увеличивает экран при фокусе на поле мельче 16px. */
-  .mm2-pal-search .ds-input, .mm2-add-form .ds-input, .mm2-panel .ds-input, .mm2-panel .ds-textarea, .mm2-panel select.ds-input,
+  .mm2-add-form .ds-input, .mm2-panel .ds-input, .mm2-panel .ds-textarea, .mm2-panel select.ds-input,
   .ds-input.mm2-add-emoji, .ds-input.mm2-lane-input { font-size: 16px; }
 }

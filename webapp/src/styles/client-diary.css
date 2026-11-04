@@ -49,7 +49,6 @@
 
 @media (max-width: 767px) {
   /* Кегль заголовка — ds-h1 (#906); .cd-head — обычный блок, своих flex-правил нет. */
-  .cd-page { gap: var(--space-16); padding-top: var(--space-16); }
 
   /* Записи: бейдж и время в одной строке, заголовок на всю ширину под ним */
   .cd-entry-head { flex-wrap: wrap; row-gap: var(--space-4); }

@@ -66,7 +66,6 @@
 .sd-step-flag { font-size: 12px; color: var(--text-faint); }
 .sd-step-flag.is-required { color: var(--accent); font-weight: 600; }
 .sd-step-count { margin-left: auto; font-size: 12px; color: var(--text-faint); }
-.sd-step-q { font-size: 22px; }
 .sd-step-hint { line-height: 1.5; }
 .sd-area-gap { margin-top: 12px; }
 .sd-aside { position: sticky; top: 40px; display: flex; flex-direction: column; gap: 8px; }
@@ -142,7 +141,7 @@
 .sd-doubt-lede { line-height: 1.5; margin: 0 0 24px; }
 .sd-doubt-list { display: flex; flex-direction: column; gap: 12px; }
 .sd-doubt-card { display: flex; flex-direction: column; gap: 6px; }
-.sd-doubt-title { display: flex; align-items: center; gap: 8px; font-size: 17px; }
+.sd-doubt-title { display: flex; align-items: center; gap: 8px; }
 .sd-doubt-gist { margin: 4px 0; font-size: 14px; line-height: 1.55; color: var(--text-sub); }
 .sd-doubt-check { border-radius: 10px; padding: 8px 12px; font-size: 13px; line-height: 1.5; margin-bottom: 6px; }
 .sd-doubt-btn { width: 100%; }

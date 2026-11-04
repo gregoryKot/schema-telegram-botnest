@@ -19,6 +19,5 @@
 .cw-foot { margin: 0; line-height: 1.5; }
 
 @media (max-width: 767px) {
-  .cw-sheet { padding-top: var(--safe-top); } /* статус-бар установленного приложения (#902) */
   .cw-inner { padding: 20px 16px calc(24px + env(safe-area-inset-bottom)); }
 }

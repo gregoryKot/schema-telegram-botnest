@@ -34,7 +34,7 @@ export function MyTherapistSection({ rel, settings, patch }: {
             <SRow title={CARDS.title} sub={CARDS.sub} right={<SmallToggle label={CARDS.title} on={!!settings.therapistShareCards} onClick={() => patch({ therapistShareCards: !settings.therapistShareCards })} />} />
             <SRow title={PROFILE.title} sub={PROFILE.sub} right={<SmallToggle label={PROFILE.title} on={!!settings.therapistShareProfile} onClick={() => patch({ therapistShareProfile: !settings.therapistShareProfile })} />} />
           </div>
-          <button className="ds-link st-link-danger" onClick={leave.ask}>{leaveCopy.button}</button>
+          <button className="ds-link ds-link--danger" onClick={leave.ask}>{leaveCopy.button}</button>
           {leave.confirming && (
             <ConfirmDialog
               title={leaveCopy.title}

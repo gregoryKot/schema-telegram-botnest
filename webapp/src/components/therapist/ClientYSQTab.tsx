@@ -30,7 +30,7 @@ export function ClientYSQTab({ clientData, selectedClient, selfSchemaIds, ysqReq
 
   if (!clientData?.ysqHistory || clientData.ysqHistory.length === 0) {
     return (
-      <div className="ds-page tb-page tb-page--ysq">
+      <div className="ds-page tb-page--ysq">
         <div className="u-col8">
           <p className="ds-empty">YSQ ещё не проходился</p>
           {virtual ? (
@@ -65,7 +65,7 @@ export function ClientYSQTab({ clientData, selectedClient, selfSchemaIds, ysqReq
   const rows = buildYsqRows(hist[0], hist[1] ?? null);
 
   return (
-    <div className="ds-page tb-page tb-page--ysq">
+    <div className="ds-page tb-page--ysq">
       {/* Заголовка нет (#906): имя уже во вкладке шапки. */}
       <div className="ds-head-row">
         <div className="ds-sub">

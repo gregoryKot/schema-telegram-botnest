@@ -40,6 +40,13 @@ describe('формы терапевта и сопутствующие экран
   it('sheet-tasks.css: нет .sk-cmd-input', () => {
     expect(css('sheet-tasks.css')).not.toContain('.sk-cmd-input');
   });
+  it('command-palette.css: панель r28 и calc(100vw - 32px), строка r14, у подписи нет своего кегля', () => {
+    const src = css('command-palette.css');
+    expect(rule(src, '.cmd-panel')).toMatch(/border-radius:\s*28px/);
+    expect(rule(src, '.cmd-panel')).toContain('max-width: calc(100vw - 32px)');
+    expect(rule(src, '.cmd-row')).toMatch(/border-radius:\s*14px/);
+    expect(rule(src, '.cmd-sub')).not.toContain('font-size');
+  });
   it('therapist-today.css: нет .tt-arrow', () => {
     expect(css('therapist-today.css')).not.toContain('.tt-arrow');
   });

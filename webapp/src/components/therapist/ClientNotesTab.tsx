@@ -17,7 +17,7 @@ export function ClientNotesTab({ clientSchemaNotesData, clientModeNotesData, cli
 
   if (all.length === 0) {
     return (
-      <div className="ds-page tb-page tb-page--narrow">
+      <div className="ds-page tb-page--narrow">
         <p className="ds-empty">Клиент ещё не заполнял дневник</p>
       </div>
     );
@@ -27,7 +27,7 @@ export function ClientNotesTab({ clientSchemaNotesData, clientModeNotesData, cli
   const shown = filterNotes(all, filter);
 
   return (
-    <div className="ds-page tb-page tb-page--narrow">
+    <div className="ds-page tb-page--narrow">
       {/* Заголовка нет (#906): имя уже во вкладке шапки — первым идёт фильтр. */}
       <div className="ds-seg ds-seg--scroll" role="tablist">
         {FILTERS.map(f => (

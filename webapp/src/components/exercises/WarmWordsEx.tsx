@@ -49,7 +49,7 @@ export function WarmWordsEx({ onBack }: { onBack: () => void }) {
       )}
 
       {failed && (
-        <div role="alert" className="ds-card ex2-empty">
+        <div role="alert" className="ds-card ds-card--warn">
           {tr(
             'Не удалось загрузить твои слова. Они на месте — проверь связь и открой ещё раз.',
             'Не удалось загрузить ваши слова. Они на месте — проверьте связь и откройте ещё раз.',
@@ -58,7 +58,7 @@ export function WarmWordsEx({ onBack }: { onBack: () => void }) {
       )}
 
       {!failed && items !== null && items.length === 0 && (
-        <p className="ds-card ex2-empty">
+        <p className="ds-empty">
           {tr(
             'Здесь пока пусто. Слова появятся, когда сохранишь ответ Здорового Взрослого — в дневнике режимов или в карточке режима.',
             'Здесь пока пусто. Слова появятся, когда сохраните ответ Здорового Взрослого — в дневнике режимов или в карточке режима.',

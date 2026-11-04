@@ -1,5 +1,4 @@
 import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent, type ReactNode, type RefObject } from 'react';
-import '../styles/sheet-modemap.css';
 
 // Выпадающее меню у кнопки. Рисуется fixed от якоря и прижимается к экрану,
 // чтобы его не обрезал контейнер и не вытолкнул правый край. Закрывается кликом
@@ -7,7 +6,8 @@ import '../styles/sheet-modemap.css';
 // (modeMap/ToolbarControls); меню «⋯ Ещё» вкладки «Концептуализация» — та же
 // механика, поэтому компонент один и живёт здесь (правило «одна механика — один
 // компонент»). role="menu" — меню действий: фокус уходит на первый пункт,
-// стрелки ходят по пунктам, Escape возвращает фокус якорю.
+// стрелки ходят по пунктам, Escape возвращает фокус якорю. Вид — ds-menu и
+// ds-backdrop из cabinet.css.
 export function Dropdown({ children, onClose, anchorRef, role, label, className }: {
   children: ReactNode;
   onClose: () => void;
@@ -52,10 +52,10 @@ export function Dropdown({ children, onClose, anchorRef, role, label, className 
     <>
       <div role="button" tabIndex={0} aria-label="Закрыть" onClick={onClose}
         onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClose(); } }}
-        className="mm2-backdrop" style={{ zIndex: 39 }} />
+        className="ds-backdrop" style={{ zIndex: 39 }} />
       {pos && (
         <div ref={dropRef} role={role} aria-label={label} onKeyDown={onKeyDown}
-          className={`ds-card mm2-drop${className ? ` ${className}` : ''}`} style={{ top: pos.top, left: pos.left }}>
+          className={`ds-menu${className ? ` ${className}` : ''}`} style={{ top: pos.top, left: pos.left }}>
           {children}
         </div>
       )}

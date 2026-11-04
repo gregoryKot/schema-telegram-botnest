@@ -58,7 +58,7 @@ export function ChildhoodWheelEx({ onBack, onSaved, onOpenSchemas }: Props) {
           </button>
         </div>
       ) : (
-        <div className="cw-skeleton" aria-busy="true">
+        <div className="chw-skeleton" aria-busy="true">
           <Skeleton height={64} radius={14} />
           <Skeleton height={64} radius={14} />
           <Skeleton height={64} radius={14} />

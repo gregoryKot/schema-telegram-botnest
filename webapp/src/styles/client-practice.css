@@ -41,7 +41,6 @@
 .cp-ex-top { display: flex; justify-content: space-between; align-items: baseline; }
 .cp-ex-num { font-size: 32px; }
 .cp-ex-time { font-size: 12px; color: var(--text-sub); white-space: nowrap; }
-.cp-ex-eyebrow { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; font-weight: 700; }
 .cp-ex-title { font-size: 17px; font-weight: 700; line-height: 1.25; }
 .cp-ex-desc { font-size: 13px; line-height: 1.45; color: var(--text-sub); }
 .cp-ex-state { margin-top: auto; font-size: 12px; color: var(--text-sub); }
@@ -51,7 +50,6 @@
    (название + одна строка подписи + шеврон), а не цветными плитками. Шапка и
    заголовки блоков — те же, что на ноутбуке (ds-eyebrow + ds-h1 + ds-sub,
    секции — Literata ds-h2; #906). */
-.cp-page--phone { gap: var(--space-20); padding-top: var(--space-16); }
 .cp-here-lead { margin: 0; font-size: 14px; line-height: 1.5; }
 .cp-page--phone .cp-block { gap: var(--space-10); }
 

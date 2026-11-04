@@ -193,7 +193,7 @@ export function PracticeSection({ onOpenChildhoodWheel, onOpenPractices, onOpenP
       )}
       {showAllGoals && (
         <AllGoalsOverlay
-          tasks={tasks}
+          tasks={tasks} compact={phone}
           taskHistory={taskHistory}
           onClose={() => setShowAllGoals(false)}
           onOpen={t => { setShowAllGoals(false); launcher.openTask(t); }}

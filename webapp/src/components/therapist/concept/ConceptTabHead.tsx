@@ -77,7 +77,7 @@ function MoreMenu({ onExport, exportEmpty, graph }: { onExport: () => void; expo
 function MenuItem({ hint, children, ...rest }: { hint?: string; children: ReactNode } & ButtonHTMLAttributes<HTMLButtonElement>) {
   const id = useId();
   return (
-    <button type="button" role="menuitem" className="mm2-item" aria-labelledby={`${id}-l`} aria-describedby={hint ? `${id}-h` : undefined} {...rest}>
+    <button type="button" role="menuitem" className="ds-menu-item" aria-labelledby={`${id}-l`} aria-describedby={hint ? `${id}-h` : undefined} {...rest}>
       <span id={`${id}-l`}>{children}</span>
       {hint && <span id={`${id}-h`} className="tcp-menu-hint">{hint}</span>}
     </button>

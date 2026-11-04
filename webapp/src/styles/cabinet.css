@@ -2,7 +2,8 @@
    Редизайн кабинетов 2026-10 — общие примитивы (ds-*) и тона по hue.
    Значения цветов — токены из index.css (светлый блок). Здесь только то, из
    чего собираются экраны: карточки, кнопки, сегмент-фильтр, чипы, заголовки,
-   шапка листа и «Назад», строка-переход, раскрывашка, пустое состояние (#906).
+   шапка листа и «Назад», строка-переход, раскрывашка, пустое состояние, меню «⋯»
+   (ds-menu, ds-menu-item, ds-backdrop) (#906). Сверка «один стиль» — styles/oneStyle.test.ts.
    Экранный компонент не пишет свои цвета/радиусы инлайном — берёт класс.
 
    Тона: элемент задаёт `--h` (оттенок oklch; таблица hue сущностей — в
@@ -63,6 +64,9 @@
   background: none; border: none; padding: 0; font-family: inherit; white-space: nowrap;
 }
 .ds-link:hover { color: var(--accent-hi); }
+/* Опасное действие текстом (#906, волна 3). */
+.ds-link--danger { color: var(--err); }
+.ds-link--danger:hover { color: var(--err); text-decoration: underline; }
 /* Ссылка внутри бегущего текста: остаётся в строке абзаца, без зоны 44 (#906). */
 .ds-link--inline { display: inline; }
 /* Пустое состояние списка/карточки: обычный текст, без рамки и курсива. */
@@ -96,6 +100,7 @@
 .ds-list-row--hover { cursor: pointer; }
 .ds-list-row--hover:hover { background: color-mix(in srgb, var(--paper-tint) 60%, var(--surface)); }
 .ds-list-title { font-size: 14px; font-weight: 600; color: var(--text); }
+.ds-list-row--danger .ds-list-title { color: var(--err); }
 .ds-list-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1 1 auto; }
 .ds-list-row--nav { grid-template-columns: minmax(0, 1fr) auto; min-height: 44px; box-sizing: border-box; }
 .ds-list-row--inset { padding-left: 0; padding-right: 0; }
@@ -169,6 +174,15 @@ button.ds-list-row, a.ds-list-row { width: 100%; box-sizing: border-box; border:
 }
 .ds-back:hover { color: var(--accent-hi); }
 
+/* ── Меню «⋯» и подложка ─────────────────────────────────────────────────── */
+/* Подложка ловит тап мимо меню; z-index ставит потребитель. */
+.ds-backdrop { position: fixed; inset: 0; }
+.ds-menu { position: fixed; z-index: 40; width: 220px; box-sizing: border-box; padding: 4px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow-2); }
+.ds-menu-item { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 36px; box-sizing: border-box; padding: 8px 10px; border: none; border-radius: 8px; background: none; text-align: left; cursor: pointer; font: 14px/1.3 var(--sans); color: var(--text); }
+.ds-menu-item:hover:not(:disabled) { background: color-mix(in srgb, var(--paper-tint) 60%, var(--surface)); }
+.ds-menu-item:disabled { opacity: .55; cursor: default; }
+.ds-menu-item.is-danger { color: var(--err); }
+
 /* ── Сегмент-фильтр ──────────────────────────────────────────────────────── */
 .ds-seg { display: inline-flex; gap: 4px; background: var(--paper-sunk); border-radius: 20px; padding: 3px; max-width: 100%; overflow-x: auto; scrollbar-width: none; }
 .ds-seg::-webkit-scrollbar { display: none; }
@@ -195,13 +209,11 @@ button.ds-list-row, a.ds-list-row { width: 100%; box-sizing: border-box; border:
 .ds-badge--line { background: var(--line); color: var(--text-sub); }
 .ds-count { font-size: 11px; background: var(--line-input); border-radius: 8px; padding: 1px 6px; margin-left: 6px; color: var(--text-sub); }
 .ds-avatar {
-  border-radius: 50%; flex-shrink: 0; color: #fff;
-  background: oklch(0.56 0.11 var(--h));
+  border-radius: 50%; flex-shrink: 0; color: oklch(0.38 0.1 var(--h));
+  background: oklch(0.94 0.035 var(--h));
   display: flex; align-items: center; justify-content: center; font-weight: 700;
 }
 .ds-avatar--serif { font-family: var(--serif); font-weight: 400; }
-/* tint-аватар: .ds-avatar объявлен после .tone-* и иначе перекрывает tint сплошной заливкой. */
-.ds-avatar.tone-tint { background: oklch(0.94 0.035 var(--h)); color: oklch(0.38 0.1 var(--h)); }
 .ds-dot { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
 
 /* ── Тумблер (role="switch") ─────────────────────────────────────────────── */
@@ -225,6 +237,10 @@ button.ds-list-row, a.ds-list-row { width: 100%; box-sizing: border-box; border:
 .ds-input--sm { width: auto; height: 40px; padding: 0 12px; }
 .ds-input:focus, .ds-textarea:focus { outline: none; border-color: var(--accent); }
 .ds-input::placeholder, .ds-textarea::placeholder { color: var(--text-ghost); }
+/* Поле на тёмной панели (#906, волна 3): после .ds-input:focus, чтобы перекрыть рамку фокуса. */
+.ds-input--on-ink { background: var(--ink-2); border-color: var(--ink-line); color: var(--on-ink); }
+.ds-input--on-ink::placeholder { color: var(--on-ink-faint); }
+.ds-input--on-ink:focus { border-color: var(--on-ink-sub); }
 
 /* ── Вкладки (шапка карточки клиента) ────────────────────────────────────── */
 .ds-tabs { display: flex; gap: 28px; font-size: 14px; overflow-x: auto; scrollbar-width: none; }
@@ -272,4 +288,5 @@ button.ds-list-row, a.ds-list-row { width: 100%; box-sizing: border-box; border:
   .ds-chip--toggle { min-height: 44px; }
   .ds-link { min-height: 44px; display: inline-flex; align-items: center; }
   .ds-link--inline { display: inline; min-height: 0; }
+  .ds-menu-item { min-height: 44px; }
 }

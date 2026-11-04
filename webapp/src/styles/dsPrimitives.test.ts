@@ -168,7 +168,7 @@ describe('cabinet.css: примитивы листов (#906)', () => {
   it('тап-цели живут в одном блоке: в блоке раскладки телефона их нет, второго блока pointer: coarse нет', () => {
     expect(css.split(TAP_MEDIA)).toHaveLength(2);
     expect(css.match(/@media[^{]*pointer: coarse/g)).toHaveLength(1);
-    for (const sel of ['.ds-tab', '.ds-btn--icon', '.ds-seg-btn', '.ds-btn--sm', '.ds-input--search', '.ds-input--sm', '.ds-chip--toggle', '.ds-link']) {
+    for (const sel of ['.ds-tab', '.ds-btn--icon', '.ds-seg-btn', '.ds-btn--sm', '.ds-input--search', '.ds-input--sm', '.ds-chip--toggle', '.ds-link', '.ds-menu-item']) {
       expect(decls(phone, sel), sel).toBe('');
     }
   });
@@ -179,11 +179,12 @@ describe('cabinet.css: поправки координатора волны 1 (#
     expect(decls(top, '.ds-sheet-head > .ds-back:first-child')).toContain('margin-left: 0');
     expect(decls(top, '.ds-sheet-head > :last-child')).toContain('margin-left: auto');
   });
-  it('.ds-avatar.tone-tint — tint-аватар с тёмными инициалами (иначе .ds-avatar перекрывает .tone-tint заливкой)', () => {
-    const tint = decls(top, '.ds-avatar.tone-tint');
-    expect(tint).toContain('background: oklch(0.94 0.035 var(--h))');
-    expect(tint).toContain('color: oklch(0.38 0.1 var(--h))');
-    expect(top.indexOf('.ds-avatar.tone-tint')).toBeGreaterThan(top.indexOf('.ds-avatar {'));
+  it('.ds-avatar — tint по умолчанию: тёмные инициалы на светлой заливке, без #fff и без .tone-tint', () => {
+    const av = decls(top, '.ds-avatar');
+    expect(av).toContain('background: oklch(0.94 0.035 var(--h))');
+    expect(av).toContain('color: oklch(0.38 0.1 var(--h))');
+    expect(av).not.toMatch(/#fff/i);
+    expect(css).not.toContain('.ds-avatar.tone-tint');
   });
   it('на акцентной карточке подпись, подпись-строка и ссылка — светлые токеном --on-ink', () => {
     for (const sel of ['.ds-card--accent .ds-label', '.ds-card--accent .ds-sub', '.ds-card--accent .ds-link']) {
@@ -257,5 +258,38 @@ describe('cabinet.css: примитивы волны 2 (#906)', () => {
     expect(decls(top, '.ds-link--inline')).toContain('display: inline');
     expect(decls(tap, '.ds-link--inline')).toContain('display: inline');
     expect(decls(tap, '.ds-link--inline')).toContain('min-height: 0');
+  });
+});
+
+describe('cabinet.css: примитивы волны 3 (#906)', () => {
+  const WAVE3 = ['.ds-link--danger', '.ds-input--on-ink', '.ds-menu', '.ds-menu-item', '.ds-backdrop'];
+  it.each(WAVE3)('%s объявлен один раз вне медиа и красится токенами', (cls) => {
+    expect(declaredTimes(cls)).toBe(1);
+    expect(decls(css, cls)).not.toMatch(/#[0-9a-f]{3,8}\b|rgba?\(/i);
+  });
+  it('разделитель строк списка — --paper-sunk (заливка-линия), --line только контуры; пунктира нет', () => {
+    expect(decls(top, '.ds-list-row')).toContain('border-bottom: 1px solid var(--paper-sunk)');
+    expect(decls(top, 'button.ds-list-row')).toContain('border-bottom: 1px solid var(--paper-sunk)');
+    expect(css).not.toMatch(/border[a-z-]*:[^;}]*dashed/);
+  });
+  it('меню «⋯»: fixed с тенью --shadow-2, пункт 44 только под пальцем, опасный — --err', () => {
+    expect(decls(top, '.ds-menu')).toContain('position: fixed');
+    expect(decls(top, '.ds-menu')).toContain('box-shadow: var(--shadow-2)');
+    expect(decls(tap, '.ds-menu-item')).toContain('min-height: 44px');
+    expect(decls(phone, '.ds-menu-item')).toBe('');
+    expect(decls(top, '.ds-menu-item.is-danger')).toContain('color: var(--err)');
+    expect(decls(top, '.ds-backdrop')).toContain('position: fixed');
+  });
+  it('опасное действие: ссылка и заголовок строки красятся --err', () => {
+    expect(decls(top, '.ds-link--danger')).toContain('color: var(--err)');
+    expect(decls(top, '.ds-link--danger:hover')).toContain('color: var(--err)');
+    expect(decls(top, '.ds-list-row--danger .ds-list-title')).toContain('color: var(--err)');
+  });
+  it('поле на тёмной панели: токены ink, объявлено после .ds-input:focus', () => {
+    const f = decls(top, '.ds-input--on-ink');
+    expect(f).toContain('background: var(--ink-2)');
+    expect(f).toContain('border-color: var(--ink-line)');
+    expect(f).toContain('color: var(--on-ink)');
+    expect(top.indexOf('.ds-input--on-ink {')).toBeGreaterThan(top.indexOf('.ds-input:focus'));
   });
 });

@@ -1,6 +1,6 @@
 /* Клиент · Сегодня (sections/TodaySection.tsx, sections/today/*). Префикс ct-.
    Одна колонка: шапка, три плитки, задания, лента дня. На десктопе — 600px. */
-.ct-page { max-width: 600px; gap: 24px; }
+.ct-page { max-width: 600px; }
 /* Кнопка «Зачем это?» стоит в строке с датой, а не рядом с h1: иначе она
    отнимает ширину у приветствия и «Привет, Имя» переносится на телефоне. */
 .ct-head { display: flex; flex-direction: column; gap: 4px; }

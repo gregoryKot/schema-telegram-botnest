@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import type { TherapyClientSummary } from '../../api';
 import { ClientHeaderBadges } from './ClientHeaderBadges';
-import { ClientHeaderMenu } from './ClientHeaderMenu';
+import { RenameDeleteMenu } from '../RenameDeleteMenu';
 import { ClientQuickActions } from './ClientQuickActions';
 import { ClientTabs } from './ClientTabs';
 import { clientInitials } from '../../../../shared/src/therapy/clientInitials';
@@ -59,7 +59,7 @@ export function ClientHeader({ selectedClient, detail, switchView }: Props) {
         </div>
         <div className="tk-actions">
           {!phone && <ClientQuickActions detail={detail} primary />}
-          <ClientHeaderMenu onRename={startRename} onDelete={requestDeleteClient} deleteBusy={deleteLoading} />
+          <RenameDeleteMenu label="Действия с карточкой" deleteLabel="Удалить клиента" onRename={startRename} onDelete={requestDeleteClient} deleteBusy={deleteLoading} />
         </div>
       </div>
       <ClientTabs detail={detail} />
