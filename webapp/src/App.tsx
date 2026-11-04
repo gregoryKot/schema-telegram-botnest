@@ -17,6 +17,7 @@ import { TwoFactorChallengePage } from './pages/TwoFactorChallengePage';
 import { AppShell } from './components/AppShell';
 import { CookieBanner } from './components/CookieBanner';
 import { ScrollLock } from './hooks/ScrollLock';
+import { ScrollToTop } from './hooks/ScrollToTop';
 import { RouteErrorScreen } from './components/RouteErrorScreen';
 import { PracticeBrand } from './components/PracticeBrand';
 import { RequireAuth } from './components/RequireAuth';
@@ -53,6 +54,7 @@ function Root() {
       <Outlet />
       <CookieBanner />
       <ScrollLock />
+      <ScrollToTop />
     </AuthProvider>
   );
 }
