@@ -8,7 +8,7 @@ import { detectCrisisAny } from '../utils/crisisMarkers';
 import { CrisisCard } from './CrisisCard';
 import { useTr } from '../utils/addressForm';
 import { scrollIntoViewSafe } from '../../../shared/src/utils/scrollIntoView';
-import { taskSheetTitle } from '../../../shared/src/therapy/therapistLinkCopy';
+import { taskSheetCopy } from '../../../shared/src/tasks/taskSheetCopy';
 import {
   STREAK_OPTIONS,
   TASK_OPTIONS,
@@ -75,6 +75,7 @@ export function TaskCreateSheet({
 
   const selected = options.find((o) => o.type === type) ?? options[0];
   const lead = assignLead(clientId);
+  const copy = taskSheetCopy(clientId, clientName, tr); // клиент ставит цель себе, терапевт назначает задание
 
   async function handleCreate() {
     const finalText = taskPayloadText({
@@ -85,7 +86,7 @@ export function TaskCreateSheet({
       text,
     }).trim();
     if (type === 'custom' && !finalText) {
-      setError(tr('Введи описание задания', 'Введите описание задания'));
+      setError(copy.emptyText);
       return;
     }
     if (type === 'schema_intro' && !selectedSchemaId) {
@@ -117,7 +118,7 @@ export function TaskCreateSheet({
   return (
     <BottomSheet onClose={onClose} zIndex={200}>
       <SectionLabel purple mb={16} as="h2">
-        {taskSheetTitle(clientName)}
+        {copy.title}
       </SectionLabel>
 
       {/* Выбор типа задания */}
@@ -193,7 +194,7 @@ export function TaskCreateSheet({
       {/* Custom text */}
       {type === 'custom' && (
         <div className="u-mb20">
-          <SectionLabel mb={8}>Описание задания</SectionLabel>
+          <SectionLabel mb={8}>{copy.textLabel}</SectionLabel>
           <LimitedTextarea
             max={TASK_TEXT_MAX}
             value={text}
@@ -248,7 +249,7 @@ export function TaskCreateSheet({
       )}
 
       <button onClick={handleCreate} disabled={saving} className="btn-primary">
-        {saving ? 'Сохраняю...' : 'Создать задание'}
+        {saving ? copy.saving : copy.submit}
       </button>
     </BottomSheet>
   );

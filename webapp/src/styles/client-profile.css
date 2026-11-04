@@ -12,6 +12,9 @@
 .cpf-avatar { width: 80px; height: 80px; font-size: 30px; }
 .cpf-head-text { flex: 1 1 200px; min-width: 0; }
 .cpf-head-sub { margin-top: 8px; }
+/* Имя без пробелов уходило за край (QA мобильной 2026-11, М5): имя — одна строка с многоточием, как в #911;
+   «N дней с тобой в приложении» по-прежнему переносится обычным порядком. */
+.cpf-head-name { display: inline-block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: bottom; }
 .cpf-head .ds-h1 i { font-style: italic; color: var(--accent); }
 .cpf-head-actions { display: flex; align-items: center; gap: 12px; margin-left: auto; }
 .cpf-heat-days { display: none; }

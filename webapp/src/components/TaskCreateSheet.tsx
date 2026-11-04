@@ -8,7 +8,7 @@ import { detectCrisisAny } from '../utils/crisisMarkers';
 import { CrisisCard } from './CrisisCard';
 import { scrollIntoViewSafe } from '../../../shared/src/utils/scrollIntoView';
 import { useTr } from '../utils/addressForm';
-import { taskSheetTitle } from '../../../shared/src/therapy/therapistLinkCopy';
+import { taskSheetCopy } from '../../../shared/src/tasks/taskSheetCopy';
 import { hueStyle } from '../lib/tone';
 import { TASK_OPTIONS, STREAK_OPTIONS, type TaskType } from './taskCreate/taskOptions';
 import { SchemaPicker, ModePicker } from './taskCreate/TaskPickers';
@@ -57,10 +57,11 @@ export function TaskCreateSheet({ clientId, clientName, defaultType, defaultText
 
   const selected = options.find(o => o.type === type) ?? options[0];
   const lead = assignLead(clientId);
+  const copy = taskSheetCopy(clientId, clientName, tr); // клиент ставит цель себе, терапевт назначает задание
 
   async function handleCreate() {
     const finalText = taskPayloadText({ type, targetDays, schemaId: selectedSchemaId, modeId: selectedModeId, text }).trim();
-    if (type === 'custom' && !finalText) { setError(tr('Введи описание задания', 'Введите описание задания')); return; }
+    if (type === 'custom' && !finalText) { setError(copy.emptyText); return; }
     if (type === 'schema_intro' && !selectedSchemaId) { setError(tr('Выбери схему', 'Выберите схему')); return; }
     if (type === 'mode_intro' && !selectedModeId) { setError(tr('Выбери режим', 'Выберите режим')); return; }
     haptic.success();
@@ -88,8 +89,8 @@ export function TaskCreateSheet({ clientId, clientName, defaultType, defaultText
       <div className="sk-scroll">
         <div className="sk-page">
           <div>
-            <div className="ds-eyebrow sk-eyebrow-one">{taskSheetTitle(clientName)}</div>
-            <h1 className="ds-h2 sk-title">{tr('Выбери', 'Выберите')}<br /><em className="sk-it">задание</em></h1>
+            <div className="ds-eyebrow sk-eyebrow-one">{copy.title}</div>
+            <h1 className="ds-h2 sk-title">{tr('Выбери', 'Выберите')}<br /><em className="sk-it">{copy.what}</em></h1>
             {lead && <p className="ds-sub sk-lead">{lead}</p>}
           </div>
 
@@ -144,7 +145,7 @@ export function TaskCreateSheet({ clientId, clientName, defaultType, defaultText
 
             {type === 'custom' && (
               <div className="sk-field">
-                <div className="ds-label">Описание задания</div>
+                <div className="ds-label">{copy.textLabel}</div>
                 <LimitedTextarea
                   ref={customTextRef}
                   max={TASK_TEXT_MAX}
@@ -170,7 +171,7 @@ export function TaskCreateSheet({ clientId, clientName, defaultType, defaultText
           <div className="sk-submit">
             {error ? <span className="sk-error">{error}</span> : <span />}
             <button className="ds-btn" onClick={handleCreate} disabled={!canSave || saving}>
-              {saving ? 'Назначаю…' : 'Назначить задание'}
+              {saving ? copy.saving : copy.submit}
             </button>
           </div>
         </div>

@@ -19,6 +19,8 @@
 .aa-row-text { min-width: 0; }
 .aa-row-title { font-size: 15px; font-weight: 700; }
 .aa-row-sub { font-size: 12px; color: var(--text-faint); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Причина серой «Отвязать» переносится, а не режется многоточием: на телефоне её было не прочесть (QA мобильной 2026-11, М9). */
+.aa-row-why { white-space: normal; }
 .aa-row-note { font-size: 12px; color: var(--text-faint); }
 .aa-row-wrap { padding: 0; }
 .aa-row-wrap > .aa-row { padding-bottom: 14px; }

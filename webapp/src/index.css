@@ -1050,8 +1050,8 @@ html[data-theme="dark"] .sheet-modal-box { box-shadow: 0 24px 64px -16px rgba(0,
 .dialog-actions > .btn-primary, .dialog-actions > .btn-outline { flex: 1; width: auto; }
 .dialog-actions > .btn-primary { padding: 12px 18px; }
 .dialog-actions > .btn-outline { padding: 11px 18px; }
-.dialog-link {
-  display: block; width: 100%; margin-top: 6px; padding: 10px 0;
+.dialog-link { /* 44 по высоте: «Позже» в выборе «ты/вы» было 40 (QA мобильной версии 2026-11, М1) */
+  display: block; width: 100%; min-height: 44px; margin-top: 6px; padding: 10px 0;
   background: none; border: none; cursor: pointer; font-family: inherit;
   font-size: 13px; color: var(--text-faint);
 }

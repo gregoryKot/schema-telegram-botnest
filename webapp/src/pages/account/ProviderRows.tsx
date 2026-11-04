@@ -55,7 +55,7 @@ export function ProviderRow({
         <div className="aa-row-text">
           <div className="aa-row-title">{title}</div>
           {sub && <div className="aa-row-sub">{sub}</div>}
-          {linked && unlinkBlocked && <div className="aa-row-sub">{ONLY_METHOD_NOTE}</div>}
+          {linked && unlinkBlocked && <div className="aa-row-sub aa-row-why">{ONLY_METHOD_NOTE}</div>}
         </div>
       </div>
       {linked && onUnlink ? (

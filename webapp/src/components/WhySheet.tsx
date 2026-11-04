@@ -15,7 +15,7 @@ const ACTIONS: [string, string][] = [
 
 // «Зачем это всё»: откуда взялись три действия и что даёт каждое — «откуда это и зачем» на пути
 // пользователя (frontend-visual.md). Шапка листа с «← Закрыть» (ds-sheet-head, #906); «Понятно, начнём»
-// идёт сразу после строк — на телефоне 852px видна без прокрутки, оговорка про самопомощь — под ней.
+// идёт после строк и прилипает к низу листа: на 390×664 и 360×640 она была за краем (QA мобильной, М4).
 export function WhySheet({ auto = false, onClose }: Props) {
   const goBack = useHistorySheet(onClose);
   const bridge = useTherapyBridgeTexts();
@@ -39,7 +39,7 @@ export function WhySheet({ auto = false, onClose }: Props) {
           ))}
         </ul>
         <p className="cw-tip">Не нужно делать всё. Одно действие в день — уже работа.</p>
-        <button type="button" className="ds-btn ds-btn--lg" onClick={goBack}>Понятно, начнём</button>
+        <div className="cw-cta"><button type="button" className="ds-btn ds-btn--lg" onClick={goBack}>Понятно, начнём</button></div>
         <p className="ds-sub cw-foot">{bridge.whyNote}</p>
       </div>
     </div>

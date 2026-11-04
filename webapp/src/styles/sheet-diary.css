@@ -175,3 +175,12 @@
 .sd-hero-num { font-size: 56px; margin-top: 8px; }
 .sd-hero-text { margin: 12px 0 0; font-size: 14px; line-height: 1.6; max-width: 460px; }
 .sd-hero-link { margin-top: 12px; min-height: 44px; font-size: 14px; }
+
+/* Палец (QA мобильной версии 2026-11, М1): сегмент шага был 32×24, чип чувства — 40 по высоте. Высота 44;
+   по ширине десять шагов в 360px до 44 не дотянуть — сегменты стоят встык (зазор рисует отступ полоски),
+   промахнуться мимо шага негде. Блок в конце файла: правила выше той же специфичности его бы перебили. */
+@media (pointer: coarse), (max-width: 767px) {
+  .sd-ticks { gap: 0; margin-bottom: 4px; }
+  .sd-tick { min-height: 44px; padding: 0 2px; }
+  .sd-chip { min-height: 44px; }
+}

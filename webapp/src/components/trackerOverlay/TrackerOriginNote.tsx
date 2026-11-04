@@ -22,7 +22,7 @@ export function TrackerOriginNote({ eligible }: { eligible: boolean }) {
   };
   return (
     <div className="tq-note" role="note">
-      <span>{TRACKER_ORIGIN_NOTE}</span>
+      <span>{TRACKER_ORIGIN_NOTE}</span>{' '}
       <button type="button" className="tq-note-x" onClick={dismiss}>Понятно</button>
     </div>
   );

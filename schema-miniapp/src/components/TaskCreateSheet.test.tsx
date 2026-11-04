@@ -93,7 +93,7 @@ describe('TaskCreateSheet — сохранение своей цели', () => {
       },
     );
 
-    fireEvent.click(screen.getByText('Создать задание'));
+    fireEvent.click(screen.getByText('Поставить цель'));
 
     await waitFor(() => expect(onCreated).toHaveBeenCalledTimes(1));
     expect(mockApi.createTask).toHaveBeenCalledWith(
@@ -111,7 +111,7 @@ describe('TaskCreateSheet — сохранение своей цели', () => {
       },
     );
 
-    fireEvent.click(screen.getByText('Создать задание'));
+    fireEvent.click(screen.getByText('Поставить цель'));
 
     await screen.findByText('Не удалось сохранить');
     expect(onCreated).not.toHaveBeenCalled();
@@ -122,7 +122,7 @@ describe('TaskCreateSheet — дефолтный тип diary_streak и пуст
   it('diary_streak (тип по умолчанию) отправляет текст с реальным числом дней', async () => {
     mockApi.createTask.mockResolvedValue({ id: 1 });
     render(<TaskCreateSheet onCreated={vi.fn()} onClose={vi.fn()} />);
-    fireEvent.click(screen.getByText('Создать задание'));
+    fireEvent.click(screen.getByText('Поставить цель'));
     await waitFor(() =>
       expect(mockApi.createTask).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -134,10 +134,10 @@ describe('TaskCreateSheet — дефолтный тип diary_streak и пуст
     );
   });
 
-  it('custom без текста — ошибка «Введи описание задания», createTask не вызывается', () => {
+  it('custom без текста — ошибка «Опиши цель», createTask не вызывается', () => {
     renderSheet();
-    fireEvent.click(screen.getByText('Создать задание'));
-    expect(screen.getByText('Введи описание задания')).toBeTruthy();
+    fireEvent.click(screen.getByText('Поставить цель'));
+    expect(screen.getByText('Опиши цель')).toBeTruthy();
     expect(mockApi.createTask).not.toHaveBeenCalled();
   });
 
@@ -150,7 +150,7 @@ describe('TaskCreateSheet — дефолтный тип diary_streak и пуст
     );
     const dateInput = document.querySelector('input[type="date"]')!;
     fireEvent.change(dateInput, { target: { value: '2026-09-01' } });
-    fireEvent.click(screen.getByText('Создать задание'));
+    fireEvent.click(screen.getByText('Поставить цель'));
     await waitFor(() => expect(onCreated).toHaveBeenCalledTimes(1));
     expect(mockApi.createTask).toHaveBeenCalledWith(
       expect.objectContaining({ dueDate: '2026-09-01' }),
@@ -180,7 +180,7 @@ describe('TaskCreateSheet — переключение типа задания �
     render(<TaskCreateSheet onCreated={vi.fn()} onClose={vi.fn()} />);
     fireEvent.click(screen.getByText('Трекер потребностей'));
     expect(screen.getByText('Цель в днях')).toBeTruthy();
-    fireEvent.click(screen.getByText('Создать задание'));
+    fireEvent.click(screen.getByText('Поставить цель'));
     await waitFor(() =>
       expect(mockApi.createTask).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -203,7 +203,7 @@ describe('TaskCreateSheet — переключение типа задания �
       mockApi.createTask.mockResolvedValue({ id: 1 });
       render(<TaskCreateSheet onCreated={vi.fn()} onClose={vi.fn()} />);
       fireEvent.click(screen.getByText(label));
-      fireEvent.click(screen.getByText('Создать задание'));
+      fireEvent.click(screen.getByText('Поставить цель'));
       await waitFor(() =>
         expect(mockApi.createTask).toHaveBeenCalledWith(
           expect.objectContaining({
@@ -221,7 +221,7 @@ describe('TaskCreateSheet — schema_intro/mode_intro требуют выбор�
   it('schema_intro без выбранной схемы — ошибка «Выбери схему», createTask не вызывается', () => {
     render(<TaskCreateSheet onCreated={vi.fn()} onClose={vi.fn()} />);
     fireEvent.click(screen.getByText('Карточка схемы'));
-    fireEvent.click(screen.getByText('Создать задание'));
+    fireEvent.click(screen.getByText('Поставить цель'));
     expect(screen.getByText('Выбери схему')).toBeTruthy();
     expect(mockApi.createTask).not.toHaveBeenCalled();
   });
@@ -232,7 +232,7 @@ describe('TaskCreateSheet — schema_intro/mode_intro требуют выбор�
     render(<TaskCreateSheet onCreated={onCreated} onClose={vi.fn()} />);
     fireEvent.click(screen.getByText('Карточка схемы'));
     fireEvent.click(screen.getByText(FIRST_SCHEMA.name));
-    fireEvent.click(screen.getByText('Создать задание'));
+    fireEvent.click(screen.getByText('Поставить цель'));
     await waitFor(() => expect(onCreated).toHaveBeenCalledTimes(1));
     expect(mockApi.createTask).toHaveBeenCalledWith(
       expect.objectContaining({ type: 'schema_intro', text: FIRST_SCHEMA.id }),
@@ -242,7 +242,7 @@ describe('TaskCreateSheet — schema_intro/mode_intro требуют выбор�
   it('mode_intro без выбранного режима — ошибка «Выбери режим»', () => {
     render(<TaskCreateSheet onCreated={vi.fn()} onClose={vi.fn()} />);
     fireEvent.click(screen.getByText('Карточка режима'));
-    fireEvent.click(screen.getByText('Создать задание'));
+    fireEvent.click(screen.getByText('Поставить цель'));
     expect(screen.getByText('Выбери режим')).toBeTruthy();
     expect(mockApi.createTask).not.toHaveBeenCalled();
   });
@@ -253,7 +253,7 @@ describe('TaskCreateSheet — schema_intro/mode_intro требуют выбор�
     render(<TaskCreateSheet onCreated={onCreated} onClose={vi.fn()} />);
     fireEvent.click(screen.getByText('Карточка режима'));
     fireEvent.click(screen.getByText(FIRST_MODE.name));
-    fireEvent.click(screen.getByText('Создать задание'));
+    fireEvent.click(screen.getByText('Поставить цель'));
     await waitFor(() => expect(onCreated).toHaveBeenCalledTimes(1));
     expect(mockApi.createTask).toHaveBeenCalledWith(
       expect.objectContaining({ type: 'mode_intro', text: FIRST_MODE.id }),
@@ -292,7 +292,7 @@ describe('TaskCreateSheet — назначение терапевтом: скл�
     mockApi.createTask.mockResolvedValue({ id: 1 });
     render(<TaskCreateSheet onCreated={vi.fn()} onClose={vi.fn()} />);
     fireEvent.click(screen.getByText('3'));
-    fireEvent.click(screen.getByText('Создать задание'));
+    fireEvent.click(screen.getByText('Поставить цель'));
     await waitFor(() =>
       expect(mockApi.createTask).toHaveBeenCalledWith(
         expect.objectContaining({

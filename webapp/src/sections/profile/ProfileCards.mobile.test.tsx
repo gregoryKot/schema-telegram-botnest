@@ -23,6 +23,8 @@ describe('ProfileHeader', () => {
     expect(h1.textContent).toBe('Мой путь');
     expect(h1.className).toContain('ds-h1');
     expect(container.querySelector('.cpf-head-sub')?.textContent).toBe('Аня · 21 день с тобой в приложении');
+    // Имя — отдельной строкой с многоточием: длинное имя без пробелов уходило за край (QA мобильной 2026-11, М5).
+    expect(container.querySelector('.cpf-head-name')?.textContent).toBe('Аня');
   });
 
   it.each([true, false])('телефон=%s: «Настроить экран» зовёт onCustomize, шестерёнка — onOpenSettings; без обработчика шестерёнки нет', (mobile) => {
