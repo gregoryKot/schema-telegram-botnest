@@ -103,6 +103,12 @@ describe('cabinet.css: примитивы листов (#906)', () => {
     expect(d).toContain('font-size: 15px');
   });
 
+  it('ds-lead: абзац под заголовком 15px/1.6 цвета --text-sub, без отступов; cw-lead удалён', () => {
+    const d = decls(css, '.ds-lead');
+    for (const x of ['margin: 0', 'font-size: 15px', 'line-height: 1.6', 'color: var(--text-sub)']) expect(d).toContain(x);
+    expect(readFileSync(join(__dirname, 'client-why.css'), 'utf8')).not.toContain('.cw-lead');
+  });
+
   it('строка-переход: заголовок 14/600, подпись = ds-sub, шеврон — один глиф «›» из ::before', () => {
     expect(decls(css, '.ds-list-title')).toContain('font-size: 14px');
     expect(decls(css, '.ds-list-title')).toContain('font-weight: 600');

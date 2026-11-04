@@ -12,7 +12,7 @@ const WIDE = /(^|;|\s)width:\s*100%/;
 /** Телефонная раскладка примитивов: растяжение на колонку — только ≤767 (на компьютере по содержимому). */
 const PHONE_ONLY: [string, RegExp][] = [['.ds-btn--lg', WIDE], ['.ds-seg--full', WIDE]];
 /** Примитивы и раскладки, у которых на ≥768 обязано быть своё правило; ':файл' — искать только в нём, по точному селектору. */
-const NEED_DESKTOP = ['.ds-sheet-head--page:cabinet.css', '.ds-seg--full:cabinet.css', '.cw-list', '.cw-item', '.sd-explainer-stack', '.cm-page > .ds-card--flush', '.ap-main--state', '.ap-donate-shell'];
+const NEED_DESKTOP = ['.ds-sheet-head--page:cabinet.css', '.ds-seg--full:cabinet.css', '.cw-list', '.cw-item', '.sd-explainer-stack', '.cm-page > .ds-card--flush', '.ap-main--state'];
 /** Скрытие телефонных элементов: display: none только под точным ≤767. */
 const PHONE_HIDDEN: [string, string][] = [['therapist-concept.css', '.tcp-head-title'], ['therapist-concept.css', '.tcp-more-txt']];
 
@@ -24,7 +24,7 @@ const LG: Record<string, ['own' | 'stretch' | 'content', string]> = {
   'sections/schemas/MineGroupsList.tsx': ['stretch', '.cs-block'],
   'sections/diary/DiaryHeader.tsx': ['content', '.cd-write'],
   'pages/subscribe/SubscribeForm.tsx': ['own', '.ap-pay .ds-btn--lg'],
-  'pages/DonatePage.tsx': ['own', '.ap-donate .ds-btn--lg'],
+  'pages/DonatePage.tsx': ['own', '.ap-donate .ds-btn--lg'], // во всю колонку 560, как «Понятно, начнём» у листа
   'pages/SubscribePage.tsx': ['own', '.ap-main--state .ds-btn--lg'],
 };
 function lgDecisionOk(rules: Rule[], kind: 'own' | 'stretch' | 'content', sel: string): boolean {
@@ -67,35 +67,42 @@ describe('компьютер ≥768 не наследует телефонную
 describe('auth-pay.css: страницы подписки и доната на компьютере', () => {
   const ap = readCss('auth-pay.css');
   const decl = (r: Rule) => r.body.replace(/\s+/g, ' ');
-  it('на ≥768 у .ap-main служебных состояний и доната боковой padding 0 (иначе .ds-page съедает колонку)', () => {
+  it('state и donate на ≥768: колонка 560, margin 0 auto, боковой padding 20, без центрирования', () => {
     for (const sel of ['.ds-page.ap-main--state', '.ap-page--donate .ds-page.ap-main']) {
       const r = ap.find((x) => isDesktop(x.media) && x.selectors.includes(sel));
-      expect(r && /padding-left:\s*0/.test(decl(r)) && /padding-right:\s*0/.test(decl(r))).toBe(true);
+      const d = r ? decl(r) : '';
+      expect(d).toMatch(/max-width:\s*560px/);
+      expect(d).toMatch(/margin:\s*0 auto/);
+      expect(d).toMatch(/padding-left:\s*20px/);
+      expect(d).toMatch(/padding-right:\s*20px/);
     }
+    expect(ap.filter((r) => /text-align:\s*center|align-items:\s*center/.test(r.body) && r.selectors.some((s) => /ap-main|ap-hero|ap-page--(state|donate)/.test(s)))).toEqual([]);
   });
-  it('.ap-home скрыт вне медиа и показан только внутри ≥768', () => {
+  it('колонка листа: --sheet-col 560 и --sheet-pad 20 у state и donate', () => {
+    const r = ap.find((x) => x.media === '' && x.selectors.includes('.ap-page--state') && x.selectors.includes('.ap-page--donate'));
+    expect(r && decl(r)).toMatch(/--sheet-col:\s*560px;\s*--sheet-pad:\s*20px/);
+  });
+  it('.ap-home: скрыт вне медиа, показан только в ≥768 и только у формы; .ap-donate-shell удалён', () => {
     const base = ap.filter((r) => r.selectors.includes('.ap-home'));
     expect(base).toHaveLength(1);
     expect(base[0].media).toBe('');
     expect(base[0].body).toMatch(/display:\s*none/);
     const shown = ap.filter((r) => /display:\s*inline-flex/.test(r.body) && r.selectors.some((s) => s.includes('.ap-home')));
     expect(shown.length).toBeGreaterThan(0);
-    for (const r of shown) expect(isDesktop(r.media)).toBe(true);
+    for (const r of shown) expect(isDesktop(r.media) && r.selectors.every((s) => s.startsWith('.ap-page--form'))).toBe(true);
+    expect(ap.flatMap((r) => r.selectors).filter((s) => s.includes('ap-donate-shell'))).toEqual([]);
   });
-  it('.ap-donate-shell: вне медиа ровно display: contents, display: flex — только в ≥768 (телефон: обёртки нет)', () => {
-    const rs = ap.filter((r) => r.selectors.includes('.ap-donate-shell'));
-    const base = rs.filter((r) => r.media === '');
-    expect(base).toHaveLength(1);
-    expect(base[0].body).toMatch(/display:\s*contents/);
-    for (const r of rs.filter((x) => /display:\s*(flex|block|grid)/.test(x.body))) expect(isDesktop(r.media)).toBe(true);
-  });
-  it('шапка .ds-sheet-head--page скрыта только внутри ≥768 и только у state/donate/form', () => {
+  it('шапка .ds-sheet-head--page скрыта на ≥768 только у формы (state и donate — шапка видна)', () => {
     const hid = ap.filter((r) => r.selectors.some((s) => s.includes('.ds-sheet-head--page')) && /display:\s*none/.test(r.body));
     expect(hid.length).toBeGreaterThan(0);
     for (const r of hid) {
       expect(isDesktop(r.media)).toBe(true);
-      expect(r.selectors.every((s) => /\.ap-page--(state|donate|form)\b/.test(s))).toBe(true);
+      expect(r.selectors.every((s) => /\.ap-page--form\b/.test(s))).toBe(true);
     }
+  });
+  it('форма на ≥768: у левой колонки .ap-info верхний отступ 88 (шапка скрыта)', () => {
+    const r = ap.find((x) => isDesktop(x.media) && x.selectors.includes('.ap-page--form .ap-info'));
+    expect(r && decl(r)).toMatch(/padding-top:\s*88px/);
   });
   it('client-more.css: правила .cm-page — только через ребёнка (.cm-page > …), листы внутри страницы не затрагиваются', () => {
     const leaks = readCss('client-more.css').flatMap((r) => r.selectors).filter((s) => /\.cm-page\s+[^>\s]/.test(s));

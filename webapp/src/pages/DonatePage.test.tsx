@@ -191,7 +191,9 @@ describe('DonatePage — шапка и кнопки (#906)', () => {
     const { container } = render(<DonatePage />);
     const back = screen.getAllByRole('link', { name: '← На главную' })[0];
     expect(back.className).toBe('ds-back');
-    expect(screen.getAllByRole('link', { name: '← На главную' })[1].className).toBe('ap-home'); // на компьютере — внизу, шапка скрыта
+    expect(screen.getAllByRole('link', { name: '← На главную' })).toHaveLength(1); // нижней ссылки нет: шапка видна и на компьютере
+    expect(container.querySelector('.ap-donate-shell, .ap-home')).toBeNull();
+    expect(container.querySelector('.ap-lead')?.classList.contains('ds-lead')).toBe(true);
     expect(back.parentElement!.className).toBe('ds-sheet-head ds-sheet-head--page');
     expect(screen.getByRole('heading', { level: 1 }).classList.contains('ds-h1')).toBe(true);
     expect(screen.getByRole('button', { name: /Поддержать 500/ }).classList.contains('ds-btn--lg')).toBe(true);
