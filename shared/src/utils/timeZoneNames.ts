@@ -6,6 +6,8 @@
 // основная Европа, США/Канада восток-запад, пара городов Латинской Америки).
 // Неизвестный пояс — фолбэк на последний сегмент IANA (см. cityLabel).
 
+export { deviceTimeZone, isValidTimeZone } from './deviceTimeZone';
+
 export const RUSSIAN_TZ_NAMES: Record<string, string> = {
   // Россия, запад → восток
   'Europe/Kaliningrad': 'Калининград',
@@ -77,27 +79,6 @@ export const TIME_ZONE_OPTIONS: ReadonlyArray<{ tz: string; label: string }> =
     tz,
     label: RUSSIAN_TZ_NAMES[tz],
   }));
-
-/** `true`, если строка — распознаваемый Intl часовой пояс IANA. */
-export function isValidTimeZone(tz: string): boolean {
-  if (!tz) return false;
-  try {
-    new Intl.DateTimeFormat('en-US', { timeZone: tz });
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-/** Пояс устройства (Intl); не определился — undefined, а не догадка. */
-export function deviceTimeZone(): string | undefined {
-  try {
-    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    return tz && isValidTimeZone(tz) ? tz : undefined;
-  } catch {
-    return undefined;
-  }
-}
 
 /** Последний сегмент IANA-идентификатора как читаемое название («Asia/Krasnoyarsk» → «Krasnoyarsk»). */
 function lastSegmentLabel(tz: string): string {

@@ -41,7 +41,7 @@ import {
 } from './utils/todayConstants';
 import { celebratedKey } from '../../shared/src/utils/todayConstants';
 import { useDayRatings } from '../../shared/src/today/useDayRatings';
-import { deviceTimeZone } from '../../shared/src/utils/timeZoneNames';
+import { deviceTimeZone } from '../../shared/src/utils/deviceTimeZone';
 import { AppSections } from './components/AppSections';
 import { AppOverlays } from './components/AppOverlays';
 import { preloadOtherSections } from './utils/preloadSections';

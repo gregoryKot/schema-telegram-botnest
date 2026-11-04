@@ -6,7 +6,7 @@ import { cacheTherapistContact } from '../../utils/therapistContact';
 import { humanizeThrown } from '../../../../shared/src/api/humanizeError';
 import { MY_SCHEMA_IDS_KEY, CHILDHOOD_DONE_KEY, YSQ_PROGRESS_KEY, THERAPIST_MODE_KEY } from '../../utils/storageKeys';
 import { useDayRatings } from '../../../../shared/src/today/useDayRatings';
-import { deviceTimeZone } from '../../../../shared/src/utils/timeZoneNames';
+import { deviceTimeZone } from '../../../../shared/src/utils/deviceTimeZone';
 // Ре-экспорт для AppShell. Это день ЗАГРУЗКИ бандла; живой день, который
 // сменяется в полночь, — `todayDate` из хука ниже.
 export { TODAY_DATE, TODAY_KEY } from '../../../../shared/src/utils/todayConstants';
