@@ -3,7 +3,7 @@
 // кризисного пути недопустим). Самый опасный класс регрессии — новый
 // компонент с полем ввода, который забыл прогнать текст через
 // detectCrisisAny/CrisisCard. Инвариант: каждый .tsx-файл (в
-// webapp/schema-miniapp/shared) с <textarea> ИЛИ с <input> свободного текста —
+// webapp/shared) с <textarea> ИЛИ с <input> свободного текста —
 // либо
 //   (A) импортирует detectCrisis* — кризисный путь есть, либо
 //   (B) в NON_THERAPEUTIC_ALLOWLIST — осознанно НЕ терапевтический свободный
@@ -34,17 +34,16 @@ import {
 const ROOT = join(__dirname, '..', '..');
 
 // Директории фронтендов, где вообще может жить пользовательский ввод.
-const FRONTEND_DIRS = ['webapp/src', 'schema-miniapp/src', 'shared/src'];
+const FRONTEND_DIRS = ['webapp/src', 'shared/src'];
 
 // `<LimitedTextarea` — общая обёртка поля с пределом длины (shared): без неё в
 // регэкспе все поля, переехавшие на обёртку, выпали бы из-под трипваера.
 const TEXTAREA_RE = /<(?:textarea|LimitedTextarea)/i;
-// Детекцией считается и прямой вызов detectCrisis*, и общие гейт-примитивы:
-// <CrisisGate> (schema-miniapp/src/components/CrisisGate.tsx) и
+// Детекцией считается и прямой вызов detectCrisis*, и общий гейт-примитив
 // <BookingCrisisNote> (webapp/src/components/booking/BookingCrisisNote.tsx,
-// форма записи на визитке) — оба инкапсулируют detectCrisisAny + карточку; что
-// сами они реально зовут detectCrisis, фиксируют отдельные тесты ниже.
-const DETECT_CRISIS_RE = /detectCrisis|CrisisGate|BookingCrisisNote/;
+// форма записи на визитке) — он инкапсулирует detectCrisisAny + карточку; что
+// сам он реально зовёт detectCrisis, фиксирует отдельный тест ниже.
+const DETECT_CRISIS_RE = /detectCrisis|BookingCrisisNote/;
 
 // Все .tsx-файлы с <textarea> (свободный текст пользователя), путь
 // относительно корня репозитория.
@@ -80,11 +79,7 @@ const NON_THERAPEUTIC_ALLOWLIST: Record<string, string> = {
   // Планы/задачи/заметки настроек — операционный текст (что сделать), а не
   // рефлексия/переживание.
   'webapp/src/components/PlanSheet.tsx': 'план действий — операционный текст',
-  'schema-miniapp/src/components/PlanSheet.tsx':
-    'план действий — операционный текст',
   'webapp/src/components/TaskCreateSheet.tsx':
-    'создание задачи — операционный текст',
-  'schema-miniapp/src/components/TaskCreateSheet.tsx':
     'создание задачи — операционный текст',
   // SettingsSheet распилен (правило №10): <textarea> анкеты «стать
   // терапевтом» уехал в BecomeTherapistSection, сам SettingsSheet остался
@@ -114,16 +109,6 @@ const NON_THERAPEUTIC_ALLOWLIST: Record<string, string> = {
     'концептуализация терапевта, не текст клиента',
   'shared/src/therapy/conceptGraph/ConceptTextField.tsx':
     'концептуализация терапевта (связи режимов), не текст клиента',
-  'schema-miniapp/src/components/therapistClientSheet/NotesSheet.tsx':
-    'заметки терапевта о клиенте',
-  'schema-miniapp/src/components/therapistClientSheet/conceptSheet/ConceptFieldsView.tsx':
-    'концептуализация терапевта, не текст клиента',
-  'schema-miniapp/src/components/settingsSheet/BecomeTherapistSection.tsx':
-    'заявка «стать терапевтом» — анкета, не дневник',
-  // Дочерний контрол — детекция стоит у родителя-шита (ModeEntrySheet /
-  // SchemaEntrySheet), который прогоняет detectCrisisAny по всем полям.
-  'schema-miniapp/src/components/diary/DiaryTextArea.tsx':
-    'дочерний <textarea>-контрол, детекция в родительском шите',
   // Общая обёртка поля с пределом длины (backend#29): сама ничего не знает о
   // содержании, детекция стоит у каждого вызывающего — они попадают в скан
   // через `<LimitedTextarea` (регэксп выше) и классифицируются поштучно.
@@ -139,18 +124,6 @@ const NON_THERAPEUTIC_ALLOWLIST: Record<string, string> = {
 // затрагиваются, т.к. эти файлы уже попадают в TEXTAREA_FILES и должны быть
 // классифицированы отдельно (см. EXPECTED_CRISIS_FILES ниже).
 const EXPECTED_CRISIS_FILES = [
-  'schema-miniapp/src/components/LetterToSelf.tsx',
-  'schema-miniapp/src/components/SafePlace.tsx',
-  'schema-miniapp/src/components/NoteSheet.tsx',
-  'schema-miniapp/src/components/WeeklyQuestion.tsx',
-  // Проверка убеждения: свободный текст живёт в двух шагах, детекция
-  // переехала вместе с ними (BeliefCheck.tsx остался оркестратором без
-  // <textarea>) — тот же случай, что ModeEntrySheet → ModeEntryForm ниже.
-  'schema-miniapp/src/components/beliefCheck/BeliefStep.tsx',
-  'schema-miniapp/src/components/beliefCheck/ReframeStep.tsx',
-  'schema-miniapp/src/components/IntroSheetFlashcard.tsx',
-  'schema-miniapp/src/components/schemaFlashcard/ResponseStep.tsx',
-  'schema-miniapp/src/components/schemaFlashcard/ActionStep.tsx',
   'webapp/src/components/NoteSheet.tsx',
   // «Мне плохо» (#746): шаги со свободным текстом и детекция переехали из
   // SchemaFlashcard.tsx в FlashcardSteps.tsx, оркестратор остался без <textarea>.
@@ -169,14 +142,6 @@ const EXPECTED_CRISIS_FILES = [
   // «Что случилось» в три шага (этап 4 простого клиента): поле сцены с
   // детекцией прямо в файле; CaseSceneScreen (старый поток) удалён с сайта.
   'webapp/src/components/caseFlow/CaseSceneStep.tsx',
-  'schema-miniapp/src/components/diary/ModeEntrySheet.tsx',
-  // Благодарность (#769): поля и детекция вынесены в GratitudeParts.tsx,
-  // GratitudeEntrySheet.tsx остался оркестратором без <textarea>.
-  'schema-miniapp/src/components/diary/GratitudeParts.tsx',
-  'schema-miniapp/src/components/diary/SchemaEntrySheet.tsx',
-  // Имя части в разборе случая (<input>, аудит 2026-10): «своё слово» уходит
-  // на сервер сразу по «Назвать», поэтому черновик проверяется на экране.
-  'schema-miniapp/src/components/caseFlow/CaseNameScreen.tsx',
 ];
 
 describe('трипваер: кризисная детекция для свободного текста (правило №7)', () => {
@@ -223,20 +188,9 @@ describe('трипваер: кризисная детекция для своб�
     );
   });
 
-  it('CrisisGate (общий гейт miniapp) сам зовёт detectCrisisAny и CrisisCard', () => {
-    // Регэксп категории (A) засчитывает <CrisisGate> как детекцию — этот
-    // якорь гарантирует, что гейт не выродился в пустышку без детекции.
-    const src = readFileSync(
-      join(ROOT, 'schema-miniapp/src/components/CrisisGate.tsx'),
-      'utf8',
-    );
-    expect(src).toMatch(/detectCrisisAny/);
-    expect(src).toMatch(/CrisisCard/);
-  });
-
   it('BookingCrisisNote (форма записи на визитке) сам зовёт detectCrisisAny и карточку', () => {
     // Регэксп категории (A) засчитывает <BookingCrisisNote> как детекцию — якорь
-    // против выродившегося в пустышку примитива (тот же приём, что у CrisisGate).
+    // против выродившегося в пустышку примитива.
     const src = readFileSync(
       join(ROOT, 'webapp/src/components/booking/BookingCrisisNote.tsx'),
       'utf8',
@@ -284,12 +238,8 @@ const INPUT_CHILD_CONTROLS: Record<string, { detector: string; why: string }> =
       why: 'доводы за/против: detectCrisisAny(forInput, ...forList) у родителя',
     },
     'webapp/src/components/caseFlow/CaseChipGrid.tsx': {
-      detector: 'shared/src/case/useCaseFlowState.ts',
-      why: '«своё» тело/импульс пишется в поля потока на каждый ввод (bodyOwn/impulseOwn)',
-    },
-    'schema-miniapp/src/components/caseFlow/CaseChipGrid.tsx': {
-      detector: 'shared/src/case/useCaseFlowState.ts',
-      why: '«своё» тело/импульс пишется в поля потока на каждый ввод (bodyOwn/impulseOwn)',
+      detector: 'shared/src/case/quick/useCaseQuickFlow.ts',
+      why: '«своё» тело/импульс пишется в поля быстрого потока на каждый ввод (bodyOwn/impulseOwn): detectCrisisAny(scene, bodyOwn, impulseOwn)',
     },
   };
 
@@ -300,19 +250,13 @@ const SHORT_INPUT_ALLOWLIST: Record<string, string> = {
     'резервный код входа 2FA (hex), о переживаниях там не пишут',
   'webapp/src/components/settingsSheet/NameAddressSections.tsx':
     'имя пользователя, до 50 символов',
-  'schema-miniapp/src/components/settingsSheet/MiscSections.tsx':
-    'имя пользователя, до 50 символов',
   'webapp/src/components/BookingPicker.tsx':
     'имя в записи на приём; «Запрос» — RequestField с BookingCrisisNote',
   'webapp/src/components/booking/ContactChannelField.tsx':
     'контакт для связи (телефон, @ник)',
   'webapp/src/components/settingsSheet/PartnerSection.tsx':
     'код приглашения пары',
-  'schema-miniapp/src/components/pairSheet/JoinCodeView.tsx':
-    'код приглашения пары',
   'webapp/src/components/settingsSheet/TherapistSections.tsx':
-    'код приглашения терапевта',
-  'schema-miniapp/src/components/settingsSheet/TherapistClientSection.tsx':
     'код приглашения терапевта',
   // Поиск по готовому списку (клиенты, режимы, команды) — текст никуда не сохраняется.
   'webapp/src/components/appShell/SidebarClients.tsx':
@@ -326,12 +270,6 @@ const SHORT_INPUT_ALLOWLIST: Record<string, string> = {
     'терапевт: имя нового клиента',
   'webapp/src/components/therapist/ClientHeader.tsx':
     'терапевт: переименование клиента',
-  'schema-miniapp/src/components/therapistClientSheet/ClientNameHeader.tsx':
-    'терапевт: переименование клиента',
-  'schema-miniapp/src/components/therapistClientSheet/addPanels/AddInputPanel.tsx':
-    'терапевт: имя офлайн-клиента',
-  'schema-miniapp/src/components/therapistClientSheet/addPanels/InvitePanel.tsx':
-    'терапевт: имя клиента в приглашении',
   'shared/src/therapy/conceptGraph/ConceptAliasField.tsx':
     'концептуализация терапевта: своё имя режима клиента',
   // Карта режимов — короткие подписи узлов, стрелок и дорожек. Тот же класс,
@@ -390,7 +328,6 @@ describe('трипваер: кризисная детекция для <input> �
     // выборку и зелёный тест выше.
     for (const rel of [
       'webapp/src/components/exercises/SafePlaceEx.tsx',
-      'schema-miniapp/src/components/caseFlow/CaseNameScreen.tsx',
       'webapp/src/components/exercises/beliefCheck/EviList.tsx',
     ]) {
       expect(FREE_INPUT_FILES).toContain(rel);

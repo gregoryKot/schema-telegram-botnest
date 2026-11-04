@@ -4,7 +4,8 @@
 // деплое. Первому экрану визитки бэкенд не нужен: это статика webapp/dist, а
 // /api/site-content у лендинга с фолбэком на /gregory.jpg. Поэтому здесь front
 // читает заголовок запроса и для хоста визитки отдаёт index.html и файлы
-// сборки с диска; продукт, API, /app и /health по-прежнему получают техработы.
+// сборки с диска; продукт, API, /app (вечный переход на /today, его делает Nest) и
+// /health по-прежнему получают техработы.
 //
 // Только встроенные модули Node: front обязан подниматься при сломанной сборке.
 import { readFileSync, statSync } from 'node:fs';
@@ -26,6 +27,8 @@ const HEAD_TIMEOUT_MS = 5000;
 
 // Продуктовые пути и то, что на хосте визитки генерирует сам Nest (sitemap,
 // robots — в webapp/dist лежит robots.txt продукта, отдавать его визитке нельзя).
+// `/app` — бывший адрес мини-аппа: вечный переход на /today делает Nest
+// (src/unified-frontend.middleware.ts); front не должен подменять его index.html.
 const PRODUCT_PREFIXES = ['/api', '/app', '/health'];
 const NEST_ONLY_FILES = new Set(['/robots.txt', '/sitemap.xml']);
 

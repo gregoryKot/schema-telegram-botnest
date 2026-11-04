@@ -1,5 +1,5 @@
 /**
- * Типы контента пяти базовых потребностей — общие для webapp и schema-miniapp
+ * Типы контента пяти базовых потребностей — общие для webapp
  * (правило №3 CLAUDE.md). Сам текст — в shared/src/needs/content/*, сборка —
  * в shared/src/needs/needData.ts.
  */

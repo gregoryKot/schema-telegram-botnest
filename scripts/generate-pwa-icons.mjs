@@ -3,13 +3,8 @@
 // существующего webapp/public/favicon.svg. Результат коммитится — скрипт не
 // гоняется в CI, только вручную при смене логотипа.
 //
-// Иконки живут в webapp/public/ (не в schema-miniapp/public/) — сайт и
-// мини-апп на одном origin, `webapp/dist/*` раздаётся с корня, а
-// `schema-miniapp/dist` копируется в `webapp/dist/app/` (см. Dockerfile).
-// Абсолютный путь вида `/icon-192.png` из `/app/manifest.webmanifest`
-// резолвится в корень — точно так же уже работает `/telegram-web-app.js`,
-// на который ссылается schema-miniapp/index.html. Одна копия иконки вместо
-// дублирования в оба public/-каталога.
+// Иконки живут в webapp/public/ — `webapp/dist/*` раздаётся с корня, путь
+// вида `/icon-192.png` из манифеста резолвится в корень.
 import sharp from 'sharp';
 import { readFileSync } from 'fs';
 import { join } from 'path';

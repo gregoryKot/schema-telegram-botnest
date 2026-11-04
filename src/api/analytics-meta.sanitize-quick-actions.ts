@@ -4,7 +4,7 @@ import {
   QUICK_ACTION_MOVE_DIR_SET,
 } from './dto/analytics.dto';
 
-// Санитизация meta для событий быстрых действий: plus_action,
+// Санитизация meta для событий быстрых действий:
 // quick_action_toggle, quick_action_move. Вынесено из
 // analytics-meta.sanitize.ts отдельным модулем по тому же поводу, что и
 // sanitize-screens.ts — тот файл сверх потолка 300 строк и обязан таять, а не
@@ -12,16 +12,9 @@ import {
 // sanitizeMeta: «всё или ничего» по событию. Вызывается только из sanitizeMeta
 // с уже проверенным именем и непустой meta.
 export function sanitizeQuickActionMeta(
-  name: 'plus_action' | 'quick_action_toggle' | 'quick_action_move',
+  name: 'quick_action_toggle' | 'quick_action_move',
   meta: Record<string, unknown>,
 ): Record<string, unknown> | undefined {
-  if (name === 'plus_action') {
-    const action = meta.action;
-    if (typeof action === 'string' && QUICK_ACTION_ID_SET.has(action)) {
-      return { action };
-    }
-    return undefined;
-  }
   if (name === 'quick_action_toggle') {
     const action = meta.action;
     const hidden = meta.hidden;

@@ -1,7 +1,6 @@
 // @vitest-environment jsdom
 // Тесты ключевой инфраструктуры ты/вы (CLAUDE.md, TEST_COVERAGE_PLAN этап 2 п.10).
-// addressForm.tsx — парный файл (schema-miniapp/src/utils/addressForm.tsx,
-// проверяется scripts/check-paired-files.mjs) — сам файл здесь не меняется.
+// addressForm.tsx — сам файл здесь не меняется.
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';

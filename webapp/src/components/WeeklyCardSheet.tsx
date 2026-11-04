@@ -1,6 +1,5 @@
 // Экран «Карточка недели» — отрисовка и расчёты в shared/src/share
 // (единственная копия, правило №3). Здесь только вёрстка ExScreen и share-флоу.
-// Парный файл: schema-miniapp/src/components/WeeklyCardSheet.tsx.
 import { useEffect, useRef, useState } from 'react';
 import type { Need, DayHistory } from '../types';
 import { ExScreen } from './exercises/ExScreen';

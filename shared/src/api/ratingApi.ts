@@ -1,11 +1,9 @@
-// Оффлайн-надёжность оценки потребности — единственная реализация для обоих
-// фронтендов (правило №3 CLAUDE.md). До 2026-08 это работало только в
-// мини-аппе: webapp глушил сетевой сбой `catch {}` в TrackerOverlay, и
-// оценка терялась без следа — самый глубокий разрыв «парные файлы правятся
-// парой» за все волны аудита. Транспорт (authedFetch/trackEvent) у каждого
-// фронта свой (initData vs JWT Bearer) — эта функция от него не зависит,
-// поэтому единственный параметр различия между webapp/api.ts и
-// schema-miniapp/api.ts.
+// Оффлайн-надёжность оценки потребности — единственная реализация
+// (правило №3 CLAUDE.md). До 2026-08 это работало только в
+// удалённом мини-аппе: webapp глушил сетевой сбой `catch {}` в TrackerOverlay, и
+// оценка терялась без следа — самый глубокий разрыв между двумя копиями за все волны
+// аудита. Транспорт (authedFetch/trackEvent) приходит снаружи — эта функция
+// от него не зависит.
 import type { StreakData } from '../apiTypes';
 import {
   type OutboxItem,
@@ -68,7 +66,7 @@ export function createRatingApi(
       }
     },
     // Отправляет отложенные оценки (см. ../utils/ratingOutbox.ts). Вызывается
-    // один раз на старте (useBootstrapLoad.ts / App.tsx у мини-аппа).
+    // один раз на старте (useBootstrapLoad.ts).
     flushOutbox: () =>
       flushRatingOutbox(
         (item) => rawSaveRating(item).then(() => undefined),

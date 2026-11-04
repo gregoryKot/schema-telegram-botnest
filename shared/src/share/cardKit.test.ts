@@ -1,7 +1,7 @@
 // Тесты чистой логики кита карточек: перенос/обрезка строк (wrapLines,
 // clampLines) — то, что реально тестируется без canvas 2d-контекста (jsdom
 // его не реализует; resolveCardTheme/beginCard/draw* остаются непокрытыми).
-// Кейсы зеркалят schema-miniapp/src/share/cardKit.test.ts — это отдельный
+// Кейсы зеркалили тест удалённого мини-аппа — это отдельный
 // прямой тест той же shared-функции, не перенос существующего теста.
 import { describe, it, expect } from 'vitest';
 import { wrapLines, clampLines, cardFont } from './cardKit';

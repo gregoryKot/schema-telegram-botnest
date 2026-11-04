@@ -34,7 +34,7 @@ const BASELINE_PATH = join(ROOT, 'scripts', 'gendered-forms-baseline.json');
 const UPDATE = process.argv.includes('--update');
 const VERBOSE = process.argv.includes('--verbose');
 
-const SCAN_DIRS = ['src', 'webapp/src', 'schema-miniapp/src', 'shared/src'];
+const SCAN_DIRS = ['src', 'webapp/src', 'shared/src'];
 
 function walk(dir, acc = []) {
   let entries;

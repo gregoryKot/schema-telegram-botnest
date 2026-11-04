@@ -43,13 +43,7 @@ const FULL: ProductMetrics = {
   shareResult: { ok: 35, fallback: 5 },
   outbox: { flushes: 8, recovered: 21 },
   today: {
-    focusChanged: 15,
-    blocksHidden: [
-      { block: 'streak', count: 7 },
-      { block: 'phrase', count: 4 },
-    ],
-    customizeGear: 30,
-    customizeLongpress: 12,
+    blocksHidden: [{ block: 'streak', count: 7 }],
   },
   journey: { opens: 18 },
   homeScreen: { shown: 200, add: 60, later: 90, never: 30, added: 45 },
@@ -78,10 +72,7 @@ const EMPTY: ProductMetrics = {
   shareResult: { ok: 0, fallback: 0 },
   outbox: { flushes: 0, recovered: 0 },
   today: {
-    focusChanged: 0,
     blocksHidden: [],
-    customizeGear: 0,
-    customizeLongpress: 0,
   },
   journey: { opens: 0 },
   homeScreen: { shown: 0, add: 0, later: 0, never: 0, added: 0 },
@@ -117,12 +108,8 @@ describe('formatProductMetrics', () => {
     expect(t).toContain('за неделю: 12, за месяц: 40');
     expect(t).toContain('🔥 сколько дней подряд — 20');
     expect(t).toContain('🧩 схема — 3');
-    expect(t).toContain('Сменили главную практику: 15');
-    // как открывали настройку — видно, находят ли жест долгого нажатия
-    expect(t).toContain('шестерёнкой 30 · долгим нажатием 12');
     // что прятали — человеческими подписями, не ключами
     expect(t).toContain('🔥 счётчик дней подряд — 7');
-    expect(t).toContain('💬 цитата — 4');
     expect(t).not.toContain('therapist_banner');
     expect(t).toContain('Открывали свою историю: 18 раз');
     // значок на экране: доля согласившихся и реально появившиеся значки

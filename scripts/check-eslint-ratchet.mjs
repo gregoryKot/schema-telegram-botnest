@@ -15,8 +15,7 @@
 //     (плюс неотслеживаемые). Бейслайн тут не применим — красным считается
 //     любая находка в изменённом файле; полную сумму по дереву сверяет CI.
 //
-// Требует установленных node_modules во всех четырёх пакетах (корень, webapp,
-// schema-miniapp, shared) и прогнанного prisma generate — иначе typed-линт
+// Требует установленных node_modules во всех пакетах (корень, webapp, shared) и прогнанного prisma generate — иначе typed-линт
 // видит неразрешённые типы как any и счётчики уезжают вверх.
 import { spawnSync } from 'child_process';
 import { existsSync, readFileSync, readdirSync, writeFileSync } from 'fs';

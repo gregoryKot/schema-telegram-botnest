@@ -63,12 +63,6 @@ ARG VITE_GOOGLE_CLIENT_ID=283410385894-d4fu4fmchc8baq5e0rla4n607shtihth.apps.goo
 ENV VITE_GOOGLE_CLIENT_ID=$VITE_GOOGLE_CLIENT_ID
 RUN npm run build --prefix webapp
 
-# Copy the pre-built Telegram mini-app into webapp/dist/app → served at /app by
-# the same ServeStaticModule. The mini-app is built from its committed source
-# (`npm run build --prefix schema-miniapp`) and its dist committed — this keeps
-# the Docker build fast (no extra install/build step here).
-RUN mkdir -p webapp/dist/app && cp -r schema-miniapp/dist/* webapp/dist/app/
-
 # Build the game (vite base '/game/') → served at /game by the same ServeStatic
 RUN npm run build --prefix game
 RUN mkdir -p webapp/dist/game && cp -r game/dist/* webapp/dist/game/

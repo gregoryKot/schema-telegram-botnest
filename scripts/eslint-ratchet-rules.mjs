@@ -3,7 +3,6 @@
 // суммируется отчёт и как печатается рост против бейслайна. Чистые функции
 // без диска и подпроцессов — их проверяет спек
 // src/test-support/gates/eslint-ratchet-modes.spec.ts через песочницу гейта.
-import { createHash } from 'crypto';
 import { readFileSync } from 'fs';
 import { createRequire } from 'module';
 import { join } from 'path';
@@ -15,8 +14,7 @@ const SKIP_DIRS = new Set(['node_modules', 'game']);
 
 /** Полный режим: один запуск eslint на каждый каталог верхнего уровня плюс
  * один на файлы в корне. Запуск по всему дереву разом держит в памяти
- * программы TypeScript всех четырёх пакетов (корень, webapp, schema-miniapp,
- * shared) и падает с OOM у лимита кучи ~2 ГБ (находка PR #880); по каталогам
+ * программы TypeScript всех пакетов (корень, webapp, shared) и падает с OOM у лимита кучи ~2 ГБ (находка PR #880); по каталогам
  * каждый дочерний процесс отдаёт память перед следующим. Сумма отчётов равна
  * отчёту по `.`: флэт-конфиг резолвится от cwd, а не от пути файла. */
 export function lintShards(dirents) {
@@ -95,23 +93,9 @@ function printEnvDiag(root) {
     const req = createRequire(join(root, 'package.json'));
     const pPath = req.resolve('prettier/package.json');
     const pVer = JSON.parse(readFileSync(pPath, 'utf8')).version;
-    let miniVer = '(нет)';
-    try {
-      const reqMini = createRequire(join(root, 'schema-miniapp/package.json'));
-      const mp = reqMini.resolve('prettier/package.json');
-      miniVer = JSON.parse(readFileSync(mp, 'utf8')).version + ' @ ' + mp;
-    } catch {
-      /* prettier не установлен в miniapp — норм */
-    }
-    const suspect = join(
-      root,
-      'schema-miniapp/src/components/YSQTestSheet.tsx',
-    );
-    const md5 = createHash('md5').update(readFileSync(suspect)).digest('hex');
     console.error(
       `   [diag] prettier(root) ${pVer} @ ${pPath}\n` +
-        `   [diag] prettier(miniapp) ${miniVer}\n` +
-        `   [diag] node ${process.version}, YSQTestSheet md5=${md5}`,
+        `   [diag] node ${process.version}`,
     );
   } catch (e) {
     console.error('   [diag] не удалось: ' + e.message);

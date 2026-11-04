@@ -1,14 +1,6 @@
 // Манифест PWA у корня сайта: «сохранить ярлык» с любой страницы
 // schemehappens.ru ставит приложение. С 2026-10-17 оно открывает кабинет сайта
-// (/today), а не мини-апп /app/ — решение владельца: от приложения в Telegram
-// отказываемся постепенно, устанавливаемая версия — редизайн кабинета.
-//
-// Два манифеста (корневой и /app/manifest.webmanifest мини-аппа, его собирает
-// vite-plugin-pwa) теперь описывают РАЗНЫЕ приложения, и это намеренно: у них
-// разные id. Браузер обновляет установленное приложение только с манифеста с
-// тем же id, поэтому старые установки (id «/app/») продолжают открывать
-// мини-апп, а новые с сайта получают кабинет. Совпадение id привело бы к
-// качелям start_url при каждом открытии /app/ изнутри установленного.
+// (/today).
 //
 // Цвет оболочки (сплэш, статус-бар) — одна роль в четырёх местах, они обязаны
 // совпадать (правило №4): manifest, два meta theme-color в index.html,
@@ -31,7 +23,6 @@ interface Manifest {
 }
 
 const root = JSON.parse(read('../public/manifest.webmanifest')) as Manifest;
-const miniapp = JSON.parse(read('../../schema-miniapp/dist/manifest.webmanifest')) as Manifest;
 const indexHtml = read('../index.html');
 
 describe('корневой manifest.webmanifest', () => {
@@ -51,14 +42,6 @@ describe('корневой manifest.webmanifest', () => {
       const file = resolve(__dirname, '../public', icon.src.replace(/^\//, ''));
       expect(() => readFileSync(file)).not.toThrow();
     }
-  });
-
-  it('это другое приложение, чем мини-апп /app/: id различаются, имя общее', () => {
-    // У мини-аппа id не задан → по спецификации равен его start_url.
-    expect(miniapp.id ?? miniapp.start_url).toBe('/app/');
-    expect(root.id).not.toBe(miniapp.id ?? miniapp.start_url);
-    expect(root.start_url).not.toBe(miniapp.start_url);
-    expect(root.name).toBe(miniapp.name);
   });
 });
 

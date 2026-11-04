@@ -62,9 +62,7 @@ describe('гейт: Dependabot видит все lock-файлы', () => {
 
     it('каталог lock-файла: корневой — «/», вложенный — «/папка»', () => {
       expect(lockDirectory('package-lock.json')).toBe('/');
-      expect(lockDirectory('schema-miniapp/package-lock.json')).toBe(
-        '/schema-miniapp',
-      );
+      expect(lockDirectory('webapp/package-lock.json')).toBe('/webapp');
     });
 
     it('npm-запись без группы, берущей patch, краснеет', () => {
@@ -115,7 +113,7 @@ describe('гейт: Dependabot видит все lock-файлы', () => {
   describe('настоящие файлы репозитория', () => {
     it('lock-файлы найдены (иначе проверка ниже ничего не доказывает)', () => {
       expect(locks).toEqual(expect.arrayContaining(['package-lock.json']));
-      expect(locks.length).toBeGreaterThanOrEqual(5);
+      expect(locks.length).toBeGreaterThanOrEqual(4);
     });
 
     it('у каждого package-lock.json есть запись, лишних записей нет', () => {
@@ -146,7 +144,7 @@ describe('гейт: Dependabot видит все lock-файлы', () => {
       expect(groups('/')).toEqual(
         expect.arrayContaining(['nestjs-major', 'stryker-major']),
       );
-      for (const dir of ['/webapp', '/schema-miniapp', '/shared']) {
+      for (const dir of ['/webapp', '/shared']) {
         expect(groups(dir)).toContain('vitest-major');
       }
     });

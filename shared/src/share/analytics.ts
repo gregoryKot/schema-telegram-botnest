@@ -92,7 +92,7 @@ export function modeEntrySavedMeta(
 }
 
 // 2026-08-31: needs_what/needs_why/needs_result/diaries_why/today_screen/author
-// сняты с визарда (schema-miniapp/src/components/disclaimer/steps.ts) — визард
+// сняты с визарда — визард
 // дублировал онбординг трекера и пустые состояния фичей, контент переехал
 // туда же. Тип НЕ сокращён — старые события с этими шагами лежат в БД, и
 // воронка /stats за прошлый период должна по-прежнему читаться (парный список
@@ -159,15 +159,5 @@ export const CONCEPT_SAVE_RETRY_EVENT = 'concept_save_retry';
 // Свободного текста в мете нет по построению: сцена, имя режима и «своё…»
 // остаются на клиенте и в зашифрованных полях карточки (правило №7).
 
-/** Вердикт критерия Jacob: meta.verdict у case_criterion. */
-export type CaseVerdictMeta = 'mode' | 'ordinary' | 'borderline';
-
 /** Откуда взялась сцена: meta.source у case_scene. */
 export type CaseSceneSource = 'own' | 'frame';
-
-/**
- * Откуда взялось имя режима: meta.source у mode_renamed. Доля `own` и `chip`
- * против `skipped` показывает, присваивает ли человек часть себе, — ради
- * этого шаг и существует.
- */
-export type ModeRenameSource = 'chip' | 'own' | 'skipped';

@@ -1,8 +1,5 @@
 // @vitest-environment jsdom
-// Тест черновиков дневника (drafts.ts — ПАРНЫЙ файл, побайтово совпадает с
-// schema-miniapp/src/utils/drafts.ts, см. scripts/check-paired-files.mjs).
-// Тест лежит только в webapp, но защищает и копию в мини-аппе транзитивно —
-// парный чекер в CI роняет сборку при расхождении файлов.
+// Тест черновиков дневника (drafts.ts).
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { saveDraft, loadDraft, clearDraft, hasDraft, formatDraftAge, DRAFT_KEYS } from './drafts';
 import type { DiaryType } from '../types';

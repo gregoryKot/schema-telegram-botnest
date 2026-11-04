@@ -3,8 +3,7 @@
 // активность схем здесь не пересчитывается (правило №4). Пустое состояние
 // отвечает «откуда и зачем» (правило «Онбординг»). Вся карточка — одно
 // действие (открыть лист); «Пройти тест» — вложенная кнопка с stopPropagation.
-// Парна schema-miniapp/src/sections/profile/PortraitCard.tsx (вёрстка своя,
-// тексты и расчёт — shared/src/portrait).
+// Тексты и расчёт — shared/src/portrait.
 import type { MouseEvent } from 'react';
 import { useTr } from '../../utils/addressForm';
 import { fmtDate, momentDayKey } from '../../utils/format';

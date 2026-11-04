@@ -1,5 +1,5 @@
-// Тексты всего, что исполняется в браузере пользователя: исходники обоих
-// фронтов, shared, игры, публичные скрипты и index.html. Одна выборка для
+// Тексты всего, что исполняется в браузере пользователя: исходники сайта,
+// shared, игры, публичные скрипты и index.html. Одна выборка для
 // сверок «заголовок безопасности ↔ что код реально делает»
 // (permissions-policy и csp-allowlist): иначе у двух трипваеров разъедутся
 // списки каталогов, и один из них ослепнет на новом дереве.
@@ -16,15 +16,9 @@ export interface SourceText {
 
 const ROOT = join(__dirname, '../..');
 
-const TREES = [
-  'webapp/src',
-  'webapp/public',
-  'shared/src',
-  'schema-miniapp/src',
-  'game/src',
-];
+const TREES = ['webapp/src', 'webapp/public', 'shared/src', 'game/src'];
 
-const PAGES = ['webapp/index.html', 'schema-miniapp/index.html'];
+const PAGES = ['webapp/index.html'];
 
 const EXTENSIONS = ['.ts', '.tsx', '.js', '.mjs', '.html'];
 

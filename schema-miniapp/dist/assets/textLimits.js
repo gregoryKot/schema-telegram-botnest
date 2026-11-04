@@ -1,1 +1,0 @@
-var e=1e4,t=1e4,n=5e3,r=1e3,i=1e3,a=1e3,o=1e4;function s(e,t,n=!1){if(!n&&e<Math.floor(t*.8))return null;let r=Math.max(0,t-e);return{left:r,atLimit:r===0}}export{e as a,s as c,t as i,r as n,o,i as r,a as s,n as t};

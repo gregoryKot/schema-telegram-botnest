@@ -45,7 +45,6 @@ scripts/alert-throttle-baseline.json      merge=ratchet-min
 scripts/body-dto-baseline.json            merge=ratchet-min
 scripts/capability-registry-baseline.json merge=ratchet-min
 scripts/cron-leader-baseline.json         merge=ratchet-min
-scripts/feature-parity-baseline.json      merge=ratchet-min
 scripts/history-sheet-baseline.json       merge=ratchet-min
 scripts/mutation-zone-baseline.json       merge=ratchet-min
 scripts/persistent-throttle-baseline.json merge=ratchet-min
@@ -65,12 +64,6 @@ scripts/mutation-golden-payments-baseline.json merge=ratchet-max
 # Новый `*-baseline.json` без строки выше краснит `setup-merge-drivers.mjs
 # --check` (CI, джоба checks): catch-all тут нельзя, забытый «больше — лучше»
 # бейслайн получил бы min. Выбирай направление явно.
-
-# ── Сборка мини-аппа ─────────────────────────────────────────────────────────
-# dist коммитится в git (Dockerfile его только копирует), поэтому конфликтует
-# у каждой пары PR, тронувших исходник. Построчно бандл не сводится — драйвер
-# пересобирает мини-апп и отдаёт результат сборки. См. merge-miniapp-dist.mjs.
-schema-miniapp/dist/**                    merge=miniapp-dist
 
 # ── Журналы только на дозапись ───────────────────────────────────────────────
 # Встроенный драйвер git `union`: при слиянии остаются строки обеих сторон, без

@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
-// Пошаговый лист сайта (StepFlowSheet): тело общее с мини-аппом
-// (shared/practices/StepFlowBody), но оболочка своя — BottomSheetShell +
-// useHistorySheet. Мирроим кейсы schema-miniapp/StepFlowSheet.test.tsx
+// Пошаговый лист сайта (StepFlowSheet): тело общее
+// (shared/practices/StepFlowBody), оболочка своя — BottomSheetShell +
+// useHistorySheet. Проверяем кейсы
 // (первый шаг, «Дальше», done-экран, «Ещё круг», кастомный repeatLabel), и
 // отдельно честно проверяем «Закрыть»: в вебе кнопка ведёт через goBack()
 // (navigate(-1)), а не зовёт onClose напрямую — при отсутствии MemoryRouter

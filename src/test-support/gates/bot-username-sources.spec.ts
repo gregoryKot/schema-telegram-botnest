@@ -1,6 +1,6 @@
 // Единое имя бота во всех источниках репозитория (правило №4, аудит 2026-10,
 // infra#18). Имя бота живёт в нескольких местах, которые никто не сверял:
-// Dockerfile (сборка webapp), .env.production мини-аппа, статика вне исходников
+// Dockerfile (сборка webapp), статика вне исходников
 // (add-icon.html, llms.txt) и env сборок в CI. Разъезд = ссылки на двух разных
 // ботов в одном продукте. Бэкендовое BOT_USERNAME репозиторию недоступно — его
 // сверяет с токеном проба самопроверки `telegram` (probe-telegram.ts).
@@ -13,7 +13,6 @@ const ROOT = join(__dirname, '..', '..', '..');
 /** Файл → как достать из него имена бота (все вхождения). */
 const EXTRACTORS: Record<string, RegExp> = {
   Dockerfile: /^ENV VITE_BOT_USERNAME=(\S+)/gm,
-  'schema-miniapp/.env.production': /^VITE_BOT_USERNAME=(\S+)/gm,
   'webapp/public/add-icon.html': /t\.me\/([A-Za-z0-9_]+)\/diary/g,
   'webapp/public/llms.txt': /Telegram-бот: @([A-Za-z0-9_]+)/g,
   '.github/workflows/ci.yml': /VITE_BOT_USERNAME: (\S+)/g,
@@ -64,8 +63,8 @@ describe('имя бота совпадает во всех источниках 
 
 // Плагин-guard (shared/src/build/requireBotUsername.ts) в dead-files-baseline
 // записан как «потребитель — vite.config». Запись не должна быть ложью.
-describe('vite-конфиги обоих фронтендов подключают guard имени бота', () => {
-  it.each(['webapp/vite.config.ts', 'schema-miniapp/vite.config.ts'])(
+describe('vite-конфиг сайта подключает guard имени бота', () => {
+  it.each(['webapp/vite.config.ts'])(
     '%s импортирует и вызывает requireBotUsernamePlugin',
     (file) => {
       const text = readReal(file);

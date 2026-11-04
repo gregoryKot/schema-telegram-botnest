@@ -51,7 +51,7 @@ export const SCREEN_BLOCK_LABELS: Record<string, string> = {
 };
 
 // Порядок строк — как в настройке, а не по убыванию счёта (та же логика,
-// что у TODAY_BLOCKS.filter в product-metrics.format.ts).
+// что у блока «Настройка экранов» в /stats).
 const SCREENS_ORDER = ['profile', 'patterns', 'today'];
 
 function formatScreenLine(

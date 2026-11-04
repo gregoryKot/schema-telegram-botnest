@@ -116,7 +116,7 @@ describe('каждое исключение EXCLUDE распознаёт сво�
     'node_modules/foo/index.ts',
     'webapp/dist/main.js',
     'coverage/lcov-report/index.html',
-    'schema-miniapp/build/bundle.js',
+    'webapp/build/bundle.js',
     'src/foo.d.ts',
     'src/foo.spec.ts',
     'test/auth-flows.e2e-spec.ts',

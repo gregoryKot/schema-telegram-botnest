@@ -1,1 +1,0 @@
-import{g as e,v as t}from"./a11y.js";var n=t(e(),1),r=`tasks-changed`;function i(){window.dispatchEvent(new Event(r))}function a(e){let t=(0,n.useRef)(e);(0,n.useEffect)(()=>{t.current=e}),(0,n.useEffect)(()=>{let e=()=>t.current();return window.addEventListener(r,e),()=>window.removeEventListener(r,e)},[])}export{a as n,i as t};

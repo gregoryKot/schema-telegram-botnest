@@ -10,10 +10,9 @@ import { describe, it, expect } from 'vitest';
 import { readdirSync, readFileSync, statSync } from 'fs';
 import { join } from 'path';
 
-// Корни обоих фронтендов относительно webapp/src/security/.
+// Корень фронтенда относительно webapp/src/security/.
 const ROOTS = [
   join(__dirname, '..'), // webapp/src
-  join(__dirname, '../../../schema-miniapp/src'), // schema-miniapp/src
 ];
 
 function walk(dir: string): string[] {

@@ -93,7 +93,7 @@
   дневник схем без бэкенд-правок (без схем и эмоций), событие
   `diary_quick_save { tag, detailed }`, строка в `/stats`.
 - **Паритет (правило №16).** Мини-апп по решению 2026-10-17 уходит
-  ([ONE_FRONTEND_PLAN.md](../ONE_FRONTEND_PLAN.md)); концепт — только
+  ([ONE_FRONTEND_PLAN.md](../archive/ONE_FRONTEND_PLAN.md)); концепт — только
   для `webapp/`. Пока мини-апп жив, блоки `shared/src/today/todayBlocks.ts`
   остаются для него, сайт их не читает.
 - **Аналитика (№8).** События `plus_action` и `today_*` теряют смысл;

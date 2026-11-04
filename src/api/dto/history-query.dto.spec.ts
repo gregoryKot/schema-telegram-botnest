@@ -29,9 +29,8 @@ const depthsIn = (src: string): number[] =>
 
 function frontendHistoryDepths(): { file: string; days: number }[] {
   const root = join(__dirname, '..', '..', '..');
-  const files = ['webapp/src', 'schema-miniapp/src', 'shared/src'].flatMap(
-    (pkg) =>
-      collectSourceFiles(join(root, pkg), { extensions: ['.ts', '.tsx'] }),
+  const files = ['webapp/src', 'shared/src'].flatMap((pkg) =>
+    collectSourceFiles(join(root, pkg), { extensions: ['.ts', '.tsx'] }),
   );
   return files.flatMap((p) =>
     depthsIn(readFileSync(p, 'utf8')).map((days) => ({

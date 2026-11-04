@@ -27,7 +27,7 @@ import { stripComments } from './gate-strip-comments.mjs';
 import { parseCssRules, splitSelectorList } from './css-rules-parse.mjs';
 
 const ROOT = join(import.meta.dirname, '..');
-const SCAN_DIRS = ['webapp/src', 'schema-miniapp/src', 'shared/src'];
+const SCAN_DIRS = ['webapp/src', 'shared/src'];
 
 const cssFiles = (dir) =>
   readdirSync(join(ROOT, dir), { recursive: true, withFileTypes: true })

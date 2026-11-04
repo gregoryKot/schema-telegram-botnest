@@ -33,7 +33,7 @@ import { RULES, ALLOW } from './schema-terms-rules.mjs';
 const ROOT = join(import.meta.dirname, '..');
 const SELF = 'schema-terms-rules.mjs';
 
-const SCAN_DIRS = ['src', 'webapp/src', 'shared/src', 'schema-miniapp/src', 'game/src'];
+const SCAN_DIRS = ['src', 'webapp/src', 'shared/src', 'game/src'];
 const SCAN_FILES = ['webapp/index.html'];
 // webapp/public/** — статика вне src/, никем не импортируется (правило №14).
 const SCAN_PUBLIC_DIRS = ['webapp/public'];

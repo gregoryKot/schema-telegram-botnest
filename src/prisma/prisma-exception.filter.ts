@@ -39,8 +39,7 @@ export class PrismaExceptionFilter implements ExceptionFilter {
     if (isStatementTimeout(exception)) {
       // Строку владельцу с местом вызова уже написал PrismaService
       // ($on('error')) — здесь warn, чтобы не слать второй DM. 500, а не 503:
-      // GET на 502/503/504 мини-апп повторяет дважды (schema-miniapp/src/
-      // apiClient.ts), а запрос, упёршийся в предел, повтор лишь утяжелит.
+      // GET на 502/503/504 клиент повторяет дважды, а запрос, упёршийся в предел, повтор лишь утяжелит.
       this.logger.warn(`Таймаут запроса к БД на ${path}`);
       return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
         statusCode: 500,

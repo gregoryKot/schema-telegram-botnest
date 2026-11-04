@@ -8,7 +8,6 @@ import { EntryDeleteMetricsService } from './entry-delete-metrics.service';
 import { AccountLinkMetricsService } from './account-link-metrics.service';
 import { SignupSourceMetricsService } from './signup-source-metrics.service';
 import { PlusMetricsService } from './plus-metrics.service';
-import { WebBannerMetricsService } from './web-banner-metrics.service';
 import { SiteInstallMetricsService } from './site-install-metrics.service';
 import { ScreenMetricsService } from './screen-metrics.service';
 import { ProfilePatternMetricsService } from './profile-pattern-metrics.service';
@@ -45,7 +44,6 @@ export class StatsReportService {
     readonly entryDelete: EntryDeleteMetricsService,
     readonly accountLink: AccountLinkMetricsService,
     readonly plus: PlusMetricsService,
-    readonly webBanner: WebBannerMetricsService,
     readonly siteInstall: SiteInstallMetricsService,
     readonly screen: ScreenMetricsService,
     readonly profilePattern: ProfilePatternMetricsService,

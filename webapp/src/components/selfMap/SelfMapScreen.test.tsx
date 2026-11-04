@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 // Карта себя (webapp): экран отвечает на «где я» и «что дальше» ровно одной
 // кнопкой, пустые полосы не выглядят долгом (никаких нулей/процентов/упрёков
-// за пропуски). Twin schema-miniapp SelfMapScreen.test.tsx.
+// за пропуски).
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import { SelfMapScreen } from './SelfMapScreen';

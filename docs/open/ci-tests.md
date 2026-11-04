@@ -8,7 +8,7 @@
 **Мажоры зависимостей: решения владельца** (разбор бот-PR 2026-10-22; процедура доводки —
 `audit-2026-10.md`, «Dependabot: доводка бот-PR»):
 - **TypeScript 7 не берём** — `ignore` мажора `typescript` в `.github/dependabot.yml` для `/`,
-  `/webapp`, `/schema-miniapp`, `/shared` (#686 закрыт). TS 7 — нативный компилятор, а
+  `/webapp`, `/shared` (#686 закрыт). TS 7 — нативный компилятор, а
   `typescript-eslint` 8.72 объявляет `typescript >=4.8.4 <6.1.0`, `ts-jest` 29.4 — `<7`. Вернуться,
   когда оба примут 7 (`npm view typescript-eslint peerDependencies`, `npm view ts-jest
   peerDependencies`): снять `ignore`, переезд одним PR во все пакеты (правило №3).
@@ -23,11 +23,6 @@
   `src/channel/pin-image.spec.ts` на #843). Прод грузит модуль один раз и не задет. Тест
   «повторная загрузка модуля» в том же спеке краснеет на 1.0.12 детерминированно — следующую
   версию бот принесёт сам, тест скажет, починена ли обёртка; тогда снять пин и `ignore`.
-- **Пересборку `schema-miniapp/dist` в ветках бота не автоматизируем, PAT не заводим.** Пуш
-  через `GITHUB_TOKEN` CI не перезапускает, а PAT с правом записи в секретах Dependabot жил бы
-  в джобе рядом со свежими пакетами из npm, чьи install-скрипты исполняются там же.
-  Пересборка нужна примерно раз в неделю и только PR мини-аппа и `shared` — её делает агент
-  по п. (а) процедуры. Вернуться, если бот-PR мини-аппа начнут висеть дольше недели.
 - **Взятые мажоры: часть проверит только прод и первая ночь.** Взяты Nest 12 (#845),
   Stryker 10 (#842), Vitest 5 (#844), jsdom 30 (#846), `actions/github-script` 9 (#522). PR-CI
   не исполняет ночные мутации (`nightly.yml`; у Stryker 10 мутатор `CallExpression` выключен —
@@ -82,8 +77,8 @@ Ubuntu 26) у трёх PR подряд падали `backend` → `check-coverag
   порядков) отдельным PR с тестом на такой ключ.
 - **Бандл: рост двух сторон сводится через `min` и теряется.**
   `scripts/bundle-size-baseline.json` стоит под `merge=ratchet-min`
-  (`.gitattributes`); если обе стороны подняли `webapp:total-js` или
-  `miniapp:total-js` (`--update` с причиной), драйвер берёт меньшее — значение
+  (`.gitattributes`); если обе стороны подняли `webapp:total-js`
+  (`--update` с причиной), драйвер берёт меньшее — значение
   одной стороны, — а слитая сборка весит базу + оба прироста. Гейт после
   слияния краснеет (громко, не молча): так было в #898 поверх #887, сумма
   сошлась с замером до 6 байт и вписана руками. Лечение: для total-метрик
@@ -101,7 +96,7 @@ Ubuntu 26) у трёх PR подряд падали `backend` → `check-coverag
 
 **Тесты и даты — открыто:**
 - **`webapp/src/components/UiPrefsGate.test.tsx` всё ещё мигает в CI** (найдено на #850,
-  2026-10-24). «Изменение на сайте уходит на сервер вместе с ключами из мини-аппа» упал в джобе
+  2026-10-24). «Изменение на сайте уходит на сервер вместе с ключами из прежних настроек» упал в джобе
   `webapp` на PR, который webapp не трогает: `expected "vi.fn()" to be called 1 times, but got 0
   times`; следующий прогон того же кода — зелёный. Фейковые таймеры для debounce 1,5 с уже стоят
   (комментарий в тесте), значит гонка в другом месте: до `vi.useFakeTimers()` тест ждёт
@@ -250,16 +245,14 @@ Ubuntu 26) у трёх PR подряд падали `backend` → `check-coverag
 - Тост-таймер без очистки при размонтировании (`setX(true); setTimeout(() =>
   setX(false), N)`): таймер срабатывает после сноса jsdom и роняет весь прогон
   vitest с `window is not defined` при зелёных тестах (CI main, run
-  36409902702, webapp под `TZ=Australia/Sydney`). Настройки обоих фронтов
+  36409902702, webapp под `TZ=Australia/Sydney`). Настройки
   переведены на `shared/src/hooks/useTimedFlag.ts`; класс ещё живёт в
   `webapp/src/components/PracticesScreen.tsx:59,63,75`,
   `webapp/src/pages/admin/{PhotoSection,MarqueeSection,HealthyAdultSection}.tsx`,
-  `webapp/src/pages/tests/QuizPage.tsx:67`, обоих `therapist/useClientDetail.ts`,
-  `schema-miniapp/src/components/SafePlace.tsx:99`,
-  `schema-miniapp/src/hooks/{useIntroSheetData,usePracticesData}.ts`. Переводить
-  на тот же хук; гейта у класса нет. Подкласс «код чистит таймер корректно, но
+  `webapp/src/pages/tests/QuizPage.tsx:67`, `therapist/useClientDetail.ts`.
+  Переводить на тот же хук; гейта у класса нет. Подкласс «код чистит таймер корректно, но
   тест не размонтировал компонент» закрыт механизмом: `setupFiles` с
-  `afterEach(cleanup)` в каждом из трёх фронтовых пакетов
+  `afterEach(cleanup)` в каждом из фронтовых пакетов
   (`<пакет>/src/test-support/rtlCleanup.ts`, флак 2026-10-15, run 38707373186,
   `LazySections.test.tsx` → `useSafeTop`). Перечисленные выше места этим НЕ
   закрыты: размонтирование не гасит таймер, которого код не чистит. Подкласс
@@ -321,7 +314,7 @@ Ubuntu 26) у трёх PR подряд падали `backend` → `check-coverag
   (Performance), а подозревать есть что — на лендинге четыре бесконечных
   marquee-анимации и полноэкранный grain-оверлей поверх всего, то самое
   сочетание «дорогое свойство на вечно едущем элементе», из-за которого
-  тормозил мини-апп (правило про размытие в CLAUDE.md).
+  тормозило приложение (правило про размытие в CLAUDE.md).
 - `BookingPicker` при возврате с оплаты чистит адрес целиком
   (`webapp/src/components/BookingPicker.tsx:75` — `pathname + hash`), то есть
   вместе с `?payment=ok` уносит `utm_source`/`yclid`. Не тронуто в PR #553
@@ -329,7 +322,7 @@ Ubuntu 26) у трёх PR подряд падали `backend` → `check-coverag
   возврате с Robokassa на атрибуцию уже не влияют — визит засчитан раньше.
   Чинится удалением одного параметра вместо всего query, если кому-то
   понадобится метка после оплаты.
-- `DiarySection` и `webapp/src/sections/diary/dateHelpers.ts` обоих фронтендов
+- `DiarySection` и `webapp/src/sections/diary/dateHelpers.ts`
   группируют записи по ГРИНВИЧСКОМУ дню (`TODAY` там тоже гринвичский, внутри
   себя согласованы) — поэтому #542 их не трогал. Это решение, а не чистота:
   перевод на локальный день сдвинет ключ группировки относительно календарного
@@ -351,11 +344,10 @@ Ubuntu 26) у трёх PR подряд падали `backend` → `check-coverag
 
 **Сверка карты инвалидации кеша видит только `shared/src/api/*`** (найдено 2026-10-26 на офлайн-клиентах терапевта):
 - `shared/src/api/apiCacheRules.coverage.test.ts` (`SOURCES`) собирает мутации из `sharedApi.ts`,
-  `ratingApi.ts`, `apiExercises.ts` и только вида `t.post(`. Мутации `webapp/src/api.ts` и
-  `schema-miniapp/src/api.ts` (голые `post(`/`postJson(`/`patchJson(`/`del(`) в сверку не попадают:
+  `ratingApi.ts`, `apiExercises.ts` и только вида `t.post(`. Мутации `webapp/src/api.ts` (голые `post(`/`postJson(`/`patchJson(`/`del(`) в сверку не попадают:
   карты режимов и свои режимы терапевта жили без строки инвалидации (закрыто в
   `shared/src/api/apiCacheRules.therapy.ts`), `booking/cancel/:token`, `subscription`, `donation` не
-  проверены. Чинить: оба `api.ts` в `SOURCES` с регэкспом без `t.`, найденное — правилом или
+  проверены. Чинить: `webapp/src/api.ts` в `SOURCES` с регэкспом без `t.`, найденное — правилом или
   записью `NO_INVALIDATION` с причиной.
 
 - **Браузерный смок трекера (`e2e-browser/tracker-smoke.spec.ts`) в PR-CI не идёт.** Проверено

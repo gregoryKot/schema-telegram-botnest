@@ -1,5 +1,5 @@
 // Тест объединённой версии format.ts (правило №3 CLAUDE.md, волна 2 —
-// webapp/format.ts и schema-miniapp/format.ts были почти-парой, различались
+// webapp были почти-парой, различались
 // только форматированием кода; единственная копия теперь в shared/src/utils).
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { fmtDate, fmtDateLong, todayStr } from './format';

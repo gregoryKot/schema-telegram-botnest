@@ -31,20 +31,13 @@ describe('ProductMetricsService.getMetrics', () => {
         { kind: 'streak', c: 20n },
         { kind: 'schema', c: 3n },
       ]) // share_card by kind
-      // скрытия блоков: новое событие + подмешанная история today_streak_toggle
-      .mockResolvedValueOnce([
-        { block: 'phrase', c: 4n },
-        { block: 'streak', c: 7n },
-      ])
+      // скрытия счётчика серии (today_streak_toggle)
+      .mockResolvedValueOnce([{ block: 'streak', c: 7n }])
       // воронка обучения приходит из БД в произвольном порядке
       .mockResolvedValueOnce([
         { step: 'done', c: 70n },
         { step: 'welcome', c: 100n },
         { step: 'needs_what', c: 80n },
-      ])
-      .mockResolvedValueOnce([
-        { via: 'longpress', c: 12n },
-        { via: 'gear', c: 30n },
       ])
       .mockResolvedValueOnce([
         { action: 'shown', c: 200n },
@@ -61,7 +54,6 @@ describe('ProductMetricsService.getMetrics', () => {
       .mockResolvedValueOnce(2) // crisis_hotline_tapped, surface=booking
       .mockResolvedValueOnce(12) // share_card total7
       .mockResolvedValueOnce(40) // share_card total30
-      .mockResolvedValueOnce(15) // today_focus_change
       .mockResolvedValueOnce(18) // journey_open
       .mockResolvedValueOnce(44); // ysq_help_open
 
@@ -89,13 +81,7 @@ describe('ProductMetricsService.getMetrics', () => {
     ).getMetrics();
 
     expect(m.onboarding).toEqual({ cohort30: 118, completed30: 70 });
-    // блоки — в порядке листа настройки, не по убыванию счёта
-    expect(m.today.blocksHidden).toEqual([
-      { block: 'streak', count: 7 },
-      { block: 'phrase', count: 4 },
-    ]);
-    expect(m.today.customizeGear).toBe(30);
-    expect(m.today.customizeLongpress).toBe(12);
+    expect(m.today.blocksHidden).toEqual([{ block: 'streak', count: 7 }]);
     // шаги пересортированы в порядок показа, счётчики bigint→number
     expect(m.onboardingSteps).toEqual([
       { step: 'welcome', count: 100 },
@@ -132,7 +118,6 @@ describe('ProductMetricsService.getMetrics', () => {
     });
     expect(m.shareResult).toEqual({ ok: 35, fallback: 5 });
     expect(m.outbox).toEqual({ flushes: 8, recovered: 21 });
-    expect(m.today.focusChanged).toBe(15);
     expect(m.journey).toEqual({ opens: 18 });
     // отсутствующие в выборке действия — нули, а не undefined/NaN
     expect(m.homeScreen).toEqual({
@@ -174,10 +159,7 @@ describe('ProductMetricsService.getMetrics', () => {
     expect(m.shareResult).toEqual({ ok: 0, fallback: 0 });
     expect(m.outbox).toEqual({ flushes: 0, recovered: 0 });
     expect(m.today).toEqual({
-      focusChanged: 0,
       blocksHidden: [],
-      customizeGear: 0,
-      customizeLongpress: 0,
     });
     expect(m.homeScreen).toEqual({
       shown: 0,
@@ -202,7 +184,6 @@ describe('ProductMetricsService.getMetrics', () => {
       .mockResolvedValueOnce([{ kind: null, c: 2n }]) // share_card без kind
       .mockResolvedValueOnce([{ block: null, c: 1n }]) // toggle без block
       .mockResolvedValueOnce([{ step: null, c: 5n }]) // онбординг без step
-      .mockResolvedValueOnce([{ via: null, c: 4n }]) // customize без via
       .mockResolvedValueOnce([{ action: null, c: 6n }]) // offer без action
       .mockResolvedValueOnce([]); // воронка теста схем: пустой ответ
     const prisma: any = {
@@ -229,8 +210,6 @@ describe('ProductMetricsService.getMetrics', () => {
     // Строки без block/step/via/action не превращаются в фантомные категории.
     expect(m.today.blocksHidden).toEqual([]);
     expect(m.onboardingSteps).toEqual([]);
-    expect(m.today.customizeGear).toBe(0);
-    expect(m.today.customizeLongpress).toBe(0);
     expect(m.homeScreen).toEqual({
       shown: 0,
       add: 0,
@@ -335,10 +314,7 @@ const EMPTY_METRICS = {
   shareResult: { ok: 0, fallback: 0 },
   outbox: { flushes: 0, recovered: 0 },
   today: {
-    focusChanged: 0,
     blocksHidden: [],
-    customizeGear: 0,
-    customizeLongpress: 0,
   },
   journey: { opens: 0 },
   homeScreen: { shown: 0, add: 0, later: 0, never: 0, added: 0 },

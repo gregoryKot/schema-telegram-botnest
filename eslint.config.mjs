@@ -133,13 +133,5 @@ export default tseslint.config(
       '@typescript-eslint/require-await': 'off',
     },
   },
-  {
-    // a11y-гейт мини-аппа (2026-07) и shared/ (2026-10, eslint.a11y-labels.mjs):
-    // они линтуются корневым конфигом, typed-правила выше сохраняются. webapp
-    // свой a11y берёт из webapp/eslint.config.js. Счётчик — eslint-храповик (№9).
-    files: ['schema-miniapp/src/**/*.{ts,tsx}'],
-    plugins: jsxA11y.flatConfigs.recommended.plugins,
-    rules: jsxA11y.flatConfigs.recommended.rules,
-  },
   sharedA11yBlock(jsxA11y),
 );

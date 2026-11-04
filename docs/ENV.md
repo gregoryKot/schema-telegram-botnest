@@ -51,7 +51,7 @@
 | `BOT_REDIRECT_USERNAME` | опциональна | nonEmpty | Имя второго бота, на который редиректит /start при миграции (опционально). |
 | `BOT_TOKEN` | **обязательна** | botToken | Токен бота BotFather — без него бот не подключается к Telegram и алерты в Telegram не уходят. |
 | `BOT_USERNAME` | **обязательна** | telegramUsername | Имя бота без @ для t.me-ссылок; без него приглашения отдают 503. |
-| `MINIAPP_APP_NAME` | опциональна | nonEmpty | Slug мини-аппа в t.me/<bot>/<name> — дефолт «diary», если не задано. |
+| `MINIAPP_APP_NAME` | опциональна | nonEmpty | Короткое имя Mini App бота в BotFather для ссылок-приглашений t.me/<bot>/<name>?startapp=… (открывают кабинет сайта внутри Telegram) — дефолт «diary», если не задано. |
 | `TELEGRAM_PROXY_URL` | опциональна | nonEmpty | Исходящий прокси до api.telegram.org на случай, если маршрут с хостинга не работает напрямую — без него бот ходит напрямую. |
 
 ## Почта

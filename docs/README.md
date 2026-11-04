@@ -34,8 +34,7 @@
 | [BOOKING_SETUP.md](BOOKING_SETUP.md) | Настройка записи на консультации: env-переменные Zoom, CalDAV, Robokassa. |
 | [TEST_IMPROVEMENT_PLAN.md](TEST_IMPROVEMENT_PLAN.md) | План по тестам (v2, 2026-07-20). Выполнен 2026-07-28 (статус в шапке документа); остаток — хвосты в разделе «Что осталось открытым» ниже. Продолжение закрытого `archive/TEST_COVERAGE_PLAN.md`. |
 | [PRIORITIES_2026-10.md](PRIORITIES_2026-10.md) | Разбор всего открытого 2026-10-31: реестр `open/` и «Идеи» бэклога по приоритетам P0–P3, волны работ агента, список того, что может сделать только владелец. **Закрыл волну — отметь ✅ с номером PR.** |
-| [ONE_FRONTEND_PLAN.md](ONE_FRONTEND_PLAN.md) | План единой версии (2026-10-17): отказ от Telegram-мини-аппа в пользу кабинета сайта. Шесть этапов — хост-слой внутри мессенджера, входы и ссылки, перенос содержимого, точки входа, переключение бота, удаление `schema-miniapp`. Инвентаризация пробелов и решения, которые ждут владельца. |
-| [PWA_PLAN.md](PWA_PLAN.md) | План устанавливаемой PWA на базе webapp + web-push. Статус: PWA отгружена; service worker мини-аппа снят регистрацией экспериментом 2026-08-25 (`registerServiceWorker.ts:63`), при этом `vite.config.ts` строит `dist/sw.js`, `miniapp-dist.spec.ts:35` охраняет прекэш, а `UpdateToast` ждёт событие, которое не наступает. Решение владельца о судьбе SW не записано. |
+| [PWA_PLAN.md](PWA_PLAN.md) | План устанавливаемой PWA на базе webapp + web-push. Статус: PWA отгружена; мини-апп и его service worker удалены (#908), устанавливаемое приложение — кабинет сайта. |
 | [GAME_ANALYSIS.md](GAME_ANALYSIS.md) | Анализ игры `game/` (2026-09-03) по четырём срезам: сюжет, интерес, вовлечение в терапию, качество, плюс воронка. Реестр находок с `file:line`. |
 | [GAME_IMPROVEMENT_PLAN.md](GAME_IMPROVEMENT_PLAN.md) | План улучшений игры по находкам анализа: Этап 0 до плейтеста, выбор в механике, терапевтический мост, полировка. Вопросы владельцу — там же. |
 | [security/](security/) | Реестр security-находок (`AUDIT_FINDINGS.md`), модель угроз, покрытие. |
@@ -49,11 +48,12 @@ CLAUDE.md. Не удалять, но и не считать списком за�
 | Документ | Статус |
 |---|---|
 | [archive/PROJECT_AUDIT.md](archive/PROJECT_AUDIT.md) | Аудит 07.2026, 4 оси. Находки закрыты. |
-| [archive/PROJECT_AUDIT_ADDENDUM.md](archive/PROJECT_AUDIT_ADDENDUM.md) | Дополнение: юридика, БД, инфра, a11y. Закрыто, кроме РКН (на владельце). a11y-класс «контрол без имени» (:171, :344) вернулся с новым кодом и закрыт механизмом на сайте и в `shared/` (#818): `jsx-a11y/control-has-associated-label` и гейт `scripts/check-glyph-controls.mjs`; остаток в мини-аппе — в «Что осталось открытым». |
+| [archive/PROJECT_AUDIT_ADDENDUM.md](archive/PROJECT_AUDIT_ADDENDUM.md) | Дополнение: юридика, БД, инфра, a11y. Закрыто, кроме РКН (на владельце). a11y-класс «контрол без имени» (:171, :344) вернулся с новым кодом и закрыт механизмом на сайте и в `shared/` (#818): `jsx-a11y/control-has-associated-label` и гейт `scripts/check-glyph-controls.mjs`; остаток в мини-аппе ушёл вместе с ним (#908). |
 | [archive/REMEDIATION_PLAN.md](archive/REMEDIATION_PLAN.md) | План 0→10. **Закрыт целиком** 17.07.2026 (этапы 0–4). |
 | [archive/TEST_COVERAGE_PLAN.md](archive/TEST_COVERAGE_PLAN.md) | План покрытия v1. Закрыт в PR #66; продолжен `TEST_IMPROVEMENT_PLAN.md`. На него по имени ссылаются `ci.yml` и `check-coverage-ratchet.mjs`. |
 | [archive/INTEGRATION_NOTES.md](archive/INTEGRATION_NOTES.md) | Разовая карта разрешения конфликтов при merge ветки покрытия. История. |
 | [archive/TODO.md](archive/TODO.md) | Туду по прототипу, 05.2026. Устарел: оба открытых пункта (`/schemas` crash, merge аккаунтов) починены. |
+| [archive/ONE_FRONTEND_PLAN.md](archive/ONE_FRONTEND_PLAN.md) | План единой версии (2026-10-17 — 2026-11-04): отказ от Telegram-мини-аппа в пользу кабинета сайта. Закрыт: этапы 1–6 сделаны, кнопки бота открывают кабинет (#916), мини-апп удалён (#917); сверка и решения владельца — #908, хвосты — [open/one-frontend.md](open/one-frontend.md). |
 
 ## Что осталось открытым
 
@@ -64,7 +64,7 @@ CLAUDE.md. Не удалять, но и не считать списком за�
 
 | Файл | Область |
 |---|---|
-| [open/one-frontend.md](open/one-frontend.md) | Единая версия (этапы 1–4), редизайн кабинета, «Назад» мини-аппа, оверлеи и диалоги webapp |
+| [open/one-frontend.md](open/one-frontend.md) | Единая версия (этапы 1–4), редизайн кабинета, «Назад» и оверлеи и диалоги webapp |
 | [open/frontend-ux.md](open/frontend-ux.md) | Хвосты аудита онбординга 2026-10-08, цвет и токены, дизайн-система визитки |
 | [open/therapy.md](open/therapy.md) | Кабинет терапевта: связи и слияние, концептуализация, заметки сессий, запрос YSQ, заявки психологов |
 | [open/backend.md](open/backend.md) | Счётчик попыток, троттлинг алертов, календарь, границы DTO, нечитаемое шифрование, полуночный обход и аренда бэкапа, фоновые хвосты (perf, размеры) |

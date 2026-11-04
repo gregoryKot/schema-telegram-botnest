@@ -31,7 +31,6 @@ import { SessionCurrencyMetricsService } from './session-currency-metrics.servic
 import { SignupSourceMetricsService } from './signup-source-metrics.service';
 import { SiteInstallMetricsService } from './site-install-metrics.service';
 import { WarmWordsMetricsService } from './warm-words-metrics.service';
-import { WebBannerMetricsService } from './web-banner-metrics.service';
 
 export const INTERNAL_PROVIDERS = [
   AccountLinkMetricsService,
@@ -62,5 +61,4 @@ export const INTERNAL_PROVIDERS = [
   SignupSourceMetricsService,
   SiteInstallMetricsService,
   WarmWordsMetricsService,
-  WebBannerMetricsService,
 ];
