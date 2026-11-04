@@ -7,7 +7,7 @@
 // (gendered-forms-tr-pairs.mjs) и расширенные строчные паттерны. Оба исхода:
 // краснеет на регрессе, молчит на законных строках.
 import { runGate } from './gate-sandbox';
-import { loadNamedPatterns } from './pattern-loader';
+import { importExport, loadNamedPatterns } from './pattern-loader';
 
 const EMPTY = { 'scripts/gendered-forms-baseline.json': JSON.stringify({}) };
 
@@ -46,6 +46,50 @@ describe('check-gendered-forms.mjs — пара tr(ты, вы)', () => {
       ].join('\n'),
     });
     expect(res.status).toBe(0);
+  });
+});
+
+// Модуль правила напрямую (scripts/gendered-forms-tr-pairs.mjs): форма
+// множественного числа и строка находки — без песочницы CLI.
+describe('gendered-forms-tr-pairs.mjs', () => {
+  const call = <T>(exportName: string, arg: string): T =>
+    JSON.parse(
+      importExport(
+        'gendered-forms-tr-pairs.mjs',
+        exportName,
+        `(f) => f(${JSON.stringify(arg)})`,
+      ),
+    ) as T;
+
+  it.each([
+    ['Сказал', 'сказали'],
+    ['вернулся', 'вернулись'],
+    ['смог', 'смогли'],
+    ['готов', 'готовы'],
+    ['сам', 'сами'],
+  ])('pluralOfMasculine(«%s») → «%s»', (word, plural) => {
+    expect(call<string>('pluralOfMasculine', word)).toBe(plural);
+  });
+
+  it.each([['план'], ['мысль'], ['говоришь']])(
+    'pluralOfMasculine(«%s») → null: не мужская форма глагола',
+    (word) => {
+      expect(call<string | null>('pluralOfMasculine', word)).toBeNull();
+    },
+  );
+
+  // Кандидат «столи» у существительного на «-л» бессмыслен, но и не опасен:
+  // находка — только если вы-вариант содержит ровно эту форму.
+  it('trPairHits: существительное на «-л» не находка — «столы», а не «столи»', () => {
+    expect(call('trPairHits', "tr('Твой стол', 'Ваши столы')")).toEqual([]);
+  });
+
+  it('trPairHits: строка находки — строка ты-литерала, не вызова', () => {
+    const src =
+      "x\nconst q = tr(\n  'Действовал из ценностей',\n  'Действовали из ценностей',\n);\n";
+    expect(call('trPairHits', src)).toEqual([
+      { line: 3, word: 'Действовал', plural: 'действовали' },
+    ]);
   });
 });
 
