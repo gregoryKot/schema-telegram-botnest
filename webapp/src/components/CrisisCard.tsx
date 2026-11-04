@@ -4,7 +4,9 @@ import { useTr } from '../utils/addressForm';
 import { CrisisCardView } from '../../../shared/src/components/CrisisCard';
 import { api } from '../api';
 
-export function CrisisCard(p: { surface?: string; standing?: boolean; compact?: boolean } = {}) {
+type Props = { surface?: string; standing?: boolean; compact?: boolean };
+
+export function CrisisCard(p: Props = {}) {
   const tr = useTr();
   return <CrisisCardView {...p} tr={tr} track={api.trackEvent} />;
 }
