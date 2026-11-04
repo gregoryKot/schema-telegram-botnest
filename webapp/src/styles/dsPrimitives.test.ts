@@ -277,13 +277,13 @@ describe('cabinet.css: примитивы волны 3 (#906)', () => {
     expect(decls(top, '.ds-menu')).toContain('box-shadow: var(--shadow-2)');
     expect(decls(tap, '.ds-menu-item')).toContain('min-height: 44px');
     expect(decls(phone, '.ds-menu-item')).toBe('');
-    expect(decls(top, '.ds-menu-item.is-danger')).toContain('color: var(--err)');
+    expect(decls(top, '.ds-menu-item.is-danger')).toContain('color: var(--accent-red)');
     expect(decls(top, '.ds-backdrop')).toContain('position: fixed');
   });
-  it('опасное действие: ссылка и заголовок строки красятся --err', () => {
-    expect(decls(top, '.ds-link--danger')).toContain('color: var(--err)');
-    expect(decls(top, '.ds-link--danger:hover')).toContain('color: var(--err)');
-    expect(decls(top, '.ds-list-row--danger .ds-list-title')).toContain('color: var(--err)');
+  it('опасное действие: ссылка и заголовок строки красятся --accent-red', () => {
+    expect(decls(top, '.ds-link--danger')).toContain('color: var(--accent-red)');
+    expect(decls(top, '.ds-link--danger:hover')).toContain('color: var(--accent-red)');
+    expect(decls(top, '.ds-list-row--danger .ds-list-title')).toContain('color: var(--accent-red)');
   });
   it('поле на тёмной панели: токены ink, объявлено после .ds-input:focus', () => {
     const f = decls(top, '.ds-input--on-ink');

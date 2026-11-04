@@ -25,7 +25,7 @@
 
 /* Раздел-карточка */
 .st-section { display: flex; flex-direction: column; scroll-margin-top: 16px; }
-.st-sec-head { padding-bottom: 8px; border-bottom: 1px solid var(--line); margin-bottom: 4px; }
+.st-sec-head { padding-bottom: 8px; border-bottom: 1px solid var(--paper-sunk); margin-bottom: 4px; }
 .st-sec-title { display: flex; align-items: center; gap: 6px; }
 .st-help-in {
   display: inline-flex; align-items: center; justify-content: center; border-radius: 50%;

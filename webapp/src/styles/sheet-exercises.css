@@ -35,7 +35,7 @@
 }
 
 /* ── Шаги, вопрос, низ экрана ─────────────────────────────────────────── */
-.ex2-steps { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 28px; padding-bottom: 18px; border-bottom: 1px solid var(--line); }
+.ex2-steps { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 28px; padding-bottom: 18px; border-bottom: 1px solid var(--paper-sunk); }
 .ex2-step {
   display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 12px;
   border-radius: 14px; cursor: pointer; font-size: 12.5px; color: var(--text-faint);
@@ -50,7 +50,7 @@
 .ex2-prompt-label { font-family: var(--serif); font-size: 26px; line-height: 1.2; color: var(--text); margin-bottom: 8px; }
 .ex2-prompt-label--sm { font-size: 22px; }
 .ex2-prompt-hint { margin: 0 0 16px; font-size: 14px; line-height: 1.6; color: var(--text-sub); }
-.ex2-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 32px; padding-top: 24px; border-top: 1px solid var(--line); }
+.ex2-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 32px; padding-top: 24px; border-top: 1px solid var(--paper-sunk); }
 .ex2-spacer { flex: 1; }
 .ds-btn.ex2-ghost, .ds-btn.ex2-ghost:hover:not(:disabled) { background: transparent; color: var(--text-sub); }
 .ds-btn.ex2-ghost:hover:not(:disabled) { color: var(--text); background: var(--paper-tint); }
@@ -70,7 +70,7 @@
 .ex2-note-list li::before { content: '·'; position: absolute; left: 3px; color: var(--text-ghost); }
 .ex2-tint.ds-card { background: oklch(0.96 0.03 var(--h)); border-color: oklch(0.88 0.05 var(--h)); }
 .ex2-tint .ds-label { color: oklch(0.38 0.1 var(--h)); }
-.ex2-hist-row { display: flex; align-items: baseline; gap: 12px; min-height: 44px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+.ex2-hist-row { display: flex; align-items: baseline; gap: 12px; min-height: 44px; padding: 10px 0; border-bottom: 1px solid var(--paper-sunk); }
 .ex2-hist-row[role='button'] { cursor: pointer; }
 .ex2-hist-date { min-width: 56px; font-size: 11px; color: var(--text-faint); font-variant-numeric: tabular-nums; }
 .ex2-hist-snip {
@@ -111,7 +111,7 @@
 
 /* ── Доказательства (за/против) ───────────────────────────────────────── */
 .ex2-evi { display: flex; flex-direction: column; margin-bottom: 16px; }
-.ex2-evi-row, .ex2-evi-add { display: grid; grid-template-columns: 32px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--line); }
+.ex2-evi-row, .ex2-evi-add { display: grid; grid-template-columns: 32px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--paper-sunk); }
 .ex2-evi-num { font-family: var(--serif); font-style: italic; font-size: 17px; color: var(--text-ghost); }
 .ex2-evi-text { font-size: 15px; line-height: 1.55; color: var(--text); padding: 8px 0; }
 .ex2-evi-x { width: 44px; height: 44px; display: grid; place-items: center; border: none; border-radius: 50%; background: none; color: var(--text-faint); cursor: pointer; }
@@ -151,8 +151,8 @@
 .ex2-check label small { display: block; margin-top: 2px; font-size: 11.5px; color: var(--text-faint); }
 
 /* ── Колесо детства ───────────────────────────────────────────────────── */
-.ex2-cw-scale { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 12px; margin-bottom: 8px; padding-bottom: 12px; border-bottom: 1px solid var(--line); font-size: 12px; color: var(--text-faint); }
-.ex2-cw-row { display: grid; grid-template-columns: 32px minmax(0, 1fr) 64px; gap: 16px; align-items: center; padding: 18px 0; border-bottom: 1px solid var(--line); }
+.ex2-cw-scale { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 12px; margin-bottom: 8px; padding-bottom: 12px; border-bottom: 1px solid var(--paper-sunk); font-size: 12px; color: var(--text-faint); }
+.ex2-cw-row { display: grid; grid-template-columns: 32px minmax(0, 1fr) 64px; gap: 16px; align-items: center; padding: 18px 0; border-bottom: 1px solid var(--paper-sunk); }
 .ex2-cw-num { font-family: var(--serif); font-style: italic; font-size: 20px; color: var(--text-ghost); }
 .ex2-cw-label { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
 .ex2-cw-q { font-size: 12.5px; line-height: 1.5; color: var(--text-faint); margin-bottom: 4px; }
@@ -173,7 +173,7 @@
 @media (max-width: 900px) { .ex2-cw-grid { grid-template-columns: minmax(0, 1fr); } }
 .ex2-cw-svg { display: block; margin: 0 auto; overflow: visible; max-width: 100%; }
 .ex2-cw-dot { fill: oklch(0.58 0.12 var(--h)); }
-.ex2-cw-legend { display: flex; flex-direction: column; gap: 6px; margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--line); }
+.ex2-cw-legend { display: flex; flex-direction: column; gap: 6px; margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--paper-sunk); }
 .ex2-cw-legend-row { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--text-sub); }
 .ex2-cw-legend-val { margin-left: auto; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--ok); }
 .ex2-cw-legend-val.is-low { color: var(--err); }
@@ -186,7 +186,7 @@
 
 /* ── Портрет режима ───────────────────────────────────────────────────── */
 .ex2-portrait.ds-card { padding: 8px 24px; }
-.ex2-portrait-row { padding: 16px 0; border-bottom: 1px solid var(--line); }
+.ex2-portrait-row { padding: 16px 0; border-bottom: 1px solid var(--paper-sunk); }
 .ex2-portrait-row:last-child { border-bottom: none; }
 .ex2-portrait-row .ds-label { margin-bottom: 6px; }
 .ex2-portrait-cta { margin-top: 22px; width: 100%; min-height: 48px; }

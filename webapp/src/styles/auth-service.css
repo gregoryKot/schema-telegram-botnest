@@ -20,7 +20,7 @@
 .as-err { border-color: var(--err); color: var(--err); font-size: 14px; line-height: 1.5; padding: 14px 16px; border-radius: 16px; }
 .as-reason { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; color: var(--text-faint); margin: 0; word-break: break-all; }
 .as-rows { display: flex; flex-direction: column; background: var(--paper-tint); border-radius: 14px; padding: 6px 16px; }
-.as-row { display: flex; gap: 10px; padding: 8px 0; font-size: 14px; border-bottom: 1px solid var(--line); }
+.as-row { display: flex; gap: 10px; padding: 8px 0; font-size: 14px; border-bottom: 1px solid var(--paper-sunk); }
 .as-row:last-child { border-bottom: 0; }
 .as-row > span:first-child { flex: 1; }
 .as-row-n { font-family: var(--serif); }

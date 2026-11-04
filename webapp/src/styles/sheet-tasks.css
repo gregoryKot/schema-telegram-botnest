@@ -129,7 +129,7 @@
 .ds-btn.sk-btn-danger:hover { background: var(--accent-red); opacity: .9; }
 .sk-celebr-num { font-size: 72px; letter-spacing: -.02em; color: var(--text); margin-bottom: 8px; }
 .sk-celebr-num[data-milestone='yes'] { color: var(--accent); }
-.sk-celebr-insight { padding-top: 12px; border-top: 1px solid var(--line); font-size: 13px; }
+.sk-celebr-insight { padding-top: 12px; border-top: 1px solid var(--paper-sunk); font-size: 13px; }
 .sk-dialog-link { display: block; width: 100%; min-height: 44px; margin-top: 6px; }
 .sk-dialog-box .ds-btn.sk-wide { width: 100%; }
 

@@ -61,8 +61,8 @@
 .ct-task-cta { font-size: 13px; font-weight: 700; color: var(--accent); white-space: nowrap; }
 
 /* Лента дня */
-.ct-feed-list { margin: 0; padding: 0; list-style: none; border-top: 1px solid var(--line); }
-.ct-feed-list > li { border-bottom: 1px solid var(--line); }
+.ct-feed-list { margin: 0; padding: 0; list-style: none; border-top: 1px solid var(--paper-sunk); }
+.ct-feed-list > li { border-bottom: 1px solid var(--paper-sunk); }
 .ct-feed-row {
   width: 100%; min-height: 48px; box-sizing: border-box; padding: 8px 0;
   display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; gap: 12px; align-items: center;

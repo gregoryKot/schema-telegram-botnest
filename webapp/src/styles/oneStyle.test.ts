@@ -55,12 +55,44 @@ function classLists(src: string): string[][] {
 const lists = walk(SRC).flatMap((f) => classLists(readFileSync(f, 'utf8')).map((l) => ({ f: f.slice(SRC.length + 1), l })));
 const allRules = [...cssFiles.flatMap((f) => rules(cssText(f)).map((r) => ({ ...r, f }))), ...rules(indexCss).map((r) => ({ ...r, f: 'index.css' }))];
 
+/** --line в border-top/bottom — только у контуров: край полосы или рамка самостоятельного блока. */
+const LINE_OUTLINES: Record<string, string> = {
+  '.ds-sheet-head': 'нижний край шапки листа',
+  '.tk-head': 'нижний край шапки трекера',
+  '.tq-bar': 'нижний край верхней полосы вопроса',
+  '.ss-tabs': 'нижний край полосы вкладок справочника',
+  '.mm2-bar': 'нижний край полосы выбора карт',
+  '.th-card': 'рамка самостоятельной карточки (три стороны + акцент слева)',
+};
+const selectorsOf = (css: string, re: RegExp) => [...css.matchAll(/([^{}]+)\{([^{}]*)\}/g)]
+  .filter((m) => re.test(m[2])).map((m) => m[1].trim());
+const LINE_BORDER = /border-(?:top|bottom):\s*1px\s+solid\s+var\(--line\)/;
+
 describe('один токен разделителя', () => {
-  // Разделитель — --paper-sunk (как в «Настройках»); --line — контуры; на тёмном — --ink-line.
+  // Разделитель строк, разделов и футеров — --paper-sunk; --line — контуры из списка выше; на тёмном — --ink-line.
   it.each(cssFiles)('%s: линии 1px — solid и токен разделителя/контура', (f) => {
     const bad = [...cssText(f).matchAll(/border-(?:top|bottom):\s*1px\s+(\w+)\s+(var\([^)]*\)|[^;}\s]+)/g)]
       .filter((m) => m[1] !== 'solid' || !/^var\(--(line|paper-sunk|ink-line)\)$/.test(m[2])).map((m) => m[0]);
     expect(bad).toEqual([]);
+  });
+  it.each(cssFiles)('%s: --line в border-top/bottom только у контуров из списка', (f) => {
+    const bad = selectorsOf(cssText(f), LINE_BORDER).filter((sel) => !(sel in LINE_OUTLINES));
+    expect(bad).toEqual([]);
+  });
+  it('гейт ловит разделитель на --line и пропускает контур', () => {
+    expect(selectorsOf('.x-row + .x-row { border-top: 1px solid var(--line); }', LINE_BORDER)).toEqual(['.x-row + .x-row']);
+    expect(selectorsOf('.ds-sheet-head { border-bottom: 1px solid var(--line); }', LINE_BORDER).every((s) => s in LINE_OUTLINES)).toBe(true);
+    expect(selectorsOf('.x-row { border-top: 1px solid var(--paper-sunk); }', LINE_BORDER)).toEqual([]);
+  });
+});
+
+describe('цепочка режимов концептуализации', () => {
+  it('тело карточки узла объявлено для .tcp-node, а не только для первого', () => {
+    const css = cssText('therapist-concept.css');
+    const body = [...css.matchAll(/([^{}]+)\{([^{}]*)\}/g)].find((m) => m[1].trim() === '.tcp-node')?.[2] ?? '';
+    expect(body).toMatch(/border:/);
+    expect(body).toMatch(/padding:/);
+    expect(css).not.toMatch(/:first-child\s+\.tcp-node\s*\{[^}]*(border|padding|background)/);
   });
 });
 

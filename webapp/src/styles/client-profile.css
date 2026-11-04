@@ -96,7 +96,7 @@
 /* Бывший терапевт (FormerTherapistNote): сообщение вместо карточки «Терапевт». */
 .cpf-former { padding: 22px 24px; border-radius: 20px; }
 
-.cpf-delete { padding-top: 20px; border-top: 1px solid var(--line); }
+.cpf-delete { padding-top: 20px; border-top: 1px solid var(--paper-sunk); }
 
 @media (max-width: 767px) {
   .cpf-card, .cpf-former { padding: 16px; border-radius: 18px; }
@@ -119,7 +119,7 @@
 .cpf-bar-fill { height: 100%; border-radius: var(--r-4); transition: width .4s ease; }
 .cpf-bar-n { width: 16px; text-align: right; font-size: 12px; font-weight: 700; color: var(--text); }
 .cpf-bar-n.is-zero { color: var(--text-faint); }
-.cpf-foot { display: flex; align-items: center; justify-content: space-between; gap: var(--space-8); flex-wrap: wrap; padding-top: var(--space-12); border-top: 1px solid var(--line); }
+.cpf-foot { display: flex; align-items: center; justify-content: space-between; gap: var(--space-8); flex-wrap: wrap; padding-top: var(--space-12); border-top: 1px solid var(--paper-sunk); }
 .cpf-delta { font-size: 12px; font-weight: 700; color: var(--text-sub); }
 .cpf-delta.is-better { color: var(--ok); }
 .cpf-foot-link { align-self: flex-start; min-height: 44px; }

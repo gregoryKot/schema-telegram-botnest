@@ -65,8 +65,8 @@
 }
 .ds-link:hover { color: var(--accent-hi); }
 /* Опасное действие текстом (#906, волна 3). */
-.ds-link--danger { color: var(--err); }
-.ds-link--danger:hover { color: var(--err); text-decoration: underline; }
+.ds-link--danger { color: var(--accent-red); }
+.ds-link--danger:hover { color: var(--accent-red); text-decoration: underline; }
 /* Ссылка внутри бегущего текста: остаётся в строке абзаца, без зоны 44 (#906). */
 .ds-link--inline { display: inline; }
 /* Пустое состояние списка/карточки: обычный текст, без рамки и курсива. */
@@ -100,7 +100,7 @@
 .ds-list-row--hover { cursor: pointer; }
 .ds-list-row--hover:hover { background: color-mix(in srgb, var(--paper-tint) 60%, var(--surface)); }
 .ds-list-title { font-size: 14px; font-weight: 600; color: var(--text); }
-.ds-list-row--danger .ds-list-title { color: var(--err); }
+.ds-list-row--danger .ds-list-title { color: var(--accent-red); }
 .ds-list-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1 1 auto; }
 .ds-list-row--nav { grid-template-columns: minmax(0, 1fr) auto; min-height: 44px; box-sizing: border-box; }
 .ds-list-row--inset { padding-left: 0; padding-right: 0; }
@@ -181,7 +181,7 @@ button.ds-list-row, a.ds-list-row { width: 100%; box-sizing: border-box; border:
 .ds-menu-item { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 36px; box-sizing: border-box; padding: 8px 10px; border: none; border-radius: 8px; background: none; text-align: left; cursor: pointer; font: 14px/1.3 var(--sans); color: var(--text); }
 .ds-menu-item:hover:not(:disabled) { background: color-mix(in srgb, var(--paper-tint) 60%, var(--surface)); }
 .ds-menu-item:disabled { opacity: .55; cursor: default; }
-.ds-menu-item.is-danger { color: var(--err); }
+.ds-menu-item.is-danger { color: var(--accent-red); }
 
 /* ── Сегмент-фильтр ──────────────────────────────────────────────────────── */
 .ds-seg { display: inline-flex; gap: 4px; background: var(--paper-sunk); border-radius: 20px; padding: 3px; max-width: 100%; overflow-x: auto; scrollbar-width: none; }
