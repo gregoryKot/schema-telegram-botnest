@@ -165,6 +165,14 @@ describe('cabinet.css: примитивы листов (#906)', () => {
     }
   });
 
+  // QA 2026-11 (T-16): поле имени «Новый клиент» — 37, сайдбар на планшете
+  // под пальцем — 34–38 (режим, поиск, строки клиентов).
+  it('поле имени нового клиента и сайдбар кабинета — 44 в блоке тап-целей', () => {
+    for (const sel of ['.tc-add-name', '.sb-mode-btn', '.sb-search', '.sb-client-item']) {
+      expect(decls(tap, sel), sel).toContain('min-height: 44px');
+    }
+  });
+
   it('тап-цели живут в одном блоке: в блоке раскладки телефона их нет, второго блока pointer: coarse нет', () => {
     expect(css.split(TAP_MEDIA)).toHaveLength(2);
     expect(css.match(/@media[^{]*pointer: coarse/g)).toHaveLength(1);

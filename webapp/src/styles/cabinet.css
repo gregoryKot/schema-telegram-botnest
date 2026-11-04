@@ -272,4 +272,7 @@ button.ds-list-row, a.ds-list-row { width: 100%; box-sizing: border-box; border:
   .ds-chip--toggle { min-height: 44px; }
   .ds-link { min-height: 44px; display: inline-flex; align-items: center; }
   .ds-link--inline { display: inline; min-height: 0; }
+  /* Вне примитивов (QA 2026-11): поле имени «Новый клиент» (было 37) и сайдбар
+     кабинета на планшете под пальцем — режим, поиск, строки клиентов (34–38). */
+  .tc-add-name, .sb-mode-btn, .sb-search, .sb-client-item { min-height: 44px; }
 }
