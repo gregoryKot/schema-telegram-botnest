@@ -12,34 +12,51 @@
 }
 .ct-link:hover { text-decoration: underline; text-underline-offset: 3px; }
 .ct-head-why { flex-shrink: 0; }
-.ct-calm { align-self: flex-start; color: var(--text-sub); }
-
-/* Плитки: одна главная (трекер, с картинкой и единственной залитой кнопкой
-   экрана) и две тихие строки с картинкой слева (владелец 2026-11-04: «одна
-   главная плитка, воздух, одна кнопка, картинки»). Картинки — HomeArt.tsx. */
-.ct-tiles { display: flex; flex-direction: column; gap: 12px; }
-.ct-tile {
-  box-sizing: border-box; width: 100%; border-radius: 20px;
-  display: flex; align-items: center; gap: 18px; cursor: pointer; text-align: left;
-  background: var(--surface); color: var(--text); border: 1px solid var(--line); font-family: var(--sans);
-  transition: border-color .12s;
+/* «Подышим» — строка между тонкими линиями, как блок трекера. */
+.ct-calm {
+  width: 100%; min-height: 60px; justify-content: space-between; color: var(--text);
+  font-size: 17px; font-weight: 500; border-top: 1px solid var(--panel-line); border-bottom: 1px solid var(--panel-line);
 }
-.ct-tile:hover { border-color: var(--line-hover); }
-.ct-tile--main { flex-direction: column; align-items: stretch; gap: 16px; padding: 24px; margin-bottom: 8px; }
-/* Строка — ds-card--nav из cabinet.css; здесь только плотность и шрифт. */
-.ct-tile--row { min-height: 84px; padding: 16px 18px; gap: 18px; }
-.ct-tile-body { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
-.ct-tile-title { font-family: var(--serif); font-size: 24px; line-height: 1.15; }
-.ct-tile--row .ct-tile-title { font-size: 20px; }
+
+/* Главная по референсу владельца 2026-11-04 («бумажная аппликация»): трекер —
+   блок между тонкими линиями, вопрос слева, картинка справа, единственная
+   залитая кнопка экрана; ниже два квадрата цветной бумаги. Картинки — HomeArt.tsx. */
+.ct-home { display: flex; flex-direction: column; gap: 20px; }
+.ct-main {
+  display: flex; flex-direction: column; gap: 22px; width: 100%; box-sizing: border-box;
+  padding: 24px 0 28px; margin: 0; background: none; color: var(--text);
+  border: 0; border-top: 1px solid var(--panel-line); border-bottom: 1px solid var(--panel-line);
+  text-align: left; cursor: pointer; font-family: var(--sans);
+}
+.ct-main-grid { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 16px; align-items: center; }
+.ct-main-body { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.ct-main-title { font-family: var(--serif); font-size: 32px; line-height: 1.1; }
+.ct-main-text { font-size: 16px; line-height: 1.45; color: var(--text-sub); }
+.ct-main-cta { pointer-events: none; }
+
+.ct-squares { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.ct-tile { border-radius: 20px; }
+.ct-square {
+  display: flex; flex-direction: column; gap: 8px; min-height: 232px; box-sizing: border-box;
+  padding: 22px 20px 18px; border: 0; text-align: left; cursor: pointer; font-family: var(--sans);
+  background: oklch(0.915 0.03 var(--h)); color: var(--text);
+  transition: background .12s;
+}
+.ct-square:hover { background: oklch(0.895 0.04 var(--h)); }
+.ct-square .ct-tile-title { font-size: 26px; line-height: 1.05; }
+.ct-square .ct-tile-text { font-size: 15px; }
+.ct-square .ct-art { margin-top: auto; align-self: flex-start; }
+.ct-square-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 10px; }
+.ct-arrow { font-size: 22px; line-height: 1; color: var(--accent); }
+.ct-tile-title { font-family: var(--serif); line-height: 1.15; }
 .ct-tile-text { font-size: 14px; line-height: 1.45; color: var(--text-sub); }
-.ct-tile-meta { font-size: 12px; font-weight: 600; letter-spacing: .02em; color: var(--accent); }
+.ct-tile-meta { font-size: 13px; font-weight: 600; letter-spacing: .02em; color: var(--accent); }
 .ct-tile-meta--skeleton { display: block; height: 11px; width: 55%; border-radius: var(--r-6); background: var(--surface-3); }
-.ct-tile-cta { pointer-events: none; }
 
 /* Картинки */
 .ct-art { display: block; flex-shrink: 0; }
-.ct-art--garden { width: 128px; height: 96px; }
-.ct-art--spot { width: 48px; height: 48px; }
+.ct-art--strokes { width: 112px; height: 94px; }
+.ct-art--square { width: 112px; height: 60px; }
 .ct-art--rest { width: 56px; height: 48px; }
 .ct-feed-empty { display: flex; align-items: center; gap: 16px; }
 
@@ -78,6 +95,6 @@
 .ct-feed-kind { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--text-muted); }
 
 @media (max-width: 767px) {
-  .ct-tile--main { padding: 20px; }
-  .ct-tile--row { padding: 14px 16px; }
+  .ct-square { padding: 20px 18px 16px; min-height: 216px; }
+  .ct-art--strokes { width: 96px; height: 80px; }
 }

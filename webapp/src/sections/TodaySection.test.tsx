@@ -153,7 +153,7 @@ describe('TodaySection — пустой аккаунт: ничего выдум�
     expect(screen.getByRole('button', { name: /Что случилось/ })).toBeTruthy();
     expect(screen.getByRole('button', { name: /Дневник/ })).toBeTruthy();
     expect(screen.getByText('Ещё не заполнен · ≈1 мин')).toBeTruthy();
-    expect(screen.getByText('≈3 мин · когда что-то зацепило')).toBeTruthy();
+    expect(screen.getByText('≈3 мин')).toBeTruthy();
     await screen.findByText('Пока записей нет');
     expect(screen.getByText('Пока ничего. Любая кнопка выше подойдёт для начала.')).toBeTruthy();
     expect(screen.queryByText('От терапевта')).toBeNull();
@@ -192,11 +192,11 @@ describe('TodaySection — плитка трекера по реальным о�
     expect(await screen.findByText('Трекер заполнен — индекс 6,0')).toBeTruthy();
   });
 
-  it('лепестки картинки окрашены только у оценённых потребностей', () => {
+  it('полоски картинки плотные только у оценённых потребностей', () => {
     const { container } = renderSection({ ratings: { attachment: 4 } });
-    const petals = container.querySelectorAll('.ct-art--garden [data-need]');
-    expect(petals).toHaveLength(5);
-    expect(container.querySelectorAll('.ct-art--garden [data-rated="yes"]')).toHaveLength(1);
+    const strokes = container.querySelectorAll('.ct-art--strokes [data-need]');
+    expect(strokes).toHaveLength(5);
+    expect(container.querySelectorAll('.ct-art--strokes [data-rated="yes"]')).toHaveLength(1);
   });
 
   it('клик по плитке открывает трекер и шлёт home_tile', () => {
@@ -239,7 +239,7 @@ describe('TodaySection — лента дня и плитка дневника', 
     mockApi.getModeDiary.mockResolvedValue([{ id: 3, situation: 'запись', createdAt: nowIso() }]);
     renderSection();
     expect(await screen.findByText('Сегодня 1 запись')).toBeTruthy();
-    expect(screen.getByText('≈3 мин · когда что-то зацепило')).toBeTruthy();
+    expect(screen.getByText('≈3 мин')).toBeTruthy();
     expect(screen.queryByText(/Сегодня разобран/)).toBeNull();
   });
 
@@ -296,7 +296,7 @@ describe('TodaySection — «Что случилось»', () => {
     await screen.findByText('Последняя запись — 3 дн. назад');
     fireEvent.click(screen.getByRole('button', { name: /Что случилось/ }));
     expect((await screen.findByTestId('case-flow-start')).textContent).toBe('flow');
-    expect(screen.getByText('≈3 мин · когда что-то зацепило')).toBeTruthy();
+    expect(screen.getByText('≈3 мин')).toBeTruthy();
     expect(mockApi.trackEvent).toHaveBeenCalledWith('home_tile', { tile: 'case' });
 
     mockApi.getModeDiary.mockResolvedValue([

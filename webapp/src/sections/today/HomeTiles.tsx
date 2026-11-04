@@ -1,7 +1,8 @@
 import { haptic } from '../../haptic';
+import { useTr } from '../../utils/addressForm';
 import type { TrackerSummary } from './todayFeed';
-import { NeedGarden, RippleArt, LeafArt } from './HomeArt';
-import { HomeTileRow } from './HomeTileRow';
+import { NeedStrokes, RibbonArt, PebblesArt } from './HomeArt';
+import { HomeSquare } from './HomeSquare';
 import { trackerCta } from './trackerCta';
 
 interface Props {
@@ -16,30 +17,38 @@ interface Props {
   onDiary: () => void;
 }
 
-// Главная «Сегодня» (docs/design/CLIENT_SIMPLE_2026-10.md): одна главная плитка — трекер,
-// с картинкой и единственной залитой кнопкой экрана; «Что случилось» и дневник — тихие
-// строки с картинкой слева (HomeTileRow). Плитка — вся кнопка целиком, «кнопка» внутри нарисована
-// span-ом: вложенная button невалидна, а тап-цель и так вся карточка; span без aria-hidden,
-// чтобы имя кнопки для скринридера несло действие («Трекер … Заполнить за минуту»).
+/** Оттенки цветной бумаги квадратов (референс: шалфей и персик), не hue сущностей. */
+const SQUARE_HUE = { case: 135, diary: 45 } as const;
+
+// Главная по референсу владельца 2026-11-04 (бумажная аппликация): трекер — блок между
+// линиями с вопросом, картинкой и единственной залитой кнопкой экрана; ниже два квадрата.
+// Блок трекера — вся кнопка целиком; «кнопка» внутри — span (вложенная button невалидна),
+// без aria-hidden, чтобы имя кнопки несло действие («Трекер … Отметить состояние»).
 export function HomeTiles({ ratings, tracker, trackerMeta, caseMeta, diaryMeta, onTracker, onCase, onDiary }: Props) {
+  const tr = useTr();
   const tap = (fn: () => void) => () => { haptic.tap(); fn(); };
   const done = tracker.total > 0 && tracker.filled >= tracker.total;
   return (
-    <div className="ct-tiles">
-      <button type="button" className="ct-tile ct-tile--main" onClick={tap(onTracker)}>
-        <NeedGarden ratings={ratings} />
-        <span className="ct-tile-body">
-          <span className="ct-tile-title">Трекер</span>
-          <span className="ct-tile-text">Пять потребностей, один вопрос за раз.</span>
-          <span className="ct-tile-meta">{trackerMeta}</span>
+    <div className="ct-home">
+      <button type="button" className="ct-main" onClick={tap(onTracker)}>
+        <span className="ct-main-grid">
+          <span className="ct-main-body">
+            <span className="ds-label">Трекер</span>
+            <span className="ct-main-title">{tr('Как ты сегодня?', 'Как вы сегодня?')}</span>
+            <span className="ct-main-text">Пять потребностей. Одна минута для себя.</span>
+            <span className="ct-tile-meta">{trackerMeta}</span>
+          </span>
+          <NeedStrokes ratings={ratings} />
         </span>
-        <span className={`ds-btn ds-btn--lg ct-tile-cta${done ? ' ds-btn--secondary' : ''}`}>
-          {trackerCta(tracker)}
+        <span className={`ds-btn ds-btn--lg ct-main-cta${done ? ' ds-btn--secondary' : ''}`}>
+          {trackerCta(tracker)} →
         </span>
       </button>
 
-      <HomeTileRow art={<RippleArt />} title="Что случилось" text="Момент, после которого стало не по себе." meta={caseMeta} onClick={tap(onCase)} />
-      <HomeTileRow art={<LeafArt />} title="Дневник" text="Одна мысль, схема, режим или спасибо." meta={diaryMeta} onClick={tap(onDiary)} />
+      <div className="ct-squares">
+        <HomeSquare hue={SQUARE_HUE.case} art={<RibbonArt />} title="Что случилось" text="Разобрать то, что задело." meta={caseMeta} onClick={tap(onCase)} />
+        <HomeSquare hue={SQUARE_HUE.diary} art={<PebblesArt />} title="Дневник" text="Оставить здесь то, что на уме." meta={diaryMeta} onClick={tap(onDiary)} />
+      </div>
     </div>
   );
 }

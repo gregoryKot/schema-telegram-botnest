@@ -4,6 +4,7 @@
 // зовёт свой обработчик.
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
+import { AddressFormContext } from '../../utils/addressForm';
 import { HomeTiles } from './HomeTiles';
 import { trackerCta } from './trackerCta';
 
@@ -13,7 +14,7 @@ const base = {
   ratings: {} as Record<string, number>,
   tracker: { filled: 0, total: 5, index: null },
   trackerMeta: 'Ещё не заполнен · ≈1 мин',
-  caseMeta: '≈3 мин · когда что-то зацепило',
+  caseMeta: '≈3 мин',
   diaryMeta: 'Пока записей нет',
   onTracker: vi.fn(),
   onCase: vi.fn(),
@@ -21,28 +22,40 @@ const base = {
 };
 
 describe('trackerCta', () => {
-  it('пусто → «Заполнить за минуту», частично → «Продолжить», всё → «Посмотреть сегодня»', () => {
-    expect(trackerCta({ filled: 0, total: 5, index: null })).toBe('Заполнить за минуту');
+  it('пусто → «Отметить состояние», частично → «Продолжить», всё → «Посмотреть сегодня»', () => {
+    expect(trackerCta({ filled: 0, total: 5, index: null })).toBe('Отметить состояние');
     expect(trackerCta({ filled: 2, total: 5, index: null })).toBe('Продолжить');
     expect(trackerCta({ filled: 5, total: 5, index: 6 })).toBe('Посмотреть сегодня');
   });
-  it('потребностей нет (ещё не загрузились) — не «Посмотреть», а «Заполнить»', () => {
-    expect(trackerCta({ filled: 0, total: 0, index: null })).toBe('Заполнить за минуту');
+  it('потребностей нет (ещё не загрузились) — не «Посмотреть», а «Отметить»', () => {
+    expect(trackerCta({ filled: 0, total: 0, index: null })).toBe('Отметить состояние');
   });
 });
 
 describe('HomeTiles', () => {
-  it('главная плитка — кнопка с именем «Трекер», внутри одна залитая «кнопка»-подпись; заполненный трекер — вторичная', () => {
+  it('блок трекера — кнопка с именем «Трекер … Отметить состояние», внутри одна залитая «кнопка»-подпись; заполненный трекер — вторичная', () => {
     const { rerender } = render(<HomeTiles {...base} />);
-    const main = screen.getByRole('button', { name: /Трекер.*Заполнить за минуту/ });
-    expect(main.querySelector('.ct-tile-cta')?.textContent).toBe('Заполнить за минуту');
-    expect(main.querySelector('.ct-tile-cta')?.className).not.toContain('ds-btn--secondary');
+    const main = screen.getByRole('button', { name: /Трекер.*Отметить состояние/ });
+    expect(main.querySelector('.ct-main-cta')?.textContent).toBe('Отметить состояние →');
+    expect(main.querySelector('.ct-main-cta')?.className).not.toContain('ds-btn--secondary');
     rerender(<HomeTiles {...base} tracker={{ filled: 5, total: 5, index: 6 }} />);
-    expect(main.querySelector('.ct-tile-cta')?.className).toContain('ds-btn--secondary');
+    expect(main.querySelector('.ct-main-cta')?.className).toContain('ds-btn--secondary');
     expect(document.querySelectorAll('.ds-btn').length).toBe(1);
   });
 
-  it('лепестки: оценённая потребность красится, остальные пустые', () => {
+  it('вопрос трекера звучит в форме обращения: «ты» и «вы»', () => {
+    const { unmount } = render(<HomeTiles {...base} />);
+    expect(screen.getByText('Как ты сегодня?')).toBeTruthy();
+    unmount();
+    render(
+      <AddressFormContext.Provider value={{ form: 'vy', setForm: vi.fn() }}>
+        <HomeTiles {...base} />
+      </AddressFormContext.Provider>,
+    );
+    expect(screen.getByText('Как вы сегодня?')).toBeTruthy();
+  });
+
+  it('полоски: оценённая потребность плотная, остальные бледные', () => {
     render(<HomeTiles {...base} ratings={{ attachment: 4 }} />);
     const rated = document.querySelectorAll('[data-rated="yes"]');
     expect(rated.length).toBe(1);
