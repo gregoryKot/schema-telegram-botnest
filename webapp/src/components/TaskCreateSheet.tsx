@@ -88,7 +88,7 @@ export function TaskCreateSheet({ clientId, clientName, defaultType, defaultText
       <div className="sk-scroll">
         <div className="sk-page">
           <div>
-            <div className="ds-eyebrow">{taskSheetTitle(clientName)}</div>
+            <div className="ds-eyebrow sk-eyebrow-one">{taskSheetTitle(clientName)}</div>
             <h1 className="ds-h2 sk-title">{tr('Выбери', 'Выберите')}<br /><em className="sk-it">задание</em></h1>
             {lead && <p className="ds-sub sk-lead">{lead}</p>}
           </div>

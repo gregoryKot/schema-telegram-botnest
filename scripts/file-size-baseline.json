@@ -2155,7 +2155,7 @@
   "webapp/src/components/therapist/MeetingDaysCard.tsx": 39,
   "webapp/src/components/therapist/NoteCard.tsx": 27,
   "webapp/src/components/therapist/notesModel.ts": 106,
-  "webapp/src/components/therapist/rosterModel.ts": 82,
+  "webapp/src/components/therapist/rosterModel.ts": 77,
   "webapp/src/components/therapist/SessionArchive.tsx": 56,
   "webapp/src/components/therapist/sessionNumbers.ts": 8,
   "webapp/src/components/therapist/taskModel.ts": 23,
