@@ -5,6 +5,10 @@
 import { getTherapistContact } from '../utils/therapistContact';
 import { useTr } from '../utils/addressForm';
 
+// Ссылка в мелкой строке была 74×16 (QA мобильной версии 2026-11, М1): зона нажатия
+// 44 по высоте — отступом, отрицательный margin возвращает строке прежнюю высоту.
+const LINK_HIT = { display: 'inline-block', padding: '14px 0', margin: '-14px 0' } as const;
+
 export function TherapyNote({ compact }: { compact?: boolean }) {
   const contact = getTherapistContact();
   const tr = useTr();
@@ -43,6 +47,7 @@ export function TherapyNote({ compact }: { compact?: boolean }) {
               target="_blank"
               rel="noopener noreferrer"
               className="u-link"
+              style={LINK_HIT}
             >
               {contact.name === 'автору'
                 ? 'Записаться →'
@@ -88,8 +93,8 @@ export function TherapyNote({ compact }: { compact?: boolean }) {
             target="_blank"
             rel="noopener noreferrer"
             style={{
-              display: 'inline-block',
-              marginTop: 6,
+              ...LINK_HIT,
+              marginTop: 6 - 14,
               fontSize: 12,
               color: 'var(--accent)',
               textDecoration: 'none',

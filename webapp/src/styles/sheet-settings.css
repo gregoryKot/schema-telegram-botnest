@@ -53,8 +53,8 @@
 .st-btn-danger.is-solid:hover { background: var(--accent-red); opacity: .9; }
 .st-pair-num { font-family: var(--serif); font-size: 38px; letter-spacing: -0.02em; line-height: 1; }
 .st-pair-num small { font-size: 14px; color: var(--text-sub); }
-.st-links { display: flex; flex-direction: column; gap: 6px; }
-.st-links a { font-size: 14px; color: var(--text-sub); text-decoration: none; min-height: 32px; display: inline-flex; align-items: center; }
+.st-links { display: flex; flex-direction: column; } /* ссылки 44 по высоте встык: были 32 (QA мобильной версии 2026-11, М1) */
+.st-links a { font-size: 14px; color: var(--text-sub); text-decoration: none; min-height: 44px; display: inline-flex; align-items: center; }
 .st-links a b { color: var(--accent); font-weight: 600; }
 .st-fine { font-size: 11px; color: var(--text-faint); line-height: 1.5; }
 

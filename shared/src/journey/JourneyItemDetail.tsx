@@ -77,8 +77,8 @@ export function JourneyItemDetail({
           fontSize: 14,
           fontFamily: 'inherit',
           cursor: 'pointer',
-          padding: '4px 0',
-          marginBottom: 10,
+          padding: '0 12px 0 0',
+          minHeight: 44, marginBottom: 6, // палец: было 57×29 (QA мобильной версии 2026-11, М1)
         }}
       >
         ← Назад
