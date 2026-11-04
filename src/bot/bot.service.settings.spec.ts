@@ -196,6 +196,24 @@ describe('BotService.acceptDisclaimer / hasAcceptedDisclaimer', () => {
     expect(await svc.hasAcceptedDisclaimer(1n)).toBe(true);
   });
 
+  it('acceptDisclaimer: из чата — только согласие; с экрана кабинета (viaApp) — ещё и onboardingV2Done одним update', async () => {
+    const db = makeDb({ disclaimerAccepted: false });
+    const svc = new BotService(db);
+
+    await svc.acceptDisclaimer(1n);
+    expect(db.user.update).toHaveBeenLastCalledWith({
+      where: { id: 1n },
+      data: { disclaimerAccepted: true },
+    });
+
+    await svc.acceptDisclaimer(1n, true);
+    expect(db.user.update).toHaveBeenLastCalledWith({
+      where: { id: 1n },
+      data: { disclaimerAccepted: true, onboardingV2Done: true },
+    });
+    expect(await svc.hasAcceptedDisclaimer(1n)).toBe(true);
+  });
+
   // Поле отсутствует (undefined), а не явно false — только этот случай реально
   // проверяет `?? false`: при disclaimerAccepted=false оператор `??` не
   // срабатывает вовсе (false не nullish), и мутант `?? true` прошёл бы мимо.

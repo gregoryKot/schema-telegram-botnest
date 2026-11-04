@@ -45,13 +45,6 @@ export const TELEGRAM_ENV_ENTRIES: EnvVarSpec[] = [
     group: 'telegram',
   },
   {
-    name: 'MINIAPP_URL',
-    purpose: 'Адрес мини-аппа для webApp-кнопок; по умолчанию APP_URL + /app/.',
-    requiredInProd: false,
-    format: formats.httpsUrl,
-    group: 'telegram',
-  },
-  {
     name: 'TELEGRAM_PROXY_URL',
     purpose:
       'Исходящий прокси до api.telegram.org на случай, если маршрут с хостинга ' +

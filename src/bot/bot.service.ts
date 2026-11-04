@@ -93,11 +93,11 @@ export class BotService {
     return user?.notifyTimezone ?? 'Europe/Moscow';
   }
 
-  async acceptDisclaimer(userId: bigint): Promise<void> {
-    await this.prisma.user.update({
-      where: { id: userId },
-      data: { disclaimerAccepted: true },
-    });
+  // viaApp — экран согласий кабинета: он ещё и завершает онбординг (/stats).
+  async acceptDisclaimer(userId: bigint, viaApp = false): Promise<void> {
+    const done = viaApp ? { onboardingV2Done: true } : {};
+    const data = { disclaimerAccepted: true, ...done };
+    await this.prisma.user.update({ where: { id: userId }, data });
   }
 
   async hasAcceptedDisclaimer(userId: bigint): Promise<boolean> {

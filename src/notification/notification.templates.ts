@@ -1,6 +1,6 @@
 import { Markup } from 'telegraf';
 import { NotificationType } from './notification.service';
-import { BOOKING_URL, MINIAPP_URL } from '../telegram/telegram.constants';
+import { BOOKING_URL, CABINET_HELP_URL } from '../telegram/telegram.constants';
 import { Need, NeedId } from '../bot/bot.service';
 import { renderSoftTemplate, pluralDays } from './notification.templates.soft';
 import { AddressForm, t } from './address-form';
@@ -287,10 +287,10 @@ export function renderLowStreakInsight(
     keyboard: Markup.inlineKeyboard(
       showBooking
         ? [
-            [Markup.button.webApp('📱 Раздел Помощь', MINIAPP_URL)],
+            [Markup.button.webApp('📱 Раздел Помощь', CABINET_HELP_URL)],
             [Markup.button.url('📝 Записаться на сессию', bookingUrl)],
           ]
-        : [[Markup.button.webApp('📱 Раздел Помощь', MINIAPP_URL)]],
+        : [[Markup.button.webApp('📱 Раздел Помощь', CABINET_HELP_URL)]],
     ),
   };
 }

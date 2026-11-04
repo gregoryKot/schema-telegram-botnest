@@ -8,7 +8,7 @@ import {
   Optional,
 } from '@nestjs/common';
 import { Context, Markup, Telegraf } from 'telegraf';
-import { TELEGRAF_BOT, MINIAPP_URL } from './telegram.constants';
+import { TELEGRAF_BOT, CABINET_URL } from './telegram.constants';
 import { failCallback } from './callback-failure';
 import { BotService } from '../bot/bot.service';
 import { AccountService } from '../bot/account.service';
@@ -168,7 +168,7 @@ export class TelegramQuizService implements OnModuleInit {
       );
     const keyboard = Markup.inlineKeyboard([
       [Markup.button.callback('🎲 Другие тесты', 'qz:list')],
-      [Markup.button.webApp('🧠 Большой тест схем', MINIAPP_URL)],
+      [Markup.button.webApp('🧠 Большой тест схем', CABINET_URL)],
     ]);
     await this.show(ctx, text, keyboard);
   }
