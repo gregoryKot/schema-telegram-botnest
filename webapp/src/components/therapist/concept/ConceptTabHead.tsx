@@ -3,6 +3,7 @@ import { Dropdown } from '../../Dropdown';
 import { useMenuPick } from '../../useMenuPick';
 import { useTr } from '../../../utils/addressForm';
 import type { ClientDetail } from '../clientSheetTypes';
+import { TabTitle } from '../TabTitle';
 import { ConceptViewSwitch, type ConceptView } from '../../../../../shared/src/therapy/conceptGraph/ConceptViewSwitch';
 import { SaveStatusLine } from '../../../../../shared/src/therapy/SaveStatusLine';
 import { CANVAS_HINT, EXPAND_HINT, actionStatusText, type GraphActions } from './conceptHeadText';
@@ -28,9 +29,9 @@ export function ConceptTabHead({ detail, view, onView, graph }: ConceptTabHeadPr
   return (
     <>
       <div className="tcp-head">
-        <div className="tcp-head-title"><h2 className="ds-h2">Концептуализация</h2><div className="ds-sub">Схема-карта, цели терапии и связь с детским опытом</div></div>
-        <ConceptViewSwitch view={view} onChange={onView} />
+        <TabTitle title="Концептуализация" className="tcp-head-title"><div className="ds-sub">Схема-карта, цели терапии и связь с детским опытом</div></TabTitle>
         <SaveStatusLine className="tcp-save" status={saveStatus} savedAt={savedAt} onRetry={retrySave} errorText={conceptError || undefined} align="right" />
+        <ConceptViewSwitch view={view} onChange={onView} />
         <MoreMenu onExport={handleExport} exportEmpty={exportEmpty} graph={graph} />
       </div>
       <ActionStatus graph={graph} exportCopied={exportCopied} />

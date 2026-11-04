@@ -253,4 +253,24 @@
   строку из блока уведомлений стоит вместе с ним.
 
 ### Компьютерная версия кабинета: остаток инцидента 2026-11-04
+- **Снимок 1280 рядом с 393 — пока процесс, не механизм.** Класс «телефонное правило без медиа» держит
+  `webapp/src/styles/desktopLayout.test.ts`, но вид целиком на компьютере никто не снимает: следующая правка вида
+  может снова проверить только 393. Предложение: e2e-browser-снимок 1280 ключевых страниц (`/subscribe`, `/donate`,
+  `/account`, «Зачем это всё», «Обзор» клиента) со сравнением с эталоном. Доказано: в `e2e-browser/` и `ci.yml`
+  снимков компьютера нет.
+- **Аккаунт: значок Telegram сжат до ~19px, пояснение «Единственный способ входа…» обрезано многоточием** — на
+  телефоне и на компьютере, в main тоже (пришло с #912, не с волн). `webapp/src/pages/account/ProviderRows.tsx`
+  (`ONLY_METHOD_NOTE`, у `iconBox` нет `flexShrink: 0`), `webapp/src/styles/auth-account.css` (`.aa-row-sub`
+  `white-space: nowrap`, у `.aa-row-text` нет `flex: 1; min-width: 0`). Не чинилось в ветке компьютерной версии:
+  правка меняет телефон. Доказано замером: плитка значка 19×36 против 36×36 у Google.
+- **«Отменить подписку» (`/subscribe?token=…`) — подчёркнутая строка высотой 21px и на телефоне**
+  (`webapp/src/pages/subscribe/CancelControl.tsx`, инлайн-стиль без `minHeight`): тап-цель меньше 44. На ≥768
+  высота поднята в ветке компьютерной версии, телефон — отдельной правкой.
+- **Фокус с клавиатуры в сайдбаре не виден**: `webapp/src/index.css` — `.sb-item:focus-visible,
+  .sb-account:focus-visible { outline: none; }`, а фон меняется только на `:hover` (WCAG 2.4.7). В main так же.
+  Правка: кольцо `outline: 2px solid var(--accent); outline-offset: -2px` на `:focus-visible`.
+- **Листы «Зачем это всё» и «Поговорить с кем-то» (`role="dialog"`, `aria-modal`) не забирают фокус**: он остаётся
+  на строке «Ещё» под листом, Tab ходит по невидимой странице (`webapp/src/components/WhySheet.tsx`,
+  `webapp/src/components/therapy/TalkSheet.tsx`). В main так же. Правка: фокус на «← Закрыть» при открытии, возврат
+  на вызвавшую строку при закрытии, страница под листом — `inert`.
 - **Оверлеи с `ds-sheet-head` на компьютере остаются полосой во всю ширину** (ExScreen, JourneySheet, HistorySheet, ModeDoubtButton, SettingsSheet, SsSheet, OverlayFrame, TaskCreateSheet, SchemaFlashcardTopbar, ModeMapBanner): `ds-sheet-head--page` (ссылка над колонкой) включён только у страниц и листа «Зачем это всё»/«Поговорить». Колонки оверлеев разные (560–1160), общего `--sheet-col` у них нет; решить по снимкам 1280, нужна ли им ссылка над колонкой. Доказано: grep потребителей `ds-sheet-head`; снимки «после» на 1280 не снимались.

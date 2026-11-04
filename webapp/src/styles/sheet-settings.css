@@ -112,6 +112,6 @@
 .st-pc > .ds-link { align-self: flex-start; }
 .st-need { display: flex; flex-direction: column; gap: var(--space-4); }
 .st-need-name { font-size: 14px; font-weight: 600; color: var(--text); }
-.st-done { margin-top: var(--space-20); } /* форма кнопки — ds-btn--lg; здесь только отступ от текста */
+.st-done { width: 100%; margin-top: var(--space-20); } /* форма кнопки — ds-btn--lg; здесь ширина во всю колонку листа (и на компьютере) и отступ от текста */
 .st-info-b { color: var(--text); font-weight: 600; }
 .st-steps { margin: 6px 0 0; padding: 0 0 0 20px; display: grid; gap: var(--space-6); font-size: 13px; line-height: 1.6; color: var(--text-sub); }
