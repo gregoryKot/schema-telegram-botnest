@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { api, type ModeMapMeta, type ModeMapFull, type ModeMapKind, type UserId } from '../api';
 import { ModeMapEditor } from './ModeMapEditor';
 import { ModeMapSkeleton } from './modeMap/ModeMapSkeleton';
+import { useCanvasTop } from './modeMap/useCanvasTop';
 import { MMIcon } from './modeMapIcons';
 import { useTr } from '../utils/addressForm';
 import '../styles/sheet-modemap.css';
@@ -29,6 +30,8 @@ export function ModeMapSelector({ clientId, initialMapId }: Props) {
   const [editTitle, setEditTitle] = useState('');
   const titleRef = useRef<HTMLInputElement>(null);
   const newBtnRef = useRef<HTMLButtonElement>(null);
+  const bodyRef = useRef<HTMLDivElement>(null);
+  useCanvasTop(bodyRef);
   const [menuPos, setMenuPos] = useState<{ x: number; y: number } | null>(null);
 
   function openKindPicker() {
@@ -176,7 +179,7 @@ export function ModeMapSelector({ clientId, initialMapId }: Props) {
       )}
 
       {/* Editor area */}
-      <div className="mm2-body">
+      <div ref={bodyRef} className="mm2-body">
         {loading && <ModeMapSkeleton />}
         {!loading && maps.length === 0 && (
           <div className="mm2-center">
