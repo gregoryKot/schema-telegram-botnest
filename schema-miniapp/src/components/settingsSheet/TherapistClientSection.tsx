@@ -70,7 +70,7 @@ export function TherapistClientSection({
                   marginBottom: 12,
                 }}
               >
-                {joinDoneText(therapyRelation.partnerName, tr)}
+                {joinDoneText(therapyRelation.partnerName, tr, true)}
               </div>
             )}
 

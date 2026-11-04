@@ -776,7 +776,7 @@
   "shared/src/onboarding/consents.ts": 67,
   "shared/src/onboarding/onboardingExplainers.ts": 38,
   "shared/src/pair/pairTexts.ts": 14,
-  "shared/src/pair/pairView.ts": 41,
+  "shared/src/pair/pairView.ts": 44,
   "shared/src/pair/partnerCard.ts": 57,
   "shared/src/pair/usePairMechanics.ts": 135,
   "shared/src/pattern/modesHeroModel.ts": 77,

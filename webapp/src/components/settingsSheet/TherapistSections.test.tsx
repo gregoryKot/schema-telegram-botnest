@@ -101,6 +101,9 @@ describe('MyTherapistSection — подключение и отключение'
   it('только что подключились — сказано, что видит терапевт', () => {
     render(<MyTherapistSection rel={rel(ACTIVE, { join: { joined: true } })} settings={settings} patch={patch} />);
     expect(screen.getByRole('status').textContent).toMatch(/^Терапевт Анна Терапевт видит твой трекер/);
+    // QA 2026-11, М7: текст стоит в самом разделе — не «в настройках».
+    expect(screen.getByRole('status').textContent).toMatch(/тумблерами ниже/);
+    expect(screen.queryByText(/усмотрение/)).toBeNull();
   });
 
   it('«Отключиться от терапевта» сначала спрашивает — сам тап связь не рвёт', () => {

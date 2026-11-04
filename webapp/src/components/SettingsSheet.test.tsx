@@ -388,7 +388,7 @@ describe('SettingsSheet — пара: создание приглашения', 
     await renderSheet();
 
     fireEvent.click(
-      within(partnerSectionContent()).getByText('Пригласить друга'),
+      within(partnerSectionContent()).getByText('Позвать в пару'),
     );
 
     await screen.findByText('https://schemehappens.ru/p/ABC123');
@@ -618,7 +618,7 @@ describe('SettingsSheet — загрузка партнёра: отказ не �
 
     mockApi.getPair.mockResolvedValue({ partners: [], pendingCode: null });
     fireEvent.click(screen.getByText('Повторить'));
-    await screen.findByText('Пригласить друга');
+    await screen.findByText('Позвать в пару');
   });
 });
 
@@ -986,14 +986,14 @@ describe('SettingsSheet — «Перестать быть специалисто
 describe('SettingsSheet — «Поделиться»: приглашение в приложение открывает карточку', () => {
   it('клик по «Пригласить друга» в разделе «Поделиться» открывает ShareCardSheet с приглашением', async () => {
     await renderSheet();
-    // Тот же текст встречается и в разделе «Партнёр» — берём второе вхождение
-    // (строка «Поделиться» идёт в разметке позже).
+    // QA 2026-11, М7: «Пригласить друга» — одна строка; кнопка пары
+    // называется «Позвать в пару» (раньше два одинаковых ярлыка).
     const buttonsBefore = screen.getAllByText('Пригласить друга');
-    expect(buttonsBefore.length).toBe(2);
-    fireEvent.click(buttonsBefore[buttonsBefore.length - 1]);
+    expect(buttonsBefore.length).toBe(1);
+    fireEvent.click(buttonsBefore[0]);
     // ShareCardSheet рендерит свой заголовок с тем же текстом — после
     // открытия совпадений на один больше (карточка реально появилась).
-    await waitFor(() => expect(screen.getAllByText('Пригласить друга').length).toBe(3));
+    await waitFor(() => expect(screen.getAllByText('Пригласить друга').length).toBe(2));
   });
 });
 
@@ -1148,7 +1148,7 @@ describe('SettingsSheet — пара: копирование ссылки-при
       .mockResolvedValueOnce({ partners: [], pendingCode: null })
       .mockResolvedValueOnce({ partners: [], pendingCode: 'ABC123' });
     await renderSheet();
-    fireEvent.click(within(partnerSectionContent()).getByText('Пригласить друга'));
+    fireEvent.click(within(partnerSectionContent()).getByText('Позвать в пару'));
     await screen.findByText('https://schemehappens.ru/p/ABC123');
 
     fireEvent.click(within(partnerSectionContent()).getByText('Скопировать ссылку'));
@@ -1161,7 +1161,7 @@ describe('SettingsSheet — пара: копирование ссылки-при
     await screen.findByPlaceholderText('Код');
 
     fireEvent.click(within(partnerSectionContent()).getByText('← Назад'));
-    expect(within(partnerSectionContent()).getByText('Пригласить друга')).toBeTruthy();
+    expect(within(partnerSectionContent()).getByText('Позвать в пару')).toBeTruthy();
     expect(within(partnerSectionContent()).queryByPlaceholderText('Код')).toBeNull();
   });
 });
