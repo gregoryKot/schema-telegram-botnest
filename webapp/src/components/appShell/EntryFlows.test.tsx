@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, waitFor, cleanup } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, cleanup, act } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 
 let startParam: string | null = null;
@@ -17,20 +17,20 @@ vi.mock('../../api', () => ({
 }));
 vi.mock('../../utils/addressForm', () => ({ useTr: () => (ty: string) => ty, useSetAddressForm: () => vi.fn() }));
 vi.mock('../../utils/therapistContact', () => ({ cacheTherapistContact: vi.fn() }));
-import { api } from '../../api';
+import { api, reportClientError } from '../../api';
 import { cacheTherapistContact } from '../../utils/therapistContact';
 import { EntryFlows } from './EntryFlows';
 
 const m = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
 
-function setup() {
+function setup(onDone = vi.fn()) {
   const ov = { setTrackerNeedId: vi.fn(), setShowTrackerOverlay: vi.fn() };
   render(
     <MemoryRouter initialEntries={['/today?startapp=x']}>
-      <EntryFlows ov={ov as never} />
+      <EntryFlows ov={ov as never} onDone={onDone} />
     </MemoryRouter>,
   );
-  return ov;
+  return Object.assign(ov, { onDone });
 }
 
 beforeEach(() => {
@@ -80,35 +80,72 @@ describe('EntryFlows', () => {
   });
 });
 
-// QA 2026-11: вопрос «Как удобнее общаться?» монтировался в RequireAuth рядом
-// с экраном согласий и открывался ПОД ним (zIndex 200 против 400). Теперь он в
-// очереди EntryFlows: согласия → ссылка-приглашение → вопрос.
-describe('EntryFlows — вопрос «ты/вы» ждёт согласий и приглашения', () => {
+// QA 2026-11: вопрос «Как удобнее общаться?» открывался под согласиями, потом —
+// после них, и согласия звучали на «ты» до выбора формы (A-З7). Теперь очередь как
+// в мини-аппе: вопрос → согласия → ссылка-приглашение → конец очереди (onDone).
+describe('EntryFlows — очередь: вопрос «ты/вы» первым, один слой за раз', () => {
   const PICKER = 'Как удобнее общаться?';
+  // Вопрос открыт и его запись в истории легла (useHistorySheet пушит в эффекте).
+  async function pickerShown() {
+    expect(await screen.findByText(PICKER)).toBeTruthy();
+    await act(async () => {});
+  }
 
-  it('пока открыты согласия, вопроса нет; после «Начать» — он появляется', async () => {
+  it('вопрос «ты/вы» до согласий: пока он открыт, согласий нет; после ответа — согласия', async () => {
     m.getDisclaimer.mockResolvedValue({ accepted: false });
     m.getSettings.mockResolvedValue({ addressForm: null });
-    setup();
-    fireEvent.click(await screen.findByText('Далее'));
-    expect(screen.queryByText(PICKER)).toBeNull();
-    expect(m.getSettings).not.toHaveBeenCalled();
+    const ov = setup();
+    await pickerShown();
+    expect(screen.queryByText('БЕТА-ВЕРСИЯ')).toBeNull();
 
+    fireEvent.click(screen.getByText('На «вы»'));
+    expect(await screen.findByText('БЕТА-ВЕРСИЯ')).toBeTruthy();
+    expect(screen.queryByText(PICKER)).toBeNull();
+    expect(m.updateSettings).toHaveBeenCalledWith({ addressForm: 'vy' });
+    expect(ov.onDone).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByText('Далее'));
     fireEvent.click(screen.getByRole('checkbox'));
     fireEvent.click(screen.getByText('Далее'));
     fireEvent.click(screen.getByRole('checkbox'));
     fireEvent.click(screen.getByText('Начать'));
-    expect(await screen.findByText(PICKER)).toBeTruthy();
+    await waitFor(() => expect(ov.onDone).toHaveBeenCalledWith(true));
     expect(screen.queryByText('Важно знать')).toBeNull();
   });
 
-  it('ссылка-приглашение открыта — вопрос ждёт, пока её не закроют', async () => {
-    startParam = 'pair_Z';
+  it('«Позже» тоже пропускает к согласиям', async () => {
+    m.getDisclaimer.mockResolvedValue({ accepted: false });
     m.getSettings.mockResolvedValue({ addressForm: null });
     setup();
-    await screen.findByText('Присоединиться к паре?');
-    expect(screen.queryByText(PICKER)).toBeNull();
+    await pickerShown();
+    fireEvent.click(screen.getByText('Позже'));
+    expect(await screen.findByText('БЕТА-ВЕРСИЯ')).toBeTruthy();
+  });
+
+  it('настройки не загрузились — вопрос не запирает вход: сразу согласия, сбой в отчёт', async () => {
+    m.getDisclaimer.mockResolvedValue({ accepted: false });
+    m.getSettings.mockRejectedValue(new Error('offline'));
+    setup();
+    expect(await screen.findByText('БЕТА-ВЕРСИЯ')).toBeTruthy();
+    expect(reportClientError).toHaveBeenCalledWith(expect.objectContaining({ message: expect.stringContaining('address picker') }));
+  });
+
+  it('ссылка-приглашение ждёт вопроса и согласий; конец очереди — только после неё', async () => {
+    startParam = 'pair_Z';
+    m.getSettings.mockResolvedValue({ addressForm: null });
+    const ov = setup();
+    await pickerShown();
+    expect(screen.queryByText('Присоединиться к паре?')).toBeNull();
+    fireEvent.click(screen.getByText('Позже'));
+    expect(await screen.findByText('Присоединиться к паре?')).toBeTruthy();
+    expect(ov.onDone).not.toHaveBeenCalled();
     fireEvent.click(screen.getByText('Не сейчас'));
-    expect(await screen.findByText(PICKER)).toBeTruthy();
+    await waitFor(() => expect(ov.onDone).toHaveBeenCalledWith(true));
+  });
+
+  it('спрашивать нечего (форма выбрана, согласия есть, ссылки нет) — конец очереди сразу, слоёв нет', async () => {
+    const ov = setup();
+    await waitFor(() => expect(ov.onDone).toHaveBeenCalledWith(true));
+    expect(screen.queryByRole('dialog')).toBeNull();
   });
 });

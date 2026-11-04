@@ -22,7 +22,7 @@ interface Props {
   gratitudeEntries: GratitudeDiaryEntry[];
   onBack: () => void;
   onNewEntry: () => void;
-  onDelete: (type: DiaryType, id: number) => void;
+  onDelete: (type: DiaryType, id: number) => Promise<void>;
 }
 
 const ACCENT = 'var(--accent)';

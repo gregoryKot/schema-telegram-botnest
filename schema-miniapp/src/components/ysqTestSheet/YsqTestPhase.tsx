@@ -1,4 +1,4 @@
-import { QUESTIONS, getSchemaForQuestion } from '../../hooks/useYsqTest';
+import { QUESTIONS } from '../../hooks/useYsqTest';
 import { YsqTestHeader } from '../../../../shared/src/components/YsqTestHeader';
 import { YsqAnswerList } from '../../../../shared/src/components/YsqAnswerList';
 
@@ -24,8 +24,9 @@ export function YsqTestPhase({
   onExit,
   onSelect,
 }: Props) {
+  // Без названия шкалы над утверждением: оно подсказывает, что измеряет
+  // вопрос, и сдвигает ответ (QA 2026-11, B-М11).
   const qIdx = page;
-  const schema = getSchemaForQuestion(qIdx);
 
   return (
     <>
@@ -60,20 +61,6 @@ export function YsqTestPhase({
             animation: `${slideDir === 'forward' ? 'slideFromRight' : 'slideFromLeft'} 0.22s cubic-bezier(0.25,0.46,0.45,0.94)`,
           }}
         >
-          {schema && (
-            <div
-              style={{
-                fontSize: 11,
-                fontWeight: 700,
-                letterSpacing: '0.1em',
-                textTransform: 'uppercase',
-                color: schema.color,
-                marginBottom: 12,
-              }}
-            >
-              {schema.name}
-            </div>
-          )}
           <div
             style={{
               fontSize: 20,

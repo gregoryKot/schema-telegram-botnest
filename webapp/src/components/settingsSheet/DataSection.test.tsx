@@ -28,6 +28,11 @@ import { api } from '../../api';
 const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
 
 vi.mock('../../apiClient', () => ({ authedFetch: vi.fn() }));
+// Запись истории диалога удаления проверяет DeleteAccountDialog.test.tsx; здесь
+// URL подменён ради экспорта, и роутер на нём не живёт — goBack = onClose.
+vi.mock('../../hooks/useHistorySheet', () => ({
+  useHistorySheet: (onClose: () => void) => onClose,
+}));
 import { authedFetch } from '../../apiClient';
 const mockAuthedFetch = authedFetch as unknown as ReturnType<typeof vi.fn>;
 
@@ -160,7 +165,7 @@ describe('DataSection — удаление аккаунта: подтвержд�
     renderWithForm();
     openDeleteSheet();
 
-    expect(screen.getByText('Необратимо.', { exact: false })).toBeTruthy();
+    expect(screen.getByText(/аккаунт целиком/)).toBeTruthy();
     expect(mockApi.deleteAllUserData).not.toHaveBeenCalled();
   });
 
@@ -206,7 +211,7 @@ describe('DataSection — удаление аккаунта: отказ серв
     renderWithForm();
     confirmAccountDeletion();
 
-    await screen.findByText(/Не удалось удалить данные/i);
+    await screen.findByText(/Не удалось удалить аккаунт/i);
     await act(async () => {});
 
     expect(reloadSpy).not.toHaveBeenCalled();
@@ -219,25 +224,25 @@ describe('DataSection — удаление аккаунта: отказ серв
     mockApi.deleteAllUserData.mockRejectedValue(new Error('network down'));
     renderWithForm('ty');
     confirmAccountDeletion();
-    await screen.findByText('Не удалось удалить данные. Проверь связь и попробуй ещё раз');
+    await screen.findByText('Не удалось удалить аккаунт. Данные на месте — проверь соединение и попробуй ещё раз.');
     cleanup();
 
     mockApi.deleteAllUserData.mockRejectedValue(new Error('network down'));
     renderWithForm('vy');
     confirmAccountDeletion();
-    await screen.findByText('Не удалось удалить данные. Проверьте связь и попробуйте ещё раз');
+    await screen.findByText('Не удалось удалить аккаунт. Данные на месте — проверьте соединение и попробуйте ещё раз.');
   });
 
   it('повторное открытие листа удаления сбрасывает прошлую ошибку', async () => {
     mockApi.deleteAllUserData.mockRejectedValue(new Error('network down'));
     renderWithForm();
     confirmAccountDeletion();
-    await screen.findByText(/Не удалось удалить данные/i);
+    await screen.findByText(/Не удалось удалить аккаунт/i);
 
     fireEvent.click(screen.getByText('Отмена'));
     openDeleteSheet();
 
-    expect(screen.queryByText(/Не удалось удалить данные/i)).toBeNull();
+    expect(screen.queryByText(/Не удалось удалить аккаунт/i)).toBeNull();
   });
 });
 
@@ -349,9 +354,9 @@ describe('DataSection — закрытие модалки фоном сбрас�
     fireEvent.click(screen.getByRole('button', { name: 'Удалить' }));
     await screen.findByText('Точно? Восстановить невозможно.');
 
-    fireEvent.click(screen.getByLabelText('Закрыть'));
+    fireEvent.click(document.querySelector('.sk-dialog-backdrop')!);
     await waitFor(() => expect(screen.queryByText('Точно? Восстановить невозможно.')).toBeNull());
-    expect(screen.queryByText('Необратимо.', { exact: false })).toBeNull();
+    expect(screen.queryByText(/аккаунт целиком/)).toBeNull();
   });
 });
 

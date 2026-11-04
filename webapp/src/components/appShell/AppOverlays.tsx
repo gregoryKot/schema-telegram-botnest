@@ -17,6 +17,7 @@ const PracticesScreen = lazy(() => import('../PracticesScreen').then(m => ({ def
 const PlansScreen     = lazy(() => import('../PlansScreen').then(m => ({ default: m.PlansScreen })));
 const SchemaInfoSheet = lazy(() => import('../SchemaInfoSheet').then(m => ({ default: m.SchemaInfoSheet })));
 const ChildhoodWheelEx = lazy(() => import('../exercises/ChildhoodWheelEx').then(m => ({ default: m.ChildhoodWheelEx })));
+const SchemaFlashcard = lazy(() => import('../SchemaFlashcard').then(m => ({ default: m.SchemaFlashcard })));
 const TherapistPrivacyDisclaimer = lazy(() => import('../TherapistPrivacyDisclaimer').then(m => ({ default: m.TherapistPrivacyDisclaimer })));
 
 export function AppOverlays({
@@ -100,6 +101,16 @@ export function AppOverlays({
         ov.setShowTodayNote(false);
         if (childhoodWheelPending) { setChildhoodWheelPending(false); ov.setShowChildhoodWheel(true); }
       }} />
+    )}
+    {/* «Мне плохо» открывается поверх раздела, где человек был: «Назад» браузера
+        возвращает туда же, а не на /practice (QA 2026-11, A-М10). */}
+    {ov.showSosCard && (
+      <Suspense fallback={null}>
+        <SchemaFlashcard
+          onClose={() => ov.setShowSosCard(false)}
+          onOpenTracker={() => { ov.setShowSosCard(false); ov.setTrackerNeedId(null); ov.setShowTrackerOverlay(true); }}
+        />
+      </Suspense>
     )}
     {ov.showTherapistDisclaimer && (
       <Suspense fallback={null}>

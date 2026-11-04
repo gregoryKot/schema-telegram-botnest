@@ -7,6 +7,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import {
   enqueueRating,
   flushRatingOutbox,
+  pendingRatingsFor,
   type OutboxItem,
 } from './ratingOutbox';
 
@@ -140,6 +141,29 @@ describe('flushRatingOutbox', () => {
     await flushRatingOutbox(post);
     expect(removeSpy).not.toHaveBeenCalled();
     removeSpy.mockRestore();
+  });
+});
+
+// QA 2026-11-03, З9: экран дня кладёт очередь поверх ответа сервера.
+describe('pendingRatingsFor', () => {
+  it('оценки только этого дня, последнее значение побеждает', () => {
+    enqueueRating(item('safety', 3, '2026-07-17'));
+    enqueueRating(item('play', 6, '2026-07-16'));
+    enqueueRating(item('safety', 8, '2026-07-17'));
+    expect(pendingRatingsFor('2026-07-17')).toEqual({ safety: 8 });
+    expect(pendingRatingsFor('2026-07-16')).toEqual({ play: 6 });
+  });
+
+  it('пустая очередь — пусто', () => {
+    expect(pendingRatingsFor('2026-07-17')).toEqual({});
+  });
+
+  it('после выгрузки очередь пуста — снимок до чтения не теряет ни одной оценки', async () => {
+    enqueueRating(item('safety', 8, '2026-07-17'));
+    const snapshot = pendingRatingsFor('2026-07-17');
+    await flushRatingOutbox(() => Promise.resolve());
+    expect(snapshot).toEqual({ safety: 8 });
+    expect(pendingRatingsFor('2026-07-17')).toEqual({});
   });
 });
 

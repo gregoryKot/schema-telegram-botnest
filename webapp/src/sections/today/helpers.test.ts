@@ -10,10 +10,10 @@ describe('homeGreeting', () => {
 });
 
 describe('taskStatusMark', () => {
-  it('сделано ✓, не сделано ×, в работе ·', () => {
+  it('сделано ✓, не вышло ×, в работе — пусто (не одинокая «·»)', () => {
     expect(taskStatusMark(true)).toBe('✓');
     expect(taskStatusMark(false)).toBe('×');
-    expect(taskStatusMark(null)).toBe('·');
+    expect(taskStatusMark(null)).toBe('');
   });
 });
 

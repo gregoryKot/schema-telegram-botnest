@@ -35,7 +35,7 @@
 | check-file-size-ratchet.mjs | рост файла из baseline, новый файл больше 300 строк | `scripts/file-size-baseline.json` | да | backend |
 | check-frontend-coverage-ratchet.mjs | просадка покрытия webapp, schema-miniapp, shared (`--package`) | `scripts/frontend-coverage-baseline.json` | да | webapp, shared, miniapp |
 | check-gate-exemptions.mjs | ALLOW/EXCLUDE-списки гейтов без теста-образца | — | нет | checks |
-| check-gendered-forms.mjs | мужской род в тексте для пользователя («ты сделал») | `scripts/gendered-forms-baseline.json` | да | backend |
+| check-gendered-forms.mjs | мужской род в тексте для пользователя («ты сделал»; без «ты» — по паре `tr(ты, вы)`, «Сказал» ↔ «Сказали») | `scripts/gendered-forms-baseline.json` | да | backend |
 | check-glyph-controls.mjs | `<button>`, `<a>`, элемент с control-ролью или `{...pressable()}` без `aria-label`/`aria-labelledby`, чьё содержимое — только глиф, иконка или пусто | — | нет | webapp |
 | check-history-sheet.mjs | fullscreen-оверлей без `useHistorySheet(` (кнопка «Назад») | `scripts/history-sheet-baseline.json` | нет | webapp |
 | check-hover-only-reveal.mjs | элемент раскрывается только по :hover, без пути для пальца | — | нет | webapp |

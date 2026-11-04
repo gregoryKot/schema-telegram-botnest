@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 // «Партнёр» на сайте — паритет с PairPanel мини-аппа: при уже подключённом
-// партнёре остаются «Пригласить ещё друга» и ввод кода (партнёров может быть
+// партнёре остаются «Позвать ещё одного человека» и ввод кода (партнёров может быть
 // несколько), а ждущее приглашение показывается ссылкой для повторной отправки.
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
@@ -23,20 +23,20 @@ function pairOf(data: PairsData | null, extra: Partial<PairMechanics> = {}): Pai
 }
 
 describe('PartnerSection — несколько партнёров', () => {
-  it('партнёр подключён: карточка и «Пригласить ещё друга» + «Ввести код»', () => {
+  it('партнёр подключён: карточка и «Позвать ещё одного человека» + «Ввести код»', () => {
     const pair = pairOf({ partners: [PARTNER], pendingCode: null });
     render(<PartnerSection pair={pair} />);
     expect(screen.getByText('Аня сегодня')).toBeTruthy();
-    fireEvent.click(screen.getByText('Пригласить ещё друга'));
+    fireEvent.click(screen.getByText('Позвать ещё одного человека'));
     expect(pair.handleCreateInvite).toHaveBeenCalledTimes(1);
     fireEvent.click(screen.getByText('Ввести код'));
     expect(pair.setJoinView).toHaveBeenCalledWith('join');
   });
 
-  it('без партнёров кнопка называется «Пригласить друга»', () => {
+  it('без партнёров кнопка называется «Позвать в пару»', () => {
     render(<PartnerSection pair={pairOf({ partners: [], pendingCode: null })} />);
-    expect(screen.getByText('Пригласить друга')).toBeTruthy();
-    expect(screen.queryByText('Пригласить ещё друга')).toBeNull();
+    expect(screen.getByText('Позвать в пару')).toBeTruthy();
+    expect(screen.queryByText('Позвать ещё одного человека')).toBeNull();
   });
 
   it('открыт ввод кода при подключённом партнёре — форма, карточки скрыты', () => {
@@ -52,7 +52,7 @@ describe('PartnerSection — ждём партнёра', () => {
     expect(screen.getByText('⏳ Ждём партнёра')).toBeTruthy();
     expect(screen.getByText(URL)).toBeTruthy();
     expect(screen.getByText('Скопировать ссылку')).toBeTruthy();
-    expect(screen.queryByText('Пригласить друга')).toBeNull();
+    expect(screen.queryByText('Позвать в пару')).toBeNull();
     expect(screen.queryByText('Новая ссылка')).toBeNull();
     expect(screen.getByText('Ввести код')).toBeTruthy();
   });

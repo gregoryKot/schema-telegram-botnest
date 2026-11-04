@@ -1,0 +1,67 @@
+// QA 2026-11 (B-М4): «За 7 дней», а линии по всей загруженной истории.
+import { describe, it, expect } from 'vitest';
+import { weekWindow, sparklineGeometry, SPARK_H } from './sparkline';
+import type { DayHistory } from '../types';
+
+// 30 дней от новых к старым, как приходит история трекера.
+const HISTORY: DayHistory[] = Array.from({ length: 30 }, (_, i) => ({
+  date: `2026-10-${String(30 - i).padStart(2, '0')}`,
+  ratings: { autonomy: (i % 9) + 1 },
+}));
+
+describe('weekWindow', () => {
+  it('сегодня выбрано — ровно последние 7 дней, а не вся история', () => {
+    const w = weekWindow(HISTORY, 0, 7);
+    expect(w).toHaveLength(7);
+    expect(w[0].date).toBe('2026-10-30');
+    expect(w[6].date).toBe('2026-10-24');
+  });
+
+  it('выбран день в прошлом — неделя, которая им кончается', () => {
+    const w = weekWindow(HISTORY, 10, 7);
+    expect(w.map((d) => d.date)).toEqual([
+      '2026-10-20',
+      '2026-10-19',
+      '2026-10-18',
+      '2026-10-17',
+      '2026-10-16',
+      '2026-10-15',
+      '2026-10-14',
+    ]);
+  });
+
+  it('раньше истории нет — окно короче, без выдуманных дней', () => {
+    expect(weekWindow(HISTORY, 27, 7)).toHaveLength(3);
+  });
+});
+
+describe('sparklineGeometry', () => {
+  it('точек столько же, сколько дней в окне', () => {
+    const g = sparklineGeometry(weekWindow(HISTORY, 0, 7), 'autonomy');
+    expect(g.points.split(' ')).toHaveLength(7);
+    expect(g.line.startsWith('M 0.0 ')).toBe(true);
+  });
+
+  it('маркер выбранного дня — справа, в процентах (не в растянутом svg)', () => {
+    const win: DayHistory[] = [
+      { date: '2026-10-02', ratings: { autonomy: 10 } },
+      { date: '2026-10-01', ratings: { autonomy: 1 } },
+    ];
+    const g = sparklineGeometry(win, 'autonomy');
+    expect(g.dot.left).toBe(100);
+    expect(g.dot.top).toBeCloseTo((2 / SPARK_H) * 100);
+  });
+
+  it('день без оценки прижат к низу, одна точка — по центру', () => {
+    const g = sparklineGeometry(
+      [{ date: '2026-10-01', ratings: {} }],
+      'autonomy',
+    );
+    expect(g.dot.left).toBe(50);
+    expect(g.dot.top).toBeCloseTo(((SPARK_H - 1) / SPARK_H) * 100);
+  });
+
+  it('пустое окно не падает', () => {
+    expect(sparklineGeometry([], 'autonomy').area).toBe('');
+  });
+});

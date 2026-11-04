@@ -1,8 +1,10 @@
 import { useState, lazy, Suspense } from 'react';
 import { useHistorySheet } from '../hooks/useHistorySheet';
-import { YSQ_RESULT_KEY, YSQ_PROGRESS_KEY } from '../utils/storageKeys';
+import { useYsqLocalState } from '../../../shared/src/hooks/ysqProgressStore';
 import { TherapyNote } from './TherapyNote';
 import { useTr } from '../utils/addressForm';
+import { api } from '../api';
+import { useYsqRequested, ysqEntrySub } from '../../../shared/src/tasks/ysqRequestMark';
 import { ModesTab } from './schemaInfoSheet/ModesTab';
 import { NeedsTab } from './schemaInfoSheet/NeedsTab';
 import { SchemasTab } from './schemaInfoSheet/SchemasTab';
@@ -46,8 +48,9 @@ export function SchemaInfoSheet({ onClose, ratings, autoStartTest, initialTab, h
   const [showTest, setShowTest] = useState(autoStartTest ?? false);
   const [contentKey, setContentKey] = useState(0);
   const [contentInitialTab, setContentInitialTab] = useState<Tab>(initialTab ?? 'needs');
-  const hasResult   = !!localStorage.getItem(YSQ_RESULT_KEY);
-  const hasProgress = !!localStorage.getItem(YSQ_PROGRESS_KEY);
+  // Под открытым результатом теста карточка не зовёт «Незаконченный тест» (QA 2026-11).
+  const { hasResult, hasProgress } = useYsqLocalState();
+  const ysqRequested = useYsqRequested(api.getTasks); // задание терапевта (К1, QA 2026-11)
   const [highlightSchema, setHighlightSchema] = useState<string | undefined>(initHighlight);
 
   const handleViewSchemas = (schemaName?: string) => {
@@ -91,7 +94,7 @@ export function SchemaInfoSheet({ onClose, ratings, autoStartTest, initialTab, h
                 {hasResult ? 'Мои результаты теста' : hasProgress ? 'Продолжить тест' : 'Пройти тест на схемы'}
               </div>
               <div className="ds-sub">
-                {hasResult ? 'Посмотреть или пройти заново' : '116 вопросов · ~10 минут'}
+                {ysqEntrySub({ hasResult, requested: ysqRequested })}
               </div>
             </div>
             <span className="ss-cta-arrow">›</span>

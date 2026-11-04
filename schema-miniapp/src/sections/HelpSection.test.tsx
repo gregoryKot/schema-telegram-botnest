@@ -13,6 +13,7 @@ import {
   waitFor,
 } from '@testing-library/react';
 import { HelpSection } from './HelpSection';
+import { notifyTasksChanged } from '../../../shared/src/tasks/tasksChanged';
 import type { UserTask, TherapyRelationInfo } from '../apiTypes';
 
 vi.mock('../api', () => ({
@@ -194,6 +195,7 @@ function baseProps() {
     onOpenPlans: vi.fn(),
     onOpenTracker: vi.fn(),
     onOpenDiaries: vi.fn(),
+    onOpenYsq: vi.fn(),
   };
 }
 
@@ -778,6 +780,32 @@ describe('HelpSection — создание цели можно отменить 
     fireEvent.click(screen.getByText('task-create-close'));
     expect(screen.queryByTestId('task-create')).toBeNull();
     expect(mockApi.getTasks).not.toHaveBeenCalled();
+  });
+});
+
+// QA 2026-11, К1: запрос терапевта пройти тест — задание. Тест открывается из
+// блока «От терапевта», а закрывает задание сервер, когда итог сохранён: блок
+// перечитывается по сигналу, а не висит до перезагрузки.
+describe('HelpSection — «Пройти тест на схемы» от терапевта', () => {
+  it('тап открывает тест; сигнал tasks-changed перечитывает задания', async () => {
+    const ysq = task({
+      id: 9,
+      assignedBy: 77,
+      type: 'ysq_test',
+      text: 'Пройти тест на схемы',
+    });
+    mockApi.getTasks.mockResolvedValue([ysq]);
+    const onOpenYsq = vi.fn();
+    await renderReady({ onOpenYsq });
+    fireEvent.click(await screen.findByText('Пройти тест на схемы'));
+    expect(onOpenYsq).toHaveBeenCalledTimes(1);
+    mockApi.getTasks.mockClear();
+    mockApi.getTasks.mockResolvedValue([]);
+    notifyTasksChanged();
+    await waitFor(() => expect(mockApi.getTasks).toHaveBeenCalled());
+    await waitFor(() =>
+      expect(screen.queryByText('Пройти тест на схемы')).toBeNull(),
+    );
   });
 });
 

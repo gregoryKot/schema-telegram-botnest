@@ -1,12 +1,11 @@
 import { lazy, Suspense, useState } from 'react';
 import type { PracticePlan, StreakData } from '../api';
 import { api } from '../api';
-import { COLORS, type Need, type DayHistory } from '../types';
+import type { Need, DayHistory } from '../types';
 import { HistorySheetSkeleton } from './HistorySheetSkeleton';
 import { CheckInSheet } from './CheckInSheet';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { GlyphArrowLeft } from './exercises/ExScreen';
-import { needColor } from '../../../shared/src/needs/needColors';
 import { useDialogA11y } from '../../../shared/src/utils/dialogA11y';
 import { fillHistoryGaps } from './appShell/navigation';
 import '../styles/sheet-diary.css';
@@ -85,9 +84,7 @@ export function HistorySheet({
         return (
           <CheckInSheet
             plan={plan}
-            needColor={needColor(need.id)}
             needLabel={need.chartLabel}
-            color={COLORS[need.id] ?? '#888'}
             onDone={() => onDismissPlan(plan.id)}
           />
         );

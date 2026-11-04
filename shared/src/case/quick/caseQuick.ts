@@ -5,9 +5,8 @@
  * caseFlowTypes) остался за мини-аппом и не меняется.
  *
  * Режим человек не выбирает «из каталога» — его предлагает pickCandidateMode
- * по воротам чувств и первому порыву, а человек соглашается («Сохранить») или
- * идёт в «Не похоже — другие режимы». Согласие и есть запись в дневник и
- * карточку режима: отдельного шага «критерий» нет.
+ * по воротам чувств и первому порыву, человек соглашается («Сохранить») или
+ * идёт в «Не похоже». Согласие — запись в дневник и дополнение карточки.
  */
 import { FEEL_GATES } from '../../mode/modeFeelGates';
 import { MODE_DESC } from '../../mode/modePickerDesc';
@@ -16,7 +15,7 @@ import { getModeById } from '../../schemaTherapy/schemaTherapyData';
 import type { ModeEntrySaveData } from '../../mode/modeDiarySteps';
 import type { CaseChip } from '../caseBodyChips';
 import { IMPULSE_SECOND_DOOR } from '../caseImpulses';
-import type { CaseCardBody } from '../caseFlowTypes';
+import { CASE_CARD_FILL, type CaseCardBody } from '../caseFlowTypes';
 import type { CaseGateId } from '../caseTypes';
 
 export type CaseQuickStep =
@@ -214,5 +213,6 @@ export function buildQuickCardBody(
     triggers: shortScene(fields.scene) || undefined,
     feelings: data.bodyFeelings,
     behavior: data.actions,
+    fillIfEmpty: CASE_CARD_FILL,
   };
 }

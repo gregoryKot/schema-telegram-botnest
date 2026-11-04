@@ -40,13 +40,16 @@ export function TalkSheet({ place, trigger, onClose }: Props) {
         )}
         <div className="th-sheet-acts">
           {hasTherapist ? (
-            <ExternalLink
-              className="ds-btn ds-btn--lg"
-              href={contact.url}
-              onClick={() => trackTherapyNudge(place, 'write', trigger)}
-            >
-              {t.sheetWriteTherapist}
-            </ExternalLink>
+            // Терапевт с веб-аккаунтом: написать из приложения некуда (З6).
+            contact.url && (
+              <ExternalLink
+                className="ds-btn ds-btn--lg"
+                href={contact.url}
+                onClick={() => trackTherapyNudge(place, 'write', trigger)}
+              >
+                {t.sheetWriteTherapist}
+              </ExternalLink>
+            )
           ) : (
             <>
               <ExternalLink

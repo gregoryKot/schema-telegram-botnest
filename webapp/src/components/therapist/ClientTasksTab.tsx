@@ -12,7 +12,8 @@ import { isVirtualId } from '../../../../shared/src/utils/sameId';
 import { therapistClosesTask, useTherapistTaskActions } from '../../../../shared/src/therapy/useTherapistTaskActions';
 import { hueStyle } from '../../lib/tone';
 import type { ClientDetail } from './clientSheetTypes';
-import { STATUS_BADGE, STATUS_LABEL, isOpenStatus, orderTasks, taskMeta, taskStatus, templateHue } from './taskModel';
+import { isOpenStatus, orderTasks, taskMeta, taskStatus, templateHue } from './taskModel';
+import { TaskStatusBadge } from '../TaskStatusBadge';
 import { ASSIGN_TEMPLATES, type AssignPreset } from './assignTemplates';
 
 interface Props {
@@ -62,7 +63,7 @@ export function ClientTasksTab({ detail, onAssign, onTasksChanged }: Props) {
                     <div className="tb-task-text">{resolveTaskDisplayText(t, 'full')}</div>
                     <div className="tb-meta">{taskMeta(t, status)}</div>
                   </div>
-                  <span className={STATUS_BADGE[status]}>{STATUS_LABEL[status]}</span>
+                  <TaskStatusBadge status={status} />
                   {therapistClosesTask(t) && (
                     <button className="ds-btn ds-btn--sm ds-btn--secondary" disabled={actions.busyId === t.id} onClick={() => void actions.markDone(t.id)}>
                       Выполнено

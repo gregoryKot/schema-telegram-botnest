@@ -42,7 +42,7 @@ describe('TwoFactorSection — включена (реальные данные)'
   it('показывает "Включена" и реальный остаток recovery-кодов из props, не выдуманный', () => {
     renderSection({ enabled: true, recoveryCodesLeft: 4 });
     expect(screen.getByText(/Включена/)).toBeTruthy();
-    expect(screen.getByText(/Recovery-кодов осталось: 4/)).toBeTruthy();
+    expect(screen.getByText(/Резервных кодов осталось: 4/)).toBeTruthy();
   });
 });
 
@@ -53,7 +53,7 @@ describe('TwoFactorSection — настройка (setup)', () => {
 
     fireEvent.click(screen.getByRole('switch'));
 
-    await screen.findByAltText('TOTP QR');
+    await screen.findByAltText('QR-код для приложения-аутентификатора');
     expect(fetchMock.mock.calls[0][0]).toContain('/api/auth/2fa/setup');
   });
 
@@ -64,7 +64,7 @@ describe('TwoFactorSection — настройка (setup)', () => {
     fireEvent.click(screen.getByRole('switch'));
 
     await screen.findByText('Сервис недоступен');
-    expect(screen.queryByAltText('TOTP QR')).toBeNull();
+    expect(screen.queryByAltText('QR-код для приложения-аутентификатора')).toBeNull();
   });
 
   it('подтверждение верным кодом вызывает /api/auth/2fa/enable и показывает recovery-коды', async () => {
@@ -74,7 +74,7 @@ describe('TwoFactorSection — настройка (setup)', () => {
     const { onChanged } = renderSection();
 
     fireEvent.click(screen.getByRole('switch'));
-    await screen.findByAltText('TOTP QR');
+    await screen.findByAltText('QR-код для приложения-аутентификатора');
     fireEvent.change(screen.getByPlaceholderText('123456'), { target: { value: '111111' } });
     fireEvent.click(screen.getByText('Подтвердить'));
 
@@ -93,12 +93,12 @@ describe('TwoFactorSection — настройка (setup)', () => {
     renderSection();
 
     fireEvent.click(screen.getByRole('switch'));
-    await screen.findByAltText('TOTP QR');
+    await screen.findByAltText('QR-код для приложения-аутентификатора');
     fireEvent.change(screen.getByPlaceholderText('123456'), { target: { value: '000000' } });
     fireEvent.click(screen.getByText('Подтвердить'));
 
     await screen.findByText('Неверный код');
-    expect(screen.queryByText(/Recovery-коды/)).toBeNull();
+    expect(screen.queryByText(/Резервные коды/)).toBeNull();
   });
 });
 
@@ -151,9 +151,9 @@ describe('TwoFactorSection — отключение', () => {
     fetchMock.mockResolvedValue(jsonResponse(200, { qrDataUrl: 'data:image/png;base64,AAA', otpauthUrl: 'otpauth://x' }));
     renderSection();
     fireEvent.click(screen.getByRole('switch'));
-    await screen.findByAltText('TOTP QR');
+    await screen.findByAltText('QR-код для приложения-аутентификатора');
     fireEvent.click(screen.getByRole('switch'));
-    expect(screen.queryByAltText('TOTP QR')).toBeNull();
+    expect(screen.queryByAltText('QR-код для приложения-аутентификатора')).toBeNull();
   });
 });
 

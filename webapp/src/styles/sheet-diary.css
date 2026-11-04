@@ -42,10 +42,11 @@
 
 .sd-spark-row { grid-template-columns: 110px minmax(0, 1fr) auto; min-height: 56px; }
 .sd-spark-name { font-size: 14px; font-weight: 500; }
+.sd-spark-plot { position: relative; display: block; min-width: 0; }
 .sd-spark-svg { height: 28px; width: 100%; display: block; overflow: visible; }
 .sd-spark-area { fill: oklch(0.58 0.12 var(--h) / .14); }
 .sd-spark-line { fill: none; stroke: oklch(0.58 0.12 var(--h)); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
-.sd-spark-dot { fill: oklch(0.58 0.12 var(--h)); transition: cx .15s ease, cy .15s ease; }
+.sd-spark-dot { position: absolute; width: 7px; height: 7px; border-radius: 50%; transform: translate(-50%, -50%); background: oklch(0.58 0.12 var(--h)); transition: left .15s ease, top .15s ease; }
 .sd-spark-score { font-family: var(--serif); font-size: 20px; min-width: 40px; text-align: right; display: inline-flex; align-items: baseline; justify-content: flex-end; gap: 4px; }
 .sd-trend { font: 600 11px var(--sans); color: var(--text-faint); }
 .sd-trend.is-up { color: var(--ok); }

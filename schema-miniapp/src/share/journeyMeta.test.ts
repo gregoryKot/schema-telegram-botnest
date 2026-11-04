@@ -25,7 +25,7 @@ import {
   type JourneyContentApi,
 } from '../../../shared/src/journey/journeyContent';
 import { QUESTIONS } from '../../../shared/src/hooks/useYsqTest';
-import { COLORS } from '../../../shared/src/types';
+import { NEED_COLORS } from '../../../shared/src/needs/needColors';
 import {
   journeyShareText,
   journeyItemShareText,
@@ -345,11 +345,11 @@ describe('totalsCardRows', () => {
   });
 });
 
-describe('JOURNEY_NEED_EMOJI — реестр совпадает с JOURNEY_NEED_NAMES и COLORS', () => {
+describe('JOURNEY_NEED_EMOJI — реестр совпадает с JOURNEY_NEED_NAMES и NEED_COLORS', () => {
   it('одинаковый набор ключей (правило №4 — дублированные реестры под тестом)', () => {
     const names = Object.keys(JOURNEY_NEED_NAMES).sort();
     expect(Object.keys(JOURNEY_NEED_EMOJI).sort()).toEqual(names);
-    expect(Object.keys(COLORS).sort()).toEqual(names);
+    expect(Object.keys(NEED_COLORS).sort()).toEqual(names);
   });
 });
 

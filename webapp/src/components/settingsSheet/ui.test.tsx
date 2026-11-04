@@ -196,4 +196,17 @@ describe('InfoModal', () => {
     fireEvent.keyDown(screen.getByLabelText('Закрыть'), { key: 'Enter' });
     expect(onClose).toHaveBeenCalledTimes(1);
   });
+
+  // QA 2026-11, М11: «Сводку для терапевта» и пояснения закрывали только
+  // клик мимо окна или Escape — кнопки не было.
+  it('внутри окна есть кнопка «Закрыть», она зовёт onClose один раз', () => {
+    const onClose = vi.fn();
+    render(
+      <InfoModal onClose={onClose}>
+        <div>Тело</div>
+      </InfoModal>,
+    );
+    fireEvent.click(screen.getByText('Закрыть', { selector: 'button' }));
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
 });

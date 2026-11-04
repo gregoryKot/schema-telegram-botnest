@@ -172,11 +172,6 @@
   ревью: `DELETE /api/therapy/tasks/:id` (удаление задания терапевтом,
   QA 2026-10-26) довезён до обеих площадок руками (`ClientTasksTab.tsx`,
   `TasksSheet.tsx`), гейт бы не заметил одностороннего.
-- **Названия схем в опроснике YSQ расходятся с реестром**
-  (`shared/src/hooks/ysqSchemasContent.ts` — «Социальная отчужденность» против
-  «отчуждённость», слэши без пробелов). Имя служит ключом `SCHEMA_NAME_TO_ID`,
-  поэтому правка требует правки ключей; нужна тест-сверка с `SCHEMA_DOMAINS`
-  (правило №4).
 - **Реплика «Я недостаточно хорош» осталась в маркетинге и статьях**
   (`webapp/src/pages/landing/productContent.tsx`, `articleDiagrams.ts`,
   `src/bot/articles.seed.ts`). В продукте её развели (правило «Род читателя»:
@@ -234,7 +229,6 @@
 - **Локальный `font-size` перебивает 16px полей на телефоне:** `webapp/src/styles/sheet-modemap.css` (`.mm2-pal-search .ds-input` 12.5px, `.mm2-add-form .ds-input` 12.5px, `.mm2-panel .ds-input/.ds-textarea/select.ds-input` 13px); iOS приближает экран при фокусе. Доказано: grep по css.
 - **`sections/schemas/MineGroupsList.tsx` — единственный остаток `.cs-row*`** (`webapp/src/styles/client-schemas.css`): перевести на `button.ds-list-row ds-list-row--nav` и удалить локальные правила.
 - **Локальные копии `ds-link`-вида:** `.st-pc-write`, `.st-pc-leave`, `.st-links a`, `.st-pc-confirm .ds-btn` (`webapp/src/styles/sheet-settings.css`), `.ps-pill`, `.st-link-danger` — убрать после `ds-link--danger`; проп `small` у `ChevronVal` (`settingsSheet/ui.tsx`) больше ничего не делает — убрать вместе с вызовами.
-- **`AllGoalsOverlay` рисует `TaskRow` без `compact`** — на телефоне стрелка «→», а не `ds-chev` (`webapp/src/components/`); волна 3.
 - **Проверить глазами на экране:** `ConceptDigest` со skin оставляет инлайн flex/margin у `dd`/`h3` и может спорить с `ds-label` (`shared/src/therapy/conceptGraph/ConceptDigest.tsx`); у `.ds-sheet-head` с `position: sticky; top: 0` в `HistorySheet`/`JourneySheet` шапка при прокрутке может уйти под статус-бар; `PortraitPatternRows` без `freq` ставит шеврон в третью колонку grid (`webapp/src/sections/profile/PortraitPatternRows.tsx`); поле `ds-input--search` в `CommandPalette.tsx` без `flex:1/min-width:0` рядом с Esc; сегмент вкладок карт в `ModeMapSelector.tsx` без `ds-seg--scroll` (нет маски края); `ActivityRow` в `TherapistTodayLists.tsx` единственная строка списка со стрелкой.
 - **Теги триггеров `ConceptSectionsText.tsx` (`ds-chip--toggle is-on` без `--h`)** красятся только если предок задаёт `--h` (фолбэка в примитиве нет — гейт `check-token-contract`); сверить на экране t05 и при нейтральном виде задать `--h` у потребителя.
 - **Мини-апп перекрасился на единую таблицу hue** (`shared/src/theme/entityHue.ts`): Автономия теперь янтарная H70, потребности и группы режимов — по таблице; решение принято, мини-апп удаляется (#908).
@@ -244,9 +238,88 @@
 - **Тест на фокус меню «⋯» вкладки «Концептуализация» не написан**: `MoreMenu` в `webapp/src/components/therapist/concept/ConceptTabHead.tsx` использует общий `useMenuPick` и покрыт кейсом `ClientHeader.actions.test.tsx`; отдельный кейс — при расхождении механики.
 - **Мини-апп: цвета сущностей (`toneHex`, L .58) как цвет мелкого текста — контраст ниже 4.5:1 в обеих темах** (пример: `schema-miniapp/src/components/PlanCard.tsx:123` — 12px, `color: needColor`; на светлом фоне 3.3-4.5:1, на тёмном 3.7-4.5:1; посчитано по WCAG). Закрывается удалением мини-аппа (#908); если удаление отложат — светлый вариант тона для тёмной темы и тёмный для светлой.
 
+**QA клиента 2026-11 — трекер, история, тест на схемы: увиденное попутно и не тронутое**
+- **Индекс дня с точкой вне общего `fmtIndex`** (`shared/src/needs/dayIndex.ts`, «6,4», нет
+  данных — «—»): карточка партнёра
+  `webapp/src/components/settingsSheet/PartnerCard.tsx:36`, `schema-miniapp/src/components/pairSheet/PartnerCard.tsx:69`;
+  кабинет терапевта `webapp/src/components/therapist/ClientIndexCard.tsx:20`,
+  `webapp/src/sections/TherapistTodayLists.tsx:44`, `schema-miniapp/src/components/therapistClientSheet/ClientCard.tsx:102`;
+  картинки шаринга `shared/src/share/cards/dayCard.ts:27,87`, `weeklyCard.ts:44,52,76,79`. Не тронуто:
+  сайдбар, настройки и кабинет — области других агентов той же волны QA; картинки — отдельное решение
+  (на холсте запятая меняет ширину строк, нужна сверка макета).
+- **Даты в «Планах» сайта — по UTC, а не по дню человека** (`webapp/src/components/PlansScreen.tsx:30-37`):
+  «Сегодня/Завтра» через `toISOString()`, остальное — `new Date('YYYY-MM-DD').toLocaleDateString`, то есть
+  полночь UTC в местной зоне (в Лос-Анджелесе — предыдущий день, правило №25). Не тронуто: нужно сверить,
+  каким днём пишется `scheduledDate` (`shared/src/practices/usePlanSheetState.ts`), и чинить обе площадки
+  разом с тестом по зонам.
+
 **Карта режимов терапевта — хвост QA 2026-10-26** (починка багов карты и YSQ, сделано
 в той же ветке; здесь — увиденное попутно и не тронутое):
 - **На телефоне выдвижная палитра карты режимов не закрывается после выбора режима**
   (`webapp/src/components/ModeMapEditor.tsx`, `overlay(...)` слева): фигура ложится на свободное
   место холста, но его закрывает сама палитра, пока её не свернуть «‹». Не тронуто: закрывать
   после каждого тапа мешает добавлять несколько режимов подряд — нужен выбор поведения.
+
+**QA клиента 2026-11, первый визит и каркас (A-З7…A-М10) — остаток:**
+- **Баннер куки мелькает на силуэте первой загрузки кабинета.** Он ждёт закрытия диалогов и листов
+  (`webapp/src/components/CookieBanner.tsx`: `useAnyDialogOpen` + `useAnySheetOpen`), но пока AppShell
+  грузит данные (`AppShellSkeleton`), модального слоя ещё нет — у новичка баннер виден до появления
+  вопроса «ты/вы» (на стенде доли секунды). Не тронуто: силуэт — не модальный шаг, а прятать уведомление
+  на всех загрузках значит прятать его и на публичных страницах; решить, ждёт ли баннер конца очереди входов.
+
+**Дневник и упражнения — хвост QA клиента 2026-11 (данные записей)** (починены К1, З2, З4,
+З14, М1, М7 из `CLIENT_FINDINGS_B`; здесь — осознанно не сделанное и увиденное попутно):
+- **Запись дневника схем или режимов нельзя исправить, только удалить и написать заново (М9).**
+  В `src/api/diary.controller.ts` для `diary/schema|mode` есть только `POST`/`DELETE`, в карточке
+  записи — «Удалить» и «Поделиться» (`webapp/src/sections/diary/EntryCards.tsx`). Не сделано:
+  нужна не только ручка `PATCH` с DTO и ownership-e2e, а режим правки у мастеров записи
+  (`SchemaEntrySheet`/`ModeEntrySheet` на обеих площадках, у режимов восемь шагов, черновики),
+  то есть отдельная задача. Решить с владельцем, нужна ли правка в мини-аппе до его отключения
+  (#908): если нет — роут сразу `webapp-only` в `scripts/feature-parity-baseline.json`.
+- **Разбор в мини-аппе пишет запись режима без `fromCase`** (`toSaveData` в
+  `shared/src/case/caseFlowMappers.ts`): в «Записях» сайта такой разбор лежит в «Дневнике», а не
+  в «Случаях», подписан «Режим», и плитка «Дневник» считает его записью. Не тронуто: блок
+  «Разбор случая» в `/stats` намеренно считает «записано с сайта» только сайт
+  (`docs/architecture/backend-core.md`), метка смешала бы популяции. Решается вместе с
+  отключением мини-аппа или новой разбивкой метрики.
+- **Удаление записи из листа паттерна при сбое молча возвращает запись**
+  (`shared/src/pattern/usePatternEntryDelete.ts`: оптимистичное удаление, на отказе
+  `console.error` и запись обратно, без текста; 404 тоже считается сбоем). Тот же класс, что З2
+  в «Записях»; не тронуто — другой экран и другая механика. Починка — через
+  `deleteDiaryEntry` и `deleteFailedText` из `shared/src/diary/diaryDelete.ts`.
+- **Письмо называется по-разному**: экран упражнения — «Письмо Уязвимому Ребёнку»
+  (`webapp/src/components/exercises/LetterEx.tsx`), «Мой путь», задания и быстрые действия —
+  «Письмо себе» (`shared/src/journey/journeyMeta.ts:38`,
+  `shared/src/quickActions/quickActionsRegistry.ts:106`,
+  `webapp/src/components/taskCreate/taskOptions.ts:14`). Название — решение владельца.
+
+### «Сегодня» клиента через полночь и офлайн-оценки (QA клиента 2026-11-03, остаток К3/З9)
+
+Оценки дня у обоих фронтендов живут в `shared/src/today/useDayRatings.ts` (день устройства явной
+датой, перечитывание в полночь, офлайн-очередь поверх ответа сервера). Что ещё не сведено:
+- **Подсветка «сегодня» в недельной полосе стрика заморожена при загрузке** — `TODAY_DOW_IDX`
+  (`webapp/src/sections/profile/streakConst.ts`, `schema-miniapp/src/sections/profile/constants.ts`).
+  Мелочь: профиль перечитывается при каждом заходе, но открытый через полночь подсвечивает вчера.
+- **Мини-апп без сети оценку не сохраняет вовсе** (`schema-miniapp/src/components/TrackerOverlay.tsx`,
+  `if (isOffline) return;`; плашка честно пишет «данные не сохраняются»), хотя офлайн-очередь у него
+  есть. Сайт с QA 2026-11-03 шлёт и без сети — оценка ложится в очередь (`webapp/src/hooks/useRatingSaver.ts`).
+  Не сведено: менять обещание плашки мини-аппа — вместе с текстом, а файл на потолке размера.
+- **Ответ 5xx на оценку уходит в очередь молча**: экран пишет «Трекер заполнен» и не говорит, что
+  сервер не ответил (QA B-З9, `shared/src/api/ratingApi.ts` возвращает `{ ok: true }`). Число на
+  плитке после перезагрузки теперь верное (очередь поверх ответа), подписи «отправится позже» нет.
+
+**Аккаунт и настройки клиента — хвост QA 2026-11** (`CLIENT_FINDINGS_A`, починены К1–К2, З1–З2,
+З5–З6, М1–М4, М6–М7, М10–М11; здесь — осознанно не тронутое):
+- **«Пригласить друга» на сайте делится ссылкой на бота** (`webapp/src/components/settingsSheet/ShareAboutSections.tsx`,
+  `appInviteShare(botShortUrl)`), как и все карточки-шаринги сайта (`AchievementDetail`, `PatternSheet`,
+  `WeeklyCardSheet` — `botShortUrl`). Звать с сайта на сайт или в бота — продуктовое решение владельца,
+  менять одну карточку из десяти — разнобой. QA заметил «карточка со ссылкой на бота — на сайте».
+- **Часовой пояс у веб-клиента без Telegram спрятан вместе с настройками уведомлений**
+  (`webapp/src/components/settingsSheet/NotificationsSection.tsx`, ветка `reachable`): строка «Часовой пояс»
+  и раньше жила внутри блока «уведомления включены». Пояс влияет и на «сегодня» заданий
+  (`TherapyTasksService.getTasks` → `notifyTimezone`). Выбор пояса правит другой агент (З4) — вынести
+  строку из блока уведомлений стоит вместе с ним.
+- **Кнопка пары в мини-аппе не через общий `inviteButtonLabel`** (`schema-miniapp/src/components/pairSheet/PairPanel.tsx`:
+  «Создать приглашение», свой текст ошибки, нет ветки «Новая ссылка»). Ярлык «ещё одного человека»
+  выровнен с сайтом, а сама развилка — вторая копия `shared/src/pair/pairView.ts`.
+

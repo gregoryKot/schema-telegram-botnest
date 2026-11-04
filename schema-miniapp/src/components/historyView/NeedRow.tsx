@@ -1,4 +1,4 @@
-import { Need, COLORS } from '../../types';
+import { Need, NEED_COLORS } from '../../types';
 import { IdentityDot } from '../../../../shared/src/components/IdentityDot';
 
 export function NeedRow({
@@ -10,7 +10,7 @@ export function NeedRow({
   value: number;
   onTap?: () => void;
 }) {
-  const color = COLORS[need.id] ?? '#888';
+  const color = NEED_COLORS[need.id] ?? '#888';
   const pct = (value / 10) * 100;
   const levelLabel =
     value === 0 ? '—' : value <= 3 ? 'низко' : value <= 6 ? 'средне' : 'хорошо';

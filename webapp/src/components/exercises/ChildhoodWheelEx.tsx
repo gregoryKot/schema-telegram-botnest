@@ -11,6 +11,7 @@ import { ChildhoodFill } from './childhoodWheel/ChildhoodFill';
 import { ChildhoodResult } from './childhoodWheel/ChildhoodResult';
 import type { ChildhoodRatings } from '../../../../shared/src/childhoodWheel/childhoodWheel';
 import { useChildhoodDraft } from '../../../../shared/src/childhoodWheel/useChildhoodDraft';
+import { exerciseCard } from '../../../../shared/src/exercises/exerciseCatalog';
 import '../../styles/sheet-childhood.css';
 
 const TITLE = (
@@ -49,7 +50,7 @@ export function ChildhoodWheelEx({ onBack, onSaved, onOpenSchemas }: Props) {
     );
   }
   return (
-    <ExScreen onBack={goBack} eyebrow="№ 06 · Истоки" title={TITLE}>
+    <ExScreen onBack={goBack} eyebrow={exerciseCard('wheel').eyebrow} title={TITLE}>
       {state.status === 'error' ? (
         <div role="alert" className="ex2-err">
           Не удалось загрузить сохранённый результат.{' '}

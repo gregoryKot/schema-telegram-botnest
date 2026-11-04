@@ -11,6 +11,7 @@ import { QuickEntrySheet } from '../components/diary/QuickEntrySheet';
 import { DiaryShareButton } from '../share/DiaryShareButton';
 import '../styles/client-diary.css';
 import { diaryToday } from '../../../shared/src/diary/diaryDay';
+import { deleteDiaryEntry } from '../../../shared/src/diary/diaryDelete';
 import { DiaryDraft } from './diary/DiaryDraft';
 import { DiaryHeader } from './diary/DiaryHeader';
 import { DiaryTimeline, DiaryTimelineSkeleton } from './diary/DiaryTimeline';
@@ -74,10 +75,12 @@ export function DiarySection({ onClose: _onClose, onOpenTrackerHistory }: { onCl
   const today = diaryToday(); // местный день, на каждый рендер (не на загрузку)
   const todayGratitude = gratitudeEntries.find(e => e.date === today);
 
+  // Сбой удаления доходит до кнопки (текст ошибки, запись на месте); 404 — записи уже нет.
   const handleDelete = async (type: DiaryType, id: number) => {
-    if (type === 'schema')    { await api.deleteSchemaDiary(id);    setSchemaEntries(p => p.filter(e => e.id !== id)); }
-    if (type === 'mode')      { await api.deleteModeDiary(id);      setModeEntries(p => p.filter(e => e.id !== id)); }
-    if (type === 'gratitude') { await api.deleteGratitudeDiary(id); setGratitudeEntries(p => p.filter(e => e.id !== id)); }
+    await deleteDiaryEntry(api, type, id);
+    if (type === 'schema')    setSchemaEntries(p => p.filter(e => e.id !== id));
+    if (type === 'mode')      setModeEntries(p => p.filter(e => e.id !== id));
+    if (type === 'gratitude') setGratitudeEntries(p => p.filter(e => e.id !== id));
   };
 
   const allEntries = useMemo(

@@ -48,6 +48,16 @@ describe('useTaskLauncher', () => {
     expect(result.current.open).toBeNull();
   });
 
+  // QA 2026-11, К1: запрос терапевта — задание «пройти тест». Открывает тест;
+  // закрывает задание сервер, когда итог сохранён, а не «Назад» из теста.
+  it('«Пройти тест на схемы» открывает тест и не закрывает задание с клиента', () => {
+    const { deps, result } = setup();
+    act(() => result.current.openTask(task({ id: 6, type: 'ysq_test', text: 'Пройти тест на схемы' })));
+    expect(result.current.open).toEqual({ ex: 'ysq' });
+    act(() => result.current.complete());
+    expect(deps.onTaskDone).not.toHaveBeenCalled();
+  });
+
   it('упражнение из библиотеки и «Назад» задание не закрывают', () => {
     const { deps, result } = setup();
     act(() => result.current.openTask(task({ id: 5, type: 'belief_check' })));

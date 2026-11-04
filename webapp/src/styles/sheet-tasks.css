@@ -35,6 +35,7 @@
 .sk-alert { display: flex; flex-direction: column; gap: 14px; align-items: flex-start; }
 .sk-empty { padding-top: 24px; max-width: 420px; display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
 .sk-empty-text { font-size: 14px; line-height: 1.65; color: var(--text-sub); margin: 0 0 10px; }
+.sk-empty > .ds-card { align-self: stretch; } /* выбор потребности для плана во всю ширину */
 .sk-group { display: flex; flex-direction: column; gap: 12px; }
 .sk-list { display: flex; flex-direction: column; gap: 10px; }
 .sk-plan { display: flex; flex-direction: column; gap: 10px; }

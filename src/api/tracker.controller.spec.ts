@@ -7,6 +7,9 @@ import { BadRequestException } from '@nestjs/common';
 import { TrackerController } from './tracker.controller';
 import { NEED_IDS } from '../bot/bot.service';
 
+// «Сегодня» юзера по его поясу (BotService.userToday).
+const TODAY = '2026-07-17';
+
 function makeReq(userId = 1n) {
   return { webUser: { userId } } as any;
 }
@@ -45,6 +48,7 @@ function makeController(overrides: Record<string, any> = {}) {
       },
     ]),
     getRatings: jest.fn(() => Promise.resolve({})),
+    userToday: jest.fn(() => Promise.resolve(TODAY)),
     saveRating: jest.fn(() => Promise.resolve(undefined)),
     getNote: jest.fn(() => Promise.resolve({ text: '' })),
     saveNote: jest.fn(() => Promise.resolve(undefined)),
@@ -129,7 +133,7 @@ describe('TrackerController.saveRating', () => {
     expect(botService.saveRating).not.toHaveBeenCalled();
   });
 
-  it('исторический бэкфилл (есть date) — не проверяет allDone, getRatings не дёргается повторно', async () => {
+  it('исторический бэкфилл (дата не сегодняшняя) — не проверяет allDone, getRatings не дёргается повторно', async () => {
     const { controller, botService } = makeController();
     const res = await controller.saveRating(makeReq(), {
       needId: 'attachment',
@@ -138,6 +142,24 @@ describe('TrackerController.saveRating', () => {
     });
     expect(res).toEqual({ ok: true, allDone: false });
     expect(botService.getRatings).not.toHaveBeenCalled();
+  });
+
+  // QA 2026-11-03: сайт и мини-апп всегда шлют дату (день устройства, она же
+  // уходит в офлайн-очередь). Раньше любая дата считалась бэкфиллом — день,
+  // заполненный на сайте, не снимал напоминание и не давал серию.
+  it('дата = сегодня юзера (так шлют сайт и мини-апп) → allDone считается по этому дню', async () => {
+    const allRated = Object.fromEntries(NEED_IDS.map((id) => [id, 7]));
+    const { controller, botService, scheduleService } = makeController({
+      botService: { getRatings: jest.fn(() => Promise.resolve(allRated)) },
+    });
+    const res = await controller.saveRating(makeReq(), {
+      needId: 'limits',
+      value: 7,
+      date: TODAY,
+    });
+    expect(res.allDone).toBe(true);
+    expect(botService.getRatings).toHaveBeenCalledWith(1n, TODAY);
+    expect(scheduleService.onDiaryComplete).toHaveBeenCalledWith(1n);
   });
 
   it('checkStreakTasks запускается фоново; его падение не мешает ответу', async () => {
@@ -255,7 +277,7 @@ describe('TrackerController.getExport', () => {
     expect(res.text).toContain('2026-07-17');
     expect(res.text).toContain('8/10');
     expect(res.text).toContain('–'); // непроставленная потребность
-    expect(res.text).toContain('Серия: 2 дн. · Рекорд: 4 · Всего: 9');
+    expect(res.text).toContain('Серия: 2 дня · Рекорд: 4 дня · Всего: 9 дней');
   });
 });
 

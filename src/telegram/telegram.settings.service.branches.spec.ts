@@ -49,7 +49,10 @@ function makeService(botService: any) {
 }
 
 describe('buildSettingsView — фолбэки', () => {
-  it('незнакомая таймзона (не из TIMEZONES) — показывает сырую строку, не падает', async () => {
+  // Пояс вне списка кнопок теперь обычен: сайт и мини-апп пишут пояс
+  // устройства (QA 2026-11-03). Название — русское, если есть в словаре, иначе
+  // хвост IANA; экран не падает.
+  it('незнакомая таймзона (не из TIMEZONES) — показывает её название, не падает', async () => {
     const botService = {
       getUserSettings: jest.fn().mockResolvedValue({
         ...BASE_SETTINGS,
@@ -57,7 +60,18 @@ describe('buildSettingsView — фолбэки', () => {
       }),
     };
     const view = await buildSettingsView(botService as any, 1n);
-    expect(view.text).toContain('Antarctica/Vostok');
+    expect(view.text).toContain('Vostok');
+  });
+
+  it('пояс устройства вне списка, но со словарным названием — по-русски', async () => {
+    const botService = {
+      getUserSettings: jest.fn().mockResolvedValue({
+        ...BASE_SETTINGS,
+        notifyTimezone: 'Europe/Paris',
+      }),
+    };
+    const view = await buildSettingsView(botService as any, 1n);
+    expect(view.text).toContain('Париж');
   });
 
   it('отрицательное UTC-смещение форматируется без двойного минуса', async () => {

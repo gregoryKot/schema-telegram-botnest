@@ -5,6 +5,7 @@ import {
   IsString,
   MaxLength,
 } from 'class-validator';
+import { TIMEZONE_MAX_LENGTH } from '../../notification/notify-timezones';
 
 /**
  * DTO для мелких эндпоинтов api.controller.ts (аудит 2026-07, 2г / правило
@@ -26,8 +27,11 @@ export class UpdateNameDto {
 }
 
 export class InitDto {
+  // Пояс устройства (Intl). Неизвестный пояс не сохраняется
+  // (AccountService.registerUser → isNotifyTimezone).
   @IsOptional()
   @IsString()
+  @MaxLength(TIMEZONE_MAX_LENGTH)
   timezone?: string;
 }
 

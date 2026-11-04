@@ -3,9 +3,10 @@ import { Need, DayHistory } from '../../types';
 import { SparklineRow } from './SparklineRow';
 import { InsightCard } from './InsightCard';
 import { BOOKING_CTA_LABEL } from '../../../../shared/src/history/therapistCta';
+import { weekWindow } from '../../../../shared/src/history/sparkline';
 
-// Недельный вид истории: спарклайны по потребностям + инсайт + карточка
-// недели. Вынесено из HistoryView.tsx (правило №10).
+// Недельный вид истории: спарклайны за N дней до выбранного (weekWindow) +
+// инсайт + карточка недели. Вынесено из HistoryView.tsx (правило №10).
 export function HistoryWeekView({
   needs,
   history,
@@ -44,8 +45,7 @@ export function HistoryWeekView({
         <SparklineRow
           key={need.id}
           need={need}
-          history={history}
-          selectedIdx={selectedIdx}
+          days={weekWindow(history, selectedIdx, days)}
           selectedRatings={selectedRatings}
           onClick={() => onTapNeed(need)}
         />

@@ -33,6 +33,22 @@ function makePlan(o: Partial<PracticePlan> = {}): PracticePlan {
   };
 }
 
+// Лист плана — свой тест (PlanSheet.test.tsx); здесь важно, что он открывается.
+vi.mock('./PlanSheet', () => ({
+  PlanSheet: ({
+    needLabel,
+    onSaved,
+  }: {
+    needLabel: string;
+    onSaved: () => void;
+  }) => (
+    <div data-testid="plan-sheet">
+      {needLabel}
+      <button onClick={onSaved}>plan-saved</button>
+    </div>
+  ),
+}));
+
 beforeEach(() => {
   vi.clearAllMocks();
 });
@@ -81,6 +97,24 @@ describe('PlansScreen — пустое состояние (чистый акка
     expect(screen.queryByText('Открыть трекер →')).toBeNull();
   });
 
+  // QA 2026-11 (B-М8): подпись обещала кнопку «Запланировать практику»,
+  // которой нет; путь к плану шёл только через трекер и ответ «Совсем нет».
+  it('пустой экран не обещает несуществующую кнопку, а сам открывает план', async () => {
+    mockApi.getPlanHistory.mockResolvedValue([]);
+    render(<PlansScreen onClose={() => {}} />);
+    await waitFor(() =>
+      expect(screen.getByText('Планов пока нет')).toBeTruthy(),
+    );
+    expect(screen.queryByText(/Запланировать практику/)).toBeNull();
+    fireEvent.click(screen.getByText('Автономия'));
+    expect(screen.getByTestId('plan-sheet').textContent).toContain('Автономия');
+    fireEvent.click(screen.getByText('plan-saved'));
+    await waitFor(() =>
+      expect(mockApi.getPlanHistory).toHaveBeenCalledTimes(2),
+    );
+    expect(screen.queryByTestId('plan-sheet')).toBeNull();
+  });
+
   it('объяснение пустого состояния звучит на «ты»', async () => {
     mockApi.getPlanHistory.mockResolvedValue([]);
     render(
@@ -89,9 +123,7 @@ describe('PlansScreen — пустое состояние (чистый акка
       </AddressFormContext.Provider>,
     );
     await waitFor(() =>
-      expect(
-        screen.getByText(/выбери потребность с низкой оценкой и нажми/),
-      ).toBeTruthy(),
+      expect(screen.getByText(/Выбери, о какой позаботиться/)).toBeTruthy(),
     );
   });
 
@@ -103,9 +135,7 @@ describe('PlansScreen — пустое состояние (чистый акка
       </AddressFormContext.Provider>,
     );
     await waitFor(() =>
-      expect(
-        screen.getByText(/выберите потребность с низкой оценкой и нажмите/),
-      ).toBeTruthy(),
+      expect(screen.getByText(/Выберите, о какой позаботиться/)).toBeTruthy(),
     );
   });
 });
@@ -149,7 +179,7 @@ describe('PlansScreen — список планов', () => {
       expect(screen.getByText('Ожидают выполнения')).toBeTruthy(),
     );
     expect(screen.getByText('Выполненные')).toBeTruthy();
-    expect(screen.getByText('1 активных · 2 завершённых')).toBeTruthy();
+    expect(screen.getByText('1 активный · 2 завершённых')).toBeTruthy();
   });
 
   it('показывает реальное название потребности из needData, а не голый id', async () => {

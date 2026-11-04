@@ -195,6 +195,8 @@ describe('CaseFlowSheet — полный проход, маппинг onSave/onS
       triggers: SCENE_TEXT,
       feelings: 'сердце колотится, трясутся руки',
       behavior: 'свернуть разговор, уйти в телефон, в ленту',
+      // QA 2026-11, К1: поля момента — только в пустое место карточки.
+      fillIfEmpty: ['triggers', 'feelings', 'behavior'],
     });
     expect(trackEvent).toHaveBeenCalledWith('case_finished', {
       modeId: 'vulnerable_child',

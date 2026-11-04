@@ -6,7 +6,7 @@ import { ShareCardSheet } from '../../../share/ShareCardSheet';
 import { drawGratitudeCard } from '../../../../../shared/src/share/cards/gratitudeCard';
 import { gratitudeShareText } from '../../../../../shared/src/share/shareTexts';
 import { botShortUrl } from '../../../utils/botConfig';
-import { DeleteBtn } from './shared';
+import { DeleteBtn } from './DeleteBtn';
 
 // Карточка записи дневника благодарности. Вынесено из DiaryListView.tsx (правило №10).
 export function GratitudeCard({
@@ -16,7 +16,7 @@ export function GratitudeCard({
 }: {
   entry: GratitudeDiaryEntry;
   color: string;
-  onDelete: () => void;
+  onDelete: () => void | Promise<void>;
 }) {
   const [open, setOpen] = useState(false);
   const [showShare, setShowShare] = useState(false);

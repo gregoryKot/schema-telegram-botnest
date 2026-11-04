@@ -25,6 +25,8 @@ export function useOverlays() {
   const [showChildhoodWheel, setShowChildhoodWheel] = useState(false);
   const [showTodayNote, setShowTodayNote] = useState(false);
   const [showTherapistDisclaimer, setShowTherapistDisclaimer] = useState(false);
+  // «Мне плохо» топбара — карточка «Схема включилась» поверх текущего раздела.
+  const [showSosCard, setShowSosCard] = useState(false);
   const [cmdOpen, setCmdOpen] = useState(false);
   // Быстрое действие «+»/⌘K, открытое оверлеем (дневники, разбор, практики).
   const [quickAction, setQuickAction] = useState<OverlayQuickActionId | null>(null);
@@ -57,6 +59,7 @@ export function useOverlays() {
     showChildhoodWheel, setShowChildhoodWheel,
     showTodayNote, setShowTodayNote,
     showTherapistDisclaimer, setShowTherapistDisclaimer,
+    showSosCard, setShowSosCard,
     cmdOpen, setCmdOpen,
     quickAction, setQuickAction, runQuickAction, openSchema,
   };

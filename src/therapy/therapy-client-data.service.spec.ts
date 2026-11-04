@@ -10,9 +10,8 @@
 import { TherapyClientDataService } from './therapy-client-data.service';
 import { TherapyRelationsService } from './therapy-relations.service';
 import { Rel, makeRelationPrismaMock } from './therapy.test-helpers';
-import { encrypt, encryptJson } from '../utils/crypto';
-import { NotificationService } from '../notification/notification.service';
-import { isOwnYsqRequestPending } from './ysq-request';
+import { decrypt, encrypt, encryptJson } from '../utils/crypto';
+import { YsqService } from '../bot/ysq.service';
 
 const blank = { triggers: '', feelings: '', thoughts: '', behavior: '' };
 const blankSchemaNote = { ...blank, origins: '', reality: '', healthyView: '' };
@@ -56,6 +55,8 @@ function makeDb(rels: Rel[]) {
   const schemaNotes: any[] = [];
   const modeNotes: any[] = [];
   const tasks: any[] = [];
+  const taskWhere = (t: any, w: any) =>
+    Object.entries(w).every(([k, v]) => t[k] === v);
   const modeMaps: any[] = [];
   const desc = (rows: any[], userId: bigint, key: string, take: number) =>
     rows
@@ -115,6 +116,18 @@ function makeDb(rels: Rel[]) {
       }),
     },
     userTask: {
+      create: jest.fn(({ data }: any) => {
+        tasks.push({ id: tasks.length + 1, done: null, ...data });
+        return Promise.resolve(tasks[tasks.length - 1]);
+      }),
+      count: jest.fn(({ where }: any) =>
+        Promise.resolve(tasks.filter((t) => taskWhere(t, where)).length),
+      ),
+      updateMany: jest.fn(({ where, data }: any) => {
+        const hit = tasks.filter((t) => taskWhere(t, where));
+        hit.forEach((t) => Object.assign(t, data));
+        return Promise.resolve({ count: hit.length });
+      }),
       deleteMany: jest.fn(({ where }: any) => {
         const before = tasks.length;
         for (let i = tasks.length - 1; i >= 0; i--)
@@ -152,7 +165,6 @@ function makeService(rels: Rel[]) {
   const notificationService = {
     schedule: jest.fn(() => Promise.resolve(undefined)),
     hasPending: jest.fn(() => Promise.resolve(false)),
-    pendingPayloads: jest.fn(() => Promise.resolve([])),
   } as any;
   const svc = new TherapyClientDataService(
     t.db,
@@ -531,186 +543,128 @@ describe('TherapyClientDataService — getClientHistory с данными', () =
   });
 });
 
-describe('TherapyClientDataService — requestYsq для реального клиента', () => {
-  it('уже есть неотправленный запрос → ничего не планируется, имя терапевта не читается', async () => {
-    const { svc, db, notificationService } = makeService([relA]);
+// QA 2026-11, К1: запрос YSQ был только сообщением бота — у аккаунта без
+// Telegram очередь его отменяла, а терапевт видел «✓ Запрос отправлен». Теперь
+// запрос — задание клиенту (ysq-request.ts), а сообщение — второй канал.
+// Задания здесь живут в общем массиве `tasks` фейковой базы: request →
+// getClientData видят одни и те же строки, а не «вызвали мок».
+describe('TherapyClientDataService — requestYsq: задание «пройти тест на схемы»', () => {
+  const relA2: Rel = {
+    id: 4,
+    therapistId: T2,
+    clientId: CLIENT_A,
+    status: 'active',
+    code: 'AAA222',
+  };
+  const ysqTasks = (tasks: any[]) => tasks.filter((t) => t.type === 'ysq_test');
+
+  it('клиенту приходит задание от терапевта — его видно на любой площадке, Telegram не нужен', async () => {
+    const { svc, tasks } = makeService([relA]);
+    await svc.requestYsq(T1, CID_A);
+    expect(ysqTasks(tasks)).toHaveLength(1);
+    const [task] = ysqTasks(tasks);
+    expect(task).toMatchObject({
+      userId: CLIENT_A,
+      assignedBy: T1,
+      done: null,
+    });
+    expect(decrypt(task.text)).toBe('Пройти тест на схемы');
+  });
+
+  it('повтор, пока тест не пройден, — ни второго задания, ни второго сообщения', async () => {
+    const { svc, tasks, notificationService } = makeService([relA]);
+    await svc.requestYsq(T1, CID_A);
+    await svc.requestYsq(T1, CID_A);
+    await svc.requestYsq(T1, CID_A);
+    expect(ysqTasks(tasks)).toHaveLength(1);
+    expect(notificationService.schedule).toHaveBeenCalledTimes(1);
+  });
+
+  it('сообщение в Telegram: имя терапевта; без имени в профиле — null', async () => {
+    const { svc, users, notificationService } = makeService([relA, relB]);
+    users.push(mkUser(T1, 'Доктор Иванова', []));
+    await svc.requestYsq(T1, CID_A);
+    expect(notificationService.schedule).toHaveBeenCalledWith(
+      CLIENT_A,
+      'ysq_requested',
+      expect.any(Date),
+      { therapistName: 'Доктор Иванова' },
+    );
+    users.length = 0;
+    await svc.requestYsq(T1, CLIENT_B);
+    expect(notificationService.schedule).toHaveBeenLastCalledWith(
+      CLIENT_B,
+      'ysq_requested',
+      expect.any(Date),
+      { therapistName: null },
+    );
+  });
+
+  it('сообщение уже ждёт в очереди → задание создаётся, второе сообщение — нет', async () => {
+    const { svc, tasks, notificationService } = makeService([relA]);
     notificationService.hasPending.mockResolvedValue(true);
-    const findUser = jest.spyOn(db.user, 'findUnique');
     await svc.requestYsq(T1, CID_A);
     expect(notificationService.hasPending).toHaveBeenCalledWith(
       CLIENT_A,
       'ysq_requested',
     );
+    expect(ysqTasks(tasks)).toHaveLength(1);
     expect(notificationService.schedule).not.toHaveBeenCalled();
-    expect(findUser).not.toHaveBeenCalled();
   });
 
-  it('чужой терапевт без связи → отказ ДО проверки очереди', async () => {
-    const { svc, notificationService } = makeService([relA]);
+  it('чужой терапевт без связи → отказ до записи', async () => {
+    const { svc, tasks, notificationService } = makeService([relA]);
     await expect(svc.requestYsq(T2, CID_A)).rejects.toThrow(
       'No active relation',
     );
-    expect(notificationService.hasPending).not.toHaveBeenCalled();
+    expect(tasks).toHaveLength(0);
+    expect(notificationService.schedule).not.toHaveBeenCalled();
   });
 
-  it('клиент с id>=0: подтягивает имя терапевта и планирует уведомление ysq_requested', async () => {
-    const { svc, users, notificationService } = makeService([relA]);
-    users.push(mkUser(T1, 'Доктор Иванова', []));
-    await svc.requestYsq(T1, CID_A);
-    expect(notificationService.schedule).toHaveBeenCalledWith(
-      CLIENT_A,
-      'ysq_requested',
-      expect.any(Date),
-      { therapistName: 'Доктор Иванова', therapistId: String(T1) },
-    );
+  it('офлайн-клиент: аккаунта нет — задания нет', async () => {
+    const { svc, tasks } = makeService([relVirtual]);
+    await svc.requestYsq(T1, -3);
+    expect(tasks).toHaveLength(0);
   });
 
-  it('терапевт без firstName в базе → therapistName: null, но уведомление всё равно планируется', async () => {
-    const { svc, notificationService } = makeService([relA]); // users пуст — findUnique(T1) → null
-    await svc.requestYsq(T1, CID_A);
-    expect(notificationService.schedule).toHaveBeenCalledWith(
-      CLIENT_A,
-      'ysq_requested',
-      expect.any(Date),
-      { therapistName: null, therapistId: String(T1) },
-    );
-  });
-});
-
-// Шов «запрос → очередь»: аудит 2026-10 — каждый тап создавал новую строку
-// ScheduledNotification, клиент получал пять одинаковых DM. Здесь НАСТОЯЩИЙ
-// NotificationService поверх фейкового делегата: проверяется реальное where у
-// hasPending (sentAt/cancelledAt/type/userId), а не «вызвали мок».
-describe('TherapyClientDataService — requestYsq: дедуп очереди (шов с NotificationService)', () => {
-  type Row = {
-    userId: bigint;
-    type: string;
-    sentAt: Date | null;
-    cancelledAt: Date | null;
-    payload?: unknown;
-  };
-  const pending = (where: Partial<Row>) => (r: Row) =>
-    r.userId === where.userId &&
-    r.type === where.type &&
-    (where.sentAt === null ? r.sentAt === null : true) &&
-    (where.cancelledAt === null ? r.cancelledAt === null : true);
-  function makeSeam() {
-    const { db, users } = makeService([relA]);
-    const queue: Row[] = [];
-    const scheduledNotification = {
-      create: jest.fn(({ data }: { data: Row }) => {
-        queue.push({ sentAt: null, cancelledAt: null, ...data });
-        return Promise.resolve(undefined);
-      }),
-      count: jest.fn(({ where }: { where: Partial<Row> }) =>
-        Promise.resolve(queue.filter(pending(where)).length),
-      ),
-      findMany: jest.fn(({ where }: { where: Partial<Row> }) =>
-        Promise.resolve(queue.filter(pending(where))),
-      ),
-    };
-    const notifications = new NotificationService({
-      scheduledNotification,
-    } as any);
-    const svc = new TherapyClientDataService(
-      db,
-      {} as any,
-      notifications,
-      new TherapyRelationsService(db, {} as any),
-    );
-    users.push(mkUser(T1, 'Доктор Иванова', []));
-    const ysqRows = () => queue.filter((r) => r.type === 'ysq_requested');
-    return { svc, queue, ysqRows, users, notifications };
-  }
-
-  it('два запроса подряд, пока первый в очереди → одна строка', async () => {
-    const { svc, ysqRows } = makeSeam();
-    await svc.requestYsq(T1, CID_A);
-    await svc.requestYsq(T1, CID_A);
-    await svc.requestYsq(T1, CID_A);
-    expect(ysqRows()).toHaveLength(1);
-    expect(ysqRows()[0].userId).toBe(CLIENT_A);
-  });
-
-  it('после отправки (sentAt) повтор снова ставится в очередь', async () => {
-    const { svc, ysqRows } = makeSeam();
-    await svc.requestYsq(T1, CID_A);
-    ysqRows()[0].sentAt = new Date();
-    await svc.requestYsq(T1, CID_A);
-    expect(ysqRows()).toHaveLength(2);
-  });
-
-  it('отменённая строка (клиент без Telegram) не блокирует повтор', async () => {
-    const { svc, ysqRows } = makeSeam();
-    await svc.requestYsq(T1, CID_A);
-    ysqRows()[0].cancelledAt = new Date();
-    await svc.requestYsq(T1, CID_A);
-    expect(ysqRows()).toHaveLength(2);
-  });
-
-  it('чужой тип в очереди (task_assigned) не блокирует ysq_requested', async () => {
-    const { svc, queue, ysqRows } = makeSeam();
-    queue.push({
-      userId: CLIENT_A,
-      type: 'task_assigned',
-      sentAt: null,
-      cancelledAt: null,
-    });
-    await svc.requestYsq(T1, CID_A);
-    expect(ysqRows()).toHaveLength(1);
-  });
-
-  it('очередь другого клиента не блокирует этого', async () => {
-    const { svc, queue, ysqRows } = makeSeam();
-    queue.push({
-      userId: CLIENT_B,
-      type: 'ysq_requested',
-      sentAt: null,
-      cancelledAt: null,
-    });
-    await svc.requestYsq(T1, CID_A);
-    expect(ysqRows().filter((r) => r.userId === CLIENT_A)).toHaveLength(1);
-  });
-
-  // QA 2026-11: «запрос отправлен» жил только в state кнопки и пропадал после
-  // перезагрузки. Read-after-write: запрос → карточка клиента видит, что он
-  // висит; ушёл или отменён — уже нет. Признак тот же, что у дедупа выше.
-  it('запрос → getClientData отдаёт ysqRequestPending, после отправки — false', async () => {
-    const { svc, ysqRows } = makeSeam();
+  // Read-after-write: запрос → карточка клиента видит, что он висит; тест
+  // пройден (настоящий YsqService на той же базе) → задание закрыто и
+  // признак погас. Источник правды один — открытое задание.
+  it('запрос → ysqRequestPending true; тест пройден → задание закрыто, false', async () => {
+    const { svc, db, tasks } = makeService([relA]);
+    db.ysqResult.upsert = jest.fn(() => Promise.resolve({}));
+    db.ysqResultHistory.create = jest.fn(() => Promise.resolve({}));
     expect((await svc.getClientData(T1, CID_A)).ysqRequestPending).toBe(false);
     await svc.requestYsq(T1, CID_A);
     expect((await svc.getClientData(T1, CID_A)).ysqRequestPending).toBe(true);
-    ysqRows()[0].sentAt = new Date();
+    await new YsqService(db).saveYsqResult(CLIENT_A, [1, 2, 3]);
+    expect(ysqTasks(tasks)[0].done).toBe(true);
     expect((await svc.getClientData(T1, CID_A)).ysqRequestPending).toBe(false);
   });
 
-  // Дедуп по клиенту, а признак — по паре: чужой висящий запрос не выдаёт
-  // второму терапевту, что у клиента есть другой (docs/open/therapy.md).
-  it('висящий запрос другого терапевта этого клиента — не «свой», ysqRequestPending false', async () => {
-    const { svc, ysqRows, notifications } = makeSeam();
+  it('терапевт удалил задание → запрос снят, его можно поставить снова', async () => {
+    const { svc, db, tasks } = makeService([relA]);
     await svc.requestYsq(T1, CID_A);
-    expect(ysqRows()).toHaveLength(1);
-    expect(await isOwnYsqRequestPending(notifications, T2, CLIENT_A)).toBe(
-      false,
-    );
-    expect(await isOwnYsqRequestPending(notifications, T1, CLIENT_A)).toBe(
-      true,
-    );
+    await db.userTask.deleteMany({
+      where: { userId: CLIENT_A, assignedBy: T1 },
+    });
+    expect((await svc.getClientData(T1, CID_A)).ysqRequestPending).toBe(false);
+    await svc.requestYsq(T1, CID_A);
+    expect(ysqTasks(tasks)).toHaveLength(1);
   });
 
-  // Запросы, поставленные до этого поля (payload без therapistId), ничьими не
-  // считаются: кнопка вернётся, а дедуп по клиенту не даст отправить второй.
-  it('висящий запрос без therapistId (до деплоя) — не «свой» ни для кого', async () => {
-    const notifications = {
-      pendingPayloads: jest.fn(async () => [{ therapistName: 'Анна' }, null]),
-    };
-    expect(await isOwnYsqRequestPending(notifications, T1, CLIENT_A)).toBe(
-      false,
-    );
+  // Признак — по паре: чужой запрос не выдаёт второму терапевту, что у
+  // клиента есть другой (docs/open/therapy.md), и не мешает ему запросить своё.
+  it('запрос другого терапевта этого клиента — не «свой»', async () => {
+    const { svc, tasks } = makeService([relA, relA2]);
+    await svc.requestYsq(T1, CID_A);
+    expect((await svc.getClientData(T2, CID_A)).ysqRequestPending).toBe(false);
+    await svc.requestYsq(T2, CID_A);
+    expect(ysqTasks(tasks).map((t) => t.assignedBy)).toEqual([T1, T2]);
   });
 
   it('профиль скрыт клиентом — свой висящий запрос терапевт всё равно видит', async () => {
-    const { svc, users } = makeSeam();
+    const { svc, users } = makeService([relA]);
     users.push(mkUser(CLIENT_A, 'Аня', ['abandonment'], false));
     await svc.requestYsq(T1, CID_A);
     const data = await svc.getClientData(T1, CID_A);

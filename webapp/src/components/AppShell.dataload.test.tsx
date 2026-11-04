@@ -45,6 +45,21 @@ describe('AppShell — согласия: молча не принимаем, н�
     await waitFor(() => expect(screen.queryByText('Важно знать')).toBeNull());
   });
 
+  // QA 2026-11 (A-З7): автопоказ «Первый раз здесь» открывался под согласиями.
+  // Шов AppShell ↔ секция: конец очереди входов секция узнаёт только после «Начать».
+  it('секция «Сегодня» узнаёт конец очереди только после согласий', async () => {
+    mockApi.getDisclaimer.mockResolvedValueOnce({ accepted: false });
+    renderAppShell('/today');
+    await screen.findByText('БЕТА-ВЕРСИЯ');
+    expect(screen.getByTestId('today-section-state').textContent).toContain('"entryDone":false');
+    fireEvent.click(screen.getByText('Далее'));
+    fireEvent.click(screen.getByRole('checkbox'));
+    fireEvent.click(screen.getByText('Далее'));
+    fireEvent.click(screen.getByRole('checkbox'));
+    fireEvent.click(screen.getByText('Начать'));
+    await waitFor(() => expect(screen.getByTestId('today-section-state').textContent).toContain('"entryDone":true'));
+  });
+
   it('accepted: false, но экран входа сайта был показан — принимается без экрана', async () => {
     localStorage.setItem('login_consent_shown', '1');
     mockApi.getDisclaimer.mockResolvedValueOnce({ accepted: false });

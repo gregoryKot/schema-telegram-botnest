@@ -13,6 +13,7 @@ export function EmailLinkRow({
   email,
   busy,
   onUnlink,
+  unlinkBlocked,
   onError,
 }: {
   accessToken: string | null;
@@ -21,6 +22,7 @@ export function EmailLinkRow({
   email?: string | null;
   busy: boolean;
   onUnlink: () => void;
+  unlinkBlocked?: boolean;
   /** Ошибку показывает страница одним блоком на весь кабинет. */
   onError: (message: string | null) => void;
 }) {
@@ -69,6 +71,7 @@ export function EmailLinkRow({
         emptySubtitle="не привязан"
         subtitle={email ?? 'привязан'}
         onUnlink={onUnlink}
+        unlinkBlocked={unlinkBlocked}
         onLink={() => {
           setShowForm(true);
           setSent(false);

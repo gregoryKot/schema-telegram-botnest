@@ -2,9 +2,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 
 // Общая логика теста на схемы (116 утверждений, скоринг, персист прогресса и
 // результата, история прохождений) — парный файл для webapp и schema-miniapp
-// (правило №3). UI остаётся в каждом YSQTestSheet.tsx отдельно; api-клиент
-// приходит параметром хука — файл не импортирует ничего фронтенд-специфичного.
-// Вопросы/схемы/скоринг/шаринг — в соседних модулях (правило №10),
+// (правило №3); UI — в YSQTestSheet.tsx каждой площадки, api-клиент приходит
+// параметром. Вопросы/схемы/скоринг/шаринг — в соседних модулях (правило №10),
 // ре-экспортируются здесь, чтобы импорты потребителей не менялись.
 export * from './ysqQuestions';
 export * from './ysqSchemas';
@@ -14,15 +13,17 @@ export * from './ysqShareText';
 import { QUESTIONS, TOTAL_PAGES } from './ysqQuestions';
 import { computeScores, type Phase, type YsqHistoryEntry } from './ysqScoring';
 
-// Сами значения — в ysqStorageKeys.ts (см. его комментарий): импорт здесь
-// нужен для внутреннего использования хуком ниже, ре-экспорт — чтобы старые
-// потребители `from './useYsqTest'` не заметили переезда.
+// Ключи — в ysqStorageKeys.ts; ре-экспорт держит старые `from './useYsqTest'`.
 import { YSQ_RESULT_KEY, YSQ_PROGRESS_KEY } from './ysqStorageKeys';
 export { YSQ_RESULT_KEY, YSQ_PROGRESS_KEY };
-import { clearYsqProgress, writeYsqProgress } from './ysqProgressStore';
+import {
+  clearYsqProgress,
+  notifyYsqResultChanged,
+  writeYsqProgress,
+} from './ysqProgressStore';
+import { submitYsqResult } from './ysqSubmitResult';
 
-// Типы и сборка результата переехали в соседние модули (правило №10);
-// ре-экспорт держит прежний путь импорта у потребителей.
+// Типы и сборка результата — соседние модули; ре-экспорт держит старый путь.
 import type { UseYsqTestOptions } from './ysqTest.types';
 export type {
   YsqApi,
@@ -32,8 +33,7 @@ export type {
 } from './ysqTest.types';
 import { buildYsqResultView } from './buildYsqResultView';
 
-// Ответ выбран, но переход на следующий вопрос (или сабмит результата)
-// откладывается на длительность анимации выбора ответа в UI теста.
+// Переход к следующему вопросу (или сабмит) ждёт анимацию выбора ответа.
 const ANSWER_ADVANCE_DELAY = 160;
 
 export function useYsqTest({ api, autoResume }: UseYsqTestOptions) {
@@ -241,21 +241,14 @@ export function useYsqTest({ api, autoResume }: UseYsqTestOptions) {
         );
         // Локальный результат уже показан вне зависимости от ответа
         // сервера — resultSaveError показывает баннер с кнопкой повтора.
-        api
-          .saveYsqResult(newAnswers)
-          .then(() => {
-            setResultSaveError(false);
-            api
-              .getYsqHistory()
-              .then((h) => {
-                if (h) setHistory(h);
-              })
-              .catch((e) => console.error('getYsqHistory failed', e));
-            api
-              .deleteYsqProgress()
-              .catch((e) => console.error('deleteYsqProgress failed', e));
-          })
-          .catch(() => setResultSaveError(true));
+        submitResult(newAnswers, () =>
+          api
+            .getYsqHistory()
+            .then((h) => {
+              if (h) setHistory(h);
+            })
+            .catch((e) => console.error('getYsqHistory failed', e)),
+        );
         clearYsqProgress();
         setAnswers(newAnswers);
         setCompletedAt(dateStr);
@@ -264,18 +257,10 @@ export function useYsqTest({ api, autoResume }: UseYsqTestOptions) {
     }, ANSWER_ADVANCE_DELAY);
   };
 
+  const submitResult = (a: number[], onSaved?: () => unknown) =>
+    submitYsqResult(api, a, setResultSaveError, onSaved);
   // Повтор отправки после сбоя — локальные ответы уже верны.
-  const retrySaveResult = () => {
-    api
-      .saveYsqResult(answers)
-      .then(() => {
-        setResultSaveError(false);
-        api
-          .deleteYsqProgress()
-          .catch((e) => console.error('deleteYsqProgress failed', e));
-      })
-      .catch(() => setResultSaveError(true));
-  };
+  const retrySaveResult = () => submitResult(answers);
 
   const handleBack = () => {
     if (page > 0) {
@@ -293,7 +278,10 @@ export function useYsqTest({ api, autoResume }: UseYsqTestOptions) {
   const handleRetake = () => {
     localStorage.removeItem(YSQ_RESULT_KEY);
     clearYsqProgress();
-    api.deleteYsqResult().catch((e) => console.error('deleteYsqResult', e));
+    api
+      .deleteYsqResult()
+      .then(notifyYsqResultChanged)
+      .catch((e) => console.error('deleteYsqResult', e));
     api.deleteYsqProgress().catch((e) => console.error('deleteYsqProgress', e));
     setAnswers(Array(QUESTIONS.length).fill(0));
     setPage(0);

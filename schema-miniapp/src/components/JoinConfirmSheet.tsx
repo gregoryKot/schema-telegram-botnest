@@ -4,13 +4,9 @@ import { useTr } from '../utils/addressForm';
 import { logErr } from '../utils/logErr';
 import { useJoinConfirm } from '../../../shared/src/therapy/useJoinConfirm';
 import { useInvitePreview } from '../../../shared/src/therapy/useInvitePreview';
-import {
-  joinConfirmExplain,
-  joinConfirmTitle,
-} from '../../../shared/src/therapy/joinConfirmCopy';
+import { joinSheetView } from '../../../shared/src/therapy/joinSheetView';
 import {
   inviteFromLine,
-  inviteInvalidText,
   JOIN_DONE_TITLE,
   joinDoneText,
 } from '../../../shared/src/therapy/therapistLinkCopy';
@@ -74,7 +70,8 @@ export function JoinConfirmSheet({
   const isPair = joinKind === 'pair';
   const preview = useInvitePreview(api.previewTherapyInvite, joinCode, !isPair);
   const name = preview.state === 'ok' ? preview.therapistName : null;
-  const invalid = preview.state === 'invalid';
+  // Согласие — только когда присоединиться можно; иначе одна причина (М1).
+  const view = joinSheetView(isPair, preview, tr);
 
   const { busy, failMsg, confirm, done } = useJoinConfirm(
     isPair,
@@ -109,26 +106,29 @@ export function JoinConfirmSheet({
         ) : (
           <>
             {/* Заголовок и объяснение («откуда и зачем», честный объём) — shared, общие с сайтом. */}
-            <div style={titleStyle}>{joinConfirmTitle(isPair)}</div>
+            <div style={titleStyle}>{view.title}</div>
             {name && (
               <p style={{ ...textStyle, fontWeight: 600, marginBottom: 8 }}>
                 {inviteFromLine(name)}
               </p>
             )}
-            <p style={textStyle}>{joinConfirmExplain(isPair, tr)}</p>
-            {invalid && (
-              <p role="alert" style={errStyle}>
-                {inviteInvalidText(tr)}
+            {view.explain && <p style={textStyle}>{view.explain}</p>}
+            {view.notice && (
+              <p
+                role={view.notice.role}
+                style={view.notice.role === 'alert' ? errStyle : textStyle}
+              >
+                {view.notice.text}
               </p>
             )}
             {failMsg && <p style={errStyle}>{failMsg}</p>}
-            {!invalid && (
+            {view.canJoin && (
               <button onClick={confirm} disabled={busy} style={btn(true, busy)}>
                 {busy ? 'Присоединяю…' : 'Присоединиться'}
               </button>
             )}
             <button onClick={onClose} disabled={busy} style={btn(false, busy)}>
-              {invalid ? 'Закрыть' : 'Не сейчас'}
+              {view.closeLabel}
             </button>
           </>
         )}

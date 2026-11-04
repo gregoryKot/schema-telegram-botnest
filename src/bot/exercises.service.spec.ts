@@ -40,6 +40,18 @@ function makeDb() {
       findMany: jest.fn(({ where }: any) =>
         letters.filter((r) => r.userId === where.userId),
       ),
+      updateMany: jest.fn(({ where, data }: any) => {
+        const hit = letters.filter(
+          (r) => r.id === where.id && r.userId === where.userId,
+        );
+        hit.forEach((r) => Object.assign(r, data));
+        return { count: hit.length };
+      }),
+      findFirst: jest.fn(
+        ({ where }: any) =>
+          letters.find((r) => r.id === where.id && r.userId === where.userId) ??
+          null,
+      ),
       deleteMany: jest.fn(({ where }: any) => {
         const before = letters.length;
         const kept = letters.filter(
@@ -173,6 +185,38 @@ describe('ExercisesService — изоляция по userId на удалени�
     await svc.deleteLetter(1n, row.id);
 
     expect(await svc.getLetters(1n)).toHaveLength(0);
+  });
+
+  // QA 2026-11, З4: «Изменить» после «Запечатать» создавало второе письмо.
+  it('updateLetter правит то же письмо: сохранил → исправил → одно письмо с новым текстом', async () => {
+    const db = makeDb();
+    const svc = new ExercisesService(db);
+    const created = await svc.createLetter(1n, 'Первая версия письма');
+
+    const updated = await svc.updateLetter(
+      1n,
+      created.id,
+      'Исправленная версия письма',
+    );
+
+    expect(updated.id).toBe(created.id);
+    const rows = await svc.getLetters(1n);
+    expect(rows.map((r: any) => r.text)).toEqual([
+      'Исправленная версия письма',
+    ]);
+  });
+
+  it('updateLetter чужим userId — 404, письмо не тронуто', async () => {
+    const db = makeDb();
+    const svc = new ExercisesService(db);
+    const created = await svc.createLetter(1n, 'моё письмо');
+
+    await expect(svc.updateLetter(2n, created.id, 'чужое')).rejects.toThrow(
+      NotFoundException,
+    );
+
+    const [row] = await svc.getLetters(1n);
+    expect(row.text).toBe('моё письмо');
   });
 
   it('deleteFlashcard чужим userId не удаляет запись', async () => {

@@ -9,6 +9,8 @@ import { NEED_HUE, hueStyle } from '../lib/tone';
 import type { NeedId } from '../../../shared/src/needs/types';
 import '../styles/sheet-tasks.css';
 import { useTr } from '../utils/addressForm';
+import { plansEmptyText, plansSummary } from '../../../shared/src/practices/plansCopy';
+import { PlanNeedPicker } from './plans/PlanNeedPicker';
 
 interface Props {
   onClose: () => void;
@@ -58,7 +60,7 @@ export function PlansScreen({ onClose, onOpenTracker }: Props) {
             <div className="ds-eyebrow">Планы</div>
             <h1 className="ds-h2 sk-title">История<br /><em className="sk-it">планов</em></h1>
             {plans !== null && plans.length > 0 && (
-              <div className="ds-sub sk-lead">{pending.length} активных · {completed.length} завершённых</div>
+              <div className="ds-sub sk-lead">{plansSummary(pending.length, completed.length)}</div>
             )}
           </div>
           <button onClick={goBack} className="ds-btn ds-btn--secondary">Закрыть</button>
@@ -86,12 +88,8 @@ export function PlansScreen({ onClose, onOpenTracker }: Props) {
         ) : plans.length === 0 ? (
           <div className="sk-empty">
             <h2 className="ds-h2">Планов пока нет</h2>
-            <p className="ds-sub sk-empty-text">
-              {tr(
-                'Планы создаются в трекере — выбери потребность с низкой оценкой и нажми «Запланировать практику»',
-                'Планы создаются в трекере — выберите потребность с низкой оценкой и нажмите «Запланировать практику»',
-              )}
-            </p>
+            <p className="ds-sub sk-empty-text">{plansEmptyText(tr)}</p>
+            <PlanNeedPicker onPlanned={load} />
             {onOpenTracker && (
               <button onClick={() => goBack(onOpenTracker)} className="ds-link">
                 Открыть трекер →

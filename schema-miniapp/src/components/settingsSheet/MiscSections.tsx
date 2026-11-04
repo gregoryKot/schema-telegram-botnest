@@ -6,6 +6,7 @@ import { ShareCardSheet } from '../../share/ShareCardSheet';
 import { appInviteShare } from '../../../../shared/src/share/cards/inviteShare';
 import { useCopyToClipboard } from '../../../../shared/src/utils/useCopyToClipboard';
 import { useDataExport } from '../../../../shared/src/account/useDataExport';
+import { deleteAccountCopy } from '../../../../shared/src/account/accountDeletion';
 import { useTr } from '../../utils/addressForm';
 import { Row, SettingsLabel } from './ui';
 
@@ -185,7 +186,8 @@ export function DataSection({ onPrivacy, onDelete }: DataProps) {
           }
         />
         <Row
-          label="Удалить все данные"
+          label={deleteAccountCopy(tr).row}
+          sub={deleteAccountCopy(tr).rowSub}
           divider
           color="var(--accent-red)"
           onClick={onDelete}

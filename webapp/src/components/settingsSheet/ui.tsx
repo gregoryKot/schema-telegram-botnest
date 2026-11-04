@@ -80,6 +80,11 @@ export function InfoModal({ children, onClose }: { children: React.ReactNode; on
       >
         <div className="sheet-modal-handle" />
         {children}
+        {/* Закрыть можно было только кликом мимо или Escape — у «Сводки для
+            терапевта» и пояснений не было кнопки (QA 2026-11, М11). */}
+        <button type="button" className="ds-btn ds-btn--secondary st-block st-modal-close" onClick={onClose}>
+          Закрыть
+        </button>
       </div>
     </div>
   );

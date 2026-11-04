@@ -55,6 +55,61 @@ describe('e2e: дневник режимов — маркер fromCase', () => {
     expect(bySituation('обычная запись').fromCase).toBe(false);
   });
 
+  // QA 2026-11, К1: «Сохранить» в разборе переписывало портрет режима
+  // триггером и порывом одного момента. Разбор живёт записью дневника
+  // режимов (сегмент «Случаи»), а в карточку ложится только в пустые поля.
+  it('сохранил разбор → карточка режима не изменилась, разбор нашёлся', async () => {
+    const card = await agent().post('/api/mode-notes', {
+      modeId: 'detached_protector',
+      triggers: 'критика начальника, громкие ссоры',
+      behavior: 'Ухожу в сериалы на весь вечер',
+    });
+    expect(card.status).toBe(201);
+
+    const entry = await agent().post('/api/diary/mode', {
+      modeId: 'detached_protector',
+      situation: 'Подруга не ответила',
+      bodyFeelings: 'Страшно, тревожно',
+      actions: 'Свернуть разговор',
+      fromCase: true,
+    });
+    expect(entry.status).toBe(201);
+    const seed = await agent().post('/api/mode-notes', {
+      modeId: 'detached_protector',
+      triggers: 'Подруга не ответила',
+      feelings: 'Страшно, тревожно',
+      behavior: 'Свернуть разговор',
+      fillIfEmpty: ['triggers', 'feelings', 'behavior'],
+    });
+    expect(seed.status).toBe(201);
+
+    const notes = await agent().get('/api/mode-notes');
+    const note = notes.body.find(
+      (n: { modeId: string }) => n.modeId === 'detached_protector',
+    );
+    expect(note.triggers).toBe('критика начальника, громкие ссоры');
+    expect(note.behavior).toBe('Ухожу в сериалы на весь вечер');
+    expect(note.feelings).toBe('Страшно, тревожно');
+
+    const list = await agent().get('/api/diary/mode');
+    const saved = list.body.find(
+      (e: { situation: string }) => e.situation === 'Подруга не ответила',
+    );
+    expect(saved).toMatchObject({
+      modeId: 'detached_protector',
+      fromCase: true,
+    });
+  });
+
+  it('fillIfEmpty с полем не из карточки — 400', async () => {
+    const res = await agent().post('/api/mode-notes', {
+      modeId: 'detached_protector',
+      triggers: 'т',
+      fillIfEmpty: ['userId'],
+    });
+    expect(res.status).toBe(400);
+  });
+
   it('fromCase не булево — 400', async () => {
     const res = await agent().post('/api/diary/mode', {
       modeId: 'vulnerable_child',

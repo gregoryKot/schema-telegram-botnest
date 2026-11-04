@@ -33,6 +33,7 @@ function renderEx(form: 'ty' | 'vy' = 'ty') {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  localStorage.clear(); // черновик упражнения не должен переезжать в следующий тест
   mockApi.saveSafePlace.mockResolvedValue(undefined);
 });
 

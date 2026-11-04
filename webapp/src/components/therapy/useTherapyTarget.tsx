@@ -7,7 +7,7 @@ import { trackTherapyNudge } from './trackTherapyNudge';
 export interface TherapyTarget {
   /** Пользователь сам терапевт: мост ему не показываем. */
   hidden: boolean;
-  /** Терапевт подключён: внешняя ссылка на него; `onClick` пишет событие write. Иначе undefined. */
+  /** Терапевт подключён и до него есть канал: внешняя ссылка; `onClick` пишет событие write. Иначе undefined. */
   write?: { url: string; onClick: () => void };
   /** Терапевт не подключён: открыть лист «Поговорить с кем-то» (событие open). */
   open: () => void;
@@ -25,7 +25,7 @@ export function useTherapyTarget(place: TherapyNudgePlace, trigger?: TherapyNudg
   const contact = getTherapistContact();
   return {
     hidden: contact.isTherapist,
-    write: hasConnectedTherapist(contact)
+    write: hasConnectedTherapist(contact) && contact.url
       ? { url: contact.url, onClick: () => trackTherapyNudge(place, 'write', trigger) }
       : undefined,
     open: () => {

@@ -7,6 +7,7 @@ import { WheelSvg } from './WheelSvg';
 import { NeedExamples } from './NeedExamples';
 import type { NeedId } from '../../../../../shared/src/needs/types';
 import { previewRatings, unratedHint } from '../../../../../shared/src/childhoodWheel/useChildhoodDraft';
+import { exerciseCard } from '../../../../../shared/src/exercises/exerciseCatalog';
 
 /** Ввод оценок: пять ползунков с примерами, предпросмотр колеса, сохранение. Неоценённая потребность — «—», сохранить можно, когда выставлены все. */
 export function ChildhoodFill({
@@ -36,17 +37,20 @@ export function ChildhoodFill({
   return (
     <ExScreen
       onBack={onBack}
-      eyebrow="№ 06 · Истоки"
+      eyebrow={exerciseCard('wheel').eyebrow}
       title={title}
-      lede="Оцени пять базовых потребностей в детстве. Не отдельные моменты, а как было «в целом, большую часть времени» – там, где формировались схемы."
+      lede={tr(
+        'Оцени пять базовых потребностей в детстве. Не отдельные моменты, а как было «в целом, большую часть времени» – там, где формировались схемы.',
+        'Оцените пять базовых потребностей в детстве. Не отдельные моменты, а как было «в целом, большую часть времени» – там, где формировались схемы.',
+      )}
       aside={
         <>
           <div className="ds-card ds-card--warn ex2-note">
             <div className="ds-label">Внимание</div>
             <h3 className="ex2-note-h">Защитная идеализация</h3>
             <p className="ex2-note-body">
-              Психика прячет систематические паттерны и подсвечивает редкие хорошие моменты.
-              Оценивай не «как могло быть», а «как было обычно, в большинстве лет».
+              Психика прячет систематические паттерны и подсвечивает редкие хорошие моменты.{' '}
+              {tr('Оценивай не «как могло быть», а «как было обычно, в большинстве лет».', 'Оценивайте не «как могло быть», а «как было обычно, в большинстве лет».')}
             </p>
           </div>
           <div className="ds-card ex2-note">
@@ -76,7 +80,7 @@ export function ChildhoodFill({
           <div>
             <div className="ex2-cw-label">{n.label}</div>
             <div className="ex2-cw-q">{n.question}</div>
-            <CWTrack value={val(n.id)} onChange={(v) => onChange(n.id, v)} hue={NEED_HUE[n.id]} />
+            <CWTrack value={val(n.id)} onChange={(v) => onChange(n.id, v)} hue={NEED_HUE[n.id]} label={n.label} />
             <div className="ex2-cw-ends">
               <div className={'ex2-cw-end' + ((val(n.id) ?? 5) <= 4 ? ' is-low' : '')}>
                 <b>0 – дефицит. </b>

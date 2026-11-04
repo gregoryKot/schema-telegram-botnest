@@ -1,14 +1,14 @@
 // Вёрстка дыхания 4-4-6 для мини-аппа: тонированная карточка
 // с кругом и зелёной пилюлей. Логика — useBreathingSession.
-import { BREATH_PHASE_LABEL } from './breathing';
 import {
   BREATHE_IDLE_KEYFRAMES,
   type BreathingViewProps,
 } from './createBreathingCard';
 
 export function BreathingAppView({
-  tr,
   active,
+  finished,
+  text,
   st,
   pulse,
   start,
@@ -43,7 +43,7 @@ export function BreathingAppView({
         }}
       >
         <style>{BREATHE_IDLE_KEYFRAMES}</style>
-        {active ? st.secondsLeft : null}
+        {active ? st.secondsLeft : finished ? '✓' : null}
       </div>
       <div
         style={{
@@ -53,9 +53,7 @@ export function BreathingAppView({
           marginTop: 'var(--space-20)',
         }}
       >
-        {active
-          ? BREATH_PHASE_LABEL[st.phase]
-          : tr('Дыши со мной', 'Дышите со мной')}
+        {text.title}
       </div>
       <div
         style={{
@@ -65,15 +63,12 @@ export function BreathingAppView({
           lineHeight: 1.5,
         }}
       >
-        {active ? (
-          <>круг {st.cycle} · вдох 4 · задержка 4 · выдох 6</>
-        ) : (
-          <>
-            Вдох на 4 · задержка на 4 · выдох на 6.
-            <br />
-            Одна минута — и станет легче.
-          </>
-        )}
+        {text.lines.map((line, i) => (
+          <span key={i}>
+            {i > 0 && <br />}
+            {line}
+          </span>
+        ))}
       </div>
       <button
         onClick={active ? stop : start}
@@ -82,10 +77,11 @@ export function BreathingAppView({
           border: 'none',
           cursor: 'pointer',
           fontFamily: 'inherit',
-          background: active
-            ? 'rgba(var(--fg-rgb),0.08)'
-            : 'var(--accent-green)',
-          color: active ? 'var(--text-sub)' : 'var(--bg)',
+          background:
+            active || finished
+              ? 'rgba(var(--fg-rgb),0.08)'
+              : 'var(--accent-green)',
+          color: active || finished ? 'var(--text-sub)' : 'var(--bg)',
           fontSize: 14,
           fontWeight: 800,
           padding: '12px 28px',
@@ -93,7 +89,7 @@ export function BreathingAppView({
           minHeight: 44,
         }}
       >
-        {active ? 'Достаточно' : 'Начать дыхание'}
+        {text.action}
       </button>
     </div>
   );

@@ -18,7 +18,7 @@ import { useWhySheet } from './today/useWhySheet';
 import { trackHomeTile } from './today/trackHomeTile';
 import { homeGreeting } from './today/helpers';
 import { formatGreetingDate } from './today/greetingDate';
-import { buildTodayFeed, trackerSummary, trackerTileMeta, caseTileMeta, diaryTileMeta } from './today/todayFeed';
+import { buildTodayFeed, trackerSummary, trackerTileMeta, caseTileMeta, diaryTileMeta, diaryEntriesToday } from './today/todayFeed';
 import { QuickEntrySheet } from '../components/diary/QuickEntrySheet';
 import { TherapyNudgeCard } from '../components/therapy/TherapyNudgeCard';
 import { HomeTherapyLine } from './today/HomeTherapyLine';
@@ -79,7 +79,7 @@ export function TodaySection({
         ratings={ratings}
         trackerMeta={trackerTileMeta(tracker)}
         caseMeta={caseTileMeta(casesToday)}
-        diaryMeta={diaryTileMeta(diariesLoaded, feed.length, lastAt)}
+        diaryMeta={diaryTileMeta(diariesLoaded, diaryEntriesToday(feed), lastAt)}
         onTracker={() => { trackHomeTile('tracker'); onOpenTracker(); }}
         onCase={() => { trackHomeTile('case'); setCaseOpen(true); }}
         onDiary={() => { trackHomeTile('diary'); setQuickOpen(true); }}
@@ -132,14 +132,16 @@ export function TodaySection({
           onClose={() => setShowTaskCreate(false)}
         />
       )}
-      <TaskExerciseHost open={launcher.open} onBack={launcher.close} onComplete={launcher.complete} onOpenTracker={onOpenTracker} />
+      <TaskExerciseHost open={launcher.open} onBack={launcher.close} onComplete={launcher.complete} onOpenTracker={onOpenTracker} backLabel="Назад" />
       {showAllTasks && (
         <AllTasksOverlay
+          title="Все задания"
           tasks={tasks}
           taskHistory={taskHistory}
           onClose={() => setShowAllTasks(false)}
-          onTaskDone={id => completeTask(id, onTasksChanged)}
-          onAddTask={() => { setShowAllTasks(false); setShowTaskCreate(true); }}
+          onOpen={launcher.openTask}
+          onComplete={task => completeTask(task.id, onTasksChanged)}
+          onAdd={() => setShowTaskCreate(true)}
         />
       )}
     </div>

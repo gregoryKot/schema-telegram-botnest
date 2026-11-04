@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useTr } from '../utils/addressForm';
 import type { TherapyRelationInfo } from '../apiTypes';
 import { normalizeTherapyCode } from './inviteCode';
-import { joinTherapyErrorText } from './joinErrorText';
+import { codeJoinErrorText } from './joinErrorText';
 
 export interface CodeJoinApi {
   joinTherapy: (code: string) => Promise<unknown>;
@@ -42,19 +42,17 @@ export function useTherapyCodeJoin(
       setJoined(true);
       onJoined(rel);
     } catch (e) {
-      setError(
-        joinTherapyErrorText(e, tr) ??
-          tr(
-            'Код не подошёл. Проверь его или попроси у терапевта новый',
-            'Код не подошёл. Проверьте его или попросите у терапевта новый',
-          ),
-      );
+      setError(codeJoinErrorText(e, tr));
     } finally {
       setBusy(false);
     }
   }
 
-  return { code, setCode, error, busy, joined, submit };
+  // Пустой код (или одни пробелы — их срезает normalizeTherapyCode) —
+  // кнопке нечего отправлять: она недоступна, а не молчит (QA 2026-11, М6).
+  const canSubmit = code.length > 0 && !busy;
+
+  return { code, setCode, error, busy, joined, submit, canSubmit };
 }
 
 export type TherapyCodeJoin = ReturnType<typeof useTherapyCodeJoin>;

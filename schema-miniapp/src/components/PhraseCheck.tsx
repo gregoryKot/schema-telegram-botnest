@@ -65,10 +65,13 @@ export function PhraseCheck({ onClose, onComplete }: Props) {
       rewrite: rewrite.trim() || undefined,
       inWarmWords: inWarmWords && Boolean(rewrite.trim()),
     };
-    api.createPhraseCheck(body).catch((e) => {
-      console.error('createPhraseCheck failed', e);
-      setSaveError(true);
-    });
+    api
+      .createPhraseCheck(body)
+      .then(phraseCheck.clearDraft)
+      .catch((e) => {
+        console.error('createPhraseCheck failed', e);
+        setSaveError(true);
+      });
     setDone(true);
     onComplete?.();
   }

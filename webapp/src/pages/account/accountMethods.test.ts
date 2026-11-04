@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { accountInitials, countMethods } from './accountMethods';
+import { accountInitials, canUnlink, countMethods } from './accountMethods';
 import type { AccountProvider } from './ProviderRows';
 
 const p = (provider: AccountProvider['provider'], displayName: string | null = null, email: string | null = null): AccountProvider => ({ provider, displayName, email });
@@ -32,5 +32,16 @@ describe('accountInitials', () => {
   });
   it('имя в приоритете над email', () => {
     expect(accountInitials([p('google', null, 'a@b.c'), p('vk', 'Мария')])).toBe('М');
+  });
+});
+
+// QA 2026-11, М2: «Отвязать» у единственного способа входа была активна.
+describe('canUnlink', () => {
+  it('единственный способ — нельзя; есть второй — можно', () => {
+    expect(canUnlink([p('google')], 'google')).toBe(false);
+    expect(canUnlink([p('google'), p('email')], 'google')).toBe(true);
+  });
+  it('две строки одного провайдера — всё равно единственный способ (как на сервере)', () => {
+    expect(canUnlink([p('email'), p('email')], 'email')).toBe(false);
   });
 });

@@ -286,4 +286,31 @@ describe('DiarySection — удаление записи', () => {
     );
     await waitFor(() => expect(screen.queryByText('первая запись')).toBeNull());
   });
+
+  // QA клиента 2026-11, З2: сбой удаления глушился в консоль — человек не
+  // узнавал, что запись осталась. Теперь текст под кнопкой, запись на месте.
+  it('сбой удаления: текст ошибки, запись остаётся', async () => {
+    mockApi.getGratitudeDiary.mockResolvedValue([
+      {
+        id: 7,
+        date: '2026-08-01',
+        items: ['первая запись'],
+        createdAt: '2026-08-01T10:00:00.000Z',
+      },
+    ]);
+    mockApi.deleteGratitudeDiary.mockRejectedValue(
+      Object.assign(new Error('Internal server error'), { status: 500 }),
+    );
+    await renderLoaded();
+
+    fireEvent.click(screen.getByText('Дневник благодарности'));
+    fireEvent.click(await screen.findByText('первая запись'));
+    fireEvent.click(screen.getByText('Удалить'));
+    fireEvent.click(screen.getByText('Удалить навсегда'));
+
+    expect((await screen.findByRole('alert')).textContent).toMatch(
+      /Не удалось удалить — запись на месте/,
+    );
+    expect(screen.getByText('первая запись')).toBeTruthy();
+  });
 });

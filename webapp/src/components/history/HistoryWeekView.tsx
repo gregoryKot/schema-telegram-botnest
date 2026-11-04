@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import type { Need, DayHistory } from '../../types';
 import { SparklineRow } from './SparklineRow';
+import { weekWindow } from '../../../../shared/src/history/sparkline';
 
 interface Props {
   needs: Need[];
@@ -15,16 +16,16 @@ interface Props {
   onWeekCard: () => void;
 }
 
-/** Вид «Неделя»: линии потребностей за период + карточка недели. */
+/** Вид «Неделя»: линии потребностей за N дней до выбранного + карточка недели. */
 export function HistoryWeekView({ needs, history, days, selectedIdx, selectedRatings, needsLow, isTherapist, bookingLink, onTapNeed, onWeekCard }: Props) {
+  const weekDays = weekWindow(history, selectedIdx, days);
   return (
     <div className="sd-col">
       <div className="ds-label">За {days} дней</div>
       <div className="ds-card ds-card--flush">
         {needs.map(need => (
-          <SparklineRow key={need.id} need={need} history={history}
-            selectedIdx={selectedIdx} selectedRatings={selectedRatings}
-            onClick={() => onTapNeed(need)} />
+          <SparklineRow key={need.id} need={need} days={weekDays}
+            selectedRatings={selectedRatings} onClick={() => onTapNeed(need)} />
         ))}
       </div>
 

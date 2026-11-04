@@ -4,12 +4,12 @@ import '../styles/sheet-settings.css';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { api, type UserSettings } from '../api';
 import { Loader } from './Loader';
-import { useTimedFlag } from '../../../shared/src/hooks/useTimedFlag';
+import { useSaveBadge } from './settingsSheet/useSaveBadge';
 import { scrollIntoViewSafe } from '../../../shared/src/utils/scrollIntoView';
 import { useDialogA11y } from '../../../shared/src/utils/dialogA11y';
 import { ShareCardSheet } from '../share/ShareCardSheet';
 import { pairInviteShare } from '../../../shared/src/share/cards/inviteShare';
-import { TIMEZONES } from '../../../shared/src/settings/constants';
+import { timezoneLabel } from '../../../shared/src/settings/timezones';
 import { useSitePair } from './settingsSheet/useSitePair';
 import { useTherapyRelationSettings } from './settingsSheet/useTherapyRelationSettings';
 import { AppearanceSection } from './settingsSheet/AppearanceSection';
@@ -58,7 +58,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
   const therapy = useTherapyRelationSettings(userRole);
   const [pairShare, setPairShare] = useState<{ code: string; url: string } | null>(null);
   const pair = useSitePair(userRole, (code, url) => setPairShare({ code, url }));
-  const [savedToast, flashSaved] = useTimedFlag(1800); const [saveError, flashSaveError] = useTimedFlag(2400); // «Сохранено» раньше шло даже при отказе api
+  const { visible: badgeOn, outcome, flashSaved, flashError: flashSaveError } = useSaveBadge(); // «Сохранено» раньше шло даже при отказе api
   const [editName, setEditName] = useState(displayName ?? '');
 
   useEffect(() => {
@@ -84,6 +84,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
     ...(homeMode ? [{ id: 's-home', label: 'Значок на экране' }] : []),
     { id: 's-name', label: 'Имя' },
     { id: 's-notifications', label: 'Уведомления' },
+    { id: 's-address', label: 'Обращение' }, // раздел был, строки в оглавлении не было (QA 2026-11, М10)
     ...(!isTherapist ? [
       { id: 's-therapist', label: 'Мой терапевт' },
       { id: 's-specialist', label: 'Специалист' },
@@ -104,7 +105,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
     );
   }
 
-  const tzLabel = TIMEZONES.find(t => t.iana === settings.notifyTimezone)?.label ?? settings.notifyTimezone;
+  const tzLabel = timezoneLabel(settings.notifyTimezone);
 
   return (
     <>
@@ -116,8 +117,8 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
             ← {subView !== 'main' ? 'Назад' : 'Закрыть'}
           </button>
           <h2 className="ds-h2">{SUB_TITLES[subView]}</h2>
-          <span className={`ds-badge ${saveError ? 'st-toast is-err' : 'ds-badge--ok st-toast'}${savedToast || saveError ? ' is-on' : ''}`}>
-            {saveError ? 'Не сохранилось' : 'Сохранено ✓'}
+          <span className={`ds-badge ${outcome === 'err' ? 'st-toast is-err' : 'ds-badge--ok st-toast'}${badgeOn ? ' is-on' : ''}`}>
+            {outcome === 'err' ? 'Не сохранилось' : 'Сохранено ✓'}
           </span>
         </div>
 
@@ -145,7 +146,8 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                 <AppearanceSection userRole={userRole} onResignTherapist={onResignTherapist} onSaved={flashSaved} />
                 {homeMode && <HomeScreenSection mode={homeMode} />}
                 <NameSection value={editName} onChange={setEditName} displayName={displayName} onNameChanged={onNameChanged} onSaved={flashSaved} />
-                <NotificationsSection settings={settings} tzLabel={tzLabel} patch={patch} openSubView={setSubView} />
+                <NotificationsSection settings={settings} tzLabel={tzLabel} patch={patch} openSubView={setSubView}
+                  onOpenAccount={() => goBack(() => navigate('/account'))} />
                 <AddressSection settings={settings} patch={patch} />
                 {!isTherapist && <MyTherapistSection rel={therapy} settings={settings} patch={patch} />}
                 {!isTherapist && <BecomeTherapistSection />}

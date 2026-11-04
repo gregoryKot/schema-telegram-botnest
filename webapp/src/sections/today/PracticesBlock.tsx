@@ -19,7 +19,7 @@ interface Props {
   onAddGoal: () => void;
 }
 
-// Задания на сегодня: карточки-задачи; у заданий терапевта — метка «от терапевта».
+// Задания на сегодня: карточки-задачи; у заданий терапевта — метка «от терапевта»; счётчик — «1 активное» (род «задания»).
 // Тап открывает упражнение задания; у «Своего задания» вместо стрелки «Готово»
 // (QA 2026-10-26: тап по нему не делал ничего, и задание навсегда оставалось
 // «В работе», если всего заданий не больше пяти и ссылки «Все задания» нет).
@@ -35,7 +35,7 @@ export function PracticesBlock({ title, tasks, taskError, onStart, onComplete, o
     <section className="ct-section ct-block">
       <div className="ds-head-row">
         <h3 className="ds-h2">{title}</h3>
-        {activeCount > 0 && <span className="ds-sub">{activeCount} {pluralRu(activeCount, 'активная', 'активные', 'активных')}</span>}
+        {activeCount > 0 && <span className="ds-sub">{activeCount} {pluralRu(activeCount, 'активное', 'активных', 'активных')}</span>}
       </div>
       {taskError && (
         <div role="alert" className="ct-alert">
@@ -56,7 +56,7 @@ export function PracticesBlock({ title, tasks, taskError, onStart, onComplete, o
             className={'ds-card ds-card--row ct-task' + (openable ? ' ds-card--hover' : '') + (isDone ? ' is-done' : '')}
             {...(openable ? pressable(() => onStart(task)) : {})}
           >
-            <span className="ct-task-box" aria-hidden>{active ? '' : taskStatusMark(task.done)}</span>
+            <span className="ct-task-box" aria-hidden>{taskStatusMark(task.done)}</span>
             <div className="ct-task-body">
               <div className="ct-task-text">{resolveTaskDisplayText(task, 'compact')}</div>
               {task.assignedBy !== null && !isDone && <div className="ct-from-therapist">от терапевта</div>}

@@ -36,8 +36,8 @@ const DAYS_OPTIONS = [7, 14, 30];
 export function HistoryView({ needs, history, currentRatings, childhoodRatings = {}, onOpenSchemas, onOpenChildhoodWheel, days = 7, onChangeDays, onGoToToday, onBackfill }: Props) {
   const tr = useTr();
   const contact = getTherapistContact();
-  // Терапевту не предлагаем запись к самому себе (null); один элемент на оба блока.
-  const bookingLink = contact.isTherapist ? null : <ExternalLink href={contact.bookingUrl} className="ds-link">{BOOKING_CTA_LABEL}</ExternalLink>;
+  // Терапевту не предлагаем запись к самому себе, без канала связи — некуда (null); один элемент на оба блока.
+  const bookingLink = contact.isTherapist || !contact.bookingUrl ? null : <ExternalLink href={contact.bookingUrl} className="ds-link">{BOOKING_CTA_LABEL}</ExternalLink>;
   const [selectedIdx, setSelectedIdx] = useState(0);
   const [subView, setSubView] = useState<'day' | 'week'>('day');
   const dateBtnRefs = useRef<(HTMLButtonElement | null)[]>([]);

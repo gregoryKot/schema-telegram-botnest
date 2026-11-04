@@ -1,15 +1,13 @@
-import { Need, DayHistory, COLORS } from '../types';
+import { Need, DayHistory, NEED_COLORS } from '../types';
 import { SkeletonCard, SkeletonList } from './Skeleton';
 import { api, PracticePlan } from '../api';
 import { HistoryView } from './HistoryView';
 import { CheckInSheet } from './CheckInSheet';
 import { TrackerOverlay } from './TrackerOverlay';
 import { UseSheetsReturn } from '../hooks/useSheets';
-import {
-  TODAY_DATE,
-  YESTERDAY_DATE,
-  fillHistoryGaps,
-} from '../utils/todayConstants';
+import { fillHistoryGaps } from '../utils/todayConstants';
+import { useLocalDay } from '../../../shared/src/utils/useLocalDay';
+import { shiftCalendarDay } from '../../../shared/src/utils/calendarDate';
 
 function formatHeaderDate(): string {
   const now = new Date();
@@ -62,6 +60,8 @@ export function TrackerHistoryOverlay({
   backfillDate,
   setBackfillDate,
 }: Props) {
+  // День живой, а не с загрузки бандла: вкладка переживает полночь (QA 2026-11-03, К3).
+  const today = useLocalDay();
   const closeAndRate = () => {
     onClose();
     sheets.open('trackerOverlay', { trackerNeedId: null });
@@ -161,16 +161,16 @@ export function TrackerHistoryOverlay({
       {pendingPlans.length > 0 &&
         needs.length > 0 &&
         (() => {
-          const plan = pendingPlans.find((p) => p.scheduledDate < TODAY_DATE);
+          const plan = pendingPlans.find((p) => p.scheduledDate < today);
           if (!plan) return null;
           const need = needs.find((n) => n.id === plan.needId);
           if (!need) return null;
           return (
             <CheckInSheet
               plan={plan}
-              needColor={COLORS[need.id] ?? '#888'}
+              needColor={NEED_COLORS[need.id] ?? '#888'}
               needLabel={need.chartLabel}
-              color={COLORS[need.id] ?? '#888'}
+              color={NEED_COLORS[need.id] ?? '#888'}
               onDone={() =>
                 setPendingPlans((prev) => prev.filter((p) => p.id !== plan.id))
               }
@@ -185,7 +185,7 @@ export function TrackerHistoryOverlay({
           saved={{}}
           onChange={() => {}}
           onSaved={() => {}}
-          date={YESTERDAY_DATE}
+          date={shiftCalendarDay(today, -1)}
           onClose={() => {
             setShowYesterdaySheet(false);
           }}
@@ -194,7 +194,7 @@ export function TrackerHistoryOverlay({
             setHistoryLoading(true);
             void api
               .history(historyDays)
-              .then((h) => setHistory(fillHistoryGaps(h)))
+              .then((h) => setHistory(fillHistoryGaps(h, today)))
               .finally(() => setHistoryLoading(false));
           }}
         />
@@ -215,7 +215,7 @@ export function TrackerHistoryOverlay({
             setHistoryLoading(true);
             void api
               .history(historyDays)
-              .then((h) => setHistory(fillHistoryGaps(h)))
+              .then((h) => setHistory(fillHistoryGaps(h, today)))
               .finally(() => setHistoryLoading(false));
           }}
         />

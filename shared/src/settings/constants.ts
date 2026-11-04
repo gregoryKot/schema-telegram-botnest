@@ -1,19 +1,8 @@
-// Общие константы настроек уведомлений (таймзоны, часы, частота, тихие часы)
+// Общие константы настроек уведомлений (часы, частота, тихие часы)
 // — единый источник для webapp и miniapp (правило №3/№11). Раньше дублировались
 // инлайном в обоих SettingsSheet.
 
-export const TIMEZONES = [
-  { label: 'Лос-Анджелес (UTC−8)', iana: 'America/Los_Angeles' },
-  { label: 'Нью-Йорк (UTC−5)', iana: 'America/New_York' },
-  { label: 'Лондон (UTC+0)', iana: 'Europe/London' },
-  { label: 'Берлин (UTC+1)', iana: 'Europe/Berlin' },
-  { label: 'Киев / Израиль (UTC+2)', iana: 'Europe/Kyiv' },
-  { label: 'Москва (UTC+3)', iana: 'Europe/Moscow' },
-  { label: 'Дубай (UTC+4)', iana: 'Asia/Dubai' },
-  { label: 'Ташкент (UTC+5)', iana: 'Asia/Tashkent' },
-  { label: 'Алматы (UTC+6)', iana: 'Asia/Almaty' },
-  { label: 'Пекин (UTC+8)', iana: 'Asia/Shanghai' },
-];
+// Часовые пояса — shared/src/settings/timezones.ts (timezoneOptions/timezoneLabel).
 
 export const HOURS = [
   8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,

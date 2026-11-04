@@ -8,7 +8,7 @@ import { useTr } from '../utils/addressForm';
 import { AchievementDetail } from '../components/AchievementDetail';
 import { pressable } from '../utils/a11y';
 import '../styles/client-profile.css'; import '../styles/client-profile-mobile.css';
-import { DeleteAccountDialog } from './profile/DeleteAccountDialog';
+import { DeleteAccountDialog } from '../components/DeleteAccountDialog';
 import { ProfileHeader } from './profile/ProfileHeader';
 import { ProfileCounters } from './profile/ProfileCounters';
 import { StreakCard } from './profile/StreakCard';

@@ -11,9 +11,10 @@ const LAUNCH_KEYS = ['startapp', 'start_param'];
  * согласия). Неизвестное значение игнорируется. После разбора параметр
  * убирается из адреса, чтобы перезагрузка не открывала согласие второй раз.
  * Само действие выполняет `onAction`; присоединения к паре/терапевту он
- * обязан показывать экраном согласия (M1), а не исполнять.
+ * обязан показывать экраном согласия (M1), а не исполнять. `onHandled` — разбор
+ * закончен (с действием или без): очередь входов знает, что ссылка не придёт.
  */
-export function useStartParam(enabled: boolean, onAction: (a: StartAction) => void): void {
+export function useStartParam(enabled: boolean, onAction: (a: StartAction) => void, onHandled?: () => void): void {
   const done = useRef(false);
   const navigate = useNavigate();
   const location = useLocation();
@@ -32,6 +33,7 @@ export function useStartParam(enabled: boolean, onAction: (a: StartAction) => vo
       navigate({ pathname: location.pathname, search: search ? `?${search}` : '', hash: location.hash }, { replace: true });
     }
     if (action && action.kind !== 'diaries') onAction(action);
+    onHandled?.();
     // eslint-disable-next-line react-hooks/exhaustive-deps -- разбор намеренно одноразовый (done-ref): ни location, ни onAction не должны его перезапускать
   }, [enabled]);
 }

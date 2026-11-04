@@ -13,10 +13,28 @@ describe('useInvitePreview', () => {
       useInvitePreview(preview, 'CODE', true),
     );
     expect(result.current).toEqual({ state: 'loading' });
+    // Сервер без поля connection (старый ответ) — связи нет.
     await waitFor(() =>
-      expect(result.current).toEqual({ state: 'ok', therapistName: 'Анна' }),
+      expect(result.current).toEqual({
+        state: 'ok',
+        therapistName: 'Анна',
+        connection: 'none',
+      }),
     );
     expect(preview).toHaveBeenCalledWith('CODE');
+  });
+
+  // QA 2026-11, М1: связь клиента с терапевтом ссылки — до согласия.
+  it('connection с сервера доходит до экрана', async () => {
+    const preview = vi
+      .fn()
+      .mockResolvedValue({ therapistName: 'Анна', connection: 'other' });
+    const { result } = renderHook(() =>
+      useInvitePreview(preview, 'CODE', true),
+    );
+    await waitFor(() =>
+      expect(result.current).toMatchObject({ connection: 'other' }),
+    );
   });
 
   it('400 → invalid', async () => {

@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { BottomSheet } from './BottomSheet';
 import { SectionLabel } from './SectionLabel';
-import { YSQTestSheet, YSQ_RESULT_KEY, YSQ_PROGRESS_KEY } from './YSQTestSheet';
+import { YSQTestSheet } from './YSQTestSheet';
+import { useYsqLocalState } from '../../../shared/src/hooks/ysqProgressStore';
 import { TherapyNote } from './TherapyNote';
 import { SCHEMA_DOMAINS } from '../schemaTherapyData';
 import type { Tab } from './schemaInfoSheet/types';
@@ -9,6 +10,11 @@ import { NeedsTab } from './schemaInfoSheet/NeedsTab';
 import { SchemasTab } from './schemaInfoSheet/SchemasTab';
 import { ModesTab } from './schemaInfoSheet/ModesTab';
 import { useTr } from '../utils/addressForm';
+import { api } from '../api';
+import {
+  useYsqRequested,
+  ysqEntrySub,
+} from '../../../shared/src/tasks/ysqRequestMark';
 export { SCHEMA_DOMAINS };
 /* ─── Main Component ─── */
 export type SchemaInfoTab = 'needs' | 'schemas' | 'modes';
@@ -106,8 +112,8 @@ export function SchemaInfoSheet({
   const [contentInitialTab, setContentInitialTab] = useState<Tab>(
     initialTab ?? 'needs',
   );
-  const hasResult = !!localStorage.getItem(YSQ_RESULT_KEY);
-  const hasProgress = !!localStorage.getItem(YSQ_PROGRESS_KEY);
+  const { hasResult, hasProgress } = useYsqLocalState(); // живое под тестом
+  const ysqRequested = useYsqRequested(api.getTasks); // задание терапевта (К1)
 
   const [highlightSchema, setHighlightSchema] = useState<string | undefined>(
     initHighlight,
@@ -226,9 +232,7 @@ export function SchemaInfoSheet({
                     marginTop: 3,
                   }}
                 >
-                  {hasResult
-                    ? 'Посмотреть или пройти заново'
-                    : '116 вопросов · ~10 минут'}
+                  {ysqEntrySub({ hasResult, requested: ysqRequested })}
                 </div>
               </div>
               <span style={{ fontSize: 20, color: 'var(--accent)' }}>›</span>

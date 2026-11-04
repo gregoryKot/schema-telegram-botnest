@@ -1,5 +1,6 @@
 import { lazy, Suspense } from 'react';
 import { Loader } from '../../components/Loader';
+import { ExBackLabelContext, EX_BACK_DEFAULT } from '../../components/exercises/exBackLabel';
 import type { OpenExercise } from './useTaskLauncher';
 
 // Упражнения поверх экрана — один набор на «Сегодня» и «Практику» (раньше
@@ -15,15 +16,19 @@ const SafePlaceEx = lazy(() => import('../../components/exercises/SafePlaceEx').
 const WarmWordsEx = lazy(() => import('../../components/exercises/WarmWordsEx').then(m => ({ default: m.WarmWordsEx })));
 const PhraseCheckEx = lazy(() => import('../../components/exercises/PhraseCheckEx').then(m => ({ default: m.PhraseCheckEx })));
 const SchemaFlashcard = lazy(() => import('../../components/SchemaFlashcard').then(m => ({ default: m.SchemaFlashcard })));
+const YSQTestSheet = lazy(() => import('../../components/YSQTestSheet').then(m => ({ default: m.YSQTestSheet })));
 
-export function TaskExerciseHost({ open, onBack, onComplete, onOpenTracker }: {
+export function TaskExerciseHost({ open, onBack, onComplete, onOpenTracker, backLabel = EX_BACK_DEFAULT }: {
   open: OpenExercise | null;
   onBack: () => void;
   onComplete: () => void;
   onOpenTracker: () => void;
+  /** Подпись «Назад» в шапке упражнения: с «Сегодня» — просто «Назад» (QA 2026-11, A-М10). */
+  backLabel?: string;
 }) {
   if (!open) return null;
   return (
+    <ExBackLabelContext.Provider value={backLabel}>
     <Suspense fallback={<Loader minHeight="100dvh" />}>
       {open.ex === 'belief' && <BeliefCheckEx onBack={onBack} onComplete={onComplete} />}
       {open.ex === 'schema' && <SchemaEx onBack={onBack} initialSchemaId={open.id} onComplete={onComplete} />}
@@ -33,6 +38,8 @@ export function TaskExerciseHost({ open, onBack, onComplete, onOpenTracker }: {
       {open.ex === 'warm' && <WarmWordsEx onBack={onBack} />}
       {open.ex === 'phrase' && <PhraseCheckEx onBack={onBack} onComplete={onComplete} />}
       {open.ex === 'flashcard' && <SchemaFlashcard onClose={onBack} onOpenTracker={onOpenTracker} onComplete={onComplete} />}
+      {open.ex === 'ysq' && <YSQTestSheet onClose={onBack} autoResume />}
     </Suspense>
+    </ExBackLabelContext.Provider>
   );
 }

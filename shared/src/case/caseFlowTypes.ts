@@ -14,6 +14,16 @@
  */
 import type { CaseCriterionAnswers, CaseGateId } from './caseTypes';
 import type { ModeEntrySaveData } from '../mode/modeDiarySteps';
+import type { ModeNoteField } from '../notes/types';
+
+/** Поля, которые разбор пишет в карточку режима только в пустое место: один
+ *  момент дополняет портрет, а не переписывает его (QA 2026-11, К1). Имя части
+ *  (alias) дают явно на шаге «Как назовёшь» — оно обновляется как обычно. */
+export const CASE_CARD_FILL: ModeNoteField[] = [
+  'triggers',
+  'feelings',
+  'behavior',
+];
 
 /** Тело onSaveCard — карточка режима (UserModeNote, частичный апсерт). */
 export interface CaseCardBody {
@@ -22,6 +32,7 @@ export interface CaseCardBody {
   triggers?: string;
   feelings?: string;
   behavior?: string;
+  fillIfEmpty: ModeNoteField[];
 }
 
 /** Пропсы оркестратора потока — общая форма для CaseFlowSheet (miniapp) и

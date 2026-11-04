@@ -368,7 +368,7 @@ describe('TherapistClientSheet — вкладка «Схемы» (YSQ)', () => {
     await screen.findByText('Обзор');
 
     fireEvent.click(screen.getByText('Схемы'));
-    await screen.findByText('Клиент без Telegram – YSQ недоступен');
+    await screen.findByText('У офлайн-клиента нет аккаунта – тест пройти негде');
     expect(screen.queryByText('Запросить тест на схемы')).toBeNull();
   });
 });

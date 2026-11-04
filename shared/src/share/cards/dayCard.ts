@@ -2,7 +2,7 @@
 // Как weeklyCard, но значения — оценки за конкретный день, а не средние.
 // Общая копия для обоих фронтендов (правило №3). Чистый билдер текста
 // экспортируется для тестов.
-import { COLORS } from '../../types';
+import { NEED_COLORS } from '../../needs/needColors';
 import type { Need } from '../../types';
 import { drawNeedsRadarCard, type NeedsRadarRow } from './needsRadarCard';
 
@@ -64,7 +64,7 @@ export function dayRadarRows(
     return {
       emoji: n.emoji,
       label: n.chartLabel,
-      color: COLORS[n.id] ?? '#888',
+      color: NEED_COLORS[n.id] ?? '#888',
       value: val ?? null,
       valueText: val !== undefined ? String(val) : '—',
     };

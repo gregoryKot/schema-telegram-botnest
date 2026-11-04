@@ -5,6 +5,7 @@ import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { ModeEntrySheet } from './ModeEntrySheet';
 import { CRISIS_HOTLINE_DISPLAY } from '../../utils/crisisMarkers';
+import { healthyAdultHint } from '../../../../shared/src/mode/healthyAdultHints';
 
 vi.mock('../../api', () => ({
   api: { trackEvent: vi.fn() },
@@ -57,5 +58,18 @@ describe('ModeEntrySheet — поле связано с вопросом (В7)',
     const byLabel = screen.getByLabelText('Что произошло?');
     const byPlaceholder = screen.getByPlaceholderText('Например: позвонил папа, начал расспрашивать про работу — и я чувствую, что «выключаюсь».');
     expect(byLabel).toBe(byPlaceholder);
+  });
+});
+
+// QA 2026-11, М5: пример Здорового Взрослого показывался в двойных кавычках
+// ««Мне сейчас больно…»» — экран добавлял свои «» к тексту карточки.
+describe('ModeEntrySheet — пример Здорового Взрослого', () => {
+  it('одна пара кавычек: текст карточки как есть', () => {
+    renderSheetOnFormStep();
+    const ticks = screen.getAllByRole('button', { name: /^Шаг \d+$/ });
+    fireEvent.click(ticks[ticks.length - 1]);
+    const example = screen.getByText(/^«Мне сейчас больно/);
+    expect(example.textContent).toBe(healthyAdultHint('vulnerable_child'));
+    expect(example.textContent).not.toMatch(/««|»»/);
   });
 });

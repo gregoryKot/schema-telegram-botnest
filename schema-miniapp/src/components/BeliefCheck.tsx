@@ -11,8 +11,11 @@ import { cm } from '../sections/schemas/utils';
 import { BeliefEntry, fmtDate, loadLocal } from './beliefCheck/storage';
 import { BeliefDoneScreen } from './beliefCheck/DoneScreen';
 import { useSaveBeliefCheck } from './beliefCheck/useSaveBeliefCheck';
+import { useBeliefCheckForm } from '../../../shared/src/beliefCheck/useBeliefCheckForm';
 
-type Step = 'belief' | 'for' | 'against' | 'reframe' | 'done';
+// Шаги мастера по порядку; номер шага хранит общий черновик (useBeliefCheckForm).
+const STEP_ORDER = ['belief', 'for', 'against', 'reframe'] as const;
+type Step = (typeof STEP_ORDER)[number] | 'done';
 
 interface Props {
   onClose: () => void;
@@ -21,17 +24,19 @@ interface Props {
 
 export function BeliefCheck({ onClose, onComplete }: Props) {
   const tr = useTr();
-  const [step, setStep] = useState<Step>('belief');
-  const [belief, setBelief] = useState('');
-  const [forInput, setForInput] = useState('');
-  const [forList, setForList] = useState<string[]>([]);
-  const [againstInput, setAgainstInput] = useState('');
-  const [againstList, setAgainstList] = useState<string[]>([]);
-  const [reframe, setReframe] = useState('');
-  const { saving, saveError, save } = useSaveBeliefCheck(
-    () => setStep('done'),
-    onComplete,
-  );
+  // Текст и шаг — в черновике: F5 и «Назад» не стирают разбор (QA 2026-11).
+  const form = useBeliefCheckForm();
+  const { belief, setBelief, forList, setForList, reframe, setReframe } = form;
+  const { againstList, setAgainstList, forInput, setForInput } = form;
+  const { againstInput, setAgainstInput, addFor, addAgainst } = form;
+  const [done, setDone] = useState(false);
+  const step: Step = done ? 'done' : STEP_ORDER[form.step];
+  const setStep = (s: Exclude<Step, 'done'>) =>
+    form.setStep(STEP_ORDER.indexOf(s));
+  const { saving, saveError, save } = useSaveBeliefCheck(() => {
+    form.clearDraft();
+    setDone(true);
+  }, onComplete);
   const [history, setHistory] = useState<BeliefEntry[]>(() =>
     loadLocal().slice(0, 3),
   );
@@ -54,20 +59,6 @@ export function BeliefCheck({ onClose, onComplete }: Props) {
       .catch((e) => console.error('getBeliefChecks failed', e));
   }, []);
 
-  function addFor() {
-    const v = forInput.trim();
-    if (!v) return;
-    setForList((l) => [...l, v]);
-    setForInput('');
-  }
-
-  function addAgainst() {
-    const v = againstInput.trim();
-    if (!v) return;
-    setAgainstList((l) => [...l, v]);
-    setAgainstInput('');
-  }
-
   function handleSave() {
     void save({ belief, forList, againstList, reframe });
   }
@@ -84,8 +75,7 @@ export function BeliefCheck({ onClose, onComplete }: Props) {
     );
   }
 
-  const STEP_ORDER: Step[] = ['belief', 'for', 'against', 'reframe'];
-  const stepIndex = STEP_ORDER.indexOf(step);
+  const stepIndex = form.step;
   const STEP_LABELS = ['Убеждение', 'За', 'Против', 'Переформулировка'];
 
   return (

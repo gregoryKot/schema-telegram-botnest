@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 
 // Стек открытых диалогов: один на Tab-трап и Escape (useDialogA11y).
 // Два слоя с собственными слушателями дрались: Escape звал onClose у каждого
@@ -21,6 +21,9 @@ export interface LayerOpts {
 
 let layers: Layer[] = [];
 let counter = 0;
+// Подписчики «открыт ли хоть один диалог» (useAnyDialogOpen).
+const listeners = new Set<() => void>();
+const emit = () => listeners.forEach((l) => l());
 
 function onKeyDown(e: KeyboardEvent) {
   if (e.key !== 'Escape') return;
@@ -35,12 +38,30 @@ function onKeyDown(e: KeyboardEvent) {
 function pushLayer(layer: Layer) {
   if (layers.length === 0) window.addEventListener('keydown', onKeyDown, true);
   layers = [...layers, layer].sort((a, b) => a.seq - b.seq);
+  emit();
 }
 
 function removeLayer(layer: Layer) {
   layers = layers.filter((l) => l !== layer);
   if (layers.length === 0)
     window.removeEventListener('keydown', onKeyDown, true);
+  emit();
+}
+
+const subscribe = (cb: () => void) => {
+  listeners.add(cb);
+  return () => {
+    listeners.delete(cb);
+  };
+};
+
+/** Открыт ли хоть один модальный диалог: уведомления (баннер куки) ждут под ним, а не лежат поверх (QA 2026-11). */
+export function useAnyDialogOpen(): boolean {
+  return useSyncExternalStore(
+    subscribe,
+    () => layers.length > 0,
+    () => false,
+  );
 }
 
 // Слой диалога: join() вызывают из эффекта монтирования (возвращает отписку),

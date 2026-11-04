@@ -7,6 +7,7 @@ import {
   inviteFromLine,
   inviteInvalidText,
   joinDoneText,
+  therapistSectionHint,
   leaveTherapyCopy,
   SHARE_CARDS_TOGGLE,
   SHARE_PROFILE_TOGGLE,
@@ -69,6 +70,15 @@ describe('joinDoneText', () => {
     }
   });
 
+  // QA 2026-11, М7: в самом разделе «Мой терапевт» — не «в настройках».
+  it('в настройках — «тумблерами ниже», а не «в настройках»', () => {
+    for (const tr of [ty, vy]) {
+      const t = joinDoneText('Анна', tr, true);
+      expect(t).toMatch(/тумблерами ниже/);
+      expect(t).not.toMatch(/в настройках/);
+    }
+  });
+
   it('без имени — просто «Терапевт»', () => {
     expect(joinDoneText(null, ty)).toMatch(/^Терапевт видит/);
   });
@@ -118,5 +128,15 @@ describe('INVITE_CODE_HINT', () => {
   it('называет реальный путь в приложении', () => {
     expect(INVITE_CODE_HINT).toMatch(/Профиль → Настройки → «Мой терапевт»/);
     expect(INVITE_CODE_HINT).toMatch(/вкладка «Я»/);
+  });
+});
+
+// QA 2026-11, М7: «Остальное — на твоё усмотрение» спорило с «открыто по
+// умолчанию» ниже.
+describe('therapistSectionHint', () => {
+  it('говорит, что открыто по умолчанию и где закрыть', () => {
+    expect(therapistSectionHint(true)).toMatch(/по умолчанию.*тумблерами ниже/);
+    expect(therapistSectionHint(false)).toMatch(/после подключения/);
+    expect(therapistSectionHint(true)).not.toMatch(/усмотрение/);
   });
 });

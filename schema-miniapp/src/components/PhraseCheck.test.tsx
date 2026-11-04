@@ -83,6 +83,7 @@ function answerAllCritic(rewrite: string) {
 }
 
 beforeEach(() => {
+  localStorage.clear(); // черновик разбора не должен переезжать в следующий тест
   vi.mocked(api.getPhraseChecks).mockResolvedValue([]);
   vi.mocked(api.createPhraseCheck).mockResolvedValue(undefined);
 });

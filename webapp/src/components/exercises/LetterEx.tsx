@@ -7,6 +7,10 @@ import { fmtAgo } from '../../utils/format';
 import { detectCrisisAny } from '../../utils/crisisMarkers';
 import { CrisisCard } from '../CrisisCard';
 import { hueStyle, NEED_HUE } from '../../lib/tone';
+import { wordsLabel } from './letterWords';
+import { EXERCISE_DRAFT_KEYS } from '../../utils/drafts';
+import { restoreDraft, useDraftAutosave } from '../../../../shared/src/utils/useDraftAutosave';
+import { exerciseCard } from '../../../../shared/src/exercises/exerciseCatalog';
 
 export function LetterEx({
   onBack,
@@ -17,12 +21,15 @@ export function LetterEx({
 }) {
   const tr = useTr();
   const goBack = useHistorySheet(onBack);
-  const [text, setText] = useState('');
+  const [text, setText] = useState(() => restoreDraft<{ text: string }>(EXERCISE_DRAFT_KEYS.letter)?.text ?? '');
   const [done, setDone] = useState(false);
   const [sealing, setSealing] = useState(false);
   const [sealError, setSealError] = useState(false);
+  // id запечатанного письма: «Изменить» → «Запечатать» правит его, а не пишет второе.
+  const [sealedId, setSealedId] = useState<number | null>(null);
   const [pastLetters, setPastLetters] = useState<Awaited<ReturnType<typeof api.getLetters>>>([]);
   const textRef = useRef<HTMLTextAreaElement>(null);
+  const clearDraft = useDraftAutosave(EXERCISE_DRAFT_KEYS.letter, { text });
 
   useEffect(() => {
     if (!done) textRef.current?.focus();
@@ -32,7 +39,7 @@ export function LetterEx({
     if (done)
       api
         .getLetters()
-        .then((l) => setPastLetters(l.slice(0, 3)))
+        .then(setPastLetters)
         .catch(() => {});
   }, [done]);
 
@@ -45,8 +52,11 @@ export function LetterEx({
     setSealing(true);
     setSealError(false);
     try {
-      await api.createLetter(text);
-      onComplete?.();
+      if (sealedId === null) {
+        setSealedId((await api.createLetter(text)).id);
+        onComplete?.();
+      } else await api.updateLetter(sealedId, text);
+      clearDraft();
       setDone(true);
     } catch {
       setSealError(true);
@@ -56,7 +66,7 @@ export function LetterEx({
   }
 
   if (done) {
-    const others = pastLetters.filter((l) => l.text !== text);
+    const others = pastLetters.filter((l) => l.id !== sealedId);
     return (
       <ExScreen
         onBack={goBack}
@@ -68,12 +78,12 @@ export function LetterEx({
             <span className="it">написано.</span>
           </>
         }
-        lede={tr('Письмо — тоже работа, и порой самая важная. Вернись к нему через неделю и перечитай вслух.', 'Письмо — тоже работа, и порой самая важная. Вернитесь к нему через неделю и перечитайте вслух.')}
+        lede={tr('Письмо — тоже работа, и порой самая важная. Оно лежит в разделе «Мой путь»: вернись к нему через неделю и перечитай вслух.', 'Письмо — тоже работа, и порой самая важная. Оно лежит в разделе «Мой путь»: вернитесь к нему через неделю и перечитайте вслух.')}
         aside={
           others.length > 0 ? (
             <div className="ds-card ex2-note">
               <div className="ds-label">
-                Прошлые письма · {pastLetters.length}
+                Прошлые письма · {others.length}
               </div>
               {others.slice(0, 2).map((l, i) => (
                 <div key={i} className="ex2-hist-row">
@@ -98,7 +108,7 @@ export function LetterEx({
                 year: 'numeric',
               })}
             </span>
-            <span>{text.split(/\s+/).filter(Boolean).length} слов</span>
+            <span>{wordsLabel(text)}</span>
           </div>
         </div>
         <div className="ex2-foot">
@@ -120,7 +130,7 @@ export function LetterEx({
   return (
     <ExScreen
       onBack={goBack}
-      eyebrow="№ 04 · Эмоциональная работа"
+      eyebrow={exerciseCard('letter').eyebrow}
       title={
         <>
           Письмо
@@ -139,12 +149,7 @@ export function LetterEx({
             <h3 className="ex2-note-h">Три вопроса перед тем как писать</h3>
             <ul className="ex2-note-list">
               <li>Какой момент из детства – самый трудный?</li>
-              <li>
-                {tr(
-                  'Какие были чувства тогда? Чего не хватало?',
-                  'Какие были чувства тогда? Чего не хватало?',
-                )}
-              </li>
+              <li>Какие были чувства тогда? Чего не хватало?</li>
               <li>Что он должен был услышать – но не услышал?</li>
             </ul>
           </div>
@@ -168,8 +173,8 @@ export function LetterEx({
         />
       </div>
       <div className="ex2-meta">
-        <span>Сохраняется в дневнике</span>
-        <span>{text.split(/\s+/).filter(Boolean).length} слов</span>
+        <span>Письма хранятся в разделе «Мой путь»</span>
+        <span>{wordsLabel(text)}</span>
       </div>
       {detectCrisisAny(text) && <CrisisCard surface="letter" />}
       {sealError && (

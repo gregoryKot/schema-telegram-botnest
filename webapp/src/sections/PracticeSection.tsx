@@ -18,7 +18,7 @@ import { PhoneHelpRows } from './practice/PhoneHelpRows';
 import { useIsMobile } from '../components/useIsMobile';
 import { ExerciseLibrary } from './practice/ExerciseLibrary';
 import { TaskRow } from './practice/TaskRow';
-import { AllGoalsOverlay } from './practice/AllGoalsOverlay';
+import { AllTasksOverlay } from './today/AllTasksOverlay';
 import { useExerciseStats } from './practice/useExerciseStats';
 import { useCatalogCounts } from './practice/catalogCounts';
 import { usePracticeTools } from './practice/usePracticeTools';
@@ -60,13 +60,10 @@ export function PracticeSection({ onOpenChildhoodWheel, onOpenPractices, onOpenP
     goalsCount: tasks.filter(t => t.assignedBy === null).length, catalog, childhoodDone, onOpenPractices, onOpenPlans,
   });
 
-  // Detect openSchemaEx state from navigation
+  // Detect openSchemaEx state from navigation. «Мне плохо» топбара сюда больше
+  // не ведёт — карточка открывается поверх текущего раздела (AppOverlays).
   useEffect(() => {
-    const state = location.state as { openSchemaEx?: string; openFlashcard?: boolean } | null;
-    if (state?.openFlashcard === true) {
-      openFlashcard();
-      window.history.replaceState({}, '', '/practice');
-    }
+    const state = location.state as { openSchemaEx?: string } | null;
     if (state?.openSchemaEx) {
       launcher.openExercise({ ex: 'schema', id: state.openSchemaEx });
       window.history.replaceState({}, '', '/practice');
@@ -192,13 +189,14 @@ export function PracticeSection({ onOpenChildhoodWheel, onOpenPractices, onOpenP
         />
       )}
       {showAllGoals && (
-        <AllGoalsOverlay
+        <AllTasksOverlay
+          title="Все цели"
           tasks={tasks}
           taskHistory={taskHistory}
           onClose={() => setShowAllGoals(false)}
-          onOpen={t => { setShowAllGoals(false); launcher.openTask(t); }}
+          onOpen={launcher.openTask}
           onComplete={t => completeTask(t.id, onTasksChanged)}
-          onAdd={() => { setShowAllGoals(false); setShowTaskCreate(true); }}
+          onAdd={() => setShowTaskCreate(true)}
         />
       )}
     </div>

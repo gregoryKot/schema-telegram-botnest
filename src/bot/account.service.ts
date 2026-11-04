@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { VALID_TIMEZONES } from '../telegram/telegram.constants';
+import { isNotifyTimezone } from '../notification/notify-timezones';
+import { adoptDeviceTimezone } from './device-timezone';
 import { canonicalUserId, telegramIdsFor } from '../auth/telegram-identity';
 import { WEB_USER_ID_MIN, isTelegramUserId } from '../auth/user-id-range';
 import { deleteAllUserData } from './account.delete';
@@ -53,9 +54,14 @@ export class AccountService {
 
   constructor(private readonly prisma: PrismaService) {}
 
-  async registerUser(userId: bigint, firstName?: string, timezone?: string) {
-    const validTz =
-      typeof timezone === 'string' && VALID_TIMEZONES.includes(timezone);
+  // `timezone` — пояс устройства (/api/init): см. device-timezone.ts. true —
+  // пояс уже существующего юзера сменился, напоминание надо перепланировать.
+  async registerUser(
+    userId: bigint,
+    firstName?: string,
+    timezone?: string,
+  ): Promise<boolean> {
+    const validTz = isNotifyTimezone(timezone);
     await this.prisma.user.upsert({
       where: { id: userId },
       update: {
@@ -69,6 +75,7 @@ export class AccountService {
         ...(validTz ? { notifyTimezone: timezone } : {}),
       },
     });
+    return validTz ? adoptDeviceTimezone(this.prisma, userId, timezone) : false;
   }
 
   async getUserFirstName(userId: bigint): Promise<string | null> {
@@ -207,6 +214,17 @@ export class AccountService {
         },
       ]),
     );
+  }
+
+  /**
+   * Доходят ли до человека уведомления: тот же адрес, по которому их шлёт
+   * очередь (getSendSettingsFor → chatId). QA 2026-11 (З5): веб-клиент без
+   * Telegram видел включённые тумблеры, а очередь снимала его уведомления
+   * как «доставить некому».
+   */
+  async isNotifyReachable(userId: bigint): Promise<boolean> {
+    const s = await this.getSendSettingsFor([userId]);
+    return (s.get(userId.toString())?.chatId ?? null) !== null;
   }
 
   /**

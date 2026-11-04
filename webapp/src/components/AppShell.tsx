@@ -1,6 +1,5 @@
 import { lazy, Suspense, useEffect, useState, useCallback, useRef, useMemo } from 'react';
-import { useLocation, useNavigate, useParams, NavLink } from 'react-router-dom';
-import { useAuth } from '../auth/authContext';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useTr } from '../utils/addressForm';
 import { api } from '../api';
 import type { DayHistory } from '../types';
@@ -8,16 +7,17 @@ import { applyCabinetLightTheme } from '../utils/theme';
 import { syncMotionAttr } from '../utils/reducedMotion';
 import { shouldShowChildhoodWheel, THERAPIST_MODE_KEY } from '../utils/storageKeys';
 import { CommandPalette } from './CommandPalette';
-import { Loader } from './Loader';
-import { useBootstrapLoad, TODAY_DATE, TODAY_KEY } from './appShell/useBootstrapLoad';
+import { useBootstrapLoad } from './appShell/useBootstrapLoad';
+import { celebratedKey } from '../../../shared/src/utils/todayConstants';
 import { useOverlays } from './appShell/useOverlays';
 import { AppOverlays } from './appShell/AppOverlays';
 import { EntryFlows } from './appShell/EntryFlows';
+import { EntryFlowsDoneContext } from './appShell/entryQueue';
 import { AppSections } from './appShell/AppSections';
+import { AppShellSkeleton } from './appShell/AppShellSkeleton';
+import { Sidebar } from './appShell/Sidebar';
 import { type Section, sectionFromPath, fillHistoryGaps } from './appShell/navigation';
 import { MobileNav } from './appShell/MobileNav';
-import { ModeSwitch } from './appShell/ModeSwitch';
-import { SidebarClients } from './appShell/SidebarClients';
 import { QuickActions } from './quickActions/QuickActions';
 import { useDesktopAppLaunch } from '../hooks/useDesktopAppLaunch';
 import { useHostShell } from '../hooks/useHostShell';
@@ -28,7 +28,7 @@ import { OfflineBanner } from './OfflineBanner';
 import { Celebration } from './Celebration';
 import { todayInsightPhrase } from '../utils/todayInsight';
 import { DonateNudge } from './DonateNudge';
-import { SECTION_HUE, hueStyle } from '../lib/tone';
+import { hueStyle } from '../lib/tone';
 
 // – lazy: heavy overlays –
 // SettingsSheet/PracticesScreen/PlansScreen/SchemaInfoSheet/ChildhoodWheelEx/
@@ -54,7 +54,6 @@ const NAV_ITEMS: { id: Section; label: string }[] = [
 ];
 
 export function AppShell() {
-  const { logout } = useAuth();
   // Запуск установленного приложения на компьютере приходит сюда (?from=app).
   useDesktopAppLaunch();
   useHostShell();
@@ -104,6 +103,7 @@ export function AppShell() {
     pendingPlans, setPendingPlans,
     childhoodRatings, setChildhoodRatings,
     therapistClients, setTherapistClients,
+    todayDate,
   } = useBootstrapLoad({ navigate, initialPathname: location.pathname });
 
   const [history, setHistory] = useState<DayHistory[]>([]);
@@ -115,6 +115,7 @@ export function AppShell() {
   const [childhoodWheelPending, setChildhoodWheelPending] = useState(false);
   const [todayRefreshKey, setTodayRefreshKey] = useState(0);
   const [profileRefreshKey, setProfileRefreshKey] = useState(0);
+  const [entryDone, setEntryDone] = useState(false);
 
   // Overlay state (флаги видимости и их сеттеры — appShell/useOverlays.ts)
   const ov = useOverlays();
@@ -189,14 +190,16 @@ export function AppShell() {
 
   const handleSaved = useCallback((needId: string, streak?: StreakData) => {
     setSaved(prev => ({ ...prev, [needId]: true }));
-    if (streak && !localStorage.getItem(TODAY_KEY)) {
-      localStorage.setItem(TODAY_KEY, '1');
+    // День праздника — живой день устройства (todayDate сменяется в полночь), а не день загрузки бандла.
+    const key = celebratedKey(todayDate);
+    if (streak && !localStorage.getItem(key)) {
+      localStorage.setItem(key, '1');
       if (streak.currentStreak > 0) setCelebrationStreak(streak.currentStreak);
       else ov.setShowTodayNote(true);
       if (streak.totalDays >= 5 && shouldShowChildhoodWheel()) setChildhoodWheelPending(true);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- ov.setShowTodayNote стабильный сеттер useState; ov как объект не нужен в deps
-  }, [setSaved]);
+  }, [setSaved, todayDate]);
 
   // Сиблинги контейнера секций ниже (Tracker/History/Diaries/Celebration/
   // AppOverlays) — `inert` на контейнере прячет фон от таба/скринридера,
@@ -204,11 +207,9 @@ export function AppShell() {
   const anyOverlayOpen = ov.showTrackerOverlay || ov.showTracker || ov.showDiaries
     || ov.showSchemaInfo || ov.showSettings || ov.showPractices || ov.showPlans
     || ov.showChildhoodWheel || ov.showTodayNote
-    || ov.showTherapistDisclaimer || ov.quickAction !== null || celebrationStreak !== null;
+    || ov.showTherapistDisclaimer || ov.showSosCard || ov.quickAction !== null || celebrationStreak !== null;
 
-  if (loading) {
-    return <Loader minHeight="100vh" />;
-  }
+  if (loading) return <AppShellSkeleton section={section} therapistMode={therapistMode} />;
 
   if (error) {
     return (
@@ -224,84 +225,18 @@ export function AppShell() {
 
   return (
     <div className="app-shell light-lock">
-      {/* ── Sidebar ──────────────────────────────────────────────────────────── */}
-      <aside className="sidebar">
-        <div className="sb-brand">
-          <div className="sb-logo">В</div>
-          <div className="sb-name">Всё по схеме</div>
-        </div>
-
-        {userRole === 'THERAPIST' && (
-          <ModeSwitch variant="sidebar" value={therapistMode} onChange={(on) => switchTherapistMode(on)} />
-        )}
-
-        <nav className="sb-nav">
-          {!therapistMode && NAV_ITEMS.map(item => (
-            <NavLink key={item.id} to={'/' + item.id}
-                     className={({ isActive }) => `sb-item${isActive ? ' is-active' : ''}`}>
-              <span className="sb-dot" style={hueStyle(SECTION_HUE[item.id])} />{item.label}
-            </NavLink>
-          ))}
-          {therapistMode && (<>
-            <NavLink to="/cabinet/today"
-                     className={({ isActive }) => `sb-item${isActive ? ' is-active' : ''}`}>
-              <span>Сегодня</span>
-            </NavLink>
-            <NavLink to="/cabinet" end
-                     className={({ isActive }) => `sb-item${isActive ? ' is-active' : ''}`}>
-              <span>Все клиенты</span><span className="badge">{therapistClients.length || ''}</span>
-            </NavLink>
-            {/* Клиенты — порядок, поиск и инициалы как в «Все клиенты» (appShell/SidebarClients). */}
-            <SidebarClients clients={therapistClients} />
-          </>)}
-        </nav>
-
-        <div className="sb-foot-wrap">
-          {/* Today's index widget — fills the empty space and gives at-a-glance status */}
-          {!therapistMode && (() => {
-            const vals = Object.values(ratings);
-            const allFilled = needs.length > 0 && vals.length >= needs.length;
-            const idx = allFilled ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
-            return (
-              <div className="sb-today">
-                <div className="sb-today-label">Сегодня</div>
-                {idx !== null ? (
-                  <>
-                    <div className="sb-today-index">
-                      <span className="sb-today-num">{idx.toFixed(1)}</span>
-                      <span className="sb-today-denom">/10</span>
-                    </div>
-                    <div className="sb-today-sub">индекс дня</div>
-                  </>
-                ) : (
-                  <button className="sb-today-cta"
-                          onClick={() => { ov.setTrackerNeedId(null); ov.setShowTrackerOverlay(true); }}>
-                    Заполнить дневник →
-                  </button>
-                )}
-              </div>
-            );
-          })()}
-        <div className="sb-foot">
-          <NavLink to="/profile" className={({ isActive }) => `sb-account${isActive ? ' is-active' : ''}`}>
-            <div className="sb-avatar">{(displayName ?? '?')[0].toUpperCase()}</div>
-            <div className="u-fill">
-              <div className="sb-acc-name">{displayName || 'Профиль'}</div>
-              <div className="sb-acc-role">{userRole === 'THERAPIST' ? 'Терапевт' : 'Клиент'}</div>
-            </div>
-          </NavLink>
-          <div className="sb-links">
-            <button className="sb-item" onClick={() => ov.setShowSettings(true)}>Настройки</button>
-            <NavLink to="/account" className="sb-item">Аккаунт</NavLink>
-            <button className="sb-item sb-danger" onClick={() => logout()}>Выйти</button>
-          </div>
-          <div className="sb-links sb-legal">
-            <a href="/privacy" target="_blank">Конфиденциальность</a>
-            <a href="/offer" target="_blank">Оферта</a>
-          </div>
-        </div>
-        </div>{/* end sb-foot-wrap */}
-      </aside>
+      <Sidebar
+        items={NAV_ITEMS}
+        therapistMode={therapistMode}
+        userRole={userRole}
+        onSwitchMode={(on) => switchTherapistMode(on)}
+        therapistClients={therapistClients}
+        needs={needs}
+        ratings={ratings}
+        displayName={displayName}
+        onOpenTracker={() => { ov.setTrackerNeedId(null); ov.setShowTrackerOverlay(true); }}
+        onOpenSettings={() => ov.setShowSettings(true)}
+      />
 
       {/* ── Main ─────────────────────────────────────────────────────────────── */}
       <div className={`main${therapistMode ? ' main--cabinet' : ''}`}>
@@ -312,7 +247,7 @@ export function AppShell() {
           {isOffline && <span className="topbar-offline">офлайн</span>}
           {!therapistMode && (
             <button className="topbar-sos tone-tint" style={hueStyle(28)}
-                    onClick={() => navigate('/practice', { state: { openFlashcard: true } })}>Мне плохо</button>
+                    onClick={() => ov.setShowSosCard(true)}>Мне плохо</button>
           )}
           <button className="search-pill" onClick={() => ov.setCmdOpen(true)}>
             <span>Перейти к…</span>
@@ -332,6 +267,8 @@ export function AppShell() {
           Аудит 2026-09: тот же фон оставался доступным таба/скринридеру
           сквозь открытый оверлей — AppSections получает inert=anyOverlayOpen.
         */}
+        {/* Автопоказы секций (WhySheet «Сегодня») ждут конца очереди входов — EntryFlows ниже. */}
+        <EntryFlowsDoneContext.Provider value={entryDone}>
         <AppSections
           inert={anyOverlayOpen}
           therapistMode={therapistMode}
@@ -354,6 +291,7 @@ export function AppShell() {
           helpTasksKey={helpTasksKey}
           setHelpTasksKey={setHelpTasksKey}
         />
+        </EntryFlowsDoneContext.Provider>
 
         {/* ── TrackerOverlay ── */}
         {ov.showTrackerOverlay && (
@@ -361,7 +299,6 @@ export function AppShell() {
             <TrackerOverlay
               needs={needs}
               ratings={ratings}
-              isOffline={isOffline}
               onChange={handleChange}
               onSaved={handleSaved}
               onClose={() => { ov.setShowTrackerOverlay(false); ov.setTrackerNeedId(null); }}
@@ -383,7 +320,7 @@ export function AppShell() {
               ratings={ratings}
               childhoodRatings={childhoodRatings}
               pendingPlans={pendingPlans}
-              todayDate={TODAY_DATE}
+              todayDate={todayDate}
               historyDays={historyDays}
               onClose={() => { ov.setShowTracker(false); ov.setTrackerTab('today'); }}
               onOpenTracker={() => { ov.setTrackerTab('today'); ov.setTrackerNeedId(null); ov.setShowTrackerOverlay(true); }}
@@ -403,7 +340,7 @@ export function AppShell() {
         )}
 
         {/* Согласия и ссылки-приглашения (EntryFlows), затем шторки (AppOverlays, правило №10) */}
-        <EntryFlows ov={ov} />
+        <EntryFlows ov={ov} onDone={setEntryDone} />
         <AppOverlays
           ov={ov}
           userRole={userRole}
@@ -417,7 +354,7 @@ export function AppShell() {
           setChildhoodRatings={setChildhoodRatings}
           childhoodWheelPending={childhoodWheelPending}
           setChildhoodWheelPending={setChildhoodWheelPending}
-          todayDate={TODAY_DATE}
+          todayDate={todayDate}
         />
 
         {/* ── Celebration ── */}

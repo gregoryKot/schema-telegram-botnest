@@ -114,8 +114,9 @@ describe('HistoryView — день с реальными данными', () => 
     await act(async () => {
       renderView({ history: HISTORY, currentRatings: { attachment: 8, autonomy: 7 } });
     });
-    // avg(8,7) = 7.5 — если бы использовался хардкод-фолбэк, число было бы другим.
-    expect(screen.getByText('7.5')).toBeTruthy();
+    // avg(8,7) = 7,5 — если бы использовался хардкод-фолбэк, число было бы другим.
+    // Запятая — общий fmtIndex (QA 2026-11, B-М3), как на плитке «Сегодня».
+    expect(screen.getByText('7,5')).toBeTruthy();
   });
 
   it('клик по потребности в списке открывает NeedHistorySheet', async () => {

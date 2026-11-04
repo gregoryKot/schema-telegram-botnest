@@ -1,6 +1,8 @@
-// Волна В mutation-покрытия (2026-08): getActiveDates (приватный) объединяет
-// ПЯТЬ источников активности — rating, appActivity, schemaDiaryEntry,
-// modeDiaryEntry, gratitudeDiaryEntry. Все существующие тесты getStreakData
+// Волна В mutation-покрытия (2026-08): getActiveDates объединяет ЧЕТЫРЕ
+// источника активности — rating, schemaDiaryEntry, modeDiaryEntry,
+// gratitudeDiaryEntry. Пятый, appActivity (визит в приложение), с QA
+// 2026-11-03 в серию не идёт: одно открытие сайта давало «серию 1» и
+// достижение «Первый шаг». Все существующие тесты getStreakData
 // кормили только rating — источники diary/appActivity ни разу не были
 // единственным источником данных, поэтому мутант, вырезающий один из них
 // из Promise.all/объединения Set, прошёл бы незамеченным.
@@ -29,16 +31,28 @@ describe('BotAnalyticsService.getStreakData — каждый источник ge
   });
   afterEach(() => jest.useRealTimers());
 
-  it('только appActivity (без rating) — день засчитан как заполненный', async () => {
+  it('только appActivity (визит, без записей) — день НЕ засчитан, серии нет', async () => {
     const prisma = emptyPrisma({
       appActivity: {
         findMany: jest.fn().mockResolvedValue([{ date: '2025-06-11' }]),
       },
     });
     const svc = new BotAnalyticsService(prisma);
-    const { todayDone, totalDays } = await svc.getStreakData(1n);
-    expect(todayDone).toBe(true);
-    expect(totalDays).toBe(1);
+    const { todayDone, totalDays, currentStreak } = await svc.getStreakData(1n);
+    expect(todayDone).toBe(false);
+    expect(totalDays).toBe(0);
+    expect(currentStreak).toBe(0);
+  });
+
+  it('визит без записей не даёт достижения «Первый шаг»', async () => {
+    const prisma = emptyPrisma({
+      appActivity: {
+        findMany: jest.fn().mockResolvedValue([{ date: '2025-06-11' }]),
+      },
+    });
+    const svc = new BotAnalyticsService(prisma);
+    const achievements = await svc.getAchievements(1n);
+    expect(achievements.filter((a) => a.earned)).toEqual([]);
   });
 
   it('только schemaDiaryEntry (createdAt в UTC) — конвертируется в локальную дату и засчитывается', async () => {
@@ -78,7 +92,7 @@ describe('BotAnalyticsService.getStreakData — каждый источник ge
     expect(todayDone).toBe(true);
   });
 
-  it('все 5 источников на разные дни объединяются в один Set без потерь (totalDays = 5)', async () => {
+  it('все 4 источника на разные дни объединяются в один Set без потерь (totalDays = 4)', async () => {
     const prisma = emptyPrisma({
       rating: {
         findMany: jest.fn().mockResolvedValue([{ date: '2025-06-11' }]),
@@ -102,7 +116,7 @@ describe('BotAnalyticsService.getStreakData — каждый источник ge
     });
     const svc = new BotAnalyticsService(prisma);
     const { totalDays } = await svc.getStreakData(1n);
-    expect(totalDays).toBe(5);
+    expect(totalDays).toBe(4);
   });
 
   it('одна и та же дата из двух источников не задваивается (Set, не массив)', async () => {
@@ -110,12 +124,31 @@ describe('BotAnalyticsService.getStreakData — каждый источник ge
       rating: {
         findMany: jest.fn().mockResolvedValue([{ date: '2025-06-11' }]),
       },
-      appActivity: {
+      gratitudeDiaryEntry: {
         findMany: jest.fn().mockResolvedValue([{ date: '2025-06-11' }]),
       },
     });
     const svc = new BotAnalyticsService(prisma);
     const { totalDays } = await svc.getStreakData(1n);
     expect(totalDays).toBe(1);
+  });
+
+  // Одно правило серии для бота и приложения: напоминание и «С возвращением»
+  // считают те же дни, что профиль, и серия жива, пока не кончился день.
+  it('getConsecutiveDays бота: дневник засчитан, сегодня без записей серию не рвёт', async () => {
+    const prisma = emptyPrisma({
+      rating: {
+        findMany: jest.fn().mockResolvedValue([{ date: '2025-06-10' }]),
+      },
+      gratitudeDiaryEntry: {
+        findMany: jest.fn().mockResolvedValue([{ date: '2025-06-09' }]),
+      },
+      appActivity: {
+        findMany: jest.fn().mockResolvedValue([{ date: '2025-06-08' }]),
+      },
+    });
+    const svc = new BotAnalyticsService(prisma);
+    expect(await svc.getConsecutiveDays(1n)).toBe(2);
+    expect((await svc.getStreakData(1n)).currentStreak).toBe(2);
   });
 });

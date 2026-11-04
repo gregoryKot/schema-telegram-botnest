@@ -840,19 +840,27 @@ describe('личный контент — URL, метод, тело запрос
     expect(init.method).toBe('DELETE');
   });
 
-  it('getLetters / createLetter / deleteLetter', async () => {
+  it('getLetters / createLetter / updateLetter / deleteLetter', async () => {
     fetchMock.mockResolvedValue(jsonResponse(200, []));
     await api.getLetters();
     expect(String(fetchMock.mock.calls[0][0])).toContain('/api/letters');
 
-    fetchMock.mockResolvedValue(jsonResponse(200, {}));
-    await api.createLetter('дорогой я');
+    fetchMock.mockResolvedValue(jsonResponse(201, { id: 9, text: 'дорогой я' }));
+    // id созданного письма нужен «Изменить» — правка идёт в то же письмо (QA 2026-11, З4).
+    expect((await api.createLetter('дорогой я')).id).toBe(9);
     const [, init] = fetchMock.mock.calls[1];
     expect(JSON.parse(init.body)).toEqual({ text: 'дорогой я' });
 
+    fetchMock.mockResolvedValue(jsonResponse(200, { id: 9, text: 'иначе' }));
+    await api.updateLetter(9, 'иначе');
+    const [patchUrl, patchInit] = fetchMock.mock.calls[2];
+    expect(String(patchUrl)).toContain('/api/letters/9');
+    expect(patchInit.method).toBe('PATCH');
+    expect(JSON.parse(patchInit.body)).toEqual({ text: 'иначе' });
+
     fetchMock.mockResolvedValue(jsonResponse(204, undefined));
     await api.deleteLetter(9);
-    expect(String(fetchMock.mock.calls[2][0])).toContain('/api/letters/9');
+    expect(String(fetchMock.mock.calls[3][0])).toContain('/api/letters/9');
   });
 
   it('getSafePlace / saveSafePlace', async () => {

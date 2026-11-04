@@ -1,4 +1,4 @@
-// e2e SMOKE на удаление записей упражнений («Проверка убеждения», «Письмо
+// e2e SMOKE на удаление записей упражнений и правку письма («Проверка убеждения», «Письмо
 // себе», кризисная карточка). До этого PR роуты DELETE /api/belief-checks/:id,
 // /api/letters/:id и /api/flashcards/:id существовали, но их никто не звал —
 // ни один экран не давал удалить написанное. Теперь кнопка есть в «Моём пути»
@@ -132,5 +132,36 @@ describe('e2e smoke: удаление записей упражнений (owner
       .get('/api/letters')
       .set('Authorization', `Bearer ${tokenA()}`);
     expect(ids(still.body)).toContain(id);
+  });
+
+  // QA 2026-11, З4: «Изменить» после «Запечатать» правит то же письмо
+  // (PATCH /api/letters/:id). Чужой и анонимный PATCH текст не трогают.
+  it('«Письмо себе»: PATCH — B и аноним не правят письмо A, A правит своё, писем одно', async () => {
+    const as = (token: string) => ({ Authorization: `Bearer ${token}` });
+    const created = await request(server())
+      .post('/api/letters')
+      .set(as(tokenA()))
+      .send({ text: 'Первая версия письма' });
+    const id = created.body.id as number;
+    const patch = () => request(server()).patch(`/api/letters/${id}`);
+
+    const stranger = await patch().set(as(tokenB())).send({ text: 'чужое' });
+    expect(stranger.status).toBe(404);
+    const anon = await patch().send({ text: 'аноним' });
+    expect(anon.status).toBe(401);
+
+    const own = await patch()
+      .set(as(tokenA()))
+      .send({ text: 'Исправленная версия письма' });
+    expect(own.status).toBe(200);
+    expect(own.body).toMatchObject({ id, text: 'Исправленная версия письма' });
+
+    const list = await request(server()).get('/api/letters').set(as(tokenA()));
+    const mine = (list.body as Array<{ id: number; text: string }>).filter(
+      (l) => l.text.endsWith('версия письма'),
+    );
+    expect(mine).toEqual([
+      expect.objectContaining({ id, text: 'Исправленная версия письма' }),
+    ]);
   });
 });
