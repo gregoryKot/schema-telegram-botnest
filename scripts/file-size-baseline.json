@@ -2241,7 +2241,7 @@
   "webapp/src/pages/account/SignInMethods.tsx": 65,
   "webapp/src/pages/account/TherapistRequestSection.tsx": 101,
   "webapp/src/pages/account/TwoFactorScopeNote.tsx": 15,
-  "webapp/src/pages/account/TwoFactorSection.tsx": 179,
+  "webapp/src/pages/account/TwoFactorSection.tsx": 165,
   "webapp/src/pages/account/useAccountData.ts": 49,
   "webapp/src/pages/account/useProviderActions.ts": 60,
   "webapp/src/pages/AccountPage.tsx": 81,

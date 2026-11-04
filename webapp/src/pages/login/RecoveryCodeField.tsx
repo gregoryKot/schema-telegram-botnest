@@ -28,10 +28,10 @@ export const RecoveryCodeField = forwardRef<HTMLInputElement, {
       autoCapitalize="off"
       autoCorrect="off"
       spellCheck={false}
-      aria-label="Recovery-код"
+      aria-label="Резервный код"
       value={value}
       onChange={e => onChange(normalizeRecoveryCode(e.target.value))}
-      placeholder="recovery-код"
+      placeholder="резервный код"
       disabled={disabled}
     />
   );

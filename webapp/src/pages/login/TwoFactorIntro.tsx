@@ -9,7 +9,7 @@ export function TwoFactorIntro() {
       <h1 className="al-2fa-title">Код из приложения-аутентификатора</h1>
       <p className="al-sub">
         Понадобится код из приложения-аутентификатора (Google Authenticator, 1Password, Bitwarden и т.п.) — 6 цифр.
-        Подойдёт и один из recovery-кодов, если доступ к телефону потерян.
+        Подойдёт и один из резервных кодов, если доступ к телефону потерян.
       </p>
     </>
   );
