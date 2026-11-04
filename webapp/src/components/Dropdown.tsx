@@ -8,25 +8,26 @@ import '../styles/sheet-modemap.css';
 // механика, поэтому компонент один и живёт здесь (правило «одна механика — один
 // компонент»). role="menu" — меню действий: фокус уходит на первый пункт,
 // стрелки ходят по пунктам, Escape возвращает фокус якорю.
-export function Dropdown({ children, onClose, anchorRef, role, label, className }: {
+export function Dropdown({ children, onClose, anchorRef, role, label, className, width = 220 }: {
   children: ReactNode;
   onClose: () => void;
   anchorRef: RefObject<HTMLElement | null>;
   role?: 'menu';
   label?: string;
   className?: string;
+  width?: number; // ширина меню в px (по умолчанию 220); нужна для прижатия к краю экрана
 }) {
   const [pos, setPos] = useState<{ left: number; top: number } | null>(null);
   const dropRef = useRef<HTMLDivElement>(null);
   useLayoutEffect(() => {
     const r = anchorRef.current?.getBoundingClientRect();
     if (!r) return;
-    const WIDTH = 220, MARGIN = 8;
+    const WIDTH = Math.min(width, window.innerWidth - 16), MARGIN = 8;
     let left = r.left;
     if (left + WIDTH > window.innerWidth - MARGIN) left = window.innerWidth - MARGIN - WIDTH;
     if (left < MARGIN) left = MARGIN;
     setPos({ left, top: r.bottom + 4 });
-  }, [anchorRef]);
+  }, [anchorRef, width]);
   useEffect(() => {
     const onKey = (e: globalThis.KeyboardEvent) => {
       if (e.key !== 'Escape') return;

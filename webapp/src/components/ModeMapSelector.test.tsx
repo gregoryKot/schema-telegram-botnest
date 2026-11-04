@@ -18,6 +18,12 @@ import { ModeMapSelector } from './ModeMapSelector';
 import { AddressFormContext } from '../utils/addressForm';
 import type { ModeMapMeta, ModeMapFull } from '../api';
 
+// Запись в истории (useHistorySheet) здесь не нужна и требует Router: goBack просто закрывает
+// лист и зовёт then. Саму запись истории проверяет modeMap/MobileDrawer.test.tsx.
+vi.mock('../hooks/useHistorySheet', () => ({
+  useHistorySheet: (onClose: () => void) => (then?: unknown) => { onClose(); if (typeof then === 'function') then(); },
+}));
+
 const listModeMaps = vi.fn();
 const getModeMap = vi.fn();
 const createModeMap = vi.fn();

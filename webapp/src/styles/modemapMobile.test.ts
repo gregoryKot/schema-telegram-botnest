@@ -55,7 +55,7 @@ describe('холст карты режимов на телефоне (sheet-mode
     expect(heights.some((h) => h.includes('100dvh'))).toBe(true);
     expect(values(modemap, PHONE, '.mm2-body', 'min-height')).toEqual([]);
     const chrome = values(modemap, PHONE, '.mm2-body', '--mm2-chrome').join('');
-    for (const token of ['var(--safe-top)', 'var(--safe-bottom)', 'var(--mobile-nav-h)']) expect(chrome).toContain(token);
+    for (const token of ['var(--mm2-top)', 'var(--safe-bottom)', 'var(--mobile-nav-h)']) expect(chrome).toContain(token);
     expect(heights.every((h) => h.includes('var(--mm2-chrome)'))).toBe(true);
   });
 
@@ -99,5 +99,25 @@ describe('холст карты режимов на телефоне (sheet-mode
     for (const sel of sels) expect(values(modemap, PHONE, sel, 'font-size'), sel).toEqual(['16px']);
     expect(values(modemap, null, '.mm2-pal-search .ds-input', 'font-size')).toEqual(['12.5px']);
     expect(values(modemap, null, '.mm2-panel .ds-input', 'font-size')).toEqual(['13px']);
+  });
+
+  // QA 2026-11, T-5: тулбар 36, пункты палитры 34, «Скрыть» 22, кнопки над узлом
+  // 31×23. Гейт check-tap-targets видит только инлайн-квадраты, CSS-классы ему
+  // не видны (docs/open/frontend-ux.md), поэтому размеры держит этот тест.
+  it('тап-цели холста под пальцем (pointer: coarse) и на телефоне — не меньше 44', () => {
+    const TOUCH = '@media (pointer: coarse), (max-width: 767px)';
+    const px = (sel: string, prop: string) => Number.parseFloat(values(modemap, TOUCH, sel, prop).at(-1) ?? '0');
+    const cases: Array<[string, string]> = [
+      ['.ds-btn.mm2-tb-btn', 'height'], ['.ds-btn.mm2-tb-btn', 'min-width'], ['.mm2-pal-item', 'min-height'], ['.mm2-pal-head', 'min-height'],
+      ['.ds-btn.mm2-pal-add', 'height'], ['.mm2-nt-btn', 'min-width'], ['.mm2-nt-btn', 'min-height'], ['.mm2-ear', 'width'], ['.mm2-ear', 'height'],
+      ['.mm2-swatch', 'width'], ['.mm2-swatch', 'height'], ['.mm2-x', 'width'], ['.mm2-x', 'height'], ['.ds-btn.mm2-del', 'height'],
+    ];
+    for (const [sel, prop] of cases) expect(px(sel, prop), `${sel} ${prop}`).toBeGreaterThanOrEqual(44);
+  });
+
+  it('ручки связи на (hover: none) видны всегда (T-4); на ноутбуке — по наведению', () => {
+    const idx = read('../index.css');
+    expect(idx).toMatch(/@media \(hover: none\)\s*\{\s*\.mm-handle\s*\{\s*opacity: 1/);
+    expect(idx).toMatch(/\.mm-handle\s*\{\s*opacity: 0;/);
   });
 });

@@ -254,7 +254,7 @@ export function AppShell() {
           <button className="search-pill" onClick={() => ov.setCmdOpen(true)}>
             <span>Перейти к…</span>
             <span className="sp-spacer" />
-            <span className="kbd">⌘K</span>
+            <span className="kbd kbd-hint">⌘K</span>
           </button>
         </div>
 
