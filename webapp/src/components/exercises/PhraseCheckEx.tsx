@@ -37,7 +37,7 @@ export function PhraseCheckEx({
   const goBack = useHistorySheet(onBack);
   const {
     phrase, setPhrase, markIndex, setMarkIndex, marks,
-    rewrite, setRewrite, inWarmWords, setInWarmWords, answer, reset,
+    rewrite, setRewrite, inWarmWords, setInWarmWords, answer, reset, clearDraft,
   } = usePhraseCheckState();
   const [done, setDone] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -65,6 +65,7 @@ export function PhraseCheckEx({
         rewrite: rewrite.trim() || undefined,
         inWarmWords: inWarmWords && Boolean(rewrite.trim()),
       });
+      clearDraft();
       onComplete?.();
       setDone(true);
       api.getPhraseChecks().then(setHistory).catch((e) => console.error('getPhraseChecks failed', e));

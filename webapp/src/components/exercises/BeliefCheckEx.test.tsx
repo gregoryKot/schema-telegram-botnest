@@ -29,6 +29,7 @@ function renderSheet() {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  localStorage.clear(); // черновик упражнения не должен переезжать в следующий тест
   mockApi.getBeliefChecks.mockResolvedValue([]);
 });
 
@@ -211,6 +212,7 @@ describe('BeliefCheckEx — сохранение: отказ сети виден
       'Не удалось сохранить. Проверь связь и попробуй ещё раз',
     );
     cleanup();
+    localStorage.clear(); // отказ оставил черновик — второй заход с чистого листа
 
     mockApi.createBeliefCheck.mockRejectedValue(new Error('network down'));
     render(

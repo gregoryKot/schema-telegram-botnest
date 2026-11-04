@@ -7,6 +7,8 @@ import { fmtAgo } from '../../utils/format';
 import { detectCrisisAny } from '../../utils/crisisMarkers';
 import { CrisisCard } from '../CrisisCard';
 import { hueStyle, NEED_HUE } from '../../lib/tone';
+import { EXERCISE_DRAFT_KEYS } from '../../utils/drafts';
+import { restoreDraft, useDraftAutosave } from '../../../../shared/src/utils/useDraftAutosave';
 import { exerciseCard } from '../../../../shared/src/exercises/exerciseCatalog';
 
 export function LetterEx({
@@ -18,12 +20,13 @@ export function LetterEx({
 }) {
   const tr = useTr();
   const goBack = useHistorySheet(onBack);
-  const [text, setText] = useState('');
+  const [text, setText] = useState(() => restoreDraft<{ text: string }>(EXERCISE_DRAFT_KEYS.letter)?.text ?? '');
   const [done, setDone] = useState(false);
   const [sealing, setSealing] = useState(false);
   const [sealError, setSealError] = useState(false);
   const [pastLetters, setPastLetters] = useState<Awaited<ReturnType<typeof api.getLetters>>>([]);
   const textRef = useRef<HTMLTextAreaElement>(null);
+  const clearDraft = useDraftAutosave(EXERCISE_DRAFT_KEYS.letter, { text });
 
   useEffect(() => {
     if (!done) textRef.current?.focus();
@@ -47,6 +50,7 @@ export function LetterEx({
     setSealError(false);
     try {
       await api.createLetter(text);
+      clearDraft();
       onComplete?.();
       setDone(true);
     } catch {

@@ -7,6 +7,8 @@ import { useTr } from '../../utils/addressForm';
 import { detectCrisisAny } from '../../utils/crisisMarkers';
 import { CrisisCard } from '../CrisisCard';
 import { hueStyle, DIARY_HUE } from '../../lib/tone';
+import { EXERCISE_DRAFT_KEYS } from '../../utils/drafts';
+import { restoreDraft, useDraftAutosave } from '../../../../shared/src/utils/useDraftAutosave';
 import { exerciseCard } from '../../../../shared/src/exercises/exerciseCatalog';
 
 // Безопасное место — ресурс, тон «здорового» (зелёный) как у благодарности.
@@ -44,15 +46,12 @@ export function SafePlaceEx({
 }) {
   const tr = useTr();
   const goBack = useHistorySheet(onBack);
-  const [overview, setOverview] = useState('');
-  const [senses, setSenses] = useState<Record<string, string>>({
-    see: '',
-    hear: '',
-    feel: '',
-    smell: '',
-  });
+  const [draft] = useState(() => restoreDraft<{ overview: string; senses: Record<string, string> }>(EXERCISE_DRAFT_KEYS.safePlace));
+  const [overview, setOverview] = useState(draft?.overview ?? '');
+  const [senses, setSenses] = useState<Record<string, string>>({ see: '', hear: '', feel: '', smell: '', ...draft?.senses });
   const [done, setDone] = useState(false);
   const overviewRef = useRef<HTMLInputElement>(null);
+  const clearDraft = useDraftAutosave(EXERCISE_DRAFT_KEYS.safePlace, { overview, senses });
 
   useEffect(() => {
     if (!done) overviewRef.current?.focus();
@@ -77,7 +76,7 @@ export function SafePlaceEx({
       ),
     ].join('\n');
     const ok = await run(() => api.saveSafePlace(desc));
-    if (ok) { onComplete?.(); setDone(true); }
+    if (ok) { clearDraft(); onComplete?.(); setDone(true); }
   }
 
   if (done) {

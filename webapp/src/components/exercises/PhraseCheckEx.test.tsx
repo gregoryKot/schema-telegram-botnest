@@ -34,6 +34,7 @@ function renderEx(onComplete?: () => void) {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  localStorage.clear(); // черновик упражнения не должен переезжать в следующий тест
   mockApi.getPhraseChecks.mockResolvedValue([]);
 });
 
