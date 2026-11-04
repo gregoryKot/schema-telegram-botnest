@@ -11,6 +11,9 @@ export const BREATH_IN_S = 4;
 export const BREATH_HOLD_S = 4;
 export const BREATH_OUT_S = 6;
 export const BREATH_CYCLE_S = BREATH_IN_S + BREATH_HOLD_S + BREATH_OUT_S;
+/** Карточка обещает «одна минута»: четыре полных круга (56 с) — и итог. */
+export const BREATH_SESSION_CYCLES = 4;
+export const BREATH_SESSION_S = BREATH_SESSION_CYCLES * BREATH_CYCLE_S;
 
 export interface BreathState {
   phase: BreathPhase;
