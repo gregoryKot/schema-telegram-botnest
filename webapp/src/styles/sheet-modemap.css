@@ -237,7 +237,8 @@
    растёт, и .mm2-body прокручивает его, если не влезло. */
 @media (max-width: 767px) {
   .mm2-body {
-    --mm2-chrome: calc(var(--mm2-top, 240px) + var(--safe-bottom) + var(--mobile-nav-h));
+    --mm2-top: 240px; /* запасное значение до первого замера; useCanvasTop перекрывает его инлайном */
+    --mm2-chrome: calc(var(--mm2-top) + var(--safe-bottom) + var(--mobile-nav-h));
     flex: none; overflow: auto;
     height: max(320px, calc(100vh - var(--mm2-chrome)));
     height: max(320px, calc(100dvh - var(--mm2-chrome)));

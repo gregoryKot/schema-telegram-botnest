@@ -55,7 +55,7 @@ describe('холст карты режимов на телефоне (sheet-mode
     expect(heights.some((h) => h.includes('100dvh'))).toBe(true);
     expect(values(modemap, PHONE, '.mm2-body', 'min-height')).toEqual([]);
     const chrome = values(modemap, PHONE, '.mm2-body', '--mm2-chrome').join('');
-    for (const token of ['var(--mm2-top', 'var(--safe-bottom)', 'var(--mobile-nav-h)']) expect(chrome).toContain(token);
+    for (const token of ['var(--mm2-top)', 'var(--safe-bottom)', 'var(--mobile-nav-h)']) expect(chrome).toContain(token);
     expect(heights.every((h) => h.includes('var(--mm2-chrome)'))).toBe(true);
   });
 

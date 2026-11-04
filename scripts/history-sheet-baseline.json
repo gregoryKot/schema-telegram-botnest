@@ -19,10 +19,7 @@
     "reason": "Невидимая подложка под контекстным меню карты режимов (поповер у курсора): ловит клик снаружи, закрывает меню. Это не лист, «Назад» с поповером не связана.",
     "since": "docs/AUDIT_2026-10_FINDINGS.md"
   },
-  "webapp/src/components/ModeMapSelector.tsx": {
-    "reason": "Невидимая подложка под выпадающим выбором вида карты (поповер у кнопки): ловит клик снаружи. Это не лист, запись истории ему не нужна.",
-    "since": "docs/AUDIT_2026-10_FINDINGS.md"
-  },
+
   "webapp/src/components/OverlayFrame.tsx": {
     "reason": "Рамка оверлеев «Все задания» и «Все цели» (класс sk-overlay): goBack приходит пропом, хук вызывают потребители — sections/today/AllTasksOverlay.tsx и sections/practice/AllGoalsOverlay.tsx, по одному разу на лист. Хук в рамке дал бы вторую запись истории.",
     "since": "#746"
