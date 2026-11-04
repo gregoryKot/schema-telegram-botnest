@@ -97,10 +97,10 @@ describe('auth-pay.css: страницы подписки и доната на �
       expect(r.selectors.every((s) => /\.ap-page--(state|donate)\b/.test(s))).toBe(true);
     }
   });
-  it('.cw-list на ≥768 перебивает границу .cm-page .ds-card--flush (линия над первой карточкой)', () => {
-    const r = all.find((x) => x.f === 'client-why.css' && isDesktop(x.media) && x.selectors.some((s) => s.includes('.cw-list')));
-    expect(r?.selectors[0]).toContain('ul.cw-list.ds-card--flush');
-    expect(r?.body).toMatch(/border:\s*none/);
+  it('client-more.css: правила .cm-page — только через ребёнка (.cm-page > …), листы внутри страницы не затрагиваются', () => {
+    const cm = parseRules(readFileSync(join(dir, 'client-more.css'), 'utf8'));
+    const leaks = cm.flatMap((r) => r.selectors).filter((s) => /\.cm-page\s+[^>\s]/.test(s));
+    expect(leaks).toEqual([]);
   });
 });
 
