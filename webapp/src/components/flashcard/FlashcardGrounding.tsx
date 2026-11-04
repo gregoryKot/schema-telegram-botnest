@@ -1,4 +1,5 @@
 import { FlashcardFrame } from './FlashcardFrame';
+import { CrisisCard } from '../CrisisCard';
 import { hueStyle } from '../../lib/tone';
 
 interface Props {
@@ -19,6 +20,8 @@ export function FlashcardGrounding({ tr, historyCount, onContinue, onHistory, on
       <p className="sk-fc-lead">
         {tr('То, что ты чувствуешь сейчас – это нормально.', 'То, что вы чувствуете сейчас – это нормально.')}<br />Это пройдёт.
       </p>
+      {/* Телефоны доверия — на первом экране, без раскрытия и прокрутки (C-К1). */}
+      <CrisisCard standing compact />
       <div className="ds-card sk-fc-breath tone-soft" style={hueStyle(240)}>
         <div className="sk-fc-breath-title tone-ink">Три вдоха прямо сейчас</div>
         {BREATHS.map((t, i) => (

@@ -22,7 +22,7 @@ afterEach(cleanup);
 
 function setup(userRole: 'CLIENT' | 'THERAPIST' = 'CLIENT') {
   const h = {
-    onNavigate: vi.fn(), onOpenSchema: vi.fn(), onOpenAdvanced: vi.fn(), onOpenTherapistCabinet: vi.fn(),
+    onNavigate: vi.fn(), onOpenSchema: vi.fn(), onOpenAdvanced: vi.fn(), onOpenCrisis: vi.fn(), onOpenTherapistCabinet: vi.fn(),
   };
   render(<MemoryRouter><MoreSection {...h} userRole={userRole} /></MemoryRouter>);
   return h;
@@ -38,7 +38,7 @@ describe('MoreSection', () => {
     }
   });
 
-  it('переходы: паттерны, практики, профиль (в нём же терапевт) — в свои разделы; «Мне очень плохо» — в практики', () => {
+  it('переходы: паттерны, практики, профиль (в нём же терапевт) — в свои разделы; «Мне очень плохо» открывает SOS-лист, а не раздел', () => {
     const h = setup();
     fireEvent.click(row('Мои паттерны'));
     expect(h.onNavigate).toHaveBeenLastCalledWith('schemas');
@@ -46,8 +46,10 @@ describe('MoreSection', () => {
     expect(h.onNavigate).toHaveBeenLastCalledWith('practice');
     fireEvent.click(row('Профиль'));
     expect(h.onNavigate).toHaveBeenLastCalledWith('profile');
+    h.onNavigate.mockClear();
     fireEvent.click(row('Мне очень плохо'));
-    expect(h.onNavigate).toHaveBeenLastCalledWith('practice');
+    expect(h.onOpenCrisis).toHaveBeenCalledTimes(1);
+    expect(h.onNavigate).not.toHaveBeenCalled();
   });
 
   it('тест на схемы запускается сразу, настройки открываются', () => {
