@@ -25,7 +25,8 @@ export function trackerCta({ filled, total }: TrackerSummary): string {
 // Главная «Сегодня» (docs/design/CLIENT_SIMPLE_2026-10.md): одна главная плитка — трекер,
 // с картинкой и единственной залитой кнопкой экрана; «Что случилось» и дневник — тихие
 // строки с картинкой слева (HomeTileRow). Плитка — вся кнопка целиком, «кнопка» внутри нарисована
-// span-ом: вложенная button невалидна, а тап-цель и так вся карточка.
+// span-ом: вложенная button невалидна, а тап-цель и так вся карточка; span без aria-hidden,
+// чтобы имя кнопки для скринридера несло действие («Трекер … Заполнить за минуту»).
 export function HomeTiles({ ratings, tracker, trackerMeta, caseMeta, diaryMeta, onTracker, onCase, onDiary }: Props) {
   const tap = (fn: () => void) => () => { haptic.tap(); fn(); };
   const done = tracker.total > 0 && tracker.filled >= tracker.total;
@@ -38,7 +39,7 @@ export function HomeTiles({ ratings, tracker, trackerMeta, caseMeta, diaryMeta, 
           <span className="ct-tile-text">Пять потребностей, один вопрос за раз.</span>
           <span className="ct-tile-meta">{trackerMeta}</span>
         </span>
-        <span className={`ds-btn ds-btn--lg ct-tile-cta${done ? ' ds-btn--secondary' : ''}`} aria-hidden="true">
+        <span className={`ds-btn ds-btn--lg ct-tile-cta${done ? ' ds-btn--secondary' : ''}`}>
           {trackerCta(tracker)}
         </span>
       </button>

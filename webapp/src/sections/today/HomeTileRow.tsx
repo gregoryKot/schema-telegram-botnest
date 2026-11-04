@@ -9,10 +9,11 @@ interface Props {
   onClick: () => void;
 }
 
-/** Тихая строка главной «Сегодня»: картинка слева, заголовок, подпись из данных, шеврон. */
+/** Тихая строка главной «Сегодня»: примитив ds-card--nav (карточка-кнопка), картинка слева,
+ *  заголовок, подпись из данных, шеврон. */
 export function HomeTileRow({ art, title, text, meta, onClick }: Props) {
   return (
-    <button type="button" className="ct-tile ct-tile--row" onClick={onClick}>
+    <button type="button" className="ds-card ds-card--nav ds-card--hover ct-tile ct-tile--row" onClick={onClick}>
       {art}
       <span className="ct-tile-body">
         <span className="ct-tile-title">{title}</span>

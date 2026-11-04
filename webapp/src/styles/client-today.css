@@ -26,7 +26,8 @@
 }
 .ct-tile:hover { border-color: var(--line-hover); }
 .ct-tile--main { flex-direction: column; align-items: stretch; gap: 16px; padding: 24px; margin-bottom: 8px; }
-.ct-tile--row { min-height: 84px; padding: 16px 18px; }
+/* Строка — ds-card--nav из cabinet.css; здесь только плотность и шрифт. */
+.ct-tile--row { min-height: 84px; padding: 16px 18px; gap: 18px; }
 .ct-tile-body { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
 .ct-tile-title { font-family: var(--serif); font-size: 24px; line-height: 1.15; }
 .ct-tile--row .ct-tile-title { font-size: 20px; }
@@ -40,7 +41,7 @@
 .ct-art--garden { width: 128px; height: 96px; }
 .ct-art--spot { width: 48px; height: 48px; }
 .ct-art--rest { width: 56px; height: 48px; }
-.ct-empty { display: flex; align-items: center; gap: 16px; }
+.ct-feed-empty { display: flex; align-items: center; gap: 16px; }
 
 /* Задания (PracticesBlock) */
 .ct-section { min-width: 0; }

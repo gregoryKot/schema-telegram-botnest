@@ -33,7 +33,7 @@ describe('trackerCta', () => {
 describe('HomeTiles', () => {
   it('главная плитка — кнопка с именем «Трекер», внутри одна залитая «кнопка»-подпись; заполненный трекер — вторичная', () => {
     const { rerender } = render(<HomeTiles {...base} />);
-    const main = screen.getByRole('button', { name: /Трекер/ });
+    const main = screen.getByRole('button', { name: /Трекер.*Заполнить за минуту/ });
     expect(main.querySelector('.ct-tile-cta')?.textContent).toBe('Заполнить за минуту');
     expect(main.querySelector('.ct-tile-cta')?.className).not.toContain('ds-btn--secondary');
     rerender(<HomeTiles {...base} tracker={{ filled: 5, total: 5, index: 6 }} />);

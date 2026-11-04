@@ -23,7 +23,7 @@ export function TodayFeed({ entries, loaded, onOpenDiaries, onOpenTrackerHistory
       {!loaded ? (
         <SkeletonLines />
       ) : entries.length === 0 ? (
-        <div className="ct-empty">
+        <div className="ct-feed-empty">
           <RestArt />
           <p className="ds-empty">Пока ничего. Любая кнопка выше подойдёт для начала.</p>
         </div>
