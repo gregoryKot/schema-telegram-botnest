@@ -158,7 +158,7 @@ export function CommandPalette({ onNavigate, onClose, userRole, therapistMode, o
             onChange={e => setQ(e.target.value)}
             placeholder="Найти клиента, страницу или действие…"
           />
-          <span className="kbd">Esc</span>
+          <span className="kbd kbd-hint">Esc</span>
         </div>
         <div className="sk-cmd-list">
           {rows.length === 0 && <p className="ds-empty sk-cmd-empty">Ничего не найдено</p>}
@@ -180,7 +180,7 @@ export function CommandPalette({ onNavigate, onClose, userRole, therapistMode, o
                   </span>
                 )}
               </span>
-              {row.hint && <span className="ds-sub">{row.hint}</span>}
+              {row.hint && <span className={row.hint.startsWith('⌘') ? 'ds-sub kbd-hint' : 'ds-sub'}>{row.hint}</span>}
             </div>
           ))}
         </div>
