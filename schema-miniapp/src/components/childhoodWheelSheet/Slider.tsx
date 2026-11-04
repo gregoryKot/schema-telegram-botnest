@@ -1,16 +1,14 @@
-import { useCallback, useEffect, useRef } from 'react';
+import { useEffect } from 'react';
+import { useRatingSlider } from '../../../../shared/src/childhoodWheel/useRatingSlider';
 
 // В9 дизайн-аудита 2026-08: pointer-only слайдер был недоступен с клавиатуры —
 // единственный способ поставить значение в «Колесе детства». `NeedRatingBar`
 // (10 нативных кнопок) решает ту же механику 0–10, но непрерывный drag-трек
 // (заливка + бегунок) — часть визуальной идентичности упражнения, замена на
-// кнопки была бы переверсткой (см. prC-notes.md). Поэтому клавиатура — в этом
-// же компоненте: role="slider" + aria-value* + стрелки, вид тот же.
+// кнопки была бы переверсткой (см. prC-notes.md). Указатель, клавиатура и
+// aria-value* — общий с сайтом useRatingSlider (shared), здесь только вид.
 // `value` нет — не оценено: ни заливки, ни бегунка, читалка слышит «не оценено»,
 // стрелки стартуют с середины; сохранить колесо так нельзя (FillPhase).
-const MIN = 0;
-const MAX = 10;
-
 export function Slider({
   value,
   color,
@@ -23,97 +21,20 @@ export function Slider({
   /** Доступное имя слайдера — что именно оцениваем (название потребности). */
   label?: string;
 }) {
-  const trackRef = useRef<HTMLDivElement>(null);
+  const slider = useRatingSlider({ value, onChange, label });
+  const trackRef = slider.ref;
   useEffect(() => {
     const el = trackRef.current;
     if (!el) return;
     const prevent = (e: TouchEvent) => e.preventDefault();
     el.addEventListener('touchstart', prevent, { passive: false });
     return () => el.removeEventListener('touchstart', prevent);
-  }, []);
+  }, [trackRef]);
   const pct = (value ?? 0) * 10;
-
-  const calcValue = useCallback(
-    (clientX: number) => {
-      if (!trackRef.current) return;
-      const rect = trackRef.current.getBoundingClientRect();
-      onChange(
-        Math.round(
-          Math.max(0, Math.min(1, (clientX - rect.left) / rect.width)) * 10,
-        ),
-      );
-    },
-    [onChange],
-  );
-
-  const onPtrDown = useCallback(
-    (e: React.PointerEvent<HTMLDivElement>) => {
-      e.preventDefault();
-      e.currentTarget.setPointerCapture(e.pointerId);
-      calcValue(e.clientX);
-    },
-    [calcValue],
-  );
-
-  const onPtrMove = useCallback(
-    (e: React.PointerEvent<HTMLDivElement>) => {
-      if (e.buttons === 0) return;
-      calcValue(e.clientX);
-    },
-    [calcValue],
-  );
-
-  const onKeyDown = useCallback(
-    (e: React.KeyboardEvent<HTMLDivElement>) => {
-      const step = (d: number) =>
-        onChange(Math.max(MIN, Math.min(MAX, (value ?? 5) + d)));
-      switch (e.key) {
-        case 'ArrowRight':
-        case 'ArrowUp':
-          e.preventDefault();
-          step(1);
-          break;
-        case 'ArrowLeft':
-        case 'ArrowDown':
-          e.preventDefault();
-          step(-1);
-          break;
-        case 'PageUp':
-          e.preventDefault();
-          step(2);
-          break;
-        case 'PageDown':
-          e.preventDefault();
-          step(-2);
-          break;
-        case 'Home':
-          e.preventDefault();
-          onChange(MIN);
-          break;
-        case 'End':
-          e.preventDefault();
-          onChange(MAX);
-          break;
-        default:
-          break;
-      }
-    },
-    [value, onChange],
-  );
 
   return (
     <div
-      ref={trackRef}
-      role="slider"
-      tabIndex={0}
-      aria-label={label}
-      aria-valuemin={MIN}
-      aria-valuemax={MAX}
-      aria-valuenow={value}
-      aria-valuetext={value === undefined ? 'не оценено' : `${value} из ${MAX}`}
-      onKeyDown={onKeyDown}
-      onPointerDown={onPtrDown}
-      onPointerMove={onPtrMove}
+      {...slider}
       style={{
         position: 'relative',
         padding: '12px 0',

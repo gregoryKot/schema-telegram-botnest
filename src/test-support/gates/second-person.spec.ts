@@ -86,6 +86,33 @@ describe('check-second-person.mjs', () => {
     expect(res.stderr).toContain(hit);
   });
 
+  // QA 2026-11 (З12): «Оцени…»/«Оценивай…» в «Колесе детства» видел человек с
+  // формой «вы» — глагола в TY_IMPERATIVES не было. Образец в атрибуте JSX.
+  it.each([
+    ['<X lede="Оцени пять потребностей" />', '[imperative-ty] Оцени'],
+    ['<p>Оценивай не «как могло быть»</p>', '[imperative-ty] Оценивай'],
+    ['<p>Оцените сейчас</p>', '[imperative-vy] Оцените'],
+  ])('%s вне tr() — exit 1', (jsx, hit) => {
+    const res = runGate('check-second-person.mjs', {
+      'scripts/second-person-baseline.json': JSON.stringify({}),
+      'webapp/src/components/X.tsx': `export const X = () => ${jsx};\n`,
+    });
+    expect(res.status).toBe(1);
+    expect(res.stderr).toContain(hit);
+  });
+
+  it('КОНТРОЛЬ: «Оцени/Оцените» внутри tr() и «Оценить», «оценивать» — exit 0', () => {
+    const res = runGate('check-second-person.mjs', {
+      'scripts/second-person-baseline.json': JSON.stringify({}),
+      'webapp/src/components/X.tsx':
+        [
+          "export const a = tr('Оцени сейчас', 'Оцените сейчас');",
+          "export const b = 'Оценить детство; оценивать по шкале';",
+        ].join('\n') + '\n',
+    });
+    expect(res.status).toBe(0);
+  });
+
   it('КОНТРОЛЬ: «поддержи/поддержите» внутри tr() и инфинитив «Поддержать» — exit 0', () => {
     const res = runGate('check-second-person.mjs', {
       'scripts/second-person-baseline.json': JSON.stringify({}),

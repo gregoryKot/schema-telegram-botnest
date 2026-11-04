@@ -1,37 +1,19 @@
-import { useRef } from 'react';
 import { hueStyle } from '../../../lib/tone';
+import { useRatingSlider } from '../../../../../shared/src/childhoodWheel/useRatingSlider';
 
-function clamp(n: number, lo: number, hi: number) {
-  return Math.max(lo, Math.min(hi, n));
-}
-
-/** Ползунок 0–10. `value` нет — потребность ещё не оценена: ни заливки, ни бегунка. */
-export function CWTrack({ value, onChange, hue }: {
+/** Ползунок 0–10. `value` нет — потребность ещё не оценена: ни заливки, ни бегунка.
+ * Указатель и клавиатура (стрелки, Home/End, Enter/пробел) — useRatingSlider. */
+export function CWTrack({ value, onChange, hue, label }: {
   value: number | undefined;
   onChange: (v: number) => void;
   hue: number;
+  /** Доступное имя ползунка — название потребности. */
+  label: string;
 }) {
-  const ref = useRef<HTMLDivElement>(null);
+  const slider = useRatingSlider({ value, onChange, label });
   const pct = (value ?? 0) * 10;
-  function compute(clientX: number) {
-    const r = ref.current!.getBoundingClientRect();
-    onChange(Math.round(clamp((clientX - r.left) / r.width, 0, 1) * 10));
-  }
   return (
-    <div
-      ref={ref}
-      className="ex2-cw-track"
-      style={hueStyle(hue)}
-      onPointerDown={(e) => {
-        e.preventDefault();
-        e.currentTarget.setPointerCapture(e.pointerId);
-        compute(e.clientX);
-      }}
-      onPointerMove={(e) => {
-        if (e.buttons === 0) return;
-        compute(e.clientX);
-      }}
-    >
+    <div {...slider} className="ex2-cw-track" style={hueStyle(hue)}>
       <div className="ex2-cw-line">
         <div className="ex2-cw-fill" style={{ width: pct + '%' }} />
         {[0, 25, 50, 75, 100].map((p) => (
