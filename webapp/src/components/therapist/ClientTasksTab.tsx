@@ -2,7 +2,7 @@ import { useState } from 'react';
 import '../../styles/therapist-tabs.css';
 import { api, type UserTask } from '../../api';
 import { pressable } from '../../utils/a11y';
-import { ConfirmDialog } from '../ConfirmDialog';
+import { HistoryConfirmDialog } from '../HistoryConfirmDialog';
 import { MMIcon } from '../modeMapIcons';
 import { todayStr } from '../../utils/format';
 import { pluralRu } from '../../../../shared/src/utils/pluralRu';
@@ -96,14 +96,14 @@ export function ClientTasksTab({ detail, onAssign, onTasksChanged }: Props) {
       </div>
 
       {confirmDelete && (
-        <ConfirmDialog
+        <HistoryConfirmDialog
           title="Удалить задание?"
           message={`«${resolveTaskDisplayText(confirmDelete, 'full')}» ${offline ? 'пропадёт из карточки' : 'пропадёт у клиента и из карточки'}. Вернуть его нельзя.`}
           confirmLabel="Удалить"
           busyLabel="Удаляю…"
           busy={actions.busyId === confirmDelete.id}
           error={actions.error}
-          onConfirm={() => void actions.remove(confirmDelete.id).then(ok => { if (ok) setConfirmDelete(null); })}
+          run={() => actions.remove(confirmDelete.id)}
           onCancel={() => setConfirmDelete(null)}
         />
       )}

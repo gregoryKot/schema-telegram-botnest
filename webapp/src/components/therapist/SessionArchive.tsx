@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { fmtDate } from '../../utils/format';
 import { MMIcon } from '../modeMapIcons';
 import { sessionNumbers } from './sessionNumbers';
-import { ConfirmDialog } from '../ConfirmDialog';
+import { HistoryConfirmDialog } from '../HistoryConfirmDialog';
 import { pluralRu } from '../../../../shared/src/utils/pluralRu';
 import { NotesTruncationHint } from '../../../../shared/src/therapy/NotesTruncationHint';
 import type { TherapistNotesPage } from '../../../../shared/src/therapy/notesPage';
@@ -15,9 +15,11 @@ export function SessionArchive({ page, removeNote }: { page: TherapistNotesPage;
   const [confirmId, setConfirmId] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
   const confirmNote = notes.find(n => n.id === confirmId);
-  const remove = (id: number) => {
+  // Диалог закрывается и после ошибки удаления: её показывает вызывающий код.
+  const remove = async (id: number) => {
     setBusy(true);
-    void Promise.resolve(removeNote(id)).finally(() => { setBusy(false); setConfirmId(null); });
+    try { await removeNote(id); } finally { setBusy(false); }
+    return true;
   };
   return (
     <div>
@@ -41,13 +43,13 @@ export function SessionArchive({ page, removeNote }: { page: TherapistNotesPage;
         ))
       )}
       {confirmNote && (
-        <ConfirmDialog
+        <HistoryConfirmDialog
           title="Удалить заметку?"
           message={`Заметка о сессии ${numbers.get(confirmNote.id) ?? ''} от ${fmtDate(confirmNote.date)} удалится насовсем.`}
           confirmLabel="Удалить"
           busyLabel="Удаляю…"
           busy={busy}
-          onConfirm={() => remove(confirmNote.id)}
+          run={() => remove(confirmNote.id)}
           onCancel={() => setConfirmId(null)}
         />
       )}
