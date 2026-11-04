@@ -6,7 +6,7 @@ import type { AnyEntry } from './diaryModel';
 // Одна строка ленты по типу: запись трёх дневников или трекер дня.
 export function EntryRow({ item, onDelete, onOpenTrackerHistory }: {
   item: AnyEntry;
-  onDelete: (type: DiaryType, id: number) => void;
+  onDelete: (type: DiaryType, id: number) => Promise<void>;
   onOpenTrackerHistory?: () => void;
 }) {
   if (item._type === 'tracker') return <TrackerEntry day={item.entry} onOpen={onOpenTrackerHistory} />;

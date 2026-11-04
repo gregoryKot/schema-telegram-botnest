@@ -1,7 +1,7 @@
 import { describe, it, expect, afterEach, vi } from 'vitest';
 import {
   buildDiaryFeed, buildTodayFeed, casesTodayCount, trackerSummary, trackerTileMeta, caseTileMeta,
-  diaryTileMeta, lastEntryAt, fmtIndex, type FeedEntry,
+  diaryTileMeta, lastEntryAt, fmtIndex, diaryEntriesToday, type FeedEntry,
 } from './todayFeed';
 import { forEachTimeZone, withTimeZone } from '../../../../shared/src/utils/timeZone.test-helpers';
 import { diaryToday } from '../../../../shared/src/diary/diaryDay';
@@ -27,8 +27,8 @@ describe('buildDiaryFeed — только сегодня', () => {
   it('берёт записи трёх дневников за сегодня и отбрасывает старые', () => {
     const feed = buildDiaryFeed({
       schema: [
-        { id: 1, trigger: 'Коллега не ответил', createdAt: noon() },
-        { id: 2, trigger: 'Старое', createdAt: longAgo() },
+        { id: 1, trigger: 'Коллега не ответил', schemaIds: ['abandonment'], emotions: [], createdAt: noon() },
+        { id: 2, trigger: 'Старое', schemaIds: ['abandonment'], emotions: [], createdAt: longAgo() },
       ],
       mode: [{ id: 3, situation: 'Критик громко', createdAt: earlier() }],
       gratitude: [{ id: 4, items: ['чай'], date: diaryToday(), createdAt: hoursAgo(0) }],
@@ -61,7 +61,7 @@ describe('buildDiaryFeed — только сегодня', () => {
 
   it('длинный текст режется, у пустой благодарности запасная подпись', () => {
     const feed = buildDiaryFeed({
-      schema: [{ id: 1, trigger: 'я'.repeat(200), createdAt: noon() }],
+      schema: [{ id: 1, trigger: 'я'.repeat(200), schemaIds: ['abandonment'], emotions: [], createdAt: noon() }],
       mode: [],
       gratitude: [{ id: 2, items: [], date: diaryToday(), createdAt: noon() }],
     });
@@ -72,7 +72,7 @@ describe('buildDiaryFeed — только сегодня', () => {
   it('«сегодня» — по локальному дню читателя в любой зоне', () => {
     forEachTimeZone((tz) => {
       const feed = buildDiaryFeed({
-        schema: [{ id: 1, trigger: 'т', createdAt: new Date().toISOString() }],
+        schema: [{ id: 1, trigger: 'т', schemaIds: ['abandonment'], emotions: [], createdAt: new Date().toISOString() }],
         mode: [{ id: 2, situation: 'с', createdAt: longAgo() }],
         gratitude: [],
       });
@@ -163,11 +163,48 @@ describe('мета-строки плиток', () => {
   });
 });
 
+// QA 2026-11, М1: тип записи на главной — тот же, что в «Записях» (entryKind.ts),
+// а плитка «Дневник» не считает разбор записью дневника.
+describe('лента и плитка «Дневник» — те же типы, что в «Записях»', () => {
+  const src = {
+    schema: [
+      { id: 1, trigger: 'просто мысль', schemaIds: [], emotions: [], createdAt: noon() },
+      { id: 2, trigger: 'про схему', schemaIds: ['abandonment'], emotions: [], createdAt: noon() },
+    ],
+    mode: [
+      { id: 3, situation: 'разбор', createdAt: earlier(), fromCase: true },
+      { id: 4, situation: 'дневник режимов', createdAt: earlier() },
+    ],
+    gratitude: [],
+  };
+
+  it('запись без схем и чувств — «thought», со схемой — «schema»', () => {
+    const kinds = Object.fromEntries(buildDiaryFeed(src).map(e => [e.text, e.kind]));
+    expect(kinds).toEqual({ 'просто мысль': 'thought', 'про схему': 'schema', 'разбор': 'case', 'дневник режимов': 'mode' });
+  });
+
+  it('diaryEntriesToday: разбор и строка трекера не в счёт', () => {
+    const feed = buildTodayFeed(buildDiaryFeed(src), { filled: 2, total: 5, index: null });
+    expect(diaryEntriesToday(feed)).toBe(3);
+  });
+
+  it('lastEntryAt: разбор не делает дневник «свежим»', () => {
+    expect(lastEntryAt({
+      schema: [],
+      mode: [
+        { id: 1, situation: 'разбор', createdAt: '2026-10-05T10:00:00Z', fromCase: true },
+        { id: 2, situation: 'запись', createdAt: '2026-10-03T10:00:00Z' },
+      ],
+      gratitude: [],
+    })).toBe('2026-10-03T10:00:00Z');
+  });
+});
+
 describe('lastEntryAt', () => {
   it('самый поздний момент среди трёх дневников; пусто — null', () => {
     expect(lastEntryAt({ schema: [], mode: [], gratitude: [] })).toBeNull();
     expect(lastEntryAt({
-      schema: [{ id: 1, trigger: 'т', createdAt: '2026-10-01T10:00:00Z' }],
+      schema: [{ id: 1, trigger: 'т', schemaIds: ['abandonment'], emotions: [], createdAt: '2026-10-01T10:00:00Z' }],
       mode: [{ id: 2, situation: 'с', createdAt: '2026-10-03T10:00:00Z' }],
       gratitude: [{ id: 3, items: [], date: '2026-10-02', createdAt: '2026-10-02T10:00:00Z' }],
     })).toBe('2026-10-03T10:00:00Z');

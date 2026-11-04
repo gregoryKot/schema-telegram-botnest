@@ -97,7 +97,7 @@ beforeEach(() => {
   mockApi.createTask.mockResolvedValue(undefined);
   mockApi.getFlashcards.mockResolvedValue([]);
   mockApi.createFlashcard.mockResolvedValue(undefined);
-  mockApi.createLetter.mockResolvedValue(undefined);
+  mockApi.createLetter.mockResolvedValue({ id: 1, text: '', createdAt: '' });
   mockApi.getPractices.mockRejectedValue(new Error('offline'));
   mockApi.getPlanHistory.mockRejectedValue(new Error('offline'));
 });

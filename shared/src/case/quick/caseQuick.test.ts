@@ -175,6 +175,8 @@ describe('сборка итога и записи', () => {
     expect(c.triggers).toBe('Она ответила одним словом');
     expect(c.behavior).toContain('исчезнуть');
     expect(c.alias).toBeUndefined();
+    // QA 2026-11, К1: сцена и порыв одного момента ложатся только в пустые поля.
+    expect(c.fillIfEmpty).toEqual(['triggers', 'feelings', 'behavior']);
   });
 
   it('ровный день: Здоровый Взрослый, ворота «Спокойно, хорошо», fromCase', () => {

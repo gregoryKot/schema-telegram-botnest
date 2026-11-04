@@ -8,22 +8,11 @@ import { DIARY_HUE, hueStyle } from '../../lib/tone';
 import { fmtTime, fmtDateKey, fmtDayMonth } from './dateHelpers';
 import { schemaEntryRows, modeEntryRows, type FieldRow } from './entryRows';
 import { EntryPreviewText } from './EntryPreviewText';
+import { DeleteBtn } from './DeleteBtn';
+import { ENTRY_KIND_LABEL, modeEntryKind, schemaEntryKind, type EntryKind } from './entryKind';
 import '../../styles/client-diary.css';
 
 // Карточки записей дневника: бейдж типа в тоне DIARY_HUE, заголовок, текст; клик раскрывает детали и удаление.
-
-export function DeleteBtn({ onClick }: { onClick: () => void }) {
-  const [confirm, setConfirm] = useState(false);
-  if (!confirm) return (
-    <button className="ds-btn ds-btn--sm ds-btn--secondary cd-del" onClick={e => { e.stopPropagation(); setConfirm(true); }}>Удалить</button>
-  );
-  return (
-    <div className="cd-del-row" role="presentation" onClick={e => e.stopPropagation()}>
-      <button className="ds-btn ds-btn--sm ds-btn--accent" onClick={onClick}>Удалить навсегда</button>
-      <button className="ds-btn ds-btn--sm ds-btn--secondary" onClick={() => setConfirm(false)}>Отмена</button>
-    </div>
-  );
-}
 
 export function ExpandField({ label, text, accent }: { label: string; text: string; accent?: boolean }) {
   return (
@@ -34,10 +23,9 @@ export function ExpandField({ label, text, accent }: { label: string; text: stri
   );
 }
 
-const TYPE_LABEL: Record<DiaryType, string> = { schema: 'Схема', mode: 'Режим', gratitude: 'Благодарность' };
-
-function EntryShell({ type, label, title, time, text, preview, children }: {
-  type: DiaryType; label?: string; title?: string; time?: string;
+// type — тон карточки (дневник), kind — ярлык (общий с лентой «Сегодня»).
+function EntryShell({ type, kind, title, time, text, preview, children }: {
+  type: DiaryType; kind: EntryKind; title?: string; time?: string;
   /** Текст записи: длинный в закрытой карточке обрезается (EntryPreviewText). */
   text?: string | null;
   preview?: ReactNode; children?: (open: boolean) => ReactNode;
@@ -46,7 +34,7 @@ function EntryShell({ type, label, title, time, text, preview, children }: {
   return (
     <div className="ds-card ds-card--row ds-card--hover cd-entry" style={hueStyle(DIARY_HUE[type])} aria-expanded={open} {...pressable(() => setOpen(v => !v))}>
       <div className="cd-entry-head">
-        <span className="ds-chip ds-chip--sm tone-tint">{label ?? TYPE_LABEL[type]}</span>
+        <span className="ds-chip ds-chip--sm tone-tint">{ENTRY_KIND_LABEL[kind]}</span>
         {title && <span className="cd-entry-title">{title}</span>}
         {time && <span className="cd-entry-time">{time}</span>}
       </div>
@@ -63,15 +51,15 @@ function ExpandFields({ rows }: { rows: FieldRow[] }) {
   ))}</>;
 }
 
-export function SchemaEntry({ entry, onDelete }: { entry: SchemaDiaryEntry; onDelete: () => void }) {
+export function SchemaEntry({ entry, onDelete }: { entry: SchemaDiaryEntry; onDelete: () => void | Promise<void> }) {
   const schemas = entry.schemaIds.map(id => getSchemaById(id)).filter(Boolean);
   const emotions = EMOTIONS.filter(e => entry.emotions.some((em: EmotionEntry) => em.id === e.id));
-  const thought = schemas.length === 0 && entry.emotions.length === 0; // «Дневник одной страницей»: просто мысль
+  const kind = schemaEntryKind(entry);
   return (
     <EntryShell
       type="schema"
-      label={thought ? 'Мысль' : undefined}
-      title={schemas.length > 0 ? schemas.slice(0, 2).map(s => s!.name).join(' · ') : thought ? undefined : 'Дневник схем'}
+      kind={kind}
+      title={schemas.length > 0 ? schemas.slice(0, 2).map(s => s!.name).join(' · ') : kind === 'thought' ? undefined : 'Дневник схем'}
       time={fmtTime(entry.createdAt)}
       text={entry.trigger}
       preview={emotions.length > 0 && <div className="cd-entry-meta">{emotions.slice(0, 4).map(e => e.label).join(' · ')}</div>}
@@ -86,12 +74,12 @@ export function SchemaEntry({ entry, onDelete }: { entry: SchemaDiaryEntry; onDe
   );
 }
 
-export function ModeEntry({ entry, onDelete }: { entry: ModeDiaryEntry; onDelete: () => void }) {
+export function ModeEntry({ entry, onDelete }: { entry: ModeDiaryEntry; onDelete: () => void | Promise<void> }) {
   const mode = getModeById(entry.modeId);
   return (
     <EntryShell
       type="mode"
-      label={entry.fromCase ? 'Разбор' : undefined}
+      kind={modeEntryKind(entry)}
       title={mode ? mode.name : 'Дневник режимов'}
       time={fmtTime(entry.createdAt)}
       text={entry.situation}
@@ -114,11 +102,12 @@ export function ModeEntry({ entry, onDelete }: { entry: ModeDiaryEntry; onDelete
   );
 }
 
-export function GratitudeEntry({ entry, onDelete }: { entry: GratitudeDiaryEntry; onDelete: () => void }) {
+export function GratitudeEntry({ entry, onDelete }: { entry: GratitudeDiaryEntry; onDelete: () => void | Promise<void> }) {
   const n = entry.items.length;
   return (
     <EntryShell
       type="gratitude"
+      kind="gratitude"
       title={`${n} ${n === 1 ? 'пункт' : n < 5 ? 'пункта' : 'пунктов'}`}
     >
       {open => (

@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { pressable } from '../../../utils/a11y';
 import { SchemaDiaryEntry } from '../../../types';
 import { EMOTIONS, getSchemaById } from '../../../schemaTherapyData';
-import { formatDt, Field, DeleteBtn } from './shared';
+import { formatDt, Field } from './shared';
+import { DeleteBtn } from './DeleteBtn';
 
 // Карточка записи дневника схем. Вынесено из DiaryListView.tsx (правило №10).
 export function SchemaCard({
@@ -12,7 +13,7 @@ export function SchemaCard({
 }: {
   entry: SchemaDiaryEntry;
   color: string;
-  onDelete: () => void;
+  onDelete: () => void | Promise<void>;
 }) {
   const [open, setOpen] = useState(false);
   const emotionMetas = EMOTIONS.filter((e) =>

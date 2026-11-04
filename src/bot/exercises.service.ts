@@ -1,7 +1,7 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { encrypt, encryptJson } from '../utils/crypto';
-import { deleteOwned } from '../utils/require-affected';
+import { deleteOwned, requireAffected } from '../utils/require-affected';
 import {
   readBeliefCheck,
   readFlashcard,
@@ -69,6 +69,19 @@ export class ExercisesService {
     const row = await this.prisma.userLetter.create({
       data: { userId, text: encrypt(text) ?? text },
     });
+    return readLetter(row);
+  }
+
+  // «Изменить» после «Запечатать» правит то же письмо (QA 2026-11, З4).
+  async updateLetter(userId: bigint, id: number, text: string) {
+    const data = { text: encrypt(text) ?? text };
+    const where = { id, userId };
+    await requireAffected(
+      this.prisma.userLetter.updateMany({ where, data }),
+      'Letter',
+    );
+    const row = await this.prisma.userLetter.findFirst({ where });
+    if (!row) throw new NotFoundException('Letter not found'); // удалено между запросами
     return readLetter(row);
   }
 

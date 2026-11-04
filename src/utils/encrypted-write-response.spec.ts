@@ -207,6 +207,15 @@ const CASES: Case[] = [
     read: (s, w) => s.exercises.getLetters(USER).then(byId(w)),
   },
   {
+    model: 'UserLetter',
+    route: 'PATCH /api/letters/:id',
+    write: async (s) => {
+      const { id } = await s.exercises.createLetter(USER, 'первая версия');
+      return s.exercises.updateLetter(USER, id, 'исправленная версия');
+    },
+    read: (s, w) => s.exercises.getLetters(USER).then(byId(w)),
+  },
+  {
     model: 'UserSafePlace',
     route: 'POST /api/safe-place',
     write: (s) => s.exercises.upsertSafePlace(USER, 'берег озера'),

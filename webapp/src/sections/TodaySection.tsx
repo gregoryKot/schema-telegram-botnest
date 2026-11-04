@@ -18,7 +18,7 @@ import { useWhySheet } from './today/useWhySheet';
 import { trackHomeTile } from './today/trackHomeTile';
 import { homeGreeting } from './today/helpers';
 import { formatGreetingDate } from './today/greetingDate';
-import { buildTodayFeed, trackerSummary, trackerTileMeta, caseTileMeta, diaryTileMeta } from './today/todayFeed';
+import { buildTodayFeed, trackerSummary, trackerTileMeta, caseTileMeta, diaryTileMeta, diaryEntriesToday } from './today/todayFeed';
 import { QuickEntrySheet } from '../components/diary/QuickEntrySheet';
 import { TherapyNudgeCard } from '../components/therapy/TherapyNudgeCard';
 import { HomeTherapyLine } from './today/HomeTherapyLine';
@@ -79,7 +79,7 @@ export function TodaySection({
         ratings={ratings}
         trackerMeta={trackerTileMeta(tracker)}
         caseMeta={caseTileMeta(casesToday)}
-        diaryMeta={diaryTileMeta(diariesLoaded, feed.length, lastAt)}
+        diaryMeta={diaryTileMeta(diariesLoaded, diaryEntriesToday(feed), lastAt)}
         onTracker={() => { trackHomeTile('tracker'); onOpenTracker(); }}
         onCase={() => { trackHomeTile('case'); setCaseOpen(true); }}
         onDiary={() => { trackHomeTile('diary'); setQuickOpen(true); }}

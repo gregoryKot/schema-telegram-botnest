@@ -8,17 +8,15 @@ import { getModeById } from '../schemaTherapyData';
 import { IdentityDot } from '../../../shared/src/components/IdentityDot';
 import { useWarmWords } from '../../../shared/src/warmWords/useWarmWords';
 import { pluralEntries } from '../../../shared/src/share/shareTexts';
+import {
+  WARM_SOURCE_LABEL,
+  buildWarmWordsTexts,
+  warmWordTitle,
+} from '../../../shared/src/warmWords/warmWordsText';
 
 interface Props {
   onClose: () => void;
 }
-
-// Откуда слова — подпись под датой (источники collectWarmWords).
-const SOURCE_LABELS: Record<'diary' | 'card' | 'phrase', string> = {
-  diary: 'дневник',
-  card: 'карточка режима',
-  phrase: 'разбор фразы',
-};
 
 function fmtDate(d: Date): string {
   return d.toLocaleDateString('ru-RU', {
@@ -32,7 +30,7 @@ function fmtDate(d: Date): string {
 // карточек режимов, собранные в одном месте, чтобы перечитывать в трудный
 // момент. Только чтение: детекция кризиса была на этапе записи (правило №7).
 export function WarmWords({ onClose }: Props) {
-  const tr = useTr();
+  const text = buildWarmWordsTexts(useTr());
   const { items, failed } = useWarmWords(api);
 
   return (
@@ -56,10 +54,7 @@ export function WarmWords({ onClose }: Props) {
             lineHeight: 1.6,
           }}
         >
-          {tr(
-            'Здесь — твои слова: ответы Здорового Взрослого из дневника и карточек режимов, а ещё переписанные фразы из разбора. Перечитывай, когда трудно.',
-            'Здесь — ваши слова: ответы Здорового Взрослого из дневника и карточек режимов, а ещё переписанные фразы из разбора. Перечитывайте, когда трудно.',
-          )}
+          {text.lede}
         </div>
 
         {items === null && <SkeletonList rows={4} h={92} />}
@@ -75,21 +70,13 @@ export function WarmWords({ onClose }: Props) {
               lineHeight: 1.6,
             }}
           >
-            {tr(
-              'Не удалось загрузить твои слова. Они на месте — проверь связь и открой ещё раз.',
-              'Не удалось загрузить ваши слова. Они на месте — проверьте связь и откройте ещё раз.',
-            )}
+            {text.failed}
           </div>
         )}
 
         {!failed && items !== null && items.length === 0 && (
           <div style={{ textAlign: 'center', padding: '20px 8px' }}>
-            <div className="u-sub13-lh16">
-              {tr(
-                'Здесь пока пусто. Слова появятся, когда сохранишь ответ Здорового Взрослого — в дневнике режимов или в карточке режима.',
-                'Здесь пока пусто. Слова появятся, когда сохраните ответ Здорового Взрослого — в дневнике режимов или в карточке режима.',
-              )}
-            </div>
+            <div className="u-sub13-lh16">{text.empty}</div>
           </div>
         )}
 
@@ -127,19 +114,15 @@ export function WarmWords({ onClose }: Props) {
                     }}
                   >
                     <span className="u-sub12">
-                      {item.source === 'phrase' ? (
-                        'Переписанная фраза'
-                      ) : mode ? (
+                      {mode && (
                         <>
                           <IdentityDot
                             color={mode.groupColor ?? 'var(--accent)'}
                             size={8}
                           />{' '}
-                          {mode.name}
                         </>
-                      ) : (
-                        'Режим'
                       )}
+                      {warmWordTitle(item, mode?.name)}
                     </span>
                     <span
                       style={{
@@ -149,7 +132,7 @@ export function WarmWords({ onClose }: Props) {
                         textAlign: 'right',
                       }}
                     >
-                      {fmtDate(item.at)} · {SOURCE_LABELS[item.source]}
+                      {fmtDate(item.at)} · {WARM_SOURCE_LABEL[item.source]}
                     </span>
                   </div>
                   <div

@@ -11,7 +11,11 @@ import type { CaseChip } from './caseBodyChips';
 import type { ModeEntrySaveData } from '../mode/modeDiarySteps';
 import type { RecognitionView } from './caseRecognition';
 import { findPickerGroupIdByModeId } from '../mode/modeFeelGates';
-import type { CaseCardBody, CaseFlowFields } from './caseFlowTypes';
+import {
+  CASE_CARD_FILL,
+  type CaseCardBody,
+  type CaseFlowFields,
+} from './caseFlowTypes';
 
 /** Кастует id ворот в CaseGateId — FEEL_GATES и CaseGateId читают из одного
  *  источника (caseTypes.ts), поэтому любой найденный id точно входит в union;
@@ -67,8 +71,8 @@ export function toSaveData(
   };
 }
 
-/** Маппинг в карточку режима (onSaveCard) — вызывается только при вердикте
- *  'mode', после шага name (alias уже известен, может быть пустым). */
+/** Маппинг в карточку режима (onSaveCard) — только при вердикте 'mode', после
+ *  шага name; поля момента ложатся лишь в пустое место (CASE_CARD_FILL). */
 export function toCardBody(
   modeId: string,
   alias: string,
@@ -80,5 +84,6 @@ export function toCardBody(
     triggers: traits.trigger || undefined,
     feelings: traits.body || undefined,
     behavior: traits.impulse || undefined,
+    fillIfEmpty: CASE_CARD_FILL,
   };
 }

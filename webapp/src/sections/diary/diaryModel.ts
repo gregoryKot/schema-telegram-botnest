@@ -2,6 +2,7 @@ import type { DiaryType, SchemaDiaryEntry, ModeDiaryEntry, GratitudeDiaryEntry }
 import { diaryDayKey } from '../../../../shared/src/diary/diaryDay';
 import { pluralRu } from '../../../../shared/src/utils/pluralRu';
 import type { TrackerDay } from './trackerEntries';
+import { modeEntryKind } from './entryKind';
 
 // Чистая модель экрана «Записи»: единый список (дневники + строки трекера),
 // группировка по дням, счётчики сегмента «Все · Трекер · Случаи · Дневник».
@@ -15,7 +16,7 @@ export type AnyEntry =
 export type DiaryFilter = 'all' | 'tracker' | 'case' | 'diary';
 
 /** Запись режима, рождённая потоком «Что случилось» (маркер fromCase, этап 4 простого клиента). */
-export const isCaseEntry = (e: AnyEntry): boolean => e._type === 'mode' && e.entry.fromCase === true;
+export const isCaseEntry = (e: AnyEntry): boolean => e._type === 'mode' && modeEntryKind(e.entry) === 'case';
 
 /** Все записи одним списком, новые сверху; строка трекера идёт последней внутри своего дня. */
 export function buildEntries(
