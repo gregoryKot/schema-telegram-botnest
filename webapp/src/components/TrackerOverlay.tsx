@@ -28,7 +28,6 @@ import type { Need } from '../types';
 export function TrackerOverlay({
   needs,
   ratings,
-  isOffline,
   onChange,
   onSaved,
   onClose,
@@ -68,7 +67,6 @@ export function TrackerOverlay({
 
   const save = useRatingSaver({
     date: isBackfill ? date : undefined,
-    isOffline: !isBackfill && isOffline,
     onSaved: isBackfill ? undefined : onSaved,
     errorMessage: isBackfill ? 'tracker backfill rating save failed' : 'tracker rating save failed',
     section: 'tracker',

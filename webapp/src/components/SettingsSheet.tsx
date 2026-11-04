@@ -9,7 +9,7 @@ import { scrollIntoViewSafe } from '../../../shared/src/utils/scrollIntoView';
 import { useDialogA11y } from '../../../shared/src/utils/dialogA11y';
 import { ShareCardSheet } from '../share/ShareCardSheet';
 import { pairInviteShare } from '../../../shared/src/share/cards/inviteShare';
-import { TIMEZONES } from '../../../shared/src/settings/constants';
+import { timezoneLabel } from '../../../shared/src/settings/timezones';
 import { useSitePair } from './settingsSheet/useSitePair';
 import { useTherapyRelationSettings } from './settingsSheet/useTherapyRelationSettings';
 import { AppearanceSection } from './settingsSheet/AppearanceSection';
@@ -104,7 +104,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
     );
   }
 
-  const tzLabel = TIMEZONES.find(t => t.iana === settings.notifyTimezone)?.label ?? settings.notifyTimezone;
+  const tzLabel = timezoneLabel(settings.notifyTimezone);
 
   return (
     <>

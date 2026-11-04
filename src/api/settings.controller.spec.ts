@@ -136,12 +136,30 @@ describe('SettingsController.updateSettings — whitelist полей', () => {
     });
   });
 
-  it('невалидная таймзона (не из VALID_TIMEZONES) отбрасывается', async () => {
+  it('несуществующая таймзона отбрасывается', async () => {
     const { controller, botService } = makeController();
     await controller.updateSettings(makeReq(), {
       notifyTimezone: 'Mars/Olympus',
     });
     expect(botService.updateUserSettings).toHaveBeenCalledWith(1n, {});
+  });
+
+  // QA 2026-11-03: пояс устройства (Париж) показывается в выборе первым;
+  // повторный тап по нему раньше молча отбрасывался — пояс вне списка.
+  it('настоящий пояс IANA вне списка выбора сохраняется; новый пояс из списка — тоже', async () => {
+    const { controller, botService } = makeController();
+    await controller.updateSettings(makeReq(), {
+      notifyTimezone: 'Europe/Paris',
+    });
+    expect(botService.updateUserSettings).toHaveBeenLastCalledWith(1n, {
+      notifyTimezone: 'Europe/Paris',
+    });
+    await controller.updateSettings(makeReq(), {
+      notifyTimezone: 'Asia/Vladivostok',
+    });
+    expect(botService.updateUserSettings).toHaveBeenLastCalledWith(1n, {
+      notifyTimezone: 'Asia/Vladivostok',
+    });
   });
 
   it('addressForm принимает только «ty»/«vy», остальное отбрасывается', async () => {

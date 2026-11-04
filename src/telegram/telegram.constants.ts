@@ -27,17 +27,6 @@ export const BOT_COMMANDS = [
   { command: 'about', description: 'О приложении и авторе ℹ️' },
 ];
 
-export const VALID_TIMEZONES = [
-  'America/Los_Angeles',
-  'America/New_York',
-  'Europe/London',
-  'Europe/Berlin',
-  'Europe/Kyiv',
-  'Asia/Jerusalem',
-  'Europe/Moscow',
-  'Asia/Dubai',
-  'Asia/Tashkent',
-  'Asia/Almaty',
-  'Asia/Shanghai',
-];
+// Список поясов — src/notification/notify-timezones.ts (один на бота, сайт и мини-апп).
+export { VALID_TIMEZONES } from '../notification/notify-timezones';
 export const ERROR_RETRY = 'Не получилось. Попробовать ещё раз.';

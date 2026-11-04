@@ -183,6 +183,7 @@ export const USER_EXPORT_SELECT = {
   notifyEnabled: true,
   notifyLocalHour: true,
   notifyTimezone: true,
+  notifyTimezoneChosen: true,
   notifyReminderEnabled: true,
   notifyFrequency: true,
   notifyAdaptiveLevel: true,

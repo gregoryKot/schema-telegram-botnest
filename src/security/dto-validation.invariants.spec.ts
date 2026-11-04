@@ -153,7 +153,7 @@ function countBodyParams(): number {
 // номер строки после prettier совпал с прежним. Переезд лимитов на
 // `STRICT_THROTTLE` (check-persistent-throttle) сдвинул её на семь строк вверх.
 const VIOLATIONS_LEGACY: Record<string, string> = {
-  'api/tracker.controller.ts:189':
+  'api/tracker.controller.ts:180':
     'inline-тип Record<string, number> (childhood-ratings) — ручная ' +
     'проверка по NEED_IDS в коде, но не DTO',
   'auth/auth-account.controller.ts:235':

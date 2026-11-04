@@ -4,6 +4,7 @@
 // файл), этот файл добирает остальную публичную поверхность. Отказ от роли
 // терапевта переехал в src/therapy/therapist-exit.service.ts (2026-10-22).
 import { AccountService } from './account.service';
+import { adoptDeviceTimezone } from './device-timezone';
 
 function makePrisma() {
   const update = jest.fn(() => Promise.resolve({}));
@@ -76,6 +77,59 @@ describe('AccountService.registerUser', () => {
       botBlockedAt: null,
       deletedAt: null,
     });
+  });
+});
+
+// QA 2026-11-03: пояс устройства не доходил до сервера (фронты слали число
+// tzOffset, валидатор его отбрасывал), и «сегодня» сервера у всех было
+// московским. Пояс устройства становится поясом уведомлений, пока человек не
+// выбрал свой сам (notifyTimezoneChosen).
+describe('AccountService.registerUser / adoptDeviceTimezone — пояс устройства', () => {
+  const uid = 777n;
+
+  it('пояс вне списка выбора, но настоящий IANA (Париж) — тоже принимается', async () => {
+    const prisma = makePrisma();
+    const service = new AccountService(prisma);
+    await service.registerUser(uid, undefined, 'Europe/Paris');
+    expect(prisma.user.upsert.mock.calls[0][0].create).toEqual({
+      id: uid,
+      notifyTimezone: 'Europe/Paris',
+    });
+  });
+
+  it('у старого юзера пояс меняется только условным UPDATE: не выбран руками и отличается', async () => {
+    const prisma = makePrisma();
+    const service = new AccountService(prisma);
+    const changed = await service.registerUser(
+      uid,
+      undefined,
+      'Asia/Vladivostok',
+    );
+    expect(changed).toBe(true);
+    expect(prisma.user.updateMany).toHaveBeenCalledWith({
+      where: {
+        id: uid,
+        notifyTimezoneChosen: false,
+        NOT: { notifyTimezone: 'Asia/Vladivostok' },
+      },
+      data: { notifyTimezone: 'Asia/Vladivostok' },
+    });
+  });
+
+  it('пояс выбран руками (или уже совпадает) — UPDATE ничего не нашёл, false', async () => {
+    const prisma = makePrisma();
+    prisma.user.updateMany.mockResolvedValue({ count: 0 });
+    expect(await adoptDeviceTimezone(prisma, uid, 'Asia/Vladivostok')).toBe(
+      false,
+    );
+  });
+
+  it('невалидный пояс или его нет (бот /start) — пояс не трогается вовсе', async () => {
+    const prisma = makePrisma();
+    const service = new AccountService(prisma);
+    expect(await service.registerUser(uid, 'Аня', 'Mars/Base')).toBe(false);
+    expect(await service.registerUser(uid, 'Аня')).toBe(false);
+    expect(prisma.user.updateMany).not.toHaveBeenCalled();
   });
 });
 

@@ -5,7 +5,7 @@ import { BotService } from '../bot/bot.service';
 import { AccountService } from '../bot/account.service';
 import { TelegramAuthGuard } from './telegram-auth.guard';
 import { TelegramScheduleService } from '../telegram/telegram.schedule.service';
-import { VALID_TIMEZONES } from '../telegram/telegram.constants';
+import { isNotifyTimezone } from '../notification/notify-timezones';
 import { UpdateSettingsDto } from './dto/settings.dto';
 import { sanitizeUiPrefs } from './ui-prefs.sanitize';
 
@@ -72,10 +72,7 @@ export class SettingsController {
       body.notifyLocalHour! <= 23
     )
       clean.notifyLocalHour = body.notifyLocalHour;
-    if (
-      typeof body.notifyTimezone === 'string' &&
-      VALID_TIMEZONES.includes(body.notifyTimezone)
-    )
+    if (isNotifyTimezone(body.notifyTimezone))
       clean.notifyTimezone = body.notifyTimezone;
     if (
       Number.isInteger(body.notifyFrequency) &&

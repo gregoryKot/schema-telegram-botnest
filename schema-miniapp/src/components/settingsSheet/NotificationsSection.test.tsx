@@ -120,19 +120,36 @@ describe('NotificationsSection — «Итоги дня» включены', () =
     expect(setView).toHaveBeenCalledWith('tz');
   });
 
-  it('неизвестный IANA-пояс — подпись падает обратно на сырую строку', () => {
+  // Пояс устройства вне списка выбора теперь обычен (QA 2026-11-03): сервер
+  // пишет его в notifyTimezone, пока человек не выбрал пояс сам.
+  it('пояс вне списка — подпись по-русски из словаря или хвост IANA, со смещением', () => {
     render(
       <NotificationsSection
         settings={baseSettings({
           notifyEnabled: true,
-          notifyTimezone: 'Antarctica/Vostok',
+          notifyTimezone: 'Asia/Kathmandu',
         })}
         patch={vi.fn()}
         setView={vi.fn()}
         onInfo={vi.fn()}
       />,
     );
-    expect(screen.getByText('Antarctica/Vostok')).toBeTruthy();
+    expect(screen.getByText('Kathmandu (UTC+5:45)')).toBeTruthy();
+  });
+
+  it('выдуманный пояс — подпись падает обратно на сырую строку', () => {
+    render(
+      <NotificationsSection
+        settings={baseSettings({
+          notifyEnabled: true,
+          notifyTimezone: 'Mars/Base',
+        })}
+        patch={vi.fn()}
+        setView={vi.fn()}
+        onInfo={vi.fn()}
+      />,
+    );
+    expect(screen.getByText('Mars/Base')).toBeTruthy();
   });
 
   it('переключатель «Итоги дня» зовёт patch с инвертированным notifyEnabled', () => {

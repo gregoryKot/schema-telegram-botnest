@@ -84,6 +84,7 @@ model User {
   notifyEnabled          Boolean  @default(true)
   notifyLocalHour        Int      @default(21)
   notifyTimezone         String   @default("Europe/Moscow")
+  notifyTimezoneChosen   Boolean  @default(false) // пояс выбран руками; false — следует за поясом устройства (/api/init)
   notifyReminderEnabled  Boolean  @default(true)
   // ── Adaptive notification cadence ────────────────────────────────────────
   notifyFrequency        Int      @default(0)  // выбор юзера: 0=каждый день,1=через день,2=2×/нед,3=раз/нед — потолок для адаптации

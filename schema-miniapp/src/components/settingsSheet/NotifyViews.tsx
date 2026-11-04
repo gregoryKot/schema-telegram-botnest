@@ -1,6 +1,7 @@
 import { UserSettings } from '../../api';
 import { View } from './types';
-import { HOURS, FREQ_LABELS, QUIET_PRESETS, TIMEZONES, pad } from './constants';
+import { HOURS, FREQ_LABELS, QUIET_PRESETS, pad } from './constants';
+import { timezoneOptions } from '../../../../shared/src/settings/timezones';
 
 interface Props {
   view: View;
@@ -190,7 +191,7 @@ export function NotifySubView({
       {/* ── TZ VIEW ── */}
       {view === 'tz' && (
         <div className="u-col4">
-          {TIMEZONES.map((tz) => {
+          {timezoneOptions(settings.notifyTimezone).map((tz) => {
             const active = tz.iana === settings.notifyTimezone;
             return (
               <div

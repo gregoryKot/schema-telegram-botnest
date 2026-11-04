@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { forEachTimeZone } from '../../../../shared/src/utils/timeZone.test-helpers';
 import {
-  utcDateStr, dayLevel, buildLevelMap, buildHeatWeeks, monthLabels, daysWord,
+  utcDateStr, dayLevel, buildLevelMap, buildHeatWeeks, monthLabels, daysWord, counterItems,
   achievementProgress, avatarInitial, trendKind, heatWeeksForWidth, patternBarPercent,
 } from './profileModel';
 
@@ -66,6 +66,16 @@ describe('мелкие функции', () => {
   it('utcDateStr — календарный день UTC', () => {
     expect(utcDateStr(new Date(Date.UTC(2026, 0, 5, 23, 30)))).toBe('2026-01-05');
   });
+  // QA 2026-11-03: «1 дней стрика», «1 записей дневника», «1 прохождений теста».
+  it('counterItems: подписи счётчиков склоняются по числу', () => {
+    expect(counterItems({ streak: 1, totalDays: 2, diaryCount: 1, ysqCount: 1 }).map(([, l]) => l)).toEqual([
+      'день стрика', 'дня всего', 'запись дневника', 'прохождение теста',
+    ]);
+    expect(counterItems({ streak: 5, totalDays: 21, diaryCount: 3, ysqCount: 12 }).map(([, l]) => l)).toEqual([
+      'дней стрика', 'день всего', 'записи дневника', 'прохождений теста',
+    ]);
+  });
+
   it('daysWord', () => {
     expect([1, 2, 5, 11, 21, 12].map(daysWord)).toEqual(['день', 'дня', 'дней', 'дней', 'день', 'дней']);
   });

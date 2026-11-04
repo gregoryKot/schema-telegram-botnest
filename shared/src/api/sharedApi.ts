@@ -48,7 +48,10 @@ export interface ApiTransport {
 }
 
 export const buildSharedApi = (t: ApiTransport) => ({
-  init: (tzOffset?: number) => t.post('/api/init', { tzOffset }),
+  // Пояс устройства (deviceTimeZone): пока человек не выбрал пояс сам, сервер
+  // считает по нему «сегодня» — серию, недельную полосу, напоминания. Раньше
+  // уходило число tzOffset, которого DTO не знает, и пояс у всех был московским.
+  init: (timezone?: string) => t.post('/api/init', { timezone }),
 
   // Продуктовая аналитика (правило №8). Fire-and-forget: аналитика НИКОГДА не
   // влияет на UX — ошибки/сеть глотаем, промис не пробрасываем.

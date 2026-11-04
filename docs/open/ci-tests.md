@@ -365,3 +365,9 @@ Ubuntu 26) у трёх PR подряд падали `backend` → `check-coverag
   (на PR этапа 2 смок был красным из-за двух кнопок «Трекер» после первой оценки — поймал только
   ручной локальный прогон). Нужно решение: вынести `tracker-smoke` + `crisis-smoke` отдельной джобой
   `ci.yml` (Chromium из кэша) или принять ночной прогон как осознанный.
+- **`src/telegram/telegram.schedule.errors.spec.ts` краснеет с 23:00 до 00:00 UTC.** Тест «падение
+  scheduleDailyReminders через catch-up — warn» берёт настоящие часы (`jest.useFakeTimers()` без
+  `setSystemTime`), а `MidnightPlanner.catchUp` (`src/telegram/telegram.midnight-planner.ts`,
+  `catchUpClaimWindowMs`) в последний час до полуночи UTC ничего не захватывает — «обход сделает
+  тик», `getAllUsersWithSettings` не зовётся. Пойман прогоном в 23:20 UTC 2026-11-03 (QA клиента,
+  «сегодня» и пояса), к задаче не относится. Починка — `jest.setSystemTime` на полдень в `beforeEach`.

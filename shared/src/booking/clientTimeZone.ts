@@ -8,19 +8,13 @@
 // webapp/src/components/booking, и в бэкенд-форматтере уведомления админу
 // (там своя копия словаря городов из-за tsconfig.build.json, см. комментарий
 // в src/booking/client-timezone-names.ts).
-import { cityLabel, isValidTimeZone } from '../utils/timeZoneNames';
+import { cityLabel, deviceTimeZone } from '../utils/timeZoneNames';
 
 const MSK = 'Europe/Moscow';
 
 /** Определить часовой пояс посетителя; фолбэк — Europe/Moscow. */
 export function resolveClientTimeZone(): string {
-  try {
-    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    if (tz && isValidTimeZone(tz)) return tz;
-  } catch {
-    // Intl недоступен/бросил — берём фолбэк ниже.
-  }
-  return MSK;
+  return deviceTimeZone() ?? MSK;
 }
 
 /** Смещение зоны от UTC в минутах в момент `at` (учитывает DST на эту дату). */
