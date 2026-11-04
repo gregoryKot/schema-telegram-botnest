@@ -19,7 +19,7 @@
 /* Клиента нет (удалён, чужой, выдуманный id) — ClientCardFallback.tsx. */
 .tk-missing { align-items: flex-start; }
 .tk-missing-text { margin: 0; font-size: 15px; line-height: 1.5; }
-@media (min-width: 768px) {
+@media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) {
   .tk-tabs-body > .tk-ov, .tk-tabs-body > .tk-load, .tk-tabs-body > .ds-page { margin-left: var(--tk-center); padding-inline: var(--tk-gutter); }
   .therapist-scroll--list > .ds-page { margin-left: var(--tk-center); max-width: var(--tk-max); padding-inline: var(--tk-gutter); }
   .tk-tabs-body > .page-inner-wide { margin: 0 0 0 var(--tk-center); max-width: var(--tk-max); padding-inline: var(--tk-gutter); }
@@ -107,7 +107,7 @@
 .tk-day.is-on { background: var(--ink); color: var(--on-ink); }
 
 /* ── Мобильный (<768): компактная шапка, «Обзор» в одну колонку ──────────── */
-@media (max-width: 767px) {
+@media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
   .tk-head { padding: 6px 16px 0; gap: 12px; }
   .tk-head .ds-tabs { margin: 0 -16px; padding: 0 16px; gap: 20px; }
   .tk-head > .ds-back { margin-bottom: 0; }

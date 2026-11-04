@@ -75,7 +75,7 @@
 .tc-task-flag { display: inline-block; margin-top: 6px; }
 .tc-dash { padding: 20px 0; text-align: center; color: var(--text-faint); font-size: 13px; }
 
-@media (max-width: 767px) {
+@media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
   .tc-count { font-size: 24px; }
   .tc-add { grid-template-columns: 1fr; padding: 20px; }
   .tc-search { width: 100%; }

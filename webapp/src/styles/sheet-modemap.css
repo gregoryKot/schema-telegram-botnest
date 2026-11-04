@@ -239,7 +239,7 @@
    вариант для браузера без dvh.
    Пустое состояние в фиксированной высоте не центрируется насильно, а
    растёт, и .mm2-body прокручивает его, если не влезло. */
-@media (max-width: 767px) {
+@media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
   .mm2-body {
     --mm2-chrome: calc(var(--safe-top) + var(--safe-bottom) + var(--mobile-nav-h) + 240px);
     flex: none; overflow: auto;

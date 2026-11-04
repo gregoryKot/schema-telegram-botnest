@@ -72,7 +72,7 @@
 .cs-sheet { position: fixed; inset: 0; z-index: 90; background: var(--bg); display: flex; flex-direction: column; }
 .cs-sheet-body { flex: 1; min-height: 0; }
 
-@media (max-width: 767px) {
+@media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
   .cs-sheet { padding-top: var(--safe-top); } /* статус-бар установленного приложения (#902) */
   .cs-page { gap: var(--space-16); }
   .cs-head { gap: var(--space-12) var(--space-16); }

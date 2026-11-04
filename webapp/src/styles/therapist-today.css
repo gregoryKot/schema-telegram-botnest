@@ -1,7 +1,7 @@
 /* Экран «Сегодня» кабинета терапевта. Префикс tt-. */
 .tt-page { max-width: 1200px; }
 /* Колонка кабинета — та же, что у списка и карточки клиента (index.css). */
-@media (min-width: 768px) { .tt-page { margin-left: var(--tk-center); max-width: var(--tk-max); padding-inline: var(--tk-gutter); } }
+@media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) { .tt-page { margin-left: var(--tk-center); max-width: var(--tk-max); padding-inline: var(--tk-gutter); } }
 .tt-counters { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; }
 /* Счётчик — ds-card--row с подписью ds-label (#906): радиус и отступы от
    примитива, здесь только порядок подписи и числа. */
@@ -42,7 +42,7 @@
 .tt-attn .tt-row-sub { color: var(--warn-ink); font-size: 12px; }
 .tt-attn-list { display: flex; flex-direction: column; gap: 8px; }
 
-@media (max-width: 767px) {
+@media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
   /* Три счётчика в ряд — ~115px на карточку: отступ уже, чем у ds-card--row,
      капитель подписи остаётся и ложится в две строки. */
   .tt-counters { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }

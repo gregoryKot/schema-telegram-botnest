@@ -150,7 +150,7 @@
 .ss-confirm { padding: 16px; border-radius: 14px; background: var(--warn-bg); color: var(--warn-ink); display: flex; flex-direction: column; gap: 12px; font-size: 14px; }
 .ss-confirm .ds-btn { flex: 1; }
 
-@media (max-width: 767px) {
+@media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
   .ss-sheet, .ss-test { padding-top: var(--safe-top); } /* статус-бар установленного приложения (#902) */
   .ss-title { font-size: 28px; }
   .ss-inner { padding-top: 24px; }

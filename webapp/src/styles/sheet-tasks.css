@@ -21,7 +21,7 @@
 .sk-strong { font-weight: 600; }
 .sk-submit { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
 .sk-error { font-size: 13px; color: var(--err); }
-@media (max-width: 767px) {
+@media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
   .sk-title { font-size: 26px; }
   .sk-page { padding-top: 20px; gap: 22px; }
 }
@@ -134,7 +134,7 @@
 .sk-fc-value { font-size: 15px; line-height: 1.55; white-space: pre-wrap; overflow-wrap: anywhere; }
 .sk-fc-pair { display: flex; gap: 10px; }
 .sk-fc-pair .ds-btn { flex: 1; }
-@media (max-width: 767px) {
+@media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
   .sk-fc-hero { font-size: 32px; }
   .sk-fc-body { padding: 24px 16px 64px; }
 }
@@ -219,4 +219,4 @@
 .sk-priv-item-text { font-size: 13.5px; line-height: 1.65; color: var(--text-sub); }
 
 /* Телефон: корни полноэкранных листов не уходят под статус-бар установленного приложения (#902, --safe-top в index.css). */
-@media (max-width: 767px) { .sk-sheet, .sk-overlay, .sk-priv { padding-top: var(--safe-top); } }
+@media (max-width: 767px), (pointer: coarse) and (max-height: 500px) { .sk-sheet, .sk-overlay, .sk-priv { padding-top: var(--safe-top); } }

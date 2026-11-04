@@ -249,7 +249,7 @@ button.ds-list-row, a.ds-list-row { width: 100%; box-sizing: border-box; border:
 
 /* ── Адаптив ─────────────────────────────────────────────────────────────── */
 /* Раскладка телефона: отступы, кегли, прокрутка сегмента. */
-@media (max-width: 767px) {
+@media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
   .ds-page { padding: 20px 16px 40px; gap: 24px; }
   .ds-h1 { font-size: 32px; }
   .ds-h2 { font-size: 22px; }

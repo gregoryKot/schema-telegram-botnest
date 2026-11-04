@@ -582,7 +582,7 @@ a { color: inherit; text-decoration: none; }
   background: var(--bg);
 }
 .page-inner-wide { padding: 48px 64px 96px; max-width: 1280px; margin: 0 auto; }
-@media (max-width: 767px) {
+@media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
   .page-inner-wide { padding: 20px 16px 40px; }
 }
 
@@ -758,7 +758,7 @@ a { color: inherit; text-decoration: none; }
 .row   { display: flex; flex-direction: row; }
 .doc-grid { display: grid; grid-template-columns: 1fr 320px; gap: 72px; align-items: start; }
 @media (max-width: 1240px) { .doc-grid { grid-template-columns: 1fr; gap: var(--space-48); } }
-@media (max-width: 767px) { .doc-grid { gap: var(--space-32); } }
+@media (max-width: 767px), (pointer: coarse) and (max-height: 500px) { .doc-grid { gap: var(--space-32); } }
 
 /* ─── Animations ─────────────────────────────────────────────────────────── */
 @keyframes fade-in     { from { opacity: 0; } to { opacity: 1; } }
@@ -832,7 +832,7 @@ a { color: inherit; text-decoration: none; }
    Desktop: fill canvas via a flex chain. Mobile: natural block flow so the
    whole page scrolls like a regular section. Layout is kept in CSS (not inline
    styles) so mobile breakpoint can cleanly override without !important hacks. */
-@media (min-width: 768px) {
+@media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) {
   .therapist-sheet {
     flex: 1;
     min-width: 0;
@@ -861,7 +861,7 @@ a { color: inherit; text-decoration: none; }
 }
 
 /* Mobile: header padding + horizontal tab scroll */
-@media (max-width: 767px) {
+@media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
   .tabs {
     padding: 0 16px;
     overflow-x: auto;
@@ -910,7 +910,7 @@ a { color: inherit; text-decoration: none; }
 }
 
 /* ─── Responsive breakpoints ─────────────────────────────────────────────── */
-@media (max-width: 767px) {
+@media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
   .app-shell {
     display: flex;
     flex-direction: column;
@@ -950,7 +950,7 @@ a { color: inherit; text-decoration: none; }
      приложения (#902; новые листы отступают в styles/sheet-*.css). */
   .ex-screen { padding-top: var(--safe-top); }
 }
-@media (min-width: 768px) {
+@media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) {
   .mobile-nav { display: none !important; }
   /* Settings overlay: don't cover the sidebar on desktop */
   .settings-overlay { left: var(--sidebar-w) !important; }
@@ -1009,7 +1009,7 @@ a { color: inherit; text-decoration: none; }
   background: rgba(var(--fg-rgb), 0.12);
   margin: 0 auto 20px;
 }
-@media (min-width: 768px) {
+@media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) {
   .sheet-modal { align-items: center; justify-content: center; padding: var(--space-32); }
   .sheet-modal-box {
     border-radius: var(--r-16);
@@ -1047,7 +1047,7 @@ html[data-theme="dark"] .sheet-modal-box { box-shadow: 0 24px 64px -16px rgba(0,
 .dialog-link:hover { color: var(--text-sub); }
 /* Settings content area: center on desktop */
 .settings-content-inner { max-width: 600px; }
-@media (min-width: 768px) { .settings-content-inner { margin: 0 auto; } }
+@media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) { .settings-content-inner { margin: 0 auto; } }
 
 /* ─── BottomSheet → Modal on desktop ────────────────────────────────────── */
 @keyframes modal-in {
