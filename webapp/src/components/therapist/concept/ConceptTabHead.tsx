@@ -14,9 +14,7 @@ import { CONCEPT_EXPORT_EMPTY } from '../../../../../shared/src/therapy/conceptE
 // меню «⋯»: шапка из пяти кнопок читалась как панель инструментов, и терапевт
 // не находил главного. Меню закрывается по выбору пункта, поэтому занятость и
 // отказ действия показываются строкой под шапкой (ActionStatus), а не внутри
-// меню. Заголовок, подпись и слово «Ещё» — на компьютере (≥768), как в
-// макете; на телефоне (#906) их прячет therapist-concept.css: имя уже во вкладке
-// шапки карточки, кнопка меню — круглая «⋯» (ds-btn--icon), подпись — aria-label.
+// меню. Заголовок, подпись и слово «Ещё» — на ≥768; на телефоне (#906) их прячет CSS.
 export interface ConceptTabHeadProps {
   detail: ClientDetail;
   view: ConceptView;
@@ -30,10 +28,7 @@ export function ConceptTabHead({ detail, view, onView, graph }: ConceptTabHeadPr
   return (
     <>
       <div className="tcp-head">
-        <div className="tcp-head-title">
-          <h2 className="ds-h2">Концептуализация</h2>
-          <div className="ds-sub">Схема-карта, цели терапии и связь с детским опытом</div>
-        </div>
+        <div className="tcp-head-title"><h2 className="ds-h2">Концептуализация</h2><div className="ds-sub">Схема-карта, цели терапии и связь с детским опытом</div></div>
         <ConceptViewSwitch view={view} onChange={onView} />
         <SaveStatusLine className="tcp-save" status={saveStatus} savedAt={savedAt} onRetry={retrySave} errorText={conceptError || undefined} align="right" />
         <MoreMenu onExport={handleExport} exportEmpty={exportEmpty} graph={graph} />

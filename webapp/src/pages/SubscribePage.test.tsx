@@ -270,9 +270,10 @@ describe('SubscribePage — шапка и кнопки (#906)', () => {
     mockApi.getSubscriptionOptions.mockResolvedValue({ enabled: false, options: [] });
     const { container } = render(<SubscribePage />);
     await screen.findByText('Подписка скоро');
-    const back = screen.getByRole('link', { name: '← На главную' });
+    const back = screen.getAllByRole('link', { name: '← На главную' })[0];
     expect(back.className).toBe('ds-back');
-    expect(back.parentElement!.className).toBe('ds-sheet-head');
+    expect(back.parentElement!.className).toBe('ds-sheet-head ds-sheet-head--page');
+    expect(screen.getAllByRole('link', { name: '← На главную' })[1].className).toBe('ap-home'); // на компьютере — под кнопкой
     expect(screen.getByRole('heading', { level: 1 }).classList.contains('ds-h1')).toBe(true);
     expect(screen.getByRole('link', { name: 'Разовый донат' }).className).toBe('ds-btn ds-btn--lg');
     expect(container.querySelector('.ap-page--center, .ap-card, .ap-btn')).toBeNull();
@@ -282,7 +283,7 @@ describe('SubscribePage — шапка и кнопки (#906)', () => {
     await renderLoaded();
     const back = screen.getByRole('link', { name: '← На главную' });
     expect(back.className).toBe('ds-back');
-    expect(back.parentElement!.className).toBe('ds-sheet-head');
+    expect(back.parentElement!.className).toBe('ds-sheet-head ds-sheet-head--page');
     expect(screen.getByRole('button', { name: /Оформить за/ }).className).toContain('ds-btn ds-btn--accent ds-btn--lg');
   });
 });

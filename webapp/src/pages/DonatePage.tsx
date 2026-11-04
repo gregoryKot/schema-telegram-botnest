@@ -29,7 +29,7 @@ export function DonatePage() {
   return (
     <div className="light-lock ap-page ap-page--donate">
       <div className="ds-sheet-head ds-sheet-head--page"><a href="/" className="ds-back">← На главную</a></div>
-      <div className="ds-page ap-main">
+      <div className="ds-page ap-main"><div className="ap-donate-shell">
         <div className="ap-hero">
           <div className="ds-eyebrow">Разовая поддержка</div>
           <h1 className="ds-h1">{ret === 'ok' ? 'Спасибо за поддержку!' : <>Поддержать <i>проект</i></>}</h1>
@@ -53,7 +53,8 @@ export function DonatePage() {
             <p className="ap-fine">Оплата картой или СБП через Robokassa.<br />Добровольное пожертвование, возврату не подлежит.</p>
           </div>
         )}
-      </div>
+        <a href="/" className="ap-home">← На главную</a>
+      </div></div>
     </div>
   );
 }

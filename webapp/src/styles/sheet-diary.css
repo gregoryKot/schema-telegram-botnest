@@ -180,4 +180,5 @@
   .sd-explainer-stack { width: 100%; max-width: 640px; margin: 0 auto; text-align: center; }
   .sd-explainer-stack .ds-list-title { font: italic 400 24px/1.25 var(--serif); }
   .sd-explainer-stack .ds-empty { text-align: center; }
+  .sd-explainer-stack .sd-explainer-card { text-align: left; }
 }

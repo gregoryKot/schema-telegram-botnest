@@ -24,7 +24,8 @@
 
 /* Компьютер: три отдельные карточки с засечными заголовками, как в макете (REDESIGN_2026-10). */
 @media (min-width: 768px) {
-  .cw-sheet .cw-list { display: flex; flex-direction: column; gap: 16px; background: none; border: none; border-radius: 0; overflow: visible; }
+  /* ul.… — чтобы перебить .cm-page .ds-card--flush (client-more.css): его border-top рисовал линию над первой карточкой */
+  .cw-sheet ul.cw-list.ds-card--flush { display: flex; flex-direction: column; gap: 16px; background: none; border: none; border-radius: 0; overflow: visible; }
   .cw-sheet .cw-item { padding: 22px 24px; background: var(--surface); border: 1px solid var(--line); border-radius: 20px; gap: 8px; }
   .cw-sheet .cw-item .ds-list-title { font: 400 20px/1.25 var(--serif); }
   .cw-sheet .cw-item-text { font-size: 15px; }

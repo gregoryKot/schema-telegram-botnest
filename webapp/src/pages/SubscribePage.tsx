@@ -120,7 +120,7 @@ export function SubscribePage() {
   return (
     <div className="light-lock ap-page ap-page--state">
       <div className="ds-sheet-head ds-sheet-head--page"><a href="/" className="ds-back">← На главную</a></div>
-      <div className="ds-page ap-main ap-main--state">{body}</div>
+      <div className="ds-page ap-main ap-main--state">{body}<a href="/" className="ap-home">← На главную</a></div>
     </div>
   );
 }
