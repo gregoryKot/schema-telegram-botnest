@@ -92,6 +92,7 @@
 
 /* ── «Мне плохо» (кризисный путь: порядок шагов и тексты не менять) ── */
 .sk-fc-body { max-width: 560px; width: 100%; margin: 0 auto; padding: 40px 24px 80px; overflow-y: auto; box-sizing: border-box; display: flex; flex-direction: column; gap: 18px; }
+.sk-fc-body > * { flex-shrink: 0; } /* колонка прокручивается, а не сплющивает кнопки (C-З6) */
 .sk-fc-body.is-center { text-align: center; padding-top: 56px; }
 .sk-fc-body.is-center .ds-card { text-align: left; }
 .sk-fc-hero { font-size: 40px; margin: 8px 0 0; }

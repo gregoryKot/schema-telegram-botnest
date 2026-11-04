@@ -28,6 +28,8 @@ import { OfflineBanner } from './OfflineBanner';
 import { Celebration } from './Celebration';
 import { todayInsightPhrase } from '../utils/todayInsight';
 import { DonateNudge } from './DonateNudge';
+import { donateNudgeBlocked } from './donateNudgeBlocked';
+import { MobileSosButton } from './appShell/MobileSosButton';
 import { hueStyle } from '../lib/tone';
 
 // – lazy: heavy overlays –
@@ -368,6 +370,7 @@ export function AppShell() {
       {/* ── Mobile bottom nav ──────────────────────────────────────────────── */}
       <MobileNav items={NAV_ITEMS} therapist={therapistMode} onSearch={() => ov.setCmdOpen(true)} onProfile={() => ov.setShowSettings(true)} />
 
+      {!therapistMode && !anyOverlayOpen && <MobileSosButton onOpen={() => ov.setShowSosCard(true)} />}
       <QuickActions ov={ov} />
       {/* ── Command palette ─────────────────────────────────────────────────── */}
       {ov.cmdOpen && (
@@ -384,7 +387,7 @@ export function AppShell() {
       )}
 
       {/* Periodic donate nudge (once ~monthly, dismissible) */}
-      <DonateNudge />
+      <DonateNudge blocked={donateNudgeBlocked({ section, anyOverlayOpen, entryDone })} />
     </div>
   );
 }

@@ -1,0 +1,14 @@
+/* Плавающая «Мне плохо» на телефоне (components/appShell/MobileSosButton.tsx).
+   Выше нижней панели, правый край; на десктопе есть .topbar-sos. */
+.mobile-sos { display: none; }
+@media (max-width: 767px) {
+  .mobile-sos {
+    display: inline-flex; align-items: center; justify-content: center;
+    position: fixed; right: 12px; z-index: 48;
+    bottom: calc(var(--mobile-nav-h) + var(--safe-bottom) + 10px);
+    min-height: 44px; min-width: 44px; padding: 0 18px;
+    border: none; border-radius: 22px; cursor: pointer;
+    font: 700 14px var(--sans); white-space: nowrap;
+    box-shadow: 0 2px 10px color-mix(in srgb, var(--ink) 25%, transparent);
+  }
+}

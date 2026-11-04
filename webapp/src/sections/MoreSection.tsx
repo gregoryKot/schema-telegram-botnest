@@ -12,6 +12,8 @@ interface Props {
   onNavigate: (s: Section) => void;
   onOpenSchema: (opts?: { startTest?: boolean }) => void;
   onOpenAdvanced: () => void;
+  /** «Мне очень плохо»: открывает SOS-лист поверх «Ещё» (C-К1). */
+  onOpenCrisis: () => void;
   userRole?: 'CLIENT' | 'THERAPIST';
   onOpenTherapistCabinet?: () => void;
 }
@@ -33,7 +35,7 @@ function RowBody({ row }: { row: Row }) {
 
 // «Ещё»: всё, что не входит в три действия главной (docs/design/CLIENT_SIMPLE_2026-10.md).
 // Разделы /schemas, /practice, /profile остаются на своих адресах — отсюда в них заходят. Кризисный вход «Мне очень плохо» — ds-card--crisis (#906).
-export function MoreSection({ onNavigate, onOpenSchema, onOpenAdvanced, userRole, onOpenTherapistCabinet }: Props) {
+export function MoreSection({ onNavigate, onOpenSchema, onOpenAdvanced, onOpenCrisis, userRole, onOpenTherapistCabinet }: Props) {
   const [why, setWhy] = useState(false);
   const [journey, setJourney] = useState(false);
   const bridge = useTherapyBridgeTexts();
@@ -78,7 +80,7 @@ export function MoreSection({ onNavigate, onOpenSchema, onOpenAdvanced, userRole
         ))}
       </div>
 
-      <button type="button" className="ds-card ds-card--row ds-card--nav ds-card--crisis ds-card--hover" onClick={() => onNavigate('practice')}>
+      <button type="button" className="ds-card ds-card--row ds-card--nav ds-card--crisis ds-card--hover" onClick={onOpenCrisis}>
         <span className="ds-list-title">Мне очень плохо</span>
         <span className="ds-chev" aria-hidden="true" />
       </button>

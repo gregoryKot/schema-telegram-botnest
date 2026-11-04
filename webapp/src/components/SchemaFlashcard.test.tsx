@@ -41,6 +41,14 @@ afterEach(() => {
   cleanup();
 });
 
+describe('SchemaFlashcard — первый экран (C-К1)', () => {
+  it('телефоны доверия видны сразу, без раскрытия: обе линии с tel-ссылками', () => {
+    render(<MemoryRouter><SchemaFlashcard onClose={vi.fn()} /></MemoryRouter>);
+    expect(screen.getByText(CRISIS_HOTLINE_DISPLAY).getAttribute('href')).toBe('tel:88001004994');
+    expect(screen.getByText('8-800-2000-122').getAttribute('href')).toBe('tel:88002000122');
+  });
+});
+
 describe('SchemaFlashcard — проход мастера и сохранение', () => {
   // Флоу из 4 шагов с несколькими точками входа: тест бьёт по связке
   // «прошёл шаги → сохранилось → показалось», а не только по записи

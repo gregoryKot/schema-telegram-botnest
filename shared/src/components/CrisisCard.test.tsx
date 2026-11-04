@@ -3,9 +3,9 @@
 // путь + правило №8: аналитика). Обёртки фронтендов (webapp/CrisisCard.tsx,
 // schema-miniapp/CrisisCard.tsx) тестируют только прокидывание tr/track —
 // сама механика показа/клика/двух форм обращения тестируется здесь один раз.
-import { describe, it, expect, vi, afterEach } from 'vitest';
+import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { render, screen, cleanup, fireEvent } from '@testing-library/react';
-import { CrisisCardView } from './CrisisCard';
+import { CrisisCardView, revealAboveKeyboard } from './CrisisCard';
 import {
   CRISIS_HOTLINE_DISPLAY,
   CRISIS_HOTLINE_TEL,
@@ -92,5 +92,55 @@ describe('CrisisCardView — аналитика (правило №8)', () => {
     render(<CrisisCardView tr={tr} track={track} />);
     fireEvent.click(screen.getByText(CRISIS_HOTLINE_DISPLAY));
     expect(track).not.toHaveBeenCalled();
+  });
+});
+
+describe('CrisisCardView — compact (C-К1)', () => {
+  it('только заголовок и обе линии: без лида и сноски', () => {
+    render(<CrisisCardView standing compact tr={tr} track={vi.fn()} />);
+    for (const h of CRISIS_HOTLINES) expect(screen.getByText(h.display)).toBeTruthy();
+    expect(screen.queryByText(/Круглосуточно/)).toBeNull();
+    expect(screen.queryByText(/выслушают/)).toBeNull();
+  });
+});
+
+describe('CrisisCardView — прокрутка над клавиатурой (C-З7)', () => {
+  const scroll = vi.fn();
+  beforeEach(() => {
+    scroll.mockClear();
+    Element.prototype.scrollIntoView = scroll;
+  });
+  afterEach(() => {
+    vi.restoreAllMocks();
+    Object.defineProperty(window, 'visualViewport', { value: undefined, configurable: true });
+  });
+  const setVv = (height: number) =>
+    Object.defineProperty(window, 'visualViewport', { value: { offsetTop: 0, height }, configurable: true });
+  const rectBottom = (bottom: number) =>
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue({ top: bottom - 200, bottom } as DOMRect);
+
+  it('карточка по детекции ниже видимой высоты visualViewport прокручивается в видимую область', () => {
+    setVv(400);
+    rectBottom(700);
+    render(<CrisisCardView surface="diary" tr={tr} track={vi.fn()} />);
+    expect(scroll).toHaveBeenCalledTimes(1);
+  });
+
+  it('карточка уже на виду: прокрутки нет', () => {
+    setVv(400);
+    rectBottom(380);
+    render(<CrisisCardView surface="diary" tr={tr} track={vi.fn()} />);
+    expect(scroll).not.toHaveBeenCalled();
+  });
+
+  it('постоянный блок «Помощь рядом» сам не прокручивается', () => {
+    setVv(400);
+    rectBottom(700);
+    render(<CrisisCardView standing tr={tr} track={vi.fn()} />);
+    expect(scroll).not.toHaveBeenCalled();
+  });
+
+  it('revealAboveKeyboard(null) безопасен', () => {
+    expect(() => revealAboveKeyboard(null)).not.toThrow();
   });
 });
