@@ -19,7 +19,13 @@ import { withCreatedAt, withUpdatedAt } from './fake-updated-at';
 
 /** Собирает фейковый PrismaService, готовый к .overrideProvider(PrismaService). */
 export function makeFakePrisma() {
-  const userTable = makeTable();
+  // @default схемы, на которых стоит условный UPDATE пояса устройства
+  // (src/bot/device-timezone.ts): без них `notifyTimezoneChosen: false` не
+  // совпадал со строкой, где поля нет, и /api/init на фейке пояс не писал.
+  const userTable = withDefaults(makeTable(), {
+    notifyTimezone: 'Europe/Moscow',
+    notifyTimezoneChosen: false,
+  });
   const tables: Record<string, ReturnType<typeof makeTable>> = {
     user: userTable,
     userSchemaNote: makeTable(),

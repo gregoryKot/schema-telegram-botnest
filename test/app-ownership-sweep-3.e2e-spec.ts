@@ -21,7 +21,9 @@ describe('e2e smoke: ownership sweep 3 (tracker aggregates + settings)', () => {
   const secret = () => process.env.JWT_SECRET as string;
   const USER_A = 6_000_000_000_000_001n;
   const USER_B = 6_000_000_000_000_002n;
-  const ALL_USER_IDS = [USER_A, USER_B];
+  // Свой пользователь для поясов: A и B уже правят настройки выше.
+  const USER_TZ = 6_000_000_000_000_003n;
+  const ALL_USER_IDS = [USER_A, USER_B, USER_TZ];
 
   beforeAll(async () => {
     ({ app, prisma } = await buildTestApp());
@@ -181,5 +183,29 @@ describe('e2e smoke: ownership sweep 3 (tracker aggregates + settings)', () => {
       today_streak_hidden: '1',
       today_focus_practice: 'tracker',
     });
+  });
+
+  // Пояс устройства (QA 2026-11-03, src/bot/device-timezone.ts): /api/init
+  // пишет его в notifyTimezone одним условным UPDATE, пока
+  // notifyTimezoneChosen=false; выбор в настройках ставит признак. Юнит
+  // проверяет это на моке Prisma — здесь сохранил → нашёл через HTTP (DTO,
+  // ValidationPipe), а в джобе migrations — на живом Postgres: дефолт колонки
+  // из миграции и фильтр `NOT` исполняет база, а не мок.
+  it('пояс устройства: init → настройки отдают его; выбрал пояс сам → init его не меняет', async () => {
+    const tz = agentAs(USER_TZ);
+    const init = () => tz.post('/api/init', { timezone: 'Asia/Vladivostok' });
+
+    expect((await init()).status).toBeLessThan(300);
+    const adopted = await tz.get('/api/settings');
+    expect(adopted.status).toBe(200);
+    expect(adopted.body.notifyTimezone).toBe('Asia/Vladivostok');
+
+    const chosen = await tz.post('/api/settings', {
+      notifyTimezone: 'Europe/Moscow',
+    });
+    expect(chosen.status).toBeLessThan(300);
+    expect((await init()).status).toBeLessThan(300);
+    const kept = await tz.get('/api/settings');
+    expect(kept.body.notifyTimezone).toBe('Europe/Moscow');
   });
 });
