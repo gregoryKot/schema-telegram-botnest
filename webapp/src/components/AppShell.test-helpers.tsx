@@ -7,6 +7,7 @@ import type { ComponentProps } from 'react';
 import { render } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { AppShell } from './AppShell';
+import { useEntryFlowsDone } from './appShell/entryQueue';
 
 import type { TodaySection as TodaySectionT } from '../sections/TodaySection';
 import type { MoreSection as MoreSectionT } from '../sections/MoreSection';
@@ -26,6 +27,7 @@ import type { NoteSheet as NoteSheetT } from './NoteSheet';
 import type { Celebration as CelebrationT } from './Celebration';
 import type { TaskCreateSheet as TaskCreateSheetT } from './TaskCreateSheet';
 import type { CommandPalette as CommandPaletteT } from './CommandPalette';
+import type { SchemaFlashcard as SchemaFlashcardT } from './SchemaFlashcard';
 import type { ChildhoodWheelEx as ChildhoodWheelExT } from './exercises/ChildhoodWheelEx';
 
 /** Заглушка мокнутого экрана: кнопка на каждый колбэк из `map`, плюс
@@ -45,9 +47,10 @@ function Btns({ testid, map, state }: { testid: string; map: Record<string, () =
 vi.mock('../auth/authContext', () => ({ useAuth: () => ({ logout: mockLogout }) }));
 export const mockLogout = vi.fn();
 
+// state — конец очереди входов (EntryFlows): по нему секция открывает автопоказы.
 vi.mock('../sections/TodaySection', () => ({
   TodaySection: (p: ComponentProps<typeof TodaySectionT>) => (
-    <Btns testid="today-section" map={{
+    <Btns testid="today-section" state={{ entryDone: useEntryFlowsDone() }} map={{
       navigate: () => p.onNavigate('diary'),
       tracker: () => p.onOpenTracker(),
       schema: () => p.onOpenSchema({ startTest: true, tab: 'schemas', highlight: 'abandonment' }),
@@ -203,6 +206,11 @@ vi.mock('./CommandPalette', () => ({
       openClient: () => p.onOpenClient?.(9),
       quickTracker: () => p.onQuickAction?.('tracker'),
     }} />
+  ),
+}));
+vi.mock('./SchemaFlashcard', () => ({
+  SchemaFlashcard: (p: ComponentProps<typeof SchemaFlashcardT>) => (
+    <Btns testid="sos-card" map={{ close: () => p.onClose(), tracker: () => p.onOpenTracker?.() }} />
   ),
 }));
 vi.mock('./DonateNudge', () => ({ DonateNudge: () => null }));

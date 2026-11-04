@@ -56,7 +56,7 @@ export function PracticesBlock({ title, tasks, taskError, onStart, onComplete, o
             className={'ds-card ds-card--row ct-task' + (openable ? ' ds-card--hover' : '') + (isDone ? ' is-done' : '')}
             {...(openable ? pressable(() => onStart(task)) : {})}
           >
-            <span className="ct-task-box" aria-hidden>{active ? '' : taskStatusMark(task.done)}</span>
+            <span className="ct-task-box" aria-hidden>{taskStatusMark(task.done)}</span>
             <div className="ct-task-body">
               <div className="ct-task-text">{resolveTaskDisplayText(task, 'compact')}</div>
               {task.assignedBy !== null && !isDone && <div className="ct-from-therapist">от терапевта</div>}
