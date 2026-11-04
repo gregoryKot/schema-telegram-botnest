@@ -96,7 +96,7 @@ export function SafePlaceEx({
           'Возвращайтесь сюда, когда станет тревожно. Закройте глаза. Прочтите. Побудьте.',
         )}
       >
-        <div className="ds-card ds-card--ink ex2-done ex2-scene">
+        <div className="ds-card ds-card--panel ex2-done ex2-scene">
           <div className="ex2-scene-text">«{overview}»</div>
         </div>
         <div className="ex2-senses">

@@ -173,3 +173,38 @@ describe('a11y: красный текст опасных действий на -
     expect(bad).toEqual([]);
   });
 });
+
+// Песочная панель (2026-11): сайдбар, нижняя навигация, герой входа и оплаты,
+// вводные карточки — до того почти чёрный «ink» редизайна 2026-10, который
+// владелец снял («чёрный тяжёлый, добавляет тяжести»). Панель светлая, и
+// текст на ней — те же чернила, что на бумаге; этот тест держит пары
+// «текст на панели» на ≥4.5:1, чтобы --panel нельзя было тихо затемнить или
+// осветлить так, что подписи сайдбара и нижней навигации (--on-panel-faint)
+// или «Выйти» (--on-panel-danger) поплывут. Панель только в светлой теме:
+// кабинет под .light-lock, тёмная панель не объявлена.
+describe('a11y: текст на песочной --panel держит ≥4.5:1', () => {
+  it.each([
+    ['--on-panel', '--panel'],
+    ['--on-panel', '--panel-2'],
+    ['--on-panel', '--panel-3'],
+    ['--on-panel-sub', '--panel'],
+    ['--on-panel-sub', '--panel-2'],
+    ['--on-panel-faint', '--panel'],
+    ['--on-panel-faint', '--panel-2'],
+    ['--on-panel-danger', '--panel'],
+    ['--on-panel-danger', '--panel-2'],
+  ])('%s на %s', (fgName, bgName) => {
+    const fg = parseColor(resolveToken(LIGHT, fgName)).rgb;
+    const bg = parseColor(resolveToken(LIGHT, bgName)).rgb;
+    expect(contrastRatio(fg, bg)).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it('панель светлее чернил и темнее бумаги: это плашка на бумаге, а не второй чёрный', () => {
+    const panel = luminance(parseColor(resolveToken(LIGHT, '--panel')).rgb);
+    const paper = luminance(parseColor(resolveToken(LIGHT, '--bg')).rgb);
+    const ink = luminance(parseColor(resolveToken(LIGHT, '--text')).rgb);
+    expect(panel).toBeLessThan(paper);
+    expect(panel).toBeGreaterThan(0.5);
+    expect(ink).toBeLessThan(0.1);
+  });
+});

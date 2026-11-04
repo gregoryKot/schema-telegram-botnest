@@ -126,17 +126,23 @@
   --accent-hot:    #c8553d; /* логотип, кавычки, стрик — декор, не текст */
   --font-serif:    'Literata', 'Spectral', Georgia, serif;
 
-  /* ── Ink — тёмные поверхности редизайна (сайдбар, нижняя навигация,
-     тёмные карточки-акценты). Текст на них: --on-ink 15:1, --on-ink-sub
-     10.1:1, --on-ink-faint 5.6:1, --on-ink-danger 6.6:1 к --ink. */
-  --ink:            #1f1b17;
-  --ink-2:          #2c2722;
-  --ink-3:          #3a332c;
-  --ink-line:       #36302a;
-  --on-ink:         #f6f2eb;
-  --on-ink-sub:     #cfc6b8;
-  --on-ink-faint:   #9c9286;
-  --on-ink-danger:  #e08a75;
+  /* ── Panel — плотная песочная панель (сайдбар, нижняя навигация, герой
+     входа и оплаты, вводные карточки). До 2026-11 здесь был почти чёрный
+     «ink» редизайна 2026-10 (#1f1b17): владелец — «чёрный тяжёлый, добавляет
+     тяжести». Текст на панели — те же чернила, что на бумаге: --on-panel
+     13.6:1, --on-panel-sub 7.8:1, --on-panel-faint ≥4.5:1 к --panel и
+     --panel-2, --on-panel-danger 5.7:1 к --panel (сверка —
+     index.css.contrast.test.ts). Главное действие и выбранное состояние
+     панелью не красятся: кнопка — --accent, выбор — --accent-soft с контуром
+     --accent (docs/design/REDESIGN_2026-10.md, «Спокойная палитра 2026-11»). */
+  --panel:           #ebe5d9;
+  --panel-2:         #e2dbcc;
+  --panel-3:         #d9d0bf;
+  --panel-line:      #d3c9b8;
+  --on-panel:        #1f1b17;
+  --on-panel-sub:    #4a433b;
+  --on-panel-faint:  #5c544c;
+  --on-panel-danger: #9a3626;
 
   /* ── Плотные заливки редизайна (сегменты, шапка карточки клиента) ──── */
   --paper-sunk:     #ede7dd;
@@ -356,11 +362,12 @@ a { color: inherit; text-decoration: none; }
   background: var(--bg);
 }
 
-/* ─── Sidebar — тёмный (редизайн 2026-10) ─────────────────────────────────
-   Цвета только из токенов --ink-… и --on-ink-… (контраст — в комментарии к токенам). */
+/* ─── Sidebar — песочная панель (2026-11; до того тёмный ink редизайна 2026-10) ──
+   Цвета только из токенов --panel-… и --on-panel-… (контраст — в комментарии к токенам). */
 .sidebar {
-  background: var(--ink);
-  color: var(--on-ink-sub);
+  background: var(--panel);
+  border-right: 1px solid var(--panel-line);
+  color: var(--on-panel-sub);
   display: flex;
   flex-direction: column;
   gap: 22px;
@@ -381,44 +388,44 @@ a { color: inherit; text-decoration: none; }
   font-family: var(--serif); font-size: 15px; font-weight: 500;
   flex-shrink: 0;
 }
-.sb-name { font-family: var(--serif); font-size: 17px; color: var(--on-ink); }
+.sb-name { font-family: var(--serif); font-size: 17px; color: var(--on-panel); }
 
 .sb-mode-switch {
   display: grid; grid-template-columns: 1fr 1fr;
-  background: var(--ink-2); border-radius: var(--r-10); padding: 3px;
+  background: var(--panel-2); border-radius: var(--r-10); padding: 3px;
   font-size: 13px;
   flex-shrink: 0;
 }
 .sb-mode-btn {
   padding: 7px 0; text-align: center;
-  color: var(--on-ink-faint);
+  color: var(--on-panel-faint);
   font-weight: 500; border-radius: var(--r-8);
   transition: color .12s, background .12s;
 }
-.sb-mode-btn:hover { color: var(--on-ink); }
-.sb-mode-btn.is-active { background: var(--on-ink); color: var(--ink); font-weight: 600; }
+.sb-mode-btn:hover { color: var(--on-panel); }
+.sb-mode-btn.is-active { background: var(--surface); color: var(--text); font-weight: 600; box-shadow: var(--shadow-1); }
 
 .sb-section-label {
   padding: 0 10px 6px;
   font-size: 11px; letter-spacing: 0.08em;
-  text-transform: uppercase; color: var(--on-ink-faint);
+  text-transform: uppercase; color: var(--on-panel-faint);
 }
 .sb-nav { display: flex; flex-direction: column; gap: 2px; }
 .sb-item {
   display: flex; align-items: center; gap: var(--space-10);
   padding: 9px 10px; border-radius: var(--r-8);
-  color: var(--on-ink-sub);
+  color: var(--on-panel-sub);
   font-size: 14px; font-weight: 400;
   text-align: left; width: 100%;
   transition: background .1s, color .1s;
 }
-.sb-item:hover { background: var(--ink-2); color: var(--on-ink); }
+.sb-item:hover { background: var(--panel-2); color: var(--on-panel); }
 /* Пункт меню — 44 по высоте (A-М8): при 9px паддинга выходило 39. */
 .sb-nav > .sb-item { min-height: 44px; }
-/* «Выйти» — роль «опасность» на тёмном: --on-ink-danger (6.6:1 к --ink). */
-.sb-item.sb-danger { color: var(--on-ink-danger); }
-.sb-item.sb-danger:hover { background: var(--ink-2); color: var(--on-ink-danger); }
-.sb-item.is-active { background: var(--ink-3); color: #fff; font-weight: 600; }
+/* «Выйти» — роль «опасность» на панели: --on-panel-danger (5.7:1 к --panel). */
+.sb-item.sb-danger { color: var(--on-panel-danger); }
+.sb-item.sb-danger:hover { background: var(--panel-2); color: var(--on-panel-danger); }
+.sb-item.is-active { background: var(--panel-3); color: var(--on-panel); font-weight: 600; }
 /* Цветной квадрат раздела клиента (оттенок задаёт --h на элементе). */
 .sb-dot { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; background: oklch(0.58 0.12 var(--h)); }
 /* Sidebar items don't need focus ring — active/hover state is sufficient */
@@ -426,7 +433,7 @@ a { color: inherit; text-decoration: none; }
 .sb-item .badge {
   margin-left: auto;
   font-size: 12px; font-weight: 500;
-  color: var(--on-ink-faint); min-width: 18px; text-align: right;
+  color: var(--on-panel-faint); min-width: 18px; text-align: right;
 }
 .sb-item.is-active .badge { color: var(--accent-hot); }
 
@@ -447,33 +454,33 @@ a { color: inherit; text-decoration: none; }
 .sb-foot-wrap { margin-top: auto; flex-shrink: 0; display: flex; flex-direction: column; gap: 14px; }
 .sb-foot {
   padding-top: 12px;
-  border-top: 1px solid var(--ink-line);
+  border-top: 1px solid var(--panel-line);
 }
-/* Карточка «Сегодня» над подвалом — плашка --ink-2 */
+/* Карточка «Сегодня» над подвалом — плашка --panel-2 */
 .sb-today {
-  background: var(--ink-2); border-radius: 14px;
+  background: var(--panel-2); border-radius: 14px;
   padding: 14px;
 }
 .sb-today-label {
   font-size: 11px; letter-spacing: 0.08em;
-  text-transform: uppercase; color: var(--on-ink-faint); margin-bottom: var(--space-6);
+  text-transform: uppercase; color: var(--on-panel-faint); margin-bottom: var(--space-6);
 }
 .sb-today-index { display: flex; align-items: baseline; gap: 3px; }
 .sb-today-num {
   font-family: var(--serif); font-size: 40px; font-weight: 400;
-  color: var(--on-ink); line-height: 1;
+  color: var(--on-panel); line-height: 1;
 }
-.sb-today-denom { font-size: 12px; color: var(--on-ink-faint); padding-bottom: 3px; }
-.sb-today-sub { font-size: 12px; color: var(--on-ink-faint); margin-top: 3px; }
+.sb-today-denom { font-size: 12px; color: var(--on-panel-faint); padding-bottom: 3px; }
+.sb-today-sub { font-size: 12px; color: var(--on-panel-faint); margin-top: 3px; }
 .sb-today-cta {
   width: 100%; min-height: 44px; margin-top: 10px; padding: 8px 10px; border-radius: var(--r-8);
-  background: var(--ink-3);
-  border: none; color: var(--on-ink);
+  background: var(--accent);
+  border: none; color: var(--on-accent);
   font-size: 13px; font-weight: 600; font-family: inherit;
   text-align: left; cursor: pointer;
   transition: background .1s;
 }
-.sb-today-cta:hover { background: var(--ink-line); }
+.sb-today-cta:hover { background: var(--accent-hi); }
 
 .sb-account {
   display: flex; align-items: center; gap: var(--space-10);
@@ -481,32 +488,32 @@ a { color: inherit; text-decoration: none; }
   cursor: pointer; width: 100%; text-align: left;
   transition: background .1s;
 }
-.sb-account:hover, .sb-account.is-active { background: var(--ink-2); }
+.sb-account:hover, .sb-account.is-active { background: var(--panel-2); }
 .sb-avatar {
   width: 32px; height: 32px; border-radius: 50%;
-  background: var(--on-ink);
+  background: var(--accent-soft);
   display: grid; place-items: center;
-  font-size: 13px; font-weight: 700; color: var(--ink);
+  font-size: 13px; font-weight: 700; color: var(--accent-hi);
   flex-shrink: 0;
 }
-.sb-acc-name { font-size: 14px; font-weight: 600; line-height: 1.2; color: var(--on-ink); }
-.sb-acc-role { font-size: 12px; color: var(--on-ink-faint); margin-top: var(--space-2); }
+.sb-acc-name { font-size: 14px; font-weight: 600; line-height: 1.2; color: var(--on-panel); }
+.sb-acc-role { font-size: 12px; color: var(--on-panel-faint); margin-top: var(--space-2); }
 /* Ряд мелких ссылок подвала: Настройки · Аккаунт · Выйти. Текст мелкий, а зона
    нажатия — 44 по высоте (QA 2026-11, A-М8: было 18): подложки у ссылок нет,
    поэтому выросла только строка, видимый размер прежний. */
 .sb-links { display: flex; gap: 14px; padding: 0 10px; }
-.sb-links .sb-item { width: auto; min-width: 44px; min-height: 44px; padding: 0; font-size: 12px; color: var(--on-ink-faint); background: none; }
-.sb-links .sb-item:hover { color: var(--on-ink); background: none; }
-.sb-links .sb-item.sb-danger { color: var(--on-ink-danger); }
-.sb-legal a { display: inline-flex; align-items: center; min-width: 44px; min-height: 44px; font-size: 11px; color: var(--on-ink-faint); text-decoration: none; }
-.sb-legal a:hover { color: var(--on-ink-sub); }
+.sb-links .sb-item { width: auto; min-width: 44px; min-height: 44px; padding: 0; font-size: 12px; color: var(--on-panel-faint); background: none; }
+.sb-links .sb-item:hover { color: var(--on-panel); background: none; }
+.sb-links .sb-item.sb-danger { color: var(--on-panel-danger); }
+.sb-legal a { display: inline-flex; align-items: center; min-width: 44px; min-height: 44px; font-size: 11px; color: var(--on-panel-faint); text-decoration: none; }
+.sb-legal a:hover { color: var(--on-panel-sub); }
 .sb-search {
   margin: 0 0 4px; width: 100%; padding: 6px 10px; border-radius: var(--r-8);
-  border: 1px solid var(--ink-line); background: var(--ink-2);
-  color: var(--on-ink); font: 13px var(--sans); outline: none; box-sizing: border-box;
+  border: 1px solid var(--panel-line); background: var(--surface);
+  color: var(--text); font: 13px var(--sans); outline: none; box-sizing: border-box;
 }
-.sb-search::placeholder { color: var(--on-ink-faint); }
-.sb-search:focus { border-color: var(--on-ink-faint); }
+.sb-search::placeholder { color: var(--on-panel-faint); }
+.sb-search:focus { border-color: var(--accent); }
 
 /* ─── Main / topbar / canvas ─────────────────────────────────────────────── */
 .main {
@@ -595,8 +602,8 @@ a { color: inherit; text-decoration: none; }
 /* ─── Buttons ─────────────────────────────────────────────────────────────── */
 /* Full-width legacy buttons (used in sheets, forms) */
 .btn-primary {
-  background: var(--text);
-  color: var(--bg);
+  background: var(--accent);
+  color: var(--on-accent);
   border: none;
   border-radius: var(--r-md);
   padding: 12px 22px;
@@ -606,7 +613,7 @@ a { color: inherit; text-decoration: none; }
   width: 100%;
   transition: background .12s, opacity .12s;
 }
-.btn-primary:hover  { background: var(--accent); color: var(--on-accent); }
+.btn-primary:hover  { background: var(--accent-hi); color: var(--on-accent); }
 .btn-primary:active { opacity: 0.85; }
 .btn-primary:disabled { opacity: 0.38; cursor: default; }
 
@@ -634,8 +641,8 @@ a { color: inherit; text-decoration: none; }
   transition: background .12s, color .12s, border-color .12s, opacity .12s;
   white-space: nowrap; cursor: pointer; border: none;
 }
-.btn.btn-primary { background: var(--text); color: var(--bg); font-weight: 600; width: auto; border-radius: 7px; padding: 7px 14px; font-size: 13px; }
-.btn.btn-primary:hover { background: var(--accent); }
+.btn.btn-primary { background: var(--accent); color: var(--on-accent); font-weight: 600; width: auto; border-radius: 7px; padding: 7px 14px; font-size: 13px; }
+.btn.btn-primary:hover { background: var(--accent-hi); }
 
 /* ─── Card ────────────────────────────────────────────────────────────────── */
 .card {
@@ -791,8 +798,8 @@ a { color: inherit; text-decoration: none; }
   padding: 11px 22px;
   border: none;
   border-radius: var(--r-8);
-  background: var(--text);
-  color: var(--bg);
+  background: var(--accent);
+  color: var(--on-accent);
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
@@ -800,7 +807,7 @@ a { color: inherit; text-decoration: none; }
   transition: background .12s, color .12s;
   -webkit-tap-highlight-color: transparent;
 }
-.cookie-btn:hover { background: var(--accent); color: var(--on-accent); }
+.cookie-btn:hover { background: var(--accent-hi); color: var(--on-accent); }
 .cookie-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 @media (prefers-reduced-motion: reduce) {
@@ -877,8 +884,9 @@ a { color: inherit; text-decoration: none; }
   /* Без backdrop-filter: в установленном на телефон приложении (PWA) iOS
      считает размытие программно, и каждый кадр экрана стоил ~1.4с —
      приложение вязло метрономом (замеры на устройстве владельца
-     2026-08-26). Фон сплошной --ink. */
-  background: var(--ink);
+     2026-08-26). Фон сплошной --panel, граница сверху — --panel-line. */
+  background: var(--panel);
+  border-top: 1px solid var(--panel-line);
   z-index: 49;
   display: flex;
   gap: var(--space-2);
@@ -890,7 +898,7 @@ a { color: inherit; text-decoration: none; }
   align-items: center; justify-content: center; gap: var(--space-4);
   min-height: 52px; padding: var(--space-4) 0;
   border: none; border-radius: var(--r-12);
-  color: var(--on-ink-faint); font-family: inherit; font-size: 11px; font-weight: 500;
+  color: var(--on-panel-faint); font-family: inherit; font-size: 11px; font-weight: 500;
   letter-spacing: 0.01em; white-space: nowrap;
   cursor: pointer; transition: color .15s, background-color .15s;
   background: none; text-decoration: none;
@@ -898,7 +906,7 @@ a { color: inherit; text-decoration: none; }
 }
 /* Активный пункт — светлый текст и точка --accent-hot над подписью (без «таблетки»). */
 .mobile-nav-item { position: relative; }
-.mobile-nav-item.active { color: var(--on-ink); font-weight: 700; }
+.mobile-nav-item.active { color: var(--on-panel); font-weight: 700; }
 .mobile-nav-item svg { transition: opacity .15s; }
 .mobile-nav-item:not(.active) svg { opacity: 0.6; }
 .mobile-nav-item.active::after {
@@ -1084,9 +1092,9 @@ html[data-theme="dark"] .sheet-modal-box { box-shadow: 0 24px 64px -16px rgba(0,
 
 /* Ex buttons (exercise-scoped) */
 .ex-btn { display: inline-flex; align-items: center; gap: var(--space-8); padding: 11px 22px; border-radius: var(--r-8); font-size: 14px; font-weight: 600; cursor: pointer; transition: background .12s, color .12s; white-space: nowrap; border: none; font-family: inherit; }
-.ex-btn-primary { background: var(--text); color: var(--bg); }
-.ex-btn-primary:hover { background: var(--accent); }
-.ex-btn-primary:disabled { opacity: 0.35; cursor: default; background: var(--text); }
+.ex-btn-primary { background: var(--accent); color: var(--on-accent); }
+.ex-btn-primary:hover { background: var(--accent-hi); }
+.ex-btn-primary:disabled { opacity: 0.35; cursor: default; background: var(--accent); }
 .ex-btn-ghost { color: var(--text-sub); background: none; }
 .ex-btn-ghost:hover { background: var(--surface-2); color: var(--text); }
 

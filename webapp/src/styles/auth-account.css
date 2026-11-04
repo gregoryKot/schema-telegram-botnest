@@ -44,11 +44,11 @@
 
 /* Роль психолога */
 .aa-role { padding: 20px 22px; display: flex; flex-direction: column; gap: 10px; }
-.aa-role-label { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--on-ink-faint); }
-.aa-role-note { font-size: 13px; line-height: 1.5; color: var(--on-ink-sub); }
-.aa-role .ds-btn:not(.ds-btn--secondary) { align-self: flex-start; background: var(--bg); color: var(--ink); }
+.aa-role-label { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--on-panel-faint); }
+.aa-role-note { font-size: 13px; line-height: 1.5; color: var(--on-panel-sub); }
+.aa-role .ds-btn:not(.ds-btn--secondary) { align-self: flex-start; }
 .aa-role-form { display: flex; flex-direction: column; gap: 8px; }
-.aa-role .aa-fail { color: var(--on-ink-danger); }
+.aa-role .aa-fail { color: var(--on-panel-danger); }
 
 /* Низ: «Выйти» — ds-btn--secondary, «Выйти со всех устройств» — ds-link с тап-целью 44 */
 .aa-foot { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; border-top: 1px solid var(--paper-sunk); padding-top: 20px; }
@@ -64,4 +64,4 @@
   .aa-foot { flex-direction: column; align-items: stretch; border-top: none; padding-top: 0; margin-top: 8px; }
   .aa-foot .ds-link { align-self: center; }
 }
-.aa-role .ds-btn--secondary { background: transparent; color: var(--on-ink); border-color: var(--ink-line); }
+.aa-role .ds-btn--secondary { background: transparent; color: var(--on-panel); border-color: var(--panel-line); }

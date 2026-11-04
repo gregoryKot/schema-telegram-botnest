@@ -69,10 +69,10 @@ const selectorsOf = (css: string, re: RegExp) => [...css.matchAll(/([^{}]+)\{([^
 const LINE_BORDER = /border-(?:top|bottom):\s*1px\s+solid\s+var\(--line\)/;
 
 describe('один токен разделителя', () => {
-  // Разделитель строк, разделов и футеров — --paper-sunk; --line — контуры из списка выше; на тёмном — --ink-line.
+  // Разделитель строк, разделов и футеров — --paper-sunk; --line — контуры из списка выше; на песочной панели — --panel-line.
   it.each(cssFiles)('%s: линии 1px — solid и токен разделителя/контура', (f) => {
     const bad = [...cssText(f).matchAll(/border-(?:top|bottom):\s*1px\s+(\w+)\s+(var\([^)]*\)|[^;}\s]+)/g)]
-      .filter((m) => m[1] !== 'solid' || !/^var\(--(line|paper-sunk|ink-line)\)$/.test(m[2])).map((m) => m[0]);
+      .filter((m) => m[1] !== 'solid' || !/^var\(--(line|paper-sunk|panel-line)\)$/.test(m[2])).map((m) => m[0]);
     expect(bad).toEqual([]);
   });
   it.each(cssFiles)('%s: --line в border-top/bottom только у контуров из списка', (f) => {

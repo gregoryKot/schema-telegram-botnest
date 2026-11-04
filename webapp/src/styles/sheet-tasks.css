@@ -13,7 +13,7 @@
 .sk-tpl-side { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
 .sk-tpl-time { font-size: 11px; font-weight: 500; color: var(--text-muted); white-space: nowrap; }
 .sk-radio { width: 20px; height: 20px; border-radius: 50%; border: 2px solid var(--line-strong); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-.sk-radio.is-on { background: var(--ink); border-color: var(--ink); color: var(--on-ink); }
+.sk-radio.is-on { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
 .sk-config { display: flex; flex-direction: column; gap: 24px; }
 .sk-field { display: flex; flex-direction: column; gap: 10px; }
 .sk-pick { grid-template-columns: 1fr auto; min-height: 44px; box-sizing: border-box; }
@@ -117,7 +117,7 @@
 }
 
 /* ── Диалоги (Dialog / ConfirmDialog / Celebration) ── */
-.sk-dialog-backdrop { position: fixed; inset: 0; z-index: 300; background: color-mix(in srgb, var(--ink) 50%, transparent); display: flex; align-items: center; justify-content: center; padding: 24px; box-sizing: border-box; }
+.sk-dialog-backdrop { position: fixed; inset: 0; z-index: 300; background: rgba(var(--fg-rgb), 0.5); display: flex; align-items: center; justify-content: center; padding: 24px; box-sizing: border-box; }
 .sk-dialog-box { position: relative; width: 100%; max-width: 440px; max-height: 90vh; overflow-y: auto; padding: 28px 24px; box-shadow: 0 24px 64px -16px rgba(0, 0, 0, .3); animation: modal-in .18s ease; }
 .sk-dialog-box--center { text-align: center; }
 .sk-dialog-title { margin: 0 0 10px; }

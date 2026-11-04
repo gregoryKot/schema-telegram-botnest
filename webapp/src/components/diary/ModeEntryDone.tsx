@@ -38,7 +38,7 @@ export function ModeEntryDone({
       }
       lede="Она в «Дневнике режимов» и в «Моём пути» — можно открыть и перечитать в любой момент."
     >
-      <div className="ds-card ds-card--ink sd-done">
+      <div className="ds-card ds-card--panel sd-done">
         <ModeEntryShare
           mode={getModeById(modeId)}
           healthyResponse={healthyResponse}
