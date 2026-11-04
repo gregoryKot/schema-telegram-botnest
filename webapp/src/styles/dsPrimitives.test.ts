@@ -7,6 +7,7 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { PHONE_MEDIA } from '../utils/phoneLayout';
 
 const css = readFileSync(join(__dirname, 'cabinet.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
 
@@ -31,7 +32,7 @@ function decls(src: string, sel: string): string {
     .join(';');
 }
 
-const phone = block(css, '@media (max-width: 767px)');
+const phone = block(css, `@media ${PHONE_MEDIA}`);
 /** Тап-цели 44: один блок на телефон и на экран под пальцем (планшет). */
 const TAP_MEDIA = '@media (pointer: coarse), (max-width: 767px)';
 const tap = block(css, TAP_MEDIA);
@@ -167,7 +168,7 @@ describe('cabinet.css: примитивы листов (#906)', () => {
 
   it('тап-цели живут в одном блоке: в блоке раскладки телефона их нет, второго блока pointer: coarse нет', () => {
     expect(css.split(TAP_MEDIA)).toHaveLength(2);
-    expect(css.match(/@media[^{]*pointer: coarse/g)).toHaveLength(1);
+    expect(css.match(/@media \(pointer: coarse\)/g)).toHaveLength(1);
     for (const sel of ['.ds-tab', '.ds-btn--icon', '.ds-seg-btn', '.ds-btn--sm', '.ds-input--search', '.ds-input--sm', '.ds-chip--toggle', '.ds-link']) {
       expect(decls(phone, sel), sel).toBe('');
     }
@@ -250,7 +251,7 @@ describe('cabinet.css: примитивы волны 2 (#906)', () => {
   it('.ds-link: тап 44 на телефоне и под пальцем, не у мыши; один телефонный блок', () => {
     expect(decls(tap, '.ds-link')).toContain('min-height: 44px');
     expect(decls(top, '.ds-link')).not.toContain('min-height');
-    expect(css.match(/@media \(max-width: 767px\)/g)).toHaveLength(1);
+    expect(css.match(/@media \(max-width: 767px\), \(pointer: coarse\) and \(max-height: 500px\)/g)).toHaveLength(1);
   });
   it('.ds-link--inline: объявлен один раз вне медиа, под пальцем остаётся в строке текста', () => {
     expect(declaredTimes('.ds-link--inline')).toBe(1);

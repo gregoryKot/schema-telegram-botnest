@@ -10,6 +10,7 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { PHONE_MEDIA } from '../utils/phoneLayout';
 
 interface Rule { group: string | null; selectors: string[]; body: string }
 
@@ -45,7 +46,7 @@ function values(rules: Rule[], group: string | null, sel: string, prop: string):
 }
 
 const read = (f: string) => readFileSync(join(__dirname, f), 'utf8');
-const PHONE = '@media (max-width: 767px)';
+const PHONE = `@media ${PHONE_MEDIA}`;
 const modemap = parse(read('sheet-modemap.css'));
 
 describe('холст карты режимов на телефоне (sheet-modemap.css)', () => {

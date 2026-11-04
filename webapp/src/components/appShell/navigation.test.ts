@@ -3,7 +3,7 @@
 // косвенно через AppShell.overlays.test.tsx — здесь дополнены граничные
 // случаи (пустая история, отсутствие «сегодня», дырка длиной больше суток).
 import { describe, it, expect } from 'vitest';
-import { sectionFromPath, fillHistoryGaps } from './navigation';
+import { sectionFromPath, fillHistoryGaps, navItemOf } from './navigation';
 import { TODAY_DATE } from './useBootstrapLoad';
 
 function addDays(dateStr: string, delta: number): string {
@@ -69,5 +69,15 @@ describe('fillHistoryGaps', () => {
     const result = fillHistoryGaps([{ date: yesterday, ratings: { safety: 3 } }]);
     expect(result.some(d => d.date === TODAY_DATE)).toBe(false);
     expect(result[0].date).toBe(yesterday);
+  });
+});
+
+describe('navItemOf', () => {
+  it('вложенные в «Ещё» разделы подсвечивают «Ещё»', () => {
+    expect(navItemOf('/practice')).toBe('more');
+    expect(navItemOf('/schemas')).toBe('more');
+    expect(navItemOf('/profile')).toBe('more');
+    expect(navItemOf('/diary')).toBe('diary');
+    expect(navItemOf('/')).toBe('today');
   });
 });

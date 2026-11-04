@@ -6,6 +6,7 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { PHONE_MEDIA } from '../utils/phoneLayout';
 
 const css = readFileSync(join(__dirname, 'therapist-card.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
 
@@ -30,7 +31,7 @@ function decls(src: string, sel: string): string {
     .join(';');
 }
 
-const phone = block(css, '@media (max-width: 767px)');
+const phone = block(css, `@media ${PHONE_MEDIA}`);
 
 // Локальные копии примитивов и плитки, ушедшие вместе с заменой на ds-*.
 const GONE = [

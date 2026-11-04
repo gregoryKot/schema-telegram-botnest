@@ -8,14 +8,15 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { PHONE_MEDIA } from '../utils/phoneLayout';
 
 const SRC = join(__dirname, '..');
 const read = (f: string) => readFileSync(join(SRC, f), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
 
-/** Тела всех блоков `@media (max-width: 767px) { … }` файла, склеенные. */
-function phoneBlocks(css: string): string {
+/** Тела всех блоков `@media <PHONE_MEDIA> { … }` файла, склеенные. */
+function phoneBlocks(css: string, media = `@media ${PHONE_MEDIA}`): string {
   const out: string[] = [];
-  const re = /@media \(max-width: 767px\)\s*\{/g;
+  const re = new RegExp(`${media.replace(/[()]/g, '\\$&')}\\s*\\{`, 'g');
   let m: RegExpExecArray | null;
   while ((m = re.exec(css))) {
     const start = m.index + m[0].length;
@@ -95,8 +96,17 @@ describe('безопасная зона сверху (--safe-top)', () => {
 
   it('shared/utilities.css: на телефоне .u-sheet и .u-sheet-grid отступают на --safe-top', () => {
     const css = readFileSync(join(__dirname, '..', '..', '..', 'shared/src/theme/utilities.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
-    const phone = phoneBlocks(css);
+    // shared/ общий с мини-аппом: там свой брейкпоинт, только ширина.
+    const phone = phoneBlocks(css, '@media (max-width: 767px)');
     expect(hasRule(phone, '.u-sheet.u-sheet', 'padding-top: var(--safe-top')).toBe(true);
     expect(hasRule(phone, '.u-sheet-grid.u-sheet-grid', 'padding-top: var(--safe-top')).toBe(true);
   });
+
+  // C-З9: страницы вне AppShell (/account, /subscribe, /donate) в установленном
+  // приложении стояли под статус-баром — корень не отступал.
+  it.each([['styles/auth-account.css', '.aa-root'], ['styles/auth-pay.css', '.ap-page']])(
+    '%s: корень страницы %s отступает на --safe-top', (file, root) => {
+      const css = read(file);
+      expect(hasRule(css, root, 'padding-top: var(--safe-top)'), `${root} в ${file}`).toBe(true);
+    });
 });

@@ -5,6 +5,7 @@
    Суммы доната — ds-seg, поля доната — ds-input (#906). .ap-field на тёмной
    панели подписки — волна 3. */
 .ap-page {
+  padding-top: var(--safe-top);
   flex: 1; width: 100%; box-sizing: border-box; min-height: 100dvh; display: flex; flex-direction: column;
   background: var(--bg); color: var(--text); font-family: var(--sans);
 }

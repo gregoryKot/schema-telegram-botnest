@@ -15,3 +15,10 @@ export function sectionFromPath(path: string): Section {
   if (seg === 'help' || seg === 'exercises') return 'practice';
   return 'today';
 }
+
+/** Пункт нижней навигации, под которым лежит раздел: «Практики», «Паттерны» и
+ *  «Профиль» открываются из «Ещё», поэтому горит «Ещё» (QA 2026-11, C-З8). */
+export function navItemOf(path: string): Section {
+  const s = sectionFromPath(path);
+  return s === 'practice' || s === 'schemas' || s === 'profile' ? 'more' : s;
+}
