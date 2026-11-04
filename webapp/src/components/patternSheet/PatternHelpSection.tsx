@@ -49,7 +49,7 @@ export function PatternHelpSection({ kind, id }: Props) {
         {QUICK_PRACTICE_IDS.map((pid) => {
           const p = buildQuickPractice(pid, tr);
           return (
-            <button key={pid} className="ps-pill" onClick={() => setActive(pid)}>
+            <button key={pid} className="ds-btn ds-btn--secondary ds-btn--sm" onClick={() => setActive(pid)}>
               <span aria-hidden>{p.emoji}</span> {p.title}
             </button>
           );

@@ -31,8 +31,14 @@ describe('Настройки: строки и переключатель реж�
       if (sels.some((s) => s.includes('.ds-link'))) expect(body).not.toMatch(/min-height/);
     }
   });
-  it('опасная строка красит заголовок общей строки', () => {
-    expect(selectors(settings)).toContain('.st-row--danger .ds-list-title');
+  it('в sheet-settings.css нет .st-row--danger: опасную строку красит ds-list-row--danger (cabinet.css)', () => {
+    expect(hasClass(settings, 'st-row--danger')).toBe(false);
+  });
+  it.each(['st-opt', 'st-hour', 'st-link-danger', 'st-pc-write', 'st-pc-leave'])(
+    'в sheet-settings.css нет .%s (общие ds-list-row, ds-chip--toggle, ds-link--danger)', (cls) =>
+      expect(hasClass(settings, cls)).toBe(false));
+  it('в sheet-settings.css нет селектора .st-links a', () => {
+    expect(selectors(settings).filter((s) => s.includes('.st-links a'))).toEqual([]);
   });
 });
 
@@ -61,5 +67,12 @@ describe('Записи и история', () => {
 describe('Паттерны', () => {
   it.each(['cs-seg', 'cs-fold-btn', 'cs-fold', 'cs-fold-chev', 'cs-empty', 'cs-tools'])(
     'в client-schemas.css нет .%s', (cls) => expect(hasClass(schemas, cls)).toBe(false));
-  it('в pattern-sheet.css нет .ps-empty', () => expect(hasClass(pattern, 'ps-empty')).toBe(false));
+  it('в client-schemas.css нет .cs-row: строка группы — ds-list-row', () =>
+    expect(hasClass(schemas, 'cs-row')).toBe(false));
+  it.each(['ps-empty', 'ps-pill'])('в pattern-sheet.css нет .%s', (cls) =>
+    expect(hasClass(pattern, cls)).toBe(false));
+  it.each(['cpf-delete-link', 'cpf-danger'])('в client-profile.css нет .%s (ds-link--danger, ds-list-row--danger)', (cls) =>
+    expect(hasClass(read('client-profile.css'), cls)).toBe(false));
+  it('в auth-pay.css нет .ap-field: поле email — ds-input--on-ink', () =>
+    expect(hasClass(read('auth-pay.css'), 'ap-field')).toBe(false));
 });

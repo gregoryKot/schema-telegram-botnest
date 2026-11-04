@@ -31,12 +31,9 @@ export function MineGroupsList({ kind, groups, nameOf, addLabel, onAdd, onOpen, 
               const name = nameOf(id);
               if (!name) return null;
               return (
-                <button key={id} className="cs-row" onClick={() => onOpen(id)}>
-                  <span className="cs-row-text">
-                    <span className="cs-row-name tone-ink">{name}</span>
-                    {statusFor && <span className="cs-row-sub">{statusFor(id)}</span>}
-                  </span>
-                  {freq && <FreqMark freq={freq[id] ?? 0} />}
+                <button key={id} type="button" className="ds-list-row ds-list-row--nav ds-list-row--hover" onClick={() => onOpen(id)}>
+                  <span className="ds-list-body"><span className="ds-list-title tone-ink">{name}</span>{statusFor && <span className="ds-list-sub">{statusFor(id)}</span>}</span>
+                  <span className="cs-grp-right">{freq && <FreqMark freq={freq[id] ?? 0} />}<span className="ds-chev" aria-hidden="true" /></span>
                 </button>
               );
             })}

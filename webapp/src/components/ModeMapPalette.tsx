@@ -99,7 +99,7 @@ export function ModeMapPalette({ onAdd, onAddMany }: Props) {
     <div className="ds-card mm2-pal">
       {/* Search */}
       <div className="mm2-pal-search">
-        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Поиск режима…" className="ds-input" />
+        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Поиск режима…" className="ds-input ds-input--search" />
       </div>
 
       <div className="mm2-pal-scroll">
@@ -253,7 +253,7 @@ export function ModeMapPalette({ onAdd, onAddMany }: Props) {
           const m = GROUP_TO_TYPE[g.id];
           return !m || !g.items.some(i => i.name.toLowerCase().includes(q) || i.short.toLowerCase().includes(q));
         }) && !customModesList.some(m => m.name.toLowerCase().includes(q)) && (
-          <div className="mm2-pal-empty">Режим не найден</div>
+          <p className="ds-empty mm2-pal-empty">Режим не найден</p>
         )}
       </div>
     </div>

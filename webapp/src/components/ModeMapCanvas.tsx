@@ -338,13 +338,13 @@ export function ModeMapCanvas({ clientId, mapId, kind, nodes, edges, setNodes, s
               <TbBtn label="Шаблоны и генерация" onClick={() => { setTplOpen(o => !o); setDlOpen(false); }} active={tplOpen} caret><MMIcon name="layers" size={17} /></TbBtn>
               {tplOpen && (
                 <Dropdown anchorRef={tplWrapRef} onClose={() => setTplOpen(false)}>
-                  <div className="mm2-drop-head">Шаблоны</div>
+                  <div className="ds-label mm2-drop-head">Шаблоны</div>
                   {TEMPLATES.map(t => (
                     <button key={t.id} onClick={() => { const g = templateToGraph(t); insertGraph(g.nodes, g.edges); setTplOpen(false); }}
-                      className="mm2-item">{t.name}</button>
+                      className="ds-menu-item">{t.name}</button>
                   ))}
                   <div className="mm2-drop-sep" />
-                  <button onClick={() => { void fromConcept.generate(); setTplOpen(false); }} className="mm2-item">
+                  <button onClick={() => { void fromConcept.generate(); setTplOpen(false); }} className="ds-menu-item">
                     Из концептуализации клиента
                   </button>
                 </Dropdown>
@@ -361,7 +361,7 @@ export function ModeMapCanvas({ clientId, mapId, kind, nodes, edges, setNodes, s
                 <TbBtn label="Горячие клавиши" onClick={() => setKeysOpen(o => !o)} active={keysOpen}><MMIcon name="keyboard" size={17} /></TbBtn>
                 {keysOpen && (
                   <Dropdown anchorRef={keysWrapRef} onClose={() => setKeysOpen(false)}>
-                    <div className="mm2-drop-head">Горячие клавиши</div>
+                    <div className="ds-label mm2-drop-head">Горячие клавиши</div>
                     {([
                       ['⌘Z / Ctrl+Z', 'Отменить'],
                       ['⌘⇧Z / Ctrl+Y', 'Вернуть'],

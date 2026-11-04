@@ -6,6 +6,7 @@ import { MMIcon } from './modeMapIcons';
 import { useTr } from '../utils/addressForm';
 import '../styles/sheet-modemap.css';
 import { ConfirmDialog } from './ConfirmDialog';
+import { RenameDeleteMenu } from './RenameDeleteMenu';
 import { MODE_MAP_TITLE_MAX } from '../../../shared/src/limits/textLimits';
 
 interface Props { clientId: UserId; initialMapId?: number }  // initialMapId: карта, которую открыть первой (иначе первая в списке)
@@ -114,11 +115,13 @@ export function ModeMapSelector({ clientId, initialMapId }: Props) {
     setTimeout(() => titleRef.current?.select(), 50);
   }
 
+  const activeMeta = maps.find(m => m.id === activeId);
+
   return (
     <div className="mm2-fill">
       {/* Map selector bar — pill-style tabs */}
       <div className="mm2-bar">
-        <div className="ds-seg" role="group" aria-label="Карты режимов">
+        <div className="ds-seg ds-seg--scroll" role="group" aria-label="Карты режимов">
           {maps.map(m => editingId === m.id ? (
             <input
               key={m.id}
@@ -134,19 +137,14 @@ export function ModeMapSelector({ clientId, initialMapId }: Props) {
               key={m.id} type="button"
               aria-pressed={activeId === m.id}
               onClick={() => selectMap(m.id)}
-              onDoubleClick={() => startEdit(m)}
-              title={`${KIND_META[m.kind]?.label ?? ''} · двойной клик — переименовать`}
+              title={KIND_META[m.kind]?.label}
               className={`ds-seg-btn${activeId === m.id ? ' is-active' : ''}`}
             >
               {m.title}
             </button>
           ))}
         </div>
-        {maps.length > 1 && activeId !== null && (
-          <button type="button" onClick={() => setDeleteTargetId(activeId)} title="Удалить карту" aria-label="Удалить карту" className="ds-btn ds-btn--icon">
-            <MMIcon name="trash" size={16} />
-          </button>
-        )}
+        {activeMeta && <RenameDeleteMenu label="Действия с картой" deleteLabel="Удалить карту" onRename={() => startEdit(activeMeta)} onDelete={maps.length > 1 ? () => setDeleteTargetId(activeMeta.id) : undefined} />}
         <button ref={newBtnRef} onClick={openKindPicker} disabled={creating}
           className={`ds-btn ds-btn--secondary ds-btn--sm mm2-new${pickKind ? ' is-active' : ''}`}>
           {creating ? '…' : (
@@ -163,10 +161,10 @@ export function ModeMapSelector({ clientId, initialMapId }: Props) {
           <div role="button" tabIndex={0} aria-label="Закрыть"
             onClick={() => setPickKind(false)}
             onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setPickKind(false); } }}
-            className="mm2-backdrop" style={{ zIndex: 60 }} />
-          <div className="ds-card mm2-kind-menu" style={{ left: menuPos.x, top: menuPos.y }}>
+            className="ds-backdrop" style={{ zIndex: 60 }} />
+          <div className="ds-menu mm2-kind-menu" style={{ left: menuPos.x, top: menuPos.y }}>
             {KINDS.map(k => (
-              <button key={k} onClick={() => createMap(k)} className="mm2-item">
+              <button key={k} onClick={() => createMap(k)} className="ds-menu-item">
                 <div className="mm2-kind-name">{KIND_META[k].label}</div>
                 <div className="mm2-kind-hint">{KIND_META[k].hint}</div>
               </button>

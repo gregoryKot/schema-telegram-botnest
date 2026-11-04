@@ -41,6 +41,12 @@ describe('Dropdown', () => {
     expect(onClose).toHaveBeenCalled();
   });
 
+  it('вид общий: панель — .ds-menu, подложка — .ds-backdrop', () => {
+    renderMenu();
+    expect(screen.getByRole('menu').classList.contains('ds-menu')).toBe(true);
+    expect(screen.getByLabelText('Закрыть').classList.contains('ds-backdrop')).toBe(true);
+  });
+
   it('без anchorRef.current не падает (не позиционируется, но не крашится)', () => {
     const ref = createRef<HTMLDivElement>();
     expect(() =>

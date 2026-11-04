@@ -36,7 +36,7 @@
 .cd-entry-text:empty { display: none; }
 .cd-entry-meta { font-size: 12px; color: var(--text-faint); margin-top: 4px; }
 .cd-entry-more-hint { font-weight: 600; color: var(--accent); white-space: nowrap; }
-.cd-entry-more { padding-top: 12px; border-top: 1px solid var(--line); cursor: default; }
+.cd-entry-more { padding-top: 12px; border-top: 1px solid var(--paper-sunk); cursor: default; }
 .cd-field { margin-bottom: 10px; }
 .cd-field-label { font-size: 10.5px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--text-faint); margin-bottom: 3px; }
 .cd-field-label.is-accent { color: var(--accent); }
@@ -51,7 +51,6 @@
 
 @media (max-width: 767px) {
   /* Кегль заголовка — ds-h1 (#906); .cd-head — обычный блок, своих flex-правил нет. */
-  .cd-page { gap: var(--space-16); padding-top: var(--space-16); }
 
   /* Записи: бейдж и время в одной строке, заголовок на всю ширину под ним */
   .cd-entry-head { flex-wrap: wrap; row-gap: var(--space-4); }

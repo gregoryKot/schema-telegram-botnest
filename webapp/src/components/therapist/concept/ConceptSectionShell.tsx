@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { sectionAnchor } from './conceptSections';
 
-// Оболочка нумерованного раздела: номер Literata, H3 и подсказка.
+// Оболочка нумерованного раздела: номер капителью, заголовок ds-h3 и подсказка.
 export function ConceptSectionShell({ id, n, title, hint, children }: {
   id: string;
   n: string;
@@ -12,9 +12,9 @@ export function ConceptSectionShell({ id, n, title, hint, children }: {
   return (
     <section id={sectionAnchor(id)} className="tcp-sec">
       <div className="tcp-sec-head">
-        <span className="tcp-sec-n">{n}</span>
+        <span className="ds-label">{n}</span>
         <div>
-          <h3 className="tcp-sec-title">{title}</h3>
+          <h3 className="ds-h3">{title}</h3>
           {hint && <div className="tcp-sec-hint">{hint}</div>}
         </div>
       </div>

@@ -86,8 +86,8 @@ describe('лист «Зачем это всё» (client-why.css)', () => {
     expect(css).not.toMatch(/\.cw-head > \.ds-back/);
     expect(declsOf(css, '.cw-sheet')).toContain('flex-direction: column');
   });
-  it('на телефоне лист отступает на --safe-top: .u-sheet сам статус-бар не учитывает', () => {
-    expect(phoneBlock(css)).toMatch(/\.cw-sheet \{ padding-top: var\(--safe-top\)/);
+  it('отступ на --safe-top даёт .u-sheet (shared/theme/utilities.css), своего padding-top у .cw-sheet нет', () => {
+    expect(css).not.toMatch(/\.cw-sheet \{[^}]*padding-top/);
   });
   it('строки трёх действий — ds-list-row в одну колонку, пояснение Manrope 14, без засечного кегля', () => {
     expect(declsOf(css, '.cw-item')).toContain('grid-template-columns');
