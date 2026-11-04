@@ -153,8 +153,8 @@ describe('AppShell — виджет «Сегодня» в сайдбаре (ре
     ]);
     mockApi.ratings.mockResolvedValueOnce({ safety: 8, autonomy: 6 }).mockResolvedValueOnce({});
     renderAppShell('/today');
-    // (8+6)/2 = 7.0 — ожидаем реально посчитанное значение, не хардкод.
-    await waitFor(() => expect(screen.getByText('7.0')).toBeTruthy());
+    // (8+6)/2 = 7,0 (fmtIndex: запятая, как на плитке) — ожидаем реально посчитанное значение, не хардкод.
+    await waitFor(() => expect(screen.getByText('7,0')).toBeTruthy());
   });
 });
 

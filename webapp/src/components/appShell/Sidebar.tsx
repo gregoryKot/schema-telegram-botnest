@@ -6,7 +6,7 @@ import { SECTION_HUE, hueStyle } from '../../lib/tone';
 import { ModeSwitch } from './ModeSwitch';
 import type { Section } from './navigation';
 import { SidebarClients } from './SidebarClients';
-import { sidebarDayIndex } from './sidebarDayIndex';
+import { dayIndex, fmtIndex } from '../../../../shared/src/needs/dayIndex';
 
 const itemClass = ({ isActive }: { isActive: boolean }) => `sb-item${isActive ? ' is-active' : ''}`;
 
@@ -40,7 +40,8 @@ export function Sidebar({
   needs, ratings, displayName, onOpenTracker, onOpenSettings,
 }: Props) {
   const { logout } = useAuth();
-  const idx = sidebarDayIndex(needs, ratings);
+  // Тот же индекс дня, что на плитке и в итоге трекера (shared/src/needs/dayIndex.ts).
+  const idx = dayIndex(needs.map(n => n.id), ratings);
   return (
     <aside className="sidebar">
       <SidebarBrand />
@@ -75,7 +76,7 @@ export function Sidebar({
             {idx !== null ? (
               <>
                 <div className="sb-today-index">
-                  <span className="sb-today-num">{idx.toFixed(1)}</span>
+                  <span className="sb-today-num">{fmtIndex(idx)}</span>
                   <span className="sb-today-denom">/10</span>
                 </div>
                 <div className="sb-today-sub">индекс дня</div>
