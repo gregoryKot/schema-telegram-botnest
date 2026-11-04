@@ -53,8 +53,7 @@ export function DonatePage() {
             <p className="ap-fine">Оплата картой или СБП через Robokassa.<br />Добровольное пожертвование, возврату не подлежит.</p>
           </div>
         )}
-        <a href="/" className="ap-home">← На главную</a>
-      </div></div>
+        <a href="/" className="ap-home">← На главную</a></div></div>
     </div>
   );
 }

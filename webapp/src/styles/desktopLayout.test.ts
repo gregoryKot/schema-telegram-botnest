@@ -54,7 +54,7 @@ const PHONE_ONLY: [string, RegExp][] = [
   ['.ds-seg--full', /(^|;|\s)width:\s*100%/],
 ];
 /** Примитивы и раскладки, у которых на ≥768 обязано быть своё правило (вид из макета до волн). */
-const NEED_DESKTOP = ['.ds-sheet-head--page', '.ds-seg--full', '.cw-list', '.cw-item', '.sd-explainer-stack', '.cm-page .ds-card--flush', '.ap-main--state', '.ap-donate-shell'];
+const NEED_DESKTOP = ['.ds-sheet-head--page', '.ds-seg--full', '.cw-list', '.cw-item', '.sd-explainer-stack', '.cm-page > .ds-card--flush', '.ap-main--state', '.ap-donate-shell'];
 
 describe('компьютер ≥768 не наследует телефонную раскладку', () => {
   it.each(PHONE_ONLY)('%s: width: 100% только под @media (max-width: 767px)', (sel, decl) => {
