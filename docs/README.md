@@ -53,7 +53,7 @@ CLAUDE.md. Не удалять, но и не считать списком за�
 | [archive/TEST_COVERAGE_PLAN.md](archive/TEST_COVERAGE_PLAN.md) | План покрытия v1. Закрыт в PR #66; продолжен `TEST_IMPROVEMENT_PLAN.md`. На него по имени ссылаются `ci.yml` и `check-coverage-ratchet.mjs`. |
 | [archive/INTEGRATION_NOTES.md](archive/INTEGRATION_NOTES.md) | Разовая карта разрешения конфликтов при merge ветки покрытия. История. |
 | [archive/TODO.md](archive/TODO.md) | Туду по прототипу, 05.2026. Устарел: оба открытых пункта (`/schemas` crash, merge аккаунтов) починены. |
-| [archive/ONE_FRONTEND_PLAN.md](archive/ONE_FRONTEND_PLAN.md) | План единой версии (2026-10-17 — 2026-11-04): отказ от Telegram-мини-аппа в пользу кабинета сайта. Закрыт: этапы 1–6 сделаны, кнопки бота открывают кабинет (#916), мини-апп удалён (#TBD); сверка и решения владельца — #908, хвосты — [open/one-frontend.md](open/one-frontend.md). |
+| [archive/ONE_FRONTEND_PLAN.md](archive/ONE_FRONTEND_PLAN.md) | План единой версии (2026-10-17 — 2026-11-04): отказ от Telegram-мини-аппа в пользу кабинета сайта. Закрыт: этапы 1–6 сделаны, кнопки бота открывают кабинет (#916), мини-апп удалён (#917); сверка и решения владельца — #908, хвосты — [open/one-frontend.md](open/one-frontend.md). |
 
 ## Что осталось открытым
 
