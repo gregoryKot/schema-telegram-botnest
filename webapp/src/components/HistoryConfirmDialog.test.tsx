@@ -3,18 +3,19 @@
 // из карточки клиента. Диалог кладёт запись в историю: «Назад» закрывает
 // только его. Вид `run` держит диалог открытым, пока идёт действие.
 import { describe, it, expect, vi } from 'vitest';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { act, render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter, useNavigate, useLocation } from 'react-router-dom';
 import { HistoryConfirmDialog } from './HistoryConfirmDialog';
 
-let nav: ReturnType<typeof useNavigate> | null = null;
-let depth = 0;
+// Снимок роутера: мутация свойства в эффекте, а не переприсваивание внешней переменной.
+const snap = { nav: null as ReturnType<typeof useNavigate> | null, depth: 0 };
 
 function Host({ run }: { run?: () => Promise<boolean> }) {
   const [open, setOpen] = useState(true);
-  nav = useNavigate();
-  depth = (useLocation().state as { __sheetStack?: string[] } | null)?.__sheetStack?.length ?? 0;
+  const navigate = useNavigate();
+  const depth = (useLocation().state as { __sheetStack?: string[] } | null)?.__sheetStack?.length ?? 0;
+  useEffect(() => { snap.nav = navigate; snap.depth = depth; });
   return (
     <div>
       {open && (run
@@ -31,8 +32,8 @@ describe('HistoryConfirmDialog', () => {
   it('«Назад» закрывает диалог, запись истории была', async () => {
     mount();
     await screen.findByText('Удалить?');
-    expect(depth).toBe(1);
-    act(() => nav!(-1));
+    expect(snap.depth).toBe(1);
+    act(() => snap.nav!(-1));
     expect(screen.queryByText('Удалить?')).toBeNull();
   });
 
@@ -42,7 +43,7 @@ describe('HistoryConfirmDialog', () => {
     fireEvent.click(await screen.findByText('Да'));
     await waitFor(() => expect(screen.queryByText('Удалить?')).toBeNull());
     expect(run).toHaveBeenCalledTimes(1);
-    expect(depth).toBe(0);
+    expect(snap.depth).toBe(0);
   });
 
   it('run: ответ false — диалог остаётся с ошибкой, запись не снята', async () => {
@@ -52,7 +53,7 @@ describe('HistoryConfirmDialog', () => {
     await waitFor(() => expect(run).toHaveBeenCalled());
     expect(screen.getByText('Удалить?')).toBeTruthy();
     expect(screen.getByText('сбой')).toBeTruthy();
-    expect(depth).toBe(1);
+    expect(snap.depth).toBe(1);
   });
 
   it('run: пока действие идёт, кнопки заняты', async () => {

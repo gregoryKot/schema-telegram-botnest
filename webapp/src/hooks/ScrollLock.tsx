@@ -3,7 +3,7 @@ import { useAnySheetOpen } from './openSheets';
 import { useAnyDialogOpen } from '../../../shared/src/utils/dialogStack';
 
 /** Блокирует прокрутку страницы; возвращает снятие блокировки. */
-export function lockPageScroll(): () => void {
+function lockPageScroll(): () => void {
   const html = document.documentElement;
   const body = document.body;
   const prev = { h: html.style.overflow, b: body.style.overflow, o: html.style.overscrollBehavior };

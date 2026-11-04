@@ -5,7 +5,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { act, render, screen } from '@testing-library/react';
 import { MemoryRouter, useNavigate, useLocation, type NavigateFunction } from 'react-router-dom';
-import { useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { AppSections } from './AppSections';
 
 interface SheetProps {
@@ -21,11 +21,12 @@ vi.mock('../TherapistClientSheet', () => ({
   ),
 }));
 
-let loc: ReturnType<typeof useLocation> | null = null;
+const snap = { loc: null as ReturnType<typeof useLocation> | null };
 
 function Host() {
   const nav: NavigateFunction = useNavigate();
-  loc = useLocation();
+  const loc = useLocation();
+  useEffect(() => { snap.loc = loc; });
   const back = useRef(() => {});
   const seg = loc.pathname.split('/')[2];
   const id = seg && seg !== 'today' ? Number(seg) : null;
@@ -47,26 +48,26 @@ const click = (el: HTMLElement) => act(() => { el.click(); });
 describe('AppSections: карточка клиента', () => {
   it('повторное открытие уже открытой карточки ничего не пушит', async () => {
     mount(['/cabinet/42']);
-    const before = loc!.key;
+    const before = snap.loc!.key;
     click(await screen.findByText('открыть 42'));
-    expect(loc!.key).toBe(before);
+    expect(snap.loc!.key).toBe(before);
   });
 
   it('из списка открывается с fromList, «все клиенты» возвращает шагом назад', async () => {
     mount(['/cabinet']);
-    const listKey = loc!.key;
+    const listKey = snap.loc!.key;
     click(await screen.findByText('открыть 42'));
-    expect(loc!.pathname).toBe('/cabinet/42');
+    expect(snap.loc!.pathname).toBe('/cabinet/42');
     click(screen.getByText('все клиенты'));
     await act(async () => {});
-    expect(loc!.pathname).toBe('/cabinet');
-    expect(loc!.key).toBe(listKey);
+    expect(snap.loc!.pathname).toBe('/cabinet');
+    expect(snap.loc!.key).toBe(listKey);
   });
 
   it('без метки (пришли не из списка) «все клиенты» ведёт на список', async () => {
     mount(['/cabinet/today', '/cabinet/42']);
     click(await screen.findByText('все клиенты'));
     await act(async () => {});
-    expect(loc!.pathname).toBe('/cabinet');
+    expect(snap.loc!.pathname).toBe('/cabinet');
   });
 });

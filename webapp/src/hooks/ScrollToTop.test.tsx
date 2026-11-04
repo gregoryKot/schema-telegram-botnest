@@ -1,11 +1,13 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { useEffect } from 'react';
 import { act, render } from '@testing-library/react';
 import { MemoryRouter, useNavigate } from 'react-router-dom';
-import { ScrollToTop, shouldResetScroll } from './ScrollToTop';
+import { ScrollToTop } from './ScrollToTop';
+import { shouldResetScroll } from './shouldResetScroll';
 
-let nav: ReturnType<typeof useNavigate> | null = null;
-function Spy() { nav = useNavigate(); return null; }
+const snap = { nav: null as ReturnType<typeof useNavigate> | null };
+function Spy() { const navigate = useNavigate(); useEffect(() => { snap.nav = navigate; }); return null; }
 const scrollTo = vi.fn();
 
 beforeEach(() => { scrollTo.mockClear(); window.scrollTo = scrollTo as never; });
@@ -23,10 +25,10 @@ describe('ScrollToTop', () => {
   it('переход по ссылке сбрасывает прокрутку, «Назад» — нет', () => {
     render(<MemoryRouter initialEntries={['/diary']}><Spy /><ScrollToTop /></MemoryRouter>);
     expect(scrollTo).not.toHaveBeenCalled();
-    act(() => nav!('/today'));
+    act(() => snap.nav!('/today'));
     expect(scrollTo).toHaveBeenCalledWith(0, 0);
     scrollTo.mockClear();
-    act(() => nav!(-1));
+    act(() => snap.nav!(-1));
     expect(scrollTo).not.toHaveBeenCalled();
   });
 });
