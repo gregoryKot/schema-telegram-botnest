@@ -11,7 +11,7 @@ import type { ConsentState } from '../../hooks/useConsentGate';
 export type EntryStep = 'address' | 'consent' | 'join' | 'wait' | 'done';
 
 export function entryStep(s: {
-  /** Вопрос «ты/вы» решён: задан, отложен «Позже» или не нужен. */
+  /** Вопрос о форме обращения решён: задан, отложен «Позже» или не нужен. */
   addressDone: boolean;
   consent: ConsentState;
   /** Параметр запуска разобран (useStartParam отработал). */
