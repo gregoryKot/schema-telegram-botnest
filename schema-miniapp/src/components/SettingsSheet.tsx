@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { loadFreshTherapyRelation } from '../../../shared/src/therapy/freshRelation';
 import { useTimedFlag } from '../../../shared/src/hooks/useTimedFlag';
 import { getHost } from '../../../shared/src/host';
 import { api, UserSettings, TherapyRelationInfo } from '../api';
@@ -102,8 +103,7 @@ export function SettingsSheet({
           therapistShareProfile: true,
         }),
       );
-    api
-      .getTherapyRelation()
+    loadFreshTherapyRelation(api.getTherapyRelation) // мимо кеша — М4
       .then(setTherapyRelation)
       .catch(() => setTherapyRelation(null));
     api

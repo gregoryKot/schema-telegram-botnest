@@ -107,6 +107,13 @@ describe('toCardBody', () => {
     expect(skipped.alias).toBeUndefined();
   });
 
+  // QA 2026-11, К1: разбор одного момента не переписывает портрет режима.
+  it('поля момента помечены fillIfEmpty, имя части — нет', () => {
+    const body = toCardBody('vulnerable_child', 'Стена', recognition.traits);
+    expect(body.fillIfEmpty).toEqual(['triggers', 'feelings', 'behavior']);
+    expect(body.fillIfEmpty).not.toContain('alias');
+  });
+
   it('пустые traits дают undefined для triggers/feelings/behavior, не пустую строку', () => {
     const body = toCardBody('vulnerable_child', 'Стена', {
       body: '',

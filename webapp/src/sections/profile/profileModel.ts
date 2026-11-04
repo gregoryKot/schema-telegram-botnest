@@ -1,5 +1,6 @@
 // Чистые вычисления экрана «Профиль»: раскладка тепловой карты, уровни,
 // подписи месяцев, прогресс достижений, формат даты сессии, склонение.
+import { pluralRu } from '../../../../shared/src/utils/pluralRu';
 
 export const HEAT_WEEKS = 18;
 /** Ширина, до которой кабинет считается телефонным (синхронно с @media в css). */
@@ -74,11 +75,17 @@ export function monthLabels(weeks: HeatCell[][]): string[] {
 
 /** «день / дня / дней» по числу. */
 export function daysWord(n: number): string {
-  const m100 = n % 100, m10 = n % 10;
-  if (m100 >= 11 && m100 <= 14) return 'дней';
-  if (m10 === 1) return 'день';
-  if (m10 >= 2 && m10 <= 4) return 'дня';
-  return 'дней';
+  return pluralRu(n, 'день', 'дня', 'дней');
+}
+
+/** Счётчики «Прогресса» со склонением: «1 день стрика», а не «1 дней» (QA 2026-11-03). */
+export function counterItems(c: { streak: number; totalDays: number; diaryCount: number; ysqCount: number }): [number, string][] {
+  return [
+    [c.streak, `${daysWord(c.streak)} стрика`],
+    [c.totalDays, `${daysWord(c.totalDays)} всего`],
+    [c.diaryCount, `${pluralRu(c.diaryCount, 'запись', 'записи', 'записей')} дневника`],
+    [c.ysqCount, `${pluralRu(c.ysqCount, 'прохождение', 'прохождения', 'прохождений')} теста`],
+  ];
 }
 
 const PROGRESS_TARGET: Record<string, { kind: 'streak' | 'total'; goal: number }> = {

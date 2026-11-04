@@ -27,9 +27,7 @@ function renderSheet() {
     <MemoryRouter>
       <CheckInSheet
         plan={PLAN}
-        needColor="#60a5fa"
         needLabel="Привязанность"
-        color="#60a5fa"
         onDone={vi.fn()}
       />
     </MemoryRouter>,

@@ -49,9 +49,9 @@ export function HistoryView({
 }: Props) {
   const tr = useTr();
   const contact = getTherapistContact();
-  // Терапевту не предлагаем запись к самому себе (null); один хелпер на оба блока.
+  // Не к себе (терапевт) и не в никуда (нет канала, З6); хелпер на оба блока.
   const bookingLink = (label: string) =>
-    contact.isTherapist ? null : (
+    contact.isTherapist || !contact.bookingUrl ? null : (
       <a
         href={contact.bookingUrl}
         target="_blank"

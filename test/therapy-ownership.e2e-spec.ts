@@ -128,6 +128,12 @@ describe('e2e smoke: therapy ownership isolation (therapist ↔ client)', () => 
     expect(req.status).toBeLessThan(300);
     const after = await t1.get(`/api/therapy/client-data/${C1_ID}`);
     expect(after.body.ysqRequestPending).toBe(true);
+    // Запрос — задание клиенту (QA 2026-11, К1): его видят и терапевт, и
+    // клиент без Telegram; признак выше считается по нему же.
+    const tasks = await t1.get(`/api/therapy/tasks/client/${C1_ID}`);
+    expect(tasks.body.map((t: { type: string }) => t.type)).toEqual([
+      'ysq_test',
+    ]);
   });
 
   it('T1 назначает задачу C1 и видит её через tasks/client/:clientId', async () => {
@@ -141,8 +147,11 @@ describe('e2e smoke: therapy ownership isolation (therapist ↔ client)', () => 
 
     const list = await t1.get(`/api/therapy/tasks/client/${C1_ID}`);
     expect(list.status).toBe(200);
-    expect(list.body).toHaveLength(1);
-    expect(list.body[0].text).toBe('заполнить дневник схем');
+    // Плюс задание «пройти тест на схемы» из запроса YSQ шагом выше. Порядок
+    // — createdAt desc на живой базе; фейк его не держит, поэтому сортируем.
+    expect(list.body.map((t: { text: string }) => t.text).sort()).toEqual(
+      ['Пройти тест на схемы', 'заполнить дневник схем'].sort(),
+    );
   });
 
   it('T1 создаёт карту режимов для C1 и видит её в списке', async () => {
@@ -258,7 +267,9 @@ describe('e2e smoke: therapy ownership isolation (therapist ↔ client)', () => 
     const all = await t1.get('/api/therapy/tasks/all');
     expect(all.status).toBe(200);
     expect(all.body).toHaveLength(1);
-    expect(all.body[0].tasks[0].text).toBe('заполнить дневник схем');
+    expect(all.body[0].tasks.map((t: { text: string }) => t.text)).toContain(
+      'заполнить дневник схем',
+    );
   });
 
   // ─── Сценарий 7: custom-modes терапевта не текут другому терапевту ───────

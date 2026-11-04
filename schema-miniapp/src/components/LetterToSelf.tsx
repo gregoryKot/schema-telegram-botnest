@@ -7,6 +7,11 @@ import { useTr } from '../utils/addressForm';
 import { CrisisGate } from './CrisisGate';
 import { SaveErrorNote } from './SaveErrorNote';
 import { PastLetters } from './letterToSelf/PastLetters';
+import { EXERCISE_DRAFT_KEYS } from '../utils/drafts';
+import {
+  restoreDraft,
+  useDraftAutosave,
+} from '../../../shared/src/utils/useDraftAutosave';
 
 const STORAGE_KEY = 'letters_to_self';
 
@@ -55,7 +60,11 @@ const buildPrompts = (tr: (ty: string, vy: string) => string) => [
 export function LetterToSelf({ onClose, onComplete }: Props) {
   const tr = useTr();
   const PROMPTS = buildPrompts(tr);
-  const [text, setText] = useState('');
+  const [text, setText] = useState(
+    () =>
+      restoreDraft<{ text: string }>(EXERCISE_DRAFT_KEYS.letter)?.text ?? '',
+  );
+  const clearDraft = useDraftAutosave(EXERCISE_DRAFT_KEYS.letter, { text });
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(false);
@@ -99,6 +108,7 @@ export function LetterToSelf({ onClose, onComplete }: Props) {
     setError(false);
     try {
       await api.createLetter(trimmed);
+      clearDraft();
       setSaved(true);
       onComplete?.();
       setTimeout(() => {

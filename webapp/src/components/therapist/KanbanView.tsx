@@ -3,7 +3,8 @@ import { todayStr } from '../../utils/format';
 import { pressable } from '../../utils/a11y';
 import { Skeleton } from '../Skeleton';
 import { resolveTaskDisplayText } from '../../../../shared/src/tasks/taskTitle';
-import { STATUS_BADGE, STATUS_LABEL, isOpenStatus, orderTasks, taskMeta, taskStatus } from './taskModel';
+import { STATUS_LABEL, isOpenStatus, orderTasks, taskMeta, taskStatus } from './taskModel';
+import { TaskStatusBadge } from '../TaskStatusBadge';
 import '../../styles/therapist-clients.css';
 
 interface Props {
@@ -72,7 +73,7 @@ export function KanbanView({ allTasks, loading, loadFailed, onRetry, onOpenClien
                 <div className={col.name}>{task.clientName}</div>
                 <div className="tc-task-text">{resolveTaskDisplayText(task, 'full')}</div>
                 <div className="tc-task-due">{taskMeta(task, task.status)}</div>
-                {(task.status === 'overdue' || task.status === 'soon') && <span className={`${STATUS_BADGE[task.status]} tc-task-flag`}>{STATUS_LABEL[task.status]}</span>}
+                {(task.status === 'overdue' || task.status === 'soon') && <TaskStatusBadge status={task.status} className="tc-task-flag" />}
               </div>
             ))}
           </div>

@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { encryptRecord, decryptRecord, EncryptSchema } from '../utils/crypto';
 import { addToMyList } from './notes-my-list';
-import { withoutEmptyFields } from './notes-partial';
+import { keepFilled, withoutEmptyFields } from './notes-partial';
 
 // Поля, общие для карточки схемы и карточки режима — не копипастим список
 // дважды (правило №4/№10 CLAUDE.md). Различаются только doc-специфичные
@@ -30,18 +30,15 @@ export const SCHEMA_NOTE_SCHEMA: EncryptSchema = {
   model: 'userSchemaNote',
   strings: [...COMMON_NOTE_FIELDS, 'reality'],
 };
+// Имя режима своими словами (alias) и «чего боишься, если он перестанет»
+// (fear) — свободный текст человека, шифруется наравне с остальной карточкой.
+export const MODE_NOTE_FIELDS = [
+  ...COMMON_NOTE_FIELDS,
+  ...(['needs', 'modeFunction', 'needsMet', 'alias', 'fear'] as const),
+];
 export const MODE_NOTE_SCHEMA: EncryptSchema = {
   model: 'userModeNote',
-  strings: [
-    ...COMMON_NOTE_FIELDS,
-    'needs',
-    'modeFunction',
-    'needsMet',
-    // Имя режима своими словами и «чего боишься, если он перестанет» —
-    // свободный текст человека, шифруется наравне с остальной карточкой.
-    'alias',
-    'fear',
-  ],
+  strings: [...MODE_NOTE_FIELDS],
 };
 
 // Карточки схем/режимов (UserSchemaNote / UserModeNote) + доступ терапевта
@@ -104,12 +101,24 @@ export class NotesService {
       alias?: string;
       fear?: string;
     },
+    fillIfEmpty: readonly string[] = [],
   ) {
-    const enc = encryptRecord(withoutEmptyFields(data), MODE_NOTE_SCHEMA);
-    const res = await this.prisma.userModeNote.upsert({
-      where: { userId_modeId: { userId, modeId } },
-      update: enc,
-      create: { userId, modeId, ...enc },
+    const where = { userId_modeId: { userId, modeId } };
+    // fillIfEmpty — поля, которые ложатся только в пустое место (notes-partial):
+    // чтение карточки и запись — одной транзакцией (правило №4).
+    const res = await this.prisma.$transaction(async (tx) => {
+      const row = fillIfEmpty.length
+        ? await tx.userModeNote.findUnique({ where })
+        : null;
+      const saved = row && decryptRecord(row, MODE_NOTE_SCHEMA);
+      const write = keepFilled(withoutEmptyFields(data), saved, fillIfEmpty);
+      if (row && Object.keys(write).length === 0) return row;
+      const enc = encryptRecord(write, MODE_NOTE_SCHEMA);
+      return tx.userModeNote.upsert({
+        where,
+        update: enc,
+        create: { userId, modeId, ...enc },
+      });
     });
     await addToMyList(this.prisma, userId, 'myModeIds', modeId);
     return decryptRecord(res, MODE_NOTE_SCHEMA);

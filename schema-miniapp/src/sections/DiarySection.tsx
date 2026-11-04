@@ -13,6 +13,7 @@ import { ModeEntrySheet } from '../components/diary/ModeEntrySheet';
 import { GratitudeEntrySheet } from '../components/diary/GratitudeEntrySheet';
 import { useTr } from '../utils/addressForm';
 import { diaryToday } from '../../../shared/src/diary/diaryDay';
+import { deleteDiaryEntry } from '../../../shared/src/diary/diaryDelete';
 
 interface Props {
   onClose?: () => void;
@@ -70,21 +71,15 @@ export function DiarySection({ onClose, onOpenTracker }: Props = {}) {
     void load();
   }, [load]);
 
+  // Сбой удаления доходит до кнопки (текст ошибки, запись на месте) — раньше
+  // он глушился в консоль; 404 — записи уже нет (shared diaryDelete).
   const handleDelete = async (type: DiaryType, id: number) => {
-    try {
-      if (type === 'schema') {
-        await api.deleteSchemaDiary(id);
-        setSchemaEntries((prev) => prev.filter((e) => e.id !== id));
-      } else if (type === 'mode') {
-        await api.deleteModeDiary(id);
-        setModeEntries((prev) => prev.filter((e) => e.id !== id));
-      } else {
-        await api.deleteGratitudeDiary(id);
-        setGratitudeEntries((prev) => prev.filter((e) => e.id !== id));
-      }
-    } catch (err) {
-      console.error(err);
-    }
+    await deleteDiaryEntry(api, type, id);
+    const drop = <T extends { id: number }>(prev: T[]) =>
+      prev.filter((e) => e.id !== id);
+    if (type === 'schema') setSchemaEntries(drop);
+    else if (type === 'mode') setModeEntries(drop);
+    else setGratitudeEntries(drop);
   };
 
   const today = diaryToday(); // местный день, на каждый рендер (не на загрузку)

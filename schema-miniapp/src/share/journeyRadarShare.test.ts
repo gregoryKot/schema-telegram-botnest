@@ -25,7 +25,7 @@ describe('journeyRadarRows', () => {
     expect(autonomy).toMatchObject({ value: null, valueText: '—' });
   });
 
-  it('порядок строк — как в JOURNEY_NEED_NAMES/COLORS', () => {
+  it('порядок строк — как в JOURNEY_NEED_NAMES/NEED_COLORS', () => {
     const rows = journeyRadarRows({});
     expect(rows.map((r) => r.label)).toEqual(Object.values(JOURNEY_NEED_NAMES));
   });

@@ -42,7 +42,7 @@ export function PlanSheet({ needId, needLabel, onClose, onSaved }: Props) {
     handleDeletePractice,
     handleSave,
     handleIcsDownload,
-  } = usePlanSheetState(needId, needLabel, api, onSaved);
+  } = usePlanSheetState(needId, needLabel, api, () => goBack(onSaved)); // лист снимает свою запись истории сам
 
   return (
     <ExScreen

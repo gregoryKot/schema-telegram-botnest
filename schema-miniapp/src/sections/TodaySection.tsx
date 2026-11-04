@@ -16,6 +16,7 @@ import { MY_SCHEMA_IDS_KEY, MY_MODE_IDS_KEY } from '../utils/storageKeys';
 import { TaskCreateSheet } from '../components/TaskCreateSheet';
 import { momentDayLabel, momentTime } from '../utils/format';
 import { isDiaryToday } from '../../../shared/src/diary/diaryDay';
+import { dayIndex, fmtIndex } from '../../../shared/src/needs/dayIndex';
 import { HomeScreenOfferCard } from '../components/HomeScreenOfferCard';
 import { GearButton } from '../components/GearButton';
 import { TodayCustomizeSheet } from '../components/TodayCustomizeSheet';
@@ -148,9 +149,8 @@ export function TodaySection({
   const streak = profile?.streak ?? 0;
   const ratedCount = needs.filter((n) => ratings[n.id] !== undefined).length;
   const allRated = needs.length > 0 && ratedCount === needs.length;
-  const avgScore = allRated
-    ? (needs.reduce((s, n) => s + ratings[n.id], 0) / needs.length).toFixed(1)
-    : null;
+  const needIds = needs.map((n) => n.id); // индекс «6,4» — как на сайте
+  const avgScore = allRated ? fmtIndex(dayIndex(needIds, ratings)) : null;
   const hasSchemas =
     [...new Set([...(profile?.ysq?.activeSchemaIds ?? []), ...manualSchemaIds])]
       .length > 0;

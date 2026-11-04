@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useTr } from '../utils/addressForm';
 import { hitboxStyle } from '../utils/hitbox';
-import { Need, DayHistory, COLORS } from '../types';
+import { Need, DayHistory, NEED_COLORS } from '../types';
 import { useNeedData } from '../needData';
 import { BottomSheet } from './BottomSheet';
 import { SectionLabel } from './SectionLabel';
@@ -32,7 +32,7 @@ export function NeedHistorySheet({
   const [tipRand] = useState(() => Math.random());
   const data = NEED_DATA[need.id];
   if (!data) return null;
-  const color = COLORS[need.id] ?? '#888';
+  const color = NEED_COLORS[need.id] ?? '#888';
 
   // Trend
   const scores = history.map((d) => d.ratings[need.id] ?? 0);

@@ -102,7 +102,7 @@ describe('e2e: приглашение клиента терапевтом', () =
       code: created.body.code,
     });
     expect(preview.status).toBe(201);
-    expect(preview.body).toEqual({ therapistName: 'Анна' });
+    expect(preview.body).toEqual({ therapistName: 'Анна', connection: 'none' });
 
     const join = await as(C).post('/api/therapy/join', {
       code: created.body.code,
@@ -125,7 +125,7 @@ describe('e2e: приглашение клиента терапевтом', () =
     expect((await as(TH).get('/api/therapy/invites')).body).toEqual([]);
   });
 
-  it('предпросмотр принятого и выдуманного кода — 400, как у подключения', async () => {
+  it('предпросмотр чужого принятого и выдуманного кода — 400, как у подключения', async () => {
     const used = await prisma.therapyRelation.findFirst({
       where: { therapistId: TH, clientId: C },
     });
@@ -133,6 +133,19 @@ describe('e2e: приглашение клиента терапевтом', () =
       expect(
         (await as(B).post('/api/therapy/invite/preview', { code })).status,
       ).toBe(400);
+  });
+
+  // QA 2026-11, М1: по своей принятой ссылке — «уже подключено», а не
+  // «ссылка не действует, попросите новую».
+  it('предпросмотр своей принятой ссылки — same: связь уже есть', async () => {
+    const used = await prisma.therapyRelation.findFirst({
+      where: { therapistId: TH, clientId: C },
+    });
+    const res = await as(C).post('/api/therapy/invite/preview', {
+      code: used!.code,
+    });
+    expect(res.status).toBe(201);
+    expect(res.body).toEqual({ therapistName: 'Анна', connection: 'same' });
   });
 
   it('список и отзыв — только свои: чужой терапевт не видит и не отзывает', async () => {

@@ -62,19 +62,46 @@ export async function revokeTherapyInvite(
 }
 
 /**
+ * Подключение клиента на момент предпросмотра (QA 2026-11, М1): `same` — он
+ * уже подключён к терапевту этой ссылки (новая ссылка не нужна), `other` — к
+ * другому (присоединиться не выйдет, пока не отключится), `none` — связи нет.
+ * Это его собственная связь: чужого предпросмотр не выдаёт.
+ */
+export type InviteConnection = 'none' | 'same' | 'other';
+
+export interface InvitePreview {
+  therapistName: string | null;
+  connection: InviteConnection;
+}
+
+/**
  * Чей это код — до согласия. null — по коду подключиться нельзя (неизвестен,
- * принят, просрочен, свой): то же правило, что у подключения. Имя — как в
- * «Мой терапевт» (therapist-name.ts), null, если в профиле его нет.
+ * чужой принятый, просрочен, свой): то же правило, что у подключения. Код,
+ * которым этот клиент уже подключился, — не «недействителен», а `same`:
+ * повторный переход по ссылке говорил «попросите новую», хотя связь есть.
+ * Имя — как в «Мой терапевт» (therapist-name.ts), null, если его нет.
  */
 export async function previewTherapyInvite(
   prisma: PrismaService,
   clientId: bigint,
   code: string,
-): Promise<{ therapistName: string | null } | null> {
+): Promise<InvitePreview | null> {
   const rel = await prisma.therapyRelation.findUnique({
     where: { code: normalizeInviteCode(code) },
     include: { therapist: { select: { firstName: true } } },
   });
+  const name = rel ? therapistName(rel.therapist) : null;
+  if (rel?.status === 'active' && rel.clientId === clientId)
+    return { therapistName: name, connection: 'same' };
   if (!isClaimableInvite(rel, clientId)) return null;
-  return { therapistName: therapistName(rel.therapist) };
+  const active = await prisma.therapyRelation.findFirst({
+    where: { clientId, status: 'active' },
+    select: { therapistId: true },
+  });
+  const connection: InviteConnection = !active
+    ? 'none'
+    : active.therapistId === rel.therapistId
+      ? 'same'
+      : 'other';
+  return { therapistName: name, connection };
 }

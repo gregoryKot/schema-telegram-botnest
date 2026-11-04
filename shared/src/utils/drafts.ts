@@ -6,31 +6,57 @@ export const DRAFT_KEYS: Record<DiaryType, string> = {
   gratitude: 'diary_draft_gratitude',
 };
 
+/** Черновики упражнений с текстом (useDraftAutosave): тот же формат, свои ключи. */
+export const EXERCISE_DRAFT_KEYS = {
+  letter: 'exercise_draft_letter',
+  safePlace: 'exercise_draft_safe_place',
+  beliefCheck: 'exercise_draft_belief_check',
+  phraseCheck: 'exercise_draft_phrase_check',
+} as const;
+
 export interface DiaryDraft<T> {
   startedAt: string; // ISO
   data: T;
 }
 
-export function saveDraft<T>(type: DiaryType, data: T) {
+// Отказ хранилища не глотается молча (как в case/caseDraft.ts): в черновике
+// лежит начатая человеком работа, сбой должен быть виден в консоли.
+export function saveDraftAt<T>(key: string, data: T) {
   const draft: DiaryDraft<T> = { startedAt: new Date().toISOString(), data };
   try {
-    localStorage.setItem(DRAFT_KEYS[type], JSON.stringify(draft));
-  } catch {
-    /* best-effort: ошибку намеренно игнорируем */
+    localStorage.setItem(key, JSON.stringify(draft));
+  } catch (e) {
+    console.error('draft save failed', key, e);
   }
 }
 
-export function loadDraft<T>(type: DiaryType): DiaryDraft<T> | null {
+export function loadDraftAt<T>(key: string): DiaryDraft<T> | null {
   try {
-    const s = localStorage.getItem(DRAFT_KEYS[type]);
+    const s = localStorage.getItem(key);
     return s ? (JSON.parse(s) as DiaryDraft<T>) : null;
   } catch {
     return null;
   }
 }
 
+export function clearDraftAt(key: string) {
+  try {
+    localStorage.removeItem(key);
+  } catch (e) {
+    console.error('draft clear failed', key, e);
+  }
+}
+
+export function saveDraft<T>(type: DiaryType, data: T) {
+  saveDraftAt(DRAFT_KEYS[type], data);
+}
+
+export function loadDraft<T>(type: DiaryType): DiaryDraft<T> | null {
+  return loadDraftAt<T>(DRAFT_KEYS[type]);
+}
+
 export function clearDraft(type: DiaryType) {
-  localStorage.removeItem(DRAFT_KEYS[type]);
+  clearDraftAt(DRAFT_KEYS[type]);
 }
 
 export function hasDraft(type: DiaryType): boolean {

@@ -6,6 +6,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, fireEvent } from '@testing-library/react';
 import { NeedsWheel } from './NeedsWheel';
 import type { Need } from '../types';
+import { NEED_COLORS } from '../needs/needColors';
 
 const needs: Need[] = [
   { id: 'safety', name: 'Безопасность', emoji: '🛡' },
@@ -17,7 +18,7 @@ describe('NeedsWheel', () => {
     const { container } = render(
       <NeedsWheel needs={needs} ratings={{ safety: 8, autonomy: 4 }} />,
     );
-    expect(container.textContent).toContain('6.0');
+    expect(container.textContent).toContain('6,0');
     expect(container.textContent).toContain('индекс');
   });
 
@@ -29,7 +30,7 @@ describe('NeedsWheel', () => {
         prevRatings={{ safety: 4, autonomy: 4 }}
       />,
     );
-    expect(container.textContent).toContain('↑ вчера 4.0');
+    expect(container.textContent).toContain('↑ вчера 4,0');
   });
 
   it('без prevRatings строки «вчера» нет', () => {
@@ -39,7 +40,7 @@ describe('NeedsWheel', () => {
     expect(container.textContent).not.toContain('вчера');
   });
 
-  it('вчера всё по нулям (prevAvg=0) — сравнение тоже скрыто', () => {
+  it('вчера всё по нулям (в истории 0 — «не заполнено») — сравнение скрыто', () => {
     const { container } = render(
       <NeedsWheel
         needs={needs}
@@ -64,8 +65,35 @@ describe('NeedsWheel', () => {
   it('нулевые оценки — лепестки не рисуются (petalPath даёт пустой путь)', () => {
     const { container } = render(<NeedsWheel needs={needs} ratings={{}} />);
     // залитых лепестков нет: у всех value=0 → r<1 → d='' → null-ветка
-    expect(container.textContent).toContain('0.0');
     expect(container.querySelectorAll('path[fill-opacity]').length).toBe(0);
+  });
+
+  // QA 2026-11 (B-З6): пустой день показывал «индекс 0.0 ↓ вчера 6.0».
+  it('пустой день после заполненного — «—» в центре, без стрелки падения', () => {
+    const { container } = render(
+      <NeedsWheel
+        needs={needs}
+        ratings={{}}
+        prevRatings={{ safety: 6, autonomy: 6 }}
+      />,
+    );
+    expect(container.textContent).toContain('—');
+    expect(container.textContent).not.toContain('0.0');
+    expect(container.textContent).not.toContain('↓');
+    expect(container.textContent).toContain('вчера 6,0');
+  });
+
+  // QA 2026-11 (B-З7): колесо красило потребности старой палитрой COLORS.
+  it('цвет лепестка — из NEED_COLORS, как на остальных экранах', () => {
+    const { container } = render(
+      <NeedsWheel
+        needs={[{ id: 'autonomy' } as Need]}
+        ratings={{ autonomy: 9 }}
+      />,
+    );
+    expect(
+      container.querySelector(`path[fill="${NEED_COLORS.autonomy}"]`),
+    ).toBeTruthy();
   });
 
   it('потребность без цвета в реестре красится фолбэком #888', () => {

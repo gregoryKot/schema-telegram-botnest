@@ -11,6 +11,7 @@ import {
 } from './LazySections';
 import { UseSheetsReturn } from '../hooks/useSheets';
 import { KeepMountedSection } from './KeepMountedSection';
+import type { SchemasSectionProps } from '../sections/schemas/types';
 
 interface Props {
   /** Вкладки, собранные заранее в простое (usePrerenderSections) — KeepMountedSection монтирует их скрытыми до первого тапа. */
@@ -82,6 +83,13 @@ export function AppSections({
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [section]);
+  // Справочник схем (и тест в нём) — один вход для всех вкладок.
+  const openSchema: SchemasSectionProps['onOpenSchema'] = (opts) =>
+    sheets.open('schemaInfo', {
+      schemaAutoStartTest: !!opts?.startTest,
+      schemaInitialTab: opts?.tab ?? 'needs',
+      schemaHighlight: opts?.highlight,
+    });
   return (
     // display:contents — обёртка не участвует в раскладке, нужна только как узел DOM для inert.
     <div style={{ display: 'contents' }} inert={inert}>
@@ -95,13 +103,7 @@ export function AppSections({
               needs={needs}
               ratings={ratings}
               yesterdayRatings={yesterdayRatings}
-              onOpenSchema={(opts) => {
-                sheets.open('schemaInfo', {
-                  schemaAutoStartTest: !!opts?.startTest,
-                  schemaInitialTab: opts?.tab ?? 'needs',
-                  schemaHighlight: opts?.highlight,
-                });
-              }}
+              onOpenSchema={openSchema}
               onOpenAdvanced={() => sheets.open('settings')}
               onOpenTracker={() => {
                 sheets.open('trackerOverlay', { trackerNeedId: null });
@@ -136,13 +138,7 @@ export function AppSections({
         {
           <ErrorBoundary section="Паттерны" key="schemas-boundary">
             <SchemasSection
-              onOpenSchema={(opts) => {
-                sheets.open('schemaInfo', {
-                  schemaAutoStartTest: !!opts?.startTest,
-                  schemaInitialTab: opts?.tab ?? 'needs',
-                  schemaHighlight: opts?.highlight,
-                });
-              }}
+              onOpenSchema={openSchema}
               childhoodRatings={childhoodRatings}
               onOpenChildhoodWheel={() => sheets.open('childhoodWheel')}
               onOpenDiaries={() => sheets.open('diaries')}
@@ -166,6 +162,7 @@ export function AppSections({
                 sheets.open('trackerOverlay', { trackerNeedId: null });
               }}
               onOpenDiaries={() => sheets.open('diaries')}
+              onOpenYsq={() => openSchema({ startTest: true })}
               practiceCount={helpPracticeCount}
               planCount={helpPlanCount}
               initialTasks={helpTasks}

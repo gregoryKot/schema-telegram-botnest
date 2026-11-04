@@ -5,6 +5,7 @@ import {
   Delete,
   Get,
   Param,
+  Patch,
   Post,
   Req,
   UseGuards,
@@ -86,6 +87,18 @@ export class ExercisesController {
   async createLetter(@Req() req: AuthRequest, @Body() body: LetterDto) {
     if (!body.text) throw new BadRequestException('invalid text');
     return this.exercisesService.createLetter(uid(req), body.text.trim());
+  }
+
+  @Patch('letters/:id')
+  async updateLetter(
+    @Req() req: AuthRequest,
+    @Param('id') id: string,
+    @Body() body: LetterDto,
+  ) {
+    const text = body.text?.trim();
+    if (!text) throw new BadRequestException('invalid text');
+    const letterId = parseId(id, { int32: true });
+    return this.exercisesService.updateLetter(uid(req), letterId, text);
   }
 
   @Delete('letters/:id')

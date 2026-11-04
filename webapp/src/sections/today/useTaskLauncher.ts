@@ -10,7 +10,7 @@ import { completesOnSave, taskRoute, type TaskExercise } from '../../../../share
 
 /** Упражнение, открытое поверх экрана (рисует TaskExerciseHost). */
 export type OpenExercise =
-  | { ex: 'belief' | 'letter' | 'safe' | 'warm' | 'phrase' | 'flashcard' }
+  | { ex: 'belief' | 'letter' | 'safe' | 'warm' | 'phrase' | 'flashcard' | 'ysq' }
   | { ex: 'schema' | 'mode'; id?: string };
 
 const EXERCISE_OF: Record<TaskExercise, OpenExercise['ex']> = {
@@ -55,6 +55,9 @@ export function useTaskLauncher(deps: TaskLauncherDeps) {
       case 'exercise': setOpen({ ex: EXERCISE_OF[route.exercise] }); return;
       case 'schema':
       case 'mode': setOpen({ ex: route.kind, id: route.id }); return;
+      // Тест по запросу терапевта: задание закроет сервер, когда итог
+      // сохранён, а список перечитается по сигналу (tasks/tasksChanged).
+      case 'ysq': setOpen({ ex: 'ysq' }); return;
       // «Своё задание» закрывается кнопкой «Готово», открывать нечего.
       default: return;
     }

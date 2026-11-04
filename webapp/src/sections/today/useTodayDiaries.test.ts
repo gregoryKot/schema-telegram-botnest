@@ -44,12 +44,12 @@ describe('useTodayData — дневники главной', () => {
   });
 
   it('сохранил → нашёл: после reloadDiaries новая запись появляется в ленте, профиль на месте', async () => {
-    m.getSchemaDiary.mockResolvedValue([{ id: 1, createdAt: twoDaysAgo(), trigger: 'Т' }]);
+    m.getSchemaDiary.mockResolvedValue([{ id: 1, createdAt: twoDaysAgo(), trigger: 'Т', schemaIds: ['abandonment'], emotions: [] }]);
     const { result } = renderHook(() => useTodayData(0));
     await waitFor(() => expect(result.current.diariesLoaded).toBe(true));
     expect(result.current.feed).toEqual([]);
 
-    m.getSchemaDiary.mockResolvedValue([{ id: 2, createdAt: now(), trigger: 'Новая' }]);
+    m.getSchemaDiary.mockResolvedValue([{ id: 2, createdAt: now(), trigger: 'Новая', schemaIds: ['abandonment'], emotions: [] }]);
     act(() => result.current.reloadDiaries());
     await waitFor(() => expect(result.current.feed).toHaveLength(1));
     expect(result.current.profile).not.toBeNull();

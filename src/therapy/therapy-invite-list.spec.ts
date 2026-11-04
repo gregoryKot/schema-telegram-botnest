@@ -93,6 +93,7 @@ describe('previewTherapyInvite', () => {
     const findUnique = prisma.therapyRelation.findUnique;
     return {
       therapyRelation: {
+        findFirst: prisma.therapyRelation.findFirst,
         findUnique: async (args: { where: { code: string } }) => {
           const r = await findUnique(args);
           return r ? { ...r, therapist: { firstName } } : null;
@@ -105,14 +106,62 @@ describe('previewTherapyInvite', () => {
     const prisma = withTherapist([rel({ code: 'ABCDEF123456' })], 'Анна');
     await expect(
       previewTherapyInvite(prisma, CLIENT, ' abcdef123456 '),
-    ).resolves.toEqual({ therapistName: 'Анна' });
+    ).resolves.toEqual({ therapistName: 'Анна', connection: 'none' });
   });
 
   it('имени в профиле нет → null, а не выдуманное', async () => {
     const prisma = withTherapist([rel({})], null);
     await expect(
       previewTherapyInvite(prisma, CLIENT, 'AAAAAAAAAAAA'),
-    ).resolves.toEqual({ therapistName: null });
+    ).resolves.toEqual({ therapistName: null, connection: 'none' });
+  });
+
+  // QA 2026-11, М1: пограничные состояния ссылки — до согласия, а не после.
+  it('ссылка, по которой этот клиент уже подключился → same, а не «недействительна»', async () => {
+    const prisma = withTherapist(
+      [rel({ status: 'active', clientId: CLIENT })],
+      'Анна',
+    );
+    await expect(
+      previewTherapyInvite(prisma, CLIENT, 'AAAAAAAAAAAA'),
+    ).resolves.toEqual({ therapistName: 'Анна', connection: 'same' });
+  });
+
+  it('новая ссылка того же терапевта при живой связи → same', async () => {
+    const prisma = withTherapist(
+      [
+        rel({}),
+        rel({
+          id: 2,
+          code: 'BBBBBBBBBBBB',
+          status: 'active',
+          clientId: CLIENT,
+        }),
+      ],
+      'Анна',
+    );
+    await expect(
+      previewTherapyInvite(prisma, CLIENT, 'AAAAAAAAAAAA'),
+    ).resolves.toMatchObject({ connection: 'same' });
+  });
+
+  it('клиент подключён к другому терапевту → other (до нажатия «Присоединиться»)', async () => {
+    const prisma = withTherapist(
+      [
+        rel({}),
+        rel({
+          id: 2,
+          therapistId: T2,
+          code: 'BBBBBBBBBBBB',
+          status: 'active',
+          clientId: CLIENT,
+        }),
+      ],
+      'Анна',
+    );
+    await expect(
+      previewTherapyInvite(prisma, CLIENT, 'AAAAAAAAAAAA'),
+    ).resolves.toEqual({ therapistName: 'Анна', connection: 'other' });
   });
 
   it('неизвестный, принятый, просроченный и свой код → null (то же правило, что у подключения)', async () => {

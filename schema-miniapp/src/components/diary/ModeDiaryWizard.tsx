@@ -113,7 +113,7 @@ export function ModeDiaryWizard({
               fontStyle: 'italic',
             }}
           >
-            «{healthyHint}»
+            {healthyHint}
           </div>
         </div>
       )}

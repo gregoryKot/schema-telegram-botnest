@@ -19,6 +19,16 @@ vi.mock('../api', () => ({
   },
 }));
 
+// Лист плана — свой тест (PlanSheet.test.tsx); здесь важно, что он открывается.
+vi.mock('./PlanSheet', () => ({
+  PlanSheet: ({ needLabel, onSaved }: { needLabel: string; onSaved: () => void }) => (
+    <div data-testid="plan-sheet">
+      {needLabel}
+      <button onClick={onSaved}>plan-saved</button>
+    </div>
+  ),
+}));
+
 beforeEach(() => {
   vi.clearAllMocks();
 });
@@ -58,15 +68,28 @@ describe('PlansScreen — пустое состояние', () => {
     getPlanHistory.mockResolvedValue([]);
     renderScreen(vi.fn(), 'ty');
     expect(
-      await screen.findByText(/выбери потребность с низкой оценкой и нажми/),
+      await screen.findByText(/Выбери, о какой позаботиться/),
     ).toBeTruthy();
+  });
+
+  // QA 2026-11 (B-М8): подпись обещала кнопку «Запланировать практику», которой
+  // нет; путь к плану шёл только через трекер и ответ «Совсем нет».
+  it('пустой экран не обещает несуществующую кнопку, а сам открывает план', async () => {
+    getPlanHistory.mockResolvedValue([]);
+    renderScreen();
+    await screen.findByText('Планов пока нет');
+    expect(screen.queryByText(/Запланировать практику/)).toBeNull();
+    fireEvent.click(screen.getByText('Автономия'));
+    expect(screen.getByTestId('plan-sheet').textContent).toContain('Автономия');
+    fireEvent.click(screen.getByText('plan-saved'));
+    await waitFor(() => expect(getPlanHistory).toHaveBeenCalledTimes(2)); // список перечитан
   });
 
   it('объяснение пустого состояния звучит на «вы»', async () => {
     getPlanHistory.mockResolvedValue([]);
     renderScreen(vi.fn(), 'vy');
     expect(
-      await screen.findByText(/выберите потребность с низкой оценкой и нажмите/),
+      await screen.findByText(/Выберите, о какой позаботиться/),
     ).toBeTruthy();
   });
 });
@@ -107,7 +130,7 @@ describe('PlansScreen — список планов', () => {
     renderScreen();
     expect(await screen.findByText('Ожидают выполнения')).toBeTruthy();
     expect(screen.getByText('Выполненные')).toBeTruthy();
-    expect(screen.getByText('1 активных · 1 завершённых')).toBeTruthy();
+    expect(screen.getByText('1 активный · 1 завершённый')).toBeTruthy();
     expect(screen.getByText('Позвонить другу')).toBeTruthy();
     expect(screen.getByText('Прогулка одному')).toBeTruthy();
   });

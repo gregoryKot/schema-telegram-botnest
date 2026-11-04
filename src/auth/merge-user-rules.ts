@@ -63,6 +63,9 @@ export const USER_MERGE_RULES: Record<string, MergeRule> = {
   notifyEnabled: pref(true),
   notifyLocalHour: pref(21),
   notifyTimezone: pref('Europe/Moscow'),
+  // Пояс, выбранный руками в любом из аккаунтов, остаётся выбранным: иначе
+  // /api/init подменил бы его поясом устройства.
+  notifyTimezoneChosen: flag,
   notifyReminderEnabled: pref(true),
   notifyFrequency: pref(0),
   notifyQuietStart: pref(22),

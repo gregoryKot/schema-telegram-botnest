@@ -34,10 +34,10 @@ export function ClientYSQTab({ clientData, selectedClient, selfSchemaIds, ysqReq
         <div className="u-col8">
           <p className="ds-empty">YSQ ещё не проходился</p>
           {virtual ? (
-            <div className="tb-meta">Клиент без Telegram – YSQ недоступен</div>
+            <div className="tb-meta">У офлайн-клиента нет аккаунта – тест пройти негде</div>
           ) : (
             <>
-              <div className="ds-sub">{tr('Запроси тест – клиент получит уведомление в боте', 'Запросите тест – клиент получит уведомление в боте')}</div>
+              <div className="ds-sub">{tr('Запроси тест – у клиента появится задание «Пройти тест на схемы», а в Telegram придёт сообщение, если он привязан', 'Запросите тест – у клиента появится задание «Пройти тест на схемы», а в Telegram придёт сообщение, если он привязан')}</div>
               <button onClick={handleRequestYsq} disabled={ysqRequested} className="ds-btn ds-btn--sm" style={{ alignSelf: 'flex-start' }}>
                 {ysqRequested ? '✓ Запрос отправлен' : 'Запросить тест на схемы'}
               </button>

@@ -47,9 +47,9 @@ export function seedWipeTestStorage() {
   localStorage.setItem('some_other_key', 'should-be-wiped');
 }
 
-/** Открывает лист удаления аккаунта (первый шаг — предупреждение). */
+/** Открывает диалог удаления аккаунта (первый шаг — предупреждение). */
 export function openDeleteSheet() {
-  fireEvent.click(screen.getByText('Удалить все данные'));
+  fireEvent.click(screen.getByText('Удалить аккаунт'));
 }
 
 /** Доводит удаление аккаунта до конца: открыть лист → «Удалить» → «Да,

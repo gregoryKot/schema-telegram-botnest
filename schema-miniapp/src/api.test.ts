@@ -74,10 +74,13 @@ describe('api — заголовки авторизации', () => {
 
   it('POST-запрос тоже несёт initData и Content-Type, тело — JSON', async () => {
     mockFetchOnce(200, {});
-    await api.init(-180);
+    await api.init('Asia/Vladivostok');
     const [, init] = (global.fetch as ReturnType<typeof vi.fn>).mock.calls[0];
     expect(init.method).toBe('POST');
-    expect(JSON.parse(init.body as string)).toEqual({ tzOffset: -180 });
+    // Пояс IANA, а не tzOffset: число сервер отбрасывал (QA 2026-11-03).
+    expect(JSON.parse(init.body as string)).toEqual({
+      timezone: 'Asia/Vladivostok',
+    });
     expect(
       (init.headers as Record<string, string>)['x-telegram-init-data'],
     ).toBe('query_id=AAA&user=%7B%7D&hash=deadbeef');

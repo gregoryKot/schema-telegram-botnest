@@ -81,4 +81,35 @@ describe('useTherapyCodeJoin', () => {
     act(() => result.current.setCode('7F3A9C21B04F'));
     expect(result.current.error).toBe('');
   });
+
+  // QA 2026-11, З1: обрыв сети, 429 и 500 выглядели как «Код не подошёл», и
+  // человек шёл просить новый код, хотя старый рабочий.
+  it.each([
+    ['нет сети', new TypeError('Failed to fetch'), /Нет связи с сервером/],
+    [
+      'таймаут',
+      Object.assign(new Error('x'), { name: 'AbortError' }),
+      /Нет связи/,
+    ],
+    ['429', { status: 429 }, /Слишком много попыток/],
+    ['500', { status: 500 }, /Сервер не ответил/],
+  ])('%s — своя причина, а не «код не подошёл»', async (_n, err, text) => {
+    const api = makeApi();
+    api.joinTherapy.mockRejectedValue(err);
+    const { result } = renderHook(() => useTherapyCodeJoin(api, vi.fn()));
+    act(() => result.current.setCode('7F3A9C21B04E'));
+    await act(() => result.current.submit());
+    expect(result.current.error).toMatch(text);
+    expect(result.current.error).not.toMatch(/Код не подошёл/);
+  });
+
+  // QA 2026-11, М6: пустое поле или пробелы — кнопка молчала при нажатии.
+  it('canSubmit: пусто или пробелы — нельзя, есть код — можно', () => {
+    const { result } = renderHook(() => useTherapyCodeJoin(makeApi(), vi.fn()));
+    expect(result.current.canSubmit).toBe(false);
+    act(() => result.current.setCode('   '));
+    expect(result.current.canSubmit).toBe(false);
+    act(() => result.current.setCode('7F3A9C21B04E'));
+    expect(result.current.canSubmit).toBe(true);
+  });
 });

@@ -120,8 +120,12 @@ describe('CaseFlowScreen — три шага и итог', () => {
         fromCase: true,
       }),
     );
+    // QA 2026-11, К1: разбор дополняет карточку режима, а не переписывает её.
     expect(p.onSaveCard).toHaveBeenCalledWith(
-      expect.objectContaining({ modeId: 'avoidant_protector' }),
+      expect.objectContaining({
+        modeId: 'avoidant_protector',
+        fillIfEmpty: ['triggers', 'feelings', 'behavior'],
+      }),
     );
     expect(trackEvent).toHaveBeenCalledWith('case_finished', {
       modeId: 'avoidant_protector',

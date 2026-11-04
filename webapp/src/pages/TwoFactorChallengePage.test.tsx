@@ -115,8 +115,8 @@ describe('TwoFactorChallengePage — клавиатура под каждый р
 
   it('резервный код: буквенная клавиатура, без one-time-code и автозаглавной, буквы a–f проходят', () => {
     renderAt('/auth/2fa?token=chal123');
-    fireEvent.click(screen.getByRole('button', { name: /recovery-код/ }));
-    const input = screen.getByLabelText('Recovery-код') as HTMLInputElement;
+    fireEvent.click(screen.getByRole('button', { name: /резервный код/ }));
+    const input = screen.getByLabelText('Резервный код') as HTMLInputElement;
     expect(input.getAttribute('inputmode')).toBe('text');
     expect(input.getAttribute('autocomplete')).not.toBe('one-time-code');
     expect(input.getAttribute('autocapitalize')).toBe('off');
@@ -129,8 +129,8 @@ describe('TwoFactorChallengePage — recovery-код', () => {
   it('переключение на recovery-код принимает hex и отправляет без пробелов, дефисов и заглавных', async () => {
     fetchMock.mockResolvedValue(jsonResponse(200, { accessToken: 't', expiresIn: 900 }));
     const { container } = renderAt('/auth/2fa?token=chal123');
-    fireEvent.click(screen.getByRole('button', { name: /recovery-код/ }));
-    fireEvent.change(screen.getByLabelText('Recovery-код'), { target: { value: 'AB12 cd34-EF' } });
+    fireEvent.click(screen.getByRole('button', { name: /резервный код/ }));
+    fireEvent.change(screen.getByLabelText('Резервный код'), { target: { value: 'AB12 cd34-EF' } });
     fireEvent.submit(container.querySelector('form')!);
     await screen.findByText('today-page');
     const [, init] = fetchMock.mock.calls[0];

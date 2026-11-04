@@ -1,11 +1,13 @@
 import {
   ArrayMaxSize,
   IsArray,
+  IsIn,
   IsOptional,
   IsString,
   MaxLength,
 } from 'class-validator';
 import { DAY_NOTE_MAX } from '../../utils/text-limits';
+import { MODE_NOTE_FIELDS } from '../../bot/notes.service';
 
 /**
  * DTO для POST /api/note, /api/schema-notes, /api/mode-notes
@@ -104,4 +106,11 @@ export class ModeNoteDto extends NoteFieldsDto {
   @IsString()
   @MaxLength(NOTE_MAX)
   fear?: string;
+
+  /** Поля, которые пишутся только в пустое место карточки (разбор «Что случилось»). */
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(MODE_NOTE_FIELDS.length)
+  @IsIn(MODE_NOTE_FIELDS, { each: true })
+  fillIfEmpty?: string[];
 }

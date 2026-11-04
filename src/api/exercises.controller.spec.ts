@@ -21,6 +21,7 @@ function makeController(
     deleteBeliefCheck: jest.fn().mockResolvedValue(undefined),
     getLetters: jest.fn().mockResolvedValue([]),
     createLetter: jest.fn().mockResolvedValue({ id: 2 }),
+    updateLetter: jest.fn().mockResolvedValue({ id: 2 }),
     deleteLetter: jest.fn().mockResolvedValue(undefined),
     getSafePlace: jest.fn().mockResolvedValue(null),
     upsertSafePlace: jest.fn().mockResolvedValue({ id: 3 }),
@@ -136,6 +137,21 @@ describe('ExercisesController letters', () => {
       text: '  дорогой я  ',
     });
     expect(exercisesService.createLetter).toHaveBeenCalledWith(2n, 'дорогой я');
+  });
+
+  // QA 2026-11, З4: правка запечатанного письма идёт в то же письмо.
+  it('PATCH: текст тримится, правится под userId из req и id из пути', async () => {
+    const { controller, exercisesService } = makeController();
+    await controller.updateLetter(makeReq(2n), '15', { text: '  иначе  ' });
+    expect(exercisesService.updateLetter).toHaveBeenCalledWith(2n, 15, 'иначе');
+  });
+
+  it('PATCH: текст из пробелов → BadRequestException, сервис не вызван', async () => {
+    const { controller, exercisesService } = makeController();
+    await expect(
+      controller.updateLetter(makeReq(), '15', { text: '   ' }),
+    ).rejects.toThrow(BadRequestException);
+    expect(exercisesService.updateLetter).not.toHaveBeenCalled();
   });
 });
 

@@ -4,6 +4,7 @@
 // файл), этот файл добирает остальную публичную поверхность. Отказ от роли
 // терапевта переехал в src/therapy/therapist-exit.service.ts (2026-10-22).
 import { AccountService } from './account.service';
+import { adoptDeviceTimezone } from './device-timezone';
 
 function makePrisma() {
   const update = jest.fn(() => Promise.resolve({}));
@@ -76,6 +77,59 @@ describe('AccountService.registerUser', () => {
       botBlockedAt: null,
       deletedAt: null,
     });
+  });
+});
+
+// QA 2026-11-03: пояс устройства не доходил до сервера (фронты слали число
+// tzOffset, валидатор его отбрасывал), и «сегодня» сервера у всех было
+// московским. Пояс устройства становится поясом уведомлений, пока человек не
+// выбрал свой сам (notifyTimezoneChosen).
+describe('AccountService.registerUser / adoptDeviceTimezone — пояс устройства', () => {
+  const uid = 777n;
+
+  it('пояс вне списка выбора, но настоящий IANA (Париж) — тоже принимается', async () => {
+    const prisma = makePrisma();
+    const service = new AccountService(prisma);
+    await service.registerUser(uid, undefined, 'Europe/Paris');
+    expect(prisma.user.upsert.mock.calls[0][0].create).toEqual({
+      id: uid,
+      notifyTimezone: 'Europe/Paris',
+    });
+  });
+
+  it('у старого юзера пояс меняется только условным UPDATE: не выбран руками и отличается', async () => {
+    const prisma = makePrisma();
+    const service = new AccountService(prisma);
+    const changed = await service.registerUser(
+      uid,
+      undefined,
+      'Asia/Vladivostok',
+    );
+    expect(changed).toBe(true);
+    expect(prisma.user.updateMany).toHaveBeenCalledWith({
+      where: {
+        id: uid,
+        notifyTimezoneChosen: false,
+        NOT: { notifyTimezone: 'Asia/Vladivostok' },
+      },
+      data: { notifyTimezone: 'Asia/Vladivostok' },
+    });
+  });
+
+  it('пояс выбран руками (или уже совпадает) — UPDATE ничего не нашёл, false', async () => {
+    const prisma = makePrisma();
+    prisma.user.updateMany.mockResolvedValue({ count: 0 });
+    expect(await adoptDeviceTimezone(prisma, uid, 'Asia/Vladivostok')).toBe(
+      false,
+    );
+  });
+
+  it('невалидный пояс или его нет (бот /start) — пояс не трогается вовсе', async () => {
+    const prisma = makePrisma();
+    const service = new AccountService(prisma);
+    expect(await service.registerUser(uid, 'Аня', 'Mars/Base')).toBe(false);
+    expect(await service.registerUser(uid, 'Аня')).toBe(false);
+    expect(prisma.user.updateMany).not.toHaveBeenCalled();
   });
 });
 
@@ -355,5 +409,41 @@ describe('AccountService — адрес в Telegram', () => {
     const service = new AccountService(prisma);
     const map = await service.telegramIdsFor([1_000_000_000_000_777n]);
     expect(map.get('1000000000000777')).toBe(42n);
+  });
+});
+
+// QA 2026-11, З5: экран настроек спрашивает «дойдут ли уведомления» у того же
+// адреса, по которому их шлёт очередь, — а не у своей копии правила.
+describe('AccountService.isNotifyReachable', () => {
+  const row = (id: bigint, providers: { providerId: string }[]) => ({
+    id,
+    notifyTimezone: 'Europe/Moscow',
+    notifyQuietStart: 22,
+    notifyQuietEnd: 8,
+    addressForm: null,
+    authProviders: providers,
+  });
+
+  it('веб-аккаунт без Telegram — некуда (очередь снимет уведомление)', async () => {
+    const prisma = makePrisma();
+    prisma.user.findMany.mockResolvedValue([row(1_000_000_000_000_005n, [])]);
+    const service = new AccountService(prisma);
+    expect(await service.isNotifyReachable(1_000_000_000_000_005n)).toBe(false);
+  });
+
+  it('веб-аккаунт с привязанным Telegram и старый пользователь бота — доходят', async () => {
+    const prisma = makePrisma();
+    prisma.user.findMany.mockResolvedValueOnce([
+      row(1_000_000_000_000_006n, [{ providerId: '777' }]),
+    ]);
+    prisma.user.findMany.mockResolvedValueOnce([row(42n, [])]);
+    const service = new AccountService(prisma);
+    expect(await service.isNotifyReachable(1_000_000_000_000_006n)).toBe(true);
+    expect(await service.isNotifyReachable(42n)).toBe(true);
+  });
+
+  it('строки пользователя нет — некуда', async () => {
+    const service = new AccountService(makePrisma());
+    expect(await service.isNotifyReachable(5n)).toBe(false);
   });
 });

@@ -4,8 +4,13 @@ import type { DayHistory } from '../types';
 // Константы «сегодня/вчера» на момент загрузки бандла — единственная копия
 // (правило №3; жили дублем в schema-miniapp/utils/todayConstants.ts и
 // webapp/appShell/useBootstrapLoad.ts).
+/** Ключ «день заполнен, праздник показан» — по нему же мини-апп узнаёт, что история есть. */
+export const celebratedKey = (day: string) => 'celebrated_' + day;
+
+// Константы ниже заморожены при загрузке бандла: для экрана, который живёт
+// через полночь, — useLocalDay (./useLocalDay.ts) и useDayRatings.
 export const TODAY_DATE = todayStr();
-export const TODAY_KEY = 'celebrated_' + TODAY_DATE;
+export const TODAY_KEY = celebratedKey(TODAY_DATE);
 export const YESTERDAY_DATE = (() => {
   const [y, m, d] = TODAY_DATE.split('-').map(Number);
   return localDateStr(new Date(y, m - 1, d - 1));

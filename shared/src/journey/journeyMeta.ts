@@ -171,7 +171,7 @@ export const JOURNEY_NEED_NAMES: Record<string, string> = {
 };
 
 // Эмодзи потребностей для радара трекера в «Моём пути» — та же пятёрка,
-// что и JOURNEY_NEED_NAMES/COLORS (shared/src/types.ts). Реестр-сверка
+// что и JOURNEY_NEED_NAMES/NEED_COLORS (shared/src/needs/needColors.ts). Реестр-сверка
 // (правило №4) — schema-miniapp/src/share/journeyMeta.test.ts.
 export const JOURNEY_NEED_EMOJI: Record<string, string> = {
   attachment: '🤝',

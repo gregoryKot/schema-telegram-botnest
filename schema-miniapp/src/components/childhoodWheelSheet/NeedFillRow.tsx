@@ -1,4 +1,4 @@
-import { COLORS } from '../../types';
+import { NEED_COLORS } from '../../../../shared/src/needs/needColors';
 import { hitboxStyle } from '../../utils/hitbox';
 import { IdentityDot } from '../../../../shared/src/components/IdentityDot';
 import { LOW_NEED_MAX } from '../../../../shared/src/childhoodWheel/childhoodWheel';
@@ -26,7 +26,7 @@ export function NeedFillRow({
   openExampleIdx: number | null;
   setOpenExampleIdx: React.Dispatch<React.SetStateAction<number | null>>;
 }) {
-  const color = COLORS[id] ?? '#888';
+  const color = NEED_COLORS[id] ?? '#888';
   const showLow = value !== undefined && value <= 5;
   const showHigh = value !== undefined && value >= 5;
   return (

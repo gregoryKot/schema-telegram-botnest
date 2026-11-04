@@ -8,8 +8,14 @@ import { CrisisGate } from './CrisisGate';
 import { SaveErrorNote } from './SaveErrorNote';
 import { SafePlaceSavedView } from './safePlace/SavedView';
 import { buildPrompts } from './safePlace/prompts';
+import { EXERCISE_DRAFT_KEYS } from '../utils/drafts';
+import {
+  restoreDraft,
+  useDraftAutosave,
+} from '../../../shared/src/utils/useDraftAutosave';
 
 const STORAGE_KEY = 'safe_place';
+const DRAFT_KEY = EXERCISE_DRAFT_KEYS.safePlace;
 
 interface SafePlaceData {
   text: string;
@@ -35,8 +41,15 @@ export function SafePlace({ onClose, onComplete }: Props) {
   const tr = useTr();
   const PROMPTS = buildPrompts(tr);
   const [saved, setSaved] = useState<SafePlaceData | null>(() => loadLocal());
-  const [editing, setEditing] = useState(!loadLocal());
-  const [text, setText] = useState(() => loadLocal()?.text ?? '');
+  // Черновик — только несохранённая правка: открывает редактор с ней.
+  const [draft] = useState(() => restoreDraft<{ text: string }>(DRAFT_KEY));
+  const [editing, setEditing] = useState(!!draft?.text || !loadLocal());
+  const [text, setText] = useState(
+    () => draft?.text ?? loadLocal()?.text ?? '',
+  );
+  const clearDraft = useDraftAutosave(DRAFT_KEY, {
+    text: editing && text !== (saved?.text ?? '') ? text : '',
+  });
   const [justSaved, setJustSaved] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(false);
@@ -58,7 +71,7 @@ export function SafePlace({ onClose, onComplete }: Props) {
           localStorage.setItem(STORAGE_KEY, JSON.stringify(local));
           setSaved(local);
           if (!text) setText(data.description);
-          setEditing(false);
+          if (!draft?.text) setEditing(false);
         } else {
           // Сервер уверенно ответил «пусто»: локальная копия — чужая (смена
           // аккаунта) или устаревшая, оставлять её нельзя (аудит 2026-10, E1).
@@ -92,6 +105,7 @@ export function SafePlace({ onClose, onComplete }: Props) {
     setError(false);
     try {
       await api.saveSafePlace(trimmed);
+      clearDraft();
       setSaved(data);
       setJustSaved(true);
       setEditing(false);

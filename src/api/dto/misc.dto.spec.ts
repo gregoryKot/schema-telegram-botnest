@@ -49,6 +49,15 @@ describe('InitDto / CheckinDto', () => {
     await expect(errorsFor(InitDto, {})).resolves.toEqual([]);
   });
 
+  it('InitDto: пояс устройства проходит, строка длиннее 64 — отказ', async () => {
+    await expect(
+      errorsFor(InitDto, { timezone: 'Asia/Vladivostok' }),
+    ).resolves.toEqual([]);
+    await expect(
+      errorsFor(InitDto, { timezone: 'x'.repeat(65) }),
+    ).resolves.toContain('timezone');
+  });
+
   it('CheckinDto требует boolean done', async () => {
     await expect(errorsFor(CheckinDto, { done: true })).resolves.toEqual([]);
     await expect(errorsFor(CheckinDto, { done: 'yes' })).resolves.toContain(

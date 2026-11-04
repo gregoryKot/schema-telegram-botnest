@@ -1,1 +1,1 @@
-import{p as e}from"./hitbox.js";var t={tap:()=>e().haptic.tap(),press:()=>e().haptic.press(),select:()=>e().haptic.select(),success:()=>e().haptic.success(),warning:()=>e().haptic.warning(),error:()=>e().haptic.error()};export{t};
+import{m as e}from"./a11y.js";var t={tap:()=>e().haptic.tap(),press:()=>e().haptic.press(),select:()=>e().haptic.select(),success:()=>e().haptic.success(),warning:()=>e().haptic.warning(),error:()=>e().haptic.error()};export{t};

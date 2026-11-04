@@ -3,7 +3,7 @@ import type { UserSettings } from '../../api';
 import { FormerTherapistNote } from '../../../../shared/src/therapy/FormerTherapistNote';
 import { InviteCodeBox } from '../../../../shared/src/therapy/InviteCodeBox';
 import { THERAPY_INVITE_CODE_PLACEHOLDER, THERAPY_INVITE_INPUT_MAX } from '../../../../shared/src/therapy/inviteCode';
-import { joinDoneText, leaveTherapyCopy, SHARE_CARDS_TOGGLE as CARDS, SHARE_PROFILE_TOGGLE as PROFILE, therapistConnectedTitle } from '../../../../shared/src/therapy/therapistLinkCopy';
+import { joinDoneText, leaveTherapyCopy, SHARE_CARDS_TOGGLE as CARDS, SHARE_PROFILE_TOGGLE as PROFILE, therapistConnectedTitle, therapistSectionHint } from '../../../../shared/src/therapy/therapistLinkCopy';
 import { useTr } from '../../utils/addressForm';
 import { ConfirmDialog } from '../ConfirmDialog';
 import { SSection, SRow, SmallToggle } from './ui';
@@ -23,13 +23,13 @@ export function MyTherapistSection({ rel, settings, patch }: {
   const { therapyRelation, join, leave } = rel;
   const leaveCopy = leaveTherapyCopy(tr);
   return (
-    <SSection id="s-therapist" label="Мой терапевт" help={<SettingsInfoHelp infoKey="therapist" />} hint={tr('Терапевт видит трекер и задания. Остальное — на твоё усмотрение.', 'Терапевт видит трекер и задания. Остальное — на ваше усмотрение.')}>
+    <SSection id="s-therapist" label="Мой терапевт" help={<SettingsInfoHelp infoKey="therapist" />} hint={therapistSectionHint(therapyRelation?.status === 'active')}>
       {therapyRelation === undefined ? (
         <SRow title="Загрузка..." />
       ) : therapyRelation?.status === 'active' ? (
         <div className="st-body-block">
           <div className="ds-h3">{therapistConnectedTitle(therapyRelation.partnerName)}</div>
-          {join.joined && <p className="st-text" role="status">{joinDoneText(therapyRelation.partnerName, tr)}</p>}
+          {join.joined && <p className="st-text" role="status">{joinDoneText(therapyRelation.partnerName, tr, true)}</p>}
           <div>
             <SRow title={CARDS.title} sub={CARDS.sub} right={<SmallToggle label={CARDS.title} on={!!settings.therapistShareCards} onClick={() => patch({ therapistShareCards: !settings.therapistShareCards })} />} />
             <SRow title={PROFILE.title} sub={PROFILE.sub} right={<SmallToggle label={PROFILE.title} on={!!settings.therapistShareProfile} onClick={() => patch({ therapistShareProfile: !settings.therapistShareProfile })} />} />
@@ -67,7 +67,7 @@ export function MyTherapistSection({ rel, settings, patch }: {
               onKeyDown={e => e.key === 'Enter' && void join.submit()}
               placeholder={THERAPY_INVITE_CODE_PLACEHOLDER} maxLength={THERAPY_INVITE_INPUT_MAX}
               autoComplete="off" autoCapitalize="characters" spellCheck={false} />
-            <button className="ds-btn" onClick={() => void join.submit()} disabled={join.busy}>
+            <button className="ds-btn" onClick={() => void join.submit()} disabled={!join.canSubmit}>
               {join.busy ? 'Подключаю…' : 'Подключиться'}
             </button>
           </div>

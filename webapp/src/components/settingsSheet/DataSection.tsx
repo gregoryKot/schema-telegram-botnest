@@ -1,22 +1,21 @@
 import { useState } from 'react';
-import { api } from '../../api';
 import { authedFetch } from '../../apiClient';
 import { useTr } from '../../utils/addressForm';
 import { SSection, SRow, InfoModal } from './ui';
 import { YsqDataDeleteButton } from './YsqDataDeleteButton';
 import { privacyStorageText, PRIVACY_NO_SHARE_TEXT } from '../../../../shared/src/settings/privacyText';
 import { useDataExport } from '../../../../shared/src/account/useDataExport';
-import { DeleteAccountConfirm } from '../../../../shared/src/components/DeleteAccountConfirm';
+import { deleteAccountCopy } from '../../../../shared/src/account/accountDeletion';
+import { DeleteAccountDialog } from '../DeleteAccountDialog';
 
-// Раздел «Данные» (конфиденциальность + полное удаление аккаунта) — вынесен
-// из SettingsSheet.tsx (правило №10). Состояние обеих модалок полностью
-// локально: снаружи оно нигде больше не используется.
+// Раздел «Данные» (конфиденциальность + удаление аккаунта) — вынесен из
+// SettingsSheet.tsx (правило №10). Удаление — тот же диалог, что в «Профиле»
+// (QA 2026-11, К2): строка называет действие честно — уходит аккаунт целиком.
 export function DataSection() {
   const tr = useTr();
   const [showPrivacy, setShowPrivacy] = useState(false);
-  const [showDeleteSheet, setShowDeleteSheet] = useState(false);
-  const [deleteConfirm, setDeleteConfirm] = useState(false);
-  const [deleting, setDeleting]     = useState(false); const [deleteError, setDeleteError] = useState(false); // отказ раньше не был виден
+  const [showDelete, setShowDelete] = useState(false);
+  const deleteCopy = deleteAccountCopy(tr);
   const dataExport = useDataExport({ authedFetch });
 
   return (
@@ -46,7 +45,7 @@ export function DataSection() {
           {tr('Тут скачать не получится — открой schemehappens.ru в браузере и попробуй там', 'Тут скачать не получится — откройте schemehappens.ru в браузере и попробуйте там')}
         </div>
       )}
-      <SRow title="Удалить все данные" danger onClick={() => { setDeleteConfirm(false); setDeleteError(false); setShowDeleteSheet(true); }} />
+      <SRow title={deleteCopy.row} sub={deleteCopy.rowSub} danger onClick={() => setShowDelete(true)} />
       </SSection>
 
       {/* ── Privacy modal ── */}
@@ -68,26 +67,7 @@ export function DataSection() {
         </InfoModal>
       )}
 
-      {/* ── Delete modal ── */}
-      {showDeleteSheet && (
-        <InfoModal onClose={() => { setShowDeleteSheet(false); setDeleteConfirm(false); }}>
-          <h2 className="dialog-title st-modal-title--danger">Удалить все данные</h2>
-          <div className="st-text st-mb20">
-            Дневники, оценки, практики, тесты, заметки, задания — всё удалится с сервера. Необратимо.
-          </div>
-          {deleteError && !deleteConfirm && <div className="st-err st-center st-mb10">{tr('Не удалось удалить данные. Проверь связь и попробуй ещё раз', 'Не удалось удалить данные. Проверьте связь и попробуйте ещё раз')}</div>}
-          {!deleteConfirm ? (
-            <div className="st-modal-actions">
-              <button className="ds-btn ds-btn--secondary" onClick={() => setShowDeleteSheet(false)}>Отмена</button>
-              <button className="ds-btn ds-btn--secondary st-btn-danger" onClick={() => setDeleteConfirm(true)}>Удалить</button>
-            </div>
-          ) : (
-            <DeleteAccountConfirm tr={tr} deleting={deleting} setDeleting={setDeleting} deleteAllUserData={api.deleteAllUserData}
-              onFailed={() => { setDeleteConfirm(false); setDeleteError(true); }}
-              onDeleted={() => { const t = localStorage.getItem('app_theme'); const cc = localStorage.getItem('cookie_consent'); localStorage.clear(); sessionStorage.clear(); if (t) localStorage.setItem('app_theme', t); if (cc) localStorage.setItem('cookie_consent', cc); window.location.reload(); }} />
-          )}
-        </InfoModal>
-      )}
+      {showDelete && <DeleteAccountDialog onClose={() => setShowDelete(false)} />}
     </>
   );
 }

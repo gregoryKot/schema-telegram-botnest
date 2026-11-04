@@ -4,6 +4,7 @@ import { useTr } from '../../utils/addressForm';
 import { useCopyToClipboard } from '../../../../shared/src/utils/useCopyToClipboard';
 import type { TherapyRelationInfo } from '../../api';
 import { useTherapyCodeJoin } from '../../../../shared/src/therapy/useTherapyCodeJoin';
+import { loadFreshTherapyRelation } from '../../../../shared/src/therapy/freshRelation';
 import { useConfirmedAction } from '../../../../shared/src/hooks/useConfirmedAction';
 import { inviteCreateErrorText } from '../../../../shared/src/therapy/therapyInvites';
 
@@ -23,8 +24,9 @@ export function useTherapyRelationSettings(userRole: 'CLIENT' | 'THERAPIST' | un
   const join = useTherapyCodeJoin(api, setTherapyRelation);
   const leave = useConfirmedAction(() => api.leaveTherapy(), () => setTherapyRelation(null));
 
+  // При открытии — с сервера: связь могла появиться на другом устройстве (М4).
   useEffect(() => {
-    api.getTherapyRelation().then(setTherapyRelation).catch(() => setTherapyRelation(null));
+    loadFreshTherapyRelation(api.getTherapyRelation).then(setTherapyRelation).catch(() => setTherapyRelation(null));
   }, [userRole]);
 
   // Каждый тап — новое приглашение со своим кодом (раньше — тот же код

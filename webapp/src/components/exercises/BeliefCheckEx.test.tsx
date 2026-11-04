@@ -29,6 +29,7 @@ function renderSheet() {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  localStorage.clear(); // черновик упражнения не должен переезжать в следующий тест
   mockApi.getBeliefChecks.mockResolvedValue([]);
 });
 
@@ -150,6 +151,10 @@ describe('BeliefCheckEx — сохранение: успех', () => {
       reframe: 'Иногда ошибаюсь, но это не значит что я всегда всё порчу',
     });
     expect(onComplete).toHaveBeenCalledTimes(1);
+    // QA клиента 2026-11, З14: «Сохранено в дневнике», а в «Записях» проверки
+    // нет — она в «Моём пути». Экран называет место, где её найти.
+    expect(screen.getByText(/Проверка сохранена в разделе «Мой путь»/)).toBeTruthy();
+    expect(screen.queryByText(/в дневнике/)).toBeNull();
   });
 });
 
@@ -211,6 +216,7 @@ describe('BeliefCheckEx — сохранение: отказ сети виден
       'Не удалось сохранить. Проверь связь и попробуй ещё раз',
     );
     cleanup();
+    localStorage.clear(); // отказ оставил черновик — второй заход с чистого листа
 
     mockApi.createBeliefCheck.mockRejectedValue(new Error('network down'));
     render(

@@ -121,6 +121,17 @@ describe('ритм страницы — только от ds-page', () => {
       && declares(r.body, ['gap', 'row-gap', 'padding', 'padding-top', 'padding-bottom', 'padding-block']));
     expect(bad.map((r) => r.subjects.join(','))).toEqual([]);
   });
+  // Инлайн-стиль css-сверка не видит: силуэт «Сегодня» (AppShellSkeleton) держал gap: 24 при ds-page.
+  const inlineRhythm = (src: string) => [...src.matchAll(/<\w+\s[^<>]*?\bds-page\b[^<>]*>/g)]
+    .map((m) => m[0]).filter((tag) => /style=\{\{[^}]*\b(gap|rowGap|padding|paddingTop|paddingBottom|paddingBlock)\s*:/.test(tag));
+  it('в .tsx у тега с ds-page нет инлайн gap и вертикальных padding', () => {
+    const bad = walk(SRC).flatMap((f) => inlineRhythm(readFileSync(f, 'utf8')).map((t) => `${f.slice(SRC.length + 1)}: ${t}`));
+    expect(bad).toEqual([]);
+  });
+  it('сверка ловит инлайн-ритм у ds-page и пропускает ширину', () => {
+    expect(inlineRhythm('<div className="ds-page" style={{ maxWidth: 600, gap: 24 }}>')).toHaveLength(1);
+    expect(inlineRhythm('<div className="ds-page" style={{ maxWidth: 600, paddingLeft: 8 }}>')).toEqual([]);
+  });
 });
 
 describe('высота навигации: документ = код', () => {

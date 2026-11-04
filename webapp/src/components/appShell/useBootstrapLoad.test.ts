@@ -7,6 +7,8 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { act, renderHook } from '@testing-library/react';
 import { useBootstrapLoad } from './useBootstrapLoad';
 import { THERAPIST_MODE_KEY } from '../../utils/storageKeys';
+import { todayStr } from '../../../../shared/src/utils/format';
+import { shiftCalendarDay } from '../../../../shared/src/utils/calendarDate';
 
 vi.mock('../../api', () => ({
   api: {
@@ -126,6 +128,26 @@ describe('useBootstrapLoad — сбои фоновых источников не
     expect(result.current.error).toBeTruthy();
     expect(mockReport).toHaveBeenCalledTimes(1);
     expect(mockReport.mock.calls[0][0].message).toContain('needs/ratings');
+  });
+});
+
+// QA 2026-11-03, К2: «сегодня» запрашивалось без даты — сервер отдавал СВОЙ
+// день (пояс уведомлений, по умолчанию Москва), а пояс устройства до сервера
+// не доходил: уходило число tzOffset, которое DTO отбрасывал.
+describe('useBootstrapLoad — день и пояс устройства', () => {
+  it('оценки «сегодня» и «вчера» — явными датами дня устройства, без запроса «день сервера»', async () => {
+    setup();
+    await flush();
+    const today = todayStr();
+    expect(mockApi.ratings).toHaveBeenCalledWith(today);
+    expect(mockApi.ratings).toHaveBeenCalledWith(shiftCalendarDay(today, -1));
+    expect(mockApi.ratings.mock.calls.every((c) => typeof c[0] === 'string')).toBe(true);
+  });
+
+  it('init несёт пояс устройства (IANA), а не смещение в часах', async () => {
+    setup();
+    await flush();
+    expect(mockApi.init).toHaveBeenCalledWith(Intl.DateTimeFormat().resolvedOptions().timeZone);
   });
 });
 

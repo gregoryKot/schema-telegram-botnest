@@ -14,9 +14,10 @@ function makeService(userRow: Record<string, unknown> | null) {
     user: { findUnique: jest.fn(async () => userRow) },
     ysqResult: { findUnique: jest.fn(async () => null) },
     ysqResultHistory: { findMany: jest.fn(async () => []) },
+    userTask: { count: jest.fn(async () => 0) },
   };
   const relations: any = { assertHasClient: jest.fn(async () => undefined) };
-  const notifications: any = { pendingPayloads: jest.fn(async () => []) };
+  const notifications: any = {};
   return new TherapyClientDataService(
     prisma,
     {} as any,

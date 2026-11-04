@@ -453,6 +453,55 @@ describe('DiarySection — удаление записей режима и бл�
   });
 });
 
+// QA клиента 2026-11, З2: при 500 удаление проходило молча (исключение в
+// консоль), второй клик слал ещё один DELETE и ловил 404 тем же исключением.
+// Необработанный отказ vitest засчитывает как падение прогона.
+describe('DiarySection — сбой удаления виден, повторный клик не шлёт второй DELETE', () => {
+  const httpError = (status: number, message: string) => Object.assign(new Error(message), { status });
+  async function confirmDelete(text: string) {
+    fireEvent.click(await screen.findByText(text));
+    fireEvent.click(screen.getByText('Удалить'));
+    fireEvent.click(screen.getByText('Удалить навсегда'));
+  }
+
+  it('500: текст ошибки, запись остаётся, кнопка снова доступна', async () => {
+    mockApi.getModeDiary.mockResolvedValue([modeEntry({ id: 55, situation: 'Критика на работе' })]);
+    mockApi.deleteModeDiary.mockRejectedValue(httpError(500, 'Internal server error'));
+    renderSection();
+
+    await confirmDelete('Критика на работе');
+
+    expect((await screen.findByRole('alert')).textContent).toMatch(/Не удалось удалить — запись на месте/);
+    expect(screen.getByText('Критика на работе')).toBeTruthy();
+    expect((screen.getByText('Удалить навсегда') as HTMLButtonElement).disabled).toBe(false);
+  });
+
+  it('двойной клик — один DELETE; после ответа запись уходит из списка', async () => {
+    let resolve!: () => void;
+    mockApi.getModeDiary.mockResolvedValue([modeEntry({ id: 55, situation: 'Критика на работе' })]);
+    mockApi.deleteModeDiary.mockImplementation(() => new Promise<void>(r => { resolve = r; }));
+    renderSection();
+
+    await confirmDelete('Критика на работе');
+    fireEvent.click(screen.getByText('Удалить навсегда'));
+
+    expect(mockApi.deleteModeDiary).toHaveBeenCalledTimes(1);
+    resolve();
+    await waitFor(() => expect(screen.queryByText('Критика на работе')).toBeNull());
+  });
+
+  it('404 (запись уже удалена) — запись уходит из списка без ошибки', async () => {
+    mockApi.getSchemaDiary.mockResolvedValue([schemaEntry({ id: 42, trigger: 'Уже удалённая' })]);
+    mockApi.deleteSchemaDiary.mockRejectedValue(httpError(404, 'Entry not found'));
+    renderSection();
+
+    await confirmDelete('Уже удалённая');
+
+    await waitFor(() => expect(screen.queryByText('Уже удалённая')).toBeNull());
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+});
+
 describe('DiarySection — группировка по дате', () => {
   it('группа сегодняшних записей помечена "сегодня"', async () => {
     const today = new Date().toISOString();

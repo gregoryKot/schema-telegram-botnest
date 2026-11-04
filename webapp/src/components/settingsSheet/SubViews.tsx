@@ -1,6 +1,7 @@
 import type { UserSettings } from '../../api';
 import { hueStyle } from '../../lib/tone';
-import { TIMEZONES, HOURS, FREQ_LABELS, QUIET_PRESETS, pad } from '../../../../shared/src/settings/constants';
+import { HOURS, FREQ_LABELS, QUIET_PRESETS, pad } from '../../../../shared/src/settings/constants';
+import { timezoneOptions } from '../../../../shared/src/settings/timezones';
 
 export type SubView = 'main' | 'time' | 'tz' | 'freq' | 'quiet';
 
@@ -51,18 +52,16 @@ export function SettingsSubView({ subView, settings, patch, onDone }: Props) {
           В тихие часы бот не пишет вообще — всё, что накопится, придёт утром.
         </div>
         <div className="st-opts">
-          {QUIET_PRESETS.map(p => option(
-            p.label, p.label,
+          {QUIET_PRESETS.map(p => option(p.label, p.label,
             p.start === (settings.notifyQuietStart ?? 22) && p.end === (settings.notifyQuietEnd ?? 8),
-            { notifyQuietStart: p.start, notifyQuietEnd: p.end },
-          ))}
+            { notifyQuietStart: p.start, notifyQuietEnd: p.end }))}
         </div>
       </div>
     );
   }
   return (
     <div className="ds-card st-opts">
-      {TIMEZONES.map(tz => option(tz.iana, tz.label, tz.iana === settings.notifyTimezone, { notifyTimezone: tz.iana }))}
+      {timezoneOptions(settings.notifyTimezone).map(tz => option(tz.iana, tz.label, tz.iana === settings.notifyTimezone, { notifyTimezone: tz.iana }))}
     </div>
   );
 }

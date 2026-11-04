@@ -3,6 +3,7 @@
 // теперь метод описан ОДИН раз здесь. Фронт отличается только транспортом (webapp —
 // JWT Bearer, мини-апп — initData) и платформенными методами своего api.ts (booking/
 // статьи/админка — сайт; exercises, saveRating с outbox-датой, conceptualization — локально).
+import { THERAPY_RELATION_PATH } from '../therapy/freshRelation';
 import type {
   Need,
   UserProfile,
@@ -48,7 +49,10 @@ export interface ApiTransport {
 }
 
 export const buildSharedApi = (t: ApiTransport) => ({
-  init: (tzOffset?: number) => t.post('/api/init', { tzOffset }),
+  // Пояс устройства (deviceTimeZone): пока человек не выбрал пояс сам, сервер
+  // считает по нему «сегодня» — серию, недельную полосу, напоминания. Раньше
+  // уходило число tzOffset, которого DTO не знает, и пояс у всех был московским.
+  init: (timezone?: string) => t.post('/api/init', { timezone }),
 
   // Продуктовая аналитика (правило №8). Fire-and-forget: аналитика НИКОГДА не
   // влияет на UX — ошибки/сеть глотаем, промис не пробрасываем.
@@ -177,12 +181,12 @@ export const buildSharedApi = (t: ApiTransport) => ({
   revokeTherapyInvite: (id: number) => t.del(`/api/therapy/invites/${id}`),
   // Чей код — до согласия клиента (экран JoinConfirmSheet).
   previewTherapyInvite: (code: string) =>
-    t.postJson<{ therapistName: string | null }>(
-      '/api/therapy/invite/preview',
-      { code },
-    ),
+    t.postJson<{
+      therapistName: string | null;
+      connection?: 'none' | 'same' | 'other';
+    }>('/api/therapy/invite/preview', { code }),
   getTherapyRelation: () =>
-    t.get<TherapyRelationInfo | null>('/api/therapy/relation'),
+    t.get<TherapyRelationInfo | null>(THERAPY_RELATION_PATH),
   // Терапевт отказался от роли — сообщение вместо «Мой терапевт».
   getFormerTherapist: () =>
     t.get<FormerTherapistInfo | null>('/api/therapy/former-therapist'),

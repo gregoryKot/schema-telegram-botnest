@@ -27,6 +27,7 @@ function makeController(
   } as unknown as BotService;
   const accountService = {
     setAdaptiveLevel: jest.fn().mockResolvedValue(undefined),
+    isNotifyReachable: jest.fn().mockResolvedValue(true),
     ...overrides.accountService,
   } as unknown as AccountService;
   const scheduleService = {
@@ -62,7 +63,19 @@ describe('SettingsController.getSettings', () => {
       therapistShareCards: true,
       therapistShareProfile: true,
       uiPrefs: {},
+      notifyReachable: true,
     });
+  });
+
+  // QA 2026-11, З5: веб-клиент без Telegram видел включённые уведомления,
+  // которые очередь снимала как «доставить некому».
+  it('notifyReachable — от адреса очереди уведомлений этого человека', async () => {
+    const { controller, accountService } = makeController({
+      accountService: { isNotifyReachable: jest.fn().mockResolvedValue(false) },
+    });
+    const res = await controller.getSettings(makeReq(7n));
+    expect(res.notifyReachable).toBe(false);
+    expect(accountService.isNotifyReachable).toHaveBeenCalledWith(7n);
   });
 
   it('запрашивает настройки под userId из req', async () => {
@@ -136,12 +149,30 @@ describe('SettingsController.updateSettings — whitelist полей', () => {
     });
   });
 
-  it('невалидная таймзона (не из VALID_TIMEZONES) отбрасывается', async () => {
+  it('несуществующая таймзона отбрасывается', async () => {
     const { controller, botService } = makeController();
     await controller.updateSettings(makeReq(), {
       notifyTimezone: 'Mars/Olympus',
     });
     expect(botService.updateUserSettings).toHaveBeenCalledWith(1n, {});
+  });
+
+  // QA 2026-11-03: пояс устройства (Париж) показывается в выборе первым;
+  // повторный тап по нему раньше молча отбрасывался — пояс вне списка.
+  it('настоящий пояс IANA вне списка выбора сохраняется; новый пояс из списка — тоже', async () => {
+    const { controller, botService } = makeController();
+    await controller.updateSettings(makeReq(), {
+      notifyTimezone: 'Europe/Paris',
+    });
+    expect(botService.updateUserSettings).toHaveBeenLastCalledWith(1n, {
+      notifyTimezone: 'Europe/Paris',
+    });
+    await controller.updateSettings(makeReq(), {
+      notifyTimezone: 'Asia/Vladivostok',
+    });
+    expect(botService.updateUserSettings).toHaveBeenLastCalledWith(1n, {
+      notifyTimezone: 'Asia/Vladivostok',
+    });
   });
 
   it('addressForm принимает только «ty»/«vy», остальное отбрасывается', async () => {

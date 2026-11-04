@@ -18,7 +18,7 @@ const realApi = api as unknown as Record<string, any>;
 
 const MOCKED_API_METHODS = [
   // exercises/LetterEx.test.tsx
-  'getLetters', 'createLetter',
+  'getLetters', 'createLetter', 'updateLetter',
   // exercises/FlashcardEx.test.tsx
   'saveSchemaNote', 'saveModeNote',
   // exercises/BeliefCheckEx.test.tsx

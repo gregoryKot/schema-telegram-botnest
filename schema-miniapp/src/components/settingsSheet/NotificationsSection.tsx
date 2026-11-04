@@ -1,14 +1,13 @@
 import { UserSettings } from '../../api';
 import { botUrl, botHandle } from '../../utils/botConfig';
 import { Row, Toggle, RowRight, SectionHeader } from './ui';
-import {
-  TIMEZONES,
-  FREQ_LABELS,
-  pad,
-  quietLabel,
-  hourInQuiet,
-} from './constants';
+import { FREQ_LABELS, pad, quietLabel, hourInQuiet } from './constants';
+import { timezoneLabel } from '../../../../shared/src/settings/timezones';
 import { View } from './types';
+import {
+  NOTIFY_UNREACHABLE,
+  notifyReachable,
+} from '../../../../shared/src/settings/notifyReach';
 
 interface Props {
   settings: UserSettings;
@@ -24,9 +23,23 @@ export function NotificationsSection({
   onInfo,
 }: Props) {
   const localHour = settings.notifyLocalHour;
-  const tzLabel =
-    TIMEZONES.find((t) => t.iana === settings.notifyTimezone)?.label ??
-    settings.notifyTimezone;
+  const tzLabel = timezoneLabel(settings.notifyTimezone);
+
+  // Без Telegram уведомлениям некуда прийти (MAX без привязки): вместо
+  // тумблеров — честная причина и где привязать (QA 2026-11, З5).
+  if (!notifyReachable(settings))
+    return (
+      <div className="u-mb8">
+        <SectionHeader onInfo={onInfo}>УВЕДОМЛЕНИЯ</SectionHeader>
+        <div
+          className="card u-sub13"
+          role="note"
+          style={{ borderRadius: 'var(--r-16)', padding: '14px 16px' }}
+        >
+          {NOTIFY_UNREACHABLE.text} {NOTIFY_UNREACHABLE.linkElsewhere}
+        </div>
+      </div>
+    );
 
   return (
     <div className="u-mb8">

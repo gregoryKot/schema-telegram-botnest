@@ -17,6 +17,7 @@ import {
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { AuthContext, type AuthState } from '../auth/authContext';
 import { LoginPage } from './LoginPage';
+import { wipeAfterAccountDeletion } from '../../../shared/src/account/accountDeletion';
 
 vi.mock('../../../shared/src/host', () => ({
   getHost: vi.fn(() => ({ sessionExchange: () => null })),
@@ -74,6 +75,19 @@ function renderPage(auth: AuthState = authValue(), initialPath = '/login') {
     </MemoryRouter>,
   );
 }
+
+// QA 2026-11, К2: после удаления аккаунта экран входа писал «Вход устарел —
+// данные на месте»: человек решал, что удаление не прошло.
+describe('LoginPage — сразу после удаления аккаунта', () => {
+  it('говорит «Аккаунт удалён», а не «данные на месте»; отметка одноразовая', () => {
+    localStorage.setItem('auth_seen', '1');
+    wipeAfterAccountDeletion();
+    renderPage();
+    expect(screen.getByText(/^Аккаунт удалён/)).toBeTruthy();
+    expect(screen.queryByText(/данные на месте/)).toBeNull();
+    expect(localStorage.getItem('account_deleted')).toBeNull();
+  });
+});
 
 describe('LoginPage — уже вошедший пользователь', () => {
   it('isAuthenticated=true сразу уводит на /today', async () => {

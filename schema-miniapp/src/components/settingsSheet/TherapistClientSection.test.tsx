@@ -266,6 +266,18 @@ describe('TherapistClientSection — нет терапевта, ввод код�
     expect(mockApi.joinTherapy).not.toHaveBeenCalled();
   });
 
+  // QA 2026-11, М6: пустое поле — кнопка молча ничего не делала.
+  it('пустой код или пробелы — кнопка недоступна; есть код — доступна', () => {
+    render(<TherapistClientSection {...baseProps()} />);
+    const btn = screen.getByText<HTMLButtonElement>('Подключиться');
+    expect(btn.disabled).toBe(true);
+    const input = screen.getByLabelText('Код от терапевта');
+    fireEvent.change(input, { target: { value: '   ' } });
+    expect(btn.disabled).toBe(true);
+    fireEvent.change(input, { target: { value: '7F3A9C21B04E' } });
+    expect(btn.disabled).toBe(false);
+  });
+
   it('успешный код: joinTherapy → getTherapyRelation → setTherapyRelation, поле очищается', async () => {
     mockApi.joinTherapy.mockResolvedValue(undefined);
     mockApi.getTherapyRelation.mockResolvedValue(activeRelation());
@@ -282,7 +294,10 @@ describe('TherapistClientSection — нет терапевта, ввод код�
   });
 
   it('неверный код: «Код не подошёл» под полем, relation не трогается', async () => {
-    mockApi.joinTherapy.mockRejectedValue(new Error('bad code'));
+    // Как настоящий клиент: HttpStatusError со статусом 400 (неверный код).
+    mockApi.joinTherapy.mockRejectedValue(
+      Object.assign(new Error('bad code'), { status: 400 }),
+    );
     const setTherapyRelation = vi.fn();
     render(<TherapistClientSection {...baseProps({ setTherapyRelation })} />);
     fireEvent.change(screen.getByLabelText('Код от терапевта'), {

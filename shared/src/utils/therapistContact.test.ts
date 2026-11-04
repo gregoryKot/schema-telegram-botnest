@@ -11,6 +11,7 @@ import {
   cacheTherapistContact,
   contactCta,
   hasConnectedTherapist,
+  telegramChatUrl,
 } from './therapistContact';
 
 beforeEach(() => {
@@ -161,5 +162,38 @@ describe('hasConnectedTherapist', () => {
         isTherapist: false,
       }),
     ).toBe(false);
+  });
+});
+
+// QA 2026-11, З6: терапевт зарегистрирован через сайт (id из веб-диапазона),
+// а «Написать терапевту →» строил tg://user?id=<веб-id> — на десктопе ничего не
+// происходило, такого чата нет.
+describe('терапевт с веб-аккаунтом — написать из приложения некуда', () => {
+  it('telegramChatUrl: телеграмный номер — ссылка; веб-номер, офлайн-id и мусор — null', () => {
+    expect(telegramChatUrl(777)).toBe('tg://user?id=777');
+    expect(telegramChatUrl('999999999999999')).toBe(
+      'tg://user?id=999999999999999',
+    );
+    expect(telegramChatUrl(3073214303225013)).toBeNull();
+    expect(telegramChatUrl('1000000000000000')).toBeNull();
+    expect(telegramChatUrl(-5)).toBeNull();
+    expect(telegramChatUrl('abc')).toBeNull();
+  });
+
+  it('клиент: терапевт подключён, но ссылки и кнопки «Написать» нет', () => {
+    cacheTherapistContact({
+      role: 'CLIENT',
+      partnerId: '3073214303225013',
+      partnerName: 'Анна',
+      myId: 1,
+      myName: null,
+    });
+    const c = getTherapistContact();
+    expect(c.url).toBeNull();
+    expect(c.bookingUrl).toBeNull();
+    // Терапевт есть — не «Записаться на консультацию» к автору.
+    expect(hasConnectedTherapist(c)).toBe(true);
+    expect(contactCta(c).isSelf).toBe(true);
+    expect(localStorage.getItem('therapy_contact_url')).not.toMatch(/tg:/);
   });
 });

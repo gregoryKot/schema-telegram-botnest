@@ -12,7 +12,6 @@ import { useHistorySheet } from '../hooks/useHistorySheet';
 import {
   useYsqTest,
   useYsqSchemas,
-  getSchemaForQuestion,
   buildShareText,
   YSQ_RESULT_KEY,
   YSQ_PROGRESS_KEY,
@@ -59,7 +58,6 @@ export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Pr
         slideKey={slideKey}
         slideDir={slideDir}
         answer={answers[page]}
-        schema={getSchemaForQuestion(page)}
         onSelect={(value) => selectAnswer(page, value)}
         onBack={handleBack}
         onClose={() => setPhase('intro')}

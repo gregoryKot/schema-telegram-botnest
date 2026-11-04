@@ -11,6 +11,7 @@ import {
   buildConsentKeyboard,
   buildWelcomeKeyboard,
 } from './telegram.keyboards';
+import { plural } from '../bot/plural';
 
 export interface StartWelcomeDeps {
   botService: BotService;
@@ -45,7 +46,7 @@ export async function sendStartWelcome(
   const name = ctx.from?.first_name ? ` ${ctx.from.first_name}` : '';
   const streakLine =
     streak >= STREAK_FROM
-      ? `\n🔥 Серия: ${streak} ${streak < 5 ? 'дня' : 'дней'} подряд`
+      ? `\n🔥 Серия: ${streak} ${plural(streak, 'день', 'дня', 'дней')} подряд`
       : '';
   await ctx.reply(
     `С возвращением${name}!${streakLine}`,

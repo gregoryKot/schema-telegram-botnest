@@ -23,7 +23,7 @@ import {
 import { AppDiaryNav } from './AppDiaryNav';
 import { UseSheetsReturn } from '../hooks/useSheets';
 import type { OverlaySheetKey } from '../hooks/sheetsStack';
-import { TODAY_DATE } from '../utils/todayConstants';
+import { useLocalDay } from '../../../shared/src/utils/useLocalDay';
 
 interface Props {
   sheets: UseSheetsReturn;
@@ -93,6 +93,7 @@ export function AppOverlays({
   section,
   setSection,
 }: Props) {
+  const today = useLocalDay(); // заметка дня — за живой день, не за день загрузки
   // Три экрана ведут к оценке потребностей: лист закрывается функцией реестра.
   const openTrackerAfter = (close: () => void) => () => {
     close();
@@ -160,7 +161,7 @@ export function AppOverlays({
       )}
 
       {sheets.todayNote && (
-        <NoteSheet date={TODAY_DATE} onClose={closers.todayNote} />
+        <NoteSheet date={today} onClose={closers.todayNote} />
       )}
 
       {sheets.trackerGoal && (

@@ -57,7 +57,7 @@ export class TherapyClientDataService {
         orderBy: { completedAt: 'desc' },
         take: 20,
       }),
-      isOwnYsqRequestPending(this.notificationService, therapistId, uid),
+      isOwnYsqRequestPending(this.prisma, therapistId, uid),
     ]);
 
     if (user?.therapistShareProfile === false) {

@@ -24,7 +24,7 @@
     "since": "docs/AUDIT_2026-10_FINDINGS.md"
   },
   "webapp/src/components/OverlayFrame.tsx": {
-    "reason": "Рамка оверлеев «Все задания» и «Все цели» (класс sk-overlay): goBack приходит пропом, хук вызывают потребители — sections/today/AllTasksOverlay.tsx и sections/practice/AllGoalsOverlay.tsx, по одному разу на лист. Хук в рамке дал бы вторую запись истории.",
+    "reason": "Рамка оверлеев «Все задания» и «Все цели» (класс sk-overlay): goBack приходит пропом, хук вызывает потребитель — sections/today/AllTasksOverlay.tsx (один на оба списка), один раз на лист. Хук в рамке дал бы вторую запись истории.",
     "since": "#746"
   },
   "webapp/src/components/appShell/AppOverlays.tsx": {

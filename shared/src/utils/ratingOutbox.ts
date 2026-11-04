@@ -69,6 +69,22 @@ export function enqueueRating(item: OutboxItem): void {
   writeOutbox(items);
 }
 
+/**
+ * Оценки дня `date`, ещё лежащие в очереди: needId → последнее значение.
+ * Экран дня кладёт их поверх ответа сервера (QA 2026-11-03, З9: после
+ * перезагрузки плитка показывала «1 из 5» — чтение обогнало выгрузку
+ * очереди, а в БД уже было 5 из 5). Снимок берётся ДО запроса оценок:
+ * очередь чистится только после того, как сервер принял всё отправленное,
+ * поэтому оценка либо есть в снимке, либо уже лежала на сервере к моменту
+ * чтения — щели между ними нет.
+ */
+export function pendingRatingsFor(date: string): Record<string, number> {
+  const out: Record<string, number> = {};
+  for (const it of readOutbox())
+    if (it.date === date) out[it.needId] = it.value;
+  return out;
+}
+
 // Дедуп по (needId, date): побеждает последняя запись по этому ключу,
 // порядок отправки — по первому вхождению ключа в очереди.
 function dedupe(items: OutboxItem[]): OutboxItem[] {

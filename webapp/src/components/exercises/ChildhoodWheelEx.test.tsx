@@ -283,3 +283,58 @@ describe('ChildhoodWheelEx — низкие зоны', () => {
     expect(screen.queryByText('Подробнее о схемах')).toBeNull();
   });
 });
+
+// QA 2026-11, З13: шкала была div с одними pointer-событиями — фокус на неё не
+// попадал, без мыши «Посмотреть результат» оставалась недоступной.
+describe('ChildhoodWheelEx — с клавиатуры', () => {
+  it('пять ползунков с именем потребности получают фокус и проходятся клавишами', async () => {
+    renderEx();
+    await openFill();
+    const sliders = screen.getAllByRole('slider');
+    expect(sliders.map((s) => s.getAttribute('aria-label'))).toEqual(
+      ['Привязанность', 'Автономия', 'Выражение чувств', 'Спонтанность', 'Границы'],
+    );
+    sliders[0].focus();
+    expect(document.activeElement).toBe(sliders[0]);
+    expect(sliders[0].getAttribute('aria-valuetext')).toBe('не оценено');
+    fireEvent.keyDown(sliders[0], { key: 'Enter' }); // неоценённой — середина
+    fireEvent.keyDown(sliders[0], { key: 'ArrowLeft' });
+    expect(sliders[0].getAttribute('aria-valuenow')).toBe('4');
+    fireEvent.keyDown(sliders[1], { key: ' ' });
+    fireEvent.keyDown(sliders[2], { key: 'End' });
+    fireEvent.keyDown(sliders[3], { key: 'Home' });
+    fireEvent.keyDown(sliders[4], { key: 'ArrowRight' });
+    const save = screen.getByRole('button', { name: /Посмотреть результат/ }) as HTMLButtonElement;
+    expect(save.disabled).toBe(false);
+    fireEvent.click(save);
+    await screen.findByText(/Среднее/);
+    expect(mockApi.saveChildhoodRatings).toHaveBeenCalledWith({ attachment: 4, autonomy: 5, expression: 10, play: 0, limits: 6 });
+  });
+});
+
+// QA 2026-11, З12: подсказки заполнения обращались на «ты» к человеку с формой «вы».
+describe('ChildhoodWheelEx — ты/вы на заполнении', () => {
+  async function openFillAs(form: 'ty' | 'vy') {
+    render(
+      <MemoryRouter>
+        <AddressFormContext.Provider value={{ form, setForm: vi.fn() }}>
+          <ChildhoodWheelEx onBack={vi.fn()} onSaved={vi.fn()} />
+        </AddressFormContext.Provider>
+      </MemoryRouter>,
+    );
+    await openFill();
+  }
+
+  it('форма «вы»: «Оцените», «Оценивайте», ни одного «Оцени»', async () => {
+    await openFillAs('vy');
+    expect(screen.getByText(/^Оцените пять базовых потребностей/)).toBeTruthy();
+    expect(screen.getByText(/Оценивайте не «как могло быть»/)).toBeTruthy();
+    expect(document.body.textContent).not.toMatch(/Оцени(вай)?\s/);
+  });
+
+  it('форма «ты»: «Оцени», «Оценивай»', async () => {
+    await openFillAs('ty');
+    expect(screen.getByText(/^Оцени пять базовых потребностей/)).toBeTruthy();
+    expect(screen.getByText(/Оценивай не «как могло быть»/)).toBeTruthy();
+  });
+});

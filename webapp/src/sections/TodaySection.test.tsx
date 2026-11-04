@@ -216,8 +216,8 @@ describe('TodaySection — плитка трекера по реальным о�
 describe('TodaySection — лента дня и плитка дневника', () => {
   it('записи за сегодня из трёх дневников: время, текст, тип; старые не показываются', async () => {
     mockApi.getSchemaDiary.mockResolvedValue([
-      { id: 1, trigger: 'ссора с коллегой', createdAt: nowIso() },
-      { id: 2, trigger: 'старая запись', createdAt: daysAgoIso(4) },
+      { id: 1, trigger: 'ссора с коллегой', schemaIds: ['abandonment'], emotions: [], createdAt: nowIso() },
+      { id: 2, trigger: 'старая запись', schemaIds: ['abandonment'], emotions: [], createdAt: daysAgoIso(4) },
     ]);
     mockApi.getModeDiary.mockResolvedValue([{ id: 3, situation: 'Критик громко', createdAt: nowIso() }]);
     renderSection();
@@ -230,7 +230,7 @@ describe('TodaySection — лента дня и плитка дневника', 
   });
 
   it('записей сегодня нет, но есть старые — «Последняя запись — …»', async () => {
-    mockApi.getSchemaDiary.mockResolvedValue([{ id: 2, trigger: 'старая', createdAt: daysAgoIso(1.4) }]);
+    mockApi.getSchemaDiary.mockResolvedValue([{ id: 2, trigger: 'старая', schemaIds: ['abandonment'], emotions: [], createdAt: daysAgoIso(1.4) }]);
     renderSection();
     expect(await screen.findByText('Последняя запись — вчера')).toBeTruthy();
   });
@@ -244,7 +244,7 @@ describe('TodaySection — лента дня и плитка дневника', 
   });
 
   it('плитка дневника открывает «Дневник одной страницей», а не список дневников; строка ленты — список', async () => {
-    mockApi.getSchemaDiary.mockResolvedValue([{ id: 1, trigger: 'строка ленты', createdAt: nowIso() }]);
+    mockApi.getSchemaDiary.mockResolvedValue([{ id: 1, trigger: 'строка ленты', schemaIds: ['abandonment'], emotions: [], createdAt: nowIso() }]);
     renderSection();
     fireEvent.click(screen.getByRole('button', { name: /Дневник/ }));
     expect(screen.getByRole('heading', { name: 'Что на уме?' })).toBeTruthy();
@@ -276,7 +276,7 @@ describe('TodaySection — лента дня и плитка дневника', 
   it('refreshKey: смена ключа перечитывает дневники (сохранил → нашёл)', async () => {
     const view = renderSection({ refreshKey: 0 });
     await screen.findByText('Пока записей нет');
-    mockApi.getSchemaDiary.mockResolvedValue([{ id: 1, trigger: 'новая запись', createdAt: nowIso() }]);
+    mockApi.getSchemaDiary.mockResolvedValue([{ id: 1, trigger: 'новая запись', schemaIds: ['abandonment'], emotions: [], createdAt: nowIso() }]);
     view.rerender(
       <AddressFormContext.Provider value={{ form: 'ty', setForm: vi.fn() }}>
         <MemoryRouter>
@@ -308,6 +308,18 @@ describe('TodaySection — «Что случилось»', () => {
     expect(await screen.findByText('только что')).toBeTruthy();
     expect(screen.getByText('Сегодня: 1 разбор')).toBeTruthy();
     expect(screen.getByText('Разбор')).toBeTruthy();
+    // QA 2026-11, М1: разбор — не запись дневника; «Записи» относят его к «Случаям».
+    expect(screen.getByText('Последняя запись — 3 дн. назад')).toBeTruthy();
+    expect(screen.queryByText('Сегодня 1 запись')).toBeNull();
+  });
+
+  // QA 2026-11, М1: «Просто мысль» на главной была «Схема», в «Записях» — «Мысль».
+  it('«Просто мысль» в ленте подписана «Мысль», как в «Записях»', async () => {
+    mockApi.getSchemaDiary.mockResolvedValue([{ id: 5, trigger: 'мысль дня', schemaIds: [], emotions: [], createdAt: nowIso() }]);
+    renderSection();
+    expect(await screen.findByText('мысль дня')).toBeTruthy();
+    expect(screen.getByText('Мысль')).toBeTruthy();
+    expect(screen.queryByText('Схема')).toBeNull();
   });
 });
 
@@ -335,7 +347,7 @@ describe('TodaySection — «Зачем это?» и первый вход', () 
 
   it('у кого уже есть оценки или записи, лист сам не открывается', async () => {
     localStorage.removeItem(WHY_SEEN_KEY);
-    mockApi.getSchemaDiary.mockResolvedValue([{ id: 1, trigger: 'давно', createdAt: daysAgoIso(30) }]);
+    mockApi.getSchemaDiary.mockResolvedValue([{ id: 1, trigger: 'давно', schemaIds: ['abandonment'], emotions: [], createdAt: daysAgoIso(30) }]);
     renderSection();
     await screen.findByText(/Последняя запись/);
     expect(screen.queryByText('Первый раз здесь')).toBeNull();
@@ -443,6 +455,24 @@ describe('TodaySection — задания: каждый тип «начать �
     await waitFor(() => expect(mockApi.completeTask).toHaveBeenCalledWith(7, true));
   });
 
+  // QA 2026-11 (A-З8): «Все задания» были тупиком — шестое задание и дальше
+  // нельзя было открыть. Теперь строка списка ведёт тем же маршрутом.
+  it('шестое задание открывается из «Все задания» тем же упражнением; сохранение закрывает его', async () => {
+    const five = Array.from({ length: 5 }, (_, i) => task({ id: i + 1, assignedBy: 9, type: 'custom', text: `Задача ${i + 1}` }));
+    mockApi.getTasks.mockResolvedValue([...five, task({ id: 6, assignedBy: 9, type: 'belief_check', text: '' })]);
+    mockApi.completeTask.mockResolvedValue({ ok: true });
+    renderWithHandlers();
+    fireEvent.click(await screen.findByText('Все задания (6) →'));
+    const overlay = (await screen.findByText('Все задания', { selector: 'h1' })).closest('.sk-overlay') as HTMLElement;
+    await act(async () => {});
+    fireEvent.click(within(overlay).getByText('начать →'));
+
+    expect(await screen.findByTestId('belief-ex')).toBeTruthy();
+    expect(screen.queryByText('Все задания', { selector: 'h1' })).toBeNull();
+    fireEvent.click(screen.getByText('Сохранить упражнение'));
+    await waitFor(() => expect(mockApi.completeTask).toHaveBeenCalledWith(6, true));
+  });
+
   it('«Своё задание» от терапевта: на карточке «Готово», задание закрывается', async () => {
     mockApi.getTasks.mockResolvedValue([task({ id: 8, assignedBy: 9, type: 'custom', text: 'Позвонить маме' })]);
     mockApi.completeTask.mockResolvedValue({ ok: true });
@@ -541,7 +571,7 @@ describe('TodaySection — день и время записи в зоне чи�
         vi.useFakeTimers({ toFake: ['Date'] });
         vi.setSystemTime(new Date(iso));
         try {
-          mockApi.getSchemaDiary.mockResolvedValue([{ id: 1, trigger: 'ссора с коллегой', createdAt: iso }]);
+          mockApi.getSchemaDiary.mockResolvedValue([{ id: 1, trigger: 'ссора с коллегой', schemaIds: ['abandonment'], emotions: [], createdAt: iso }]);
           renderSection();
           await screen.findByText('ссора с коллегой');
           const at = new Date(iso);

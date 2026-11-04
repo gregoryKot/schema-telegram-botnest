@@ -13,6 +13,7 @@ import { renderHook, act, waitFor } from '@testing-library/react';
 import { useMySelections } from './useMySelections';
 import { MY_SCHEMA_IDS_KEY, MY_MODE_IDS_KEY } from '../../utils/storageKeys';
 import { api } from '../../api';
+import { notifyYsqResultChanged } from '../../../../shared/src/hooks/ysqProgressStore';
 
 vi.mock('../../api', () => ({
   api: { getProfile: vi.fn(), updateSettings: vi.fn() },
@@ -178,5 +179,37 @@ describe('useMySelections', () => {
     expect(JSON.parse(localStorage.getItem(MY_MODE_IDS_KEY)!)).toEqual([
       'vulnerable_child',
     ]);
+  });
+});
+
+// QA 2026-11 (B-З5): тест YSQ открыт поверх «Моих паттернов», а профиль
+// (ysq.activeSchemaIds) читался один раз — после сдачи до перезагрузки экран
+// звал «Узнать свои схемы».
+describe('useMySelections — прошёл тест → схемы видны без перезагрузки', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    vi.clearAllMocks();
+    mockApi.getProfile.mockResolvedValue(profile());
+  });
+
+  it('событие итога перечитывает профиль: выраженные схемы и дата', async () => {
+    const { result } = renderHook(() => useMySelections());
+    await waitFor(() => expect(result.current.profileLoading).toBe(false));
+    expect(result.current.ysqSchemaIds).toEqual([]);
+
+    mockApi.getProfile.mockResolvedValue(
+      profile({
+        ysq: {
+          activeSchemaIds: ['abandonment'],
+          completedAt: '2026-11-03T10:00:00.000Z',
+        },
+      }),
+    );
+    act(() => notifyYsqResultChanged());
+
+    await waitFor(() =>
+      expect(result.current.ysqSchemaIds).toEqual(['abandonment']),
+    );
+    expect(result.current.ysqCompletedAt).toBe('2026-11-03T10:00:00.000Z');
   });
 });

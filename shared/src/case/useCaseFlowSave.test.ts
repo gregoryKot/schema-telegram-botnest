@@ -194,6 +194,8 @@ describe('вердикт и карточка режима (onSaveCard)', () => {
       triggers: 'Мама написала резким тоном в переписке',
       feelings: 'сердце колотится',
       behavior: 'свернуть разговор',
+      // QA 2026-11, К1: поля момента — только в пустое место карточки.
+      fillIfEmpty: ['triggers', 'feelings', 'behavior'],
     });
     expect(result.current.step).toBe('done');
   });

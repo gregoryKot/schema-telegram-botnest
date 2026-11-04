@@ -14,6 +14,7 @@ import { buildSchemaIntroExplainer } from '../../../../shared/src/schema/schemaF
 import { buildModeIntroQuestions } from '../../../../shared/src/mode/modeIntroQuestions';
 import { getModeCard } from '../../../../shared/src/mode/modeCards';
 import { MODE_CARD_SAVED_EVENT } from '../../../../shared/src/share/analytics';
+import { exerciseCard } from '../../../../shared/src/exercises/exerciseCatalog';
 import { SCHEMA_QUESTIONS, type Q } from './flashcardQuestions';
 import { ModePortrait } from './ModePortrait';
 import { PickRow, PickGroupHead } from './PickRow';
@@ -104,7 +105,7 @@ export function SchemaEx({ onBack, initialSchemaId, onComplete, initialData }: {
 
   if (!picked) {
     return (
-      <ExScreen onBack={goBack} eyebrow="№ 02 · Знакомство"
+      <ExScreen onBack={goBack} eyebrow={exerciseCard('schema').eyebrow}
         title={<>Карточка<br/><span className="it">схемы</span></>}
         lede={tr('Выбери одну из схем. Семь вопросов, чтобы увидеть её во весь рост: триггеры, голос, истоки, реальность, поддержка.', 'Выберите одну из схем. Семь вопросов, чтобы увидеть её во весь рост: триггеры, голос, истоки, реальность, поддержка.')}
         aside={<div className="ds-card ex2-note"><div className="ds-label">Зачем это</div><h3 className="ex2-note-h">Назвать – значит вернуть себе власть</h3><p className="ex2-note-body">{tr('Схема работает в тени. Когда мы её называем – она становится паттерном, а не «правдой о тебе».', 'Схема работает в тени. Когда мы её называем – она становится паттерном, а не «правдой о вас».')}</p></div>}
@@ -156,7 +157,7 @@ export function ModeEx({ onBack, initialModeId, onComplete, initialData }: { onB
 
   if (!picked) {
     return (
-      <ExScreen onBack={goBack} eyebrow="№ 03 · Знакомство"
+      <ExScreen onBack={goBack} eyebrow={exerciseCard('mode').eyebrow}
         title={<>Карточка<br/><span className="it">режима</span></>}
         lede="Режим – это эмоциональное состояние, которое включается целиком. Описать его – значит научиться его узнавать в моменте."
         aside={<div className="ds-card ex2-note"><div className="ds-label">Совет</div><h3 className="ex2-note-h">{tr('Начни с того, что чаще включается', 'Начните с того, что чаще включается')}</h3><p className="ex2-note-body">Не обязательно работать с трудным режимом. Иногда полезнее описать Здорового Взрослого – чтобы было что искать в себе в трудный момент.</p></div>}

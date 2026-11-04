@@ -65,7 +65,7 @@ export function TwoFactorChallengePage() {
           <p className="al-foot" style={{ textAlign: 'center' }}>
             {recovery ? 'Есть телефон? ' : 'Нет телефона? '}
             <button type="button" className="al-linkbtn" onClick={switchMode}>
-              {recovery ? 'Ввести код из приложения' : 'Ввести recovery-код'}
+              {recovery ? 'Ввести код из приложения' : 'Ввести резервный код'}
             </button>
           </p>
         </form>}

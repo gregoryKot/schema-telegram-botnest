@@ -286,3 +286,106 @@ describe('NotesService — пустое поле не затирает сохр�
     expect('triggers' in arg.create).toBe(false);
   });
 });
+
+// QA 2026-11, К1: «Что случилось» → «Сохранить» слало в карточку режима
+// триггер и порыв одного момента, и upsert переписывал портрет, собранный в
+// упражнении «Карточка режима». Поля разбора приходят с fillIfEmpty и ложатся
+// только в пустое место.
+describe('NotesService — разбор дополняет карточку режима, а не переписывает', () => {
+  const CASE_FIELDS = ['triggers', 'feelings', 'behavior'];
+
+  it('заполненные поля карточки остаются, пустые дополняются', async () => {
+    const db = makeDb({ mySchemaIds: [], myModeIds: [] });
+    const svc = new NotesService(db);
+    await svc.upsertModeNote(1n, 'detached_protector', {
+      triggers: 'критика начальника, громкие ссоры',
+      behavior: 'Ухожу в сериалы на весь вечер',
+    });
+
+    await svc.upsertModeNote(
+      1n,
+      'detached_protector',
+      {
+        triggers: 'Подруга не ответила',
+        feelings: 'Страшно, тревожно',
+        behavior: 'свернуть разговор',
+      },
+      CASE_FIELDS,
+    );
+
+    const note = await svc.getModeNote(1n, 'detached_protector');
+    expect(note!.triggers).toBe('критика начальника, громкие ссоры');
+    expect(note!.behavior).toBe('Ухожу в сериалы на весь вечер');
+    expect(note!.feelings).toBe('Страшно, тревожно');
+  });
+
+  it('поле вне fillIfEmpty (имя части) обновляется как обычно', async () => {
+    const db = makeDb({ mySchemaIds: [], myModeIds: [] });
+    const svc = new NotesService(db);
+    await svc.upsertModeNote(1n, 'detached_protector', {
+      triggers: 'старое',
+      alias: 'Стена',
+    });
+
+    await svc.upsertModeNote(
+      1n,
+      'detached_protector',
+      { triggers: 'новое', alias: 'Ракушка' },
+      CASE_FIELDS,
+    );
+
+    const note = await svc.getModeNote(1n, 'detached_protector');
+    expect(note!.triggers).toBe('старое');
+    expect(note!.alias).toBe('Ракушка');
+  });
+
+  it('карточки ещё нет — разбор её заводит и кладёт режим в myModeIds', async () => {
+    const db = makeDb({ mySchemaIds: [], myModeIds: [] });
+    const svc = new NotesService(db);
+
+    await svc.upsertModeNote(
+      1n,
+      'vulnerable_child',
+      { triggers: 'тишина в ответ', feelings: 'одиноко' },
+      CASE_FIELDS,
+    );
+
+    const note = await svc.getModeNote(1n, 'vulnerable_child');
+    expect(note!.triggers).toBe('тишина в ответ');
+    const settings = decryptRecord(db._user, { jsonArrays: ['myModeIds'] });
+    expect(settings.myModeIds).toContain('vulnerable_child');
+  });
+
+  it('дополнять нечего — карточка не переписывается (дата «Тёплых слов» не сдвигается)', async () => {
+    const db = makeDb({ mySchemaIds: [], myModeIds: [] });
+    const svc = new NotesService(db);
+    await svc.upsertModeNote(1n, 'vulnerable_child', {
+      triggers: 'а',
+      feelings: 'б',
+      behavior: 'в',
+    });
+    (db.userModeNote.upsert as jest.Mock).mockClear();
+
+    await svc.upsertModeNote(
+      1n,
+      'vulnerable_child',
+      { triggers: 'x', feelings: 'y', behavior: 'z' },
+      CASE_FIELDS,
+    );
+
+    expect(db.userModeNote.upsert).not.toHaveBeenCalled();
+    const note = await svc.getModeNote(1n, 'vulnerable_child');
+    expect(note!.triggers).toBe('а');
+  });
+
+  it('без fillIfEmpty (упражнение «Карточка режима») поле переписывается', async () => {
+    const db = makeDb({ mySchemaIds: [], myModeIds: [] });
+    const svc = new NotesService(db);
+    await svc.upsertModeNote(1n, 'vulnerable_child', { triggers: 'старое' });
+
+    await svc.upsertModeNote(1n, 'vulnerable_child', { triggers: 'новое' });
+
+    const note = await svc.getModeNote(1n, 'vulnerable_child');
+    expect(note!.triggers).toBe('новое');
+  });
+});

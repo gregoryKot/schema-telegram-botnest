@@ -10,20 +10,26 @@ import { Dialog } from './Dialog';
 /**
  * Выбор обращения («ты»/«вы») при первом входе — пока addressForm в настройках null.
  * «Позже» = мягкий пропуск: остаётся «ты» по умолчанию, спросим через неделю
- * (не блокируем вход). Монтирует EntryFlows — в очереди после согласий и ссылки.
+ * (не блокируем вход). Монтирует EntryFlows — первым шагом очереди, до согласий:
+ * иначе они звучат в форме по умолчанию до вопроса (QA 2026-11, A-З7). `onDone` — вопрос решён
+ * (ответ, «Позже», не нужен или настройки не загрузились): очередь идёт дальше.
  * Сохранение — общий shared/src/settings/useAddressFormChoice.ts (правило №3): при
  * отказе api.updateSettings диалог НЕ закрывается, иначе выбор, не долетевший до
  * сервера, на следующей сессии перезатрётся дефолтом (см. useAddressFormChoice.ts).
  */
-export function AddressFormPicker() {
+export function AddressFormPicker({ onDone }: { onDone?: () => void } = {}) {
   const [show, setShow] = useState(false);
   const [round, setRound] = useState(0);
 
   useEffect(() => {
     api.getSettings()
-      .then(s => { if (shouldAskAddressForm(s.addressForm)) setShow(true); })
-      .catch(() => {});
-  }, []);
+      .then(s => { if (shouldAskAddressForm(s.addressForm)) setShow(true); else onDone?.(); })
+      .catch(() => {
+        // Вопрос не запирает вход: очередь идёт дальше, сбой уходит наверх (№14).
+        reportClientError({ message: 'address picker: настройки не загрузились', section: 'appshell.bootstrap' });
+        onDone?.();
+      });
+  }, [onDone]);
 
   // Запись листа сняла чужая навигация (navigate с replace после разбора ссылки
   // или бутстрапа) — человек не ответил: «спросили» не ставим, а открываем вопрос
@@ -32,6 +38,7 @@ export function AddressFormPicker() {
     if (!answered) { setRound(r => r + 1); return; }
     markAddressFormAsked();
     setShow(false);
+    onDone?.();
   }
 
   if (!show) return null;

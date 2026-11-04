@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api, reportClientError, type UserTask } from '../../api';
 import { asArray } from './safeData';
+import { useTasksChanged } from '../../../../shared/src/tasks/tasksChanged';
 
 // Загрузка + мутации «Практик на сегодня». Раньше completeTask/refetch после
 // создания задания глотали сбой молча: пользователь заканчивал упражнение
@@ -24,9 +25,14 @@ export function useTaskActions(refreshKey: number | undefined, section = 'today.
     [],
   );
 
-  useEffect(() => {
-    load().catch(() => reportClientError({ message: 'tasks background load failed', section }));
-  }, [refreshKey, load, section]);
+  const reload = useCallback(
+    () => load().catch(() => reportClientError({ message: 'tasks background load failed', section })),
+    [load, section],
+  );
+  useEffect(() => { void reload(); }, [refreshKey, reload]);
+  // Задание закрыл сервер (пройденный тест на схемы): список перечитывается,
+  // а не ждёт перезагрузки (QA 2026-11, К1).
+  useTasksChanged(() => void reload());
 
   const completeTask = useCallback(
     (id: number, onDone?: () => void) => {

@@ -9,7 +9,7 @@ import {
   createFakeTable,
   type Row,
 } from '../test-support/fake-prisma.spec-helper';
-import { unlinkProviderSafely } from './unlink-provider';
+import { LAST_METHOD_MESSAGE, unlinkProviderSafely } from './unlink-provider';
 
 function makeRacingPrisma(initial: Row[]) {
   const store: Row[] = [...initial];
@@ -74,6 +74,18 @@ describe('unlinkProviderSafely', () => {
       unlinkProviderSafely(prisma, 7n, 'email'),
     ).rejects.toBeInstanceOf(ConflictException);
     expect(store).toHaveLength(2);
+  });
+
+  // QA 2026-11, М2: английский текст фронт подменял общим «Не удалось
+  // отвязать» — человек не видел причину. Русский текст проходит на экран.
+  it('последний способ входа — причина по-русски, её можно показать как есть', async () => {
+    const { prisma } = makeRacingPrisma([
+      { id: 1, userId: 7n, provider: 'google' },
+    ]);
+    await expect(unlinkProviderSafely(prisma, 7n, 'google')).rejects.toThrow(
+      LAST_METHOD_MESSAGE,
+    );
+    expect(LAST_METHOD_MESSAGE).toMatch(/[А-Яа-я]/);
   });
 
   it('чужие провайдеры не считаются способами входа этого пользователя', async () => {

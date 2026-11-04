@@ -328,7 +328,10 @@ describe('ProfileSection — действия', () => {
     await act(async () => { renderSection(); });
     fireEvent.click(screen.getByText('Удалить аккаунт'));
     fireEvent.click(screen.getByText('Удалить'));
+    fireEvent.click(screen.getByText('Да, удалить всё навсегда'));
     await waitFor(() => expect(mockApi.deleteAllUserData).toHaveBeenCalledTimes(1));
+    // QA 2026-11, К2: тот же диалог, что в настройках, — с уборкой хранилища.
+    await waitFor(() => expect(reload).toHaveBeenCalledTimes(1));
     Object.defineProperty(window, 'location', { configurable: true, value: originalLocation });
   });
 
@@ -340,6 +343,7 @@ describe('ProfileSection — действия', () => {
     await act(async () => { renderSection(); });
     fireEvent.click(screen.getByText('Удалить аккаунт'));
     fireEvent.click(screen.getByText('Удалить'));
+    fireEvent.click(screen.getByText('Да, удалить всё навсегда'));
     await waitFor(() => expect(mockApi.deleteAllUserData).toHaveBeenCalledTimes(1));
     // Кнопка снова активна — повтор возможен...
     await waitFor(() => expect(screen.getByText('Удалить')).toBeTruthy());

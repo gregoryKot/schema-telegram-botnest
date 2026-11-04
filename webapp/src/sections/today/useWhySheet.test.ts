@@ -3,6 +3,8 @@
 // пусто; закрытие ставит флаг, который уходит в синхронизацию prefs.
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
+import { createElement, type ReactNode } from 'react';
+import { EntryFlowsDoneContext } from '../../components/appShell/entryQueue';
 
 const notify = vi.fn();
 const trackEvent = vi.fn();
@@ -54,6 +56,30 @@ describe('useWhySheet', () => {
     expect(result.current.mode).toBe('manual');
     expect(trackEvent).toHaveBeenCalledWith('home_tile', { tile: 'why' });
     act(() => result.current.close());
+    expect(result.current.mode).toBeNull();
+  });
+});
+
+// QA 2026-11 (A-З7): автопоказ открывался поверх согласий и вопроса «ты/вы» —
+// новичок видел три слоя сразу. Теперь он ждёт конца очереди входов (EntryFlows).
+describe('useWhySheet — ждёт конца очереди входов', () => {
+  function withQueue(done: { current: boolean }) {
+    return ({ children }: { children: ReactNode }) =>
+      createElement(EntryFlowsDoneContext.Provider, { value: done.current }, children);
+  }
+
+  it('экран готов, но очередь не кончилась — листа нет; кончилась — открывается сам', () => {
+    const done = { current: false };
+    const { result, rerender } = renderHook(() => useWhySheet({ ready: true, hasHistory: false }), { wrapper: withQueue(done) });
+    expect(result.current.mode).toBeNull();
+    done.current = true;
+    rerender();
+    expect(result.current.mode).toBe('auto');
+  });
+
+  it('контрольный: очередь кончилась, но в аккаунте есть данные — сам не открывается', () => {
+    const done = { current: true };
+    const { result } = renderHook(() => useWhySheet({ ready: true, hasHistory: true }), { wrapper: withQueue(done) });
     expect(result.current.mode).toBeNull();
   });
 });

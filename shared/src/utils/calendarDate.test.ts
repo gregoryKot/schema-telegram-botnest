@@ -10,6 +10,7 @@ import {
   dateStringParts,
   formatDateString,
   todayCalendarDate,
+  shiftCalendarDay,
 } from './calendarDate';
 import {
   withTimeZone,
@@ -192,6 +193,17 @@ describe('todayCalendarDate', () => {
   it('совпадает с днём, который отдаёт сервер', () => {
     forEachTimeZone(() => {
       expect(todayCalendarDate()).toBe(new Date().toISOString().slice(0, 10));
+    });
+  });
+});
+
+describe('shiftCalendarDay', () => {
+  it('вчера/завтра через границы месяца, года и перевода часов — в любой зоне', () => {
+    forEachTimeZone((tz) => {
+      expect(shiftCalendarDay('2026-03-01', -1), tz).toBe('2026-02-28');
+      expect(shiftCalendarDay('2026-01-01', -1), tz).toBe('2025-12-31');
+      expect(shiftCalendarDay('2026-03-29', 1), tz).toBe('2026-03-30');
+      expect(shiftCalendarDay('2026-10-04', -1), tz).toBe('2026-10-03');
     });
   });
 });

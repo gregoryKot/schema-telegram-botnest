@@ -588,13 +588,39 @@ describe('AppShell — командная палитра: закрытие и п
 });
 
 describe('AppShell — сайдбар: индекс дня и поиск⌘K открываются кликом (не только по клавише)', () => {
-  it('CTA «Заполнить дневник» в сайдбаре реально открывает трекер', async () => {
+  // QA 2026-11 (A-З9): подпись «Заполнить дневник →» открывала трекер, а
+  // «Дневник» на главной — отдельная плитка. Подпись и действие совпадают.
+  it('CTA «Заполнить трекер» в сайдбаре реально открывает трекер', async () => {
     mockApi.needs.mockResolvedValueOnce([{ id: 'safety', emoji: '', title: 'Безопасность', chartLabel: 'Без.' }]);
     mockApi.ratings.mockResolvedValueOnce({}).mockResolvedValueOnce({});
     renderAppShell('/today');
-    await waitFor(() => expect(screen.getByText('Заполнить дневник →')).toBeTruthy());
-    fireEvent.click(screen.getByText('Заполнить дневник →'));
+    await waitFor(() => expect(screen.getByText('Заполнить трекер →')).toBeTruthy());
+    expect(screen.queryByText(/Заполнить дневник/)).toBeNull();
+    fireEvent.click(screen.getByText('Заполнить трекер →'));
     await waitFor(() => expect(screen.getByTestId('tracker-overlay')).toBeTruthy());
+  });
+
+  // QA 2026-11 (A-М10): «Мне плохо» уводил на /practice, и «Назад» браузера
+  // возвращал туда, а не откуда пришли. Теперь карточка — поверх раздела.
+  it('«Мне плохо» открывает карточку поверх текущего раздела, не уводя на /practice', async () => {
+    renderAppShell('/today');
+    await waitFor(() => expect(screen.getByTestId('today-section')).toBeTruthy());
+    fireEvent.click(screen.getByText('Мне плохо'));
+    expect(await screen.findByTestId('sos-card')).toBeTruthy();
+    expect(screen.queryByTestId('practice-section')).toBeNull();
+    expect(screen.getByTestId('today-section').closest('[inert]')).not.toBeNull();
+    fireEvent.click(screen.getByTestId('sos-card-close'));
+    await waitFor(() => expect(screen.queryByTestId('sos-card')).toBeNull());
+    expect(screen.getByTestId('today-section').closest('[inert]')).toBeNull();
+  });
+
+  it('из карточки «Мне плохо» — в трекер: карточка закрывается, трекер открыт', async () => {
+    renderAppShell('/today');
+    await waitFor(() => expect(screen.getByTestId('today-section')).toBeTruthy());
+    fireEvent.click(screen.getByText('Мне плохо'));
+    fireEvent.click(await screen.findByTestId('sos-card-tracker'));
+    expect(await screen.findByTestId('tracker-overlay')).toBeTruthy();
+    expect(screen.queryByTestId('sos-card')).toBeNull();
   });
 
   it('иконка поиска в топбаре («Перейти к…») открывает командную палитру', async () => {

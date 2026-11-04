@@ -84,6 +84,7 @@
   .st-inner { padding: 16px 16px 80px; gap: 16px; }
 }
 .st-block { width: 100%; }
+.st-modal-close { margin-top: 10px; }
 .st-center { text-align: center; }
 .st-mb10 { margin-bottom: 10px; }
 .st-mb20 { margin-bottom: 20px; }

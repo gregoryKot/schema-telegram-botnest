@@ -12,6 +12,18 @@ export function countMethods(providers: AccountProvider[]): { linked: number; to
   return { linked, total };
 }
 
+/**
+ * Можно ли отвязать способ: после отвязки должен остаться хоть один другой —
+ * то же правило, что на сервере (src/auth/unlink-provider.ts). QA 2026-11
+ * (М2): «Отвязать» у единственного способа была активна и вела к отказу.
+ */
+export function canUnlink(providers: AccountProvider[], id: AccountProvider['provider']): boolean {
+  return providers.some((p) => p.provider !== id);
+}
+
+/** Почему «Отвязать» недоступна — под строкой способа. */
+export const ONLY_METHOD_NOTE = 'Единственный способ входа — отвязать можно, когда появится второй';
+
 /** Инициалы для аватара из реальных данных привязок; нет данных — null (аватар не рисуем). */
 export function accountInitials(providers: AccountProvider[]): string | null {
   const name = providers.find((p) => p.displayName?.trim())?.displayName?.trim();
