@@ -1504,7 +1504,6 @@
   "src/infra/env-registry.entries.booking.ts": 123,
   "src/infra/env-registry.entries.channel.ts": 102,
   "src/infra/env-registry.entries.email.ts": 32,
-  "src/infra/env-registry.entries.frontend.ts": 17,
   "src/infra/env-registry.entries.infra.ts": 65,
   "src/infra/env-registry.entries.platform.ts": 26,
   "src/infra/env-registry.entries.supervisor.ts": 38,

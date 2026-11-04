@@ -15,8 +15,8 @@ export const BOT_USERNAME = (process.env.BOT_USERNAME ?? '')
   .trim()
   .replace(/^@/, '');
 export const MINIAPP_APP_NAME = process.env.MINIAPP_APP_NAME ?? 'diary';
-// Слэш в конце обязателен: vite base '/app/', а 301 /app → /app/ теряет #tgWebAppData.
-export const MINIAPP_URL = process.env.MINIAPP_URL?.trim() || `${APP_URL}/app/`;
+export const CABINET_URL = `${APP_URL}/today`;
+export const CABINET_HELP_URL = `${APP_URL}/practice`;
 
 /** Меню команд бота (setMyCommands). Единый список — правится здесь. */
 export const BOT_COMMANDS = [

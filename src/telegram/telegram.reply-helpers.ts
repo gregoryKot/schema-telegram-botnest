@@ -1,5 +1,5 @@
 import { Markup } from 'telegraf';
-import { MINIAPP_URL } from './telegram.constants';
+import { CABINET_URL } from './telegram.constants';
 import { BotService } from '../bot/bot.service';
 import { AccountService } from '../bot/account.service';
 import {
@@ -9,8 +9,8 @@ import {
 } from '../notification/address-form';
 
 /** Единственная кнопка «Всё по схеме» — для мест без остальных кнопок welcome-экрана. */
-export const MINIAPP_ONLY_KEYBOARD = Markup.inlineKeyboard([
-  [Markup.button.webApp('🧠 Всё по схеме', MINIAPP_URL)],
+export const CABINET_KEYBOARD = Markup.inlineKeyboard([
+  [Markup.button.webApp('🧠 Всё по схеме', CABINET_URL)],
 ]);
 
 /** Текст результата пары — общий для /start?pair_ и resumePendingPair. */

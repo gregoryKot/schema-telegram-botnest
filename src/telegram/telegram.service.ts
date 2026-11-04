@@ -7,7 +7,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { Telegraf, Context } from 'telegraf';
-import { TELEGRAF_BOT, MINIAPP_URL, DONATE_URL } from './telegram.constants';
+import { TELEGRAF_BOT, CABINET_URL, DONATE_URL } from './telegram.constants';
 import { BOT_COMMANDS, ERROR_RETRY } from './telegram.constants';
 import { BotService } from '../bot/bot.service';
 import { BotAnalyticsService } from '../bot/bot.analytics.service';
@@ -44,7 +44,7 @@ import { retryWithBackoff } from '../utils/retry';
 import { BotLauncher } from './telegram.launch';
 import { t, AddressForm } from '../notification/address-form';
 import {
-  MINIAPP_ONLY_KEYBOARD,
+  CABINET_KEYBOARD,
   pairJoinResultText,
   acceptRetryText,
   resolveForm,
@@ -185,7 +185,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
         await ctx
           .reply(
             'Что-то пошло не так. Кнопка ниже откроет «Всё по схеме» ещё раз.',
-            MINIAPP_ONLY_KEYBOARD,
+            CABINET_KEYBOARD,
           )
           .catch(() => null);
       }
@@ -467,7 +467,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
         menu_button: {
           type: 'web_app',
           text: 'Всё по схеме',
-          web_app: { url: MINIAPP_URL },
+          web_app: { url: CABINET_URL },
         },
       }),
     ).then((ok) => {
@@ -508,7 +508,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     const userId = await this.accountService.canonicalUserId(rawId);
     const ok = await this.pairsService.joinPair(userId, pending.code);
     const text = pairJoinResultText(ok, await this.form(rawId));
-    const kb = MINIAPP_ONLY_KEYBOARD;
+    const kb = CABINET_KEYBOARD;
     try {
       await ctx.editMessageText(text, kb);
     } catch {

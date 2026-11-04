@@ -1,11 +1,11 @@
 import { Markup } from 'telegraf';
-import { MINIAPP_URL } from '../telegram/telegram.constants';
+import { CABINET_URL } from '../telegram/telegram.constants';
 import type { NotificationTemplate } from './notification.templates';
 import { AddressForm, t } from './address-form';
 
 const openDiaryButton = Markup.button.webApp(
   '📱 Открыть «Всё по схеме»',
-  MINIAPP_URL,
+  CABINET_URL,
 );
 
 /** N день / N дня / N дней */

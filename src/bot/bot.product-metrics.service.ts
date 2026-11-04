@@ -95,7 +95,7 @@ export class ProductMetricsService {
         where: {
           ...activeUser,
           createdAt: { gte: since30 },
-          onboardingV2Done: true,
+          onboardingV2Done: true, // ставят онбординг мини-аппа и экран согласий сайта
         },
       }),
       // Дневники и упражнения — разные люди, объединение таблиц (COUNT DISTINCT).

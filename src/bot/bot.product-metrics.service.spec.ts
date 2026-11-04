@@ -2,6 +2,7 @@
 // share_result по meta.ok (true/false), сортировка распределения экранов.
 // Prisma мокается; порядок вызовов совпадает с Promise.all в getMetrics.
 import { ProductMetricsService } from './bot.product-metrics.service';
+import { BotService } from './bot.service';
 
 describe('ProductMetricsService.getMetrics', () => {
   it('собирает метрики из запросов и правильно раскладывает', async () => {
@@ -342,3 +343,45 @@ const EMPTY_METRICS = {
   journey: { opens: 0 },
   homeScreen: { shown: 0, add: 0, later: 0, never: 0, added: 0 },
 };
+
+// Сохранил → нашёл: экран согласий кабинета (acceptDisclaimer с viaApp) ставит
+// onboardingV2Done, и строка «Дошли до конца» его считает.
+describe('согласие с экрана кабинета → метрика онбординга', () => {
+  it('новичок появляется в completed30', async () => {
+    const user: Record<string, unknown> = {
+      deletedAt: null,
+      disclaimerAccepted: false,
+      onboardingV2Done: false,
+    };
+    const prisma: any = {
+      user: {
+        update: jest.fn(async ({ data }: any) => Object.assign(user, data)),
+        count: jest.fn(async ({ where }: any) => {
+          if (!where.createdAt) return 0;
+          if (where.onboardingV2Done && !user.onboardingV2Done) return 0;
+          return 1;
+        }),
+        groupBy: jest.fn(async () => []),
+      },
+      analyticsEvent: { count: jest.fn(async () => 0) },
+      $queryRaw: jest.fn(async () => []),
+    };
+    const metrics = () =>
+      new ProductMetricsService(
+        prisma,
+        { getMetrics: jest.fn() } as never,
+        { getMetrics: jest.fn() } as never,
+        { getMetrics: jest.fn() } as never,
+      ).getMetrics();
+
+    expect((await metrics()).onboarding).toEqual({
+      cohort30: 1,
+      completed30: 0,
+    });
+    await new BotService(prisma).acceptDisclaimer(1n, true);
+    expect((await metrics()).onboarding).toEqual({
+      cohort30: 1,
+      completed30: 1,
+    });
+  });
+});
