@@ -6,6 +6,7 @@ import { describe, it, expect } from 'vitest';
 import { MODE_CARDS, getModeCard } from './index';
 import type { ModeCard } from './types';
 import { healthyAdultHint, DEFAULT_HINT } from '../healthyAdultHints';
+import { ALL_TEST_MODE_IDS } from '../modeTest';
 
 const EXPECTED_IDS = [
   // child
@@ -157,4 +158,17 @@ describe('healthyAdultHint — приоритет карточки над сем
   it('несуществующий id: падает на нейтральный дефолт', () => {
     expect(healthyAdultHint('not_a_real_mode')).toBe(DEFAULT_HINT);
   });
+});
+
+// QA 2026-11, М5: дневник режимов оборачивал подсказку в «» поверх кавычек
+// карточки — ««Мне сейчас больно…»», а запасные подсказки семей шли без
+// кавычек вовсе. Кавычки живут в тексте, ровно одна пара на любом пути.
+describe('healthyAdultHint — ровно одна пара кавычек', () => {
+  const ONE_PAIR = /^«(?!«)[\s\S]*[^»]»$/;
+  it.each([...EXPECTED_IDS, ...ALL_TEST_MODE_IDS, 'not_a_real_mode'])(
+    '%s',
+    (id) => {
+      expect(healthyAdultHint(id)).toMatch(ONE_PAIR);
+    },
+  );
 });
