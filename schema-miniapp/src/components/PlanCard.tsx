@@ -1,5 +1,5 @@
 import { api, PracticePlan } from '../api';
-import { COLORS } from '../types';
+import { NEED_COLORS } from '../../../shared/src/needs/needColors';
 import { useNeedData } from '../needData';
 
 // Карточка одного плана — вынесено из PlansScreen.tsx (правило №10, файл был
@@ -89,7 +89,7 @@ export function PlanCard({
 }) {
   const isPending = plan.done === null;
   const colors = statusColor(plan.done);
-  const needColor = COLORS[plan.needId] ?? 'var(--accent)';
+  const needColor = NEED_COLORS[plan.needId] ?? 'var(--accent)';
   const NEED_DATA = useNeedData();
   const needData = NEED_DATA[plan.needId];
 

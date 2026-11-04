@@ -1,22 +1,19 @@
 import { ANSWER_LABELS, QUESTIONS, TOTAL_PAGES } from '../../hooks/useYsqTest';
-import { NEED_HUE, hueStyle } from '../../lib/tone';
-import type { NeedId } from '../../../../shared/src/needs/types';
-
-interface SchemaRef { name: string; needId: string }
 
 interface Props {
   page: number;
   slideKey: number;
   slideDir: 'forward' | 'back';
   answer: number;
-  schema: SchemaRef | null | undefined;
   onSelect: (value: number) => void;
   onBack: () => void;
   onClose: () => void;
 }
 
-/** Полноэкранная фаза теста: прогресс, карточка вопроса, шкала 1–6, «Назад». */
-export function YsqQuestion({ page, slideKey, slideDir, answer, schema, onSelect, onBack, onClose }: Props) {
+/** Полноэкранная фаза теста: прогресс, карточка вопроса, шкала 1–6, «Назад».
+ *  Название шкалы над утверждением не показываем: оно подсказывает, что
+ *  измеряет вопрос, и сдвигает ответ (QA 2026-11, B-М11). */
+export function YsqQuestion({ page, slideKey, slideDir, answer, onSelect, onBack, onClose }: Props) {
   const pct = ((page + 1) / TOTAL_PAGES) * 100;
   return (
     <div className="ss-test">
@@ -33,9 +30,6 @@ export function YsqQuestion({ page, slideKey, slideDir, answer, schema, onSelect
       <div className="ss-test-body">
         <div key={slideKey} className={`ss-test-col ${slideDir === 'forward' ? 'ss-slide-r' : 'ss-slide-l'}`}>
           <div className="ds-card ss-q">
-            {schema && (
-              <div className="ds-eyebrow tone-text" style={hueStyle(NEED_HUE[schema.needId as NeedId])}>{schema.name}</div>
-            )}
             <p className="ss-q-text">{QUESTIONS[page]}</p>
           </div>
           <div className="ss-scale" role="radiogroup" aria-label="Ответ от 1 до 6">

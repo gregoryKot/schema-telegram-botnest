@@ -105,3 +105,32 @@ describe('RULES: DELETE /api/ysq-data', () => {
     ]);
   });
 });
+
+// QA 2026-11 (B-З5): после теста «Мои паттерны» перечитывали профиль
+// (ysq.activeSchemaIds), но 15 секунд получали его из кеша — без схем.
+describe('RULES: итог YSQ сбрасывает профиль', () => {
+  const targetsOf = (method: string) => {
+    const rule = RULES.find(
+      (r) => r.method === method && r.pattern.test('/api/ysq-result'),
+    );
+    return rule?.targets?.(FAKE_MATCH, undefined) ?? [];
+  };
+  it('POST /api/ysq-result — профиль, история и «Мой путь»', () => {
+    expect(targetsOf('POST')).toEqual(
+      expect.arrayContaining([
+        '/api/profile',
+        '/api/ysq-history',
+        '/api/journey',
+      ]),
+    );
+  });
+  it('DELETE /api/ysq-result («Пройти заново») — профиль и «Мой путь»', () => {
+    expect(targetsOf('DELETE')).toEqual(
+      expect.arrayContaining([
+        '/api/ysq-result',
+        '/api/profile',
+        '/api/journey',
+      ]),
+    );
+  });
+});

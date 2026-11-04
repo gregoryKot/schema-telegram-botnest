@@ -1,4 +1,4 @@
-import { Need, COLORS } from '../../types';
+import { Need, NEED_COLORS } from '../../types';
 import { IdentityDot } from '../../../../shared/src/components/IdentityDot';
 
 export function InsightCard({
@@ -15,7 +15,7 @@ export function InsightCard({
   const lowest = rated.reduce((min, n) =>
     (ratings[n.id] ?? 0) < (ratings[min.id] ?? 0) ? n : min,
   );
-  const color = COLORS[lowest.id] ?? '#888';
+  const color = NEED_COLORS[lowest.id] ?? '#888';
   const value = ratings[lowest.id] ?? 0;
   return (
     <div

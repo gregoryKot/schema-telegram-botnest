@@ -100,6 +100,14 @@ describe('YSQTestSheet — старт теста', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Начать тест' }));
     expect(screen.getByText('1 / 116')).toBeTruthy();
   });
+
+  // QA 2026-11 (B-М11): название шкалы над утверждением подсказывало, что
+  // измеряет вопрос.
+  it('над утверждением нет названия шкалы', () => {
+    render(<YSQTestSheet onClose={vi.fn()} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Начать тест' }));
+    expect(screen.queryByText(/Эмоциональная депривация/i)).toBeNull();
+  });
 });
 
 describe('YSQTestSheet — ответ на вопрос', () => {

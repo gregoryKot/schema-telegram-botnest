@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
 // Счётчик активных заданий в шапке блока «Задания» на «Сегодня»: форма слова
-// по числу (1 активная / 2 активные / 5 активных). До 2026-11 вторая форма
-// была «активных», и экран писал «2 активных».
+// по числу и по роду слова «задание» — «1 активное», «2 активных» («два
+// активных задания»), «5 активных». QA 2026-11 (B-М2): экран писал
+// «Задания · 1 активная» — женский род рядом с «Заданиями».
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { cleanup, render, screen } from '@testing-library/react';
 import { PracticesBlock } from './PracticesBlock';
@@ -25,12 +26,12 @@ function renderBlock(tasks: UserTask[]) {
 
 describe('PracticesBlock — счётчик активных', () => {
   it.each([
-    [1, '1 активная'],
-    [2, '2 активные'],
-    [4, '4 активные'],
+    [1, '1 активное'],
+    [2, '2 активных'],
+    [4, '4 активных'],
     [5, '5 активных'],
     [11, '11 активных'],
-    [22, '22 активные'],
+    [21, '21 активное'],
   ])('%i → «%s»', (n, text) => {
     renderBlock(Array.from({ length: n }, (_, i) => task(i + 1)));
     expect(screen.getByText(text)).toBeTruthy();

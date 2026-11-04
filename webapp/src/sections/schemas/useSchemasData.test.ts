@@ -7,7 +7,9 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
 import { useSchemasData } from './useSchemasData';
 import { MY_SCHEMA_IDS_KEY, MY_MODE_IDS_KEY } from '../../utils/storageKeys';
-import { clearYsqProgress, writeYsqProgress } from '../../../../shared/src/hooks/ysqProgressStore';
+import { clearYsqProgress, notifyYsqResultChanged, writeYsqProgress } from '../../../../shared/src/hooks/ysqProgressStore';
+import { cachedGet, clearApiCache } from '../../../../shared/src/api/apiCache';
+import { applyMutationInvalidation } from '../../../../shared/src/api/apiCacheRules';
 
 vi.mock('../../api', () => ({
   api: {
@@ -106,5 +108,47 @@ describe('useSchemasData — прогресс теста YSQ живой', () => 
 
     act(() => clearYsqProgress());
     expect(result.current.ysqProgressAnswered).toBeNull();
+  });
+});
+
+// QA 2026-11 (B-З5): после «Сохранить и закрыть» в тесте экран «Мои паттерны»
+// до F5 звал «Начать тест» и показывал пустые выраженные схемы. Связка
+// целиком, через настоящий кеш GET: сервер сохранил итог → мутация сбросила
+// кеш профиля → тест сообщил экрану → экран перечитал профиль и увидел схемы.
+describe('useSchemasData — прошёл тест → паттерны видны без перезагрузки', () => {
+  const server = { ysq: { activeSchemaIds: [] as string[], completedAt: null as string | null } };
+  const fetchProfile = vi.fn(async () => ({ mySchemaIds: [], myModeIds: [], ysq: { ...server.ysq } }));
+
+  beforeEach(() => {
+    localStorage.clear();
+    vi.clearAllMocks();
+    clearApiCache();
+    server.ysq = { activeSchemaIds: [], completedAt: null };
+    mockApi.getProfile.mockImplementation(() => cachedGet('/api/profile', fetchProfile));
+    mockApi.getYsqHistory.mockResolvedValue([]);
+    mockApi.getYsqProgress.mockResolvedValue(null);
+    mockApi.listMyModeMaps.mockResolvedValue([]);
+  });
+
+  it('итог сохранён на сервере — выраженные схемы и дата прохождения появляются сразу', async () => {
+    const { result } = await mounted();
+    expect(result.current.ysqSchemaIds).toEqual([]);
+    expect(result.current.ysqCompletedAt).toBeNull();
+
+    // POST /api/ysq-result прошёл: сервер пишет итог, apiClient сбрасывает кеш.
+    server.ysq = { activeSchemaIds: ['abandonment'], completedAt: '2026-11-03T10:00:00.000Z' };
+    applyMutationInvalidation('POST', '/api/ysq-result', '{}');
+    act(() => notifyYsqResultChanged());
+
+    await waitFor(() => expect(result.current.ysqSchemaIds).toEqual(['abandonment']));
+    expect(result.current.ysqCompletedAt).toBe('2026-11-03T10:00:00.000Z');
+  });
+
+  it('контроль: без события экран профиль не перечитывает (событие — и есть механизм)', async () => {
+    const { result } = await mounted();
+    server.ysq = { activeSchemaIds: ['abandonment'], completedAt: '2026-11-03T10:00:00.000Z' };
+    applyMutationInvalidation('POST', '/api/ysq-result', '{}');
+    await act(async () => {});
+    expect(result.current.ysqSchemaIds).toEqual([]);
   });
 });

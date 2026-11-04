@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Need, COLORS } from '../types';
+import { Need, NEED_COLORS } from '../types';
 import { useNeedData } from '../needData';
 import { BottomSheet } from './BottomSheet';
 import { SectionLabel } from './SectionLabel';
@@ -42,7 +42,7 @@ export function NeedTodaySheet({
   const NEED_DATA = useNeedData();
   const data = NEED_DATA[need.id];
   if (!data) return null;
-  const color = COLORS[need.id] ?? '#888';
+  const color = NEED_COLORS[need.id] ?? '#888';
 
   const rangeIdx = value <= 3 ? 0 : value <= 6 ? 1 : 2;
 

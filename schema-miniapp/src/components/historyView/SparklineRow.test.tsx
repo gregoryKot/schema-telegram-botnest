@@ -19,7 +19,7 @@ const NEED: Need = {
 };
 
 function makeHistory(scores: number[]): DayHistory[] {
-  // history[0] — самый свежий день (как отдаёт API), см. reversed внутри компонента
+  // Окно дней (weekWindow): [0] — выбранный, самый свежий день
   return scores.map((v, i) => ({
     date: `2026-08-${String(10 - i).padStart(2, '0')}`,
     ratings: { attachment: v },
@@ -32,8 +32,7 @@ describe('SparklineRow — тренд относительно предыдущ�
     render(
       <SparklineRow
         need={NEED}
-        history={history}
-        selectedIdx={0}
+        days={history}
         selectedRatings={{ attachment: 8 }}
       />,
     );
@@ -46,8 +45,7 @@ describe('SparklineRow — тренд относительно предыдущ�
     render(
       <SparklineRow
         need={NEED}
-        history={history}
-        selectedIdx={0}
+        days={history}
         selectedRatings={{ attachment: 3 }}
       />,
     );
@@ -59,8 +57,7 @@ describe('SparklineRow — тренд относительно предыдущ�
     render(
       <SparklineRow
         need={NEED}
-        history={history}
-        selectedIdx={0}
+        days={history}
         selectedRatings={{ attachment: 5 }}
       />,
     );
@@ -75,8 +72,7 @@ describe('SparklineRow — устойчивость к краям данных',
       render(
         <SparklineRow
           need={NEED}
-          history={history}
-          selectedIdx={0}
+          days={history}
           selectedRatings={{ attachment: 6 }}
         />,
       ),
@@ -89,13 +85,31 @@ describe('SparklineRow — устойчивость к краям данных',
     render(
       <SparklineRow
         need={NEED}
-        history={history}
-        selectedIdx={0}
+        days={history}
         selectedRatings={{ attachment: 5 }}
         onClick={onClick}
       />,
     );
     fireEvent.click(screen.getByRole('button'));
     expect(onClick).toHaveBeenCalled();
+  });
+});
+
+// QA 2026-11 (B-М4): круг-маркер внутри svg с preserveAspectRatio="none"
+// сплющивался в овал — теперь это HTML-точка поверх графика.
+describe('SparklineRow — маркер выбранного дня', () => {
+  it('точка — не круг в растянутом svg, а элемент справа по процентам', () => {
+    const { container } = render(
+      <SparklineRow
+        need={NEED}
+        days={makeHistory([8, 5, 5])}
+        selectedRatings={{ attachment: 8 }}
+      />,
+    );
+    expect(container.querySelector('svg circle')).toBeNull();
+    const dot = [...container.querySelectorAll<HTMLElement>('span')].find(
+      (el) => el.style.left === '100%',
+    );
+    expect(dot).toBeTruthy();
   });
 });

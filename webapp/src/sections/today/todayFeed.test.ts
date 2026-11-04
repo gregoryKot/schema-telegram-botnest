@@ -1,7 +1,7 @@
 import { describe, it, expect, afterEach, vi } from 'vitest';
 import {
   buildDiaryFeed, buildTodayFeed, casesTodayCount, trackerSummary, trackerTileMeta, caseTileMeta,
-  diaryTileMeta, lastEntryAt, fmtIndex, diaryEntriesToday, type FeedEntry,
+  diaryTileMeta, lastEntryAt, diaryEntriesToday, type FeedEntry,
 } from './todayFeed';
 import { forEachTimeZone, withTimeZone } from '../../../../shared/src/utils/timeZone.test-helpers';
 import { diaryToday } from '../../../../shared/src/diary/diaryDay';
@@ -156,10 +156,6 @@ describe('мета-строки плиток', () => {
     expect(diaryTileMeta(true, 5, null)).toBe('Сегодня 5 записей');
     expect(diaryTileMeta(true, 0, hoursAgo(30))).toBe('Последняя запись — вчера');
     expect(diaryTileMeta(true, 0, null)).toBe('Пока записей нет');
-  });
-  it('fmtIndex: запятая и один знак', () => {
-    expect(fmtIndex(6.84)).toBe('6,8');
-    expect(fmtIndex(10)).toBe('10,0');
   });
 });
 

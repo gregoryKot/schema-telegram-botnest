@@ -24,13 +24,13 @@ vi.mock('./YSQTestSheet', () => ({
       <button onClick={onClose}>close-ysq</button>
     </div>
   ),
-  YSQ_RESULT_KEY: 'ysq_result_v1',
-  YSQ_PROGRESS_KEY: 'ysq_progress_v1',
 }));
-// SchemaInfoSheet сам ре-экспортирует эти ключи из ./YSQTestSheet (мок выше) —
-// берём их оттуда же, а не из реального хука, иначе тест пишет прогресс не по
-// тому ключу, который читает замоканный компонент.
-import { YSQ_RESULT_KEY, YSQ_PROGRESS_KEY } from './YSQTestSheet';
+// Карточки читают localStorage через useYsqLocalState (ysqProgressStore) —
+// по настоящим ключам теста, а не по ре-экспорту из ./YSQTestSheet.
+import {
+  YSQ_RESULT_KEY,
+  YSQ_PROGRESS_KEY,
+} from '../../../shared/src/hooks/ysqStorageKeys';
 
 beforeEach(() => {
   localStorage.clear();

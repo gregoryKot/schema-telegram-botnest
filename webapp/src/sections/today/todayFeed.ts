@@ -1,7 +1,7 @@
 import { fmtAgo, momentTime } from '../../utils/format';
 import { isDiaryToday } from '../../../../shared/src/diary/diaryDay';
 import { pluralRu } from '../../../../shared/src/utils/pluralRu';
-import { dayIndex } from '../../../../shared/src/needs/dayIndex';
+import { dayIndex, fmtIndex } from '../../../../shared/src/needs/dayIndex';
 import { modeEntryKind, schemaEntryKind, type EntryKind } from '../diary/entryKind';
 
 // Чистые вычисления главной «Сегодня»: лента дня и мета-строки трёх плиток.
@@ -29,11 +29,6 @@ export interface DiarySources {
 export interface TrackerSummary { filled: number; total: number; index: number | null }
 
 const TEXT_MAX = 80;
-
-/** Индекс дня с запятой: 6,8. */
-export function fmtIndex(value: number): string {
-  return value.toFixed(1).replace('.', ',');
-}
 
 export function trackerSummary(needIds: string[], ratings: Record<string, number>): TrackerSummary {
   return {

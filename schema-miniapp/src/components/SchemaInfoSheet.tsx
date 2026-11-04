@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { BottomSheet } from './BottomSheet';
 import { SectionLabel } from './SectionLabel';
-import { YSQTestSheet, YSQ_RESULT_KEY, YSQ_PROGRESS_KEY } from './YSQTestSheet';
+import { YSQTestSheet } from './YSQTestSheet';
+import { useYsqLocalState } from '../../../shared/src/hooks/ysqProgressStore';
 import { TherapyNote } from './TherapyNote';
 import { SCHEMA_DOMAINS } from '../schemaTherapyData';
 import type { Tab } from './schemaInfoSheet/types';
@@ -106,8 +107,7 @@ export function SchemaInfoSheet({
   const [contentInitialTab, setContentInitialTab] = useState<Tab>(
     initialTab ?? 'needs',
   );
-  const hasResult = !!localStorage.getItem(YSQ_RESULT_KEY);
-  const hasProgress = !!localStorage.getItem(YSQ_PROGRESS_KEY);
+  const { hasResult, hasProgress } = useYsqLocalState(); // живое под тестом
 
   const [highlightSchema, setHighlightSchema] = useState<string | undefined>(
     initHighlight,

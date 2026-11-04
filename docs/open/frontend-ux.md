@@ -172,11 +172,6 @@
   ревью: `DELETE /api/therapy/tasks/:id` (удаление задания терапевтом,
   QA 2026-10-26) довезён до обеих площадок руками (`ClientTasksTab.tsx`,
   `TasksSheet.tsx`), гейт бы не заметил одностороннего.
-- **Названия схем в опроснике YSQ расходятся с реестром**
-  (`shared/src/hooks/ysqSchemasContent.ts` — «Социальная отчужденность» против
-  «отчуждённость», слэши без пробелов). Имя служит ключом `SCHEMA_NAME_TO_ID`,
-  поэтому правка требует правки ключей; нужна тест-сверка с `SCHEMA_DOMAINS`
-  (правило №4).
 - **Реплика «Я недостаточно хорош» осталась в маркетинге и статьях**
   (`webapp/src/pages/landing/productContent.tsx`, `articleDiagrams.ts`,
   `src/bot/articles.seed.ts`). В продукте её развели (правило «Род читателя»:
@@ -242,6 +237,22 @@
 - **Флешкарты (`SchemaFlashcardTopbar`) переведены на `ds-sheet-head` целиком** хотя это верх экрана упражнения; подпись «Закрыть» сохранена. Если упражнения получат общий `ExScreen`-бар — свести в один примитив (волна 2).
 - **Тест на фокус меню «⋯» вкладки «Концептуализация» не написан**: `MoreMenu` в `webapp/src/components/therapist/concept/ConceptTabHead.tsx` использует общий `useMenuPick` и покрыт кейсом `ClientHeader.actions.test.tsx`; отдельный кейс — при расхождении механики.
 - **Мини-апп: цвета сущностей (`toneHex`, L .58) как цвет мелкого текста — контраст ниже 4.5:1 в обеих темах** (пример: `schema-miniapp/src/components/PlanCard.tsx:123` — 12px, `color: needColor`; на светлом фоне 3.3-4.5:1, на тёмном 3.7-4.5:1; посчитано по WCAG). Закрывается удалением мини-аппа (#908); если удаление отложат — светлый вариант тона для тёмной темы и тёмный для светлой.
+
+**QA клиента 2026-11 — трекер, история, тест на схемы: увиденное попутно и не тронутое**
+- **Индекс дня с точкой вне общего `fmtIndex`** (`shared/src/needs/dayIndex.ts`, «6,4», нет
+  данных — «—»): сайдбар `webapp/src/components/AppShell.tsx:271` (`idx.toFixed(1)`, а индекс
+  считается инлайном на `:263-264` — нужен `dayIndex` + `fmtIndex`); карточка партнёра
+  `webapp/src/components/settingsSheet/PartnerCard.tsx:36`, `schema-miniapp/src/components/pairSheet/PartnerCard.tsx:69`;
+  кабинет терапевта `webapp/src/components/therapist/ClientIndexCard.tsx:20`,
+  `webapp/src/sections/TherapistTodayLists.tsx:44`, `schema-miniapp/src/components/therapistClientSheet/ClientCard.tsx:102`;
+  картинки шаринга `shared/src/share/cards/dayCard.ts:27,87`, `weeklyCard.ts:44,52,76,79`. Не тронуто:
+  сайдбар, настройки и кабинет — области других агентов той же волны QA; картинки — отдельное решение
+  (на холсте запятая меняет ширину строк, нужна сверка макета).
+- **Даты в «Планах» сайта — по UTC, а не по дню человека** (`webapp/src/components/PlansScreen.tsx:30-37`):
+  «Сегодня/Завтра» через `toISOString()`, остальное — `new Date('YYYY-MM-DD').toLocaleDateString`, то есть
+  полночь UTC в местной зоне (в Лос-Анджелесе — предыдущий день, правило №25). Не тронуто: нужно сверить,
+  каким днём пишется `scheduledDate` (`shared/src/practices/usePlanSheetState.ts`), и чинить обе площадки
+  разом с тестом по зонам.
 
 **Карта режимов терапевта — хвост QA 2026-10-26** (починка багов карты и YSQ, сделано
 в той же ветке; здесь — увиденное попутно и не тронутое):

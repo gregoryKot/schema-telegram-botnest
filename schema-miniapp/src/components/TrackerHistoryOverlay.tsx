@@ -1,4 +1,4 @@
-import { Need, DayHistory, COLORS } from '../types';
+import { Need, DayHistory, NEED_COLORS } from '../types';
 import { SkeletonCard, SkeletonList } from './Skeleton';
 import { api, PracticePlan } from '../api';
 import { HistoryView } from './HistoryView';
@@ -168,9 +168,9 @@ export function TrackerHistoryOverlay({
           return (
             <CheckInSheet
               plan={plan}
-              needColor={COLORS[need.id] ?? '#888'}
+              needColor={NEED_COLORS[need.id] ?? '#888'}
               needLabel={need.chartLabel}
-              color={COLORS[need.id] ?? '#888'}
+              color={NEED_COLORS[need.id] ?? '#888'}
               onDone={() =>
                 setPendingPlans((prev) => prev.filter((p) => p.id !== plan.id))
               }

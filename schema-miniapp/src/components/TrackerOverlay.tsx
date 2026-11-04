@@ -17,7 +17,7 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import { pressable } from '../utils/a11y';
 import { hitboxStyle } from '../utils/hitbox';
 import { SkeletonList } from './Skeleton';
-import { Need, COLORS } from '../types';
+import { Need, NEED_COLORS } from '../types';
 import { useNeedData } from '../needData';
 import { NeedRatingBar } from './NeedRatingBar';
 import { NeedTodaySheet } from './NeedTodaySheet';
@@ -473,7 +473,7 @@ export function TrackerOverlay({
         {/* Оценка тапом — тот же контрол, что в детали и «Вчера» */}
         <div style={{ width: '100%', maxWidth: 360, padding: '0 26px' }}>
           <NeedRatingBar
-            color={COLORS[need.id] ?? '#888'}
+            color={NEED_COLORS[need.id] ?? '#888'}
             value={value}
             yesterday={yval}
             onChange={(v) => {

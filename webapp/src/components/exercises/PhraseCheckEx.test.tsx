@@ -282,7 +282,7 @@ describe('PhraseCheckEx — ты/вы', () => {
         </AddressFormContext.Provider>
       </MemoryRouter>,
     );
-    expect(screen.getByText(/^Запиши фразу, которую сказал себе/)).toBeTruthy();
+    expect(screen.getByText(/^Запиши дословно фразу, которую говоришь себе/)).toBeTruthy();
   });
 
   it('вступление звучит на «вы»', () => {
@@ -293,6 +293,6 @@ describe('PhraseCheckEx — ты/вы', () => {
         </AddressFormContext.Provider>
       </MemoryRouter>,
     );
-    expect(screen.getByText(/^Запишите фразу, которую сказали себе/)).toBeTruthy();
+    expect(screen.getByText(/^Запишите дословно фразу, которую говорите себе/)).toBeTruthy();
   });
 });

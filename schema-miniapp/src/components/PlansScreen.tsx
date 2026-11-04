@@ -6,6 +6,8 @@ import { PlanCard } from './PlanCard';
 import { useSafeTop } from '../utils/safezone';
 import { useTr } from '../utils/addressForm';
 import { hitboxStyle } from '../utils/hitbox';
+import { plansSummary } from '../../../shared/src/practices/plansCopy';
+import { PlanNeedPicker } from './plansScreen/PlanNeedPicker';
 
 interface Props {
   onClose: () => void;
@@ -139,7 +141,7 @@ export function PlansScreen({ onClose, onOpenTracker }: Props) {
                   marginTop: 1,
                 }}
               >
-                {pending.length} активных · {completed.length} завершённых
+                {plansSummary(pending.length, completed.length)}
               </div>
             )}
           </div>
@@ -160,8 +162,8 @@ export function PlansScreen({ onClose, onOpenTracker }: Props) {
         ) : !plans ? (
           <SkeletonList rows={4} h={96} />
         ) : plans.length === 0 ? (
-          /* Empty state */
-          <div style={{ paddingTop: 60, textAlign: 'center' }}>
+          /* Пустой экран: что такое план и выбор потребности (B-М8) */
+          <div style={{ paddingTop: 40, textAlign: 'center' }}>
             <div
               style={{
                 fontSize: 17,
@@ -172,21 +174,7 @@ export function PlansScreen({ onClose, onOpenTracker }: Props) {
             >
               Планов пока нет
             </div>
-            <div
-              style={{
-                fontSize: 14,
-                color: 'var(--text-sub)',
-                lineHeight: 1.65,
-                marginBottom: 24,
-                maxWidth: 280,
-                margin: '0 auto 24px',
-              }}
-            >
-              {tr(
-                'Планы создаются в трекере — выбери потребность с низкой оценкой и нажми «Запланировать практику»',
-                'Планы создаются в трекере — выберите потребность с низкой оценкой и нажмите «Запланировать практику»',
-              )}
-            </div>
+            <PlanNeedPicker onPlanned={load} />
             {onOpenTracker && (
               <button
                 onClick={() => {
@@ -194,12 +182,11 @@ export function PlansScreen({ onClose, onOpenTracker }: Props) {
                   onOpenTracker();
                 }}
                 style={{
-                  padding: '12px 28px',
-                  borderRadius: 'var(--r-14)',
+                  marginTop: 16,
+                  padding: '12px 0',
                   border: 'none',
                   fontFamily: 'inherit',
-                  background: 'var(--surface)',
-                  outline: '1px solid var(--border-color)',
+                  background: 'none',
                   color: 'var(--accent)',
                   fontSize: 14,
                   fontWeight: 600,

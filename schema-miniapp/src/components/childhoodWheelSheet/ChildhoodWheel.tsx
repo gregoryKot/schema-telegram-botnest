@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { COLORS } from '../../types';
+import { NEED_COLORS } from '../../../../shared/src/needs/needColors';
 import { NEED_IDS, type NeedId } from './types';
 
 export function ChildhoodWheel({
@@ -64,7 +64,7 @@ export function ChildhoodWheel({
       {/* Per-need dots + value labels */}
       {NEED_IDS.map((id, i) => {
         const r = (ratings[id] / 10) * maxR;
-        const color = COLORS[id] ?? '#888';
+        const color = NEED_COLORS[id] ?? '#888';
         const dotX = cx + r * Math.cos(angles[i]);
         const dotY = cy + r * Math.sin(angles[i]);
         const labelR = maxR + 22;

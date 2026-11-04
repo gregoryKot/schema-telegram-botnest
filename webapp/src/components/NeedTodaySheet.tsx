@@ -40,7 +40,7 @@ export function NeedTodaySheet({ need, value, yesterdayValue, onChange, onClose,
   return (
     <ExScreen
       onBack={goBack}
-      backLabel="Назад к дневнику"
+      backLabel="Назад к трекеру"
       eyebrow={tr('Оцени сейчас', 'Оцените сейчас')}
       title={<>{need.chartLabel}</>}
       lede={data.question}
