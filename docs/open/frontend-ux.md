@@ -15,6 +15,11 @@
   «С чего начать». Ключи `today_*` и `screen_order_today` сайт больше не читает, но они в
   `SYNCED_PREF_KEYS`: их больше никто не пишет (мини-апп удалён, #908).
 - **Восемь ключей `uiPrefs` главной мини-аппа без читателя в интерфейсе (#908):** `today_focus_practice`, `today_streak_hidden`, `today_phrase_hidden`, `today_secondary_hidden`, `today_therapist_banner_hidden`, `screen_order_today`, `quick_actions_hidden_plus`, `quick_actions_order_plus`. Белый список `SYNCED_PREF_KEYS` (`src/api/ui-prefs.sanitize.ts`, `shared/src/prefs/uiPrefsSync.ts`) их ещё принимает и синхронизирует, в `User.uiPrefs` они лежат, но ни один экран сайта их не читает (главная после #872 — три плитки). Решение владельца 2026-11-04 — убрать отдельным PR: белый список и сверка `src/security/ui-prefs-sync.invariants.spec.ts`, `SCREEN_BLOCK_IDS` в `src/api/dto/analytics.dto.ts`, `screen-metrics.service.ts`, данные — миграцией. Модули `shared/src/today/*` и `shared/src/screens/*` живы: их берут «Профиль», «Паттерны» и синхронизация настроек.
+- **«Настроить экран»: скрытые блоки остаются на экране** (владелец 2026-10-21, issue #922). Скрыл всё в
+  листе — экран показывает всё; юнит-тесты зелёные, браузерного e2e на «скрыл → пропало → перезагрузил»
+  нет. Экраны с настройкой после #872: «Профиль», «Паттерны» (обе вкладки), «Инструменты» в «Практике»;
+  общее — `webapp/src/components/customize/*`, синхронизация `shared/src/prefs/uiPrefsSync.ts` +
+  `webapp/src/components/UiPrefsGate.tsx`. План и критерии — в issue.
 - **Вход в «Карту себя» с сайта — только с экрана «Записано» после разбора** (кнопка «Карта себя» в
   `CaseDoneScreen`; `CaseFlowHost` со `start="map"` больше нигде не открывается): строка «Карта себя ·
   N разборов →» жила в `CaseEntryCard`. Постоянного входа нет — решить, где ему жить: в «Ещё» или
