@@ -3,7 +3,7 @@
 // косвенно через AppShell.overlays.test.tsx — здесь дополнены граничные
 // случаи (пустая история, отсутствие «сегодня», дырка длиной больше суток).
 import { describe, it, expect } from 'vitest';
-import { sectionFromPath, fillHistoryGaps, navItemOf } from './navigation';
+import { sectionFromPath, fillHistoryGaps, navItemOf, openClientRoute, leaveClientTarget } from './navigation';
 import { TODAY_DATE } from './useBootstrapLoad';
 
 function addDays(dateStr: string, delta: number): string {
@@ -79,5 +79,20 @@ describe('navItemOf', () => {
     expect(navItemOf('/profile')).toBe('more');
     expect(navItemOf('/diary')).toBe('diary');
     expect(navItemOf('/')).toBe('today');
+  });
+});
+
+describe('открытие и закрытие карточки клиента (T-12, T-13)', () => {
+  it('уже на карточке — перехода нет (прямой вход не пушит лишнюю запись)', () => {
+    expect(openClientRoute('/cabinet/42', 42)).toBeNull();
+  });
+  it('из списка — переход с меткой fromList; из других мест — без метки', () => {
+    expect(openClientRoute('/cabinet', 42)).toEqual({ to: '/cabinet/42', state: { fromList: true } });
+    expect(openClientRoute('/cabinet/today', 42)).toEqual({ to: '/cabinet/42' });
+  });
+  it('«Все клиенты»: пришли из списка — шаг назад, иначе — на список', () => {
+    expect(leaveClientTarget({ fromList: true, __sheetStack: [] })).toBe(-1);
+    expect(leaveClientTarget(null)).toBe('/cabinet');
+    expect(leaveClientTarget({})).toBe('/cabinet');
   });
 });
