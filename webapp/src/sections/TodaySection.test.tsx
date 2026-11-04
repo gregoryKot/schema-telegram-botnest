@@ -192,11 +192,11 @@ describe('TodaySection — плитка трекера по реальным о�
     expect(await screen.findByText('Трекер заполнен — индекс 6,0')).toBeTruthy();
   });
 
-  it('столбики окрашены только у оценённых потребностей', () => {
+  it('лепестки картинки окрашены только у оценённых потребностей', () => {
     const { container } = renderSection({ ratings: { attachment: 4 } });
-    const bars = Array.from(container.querySelectorAll('.ct-bars > i')) as HTMLElement[];
-    expect(bars).toHaveLength(5);
-    expect(bars.filter(b => b.style.background !== '')).toHaveLength(1);
+    const petals = container.querySelectorAll('.ct-art--garden [data-need]');
+    expect(petals).toHaveLength(5);
+    expect(container.querySelectorAll('.ct-art--garden [data-rated="yes"]')).toHaveLength(1);
   });
 
   it('клик по плитке открывает трекер и шлёт home_tile', () => {

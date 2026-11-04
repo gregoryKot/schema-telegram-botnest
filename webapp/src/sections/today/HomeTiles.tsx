@@ -1,8 +1,11 @@
-import { needColor, NEED_COLOR_ORDER } from '../../../../shared/src/needs/needColors';
 import { haptic } from '../../haptic';
+import type { TrackerSummary } from './todayFeed';
+import { NeedGarden, RippleArt, LeafArt } from './HomeArt';
+import { HomeTileRow } from './HomeTileRow';
 
 interface Props {
   ratings: Record<string, number>;
+  tracker: TrackerSummary;
   trackerMeta: string;
   caseMeta: string;
   /** null — дневники ещё грузятся: вместо текста плашка-скелетон, ничего выдуманного. */
@@ -12,42 +15,36 @@ interface Props {
   onDiary: () => void;
 }
 
-// Три плитки главной: трекер, «Что случилось», дневник (docs/design/CLIENT_SIMPLE_2026-10.md).
-// Плитка — вся кнопка целиком (высота от 124px), мета-строка берётся из данных.
-export function HomeTiles({ ratings, trackerMeta, caseMeta, diaryMeta, onTracker, onCase, onDiary }: Props) {
+/** Подпись единственной кнопки экрана — по состоянию трекера за сегодня. */
+export function trackerCta({ filled, total }: TrackerSummary): string {
+  if (filled === 0 || total === 0) return 'Заполнить за минуту';
+  if (filled < total) return 'Продолжить';
+  return 'Посмотреть сегодня';
+}
+
+// Главная «Сегодня» (docs/design/CLIENT_SIMPLE_2026-10.md): одна главная плитка — трекер,
+// с картинкой и единственной залитой кнопкой экрана; «Что случилось» и дневник — тихие
+// строки с картинкой слева (HomeTileRow). Плитка — вся кнопка целиком, «кнопка» внутри нарисована
+// span-ом: вложенная button невалидна, а тап-цель и так вся карточка.
+export function HomeTiles({ ratings, tracker, trackerMeta, caseMeta, diaryMeta, onTracker, onCase, onDiary }: Props) {
   const tap = (fn: () => void) => () => { haptic.tap(); fn(); };
+  const done = tracker.total > 0 && tracker.filled >= tracker.total;
   return (
     <div className="ct-tiles">
-      <button type="button" className="ct-tile ct-tile--tracker" onClick={tap(onTracker)}>
-        <span className="ct-bars" aria-hidden="true">
-          {NEED_COLOR_ORDER.map(id => (
-            <i key={id} style={ratings[id] !== undefined ? { background: needColor(id) } : undefined} />
-          ))}
-        </span>
+      <button type="button" className="ct-tile ct-tile--main" onClick={tap(onTracker)}>
+        <NeedGarden ratings={ratings} />
         <span className="ct-tile-body">
           <span className="ct-tile-title">Трекер</span>
-          <span className="ct-tile-text">Пять потребностей, один вопрос за раз. Минута.</span>
+          <span className="ct-tile-text">Пять потребностей, один вопрос за раз.</span>
           <span className="ct-tile-meta">{trackerMeta}</span>
         </span>
-      </button>
-
-      <button type="button" className="ct-tile ct-tile--case" onClick={tap(onCase)}>
-        <span className="ct-tile-body">
-          <span className="ct-tile-title">Что случилось</span>
-          <span className="ct-tile-text">Момент, после которого стало не по себе. Три минуты, писать почти не надо.</span>
-          <span className="ct-tile-meta">{caseMeta}</span>
+        <span className={`ds-btn ds-btn--lg ct-tile-cta${done ? ' ds-btn--secondary' : ''}`} aria-hidden="true">
+          {trackerCta(tracker)}
         </span>
       </button>
 
-      <button type="button" className="ct-tile ct-tile--diary" onClick={tap(onDiary)}>
-        <span className="ct-tile-body">
-          <span className="ct-tile-title">Дневник</span>
-          <span className="ct-tile-text">Одна мысль, схема, режим или спасибо — что на уме.</span>
-          {diaryMeta === null
-            ? <span className="ct-tile-meta ct-tile-meta--skeleton" aria-hidden="true" />
-            : <span className="ct-tile-meta">{diaryMeta}</span>}
-        </span>
-      </button>
+      <HomeTileRow art={<RippleArt />} title="Что случилось" text="Момент, после которого стало не по себе." meta={caseMeta} onClick={tap(onCase)} />
+      <HomeTileRow art={<LeafArt />} title="Дневник" text="Одна мысль, схема, режим или спасибо." meta={diaryMeta} onClick={tap(onDiary)} />
     </div>
   );
 }
