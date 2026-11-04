@@ -106,7 +106,7 @@
 .tb-field-label { font-size: 11px; }
 .tb-field-val { font-size: 14px; margin-top: 3px; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; }
 
-@media (max-width: 767px) {
+@media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
   .tb-tl-row { grid-template-columns: 52px 1fr; gap: 14px; }
   .tb-tl-dot { width: 44px; height: 44px; font-size: 18px; }
   .tb-ysq-card { padding: 4px 16px; }

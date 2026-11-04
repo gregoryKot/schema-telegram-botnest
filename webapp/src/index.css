@@ -582,7 +582,7 @@ a { color: inherit; text-decoration: none; }
   background: var(--bg);
 }
 .page-inner-wide { padding: 48px 64px 96px; max-width: 1280px; margin: 0 auto; }
-@media (max-width: 767px) {
+@media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
   .page-inner-wide { padding: 20px 16px 40px; }
 }
 
@@ -762,7 +762,7 @@ a { color: inherit; text-decoration: none; }
 .row   { display: flex; flex-direction: row; }
 .doc-grid { display: grid; grid-template-columns: 1fr 320px; gap: 72px; align-items: start; }
 @media (max-width: 1240px) { .doc-grid { grid-template-columns: 1fr; gap: var(--space-48); } }
-@media (max-width: 767px) { .doc-grid { gap: var(--space-32); } }
+@media (max-width: 767px), (pointer: coarse) and (max-height: 500px) { .doc-grid { gap: var(--space-32); } }
 
 /* ─── Animations ─────────────────────────────────────────────────────────── */
 @keyframes fade-in     { from { opacity: 0; } to { opacity: 1; } }
@@ -782,6 +782,15 @@ a { color: inherit; text-decoration: none; }
 .animate-slide { animation: slide-up .22s ease backwards; }
 
 /* ─── Cookie consent banner – editorial: сплошная бумага, тонкая рамка ───── */
+.cookie-banner-wrap {
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 9999;
+  padding: 0 16px calc(20px + var(--safe-bottom)); pointer-events: none;
+}
+/* На странице с нижней навигацией баннер стоит НАД ней, а не закрывает её
+   пункты (QA 2026-11, C-З1: центры «Сегодня/Записи/Ещё» попадали в баннер). */
+@media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
+  body:has(.mobile-nav) .cookie-banner-wrap { bottom: calc(var(--mobile-nav-h) + var(--safe-bottom)); padding-bottom: var(--space-12); }
+}
 .cookie-banner {
   background: var(--bg-elev);
   border: 1px solid var(--line-strong);
@@ -836,7 +845,7 @@ a { color: inherit; text-decoration: none; }
    Desktop: fill canvas via a flex chain. Mobile: natural block flow so the
    whole page scrolls like a regular section. Layout is kept in CSS (not inline
    styles) so mobile breakpoint can cleanly override without !important hacks. */
-@media (min-width: 768px) {
+@media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) {
   .therapist-sheet {
     flex: 1;
     min-width: 0;
@@ -865,7 +874,7 @@ a { color: inherit; text-decoration: none; }
 }
 
 /* Mobile: header padding + horizontal tab scroll */
-@media (max-width: 767px) {
+@media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
   .tabs {
     padding: 0 16px;
     overflow-x: auto;
@@ -914,7 +923,7 @@ a { color: inherit; text-decoration: none; }
 }
 
 /* ─── Responsive breakpoints ─────────────────────────────────────────────── */
-@media (max-width: 767px) {
+@media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
   .app-shell {
     display: flex;
     flex-direction: column;
@@ -941,9 +950,11 @@ a { color: inherit; text-decoration: none; }
        за него, и этот отступ ничего не давал (последние 64px лежали под
        панелью). */
     flex-shrink: 0; min-height: auto;
-    /* + 72px — запас под плавающую «+» (56px + отступ): последняя строка
-       не прячется под кнопкой. */
-    padding-bottom: calc(var(--mobile-nav-h) + 72px + var(--safe-bottom));
+    /* + 60px — запас под плавающую кнопку «Мне плохо» над панелью (высота 44 +
+       зазор 16): последняя строка не прячется под ней. Раньше стояло 72px «под
+       „+“», которой на сайте нет (QA 2026-11, C-М2). Когда в ветке появится
+       MobileSosButton, привести 60px к её реальной высоте + зазору. */
+    padding-bottom: calc(var(--mobile-nav-h) + 60px + var(--safe-bottom));
   }
   .page { overflow: visible; height: auto; }
   /* Fixed fullscreen overlays (.ex-screen) need their own scroll — the global
@@ -954,7 +965,7 @@ a { color: inherit; text-decoration: none; }
      приложения (#902; новые листы отступают в styles/sheet-*.css). */
   .ex-screen { padding-top: var(--safe-top); }
 }
-@media (min-width: 768px) {
+@media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) {
   .mobile-nav { display: none !important; }
   /* Settings overlay: don't cover the sidebar on desktop */
   .settings-overlay { left: var(--sidebar-w) !important; }
@@ -1008,12 +1019,9 @@ a { color: inherit; text-decoration: none; }
   /* Конец прокрутки листа не должен докручивать страницу под ним. */
   overscroll-behavior: contain;
 }
-.sheet-modal-handle {
-  width: 36px; height: 4px; border-radius: var(--r-2);
-  background: rgba(var(--fg-rgb), 0.12);
-  margin: 0 auto 20px;
-}
-@media (min-width: 768px) {
+/* «Ручки» у нижнего листа нет: она обещала свайп вниз, а свайпа нет (QA 2026-11,
+   C-М3). Закрывают кнопка, фон, Escape и «Назад». */
+@media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) {
   .sheet-modal { align-items: center; justify-content: center; padding: var(--space-32); }
   .sheet-modal-box {
     border-radius: var(--r-16);
@@ -1023,7 +1031,6 @@ a { color: inherit; text-decoration: none; }
     box-shadow: 0 24px 64px -16px rgba(28,25,22,0.22);
     animation: modal-in 0.18s ease;
   }
-  .sheet-modal-handle { display: none; }
 }
 html[data-theme="dark"] .sheet-modal-box { box-shadow: 0 24px 64px -16px rgba(0,0,0,0.6); }
 
@@ -1051,7 +1058,7 @@ html[data-theme="dark"] .sheet-modal-box { box-shadow: 0 24px 64px -16px rgba(0,
 .dialog-link:hover { color: var(--text-sub); }
 /* Settings content area: center on desktop */
 .settings-content-inner { max-width: 600px; }
-@media (min-width: 768px) { .settings-content-inner { margin: 0 auto; } }
+@media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) { .settings-content-inner { margin: 0 auto; } }
 
 /* ─── BottomSheet → Modal on desktop ────────────────────────────────────── */
 @keyframes modal-in {

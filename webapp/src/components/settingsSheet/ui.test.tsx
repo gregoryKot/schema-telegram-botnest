@@ -4,7 +4,8 @@
 // тесты каждого примитива и его веток — сам SettingsSheet использует их
 // только косвенно.
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { render, screen, fireEvent, cleanup } from '@testing-library/react';
+import { render, screen, fireEvent, cleanup, waitFor } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import { SRow, Toggle, SmallToggle, ChevronVal, InfoModal } from './ui';
 
 afterEach(() => {
@@ -157,56 +158,56 @@ describe('ChevronVal', () => {
 describe('InfoModal', () => {
   it('рендерит children', () => {
     render(
-      <InfoModal onClose={() => {}}>
+      <MemoryRouter><InfoModal onClose={() => {}}>
         <div>Содержимое модалки</div>
-      </InfoModal>,
+      </InfoModal></MemoryRouter>,
     );
     expect(screen.getByText('Содержимое модалки')).toBeTruthy();
   });
 
-  it('клик по фону зовёт onClose', () => {
+  it('клик по фону зовёт onClose', async () => {
     const onClose = vi.fn();
     render(
-      <InfoModal onClose={onClose}>
+      <MemoryRouter><InfoModal onClose={onClose}>
         <div>Тело</div>
-      </InfoModal>,
+      </InfoModal></MemoryRouter>,
     );
     fireEvent.click(screen.getByLabelText('Закрыть'));
-    expect(onClose).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
   });
 
   it('клик внутри модалки не зовёт onClose (stopPropagation)', () => {
     const onClose = vi.fn();
     render(
-      <InfoModal onClose={onClose}>
+      <MemoryRouter><InfoModal onClose={onClose}>
         <div>Клик внутри</div>
-      </InfoModal>,
+      </InfoModal></MemoryRouter>,
     );
     fireEvent.click(screen.getByText('Клик внутри'));
     expect(onClose).not.toHaveBeenCalled();
   });
 
-  it('Enter/Space на фоне зовут onClose', () => {
+  it('Enter/Space на фоне зовут onClose', async () => {
     const onClose = vi.fn();
     render(
-      <InfoModal onClose={onClose}>
+      <MemoryRouter><InfoModal onClose={onClose}>
         <div>Тело</div>
-      </InfoModal>,
+      </InfoModal></MemoryRouter>,
     );
     fireEvent.keyDown(screen.getByLabelText('Закрыть'), { key: 'Enter' });
-    expect(onClose).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
   });
 
   // QA 2026-11, М11: «Сводку для терапевта» и пояснения закрывали только
   // клик мимо окна или Escape — кнопки не было.
-  it('внутри окна есть кнопка «Закрыть», она зовёт onClose один раз', () => {
+  it('внутри окна есть кнопка «Закрыть», она зовёт onClose один раз', async () => {
     const onClose = vi.fn();
     render(
-      <InfoModal onClose={onClose}>
+      <MemoryRouter><InfoModal onClose={onClose}>
         <div>Тело</div>
-      </InfoModal>,
+      </InfoModal></MemoryRouter>,
     );
     fireEvent.click(screen.getByText('Закрыть', { selector: 'button' }));
-    expect(onClose).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
   });
 });

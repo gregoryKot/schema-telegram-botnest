@@ -18,7 +18,7 @@
 .cw-tip { margin: 0; font-size: 14px; line-height: 1.5; color: var(--text); }
 .cw-foot { margin: 0; line-height: 1.5; }
 
-@media (max-width: 767px) {
+@media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
   .cw-sheet { padding-top: var(--safe-top); } /* статус-бар установленного приложения (#902) */
   .cw-inner { padding: 20px 16px calc(24px + env(safe-area-inset-bottom)); }
 }

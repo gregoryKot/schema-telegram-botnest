@@ -4,7 +4,7 @@
    (client-profile.css, #906): надпись, заголовок, подпись и те же действия. */
 .cpf-ach-more { display: none; }
 
-@media (max-width: 767px) {
+@media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
   .cpf-page { gap: var(--space-16); }
 
   /* Порядок: шапка → блоки из «Настроить экран» (по умолчанию: портрет, тёплые слова, «Мой путь», стрик,

@@ -3,7 +3,7 @@
 
 /* «Записать» — ds-btn--lg (48/r24, во всю ширину на телефоне); на ноутбуке пилюля по тексту. */
 .cd-write { align-self: flex-start; }
-@media (min-width: 768px) { .cd-write { width: auto; padding: 0 var(--space-24); } }
+@media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) { .cd-write { width: auto; padding: 0 var(--space-24); } }
 
 .cd-drafts { display: flex; flex-direction: column; gap: 10px; }
 .cd-draft {
@@ -49,7 +49,7 @@
 .cd-grat-num { font-size: 11px; color: var(--text-ghost); margin-right: 10px; }
 .cd-grat-more { color: var(--text-faint); font-style: italic; }
 
-@media (max-width: 767px) {
+@media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
   /* Кегль заголовка — ds-h1 (#906); .cd-head — обычный блок, своих flex-правил нет. */
   .cd-page { gap: var(--space-16); padding-top: var(--space-16); }
 

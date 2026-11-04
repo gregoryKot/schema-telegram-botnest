@@ -89,7 +89,7 @@
 /* Сводка «Коротко»: отступ, который раньше давал инлайн-CARD. */
 .tcp-digest { margin-bottom: 16px; }
 
-@media (max-width: 767px) {
+@media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
   .tcp-fields { gap: 40px; }
   .tcp-sec-n { font-size: 36px; }
   .tcp-sec-title { font-size: 24px; }
@@ -122,7 +122,7 @@
 /* Телефон (#902): «Схема · Поля» слева, «⋯» справа; статус сохранения — своей
    строкой ниже, мелко, слева. justify-content с !important: SaveStatusLine
    (shared) ставит выравнивание инлайн по пропу align="right", нужному ноутбуку. */
-@media (max-width: 767px) {
+@media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
   .tcp-head { margin-bottom: 16px; }
   .tcp-status { margin: -4px 0 16px; } /* на телефоне шапка ниже на 16px: отрицательный отступ строки статуса не должен съедать весь зазор */
   .tcp-save { order: 1; width: 100%; min-width: 0; margin-left: 0; text-align: left; justify-content: flex-start !important; }
@@ -135,12 +135,12 @@
 .tcp-folds { display: flex; flex-direction: column; gap: 12px; margin-top: 40px; max-width: 880px; }
 /* Верхний отступ вкладки — как у ds-page: 40 на ноутбуке, на телефоне 20 из
    .page-inner-wide (index.css); u-pt40 из shared/utilities.css держал 40 и там. */
-@media (min-width: 768px) { .page-inner-wide.tcp-page { padding-top: 40px; } }
+@media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) { .page-inner-wide.tcp-page { padding-top: 40px; } }
 /* Вид «Схема»: четыре колонки схеме нужны от 960px (WIDE_MIN). Ноутбук 1280 минус
    сайдбар 240 — 1040; с отступами --tk-gutter (48px с каждой стороны) оставалось
    944 и схема падала в столбик. Здесь отступ 20px: 1040 − 40 = 1000 ≥ 960.
    max-width остаётся --tk-max: на широком мониторе колонка стоит по центру,
    как остальные экраны кабинета. Селектор специфичнее therapist-card.css. */
-@media (min-width: 768px) {
+@media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) {
   .tk-tabs-body > .page-inner-wide.tcp--graph { padding-inline: 20px; }
 }

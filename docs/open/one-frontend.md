@@ -189,9 +189,8 @@
   подтверждение — `goBack(onConfirm)`). Тот же «Назад мимо диалога» остался в
   карточке клиента: «Восстановить версию?» (`concept/ConceptVersionHistory.tsx`,
   закрывается сразу — переводится на `HistoryConfirmDialog` вместе с Router в
-  `ClientConceptTab.restore.test.tsx`), «Удалить задание?» (`ClientTasksTab.tsx`)
-  и «Удалить заметку?» (`SessionArchive.tsx`) — эти держат busy/ошибку внутри
-  диалога, им нужен `goBack` по успеху, а не до действия.
+  `ClientConceptTab.restore.test.tsx`). «Удалить задание?» и «Удалить заметку?»
+  переведены (`run` у `HistoryConfirmDialog`: busy/ошибка внутри, `goBack` по успеху).
 - Повторный `goBack()` после того, как запись листа уже снята (лист не
   размонтировался по `onClose`, или `await save(); goBack()` дождался ответа
   после системной «Назад» — `NoteSheet.tsx`, `CheckInSheet.tsx`,

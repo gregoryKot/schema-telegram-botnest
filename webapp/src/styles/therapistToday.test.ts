@@ -4,11 +4,12 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { PHONE_MEDIA } from '../utils/phoneLayout';
 
 const css = readFileSync(join(__dirname, 'therapist-today.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
 /** Телефонный блок — последний в файле: всё от его заголовка до конца. */
-const phone = css.slice(css.indexOf('@media (max-width: 767px)'));
-const desk = css.slice(0, css.indexOf('@media (max-width: 767px)'));
+const phone = css.slice(css.indexOf(`@media ${PHONE_MEDIA}`));
+const desk = css.slice(0, css.indexOf(`@media ${PHONE_MEDIA}`));
 /** Тело первого правила с ровно этим селектором. */
 const rule = (src: string, sel: string) =>
   src.match(new RegExp(`(?:^|[}\\s])${sel.replace(/[.-]/g, '\\$&')}\\s*\\{([^}]*)\\}`))?.[1] ?? '';
