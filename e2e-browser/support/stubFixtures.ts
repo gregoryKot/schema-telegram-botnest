@@ -170,6 +170,8 @@ export const FIXTURES: Record<string, unknown> = {
     weekDots: [false, false, false, false, false, false, false],
   },
   'GET /api/therapy/relation': null, // связи с терапевтом нет
+  // src/api/pairs.controller.ts → PairsData (shared/src/apiTypes.ts): пар и приглашения нет.
+  'GET /api/pair': { partners: [], pendingCode: null, pendingUrl: null },
   'GET /api/therapy/tasks': [], // therapy-tasks.controller.ts
   'GET /api/therapy/tasks/history': [],
   'GET /api/user-flags': NEW_USER_FLAGS,

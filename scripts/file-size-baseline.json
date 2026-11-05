@@ -10,7 +10,7 @@
   "deploy/threads-relay/worker.js": 56,
   "deploy/wait-for-db.mjs": 108,
   "e2e-browser/support/stubApi.ts": 150,
-  "e2e-browser/support/stubFixtures.ts": 187,
+  "e2e-browser/support/stubFixtures.ts": 189,
   "eslint.a11y-labels.mjs": 30,
   "eslint.config.mjs": 145,
   "playwright.config.ts": 147,
