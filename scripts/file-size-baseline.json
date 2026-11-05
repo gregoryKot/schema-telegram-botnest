@@ -1355,7 +1355,7 @@
   "test/e2e-support/jose.stub.ts": 15,
   "test/e2e-support/jwt.ts": 16,
   "test/e2e-support/live-stand.ts": 113,
-  "test/e2e-support/stats-report.factory.ts": 75,
+  "test/e2e-support/stats-report.factory.ts": 77,
   "test/e2e-support/stop-cron-jobs.ts": 31,
   "test/e2e-support/throttle-reset.setup.ts": 25,
   "test/e2e-support/unique-rule-fixtures.ts": 130,
