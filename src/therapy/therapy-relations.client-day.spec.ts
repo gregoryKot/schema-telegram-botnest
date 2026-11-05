@@ -16,6 +16,7 @@ const T = 100n;
 const MSK_TODAY = 1n; // Москва, оценил 27-го — у него сегодня
 const MSK_YESTERDAY = 2n; // Москва, оценил 26-го — у него вчера
 const LA_TODAY = 3n; // Лос-Анджелес, оценил 26-го — у него ещё сегодня
+const NO_RATINGS = 4n; // ни одной оценки: daysSince = -1
 
 const NEEDS = ['attachment', 'autonomy', 'expression', 'play', 'limits'];
 const fullDay = (userId: bigint, date: string, value: number) =>
@@ -30,6 +31,7 @@ const TZ: Record<string, string> = {
   [String(MSK_TODAY)]: 'Europe/Moscow',
   [String(MSK_YESTERDAY)]: 'Europe/Moscow',
   [String(LA_TODAY)]: 'America/Los_Angeles',
+  [String(NO_RATINGS)]: 'Europe/Moscow',
 };
 
 interface RatingWhere {
@@ -38,7 +40,7 @@ interface RatingWhere {
 }
 
 function makePrisma() {
-  const clients = [MSK_TODAY, MSK_YESTERDAY, LA_TODAY];
+  const clients = [MSK_TODAY, MSK_YESTERDAY, LA_TODAY, NO_RATINGS];
   return {
     therapyRelation: {
       findMany: jest.fn(async () =>
@@ -131,5 +133,13 @@ describe('getClients — «сегодня» по календарю клиент
     expect(c.todayIndex).toBe(6);
     expect(c.lastActiveDate).toBe('2026-10-26');
     expect(c.daysSinceActive).toBe(0);
+  });
+
+  it('клиент без единой оценки: daysSince = -1 → daysSinceActive null, не -1', async () => {
+    const c = (await clientsById()).get(NO_RATINGS)!;
+    expect(c.lastActiveDate).toBeNull();
+    expect(c.daysSinceActive).toBeNull();
+    expect(c.todayIndex).toBeNull();
+    expect(c.streak).toBe(0);
   });
 });
