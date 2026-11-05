@@ -18,8 +18,8 @@ import { ModeMapSelector } from './ModeMapSelector';
 import { AddressFormContext } from '../utils/addressForm';
 import type { ModeMapMeta, ModeMapFull } from '../api';
 
-// Запись в истории (useHistorySheet) здесь не нужна и требует Router: goBack просто закрывает
-// лист и зовёт then. Саму запись истории проверяет modeMap/MobileDrawer.test.tsx.
+// Запись в истории (useHistorySheet) нужна диалогу удаления карты (HistoryConfirmDialog)
+// и требует Router: здесь goBack просто закрывает диалог и зовёт then.
 vi.mock('../hooks/useHistorySheet', () => ({
   useHistorySheet: (onClose: () => void) => (then?: unknown) => { onClose(); if (typeof then === 'function') then(); },
 }));

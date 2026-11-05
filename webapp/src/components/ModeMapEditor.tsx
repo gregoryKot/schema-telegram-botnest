@@ -14,9 +14,7 @@ import {
 } from './modeMapFlow';
 import { useModeMapHistory } from './useModeMapHistory';
 import { useModeMapAutosave } from './useModeMapAutosave';
-import { useIsMobile } from './useIsMobile';
 import { collapseBtnStyle } from './modeMap/paletteStyle';
-import { MobileDrawer } from './modeMap/MobileDrawer';
 import { useSettleFresh } from './modeMap/useSettleFresh';
 import { useCanvasSpace } from './modeMap/useCanvasSpace';
 import { ModeMapConceptProvider } from './modeMap/ModeMapConceptProvider';
@@ -41,11 +39,8 @@ function EditorBody({ mapId, clientId, kind, initialNodes, initialEdges }: Props
   const [edges, setEdges, onEdgesChange] = useEdgesState<FlowEdge>(toFlowEdges(initialEdges));
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null);
-  const mobile = useIsMobile();
-  // On phones the palette starts hidden so the canvas gets the full width.
-  const [paletteOpen, setPaletteOpen] = useState(() =>
-    mobile ? false : localStorage.getItem('modemap_palette') !== '0');
-  useEffect(() => { if (!mobile) localStorage.setItem('modemap_palette', paletteOpen ? '1' : '0'); }, [paletteOpen, mobile]);
+  const [paletteOpen, setPaletteOpen] = useState(() => localStorage.getItem('modemap_palette') !== '0');
+  useEffect(() => { localStorage.setItem('modemap_palette', paletteOpen ? '1' : '0'); }, [paletteOpen]);
 
   // Always-fresh refs (for deferred saves after React Flow internal updates).
   // Пишем в эффекте, а не в рендере (react-hooks/refs): читаются только в
@@ -203,26 +198,22 @@ function EditorBody({ mapId, clientId, kind, initialNodes, initialEdges }: Props
     return () => window.removeEventListener('keydown', onKey);
   }, [selectedNodeId, selectedEdgeId, nodes, edges, setNodes, setEdges, scheduleSave, pushHistory, undo, redo]);
 
-  // On mobile, the palette + side editor float over the canvas (drawers, MobileDrawer —
-  // запись в истории, «Назад» закрывает шторку) so the canvas always has the full
-  // width; on desktop they're flex columns.
-  type GoBack = (then?: unknown) => void;
-  const nodeEditor = (onClose: () => void, goBack: GoBack) => selectedNode && (
+  // Палитра и боковой редактор — flex-колонки по бокам холста. Холст бывает только
+  // на компьютере и планшете: на телефоне вкладка показывает ModeMapTab без него.
+  const nodeEditor = selectedNode && (
     <ModeMapNodeEditor
       node={{ id: selectedNode.id, type: selectedNode.type as ModeMapNode['type'], position: selectedNode.position, data: selectedNode.data as unknown as ModeMapNode['data'] }}
-      onChange={handleNodeChange} onDelete={mobile ? () => goBack(handleDeleteNode) : handleDeleteNode}
+      onChange={handleNodeChange} onDelete={handleDeleteNode}
       coupleMode={kind === 'couple'}
-      onClose={onClose} />
+      onClose={() => setSelectedNodeId(null)} />
   );
-  const edgeEditor = (onClose: () => void, goBack: GoBack) => selectedEdge && !selectedNode && (
+  const edgeEditor = selectedEdge && !selectedNode && (
     <ModeMapEdgeEditor
       key={selectedEdge.id}
       edge={{ id: selectedEdge.id, source: selectedEdge.source, target: selectedEdge.target, label: selectedEdge.label as string | undefined, data: selectedEdge.data as unknown as ModeMapEdge['data'] }}
-      onChange={handleEdgeChange} onDelete={mobile ? () => goBack(handleDeleteEdge) : handleDeleteEdge} onSwap={handleSwapEdge}
-      onClose={onClose} />
+      onChange={handleEdgeChange} onDelete={handleDeleteEdge} onSwap={handleSwapEdge}
+      onClose={() => setSelectedEdgeId(null)} />
   );
-  const noGoBack: GoBack = () => {};
-  const closeNodeOrEdge = () => { setSelectedNodeId(null); setSelectedEdgeId(null); };
 
   const paletteCol = (
     <div style={{ position: 'relative', display: 'flex' }}>
@@ -234,13 +225,9 @@ function EditorBody({ mapId, clientId, kind, initialNodes, initialEdges }: Props
 
   return (
     <ModeMapConceptProvider clientId={clientId} kind={kind} nodes={nodes}><div style={{ display: 'flex', height: '100%', background: 'var(--bg)', position: 'relative' }}>
-      {/* Palette: inline column (desktop) or floating drawer (mobile) */}
-      {paletteOpen && !mobile && paletteCol}
-      {!paletteOpen && (
+      {paletteOpen ? paletteCol : (
         <button onClick={() => setPaletteOpen(true)} title="Показать панель режимов" aria-label="Показать панель режимов"
-          className="mm2-ear" style={mobile
-            ? { ...collapseBtnStyle('left'), position: 'absolute', top: 70, left: 8, zIndex: 30, borderRadius: 7, width: 30, height: 30, fontSize: 17 }
-            : { ...collapseBtnStyle('left'), position: 'static', borderRadius: '0 7px 7px 0', height: 'auto', alignSelf: 'stretch', width: 22 }}>
+          className="mm2-ear" style={{ ...collapseBtnStyle('left'), position: 'static', borderRadius: '0 7px 7px 0', height: 'auto', alignSelf: 'stretch', width: 22 }}>
           ›
         </button>
       )}
@@ -252,19 +239,7 @@ function EditorBody({ mapId, clientId, kind, initialNodes, initialEdges }: Props
         pushHistory={pushHistory} nodesRef={nodesRef} edgesRef={edgesRef}
         onUndo={undo} onRedo={redo} canUndo={canUndo} canRedo={canRedo} />
 
-      {/* Side editor: inline column (desktop) or floating drawer (mobile) */}
-      {!mobile && (nodeEditor(() => setSelectedNodeId(null), noGoBack) || edgeEditor(() => setSelectedEdgeId(null), noGoBack))}
-
-      {/* Mobile drawers */}
-      {mobile && paletteOpen && (
-        <MobileDrawer side="left" onClose={() => setPaletteOpen(false)}
-          sideBtn={goBack => <button onClick={() => goBack()} title="Скрыть" aria-label="Скрыть" className="mm2-ear" style={collapseBtnStyle('left')}>‹</button>}
-          content={() => <ModeMapPalette onAdd={handleAddNode} onAddMany={handleAddMany} />} />
-      )}
-      {mobile && (selectedNode || selectedEdge) && (
-        <MobileDrawer side="right" onClose={closeNodeOrEdge}
-          content={goBack => nodeEditor(() => goBack(), goBack) || edgeEditor(() => goBack(), goBack)} />
-      )}
+      {nodeEditor || edgeEditor}
     </div></ModeMapConceptProvider>
   );
 }
