@@ -3,7 +3,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { TodayFeed } from './TodayFeed';
-import type { FeedEntry } from './todayFeed';
+import type { FeedEntry } from './todayFeedModel';
 
 afterEach(cleanup);
 

@@ -1,6 +1,6 @@
 import { haptic } from '../../haptic';
 import { useTr } from '../../utils/addressForm';
-import type { TrackerSummary } from './todayFeed';
+import type { TrackerSummary } from './todayFeedModel';
 import { NEED_COLOR_ORDER } from '../../../../shared/src/needs/needColors';
 import { Strokes, Ribbon, Pebbles } from '../../components/art/PaperArt';
 import { HomeSquare } from './HomeSquare';

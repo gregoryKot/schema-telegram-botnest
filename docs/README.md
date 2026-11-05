@@ -33,7 +33,6 @@
 | [PERF_PLANS.md](PERF_PLANS.md) | Замер планов горячих запросов (2026-10-08): синтетика горизонта роста, `EXPLAIN (ANALYZE, BUFFERS)`, что нашлось и что из этого исправлено. Единственная зона, которую аудиты проверяли чтением схемы. **Новый горячий путь — сценарий в `test/perf/scenarios.ts`** (правило №28). |
 | [BOOKING_SETUP.md](BOOKING_SETUP.md) | Настройка записи на консультации: env-переменные Zoom, CalDAV, Robokassa. |
 | [TEST_IMPROVEMENT_PLAN.md](TEST_IMPROVEMENT_PLAN.md) | План по тестам (v2, 2026-07-20). Выполнен 2026-07-28 (статус в шапке документа); остаток — хвосты в разделе «Что осталось открытым» ниже. Продолжение закрытого `archive/TEST_COVERAGE_PLAN.md`. |
-| [PRIORITIES_2026-10.md](PRIORITIES_2026-10.md) | Разбор всего открытого 2026-10-31: реестр `open/` и «Идеи» бэклога по приоритетам P0–P3, волны работ агента, список того, что может сделать только владелец. **Закрыл волну — отметь ✅ с номером PR.** |
 | [PWA_PLAN.md](PWA_PLAN.md) | План устанавливаемой PWA на базе webapp + web-push. Статус: PWA отгружена; мини-апп и его service worker удалены (#908), устанавливаемое приложение — кабинет сайта. |
 | [GAME_ANALYSIS.md](GAME_ANALYSIS.md) | Анализ игры `game/` (2026-09-03) по четырём срезам: сюжет, интерес, вовлечение в терапию, качество, плюс воронка. Реестр находок с `file:line`. |
 | [GAME_IMPROVEMENT_PLAN.md](GAME_IMPROVEMENT_PLAN.md) | План улучшений игры по находкам анализа: Этап 0 до плейтеста, выбор в механике, терапевтический мост, полировка. Вопросы владельцу — там же. |
@@ -50,6 +49,7 @@ CLAUDE.md. Не удалять, но и не считать списком за�
 | [archive/PROJECT_AUDIT.md](archive/PROJECT_AUDIT.md) | Аудит 07.2026, 4 оси. Находки закрыты. |
 | [archive/PROJECT_AUDIT_ADDENDUM.md](archive/PROJECT_AUDIT_ADDENDUM.md) | Дополнение: юридика, БД, инфра, a11y. Закрыто, кроме РКН (на владельце). a11y-класс «контрол без имени» (:171, :344) вернулся с новым кодом и закрыт механизмом на сайте и в `shared/` (#818): `jsx-a11y/control-has-associated-label` и гейт `scripts/check-glyph-controls.mjs`; остаток в мини-аппе ушёл вместе с ним (#908). |
 | [archive/REMEDIATION_PLAN.md](archive/REMEDIATION_PLAN.md) | План 0→10. **Закрыт целиком** 17.07.2026 (этапы 0–4). |
+| [archive/PRIORITIES_2026-10.md](archive/PRIORITIES_2026-10.md) | Разбор всего открытого 2026-10-31 по P0–P3 и четыре волны работ агента. **Закрыт** 2026-11-05 (#897, #899, #900, #901, #927). |
 | [archive/TEST_COVERAGE_PLAN.md](archive/TEST_COVERAGE_PLAN.md) | План покрытия v1. Закрыт в PR #66; продолжен `TEST_IMPROVEMENT_PLAN.md`. На него по имени ссылаются `ci.yml` и `check-coverage-ratchet.mjs`. |
 | [archive/INTEGRATION_NOTES.md](archive/INTEGRATION_NOTES.md) | Разовая карта разрешения конфликтов при merge ветки покрытия. История. |
 | [archive/TODO.md](archive/TODO.md) | Туду по прототипу, 05.2026. Устарел: оба открытых пункта (`/schemas` crash, merge аккаунтов) починены. |
