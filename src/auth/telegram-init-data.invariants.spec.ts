@@ -92,6 +92,20 @@ describe('верификатор initData Telegram — одна реализац
     ).toBe(true);
   });
 
+  // Пакет без потребителей снят из зависимостей: вернуть его в package.json —
+  // значит снова тащить вторую реализацию подписи в прод-образ.
+  it('(б) @tma.js/init-data-node нет в зависимостях бэкенда', () => {
+    const pkg = JSON.parse(
+      readFileSync(join(SRC, '..', 'package.json'), 'utf8'),
+    ) as Record<string, Record<string, string> | undefined>;
+    const deps = { ...pkg.dependencies, ...pkg.devDependencies };
+    expect(Object.keys(deps).filter((d) => d.startsWith('@tma.js/'))).toEqual(
+      [],
+    );
+    // контроль: чтение настоящее — рабочие зависимости в списке есть
+    expect(deps['@nestjs/core']).toBeDefined();
+  });
+
   it('(в) окно в telegram-init-data.ts берётся из INIT_DATA_MAX_AGE_S, своих литералов нет', () => {
     const own = files.find((f) => f.rel === 'auth/telegram-init-data.ts');
     expect(own).toBeDefined();

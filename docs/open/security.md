@@ -81,12 +81,6 @@
   CSRF-заголовок, подписанный merge-токен, вызывающий обязан быть целевым
   аккаунтом (`assertMergeCaller`), TOTP поглощаемого. `ticket/start`: только
   троттлинг и 401 для `intent: 'link'` без сессии; выдаёт device-код.
-- **Зависимость `@tma.js/init-data-node` без потребителей.** После единого
-  верификатора `src/auth/telegram-init-data.ts` пакет не импортируют ни рабочий
-  код, ни тесты (`grep -rn tma.js src test` пуст; инвариант (б) в
-  `telegram-init-data.invariants.spec.ts` не даст вернуть импорт). Убрать из
-  `package.json` и перегенерировать `package-lock.json` (`npm install` у
-  владельца/CI-агента), прогнать `knip`.
 - **`src/auth/telegram-init-data.ts` вне мутационной зоны `golden-auth`, пол
   `auth.service.ts` не пересчитан.** Верификатор подписи ушёл из `auth.service.ts`
   (пол 94.29 в `scripts/mutation-golden-auth-baseline.json`) в новый файл; прогон
