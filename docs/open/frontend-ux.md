@@ -257,9 +257,6 @@
   может снова проверить только 393. Предложение: e2e-browser-снимок 1280 ключевых страниц (`/subscribe`, `/donate`,
   `/account`, «Зачем это всё», «Обзор» клиента) со сравнением с эталоном. Доказано: в `e2e-browser/` и `ci.yml`
   снимков компьютера нет.
-- **«Отменить подписку» (`/subscribe?token=…`) — подчёркнутая строка высотой 21px и на телефоне**
-  (`webapp/src/pages/subscribe/CancelControl.tsx`, инлайн-стиль без `minHeight`): тап-цель меньше 44. На ≥768
-  высота поднята в ветке компьютерной версии, телефон — отдельной правкой.
 - **Фокус с клавиатуры в сайдбаре не виден**: `webapp/src/index.css` — `.sb-item:focus-visible,
   .sb-account:focus-visible { outline: none; }`, а фон меняется только на `:hover` (WCAG 2.4.7). В main так же.
   Правка: кольцо `outline: 2px solid var(--accent); outline-offset: -2px` на `:focus-visible`.
