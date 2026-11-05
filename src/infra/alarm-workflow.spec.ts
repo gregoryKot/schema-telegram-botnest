@@ -180,3 +180,136 @@ describe.each(['prod-smoke.yml', 'nightly.yml'])(
     });
   },
 );
+
+// Шаг issue ci-alarm в nightly.yml исполняется с поддельными github/context:
+// новая красная джоба не должна тонуть в продолжающемся «Упали джобы».
+describe('nightly.yml: шаг issue ci-alarm — строка «Новые»', () => {
+  const step = steps(alarmJob(read('nightly.yml'))).find((s) =>
+    stepName(s).startsWith('issue ci-alarm'),
+  );
+  if (!step) throw new Error('шага issue ci-alarm нет');
+  const lines = step.split('\n');
+  const at = lines.findIndex((l) => /^ {10}script: \|\s*$/.test(l));
+  const script = lines
+    .slice(at + 1)
+    .filter((l) => l.trim() === '' || l.startsWith(' '.repeat(12)))
+    .map((l) => l.slice(12))
+    .join('\n');
+  const AsyncFunction = Object.getPrototypeOf(async () => 0).constructor;
+
+  type Call = { kind: string; args: Record<string, unknown> };
+  async function exec(opts: {
+    failed: string;
+    issue?: { number: number; title: string; body: string };
+    comments?: { body: string; user: { type: string } }[];
+  }) {
+    const calls: Call[] = [];
+    const outputs: Record<string, string> = {};
+    const rec = (kind: string) => async (args: Record<string, unknown>) => {
+      calls.push({ kind, args });
+      return {};
+    };
+    const github = {
+      paginate: async () => opts.comments ?? [],
+      rest: {
+        issues: {
+          listForRepo: async () => ({
+            data: opts.issue ? [opts.issue] : [],
+          }),
+          listComments: () => undefined,
+          create: rec('create'),
+          createComment: rec('comment'),
+          update: rec('update'),
+        },
+      },
+    };
+    const context = {
+      serverUrl: 'https://github.com',
+      runId: 7,
+      repo: { owner: 'o', repo: 'r' },
+    };
+    const core = {
+      setOutput: (k: string, v: string) => (outputs[k] = v),
+      warning: () => undefined,
+    };
+    const fn = new AsyncFunction(
+      'github',
+      'context',
+      'core',
+      'process',
+      script,
+    );
+    await fn(github, context, core, { env: { FAILED: opts.failed } });
+    return { calls, outputs };
+  }
+
+  const TITLE = 'Ночная flaky-детекция — красный прогон';
+  const bot = (body: string) => ({ body, user: { type: 'Bot' } });
+
+  it('новая джоба: тело комментария начинается с «Новые: …»', async () => {
+    const r = await exec({
+      failed: 'mutation-golden-auth,browser-smoke',
+      issue: { number: 903, title: TITLE, body: 'Упали джобы: browser-smoke.' },
+      comments: [bot('Упали джобы: browser-smoke.\n\nСсылка на прогон: x')],
+    });
+    expect(r.calls[0].kind).toBe('comment');
+    expect(String(r.calls[0].args.body)).toMatch(
+      /^Новые: mutation-golden-auth\.\n\nУпали джобы: mutation-golden-auth, browser-smoke\./,
+    );
+    expect(r.outputs.new).toBe('mutation-golden-auth');
+  });
+
+  it('те же джобы: строки «Новые» нет', async () => {
+    const r = await exec({
+      failed: 'browser-smoke',
+      issue: { number: 903, title: TITLE, body: 'Упали джобы: browser-smoke.' },
+      comments: [bot('Упали джобы: browser-smoke.\n\nСсылка на прогон: x')],
+    });
+    expect(String(r.calls[0].args.body)).not.toContain('Новые');
+    expect(r.outputs.new).toBe('');
+  });
+
+  it('нет комментариев бота: сравнивает с телом issue', async () => {
+    const r = await exec({
+      failed: 'a,b',
+      issue: { number: 1, title: TITLE, body: 'Упали джобы: a.\n\nСсылка' },
+      comments: [],
+    });
+    expect(String(r.calls[0].args.body)).toMatch(/^Новые: b\./);
+  });
+
+  it('прошлый отчёт не разобрался: без «Новые», не падает', async () => {
+    const r = await exec({
+      failed: 'a',
+      issue: { number: 1, title: TITLE, body: 'что-то своё' },
+      comments: [],
+    });
+    expect(r.calls[0].kind).toBe('comment');
+    expect(String(r.calls[0].args.body)).toMatch(/^Упали джобы: a\./);
+  });
+
+  it('issue нет: создаётся, как раньше', async () => {
+    const r = await exec({ failed: 'a' });
+    expect(r.calls.map((c) => c.kind)).toEqual(['create']);
+    expect(String(r.calls[0].args.body)).toMatch(/^Упали джобы: a\./);
+  });
+
+  it('зелёный прогон: комментарий и закрытие issue', async () => {
+    const r = await exec({
+      failed: '',
+      issue: { number: 5, title: TITLE, body: '' },
+    });
+    expect(r.calls.map((c) => c.kind)).toEqual(['comment', 'update']);
+  });
+
+  it('DM: «Новые» попадают в текст уведомления', () => {
+    const dm = dmStep('nightly.yml');
+    const r = runStep(dm, {
+      ...SECRETS,
+      FAILED: 'a,b',
+      NEW_JOBS: 'b',
+    });
+    expect(r.status).toBe(0);
+    expect(r.curlCalls[0]).toContain('Новые: b.');
+  });
+});
