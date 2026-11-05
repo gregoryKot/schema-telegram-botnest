@@ -138,7 +138,7 @@
 
 /* ── «Главное»: кнопка в шапке и экран с самым важным (2026-11) ── */
 .tcp-brief-btn { height: 44px; padding: 0 16px; }
-.tcp-brief-pick { display: flex; flex-direction: column; gap: 10px; padding: 12px 20px 14px; border-bottom: 1px solid var(--line); }
+.tcp-brief-pick { display: flex; flex-direction: column; gap: 10px; padding: 12px 20px 14px; border-bottom: 1px solid var(--paper-sunk); } /* разделитель — --paper-sunk, не --line (oneStyle.test) */
 /* Сетка карточек: на ноутбуке 2–3 колонки, чтобы всё выбранное встало в один экран; текстовые блоки шире. */
 .tcp-brief-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; align-items: start; max-width: 1280px; }
 .tcp-brief-card { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
