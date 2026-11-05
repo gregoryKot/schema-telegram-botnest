@@ -4,6 +4,7 @@ import { useNeedData } from '../../needData';
 import { formatDateString } from '../../../../shared/src/utils/calendarDate';
 import { TherapyLine } from '../therapy/TherapyLine';
 import { useTherapyBridgeTexts } from '../therapy/useTherapyBridgeTexts';
+import { Strokes } from '../art/PaperArt';
 import { DayBars } from './DayBars';
 import { completionHeadline, lowestObservation, nextUnrated, summarizeDay } from './trackerFlow';
 
@@ -46,15 +47,14 @@ export function CompletionScreen({
   return (
     <div className="tk2-overlay">
       <div className="tq-body">
-        <div className="tq-inner tq-done">
+        <div className="tq-inner tq-done pp-paper">
+          <Strokes size="hero" />
           <p className="tq-eyebrow">Трекер · {when}</p>
           <div className="tq-index" aria-label={headline.aria}>{headline.big}</div>
           <p className="tq-index-cap">{headline.caption}</p>
-          {complete && lowest ? (
-            <p className="tq-obs">{lowestObservation(nameOf(lowest))}</p>
-          ) : (
-            <p className="tq-obs">Остальное можно дооценить позже — хоть вечером, хоть завтра из истории.</p>
-          )}
+          <p className="tq-obs">
+            {complete && lowest ? lowestObservation(nameOf(lowest)) : 'Остальное можно дооценить позже — хоть вечером, хоть завтра из истории.'}
+          </p>
           <DayBars needs={needs} ratings={effectiveRatings} />
           <div className="tq-acts">
             <button type="button" className="tq-btn tq-btn--main" onClick={close}>

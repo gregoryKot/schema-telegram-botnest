@@ -1,4 +1,5 @@
-import type { ReactNode } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
+import { Leaf } from '../art/PaperArtSigns';
 import { pressable } from '../../utils/a11y';
 import { useExBackLabel } from './exBackLabel';
 import '../../styles/sheet-exercises.css';
@@ -19,25 +20,13 @@ export function GlyphArrowRight() {
   );
 }
 export function GlyphCheck() {
-  return (
-    <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M3 8.5l3.5 3.5L13 4.5" />
-    </svg>
-  );
+  return <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 8.5l3.5 3.5L13 4.5" /></svg>;
 }
 export function GlyphPlus() {
-  return (
-    <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round">
-      <path d="M8 3v10M3 8h10" />
-    </svg>
-  );
+  return <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"><path d="M8 3v10M3 8h10" /></svg>;
 }
 export function GlyphX() {
-  return (
-    <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round">
-      <path d="M4 4l8 8M12 4l-8 8" />
-    </svg>
-  );
+  return <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"><path d="M4 4l8 8M12 4l-8 8" /></svg>;
 }
 
 // ── Shared exercise wrapper ───────────────────────────────────────────────────
@@ -73,6 +62,16 @@ export function ExScreen({ onBack, backLabel, eyebrow, title, lede, aside, foot,
         </div>
         {aside && <aside className="ex2-aside">{aside}</aside>}
       </div>
+    </div>
+  );
+}
+
+// ── Экран «готово»: цветная бумага (шалфей) с листком над содержимым ─────────
+export function ExDone({ className = '', children }: { className?: string; children: ReactNode }) {
+  return (
+    <div className={`pp-paper ex2-done ${className}`.trim()} style={{ '--h': 135 } as CSSProperties}>
+      <Leaf size="square" />
+      {children}
     </div>
   );
 }

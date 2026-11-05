@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { api } from '../../api';
 import { SCHEMA_DOMAINS, MODE_GROUPS } from '../../schemaTherapyData';
-import { ExScreen, GlyphArrowLeft, GlyphArrowRight, GlyphCheck } from './ExScreen';
+import { ExScreen, ExDone, GlyphArrowLeft, GlyphArrowRight, GlyphCheck } from './ExScreen';
 import { useHistorySheet } from '../../hooks/useHistorySheet';
 import { useSavingAction } from '../../hooks/useSavingAction';
 import { useTr } from '../../utils/addressForm';
@@ -45,7 +45,7 @@ function FlashcardFlow({ questions, hue, onSave, explainer, initial }: { questio
 
   if (done) {
     return (
-      <div className="ds-card ds-card--panel ex2-done animate-slide" style={hueStyle(hue)}>
+      <ExDone className="animate-slide">
         <div className="ex2-stamp"><GlyphCheck /> Карточка сохранена · {new Date().toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })}</div>
         {questions.map((qq, i) => data[qq.key].trim() && (
           <div key={qq.key}>
@@ -54,7 +54,7 @@ function FlashcardFlow({ questions, hue, onSave, explainer, initial }: { questio
           </div>
         ))}
         <button className="ds-btn ds-btn--secondary ex2-gap" onClick={() => { setDone(false); setStep(0); }}>Изменить карточку</button>
-      </div>
+      </ExDone>
     );
   }
 

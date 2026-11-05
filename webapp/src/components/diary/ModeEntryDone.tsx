@@ -1,3 +1,4 @@
+import { Pebbles } from '../art/PaperArt';
 import { ExScreen, GlyphCheck } from '../exercises/ExScreen';
 import { getModeById } from '../../schemaTherapyData';
 import '../../styles/sheet-diary.css';
@@ -29,16 +30,11 @@ export function ModeEntryDone({
       onBack={goBack}
       backLabel="Закрыть"
       eyebrow="Дневник режимов"
-      title={
-        <>
-          Запись
-          <br />
-          <span className="it">сохранена</span>
-        </>
-      }
+      title={<>Запись<br /><span className="it">сохранена</span></>}
       lede="Она в «Дневнике режимов» и в «Моём пути» — можно открыть и перечитать в любой момент."
     >
-      <div className="ds-card ds-card--panel sd-done">
+      <div className="pp-paper sd-done">
+        <Pebbles size="square" />
         <ModeEntryShare
           mode={getModeById(modeId)}
           healthyResponse={healthyResponse}

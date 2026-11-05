@@ -1,4 +1,5 @@
-import { DIARY_HUE, hueStyle } from '../../lib/tone';
+import { Cup } from '../art/PaperArt';
+import { ExplainerPaperCard } from './ExplainerPaperCard';
 import '../../styles/sheet-diary.css';
 import { useTr } from '../../utils/addressForm';
 import {
@@ -32,14 +33,9 @@ export function DiaryEmptyExplainer({ filter }: { filter: DiaryFilter }) {
 
   return (
     <div className="sd-explainer-stack">
-      <p className="ds-list-title">{TITLE[filter]}</p>
+      <div className="pp-empty"><Cup /><p className="ds-list-title">{TITLE[filter]}</p></div>
       {filter !== 'diary' && <p className="ds-empty">{INTRO[filter]}</p>}
-      {types.map((type) => (
-        <div key={type} className="ds-card ds-card--row tone-soft sd-explainer-card" style={hueStyle(DIARY_HUE[type])}>
-          <div>{explainers[type].what}</div>
-          <div className="ds-sub sd-explainer-why">{explainers[type].why}</div>
-        </div>
-      ))}
+      {types.map((type) => <ExplainerPaperCard key={type} type={type} what={explainers[type].what} why={explainers[type].why} />)}
       <p className="ds-empty">{FOOT[filter]}</p>
     </div>
   );

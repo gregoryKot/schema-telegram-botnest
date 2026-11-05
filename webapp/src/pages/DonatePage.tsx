@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { api, ApiError } from '../api';
+import { Leaf } from '../components/art/PaperArtSigns';
 import '../styles/auth-pay.css';
 
 const PRESETS = [200, 500, 1000, 2000];
@@ -38,6 +39,7 @@ export function DonatePage() {
         </div>
         {ret !== 'ok' && (
           <div className="ds-card ap-donate">
+            <div className="ap-pay-art"><Leaf size="square" /></div>
             <div className="ds-seg ds-seg--full ap-seg" role="group" aria-label="Сумма">
               {PRESETS.map((p) => (
                 <button key={p} type="button" aria-pressed={amount === p} onClick={() => setAmount(p)} className={`ds-seg-btn${amount === p ? ' is-active' : ''}`}>{p} ₽</button>

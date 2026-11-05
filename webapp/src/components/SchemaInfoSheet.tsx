@@ -63,7 +63,7 @@ export function SchemaInfoSheet({ onClose, ratings, autoStartTest, initialTab, h
   return (
     <>
       <SsSheet onBack={goBack} zIndex={80}>
-        <SsHead eyebrow="Схема-терапия" title={<>Как это <i>работает</i></>} />
+        <SsHead layers eyebrow="Схема-терапия" title={<>Как это <i>работает</i></>} />
 
         <SchemaInfoContent key={contentKey} initialTab={contentInitialTab} highlight={highlightSchema} />
 
