@@ -99,4 +99,25 @@ describe('PracticeSection на телефоне', () => {
     expect(screen.getByText('Критик или забота?')).toBeTruthy();
     await waitFor(() => expect(mockApi.getTasks).toHaveBeenCalled());
   });
+
+  const BRIDGE = /Разобраться глубже — на встречах с терапевтом/;
+
+  it('мост к терапевту: клиенту виден после блока «Здесь и сейчас» и до «Инструментов»', async () => {
+    renderPhone();
+    const bridge = (await screen.findAllByText(BRIDGE))[0];
+    const here = screen.getByTestId('here');
+    const tools = screen.getByRole('heading', { name: 'Инструменты' });
+    expect(here.compareDocumentPosition(bridge) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(bridge.compareDocumentPosition(tools) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it('мост к терапевту: самому терапевту карточки нет', async () => {
+    localStorage.setItem('therapy_contact_url', 'tg://user?id=1');
+    localStorage.setItem('therapy_contact_name', 'вам');
+    localStorage.setItem('therapy_is_therapist', '1');
+    renderPhone();
+    expect(screen.getByRole('heading', { name: 'Инструменты' })).toBeTruthy();
+    expect(screen.queryByText(BRIDGE)).toBeNull();
+    await waitFor(() => expect(mockApi.getTasks).toHaveBeenCalled());
+  });
 });

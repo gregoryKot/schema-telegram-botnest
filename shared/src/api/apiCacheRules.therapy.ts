@@ -35,12 +35,22 @@ const clientKeys = (id: string): InvalidationTarget[] => [
 export const THERAPY_RULES: Rule[] = [
   // Сообщение о бывшем терапевте зависит от живой связи: подключился по коду —
   // пропадает, отключился — может вернуться (former-therapist-info.ts).
+  // Отключение ещё и делает открытые задания терапевта личными
+  // (end-client-relations.ts): метка «От терапевта» не висит 15 секунд.
   simple('POST', /^\/api\/therapy\/join$/, `${T}/relation`, FORMER),
-  simple('DELETE', /^\/api\/therapy\/relation$/, `${T}/relation`, FORMER),
+  simple(
+    'DELETE',
+    /^\/api\/therapy\/relation$/,
+    `${T}/relation`,
+    FORMER,
+    `${T}/tasks`,
+  ),
   // Живые приглашения терапевта («Ждут подключения»): новое и отозванное
   // меняют список сразу; принятое клиентом уходит из него на чужом запросе —
   // его кеш у терапевта живёт 15 секунд, это допустимо.
   simple('POST', /^\/api\/therapy\/invite$/, INVITES),
+  // Приглашение из карточки офлайн-клиента сразу видно в «Ждут подключения» и в карточке.
+  simple('POST', /^\/api\/therapy\/clients\/-?\d+\/invite$/, INVITES),
   simple('DELETE', /^\/api\/therapy\/invites\/\d+$/, INVITES),
   simple('POST', /^\/api\/therapy\/clients\/virtual$/, CLIENTS),
   // Удаление стирает связь, заметки, концептуализацию, карты режимов, а у

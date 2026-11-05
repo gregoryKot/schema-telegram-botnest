@@ -567,3 +567,26 @@ describe('DiarySection — «сегодня» по местному дню, а �
     expect(document.querySelector('.cd-day-rel')?.textContent).toBe('сегодня · вторник');
   });
 });
+
+describe('DiarySection — мост к терапевту', () => {
+  const LINE = /Записи — самопомощь, не замена терапии/;
+  beforeEach(() => localStorage.clear());
+  afterEach(() => localStorage.clear());
+
+  it('клиенту строка про самопомощь видна', async () => {
+    mockApi.getSchemaDiary.mockResolvedValue([schemaEntry()]);
+    renderSection();
+    await screen.findByText('Коллега не ответил на сообщение');
+    expect(screen.getByText(LINE)).toBeTruthy();
+  });
+
+  it('самому терапевту строки нет', async () => {
+    localStorage.setItem('therapy_contact_url', 'tg://user?id=1');
+    localStorage.setItem('therapy_contact_name', 'вам');
+    localStorage.setItem('therapy_is_therapist', '1');
+    mockApi.getSchemaDiary.mockResolvedValue([schemaEntry()]);
+    renderSection();
+    await screen.findByText('Коллега не ответил на сообщение');
+    expect(screen.queryByText(LINE)).toBeNull();
+  });
+});

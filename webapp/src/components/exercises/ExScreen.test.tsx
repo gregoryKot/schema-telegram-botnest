@@ -56,3 +56,13 @@ describe('ExScreen — aside на телефоне', () => {
     expect(document.querySelector('.ex2-body .ex2-aside')).toBeTruthy();
   });
 });
+
+describe('ExScreen — предупреждение о самопомощи', () => {
+  it('caution рендерит предупреждение, без него — нет', () => {
+    localStorage.clear();
+    const { rerender } = render(<ExScreen onBack={() => {}} eyebrow="Упражнение" title="Письмо" lede="Подсказка">тело</ExScreen>);
+    expect(screen.queryByText('Это самопомощь, не замена терапии.')).toBeNull();
+    rerender(<ExScreen onBack={() => {}} eyebrow="Упражнение" title="Письмо" lede="Подсказка" caution>тело</ExScreen>);
+    expect(screen.getByText('Это самопомощь, не замена терапии.')).toBeTruthy();
+  });
+});

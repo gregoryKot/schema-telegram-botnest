@@ -16,6 +16,7 @@ import { HereAndNowBlock } from './practice/HereAndNowBlock';
 import { PracticeTopRow, HERE_BLOCK_ID, HELP_BLOCK_ID } from './practice/PracticeTopRow';
 import { PracticeHeader } from './practice/PracticeHeader';
 import { PhoneHelpRows } from './practice/PhoneHelpRows';
+import { TherapyBridgeCard } from '../components/therapy/TherapyBridgeCard';
 import { useIsMobile } from '../components/useIsMobile';
 import { ExerciseLibrary } from './practice/ExerciseLibrary';
 import { TaskRow } from './practice/TaskRow';
@@ -112,6 +113,9 @@ export function PracticeSection({ onOpenChildhoodWheel, onOpenPractices, onOpenP
           <div id={HELP_BLOCK_ID} className="cp-block"><CrisisBlock /></div>
         </>
       )}
+
+      {/* Мост к терапевту — после быстрых практик и кризисного входа, перед «Инструментами»: кризисный путь остаётся первым. */}
+      <TherapyBridgeCard place="practice" />
 
       {(therapistTasks.length > 0 || taskError) && (
         <section className="cp-block">

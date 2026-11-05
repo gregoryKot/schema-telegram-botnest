@@ -109,7 +109,7 @@ describe('TherapistClientSheet — «Ждут подключения»', () => {
     mockApi.getTherapyClients.mockResolvedValue([]);
     mockApi.getTherapyInvites.mockResolvedValueOnce([{
       id: 5, code: '7F3A9C21B04E', url: 'https://t.me/b/diary?startapp=therapy_7F3A9C21B04E',
-      alias: 'Мария К.', createdAt: '2026-10-26T10:00:00.000Z', expiresAt: '2026-11-02T10:00:00.000Z',
+      alias: 'Мария К.', createdAt: '2026-10-26T10:00:00.000Z', expiresAt: '2026-11-02T10:00:00.000Z', attachToId: null,
     }]);
     renderSheet();
     expect(await screen.findByText('Ждут подключения · 1')).toBeTruthy();

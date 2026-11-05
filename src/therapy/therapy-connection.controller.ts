@@ -18,6 +18,7 @@ import { parseClientId } from '../api/parse-user-id';
 import { SubmitTherapistRequestDto } from './therapist-request.dto';
 import { TelegramAuthGuard } from '../api/telegram-auth.guard';
 import { TherapyRelationsService } from './therapy-relations.service';
+import { TherapyInviteService } from './therapy-invite.service';
 import {
   ALREADY_CONNECTED_ERROR,
   TOO_MANY_INVITES_ERROR,
@@ -38,6 +39,7 @@ import { RenameClientDto } from './dto/client-data.dto';
 export class TherapyConnectionController {
   constructor(
     private readonly relationsService: TherapyRelationsService,
+    private readonly invites: TherapyInviteService,
     private readonly clientDataService: TherapyClientDataService,
     private readonly accountService: AccountService,
     private readonly therapistRequestService: TherapistRequestService,
@@ -57,7 +59,7 @@ export class TherapyConnectionController {
   async createInvite(@Req() req: AuthRequest, @Body() body: CreateInviteDto) {
     await this.assertTherapist(req);
     try {
-      return await this.relationsService.createInvite(uid(req), body.alias);
+      return await this.invites.create(uid(req), body.alias);
     } catch (e) {
       if (e instanceof Error && e.message === TOO_MANY_INVITES_ERROR)
         throw new ConflictException({
@@ -89,7 +91,7 @@ export class TherapyConnectionController {
     if (!body.code) throw new BadRequestException('code required');
     let ok: boolean;
     try {
-      ok = await this.relationsService.joinAsClient(uid(req), body.code);
+      ok = await this.invites.join(uid(req), body.code);
     } catch (e) {
       // Уже есть активная связь с другим терапевтом (аудит 2026-10, T3): 409 с
       // машиночитаемой причиной — фронт может показать точный текст вместо

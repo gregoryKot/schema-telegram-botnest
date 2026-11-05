@@ -98,7 +98,8 @@ jobs:
           test/app-auth test/app-ownership test/app-ownership-sweep
           test/auth-flows test/public-quizzes test/phrase-check-ownership
           test/scheduler-teardown test/login-ticket test/refresh-rotation
-          test/slot-override test/therapy-remove-client test/therapy-resign test/therapy-invite
+          test/slot-override test/therapy-remove-client test/therapy-resign test/therapy-invite test/therapy-invite-attach
+          test/therapy-relation-end test/notify-from-other
           test/body-limit test/login-csrf test/payment-webhook-practice-host
           test/text-limits test/therapy-ownership.e2e-spec.ts
           test/booking-admin-cancel test/exercise-delete-ownership test/max-auth
@@ -210,6 +211,13 @@ jobs:
       # теле, exempt — только с внятной причиной); протухшая запись тоже красит
       # CI. Флага --update нет: это решение человека, не счётчик долга.
       - run: node scripts/check-cron-leader.mjs
+      # Один ключ localStorage — один писатель (инцидент 2026-11-05, PR #935:
+      # кэш контакта терапевта писали два места, третье меняло источник правды
+      # на сервере и кэш не трогало). Каждый ключ классифицирован в
+      # scripts/local-cache-baseline.json (владелец, mirror|local, что на
+      # сервере); второй писатель, ключ без записи и протухшая запись красят
+      # CI. Флага --update нет: это решение человека, не счётчик долга.
+      - run: node scripts/check-local-cache-writers.mjs
       # Счётчик попыток в памяти процесса обнуляется деплоем и не общий между
       # инстансами (правило №5). Каждая ручка с лимитом или с проверкой кода /
       # заявкой несёт @PersistentThrottle (счёт в Postgres) либо запись exempt с
@@ -443,6 +451,11 @@ jobs:
       # нашего кода. На фейке этот спек ничего бы не доказывал, поэтому только тут.
       - name: e2e leader-election кронов на реальном Postgres
         run: npx jest --config ./test/jest-e2e.json --runInBand test/cron-leader.e2e-spec.ts
+      # Заглушка браузерного смока (e2e-browser/support/stubFixtures.ts) против
+      # настоящих ответов: статус и тело каждой ручки (ci-alarm #903). Только тут:
+      # ручки читают сырым SQL, фейковая Prisma его не знает.
+      - name: e2e заглушка браузерного смока ↔ сервер на реальном Postgres
+        run: npx jest --config ./test/jest-e2e.json --runInBand test/browser-stub-contract.e2e-spec.ts
       # Полуночный обход, оборванный рестартом (аудит 2026-10): хвост доделывает
       # старт нового процесса, дублей нет — день человека забирает один UPDATE с
       # условием, а это свойство Postgres, не нашего кода.
@@ -574,12 +587,15 @@ jobs:
           test/login-ticket.e2e-spec.ts
           test/refresh-rotation.e2e-spec.ts
           test/notify-address.e2e-spec.ts
+          test/notify-from-other.e2e-spec.ts
           test/merge-my-lists.e2e-spec.ts
           test/merge-relations.e2e-spec.ts
           test/merge-unique-rules.e2e-spec.ts
           test/account-export-ownership.e2e-spec.ts
           test/therapy-remove-client.e2e-spec.ts
+          test/therapy-relation-end.e2e-spec.ts
           test/therapy-invite.e2e-spec.ts
+          test/therapy-invite-attach.e2e-spec.ts
           test/therapy-task-delete.e2e-spec.ts
           test/text-limits.e2e-spec.ts
           test/therapy-resign.e2e-spec.ts
@@ -881,3 +897,108 @@ jobs:
       # верить.
       - run: npm ci --prefix shared
       - run: node scripts/check-eslint-ratchet.mjs
+
+  # Браузерный смок прод-сборки в PR (2026-11-05): три поломки недели (#878,
+  # #921, #898) прошли зелёный PR-CI и всплыли только в ночном nightly уже
+  # после мержа — 8 ночей красного смока. Владелец одобрил время CI: сигнал
+  # приходит до мержа. Ночная джоба browser-smoke остаётся: она ловит флаки
+  # на main и кричит через alarm. ~4-6 минут (сборка сайта + Chromium из кэша).
+  browser-smoke:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            webapp/package-lock.json
+      - run: npm ci
+      - run: npm ci --prefix webapp
+      # Без VITE_BOT_USERNAME production-сборка падает (shared/src/build/
+      # requireBotUsername.ts); значение то же, что в Dockerfile.
+      - run: npm run build --prefix webapp
+        env:
+          VITE_BOT_USERNAME: SchemeHappensBot
+      - name: версия Playwright для ключа кэша браузера
+        id: pw
+        run: echo "version=$(node -p "require('@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@v6
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.pw.outputs.version }}
+      # С кэшем скачивание браузера пропускается, системные зависимости
+      # (apt) ставятся всегда.
+      - run: npx playwright install --with-deps chromium
+      - name: браузерный smoke прод-сборки (Chromium)
+        run: npx playwright test
+      - name: трейс упавшего смока артефактом
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-trace
+          path: test-results/
+          retention-days: 14
+
+  # Мутации изменённых файлов золотых зон в PR (2026-11-05): храповик волны А
+  # (therapy-relations.service 97.95% → 94.96%) покраснел только ночью, после
+  # мержа #898 (ветка без теста). Здесь Stryker идёт ТОЛЬКО по изменённым
+  # файлам из `mutate` золотых конфигов (волна А — вход/шифрование, волна Б —
+  # деньги/бронирования), храповик — в режиме --partial: пол сверяется лишь у
+  # файлов отчёта, --update нет. PR без таких файлов — зелёный за секунды.
+  # Полный ночной прогон остаётся. Выбор файлов — scripts/mutation-changed-files.mjs.
+  mutation-changed:
+    # push в main не гоняем: там нет базы для сравнения, а ночь прогонит всё.
+    if: github.event_name != 'push'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      # Каждый вызов `node scripts/…` — отдельный однострочный шаг: так его
+      # разбирает precheck (scripts/agent/precheck-lib.mjs, спек
+      # agent-precheck.spec.ts), а селектор сам пишет в $GITHUB_OUTPUT.
+      - run: git fetch origin main --quiet
+      - name: изменённые файлы волны А (вход, шифрование)
+        id: auth
+        run: node scripts/mutation-changed-files.mjs --config=stryker.golden-auth.config.json --base=origin/main --github-output=files
+      - name: изменённые файлы волны Б (деньги, бронирования)
+        id: payments
+        run: node scripts/mutation-changed-files.mjs --config=stryker.golden-payments.config.json --base=origin/main --github-output=files
+      - name: нечего мутировать
+        if: steps.auth.outputs.files == '' && steps.payments.outputs.files == ''
+        run: echo "PR не трогает файлы золотых зон (mutate в stryker.golden-*.config.json) — мутации не нужны."
+      - if: steps.auth.outputs.files != '' || steps.payments.outputs.files != ''
+        run: npm ci
+      - if: steps.auth.outputs.files != '' || steps.payments.outputs.files != ''
+        run: npx prisma generate
+      - name: Stryker — волна А (${{ steps.auth.outputs.files }})
+        if: steps.auth.outputs.files != ''
+        env:
+          FILES: ${{ steps.auth.outputs.files }}
+        run: npx stryker run stryker.golden-auth.config.json --mutate "$FILES"
+      - name: храповик мутаций — волна А, только файлы отчёта
+        if: steps.auth.outputs.files != ''
+        run: node scripts/check-mutation-ratchet.mjs --partial --report=reports/mutation/golden-auth.json --baseline=scripts/mutation-golden-auth-baseline.json
+      - name: Stryker — волна Б (${{ steps.payments.outputs.files }})
+        if: steps.payments.outputs.files != ''
+        env:
+          FILES: ${{ steps.payments.outputs.files }}
+        run: npx stryker run stryker.golden-payments.config.json --mutate "$FILES"
+      - name: храповик мутаций — волна Б, только файлы отчёта
+        if: steps.payments.outputs.files != ''
+        run: node scripts/check-mutation-ratchet.mjs --partial --report=reports/mutation/golden-payments.json --baseline=scripts/mutation-golden-payments-baseline.json
+      - name: отчёт артефактом
+        if: always() && (steps.auth.outputs.files != '' || steps.payments.outputs.files != '')
+        uses: actions/upload-artifact@v7
+        with:
+          name: mutation-report-changed
+          path: reports/mutation/
+          retention-days: 14

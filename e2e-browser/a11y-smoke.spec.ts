@@ -21,10 +21,14 @@
 // с комментарием-причиной, чтобы это было видно в дифф-ревью (правило №15
 // CLAUDE.md: «исключение — только с обоснованием»); сейчас список пуст.
 import AxeBuilder from '@axe-core/playwright';
-import { test, expect, type Page, type TestInfo } from '@playwright/test';
+import type { Page, TestInfo } from '@playwright/test';
 import { readFileSync } from 'fs';
 import { join } from 'path';
-import { stubApi, throwOnPageError } from './support/stubApi';
+// Стаб API и проверка на падение — общий `test` (support/test.ts): снимок axe
+// с экрана падения ничего не доказывает, а у экрана ошибки роутера есть <h1>,
+// и «страница отрисовалась» он проходит — до ci-alarm #903 /articles под
+// ответом `{}` падал в «Что-то пошло не так», и храповик сверял его.
+import { test, expect } from './support/test';
 
 const BASELINE_PATH = join(__dirname, 'a11y-baseline.json');
 const baseline: Record<string, number> = JSON.parse(
@@ -101,23 +105,15 @@ async function settled(page: import('@playwright/test').Page) {
 }
 
 test.describe('a11y-smoke: webapp', () => {
-  test.beforeEach(async ({ page }, testInfo) => {
+  test('главная (/)', async ({ page }, testInfo) => {
     skipOnOtherProject(testInfo, 'webapp');
-    await stubApi(page);
-    // Снимок axe с экрана падения ничего не доказывает, а у экрана ошибки
-    // роутера есть <h1>, и «страница отрисовалась» он проходит: до ci-alarm
-    // #903 /articles под ответом `{}` падал в «Что-то пошло не так», и
-    // храповик сверял доступность его, а не списка статей.
-    throwOnPageError(page);
-  });
-
-  test('главная (/)', async ({ page }) => {
     await page.goto('/');
     await settled(page);
     await checkScreen(page, 'webapp:home');
   });
 
-  test('список статей (/articles)', async ({ page }) => {
+  test('список статей (/articles)', async ({ page }, testInfo) => {
+    skipOnOtherProject(testInfo, 'webapp');
     await page.goto('/articles');
     await settled(page);
     await checkScreen(page, 'webapp:articles');

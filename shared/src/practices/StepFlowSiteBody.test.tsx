@@ -58,4 +58,13 @@ describe('StepFlowSiteBody', () => {
     fireEvent.click(screen.getByText('Готово'));
     expect(screen.getByText('ДополнениеDone')).toBeTruthy();
   });
+
+  it('intro только на шаге 0: не на втором шаге и не на экране «Готово»', () => {
+    renderFlow({ intro: <div data-testid="intro" /> });
+    expect(screen.getByTestId('intro')).toBeTruthy();
+    fireEvent.click(screen.getByText('Дальше'));
+    expect(screen.queryByTestId('intro')).toBeNull();
+    fireEvent.click(screen.getByText('Готово'));
+    expect(screen.queryByTestId('intro')).toBeNull();
+  });
 });

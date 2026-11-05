@@ -1,4 +1,5 @@
 import { ExScreen, GlyphArrowRight } from '../ExScreen';
+import { TherapyCaution } from '../../therapy/TherapyCaution';
 import { useTr } from '../../../utils/addressForm';
 import { exerciseCard } from '../../../../../shared/src/exercises/exerciseCatalog';
 import '../../../styles/sheet-childhood.css';
@@ -24,6 +25,7 @@ export function ChildhoodIntro({
       title={title}
       lede="Те же пять потребностей – но про детство."
     >
+      <TherapyCaution place="test_start" />
       <div className="ds-card chw-intro">
         <p className="chw-intro-body">
           В схема-терапии считается, что схемы формируются, когда базовые потребности{' '}

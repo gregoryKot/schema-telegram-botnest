@@ -218,6 +218,19 @@ describe('ModeMapsService — клиентский read-only доступ к с�
     });
   });
 
+  // 2026-11-05: связь больше не удаляется, а завершается с причиной. Клиент
+  // отключился сам — карт этого терапевта у него нет, как и раньше, пока
+  // строка удалялась (test/therapy-remove-client.e2e-spec.ts, сценарий 7).
+  it('клиент отключился сам (ended, client_left) — карт этого терапевта нет', async () => {
+    const left = { ...relA, status: 'ended', endReason: 'client_left' } as Rel;
+    const { service, maps } = makeService([left]);
+    maps.push(mkMap(34, 'Закрыта'));
+    expect(await service.listMyModeMaps(CLIENT_A)).toEqual([]);
+    await expect(service.getMyModeMap(CLIENT_A, 34)).rejects.toThrow(
+      'Not found',
+    );
+  });
+
   it('getMyModeMap: клиент B не может прочитать карту клиента A по id — "Not found"', async () => {
     const { service, maps } = makeService([relA]);
     maps.push(mkMap(20, 'Карта Ани', { clientId: CLIENT_A }));

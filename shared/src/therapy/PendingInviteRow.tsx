@@ -45,6 +45,7 @@ export function PendingInviteRow({
         {invite.alias ?? 'Приглашение без имени'}
       </div>
       <div style={{ ...muted, marginTop: 2 }}>
+        {invite.attachToId != null && 'Офлайн-карточка · '}
         <code style={{ ...inviteCodeStyle, fontSize: 13 }}>{invite.code}</code>
         {' · '}
         {inviteExpiryLabel(invite.expiresAt)}

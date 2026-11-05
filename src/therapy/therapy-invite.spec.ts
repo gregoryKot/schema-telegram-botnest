@@ -1,5 +1,12 @@
 import { joinTherapyAsClient, ALREADY_CONNECTED_ERROR } from './therapy-invite';
 import type { PrismaService } from '../prisma/prisma.service';
+import { attachOfflineCard } from './therapy-invite-attach';
+
+jest.mock('./therapy-invite-attach', () => ({
+  attachOfflineCard: jest.fn().mockResolvedValue(true),
+}));
+const attachMock = attachOfflineCard as jest.Mock;
+beforeEach(() => attachMock.mockClear());
 
 // Гонка двух кодов одного терапевта: findFirst(alreadyConnected) пропустил
 // обоих, а частичный unique TherapyRelation_active_pair_key пропустил одного.
@@ -63,5 +70,54 @@ describe('joinTherapyAsClient — уникальность активной св
     await expect(joinTherapyAsClient(db, 2n, 'abc123')).rejects.toThrow(
       ALREADY_CONNECTED_ERROR,
     );
+  });
+});
+
+describe('joinTherapyAsClient — приглашение из офлайн-карточки', () => {
+  const fromCard = { ...pending, attachToId: 9 };
+  const dbWith = (rel: unknown, alreadyConnected: unknown, count: number) =>
+    ({
+      therapyRelation: {
+        findUnique: jest.fn().mockResolvedValue(rel),
+        findFirst: jest
+          .fn()
+          .mockResolvedValueOnce(alreadyConnected)
+          .mockResolvedValue(null),
+        updateMany: jest.fn().mockResolvedValue({ count }),
+      },
+    }) as unknown as PrismaService;
+
+  it('захват: данные карточки переносятся', async () => {
+    expect(
+      await joinTherapyAsClient(dbWith(fromCard, null, 1), 2n, 'abc123'),
+    ).toBe(true);
+    expect(attachMock).toHaveBeenCalledWith(expect.anything(), 1n, 2n, 9);
+  });
+
+  it('уже подключён: данные карточки сливаются в существующую связь', async () => {
+    const db = dbWith(fromCard, { id: 5 }, 0);
+    expect(await joinTherapyAsClient(db, 2n, 'abc123')).toBe(true);
+    expect(attachMock).toHaveBeenCalledWith(db, 1n, 2n, 9);
+  });
+
+  it('захват не удался: перенос не зовётся', async () => {
+    expect(
+      await joinTherapyAsClient(dbWith(fromCard, null, 0), 2n, 'abc123'),
+    ).toBe(false);
+    expect(attachMock).not.toHaveBeenCalled();
+  });
+
+  it('обычное приглашение (attachToId нет/null): перенос не зовётся', async () => {
+    expect(
+      await joinTherapyAsClient(dbWith(pending, null, 1), 2n, 'abc123'),
+    ).toBe(true);
+    expect(
+      await joinTherapyAsClient(
+        dbWith({ ...pending, attachToId: null }, { id: 5 }, 0),
+        2n,
+        'abc123',
+      ),
+    ).toBe(true);
+    expect(attachMock).not.toHaveBeenCalled();
   });
 });

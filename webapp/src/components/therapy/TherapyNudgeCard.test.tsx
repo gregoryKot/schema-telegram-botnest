@@ -60,23 +60,36 @@ describe('TherapyNudgeCard', () => {
     await waitFor(() => expect(track).toHaveBeenCalledWith('signal_card', 'shown', 'crisis'));
   });
 
-  it('спокойные дни и новичок: карточки нет', async () => {
+  it('спокойные дни и новичок: спокойная карточка моста без «Не сейчас»', async () => {
     history.mockResolvedValue(CALM);
-    const { container } = renderCard();
+    renderCard();
     await waitFor(() => expect(history).toHaveBeenCalled());
-    expect(container.textContent).toBe('');
+    expect(await screen.findByText(/Разобраться глубже — на встречах с терапевтом/)).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Не сейчас' })).toBeNull();
+    await waitFor(() => expect(track).toHaveBeenCalledWith('home_card', 'shown'));
     cleanup();
     history.mockResolvedValue(LOW.slice(0, 3));
-    const second = renderCard();
-    await waitFor(() => expect(history).toHaveBeenCalledTimes(2));
-    expect(second.container.textContent).toBe('');
+    renderCard();
+    expect(await screen.findByText(/Разобраться глубже — на встречах с терапевтом/)).toBeTruthy();
   });
 
-  it('сбой сети — тихо, без карточки', async () => {
-    history.mockRejectedValue(new Error('offline'));
+  it('пока история грузится — скелетон, спокойная карточка не мигает и показ не считается', async () => {
+    let resolve!: (h: DayHistory[]) => void;
+    history.mockReturnValue(new Promise<DayHistory[]>((r) => { resolve = r; }));
     const { container } = renderCard();
-    await waitFor(() => expect(history).toHaveBeenCalled());
-    expect(container.textContent).toBe('');
+    expect(container.querySelector('[aria-hidden]')).toBeTruthy();
+    expect(screen.queryByText(/Разобраться глубже/)).toBeNull();
+    expect(track).not.toHaveBeenCalled();
+    resolve(CALM);
+    expect(await screen.findByText(/Разобраться глубже/)).toBeTruthy();
+    await waitFor(() => expect(track).toHaveBeenCalledWith('home_card', 'shown'));
+    expect(track).toHaveBeenCalledTimes(1);
+  });
+
+  it('сбой сети — тихо, спокойная карточка', async () => {
+    history.mockRejectedValue(new Error('offline'));
+    renderCard();
+    expect(await screen.findByText(/Разобраться глубже/)).toBeTruthy();
   });
 
   it('«Не сейчас» прячет карточку, пишет событие и запоминает на 14 дней', async () => {
@@ -86,20 +99,22 @@ describe('TherapyNudgeCard', () => {
     // приходил ПОСЛЕ клика и затирал «последний вызов» (флейк на PR #880).
     await waitFor(() => expect(track).toHaveBeenCalledWith('signal_card', 'shown', 'low_index'));
     fireEvent.click(await screen.findByRole('button', { name: 'Не сейчас' }));
-    expect(track).toHaveBeenLastCalledWith('signal_card', 'dismiss', 'low_index');
+    expect(track).toHaveBeenCalledWith('signal_card', 'dismiss', 'low_index');
     expect(screen.queryByText('Три последних заполненных дня: индекс не выше 4')).toBeNull();
     const until = Date.parse(localStorage.getItem('therapy_nudge_dismissed_until') ?? '');
     expect(until - Date.now()).toBeGreaterThan(13 * 86400000);
     cleanup();
-    const again = renderCard();
+    renderCard();
     await waitFor(() => expect(history).toHaveBeenCalledTimes(2));
-    expect(again.container.textContent).toBe('');
+    expect(screen.queryByText('Три последних заполненных дня: индекс не выше 4')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Не сейчас' })).toBeNull();
   });
 
   it('«Поговорить с кем-то» открывает лист с trigger', async () => {
     history.mockResolvedValue(LOW);
     renderCard();
-    fireEvent.click(await screen.findByRole('button', { name: 'Поговорить с кем-то' }));
+    await screen.findByText('Три последних заполненных дня: индекс не выше 4');
+    fireEvent.click(screen.getByRole('button', { name: 'Поговорить с кем-то' }));
     expect(track).toHaveBeenCalledWith('signal_card', 'open', 'low_index');
     expect(screen.getByRole('dialog')).toBeTruthy();
     fireEvent.click(screen.getByRole('link', { name: 'Записаться на встречу' }));

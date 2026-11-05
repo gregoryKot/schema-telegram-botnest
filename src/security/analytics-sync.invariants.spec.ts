@@ -195,6 +195,12 @@ const BACKEND_ONLY: Record<string, string> = {
     'число завершённых связей с клиентами. Фронт его не шлёт: отказ — сам ' +
     'HTTP-запрос, а /stats считает только строки с числом в meta, которое ' +
     'клиентский путь не пропускает (у события нет ветки в sanitizeMeta)',
+  therapy_invite:
+    'серверное событие: пишет только TherapyInviteService ' +
+    '(src/therapy/therapy-invite.service.ts) при создании, подключении и ' +
+    'отзыве приглашения; ветки в sanitizeMeta нет — meta с клиента ' +
+    'отбрасывается, а /stats считает только строки с step и kind из ' +
+    'therapy-invite-events.constants.ts',
   home_screen_offer:
     'шлётся не литералом trackEvent(...), а через колбэк track(...) общего ' +
     'хука shared/src/host/useHomeScreenOffer.ts (мини-апп и карточка ' +
@@ -264,6 +270,7 @@ describe('трипваер: имена событий фронта ⊆ allow-lis
     // 33 — tracker_skip (2026-10, простой клиент, этап 2): тоже константа.
     // 34 — diary_quick_save (2026-10, простой клиент, этап 3): тоже константа.
     // 35 — therapy_nudge (2026-10, мост к терапевту): тоже константа.
-    expect(Object.keys(BACKEND_ONLY).length).toBeLessThanOrEqual(35);
+    // 36 — therapy_invite (2026-11, воронка приглашения клиента): серверное.
+    expect(Object.keys(BACKEND_ONLY).length).toBeLessThanOrEqual(36);
   });
 });

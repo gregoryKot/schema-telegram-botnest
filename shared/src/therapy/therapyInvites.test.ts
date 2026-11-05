@@ -5,9 +5,12 @@ import { describe, it, expect, vi } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
 import {
   inviteCreateErrorText,
+  offlineClientInvite,
+  THERAPY_INVITES_PATH,
   usePendingInvites,
   type TherapyInvite,
 } from './therapyInvites';
+import { cachedGet, clearApiCache } from '../api/apiCache';
 
 const inv = (id: number, alias: string | null = null): TherapyInvite => ({
   id,
@@ -16,6 +19,7 @@ const inv = (id: number, alias: string | null = null): TherapyInvite => ({
   alias,
   createdAt: '2026-10-26T10:00:00.000Z',
   expiresAt: '2026-11-02T10:00:00.000Z',
+  attachToId: null,
 });
 
 function makeApi(list: TherapyInvite[]) {
@@ -62,6 +66,22 @@ describe('usePendingInvites', () => {
     expect(api.getTherapyInvites).toHaveBeenCalledTimes(2);
   });
 
+  it('список, перечитанный другим экземпляром через кеш GET, доезжает и сюда', async () => {
+    clearApiCache();
+    const api = makeApi([]);
+    const { result, unmount } = renderHook(() => usePendingInvites(api));
+    await waitFor(() => expect(result.current.invites).toEqual([]));
+    // Так OfflineInviteCard перечитывает список после создания приглашения.
+    await act(() =>
+      cachedGet(THERAPY_INVITES_PATH, () =>
+        Promise.resolve([inv(7, 'Лев К.')]),
+      ),
+    );
+    expect(result.current.invites?.[0].alias).toBe('Лев К.');
+    unmount();
+    clearApiCache();
+  });
+
   it('reload — новое приглашение появляется без перезахода в кабинет', async () => {
     const api = makeApi([]);
     const { result } = renderHook(() => usePendingInvites(api));
@@ -87,5 +107,25 @@ describe('inviteCreateErrorText', () => {
       /Не удалось создать приглашение/,
     );
     expect(inviteCreateErrorText(null, vy)).toMatch(/Попробуйте ещё раз/);
+  });
+});
+
+describe('offlineClientInvite', () => {
+  it('берёт приглашение своей офлайн-карточки, при нескольких — свежее', () => {
+    const own = (id: number, createdAt: string, attachToId: number | null) => ({
+      ...inv(id),
+      createdAt,
+      attachToId,
+    });
+    const list = [
+      own(1, '2026-10-26T10:00:00.000Z', 57),
+      own(2, '2026-10-27T10:00:00.000Z', 57),
+      own(3, '2026-10-28T10:00:00.000Z', 58),
+      own(4, '2026-10-29T10:00:00.000Z', null),
+    ];
+    expect(offlineClientInvite(list, -57 as never)?.id).toBe(2);
+    expect(offlineClientInvite(list, -59 as never)).toBeNull();
+    expect(offlineClientInvite(null, -57 as never)).toBeNull();
+    expect(offlineClientInvite(undefined, -57 as never)).toBeNull();
   });
 });

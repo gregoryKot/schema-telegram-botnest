@@ -35,6 +35,15 @@ export function clearYsqProgress(): void {
   emit(null);
 }
 
+/** Локальная копия итога теста (дата прохождения и ответы). */
+export function writeYsqResult(date: string, answers: number[]): void {
+  localStorage.setItem(YSQ_RESULT_KEY, JSON.stringify({ date, answers }));
+}
+
+export function clearYsqResult(): void {
+  localStorage.removeItem(YSQ_RESULT_KEY);
+}
+
 /** Итог теста на сервере сохранён или удалён — экранам перечитать профиль. */
 export function notifyYsqResultChanged(): void {
   window.dispatchEvent(new Event(YSQ_RESULT_EVENT));
