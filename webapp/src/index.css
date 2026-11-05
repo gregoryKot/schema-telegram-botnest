@@ -231,6 +231,15 @@
   --mobile-nav-h: 64px;
 }
 
+/* .light-lock переопределяет токены, но не `color`: цвет, унаследованный от
+   body, вычислен на уровне body, где при тёмной теме на <html> --text
+   светлый, и он проникает внутрь. Инцидент 2026-11-05: в кабинете внутри
+   Telegram текст без явного color был светлым на светлой бумаге. */
+.light-lock {
+  color: var(--text);
+  color-scheme: light;
+}
+
 html[data-theme="dark"] {
   --bg:            #14141a;
   --bg-rail:       #101015;
@@ -596,7 +605,7 @@ a { color: inherit; text-decoration: none; }
   background: var(--bg);
 }
 .page-inner-wide { padding: 48px 64px 96px; max-width: 1280px; margin: 0 auto; }
-@media (max-width: 767px) {
+@media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
   .page-inner-wide { padding: 20px 16px 40px; }
 }
 
@@ -765,6 +774,10 @@ a { color: inherit; text-decoration: none; }
   font-family: 'JetBrains Mono', ui-monospace, monospace; letter-spacing: 0;
   flex-shrink: 0;
 }
+/* Подсказки для клавиатуры («⌘K», «Esc», «⌘ + Enter — сохранить») на устройстве
+   без наведения (телефон, планшет) не нужны: нажать их нечем. Один класс на
+   все такие подсказки; новую клавиатурную подсказку помечай им (QA 2026-11, T-14). */
+@media (hover: none) { .kbd-hint { display: none !important; } }
 
 /* ─── Layout helpers ─────────────────────────────────────────────────────── */
 .flex  { display: flex; }
@@ -772,7 +785,7 @@ a { color: inherit; text-decoration: none; }
 .row   { display: flex; flex-direction: row; }
 .doc-grid { display: grid; grid-template-columns: 1fr 320px; gap: 72px; align-items: start; }
 @media (max-width: 1240px) { .doc-grid { grid-template-columns: 1fr; gap: var(--space-48); } }
-@media (max-width: 767px) { .doc-grid { gap: var(--space-32); } }
+@media (max-width: 767px), (pointer: coarse) and (max-height: 500px) { .doc-grid { gap: var(--space-32); } }
 
 /* ─── Animations ─────────────────────────────────────────────────────────── */
 @keyframes fade-in     { from { opacity: 0; } to { opacity: 1; } }
@@ -792,6 +805,15 @@ a { color: inherit; text-decoration: none; }
 .animate-slide { animation: slide-up .22s ease backwards; }
 
 /* ─── Cookie consent banner – editorial: сплошная бумага, тонкая рамка ───── */
+.cookie-banner-wrap {
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 9999;
+  padding: 0 16px calc(20px + var(--safe-bottom)); pointer-events: none;
+}
+/* На странице с нижней навигацией баннер стоит НАД ней, а не закрывает её
+   пункты (QA 2026-11, C-З1: центры «Сегодня/Записи/Ещё» попадали в баннер). */
+@media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
+  body:has(.mobile-nav) .cookie-banner-wrap { bottom: calc(var(--mobile-nav-h) + var(--safe-bottom)); padding-bottom: var(--space-12); }
+}
 .cookie-banner {
   background: var(--bg-elev);
   border: 1px solid var(--line-strong);
@@ -846,7 +868,7 @@ a { color: inherit; text-decoration: none; }
    Desktop: fill canvas via a flex chain. Mobile: natural block flow so the
    whole page scrolls like a regular section. Layout is kept in CSS (not inline
    styles) so mobile breakpoint can cleanly override without !important hacks. */
-@media (min-width: 768px) {
+@media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) {
   .therapist-sheet {
     flex: 1;
     min-width: 0;
@@ -875,7 +897,7 @@ a { color: inherit; text-decoration: none; }
 }
 
 /* Mobile: header padding + horizontal tab scroll */
-@media (max-width: 767px) {
+@media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
   .tabs {
     padding: 0 16px;
     overflow-x: auto;
@@ -917,7 +939,7 @@ a { color: inherit; text-decoration: none; }
 .mobile-nav-item.active { color: var(--accent); font-weight: 600; }
 
 /* ─── Responsive breakpoints ─────────────────────────────────────────────── */
-@media (max-width: 767px) {
+@media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
   .app-shell {
     display: flex;
     flex-direction: column;
@@ -944,9 +966,10 @@ a { color: inherit; text-decoration: none; }
        за него, и этот отступ ничего не давал (последние 64px лежали под
        панелью). */
     flex-shrink: 0; min-height: auto;
-    /* + 72px — запас под плавающую «+» (56px + отступ): последняя строка
-       не прячется под кнопкой. */
-    padding-bottom: calc(var(--mobile-nav-h) + 72px + var(--safe-bottom));
+    /* + 24px — обычный зазор над панелью: последняя строка не прижата к ней.
+       Раньше стояло 72px «под „+“», которой на сайте нет (QA 2026-11, C-М2);
+       плавающей кнопки внизу тоже нет (решение владельца 2026-11-03). */
+    padding-bottom: calc(var(--mobile-nav-h) + var(--space-24) + var(--safe-bottom));
   }
   .page { overflow: visible; height: auto; }
   /* Fixed fullscreen overlays (.ex-screen) need their own scroll — the global
@@ -957,7 +980,7 @@ a { color: inherit; text-decoration: none; }
      приложения (#902; новые листы отступают в styles/sheet-*.css). */
   .ex-screen { padding-top: var(--safe-top); }
 }
-@media (min-width: 768px) {
+@media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) {
   .mobile-nav { display: none !important; }
   /* Settings overlay: don't cover the sidebar on desktop */
   .settings-overlay { left: var(--sidebar-w) !important; }
@@ -1011,12 +1034,9 @@ a { color: inherit; text-decoration: none; }
   /* Конец прокрутки листа не должен докручивать страницу под ним. */
   overscroll-behavior: contain;
 }
-.sheet-modal-handle {
-  width: 36px; height: 4px; border-radius: var(--r-2);
-  background: rgba(var(--fg-rgb), 0.12);
-  margin: 0 auto 20px;
-}
-@media (min-width: 768px) {
+/* «Ручки» у нижнего листа нет: она обещала свайп вниз, а свайпа нет (QA 2026-11,
+   C-М3). Закрывают кнопка, фон, Escape и «Назад». */
+@media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) {
   .sheet-modal { align-items: center; justify-content: center; padding: var(--space-32); }
   .sheet-modal-box {
     border-radius: var(--r-16);
@@ -1026,7 +1046,6 @@ a { color: inherit; text-decoration: none; }
     box-shadow: 0 24px 64px -16px rgba(28,25,22,0.22);
     animation: modal-in 0.18s ease;
   }
-  .sheet-modal-handle { display: none; }
 }
 html[data-theme="dark"] .sheet-modal-box { box-shadow: 0 24px 64px -16px rgba(0,0,0,0.6); }
 
@@ -1046,15 +1065,15 @@ html[data-theme="dark"] .sheet-modal-box { box-shadow: 0 24px 64px -16px rgba(0,
 .dialog-actions > .btn-primary, .dialog-actions > .btn-outline { flex: 1; width: auto; }
 .dialog-actions > .btn-primary { padding: 12px 18px; }
 .dialog-actions > .btn-outline { padding: 11px 18px; }
-.dialog-link {
-  display: block; width: 100%; margin-top: 6px; padding: 10px 0;
+.dialog-link { /* 44 по высоте: «Позже» в выборе «ты/вы» было 40 (QA мобильной версии 2026-11, М1) */
+  display: block; width: 100%; min-height: 44px; margin-top: 6px; padding: 10px 0;
   background: none; border: none; cursor: pointer; font-family: inherit;
   font-size: 13px; color: var(--text-faint);
 }
 .dialog-link:hover { color: var(--text-sub); }
 /* Settings content area: center on desktop */
 .settings-content-inner { max-width: 600px; }
-@media (min-width: 768px) { .settings-content-inner { margin: 0 auto; } }
+@media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) { .settings-content-inner { margin: 0 auto; } }
 
 /* ─── BottomSheet → Modal on desktop ────────────────────────────────────── */
 @keyframes modal-in {
@@ -1174,6 +1193,14 @@ textarea:focus-visible {
 }
 .react-flow__node:hover .mm-handle,
 .react-flow__node.selected .mm-handle { opacity: 1; }
+/* Без наведения (телефон, планшет) ручки видны всегда: показывать их по :hover
+   или у выделенного узла нечем, а выделенный узел на телефоне закрыт панелью
+   правки (QA 2026-11, T-4). Связь — потянуть точку к другому узлу или тапнуть
+   точку одного узла и точку другого (React Flow connectOnClick). Зона 28px —
+   компромисс: 44 соседние ручки узла перекрыли бы друг друга и сам узел. */
+@media (hover: none) {
+  .mm-handle { opacity: 1; width: 28px !important; height: 28px !important; } /* !important: размер ручки задан инлайн (nodeParts dotStyle) */
+}
 /* While dragging a connection, reveal all handles so targets are obvious */
 .react-flow.connecting .mm-handle { opacity: 0.85; }
 /* Keep the connect-cursor while actively dragging the line over the canvas */

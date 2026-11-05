@@ -1,13 +1,20 @@
 import { useEffect, useState } from 'react';
+import { isPhoneLayout, PHONE_MEDIA } from '../utils/phoneLayout';
 
-// True when the viewport is narrow (phone / small tablet). Updates on resize.
-export function useIsMobile(breakpoint = 768): boolean {
-  const [mobile, setMobile] = useState(() =>
-    typeof window !== 'undefined' && window.innerWidth < breakpoint);
+// True в телефонной раскладке (условие — utils/phoneLayout, то же, что в CSS).
+// Обновляется при повороте и изменении размера окна.
+export function useIsMobile(): boolean {
+  const [mobile, setMobile] = useState(isPhoneLayout);
   useEffect(() => {
-    const onResize = () => setMobile(window.innerWidth < breakpoint);
-    window.addEventListener('resize', onResize);
-    return () => window.removeEventListener('resize', onResize);
-  }, [breakpoint]);
+    const update = () => setMobile(isPhoneLayout());
+    window.addEventListener('resize', update);
+    const mq = typeof window.matchMedia === 'function' ? window.matchMedia(PHONE_MEDIA) : null;
+    mq?.addEventListener?.('change', update);
+    update();
+    return () => {
+      window.removeEventListener('resize', update);
+      mq?.removeEventListener?.('change', update);
+    };
+  }, []);
   return mobile;
 }

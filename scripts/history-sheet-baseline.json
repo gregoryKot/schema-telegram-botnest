@@ -15,10 +15,6 @@
     "reason": "Невидимая подложка под контекстным меню карты режимов (поповер у курсора): ловит клик снаружи, закрывает меню. Это не лист, «Назад» с поповером не связана.",
     "since": "docs/AUDIT_2026-10_FINDINGS.md"
   },
-  "webapp/src/components/ModeMapSelector.tsx": {
-    "reason": "Невидимая подложка под выпадающим выбором вида карты (поповер у кнопки): ловит клик снаружи. Это не лист, запись истории ему не нужна.",
-    "since": "docs/AUDIT_2026-10_FINDINGS.md"
-  },
   "webapp/src/components/OverlayFrame.tsx": {
     "reason": "Рамка оверлеев «Все задания» и «Все цели» (класс sk-overlay): goBack приходит пропом, хук вызывает потребитель — sections/today/AllTasksOverlay.tsx (один на оба списка), один раз на лист. Хук в рамке дал бы вторую запись истории.",
     "since": "#746"
@@ -42,10 +38,6 @@
   "webapp/src/components/schemaSheets/SsSheet.tsx": {
     "reason": "Оболочка листов схем и режимов (класс ss-sheet): onBack приходит пропом, хук вызывает каждый лист-потребитель один раз — SchemaInfoSheet, SchemaDetailSheet, SchemaPickerSheet, ModePickerSheet, YSQTestSheet (его экраны YsqIntro/YsqResult получают goBack пропом), ModeCheckinOverlay. Хук в оболочке дал бы вторую запись истории на один лист.",
     "since": "#746"
-  },
-  "webapp/src/components/settingsSheet/ui.tsx": {
-    "reason": "InfoModal — мини-модалка поверх листа настроек с тёмным фоном: у неё свой локальный onClose, хук вызывает сам лист настроек (CLAUDE.md, раздел про fullscreen-лист: внутренние мини-модалки исключены).",
-    "since": "docs/AUDIT_2026-10_FINDINGS.md"
   },
   "webapp/src/components/trackerOverlay/CompletionScreen.tsx": {
     "reason": "Часть TrackerOverlay: экран «Готово» рисуется внутри него, хук вызван в родителе (TrackerOverlay.tsx:42), «Назад» этого экрана — его goBack.",

@@ -17,7 +17,7 @@
    липкой шапке, а не на корне .ex2-screen: sticky считает top: 0 от края
    скролл-контейнера, и padding корня уезжает при первом же скролле. Бар
    остаётся 56 поверх отступа. */
-@media (max-width: 767px) { .ex2-top { padding-top: var(--safe-top); min-height: calc(56px + var(--safe-top)); } }
+@media (max-width: 767px), (pointer: coarse) and (max-height: 500px) { .ex2-top { padding-top: var(--safe-top); min-height: calc(56px + var(--safe-top)); } }
 .ex2-body {
   display: grid; grid-template-columns: minmax(0, 720px) 300px; gap: 56px;
   align-items: start; justify-content: center; box-sizing: border-box;

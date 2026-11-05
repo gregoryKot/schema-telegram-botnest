@@ -1,27 +1,29 @@
 // @vitest-environment jsdom
 // «?» у заголовка раздела настроек и лист «Зачем это» (паритет с InfoOverlays мини-аппа).
 import { describe, it, expect, afterEach } from 'vitest';
-import { render, screen, fireEvent, cleanup } from '@testing-library/react';
+import { render as rtlRender, screen, fireEvent, cleanup, waitFor } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import { AddressFormContext } from '../../utils/addressForm';
 import { hasTyForms } from '../../../../shared/src/utils/tyFormsSweep';
 import { SSection } from './ui';
 import { SettingsInfoHelp } from './SettingsInfoHelp';
 
 afterEach(cleanup);
+const render = (ui: React.ReactElement) => rtlRender(<MemoryRouter>{ui}</MemoryRouter>);
 
 const withForm = (form: 'ty' | 'vy', node: React.ReactNode) => (
   <AddressFormContext.Provider value={{ form, setForm: () => {} }}>{node}</AddressFormContext.Provider>
 );
 
 describe('SettingsInfoHelp', () => {
-  it('лист закрыт, пока не нажали «?»; нажатие открывает объяснение, фон закрывает', () => {
+  it('лист закрыт, пока не нажали «?»; нажатие открывает объяснение, фон закрывает', async () => {
     render(<SettingsInfoHelp infoKey="notify" />);
     expect(screen.queryByText('Зачем уведомления')).toBeNull();
     fireEvent.click(screen.getByLabelText('Пояснение'));
     expect(screen.getByText('Зачем уведомления')).toBeTruthy();
     expect(screen.getByText('Итоги дня')).toBeTruthy();
     fireEvent.click(screen.getByLabelText('Закрыть'));
-    expect(screen.queryByText('Зачем уведомления')).toBeNull();
+    await waitFor(() => expect(screen.queryByText('Зачем уведомления')).toBeNull());
   });
 
   it('зона нажатия «?» не меньше 44×44', () => {

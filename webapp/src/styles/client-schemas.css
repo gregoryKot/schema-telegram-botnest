@@ -71,7 +71,7 @@
 .cs-sheet { position: fixed; inset: 0; z-index: 90; background: var(--bg); display: flex; flex-direction: column; }
 .cs-sheet-body { flex: 1; min-height: 0; }
 
-@media (max-width: 767px) {
+@media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
   .cs-sheet { padding-top: var(--safe-top); } /* статус-бар установленного приложения (#902) */
   .cs-head { gap: var(--space-12) var(--space-16); }
 
@@ -123,6 +123,6 @@
 
 /* Компьютер: заголовок «Мои паттерны» не сжимается ради действий (на 1024 с шестерёнкой он ломался на две строки) —
    действия при нехватке места уходят второй строкой. Телефон (≤767) не затронут. */
-@media (min-width: 768px) {
+@media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) {
   .cs-head-text { flex: 1 1 auto; }
 }

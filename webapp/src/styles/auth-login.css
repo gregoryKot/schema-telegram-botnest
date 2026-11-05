@@ -79,7 +79,7 @@
   border: 0; background: none; cursor: text;
 }
 
-@media (max-width: 767px) {
+@media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
   .al-root { grid-template-columns: 1fr; grid-template-rows: auto 1fr; background: var(--panel); }
   .al-hero { padding: 24px 24px 28px; gap: 14px; }
   .al-brand-name, .al-lead { display: none; }

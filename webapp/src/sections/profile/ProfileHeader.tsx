@@ -20,7 +20,7 @@ export function ProfileHeader({ displayName, totalDays, onCustomize, onOpenSetti
         <h1 className="ds-h1">Мой <i>путь</i></h1>
         {(name || totalDays > 0) && (
           <div className="ds-sub cpf-head-sub">
-            {name}{name && totalDays > 0 ? ' · ' : ''}
+            {name && <span className="cpf-head-name">{name}</span>}{name && totalDays > 0 ? ' · ' : ''}
             {totalDays > 0 && <>{totalDays} {daysWord(totalDays)} {tr('с тобой', 'с вами')} в приложении</>}
           </div>
         )}

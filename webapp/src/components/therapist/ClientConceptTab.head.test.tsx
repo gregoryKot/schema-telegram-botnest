@@ -31,6 +31,7 @@ import { api } from '../../api';
 import { ClientConceptTab } from './ClientConceptTab';
 import { useClientDetail } from './useClientDetail';
 import { ysqFoldTitle, actionStatusText } from './concept/conceptHeadText';
+import { PHONE_MEDIA, DESKTOP_MEDIA } from '../../utils/phoneLayout';
 
 const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
 
@@ -267,9 +268,11 @@ describe('ширина под схему', () => {
 });
 
 // Шапка вкладки: заголовок, подпись и слово «Ещё» есть в разметке и показываются
-// на компьютере (≥768); на телефоне (#906) их прячет CSS под @media (max-width:
-// 767px) — разметка общая, useIsMobile не нужен. Верхний отступ — класс tcp-page
+// на компьютере (DESKTOP_MEDIA, ≥768); на телефоне (#906) их прячет CSS под @media
+// PHONE_MEDIA (utils/phoneLayout.ts) — разметка общая, useIsMobile не нужен. Верхний отступ — класс tcp-page
 // (40 на ноутбуке, 20 на телефоне из .page-inner-wide), а не u-pt40.
+/** Заголовок компьютерного блока для RegExp: скобки DESKTOP_MEDIA экранированы. */
+const DESK = `@media ${DESKTOP_MEDIA.replace(/[()]/g, '\\$&')}`;
 describe('шапка: компьютер с заголовком, телефон без (#906)', () => {
   it('h2 «Концептуализация» и слово «Ещё» в разметке; прячутся только под ≤767, показ на ≥768', async () => {
     await openTab();
@@ -280,19 +283,21 @@ describe('шапка: компьютер с заголовком, телефон
     expect(root().classList.contains('tcp-page')).toBe(true);
     expect(root().classList.contains('u-pt40')).toBe(false);
     const css = readFileSync(join(__dirname, '../../styles/therapist-concept.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
-    const phone = css.slice(css.indexOf('@media (max-width: 767px) {\n  .tcp-head'));
+    const phoneAt = css.indexOf(`@media ${PHONE_MEDIA} {\n  .tcp-head`);
+    expect(phoneAt).toBeGreaterThan(-1);
+    const phone = css.slice(phoneAt);
     expect(phone).toMatch(/\.tcp-head-title, \.tcp-more-txt \{ display: none; \}/);
     // вне телефонного блока скрытия нет
     expect(css.replace(phone.slice(0, phone.indexOf('\n}\n') + 3), '')).not.toMatch(/\.tcp-(head-title|more-txt)[^{]*\{[^}]*display: none/);
-    expect(css).toMatch(/@media \(min-width: 768px\) \{\s*\.tcp-save \{ margin-left: 0; \}[\s\S]*?\.tcp-more \.ds-btn--icon \{[^}]*width: auto/);
+    expect(css).toMatch(new RegExp(`${DESK} \\{\\s*\\.tcp-save \\{ margin-left: 0; \\}[\\s\\S]*?\\.tcp-more \\.ds-btn--icon \\{[^}]*width: auto`));
     // на компьютере order не нужен: порядок в DOM = видимому (B1), order у статуса — только на телефоне
-    expect(css.slice(0, css.indexOf('@media (max-width: 767px) {\n  .tcp-head'))).not.toMatch(/\.tcp-(save|more)[^{]*\{[^}]*order:|\.tcp-head > \.ds-seg \{[^}]*order/);
+    expect(css.slice(0, phoneAt)).not.toMatch(/\.tcp-(save|more)[^{]*\{[^}]*order:|\.tcp-head > \.ds-seg \{[^}]*order/);
     // группа действий: вне медиа растворена (телефон как раньше), на ≥768 неразрывная; принудительного переноса заголовка нет
     expect(css).toMatch(/\n\.tcp-head-actions \{ display: contents; \}/);
-    expect(css).toMatch(/@media \(min-width: 768px\) \{\s*\.tcp-head-actions \{ display: inline-flex;[^}]*margin-left: auto/);
+    expect(css).toMatch(new RegExp(`${DESK} \\{\\s*\\.tcp-head-actions \\{ display: inline-flex;[^}]*margin-left: auto`));
     expect(css).not.toMatch(/\.tcp-head-title \{ flex-basis/);
     // раскрывашка «Как читать схему» на компьютере — по содержимому, не полоса
-    expect(css).toMatch(/@media \(min-width: 768px\) \{\s*\.tcp-graph \[data-export-skip\] > \.ds-fold \{ width: fit-content/);
+    expect(css).toMatch(new RegExp(`${DESK} \\{\\s*\\.tcp-graph \\[data-export-skip\\] > \\.ds-fold \\{ width: fit-content`));
     expect(css).toMatch(/\.tcp-page \{[^}]*padding-top: 40px/);
   });
 

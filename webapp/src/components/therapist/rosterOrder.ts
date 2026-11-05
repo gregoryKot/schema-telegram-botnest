@@ -1,11 +1,17 @@
-// Порядок и поиск клиентов терапевта — одни для «Все клиенты» (rosterModel)
-// и сайдбара кабинета (appShell/SidebarClients). Отдельно от rosterModel
-// намеренно: сайдбар живёт в основном чанке, а фильтры статусов, подписи и
-// данные схем ему не нужны — их импорт перекраивал общие чанки бандла.
+// Порядок, поиск и метка статуса клиентов терапевта — одни для «Все клиенты»
+// (rosterModel), сайдбара кабинета (appShell/SidebarClients) и поиска-палитры
+// (CommandPalette). Отдельно от rosterModel намеренно: сайдбар и палитра живут
+// в основном чанке, а фильтры статусов, подписи и данные схем им не нужны —
+// их импорт перекраивал общие чанки бандла.
 // today — местный день терапевта: nextSession — его настенное время (№25).
 import type { TherapyClientSummary } from '../../api';
+import { isVirtualClient } from '../../../../shared/src/therapy/clientSheetHelpers';
 import { upcomingSession } from '../../../../shared/src/therapy/upcomingSession';
 import { matchesSearch } from '../../../../shared/src/utils/searchNormalize';
+
+/** Статус: клиент в боте (ok) или офлайн-карточка без бота — одна метка для списка и палитры. */
+export const clientStatus = (c: TherapyClientSummary): { label: string; inBot: boolean } =>
+  isVirtualClient(c) ? { label: 'офлайн', inBot: false } : { label: 'в боте', inBot: true };
 
 /** Явная встреча не в прошлом — иначе null; дни встреч список подписывает «по Вт». */
 export const plannedSession = (c: TherapyClientSummary, today: string): string | null =>

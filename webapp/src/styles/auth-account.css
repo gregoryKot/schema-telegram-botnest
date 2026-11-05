@@ -2,7 +2,7 @@
    Страница живёт вне AppShell, поэтому корень сам держит светлую тему.
    Шапка «← Назад» — общая .ds-sheet-head/.ds-back, заголовок страницы —
    ds-eyebrow + ds-h1 + ds-sub, кнопки — ds-btn/ds-link (#906). */
-.aa-root { --sheet-col: 880px; --sheet-pad: 32px; min-height: 100vh; background: var(--bg); color: var(--text); width: 100%; box-sizing: border-box; }
+.aa-root { --sheet-col: 880px; --sheet-pad: 32px; padding-top: var(--safe-top); min-height: 100vh; background: var(--bg); color: var(--text); width: 100%; box-sizing: border-box; }
 .aa-page { max-width: 880px; margin: 0 auto; padding: 32px 32px 56px; display: flex; flex-direction: column; gap: 28px; box-sizing: border-box; }
 .aa-head { display: flex; align-items: center; gap: 20px; }
 .aa-avatar { width: 72px; height: 72px; font-size: 26px; }
@@ -19,6 +19,8 @@
 .aa-row-text { min-width: 0; }
 .aa-row-title { font-size: 15px; font-weight: 700; }
 .aa-row-sub { font-size: 12px; color: var(--text-faint); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Причина серой «Отвязать» переносится, а не режется многоточием: на телефоне её было не прочесть (QA мобильной 2026-11, М9). */
+.aa-row-why { white-space: normal; }
 .aa-row-note { font-size: 12px; color: var(--text-faint); }
 .aa-row-wrap { padding: 0; }
 .aa-row-wrap > .aa-row { padding-bottom: 14px; }
@@ -56,7 +58,7 @@
 /* Низ: «Выйти» — ds-btn--secondary, «Выйти со всех устройств» — ds-link с тап-целью 44 */
 .aa-foot { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; border-top: 1px solid var(--paper-sunk); padding-top: 20px; }
 
-@media (max-width: 767px) {
+@media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
   .aa-page { padding: 20px 16px 40px; gap: 24px; }
   .aa-avatar { width: 56px; height: 56px; font-size: 20px; }
   .aa-head { gap: 14px; }
@@ -70,7 +72,7 @@
 
 /* Компьютер: карточка «Подписка» — «Управлять →» акцентом справа, как до волн (телефон: серый «Управлять» и «›»).
    Правила на прямом ребёнке колонки. */
-@media (min-width: 768px) {
+@media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) {
   .aa-col > .ds-card--nav .ds-list-body { flex-direction: row; align-items: center; justify-content: space-between; gap: 12px; }
   .aa-col > .ds-card--nav .ds-sub { font-size: 13px; font-weight: 700; color: var(--accent); }
   .aa-col > .ds-card--nav .ds-chev { margin-left: 0; color: var(--accent); }

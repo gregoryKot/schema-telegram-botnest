@@ -10,4 +10,4 @@ export const page: React.CSSProperties = {
 };
 export const h1: React.CSSProperties = { fontFamily: 'var(--serif)', fontSize: 'clamp(26px,6vw,34px)', fontWeight: 400, lineHeight: 1.15, letterSpacing: '-.01em', margin: '0 0 10px' };
 export const sub: React.CSSProperties = { fontSize: 15, color: 'var(--text-sub)', lineHeight: 1.7, margin: '0 0 24px' };
-export const backLink: React.CSSProperties = { display: 'inline-block', marginTop: 32, fontSize: 13, color: 'var(--text-faint)', textDecoration: 'none' };
+export const backLink: React.CSSProperties = { display: 'inline-flex', alignItems: 'center', minHeight: 44, marginTop: 20, fontSize: 13, color: 'var(--text-faint)', textDecoration: 'none' }; // 44 — палец (QA мобильной 2026-11, М1)

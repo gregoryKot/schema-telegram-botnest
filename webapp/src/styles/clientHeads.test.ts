@@ -6,6 +6,7 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { PHONE_MEDIA } from '../utils/phoneLayout';
 
 const read = (f: string) => readFileSync(join(__dirname, f), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
 
@@ -17,7 +18,7 @@ const declsOf = (css: string, sel: string) =>
   rulesOf(css).filter(([sels]) => sels.includes(sel)).map(([, body]) => body.trim()).join(';');
 /** Тело блока `@media (max-width: 767px)` — по балансу скобок. */
 function phoneBlock(css: string): string {
-  const open = css.indexOf('{', css.indexOf('@media (max-width: 767px)'));
+  const open = css.indexOf('{', css.indexOf(`@media ${PHONE_MEDIA}`));
   let depth = 0;
   for (let i = open; i < css.length; i++) {
     depth += css[i] === '{' ? 1 : css[i] === '}' ? -1 : 0;
@@ -70,7 +71,7 @@ describe('экраны клиента: действия и кнопки — ds-*
   it('«Записать» — ds-btn--lg во всю ширину на телефоне, пилюля по тексту только от 768px', () => {
     const css = read('client-diary.css');
     expect(declsOf(css, '.cd-write')).not.toMatch(/min-height|border-radius/);
-    expect(css).toMatch(/@media \(min-width: 768px\) \{ \.cd-write \{ width: auto/);
+    expect(css).toMatch(/@media \(min-width: 768px\) and \(min-height: 501px\), \(min-width: 768px\) and \(pointer: fine\) \{ \.cd-write \{ width: auto/);
     expect(phoneBlock(css)).not.toContain('.cd-write');
   });
 

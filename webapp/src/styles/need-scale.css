@@ -18,7 +18,7 @@
 .ns-seg:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .ns-scale--lg .ns-seg { height: 32px; border-radius: 7px; }
 .ns-scale--lg .ns-seg::after { inset: -6px -1px; }
-@media (max-width: 767px) {
+@media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
   .ns-scale { gap: 2px; }
   .ns-seg { height: 16px; border-radius: 3px; }
   .ns-scale--lg .ns-seg { height: 32px; }

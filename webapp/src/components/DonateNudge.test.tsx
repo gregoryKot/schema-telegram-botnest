@@ -8,6 +8,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { DonateNudge } from './DonateNudge';
+import { donateNudgeBlocked } from './donateNudgeBlocked';
 
 const SHOWN_KEY = 'donateNudgeAt';
 const SEEN_KEY = 'donateNudgeSeen';
@@ -89,5 +90,22 @@ describe('DonateNudge — закрытие', () => {
     renderNudge();
     const link = screen.getByText('Поддержать') as HTMLAnchorElement;
     expect(link.getAttribute('href')).toBe('/donate');
+  });
+});
+
+describe('DonateNudge — не поверх помощи (C-М6)', () => {
+  it('blocked: лист не показывается, а после снятия блока появляется', () => {
+    localStorage.setItem(SEEN_KEY, String(Date.now() - 10 * DAY));
+    const { rerender } = render(<MemoryRouter><DonateNudge blocked /></MemoryRouter>);
+    expect(screen.queryByText('Поддержать проект')).toBeNull();
+    rerender(<MemoryRouter><DonateNudge blocked={false} /></MemoryRouter>);
+    expect(screen.getByText('Поддержать проект')).toBeTruthy();
+  });
+
+  it('donateNudgeBlocked: «Здесь и сейчас», открытый лист и очередь входов блокируют', () => {
+    expect(donateNudgeBlocked({ section: 'practice', anyOverlayOpen: false, entryDone: true })).toBe(true);
+    expect(donateNudgeBlocked({ section: 'today', anyOverlayOpen: true, entryDone: true })).toBe(true);
+    expect(donateNudgeBlocked({ section: 'today', anyOverlayOpen: false, entryDone: false })).toBe(true);
+    expect(donateNudgeBlocked({ section: 'today', anyOverlayOpen: false, entryDone: true })).toBe(false);
   });
 });
