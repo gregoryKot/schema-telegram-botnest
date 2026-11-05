@@ -229,3 +229,14 @@ user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
 ```bash
 npx prisma generate
 ```
+
+## Новая колонка у модели из реестра выгрузки — классифицируй там же
+
+Модели с `userId`/`clientId` описаны в реестре выгрузки данных
+(`src/account/export-policy.ts`, `src/account/export-policy.client.ts`):
+каждая колонка либо в `select`, либо в `omit` с причиной. Новая колонка без
+записи роняет `src/account/export-policy*.spec.ts` — и только его, остальные
+спеки модуля молчат (2026-11-05, `TherapyRelation.attachToId`: нашлось полным
+прогоном jest, а не спеками `src/therapy`). Правка схемы = запись в реестре в
+том же PR.
+

@@ -22,6 +22,7 @@ import { GameMetricsService } from './game-metrics.service';
 import { DataExportMetricsService } from './data-export-metrics.service';
 import { BookingRetentionMetricsService } from './booking-retention-metrics.service';
 import { IntroLeadMetricsService } from './intro-lead-metrics.service';
+import { TherapyInviteMetricsService } from './therapy-invite-metrics.service';
 import { TherapyNudgeMetricsService } from './therapy-nudge-metrics.service';
 import { TherapistExitMetricsService } from './therapist-exit-metrics.service';
 import { statsBlocks } from './stats-report.blocks';
@@ -59,6 +60,7 @@ export class StatsReportService {
     readonly bookingRetention: BookingRetentionMetricsService,
     readonly introLeads: IntroLeadMetricsService,
     readonly therapyNudge: TherapyNudgeMetricsService,
+    readonly therapyInvites: TherapyInviteMetricsService,
     readonly notifyQueue: NotifyQueueMetricsService,
     readonly therapistExit: TherapistExitMetricsService,
   ) {}

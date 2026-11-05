@@ -23,6 +23,8 @@ export interface TherapyInviteView {
   url: string;
   /** Имя клиента, которое терапевт ввёл при создании; null — без имени. */
   alias: string | null;
+  /** id офлайн-карточки, из которой создано приглашение; null — обычное. */
+  attachToId: number | null;
   createdAt: string;
   /** Когда код перестанет действовать (createdAt + INVITE_TTL_MS). */
   expiresAt: string;
@@ -41,6 +43,7 @@ export async function listTherapyInvites(
     code: r.code,
     url: inviteUrl(r.code),
     alias: decryptName(r.clientAlias),
+    attachToId: r.attachToId ?? null,
     createdAt: r.createdAt.toISOString(),
     expiresAt: new Date(r.createdAt.getTime() + INVITE_TTL_MS).toISOString(),
   }));

@@ -32,6 +32,10 @@
 //   therapist_resigned — терапевт отказался от роли (TherapistExitService),
 //                   meta.clientsEnded. С клиента meta не принимается (ветки в
 //                   sanitizeMeta нет), /stats верит только строкам с числом.
+//   therapy_invite — шаг воронки приглашения клиента терапевтом: создал код,
+//                   клиент подключился, отозвал (meta.step + meta.kind, реестр
+//                   и причины — therapy-invite-events.constants.ts). Пишет
+//                   TherapyInviteService; ветки в sanitizeMeta нет.
 export const SERVER_EVENTS = [
   'auth_rejected',
   'auth_success',
@@ -40,4 +44,5 @@ export const SERVER_EVENTS = [
   'data_export',
   'notify_queue_tick',
   'therapist_resigned',
+  'therapy_invite',
 ] as const;
