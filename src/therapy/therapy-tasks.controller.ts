@@ -67,8 +67,8 @@ export class TherapyTasksController {
       assignedBy,
     );
     if (assignedBy && targetUserId > 0n) {
-      // Pass original (plaintext) body so the notification payload is readable
       await this.tasksService.scheduleTaskNotification(targetUserId, {
+        type: body.type,
         text: body.text,
         needId: body.needId ?? null,
         dueDate: body.dueDate ?? null,

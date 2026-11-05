@@ -46,7 +46,7 @@
   - `CMD ["node","deploy/entrypoint.mjs"]`.
 
 **`deploy/entrypoint.mjs`** (супервизор, PID 1) по порядку:
-1. `front-server.mjs` сразу занимает публичный порт 3000: это TCP-проброс на `APP_PORT` (3001) или, пока приложение не поднялось или упало, страница `maintenance.html`. Исключение — хост визитки (`kotlarewski.gr`, сюда идёт реклама): ему front отдаёт `webapp/dist` с диска (`front-static.mjs`), техработы видят только продукт, API, `/app` и `/health`.
+1. `front-server.mjs` сразу занимает публичный порт 3000: это TCP-проброс на `APP_PORT` (3001) или, пока приложение не поднялось или упало, ответ с диска (`front-static.mjs`): файлы сборки `webapp/dist` — любому хосту (нет файла — 404 `no-store`, не HTML: при выкладке HTML мог прийти от соседнего контейнера, инцидент 2026-11-04), страницы — только визитке (`kotlarewski.gr`, сюда идёт реклама). Страницы продукта, API, `/app`, `/health`, `robots.txt` и `sitemap.xml` получают `maintenance.html`.
 2. `wait-for-db.mjs` ждёт TCP-порт БД из `DATABASE_URL`, до 120 с.
 3. `RECOVER_CMD`, по умолчанию `npx prisma db execute --file prisma/recover-p3009.sql || true`.
 4. `MIGRATE_CMD`, по умолчанию `npx prisma migrate deploy`, 3 попытки. Если не прошло, остаются техработы навсегда и приложение не стартует.
@@ -63,6 +63,7 @@ SIGTERM/SIGINT пробрасываются приложению.
   - `threads-relay/` — Cloudflare Worker (`worker.js` + README), ретранслятор запросов к `graph.threads.net`;
   - `app-exit.mjs` — решение супервизора по выходу приложения;
   - `pg-url-env.cjs` — `DATABASE_URL` в переменные libpq;
+  - `backup-lease-release.cjs` — при SIGTERM синхронно отпускает аренду бэкапа (иначе следующий процесс ждёт окно);
   - `transfer-db.sh` — разовый перенос БД Amvera→VPS через `RECOVER_CMD`.
 
 ### CI

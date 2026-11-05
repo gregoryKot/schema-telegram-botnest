@@ -3,8 +3,8 @@ import { useRef, type TouchEvent } from 'react';
 // Горизонтальный свайп между вопросами трекера — один на обе площадки
 // (webapp TrackerOverlay и мини-апп TrackerOverlay держали по копии).
 // Влево — вперёд, вправо — назад; порог 90px, вертикальные жесты (скролл) не
-// считаются. Касание внутри `[role="group"]` — шкалы оценки (NeedScale /
-// WordScale / NeedRatingBar) и точек потребностей — не свайп: палец,
+// считаются. Касание внутри `[role="group"]` — шкала оценки (NeedScale)
+// и точки потребностей — не свайп: палец,
 // проехавший по шкале, не уводит на другую потребность (docs/open/frontend-ux.md).
 const SWIPE_IGNORE = '[role="group"]';
 const MIN_DX = 90;

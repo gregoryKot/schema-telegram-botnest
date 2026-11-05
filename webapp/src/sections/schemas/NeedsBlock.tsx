@@ -2,6 +2,7 @@ import { NEED_ORDER, useNeedData } from '../../needData';
 import { IdentityDot } from '../../../../shared/src/components/IdentityDot';
 import { hueStyle, NEED_HUE } from '../../lib/tone';
 import { needLevel } from './schemasModel';
+import { NEEDS_WHAT } from '../../../../shared/src/pattern/patternTerms';
 
 interface Props {
   childhoodRatings: Record<string, number>;
@@ -9,7 +10,7 @@ interface Props {
   onOpenNeed: (id: string) => void;
 }
 
-/** «Базовые потребности»: оценка детства (если есть) и вход в описание. */
+/** «Базовые потребности»: оценка детства (если есть) и вход в описание; до колеса детства — что это (онбординг). */
 export function NeedsBlock({ childhoodRatings, onOpenChildhoodWheel, onOpenNeed }: Props) {
   const NEED_DATA = useNeedData();
   const hasChildhood = Object.keys(childhoodRatings).length > 0;
@@ -21,6 +22,7 @@ export function NeedsBlock({ childhoodRatings, onOpenChildhoodWheel, onOpenNeed 
           {hasChildhood ? 'Изменить детство →' : 'Пройти колесо детства →'}
         </button>
       </div>
+      {!hasChildhood && <p className="ds-empty">{NEEDS_WHAT}</p>}
       <div className="ds-card ds-card--flush">
         {!hasChildhood && (
           <button className="ds-list-row ds-list-row--hover cs-need" onClick={() => onOpenChildhoodWheel?.()}>
@@ -32,9 +34,8 @@ export function NeedsBlock({ childhoodRatings, onOpenChildhoodWheel, onOpenNeed 
             <span className="cs-need-arrow">›</span>
           </button>
         )}
-        {NEED_ORDER.map(id => {
+        {NEED_ORDER.filter(id => NEED_DATA[id]).map(id => {
           const d = NEED_DATA[id];
-          if (!d) return null;
           const score = childhoodRatings[id];
           return (
             <button key={id} className="ds-list-row ds-list-row--hover cs-need" onClick={() => onOpenNeed(id)}>
@@ -45,8 +46,7 @@ export function NeedsBlock({ childhoodRatings, onOpenChildhoodWheel, onOpenNeed 
               </span>
               {score !== undefined ? (
                 <span className="cs-need-score">
-                  <b className={`ds-num ds-idx-${needLevel(score)}`}>{score}</b>
-                  <small>детство</small>
+                  <b className={`ds-num ds-idx-${needLevel(score)}`}>{score}</b><small>детство</small>
                 </span>
               ) : <span className="cs-need-arrow">›</span>}
             </button>

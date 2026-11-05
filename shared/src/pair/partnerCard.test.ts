@@ -70,7 +70,11 @@ describe('pairTexts', () => {
   it('ты и вы дают разные тексты', () => {
     const ty = pairTexts((a) => a);
     const vy = pairTexts((_a, b) => b);
-    expect(ty.inviteText).not.toBe(vy.inviteText);
     expect(ty.copyLabel).not.toBe(vy.copyLabel);
+  });
+  it('объём доступа честный: партнёр видит и неделю (partnerWeekAvgs), «только число» не обещаем', () => {
+    const { scopeHint } = pairTexts((a) => a);
+    expect(scopeHint).toMatch(/за неделю/);
+    expect(scopeHint).not.toMatch(/только число|просто число/i);
   });
 });

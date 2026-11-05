@@ -1,6 +1,5 @@
 {
   "shared/src/flashcard/modes.ts": 4,
-  "shared/src/journey/JourneyDeleteButton.tsx": 4,
   "shared/src/therapy/clientSheetHelpers.ts": 1,
   "webapp/src/components/landing-kit-hooks.ts": 2,
   "webapp/src/components/useModeMapExport.ts": 1,

@@ -41,7 +41,7 @@ const ACTION: React.CSSProperties = {
   borderRadius: 'var(--r-12)',
   border: 'none',
   background: 'var(--accent)',
-  color: '#fff',
+  color: 'var(--on-accent)',
   fontSize: 15,
   fontWeight: 600,
   cursor: 'pointer',

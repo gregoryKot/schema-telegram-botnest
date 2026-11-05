@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { taskNotificationTitle, TaskNotificationInput } from './task-title';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationService } from '../notification/notification.service';
 import { encrypt, decrypt } from '../utils/crypto';
@@ -197,14 +198,14 @@ export class TherapyTasksService {
 
   async scheduleTaskNotification(
     clientId: bigint,
-    task: { text: string; needId: string | null; dueDate: string | null },
+    task: TaskNotificationInput,
   ): Promise<void> {
     await this.notificationService.schedule(
       clientId,
       'task_assigned',
       new Date(),
       {
-        text: task.text,
+        text: taskNotificationTitle(task.type, task.text),
         needId: task.needId,
         dueDate: task.dueDate,
       },

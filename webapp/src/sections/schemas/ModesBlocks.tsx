@@ -5,17 +5,17 @@ import { hueStyle, MODE_GROUP_HUE } from '../../lib/tone';
 import { FreqMark, FreqHint } from './FreqMark';
 import { Skeleton } from '../../components/Skeleton';
 import { ModeMap } from './ModeMap';
+import { MODE_WHAT } from '../../../../shared/src/pattern/patternTerms';
 
 interface Props {
-  loading: boolean; myModeIds: string[]; onAdd: () => void;
-  onOpenMode: (id: string) => void;
+  loading: boolean; myModeIds: string[]; onAdd: () => void; onOpenMode: (id: string) => void;
   modeFreq?: Record<string, number>; // дней за неделю по дневнику; undefined — пока не загрузилось
   onOpenPattern: (id: string) => void; // чип «Мои режимы» → экран паттерна; плитки карты → onOpenMode
 }
 
 const MODE_HUE: Record<string, number | undefined> = Object.fromEntries(MODE_GROUPS.flatMap(g => g.items.map(m => [m.id, MODE_GROUP_HUE[g.id]])),);
 
-/** Десктоп: «Мои режимы» (чипы) и «Карта режимов» (все режимы по группам). */
+/** Десктоп: «Мои режимы» (чипы) и «Карта режимов» (все режимы по группам); пусто — что такое режим. */
 export function ModesBlocks({ loading, myModeIds, onAdd, onOpenMode, onOpenPattern, modeFreq }: Props) {
   const tr = useTr();
   const myModes = myModeIds.map(id => ALL_MODES.find(m => m.id === id)).filter(Boolean) as typeof ALL_MODES;
@@ -31,7 +31,7 @@ export function ModesBlocks({ loading, myModeIds, onAdd, onOpenMode, onOpenPatte
             {[90, 110, 80].map((w, i) => <Skeleton key={i} height={32} width={w} radius={16} />)}
           </div>
         ) : myModes.length === 0 ? (
-          <PaperEmpty>{tr('Добавь режимы, которые узнаёшь у себя', 'Добавьте режимы, которые узнаёте у себя')}</PaperEmpty>
+          <PaperEmpty>{MODE_WHAT} {tr('Добавь режимы, которые узнаёшь у себя.', 'Добавьте режимы, которые узнаёте у себя.')}</PaperEmpty>
         ) : (
           <>
           {modeFreq && <FreqHint kind="mode" freq={modeFreq} />}

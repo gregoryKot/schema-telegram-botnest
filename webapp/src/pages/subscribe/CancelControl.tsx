@@ -1,7 +1,7 @@
 import { CANCEL_SUPPORT_LINK } from '../../components/booking/cancelPolicy';
 import { useSubscriptionCancel } from './useSubscriptionCancel';
 
-const btnSt: React.CSSProperties = { background: 'none', border: 'none', color: 'var(--text-faint)', fontSize: 14, fontFamily: 'inherit', cursor: 'pointer', textDecoration: 'underline', marginTop: 4 };
+const btnSt: React.CSSProperties = { background: 'none', border: 'none', color: 'var(--text-faint)', fontSize: 14, fontFamily: 'inherit', cursor: 'pointer', textDecoration: 'underline', marginTop: 4, minHeight: 44 }; // тап-цель ≥44 и на телефоне
 const noteSt: React.CSSProperties = { color: 'var(--accent-red)', fontSize: 14, lineHeight: 1.6, margin: '12px 0 0' };
 const linkSt: React.CSSProperties = { color: 'inherit', textDecoration: 'underline' };
 

@@ -54,6 +54,7 @@
 - Подводные камни:
   - Новый `*.controller.ts` без `@UseGuards(TelegramAuthGuard|JwtAuthGuard|OptionalJwtGuard)`, `assertAdminKey` или записи в реестр — красный `src/security/route-auth.invariants.spec.ts`; allowlist'ы только сокращаются, добавление — с ревью безопасности.
   - Рекурсивный обход `src/` в спеках — только через `collectSourceFiles` (гейт `src/test-support/gates/source-walk.spec.ts`).
+  - Свободный порт для спеков, поднимающих сервер, — `src/test-support/ephemeral-port.ts` (не захардкоженный номер: гонка между сьютами).
 
 ### `src/therapy/`
 Кабинет терапевта: связь терапевт↔клиент (код-приглашение, виртуальные офлайн-клиенты), заметки по сессиям, концептуализация, карты режимов, задания клиенту, заявка на роль терапевта (`therapist-request.*`).
@@ -64,6 +65,7 @@
   - `src/therapy/therapy-invites.controller.ts` — живые приглашения терапевта (`GET invites`, `DELETE invites/:id`) и предпросмотр кода для экрана согласия (`POST invite/preview`); логика — `src/therapy/therapy-invite-list.ts`
   - `src/therapy/therapy-client-data.service.ts` — данные клиента для терапевта, запрос YSQ
   - `src/therapy/therapy-tasks.service.ts` — задачи (свои и назначенные), стрик-прогресс
+  - `src/therapy/task-title.ts` — название задания для уведомления в боте («Карточка схемы: …»); названия схем/режимов — копия `shared` в `task-title.data.ts`, сверка `task-title.sync.spec.ts`
   - `src/therapy/streak-progress.ts` — прогресс задания-серии: дни с дня назначения по календарю клиента; один расчёт для /tasks клиента, карточки у терапевта и авто-закрытия
   - `src/therapy/assigned-task.ts` — удаление и отметка «выполнено» задания терапевтом (офлайн-клиенту выполнить его некому); доступ — задание назначено этим терапевтом и связь активна, иначе 403
   - `src/therapy/dto/not-future-day.ts` — валидатор `NotFutureDay`: «начало терапии» не позже самого позднего «сегодня» на Земле (UTC+14)
@@ -79,6 +81,7 @@
 Запись на консультации и деньги: слоты, бронь, оплата Robokassa, .ics, админка записи, календарь CalDAV, ссылки на встречи (Zoom/Jitsi), подписки/донаты, заявки с формы знакомства (IntroLead).
 - Входы:
   - `src/booking/booking.service.ts` — бронь: создание, подтверждение, отмена, cron `expireHolds`
+  - `src/booking/client-key.ts` + `contact-normal-form.ts` — ключ клиента из контакта (телефон с «+», почта); `client-key-rekey.service.ts` — проход на старте, переносит строки со старых ключей «только цифры»
   - `src/booking/whole-price.ts` — строгий разбор целой цены (`1e+22`, мусор → отказ); на нём `parsePrice` и `src/subscription/subscription-price.ts`
   - `src/booking/booking.transitions.ts` — переходы статуса брони (CAS)
   - `src/booking/slot.service.ts` — свободные слоты: правила, брони, override, CalDAV

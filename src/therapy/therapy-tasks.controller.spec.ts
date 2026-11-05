@@ -147,6 +147,7 @@ describe('TherapyTasksController.createTask', () => {
     expect(relations.assertHasClient).toHaveBeenCalledWith(7n, 5n);
     expect(tasks.createTask).toHaveBeenCalledWith(5n, body, 7n);
     expect(tasks.scheduleTaskNotification).toHaveBeenCalledWith(5n, {
+      type: 'reading',
       text: 'почитать главу',
       needId: 'safety',
       dueDate: '2026-08-01',

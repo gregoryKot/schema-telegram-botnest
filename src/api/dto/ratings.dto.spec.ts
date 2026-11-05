@@ -27,13 +27,25 @@ describe('SaveRatingDto', () => {
     ).resolves.toContain('needId');
   });
 
-  it('value вне 0–10 — отказ', async () => {
+  it('value вне 1–10 — отказ: 0 значит «не оценено» и не сохраняется', async () => {
     await expect(
       errorsFor(SaveRatingDto, { ...VALID, value: 11 }),
     ).resolves.toContain('value');
     await expect(
+      errorsFor(SaveRatingDto, { ...VALID, value: 0 }),
+    ).resolves.toContain('value');
+    await expect(
       errorsFor(SaveRatingDto, { ...VALID, value: -1 }),
     ).resolves.toContain('value');
+  });
+
+  it('границы шкалы 1 и 10 проходят', async () => {
+    await expect(
+      errorsFor(SaveRatingDto, { ...VALID, value: 1 }),
+    ).resolves.toEqual([]);
+    await expect(
+      errorsFor(SaveRatingDto, { ...VALID, value: 10 }),
+    ).resolves.toEqual([]);
   });
 
   it('date опционален', async () => {

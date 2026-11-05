@@ -1,6 +1,3 @@
-import { createHash } from 'crypto';
-import { keyedDigests } from '../utils/crypto-keys';
-
 // Ключ клиента для ClientMeeting (одна строка = одна постоянная комната).
 //
 // Аудит 2026-10 (docs/open/security.md): ключ был несолёным sha256 контакта,
@@ -11,30 +8,17 @@ import { keyedDigests } from '../utils/crypto-keys';
 // телефонов и ников — база отвечала, записывался ли человек, даже после
 // обезличивания брони. Теперь нормализация зависит от формы контакта, а ключ —
 // HMAC с серверным секретом. Старые строки переводит client-key-rekey.service.ts.
+// Нормальная форма контакта — contact-normal-form.ts.
+
+import { createHash } from 'crypto';
+import { keyedDigests } from '../utils/crypto-keys';
+import { digitsOnlyForm, normalizeContact } from './contact-normal-form';
+
+export { normalizeContact };
 
 const LABEL = 'clientMeeting.clientKey.v1';
-// Форма контакта — по самой строке, а не по clientChannel: канал необязателен,
-// у старых броней его нет, а в канале telegram форма разрешает и ник, и номер.
-const PHONE_RE = /^[\d\s()+\-.]+$/;
-// Ник Telegram начинается с буквы: `@79991234567` — не ник и не телефон, иначе
-// он совпал бы с номером 79991234567 после нормализации.
-const NICK_RE = /^@?[a-z][a-z0-9_]{2,31}$/;
-
 const sha256 = (s: string): string =>
   createHash('sha256').update(s).digest('hex');
-
-/**
- * Одна нормальная форма на одного человека. Телефон — только цифры (8… и +7…
- * остаются разными: правила замены в коде нигде не принято); ник — без `@`;
- * всё прочее, включая почту, — регистр и пробелы по краям, `-`, `+` и точки
- * сохраняются: в адресе почты они различают ящики.
- */
-export function normalizeContact(contact: string): string {
-  const s = contact.trim().toLowerCase();
-  if (PHONE_RE.test(s) && /\d/.test(s)) return s.replace(/\D/g, '');
-  if (NICK_RE.test(s)) return s.replace(/^@/, '');
-  return s.replace(/\s+/g, ' ');
-}
 
 /**
  * Ключи контакта: под текущим ENCRYPTION_KEY первым (`k1:`), затем под каждым
@@ -77,5 +61,11 @@ export function clientKeySources(contact: string): string[] {
   const [current, ...olds] = clientKeyCandidates(contact);
   const k0 = `k0:${sha256(normalizeContact(contact))}`;
   const extra = current === k0 ? [] : [k0];
-  return [legacyClientKey(contact), ...olds, ...extra];
+  // Строки, записанные до сохранения `+` у телефона (под каждым ключом и k0).
+  const digits = digitsOnlyForm(contact);
+  const prior =
+    digits === null
+      ? []
+      : [...clientKeyCandidates(digits), `k0:${sha256(digits)}`];
+  return [...new Set([legacyClientKey(contact), ...olds, ...extra, ...prior])];
 }

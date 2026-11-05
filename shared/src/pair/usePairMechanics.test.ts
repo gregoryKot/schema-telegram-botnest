@@ -147,7 +147,7 @@ describe('выход из пары', () => {
     });
     expect(api.leavePair).toHaveBeenCalledWith('CODE1');
     expect(result.current.confirmLeaveCode).toBeNull();
-    expect(result.current.leaveError).toBe(false);
+    expect(result.current.leaveError).toBeNull();
     expect(api.getPair).toHaveBeenCalledTimes(2);
   });
 
@@ -159,7 +159,7 @@ describe('выход из пары', () => {
     await act(async () => {
       await result.current.handleLeave('CODE1');
     });
-    expect(result.current.leaveError).toBe(true);
+    expect(result.current.leaveError).toBe('CODE1');
     expect(result.current.confirmLeaveCode).toBeNull();
     expect(reportError).toHaveBeenCalledWith('pair leave failed');
     expect(api.getPair).toHaveBeenCalledTimes(1);
@@ -172,10 +172,10 @@ describe('выход из пары', () => {
     await act(async () => {
       await result.current.handleLeave('C');
     });
-    expect(result.current.leaveError).toBe(true);
+    expect(result.current.leaveError).toBe('C');
     await act(async () => {
       await result.current.handleLeave('C');
     });
-    expect(result.current.leaveError).toBe(false);
+    expect(result.current.leaveError).toBeNull();
   });
 });
