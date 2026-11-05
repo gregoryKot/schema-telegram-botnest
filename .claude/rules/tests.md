@@ -71,6 +71,16 @@ paths:
   (`exercise-delete-ownership`, `max-auth`) лежали в `test/` без единого
   прогона. Гейт `scripts/check-e2e-in-ci.mjs` (CI, джоба `checks`): спек-сирота
   и путь в CI без файла — красное. Бейслайна и `--update` нет.
+- **Браузерный смок — через общий `test`** (`e2e-browser/support/test.ts`,
+  ci-alarm #903): стаб API отвечает формой сервера (`support/stubFixtures.ts`,
+  `support/stubPublic.ts`), ручка без фикстуры — 404 с предупреждением в логе,
+  `pageerror` и отчёт клиента о сбое (`POST /api/client-errors`) роняют тест;
+  гость — `test.use({ session: 'anonymous' })`. Новая ручка на пути смока =
+  фикстура формы контроллера, не `{}`: под «пустым успехом» `/api/history`
+  ронял «Сегодня» только в смоке, а `/articles` и `/subscribe` проходили
+  зелёными на экране падения (у него тоже есть `<h1>`). Что спек берёт `test`
+  отсюда и не заводит свой перехват `/api`, держит
+  `src/test-support/gates/browser-smoke-specs.spec.ts`.
 - **ESM-пакеты в jest** (с NestJS 12, 2026-10-24): бэкенд на CommonJS, а
   `@nestjs/*` — только ESM; рантайм Node 22 грузит их сам, jest — только через
   `src/test-support/esm-to-cjs.transform.cjs`. Новая зависимость падает в спеке
@@ -111,6 +121,9 @@ Vitest-сьюты `shared` и `webapp` под не-UTC зоной не гоня�
 - **Проверка, живущая в одной среде, слепа к среде.** Сьюты бэкенда и всех
   трёх фронтовых пакетов гоняются в CI дважды: как есть (раннер всегда UTC) и
   под `TZ=Australia/Sydney` (ненулевое смещение + DST в противофазе).
+  То же про ОС: сайт (`webapp`, `shared`) ночью собирается и гоняется ещё и
+  на macOS — джоба `macos-build` в `nightly.yml`: у CI файловая система
+  различает регистр, у владельца нет (инцидент 2026-11-05, #933).
 - **Тест может обойти зоны сам** — `shared/src/utils/timeZone.test-helpers.ts`
   (`forEachTimeZone`): в vitest смена `process.env.TZ` доходит до Date, в
   отличие от jest (там зону задаёт только env процесса, см.

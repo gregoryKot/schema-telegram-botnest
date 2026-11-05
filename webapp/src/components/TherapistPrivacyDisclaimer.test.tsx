@@ -5,7 +5,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { TherapistPrivacyDisclaimer, THERAPIST_DISCLAIMER_KEY } from './TherapistPrivacyDisclaimer';
+import { TherapistPrivacyDisclaimer } from './TherapistPrivacyDisclaimer';
+import { THERAPIST_DISCLAIMER_KEY } from './therapistDisclaimerSeen';
 import { AddressFormContext } from '../utils/addressForm';
 
 beforeEach(() => {

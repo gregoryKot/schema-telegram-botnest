@@ -8,7 +8,14 @@
 //
 // Юнит-тесты этого не ловят в принципе: они рендерят компонент, минуя
 // сборку, роутер и сервер статики.
-import { test, expect } from '@playwright/test';
+import { test, expect } from './support/test';
+
+// Гость: refresh без куки — 401, как у сервера. Ответы API — формы сервера
+// (общий `test`, support/test.ts), падение страницы роняет тест. До ci-alarm
+// #903 здесь был свой перехват `{}` на всё: /articles и /subscribe рисовали
+// «Что-то пошло не так», и тест был зелёным — <h1> есть и у экрана падения,
+// а ошибку, пойманную роутером, `pageerror` не видит.
+test.use({ session: 'anonymous' });
 
 // Публичные маршруты из webapp/src/App.tsx. Набор роутов выбирает хост:
 // 127.0.0.1 — продукт schemehappens.ru (appRoutes), `?site=personal` — визитка
@@ -35,18 +42,6 @@ test.describe('браузерный smoke: публичные страницы �
     test(`${route.name} (${route.path}${route.query ?? ''})`, async ({
       page,
     }) => {
-      const errors: string[] = [];
-      page.on('pageerror', (err) => errors.push(err.message));
-      // Бэкенда нет — отвечаем пустым успехом. Страница обязана открыться
-      // даже так: контент, который не пришёл, — не повод для белого экрана.
-      await page.route('**/api/**', (r) =>
-        r.fulfill({
-          status: 200,
-          contentType: 'application/json',
-          body: '{}',
-        }),
-      );
-
       const res = await page.goto(route.path + (route.query ?? ''));
       expect(res?.status(), `HTTP-статус ${route.path}`).toBeLessThan(400);
       await expect(page.locator('#root')).not.toBeEmpty();
@@ -58,17 +53,12 @@ test.describe('браузерный smoke: публичные страницы �
       expect(new URL(page.url()).pathname, `адрес после ${route.path}`).toBe(
         route.path,
       );
-      // Ошибка рантайма — то, с чего начинается белый экран у пользователя.
-      expect(errors, `ошибки рантайма на ${route.path}`).toEqual([]);
     });
   }
 
   test('несуществующий путь уводит на реальный экран, а не в пустоту', async ({
     page,
   }) => {
-    await page.route('**/api/**', (r) =>
-      r.fulfill({ status: 200, contentType: 'application/json', body: '{}' }),
-    );
     const unknown = '/nesuschestvuyuschiy-put-12345';
     const res = await page.goto(unknown);
     expect(res?.status()).toBeLessThan(400);
@@ -91,13 +81,7 @@ test.describe('визитка практики: прокручивается о�
   test('после прокрутки window.scrollY > 0 и липкая панель показана', async ({
     page,
   }) => {
-    await page.route('**/api/**', (r) =>
-      r.fulfill({ status: 200, contentType: 'application/json', body: '[]' }),
-    );
     await page.goto('/?site=personal', { waitUntil: 'networkidle' });
-    await page.evaluate(() =>
-      localStorage.setItem('cookie_consent', 'necessary'),
-    );
     const viewport = page.viewportSize()!;
     await page.mouse.move(viewport.width / 2, viewport.height / 2);
     await page.mouse.wheel(0, viewport.height * 2);
@@ -134,9 +118,6 @@ test.describe('юридические страницы укладываются 
       page,
     }) => {
       await page.setViewportSize({ width: 390, height: 844 });
-      await page.route('**/api/**', (r) =>
-        r.fulfill({ status: 200, contentType: 'application/json', body: '{}' }),
-      );
       await page.goto(route.path + (route.query ?? ''));
       await expect(page.locator('h1').first()).toBeVisible();
       const overflow = await page.evaluate(

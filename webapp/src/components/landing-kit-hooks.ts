@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { api, type ArticleSummary } from '../api';
+import { applyTheme } from '../utils/theme';
 
 // Shared non-component primitives for landing pages (tokens + hooks). Split out
 // of landing-kit.tsx so that file exports only components (Fast Refresh).
@@ -60,8 +61,7 @@ export function useTheme() {
   const toggle = useCallback(() => {
     const next = theme === 'dark' ? 'light' : 'dark';
     setThemeState(next);
-    localStorage.setItem('app_theme', next);
-    document.documentElement.setAttribute('data-theme', next);
+    applyTheme(next);
   }, [theme]);
   return { theme, toggle };
 }

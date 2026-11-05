@@ -5,7 +5,7 @@ import { SsSheet } from './schemaSheets/SsSheet';
 import { DOMAIN_HUE, hueStyle } from '../lib/tone';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { SCHEMA_DOMAINS } from '../schemaTherapyData';
-import { MY_SCHEMA_IDS_KEY } from '../utils/storageKeys';
+import { MY_SCHEMA_IDS_KEY, cacheMySchemaIds } from '../utils/storageKeys';
 import { api } from '../api';
 import { ShareCardSheet } from '../share/ShareCardSheet';
 import { drawSchemaCard } from '../../../shared/src/share/cards/schemaCard';
@@ -75,7 +75,7 @@ export function SchemaDetailSheet({ schemaId, onClose }: Props) {
     const next = isAdded
       ? myIds.filter(id => id !== schemaId)
       : [...myIds, schemaId];
-    localStorage.setItem(MY_SCHEMA_IDS_KEY, JSON.stringify(next));
+    cacheMySchemaIds(next);
     setMyIds(next);
     api.updateSettings({ mySchemaIds: next }).catch(() => {});
   }

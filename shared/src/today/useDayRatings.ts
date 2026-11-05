@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useLocalDay } from '../utils/useLocalDay';
 import { shiftCalendarDay } from '../utils/calendarDate';
 import { pendingRatingsFor } from '../utils/ratingOutbox';
-import { celebratedKey } from '../utils/todayConstants';
+import { markCelebrated } from '../utils/todayConstants';
 
 // Оценки потребностей «сегодня» и «вчера» для экрана дня — одна механика для
 // сайта (useBootstrapLoad) и мини-аппа (App.tsx), до QA 2026-11-03 жила двумя
@@ -87,7 +87,7 @@ export function useDayRatings<N extends { id: string }>(
         setSaved((prev) => ({ ...allTrue(day), ...prev }));
         setYesterdayRatings(prevDay);
         if (n.length > 0 && n.every((need) => day[need.id] !== undefined)) {
-          localStorage.setItem(celebratedKey(today), '1');
+          markCelebrated(today);
         }
         if (initial)
           latest.current.handlers.onLoaded?.({

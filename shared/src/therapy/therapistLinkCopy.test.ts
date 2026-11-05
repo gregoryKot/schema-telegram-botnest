@@ -119,7 +119,12 @@ describe('leaveTherapyCopy', () => {
     expect(c.title).toBe('Отключиться от терапевта?');
     expect(c.message).toMatch(/твой трекер/);
     expect(c.message).toMatch(/по новому коду/);
+    // До нажатия: открытые задания терапевта не пропадут (2026-11-05).
+    expect(c.message).toMatch(
+      /Открытые задания от терапевта останутся в твоих целях/,
+    );
     expect(leaveTherapyCopy(vy).message).toMatch(/ваш трекер/);
+    expect(leaveTherapyCopy(vy).message).toMatch(/останутся в ваших целях/);
     expect(leaveTherapyCopy(vy).error).toMatch(/Проверьте связь/);
   });
 });

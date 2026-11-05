@@ -20,6 +20,8 @@ import {
   clearYsqProgress,
   notifyYsqResultChanged,
   writeYsqProgress,
+  writeYsqResult,
+  clearYsqResult,
 } from './ysqProgressStore';
 import { submitYsqResult } from './ysqSubmitResult';
 
@@ -101,10 +103,7 @@ export function useYsqTest({ api, autoResume }: UseYsqTestOptions) {
           serverResult.answers.length === QUESTIONS.length
         ) {
           const dateStr = serverResult.completedAt ?? new Date().toISOString();
-          localStorage.setItem(
-            YSQ_RESULT_KEY,
-            JSON.stringify({ date: dateStr, answers: serverResult.answers }),
-          );
+          writeYsqResult(dateStr, serverResult.answers);
           setAnswers(serverResult.answers);
           setCompletedAt(dateStr);
           setPhase('result');
@@ -235,10 +234,7 @@ export function useYsqTest({ api, autoResume }: UseYsqTestOptions) {
           .catch((e) => console.error('saveYsqProgress failed', e));
       } else {
         const dateStr = new Date().toISOString();
-        localStorage.setItem(
-          YSQ_RESULT_KEY,
-          JSON.stringify({ date: dateStr, answers: newAnswers }),
-        );
+        writeYsqResult(dateStr, newAnswers);
         // Локальный результат уже показан вне зависимости от ответа
         // сервера — resultSaveError показывает баннер с кнопкой повтора.
         submitResult(newAnswers, () =>
@@ -276,7 +272,7 @@ export function useYsqTest({ api, autoResume }: UseYsqTestOptions) {
   };
 
   const handleRetake = () => {
-    localStorage.removeItem(YSQ_RESULT_KEY);
+    clearYsqResult();
     clearYsqProgress();
     api
       .deleteYsqResult()

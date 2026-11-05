@@ -56,6 +56,7 @@ scripts/check-agent-docs.mjs (CI, джоба checks). Новое правило:
 - **Данные пользователя — только реальные:** нет данных → пусто, скелетон или «—».
 - **Загрузка — скелетон по форме контента** (`webapp/src/components/Skeleton.tsx`), спиннер — только у кнопок-действий.
 - **Полноэкранный лист в webapp** (`position: fixed; inset: 0`) → `const goBack = useHistorySheet(onClose)`, все «Назад/Закрыть» — через `goBack()`; без `history.pushState` (`check-history-sheet`).
+- **Кэш в localStorage — один ключ, один писатель:** `setItem`/`removeItem` с ключом зовёт только модуль-владелец из `scripts/local-cache-baseline.json` (mirror|local), остальные — его функцию; кэш обновляется там же, где меняется источник (`check-local-cache-writers`).
 - **Сборка:** сайт собирает Docker (dist в git нет). Деплой = push в `main`.
 
 ### Фронтенды: очевидность и визуал → [.claude/rules/frontend-visual.md](.claude/rules/frontend-visual.md)
@@ -91,7 +92,7 @@ scripts/check-agent-docs.mjs (CI, джоба checks). Новое правило:
 - **№21** Новая внешняя интеграция = проба в `src/infra/self-check/` (живой вызов, таймаут, не бросает).
 - **№22** Новая env-переменная = запись в `src/infra/env-registry*.ts` + строка в `docs/ENV.md` (`check-env-registry`).
 - **№23** Парсер ответа внешней площадки — с записанной фикстурой в `test/fixtures/recorded/` (`check-recorded-fixtures`).
-- **№24** У каждой джобы есть `timeout-minutes`; открытая issue `ci-alarm` — работа на сейчас.
+- **№24** У каждой джобы есть `timeout-minutes`, образ раннера прибит версией, не `*-latest` (`runner-pin.spec.ts`); открытая issue `ci-alarm` — работа на сейчас.
 
 ### Аналитика → [.claude/rules/analytics.md](.claude/rules/analytics.md)
 - **№8** User-facing фича = событие: имя в `ANALYTICS_EVENTS` (`src/analytics/analytics.constants.ts`) + ветка в `sanitizeMeta` (только известные поля) + константа на фронте (`shared/src/share/analytics.ts`) + блок в `/stats` (чистый форматтер с тестом, включая пустую БД; язык без терминов).
