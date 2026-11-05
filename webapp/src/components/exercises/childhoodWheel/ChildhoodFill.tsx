@@ -1,6 +1,8 @@
 import { ExScreen, GlyphArrowRight } from '../ExScreen';
 import { useTr } from '../../../utils/addressForm';
 import { hueStyle, NEED_HUE } from '../../../lib/tone';
+import { NeedArt } from '../../art/NeedArt';
+import { Wheel } from '../../art/PaperArtSigns';
 import { NEEDS } from './needs';
 import { CWTrack } from './CWTrack';
 import { WheelSvg } from './WheelSvg';
@@ -28,16 +30,14 @@ export function ChildhoodFill({
   onBack: () => void;
   /** Есть сохранённый результат, к которому можно вернуться без сохранения. */
   onCancel?: () => void;
-  onSave: () => void;
-  saving: boolean;
-  error: boolean;
+  onSave: () => void; saving: boolean; error: boolean;
 }) {
   const tr = useTr();
   const val = (id: NeedId) => (unrated.includes(id) ? undefined : ratings[id]);
   return (
     <ExScreen
       onBack={onBack}
-      eyebrow={exerciseCard('wheel').eyebrow}
+      eyebrow={exerciseCard('wheel').eyebrow} art={<Wheel size="square" />}
       title={title}
       lede={tr(
         'Оцени пять базовых потребностей в детстве. Не отдельные моменты, а как было «в целом, большую часть времени» – там, где формировались схемы.',
@@ -59,7 +59,7 @@ export function ChildhoodFill({
             <div className="ex2-cw-legend">
               {NEEDS.map((n) => (
                 <div key={n.id} className="ex2-cw-legend-row" style={hueStyle(NEED_HUE[n.id])}>
-                  <span className="ds-dot tone-fill" />
+                  <NeedArt id={n.id} size="row" />
                   {n.label}
                   <span className={'ex2-cw-legend-val' + zone(val(n.id))}>{val(n.id) ?? '—'}</span>
                 </div>

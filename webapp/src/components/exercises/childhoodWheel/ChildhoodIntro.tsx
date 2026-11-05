@@ -1,5 +1,6 @@
 import { ExScreen, GlyphArrowRight } from '../ExScreen';
 import { useTr } from '../../../utils/addressForm';
+import { Wheel } from '../../art/PaperArtSigns';
 import { exerciseCard } from '../../../../../shared/src/exercises/exerciseCatalog';
 import '../../../styles/sheet-childhood.css';
 
@@ -7,20 +8,12 @@ import '../../../styles/sheet-childhood.css';
  * Вступление перед первым прохождением: откуда упражнение и зачем оно
  * (правило «откуда и зачем» до первого действия), главное действие одно.
  */
-export function ChildhoodIntro({
-  title,
-  onBack,
-  onStart,
-}: {
-  title: React.ReactNode;
-  onBack: () => void;
-  onStart: () => void;
-}) {
+export function ChildhoodIntro({ title, onBack, onStart }: { title: React.ReactNode; onBack: () => void; onStart: () => void }) {
   const tr = useTr();
   return (
     <ExScreen
       onBack={onBack}
-      eyebrow={exerciseCard('wheel').eyebrow}
+      eyebrow={exerciseCard('wheel').eyebrow} art={<Wheel size="square" />}
       title={title}
       lede="Те же пять потребностей – но про детство."
     >

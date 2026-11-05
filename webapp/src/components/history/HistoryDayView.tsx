@@ -2,11 +2,11 @@ import type { ReactNode } from 'react';
 import type { Need } from '../../types';
 import type { NeedId } from '../../../../shared/src/needs/types';
 import { NeedsWheel } from '../../../../shared/src/components/NeedsWheel';
-import { NEED_HUE, hueStyle } from '../../lib/tone';
 import { NeedArt } from '../art/NeedArt';
+import { Wheel } from '../art/PaperArtSigns';
+import { NEED_HUE, hueStyle } from '../../lib/tone';
 import { pressable } from '../../utils/a11y';
 import { needLevel } from './historyMath';
-
 interface Props {
   date: string;
   needs: Need[];
@@ -44,9 +44,9 @@ export function HistoryDayView(p: Props) {
       {(hasChildhood || p.onOpenChildhoodWheel || p.onOpenSchemas) && (
         <div className="sd-links">
           {hasChildhood ? (
-            <button onClick={p.onOpenChildhoodWheel} className="ds-link">детство →</button>
+            <button onClick={p.onOpenChildhoodWheel} className="ds-link sd-link-art"><Wheel size="row" />детство →</button>
           ) : p.onOpenChildhoodWheel ? (
-            <button onClick={p.onOpenChildhoodWheel} className="ds-link">Оценить детство →</button>
+            <button onClick={p.onOpenChildhoodWheel} className="ds-link sd-link-art"><Wheel size="row" />Оценить детство →</button>
           ) : null}
           {p.onOpenSchemas && <button onClick={p.onOpenSchemas} className="ds-link">Что за этим стоит →</button>}
         </div>

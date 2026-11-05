@@ -1,5 +1,6 @@
 import { NEED_ORDER, useNeedData } from '../../needData';
 import { NeedArt } from '../../components/art/NeedArt';
+import { Wheel } from '../../components/art/PaperArtSigns';
 import { needLevel } from './schemasModel';
 import { NEEDS_WHAT } from '../../../../shared/src/pattern/patternTerms';
 
@@ -25,7 +26,7 @@ export function NeedsBlock({ childhoodRatings, onOpenChildhoodWheel, onOpenNeed 
       <div className="ds-card ds-card--flush">
         {!hasChildhood && (
           <button className="ds-list-row ds-list-row--hover cs-need" onClick={() => onOpenChildhoodWheel?.()}>
-            <span />
+            <span className="pp-row-art"><Wheel size="row" /></span>
             <span className="cs-need-text">
               <span className="cs-need-name tone-text">Колесо детства</span>
               <span className="cs-need-hint">Как потребности удовлетворялись в детстве?</span>

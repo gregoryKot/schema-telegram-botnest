@@ -10,6 +10,7 @@ import { fmtDate, momentDayKey } from '../../utils/format';
 import { pressable } from '../../utils/a11y';
 import { hasPortraitData, type Portrait } from '../../../../shared/src/portrait/portraitData';
 import { portraitTexts, portraitTotalsText, portraitDeltaText } from '../../../../shared/src/portrait/portraitTexts';
+import { CardTitle } from './CardTitle';
 import { PortraitNeedBar } from './PortraitNeedBar';
 
 interface Props {
@@ -30,7 +31,7 @@ export function PortraitCard({ portrait, ysqCompletedAt, onOpenSheet, onTakeTest
   return (
     <section {...pressable(onOpenSheet)} aria-label={txt.title} className="ds-card ds-card--hover cpf-card">
       <div className="ds-head-row">
-        <h2 className="ds-h3">{txt.title}</h2>
+        <CardTitle sign="portrait">{txt.title}</CardTitle>
         <span className="ds-sub">{hasData && <>{portraitTotalsText(portrait)} </>}<span className="ds-chev" aria-hidden="true" /></span>
       </div>
       <div className="cpf-hint">{txt.hint}</div>

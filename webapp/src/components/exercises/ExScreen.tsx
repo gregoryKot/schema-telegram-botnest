@@ -38,6 +38,7 @@ interface ExScreenProps {
   onBack: () => void;
   backLabel?: string;
   eyebrow: ReactNode;
+  art?: ReactNode;
   title: ReactNode;
   lede?: ReactNode;
   aside?: ReactNode;
@@ -45,7 +46,7 @@ interface ExScreenProps {
   children?: ReactNode;
 }
 
-export function ExScreen({ onBack, backLabel, eyebrow, title, lede, aside, foot, children }: ExScreenProps) {
+export function ExScreen({ onBack, backLabel, eyebrow, art, title, lede, aside, foot, children }: ExScreenProps) {
   const hostBackLabel = useExBackLabel();
   return (
     <div className="ex2-screen">
@@ -54,7 +55,7 @@ export function ExScreen({ onBack, backLabel, eyebrow, title, lede, aside, foot,
       </div>
       <div className={'ex2-body' + (aside ? '' : ' ex2-body--single')}>
         <div className="ex2-main">
-          <div className="ds-eyebrow">{eyebrow}</div>
+          {art}<div className="ds-eyebrow">{eyebrow}</div>
           <h1 className="ds-h2 ex2-title">{title}</h1>
           {lede && <p className="ds-sub ex2-lede">{lede}</p>}
           {children}

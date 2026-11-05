@@ -2,6 +2,7 @@ import { TherapyNote } from '../TherapyNote';
 import { detectCrisisAny } from '../../utils/crisisMarkers';
 import { CrisisCard } from '../CrisisCard';
 import { hueStyle } from '../../lib/tone';
+import { NeedArt } from '../art/NeedArt';
 import { FlashcardFrame, FlashcardStepHead, FlashcardProgress } from './FlashcardFrame';
 import { flashcardModeHue, flashcardNeedHue } from './flashcardTone';
 import type { ModeData, NeedData } from '../schemaFlashcard/types';
@@ -76,10 +77,8 @@ export function StepNeed({ needs, selected, onPick, ...c }: Common & {
       <p className="sk-fc-ask">Какая потребность сейчас не удовлетворена?</p>
       <div className="sk-list">
         {needs.map(n => (
-          <button key={n.id} onClick={() => onPick(n.id)}
-            className={'ds-card ds-card--row ds-card--hover sk-fc-need' + (selected === n.id ? ' is-selected' : '')}>
-            <span className="ds-dot tone-fill" style={hueStyle(flashcardNeedHue(n.id))} />
-            <span className="ds-h3">{n.label}</span>
+          <button key={n.id} onClick={() => onPick(n.id)} className={'ds-card ds-card--row ds-card--hover sk-fc-need' + (selected === n.id ? ' is-selected' : '')}>
+            <NeedArt id={n.id} size="row" /><span className="ds-h3">{n.label}</span>
           </button>
         ))}
       </div>
