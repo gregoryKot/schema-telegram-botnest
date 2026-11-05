@@ -150,7 +150,7 @@
   "shared/src/childhoodWheel/childhoodExamples.ts": 103,
   "shared/src/childhoodWheel/childhoodWheel.ts": 106,
   "shared/src/childhoodWheel/useChildhoodDraft.ts": 57,
-  "shared/src/childhoodWheel/useRatingSlider.ts": 90,
+  "shared/src/childhoodWheel/useRatingSlider.ts": 82,
   "shared/src/components/AccountLinkCard.tsx": 181,
   "shared/src/components/AuthFailureHelp.tsx": 51,
   "shared/src/components/CharCounter.tsx": 49,

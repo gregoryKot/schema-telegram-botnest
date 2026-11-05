@@ -91,11 +91,81 @@ describe('useRatingSlider', () => {
 
   it('указатель: нажатие ставит значение по месту, протяжка — только с зажатой кнопкой', () => {
     const { el, onChange } = mountTrack(2);
-    fireEvent.pointerDown(el, { clientX: 72, pointerId: 1 });
+    fireEvent.pointerDown(el, {
+      clientX: 72,
+      pointerId: 1,
+      pointerType: 'mouse',
+    });
     fireEvent.pointerMove(el, { clientX: 31, buttons: 1 });
     fireEvent.pointerMove(el, { clientX: 95, buttons: 0 });
-    fireEvent.pointerDown(el, { clientX: 500, pointerId: 1 });
+    fireEvent.pointerUp(el, { clientX: 95 });
+    fireEvent.pointerMove(el, { clientX: 50, buttons: 1 });
+    fireEvent.pointerDown(el, {
+      clientX: 500,
+      pointerId: 1,
+      pointerType: 'mouse',
+    });
     expect(onChange.mock.calls.map((c) => c[0])).toEqual([7, 3, 10]);
     expect(el.setPointerCapture).toHaveBeenCalledWith(1);
+  });
+
+  // Бэклог 2026-10: скролл, начатый с полосы, менял оценку — палец ставил её
+  // уже на pointerdown. Теперь значение — по тапу или после сдвига вбок.
+  it('палец: касание само ничего не меняет, тап без сдвига ставит значение', () => {
+    const { el, onChange } = mountTrack(2);
+    fireEvent.pointerDown(el, {
+      clientX: 72,
+      clientY: 5,
+      pointerId: 2,
+      pointerType: 'touch',
+    });
+    expect(onChange).not.toHaveBeenCalled();
+    fireEvent.pointerMove(el, { clientX: 74, clientY: 7, buttons: 1 });
+    fireEvent.pointerUp(el, { clientX: 74, clientY: 7 });
+    expect(onChange.mock.calls.map((c) => c[0])).toEqual([7]);
+  });
+
+  it('палец: сдвиг вбок тянет ползунок', () => {
+    const { el, onChange } = mountTrack();
+    fireEvent.pointerDown(el, {
+      clientX: 20,
+      clientY: 5,
+      pointerId: 3,
+      pointerType: 'touch',
+    });
+    fireEvent.pointerMove(el, {
+      clientX: 40,
+      clientY: 8,
+      buttons: 1,
+      pointerId: 3,
+    });
+    fireEvent.pointerMove(el, { clientX: 61, clientY: 30, buttons: 1 });
+    fireEvent.pointerUp(el, { clientX: 61, clientY: 30 });
+    expect(onChange.mock.calls.map((c) => c[0])).toEqual([4, 6]);
+    expect(el.setPointerCapture).toHaveBeenCalledWith(3);
+  });
+
+  it('палец: прокрутка, начатая с полосы, оценку не трогает', () => {
+    const { el, onChange } = mountTrack(2);
+    fireEvent.pointerDown(el, {
+      clientX: 72,
+      clientY: 5,
+      pointerId: 4,
+      pointerType: 'touch',
+    });
+    fireEvent.pointerMove(el, { clientX: 78, clientY: 40, buttons: 1 });
+    fireEvent.pointerMove(el, { clientX: 95, clientY: 42, buttons: 1 });
+    fireEvent.pointerUp(el, { clientX: 95, clientY: 42 });
+    // Браузер забрал жест сам (touch-action: pan-y) — pointercancel, затем отпускание.
+    fireEvent.pointerDown(el, {
+      clientX: 72,
+      clientY: 5,
+      pointerId: 5,
+      pointerType: 'touch',
+    });
+    fireEvent.pointerCancel(el);
+    fireEvent.pointerUp(el, { clientX: 72, clientY: 5 });
+    expect(onChange).not.toHaveBeenCalled();
+    expect(el.getAttribute('aria-valuetext')).toBe('2 из 10');
   });
 });

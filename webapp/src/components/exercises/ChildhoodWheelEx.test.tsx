@@ -40,7 +40,9 @@ function dragTrackTo(i: number, clientX: number) {
   } as DOMRect);
   // jsdom не реализует Pointer Capture API — компонент его вызывает при drag-старте.
   track.setPointerCapture = vi.fn();
+  // Тап: значение ставит отпускание без сдвига (жест пальца — sliderGesture.ts).
   fireEvent.pointerDown(track, { clientX, pointerId: 1 });
+  fireEvent.pointerUp(track, { clientX, pointerId: 1 });
 }
 const dragFirstTrackTo = (clientX: number) => dragTrackTo(0, clientX);
 /** Выставить все пять руками: первую — в firstX, остальные — в середину (100/200 → 5). */
