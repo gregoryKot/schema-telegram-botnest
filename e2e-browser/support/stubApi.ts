@@ -9,6 +9,7 @@
 // App.tsx: Root), поэтому /api/auth/refresh дёргается на каждой загрузке —
 // фейковый токен не мешает тестам, которым авторизация не нужна.
 import type { Page } from '@playwright/test';
+import { handleTherapyRoute, type StubTherapyHandle } from './stubTherapy';
 
 export const STUB_NEEDS = [
   {
@@ -36,6 +37,10 @@ const EMPTY_ARRAY_ENDPOINTS = [
   '/api/mode-notes',
   '/api/belief-checks',
   '/api/letters',
+  '/api/history',
+  '/api/diary/gratitude',
+  '/api/diary/mode',
+  '/api/diary/schema',
 ];
 
 export interface StubApiHandle {
@@ -45,6 +50,8 @@ export interface StubApiHandle {
    * иначе проверка «пережило перезагрузку» была бы самообманом.
    */
   ratings: Record<string, number>;
+  /** Связь с терапевтом (stubTherapy.ts): состояние «подключён» живёт здесь. */
+  therapy: StubTherapyHandle;
 }
 
 /**
@@ -64,6 +71,7 @@ export async function stubApi(page: Page): Promise<StubApiHandle> {
   });
 
   const ratings: Record<string, number> = {};
+  const therapy: StubTherapyHandle = { connected: false };
 
   await page.route('**/api/**', async (route) => {
     const url = new URL(route.request().url());
@@ -79,6 +87,8 @@ export async function stubApi(page: Page): Promise<StubApiHandle> {
     if (path.endsWith('/api/auth/refresh') && method === 'POST') {
       return json({ accessToken: 'e2e-test-token', expiresIn: 3600 });
     }
+
+    if (await handleTherapyRoute(route, therapy)) return;
 
     if (path.endsWith('/api/needs')) return json(STUB_NEEDS);
     if (path.endsWith('/api/ratings')) return json(ratings);
@@ -98,7 +108,14 @@ export async function stubApi(page: Page): Promise<StubApiHandle> {
     // авторизованных сценариев (трекер/кризисный путь) — сам онбординг формы
     // обращения тестируется отдельно юнитами AddressFormPicker.test.tsx.
     if (path.endsWith('/api/settings'))
-      return json({ addressForm: 'ty', notifyEnabled: true });
+      return json({
+        addressForm: 'ty',
+        notifyEnabled: true,
+        therapistShareCards: true,
+        therapistShareProfile: true,
+      });
+    if (path.endsWith('/api/pair'))
+      return json({ partners: [], pendingCode: null, pendingUrl: null });
     if (path.endsWith('/api/streak'))
       return json({ todayDone: false, totalDays: 0 });
 
@@ -137,7 +154,7 @@ export async function stubApi(page: Page): Promise<StubApiHandle> {
     return json({});
   });
 
-  return { ratings };
+  return { ratings, therapy };
 }
 
 /** Ошибки рантайма — то, с чего начинается белый экран у пользователя. */

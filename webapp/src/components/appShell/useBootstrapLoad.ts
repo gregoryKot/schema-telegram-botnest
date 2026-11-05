@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import type { NavigateFunction } from 'react-router-dom';
 import { api, reportClientError, type PracticePlan, type TherapyClientSummary } from '../../api';
 import type { Need } from '../../types';
-import { cacheTherapistContact } from '../../utils/therapistContact';
+import { cacheClientRelation, cacheTherapistContact } from '../../utils/therapistContact';
 import { humanizeThrown } from '../../../../shared/src/api/humanizeError';
 import { MY_SCHEMA_IDS_KEY, CHILDHOOD_DONE_KEY, YSQ_PROGRESS_KEY, THERAPIST_MODE_KEY } from '../../utils/storageKeys';
 import { useDayRatings } from '../../../../shared/src/today/useDayRatings';
@@ -136,9 +136,7 @@ export function useBootstrapLoad({ navigate, initialPathname }: Params) {
         cacheTherapistContact({ role: 'THERAPIST', partnerId: null, partnerName: null, myId: null, myName: p.name });
         return api.getTherapyClients().then(setTherapistClients).catch(() => fail('клиенты терапевта'));
       } else {
-        return api.getTherapyRelation().then(rel => {
-          cacheTherapistContact({ role: 'CLIENT', partnerId: rel?.partnerId ?? null, partnerName: rel?.partnerName ?? null, myId: null, myName: null });
-        }).catch(() => fail('связь с терапевтом'));
+        return api.getTherapyRelation().then(cacheClientRelation).catch(() => fail('связь с терапевтом'));
       }
     }).catch(() => fail('профиль'));
 
