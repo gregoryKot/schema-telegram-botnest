@@ -34,13 +34,8 @@
 import { readdirSync, readFileSync, statSync, existsSync } from 'fs';
 import { join, relative, resolve } from 'path';
 import { fileURLToPath } from 'url';
-import {
-  importMap,
-  makeContext,
-  matchBracket,
-  resolveKeyExpr,
-  splitTopLevel,
-} from './local-cache-resolve.mjs';
+import { importMap, makeContext, resolveKeyExpr } from './local-cache-resolve.mjs';
+import { matchBracket, splitTopLevel } from './local-cache-source.mjs';
 
 const ROOT = resolve(import.meta.dirname, '..');
 const BASELINE_PATH = join(ROOT, 'scripts', 'local-cache-baseline.json');

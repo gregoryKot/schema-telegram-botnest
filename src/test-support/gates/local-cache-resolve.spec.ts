@@ -26,12 +26,25 @@ function resolve(
 }
 
 describe('local-cache-resolve.mjs', () => {
-  it('splitTopLevel не режет внутри строк и скобок', () => {
-    const parts = call<string[]>(
-      'splitTopLevel',
-      `(fn) => fn("a, f(b, c), 'd,e', { x: 1, y: 2 }", ',')`,
-    );
+  // Текстовый слой живёт отдельно (local-cache-source.mjs): скобки и запятые
+  // внутри строк — не разделители.
+  it('splitTopLevel и matchBracket (local-cache-source.mjs) не режут внутри строк и скобок', () => {
+    const parts = JSON.parse(
+      importExport(
+        'local-cache-source.mjs',
+        'splitTopLevel',
+        `(fn) => fn("a, f(b, c), 'd,e', { x: 1, y: 2 }", ',')`,
+      ),
+    ) as string[];
     expect(parts).toEqual(['a', 'f(b, c)', "'d,e'", '{ x: 1, y: 2 }']);
+    const close = JSON.parse(
+      importExport(
+        'local-cache-source.mjs',
+        'matchBracket',
+        `(fn) => fn("f(')', x)", 1)`,
+      ),
+    ) as number;
+    expect(close).toBe(8);
   });
 
   it('литерал, шаблон с префиксом, сложение и тернарник', () => {
