@@ -4,7 +4,7 @@ import { api, reportClientError, type PracticePlan, type TherapyClientSummary } 
 import type { Need } from '../../types';
 import { cacheClientRelation, cacheTherapistContact } from '../../utils/therapistContact';
 import { humanizeThrown } from '../../../../shared/src/api/humanizeError';
-import { CHILDHOOD_DONE_KEY, THERAPIST_MODE_KEY, cacheMySchemaIds } from '../../utils/storageKeys';
+import { CHILDHOOD_DONE_KEY, THERAPIST_MODE_KEY, cacheMyPatternsFromProfile } from '../../utils/storageKeys';
 import { cacheTherapistMode } from './therapistModeCache';
 import { writeYsqProgress } from '../../../../shared/src/hooks/ysqProgressStore';
 import { useDayRatings } from '../../../../shared/src/today/useDayRatings';
@@ -128,7 +128,7 @@ export function useBootstrapLoad({ navigate, initialPathname }: Params) {
         if (initialPathname.startsWith('/cabinet')) navigate('/today', { replace: true });
       }
       if (p.name) setDisplayName(p.name);
-      if (p.mySchemaIds?.length > 0) cacheMySchemaIds(p.mySchemaIds);
+      cacheMyPatternsFromProfile(p); // пустой список с сервера — тоже правда (#939)
       // Дальше — вложенные запросы. Возвращаем их промис из колбэка: иначе
       // profilePromise резолвится раньше, чем клиенты/связь с терапевтом
       // отработают, и их сбой не попадёт во флаш отчёта ниже.

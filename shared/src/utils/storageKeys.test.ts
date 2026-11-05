@@ -5,6 +5,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import {
   cacheMySchemaIds,
   cacheMyModeIds,
+  cacheMyPatternsFromProfile,
   MY_SCHEMA_IDS_KEY,
   MY_MODE_IDS_KEY,
   shouldShowChildhoodWheel,
@@ -29,5 +30,24 @@ describe('storageKeys: писатели кэша', () => {
     expect(shouldShowChildhoodWheel()).toBe(true);
     localStorage.setItem(CHILDHOOD_DONE_KEY, '1');
     expect(shouldShowChildhoodWheel()).toBe(false);
+  });
+});
+
+describe('cacheMyPatternsFromProfile — профиль как источник правды', () => {
+  it('пустые списки стирают старую копию', () => {
+    cacheMySchemaIds(['abandonment']);
+    cacheMyModeIds(['critic']);
+    cacheMyPatternsFromProfile({ mySchemaIds: [], myModeIds: [] });
+    expect(localStorage.getItem(MY_SCHEMA_IDS_KEY)).toBe('[]');
+    expect(localStorage.getItem(MY_MODE_IDS_KEY)).toBe('[]');
+  });
+  it('поля нет или оно не список строк — копия остаётся', () => {
+    cacheMySchemaIds(['abandonment']);
+    cacheMyPatternsFromProfile({});
+    cacheMyPatternsFromProfile({ mySchemaIds: 'abandonment', myModeIds: [1] });
+    expect(JSON.parse(localStorage.getItem(MY_SCHEMA_IDS_KEY) ?? '')).toEqual([
+      'abandonment',
+    ]);
+    expect(localStorage.getItem(MY_MODE_IDS_KEY)).toBeNull();
   });
 });
