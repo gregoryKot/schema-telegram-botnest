@@ -17,6 +17,8 @@ import { AppSections } from './appShell/AppSections';
 import { AppShellSkeleton } from './appShell/AppShellSkeleton';
 import { Sidebar } from './appShell/Sidebar';
 import { type Section, sectionFromPath, fillHistoryGaps } from './appShell/navigation';
+import { MOBILE_NAV_ITEMS, DESKTOP_NAV_ITEMS } from './appShell/navItems';
+import '../styles/client-frame.css'; // рамка клиентских страниц на ≥768 (#925)
 import { MobileNav } from './appShell/MobileNav';
 import { QuickActions } from './quickActions/QuickActions';
 import { useHostShell } from '../hooks/useHostShell';
@@ -42,14 +44,6 @@ import type { StreakData } from '../api';
 import { parseRouteUserId } from '../../../shared/src/utils/sameId';
 
 syncMotionAttr();
-
-// Три вкладки (редизайн 2026-10, docs/design/CLIENT_SIMPLE_2026-10.md):
-// «Паттерны», «Практика» и «Профиль» открываются из «Ещё» и по прямому URL.
-const NAV_ITEMS: { id: Section; label: string }[] = [
-  { id: 'today', label: 'Сегодня' },
-  { id: 'diary', label: 'Записи' },
-  { id: 'more',  label: 'Ещё' },
-];
 
 export function AppShell() {
   useHostShell();
@@ -222,7 +216,7 @@ export function AppShell() {
   return (
     <div className="app-shell light-lock">
       <Sidebar
-        items={NAV_ITEMS}
+        items={DESKTOP_NAV_ITEMS}
         therapistMode={therapistMode}
         userRole={userRole}
         onSwitchMode={(on) => switchTherapistMode(on)}
@@ -362,7 +356,7 @@ export function AppShell() {
       </div>{/* end main */}
 
       {/* ── Mobile bottom nav ──────────────────────────────────────────────── */}
-      <MobileNav items={NAV_ITEMS} therapist={therapistMode} onSearch={() => ov.setCmdOpen(true)} onProfile={() => ov.setShowSettings(true)} />
+      <MobileNav items={MOBILE_NAV_ITEMS} therapist={therapistMode} onSearch={() => ov.setCmdOpen(true)} onProfile={() => ov.setShowSettings(true)} />
 
       <QuickActions ov={ov} />
       {/* ── Command palette ─────────────────────────────────────────────────── */}

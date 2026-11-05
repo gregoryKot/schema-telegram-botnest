@@ -18,9 +18,9 @@ interface Props {
   onOpenTherapistCabinet?: () => void;
 }
 
-interface Row { id: string; title: string; sub: string; onClick: () => void; href?: string; art?: ReactNode }
-
+interface Row { id: string; title: string; sub: string; onClick: () => void; href?: string; art?: ReactNode; phoneOnly?: boolean }
 const ROW_CLASS = 'ds-list-row ds-list-row--nav ds-list-row--hover';
+const rowClass = (r: Row) => r.phoneOnly ? `${ROW_CLASS} cm-phone-only` : ROW_CLASS;
 function RowBody({ row }: { row: Row }) {
   return (
     <>
@@ -46,8 +46,8 @@ export function MoreSection({ onNavigate, onOpenSchema, onOpenAdvanced, userRole
 
   const rows: Row[] = [
     { id: 'why', art: <Leaf size="row" />, title: 'Зачем это всё', sub: 'Откуда это и что даёт каждое действие', onClick: () => { trackHomeTile('why'); setWhy(true); } },
-    { id: 'schemas', art: <Layers size="row" />, title: 'Мои паттерны', sub: 'Схемы и режимы', onClick: () => onNavigate('schemas') },
-    { id: 'practice', art: <Breath size="row" />, title: 'Практики', sub: 'Дыхание, упражнения, планы', onClick: () => onNavigate('practice') },
+    { id: 'schemas', art: <Layers size="row" />, title: 'Мои паттерны', sub: 'Схемы и режимы', onClick: () => onNavigate('schemas'), phoneOnly: true },
+    { id: 'practice', art: <Breath size="row" />, title: 'Практики', sub: 'Дыхание, упражнения, планы', onClick: () => onNavigate('practice'), phoneOnly: true },
     { id: 'journey', art: <Sheets size="row" />, title: 'Мой путь', sub: 'Всё, что уже собрано', onClick: () => setJourney(true) },
     ...talkRow,
     ...(userRole === 'THERAPIST' && onOpenTherapistCabinet
@@ -55,7 +55,7 @@ export function MoreSection({ onNavigate, onOpenSchema, onOpenAdvanced, userRole
       : []),
     { id: 'test', art: <Layers size="row" />, title: 'Тест на схемы', sub: 'Какие схемы откликаются', onClick: () => onOpenSchema({ startTest: true }) },
     { id: 'settings', art: <Beads size="row" />, title: 'Настройки', sub: 'Напоминания, обращение, данные', onClick: onOpenAdvanced },
-    { id: 'profile', art: <Pebbles size="row" />, title: 'Профиль', sub: 'Портрет, терапевт, ближайшая встреча', onClick: () => onNavigate('profile') },
+    { id: 'profile', art: <Pebbles size="row" />, title: 'Профиль', sub: 'Портрет, терапевт, ближайшая встреча', onClick: () => onNavigate('profile'), phoneOnly: true },
   ];
 
   return (
@@ -67,11 +67,11 @@ export function MoreSection({ onNavigate, onOpenSchema, onOpenAdvanced, userRole
 
       <div className="ds-card ds-card--flush">
         {rows.map(r => r.href ? (
-          <ExternalLink key={r.id} className={ROW_CLASS} href={r.href} onClick={r.onClick}>
+          <ExternalLink key={r.id} className={rowClass(r)} href={r.href} onClick={r.onClick}>
             <RowBody row={r} />
           </ExternalLink>
         ) : (
-          <button key={r.id} type="button" className={ROW_CLASS} onClick={r.onClick}>
+          <button key={r.id} type="button" className={rowClass(r)} onClick={r.onClick}>
             <RowBody row={r} />
           </button>
         ))}
