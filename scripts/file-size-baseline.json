@@ -627,7 +627,7 @@
   "src/api/tracker.controller.ts": 198,
   "src/api/ui-prefs.sanitize.ts": 144,
   "src/api/ysq.controller.ts": 94,
-  "src/app.module.ts": 118,
+  "src/app.module.ts": 107,
   "src/articles/article-diagrams.ts": 19,
   "src/articles/article-seo.middleware.ts": 117,
   "src/articles/article-seo.render.ts": 148,

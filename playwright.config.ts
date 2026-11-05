@@ -44,6 +44,7 @@ export default defineConfig({
         'tracker-smoke.spec.ts',
         'public-pages.spec.ts',
         'a11y-smoke.spec.ts',
+        'asset-recovery.spec.ts',
       ],
       use: { ...commonUse, baseURL: 'http://127.0.0.1:4173' },
     },

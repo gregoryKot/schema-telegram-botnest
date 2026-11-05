@@ -15,6 +15,10 @@
          Внешний файл, а не инлайн: CSP не разрешает инлайн-скрипты. Без
          async/defer — выполняется синхронно до первого кадра. -->
     <script src="/theme.js"></script>
+    <!-- Сбой файла сборки на деплое (инцидент 2026-11-04): стиль запрашивается
+         снова, упавший модуль перезагружает страницу (public/asset-recovery.js).
+         Синхронно и раньше тегов сборки: Vite ставит их в конец <head>. -->
+    <script src="/asset-recovery.js"></script>
 
     <!-- Address bar / status bar color (updates via JS after load) -->
     <meta name="theme-color" content="#f6f2eb" media="(prefers-color-scheme: light)" />
