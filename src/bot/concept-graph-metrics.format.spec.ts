@@ -11,6 +11,7 @@ const base: ConceptGraphMetrics = {
   canvasOpen30: 0,
   fullscreen30: 0,
   saveRetry30: 0,
+  brief30: 0,
 };
 
 describe('formatConceptGraphMetrics', () => {
@@ -100,6 +101,17 @@ describe('formatConceptGraphMetrics', () => {
   it('пустая БД не упоминает полный экран', () => {
     const text = formatConceptGraphMetrics({ ...base });
     expect(text).not.toContain('весь экран');
+  });
+
+  it('только «Главное» (2026-11): блок не пустой, строка про экран стоит, мусора нет', () => {
+    const text = formatConceptGraphMetrics({ ...base, brief30: 7 });
+    expect(text).not.toContain('Пока никто');
+    expect(text).toContain('Открывали «Главное» на одном экране 7 раз');
+    expect(text).not.toMatch(/NaN|undefined|null/);
+  });
+
+  it('пустая БД не упоминает «Главное»', () => {
+    expect(formatConceptGraphMetrics({ ...base })).not.toContain('Главное');
   });
 
   it('только повторы сохранения (#879): блок не пустой, строка про повторы стоит, мусора нет', () => {

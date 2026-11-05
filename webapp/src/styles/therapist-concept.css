@@ -135,3 +135,24 @@
 @media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) {
   .tk-tabs-body > .page-inner-wide.tcp--graph { padding-inline: 20px; }
 }
+
+/* ── «Главное»: кнопка в шапке и экран с самым важным (2026-11) ── */
+.tcp-brief-btn { height: 44px; padding: 0 16px; }
+.tcp-brief-pick { display: flex; flex-direction: column; gap: 10px; padding: 12px 20px 14px; border-bottom: 1px solid var(--paper-sunk); } /* разделитель — --paper-sunk, не --line (oneStyle.test) */
+/* Сетка карточек: на ноутбуке 2–3 колонки, чтобы всё выбранное встало в один экран; текстовые блоки шире. */
+.tcp-brief-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; align-items: start; max-width: 1280px; }
+.tcp-brief-card { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.tcp-brief-card--text { grid-column: 1 / -1; }
+.tcp-brief-label { margin: 0; }
+.tcp-brief-text { font-size: 14px; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; }
+.tcp-brief-empty, .tcp-brief-none { color: var(--text-faint); }
+.tcp-brief-modes { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.tcp-brief-mode { display: flex; flex-direction: column; gap: 3px; font-size: 14px; line-height: 1.45; }
+.tcp-brief-mode-head { display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.tcp-brief-mode-text { color: var(--text-sub); }
+@media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
+  .tcp-brief-btn { padding: 0 12px; }
+  .tcp-brief-pick { padding: 10px 16px 12px; }
+  .tcp-brief-grid { grid-template-columns: 1fr; }
+  .tcp-brief-card--text { grid-column: auto; }
+}

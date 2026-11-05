@@ -73,8 +73,12 @@ const digest = () => screen.getByRole('region', { name: 'Коротко' });
 const head = () => document.querySelector('.tcp-head')!;
 const isBefore = (a: Element, b: Element) =>
   Boolean(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
-const value = (label: string) =>
-  within(digest()).getByText(label).nextElementSibling?.textContent;
+// Строка сводки словами: плашки (2026-11) — через пробел, текст — как есть.
+const value = (label: string) => {
+  const dd = within(digest()).getByText(label).nextElementSibling!;
+  const chips = Array.from(dd.querySelectorAll('span > span'));
+  return chips.length ? chips.map((c) => c.textContent).join(' ') : dd.textContent;
+};
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -95,8 +99,10 @@ describe('ClientConceptTab: сводка «Коротко»', () => {
     expect(screen.getByRole('button', { name: 'Схема' }).getAttribute('aria-pressed')).toBe('true');
     expect(value('Схемы')).toBe('Неуспешность');
     expect(value('Режимы')).toBe('Судья (Карающий Критик) → Здоровый Взрослый');
+    // схема — плашка в тоне домена (ds-chip tone-tint + --h), не текст через « · »
+    expect(within(digest()).getByText('Неуспешность').className).toBe('ds-chip tone-tint');
     expect(value('Цикл')).toBe('Критика → Судья → уход в себя');
-    expect(value('Потребности')).toBe('✗ блокированы: Автономия · ✓ есть опора: Границы');
+    expect(value('Потребности')).toBe('✗ блокированы: Автономия ✓ есть опора: Границы'); // плашки через пробел (value)
     expect(value('Цель')).toBe('Снизить тревогу перед работой');
     const figure = screen.getByRole('button', { name: 'Карающий Критик: связи' });
     expect(isBefore(head(), digest())).toBe(true);
