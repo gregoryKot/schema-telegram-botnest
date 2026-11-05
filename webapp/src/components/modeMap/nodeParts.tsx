@@ -72,21 +72,21 @@ export function NodeTools({ id, selected, data }: { id: string; selected?: boole
       <div style={{ display: 'flex', gap: 2, padding: 'var(--space-4)', borderRadius: 'var(--r-8)', alignItems: 'center',
         background: 'var(--bg-elev)', border: '1px solid var(--line-strong)',
         boxShadow: 'var(--shadow-2)' }}>
-        <button style={btn} title="Редактировать" aria-label="Редактировать" onClick={() => actions.edit(id)}><MMIcon name="edit" size={15} /></button>
+        <button className="mm2-nt-btn" style={btn} title="Редактировать" aria-label="Редактировать" onClick={() => actions.edit(id)}><MMIcon name="edit" size={15} /></button>
         {sep}
-        <button style={btn} title={`Толщина контура: ${({ thin: 'тонкий', normal: 'обычный', bold: 'жирный' } as const)[sw]} (${tr('нажми', 'нажмите')}, чтобы сменить)`}
+        <button className="mm2-nt-btn" style={btn} title={`Толщина контура: ${({ thin: 'тонкий', normal: 'обычный', bold: 'жирный' } as const)[sw]} (${tr('нажми', 'нажмите')}, чтобы сменить)`}
           aria-label="Толщина контура"
           onClick={() => actions.patchData(id, { strokeWidth: next(STROKE_CYCLE, sw) })}>
           <span style={{ display: 'inline-block', width: 16, height: sw === 'thin' ? 1.5 : sw === 'bold' ? 4 : 2.5,
             borderRadius: 'var(--r-2)', background: 'var(--text-sub)' }} />
         </button>
-        <button style={{ ...btn, fontWeight: 700, fontSize: fz === 'sm' ? 11 : fz === 'lg' ? 17 : 14 }}
+        <button className="mm2-nt-btn" style={{ ...btn, fontWeight: 700, fontSize: fz === 'sm' ? 11 : fz === 'lg' ? 17 : 14 }}
           title={`Размер текста: ${({ sm: 'мелкий', md: 'средний', lg: 'крупный' } as const)[fz]} (${tr('нажми', 'нажмите')}, чтобы сменить)`}
           aria-label="Размер текста"
           onClick={() => actions.patchData(id, { fontSize: next(FONT_CYCLE, fz) })}>A</button>
         {sep}
-        <button style={btn} title="Дублировать" aria-label="Дублировать" onClick={() => actions.duplicate(id)}><MMIcon name="copy" size={15} /></button>
-        <button style={{ ...btn, color: 'var(--accent-red)' }} title="Удалить" aria-label="Удалить" onClick={() => actions.remove(id)}><MMIcon name="trash" size={15} /></button>
+        <button className="mm2-nt-btn" style={btn} title="Дублировать" aria-label="Дублировать" onClick={() => actions.duplicate(id)}><MMIcon name="copy" size={15} /></button>
+        <button className="mm2-nt-btn" style={{ ...btn, color: 'var(--accent-red)' }} title="Удалить" aria-label="Удалить" onClick={() => actions.remove(id)}><MMIcon name="trash" size={15} /></button>
       </div>
     </NodeToolbar>
   );

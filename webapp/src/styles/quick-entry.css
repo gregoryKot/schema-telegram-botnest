@@ -27,3 +27,6 @@
 }
 .qe-cta { min-height: 52px; width: 100%; border-radius: 26px; font-size: 16px; }
 .qe-cta:disabled { opacity: .5; cursor: default; }
+
+.qe-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.qe-head .tq-title { min-width: 0; }

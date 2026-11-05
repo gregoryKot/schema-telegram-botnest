@@ -5,6 +5,9 @@
 import { getTherapistContact } from '../utils/therapistContact';
 import { useTr } from '../utils/addressForm';
 
+// Ссылки ниже были 74×16 (QA мобильной версии 2026-11, М1): зона нажатия 44 по
+// высоте — отступом 14px; у строчной он не раздвигает строку, у блочной это
+// делает отрицательный margin.
 export function TherapyNote({ compact }: { compact?: boolean }) {
   const contact = getTherapistContact();
   const tr = useTr();
@@ -43,6 +46,7 @@ export function TherapyNote({ compact }: { compact?: boolean }) {
               target="_blank"
               rel="noopener noreferrer"
               className="u-link"
+              style={{ padding: '14px 0' }}
             >
               {contact.name === 'автору'
                 ? 'Записаться →'
@@ -89,7 +93,8 @@ export function TherapyNote({ compact }: { compact?: boolean }) {
             rel="noopener noreferrer"
             style={{
               display: 'inline-block',
-              marginTop: 6,
+              padding: '14px 0',
+              margin: '-8px 0 -14px',
               fontSize: 12,
               color: 'var(--accent)',
               textDecoration: 'none',

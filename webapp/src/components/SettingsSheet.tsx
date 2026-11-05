@@ -153,9 +153,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                 {!isTherapist && <BecomeTherapistSection />}
                 {isTherapist && <CabinetSection rel={therapy} onOpenTherapistCabinet={onOpenTherapistCabinet} />}
                 <PartnerSection pair={pair} />
-                <ShareSection />
-                <AboutSection />
-                <DataSection />
+                <ShareSection /><AboutSection /><DataSection />
               </>)}
             </div>
           </div>

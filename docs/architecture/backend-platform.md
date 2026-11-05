@@ -64,6 +64,8 @@
   - `src/therapy/therapy-invites.controller.ts` — живые приглашения терапевта (`GET invites`, `DELETE invites/:id`) и предпросмотр кода для экрана согласия (`POST invite/preview`); логика — `src/therapy/therapy-invite-list.ts`
   - `src/therapy/therapy-client-data.service.ts` — данные клиента для терапевта, запрос YSQ
   - `src/therapy/therapy-tasks.service.ts` — задачи (свои и назначенные), стрик-прогресс
+  - `src/therapy/task-title.ts` — название задания для уведомления в боте («Карточка схемы: …»); названия схем/режимов — копия `shared` в `task-title.data.ts`, сверка `task-title.sync.spec.ts`
+  - `src/therapy/streak-progress.ts` — прогресс задания-серии: дни с дня назначения по календарю клиента; один расчёт для /tasks клиента, карточки у терапевта и авто-закрытия
   - `src/therapy/assigned-task.ts` — удаление и отметка «выполнено» задания терапевтом (офлайн-клиенту выполнить его некому); доступ — задание назначено этим терапевтом и связь активна, иначе 403
   - `src/therapy/dto/not-future-day.ts` — валидатор `NotFutureDay`: «начало терапии» не позже самого позднего «сегодня» на Земле (UTC+14)
   - `src/therapy/therapist-request.service.ts` — заявка на роль терапевта

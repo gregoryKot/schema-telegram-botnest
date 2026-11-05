@@ -1,11 +1,21 @@
-// Визитка в окне старта приложения (deploy/front-server.mjs). Пока Nest не
-// поднял APP_PORT, front раньше отдавал страницу техработ на любой хост, и
-// рекламный клик на kotlarewski.gr попадал в «технические работы» на каждом
-// деплое. Первому экрану визитки бэкенд не нужен: это статика webapp/dist, а
-// /api/site-content у лендинга с фолбэком на /gregory.jpg. Поэтому здесь front
-// читает заголовок запроса и для хоста визитки отдаёт index.html и файлы
-// сборки с диска; продукт, API, /app (вечный переход на /today, его делает Nest) и
-// /health по-прежнему получают техработы.
+// Ответ с диска, пока Nest не слушает APP_PORT (deploy/front-server.mjs):
+// старт контейнера (recover + migrate + буст Nest) и его остановка. Front
+// читает заголовок запроса и решает: файл сборки, визитка или техработы.
+//
+// Файлы сборки — любому хосту. Выкладка на Amvera (замер 2026-11-05,
+// docs/RUNBOOKS.md): старый контейнер гасит Nest, ~20 с контейнера нет, новый
+// стартует. HTML, пришедший до этого окна, тянет CSS/JS/шрифт уже в окне —
+// сюда, пока Nest погашен или стартует. Такой запрос получает файл или 404, но
+// не HTML техработ: с nosniff браузер молча выбрасывает стиль или модуль, и
+// страница рисуется без стилей (инцидент 2026-11-04). Имени с чужим хешем
+// здесь может не быть — тогда 404 с no-store, чтобы промах не закэшировался.
+//
+// Страницы — только визитке. Рекламный клик на kotlarewski.gr раньше попадал
+// в «технические работы» на каждом деплое, а первому экрану визитки бэкенд не
+// нужен: это index.html из webapp/dist и /api/site-content у лендинга с
+// фолбэком на /gregory.jpg. Страницам продукта (и его .html) бэкенд нужен —
+// им, как и API, /app (вечный переход на /today, его делает Nest) и /health,
+// по-прежнему техработы.
 //
 // Только встроенные модули Node: front обязан подниматься при сломанной сборке.
 import { readFileSync, statSync } from 'node:fs';
@@ -99,35 +109,31 @@ export function parseRequestHead(text) {
 const isUnder = (path, prefix) =>
   path === prefix || path.startsWith(`${prefix}/`);
 
-/** Файл визитки на диске для запроса или null (тогда — страница техработ). */
-export function visitkaResponse(head, distDir = DEFAULT_DIST_DIR) {
-  if (!head || !VISITKA_HOSTS.has(head.host)) return null;
-  if (head.method !== 'GET' && head.method !== 'HEAD') return null;
+/** Раскодированный путь запроса или null (битое кодирование, \0, не от корня). */
+function decodedPath(rawPath) {
   let path;
   try {
-    path = decodeURIComponent(head.path);
+    path = decodeURIComponent(rawPath);
   } catch {
     return null;
   }
-  if (!path.startsWith('/') || path.includes('\0')) return null;
-  if (
-    PRODUCT_PREFIXES.some((p) => isUnder(path, p)) ||
-    NEST_ONLY_FILES.has(path)
-  ) {
-    return null;
-  }
-  const omitBody = head.method === 'HEAD';
-  const index = readOrNull(join(distDir, 'index.html'));
-  if (!index) return null; // сборки нет — честные техработы, а не пустой ответ
-  const isAsset = path.slice(path.lastIndexOf('/') + 1).includes('.');
-  if (!isAsset) {
-    return rawResponse({
-      type: TYPES['.html'],
-      body: index,
-      cache: 'no-store, must-revalidate',
-      omitBody,
-    });
-  }
+  return path.startsWith('/') && !path.includes('\0') ? path : null;
+}
+
+/** Это отвечает только Nest: продуктовые пути, sitemap и robots. */
+const isNestOnly = (path) =>
+  PRODUCT_PREFIXES.some((p) => isUnder(path, p)) || NEST_ONLY_FILES.has(path);
+
+/** Файл — точка в последнем сегменте пути; без неё — страница SPA. */
+const isFilePath = (path) =>
+  path.slice(path.lastIndexOf('/') + 1).includes('.');
+
+/** Страница продукта (путь без точки или .html) — без бэкенда не работает. */
+const isProductPage = (path) =>
+  !isFilePath(path) || extname(path).toLowerCase() === '.html';
+
+/** Файл из dist или 404 с no-store, но не HTML техработ. */
+function fileResponse(distDir, path, omitBody) {
   const file = join(distDir, normalize(path));
   const body = file.startsWith(distDir + sep) ? readOrNull(file) : null;
   if (!body) {
@@ -143,6 +149,26 @@ export function visitkaResponse(head, distDir = DEFAULT_DIST_DIR) {
   return rawResponse({ type, body, cache: 'public, no-cache', omitBody });
 }
 
+/** Ответ с диска, пока Nest лежит, или null (тогда — страница техработ). */
+export function staticWhileDown(head, distDir = DEFAULT_DIST_DIR) {
+  if (!head || (head.method !== 'GET' && head.method !== 'HEAD')) return null;
+  const path = decodedPath(head.path);
+  if (!path || isNestOnly(path)) return null;
+  const visitka = VISITKA_HOSTS.has(head.host);
+  if (!visitka && isProductPage(path)) return null;
+  const index = readOrNull(join(distDir, 'index.html'));
+  if (!index) return null; // сборки нет — честные техработы, а не пустой ответ
+  const omitBody = head.method === 'HEAD';
+  if (isFilePath(path)) return fileResponse(distDir, path, omitBody);
+  // Страница визитки — её index.html.
+  return rawResponse({
+    type: TYPES['.html'],
+    body: index,
+    cache: 'no-store, must-revalidate',
+    omitBody,
+  });
+}
+
 function readOrNull(file) {
   try {
     return statSync(file).isFile() ? readFileSync(file) : null;
@@ -151,7 +177,7 @@ function readOrNull(file) {
   }
 }
 
-/** Приложение лежит: дочитать заголовок запроса и ответить визиткой или техработами. */
+/** Приложение лежит: дочитать заголовок запроса и ответить с диска или техработами. */
 export function answerWhileDown(
   client,
   maintenance,
@@ -174,7 +200,7 @@ export function answerWhileDown(
       return;
     }
     const head = parseRequestHead(buf.subarray(0, end).toString('latin1'));
-    finish(visitkaResponse(head, distDir) ?? maintenance);
+    finish(staticWhileDown(head, distDir) ?? maintenance);
   };
   const timer = setTimeout(() => finish(maintenance), HEAD_TIMEOUT_MS);
   client.on('data', onData);

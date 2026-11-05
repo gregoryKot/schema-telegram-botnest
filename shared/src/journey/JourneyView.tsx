@@ -30,7 +30,7 @@ export interface JourneyViewProps {
 
 const chipStyle = (active: boolean): CSSProperties => ({
   flexShrink: 0,
-  minHeight: 34,
+  minHeight: 44, // палец, а не курсор: чип 34px промахивался (QA мобильной версии 2026-11, М1)
   padding: '0 13px',
   borderRadius: 999,
   border: active

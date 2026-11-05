@@ -122,7 +122,7 @@ describe('front-server (публичный порт: техработы ⇄ пр
     expect(await after.text()).toBe('APP-UP');
   }, 10000);
 
-  describe('визитка в окне старта (хост решает: статика или техработы)', () => {
+  describe('статика в окне старта (файлы сборки — всем, страницы — визитке)', () => {
     let root: string;
     let dist: string;
     beforeAll(() => {
@@ -139,28 +139,28 @@ describe('front-server (публичный порт: техработы ⇄ пр
     });
     afterAll(() => rmSync(root, { recursive: true, force: true }));
 
+    type Hit = { status: number; type: string; cache: string; body: string };
     // fetch не даёт подменить Host — сырой http.request.
     function hit(port: number, path: string, host: string, method = 'GET') {
-      return new Promise<{ status: number; type: string; body: string }>(
-        (resolve, reject) => {
-          const req = request(
-            { port, host: '127.0.0.1', path, method, headers: { Host: host } },
-            (res) => {
-              let body = '';
-              res.on('data', (c: Buffer) => (body += c.toString()));
-              res.on('end', () =>
-                resolve({
-                  status: res.statusCode ?? 0,
-                  type: String(res.headers['content-type']),
-                  body,
-                }),
-              );
-            },
-          );
-          req.on('error', reject);
-          req.end();
-        },
-      );
+      return new Promise<Hit>((resolve, reject) => {
+        const req = request(
+          { port, host: '127.0.0.1', path, method, headers: { Host: host } },
+          (res) => {
+            let body = '';
+            res.on('data', (c: Buffer) => (body += c.toString()));
+            res.on('end', () =>
+              resolve({
+                status: res.statusCode ?? 0,
+                type: String(res.headers['content-type']),
+                cache: String(res.headers['cache-control']),
+                body,
+              }),
+            );
+          },
+        );
+        req.on('error', reject);
+        req.end();
+      });
     }
 
     it('kotlarewski.gr: страницы — index.html, файлы сборки — с диска', async () => {
@@ -206,6 +206,34 @@ describe('front-server (публичный порт: техработы ⇄ пр
         expect(res.status).toBe(200);
         expect(res.body).toContain('технические работы');
         expect(res.body).not.toContain('VISITKA-INDEX');
+      }
+    }, 10000);
+
+    // Инцидент 2026-11-04: HTML пришёл до окна выкладки, а его CSS/JS — сюда,
+    // пока Nest этого контейнера стартует или погашен. Файл сборки
+    // получает файл или 404, не HTML техработ: с nosniff браузер молча
+    // выбросил бы стиль, и страница открылась бы без стилей.
+    it('продукт: файл сборки — с диска или 404, страницы и API — техработы', async () => {
+      const { proc, port } = launchFront(59995, dist);
+      alive.push(proc);
+      const p = await port;
+      const host = 'schemehappens.ru';
+
+      const js = await hit(p, '/assets/index-AbCdEf12.js', host);
+      expect(js.status).toBe(200);
+      expect(js.type).toContain('javascript');
+      expect(js.body).toBe('console.log(1)');
+      // Чужой хеш — в этой сборке файла нет: 404, который не закэшируется.
+      const miss = await hit(p, '/assets/missing-AbCdEf12.css', host);
+      expect(miss.status).toBe(404);
+      expect(miss.cache).toBe('no-store');
+      expect(miss.body).not.toContain('технические работы');
+      // Контроль: страницам продукта, его .html и API нужен бэкенд.
+      const pages = ['/robots.txt', '/health', '/api/x', '/', '/donate'];
+      for (const path of [...pages, '/index.html']) {
+        const res = await hit(p, path, host);
+        expect(res.status).toBe(200);
+        expect(res.body).toContain('технические работы');
       }
     }, 10000);
 

@@ -15,7 +15,8 @@ export function scrollIntoViewSafe(
   options: Omit<ScrollIntoViewOptions, 'behavior'> = {},
 ): void {
   if (!el) return;
-  el.scrollIntoView({
+  // jsdom и очень старые WebView метода не имеют — прокрутка не нужна, падать нельзя.
+  el.scrollIntoView?.({
     ...options,
     behavior: isReducedMotion() ? 'auto' : 'smooth',
   });

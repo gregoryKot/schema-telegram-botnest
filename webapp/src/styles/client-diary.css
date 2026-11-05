@@ -3,14 +3,13 @@
 
 /* «Записать» — ds-btn--lg (48/r24, во всю ширину на телефоне); на ноутбуке пилюля по тексту. */
 .cd-write { align-self: flex-start; }
-@media (min-width: 768px) { .cd-write { width: auto; padding: 0 var(--space-24); } }
+@media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) { .cd-write { width: auto; padding: 0 var(--space-24); } }
 
-/* Шапка (DiaryHeader): на ≥768 заголовок слева и «Записать» справа в одной строке, фильтры ниже (#925).
-   На телефоне .cd-top — display: contents: eyebrow, заголовок и кнопка остаются детьми колонки. */
-.cd-top { display: contents; }
-@media (min-width: 768px) {
-  .cd-top { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-16); }
-  .cd-top .cd-write { align-self: flex-end; flex-shrink: 0; }
+/* Шапка (DiaryHeader): на ≥768 герой слева и «Записать» справа в одной строке, фильтры ниже (#925). */
+@media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) {
+  .pp-block.cd-head { flex-direction: row; align-items: center; justify-content: space-between; gap: var(--space-24); }
+  .cd-head .pp-hero { flex: 1; min-width: 0; }
+  .cd-head .cd-write { align-self: center; flex-shrink: 0; }
 }
 
 .cd-drafts { display: flex; flex-direction: column; gap: 10px; }
@@ -58,13 +57,13 @@
 .cd-grat-more { color: var(--text-faint); font-style: italic; }
 
 /* Дата группы на ≥768 — компактная подпись в колонке слева: «4 ноября» и под ней «среда» (#925). */
-@media (min-width: 768px) {
+@media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) {
   .cd-day { grid-template-columns: 136px minmax(0, 1fr); gap: var(--space-24); }
   .cd-day-date { font: 600 15px/1.3 var(--sans); white-space: nowrap; }
   .cd-day-rel { font-size: 12px; margin-top: 2px; }
 }
 
-@media (max-width: 767px) {
+@media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
   /* Кегль заголовка — ds-h1 (#906); .cd-head — обычный блок, своих flex-правил нет. */
 
   /* Записи: бейдж и время в одной строке, заголовок на всю ширину под ним */
@@ -82,3 +81,7 @@
 .cd-entry--tracker { flex-direction: row; align-items: center; font-size: 15px; font-weight: 600; }
 .cd-retry { min-height: 44px; padding: 0 var(--space-8); background: none; border: none; cursor: pointer; font: 600 13px var(--sans); color: var(--accent); }
 .cd-streak { margin: 0; font-size: 13px; line-height: 1.5; color: var(--text-faint); }
+
+/* Пустая лента: карточки «Схема» и «Режим» — цветная бумага с мотивом над текстом */
+.cd-explainer-card { padding: 16px 18px; }
+.cd-explainer-art { display: flex; justify-content: flex-start; width: auto; margin-bottom: 8px; }

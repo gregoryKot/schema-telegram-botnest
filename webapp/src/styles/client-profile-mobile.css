@@ -4,12 +4,12 @@
    (client-profile.css, #906): надпись, заголовок, подпись и те же действия. */
 .cpf-ach-more { display: none; }
 
-@media (max-width: 767px) {
+@media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
 
   /* Порядок: шапка → блоки из «Настроить экран» (по умолчанию: портрет, тёплые слова, «Мой путь», стрик,
      активность, достижения, паттерны — как в мини-аппе) → остальное. Место блока — --blk-o на обёртке. */
   .cpf-page > * { order: 10; }
-  .cpf-head, .cpf-skeleton, .cpf-error { order: 0; }
+  .cpf-block, .cpf-skeleton, .cpf-error { order: 0; }
   .cpf-blk { --blk-o: 5; order: var(--blk-o); }
   .cpf-duo { display: contents; }
 

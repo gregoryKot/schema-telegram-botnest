@@ -1,6 +1,7 @@
 import { getTherapistContact, hasConnectedTherapist } from '../../../../shared/src/utils/therapistContact';
 import type { TherapyNudgePlace, TherapyNudgeTrigger } from '../../../../shared/src/analytics/therapyNudge';
 import { bookingUrl, telegramUrl } from '../../../../shared/src/therapy/bridge/therapyBridgeLinks';
+import { Talk } from '../art/PaperArtSigns';
 import { ExternalLink } from '../../host/ExternalLink';
 import { useHistorySheet } from '../../hooks/useHistorySheet';
 import { trackTherapyNudge } from './trackTherapyNudge';
@@ -28,7 +29,10 @@ export function TalkSheet({ place, trigger, onClose }: Props) {
       </div>
       <div className="cw-inner">
         <div className="ds-eyebrow">{hasTherapist ? t.sheetTherapistEyebrow : t.sheetEyebrow}</div>
-        <h1 className="ds-h1">{hasTherapist ? t.sheetTherapistTitle : t.sheetTitle}</h1>
+        <div className="cw-title-row">
+          <h1 className="ds-h1">{hasTherapist ? t.sheetTherapistTitle : t.sheetTitle}</h1>
+          <Talk size="square" />
+        </div>
         {hasTherapist ? (
           <p className="cw-lead">{t.sheetTherapistP}</p>
         ) : (
@@ -42,13 +46,8 @@ export function TalkSheet({ place, trigger, onClose }: Props) {
           {hasTherapist ? (
             // Терапевт с веб-аккаунтом: написать из приложения некуда (З6).
             contact.url && (
-              <ExternalLink
-                className="ds-btn ds-btn--lg"
-                href={contact.url}
-                onClick={() => trackTherapyNudge(place, 'write', trigger)}
-              >
-                {t.sheetWriteTherapist}
-              </ExternalLink>
+              <ExternalLink className="ds-btn ds-btn--lg" href={contact.url}
+                onClick={() => trackTherapyNudge(place, 'write', trigger)}>{t.sheetWriteTherapist}</ExternalLink>
             )
           ) : (
             <>

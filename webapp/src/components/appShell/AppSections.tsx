@@ -7,12 +7,12 @@
 // блок «Помощь рядом» в PracticeSection оставался доступным под каталогом
 // практик). Сами оверлеи — вне этого компонента, поэтому inert их не трогает.
 import { lazy, Suspense, type MutableRefObject } from 'react';
-import type { NavigateFunction } from 'react-router-dom';
+import { useLocation, type NavigateFunction } from 'react-router-dom';
 import { ErrorBoundary } from '../ErrorBoundary';
 import { ScreenSkeleton } from '../Skeleton';
 import type { Need } from '../../types';
 import type { TherapyClientSummary, UserId } from '../../api';
-import type { Section } from './navigation';
+import { leaveClientTarget, openClientRoute, type Section } from './navigation';
 import type { useOverlays } from './useOverlays';
 const TodaySection    = lazy(() => import('../../sections/TodaySection').then(m => ({ default: m.TodaySection })));
 const MoreSection    = lazy(() => import('../../sections/MoreSection').then(m => ({ default: m.MoreSection })));
@@ -52,6 +52,11 @@ export function AppSections({
   setTherapistClients, setSection, ov, todayRefreshKey, userRole, profileRefreshKey,
   childhoodRatings, helpTasksKey, setHelpTasksKey,
 }: Props) {
+  const { state: locState } = useLocation();
+  const openClient = (id: UserId) => {
+    const r = openClientRoute(pathname, id);
+    if (r) navigate(r.to, { state: r.state });
+  };
   return (
     // display:contents — обёртка не участвует в flex-раскладке canvas
     // (.page/.main--cabinet контент остаётся прямым flex-ребёнком canvas),
@@ -63,7 +68,7 @@ export function AppSections({
       <ErrorBoundary section="Кабинет" key="cabinet-today-boundary">
         <TherapistTodaySection
           displayName={displayName}
-          onOpenClient={(id) => navigate('/cabinet/' + id)}
+          onOpenClient={openClient}
         />
       </ErrorBoundary>
     )}
@@ -72,8 +77,12 @@ export function AppSections({
         <TherapistClientSheet
           view={openClientId ? 'client' : 'list'}
           openClientId={openClientId}
-          onViewChange={(v) => v === 'list' ? navigate('/cabinet') : null}
-          onOpenClient={(id) => navigate('/cabinet/' + id)}
+          onViewChange={(v) => {
+            if (v !== 'list') return;
+            const to = leaveClientTarget(locState);
+            if (to === -1) navigate(-1); else navigate(to);
+          }}
+          onOpenClient={openClient}
           onClose={() => switchTherapistMode(false)}
           backHandlerRef={therapistBackHandlerRef}
           onClientsChange={setTherapistClients}

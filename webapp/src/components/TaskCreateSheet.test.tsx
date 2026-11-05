@@ -69,7 +69,7 @@ describe('TaskCreateSheet — сохранение своей цели', () => {
       target: { value: 'Пить больше воды' },
     });
 
-    fireEvent.click(screen.getByText('Назначить задание'));
+    fireEvent.click(screen.getByText('Поставить цель'));
 
     await waitFor(() => expect(onCreated).toHaveBeenCalledTimes(1));
     expect(mockApi.createTask).toHaveBeenCalledWith(
@@ -77,9 +77,17 @@ describe('TaskCreateSheet — сохранение своей цели', () => {
     );
   });
 
+  // QA мобильной версии 2026-11, М8: клиент ставит цель себе, а читал «Новое задание · Назначить задание».
+  it('своя цель — язык клиента: «Новая цель», «Выбери цель», «Поставить цель»', () => {
+    renderSheet();
+    expect(screen.getByText('Новая цель')).toBeTruthy();
+    expect(screen.getByText('цель', { selector: 'em' })).toBeTruthy();
+    expect(screen.queryByText(/Назначить|Новое задание/)).toBeNull();
+  });
+
   it('пустой текст блокирует кнопку сохранения — api не вызывается', () => {
     renderSheet();
-    const saveBtn = screen.getByText('Назначить задание') as HTMLButtonElement;
+    const saveBtn = screen.getByText('Поставить цель') as HTMLButtonElement;
     expect(saveBtn.disabled).toBe(true);
   });
 
@@ -93,7 +101,7 @@ describe('TaskCreateSheet — сохранение своей цели', () => {
     );
     expect(screen.getByText('Выберите')).toBeTruthy();
     expect(screen.queryByText('Выбери')).toBeNull();
-    fireEvent.click(screen.getByText('Назначить задание'));
+    fireEvent.click(screen.getByText('Поставить цель'));
     expect(screen.queryByText('Выбери схему')).toBeNull(); // не должно быть тыкающей ошибки
     expect(screen.getByText('Выберите схему')).toBeTruthy();
   });
@@ -106,7 +114,7 @@ describe('TaskCreateSheet — сохранение своей цели', () => {
     fireEvent.change(screen.getByPlaceholderText('Например: позвонить другу раз в неделю'), {
       target: { value: 'Пить больше воды' },
     });
-    fireEvent.click(screen.getByText('Назначить задание'));
+    fireEvent.click(screen.getByText('Поставить цель'));
     await waitFor(() => expect(onCreated).toHaveBeenCalledTimes(1));
     await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
   });
@@ -118,7 +126,7 @@ describe('TaskCreateSheet — сохранение своей цели', () => {
       target: { value: 'Гулять по вечерам' },
     });
 
-    fireEvent.click(screen.getByText('Назначить задание'));
+    fireEvent.click(screen.getByText('Поставить цель'));
 
     await screen.findByText('Не удалось сохранить');
     expect(onCreated).not.toHaveBeenCalled();

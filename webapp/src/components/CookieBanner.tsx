@@ -85,12 +85,7 @@ export function CookieBanner() {
   const compact = isPracticeHost();
 
   return (
-    <div style={{
-      position: 'fixed', bottom: 0, left: 0, right: 0,
-      zIndex: 9999,
-      padding: '0 16px 20px',
-      pointerEvents: 'none',
-    }}>
+    <div className="cookie-banner-wrap">
       <div
         className="cookie-banner"
         role="dialog"

@@ -3,6 +3,6 @@
    Колонка, поля и центрирование — те же --tk-max / --tk-gutter / --tk-center, что у кабинета терапевта
    (объявлены на .main в index.css): раньше у каждой страницы был свой max-width (600/1100) и колонка
    прижималась влево с пустой правой половиной. Телефон (≤767) — без изменений. */
-@media (min-width: 768px) {
+@media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) {
   .page > .ds-page { margin-left: var(--tk-center); max-width: var(--tk-max); padding-inline: var(--tk-gutter); }
 }

@@ -3,7 +3,7 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useTr } from '../utils/addressForm';
 import { api } from '../api';
 import type { DayHistory } from '../types';
-import { applyCabinetLightTheme } from '../utils/theme';
+import { useCabinetLightTheme } from '../utils/useCabinetLightTheme';
 import { syncMotionAttr } from '../utils/reducedMotion';
 import { shouldShowChildhoodWheel, THERAPIST_MODE_KEY } from '../utils/storageKeys';
 import { CommandPalette } from './CommandPalette';
@@ -29,6 +29,7 @@ import { OfflineBanner } from './OfflineBanner';
 import { Celebration } from './Celebration';
 import { todayInsightPhrase } from '../utils/todayInsight';
 import { DonateNudge } from './DonateNudge';
+import { donateNudgeBlocked } from './donateNudgeBlocked';
 import { hueStyle } from '../lib/tone';
 
 // – lazy: heavy overlays –
@@ -42,12 +43,11 @@ const HistorySheet   = lazy(() => import('./HistorySheet').then(m => ({ default:
 import type { StreakData } from '../api';
 import { parseRouteUserId } from '../../../shared/src/utils/sameId';
 
-// Кабинет — только светлая тема (решение владельца 2026-10-15); тумблер темы живёт на лендинге.
-applyCabinetLightTheme();
 syncMotionAttr();
 
 export function AppShell() {
   useHostShell();
+  useCabinetLightTheme(); // кабинет — только светлая тема (решение владельца 2026-10-15)
   const tr = useTr();
   const location = useLocation();
   const navigate = useNavigate();
@@ -242,7 +242,7 @@ export function AppShell() {
           <button className="search-pill" onClick={() => ov.setCmdOpen(true)}>
             <span>Перейти к…</span>
             <span className="sp-spacer" />
-            <span className="kbd">⌘K</span>
+            <span className="kbd kbd-hint">⌘K</span>
           </button>
         </div>
 
@@ -374,7 +374,7 @@ export function AppShell() {
       )}
 
       {/* Periodic donate nudge (once ~monthly, dismissible) */}
-      <DonateNudge />
+      <DonateNudge blocked={donateNudgeBlocked({ section, anyOverlayOpen, entryDone })} />
     </div>
   );
 }

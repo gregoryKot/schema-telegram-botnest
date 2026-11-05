@@ -34,17 +34,15 @@ export function QuestionScreen({
   onAnswer: (v: number) => void;
   onMore: () => void;
 }) {
-  // Примеры раскрыты, пока эту потребность ещё не оценивали (ни сегодня, ни вчера).
-  const ratedBefore = value > 0 || yesterday !== undefined;
   return (
-    <div className="tq-inner" style={hueStyle(hue)}>
+    <div className="tq-inner tq-ask" style={hueStyle(hue)}>
       <TrackerOriginNote eligible={showOriginNote} />
       <p className="tq-eyebrow tone-text">
         Потребность {idx + 1} из {total}
         {caption ? ` · ${caption}` : ''}
       </p>
       <h1 className="tq-title">{name}</h1>
-      <NeedExplainer data={data} expanded={!ratedBefore} />
+      <NeedExplainer data={data} />
       <p className="tq-question">{data?.question ?? ''}</p>
       <NeedScale
         variant="words"

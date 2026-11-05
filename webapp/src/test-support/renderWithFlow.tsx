@@ -7,6 +7,7 @@
 // ДО того, как тест успеет что-то проверить (см. ModeMapCanvas.tsx: isDesktop
 // использует matchMedia напрямую в теле компонента, не в эффекте).
 import { vi } from 'vitest';
+import { PHONE_MEDIA } from '../utils/phoneLayout';
 import { render, fireEvent, screen, type RenderResult } from '@testing-library/react';
 import { ReactFlowProvider } from '@xyflow/react';
 import type { ReactElement } from 'react';
@@ -21,7 +22,8 @@ export function installFlowTestPolyfills() {
   // @ts-expect-error — тестовый полифилл, не полная реализация DOM API
   global.ResizeObserver = ResizeObserverStub;
   window.matchMedia = vi.fn().mockImplementation((query: string) => ({
-    matches: false, media: query,
+    // Условие телефона (utils/phoneLayout) в jsdom — по innerWidth, как до перехода на matchMedia.
+    matches: query === PHONE_MEDIA ? window.innerWidth < 768 : false, media: query,
     addEventListener: vi.fn(), removeEventListener: vi.fn(),
   })) as unknown as typeof window.matchMedia;
 }

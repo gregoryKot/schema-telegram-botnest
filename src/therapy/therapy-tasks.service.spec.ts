@@ -6,8 +6,14 @@
 // см. src/therapy/therapy-tasks.controller.ts) — сам сервис createTask
 // ownership не проверяет, это сознательно не e2e-покрыто здесь (правило
 // "controllers — see e2e" из задания).
+//
+// Серия с дня назначения (инцидент 2026-11-04, docs/INCIDENTS.md): окно
+// прогресса было «последние N суток», и клиент, отмечавшийся неделю до
+// назначения, закрывал задание на 7 дней первой оценкой в тот же день.
 import { TherapyTasksService } from './therapy-tasks.service';
 import { encrypt } from '../utils/crypto';
+import { renderTemplate } from '../notification/notification.templates';
+import { localDate } from '../utils/tz';
 
 function matchWhere(row: any, where: any): boolean {
   return Object.entries(where ?? {}).every(([k, v]) => {
@@ -278,7 +284,9 @@ describe('TherapyTasksService — авто-экспирация и авто-за
 
   it('checkStreakTasks: задача завершается, когда прогресс достиг targetDays; недостаточный прогресс — не трогает', async () => {
     const { service, tasks, ratings } = makeService();
-    const today = new Date().toISOString().slice(0, 10);
+    // День клиента (зона по умолчанию — Москва), не UTC: с 21:00 UTC там
+    // уже завтра, и UTC-дата фикстуры выпадала бы из окна серии.
+    const today = localDate('Europe/Moscow', new Date());
     ratings.push({ userId: CLIENT_A, date: today });
     tasks.push(
       {
@@ -329,17 +337,101 @@ describe('TherapyTasksService — getStreakProgress', () => {
     gratitudeDiary.push({ userId: CLIENT_A, date: day });
     const progress = await service.getStreakProgress(
       CLIENT_A,
-      'diary_streak',
-      7,
+      { type: 'diary_streak', createdAt: new Date(`${day}T00:00:00Z`) },
+      'UTC',
     );
     expect(progress).toBe(1); // один и тот же день, не три
   });
 });
 
+describe('TherapyTasksService — серия считается с дня назначения (инцидент 2026-11-04)', () => {
+  const streakTask = (createdAt: Date, targetDays = 7) => ({
+    id: 1,
+    userId: CLIENT_A,
+    assignedBy: THERAPIST,
+    type: 'tracker_streak',
+    text: 't',
+    targetDays,
+    needId: null,
+    dueDate: null,
+    done: null,
+    completedAt: null,
+    createdAt,
+  });
+
+  it('неделя оценок до назначения не закрывает задание: после одной оценки — 1 из 7, задание в работе', async () => {
+    const { service, tasks, users, ratings } = makeService();
+    users.push({ id: CLIENT_A, notifyTimezone: 'Europe/Moscow' });
+    const now = Date.now();
+    for (let i = 0; i < 7; i++) {
+      const date = localDate('Europe/Moscow', new Date(now - i * 86_400_000));
+      ratings.push({ userId: CLIENT_A, date });
+    }
+    tasks.push(streakTask(new Date(now)));
+
+    await service.checkStreakTasks(CLIENT_A);
+    expect(tasks[0].done).toBeNull(); // до починки — true, закрыто в день назначения
+    const [task] = await service.getTasks(CLIENT_A);
+    expect(task.progress).toBe(1);
+  });
+
+  it('день назначения — по календарю клиента: 01:30 по Москве = 22:30 UTC вчера, вчерашняя оценка не в счёт', async () => {
+    const { service, ratings } = makeService();
+    ratings.push(
+      { userId: CLIENT_A, date: '2026-11-03' },
+      { userId: CLIENT_A, date: '2026-11-04' },
+    );
+    const assignedAt = new Date('2026-11-03T22:30:00Z');
+    const task = { type: 'tracker_streak', createdAt: assignedAt };
+    expect(
+      await service.getStreakProgress(CLIENT_A, task, 'Europe/Moscow'),
+    ).toBe(1);
+    // В UTC-днях назначение было 3-го, и оба дня считались бы.
+    expect(await service.getStreakProgress(CLIENT_A, task, 'UTC')).toBe(2);
+  });
+
+  it('diary_streak: записи — по дню клиента; запись до полуночи дня назначения не в счёт', async () => {
+    const { service, schemaDiary, modeDiary } = makeService();
+    schemaDiary.push(
+      // 23:30 по Москве 3-го — до дня назначения
+      { userId: CLIENT_A, createdAt: new Date('2026-11-03T20:30:00Z') },
+      // 01:30 по Москве 4-го (в UTC ещё 3-е)
+      { userId: CLIENT_A, createdAt: new Date('2026-11-03T22:30:00Z') },
+    );
+    modeDiary.push({
+      userId: CLIENT_A,
+      createdAt: new Date('2026-11-04T10:00:00Z'),
+    });
+    const progress = await service.getStreakProgress(
+      CLIENT_A,
+      { type: 'diary_streak', createdAt: new Date('2026-11-03T21:15:00Z') },
+      'Europe/Moscow',
+    );
+    expect(progress).toBe(1); // обе записи 4-го по Москве — один день
+  });
+});
+
 describe('TherapyTasksService — scheduleTaskNotification', () => {
+  // Баг 2026-11-05 (docs/INCIDENTS.md): карточка схемы приходила клиенту как
+  // «emotional_deprivation». Шов: payload сервиса → настоящий шаблон бота.
+  it('карточка схемы: в сообщении бота — название, а не id', async () => {
+    const { service, notificationService } = makeService();
+    await service.scheduleTaskNotification(CLIENT_A, {
+      type: 'schema_intro',
+      text: 'emotional_deprivation',
+      needId: null,
+      dueDate: null,
+    });
+    const payload = notificationService.schedule.mock.calls[0][3];
+    const msg = renderTemplate('task_assigned', payload)!.text;
+    expect(msg).toContain('Карточка схемы: Эмоциональная депривация');
+    expect(msg).not.toContain('emotional_deprivation');
+  });
+
   it('вызывает notificationService.schedule с типом task_assigned и payload задачи', async () => {
     const { service, notificationService } = makeService();
     await service.scheduleTaskNotification(CLIENT_A, {
+      type: 'custom',
       text: 'сделай практику',
       needId: 'safety',
       dueDate: '2026-08-01',
@@ -349,6 +441,26 @@ describe('TherapyTasksService — scheduleTaskNotification', () => {
       'task_assigned',
       expect.any(Date),
       { text: 'сделай практику', needId: 'safety', dueDate: '2026-08-01' },
+    );
+  });
+
+  it('schema_intro: в payload название схемы, а не id (баг 2026-11-05)', async () => {
+    const { service, notificationService } = makeService();
+    await service.scheduleTaskNotification(CLIENT_A, {
+      type: 'schema_intro',
+      text: 'emotional_deprivation',
+      needId: null,
+      dueDate: null,
+    });
+    expect(notificationService.schedule).toHaveBeenCalledWith(
+      CLIENT_A,
+      'task_assigned',
+      expect.any(Date),
+      {
+        text: 'Карточка схемы: Эмоциональная депривация',
+        needId: null,
+        dueDate: null,
+      },
     );
   });
 });

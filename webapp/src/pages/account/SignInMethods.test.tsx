@@ -26,6 +26,13 @@ describe('SignInMethods — отвязка', () => {
     expect(screen.getByText(/Единственный способ входа/)).toBeTruthy();
   });
 
+  // QA мобильной версии 2026-11, М9: причина резалась многоточием (.aa-row-sub — одна
+  // строка для почты), на телефоне видно было «Единственный способ входа …».
+  it('причина недоступной «Отвязать» переносится, а не режется многоточием', () => {
+    renderMethods([p('google')]);
+    expect(screen.getByText(/Единственный способ входа/).classList.contains('aa-row-why')).toBe(true);
+  });
+
   it('два способа: обе «Отвязать» доступны, пояснения нет', () => {
     renderMethods([p('google'), p('telegram')]);
     const buttons = screen.getAllByRole<HTMLButtonElement>('button', { name: 'Отвязать' });

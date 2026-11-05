@@ -3,40 +3,28 @@
 .ct-page { max-width: 600px; }
 /* Кнопка «Зачем это?» стоит в строке с датой, а не рядом с h1: иначе она
    отнимает ширину у приветствия и «Привет, Имя» переносится на телефоне. */
-.ct-head { display: flex; flex-direction: column; gap: 4px; }
+.ct-head { display: flex; flex-direction: column; gap: 4px; margin-bottom: 8px; }
 .ct-head-top { display: flex; align-items: center; justify-content: space-between; gap: var(--space-12); }
-.ct-h1 { margin: 0; }
+/* Имя из почты или ника без пробелов резалось краем экрана посреди слова (QA мобильной 2026-11, М5):
+   одна строка с многоточием, как имена кабинета в #911, без overflow-wrap: anywhere. */
+.ct-h1 { margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ct-link {
   min-height: 44px; padding: 0; display: inline-flex; align-items: center; background: none; border: 0;
   cursor: pointer; font: 600 14px var(--sans); color: var(--accent);
 }
 .ct-link:hover { text-decoration: underline; text-underline-offset: 3px; }
 .ct-head-why { flex-shrink: 0; }
-.ct-calm { align-self: flex-start; color: var(--text-sub); }
-
-/* Плитки */
-.ct-tiles { display: flex; flex-direction: column; gap: 12px; }
-.ct-tile {
-  min-height: 124px; box-sizing: border-box; width: 100%; padding: 20px; border-radius: 20px;
-  display: flex; align-items: center; gap: 18px; cursor: pointer; text-align: left;
-  border: 1px solid var(--line); font-family: var(--sans);
+/* «Подышим» — строка между тонкими линиями, как блок трекера. */
+.ct-calm {
+  width: 100%; min-height: 60px; justify-content: space-between; color: var(--text);
+  font-size: 17px; font-weight: 500; border-top: 1px solid var(--panel-line); border-bottom: 1px solid var(--panel-line);
 }
-.ct-tile--tracker { background: var(--surface); color: var(--text); }
-.ct-tile--case { background: var(--panel); color: var(--on-panel); border-color: var(--panel-line); }
-.ct-tile--diary { background: var(--paper-tint); color: var(--text); }
-.ct-tile-body { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
-.ct-tile-title { font-family: var(--serif); font-size: 24px; line-height: 1.15; }
-.ct-tile-text { font-size: 14px; line-height: 1.45; opacity: .85; }
-.ct-tile--case .ct-tile-text, .ct-tile--case .ct-tile-meta { color: var(--on-panel-sub); opacity: 1; }
-.ct-tile-meta { font-size: 12px; font-weight: 700; letter-spacing: .02em; color: var(--accent); }
-.ct-tile-meta--skeleton { display: block; height: 11px; width: 55%; border-radius: var(--r-6); background: var(--surface-3); }
-.ct-bars { display: flex; align-items: flex-end; gap: 4px; height: 44px; flex-shrink: 0; }
-.ct-bars > i { display: block; width: 8px; border-radius: 4px; background: var(--line); }
-.ct-bars > i:nth-child(1) { height: 22px; }
-.ct-bars > i:nth-child(2) { height: 32px; }
-.ct-bars > i:nth-child(3) { height: 44px; }
-.ct-bars > i:nth-child(4) { height: 32px; }
-.ct-bars > i:nth-child(5) { height: 22px; }
+
+/* Главная по референсу владельца 2026-11-04 («бумажная аппликация»): блок трекера,
+   два квадрата цветной бумаги, картинки — примитивы pp-* из styles/paper.css и
+   components/art/PaperArt.tsx. Здесь только то, что своё у главной. */
+.ct-home { display: flex; flex-direction: column; gap: 20px; }
+.ct-tile { border-radius: 20px; }
 
 /* Задания (PracticesBlock) */
 .ct-section { min-width: 0; }
@@ -72,18 +60,13 @@
 .ct-feed-text { font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ct-feed-kind { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--text-muted); }
 
-@media (max-width: 767px) {
-  .ct-tile { padding: 18px; }
-}
-
 /* Компьютер (#925). Две колонки «Задания» | лента дня — .ct-cols/.ct-col; на телефоне обёртки display: contents,
-   порядок и отступы ds-page как раньше. На 768–1023 колонки и плитки — столбиком: ряд не помещается. */
+   порядок и отступы ds-page как раньше. Блок трекера и квадраты — тоже в два столбца с 1024; на 768–1023 всё столбиком: ряд не помещается. */
 .ct-cols, .ct-col { display: contents; }
-@media (min-width: 768px) {
+@media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) {
   .ct-cols, .ct-col { display: flex; flex-direction: column; gap: 32px; min-width: 0; }
 }
-@media (min-width: 1024px) {
-  .ct-tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
-  .ct-tile { flex-direction: column; align-items: flex-start; justify-content: flex-start; gap: 16px; }
+@media (min-width: 1024px) and (min-height: 501px), (min-width: 1024px) and (pointer: fine) {
+  .ct-home { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 48px; align-items: stretch; }
   .ct-cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 48px; align-items: start; }
 }
