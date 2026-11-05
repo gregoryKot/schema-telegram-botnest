@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useState, useCallback, useRef, useMemo } from 'react';
+import { lazy, Suspense, useEffect, useLayoutEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useTr } from '../utils/addressForm';
 import { api } from '../api';
@@ -55,6 +55,9 @@ const NAV_ITEMS: { id: Section; label: string }[] = [
 
 export function AppShell() {
   useHostShell();
+  // App.tsx и тумблер лендинга могут поставить data-theme="dark" уже после
+  // модульного вызова выше — на каждом монтировании возвращаем светлую (инцидент 2026-11-05).
+  useLayoutEffect(() => { applyCabinetLightTheme(); }, []);
   const tr = useTr();
   const location = useLocation();
   const navigate = useNavigate();

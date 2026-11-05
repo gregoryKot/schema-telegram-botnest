@@ -30,6 +30,21 @@ beforeEach(() => {
 
 afterEach(() => {
   cleanup();
+  document.documentElement.removeAttribute('data-theme');
+  document.documentElement.style.colorScheme = '';
+});
+
+// Инцидент 2026-11-05: html оставался тёмным (App.tsx ставит data-theme после
+// модульного вызова, тумблер лендинга — при SPA-переходе), и в кабинете текст
+// без явного цвета был светлым на светлой бумаге.
+describe('AppShell — светлая тема при тёмном html', () => {
+  it('html с data-theme="dark" до рендера → после монтирования светлый', () => {
+    document.documentElement.setAttribute('data-theme', 'dark');
+    document.documentElement.style.colorScheme = 'dark';
+    renderAppShell('/today');
+    expect(document.documentElement.getAttribute('data-theme')).toBe('light');
+    expect(document.documentElement.style.colorScheme).toBe('light');
+  });
 });
 
 describe('AppShell — состояние загрузки', () => {
