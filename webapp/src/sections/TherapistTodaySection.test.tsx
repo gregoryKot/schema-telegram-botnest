@@ -108,7 +108,7 @@ describe('TherapistTodaySection — реальные данные клиенто
     await waitFor(() => expect(screen.getAllByText('Вера').length).toBeGreaterThanOrEqual(2));
     const names = [...document.querySelectorAll('.tt-session .tt-name, .tt-act .tt-act-name')];
     expect(names).toHaveLength(2);
-    for (const n of names) expect(n.parentElement?.className).toBe('tt-who');
+    for (const n of names) expect(n.closest('.tt-who')).not.toBeNull();
   });
 
   it('клик по клиенту вызывает onOpenClient с его telegramId', async () => {

@@ -58,7 +58,8 @@ describe('ClientTasksTab', () => {
     for (const row of rows) {
       expect(row.querySelectorAll('.ds-badge')).toHaveLength(1);
       expect(row.querySelector('[role="checkbox"], input[type="checkbox"]')).toBeNull();
-      expect(row.firstElementChild?.className).toBe('tb-task-main');
+      expect(row.firstElementChild?.className).toBe('pp-row-art'); // знак задания, дальше основной блок
+      expect(row.querySelector('.tb-task-main')).not.toBeNull();
     }
     expect(rows.map(r => r.querySelector('.ds-badge')?.textContent)).toEqual(['В работе', 'Выполнено']);
   });

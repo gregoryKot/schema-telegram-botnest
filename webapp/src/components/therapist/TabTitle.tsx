@@ -1,17 +1,19 @@
 import type { ReactNode } from 'react';
-import { Layers, Pebbles } from '../art/PaperArt';
-import { Check } from '../art/PaperArtSigns';
+import { Sign } from './SignArt';
+import { TaskSign } from '../../sections/practice/TaskSign';
+import type { UserTask } from '../../api';
 import '../../styles/therapist-tabs.css';
 
 // Бумажная аппликация кабинета терапевта (docs/design/PAPER_2026-11.md): мотив
 // строки рядом с заголовком вкладки по смыслу — заметки, задания, тест YSQ.
-const MOTIFS = { pebbles: Pebbles, check: Check, layers: Layers } as const;
-export type TabMotif = keyof typeof MOTIFS;
+export type TabMotif = 'pebbles' | 'check' | 'layers';
 
 export function TabArt({ motif }: { motif: TabMotif }) {
-  const Art = MOTIFS[motif];
-  return <span className="pp-row-art tb-tab-art"><Art size="row" /></span>;
+  return <Sign kind={motif} className="tb-tab-art" />;
 }
+
+/** Знак строки задания по его типу (TaskSign). */
+export const TaskArt = ({ task }: { task: Pick<UserTask, 'type' | 'text'> }) => <span className="pp-row-art"><TaskSign task={task} /></span>;
 
 // Заголовок вкладки карточки клиента: h2 и подпись. Показывается на компьютере
 // (≥768, как до волн #906); на телефоне h2 прячет CSS (имя вкладки уже наверху).

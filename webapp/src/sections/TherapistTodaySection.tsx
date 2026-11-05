@@ -3,8 +3,10 @@ import { Skeleton } from '../components/Skeleton';
 import { api } from '../api';
 import type { TherapyClientSummary, UserId } from '../api';
 import '../styles/therapist-today.css';
-import { AttentionRow, ActivityRow, SessionRow } from './TherapistTodayLists';
+import { AttentionRow, ActivityRow } from './TherapistTodayLists';
+import { SessionRow } from './TherapistSessionRow';
 import { needsAttention, sessionsTodaySorted, todayCounts, trackedClients } from './therapistTodayModel';
+import { SignHead } from '../components/therapist/SignArt';
 import { PaperEmpty } from '../components/art/PaperEmpty';
 import { TherapistTodayHead } from './TherapistTodayHead';
 
@@ -48,7 +50,7 @@ export function TherapistTodaySection({ displayName, onOpenClient }: Props) {
 
       <div className="tt-cols">
         <div className="tt-col">
-          <h2 className="ds-h2">Сессии сегодня</h2>
+          <SignHead kind="talk" className="ds-h2">Сессии сегодня</SignHead>
           {loading ? (
             [0, 1].map(i => <Skeleton key={i} height={74} radius={16} />)
           ) : sessions.length === 0 ? (
@@ -58,7 +60,7 @@ export function TherapistTodaySection({ displayName, onOpenClient }: Props) {
           )}
           {!loading && attention.length > 0 && (
             <>
-              <h2 className="ds-h2">Требуют внимания</h2>
+              <SignHead kind="heart" className="ds-h2">Требуют внимания</SignHead>
               <div className="tt-attn-list">
                 {attention.map(c => <AttentionRow key={c.telegramId} client={c} onOpen={onOpenClient} />)}
               </div>
@@ -67,7 +69,7 @@ export function TherapistTodaySection({ displayName, onOpenClient }: Props) {
         </div>
 
         <div className="tt-col">
-          <h2 className="ds-h2">Активность клиентов</h2>
+          <SignHead kind="strokes" className="ds-h2">Активность клиентов</SignHead>
           {loading ? (
             <Skeleton height={192} radius={16} />
           ) : counts.total === 0 ? (

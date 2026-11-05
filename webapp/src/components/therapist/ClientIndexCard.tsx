@@ -1,4 +1,5 @@
 import { indexLevel } from '../../lib/tone';
+import { SignHead } from './SignArt';
 import { indexSparkBars, weekDelta } from './clientOverviewModel';
 
 interface Props {
@@ -15,7 +16,7 @@ export function ClientIndexCard({ todayIndex, history }: Props) {
   const delta = weekDelta(history, todayIndex);
   return (
     <div className="ds-card ds-card--row">
-      <h2 className="ds-label">Индекс сегодня</h2>
+      <SignHead kind="strokes" className="ds-label">Индекс сегодня</SignHead>
       <div className="tk-index">
         <span className={`ds-num ds-idx-${indexLevel(todayIndex)}`}>{todayIndex.toFixed(1)}</span>
         {delta != null && (

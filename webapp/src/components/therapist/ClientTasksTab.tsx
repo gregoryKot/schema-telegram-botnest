@@ -13,7 +13,7 @@ import { therapistClosesTask, useTherapistTaskActions } from '../../../../shared
 import { hueStyle } from '../../lib/tone';
 import type { ClientDetail } from './clientSheetTypes';
 import { isOpenStatus, orderTasks, taskMeta, taskStatus, templateHue } from './taskModel';
-import { TabArt } from './TabTitle';
+import { TabArt, TaskArt } from './TabTitle';
 import { PaperEmpty } from '../art/PaperEmpty';
 import { TaskStatusBadge } from '../TaskStatusBadge';
 import { ASSIGN_TEMPLATES, type AssignPreset } from './assignTemplates';
@@ -59,7 +59,7 @@ export function ClientTasksTab({ detail, onAssign, onTasksChanged }: Props) {
               const done = status === 'done';
               return (
                 <div key={t.id} className={`ds-card ds-card--row tb-task${done ? ' is-done' : ''}`}>
-                  <div className="tb-task-main">
+                  <TaskArt task={t} /><div className="tb-task-main">
                     <div className="tb-task-text">{resolveTaskDisplayText(t, 'full')}</div>
                     <div className="tb-meta">{taskMeta(t, status)}</div>
                   </div>

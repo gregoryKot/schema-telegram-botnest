@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { hueStyle } from '../../lib/tone';
+import { SignHead, type SignKind } from './SignArt';
 
 export interface ToneGroup {
   id: string;
@@ -10,6 +11,8 @@ export interface ToneGroup {
 
 interface Props {
   label: string;
+  /** Знак слева от подписи. */
+  sign: SignKind;
   /** Правый слот шапки: счётчик («4 в работе») … */
   sub?: string;
   /** … или ссылка-действие («Редактировать →»). */
@@ -25,11 +28,11 @@ interface Props {
 // рамок, один акцент на экран. На компьютере (≥768) те же группы — плитки по
 // три в ряд (схемы) и колонки (режимы), как в макете; тон — тонкая подложка и
 // верхняя черта, не заливка (therapist-card.css).
-export function ToneGroupsCard({ label, sub, action, groups, layout }: Props) {
+export function ToneGroupsCard({ label, sign, sub, action, groups, layout }: Props) {
   return (
     <section className="ds-card">
       <div className="ds-head-row tk-card-head">
-        <h2 className="ds-label">{label}</h2>
+        <SignHead kind={sign} className="ds-label">{label}</SignHead>
         {sub && <span className="ds-sub">{sub}</span>}
         {action}
       </div>
