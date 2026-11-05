@@ -6,10 +6,11 @@
 > `grep -n` по ключу, затем чтение куска.
 
 **Счётчик попыток в Postgres** (`scripts/check-persistent-throttle.mjs`, #708):
-- **`therapy/join` и `pair/join` без собственного `@Throttle`** — считаются только
-  глобальным лимитом в памяти. Не переведены в Postgres осознанно: код приглашения —
-  40–48 бит (`randomBytes(5|6)`, `therapy-relations.service.ts`, `pairs.service.ts`),
-  перебор нереален, а гейт их не видит (нет ни лимита, ни `verifyCode(`/`.approve(`
+- **`pair/join` без собственного `@Throttle`** (`src/api/pairs.controller.ts`;
+  `therapy/join` уже под `@PersistentThrottleLimit`) — считается только
+  глобальным лимитом в памяти. Не переведён в Postgres осознанно: код приглашения —
+  40–48 бит (`randomBytes(5|6)`, `pairs.service.ts`),
+  перебор нереален, а гейт его не видит (нет ни лимита, ни `verifyCode(`/`.approve(`
   в теле). Появится лимит или проверка кода в теле — гейт потребует решения сам.
 - **Гейт читает тело хендлера вместе со строковыми литералами**: `verifyCode(` в
   тексте ошибки сошёл бы за вызов (ложно-красное, лечится записью `exempt` с
@@ -309,13 +310,12 @@ NestJS 12, 2026-10-24): `src/api/memory-throttle-storage.ts` заменял шт
   ([AUDIT_2026-10, «Тесты и гейты»](../AUDIT_2026-10_FINDINGS.md#тесты-и-гейты)).
 - Добивание `no-unsafe-*` в проде (храповик не даёт расти).
 - Удаление мёртвой колонки `User.deletedAt` — ждёт проверки прод-данных.
-- Таяние долга `check-color-drift.mjs`: 139 литералов в 64 файлах, первыми —
-  84 в самом приложении. Брать ролями (один янтарный лежит в семи местах),
-  а не файлами.
-- Стартовый `Loader` в `AppShell.tsx:225` и Suspense-fallback со спиннером поверх
-  навигации в `PracticeSection.tsx:215` — записано комментарием в
-  `AppShell.render.test.tsx:9-13`, а не здесь (правило №26); webapp грузит экраны
-  спиннером в 28 местах при нуле в прежнем мини-аппе ([AUDIT_2026-10, «Фронтенды и UX»](../AUDIT_2026-10_FINDINGS.md#фронтенды-и-ux)).
+- Таяние долга `check-color-drift.mjs`: 44 литерала (сверка 2026-11-05,
+  `scripts/color-drift-baseline.json`). Брать ролями, а не файлами.
+- Загрузка спиннером вместо скелетона осталась в четырёх местах webapp (сверка
+  2026-11-05, `grep -rn "<Loader" webapp/src`): `PlansScreen.tsx`, `PracticesScreen.tsx`,
+  `SettingsSheet.tsx` и Suspense-fallback `sections/today/TaskExerciseHost.tsx`
+  ([AUDIT_2026-10, «Фронтенды и UX»](../AUDIT_2026-10_FINDINGS.md#фронтенды-и-ux)).
 
 **Удаление всех данных теста схем не пишет событие аналитики** (осознанно, 2026-10-24):
 `DELETE /api/ysq-data` (`src/api/ysq.controller.ts`, кнопка «Удалить результаты теста»)

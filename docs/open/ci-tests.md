@@ -105,7 +105,9 @@ Ubuntu 26) у трёх PR подряд падали `backend` → `check-coverag
 - **`webapp/src/sections/ProfileSection.customize.test.tsx` мигает под нагрузкой.**
   Полный `npm test --prefix webapp` 2026-10-22 на общей машине (несколько
   агентов) дал 1 красный из 3811 именно в нём; отдельно — 5 из 5 зелёных, во
-  втором полном прогоне не воспроизвёлся. Причина не разобрана: вероятно,
+  втором полном прогоне не воспроизвёлся; 2026-10-27 (66 файлов vitest
+  параллельно) тест «„Настроить“ открывает лист…» не нашёл `role="dialog"`
+  «Настроить экран». Причина не разобрана: вероятно,
   таймаут ожидания `findBy*`/`waitFor` при медленном рендере. Если повторится
   в CI — снять лог и разобрать, а не перезапускать (правило «флак — не
   причина»).
@@ -198,8 +200,8 @@ Ubuntu 26) у трёх PR подряд падали `backend` → `check-coverag
   `src/test-support/gates/job-timeouts.spec.ts` требует `timeout-minutes`
   на уровне джобы; шаг (`vitest`, `migrate deploy`) может занять весь потолок
   джобы, а красная отмена по таймауту не скажет, какой именно шаг завис. Не
-  делалось: единственный шаговый таймаут сегодня стоит в `backend`
-  (`ci.yml:64`), остальные шаги укладываются в 3–7 минут при потолке 10–20;
+  делалось: шаговые таймауты стоят только у нескольких шагов (`backend`
+  и пара гейтов, сверка 2026-11-05), остальные шаги укладываются в 3–7 минут при потолке 10–20;
   вернуться, если отмена по потолку джобы случится хоть раз.
 - **Проверка «спек оставил `process.exitCode`» не подключена к e2e.**
   `src/test-support/exit-code-leak.setup.ts` стоит в `jest.setupFilesAfterEnv`
@@ -215,9 +217,6 @@ Ubuntu 26) у трёх PR подряд падали `backend` → `check-coverag
   зелёные. Причина не разобрана: подозрение на лимиты проб здоровья
   (`OPS_HEALTH_LIMIT`/`OPS_HEALTH_POLL`) и `timeout 15` вокруг поддельного
   docker. Нашлось попутно при починке наблюдателей (2026-10-14), не чинилось.
-- `webapp/src/sections/ProfileSection.customize.test.tsx` («„Настроить“ открывает лист с блоками
-  профиля…») под нагрузкой не находит `role="dialog"` «Настроить экран» (прогон 66 файлов vitest
-  параллельно, 2026-10-27), в одиночку зелёный. Не разбиралось — нашлось попутно при правках YSQ.
 - Ещё два спека того же класса (2026-10-15, полный `npx jest --silent` при load
   average 13–19 на четырёх ядрах; в одиночном прогоне зелёные):
   `src/auth/totp.service.spec.ts`, «повторный confirmSetup на уже включённой
@@ -247,9 +246,9 @@ Ubuntu 26) у трёх PR подряд падали `backend` → `check-coverag
   vitest с `window is not defined` при зелёных тестах (CI main, run
   36409902702, webapp под `TZ=Australia/Sydney`). Настройки
   переведены на `shared/src/hooks/useTimedFlag.ts`; класс ещё живёт в
-  `webapp/src/components/PracticesScreen.tsx:59,63,75`,
+  `webapp/src/components/PracticesScreen.tsx:62,66,78`,
   `webapp/src/pages/admin/{PhotoSection,MarqueeSection,HealthyAdultSection}.tsx`,
-  `webapp/src/pages/tests/QuizPage.tsx:67`, `therapist/useClientDetail.ts`.
+  `webapp/src/pages/tests/QuizPage.tsx:67`.
   Переводить на тот же хук; гейта у класса нет. Подкласс «код чистит таймер корректно, но
   тест не размонтировал компонент» закрыт механизмом: `setupFiles` с
   `afterEach(cleanup)` в каждом из фронтовых пакетов
@@ -273,15 +272,6 @@ Ubuntu 26) у трёх PR подряд падали `backend` → `check-coverag
   [TEST_IMPROVEMENT_PLAN.md](../TEST_IMPROVEMENT_PLAN.md), п. 3.4. Не путать со
   следующей строкой: там у того же `maintenance-startup.spec.ts` другой дефект
   (не хватает бюджета ожидания). Файл один — чинить обе разом.
-- `src/security/install-openssl.spec.ts:99` — «первая попытка упала —
-  переключается на зеркало» падает детерминированно (не флак: sandbox
-  полностью подставной, `apt-get`/`sleep`/`openssl` — стабы, сети нет).
-  После одной симулированной ошибки `sources.list` не переключается на
-  `mirror.yandex.ru` — либо `deploy/install-openssl.sh` не делает свитч на
-  зеркало после первого провала, либо сам тест устарел относительно
-  скрипта. Найдено попутно при прогоне полного `jest` для PR записи на
-  консультацию (часовой пояс посетителя + цели Метрики) — не трогал ни
-  `deploy/`, ни `src/security/`, воспроизводится и без моих изменений.
 - `src/infra/maintenance-startup.spec.ts`, тест «приложение крашится → после
   лимита перезапусков front держит техработы», мигает таймаутом 10 с и роняет
   джобу `backend` на посторонних PR — тот же класс, что флак

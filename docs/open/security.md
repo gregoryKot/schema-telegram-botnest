@@ -47,14 +47,11 @@
 - **Владельцу, в env прода** (до переезда — Amvera, после — `PROD_ENV`): если
   `ALLOWED_ORIGINS` задан явно и содержит
   `kotlarewski.*` — убрать; проверка env теперь предупреждает об этом (F-2).
-- Ссылка «написать в Telegram» (`tg://user?id=${partnerId}` в
-  `shared/src/utils/therapistContact.ts:86`,
-  `PartnerCard.tsx`)
-  собирается из id связи, а у веб-партнёра (Google/VK/MAX/почта) это не
-  Telegram-id — ссылка ведёт в никуда. Поправка аудита 2026-10: веб-id лежат в
-  [1e15, 9e15), ниже 2^53 (100 000 сэмплов `src/auth/user-id-range.ts`) — прежняя
-  запись «[1e18, 9e18)» была неверна, ссылка в никуда от этого не меняется.
-  Нужно решение: прятать ссылку, если у партнёра нет Telegram.
+- Ссылка «Написать» партнёру (`tg://user?id=${partner.partnerTelegramId}` в
+  `webapp/src/components/settingsSheet/PartnerCard.tsx`) собирается из id связи,
+  а у веб-партнёра (Google/VK/MAX/почта, id в [1e15, 9e15)) это не Telegram-id —
+  ссылка ведёт в никуда. Кабинет терапевта уже прячет такую ссылку
+  (`telegramChatUrl` в `shared/src/utils/therapistContact.ts`), карточка пары — нет.
 - Мёртвое поле `req.telegramUserId = Number(…)` (`src/api/telegram-auth.guard.ts:45`,
   `src/api/init-data-paths.ts:75,114`; тип — `src/types/express.d.ts:13`,
   `src/api/request-utils.ts:9`, `telegramUserId: number` в семи контроллерах):
