@@ -25,7 +25,7 @@
   - `webapp/src/security/` — только тест-инвариант XSS (`xss.invariants.test.ts`).
   - `webapp/src/assets/` — `hero.png`, `vite.svg`.
   - `webapp/src/test-support/` — `mockCanvas2d.ts`, `renderWithFlow.tsx`, `rtlCleanup.ts`.
-  - `webapp/public/` — `fonts/`, иконки и favicon, `manifest.webmanifest`, `theme.js` (тема до первого кадра, из-за CSP не инлайн), `telegram-web-app.js`, `max-bridge.js`, `robots.txt`, `llms.txt`, файлы верификации Яндекса.
+  - `webapp/public/` — `fonts/`, иконки и favicon, `manifest.webmanifest`, `theme.js` (тема до первого кадра, из-за CSP не инлайн), `asset-recovery.js` (стартовый файл сборки не дошёл — CSS запрашивается снова, упавший входной модуль перезагружает страницу, не больше трёх раз за 2 мин; инцидент 2026-11-04), `telegram-web-app.js`, `max-bridge.js`, `robots.txt`, `llms.txt`, файлы верификации Яндекса.
   - Прочее в `webapp/src/`: `api.types.ts` и реэкспорты-заглушки (`needData.ts`, `haptic.ts`, `types.ts`).
 - **API-клиент:**
   - `webapp/src/apiClient.ts` — HTTP-слой: `authedFetch`, `get/post/postJson/patchJson/del`, `ApiError`.

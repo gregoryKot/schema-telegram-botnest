@@ -387,11 +387,22 @@ Ubuntu 26) у трёх PR подряд падали `backend` → `check-coverag
   учёта регистра в одном каталоге (`scripts/check-case-collisions.mjs` или проверка в
   `check-dead-files.mjs`), без бейслайна: класс вычищается целиком.
 
-**Файл-храповик красный на `main` после #929 (найдено в #926, 2026-11-05):**
-- #929 (`026bea8`) добавил три строки в `webapp/src/components/AppShell.tsx` (387 → 390), а запись
-  в `scripts/file-size-baseline.json` осталась 387. На чистом чекауте `main`
-  `node scripts/check-file-size-ratchet.mjs` красный (на `51701e9`, #915, ещё зелёный), значит
-  джоба `backend` на мерж-коммите #929 красная, и деплой VPS после зелёного CI не стартует.
-  #926 поднял запись до фактических 390 в своём слиянии. Открыто: как PR #929 прошёл CI с таким
-  диффом (гейт меряет head ветки; версия бейслайна в ветке могла быть выше, а squash
-  взял файл из `main`?) и разбудил ли красный `main` кого-то — правило №24, issue `ci-alarm`.
+**Статика и браузерный смок — находки при починке перекоса ассетов** (инцидент 2026-11-04, #928):
+- **e2e не отдаёт статику вовсе.** `test/e2e-support/build-test-app.ts` и
+  `build-real-db-test-app.ts` поднимают AppModule через `Test.createTestingModule(...).compile()`:
+  провайдер загрузчика `ServeStaticModule` создаётся до HTTP-адаптера и берёт `NoopLoader`
+  (`node_modules/@nestjs/serve-static/dist/serve-static.providers.js`) — SPA-фолбэк и раздачу
+  `webapp/dist` не видит ни один e2e, любой путь вне контроллеров там 404. Шов статики держит
+  только `src/infra/site-static.spec.ts` (поднимает через `NestFactory.create`, как `main.ts`).
+- **Комментарий джобы `checks` про `check-deploy-paths.mjs` устарел.** `.github/workflows/ci.yml`
+  (~стр. 284): «назначение мини-аппа совпадает с rootPath ServeStaticModule в src/app.module.ts» —
+  мини-апп удалён (#917), а скрипт `src/app.module.ts` не читает (`grep app.module
+  scripts/check-deploy-paths.mjs` пуст).
+- **Ночной browser-smoke красный, issue `ci-alarm` #903 (с 2026-11-02).** В
+  `e2e-browser/tracker-smoke.spec.ts` «трекер: оценка ставится тапом…» не дожидается «Понятно,
+  начнём»: «Сегодня» падает в «Раздел упал», `TypeError: t.filter is not a function` в `useMemo`
+  бандла `TodaySection` (консоль трейса Playwright). Вероятно, catch-all `{}` в
+  `e2e-browser/support/stubApi.ts` отвечает ручке, от которой экран теперь ждёт массив; кандидаты
+  из трейса — `/api/history?days=14`, `/api/diary/{schema,mode,gratitude}`, `/api/childhood-ratings`,
+  `/api/activity`, `/api/user-flags`. Воспроизведено локально на сборке ветки #928 (база `1999a51`)
+  и без её правок; остальные 26 тестов смока, включая `asset-recovery.spec.ts`, зелёные.

@@ -1,9 +1,9 @@
-import { lazy, Suspense, useEffect, useLayoutEffect, useState, useCallback, useRef, useMemo } from 'react';
+import { lazy, Suspense, useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useTr } from '../utils/addressForm';
 import { api } from '../api';
 import type { DayHistory } from '../types';
-import { applyCabinetLightTheme } from '../utils/theme';
+import { useCabinetLightTheme } from '../utils/useCabinetLightTheme';
 import { syncMotionAttr } from '../utils/reducedMotion';
 import { shouldShowChildhoodWheel, THERAPIST_MODE_KEY } from '../utils/storageKeys';
 import { CommandPalette } from './CommandPalette';
@@ -41,8 +41,6 @@ const HistorySheet   = lazy(() => import('./HistorySheet').then(m => ({ default:
 import type { StreakData } from '../api';
 import { parseRouteUserId } from '../../../shared/src/utils/sameId';
 
-// Кабинет — только светлая тема (решение владельца 2026-10-15); тумблер темы живёт на лендинге.
-applyCabinetLightTheme();
 syncMotionAttr();
 
 // Три вкладки (редизайн 2026-10, docs/design/CLIENT_SIMPLE_2026-10.md):
@@ -55,9 +53,7 @@ const NAV_ITEMS: { id: Section; label: string }[] = [
 
 export function AppShell() {
   useHostShell();
-  // App.tsx и тумблер лендинга могут поставить data-theme="dark" уже после
-  // модульного вызова выше — на каждом монтировании возвращаем светлую (инцидент 2026-11-05).
-  useLayoutEffect(() => { applyCabinetLightTheme(); }, []);
+  useCabinetLightTheme(); // кабинет — только светлая тема (решение владельца 2026-10-15)
   const tr = useTr();
   const location = useLocation();
   const navigate = useNavigate();

@@ -12,8 +12,7 @@ import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { AdminKeyAuditInterceptor } from './booking/admin-key-audit.interceptor';
 import { existsSync, readFileSync } from 'fs';
 import { join } from 'path';
-import type { ServerResponse } from 'http';
-import { cacheControlFor } from './infra/static-cache';
+import { configureBuildAssets, siteStaticOptions } from './infra/site-static';
 import { UserThrottlerGuard } from './api/throttler.guard';
 import { TelegramModule } from './telegram/telegram.module';
 import { BotModule } from './bot/bot.module';
@@ -53,21 +52,10 @@ const ALIAS_DOMAINS = PRACTICE_ALIAS_HOSTS;
       inject: [PrismaService],
       useFactory: throttlerOptions,
     }),
-    // Single ServeStatic: site at / (webapp/dist). SPA
-    // renderPath serves index.html for non-file paths; /api excluded.
-    ServeStaticModule.forRoot({
-      rootPath: join(__dirname, '..', 'webapp', 'dist'),
-      // path-to-regexp v6+ syntax: '/*path' (named wildcard), not bare '/*'
-      renderPath: '/*path',
-      exclude: ['/api/{*path}'],
-      // Cache-Control по типу файла (immutable — только то, чьё имя меняется
-      // вместе с содержимым; иначе max-age=0, замер 2026-08-22: 857мс).
-      serveStaticOptions: {
-        setHeaders: (res: ServerResponse, filePath: string) => {
-          res.setHeader('Cache-Control', cacheControlFor(filePath));
-        },
-      },
-    }),
+    // Сайт на / (webapp/dist): фолбэк, исключения и кэш — infra/site-static.ts.
+    ServeStaticModule.forRoot(
+      siteStaticOptions(join(__dirname, '..', 'webapp', 'dist')),
+    ),
     PrismaModule,
     ThrottleHitModule,
     CronLeaderModule,
@@ -105,6 +93,7 @@ export class AppModule implements NestModule {
       .forRoutes({ path: '{*path}', method: RequestMethod.ALL });
 
     configureUnifiedFrontend(consumer); // /app/* → /today за флагом
+    configureBuildAssets(consumer); // промах по файлу сборки — 404 no-store
     consumer.apply(practiceIndexMiddleware(html, ALIAS_DOMAINS)).forRoutes(
       ...PRACTICE_INDEXED_PAGES.map((path) => ({
         path,
