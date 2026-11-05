@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useState, useCallback, useRef, useMemo } from 'react';
+import { lazy, Suspense, useEffect, useLayoutEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useTr } from '../utils/addressForm';
 import { api } from '../api';
@@ -27,6 +27,7 @@ import { OfflineBanner } from './OfflineBanner';
 import { Celebration } from './Celebration';
 import { todayInsightPhrase } from '../utils/todayInsight';
 import { DonateNudge } from './DonateNudge';
+import { donateNudgeBlocked } from './donateNudgeBlocked';
 import { hueStyle } from '../lib/tone';
 
 // – lazy: heavy overlays –
@@ -54,6 +55,9 @@ const NAV_ITEMS: { id: Section; label: string }[] = [
 
 export function AppShell() {
   useHostShell();
+  // App.tsx и тумблер лендинга могут поставить data-theme="dark" уже после
+  // модульного вызова выше — на каждом монтировании возвращаем светлую (инцидент 2026-11-05).
+  useLayoutEffect(() => { applyCabinetLightTheme(); }, []);
   const tr = useTr();
   const location = useLocation();
   const navigate = useNavigate();
@@ -248,7 +252,7 @@ export function AppShell() {
           <button className="search-pill" onClick={() => ov.setCmdOpen(true)}>
             <span>Перейти к…</span>
             <span className="sp-spacer" />
-            <span className="kbd">⌘K</span>
+            <span className="kbd kbd-hint">⌘K</span>
           </button>
         </div>
 
@@ -380,7 +384,7 @@ export function AppShell() {
       )}
 
       {/* Periodic donate nudge (once ~monthly, dismissible) */}
-      <DonateNudge />
+      <DonateNudge blocked={donateNudgeBlocked({ section, anyOverlayOpen, entryDone })} />
     </div>
   );
 }

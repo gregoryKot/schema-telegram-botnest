@@ -44,7 +44,6 @@ export function BottomSheetShell({
         style={maxWidth ? { maxWidth } : undefined}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="sheet-modal-handle" />
         {children}
       </div>
     </div>

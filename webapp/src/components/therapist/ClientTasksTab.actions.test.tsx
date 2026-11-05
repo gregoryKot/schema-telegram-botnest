@@ -3,7 +3,8 @@
 // отметка задания офлайн-клиента (QA 2026-10-26: удалить задание было
 // нельзя, а офлайн-клиенту задание закрыть было некому).
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
-import { render, screen, cleanup, fireEvent, waitFor } from '@testing-library/react';
+import { render as rtlRender, screen, cleanup, fireEvent, waitFor } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import { useState } from 'react';
 import { ClientTasksTab } from './ClientTasksTab';
 import type { ClientDetail } from './clientSheetTypes';
@@ -13,6 +14,9 @@ vi.mock('../../api', () => ({
   api: { deleteTherapyTask: vi.fn(), completeTask: vi.fn() },
 }));
 import { api } from '../../api';
+
+// Подтверждение пишет запись в историю (HistoryConfirmDialog) — нужен роутер.
+const render = (ui: React.ReactElement) => rtlRender(<MemoryRouter>{ui}</MemoryRouter>);
 const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
 
 afterEach(cleanup);
@@ -40,7 +44,7 @@ describe('ClientTasksTab — удаление задания', () => {
     await waitFor(() => expect(screen.queryByText('задание 1')).toBeNull());
     expect(mockApi.deleteTherapyTask).toHaveBeenCalledWith(1);
     expect(screen.getByText('задание 2')).toBeTruthy();
-    expect(screen.queryByText('Удалить задание?')).toBeNull();
+    await waitFor(() => expect(screen.queryByText('Удалить задание?')).toBeNull());
   });
 
   it('«Отмена» ничего не удаляет', () => {

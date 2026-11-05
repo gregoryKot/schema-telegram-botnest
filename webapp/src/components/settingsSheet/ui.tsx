@@ -1,4 +1,5 @@
 import '../../styles/sheet-settings.css';
+import { useHistorySheet } from '../../hooks/useHistorySheet';
 
 // Примитивы SettingsSheet (правило №10): вид — st-* из sheet-settings.css + ds-*;
 // label у Toggle — имя switch для скринридера, обычно заголовок его строки SRow.
@@ -69,20 +70,22 @@ export function ChevronVal({ text }: { text: string }) {
 }
 
 export function InfoModal({ children, onClose }: { children: React.ReactNode; onClose: () => void }) {
+  // Вложенный уровень над листом настроек: «Назад» закрывает только окно (QA 2026-11, C-З2).
+  const goBack = useHistorySheet(onClose);
+  const close = () => goBack();
   return (
-    <div className="sheet-modal" onClick={onClose} role="button" tabIndex={0} aria-label="Закрыть"
-      onKeyDown={onKeyActivate(onClose)}>
+    <div className="sheet-modal" onClick={close} role="button" tabIndex={0} aria-label="Закрыть"
+      onKeyDown={onKeyActivate(close)}>
       <div
         role="presentation"
         className="sheet-modal-box"
         onClick={e => e.stopPropagation()}
         onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); } }}
       >
-        <div className="sheet-modal-handle" />
         {children}
         {/* Закрыть можно было только кликом мимо или Escape — у «Сводки для
             терапевта» и пояснений не было кнопки (QA 2026-11, М11). */}
-        <button type="button" className="ds-btn ds-btn--secondary st-block st-modal-close" onClick={onClose}>
+        <button type="button" className="ds-btn ds-btn--secondary st-block st-modal-close" onClick={close}>
           Закрыть
         </button>
       </div>

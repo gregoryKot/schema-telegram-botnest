@@ -1,5 +1,6 @@
 import { api } from '../api';
 import { ExScreen, GlyphCheck } from './exercises/ExScreen';
+import { Check } from './art/PaperArtSigns';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { useTr } from '../utils/addressForm';
 import { NEED_HUE, hueStyle } from '../lib/tone';
@@ -7,10 +8,7 @@ import type { NeedId } from '../../../shared/src/needs/types';
 import '../styles/sheet-tasks.css';
 import { detectCrisisAny } from '../utils/crisisMarkers';
 import { CrisisCard } from './CrisisCard';
-import {
-  usePlanSheetState,
-  REMINDER_OPTIONS,
-} from '../../../shared/src/practices/usePlanSheetState';
+import { usePlanSheetState, REMINDER_OPTIONS } from '../../../shared/src/practices/usePlanSheetState';
 
 interface Props {
   needId: string;
@@ -56,6 +54,7 @@ export function PlanSheet({ needId, needLabel, onClose, onSaved }: Props) {
       lede={phase === 'pick' ? 'Один маленький конкретный шаг – уже много.' : undefined}
       aside={
         <div className="ds-card sk-aside" style={hueStyle(NEED_HUE[needId as NeedId])}>
+          <Check size="row" />
           <div className="ds-label">Потребность</div>
           <h3 className="ds-h3 sk-aside-title">
             <span className="ds-dot tone-fill" /> {needLabel}

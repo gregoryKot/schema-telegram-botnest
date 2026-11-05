@@ -18,6 +18,16 @@ describe('MobileNav', () => {
     expect(screen.queryByText('Клиенты')).toBeNull();
   });
 
+  // C-З8: на «Практиках», «Паттернах» и «Профиле» не горел ни один пункт.
+  it.each(['/practice', '/schemas', '/profile', '/more'])('клиент на %s: горит «Ещё», остальные нет', (path) => {
+    render(<MemoryRouter initialEntries={[path]}><MobileNav items={ITEMS} /></MemoryRouter>);
+    const more = screen.getByText('Ещё').closest('a')!;
+    expect(more.className).toContain('active');
+    expect(more.getAttribute('aria-current')).toBe('page');
+    expect(screen.getByText('Сегодня').closest('a')?.className).not.toContain('active');
+    expect(screen.getByText('Записи').closest('a')?.className).not.toContain('active');
+  });
+
   it('терапевт: свои пункты кабинета вместо разделов клиента', () => {
     render(<MemoryRouter initialEntries={['/cabinet']}><MobileNav items={ITEMS} therapist /></MemoryRouter>);
     expect(screen.getByText('Клиенты').closest('a')?.getAttribute('href')).toBe('/cabinet');

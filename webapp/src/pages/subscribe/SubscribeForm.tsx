@@ -1,3 +1,4 @@
+import { Leaf } from '../../components/art/PaperArtSigns';
 import { periodLabel, yearDiscountPercent, type SubscriptionOption } from './subscribeDiscount';
 
 type Props = {
@@ -38,6 +39,7 @@ export function SubscribeForm(p: Props) {
         </section>
 
         <section className="ap-pay">
+          <div className="ap-pay-art"><Leaf size="square" /></div>
           <div role="radiogroup" aria-label="Период подписки" className="ap-plans">
             {(['month', 'year'] as const).map((per) => {
               const o = p.opts.find((x) => x.period === per);

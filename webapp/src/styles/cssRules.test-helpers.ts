@@ -1,6 +1,7 @@
 // Помощники сверок раскладки по исходникам css (CSS в jsdom не исполняется): разбор правил с медиа-контекстом.
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
+import { PHONE_MEDIA } from '../utils/phoneLayout';
 
 export type Rule = { media: string; selectors: string[]; body: string; f?: string };
 
@@ -26,9 +27,11 @@ export function parseRules(css: string): Rule[] {
   return out;
 }
 
-/** Только точный блок телефона: блок касаний `(pointer: coarse), (max-width: 767px)` телефонным не считается (iPad ≥768). */
-export const isPhone = (m: string) => /^@media\s*\(max-width:\s*767px\)$/.test(m.trim());
-export const isTouch = (m: string) => /pointer:\s*coarse/.test(m);
+/** Только точный блок телефона — каноническая PHONE_MEDIA (utils/phoneLayout.ts: узкий экран или палец на низком
+ *  экране); блок касаний `(pointer: coarse), (max-width: 767px)` телефонным не считается (iPad ≥768). */
+export const isPhone = (m: string) => m.trim() === `@media ${PHONE_MEDIA}`;
+/** Блок касаний любой ширины; телефонный блок сюда не входит, хотя в PHONE_MEDIA тоже есть pointer: coarse. */
+export const isTouch = (m: string) => /pointer:\s*coarse/.test(m) && !isPhone(m);
 export const isDesktop = (m: string) => /min-width:\s*768px/.test(m);
 
 /** Объявление у селектора вне телефонного блока и вне ≥768 (включая блок касаний) — нарушение. */

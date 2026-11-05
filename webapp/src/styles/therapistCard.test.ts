@@ -6,6 +6,7 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { PHONE_MEDIA, DESKTOP_MEDIA } from '../utils/phoneLayout';
 
 const css = readFileSync(join(__dirname, 'therapist-card.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
 
@@ -30,7 +31,7 @@ function decls(src: string, sel: string): string {
     .join(';');
 }
 
-const phone = block(css, '@media (max-width: 767px)');
+const phone = block(css, `@media ${PHONE_MEDIA}`);
 
 // Локальные копии примитивов и плитки, ушедшие вместе с заменой на ds-*.
 const GONE = [
@@ -121,7 +122,7 @@ describe('therapist-card.css: имя, заметка, действия сайд�
 // мобильник». «Обзор» на ≥768 возвращает раскладку макета; строки в одной
 // карточке и 15px — только телефон.
 describe('therapist-card.css: «Обзор» — компьютер и телефон (регрессия 2026-11-04)', () => {
-  const desk = block(css, '@media (min-width: 768px) {\n  .tk-goal');
+  const desk = block(css, `@media ${DESKTOP_MEDIA} {\n  .tk-goal`);
 
   it('на ≥768: цель — 24px с засечками (макет REDESIGN_2026-10: Literata 24px), схемы — плитки до 3 в ряд, режимы — колонки с верхней чертой', () => {
     expect(decls(desk, '.tk-goal .tk-text')).toMatch(/24px\/1\.4 var\(--serif\)/);

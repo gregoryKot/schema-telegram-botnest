@@ -1,0 +1,56 @@
+/* Бумажная аппликация — примитивы единого стиля сайта (референс владельца
+   2026-11-04, docs/design/PAPER_2026-11.md). Префикс pp-. Картинки —
+   components/art/PaperArt*.tsx. Подключается из index.css после cabinet.css.
+   Правила: блок между тонкими линиями, одна залитая кнопка на экран, квадраты
+   цветной бумаги через --h, картинка рядом с текстом, а не вместо него. */
+
+/* ── Блок между линиями: герой раздела, главное действие экрана ─────────── */
+.pp-block {
+  display: flex; flex-direction: column; gap: 22px; box-sizing: border-box; width: 100%;
+  padding: 24px 0 28px; margin: 0;
+  border-top: 1px solid var(--panel-line); border-bottom: 1px solid var(--panel-line);
+}
+/* Блок-кнопка (весь блок — тап-цель; «кнопка» внутри — span.pp-cta). */
+.pp-block--btn { background: none; border-left: 0; border-right: 0; color: var(--text); text-align: left; cursor: pointer; font-family: var(--sans); }
+.pp-cta { pointer-events: none; }
+
+/* ── Герой: текст слева, картинка справа ────────────────────────────────── */
+.pp-hero { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 16px; align-items: center; }
+.pp-hero-body { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.pp-hero-title { margin: 0; font-family: var(--serif); font-weight: 400; font-size: 32px; line-height: 1.1; color: var(--text); }
+.pp-hero-text { margin: 0; font-size: 16px; line-height: 1.45; color: var(--text-sub); }
+
+/* ── Цветная бумага: квадраты-кнопки и спокойные блоки ─────────────────── */
+.pp-squares { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.pp-paper { background: oklch(0.915 0.03 var(--h)); color: var(--text); border-radius: 20px; }
+.pp-square {
+  display: flex; flex-direction: column; gap: 8px; min-height: 232px; box-sizing: border-box;
+  padding: 22px 20px 18px; border: 0; text-align: left; cursor: pointer; font-family: var(--sans);
+  transition: background .12s;
+}
+.pp-square:hover { background: oklch(0.895 0.04 var(--h)); }
+.pp-square .pp-art { margin-top: auto; align-self: flex-start; }
+.pp-square-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 10px; }
+.pp-arrow { font-size: 22px; line-height: 1; color: var(--accent); }
+.pp-title { font-family: var(--serif); font-size: 26px; line-height: 1.05; }
+.pp-text { font-size: 15px; line-height: 1.45; color: var(--text-sub); }
+.pp-meta { font-size: 13px; font-weight: 600; letter-spacing: .02em; color: var(--accent); }
+.pp-meta--skeleton { display: block; height: 11px; width: 55%; border-radius: var(--r-6); background: var(--surface-3); }
+
+/* ── Картинки: размер по месту ──────────────────────────────────────────── */
+.pp-art { display: block; flex-shrink: 0; }
+.pp-art--hero { width: 112px; height: 94px; }
+.pp-art--square { width: 112px; height: 60px; }
+.pp-art--row { width: 44px; height: 24px; }
+.pp-art--empty { width: 56px; height: 48px; }
+
+/* ── Пустое состояние: картинка и текст ─────────────────────────────────── */
+.pp-empty { display: flex; align-items: center; gap: 16px; }
+
+/* ── Строка-переход с картинкой слева (списки «Ещё», инструменты) ───────── */
+.pp-row-art { display: inline-flex; align-items: center; justify-content: center; width: 44px; flex-shrink: 0; }
+
+@media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
+  .pp-square { padding: 20px 18px 16px; min-height: 216px; }
+  .pp-art--hero { width: 96px; height: 80px; }
+}

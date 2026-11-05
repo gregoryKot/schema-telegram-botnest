@@ -39,4 +39,13 @@ describe('CompletionScreen — мост к терапевту', () => {
     renderDone(null);
     expect(screen.getByText(/Если нужна терапия, есть с кем поговорить/)).toBeTruthy();
   });
+
+  it('экран «Готово» — цветная бумага с полосками над индексом', () => {
+    const { container } = render(
+      <MemoryRouter>
+        <CompletionScreen needs={NEEDS} effectiveRatings={{ attachment: 5 }} isBackfill={false} goBack={vi.fn()} onReview={vi.fn()} />
+      </MemoryRouter>,
+    );
+    expect(container.querySelector('.tq-done.pp-paper > svg.pp-art--hero')).toBeTruthy();
+  });
 });

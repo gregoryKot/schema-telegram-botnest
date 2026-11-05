@@ -16,6 +16,7 @@ import { useModeMapHistory } from './useModeMapHistory';
 import { useModeMapAutosave } from './useModeMapAutosave';
 import { useIsMobile } from './useIsMobile';
 import { collapseBtnStyle } from './modeMap/paletteStyle';
+import { MobileDrawer } from './modeMap/MobileDrawer';
 import { useSettleFresh } from './modeMap/useSettleFresh';
 import { useCanvasSpace } from './modeMap/useCanvasSpace';
 import { ModeMapConceptProvider } from './modeMap/ModeMapConceptProvider';
@@ -202,41 +203,32 @@ function EditorBody({ mapId, clientId, kind, initialNodes, initialEdges }: Props
     return () => window.removeEventListener('keydown', onKey);
   }, [selectedNodeId, selectedEdgeId, nodes, edges, setNodes, setEdges, scheduleSave, pushHistory, undo, redo]);
 
-  // On mobile, the palette + side editor float over the canvas (drawers) so
-  // the canvas always has the full width; on desktop they're flex columns.
-  const overlay = (sideBtn: React.ReactNode, content: React.ReactNode, side: 'left' | 'right') => (
-    <>
-      <div role="button" tabIndex={0} aria-label="Закрыть"
-        onClick={() => { setPaletteOpen(false); setSelectedNodeId(null); setSelectedEdgeId(null); }}
-        onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setPaletteOpen(false); setSelectedNodeId(null); setSelectedEdgeId(null); } }}
-        style={{ position: 'absolute', inset: 0, zIndex: 39, background: 'rgba(0,0,0,0.25)' }} />
-      <div style={{ position: 'absolute', top: 0, bottom: 0, [side]: 0, zIndex: 40, display: 'flex',
-        boxShadow: side === 'left' ? '4px 0 16px rgba(0,0,0,0.15)' : '-4px 0 16px rgba(0,0,0,0.15)' }}>
-        {side === 'left' ? <>{content}{sideBtn}</> : <>{sideBtn}{content}</>}
-      </div>
-    </>
-  );
-
-  const nodeEditor = selectedNode && (
+  // On mobile, the palette + side editor float over the canvas (drawers, MobileDrawer —
+  // запись в истории, «Назад» закрывает шторку) so the canvas always has the full
+  // width; on desktop they're flex columns.
+  type GoBack = (then?: unknown) => void;
+  const nodeEditor = (onClose: () => void, goBack: GoBack) => selectedNode && (
     <ModeMapNodeEditor
       node={{ id: selectedNode.id, type: selectedNode.type as ModeMapNode['type'], position: selectedNode.position, data: selectedNode.data as unknown as ModeMapNode['data'] }}
-      onChange={handleNodeChange} onDelete={handleDeleteNode}
+      onChange={handleNodeChange} onDelete={mobile ? () => goBack(handleDeleteNode) : handleDeleteNode}
       coupleMode={kind === 'couple'}
-      onClose={() => setSelectedNodeId(null)} />
+      onClose={onClose} />
   );
-  const edgeEditor = selectedEdge && !selectedNode && (
+  const edgeEditor = (onClose: () => void, goBack: GoBack) => selectedEdge && !selectedNode && (
     <ModeMapEdgeEditor
       key={selectedEdge.id}
       edge={{ id: selectedEdge.id, source: selectedEdge.source, target: selectedEdge.target, label: selectedEdge.label as string | undefined, data: selectedEdge.data as unknown as ModeMapEdge['data'] }}
-      onChange={handleEdgeChange} onDelete={handleDeleteEdge} onSwap={handleSwapEdge}
-      onClose={() => setSelectedEdgeId(null)} />
+      onChange={handleEdgeChange} onDelete={mobile ? () => goBack(handleDeleteEdge) : handleDeleteEdge} onSwap={handleSwapEdge}
+      onClose={onClose} />
   );
+  const noGoBack: GoBack = () => {};
+  const closeNodeOrEdge = () => { setSelectedNodeId(null); setSelectedEdgeId(null); };
 
   const paletteCol = (
     <div style={{ position: 'relative', display: 'flex' }}>
       <ModeMapPalette onAdd={handleAddNode} onAddMany={handleAddMany} />
       <button onClick={() => setPaletteOpen(false)} title="Скрыть панель режимов" aria-label="Скрыть панель режимов"
-        style={collapseBtnStyle('left')}>‹</button>
+        className="mm2-ear" style={collapseBtnStyle('left')}>‹</button>
     </div>
   );
 
@@ -246,7 +238,7 @@ function EditorBody({ mapId, clientId, kind, initialNodes, initialEdges }: Props
       {paletteOpen && !mobile && paletteCol}
       {!paletteOpen && (
         <button onClick={() => setPaletteOpen(true)} title="Показать панель режимов" aria-label="Показать панель режимов"
-          style={mobile
+          className="mm2-ear" style={mobile
             ? { ...collapseBtnStyle('left'), position: 'absolute', top: 70, left: 8, zIndex: 30, borderRadius: 7, width: 30, height: 30, fontSize: 17 }
             : { ...collapseBtnStyle('left'), position: 'static', borderRadius: '0 7px 7px 0', height: 'auto', alignSelf: 'stretch', width: 22 }}>
           ›
@@ -261,13 +253,18 @@ function EditorBody({ mapId, clientId, kind, initialNodes, initialEdges }: Props
         onUndo={undo} onRedo={redo} canUndo={canUndo} canRedo={canRedo} />
 
       {/* Side editor: inline column (desktop) or floating drawer (mobile) */}
-      {!mobile && (nodeEditor || edgeEditor)}
+      {!mobile && (nodeEditor(() => setSelectedNodeId(null), noGoBack) || edgeEditor(() => setSelectedEdgeId(null), noGoBack))}
 
       {/* Mobile drawers */}
-      {mobile && paletteOpen && overlay(
-        <button onClick={() => setPaletteOpen(false)} title="Скрыть" aria-label="Скрыть" style={collapseBtnStyle('left')}>‹</button>,
-        <ModeMapPalette onAdd={handleAddNode} onAddMany={handleAddMany} />, 'left')}
-      {mobile && (nodeEditor || edgeEditor) && overlay(null, nodeEditor || edgeEditor, 'right')}
+      {mobile && paletteOpen && (
+        <MobileDrawer side="left" onClose={() => setPaletteOpen(false)}
+          sideBtn={goBack => <button onClick={() => goBack()} title="Скрыть" aria-label="Скрыть" className="mm2-ear" style={collapseBtnStyle('left')}>‹</button>}
+          content={() => <ModeMapPalette onAdd={handleAddNode} onAddMany={handleAddMany} />} />
+      )}
+      {mobile && (selectedNode || selectedEdge) && (
+        <MobileDrawer side="right" onClose={closeNodeOrEdge}
+          content={goBack => nodeEditor(() => goBack(), goBack) || edgeEditor(() => goBack(), goBack)} />
+      )}
     </div></ModeMapConceptProvider>
   );
 }

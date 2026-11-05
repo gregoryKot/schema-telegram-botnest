@@ -31,7 +31,7 @@ export function ClientSessionsTab({ detail }: Props) {
           placeholder="Наблюдения, гипотезы, динамика, план следующей встречи…"
         />
         <div className="tb-composer-foot">
-          <span className="tb-hint">⌘ + Enter — сохранить</span>
+          <span className="tb-hint kbd-hint">⌘ + Enter — сохранить</span>
           <div className="tb-actions">
             {newNoteText.trim() && (
               <button onClick={() => setNewNoteText('')} className="ds-btn ds-btn--sm ds-btn--secondary">Отмена</button>

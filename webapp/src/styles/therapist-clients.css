@@ -1,5 +1,7 @@
 /* Экран «Все клиенты» кабинета терапевта (префикс tc-). Цвета — токены. */
-.tc-count { font-size: 36px; color: var(--text-ghost); }
+.tc-count { font-size: 28px; color: var(--text-ghost); }
+.tc-hero { gap: 18px; }
+.tc-hero-btn { align-self: flex-start; }
 .tc-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
 .tc-search { width: 240px; max-width: 100%; }
 .tc-modes { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
@@ -35,7 +37,8 @@
 }
 
 /* ── Сетка карточек ──────────────────────────────────────────────────────── */
-.tc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr)); gap: 16px; }
+/* --tc-card-h — высота скелетона карточки (ClientListView): на телефоне карточка компактнее. */
+.tc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr)); gap: 16px; --tc-card-h: 260px; }
 .tc-card { display: flex; flex-direction: column; }
 .tc-bar { display: flex; height: 6px; gap: 2px; background: var(--paper-sunk); }
 .tc-bar > i { display: block; }
@@ -57,6 +60,7 @@
   margin-top: auto; padding-top: 14px; border-top: 1px solid var(--paper-sunk);
   display: flex; justify-content: flex-end; min-height: 20px;
 }
+.tc-chev { display: none; }
 .tc-error { padding: 24px 0; font-size: 14px; color: var(--err); }
 
 /* ── Задания (канбан) ────────────────────────────────────────────────────── */
@@ -74,8 +78,20 @@
 .tc-task-flag { display: inline-block; margin-top: 6px; }
 .tc-dash { padding: 20px 0; text-align: center; color: var(--text-faint); font-size: 13px; }
 
-@media (max-width: 767px) {
+@media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
   .tc-count { font-size: 24px; }
   .tc-add { grid-template-columns: 1fr; padding: 20px; }
   .tc-search { width: 100%; }
+  /* Компактная карточка: было 2–3 клиента на экран и 8345px прокрутки у 30
+     клиентов (QA 2026-11). Данные те же; футер «Открыть →» (с тап-зоной 44 —
+     ещё ~77px) заменяет шеврон в строке имени, карточка нажимается целиком. */
+  .tc-grid { gap: 10px; --tc-card-h: 132px; }
+  .tc-body { padding: 14px 16px; gap: 10px; }
+  .tc-top { gap: 12px; align-items: center; }
+  .tc-avatar { width: 40px; height: 40px; font-size: 15px; }
+  .tc-name { font-size: 20px; }
+  .tc-meta { margin-top: 4px; }
+  .tc-card .tc-meeting { padding: 8px 12px; }
+  .tc-foot { display: none; }
+  .tc-chev { display: block; }
 }
