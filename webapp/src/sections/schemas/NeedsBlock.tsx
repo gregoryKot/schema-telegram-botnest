@@ -1,6 +1,5 @@
 import { NEED_ORDER, useNeedData } from '../../needData';
-import { IdentityDot } from '../../../../shared/src/components/IdentityDot';
-import { hueStyle, NEED_HUE } from '../../lib/tone';
+import { NeedArt } from '../../components/art/NeedArt';
 import { needLevel } from './schemasModel';
 import { NEEDS_WHAT } from '../../../../shared/src/pattern/patternTerms';
 
@@ -39,7 +38,7 @@ export function NeedsBlock({ childhoodRatings, onOpenChildhoodWheel, onOpenNeed 
           const score = childhoodRatings[id];
           return (
             <button key={id} className="ds-list-row ds-list-row--hover cs-need" onClick={() => onOpenNeed(id)}>
-              <span className="cs-need-icon tone-soft" style={hueStyle(NEED_HUE[id])}><IdentityDot id={id} size={14} /></span>
+              <span className="pp-row-art"><NeedArt id={id} size="row" /></span>
               <span className="cs-need-text">
                 <span className="cs-need-name">{d.name}</span>
                 <span className="cs-need-hint">{d.hint}</span>

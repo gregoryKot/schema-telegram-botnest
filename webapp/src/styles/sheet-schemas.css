@@ -168,3 +168,7 @@
 }
 .ss-mode-share { margin-left: auto; flex-shrink: 0; }
 .ss-head--center .ss-title-row { justify-content: center; }
+/* Мотив домена рядом с названием: в шапке схемы — «квадрат», в строках — «ряд» (DomainMark). */
+.ss-domain-line { display: flex; align-items: center; gap: var(--space-12); flex-wrap: wrap; }
+.ss-res-head { display: flex; align-items: center; gap: var(--space-8); }
+.pp-domain-art--square { width: auto; }

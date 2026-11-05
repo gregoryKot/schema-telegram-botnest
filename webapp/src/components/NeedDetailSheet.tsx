@@ -6,6 +6,7 @@ import { IdentityDot } from '../../../shared/src/components/IdentityDot';
 import { useTr } from '../utils/addressForm';
 import { NEED_HUE, hueStyle } from '../lib/tone';
 import type { NeedId } from '../../../shared/src/needs/types';
+import { NeedArtLine } from './NeedArtLine';
 import '../styles/sheet-tracker.css';
 
 const NEED_DOMAIN_MAP: Record<string, string[]> = {
@@ -72,6 +73,7 @@ export function NeedDetailSheet({ needId, childhoodRating, activeSchemaIds, onCl
       }
     >
       <div className="tk2-opts" style={hueStyle(hue)}>
+        <NeedArtLine id={needId} />
         {relatedSchemas.length > 0 && (
           <div className="ds-card ds-card--row">
             <div className="ds-label">Связанные схемы</div>
