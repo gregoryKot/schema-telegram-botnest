@@ -125,13 +125,15 @@ describe('настоящие воркфлоу репозитория', () => {
     expect(files.length).toBeGreaterThanOrEqual(5);
   });
 
-  it('ci.yml разобран целиком: девять джоб (иначе разборщик слеп)', () => {
+  it('ci.yml разобран целиком: одиннадцать джоб (иначе разборщик слеп)', () => {
     expect(Object.keys(jobBlocks(read('ci.yml'))).sort()).toEqual([
       'backend',
+      'browser-smoke',
       'checks',
       'docker',
       'eslint',
       'migrations',
+      'mutation-changed',
       'perf',
       'shared',
       'webapp',

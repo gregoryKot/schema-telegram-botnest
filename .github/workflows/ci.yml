@@ -891,3 +891,108 @@ jobs:
       # верить.
       - run: npm ci --prefix shared
       - run: node scripts/check-eslint-ratchet.mjs
+
+  # Браузерный смок прод-сборки в PR (2026-11-05): три поломки недели (#878,
+  # #921, #898) прошли зелёный PR-CI и всплыли только в ночном nightly уже
+  # после мержа — 8 ночей красного смока. Владелец одобрил время CI: сигнал
+  # приходит до мержа. Ночная джоба browser-smoke остаётся: она ловит флаки
+  # на main и кричит через alarm. ~4-6 минут (сборка сайта + Chromium из кэша).
+  browser-smoke:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            webapp/package-lock.json
+      - run: npm ci
+      - run: npm ci --prefix webapp
+      # Без VITE_BOT_USERNAME production-сборка падает (shared/src/build/
+      # requireBotUsername.ts); значение то же, что в Dockerfile.
+      - run: npm run build --prefix webapp
+        env:
+          VITE_BOT_USERNAME: SchemeHappensBot
+      - name: версия Playwright для ключа кэша браузера
+        id: pw
+        run: echo "version=$(node -p "require('@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@v6
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.pw.outputs.version }}
+      # С кэшем скачивание браузера пропускается, системные зависимости
+      # (apt) ставятся всегда.
+      - run: npx playwright install --with-deps chromium
+      - name: браузерный smoke прод-сборки (Chromium)
+        run: npx playwright test
+      - name: трейс упавшего смока артефактом
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-trace
+          path: test-results/
+          retention-days: 14
+
+  # Мутации изменённых файлов золотых зон в PR (2026-11-05): храповик волны А
+  # (therapy-relations.service 97.95% → 94.96%) покраснел только ночью, после
+  # мержа #898 (ветка без теста). Здесь Stryker идёт ТОЛЬКО по изменённым
+  # файлам из `mutate` золотых конфигов (волна А — вход/шифрование, волна Б —
+  # деньги/бронирования), храповик — в режиме --partial: пол сверяется лишь у
+  # файлов отчёта, --update нет. PR без таких файлов — зелёный за секунды.
+  # Полный ночной прогон остаётся. Выбор файлов — scripts/mutation-changed-files.mjs.
+  mutation-changed:
+    # push в main не гоняем: там нет базы для сравнения, а ночь прогонит всё.
+    if: github.event_name != 'push'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      # Каждый вызов `node scripts/…` — отдельный однострочный шаг: так его
+      # разбирает precheck (scripts/agent/precheck-lib.mjs, спек
+      # agent-precheck.spec.ts), а селектор сам пишет в $GITHUB_OUTPUT.
+      - run: git fetch origin main --quiet
+      - name: изменённые файлы волны А (вход, шифрование)
+        id: auth
+        run: node scripts/mutation-changed-files.mjs --config=stryker.golden-auth.config.json --base=origin/main --github-output=files
+      - name: изменённые файлы волны Б (деньги, бронирования)
+        id: payments
+        run: node scripts/mutation-changed-files.mjs --config=stryker.golden-payments.config.json --base=origin/main --github-output=files
+      - name: нечего мутировать
+        if: steps.auth.outputs.files == '' && steps.payments.outputs.files == ''
+        run: echo "PR не трогает файлы золотых зон (mutate в stryker.golden-*.config.json) — мутации не нужны."
+      - if: steps.auth.outputs.files != '' || steps.payments.outputs.files != ''
+        run: npm ci
+      - if: steps.auth.outputs.files != '' || steps.payments.outputs.files != ''
+        run: npx prisma generate
+      - name: Stryker — волна А (${{ steps.auth.outputs.files }})
+        if: steps.auth.outputs.files != ''
+        env:
+          FILES: ${{ steps.auth.outputs.files }}
+        run: npx stryker run stryker.golden-auth.config.json --mutate "$FILES"
+      - name: храповик мутаций — волна А, только файлы отчёта
+        if: steps.auth.outputs.files != ''
+        run: node scripts/check-mutation-ratchet.mjs --partial --report=reports/mutation/golden-auth.json --baseline=scripts/mutation-golden-auth-baseline.json
+      - name: Stryker — волна Б (${{ steps.payments.outputs.files }})
+        if: steps.payments.outputs.files != ''
+        env:
+          FILES: ${{ steps.payments.outputs.files }}
+        run: npx stryker run stryker.golden-payments.config.json --mutate "$FILES"
+      - name: храповик мутаций — волна Б, только файлы отчёта
+        if: steps.payments.outputs.files != ''
+        run: node scripts/check-mutation-ratchet.mjs --partial --report=reports/mutation/golden-payments.json --baseline=scripts/mutation-golden-payments-baseline.json
+      - name: отчёт артефактом
+        if: always() && (steps.auth.outputs.files != '' || steps.payments.outputs.files != '')
+        uses: actions/upload-artifact@v7
+        with:
+          name: mutation-report-changed
+          path: reports/mutation/
+          retention-days: 14
