@@ -98,7 +98,7 @@ jobs:
           test/app-auth test/app-ownership test/app-ownership-sweep
           test/auth-flows test/public-quizzes test/phrase-check-ownership
           test/scheduler-teardown test/login-ticket test/refresh-rotation
-          test/slot-override test/therapy-remove-client test/therapy-resign test/therapy-invite
+          test/slot-override test/therapy-remove-client test/therapy-resign test/therapy-invite test/therapy-invite-attach
           test/therapy-relation-end test/notify-from-other
           test/body-limit test/login-csrf test/payment-webhook-practice-host
           test/text-limits test/therapy-ownership.e2e-spec.ts
@@ -590,6 +590,7 @@ jobs:
           test/therapy-remove-client.e2e-spec.ts
           test/therapy-relation-end.e2e-spec.ts
           test/therapy-invite.e2e-spec.ts
+          test/therapy-invite-attach.e2e-spec.ts
           test/therapy-task-delete.e2e-spec.ts
           test/text-limits.e2e-spec.ts
           test/therapy-resign.e2e-spec.ts

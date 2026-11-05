@@ -30,7 +30,10 @@ import type {
   Insights,
 } from '../apiTypes';
 import type { FormerTherapistInfo } from '../therapy/formerTherapist';
-import type { TherapyInvite } from '../therapy/therapyInvites';
+import {
+  THERAPY_INVITES_PATH,
+  type TherapyInvite,
+} from '../therapy/therapyInvites';
 import type {
   UserSchemaNote,
   UserModeNote,
@@ -177,7 +180,14 @@ export const buildSharedApi = (t: ApiTransport) => ({
       '/api/therapy/invite',
       alias ? { alias } : {},
     ),
-  getTherapyInvites: () => t.get<TherapyInvite[]>('/api/therapy/invites'),
+  // Приглашение из карточки офлайн-клиента (clientId < 0): после подключения её
+  // данные переедут на аккаунт клиента. Повтор отдаёт то же живое приглашение.
+  createOfflineClientInvite: (clientId: UserId) =>
+    t.postJson<{ code: string; url: string }>(
+      `/api/therapy/clients/${clientId}/invite`,
+      {},
+    ),
+  getTherapyInvites: () => t.get<TherapyInvite[]>(THERAPY_INVITES_PATH),
   revokeTherapyInvite: (id: number) => t.del(`/api/therapy/invites/${id}`),
   // Чей код — до согласия клиента (экран JoinConfirmSheet).
   previewTherapyInvite: (code: string) =>

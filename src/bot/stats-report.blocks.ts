@@ -32,6 +32,7 @@ export interface StatsBlockDeps {
   bookingRetention: Renderable;
   introLeads: Renderable;
   therapyNudge: Renderable;
+  therapyInvites: Renderable;
   therapistExit: Renderable;
 }
 
@@ -66,6 +67,7 @@ export function statsBlocks(d: StatsBlockDeps): StatsBlock[] {
     { name: 'Данные записей', svc: d.bookingRetention },
     { name: 'Заявки с формы знакомства', svc: d.introLeads },
     { name: 'Мост к терапевту', svc: d.therapyNudge },
+    { name: 'Приглашения клиентов', svc: d.therapyInvites },
     { name: 'Терапевты уходят', svc: d.therapistExit },
   ];
 }

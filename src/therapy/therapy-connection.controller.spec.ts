@@ -12,6 +12,7 @@ import {
 import type { Request } from 'express';
 import { TherapyConnectionController } from './therapy-connection.controller';
 import { TherapyRelationsService } from './therapy-relations.service';
+import { TherapyInviteService } from './therapy-invite.service';
 import {
   ALREADY_CONNECTED_ERROR,
   TOO_MANY_INVITES_ERROR,
@@ -24,21 +25,22 @@ import { SubmitTherapistRequestDto } from './therapist-request.dto';
 
 type RelationsMock = Pick<
   TherapyRelationsService,
-  | 'createInvite'
   | 'getRelation'
-  | 'joinAsClient'
   | 'disconnect'
   | 'getClients'
   | 'addVirtualClient'
   | 'renameClient'
 > & {
-  createInvite: jest.Mock;
   getRelation: jest.Mock;
-  joinAsClient: jest.Mock;
   disconnect: jest.Mock;
   getClients: jest.Mock;
   addVirtualClient: jest.Mock;
   renameClient: jest.Mock;
+};
+
+type InvitesMock = Pick<TherapyInviteService, 'create' | 'join'> & {
+  create: jest.Mock;
+  join: jest.Mock;
 };
 
 type ClientDataMock = Pick<TherapyClientDataService, 'removeClient'> & {
@@ -62,17 +64,22 @@ type RequestSvcMock = Pick<TherapistRequestService, 'submit' | 'getMine'> & {
 
 function makeRelations(): RelationsMock {
   return {
-    createInvite: jest
-      .fn()
-      .mockResolvedValue({ code: 'ABC123', url: 'https://t.me/x?startapp=y' }),
     getRelation: jest
       .fn()
       .mockResolvedValue({ role: 'client', status: 'active' }),
-    joinAsClient: jest.fn().mockResolvedValue(true),
     disconnect: jest.fn().mockResolvedValue(undefined),
     getClients: jest.fn().mockResolvedValue([{ id: 1 }]),
     addVirtualClient: jest.fn().mockResolvedValue([{ id: 1 }, { id: -1 }]),
     renameClient: jest.fn().mockResolvedValue(undefined),
+  };
+}
+
+function makeInvites(): InvitesMock {
+  return {
+    create: jest
+      .fn()
+      .mockResolvedValue({ code: 'ABC123', url: 'https://t.me/x?startapp=y' }),
+    join: jest.fn().mockResolvedValue(true),
   };
 }
 
@@ -111,18 +118,28 @@ function makeController(
   opts: { account?: AccountMock; relations?: RelationsMock } = {},
 ) {
   const relations = opts.relations ?? makeRelations();
+  const invites = makeInvites();
   const clientData = makeClientData();
   const account = opts.account ?? makeAccount();
   const requestSvc = makeRequestSvc();
   const exit = makeExit();
   const controller = new TherapyConnectionController(
     relations as unknown as TherapyRelationsService,
+    invites as unknown as TherapyInviteService,
     clientData as unknown as TherapyClientDataService,
     account as unknown as AccountService,
     requestSvc as unknown as TherapistRequestService,
     exit as unknown as TherapistExitService,
   );
-  return { controller, relations, clientData, account, requestSvc, exit };
+  return {
+    controller,
+    relations,
+    invites,
+    clientData,
+    account,
+    requestSvc,
+    exit,
+  };
 }
 
 // Все эти хендлеры одинаково начинаются с getUserRole !== 'THERAPIST' → 403,
@@ -151,24 +168,23 @@ describe('TherapyConnectionController — 403 для не-терапевта', (
 
 describe('TherapyConnectionController.createInvite', () => {
   it('терапевт → делегирует createInvite(therapistId, alias) и возвращает результат', async () => {
-    const { controller, relations } = makeController();
+    const { controller, invites } = makeController();
     const res = await controller.createInvite(makeReq(3n), {
       alias: 'Мария К.',
     });
-    expect(relations.createInvite).toHaveBeenCalledWith(3n, 'Мария К.');
+    expect(invites.create).toHaveBeenCalledWith(3n, 'Мария К.');
     expect(res).toEqual({ code: 'ABC123', url: 'https://t.me/x?startapp=y' });
   });
 
   it('без имени (настройки «Кабинет») → alias undefined', async () => {
-    const { controller, relations } = makeController();
+    const { controller, invites } = makeController();
     await controller.createInvite(makeReq(3n), {});
-    expect(relations.createInvite).toHaveBeenCalledWith(3n, undefined);
+    expect(invites.create).toHaveBeenCalledWith(3n, undefined);
   });
 
   it('предел живых приглашений → 409 { reason: too_many_invites }', async () => {
-    const relations = makeRelations();
-    relations.createInvite.mockRejectedValue(new Error(TOO_MANY_INVITES_ERROR));
-    const { controller } = makeController({ relations });
+    const { controller, invites } = makeController();
+    invites.create.mockRejectedValue(new Error(TOO_MANY_INVITES_ERROR));
     const err = await controller
       .createInvite(makeReq(3n), {})
       .catch((e: unknown) => e);
@@ -179,9 +195,8 @@ describe('TherapyConnectionController.createInvite', () => {
   });
 
   it('прочая ошибка пробрасывается как есть', async () => {
-    const relations = makeRelations();
-    relations.createInvite.mockRejectedValue(new Error('db down'));
-    const { controller } = makeController({ relations });
+    const { controller, invites } = makeController();
+    invites.create.mockRejectedValue(new Error('db down'));
     await expect(controller.createInvite(makeReq(3n), {})).rejects.toThrow(
       'db down',
     );
@@ -218,29 +233,27 @@ describe('TherapyConnectionController.getFormerTherapist', () => {
 
 describe('TherapyConnectionController.join', () => {
   it('пустой code → BadRequestException, joinAsClient не вызывается', async () => {
-    const { controller, relations } = makeController();
+    const { controller, invites } = makeController();
     await expect(controller.join(makeReq(), { code: '' })).rejects.toThrow(
       BadRequestException,
     );
-    expect(relations.joinAsClient).not.toHaveBeenCalled();
+    expect(invites.join).not.toHaveBeenCalled();
   });
 
   it('невалидный/просроченный код → BadRequestException("Invalid or expired code")', async () => {
-    const { controller, relations } = makeController();
-    relations.joinAsClient.mockResolvedValue(false);
+    const { controller, invites } = makeController();
+    invites.join.mockResolvedValue(false);
     await expect(controller.join(makeReq(5n), { code: 'BAD' })).rejects.toThrow(
       'Invalid or expired code',
     );
-    expect(relations.joinAsClient).toHaveBeenCalledWith(5n, 'BAD');
+    expect(invites.join).toHaveBeenCalledWith(5n, 'BAD');
   });
 
   // Аудит 2026-10, T3: уже есть связь с другим терапевтом → 409 с причиной
   // (не 400 «неверный код» и не тихий успех).
   it('связь с другим терапевтом → 409 с reason: already_connected', async () => {
-    const { controller, relations } = makeController();
-    relations.joinAsClient.mockRejectedValue(
-      new Error(ALREADY_CONNECTED_ERROR),
-    );
+    const { controller, invites } = makeController();
+    invites.join.mockRejectedValue(new Error(ALREADY_CONNECTED_ERROR));
     const err = await controller
       .join(makeReq(5n), { code: 'GOOD' })
       .catch((e: unknown) => e);
@@ -251,17 +264,17 @@ describe('TherapyConnectionController.join', () => {
   });
 
   it('неизвестная ошибка сервиса пробрасывается как есть (не маскируется под 409)', async () => {
-    const { controller, relations } = makeController();
-    relations.joinAsClient.mockRejectedValue(new Error('db down'));
+    const { controller, invites } = makeController();
+    invites.join.mockRejectedValue(new Error('db down'));
     await expect(
       controller.join(makeReq(5n), { code: 'GOOD' }),
     ).rejects.toThrow('db down');
   });
 
   it('валидный код → { ok: true }', async () => {
-    const { controller, relations } = makeController();
+    const { controller, invites } = makeController();
     const res = await controller.join(makeReq(5n), { code: 'GOOD' });
-    expect(relations.joinAsClient).toHaveBeenCalledWith(5n, 'GOOD');
+    expect(invites.join).toHaveBeenCalledWith(5n, 'GOOD');
     expect(res).toEqual({ ok: true });
   });
 });

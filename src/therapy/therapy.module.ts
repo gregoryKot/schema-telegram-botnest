@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TherapyRelationsService } from './therapy-relations.service';
+import { TherapyInviteService } from './therapy-invite.service';
 import { TherapyTasksService } from './therapy-tasks.service';
 import { TherapyTasksViewService } from './therapy-tasks-view.service';
 import { TherapyNotesService } from './therapy-notes.service';
@@ -32,6 +33,7 @@ import { AuthModule } from '../auth/auth.module';
   ],
   providers: [
     TherapyRelationsService,
+    TherapyInviteService,
     TherapyTasksService,
     TherapyTasksViewService,
     TherapyNotesService,
