@@ -7,7 +7,17 @@ export const THERAPY_NUDGE_EVENT = 'therapy_nudge';
 
 /** Где показана строка/карточка/лист. */
 export type TherapyNudgePlace =
-  'home' | 'tracker_done' | 'case_done' | 'diary_done' | 'more' | 'signal_card';
+  | 'home'
+  | 'tracker_done'
+  | 'case_done'
+  | 'diary_done'
+  | 'more'
+  | 'signal_card'
+  | 'home_card'
+  | 'practice'
+  | 'diary'
+  | 'exercise_start'
+  | 'test_start';
 
 /** shown — показали; open — открыли лист; book — «Записаться»; write — написали (Telegram/терапевту); dismiss — «Не сейчас». */
 export type TherapyNudgeAction =

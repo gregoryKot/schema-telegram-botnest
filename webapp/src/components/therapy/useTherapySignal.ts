@@ -20,10 +20,14 @@ interface Loaded {
 /**
  * Сигнал для карточки моста к терапевту на главной. История за 14 дней грузится
  * по refreshKey; сбой сети — тихо «сигнала нет» (не «данных нет»). Пользователю-
- * терапевту история не запрашивается вовсе.
+ * терапевту история не запрашивается вовсе. `ready` — ответ (или сбой) уже
+ * получен: до него карточка на главной показывает скелетон.
  */
 export function useTherapySignal(refreshKey: number | undefined, modeEntries: ModeDiaryEntry[]) {
   const [loaded, setLoaded] = useState<Loaded | null>(null);
+  // Ответ на запрос истории уже есть (данные или сбой): до него карточка не
+  // решает «сигнал или спокойная», иначе спокойная мигнёт и пошлёт ложный показ.
+  const [settled, setSettled] = useState(false);
   const [dismissedUntil, setDismissedUntil] = useState<string | null>(getDismissedUntil);
   const isTherapist = getTherapistContact().isTherapist;
 
@@ -37,6 +41,9 @@ export function useTherapySignal(refreshKey: number | undefined, modeEntries: Mo
       })
       .catch(() => {
         if (!ignore) setLoaded(null);
+      })
+      .finally(() => {
+        if (!ignore) setSettled(true);
       });
     return () => {
       ignore = true;
@@ -59,5 +66,5 @@ export function useTherapySignal(refreshKey: number | undefined, modeEntries: Mo
     setDismissedUntil(getDismissedUntil());
   }, []);
 
-  return { signal, dismiss };
+  return { signal, dismiss, ready: isTherapist || settled };
 }

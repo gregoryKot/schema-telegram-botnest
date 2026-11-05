@@ -17,5 +17,6 @@ export interface StepFlowProps {
   repeatLabel?: string;
   /** Рендерится под hint на done-экране (счётчик прохождений, «Поделиться» и т.п.) */
   doneExtra?: ReactNode;
+  intro?: ReactNode; // блок под подзаголовком на первом шаге (предупреждение от площадки)
   onClose: () => void;
 }

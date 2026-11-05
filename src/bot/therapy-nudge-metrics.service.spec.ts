@@ -1,6 +1,8 @@
-// Агрегат блока «Мост к терапевту»: count по Prisma (JSON-фильтр meta, без
-// сырого SQL). Мок отвечает по фильтру, поэтому перепутанный ключ виден.
+// Агрегат блока «Мост к терапевту»: один findMany meta за 30 дней (фильтр по
+// имени и дате — в where) и чистый агрегат в памяти. Мок отдаёт строки, а
+// проверка where ловит перепутанное имя события или пропавший срок.
 import {
+  THERAPY_NUDGE_EVENT,
   THERAPY_NUDGE_PLACES,
   THERAPY_NUDGE_TRIGGERS,
 } from '../analytics/therapy-nudge.constants';
@@ -9,29 +11,23 @@ import { TherapyNudgeMetricsService } from './therapy-nudge-metrics.service';
 const NOW = new Date('2026-10-27T12:00:00.000Z');
 const MONTH_AGO = new Date('2026-09-27T12:00:00.000Z');
 
-type MetaFilter = { meta: { path: string[]; equals: string } };
-type Args = { where: { name: string; AND: MetaFilter[] } };
+type Args = {
+  where: { name: string; createdAt: { gte: Date } };
+  select: { meta: true };
+};
 
-function fields(args: Args): Record<string, string> {
-  return Object.fromEntries(
-    args.where.AND.map((f) => [f.meta.path[0], f.meta.equals]),
+function build(metas: unknown[] = [], intro = 0, booking = 0) {
+  const findMany = jest.fn(async (_args: Args) =>
+    metas.map((meta) => ({ meta })),
   );
-}
-
-function build(
-  answer: (f: Record<string, string>) => number = () => 0,
-  intro = 0,
-  booking = 0,
-) {
-  const eventCount = jest.fn(async (args: Args) => answer(fields(args)));
   const introCount = jest.fn(async () => intro);
   const bookingCount = jest.fn(async () => booking);
   return {
-    eventCount,
+    findMany,
     introCount,
     bookingCount,
     service: new TherapyNudgeMetricsService({
-      analyticsEvent: { count: eventCount },
+      analyticsEvent: { findMany },
       introLead: { count: introCount },
       booking: { count: bookingCount },
     } as never),
@@ -57,11 +53,21 @@ describe('TherapyNudgeMetricsService', () => {
 
   it('раскладывает счётчики по месту, причине и действию', async () => {
     const { service } = build(
-      (f) => {
-        if (f.trigger === 'crisis') return 2;
-        if (f.action === 'shown') return f.place === 'home' ? 9 : 0;
-        return { open: 5, book: 3, write: 1, dismiss: 4 }[f.action] ?? 0;
-      },
+      [
+        ...Array.from({ length: 9 }, () => ({
+          place: 'home',
+          action: 'shown',
+        })),
+        { place: 'signal_card', action: 'shown', trigger: 'crisis' },
+        { place: 'signal_card', action: 'shown', trigger: 'crisis' },
+        ...Array.from({ length: 5 }, () => ({ place: 'more', action: 'open' })),
+        ...Array.from({ length: 3 }, () => ({ place: 'more', action: 'book' })),
+        { place: 'home', action: 'write' },
+        ...Array.from({ length: 4 }, () => ({
+          place: 'signal_card',
+          action: 'dismiss',
+        })),
+      ],
       6,
       4,
     );
@@ -82,26 +88,13 @@ describe('TherapyNudgeMetricsService', () => {
     ]).toEqual([5, 3, 1, 4, 6, 4]);
   });
 
-  it('фильтры: окно 30 дней, имя события, ключи meta; заявки — source содержит from=app', async () => {
-    const { service, eventCount, introCount } = build();
+  it('фильтры: окно 30 дней и имя события в where, только meta в select; заявки — source содержит from=app', async () => {
+    const { service, findMany, introCount } = build();
     await service.getMetrics(NOW);
-    expect(eventCount).toHaveBeenCalledWith({
-      where: {
-        name: 'therapy_nudge',
-        createdAt: { gte: MONTH_AGO },
-        AND: [
-          { meta: { path: ['place'], equals: 'signal_card' } },
-          { meta: { path: ['action'], equals: 'shown' } },
-          { meta: { path: ['trigger'], equals: 'low_index' } },
-        ],
-      },
-    });
-    expect(eventCount).toHaveBeenCalledWith({
-      where: {
-        name: 'therapy_nudge',
-        createdAt: { gte: MONTH_AGO },
-        AND: [{ meta: { path: ['action'], equals: 'book' } }],
-      },
+    expect(findMany).toHaveBeenCalledTimes(1);
+    expect(findMany).toHaveBeenCalledWith({
+      where: { name: THERAPY_NUDGE_EVENT, createdAt: { gte: MONTH_AGO } },
+      select: { meta: true },
     });
     expect(introCount).toHaveBeenCalledWith({
       where: {

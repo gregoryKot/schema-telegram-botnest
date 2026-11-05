@@ -1,15 +1,17 @@
 import { useEffect } from 'react';
 import type { ModeDiaryEntry } from '../../../../shared/src/types';
-import { ExternalLink } from '../../host/ExternalLink';
+import { SkeletonCard } from '../Skeleton';
+import { TherapyBridgeCard } from './TherapyBridgeCard';
+import { TherapyCardFrame } from './TherapyCardFrame';
 import { trackTherapyNudge } from './trackTherapyNudge';
 import { useTherapyBridgeTexts } from './useTherapyBridgeTexts';
 import { useTherapySignal } from './useTherapySignal';
 import { useTherapyTarget } from './useTherapyTarget';
-import '../../styles/therapy-bridge.css';
 
 /**
  * Карточка на главной, когда по данным видно: одной самопомощи может быть мало
- * (низкий индекс, повторяющийся режим, тяжёлый день). Нет сигнала — нет карточки.
+ * (низкий индекс, повторяющийся режим, тяжёлый день). Нет сигнала — спокойная
+ * карточка моста (TherapyBridgeCard); терапевту — пусто; до ответа истории — скелетон.
  * «Не сейчас» прячет её на 14 дней на этом устройстве.
  */
 export function TherapyNudgeCard({
@@ -20,7 +22,7 @@ export function TherapyNudgeCard({
   modeEntries: ModeDiaryEntry[];
 }) {
   const t = useTherapyBridgeTexts();
-  const { signal, dismiss } = useTherapySignal(refreshKey, modeEntries);
+  const { signal, dismiss, ready } = useTherapySignal(refreshKey, modeEntries);
   const trigger = signal?.trigger;
   const target = useTherapyTarget('signal_card', trigger);
 
@@ -28,23 +30,17 @@ export function TherapyNudgeCard({
     if (trigger) trackTherapyNudge('signal_card', 'shown', trigger);
   }, [trigger]);
 
-  if (!signal) return null;
+  if (target.hidden) return null;
+  // Пока история не пришла — силуэт карточки, не спокойная версия с ложным показом.
+  if (!ready) return <SkeletonCard height={150} radius={18} />;
+  if (!signal) return <TherapyBridgeCard place="home_card" />;
 
   return (
-    <section className="th-card" aria-label={t.cardTalk}>
-      <div className="ds-eyebrow">{signal.eyebrow}</div>
-      <h2 className="th-card-title">{t.cardTitle}</h2>
-      <p className="th-card-sub">{target.write ? t.cardSubTherapist : t.cardSubAuthor}</p>
-      <div className="th-card-acts">
-        {target.write ? (
-          <ExternalLink className="ds-btn th-btn" href={target.write.url} onClick={target.write.onClick}>
-            {t.cardWrite}
-          </ExternalLink>
-        ) : (
-          <button type="button" className="ds-btn th-btn" onClick={target.open}>
-            {t.cardTalk}
-          </button>
-        )}
+    <TherapyCardFrame
+      eyebrow={signal.eyebrow}
+      title={t.cardTitle}
+      target={target}
+      extra={
         <button
           type="button"
           className="th-back"
@@ -55,8 +51,7 @@ export function TherapyNudgeCard({
         >
           {t.cardLater}
         </button>
-      </div>
-      {target.sheet}
-    </section>
+      }
+    />
   );
 }

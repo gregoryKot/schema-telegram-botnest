@@ -30,6 +30,11 @@ const PLACE_LABELS: Record<string, string> = {
   case_done: 'после разбора случая',
   diary_done: 'после дневника',
   more: 'в «Ещё»',
+  home_card: 'карточкой на главной',
+  practice: 'в «Практиках»',
+  diary: 'в «Записях»',
+  exercise_start: 'на входе в упражнение',
+  test_start: 'на входе в тест',
 };
 
 const TRIGGER_LABELS: Record<string, string> = {

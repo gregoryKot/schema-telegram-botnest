@@ -1,6 +1,7 @@
 import type { CSSProperties, ReactNode } from 'react';
 import { Leaf } from '../art/PaperArtSigns';
 import { pressable } from '../../utils/a11y';
+import { TherapyCaution } from '../therapy/TherapyCaution';
 import { useExBackLabel } from './exBackLabel';
 import '../../styles/sheet-exercises.css';
 
@@ -40,12 +41,13 @@ interface ExScreenProps {
   eyebrow: ReactNode;
   title: ReactNode;
   lede?: ReactNode;
+  caution?: boolean; // предупреждение «самопомощь» под lede, только на первом экране
   aside?: ReactNode;
   foot?: ReactNode;
   children?: ReactNode;
 }
 
-export function ExScreen({ onBack, backLabel, eyebrow, title, lede, aside, foot, children }: ExScreenProps) {
+export function ExScreen({ onBack, backLabel, eyebrow, title, lede, caution, aside, foot, children }: ExScreenProps) {
   const hostBackLabel = useExBackLabel();
   return (
     <div className="ex2-screen">
@@ -57,6 +59,7 @@ export function ExScreen({ onBack, backLabel, eyebrow, title, lede, aside, foot,
           <div className="ds-eyebrow">{eyebrow}</div>
           <h1 className="ds-h2 ex2-title">{title}</h1>
           {lede && <p className="ds-sub ex2-lede">{lede}</p>}
+          {caution && <TherapyCaution place="exercise_start" />}
           {children}
           {foot}
         </div>

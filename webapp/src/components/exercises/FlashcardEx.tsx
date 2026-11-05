@@ -105,7 +105,7 @@ export function SchemaEx({ onBack, initialSchemaId, onComplete, initialData }: {
 
   if (!picked) {
     return (
-      <ExScreen onBack={goBack} eyebrow={exerciseCard('schema').eyebrow}
+      <ExScreen onBack={goBack} caution eyebrow={exerciseCard('schema').eyebrow}
         title={<>Карточка<br/><span className="it">схемы</span></>}
         lede={tr('Выбери одну из схем. Семь вопросов, чтобы увидеть её во весь рост: триггеры, голос, истоки, реальность, поддержка.', 'Выберите одну из схем. Семь вопросов, чтобы увидеть её во весь рост: триггеры, голос, истоки, реальность, поддержка.')}
         aside={<div className="ds-card ex2-note"><div className="ds-label">Зачем это</div><h3 className="ex2-note-h">Назвать – значит вернуть себе власть</h3><p className="ex2-note-body">{tr('Схема работает в тени. Когда мы её называем – она становится паттерном, а не «правдой о тебе».', 'Схема работает в тени. Когда мы её называем – она становится паттерном, а не «правдой о вас».')}</p></div>}
@@ -126,7 +126,7 @@ export function SchemaEx({ onBack, initialSchemaId, onComplete, initialData }: {
   }
 
   return (
-    <ExScreen onBack={goBack} eyebrow={picked.domain} title={picked.name} lede={picked.desc}
+    <ExScreen onBack={goBack} caution={Boolean(initialSchemaId)} eyebrow={picked.domain} title={picked.name} lede={picked.desc}
       aside={<>
         <div className="ds-card ex2-note ex2-tint" style={hueStyle(picked.hue)}>
           <div className="ds-label">Совет</div>
@@ -157,7 +157,7 @@ export function ModeEx({ onBack, initialModeId, onComplete, initialData }: { onB
 
   if (!picked) {
     return (
-      <ExScreen onBack={goBack} eyebrow={exerciseCard('mode').eyebrow}
+      <ExScreen onBack={goBack} caution eyebrow={exerciseCard('mode').eyebrow}
         title={<>Карточка<br/><span className="it">режима</span></>}
         lede="Режим – это эмоциональное состояние, которое включается целиком. Описать его – значит научиться его узнавать в моменте."
         aside={<div className="ds-card ex2-note"><div className="ds-label">Совет</div><h3 className="ex2-note-h">{tr('Начни с того, что чаще включается', 'Начните с того, что чаще включается')}</h3><p className="ex2-note-body">Не обязательно работать с трудным режимом. Иногда полезнее описать Здорового Взрослого – чтобы было что искать в себе в трудный момент.</p></div>}
@@ -181,7 +181,7 @@ export function ModeEx({ onBack, initialModeId, onComplete, initialData }: { onB
   // seen — честная подпись кнопки при ручном возврате («Про режим»).
   const seen = Boolean(card) && Boolean(localStorage.getItem(portraitSeenKey(picked.id)));
   return (
-    <ExScreen onBack={goBack} eyebrow={picked.group} title={picked.name} lede={showPortrait && card ? card.about : picked.short}
+    <ExScreen onBack={goBack} caution={Boolean(initialModeId)} eyebrow={picked.group} title={picked.name} lede={showPortrait && card ? card.about : picked.short}
       aside={<>
         {!showPortrait && card && <button className="ds-btn ds-btn--sm ex2-ghost" onClick={() => setShowPortrait(true)}>ⓘ Про режим</button>}
         {!showPortrait && <div className="ds-card ex2-note ex2-tint" style={hueStyle(picked.hue)}><div className="ds-label">Подсказка</div><h3 className="ex2-note-h">{tr('Говори в настоящем', 'Говорите в настоящем')}</h3><p className="ex2-note-body">«Когда я в этом режиме – я чувствую…» работает лучше, чем абстрактные описания.</p></div>}

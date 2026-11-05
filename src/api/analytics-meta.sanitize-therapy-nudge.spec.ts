@@ -27,6 +27,15 @@ describe('therapy_nudge: санитизация meta', () => {
     },
   );
 
+  it('место exercise_start проходит', () => {
+    expect(
+      sanitizeMeta(THERAPY_NUDGE_EVENT, {
+        place: 'exercise_start',
+        action: 'shown',
+      }),
+    ).toEqual({ place: 'exercise_start', action: 'shown' });
+  });
+
   it.each(THERAPY_NUDGE_ACTIONS)('действие %s проходит', (action) => {
     expect(sanitizeTherapyNudgeMeta({ place: 'home', action })).toEqual({
       place: 'home',
