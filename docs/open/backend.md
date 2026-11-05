@@ -333,3 +333,16 @@ NestJS 12, 2026-10-24): `src/api/memory-throttle-storage.ts` заменял шт
 - **`GET /api/link-token`** (`src/api/api.controller.ts`): не путать с `/api/auth/link-token` (`src/auth/auth.controller.ts`), который сайт вызывает. Решение: проверить, что вызывающих нет нигде (бот, `public/`), и удалить.
 - **`POST /api/user-flags`** (`src/api/api.controller.ts`): единственным писателем был мини-апп. `onboardingV2Done` теперь ставит `POST /api/disclaimer` (его читает строка «Дошли до конца» в `/stats`, `src/bot/bot.product-metrics.service.ts`); `childhoodWheelDone` бэкенд не читает (только слияние и экспорт); ещё 13 полей `UserFlags` не пишет никто. Решение: удалить ручку и DTO (`src/api/dto/user-flags.dto.ts`), колонки чистить отдельным PR с миграцией; затронет правила слияния (`src/auth/merge-user-rules.ts`) и экспорт (`src/account/export-policy.ts`).
 - **`GET /health`** остаётся: это HEALTHCHECK в Docker, не долг.
+
+**Перекос ассетов при выкладке — что осознанно не сделано** (инцидент 2026-11-04, #928):
+- **Отчёт `asset-recovery.js` лежит в «другом».** `webapp/public/asset-recovery.js` шлёт в
+  `/api/client-errors` `section: 'assets'`, которой нет в `src/api/client-error-section.ts`:
+  бакет `other`, DM «[client:webapp/other] ошибка фронтенда», в `/stats` — «другое». Отдельную
+  строку не завели: правило того же файла — расширять список, когда «другое» станет заметной
+  долей, а `client-error-*.ts` на пределе храповика размеров. Отчёт уходит, только когда
+  восстановление не помогло; сработавшие повторы не считает никто.
+- **Файлы прошлой сборки в образе не держим.** Закрыло бы половину перекоса (HTML старой сборки →
+  новый контейнер) и ленивые чанки давно открытых вкладок без перезагрузки. Amvera собирает образ
+  из git, прошлой сборки у неё нет — пришлось бы качать файлы с прода на сборке (сеть билдера
+  Amvera рвётся, см. `deploy/install-openssl.sh`), а вторую половину (HTML новой сборки → старый
+  контейнер) это не лечит. Обе половины закрывает повтор на клиенте.
