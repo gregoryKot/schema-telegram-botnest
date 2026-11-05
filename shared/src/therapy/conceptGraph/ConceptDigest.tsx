@@ -17,7 +17,7 @@ import {
   buildConceptDigest,
   type DigestItem,
   type DigestRow,
-} from './conceptDigest';
+} from './conceptDigestModel';
 import { toneHex } from '../../theme/entityHue';
 
 /**

@@ -1,4 +1,4 @@
-import type { TrackerSummary } from './todayFeed';
+import type { TrackerSummary } from './todayFeedModel';
 
 /** Подпись единственной кнопки главной «Сегодня» — по состоянию трекера за сегодня.
  *  Отдельный файл, а не экспорт из HomeTiles.tsx: файл компонента экспортирует только

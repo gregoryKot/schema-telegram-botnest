@@ -2,7 +2,7 @@
 // скрытие пунктов реестра действуют на карточки с пунктом; «Карточка схемы» и
 // «Карточка режима» (в реестре их нет) стоят на своих местах и не скрываются.
 import { describe, it, expect } from 'vitest';
-import { EXERCISES } from './exerciseLibrary';
+import { EXERCISES } from './exerciseLibraryModel';
 import { CARD_TOOL_IDS, EXERCISE_TOOL, arrangeExercises } from './toolsLayout';
 import { buildToolRows } from '../../../../shared/src/quickActions/toolRows';
 

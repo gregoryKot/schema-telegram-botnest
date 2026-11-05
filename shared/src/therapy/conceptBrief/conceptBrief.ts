@@ -16,7 +16,7 @@ import {
   needItems,
   schemaItems,
   type DigestItem,
-} from '../conceptGraph/conceptDigest';
+} from '../conceptGraph/conceptDigestModel';
 import type { ClientConceptualizationBase } from '../clientConceptualization';
 
 export type BriefBlockId =

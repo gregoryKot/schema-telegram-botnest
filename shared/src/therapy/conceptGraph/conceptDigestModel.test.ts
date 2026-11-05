@@ -12,7 +12,7 @@ import {
   clip,
   type DigestKey,
   type DigestRow,
-} from './conceptDigest';
+} from './conceptDigestModel';
 
 const ty = (a: string) => a;
 

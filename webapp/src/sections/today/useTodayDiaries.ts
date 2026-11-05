@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api, reportClientError } from '../../api';
 import type { ModeDiaryEntry } from '../../../../shared/src/types';
-import { buildDiaryFeed, casesTodayCount, lastEntryAt, type FeedEntry } from './todayFeed';
+import { buildDiaryFeed, casesTodayCount, lastEntryAt, type FeedEntry } from './todayFeedModel';
 
 interface DiariesState {
   /** Записи трёх дневников за сегодня (без строки трекера). */

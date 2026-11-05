@@ -32,6 +32,7 @@
 | check-env-registry.mjs | чтение env мимо реестра и протухшие записи реестра | — (реестр `src/infra/env-registry.entries*.ts`) | нет | checks |
 | check-eslint-ratchet.mjs | рост числа ошибок и варнингов eslint; полный режим — по каталогам верхнего уровня отдельными процессами (правила — `eslint-ratchet-rules.mjs`), локально `--changed` — только файлы против `origin/main` | `scripts/eslint-baseline.json` | да | eslint |
 | check-file-size-ratchet.mjs | рост файла из baseline, новый файл больше 300 строк | `scripts/file-size-baseline.json` | да | backend |
+| check-filename-case.mjs | два отслеживаемых пути, различающиеся только регистром (`diagramEdges.ts` ≈ `DiagramEdges.tsx`): на macOS Vite резолвит не тот файл | — | нет | checks |
 | check-frontend-coverage-ratchet.mjs | просадка покрытия webapp, shared (`--package`) | `scripts/frontend-coverage-baseline.json` | да | webapp, shared |
 | check-gate-exemptions.mjs | ALLOW/EXCLUDE-списки гейтов без теста-образца | — | нет | checks |
 | check-gendered-forms.mjs | мужской род в тексте для пользователя («ты сделал»; без «ты» — по паре `tr(ты, вы)`, «Сказал» ↔ «Сказали») | `scripts/gendered-forms-baseline.json` | да | backend |
