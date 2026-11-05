@@ -114,10 +114,6 @@ NestJS 12, 2026-10-24): `src/api/memory-throttle-storage.ts` заменял шт
 
 **Полуночный обход: остаток после доделки оборванного прогона** (`docs/AUDIT_2026-10_FINDINGS.md`,
 «Полуночный `planDay`…» и «Аренда берётся при старте…»):
-- **Аренда бэкапа `backup-b2` при SIGTERM не отпускается.** `deploy/backup-scheduler.cjs`:
-  релиз аренды только в ветке failed, psql-релиз при остановке гонится с `process.exit`
-  — бэкап, оборванный деплоем, следующий раз пойдёт только после окна аренды. Нужен
-  синхронный релиз в `stop()` и живой спек рядом с `test/backup-lease.e2e-spec.ts`.
 - **`cancel`+`schedule` в `scheduleReminder` без `$transaction`**
   (`src/notification/notification.planner.service.ts`, `scheduleReminder`). Не сделано
   сознательно: после захвата дня (`claimPlanDay`) обрыв между ними теряет напоминание
