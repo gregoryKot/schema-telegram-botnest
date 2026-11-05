@@ -298,6 +298,9 @@ pointer-based div: без `role="slider"`, `tabIndex`, `aria-value*`, стрел
    класс отдельным гейтом («литерал белого в одном style-объекте с заливкой
    `var(--accent*)`») или расширить `check-color-drift.mjs` — сейчас он белый
    не считает намеренно, ахроматика у нас законный приём для теней.
+   **2026-11:** к волне 4 реестра литералов осталось ~19; белый на `var(--accent)`
+   переведён на `--on-accent` (`cabinet.css`, `AccountLinkCard`), CSS держит
+   `webapp/src/styles/onAccent.test.ts`; остаток — `docs/open/frontend-ux.md`.
 2. **Четыре `rgba(255,100,100,…)` в `shared/src/journey/JourneyDeleteButton.tsx`.**
    Тот самый литерал, который #516 перечисляет как вычищенный: свип читал
    глазами и это место пропустил, а гейт нашёл на первом прогоне. Лежит в
