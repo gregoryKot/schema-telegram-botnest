@@ -129,7 +129,7 @@ export function LetterEx({
 
   return (
     <ExScreen
-      onBack={goBack}
+      onBack={goBack} caution
       eyebrow={exerciseCard('letter').eyebrow}
       title={
         <>

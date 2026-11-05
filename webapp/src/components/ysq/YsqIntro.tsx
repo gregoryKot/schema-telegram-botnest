@@ -1,5 +1,6 @@
 import { YsqDisclaimer } from '../../../../shared/src/components/YsqDisclaimer';
 import { YsqSyncErrorNote } from '../../../../shared/src/components/YsqSyncErrorNote';
+import { TherapyCaution } from '../therapy/TherapyCaution';
 import { SsHead } from '../schemaSheets/SsSheet';
 
 type Tr = (ty: string, vy: string) => string;
@@ -25,6 +26,7 @@ export function YsqIntro({ tr, hasProgress, progressAnswered, resumeCheckFailed,
   return (
     <>
       <SsHead center layers title="Тест на схемы" lede="Паттерны мышления и поведения, сложившиеся в детстве" />
+      <TherapyCaution place="test_start" />
 
       <div className="ss-facts">
         {facts.map(([title, desc]) => (

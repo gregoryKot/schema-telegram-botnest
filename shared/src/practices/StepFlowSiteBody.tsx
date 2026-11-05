@@ -13,6 +13,7 @@ export function StepFlowSiteBody({
   done,
   repeatLabel,
   doneExtra,
+  intro,
   onClose,
 }: StepFlowProps) {
   const [step, isDone, cur, nextLabel, onNext] = useStepFlow(
@@ -33,6 +34,7 @@ export function StepFlowSiteBody({
       >
         {subtitle}
       </div>
+      {step === 0 && !isDone && intro}
 
       <div
         style={{

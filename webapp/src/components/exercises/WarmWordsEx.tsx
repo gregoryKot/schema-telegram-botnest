@@ -27,7 +27,7 @@ export function WarmWordsEx({ onBack }: { onBack: () => void }) {
 
   return (
     <ExScreen
-      onBack={goBack}
+      onBack={goBack} caution
       eyebrow="Ресурс"
       title={
         <>

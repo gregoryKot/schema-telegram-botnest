@@ -15,6 +15,7 @@ vi.mock('../../api', () => ({
     saveChildhoodRatings: vi.fn(),
     getChildhoodRatings: vi.fn(),
     updateSettings: vi.fn(),
+    trackEvent: vi.fn(), // предупреждение моста к терапевту шлёт shown
   },
 }));
 import { api } from '../../api';

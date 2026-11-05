@@ -34,7 +34,7 @@ export function CaseSceneStep({
   return (
     <ExScreen
       onBack={onBack}
-      backLabel="Назад"
+      backLabel="Назад" caution
       eyebrow="Что случилось · 1 из 3"
       title="Что случилось?"
       lede="Крупное необязательно. Хватит мелочи: сообщение, взгляд, тишина в ответ."

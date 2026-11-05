@@ -8,6 +8,8 @@ import { loadDraft, clearDraft } from '../utils/drafts';
 import { DiaryEmptyExplainer } from '../components/diary/DiaryEmptyExplainer';
 import { DiaryLoadFailedBanner } from '../components/diary/DiaryLoadFailedBanner';
 import { QuickEntrySheet } from '../components/diary/QuickEntrySheet';
+import { TherapyLine } from '../components/therapy/TherapyLine';
+import { useTherapyBridgeTexts } from '../components/therapy/useTherapyBridgeTexts';
 import { DiaryShareButton } from '../share/DiaryShareButton';
 import '../styles/client-diary.css';
 import { diaryToday } from '../../../shared/src/diary/diaryDay';
@@ -32,6 +34,7 @@ const TRACKER_DAYS = 365;
 const DRAFT_TYPES: DiaryType[] = ['schema', 'mode', 'gratitude'];
 
 export function DiarySection({ onClose: _onClose, onOpenTrackerHistory }: { onClose?: () => void; onOpenTrackerHistory?: () => void } = {}) {
+  const bridge = useTherapyBridgeTexts();
   const [schemaEntries,    setSchemaEntries]    = useState<SchemaDiaryEntry[]>([]);
   const [modeEntries,      setModeEntries]      = useState<ModeDiaryEntry[]>([]);
   const [gratitudeEntries, setGratitudeEntries] = useState<GratitudeDiaryEntry[]>([]);
@@ -179,6 +182,8 @@ export function DiarySection({ onClose: _onClose, onOpenTrackerHistory }: { onCl
       {streakText && <p className="cd-streak">{streakText}</p>}
 
       {quickOpen && <QuickEntrySheet onClose={() => setQuickOpen(false)} onSaved={() => { void load(); }} />}
+
+      <TherapyLine place="diary" text={bridge.lineDiaryList} />
     </div>
   );
 }
