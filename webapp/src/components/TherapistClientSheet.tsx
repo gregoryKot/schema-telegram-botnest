@@ -8,7 +8,7 @@ import { ClientYSQTab } from './therapist/ClientYSQTab';
 import { useClientDetail } from './therapist/useClientDetail';
 import { useAddClient } from './therapist/useAddClient';
 import { useTasksBoard } from './therapist/useTasksBoard';
-import { ModeMapSelector } from './ModeMapSelector';
+import { ModeMapTab } from './modeMap/ModeMapTab';
 import { ClientListView } from './therapist/ClientListView';
 import { ClientHeader } from './therapist/ClientHeader';
 import { ClientOverviewTab } from './therapist/ClientOverviewTab';
@@ -154,7 +154,7 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
             {/* ── MODE MAP — keep mounted to preserve React Flow state across tab switches */}
             {selectedClient != null && clientTab === 'mode_map' && (
               <div style={{ height: '100%', minHeight: 0, display: 'flex', flexDirection: 'column' }}>
-                <ModeMapSelector key={`${selectedClient.telegramId}-${canvasMapId}`} clientId={selectedClient.telegramId} initialMapId={canvasMapId ?? undefined} />
+                <ModeMapTab key={`${selectedClient.telegramId}-${canvasMapId}`} clientId={selectedClient.telegramId} initialMapId={canvasMapId ?? undefined} />
               </div>
             )}
 
