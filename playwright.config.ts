@@ -1,7 +1,7 @@
 // Playwright — только браузерный smoke (docs/TEST_TRUST_PLAN.md, п.4).
 // Не «ещё один слой тестов», а страховка от класса «собралось, но не
 // работает»: битый бандл, сломанный SPA-fallback, ошибка рантайма до первого
-// рендера. Гоняется в nightly, в PR-CI не лезет — там уже 7 джоб.
+// рендера. Гоняется в PR-CI (джоба browser-smoke) и в nightly (флаки на main).
 import { existsSync } from 'fs';
 import { defineConfig, devices } from '@playwright/test';
 
