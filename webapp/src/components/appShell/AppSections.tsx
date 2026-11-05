@@ -98,14 +98,9 @@ export function AppSections({
           <TodaySection
             needs={needs}
             ratings={ratings}
-            onNavigate={setSection}
             onOpenSchema={(opts) => { ov.setSchemaAutoStartTest(!!opts?.startTest); ov.setSchemaInitialTab(opts?.tab ?? 'needs'); ov.setSchemaHighlight(opts?.highlight); ov.setShowSchemaInfo(true); }}
             onOpenTracker={() => { ov.setTrackerNeedId(null); ov.setShowTrackerOverlay(true); }}
-            onOpenTrackerHistory={() => { ov.setTrackerTab('history'); ov.setShowTracker(true); }}
-            onOpenDiaries={() => ov.setShowDiaries(true)}
-            onOpenChildhoodWheel={() => ov.setShowChildhoodWheel(true)}
             refreshKey={todayRefreshKey}
-            onTasksChanged={() => setHelpTasksKey(k => k + 1)}
           />
           </ErrorBoundary>
         )}
@@ -120,6 +115,11 @@ export function AppSections({
               onNavigate={setSection}
               onOpenSchema={(opts) => { ov.setSchemaAutoStartTest(!!opts?.startTest); ov.setSchemaInitialTab('needs'); ov.setSchemaHighlight(undefined); ov.setShowSchemaInfo(true); }}
               onOpenAdvanced={() => ov.setShowSettings(true)}
+              onOpenTracker={() => { ov.setTrackerNeedId(null); ov.setShowTrackerOverlay(true); }}
+              onOpenDiaries={() => ov.setShowDiaries(true)}
+              onOpenChildhoodWheel={() => ov.setShowChildhoodWheel(true)}
+              refreshKey={todayRefreshKey}
+              onTasksChanged={() => setHelpTasksKey(k => k + 1)}
               userRole={userRole}
               onOpenTherapistCabinet={() => { switchTherapistMode(true); }}
             />
