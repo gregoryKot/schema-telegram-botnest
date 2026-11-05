@@ -49,6 +49,8 @@ export const THERAPY_RULES: Rule[] = [
   // меняют список сразу; принятое клиентом уходит из него на чужом запросе —
   // его кеш у терапевта живёт 15 секунд, это допустимо.
   simple('POST', /^\/api\/therapy\/invite$/, INVITES),
+  // Приглашение из карточки офлайн-клиента сразу видно в «Ждут подключения» и в карточке.
+  simple('POST', /^\/api\/therapy\/clients\/-?\d+\/invite$/, INVITES),
   simple('DELETE', /^\/api\/therapy\/invites\/\d+$/, INVITES),
   simple('POST', /^\/api\/therapy\/clients\/virtual$/, CLIENTS),
   // Удаление стирает связь, заметки, концептуализацию, карты режимов, а у

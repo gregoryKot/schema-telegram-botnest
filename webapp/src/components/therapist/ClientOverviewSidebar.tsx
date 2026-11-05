@@ -2,6 +2,7 @@ import type { TherapyClientSummary } from '../../api';
 import { hueStyle } from '../../lib/tone';
 import { ClientIndexCard } from './ClientIndexCard';
 import { NextSessionCard, StartDateCard } from './ClientSessionInfoCards';
+import { OfflineInviteCard } from './OfflineInviteCard';
 import { MeetingDaysCard } from './MeetingDaysCard';
 import { needBars } from './clientOverviewModel';
 import type { ClientDetail } from './clientSheetTypes';
@@ -30,6 +31,7 @@ export function ClientOverviewSidebar({ selectedClient, detail }: Props) {
       <NextSessionCard selectedClient={selectedClient} detail={detail} />
       <MeetingDaysCard key={String(selectedClient.telegramId)} selectedClient={selectedClient} detail={detail} />
       <StartDateCard selectedClient={selectedClient} detail={detail} />
+      {isVirtualClient(selectedClient) && <OfflineInviteCard selectedClient={selectedClient} />}
 
       {todayIndex != null && <ClientIndexCard todayIndex={todayIndex} history={clientHistory} />}
 

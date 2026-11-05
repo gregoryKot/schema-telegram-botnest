@@ -17,6 +17,7 @@ const maria: TherapyInvite = {
   alias: 'Мария К.',
   createdAt: '2026-10-26T10:00:00.000Z',
   expiresAt: '2026-11-02T10:00:00.000Z',
+  attachToId: null,
 };
 
 function pending(invites: TherapyInvite[] | null | undefined): PendingInvites {
@@ -50,6 +51,17 @@ describe('PendingInvitesList', () => {
     expect(screen.getByText('Ждут подключения · 1')).toBeTruthy();
     expect(screen.getByText('Мария К.')).toBeTruthy();
     expect(screen.getByText('7F3A9C21B04E')).toBeTruthy();
+  });
+
+  it('приглашение из офлайн-карточки помечено, обычное — нет', () => {
+    const { rerender } = render(
+      <PendingInvitesList pending={pending([maria])} />,
+    );
+    expect(screen.queryByText(/Офлайн-карточка/)).toBeNull();
+    rerender(
+      <PendingInvitesList pending={pending([{ ...maria, attachToId: 3 }])} />,
+    );
+    expect(screen.getByText(/Офлайн-карточка/)).toBeTruthy();
   });
 
   it('без имени — «Приглашение без имени», а не пустая строка', () => {

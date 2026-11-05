@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { claimTherapyInvite } from './therapy-invite-claim';
 import { miniappStartLink } from '../telegram/miniapp-link';
 import { encryptName } from './client-name';
+import { attachOfflineCard } from './therapy-invite-attach';
 
 // Срок жизни кода-приглашения (аудит 2026-10, T5): колонки expiresAt нет, а
 // миграции ради этого не нужны — возраст считается по createdAt.
@@ -74,14 +75,15 @@ export function isClaimableInvite(
 /**
  * Новое приглашение — всегда новый код. `alias` — имя, которое терапевт ввёл
  * в «Новый клиент»: ложится в clientAlias приглашения, и после подключения
- * карточка клиента одна и называется так, как назвал терапевт (офлайн-карточка
- * при этом не создаётся — её данные висят на -TherapyRelation.id и в связь с
- * аккаунтом клиента не переезжают). Бросает TOO_MANY_INVITES_ERROR.
+ * карточка клиента одна и называется так, как назвал терапевт. `attachToId` —
+ * приглашение из карточки офлайн-клиента: при подключении её данные переезжают
+ * на аккаунт (therapy-invite-attach.ts). Бросает TOO_MANY_INVITES_ERROR.
  */
 export async function createTherapyInvite(
   prisma: PrismaService,
   therapistId: bigint,
   alias?: string,
+  attachToId?: number,
 ): Promise<{ code: string; url: string }> {
   const live = await prisma.therapyRelation.count({
     where: liveInvitesWhere(therapistId),
@@ -92,7 +94,7 @@ export async function createTherapyInvite(
     code = randomCode();
   } while (await prisma.therapyRelation.findUnique({ where: { code } }));
   await prisma.therapyRelation.create({
-    data: { therapistId, code, clientAlias: encryptName(alias) },
+    data: { therapistId, code, clientAlias: encryptName(alias), attachToId },
   });
   return { code, url: inviteUrl(code) };
 }
@@ -117,7 +119,19 @@ export async function joinTherapyAsClient(
   const alreadyConnected = await prisma.therapyRelation.findFirst({
     where: { therapistId: rel.therapistId, clientId, status: 'active' },
   });
-  if (alreadyConnected) return true;
+  // Приглашение из офлайн-карточки: данные карточки переезжают на аккаунт, а
+  // при «уже подключён» сливаются в существующую связь; карточка и приглашение
+  // (каскадом) исчезают.
+  if (alreadyConnected) {
+    if (rel.attachToId != null)
+      await attachOfflineCard(
+        prisma,
+        rel.therapistId,
+        clientId,
+        rel.attachToId,
+      );
+    return true;
+  }
   const otherTherapist = await prisma.therapyRelation.findFirst({
     where: {
       clientId,
@@ -126,5 +140,8 @@ export async function joinTherapyAsClient(
     },
   });
   if (otherTherapist) throw new Error(ALREADY_CONNECTED_ERROR);
-  return claimTherapyInvite(prisma, rel.code, clientId);
+  const claimed = await claimTherapyInvite(prisma, rel.code, clientId);
+  if (claimed && rel.attachToId != null)
+    await attachOfflineCard(prisma, rel.therapistId, clientId, rel.attachToId);
+  return claimed;
 }
