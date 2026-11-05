@@ -254,6 +254,56 @@ jobs:
           path: test-results/
           retention-days: 14
 
+  # Вторая ОС (правило №14: «проверка, живущая в одной среде, слепа к
+  # среде»). Весь CI идёт на Linux с регистрозависимой ФС, владелец запускает
+  # сайт на Mac с регистронезависимой. Инцидент 2026-11-05 (#933): пять пар
+  # файлов, различавшихся только регистром (`todayFeed.ts` / `TodayFeed.tsx`),
+  # ломали на Mac `vite build` («Missing export»), 228 тестов vitest и кабинет
+  # терапевта — на Linux всё было зелёным, а агенты пушили с `--no-verify`,
+  # потому что pre-push хук «краснел из-за окружения». Гейт
+  # check-filename-case закрыл ровно тот класс; эта джоба ловит любое другое
+  # различие платформ (регистр путей, `fs.watch`, порядок `readdir`,
+  # `localhost` → `::1`): что собирается и проходит на Linux, обязано
+  # собираться и проходить и здесь. Без Playwright и без Postgres — цель одна.
+  #
+  # Ставятся все три пакета, как на машине владельца: с корневым node_modules
+  # `../shared` резолвит react вверх в КОРЕНЬ (webapp/vite.config.ts, dedupe),
+  # а в PR-джобе webapp корень пуст — тот класс ошибок там невидим.
+  #
+  # `macos-latest`, а не прибитый образ: джоба моделирует Mac владельца,
+  # который обновляется сам; смену образа увидит alarm, пин — одна строка.
+  macos-build:
+    runs-on: macos-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            webapp/package-lock.json
+            shared/package-lock.json
+      - run: npm ci
+      - run: npm ci --prefix webapp
+      - run: npm ci --prefix shared
+      # Контроль: гейт имён файлов обязан быть зелёным и здесь. Стоит ДО
+      # сборки: пара с одним регистром падает понятной строкой гейта, а не
+      # «Missing export» из Vite.
+      - run: node scripts/check-filename-case.mjs
+      # Без VITE_BOT_USERNAME production-сборка падает (shared/src/build/
+      # requireBotUsername.ts); значение то же, что в browser-smoke и
+      # Dockerfile — их равенство держит bot-username-sources.spec.ts.
+      - name: сборка сайта на регистронезависимой ФС
+        run: npm run build --prefix webapp
+        env:
+          VITE_BOT_USERNAME: SchemeHappensBot
+      - name: webapp vitest (macOS)
+        run: npm test --prefix webapp
+      - name: shared vitest (macOS)
+        run: npm test --prefix shared
+
   # Репетиция restore бэкапа (аудит тестовых практик 2026-08, пункт №1):
   # «бэкап без проверенного restore — не бэкап». До этой джобы restore
   # существовал только как комментарий в хвосте скрипта бэкапа (тогда backup-to-b2.sh) — и
@@ -442,6 +492,7 @@ jobs:
       - mutation-golden-auth
       - mutation-golden-payments
       - browser-smoke
+      - macos-build
       - backup-restore
       - npm-audit
     if: always()
