@@ -2,13 +2,13 @@
 .cd-page { max-width: 1100px; }
 
 /* «Записать» — ds-btn--lg (48/r24, во всю ширину на телефоне); на ноутбуке пилюля по тексту. */
-.cd-write { align-self: flex-start; }
+.cd-write { align-self: stretch; }
 @media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) { .cd-write { width: auto; padding: 0 var(--space-24); } }
 
 /* Шапка (DiaryHeader): на ≥768 герой слева и «Записать» справа в одной строке, фильтры ниже (#925). */
 @media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) {
   .pp-block.cd-head { flex-direction: row; align-items: center; justify-content: space-between; gap: var(--space-24); }
-  .cd-head .pp-hero { flex: 1; min-width: 0; }
+  .cd-head .pp-hero-body { flex: 1; min-width: 0; }
   .cd-head .cd-write { align-self: center; flex-shrink: 0; }
 }
 

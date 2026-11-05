@@ -11,6 +11,10 @@
   padding: 24px 0 28px; margin: 0;
   border-top: 1px solid var(--panel-line); border-bottom: 1px solid var(--panel-line);
 }
+/* Шапка страницы: без линий и верхнего отступа — линии только у блоков посреди
+   страницы (трекер на главной, дыхание, вводная «Паттернов»). Владелец 2026-11-05
+   по «Записям»: линия под статус-баром и блок на полэкрана — «перегружено». */
+.pp-block--head { border: 0; padding: 0 0 4px; gap: 18px; }
 /* Блок-кнопка (весь блок — тап-цель; «кнопка» внутри — span.pp-cta). */
 .pp-block--btn { background: none; border-left: 0; border-right: 0; color: var(--text); text-align: left; cursor: pointer; font-family: var(--sans); }
 .pp-cta { pointer-events: none; }

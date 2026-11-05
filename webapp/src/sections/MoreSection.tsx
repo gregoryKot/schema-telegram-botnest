@@ -43,7 +43,7 @@ export function MoreSection(p: Props) {
 
   return (
     <div className="ds-page cm-page">
-      <header className="pp-block cm-head">
+      <header className="pp-block pp-block--head cm-head">
         <div className="ds-eyebrow">Ещё</div>
         <h1 className="ds-h1">Всё остальное</h1>
       </header>
