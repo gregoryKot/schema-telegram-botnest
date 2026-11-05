@@ -20,15 +20,14 @@
 // `[backup] FAILED <причина>`; ключей и паролей в логе нет по построению
 // (скрипт их не печатает, сюда попадает только хвост его stderr).
 //
-// Наблюдатель за результатом — проба самопроверки backupFreshness
-// (src/infra/self-check/probe-backup-freshness.ts): «последний бэкап в
-// бакете моложе 36 ч». Список REQUIRED_ENV сверяется с ней тестом
-// src/infra/backup-scheduler.spec.ts (правило №4).
+// Наблюдатель — проба backupFreshness (src/infra/self-check/probe-backup-freshness.ts,
+// «последний бэкап моложе 36 ч»); REQUIRED_ENV сверяется с ней тестом (правило №4).
 
 const { spawn: nodeSpawn } = require('node:child_process');
 const { randomBytes } = require('node:crypto');
 const { join } = require('node:path');
 const { pgEnvFromUrl } = require('./pg-url-env.cjs');
+const { stopRun } = require('./backup-lease-release.cjs');
 
 const REQUIRED_ENV = [
   'BACKUP_S3_ENDPOINT',
@@ -205,6 +204,7 @@ function startBackupScheduler(opts = {}) {
   const ctx = {
     env,
     spawn,
+    spawnSync: opts.spawnSync, // только для stop() (backup-lease-release.cjs)
     log,
     now: opts.now ?? (() => new Date()),
     psql: opts.psql ?? makePsql({ spawn, env }),
@@ -223,7 +223,7 @@ function startBackupScheduler(opts = {}) {
     stop() {
       clearTimeout(first);
       clearInterval(timer);
-      ctx.state.child?.kill('SIGTERM');
+      if (ctx.state.child) stopRun(ctx, RELEASE_SQL, LEASE_NAME); // и аренду — синхронно
     },
   };
 }

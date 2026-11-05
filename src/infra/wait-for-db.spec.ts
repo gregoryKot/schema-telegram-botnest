@@ -9,7 +9,12 @@
 // Запускаем реальным процессом (как в контейнере) — это dependency-free .mjs
 // вне сборки Nest, ESM в jest напрямую не импортируется (ср. front-server.spec).
 import { spawn, ChildProcess } from 'child_process';
-import { createServer, Server, AddressInfo } from 'net';
+import { createServer, Server } from 'net';
+import {
+  listenOn,
+  listenWithRetry,
+  reservePort,
+} from '../test-support/ephemeral-port';
 import { join } from 'path';
 
 const WAIT = join(process.cwd(), 'deploy', 'wait-for-db.mjs');
@@ -34,55 +39,16 @@ function runWait(env: Record<string, string>): {
   return { proc, code };
 }
 
-// Поднимает TCP-listener (127.0.0.1) на заданном (или эфемерном) порту.
-// Ошибка биндинга уходит в reject: без обработчика 'error' EADDRINUSE
-// прилетал необработанным событием и валил весь файл невнятным сообщением.
-function listen(port = 0): { server: Server; port: Promise<number> } {
-  const server = createServer((s) => s.end());
-  const bound = new Promise<number>((resolve, reject) => {
-    server.once('error', reject);
-    server.listen(port, '127.0.0.1', () =>
-      resolve((server.address() as AddressInfo).port),
-    );
-  });
-  return { server, port: bound };
-}
-
-// Занимает эфемерный порт и сразу отпускает: ОС выдаёт номер, который прямо
-// сейчас свободен. Нужно там, где порт требуется знать ДО того, как на нём
-// кто-то слушает. Захардкоженная константа (было 58124) делала тест флаки —
-// порт мог держать параллельный jest-воркер или сокет в TIME_WAIT.
-async function reservePort(): Promise<number> {
-  const { server, port } = listen();
-  const p = await port;
-  await new Promise<void>((r) => server.close(() => r()));
-  return p;
+// TCP-listener, который сразу закрывает соединение («БД отвечает»). Поздний
+// бинд и резерв порта — общий хелпер (src/test-support/ephemeral-port.ts).
+const dbStub = () => createServer((s) => s.end());
+function listen(): { server: Server; port: Promise<number> } {
+  const server = dbStub();
+  return { server, port: listenOn(server) };
 }
 
 const url = (port: number) => `postgresql://u:p@127.0.0.1:${port}/db`;
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
-
-// Бинд на ЗАДАННЫЙ порт с бюджетом ретраев. Между reservePort() и этим вызовом
-// номер свободен для всей машины: его может занять и слушатель соседнего
-// jest-воркера, и локальный порт исходящего соединения (таких в прогоне на
-// порядки больше — каждый supertest-запрос берёт эфемерный порт). Одна попытка
-// бинда и делала тест флаки: EADDRINUSE ронял джобу `backend` на посторонних
-// PR (PR #542). Порт освобождается за миллисекунды, поэтому ждём его, а не
-// сдаёмся с первого отказа.
-async function listenWithRetry(port: number, attempts = 20): Promise<Server> {
-  for (let i = 0; ; i++) {
-    const { server, port: bound } = listen(port);
-    try {
-      await bound;
-      return server;
-    } catch (e) {
-      server.close();
-      if (i >= attempts || (e as NodeJS.ErrnoException).code !== 'EADDRINUSE')
-        throw e;
-      await wait(50);
-    }
-  }
-}
 
 describe('wait-for-db (ждём готовности БД перед migrate deploy)', () => {
   const alive: ChildProcess[] = [];
@@ -147,7 +113,7 @@ describe('wait-for-db (ждём готовности БД перед migrate dep
     });
     alive.push(proc);
     await wait(600); // БД ещё «спит» — идут ретраи
-    servers.push(await listenWithRetry(PORT)); // «под встал»
+    servers.push(await listenWithRetry(dbStub, PORT)); // «под встал»
     expect(await code).toBe(0);
   }, 20000);
 

@@ -2,8 +2,7 @@
 // QuickActionId остаются в quickActions.ts (сверка с бэкендом держит
 // фиксированный путь до того файла) — здесь только определения (label/sub/
 // группа/поверхности) и сборка групп «плюса»; quickActions.ts реэкспортирует
-// это, чтобы у потребителей остался один путь импорта: 'utils/quickActions'
-// (файл упирается в свой бейслайн размера, правило №10 CLAUDE.md).
+// это, чтобы у потребителей остался один путь импорта (бейслайн размера, №10).
 //
 // Продуктовое решение (свод дублей шести упражнений, 2026-08): раньше
 // belief_check/phrase_check/flashcard/safe_place/letter_to_self/warm_words
@@ -18,6 +17,7 @@ import type { Tr } from '../practices/quickPractices';
 import type { FocusPractice } from '../today/todayFocus';
 import type { QuickActionId } from './quickActions';
 import type { QuickActionSurface } from './quickActionPrefs';
+import { FLASHCARD_SUB, FLASHCARD_TITLE } from '../flashcard/flashcardNames';
 
 export type QuickActionGroupId = 'case' | 'capture' | 'rate' | 'calm';
 
@@ -101,7 +101,7 @@ export const QUICK_ACTIONS: QuickActionDef[] = [
     'Проверить фразу внутреннего голоса',
     ['tools'],
   ),
-  def('flashcard', 'Схема включилась', '5 шагов чтобы разобраться', ['tools']),
+  def('flashcard', FLASHCARD_TITLE, FLASHCARD_SUB, ['tools']),
   def('safe_place', 'Безопасное место', 'Ресурс в тревожный момент', ['tools']),
   def('letter_to_self', 'Письмо себе', 'Уязвимому Ребёнку', ['tools']),
   def('warm_words', 'Тёплые слова', 'Слова поддержки себе', ['tools']),

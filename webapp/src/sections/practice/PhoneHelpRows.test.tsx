@@ -39,7 +39,7 @@ describe('PhoneHelpRows', () => {
     expect(screen.queryByText(CRISIS_HOTLINE_DISPLAY)).toBeNull();
   });
 
-  it('«Мне плохо» запускает пять шагов и не раскрывает контакты', () => {
+  it('«Мне плохо» запускает карточку и не раскрывает контакты', () => {
     const onSteps = vi.fn();
     render(<PhoneHelpRows onSteps={onSteps} />);
     fireEvent.click(screen.getByText('Мне плохо'));

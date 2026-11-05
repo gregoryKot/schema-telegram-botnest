@@ -5,6 +5,7 @@
 // подсовывая фейковые команды через env (RECOVER_CMD/MIGRATE_CMD/APP_CMD).
 import { spawn, ChildProcess } from 'child_process';
 import { createServer, Server } from 'net';
+import { listenWithRetry, reservePort } from '../test-support/ephemeral-port';
 import { join } from 'path';
 import { existsSync, unlinkSync } from 'fs';
 import { tmpdir } from 'os';
@@ -12,21 +13,9 @@ import { STARTUP_ENV } from '../telegram/start-launch-env';
 
 const ENTRY = join(process.cwd(), 'deploy', 'entrypoint.mjs');
 
-// APP_PORT раньше был захардкожен (58124 и соседи). На общем CI-раннере такой
-// порт может быть занят чужой джобой: фейковое «приложение» тогда не слушает,
-// front проксировать некуда, и тест падает по таймауту — при полностью
-// исправном коде. Просим ядро выдать свободный порт и сразу отпускаем его.
-async function freePort(): Promise<number> {
-  return new Promise((resolve, reject) => {
-    const srv = createServer();
-    srv.on('error', reject);
-    srv.listen(0, '127.0.0.1', () => {
-      const addr = srv.address();
-      const port = typeof addr === 'object' && addr ? addr.port : 0;
-      srv.close(() => (port ? resolve(port) : reject(new Error('нет порта'))));
-    });
-  });
-}
+// APP_PORT раньше был захардкожен (58124 и соседи), потом брался своей копией
+// «занять и отпустить» — номер от ядра, поздний бинд с ретраями: общий хелпер
+// src/test-support/ephemeral-port.ts (#547, TEST_IMPROVEMENT_PLAN п. 3.4).
 
 // Запускает entrypoint с фейковыми командами. front всегда поднимается на PORT=0
 // (эфемерный) — возвращаем промис его порта (из лога) и промис exit-кода.
@@ -53,8 +42,8 @@ function launch(env: Record<string, string>) {
   proc.stderr?.on('data', (d: Buffer) => (logBuf += d.toString()));
   const frontPort = new Promise<number>((resolve, reject) => {
     const timer = setTimeout(
-      () => reject(new Error('front не поднялся за 5с')),
-      5000,
+      () => reject(new Error('front не поднялся за 10с')),
+      10_000,
     );
     let buf = '';
     proc.stderr?.on('data', (d: Buffer) => {
@@ -75,7 +64,11 @@ function launch(env: Record<string, string>) {
   return { proc, frontPort, exit, log: () => logBuf };
 }
 
-async function poll(url: string, want: RegExp, tries = 40): Promise<string> {
+// Бюджет опроса — 10 с (было 4 с): на загруженном раннере второго полного
+// прогона jest (TZ=Australia/Sydney) двум падениям APP_CMD и front его не
+// хватало, тест краснел на посторонних PR. Регресс всё равно краснеет:
+// нужного ответа не будет и через 10 с.
+async function poll(url: string, want: RegExp, tries = 100): Promise<string> {
   for (let i = 0; i < tries; i++) {
     try {
       const res = await fetch(url);
@@ -128,14 +121,14 @@ describe('entrypoint (супервизор старта)', () => {
     const { proc, frontPort } = launch({
       RECOVER_CMD: 'true',
       MIGRATE_CMD: 'exit 1',
-      APP_PORT: String(await freePort()), // апстрима нет
+      APP_PORT: String(await reservePort()), // апстрима нет
     });
     alive.push(proc);
     const port = await frontPort;
     const res = await fetch(`http://127.0.0.1:${port}/`);
     expect(res.status).toBe(200);
     expect(await res.text()).toContain('технические работы');
-  }, 10000);
+  }, 25_000); // front до 10 с + опрос до 10 с
 
   // Щит, волна 3: DB-wait (deploy/wait-for-db.mjs) до этого теста был проверен
   // только как отдельная функция (wait-for-db.spec.ts) — а то, что САМ
@@ -155,13 +148,13 @@ describe('entrypoint (супервизор старта)', () => {
         // отказывает быстро (ECONNREFUSED). Бюджет ожидания БД — короткий
         // (150мс), а проверку маркера ниже делаем с большим запасом сверху,
         // чтобы гонка таймингов не давала ложно-зелёный результат.
-        DATABASE_URL: `postgresql://u:p@127.0.0.1:${await freePort()}/db`,
+        DATABASE_URL: `postgresql://u:p@127.0.0.1:${await reservePort()}/db`,
         DB_WAIT_TIMEOUT_MS: '150',
         DB_WAIT_INTERVAL_MS: '50',
         DB_WAIT_CONNECT_MS: '50',
         RECOVER_CMD: `node -e "require('fs').writeFileSync('${marker}','x')"`,
         MIGRATE_CMD: 'true',
-        APP_PORT: String(await freePort()),
+        APP_PORT: String(await reservePort()),
       });
       alive.push(proc);
       const port = await frontPort;
@@ -178,14 +171,14 @@ describe('entrypoint (супервизор старта)', () => {
     } finally {
       if (existsSync(marker)) unlinkSync(marker);
     }
-  }, 10000);
+  }, 25_000); // front до 10 с + опрос до 10 с
 
   it('приложение крашится → после лимита перезапусков front держит техработы', async () => {
     const { proc, frontPort } = launch({
       RECOVER_CMD: 'true',
       MIGRATE_CMD: 'true',
       APP_CMD: 'exit 1',
-      APP_PORT: String(await freePort()), // апстрим так и не поднимется
+      APP_PORT: String(await reservePort()), // апстрим так и не поднимется
       STARTUP_MAX_FAILS: '2',
       STARTUP_BACKOFF_MS: '10',
     });
@@ -193,7 +186,7 @@ describe('entrypoint (супервизор старта)', () => {
     const port = await frontPort;
     const text = await poll(`http://127.0.0.1:${port}/`, /технические работы/);
     expect(text).toContain('технические работы');
-  }, 10000);
+  }, 25_000); // front до 10 с + опрос до 10 с
 
   // Аудит 2026-10-11 (infra#13): после лимита перезапусков супервизор парковался
   // НАВСЕГДА (процесс жив, restart-policy не срабатывает), и сбой, прошедший
@@ -204,7 +197,7 @@ describe('entrypoint (супервизор старта)', () => {
       RECOVER_CMD: 'true',
       MIGRATE_CMD: 'true',
       APP_CMD: 'echo APP-START >&2; exit 1',
-      APP_PORT: String(await freePort()),
+      APP_PORT: String(await reservePort()),
       STARTUP_MAX_FAILS: '2',
       STARTUP_BACKOFF_MS: '10',
       STARTUP_COOLDOWN_MS: '200',
@@ -224,10 +217,10 @@ describe('entrypoint (супервизор старта)', () => {
     expect(proc.exitCode).toBeNull();
     const text = await poll(`http://127.0.0.1:${port}/`, /технические работы/);
     expect(text).toContain('технические работы');
-  }, 30000);
+  }, 30_000);
 
   it('БД не поднялась за отведённое время → повтор ожидания, а когда БД ожила — старт идёт дальше', async () => {
-    const dbPort = await freePort();
+    const dbPort = await reservePort();
     const marker = join(
       tmpdir(),
       `entrypoint-db-retry-marker-${process.pid}-${Date.now()}`,
@@ -245,7 +238,7 @@ describe('entrypoint (супервизор старта)', () => {
         RECOVER_CMD: `node -e "require('fs').writeFileSync('${marker}','x')"`,
         MIGRATE_CMD: 'true',
         APP_CMD: 'echo APP-START >&2; exec sleep 30',
-        APP_PORT: String(await freePort()),
+        APP_PORT: String(await reservePort()),
       });
       alive.push(proc);
       await frontPort;
@@ -257,42 +250,45 @@ describe('entrypoint (супервизор старта)', () => {
       expect(existsSync(marker)).toBe(false);
       expect(proc.exitCode).toBeNull();
       // БД «ожила»: следующая серия обязана дойти до recover и приложения.
-      db = createServer((c) => c.destroy());
-      await new Promise<void>((r) => db?.listen(dbPort, '127.0.0.1', r));
+      db = await listenWithRetry(
+        () => createServer((c) => c.destroy()),
+        dbPort,
+      );
       await waitLog(log, (l) => /APP-START/.test(l));
       expect(existsSync(marker)).toBe(true);
     } finally {
       db?.close();
       if (existsSync(marker)) unlinkSync(marker);
     }
-  }, 30000);
+  }, 30_000);
 
   it('приложение подняло APP_PORT → front проксирует на него (не техработы)', async () => {
-    const APP_PORT = String(await freePort());
+    const APP_PORT = String(await reservePort());
     const { proc, frontPort } = launch({
       RECOVER_CMD: 'true',
       MIGRATE_CMD: 'true',
       // Приложение слушает process.env.PORT — entrypoint выставляет его в APP_PORT.
       APP_CMD:
-        "node -e \"require('http').createServer((_q,s)=>s.end('APP-LIVE')).listen(process.env.PORT)\"",
+        // Порт отпущен reservePort() и мог быть занят соседом: повтор бинда.
+        "node -e \"const s=require('http').createServer((_q,r)=>r.end('APP-LIVE'));s.on('error',()=>setTimeout(()=>s.listen(process.env.PORT),50));s.listen(process.env.PORT)\"",
       APP_PORT,
     });
     alive.push(proc);
     const port = await frontPort;
     const text = await poll(`http://127.0.0.1:${port}/`, /APP-LIVE/);
     expect(text).toBe('APP-LIVE');
-  }, 10000);
+  }, 25_000); // front до 10 с + опрос до 10 с
 
   it('чистый старт (app завершился 0) → контейнер выходит 0', async () => {
     const { proc, exit } = launch({
       RECOVER_CMD: 'true',
       MIGRATE_CMD: 'true',
       APP_CMD: 'exit 0',
-      APP_PORT: String(await freePort()),
+      APP_PORT: String(await reservePort()),
     });
     alive.push(proc);
     expect(await exit).toBe(0);
-  }, 10000);
+  }, 25_000); // front до 10 с + опрос до 10 с
 
   // Инцидент-класс аудита 2026-10-11 (r2-3#0): `if (shuttingDown || app.signal)
   // return` читал ЛЮБОЙ сигнал у ребёнка как штатную остановку. V8 при heap-OOM
@@ -314,7 +310,7 @@ describe('entrypoint (супервизор старта)', () => {
         RECOVER_CMD: 'true',
         MIGRATE_CMD: 'true',
         APP_CMD: appCmd,
-        APP_PORT: String(await freePort()),
+        APP_PORT: String(await reservePort()),
         STARTUP_MAX_FAILS: '3',
         STARTUP_BACKOFF_MS: '10',
       });
@@ -342,7 +338,7 @@ describe('entrypoint (супервизор старта)', () => {
         RECOVER_CMD: 'true',
         MIGRATE_CMD: 'true',
         APP_CMD: appCmd,
-        APP_PORT: String(await freePort()),
+        APP_PORT: String(await reservePort()),
         STARTUP_MAX_FAILS: '2',
         STARTUP_BACKOFF_MS: '10',
         STARTUP_CRASH_WINDOW_MS: '100',
@@ -375,7 +371,7 @@ describe('entrypoint (супервизор старта)', () => {
     it('три падения за окно → лимит и техработы, процесс жив', async () => {
       const { proc, frontPort, log } = launch({
         ...slowCrash,
-        APP_PORT: String(await freePort()),
+        APP_PORT: String(await reservePort()),
         STARTUP_MAX_FAILS: '3',
       });
       alive.push(proc);
@@ -394,7 +390,7 @@ describe('entrypoint (супервизор старта)', () => {
     it('серии подряд без прогона дольше окна → пауза растёт, а не сбрасывается', async () => {
       const { proc, frontPort, log } = launch({
         ...slowCrash,
-        APP_PORT: String(await freePort()),
+        APP_PORT: String(await reservePort()),
         STARTUP_MAX_FAILS: '2',
         STARTUP_COOLDOWN_MS: '100',
         STARTUP_COOLDOWN_MAX_MS: '10000',
@@ -424,7 +420,7 @@ describe('entrypoint (супервизор старта)', () => {
       RECOVER_CMD: 'true',
       MIGRATE_CMD: 'true',
       APP_CMD: 'echo APP-START >&2; sleep 0.2; exit 1',
-      APP_PORT: String(await freePort()),
+      APP_PORT: String(await reservePort()),
       STARTUP_CRASH_WINDOW_MS: '1000',
       STARTUP_MAX_FAILS: '2',
       STARTUP_MAX_FAILS_HOUR: '3',
@@ -461,7 +457,7 @@ describe('entrypoint (супервизор старта)', () => {
       RECOVER_CMD: 'true',
       MIGRATE_CMD: 'true',
       APP_CMD: `echo "RUN L=$${L} C=$${C} N=$${N}" >&2; exit 1`,
-      APP_PORT: String(await freePort()),
+      APP_PORT: String(await reservePort()),
       STARTUP_MAX_FAILS: '3',
       STARTUP_BACKOFF_MS: '10',
       STARTUP_COOLDOWN_MS: '50',
@@ -486,14 +482,14 @@ describe('entrypoint (супервизор старта)', () => {
       '10/9/0',
     ]);
     expect(out).toMatch(/L=3 [\s\S]*следующая серия через[\s\S]*L=4 /);
-  }, 30000);
+  }, 30_000);
 
   it('контроль: SIGTERM самому entrypoint → приложение гасится, выход 0, без перезапуска и без «убито»', async () => {
     const { proc, frontPort, exit, log } = launch({
       RECOVER_CMD: 'true',
       MIGRATE_CMD: 'true',
       APP_CMD: 'echo APP-START >&2; exec sleep 30',
-      APP_PORT: String(await freePort()),
+      APP_PORT: String(await reservePort()),
       STARTUP_MAX_FAILS: '3',
       STARTUP_BACKOFF_MS: '10',
     });
@@ -505,5 +501,5 @@ describe('entrypoint (супервизор старта)', () => {
     const out = log();
     expect(count(out, /APP-START/g)).toBe(1);
     expect(out).not.toMatch(/убито сигналом|приложение упало/);
-  }, 30000);
+  }, 30_000);
 });

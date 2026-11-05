@@ -1,6 +1,7 @@
 import { FlashcardFrame } from './FlashcardFrame';
 import { CrisisCard } from '../CrisisCard';
 import { hueStyle } from '../../lib/tone';
+import { GROUNDING_BREATHS as BREATHS } from '../../../../shared/src/flashcard/flashcardNames';
 
 interface Props {
   tr: (ty: string, vy: string) => string;
@@ -10,9 +11,7 @@ interface Props {
   onClose: () => void;
 }
 
-const BREATHS = ['Вдох через нос — 4 секунды', 'Задержка — 2 секунды', 'Медленный выдох — 6 секунд'];
-
-/** Первый экран: «Всё правильно» + три вдоха. */
+/** Первый экран: «Всё правильно» + три вдоха (ритм 4-4-6, как у практики дыхания). */
 export function FlashcardGrounding({ tr, historyCount, onContinue, onHistory, onClose }: Props) {
   return (
     <FlashcardFrame onBack={onClose} label="Закрыть" center>

@@ -35,6 +35,12 @@ describe('settingsInfoTexts', () => {
     );
   });
 
+  it('лист пары честен об объёме: партнёр видит и неделю, не «просто число»', () => {
+    const text = plain(settingsInfoTexts(tr('ty')).pair);
+    expect(text).toMatch(/последнюю неделю/);
+    expect(text).not.toMatch(/просто число|Никаких деталей/);
+  });
+
   it('в форме «вы» нет остаточных «ты»-форм', () => {
     const t = settingsInfoTexts(tr('vy'));
     for (const key of ['notify', 'pair', 'therapist'] as const) {

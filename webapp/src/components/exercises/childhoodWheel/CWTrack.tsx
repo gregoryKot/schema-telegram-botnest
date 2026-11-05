@@ -2,7 +2,7 @@ import { hueStyle } from '../../../lib/tone';
 import { useRatingSlider } from '../../../../../shared/src/childhoodWheel/useRatingSlider';
 
 /** Ползунок 0–10. `value` нет — потребность ещё не оценена: ни заливки, ни бегунка.
- * Указатель и клавиатура (стрелки, Home/End, Enter/пробел) — useRatingSlider. */
+ * Клавиатура и указатель — useRatingSlider: палец ставит оценку тапом или сдвигом вбок, вертикаль — прокрутка. */
 export function CWTrack({ value, onChange, hue, label }: {
   value: number | undefined;
   onChange: (v: number) => void;

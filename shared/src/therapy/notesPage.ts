@@ -1,10 +1,7 @@
 import type { TherapistNote } from '../apiTypes';
 
-/**
- * Страница заметок сессий: свежие `notes` (сервер режет по 100) и `total` —
- * сколько всего заметок у клиента. total > notes.length = есть более ранние,
- * не показанные; «Сессия N» считается от total, а не от среза.
- */
+/** Страница заметок сессий: свежие `notes` (сервер режет по 100) и `total` — сколько
+ * всего у клиента; total > notes.length = есть более ранние, «Сессия N» — от total. */
 export interface TherapistNotesPage {
   notes: TherapistNote[];
   total: number;
@@ -28,13 +25,15 @@ export function compareNotesAsc(a: NoteKey, b: NoteKey): number {
   );
 }
 
-/** Заметка, только что сохранённая на сервере: встаёт на своё место, total растёт. */
+/** Сохранённая заметка встаёт на своё место, total растёт. Задним числом раньше среза
+ * её место среди скрытых: в срез не встаёт (иначе «Сессия N» = offset + 1). */
 export function addNoteToPage(
   page: TherapistNotesPage,
   note: TherapistNote,
 ): TherapistNotesPage {
-  const notes = [...page.notes, note].sort((a, b) => compareNotesAsc(b, a));
-  return { notes, total: page.total + 1 };
+  const sorted = [...page.notes, note].sort((a, b) => compareNotesAsc(b, a));
+  const older = hiddenCount(page) > 0 && sorted[sorted.length - 1] === note;
+  return { notes: older ? page.notes : sorted, total: page.total + 1 };
 }
 
 /** Удалённая заметка: total уменьшается, только если она была в показанных. */

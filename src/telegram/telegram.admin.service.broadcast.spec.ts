@@ -150,6 +150,7 @@ describe('TelegramAdminService — /broadcast (только админ)', () => 
       from: { id: 999 },
       message: { text: '/broadcast всем привет' },
     });
+    await service.broadcast.current; // рассылка идёт фоном
     expect(callApi).toHaveBeenCalledWith(
       'sendMessage',
       { chat_id: 1, text: 'всем привет', parse_mode: undefined },
@@ -181,10 +182,67 @@ describe('TelegramAdminService — /broadcast (только админ)', () => 
       from: { id: 999 },
       message: { text: '/broadcast всем привет' },
     });
+    await service.broadcast.current; // рассылка идёт фоном
     expect(accountService.markUserBlocked).toHaveBeenCalledWith(2n);
     expect(warnSpy).toHaveBeenCalledWith('markUserBlocked failed', dbError);
     const summary = ctx.reply.mock.calls.at(-1)![0];
     expect(summary).toContain('1 ошибок');
+  }, 10_000);
+});
+
+// Регресс (docs/open/backend.md): рассылка шла внутри обработчика команды, а
+// Telegraf обрывает его через 90 с (handlerTimeout) — при паузе 50 мс это
+// ~1800 адресатов. Теперь обработчик только запускает рассылку.
+describe('TelegramAdminService — /broadcast идёт фоном', () => {
+  it('обработчик возвращается до конца рассылки; итог приходит после', async () => {
+    process.env.ADMIN_ID = '999';
+    const { service, fakeBot } = makeDeps({
+      accountService: {
+        getBroadcastUserIds: jest.fn().mockResolvedValue([1n]),
+      },
+    });
+    service.onModuleInit();
+    let deliver!: () => void;
+    fakeBot.telegram.callApi.mockImplementationOnce(
+      () => new Promise<void>((r) => (deliver = r)),
+    );
+    const ctx = await runCommand(fakeBot, 'broadcast', {
+      from: { id: 999 },
+      message: { text: '/broadcast привет' },
+    });
+    // отправка ещё висит, а обработчик уже вернулся
+    expect(service.broadcast.current).not.toBeNull();
+    expect(ctx.reply.mock.calls.flat().join()).not.toContain('Готово');
+    await new Promise((r) => setImmediate(r));
+    deliver();
+    await service.broadcast.current;
+    expect(ctx.reply.mock.calls.at(-1)![0]).toContain('1 доставлено');
+    expect(service.broadcast.current).toBeNull();
+  }, 10_000);
+
+  it('вторая /broadcast, пока идёт первая, не запускает рассылку повторно', async () => {
+    process.env.ADMIN_ID = '999';
+    const { service, fakeBot } = makeDeps({
+      accountService: {
+        getBroadcastUserIds: jest.fn().mockResolvedValue([1n]),
+      },
+    });
+    service.onModuleInit();
+    let deliver!: () => void;
+    fakeBot.telegram.callApi.mockImplementationOnce(
+      () => new Promise<void>((r) => (deliver = r)),
+    );
+    const cmd = { from: { id: 999 }, message: { text: '/broadcast привет' } };
+    await runCommand(fakeBot, 'broadcast', cmd);
+    const second = await runCommand(fakeBot, 'broadcast', cmd);
+    expect(second.reply).toHaveBeenCalledWith(
+      expect.stringContaining('Предыдущая рассылка ещё идёт'),
+    );
+    await new Promise((r) => setImmediate(r));
+    deliver();
+    await service.broadcast.current;
+    // контроль: одна отправка на одного адресата, не две
+    expect(fakeBot.telegram.callApi).toHaveBeenCalledTimes(1);
   }, 10_000);
 });
 
@@ -228,6 +286,7 @@ describe('TelegramAdminService — /broadcast на настоящем AccountSer
       from: { id: 999 },
       message: { text: '/broadcast привет' },
     });
+    await service.broadcast.current; // рассылка идёт фоном
     const sentTo = fakeBot.telegram.callApi.mock.calls.map(
       (c) => (c[1] as { chat_id: number }).chat_id,
     );
@@ -256,6 +315,7 @@ describe('TelegramAdminService — /broadcast на настоящем AccountSer
       from: { id: 999 },
       message: { text: '/broadcast привет' },
     });
+    await service.broadcast.current; // рассылка идёт фоном
     expect(accountService.markUserBlocked).toHaveBeenCalledTimes(1);
     expect(accountService.markUserBlocked).toHaveBeenCalledWith(ABOVE_2_53);
   }, 10_000);

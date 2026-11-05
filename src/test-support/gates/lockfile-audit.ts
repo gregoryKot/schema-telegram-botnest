@@ -17,6 +17,7 @@
 import { lockDirectory, type Coverage } from './dependabot-coverage';
 import { joinContinuations, runScript } from './step-script';
 import { jobBlocks } from './workflow-yaml';
+import { GUARD } from './yaml-guard-keys';
 
 /** Уровни, на которых high/critical валят шаг. critical и none — слабее. */
 const GATING_LEVELS = new Set(['info', 'low', 'moderate', 'high']);
@@ -86,9 +87,6 @@ export function prefixDirectory(cmd: string): string {
 const ESCAPE =
   /(?:^|[;&|(]\s*)(?:exit|return|exec|trap)\b|\bset\s[^;&|\n]*(?:\+[a-zA-Z]*e|\+o\s+errexit)/;
 
-/** `continue-on-error` с любым значением, кроме `false`: `${{ true }}` тоже глушит. */
-const SOFT_FAIL = /^\s*continue-on-error:(?!\s*false\s*(?:#.*)?$)/m;
-
 /**
  * Команда audit, которой шаг гейтит, или null. Засчитывается обёртка или
  * `npm audit` (не `fix`), уровень не слабее high (без флага npm валит на
@@ -108,12 +106,14 @@ export function gatingAuditCall(step: string): string | null {
     .map((l) => l.trim())
     .filter((l) => l && !l.startsWith('#'));
   if (commands.length !== 1 || ESCAPE.test(commands[0])) return null;
+  // `${{ … }}` разворачивается до shell и может принести `|| true`.
+  if (commands[0].includes('${{')) return null;
   const calls = auditCalls(commands[0]);
   if (calls.length !== 1 || !calls[0].sole) return null;
   const level = /--audit-level[ =]["']?(\w+)/.exec(calls[0].call)?.[1];
   if (level !== undefined && !GATING_LEVELS.has(level)) return null;
-  if (SOFT_FAIL.test(step) || /^\s*shell:/m.test(step)) return null;
-  if (/^(?: {8})?if:/m.test(step)) return null;
+  if (GUARD.softFail.test(step) || GUARD.shell.test(step)) return null;
+  if (GUARD.stepIf.test(step)) return null;
   return calls[0].call;
 }
 
@@ -135,13 +135,13 @@ const steps = (job: string): string[] =>
 export function auditedDirectories(ciText: string): string[] {
   const dirs = new Set<string>();
   // `defaults: run: shell:` воркфлоу — свой shell у каждого шага.
-  if (/^\s+shell:/m.test(ciText.split(/^jobs:/m)[0])) return [];
+  if (GUARD.shell.test(ciText.split(/^jobs:/m)[0])) return [];
   for (const job of Object.values(jobBlocks(ciText))) {
     // Условная, неглушащаяся или со своим shell на уровне джобы — то же,
     // что у шага.
     const header = job.split(/^ {4}steps:/m)[0];
-    if (/^ {4}if:/m.test(header) || SOFT_FAIL.test(header)) continue;
-    if (/^\s+shell:/m.test(header)) continue;
+    if (GUARD.jobIf.test(header) || GUARD.softFail.test(header)) continue;
+    if (GUARD.shell.test(header)) continue;
     for (const step of steps(job)) {
       const call = gatingAuditCall(step);
       if (call !== null) dirs.add(prefixDirectory(call));

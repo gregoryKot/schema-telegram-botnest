@@ -83,7 +83,7 @@
 .ds-card--hover { cursor: pointer; transition: border-color .12s, box-shadow .12s; }
 .ds-card--hover:hover { border-color: var(--line-hover); box-shadow: 0 12px 30px -18px rgba(60, 40, 20, .4); }
 .ds-card--panel { background: var(--panel); border-color: var(--panel-line); color: var(--on-panel); }
-.ds-card--accent { background: var(--accent); border-color: var(--accent); color: #fff; }
+.ds-card--accent { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
 /* На акцентной заливке подпись, подпись-строка и ссылка — светлые (ниже они красятся для бумаги). */
 .ds-card--accent .ds-label, .ds-card--accent .ds-sub, .ds-card--accent .ds-link { color: var(--on-accent); }
 .ds-card--accent .ds-label, .ds-card--accent .ds-sub { opacity: .85; }
@@ -149,7 +149,7 @@ button.ds-list-row, a.ds-list-row { width: 100%; box-sizing: border-box; border:
 .ds-btn--lg { height: auto; min-height: 48px; border-radius: 24px; font-size: 15px; } /* на телефоне во всю колонку — в блоке ≤767; на компьютере по тексту */
 .ds-btn--secondary { background: var(--surface); color: var(--text); border: 1px solid var(--line-strong); }
 .ds-btn--secondary:hover { background: var(--surface); border-color: var(--text-faint); }
-.ds-btn--accent { background: var(--accent); color: #fff; }
+.ds-btn--accent { background: var(--accent); color: var(--on-accent); }
 .ds-btn--accent:hover { background: var(--accent-hi); }
 .ds-btn--icon { width: 40px; height: 40px; padding: 0; border-radius: 50%; background: transparent; color: var(--text-faint); border: 1px solid var(--line-strong); }
 .ds-btn--icon:hover { background: var(--paper-tint); color: var(--text); }
@@ -205,7 +205,7 @@ button.ds-list-row, a.ds-list-row { width: 100%; box-sizing: border-box; border:
 .ds-badge { display: inline-block; border-radius: 10px; padding: 3px 10px; font-size: 12px; font-weight: 600; white-space: nowrap; background: var(--paper-sunk); color: var(--text-sub); }
 .ds-badge--ok { background: var(--ok-bg); color: var(--ok-ink); }
 .ds-badge--warn { background: var(--warn-bg); color: var(--warn-ink); }
-.ds-badge--accent { background: var(--accent); color: #fff; }
+.ds-badge--accent { background: var(--accent); color: var(--on-accent); }
 .ds-badge--line { background: var(--line); color: var(--text-sub); }
 .ds-count { font-size: 11px; background: var(--line-input); border-radius: 8px; padding: 1px 6px; margin-left: 6px; color: var(--text-sub); }
 .ds-avatar {

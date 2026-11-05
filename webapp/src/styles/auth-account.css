@@ -16,7 +16,7 @@
 .aa-methods > * + * { border-top: 1px solid var(--paper-sunk); }
 .aa-row { display: flex; align-items: center; gap: 14px; padding: 14px 0; min-height: 44px; }
 .aa-row-main { display: flex; align-items: center; gap: 14px; flex: 1; min-width: 0; }
-.aa-row-text { min-width: 0; }
+.aa-row-text { flex: 1; min-width: 0; }
 .aa-row-title { font-size: 15px; font-weight: 700; }
 .aa-row-sub { font-size: 12px; color: var(--text-faint); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 /* Причина серой «Отвязать» переносится, а не режется многоточием: на телефоне её было не прочесть (QA мобильной 2026-11, М9). */

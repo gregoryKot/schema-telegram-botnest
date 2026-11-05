@@ -47,14 +47,11 @@
 - **Владельцу, в env прода** (до переезда — Amvera, после — `PROD_ENV`): если
   `ALLOWED_ORIGINS` задан явно и содержит
   `kotlarewski.*` — убрать; проверка env теперь предупреждает об этом (F-2).
-- Ссылка «написать в Telegram» (`tg://user?id=${partnerId}` в
-  `shared/src/utils/therapistContact.ts:86`,
-  `PartnerCard.tsx`)
-  собирается из id связи, а у веб-партнёра (Google/VK/MAX/почта) это не
-  Telegram-id — ссылка ведёт в никуда. Поправка аудита 2026-10: веб-id лежат в
-  [1e15, 9e15), ниже 2^53 (100 000 сэмплов `src/auth/user-id-range.ts`) — прежняя
-  запись «[1e18, 9e18)» была неверна, ссылка в никуда от этого не меняется.
-  Нужно решение: прятать ссылку, если у партнёра нет Telegram.
+- Ссылка «Написать» партнёру (`tg://user?id=${partner.partnerTelegramId}` в
+  `webapp/src/components/settingsSheet/PartnerCard.tsx`) собирается из id связи,
+  а у веб-партнёра (Google/VK/MAX/почта, id в [1e15, 9e15)) это не Telegram-id —
+  ссылка ведёт в никуда. Кабинет терапевта уже прячет такую ссылку
+  (`telegramChatUrl` в `shared/src/utils/therapistContact.ts`), карточка пары — нет.
 - Мёртвое поле `req.telegramUserId = Number(…)` (`src/api/telegram-auth.guard.ts:45`,
   `src/api/init-data-paths.ts:75,114`; тип — `src/types/express.d.ts:13`,
   `src/api/request-utils.ts:9`, `telegramUserId: number` в семи контроллерах):
@@ -84,19 +81,6 @@
   CSRF-заголовок, подписанный merge-токен, вызывающий обязан быть целевым
   аккаунтом (`assertMergeCaller`), TOTP поглощаемого. `ticket/start`: только
   троттлинг и 401 для `intent: 'link'` без сессии; выдаёт device-код.
-- **Зависимость `@tma.js/init-data-node` без потребителей.** После единого
-  верификатора `src/auth/telegram-init-data.ts` пакет не импортируют ни рабочий
-  код, ни тесты (`grep -rn tma.js src test` пуст; инвариант (б) в
-  `telegram-init-data.invariants.spec.ts` не даст вернуть импорт). Убрать из
-  `package.json` и перегенерировать `package-lock.json` (`npm install` у
-  владельца/CI-агента), прогнать `knip`.
-- **`POST /api/auth/telegram/webapp` отвечает обычным 401 без `suspicious_initdata`
-  и без кода `initdata_expired`** (`auth-account.controller.ts`, ошибка
-  верификатора превращается в `UnauthorizedException(message)`), в отличие от
-  гарда (`rejectInitData`). Осознанно не включено в починке верификатора: это
-  новая сигнализация (правило №14, троттлинг `initDataAlerts` уже есть) и
-  отдельный PR (правило №20). Подделка подписи на этом входе сегодня не будит
-  админа.
 - **`src/auth/telegram-init-data.ts` вне мутационной зоны `golden-auth`, пол
   `auth.service.ts` не пересчитан.** Верификатор подписи ушёл из `auth.service.ts`
   (пол 94.29 в `scripts/mutation-golden-auth-baseline.json`) в новый файл; прогон
@@ -144,14 +128,6 @@
   (HMAC под потерянным ключом) — это мусор, а не утечка; удалять ли такие
   строки (их не отличить от строк текущего ключа без перебора ключей) — не
   решено.
-- **Телефон с кодом страны и без него склеиваются.** Нормализация телефона
-  (`normalizeContact` в `src/booking/client-key.ts`) оставляет только цифры, и
-  ведущий `+` теряется: `+49 5123 4567` и `(495) 123-45-67` дают один ключ
-  `4951234567`, то есть одну комнату. Так было и до починки; занять чужую
-  комнату так может только владелец подходящего иностранного номера. По
-  правилу «расклейка безопасна, склейка — нет» лечится сохранением ведущего `+`
-  в нормальной форме (тогда `+7…` и `7…` разойдутся — худший случай: новая
-  комната вместо прежней).
 - **Нерасшифровываемые брони шумят на каждом старте.** Проход ключей
   (`collectClaims` в `src/booking/client-key-rekey.service.ts`) расшифровывает
   контакт и ссылку каждой живой брони со ссылкой; бронь под ключом, которого в
