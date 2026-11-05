@@ -15,6 +15,8 @@
 // Выросло из device-link (RFC 8628). Второго механизма рядом не заводим —
 // привязка аккаунта это тот же билет с `intent: 'link'` (CLAUDE.md, «одна
 // механика — один компонент»); тяжёлая часть привязки — в ticket-link.service.
+// Передача сессии из мессенджера в браузер — тоже он, `intent: 'handoff'`
+// (ticket-handoff.ts).
 import {
   BadRequestException,
   Injectable,
@@ -29,6 +31,7 @@ import { newUserCode, staleTicketsWhere } from './ticket-user-code';
 import { claimApproval, loadForApproval } from './ticket-approval';
 import { assertTicketViewer, claimTicketView } from './ticket-viewer';
 import { LoginTicketReport } from './login-ticket.report';
+import { issueHandoff, type HandoffInput } from './ticket-handoff';
 import type { StartTicketInput } from './ticket-start.types';
 import type {
   TicketForConfirm,
@@ -91,6 +94,11 @@ export class LoginTicketService {
     };
   }
 
+  /** Сессия уже есть (сайт внутри Telegram/MAX): билет сразу подтверждён. */
+  handoff(input: HandoffInput) {
+    return issueHandoff(this.prisma, input);
+  }
+
   /**
    * Живой билет по короткому коду. Бросает, если его нет, он погашен или
    * протух — или (viaTelegramId задан) карточку показали не этому человеку.
@@ -136,6 +144,8 @@ export class LoginTicketService {
         this.report.step('too_late', row.hostId);
       return null;
     }
+    // Короткий код handoff не показывают: пришедший с ним — перебор.
+    if (row.intent === 'handoff') return null;
     // Карточку закрепляем за первым увидевшим; остальным код «не найден».
     const mine = await claimTicketView(
       this.prisma,

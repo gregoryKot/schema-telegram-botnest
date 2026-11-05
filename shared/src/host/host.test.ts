@@ -30,8 +30,6 @@ function fakeTelegram(overrides: Record<string, unknown> = {}) {
     disableVerticalSwipes: vi.fn(),
     enableVerticalSwipes: vi.fn(),
     openLink: vi.fn(),
-    addToHomeScreen: vi.fn(),
-    checkHomeScreenStatus: vi.fn(),
     onEvent: vi.fn((e: string, cb: Listener) => {
       if (!events.has(e)) events.set(e, new Set());
       events.get(e)!.add(cb);
@@ -223,9 +221,8 @@ describe('адаптер Telegram', () => {
     fakeTelegram({ platform: 'android' });
     const host = createTelegramHost();
     expect(host.platform).toBe('android');
-    fakeTelegram({ platform: 'ios', addToHomeScreen: undefined });
+    fakeTelegram({ platform: 'ios' });
     expect(host.platform).toBe('ios');
-    expect(host.capabilities.homeScreen).toBe(false);
   });
 
   it('пустая initData не роняет заголовок', () => {
@@ -341,27 +338,10 @@ describe('адаптер Telegram', () => {
     );
   });
 
-  it('значок на домашний экран: добавление, статус и подписка', () => {
-    const { webApp, emit } = fakeTelegram();
-    const host = createTelegramHost();
-    expect(host.capabilities.homeScreen).toBe(true);
-    host.homeScreen.add();
-    expect(webApp.addToHomeScreen).toHaveBeenCalled();
-
-    const added = vi.fn();
-    const off = host.homeScreen.onAdded(added);
-    emit('homeScreenAdded');
-    expect(added).toHaveBeenCalled();
-    off();
-    emit('homeScreenAdded');
-    expect(added).toHaveBeenCalledTimes(1);
-  });
-
   it('старый клиент без новых методов не роняет вызовы', () => {
     fakeTelegram({
       HapticFeedback: undefined,
       BackButton: undefined,
-      addToHomeScreen: undefined,
       disableVerticalSwipes: undefined,
       enableVerticalSwipes: undefined,
     });
@@ -369,14 +349,12 @@ describe('адаптер Telegram', () => {
     expect(host.capabilities).toEqual({
       haptics: false,
       backButton: false,
-      homeScreen: false,
       close: true,
     });
     expect(() => {
       host.expand();
       host.haptic.tap();
       host.backButton.setVisible(true);
-      host.homeScreen.add();
       host.backButton.onClick(vi.fn())();
       host.setVerticalSwipes(false);
       host.setVerticalSwipes(true);
@@ -428,12 +406,6 @@ describe('адаптер Telegram', () => {
     const offInsets = host.onInsetsChange(cb);
     expect(() => offInsets()).not.toThrow();
     expect(cb).not.toHaveBeenCalled();
-
-    const statusCb = vi.fn();
-    host.homeScreen.checkStatus(statusCb);
-    expect(statusCb).not.toHaveBeenCalled();
-    const offAdded = host.homeScreen.onAdded(vi.fn());
-    expect(() => offAdded()).not.toThrow();
 
     expect(() => {
       host.ready();
@@ -499,11 +471,10 @@ describe('адаптер MAX', () => {
     expect(createMaxHost().capabilities.haptics).toBe(false);
   });
 
-  it('close и homeScreen у площадки нет, backButton есть', () => {
+  it('close у площадки нет, backButton есть', () => {
     fakeMax();
     const host = createMaxHost();
     expect(host.capabilities.close).toBe(false);
-    expect(host.capabilities.homeScreen).toBe(false);
     expect(host.capabilities.backButton).toBe(true);
   });
 
@@ -624,16 +595,12 @@ describe('адаптер MAX', () => {
       host.haptic.error();
       host.backButton.setVisible(true);
       host.backButton.onClick(vi.fn())();
-      host.homeScreen.add();
-      host.homeScreen.checkStatus(vi.fn());
-      host.homeScreen.onAdded(vi.fn())();
       host.setVerticalSwipes(false);
       host.setVerticalSwipes(true);
     }).not.toThrow();
     expect(host.capabilities).toEqual({
       haptics: false,
       backButton: false,
-      homeScreen: false,
       close: false,
     });
   });
@@ -643,7 +610,6 @@ describe('адаптер браузера', () => {
   it('чего в браузере нет — помечено в capabilities, а не притворяется', () => {
     const host = createWebHost();
     expect(host.capabilities.backButton).toBe(false);
-    expect(host.capabilities.homeScreen).toBe(false);
     expect(host.capabilities.close).toBe(false);
   });
 
@@ -706,7 +672,7 @@ describe('адаптер браузера', () => {
     expect(document.body.contains(anchor)).toBe(false);
   });
 
-  it('без вибрации вызовы тихие, статус значка — «не поддерживается»', () => {
+  it('без вибрации вызовы тихие', () => {
     const host = createWebHost();
     expect(host.capabilities.haptics).toBe(false);
     expect(() => {
@@ -715,14 +681,10 @@ describe('адаптер браузера', () => {
       host.close();
       host.haptic.error();
       host.backButton.setVisible(true);
-      host.homeScreen.add();
       host.onInsetsChange(vi.fn())();
       host.setVerticalSwipes(false);
       host.setVerticalSwipes(true);
     }).not.toThrow();
-    const status = vi.fn();
-    host.homeScreen.checkStatus(status);
-    expect(status).toHaveBeenCalledWith('unsupported');
   });
 
   function mockUserAgent(ua: string) {
@@ -769,12 +731,10 @@ describe('адаптер браузера', () => {
     expect(vibrate).toHaveBeenNthCalledWith(4, [30, 40, 30]);
   });
 
-  it('backButton.onClick и homeScreen.onAdded — браузер отдаёт заглушки, отписка не падает', () => {
+  it('backButton.onClick — браузер отдаёт заглушку, отписка не падает', () => {
     const host = createWebHost();
     const offClick = host.backButton.onClick(vi.fn());
     expect(() => offClick()).not.toThrow();
-    const offAdded = host.homeScreen.onAdded(vi.fn());
-    expect(() => offAdded()).not.toThrow();
   });
 
   it('SSR-заглушки: без глобального window изоляция не падает и возвращает нейтральные значения', () => {

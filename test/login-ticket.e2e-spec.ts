@@ -110,6 +110,31 @@ describe('e2e smoke: билет входа и привязка аккаунта 
     expect(res.status).toBe(401);
   });
 
+  it('handoff: сессия из мессенджера уходит в браузер одним опросом, повтор — expired', async () => {
+    const noAuth = await call(srv().post('/api/auth/ticket/handoff')).send({});
+    expect(noAuth.status).toBe(401);
+
+    const issued = await call(
+      srv().post('/api/auth/ticket/handoff'),
+      tokenA,
+    ).send({ hostId: 'telegram' });
+    expect(issued.status).toBe(200);
+    expect(issued.body.deviceCode).toHaveLength(64);
+    expect(issued.body.expiresIn).toBe(120);
+    expect(issued.body).not.toHaveProperty('userCode');
+
+    const poll = () =>
+      call(srv().post('/api/auth/ticket/poll')).send({
+        deviceCode: issued.body.deviceCode,
+      });
+    const first = await poll();
+    expect(first.status).toBe(200);
+    expect(first.body.status).toBe('linked');
+    expect(typeof first.body.accessToken).toBe('string');
+
+    expect((await poll()).body.status).toBe('expired');
+  });
+
   it('чужой код не подсматривается: preview на выдуманный код — отказ', async () => {
     const res = await call(srv().post('/api/auth/ticket/preview'), tokenB).send(
       {

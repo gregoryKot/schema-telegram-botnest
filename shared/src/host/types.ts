@@ -8,8 +8,6 @@
 
 export type HostId = 'telegram' | 'max' | 'web';
 
-export type HomeScreenStatus = 'unsupported' | 'unknown' | 'added' | 'missed';
-
 export interface HostUser {
   /** Строкой: у Telegram число, у остальных площадок формат свой. */
   id: string;
@@ -22,8 +20,6 @@ export interface HostCapabilities {
   haptics: boolean;
   /** Хост даёт свою кнопку «назад» (иначе — история браузера). */
   backButton: boolean;
-  /** Хост умеет сам поставить значок на домашний экран. */
-  homeScreen: boolean;
   /** Приложение можно закрыть изнутри (в браузере вкладку не закрыть). */
   close: boolean;
 }
@@ -57,13 +53,6 @@ export interface HostBackButton {
   setVisible(visible: boolean): void;
   /** Возвращает отписку. */
   onClick(cb: () => void): () => void;
-}
-
-export interface HostHomeScreen {
-  add(): void;
-  checkStatus(cb: (status: HomeScreenStatus) => void): void;
-  /** Возвращает отписку. */
-  onAdded(cb: () => void): () => void;
 }
 
 export interface HostBridge {
@@ -115,5 +104,4 @@ export interface HostBridge {
 
   readonly haptic: HostHaptic;
   readonly backButton: HostBackButton;
-  readonly homeScreen: HostHomeScreen;
 }

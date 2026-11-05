@@ -141,8 +141,6 @@ export function createMaxHost(): HostBridge {
             w.platform ?? launchParams()['WebAppPlatform'] ?? '',
           ),
         backButton: !!w?.BackButton,
-        // Своего значка на домашний экран у площадки нет.
-        homeScreen: false,
         // Закрыть мини-апп изнутри нельзя — только предупреждение о закрытии.
         close: false,
       };
@@ -235,12 +233,6 @@ export function createMaxHost(): HostBridge {
         bb.onClick(cb);
         return () => bb.offClick(cb);
       },
-    },
-
-    homeScreen: {
-      add: () => {},
-      checkStatus: (cb) => cb('unsupported'),
-      onAdded: () => () => {},
     },
   };
 }

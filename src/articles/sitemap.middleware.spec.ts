@@ -45,7 +45,7 @@ describe('SitemapMiddleware', () => {
     );
     const xml = res.send.mock.calls[0][0] as string;
     expect(xml.startsWith('<?xml version="1.0" encoding="UTF-8"?>')).toBe(true);
-    for (const p of ['/', '/articles', '/privacy', '/offer']) {
+    for (const p of ['/', '/articles', '/install', '/privacy', '/offer']) {
       expect(xml).toContain(
         `<url><loc>https://schemehappens.ru${p}</loc></url>`,
       );

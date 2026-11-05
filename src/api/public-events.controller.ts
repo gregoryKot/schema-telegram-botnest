@@ -7,17 +7,13 @@ import {
   isGameEvent,
   sanitizeGameMeta,
 } from '../analytics/game-events.constants';
+import {
+  PUBLIC_HOME_SCREEN_ACTIONS,
+  PUBLIC_HOME_SCREEN_SURFACES,
+} from './public-home-screen';
 import { PublicEventDto } from './dto/public-event.dto';
 import { sanitizePublicCrisisMeta } from './public-crisis.sanitize';
 import { isQuizId, quizResultIdSet } from '../quiz/quiz-registry';
-
-// Анонимному лендингу (правило №5/№14) — ТОЛЬКО 'add'/'added', их шлёт
-// AppInstallSection.tsx. 'shown'/'later'/'never' — состояния воронки, аноним
-// не обязан быть честным. Расширять — сознательное решение, не копия auth-пути.
-const PUBLIC_HOME_SCREEN_ACTIONS: ReadonlySet<string> = new Set([
-  'add',
-  'added',
-]);
 
 // Анонимная аналитика (правило №8): мини-тест, клик на сайт практики, блок
 // установки, игра (game/, правило №5/№14), кризисная карточка записи — событие
@@ -74,11 +70,12 @@ export class PublicEventsController {
     if (name === 'home_screen_offer') {
       const action = meta?.action;
       const surface = meta?.surface;
-      // Публичный путь принимает ТОЛЬКО лендинг (site_landing): остальные
-      // поверхности авторизованы — POST /api/event (HOME_SCREEN_SURFACE_SET).
+      // Публичный путь принимает ТОЛЬКО лендинг и страницу установки:
+      // остальные поверхности авторизованы — POST /api/event.
       return typeof action === 'string' &&
         PUBLIC_HOME_SCREEN_ACTIONS.has(action) &&
-        surface === 'site_landing'
+        typeof surface === 'string' &&
+        PUBLIC_HOME_SCREEN_SURFACES.has(surface)
         ? { action, surface }
         : null;
     }

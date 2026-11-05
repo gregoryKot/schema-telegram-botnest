@@ -1,46 +1,46 @@
 import type { CSSProperties, ReactNode } from 'react';
 import { getHost } from './index';
-import { ADD_ICON_HOP_URL, homeScreenPlatform } from './homeScreen';
+import { homeScreenPlatform } from './homeScreen';
 
-// Единая кнопка «добавить значок на экран» внутри мессенджера — один
-// компонент на оба фронтенда и все места показа (правила №3/№11: карточка
-// «Сегодня», настройки, шаг онбординга). Вид задаёт `className` фронтенда.
+// Единая кнопка «установить приложение» внутри мессенджера (карточка «Сегодня»,
+// настройки, страница /install). Вид задаёт `className` фронтенда. Ведёт на
+// наш сайт (`href`) во внешнем браузере, где ставится настоящее PWA, а не
+// ярлык мини-аппа, привязанный к мессенджеру.
 //
-// Android — нативный WebApp.addToHomeScreen(), работает штатно.
-// iOS — НАСТОЯЩАЯ ссылка <a target="_blank">, а не postEvent: на устройстве
-// пользователя молча умирают и addToHomeScreen (x-safari-https в клиенте), и
-// openLink (гейт lastTouchTimestamp в web_app_open_link). Тап по якорю идёт
-// через навигационную политику WKWebView — совсем другой механизм, который
-// Telegram обрабатывает как внешнюю навигацию и открывает браузер.
-// Ссылка ведёт на прыжковую страницу нашего домена (add-icon.html), она
-// переправляет на t.me-инструкцию добавления значка.
+// Android — openLink: документированный путь Telegram «открыть во внешнем
+// браузере». Остальное (iOS и прочее) — НАСТОЯЩАЯ ссылка <a target="_blank">:
+// на iOS openLink молча умирает (гейт lastTouchTimestamp в web_app_open_link),
+// а тап по якорю идёт через навигационную политику WKWebView, которую Telegram
+// обрабатывает как внешнюю навигацию и открывает браузер.
 export function AddHomeScreenButton({
+  href,
   children,
   onActivated,
   className,
   style,
   linkStyle,
 }: {
+  href: string;
   children: ReactNode;
-  /** Побочные действия при активации (снуз, аналитика, согласие). */
+  /** Побочные действия при активации (снуз, аналитика). */
   onActivated?: () => void;
   className?: string;
   style?: CSSProperties;
-  /** Дополнительный стиль только для iOS-варианта (якорь вместо кнопки). */
+  /** Дополнительный стиль только для варианта-якоря (вместо кнопки). */
   linkStyle?: CSSProperties;
 }) {
   const host = getHost();
   const platform = homeScreenPlatform(host.platform);
 
-  if (platform === 'android' && host.capabilities.homeScreen) {
+  if (platform === 'android' && host.id !== 'web') {
     return (
       <button
         type="button"
         className={className}
         style={style}
         onClick={() => {
-          // Нативный вызов ПЕРВЫМ, в жесте; побочные действия после.
-          host.homeScreen.add();
+          // Открытие браузера ПЕРВЫМ, в жесте; побочные действия после.
+          host.openLink(href);
           onActivated?.();
         }}
       >
@@ -52,7 +52,7 @@ export function AddHomeScreenButton({
   return (
     <a
       className={className}
-      href={ADD_ICON_HOP_URL}
+      href={href}
       target="_blank"
       rel="noopener noreferrer"
       onClick={() => onActivated?.()}

@@ -15,6 +15,14 @@ export interface SiteInstallMetrics {
    * кликов браузера, а не подтверждённых людей.
    */
   landing: { add30: number; added30: number };
+  /** Страница /install (аноним): shown = открыли, handoff* = вход по ссылке. */
+  install: {
+    shown30: number;
+    handoffOk30: number;
+    handoffFailed30: number;
+    add30: number;
+    added30: number;
+  };
 }
 
 const isEmpty = (m: SiteInstallMetrics): boolean =>
@@ -22,7 +30,8 @@ const isEmpty = (m: SiteInstallMetrics): boolean =>
   m.banner.add30 === 0 &&
   m.banner.added30 === 0 &&
   m.landing.add30 === 0 &&
-  m.landing.added30 === 0;
+  m.landing.added30 === 0 &&
+  Object.values(m.install).every((n) => n === 0);
 
 /** Текстовый блок для /stats. Чистая функция. */
 export function formatSiteInstallMetrics(m: SiteInstallMetrics): string {
@@ -30,7 +39,7 @@ export function formatSiteInstallMetrics(m: SiteInstallMetrics): string {
     return '📲 <b>Установка с сайта</b>: за 30 дней никто не ставил.';
   }
   const lines = [`📲 <b>Установка с сайта</b> (за месяц)`];
-  const { banner, landing } = m;
+  const { banner, landing, install } = m;
   if (banner.shown30 > 0 || banner.add30 > 0 || banner.added30 > 0) {
     lines.push(
       `Баннер в кабинете: развернули инструкцию ${banner.shown30} · ` +
@@ -40,6 +49,13 @@ export function formatSiteInstallMetrics(m: SiteInstallMetrics): string {
   if (landing.add30 > 0 || landing.added30 > 0) {
     lines.push(
       `Лендинг: нажали установить ${landing.add30} · поставили ${landing.added30}`,
+    );
+  }
+  if (Object.values(install).some((n) => n > 0)) {
+    lines.push(
+      `Страница установки: открыли ${install.shown30} · вошли по ссылке из ` +
+        `мессенджера ${install.handoffOk30} (не вышло ${install.handoffFailed30}) · ` +
+        `нажали установить ${install.add30} · поставили ${install.added30}`,
     );
   }
   return lines.join('\n');

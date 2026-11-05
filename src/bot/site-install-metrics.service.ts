@@ -51,6 +51,13 @@ export class SiteInstallMetricsService {
         add30: count('site_landing', 'add'),
         added30: count('site_landing', 'added'),
       },
+      install: {
+        shown30: count('site_install', 'shown'),
+        handoffOk30: count('site_install', 'handoff_ok'),
+        handoffFailed30: count('site_install', 'handoff_failed'),
+        add30: count('site_install', 'add'),
+        added30: count('site_install', 'added'),
+      },
     };
   }
 }
