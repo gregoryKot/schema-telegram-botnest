@@ -12,9 +12,14 @@ import { useUiPrefsStartupSync } from '../utils/useUiPrefsStartupSync';
  * этого человек, настроивший экран в мини-аппе, видел бы на сайте дефолт.
  * Заставка та же, что у проверки входа, — один непрерывный экран загрузки.
  */
+// Ссылка стабильна: новая стрелка на каждом рендере перезапускала эффект
+// стартовой синхронизации — повторный GET и reset() закрывали пуш до ответа,
+// и правка, сделанная в это окно, не уходила на сервер.
+const loadSettings = () => api.getSettings();
+
 export function UiPrefsGate({ children }: { children: ReactNode }) {
   const settled = useUiPrefsStartupSync({
-    load: () => api.getSettings(),
+    load: loadSettings,
     sync: syncFromServer,
     reset: resetUiPrefsSync,
   });
