@@ -141,7 +141,7 @@ export function TrackerOverlay({
         <QuestionScreen
           idx={idx}
           total={needs.length}
-          name={nameOf(need)} needId={need.id}
+          name={nameOf(need)}
           data={NEED_DATA[need.id]}
           value={value}
           hue={NEED_HUE[need.id as NeedId]}

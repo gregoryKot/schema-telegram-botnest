@@ -7,7 +7,6 @@ import type { contactCta } from '../../utils/therapistContact';
 import { NEED_HUE, hueStyle } from '../../lib/tone';
 import type { NeedId } from '../../../../shared/src/needs/types';
 import type { ResultView, SchemaInfo, SchemaScore, YsqHistoryEntry } from '../../hooks/useYsqTest';
-import { YsqNeedHead } from './YsqNeedHead';
 import { YsqSchemaCard } from './YsqSchemaCard';
 import { YsqInactiveList, YsqHistory } from './YsqExtras';
 import { SsHead } from '../schemaSheets/SsSheet';
@@ -50,7 +49,7 @@ export function YsqResult(p: Props) {
 
       {activeByDomain.map(domain => (
         <div key={domain.needId} className="ss-res" style={hueStyle(NEED_HUE[domain.needId as NeedId])}>
-          <YsqNeedHead needId={domain.needId} label={domain.label} />
+          <div className="ds-chip tone-tint" style={{ alignSelf: 'flex-start' }}>{domain.label}</div>
           {domain.schemas.map(schema => {
             const s = p.scores[schema.name];
             return (

@@ -60,5 +60,3 @@
 .tk2-ci-skip { margin-top: 10px; min-height: 44px; }
 .tk2-info { display: grid; grid-template-columns: 28px 1fr; gap: 12px; margin-bottom: 12px; }
 .tk2-info-n { font-size: 20px; color: var(--accent); }
-/* Мотив потребности отдельной строкой в теле листа (NeedArtLine). */
-.pp-need-line { width: auto; justify-content: flex-start; }

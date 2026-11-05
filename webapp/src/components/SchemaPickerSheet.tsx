@@ -3,7 +3,6 @@ import { useTr } from '../utils/addressForm';
 import { SCHEMA_DOMAINS } from '../schemaTherapyData';
 import { useAutosavedSelection } from '../../../shared/src/hooks/useAutosavedSelection';
 import { DOMAIN_HUE, hueStyle } from '../lib/tone';
-import { DomainMark } from './DomainMark';
 import { SsSheet, SsHead } from './schemaSheets/SsSheet';
 import { PickRow } from './schemaSheets/PickRow';
 
@@ -28,7 +27,7 @@ export function SchemaPickerSheet({ selected, onSave, onClose }: Props) {
       {SCHEMA_DOMAINS.map(domain => (
         <div key={domain.id} className="ss-pick-group" style={hueStyle(DOMAIN_HUE[domain.id])}>
           <div className="ss-pick-eyebrow tone-ink">
-            <DomainMark domainId={domain.id} />
+            <span className="ds-dot tone-fill" />
             {domain.domain}
           </div>
           {domain.schemas.map(s => (

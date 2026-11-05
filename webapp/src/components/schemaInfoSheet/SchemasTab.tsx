@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { SCHEMA_DOMAINS } from '../../schemaTherapyData';
-import { DomainMark } from '../DomainMark';
 import { DOMAIN_HUE, hueStyle } from '../../lib/tone';
 
 // Вкладка «схемы» справочника: домены-аккордеон, внутри плитки схем.
@@ -27,7 +26,7 @@ export function SchemasTab({ highlight }: { highlight?: string }) {
               onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); } }}
               className="ss-domain-head tone-tint"
             >
-              <DomainMark domainId={d.id} />
+              <span className="ds-dot tone-fill" />
               <span className="ss-domain-name">{d.domain}</span>
               <span className="ss-domain-count">{d.schemas.length}</span>
               <svg className={`ss-chev${isOpen ? ' is-open' : ''}`} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">

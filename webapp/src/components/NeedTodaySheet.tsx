@@ -10,7 +10,6 @@ import { NeedScale } from './NeedScale';
 import { NEED_HUE, hueStyle } from '../lib/tone';
 import { NeedFold } from './NeedFold';
 import { rangeCardIndex, wordForValue } from '../../../shared/src/needs/ratingWords';
-import { NeedArtLine } from './NeedArtLine';
 import '../styles/sheet-tracker.css';
 import type { NeedId } from '../../../shared/src/needs/types';
 
@@ -72,7 +71,6 @@ export function NeedTodaySheet({ need, value, yesterdayValue, onChange, onClose,
       }
     >
       <div className="tk2-opts" style={hueStyle(hue)}>
-        <NeedArtLine id={need.id} />
         <NeedFold title="Как это выглядит в жизни">
           <div className="tk2-list">
             {data.examples.map((ex, i) => (
@@ -158,7 +156,7 @@ export function NeedTodaySheet({ need, value, yesterdayValue, onChange, onClose,
         />
       )}
 
-      {showDisclaimer && <NeedAdviceModal needId={need.id} onClose={() => setShowDisclaimer(false)} />}
+      {showDisclaimer && <NeedAdviceModal onClose={() => setShowDisclaimer(false)} />}
     </ExScreen>
   );
 }

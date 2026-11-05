@@ -1,7 +1,6 @@
 import { SCHEMA_DOMAINS, ALL_MODES } from '../../schemaTherapyData';
-import { DomainMark } from '../DomainMark';
 import { pressable } from '../../utils/a11y';
-import { MODE_GROUP_HUE, hueStyle } from '../../lib/tone';
+import { DOMAIN_HUE, MODE_GROUP_HUE, hueStyle } from '../../lib/tone';
 
 const ALL_SCHEMAS_FLAT = SCHEMA_DOMAINS.flatMap(d => d.schemas.map(s => ({ id: s.id, name: s.name, domainId: d.id })));
 
@@ -23,7 +22,7 @@ export function SchemaPicker({ value, onPick }: PickerProps) {
         {ALL_SCHEMAS_FLAT.map(s => (
           <div key={s.id} className="ds-list-row ds-list-row--hover sk-pick" {...pressable(() => onPick(s.id))}>
             <span className="sk-pick-name">
-              <DomainMark domainId={s.domainId} />
+              <span className="ds-dot tone-fill" style={hueStyle(DOMAIN_HUE[s.domainId])} />
               <span className={value === s.id ? 'sk-strong' : undefined}>{s.name}</span>
             </span>
             {value === s.id && <Check />}

@@ -2,8 +2,8 @@ import type { ReactNode } from 'react';
 import type { Need } from '../../types';
 import type { NeedId } from '../../../../shared/src/needs/types';
 import { NeedsWheel } from '../../../../shared/src/components/NeedsWheel';
+import { IdentityDot } from '../../../../shared/src/components/IdentityDot';
 import { NEED_HUE, hueStyle } from '../../lib/tone';
-import { NeedArt } from '../art/NeedArt';
 import { pressable } from '../../utils/a11y';
 import { needLevel } from './historyMath';
 
@@ -68,7 +68,7 @@ export function HistoryDayView(p: Props) {
           const lvl = needLevel(val);
           return (
             <div key={n.id} className="ds-list-row ds-list-row--hover sd-need-row" style={hueStyle(NEED_HUE[n.id as NeedId])} {...pressable(() => p.onTapNeed(n))}>
-              <span className="pp-row-art"><NeedArt id={n.id} size="row" /></span>
+              <IdentityDot id={n.id} size={14} />
               <span className="sd-need-name">{n.chartLabel}</span>
               {lvl && <span className={'sd-need-level ds-idx-' + lvl.level}>{lvl.label}</span>}
               <span className={'ds-num sd-need-val' + (val > 0 ? ' tone-text' : ' is-empty')}>{val > 0 ? val : '–'}</span>

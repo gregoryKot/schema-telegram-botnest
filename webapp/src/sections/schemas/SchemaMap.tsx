@@ -1,6 +1,5 @@
 import { SCHEMA_DOMAINS } from '../../schemaTherapyData';
 import { useTr } from '../../utils/addressForm';
-import { DomainMark } from '../../components/DomainMark';
 import { hueStyle } from '../../lib/tone';
 import { countSchemas, domainCountLabel, domainsWord, groupMap, schemasWord } from './schemasModel';
 
@@ -25,7 +24,7 @@ export function SchemaMap({ mineIds, onOpenSchema }: Props) {
       {domains.map(d => (
         <div key={d.id} className="cs-domain" style={hueStyle(d.hue)}>
           <div className="cs-domain-head">
-            <DomainMark domainId={d.id} />
+            <span className="cs-domain-line tone-fill" />
             <span className="cs-domain-name tone-ink">{d.title}</span>
             <span className="ds-sub">{domainCountLabel(d)}</span>
           </div>

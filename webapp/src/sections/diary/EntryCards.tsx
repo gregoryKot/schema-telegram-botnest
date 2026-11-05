@@ -9,9 +9,9 @@ import { fmtTime, fmtDateKey, fmtDayMonth } from './dateHelpers';
 import { schemaEntryRows, modeEntryRows, type FieldRow } from './entryRows';
 import { EntryPreviewText } from './EntryPreviewText';
 import { DeleteBtn } from './DeleteBtn';
-import { modeEntryKind, schemaEntryKind, type EntryKind } from './entryKind';
-import { EntryKindChip } from './EntryKindChip';
+import { ENTRY_KIND_LABEL, modeEntryKind, schemaEntryKind, type EntryKind } from './entryKind';
 import '../../styles/client-diary.css';
+
 // Карточки записей дневника: бейдж типа в тоне DIARY_HUE, заголовок, текст; клик раскрывает детали и удаление.
 
 export function ExpandField({ label, text, accent }: { label: string; text: string; accent?: boolean }) {
@@ -34,7 +34,7 @@ function EntryShell({ type, kind, title, time, text, preview, children }: {
   return (
     <div className="ds-card ds-card--row ds-card--hover cd-entry" style={hueStyle(DIARY_HUE[type])} aria-expanded={open} {...pressable(() => setOpen(v => !v))}>
       <div className="cd-entry-head">
-        <EntryKindChip kind={kind} />
+        <span className="ds-chip ds-chip--sm tone-tint">{ENTRY_KIND_LABEL[kind]}</span>
         {title && <span className="cd-entry-title">{title}</span>}
         {time && <span className="cd-entry-time">{time}</span>}
       </div>

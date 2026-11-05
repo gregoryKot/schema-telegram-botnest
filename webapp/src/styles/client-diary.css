@@ -78,7 +78,7 @@
 }
 
 /* Строка трекера в ленте дня и серия внизу */
-.cd-entry--tracker { flex-direction: row; align-items: center; gap: var(--space-8); font-size: 15px; font-weight: 600; }
+.cd-entry--tracker { flex-direction: row; align-items: center; font-size: 15px; font-weight: 600; }
 .cd-retry { min-height: 44px; padding: 0 var(--space-8); background: none; border: none; cursor: pointer; font: 600 13px var(--sans); color: var(--accent); }
 .cd-streak { margin: 0; font-size: 13px; line-height: 1.5; color: var(--text-faint); }
 

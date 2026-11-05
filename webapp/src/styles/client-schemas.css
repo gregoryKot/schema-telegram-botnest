@@ -58,7 +58,7 @@
 .cs-banner-sub { font-size: 13px; color: var(--text-sub); }
 .cs-banner-arrow { font-size: 20px; flex-shrink: 0; }
 
-.cs-need { grid-template-columns: 44px minmax(0, 1fr) auto; min-height: 44px; }
+.cs-need { grid-template-columns: 36px minmax(0, 1fr) auto; min-height: 44px; }
 .cs-need-icon { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; }
 .cs-need-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .cs-need-name { font-size: 14px; font-weight: 600; }
@@ -126,5 +126,3 @@
 @media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) {
   .cs-head-text { flex: 1 1 auto; }
 }
-/* Мотив домена в заголовке группы «Мои схемы» (DomainMark). */
-.cs-grp-title { display: inline-flex; align-items: center; gap: var(--space-8); min-width: 0; }
