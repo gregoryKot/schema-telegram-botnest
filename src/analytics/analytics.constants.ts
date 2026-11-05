@@ -12,17 +12,10 @@
 //   crisis_card_shown   — показалась карточка помощи (meta.surface);
 //   crisis_hotline_tapped — нажал на телефон доверия (meta.surface);
 //   outbox_flush        — доехали записи, сделанные без интернета (meta.count);
-//   today_focus_change  — сменил главную практику экрана «Сегодня» (meta.practice);
 //   today_streak_toggle — скрыл/показал счётчик серии (meta.hidden);
 //   breath_start        — запустил дыхание «Здесь и сейчас» (без meta);
 //   stop_start          — запустил технику «Стоп» в «Здесь и сейчас» (без meta);
-//   web_banner_open     — нажал баннер-переход (meta.banner). Баннеры живут
-//                         в обоих фронтендах: кабинет мини-аппа зовёт на
-//                         сайт, мобильный сайт — в приложение (/app/);
-//   web_banner_dismiss  — скрыл баннер-переход (meta.banner), те же баннеры;
 //   onboarding_step     — новичок дошёл до шага обучения (meta.step);
-//   today_block_toggle  — показал/скрыл блок «Сегодня» (meta.block + meta.hidden);
-//   today_customize_open — открыл «Настроить экран» (meta.via: как открыл);
 //   home_screen_offer   — предложение значка на экран (meta.action + surface).
 //                         Поверхности мини-аппа (Telegram) шлют событие
 //                         авторизованно через POST /api/event. Сайт добавил
@@ -64,9 +57,6 @@
 //   account_link_failed — перенос не состоялся (meta.host + meta.reason:
 //                         expired|error). Без него в отчёте видно только
 //                         успехи, и «сколько людей не смогли» не измерить.
-//   plus_open           — открыл универсальное меню «плюс» (без meta).
-//   plus_action         — выбрал действие в меню «плюс» (meta.action —
-//                         QuickActionId).
 //   quick_action_toggle — скрыл/вернул пункт в настройке меню (meta.action +
 //                         meta.hidden + meta.surface: 'plus'|'tools').
 //   quick_action_move   — переставил пункт в настройке меню (meta.action +
@@ -74,8 +64,7 @@
 //   screen_customize_open — открыл «Настроить экран» на «Профиле»/«Паттернах»
 //                         (meta.screen + meta.via — переиспользует
 //                         CUSTOMIZE_ENTRY_POINTS). screen='today' сюда не
-//                         шлётся: вход в настройку «Сегодня» исторически
-//                         отчитывается своим today_customize_open.
+//                         шлётся.
 //   screen_block_toggle — показал/скрыл блок на «Профиле»/«Паттернах»
 //                         (meta.screen + meta.block + meta.hidden). Видимость
 //                         блоков «Сегодня» — отдельным путём (частные
@@ -94,8 +83,6 @@
 //                         (meta.kind — PROFILE_PATTERN_KINDS: schema|mode).
 //   concept_*            — схема случая в кабинете терапевта (без meta); реестр и
 //                         описания каждого — в concept-events.constants.ts.
-//   desktop_app_open     — запустил установленное приложение на компьютере,
-//                         открылся кабинет сайта (без meta).
 //   case_*               — разбор случая («Что это было»); имена, мета и
 //                         описания каждого — в case-steps.constants.ts.
 //   game_*               — события игры (game/); реестр, meta и описания
@@ -119,15 +106,10 @@ export const ANALYTICS_EVENTS = [
   'crisis_card_shown',
   'crisis_hotline_tapped',
   'outbox_flush',
-  'today_focus_change',
   'today_streak_toggle',
   'breath_start',
   'stop_start',
-  'web_banner_open',
-  'web_banner_dismiss',
   'onboarding_step',
-  'today_block_toggle',
-  'today_customize_open',
   'home_screen_offer',
   'journey_open',
   'ysq_help_open',
@@ -144,8 +126,6 @@ export const ANALYTICS_EVENTS = [
   'account_link_started',
   'account_link_confirmed',
   'account_link_failed',
-  'plus_open',
-  'plus_action',
   'quick_action_toggle',
   'quick_action_move',
   'screen_customize_open',
@@ -156,7 +136,6 @@ export const ANALYTICS_EVENTS = [
   'profile_pattern_open',
   // Схема случая в кабинете терапевта — реестр рядом с фичей (правило №10).
   ...CONCEPT_EVENTS,
-  'desktop_app_open',
   // Путь входа по билету: один шаг в meta.step (см. login-ticket-steps).
   'login_ticket_step',
   // Разбор случая — реестр рядом с фичей (правило №10, файл в храповике).
@@ -198,18 +177,6 @@ export const PRACTICE_LINK_PLACES = [
   'ysq_result', // CTA в результатах теста схем (оба фронтенда)
 ] as const;
 export type PracticeLinkPlace = (typeof PRACTICE_LINK_PLACES)[number];
-
-// Блоки главного экрана, которые можно скрыть (meta.block). Заменяет частное
-// событие today_streak_toggle: блоков стало больше одного, и заводить событие
-// на каждый — плодить реестры. Старое имя остаётся в allow-list ради уже
-// накопленных строк, /stats суммирует оба.
-export const TODAY_BLOCKS = [
-  'streak',
-  'phrase',
-  'secondary',
-  'therapist_banner',
-] as const;
-export type TodayBlock = (typeof TODAY_BLOCKS)[number];
 
 // Как открыли «Настроить экран»: шестерёнка в шапке или долгое нажатие на
 // блок. Нужно, чтобы понять, находят ли жест вообще (он без аффорданса).
@@ -303,7 +270,7 @@ export {
   type CrisisSurface,
 } from './crisis-surfaces.constants';
 
-// Главная практика экрана «Сегодня» (meta.practice для today_focus_change) —
+// Главная практика экрана «Сегодня» (ключ ui-prefs today_focus_practice) —
 // парно с FocusPractice на фронте (shared/src/today/todayFocus.ts).
 export const TODAY_FOCUS_PRACTICES = [
   'tracker',
@@ -312,9 +279,6 @@ export const TODAY_FOCUS_PRACTICES = [
   'gratitude',
 ] as const;
 export type TodayFocusPractice = (typeof TODAY_FOCUS_PRACTICES)[number];
-
-// WEB_BANNER_IDS/WebBannerId — вынесены в web-banner-ids.constants.ts (правило №10).
-export { WEB_BANNER_IDS, type WebBannerId } from './web-banner-ids.constants';
 
 // QUICK_ACTION_IDS/QuickActionId/QUICK_ACTION_SURFACES/QuickActionSurface —
 // вынесены в quick-actions.constants.ts (правило №10: тот файл держим

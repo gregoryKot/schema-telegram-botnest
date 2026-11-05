@@ -1,10 +1,10 @@
 import type { CaseChip } from '../../../../shared/src/case/caseBodyChips';
 import { isOwnChipId } from '../../../../shared/src/case/useCaseOwnSync';
+import { hueStyle } from '../../lib/tone';
 
 /**
  * Шаги body/impulse: поле «своё» + чипы-варианты (правило «одна механика —
- * один компонент»). Twin по смыслу с schema-miniapp CaseChipGrid.tsx,
- * разметка — ds-input + ex2-chip (ds-chip с зоной нажатия 44px).
+ * один компонент»). Разметка — ds-input + ds-chip--toggle (зона нажатия 44px).
  *
  * Поле рендерится ВСЕГДА и ПЕРВЫМ (фидбек владельца 2026-08-31: «по
  * умолчанию поле ввода, а снизу варианты»), чипы `*_own` («Своё…») не
@@ -38,17 +38,16 @@ export function CaseChipGrid({
         maxLength={60}
         className="ds-input ex2-gap-b"
       />
-      <div className="ex2-chips">
+      <div className="ex2-chips" style={hueStyle(undefined)}>
         {chips
           .filter((chip) => !isOwnChipId(chip.id))
           .map((chip) => {
             const sel = selectedIds.includes(chip.id);
             return (
               <button
-                key={chip.id}
-                type="button"
-                className={'ds-chip ex2-chip' + (sel ? ' is-selected' : '')}
-                onClick={() => onToggle(chip.id)}
+                key={chip.id} type="button"
+                className={'ds-chip ds-chip--toggle' + (sel ? ' is-on' : '')}
+                aria-pressed={sel} onClick={() => onToggle(chip.id)}
               >
                 {chip.label}
               </button>

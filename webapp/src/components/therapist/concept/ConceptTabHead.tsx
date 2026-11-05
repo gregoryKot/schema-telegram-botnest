@@ -3,19 +3,16 @@ import { Dropdown } from '../../Dropdown';
 import { useMenuPick } from '../../useMenuPick';
 import { useTr } from '../../../utils/addressForm';
 import type { ClientDetail } from '../clientSheetTypes';
+import { TabTitle } from '../TabTitle';
 import { ConceptViewSwitch, type ConceptView } from '../../../../../shared/src/therapy/conceptGraph/ConceptViewSwitch';
 import { SaveStatusLine } from '../../../../../shared/src/therapy/SaveStatusLine';
 import { CANVAS_HINT, EXPAND_HINT, actionStatusText, type GraphActions } from './conceptHeadText';
 import { CONCEPT_EXPORT_EMPTY } from '../../../../../shared/src/therapy/conceptExport';
 
-// Шапка вкладки «Концептуализация» (#879, тест с терапевтом): в ней остаются
-// только переключатель «Схема · Поля» и статус сохранения. Экспорт, картинка,
-// лист на весь экран и холст — второстепенные действия, они собраны в одно
-// меню «⋯»: шапка из пяти кнопок читалась как панель инструментов, и терапевт
-// не находил главного. Меню закрывается по выбору пункта, поэтому занятость и
-// отказ действия показываются строкой под шапкой (ActionStatus), а не внутри
-// меню. Заголовка у вкладки нет (#906): имя уже во вкладке шапки карточки;
-// кнопка меню — круглая иконочная (ds-btn--icon), подпись — aria-label.
+// Шапка вкладки «Концептуализация» (#879, тест с терапевтом): в ней только переключатель «Схема · Поля» и статус
+// сохранения; экспорт, картинка, лист на весь экран и холст — в одном меню «⋯» (пять кнопок читались как панель
+// инструментов, и терапевт не находил главного). Меню закрывается по выбору пункта — занятость и отказ строкой под
+// шапкой (ActionStatus). Заголовок и «Ещё» — на ≥768 (телефон прячет CSS); статус, сегмент и «⋯» — группа tcp-head-actions.
 export interface ConceptTabHeadProps {
   detail: ClientDetail;
   view: ConceptView;
@@ -29,9 +26,12 @@ export function ConceptTabHead({ detail, view, onView, graph }: ConceptTabHeadPr
   return (
     <>
       <div className="tcp-head">
-        <ConceptViewSwitch view={view} onChange={onView} />
-        <SaveStatusLine className="tcp-save" status={saveStatus} savedAt={savedAt} onRetry={retrySave} errorText={conceptError || undefined} align="right" />
-        <MoreMenu onExport={handleExport} exportEmpty={exportEmpty} graph={graph} />
+        <TabTitle title="Концептуализация" className="tcp-head-title"><div className="ds-sub">Схема-карта, цели терапии и связь с детским опытом</div></TabTitle>
+        <div className="tcp-head-actions">
+          <SaveStatusLine className="tcp-save" status={saveStatus} savedAt={savedAt} onRetry={retrySave} errorText={conceptError || undefined} align="right" />
+          <ConceptViewSwitch view={view} onChange={onView} />
+          <MoreMenu onExport={handleExport} exportEmpty={exportEmpty} graph={graph} />
+        </div>
       </div>
       <ActionStatus graph={graph} exportCopied={exportCopied} />
     </>
@@ -51,7 +51,7 @@ function MoreMenu({ onExport, exportEmpty, graph }: { onExport: () => void; expo
         aria-expanded={open}
         onClick={() => setOpen(o => !o)}
       >
-        ⋯
+        ⋯<span className="tcp-more-txt"> Ещё</span>
       </button>
       {open && (
         <Dropdown anchorRef={wrapRef} onClose={() => setOpen(false)} role="menu" label="Ещё действия" className="tcp-menu">
@@ -77,7 +77,7 @@ function MoreMenu({ onExport, exportEmpty, graph }: { onExport: () => void; expo
 function MenuItem({ hint, children, ...rest }: { hint?: string; children: ReactNode } & ButtonHTMLAttributes<HTMLButtonElement>) {
   const id = useId();
   return (
-    <button type="button" role="menuitem" className="mm2-item" aria-labelledby={`${id}-l`} aria-describedby={hint ? `${id}-h` : undefined} {...rest}>
+    <button type="button" role="menuitem" className="ds-menu-item" aria-labelledby={`${id}-l`} aria-describedby={hint ? `${id}-h` : undefined} {...rest}>
       <span id={`${id}-l`}>{children}</span>
       {hint && <span id={`${id}-h`} className="tcp-menu-hint">{hint}</span>}
     </button>

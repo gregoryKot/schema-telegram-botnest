@@ -11,7 +11,6 @@ import {
   PUBLIC_ANALYTICS_EVENTS,
   QUIZ_EVENT_SOURCES,
   PRACTICE_LINK_PLACES,
-  TODAY_BLOCKS,
   CUSTOMIZE_ENTRY_POINTS,
   HOME_SCREEN_ACTIONS,
   HOME_SCREEN_SURFACES,
@@ -20,7 +19,6 @@ import {
   SHARE_CARD_KINDS,
   CRISIS_SURFACES,
   TODAY_FOCUS_PRACTICES,
-  WEB_BANNER_IDS,
   SIGNUP_SOURCES,
   PROFILE_PATTERN_KINDS,
 } from './analytics.constants';
@@ -31,7 +29,6 @@ import {
   PUBLIC_CRISIS_SURFACES,
 } from './public-crisis.constants';
 import { SIGNUP_SOURCES as SIGNUP_SOURCES_DIRECT } from './signup-sources.constants';
-import { WEB_BANNER_IDS as WEB_BANNER_IDS_DIRECT } from './web-banner-ids.constants';
 import {
   GAME_EVENTS,
   GAME_CHAPTERS,
@@ -45,7 +42,6 @@ const REGISTRIES: Record<string, readonly string[]> = {
   PUBLIC_ANALYTICS_EVENTS,
   QUIZ_EVENT_SOURCES,
   PRACTICE_LINK_PLACES,
-  TODAY_BLOCKS,
   CUSTOMIZE_ENTRY_POINTS,
   HOME_SCREEN_ACTIONS,
   HOME_SCREEN_SURFACES,
@@ -54,7 +50,6 @@ const REGISTRIES: Record<string, readonly string[]> = {
   SHARE_CARD_KINDS,
   CRISIS_SURFACES,
   TODAY_FOCUS_PRACTICES,
-  WEB_BANNER_IDS,
   SIGNUP_SOURCES,
   PROFILE_PATTERN_KINDS,
   GAME_EVENTS,
@@ -152,14 +147,6 @@ describe('SIGNUP_SOURCES реэкспортирован без искажени�
 
   it('содержит other — обязательный фолбэк для неизвестного/мусорного slug', () => {
     expect(SIGNUP_SOURCES).toContain('other');
-  });
-});
-
-describe('WEB_BANNER_IDS реэкспортирован без искажений', () => {
-  it('analytics.constants.ts отдаёт тот же массив, что и web-banner-ids.constants.ts', () => {
-    // Правило №10: WEB_BANNER_IDS вынесен в отдельный файл ради лимита строк
-    // (тот же приём, что и SIGNUP_SOURCES выше) — реэкспорт легко протухает.
-    expect(WEB_BANNER_IDS).toEqual(WEB_BANNER_IDS_DIRECT);
   });
 });
 

@@ -18,7 +18,7 @@
 | check-alert-throttle.mjs | прямой `notifyAdminWithFallback` без бюджета и записи в baseline | `scripts/alert-throttle-baseline.json` | да | checks |
 | check-body-dto.mjs | `@Body()` с interface/type вместо DTO-класса с class-validator | `scripts/body-dto-baseline.json` | да | checks |
 | check-body-truncation.mjs | `.slice(0, …)` в контроллерах молча режет поля запроса | `scripts/body-truncation-baseline.json` | нет | checks |
-| check-bundle-size-ratchet.mjs | рост байт JS-бандлов webapp и мини-аппа | `scripts/bundle-size-baseline.json` | да | webapp |
+| check-bundle-size-ratchet.mjs | рост байт JS-бандлов webapp | `scripts/bundle-size-baseline.json` | да | webapp |
 | check-capability-registry.mjs | ветка `if (!env) return` без регистрации в capability-report | `scripts/capability-registry-baseline.json` | да | checks |
 | check-color-drift.mjs | захардкоженные хроматические hex/rgb вне токенов палитры | `scripts/color-drift-baseline.json` | да | webapp |
 | check-coverage-ratchet.mjs | просадка покрытия бэкенда (сам гоняет jest --coverage) | `scripts/coverage-baseline.json` | да | backend |
@@ -31,9 +31,8 @@
 | check-e2e-in-ci.mjs | `test/*.e2e-spec.ts`, который не запускается ни одним шагом workflow | — | нет | checks |
 | check-env-registry.mjs | чтение env мимо реестра и протухшие записи реестра | — (реестр `src/infra/env-registry.entries*.ts`) | нет | checks |
 | check-eslint-ratchet.mjs | рост числа ошибок и варнингов eslint; полный режим — по каталогам верхнего уровня отдельными процессами (правила — `eslint-ratchet-rules.mjs`), локально `--changed` — только файлы против `origin/main` | `scripts/eslint-baseline.json` | да | eslint |
-| check-feature-parity.mjs | роут бэкенда, вызываемый только одним фронтендом | `scripts/feature-parity-baseline.json` | да | checks |
 | check-file-size-ratchet.mjs | рост файла из baseline, новый файл больше 300 строк | `scripts/file-size-baseline.json` | да | backend |
-| check-frontend-coverage-ratchet.mjs | просадка покрытия webapp, schema-miniapp, shared (`--package`) | `scripts/frontend-coverage-baseline.json` | да | webapp, shared, miniapp |
+| check-frontend-coverage-ratchet.mjs | просадка покрытия webapp, shared (`--package`) | `scripts/frontend-coverage-baseline.json` | да | webapp, shared |
 | check-gate-exemptions.mjs | ALLOW/EXCLUDE-списки гейтов без теста-образца | — | нет | checks |
 | check-gendered-forms.mjs | мужской род в тексте для пользователя («ты сделал»; без «ты» — по паре `tr(ты, вы)`, «Сказал» ↔ «Сказали») | `scripts/gendered-forms-baseline.json` | да | backend |
 | check-glyph-controls.mjs | `<button>`, `<a>`, элемент с control-ролью или `{...pressable()}` без `aria-label`/`aria-labelledby`, чьё содержимое — только глиф, иконка или пусто | — | нет | webapp |
@@ -44,7 +43,6 @@
 | check-legacy-name.mjs | возврат старого названия «СхемаЛаб» в текстах | — | нет | checks |
 | check-mutation-ratchet.mjs | падение mutation-score золотых зон (читает отчёт Stryker) | `scripts/mutation-baseline.json`; для nightly-волн через `--baseline=`: `scripts/mutation-golden-auth-baseline.json`, `scripts/mutation-golden-payments-baseline.json`, `scripts/mutation-crisis-baseline.json`, `scripts/mutation-outbox-baseline.json` | да | nightly |
 | check-mutation-zone.mjs | файл, выделенный из мутационной зоны, выпал из неё молча | `scripts/mutation-zone-baseline.json` | нет | checks |
-| check-paired-files.mjs | расхождение парных файлов webapp и schema-miniapp | — | нет | webapp |
 | check-persistent-throttle.mjs | ручка с лимитом без решения о `@PersistentThrottle()` | `scripts/persistent-throttle-baseline.json` | нет | checks |
 | check-pool-sync.mjs | фразы `healthy-adult.data.ts`, не доехавшие миграциями до БД | — | нет | checks |
 | check-public-scripts.mjs | `public/**/*.js` без теста, инлайн-`<script>` без хеша | `scripts/public-scripts-baseline.json` | да | checks |
@@ -61,7 +59,7 @@
 | check-spelling.mjs | орфография видимых строк («оффлайн» → «офлайн»); комментарии и тесты не смотрит | — | нет | checks |
 | check-tap-targets.mjs | интерактивный элемент с инлайн-размером обеих сторон меньше 44px | `scripts/tap-targets-baseline.json` | да | webapp |
 | check-tiny-fonts.mjs | инлайн `fontSize` ниже 11px | `scripts/tiny-fonts-baseline.json` | да | webapp |
-| check-token-contract.mjs | расхождение дизайн-токенов webapp и мини-аппа (`tokens.css`) | — | нет | webapp |
+| check-token-contract.mjs | расхождение набора токенов `shared/src/theme/tokens.css` и `webapp/src/index.css` | — | нет | webapp |
 | check-unwatched-code.mjs | исполняемый .js/.mjs/.cjs/.sh вне тестов и наблюдаемых деревьев | `scripts/unwatched-code-baseline.json` | да | checks |
 | check-var-alpha-suffix.mjs | hex-суффикс альфы после `var()`, например `var(--x)18` | — | нет | webapp |
 | check-weak-assert-ratchet.mjs | тесты только с голым `toHaveBeenCalled()` без аргументов | `scripts/weak-assert-baseline.json` | да | backend |
@@ -79,9 +77,7 @@ node scripts/check-eslint-ratchet.mjs              # eslint-храповик, п
 node scripts/check-eslint-ratchet.mjs --changed    # то же по файлам, отличающимся от origin/main (секунды; любая находка — красное)
 npm run build                                      # nest build; npm run start:dev — бэкенд с watch
 npm run build --prefix webapp                      # tsc -b && vite build (в прод-сборке нужен VITE_BOT_USERNAME)
-npm run typecheck --prefix schema-miniapp          # tsc --noEmit -p tsconfig.typecheck.json
-npm run build --prefix schema-miniapp              # после правок мини-аппа обязательно закоммитить schema-miniapp/dist
-npm test --prefix webapp                           # vitest run; так же --prefix schema-miniapp и --prefix shared
+npm test --prefix webapp                           # vitest run; так же --prefix shared
 npm run test:e2e                                   # jest --config ./test/jest-e2e.json (часть спеков требует E2E_REAL_DB=1 и DATABASE_URL)
 npx prisma generate                                # после любых правок schema.prisma
 npx prisma migrate dev                             # создать миграцию на dev-БД

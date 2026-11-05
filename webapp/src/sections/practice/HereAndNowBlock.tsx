@@ -1,9 +1,7 @@
 // Блок «Здесь и сейчас» раздела «Практика»: три быстрые практики на одну-три
-// минуты. Парный по смыслу с schema-miniapp/src/sections/helpSection/
-// HereAndNow.tsx — раздел жил только в мини-аппе и стоял осознанным долгом в
-// scripts/feature-parity-baseline.json, пока сайт до готовых роутов
-// /api/practice-session(s) не доставал (правило №16). Логика и контент —
-// общие (shared/src/practices), здесь только вёрстка сайта.
+// минуты. Раздел жил только в мини-аппе, пока сайт до готовых роутов
+// /api/practice-session(s) не доставал. Логика и контент — общие
+// (shared/src/practices), здесь только вёрстка сайта.
 //
 // Онбординг (правило «откуда это и зачем»): подпись над практиками отвечает,
 // что это и зачем, до первого действия — на самом пути, а не в спрятанном
@@ -56,7 +54,7 @@ export function HereAndNowBlock({ compact = false, extraRows }: { compact?: bool
     <>
       <HereAndNowIntro compact={compact} />
 
-      <BreathingCard />
+      <div className="cp-open-card"><BreathingCard /></div>
 
       <div className="ds-label">Если нужно больше</div>
       {ROWS.map((row) => (

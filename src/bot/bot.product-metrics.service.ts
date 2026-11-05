@@ -15,7 +15,6 @@ import { CaseMetricsService } from './case-metrics.service';
 import {
   ONBOARDING_STEPS,
   SITE_INSTALL_SURFACES,
-  TODAY_BLOCKS,
 } from '../analytics/analytics.constants';
 
 // IN-список сайтовых surface для исключения из воронки мини-аппа — сама
@@ -79,10 +78,8 @@ export class ProductMetricsService {
       shareCard7,
       shareCard30,
       shareKindRows,
-      todayFocusChanged,
       blocksHiddenRows,
       onboardingStepRows,
-      customizeRows,
       homeScreenRows,
       journeyOpens,
       ysqHelpOpens,
@@ -95,7 +92,7 @@ export class ProductMetricsService {
         where: {
           ...activeUser,
           createdAt: { gte: since30 },
-          onboardingV2Done: true,
+          onboardingV2Done: true, // ставят онбординг мини-аппа и экран согласий сайта
         },
       }),
       // Дневники и упражнения — разные люди, объединение таблиц (COUNT DISTINCT).
@@ -150,23 +147,13 @@ export class ProductMetricsService {
         WHERE "name" = 'share_card' AND "createdAt" >= ${since30}
         GROUP BY "meta"->>'kind'
         ORDER BY c DESC`,
-      ev('today_focus_change'),
-      // Скрытия блоков главного. Старое событие today_streak_toggle (до того,
-      // как блоков стало несколько) подмешиваем как блок 'streak' — иначе
-      // накопленная история молча обнулится в отчёте.
+      // Скрытия счётчика серии на главном (событие устарело — блоков с
+      // отдельным переключателем больше нет; копится только история).
       this.prisma.$queryRaw<Array<{ block: string | null; c: bigint }>>`
-        SELECT block, SUM(c)::bigint AS c FROM (
-          SELECT "meta"->>'block' AS block, count(*)::bigint AS c
-            FROM "AnalyticsEvent"
-           WHERE "name" = 'today_block_toggle' AND "meta"->>'hidden' = 'true'
-             AND "createdAt" >= ${since30}
-           GROUP BY "meta"->>'block'
-          UNION ALL
-          SELECT 'streak' AS block, count(*)::bigint AS c
-            FROM "AnalyticsEvent"
-           WHERE "name" = 'today_streak_toggle' AND "meta"->>'hidden' = 'true'
-             AND "createdAt" >= ${since30}
-        ) t GROUP BY block`,
+        SELECT 'streak' AS block, count(*)::bigint AS c
+          FROM "AnalyticsEvent"
+         WHERE "name" = 'today_streak_toggle' AND "meta"->>'hidden' = 'true'
+           AND "createdAt" >= ${since30}`,
       // Воронка обучения: люди (не события) на каждом шаге — один человек мог
       // вернуться к шагу точками навигации, это не должно раздувать счёт.
       this.prisma.$queryRaw<Array<{ step: string | null; c: bigint }>>`
@@ -174,11 +161,6 @@ export class ProductMetricsService {
         FROM "AnalyticsEvent"
         WHERE "name" = 'onboarding_step' AND "createdAt" >= ${since30}
         GROUP BY "meta"->>'step'`,
-      this.prisma.$queryRaw<Array<{ via: string | null; c: bigint }>>`
-        SELECT "meta"->>'via' AS via, count(*)::bigint AS c
-        FROM "AnalyticsEvent"
-        WHERE "name" = 'today_customize_open' AND "createdAt" >= ${since30}
-        GROUP BY "meta"->>'via'`,
       // Воронка мини-аппа: сайтовые surface (site_banner/site_landing) не
       // считаются здесь — у них своя семантика shown/add/added (см. блок
       // «Установка с сайта», site-install-metrics.*), подмешивать их сюда
@@ -210,13 +192,8 @@ export class ProductMetricsService {
       shareRows.find((r) => r.ok === 'false')?.c ?? 0n,
     );
 
-    const blockCounts = new Map(
-      blocksHiddenRows.map((r) => [r.block ?? '', Number(r.c)]),
-    );
     const hsCount = (action: string): number =>
       Number(homeScreenRows.find((r) => r.action === action)?.c ?? 0n);
-    const viaCount = (via: string): number =>
-      Number(customizeRows.find((r) => r.via === via)?.c ?? 0n);
 
     // Порядок — как в онбординге (ONBOARDING_STEPS), а не по убыванию счёта:
     // воронка читается сверху вниз, видно, на каком шаге обрыв.
@@ -256,13 +233,9 @@ export class ProductMetricsService {
         recovered: Number(outboxRows[0]?.recovered ?? 0n),
       },
       today: {
-        focusChanged: todayFocusChanged,
-        // Порядок — как в листе настройки, а не по убыванию счёта.
-        blocksHidden: TODAY_BLOCKS.filter((b) => blockCounts.has(b)).map(
-          (block) => ({ block, count: blockCounts.get(block) ?? 0 }),
-        ),
-        customizeGear: viaCount('gear'),
-        customizeLongpress: viaCount('longpress'),
+        blocksHidden: blocksHiddenRows
+          .filter((r) => r.block != null && Number(r.c) > 0)
+          .map((r) => ({ block: r.block ?? '', count: Number(r.c) })),
       },
       journey: { opens: journeyOpens },
       homeScreen: {

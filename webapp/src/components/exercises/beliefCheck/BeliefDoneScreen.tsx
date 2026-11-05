@@ -66,7 +66,7 @@ export function BeliefDoneScreen({
       </>
     }
   >
-    <div className="ds-card ds-card--ink ex2-done">
+    <div className="ds-card ds-card--panel ex2-done">
       <div className="ex2-stamp">
         <GlyphCheck /> Сохранено ·{' '}
         {new Date().toLocaleDateString('ru-RU', {

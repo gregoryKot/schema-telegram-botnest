@@ -45,7 +45,7 @@ function hasRule(block: string, cls: string, decl: string): boolean {
 
 // Корни полноэкранных листов сайта (position: fixed; inset: 0 — grep по
 // styles/*.css и index.css). Подложки модалок и поповеров (.sheet-modal,
-// .sk-cmd-bg, .sk-dialog-backdrop, .mm2-backdrop) и спиннер .sk-loader--full
+// .cmd-backdrop, .sk-dialog-backdrop, .ds-backdrop) и спиннер .sk-loader--full
 // сюда не входят: их содержимое не у верхней кромки. У экрана упражнения
 // отступ стоит на липкой шапке .ex2-top, а не на корне: sticky top: 0
 // считается от края скролл-контейнера, и padding корня уезжает при скролле.
@@ -96,8 +96,7 @@ describe('безопасная зона сверху (--safe-top)', () => {
 
   it('shared/utilities.css: на телефоне .u-sheet и .u-sheet-grid отступают на --safe-top', () => {
     const css = readFileSync(join(__dirname, '..', '..', '..', 'shared/src/theme/utilities.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
-    // shared/ общий с мини-аппом: там свой брейкпоинт, только ширина.
-    const phone = phoneBlocks(css, '@media (max-width: 767px)');
+    const phone = phoneBlocks(css);
     expect(hasRule(phone, '.u-sheet.u-sheet', 'padding-top: var(--safe-top')).toBe(true);
     expect(hasRule(phone, '.u-sheet-grid.u-sheet-grid', 'padding-top: var(--safe-top')).toBe(true);
   });

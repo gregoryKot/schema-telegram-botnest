@@ -128,7 +128,7 @@ describe('трипваер: CSP и инлайн-скрипты (I4)', () => {
     expect(m![1]).not.toMatch(/unsafe-inline|sha256-|nonce-/);
   });
 
-  it.each(['webapp/index.html', 'schema-miniapp/index.html'])(
+  it.each(['webapp/index.html'])(
     '%s: нет инлайн-<script> (кроме ld+json) — CSP их блокирует',
     (rel) => {
       const html = read(rel);

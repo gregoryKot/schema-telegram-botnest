@@ -3,8 +3,7 @@
 // проехавший по шкале оценки ≥90px, уводил на другую потребность вместо
 // выбора ответа. Касание, начатое внутри [role="group"] (шкала WordScale /
 // NeedScale), свайпом не считается; по фону — по-прежнему листает.
-// Хук общий (shared/src/hooks/useHorizontalSwipe.ts), шкала мини-аппа —
-// schema-miniapp/src/components/NeedRatingBar.swipe.test.tsx.
+// Хук общий (shared/src/hooks/useHorizontalSwipe.ts).
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { useHorizontalSwipe } from '../../../../shared/src/hooks/useHorizontalSwipe';

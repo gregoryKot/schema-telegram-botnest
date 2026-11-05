@@ -1,7 +1,7 @@
 import { Markup } from 'telegraf';
 import {
   BOOKING_URL,
-  MINIAPP_URL,
+  CABINET_URL,
   DONATE_URL,
 } from '../telegram/telegram.constants';
 
@@ -9,7 +9,7 @@ import {
 // Вынесено из notification.templates.ts (правило №10).
 export const openDiaryButton = Markup.button.webApp(
   '📱 Открыть «Всё по схеме»',
-  MINIAPP_URL,
+  CABINET_URL,
 );
 export const bookingButton = Markup.button.url(
   '📝 Записаться на сессию',

@@ -5,7 +5,7 @@
   background: var(--bg); color: var(--text); font-family: var(--sans);
 }
 .al-hero {
-  background: var(--ink); color: var(--on-ink); padding: 48px 56px;
+  background: var(--panel); color: var(--on-panel); padding: 48px 56px;
   display: flex; flex-direction: column;
 }
 .al-brand { display: flex; align-items: center; gap: 10px; }
@@ -16,8 +16,8 @@
 .al-brand-name { font-family: var(--serif); font-size: 19px; }
 .al-pitch { margin-top: auto; display: flex; flex-direction: column; gap: 20px; }
 .al-slogan { font-family: var(--serif); font-size: 56px; line-height: 1.05; font-weight: 400; margin: 0; }
-.al-slogan i { color: var(--on-ink-danger); }
-.al-lead { font-size: 16px; line-height: 1.6; color: var(--on-ink-sub); max-width: 440px; margin: 0; }
+.al-slogan i { color: var(--accent); }
+.al-lead { font-size: 16px; line-height: 1.6; color: var(--on-panel-sub); max-width: 440px; margin: 0; }
 .al-strip { display: flex; gap: 6px; margin-top: 40px; }
 .al-strip span { height: 8px; border-radius: 4px; }
 
@@ -33,8 +33,8 @@
 }
 .al-btn { height: 52px; background: var(--surface); border: 1px solid var(--line-strong); color: var(--text); }
 .al-btn:hover { border-color: var(--line-hover); }
-.al-btn-main { height: 56px; background: var(--ink); border: 0; color: var(--on-ink); font-weight: 700; }
-.al-btn-main:hover { background: var(--ink-2); }
+.al-btn-main { height: 56px; background: var(--accent); border: 0; color: var(--on-accent); font-weight: 700; }
+.al-btn-main:hover { background: var(--accent-hi); }
 .al-ico { width: 28px; height: 28px; display: grid; place-items: center; flex-shrink: 0; }
 .al-vk { background: #0077FF; color: #fff; border-radius: 7px; font-size: 11px; font-weight: 700; }
 .al-badge {
@@ -57,7 +57,7 @@
 .al-email-sent p:first-child { font-size: 14px; font-weight: 600; color: var(--text); }
 .al-email { display: flex; flex-direction: column; gap: 8px; }
 .al-submit {
-  height: 52px; border-radius: 26px; border: 0; background: var(--ink); color: var(--on-ink);
+  height: 52px; border-radius: 26px; border: 0; background: var(--accent); color: var(--on-accent);
   font: 700 15px var(--sans); cursor: pointer; width: 100%;
 }
 .al-submit:disabled { opacity: .5; cursor: default; }
@@ -81,7 +81,7 @@
 }
 
 @media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
-  .al-root { grid-template-columns: 1fr; grid-template-rows: auto 1fr; background: var(--ink); }
+  .al-root { grid-template-columns: 1fr; grid-template-rows: auto 1fr; background: var(--panel); }
   .al-hero { padding: 24px 24px 28px; gap: 14px; }
   .al-brand-name, .al-lead, .al-strip { display: none; }
   .al-logo { width: 40px; height: 40px; border-radius: 10px; font-size: 19px; }

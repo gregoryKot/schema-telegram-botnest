@@ -1,7 +1,7 @@
 /* Вкладки карточки клиента: Сессии, Задания, YSQ, Записи клиента (префикс tb-).
-   Заголовка у вкладки нет (#906): имя уже во вкладке шапки. Пустые состояния —
+   Заголовок вкладки (TabTitle) — на компьютере; на телефоне его нет (#906): имя
+   уже во вкладке шапки, подпись у «Схем» остаётся. Пустые состояния —
    ds-empty, иконочные кнопки — ds-btn--icon (cabinet.css); здесь только раскладка. */
-.tb-page { gap: 28px; }
 .tb-page--narrow { max-width: 900px; }
 .tb-page--ysq { max-width: 1000px; }
 .tb-hint { font-size: 12px; color: var(--text-faint); }
@@ -10,6 +10,7 @@
 .tb-r { text-align: right; }
 .tb-error { font-size: 13px; color: var(--err); }
 .tb-mt16 { margin-top: 16px; }
+@media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) { .tb-tab-title .ds-sub { margin-top: 4px; } }
 .tb-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .tb-tags { display: flex; flex-wrap: wrap; gap: 8px; }
 
@@ -22,7 +23,7 @@
 .tb-tl-row { display: grid; grid-template-columns: 80px 1fr; gap: 24px; }
 .tb-tl-rail { display: flex; flex-direction: column; align-items: center; }
 .tb-tl-dot {
-  width: 52px; height: 52px; border-radius: 50%; background: var(--ink); color: var(--on-ink);
+  width: 52px; height: 52px; border-radius: 50%; background: var(--accent); color: var(--on-accent);
   font-family: var(--serif); font-size: 20px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
 }
 .tb-tl-line { flex: 1; width: 2px; background: var(--line-input); margin: 8px 0; }
@@ -37,8 +38,8 @@
 .tb-tl-del { margin-left: auto; margin-block: -8px; }
 
 /* ── Задания ──────────────────────────────────────────────────────────── */
-.tb-tasks { display: grid; grid-template-columns: minmax(0, 1fr) clamp(260px, 30%, 340px); align-items: start; gap: 48px; max-width: var(--tk-max); }
-@media (max-width: 1023px) { .tb-tasks { grid-template-columns: minmax(0, 1fr); gap: 40px; } }
+.tb-tasks { display: grid; grid-template-columns: minmax(0, 1fr) clamp(260px, 30%, 340px); align-items: start; column-gap: 48px; max-width: var(--tk-max); }
+@media (max-width: 1023px) { .tb-tasks { grid-template-columns: minmax(0, 1fr); } }
 .tb-col { display: flex; flex-direction: column; gap: 28px; min-width: 0; }
 .tb-col--tight { gap: 12px; }
 .tb-big { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
@@ -67,7 +68,7 @@
 .tb-ysq-card { padding: 8px 24px; }
 .tb-ysq-row {
   display: grid; grid-template-columns: minmax(110px, 240px) 1fr 56px 48px 48px; gap: 16px;
-  padding: 11px 0; border-bottom: 1px solid var(--paper-tint); align-items: center;
+  padding: 11px 0; border-bottom: 1px solid var(--paper-sunk); align-items: center;
 }
 .tb-ysq-row:last-child { border-bottom: none; }
 .tb-ysq-head { font-size: 11px; padding: 12px 0; border-bottom: 1px solid var(--paper-sunk); }
@@ -102,11 +103,13 @@
 .tb-note-title { font-size: 15px; font-weight: 700; flex: 1; min-width: 0; overflow-wrap: break-word; }
 .tb-note-text { font-size: 14px; line-height: 1.6; color: var(--text-sub); white-space: pre-wrap; overflow-wrap: anywhere; }
 .tb-note-text.is-clamped { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
-.tb-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 24px; padding-top: 12px; border-top: 1px dashed var(--line-input); }
+.tb-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 24px; padding-top: 12px; border-top: 1px solid var(--paper-sunk); }
 .tb-field-label { font-size: 11px; }
 .tb-field-val { font-size: 14px; margin-top: 3px; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; }
 
 @media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
+  .tb-tab-h, .tb-tab-title--desk { display: none; }
+  .tb-notes-head { display: contents; } /* фильтр — прямой ребёнок страницы, как без заголовка */
   .tb-tl-row { grid-template-columns: 52px 1fr; gap: 14px; }
   .tb-tl-dot { width: 44px; height: 44px; font-size: 18px; }
   .tb-ysq-card { padding: 4px 16px; }

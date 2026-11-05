@@ -7,14 +7,14 @@ import type { Section } from './navigation';
 // без сайдбара, и человек 2–3 секунды не видел, куда попал. Примитивы — общий
 // Skeleton.tsx (правило «скелетоны по форме контента»).
 
-const SIDEBAR_BAR = { background: 'var(--ink-2)' };
-// Раскладка «Сегодня» (client-today.css: колонка 600px, шапка, плитки 124px)
-// инлайном: стили раздела приезжают с его ленивым чанком, а силуэт нужен до него.
+const SIDEBAR_BAR = { background: 'var(--panel-2)' };
+// Раскладка «Сегодня» (client-today.css: колонка 600px, шапка, плитки 124px; ритм —
+// от ds-page) инлайном: стили раздела приезжают с ленивым чанком, а силуэт нужен до него.
 const COLUMN = { display: 'flex', flexDirection: 'column' } as const;
 
 function TodaySkeleton() {
   return (
-    <div className="ds-page" style={{ maxWidth: 600, gap: 24 }} data-testid="today-skeleton">
+    <div className="ds-page" style={{ maxWidth: 600 }} data-testid="today-skeleton">
       <div style={{ ...COLUMN, gap: 8 }}>
         <Skeleton width={140} height={12} />
         <Skeleton width="60%" height={34} radius={10} />

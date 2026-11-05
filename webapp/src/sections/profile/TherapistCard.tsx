@@ -12,7 +12,7 @@ export function TherapistCard({ relation }: { relation: TherapyRelationInfo | nu
   if (relation.role !== 'client' || !relation.partnerName) return null;
   const next = upcomingSession(relation.nextSession, relation.meetingDays);
   return (
-    <section className="ds-card ds-card--ink cpf-therapist">
+    <section className="ds-card ds-card--panel cpf-therapist">
       <div className="cpf-therapist-ava" aria-hidden="true">{avatarInitial(relation.partnerName)}</div>
       <div className="cpf-therapist-body">
         <div className="ds-label cpf-therapist-label">Терапевт</div>

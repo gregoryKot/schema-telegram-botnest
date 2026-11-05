@@ -338,9 +338,8 @@ describe('checkEnv', () => {
   });
 });
 
-// Аудит 2026-10 (infra#18): дефолты MINIAPP_URL/BOT_USERNAME вели на старый
-// деплой и старого бота, а прод это не показывал.
-describe('checkEnv — имя бота и адрес мини-аппа', () => {
+// Аудит 2026-10 (infra#18): дефолт BOT_USERNAME вёл на старого бота, а прод это не показывал.
+describe('checkEnv — имя бота', () => {
   it('BOT_USERNAME обязателен в проде: пустой env его требует', () => {
     expect(checkEnv({}, 'production').missing).toContain('BOT_USERNAME');
   });
@@ -359,46 +358,5 @@ describe('checkEnv — имя бота и адрес мини-аппа', () => {
       'production',
     );
     expect(result.invalid.map((i) => i.name)).toContain('BOT_USERNAME');
-  });
-
-  describe('miniappUrlCanonicalHost', () => {
-    const issue = (url: string | undefined, mode: string) =>
-      checkEnv({ ...ALL_VALID, MINIAPP_URL: url }, mode).crossCheckIssues.find(
-        (i) => i.id === 'miniappUrlCanonicalHost',
-      );
-
-    it('старый vercel-деплой в проде — проблема с названием хоста', () => {
-      expect(
-        issue('https://schema-miniapp.vercel.app', 'production')?.problem,
-      ).toContain('schema-miniapp.vercel.app');
-    });
-
-    it('www. редиректится сам — проблема', () => {
-      expect(
-        issue('https://www.schemehappens.ru/app/', 'production'),
-      ).toBeDefined();
-    });
-
-    it('канонический хост без /app/ — проблема про путь', () => {
-      expect(
-        issue('https://schemehappens.ru/', 'production')?.problem,
-      ).toContain('/app/');
-    });
-
-    it('контрольный: https://schemehappens.ru/app/ — чисто', () => {
-      expect(
-        issue('https://schemehappens.ru/app/', 'production'),
-      ).toBeUndefined();
-    });
-
-    it('не в проде чужой хост законен (localhost, staging)', () => {
-      expect(
-        issue('https://schema-miniapp.vercel.app', 'development'),
-      ).toBeUndefined();
-    });
-
-    it('MINIAPP_URL не задан — дефолт из APP_URL, проверять нечего', () => {
-      expect(issue(undefined, 'production')).toBeUndefined();
-    });
   });
 });

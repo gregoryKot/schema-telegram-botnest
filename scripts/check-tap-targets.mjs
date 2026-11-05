@@ -4,7 +4,7 @@
 //
 // Аудит нашёл системные промахи, их починили (#397) — а гейта не оставили, и
 // класс вернулся: `hitboxStyle` (shared/src/utils/hitbox.ts) использован 7 раз,
-// все в schema-miniapp, в webapp/src — ни разу. Пофайловый храповик (формат —
+// все в удалённом мини-аппе, в webapp/src — ни разу. Пофайловый храповик (формат —
 // check-tiny-fonts.mjs): счётчик может только падать, новый файл — с нулём.
 // Считается ОДИН случай, если в открывающем JSX-теге интерактивный элемент
 // (`<button`, onClick, role=button/checkbox/slider) задаёт инлайн-стилем ЧИСЛАМИ
@@ -15,7 +15,7 @@
 // `padding: '8px 0'` (высота ~33) в счётчик не входит: иначе он уходит в сотни,
 // и настоящий класс (мелкая иконка-квадратик 20×20, до которой не попасть
 // пальцем) в нём тонет, а гейт, которому не верят, отключают (правило №15).
-// Образец правильной узкой шкалы — schema-miniapp/src/components/NeedRatingBar.tsx:
+// Образец правильной узкой шкалы — шкала оценки потребности (NeedRatingBar):
 // `flex: 1` + `padding: '17px 0'` → 46px по высоте при ~30 по ширине.
 // Не считаются значения-не-числа (`'var(--x)'`, `'100%'`, переменные) и стили вне
 // инлайна (`style={styles.btn}`): их размер статически неизвестен.
@@ -33,7 +33,7 @@ const BASELINE_PATH = join(ROOT, 'scripts', 'tap-targets-baseline.json');
 const UPDATE = process.argv.includes('--update');
 const VERBOSE = process.argv.includes('--verbose');
 
-const SCAN_DIRS = ['webapp/src', 'schema-miniapp/src', 'shared/src'];
+const SCAN_DIRS = ['webapp/src', 'shared/src'];
 const sum = (o) => Object.values(o).reduce((a, b) => a + b, 0);
 
 function walk(dir, acc = []) {

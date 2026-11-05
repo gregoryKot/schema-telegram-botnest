@@ -43,8 +43,7 @@ lerna-debug.log*
 .env.local
 
 # Claude Code local settings (may contain env vars from permission prompts).
-# Шаблон с `**/` — иначе правило якорится к корню и вложенные .claude
-# (schema-miniapp/.claude/) остаются затреканными.
+# Шаблон с `**/` — иначе правило якорится к корню и вложенные .claude остаются затреканными.
 **/.claude/settings.local.json
 **/.claude/worktrees/
 
@@ -65,17 +64,6 @@ report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 
 # webapp dist — built by Dockerfile on Amvera, no need to commit
 webapp/dist/
-
-# schema-miniapp: track BOTH source and the built dist. Docker copies dist for a
-# fast build; rebuild dist locally (`npm run build --prefix schema-miniapp`) and
-# commit it whenever the mini-app source changes.
-# Без косой черты в конце: шаблон ловит и ссылку на node_modules (рабочая копия
-# через git worktree), а не только папку — ссылка уже уезжала в коммит (#887).
-schema-miniapp/node_modules
-
-# vitest coverage artefacts (schema-miniapp не имеет своего .gitignore, в
-# отличие от webapp) — генерятся scripts/check-frontend-coverage-ratchet.mjs.
-schema-miniapp/coverage/
 
 # shared: не npm-workspace (README.md), поэтому /node_modules и /coverage
 # корневого .gitignore его не покрывают — свой пакет, свои артефакты.

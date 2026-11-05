@@ -7,7 +7,7 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { PHONE_MEDIA } from '../utils/phoneLayout';
+import { PHONE_MEDIA, DESKTOP_MEDIA } from '../utils/phoneLayout';
 
 const css = readFileSync(join(__dirname, 'cabinet.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
 
@@ -37,7 +37,9 @@ const phone = block(css, `@media ${PHONE_MEDIA}`);
 const TAP_MEDIA = '@media (pointer: coarse), (max-width: 767px)';
 const tap = block(css, TAP_MEDIA);
 /** Всё вне медиа-блоков (десктоп с мышью): там каждый примитив объявлен один раз. */
-const top = css.replace(phone, '').replace(tap, '');
+/** Компьютер (≥768): телефонные примитивы здесь не растягиваются, шапка страницы — не полоса. */
+const desk = block(css, `@media ${DESKTOP_MEDIA}`);
+const top = css.replace(phone, '').replace(tap, '').replace(desk, '');
 
 /** Сколько правил вне медиа-блоков объявляют ровно селектор `sel`. */
 function declaredTimes(sel: string): number {
@@ -96,6 +98,8 @@ describe('cabinet.css: примитивы листов (#906)', () => {
     expect(d).toContain('min-height: 48px');
     expect(d).toContain('height: auto'); // базовый .ds-btn задаёт height: 44px
     expect(d).toContain('width: 100%');
+    expect(decls(phone, '.ds-btn--lg')).toContain('width: 100%'); // во всю колонку — только на телефоне
+    expect(decls(top, '.ds-btn--lg')).not.toContain('width');
     expect(d).toContain('border-radius: 24px');
     expect(d).toContain('font-size: 15px');
   });
@@ -177,7 +181,7 @@ describe('cabinet.css: примитивы листов (#906)', () => {
   it('тап-цели живут в одном блоке: в блоке раскладки телефона их нет, второго блока pointer: coarse нет', () => {
     expect(css.split(TAP_MEDIA)).toHaveLength(2);
     expect(css.match(/@media \(pointer: coarse\)/g)).toHaveLength(1);
-    for (const sel of ['.ds-tab', '.ds-btn--icon', '.ds-seg-btn', '.ds-btn--sm', '.ds-input--search', '.ds-input--sm', '.ds-chip--toggle', '.ds-link']) {
+    for (const sel of ['.ds-tab', '.ds-btn--icon', '.ds-seg-btn', '.ds-btn--sm', '.ds-input--search', '.ds-input--sm', '.ds-chip--toggle', '.ds-link', '.ds-menu-item']) {
       expect(decls(phone, sel), sel).toBe('');
     }
   });
@@ -188,15 +192,16 @@ describe('cabinet.css: поправки координатора волны 1 (#
     expect(decls(top, '.ds-sheet-head > .ds-back:first-child')).toContain('margin-left: 0');
     expect(decls(top, '.ds-sheet-head > :last-child')).toContain('margin-left: auto');
   });
-  it('.ds-avatar.tone-tint — tint-аватар с тёмными инициалами (иначе .ds-avatar перекрывает .tone-tint заливкой)', () => {
-    const tint = decls(top, '.ds-avatar.tone-tint');
-    expect(tint).toContain('background: oklch(0.94 0.035 var(--h))');
-    expect(tint).toContain('color: oklch(0.38 0.1 var(--h))');
-    expect(top.indexOf('.ds-avatar.tone-tint')).toBeGreaterThan(top.indexOf('.ds-avatar {'));
+  it('.ds-avatar — tint по умолчанию: тёмные инициалы на светлой заливке, без #fff и без .tone-tint', () => {
+    const av = decls(top, '.ds-avatar');
+    expect(av).toContain('background: oklch(0.94 0.035 var(--h))');
+    expect(av).toContain('color: oklch(0.38 0.1 var(--h))');
+    expect(av).not.toMatch(/#fff/i);
+    expect(css).not.toContain('.ds-avatar.tone-tint');
   });
-  it('на акцентной карточке подпись, подпись-строка и ссылка — светлые токеном --on-ink', () => {
+  it('на акцентной карточке подпись, подпись-строка и ссылка — светлые токеном --on-accent', () => {
     for (const sel of ['.ds-card--accent .ds-label', '.ds-card--accent .ds-sub', '.ds-card--accent .ds-link']) {
-      expect(decls(top, sel), sel).toContain('color: var(--on-ink)');
+      expect(decls(top, sel), sel).toContain('color: var(--on-accent)');
     }
   });
 });
@@ -212,7 +217,9 @@ describe('cabinet.css: примитивы волны 2 (#906)', () => {
   });
   it('сегмент: --full равные кнопки, --scroll только на телефоне с маской, счётчик без пилюли', () => {
     expect(decls(top, '.ds-seg--full')).toContain('display: flex');
-    expect(decls(top, '.ds-seg--full')).toContain('width: 100%');
+    expect(decls(phone, '.ds-seg--full')).toContain('width: 100%'); // растяжение — только телефон
+    expect(decls(desk, '.ds-seg--full')).toContain('display: inline-flex'); // на компьютере по содержимому
+    expect(decls(top, '.ds-seg--full')).not.toContain('width');
     expect(decls(top, '.ds-seg--full > .ds-seg-btn')).toContain('flex: 1 1 0');
     expect(top).not.toContain('.ds-seg--scroll');
     expect(decls(phone, '.ds-seg--scroll')).not.toContain('mask-image');
@@ -250,7 +257,7 @@ describe('cabinet.css: примитивы волны 2 (#906)', () => {
   it('карточки: --nav раньше цветных модификаторов, --crisis без --err', () => {
     const nav = top.indexOf('.ds-card--nav {');
     expect(nav).toBeGreaterThan(-1);
-    expect(nav).toBeLessThan(top.indexOf('.ds-card--ink'));
+    expect(nav).toBeLessThan(top.indexOf('.ds-card--panel'));
     expect(nav).toBeLessThan(top.indexOf('.ds-card--accent'));
     const crisis = decls(top, '.ds-card--crisis');
     expect(crisis).toContain('--h: 28');
@@ -266,5 +273,53 @@ describe('cabinet.css: примитивы волны 2 (#906)', () => {
     expect(decls(top, '.ds-link--inline')).toContain('display: inline');
     expect(decls(tap, '.ds-link--inline')).toContain('display: inline');
     expect(decls(tap, '.ds-link--inline')).toContain('min-height: 0');
+  });
+});
+
+describe('cabinet.css: примитивы волны 3 (#906)', () => {
+  const WAVE3 = ['.ds-link--danger', '.ds-input--on-panel', '.ds-menu', '.ds-menu-item', '.ds-backdrop'];
+  it.each(WAVE3)('%s объявлен один раз вне медиа и красится токенами', (cls) => {
+    expect(declaredTimes(cls)).toBe(1);
+    expect(decls(css, cls)).not.toMatch(/#[0-9a-f]{3,8}\b|rgba?\(/i);
+  });
+  it('разделитель строк списка — --paper-sunk (заливка-линия), --line только контуры; пунктира нет', () => {
+    expect(decls(top, '.ds-list-row')).toContain('border-bottom: 1px solid var(--paper-sunk)');
+    expect(decls(top, 'button.ds-list-row')).toContain('border-bottom: 1px solid var(--paper-sunk)');
+    expect(css).not.toMatch(/border[a-z-]*:[^;}]*dashed/);
+  });
+  it('меню «⋯»: fixed с тенью --shadow-2, пункт 44 только под пальцем, опасный — --err', () => {
+    expect(decls(top, '.ds-menu')).toContain('position: fixed');
+    expect(decls(top, '.ds-menu')).toContain('box-shadow: var(--shadow-2)');
+    expect(decls(tap, '.ds-menu-item')).toContain('min-height: 44px');
+    expect(decls(phone, '.ds-menu-item')).toBe('');
+    expect(decls(top, '.ds-menu-item.is-danger')).toContain('color: var(--accent-red)');
+    expect(decls(top, '.ds-backdrop')).toContain('position: fixed');
+  });
+  it('опасное действие: ссылка и заголовок строки красятся --accent-red', () => {
+    expect(decls(top, '.ds-link--danger')).toContain('color: var(--accent-red)');
+    expect(decls(top, '.ds-link--danger:hover')).toContain('color: var(--accent-red)');
+    expect(decls(top, '.ds-list-row--danger .ds-list-title')).toContain('color: var(--accent-red)');
+  });
+  it('поле на песочной панели: белая бумага с контуром --panel-line, объявлено после .ds-input:focus', () => {
+    const f = decls(top, '.ds-input--on-panel');
+    expect(f).toContain('background: var(--surface)');
+    expect(f).toContain('border-color: var(--panel-line)');
+    expect(f).toContain('color: var(--text)');
+    expect(top.indexOf('.ds-input--on-panel {')).toBeGreaterThan(top.indexOf('.ds-input:focus'));
+  });
+});
+
+describe('cabinet.css: компьютер ≥768 (регрессия 2026-11-04 «кабинет стал как телефон»)', () => {
+  it('шапка страницы на компьютере — без полосы: без линии и фона, min-height 0, колонка из --sheet-col', () => {
+    const d = decls(desk, '.ds-sheet-head--page');
+    expect(d).toContain('border-bottom: none');
+    expect(d).toContain('background: none');
+    expect(d).toContain('min-height: 0');
+    expect(d).toContain('max-width: var(--sheet-col)');
+    expect(d).not.toMatch(/var\([^)]*,/); // фолбэков в var() нет
+    expect(decls(css, ':root')).toContain('--sheet-col');
+  });
+  it('на телефоне модификатор --page ничего не меняет: правила для него нет вне ≥768', () => {
+    expect(top + phone).not.toContain('.ds-sheet-head--page');
   });
 });

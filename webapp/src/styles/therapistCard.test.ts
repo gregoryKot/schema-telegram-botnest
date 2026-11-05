@@ -6,7 +6,7 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { PHONE_MEDIA } from '../utils/phoneLayout';
+import { PHONE_MEDIA, DESKTOP_MEDIA } from '../utils/phoneLayout';
 
 const css = readFileSync(join(__dirname, 'therapist-card.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
 
@@ -37,7 +37,7 @@ const phone = block(css, `@media ${PHONE_MEDIA}`);
 const GONE = [
   '.tk-actions-main', '.tk-head--quiet-actions', '.tk-back', '.tk-edit', '.tk-name-row',
   '.tk-tile', '.tk-tile-title', '.tk-tile-item', '.tk-tiles', '.tk-quote', '.tk-goal-text', '.tk-mode-col', '.tk-modes',
-  '.tk-card-label', '.tk-next-edit', '.tk-next-sub', '.tk-action', '.tk-actions-grid', '.tk-hint', '.tk-block',
+  '.tk-card-label', '.tk-next-edit', '.tk-next-sub', '.tk-action', '.tk-actions-grid', '.tk-hint', '.tk-block', '.tk-day',
 ];
 
 describe('therapist-card.css: тихая карточка клиента (#906)', () => {
@@ -66,11 +66,18 @@ describe('therapist-card.css: тихая карточка клиента (#906)'
     expect(decls(phone, '.tk-avatar')).toContain('height: 44px');
   });
 
-  it('строка «Встреча» в шапке — без подложки списка, своей строкой; тап-цель пунктов меню «⋯» — у общего .mm2-item, не здесь', () => {
-    const line = decls(css, '.tk-head .tc-meeting');
-    expect(line).toContain('background: none');
-    expect(line).toContain('flex-basis: 100%');
-    expect(decls(css, '.tk-menu .mm2-item')).not.toContain('min-height');
+  it('Встреча в шапке — та же форма, что в списке: у .tc-meeting нет background, у .tk-head .tc-meeting только flex-basis; в therapist-card.css нет .mm2-item и .tk-menu', () => {
+    const list = readFileSync(join(__dirname, 'therapist-clients.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+    expect(decls(list, '.tc-meeting')).not.toContain('background');
+    expect(decls(css, '.tk-head .tc-meeting').replace(/\s/g, '')).toBe('flex-basis:100%;');
+    expect(css).not.toContain('.mm2-item');
+    expect(css).not.toContain('.tk-menu');
+  });
+
+  it('шаг стопки карточек — 16: у .tk-side и .tk-col, без телефонного переопределения', () => {
+    expect(decls(css, '.tk-side')).toContain('gap: 16px');
+    expect(decls(css, '.tk-col')).toContain('gap: 16px');
+    expect(decls(phone, '.tk-col')).toBe('');
   });
 
   it('цель терапии — Manrope 15 обычным текстом; цвета — только токенами и тонами', () => {
@@ -108,5 +115,34 @@ describe('therapist-card.css: имя, заметка, действия сайд�
     expect(decls(wide, '.tk-side .tk-quick')).toContain('flex-direction: column');
     // На одну колонку (<1024) правило не распространяется: там кнопки в ряд.
     expect(decls(block(css, '@media (max-width: 1023px)'), '.tk-side .tk-quick')).toBe('');
+  });
+});
+
+// Регрессия 2026-11-04: «сайт выглядел как компьютерная версия, а стал как
+// мобильник». «Обзор» на ≥768 возвращает раскладку макета; строки в одной
+// карточке и 15px — только телефон.
+describe('therapist-card.css: «Обзор» — компьютер и телефон (регрессия 2026-11-04)', () => {
+  const desk = block(css, `@media ${DESKTOP_MEDIA} {\n  .tk-goal`);
+
+  it('на ≥768: цель — 24px с засечками (макет REDESIGN_2026-10: Literata 24px), схемы — плитки до 3 в ряд, режимы — колонки с верхней чертой', () => {
+    expect(decls(desk, '.tk-goal .tk-text')).toMatch(/24px\/1\.4 var\(--serif\)/);
+    expect(decls(desk, '.tk-groups')).toContain('display: grid');
+    expect(decls(desk, '.tk-groups--tiles')).toContain('/ 3)');
+    expect(decls(desk, '.tk-groups--cols')).toContain('/ 3)');
+    expect(decls(desk, '.tk-groups--cols .tk-group')).toContain('border-top: 3px solid');
+  });
+
+  it('сплошных заливок нет: плитка — тонкая подложка и рамка, не tone-fill/tone-soft', () => {
+    expect(css).not.toMatch(/tone-soft|tone-fill/);
+    expect(decls(desk, '.tk-groups--tiles .tk-group')).toContain('border: 1px solid');
+  });
+
+  it('сетка групп и крупная цель объявлены только под ≥768; в базе и на телефоне — строки и 15px', () => {
+    const outside = css.replace(desk, '');
+    expect(outside).not.toMatch(/\.tk-groups--|grid-template-columns: repeat\(auto-fill/);
+    expect(decls(outside, '.tk-groups')).toContain('flex-direction: column');
+    expect(decls(outside, '.tk-text')).toContain('15px');
+    expect(decls(phone, '.tk-goal .tk-text')).toBe('');
+    expect(decls(phone, '.tk-groups')).toBe('');
   });
 });

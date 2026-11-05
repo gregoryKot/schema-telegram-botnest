@@ -32,7 +32,7 @@ const BASELINE_PATH = join(ROOT, 'scripts', 'scale-drift-baseline.json');
 const UPDATE = process.argv.includes('--update');
 const VERBOSE = process.argv.includes('--verbose');
 
-const SCAN_DIRS = ['webapp/src', 'schema-miniapp/src', 'shared/src'];
+const SCAN_DIRS = ['webapp/src', 'shared/src'];
 
 // Шкала — shared/src/theme/tokens.css (частоты замеров там же).
 const RADIUS_SCALE = new Set([2, 4, 6, 8, 10, 12, 14, 16, 20]);

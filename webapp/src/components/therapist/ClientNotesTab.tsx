@@ -2,6 +2,7 @@ import { useState } from 'react';
 import '../../styles/therapist-tabs.css';
 import { buildNoteItems, countByFilter, filterNotes, FILTERS, type DiaryEntry, type ModeNoteData, type NoteFilter, type SchemaNoteData } from './notesModel';
 import { NoteCard } from './NoteCard';
+import { TabTitle } from './TabTitle';
 
 interface Props {
   clientSchemaNotesData: SchemaNoteData[];
@@ -12,30 +13,28 @@ interface Props {
 export function ClientNotesTab({ clientSchemaNotesData, clientModeNotesData, clientDiary }: Props) {
   const [filter, setFilter] = useState<NoteFilter>('all');
   const [openKey, setOpenKey] = useState<string | null>(null);
-
   const all = buildNoteItems(clientDiary, clientSchemaNotesData, clientModeNotesData);
 
   if (all.length === 0) {
     return (
-      <div className="ds-page tb-page tb-page--narrow">
+      <div className="ds-page tb-page--narrow">
         <p className="ds-empty">Клиент ещё не заполнял дневник</p>
       </div>
     );
   }
-
   const counts = countByFilter(all);
   const shown = filterNotes(all, filter);
-
   return (
-    <div className="ds-page tb-page tb-page--narrow">
-      {/* Заголовка нет (#906): имя уже во вкладке шапки — первым идёт фильтр. */}
-      <div className="ds-seg ds-seg--scroll" role="tablist">
-        {FILTERS.map(f => (
-          <button key={f.id} role="tab" aria-selected={filter === f.id}
-            className={`ds-seg-btn${filter === f.id ? ' is-active' : ''}`} onClick={() => setFilter(f.id)}>
-            {f.label}<span className="ds-count">{counts[f.id]}</span>
-          </button>
-        ))}
+    <div className="ds-page tb-page--narrow">
+      <div className="ds-head-row tb-notes-head">
+        <TabTitle title="Записи клиента" className="tb-tab-title--desk" />
+        <div className="ds-seg ds-seg--scroll" role="tablist">
+          {FILTERS.map(f => (
+            <button key={f.id} role="tab" aria-selected={filter === f.id} className={`ds-seg-btn${filter === f.id ? ' is-active' : ''}`} onClick={() => setFilter(f.id)}>
+              {f.label}<span className="ds-count">{counts[f.id]}</span>
+            </button>
+          ))}
+        </div>
       </div>
       <div className="tb-notes">
         {shown.length === 0 && <p className="ds-empty">В этой категории записей нет</p>}

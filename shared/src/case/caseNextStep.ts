@@ -15,7 +15,7 @@
  * нельзя — правило №11 про денормализацию просит тест-сверку, а не запрет
  * дублировать константу там, где вынести её некуда).
  *
- * Один источник для webapp/schema-miniapp (правило №3 CLAUDE.md).
+ * Один источник для webapp (правило №3 CLAUDE.md).
  */
 import type { Tr } from './caseTypes';
 import { modeDisplayName } from '../mode/modeDisplayName';

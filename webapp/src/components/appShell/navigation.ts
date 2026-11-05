@@ -1,9 +1,8 @@
 // Чистые утилиты навигации/истории AppShell — вынесены из AppShell.tsx
 // (правило №10). sectionFromPath — своя (по разделам конкретно этого
-// фронтенда); fillHistoryGaps — общая с мини-аппом, поэтому не копия,
-// а ре-экспорт единственной реализации из shared (правило №3, jscpd-свип
-// 2026-08: копия здесь и в schema-miniapp/utils/todayConstants.ts была
-// найдена храповиком дублей).
+// фронтенда); fillHistoryGaps — ре-экспорт единственной реализации из
+// shared (правило №3, jscpd-свип 2026-08: копия здесь и в удалённом
+// мини-аппе была найдена храповиком дублей).
 export { fillHistoryGaps } from '../../../../shared/src/utils/todayConstants';
 
 export type Section = 'today' | 'diary' | 'more' | 'schemas' | 'profile' | 'practice';

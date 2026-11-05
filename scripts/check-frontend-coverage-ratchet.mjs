@@ -1,16 +1,16 @@
 #!/usr/bin/env node
 // Фронтенд-coverage-храповик (TEST_IMPROVEMENT_PLAN.md, этап 2.1; по образцу
-// check-coverage-ratchet.mjs, бэкендового). До этого шага coverage webapp и
-// schema-miniapp вообще не гейтился в CI — джобы гоняли `npm test --prefix
+// check-coverage-ratchet.mjs, бэкендового). До этого шага coverage фронтендов
+// вообще не гейтился в CI — джобы гоняли `npm test --prefix
 // <pkg>` без --coverage, число могло падать незаметно.
 //
 // Гоняет `npx vitest run --coverage` в каждом пакете (webapp,
-// schema-miniapp), читает <pkg>/coverage/coverage-summary.json (репортер
+// shared), читает <pkg>/coverage/coverage-summary.json (репортер
 // json-summary объявлен в <pkg>/vite.config.ts → test.coverage.reporter) и
 // сравнивает total lines/branches с scripts/frontend-coverage-baseline.json.
 //
-// Без флага — оба пакета по очереди (для локального прогона). В CI джобы
-// раздельные (webapp/miniapp) — каждая передаёт --package <имя>, чтобы не
+// Без флага — все пакеты по очереди (для локального прогона). В CI джобы
+// раздельные (webapp, shared) — каждая передаёт --package <имя>, чтобы не
 // гонять чужой пакет и не задваивать время джобы.
 import { spawnSync } from 'child_process';
 import { readFileSync, writeFileSync, existsSync } from 'fs';
@@ -19,7 +19,7 @@ import { exitFlushed as exit, relayOutput } from './child-output.mjs';
 
 const ROOT = join(import.meta.dirname, '..');
 const BASELINE_PATH = join(ROOT, 'scripts', 'frontend-coverage-baseline.json');
-const PACKAGES = ['webapp', 'schema-miniapp', 'shared'];
+const PACKAGES = ['webapp', 'shared'];
 
 const UPDATE = process.argv.includes('--update');
 const packageFlagIndex = process.argv.indexOf('--package');

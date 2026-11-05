@@ -1,6 +1,5 @@
 // @vitest-environment jsdom
-// DiaryShareButton (webapp) — шеринг сводки дневника (DiarySection.tsx),
-// паритет с schema-miniapp/src/share/DiaryShareButton.tsx (правило №16).
+// DiaryShareButton (webapp) — шеринг сводки дневника (DiarySection.tsx).
 // Ключевой инвариант: на пустом дневнике (0 записей) кнопки нет вовсе.
 import { describe, it, expect, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';

@@ -23,11 +23,11 @@ describe('check-render-poison.mjs', () => {
   it('backdrop-filter в .css — exit 1', () => {
     const res = runGate('check-render-poison.mjs', {
       'scripts/render-poison-baseline.json': JSON.stringify({}),
-      'schema-miniapp/src/foo.css': '.nav { backdrop-filter: blur(10px); }\n',
+      'webapp/src/foo.css': '.nav { backdrop-filter: blur(10px); }\n',
     });
     expect(res.status).toBe(1);
     expect(res.stderr).toContain(
-      'schema-miniapp/src/foo.css: новый файл с 1 нарушениями',
+      'webapp/src/foo.css: новый файл с 1 нарушениями',
     );
   });
 
@@ -69,9 +69,9 @@ describe('check-render-poison.mjs', () => {
   it('значение none (выключатель размытия) НЕ считается', () => {
     const res = runGate('check-render-poison.mjs', {
       'scripts/render-poison-baseline.json': JSON.stringify({}),
-      // Тот же приём, что schema-miniapp/src/utils/perfExperiments.ts:
+      // Тот же приём, что у инструмента замеров (perfExperiments):
       // экспериментальный CSS-переключатель, а не поражённый код.
-      'schema-miniapp/src/utils/perfExperiments.ts':
+      'webapp/src/utils/perfExperiments.ts':
         "const off = '*{backdrop-filter:none!important;" +
         "-webkit-backdrop-filter:none!important;filter:none!important}';\n",
     });
@@ -82,7 +82,7 @@ describe('check-render-poison.mjs', () => {
   it('упоминание в // -комментарии НЕ считается', () => {
     const res = runGate('check-render-poison.mjs', {
       'scripts/render-poison-baseline.json': JSON.stringify({}),
-      'schema-miniapp/src/components/Foo.tsx': [
+      'webapp/src/components/Foo.tsx': [
         'export function Foo() {',
         '  return (',
         '    <div',
@@ -177,17 +177,17 @@ describe('check-render-poison.mjs', () => {
     // после незакавыченного адреса становилось невидимым для гейта.
     const res = runGate('check-render-poison.mjs', {
       'scripts/render-poison-baseline.json': JSON.stringify({}),
-      'schema-miniapp/src/theme.css':
+      'webapp/src/theme.css':
         '.a { background: url(https://cdn.example.com/x.png); backdrop-filter: blur(4px); }\n',
     });
     expect(res.status).toBe(1);
-    expect(res.stderr).toContain('schema-miniapp/src/theme.css');
+    expect(res.stderr).toContain('webapp/src/theme.css');
   });
 
   it('КОНТРОЛЬ: то же значение backdrop-filter вне комментария — по-прежнему exit 1', () => {
     const res = runGate('check-render-poison.mjs', {
       'scripts/render-poison-baseline.json': JSON.stringify({}),
-      'schema-miniapp/src/components/Bar.tsx':
+      'webapp/src/components/Bar.tsx':
         "export const x = <div style={{ backdropFilter: 'blur(8px)' }} />; // не убрано\n",
     });
     expect(res.status).toBe(1);

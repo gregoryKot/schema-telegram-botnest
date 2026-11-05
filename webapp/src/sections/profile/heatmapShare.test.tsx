@@ -1,7 +1,6 @@
 // @vitest-environment jsdom
-// MonthShareButton (webapp) — карточка «Мой месяц» из хитмапа профиля,
-// паритет с schema-miniapp/src/sections/profile/heatmapShare.tsx (правило
-// №16). Ветка «активных дней нет» — кнопки нет вовсе.
+// MonthShareButton (webapp) — карточка «Мой месяц» из хитмапа профиля.
+// Ветка «активных дней нет» — кнопки нет вовсе.
 import { describe, it, expect, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';

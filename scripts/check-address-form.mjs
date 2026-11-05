@@ -13,7 +13,7 @@ const ROOT = join(import.meta.dirname, '..');
 const BASELINE_PATH = join(ROOT, 'scripts', 'address-form-baseline.json');
 const UPDATE = process.argv.includes('--update');
 
-const SCAN_DIRS = ['webapp/src', 'schema-miniapp/src', 'shared/src'];
+const SCAN_DIRS = ['webapp/src', 'shared/src'];
 // Экспорт ради структурной проверки в address-form.spec.ts (приём ALLOW из
 // check-gendered-forms.mjs): у каждого исключения — образец, который оно ловит.
 export const EXCLUDE = [

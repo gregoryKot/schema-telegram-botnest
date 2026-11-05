@@ -744,7 +744,7 @@ describe('SettingsSheet — переключение подвидов «Част
     await screen.findByText('Настройки');
   });
 
-  it('«Тихие часы»: выбор пресета клавиатурой (Enter) тоже сохраняет', async () => {
+  it('«Тихие часы»: пресет — нативная кнопка, клик сохраняет', async () => {
     mockApi.getSettings.mockResolvedValue({ ...SETTINGS, notifyEnabled: true });
     await renderSheet();
     fireEvent.click(screen.getByText('Тихие часы'));
@@ -752,7 +752,8 @@ describe('SettingsSheet — переключение подвидов «Част
 
     const firstPreset = screen.getAllByRole('button').find(b => b.textContent?.includes('–'));
     expect(firstPreset).toBeTruthy();
-    fireEvent.keyDown(firstPreset!, { key: 'Enter' });
+    expect(firstPreset!.tagName).toBe('BUTTON');
+    fireEvent.click(firstPreset!);
     await waitFor(() => expect(mockApi.updateSettings).toHaveBeenCalled());
   });
 

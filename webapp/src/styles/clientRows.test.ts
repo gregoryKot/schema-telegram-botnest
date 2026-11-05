@@ -26,3 +26,31 @@ describe('строки-переходы клиента: локальные ха�
     expect(read('client-why.css')).not.toContain('.cw-h1');
   });
 });
+
+// Класс как целый селектор: `.ex2-chip` не совпадает с `.ex2-chips`.
+const hasClass = (css: string, cls: string) => new RegExp('\\.' + cls.replace(/-/g, '\\-') + '(?![\\w-])').test(css);
+
+describe('волна 3 (#906): один примитив на механику', () => {
+  it.each(['sk-empty', 'sk-empty-text', 'sk-fc-empty', 'sk-danger', 'sk-fc-hist-title'])('sheet-tasks.css: нет .%s', (cls) => {
+    expect(hasClass(read('sheet-tasks.css'), cls)).toBe(false);
+  });
+  it('sheet-tasks.css: палитра команд переехала, .sk-cmd- нет', () => {
+    expect(read('sheet-tasks.css')).not.toContain('.sk-cmd-');
+  });
+  it.each(['ex2-pick-arrow', 'ex2-pick-name', 'ex2-empty', 'ex2-chip'])('sheet-exercises.css: нет .%s', (cls) => {
+    expect(hasClass(read('sheet-exercises.css'), cls)).toBe(false);
+  });
+  it('sheet-exercises.css: контейнер .ex2-chips остался', () => {
+    expect(hasClass(read('sheet-exercises.css'), 'ex2-chips')).toBe(true);
+  });
+  it('sheet-childhood.css: ни одного селектора .cw-, префикс chw-', () => {
+    const css = read('sheet-childhood.css');
+    expect(css).not.toMatch(/\.cw-/);
+    expect(css).toMatch(/\.chw-/);
+  });
+  it('client-practice.css: у .cp-page--phone нет gap и padding-top', () => {
+    const rules = [...read('client-practice.css').matchAll(/\.cp-page--phone\s*\{([^}]*)\}/g)].map(m => m[1]).join(';');
+    expect(rules).not.toMatch(/(^|[;\s])gap\s*:/);
+    expect(rules).not.toMatch(/padding-top\s*:/);
+  });
+});

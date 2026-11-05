@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 // Тест оффлайн-очереди оценок (правило №3 — перенесено из
-// schema-miniapp/src/utils/outbox.test.ts, единственная копия теперь здесь;
+// удалённого мини-аппа, единственная копия теперь здесь;
 // webapp получает тот же контракт через webapp/src/apiRating.ts). Реальный
 // jsdom-localStorage — тот же паттерн, что у drafts.test.ts в этом каталоге.
 import { describe, it, expect, beforeEach, vi } from 'vitest';

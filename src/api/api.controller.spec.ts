@@ -349,6 +349,7 @@ describe('ApiController profile / name / init / disclaimer', () => {
     expect(botService.hasAcceptedDisclaimer).toHaveBeenCalledWith(3n);
 
     await controller.acceptDisclaimer(makeReq(3n));
-    expect(botService.acceptDisclaimer).toHaveBeenCalledWith(3n);
+    // Экран согласий кабинета закрывает и онбординг (метрика /stats).
+    expect(botService.acceptDisclaimer).toHaveBeenCalledWith(3n, true);
   });
 });

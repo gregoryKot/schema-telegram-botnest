@@ -12,7 +12,7 @@
 .tt-counter--warn .ds-num { color: var(--warn-ink); }
 .tt-denom { font-size: 22px; font-style: italic; color: var(--text-faint); }
 .tt-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr)); gap: 32px; align-items: start; }
-.tt-col { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.tt-col { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
 /* Второй раздел колонки («Требуют внимания» под «Сессиями») — отдельным блоком,
    а не вплотную к пустому состоянию первого. */
 .tt-col > .ds-h2:not(:first-child) { margin-top: 24px; }
@@ -41,6 +41,15 @@
 .tt-attn-body { flex: 1; min-width: 0; }
 .tt-attn .tt-row-sub { color: var(--warn-ink); font-size: 12px; }
 .tt-attn-list { display: flex; flex-direction: column; gap: 8px; }
+
+/* Компьютер (≥768): переход — акцентная стрелка «→» справа (как до волн), а не
+   телефонный шеврон «›»; у строки активности стрелки не было. */
+@media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) {
+  .tt-session > .ds-chev:empty::before, .tt-attn > .ds-chev:empty::before { content: '→'; }
+  .tt-session > .ds-chev, .tt-attn > .ds-chev { font-size: 18px; font-weight: 600; color: var(--accent); white-space: nowrap; }
+  .tt-attn > .ds-chev { color: var(--warn-ink); }
+  .tt-act > .ds-chev { display: none; }
+}
 
 @media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
   /* Три счётчика в ряд — ~115px на карточку: отступ уже, чем у ds-card--row,

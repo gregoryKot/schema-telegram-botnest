@@ -23,7 +23,7 @@ export function FlashcardDoneScreen({ modeLabel, needLabel, action, syncFailed, 
   ].filter((r): r is { label: string; value: string | undefined } => r !== null);
   return (
     <FlashcardFrame onBack={goBack} label="Закрыть" center>
-      <h1 className="ds-h1 sk-fc-hero">Сохранено</h1>
+      <h1 className="ds-h2 sk-fc-hero">Сохранено</h1>
       <p className="sk-fc-lead">
         {tr('Это твой шаг навстречу себе. Уже немало.', 'Это ваш шаг навстречу себе. Уже немало.')}
       </p>

@@ -128,7 +128,7 @@ export function TaskCreateSheet({ clientId, clientName, defaultType, defaultText
             {selected.hasStreak && (
               <div className="sk-field">
                 <div className="ds-label">Цель в днях</div>
-                <div className="ds-seg">
+                <div className="ds-seg ds-seg--full">
                   {STREAK_OPTIONS.map(d => (
                     <button
                       key={d}

@@ -165,7 +165,7 @@ describe('CommandPalette — клиенты терапевта', () => {
     ]);
     renderPalette({ userRole: 'THERAPIST', therapistMode: true });
     const sub = async (name: string) =>
-      (await screen.findByText(name)).parentElement!.querySelector('.sk-cmd-sub')!.textContent;
+      (await screen.findByText(name)).parentElement!.querySelector('.cmd-sub')!.textContent;
     expect(await sub('Офлайн Иван')).toBe('офлайн');
     expect(await sub('Света')).toBe('в боте');
     expect(screen.queryByText('Клиент')).toBeNull();
@@ -218,6 +218,14 @@ describe('CommandPalette — клиенты терапевта', () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+});
+
+describe('CommandPalette — вид', () => {
+  it('нет плашки «Esc» (на телефоне такой клавиши нет), панель — .cmd-panel', () => {
+    renderPalette();
+    expect(screen.queryByText('Esc')).toBeNull();
+    expect(screen.getByRole('dialog').classList.contains('cmd-panel')).toBe(true);
   });
 });
 

@@ -16,7 +16,7 @@ const BREATHS = ['Вдох через нос — 4 секунды', 'Задер�
 export function FlashcardGrounding({ tr, historyCount, onContinue, onHistory, onClose }: Props) {
   return (
     <FlashcardFrame onBack={onClose} label="Закрыть" center>
-      <h1 className="ds-h1 sk-fc-hero">Всё правильно</h1>
+      <h1 className="ds-h2 sk-fc-hero">Всё правильно</h1>
       <p className="sk-fc-lead">
         {tr('То, что ты чувствуешь сейчас – это нормально.', 'То, что вы чувствуете сейчас – это нормально.')}<br />Это пройдёт.
       </p>

@@ -12,7 +12,7 @@
   flex: 1 1 auto; min-height: 80px; overflow-y: auto; overscroll-behavior: contain;
   background:
     linear-gradient(transparent, var(--surface) 60%) bottom / 100% 24px no-repeat local,
-    linear-gradient(to top, color-mix(in srgb, var(--ink) 12%, transparent), transparent) bottom / 100% 10px no-repeat scroll;
+    linear-gradient(to top, rgba(var(--fg-rgb), 0.12), transparent) bottom / 100% 10px no-repeat scroll;
 }
 .ef-check { display: flex; align-items: flex-start; gap: 12px; min-height: 44px; margin: 0 0 16px; cursor: pointer; font-size: 14px; line-height: 1.55; color: var(--text); }
 .ef-check input { flex-shrink: 0; width: 22px; height: 22px; margin: 1px 0 0; accent-color: var(--accent); cursor: pointer; }

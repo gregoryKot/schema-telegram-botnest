@@ -13,9 +13,13 @@
   осталась в «Практике» и в карточке терапевта на «Профиле»), шкала потребностей прямо на главной
   (оценка — только в трекере), черновики, «Последние записи» (теперь лента «Сегодня»), онбординг
   «С чего начать». Ключи `today_*` и `screen_order_today` сайт больше не читает, но они в
-  `SYNCED_PREF_KEYS`: их пишет мини-апп.
-- **Осталось у мини-аппа до его отключения** ([ONE_FRONTEND_PLAN.md](../ONE_FRONTEND_PLAN.md)):
-  всё перечисленное выше, `shared/src/today/*`, `shared/src/screens/*`, бэкенд `screen_order_today`.
+  `SYNCED_PREF_KEYS`: их больше никто не пишет (мини-апп удалён, #908).
+- **Восемь ключей `uiPrefs` главной мини-аппа без читателя в интерфейсе (#908):** `today_focus_practice`, `today_streak_hidden`, `today_phrase_hidden`, `today_secondary_hidden`, `today_therapist_banner_hidden`, `screen_order_today`, `quick_actions_hidden_plus`, `quick_actions_order_plus`. Белый список `SYNCED_PREF_KEYS` (`src/api/ui-prefs.sanitize.ts`, `shared/src/prefs/uiPrefsSync.ts`) их ещё принимает и синхронизирует, в `User.uiPrefs` они лежат, но ни один экран сайта их не читает (главная после #872 — три плитки). Решение владельца 2026-11-04 — убрать отдельным PR: белый список и сверка `src/security/ui-prefs-sync.invariants.spec.ts`, `SCREEN_BLOCK_IDS` в `src/api/dto/analytics.dto.ts`, `screen-metrics.service.ts`, данные — миграцией. Модули `shared/src/today/*` и `shared/src/screens/*` живы: их берут «Профиль», «Паттерны» и синхронизация настроек.
+- **«Настроить экран»: скрытые блоки остаются на экране** (владелец 2026-10-21, issue #922). Скрыл всё в
+  листе — экран показывает всё; юнит-тесты зелёные, браузерного e2e на «скрыл → пропало → перезагрузил»
+  нет. Экраны с настройкой после #872: «Профиль», «Паттерны» (обе вкладки), «Инструменты» в «Практике»;
+  общее — `webapp/src/components/customize/*`, синхронизация `shared/src/prefs/uiPrefsSync.ts` +
+  `webapp/src/components/UiPrefsGate.tsx`. План и критерии — в issue.
 - **Вход в «Карту себя» с сайта — только с экрана «Записано» после разбора** (кнопка «Карта себя» в
   `CaseDoneScreen`; `CaseFlowHost` со `start="map"` больше нигде не открывается): строка «Карта себя ·
   N разборов →» жила в `CaseEntryCard`. Постоянного входа нет — решить, где ему жить: в «Ещё» или
@@ -30,13 +34,6 @@
 - **Этапы 4–5** («Что случилось» в три шага и остальное) — в разделе «Порядок внедрения» концепта.
   «Зачем это всё» (экран «Первый раз») сделан в этапе 1 (`webapp/src/components/WhySheet.tsx`),
   «Записи» и дневник одной страницей — в этапе 3.
-- **В мини-аппе моста к терапевту нет** (строки «самопомощь, не замена терапии», карточки по сигналу,
-  листа «Поговорить с кем-то»); `noteCrisisSeen()` пишется только из webapp
-  (`webapp/src/components/diary/quickEntry/useQuickEntry.ts`) и общего `useCaseQuickFlow`, который
-  мини-апп не использует. Причина: мини-апп сворачивается (BACKLOG «Одна версия вместо двух
-  фронтендов»), при переезде на одну версию мост приедет сам. Доказано: `grep -r therapy/bridge
-  schema-miniapp/src` пуст. Концепт — [design/CLIENT_SIMPLE_2026-10.md](../design/CLIENT_SIMPLE_2026-10.md).
-
 **Дизайн-система визитки kotlarewski — что осталось после выравнивания бренда** (аудит
 2026-10-21; `.landing-personal-brand` теперь на всех страницах визитки через `PracticeBrand`
 в `webapp/src/App.tsx`). Не сделано осознанно, каждое меняет вид или упирается в решение владельца:
@@ -72,32 +69,14 @@
   это отдельная работа с разбором, а не `--update` (правило №15 п.3).
 - **Полоски-шаги визардов кликабельны и не попадаемы.** `webapp/src/index.css:1545`
   `.tick` 3px (прыгает на шаг из `SchemaEntrySheet.tsx:154`,
-  `ModeEntryForm.tsx:101`, `FlashcardEx.tsx:61`), `.intensity-step` 6px;
-  `schema-miniapp/src/components/WizardProgress.tsx:34-39` — сегменты 4px с
-  `onSelect={setStep}` из `IntroSheetShell.tsx:107-114`. Ни подписи, ни
+  `ModeEntryForm.tsx:101`, `FlashcardEx.tsx:61`), `.intensity-step` 6px. Ни подписи, ни
   `aria-label`. Решение владельца: хитбокс 44 с `aria-label` или убрать прыжок.
-- **Свайп разделов мини-аппа не исключает касания по контролам.**
-  `schema-miniapp/src/hooks/useSectionSwipe.ts` (72 / 0.6) — отдельная от
-  трекерного `shared/src/hooks/useHorizontalSwipe.ts` реализация без проверки
-  `closest('[role="group"]')`. Сейчас безвредно: шкала `NeedRatingBar` живёт
-  только в оверлеях (`TrackerOverlay`, `NeedTodaySheet`), где свайп разделов
-  выключен (`App.tsx`, `disabled: anyOverlayOpen`). Шкала или слайдер прямо в
-  разделе — перевести на общий хук.
-- **Проверка убеждения: «Дальше» на шагах доказательств ведёт себя по-разному.**
-  В вебе (`webapp/src/components/exercises/BeliefCheckEx.tsx`) кнопка требует
-  хотя бы одно доказательство за и против (или текст в поле), в мини-аппе
-  (`schema-miniapp/src/components/beliefCheck/EvidenceStep.tsx`) пускает с
-  пустым списком. Решение владельца: какой вариант общий.
 - **Гейт тап-целей не видит размеры из CSS-классов.**
   `scripts/tap-targets-rules.mjs` читает только инлайновый `style` в JSX, а
   размер `.evi-x` 22×22 (`webapp/src/index.css`; чинился: зона 44 через
   `::before`, держит пин в `EviList.test.tsx`) задан классом. Расширение —
   другой механизм (разбор CSS плюс связь `className` → правило), больше
   PR кнопки удаления; разборщик правил уже есть в `scripts/css-rules-parse.mjs`.
-- **Список доказательств написан дважды.** `EviList` (сайт, грид на классах) и
-  `EvidenceList` (мини-апп, инлайн плюс `CrisisGate` внутри) — две разметки
-  одной механики; PR кнопки удаления вынес в оба по отдельности. Долг правил №3
-  и №11: общий компонент в `shared/`.
 - **`.evi-add-go` невидима, но фокусируема при пустом вводе**
   (`webapp/src/index.css`, `opacity: 0` до `.ready`): Tab уходит в пустое
   место. Класс состояния гейт `check-hover-only-reveal` считает законным
@@ -110,40 +89,16 @@
   ниже в файле. Шаблонные `<style>` в `webapp/src/pages/ArticlesPage.tsx` и
   `ProductLandingPage.tsx` гейт не сканирует (пары «спрятано + :hover» там
   сегодня нет).
-- **Удаление доказательства без отмены и подтверждения** на обеих площадках
-  (`EviList`, `EvidenceList`): после починки крестик на телефоне виден всегда,
-  зона 44×44, а в мини-аппе зона на 6px заходит на правый край текста строки
-  (`hitboxStyle(16, 16)` при `gap: 8`). Пункт — несохранённый черновик, потеря
+- **Удаление доказательства без отмены и подтверждения**
+  (`EviList`): после починки крестик на телефоне виден всегда,
+  зона 44×44. Пункт — несохранённый черновик, потеря
   — перенабрать строку; решение об отмене за владельцем.
-- **Отказ сохранения неотличим от успеха** в дневнике схем и дневнике режимов
-  мини-аппа (на сайте `SchemaEntrySheet` уже показывает `saveError`, сверка 2026-10-31): `catch { haptic.error() } finally { … onClose() }`
-  закрывает лист, как при успехе. В `GratitudeEntrySheet` и вебовском
-  `ModeEntryForm` этот класс уже закрыт шаблоном `saveError` — осталось
-  перенести на три места.
-- **Шаг имени в разборе не проходит кризисную детекцию, пока человек печатает**
-  (правило №7). Осталось только в мини-аппе: на сайте шага имени после #877 нет,
-  детекция идёт по `scene`/`bodyOwn`/`impulseOwn` во время ввода (сверка 2026-10-31).
-  Исходное описание: текст живёт в локальном `own` и попадает в `detectCrisisAny`
-  только после тапа «Назвать» (`CaseNameScreen` в обоих фронтах). Дальше фронты
-  расходятся. В мини-аппе `CaseSupportFoot` стоит вне шагов
-  (`schema-miniapp/src/components/caseFlow/CaseFlowSheet.tsx`), и карточка
-  появляется уже на экране итога. На сайте флаг `crisis` получают все шаги,
-  кроме итога: `CaseDoneScreen` его не принимает
-  (`webapp/src/components/caseFlow/CaseFlowScreen.tsx`), так что карточка
-  мелькает разве что на время сохранения, а на экране итога её нет совсем.
-  Проверка кризисного пути (`src/security/crisis-path.invariants.spec.ts`) этого
-  не видит: она смотрит только `<textarea>`, а имя — однострочный `<input>`.
-- **Кнопка «Вернуть» у отложенного шага онбординга не возвращает шаг**:
-  `schema-miniapp/src/sections/today/OnboardingWidget.tsx:112-118` — у «Вернуть»
-  тот же `handleSkip`, что у «Позже», id добавляется в `skipped` повторно
-  (в localStorage дубли), шаг остаётся отложенным. Сайтовой копии виджета
-  больше нет (убрана в #872).
+- **Экран итога разбора не показывает карточку кризиса.** Шага имени на сайте после #877 нет, детекция идёт по `scene`/`bodyOwn`/`impulseOwn` во время ввода (сверка 2026-10-31). Флаг `crisis` получают все шаги, кроме итога: `CaseDoneScreen` его не принимает (`webapp/src/components/caseFlow/CaseFlowScreen.tsx`), так что карточка мелькает разве что на время сохранения, а на экране итога её нет совсем. Проверка кризисного пути (`src/security/crisis-path.invariants.spec.ts`) этого не видит: она смотрит только `<textarea>`, а имя было однострочным `<input>`.
 - **Второй словарь имён провайдеров — `PROVIDER_NAMES` в
   `shared/src/components/LoginTicketWait.tsx`** (на сайте один —
   `webapp/src/pages/account/providerNames.ts`). Осознанно не сведены: в шторке
-  билета имя стоит в предложном падеже («вход в Telegram», `email: 'почте'`), и
-  правка `shared/` тянет пересборку `schema-miniapp/dist`. Сводить — когда
-  словарь понадобится мини-аппу: перенести `providerNames.ts` в `shared/`.
+  билета имя стоит в предложном падеже («вход в Telegram», `email: 'почте'`), .
+  Сводить — переносом `providerNames.ts` в `shared/`, если понадобится один словарь.
 - **Вход Telegram OIDC удалён в #725 — сколько аккаунтов потеряли способ
   входа, не проверено.** Куку `tg_pkce_verifier` этого входа политика больше не
   объявляет (сверка 2026-10-22). Владельцу: `SELECT count(*) FROM
@@ -161,29 +116,11 @@
   держат карта сайта (`sitemap.middleware.spec.ts`) и ночной smoke адресов
   (`e2e-browser/public-pages.spec.ts`). На 2026-10-24 второй такой ссылки нет: `/reviews`,
   `/book`, `/booking/*` встречаются только в компонентах визитки (ревью #860).
-- **`check-feature-parity.mjs` слеп к `src/auth/*.controller.ts`**: он смотрит
-  только `src/api/**`. Мёртвый публичный роут в `src/auth` (так жил
-  `/api/auth/telegram-oidc`) ловит только `registry-consumers.spec.ts` — и
-  только для роутов провайдеров из `registry.ts`. Прочие роуты `src/auth/*`
-  (2fa, ticket) паритетом не сверяются.
-- **`check-feature-parity.mjs` слеп и к `src/therapy/*.controller.ts`** — весь
-  кабинет терапевта (задания, заметки, концептуализация, карты режимов) живёт
-  там, а гейт смотрит только `src/api/**`. Паритет ручек кабинета держится
-  ревью: `DELETE /api/therapy/tasks/:id` (удаление задания терапевтом,
-  QA 2026-10-26) довезён до обеих площадок руками (`ClientTasksTab.tsx`,
-  `TasksSheet.tsx`), гейт бы не заметил одностороннего.
 - **Реплика «Я недостаточно хорош» осталась в маркетинге и статьях**
   (`webapp/src/pages/landing/productContent.tsx`, `articleDiagrams.ts`,
   `src/bot/articles.seed.ts`). В продукте её развели (правило «Род читателя»:
   реплику, которую пользователь примеряет к себе, разводить обязательно), а
   лендинг и статьи — замороженный долг гейта рода, и он обязан таять.
-- **Кнопка «Пройти тест на схемы» на «Карте себя» в мини-аппе открывает не
-  тест**, а «Библиотеку» на вкладке «Потребности»
-  (`selfMap/SelfMapOverlay.tsx:45` зовёт `sheets.open('schemaInfo')` без
-  payload, дефолт `schemaInitialTab` — `'needs'`). В вебе то же место делает
-  `onOpenSchema({ startTest: true })`. Тот же дефект у строки «Что такое схемы
-  и режимы» в `PatternsHero.tsx:55-58`.
-
 - **Живой вызов Robokassa в самопроверке.** Пробы `robokassa` и `paymentWebhooks`
   смотрят конфигурацию и следы вебхуков в БД, но площадку не спрашивают:
   записанного ответа Robokassa нет (правило №23), эндпоинт выдумывать нельзя.
@@ -201,10 +138,9 @@
   соседний класс, его тоже никто не написал.
 
 **`shared/README.md` — раздел о парных копиях устарел** (найдено при сборке карты
-`docs/architecture/frontends.md`, 2026-10-21): README говорит, что `addressForm` и
-`CrisisCard` остались парными копиями во фронтендах, а сейчас обе стороны — тонкие
-реэкспорты из `shared/src/` (список пар — `PAIRS` в `scripts/check-paired-files.mjs`).
-Поправить текст README по `PAIRS`; гейта на этот документ нет.
+`docs/architecture/frontends.md`, 2026-10-21): README говорит про «парные копии» `addressForm` и
+`CrisisCard`, а сейчас это `shared/src/` (парных файлов больше нет, #908).
+Поправить текст README; гейта на этот документ нет.
 
 **Обещания приватности вне дневников не сверены с доступом терапевта** (найдено при починке
 строки «кто увидит» в дневнике схем, 2026-10-26; там теперь `shared/src/diary/diaryPrivacy.ts`):
@@ -216,34 +152,40 @@
 терапевте. Не тронуто: маркетинговый текст и текст пары вне задачи про дневник, формулировку
 выбирает владелец.
 
-- **Сайт: автосохранение концептуализации при отказе сети или сервера показывает только «Не сохранилось».** `webapp/src/components/therapist/useConceptAutosave.ts` (`send`, catch) отдаёт в `SaveStatusLine` причину (`conceptError` → `errorText`) только для поля длиннее предела сервера (`shared/src/therapy/conceptOverLimit.ts`); отказ сети, 5xx и прочие 4xx идут без причины, хотя мини-апп её называет (`schema-miniapp/src/components/therapist/conceptSaveError.ts`). Осознанно не сделано в PR по находке #880: общий маппер потребовал бы класса статуса ответа в `shared/` (у webapp свой клиент API). Закрыть: маппер причины — в `shared/src/api/`, оба фронтенда берут его оттуда.
-- **«В мои схемы» из карточки схемы глушит отказ записи, включая 409 «не читается».** `toggleSchema` в `webapp/src/components/SchemaDetailSheet.tsx` (`.catch(() => {})`) и `schema-miniapp/src/components/SchemaDetailSheet.tsx` (`.catch(logErr(...))`) шлют `updateSettings({ mySchemaIds })` без плашки: при 409 `unreadable_data` данные на сервере целы (бэкенд не пишет), но человек не узнаёт, что выбор не сохранился. На экране «Мои паттерны» отказ уже виден (`SelectionSaveNote` в обоих фронтендах, `shared/src/api/unwritableError.ts`). Не сделано в PR защиты настроек: файл мини-аппа на 313 строках в бейслайне размера и может только уменьшаться. Закрыть: тот же `isUnwritableError` + `SaveErrorNote` в листе (или общий хук сохранения выбора для листа и экрана).
-- **После 409 на «моих схемах/режимах» перезагрузка показывает пустой список.** `useSchemasData` (сайт) и `useMySelections` (мини-апп) при загрузке ставят в state `mySchemaIds` с сервера, а для нечитаемого списка сервер отдаёт `[]`: выбор человека остаётся в `localStorage`, но на экран не возвращается. Данные на сервере целы (409 не дал их стереть); честнее было бы отдавать в `GET /api/settings`/профиле флаг «не читается» и не затирать локальный выбор. Не сделано: нужен контракт ответа на обе площадки, вне задачи защиты записи.
+- **Сайт: автосохранение концептуализации при отказе сети или сервера показывает только «Не сохранилось».** `webapp/src/components/therapist/useConceptAutosave.ts` (`send`, catch) отдаёт в `SaveStatusLine` причину (`conceptError` → `errorText`) только для поля длиннее предела сервера (`shared/src/therapy/conceptOverLimit.ts`); отказ сети, 5xx и прочие 4xx идут без причины, хотя удалённый мини-апп её называл (#908). Осознанно не сделано в PR по находке #880: общий маппер потребовал бы класса статуса ответа в `shared/` (у webapp свой клиент API). Закрыть: маппер причины — в `shared/src/api/`, сайт берёт его оттуда.
+- **«В мои схемы» из карточки схемы глушит отказ записи, включая 409 «не читается».** `toggleSchema` в `webapp/src/components/SchemaDetailSheet.tsx` (`.catch(() => {})`) шлёт `updateSettings({ mySchemaIds })` без плашки: при 409 `unreadable_data` данные на сервере целы (бэкенд не пишет), но человек не узнаёт, что выбор не сохранился. На экране «Мои паттерны» отказ уже виден (`SelectionSaveNote`, `shared/src/api/unwritableError.ts`). Не сделано в PR защиты настроек: файл на потолке размера (бейслайн только уменьшается). Закрыть: тот же `isUnwritableError` + `SaveErrorNote` в листе (или общий хук сохранения выбора для листа и экрана).
+- **После 409 на «моих схемах/режимах» перезагрузка показывает пустой список.** `useSchemasData` (сайт) при загрузке ставят в state `mySchemaIds` с сервера, а для нечитаемого списка сервер отдаёт `[]`: выбор человека остаётся в `localStorage`, но на экран не возвращается. Данные на сервере целы (409 не дал их стереть); честнее было бы отдавать в `GET /api/settings`/профиле флаг «не читается» и не затирать локальный выбор. Не сделано: нужен контракт ответа, вне задачи защиты записи.
 - **Полноэкранные оверлеи с инлайн `position: fixed; inset: 0` не учитывают статус-бар установленного приложения.** CSS-листы получили `padding-top: var(--safe-top)` на телефоне (#902), инлайновые — нет: `webapp/src/components/therapist/ConceptGraphFullscreen.tsx:33` (лист схемы на весь экран — его шапка с «Закрыть» уходит под статус-бар), `webapp/src/pages/landing/nav.tsx:58` и `webapp/src/pages/landing/ProductMobileMenu.tsx:33` (мобильные меню лендингов), `shared/src/components/Celebration.tsx:41` (контент по центру, не критично). Закрыть: `paddingTop: 'var(--safe-top)'` на корне каждого + тест-сверка списка с `scripts/history-sheet-baseline.json`; проверить в установленном приложении на iPhone.
 - **Кнопка «Перестать быть специалистом» стоит в разделе «Оформление» листа настроек** (`webapp/src/components/settingsSheet/AppearanceSection.tsx`, проп `onResignTherapist`): после #902 у терапевта первым блоком идёт «Режим» (`settingsSheet/ModeSection.tsx`), и отказ от роли по смыслу принадлежит ему, а не оформлению. Перенести в `ModeSection` вместе с подтверждением; видно на скриншоте листа с телефона (#902).
 - **Событий для #904 не добавляли осознанно** (правило №8): сводка «Коротко» — показ без действия, открытие схемы уже считает `concept_graph_open`; переключение режима с телефона — второй вход в прежнее действие, итог пишет сервер (`POST /api/therapy/therapist-view`). Если понадобится мерить путь «Профиль → Клиент» с телефона — событие `therapist_mode_switched` с `meta.surface` и полный пайплайн №8 отдельным PR.
-- **Префикс `cw-` делят два css: `client-why.css` («Зачем это всё», «Поговорить») и `sheet-childhood.css` (колесо детства).** `.cw-note` был объявлен в обоих, побеждал порядок загрузки модулей; на стороне «Зачем» переименован в `.cw-tip` (#906), колесу детства нужен свой префикс (например `chw-`); гейта «один префикс — один файл» нет.
-- **Остатки «один стиль» → волна 3 #906** (осознанно не сделано в волне 2): три счётчика «Сегодня» с тремя заливками ink/plain/warn на одном экране (`webapp/src/sections/TherapistTodaySection.tsx:53-61`) против «один акцент на экран»; кандидаты примитивов, которые срезы пока держат локально: `.ds-hero` (eyebrow + h1 + sub), `.ds-list-row--stack`, `.ds-card--compact`, `.ds-btn--icon.is-warn`, `.ds-btn--on-ink:disabled`, `u-self-start` (сейчас инлайн `alignSelf` в `therapist/ClientYSQTab.tsx`), общий набор SVG-иконок кабинета (корзина сейчас из `modeMapIcons.tsx`).
+- **Осознанно не сделано: гейт «один префикс — один файл».** Живой коллизии нет: колесо детства ушло на `chw-` (#906, волна 3), `.cw-note` в `client-why.css` — только комментарий. Гейту нужен реестр законно разбитых зон (`cpf-`, `cz-`, `cp-`, контекстные селекторы вроде `.tk-head .tc-meeting`); один случай объём не оправдывает. Пересмотреть при второй коллизии.
+- **Осознанно не сделано: примитивы без второго потребителя.** `.ds-hero` (eyebrow + h1 + sub), `.ds-list-row--stack`, `.ds-card--compact`, `.ds-btn--icon.is-warn` (⚠ самопомощи — цвет у потребителя), `.ds-btn:disabled на панели (прежний `.ds-btn--on-ink`)` (одно правило `.ap-pay`), общий набор SVG-иконок кабинета. Не строим, пока нет второго потребителя: примитив без копий мёртв. Не тронуты и инлайн `alignSelf` в шести местах (`ModesTab`, `SchemaDetailSheet`, `ClientYSQTab`, `YsqCrossCheck`, `YsqResult`, `TwoFactorSection`): `u-self-start` живёт в `shared/src/theme/utilities.css`, правка shared тянет dist мини-аппа — вернуться после #908.
 - **`.ds-link` на телефоне (min-height 44, inline-flex) вытаскивает ссылку из строки абзаца.** `webapp/src/components/PracticesScreen.tsx:100` («Что-то просело? <span class=ds-link>Открой трекер →</span>»); проверить также `exercises/childhoodWheel/SchemaHints.tsx:63`, `history/HistoryDayView.tsx:47-51`, `ConsentScreen.tsx:69`. Доказано: grep в отчётах срезов; на снимках `c0x` не видно. Исключение для ссылки в потоке (`ds-link--inline`) или кнопка отдельной строкой — волна 3.
-- **`ds-seg` без модификатора (не `--full`/`--scroll`) остался**: `TaskCreateSheet.tsx:125`, `HistoryView.tsx:88,96`, `PracticesScreen.tsx:110`, `ClientListView.tsx:90,100`, `NameAddressSections.tsx:47`, `DiarySection.tsx:147` (webapp/src/components, sections); решить, какой из вариантов нужен, — волна 3.
-- **Локальный `font-size` перебивает 16px полей на телефоне:** `webapp/src/styles/sheet-modemap.css` (`.mm2-pal-search .ds-input` 12.5px, `.mm2-add-form .ds-input` 12.5px, `.mm2-panel .ds-input/.ds-textarea/select.ds-input` 13px); iOS приближает экран при фокусе. Доказано: grep по css.
-- **`sections/schemas/MineGroupsList.tsx` — единственный остаток `.cs-row*`** (`webapp/src/styles/client-schemas.css`): перевести на `button.ds-list-row ds-list-row--nav` и удалить локальные правила.
-- **Локальные копии `ds-link`-вида:** `.st-pc-write`, `.st-pc-leave`, `.st-links a`, `.st-pc-confirm .ds-btn` (`webapp/src/styles/sheet-settings.css`), `.ps-pill`, `.st-link-danger` — убрать после `ds-link--danger`; проп `small` у `ChevronVal` (`settingsSheet/ui.tsx`) больше ничего не делает — убрать вместе с вызовами.
-- **Проверить глазами на экране:** `ConceptDigest` со skin оставляет инлайн flex/margin у `dd`/`h3` и может спорить с `ds-label` (`shared/src/therapy/conceptGraph/ConceptDigest.tsx`); у `.ds-sheet-head` с `position: sticky; top: 0` в `HistorySheet`/`JourneySheet` шапка при прокрутке может уйти под статус-бар; `PortraitPatternRows` без `freq` ставит шеврон в третью колонку grid (`webapp/src/sections/profile/PortraitPatternRows.tsx`); поле `ds-input--search` в `CommandPalette.tsx` без `flex:1/min-width:0` рядом с Esc; сегмент вкладок карт в `ModeMapSelector.tsx` без `ds-seg--scroll` (нет маски края); `ActivityRow` в `TherapistTodayLists.tsx` единственная строка списка со стрелкой.
-- **Теги триггеров `ConceptSectionsText.tsx` (`ds-chip--toggle is-on` без `--h`)** красятся только если предок задаёт `--h` (фолбэка в примитиве нет — гейт `check-token-contract`); сверить на экране t05 и при нейтральном виде задать `--h` у потребителя.
-- **Мини-апп перекрасился на единую таблицу hue** (`shared/src/theme/entityHue.ts`): Автономия теперь янтарная H70, потребности и группы режимов — по таблице; решение принято, мини-апп удаляется (#908).
-- **Шапки переведённых листов на широком экране не совпадают с отступом тела.** `.ds-sheet-head` на мобильном — `padding: 0 16px` (`webapp/src/styles/cabinet.css`, ~233), прежние `.sk-top`/`.ss-bar` брали `clamp(12-16px, 3-4vw, 32-56px)`, как тело (`.sk-page`, `.ss-inner`) у `OverlayFrame`, `TaskCreateSheet`, `SchemaFlashcardTopbar`, `SsSheet`. Доказано: удалённые правила в диффе волны 1; скриншотом на ширине >1000 не проверялось. Выровнять в волне 2.
+- **`ds-seg` без модификатора (не `--full`/`--scroll`) остался:** `HistoryView.tsx:88,96`, `ClientListView.tsx:73` (вкладки «Клиенты/Задания», по ТЗ волны 3 оставлены) в `webapp/src/components`; решить, какой из вариантов нужен. Доказано: grep `className="ds-seg"`.
+- **Локальный `font-size` перебивает 16px полей на телефоне:** `webapp/src/styles/sheet-modemap.css` (`.mm2-add-form .ds-input` 12.5px, `.mm2-panel .ds-input/.ds-textarea/select.ds-input` 13px); iOS приближает экран при фокусе (правило поиска палитры `.mm2-pal-search` удалено в волне 3). Доказано: grep по css.
+- **Проверить глазами на экране:** `ConceptDigest` со skin оставляет инлайн flex/margin у `dd`/`h3` и может спорить с `ds-label` (`shared/src/therapy/conceptGraph/ConceptDigest.tsx`); у `.ds-sheet-head` с `position: sticky; top: 0` в `HistorySheet`/`JourneySheet` шапка при прокрутке может уйти под статус-бар; `PortraitPatternRows` без `freq` ставит шеврон в третью колонку grid (`webapp/src/sections/profile/PortraitPatternRows.tsx`); `ActivityRow` в `TherapistTodayLists.tsx` единственная строка списка со стрелкой.
 - **«Встреча» как `ds-label` вне секции** — `webapp/src/components/therapist/ClientHeaderBadges.test.tsx:55`, `NextSessionLine.test.tsx:13`: подпись не сделана заголовком осознанно (не секция, а строка шапки). Если скринридеру нужна структура — решить вместе с шапкой карточки.
 - **Флешкарты (`SchemaFlashcardTopbar`) переведены на `ds-sheet-head` целиком** хотя это верх экрана упражнения; подпись «Закрыть» сохранена. Если упражнения получат общий `ExScreen`-бар — свести в один примитив (волна 2).
 - **Тест на фокус меню «⋯» вкладки «Концептуализация» не написан**: `MoreMenu` в `webapp/src/components/therapist/concept/ConceptTabHead.tsx` использует общий `useMenuPick` и покрыт кейсом `ClientHeader.actions.test.tsx`; отдельный кейс — при расхождении механики.
-- **Мини-апп: цвета сущностей (`toneHex`, L .58) как цвет мелкого текста — контраст ниже 4.5:1 в обеих темах** (пример: `schema-miniapp/src/components/PlanCard.tsx:123` — 12px, `color: needColor`; на светлом фоне 3.3-4.5:1, на тёмном 3.7-4.5:1; посчитано по WCAG). Закрывается удалением мини-аппа (#908); если удаление отложат — светлый вариант тона для тёмной темы и тёмный для светлой.
+
+- **Меню «Новая карта» (`webapp/src/components/ModeMapSelector.tsx`) осталось на собственных `ds-backdrop`/`ds-menu`**, не на `Dropdown`: `Dropdown` держит ширину 220 и z 39/40, а этому меню нужно 290 и 60/61; Escape не закрывает. Перевести, добавив `Dropdown` проп ширины.
+- **`booking/Chip.tsx` (визитка и форма записи лендинга) не приведён к `ds-chip`:** ТЗ #906 — «лендинги не входят», визитка живёт в своём стиле с акцентной заливкой.
+- **Ссылки в общих компонентах `shared/` не на `ds-link`:** «+ режим» в `DiagramSectionHeader`, компактный `TherapyNote` (инлайн-дефолты и className-пропы). Мини-апп удалён (#908), теперь их можно перевести на `ds-link`; `shared/` в волне 3 не трогали.
+- **Нет модификатора `ds-textarea--resize` для ≥768:** `resize: none` у `ds-textarea`; жалоб терапевта нет, заводим по первой жалобе.
+- **Раскрывашки примеров колеса детства — глифы ▴/▾ текстом** (`webapp/src/components/exercises/childhoodWheel/NeedExamples.tsx`): `ds-fold-chev` рассчитан на кнопку `ds-fold-btn`, экраны упражнений не снимали.
+- **Плашка ⌘K в топбаре — моноширинный `.kbd`** (кнопка «Перейти к…», `webapp/src/components/AppShell.tsx`; только ноутбук, вне телефона): не приведена к общему виду вместе с палитрой команд (`webapp/src/components/CommandPalette.tsx`, классы `cmd-*`, `command-palette.css`).
+- **`.sk-fc-row` и разделители «один токен»:** по решению владельца разделитель строк и разделов — `--paper-sunk`, `--line` только контуры (край полосы или рамка самостоятельного блока; список селекторов — `LINE_OUTLINES` в `oneStyle.test.ts`: `ds-sheet-head`, `tk-head`, `tq-bar`, `ss-tabs`, `mm2-bar`, `th-card`); `ds-list-row` оставлен на `--paper-sunk` (плановая смена на `--line` отменена). Сверка — `webapp/src/styles/oneStyle.test.ts`.
+- **`CaseFeelStep.tsx` и `CaseChipGrid.tsx` теперь на `ds-chip--toggle`** (`webapp/src/components/caseFlow/`); `.ex2-chip` удалён — шаг чувств глазами не снимали (экран упражнения вне тура `tour.mjs`).
+- **`.tk-ov` на телефоне держит свой `gap: 24` и padding** (`webapp/src/styles/therapist-card.css`) при остальных страницах на 16/24 по `ds-page`; к `ds-page` не относится, сверка не ругается.
+- **`AboutSheet.tsx`: после удаления `.st-links a b` слова в `<b>` не акцентные** (`webapp/src/components/settingsSheet/AboutSheet.tsx`); тексты не менялись, глазами не проверено.
+- **Нет теста на синтаксис CSS целиком:** при волне 3 `vite build` (lightningcss) упал на осиротевшем теле правила `.st-hour` в `sheet-settings.css`, а vitest (366 кейсов стилей) был зелёным — спеки читают css регэкспами. Образец: сборка (CI) ловит, локально — `vite build` перед пушем.
 
 **QA клиента 2026-11 — трекер, история, тест на схемы: увиденное попутно и не тронутое**
 - **Индекс дня с точкой вне общего `fmtIndex`** (`shared/src/needs/dayIndex.ts`, «6,4», нет
   данных — «—»): карточка партнёра
-  `webapp/src/components/settingsSheet/PartnerCard.tsx:36`, `schema-miniapp/src/components/pairSheet/PartnerCard.tsx:69`;
+  `webapp/src/components/settingsSheet/PartnerCard.tsx:36`;
   кабинет терапевта `webapp/src/components/therapist/ClientIndexCard.tsx:20`,
-  `webapp/src/sections/TherapistTodayLists.tsx:44`, `schema-miniapp/src/components/therapistClientSheet/ClientCard.tsx:102`;
+  `webapp/src/sections/TherapistTodayLists.tsx:44`;
   картинки шаринга `shared/src/share/cards/dayCard.ts:27,87`, `weeklyCard.ts:44,52,76,79`. Не тронуто:
   сайдбар, настройки и кабинет — области других агентов той же волны QA; картинки — отдельное решение
   (на холсте запятая меняет ширину строк, нужна сверка макета).
@@ -259,6 +201,7 @@
   (`webapp/src/components/ModeMapEditor.tsx`, `overlay(...)` слева): фигура ложится на свободное
   место холста, но его закрывает сама палитра, пока её не свернуть «‹». Не тронуто: закрывать
   после каждого тапа мешает добавлять несколько режимов подряд — нужен выбор поведения.
+- **Разделители в `webapp/src/index.css` не проверены сверкой «один токен разделителя».** `webapp/src/styles/oneStyle.test.ts` читает только `webapp/src/styles/*.css`; в `index.css` остались `border-top/bottom: 1px solid var(--line)` у `.entry`, `.intensity` и соседей (≈ стр. 536, 681, 703, 726, 931, 1105–1111), часть из них — разделители внутри блоков, а не контуры. Не тронуто: вне списка волны 3 #906; починка — классифицировать эти правила (разделитель → `--paper-sunk`, контур → в список `LINE_OUTLINES`) и подключить `index.css` к сверке.
 
 **QA клиента 2026-11, первый визит и каркас (A-З7…A-М10) — остаток:**
 - **Баннер куки мелькает на силуэте первой загрузки кабинета.** Он ждёт закрытия диалогов и листов
@@ -273,15 +216,8 @@
   В `src/api/diary.controller.ts` для `diary/schema|mode` есть только `POST`/`DELETE`, в карточке
   записи — «Удалить» и «Поделиться» (`webapp/src/sections/diary/EntryCards.tsx`). Не сделано:
   нужна не только ручка `PATCH` с DTO и ownership-e2e, а режим правки у мастеров записи
-  (`SchemaEntrySheet`/`ModeEntrySheet` на обеих площадках, у режимов восемь шагов, черновики),
-  то есть отдельная задача. Решить с владельцем, нужна ли правка в мини-аппе до его отключения
-  (#908): если нет — роут сразу `webapp-only` в `scripts/feature-parity-baseline.json`.
-- **Разбор в мини-аппе пишет запись режима без `fromCase`** (`toSaveData` в
-  `shared/src/case/caseFlowMappers.ts`): в «Записях» сайта такой разбор лежит в «Дневнике», а не
-  в «Случаях», подписан «Режим», и плитка «Дневник» считает его записью. Не тронуто: блок
-  «Разбор случая» в `/stats` намеренно считает «записано с сайта» только сайт
-  (`docs/architecture/backend-core.md`), метка смешала бы популяции. Решается вместе с
-  отключением мини-аппа или новой разбивкой метрики.
+  (`SchemaEntrySheet`/`ModeEntrySheet` у режимов восемь шагов, черновики),
+  то есть отдельная задача. Решить с владельцем, нужна ли правка.
 - **Удаление записи из листа паттерна при сбое молча возвращает запись**
   (`shared/src/pattern/usePatternEntryDelete.ts`: оптимистичное удаление, на отказе
   `console.error` и запись обратно, без текста; 404 тоже считается сбоем). Тот же класс, что З2
@@ -295,15 +231,11 @@
 
 ### «Сегодня» клиента через полночь и офлайн-оценки (QA клиента 2026-11-03, остаток К3/З9)
 
-Оценки дня у обоих фронтендов живут в `shared/src/today/useDayRatings.ts` (день устройства явной
+Оценки дня живут в `shared/src/today/useDayRatings.ts` (день устройства явной
 датой, перечитывание в полночь, офлайн-очередь поверх ответа сервера). Что ещё не сведено:
 - **Подсветка «сегодня» в недельной полосе стрика заморожена при загрузке** — `TODAY_DOW_IDX`
-  (`webapp/src/sections/profile/streakConst.ts`, `schema-miniapp/src/sections/profile/constants.ts`).
+  (`webapp/src/sections/profile/streakConst.ts`).
   Мелочь: профиль перечитывается при каждом заходе, но открытый через полночь подсвечивает вчера.
-- **Мини-апп без сети оценку не сохраняет вовсе** (`schema-miniapp/src/components/TrackerOverlay.tsx`,
-  `if (isOffline) return;`; плашка честно пишет «данные не сохраняются»), хотя офлайн-очередь у него
-  есть. Сайт с QA 2026-11-03 шлёт и без сети — оценка ложится в очередь (`webapp/src/hooks/useRatingSaver.ts`).
-  Не сведено: менять обещание плашки мини-аппа — вместе с текстом, а файл на потолке размера.
 - **Ответ 5xx на оценку уходит в очередь молча**: экран пишет «Трекер заполнен» и не говорит, что
   сервер не ответил (QA B-З9, `shared/src/api/ratingApi.ts` возвращает `{ ok: true }`). Число на
   плитке после перезагрузки теперь верное (очередь поверх ответа), подписи «отправится позже» нет.
@@ -319,9 +251,6 @@
   и раньше жила внутри блока «уведомления включены». Пояс влияет и на «сегодня» заданий
   (`TherapyTasksService.getTasks` → `notifyTimezone`). Выбор пояса правит другой агент (З4) — вынести
   строку из блока уведомлений стоит вместе с ним.
-- **Кнопка пары в мини-аппе не через общий `inviteButtonLabel`** (`schema-miniapp/src/components/pairSheet/PairPanel.tsx`:
-  «Создать приглашение», свой текст ошибки, нет ветки «Новая ссылка»). Ярлык «ещё одного человека»
-  выровнен с сайтом, а сама развилка — вторая копия `shared/src/pair/pairView.ts`.
 
 **`check-tap-targets` не видит размеры из CSS-классов** (`scripts/check-tap-targets.mjs`; QA 2026-11, T-5: тулбар карты режимов 36, пункты палитры 34, ушко 22 — всё из `sheet-modemap.css`, гейт зелёный). Гейт считает инлайн-квадраты в `.tsx`. Расширение на CSS не делали: класс получает размер из нескольких правил и медиа-блоков (`min-height`, `padding`, `@media (pointer: coarse)`), без вычисления каскада гейт даёт либо лавину ложных срабатываний (каждый `.ds-btn--icon` с 36 на десктопе), либо слепоту. Пока карта режимов закреплена тестом `webapp/src/styles/modemapMobile.test.ts` (минимумы 44 в блоке `pointer: coarse`); остальные CSS-кнопки проверяет только живой замер `getBoundingClientRect` в Playwright.
 
@@ -337,7 +266,26 @@
   На телефоне высота 44 и сегменты встык (М1), шире не сделать без смены вида полосы.
 - **Шкала интенсивности чувства в дневнике — 26px по высоте** (`webapp/src/styles/sheet-diary.css`, `.sd-int-step`):
   QA не мерил, замечено попутно. Высота 44 у десяти полосок меняет вид листа — решать вместе с дизайном шкалы.
-- **Мини-апп: на экране вопроса трекера нет строки «Например»** (`schema-miniapp/src/components/TrackerOverlay.tsx`;
-  на сайте — `webapp/src/components/trackerOverlay/NeedExplainer.tsx`, свёрнута до тапа): у мини-аппа описание
-  потребности строкой, примеры — в листе потребности по тапу на название. Блок сайта не в `shared/`; мини-апп
-  отключается (#908), переносить ради него не стали.
+
+### Компьютерная версия кабинета: остаток инцидента 2026-11-04
+- **Снимок 1280 рядом с 393 — пока процесс, не механизм.** Класс «телефонное правило без медиа» держит
+  `webapp/src/styles/desktopLayout.test.ts`, но вид целиком на компьютере никто не снимает: следующая правка вида
+  может снова проверить только 393. Предложение: e2e-browser-снимок 1280 ключевых страниц (`/subscribe`, `/donate`,
+  `/account`, «Зачем это всё», «Обзор» клиента) со сравнением с эталоном. Доказано: в `e2e-browser/` и `ci.yml`
+  снимков компьютера нет.
+- **Аккаунт: значок Telegram сжат до ~19px** — на телефоне и на компьютере (пришло с #912, не с волн).
+  `webapp/src/pages/account/ProviderRows.tsx` (у `iconBox` нет `flexShrink: 0`), `webapp/src/styles/auth-account.css`
+  (у `.aa-row-text` нет `flex: 1; min-width: 0`). Доказано замером до #915: плитка значка 19×36 против 36×36 у Google.
+  Пояснение «Единственный способ входа…» больше не режется многоточием — переносится (`.aa-row-why`, #915, М9);
+  сжат ли значок после переноса, не перемерено.
+- **«Отменить подписку» (`/subscribe?token=…`) — подчёркнутая строка высотой 21px и на телефоне**
+  (`webapp/src/pages/subscribe/CancelControl.tsx`, инлайн-стиль без `minHeight`): тап-цель меньше 44. На ≥768
+  высота поднята в ветке компьютерной версии, телефон — отдельной правкой.
+- **Фокус с клавиатуры в сайдбаре не виден**: `webapp/src/index.css` — `.sb-item:focus-visible,
+  .sb-account:focus-visible { outline: none; }`, а фон меняется только на `:hover` (WCAG 2.4.7). В main так же.
+  Правка: кольцо `outline: 2px solid var(--accent); outline-offset: -2px` на `:focus-visible`.
+- **Листы «Зачем это всё» и «Поговорить с кем-то» (`role="dialog"`, `aria-modal`) не забирают фокус**: он остаётся
+  на строке «Ещё» под листом, Tab ходит по невидимой странице (`webapp/src/components/WhySheet.tsx`,
+  `webapp/src/components/therapy/TalkSheet.tsx`). В main так же. Правка: фокус на «← Закрыть» при открытии, возврат
+  на вызвавшую строку при закрытии, страница под листом — `inert`.
+- **Оверлеи с `ds-sheet-head` на компьютере остаются полосой во всю ширину** (ExScreen, JourneySheet, HistorySheet, ModeDoubtButton, SettingsSheet, SsSheet, OverlayFrame, TaskCreateSheet, SchemaFlashcardTopbar, ModeMapBanner): `ds-sheet-head--page` (ссылка над колонкой) включён только у страниц и листа «Зачем это всё»/«Поговорить». Колонки оверлеев разные (560–1160), общего `--sheet-col` у них нет; решить по снимкам 1280, нужна ли им ссылка над колонкой. Доказано: grep потребителей `ds-sheet-head`; снимки «после» на 1280 не снимались.

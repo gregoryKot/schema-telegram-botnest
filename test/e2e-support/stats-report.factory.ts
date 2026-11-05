@@ -18,7 +18,6 @@ import { PhraseCheckMetricsService } from '../../src/bot/phrase-check-metrics.se
 import { EntryDeleteMetricsService } from '../../src/bot/entry-delete-metrics.service';
 import { AccountLinkMetricsService } from '../../src/bot/account-link-metrics.service';
 import { PlusMetricsService } from '../../src/bot/plus-metrics.service';
-import { WebBannerMetricsService } from '../../src/bot/web-banner-metrics.service';
 import { SiteInstallMetricsService } from '../../src/bot/site-install-metrics.service';
 import { ScreenMetricsService } from '../../src/bot/screen-metrics.service';
 import { ProfilePatternMetricsService } from '../../src/bot/profile-pattern-metrics.service';
@@ -55,7 +54,6 @@ export function buildStatsReport(prisma: PrismaService): StatsReportService {
     new EntryDeleteMetricsService(prisma),
     new AccountLinkMetricsService(prisma),
     new PlusMetricsService(prisma),
-    new WebBannerMetricsService(prisma),
     new SiteInstallMetricsService(prisma),
     new ScreenMetricsService(prisma),
     new ProfilePatternMetricsService(prisma),

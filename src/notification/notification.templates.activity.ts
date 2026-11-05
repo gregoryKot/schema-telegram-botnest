@@ -1,5 +1,5 @@
 import { Markup } from 'telegraf';
-import { MINIAPP_URL } from '../telegram/telegram.constants';
+import { CABINET_URL, CABINET_HELP_URL } from '../telegram/telegram.constants';
 import type { NotificationTemplate } from './notification.templates';
 import { NotificationType } from './notification.service';
 import { AddressForm, t } from './address-form';
@@ -70,10 +70,10 @@ export function renderActivityTemplate(
       if (!text) return null;
       const buttons = showBooking
         ? [
-            [Markup.button.webApp('📱 Раздел Помощь', MINIAPP_URL)],
+            [Markup.button.webApp('📱 Раздел Помощь', CABINET_HELP_URL)],
             [bookingButton],
           ]
-        : [[Markup.button.webApp('📱 Раздел Помощь', MINIAPP_URL)]];
+        : [[Markup.button.webApp('📱 Раздел Помощь', CABINET_HELP_URL)]];
       return {
         text,
         keyboard: Markup.inlineKeyboard(buttons),
@@ -123,7 +123,7 @@ export function renderActivityTemplate(
           `📋 ${tn ? `Терапевт ${tn}` : 'Ваш терапевт'} просит вас пройти тест на схемы.\n\nЭто займёт 10–15 минут. Результаты помогут лучше понять ваши схемы.`,
         ),
         keyboard: Markup.inlineKeyboard([
-          [Markup.button.webApp('📋 Пройти тест', MINIAPP_URL)],
+          [Markup.button.webApp('📋 Пройти тест', CABINET_URL)],
         ]),
       };
     }

@@ -17,6 +17,15 @@ describe('ExerciseLibrary', () => {
     expect(container.querySelectorAll('.cp-ex > .ds-chev')).toHaveLength(8);
   });
 
+  it('ноутбук: 8 карточек .ds-card, нет .tone-tint, ни у одной нет --h в style', () => {
+    const { container } = render(<ExerciseLibrary stats={{}} onOpen={vi.fn()} />);
+    const cards = container.querySelectorAll('.cp-ex');
+    expect(cards).toHaveLength(8);
+    expect(container.querySelectorAll('.cp-ex.ds-card')).toHaveLength(8);
+    expect(container.querySelector('.tone-tint')).toBeNull();
+    cards.forEach(c => expect((c.getAttribute('style') ?? '')).not.toContain('--h'));
+  });
+
   it('без статистики все карточки «не начато» с is-new', () => {
     render(<ExerciseLibrary stats={{}} onOpen={vi.fn()} />);
     const states = screen.getAllByText('не начато');

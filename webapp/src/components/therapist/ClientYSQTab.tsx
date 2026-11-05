@@ -8,6 +8,7 @@ import { isVirtualId } from '../../../../shared/src/utils/sameId';
 import { pluralRu } from '../../../../shared/src/utils/pluralRu';
 import { CONCEPT_EXPORT_EMPTY } from '../../../../shared/src/therapy/conceptExport';
 import { buildYsqRows, YSQ_TOP_N } from './ysqRows';
+import { TabTitle } from './TabTitle';
 import { YSQTable } from './YSQTable';
 import { YSQDynamics } from './YSQDynamics';
 
@@ -30,7 +31,7 @@ export function ClientYSQTab({ clientData, selectedClient, selfSchemaIds, ysqReq
 
   if (!clientData?.ysqHistory || clientData.ysqHistory.length === 0) {
     return (
-      <div className="ds-page tb-page tb-page--ysq">
+      <div className="ds-page tb-page--ysq">
         <div className="u-col8">
           <p className="ds-empty">YSQ ещё не проходился</p>
           {virtual ? (
@@ -65,12 +66,11 @@ export function ClientYSQTab({ clientData, selectedClient, selfSchemaIds, ysqReq
   const rows = buildYsqRows(hist[0], hist[1] ?? null);
 
   return (
-    <div className="ds-page tb-page tb-page--ysq">
-      {/* Заголовка нет (#906): имя уже во вкладке шапки. */}
+    <div className="ds-page tb-page--ysq">
       <div className="ds-head-row">
-        <div className="ds-sub">
-          {hist.length} {pluralRu(hist.length, 'прохождение', 'прохождения', 'прохождений')} · последнее {clientData.ysqCompletedAt ? fmtDate(momentDayKey(clientData.ysqCompletedAt)) : '–'}
-        </div>
+        <TabTitle title="Опросник схем YSQ">
+          <div className="ds-sub">{hist.length} {pluralRu(hist.length, 'прохождение', 'прохождения', 'прохождений')} · последнее {clientData.ysqCompletedAt ? fmtDate(momentDayKey(clientData.ysqCompletedAt)) : '–'}</div>
+        </TabTitle>
         <div className="tb-actions">
           <button onClick={handleExport} disabled={exportEmpty} className="ds-btn ds-btn--sm ds-btn--secondary">
             {exportCopied ? '✓ Скопировано' : 'Экспорт'}

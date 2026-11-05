@@ -1,6 +1,6 @@
 // Generic-шит шаринга карточки (webapp): превью канваса + «Поделиться» +
-// «Скопировать текст». Парный по смыслу с schema-miniapp/src/share/ShareCardSheet
-// (вёрстка своя — правило №3: логика в shared/useShareCard, вёрстка per-frontend).
+// «Скопировать текст». Логика в shared/useShareCard
+// (правило №3), вёрстка своя.
 import { useRef } from 'react';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { TherapyNote } from '../components/TherapyNote';
@@ -21,7 +21,7 @@ interface Props {
   eventKind: ShareCardKind;
   onClose: () => void;
   zIndex?: number;
-  /** Заход на терапию после «Поделиться» — паритет с miniapp (В10 аудита 2026-08) */
+  /** Заход на терапию после «Поделиться» (В10 аудита 2026-08) */
   therapyNote?: boolean;
 }
 

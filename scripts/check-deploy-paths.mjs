@@ -1,20 +1,18 @@
 #!/usr/bin/env node
-// Гейт: деплой-шов (Dockerfile ↔ .dockerignore ↔ src/app.module.ts ↔
+// Гейт: деплой-шов (Dockerfile ↔ .dockerignore ↔
 // amvera.yml) — правило №14 CLAUDE.md, «всё, что исполняется у пользователя,
 // обязано быть кем-то проверено».
 //
-// Класс: Dockerfile кладёт собранный мини-апп в webapp/dist/app/, а
-// src/app.module.ts отдаёт его оттуда через ServeStaticModule — две строки на
-// разных языках, обязаны совпадать, и ничто их не связывает: tsc/jest/eslint
-// Dockerfile не читают вовсе. Протухший источник COPY или разъехавшееся
-// назначение оставляют CI зелёным, а красным станет билд на Amvera — ПОСЛЕ
+// Класс: Dockerfile, .dockerignore и amvera.yml — файлы на разных языках,
+// обязаны совпадать, и ничто их не связывает: tsc/jest/eslint их не читают
+// вовсе. Протухший источник COPY или разъехавшийся порт оставляют CI зелёным, а красным станет билд на Amvera — ПОСЛЕ
 // мержа, перед живыми пользователями.
 //
 // Почему статический гейт, а не `docker build`: дефект здесь — рассогласование
 // ПУТЕЙ, оно читается с диска за миллисекунды. Настоящий билд стоит минуты и
 // требует демона (джоба `checks` его не поднимает), а ловит другой класс —
 // синтаксис, сеть до реестра, версии пакетов. Что проверяется — см. секции
-// (a)–(d) ниже по файлу.
+// (a)–(c) ниже по файлу.
 //   node scripts/check-deploy-paths.mjs [--verbose]
 import { readFileSync, existsSync, readdirSync, statSync } from 'fs';
 import { dirname, basename, join } from 'path';
@@ -23,7 +21,6 @@ const ROOT = join(import.meta.dirname, '..');
 const VERBOSE = process.argv.includes('--verbose');
 const DOCKERFILE = join(ROOT, 'Dockerfile');
 const DOCKERIGNORE = join(ROOT, '.dockerignore');
-const APP_MODULE = join(ROOT, 'src', 'app.module.ts');
 const AMVERA_YML = join(ROOT, 'amvera.yml');
 const ENTRYPOINT = join(ROOT, 'deploy', 'entrypoint.mjs');
 
@@ -36,7 +33,6 @@ const BUILD_PRODUCED = [
   { path: 'game/dist', why: '`npm run build --prefix game` — билдится в Dockerfile' },
 ];
 const buildProducedEntry = (p) => BUILD_PRODUCED.find(({ path: bp }) => p === bp || p.startsWith(`${bp}/`));
-const lineOf = (text, index) => text.slice(0, index).split('\n').length;
 
 // Склеивает `\`-продолжения Dockerfile-строк в одну логическую строку —
 // иначе многострочный RUN/COPY читался бы как обрывки.
@@ -66,7 +62,7 @@ function parseCopyLine(raw) {
   const positional = rest.split(/\s+/).filter((t) => t && !t.startsWith('--'));
   if (/--from=/.test(rest)) {
     // Источник — путь ВНУТРИ предыдущей стадии (`/app/prisma`). Для правила
-    // (a) он бесполезен, но нужен правилу (c2): в стадию он попал из контекста.
+    // (a) он бесполезен, но нужен правилу (b2): в стадию он попал из контекста.
     if (positional.length < 2) return { skip: true };
     return { skip: true, stageSrc: positional[0] };
   }
@@ -79,7 +75,7 @@ function parseCopyLine(raw) {
 }
 
 // `cp -r src dst` внутри RUN читает файловую систему УЖЕ собираемого образа,
-// не build-контекст — .dockerignore на него не влияет (правило (c) не про это).
+// не build-контекст — .dockerignore на него не влияет (правило (b) не про это).
 function parseRunCp(raw) {
   const re = /\bcp\s+-[rR]\s+(\S+)\s+(\S+)/g;
   return [...raw.matchAll(re)].map((m) => ({ src: m[1], dst: m[2] }));
@@ -192,7 +188,7 @@ if (!existsSync(DOCKERFILE)) {
 const dockerfileText = readFileSync(DOCKERFILE, 'utf8');
 const copyEntries = [];
 const runCpEntries = [];
-/** `COPY --from=<стадия> <путь-в-стадии> …` — нужны правилу (c2). */
+/** `COPY --from=<стадия> <путь-в-стадии> …` — нужны правилу (b2). */
 const stageCopyEntries = [];
 /** Есть ли `COPY . .`: только через него контекст попадает в стадию build. */
 let hasWholeContextCopy = false;
@@ -229,33 +225,7 @@ for (const entry of runCpEntries) {
   }
 }
 
-// ── (b) назначение мини-аппа в Dockerfile ⇄ rootPath в app.module.ts ───────
-if (!existsSync(APP_MODULE)) {
-  problems.push('src/app.module.ts не найден — не с чем сверить назначение мини-аппа');
-} else {
-  const appModuleText = readFileSync(APP_MODULE, 'utf8');
-  const rootPathMatch = appModuleText.match(/ServeStaticModule\.forRoot\(\{[\s\S]*?rootPath:\s*join\(([^)]*)\)/);
-  const miniappCp = runCpEntries.find((e) => e.src.replace(/^\.\//, '').startsWith('schema-miniapp/dist'));
-  if (!rootPathMatch) {
-    problems.push('src/app.module.ts: не нашли `rootPath: join(...)` внутри ServeStaticModule.forRoot — нечего сверить с Dockerfile');
-  } else if (!miniappCp) {
-    problems.push('Dockerfile: не нашли `cp -r schema-miniapp/dist/* ...` — нечего сверить с src/app.module.ts');
-  } else {
-    const rootPath = rootPathMatch[1]
-      .split(',')
-      .map((s) => s.trim().replace(/^['"]|['"]$/g, ''))
-      .filter((s) => s !== '__dirname' && s !== '..' && s !== '')
-      .join('/');
-    const expectedDest = `${rootPath}/app`;
-    const actualDest = miniappCp.dst.replace(/^\.\//, '').replace(/\/$/, '');
-    if (actualDest !== expectedDest) {
-      const rootLine = lineOf(appModuleText, rootPathMatch.index);
-      problems.push(`Dockerfile:${miniappCp.line} копирует мини-апп в «${actualDest}», а src/app.module.ts:${rootLine} отдаёт статику из «${rootPath}» — ожидалось назначение «${expectedDest}». ServeStaticModule не найдёт мини-апп по этому пути.`);
-    }
-  }
-}
-
-// ── (c) .dockerignore не исключает то, что Dockerfile копирует ─────────────
+// ── (b) .dockerignore не исключает то, что Dockerfile копирует ─────────────
 // Прямой путь: `COPY X ./` берёт X из контекста, а его там нет. Транзитный:
 // `COPY --from=build /app/X` берёт X из стадии, но в стадию он попал через
 // `COPY . .`, то есть тоже из контекста. Транзитный нашёлся доказательством
@@ -281,7 +251,7 @@ for (const { src, line, via } of ignoreSuspects) {
   }
 }
 
-// ── (d) amvera.yml ───────────────────────────────────────────────────────
+// ── (c) amvera.yml ───────────────────────────────────────────────────────
 problems.push(...checkAmveraYml());
 
 if (VERBOSE) {
@@ -290,11 +260,11 @@ if (VERBOSE) {
 }
 
 if (problems.length > 0) {
-  console.error('❌ гейт деплой-путей (Dockerfile/.dockerignore/app.module.ts/amvera.yml):');
+  console.error('❌ гейт деплой-путей (Dockerfile/.dockerignore/amvera.yml):');
   for (const p of problems) console.error(`   ${p}`);
   console.error('Эти пути читает только Amvera при сборке образа — ни tsc, ни jest, ни eslint их не видят. Рассинхрон покраснеет ПОСЛЕ мержа, в проде, а не в CI.');
   process.exit(1);
 }
 
-const summary = `${checkedSources.length} источников COPY/cp, назначение мини-аппа, ${ignoreEntries.length} строк .dockerignore, amvera.yml`;
+const summary = `${checkedSources.length} источников COPY/cp, ${ignoreEntries.length} строк .dockerignore, amvera.yml`;
 console.log(`✓ гейт деплой-путей: ${summary} — без рассинхрона.`);

@@ -2,13 +2,13 @@
 // перерос лимит (правило №10 CLAUDE.md — раздутый файл дробится, а не пухнет
 // дальше), а разметка кнопок ни от чего в сервисе не зависит.
 import { Markup } from 'telegraf';
-import { MINIAPP_URL, DONATE_URL } from './telegram.constants';
+import { CABINET_URL, DONATE_URL } from './telegram.constants';
 
 export function buildWelcomeKeyboard(): ReturnType<
   typeof Markup.inlineKeyboard
 > {
   return Markup.inlineKeyboard([
-    [Markup.button.webApp('🧠 Открыть «Всё по схеме»', MINIAPP_URL)],
+    [Markup.button.webApp('🧠 Открыть «Всё по схеме»', CABINET_URL)],
     [Markup.button.callback('🎲 Мини-тесты на 2 минуты', 'qz:list')],
     [Markup.button.url('💛 Поддержать проект', DONATE_URL)],
   ]);

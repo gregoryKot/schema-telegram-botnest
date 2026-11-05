@@ -1,6 +1,5 @@
-// Кнопка «Поделиться днём» + шит с карточкой дня (webapp). Парный файл:
-// schema-miniapp/src/share/DayShareButton.tsx — логика в shared/useDayShare,
-// вёрстка per-frontend (правило №3).
+// Кнопка «Поделиться днём» + шит с карточкой дня (webapp). Логика в shared/useDayShare
+// (правило №3).
 import { useState } from 'react';
 import type { Need } from '../types';
 import { ShareCardSheet } from './ShareCardSheet';

@@ -7,8 +7,8 @@
 // CSS получает внутри Telegram. Полноэкранное размытие под нижней панелью
 // стоило ~1.4с НА КАДР, приложение вязло метрономом всю первую минуту.
 // Выключение одного размытия (эксперимент noblur) убрало 42 блока и 78с
-// зависаний; тап 2000-4000мс упал до 115-196мс. Blur снят из мини-аппа
-// полностью — этот гейт не даёт ему вернуться.
+// зависаний; тап 2000-4000мс упал до 115-196мс. Blur снят полностью —
+// этот гейт не даёт ему вернуться.
 //
 // Пофайловый храповик ЧИСЛА нарушений (формат — scripts/check-tiny-fonts.mjs),
 // а не список ручных причин: у webapp-лендинга долг тает по счётчику, а не
@@ -29,7 +29,7 @@ const BASELINE_PATH = join(ROOT, 'scripts', 'render-poison-baseline.json');
 const UPDATE = process.argv.includes('--update');
 const VERBOSE = process.argv.includes('--verbose');
 
-const SCAN_DIRS = ['schema-miniapp/src', 'shared/src', 'webapp/src'];
+const SCAN_DIRS = ['shared/src', 'webapp/src'];
 
 function walk(dir, acc = []) {
   let entries;

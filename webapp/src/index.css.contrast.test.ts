@@ -80,21 +80,6 @@ function overlay(fg: Rgb, alpha: number, bg: Rgb): Rgb {
 const LIGHT = extractBlock(CSS, ':root, html[data-theme="light"]');
 const DARK = extractBlock(CSS, 'html[data-theme="dark"]');
 
-// Мини-апп читается ТЕМ ЖЕ тестом, а не копией помощников рядом (правило №11
-// CLAUDE.md — повторённый блок выносится, а не дублируется; здесь проще
-// параметризовать один файл, чем городить общий модуль-помощник, у которого
-// не будет прод-потребителя). У мини-аппа темы разложены наоборот: голый
-// `:root` держит ТЁМНЫЕ значения, светлые — в `html[data-theme='light']`
-// (см. комментарий в его index.css).
-const MINIAPP_CSS = readFileSync(
-  join(__dirname, '..', '..', 'schema-miniapp', 'src', 'index.css'),
-  'utf8',
-);
-// Маркер — заголовок комментария перед блоком, а не `:root {`: голых `:root`
-// в файле два (первый — только --safe-bottom), и по имени блоки не отличить.
-const MINIAPP_DARK = extractBlock(MINIAPP_CSS, '── Dark theme (default)');
-const MINIAPP_LIGHT = extractBlock(MINIAPP_CSS, "html[data-theme='light']");
-
 describe('a11y: цвета токенов --kbd-text / --c-rose-strong держат ≥4.5:1', () => {
   it.each([
     ['light', LIGHT],
@@ -137,10 +122,8 @@ describe('a11y: цвета токенов --kbd-text / --c-rose-strong держ�
 // в комментарии.
 describe('a11y: текст на залитом --accent-red держит ≥4.5:1 в обеих темах', () => {
   it.each([
-    ['webapp light', LIGHT],
-    ['webapp dark', DARK],
-    ['miniapp light', MINIAPP_LIGHT],
-    ['miniapp dark', MINIAPP_DARK],
+    ['light', LIGHT],
+    ['dark', DARK],
   ] as const)('--on-accent-red на --accent-red — %s', (_label, block) => {
     const fill = parseColor(resolveToken(block, '--accent-red'));
     const ink = parseColor(resolveToken(block, '--on-accent-red'));
@@ -166,5 +149,62 @@ describe('a11y: .landing-personal-brand — текст на залитом --acc
 
     expect(fill.alpha).toBe(1);
     expect(contrastRatio(ink.rgb, fill.rgb)).toBeGreaterThanOrEqual(4.5);
+  });
+});
+
+// Опасные действия (ds-link--danger, ds-list-row--danger, ds-menu-item.is-danger)
+// красятся --accent-red: у него есть тёмный вариант. Страницы вне AppShell
+// (/account) бывают в тёмной теме, а --err определён только в светлой: на тёмных
+// --bg/--surface он давал 3.11:1 и 2.84:1.
+describe('a11y: красный текст опасных действий на --bg и --surface ≥4.5:1 в обеих темах', () => {
+  it.each([
+    ['light', LIGHT],
+    ['dark', DARK],
+  ] as const)('--accent-red на --bg и --surface — тема %s', (_label, block) => {
+    const fg = parseColor(resolveToken(block, '--accent-red'));
+    for (const bgToken of ['--bg', '--surface']) {
+      const bg = parseColor(resolveToken(block, bgToken));
+      expect(contrastRatio(fg.rgb, bg.rgb), bgToken).toBeGreaterThanOrEqual(4.5);
+    }
+  });
+  it('опасные правила cabinet.css не берут --err (нет тёмного варианта)', () => {
+    const cabinet = readFileSync(join(__dirname, 'styles', 'cabinet.css'), 'utf8');
+    const bad = [...cabinet.matchAll(/([^{}]*danger[^{}]*)\{([^{}]*)\}/g)].filter((m) => /var\(--err\)/.test(m[2])).map((m) => m[1].trim());
+    expect(bad).toEqual([]);
+  });
+});
+
+// Песочная панель (2026-11): сайдбар, нижняя навигация, герой входа и оплаты,
+// вводные карточки — до того почти чёрный «ink» редизайна 2026-10, который
+// владелец снял («чёрный тяжёлый, добавляет тяжести»). Панель светлая, и
+// текст на ней — те же чернила, что на бумаге; этот тест держит пары
+// «текст на панели» на ≥4.5:1, чтобы --panel нельзя было тихо затемнить или
+// осветлить так, что подписи сайдбара и нижней навигации (--on-panel-faint)
+// или «Выйти» (--on-panel-danger) поплывут. Панель только в светлой теме:
+// кабинет под .light-lock, тёмная панель не объявлена.
+describe('a11y: текст на песочной --panel держит ≥4.5:1', () => {
+  it.each([
+    ['--on-panel', '--panel'],
+    ['--on-panel', '--panel-2'],
+    ['--on-panel', '--panel-3'],
+    ['--on-panel-sub', '--panel'],
+    ['--on-panel-sub', '--panel-2'],
+    ['--on-panel-faint', '--panel'],
+    ['--on-panel-faint', '--panel-2'],
+    ['--on-panel-danger', '--panel'],
+    ['--on-panel-danger', '--panel-2'],
+  ])('%s на %s', (fgName, bgName) => {
+    const fg = parseColor(resolveToken(LIGHT, fgName)).rgb;
+    const bg = parseColor(resolveToken(LIGHT, bgName)).rgb;
+    expect(contrastRatio(fg, bg)).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it('панель светлее чернил и темнее бумаги: это плашка на бумаге, а не второй чёрный', () => {
+    const panel = luminance(parseColor(resolveToken(LIGHT, '--panel')).rgb);
+    const paper = luminance(parseColor(resolveToken(LIGHT, '--bg')).rgb);
+    const ink = luminance(parseColor(resolveToken(LIGHT, '--text')).rgb);
+    expect(panel).toBeLessThan(paper);
+    expect(panel).toBeGreaterThan(0.5);
+    expect(ink).toBeLessThan(0.1);
   });
 });

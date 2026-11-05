@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
-// Кнопка «Поделиться месяцем» (webapp ↔ miniapp, правило №3) — логика и
+// Кнопка «Поделиться месяцем» (правило №3) — логика и
 // разметка общие, кнопка и ShareCardSheet приходят инъекцией. Тут — сам
 // компонент с поддельными ShareCardSheet/renderButton, площадочные обёртки
-// (webapp/schema-miniapp heatmapShare.tsx) проверяют только свою инъекцию.
+// (webapp heatmapShare.tsx) проверяют только свою инъекцию.
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { MonthShareButton } from './MonthShareButton';

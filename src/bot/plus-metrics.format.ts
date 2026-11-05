@@ -1,14 +1,8 @@
 // Блок «Кнопка «плюс»» для /stats (правило №8: событие, которого нет в
 // отчёте, — невидимо). Чистый форматтер, покрыт тестом, включая пустую БД.
-// Язык — простой: «открывали меню», а не «plus_open events».
+// Язык — простой: «убирают из меню», а не «quick_action_toggle events».
 
 export interface PlusMetrics {
-  /** За месяц: сколько раз открыли меню «плюс». */
-  opens30: number;
-  /** За месяц: у скольких разных людей это было. */
-  users30: number;
-  /** Какие действия выбирают чаще всего (meta.action), по убыванию. */
-  actions30: Array<{ action: string; count: number }>;
   /** Что прячут из меню (quick_action_toggle, hidden=true), по убыванию. */
   hidden30: Array<{ action: string; count: number }>;
   /** За месяц: сколько раз меняли порядок пунктов (quick_action_move). */
@@ -46,16 +40,10 @@ const listByLabel = (rows: Array<{ action: string; count: number }>): string =>
 
 /** Текстовый блок для /stats. Чистая функция. */
 export function formatPlusMetrics(m: PlusMetrics): string {
-  if (m.opens30 === 0 && m.moves30 === 0) {
-    return '➕ <b>Кнопка «плюс»</b>: за 30 дней ещё не открывали.';
+  if (m.hidden30.length === 0 && m.moves30 === 0) {
+    return '➕ <b>Кнопка «плюс»</b>: за 30 дней меню не настраивали.';
   }
   const lines = [`➕ <b>Кнопка «плюс»</b> (за месяц)`];
-  if (m.opens30 > 0) {
-    lines.push(`Открывали: ${m.opens30} раз (${m.users30} человек)`);
-  }
-  if (m.actions30.length > 0) {
-    lines.push(`Чаще всего выбирают: ${listByLabel(m.actions30)}`);
-  }
   if (m.hidden30.length > 0) {
     lines.push(`Убирают из меню: ${listByLabel(m.hidden30)}`);
   }

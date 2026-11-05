@@ -1,5 +1,5 @@
 // «Мой путь» (webapp) — обёртка над общими useJourney/JourneyView (правило №3):
-// fixed-оверлей с useHistorySheet, заголовок, шаринг. Парный: schema-miniapp/…
+// fixed-оверлей с useHistorySheet, заголовок, шаринг.
 import '../styles/sheet-diary.css';
 import { useRef } from 'react';
 import { useHistorySheet } from '../hooks/useHistorySheet';
@@ -72,8 +72,7 @@ export function JourneySheet({ onClose }: { onClose: () => void }) {
               skeleton={
                 // Форма — как у реального JourneyView: hero-итог + счётчик +
                 // строки ленты (JourneyTimeline минимальная высота строки —
-                // 52px, shared/src/journey/JourneyTimeline.tsx). Парно с
-                // schema-miniapp/src/components/JourneySheet.tsx.
+                // 52px, shared/src/journey/JourneyTimeline.tsx).
                 <>
                   <Skeleton height={96} radius={16} />
                   <div className="sd-skel-gap" />

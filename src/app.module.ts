@@ -53,7 +53,7 @@ const ALIAS_DOMAINS = PRACTICE_ALIAS_HOSTS;
       inject: [PrismaService],
       useFactory: throttlerOptions,
     }),
-    // Single ServeStatic: site at / (webapp/dist), mini-app at /app/. SPA
+    // Single ServeStatic: site at / (webapp/dist). SPA
     // renderPath serves index.html for non-file paths; /api excluded.
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, '..', 'webapp', 'dist'),

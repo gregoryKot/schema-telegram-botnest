@@ -27,9 +27,9 @@ export function DonatePage() {
   };
 
   return (
-    <div className="light-lock ap-page">
-      <div className="ds-sheet-head"><a href="/" className="ds-back">← На главную</a></div>
-      <div className="ds-page ap-main">
+    <div className="light-lock ap-page ap-page--donate">
+      <div className="ds-sheet-head ds-sheet-head--page"><a href="/" className="ds-back">← На главную</a></div>
+      <div className="ds-page ap-main"><div className="ap-donate-shell">
         <div className="ap-hero">
           <div className="ds-eyebrow">Разовая поддержка</div>
           <h1 className="ds-h1">{ret === 'ok' ? 'Спасибо за поддержку!' : <>Поддержать <i>проект</i></>}</h1>
@@ -38,7 +38,7 @@ export function DonatePage() {
         </div>
         {ret !== 'ok' && (
           <div className="ds-card ap-donate">
-            <div className="ds-seg ds-seg--full" role="group" aria-label="Сумма">
+            <div className="ds-seg ds-seg--full ap-seg" role="group" aria-label="Сумма">
               {PRESETS.map((p) => (
                 <button key={p} type="button" aria-pressed={amount === p} onClick={() => setAmount(p)} className={`ds-seg-btn${amount === p ? ' is-active' : ''}`}>{p} ₽</button>
               ))}
@@ -53,7 +53,7 @@ export function DonatePage() {
             <p className="ap-fine">Оплата картой или СБП через Robokassa.<br />Добровольное пожертвование, возврату не подлежит.</p>
           </div>
         )}
-      </div>
+        <a href="/" className="ap-home">← На главную</a></div></div>
     </div>
   );
 }

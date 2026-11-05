@@ -24,16 +24,16 @@ export function ChildhoodIntro({
       title={title}
       lede="Те же пять потребностей – но про детство."
     >
-      <div className="ds-card cw-intro">
-        <p className="cw-intro-body">
+      <div className="ds-card chw-intro">
+        <p className="chw-intro-body">
           В схема-терапии считается, что схемы формируются, когда базовые потребности{' '}
           <b>систематически не удовлетворялись в детстве</b>. Это упражнение поможет увидеть,
           какие области могут быть особенно чувствительными – и почему дневник сегодня
           показывает то, что показывает.
         </p>
       </div>
-      <div className="ds-card cw-intro">
-        <p className="cw-intro-small">
+      <div className="ds-card chw-intro">
+        <p className="chw-intro-small">
           Это не диагностика – оценки приблизительны и субъективны. Результаты{' '}
           {tr('для твоего понимания', 'для вашего понимания')}, не для выводов.
         </p>

@@ -11,9 +11,9 @@ interface AuthRequest extends Request {
 }
 
 // Право на переносимость данных (152-ФЗ ст.14 / GDPR art.15,20). Контур и
-// решения о составе — src/account/export-policy.ts. Пока без кнопки ни на
-// одной площадке (правило №16 CLAUDE.md: честный долг в
-// scripts/feature-parity-baseline.json, UI — отдельным PR).
+// решения о составе — src/account/export-policy.ts. Кнопка «Скачать мои
+// данные» есть на сайте (webapp/src/components/settingsSheet/DataSection.tsx,
+// хук shared/src/account/useDataExport.ts).
 @Controller('api/account')
 @UseGuards(TelegramAuthGuard)
 export class AccountExportController {

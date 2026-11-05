@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 // Прямой тест тела карточки (правило №7 CLAUDE.md: свободный текст = кризисный
-// путь + правило №8: аналитика). Обёртки фронтендов (webapp/CrisisCard.tsx,
-// schema-miniapp/CrisisCard.tsx) тестируют только прокидывание tr/track —
+// путь + правило №8: аналитика). Обёртка сайта (webapp/CrisisCard.tsx)
+// тестирует только прокидывание tr/track —
 // сама механика показа/клика/двух форм обращения тестируется здесь один раз.
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { render, screen, cleanup, fireEvent } from '@testing-library/react';

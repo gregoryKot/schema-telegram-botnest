@@ -35,7 +35,7 @@ describe('needColors', () => {
 // исходник фронтендов, кроме этого модуля, не имеет права его объявлять.
 describe('needColors: второй палитры потребностей нет', () => {
   const REPO_ROOT = join(__dirname, '..', '..', '..');
-  const DIRS = ['shared/src', 'webapp/src', 'schema-miniapp/src'];
+  const DIRS = ['shared/src', 'webapp/src'];
   const PALETTE = new RegExp(
     `(?:${NEED_COLOR_ORDER.join('|')})\\s*:\\s*['"\`]#[0-9a-f]{3,8}['"\`]`,
     'i',

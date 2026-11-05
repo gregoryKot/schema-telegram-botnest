@@ -22,8 +22,8 @@ const CODE_EXT = /\.(js|mjs|cjs|sh)$/;
 
 // Деревья, за которыми уже следит другой гейт — префиксы repo-relative путей.
 const WATCHED_PREFIXES = [
-  'src/', 'webapp/src/', 'schema-miniapp/src/', 'shared/src/',
-  'webapp/public/', 'schema-miniapp/public/', 'game/public/',
+  'src/', 'webapp/src/', 'shared/src/',
+  'webapp/public/', 'game/public/',
 ];
 // Деревья вне гейта в принципе (не прод-код репозитория или заморожены).
 // Экспорт — ради теста гейта.
@@ -94,7 +94,6 @@ const isTestFile = (rel) =>
   (rel.startsWith('src/') && rel.endsWith('.spec.ts')) ||
   (rel.startsWith('test/') && rel.endsWith('.ts')) ||
   (rel.startsWith('webapp/src/') && /\.test\.[jt]sx?$/.test(rel)) ||
-  (rel.startsWith('schema-miniapp/src/') && /\.test\.[jt]sx?$/.test(rel)) ||
   (rel.startsWith('shared/src/') && /\.test\.[jt]sx?$/.test(rel));
 
 // existsSync — на удалённое из рабочего дерева. stripComments ДО поиска.

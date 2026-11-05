@@ -1,7 +1,6 @@
 // @vitest-environment jsdom
 // PatternSheet (сайт) — единый экран паттерна: тап по «Моим схемам/режимам»
-// больше не уводит сразу в упражнение или справку. Парный по смыслу с
-// schema-miniapp/src/components/patternSheet/PatternSheet.test.tsx.
+// больше не уводит сразу в упражнение или справку.
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
@@ -158,7 +157,7 @@ describe('PatternSheet — справка и «О схеме»', () => {
 
   it('быстрая практика открывается из блока «Что поможет»', () => {
     renderSheet();
-    fireEvent.click(screen.getAllByRole('button').find((b) => b.className === 'ps-pill')!);
+    fireEvent.click(screen.getByRole('button', { name: /Дыхание 4-4-6/ }));
     expect(screen.getByTestId('practice')).toBeTruthy();
   });
 

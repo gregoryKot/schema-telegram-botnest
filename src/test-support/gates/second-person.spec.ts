@@ -38,10 +38,10 @@ describe('check-second-person.mjs', () => {
   });
 
   it('ловит захардкоженный императив без единого местоимения рядом', () => {
-    // Ровно так был найден баг: BottomSheet мини-аппа звал «Нажми» безусловно.
+    // Ровно так был найден баг: BottomSheet удалённого мини-аппа звал «Нажми» безусловно.
     const res = runGate('check-second-person.mjs', {
       'scripts/second-person-baseline.json': JSON.stringify({}),
-      'schema-miniapp/src/components/BottomSheet.tsx':
+      'webapp/src/components/BottomSheet.tsx':
         "export const hint = 'Нажми кнопку ниже, чтобы продолжить';\n",
     });
     expect(res.status).toBe(1);
@@ -128,7 +128,7 @@ describe('check-second-person.mjs', () => {
   it('«ты» внутри вилки tr(...) — легитимно, exit 0', () => {
     const res = runGate('check-second-person.mjs', {
       'scripts/second-person-baseline.json': JSON.stringify({}),
-      'schema-miniapp/src/components/BottomSheet.tsx':
+      'webapp/src/components/BottomSheet.tsx':
         "const msg = tr('Нажми кнопку, ты справишься', 'Нажмите кнопку, вы справитесь');\n",
     });
     expect(res.status).toBe(0);

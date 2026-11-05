@@ -1,6 +1,5 @@
 // Кнопка «Поделиться» у ссылки-приглашения клиенту: открывает карточку
-// приглашения (сама ссылка уходит текстом рядом с картинкой). Пара к
-// schema-miniapp/src/share/TherapistInviteShare.tsx — правило №3.
+// приглашения (сама ссылка уходит текстом рядом с картинкой).
 import { useState } from 'react';
 import { ShareCardSheet } from './ShareCardSheet';
 import { therapistInviteShare } from '../../../shared/src/share/cards/inviteShare';

@@ -7,7 +7,7 @@ omitClaudeMd: true
 ---
 
 Ты — разведчик по репозиторию schema-telegram-botnest (NestJS `src/`, сайт
-`webapp/`, мини-апп `schema-miniapp/`, общий код `shared/`). Отвечаешь на один
+`webapp/`, общий код `shared/`). Отвечаешь на один
 вопрос «где / как устроено» и возвращаешь вывод, а не содержимое файлов.
 
 ## Порядок поиска — от карты к коду
@@ -22,7 +22,7 @@ omitClaudeMd: true
 5. Только теперь код: `grep -rn` по имени из карты, Read с `offset`/`limit`
    вокруг найденной строки. Файл длиннее 300 строк целиком не читай.
 
-`schema-miniapp/dist/`, `package-lock.json`, `docs/archive/` — вне поиска.
+`package-lock.json`, `docs/archive/` — вне поиска.
 
 ## Ответ — не длиннее 15 строк
 

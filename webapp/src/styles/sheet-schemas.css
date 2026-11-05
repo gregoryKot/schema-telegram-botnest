@@ -61,7 +61,7 @@
 .ss-center { display: flex; flex-direction: column; align-items: center; gap: 12px; text-align: center; }
 
 /* ── Карточка схемы ─────────────────────────────────────────────────────── */
-.ss-belief { display: flex; gap: 14px; align-items: flex-start; padding: 14px 0; border-top: 1px solid var(--line); }
+.ss-belief { display: flex; gap: 14px; align-items: flex-start; padding: 14px 0; border-top: 1px solid var(--paper-sunk); }
 .ss-belief:first-of-type { border-top: none; }
 .ss-belief-dot { font-family: var(--serif); font-size: 22px; line-height: 1; flex-shrink: 0; }
 .ss-belief-text { font-family: var(--serif); font-size: 18px; font-style: italic; line-height: 1.55; color: var(--text); }
@@ -105,7 +105,7 @@
   transition: background .12s, border-color .12s, color .12s;
 }
 .ss-scale-btn:hover { border-color: var(--line-hover); }
-.ss-scale-btn.is-active { background: var(--ink); border-color: var(--ink); color: var(--on-ink); }
+.ss-scale-btn.is-active { background: var(--accent-soft); border-color: var(--accent); color: var(--accent-hi); }
 .ss-scale-num { font-family: var(--serif); font-size: 22px; line-height: 1; }
 .ss-scale-lbl { font-size: 11.5px; line-height: 1.25; text-align: center; overflow-wrap: anywhere; }
 .ss-test-nav { flex-shrink: 0; max-width: 760px; width: 100%; margin: 0 auto; padding: 8px clamp(16px, 4vw, 32px) 24px; box-sizing: border-box; display: flex; }

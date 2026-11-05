@@ -29,7 +29,6 @@ const ROOT = join(import.meta.dirname, '..');
 const SCAN_DIRS = [
   'src',
   'webapp/src',
-  'schema-miniapp/src',
   'shared/src',
   'game/src',
 ];

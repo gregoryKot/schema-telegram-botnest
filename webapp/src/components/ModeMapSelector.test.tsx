@@ -224,7 +224,8 @@ describe('ModeMapSelector — создание новой карты через 
 });
 
 describe('ModeMapSelector — переименование и удаление карты', () => {
-  it('двойной клик по вкладке переименовывает карту через API', async () => {
+  const openMenu = () => fireEvent.click(screen.getByRole('button', { name: 'Действия с картой' }));
+  it('«⋯» → «Переименовать» открывает поле, Enter сохраняет через API', async () => {
     listModeMaps.mockResolvedValue([meta(1, 'Старое имя')]);
     getModeMap.mockResolvedValue(full(1, 'Старое имя'));
     updateModeMap.mockResolvedValue(full(1, 'Новое имя'));
@@ -232,7 +233,8 @@ describe('ModeMapSelector — переименование и удаление �
       render(<ModeMapSelector clientId={5} />);
     });
     expect(screen.getByTestId('mm-editor-stub')).toBeTruthy();
-    fireEvent.doubleClick(screen.getByText('Старое имя'));
+    openMenu();
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Переименовать' }));
     const input = screen.getByDisplayValue('Старое имя');
     fireEvent.change(input, { target: { value: 'Новое имя' } });
     // Enter вызывает api.updateModeMap — оборачиваем в act(async), чтобы
@@ -257,7 +259,8 @@ describe('ModeMapSelector — переименование и удаление �
       render(<ModeMapSelector clientId={5} />);
     });
     expect(screen.getByTestId('mm-editor-stub')).toBeTruthy();
-    fireEvent.click(screen.getByLabelText('Удалить карту'));
+    openMenu();
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Удалить карту' }));
     const dialog = screen.getByRole('dialog');
     expect(dialog.getAttribute('aria-modal')).toBe('true');
     expect(deleteModeMap).not.toHaveBeenCalled();
@@ -278,7 +281,8 @@ describe('ModeMapSelector — переименование и удаление �
       render(<ModeMapSelector clientId={5} />);
     });
     expect(screen.getByTestId('mm-editor-stub')).toBeTruthy();
-    fireEvent.click(screen.getByLabelText('Удалить карту'));
+    openMenu();
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Удалить карту' }));
     fireEvent.click(screen.getByText('Отмена'));
     expect(deleteModeMap).not.toHaveBeenCalled();
     expect(screen.getByText('Карта А')).toBeTruthy();
@@ -291,20 +295,33 @@ describe('ModeMapSelector — переименование и удаление �
     await act(async () => {
       render(<ModeMapSelector clientId={5} />);
     });
-    fireEvent.click(screen.getByLabelText('Удалить карту'));
+    openMenu();
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Удалить карту' }));
     fireEvent.keyDown(document, { key: 'Escape' });
     expect(deleteModeMap).not.toHaveBeenCalled();
     expect(screen.queryByRole('dialog')).toBeNull();
   });
 
-  it('единственная карта не показывает кнопку удаления', async () => {
+  it('двойной клик по вкладке не открывает поле переименования', async () => {
+    listModeMaps.mockResolvedValue([meta(1, 'Карта А')]);
+    getModeMap.mockResolvedValue(full(1, 'Карта А'));
+    await act(async () => {
+      render(<ModeMapSelector clientId={5} />);
+    });
+    fireEvent.doubleClick(screen.getByText('Карта А'));
+    expect(screen.queryByDisplayValue('Карта А')).toBeNull();
+  });
+
+  it('единственная карта: в меню нет пункта «Удалить карту»', async () => {
     listModeMaps.mockResolvedValue([meta(1, 'Единственная')]);
     getModeMap.mockResolvedValue(full(1, 'Единственная'));
     await act(async () => {
       render(<ModeMapSelector clientId={5} />);
     });
     expect(screen.getByTestId('mm-editor-stub')).toBeTruthy();
-    expect(screen.queryByLabelText('Удалить карту')).toBeNull();
+    openMenu();
+    expect(screen.getByRole('menuitem', { name: 'Переименовать' })).toBeTruthy();
+    expect(screen.queryByRole('menuitem', { name: 'Удалить карту' })).toBeNull();
   });
 });
 

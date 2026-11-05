@@ -1,6 +1,6 @@
 /* Клиент · Сегодня (sections/TodaySection.tsx, sections/today/*). Префикс ct-.
    Одна колонка: шапка, три плитки, задания, лента дня. На десктопе — 600px. */
-.ct-page { max-width: 600px; gap: 24px; }
+.ct-page { max-width: 600px; }
 /* Кнопка «Зачем это?» стоит в строке с датой, а не рядом с h1: иначе она
    отнимает ширину у приветствия и «Привет, Имя» переносится на телефоне. */
 .ct-head { display: flex; flex-direction: column; gap: 4px; }
@@ -24,12 +24,12 @@
   border: 1px solid var(--line); font-family: var(--sans);
 }
 .ct-tile--tracker { background: var(--surface); color: var(--text); }
-.ct-tile--case { background: var(--ink); color: var(--on-ink); border-color: var(--ink); }
+.ct-tile--case { background: var(--panel); color: var(--on-panel); border-color: var(--panel-line); }
 .ct-tile--diary { background: var(--paper-tint); color: var(--text); }
 .ct-tile-body { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
 .ct-tile-title { font-family: var(--serif); font-size: 24px; line-height: 1.15; }
 .ct-tile-text { font-size: 14px; line-height: 1.45; opacity: .85; }
-.ct-tile--case .ct-tile-text, .ct-tile--case .ct-tile-meta { color: var(--on-ink-sub); opacity: 1; }
+.ct-tile--case .ct-tile-text, .ct-tile--case .ct-tile-meta { color: var(--on-panel-sub); opacity: 1; }
 .ct-tile-meta { font-size: 12px; font-weight: 700; letter-spacing: .02em; color: var(--accent); }
 .ct-tile-meta--skeleton { display: block; height: 11px; width: 55%; border-radius: var(--r-6); background: var(--surface-3); }
 .ct-bars { display: flex; align-items: flex-end; gap: 4px; height: 44px; flex-shrink: 0; }
@@ -54,17 +54,17 @@
 .ct-task-box {
   width: 22px; height: 22px; border-radius: 7px; flex-shrink: 0; box-sizing: border-box;
   display: flex; align-items: center; justify-content: center;
-  font-size: 12px; font-weight: 700; color: var(--on-ink); border: 2px solid var(--accent);
+  font-size: 12px; font-weight: 700; color: var(--on-accent); border: 2px solid var(--accent);
 }
-.ct-task.is-done .ct-task-box { background: var(--ink); border-color: var(--ink); }
+.ct-task.is-done .ct-task-box { background: var(--accent); border-color: var(--accent); }
 .ct-task-body { flex: 1; min-width: 0; }
 .ct-task-text { font-size: 15px; font-weight: 600; }
 .ct-from-therapist { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); font-weight: 700; margin-top: 4px; }
 .ct-task-cta { font-size: 13px; font-weight: 700; color: var(--accent); white-space: nowrap; }
 
 /* Лента дня */
-.ct-feed-list { margin: 0; padding: 0; list-style: none; border-top: 1px solid var(--line); }
-.ct-feed-list > li { border-bottom: 1px solid var(--line); }
+.ct-feed-list { margin: 0; padding: 0; list-style: none; border-top: 1px solid var(--paper-sunk); }
+.ct-feed-list > li { border-bottom: 1px solid var(--paper-sunk); }
 .ct-feed-row {
   width: 100%; min-height: 48px; box-sizing: border-box; padding: 8px 0;
   display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; gap: 12px; align-items: center;

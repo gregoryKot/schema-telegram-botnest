@@ -13,7 +13,7 @@
 .st-toast.is-err { background: color-mix(in srgb, var(--accent-red) 12%, transparent); color: var(--accent-red); }
 .st-body { flex: 1; display: flex; min-height: 0; }
 .st-scroll { flex: 1; overflow-y: auto; }
-.st-inner { padding: 24px 48px 80px; display: flex; flex-direction: column; gap: 20px; }
+.st-inner { padding: 24px 48px 80px; display: flex; flex-direction: column; gap: 16px; }
 
 /* Боковое оглавление */
 .settings-sidenav { padding: 24px 12px; }
@@ -25,7 +25,7 @@
 
 /* Раздел-карточка */
 .st-section { display: flex; flex-direction: column; scroll-margin-top: 16px; }
-.st-sec-head { padding-bottom: 8px; border-bottom: 1px solid var(--line); margin-bottom: 4px; }
+.st-sec-head { padding-bottom: 8px; border-bottom: 1px solid var(--paper-sunk); margin-bottom: 4px; }
 .st-sec-title { display: flex; align-items: center; gap: 6px; }
 .st-help-in {
   display: inline-flex; align-items: center; justify-content: center; border-radius: 50%;
@@ -45,39 +45,24 @@
 .st-code { font-family: monospace; letter-spacing: 3px; }
 .st-code--center { text-align: center; letter-spacing: 4px; font-size: 15px; }
 .st-input-err { border-color: var(--accent-red); }
-.st-link-danger { color: var(--accent-red); align-self: flex-start; }
-.st-link-danger:hover { color: var(--accent-red); text-decoration: underline; }
 .st-btn-danger { color: var(--accent-red); border-color: color-mix(in srgb, var(--accent-red) 35%, transparent); }
 .st-btn-danger:hover { border-color: var(--accent-red); }
 .st-btn-danger.is-solid { background: var(--accent-red); color: var(--on-accent-red); border-color: var(--accent-red); }
 .st-btn-danger.is-solid:hover { background: var(--accent-red); opacity: .9; }
 .st-pair-num { font-family: var(--serif); font-size: 38px; letter-spacing: -0.02em; line-height: 1; }
 .st-pair-num small { font-size: 14px; color: var(--text-sub); }
-.st-links { display: flex; flex-direction: column; } /* ссылки 44 по высоте встык: были 32 (QA мобильной версии 2026-11, М1) */
-.st-links a { font-size: 14px; color: var(--text-sub); text-decoration: none; min-height: 44px; display: inline-flex; align-items: center; }
-.st-links a b { color: var(--accent); font-weight: 600; }
+.st-links { display: flex; flex-direction: column; gap: 6px; }
 .st-fine { font-size: 11px; color: var(--text-faint); line-height: 1.5; }
 
 /* Строка: заголовок/подпись | контрол — общий ds-list-row (cabinet.css) */
-.st-row--danger .ds-list-title { color: var(--accent-red); }
 .st-row-right { display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0; }
 .st-row-name { display: flex; align-items: center; gap: 12px; padding: 8px 0; }
 
 /* Подвиды выбора */
 .st-hours { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
-.st-hour {
-  padding: 14px 0; min-height: 44px; border-radius: 12px; text-align: center; cursor: pointer;
-  background: var(--paper-sunk); color: var(--text-sub); font-size: 15px;
-}
-.st-hour.is-active { background: var(--ink); color: var(--on-ink); font-weight: 600; }
-.st-opts { display: flex; flex-direction: column; gap: 2px; }
-.st-opt {
-  padding: 12px 14px; min-height: 44px; box-sizing: border-box; border-radius: 12px; cursor: pointer;
-  display: flex; justify-content: space-between; align-items: center; gap: 12px;
-  color: var(--text-sub); font-size: 14px;
-}
-.st-opt:hover { background: var(--paper-tint); }
-.st-opt.is-active { background: var(--paper-sunk); color: var(--text); font-weight: 600; }
+.st-opts { display: flex; flex-direction: column; }
+.st-hours > .ds-chip { justify-content: center; }
+.st-check { color: var(--accent); font-weight: 700; }
 .st-pause { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 13px 0; border-bottom: 1px solid var(--paper-sunk); }
 
 /* Модалки (InfoModal) */
@@ -112,7 +97,6 @@
 .st-pc { background: var(--paper-tint); border-radius: 12px; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; }
 .st-pc-top { display: flex; align-items: center; gap: 12px; }
 .st-pc-top > div { flex: 1; min-width: 0; }
-.st-pc-write { flex-shrink: 0; min-height: 44px; display: inline-flex; align-items: center; text-decoration: none; }
 .st-pc-bars { display: flex; gap: 4px; align-items: flex-end; height: 40px; }
 .st-pc-bar { flex: 1; display: flex; flex-direction: column; align-items: center; gap: var(--space-4); }
 .st-pc-bar i { display: block; width: 100%; border-radius: var(--r-4); background: var(--paper-sunk); }
@@ -124,10 +108,10 @@
 .st-pc-bar i.st-pc-tone--mid { background: var(--accent-yellow); }
 .st-pc-bar i.st-pc-tone--low { background: var(--accent-red); }
 .st-pc-confirm { display: flex; gap: 8px; }
-.st-pc-confirm .ds-btn { flex: 1; min-height: 44px; height: auto; }
-.st-pc-leave { min-height: 44px; display: inline-flex; align-items: center; }
+.st-pc-confirm .ds-btn { flex: 1; }
+.st-pc > .ds-link { align-self: flex-start; }
 .st-need { display: flex; flex-direction: column; gap: var(--space-4); }
 .st-need-name { font-size: 14px; font-weight: 600; color: var(--text); }
-.st-done { margin-top: var(--space-20); } /* форма кнопки — ds-btn--lg; здесь только отступ от текста */
+.st-done { width: 100%; margin-top: var(--space-20); } /* форма кнопки — ds-btn--lg; здесь ширина во всю колонку листа (и на компьютере) и отступ от текста */
 .st-info-b { color: var(--text); font-weight: 600; }
 .st-steps { margin: 6px 0 0; padding: 0 0 0 20px; display: grid; gap: var(--space-6); font-size: 13px; line-height: 1.6; color: var(--text-sub); }

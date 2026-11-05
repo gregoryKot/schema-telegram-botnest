@@ -16,9 +16,9 @@ export const NEEDS_BUILD = {
   'check-frontend-coverage-ratchet.mjs':
     'сам гоняет vitest с покрытием, нужен npm ci во фронтендах',
   'check-bundle-size-ratchet.mjs':
-    'меряет готовые webapp/dist и мини-апп dist — нужна сборка фронтенда',
+    'меряет готовые webapp/dist — нужна сборка фронтенда',
   'check-eslint-ratchet.mjs':
-    'запускает eslint по всему репозиторию — нужны node_modules четырёх пакетов и prisma generate; локально: node scripts/check-eslint-ratchet.mjs --changed',
+    'запускает eslint по всему репозиторию — нужны node_modules всех пакетов и prisma generate; локально: node scripts/check-eslint-ratchet.mjs --changed',
   'check-query-plans.mjs':
     'судит .perf/plans.json, который пишет замер EXPLAIN на живом Postgres (джоба perf)',
 };

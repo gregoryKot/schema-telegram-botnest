@@ -29,9 +29,6 @@ describe('StatsReportService.render', () => {
     const plus = {
       render: jest.fn().mockResolvedValue('кнопка плюс: 4'),
     };
-    const webBanner = {
-      render: jest.fn().mockResolvedValue('баннеры-переходы: 6'),
-    };
     const siteInstall = {
       render: jest.fn().mockResolvedValue('установка с сайта: 8'),
     };
@@ -88,7 +85,6 @@ describe('StatsReportService.render', () => {
         entryDelete,
         accountLink,
         plus,
-        webBanner,
         siteInstall,
         screen,
         profilePattern,
@@ -116,7 +112,6 @@ describe('StatsReportService.render', () => {
         entryDelete as never,
         accountLink as never,
         plus as never,
-        webBanner as never,
         siteInstall as never,
         screen as never,
         profilePattern as never,
@@ -149,7 +144,7 @@ describe('StatsReportService.render', () => {
       'разборы фраз: 7\n\nудаление записей: 2\n\nперенос данных: 2',
     );
     expect(out).toContain(
-      'кнопка плюс: 4\n\nбаннеры-переходы: 6\n\nустановка с сайта: 8\n\nнастройка экранов: 1',
+      'кнопка плюс: 4\n\nустановка с сайта: 8\n\nнастройка экранов: 1',
     );
     expect(out).toContain(
       'настройка экранов: 1\n\nпаттерны со вкладки «Я»: 4\n\nсхема случая по режимам: 3\n\nвход в мессенджере: всё хорошо',
@@ -243,7 +238,6 @@ describe('StatsReportService.render', () => {
     expect(blocks.entryDelete.render).toHaveBeenCalledTimes(1);
     expect(blocks.accountLink.render).toHaveBeenCalledTimes(1);
     expect(blocks.plus.render).toHaveBeenCalledTimes(1);
-    expect(blocks.webBanner.render).toHaveBeenCalledTimes(1);
     expect(blocks.siteInstall.render).toHaveBeenCalledTimes(1);
     expect(blocks.screen.render).toHaveBeenCalledTimes(1);
     expect(blocks.profilePattern.render).toHaveBeenCalledTimes(1);
@@ -263,7 +257,6 @@ describe('StatsReportService.render', () => {
     expect(out).toContain('удаление записей: 2');
     expect(out).toContain('перенос данных: 2');
     expect(out).toContain('кнопка плюс: 4');
-    expect(out).toContain('баннеры-переходы: 6');
     expect(out).toContain('установка с сайта: 8');
     expect(out).toContain('настройка экранов: 1');
     expect(out).toContain('паттерны со вкладки «Я»: 4');

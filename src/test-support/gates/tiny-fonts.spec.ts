@@ -23,16 +23,16 @@ describe('check-tiny-fonts.mjs', () => {
   it('рост счётчика в известном файле — exit 1 с "было → стало"', () => {
     const res = runGate('check-tiny-fonts.mjs', {
       'scripts/tiny-fonts-baseline.json': JSON.stringify({
-        'schema-miniapp/src/known.tsx': 1,
+        'webapp/src/known.tsx': 1,
       }),
-      'schema-miniapp/src/known.tsx': [
+      'webapp/src/known.tsx': [
         'const a = { fontSize: 8 };',
         'const b = { fontSize: 9 };',
         '',
       ].join('\n'),
     });
     expect(res.status).toBe(1);
-    expect(res.stderr).toContain('schema-miniapp/src/known.tsx: 1 → 2');
+    expect(res.stderr).toContain('webapp/src/known.tsx: 1 → 2');
   });
 
   it('снижение счётчика — exit 0, предлагает зафиксировать --update', () => {

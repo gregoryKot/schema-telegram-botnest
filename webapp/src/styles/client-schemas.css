@@ -1,5 +1,5 @@
 /* Экран «Мои паттерны» кабинета клиента. Префикс cs-. */
-.cs-page { max-width: 1100px; gap: 40px; }
+.cs-page { max-width: 1100px; }
 /* Шапка (#906), один состав на любой ширине: надпись / заголовок / подпись, справа
    «Настроить экран», шестерёнка «Настройки» и «Библиотека»; на телефоне действия
    переносятся второй строкой. */
@@ -23,9 +23,9 @@
 .cs-bar-val { text-align: right; font-weight: 700; font-size: 14px; font-variant-numeric: tabular-nums; white-space: nowrap; }
 
 .cs-test { display: flex; flex-direction: column; justify-content: space-between; gap: 16px; }
-.cs-test-label { color: var(--on-ink-faint); }
+.cs-test-label { color: var(--on-panel-faint); }
 .cs-test-text { margin: 8px 0 0; font-family: var(--serif); font-size: 22px; line-height: 1.3; }
-.cs-test-btn { align-self: flex-start; background: var(--bg); color: var(--ink); }
+.cs-test-btn { align-self: flex-start; }
 .cs-test-btn:hover { background: var(--surface); }
 
 .cs-block, .cs-map { display: flex; flex-direction: column; gap: 16px; }
@@ -74,42 +74,35 @@
 
 @media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
   .cs-sheet { padding-top: var(--safe-top); } /* статус-бар установленного приложения (#902) */
-  .cs-page { gap: var(--space-16); }
   .cs-head { gap: var(--space-12) var(--space-16); }
 
   .cs-bar-row { grid-template-columns: minmax(0, 1fr) 48px; gap: 6px 10px; padding: 6px 0; }
   .cs-bar-track { grid-column: 1 / -1; grid-row: 2; height: 6px; }
   .cs-expressed { padding: var(--space-16); gap: var(--space-8); }
-  .cs-expressed .ds-h3 { font-size: 19px; }
   .cs-expressed .ds-head-row { gap: var(--space-2) var(--space-12); }
   .cs-test-text { font-size: 19px; }
 
-  /* Вводная новичку: тёмная (ink) карточка, плотнее десктопной. */
-  .cs-intro.ds-card--ink { padding: var(--space-16); }
+  /* Вводная новичку: песочная (panel) карточка, плотнее десктопной. */
+  .cs-intro.ds-card--panel { padding: var(--space-16); }
   .cs-intro-title { font-size: 20px; }
 
   .cs-block { gap: var(--space-12); }
-  .cs-block .ds-h3, .cs-map .ds-h2 { font-size: 20px; }
   .cs-map { gap: var(--space-16); }
 }
 
-/* Строка про тест YSQ на телефоне: тёмная (ink), подпись слева, действие справа. */
-.cs-testrow.ds-card { background: var(--ink); border-color: var(--ink); color: var(--on-ink); display: flex; align-items: center; justify-content: space-between; gap: var(--space-12); padding: var(--space-12) var(--space-16); border-radius: var(--r-20); }
+/* Строка про тест YSQ на телефоне: песочная (panel), подпись слева, действие справа. */
+.cs-testrow.ds-card { background: var(--panel); border-color: var(--panel-line); color: var(--on-panel); display: flex; align-items: center; justify-content: space-between; gap: var(--space-12); padding: var(--space-12) var(--space-16); border-radius: var(--r-20); }
 .cs-testrow-text { min-width: 0; }
-.cs-testrow-title { font-size: 16px; font-weight: 600; color: var(--on-ink); }
-.cs-testrow-sub { margin-top: var(--space-2); font-size: 12px; line-height: 1.35; color: var(--on-ink-sub); }
-.cs-testrow .ds-btn { flex-shrink: 0; padding: 0 var(--space-12); border-radius: var(--r-14); background: var(--bg); color: var(--ink); border-color: var(--bg); }
+.cs-testrow-title { font-size: 16px; font-weight: 600; color: var(--on-panel); }
+.cs-testrow-sub { margin-top: var(--space-2); font-size: 12px; line-height: 1.35; color: var(--on-panel-sub); }
+.cs-testrow .ds-btn { flex-shrink: 0; padding: 0 var(--space-12); border-radius: var(--r-14); background: var(--bg); color: var(--panel); border-color: var(--bg); }
 
 /* «Мои схемы» строками по доменам (телефон). */
 .cs-grp-wrap { display: flex; flex-direction: column; gap: var(--space-8); }
 .cs-grp-head { display: flex; justify-content: space-between; gap: var(--space-8); padding: 0 var(--space-4); font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; }
 .cs-grp { border: 1px solid; border-radius: var(--r-20); overflow: hidden; } /* подложка и рамка — тон группы: tone-tint tone-border */
-.cs-row { display: flex; align-items: center; justify-content: space-between; gap: var(--space-12); width: 100%; box-sizing: border-box; min-height: 64px; padding: var(--space-12) var(--space-16); border: none; border-bottom: 1px solid var(--line); background: none; font: inherit; text-align: left; color: var(--text); cursor: pointer; }
-.cs-row:last-child { border-bottom: none; }
-.cs-row-text { display: flex; flex-direction: column; gap: var(--space-2); min-width: 0; }
-.cs-row-name { font-size: 16px; font-weight: 600; line-height: 1.25; }
-.cs-row-sub { font-size: 13px; color: var(--text-sub); }
-.cs-row .cs-freq { font-size: 13px; opacity: 1; color: var(--text-sub); flex-shrink: 0; }
+.cs-grp-right { display: inline-flex; align-items: center; gap: 12px; }
+.cs-grp .cs-freq { font-size: 13px; opacity: 1; color: var(--text-sub); flex-shrink: 0; }
 
 /* Чип «Мои схемы» со статусом карточки второй строкой. */
 .cs-chip--stacked { flex-direction: column; align-items: flex-start; gap: 2px; border-radius: 14px; min-height: 44px; }
@@ -133,3 +126,9 @@
 
 /* Верх вкладки «Режимы» (телефон): карточка и строки-входы под ней. */
 .cs-hero-stack { display: flex; flex-direction: column; gap: var(--space-12); }
+
+/* Компьютер: заголовок «Мои паттерны» не сжимается ради действий (на 1024 с шестерёнкой он ломался на две строки) —
+   действия при нехватке места уходят второй строкой. Телефон (≤767) не затронут. */
+@media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) {
+  .cs-head-text { flex: 1 1 auto; }
+}

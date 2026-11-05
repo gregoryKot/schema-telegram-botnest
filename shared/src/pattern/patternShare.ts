@@ -1,6 +1,6 @@
-// Тексты экрана паттерна, общие для сайта и мини-аппа (правило №3): подпись
+// Тексты экрана паттерна (правило №3): подпись
 // листа шаринга, текст сообщения и пустое состояние списка записей. Раньше
-// жили константами в schema-miniapp PatternSheet.
+// жили константами в PatternSheet удалённого мини-аппа.
 import type { MyCardsKind } from './useMyCards';
 
 export const PATTERN_SHARE_TITLE: Record<MyCardsKind, string> = {

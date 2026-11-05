@@ -1,5 +1,5 @@
 // Гейт «у каждого lock-файла есть шаг npm audit» (аудит 2026-10). До него
-// audit стоял один — на корень, ci.yml; lock-файлы webapp, мини-аппа, shared
+// audit стоял один — на корень, ci.yml; lock-файлы webapp, shared
 // и игры не проверял никто, а Dependabot (dependabot-coverage.spec.ts) только
 // предлагает обновления, мерж не блокирует. Правила — lockfile-audit.ts;
 // здесь оба исхода на образцах, прогон по настоящему ci.yml и ИСПОЛНЕНИЕ
@@ -288,8 +288,8 @@ describe('гейт: у каждого lock-файла есть npm audit в CI',
   });
 
   describe('настоящий ci.yml', () => {
-    it('lock-файлов не меньше пяти (иначе проверка пуста)', () => {
-      expect(locks.length).toBeGreaterThanOrEqual(5);
+    it('lock-файлов не меньше четырёх (иначе проверка пуста)', () => {
+      expect(locks.length).toBeGreaterThanOrEqual(4);
     });
 
     it('у каждого lock-файла есть засчитанный шаг, лишних нет', () => {

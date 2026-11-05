@@ -47,13 +47,13 @@ export function WarmWordsEx({ onBack }: { onBack: () => void }) {
       )}
 
       {failed && (
-        <div role="alert" className="ds-card ex2-empty">
+        <div role="alert" className="ds-card ds-card--warn">
           {text.failed}
         </div>
       )}
 
       {!failed && items !== null && items.length === 0 && (
-        <p className="ds-card ex2-empty">
+        <p className="ds-empty">
           {text.empty}
         </p>
       )}

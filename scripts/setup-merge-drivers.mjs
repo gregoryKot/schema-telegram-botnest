@@ -18,14 +18,8 @@
 // забыть драйвер или завести бейслайн и забыть атрибут: слияние тогда пойдёт
 // текстовым, ошибки не будет, и узнаем мы об этом по битому бейслайну.
 import { spawnSync } from 'child_process';
-import {
-  chmodSync,
-  existsSync,
-  mkdirSync,
-  readFileSync,
-  writeFileSync,
-} from 'fs';
-import { dirname, join } from 'path';
+import { existsSync, readFileSync, rmSync } from 'fs';
+import { join } from 'path';
 import { checkMergeDrivers } from './merge-drivers-check.mjs';
 
 const ROOT = join(import.meta.dirname, '..');
@@ -42,11 +36,6 @@ const DRIVERS = {
     name: 'JSON-бейслайн храповика: больше — лучше',
     script: 'scripts/merge-json-ratchet.mjs',
     args: 'max %O %A %B %P',
-  },
-  'miniapp-dist': {
-    name: 'schema-miniapp/dist: гасит конфликт, dist пересоберёт post-merge',
-    script: 'scripts/merge-miniapp-dist.mjs',
-    args: '%A %P',
   },
 };
 
@@ -92,38 +81,17 @@ for (const [driver, { name, script, args }] of Object.entries(DRIVERS)) {
   installed += 1;
 }
 
-// Хук post-merge: драйвер miniapp-dist только гасит конфликт, а верный dist
-// можно собрать лишь когда слитый исходник уже лежит в рабочем дереве — то
-// есть после слияния. Хук и делает это сам, чтобы шаг не держался на памяти
-// агента (подстраховка — CI-джоба `miniapp`).
+// Хук post-merge ставил сборку мини-аппа после слияния; мини-аппа больше нет.
+// Хук, поставленный прежней версией скрипта (по метке), убираем — иначе он
+// будет звать удалённый scripts/merge-miniapp-dist.mjs после каждого слияния.
 const HOOK_MARK = 'schema-telegram-botnest: merge-драйверы';
-const HOOK_BODY = [
-  '#!/bin/sh',
-  `# ${HOOK_MARK} (поставлен scripts/setup-merge-drivers.mjs).`,
-  '# Пересобирает мини-апп после слияния, если оно его трогало.',
-  'exec node scripts/merge-miniapp-dist.mjs --after-merge',
-  '',
-].join('\n');
-
 const hookPath = join(gitDir.stdout.trim(), 'hooks', 'post-merge');
 try {
-  // Чужой хук не затираем — он может делать что-то своё.
-  if (existsSync(hookPath) && !readFileSync(hookPath, 'utf8').includes(HOOK_MARK)) {
-    console.warn(
-      `merge-драйверы: в ${hookPath} уже лежит чужой post-merge — не трогаю.\n` +
-        '  Добавь в него строку сам:\n' +
-        '  node scripts/merge-miniapp-dist.mjs --after-merge',
-    );
-  } else {
-    mkdirSync(dirname(hookPath), { recursive: true });
-    writeFileSync(hookPath, HOOK_BODY);
-    chmodSync(hookPath, 0o755);
+  if (existsSync(hookPath) && readFileSync(hookPath, 'utf8').includes(HOOK_MARK)) {
+    rmSync(hookPath);
   }
 } catch (e) {
-  console.warn(
-    `merge-драйверы: не удалось поставить post-merge (${e.message}) — ` +
-      'после слияния пересобирай мини-апп руками.',
-  );
+  console.warn(`merge-драйверы: не удалось убрать старый post-merge (${e.message}).`);
 }
 
-console.log(`merge-драйверы: настроено ${installed}, хук post-merge на месте.`);
+console.log(`merge-драйверы: настроено ${installed}.`);

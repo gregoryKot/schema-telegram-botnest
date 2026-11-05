@@ -86,22 +86,21 @@ describe('check-schema-terms.mjs', () => {
   // ——— Режимы: «…Родитель» вместо «…Критик» ———
   it('«Карающий Родитель» — exit 1, «Наказывающий Родитель» — exit 1, «Хороший Родитель» — exit 0', () => {
     const bad = runGate('check-schema-terms.mjs', {
-      'schema-miniapp/src/h.tsx':
+      'webapp/src/h.tsx':
         'const m = "Карающий Родитель говорит: ты плохой.";\n',
     });
     expect(bad.status).toBe(1);
     expect(bad.stderr).toContain('Критик');
 
     const bad2 = runGate('check-schema-terms.mjs', {
-      'schema-miniapp/src/h2.tsx':
+      'webapp/src/h2.tsx':
         'const m = "Наказывающий Родитель тут неуместен.";\n',
     });
     expect(bad2.status).toBe(1);
     expect(bad2.stderr).toContain('Критик');
 
     const ok = runGate('check-schema-terms.mjs', {
-      'schema-miniapp/src/h.tsx':
-        'const m = "Хороший Родитель поддерживает тебя.";\n',
+      'webapp/src/h.tsx': 'const m = "Хороший Родитель поддерживает тебя.";\n',
     });
     expect(ok.status).toBe(0);
     expect(ok.stdout).toContain(OK_PREFIX);
@@ -112,8 +111,7 @@ describe('check-schema-terms.mjs', () => {
   // «Родитель» (тест выше) ———
   it('«Наказывающий Критик» — допустимая альтернатива, exit 0', () => {
     const ok = runGate('check-schema-terms.mjs', {
-      'schema-miniapp/src/h3.tsx':
-        'const m = "Наказывающий Критик тут неуместен.";\n',
+      'webapp/src/h3.tsx': 'const m = "Наказывающий Критик тут неуместен.";\n',
     });
     expect(ok.status).toBe(0);
     expect(ok.stdout).toContain(OK_PREFIX);
@@ -202,15 +200,13 @@ describe('check-schema-terms.mjs', () => {
   // ——— Половина имени строчными: «Здоровый взрослый» ———
   it('«Здоровый взрослый» (строчная 2-я половина) — exit 1, «Здоровый Взрослый» — exit 0', () => {
     const bad = runGate('check-schema-terms.mjs', {
-      'schema-miniapp/src/n.tsx':
-        'const m = "В тебе живёт Здоровый взрослый.";\n',
+      'webapp/src/n.tsx': 'const m = "В тебе живёт Здоровый взрослый.";\n',
     });
     expect(bad.status).toBe(1);
     expect(bad.stderr).toContain('Здоровый Взрослый');
 
     const ok = runGate('check-schema-terms.mjs', {
-      'schema-miniapp/src/n.tsx':
-        'const m = "В тебе живёт Здоровый Взрослый.";\n',
+      'webapp/src/n.tsx': 'const m = "В тебе живёт Здоровый Взрослый.";\n',
     });
     expect(ok.status).toBe(0);
     expect(ok.stdout).toContain(OK_PREFIX);

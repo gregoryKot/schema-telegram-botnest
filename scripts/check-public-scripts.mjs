@@ -14,9 +14,9 @@ import { createHash } from 'crypto';
 const ROOT = join(import.meta.dirname, '..');
 const BASELINE = join(ROOT, 'scripts', 'public-scripts-baseline.json'), update = process.argv.includes('--update');
 
-const PUBLIC_DIRS = ['webapp/public', 'schema-miniapp/public', 'game/public'];
-const TEST_TREES = ['src', 'webapp/src', 'schema-miniapp/src', 'shared/src'];
-const HTML = ['webapp/index.html', 'schema-miniapp/index.html'];
+const PUBLIC_DIRS = ['webapp/public', 'game/public'];
+const TEST_TREES = ['src', 'webapp/src', 'shared/src'];
+const HTML = ['webapp/index.html'];
 const TEST_FILE = /\.(spec|test)\.(ts|tsx)$/;
 
 function walk(dir, out = []) {

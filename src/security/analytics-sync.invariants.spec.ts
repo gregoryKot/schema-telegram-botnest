@@ -13,18 +13,13 @@ import { ANALYTICS_EVENTS } from '../analytics/analytics.constants';
 
 const ROOT = join(__dirname, '..', '..');
 
-// Директории фронтендов, где вообще есть трекинг (правило №3: пайплайн
+// Директории фронтендов, где вообще есть трекинг (пайплайн
 // событий общий, но реализация вызова живёт в каждом фронте + shared).
 // 'game/src' — третий фронтенд (Phaser, отдельный SPA): её trackEvent
 // ('game_…', …) (game/src/analytics.ts) шлёт события анонимно через
 // POST /api/public-event, литералы там обязаны быть в ANALYTICS_EVENTS —
-// как и у двух остальных фронтендов.
-const FRONTEND_DIRS = [
-  'webapp/src',
-  'schema-miniapp/src',
-  'shared/src',
-  'game/src',
-];
+// как и у остальных фронтендов.
+const FRONTEND_DIRS = ['webapp/src', 'shared/src', 'game/src'];
 
 // Литералы вида trackEvent('name'...) / api.trackEvent('name'...). НЕ ловит
 // вызовы через импортируемую константу (SHARE_CARD_EVENT и т.п.) и НЕ ловит
@@ -55,7 +50,7 @@ const BACKEND_ONLY: Record<string, string> = {
   share_card:
     'шлётся через импортируемую константу SHARE_CARD_EVENT ' +
     '(shared/src/share/analytics.ts), не строковым литералом — ' +
-    'WeeklyCardSheet.tsx/Celebration.tsx/ShareCardSheet.tsx (оба фронта)',
+    'WeeklyCardSheet.tsx/ShareCardSheet.tsx',
   share_result:
     'константа SHARE_RESULT_EVENT, та же группа файлов, что и share_card',
   auth_rejected:
@@ -74,8 +69,8 @@ const BACKEND_ONLY: Record<string, string> = {
   crisis_hotline_tapped:
     'та же причина, что и crisis_card_shown — useCrisisCardTracking.ts',
   today_streak_toggle:
-    'легаси-имя: заменено на today_block_toggle (см. комментарий в ' +
-    'analytics.constants.ts), фронт больше не шлёт — оставлено в allow-list ' +
+    'легаси-имя: переключателей блоков «Сегодня» больше нет (см. ' +
+    'комментарий в analytics.constants.ts), фронт не шлёт — оставлено в allow-list ' +
     'только ради уже накопленных исторических строк в БД',
   onboarding_step:
     'константа ONBOARDING_STEP_EVENT (shared/src/share/analytics.ts), ' +

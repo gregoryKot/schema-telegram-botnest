@@ -1,8 +1,6 @@
 // Карточка прошлого разбора (тап по строке в «Прошлые разборы»,
 // PhraseCheckEx.tsx). Правится только ответ Здорового Взрослого — фраза и
-// приметы критика неизменны (см. UpdatePhraseCheckDto). Паритет с miniapp
-// (schema-miniapp/src/components/phraseCheck/HistoryCard.tsx, правило №3 —
-// гейт паритета фич поймал этот роут как miniapp-only). Состояние — общее
+// приметы критика неизменны (см. UpdatePhraseCheckDto). Состояние — общее
 // (shared/usePhraseHistoryCard), вёрстка своя. Read-after-write: onUpdated
 // обновляет список у родителя сразу после PATCH.
 import { useHistorySheet } from '../../../hooks/useHistorySheet';

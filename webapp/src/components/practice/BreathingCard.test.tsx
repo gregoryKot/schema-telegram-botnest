@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-// «Дыши со мной» на сайте — зеркало schema-miniapp/BreathingCard.test.tsx.
+// «Дыши со мной» на сайте.
 // Прохождение засчитывается только после полного цикла
 // (BREATH_IN_S+BREATH_HOLD_S+BREATH_OUT_S=BREATH_CYCLE_S) — правило CLAUDE.md
 // «никаких хардкод-заглушек»: досрочная остановка не должна попасть в

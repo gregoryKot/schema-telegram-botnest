@@ -36,7 +36,7 @@ export function ClientTasksTab({ detail, onAssign, onTasksChanged }: Props) {
   const ordered = orderTasks(clientTasks, today);
 
   return (
-    <div className="ds-page tb-page tb-tasks">
+    <div className="ds-page tb-tasks">
       <div className="tb-col">
         <div className="tb-big">
           <span className="ds-num tb-big-num">{activeCount}</span>

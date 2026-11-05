@@ -77,7 +77,7 @@ export function ClientListView({
                       onClick={() => { setListTab('kanban'); board.open(); }}>Задания</button>
             </div>
             {listTab === 'clients' && (
-              <div className="ds-seg">
+              <div className="ds-seg ds-seg--scroll">
                 {FILTERS.map(f => (
                   <button key={f.key} className={`ds-seg-btn ${filterStatus === f.key ? 'is-active' : ''}`}
                           onClick={() => setFilterStatus(f.key)}>{f.label}</button>

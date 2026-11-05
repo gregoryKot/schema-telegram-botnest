@@ -132,7 +132,6 @@ describe('настоящие воркфлоу репозитория', () => {
       'docker',
       'eslint',
       'migrations',
-      'miniapp',
       'perf',
       'shared',
       'webapp',

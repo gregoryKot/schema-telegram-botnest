@@ -1,8 +1,7 @@
 #!/usr/bin/env node
 // Храповик подпороговых inline fontSize (дизайн-аудит 2026-08, пункт В1).
 //
-// Худший случай на момент аудита — `schema-miniapp/src/sections/today/
-// NeedMini.tsx:95: fontSize: 7` — но по обоим фронтендам десятки inline
+// Худший случай на момент аудита — `fontSize: 7` в мини-аппе (удалён) — но по фронтендам десятки inline
 // `fontSize: N` ниже 11px (нижний читаемый порог даже официальная шкала
 // `.text-xs` не опускается ниже 11/11.5). Правило без гейта не работает —
 // счётчик заморожен пофайлово и может только падать; новый файл рождается
@@ -19,7 +18,7 @@ const BASELINE_PATH = join(ROOT, 'scripts', 'tiny-fonts-baseline.json');
 const UPDATE = process.argv.includes('--update');
 const VERBOSE = process.argv.includes('--verbose');
 
-const SCAN_DIRS = ['webapp/src', 'schema-miniapp/src', 'shared/src'];
+const SCAN_DIRS = ['webapp/src', 'shared/src'];
 
 // Порог: минимум читаемого inline-текста (В1). Значение РАВНОЕ порогу —
 // допустимо, ловим только строго меньше.

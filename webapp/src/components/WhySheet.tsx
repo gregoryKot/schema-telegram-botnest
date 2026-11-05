@@ -15,13 +15,13 @@ const ACTIONS: [string, string][] = [
 
 // «Зачем это всё»: откуда взялись три действия и что даёт каждое — «откуда это и зачем» на пути
 // пользователя (frontend-visual.md). Шапка листа с «← Закрыть» (ds-sheet-head, #906); «Понятно, начнём»
-// идёт после строк и прилипает к низу листа: на 390×664 и 360×640 она была за краем (QA мобильной, М4).
+// идёт после строк; на телефоне прилипает к низу листа: на 390×664 и 360×640 она была за краем (QA мобильной, М4).
 export function WhySheet({ auto = false, onClose }: Props) {
   const goBack = useHistorySheet(onClose);
   const bridge = useTherapyBridgeTexts();
   return (
     <div className="u-sheet cw-sheet" role="dialog" aria-modal="true" aria-label="Зачем это всё">
-      <div className="ds-sheet-head cw-head">
+      <div className="ds-sheet-head ds-sheet-head--page cw-head">
         <button type="button" className="ds-back" onClick={goBack}>← Закрыть</button>
       </div>
       <div className="cw-inner">
@@ -39,7 +39,7 @@ export function WhySheet({ auto = false, onClose }: Props) {
           ))}
         </ul>
         <p className="cw-tip">Не нужно делать всё. Одно действие в день — уже работа.</p>
-        <div className="cw-cta"><button type="button" className="ds-btn ds-btn--lg" onClick={goBack}>Понятно, начнём</button></div>
+        <div className="cw-sticky"><button type="button" className="ds-btn ds-btn--lg" onClick={goBack}>Понятно, начнём</button></div>
         <p className="ds-sub cw-foot">{bridge.whyNote}</p>
       </div>
     </div>

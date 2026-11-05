@@ -11,7 +11,7 @@ import type { useOverlays } from './useOverlays';
 
 interface Join { joinKind: 'pair' | 'therapy'; joinCode: string }
 
-// Входы в кабинет (этап 2 docs/ONE_FRONTEND_PLAN.md) — очередью, а не стопкой: вопрос «ты/вы» →
+// Входы в кабинет (этап 2 docs/archive/ONE_FRONTEND_PLAN.md) — очередью, а не стопкой: вопрос «ты/вы» →
 // согласия при первом входе → параметр запуска (ссылка-приглашение, трекер). Порядок и «один слой
 // за раз» — entryQueue.ts (QA 2026-11, A-З7); конец очереди уходит в onDone, по нему открываются
 // автопоказы «Сегодня». Отдельный компонент: AppShell на потолке размера (№10).

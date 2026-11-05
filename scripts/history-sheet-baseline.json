@@ -1,8 +1,4 @@
 {
-  "shared/src/components/Celebration.tsx": {
-    "reason": "ДОЛГ, ждёт решения владельца: праздничный экран закрывается тапом по фону и не имеет записи истории, «Назад» браузера уводит со страницы. Файл общий для двух площадок, а в мини-аппе «Назад» хоста устроен иначе (backLayers), поэтому хук в shared не добавлялся. Строка в docs/README.md, «Что осталось открытым».",
-    "since": "docs/AUDIT_2026-10_FINDINGS.md"
-  },
   "webapp/src/components/BottomSheetShell.tsx": {
     "reason": "Оболочка нижней шторки: «Назад» приходит пропом goBack, который вызывающий считает через useHistorySheet (шапка файла); хук в оболочке дал бы вторую запись истории на один лист. Соблюдение этого гейт у потребителей не проверяет: NeedAdviceModal передаёт локальный onClose (мини-модалка поверх листа, CLAUDE.md допускает) — слепая зона записана в docs/README.md, «Гейт оверлеев webapp».",
     "since": "docs/AUDIT_2026-10_FINDINGS.md"
@@ -20,7 +16,7 @@
     "since": "docs/AUDIT_2026-10_FINDINGS.md"
   },
   "webapp/src/components/OverlayFrame.tsx": {
-    "reason": "Рамка оверлеев «Все задания» и «Все цели» (класс sk-overlay): goBack приходит пропом, хук вызывают потребители — sections/today/AllTasksOverlay.tsx и sections/practice/AllGoalsOverlay.tsx, по одному разу на лист. Хук в рамке дал бы вторую запись истории.",
+    "reason": "Рамка оверлеев «Все задания» и «Все цели» (класс sk-overlay): goBack приходит пропом, хук вызывает потребитель — sections/today/AllTasksOverlay.tsx (один на оба списка), один раз на лист. Хук в рамке дал бы вторую запись истории.",
     "since": "#746"
   },
   "webapp/src/components/appShell/AppOverlays.tsx": {

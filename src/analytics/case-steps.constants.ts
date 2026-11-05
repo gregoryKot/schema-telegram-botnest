@@ -19,32 +19,18 @@ export const CASE_EVENTS = [
   'case_started',
   // Сцена написана: своими словами или от готовой рамки.
   'case_scene',
-  // Микроопрос критерия пройден, получен вердикт.
-  'case_criterion',
   // Экран узнавания показан; agreed = false, когда человек нажал
   // «У меня было иначе» — это индикатор эффекта Барнума, а не ошибка.
   'case_recognized',
-  // Человек назвал часть своим словом (или пропустил шаг).
-  'mode_renamed',
   // Разбор доведён до конца.
   'case_finished',
 ] as const;
 
 export type CaseEventName = (typeof CASE_EVENTS)[number];
 
-/** Вердикт критерия Jacob — совпадает с CaseVerdict в shared/src/case. */
-export const CASE_VERDICTS = ['mode', 'ordinary', 'borderline'] as const;
-
 /** Откуда взялась сцена: свой текст или дописанная рамка. */
 export const CASE_SCENE_SOURCES = ['own', 'frame'] as const;
 
-/** Откуда взялось имя режима: чип-заготовка, своё слово или пропуск. */
-export const MODE_RENAME_SOURCES = ['chip', 'own', 'skipped'] as const;
-
-export const CASE_VERDICT_SET: ReadonlySet<string> = new Set(CASE_VERDICTS);
 export const CASE_SCENE_SOURCE_SET: ReadonlySet<string> = new Set(
   CASE_SCENE_SOURCES,
-);
-export const MODE_RENAME_SOURCE_SET: ReadonlySet<string> = new Set(
-  MODE_RENAME_SOURCES,
 );

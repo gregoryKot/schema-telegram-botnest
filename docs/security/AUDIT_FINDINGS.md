@@ -687,7 +687,7 @@ plaintext в очереди уведомлений. Нумерация: букв
   зовёт `ensureHostOwner()`: id пользователя площадки сверяется с запомненным
   (`data_owner_host`, `shared/src/auth/hostOwnerGuard.ts`). Привязанное
   устройство не страдает — сравнивается id площадки, не `sub`. Шов держит
-  `schema-miniapp/src/App.ownerSwitch.test.tsx` на настоящих main/App/session.
+  `App.ownerSwitch.test.tsx` (мини-апп, удалён) на настоящих main/App/session.
   Webapp: порядок верный и раньше (`RequireAuth` пускает после `applyToken`).
 
 #### E-2 · Webvisor записывал ввод PII в запасной форме записи ✅ Закрыто

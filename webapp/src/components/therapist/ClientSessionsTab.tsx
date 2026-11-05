@@ -15,7 +15,7 @@ export function ClientSessionsTab({ detail }: Props) {
   const save = () => { if (canSave) addNote(); };
 
   return (
-    <div className="ds-page tb-page tb-page--narrow">
+    <div className="ds-page tb-page--narrow">
       <div className="ds-card tb-composer">
         <div className="tb-composer-head">
           <div className="ds-h3">Новая заметка</div>

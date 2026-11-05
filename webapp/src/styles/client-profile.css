@@ -90,17 +90,16 @@
 .cpf-help-dot { display: flex; align-items: center; justify-content: center; border-radius: 50%; background: var(--paper-sunk); color: var(--text-sub); font-size: 11px; font-weight: 600; }
 
 .cpf-therapist { display: flex; flex-direction: row; gap: 18px; align-items: center; flex-wrap: wrap; border-radius: 20px; padding: 22px 24px; }
-.cpf-therapist-ava { width: 48px; height: 48px; border-radius: 50%; background: var(--on-ink); color: var(--ink); font-weight: 700; font-size: 18px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.cpf-therapist-ava { width: 48px; height: 48px; border-radius: 50%; background: var(--accent-soft); color: var(--accent-hi); font-weight: 700; font-size: 18px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .cpf-therapist-body { flex: 1; min-width: 160px; }
-.cpf-therapist-label { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--on-ink-faint); }
-.cpf-therapist-body .ds-label { color: var(--on-ink-faint); }
+.cpf-therapist-label { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--on-panel-faint); }
+.cpf-therapist-body .ds-label { color: var(--on-panel-faint); }
 .cpf-therapist-name { font-family: var(--serif); font-size: 22px; margin-top: 2px; }
-.cpf-therapist-next { display: flex; flex-direction: column; gap: 2px; font-size: 14px; color: var(--on-ink-sub); }
+.cpf-therapist-next { display: flex; flex-direction: column; gap: 2px; font-size: 14px; color: var(--on-panel-sub); }
 /* Бывший терапевт (FormerTherapistNote): сообщение вместо карточки «Терапевт». */
 .cpf-former { padding: 22px 24px; border-radius: 20px; }
 
-.cpf-delete { padding-top: 20px; border-top: 1px solid var(--line); }
-.cpf-delete-link { color: var(--err); cursor: pointer; font-size: 13px; display: inline-flex; align-items: center; min-height: 44px; }
+.cpf-delete { padding-top: 20px; border-top: 1px solid var(--paper-sunk); }
 
 @media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
   .cpf-card, .cpf-former { padding: 16px; border-radius: 18px; }
@@ -123,7 +122,7 @@
 .cpf-bar-fill { height: 100%; border-radius: var(--r-4); transition: width .4s ease; }
 .cpf-bar-n { width: 16px; text-align: right; font-size: 12px; font-weight: 700; color: var(--text); }
 .cpf-bar-n.is-zero { color: var(--text-faint); }
-.cpf-foot { display: flex; align-items: center; justify-content: space-between; gap: var(--space-8); flex-wrap: wrap; padding-top: var(--space-12); border-top: 1px solid var(--line); }
+.cpf-foot { display: flex; align-items: center; justify-content: space-between; gap: var(--space-8); flex-wrap: wrap; padding-top: var(--space-12); border-top: 1px solid var(--paper-sunk); }
 .cpf-delta { font-size: 12px; font-weight: 700; color: var(--text-sub); }
 .cpf-delta.is-better { color: var(--ok); }
 .cpf-foot-link { align-self: flex-start; min-height: 44px; }
@@ -135,8 +134,13 @@
 .cpf-sheet-empty { margin: 0 0 var(--space-16); line-height: 1.6; }
 .cpf-sheet-lists { display: flex; flex-direction: column; gap: var(--space-16); }
 .cpf-prow { grid-template-columns: auto minmax(0, 1fr) auto auto; }
-.cpf-danger { color: var(--err); }
+.cpf-prow > .ds-chev { grid-column: -1; }
 .cpf-dlg-count { margin-right: auto; }
 @media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
   .cpf-bar-name { width: 148px; font-size: 14px; white-space: nowrap; }
+}
+
+/* Компьютер: у карточек-переходов («Мой путь», «Мой портрет», «Достижения») справа «→», как до волн; телефон — «›». */
+@media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) {
+  .cpf-card > .ds-head-row .ds-chev:empty::before { content: '→'; }
 }

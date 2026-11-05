@@ -14,7 +14,7 @@
 
 ### К1. Живой баг «ты/вы»: отклик «Злой Ребёнок» в мини-аппе без `tr()`
 
-`schema-miniapp/src/components/schemaFlashcard/constants.ts:24-25` — из всех
+`constants.ts:24-25` (мини-апп, удалён) — из всех
 режимов флешкарты только этот отдаёт сырую строку с «Давай выясним», остальные
 обёрнуты в `tr()`. Пользователь с формой «вы» видит «ты»-текст. В webapp тот же
 контент обёрнут правильно (`webapp/src/components/SchemaFlashcard.tsx:28`) —
@@ -52,7 +52,7 @@ miniapp — `schemaFlashcard/constants.ts`), копии правились не�
 Стандарт в проекте есть (`GearButton`, `CustomizeButton`, `UpdateToast.tsx:64-70`
 с комментарием «цель нажатия ≥44×44»), но в служебных оверлеях он не применён:
 
-- `schema-miniapp/src/components/PracticesList.tsx:75-89` — **удаление
+- `PracticesList.tsx:75-89` (мини-апп, удалён) — **удаление
   практики: цель 30×30, подтверждения нет** (`usePracticesData.ts:61-65`
   зовёт `api.deletePractice` сразу, undo нет). Случайный тап = потеря данных.
 - `TrackerOverlay.tsx:250-353` — «Закрыть», «Заметка», «История» по 34×34.
@@ -71,7 +71,7 @@ miniapp — `schemaFlashcard/constants.ts`), копии правились не�
 
 `role="dialog"` / `aria-modal` в терапевтической части приложения — ноль
 (в webapp только `CookieBanner` и мобильное меню лендинга; в miniapp — нигде).
-Базовый `schema-miniapp/src/components/BottomSheet.tsx` (31 использование):
+Базовый `BottomSheet.tsx` (мини-апп, удалён) (31 использование):
 Escape есть, но нет `role="dialog"`, нет фокус-трапа (Tab уходит на фон под
 шитом), нет возврата фокуса после закрытия — `activeElement` по всему коду
 встречается только в тестах, то есть паттерна «вернуть фокус» нет ни в одной
@@ -100,7 +100,7 @@ Escape есть, но нет `role="dialog"`, нет фокус-трапа (Tab 
 
 ### В1. Шрифты 7–9px — подпороговый текст в десятках мест
 
-Худший случай — `schema-miniapp/src/sections/today/NeedMini.tsx:95`:
+Худший случай — `NeedMini.tsx:95` (мини-апп, удалён):
 `fontSize: 7`. В webapp — `fontSize: 8` в `ProfileSection.tsx:282,290,383`,
 `8.5` в `ModeMapNodeEditor.tsx:263`, и десятки мест 9–11px в обоих проектах.
 Даже официальная шкала `.text-xs` — 11px (miniapp) / 11.5px (webapp).
@@ -188,7 +188,7 @@ miniapp.
 
 ### В9. Слайдер «Колеса детства» недоступен с клавиатуры полностью
 
-`schema-miniapp/src/components/childhoodWheelSheet/Slider.tsx` — чисто
+`Slider.tsx` (мини-апп, удалён) — чисто
 pointer-based div: без `role="slider"`, `tabIndex`, `aria-value*`, стрелок.
 Единственный способ поставить значение в упражнении. Контраст: `NeedRatingBar`
 сделан образцово (10 нативных кнопок с `aria-label`/`aria-pressed`).

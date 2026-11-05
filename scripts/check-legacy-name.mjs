@@ -15,7 +15,6 @@ import { join, relative } from 'path';
 const ROOT = join(import.meta.dirname, '..');
 const SCAN_DIRS = [
   join(ROOT, 'webapp', 'src'),
-  join(ROOT, 'schema-miniapp', 'src'),
 ];
 
 // «лаб» обязателен после «схема» — «схема-терапия», «дневник схем» не триггерят.

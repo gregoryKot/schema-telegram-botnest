@@ -117,10 +117,6 @@
     "spec": "test/raw-sql-live-stats.e2e-spec.ts",
     "via": "test/e2e-support/stats-report.factory.ts"
   },
-  "src/bot/web-banner-metrics.service.ts": {
-    "spec": "test/raw-sql-live-stats.e2e-spec.ts",
-    "via": "test/e2e-support/stats-report.factory.ts"
-  },
   "src/bot/ysq-funnel-metrics.ts": {
     "spec": "test/raw-sql-live-stats.e2e-spec.ts"
   },

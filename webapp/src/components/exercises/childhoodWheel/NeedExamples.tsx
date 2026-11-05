@@ -12,10 +12,10 @@ export function NeedExamples({ needId }: { needId: NeedId }) {
   const [open, setOpen] = useState(false);
   const [openIdx, setOpenIdx] = useState<number | null>(null);
   return (
-    <div className="cw-examples">
+    <div className="chw-examples">
       <button
         type="button"
-        className="ds-link cw-examples-toggle"
+        className="ds-link chw-examples-toggle"
         aria-expanded={open}
         onClick={() => {
           setOpen((v) => !v);
@@ -25,21 +25,21 @@ export function NeedExamples({ needId }: { needId: NeedId }) {
         Примеры – как это выглядит в жизни {open ? '▴' : '▾'}
       </button>
       {open && (
-        <div className="cw-examples-list">
+        <div className="chw-examples-list">
           {CHILDHOOD_EXAMPLES[needId].map((ex, i) => {
             const isOpen = openIdx === i;
             return (
-              <div key={i} className="cw-example">
+              <div key={i} className="chw-example">
                 <button
                   type="button"
-                  className="cw-example-head"
+                  className="chw-example-head"
                   aria-expanded={isOpen}
                   onClick={() => setOpenIdx(isOpen ? null : i)}
                 >
-                  <span className={'cw-badge is-' + exampleTone(ex.score)}>≈{ex.score}/10</span>
-                  <span className="cw-example-chev">{isOpen ? '▴' : '▾'}</span>
+                  <span className={'chw-badge is-' + exampleTone(ex.score)}>≈{ex.score}/10</span>
+                  <span className="chw-example-chev">{isOpen ? '▴' : '▾'}</span>
                 </button>
-                {isOpen && <p className="cw-example-text">{ex.text}</p>}
+                {isOpen && <p className="chw-example-text">{ex.text}</p>}
               </div>
             );
           })}

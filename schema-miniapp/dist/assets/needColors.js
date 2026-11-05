@@ -1,1 +1,0 @@
-import{i as e,r as t}from"./entityHue.js";var n=[`attachment`,`autonomy`,`expression`,`play`,`limits`],r=Object.fromEntries(n.map(n=>[n,e(t[n])]));function i(e){return r[e]??`var(--muted)`}export{n,i as r,r as t};

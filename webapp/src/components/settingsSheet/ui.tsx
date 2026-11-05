@@ -29,7 +29,7 @@ export function SRow({ title, sub, right, onClick, danger }: {
   title: string; sub?: React.ReactNode; right?: React.ReactNode;
   onClick?: () => void; danger?: boolean;
 }) {
-  const cls = `ds-list-row ds-list-row--nav ds-list-row--inset${onClick ? ' ds-list-row--hover' : ''}${danger ? ' st-row--danger' : ''}`;
+  const cls = `ds-list-row ds-list-row--nav ds-list-row--inset${onClick ? ' ds-list-row--hover' : ''}${danger ? ' ds-list-row--danger' : ''}`;
   return (
     <div className={cls} onClick={onClick} role={onClick ? 'button' : undefined} tabIndex={onClick ? 0 : undefined}
       onKeyDown={onClick ? onKeyActivate(onClick) : undefined}>
@@ -60,7 +60,7 @@ export function SmallToggle({ on, onClick, label }: { on: boolean; onClick: () =
   return <Switch on={on} onClick={onClick} label={label} small />;
 }
 
-export function ChevronVal({ text }: { text: string; small?: boolean }) {
+export function ChevronVal({ text }: { text: string }) {
   return (
     <div className="st-row-right">
       <span className="ds-sub">{text}</span>

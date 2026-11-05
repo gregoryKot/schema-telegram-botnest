@@ -1,7 +1,6 @@
 // Правило №4: реестр «с чем путают режим» (shared/mode/modeDoubts) и MODE_GROUPS
 // обязаны совпадать — каждый id из пары должен указывать на реальный режим,
 // иначе карточка «Сомневаешься?» сошлётся на несуществующий modeId.
-// Зеркало schema-miniapp/src/components/diary/modeDoubts.registry.test.ts (правило №3).
 import { describe, it, expect } from 'vitest';
 import { MODE_DOUBT_PAIRS } from '../../../../shared/src/mode/modeDoubts';
 import { MODE_GROUPS } from '../../schemaTherapyData';

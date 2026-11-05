@@ -1,5 +1,4 @@
-// Поделиться записью благодарности — паритет с мини-аппом
-// (schema-miniapp/.../GratitudeCard.tsx). Карточка рисуется shared-функцией,
+// Поделиться записью благодарности. Карточка рисуется shared-функцией,
 // событие share_card kind=gratitude шлёт сам ShareCardSheet. Тап явный, с превью.
 import { useState } from 'react';
 import { ShareCardSheet } from '../../share/ShareCardSheet';

@@ -1,6 +1,5 @@
 // Скелетоны загрузки (правило CLAUDE.md: плейсхолдер ПО ФОРМЕ контента, а не
-// спиннер). Примитив для webapp — аналог schema-miniapp/src/components/
-// Skeleton.tsx; шиммер глушится глобальным reduced-motion блоком index.css.
+// спиннер). Примитив для webapp; шиммер глушится глобальным reduced-motion блоком index.css.
 import type { CSSProperties } from 'react';
 
 export function Skeleton({
@@ -75,10 +74,9 @@ export function SkeletonCard({
 }
 
 /** Список плоских плашек одной высоты — без рамки/строк (в отличие от
- * SkeletonCard), для списков строк-элементов (лента, практики). Параллель
- * schema-miniapp/src/components/Skeleton.tsx SkeletonList — там она собрана
- * из плоского miniapp-SkeletonCard, здесь напрямую из Skeleton, потому что
- * webapp-SkeletonCard тяжелее (рамка + внутренние строки). */
+ * SkeletonCard), для списков строк-элементов (лента, практики). Собран
+ * напрямую из Skeleton, а не из SkeletonCard: тот тяжелее (рамка +
+ * внутренние строки). */
 export function SkeletonList({
   rows = 4,
   height = 72,

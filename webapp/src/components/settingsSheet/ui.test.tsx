@@ -142,15 +142,9 @@ describe('SmallToggle', () => {
 });
 
 describe('ChevronVal', () => {
-  it('small не задан — текст и стрелка рендерятся', () => {
+  it('текст и стрелка рендерятся', () => {
     const { container } = render(<ChevronVal text="Значение" />);
     expect(screen.getByText('Значение')).toBeTruthy();
-    expect(container.querySelector('.ds-chev')).toBeTruthy();
-  });
-
-  it('small=true — текст и стрелка тоже рендерятся (проверяем контент, не размер шрифта)', () => {
-    const { container } = render(<ChevronVal text="Малое значение" small />);
-    expect(screen.getByText('Малое значение')).toBeTruthy();
     expect(container.querySelector('.ds-chev')).toBeTruthy();
   });
 });

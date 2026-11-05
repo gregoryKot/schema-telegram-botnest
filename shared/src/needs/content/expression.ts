@@ -2,7 +2,7 @@ import type { NeedExtra, Tr } from '../types';
 
 // Контент потребности «Выражение чувств» — единственный источник (правило
 // №3 CLAUDE.md): раньше дублировался построчно в webapp/src/needData.ts и
-// schema-miniapp/src/needData.ts, оба фронтенда берут его отсюда.
+// удалённом мини-аппе; сайт берёт его отсюда.
 export const buildExpression = (tr: Tr): NeedExtra => ({
   name: 'Выражение чувств',
   short: 'Выраж.',

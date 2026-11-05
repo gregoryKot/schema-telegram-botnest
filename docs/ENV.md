@@ -51,10 +51,8 @@
 | `BOT_REDIRECT_USERNAME` | опциональна | nonEmpty | Имя второго бота, на который редиректит /start при миграции (опционально). |
 | `BOT_TOKEN` | **обязательна** | botToken | Токен бота BotFather — без него бот не подключается к Telegram и алерты в Telegram не уходят. |
 | `BOT_USERNAME` | **обязательна** | telegramUsername | Имя бота без @ для t.me-ссылок; без него приглашения отдают 503. |
-| `MINIAPP_APP_NAME` | опциональна | nonEmpty | Slug мини-аппа в t.me/<bot>/<name> — дефолт «diary», если не задано. |
-| `MINIAPP_URL` | опциональна | httpsUrl | Адрес мини-аппа для webApp-кнопок; по умолчанию APP_URL + /app/. |
+| `MINIAPP_APP_NAME` | опциональна | nonEmpty | Короткое имя Mini App бота в BotFather для ссылок-приглашений t.me/<bot>/<name>?startapp=… (открывают кабинет сайта внутри Telegram) — дефолт «diary», если не задано. |
 | `TELEGRAM_PROXY_URL` | опциональна | nonEmpty | Исходящий прокси до api.telegram.org на случай, если маршрут с хостинга не работает напрямую — без него бот ходит напрямую. |
-| `UNIFIED_FRONTEND` | опциональна | oneOf(1, true, 0, false) | Единая версия: `/app/*` мини-аппа редиректится в кабинет `/today`, `/app/sw.js` отдаёт заглушку, снимающую старый service worker. Значения `1`/`true` включают, иначе выключено. Включается на этапе 5 плана docs/ONE_FRONTEND_PLAN.md. |
 
 ## Почта
 

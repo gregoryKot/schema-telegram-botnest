@@ -19,7 +19,6 @@ import { Sidebar } from './appShell/Sidebar';
 import { type Section, sectionFromPath, fillHistoryGaps } from './appShell/navigation';
 import { MobileNav } from './appShell/MobileNav';
 import { QuickActions } from './quickActions/QuickActions';
-import { useDesktopAppLaunch } from '../hooks/useDesktopAppLaunch';
 import { useHostShell } from '../hooks/useHostShell';
 import { useIsOffline } from '../hooks/useIsOffline';
 import { useOutboxFlushOnOnline } from '../hooks/useOutboxFlushOnOnline';
@@ -56,8 +55,6 @@ const NAV_ITEMS: { id: Section; label: string }[] = [
 ];
 
 export function AppShell() {
-  // Запуск установленного приложения на компьютере приходит сюда (?from=app).
-  useDesktopAppLaunch();
   useHostShell();
   const tr = useTr();
   const location = useLocation();
@@ -81,8 +78,7 @@ export function AppShell() {
 
   const switchTherapistMode = useCallback((on: boolean, persist = true) => {
     localStorage.setItem(THERAPIST_MODE_KEY, on ? '1' : '0');
-    // Запоминаем стартовое предпочтение на сервере (source of truth, единое с
-    // мини-аппом). Сервер принимает флаг только у THERAPIST — эндпоинт вернёт
+    // Запоминаем стартовое предпочтение на сервере (source of truth). Сервер принимает флаг только у THERAPIST — эндпоинт вернёт
     // 403 для клиента, поэтому просто глушим ошибку.
     if (persist) api.setTherapistView(on).catch(() => {});
     if (on) {

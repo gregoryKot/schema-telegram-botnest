@@ -2,7 +2,7 @@
 // пустыми рейтингами, чтобы экраны истории рисовали сплошную шкалу дат,
 // а не «дыры». Единственная реализация (правило №3 CLAUDE.md, jscpd-свип
 // 2026-08: копия жила в webapp/appShell/navigation.ts и в
-// schema-miniapp/utils/todayConstants.ts) — оба фронтенда ре-экспортируют
+// удалённом мини-аппе) — сайт ре-экспортирует
 // отсюда, тест держим здесь же.
 import { describe, it, expect } from 'vitest';
 import { fillHistoryGaps, TODAY_DATE, YESTERDAY_DATE } from './todayConstants';

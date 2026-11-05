@@ -1,6 +1,6 @@
 // Curated-практики по потребностям — единственная копия (правило №3
 // CLAUDE.md). Раньше webapp/src/components/practiceCurated.ts и инлайн-
-// константа в schema-miniapp PlanSheet.tsx дублировали друг друга дословно —
+// константа в PlanSheet.tsx удалённого мини-аппа дублировали друг друга дословно —
 // и пунктуация уже разъехалась (en-dash «–» в webapp против em-dash «—» в
 // miniapp). Канон — em-dash «—» (типографски верное тире для этой позиции).
 export const CURATED: Record<string, string[]> = {

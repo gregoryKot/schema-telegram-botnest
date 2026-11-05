@@ -9,6 +9,6 @@
     min-height: 44px; min-width: 44px; padding: 0 18px;
     border: none; border-radius: 22px; cursor: pointer;
     font: 700 14px var(--sans); white-space: nowrap;
-    box-shadow: 0 2px 10px color-mix(in srgb, var(--ink) 25%, transparent);
+    box-shadow: 0 2px 10px rgba(var(--fg-rgb), 0.25);
   }
 }

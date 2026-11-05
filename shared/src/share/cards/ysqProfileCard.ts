@@ -7,7 +7,7 @@
 // на отдельные вопросы.
 //
 // Чистая логика (подписи, группировка, высота) отделена от canvas-отрисовки и
-// покрыта тестами schema-miniapp/src/share/cards/ysqProfileCard.test.ts.
+// покрыта тестами (ysqProfileCard.test.ts).
 import {
   CARD_PAD,
   CARD_W,

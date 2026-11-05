@@ -37,7 +37,7 @@ export function PartnerCard({ partner, confirmLeaveCode, setConfirmLeaveCode, on
             : <div className="st-text">{PARTNER_EMPTY_TEXT}</div>}
         </div>
         {partner.partnerTelegramId && (
-          <a className="ds-btn ds-btn--sm ds-btn--secondary st-pc-write" href={`tg://user?id=${partner.partnerTelegramId}`}>Написать</a>
+          <a className="ds-btn ds-btn--sm ds-btn--secondary" href={`tg://user?id=${partner.partnerTelegramId}`}>Написать</a>
         )}
       </div>
 
@@ -62,7 +62,7 @@ export function PartnerCard({ partner, confirmLeaveCode, setConfirmLeaveCode, on
           <button className="ds-btn ds-btn--sm ds-btn--secondary st-btn-danger is-solid" onClick={() => onLeave(partner.code)}>Выйти</button>
         </div>
       ) : (
-        <button className="ds-link st-link-danger st-pc-leave" onClick={() => setConfirmLeaveCode(partner.code)}>Выйти из пары</button>
+        <button className="ds-link ds-link--danger" onClick={() => setConfirmLeaveCode(partner.code)}>Выйти из пары</button>
       )}
     </div>
   );

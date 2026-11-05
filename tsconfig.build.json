@@ -7,8 +7,6 @@
     "**/*spec.ts",
     "src/test-support",
     "scripts",
-    "diary-miniapp",
-    "schema-miniapp",
     "webapp",
     "schema-telegram-botnest",
     "game",

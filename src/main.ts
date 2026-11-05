@@ -83,7 +83,7 @@ async function bootstrap() {
   // внешняя система, — в src/infra/body-parsers.ts (login-CSRF, security#6).
   installBodyParsers(app);
 
-  // CORS нужен только мини-аппу (другой origin): сайт на том же домене, localhost — dev.
+  // CORS: в проде только канонический хост, localhost — dev.
   const isProd = process.env.NODE_ENV === 'production';
   const origins =
     process.env.ALLOWED_ORIGINS?.split(',') ??
@@ -93,11 +93,7 @@ async function bootstrap() {
         // CORS ей не нужен; credentials-CORS для алиаса — лишняя поверхность
         // (аудит 2026-10, I1; правило №19).
         ['https://schemehappens.ru']
-      : [
-          'https://schema-miniapp.vercel.app',
-          'https://diary-miniapp-sigma.vercel.app',
-          'http://localhost:5173',
-        ]);
+      : ['http://localhost:5173']);
   app.enableCors({
     origin: origins,
     methods: ['GET', 'POST', 'DELETE', 'PUT', 'PATCH'],
