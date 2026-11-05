@@ -408,7 +408,7 @@ describe('SettingsSheet — пара: вход по коду', () => {
         target: { value: 'zzzzzz' },
       },
     );
-    fireEvent.click(within(partnerSectionContent()).getByText('Войти'));
+    fireEvent.click(within(partnerSectionContent()).getByText('Присоединиться'));
 
     await screen.findByText('Код не найден или уже использован');
   });
@@ -437,7 +437,7 @@ describe('SettingsSheet — пара: вход по коду', () => {
         target: { value: 'xyz123' },
       },
     );
-    fireEvent.click(within(partnerSectionContent()).getByText('Войти'));
+    fireEvent.click(within(partnerSectionContent()).getByText('Присоединиться'));
 
     await screen.findByText('Аня сегодня');
     expect(mockApi.joinPair).toHaveBeenCalledWith('XYZ123');

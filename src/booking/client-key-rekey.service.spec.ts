@@ -134,6 +134,29 @@ describe('ClientKeyRekeyService.run', () => {
     expect(telegram.notifyAdmin.mock.calls).toEqual([]);
   });
 
+  // Нормализация телефона стала сохранять ведущий `+` (docs/open/security.md):
+  // строка, записанная под формой «только цифры», переезжает на новый ключ
+  // по живой брони со ссылкой на её комнату — клиент не теряет комнату.
+  it('строка под ключом телефона без `+` переезжает на ключ с `+`', async () => {
+    const C = '+49 5123 4567';
+    const { service, rows } = setup(
+      [booking(1, C)],
+      [
+        {
+          clientKey: keys.clientKey('4951234567'),
+          meetingUrl: ROOM,
+          createdAt: OLD_ROW,
+        },
+      ],
+    );
+    expect(keys.clientKey(C)).not.toBe(keys.clientKey('4951234567'));
+    expect(await service.run(NOW)).toMatchObject({ moved: 1, purged: 0 });
+    expect(rows).toEqual([
+      { clientKey: keys.clientKey(C), meetingUrl: ROOM, createdAt: OLD_ROW },
+    ]);
+    expect(await service.run(NOW)).toMatchObject({ moved: 0 });
+  });
+
   it('склейка ящиков: комната остаётся за ранней бронью, владельцу — одно сообщение с номером поздней', async () => {
     const A = 'ivan-petrov@x.ru';
     const B2 = 'ivanpetrov@x.ru';

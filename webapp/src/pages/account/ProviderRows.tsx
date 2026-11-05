@@ -18,7 +18,7 @@ const iconBox = {
   borderRadius: 'var(--r-10)',
   display: 'flex',
   alignItems: 'center',
-  justifyContent: 'center',
+  justifyContent: 'center', flexShrink: 0, // длинная подпись рядом сжимала плитку до ~19px
 } as const;
 
 export function ProviderRow({

@@ -111,6 +111,34 @@ describe('UiPrefsGate + «Сегодня»', () => {
     });
   });
 
+  // Ререндер шлюза (родитель обновился) не перезапускает стартовую
+  // синхронизацию: раньше `load` был новой стрелкой на каждом рендере, эффект
+  // повторял GET и reset() закрывал пуш до ответа — правка в это окно терялась
+  // (так «мигал» тест выше в CI).
+  it('ререндер шлюза не перезапрашивает настройки и не закрывает пуш', async () => {
+    getSettings.mockResolvedValue({ uiPrefs: { today_streak_hidden: '1' } });
+    const tree = (n: number) => (
+      <UiPrefsGate key="gate">
+        <TodayProbe />
+        <span>{n}</span>
+      </UiPrefsGate>
+    );
+    const { rerender } = render(tree(0));
+    await waitFor(() => expect(screen.getByTestId('streak').textContent).toBe('hidden'));
+    rerender(tree(1));
+    rerender(tree(2));
+    expect(getSettings).toHaveBeenCalledTimes(1);
+
+    vi.useFakeTimers();
+    try {
+      fireEvent.click(screen.getByText('toggle'));
+      await act(() => vi.advanceTimersByTimeAsync(2000));
+    } finally {
+      vi.useRealTimers();
+    }
+    expect(updateSettings).toHaveBeenCalledTimes(1);
+  });
+
   it('первый ответ сервера пуст, а на устройстве уже есть настройка сайта → она мигрирует на сервер', async () => {
     localStorage.setItem('today_phrase_hidden', '1');
     getSettings.mockResolvedValue({ uiPrefs: {} });

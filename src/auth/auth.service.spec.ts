@@ -409,12 +409,50 @@ describe('AuthService — verifyTelegramWebAppData', () => {
     });
   });
 
-  it('нет hash → именно "Missing hash in initData" (не проваливается в другую ветку)', () => {
-    const { svc } = makeService();
+  it('нет hash → причина "Missing hash in initData" в алерте (не проваливается в другую ветку)', () => {
+    const { svc, securityLog } = makeService();
     const initData = signInitData({ user: { id: 1 }, hash: 'omit' });
-    expect(() => svc.verifyTelegramWebAppData(initData)).toThrow(
-      'Missing hash in initData',
+    expect(() =>
+      svc.verifyTelegramWebAppData(initData, '203.0.113.11'),
+    ).toThrow('Invalid initData');
+    expect(securityLog.log).toHaveBeenCalledWith('suspicious_initdata', {
+      reason: 'Missing hash in initData',
+      ip: '203.0.113.11',
+    });
+  });
+
+  // Регресс (docs/open/security.md): вход сайта внутри Telegram отвечал голым
+  // 401 — подделка подписи не будила админа, а просрочка не несла кода
+  // `initdata_expired`, в отличие от гарда (rejectInitData).
+  it('подделанная подпись → suspicious_initdata в журнал безопасности', () => {
+    const { svc, securityLog } = makeService();
+    const initData = signInitData({ user: { id: 42 }, hash: 'a'.repeat(64) });
+    expect(() =>
+      svc.verifyTelegramWebAppData(initData, '203.0.113.12'),
+    ).toThrow(UnauthorizedException);
+    expect(securityLog.log).toHaveBeenCalledWith(
+      'suspicious_initdata',
+      expect.objectContaining({ ip: '203.0.113.12' }),
     );
+  });
+
+  it('просроченная initData → 401 с кодом initdata_expired, без алерта', () => {
+    const { svc, securityLog } = makeService();
+    const initData = signInitData({
+      user: { id: 42 },
+      authDate: Math.floor(Date.now() / 1000) - 3700,
+    });
+    let caught: unknown;
+    try {
+      svc.verifyTelegramWebAppData(initData, '203.0.113.13');
+    } catch (e) {
+      caught = e;
+    }
+    expect(caught).toBeInstanceOf(UnauthorizedException);
+    expect((caught as UnauthorizedException).getResponse()).toMatchObject({
+      code: 'initdata_expired',
+    });
+    expect(securityLog.log).not.toHaveBeenCalled();
   });
 
   it('user отсутствует в initData целиком (не просто user.id) → UnauthorizedException, не TypeError', () => {
@@ -475,25 +513,33 @@ describe('AuthService — verifyTelegramWebAppData', () => {
   });
 
   it('hash с посторонним префиксом перед 64 hex-символами → "Malformed hash" (regex обязан быть заякорён с начала, не просто искать 64-hex где-то внутри)', () => {
-    const { svc } = makeService();
+    const { svc, securityLog } = makeService();
     const initData = signInitData({
       user: { id: 1 },
       hash: 'zz' + 'a'.repeat(64),
     });
-    expect(() => svc.verifyTelegramWebAppData(initData)).toThrow(
-      'Malformed hash in initData',
-    );
+    expect(() =>
+      svc.verifyTelegramWebAppData(initData, '203.0.113.21'),
+    ).toThrow(UnauthorizedException);
+    expect(securityLog.log).toHaveBeenCalledWith('suspicious_initdata', {
+      reason: 'Malformed hash in initData',
+      ip: '203.0.113.21',
+    });
   });
 
   it('hash с посторонним суффиксом после 64 hex-символов → "Malformed hash" (regex обязан требовать конец строки, не просто префикс)', () => {
-    const { svc } = makeService();
+    const { svc, securityLog } = makeService();
     const initData = signInitData({
       user: { id: 1 },
       hash: 'a'.repeat(64) + 'zz',
     });
-    expect(() => svc.verifyTelegramWebAppData(initData)).toThrow(
-      'Malformed hash in initData',
-    );
+    expect(() =>
+      svc.verifyTelegramWebAppData(initData, '203.0.113.22'),
+    ).toThrow(UnauthorizedException);
+    expect(securityLog.log).toHaveBeenCalledWith('suspicious_initdata', {
+      reason: 'Malformed hash in initData',
+      ip: '203.0.113.22',
+    });
   });
 
   it('BOT_TOKEN с пробелами/переносом строки по краям (случайность env) — verify обязан использовать .trim()', () => {

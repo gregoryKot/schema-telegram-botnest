@@ -44,7 +44,7 @@ describe('ToolsCustomizeSheet', () => {
     setup();
     expect(document.querySelectorAll('.cz-handle')).toHaveLength(6);
     expect(screen.queryByRole('button', { name: 'Переставить: Мои цели' })).toBeNull();
-    expect(screen.queryByRole('button', { name: 'Переставить: Схема включилась' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Переставить: Мне плохо' })).toBeNull();
   });
 
   it('перестановка с клавиатуры: порядок в ключ, quick_action_move с surface tools, notifyPrefsChanged', () => {

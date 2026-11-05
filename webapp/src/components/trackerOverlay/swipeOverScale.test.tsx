@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 // docs/open/frontend-ux.md: свайп трекера слушает весь оверлей, и палец,
 // проехавший по шкале оценки ≥90px, уводил на другую потребность вместо
-// выбора ответа. Касание, начатое внутри [role="group"] (шкала WordScale /
+// выбора ответа. Касание, начатое внутри [role="group"] (шкала оценки
 // NeedScale), свайпом не считается; по фону — по-прежнему листает.
 // Хук общий (shared/src/hooks/useHorizontalSwipe.ts).
 import { describe, it, expect, vi, afterEach } from 'vitest';
@@ -16,7 +16,7 @@ function Harness({ onNext, onPrev }: { onNext: () => void; onPrev: () => void })
   return (
     <div data-testid="overlay" {...swipe}>
       <p>Фон вопроса</p>
-      <NeedScale variant="words" value={undefined} hue={200} label="Близость" onChange={() => {}} />
+      <NeedScale value={undefined} hue={200} label="Близость" onChange={() => {}} />
       <NeedScale value={undefined} hue={200} label="Шкала 10" onChange={() => {}} />
     </div>
   );

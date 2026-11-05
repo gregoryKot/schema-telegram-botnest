@@ -491,7 +491,11 @@ describe('AuthAccountController.telegramWebApp', () => {
       req,
       res,
     );
-    expect(auth.verifyTelegramWebAppData).toHaveBeenCalledWith('init-data');
+    // IP уходит в верификатор: по нему троттлится алерт о подделке подписи.
+    expect(auth.verifyTelegramWebAppData).toHaveBeenCalledWith(
+      'init-data',
+      req.ip,
+    );
     expect(auth.findOrCreateUserByProvider).toHaveBeenCalledWith(
       'telegram',
       '123',

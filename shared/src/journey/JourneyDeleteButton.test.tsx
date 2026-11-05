@@ -5,6 +5,8 @@
 // (правило CLAUDE.md «Онбординг и очевидность» / хитбокс).
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { JourneyDeleteButton } from './JourneyDeleteButton';
 import type { JourneyDeleteState } from './journeyDelete';
 import type { JourneyItem } from './journeyMeta';
@@ -87,5 +89,19 @@ describe('JourneyDeleteButton', () => {
     const btn = screen.getByRole('button');
     const minHeight = parseFloat(btn.style.minHeight);
     expect(minHeight).toBeGreaterThanOrEqual(44);
+  });
+
+  // Свип цвета #516 прошёл мимо четырёх rgba(255,100,100,…) здесь: цвет «опасно»
+  // жил литералом и не следовал теме. Теперь — токен --accent-red и color-mix.
+  it('цвет «удалить» — из токена --accent-red, а не литералом', () => {
+    const src = readFileSync(
+      join(__dirname, 'JourneyDeleteButton.tsx'),
+      'utf8',
+    );
+    expect(src).not.toMatch(/rgba?\(\s*\d/);
+    expect(src).toMatch(/color: 'var\(--accent-red\)'/);
+    expect(src).toMatch(
+      /color-mix\(in srgb, var\(--accent-red\) \d+%, transparent\)/,
+    );
   });
 });
