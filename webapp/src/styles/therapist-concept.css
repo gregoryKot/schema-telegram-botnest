@@ -57,7 +57,7 @@
 /* Сводка «Коротко»: отступ, который раньше давал инлайн-CARD. */
 .tcp-digest { margin-bottom: 16px; }
 
-@media (max-width: 767px) {
+@media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
   .tcp-fields { gap: 40px; }
   .tcp-sec-head { gap: 12px; }
   .tcp-timeline { grid-template-columns: 1fr; gap: 10px; }
@@ -82,7 +82,7 @@
 .tcp-head-title { flex: 1 1 320px; min-width: 0; }
 /* В DOM порядок = видимому (заголовок, статус, «Схема · Поля», «⋯»), order нет:
    Tab идёт слева направо. */
-@media (min-width: 768px) {
+@media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) {
   .tcp-save { margin-left: 0; }
   .tcp-more .ds-btn--icon { width: auto; min-width: 44px; padding: 0 16px; border-radius: 22px; }
 }
@@ -92,7 +92,7 @@
    строкой выше, а группа уходит вниз целиком, даже со статусом
    «Не сохранилось · Повторить». */
 .tcp-head-actions { display: contents; }
-@media (min-width: 768px) {
+@media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) {
   .tcp-head-actions { display: inline-flex; align-items: center; gap: 12px; margin-left: auto; flex: 0 0 auto; }
 }
 /* Пункт меню в две строки: название и подсказка под ним (подсказка переносится): ширина 220 — у .ds-menu, тап-цель 44 — у .ds-menu-item. */
@@ -104,7 +104,7 @@
 /* Телефон (#902): «Схема · Поля» слева, «⋯» справа; статус сохранения — своей
    строкой ниже, мелко, слева. justify-content с !important: SaveStatusLine
    (shared) ставит выравнивание инлайн по пропу align="right", нужному ноутбуку. */
-@media (max-width: 767px) {
+@media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
   .tcp-head { margin-bottom: 16px; }
   .tcp-head-title, .tcp-more-txt { display: none; }
   .tcp-status { margin: -4px 0 16px; } /* на телефоне шапка ниже на 16px: отрицательный отступ строки статуса не должен съедать весь зазор */
@@ -118,11 +118,11 @@
 .tcp-folds { display: flex; flex-direction: column; gap: 12px; margin-top: 40px; max-width: 880px; }
 /* Верхний отступ вкладки — как у ds-page: 40 на ноутбуке, на телефоне 20 из
    .page-inner-wide (index.css); u-pt40 из shared/utilities.css держал 40 и там. */
-@media (min-width: 768px) { .page-inner-wide.tcp-page { padding-top: 40px; } }
+@media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) { .page-inner-wide.tcp-page { padding-top: 40px; } }
 /* Компьютер: «Как читать схему» — не полоса во всю ширину, а компактная
    раскрывашка по содержимому без рамки (как до волны #906: маленькая ссылка);
    открытая — на ширину колонки, чтобы читался текст. */
-@media (min-width: 768px) {
+@media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) {
   .tcp-graph [data-export-skip] > .ds-fold { width: fit-content; max-width: 100%; background: transparent; border-color: transparent; }
   .tcp-graph [data-export-skip] > .ds-fold:has(> .ds-fold-btn[aria-expanded="true"]) { width: 100%; background: var(--surface); border-color: var(--line); }
   .tcp-graph [data-export-skip] > .ds-fold > .ds-fold-btn { width: auto; padding: 0 8px; }
@@ -132,6 +132,6 @@
    944 и схема падала в столбик. Здесь отступ 20px: 1040 − 40 = 1000 ≥ 960.
    max-width остаётся --tk-max: на широком мониторе колонка стоит по центру,
    как остальные экраны кабинета. Селектор специфичнее therapist-card.css. */
-@media (min-width: 768px) {
+@media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) {
   .tk-tabs-body > .page-inner-wide.tcp--graph { padding-inline: 20px; }
 }

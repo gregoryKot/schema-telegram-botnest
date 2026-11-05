@@ -5,7 +5,7 @@
 .cm-page > .ds-card--flush .ds-list-row--nav:has(> .pp-row-art) { grid-template-columns: 44px minmax(0, 1fr) auto; column-gap: 14px; align-items: center; }
 
 /* Компьютер: простой список с линиями и стрелкой «→», кризисный вход — контурная кнопка (вид до #907). */
-@media (min-width: 768px) {
+@media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) {
   .cm-page > .ds-card--flush { background: none; border: none; border-top: 1px solid var(--paper-sunk); border-radius: 0; overflow: visible; }
   .cm-page > .ds-card--flush .ds-chev:empty::before { content: '→'; }
   .cm-page > .ds-card--flush .ds-list-row { padding-left: 4px; padding-right: 4px; }

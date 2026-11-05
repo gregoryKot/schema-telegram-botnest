@@ -13,6 +13,9 @@
 .cpf-avatar { width: 80px; height: 80px; font-size: 30px; }
 .cpf-head-text { flex: 1 1 200px; min-width: 0; }
 .cpf-head-sub { margin-top: 8px; }
+/* Имя без пробелов уходило за край (QA мобильной 2026-11, М5): имя — одна строка с многоточием, как в #911;
+   «N дней с тобой в приложении» по-прежнему переносится обычным порядком. */
+.cpf-head-name { display: inline-block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: bottom; }
 .cpf-head .ds-h1 i { font-style: italic; color: var(--accent); }
 .cpf-head-actions { display: flex; align-items: center; gap: 12px; margin-left: auto; }
 .cpf-heat-days { display: none; }
@@ -99,7 +102,7 @@
 
 .cpf-delete { padding-top: 20px; border-top: 1px solid var(--paper-sunk); }
 
-@media (max-width: 767px) {
+@media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
   .cpf-card, .cpf-former { padding: 16px; border-radius: 18px; }
   .cpf-avatar { width: 56px; height: 56px; font-size: 20px; }
   .cpf-head { gap: 12px 14px; }
@@ -135,11 +138,11 @@
 .cpf-prow { grid-template-columns: auto minmax(0, 1fr) auto auto; }
 .cpf-prow > .ds-chev { grid-column: -1; }
 .cpf-dlg-count { margin-right: auto; }
-@media (max-width: 767px) {
+@media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
   .cpf-bar-name { width: 148px; font-size: 14px; white-space: nowrap; }
 }
 
 /* Компьютер: у карточек-переходов («Мой путь», «Мой портрет», «Достижения») справа «→», как до волн; телефон — «›». */
-@media (min-width: 768px) {
+@media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) {
   .cpf-card > .ds-head-row .ds-chev:empty::before { content: '→'; }
 }

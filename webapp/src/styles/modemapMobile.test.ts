@@ -10,6 +10,7 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { PHONE_MEDIA } from '../utils/phoneLayout';
 
 interface Rule { group: string | null; selectors: string[]; body: string }
 
@@ -45,7 +46,7 @@ function values(rules: Rule[], group: string | null, sel: string, prop: string):
 }
 
 const read = (f: string) => readFileSync(join(__dirname, f), 'utf8');
-const PHONE = '@media (max-width: 767px)';
+const PHONE = `@media ${PHONE_MEDIA}`;
 const modemap = parse(read('sheet-modemap.css'));
 
 describe('холст карты режимов на телефоне (sheet-modemap.css)', () => {
@@ -55,7 +56,7 @@ describe('холст карты режимов на телефоне (sheet-mode
     expect(heights.some((h) => h.includes('100dvh'))).toBe(true);
     expect(values(modemap, PHONE, '.mm2-body', 'min-height')).toEqual([]);
     const chrome = values(modemap, PHONE, '.mm2-body', '--mm2-chrome').join('');
-    for (const token of ['var(--safe-top)', 'var(--safe-bottom)', 'var(--mobile-nav-h)']) expect(chrome).toContain(token);
+    for (const token of ['var(--mm2-top)', 'var(--safe-bottom)', 'var(--mobile-nav-h)']) expect(chrome).toContain(token);
     expect(heights.every((h) => h.includes('var(--mm2-chrome)'))).toBe(true);
   });
 
@@ -90,8 +91,9 @@ describe('холст карты режимов на телефоне (sheet-mode
 
   it('сегмент карт в полосе тянется (flex: 1 1 auto) только на ≤767; на ≥768 по содержимому', () => {
     const src = readFileSync(join(__dirname, 'sheet-modemap.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
-    expect(src).toMatch(/@media \(max-width: 767px\) \{ \.mm2-bar > \.ds-seg \{ flex: 1 1 auto; \} \}/);
-    expect(src.replace(/@media \(max-width: 767px\) \{ \.mm2-bar > \.ds-seg \{ flex: 1 1 auto; \} \}/, '')).not.toMatch(/\.mm2-bar > \.ds-seg \{[^}]*flex:/);
+    const stretch = `${PHONE} { .mm2-bar > .ds-seg { flex: 1 1 auto; } }`;
+    expect(src).toContain(stretch);
+    expect(src.replace(stretch, '')).not.toMatch(/\.mm2-bar > \.ds-seg \{[^}]*flex:/);
   });
 
   it('полоса карт .mm2-bar — боковой отступ 16 (один отступ на телефоне)', () => {
@@ -109,5 +111,25 @@ describe('холст карты режимов на телефоне (sheet-mode
       '.mm2-panel select.ds-input', '.ds-input.mm2-add-emoji', '.ds-input.mm2-lane-input'];
     for (const sel of sels) expect(values(modemap, PHONE, sel, 'font-size'), sel).toEqual(['16px']);
     expect(values(modemap, null, '.mm2-panel .ds-input', 'font-size')).toEqual(['13px']);
+  });
+
+  // QA 2026-11, T-5: тулбар 36, пункты палитры 34, «Скрыть» 22, кнопки над узлом
+  // 31×23. Гейт check-tap-targets видит только инлайн-квадраты, CSS-классы ему
+  // не видны (docs/open/frontend-ux.md), поэтому размеры держит этот тест.
+  it('тап-цели холста под пальцем (pointer: coarse) и на телефоне — не меньше 44', () => {
+    const TOUCH = '@media (pointer: coarse), (max-width: 767px)';
+    const px = (sel: string, prop: string) => Number.parseFloat(values(modemap, TOUCH, sel, prop).at(-1) ?? '0');
+    const cases: Array<[string, string]> = [
+      ['.ds-btn.mm2-tb-btn', 'height'], ['.ds-btn.mm2-tb-btn', 'min-width'], ['.mm2-pal-item', 'min-height'], ['.mm2-pal-head', 'min-height'],
+      ['.ds-btn.mm2-pal-add', 'height'], ['.mm2-nt-btn', 'min-width'], ['.mm2-nt-btn', 'min-height'], ['.mm2-ear', 'width'], ['.mm2-ear', 'height'],
+      ['.mm2-swatch', 'width'], ['.mm2-swatch', 'height'], ['.mm2-x', 'width'], ['.mm2-x', 'height'], ['.ds-btn.mm2-del', 'height'],
+    ];
+    for (const [sel, prop] of cases) expect(px(sel, prop), `${sel} ${prop}`).toBeGreaterThanOrEqual(44);
+  });
+
+  it('ручки связи на (hover: none) видны всегда (T-4); на ноутбуке — по наведению', () => {
+    const idx = read('../index.css');
+    expect(idx).toMatch(/@media \(hover: none\)\s*\{\s*\.mm-handle\s*\{\s*opacity: 1/);
+    expect(idx).toMatch(/\.mm-handle\s*\{\s*opacity: 0;/);
   });
 });

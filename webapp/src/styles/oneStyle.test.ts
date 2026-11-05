@@ -144,3 +144,24 @@ describe('высота навигации: документ = код', () => {
     expect(line).not.toContain('h76');
   });
 });
+
+// #920 переименовал группу --ink…/--on-ink… в --panel…/--on-panel…. var() без объявления
+// не роняет ни сборку, ни консоль: свойство молча теряет значение (тень и затенение под
+// «Мне плохо» и текстом согласия пропали при сведении ветки, начатой до #920).
+describe('снятые токены --ink/--on-ink нигде не читаются (#920)', () => {
+  const OLD = /var\(--(on-)?ink(-[\w-]+)?\)/;
+  const files = (dir: string): string[] => readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
+    const p = join(dir, e.name);
+    if (e.isDirectory()) return e.name === 'node_modules' ? [] : files(p);
+    return /\.(css|tsx?)$/.test(e.name) && !/\.test(-helpers)?\.tsx?$/.test(e.name) ? [p] : [];
+  });
+  it('webapp/src и shared/src: нет var(--ink…) и var(--on-ink…)', () => {
+    const bad = [...files(SRC), ...files(join(SRC, '../../shared/src'))]
+      .filter((f) => OLD.test(stripC(readFileSync(f, 'utf8'))));
+    expect(bad).toEqual([]);
+  });
+  it('сверка ловит старое имя и пропускает --warn-ink, --ok-ink, --panel', () => {
+    for (const bad of ['var(--ink)', 'var(--on-ink-faint)', 'color-mix(in srgb, var(--ink) 25%, transparent)']) expect(OLD.test(bad), bad).toBe(true);
+    for (const ok of ['var(--warn-ink)', 'var(--ok-ink)', 'var(--panel)', 'var(--on-panel-faint)']) expect(OLD.test(ok), ok).toBe(false);
+  });
+});

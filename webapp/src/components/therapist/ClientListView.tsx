@@ -20,7 +20,7 @@ import '../../styles/therapist-clients.css';
 const FILTERS: { key: RosterStatus; label: string }[] = [
   { key: 'all', label: 'Все' },
   { key: 'active', label: 'Активны' },
-  { key: 'wait', label: 'Ждут' },
+  { key: 'wait', label: 'Не сегодня' }, // в боте, но сегодня без активности; «Ждут» путалось с «Ждут подключения»
   { key: 'virtual', label: 'Офлайн' },
 ];
 
@@ -102,7 +102,7 @@ export function ClientListView({
         {listTab === 'clients' && (
           loading ? (
             <div className="tc-grid" aria-hidden>
-              {[0, 1, 2].map(i => <Skeleton key={i} height={260} radius={20} />)}
+              {[0, 1, 2].map(i => <Skeleton key={i} height="var(--tc-card-h)" radius={20} />)}
             </div>
           ) : loadFailed ? (
             // Сбой ≠ пусто (CLAUDE.md: никаких заглушек вместо данных) —

@@ -4,11 +4,12 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { PHONE_MEDIA, DESKTOP_MEDIA } from '../utils/phoneLayout';
 
 const css = readFileSync(join(__dirname, 'therapist-today.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
 /** Телефонный блок — последний в файле: всё от его заголовка до конца. */
-const phone = css.slice(css.indexOf('@media (max-width: 767px)'));
-const desk = css.slice(0, css.indexOf('@media (max-width: 767px)'));
+const phone = css.slice(css.indexOf(`@media ${PHONE_MEDIA}`));
+const desk = css.slice(0, css.indexOf(`@media ${PHONE_MEDIA}`));
 /** Тело первого правила с ровно этим селектором. */
 const rule = (src: string, sel: string) =>
   src.match(new RegExp(`(?:^|[}\\s])${sel.replace(/[.-]/g, '\\$&')}\\s*\\{([^}]*)\\}`))?.[1] ?? '';
@@ -45,9 +46,9 @@ describe('therapist-today.css: имена в одну строку (QA 2026-11)'
 // Компьютер (≥768): переход — акцентная «→» как до волн, не телефонный шеврон «›»;
 // у строки активности стрелки не было. Телефонный блок эти правила не содержит.
 describe('therapist-today.css: стрелка перехода на компьютере', () => {
-  const at = css.indexOf('@media (min-width: 768px) {\n  .tt-session');
+  const at = css.indexOf(`@media ${DESKTOP_MEDIA} {\n  .tt-session`);
   const deskBlock = at < 0 ? '' : css.slice(at, css.indexOf('\n}', at));
-  it('карточки сессии и внимания — «→» только под min-width: 768px', () => {
+  it('карточки сессии и внимания — «→» только под DESKTOP_MEDIA (≥768)', () => {
     expect(deskBlock).toMatch(/\.tt-session > \.ds-chev:empty::before, \.tt-attn > \.ds-chev:empty::before \{ content: '→'; \}/);
     expect(deskBlock).toMatch(/\.tt-attn > \.ds-chev \{ color: var\(--warn-ink\); \}/);
     expect(deskBlock).toMatch(/\.tt-act > \.ds-chev \{ display: none; \}/);

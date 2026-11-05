@@ -5,6 +5,7 @@
    Суммы доната — ds-seg, поля доната — ds-input (#906); поле email — ds-input--on-panel. */
 .ap-page {
   --sheet-col: 640px; --sheet-pad: clamp(20px, 4vw, 56px);
+  padding-top: var(--safe-top);
   flex: 1; width: 100%; box-sizing: border-box; min-height: 100dvh; display: flex; flex-direction: column;
   background: var(--bg); color: var(--text); font-family: var(--sans);
 }
@@ -71,7 +72,7 @@
 .ap-donate { max-width: 560px; border-radius: 28px; padding: 32px; display: flex; flex-direction: column; gap: 18px; }
 
 /* ── Мобильный ───────────────────────────────────────────────────────────── */
-@media (max-width: 767px) {
+@media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
   .ap-split { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
   .ap-info { padding: 20px 16px; }
   .ap-checks { margin-top: 16px; font-size: 14px; gap: 6px; }
@@ -98,7 +99,7 @@
 .ap-page--form { --sheet-col: 100%; --sheet-pad: 56px; }
 .ap-home { display: none; } /* ссылка «← На главную» внизу — только на компьютере (state, donate, форма), на телефоне она в шапке */
 .ap-donate-shell { display: contents; } /* на телефоне обёртки нет: hero и карточка — прямые дети страницы */
-@media (min-width: 768px) {
+@media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) {
   .ds-page.ap-main--state { max-width: 400px; margin: auto; padding-left: 0; padding-right: 0; align-items: center; text-align: center; }
   .ap-main--state .ap-hero { align-items: center; }
   .ap-main--state .ap-lead { margin-left: auto; margin-right: auto; }

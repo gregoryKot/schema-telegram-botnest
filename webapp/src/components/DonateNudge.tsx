@@ -12,7 +12,7 @@ const SHOWN_KEY = 'donateNudgeAt';
 const SEEN_KEY = 'donateNudgeSeen';
 const PERIOD = 30 * 24 * 60 * 60 * 1000;
 
-export function DonateNudge() {
+export function DonateNudge({ blocked = false }: { blocked?: boolean } = {}) {
   // Показывать ли — выводится на маунте (lazy-init), а не через setState в
   // эффекте (react-hooks/set-state-in-effect). Побочный эффект (пометить
   // brand-new юзера) остаётся в эффекте.
@@ -32,7 +32,7 @@ export function DonateNudge() {
     }
   }, []);
 
-  if (!show) return null;
+  if (!show || blocked) return null;
 
   // Mounted only while the sheet is visible, so useHistorySheet's history push
   // happens exactly once per appearance (not on every app load).

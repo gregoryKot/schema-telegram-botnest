@@ -2,10 +2,12 @@ import { useEffect, useRef, useState } from 'react';
 import { api, type ModeMapMeta, type ModeMapFull, type ModeMapKind, type UserId } from '../api';
 import { ModeMapEditor } from './ModeMapEditor';
 import { ModeMapSkeleton } from './modeMap/ModeMapSkeleton';
+import { useCanvasTop } from './modeMap/useCanvasTop';
+import { Dropdown } from './Dropdown';
 import { MMIcon } from './modeMapIcons';
 import { useTr } from '../utils/addressForm';
 import '../styles/sheet-modemap.css';
-import { ConfirmDialog } from './ConfirmDialog';
+import { HistoryConfirmDialog } from './HistoryConfirmDialog';
 import { RenameDeleteMenu } from './RenameDeleteMenu';
 import { MODE_MAP_TITLE_MAX } from '../../../shared/src/limits/textLimits';
 
@@ -30,13 +32,8 @@ export function ModeMapSelector({ clientId, initialMapId }: Props) {
   const [editTitle, setEditTitle] = useState('');
   const titleRef = useRef<HTMLInputElement>(null);
   const newBtnRef = useRef<HTMLButtonElement>(null);
-  const [menuPos, setMenuPos] = useState<{ x: number; y: number } | null>(null);
-
-  function openKindPicker() {
-    const r = newBtnRef.current?.getBoundingClientRect();
-    if (r) setMenuPos({ x: r.left, y: r.bottom + 4 });
-    setPickKind(o => !o);
-  }
+  const bodyRef = useRef<HTMLDivElement>(null);
+  useCanvasTop(bodyRef);
 
   // Reset to the loading state when the viewed client changes: adjusting state
   // during render (not in an effect) is the documented pattern for a changing prop.
@@ -145,7 +142,7 @@ export function ModeMapSelector({ clientId, initialMapId }: Props) {
           ))}
         </div>
         {activeMeta && <RenameDeleteMenu label="Действия с картой" deleteLabel="Удалить карту" onRename={() => startEdit(activeMeta)} onDelete={maps.length > 1 ? () => setDeleteTargetId(activeMeta.id) : undefined} />}
-        <button ref={newBtnRef} onClick={openKindPicker} disabled={creating}
+        <button ref={newBtnRef} onClick={() => setPickKind(o => !o)} disabled={creating}
           className={`ds-btn ds-btn--secondary ds-btn--sm mm2-new${pickKind ? ' is-active' : ''}`}>
           {creating ? '…' : (
             <span>
@@ -155,26 +152,20 @@ export function ModeMapSelector({ clientId, initialMapId }: Props) {
         </button>
       </div>
 
-      {/* Kind picker — fixed so the tab bar's overflow can't clip it */}
-      {pickKind && menuPos && (
-        <>
-          <div role="button" tabIndex={0} aria-label="Закрыть"
-            onClick={() => setPickKind(false)}
-            onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setPickKind(false); } }}
-            className="ds-backdrop" style={{ zIndex: 60 }} />
-          <div className="ds-menu mm2-kind-menu" style={{ left: menuPos.x, top: menuPos.y }}>
-            {KINDS.map(k => (
-              <button key={k} onClick={() => createMap(k)} className="ds-menu-item">
-                <div className="mm2-kind-name">{KIND_META[k].label}</div>
-                <div className="mm2-kind-hint">{KIND_META[k].hint}</div>
-              </button>
-            ))}
-          </div>
-        </>
+      {/* Тип новой карты: общее меню Dropdown прижимает себя к краям экрана (T-6) */}
+      {pickKind && (
+        <Dropdown anchorRef={newBtnRef} width={290} className="mm2-kind-menu" onClose={() => setPickKind(false)}>
+          {KINDS.map(k => (
+            <button key={k} onClick={() => createMap(k)} className="ds-menu-item">
+              <div className="mm2-kind-name">{KIND_META[k].label}</div>
+              <div className="mm2-kind-hint">{KIND_META[k].hint}</div>
+            </button>
+          ))}
+        </Dropdown>
       )}
 
       {/* Editor area */}
-      <div className="mm2-body">
+      <div ref={bodyRef} className="mm2-body">
         {loading && <ModeMapSkeleton />}
         {!loading && maps.length === 0 && (
           <div className="mm2-center">
@@ -202,7 +193,7 @@ export function ModeMapSelector({ clientId, initialMapId }: Props) {
         )}
       </div>
       {deleteTargetId !== null && (
-        <ConfirmDialog
+        <HistoryConfirmDialog
           title="Удалить карту режимов?"
           message="Это действие нельзя отменить."
           confirmLabel="Удалить"

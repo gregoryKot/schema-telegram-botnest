@@ -10,7 +10,7 @@
 .tb-r { text-align: right; }
 .tb-error { font-size: 13px; color: var(--err); }
 .tb-mt16 { margin-top: 16px; }
-@media (min-width: 768px) { .tb-tab-title .ds-sub { margin-top: 4px; } }
+@media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) { .tb-tab-title .ds-sub { margin-top: 4px; } }
 .tb-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .tb-tags { display: flex; flex-wrap: wrap; gap: 8px; }
 
@@ -108,7 +108,7 @@
 .tb-field-label { font-size: 11px; }
 .tb-field-val { font-size: 14px; margin-top: 3px; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; }
 
-@media (max-width: 767px) {
+@media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
   .tb-tab-h, .tb-tab-title--desk { display: none; }
   .tb-tab-title--art { align-items: flex-start; }
   .tb-notes-head { display: contents; } /* фильтр — прямой ребёнок страницы, как без заголовка */

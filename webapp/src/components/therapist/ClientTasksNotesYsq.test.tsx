@@ -8,6 +8,7 @@ import { KanbanView } from './KanbanView';
 import type { ClientData, TherapyClientSummary, UserTask } from '../../api';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { PHONE_MEDIA } from '../../utils/phoneLayout';
 import type { ClientDetail } from './clientSheetTypes';
 
 afterEach(cleanup);
@@ -163,9 +164,10 @@ describe('вкладки без заголовков, пустые состоя�
     expect(screen.getByText('В этой категории записей нет').classList.contains('ds-empty')).toBe(true);
   });
 
-  it('therapist-tabs.css: заголовок вкладки скрыт только под max-width: 767px', () => {
+  it('therapist-tabs.css: заголовок вкладки скрыт только под PHONE_MEDIA (≤767 и телефон в альбомной)', () => {
     const css = readFileSync(join(__dirname, '../../styles/therapist-tabs.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
-    const at = css.indexOf('@media (max-width: 767px)');
+    const at = css.indexOf(`@media ${PHONE_MEDIA}`);
+    expect(at).toBeGreaterThan(-1);
     const phone = css.slice(at);
     expect(phone).toMatch(/\.tb-tab-h, \.tb-tab-title--desk \{ display: none; \}/);
     expect(phone).toMatch(/\.tb-notes-head \{ display: contents; \}/);

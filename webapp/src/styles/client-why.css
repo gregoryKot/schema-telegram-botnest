@@ -25,12 +25,19 @@
 .cw-tip { margin: 0; font-size: 14px; line-height: 1.5; color: var(--text); }
 .cw-foot { margin: 0; line-height: 1.5; }
 
-@media (max-width: 767px) {
+@media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
   .cw-inner { padding: 20px 16px calc(24px + env(safe-area-inset-bottom)); }
+  /* «Понятно, начнём» прилипает к низу листа: на реальной высоте телефона (390×664, 360×640) кнопка стояла за
+     краем (QA мобильной версии 2026-11, М4). Сплошной фон под ней — текст за кнопкой не просвечивает.
+     Только телефон: на компьютере кнопка стоит под карточками, как до волн (инцидент 2026-11-04). */
+  .cw-sticky {
+    position: sticky; bottom: 0; z-index: 1;
+    margin: 0 -16px; padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); background: var(--bg);
+  }
 }
 
 /* Компьютер: три отдельные карточки с засечными заголовками, как в макете (REDESIGN_2026-10). */
-@media (min-width: 768px) {
+@media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) {
   .cw-sheet .cw-list { display: flex; flex-direction: column; gap: 16px; background: none; border: none; border-radius: 0; overflow: visible; }
   .cw-sheet .cw-item { padding: 22px 24px; background: var(--surface); border: 1px solid var(--line); border-radius: 20px; gap: 8px; }
   .cw-sheet .cw-item .ds-list-title { font: 400 20px/1.25 var(--serif); }

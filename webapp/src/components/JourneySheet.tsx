@@ -1,6 +1,7 @@
 // «Мой путь» (webapp) — обёртка над общими useJourney/JourneyView (правило №3):
 // fixed-оверлей с useHistorySheet, заголовок, шаринг.
 import '../styles/sheet-diary.css';
+import { useRef } from 'react';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { useTr } from '../utils/addressForm';
 import { ShareCardSheet } from '../share/ShareCardSheet';
@@ -15,7 +16,7 @@ import { WEB_JOURNEY_HEROES } from './journey/webJourneyHeroes';
 import { botShortUrl } from '../utils/botConfig';
 import { ShareIcon } from '../../../shared/src/share/ShareIcon';
 import { useJourneyDetail } from '../../../shared/src/journey/JourneyItemDetail';
-import { JourneyDetailPane } from '../../../shared/src/journey/JourneyDetailPane';
+import { JourneyDetailLayer } from './journey/JourneyDetailLayer';
 import { useJourneyDelete } from '../../../shared/src/journey/journeyDelete';
 
 // Уровень модуля — стабильные ссылки (см. комментарий makeJourneyProps).
@@ -27,8 +28,10 @@ export function JourneySheet({ onClose }: { onClose: () => void }) {
   const j = useJourney(jp.deps);
   const sh = useJourneyShare(j, jp.subtitle, botShortUrl, jp.fetchResult);
   const detail = useJourneyDetail(jp.fetchDetail);
+  // Запись — вложенный уровень истории: после удаления закрываем её через слой.
+  const closeDetail = useRef<() => void>(() => {});
   const del = useJourneyDelete(api, () => {
-    detail.close();
+    closeDetail.current();
     j.reload();
   });
 
@@ -37,7 +40,8 @@ export function JourneySheet({ onClose }: { onClose: () => void }) {
       {!detail.item && <div className="ds-sheet-head sd-top"><button type="button" className="ds-back" onClick={goBack}>← Назад</button></div>}
       <div className="sd-journey-inner">
         {detail.item ? (
-          <JourneyDetailPane
+          <JourneyDetailLayer
+            closeRef={closeDetail}
             detail={detail}
             subtitle={jp.subtitle}
             tr={tr}
