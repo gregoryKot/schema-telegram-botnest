@@ -254,6 +254,144 @@ jobs:
           path: test-results/
           retention-days: 14
 
+  # Живой проход связи клиент↔терапевт (#935): настоящий AppModule на живом
+  # Postgres (test/e2e-support/live-stand.ts — слушает :3000, вход :3001/login/<id>
+  # ставит настоящую refresh-куку), прод-сборка сайта на :5174 с прокси /api
+  # (webapp/vite.live.config.ts) и Playwright по e2e-browser/live (11 сценариев:
+  # приглашение → код → карточка, тумблеры, задание, встреча, отключение,
+  # повторное подключение, удаление, офлайн-клиент, веб-клиент по ссылке).
+  # Единственная проверка «фронт + бэк + база + браузер» разом: 2026-11-05
+  # она нашла кэш «Написать терапевту», переживший отключение, и краш кабинета
+  # на Mac (пары файлов, различавшихся регистром) — ни юниты, ни HTTP-e2e, ни
+  # browser-smoke на стабе их не видели.
+  #
+  # Стенд и preview живут в фоне между шагами: их вывод уходит в файлы (иначе
+  # шаг ждёт закрытия их stdout), стенд останавливает стоп-файл
+  # STAND_STOP_FILE, по которому он сам чистит своих пользователей и закрывает
+  # приложение. Бот подменён фейком в build-test-app.ts, ADMIN_ID не нужен —
+  # тот же AppModule гоняет джоба `migrations` в ci.yml. Chromium — тот, что
+  # ставит playwright install: PW_CHROMIUM_PATH на раннере не задан.
+  browser-live:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: mirror.gcr.io/library/postgres:16
+        env:
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://postgres:ci@localhost:5432/ci
+      STAND_STOP_FILE: ${{ runner.temp }}/stand.stop
+      STAND_LOG: ${{ runner.temp }}/stand.log
+      PREVIEW_LOG: ${{ runner.temp }}/preview.log
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm ci --prefix webapp
+      - run: npx prisma migrate deploy
+      - run: npx prisma generate
+      # Занятый порт дал бы не «порт занят», а таймаут ожидания ниже или 404 от
+      # чужого сервера в самих сценариях.
+      - name: порты стенда свободны (3000 бэкенд, 3001 вход, 5174 сайт)
+        run: |
+          busy=$(ss -ltnH | awk '{print $4}' | grep -E ':(3000|3001|5174)$' || true)
+          if [ -n "$busy" ]; then
+            echo "::error::порт стенда занят: $busy"
+            exit 1
+          fi
+      # Стенд — jest-спек без `.e2e-spec` (--testRegex, джоба `backend` его не
+      # подхватывает); компиляция AppModule через ts-jest идёт в фоне, пока
+      # собирается сайт и ставится Chromium.
+      - name: стенд в фоне — настоящий AppModule на живом Postgres
+        env:
+          E2E_REAL_DB: '1'
+        run: |
+          npx jest --config ./test/jest-e2e.json --runInBand --testRegex 'e2e-support/live-stand\.ts$' > "$STAND_LOG" 2>&1 &
+          echo "STAND_PID=$!" >> "$GITHUB_ENV"
+      # Та же сборка, что в Dockerfile (VITE_BOT_USERNAME сверяет
+      # bot-username-sources.spec.ts).
+      - name: прод-сборка сайта
+        run: npm run build --prefix webapp
+        env:
+          VITE_BOT_USERNAME: SchemeHappensBot
+      - run: npx playwright install --with-deps chromium
+      # Готовность — по факту ответа: /health отвечает после app.listen(3000),
+      # вход :3001 поднимается следом (404 на чужой путь — сервер уже слушает).
+      # Строку «STAND READY» jest буферизует до конца теста, на неё не опереться.
+      - name: ждать стенд (:3000 /health и вход :3001)
+        run: |
+          for i in $(seq 1 300); do
+            if ! kill -0 "$STAND_PID" 2>/dev/null; then
+              echo "::error::стенд завершился, не поднявшись"
+              tail -n 80 "$STAND_LOG"
+              exit 1
+            fi
+            if curl -fsS -o /dev/null http://localhost:3000/health \
+              && [ "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:3001/)" = "404" ]; then
+              echo "стенд готов за $i с"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "::error::стенд не поднялся за 300 с"
+          tail -n 80 "$STAND_LOG"
+          exit 1
+      # vite preview без --host: слушает localhost, Chromium, curl и прокси
+      # ходят туда же — по IPv6 или IPv4, что первым ответит.
+      - name: сайт в фоне — vite preview :5174 с прокси /api на стенд
+        run: |
+          (cd webapp && npx vite preview --config vite.live.config.ts > "$PREVIEW_LOG" 2>&1 &)
+          for i in $(seq 1 60); do
+            if curl -fsS -o /dev/null http://localhost:5174/; then
+              echo "сайт готов за $i с"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "::error::сайт на :5174 не поднялся за 60 с"
+          cat "$PREVIEW_LOG"
+          exit 1
+      # 11 сценариев по 90 с потолка каждый — 17 минут худшего случая, обычный
+      # прогон единицы минут; потолок шага ниже потолка джобы, чтобы причиной
+      # был сам шаг, а не отмена джобы.
+      - name: живой проход связи клиент↔терапевт (Chromium)
+        timeout-minutes: 20
+        run: npx playwright test -c e2e-browser/live/playwright.config.ts
+      - name: остановить стенд (стоп-файл — стенд чистит своих пользователей)
+        if: always()
+        run: |
+          touch "$STAND_STOP_FILE"
+          for i in $(seq 1 30); do
+            kill -0 "$STAND_PID" 2>/dev/null || break
+            sleep 1
+          done
+      - name: хвост лога стенда
+        if: failure()
+        run: tail -n 120 "$STAND_LOG"
+      - name: трейсы и логи упавшего прохода артефактом
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-live-trace
+          path: |
+            test-results/live/
+            ${{ runner.temp }}/stand.log
+            ${{ runner.temp }}/preview.log
+          retention-days: 14
+          if-no-files-found: ignore
+
   # Репетиция restore бэкапа (аудит тестовых практик 2026-08, пункт №1):
   # «бэкап без проверенного restore — не бэкап». До этой джобы restore
   # существовал только как комментарий в хвосте скрипта бэкапа (тогда backup-to-b2.sh) — и
@@ -442,6 +580,7 @@ jobs:
       - mutation-golden-auth
       - mutation-golden-payments
       - browser-smoke
+      - browser-live
       - backup-restore
       - npm-audit
     if: always()
