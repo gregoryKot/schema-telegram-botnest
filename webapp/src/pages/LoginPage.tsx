@@ -8,6 +8,7 @@ import { LoginProviderButtons } from './login/LoginProviderButtons';
 import { LoginHero } from './login/LoginHero';
 import { LoginEmailForm } from './login/LoginEmailForm';
 import { TelegramRetry } from './login/TelegramRetry';
+import { LoginConsentNote } from './login/LoginConsentNote';
 import { exchangeErrorText } from './login/exchangeError';
 import { humanizeThrown } from '../../../shared/src/api/humanizeError';
 import { hasAuthSeen } from '../../../shared/src/auth/authSeen';
@@ -119,13 +120,7 @@ export function LoginPage() {
 
           {error && <p className="al-error">{error}</p>}
 
-          <p className="al-note">
-            Нажимая «Войти», вы подтверждаете, что вам исполнилось 18 лет, и даёте согласие
-            на обработку персональных данных — включая сведения о психоэмоциональном состоянии
-            (дневники, ответы на опросники), которые вы добровольно вносите, —
-            в соответствии с{' '}
-            <a href="/privacy" target="_blank">Политикой конфиденциальности</a>
-          </p>
+          <LoginConsentNote />
 
           {/* Проект бесплатный — ненавязчивая точка поддержки на первом экране */}
           <p className="al-note">
