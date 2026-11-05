@@ -1,75 +1,63 @@
 import { TherapyInviteMetricsService } from './therapy-invite-metrics.service';
 
+// Один запрос по индексу (name, createdAt) вместо шести count с JSON-фильтром
+// (гейт планов, правило №28); раскладка по step/kind — в памяти, чужое
+// или неполное meta не считается.
 describe('TherapyInviteMetricsService', () => {
   const now = new Date('2026-11-05T12:00:00Z');
 
-  function setup(impl?: (args: any) => number) {
-    const count = jest.fn(async (args: any) => (impl ? impl(args) : 0));
+  function setup(rows: { meta: unknown }[] = []) {
+    const findMany = jest.fn(async () => rows);
     const svc = new TherapyInviteMetricsService({
-      analyticsEvent: { count },
+      analyticsEvent: { findMany },
     } as any);
-    return { svc, count };
+    return { svc, findMany };
   }
 
-  const pairOf = (args: any) => ({
-    step: args.where.AND.find((f: any) => f.meta.path[0] === 'step')?.meta
-      .equals,
-    kind: args.where.AND.find((f: any) => f.meta.path[0] === 'kind')?.meta
-      .equals,
-  });
-
-  it('шесть count: имя события, окно 30 дней, пары step/kind', async () => {
-    const { svc, count } = setup();
+  it('один findMany: имя события и окно 30 дней, только meta', async () => {
+    const { svc, findMany } = setup();
     await svc.getMetrics(now);
-    expect(count).toHaveBeenCalledTimes(6);
-    const since = new Date(now.getTime() - 30 * 86_400_000);
-    const pairs = count.mock.calls.map(([args]) => {
-      expect(args.where.name).toBe('therapy_invite');
-      expect(args.where.createdAt.gte).toEqual(since);
-      return pairOf(args);
+    expect(findMany).toHaveBeenCalledWith({
+      where: {
+        name: 'therapy_invite',
+        createdAt: { gte: new Date(now.getTime() - 30 * 86_400_000) },
+      },
+      select: { meta: true },
     });
-    expect(pairs).toEqual(
-      expect.arrayContaining(
-        ['created', 'joined', 'revoked'].flatMap((step) =>
-          ['new', 'offline'].map((kind) => ({ step, kind })),
-        ),
-      ),
-    );
   });
 
-  it('фильтр по kind обязателен в каждом запросе: строка без kind не считается', async () => {
-    const { svc, count } = setup();
-    await svc.getMetrics(now);
-    for (const [args] of count.mock.calls) {
-      const { step, kind } = pairOf(args);
-      expect(step).toBeDefined();
-      expect(['new', 'offline']).toContain(kind);
-      expect(args.where.AND).toHaveLength(2);
-    }
-  });
-
-  it('раскладывает счётчики по шагам и видам', async () => {
-    const table: Record<string, number> = {
-      'created:new': 5,
-      'created:offline': 2,
-      'joined:new': 3,
-      'joined:offline': 1,
-      'revoked:new': 4,
-      'revoked:offline': 0,
-    };
-    const { svc } = setup((a) => {
-      const p = pairOf(a);
-      return table[`${p.step}:${p.kind}`];
-    });
-    expect(await svc.getMetrics(now)).toEqual({
+  it('раскладывает строки по шагам и видам', async () => {
+    const rows = [
+      ...Array(5).fill({ meta: { step: 'created', kind: 'new' } }),
+      ...Array(2).fill({ meta: { step: 'created', kind: 'offline' } }),
+      ...Array(3).fill({ meta: { step: 'joined', kind: 'new' } }),
+      { meta: { step: 'joined', kind: 'offline' } },
+      ...Array(4).fill({ meta: { step: 'revoked', kind: 'new' } }),
+    ];
+    expect(await setup(rows).svc.getMetrics(now)).toEqual({
       created: { new: 5, offline: 2 },
       joined: { new: 3, offline: 1 },
       revoked: { new: 4, offline: 0 },
     });
   });
 
+  it('строка без kind, с чужим step или без meta не считается', async () => {
+    const rows = [
+      { meta: { step: 'created' } },
+      { meta: { step: 'opened', kind: 'new' } },
+      { meta: { step: 'joined', kind: 'paper' } },
+      { meta: null },
+      { meta: 'created' },
+      { meta: { step: 'joined', kind: 'offline' } },
+    ];
+    expect(await setup(rows).svc.getMetrics(now)).toEqual({
+      created: { new: 0, offline: 0 },
+      joined: { new: 0, offline: 1 },
+      revoked: { new: 0, offline: 0 },
+    });
+  });
+
   it('render на пустой БД — «Пока ничего.»', async () => {
-    const { svc } = setup();
-    expect(await svc.render()).toContain('Пока ничего.');
+    expect(await setup().svc.render()).toContain('Пока ничего.');
   });
 });

@@ -987,7 +987,7 @@
   "src/bot/therapist-exit-metrics.format.ts": 51,
   "src/bot/therapist-exit-metrics.service.ts": 63,
   "src/bot/therapy-invite-metrics.format.ts": 39,
-  "src/bot/therapy-invite-metrics.service.ts": 57,
+  "src/bot/therapy-invite-metrics.service.ts": 62,
   "src/bot/therapy-nudge-metrics.format.ts": 91,
   "src/bot/therapy-nudge-metrics.service.ts": 92,
   "src/bot/user-data-tables.ts": 46,
