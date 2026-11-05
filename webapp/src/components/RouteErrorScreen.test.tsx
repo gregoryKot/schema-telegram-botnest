@@ -6,6 +6,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, cleanup } from '@testing-library/react';
 import { createMemoryRouter, RouterProvider } from 'react-router-dom';
 import { RouteErrorScreen } from './RouteErrorScreen';
+import { allowCrashScreen } from '../test-support/crashScreenGuard';
 
 const reportClientError = vi.fn();
 vi.mock('../api', () => ({
@@ -32,6 +33,7 @@ let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
 
 beforeEach(() => {
   vi.clearAllMocks();
+  allowCrashScreen(); // экран падения здесь рисуется намеренно
   sessionStorage.clear();
   consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
   vi.spyOn(console, 'warn').mockImplementation(() => {});

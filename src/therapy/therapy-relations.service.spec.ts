@@ -230,7 +230,8 @@ const recentDaysFrom = (today: string): string[] =>
 function relMatches(r: FullRel, where: any = {}): boolean {
   if (where.OR) return (where.OR as any[]).some((cond) => relMatches(r, cond));
   return (
-    (where.id === undefined || r.id === where.id) &&
+    (where.id === undefined ||
+      (where.id.in ? where.id.in.includes(r.id) : r.id === where.id)) &&
     (where.therapistId === undefined || r.therapistId === where.therapistId) &&
     (where.clientId === undefined || r.clientId === where.clientId) &&
     (where.status === undefined ||
@@ -304,6 +305,9 @@ function makeFullPrisma(
     user: {
       findUnique: async ({ where }: any) => findUser(where.id),
     },
+    // disconnect: открытые задания терапевта становятся личными
+    // (end-client-relations.ts, своя сверка where — в его спеке).
+    userTask: { updateMany: jest.fn(async () => ({ count: 0 })) },
   };
 }
 
@@ -314,6 +318,7 @@ function makeFullService(
   overviews: Map<string, Overview> = new Map(),
 ) {
   const prisma: any = makeFullPrisma(rels, users, concepts);
+  prisma.$transaction = (fn: (tx: unknown) => unknown) => fn(prisma);
   // jest.fn(), не голая async-функция: часть новых тестов (мутационное
   // усиление, см. "getClients — batch-загрузка overview...") проверяет,
   // КАКИЕ id реально передаются в overview-сервис (jest.spyOn требует, чтобы
@@ -743,8 +748,11 @@ describe('getRelation — статус связи для терапевта и �
   });
 });
 
-describe('disconnect — клиент разрывает свои связи', () => {
-  it('удаляет только связи, где userId — КЛИЕНТ; связи в роли терапевта остаются (T2, аудит 2026-10)', async () => {
+describe('disconnect — клиент отключается сам', () => {
+  const ended = (rels: FullRel[]) =>
+    rels.map((r: any) => `${r.code}:${r.status}:${r.endReason ?? '-'}`);
+
+  it('завершает только связи, где userId — КЛИЕНТ; связи в роли терапевта живы (T2, аудит 2026-10)', async () => {
     const relAsTherapist: FullRel = {
       id: 1,
       therapistId: T1,
@@ -766,25 +774,36 @@ describe('disconnect — клиент разрывает свои связи', (
       status: 'active',
       code: 'CCC333',
     };
-    const { service, rels } = makeFullService([
+    const { service, rels, prisma } = makeFullService([
       relAsTherapist,
       relAsClient,
       unrelated,
     ]);
     await service.disconnect(T1);
-    expect(rels).toEqual([relAsTherapist, unrelated]);
+    // Строка не удаляется (решение владельца 2026-11-05): ended + client_left.
+    expect(ended(rels)).toEqual([
+      'AAA111:active:-',
+      'BBB222:ended:client_left',
+      'CCC333:active:-',
+    ]);
+    expect(prisma.userTask.updateMany).toHaveBeenCalledWith({
+      where: { userId: T1, assignedBy: { in: [T2] }, done: null },
+      data: { assignedBy: null },
+    });
   });
 
-  // Связь, завершённая отказом терапевта от роли, остаётся: по ней клиент
-  // видит карты бывшего терапевта как историю (решение владельца 2026-10-22).
-  it('связь ended (терапевт отказался от роли) не удаляется, живая и pending — удаляются', async () => {
-    const ended: FullRel = {
+  // Связь, завершённая отказом терапевта от роли, остаётся с прежней
+  // причиной: по ней клиент видит карты бывшего терапевта как историю
+  // (решение владельца 2026-10-22).
+  it('ended (терапевт отказался от роли) не трогается, живая и pending — ended с причиной client_left', async () => {
+    const resigned = {
       id: 1,
       therapistId: T1,
       clientId: CLIENT,
       status: 'ended',
       code: 'E1',
-    };
+      endReason: 'therapist_resigned',
+    } as FullRel;
     const live: FullRel = {
       id: 2,
       therapistId: T2,
@@ -799,9 +818,28 @@ describe('disconnect — клиент разрывает свои связи', (
       status: 'pending',
       code: 'P1',
     };
-    const { service, rels } = makeFullService([ended, live, pending]);
+    const { service, rels } = makeFullService([resigned, live, pending]);
     await service.disconnect(CLIENT);
-    expect(rels).toEqual([ended]);
+    expect(ended(rels)).toEqual([
+      'E1:ended:therapist_resigned',
+      'L1:ended:client_left',
+      'P1:ended:client_left',
+    ]);
+  });
+
+  it('живых связей нет — ничего не меняется, задания не трогаются', async () => {
+    const resigned = {
+      id: 1,
+      therapistId: T1,
+      clientId: CLIENT,
+      status: 'ended',
+      code: 'E1',
+      endReason: 'therapist_resigned',
+    } as FullRel;
+    const { service, prisma, rels } = makeFullService([resigned]);
+    await service.disconnect(CLIENT);
+    expect(ended(rels)).toEqual(['E1:ended:therapist_resigned']);
+    expect(prisma.userTask.updateMany).not.toHaveBeenCalled();
   });
 });
 

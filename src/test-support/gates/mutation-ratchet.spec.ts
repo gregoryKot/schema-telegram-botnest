@@ -189,4 +189,63 @@ describe('check-mutation-ratchet.mjs', () => {
     expect(res.status).toBe(1);
     expect(res.stderr).toContain('src/bot/bot.service.ts: 90% → 50%');
   });
+
+  describe('--partial (PR-CI: отчёт только по изменённым файлам)', () => {
+    const baseline = JSON.stringify({
+      total: 90,
+      files: { 'src/a.ts': 90, 'src/b.ts': 90 },
+    });
+    const killedAll = Array(10).fill(mutant('Killed'));
+    const half = [
+      ...Array(5).fill(mutant('Killed')),
+      ...Array(5).fill(mutant('Survived')),
+    ];
+
+    it('просевший файл из отчёта — exit 1', () => {
+      const res = runGate(
+        'check-mutation-ratchet.mjs',
+        {
+          'scripts/mutation-baseline.json': baseline,
+          'reports/mutation/mutation.json': report({ 'src/a.ts': half }),
+        },
+        { args: ['--partial'] },
+      );
+      expect(res.status).toBe(1);
+      expect(res.stderr).toContain('src/a.ts: 90% → 50%');
+    });
+
+    it('файл бейслайна вне отчёта НЕ краснит; здоровый файл — exit 0', () => {
+      const res = runGate(
+        'check-mutation-ratchet.mjs',
+        {
+          'scripts/mutation-baseline.json': baseline,
+          'reports/mutation/mutation.json': report({ 'src/a.ts': killedAll }),
+        },
+        { args: ['--partial'] },
+      );
+      expect(res.status).toBe(0);
+      expect(res.stderr).not.toContain('пропал');
+    });
+
+    it('контроль: тот же отчёт в полном режиме — exit 1 («файл пропал»)', () => {
+      const res = runGate('check-mutation-ratchet.mjs', {
+        'scripts/mutation-baseline.json': baseline,
+        'reports/mutation/mutation.json': report({ 'src/a.ts': killedAll }),
+      });
+      expect(res.status).toBe(1);
+      expect(res.stderr).toContain('файл пропал из прогона: src/b.ts');
+    });
+
+    it('--partial вместе с --update запрещён — бейслайн не затирается', () => {
+      const res = runGate(
+        'check-mutation-ratchet.mjs',
+        {
+          'scripts/mutation-baseline.json': baseline,
+          'reports/mutation/mutation.json': report({ 'src/a.ts': killedAll }),
+        },
+        { args: ['--partial', '--update'] },
+      );
+      expect(res.status).toBe(2);
+    });
+  });
 });

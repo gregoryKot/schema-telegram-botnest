@@ -4,23 +4,28 @@
 // 400 на негодный код, имя терапевта на живой.
 import {
   BadRequestException,
+  ConflictException,
   ForbiddenException,
   NotFoundException,
 } from '@nestjs/common';
+import { TOO_MANY_INVITES_ERROR } from './therapy-invite';
 import { TherapyInvitesController } from './therapy-invites.controller';
-import type { TherapyRelationsService } from './therapy-relations.service';
+import type { TherapyInviteService } from './therapy-invite.service';
 import type { AccountService } from '../bot/account.service';
 import type { AuthRequest } from '../api/request-utils';
 
 function make(role: 'CLIENT' | 'THERAPIST' = 'THERAPIST') {
   const relations = {
-    listInvites: jest.fn().mockResolvedValue([{ id: 1, code: 'AAAAAAAAAAAA' }]),
-    revokeInvite: jest.fn().mockResolvedValue(true),
-    previewInvite: jest.fn().mockResolvedValue({ therapistName: 'Анна' }),
+    list: jest.fn().mockResolvedValue([{ id: 1, code: 'AAAAAAAAAAAA' }]),
+    revoke: jest.fn().mockResolvedValue(true),
+    preview: jest.fn().mockResolvedValue({ therapistName: 'Анна' }),
+    createFromCard: jest
+      .fn()
+      .mockResolvedValue({ code: 'AAAAAAAAAAAA', url: 'https://t.me/x' }),
   };
   const account = { getUserRole: jest.fn().mockResolvedValue(role) };
   const controller = new TherapyInvitesController(
-    relations as unknown as TherapyRelationsService,
+    relations as unknown as TherapyInviteService,
     account as unknown as AccountService,
   );
   return { controller, relations };
@@ -34,13 +39,13 @@ describe('TherapyInvitesController.list', () => {
     await expect(controller.list(req(3n))).resolves.toEqual([
       { id: 1, code: 'AAAAAAAAAAAA' },
     ]);
-    expect(relations.listInvites).toHaveBeenCalledWith(3n);
+    expect(relations.list).toHaveBeenCalledWith(3n);
   });
 
   it('не терапевт — 403, сервис не зовётся', async () => {
     const { controller, relations } = make('CLIENT');
     await expect(controller.list(req())).rejects.toThrow(ForbiddenException);
-    expect(relations.listInvites).not.toHaveBeenCalled();
+    expect(relations.list).not.toHaveBeenCalled();
   });
 });
 
@@ -50,12 +55,12 @@ describe('TherapyInvitesController.revoke', () => {
     await expect(controller.revoke(req(3n), '12')).resolves.toEqual({
       ok: true,
     });
-    expect(relations.revokeInvite).toHaveBeenCalledWith(3n, 12);
+    expect(relations.revoke).toHaveBeenCalledWith(3n, 12);
   });
 
   it('не нашлось (чужое, принятое, уже отозванное) → 404', async () => {
     const { controller, relations } = make();
-    relations.revokeInvite.mockResolvedValue(false);
+    relations.revoke.mockResolvedValue(false);
     await expect(controller.revoke(req(), '12')).rejects.toThrow(
       NotFoundException,
     );
@@ -67,7 +72,7 @@ describe('TherapyInvitesController.revoke', () => {
       await expect(controller.revoke(req(), bad)).rejects.toThrow(
         BadRequestException,
       );
-    expect(relations.revokeInvite).not.toHaveBeenCalled();
+    expect(relations.revoke).not.toHaveBeenCalled();
   });
 });
 
@@ -77,14 +82,59 @@ describe('TherapyInvitesController.preview', () => {
     await expect(
       controller.preview(req(5n), { code: 'aaaaaaaaaaaa' }),
     ).resolves.toEqual({ therapistName: 'Анна' });
-    expect(relations.previewInvite).toHaveBeenCalledWith(5n, 'aaaaaaaaaaaa');
+    expect(relations.preview).toHaveBeenCalledWith(5n, 'aaaaaaaaaaaa');
   });
 
   it('негодный код → 400 с тем же текстом, что у подключения', async () => {
     const { controller, relations } = make('CLIENT');
-    relations.previewInvite.mockResolvedValue(null);
+    relations.preview.mockResolvedValue(null);
     await expect(controller.preview(req(), { code: 'ZZZ' })).rejects.toThrow(
       'Invalid or expired code',
+    );
+  });
+});
+
+describe('TherapyInvitesController.createFromCard', () => {
+  it('терапевт, офлайн-id → { code, url }', async () => {
+    const { controller, relations } = make();
+    await expect(controller.createFromCard(req(3n), '-5')).resolves.toEqual({
+      code: 'AAAAAAAAAAAA',
+      url: 'https://t.me/x',
+    });
+    expect(relations.createFromCard).toHaveBeenCalledWith(3n, -5n);
+  });
+
+  it('положительный id → 400, сервис не зовётся', async () => {
+    const { controller, relations } = make();
+    await expect(controller.createFromCard(req(), '5')).rejects.toThrow(
+      BadRequestException,
+    );
+    expect(relations.createFromCard).not.toHaveBeenCalled();
+  });
+
+  it('не терапевт → 403', async () => {
+    const { controller, relations } = make('CLIENT');
+    await expect(controller.createFromCard(req(), '-5')).rejects.toThrow(
+      ForbiddenException,
+    );
+    expect(relations.createFromCard).not.toHaveBeenCalled();
+  });
+
+  it('No active relation → 403', async () => {
+    const { controller, relations } = make();
+    relations.createFromCard.mockRejectedValue(new Error('No active relation'));
+    await expect(controller.createFromCard(req(), '-5')).rejects.toThrow(
+      'No active relation with this client',
+    );
+  });
+
+  it('предел живых приглашений → 409 too_many_invites', async () => {
+    const { controller, relations } = make();
+    relations.createFromCard.mockRejectedValue(
+      new Error(TOO_MANY_INVITES_ERROR),
+    );
+    await expect(controller.createFromCard(req(), '-5')).rejects.toThrow(
+      ConflictException,
     );
   });
 });

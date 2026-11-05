@@ -50,9 +50,9 @@ enum UserRole {
 enum RelationStatus {
   pending
   active
-  // Связь завершена (терапевт отказался от роли). Строка и данные терапевта
-  // остаются, но во все «активные» выборки она не попадает и сама не оживает:
-  // новая связь — только через новое приглашение.
+  // Связь завершена: терапевт отказался от роли или убрал клиента, клиент
+  // отключился сам (endReason). Строка остаётся, но во все «активные» выборки
+  // она не попадает и сама не оживает: новая связь — только через новое приглашение.
   ended
 }
 
@@ -526,17 +526,27 @@ model TherapyRelation {
   meetingDays       Json     @default("[]")  // number[] weekdays 0=Sun..6=Sat
   createdAt   DateTime @default(now())
   // Когда и почему связь стала `ended` (src/therapy/relation-end-reason.ts).
-  // Причина — машинный код, не свободный текст: 'therapist_resigned' — терапевт
-  // отказался от роли, клиент видит сообщение (GET /api/therapy/former-therapist).
+  // Причина — машинный код, не свободный текст: therapist_resigned /
+  // therapist_removed / client_left — по ней клиент видит строку о бывшем
+  // терапевте (GET /api/therapy/former-therapist).
   // endedAt NULL у связей, завершённых до появления колонки (дата неизвестна).
   endedAt     DateTime?
   endReason   String?  @db.VarChar(32)
+  // Приглашение, созданное из карточки офлайн-клиента, помнит id этой карточки
+  // (src/therapy/therapy-invite-attach.ts): при подключении данные карточки
+  // переезжают на аккаунт; удаление карточки каскадом отзывает её приглашения.
+  attachToId  Int?
 
+  attachTo      TherapyRelation?  @relation("AttachInvite", fields: [attachToId], references: [id], onDelete: Cascade)
+  attachInvites TherapyRelation[] @relation("AttachInvite")
   therapist   User  @relation("TherapistOf", fields: [therapistId], references: [id], onDelete: Cascade)
   client      User? @relation("ClientOf",    fields: [clientId],    references: [id], onDelete: SetNull)
 
   @@index([therapistId, status])
   @@index([clientId, status])
+  // Каскад при удалении офлайн-карточки и поиск её живого приглашения
+  // (therapy-invite-from-card.ts) — без индекса это скан всей таблицы.
+  @@index([attachToId])
 }
 
 model UserTask {

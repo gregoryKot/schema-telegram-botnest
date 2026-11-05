@@ -61,8 +61,6 @@ export function createWebHost(): HostBridge {
         haptics: canVibrate(),
         // Кнопку «назад» даёт сам браузер — своей рисовать не нужно.
         backButton: false,
-        // Значок ставит браузер (beforeinstallprompt / «На экран „Домой“»).
-        homeScreen: false,
         close: false,
       };
     },
@@ -122,12 +120,6 @@ export function createWebHost(): HostBridge {
     backButton: {
       setVisible: () => {},
       onClick: () => () => {},
-    },
-
-    homeScreen: {
-      add: () => {},
-      checkStatus: (cb) => cb('unsupported'),
-      onAdded: () => () => {},
     },
   };
 }

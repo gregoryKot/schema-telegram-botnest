@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   Body,
+  ConflictException,
   Controller,
   Delete,
   ForbiddenException,
@@ -13,9 +14,11 @@ import {
 } from '@nestjs/common';
 import { PersistentThrottleLimit } from '../api/persistent-throttle-limit';
 import { type AuthRequest, uid, parseId } from '../api/request-utils';
+import { parseClientId } from '../api/parse-user-id';
 import { TelegramAuthGuard } from '../api/telegram-auth.guard';
 import { AccountService } from '../bot/account.service';
-import { TherapyRelationsService } from './therapy-relations.service';
+import { TherapyInviteService } from './therapy-invite.service';
+import { TOO_MANY_INVITES_ERROR } from './therapy-invite';
 import { JoinTherapyDto } from './dto/connection.dto';
 
 // Приглашения терапевта после выдачи (инцидент 2026-10-26): список живых
@@ -26,7 +29,7 @@ import { JoinTherapyDto } from './dto/connection.dto';
 @UseGuards(TelegramAuthGuard)
 export class TherapyInvitesController {
   constructor(
-    private readonly relationsService: TherapyRelationsService,
+    private readonly invites: TherapyInviteService,
     private readonly accountService: AccountService,
   ) {}
 
@@ -38,14 +41,38 @@ export class TherapyInvitesController {
   @Get('invites')
   async list(@Req() req: AuthRequest) {
     await this.assertTherapist(req);
-    return this.relationsService.listInvites(uid(req));
+    return this.invites.list(uid(req));
+  }
+
+  // Приглашение из карточки офлайн-клиента (:clientId < 0): при подключении
+  // данные карточки переезжают на аккаунт. Повторный вызов отдаёт тот же код.
+  @Post('clients/:clientId/invite')
+  async createFromCard(
+    @Req() req: AuthRequest,
+    @Param('clientId') clientId: string,
+  ) {
+    await this.assertTherapist(req);
+    const cid = parseClientId(clientId);
+    if (cid >= 0n) throw new BadRequestException('Offline client only');
+    try {
+      return await this.invites.createFromCard(uid(req), cid);
+    } catch (e) {
+      if (e instanceof Error && e.message === 'No active relation')
+        throw new ForbiddenException('No active relation with this client');
+      if (e instanceof Error && e.message === TOO_MANY_INVITES_ERROR)
+        throw new ConflictException({
+          message: 'Too many live invites',
+          reason: 'too_many_invites',
+        });
+      throw e;
+    }
   }
 
   // Без проверки роли: отозвать своё приглашение можно и после отказа от
   // роли — where всё равно ограничен therapistId из гарда.
   @Delete('invites/:id')
   async revoke(@Req() req: AuthRequest, @Param('id') id: string) {
-    const ok = await this.relationsService.revokeInvite(
+    const ok = await this.invites.revoke(
       uid(req),
       parseId(id, { int32: true }),
     );
@@ -62,7 +89,7 @@ export class TherapyInvitesController {
     long: { limit: 100, ttl: 24 * 3_600_000 },
   })
   async preview(@Req() req: AuthRequest, @Body() body: JoinTherapyDto) {
-    const res = await this.relationsService.previewInvite(uid(req), body.code);
+    const res = await this.invites.preview(uid(req), body.code);
     if (!res) throw new BadRequestException('Invalid or expired code');
     return res;
   }

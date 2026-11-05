@@ -16,6 +16,9 @@ import {
   cleanup,
 } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
+
+// Предупреждение моста к терапевту на первом шаге шлёт своё событие через api.trackEvent — здесь считаем только события практики.
+vi.mock('../therapy/trackTherapyNudge', () => ({ trackTherapyNudge: vi.fn() }));
 import { QuickPracticeSheet } from './QuickPracticeSheet';
 
 vi.mock('../../api', () => ({

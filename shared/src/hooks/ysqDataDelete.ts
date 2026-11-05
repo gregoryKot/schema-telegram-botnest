@@ -18,6 +18,7 @@
 // видимость кнопки — одна, `useHasYsqData`.
 import { useEffect, useState } from 'react';
 import { YSQ_PROGRESS_KEY, YSQ_RESULT_KEY } from './ysqStorageKeys';
+import { clearYsqProgress, clearYsqResult } from './ysqProgressStore';
 import { useConfirmedAction } from './useConfirmedAction';
 import type { Tr } from './ysqSchemas';
 
@@ -27,8 +28,8 @@ export interface YsqDataDeleteApi {
 
 export async function deleteAllYsqData(api: YsqDataDeleteApi): Promise<void> {
   await api.deleteYsqData();
-  localStorage.removeItem(YSQ_PROGRESS_KEY);
-  localStorage.removeItem(YSQ_RESULT_KEY);
+  clearYsqProgress();
+  clearYsqResult();
 }
 
 /** Кнопка → подтверждение → удаление; при отказе подтверждение остаётся с ошибкой. */

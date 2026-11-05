@@ -18,10 +18,22 @@ describe('SiteInstallMetricsService.getMetrics', () => {
       { surface: 'site_banner', action: 'added', c: 12n },
       { surface: 'site_landing', action: 'add', c: 25n },
       { surface: 'site_landing', action: 'added', c: 9n },
+      { surface: 'site_install', action: 'shown', c: 50n },
+      { surface: 'site_install', action: 'handoff_ok', c: 30n },
+      { surface: 'site_install', action: 'handoff_failed', c: 4n },
+      { surface: 'site_install', action: 'add', c: 20n },
+      { surface: 'site_install', action: 'added', c: 11n },
     ]);
     await expect(service.getMetrics()).resolves.toEqual({
       banner: { shown30: 40, add30: 18, added30: 12 },
       landing: { add30: 25, added30: 9 },
+      install: {
+        shown30: 50,
+        handoffOk30: 30,
+        handoffFailed30: 4,
+        add30: 20,
+        added30: 11,
+      },
     });
   });
 
@@ -30,6 +42,13 @@ describe('SiteInstallMetricsService.getMetrics', () => {
     await expect(service.getMetrics()).resolves.toEqual({
       banner: { shown30: 0, add30: 0, added30: 0 },
       landing: { add30: 0, added30: 0 },
+      install: {
+        shown30: 0,
+        handoffOk30: 0,
+        handoffFailed30: 0,
+        add30: 0,
+        added30: 0,
+      },
     });
   });
 
@@ -40,6 +59,13 @@ describe('SiteInstallMetricsService.getMetrics', () => {
     await expect(service.getMetrics()).resolves.toEqual({
       banner: { shown30: 0, add30: 0, added30: 0 },
       landing: { add30: 3, added30: 0 },
+      install: {
+        shown30: 0,
+        handoffOk30: 0,
+        handoffFailed30: 0,
+        add30: 0,
+        added30: 0,
+      },
     });
   });
 
@@ -54,6 +80,13 @@ describe('SiteInstallMetricsService.getMetrics', () => {
     await expect(service.getMetrics()).resolves.toEqual({
       banner: { shown30: 0, add30: 2, added30: 0 },
       landing: { add30: 0, added30: 0 },
+      install: {
+        shown30: 0,
+        handoffOk30: 0,
+        handoffFailed30: 0,
+        add30: 0,
+        added30: 0,
+      },
     });
   });
 

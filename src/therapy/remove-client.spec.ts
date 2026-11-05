@@ -36,8 +36,17 @@ describe('removeTherapistClient: покрытие моделей с парой (
     );
   });
 
+  // Две ветки (2026-11-05): у офлайн-клиента стирается всё (`prisma.`), у
+  // клиента с аккаунтом — записи терапевта в транзакции (`tx.`), а связь не
+  // удаляется, а завершается (endClientRelations). Новая модель обязана
+  // попасть в обе ветки — иначе у одного из двух видов клиентов она всплывёт.
   it.each(models)('%s стирается в removeTherapistClient', (model) => {
     const delegate = model[0].toLowerCase() + model.slice(1);
     expect(source).toContain(`prisma.${delegate}.deleteMany`);
+    if (model === 'TherapyRelation')
+      expect(source).toContain(
+        'endClientRelations(tx, own, THERAPIST_REMOVED)',
+      );
+    else expect(source).toContain(`tx.${delegate}.deleteMany`);
   });
 });

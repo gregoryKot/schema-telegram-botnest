@@ -3,12 +3,12 @@ import { canOfferHomeScreenNow } from '../../../../shared/src/host/homeScreen';
 import { isStandalone } from '../../utils/pwaInstall';
 
 // Как человеку поставить значок на экран — зависит от того, где открыт сайт:
-//  messenger — внутри Telegram/MAX с рабочим addToHomeScreen: та же кнопка,
-//              что в карточке «Держи под рукой» на «Сегодня»;
+//  messenger — внутри Telegram/MAX на телефоне: та же кнопка, что в карточке
+//              «Держи под рукой» на «Сегодня» (открывает /install в браузере);
 //  browser   — обычная вкладка браузера: установка PWA (нативный промпт
 //              Chromium или шаги руками для Safari);
-//  null      — значок не нужен или поставить нечем (уже установлено, мессенджер
-//              без поддержки).
+//  null      — значок не нужен или поставить нечем (уже установлено, десктопный
+//              мессенджер).
 export type HomeIconMode = 'messenger' | 'browser' | null;
 
 export function pickHomeIconMode(o: {

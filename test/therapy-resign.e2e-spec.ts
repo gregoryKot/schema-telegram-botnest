@@ -174,7 +174,11 @@ describe('e2e: отказ от роли терапевта завершает с
 
   it('вместо него — сообщение: имя бывшего терапевта и дата окончания', async () => {
     const former = await formerOf(C);
-    expect(former).toEqual({ name: `u${T}`, endedAt: expect.any(String) });
+    expect(former).toEqual({
+      name: `u${T}`,
+      endedAt: expect.any(String),
+      reason: 'therapist_resigned',
+    });
     expect(Number.isNaN(Date.parse(former.endedAt))).toBe(false);
   });
 
@@ -392,7 +396,11 @@ describe('e2e: отказ от роли терапевта завершает с
       ]);
       expect(await reasons(T2)).toEqual([null]);
       // Клиент K бывшего терапевта Z теперь видит сообщение (даты нет).
-      expect(await formerOf(K)).toEqual({ name: `u${Z}`, endedAt: null });
+      expect(await formerOf(K)).toEqual({
+        name: `u${Z}`,
+        endedAt: null,
+        reason: 'therapist_resigned',
+      });
       // Повторный прогон ничего не меняет.
       await prisma.$executeRawUnsafe(sql);
       expect(await reasons(T2)).toEqual([null]);

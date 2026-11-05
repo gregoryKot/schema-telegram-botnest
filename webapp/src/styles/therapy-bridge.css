@@ -37,3 +37,12 @@
 .th-sheet-acts { display: flex; flex-direction: column; align-items: stretch; gap: 10px; }
 .th-sheet-acts .th-btn { width: 100%; }
 .th-sheet-acts .th-back { align-self: center; }
+
+/* Предупреждение на входе в упражнение: сплошной фон, акцентная полоска слева. */
+.th-caution {
+  margin: 12px 0; padding: 12px 16px; border-radius: 14px; border-left: 3px solid var(--accent);
+  background: var(--surface); font-size: 14px; line-height: 1.5; color: var(--text-sub);
+}
+.th-caution-lead { margin: 0 0 2px; font-weight: 600; color: var(--text); }
+.th-caution-body { margin: 0; }
+.th-caution .th-link { font-size: 14px; display: inline-block; margin-top: 6px; }

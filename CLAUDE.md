@@ -56,12 +56,14 @@ scripts/check-agent-docs.mjs (CI, джоба checks). Новое правило:
 - **Данные пользователя — только реальные:** нет данных → пусто, скелетон или «—».
 - **Загрузка — скелетон по форме контента** (`webapp/src/components/Skeleton.tsx`), спиннер — только у кнопок-действий.
 - **Полноэкранный лист в webapp** (`position: fixed; inset: 0`) → `const goBack = useHistorySheet(onClose)`, все «Назад/Закрыть» — через `goBack()`; без `history.pushState` (`check-history-sheet`).
+- **Под-лист стоит не ниже родителя:** листы одного уровня стыкуются порядком в DOM (поздний сиблинг выше при равном z-index), число — только чтобы встать выше чужого позднего сиблинга; лишний `zIndex` у родителя прячет под-лист (`check-overlay-stack`).
+- **Кэш в localStorage — один ключ, один писатель:** `setItem`/`removeItem` с ключом зовёт только модуль-владелец из `scripts/local-cache-baseline.json` (mirror|local), остальные — его функцию; кэш обновляется там же, где меняется источник (`check-local-cache-writers`).
 - **Сборка:** сайт собирает Docker (dist в git нет). Деплой = push в `main`.
 
 ### Фронтенды: очевидность и визуал → [.claude/rules/frontend-visual.md](.claude/rules/frontend-visual.md)
 - **Онбординг:** новая фича до первого действия отвечает «откуда это и зачем» прямо на пути пользователя; одно главное действие на экран; тап-цели ≥44×44 (`hitboxStyle`, `check-tap-targets`); раскрытие не только по `:hover` (`check-hover-only-reveal`).
 - **Фон под панелью — сплошной цвет, свечение — градиентом:** размытие (`backdrop-filter`, `filter: blur`) тормозит PWA и режется `check-render-poison`.
-- **Цвет — из токенов**, не литералом (`check-color-drift`); прозрачный токен — `color-mix(in srgb, var(--x) N%, transparent)`; `'var(--x)18'` невалидно (`check-var-alpha-suffix`).
+- **Цвет — из токенов**, не литералом (`check-color-drift`); прозрачный токен — `color-mix(in srgb, var(--x) N%, transparent)`; `'var(--x)18'` невалидно (`check-var-alpha-suffix`); `--c-*` — оттенок для заливок, текст — `--accent-*`/`*-strong` (`accentTextContrast.test.ts`).
 
 ### Тексты для пользователя → [.claude/rules/texts.md](.claude/rules/texts.md)
 - **ты/вы:** каждая строка с обращением — в обеих формах. Бэк: `t(form, 'ты', 'вы')` (`src/notification/address-form.ts`); фронт: `const tr = useTr(); tr('ты', 'вы')`; контент-файлы — билдер `buildX(tr)` + хук. «Вы»-строка целиком во множественном числе (`check-address-form`, `check-second-person`, `check-address-agreement`).
@@ -91,7 +93,7 @@ scripts/check-agent-docs.mjs (CI, джоба checks). Новое правило:
 - **№21** Новая внешняя интеграция = проба в `src/infra/self-check/` (живой вызов, таймаут, не бросает).
 - **№22** Новая env-переменная = запись в `src/infra/env-registry*.ts` + строка в `docs/ENV.md` (`check-env-registry`).
 - **№23** Парсер ответа внешней площадки — с записанной фикстурой в `test/fixtures/recorded/` (`check-recorded-fixtures`).
-- **№24** У каждой джобы есть `timeout-minutes`; открытая issue `ci-alarm` — работа на сейчас.
+- **№24** У каждой джобы есть `timeout-minutes`, образ раннера прибит версией, не `*-latest` (`runner-pin.spec.ts`); открытая issue `ci-alarm` — работа на сейчас.
 
 ### Аналитика → [.claude/rules/analytics.md](.claude/rules/analytics.md)
 - **№8** User-facing фича = событие: имя в `ANALYTICS_EVENTS` (`src/analytics/analytics.constants.ts`) + ветка в `sanitizeMeta` (только известные поля) + константа на фронте (`shared/src/share/analytics.ts`) + блок в `/stats` (чистый форматтер с тестом, включая пустую БД; язык без терминов).

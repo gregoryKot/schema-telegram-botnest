@@ -103,7 +103,7 @@ export function BeliefCheckEx({
   const hint = SIDE_HINTS[step];
   return (
     <ExScreen
-      onBack={goBack}
+      onBack={goBack} caution={step === 0}
       eyebrow={exerciseCard('belief').eyebrow}
       title={
         <>

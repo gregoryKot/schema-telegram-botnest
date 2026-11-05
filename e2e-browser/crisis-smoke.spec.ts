@@ -13,13 +13,12 @@
 // многошаговых упражнений (LetterEx/SafePlaceEx полнее, но требуют пройти
 // несколько экранов ради того же самого detectCrisisAny + CrisisCard).
 //
-// Стаб — общий с tracker-smoke.spec.ts, см. support/stubApi.ts.
-import { test, expect } from '@playwright/test';
+// Стаб API и проверка на падение — общий `test` (support/test.ts).
+import { test, expect } from './support/test';
 import {
   CRISIS_HOTLINE_DISPLAY,
   CRISIS_HOTLINE_TEL,
 } from '../shared/src/utils/crisisMarkers';
-import { stubApi, throwOnPageError } from './support/stubApi';
 
 // Реальная фраза из корпуса паттернов (CRISIS_PATTERNS: /хочу\s+умереть/) —
 // не выдуманная строка, а то, что детекция действительно обязана ловить.
@@ -40,11 +39,6 @@ async function openPracticesCatalog(page: import('@playwright/test').Page) {
 }
 
 test.describe('браузерный smoke: кризисная детекция в реальном бандле', () => {
-  test.beforeEach(async ({ page }) => {
-    await stubApi(page);
-    throwOnPageError(page);
-  });
-
   test('кризисная фраза показывает карточку с телефоном доверия ДО сохранения', async ({
     page,
   }) => {

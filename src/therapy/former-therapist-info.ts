@@ -1,24 +1,33 @@
 import { PrismaService } from '../prisma/prisma.service';
-import { THERAPIST_RESIGNED } from './relation-end-reason';
+import {
+  CLIENT_LEFT,
+  RelationEndReason,
+  THERAPIST_REMOVED,
+  THERAPIST_RESIGNED,
+} from './relation-end-reason';
 import { therapistName } from './therapist-name';
 
-// Бывший терапевт клиента (GET /api/therapy/former-therapist, решение владельца
-// 2026-10-22): после отказа терапевта от роли «Мой терапевт» пропадает, и клиент
-// видит вместо него сообщение «… больше не работает в приложении как терапевт».
-// GET /api/therapy/relation не трогаем: его null по всему фронту значит
-// «терапевта нет».
+// Бывший терапевт клиента (GET /api/therapy/former-therapist): вместо пустого
+// «Мой терапевт» клиент видит строку о том, чем закончилась связь. Причин три
+// (relation-end-reason.ts), у каждой свой текст на фронте
+// (shared/src/therapy/formerTherapist.ts): терапевт отказался от роли
+// (решение владельца 2026-10-22), терапевт убрал клиента, клиент отключился
+// сам (2026-11-05). GET /api/therapy/relation не трогаем: его null по всему
+// фронту значит «терапевта нет».
 //
-// null, когда сообщение не нужно: у клиента есть живая связь (active или
-// pending — подключён новый терапевт) либо нет связи, завершённой отказом
-// терапевта от роли. Иначе — последняя такая связь. Терапевт, снова получивший
-// роль, бывшим не считается (фильтр в запросе, та же сверка, что в бэкфиле
-// миграции 20261022150000): «больше не работает» было бы неправдой, а
-// клиент не переподключился — лучше прежнее молчание. Строк у клиента — по
-// одной на бывшего терапевта, поэтому порядок считается здесь, а не в SQL:
-// NULLS LAST по endedAt (у старых связей даты нет) одинаков на Postgres и фейке.
+// null, когда строка не нужна: у клиента есть живая связь (active или
+// pending — подключён новый терапевт) либо завершённых связей с известной
+// причиной нет. Иначе — последняя такая связь. Отказ от роли считается, только
+// если терапевт сейчас не THERAPIST (та же сверка, что в бэкфиле миграции
+// 20261022150000): «больше не работает» про вернувшегося было бы неправдой.
+// `ended` без причины — дубль пары из миграции 20261016100000, не история.
+// Строк у клиента — по одной на бывшую связь, поэтому фильтр и порядок
+// считаются здесь, а не в SQL: NULLS LAST по endedAt (у старых связей даты нет)
+// одинаков на Postgres и фейке.
 export interface FormerTherapistInfo {
   name: string;
   endedAt: string | null;
+  reason: RelationEndReason;
 }
 
 export async function getFormerTherapistInfo(
@@ -30,20 +39,33 @@ export async function getFormerTherapistInfo(
   });
   if (live > 0) return null;
   const rows = await prisma.therapyRelation.findMany({
-    where: {
-      clientId,
-      status: 'ended',
-      endReason: THERAPIST_RESIGNED,
-      therapist: { role: { not: 'THERAPIST' } },
-    },
-    include: { therapist: { select: { firstName: true } } },
+    where: { clientId, status: 'ended', endReason: { in: REASONS } },
+    include: { therapist: { select: { firstName: true, role: true } } },
   });
-  const latest = [...rows].sort(byLatestEnd)[0];
+  const latest = rows.filter(isShown).sort(byLatestEnd)[0];
   if (!latest) return null;
   return {
     name: therapistName(latest.therapist) ?? '',
     endedAt: latest.endedAt ? latest.endedAt.toISOString() : null,
+    reason: latest.endReason as RelationEndReason,
   };
+}
+
+const REASONS: RelationEndReason[] = [
+  THERAPIST_RESIGNED,
+  THERAPIST_REMOVED,
+  CLIENT_LEFT,
+];
+
+// Роль сверяется после выборки: фильтр по связанной записи внутри OR фейковая
+// Prisma e2e не исполняет (test/e2e-support/fake-user-join.ts), а строк у
+// одного клиента единицы.
+function isShown(r: {
+  endReason: string | null;
+  therapist: { role: string } | null;
+}): boolean {
+  if (r.endReason !== THERAPIST_RESIGNED) return true;
+  return r.therapist !== null && r.therapist.role !== 'THERAPIST';
 }
 
 type Ended = { endedAt?: Date | null; createdAt?: Date | null };

@@ -100,8 +100,13 @@ export function makeDeps() {
       const clauses = (where.OR as Where[] | undefined) ?? [where];
       for (let i = rows.length - 1; i >= 0; i--) {
         const r = rows[i];
+        // Как у Prisma: все поля условия — через AND (handoff гасит только
+        // прежние handoff того же аккаунта, а не его живую привязку).
         const byUser = clauses.some(
-          (c) => 'userId' in c && c.userId === r.userId,
+          (c) =>
+            'userId' in c &&
+            c.userId === r.userId &&
+            (!('intent' in c) || c.intent === r.intent),
         );
         const stale =
           clauses.some((c) => 'expiresAt' in c) && r.expiresAt < now;

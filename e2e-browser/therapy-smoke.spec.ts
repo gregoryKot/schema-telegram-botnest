@@ -1,12 +1,12 @@
-// Браузерный смок связи клиент ↔ терапевт (nightly, /api/** — стаб).
+// Браузерный смок связи клиент ↔ терапевт (PR-CI и nightly, /api/** — стаб).
 //
 // Регрессия, найденная 2026-11-05 на живом стенде: после «Отключиться от
 // терапевта» в «Ещё» оставалась строка «Написать терапевту» (устаревший кэш в
 // localStorage), а после подключения по коду она не появлялась без перезагрузки.
 // Юниты видят кэш и экран по отдельности — стык «сохранил → показал» проверяет
 // только целое приложение.
-import { test, expect, type Page } from '@playwright/test';
-import { stubApi, throwOnPageError } from './support/stubApi';
+import type { Page } from '@playwright/test';
+import { test, expect } from './support/test';
 
 const WRITE = 'Написать терапевту';
 const TALK = 'Поговорить с кем-то';
@@ -38,10 +38,8 @@ test.describe.configure({ mode: 'serial' });
 
 test.describe('браузерный smoke: связь с терапевтом', () => {
   test.beforeEach(async ({ page }) => {
-    await stubApi(page);
     // Автолист «Зачем это всё» (новичку без истории) перехватывает клики — он не предмет смока.
     await page.addInitScript(() => localStorage.setItem('why_seen_v1', '1'));
-    throwOnPageError(page);
   });
 
   test('подключение по коду и отключение сразу видны в «Ещё», без перезагрузки', async ({

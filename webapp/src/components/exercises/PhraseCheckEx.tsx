@@ -145,7 +145,7 @@ export function PhraseCheckEx({
   return (
     <>
     <ExScreen
-      onBack={goBack}
+      onBack={goBack} caution
       eyebrow={exerciseCard('phrase').eyebrow}
       title={<>Критик<br /><span className="it">или забота?</span></>}
       lede={tr(

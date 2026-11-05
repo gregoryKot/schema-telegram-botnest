@@ -44,10 +44,15 @@ const mkModeNote = (
 
 function makeDb(rels: Rel[]) {
   const base = makeRelationPrismaMock(rels);
+  // `in` у id и status — завершение связи (end-client-relations.ts).
+  const isIn = (v: unknown, c: any) =>
+    c?.in ? (c.in as unknown[]).includes(v) : v === c;
   const relWhere = (r: Rel, w: any) =>
-    (w.id === undefined || r.id === w.id) &&
+    (w.id === undefined || isIn(r.id, w.id)) &&
     (w.therapistId === undefined || r.therapistId === w.therapistId) &&
-    (w.clientId === undefined || r.clientId === w.clientId);
+    (w.clientId === undefined || r.clientId === w.clientId) &&
+    (w.status === undefined || isIn(r.status, w.status)) &&
+    (w.attachToId === undefined || (r as any).attachToId === w.attachToId);
   const users: any[] = [];
   const schemaDiary: any[] = [];
   const modeDiary: any[] = [];
@@ -56,7 +61,9 @@ function makeDb(rels: Rel[]) {
   const modeNotes: any[] = [];
   const tasks: any[] = [];
   const taskWhere = (t: any, w: any) =>
-    Object.entries(w).every(([k, v]) => t[k] === v);
+    Object.entries(w).every(([k, v]: [string, any]) =>
+      v?.in ? v.in.includes(t[k]) : t[k] === v,
+    );
   const modeMaps: any[] = [];
   const desc = (rows: any[], userId: bigint, key: string, take: number) =>
     rows
@@ -156,7 +163,10 @@ function makeDb(rels: Rel[]) {
   };
 }
 
-function makeService(rels: Rel[]) {
+function makeService(given: Rel[]) {
+  // Копии строк: завершение связи (removeClient) меняет строку на месте, а
+  // relA/relVirtual — общие для всех спеков файла.
+  const rels = given.map((r) => ({ ...r }));
   const t = makeDb(rels);
   const relationsService = new TherapyRelationsService(t.db, {} as any);
   const analyticsService = {
@@ -368,13 +378,25 @@ describe('TherapyClientDataService — ownership на write-путях', () => {
   // Находка: removeClient не вызывает assertHasClient явно (в отличие от
   // остальных методов) — но WHERE в deleteMany ограничен therapistId, так что
   // чужой терапевт физически не может удалить чужую связь. Фиксируем поведение.
-  it('removeClient: чужой терапевт не выбрасывает и не удаляет связь, владелец — удаляет', async () => {
-    const { svc, rels } = makeService([relA]);
+  // С 2026-11-05 связь клиента с аккаунтом не удаляется, а завершается
+  // (ended + therapist_removed); открытые задания — личные цели клиента.
+  it('removeClient: чужой терапевт не выбрасывает и не трогает связь, владелец — завершает', async () => {
+    const { svc, rels, tasks } = makeService([relA]);
+    tasks.push(
+      { id: 1, userId: CLIENT_A, assignedBy: T1, done: null },
+      { id: 2, userId: CLIENT_A, assignedBy: T1, done: true },
+    );
     await expect(svc.removeClient(T2, CID_A)).resolves.toBeUndefined();
-    expect(rels).toHaveLength(1); // связь T1↔A цела
+    expect(rels[0].status).toBe('active'); // связь T1↔A цела
+    expect(tasks[0].assignedBy).toBe(T1);
 
     await svc.removeClient(T1, CID_A);
-    expect(rels).toHaveLength(0);
+    expect(rels).toHaveLength(1);
+    expect(rels[0]).toMatchObject({
+      status: 'ended',
+      endReason: 'therapist_removed',
+    });
+    expect(tasks.map((t) => t.assignedBy)).toEqual([null, T1]);
   });
 
   it('removeClient с виртуальным клиентом (clientId<0) удаляет связь по -clientId=id', async () => {

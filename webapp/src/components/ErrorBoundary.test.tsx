@@ -6,6 +6,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { ErrorBoundary } from './ErrorBoundary';
+import { allowCrashScreen } from '../test-support/crashScreenGuard';
 
 const reportClientError = vi.fn();
 vi.mock('../api', () => ({
@@ -21,6 +22,7 @@ let reloadSpy: ReturnType<typeof vi.fn>;
 
 beforeEach(() => {
   vi.clearAllMocks();
+  allowCrashScreen(); // экран падения здесь рисуется намеренно
   sessionStorage.clear();
   // React логирует краш в консоль ошибками — глушим шум теста, но не мешаем.
   consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
