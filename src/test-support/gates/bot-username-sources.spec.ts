@@ -1,8 +1,8 @@
 // Единое имя бота во всех источниках репозитория (правило №4, аудит 2026-10,
 // infra#18). Имя бота живёт в нескольких местах, которые никто не сверял:
 // Dockerfile (сборка webapp), статика вне исходников
-// (llms.txt) и env сборок в CI. Разъезд = ссылки на двух разных
-// ботов в одном продукте. Бэкендовое BOT_USERNAME репозиторию недоступно — его
+// (llms.txt), env сборок в CI и pre-push хук (сборка webapp перед пушем).
+// Разъезд = ссылки на двух разных ботов в одном продукте. Бэкендовое BOT_USERNAME репозиторию недоступно — его
 // сверяет с токеном проба самопроверки `telegram` (probe-telegram.ts).
 import { readFileSync } from 'fs';
 import { join } from 'path';
@@ -16,6 +16,7 @@ const EXTRACTORS: Record<string, RegExp> = {
   'webapp/public/llms.txt': /Telegram-бот: @([A-Za-z0-9_]+)/g,
   '.github/workflows/ci.yml': /VITE_BOT_USERNAME: (\S+)/g,
   '.github/workflows/nightly.yml': /VITE_BOT_USERNAME: (\S+)/g,
+  'scripts/git-hooks/pre-push': /^export VITE_BOT_USERNAME=(\S+)/gm,
 };
 
 function collectBotNames(

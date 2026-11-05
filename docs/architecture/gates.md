@@ -67,6 +67,7 @@
 | check-weak-assert-ratchet.mjs | тесты только с голым `toHaveBeenCalled()` без аргументов | `scripts/weak-assert-baseline.json` | да | backend |
 | check-webvisor-fields.mjs | текстовое поле визитки без метки `ym-disable-keys` | — | нет | webapp |
 | setup-merge-drivers.mjs --check | merge-драйвер или baseline без строки/скрипта в .gitattributes | — | нет (`--check` ничего не ставит) | checks |
+| git-hooks/pre-push (локально, не CI) | красная сборка `webapp` перед `git push` (`tsc -b && vite build` с `VITE_BOT_USERNAME`); ставится в `core.hooksPath` скриптом `setup-git-hooks.mjs` из npm `prepare`, работает из git worktree; `--no-verify` не используется | — | нет | — (тест: `src/test-support/gates/git-hooks.spec.ts`, джоба backend) |
 
 ### Команды
 

@@ -333,15 +333,8 @@ Ubuntu 26) у трёх PR подряд падали `backend` → `check-coverag
   мини-апп удалён (#917), а скрипт `src/app.module.ts` не читает (`grep app.module
   scripts/check-deploy-paths.mjs` пуст).
 
-**Вторая ОС в nightly — находки при добавлении `macos-build`** (2026-11-05, #938):
-- **Pre-push хук владельца красный на любой машине, а не «из-за macOS».** Хук лежит в
-  `.git/hooks/pre-push` главного дерева (в репозитории его нет) и гоняет `npm run build` в
-  `webapp` пушимого дерева без `VITE_BOT_USERNAME`; с #690 (2026-10-15, `shared/src/build/
-  requireBotUsername.ts`) production-сборка без переменной падает «VITE_BOT_USERNAME не задан» —
-  доказано пушем #938: `tsc -b` прошёл, упал только `vite build`, с
-  `VITE_BOT_USERNAME=SchemeHappensBot git push` хук зелёный. Именно это агенты называли «хук краснеет
-  из-за окружения» и обходили `--no-verify`, пряча настоящие красные сборки (так в #933 инцидент с
-  регистром жил только у владельца). Чинить: хук в репозиторий (`scripts/git-hooks/pre-push` +
-  `core.hooksPath` из `prepare`, по образцу `setup-merge-drivers.mjs`) с той же переменной, что в
-  `ci.yml`, и строкой в правиле процесса: пушить с `VITE_BOT_USERNAME=SchemeHappensBot`, не с
-  `--no-verify`.
+**Pre-push хук собирает только `webapp`** (2026-11-05, осознанно): `scripts/git-hooks/pre-push`
+гоняет `tsc -b && vite build` сайта — то, что ломалось только на машине владельца (регистр имён,
+#933); `tsc` бэкенда, vitest `webapp`/`shared` и остальные сьюты остаются работой CI — в хуке они
+удвоили бы время каждого пуша, а класс «зелено в CI, красно у владельца» для них не наблюдался.
+Появится — расширять хук, не возвращать `--no-verify`.

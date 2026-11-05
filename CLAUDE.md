@@ -36,7 +36,7 @@ scripts/check-agent-docs.mjs (CI, джоба checks). Новое правило:
 ## Правила: одна строка; полный текст — в файле группы
 
 ### Процесс → [.claude/rules/process.md](.claude/rules/process.md)
-- **№1** Ничего не мержится с красным CI: tsc, jest, eslint, сборка и vitest сайта и `shared/`, `migrate deploy` на живом Postgres гоняет CI. Локально перед пушем — `node scripts/agent/precheck.mjs`, спеки изменённых модулей и `npx tsc --noEmit -p tsconfig.build.json` (голый `tsc` из корня падает на `e2e-browser/` — норма); полные сьюты — работа CI.
+- **№1** Ничего не мержится с красным CI: tsc, jest, eslint, сборка и vitest сайта и `shared/`, `migrate deploy` на живом Postgres гоняет CI. Локально перед пушем — `node scripts/agent/precheck.mjs`, спеки изменённых модулей и `npx tsc --noEmit -p tsconfig.build.json` (голый `tsc` из корня падает на `e2e-browser/` — норма); полные сьюты — работа CI. Сам `git push` идёт через pre-push хук репозитория `scripts/git-hooks/pre-push` (ставится из npm `prepare`, собирает `webapp` с именем бота) — `--no-verify` не используется.
 - **№1а** Мержит агент: открыл PR — дождись CI, красный чини, зелёный — сними драфт и смержи (squash) без вопроса. Мерж в `main` = деплой. Исключение — метка `do-not-merge` или «не мержить» в описании.
 - **№20** Починка инцидента приезжает со строкой в `docs/INCIDENTS.md`; один инцидент — один PR; вопрос ревью — «как система узнала бы сама?».
 - **№26** Находка вне задачи → строка в `docs/open/<область>.md` в том же PR (что сломано, где — путь, чем доказано), не в тело PR. Осознанно не сделанное — так же, с причиной. Закрыл — убери строку.

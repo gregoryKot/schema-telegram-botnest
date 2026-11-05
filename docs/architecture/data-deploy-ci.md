@@ -32,7 +32,7 @@
 **Dockerfile**, два этапа на `node:22-slim`:
 - Стадия `build`:
   - ставит openssl (`deploy/install-openssl.sh`, три попытки с запасным зеркалом);
-  - `COPY package*.json` и два скрипта `setup-merge-drivers.mjs` + `merge-drivers-check.mjs`, затем `npm ci` (нужны хуку `prepare`);
+  - `COPY package*.json` и три скрипта `setup-merge-drivers.mjs` + `merge-drivers-check.mjs` + `setup-git-hooks.mjs`, затем `npm ci` (нужны npm-хуку `prepare`; без git скрипты выходят нулём);
   - `npm ci --prefix webapp` и `npm ci --prefix game`;
   - `COPY . .`, затем `BUILD_INFO` (`date -u`), `npx prisma generate`, `npm run build` (nest, `dist/`);
   - `VITE_BOT_USERNAME=SchemeHappensBot` и `npm run build --prefix webapp` (webapp/dist);

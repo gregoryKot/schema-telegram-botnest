@@ -28,8 +28,10 @@ ENV npm_config_audit=false \
 # образа скрипт сам выходит нулём («не git-репозиторий, пропускаю»).
 # merge-drivers-check.mjs — его статический импорт (логика `--check`): без
 # него скрипт падает с ERR_MODULE_NOT_FOUND ещё до разбора аргументов.
+# setup-git-hooks.mjs — второй скрипт того же `prepare` (pre-push хук), та же
+# причина; в образе тоже выходит нулём без git.
 COPY package*.json ./
-COPY scripts/setup-merge-drivers.mjs scripts/merge-drivers-check.mjs scripts/
+COPY scripts/setup-merge-drivers.mjs scripts/merge-drivers-check.mjs scripts/setup-git-hooks.mjs scripts/
 RUN npm ci
 
 # Webapp dependencies
