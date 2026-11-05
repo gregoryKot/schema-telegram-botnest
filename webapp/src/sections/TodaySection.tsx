@@ -77,6 +77,7 @@ export function TodaySection({
 
       <HomeTiles
         ratings={ratings}
+        tracker={tracker}
         trackerMeta={trackerTileMeta(tracker)}
         caseMeta={caseTileMeta(casesToday)}
         diaryMeta={diaryTileMeta(diariesLoaded, diaryEntriesToday(feed), lastAt)}

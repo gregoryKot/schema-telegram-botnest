@@ -10,6 +10,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { NoteCard } from './NoteCard';
 import type { NoteItem } from './notesModel';
+import { PHONE_MEDIA } from '../../utils/phoneLayout';
 
 afterEach(cleanup);
 
@@ -31,7 +32,7 @@ describe('NoteCard', () => {
 
   it('therapist-tabs.css: заголовок переносится по слову, на телефоне — своей строкой, дата у правого края', () => {
     const css = readFileSync(join(__dirname, '../../styles/therapist-tabs.css'), 'utf8');
-    const phoneAt = css.indexOf('@media (max-width: 767px)');
+    const phoneAt = css.indexOf(`@media ${PHONE_MEDIA}`);
     expect(phoneAt).toBeGreaterThan(0);
     const base = css.slice(0, phoneAt);
     const phone = css.slice(phoneAt);

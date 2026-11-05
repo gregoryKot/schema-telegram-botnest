@@ -100,7 +100,7 @@ export function ConceptCoping({ value, onChange, placeholder }: FieldProps) {
   );
 }
 
-// Цепочка — из режимов клиента (modeChain.ts); не из чего строить — её нет, остаётся поле.
+// Цепочка — из режимов клиента (modeChain.ts), иначе одно поле; rows 5 — подсказка в 4–5 строк на телефоне (16px).
 export function ConceptModes({ value, onChange, placeholder }: FieldProps) {
   const chain = useConceptModeChain();
   return (
@@ -118,7 +118,7 @@ export function ConceptModes({ value, onChange, placeholder }: FieldProps) {
           ))}
         </div>
       )}
-      <ConceptArea value={value} onChange={onChange} placeholder={placeholder} rows={3} />
+      <ConceptArea value={value} onChange={onChange} placeholder={placeholder} rows={5} />
     </div>
   );
 }

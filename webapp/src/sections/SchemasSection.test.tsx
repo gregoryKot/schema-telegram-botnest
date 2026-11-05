@@ -74,7 +74,7 @@ describe('SchemasSection — пустой аккаунт (без хардкод-
     // раньше, чем стейт доедет до DOM, и под нагрузкой CI между ними ещё виден
     // скелетон (красный webapp на #269, 2026-08).
     await screen.findByText('Пройди тест на схемы или добавь вручную');
-    expect(screen.getByText('Добавь режимы которые узнаёшь у себя')).toBeTruthy();
+    expect(screen.getByText('Добавь режимы, которые узнаёшь у себя')).toBeTruthy();
     expect(screen.getByText('Начать →')).toBeTruthy();
   });
 
@@ -107,17 +107,17 @@ describe('SchemasSection — ты/вы вилка', () => {
   it('на «ты»: подсказки на «ты», без "вы"-форм', async () => {
     renderSection({}, 'ty');
     await screen.findByText('Пройди тест на схемы или добавь вручную');
-    expect(screen.getByText('Добавь режимы которые узнаёшь у себя')).toBeTruthy();
+    expect(screen.getByText('Добавь режимы, которые узнаёшь у себя')).toBeTruthy();
     expect(screen.getByText(/Определи схемы автоматически/)).toBeTruthy();
   });
 
   it('на «вы»: те же подсказки во множественном числе, ни одной "ты"-формы', async () => {
     renderSection({}, 'vy');
     await screen.findByText('Пройдите тест на схемы или добавьте вручную');
-    expect(screen.getByText('Добавьте режимы которые узнаёте у себя')).toBeTruthy();
+    expect(screen.getByText('Добавьте режимы, которые узнаёте у себя')).toBeTruthy();
     expect(screen.getByText(/Определите схемы автоматически/)).toBeTruthy();
     expect(screen.queryByText('Пройди тест на схемы или добавь вручную')).toBeNull();
-    expect(screen.queryByText('Добавь режимы которые узнаёшь у себя')).toBeNull();
+    expect(screen.queryByText('Добавь режимы, которые узнаёшь у себя')).toBeNull();
   });
 
   it('заголовок ЮSQ-раздела "Твои/Ваши выраженные схемы" разводится по форме', async () => {

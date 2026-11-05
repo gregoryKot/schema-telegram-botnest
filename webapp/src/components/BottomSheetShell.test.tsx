@@ -17,6 +17,16 @@ describe('BottomSheetShell', () => {
     expect(screen.getByText('Содержимое')).toBeTruthy();
   });
 
+  // C-М3: ручка обещала свайп вниз, которого нет — её не рисуем.
+  it('ручки-обещания свайпа нет', () => {
+    const { container } = render(
+      <BottomSheetShell goBack={vi.fn()} zIndex={300}>
+        <div>Содержимое</div>
+      </BottomSheetShell>,
+    );
+    expect(container.querySelector('.sheet-modal-handle')).toBeNull();
+  });
+
   it('клик по бэкдропу зовёт goBack', () => {
     const goBack = vi.fn();
     render(

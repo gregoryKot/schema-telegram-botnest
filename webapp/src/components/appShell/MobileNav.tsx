@@ -1,6 +1,6 @@
-import { NavLink } from 'react-router-dom';
+import { Link, NavLink, useLocation } from 'react-router-dom';
 import { MobileNavIcon, type MobileNavIconId } from './MobileNavIcon';
-import type { Section } from './navigation';
+import { navItemOf, type Section } from './navigation';
 import { useTextEntryFocus } from '../../hooks/useTextEntryFocus';
 
 // Нижняя навигация мобильной вёрстки AppShell — вынесена из AppShell.tsx
@@ -37,6 +37,9 @@ export function MobileNav({ items, therapist = false, onSearch, onProfile }: {
 }) {
   // Над экранной клавиатурой панель не нужна и закрывает поле ввода.
   const typing = useTextEntryFocus();
+  const { pathname } = useLocation();
+  // «Ещё» горит и на вложенных разделах (/practice, /schemas, /profile): NavLink их не матчит.
+  const inMoreSub = navItemOf(pathname) === 'more' && !pathname.startsWith('/more');
   if (typing) return null;
   if (therapist) {
     const [today, clients, profile] = THERAPIST_ITEMS;
@@ -47,5 +50,13 @@ export function MobileNav({ items, therapist = false, onSearch, onProfile }: {
       </nav>
     );
   }
-  return <nav className="mobile-nav">{items.map(i => link({ to: '/' + i.id, icon: i.id, label: i.label }))}</nav>;
+  return (
+    <nav className="mobile-nav">
+      {items.map(i => (i.id === 'more' && inMoreSub
+        ? <Link key={i.id} to="/more" className="mobile-nav-item active" aria-current="page">
+          <MobileNavIcon id={i.id} />{i.label}
+        </Link>
+        : link({ to: '/' + i.id, icon: i.id, label: i.label })))}
+    </nav>
+  );
 }

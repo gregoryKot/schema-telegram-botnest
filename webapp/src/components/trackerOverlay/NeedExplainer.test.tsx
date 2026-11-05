@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, afterEach } from 'vitest';
-import { render, screen, cleanup } from '@testing-library/react';
+import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import { NeedExplainer } from './NeedExplainer';
 import type { NeedExtra } from '../../../../shared/src/needs/types';
 
@@ -13,23 +13,25 @@ afterEach(cleanup);
 
 describe('NeedExplainer', () => {
   it('описание потребности всегда на экране, примеров не больше двух', () => {
-    render(<NeedExplainer data={data} expanded />);
+    render(<NeedExplainer data={data} />);
     expect(screen.getByText('Рядом есть надёжные люди.')).toBeTruthy();
     expect(screen.getByText('Кто-то обнял')).toBeTruthy();
     expect(screen.getByText('Был разговор, где услышали')).toBeTruthy();
     expect(screen.queryByText('Третий пример, который не показываем')).toBeNull();
   });
 
-  it('пока потребность не оценивали — примеры раскрыты, после — свёрнуты в «Например»', () => {
-    const { container, rerender } = render(<NeedExplainer data={data} expanded />);
-    expect(container.querySelector('details')?.hasAttribute('open')).toBe(true);
-    rerender(<NeedExplainer data={data} expanded={false} />);
-    expect(container.querySelector('details')?.hasAttribute('open')).toBe(false);
-    expect(screen.getByText('Например')).toBeTruthy();
+  // QA мобильной версии 2026-11, З5: раскрытые сразу примеры на 390×664 и 360×640
+  // сталкивали все пять ответов за край экрана — даже у новичка они свёрнуты.
+  it('примеры свёрнуты в «Например» и раскрываются по тапу', () => {
+    const { container } = render(<NeedExplainer data={data} />);
+    const details = container.querySelector('details');
+    expect(details?.open).toBe(false);
+    fireEvent.click(screen.getByText('Например'));
+    expect(details?.open).toBe(true);
   });
 
   it('без контента ничего не рисует', () => {
-    const { container } = render(<NeedExplainer data={undefined} expanded />);
+    const { container } = render(<NeedExplainer data={undefined} />);
     expect(container.innerHTML).toBe('');
   });
 });

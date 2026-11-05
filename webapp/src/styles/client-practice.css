@@ -87,11 +87,21 @@
   padding: var(--space-12) var(--space-40) var(--space-12) var(--space-16); gap: var(--space-2);
 }
 
-/* Компьютер: «Дышите со мной» — открытый блок между двумя линиями, без подложки (вид до волн);
-   на телефоне — карточка ds-card как есть. Правило на прямом ребёнке обёртки. */
-@media (min-width: 768px) {
-  .cp-open-card > .ds-card {
-    background: none; border: 0; border-radius: 0; padding: 28px 0;
-    border-top: 1px solid var(--paper-sunk); border-bottom: 1px solid var(--paper-sunk);
-  }
+/* Компьютер: прежнее правило для .ds-card внутри обёртки (закреплено desktopLayout.test.ts; дыхание теперь pp-block, правило не срабатывает). */
+@media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) {
+  .cp-open-card > .ds-card { background: none; border: 0; border-radius: 0; padding: 28px 0; }
+}
+
+/* Круг с отсчётом во время дыхания — на месте картинки героя «Дыши со мной». */
+.cp-ring {
+  width: clamp(64px, 18vw, 88px); height: clamp(64px, 18vw, 88px); flex-shrink: 0; border-radius: 50%;
+  border: 1.5px solid var(--accent); background: color-mix(in srgb, var(--accent) 6%, transparent);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--serif); font-size: clamp(24px, 6vw, 32px); color: var(--text); font-variant-numeric: tabular-nums;
+}
+
+
+/* Компьютер: «Начать дыхание» — по тексту, а не во всю ширину героя. */
+@media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) {
+  .cp-open-card .pp-block > .ds-btn { align-self: flex-start; padding: 0 var(--space-24); }
 }

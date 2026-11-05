@@ -153,7 +153,7 @@ describe('TodaySection — пустой аккаунт: ничего выдум�
     expect(screen.getByRole('button', { name: /Что случилось/ })).toBeTruthy();
     expect(screen.getByRole('button', { name: /Дневник/ })).toBeTruthy();
     expect(screen.getByText('Ещё не заполнен · ≈1 мин')).toBeTruthy();
-    expect(screen.getByText('≈3 мин · когда что-то зацепило')).toBeTruthy();
+    expect(screen.getByText('≈3 мин')).toBeTruthy();
     await screen.findByText('Пока записей нет');
     expect(screen.getByText('Пока ничего. Любая кнопка выше подойдёт для начала.')).toBeTruthy();
     expect(screen.queryByText('От терапевта')).toBeNull();
@@ -192,11 +192,11 @@ describe('TodaySection — плитка трекера по реальным о�
     expect(await screen.findByText('Трекер заполнен — индекс 6,0')).toBeTruthy();
   });
 
-  it('столбики окрашены только у оценённых потребностей', () => {
+  it('полоски картинки плотные только у оценённых потребностей', () => {
     const { container } = renderSection({ ratings: { attachment: 4 } });
-    const bars = Array.from(container.querySelectorAll('.ct-bars > i')) as HTMLElement[];
-    expect(bars).toHaveLength(5);
-    expect(bars.filter(b => b.style.background !== '')).toHaveLength(1);
+    const strokes = container.querySelectorAll('.ct-main [data-need]');
+    expect(strokes).toHaveLength(5);
+    expect(container.querySelectorAll('.ct-main [data-rated="yes"]')).toHaveLength(1);
   });
 
   it('клик по плитке открывает трекер и шлёт home_tile', () => {
@@ -239,7 +239,7 @@ describe('TodaySection — лента дня и плитка дневника', 
     mockApi.getModeDiary.mockResolvedValue([{ id: 3, situation: 'запись', createdAt: nowIso() }]);
     renderSection();
     expect(await screen.findByText('Сегодня 1 запись')).toBeTruthy();
-    expect(screen.getByText('≈3 мин · когда что-то зацепило')).toBeTruthy();
+    expect(screen.getByText('≈3 мин')).toBeTruthy();
     expect(screen.queryByText(/Сегодня разобран/)).toBeNull();
   });
 
@@ -296,7 +296,7 @@ describe('TodaySection — «Что случилось»', () => {
     await screen.findByText('Последняя запись — 3 дн. назад');
     fireEvent.click(screen.getByRole('button', { name: /Что случилось/ }));
     expect((await screen.findByTestId('case-flow-start')).textContent).toBe('flow');
-    expect(screen.getByText('≈3 мин · когда что-то зацепило')).toBeTruthy();
+    expect(screen.getByText('≈3 мин')).toBeTruthy();
     expect(mockApi.trackEvent).toHaveBeenCalledWith('home_tile', { tile: 'case' });
 
     mockApi.getModeDiary.mockResolvedValue([
@@ -526,11 +526,11 @@ describe('TodaySection — «+ Поставить цель» открывает 
     mockApi.getTasks.mockResolvedValue([task({ type: 'diary_streak', text: 'Дневник 7 дней' })]);
     renderSection();
     fireEvent.click(await screen.findByText('+ Поставить цель'));
-    await screen.findByText('Новое задание');
+    await screen.findByText('Новая цель');
 
     // Своя цель клиента: просто «Назад» (у терапевта — «Назад к карточке»).
     fireEvent.click(screen.getByText('Назад'));
-    await waitFor(() => expect(screen.queryByText('Новое задание')).toBeNull());
+    await waitFor(() => expect(screen.queryByText('Новая цель')).toBeNull());
   });
 });
 
@@ -554,7 +554,7 @@ describe('TodaySection — оверлей «Все задания»: отмет�
     await screen.findByText('Все задания');
     fireEvent.click(document.querySelector('.sk-overlay .sk-wide-btn')!);
 
-    await screen.findByText('Новое задание');
+    await screen.findByText('Новая цель');
   });
 });
 

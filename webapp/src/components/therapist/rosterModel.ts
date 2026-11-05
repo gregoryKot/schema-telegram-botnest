@@ -13,8 +13,8 @@ import {
 import { clientActivityLabel } from '../../../../shared/src/therapy/clientActivity';
 import { matchesRosterSearch, plannedSession } from './rosterOrder';
 
-// Порядок списка — rosterOrder (общий с сайдбаром кабинета).
-export { sortRoster } from './rosterOrder';
+// Порядок списка и метка статуса — rosterOrder (общие с сайдбаром и палитрой).
+export { clientStatus, sortRoster } from './rosterOrder';
 
 export type RosterStatus = 'all' | 'active' | 'wait' | 'virtual';
 
@@ -50,11 +50,6 @@ export function clientCaption(c: TherapyClientSummary): string | null {
   const activity = clientActivityLabel(c); // офлайн-клиент — null
   if (!activity) return null;
   return c.streak > 0 ? `${activity} · стрик ${c.streak} дн.` : activity;
-}
-
-/** Статус карточки: клиент в боте (ok) или офлайн-карточка без бота. */
-export function clientStatus(c: TherapyClientSummary): { label: string; inBot: boolean } {
-  return isVirtualClient(c) ? { label: 'офлайн', inBot: false } : { label: 'в боте', inBot: true };
 }
 
 export interface DomainSegment { domainId: string; count: number }

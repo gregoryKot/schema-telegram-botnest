@@ -2,10 +2,8 @@ import { useState } from 'react';
 import { BottomSheetShell } from '../../components/BottomSheetShell';
 import { useHistorySheet } from '../../hooks/useHistorySheet';
 import { useTr } from '../../utils/addressForm';
-import {
-  buildSelfHelpParagraphs,
-  SELF_HELP_TITLE,
-} from '../../../../shared/src/selfHelp/selfHelpText';
+import { buildSelfHelpParagraphs, SELF_HELP_TITLE } from '../../../../shared/src/selfHelp/selfHelpText';
+import { Breath } from '../../components/art/PaperArt';
 import { CrisisContactsSheet } from './CrisisContactsSheet';
 import '../../styles/practice-selfhelp.css';
 
@@ -21,7 +19,7 @@ export function SelfHelpSheet({ onClose }: { onClose: () => void }) {
   return (
     <>
       <BottomSheetShell goBack={goBack} zIndex={310} label={SELF_HELP_TITLE}>
-        <h2 className="ds-h3 sh-title">{SELF_HELP_TITLE}</h2>
+        <div className="sh-head"><h2 className="ds-h3 sh-title">{SELF_HELP_TITLE}</h2><Breath size="square" /></div>
         {buildSelfHelpParagraphs(tr).map((p) => (
           <p key={p} className="sh-text">
             {p}

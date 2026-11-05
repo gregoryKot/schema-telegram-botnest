@@ -27,6 +27,7 @@ import { OfflineBanner } from './OfflineBanner';
 import { Celebration } from './Celebration';
 import { todayInsightPhrase } from '../utils/todayInsight';
 import { DonateNudge } from './DonateNudge';
+import { donateNudgeBlocked } from './donateNudgeBlocked';
 import { hueStyle } from '../lib/tone';
 
 // – lazy: heavy overlays –
@@ -248,7 +249,7 @@ export function AppShell() {
           <button className="search-pill" onClick={() => ov.setCmdOpen(true)}>
             <span>Перейти к…</span>
             <span className="sp-spacer" />
-            <span className="kbd">⌘K</span>
+            <span className="kbd kbd-hint">⌘K</span>
           </button>
         </div>
 
@@ -380,7 +381,7 @@ export function AppShell() {
       )}
 
       {/* Periodic donate nudge (once ~monthly, dismissible) */}
-      <DonateNudge />
+      <DonateNudge blocked={donateNudgeBlocked({ section, anyOverlayOpen, entryDone })} />
     </div>
   );
 }

@@ -1,13 +1,15 @@
 // @vitest-environment node
 // Сверка «компьютер не стал телефоном» (инцидент 2026-11-04, docs/INCIDENTS.md): волны «один стиль»
 // (#907/#910/#913) вводили раскладки, снятые только на 393px, — на ≥768 экраны стали телефонными.
-// Телефонное объявление живёт только под точным @media (max-width: 767px) (блок касаний ≥768 не в счёте),
+// Телефонное объявление живёт только под точным @media PHONE_MEDIA (utils/phoneLayout.ts; блок касаний ≥768 не в счёте),
 // у примитива-полосы/растяжения есть правило для ≥768. CSS в jsdom не исполняется — читаем исходники.
 import { describe, it, expect } from 'vitest';
 import { join } from 'node:path';
 import { parseRules, isPhone, isTouch, isDesktop, unscopedPhone, hasDesktopRule, phoneBaseDesk, allCssRules, readCss, indexCssRules, tsxUsing, cssDir, type Rule } from './cssRules.test-helpers';
+import { PHONE_MEDIA } from '../utils/phoneLayout';
 
 const all = allCssRules();
+const PHONE = `@media ${PHONE_MEDIA}`;
 const WIDE = /(^|;|\s)width:\s*100%/;
 /** Телефонная раскладка примитивов: растяжение на колонку — только ≤767 (на компьютере по содержимому). */
 const PHONE_ONLY: [string, RegExp][] = [['.ds-btn--lg', WIDE], ['.ds-seg--full', WIDE]];
@@ -30,6 +32,7 @@ const LG: Record<string, ['own' | 'stretch' | 'content', string]> = {
   'components/therapy/TalkSheet.tsx': ['stretch', '.th-sheet-acts'],
   'sections/schemas/MineGroupsList.tsx': ['stretch', '.cs-block'],
   'sections/diary/DiaryHeader.tsx': ['content', '.cd-write'],
+  'sections/today/HomeTiles.tsx': ['stretch', '.pp-block'], // блок трекера — колонка pp-block во всю ширину страницы 600
   'pages/subscribe/SubscribeForm.tsx': ['own', '.ap-pay .ds-btn--lg'],
   'pages/DonatePage.tsx': ['own', '.ap-donate .ds-btn--lg'], // во всю карточку 560
   'pages/SubscribePage.tsx': ['own', '.ap-main--state .ds-btn--lg'], // во всю колонку 400
@@ -42,7 +45,7 @@ function lgDecisionOk(rules: Rule[], kind: 'own' | 'stretch' | 'content', sel: s
 }
 
 describe('компьютер ≥768 не наследует телефонную раскладку', () => {
-  it.each(PHONE_ONLY)('%s: width: 100% только под @media (max-width: 767px), не в блоке касаний', (sel, decl) => {
+  it.each(PHONE_ONLY)('%s: width: 100% только под телефонным @media, не в блоке касаний', (sel, decl) => {
     expect(unscopedPhone(all, sel, decl)).toEqual([]);
   });
   it.each(NEED_DESKTOP)('%s: есть правило под @media (min-width: 768px)', (spec) => {
@@ -103,10 +106,11 @@ describe('auth-pay.css: страницы подписки и доната на �
 
 describe('сверка ловит нарушение и пропускает исправленное', () => {
   const lg = (css: string) => unscopedPhone(parseRules(css), '.ds-btn--lg', WIDE);
-  it('width: 100% у .ds-btn--lg: без медиа и в блоке касаний — красное; под точным ≤767 — зелёное', () => {
+  it('width: 100% у .ds-btn--lg: без медиа, в блоке касаний и под неканоническим ≤767 — красное; под PHONE_MEDIA — зелёное', () => {
     expect(lg('.ds-btn--lg { width: 100%; }')).toHaveLength(1);
     expect(lg('@media (pointer: coarse), (max-width: 767px) { .ds-btn--lg { width: 100%; } }')).toHaveLength(1);
-    expect(lg('@media (max-width:767px) { .ds-btn--lg { width: 100%; } }')).toEqual([]);
+    expect(lg('@media (max-width: 767px) { .ds-btn--lg { width: 100%; } }')).toHaveLength(1); // не каноническая строка (phoneLayout.test)
+    expect(lg(`${PHONE} { .ds-btn--lg { width: 100%; } }`)).toEqual([]);
   });
   it('отсутствие правила ≥768 — красное, наличие — зелёное; exact не принимает селектор с предком', () => {
     expect(hasDesktopRule(parseRules('.cw-list { display: block; }'), '.cw-list')).toBe(false);
@@ -118,7 +122,7 @@ describe('сверка ловит нарушение и пропускает и�
   it('решение по ширине кнопки: нет width — красное; есть — зелёное; растяжение колонкой и «по содержимому»', () => {
     expect(lgDecisionOk(parseRules('.st-done { margin-top: 20px; }'), 'own', '.st-done')).toBe(false);
     expect(lgDecisionOk(parseRules('.st-done { width: 100%; }'), 'own', '.st-done')).toBe(true);
-    expect(lgDecisionOk(parseRules('@media (max-width: 767px) { .st-done { width: 100%; } }'), 'own', '.st-done')).toBe(false);
+    expect(lgDecisionOk(parseRules(`${PHONE} { .st-done { width: 100%; } }`), 'own', '.st-done')).toBe(false);
     expect(lgDecisionOk(parseRules('.a { display: flex; flex-direction: column; align-items: center; }'), 'stretch', '.a')).toBe(false);
     expect(lgDecisionOk(parseRules('.a { display: flex; flex-direction: column; }'), 'stretch', '.a')).toBe(true);
     expect(lgDecisionOk(parseRules('@media (min-width: 768px) { .b { width: auto; } }'), 'content', '.b')).toBe(true);
@@ -127,13 +131,13 @@ describe('сверка ловит нарушение и пропускает и�
     const bad = (css: string) => parseRules(css).filter((r) => r.selectors.includes('.x') && /display:\s*none/.test(r.body) && !isPhone(r.media));
     expect(bad('.x { display: none; }')).toHaveLength(1);
     expect(bad('@media (pointer: coarse), (max-width: 767px) { .x { display: none; } }')).toHaveLength(1);
-    expect(bad('@media (max-width: 767px) { .x { display: none; } }')).toEqual([]);
+    expect(bad(`${PHONE} { .x { display: none; } }`)).toEqual([]);
   });
   it('телефон как в main: обёртка без contents или компьютерное объявление вне ≥768 — красное; под ≥768 — зелёное', () => {
     const v = (css: string, sel: string, base: RegExp | null, d: RegExp | null) => phoneBaseDesk(parseRules(css), sel, base, d);
     expect(v('.a { display: block; }', '.a', C, null)).not.toEqual([]);
     expect(v('.a { display: contents; }', '.a', C, null)).toEqual([]);
-    expect(v('.a { display: contents; } @media (max-width: 767px) { .a { display: inline-flex; } }', '.a', C, /inline-flex/)).not.toEqual([]);
+    expect(v(`.a { display: contents; } ${PHONE} { .a { display: inline-flex; } }`, '.a', C, /inline-flex/)).not.toEqual([]);
     expect(v('.a { display: contents; } @media (min-width: 768px) { .a { display: inline-flex; } }', '.a', C, /inline-flex/)).toEqual([]);
     expect(v('.t .s { margin-top: 4px; }', '.t .s', null, /margin/)).not.toEqual([]);
     expect(v('@media (min-width: 768px) { .t .s { margin-top: 4px; } }', '.t .s', null, /margin/)).toEqual([]);
