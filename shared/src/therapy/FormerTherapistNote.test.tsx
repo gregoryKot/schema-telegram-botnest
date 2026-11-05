@@ -77,6 +77,32 @@ describe('FormerTherapistNote', () => {
     expect(container.textContent).toBe('');
   });
 
+  // 2026-11-05: терапевт убрал клиента / клиент отключился сам — своя строка.
+  it.each([
+    [
+      'therapist_removed',
+      'Анна больше не работает с тобой в приложении',
+      'Твои записи терапевту больше не видны',
+    ],
+    ['client_left', 'Анна больше не видит твои записи', 'Связь отключена'],
+  ] as const)(
+    'причина %s — свой заголовок и текст',
+    async (reason, title, text) => {
+      render(
+        <FormerTherapistNote
+          load={() => Promise.resolve({ ...anna, reason })}
+          enabled={true}
+        />,
+      );
+      expect(await screen.findByText(title)).toBeTruthy();
+      const note = screen.getByRole('note').textContent ?? '';
+      expect(note).toContain(text);
+      expect(note).toContain(
+        'Открытые задания от терапевта теперь в твоих целях',
+      );
+    },
+  );
+
   it('пустое имя — заголовок без имени', async () => {
     render(
       <FormerTherapistNote

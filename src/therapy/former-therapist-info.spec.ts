@@ -1,9 +1,14 @@
-// getFormerTherapistInfo: сообщение «терапевт больше не работает в приложении»
-// (решение владельца 2026-10-22). Фейк исполняет where сам — проверяется не
-// форма вызова, а какие строки находятся.
+// getFormerTherapistInfo: строка о бывшем терапевте вместо «Мой терапевт» —
+// терапевт отказался от роли (решение владельца 2026-10-22), убрал клиента
+// или клиент отключился сам (2026-11-05). Фейк исполняет where сам —
+// проверяется не форма вызова, а какие строки находятся.
 import type { PrismaService } from '../prisma/prisma.service';
 import { byLatestEnd, getFormerTherapistInfo } from './former-therapist-info';
-import { THERAPIST_RESIGNED } from './relation-end-reason';
+import {
+  CLIENT_LEFT,
+  THERAPIST_REMOVED,
+  THERAPIST_RESIGNED,
+} from './relation-end-reason';
 
 type Row = {
   therapistId: bigint;
@@ -28,11 +33,6 @@ type Cond = { in?: unknown[]; not?: unknown };
 
 function matches(r: Row, where: Record<string, unknown>): boolean {
   return Object.entries(where).every(([k, cond]) => {
-    // Фильтр по связанной записи: therapist: { role: { not: … } }.
-    if (k === 'therapist') {
-      const role = (cond as { role: Cond }).role;
-      return roleOf(r.therapistId) !== role.not;
-    }
     const v = r[k as keyof Row];
     if (cond && typeof cond === 'object' && 'in' in cond)
       return (cond as Cond).in!.includes(v);
@@ -55,7 +55,10 @@ function makePrisma(rows: Row[]) {
           .filter((r) => matches(r, where))
           .map((r) => ({
             ...r,
-            therapist: { firstName: names[String(r.therapistId)] },
+            therapist: {
+              firstName: names[String(r.therapistId)],
+              role: roleOf(r.therapistId),
+            },
           })),
       ),
     ),
@@ -74,9 +77,53 @@ const row = (o: Partial<Row>): Row => ({
 });
 
 describe('getFormerTherapistInfo', () => {
-  it('терапевт отказался от роли → имя и дата окончания', async () => {
+  it('терапевт отказался от роли → имя, дата окончания и причина', async () => {
     const res = await getFormerTherapistInfo(makePrisma([row({})]), C);
-    expect(res).toEqual({ name: 'Анна', endedAt: '2026-10-20T10:00:00.000Z' });
+    expect(res).toEqual({
+      name: 'Анна',
+      endedAt: '2026-10-20T10:00:00.000Z',
+      reason: THERAPIST_RESIGNED,
+    });
+  });
+
+  // 2026-11-05: связь больше не удаляется — каждая причина даёт свою строку.
+  it.each([THERAPIST_REMOVED, CLIENT_LEFT])(
+    'причина %s → строка с этой причиной, роль терапевта не важна',
+    async (reason) => {
+      roles = { '1': 'THERAPIST' }; // терапевт работает дальше
+      const res = await getFormerTherapistInfo(
+        makePrisma([row({ endReason: reason })]),
+        C,
+      );
+      expect(res).toEqual({
+        name: 'Анна',
+        endedAt: '2026-10-20T10:00:00.000Z',
+        reason,
+      });
+    },
+  );
+
+  it('неизвестная причина → null (строки без текста не бывает)', async () => {
+    const rows = [row({ endReason: 'something_else' })];
+    expect(await getFormerTherapistInfo(makePrisma(rows), C)).toBeNull();
+  });
+
+  it('убрал один терапевт, позже отключился сам от другого — последняя причина', async () => {
+    roles = { '1': 'THERAPIST', '2': 'THERAPIST' };
+    const rows = [
+      row({
+        therapistId: 1n,
+        endReason: THERAPIST_REMOVED,
+        endedAt: new Date('2026-10-01T00:00:00Z'),
+      }),
+      row({
+        therapistId: 2n,
+        endReason: CLIENT_LEFT,
+        endedAt: new Date('2026-11-01T00:00:00Z'),
+      }),
+    ];
+    const res = await getFormerTherapistInfo(makePrisma(rows), C);
+    expect([res?.name, res?.reason]).toEqual(['Борис', CLIENT_LEFT]);
   });
 
   it('у клиента активная связь с новым терапевтом → null', async () => {
@@ -121,6 +168,7 @@ describe('getFormerTherapistInfo', () => {
     expect(await getFormerTherapistInfo(makePrisma([old]), C)).toEqual({
       name: 'Борис',
       endedAt: null,
+      reason: THERAPIST_RESIGNED,
     });
   });
 
@@ -137,13 +185,6 @@ describe('getFormerTherapistInfo', () => {
     ];
     const prisma = makePrisma(rows);
     expect((await getFormerTherapistInfo(prisma, C))?.name).toBe('Анна');
-    // Роль сверяется в самом запросе, а не после выборки.
-    const findMany = (
-      prisma as unknown as { therapyRelation: { findMany: jest.Mock } }
-    ).therapyRelation.findMany;
-    expect(findMany.mock.calls[0][0].where).toMatchObject({
-      therapist: { role: { not: 'THERAPIST' } },
-    });
   });
 
   it('имени у терапевта нет → пустая строка, фронт пишет «Терапевт»', async () => {

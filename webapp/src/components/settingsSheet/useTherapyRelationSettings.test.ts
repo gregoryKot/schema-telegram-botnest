@@ -14,6 +14,7 @@ import {
   getTherapistContact,
   hasConnectedTherapist,
 } from '../../../../shared/src/utils/therapistContact';
+import { TASKS_CHANGED_EVENT } from '../../../../shared/src/tasks/tasksChanged';
 
 vi.mock('../../api', () => ({
   api: {
@@ -66,6 +67,25 @@ describe('useTherapyRelationSettings — кэш «Написать терапе�
     await waitFor(() => expect(result.current.therapyRelation).toBeNull());
     expect(hasConnectedTherapist()).toBe(false);
     expect(getTherapistContact().name).toBe('автору');
+  });
+
+  // 2026-11-05: открытые задания бывшего терапевта стали личными целями —
+  // «Сегодня» под листом перечитывает список, метка «От терапевта» уходит.
+  it('отключение сообщает экранам со списком заданий; отказ сервера — нет', async () => {
+    const heard = vi.fn();
+    window.addEventListener(TASKS_CHANGED_EVENT, heard);
+    mockApi.getTherapyRelation.mockResolvedValue(REL);
+    mockApi.leaveTherapy.mockRejectedValueOnce(new Error('500'));
+    const { result } = renderHook(() => useTherapyRelationSettings('CLIENT'), { wrapper });
+    await waitFor(() => expect(result.current.therapyRelation).toEqual(REL));
+    act(() => result.current.leave.ask());
+    await act(async () => { await result.current.leave.confirm(); });
+    expect(heard).not.toHaveBeenCalled();
+    mockApi.leaveTherapy.mockResolvedValue(undefined);
+    act(() => result.current.leave.ask());
+    await act(async () => { await result.current.leave.confirm(); });
+    expect(heard).toHaveBeenCalledTimes(1);
+    window.removeEventListener(TASKS_CHANGED_EVENT, heard);
   });
 
   it('отказ сервера при отключении: связь и кэш не тронуты', async () => {
