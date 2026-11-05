@@ -87,13 +87,6 @@
   `telegram-init-data.invariants.spec.ts` не даст вернуть импорт). Убрать из
   `package.json` и перегенерировать `package-lock.json` (`npm install` у
   владельца/CI-агента), прогнать `knip`.
-- **`POST /api/auth/telegram/webapp` отвечает обычным 401 без `suspicious_initdata`
-  и без кода `initdata_expired`** (`auth-account.controller.ts`, ошибка
-  верификатора превращается в `UnauthorizedException(message)`), в отличие от
-  гарда (`rejectInitData`). Осознанно не включено в починке верификатора: это
-  новая сигнализация (правило №14, троттлинг `initDataAlerts` уже есть) и
-  отдельный PR (правило №20). Подделка подписи на этом входе сегодня не будит
-  админа.
 - **`src/auth/telegram-init-data.ts` вне мутационной зоны `golden-auth`, пол
   `auth.service.ts` не пересчитан.** Верификатор подписи ушёл из `auth.service.ts`
   (пол 94.29 в `scripts/mutation-golden-auth-baseline.json`) в новый файл; прогон
