@@ -51,7 +51,7 @@
   "scripts/check-jscpd-ratchet.mjs": 82,
   "scripts/check-legacy-name.mjs": 60,
   "scripts/check-local-cache-writers.mjs": 206,
-  "scripts/check-mutation-ratchet.mjs": 158,
+  "scripts/check-mutation-ratchet.mjs": 176,
   "scripts/check-mutation-zone.mjs": 182,
   "scripts/check-persistent-throttle.mjs": 122,
   "scripts/check-pool-sync.mjs": 177,
