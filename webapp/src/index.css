@@ -227,8 +227,10 @@
   --sidebar-w: 240px;
   /* Высота нижней навигации телефона без safe-area: по ней встают панели,
      закреплённые над навигацией (кнопки карточки клиента, «+»). Равна
-     .mobile-nav-item (52px) + два паддинга --space-6 — меняешь их, меняй и её. */
-  --mobile-nav-h: 64px;
+     .mobile-nav-item (44px) + два паддинга --space-2 — меняешь их, меняй и её.
+     Было 64px (пункт 52 + 6 + 6): владелец 2026-11-05 — «панель широковата»;
+     с safe-area iOS выходило ~98px против 83px у системного таб-бара. */
+  --mobile-nav-h: 48px;
 }
 
 /* .light-lock переопределяет токены, но не `color`: цвет, унаследованный от
@@ -921,13 +923,14 @@ a { color: inherit; text-decoration: none; }
   z-index: 49;
   display: flex;
   gap: var(--space-2);
-  padding: var(--space-6) var(--space-6) calc(var(--space-6) + var(--safe-bottom));
+  padding: var(--space-2) var(--space-6) calc(var(--space-2) + var(--safe-bottom));
   min-height: var(--mobile-nav-h); box-sizing: border-box;
 }
+/* 44px — порог тап-цели (check-tap-targets), ниже пункт не ужать. */
 .mobile-nav-item {
   flex: 1 1 0; min-width: 0; display: flex; flex-direction: column;
-  align-items: center; justify-content: center; gap: var(--space-4);
-  min-height: 52px; padding: var(--space-4) 0;
+  align-items: center; justify-content: center; gap: var(--space-2);
+  min-height: 44px; padding: 0;
   border: none; border-radius: var(--r-12);
   color: var(--text-muted); font-family: inherit; font-size: 11px; font-weight: 500;
   letter-spacing: 0.01em; white-space: nowrap;
@@ -961,10 +964,10 @@ a { color: inherit; text-decoration: none; }
   }
   .canvas {
     overflow: visible; display: block;
-    /* Высота панели .mobile-nav (64px) + safe-area: низ контента не под ней.
-       flex-shrink: 0 — иначе canvas сжимался до экрана, страница вылезала
-       за него, и этот отступ ничего не давал (последние 64px лежали под
-       панелью). */
+    /* Высота панели .mobile-nav (--mobile-nav-h) + safe-area: низ контента не
+       под ней. flex-shrink: 0 — иначе canvas сжимался до экрана, страница
+       вылезала за него, и этот отступ ничего не давал (последняя высота панели
+       лежала под ней). */
     flex-shrink: 0; min-height: auto;
     /* + 24px — обычный зазор над панелью: последняя строка не прижата к ней.
        Раньше стояло 72px «под „+“», которой на сайте нет (QA 2026-11, C-М2);
