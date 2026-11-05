@@ -47,7 +47,6 @@ export function QuestionScreen({
       <NeedExplainer data={data} expanded={!ratedBefore} />
       <p className="tq-question">{data?.question ?? ''}</p>
       <NeedScale
-        variant="words"
         value={value > 0 ? value : undefined}
         hue={hue}
         label={name}

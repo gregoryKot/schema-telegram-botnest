@@ -50,7 +50,6 @@ export function NeedTodaySheet({ need, value, yesterdayValue, onChange, onClose,
           <div className="tk2-aside-word tone-text">{wordForValue(value)?.label ?? '—'}</div>
           <div className="u-mb12">
             <NeedScale
-              variant="words"
               value={value > 0 ? value : undefined}
               hue={hue}
               onChange={onChange}
