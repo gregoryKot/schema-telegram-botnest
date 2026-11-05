@@ -1,5 +1,5 @@
 // Язык знаков приложения — коротко новичку (docs/design/PAPER_2026-11.md, «Язык знаков»).
-import { LEGEND } from './whyLegend';
+import { LEGEND } from './legendText';
 
 /** Легенда «Что означают картинки»: знак — смысл. */
 export function WhyLegend() {

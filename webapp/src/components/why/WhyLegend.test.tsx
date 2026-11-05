@@ -3,7 +3,7 @@
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { WhyLegend } from './WhyLegend';
-import { LEGEND } from './whyLegend';
+import { LEGEND } from './legendText';
 
 describe('WhyLegend', () => {
   it('пять знаков: полоска, лента, камешки, слои, круги — каждый с пояснением', () => {
