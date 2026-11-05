@@ -51,7 +51,8 @@ function makeDb(rels: Rel[]) {
     (w.id === undefined || isIn(r.id, w.id)) &&
     (w.therapistId === undefined || r.therapistId === w.therapistId) &&
     (w.clientId === undefined || r.clientId === w.clientId) &&
-    (w.status === undefined || isIn(r.status, w.status));
+    (w.status === undefined || isIn(r.status, w.status)) &&
+    (w.attachToId === undefined || (r as any).attachToId === w.attachToId);
   const users: any[] = [];
   const schemaDiary: any[] = [];
   const modeDiary: any[] = [];
