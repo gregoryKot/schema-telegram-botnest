@@ -56,9 +56,15 @@ function makeService(
   return { service, accountService, notificationService };
 }
 
+// Часы закреплены на полудне UTC. На настоящих часах тест краснел с 23:00 до
+// 00:00 UTC (пойман 2026-11-03 в 23:20): в последний час до полуночи
+// MidnightPlanner.catchUp ничего не захватывает (catchUpClaimWindowMs) —
+// «обход сделает тик», и getAllUsersWithSettings не зовётся.
+const NOON_UTC = new Date('2026-11-03T12:00:00Z');
+
 beforeEach(() => {
   jest.spyOn(Logger.prototype, 'log').mockImplementation(() => undefined);
-  jest.useFakeTimers();
+  jest.useFakeTimers({ now: NOON_UTC });
 });
 
 afterEach(() => {
@@ -83,6 +89,20 @@ describe('onModuleInit — 30с catch-up планировщика', () => {
     expect(warnSpy).toHaveBeenCalledWith(
       expect.stringContaining('Startup planner catch-up failed'),
     );
+  });
+
+  // Контроль к закреплённым часам: тот же сценарий в 23:20 UTC — catch-up
+  // законно ничего не делает. Без закрепления первый тест жил бы на этой ветке
+  // каждый вечер.
+  it('за час до полуночи UTC catch-up не обходит — поэтому часы закреплены', async () => {
+    jest.setSystemTime(new Date('2026-11-03T23:20:00Z'));
+    const accountService = {
+      getAllUsersWithSettings: jest.fn().mockResolvedValue([]),
+    };
+    const { service } = makeService({ accountService });
+    service.onModuleInit();
+    await jest.advanceTimersByTimeAsync(30_000);
+    expect(accountService.getAllUsersWithSettings).not.toHaveBeenCalled();
   });
 
   // Регрессия флака e2e-джобы `migrations` (щит, волна 6): каждый e2e-boot
