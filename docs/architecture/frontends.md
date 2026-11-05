@@ -24,7 +24,7 @@
   - `webapp/src/share/` — кнопки и шторка шаринга (`DayShareButton`, `DiaryShareButton`, `ShareCardSheet`, `SharePillButton`, `TherapistInviteShare`).
   - `webapp/src/security/` — только тест-инвариант XSS (`xss.invariants.test.ts`).
   - `webapp/src/assets/` — `hero.png`, `vite.svg`.
-  - `webapp/src/test-support/` — `mockCanvas2d.ts`, `renderWithFlow.tsx`, `rtlCleanup.ts`.
+  - `webapp/src/test-support/` — `mockCanvas2d.ts`, `renderWithFlow.tsx`, `rtlCleanup.ts`, `crashScreenGuard.ts` (тест краснеет, если в DOM остался экран падения).
   - `webapp/public/` — `fonts/`, иконки и favicon, `manifest.webmanifest`, `theme.js` (тема до первого кадра, из-за CSP не инлайн), `asset-recovery.js` (стартовый файл сборки не дошёл — CSS запрашивается снова, упавший входной модуль перезагружает страницу, не больше трёх раз за 2 мин; инцидент 2026-11-04), `telegram-web-app.js`, `max-bridge.js`, `robots.txt`, `llms.txt`, файлы верификации Яндекса.
   - Прочее в `webapp/src/`: `api.types.ts` и реэкспорты-заглушки (`needData.ts`, `haptic.ts`, `types.ts`).
 - **API-клиент:**
