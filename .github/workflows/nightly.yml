@@ -270,11 +270,16 @@ jobs:
   # `../shared` резолвит react вверх в КОРЕНЬ (webapp/vite.config.ts, dedupe),
   # а в PR-джобе webapp корень пуст — тот класс ошибок там невидим.
   #
-  # `macos-latest`, а не прибитый образ: джоба моделирует Mac владельца,
-  # который обновляется сам; смену образа увидит alarm, пин — одна строка.
+  # Образ прибит версией, как у всех джоб (гейт runner-pin.spec.ts, урок
+  # #789 с `ubuntu-latest`): `macos-26` — то, во что `macos-latest`
+  # разворачивался на первом зелёном прогоне (2026-11-05), и та же мажорная
+  # версия, что на Mac владельца. Переезд на новый образ — отдельным PR.
   macos-build:
-    runs-on: macos-latest
-    timeout-minutes: 35
+    runs-on: macos-26
+    # Замер первого прогона (2026-11-05, #938): npm ci 74+18+4 с, сборка 24 с,
+    # vitest webapp 5,5 мин, shared 1,5 мин — 9 минут всего; 25 — растяжка
+    # на холодный кэш и медленный раннер, но не на зависший шаг.
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7

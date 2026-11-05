@@ -91,7 +91,7 @@ scripts/check-agent-docs.mjs (CI, джоба checks). Новое правило:
 - **№21** Новая внешняя интеграция = проба в `src/infra/self-check/` (живой вызов, таймаут, не бросает).
 - **№22** Новая env-переменная = запись в `src/infra/env-registry*.ts` + строка в `docs/ENV.md` (`check-env-registry`).
 - **№23** Парсер ответа внешней площадки — с записанной фикстурой в `test/fixtures/recorded/` (`check-recorded-fixtures`).
-- **№24** У каждой джобы есть `timeout-minutes`; открытая issue `ci-alarm` — работа на сейчас.
+- **№24** У каждой джобы есть `timeout-minutes`, образ раннера прибит версией, не `*-latest` (`runner-pin.spec.ts`); открытая issue `ci-alarm` — работа на сейчас.
 
 ### Аналитика → [.claude/rules/analytics.md](.claude/rules/analytics.md)
 - **№8** User-facing фича = событие: имя в `ANALYTICS_EVENTS` (`src/analytics/analytics.constants.ts`) + ветка в `sanitizeMeta` (только известные поля) + константа на фронте (`shared/src/share/analytics.ts`) + блок в `/stats` (чистый форматтер с тестом, включая пустую БД; язык без терминов).

@@ -89,7 +89,7 @@ SIGTERM/SIGINT пробрасываются приложению.
 - `mutation-golden-auth` — Stryker, волна А, затем `check-mutation-ratchet`.
 - `mutation-golden-payments` — Stryker, волна Б, затем кризис и outbox, каждый с храповиком.
 - `browser-smoke` — build webapp, `playwright test` (Chromium).
-- `macos-build` — то же на `macos-latest` (регистронезависимая ФС, как у владельца): `npm ci` корня, `webapp` и `shared`, `check-filename-case`, build webapp, vitest webapp и shared. Без Playwright и Postgres: что зелено на Linux, обязано быть зелёным и здесь (инцидент 2026-11-05, #933).
+- `macos-build` — то же на `macos-26` (регистронезависимая ФС, как у владельца; образ прибит, гейт `runner-pin.spec.ts`): `npm ci` корня, `webapp` и `shared`, `check-filename-case`, build webapp, vitest webapp и shared. Без Playwright и Postgres: что зелено на Linux, обязано быть зелёным и здесь (инцидент 2026-11-05, #933).
 - `backup-restore` — репетиция: зашифрованный бэкап, restore во вторую БД, `migrate diff`, пробы с порчей файла и неверным ключом.
 - `npm-audit` — `scripts/npm-audit.mjs` (`npm audit --omit=dev --audit-level=high` с таймером на попытку и повторами) по каждому lock-файлу из `git ls-files`, под alarm.
 - `alarm` — issue `ci-alarm` и DM в Telegram, если упала любая джоба.
