@@ -63,6 +63,7 @@ SIGTERM/SIGINT пробрасываются приложению.
   - `threads-relay/` — Cloudflare Worker (`worker.js` + README), ретранслятор запросов к `graph.threads.net`;
   - `app-exit.mjs` — решение супервизора по выходу приложения;
   - `pg-url-env.cjs` — `DATABASE_URL` в переменные libpq;
+  - `backup-lease-release.cjs` — при SIGTERM синхронно отпускает аренду бэкапа (иначе следующий процесс ждёт окно);
   - `transfer-db.sh` — разовый перенос БД Amvera→VPS через `RECOVER_CMD`.
 
 ### CI
