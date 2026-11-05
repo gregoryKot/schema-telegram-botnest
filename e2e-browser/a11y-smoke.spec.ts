@@ -24,7 +24,7 @@ import AxeBuilder from '@axe-core/playwright';
 import { test, expect, type Page, type TestInfo } from '@playwright/test';
 import { readFileSync } from 'fs';
 import { join } from 'path';
-import { stubApi } from './support/stubApi';
+import { stubApi, throwOnPageError } from './support/stubApi';
 
 const BASELINE_PATH = join(__dirname, 'a11y-baseline.json');
 const baseline: Record<string, number> = JSON.parse(
@@ -104,6 +104,11 @@ test.describe('a11y-smoke: webapp', () => {
   test.beforeEach(async ({ page }, testInfo) => {
     skipOnOtherProject(testInfo, 'webapp');
     await stubApi(page);
+    // Снимок axe с экрана падения ничего не доказывает, а у экрана ошибки
+    // роутера есть <h1>, и «страница отрисовалась» он проходит: до ci-alarm
+    // #903 /articles под ответом `{}` падал в «Что-то пошло не так», и
+    // храповик сверял доступность его, а не списка статей.
+    throwOnPageError(page);
   });
 
   test('главная (/)', async ({ page }) => {

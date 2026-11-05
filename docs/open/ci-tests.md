@@ -339,11 +339,24 @@ Ubuntu 26) у трёх PR подряд падали `backend` → `check-coverag
   (~стр. 284): «назначение мини-аппа совпадает с rootPath ServeStaticModule в src/app.module.ts» —
   мини-апп удалён (#917), а скрипт `src/app.module.ts` не читает (`grep app.module
   scripts/check-deploy-paths.mjs` пуст).
-- **Ночной browser-smoke красный, issue `ci-alarm` #903 (с 2026-11-02).** В
-  `e2e-browser/tracker-smoke.spec.ts` «трекер: оценка ставится тапом…» не дожидается «Понятно,
-  начнём»: «Сегодня» падает в «Раздел упал», `TypeError: t.filter is not a function` в `useMemo`
-  бандла `TodaySection` (консоль трейса Playwright). Вероятно, catch-all `{}` в
-  `e2e-browser/support/stubApi.ts` отвечает ручке, от которой экран теперь ждёт массив; кандидаты
-  из трейса — `/api/history?days=14`, `/api/diary/{schema,mode,gratitude}`, `/api/childhood-ratings`,
-  `/api/activity`, `/api/user-flags`. Воспроизведено локально на сборке ветки #928 (база `1999a51`)
-  и без её правок; остальные 26 тестов смока, включая `asset-recovery.spec.ts`, зелёные.
+
+**Браузерный смок — находки при починке ci-alarm #903** (2026-11-05, #936):
+- **`e2e-browser/public-pages.spec.ts` отвечает `{}` на весь `/api` и зелёный на экране падения.**
+  Четыре своих перехвата `**/api/**` (у визитки — `[]`) повторяют «пустой успех», который #936
+  убрал из общего стаба. Под ними `/articles` рисует «Что-то пошло не так» (`e.map is not a
+  function`), `/subscribe` — тоже (`reading 'find'` на ответе `/api/subscription/options`), визитка
+  шлёт отчёт «landing: цена сессии не загрузилась». Тест зелёный: у `RouteErrorScreen` есть `<h1>`,
+  а ошибку, пойманную роутером, `pageerror` не видит. Доказано пробой Playwright по 12 маршрутам
+  спека (отчёты `POST /api/client-errors`, 2026-11-05). Чинить: общий стаб в анонимном режиме с
+  фикстурами формы сервера для `articles`, `subscription/options`, `booking/options`,
+  `site-content`, `quizzes`, `auth/refresh` (без сессии), `auth/ticket/start` и `auth/ticket/poll`,
+  плюс `throwOnPageError` в спеке. В #936 не сделано: восемь форм требуют отдельной сверки с
+  контроллерами, а ci-alarm #903 — про трекер.
+- **`e2e-browser/asset-recovery.spec.ts` держит свой перехват `/api` с ответом `{}` на всё.**
+  Его `/donate` под ним не падает (прогон 2026-11-05), но новая ручка на этой странице получит
+  выдуманный ответ вместо 404, а отчёты о сбое спек копит для своей проверки, а не роняет на них
+  тест. Чинить вместе с `public-pages.spec.ts`: анонимный режим общего стаба.
+- **Формы ответов в `e2e-browser/support/stubFixtures.ts` сверены с контроллерами глазами, теста
+  нет** (кроме списка потребностей: `src/bot/stub-needs.sync.spec.ts`). Осознанно: ответы
+  собираются из БД в рантайме, статического источника для сверки нет. Расхождение, которое уронит
+  экран, `throwOnPageError` выдаст с причиной; расхождение значений без падения не увидит никто.
