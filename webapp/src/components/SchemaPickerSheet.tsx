@@ -21,7 +21,7 @@ export function SchemaPickerSheet({ selected, onSave, onClose }: Props) {
     <SsSheet onBack={goBack}>
       <SsHead
         eyebrow="Схемы"
-        title="Мои схемы"
+        title="Мои схемы" layers
         lede={tr('Выбери схемы, которые тебе близки. Можно без теста – если ты уже знаешь свои. Выбор сохраняется сразу.', 'Выберите схемы, которые вам близки. Можно без теста – если вы уже знаете свои. Выбор сохраняется сразу.')}
       />
       {SCHEMA_DOMAINS.map(domain => (

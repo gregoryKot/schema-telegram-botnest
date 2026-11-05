@@ -118,9 +118,8 @@
 .sd-mode-check { opacity: 0; display: inline-flex; }
 .sd-mode-card.is-selected { border-color: oklch(0.58 0.12 var(--h)); }
 .sd-mode-card.is-selected .sd-mode-check { opacity: 1; }
-.sd-done { margin: 0 0 16px; }
-.sd-done:empty { display: none; }
-.sd-done .sd-share-note { color: var(--on-panel-sub); }
+.sd-done { --h: 45; margin: 0 0 16px; padding: 20px; display: flex; flex-direction: column; gap: 14px; }
+.sd-done .sd-share-note { color: var(--text-sub); }
 .sd-done-btn { margin-top: 16px; }
 .sd-share { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
 .sd-share-full { display: flex; flex-direction: column; gap: 4px; align-items: flex-start; }
@@ -167,6 +166,7 @@
 .sd-wide.is-err { color: var(--err); }
 .sd-journey-inner { max-width: 680px; margin: 0 auto; padding: 24px clamp(16px, 4vw, 20px) 80px; }
 .sd-journey-head { align-items: center; margin-bottom: 8px; }
+.sd-journey-head .pp-art { margin-right: auto; }
 .sd-journey-title { margin: 0; } /* кегль — ds-h1, без локального (#906) */
 /* Шапка листа («Мой путь», сомнение в режиме) — общая .ds-sheet-head/.ds-back из cabinet.css. */
 .sd-skel-gap { height: 8px; }

@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { ExScreen } from '../exercises/ExScreen';
+import { Ribbon } from '../art/PaperArt';
 import { CaseFlowFoot } from './caseFlowUi';
 import { detectCrisisAny } from '../../utils/crisisMarkers';
 import { LimitedTextarea } from '../../../../shared/src/components/LimitedTextarea';
@@ -29,9 +30,7 @@ export function CaseSceneStep({
   onHardNow: () => void;
 }) {
   const areaRef = useRef<HTMLTextAreaElement>(null);
-  useEffect(() => {
-    areaRef.current?.focus();
-  }, []);
+  useEffect(() => { areaRef.current?.focus(); }, []);
   return (
     <ExScreen
       onBack={onBack}
@@ -40,6 +39,7 @@ export function CaseSceneStep({
       title="Что случилось?"
       lede="Крупное необязательно. Хватит мелочи: сообщение, взгляд, тишина в ответ."
     >
+      <Ribbon size="square" />
       <LimitedTextarea
         max={DIARY_FIELD_MAX}
         ref={areaRef}

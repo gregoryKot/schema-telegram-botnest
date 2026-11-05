@@ -9,6 +9,8 @@ import { KanbanView } from './KanbanView';
 import { AddClientForm } from './AddClientForm';
 import { PendingInvitesList } from '../../../../shared/src/therapy/PendingInvitesList';
 import { ClientCard } from './ClientCard';
+import { PaperEmpty } from '../art/PaperEmpty';
+import { ClientListHero } from './ClientListHero';
 import { filterRoster, sortRoster, type RosterStatus } from './rosterModel';
 import type { useAddClient } from './useAddClient';
 import type { TasksBoard } from './useTasksBoard';
@@ -55,15 +57,7 @@ export function ClientListView({
   return (
     <div className="therapist-scroll therapist-scroll--list" key={`list-${animKey}`} style={{ animation: 'fade-in 0.22s ease' }}>
       <div className="ds-page">
-        <div className="ds-head-row">
-          <div>
-            <div className="ds-eyebrow">Практика</div>
-            <h1 className="ds-h1">Клиенты{clients.length > 0 && <> <span className="tc-count">{clients.length}</span></>}</h1>
-          </div>
-          <button className="ds-btn" aria-expanded={formVisible} onClick={() => addClient.setOpen(v => !v)}>
-            + Новый клиент
-          </button>
-        </div>
+        <ClientListHero count={clients.length} formVisible={formVisible} onToggle={() => addClient.setOpen(v => !v)} />
 
         {formVisible && <AddClientForm addClient={addClient} />}
         <PendingInvitesList pending={addClient.pending} className="tc-pending" />
@@ -117,11 +111,9 @@ export function ClientListView({
               {tr('Не удалось загрузить клиентов. Проверь соединение и обнови страницу', 'Не удалось загрузить клиентов. Проверьте соединение и обновите страницу')}
             </div>
           ) : clients.length === 0 ? (
-            <p className="ds-empty">
-              {tr('Введи имя клиента выше, чтобы добавить первую карточку', 'Введите имя клиента выше, чтобы добавить первую карточку')}
-            </p>
+            <PaperEmpty>{tr('Введи имя клиента выше, чтобы добавить первую карточку', 'Введите имя клиента выше, чтобы добавить первую карточку')}</PaperEmpty>
           ) : filtered.length === 0 ? (
-            <p className="ds-empty">Ничего не найдено</p>
+            <PaperEmpty>Ничего не найдено</PaperEmpty>
           ) : (
             <div className="tc-grid">
               {filtered.map(client => (

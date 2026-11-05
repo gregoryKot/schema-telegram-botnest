@@ -9,7 +9,7 @@
   /* Порядок: шапка → блоки из «Настроить экран» (по умолчанию: портрет, тёплые слова, «Мой путь», стрик,
      активность, достижения, паттерны — как в мини-аппе) → остальное. Место блока — --blk-o на обёртке. */
   .cpf-page > * { order: 10; }
-  .cpf-head, .cpf-skeleton, .cpf-error { order: 0; }
+  .cpf-block, .cpf-skeleton, .cpf-error { order: 0; }
   .cpf-blk { --blk-o: 5; order: var(--blk-o); }
   .cpf-duo { display: contents; }
 

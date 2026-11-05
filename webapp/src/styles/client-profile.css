@@ -9,6 +9,7 @@
    справа «Настроить экран» и шестерёнка «Настройки». Действия переносятся второй
    строкой, когда не помещаются рядом с текстом (телефон). */
 .cpf-head { display: flex; align-items: center; gap: 16px 20px; flex-wrap: wrap; }
+.cpf-head .pp-art--hero { margin-left: auto; }
 .cpf-avatar { width: 80px; height: 80px; font-size: 30px; }
 .cpf-head-text { flex: 1 1 200px; min-width: 0; }
 .cpf-head-sub { margin-top: 8px; }
@@ -20,6 +21,7 @@
 .cpf-heat-days { display: none; }
 
 .cpf-counters { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+.cpf-counter.pp-paper { --h: 70; }
 .cpf-counter { border-radius: 18px; padding: 18px 20px; }
 .cpf-counter-num { font-size: 44px; }
 .cpf-counter-label { font-size: 12px; margin-top: 8px; opacity: .8; }
@@ -89,13 +91,12 @@
 .cpf-help { display: inline-flex; align-items: center; justify-content: center; background: none; border: none; padding: 0; cursor: pointer; margin: -13px; }
 .cpf-help-dot { display: flex; align-items: center; justify-content: center; border-radius: 50%; background: var(--paper-sunk); color: var(--text-sub); font-size: 11px; font-weight: 600; }
 
-.cpf-therapist { display: flex; flex-direction: row; gap: 18px; align-items: center; flex-wrap: wrap; border-radius: 20px; padding: 22px 24px; }
+.cpf-therapist { --h: 135; display: flex; flex-direction: row; gap: 18px; align-items: center; flex-wrap: wrap; border-radius: 20px; padding: 22px 24px; }
 .cpf-therapist-ava { width: 48px; height: 48px; border-radius: 50%; background: var(--accent-soft); color: var(--accent-hi); font-weight: 700; font-size: 18px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .cpf-therapist-body { flex: 1; min-width: 160px; }
-.cpf-therapist-label { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--on-panel-faint); }
-.cpf-therapist-body .ds-label { color: var(--on-panel-faint); }
+.cpf-therapist-label { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--text-faint); }
 .cpf-therapist-name { font-family: var(--serif); font-size: 22px; margin-top: 2px; }
-.cpf-therapist-next { display: flex; flex-direction: column; gap: 2px; font-size: 14px; color: var(--on-panel-sub); }
+.cpf-therapist-next { display: flex; flex-direction: column; gap: 2px; font-size: 14px; color: var(--text-sub); }
 /* Бывший терапевт (FormerTherapistNote): сообщение вместо карточки «Терапевт». */
 .cpf-former { padding: 22px 24px; border-radius: 20px; }
 
@@ -105,6 +106,7 @@
   .cpf-card, .cpf-former { padding: 16px; border-radius: 18px; }
   .cpf-avatar { width: 56px; height: 56px; font-size: 20px; }
   .cpf-head { gap: 12px 14px; }
+  .cpf-head .pp-art--hero { width: 72px; height: 60px; }
   .cpf-counters { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
   .cpf-counter { padding: 12px; border-radius: 14px; }
   .cpf-counter-num { font-size: 30px; }

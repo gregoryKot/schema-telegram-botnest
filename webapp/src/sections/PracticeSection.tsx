@@ -1,4 +1,5 @@
 import { useEffect, useState, lazy, Suspense } from 'react';
+import { PaperEmpty } from '../components/art/PaperEmpty';
 import { useLocation } from 'react-router-dom';
 import { api } from '../api';
 import { TaskCreateSheet } from '../components/TaskCreateSheet';
@@ -160,9 +161,7 @@ export function PracticeSection({ onOpenChildhoodWheel, onOpenPractices, onOpenP
           <span className="ds-sub">{myGoals.length === 0 ? 'нет активных' : `${myGoals.length} ${plural(myGoals.length, 'активная', 'активные', 'активных')}`}</span>
         </div>
         {myGoals.length === 0 ? (
-          <p className="ds-empty">
-            {tr('Поставь цель и иди к ней маленькими шагами.', 'Поставьте цель и идите к ней маленькими шагами.')}
-          </p>
+          <PaperEmpty>{tr('Поставь цель и иди к ней маленькими шагами.', 'Поставьте цель и идите к ней маленькими шагами.')}</PaperEmpty>
         ) : (
           <div className="cp-tasks">
             {myGoals.slice(0, 4).map(task => (

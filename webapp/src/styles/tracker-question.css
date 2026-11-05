@@ -72,6 +72,8 @@
 
 /* Экран «Готово» */
 .tq-done { align-items: center; text-align: center; gap: var(--space-8); }
+.tq-done.pp-paper { --h: 135; width: calc(100% - 2 * var(--space-16)); padding: var(--space-24) var(--space-16); margin-top: var(--space-16); }
+.tq-done--sand.pp-paper { --h: 45; }
 .tq-done .tq-eyebrow { color: var(--text-faint); }
 .tq-index { font: 400 72px/1 var(--serif); letter-spacing: -0.03em; color: var(--text); margin-top: var(--space-8); }
 .tq-index-cap { margin: 0; font-size: 13px; color: var(--text-faint); }

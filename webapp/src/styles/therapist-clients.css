@@ -1,5 +1,7 @@
 /* Экран «Все клиенты» кабинета терапевта (префикс tc-). Цвета — токены. */
-.tc-count { font-size: 36px; color: var(--text-ghost); }
+.tc-count { font-size: 28px; color: var(--text-ghost); }
+.tc-hero { gap: 18px; }
+.tc-hero-btn { align-self: flex-start; }
 .tc-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
 .tc-search { width: 240px; max-width: 100%; }
 .tc-modes { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }

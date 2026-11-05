@@ -1,18 +1,17 @@
 import { useTr } from '../../utils/addressForm';
+import { Leaf } from '../../components/art/PaperArtSigns';
 import { SettingsGear, CustomizeLink } from '../../components/customize/CustomizeGear';
 import { clientHue, hueStyle } from '../../lib/tone';
 import { avatarInitial, daysWord } from './profileModel';
 
 interface Props { displayName: string | null | undefined; totalDays: number; onCustomize: () => void; onOpenSettings?: () => void }
 
-// Одна шапка на любой ширине (#906): аватар, «ПРОФИЛЬ / Мой путь / Аня · N дней
-// с тобой в приложении», справа ссылка «Настроить экран» и шестерёнка «Настройки».
-// На телефоне действия переносятся второй строкой (css), состав тот же.
+// Одна шапка на любой ширине (#906): герой-блок — аватар, «Профиль / Мой путь / N дней с тобой», Leaf, ссылка «Настроить экран» и шестерёнка.
 export function ProfileHeader({ displayName, totalDays, onCustomize, onOpenSettings }: Props) {
   const tr = useTr();
   const name = displayName?.trim() ?? '';
   return (
-    <div className="cpf-head">
+    <div className="pp-block cpf-block"><div className="cpf-head">
       <div className="ds-avatar ds-avatar--serif cpf-avatar" style={hueStyle(clientHue(name || 'me'))} aria-hidden="true">
         {avatarInitial(name)}
       </div>
@@ -26,10 +25,11 @@ export function ProfileHeader({ displayName, totalDays, onCustomize, onOpenSetti
           </div>
         )}
       </div>
+      <Leaf size="hero" />
       <div className="cpf-head-actions">
         <CustomizeLink onClick={onCustomize} />
         {onOpenSettings && <SettingsGear onClick={onOpenSettings} />}
       </div>
-    </div>
+    </div></div>
   );
 }

@@ -1,6 +1,7 @@
 import { SkeletonLines } from './SkeletonLines';
 import { ENTRY_KIND_LABEL } from '../diary/entryKind';
 import type { FeedEntry } from './todayFeed';
+import { PaperEmpty } from '../../components/art/PaperEmpty';
 
 interface Props {
   entries: FeedEntry[];
@@ -22,7 +23,7 @@ export function TodayFeed({ entries, loaded, onOpenDiaries, onOpenTrackerHistory
       {!loaded ? (
         <SkeletonLines />
       ) : entries.length === 0 ? (
-        <p className="ds-empty">Пока ничего. Любая кнопка выше подойдёт для начала.</p>
+        <PaperEmpty>Пока ничего. Любая кнопка выше подойдёт для начала.</PaperEmpty>
       ) : (
         <ul className="ct-feed-list">
           {entries.map(e => (

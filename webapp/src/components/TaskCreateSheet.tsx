@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { GlyphArrowLeft } from './exercises/ExScreen';
+import { Check } from './art/PaperArtSigns';
 import { api, type UserId } from '../api';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { haptic } from '../haptic';
@@ -81,14 +82,13 @@ export function TaskCreateSheet({ clientId, clientName, defaultType, defaultText
   return (
     <div className="sk-sheet">
       <div className="ds-sheet-head">
-        <button type="button" className="ds-back" onClick={goBack}>
-          <GlyphArrowLeft /> {clientId !== undefined ? 'Назад к карточке' : 'Назад'}
-        </button>
+        <button type="button" className="ds-back" onClick={goBack}><GlyphArrowLeft /> {clientId !== undefined ? 'Назад к карточке' : 'Назад'}</button>
       </div>
 
       <div className="sk-scroll">
         <div className="sk-page">
           <div>
+            <Check size="row" />
             <div className="ds-eyebrow sk-eyebrow-one">{copy.title}</div>
             <h1 className="ds-h2 sk-title">{tr('Выбери', 'Выберите')}<br /><em className="sk-it">{copy.what}</em></h1>
             {lead && <p className="ds-sub sk-lead">{lead}</p>}
