@@ -50,7 +50,7 @@
 /* ── Строка-переход с картинкой слева (списки «Ещё», инструменты) ───────── */
 .pp-row-art { display: inline-flex; align-items: center; justify-content: center; width: 44px; flex-shrink: 0; }
 
-@media (max-width: 767px) {
+@media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
   .pp-square { padding: 20px 18px 16px; min-height: 216px; }
   .pp-art--hero { width: 96px; height: 80px; }
 }
