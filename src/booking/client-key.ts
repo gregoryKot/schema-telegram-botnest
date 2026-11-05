@@ -24,16 +24,26 @@ const sha256 = (s: string): string =>
   createHash('sha256').update(s).digest('hex');
 
 /**
- * Одна нормальная форма на одного человека. Телефон — только цифры (8… и +7…
- * остаются разными: правила замены в коде нигде не принято); ник — без `@`;
- * всё прочее, включая почту, — регистр и пробелы по краям, `-`, `+` и точки
- * сохраняются: в адресе почты они различают ящики.
+ * Одна нормальная форма на одного человека. Телефон — цифры и ведущий `+`
+ * (8… и +7… остаются разными: правила замены в коде нигде не принято; без `+`
+ * `+49 5123 4567` склеивался с `(495) 123-45-67` — «расклейка безопасна,
+ * склейка — нет»); ник — без `@`; всё прочее, включая почту, — регистр и
+ * пробелы по краям, `-`, `+` и точки сохраняются: в адресе почты они различают
+ * ящики.
  */
 export function normalizeContact(contact: string): string {
   const s = contact.trim().toLowerCase();
-  if (PHONE_RE.test(s) && /\d/.test(s)) return s.replace(/\D/g, '');
+  if (PHONE_RE.test(s) && /\d/.test(s))
+    return (/^\D*\+/.test(s) ? '+' : '') + s.replace(/\D/g, '');
   if (NICK_RE.test(s)) return s.replace(/^@/, '');
   return s.replace(/\s+/g, ' ');
+}
+
+/** Форма телефона до сохранения `+` (только цифры) — источник для перевода
+ *  строк; null, если она не отличается от нынешней. */
+function digitsOnlyForm(contact: string): string | null {
+  const norm = normalizeContact(contact);
+  return norm.startsWith('+') ? norm.slice(1) : null;
 }
 
 /**
@@ -77,5 +87,11 @@ export function clientKeySources(contact: string): string[] {
   const [current, ...olds] = clientKeyCandidates(contact);
   const k0 = `k0:${sha256(normalizeContact(contact))}`;
   const extra = current === k0 ? [] : [k0];
-  return [legacyClientKey(contact), ...olds, ...extra];
+  // Строки, записанные до сохранения `+` у телефона (под каждым ключом и k0).
+  const digits = digitsOnlyForm(contact);
+  const prior =
+    digits === null
+      ? []
+      : [...clientKeyCandidates(digits), `k0:${sha256(digits)}`];
+  return [...new Set([legacyClientKey(contact), ...olds, ...extra, ...prior])];
 }
