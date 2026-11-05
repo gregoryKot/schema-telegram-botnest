@@ -1,16 +1,36 @@
 // Сводка «Коротко» концептуализации (#902): строки «что с клиентом» из модели
-// схемы случая — первое, что видно на вкладке сайта и в листе мини-аппа, до
-// фигур схемы и карточек полей. Чистая функция без React: порядок строк
-// фиксирован (схемы → режимы → цикл → потребности → цель), пустая строка
-// опускается, пустая модель даёт [] — тогда карточки нет вовсе.
+// схемы случая — первое, что видно на вкладке сайта, до фигур схемы и карточек
+// полей. Чистая функция без React: порядок строк фиксирован (схемы → режимы →
+// цикл → потребности → цель), пустая строка опускается, пустая модель даёт [] —
+// тогда карточки нет вовсе. Строка несёт и плашки (`items`: схема в тоне
+// домена, режим в тоне группы, потребность в тоне домена), и склейку `text`
+// для экспорта и тестов: до правки 2026-11 строка была одним длинным текстом
+// через « · », и терапевт её не читал. Те же билдеры плашек берёт экран
+// «Главное» (conceptBrief.ts).
 import { NEED_ORDER, getNeedData } from '../../needs/needData';
+import {
+  getModeById,
+  getSchemaById,
+} from '../../schemaTherapy/schemaTherapyData';
+import { DOMAIN_HUE, MODE_GROUP_HUE, NEED_HUE } from '../../theme/entityHue';
 import type { ConceptGraphModel, GraphModeCard } from './conceptGraphTypes';
 
 export type DigestKey = 'schemas' | 'modes' | 'cycle' | 'needs' | 'goal';
 
+/** Плашка строки: с hue — цветной чип сущности; `plain` — слово между плашками: стрелка «→» или подпись группы («блокированы:»). */
+export interface DigestItem {
+  text: string;
+  hue?: number;
+  plain?: 'arrow' | 'caption';
+}
+
 export interface DigestRow {
   key: DigestKey;
   label: string;
+  /** Плашками или текстом: «Цикл» и «Цель» — свободный текст, остальное — сущности. */
+  kind: 'chips' | 'text';
+  items: DigestItem[];
+  /** Та же строка одним текстом (плашки через « · »). */
   text: string;
 }
 
@@ -32,7 +52,7 @@ const LABELS: Record<DigestKey, string> = {
   goal: 'Цель',
 };
 
-const SEP = ' · ';
+export const DIGEST_SEP = ' · ';
 
 /**
  * Обрезка по границе слова: текст в пределе (и ровно в предел) — как есть,
@@ -47,49 +67,79 @@ export function clip(text: string, max: number): string {
 }
 
 /** Слова клиента, в скобках — название режима; без alias — только название. */
-const modeName = (m: GraphModeCard): string =>
+export const modeName = (m: GraphModeCard): string =>
   m.alias ? `${m.alias} (${m.name})` : m.name;
 
-/** Детские → критикующие → копинг (внутри полосы — порядок модели), затем « → » и здоровые. */
-function modesText({ lanes }: ConceptGraphModel): string {
-  const main = [...lanes.child, ...lanes.critic, ...lanes.coping]
-    .map(modeName)
-    .join(SEP);
-  const healthy = lanes.healthy.map(modeName).join(SEP);
-  if (!main || !healthy) return main || healthy;
-  return `${main} → ${healthy}`;
+/** Hue группы режима — тон плашки и точки (MODE_GROUP_HUE). */
+export const modeHue = (modeId: string): number | undefined =>
+  MODE_GROUP_HUE[getModeById(modeId)?.groupId ?? ''];
+
+/** Схемы в тоне домена, порядок модели (домены). */
+export function schemaItems({ schemas }: ConceptGraphModel): DigestItem[] {
+  return schemas.map((s) => ({
+    text: s.name,
+    hue: DOMAIN_HUE[getSchemaById(s.id)?.domainId ?? ''],
+  }));
 }
 
-/** «✗ блокированы» — схемами, «✓ есть опора» — здоровые режимы заботятся; порядок NEED_ORDER. Слова, не только знаки: легенда схемы свёрнута. */
-function needsText({ schemas, lanes }: ConceptGraphModel): string {
+/** Детские → критикующие → копинг (внутри полосы — порядок модели), затем «→» и здоровые. */
+export function modeItems({ lanes }: ConceptGraphModel): DigestItem[] {
+  const chip = (m: GraphModeCard): DigestItem => ({
+    text: modeName(m),
+    hue: modeHue(m.modeId),
+  });
+  const main = [...lanes.child, ...lanes.critic, ...lanes.coping].map(chip);
+  const healthy = lanes.healthy.map(chip);
+  if (main.length === 0 || healthy.length === 0) return [...main, ...healthy];
+  return [...main, { text: '→', plain: 'arrow' }, ...healthy];
+}
+
+/** «блокированы:» — схемами, «есть опора:» — здоровые режимы заботятся; порядок NEED_ORDER. Слова, не только знаки: легенда схемы свёрнута. */
+export function needItems({ schemas, lanes }: ConceptGraphModel): DigestItem[] {
   const data = getNeedData('ty');
-  const names = (ids: Set<string>): string =>
-    NEED_ORDER.filter((id) => ids.has(id))
-      .map((id) => data[id].name)
-      .join(SEP);
-  const blocked = names(new Set(schemas.flatMap((s) => s.needIds)));
-  const met = names(
+  const chips = (ids: Set<string>): DigestItem[] =>
+    NEED_ORDER.filter((id) => ids.has(id)).map((id) => ({
+      text: data[id].name,
+      hue: NEED_HUE[id],
+    }));
+  const caption = (text: string): DigestItem => ({ text, plain: 'caption' });
+  const blocked = chips(new Set(schemas.flatMap((s) => s.needIds)));
+  const met = chips(
     new Set(lanes.healthy.flatMap((m) => m.needs.map((n) => n.id))),
   );
-  return [blocked && `✗ блокированы: ${blocked}`, met && `✓ есть опора: ${met}`]
-    .filter(Boolean)
-    .join(SEP);
+  return [
+    ...(blocked.length ? [caption('✗ блокированы:'), ...blocked] : []),
+    ...(met.length ? [caption('✓ есть опора:'), ...met] : []),
+  ];
+}
+
+/** Склейка плашек в одну строку: чипы и подписи через « · », стрелка — пробелами. */
+export function itemsText(items: DigestItem[]): string {
+  return items.reduce((acc, it, i) => {
+    if (i === 0) return it.text;
+    const prev = items[i - 1];
+    const glue = it.plain === 'arrow' || prev.plain ? ' ' : DIGEST_SEP;
+    return `${acc}${glue}${it.text}`;
+  }, '');
 }
 
 export function buildConceptDigest(
   graph: ConceptGraphModel,
   goals: string | null | undefined,
 ): DigestRow[] {
-  const texts: Record<DigestKey, string> = {
-    schemas: graph.schemas.map((s) => s.name).join(SEP),
-    modes: modesText(graph),
-    cycle: clip(graph.sequence, CYCLE_CLIP),
-    needs: needsText(graph),
-    goal: clip(goals ?? '', GOAL_CLIP),
+  const textRow = (t: string): DigestItem[] => (t ? [{ text: t }] : []);
+  const items: Record<DigestKey, DigestItem[]> = {
+    schemas: schemaItems(graph),
+    modes: modeItems(graph),
+    cycle: textRow(clip(graph.sequence, CYCLE_CLIP)),
+    needs: needItems(graph),
+    goal: textRow(clip(goals ?? '', GOAL_CLIP)),
   };
-  return ORDER.filter((key) => texts[key]).map((key) => ({
+  return ORDER.filter((key) => items[key].length > 0).map((key) => ({
     key,
     label: LABELS[key],
-    text: texts[key],
+    kind: key === 'cycle' || key === 'goal' ? 'text' : 'chips',
+    items: items[key],
+    text: itemsText(items[key]),
   }));
 }

@@ -11,6 +11,7 @@ const SCHEMA_LINKED_EVENT: AnalyticsEventName = 'concept_schema_linked';
 const CANVAS_EVENT: AnalyticsEventName = 'concept_canvas_open';
 const FULLSCREEN_EVENT: AnalyticsEventName = 'concept_graph_fullscreen';
 const SAVE_RETRY_EVENT: AnalyticsEventName = 'concept_save_retry';
+const BRIEF_EVENT: AnalyticsEventName = 'concept_brief_open';
 
 // Счётчики графической концептуализации в кабинете терапевта для /stats: открыл схему
 // случая, заполнил связи, записал тексты схемы, перенёс на холст, развернул на весь экран,
@@ -38,6 +39,7 @@ export class ConceptGraphMetricsService {
       canvas,
       fullscreen,
       saveRetry,
+      brief,
     ] = await Promise.all([
       countOf(OPEN_EVENT),
       // Одна группа на терапевта; анонимная строка (userId null) терапевтом
@@ -51,6 +53,7 @@ export class ConceptGraphMetricsService {
       countOf(CANVAS_EVENT),
       countOf(FULLSCREEN_EVENT),
       countOf(SAVE_RETRY_EVENT),
+      countOf(BRIEF_EVENT),
     ]);
     return {
       opens30: opens,
@@ -60,6 +63,7 @@ export class ConceptGraphMetricsService {
       canvasOpen30: canvas,
       fullscreen30: fullscreen,
       saveRetry30: saveRetry,
+      brief30: brief,
     };
   }
 }

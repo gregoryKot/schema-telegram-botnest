@@ -10,6 +10,7 @@ function makeService(opts: {
   canvas?: number;
   fullscreen?: number;
   saveRetry?: number;
+  brief?: number;
   groups?: Array<{ userId: bigint | null }>;
 }) {
   const byName: Record<string, number> = {
@@ -19,6 +20,7 @@ function makeService(opts: {
     concept_canvas_open: opts.canvas ?? 0,
     concept_graph_fullscreen: opts.fullscreen ?? 0,
     concept_save_retry: opts.saveRetry ?? 0,
+    concept_brief_open: opts.brief ?? 0,
   };
   const count = jest.fn(({ where }: { where: { name: string } }) =>
     Promise.resolve(byName[where.name]),
@@ -55,6 +57,7 @@ describe('ConceptGraphMetricsService', () => {
       canvasOpen30: 4,
       fullscreen30: 5,
       saveRetry30: 0,
+      brief30: 0,
     });
   });
 
@@ -93,6 +96,7 @@ describe('ConceptGraphMetricsService', () => {
       canvasOpen30: 7,
       fullscreen30: 0,
       saveRetry30: 0,
+      brief30: 0,
     });
     await expect(service.render()).resolves.toContain(
       'Переносили схему случая на холст 7 раз',
@@ -109,6 +113,7 @@ describe('ConceptGraphMetricsService', () => {
       canvasOpen30: 0,
       fullscreen30: 6,
       saveRetry30: 0,
+      brief30: 0,
     });
     await expect(service.render()).resolves.toContain(
       'Разворачивали схему на весь экран 6 раз',
@@ -125,6 +130,7 @@ describe('ConceptGraphMetricsService', () => {
       canvasOpen30: 0,
       fullscreen30: 0,
       saveRetry30: 3,
+      brief30: 0,
     });
     await expect(service.render()).resolves.toContain(
       'Повторяли сохранение после ошибки 3 раз',
@@ -159,6 +165,7 @@ describe('ConceptGraphMetricsService', () => {
       canvasOpen30: 0,
       fullscreen30: 0,
       saveRetry30: 0,
+      brief30: 0,
     });
     const text = await service.render();
     expect(text).toContain('Пока никто из терапевтов не открывал');

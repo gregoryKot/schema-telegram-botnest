@@ -147,6 +147,8 @@ export const CONCEPT_GRAPH_FULLSCREEN_EVENT = 'concept_graph_fullscreen';
 // Три места, оба фронтенда: «Повторить» в строке статуса сохранения (SaveStatusLine) после ошибки — вкладка сайта
 // (useClientDetail), холст (useModeMapAutosave) и кнопка мини-аппа (ConceptSaveBar). Шлётся литералом (трипваер analytics-sync).
 export const CONCEPT_SAVE_RETRY_EVENT = 'concept_save_retry';
+// Только сайт: открыл экран «Главное» (кнопка в шапке вкладки; шлёт ConceptBriefButton литералом).
+export const CONCEPT_BRIEF_OPEN_EVENT = 'concept_brief_open';
 
 // ── Разбор случая («Что это было») ─────────────────────────────────────────
 // Новая точка входа: человек за три минуты разбирает один случай и получает
