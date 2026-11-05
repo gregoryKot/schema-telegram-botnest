@@ -451,6 +451,11 @@ jobs:
       # нашего кода. На фейке этот спек ничего бы не доказывал, поэтому только тут.
       - name: e2e leader-election кронов на реальном Postgres
         run: npx jest --config ./test/jest-e2e.json --runInBand test/cron-leader.e2e-spec.ts
+      # Заглушка браузерного смока (e2e-browser/support/stubFixtures.ts) против
+      # настоящих ответов: статус и тело каждой ручки (ci-alarm #903). Только тут:
+      # ручки читают сырым SQL, фейковая Prisma его не знает.
+      - name: e2e заглушка браузерного смока ↔ сервер на реальном Postgres
+        run: npx jest --config ./test/jest-e2e.json --runInBand test/browser-stub-contract.e2e-spec.ts
       # Полуночный обход, оборванный рестартом (аудит 2026-10): хвост доделывает
       # старт нового процесса, дублей нет — день человека забирает один UPDATE с
       # условием, а это свойство Postgres, не нашего кода.
