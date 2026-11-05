@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { api, reportClientError } from '../../api';
 import { useConsentGate } from '../../hooks/useConsentGate';
 import { useStartParam } from '../../hooks/useStartParam';
-import { cacheTherapistContact } from '../../utils/therapistContact';
+import { cacheClientRelation } from '../../utils/therapistContact';
 import { AddressFormPicker } from '../AddressFormPicker';
 import { ConsentScreen } from '../ConsentScreen';
 import { JoinConfirmSheet } from '../JoinConfirmSheet';
@@ -36,9 +36,8 @@ export function EntryFlows({ ov, onDone }: { ov: ReturnType<typeof useOverlays>;
     // Связь с терапевтом кэшируется для «Написать терапевту»; пара читается
     // листом настроек при каждом открытии, держать копию негде.
     if (kind === 'therapy') {
-      api.getTherapyRelation().then((rel) => cacheTherapistContact({
-        role: 'CLIENT', partnerId: rel?.partnerId ?? null, partnerName: rel?.partnerName ?? null, myId: null, myName: null,
-      })).catch(() => reportClientError({ message: 'join therapy: связь не обновилась', section: 'appshell.bootstrap' }));
+      api.getTherapyRelation().then(cacheClientRelation)
+        .catch(() => reportClientError({ message: 'join therapy: связь не обновилась', section: 'appshell.bootstrap' }));
     }
   }, []);
 

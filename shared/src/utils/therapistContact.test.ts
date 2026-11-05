@@ -12,6 +12,7 @@ import {
   contactCta,
   hasConnectedTherapist,
   telegramChatUrl,
+  cacheClientRelation,
 } from './therapistContact';
 
 beforeEach(() => {
@@ -195,5 +196,24 @@ describe('терапевт с веб-аккаунтом — написать и�
     expect(hasConnectedTherapist(c)).toBe(true);
     expect(contactCta(c).isSelf).toBe(true);
     expect(localStorage.getItem('therapy_contact_url')).not.toMatch(/tg:/);
+  });
+});
+
+// QA 2026-11-05 (живой стенд): после «Отключиться от терапевта» мост в «Ещё»
+// до перезагрузки вёл к бывшему терапевту — кэш чистил только следующий старт.
+describe('cacheClientRelation — кэш клиента по его связи', () => {
+  it('связь есть → «Написать терапевту» по номеру партнёра', () => {
+    cacheClientRelation({ partnerId: 4300000000001, partnerName: 'Анна' });
+    expect(hasConnectedTherapist()).toBe(true);
+    expect(getTherapistContact().url).toBe('tg://user?id=4300000000001');
+    expect(getTherapistContact().name).toBe('терапевту');
+  });
+
+  it('null (отключился или связи нет) → кэш очищен, мост ведёт к автору', () => {
+    cacheClientRelation({ partnerId: 4300000000001, partnerName: 'Анна' });
+    cacheClientRelation(null);
+    expect(hasConnectedTherapist()).toBe(false);
+    expect(getTherapistContact().name).toBe('автору');
+    expect(localStorage.getItem('therapy_contact_url')).toBeNull();
   });
 });

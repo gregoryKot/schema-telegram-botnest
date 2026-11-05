@@ -17,6 +17,7 @@
 import type { Page } from '@playwright/test';
 import { localDateStr, todayStr } from '../../shared/src/utils/format';
 import { FIXTURES, STATUS, STUB_NEEDS } from './stubFixtures';
+import { handleTherapyRoute, type StubTherapyHandle } from './stubTherapy';
 
 export interface StubApiHandle {
   /**
@@ -26,6 +27,8 @@ export interface StubApiHandle {
    * перезагрузку» была бы самообманом.
    */
   ratingsByDay: Map<string, Record<string, number>>;
+  /** Связь с терапевтом (stubTherapy.ts): состояние «подключён» живёт здесь. */
+  therapy: StubTherapyHandle;
 }
 
 /**
@@ -47,6 +50,7 @@ export async function stubApi(page: Page): Promise<StubApiHandle> {
   // устройства, shared/src/api/ratingApi.ts). Одно хранилище на запись и оба
   // чтения: /api/ratings отдаёт день, /api/history — дни с оценками.
   const ratingsByDay = new Map<string, Record<string, number>>();
+  const therapy: StubTherapyHandle = { connected: false };
 
   await page.route('**/api/**', async (route) => {
     const req = route.request();
@@ -62,6 +66,9 @@ export async function stubApi(page: Page): Promise<StubApiHandle> {
               body: JSON.stringify(body),
             },
       );
+
+    // Связь с терапевтом — состояние в памяти теста (подключился → отключился).
+    if (await handleTherapyRoute(route, therapy)) return;
 
     // Без даты сервер берёт сегодняшний день пользователя; у стаба
     // пользователь — браузер на этой же машине, его день — todayStr().
@@ -116,7 +123,7 @@ export async function stubApi(page: Page): Promise<StubApiHandle> {
     });
   });
 
-  return { ratingsByDay };
+  return { ratingsByDay, therapy };
 }
 
 /**
