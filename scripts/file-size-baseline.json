@@ -295,8 +295,6 @@
   "shared/src/portrait/portraitTexts.ts": 49,
   "shared/src/portrait/useAboutMe.ts": 128,
   "shared/src/practices/breathing.ts": 48,
-  "shared/src/practices/BreathingSiteCard.tsx": 11,
-  "shared/src/practices/BreathingSiteView.tsx": 71,
   "shared/src/practices/breathingText.ts": 51,
   "shared/src/practices/createBreathingCard.tsx": 115,
   "shared/src/practices/curated.ts": 37,

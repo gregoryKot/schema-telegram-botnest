@@ -1,4 +1,5 @@
 import { SCHEMA_DOMAINS } from '../../schemaTherapyData';
+import { Cup } from '../../components/art/PaperArt';
 import { useTr } from '../../utils/addressForm';
 import { hueStyle, DOMAIN_HUE } from '../../lib/tone';
 import { Skeleton } from '../../components/Skeleton';
@@ -19,15 +20,14 @@ export function MySchemasBlock({ loading, ids, onAdd, onOpenSchema, statusFor, f
   return (
     <section className="cs-block">
       <div className="ds-head-row">
-        <h3 className="ds-h3">Мои схемы</h3>
-        <button onClick={onAdd} className="ds-link">+ Добавить</button>
+        <h3 className="ds-h3">Мои схемы</h3><button onClick={onAdd} className="ds-link">+ Добавить</button>
       </div>
       {loading ? (
         <div className="cs-chips">
           {[80, 100, 90, 110].map((w, i) => <Skeleton key={i} height={32} width={w} radius={16} />)}
         </div>
       ) : ids.length === 0 ? (
-        <p className="ds-empty">{tr('Пройди тест на схемы или добавь вручную', 'Пройдите тест на схемы или добавьте вручную')}</p>
+        <div className="pp-empty"><Cup /><p className="ds-empty">{tr('Пройди тест на схемы или добавь вручную', 'Пройдите тест на схемы или добавьте вручную')}</p></div>
       ) : (
         <>
         {freq && <FreqHint kind="schema" freq={freq} />}

@@ -1,5 +1,5 @@
-import { api } from '../../api';
-import type { TherapyRelationInfo } from '../../api';
+import { Talk } from '../../components/art/PaperArtSigns';
+import { api, type TherapyRelationInfo } from '../../api';
 import { FormerTherapistNote } from '../../../../shared/src/therapy/FormerTherapistNote';
 import { upcomingSession } from '../../../../shared/src/therapy/upcomingSession';
 import { nextSessionLabel } from '../../../../shared/src/therapy/clientSheetHelpers';
@@ -12,12 +12,12 @@ export function TherapistCard({ relation }: { relation: TherapyRelationInfo | nu
   if (relation.role !== 'client' || !relation.partnerName) return null;
   const next = upcomingSession(relation.nextSession, relation.meetingDays);
   return (
-    <section className="ds-card ds-card--panel cpf-therapist">
+    <section className="pp-paper cpf-therapist">
       <div className="cpf-therapist-ava" aria-hidden="true">{avatarInitial(relation.partnerName)}</div>
       <div className="cpf-therapist-body">
         <div className="ds-label cpf-therapist-label">Терапевт</div>
         <div className="cpf-therapist-name">{relation.partnerName}</div>
-      </div>
+      </div><Talk size="row" />
       {next && (
         <div className="cpf-therapist-next">
           <span className="cpf-therapist-label">Следующая сессия</span>

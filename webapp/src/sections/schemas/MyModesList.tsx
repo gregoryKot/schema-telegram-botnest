@@ -1,4 +1,5 @@
 import { MODE_GROUPS, ALL_MODES } from '../../schemaTherapyData';
+import { Cup } from '../../components/art/PaperArt';
 import { useTr } from '../../utils/addressForm';
 import { Skeleton } from '../../components/Skeleton';
 import { MineGroupsList } from './MineGroupsList';
@@ -21,9 +22,7 @@ export function MyModesList({ loading, ids, onAdd, onOpenMode, statusFor, freq }
   if (loading) return <section className="cs-block"><Skeleton height={64} radius={20} /><Skeleton height={64} radius={20} /></section>;
   return (
     <>
-      {ids.length === 0 && (
-        <p className="ds-empty">{tr('Добавь режимы, которые узнаёшь у себя', 'Добавьте режимы, которые узнаёте у себя')}</p>
-      )}
+      {ids.length === 0 && <div className="pp-empty"><Cup /><p className="ds-empty">{tr('Добавь режимы, которые узнаёшь у себя', 'Добавьте режимы, которые узнаёте у себя')}</p></div>}
       <MineGroupsList
         kind="mode" groups={groupMineByModeGroup(MODE_GROUPS, ids)} nameOf={nameOf}
         addLabel="+ Добавить режим" onAdd={onAdd} onOpen={onOpenMode} statusFor={statusFor} freq={freq}
