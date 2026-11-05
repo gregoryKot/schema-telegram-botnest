@@ -18,8 +18,7 @@ interface Props {
 
 interface Row { id: string; title: string; sub: string; onClick: () => void; href?: string; phoneOnly?: boolean }
 const ROW_CLASS = 'ds-list-row ds-list-row--nav ds-list-row--hover';
-// phoneOnly: дубль левого меню — скрыт на ≥768 (client-more.css), на телефоне «Ещё» полное (#925).
-const rowClass = (r: Row) => r.phoneOnly ? `${ROW_CLASS} cm-row--phone` : ROW_CLASS;
+const rowClass = (r: Row) => r.phoneOnly ? `${ROW_CLASS} cm-phone-only` : ROW_CLASS;
 function RowBody({ row }: { row: Row }) {
   return (
     <>

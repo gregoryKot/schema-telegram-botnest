@@ -70,3 +70,20 @@ describe('«Записи»: шапка в строку и компактная �
     expect(phone.map((r) => r.body)).toEqual([expect.stringMatching(/font-size:\s*22px/)]);
   });
 });
+
+describe('«Ещё» и «Активность» на компьютере', () => {
+  it('cm-phone-only скрыт только под ≥768; список и кризисная кнопка — колонка 720', () => {
+    const hide = rulesOf('client-more.css', '.cm-phone-only');
+    expect(hide.length).toBeGreaterThan(0);
+    for (const r of hide) expect(isDesktop(r.media)).toBe(true);
+    expect(phoneSees('client-more.css', '.cm-phone-only', /display:\s*none/)).toEqual([]);
+    expect(at('client-more.css', '.cm-page > .ds-card--flush', 768)).toMatch(/max-width:\s*720px/);
+    expect(at('client-more.css', '.cm-page > .ds-card--crisis', 768)).toMatch(/max-width:\s*720px/);
+  });
+  it('тепловая карта: клетка фиксированного размера ≤24px только под ≥768', () => {
+    const grid = at('client-profile.css', '.cpf-heat-grid', 768);
+    expect(Number(grid.match(/repeat\(var\(--cols\),\s*(\d+)px\)/)?.[1])).toBeLessThanOrEqual(24);
+    expect(at('client-profile.css', '.cpf-heat-wrap', 768)).toMatch(/width:\s*max-content/);
+    expect(rulesOf('client-profile.css', '.cpf-heat-wrap').filter((r) => !isDesktop(r.media) && /max-content/.test(r.body))).toEqual([]);
+  });
+});

@@ -12,5 +12,5 @@
   /* Список и кризисная кнопка — колонкой 720 у левого края рамки; на 1344 стрелка уезжала от текста (#925). */
   .cm-page > .ds-card--flush, .cm-page > .ds-card--crisis { max-width: 720px; width: 100%; box-sizing: border-box; }
   /* Мои паттерны, Практики, Профиль дублируют левое меню. */
-  .cm-row--phone { display: none; }
+  .cm-phone-only { display: none; }
 }
