@@ -66,7 +66,6 @@
 /* 2FA */
 .al-2fa { min-height: 100vh; display: flex; justify-content: center; padding: 36px 24px; }
 .al-2fa-in { width: 100%; max-width: 420px; display: flex; flex-direction: column; gap: 14px; padding-top: 24px; }
-.al-2fa-head { display: flex; align-items: center; gap: 14px; }
 .al-2fa-mark { width: 56px; height: 56px; border-radius: 16px; display: grid; place-items: center; font-family: var(--serif); font-size: 26px; }
 .al-2fa-title { font-family: var(--serif); font-size: 30px; line-height: 1.1; font-weight: 400; margin: 0; }
 .al-cells { position: relative; display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; margin-top: 8px; }

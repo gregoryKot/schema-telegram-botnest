@@ -2,9 +2,7 @@
 // В покое справа картинка Breath, во время дыхания и после него — тот же слот занимает
 // круг с обратным отсчётом. Логика — useBreathingSession (shared/practices).
 import { Breath } from '../art/PaperArt';
-import { PracticeDoneFooterSite } from '../../../../shared/src/practices/PracticeDoneFooterSite';
 import {
-  createBreathingCard,
   BREATHE_IDLE_KEYFRAMES,
   type BreathingViewProps,
 } from '../../../../shared/src/practices/createBreathingCard';
@@ -43,6 +41,3 @@ export function BreathingPaperView({ active, finished, text, st, pulse, start, s
     </div>
   );
 }
-
-/** Карточка «Дыши со мной» сайта: логика общая, вёрстка — герой-блок выше. */
-export const BreathingSiteCard = createBreathingCard(BreathingPaperView, PracticeDoneFooterSite);

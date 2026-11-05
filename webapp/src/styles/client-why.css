@@ -12,7 +12,14 @@
 .cw-lead { margin: 0; font-size: 15px; line-height: 1.6; color: var(--text-sub); }
 /* Три действия — строки одной карточки: название Manrope 600, пояснение 14px. */
 .cw-list { margin: 0; padding: 0; list-style: none; }
-.cw-item { grid-template-columns: minmax(0, 1fr); gap: 2px; }
+.cw-item { grid-template-columns: auto minmax(0, 1fr); align-items: start; gap: 2px 14px; }
+.cw-item-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+/* Герой: три мотива в ряд; на узком экране сжимаются, а не переносятся. */
+.cw-hero { display: flex; gap: 12px; }
+.cw-hero .pp-art { flex: 1 1 0; min-width: 0; width: auto; height: 60px; }
+.cw-title-row { display: flex; align-items: center; gap: 16px; }
+.cw-title-row .ds-h1 { margin: 0; flex: 1; min-width: 0; }
+.cw-title-row .pp-art { flex: none; width: 84px; height: auto; }
 .cw-item-text { font-size: 14px; line-height: 1.5; color: var(--text-sub); }
 /* Ободряющая фраза перед кнопкой. Не .cw-note: это имя занято колесом детства (sheet-childhood.css). */
 .cw-tip { margin: 0; font-size: 14px; line-height: 1.5; color: var(--text); }

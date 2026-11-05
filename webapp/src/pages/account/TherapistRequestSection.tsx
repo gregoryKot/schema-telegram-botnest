@@ -1,4 +1,4 @@
-import { useState, useEffect, type CSSProperties } from 'react';
+import { useState, useEffect } from 'react';
 import { Talk } from '../../components/art/PaperArtSigns';
 import { API_BASE } from '../../utils/apiBase'; import { useTr } from '../../utils/addressForm';
 import { LimitedTextarea } from '../../../../shared/src/components/LimitedTextarea';
@@ -64,7 +64,7 @@ export function TherapistRequestSection({ accessToken }: { accessToken: string |
   };
 
   return (
-    <div className="pp-paper aa-role" style={{ '--h': 135 } as CSSProperties}>
+    <div className="pp-paper aa-role">
       <div className="aa-role-head"><div className="aa-role-label">Роль психолога</div><Talk size="row" /></div>
       <TherapistRequestRejectedNote request={req} className="aa-role-note" />
       {req?.status === 'pending' ? (

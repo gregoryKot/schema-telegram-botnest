@@ -8,7 +8,7 @@ import { isVirtualId } from '../../../../shared/src/utils/sameId';
 import { pluralRu } from '../../../../shared/src/utils/pluralRu';
 import { CONCEPT_EXPORT_EMPTY } from '../../../../shared/src/therapy/conceptExport';
 import { buildYsqRows, YSQ_TOP_N } from './ysqRows';
-import { TabTitle } from './TabTitle';
+import { TabTitle, PaperEmpty } from './TabTitle';
 import { YSQTable } from './YSQTable';
 import { YSQDynamics } from './YSQDynamics';
 
@@ -33,7 +33,7 @@ export function ClientYSQTab({ clientData, selectedClient, selfSchemaIds, ysqReq
     return (
       <div className="ds-page tb-page--ysq">
         <div className="u-col8">
-          <p className="ds-empty">YSQ ещё не проходился</p>
+          <PaperEmpty>YSQ ещё не проходился</PaperEmpty>
           {virtual ? (
             <div className="tb-meta">У офлайн-клиента нет аккаунта – тест пройти негде</div>
           ) : (
@@ -68,7 +68,7 @@ export function ClientYSQTab({ clientData, selectedClient, selfSchemaIds, ysqReq
   return (
     <div className="ds-page tb-page--ysq">
       <div className="ds-head-row">
-        <TabTitle title="Опросник схем YSQ">
+        <TabTitle title="Опросник схем YSQ" motif="layers">
           <div className="ds-sub">{hist.length} {pluralRu(hist.length, 'прохождение', 'прохождения', 'прохождений')} · последнее {clientData.ysqCompletedAt ? fmtDate(momentDayKey(clientData.ysqCompletedAt)) : '–'}</div>
         </TabTitle>
         <div className="tb-actions">

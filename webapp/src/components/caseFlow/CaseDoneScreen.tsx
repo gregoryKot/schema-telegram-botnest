@@ -1,3 +1,4 @@
+import { Ribbon } from '../art/PaperArt';
 import { ExScreen } from '../exercises/ExScreen';
 import { TherapyLine } from '../therapy/TherapyLine';
 import { useTherapyBridgeTexts } from '../therapy/useTherapyBridgeTexts';
@@ -14,15 +15,13 @@ export function CaseDoneScreen({
 }) {
   const bridge = useTherapyBridgeTexts();
   return (
-    <ExScreen
-      onBack={onClose}
-      backLabel="Закрыть"
-      eyebrow="Записано"
-      title={name}
-    >
-      <p className="ds-sub ex2-gap-b">
-        Теперь это есть в записях. Через 2–3 разбора видно, что повторяется.
-      </p>
+    <ExScreen onBack={onClose} backLabel="Закрыть" eyebrow="Записано" title={name}>
+      <div className="pp-paper cq-done">
+        <Ribbon size="square" />
+        <p className="ds-sub">
+          Теперь это есть в записях. Через 2–3 разбора видно, что повторяется.
+        </p>
+      </div>
       <div className="ex2-foot">
         <button type="button" className="ds-btn" onClick={onClose}>
           На главную

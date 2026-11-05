@@ -43,7 +43,7 @@ export function YsqResult(p: Props) {
       {/* «Как понимать» + «Поделиться» — с самого верха (правило онбординга) */}
       <YsqResultTopBar tr={p.tr} onShare={p.onShare} onHelpOpen={() => api.trackEvent('ysq_help_open')} />
 
-      <SsHead title={activeLabel} lede={dateLabel ? `Пройдено ${dateLabel}` : undefined} />
+      <SsHead paperHue={70} title={activeLabel} lede={dateLabel ? `Пройдено ${dateLabel}` : undefined} />
 
       {activeCount === 0 && <p className="ss-body">Выраженных схем нет — отличный результат.</p>}
 

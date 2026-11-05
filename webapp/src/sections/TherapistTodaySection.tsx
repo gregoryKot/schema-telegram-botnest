@@ -5,8 +5,8 @@ import type { TherapyClientSummary, UserId } from '../api';
 import '../styles/therapist-today.css';
 import { AttentionRow, ActivityRow, SessionRow } from './TherapistTodayLists';
 import { needsAttention, sessionsTodaySorted, todayCounts, trackedClients } from './therapistTodayModel';
-import { homeGreeting } from './today/helpers';
-import { formatGreetingDate } from './today/greetingDate';
+import { PaperEmpty } from '../components/therapist/TabTitle';
+import { TherapistTodayHead } from './TherapistTodayHead';
 
 interface Props {
   displayName: string | null;
@@ -27,11 +27,7 @@ export function TherapistTodaySection({ displayName, onOpenClient }: Props) {
 
   return (
     <div className="ds-page tt-page animate-fade">
-      <div>
-        {/* Приветствие и дата — те же, что у клиентского «Сегодня» (одна механика). */}
-        <div className="ds-eyebrow">{formatGreetingDate()}</div>
-        <h1 className="ds-h1">{homeGreeting(displayName ?? '')}</h1>
-      </div>
+      <TherapistTodayHead displayName={displayName} />
 
       {!loading && clients.length > 0 && (
         <div className="tt-counters">
@@ -56,7 +52,7 @@ export function TherapistTodaySection({ displayName, onOpenClient }: Props) {
           {loading ? (
             [0, 1].map(i => <Skeleton key={i} height={74} radius={16} />)
           ) : sessions.length === 0 ? (
-            <p className="ds-empty">Сессий не запланировано</p>
+            <PaperEmpty>Сессий не запланировано</PaperEmpty>
           ) : (
             sessions.map(c => <SessionRow key={c.telegramId} client={c} onOpen={onOpenClient} />)
           )}
@@ -75,7 +71,7 @@ export function TherapistTodaySection({ displayName, onOpenClient }: Props) {
           {loading ? (
             <Skeleton height={192} radius={16} />
           ) : counts.total === 0 ? (
-            <p className="ds-empty">{clients.length === 0 ? 'Нет клиентов' : 'Активность видна у клиентов, подключённых к боту'}</p>
+            <PaperEmpty>{clients.length === 0 ? 'Нет клиентов' : 'Активность видна у клиентов, подключённых к боту'}</PaperEmpty>
           ) : (
             <div className="ds-card ds-card--row ds-card--flush">
               {trackedClients(clients).map(c => <ActivityRow key={c.telegramId} client={c} onOpen={onOpenClient} />)}

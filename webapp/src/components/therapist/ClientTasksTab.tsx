@@ -13,6 +13,7 @@ import { therapistClosesTask, useTherapistTaskActions } from '../../../../shared
 import { hueStyle } from '../../lib/tone';
 import type { ClientDetail } from './clientSheetTypes';
 import { isOpenStatus, orderTasks, taskMeta, taskStatus, templateHue } from './taskModel';
+import { PaperEmpty, TabArt } from './TabTitle';
 import { TaskStatusBadge } from '../TaskStatusBadge';
 import { ASSIGN_TEMPLATES, type AssignPreset } from './assignTemplates';
 
@@ -38,7 +39,7 @@ export function ClientTasksTab({ detail, onAssign, onTasksChanged }: Props) {
   return (
     <div className="ds-page tb-tasks">
       <div className="tb-col">
-        <div className="tb-big">
+        <div className="tb-big"><TabArt motif="check" />
           <span className="ds-num tb-big-num">{activeCount}</span>
           <span className="tb-big-cap">
             {pluralRu(activeCount, 'активное домашнее задание', 'активных домашних задания', 'активных домашних заданий')}
@@ -47,9 +48,7 @@ export function ClientTasksTab({ detail, onAssign, onTasksChanged }: Props) {
 
         {clientTasks.length === 0 ? (
           <div>
-            <p className="ds-empty">
-              Нет назначенных заданий. Домашние практики помогают закрепить работу между сессиями.
-            </p>
+            <PaperEmpty>Нет назначенных заданий. Домашние практики помогают закрепить работу между сессиями.</PaperEmpty>
             <button onClick={() => onAssign()} className="ds-btn tb-mt16">Назначить первое задание</button>
           </div>
         ) : (
