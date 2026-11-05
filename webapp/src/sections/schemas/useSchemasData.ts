@@ -1,15 +1,15 @@
 // Данные экрана «Мои паттерны»: профиль, последний результат YSQ, прогресс теста, число карт режимов от терапевта и сохранение ручных выборов.
 import { useEffect, useState } from 'react';
 import { api, reportClientError } from '../../api';
-import type { YsqScore } from './schemasModel';
-import { cacheMySchemaIds, cacheMyModeIds, readMySchemaIds, readMyModeIds } from './myPatternsCache';
+import { MY_SCHEMA_IDS_KEY, MY_MODE_IDS_KEY, cacheMySchemaIds, cacheMyModeIds } from '../../utils/storageKeys';
+import { readLocalIds, type YsqScore } from './schemasModel';
 import { useSaveFailure } from '../../hooks/useSaveFailure';
 import { useYsqProgressListener, useYsqResultVersion } from '../../../../shared/src/hooks/ysqProgressStore';
 import { isUnwritableError } from '../../../../shared/src/api/unwritableError';
 
 export function useSchemasData() {
-  const [manualSchemaIds, setManualSchemaIds] = useState<string[]>(readMySchemaIds);
-  const [myModeIds, setMyModeIds] = useState<string[]>(readMyModeIds);
+  const [manualSchemaIds, setManualSchemaIds] = useState<string[]>(() => readLocalIds(localStorage.getItem(MY_SCHEMA_IDS_KEY)));
+  const [myModeIds, setMyModeIds] = useState<string[]>(() => readLocalIds(localStorage.getItem(MY_MODE_IDS_KEY)));
   const [ysqSchemaIds, setYsqSchemaIds] = useState<string[]>([]);
   const [ysqScores, setYsqScores] = useState<Record<string, YsqScore>>({});
   const [ysqProgressAnswered, setYsqProgressAnswered] = useState<number | null>(null);

@@ -6,6 +6,19 @@
 export { YSQ_RESULT_KEY, YSQ_PROGRESS_KEY } from '../hooks/ysqStorageKeys';
 export const MY_SCHEMA_IDS_KEY = 'my_schema_ids';
 export const MY_MODE_IDS_KEY = 'my_mode_ids';
+// Единственный писатель локальных копий «моих» схем и режимов — зеркало
+// User.mySchemaIds / myModeIds (api.getProfile / api.updateSettings); экраны
+// и старт приложения зовут эти функции, а не localStorage напрямую. Живут
+// здесь, а не в модуле экрана «Паттерны»: их зовёт и главный чанк
+// (useBootstrapLoad), и ленивые экраны, а этот файл оба уже импортируют —
+// новый общий модуль между ними заставлял сборщик дробить index на 14
+// лишних чанков (+13 КБ бандла, PR #939).
+export function cacheMySchemaIds(ids: string[]): void {
+  localStorage.setItem(MY_SCHEMA_IDS_KEY, JSON.stringify(ids));
+}
+export function cacheMyModeIds(ids: string[]): void {
+  localStorage.setItem(MY_MODE_IDS_KEY, JSON.stringify(ids));
+}
 export const CHILDHOOD_DONE_KEY = 'childhood_wheel_done';
 // Последняя открытая вкладка экрана «Паттерны» (Схемы/Режимы/
 // Потребности) — секция размонтируется при переключении нижней навигации и

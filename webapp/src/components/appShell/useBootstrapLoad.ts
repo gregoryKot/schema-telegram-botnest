@@ -4,9 +4,8 @@ import { api, reportClientError, type PracticePlan, type TherapyClientSummary } 
 import type { Need } from '../../types';
 import { cacheClientRelation, cacheTherapistContact } from '../../utils/therapistContact';
 import { humanizeThrown } from '../../../../shared/src/api/humanizeError';
-import { CHILDHOOD_DONE_KEY, THERAPIST_MODE_KEY } from '../../utils/storageKeys';
+import { CHILDHOOD_DONE_KEY, THERAPIST_MODE_KEY, cacheMySchemaIds } from '../../utils/storageKeys';
 import { cacheTherapistMode } from './therapistModeCache';
-import { cacheMySchemaIds } from '../../sections/schemas/myPatternsCache';
 import { writeYsqProgress } from '../../../../shared/src/hooks/ysqProgressStore';
 import { useDayRatings } from '../../../../shared/src/today/useDayRatings';
 import { deviceTimeZone } from '../../../../shared/src/utils/deviceTimeZone';
