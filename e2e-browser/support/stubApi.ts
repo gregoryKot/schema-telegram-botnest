@@ -1,13 +1,11 @@
-// Общий стаб бэкенда для авторизованных браузерных смоков (правило «одна
-// механика — один компонент», CLAUDE.md). Раньше каждый спек заводил свою
-// копию перехвата `**/api/**` — tracker-smoke и crisis-smoke идут через один
-// и тот же вход (AuthProvider → /api/auth/refresh) и один и тот же бутстрап
-// AppShell, разъезд копий означал бы, что фикс контракта в одной приезжает
-// без второй.
+// Общий стаб бэкенда браузерного смока (правило «одна механика — один
+// компонент», CLAUDE.md): спеки получают его через общий `test` (test.ts), а
+// не заводят свой перехват `**/api/**` — разъезд копий означал бы, что фикс
+// контракта в одной приезжает без второй.
 //
-// AuthProvider монтируется НАД всеми маршрутами (и публичными тоже, см.
-// App.tsx: Root), поэтому /api/auth/refresh дёргается на каждой загрузке —
-// фейковый токен не мешает тестам, которым авторизация не нужна.
+// AuthProvider монтируется НАД всеми маршрутами (App.tsx: Root), поэтому
+// /api/auth/refresh дёргается на каждой загрузке: вошедший клиент получает
+// токен, гость ('anonymous') — 401, как от AuthController.refresh без куки.
 //
 // Ответы — форма настоящего контроллера (support/stubFixtures.ts). Ручка без
 // фикстуры получает 404, как от сервера на неизвестный маршрут. До ci-alarm
@@ -17,7 +15,10 @@
 import type { Page } from '@playwright/test';
 import { localDateStr, todayStr } from '../../shared/src/utils/format';
 import { FIXTURES, STATUS, STUB_NEEDS } from './stubFixtures';
+import { handlePublicRoute } from './stubPublic';
 import { handleTherapyRoute, type StubTherapyHandle } from './stubTherapy';
+
+export type StubSession = 'client' | 'anonymous';
 
 export interface StubApiHandle {
   /**
@@ -32,18 +33,25 @@ export interface StubApiHandle {
 }
 
 /**
- * Перехватывает `**\/api/**` ответами формы сервера для клиента без данных:
- * вход, профиль, бутстрап AppShell, разделы «Сегодня» и «Практики». Ручка, на
- * которую фикстуры нет, отвечает 404 и пишет предупреждение в лог прогона.
+ * Перехватывает `**\/api/**` ответами формы сервера для клиента без данных
+ * (или гостя): вход, профиль, бутстрап AppShell, разделы, публичные страницы.
+ * Ручка без фикстуры отвечает 404 и пишет предупреждение в лог прогона.
  */
-export async function stubApi(page: Page): Promise<StubApiHandle> {
+export async function stubApi(
+  page: Page,
+  { session = 'client' }: { session?: StubSession } = {},
+): Promise<StubApiHandle> {
   // CookieBanner — fixed-position оверлей поверх всего приложения, пока нет
   // согласия в localStorage; в реальном браузере это первый тап пользователя,
   // но смок проверяет не его, а кризисный путь/трекер — заранее отвечаем
   // «необходимые куки», чтобы клики не перехватывались баннером. addInitScript
   // выполняется до кода страницы на КАЖДОЙ навигации, включая page.reload().
   await page.addInitScript(() => {
-    localStorage.setItem('cookie_consent', 'necessary');
+    try {
+      localStorage.setItem('cookie_consent', 'necessary');
+    } catch {
+      // about:blank до первой навигации: у документа нет хранилища.
+    }
   });
 
   // Как строки Rating: день — тот, что прислал клиент (сайт всегда шлёт день
@@ -67,8 +75,15 @@ export async function stubApi(page: Page): Promise<StubApiHandle> {
             },
       );
 
+    if (session === 'anonymous' && key === 'POST /api/auth/refresh')
+      return reply(401, {
+        message: 'No refresh token',
+        error: 'Unauthorized',
+        statusCode: 401,
+      });
     // Связь с терапевтом — состояние в памяти теста (подключился → отключился).
     if (await handleTherapyRoute(route, therapy)) return;
+    if (await handlePublicRoute(key, url, reply)) return;
 
     // Без даты сервер берёт сегодняшний день пользователя; у стаба
     // пользователь — браузер на этой же машине, его день — todayStr().
@@ -105,7 +120,7 @@ export async function stubApi(page: Page): Promise<StubApiHandle> {
         days.map(([date, ratings]) => ({ date, ratings })),
       );
     }
-    // Отчёт клиента о сбое (@HttpCode(204)); красным его делает throwOnPageError.
+    // Отчёт клиента о сбое (@HttpCode(204)); красным его делает throwOnPageError (test.ts).
     if (key === 'POST /api/client-errors')
       return route.fulfill({ status: 204 });
 
@@ -124,27 +139,4 @@ export async function stubApi(page: Page): Promise<StubApiHandle> {
   });
 
   return { ratingsByDay, therapy };
-}
-
-/**
- * Ошибки рантайма — то, с чего начинается белый экран у пользователя. Падение,
- * пойманное ErrorBoundary раздела или экраном ошибки роутера, до `pageerror`
- * не доходит: его выдаёт отчёт клиента POST /api/client-errors, и тест
- * краснеет сразу и с причиной, а не таймаутом (ci-alarm #903 полминуты ждал
- * кнопку за «Разделом упал»). Тем же отчётом клиент шлёт фоновые сбои
- * загрузки: в спеке на stubApi их быть не должно, появился — ручке не хватает
- * фикстуры. У спеков со своим перехватом `/api` этой гарантии нет.
- */
-export function throwOnPageError(page: Page): void {
-  page.on('pageerror', (err) => {
-    throw new Error(`Ошибка в рантайме страницы: ${err.message}`);
-  });
-  page.on('request', (req) => {
-    if (req.method() !== 'POST') return;
-    if (new URL(req.url()).pathname !== '/api/client-errors') return;
-    const report = req.postDataJSON() as { section?: string; message?: string };
-    throw new Error(
-      `Клиент сообщил о сбое [${report.section}]: ${report.message}`,
-    );
-  });
 }
