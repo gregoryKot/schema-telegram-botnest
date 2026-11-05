@@ -53,11 +53,13 @@ describe('шапки листов и страниц — только ds-sheet-he
     expect(bad.map((r) => r.selectors.join(', '))).toEqual([]);
   });
 
-  it('auth-pay.css: страницы прижаты к верху и влево — корень без центрирования, text-align: center нет', () => {
-    const page = rules(css['auth-pay.css']).filter((r) => r.selectors.some((s) => classesOf(s).includes('.ap-page')));
+  it('auth-pay.css: на телефоне страницы прижаты к верху и влево — центрирование только в блоке для компьютера (с .ap-page--state)', () => {
+    const phoneCss = css['auth-pay.css'].split('.ap-page--state')[0];
+    const page = rules(phoneCss).filter((r) => r.selectors.some((s) => classesOf(s).includes('.ap-page')));
     expect(page.length).toBeGreaterThan(0);
     for (const r of page) expect(r.body, r.selectors.join(', ')).not.toMatch(/(?:align-items|justify-content):\s*center/);
-    expect(css['auth-pay.css']).not.toContain('text-align: center');
+    expect(phoneCss).not.toContain('text-align: center');
+    expect(css['auth-pay.css']).toContain('.ap-page--state');
   });
 
   it('экран упражнения: .ex2-top несёт только липкость и --safe-top, вид шапки — у .ds-sheet-head', () => {

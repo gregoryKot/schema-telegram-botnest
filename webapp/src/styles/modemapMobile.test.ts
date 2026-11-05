@@ -88,6 +88,12 @@ describe('холст карты режимов на телефоне (sheet-mode
     expect(all).not.toMatch(/\.mm2-(item|drop|backdrop)(?![-\w])/);
   });
 
+  it('сегмент карт в полосе тянется (flex: 1 1 auto) только на ≤767; на ≥768 по содержимому', () => {
+    const src = readFileSync(join(__dirname, 'sheet-modemap.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+    expect(src).toMatch(/@media \(max-width: 767px\) \{ \.mm2-bar > \.ds-seg \{ flex: 1 1 auto; \} \}/);
+    expect(src.replace(/@media \(max-width: 767px\) \{ \.mm2-bar > \.ds-seg \{ flex: 1 1 auto; \} \}/, '')).not.toMatch(/\.mm2-bar > \.ds-seg \{[^}]*flex:/);
+  });
+
   it('полоса карт .mm2-bar — боковой отступ 16 (один отступ на телефоне)', () => {
     expect(values(modemap, null, '.mm2-bar', 'padding')).toEqual(['8px 16px']);
   });

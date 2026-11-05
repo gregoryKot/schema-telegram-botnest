@@ -136,3 +136,8 @@
 @media (max-width: 767px) {
   .cpf-bar-name { width: 148px; font-size: 14px; white-space: nowrap; }
 }
+
+/* Компьютер: у карточек-переходов («Мой путь», «Мой портрет», «Достижения») справа «→», как до волн; телефон — «›». */
+@media (min-width: 768px) {
+  .cpf-card > .ds-head-row .ds-chev:empty::before { content: '→'; }
+}

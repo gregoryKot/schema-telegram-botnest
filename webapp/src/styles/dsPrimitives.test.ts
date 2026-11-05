@@ -36,7 +36,9 @@ const phone = block(css, '@media (max-width: 767px)');
 const TAP_MEDIA = '@media (pointer: coarse), (max-width: 767px)';
 const tap = block(css, TAP_MEDIA);
 /** Всё вне медиа-блоков (десктоп с мышью): там каждый примитив объявлен один раз. */
-const top = css.replace(phone, '').replace(tap, '');
+/** Компьютер (≥768): телефонные примитивы здесь не растягиваются, шапка страницы — не полоса. */
+const desk = block(css, '@media (min-width: 768px)');
+const top = css.replace(phone, '').replace(tap, '').replace(desk, '');
 
 /** Сколько правил вне медиа-блоков объявляют ровно селектор `sel`. */
 function declaredTimes(sel: string): number {
@@ -95,6 +97,8 @@ describe('cabinet.css: примитивы листов (#906)', () => {
     expect(d).toContain('min-height: 48px');
     expect(d).toContain('height: auto'); // базовый .ds-btn задаёт height: 44px
     expect(d).toContain('width: 100%');
+    expect(decls(phone, '.ds-btn--lg')).toContain('width: 100%'); // во всю колонку — только на телефоне
+    expect(decls(top, '.ds-btn--lg')).not.toContain('width');
     expect(d).toContain('border-radius: 24px');
     expect(d).toContain('font-size: 15px');
   });
@@ -204,7 +208,9 @@ describe('cabinet.css: примитивы волны 2 (#906)', () => {
   });
   it('сегмент: --full равные кнопки, --scroll только на телефоне с маской, счётчик без пилюли', () => {
     expect(decls(top, '.ds-seg--full')).toContain('display: flex');
-    expect(decls(top, '.ds-seg--full')).toContain('width: 100%');
+    expect(decls(phone, '.ds-seg--full')).toContain('width: 100%'); // растяжение — только телефон
+    expect(decls(desk, '.ds-seg--full')).toContain('display: inline-flex'); // на компьютере по содержимому
+    expect(decls(top, '.ds-seg--full')).not.toContain('width');
     expect(decls(top, '.ds-seg--full > .ds-seg-btn')).toContain('flex: 1 1 0');
     expect(top).not.toContain('.ds-seg--scroll');
     expect(decls(phone, '.ds-seg--scroll')).not.toContain('mask-image');
@@ -291,5 +297,20 @@ describe('cabinet.css: примитивы волны 3 (#906)', () => {
     expect(f).toContain('border-color: var(--panel-line)');
     expect(f).toContain('color: var(--text)');
     expect(top.indexOf('.ds-input--on-panel {')).toBeGreaterThan(top.indexOf('.ds-input:focus'));
+  });
+});
+
+describe('cabinet.css: компьютер ≥768 (регрессия 2026-11-04 «кабинет стал как телефон»)', () => {
+  it('шапка страницы на компьютере — без полосы: без линии и фона, min-height 0, колонка из --sheet-col', () => {
+    const d = decls(desk, '.ds-sheet-head--page');
+    expect(d).toContain('border-bottom: none');
+    expect(d).toContain('background: none');
+    expect(d).toContain('min-height: 0');
+    expect(d).toContain('max-width: var(--sheet-col)');
+    expect(d).not.toMatch(/var\([^)]*,/); // фолбэков в var() нет
+    expect(decls(css, ':root')).toContain('--sheet-col');
+  });
+  it('на телефоне модификатор --page ничего не меняет: правила для него нет вне ≥768', () => {
+    expect(top + phone).not.toContain('.ds-sheet-head--page');
   });
 });

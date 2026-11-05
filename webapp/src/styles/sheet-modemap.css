@@ -173,7 +173,9 @@
 /* ── Селектор карт и вьюер ── */
 .mm2-bar { display: flex; align-items: center; gap: 6px; padding: 8px 16px; border-bottom: 1px solid var(--line); overflow-x: auto; flex-shrink: 0; min-height: 56px; }
 .mm2-rename { width: 140px; flex-shrink: 0; }
-.mm2-bar > .ds-seg { flex: 1 1 auto; min-width: 0; }
+.mm2-bar > .ds-seg { min-width: 0; }
+/* Растяжение сегмента на всю полосу — только телефон; на компьютере он по содержимому. */
+@media (max-width: 767px) { .mm2-bar > .ds-seg { flex: 1 1 auto; } }
 .ds-btn.mm2-new { flex-shrink: 0; white-space: nowrap; margin-left: 2px; }
 .mm2-new > span { display: flex; align-items: center; gap: 5px; }
 .ds-btn.mm2-new.is-active { color: var(--accent); background: var(--paper-tint); }
