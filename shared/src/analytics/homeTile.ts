@@ -1,6 +1,6 @@
-// Нажатия на главной «Сегодня» сайта (правило №8): плитки, «Зачем это?»,
-// «Все записи», «Подышим». Событие home_tile, meta { tile }. Парный allow-list —
-// HOME_TILES в src/analytics/home-events.constants.ts (при добавлении синхронь оба).
+// Нажатия на главной «Сегодня» (правило №8): плитки и «Зачем это?»; событие home_tile,
+// meta { tile }. 'calm' и 'feed_all' с 2026-11-05 не шлются (ссылок на главной нет),
+// оставлены ради старых записей и /stats. Парный allow-list — HOME_TILES (src/analytics).
 export const HOME_TILE_EVENT = 'home_tile';
 
 export type HomeTile =

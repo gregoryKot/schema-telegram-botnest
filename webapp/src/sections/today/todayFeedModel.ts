@@ -56,29 +56,6 @@ export function buildDiaryFeed({ schema, mode, gratitude }: DiarySources): FeedE
   ];
 }
 
-/** Лента дня: записи со временем — свежие первыми, строки без времени (трекер) — после них. */
-export function buildTodayFeed(diary: FeedEntry[], tracker: TrackerSummary): FeedEntry[] {
-  const rows = [...diary];
-  if (tracker.filled > 0) {
-    const done = tracker.total > 0 && tracker.filled >= tracker.total && tracker.index !== null;
-    rows.push({
-      key: 'tracker',
-      kind: 'tracker',
-      time: '',
-      sortKey: '',
-      text: done
-        ? `Трекер заполнен — индекс ${fmtIndex(tracker.index as number)}`
-        : `Трекер: ${tracker.filled} из ${tracker.total}`,
-    });
-  }
-  return rows.sort((a, b) => {
-    if (a.sortKey && b.sortKey) return b.sortKey.localeCompare(a.sortKey);
-    if (a.sortKey) return -1;
-    if (b.sortKey) return 1;
-    return 0;
-  });
-}
-
 // ── Мета-строки плиток ──────────────────────────────────────────────────────
 
 export function trackerTileMeta({ filled, total, index }: TrackerSummary): string {

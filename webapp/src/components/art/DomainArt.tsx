@@ -1,49 +1,55 @@
-// Пять доменов схем (docs/TERMINOLOGY.md) — по мотиву на домен: 1 разрыв связи и
-// отвержение — две формы врозь; 2 нарушенная автономия — полоска опирается на
-// другую; 3 нарушенные границы — полоска выходит из рамки; 4 направленность
-// на других — маленький круг под большой дугой; 5 сверхбдительность и
-// подавление — глаз: овал с точкой. Цвета только из палитры бумаги.
+// Пять доменов схем — тот же язык знаков, что у потребностей: полоска —
+// потребность, домен — что с ней случилось в детстве (docs/design/PAPER_2026-11.md).
+// 1 разрыв связи и отвержение — две полоски отвернулись врозь; 2 нарушенная
+// автономия — полоска держится, опираясь на другую; 3 нарушенные границы —
+// полоска вылезла из рамки; 4 направленность на других — своя полоска
+// пригнулась под чужой дугой; 5 сверхбдительность и подавление — полоска
+// зажата между двумя перекладинами. Цвета только из палитры бумаги.
 import { PAPER, type ArtProps } from './paper';
 import { PaperSvg as Svg } from './PaperSvg';
+
+function Stroke({ x, h, deg = 0, fill, y }: { x: number; h: number; deg?: number; fill: string; y?: number }) {
+  return <rect x={x} y={y ?? 60 - h} width="16" height={h} rx="8" fill={fill} transform={`rotate(${deg} ${x + 8} 60)`} />;
+}
 
 function D1({ size }: ArtProps) {
   return (
     <Svg size={size} viewBox="0 0 120 64">
-      <circle cx="34" cy="32" r="20" fill={PAPER.clay} />
-      <path d="M86 12 A20 20 0 0 1 86 52 Z" fill={PAPER.sage} />
+      <Stroke x={22} h={50} deg={-18} fill={PAPER.clay} />
+      <Stroke x={82} h={50} deg={18} fill={PAPER.sage} />
     </Svg>
   );
 }
 function D2({ size }: ArtProps) {
   return (
     <Svg size={size} viewBox="0 0 120 64">
-      <rect x="66" y="8" width="16" height="50" rx="8" fill={PAPER.moss} />
-      <rect x="30" y="14" width="16" height="48" rx="8" transform="rotate(-22 38 38)" fill={PAPER.clay} />
+      <Stroke x={66} h={54} fill={PAPER.moss} />
+      <Stroke x={38} h={50} deg={26} fill={PAPER.clay} />
     </Svg>
   );
 }
 function D3({ size }: ArtProps) {
   return (
     <Svg size={size} viewBox="0 0 120 64">
-      <rect x="18" y="14" width="64" height="40" rx="10" fill="none" stroke={PAPER.sage} strokeWidth="8" />
-      <rect x="54" y="26" width="56" height="12" rx="6" fill={PAPER.clay} />
+      <rect x="22" y="12" width="60" height="48" rx="12" fill="none" stroke={PAPER.sage} strokeWidth="8" />
+      <Stroke x={70} h={56} deg={-28} fill={PAPER.clay} />
     </Svg>
   );
 }
 function D4({ size }: ArtProps) {
   return (
     <Svg size={size} viewBox="0 0 120 64">
-      <path d="M14 36 A46 46 0 0 1 106 36" fill="none" stroke={PAPER.moss} strokeWidth="11" strokeLinecap="round" />
-      <circle cx="60" cy="48" r="9" fill={PAPER.clay} />
+      <path d="M12 44 A48 48 0 0 1 108 44" fill="none" stroke={PAPER.moss} strokeWidth="11" strokeLinecap="round" />
+      <Stroke x={52} h={30} deg={30} fill={PAPER.clay} />
     </Svg>
   );
 }
 function D5({ size }: ArtProps) {
   return (
     <Svg size={size} viewBox="0 0 120 64">
-      <ellipse cx="60" cy="32" rx="40" ry="20" fill={PAPER.sage} />
-      <circle cx="60" cy="32" r="11" fill={PAPER.brown} />
-      <circle cx="64" cy="28" r="3" fill={PAPER.sage} />
+      <rect x="18" y="8" width="84" height="10" rx="5" fill={PAPER.brown} />
+      <rect x="18" y="50" width="84" height="10" rx="5" fill={PAPER.brown} />
+      <Stroke x={52} h={28} fill={PAPER.clay} y={20} />
     </Svg>
   );
 }

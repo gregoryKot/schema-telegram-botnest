@@ -1,0 +1,21 @@
+// @vitest-environment jsdom
+// Легенда знаков: каждый знак из таблицы мотивов назван и объяснён; без обращения.
+import { describe, it, expect } from 'vitest';
+import { render, screen } from '@testing-library/react';
+import { WhyLegend, LEGEND } from './WhyLegend';
+
+describe('WhyLegend', () => {
+  it('пять знаков: полоска, лента, камешки, слои, круги — каждый с пояснением', () => {
+    render(<WhyLegend />);
+    expect(screen.getByRole('region', { name: 'Что означают картинки' })).toBeTruthy();
+    for (const [sign, meaning] of LEGEND) {
+      expect(screen.getByText(sign)).toBeTruthy();
+      expect(screen.getByText(meaning)).toBeTruthy();
+    }
+    expect(LEGEND.map(([s]) => s)).toEqual(['Полоска', 'Лента', 'Камешки', 'Слои', 'Круги']);
+  });
+  it('текст без обращения: ни «ты», ни «вы» — одна версия на обе формы', () => {
+    const all = LEGEND.flat().join(' ');
+    expect(all).not.toMatch(/\b(ты|тебе|тебя|твой|вы|вам|вас|ваш)\b/i);
+  });
+});
