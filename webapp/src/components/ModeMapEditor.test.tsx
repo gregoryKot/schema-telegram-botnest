@@ -11,12 +11,6 @@ import { ModeMapEditor } from './ModeMapEditor';
 import type { ModeMapNode, ModeMapEdge } from '../api';
 import { installFlowTestPolyfills } from '../test-support/renderWithFlow';
 
-// Запись в истории (useHistorySheet) здесь не нужна и требует Router: goBack просто закрывает
-// лист и зовёт then. Саму запись истории проверяет modeMap/MobileDrawer.test.tsx.
-vi.mock('../hooks/useHistorySheet', () => ({
-  useHistorySheet: (onClose: () => void) => (then?: unknown) => { onClose(); if (typeof then === 'function') then(); },
-}));
-
 const updateModeMap = vi.fn();
 const getConceptualization = vi.fn();
 const listCustomModes = vi.fn();
@@ -75,7 +69,7 @@ beforeEach(() => {
   getConceptualization.mockResolvedValue(null);
   listCustomModes.mockResolvedValue([]);
   updateModeMap.mockResolvedValue({});
-  window.innerWidth = 1200; // десктоп: палитра инлайн-колонкой, не drawer
+  window.innerWidth = 1200; // компьютер: холст есть (на телефоне вкладка его не показывает)
 });
 afterEach(() => cleanup());
 
@@ -324,42 +318,5 @@ describe('ModeMapEditor — горячие клавиши', () => {
     expect(screen.getByText('Триггер')).toBeTruthy();
     fireEvent.keyDown(window, { key: 'y', metaKey: true }); // redo
     expect(screen.queryByText('Триггер')).toBeNull();
-  });
-});
-
-describe('ModeMapEditor — мобильная раскладка', () => {
-  it('на мобильном палитра стартует скрытой и открывается оверлеем по кнопке', () => {
-    window.innerWidth = 500;
-    renderEditor();
-    expect(screen.queryByPlaceholderText('Поиск режима…')).toBeNull();
-    fireEvent.click(screen.getByLabelText('Показать панель режимов'));
-    expect(screen.getByPlaceholderText('Поиск режима…')).toBeTruthy();
-  });
-
-  it('на мобильном выбор узла открывает редактор оверлеем поверх холста', () => {
-    window.innerWidth = 500;
-    renderEditor([mmNode('n1', 'child', 'Ребёнок')]);
-    fireEvent.click(screen.getByText('Ребёнок').closest('.react-flow__node')!);
-    expect(screen.getByLabelText('Название')).toBeTruthy();
-  });
-
-  it('на мобильном клик по затемнённому фону закрывает драйвер палитры', () => {
-    window.innerWidth = 500;
-    renderEditor();
-    fireEvent.click(screen.getByLabelText('Показать панель режимов'));
-    expect(screen.getByPlaceholderText('Поиск режима…')).toBeTruthy();
-    const backdrop = screen
-      .getAllByLabelText('Закрыть')
-      .find((el) => el.tagName === 'DIV')!;
-    fireEvent.click(backdrop);
-    expect(screen.queryByPlaceholderText('Поиск режима…')).toBeNull();
-  });
-
-  it('на мобильном кнопка «Скрыть» внутри драйвера палитры закрывает его', () => {
-    window.innerWidth = 500;
-    renderEditor();
-    fireEvent.click(screen.getByLabelText('Показать панель режимов'));
-    fireEvent.click(screen.getByLabelText('Скрыть'));
-    expect(screen.queryByPlaceholderText('Поиск режима…')).toBeNull();
   });
 });
