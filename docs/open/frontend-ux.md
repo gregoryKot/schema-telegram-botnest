@@ -257,9 +257,6 @@
   может снова проверить только 393. Предложение: e2e-browser-снимок 1280 ключевых страниц (`/subscribe`, `/donate`,
   `/account`, «Зачем это всё», «Обзор» клиента) со сравнением с эталоном. Доказано: в `e2e-browser/` и `ci.yml`
   снимков компьютера нет.
-- **Фокус с клавиатуры в сайдбаре не виден**: `webapp/src/index.css` — `.sb-item:focus-visible,
-  .sb-account:focus-visible { outline: none; }`, а фон меняется только на `:hover` (WCAG 2.4.7). В main так же.
-  Правка: кольцо `outline: 2px solid var(--accent); outline-offset: -2px` на `:focus-visible`.
 - **Листы «Зачем это всё» и «Поговорить с кем-то» (`role="dialog"`, `aria-modal`) не забирают фокус**: он остаётся
   на строке «Ещё» под листом, Tab ходит по невидимой странице (`webapp/src/components/WhySheet.tsx`,
   `webapp/src/components/therapy/TalkSheet.tsx`). В main так же. Правка: фокус на «← Закрыть» при открытии, возврат
