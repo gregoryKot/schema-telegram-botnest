@@ -14,7 +14,7 @@ import {
   DIGEST_TITLE,
   buildConceptDigest,
   type DigestRow,
-} from './conceptDigest';
+} from './conceptDigestModel';
 
 /**
  * Сводка «Коротко» (#902): тихая карточка над содержанием концептуализации на

@@ -6,14 +6,27 @@
 > `grep -n` по ключу, затем чтение куска.
 
 **Счётчик попыток в Postgres** (`scripts/check-persistent-throttle.mjs`, #708):
-- **`therapy/join` и `pair/join` без собственного `@Throttle`** — считаются только
-  глобальным лимитом в памяти. Не переведены в Postgres осознанно: код приглашения —
-  40–48 бит (`randomBytes(5|6)`, `therapy-relations.service.ts`, `pairs.service.ts`),
-  перебор нереален, а гейт их не видит (нет ни лимита, ни `verifyCode(`/`.approve(`
+- **`pair/join` без собственного `@Throttle`** (`src/api/pairs.controller.ts`;
+  `therapy/join` уже под `@PersistentThrottleLimit`) — считается только
+  глобальным лимитом в памяти. Не переведён в Postgres осознанно: код приглашения —
+  40–48 бит (`randomBytes(5|6)`, `pairs.service.ts`),
+  перебор нереален, а гейт его не видит (нет ни лимита, ни `verifyCode(`/`.approve(`
   в теле). Появится лимит или проверка кода в теле — гейт потребует решения сам.
 - **Гейт читает тело хендлера вместе со строковыми литералами**: `verifyCode(` в
   тексте ошибки сошёл бы за вызов (ложно-красное, лечится записью `exempt` с
   причиной). Комментарии он стирает.
+
+**Имя пригласившего на экране согласия пары — не сделано осознанно** (BACKLOG «Пара с другом», 2026-11-05):
+- `JoinConfirmSheet` (`webapp/src/components/JoinConfirmSheet.tsx`) показывает имя только терапевта —
+  через `previewTherapyInvite`; у пары ручки предпросмотра по коду нет (`src/api/pairs.controller.ts`:
+  `GET /api/pair` отдаёт только свои пары). Новая ручка «код → имя» — кодовая (правило №5: решение о
+  `@PersistentThrottle()`, e2e-смок ownership) и открывает имя любому, у кого есть ссылка; это решение
+  владельца о приватности, а не текстовая правка. Образец, если решат делать, — `previewTherapyInvite`
+  (`shared/src/therapy/useInvitePreview.ts`).
+- Ветка бота `/start pair_<код>` (`src/telegram/telegram.pair-start.ts`) вступает в пару сразу после общего
+  согласия, без экрана «что увидит партнёр»; объём назван только в ответе после вступления
+  (`pairJoinResultText`). Новые ссылки ведут в веб-приложение (`startapp=pair_…`, там экран согласия есть);
+  `/start pair_` живёт для старых ссылок — экран в боте не добавлен, пока нет следов, что ими пользуются.
 
 **Своё хранилище троттлинга в памяти больше не обязательно** (находка при переезде на
 NestJS 12, 2026-10-24): `src/api/memory-throttle-storage.ts` заменял штатный
@@ -101,10 +114,6 @@ NestJS 12, 2026-10-24): `src/api/memory-throttle-storage.ts` заменял шт
 
 **Полуночный обход: остаток после доделки оборванного прогона** (`docs/AUDIT_2026-10_FINDINGS.md`,
 «Полуночный `planDay`…» и «Аренда берётся при старте…»):
-- **Аренда бэкапа `backup-b2` при SIGTERM не отпускается.** `deploy/backup-scheduler.cjs`:
-  релиз аренды только в ветке failed, psql-релиз при остановке гонится с `process.exit`
-  — бэкап, оборванный деплоем, следующий раз пойдёт только после окна аренды. Нужен
-  синхронный релиз в `stop()` и живой спек рядом с `test/backup-lease.e2e-spec.ts`.
 - **`cancel`+`schedule` в `scheduleReminder` без `$transaction`**
   (`src/notification/notification.planner.service.ts`, `scheduleReminder`). Не сделано
   сознательно: после захвата дня (`claimPlanDay`) обрыв между ними теряет напоминание
@@ -145,11 +154,6 @@ NestJS 12, 2026-10-24): `src/api/memory-throttle-storage.ts` заменял шт
   (`test/fixtures/recorded/telegram-429-too-many-requests.json.meta.json`). При
   первой строке «Очередь: Telegram ответил 429» в логах — снять настоящий ответ
   и заменить.
-- **`/broadcast` дольше 90 с упирается в `handlerTimeout` Telegraf** (по
-  умолчанию 90 000 мс, `node_modules/telegraf/lib/telegraf.js`): при 50 мс паузы
-  это ~1800 получателей. Рассылка продолжается, но Telegraf пишет ошибку
-  таймаута обработчика; так было и до починки, теперь ожидание по 429 делает
-  это вероятнее. Лечится запуском рассылки вне обработчика команды.
 
 **Таймаут запроса к БД: что осталось после `statement_timeout`** (#837, `docs/AUDIT_2026-10_FINDINGS.md`, «Нет таймаута запроса к БД»):
 - **Ожидание свободного соединения из пула не измеряется.** Аудит предлагал пробу
@@ -297,13 +301,12 @@ NestJS 12, 2026-10-24): `src/api/memory-throttle-storage.ts` заменял шт
   ([AUDIT_2026-10, «Тесты и гейты»](../AUDIT_2026-10_FINDINGS.md#тесты-и-гейты)).
 - Добивание `no-unsafe-*` в проде (храповик не даёт расти).
 - Удаление мёртвой колонки `User.deletedAt` — ждёт проверки прод-данных.
-- Таяние долга `check-color-drift.mjs`: 139 литералов в 64 файлах, первыми —
-  84 в самом приложении. Брать ролями (один янтарный лежит в семи местах),
-  а не файлами.
-- Стартовый `Loader` в `AppShell.tsx:225` и Suspense-fallback со спиннером поверх
-  навигации в `PracticeSection.tsx:215` — записано комментарием в
-  `AppShell.render.test.tsx:9-13`, а не здесь (правило №26); webapp грузит экраны
-  спиннером в 28 местах при нуле в прежнем мини-аппе ([AUDIT_2026-10, «Фронтенды и UX»](../AUDIT_2026-10_FINDINGS.md#фронтенды-и-ux)).
+- Таяние долга `check-color-drift.mjs`: 44 литерала (сверка 2026-11-05,
+  `scripts/color-drift-baseline.json`). Брать ролями, а не файлами.
+- Загрузка спиннером вместо скелетона осталась в четырёх местах webapp (сверка
+  2026-11-05, `grep -rn "<Loader" webapp/src`): `PlansScreen.tsx`, `PracticesScreen.tsx`,
+  `SettingsSheet.tsx` и Suspense-fallback `sections/today/TaskExerciseHost.tsx`
+  ([AUDIT_2026-10, «Фронтенды и UX»](../AUDIT_2026-10_FINDINGS.md#фронтенды-и-ux)).
 
 **Удаление всех данных теста схем не пишет событие аналитики** (осознанно, 2026-10-24):
 `DELETE /api/ysq-data` (`src/api/ysq.controller.ts`, кнопка «Удалить результаты теста»)

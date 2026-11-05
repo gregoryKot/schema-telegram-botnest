@@ -78,11 +78,11 @@
 | `shared/src/booking/` | часовой пояс клиента, канал связи, региональная цена |
 | `shared/src/build/` | vite-плагин `requireBotUsername` |
 | `shared/src/case/` | поток «Что это было»: типы, состояние, сохранение; `quick/` — три шага сайта |
-| `shared/src/childhoodWheel/` | колесо детства: данные и примеры; `useRatingSlider` — ползунок 0–10 (указатель, клавиатура, aria) обеих площадок |
+| `shared/src/childhoodWheel/` | колесо детства: данные и примеры; `useRatingSlider` — ползунок 0–10 (указатель, клавиатура, aria); `sliderGesture` — значение по тапу или сдвигу вбок, вертикаль — прокрутка |
 | `shared/src/components/` | общие компоненты: CrisisCard, Celebration, TherapyNote, Ysq*, ConnectionTrouble |
 | `shared/src/diary/` | мета дневников, пояснения, благодарности; `diaryDay` — «сегодня» дневника = местный день человека; `diaryPrivacy` + `useDiaryAccess` — «кто увидит записи» по связи с терапевтом и его доступу |
 | `shared/src/exercises/` | `exerciseCatalog`: каталог упражнений — рубрика и срок для библиотеки, шапок упражнений, «Поставить цель» и «Инструментов» |
-| `shared/src/flashcard/` | контент карточки схемы: режимы, потребности, шаги |
+| `shared/src/flashcard/` | контент карточки схемы: режимы, потребности, шаги; `flashcardNames` — одно имя карточки «Мне плохо», число шагов и ритм дыхания (тест-сверка) |
 | `shared/src/history/` | CTA «Записаться» в истории |
 | `shared/src/hooks/` | useYsqTest и YSQ-скоринг, `ysqProgressStore` (незаконченный тест YSQ: запись прогресса + событие окну — «Продолжить (N из 116)» без перезагрузки), useConfetti, useLongPress, useDragReorder, `useConfirmedAction` (действие только после подтверждения), `useHorizontalSwipe` (свайп трекера; касание внутри `[role="group"]` — шкала — не листает) |
 | `shared/src/host/` | абстракция хоста: telegram, max, web (`getHost`, safezone) |

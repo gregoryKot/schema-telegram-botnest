@@ -2,7 +2,7 @@ import { describe, it, expect, afterEach, vi } from 'vitest';
 import {
   buildDiaryFeed, buildTodayFeed, casesTodayCount, trackerSummary, trackerTileMeta, caseTileMeta,
   diaryTileMeta, lastEntryAt, diaryEntriesToday, type FeedEntry,
-} from './todayFeed';
+} from './todayFeedModel';
 import { forEachTimeZone, withTimeZone } from '../../../../shared/src/utils/timeZone.test-helpers';
 import { diaryToday } from '../../../../shared/src/diary/diaryDay';
 

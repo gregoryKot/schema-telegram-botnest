@@ -1,5 +1,6 @@
 import '../../styles/client-practice.css';
 import { pressable } from '../../utils/a11y';
+import { FLASHCARD_SUB, FLASHCARD_TITLE } from '../../../../shared/src/flashcard/flashcardNames';
 
 export const HERE_BLOCK_ID = 'practice-here-and-now';
 export const HELP_BLOCK_ID = 'practice-help-nearby';
@@ -8,15 +9,14 @@ function scrollToBlock(id: string) {
   document.getElementById(id)?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
 }
 
-/** Верхний ряд «Практики»: «Мне плохо» (флешкарта) и переходы к блокам помощи ниже.
- * Без onCrisis (пункт «Схема включилась» скрыт в «Инструментах») карточки нет. */
+/** Верхний ряд «Практики»: «Мне плохо» (флешкарта; скрыта в «Инструментах» — нет onCrisis) и переходы ниже. */
 export function PracticeTopRow({ onCrisis }: { onCrisis?: () => void }) {
   return (
     <div className="cp-top">
       {onCrisis && (
         <div className="ds-card ds-card--crisis ds-card--hover cp-top-card" {...pressable(onCrisis)}>
-          <div className="ds-h3">Мне плохо</div>
-          <div className="ds-sub">Пять шагов: разобраться что происходит, успокоиться</div>
+          <div className="ds-h3">{FLASHCARD_TITLE}</div>
+          <div className="ds-sub">{FLASHCARD_SUB}</div>
           <div className="ds-link cp-top-go">Начать →</div>
         </div>
       )}

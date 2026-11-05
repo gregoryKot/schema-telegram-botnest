@@ -4,7 +4,7 @@
 // + добавить?» стояло рядом с серыми 0% в таблице терапевта.
 import { afterEach, describe, expect, it } from 'vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
-import { crossCheckItems } from './ysqCrossCheck';
+import { crossCheckItems } from './ysqCrossCheckModel';
 import { YsqCrossCheck } from './YsqCrossCheck';
 
 afterEach(cleanup);

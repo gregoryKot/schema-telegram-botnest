@@ -10,10 +10,8 @@ import { PAGE_LIFE, backDepth, pushSheetState, sheetStackOf } from './historyShe
  * идёт после onClose, когда снятие записи дошло до истории (пуш соседа в одном
  * такте с go(-1) терялся в Chromium). onClick={goBack} даёт событие — не then.
  */
-// Ж5 дизайн-аудита 2026-08: webapp не слушал Escape вовсе (miniapp — слушал).
 // Стек id смонтированных листов — модульный, не state хука: Escape с общего
-// document-листенера закрывает ИМЕННО верхний лист из наложенных (иначе
-// сработали бы все разом). Пуш/поп синхронны с mount/unmount эффектом ниже.
+// document-листенера закрывает ИМЕННО верхний лист из наложенных (иначе все разом).
 const openSheetIds: string[] = [];
 
 export function useHistorySheet(onClose: () => void) {
@@ -23,15 +21,13 @@ export function useHistorySheet(onClose: () => void) {
   const loc = useRef(location);
   // Рефы — в эффекте, а не в рендере (react-hooks/refs); layout-эффект идёт до
   // пассивных: goBack из эффекта ребёнка видит запись этого же коммита.
-  useLayoutEffect(() => {
-    ref.current = onClose;
-    loc.current = location;
-  });
+  useLayoutEffect(() => { ref.current = onClose; loc.current = location; });
   // Стабильный уникальный ID инстанса (useId — react-hooks/purity) с меткой
   // жизни страницы: запись истории переживает перезагрузку, счётчик useId — нет.
   const id = PAGE_LIFE + useId();
   const ready = useRef(false);
   const then = useRef<(() => void) | null>(null);
+  const closing = useRef(false); // goBack ушёл, переход ещё не пришёл
 
   useEffect(() => {
     navigate(location.pathname + location.search + location.hash, { replace: false, state: pushSheetState(location.state, id) });
@@ -39,8 +35,8 @@ export function useHistorySheet(onClose: () => void) {
   }, []);
 
   useEffect(() => {
-    if (!ready.current) {
-      // Wait until our navigate has committed
+    closing.current = false; // переход пришёл
+    if (!ready.current) { // ждём коммита своего navigate
       if (sheetStackOf(location.state).includes(id)) ready.current = true;
       return;
     }
@@ -71,9 +67,13 @@ export function useHistorySheet(onClose: () => void) {
     return () => document.removeEventListener('keydown', handler);
   }, [id, navigate]);
 
-  // goBack закрывает СВОЙ лист: снимает его запись и всё, что легло сверху
-  // (запись ребёнка, в том числе брошенную без goBack), — не одну верхнюю.
+  // goBack закрывает СВОЙ лист: снимает его запись и всё, что легло сверху (запись
+  // ребёнка, в том числе брошенную без goBack). Повтор до прихода перехода (dblclick)
+  // и вызов при уже снятой записи (`await save(); goBack()` после «Назад») — no-op,
+  // иначе уход на запись дальше, вплоть до ухода со страницы.
   return (next?: unknown) => {
+    if (closing.current || (ready.current && !sheetStackOf(loc.current.state).includes(id))) return;
+    closing.current = true;
     then.current = typeof next === 'function' ? (next as () => void) : null;
     navigate(-backDepth(loc.current.state, id));
   };

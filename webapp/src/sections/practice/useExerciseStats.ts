@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api } from '../../api';
-import type { ExId, ExStats } from './exerciseLibrary';
+import type { ExId, ExStats } from './exerciseLibraryModel';
 
 type Stats = Partial<Record<ExId, ExStats>>;
 

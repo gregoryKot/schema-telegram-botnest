@@ -24,8 +24,13 @@
   `CaseDoneScreen`; `CaseFlowHost` со `start="map"` больше нигде не открывается): строка «Карта себя ·
   N разборов →» жила в `CaseEntryCard`. Постоянного входа нет — решить, где ему жить: в «Ещё» или
   в «Записях».
+- **«Сменить схему/режим» на телефоне — в самом низу экрана упражнения** (`FlashcardEx.tsx`,
+  `ModeEntryForm.tsx`): `.ex2-aside` на ≤900px встаёт под основную колонку, после всех вопросов
+  и «Сохранить». Кнопка доступна (сверка — `ExScreen.test.tsx`), строка бэклога снята как не
+  воспроизводящаяся; перенос кнопок в основную колонку осознанно не делали — это решение по
+  раскладке десктопа и телефона сразу, а не починка.
 - **Голосовой ввод в «Дневнике одной страницей» — осознанный отказ** (решение 2026-10-31,
-  [PRIORITIES_2026-10.md](../PRIORITIES_2026-10.md)). Концепт рисует микрофон у поля «Что на
+  [PRIORITIES_2026-10.md](../archive/PRIORITIES_2026-10.md)). Концепт рисует микрофон у поля «Что на
   уме?», но `SpeechRecognition` в Chrome и Safari отправляет речь на серверы вендора, а дневник —
   терапевтический текст; в Firefox API нет. Микрофон запрещён политикой
   `Permissions-Policy: microphone=()` (`src/security/permissions-policy.ts`). Пересмотреть, если
@@ -67,21 +72,12 @@
   местоимения, опущенное подлежащее, «сам» без «ты» и краткие прилагательные
   «ты»-ветки. Расширение патернов подсветит законные места по всему репо —
   это отдельная работа с разбором, а не `--update` (правило №15 п.3).
-- **Полоски-шаги визардов кликабельны и не попадаемы.** `webapp/src/index.css:1545`
-  `.tick` 3px (прыгает на шаг из `SchemaEntrySheet.tsx:154`,
-  `ModeEntryForm.tsx:101`, `FlashcardEx.tsx:61`), `.intensity-step` 6px. Ни подписи, ни
-  `aria-label`. Решение владельца: хитбокс 44 с `aria-label` или убрать прыжок.
 - **Гейт тап-целей не видит размеры из CSS-классов.**
   `scripts/tap-targets-rules.mjs` читает только инлайновый `style` в JSX, а
   размер `.evi-x` 22×22 (`webapp/src/index.css`; чинился: зона 44 через
   `::before`, держит пин в `EviList.test.tsx`) задан классом. Расширение —
   другой механизм (разбор CSS плюс связь `className` → правило), больше
   PR кнопки удаления; разборщик правил уже есть в `scripts/css-rules-parse.mjs`.
-- **`.evi-add-go` невидима, но фокусируема при пустом вводе**
-  (`webapp/src/index.css`, `opacity: 0` до `.ready`): Tab уходит в пустое
-  место. Класс состояния гейт `check-hover-only-reveal` считает законным
-  раскрытием, а фокус на скрытой кнопке — отдельный класс (`disabled` либо
-  `tabindex=-1` до ввода).
 - **Гейт `check-hover-only-reveal.mjs` не считает каскад и не видит `<style>`
   в TSX.** Раскрытие для пальца засчитывается, даже если проигрывает сокрытию
   по специфичности или порядку (`@media (hover: none) { .x {…} }` выше
@@ -118,7 +114,7 @@
   `/book`, `/booking/*` встречаются только в компонентах визитки (ревью #860).
 - **Реплика «Я недостаточно хорош» осталась в маркетинге и статьях**
   (`webapp/src/pages/landing/productContent.tsx`, `articleDiagrams.ts`,
-  `src/bot/articles.seed.ts`). В продукте её развели (правило «Род читателя»:
+  `src/articles/articles.seed.ts`). В продукте её развели (правило «Род читателя»:
   реплику, которую пользователь примеряет к себе, разводить обязательно), а
   лендинг и статьи — замороженный долг гейта рода, и он обязан таять.
 - **Живой вызов Robokassa в самопроверке.** Пробы `robokassa` и `paymentWebhooks`
@@ -129,11 +125,11 @@
 **Цвет и токены — открыто, гейта пока нет** (подробности и порядок —
 [DESIGN_AUDIT_2026-08.md](../DESIGN_AUDIT_2026-08.md), раздел «Что по цвету
 открыто»):
-- Белый текст на залитом акценте: `#fff` в 60 местах, токен `--on-accent`
-  для этой пары уже есть. Свип по образцу #516 плюс решение, ловить ли класс
-  гейтом.
-- Четыре `rgba(255,100,100,…)` в `JourneyDeleteButton.tsx` — пропуск свипа
-  #516, который нашёл храповик цвета.
+- Белый на `--accent-hot` (`webapp/src/index.css` ≈386, `styles/auth-login.css:13`,
+  `styles/auth-pay.css:49`): пары `--on-accent-hot` нет, а `--accent-hot` по токену — декор,
+  не фон текста. Завести токен или сменить заливку на `--accent` — решение по виду. Белый на
+  `--accent` сведён на `--on-accent`; CSS сайта держит `webapp/src/styles/onAccent.test.ts`,
+  инлайновые style-объекты `.tsx` сверкой не покрыты.
 - Храповик «инлайновый набор свойств, для которого уже есть класс-утилита» —
   соседний класс, его тоже никто не написал.
 
@@ -155,12 +151,11 @@
 - **Сайт: автосохранение концептуализации при отказе сети или сервера показывает только «Не сохранилось».** `webapp/src/components/therapist/useConceptAutosave.ts` (`send`, catch) отдаёт в `SaveStatusLine` причину (`conceptError` → `errorText`) только для поля длиннее предела сервера (`shared/src/therapy/conceptOverLimit.ts`); отказ сети, 5xx и прочие 4xx идут без причины, хотя удалённый мини-апп её называл (#908). Осознанно не сделано в PR по находке #880: общий маппер потребовал бы класса статуса ответа в `shared/` (у webapp свой клиент API). Закрыть: маппер причины — в `shared/src/api/`, сайт берёт его оттуда.
 - **«В мои схемы» из карточки схемы глушит отказ записи, включая 409 «не читается».** `toggleSchema` в `webapp/src/components/SchemaDetailSheet.tsx` (`.catch(() => {})`) шлёт `updateSettings({ mySchemaIds })` без плашки: при 409 `unreadable_data` данные на сервере целы (бэкенд не пишет), но человек не узнаёт, что выбор не сохранился. На экране «Мои паттерны» отказ уже виден (`SelectionSaveNote`, `shared/src/api/unwritableError.ts`). Не сделано в PR защиты настроек: файл на потолке размера (бейслайн только уменьшается). Закрыть: тот же `isUnwritableError` + `SaveErrorNote` в листе (или общий хук сохранения выбора для листа и экрана).
 - **После 409 на «моих схемах/режимах» перезагрузка показывает пустой список.** `useSchemasData` (сайт) при загрузке ставят в state `mySchemaIds` с сервера, а для нечитаемого списка сервер отдаёт `[]`: выбор человека остаётся в `localStorage`, но на экран не возвращается. Данные на сервере целы (409 не дал их стереть); честнее было бы отдавать в `GET /api/settings`/профиле флаг «не читается» и не затирать локальный выбор. Не сделано: нужен контракт ответа, вне задачи защиты записи.
-- **Полноэкранные оверлеи с инлайн `position: fixed; inset: 0` не учитывают статус-бар установленного приложения.** CSS-листы получили `padding-top: var(--safe-top)` на телефоне (#902), инлайновые — нет: `webapp/src/components/therapist/ConceptGraphFullscreen.tsx:33` (лист схемы на весь экран — его шапка с «Закрыть» уходит под статус-бар), `webapp/src/pages/landing/nav.tsx:58` и `webapp/src/pages/landing/ProductMobileMenu.tsx:33` (мобильные меню лендингов), `shared/src/components/Celebration.tsx:41` (контент по центру, не критично). Закрыть: `paddingTop: 'var(--safe-top)'` на корне каждого + тест-сверка списка с `scripts/history-sheet-baseline.json`; проверить в установленном приложении на iPhone.
+- **Полноэкранные оверлеи с инлайн `position: fixed; inset: 0` не учитывают статус-бар установленного приложения.** CSS-листы получили `padding-top: var(--safe-top)` на телефоне (#902), инлайновые — нет: `webapp/src/components/therapist/ConceptGraphFullscreen.tsx:33` (лист схемы на весь экран — его шапка с «Закрыть» уходит под статус-бар), `webapp/src/pages/landing/nav.tsx:58` и `webapp/src/pages/landing/ProductMobileMenu.tsx:33` (мобильные меню лендингов). Закрыть: `paddingTop: 'var(--safe-top)'` на корне каждого + тест-сверка списка с `scripts/history-sheet-baseline.json`; проверить в установленном приложении на iPhone.
 - **Кнопка «Перестать быть специалистом» стоит в разделе «Оформление» листа настроек** (`webapp/src/components/settingsSheet/AppearanceSection.tsx`, проп `onResignTherapist`): после #902 у терапевта первым блоком идёт «Режим» (`settingsSheet/ModeSection.tsx`), и отказ от роли по смыслу принадлежит ему, а не оформлению. Перенести в `ModeSection` вместе с подтверждением; видно на скриншоте листа с телефона (#902).
 - **Событий для #904 не добавляли осознанно** (правило №8): сводка «Коротко» — показ без действия, открытие схемы уже считает `concept_graph_open`; переключение режима с телефона — второй вход в прежнее действие, итог пишет сервер (`POST /api/therapy/therapist-view`). Если понадобится мерить путь «Профиль → Клиент» с телефона — событие `therapist_mode_switched` с `meta.surface` и полный пайплайн №8 отдельным PR.
 - **Осознанно не сделано: гейт «один префикс — один файл».** Живой коллизии нет: колесо детства ушло на `chw-` (#906, волна 3), `.cw-note` в `client-why.css` — только комментарий. Гейту нужен реестр законно разбитых зон (`cpf-`, `cz-`, `cp-`, контекстные селекторы вроде `.tk-head .tc-meeting`); один случай объём не оправдывает. Пересмотреть при второй коллизии.
-- **Осознанно не сделано: примитивы без второго потребителя.** `.ds-hero` (eyebrow + h1 + sub), `.ds-list-row--stack`, `.ds-card--compact`, `.ds-btn--icon.is-warn` (⚠ самопомощи — цвет у потребителя), `.ds-btn:disabled на панели (прежний `.ds-btn--on-ink`)` (одно правило `.ap-pay`), общий набор SVG-иконок кабинета. Не строим, пока нет второго потребителя: примитив без копий мёртв. Не тронуты и инлайн `alignSelf` в шести местах (`ModesTab`, `SchemaDetailSheet`, `ClientYSQTab`, `YsqCrossCheck`, `YsqResult`, `TwoFactorSection`): `u-self-start` живёт в `shared/src/theme/utilities.css`, правка shared тянет dist мини-аппа — вернуться после #908.
-- **`.ds-link` на телефоне (min-height 44, inline-flex) вытаскивает ссылку из строки абзаца.** `webapp/src/components/PracticesScreen.tsx:100` («Что-то просело? <span class=ds-link>Открой трекер →</span>»); проверить также `exercises/childhoodWheel/SchemaHints.tsx:63`, `history/HistoryDayView.tsx:47-51`, `ConsentScreen.tsx:69`. Доказано: grep в отчётах срезов; на снимках `c0x` не видно. Исключение для ссылки в потоке (`ds-link--inline`) или кнопка отдельной строкой — волна 3.
+- **Осознанно не сделано: примитивы без второго потребителя.** `.ds-hero` (eyebrow + h1 + sub), `.ds-list-row--stack`, `.ds-card--compact`, `.ds-btn--icon.is-warn` (⚠ самопомощи — цвет у потребителя), `.ds-btn:disabled на панели (прежний `.ds-btn--on-ink`)` (одно правило `.ap-pay`), общий набор SVG-иконок кабинета. Не строим, пока нет второго потребителя: примитив без копий мёртв. Не тронуты и инлайн `alignSelf` в шести местах (`ModesTab`, `SchemaDetailSheet`, `ClientYSQTab`, `YsqCrossCheck`, `YsqResult`, `TwoFactorSection`): утилиты `u-self-start` нет, а заводить её ради шести мест одной волной с примитивами выше.
 - **`ds-seg` без модификатора (не `--full`/`--scroll`) остался:** `HistoryView.tsx:88,96`, `ClientListView.tsx:73` (вкладки «Клиенты/Задания», по ТЗ волны 3 оставлены) в `webapp/src/components`; решить, какой из вариантов нужен. Доказано: grep `className="ds-seg"`.
 - **Локальный `font-size` перебивает 16px полей на телефоне:** `webapp/src/styles/sheet-modemap.css` (`.mm2-add-form .ds-input` 12.5px, `.mm2-panel .ds-input/.ds-textarea/select.ds-input` 13px); iOS приближает экран при фокусе (правило поиска палитры `.mm2-pal-search` удалено в волне 3). Доказано: grep по css.
 - **Проверить глазами на экране:** `ConceptDigest` со skin оставляет инлайн flex/margin у `dd`/`h3` и может спорить с `ds-label` (`shared/src/therapy/conceptGraph/ConceptDigest.tsx`); у `.ds-sheet-head` с `position: sticky; top: 0` в `HistorySheet`/`JourneySheet` шапка при прокрутке может уйти под статус-бар; `PortraitPatternRows` без `freq` ставит шеврон в третью колонку grid (`webapp/src/sections/profile/PortraitPatternRows.tsx`); `ActivityRow` в `TherapistTodayLists.tsx` единственная строка списка со стрелкой.
@@ -273,17 +268,6 @@
   может снова проверить только 393. Предложение: e2e-browser-снимок 1280 ключевых страниц (`/subscribe`, `/donate`,
   `/account`, «Зачем это всё», «Обзор» клиента) со сравнением с эталоном. Доказано: в `e2e-browser/` и `ci.yml`
   снимков компьютера нет.
-- **Аккаунт: значок Telegram сжат до ~19px** — на телефоне и на компьютере (пришло с #912, не с волн).
-  `webapp/src/pages/account/ProviderRows.tsx` (у `iconBox` нет `flexShrink: 0`), `webapp/src/styles/auth-account.css`
-  (у `.aa-row-text` нет `flex: 1; min-width: 0`). Доказано замером до #915: плитка значка 19×36 против 36×36 у Google.
-  Пояснение «Единственный способ входа…» больше не режется многоточием — переносится (`.aa-row-why`, #915, М9);
-  сжат ли значок после переноса, не перемерено.
-- **«Отменить подписку» (`/subscribe?token=…`) — подчёркнутая строка высотой 21px и на телефоне**
-  (`webapp/src/pages/subscribe/CancelControl.tsx`, инлайн-стиль без `minHeight`): тап-цель меньше 44. На ≥768
-  высота поднята в ветке компьютерной версии, телефон — отдельной правкой.
-- **Фокус с клавиатуры в сайдбаре не виден**: `webapp/src/index.css` — `.sb-item:focus-visible,
-  .sb-account:focus-visible { outline: none; }`, а фон меняется только на `:hover` (WCAG 2.4.7). В main так же.
-  Правка: кольцо `outline: 2px solid var(--accent); outline-offset: -2px` на `:focus-visible`.
 - **Листы «Зачем это всё» и «Поговорить с кем-то» (`role="dialog"`, `aria-modal`) не забирают фокус**: он остаётся
   на строке «Ещё» под листом, Tab ходит по невидимой странице (`webapp/src/components/WhySheet.tsx`,
   `webapp/src/components/therapy/TalkSheet.tsx`). В main так же. Правка: фокус на «← Закрыть» при открытии, возврат

@@ -43,6 +43,27 @@ describe('addNoteToPage', () => {
     expect(res.total).toBe(6);
   });
 
+  it('задним числом раньше среза: в показанные не встаёт, total растёт', () => {
+    const page = {
+      notes: [note(2, '2026-02-01'), note(1, '2026-01-01')],
+      total: 5,
+    };
+    const res = addNoteToPage(page, note(3, '2025-12-01'));
+    expect(res.notes.map((n) => n.id)).toEqual([2, 1]);
+    expect(res.total).toBe(6);
+    expect(hiddenCount(res)).toBe(4);
+  });
+
+  it('задним числом, когда показано всё: встаёт в конец списка', () => {
+    const page = {
+      notes: [note(2, '2026-02-01'), note(1, '2026-01-01')],
+      total: 2,
+    };
+    const res = addNoteToPage(page, note(3, '2025-12-01'));
+    expect(res.notes.map((n) => n.id)).toEqual([2, 1, 3]);
+    expect(res.total).toBe(3);
+  });
+
   it('на пустой странице: одна заметка, total 1', () => {
     const res = addNoteToPage(EMPTY_NOTES_PAGE, note(1, '2026-01-01'));
     expect(res).toEqual({ notes: [note(1, '2026-01-01')], total: 1 });

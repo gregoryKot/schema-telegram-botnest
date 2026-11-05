@@ -71,6 +71,14 @@ describe('приглашение', () => {
     expect(link.rel).toContain('noopener');
   });
 
+  it('текст на залитом акценте — токен --on-accent, а не белый литерал', () => {
+    // Белый темой не меняется: в тёмной теме акцент светлый, и пара разъезжалась.
+    show();
+    const btn = screen.getByText('Подключить Telegram');
+    expect(btn.style.background).toBe('var(--accent)');
+    expect(btn.style.color).toBe('var(--on-accent)');
+  });
+
   it('без адреса — кнопка, которая начинает привязку', () => {
     const onStart = vi.fn();
     show({ onStart });

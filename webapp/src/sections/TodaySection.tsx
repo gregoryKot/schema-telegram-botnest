@@ -17,7 +17,7 @@ import { useTodayData } from './today/useTodayData';
 import { useWhySheet } from './today/useWhySheet';
 import { trackHomeTile } from './today/trackHomeTile';
 import { TodayHead } from './today/TodayHead';
-import { buildTodayFeed, trackerSummary, trackerTileMeta, caseTileMeta, diaryTileMeta, diaryEntriesToday } from './today/todayFeed';
+import { buildTodayFeed, trackerSummary, trackerTileMeta, caseTileMeta, diaryTileMeta, diaryEntriesToday } from './today/todayFeedModel';
 import { QuickEntrySheet } from '../components/diary/QuickEntrySheet';
 import { TherapyNudgeCard } from '../components/therapy/TherapyNudgeCard';
 import { HomeTherapyLine } from './today/HomeTherapyLine';

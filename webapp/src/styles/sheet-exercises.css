@@ -161,7 +161,7 @@
 .ex2-cw-num { font-family: var(--serif); font-style: italic; font-size: 20px; color: var(--text-ghost); }
 .ex2-cw-label { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
 .ex2-cw-q { font-size: 12.5px; line-height: 1.5; color: var(--text-faint); margin-bottom: 4px; }
-.ex2-cw-track { position: relative; height: 44px; display: flex; align-items: center; cursor: pointer; touch-action: none; user-select: none; }
+.ex2-cw-track { position: relative; height: 44px; display: flex; align-items: center; cursor: pointer; touch-action: pan-y; user-select: none; }
 .ex2-cw-line { position: relative; width: 100%; height: 2px; background: var(--line-strong); }
 .ex2-cw-fill { position: absolute; left: 0; top: 0; height: 2px; background: oklch(0.58 0.12 var(--h)); }
 .ex2-cw-pip { position: absolute; top: -3px; width: 1px; height: 8px; background: var(--text-ghost); }

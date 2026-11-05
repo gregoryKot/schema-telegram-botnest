@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { sessionNumbers } from './sessionNumbers';
+import { addNoteToPage } from '../../../../shared/src/therapy/notesPage';
+import type { TherapistNote } from '../../api';
 
 describe('sessionNumbers', () => {
   it('нумерует по дате независимо от порядка в списке', () => {
@@ -36,5 +38,15 @@ describe('sessionNumbers', () => {
   it('total меньше длины списка не даёт отрицательного сдвига', () => {
     const m = sessionNumbers([{ id: 1, date: '2026-01-01', createdAt: '2026-01-01T00:00:00Z' }], 0);
     expect(m.get(1)).toBe(1);
+  });
+  it('сохранил заметку задним числом при срезе → номера показанных не сдвинулись', () => {
+    const n = (id: number, date: string) => ({ id, date, createdAt: `${date}T10:00:00Z`, text: '' }) as TherapistNote;
+    const page = { notes: [n(12, '2026-03-01'), n(11, '2026-02-01')], total: 12 };
+    const before = sessionNumbers(page.notes, page.total);
+    const after = addNoteToPage(page, n(13, '2025-12-01'));
+    const m = sessionNumbers(after.notes, after.total);
+    expect(m.has(13)).toBe(false);
+    expect([m.get(11), m.get(12)]).toEqual([(before.get(11) ?? 0) + 1, (before.get(12) ?? 0) + 1]);
+    expect(m.get(12)).toBe(13);
   });
 });

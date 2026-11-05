@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 // NeedTodaySheet — экран оценки одной потребности. Ввод оценки — общая
-// десятисегментная шкала NeedScale (та же, что на «Сегодня»): один компонент
+// шкала NeedScale (пять ответов словами, та же, что в трекере): один компонент
 // на всё приложение, тестируем здесь только подключение к листу.
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup, act } from '@testing-library/react';
@@ -121,7 +121,7 @@ describe('NeedTodaySheet', () => {
 
 describe('NeedTodaySheet — маркер «вчера» (В10 аудита 2026-08)', () => {
   // Регрессия: yesterdayValue был объявлен в Props, но не деструктурирован —
-  // пользователь сайта не видел маркер «вчера», который есть в miniapp
+  // пользователь сайта не видел маркер «вчера», который был в мини-аппе
   // (NeedRatingBar). Паритет — не обязательно тот же DOM, тот же смысл.
   it('yesterdayValue передан — на ближайшем слове стоит пометка «вчера»', () => {
     renderSheet({ value: 5, yesterdayValue: 3 });

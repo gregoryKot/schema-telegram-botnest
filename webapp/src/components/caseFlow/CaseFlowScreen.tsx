@@ -8,6 +8,7 @@ import { CaseResultStep } from './CaseResultStep';
 import { CaseModeScreen } from './CaseModeScreen';
 import { CaseDoneScreen } from './CaseDoneScreen';
 import { CaseSupportProvider } from './CaseSupportFoot';
+import { CaseResumeGate } from './CaseResumeGate';
 import { useCaseQuickFlow } from '../../../../shared/src/case/quick/useCaseQuickFlow';
 import type { CaseQuickProps } from '../../../../shared/src/case/quick/caseQuick';
 
@@ -16,21 +17,20 @@ export type { CaseQuickProps } from '../../../../shared/src/case/quick/caseQuick
 const DEPS = { trackEvent: api.trackEvent };
 
 /**
- * Оркестратор «Что случилось» на сайте (простой клиент, этап 4): момент →
- * что внутри → что хотелось → итог → «Записано». Полноэкранный ExScreen на
- * каждом шаге, useHistorySheet ОДИН раз здесь (CLAUDE.md): все «Назад» и
- * «Закрыть» идут через exitFlow. «Тяжело прямо сейчас» из потока не выводит —
- * карточка поддержки открывается на месте. Состояние — shared useCaseQuickFlow;
- * мини-апп живёт на старом потоке useCaseFlowState.
+ * Оркестратор «Что случилось» на сайте (простой клиент, этап 4): момент → что
+ * внутри → что хотелось → итог → «Записано». ExScreen на каждом шаге,
+ * useHistorySheet ОДИН раз здесь: все «Назад»/«Закрыть» идут через exitFlow.
+ * «Тяжело прямо сейчас» открывает поддержку на месте. Состояние — shared
+ * useCaseQuickFlow; черновик — сначала «продолжить или заново» (CaseResumeGate).
  */
 export function CaseFlowScreen(props: CaseQuickProps) {
   const exitFlow = useHistorySheet(props.onClose);
-  const f = useCaseQuickFlow({ ...props, onClose: exitFlow }, DEPS);
-  const common = {
-    crisis: f.crisis,
-    onHardNow: f.handleHardNow,
-    onBack: f.back,
-  };
+  return <CaseResumeGate onBack={exitFlow}><CaseFlowSteps {...props} onClose={exitFlow} /></CaseResumeGate>;
+}
+
+function CaseFlowSteps(props: CaseQuickProps) {
+  const f = useCaseQuickFlow(props, DEPS);
+  const common = { crisis: f.crisis, onHardNow: f.handleHardNow, onBack: f.back };
 
   return <CaseSupportProvider flow={f}>{renderStep()}</CaseSupportProvider>;
 
@@ -97,7 +97,7 @@ export function CaseFlowScreen(props: CaseQuickProps) {
           <CaseDoneScreen
             name={f.doneName}
             onOpenMap={props.onOpenMap}
-            onClose={exitFlow}
+            onClose={props.onClose}
           />
         );
       default:
