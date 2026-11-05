@@ -11,71 +11,9 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'fs';
 import { join } from 'path';
+import { contrastRatio, extractBlock, luminance, overlay, parseColor, resolveToken, tokenInBlock } from './test-support/cssContrast';
 
 const CSS = readFileSync(join(__dirname, 'index.css'), 'utf8');
-
-type Rgb = [number, number, number];
-
-function hexToRgb(hex: string): Rgb {
-  const h = hex.replace('#', '');
-  return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
-}
-
-// Разбирает и `#rrggbb`, и `rgba(r,g,b,a)` — оба формата встречаются в index.css.
-function parseColor(raw: string): { rgb: Rgb; alpha: number } {
-  const v = raw.trim();
-  const rgbaMatch = v.match(/rgba\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)\s*\)/);
-  if (rgbaMatch) {
-    return { rgb: [+rgbaMatch[1], +rgbaMatch[2], +rgbaMatch[3]], alpha: +rgbaMatch[4] };
-  }
-  return { rgb: hexToRgb(v), alpha: 1 };
-}
-
-/** Значение токена в конкретном блоке темы (`:root, html[data-theme="light"]`
- *  либо `html[data-theme="dark"]`) — берём ПЕРВОЕ совпадение внутри блока,
- *  а не по всему файлу, иначе light/dark значения одного имени перепутаются. */
-function tokenInBlock(blockCss: string, name: string): string {
-  const re = new RegExp(`${name}:\\s*([^;]+);`);
-  const m = blockCss.match(re);
-  if (!m) throw new Error(`токен ${name} не найден в блоке темы`);
-  return m[1];
-}
-
-/** То же, но разворачивает ссылки `var(--other)` внутри того же блока темы
- *  (`--accent-red: var(--c-rose-strong)` → `var(--c-rose)` → `#d68585`).
- *  Цепочку ограничиваем — циклическая ссылка должна падать, а не висеть. */
-function resolveToken(blockCss: string, name: string, depth = 0): string {
-  if (depth > 5) throw new Error(`циклическая ссылка токенов на ${name}`);
-  const raw = tokenInBlock(blockCss, name).trim();
-  if (!raw.startsWith('var(')) return raw;
-  return resolveToken(blockCss, raw.slice(4, -1).trim(), depth + 1);
-}
-
-function extractBlock(css: string, startMarker: string): string {
-  const start = css.indexOf(startMarker);
-  if (start === -1) throw new Error(`маркер блока «${startMarker}» не найден в index.css`);
-  const openBrace = css.indexOf('{', start);
-  const closeBrace = css.indexOf('\n}', openBrace);
-  return css.slice(openBrace, closeBrace);
-}
-
-function srgbToLin(c: number): number {
-  const v = c / 255;
-  return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
-}
-function luminance([r, g, b]: Rgb): number {
-  return 0.2126 * srgbToLin(r) + 0.7152 * srgbToLin(g) + 0.0722 * srgbToLin(b);
-}
-function contrastRatio(fg: Rgb, bg: Rgb): number {
-  const L1 = luminance(fg);
-  const L2 = luminance(bg);
-  const [hi, lo] = L1 > L2 ? [L1, L2] : [L2, L1];
-  return (hi + 0.05) / (lo + 0.05);
-}
-/** Накладывает полупрозрачный цвет на непрозрачную подложку (alpha-composite). */
-function overlay(fg: Rgb, alpha: number, bg: Rgb): Rgb {
-  return [0, 1, 2].map((i) => alpha * fg[i] + (1 - alpha) * bg[i]) as Rgb;
-}
 
 const LIGHT = extractBlock(CSS, ':root, html[data-theme="light"]');
 const DARK = extractBlock(CSS, 'html[data-theme="dark"]');
@@ -193,6 +131,9 @@ describe('a11y: текст на песочной --panel держит ≥4.5:1',
     ['--on-panel-faint', '--panel-2'],
     ['--on-panel-danger', '--panel'],
     ['--on-panel-danger', '--panel-2'],
+    // Счётчик активного пункта сайдбара (.sb-item.is-active .badge): до
+    // 2026-11-05 красился --accent-hot (декор-токен) — 2.85:1 на --panel-3.
+    ['--accent', '--panel-3'],
   ])('%s на %s', (fgName, bgName) => {
     const fg = parseColor(resolveToken(LIGHT, fgName)).rgb;
     const bg = parseColor(resolveToken(LIGHT, bgName)).rgb;
