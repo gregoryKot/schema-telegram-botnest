@@ -42,7 +42,9 @@ describe('task-title.data ↔ shared', () => {
       "'Карточка режима'",
     ])
       expect(src).toContain(literal);
-    expect(taskNotificationTitle('schema_intro', 'nope')).toBe('Карточка схемы');
+    expect(taskNotificationTitle('schema_intro', 'nope')).toBe(
+      'Карточка схемы',
+    );
     expect(taskNotificationTitle('mode_intro', 'nope')).toBe('Карточка режима');
   });
 });
