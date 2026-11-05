@@ -99,6 +99,7 @@ jobs:
           test/auth-flows test/public-quizzes test/phrase-check-ownership
           test/scheduler-teardown test/login-ticket test/refresh-rotation
           test/slot-override test/therapy-remove-client test/therapy-resign test/therapy-invite test/therapy-invite-attach
+          test/therapy-relation-end test/notify-from-other
           test/body-limit test/login-csrf test/payment-webhook-practice-host
           test/text-limits test/therapy-ownership.e2e-spec.ts
           test/booking-admin-cancel test/exercise-delete-ownership test/max-auth
@@ -210,6 +211,13 @@ jobs:
       # теле, exempt — только с внятной причиной); протухшая запись тоже красит
       # CI. Флага --update нет: это решение человека, не счётчик долга.
       - run: node scripts/check-cron-leader.mjs
+      # Один ключ localStorage — один писатель (инцидент 2026-11-05, PR #935:
+      # кэш контакта терапевта писали два места, третье меняло источник правды
+      # на сервере и кэш не трогало). Каждый ключ классифицирован в
+      # scripts/local-cache-baseline.json (владелец, mirror|local, что на
+      # сервере); второй писатель, ключ без записи и протухшая запись красят
+      # CI. Флага --update нет: это решение человека, не счётчик долга.
+      - run: node scripts/check-local-cache-writers.mjs
       # Счётчик попыток в памяти процесса обнуляется деплоем и не общий между
       # инстансами (правило №5). Каждая ручка с лимитом или с проверкой кода /
       # заявкой несёт @PersistentThrottle (счёт в Postgres) либо запись exempt с
@@ -574,11 +582,13 @@ jobs:
           test/login-ticket.e2e-spec.ts
           test/refresh-rotation.e2e-spec.ts
           test/notify-address.e2e-spec.ts
+          test/notify-from-other.e2e-spec.ts
           test/merge-my-lists.e2e-spec.ts
           test/merge-relations.e2e-spec.ts
           test/merge-unique-rules.e2e-spec.ts
           test/account-export-ownership.e2e-spec.ts
           test/therapy-remove-client.e2e-spec.ts
+          test/therapy-relation-end.e2e-spec.ts
           test/therapy-invite.e2e-spec.ts
           test/therapy-invite-attach.e2e-spec.ts
           test/therapy-task-delete.e2e-spec.ts

@@ -1,9 +1,8 @@
 import { PrivacyArt, PrivacyItem } from './TherapistPrivacyParts';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { useTr } from '../utils/addressForm';
+import { markTherapistDisclaimerSeen } from './therapistDisclaimerSeen';
 import '../styles/sheet-tasks.css';
-
-export const THERAPIST_DISCLAIMER_KEY = 'therapist_privacy_disclaimer_seen';
 
 interface Props {
   onDone: () => void;
@@ -19,7 +18,7 @@ export function TherapistPrivacyDisclaimer({ onDone }: Props) {
   const tr = useTr();
 
   function acknowledge() {
-    localStorage.setItem(THERAPIST_DISCLAIMER_KEY, '1');
+    markTherapistDisclaimerSeen();
     goBack();
   }
 
