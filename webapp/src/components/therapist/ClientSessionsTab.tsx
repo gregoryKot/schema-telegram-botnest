@@ -3,6 +3,7 @@ import { todayStr } from '../../utils/format';
 import type { ClientDetail } from './clientSheetTypes';
 import { LimitedTextarea } from '../../../../shared/src/components/LimitedTextarea';
 import { SESSION_NOTE_MAX } from '../../../../shared/src/limits/textLimits';
+import { SignHead } from './SignArt';
 import { SessionArchive } from './SessionArchive';
 
 interface Props {
@@ -13,12 +14,11 @@ export function ClientSessionsTab({ detail }: Props) {
   const { newNoteDate, setNewNoteDate, newNoteText, setNewNoteText, addNote, noteSaving, noteError, notesPage, removeNote } = detail;
   const canSave = !!newNoteText.trim() && !noteSaving;
   const save = () => { if (canSave) addNote(); };
-
   return (
     <div className="ds-page tb-page--narrow">
       <div className="ds-card tb-composer">
         <div className="tb-composer-head">
-          <div className="ds-h3">Новая заметка</div>
+          <SignHead kind="pebbles" as="div" className="ds-h3">Новая заметка</SignHead>
           <input type="date" className="ds-input ds-input--sm" aria-label="Дата заметки" value={newNoteDate || todayStr()} onChange={e => setNewNoteDate(e.target.value)} />
         </div>
         <LimitedTextarea

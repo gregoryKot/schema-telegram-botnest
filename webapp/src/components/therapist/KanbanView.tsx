@@ -4,6 +4,7 @@ import { pressable } from '../../utils/a11y';
 import { Skeleton } from '../Skeleton';
 import { resolveTaskDisplayText } from '../../../../shared/src/tasks/taskTitle';
 import { STATUS_LABEL, isOpenStatus, orderTasks, taskMeta, taskStatus } from './taskModel';
+import { Sign } from './SignArt';
 import { TaskStatusBadge } from '../TaskStatusBadge';
 import '../../styles/therapist-clients.css';
 
@@ -47,7 +48,6 @@ export function KanbanView({ allTasks, loading, loadFailed, onRetry, onOpenClien
     allTasks.flatMap(group => group.tasks.map(t => ({ ...t, clientName: group.clientName }))),
     today,
   ).map(t => ({ ...t, status: taskStatus(t, today) }));
-
   if (flat.length === 0) {
     return <p className="ds-empty">Назначенных заданий пока нет</p>;
   }
@@ -70,7 +70,7 @@ export function KanbanView({ allTasks, loading, loadFailed, onRetry, onOpenClien
             {col.items.length === 0 && <div className="tc-dash">–</div>}
             {col.items.map(task => (
               <div key={task.id} className="ds-card ds-card--hover tc-task" {...pressable(() => onOpenClient(task.userId))}>
-                <div className={col.name}>{task.clientName}</div>
+                <div className={`${col.name} tc-task-who`}><Sign kind="talk" /><span>{task.clientName}</span></div>
                 <div className="tc-task-text">{resolveTaskDisplayText(task, 'full')}</div>
                 <div className="tc-task-due">{taskMeta(task, task.status)}</div>
                 {(task.status === 'overdue' || task.status === 'soon') && <TaskStatusBadge status={task.status} className="tc-task-flag" />}
