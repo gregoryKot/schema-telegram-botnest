@@ -150,7 +150,7 @@
 .tcp-brief-mode { display: flex; flex-direction: column; gap: 3px; font-size: 14px; line-height: 1.45; }
 .tcp-brief-mode-head { display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .tcp-brief-mode-text { color: var(--text-sub); }
-@media (max-width: 767px) {
+@media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
   .tcp-brief-btn { padding: 0 12px; }
   .tcp-brief-pick { padding: 10px 16px 12px; }
   .tcp-brief-grid { grid-template-columns: 1fr; }
