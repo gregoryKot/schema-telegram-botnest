@@ -19,6 +19,19 @@ export function cacheMySchemaIds(ids: string[]): void {
 export function cacheMyModeIds(ids: string[]): void {
   localStorage.setItem(MY_MODE_IDS_KEY, JSON.stringify(ids));
 }
+const isStringList = (v: unknown): v is string[] =>
+  Array.isArray(v) && v.every((x) => typeof x === 'string');
+/** Профиль с сервера — источник правды целиком, пустой список тоже: убрал всё
+ * на другом устройстве — здесь старый список не переживает загрузку (класс
+ * «кэш пережил источник правды», #939; до этого кэш писался только при
+ * непустом списке). Поля нет (ответ не той формы) — кэш не трогаем. */
+export function cacheMyPatternsFromProfile(p: {
+  mySchemaIds?: unknown;
+  myModeIds?: unknown;
+}): void {
+  if (isStringList(p.mySchemaIds)) cacheMySchemaIds(p.mySchemaIds);
+  if (isStringList(p.myModeIds)) cacheMyModeIds(p.myModeIds);
+}
 export const CHILDHOOD_DONE_KEY = 'childhood_wheel_done';
 // Последняя открытая вкладка экрана «Паттерны» (Схемы/Режимы/
 // Потребности) — секция размонтируется при переключении нижней навигации и

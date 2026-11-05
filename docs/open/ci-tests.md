@@ -367,3 +367,8 @@ Ubuntu 26) у трёх PR подряд падали `backend` → `check-coverag
   вместо внятного сообщения; в рабочем дереве тот же гейт зелёный (125 файлов). Чинить: `maxBuffer`
   у `git ls-files` в гейте (как в `check-filename-case.mjs`, 64 МиБ) и строка `schema-miniapp/` в
   `.gitignore` или `rm -rf schema-miniapp` на машине владельца; остальные 51 гейт precheck зелёные.
+- **Ещё образец того же класса — `webapp/src/sections/SchemasSection.customize.test.tsx`** (найдено в #958,
+  2026-11-05): случай «шестерёнка открывает лист с двумя блоками» падает с `Unable to find role="dialog"
+  and name "Настроить экран"` через ~2,5 с при прогоне каталога `src/sections/schemas` с соседями и на
+  чистом `origin/main` (b5095427c) даже в одиночном прогоне; в ветке в одиночном прогоне зелёный. Тот же
+  холодный импорт ленивого листа `Suspense`; лечится тем же `asyncUtilTimeout` из записи выше.

@@ -6,7 +6,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { act, renderHook } from '@testing-library/react';
 import { useBootstrapLoad } from './useBootstrapLoad';
-import { THERAPIST_MODE_KEY } from '../../utils/storageKeys';
+import { MY_MODE_IDS_KEY, MY_SCHEMA_IDS_KEY, THERAPIST_MODE_KEY } from '../../utils/storageKeys';
 import { todayStr } from '../../../../shared/src/utils/format';
 import { shiftCalendarDay } from '../../../../shared/src/utils/calendarDate';
 
@@ -222,5 +222,27 @@ describe('useBootstrapLoad — не-терапевт с устаревшим ф�
     await flush();
     expect(localStorage.getItem(THERAPIST_MODE_KEY)).toBeNull();
     expect(navigate).not.toHaveBeenCalled();
+  });
+});
+
+// Класс «кэш пережил источник правды» (#939): профиль при старте — источник
+// правды для «моих» схем и режимов, пустой список тоже.
+describe('useBootstrapLoad — кэш «моих» схем и режимов повторяет профиль', () => {
+  it('сервер отдал [] — старая локальная копия стёрта, режимы кэшируются тоже', async () => {
+    localStorage.setItem(MY_SCHEMA_IDS_KEY, JSON.stringify(['abandonment']));
+    mockApi.getProfile.mockResolvedValue({ role: 'CLIENT', name: null, mySchemaIds: [], myModeIds: ['critic'] });
+    setup('/today');
+    await flush();
+    expect(localStorage.getItem(MY_SCHEMA_IDS_KEY)).toBe('[]');
+    expect(JSON.parse(localStorage.getItem(MY_MODE_IDS_KEY)!)).toEqual(['critic']);
+  });
+
+  it('в профиле нет полей — локальная копия остаётся', async () => {
+    localStorage.setItem(MY_SCHEMA_IDS_KEY, JSON.stringify(['abandonment']));
+    mockApi.getProfile.mockResolvedValue({ role: 'CLIENT', name: null });
+    setup('/today');
+    await flush();
+    expect(JSON.parse(localStorage.getItem(MY_SCHEMA_IDS_KEY)!)).toEqual(['abandonment']);
+    expect(localStorage.getItem(MY_MODE_IDS_KEY)).toBeNull();
   });
 });
