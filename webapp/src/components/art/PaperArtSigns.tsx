@@ -2,9 +2,10 @@
 // Cluster — режимы (части, которые по очереди у руля); Leaf — рост, профиль,
 // «готово»; Talk — разговор с человеком, терапевт; Beads — настройки;
 // Check — задания и планы; Heart — «мне плохо», кризисный вход.
-import { PAPER, type ArtProps } from './PaperArt';
+import type { ReactNode } from 'react';
+import { PAPER, type ArtProps } from './paper';
 
-function Svg({ size = 'square', viewBox, children }: ArtProps & { viewBox: string; children: React.ReactNode }) {
+function Svg({ size = 'square', viewBox, children }: ArtProps & { viewBox: string; children: ReactNode }) {
   return (
     <svg className={`pp-art pp-art--${size}`} viewBox={viewBox} aria-hidden="true" focusable="false">
       {children}

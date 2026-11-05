@@ -7,19 +7,7 @@
 // Pebbles — дневник; Cup — пусто и отдых; Breath — дыхание и «здесь и сейчас»;
 // Sheets — записи и «Мой путь»; Layers — схемы и паттерны.
 import type { ReactNode } from 'react';
-
-/** Бумага референса: тёмная зелень, шалфей, тёмно-коричневый, терракота. */
-export const PAPER = {
-  moss: 'var(--c-moss)',
-  sage: 'color-mix(in srgb, var(--c-moss) 55%, var(--bg))',
-  brown: 'var(--text-sub)',
-  clay: 'var(--c-clay)',
-  slate: 'var(--c-slate)',
-  amber: 'var(--c-amber)',
-  plum: 'var(--c-plum)',
-} as const;
-
-export interface ArtProps { size?: 'hero' | 'square' | 'row' | 'empty' }
+import { PAPER, type ArtProps } from './paper';
 
 function Svg({ size = 'square', viewBox, children }: ArtProps & { viewBox: string; children: ReactNode }) {
   return (
