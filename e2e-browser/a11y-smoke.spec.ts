@@ -20,6 +20,29 @@
 // случай всё же нужно заморозить — он попадает поимённо в FROZEN_CRITICAL
 // с комментарием-причиной, чтобы это было видно в дифф-ревью (правило №15
 // CLAUDE.md: «исключение — только с обоснованием»); сейчас список пуст.
+//
+// Экраны кабинета (/today, /diary) — инцидент 2026-11-05 (docs/INCIDENTS.md):
+// в кабинете внутри Telegram текст без явного `color` был светлым на светлой
+// бумаге. `.light-lock` переопределял токены, но унаследованный от body цвет
+// тёмной темы (`html[data-theme="dark"]`, его ставят App.tsx по
+// `localStorage.app_theme === 'dark'` и тумблер лендинга) проникал внутрь.
+// Ни один vitest-тест каскад не считает, поэтому класс «унаследованный цвет не
+// совпадает с токенами поддерева» ловит только настоящий браузер: axe
+// (`color-contrast`) по кабинету в трёх состояниях — чистом, с тёмной темой в
+// localStorage до загрузки (путь App.tsx) и с тёмным атрибутом на <html> уже
+// после отрисовки (путь тумблера лендинга в SPA-сессии; держит правило CSS
+// отдельно от layout-эффекта AppShell).
+//
+// Регрессионная сверка при написании (дерево main b5095427 с убранными
+// фиксами #929, как на 1999a510): без правила `.light-lock { color }` и без
+// `useCabinetLightTheme` в AppShell оба тёмных состояния «/today» красные —
+// `color-contrast` (serious) на `h3` «От терапевта» и `.ct-task-text`; с
+// одним хуком, без правила CSS, красно только «тёмный атрибут после
+// отрисовки»; с обоими фиксами — ноль. «/diary» на том же дереве зелёный во
+// всех состояниях: карточка объяснения получила явный цвет (`.pp-paper`,
+// #921) уже после инцидента, — экран держит храповик только для себя.
+// Поэтому у экранов кабинета бейслайн 0 и держится нулём: рост здесь —
+// возврат инцидента, а не «долг».
 import AxeBuilder from '@axe-core/playwright';
 import type { Page, TestInfo } from '@playwright/test';
 import { readFileSync } from 'fs';
@@ -28,6 +51,7 @@ import { join } from 'path';
 // с экрана падения ничего не доказывает, а у экрана ошибки роутера есть <h1>,
 // и «страница отрисовалась» он проходит — до ci-alarm #903 /articles под
 // ответом `{}` падал в «Что-то пошло не так», и храповик сверял его.
+import type { StubApiHandle } from './support/stubApi';
 import { test, expect } from './support/test';
 
 const BASELINE_PATH = join(__dirname, 'a11y-baseline.json');
@@ -118,4 +142,101 @@ test.describe('a11y-smoke: webapp', () => {
     await settled(page);
     await checkScreen(page, 'webapp:articles');
   });
+});
+
+/** Тёмная тема, сохранённая пользователем на лендинге: App.tsx читает ключ
+ *  до первого рендера и ставит `data-theme="dark"` на <html>. Скрипт идёт до
+ *  кода страницы, как и согласие на куки в stubApi. */
+async function rememberDarkTheme(page: Page): Promise<void> {
+  await page.addInitScript(() => {
+    try {
+      localStorage.setItem('app_theme', 'dark');
+    } catch {
+      // about:blank до первой навигации: у документа нет хранилища.
+    }
+  });
+}
+
+/** Задание от терапевта в форме `UserTask` (shared/src/apiTypes.ts), как
+ *  отдаёт TherapyTasksService.getUserTasks. Без него кабинет чистого клиента
+ *  не содержит ни одного текста без явного `color`: заголовок блока «От
+ *  терапевта» (`.ds-h2`) и текст задания (`.ct-task-text`) — те самые
+ *  элементы инцидента, которые наследуют цвет от body. Проверено на дереве
+ *  без фиксов #929: на пустом стабе все три состояния были зелёными. */
+const THERAPIST_TASK = {
+  id: 1,
+  userId: '1',
+  assignedBy: '2',
+  type: 'custom',
+  text: 'Записать три ситуации, которые задели за день',
+  targetDays: null,
+  needId: null,
+  dueDate: null,
+  done: null,
+  completedAt: null,
+  createdAt: '2026-11-05T08:00:00.000Z',
+};
+
+/** Открывает раздел кабинета вошедшим клиентом с одним заданием терапевта
+ *  и дожидается отрисовки. Фикстура стаба для чистого клиента — `[]` (её
+ *  сверяет с живым сервером test/browser-stub-contract.e2e-spec.ts), задание
+ *  кладётся поверх через `api.overrides`. На чистом аккаунте «Сегодня» сам
+ *  открывает лист «Зачем это всё» поверх плиток — закрываем: инцидент был
+ *  про текст кабинета под ним, а оверлей на весь экран прячет его от axe. */
+async function openCabinet(
+  page: Page,
+  api: StubApiHandle,
+  path: string,
+): Promise<void> {
+  api.overrides.set('GET /api/therapy/tasks', [THERAPIST_TASK]);
+  await page.goto(path);
+  await settled(page);
+  const whyDone = page.getByRole('button', { name: 'Понятно, начнём' });
+  if ((await whyDone.count()) > 0) {
+    await whyDone.click();
+    await expect(whyDone).toHaveCount(0);
+  }
+  if (path === '/today')
+    await expect(
+      page.getByRole('heading', { name: 'От терапевта' }),
+    ).toBeVisible();
+}
+
+const CABINET_SCREENS: { path: string; id: string }[] = [
+  { path: '/today', id: 'webapp:today' },
+  { path: '/diary', id: 'webapp:diary' },
+];
+
+test.describe('a11y-smoke: кабинет (инцидент 2026-11-05)', () => {
+  for (const { path, id } of CABINET_SCREENS) {
+    test(`${path}: светлая тема`, async ({ page, api }, testInfo) => {
+      skipOnOtherProject(testInfo, 'webapp');
+      await openCabinet(page, api, path);
+      await checkScreen(page, id);
+    });
+
+    test(`${path}: тёмная тема в localStorage до загрузки`, async ({
+      page,
+      api,
+    }, testInfo) => {
+      skipOnOtherProject(testInfo, 'webapp');
+      await rememberDarkTheme(page);
+      await openCabinet(page, api, path);
+      await checkScreen(page, `${id}:dark-storage`);
+    });
+
+    test(`${path}: тёмный атрибут на <html> после отрисовки`, async ({
+      page,
+      api,
+    }, testInfo) => {
+      skipOnOtherProject(testInfo, 'webapp');
+      await openCabinet(page, api, path);
+      // Тумблер лендинга (applyTheme) в SPA-сессии: атрибут меняется на
+      // живом документе, кабинет не перемонтируется — держит только CSS.
+      await page.evaluate(() => {
+        document.documentElement.setAttribute('data-theme', 'dark');
+      });
+      await checkScreen(page, `${id}:dark-html`);
+    });
+  }
 });
