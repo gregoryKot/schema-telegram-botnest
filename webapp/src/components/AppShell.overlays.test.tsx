@@ -605,7 +605,7 @@ describe('AppShell — сайдбар: индекс дня и поиск⌘K о�
   it('«Мне плохо» открывает карточку поверх текущего раздела, не уводя на /practice', async () => {
     renderAppShell('/today');
     await waitFor(() => expect(screen.getByTestId('today-section')).toBeTruthy());
-    fireEvent.click(document.querySelector('.topbar-sos')!);
+    fireEvent.click(screen.getByText('Мне плохо'));
     expect(await screen.findByTestId('sos-card')).toBeTruthy();
     expect(screen.queryByTestId('practice-section')).toBeNull();
     expect(screen.getByTestId('today-section').closest('[inert]')).not.toBeNull();
@@ -617,19 +617,10 @@ describe('AppShell — сайдбар: индекс дня и поиск⌘K о�
   it('из карточки «Мне плохо» — в трекер: карточка закрывается, трекер открыт', async () => {
     renderAppShell('/today');
     await waitFor(() => expect(screen.getByTestId('today-section')).toBeTruthy());
-    fireEvent.click(document.querySelector('.topbar-sos')!);
+    fireEvent.click(screen.getByText('Мне плохо'));
     fireEvent.click(await screen.findByTestId('sos-card-tracker'));
     expect(await screen.findByTestId('tracker-overlay')).toBeTruthy();
     expect(screen.queryByTestId('sos-card')).toBeNull();
-  });
-
-  // C-К1: на телефоне топбара нет — вход в помощь одним тапом из любого раздела.
-  it('плавающая «Мне плохо» (телефон) открывает тот же лист из «Записей» и прячется под листом', async () => {
-    renderAppShell('/diary');
-    await waitFor(() => expect(document.querySelector('.mobile-sos')).not.toBeNull());
-    fireEvent.click(document.querySelector('.mobile-sos')!);
-    expect(await screen.findByTestId('sos-card')).toBeTruthy();
-    expect(document.querySelector('.mobile-sos')).toBeNull();
   });
 
   it('иконка поиска в топбаре («Перейти к…») открывает командную палитру', async () => {

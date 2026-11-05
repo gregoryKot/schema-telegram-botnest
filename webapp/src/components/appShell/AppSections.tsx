@@ -120,7 +120,6 @@ export function AppSections({
               onNavigate={setSection}
               onOpenSchema={(opts) => { ov.setSchemaAutoStartTest(!!opts?.startTest); ov.setSchemaInitialTab('needs'); ov.setSchemaHighlight(undefined); ov.setShowSchemaInfo(true); }}
               onOpenAdvanced={() => ov.setShowSettings(true)}
-              onOpenCrisis={() => ov.setShowSosCard(true)}
               userRole={userRole}
               onOpenTherapistCabinet={() => { switchTherapistMode(true); }}
             />
