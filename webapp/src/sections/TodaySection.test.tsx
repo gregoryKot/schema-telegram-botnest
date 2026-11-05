@@ -194,9 +194,9 @@ describe('TodaySection — плитка трекера по реальным о�
 
   it('полоски картинки плотные только у оценённых потребностей', () => {
     const { container } = renderSection({ ratings: { attachment: 4 } });
-    const strokes = container.querySelectorAll('.ct-art--strokes [data-need]');
+    const strokes = container.querySelectorAll('.ct-main [data-need]');
     expect(strokes).toHaveLength(5);
-    expect(container.querySelectorAll('.ct-art--strokes [data-rated="yes"]')).toHaveLength(1);
+    expect(container.querySelectorAll('.ct-main [data-rated="yes"]')).toHaveLength(1);
   });
 
   it('клик по плитке открывает трекер и шлёт home_tile', () => {

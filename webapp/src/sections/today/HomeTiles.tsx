@@ -1,7 +1,8 @@
 import { haptic } from '../../haptic';
 import { useTr } from '../../utils/addressForm';
 import type { TrackerSummary } from './todayFeed';
-import { NeedStrokes, RibbonArt, PebblesArt } from './HomeArt';
+import { NEED_COLOR_ORDER } from '../../../../shared/src/needs/needColors';
+import { Strokes, Ribbon, Pebbles } from '../../components/art/PaperArt';
 import { HomeSquare } from './HomeSquare';
 import { trackerCta } from './trackerCta';
 
@@ -19,8 +20,7 @@ interface Props {
 
 /** Оттенки цветной бумаги квадратов (референс: шалфей и персик), не hue сущностей. */
 const SQUARE_HUE = { case: 135, diary: 45 } as const;
-// Главная по референсу владельца 2026-11-04 (бумажная аппликация): трекер — блок между
-// линиями с вопросом, картинкой и единственной залитой кнопкой экрана; ниже два квадрата.
+// Главная по референсу владельца 2026-11-04 (бумажная аппликация, styles/paper.css):
 // Блок трекера — вся кнопка целиком; «кнопка» внутри — span (вложенная button невалидна),
 // без aria-hidden: имя кнопки несёт действие («Трекер … Отметить состояние»).
 export function HomeTiles({ ratings, tracker, trackerMeta, caseMeta, diaryMeta, onTracker, onCase, onDiary }: Props) {
@@ -29,24 +29,24 @@ export function HomeTiles({ ratings, tracker, trackerMeta, caseMeta, diaryMeta, 
   const done = tracker.total > 0 && tracker.filled >= tracker.total;
   return (
     <div className="ct-home">
-      <button type="button" className="ct-main" onClick={tap(onTracker)}>
-        <span className="ct-main-grid">
-          <span className="ct-main-body">
+      <button type="button" className="pp-block pp-block--btn ct-main" onClick={tap(onTracker)}>
+        <span className="pp-hero">
+          <span className="pp-hero-body">
             <span className="ds-label">Трекер</span>
-            <span className="ct-main-title">{tr('Как ты сегодня?', 'Как вы сегодня?')}</span>
-            <span className="ct-main-text">Пять потребностей. Одна минута для себя.</span>
-            <span className="ct-tile-meta">{trackerMeta}</span>
+            <span className="pp-hero-title">{tr('Как ты сегодня?', 'Как вы сегодня?')}</span>
+            <span className="pp-hero-text">Пять потребностей. Одна минута для себя.</span>
+            <span className="pp-meta">{trackerMeta}</span>
           </span>
-          <NeedStrokes ratings={ratings} />
+          <Strokes size="hero" marks={NEED_COLOR_ORDER.map(id => ({ id, dense: ratings[id] !== undefined }))} />
         </span>
-        <span className={`ds-btn ds-btn--lg ct-main-cta${done ? ' ds-btn--secondary' : ''}`}>
+        <span className={`ds-btn ds-btn--lg pp-cta${done ? ' ds-btn--secondary' : ''}`}>
           {trackerCta(tracker)} →
         </span>
       </button>
 
-      <div className="ct-squares">
-        <HomeSquare hue={SQUARE_HUE.case} art={<RibbonArt />} title="Что случилось" text="Разобрать то, что задело." meta={caseMeta} onClick={tap(onCase)} />
-        <HomeSquare hue={SQUARE_HUE.diary} art={<PebblesArt />} title="Дневник" text="Оставить здесь то, что на уме." meta={diaryMeta} onClick={tap(onDiary)} />
+      <div className="pp-squares">
+        <HomeSquare hue={SQUARE_HUE.case} art={<Ribbon />} title="Что случилось" text="Разобрать то, что задело." meta={caseMeta} onClick={tap(onCase)} />
+        <HomeSquare hue={SQUARE_HUE.diary} art={<Pebbles />} title="Дневник" text="Оставить здесь то, что на уме." meta={diaryMeta} onClick={tap(onDiary)} />
       </div>
     </div>
   );

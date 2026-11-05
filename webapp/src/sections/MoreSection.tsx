@@ -7,6 +7,7 @@ import { useTherapyBridgeTexts } from '../components/therapy/useTherapyBridgeTex
 import { ExternalLink } from '../host/ExternalLink';
 import { trackHomeTile } from './today/trackHomeTile';
 import '../styles/client-more.css';
+import { Heart } from '../components/art/PaperArtSigns';
 
 interface Props {
   onNavigate: (s: Section) => void;
@@ -22,10 +23,7 @@ const ROW_CLASS = 'ds-list-row ds-list-row--nav ds-list-row--hover';
 function RowBody({ row }: { row: Row }) {
   return (
     <>
-      <span className="ds-list-body">
-        <span className="ds-list-title">{row.title}</span>
-        <span className="ds-list-sub">{row.sub}</span>
-      </span>
+      <span className="ds-list-body"><span className="ds-list-title">{row.title}</span><span className="ds-list-sub">{row.sub}</span></span>
       <span className="ds-chev" aria-hidden="true" />
     </>
   );
@@ -79,6 +77,7 @@ export function MoreSection({ onNavigate, onOpenSchema, onOpenAdvanced, userRole
       </div>
 
       <button type="button" className="ds-card ds-card--row ds-card--nav ds-card--crisis ds-card--hover" onClick={() => onNavigate('practice')}>
+        <span className="pp-row-art"><Heart size="row" /></span>
         <span className="ds-list-title">Мне очень плохо</span>
         <span className="ds-chev" aria-hidden="true" />
       </button>

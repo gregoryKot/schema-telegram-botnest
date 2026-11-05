@@ -4,6 +4,7 @@
 @import '../../shared/src/theme/tokens.css';
 /* Примитивы и тона редизайна кабинетов 2026-10 (ds-*, tone-*). */
 @import './styles/cabinet.css';
+@import './styles/paper.css';
 @import './styles/touch-fixes.css';
 
 /* ── Instrument Serif — ТОЛЬКО для изолированной айдентики личного сайта

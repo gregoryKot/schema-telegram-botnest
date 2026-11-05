@@ -1,7 +1,7 @@
 import { SkeletonLines } from './SkeletonLines';
 import { ENTRY_KIND_LABEL } from '../diary/entryKind';
 import type { FeedEntry } from './todayFeed';
-import { RestArt } from './HomeArt';
+import { Cup } from '../../components/art/PaperArt';
 
 interface Props {
   entries: FeedEntry[];
@@ -23,8 +23,8 @@ export function TodayFeed({ entries, loaded, onOpenDiaries, onOpenTrackerHistory
       {!loaded ? (
         <SkeletonLines />
       ) : entries.length === 0 ? (
-        <div className="ct-feed-empty">
-          <RestArt />
+        <div className="pp-empty">
+          <Cup />
           <p className="ds-empty">Пока ничего. Любая кнопка выше подойдёт для начала.</p>
         </div>
       ) : (

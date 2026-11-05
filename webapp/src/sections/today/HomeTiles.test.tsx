@@ -36,10 +36,10 @@ describe('HomeTiles', () => {
   it('блок трекера — кнопка с именем «Трекер … Отметить состояние», внутри одна залитая «кнопка»-подпись; заполненный трекер — вторичная', () => {
     const { rerender } = render(<HomeTiles {...base} />);
     const main = screen.getByRole('button', { name: /Трекер.*Отметить состояние/ });
-    expect(main.querySelector('.ct-main-cta')?.textContent).toBe('Отметить состояние →');
-    expect(main.querySelector('.ct-main-cta')?.className).not.toContain('ds-btn--secondary');
+    expect(main.querySelector('.pp-cta')?.textContent).toBe('Отметить состояние →');
+    expect(main.querySelector('.pp-cta')?.className).not.toContain('ds-btn--secondary');
     rerender(<HomeTiles {...base} tracker={{ filled: 5, total: 5, index: 6 }} />);
-    expect(main.querySelector('.ct-main-cta')?.className).toContain('ds-btn--secondary');
+    expect(main.querySelector('.pp-cta')?.className).toContain('ds-btn--secondary');
     expect(document.querySelectorAll('.ds-btn').length).toBe(1);
   });
 
@@ -76,6 +76,6 @@ describe('HomeTiles', () => {
 
   it('дневники грузятся (null) — скелетон вместо выдуманной подписи', () => {
     render(<HomeTiles {...base} diaryMeta={null} />);
-    expect(document.querySelector('.ct-tile-meta--skeleton')).toBeTruthy();
+    expect(document.querySelector('.pp-meta--skeleton')).toBeTruthy();
   });
 });
