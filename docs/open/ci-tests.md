@@ -326,18 +326,6 @@ Ubuntu 26) у трёх PR подряд падали `backend` → `check-coverag
   `localStorage.app_theme = 'dark'` до загрузки (`page.addInitScript`) — именно это состояние
   создаёт тумблер лендинга и `App.tsx`. Пока держат только `webapp/src/lightLock.test.ts` и тест в
   `AppShell.render.test.tsx` (атрибут и правило CSS по отдельности, не вычисленный цвет).
-- **На macOS сборка и сьюта `webapp` красные из-за пар файлов, различающихся только регистром.**
-  `webapp/src/sections/today/TodayFeed.tsx` + `todayFeed.ts`, пара у `ExerciseLibrary`,
-  `shared/src/therapy/conceptGraph/ConceptDigest.tsx` + `conceptDigest.ts`: на регистронезависимой
-  ФС импорт `./today/TodayFeed` резолвится в `todayFeed.ts`, где экспорта `TodayFeed` нет.
-  Итог 2026-11-05 в чистом `main`: `vite build` — 5 `Missing export`; `npx vitest run` — 33 файла,
-  228 тестов (`TodaySection.test.tsx`, `PracticeSection.test.tsx`, `ClientConceptTab*.test.tsx`:
-  «`useConceptDigest is not a function`», «Element type is invalid»). Pre-push хук собирает webapp
-  локально и блокирует любой пуш с Mac — PR #929 и #931 ушли с `--no-verify`. На Linux в CI всё
-  проходит, поэтому гейт молчит и класс растёт (три пары к ноябрю). Починка — переименовать один
-  файл каждой пары (`todayFeed.ts` → `todayFeedModel.ts` и т. п.) и гейт на пары имён, равные без
-  учёта регистра в одном каталоге (`scripts/check-case-collisions.mjs` или проверка в
-  `check-dead-files.mjs`), без бейслайна: класс вычищается целиком.
 
 **Статика и браузерный смок — находки при починке перекоса ассетов** (инцидент 2026-11-04, #928):
 - **e2e не отдаёт статику вовсе.** `test/e2e-support/build-test-app.ts` и

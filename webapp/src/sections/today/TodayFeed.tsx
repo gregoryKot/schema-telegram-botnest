@@ -1,6 +1,6 @@
 import { SkeletonLines } from './SkeletonLines';
 import { ENTRY_KIND_LABEL } from '../diary/entryKind';
-import type { FeedEntry } from './todayFeed';
+import type { FeedEntry } from './todayFeedModel';
 import { PaperEmpty } from '../../components/art/PaperEmpty';
 
 interface Props {

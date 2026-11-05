@@ -2,7 +2,7 @@
 import { describe, it, expect } from 'vitest';
 import { sessionMoment } from './model';
 import { dayIndex as sharedDayIndex } from '../../../../shared/src/needs/dayIndex';
-import { trackerSummary } from './todayFeed';
+import { trackerSummary } from './todayFeedModel';
 import { summarizeDay } from '../../components/trackerOverlay/trackerFlow';
 import { forEachTimeZone } from '../../../../shared/src/utils/timeZone.test-helpers';
 

@@ -5,7 +5,7 @@
 import { describe, it, expect } from 'vitest';
 import { render, renderHook, screen, within } from '@testing-library/react';
 import { ConceptDigest, useConceptDigest } from './ConceptDigest';
-import type { DigestRow } from './conceptDigest';
+import type { DigestRow } from './conceptDigestModel';
 import { ConceptSkinContext, type ConceptSkin } from './conceptSkin';
 
 const SKIN: ConceptSkin = {
