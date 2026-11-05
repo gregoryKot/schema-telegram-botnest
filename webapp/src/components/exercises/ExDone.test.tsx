@@ -20,6 +20,10 @@ describe('ExDone', () => {
 });
 
 describe('SsHead', () => {
+  it('layers — слои рядом с заголовком', () => {
+    const { container } = render(<SsHead layers title="Мои схемы" />);
+    expect(container.querySelector('.ss-title-row svg.pp-art--row')).toBeTruthy();
+  });
   it('paperHue — бумага нужного оттенка, слои над заголовком', () => {
     const { container } = render(<SsHead paperHue={70} title="Результат" />);
     const root = container.firstElementChild as HTMLElement;

@@ -1,3 +1,4 @@
+import { Layers } from '../../components/art/PaperArt';
 import { fmtDate, momentDayKey } from '../../utils/format';
 import { useTr } from '../../utils/addressForm';
 
@@ -24,7 +25,7 @@ export function YsqTestCard({ progressAnswered, completedAt, onStart }: Props) {
       : tr('Определи схемы автоматически – 116 вопросов, 10 минут', 'Определите схемы автоматически – 116 вопросов, 10 минут');
   return (
     <div className="pp-paper cs-test">
-      <div className="ds-label">Тест на схемы</div>
+      <div className="cs-test-head"><div className="ds-label">Тест на схемы</div><Layers size="row" /></div>
       <p className="cs-test-text">{text}</p>
       <button className="ds-btn ds-btn--secondary cs-test-btn" onClick={onStart}>{action}</button>
     </div>

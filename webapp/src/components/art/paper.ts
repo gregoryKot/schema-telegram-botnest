@@ -11,4 +11,4 @@ export const PAPER = {
   plum: 'var(--c-plum)',
 } as const;
 
-export interface ArtProps { size?: 'hero' | 'square' | 'empty' }
+export interface ArtProps { size?: 'hero' | 'square' | 'row' | 'empty' }

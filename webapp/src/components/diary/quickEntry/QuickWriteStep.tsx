@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { haptic } from '../../../haptic';
+import { Pebbles } from '../../art/PaperArt';
 import { CrisisCard } from '../../CrisisCard';
 import { detectCrisisAny } from '../../../utils/crisisMarkers';
 import { LimitedTextarea } from '../../../../../shared/src/components/LimitedTextarea';
@@ -36,6 +37,7 @@ export function QuickWriteStep({ text, tag, saving, error, onText, onTag, onSubm
         <div className="tq-inner">
           <div className="qe-head">
             <h1 className="tq-title">Что на уме?</h1>
+            <Pebbles size="row" />
           </div>
           <LimitedTextarea
             max={DIARY_FIELD_MAX}
