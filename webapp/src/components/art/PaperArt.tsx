@@ -6,16 +6,8 @@
 // Мотив → смысл: Strokes — трекер и потребности; Ribbon — «Что случилось»;
 // Pebbles — дневник; Cup — пусто и отдых; Breath — дыхание и «здесь и сейчас»;
 // Sheets — записи и «Мой путь»; Layers — схемы и паттерны.
-import type { ReactNode } from 'react';
 import { PAPER, type ArtProps } from './paper';
-
-function Svg({ size = 'square', viewBox, children }: ArtProps & { viewBox: string; children: ReactNode }) {
-  return (
-    <svg className={`pp-art pp-art--${size}`} viewBox={viewBox} aria-hidden="true" focusable="false">
-      {children}
-    </svg>
-  );
-}
+import { PaperSvg as Svg } from './PaperSvg';
 
 export interface StrokeMark { id: string; dense: boolean }
 const STROKE_PAPER = [PAPER.moss, PAPER.sage, PAPER.brown, PAPER.clay, PAPER.sage];
