@@ -1887,7 +1887,7 @@
   "webapp/src/hooks/useSavingAction.ts": 47,
   "webapp/src/hooks/useSelfMapData.ts": 51,
   "webapp/src/hooks/useStartParam.ts": 39,
-  "webapp/src/hooks/useTextEntryFocus.ts": 52,
+  "webapp/src/hooks/useTextEntryFocus.ts": 10,
   "webapp/src/hooks/useYsqTest.ts": 2,
   "webapp/src/host/ExternalLink.tsx": 31,
   "webapp/src/host/initHost.ts": 32,
