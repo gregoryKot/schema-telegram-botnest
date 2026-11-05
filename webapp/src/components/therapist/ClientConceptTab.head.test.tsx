@@ -296,16 +296,17 @@ describe('шапка: компьютер с заголовком, телефон
     expect(css).toMatch(/\.tcp-page \{[^}]*padding-top: 40px/);
   });
 
-  it('порядок в DOM шапки = видимому: заголовок, статус сохранения, «Схема · Поля», «⋯» (Tab слева направо)', async () => {
+  it('порядок в DOM шапки = видимому: заголовок, статус сохранения, «Схема · Поля», «Главное», «⋯» (Tab слева направо)', async () => {
     await openTab();
     const head = root().querySelector('.tcp-head')!;
     expect(head.children[0].matches('.tcp-head-title')).toBe(true);
     const kids = Array.from(head.querySelector(':scope > .tcp-head-actions')!.children);
     const idx = (sel: string) => kids.findIndex(k => k.matches(sel));
-    expect(kids).toHaveLength(3);
+    expect(kids).toHaveLength(4);
     expect(idx('.tcp-save')).toBe(0);
     expect(idx('.ds-seg')).toBe(1);
-    expect(idx('.tcp-more')).toBe(2);
+    expect(idx('.tcp-brief-btn')).toBe(2);
+    expect(idx('.tcp-more')).toBe(3);
   });
 
   it('раскрывашки — общий ds-fold: кнопка ds-fold-btn с подписью ds-label, тело ds-fold-body только у открытой', async () => {

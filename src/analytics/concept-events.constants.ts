@@ -16,6 +16,8 @@
 //   concept_save_retry    — повторяли сохранение концептуализации после ошибки
 //                           (кнопка «Повторить» в строке статуса SaveStatusLine, issue #879).
 //                           Три места, оба фронтенда: вкладка сайта, холст карты режимов и кнопка мини-аппа.
+//   concept_brief_open    — открыл экран «Главное» (самое важное из концептуализации на
+//                           одном экране, кнопка в шапке вкладки). Одно событие на открытие; только сайт.
 export const CONCEPT_EVENTS = [
   'concept_graph_open',
   'concept_mode_linked',
@@ -23,4 +25,5 @@ export const CONCEPT_EVENTS = [
   'concept_canvas_open',
   'concept_graph_fullscreen',
   'concept_save_retry',
+  'concept_brief_open',
 ] as const;

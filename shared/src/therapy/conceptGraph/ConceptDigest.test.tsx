@@ -20,8 +20,31 @@ const SKIN: ConceptSkin = {
 };
 
 const ROWS: DigestRow[] = [
-  { key: 'schemas', label: 'Схемы', text: 'Неуспешность' },
-  { key: 'goal', label: 'Цель', text: 'Снизить тревогу' },
+  {
+    key: 'schemas',
+    label: 'Схемы',
+    kind: 'chips',
+    items: [{ text: 'Неуспешность', hue: 70 }],
+    text: 'Неуспешность',
+  },
+  {
+    key: 'modes',
+    label: 'Режимы',
+    kind: 'chips',
+    items: [
+      { text: 'Карающий Критик', hue: 310 },
+      { text: '→', plain: 'arrow' },
+      { text: 'Здоровый Взрослый', hue: 145 },
+    ],
+    text: 'Карающий Критик → Здоровый Взрослый',
+  },
+  {
+    key: 'goal',
+    label: 'Цель',
+    kind: 'text',
+    items: [{ text: 'Снизить тревогу' }],
+    text: 'Снизить тревогу',
+  },
 ];
 
 describe('ConceptDigest', () => {
@@ -32,11 +55,15 @@ describe('ConceptDigest', () => {
     const terms = within(card)
       .getAllByRole('term')
       .map((el) => el.textContent);
-    expect(terms).toEqual(['Схемы', 'Цель']);
+    expect(terms).toEqual(['Схемы', 'Режимы', 'Цель']);
     const values = within(card)
       .getAllByRole('definition')
       .map((el) => el.textContent);
-    expect(values).toEqual(['Неуспешность', 'Снизить тревогу']);
+    expect(values).toEqual([
+      'Неуспешность',
+      'Карающий Критик→Здоровый Взрослый',
+      'Снизить тревогу',
+    ]);
     expect(within(card).queryByRole('button')).toBeNull();
   });
 
@@ -54,9 +81,17 @@ describe('ConceptDigest', () => {
     );
     for (const t of within(card).getAllByRole('term'))
       expect(t.className).toBe('sk-label');
-    const value = within(card).getAllByRole('definition')[0];
-    expect(value.style.fontSize).toBe('');
-    expect(value.style.color).toBe('');
+    const [schemas, modes, goal] = within(card).getAllByRole('definition');
+    expect(goal.style.fontSize).toBe('');
+    expect(goal.style.color).toBe('');
+    // плашки сущностей — тег skin в тоне домена / группы, слово «→» — без тега
+    const chip = within(schemas).getByText('Неуспешность');
+    expect(chip.className).toBe('sk-tag');
+    expect(chip.getAttribute('style')).toBe('--h: 70;');
+    expect(
+      within(modes).getByText('Карающий Критик').getAttribute('style'),
+    ).toBe('--h: 310;');
+    expect(within(modes).getByText('→').className).toBe('');
   });
 
   it('пустой список строк — карточки нет', () => {
