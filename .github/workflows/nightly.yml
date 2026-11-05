@@ -287,11 +287,13 @@ jobs:
           --health-interval 5s
           --health-timeout 5s
           --health-retries 10
+    # Пути в /tmp литералами: контекст runner.temp в env уровня джобы
+    # недоступен (dispatch отказал на разборе файла).
     env:
       DATABASE_URL: postgresql://postgres:ci@localhost:5432/ci
-      STAND_STOP_FILE: ${{ runner.temp }}/stand.stop
-      STAND_LOG: ${{ runner.temp }}/stand.log
-      PREVIEW_LOG: ${{ runner.temp }}/preview.log
+      STAND_STOP_FILE: /tmp/stand.stop
+      STAND_LOG: /tmp/stand.log
+      PREVIEW_LOG: /tmp/preview.log
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -387,8 +389,8 @@ jobs:
           name: playwright-live-trace
           path: |
             test-results/live/
-            ${{ runner.temp }}/stand.log
-            ${{ runner.temp }}/preview.log
+            /tmp/stand.log
+            /tmp/preview.log
           retention-days: 14
           if-no-files-found: ignore
 
