@@ -1,7 +1,8 @@
 // Вторая половина бумажной аппликации (см. PaperArt.tsx): мотивы-знаки.
 // Cluster — режимы (части, которые по очереди у руля); Leaf — рост, профиль,
 // «готово»; Talk — разговор с человеком, терапевт; Beads — настройки;
-// Check — задания и планы; Heart — «мне плохо», кризисный вход.
+// Check — задания и планы; Heart — «мне плохо», кризисный вход; Wheel — «Колесо
+// детства»: пять полосок-потребностей по кругу вокруг детства, из которого они растут.
 import { PAPER, type ArtProps } from './paper';
 import { PaperSvg as Svg } from './PaperSvg';
 
@@ -60,6 +61,18 @@ export function Heart({ size }: ArtProps) {
   return (
     <Svg size={size} viewBox="0 0 120 64">
       <path d="M60 58 C 40 46, 20 36, 20 22 C 20 12, 30 6, 40 10 C 48 13, 56 20, 60 26 C 64 20, 72 13, 80 10 C 90 6, 100 12, 100 22 C 100 36, 80 46, 60 58 Z" fill={PAPER.clay} />
+    </Svg>
+  );
+}
+
+export function Wheel({ size }: ArtProps) {
+  const fills = [PAPER.moss, PAPER.sage, PAPER.brown, PAPER.clay, PAPER.sage];
+  return (
+    <Svg size={size} viewBox="0 0 120 64">
+      {fills.map((fill, i) => (
+        <rect key={i} x="52" y="0" width="16" height="22" rx="8" fill={fill} transform={`rotate(${i * 72} 60 33)`} />
+      ))}
+      <circle cx="60" cy="33" r="9" fill={PAPER.clay} />
     </Svg>
   );
 }
