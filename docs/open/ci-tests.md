@@ -339,11 +339,3 @@ Ubuntu 26) у трёх PR подряд падали `backend` → `check-coverag
   (~стр. 284): «назначение мини-аппа совпадает с rootPath ServeStaticModule в src/app.module.ts» —
   мини-апп удалён (#917), а скрипт `src/app.module.ts` не читает (`grep app.module
   scripts/check-deploy-paths.mjs` пуст).
-- **Ночной browser-smoke красный, issue `ci-alarm` #903 (с 2026-11-02).** В
-  `e2e-browser/tracker-smoke.spec.ts` «трекер: оценка ставится тапом…» не дожидается «Понятно,
-  начнём»: «Сегодня» падает в «Раздел упал», `TypeError: t.filter is not a function` в `useMemo`
-  бандла `TodaySection` (консоль трейса Playwright). Вероятно, catch-all `{}` в
-  `e2e-browser/support/stubApi.ts` отвечает ручке, от которой экран теперь ждёт массив; кандидаты
-  из трейса — `/api/history?days=14`, `/api/diary/{schema,mode,gratitude}`, `/api/childhood-ratings`,
-  `/api/activity`, `/api/user-flags`. Воспроизведено локально на сборке ветки #928 (база `1999a51`)
-  и без её правок; остальные 26 тестов смока, включая `asset-recovery.spec.ts`, зелёные.
