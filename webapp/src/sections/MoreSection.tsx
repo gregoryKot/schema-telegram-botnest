@@ -16,9 +16,10 @@ interface Props {
   onOpenTherapistCabinet?: () => void;
 }
 
-interface Row { id: string; title: string; sub: string; onClick: () => void; href?: string }
-
+interface Row { id: string; title: string; sub: string; onClick: () => void; href?: string; phoneOnly?: boolean }
 const ROW_CLASS = 'ds-list-row ds-list-row--nav ds-list-row--hover';
+// phoneOnly: дубль левого меню — скрыт на ≥768 (client-more.css), на телефоне «Ещё» полное (#925).
+const rowClass = (r: Row) => r.phoneOnly ? `${ROW_CLASS} cm-row--phone` : ROW_CLASS;
 function RowBody({ row }: { row: Row }) {
   return (
     <>
@@ -47,8 +48,8 @@ export function MoreSection({ onNavigate, onOpenSchema, onOpenAdvanced, userRole
 
   const rows: Row[] = [
     { id: 'why', title: 'Зачем это всё', sub: 'Откуда это и что даёт каждое действие', onClick: () => { trackHomeTile('why'); setWhy(true); } },
-    { id: 'schemas', title: 'Мои паттерны', sub: 'Схемы и режимы', onClick: () => onNavigate('schemas') },
-    { id: 'practice', title: 'Практики', sub: 'Дыхание, упражнения, планы', onClick: () => onNavigate('practice') },
+    { id: 'schemas', title: 'Мои паттерны', sub: 'Схемы и режимы', onClick: () => onNavigate('schemas'), phoneOnly: true },
+    { id: 'practice', title: 'Практики', sub: 'Дыхание, упражнения, планы', onClick: () => onNavigate('practice'), phoneOnly: true },
     { id: 'journey', title: 'Мой путь', sub: 'Всё, что уже собрано', onClick: () => setJourney(true) },
     ...talkRow,
     ...(userRole === 'THERAPIST' && onOpenTherapistCabinet
@@ -56,7 +57,7 @@ export function MoreSection({ onNavigate, onOpenSchema, onOpenAdvanced, userRole
       : []),
     { id: 'test', title: 'Тест на схемы', sub: 'Какие схемы откликаются', onClick: () => onOpenSchema({ startTest: true }) },
     { id: 'settings', title: 'Настройки', sub: 'Напоминания, обращение, данные', onClick: onOpenAdvanced },
-    { id: 'profile', title: 'Профиль', sub: 'Портрет, терапевт, ближайшая встреча', onClick: () => onNavigate('profile') },
+    { id: 'profile', title: 'Профиль', sub: 'Портрет, терапевт, ближайшая встреча', onClick: () => onNavigate('profile'), phoneOnly: true },
   ];
 
   return (
@@ -68,11 +69,11 @@ export function MoreSection({ onNavigate, onOpenSchema, onOpenAdvanced, userRole
 
       <div className="ds-card ds-card--flush">
         {rows.map(r => r.href ? (
-          <ExternalLink key={r.id} className={ROW_CLASS} href={r.href} onClick={r.onClick}>
+          <ExternalLink key={r.id} className={rowClass(r)} href={r.href} onClick={r.onClick}>
             <RowBody row={r} />
           </ExternalLink>
         ) : (
-          <button key={r.id} type="button" className={ROW_CLASS} onClick={r.onClick}>
+          <button key={r.id} type="button" className={rowClass(r)} onClick={r.onClick}>
             <RowBody row={r} />
           </button>
         ))}

@@ -110,14 +110,14 @@ describe('AppShell — роутинг: URL решает, какая секция
     await waitFor(() => expect(screen.getByTestId('diary-section')).toBeTruthy());
   });
 
-  it('в меню три вкладки — «Сегодня», «Записи», «Ещё»; «Паттерны», «Практика», «Профиль» из меню ушли', async () => {
+  it('нижняя панель телефона — три вкладки; меню слева на компьютере — шесть пунктов (#925)', async () => {
     renderAppShell('/today');
     await waitFor(() => expect(screen.getByTestId('today-section')).toBeTruthy());
     const nav = document.querySelector('.mobile-nav') as HTMLElement;
     expect(Array.from(nav.querySelectorAll('a')).map(a => a.textContent)).toEqual(['Сегодня', 'Записи', 'Ещё']);
     expect(Array.from(nav.querySelectorAll('a')).map(a => a.getAttribute('href'))).toEqual(['/today', '/diary', '/more']);
     const side = document.querySelector('.sb-nav') as HTMLElement;
-    expect(Array.from(side.querySelectorAll('a')).map(a => a.textContent)).toEqual(['Сегодня', 'Записи', 'Ещё']);
+    expect(Array.from(side.querySelectorAll('a')).map(a => a.textContent)).toEqual(['Сегодня', 'Записи', 'Практики', 'Мои паттерны', 'Профиль', 'Ещё']);
   });
 });
 

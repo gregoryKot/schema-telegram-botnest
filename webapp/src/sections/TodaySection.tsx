@@ -16,8 +16,7 @@ import { TaskExerciseHost } from './today/TaskExerciseHost';
 import { useTodayData } from './today/useTodayData';
 import { useWhySheet } from './today/useWhySheet';
 import { trackHomeTile } from './today/trackHomeTile';
-import { homeGreeting } from './today/helpers';
-import { formatGreetingDate } from './today/greetingDate';
+import { TodayHead } from './today/TodayHead';
 import { buildTodayFeed, trackerSummary, trackerTileMeta, caseTileMeta, diaryTileMeta, diaryEntriesToday } from './today/todayFeed';
 import { QuickEntrySheet } from '../components/diary/QuickEntrySheet';
 import { TherapyNudgeCard } from '../components/therapy/TherapyNudgeCard';
@@ -67,13 +66,7 @@ export function TodaySection({
 
   return (
     <div className="ds-page ct-page">
-      <header className="ct-head">
-        <div className="ct-head-top">
-          <div className="ds-eyebrow">{formatGreetingDate()}</div>
-          <button type="button" className="ct-link ct-head-why" onClick={why.open}>Зачем это?</button>
-        </div>
-        <h1 className="ds-h1 ct-h1">{homeGreeting(firstName)}</h1>
-      </header>
+      <TodayHead firstName={firstName} onWhy={why.open} />
 
       <HomeTiles
         ratings={ratings}
@@ -85,33 +78,39 @@ export function TodaySection({
         onDiary={() => { trackHomeTile('diary'); setQuickOpen(true); }}
       />
 
-      <HomeScreenOfferCard />
+      <div className="ct-cols">
+        <div className="ct-col">
+          <HomeScreenOfferCard />
 
-      {hasTasks && (
-        <PracticesBlock
-          title={fromTherapist ? 'От терапевта' : 'Задания'}
-          tasks={tasks}
-          taskError={taskError}
-          onStart={launcher.openTask}
-          onComplete={task => completeTask(task.id, onTasksChanged)}
-          onShowAll={() => setShowAllTasks(true)}
-          onAddGoal={() => setShowDiaryTask(true)}
-        />
-      )}
+          {hasTasks && (
+            <PracticesBlock
+              title={fromTherapist ? 'От терапевта' : 'Задания'}
+              tasks={tasks}
+              taskError={taskError}
+              onStart={launcher.openTask}
+              onComplete={task => completeTask(task.id, onTasksChanged)}
+              onShowAll={() => setShowAllTasks(true)}
+              onAddGoal={() => setShowDiaryTask(true)}
+            />
+          )}
 
-      <TherapyNudgeCard refreshKey={refreshKey} modeEntries={modeEntries} />
+          <TherapyNudgeCard refreshKey={refreshKey} modeEntries={modeEntries} />
+        </div>
 
-      <TodayFeed
-        entries={buildTodayFeed(feed, tracker)}
-        loaded={diariesLoaded}
-        onOpenDiaries={onOpenDiaries}
-        onOpenTrackerHistory={onOpenTrackerHistory}
-        onAll={() => { trackHomeTile('feed_all'); onNavigate('diary'); }}
-      />
+        <div className="ct-col">
+          <TodayFeed
+            entries={buildTodayFeed(feed, tracker)}
+            loaded={diariesLoaded}
+            onOpenDiaries={onOpenDiaries}
+            onOpenTrackerHistory={onOpenTrackerHistory}
+            onAll={() => { trackHomeTile('feed_all'); onNavigate('diary'); }}
+          />
 
-      <button type="button" className="ct-link ct-calm" onClick={() => { trackHomeTile('calm'); onNavigate('practice'); }}>
-        Тяжело прямо сейчас? Подышим →
-      </button>
+          <button type="button" className="ct-link ct-calm" onClick={() => { trackHomeTile('calm'); onNavigate('practice'); }}>
+            Тяжело прямо сейчас? Подышим →
+          </button>
+        </div>
+      </div>
 
       <HomeTherapyLine />
 

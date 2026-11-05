@@ -141,3 +141,12 @@
 @media (min-width: 768px) {
   .cpf-card > .ds-head-row .ds-chev:empty::before { content: '→'; }
 }
+
+/* «Активность» на компьютере (#925): клетка — квадрат 22px, сетка и подписи месяцев стоят у левого края в тех же
+   22px-колонках (иначе клетки раздувались до ~68px на 1920). Телефон — своя сетка в client-profile-mobile.css. */
+@media (min-width: 768px) {
+  .cpf-heat-wrap { width: max-content; max-width: 100%; }
+  .cpf-heat-months, .cpf-heat-grid { grid-template-columns: repeat(var(--cols), 22px); grid-auto-rows: 22px; }
+  .cpf-heat-months { grid-auto-rows: auto; }
+  .cpf-heat-legend { justify-content: flex-start; }
+}

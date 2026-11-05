@@ -527,18 +527,17 @@ a { color: inherit; text-decoration: none; }
   grid-template-rows: auto 1fr;
   min-width: 0; min-height: 0;
   overflow: hidden;
+  --tk-max: 1440px; --tk-gutter: clamp(20px, 4vw, 48px);
+  --tk-center: max(0px, (100vw - var(--sidebar-w) - var(--tk-max)) / 2);
 }
 /* Cabinet mode: topbar (search) + canvas, same as client mode.
    Все экраны кабинета («Сегодня», «Все клиенты», карточка клиента) стоят в
    одной колонке --tk-max по центру рабочей области (экран минус сайдбар):
    на широком экране они не прижимаются влево с пустой половиной справа, и
    переход между ними не сдвигает содержимое. --tk-center — отступ колонки
-   слева; уже рабочей области — ноль. */
-.main--cabinet {
-  grid-template-rows: auto 1fr;
-  --tk-max: 1440px; --tk-gutter: clamp(20px, 4vw, 48px);
-  --tk-center: max(0px, (100vw - var(--sidebar-w) - var(--tk-max)) / 2);
-}
+   слева; уже рабочей области — ноль. Те же переменные — у клиентских страниц
+   (styles/client-frame.css), поэтому живут на .main, а не только в кабинете. */
+.main--cabinet { grid-template-rows: auto 1fr; }
 
 .topbar {
   height: 56px;

@@ -9,4 +9,8 @@
   .cm-page > .ds-card--flush .ds-list-title { font-size: 16px; }
   .cm-page > .ds-card--crisis { background: none; justify-content: center; min-height: 48px; border-radius: 24px; border-color: oklch(0.58 0.12 var(--h)); }
   .cm-page > .ds-card--crisis .ds-chev { display: none; }
+  /* Список и кризисная кнопка — колонкой 720 у левого края рамки; на 1344 стрелка уезжала от текста (#925). */
+  .cm-page > .ds-card--flush, .cm-page > .ds-card--crisis { max-width: 720px; width: 100%; box-sizing: border-box; }
+  /* Мои паттерны, Практики, Профиль дублируют левое меню. */
+  .cm-row--phone { display: none; }
 }
