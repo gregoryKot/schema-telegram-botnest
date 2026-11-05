@@ -5,13 +5,13 @@ import { SessionDateTimeFields } from '../../../../shared/src/therapy/SessionDat
 import { sessionInputHint, sessionToSave, startDateHint } from '../../../../shared/src/therapy/sessionInput';
 import { DAY_NAMES, nextSessionLabel } from './clientSheetHelpers';
 import type { ClientDetail } from './clientSheetTypes';
+import { SignHead } from './SignArt';
 import { EditFormActions } from './EditFormActions';
 
 interface Props {
   selectedClient: TherapyClientSummary;
   detail: ClientDetail;
 }
-
 /** «Следующая сессия» — единственная акцентная карточка «Обзора» (#906) — с редактированием даты. */
 export function NextSessionCard({ selectedClient, detail }: Props) {
   const { editingNextSession, setEditingNextSession, localNextSession, setLocalNextSession, saveSessionInfo, sessionInfoSaving, sessionInfoError } = detail;
@@ -20,7 +20,7 @@ export function NextSessionCard({ selectedClient, detail }: Props) {
   const hint = sessionInputHint(localNextSession);
   return (
     <div className="ds-card ds-card--row ds-card--accent">
-      <h2 className="ds-label">Следующая сессия</h2>
+      <SignHead kind="talk" className="ds-label">Следующая сессия</SignHead>
       {editingNextSession ? (
         <div className="tk-edit-form">
           <SessionDateTimeFields className="ds-input" value={localNextSession} onChange={setLocalNextSession} />
@@ -47,7 +47,7 @@ export function StartDateCard({ selectedClient, detail }: Props) {
   const hint = startDateHint(localStartDate);
   return (
     <div className="ds-card ds-card--row">
-      <h2 className="ds-label">Начало терапии</h2>
+      <SignHead kind="talk" className="ds-label">Начало терапии</SignHead>
       {editingStartDate ? (
         <div className="tk-edit-form">
           <input className="ds-input" type="date" max={todayStr()} value={localStartDate} onChange={e => setLocalStartDate(e.target.value)} />

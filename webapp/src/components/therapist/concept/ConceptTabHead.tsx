@@ -25,7 +25,7 @@ export function ConceptTabHead({ detail, view, onView, graph }: ConceptTabHeadPr
   return (
     <>
       <div className="tcp-head">
-        <TabTitle title="Концептуализация" className="tcp-head-title"><div className="ds-sub">Схема-карта, цели терапии и связь с детским опытом</div></TabTitle>
+        <TabTitle title="Концептуализация" motif="layers" className="tcp-head-title"><div className="ds-sub">Схема-карта, цели терапии и связь с детским опытом</div></TabTitle>
         <div className="tcp-head-actions">
           <SaveStatusLine className="tcp-save" status={saveStatus} savedAt={savedAt} onRetry={retrySave} errorText={conceptError || undefined} align="right" />
           <ConceptViewSwitch view={view} onChange={onView} />

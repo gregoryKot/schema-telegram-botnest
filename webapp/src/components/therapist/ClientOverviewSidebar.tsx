@@ -3,6 +3,7 @@ import { hueStyle } from '../../lib/tone';
 import { ClientIndexCard } from './ClientIndexCard';
 import { NextSessionCard, StartDateCard } from './ClientSessionInfoCards';
 import { OfflineInviteCard } from './OfflineInviteCard';
+import { SignHead } from './SignArt';
 import { MeetingDaysCard } from './MeetingDaysCard';
 import { needBars } from './clientOverviewModel';
 import type { ClientDetail } from './clientSheetTypes';
@@ -34,10 +35,9 @@ export function ClientOverviewSidebar({ selectedClient, detail }: Props) {
       {isVirtualClient(selectedClient) && <OfflineInviteCard selectedClient={selectedClient} />}
 
       {todayIndex != null && <ClientIndexCard todayIndex={todayIndex} history={clientHistory} />}
-
       {needs.length > 0 && (
         <div className="ds-card ds-card--row">
-          <h2 className="ds-label">Потребности сегодня</h2>
+          <SignHead kind="strokes" className="ds-label">Потребности сегодня</SignHead>
           <div className="tk-needs">
             {needs.map(n => (
               <div key={n.id} className="tk-need">
