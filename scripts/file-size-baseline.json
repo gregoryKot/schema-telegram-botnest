@@ -575,7 +575,7 @@
   "shared/src/utils/sameId.ts": 41,
   "shared/src/utils/scrollIntoView.ts": 23,
   "shared/src/utils/searchNormalize.ts": 14,
-  "shared/src/utils/storageKeys.ts": 34,
+  "shared/src/utils/storageKeys.ts": 47,
   "shared/src/utils/stringArrayStorage.ts": 31,
   "shared/src/utils/supportContact.ts": 30,
   "shared/src/utils/telemetryUrl.ts": 25,

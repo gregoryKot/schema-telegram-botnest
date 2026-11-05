@@ -345,3 +345,11 @@ Ubuntu 26) у трёх PR подряд падали `backend` → `check-coverag
   `core.hooksPath` из `prepare`, по образцу `setup-merge-drivers.mjs`) с той же переменной, что в
   `ci.yml`, и строкой в правиле процесса: пушить с `VITE_BOT_USERNAME=SchemeHappensBot`, не с
   `--no-verify`.
+- **Плавающий `webapp/src/sections/SchemasSection.customize.test.tsx`** (найдено при починке кэша my_schema_ids, 2026-11-05):
+  случай «шестерёнка открывает лист с двумя блоками» падает с `Unable to find role="dialog"
+  and name "Настроить экран"` после ~2,5 с при прогоне каталога `src/sections/schemas` вместе с
+  соседями и на чистом `origin/main` (b5095427c) даже в одиночном прогоне, а в ветке в одиночном
+  прогоне проходит. Чем доказано: три прогона `npx vitest run src/sections/SchemasSection.customize.test.tsx`
+  в двух worktree 2026-11-05. Похоже на гонку ленивого `Suspense`-листа и `findByRole` с дефолтным
+  таймаутом; чинить — ждать лист явно (`await screen.findByRole(..., { timeout })` или дождаться
+  импорта чанка), не поднимать общий таймаут.

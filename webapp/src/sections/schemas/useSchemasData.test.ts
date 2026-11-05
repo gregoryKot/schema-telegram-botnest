@@ -152,3 +152,35 @@ describe('useSchemasData — прошёл тест → паттерны видн
     expect(result.current.ysqSchemaIds).toEqual([]);
   });
 });
+
+// Класс «кэш пережил источник правды» (#939): до этого кэш писался только при
+// непустом списке, и всё, что убрали на другом устройстве, здесь воскресало.
+describe('useSchemasData — пустой список с сервера стирает локальную копию', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    vi.clearAllMocks();
+    mockApi.getYsqHistory.mockResolvedValue([]);
+    mockApi.getYsqProgress.mockResolvedValue(null);
+    mockApi.listMyModeMaps.mockResolvedValue([]);
+  });
+
+  it('сервер отдал [] — кэш схем и режимов становится [] и state пуст', async () => {
+    localStorage.setItem(MY_SCHEMA_IDS_KEY, JSON.stringify(['abandonment']));
+    localStorage.setItem(MY_MODE_IDS_KEY, JSON.stringify(['vulnerable_child']));
+    mockApi.getProfile.mockResolvedValue({ mySchemaIds: [], myModeIds: [], ysq: { activeSchemaIds: [], completedAt: null } });
+    const { result } = await mounted();
+    expect(result.current.manualSchemaIds).toEqual([]);
+    expect(result.current.myModeIds).toEqual([]);
+    expect(localStorage.getItem(MY_SCHEMA_IDS_KEY)).toBe('[]');
+    expect(localStorage.getItem(MY_MODE_IDS_KEY)).toBe('[]');
+  });
+
+  // Контрольный образец: ответ без полей (не той формы) кэш не трогает —
+  // стирать по отсутствию данных нельзя, только по явному пустому списку.
+  it('в ответе нет полей — локальная копия остаётся', async () => {
+    localStorage.setItem(MY_SCHEMA_IDS_KEY, JSON.stringify(['abandonment']));
+    mockApi.getProfile.mockResolvedValue({ ysq: { activeSchemaIds: [], completedAt: null } });
+    await mounted();
+    expect(JSON.parse(localStorage.getItem(MY_SCHEMA_IDS_KEY)!)).toEqual(['abandonment']);
+  });
+});
