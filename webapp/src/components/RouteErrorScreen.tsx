@@ -36,7 +36,7 @@ export function RouteErrorScreen() {
   }, [chunk, message, error]);
 
   return (
-    <div className="sk-crash">
+    <div className="sk-crash" data-crash-screen="route">
       <div className="ds-card sk-crash-card">
         <h1 className="ds-h2">
           {chunk ? 'Страница устарела' : 'Что-то пошло не так'}
