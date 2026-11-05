@@ -1,21 +1,27 @@
 import { PrismaService } from '../prisma/prisma.service';
+import { CLIENT_LEFT, THERAPIST_REMOVED } from './relation-end-reason';
 
 // Терапевты, чьи карты режимов клиент видит у себя (my-mode-maps).
-// `active` — да. `ended` — тоже: так связь закрывает только отказ терапевта от
-// роли (end-therapist-relations.ts), и карты остаются у клиента как история
-// (решение владельца 2026-10-22, #865). Строки связи нет — клиент отключился
-// сам (disconnect удаляет живые связи) — карт этого терапевта в кабинете нет;
-// удаление клиента терапевтом стирает карты целиком (removeTherapistClient).
+// `active` — да. `ended` после отказа терапевта от роли — тоже: карты
+// остаются у клиента как история (решение владельца 2026-10-22, #865).
+// Клиент отключился сам (client_left) — карт этого терапевта в кабинете нет,
+// как было, пока disconnect удалял строку; удаление клиента терапевтом
+// (therapist_removed) стирает карты целиком (removeTherapistClient).
 export async function clientMapAuthors(
   prisma: PrismaService,
   clientId: bigint,
 ): Promise<bigint[]> {
   const rels = await prisma.therapyRelation.findMany({
     where: { clientId, status: { in: ['active', 'ended'] } },
-    select: { therapistId: true },
+    select: { therapistId: true, status: true, endReason: true },
   });
-  return rels.map((r) => r.therapistId);
+  return rels
+    .filter((r) => r.status === 'active' || !CLOSED.has(r.endReason ?? ''))
+    .map((r) => r.therapistId);
 }
+
+// Завершения, после которых карты бывшего терапевта клиенту не показываются.
+const CLOSED = new Set<string>([CLIENT_LEFT, THERAPIST_REMOVED]);
 
 // Карта принадлежит клиенту, и её автор — среди clientMapAuthors.
 export async function clientSeesMap(

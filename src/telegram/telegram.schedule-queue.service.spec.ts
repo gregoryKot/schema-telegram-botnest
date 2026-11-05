@@ -521,6 +521,40 @@ describe('разные причины «писать больше нельзя»
       .find((s) => s.includes('некому доставить'));
     expect(line).toContain('7 уведомлений');
     expect(line).toContain('…');
+    // Все снятые — о самом человеке: про «другого» в строке ни слова.
+    expect(line).not.toContain('От другого человека');
+  });
+
+  // Класс 20 (docs/INCIDENTS.md): снятое «от другого человека» не пропало —
+  // строка говорит, где адресат увидит его след (notification-channels.ts).
+  it('некому доставить задание терапевта — строка называет след на сайте', async () => {
+    const warns = jest.spyOn(Logger.prototype, 'warn');
+    const rows = ['task_assigned', 'task_assigned', 'summary'].map(
+      (type, i) => ({
+        id: 200 + i,
+        userId: 1_000_000_000_000_100n + BigInt(i),
+        type,
+        payload: { text: 'x' },
+        sendAt: new Date(),
+      }),
+    );
+    const sendSettings = new Map(
+      rows.map((n) => [
+        String(n.userId),
+        { tz: 'Europe/Moscow', start: 22, end: 8, form: 'ty', chatId: null },
+      ]),
+    );
+    const { service } = makeService({ due: rows, sendSettings });
+
+    await service.processQueue();
+
+    const line = warns.mock.calls
+      .flat()
+      .map(String)
+      .find((s) => s.includes('некому доставить'));
+    expect(line).toContain(
+      'От другого человека, след на сайте есть: task_assigned → UserTask (/api/therapy/tasks) ×2.',
+    );
   });
 });
 

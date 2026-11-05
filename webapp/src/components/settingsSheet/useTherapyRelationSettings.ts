@@ -8,6 +8,7 @@ import { loadFreshTherapyRelation } from '../../../../shared/src/therapy/freshRe
 import { useConfirmedAction } from '../../../../shared/src/hooks/useConfirmedAction';
 import { inviteCreateErrorText } from '../../../../shared/src/therapy/therapyInvites';
 import { cacheClientRelation } from '../../../../shared/src/utils/therapistContact';
+import { notifyTasksChanged } from '../../../../shared/src/tasks/tasksChanged';
 
 // Логика разделов «Мой терапевт» (подключение по коду, отключение) и
 // «Кабинет терапевта» (приглашение клиенту). Вынесено из SettingsSheet.tsx
@@ -18,6 +19,8 @@ import { cacheClientRelation } from '../../../../shared/src/utils/therapistConta
 // (инцидент 2026-10-26: связь удалялась одним тапом). Кэш «Написать терапевту»
 // обновляется здесь же: до 2026-11-05 после отключения мост в «Ещё» вёл к
 // бывшему терапевту до перезагрузки, а после подключения кодом не появлялся.
+// Отключение делает открытые задания терапевта личными целями — экраны со
+// списком заданий под листом перечитывают его (метка «От терапевта» уходит).
 export function useTherapyRelationSettings(userRole: 'CLIENT' | 'THERAPIST' | undefined) {
   const tr = useTr();
   const [therapyRelation, setTherapyRelation] = useState<TherapyRelationInfo | null | undefined>(undefined);
@@ -26,7 +29,7 @@ export function useTherapyRelationSettings(userRole: 'CLIENT' | 'THERAPIST' | un
   const { copied: inviteCopied, copy: copyInvite } = useCopyToClipboard();
   const applyRelation = (rel: TherapyRelationInfo | null) => { setTherapyRelation(rel); cacheClientRelation(rel); };
   const join = useTherapyCodeJoin(api, applyRelation);
-  const leave = useConfirmedAction(() => api.leaveTherapy(), () => applyRelation(null));
+  const leave = useConfirmedAction(() => api.leaveTherapy(), () => { applyRelation(null); notifyTasksChanged(); });
 
   // При открытии — с сервера: связь могла появиться на другом устройстве (М4).
   useEffect(() => {
