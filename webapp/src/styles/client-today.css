@@ -1,5 +1,5 @@
 /* Клиент · Сегодня (sections/TodaySection.tsx, sections/today/*). Префикс ct-.
-   Одна колонка: шапка, три плитки, задания, лента дня. На ≥768 ширину даёт рамка (client-frame.css). */
+   Одна колонка: шапка и три плитки, больше ничего (владелец 2026-11-05). На ≥768 ширину даёт рамка (client-frame.css). */
 .ct-page { max-width: 600px; }
 /* Кнопка «Зачем это?» стоит в строке с датой, а не рядом с h1: иначе она
    отнимает ширину у приветствия и «Привет, Имя» переносится на телефоне. */
@@ -14,59 +14,14 @@
 }
 .ct-link:hover { text-decoration: underline; text-underline-offset: 3px; }
 .ct-head-why { flex-shrink: 0; }
-/* «Подышим» — строка между тонкими линиями, как блок трекера. */
-.ct-calm {
-  width: 100%; min-height: 60px; justify-content: space-between; color: var(--text);
-  font-size: 17px; font-weight: 500; border-top: 1px solid var(--panel-line); border-bottom: 1px solid var(--panel-line);
-}
-
 /* Главная по референсу владельца 2026-11-04 («бумажная аппликация»): блок трекера,
    два квадрата цветной бумаги, картинки — примитивы pp-* из styles/paper.css и
    components/art/PaperArt.tsx. Здесь только то, что своё у главной. */
 .ct-home { display: flex; flex-direction: column; gap: 20px; }
 .ct-tile { border-radius: 20px; }
 
-/* Задания (PracticesBlock) */
-.ct-section { min-width: 0; }
-.ct-block { display: flex; flex-direction: column; gap: 12px; }
-.ct-alert { font-size: 13px; color: var(--err); }
-.ct-more { align-self: flex-start; }
-.ct-add-goal {
-  align-self: flex-start; min-height: 44px; background: none; border: none; padding: 0; cursor: pointer;
-  font: 500 12px var(--sans); color: var(--text-faint);
-}
-.ct-task { display: flex; align-items: center; gap: 14px; min-height: 44px; }
-.ct-task.is-done .ct-task-text { text-decoration: line-through; opacity: .55; }
-.ct-task-box {
-  width: 22px; height: 22px; border-radius: 7px; flex-shrink: 0; box-sizing: border-box;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 12px; font-weight: 700; color: var(--on-accent); border: 2px solid var(--accent);
-}
-.ct-task.is-done .ct-task-box { background: var(--accent); border-color: var(--accent); }
-.ct-task-body { flex: 1; min-width: 0; }
-.ct-task-text { font-size: 15px; font-weight: 600; }
-.ct-from-therapist { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); font-weight: 700; margin-top: 4px; }
-.ct-task-cta { font-size: 13px; font-weight: 700; color: var(--accent); white-space: nowrap; }
-
-/* Лента дня */
-.ct-feed-list { margin: 0; padding: 0; list-style: none; border-top: 1px solid var(--paper-sunk); }
-.ct-feed-list > li { border-bottom: 1px solid var(--paper-sunk); }
-.ct-feed-row {
-  width: 100%; min-height: 48px; box-sizing: border-box; padding: 8px 0;
-  display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; gap: 12px; align-items: center;
-  background: none; border: 0; cursor: pointer; text-align: left; color: var(--text); font-family: var(--sans);
-}
-.ct-feed-time { font-size: 12px; color: var(--text-faint); font-variant-numeric: tabular-nums; }
-.ct-feed-text { font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.ct-feed-kind { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--text-muted); }
-
-/* Компьютер (#925). Две колонки «Задания» | лента дня — .ct-cols/.ct-col; на телефоне обёртки display: contents,
-   порядок и отступы ds-page как раньше. Блок трекера и квадраты — тоже в два столбца с 1024; на 768–1023 всё столбиком: ряд не помещается. */
-.ct-cols, .ct-col { display: contents; }
-@media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) {
-  .ct-cols, .ct-col { display: flex; flex-direction: column; gap: 32px; min-width: 0; }
-}
+/* Компьютер: блок трекера и квадраты — в два столбца с 1024; на 768–1023 всё столбиком (#925).
+   Заданий и ленты на главной нет (владелец 2026-11-05: только три кнопки). */
 @media (min-width: 1024px) and (min-height: 501px), (min-width: 1024px) and (pointer: fine) {
   .ct-home { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 48px; align-items: stretch; }
-  .ct-cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 48px; align-items: start; }
 }

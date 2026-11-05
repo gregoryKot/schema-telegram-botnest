@@ -1,14 +1,14 @@
 // @vitest-environment jsdom
-// Главная «Сегодня»: три плитки (трекер / Что случилось / дневник), лента дня,
-// задания терапевта, «Зачем это?». Только реальные данные: на чистом аккаунте —
-// пустая лента и «Ещё не заполнен», а не выдуманные цифры.
+// Главная «Сегодня»: три плитки (трекер / Что случилось / дневник) и «Зачем это?»,
+// больше ничего (владелец 2026-11-05). Задания — sections/tasks/TasksHub.test.tsx,
+// мост к терапевту — MoreSection.test.tsx. Только реальные данные: на чистом
+// аккаунте — «Ещё не заполнен», а не выдуманные цифры.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, cleanup, waitFor, within, act } from '@testing-library/react';
+import { render, screen, fireEvent, cleanup, waitFor, act } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { AddressFormContext } from '../utils/addressForm';
 import { TodaySection } from './TodaySection';
 import { WHY_SEEN_KEY } from './today/whySeen';
-import { forEachTimeZoneAsync } from '../../../shared/src/utils/timeZone.test-helpers';
 
 vi.mock('../components/exercises/FlashcardEx', () => ({
   SchemaEx: (p: { onBack: () => void; initialSchemaId?: string; onComplete?: () => void }) => (
@@ -98,10 +98,7 @@ function task(overrides: Partial<{ id: number; assignedBy: number | null; type: 
   };
 }
 
-const onNavigate = vi.fn();
 const onOpenTracker = vi.fn();
-const onOpenDiaries = vi.fn();
-const onOpenTrackerHistory = vi.fn();
 
 function renderSection(props: Partial<{ ratings: Record<string, number>; refreshKey: number }> = {}, form: 'ty' | 'vy' = 'ty') {
   return render(
@@ -111,12 +108,8 @@ function renderSection(props: Partial<{ ratings: Record<string, number>; refresh
           needs={NEEDS}
           ratings={props.ratings ?? {}}
           refreshKey={props.refreshKey}
-          onNavigate={onNavigate}
           onOpenSchema={vi.fn()}
           onOpenTracker={onOpenTracker}
-          onOpenTrackerHistory={onOpenTrackerHistory}
-          onOpenDiaries={onOpenDiaries}
-          onOpenChildhoodWheel={vi.fn()}
         />
       </MemoryRouter>
     </AddressFormContext.Provider>,
@@ -147,7 +140,8 @@ afterEach(() => {
 });
 
 describe('TodaySection — пустой аккаунт: ничего выдуманного', () => {
-  it('три плитки с честными подписями, пустая лента с подсказкой, блока заданий нет', async () => {
+  it('три плитки с честными подписями и больше ничего: ни ленты, ни заданий, ни «Подышим»', async () => {
+    mockApi.getTasks.mockResolvedValue([task({ id: 1, assignedBy: 9, type: 'custom', text: 'Задание терапевта' })]);
     renderSection();
     expect(screen.getByRole('button', { name: /Трекер/ })).toBeTruthy();
     expect(screen.getByRole('button', { name: /Что случилось/ })).toBeTruthy();
@@ -155,9 +149,12 @@ describe('TodaySection — пустой аккаунт: ничего выдум�
     expect(screen.getByText('Ещё не заполнен · ≈1 мин')).toBeTruthy();
     expect(screen.getByText('≈3 мин')).toBeTruthy();
     await screen.findByText('Пока записей нет');
-    expect(screen.getByText('Пока ничего. Любая кнопка выше подойдёт для начала.')).toBeTruthy();
-    expect(screen.queryByText('От терапевта')).toBeNull();
-    expect(screen.queryByText('Задания')).toBeNull();
+    expect(screen.getAllByRole('button')).toHaveLength(4); // три плитки и «Зачем это?»
+    expect(screen.queryByText(/Пока ничего/)).toBeNull();
+    expect(screen.queryByText('Задание терапевта')).toBeNull();
+    expect(screen.queryByText(/Подышим/)).toBeNull();
+    expect(screen.queryByText(/самопомощь, не замена терапии/)).toBeNull();
+    expect(mockApi.getTasks).not.toHaveBeenCalled();
     expect(document.body.textContent).not.toMatch(/NaN|undefined/);
   });
 
@@ -171,25 +168,25 @@ describe('TodaySection — пустой аккаунт: ничего выдум�
     expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Привет');
   });
 
-  it('пока дневники грузятся — скелетон ленты и плашка вместо подписи дневника, а не «Пока ничего»', () => {
+  it('пока дневники грузятся — плашка вместо подписи дневника, а не выдуманная подпись', () => {
     mockApi.getSchemaDiary.mockReturnValue(new Promise(() => {}));
     renderSection();
-    expect(screen.queryByText(/Пока ничего/)).toBeNull();
     expect(screen.queryByText('Пока записей нет')).toBeNull();
+    expect(document.querySelector('.pp-meta--skeleton')).toBeTruthy();
   });
 });
 
 describe('TodaySection — плитка трекера по реальным оценкам', () => {
-  it('2 из 5 — «Заполнено 2 из 5 · продолжить» и одна строка в ленте', async () => {
+  it('2 из 5 — «Заполнено 2 из 5 · продолжить»', () => {
     renderSection({ ratings: { attachment: 4, play: 7 } });
     expect(screen.getByText('Заполнено 2 из 5 · продолжить')).toBeTruthy();
-    expect(await screen.findByText('Трекер: 2 из 5')).toBeTruthy();
+    expect(screen.getByText('Продолжить →')).toBeTruthy();
   });
 
-  it('все пять — «Готово · индекс 6,0», в ленте одна строка с индексом', async () => {
+  it('все пять — «Готово · индекс 6,0»', () => {
     renderSection({ ratings: ALL_RATED });
     expect(screen.getByText('Готово · индекс 6,0')).toBeTruthy();
-    expect(await screen.findByText('Трекер заполнен — индекс 6,0')).toBeTruthy();
+    expect(screen.getByText('Посмотреть сегодня →')).toBeTruthy();
   });
 
   it('полоски картинки плотные только у оценённых потребностей', () => {
@@ -206,35 +203,9 @@ describe('TodaySection — плитка трекера по реальным о�
     expect(mockApi.trackEvent).toHaveBeenCalledWith('home_tile', { tile: 'tracker' });
   });
 
-  it('строка трекера в ленте ведёт в историю', async () => {
-    renderSection({ ratings: ALL_RATED });
-    fireEvent.click(await screen.findByText('Трекер заполнен — индекс 6,0'));
-    expect(onOpenTrackerHistory).toHaveBeenCalledTimes(1);
-  });
 });
 
-describe('TodaySection — лента дня и плитка дневника', () => {
-  it('записи за сегодня из трёх дневников: время, текст, тип; старые не показываются', async () => {
-    mockApi.getSchemaDiary.mockResolvedValue([
-      { id: 1, trigger: 'ссора с коллегой', schemaIds: ['abandonment'], emotions: [], createdAt: nowIso() },
-      { id: 2, trigger: 'старая запись', schemaIds: ['abandonment'], emotions: [], createdAt: daysAgoIso(4) },
-    ]);
-    mockApi.getModeDiary.mockResolvedValue([{ id: 3, situation: 'Критик громко', createdAt: nowIso() }]);
-    renderSection();
-    expect(await screen.findByText('ссора с коллегой')).toBeTruthy();
-    expect(screen.getByText('Критик громко')).toBeTruthy();
-    expect(screen.queryByText('старая запись')).toBeNull();
-    expect(screen.getByText('Схема')).toBeTruthy();
-    expect(screen.getByText('Режим')).toBeTruthy();
-    expect(screen.getByText('Сегодня 2 записи')).toBeTruthy();
-  });
-
-  it('записей сегодня нет, но есть старые — «Последняя запись — …»', async () => {
-    mockApi.getSchemaDiary.mockResolvedValue([{ id: 2, trigger: 'старая', schemaIds: ['abandonment'], emotions: [], createdAt: daysAgoIso(1.4) }]);
-    renderSection();
-    expect(await screen.findByText('Последняя запись — вчера')).toBeTruthy();
-  });
-
+describe('TodaySection — плитка дневника', () => {
   it('в дневнике режимов есть запись за сегодня — плитка «Что случилось» без счёта, только обещание', async () => {
     mockApi.getModeDiary.mockResolvedValue([{ id: 3, situation: 'запись', createdAt: nowIso() }]);
     renderSection();
@@ -243,27 +214,13 @@ describe('TodaySection — лента дня и плитка дневника', 
     expect(screen.queryByText(/Сегодня разобран/)).toBeNull();
   });
 
-  it('плитка дневника открывает «Дневник одной страницей», а не список дневников; строка ленты — список', async () => {
-    mockApi.getSchemaDiary.mockResolvedValue([{ id: 1, trigger: 'строка ленты', schemaIds: ['abandonment'], emotions: [], createdAt: nowIso() }]);
+  it('плитка дневника открывает «Дневник одной страницей», а не список дневников', async () => {
     renderSection();
     fireEvent.click(screen.getByRole('button', { name: /Дневник/ }));
     expect(screen.getByRole('heading', { name: 'Что на уме?' })).toBeTruthy();
-    expect(onOpenDiaries).not.toHaveBeenCalled();
     expect(mockApi.trackEvent).toHaveBeenCalledWith('home_tile', { tile: 'diary' });
     fireEvent.click(screen.getByRole('button', { name: 'Закрыть' }));
     await waitFor(() => expect(screen.queryByRole('heading', { name: 'Что на уме?' })).toBeNull());
-    fireEvent.click(await screen.findByText('строка ленты'));
-    expect(onOpenDiaries).toHaveBeenCalledTimes(1);
-  });
-
-  it('«Все записи» ведёт в «Записи», «Подышим» — в практики; оба считаются', () => {
-    renderSection();
-    fireEvent.click(screen.getByText('Все записи'));
-    expect(onNavigate).toHaveBeenLastCalledWith('diary');
-    expect(mockApi.trackEvent).toHaveBeenCalledWith('home_tile', { tile: 'feed_all' });
-    fireEvent.click(screen.getByText('Тяжело прямо сейчас? Подышим →'));
-    expect(onNavigate).toHaveBeenLastCalledWith('practice');
-    expect(mockApi.trackEvent).toHaveBeenCalledWith('home_tile', { tile: 'calm' });
   });
 
   it('сбой любого дневника не роняет экран и уходит в отчёт', async () => {
@@ -280,12 +237,11 @@ describe('TodaySection — лента дня и плитка дневника', 
     view.rerender(
       <AddressFormContext.Provider value={{ form: 'ty', setForm: vi.fn() }}>
         <MemoryRouter>
-          <TodaySection needs={NEEDS} ratings={{}} refreshKey={1} onNavigate={onNavigate} onOpenSchema={vi.fn()}
-            onOpenTracker={onOpenTracker} onOpenDiaries={onOpenDiaries} onOpenChildhoodWheel={vi.fn()} />
+          <TodaySection needs={NEEDS} ratings={{}} refreshKey={1} onOpenSchema={vi.fn()} onOpenTracker={onOpenTracker} />
         </MemoryRouter>
       </AddressFormContext.Provider>,
     );
-    expect(await screen.findByText('новая запись')).toBeTruthy();
+    expect(await screen.findByText('Сегодня 1 запись')).toBeTruthy();
   });
 });
 
@@ -305,22 +261,13 @@ describe('TodaySection — «Что случилось»', () => {
     ]);
     fireEvent.click(screen.getByText('Закрыть разбор'));
     await waitFor(() => expect(screen.queryByTestId('case-flow')).toBeNull());
-    expect(await screen.findByText('только что')).toBeTruthy();
-    expect(screen.getByText('Сегодня: 1 разбор')).toBeTruthy();
-    expect(screen.getByText('Разбор')).toBeTruthy();
+    expect(await screen.findByText('Сегодня: 1 разбор')).toBeTruthy();
     // QA 2026-11, М1: разбор — не запись дневника; «Записи» относят его к «Случаям».
     expect(screen.getByText('Последняя запись — 3 дн. назад')).toBeTruthy();
     expect(screen.queryByText('Сегодня 1 запись')).toBeNull();
   });
 
   // QA 2026-11, М1: «Просто мысль» на главной была «Схема», в «Записях» — «Мысль».
-  it('«Просто мысль» в ленте подписана «Мысль», как в «Записях»', async () => {
-    mockApi.getSchemaDiary.mockResolvedValue([{ id: 5, trigger: 'мысль дня', schemaIds: [], emotions: [], createdAt: nowIso() }]);
-    renderSection();
-    expect(await screen.findByText('мысль дня')).toBeTruthy();
-    expect(screen.getByText('Мысль')).toBeTruthy();
-    expect(screen.queryByText('Схема')).toBeNull();
-  });
 });
 
 describe('TodaySection — «Зачем это?» и первый вход', () => {
@@ -363,259 +310,8 @@ describe('TodaySection — «Зачем это?» и первый вход', () 
   });
 });
 
-describe('TodaySection — задания терапевта', () => {
-  it('назначенное задание — блок «От терапевта»; выполненное помечено и без «начать →»', async () => {
-    // Тип с упражнением: у «Своего задания» вместо «начать →» кнопка «Готово».
-    mockApi.getTasks.mockResolvedValue([task({ id: 1, assignedBy: 9, type: 'letter_to_self', text: 'Письмо', done: null }), task({ id: 2, assignedBy: 9, type: 'letter_to_self', text: 'Сделанное', done: true })]);
-    renderSection();
-    expect(await screen.findByText('От терапевта', { selector: 'h3' })).toBeTruthy();
-    const section = screen.getByText('От терапевта', { selector: 'h3' }).closest('.ct-section') as HTMLElement;
-    expect(within(section).getAllByText('начать →')).toHaveLength(1);
-  });
 
-  it('только свои цели — блок «Задания»; без заданий блока нет', async () => {
-    mockApi.getTasks.mockResolvedValue([task({ id: 1, assignedBy: null, text: 'Моя цель' })]);
-    renderSection();
-    expect(await screen.findByText('Задания')).toBeTruthy();
-    expect(screen.queryByText('От терапевта', { selector: 'h3' })).toBeNull();
-  });
 
-  it('активные задачи считаются и открывают оверлей «Все задания» при >5', async () => {
-    mockApi.getTasks.mockResolvedValue(Array.from({ length: 6 }, (_, i) => task({ id: i + 1, text: `Задача ${i + 1}` })));
-    renderSection();
-    await screen.findByText('6 активных');
-    fireEvent.click(screen.getByText('Все задания (6) →'));
-    await screen.findByText('Все задания');
-  });
-});
 
-describe('TodaySection — задания: каждый тип «начать →» открывает свой правильный экран', () => {
-  function renderWithHandlers(overrides: Partial<{ onOpenTracker: () => void; onOpenDiaries: () => void; onOpenChildhoodWheel: () => void }> = {}) {
-    return render(
-      <AddressFormContext.Provider value={{ form: 'ty', setForm: vi.fn() }}>
-        <MemoryRouter>
-          <TodaySection
-            needs={NEEDS} ratings={{}} onNavigate={vi.fn()} onOpenSchema={vi.fn()}
-            onOpenTracker={overrides.onOpenTracker ?? vi.fn()}
-            onOpenDiaries={overrides.onOpenDiaries ?? vi.fn()}
-            onOpenChildhoodWheel={overrides.onOpenChildhoodWheel ?? vi.fn()}
-          />
-        </MemoryRouter>
-      </AddressFormContext.Provider>,
-    );
-  }
 
-  async function clickTaskStart() {
-    // Заголовок блока — «От терапевта», если задание назначено терапевтом.
-    const heading = await screen.findByText(/^(Задания|От терапевта)$/, { selector: 'h3' });
-    const section = heading.closest('.ct-section')!;
-    fireEvent.click(within(section).getByText('начать →'));
-  }
 
-  it('tracker_streak → onOpenTracker', async () => {
-    const onOpenTracker = vi.fn();
-    mockApi.getTasks.mockResolvedValue([task({ type: 'tracker_streak', text: 'Трекать 7 дней' })]);
-    renderWithHandlers({ onOpenTracker });
-    await clickTaskStart();
-    expect(onOpenTracker).toHaveBeenCalledTimes(1);
-  });
-
-  it('diary_streak → onOpenDiaries', async () => {
-    const onOpenDiaries = vi.fn();
-    mockApi.getTasks.mockResolvedValue([task({ type: 'diary_streak', text: 'Дневник 7 дней' })]);
-    renderWithHandlers({ onOpenDiaries });
-    await clickTaskStart();
-    expect(onOpenDiaries).toHaveBeenCalledTimes(1);
-  });
-
-  it('childhood_wheel → onOpenChildhoodWheel', async () => {
-    const onOpenChildhoodWheel = vi.fn();
-    mockApi.getTasks.mockResolvedValue([task({ type: 'childhood_wheel', text: 'Колесо детства' })]);
-    renderWithHandlers({ onOpenChildhoodWheel });
-    await clickTaskStart();
-    expect(onOpenChildhoodWheel).toHaveBeenCalledTimes(1);
-  });
-
-  // Инцидент 2026-10-26 (docs/INCIDENTS.md): три упражнения открывали
-  // экран настроек, «Разобрать ситуацию по шагам» — ничего. Колбэка настроек
-  // у «Сегодня» больше нет: задание ведёт только в своё упражнение.
-  it.each([
-    ['belief_check', 'Проверить убеждение', 'belief-ex'],
-    ['letter_to_self', 'Написать письмо Уязвимому Ребёнку', 'letter-ex'],
-    ['safe_place', 'Описать Безопасное место', 'safe-ex'],
-    ['flashcard', 'Разобрать сложную ситуацию по шагам', 'flashcard-ex'],
-  ])('%s → своё упражнение; сохранение закрывает задание', async (type, text, testId) => {
-    mockApi.getTasks.mockResolvedValue([task({ id: 7, assignedBy: 9, type, text })]);
-    mockApi.completeTask.mockResolvedValue({ ok: true });
-    renderWithHandlers();
-    await clickTaskStart();
-
-    expect(await screen.findByTestId(testId)).toBeTruthy();
-    fireEvent.click(screen.getByText('Сохранить упражнение'));
-    await waitFor(() => expect(mockApi.completeTask).toHaveBeenCalledWith(7, true));
-  });
-
-  // QA 2026-11 (A-З8): «Все задания» были тупиком — шестое задание и дальше
-  // нельзя было открыть. Теперь строка списка ведёт тем же маршрутом.
-  it('шестое задание открывается из «Все задания» тем же упражнением; сохранение закрывает его', async () => {
-    const five = Array.from({ length: 5 }, (_, i) => task({ id: i + 1, assignedBy: 9, type: 'custom', text: `Задача ${i + 1}` }));
-    mockApi.getTasks.mockResolvedValue([...five, task({ id: 6, assignedBy: 9, type: 'belief_check', text: '' })]);
-    mockApi.completeTask.mockResolvedValue({ ok: true });
-    renderWithHandlers();
-    fireEvent.click(await screen.findByText('Все задания (6) →'));
-    const overlay = (await screen.findByText('Все задания', { selector: 'h1' })).closest('.sk-overlay') as HTMLElement;
-    await act(async () => {});
-    fireEvent.click(within(overlay).getByText('начать →'));
-
-    expect(await screen.findByTestId('belief-ex')).toBeTruthy();
-    expect(screen.queryByText('Все задания', { selector: 'h1' })).toBeNull();
-    fireEvent.click(screen.getByText('Сохранить упражнение'));
-    await waitFor(() => expect(mockApi.completeTask).toHaveBeenCalledWith(6, true));
-  });
-
-  it('«Своё задание» от терапевта: на карточке «Готово», задание закрывается', async () => {
-    mockApi.getTasks.mockResolvedValue([task({ id: 8, assignedBy: 9, type: 'custom', text: 'Позвонить маме' })]);
-    mockApi.completeTask.mockResolvedValue({ ok: true });
-    renderWithHandlers();
-    const heading = await screen.findByText('От терапевта', { selector: 'h3' });
-    const section = heading.closest('.ct-section')! as HTMLElement;
-    expect(within(section).queryByText('начать →')).toBeNull();
-    fireEvent.click(await within(section).findByText('Готово'));
-    await waitFor(() => expect(mockApi.completeTask).toHaveBeenCalledWith(8, true));
-  });
-
-  it('schema_intro → открывает карточку схемы с реальным id из задания, сохранение вызывает completeTask', async () => {
-    mockApi.getTasks.mockResolvedValue([task({ id: 5, type: 'schema_intro', text: 'abandonment' })]);
-    mockApi.completeTask.mockResolvedValue({ ok: true });
-    renderWithHandlers();
-    await clickTaskStart();
-
-    expect((await screen.findByTestId('schema-ex-id')).textContent).toBe('abandonment');
-    fireEvent.click(screen.getByText('Завершить карточку схемы'));
-
-    await waitFor(() => expect(mockApi.completeTask).toHaveBeenCalledWith(5, true));
-    // Карточка остаётся на экране «Готово», закрывает её «Назад».
-    fireEvent.click(screen.getByText('Назад'));
-    await waitFor(() => expect(screen.queryByTestId('schema-ex')).toBeNull());
-  });
-
-  it('schema_intro «Назад» закрывает карточку без завершения задания', async () => {
-    mockApi.getTasks.mockResolvedValue([task({ id: 5, type: 'schema_intro', text: 'abandonment' })]);
-    renderWithHandlers();
-    await clickTaskStart();
-    fireEvent.click(await screen.findByText('Назад'));
-
-    expect(screen.queryByTestId('schema-ex')).toBeNull();
-    expect(mockApi.completeTask).not.toHaveBeenCalled();
-  });
-
-  it('mode_intro → открывает карточку режима с реальным id из задания, завершение вызывает completeTask', async () => {
-    mockApi.getTasks.mockResolvedValue([task({ id: 6, type: 'mode_intro', text: 'vulnerable_child' })]);
-    renderWithHandlers();
-    await clickTaskStart();
-
-    expect((await screen.findByTestId('mode-ex-id')).textContent).toBe('vulnerable_child');
-    fireEvent.click(screen.getByText('Завершить карточку режима'));
-
-    await waitFor(() => expect(mockApi.completeTask).toHaveBeenCalledWith(6, true));
-  });
-});
-
-describe('TodaySection — «+ Поставить цель» открывает создание задания дневника', () => {
-  it('клик открывает TaskCreateSheet, закрытие возвращает на экран', async () => {
-    mockApi.getTasks.mockResolvedValue([task({ type: 'diary_streak', text: 'Дневник 7 дней' })]);
-    renderSection();
-    fireEvent.click(await screen.findByText('+ Поставить цель'));
-    await screen.findByText('Новая цель');
-
-    // Своя цель клиента: просто «Назад» (у терапевта — «Назад к карточке»).
-    fireEvent.click(screen.getByText('Назад'));
-    await waitFor(() => expect(screen.queryByText('Новая цель')).toBeNull());
-  });
-});
-
-describe('TodaySection — оверлей «Все задания»: отметка выполненного и добавление новой цели', () => {
-  it('«Готово» у назначенной custom-задачи вызывает completeTask и уходит из активных', async () => {
-    mockApi.getTasks
-      .mockResolvedValueOnce(Array.from({ length: 6 }, (_, i) => task({ id: i + 1, assignedBy: 9, type: 'custom', text: `Задача ${i + 1}` })))
-      .mockResolvedValue([]);
-    renderSection();
-    fireEvent.click(await screen.findByText('Все задания (6) →'));
-    await screen.findByText('Все задания');
-
-    fireEvent.click(screen.getAllByText('Готово')[0]);
-    await waitFor(() => expect(mockApi.completeTask).toHaveBeenCalledWith(1, true));
-  });
-
-  it('«+ Поставить цель» внутри оверлея открывает TaskCreateSheet поверх него', async () => {
-    mockApi.getTasks.mockResolvedValue(Array.from({ length: 6 }, (_, i) => task({ id: i + 1, text: `Задача ${i + 1}` })));
-    renderSection();
-    fireEvent.click(await screen.findByText('Все задания (6) →'));
-    await screen.findByText('Все задания');
-    fireEvent.click(document.querySelector('.sk-overlay .sk-wide-btn')!);
-
-    await screen.findByText('Новая цель');
-  });
-});
-
-// ── Регрессия «момент, показанный по Гринвичу» ───────────────────────────────
-// Зеркало инцидента 2026-09-17: МОМЕНТ записи резали строкой — гринвичский день
-// сравнивался с локальным. Проверка замораживает «сейчас» на моментах, где
-// гринвичский день и локальный заведомо разные, и сама обходит зоны.
-describe('TodaySection — день и время записи в зоне читателя', () => {
-  const MOMENTS = ['2026-09-18T23:30:00.000Z', '2026-09-19T00:30:00.000Z'];
-
-  for (const iso of MOMENTS) {
-    it(`запись, сделанная в ${iso}, попадает в ленту «Сегодня» с локальным временем`, async () => {
-      await forEachTimeZoneAsync(async tz => {
-        vi.useFakeTimers({ toFake: ['Date'] });
-        vi.setSystemTime(new Date(iso));
-        try {
-          mockApi.getSchemaDiary.mockResolvedValue([{ id: 1, trigger: 'ссора с коллегой', schemaIds: ['abandonment'], emotions: [], createdAt: iso }]);
-          renderSection();
-          await screen.findByText('ссора с коллегой');
-          const at = new Date(iso);
-          const hhmm = `${String(at.getHours()).padStart(2, '0')}:${String(at.getMinutes()).padStart(2, '0')}`;
-          expect(screen.getByText(hhmm), tz).toBeTruthy();
-        } finally {
-          cleanup();
-          vi.useRealTimers();
-        }
-      });
-    });
-  }
-});
-
-// ── Мост к терапевту ─────────────────────────────────────────────────────────
-describe('TodaySection — мост к терапевту', () => {
-  const lowDays = ['26', '25', '24', '23', '22'].map(d => ({
-    date: `2026-10-${d}`,
-    ratings: { attachment: 3, autonomy: 3, expression: 3, play: 3, limits: 3 },
-  }));
-
-  it('внизу страницы тихая строка «самопомощь, не замена терапии» со ссылкой «Поговорить →»', async () => {
-    renderSection();
-    const line = await screen.findByText(/Приложение — самопомощь, не замена терапии/);
-    expect(line.textContent).toContain('Если нужна терапия, есть с кем поговорить.');
-    expect(screen.getByRole('button', { name: 'Поговорить →' })).toBeTruthy();
-    // Нет сигнала — нет карточки.
-    expect(screen.queryByText('Не сейчас')).toBeNull();
-  });
-
-  it('сигнал по трём низким дням: карточка стоит над лентой дня', async () => {
-    mockApi.history.mockResolvedValue(lowDays);
-    renderSection();
-    const eyebrow = await screen.findByText('Три последних заполненных дня: индекс не выше 4');
-    const feedTitle = document.querySelector('.ct-feed')!;
-    expect(eyebrow.compareDocumentPosition(feedTitle) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: 'Не сейчас' }));
-    expect(screen.queryByText('Три последних заполненных дня: индекс не выше 4')).toBeNull();
-  });
-
-  it('записи режимов из дневника доходят до сигнала: три раза один режим', async () => {
-    mockApi.history.mockResolvedValue([6, 5, 4, 3, 2].map(i => ({ date: `2026-10-0${i}`, ratings: { attachment: 7, autonomy: 7, expression: 7, play: 7, limits: 7 } })));
-    mockApi.getModeDiary.mockResolvedValue([1, 2, 3].map(i => ({ id: i, modeId: 'punitive_critic', situation: 'x', createdAt: daysAgoIso(i) })));
-    renderSection();
-    expect(await screen.findByText(/3 раза за две недели/)).toBeTruthy();
-  });
-});

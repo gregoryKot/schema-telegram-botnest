@@ -1,7 +1,7 @@
 import { describe, it, expect, afterEach, vi } from 'vitest';
 import {
-  buildDiaryFeed, buildTodayFeed, casesTodayCount, trackerSummary, trackerTileMeta, caseTileMeta,
-  diaryTileMeta, lastEntryAt, diaryEntriesToday, type FeedEntry,
+  buildDiaryFeed, casesTodayCount, trackerSummary, trackerTileMeta, caseTileMeta,
+  diaryTileMeta, lastEntryAt, diaryEntriesToday,
 } from './todayFeedModel';
 import { forEachTimeZone, withTimeZone } from '../../../../shared/src/utils/timeZone.test-helpers';
 import { diaryToday } from '../../../../shared/src/diary/diaryDay';
@@ -104,34 +104,6 @@ describe('buildDiaryFeed — благодарность сегодня по ме
   });
 });
 
-describe('buildTodayFeed', () => {
-  const diary: FeedEntry[] = [
-    { key: 'mode-1', kind: 'mode', time: '09:00', text: 'раньше', sortKey: '2026-10-27T06:00:00Z' },
-    { key: 'schema-2', kind: 'schema', time: '12:00', text: 'позже', sortKey: '2026-10-27T09:00:00Z' },
-  ];
-
-  it('сортирует по времени, свежие первыми; без оценок трекера строки нет', () => {
-    const feed = buildTodayFeed(diary, { filled: 0, total: 5, index: null });
-    expect(feed.map(e => e.key)).toEqual(['schema-2', 'mode-1']);
-  });
-
-  it('трекер одной строкой после записей со временем: частично — «N из 5»', () => {
-    const feed = buildTodayFeed(diary, { filled: 2, total: 5, index: null });
-    expect(feed.map(e => e.key)).toEqual(['schema-2', 'mode-1', 'tracker']);
-    expect(feed[2].text).toBe('Трекер: 2 из 5');
-  });
-
-  it('все пять оценены — «Трекер заполнен — индекс 6,8» (с запятой)', () => {
-    const feed = buildTodayFeed([], { filled: 5, total: 5, index: 6.8 });
-    expect(feed).toHaveLength(1);
-    expect(feed[0].text).toBe('Трекер заполнен — индекс 6,8');
-  });
-
-  it('пустой день — пустая лента, без выдуманных строк', () => {
-    expect(buildTodayFeed([], { filled: 0, total: 5, index: null })).toEqual([]);
-  });
-});
-
 describe('мета-строки плиток', () => {
   it('трекер: ничего, часть, всё', () => {
     expect(trackerTileMeta({ filled: 0, total: 5, index: null })).toBe('Ещё не заполнен · ≈1 мин');
@@ -180,7 +152,7 @@ describe('лента и плитка «Дневник» — те же типы, 
   });
 
   it('diaryEntriesToday: разбор и строка трекера не в счёт', () => {
-    const feed = buildTodayFeed(buildDiaryFeed(src), { filled: 2, total: 5, index: null });
+    const feed = buildDiaryFeed(src);
     expect(diaryEntriesToday(feed)).toBe(3);
   });
 

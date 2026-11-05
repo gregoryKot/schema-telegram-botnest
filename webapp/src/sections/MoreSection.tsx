@@ -1,91 +1,80 @@
-import { useState, type ReactNode } from 'react';
+import { useState } from 'react';
 import type { Section } from '../components/appShell/navigation';
 import { JourneySheet } from '../components/JourneySheet';
 import { WhySheet } from '../components/WhySheet';
-import { useTherapyTarget } from '../components/therapy/useTherapyTarget';
-import { useTherapyBridgeTexts } from '../components/therapy/useTherapyBridgeTexts';
-import { ExternalLink } from '../host/ExternalLink';
+import { HomeScreenOfferCard } from '../components/HomeScreenOfferCard';
+import { TherapyNudgeCard } from '../components/therapy/TherapyNudgeCard';
 import { trackHomeTile } from './today/trackHomeTile';
+import { useTodayDiaries } from './today/useTodayDiaries';
+import { HomeTherapyLine } from './more/HomeTherapyLine';
+import { useMoreRows } from './more/useMoreRows';
+import { MoreRows } from './more/MoreRows';
+import { TasksHub } from './tasks/TasksHub';
 import '../styles/client-more.css';
-import { Leaf, Talk, Beads, Heart } from '../components/art/PaperArtSigns';
-import { Layers, Sheets, Breath, Pebbles } from '../components/art/PaperArt';
+import { Heart } from '../components/art/PaperArtSigns';
 
 interface Props {
   onNavigate: (s: Section) => void;
   onOpenSchema: (opts?: { startTest?: boolean }) => void;
   onOpenAdvanced: () => void;
+  onOpenTracker: () => void;
+  onOpenDiaries: () => void;
+  onOpenChildhoodWheel: () => void;
+  refreshKey?: number;
+  onTasksChanged?: () => void;
   userRole?: 'CLIENT' | 'THERAPIST';
   onOpenTherapistCabinet?: () => void;
 }
 
-interface Row { id: string; title: string; sub: string; onClick: () => void; href?: string; art?: ReactNode; phoneOnly?: boolean }
-const ROW_CLASS = 'ds-list-row ds-list-row--nav ds-list-row--hover';
-const rowClass = (r: Row) => r.phoneOnly ? `${ROW_CLASS} cm-phone-only` : ROW_CLASS;
-function RowBody({ row }: { row: Row }) {
-  return (
-    <>
-      {row.art && <span className="pp-row-art">{row.art}</span>}<span className="ds-list-body"><span className="ds-list-title">{row.title}</span><span className="ds-list-sub">{row.sub}</span></span>
-      <span className="ds-chev" aria-hidden="true" />
-    </>
-  );
-}
-
 // «Ещё»: всё, что не входит в три действия главной (docs/design/CLIENT_SIMPLE_2026-10.md).
-// Разделы /schemas, /practice, /profile остаются на своих адресах — отсюда в них заходят. Кризисный вход «Мне очень плохо» — ds-card--crisis (#906).
-export function MoreSection({ onNavigate, onOpenSchema, onOpenAdvanced, userRole, onOpenTherapistCabinet }: Props) {
+// Владелец 2026-11-05: на главной только три кнопки — сюда переехали задания (строка
+// «Задания» → TasksHub), сигнальная карточка моста к терапевту, предложение поставить
+// значок на экран и строка «самопомощь, не замена терапии». Кризисный вход — внизу.
+export function MoreSection(p: Props) {
   const [why, setWhy] = useState(false);
   const [journey, setJourney] = useState(false);
-  const bridge = useTherapyBridgeTexts();
-  const target = useTherapyTarget('more');
-  // Терапевту строка «поговорить» не нужна. Подключён терапевт — сразу ссылка на него, иначе лист с записью к автору.
-  const talkRow: Row[] = userRole === 'THERAPIST' || target.hidden
-    ? []
-    : target.write
-      ? [{ id: 'talk', art: <Talk size="row" />, title: bridge.moreWriteTitle, sub: bridge.moreWriteSub, href: target.write.url, onClick: target.write.onClick }]
-      : [{ id: 'talk', art: <Talk size="row" />, title: bridge.moreTalkTitle, sub: bridge.moreTalkSub, onClick: target.open }];
-
-  const rows: Row[] = [
-    { id: 'why', art: <Leaf size="row" />, title: 'Зачем это всё', sub: 'Откуда это и что даёт каждое действие', onClick: () => { trackHomeTile('why'); setWhy(true); } },
-    { id: 'schemas', art: <Layers size="row" />, title: 'Мои паттерны', sub: 'Схемы и режимы', onClick: () => onNavigate('schemas'), phoneOnly: true },
-    { id: 'practice', art: <Breath size="row" />, title: 'Практики', sub: 'Дыхание, упражнения, планы', onClick: () => onNavigate('practice'), phoneOnly: true },
-    { id: 'journey', art: <Sheets size="row" />, title: 'Мой путь', sub: 'Всё, что уже собрано', onClick: () => setJourney(true) },
-    ...talkRow,
-    ...(userRole === 'THERAPIST' && onOpenTherapistCabinet
-      ? [{ id: 'cabinet', title: 'Кабинет терапевта', sub: 'Клиенты и сессии', onClick: onOpenTherapistCabinet }]
-      : []),
-    { id: 'test', art: <Layers size="row" />, title: 'Тест на схемы', sub: 'Какие схемы откликаются', onClick: () => onOpenSchema({ startTest: true }) },
-    { id: 'settings', art: <Beads size="row" />, title: 'Настройки', sub: 'Напоминания, обращение, данные', onClick: onOpenAdvanced },
-    { id: 'profile', art: <Pebbles size="row" />, title: 'Профиль', sub: 'Портрет, терапевт, ближайшая встреча', onClick: () => onNavigate('profile'), phoneOnly: true },
-  ];
+  const [tasks, setTasks] = useState(false);
+  const { modeEntries } = useTodayDiaries(p.refreshKey);
+  const { rows, sheet } = useMoreRows({
+    ...p,
+    onOpenWhy: () => { trackHomeTile('why'); setWhy(true); },
+    onOpenJourney: () => setJourney(true),
+    onOpenTasks: () => setTasks(true),
+  });
 
   return (
     <div className="ds-page cm-page">
-      <header className="pp-block cm-head">
+      <header className="pp-block pp-block--head cm-head">
         <div className="ds-eyebrow">Ещё</div>
         <h1 className="ds-h1">Всё остальное</h1>
       </header>
 
-      <div className="ds-card ds-card--flush">
-        {rows.map(r => r.href ? (
-          <ExternalLink key={r.id} className={rowClass(r)} href={r.href} onClick={r.onClick}>
-            <RowBody row={r} />
-          </ExternalLink>
-        ) : (
-          <button key={r.id} type="button" className={rowClass(r)} onClick={r.onClick}>
-            <RowBody row={r} />
-          </button>
-        ))}
-      </div>
+      <TherapyNudgeCard refreshKey={p.refreshKey} modeEntries={modeEntries} />
 
-      <button type="button" className="ds-card ds-card--row ds-card--nav ds-card--crisis ds-card--hover" onClick={() => onNavigate('practice')}>
+      <MoreRows rows={rows} />
+
+      <button type="button" className="ds-card ds-card--row ds-card--nav ds-card--crisis ds-card--hover" onClick={() => p.onNavigate('practice')}>
         <span className="pp-row-art"><Heart size="row" /></span>
         <span className="ds-list-title">Мне очень плохо</span>
         <span className="ds-chev" aria-hidden="true" />
       </button>
 
+      <HomeScreenOfferCard />
+      <HomeTherapyLine />
+
       {why && <WhySheet onClose={() => setWhy(false)} />}
-      {target.sheet}
+      {sheet}
       {journey && <JourneySheet onClose={() => setJourney(false)} />}
+      {tasks && (
+        <TasksHub
+          onClose={() => setTasks(false)}
+          onOpenTracker={p.onOpenTracker}
+          onOpenDiaries={p.onOpenDiaries}
+          onOpenChildhoodWheel={p.onOpenChildhoodWheel}
+          refreshKey={p.refreshKey}
+          onTasksChanged={p.onTasksChanged}
+        />
+      )}
     </div>
   );
 }

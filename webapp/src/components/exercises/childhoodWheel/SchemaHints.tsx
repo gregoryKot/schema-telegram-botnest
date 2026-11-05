@@ -1,10 +1,8 @@
-import {
-  CHILDHOOD_SCHEMA_HINTS,
-  hintSchemas,
-} from '../../../../../shared/src/childhoodWheel/childhoodWheel';
+import { hintSchemas } from '../../../../../shared/src/childhoodWheel/childhoodWheel';
 import type { NeedId } from '../../../../../shared/src/needs/types';
 import { hueStyle, NEED_HUE } from '../../../lib/tone';
-import { NEEDS } from './needs';
+import { Layers } from '../../art/PaperArt';
+import { SchemaHintHead } from './SchemaHintHead';
 import '../../../styles/sheet-childhood.css';
 
 /**
@@ -30,15 +28,9 @@ export function SchemaHints({
         выживания. Это и есть схемы – не диагноз, а паттерн, который когда-то помогал.
       </p>
       {lowIds.map((id) => {
-        const label = NEEDS.find((n) => n.id === id)?.label ?? id;
         return (
           <div key={id} className="ds-card chw-hint" style={hueStyle(NEED_HUE[id])}>
-            <div className="chw-hint-head">
-              <span className="ds-dot tone-fill" />
-              <span className="chw-hint-name">{label}</span>
-              <span className="chw-hint-score">{ratings[id]}/10 в детстве</span>
-            </div>
-            <div className="chw-hint-domain">Домен: {CHILDHOOD_SCHEMA_HINTS[id].domain}</div>
+            <SchemaHintHead id={id} score={ratings[id]} />
             <div className="chw-chips">
               {hintSchemas(id).map((s) => (
                 <button
@@ -56,7 +48,7 @@ export function SchemaHints({
       })}
       {onOpenSchemas && (
         <button type="button" className="ds-card ds-card--row ds-card--nav ds-card--hover" onClick={onOpenSchemas}>
-          <span className="ds-list-body"><span className="ds-list-title">Подробнее о схемах</span><span className="ds-list-sub">Что они значат и как с ними работать</span></span>
+          <span className="pp-row-art"><Layers size="row" /></span><span className="ds-list-body"><span className="ds-list-title">Подробнее о схемах</span><span className="ds-list-sub">Что они значат и как с ними работать</span></span>
           <span className="ds-chev" aria-hidden="true" />
         </button>
       )}

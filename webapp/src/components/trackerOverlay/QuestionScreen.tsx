@@ -1,15 +1,14 @@
 import { NeedScale } from '../NeedScale';
 import { TrackerOriginNote } from './TrackerOriginNote';
 import { NeedExplainer } from './NeedExplainer';
+import { NeedTitle } from './NeedTitle';
 import { hueStyle } from '../../lib/tone';
 import { wordAnchorDescriptions } from '../../../../shared/src/needs/ratingWords';
 import type { NeedExtra } from '../../../../shared/src/needs/types';
 
 /** Один вопрос трекера: потребность, что это, вопрос про сегодня, примеры, пять ответов словами с якорями. */
 export function QuestionScreen({
-  idx,
-  total,
-  name,
+  idx, total, name, needId,
   data,
   value,
   hue,
@@ -19,9 +18,9 @@ export function QuestionScreen({
   onAnswer,
   onMore,
 }: {
-  idx: number;
-  total: number;
-  name: string;
+  idx: number; total: number; name: string;
+  /** Id потребности — для мотива рядом с названием. */
+  needId?: string;
   /** Контент потребности (shared/needs): вопрос, описание, примеры, диапазоны. */
   data: NeedExtra | undefined;
   value: number;
@@ -41,7 +40,7 @@ export function QuestionScreen({
         Потребность {idx + 1} из {total}
         {caption ? ` · ${caption}` : ''}
       </p>
-      <h1 className="tq-title">{name}</h1>
+      <NeedTitle name={name} needId={needId} />
       <NeedExplainer data={data} />
       <p className="tq-question">{data?.question ?? ''}</p>
       <NeedScale

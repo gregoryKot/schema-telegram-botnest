@@ -1,5 +1,7 @@
 import { useEffect, useState, lazy, Suspense } from 'react';
 import { PaperEmpty } from '../components/art/PaperEmpty';
+import { Layers } from '../components/art/PaperArt';
+import { Cluster } from '../components/art/PaperArtSigns';
 import { useLocation } from 'react-router-dom';
 import { api } from '../api';
 import { TaskCreateSheet } from '../components/TaskCreateSheet';
@@ -99,9 +101,7 @@ export function PracticeSection({ onOpenChildhoodWheel, onOpenPractices, onOpenP
 
   return (
     <div className={'ds-page cp-page animate-fade' + (phone ? ' cp-page--phone' : '')}>
-
       <PracticeHeader phone={phone} banner={sessionBanner} onCustomize={() => setShowCustomize(true)} />
-
       {phone ? (
         <div id={HERE_BLOCK_ID} className="cp-block">
           <HereAndNowBlock compact extraRows={<PhoneHelpRows onSteps={tools.isShown('flashcard') ? openFlashcard : undefined} />} />
@@ -147,10 +147,11 @@ export function PracticeSection({ onOpenChildhoodWheel, onOpenPractices, onOpenP
         <div className="ds-head-row"><h3 className="ds-h2">В трудный момент</h3></div>
         <div className="cp-tools">
           {[
-            { label: 'Тест на схемы',   sub: tr('116 вопросов, 20 шкал схем – узнай свои паттерны', '116 вопросов, 20 шкал схем – узнайте свои паттерны'),   onClick: () => onOpenSchema?.({ startTest: true }) },
-            { label: 'Карта режимов',   sub: tr('Найди Уязвимого Ребёнка, Критика, Защитника', 'Найдите Уязвимого Ребёнка, Критика, Защитника'),         onClick: () => onOpenSchema?.({ tab: 'modes' }) },
+            { label: 'Тест на схемы',   sub: tr('116 вопросов, 20 шкал схем – узнай свои паттерны', '116 вопросов, 20 шкал схем – узнайте свои паттерны'),   onClick: () => onOpenSchema?.({ startTest: true }), art: <Layers size="row" /> },
+            { label: 'Карта режимов',   sub: tr('Найди Уязвимого Ребёнка, Критика, Защитника', 'Найдите Уязвимого Ребёнка, Критика, Защитника'),         onClick: () => onOpenSchema?.({ tab: 'modes' }), art: <Cluster size="row" /> },
           ].map(item => (
             <div key={item.label} className="ds-card ds-card--hover cp-tool" {...pressable(item.onClick)}>
+              {item.art}
               <div className="cp-tool-title">{item.label}</div>
               <div className="cp-tool-sub">{item.sub}</div>
               {phone ? <span className="ds-chev" aria-hidden="true" /> : <span className="ds-link">начать →</span>}

@@ -14,6 +14,7 @@ import { QuickPracticeSheet } from '../../components/practice/QuickPracticeSheet
 import { practiceCountLabel } from '../../../../shared/src/practices/practiceCountLabel';
 import type { QuickPracticeId } from '../../../../shared/src/practices/quickPractices';
 import { pressable } from '../../utils/a11y';
+import { Breath } from '../../components/art/PaperArt';
 import { HereAndNowIntro } from './HereAndNowIntro';
 import '../../styles/client-practice.css';
 
@@ -63,6 +64,7 @@ export function HereAndNowBlock({ compact = false, extraRows }: { compact?: bool
           className="ds-card ds-card--row ds-card--nav ds-card--hover cp-task"
           {...pressable(() => setActive(row.id))}
         >
+          <span className="pp-row-art"><Breath size="row" /></span>
           <div className="cp-task-body">
             <div className="cp-task-title">{row.label}</div>
             <div className="ds-sub">

@@ -36,21 +36,11 @@ describe('рамка клиентских страниц (client-frame.css)', ()
   });
 });
 
-describe('«Сегодня»: две колонки и ряд «трекер | квадраты»', () => {
+describe('«Сегодня»: ряд «трекер | квадраты» с 1024, иначе столбик', () => {
   const F = 'client-today.css';
-  it('обёртки колонок на телефоне — display: contents; flex/grid только под ≥768/≥1024', () => {
-    for (const sel of ['.ct-cols', '.ct-col']) {
-      const base = rulesOf(F, sel).filter((r) => r.media === '' || r.selectors.length > 1);
-      expect(base.some((r) => /display:\s*contents/.test(r.body))).toBe(true);
-      expect(phoneSees(F, sel, /display:\s*(flex|grid)/)).toEqual([]);
-    }
-  });
-  it('блок трекера рядом с квадратами и две колонки заданий/ленты — только с 1024; на 768–1023 столбик', () => {
+  it('блок трекера рядом с квадратами — только с 1024; на телефоне сетки нет', () => {
     expect(at(F, '.ct-home', 1024)).toMatch(/grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/);
-    expect(at(F, '.ct-cols', 1024)).toMatch(/grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/);
     expect(phoneSees(F, '.ct-home', /grid-template-columns/)).toEqual([]);
-    expect(phoneSees(F, '.ct-cols', /grid-template-columns/)).toEqual([]);
-    expect(at(F, '.ct-cols', 768)).toMatch(/flex-direction:\s*column/);
   });
 });
 
