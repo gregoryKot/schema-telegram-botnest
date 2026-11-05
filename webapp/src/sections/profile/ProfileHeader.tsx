@@ -11,7 +11,7 @@ export function ProfileHeader({ displayName, totalDays, onCustomize, onOpenSetti
   const tr = useTr();
   const name = displayName?.trim() ?? '';
   return (
-    <div className="pp-block cpf-block"><div className="cpf-head">
+    <div className="pp-block pp-block--head cpf-block"><div className="cpf-head">
       <div className="ds-avatar ds-avatar--serif cpf-avatar" style={hueStyle(clientHue(name || 'me'))} aria-hidden="true">
         {avatarInitial(name)}
       </div>

@@ -35,7 +35,7 @@ export function AccountPage() {
         <button type="button" className="ds-back" onClick={() => navigate(accountBackPathFromStorage())}>← Назад</button>
       </div>
       <div className="aa-page">
-        <div className="pp-block aa-block"><div className="pp-hero">
+        <div className="pp-block pp-block--head aa-block"><div className="pp-hero">
           <div className="aa-head">
             {initials && <div className="ds-avatar ds-avatar--serif aa-avatar" style={hueStyle(clientHue(initials))} aria-hidden>{initials}</div>}
             <div>

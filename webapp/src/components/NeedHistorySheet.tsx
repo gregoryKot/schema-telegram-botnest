@@ -8,6 +8,7 @@ import { useHistorySheet } from '../hooks/useHistorySheet';
 import { NeedAdviceModal } from './NeedAdviceModal';
 import { NEED_HUE, hueStyle } from '../lib/tone';
 import type { NeedId } from '../../../shared/src/needs/types';
+import { NeedArtLine } from './NeedArtLine';
 import '../styles/sheet-tracker.css';
 
 interface Props {
@@ -106,6 +107,7 @@ export function NeedHistorySheet({ need, value, history, childhoodValue, onClose
       }
     >
       <div className="tk2-opts" style={hueStyle(hue)}>
+        <NeedArtLine id={need.id} />
         {data.tags.length > 0 && (
           <div className="tk2-tags">
             {data.tags.map(tag => (
@@ -131,7 +133,7 @@ export function NeedHistorySheet({ need, value, history, childhoodValue, onClose
         </div>
       </div>
 
-      {showDisclaimer && <NeedAdviceModal onClose={() => setShowDisclaimer(false)} />}
+      {showDisclaimer && <NeedAdviceModal needId={need.id} onClose={() => setShowDisclaimer(false)} />}
     </ExScreen>
   );
 }

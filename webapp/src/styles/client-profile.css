@@ -155,3 +155,4 @@
   .cpf-heat-months { grid-auto-rows: auto; }
   .cpf-heat-legend { justify-content: flex-start; }
 }
+.cpf-title { display: inline-flex; align-items: center; gap: 12px; min-width: 0; }

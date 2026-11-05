@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { GlyphCheck } from './exercises/ExScreen';
+import { DomainMark } from './DomainMark';
 import { SsSheet } from './schemaSheets/SsSheet';
 import { DOMAIN_HUE, hueStyle } from '../lib/tone';
 import { useHistorySheet } from '../hooks/useHistorySheet';
@@ -98,9 +99,10 @@ export function SchemaDetailSheet({ schemaId, onClose }: Props) {
   return (
     <SsSheet onBack={goBack}>
       <div className="ss-head">
-        <span className="ds-chip tone-tint" style={{ ...hueStyle(DOMAIN_HUE[domainEntry.id]), alignSelf: 'flex-start' }}>
-          {domainEntry.domain}
-        </span>
+        <div className="ss-domain-line">
+          <DomainMark domainId={domainEntry.id} size="square" />
+          <span className="ds-chip tone-tint" style={hueStyle(DOMAIN_HUE[domainEntry.id])}>{domainEntry.domain}</span>
+        </div>
         <h1 className="ss-title">{schema.name}</h1>
         <p className="ss-lede">{lede}</p>
       </div>

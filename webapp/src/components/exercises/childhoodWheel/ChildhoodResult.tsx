@@ -7,6 +7,7 @@ import {
   childhoodAverage,
   lowNeedIds,
 } from '../../../../../shared/src/childhoodWheel/childhoodWheel';
+import { Wheel } from '../../art/PaperArtSigns';
 import { NEEDS } from './needs';
 import { WheelSvg } from './WheelSvg';
 import { SchemaHints } from './SchemaHints';
@@ -25,8 +26,7 @@ export function ChildhoodResult({
   ratings: Record<string, number>;
   onBack: () => void;
   onEdit: () => void;
-  onOpenSchema: (schemaId: string) => void;
-  onOpenSchemas?: () => void;
+  onOpenSchema: (schemaId: string) => void; onOpenSchemas?: () => void;
 }) {
   const tr = useTr();
   const avg = childhoodAverage(ratings);
@@ -35,7 +35,7 @@ export function ChildhoodResult({
   return (
     <ExScreen
       onBack={onBack}
-      eyebrow="Колесо детства · сохранено"
+      eyebrow="Колесо детства · сохранено" art={<Wheel size="square" />}
       title={title}
       lede={`Среднее ${avg}/10.${lowIds.length ? ` ${lowIds.length} ${pluralRu(lowIds.length, 'зона', 'зоны', 'зон')} ниже 5 – это места, где могли сформироваться схемы.` : ''}`}
       aside={

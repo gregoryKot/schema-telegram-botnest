@@ -7,6 +7,7 @@ import { api } from '../api';
 import { useYsqRequested, ysqEntrySub } from '../../../shared/src/tasks/ysqRequestMark';
 import { ModesTab } from './schemaInfoSheet/ModesTab';
 import { NeedsTab } from './schemaInfoSheet/NeedsTab';
+import { Layers } from './art/PaperArt';
 import { SchemasTab } from './schemaInfoSheet/SchemasTab';
 import { SsSheet, SsHead } from './schemaSheets/SsSheet';
 
@@ -89,13 +90,11 @@ export function SchemaInfoSheet({ onClose, ratings, autoStartTest, initialTab, h
             onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setShowTest(true); } }}
             className="ds-card ds-card--hover ss-cta"
           >
-            <div className="ss-cta-text">
+            <Layers size="row" /><div className="ss-cta-text">
               <div className="ss-cta-title">
                 {hasResult ? 'Мои результаты теста' : hasProgress ? 'Продолжить тест' : 'Пройти тест на схемы'}
               </div>
-              <div className="ds-sub">
-                {ysqEntrySub({ hasResult, requested: ysqRequested })}
-              </div>
+              <div className="ds-sub">{ysqEntrySub({ hasResult, requested: ysqRequested })}</div>
             </div>
             <span className="ss-cta-arrow">›</span>
           </div>

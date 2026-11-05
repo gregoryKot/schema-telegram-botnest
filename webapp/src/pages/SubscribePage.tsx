@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api';
 import '../styles/auth-pay.css';
+import { Cup } from '../components/art/PaperArt';
+import { Leaf } from '../components/art/PaperArtSigns';
 import { CancelControl } from './subscribe/CancelControl';
 import { SubscribeForm } from './subscribe/SubscribeForm';
 import { periodLabel, type SubscriptionOption as Opt } from './subscribe/subscribeDiscount';
@@ -10,10 +12,10 @@ type Sub = { status: string; period: string; amount: number; nextChargeAt: strin
 const fmtDate = (iso: string) => new Intl.DateTimeFormat('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(iso));
 
 // Заголовок служебного состояния: eyebrow + ds-h1 + ds-sub слева, страница прижата к верху (#906).
-function Hero({ eyebrow = 'Подписка', title, lead }: { eyebrow?: string; title: string; lead: React.ReactNode }) {
+function Hero({ eyebrow = 'Подписка', title, lead, art }: { eyebrow?: string; title: string; lead: React.ReactNode; art?: React.ReactNode }) {
   return (
     <div className="ap-hero">
-      <div className="ds-eyebrow">{eyebrow}</div>
+      {art}<div className="ds-eyebrow">{eyebrow}</div>
       <h1 className="ds-h1">{title}</h1>
       <p className="ds-sub ap-lead">{lead}</p>
     </div>
@@ -34,13 +36,11 @@ export function SubscribePage() {
 
   const [opts, setOpts] = useState<Opt[]>([]);
   const [period, setPeriod] = useState<'month' | 'year'>('month');
-  const [email, setEmail] = useState('');
-  const [website, setWebsite] = useState('');
+  const [email, setEmail] = useState(''); const [website, setWebsite] = useState('');
   const [status, setStatus] = useState<'idle' | 'loading' | 'error'>('idle');
 
   const [sub, setSub] = useState<Sub | null>(null);
-  const [cancelled, setCancelled] = useState(false);
-  const [enabled, setEnabled] = useState<boolean | null>(null);
+  const [cancelled, setCancelled] = useState(false); const [enabled, setEnabled] = useState<boolean | null>(null);
   const [consent, setConsent] = useState(false);
   // Сбой ≠ пусто (правило №14, экран-тупик): раньше `sub === null` на отказе
   // рисовал «Загружаем…» — навсегда, отказ не отличить от загрузки.
@@ -71,12 +71,12 @@ export function SubscribePage() {
     // Management view.
     body = cancelled ? (
       <>
-        <Hero title="Подписка отменена" lead="Спасибо, что были с проектом. Оформить снова можно в любой момент." />
+        <Hero art={<Cup size="square" />} title="Подписка отменена" lead="Спасибо, что были с проектом. Оформить снова можно в любой момент." />
         <a href="/subscribe" className="ds-btn ds-btn--lg">Оформить снова</a>
       </>
     ) : sub ? (
       <>
-        <Hero eyebrow="Управление" title="Подписка" lead={<>{sub.amount.toLocaleString('ru-RU')} ₽ / {periodLabel(sub.period)} · {sub.status === 'active' ? 'активна' : sub.status === 'past_due' ? 'проблема с оплатой' : sub.status}</>} />
+        <Hero art={<Leaf size="square" />} eyebrow="Управление" title="Подписка" lead={<>{sub.amount.toLocaleString('ru-RU')} ₽ / {periodLabel(sub.period)} · {sub.status === 'active' ? 'активна' : sub.status === 'past_due' ? 'проблема с оплатой' : sub.status}</>} />
         {sub.nextChargeAt && <div className="ds-card ds-card--row ap-note">Следующее списание: <b>{fmtDate(sub.nextChargeAt)}</b></div>}
         <CancelControl token={token} onCancelled={() => setCancelled(true)} />
       </>
@@ -93,7 +93,7 @@ export function SubscribePage() {
   } else if (ret === 'ok') {
     body = (
       <>
-        <Hero title="Спасибо за поддержку!" lead="Подписка оформлена. Управлять ею можно по ссылке, которую мы пришлём, или в настройках." />
+        <Hero art={<Leaf size="square" />} title="Спасибо за поддержку!" lead="Подписка оформлена. Управлять ею можно по ссылке, которую мы пришлём, или в настройках." />
         <a href="/" className="ds-btn ds-btn--lg">На главную</a>
       </>
     );
@@ -101,7 +101,7 @@ export function SubscribePage() {
     // Hidden until Robokassa's recurring service is live.
     body = (
       <>
-        <Hero title="Подписка скоро" lead="Регулярная поддержка пока в разработке. А поддержать проект разово уже можно." />
+        <Hero art={<Cup size="square" />} title="Подписка скоро" lead="Регулярная поддержка пока в разработке. А поддержать проект разово уже можно." />
         <a href="/donate" className="ds-btn ds-btn--lg">Разовый донат</a>
       </>
     );

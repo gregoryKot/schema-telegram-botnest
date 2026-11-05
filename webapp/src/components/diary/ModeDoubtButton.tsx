@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useHistorySheet } from '../../hooks/useHistorySheet';
 import { GlyphArrowLeft } from '../exercises/ExScreen';
+import { Cluster } from '../art/PaperArtSigns';
 import { DIARY_HUE, hueStyle } from '../../lib/tone';
 import '../../styles/sheet-diary.css';
 import { haptic } from '../../haptic';
@@ -58,11 +59,7 @@ export function ModeDoubtButton({
         )}
       </button>
       {open && (
-        <ModeDoubtSheet
-          modeId={modeId}
-          onSwitch={onSwitch}
-          onClose={() => setOpen(false)}
-        />
+        <ModeDoubtSheet modeId={modeId} onSwitch={onSwitch} onClose={() => setOpen(false)} />
       )}
     </>
   );
@@ -91,6 +88,7 @@ function ModeDoubtSheet({
       <div className="page">
         <div className="sd-doubt">
           <div className="ds-card ds-card--row tone-soft sd-doubt-now" style={hueStyle(DIARY_HUE.mode)}>
+            <span className="pp-row-art"><Cluster size="row" /></span>
             <div className="sd-doubt-now-name">
               {mode && <IdentityDot color={mode.groupColor} />} {mode?.name ?? ''}
             </div>
