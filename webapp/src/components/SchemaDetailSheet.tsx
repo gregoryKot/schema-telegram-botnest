@@ -5,7 +5,7 @@ import { SsSheet } from './schemaSheets/SsSheet';
 import { DOMAIN_HUE, hueStyle } from '../lib/tone';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { SCHEMA_DOMAINS } from '../schemaTherapyData';
-import { MY_SCHEMA_IDS_KEY } from '../utils/storageKeys';
+import { cacheMySchemaIds, readMySchemaIds } from '../sections/schemas/myPatternsCache';
 import { api } from '../api';
 import { ShareCardSheet } from '../share/ShareCardSheet';
 import { drawSchemaCard } from '../../../shared/src/share/cards/schemaCard';
@@ -35,10 +35,6 @@ const BELIEFS: Record<string, string[]> = {
   punitiveness_others:       ['Людей нужно жёстко наказывать за ошибки', 'Прощать слабости – значит поощрять их'],
 };
 
-function readSchemaIds(): string[] {
-  try { return JSON.parse(localStorage.getItem(MY_SCHEMA_IDS_KEY) ?? '[]'); } catch { return []; }
-}
-
 interface Props {
   schemaId: string;
   onClose: () => void;
@@ -49,7 +45,7 @@ export function SchemaDetailSheet({ schemaId, onClose }: Props) {
   const goBack = useHistorySheet(onClose); // явный onClose() у navigate() ниже убран — двойной вызов, see useHistorySheet.ts
   const domainEntry = SCHEMA_DOMAINS.find(d => d.schemas.some(s => s.id === schemaId));
   const schema = domainEntry?.schemas.find(s => s.id === schemaId);
-  const [myIds, setMyIds] = useState<string[]>(readSchemaIds);
+  const [myIds, setMyIds] = useState<string[]>(readMySchemaIds);
   const [showShare, setShowShare] = useState(false);
   const isAdded = myIds.includes(schemaId);
 
@@ -75,7 +71,7 @@ export function SchemaDetailSheet({ schemaId, onClose }: Props) {
     const next = isAdded
       ? myIds.filter(id => id !== schemaId)
       : [...myIds, schemaId];
-    localStorage.setItem(MY_SCHEMA_IDS_KEY, JSON.stringify(next));
+    cacheMySchemaIds(next);
     setMyIds(next);
     api.updateSettings({ mySchemaIds: next }).catch(() => {});
   }

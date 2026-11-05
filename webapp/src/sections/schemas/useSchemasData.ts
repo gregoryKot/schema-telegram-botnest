@@ -1,15 +1,15 @@
 // Данные экрана «Мои паттерны»: профиль, последний результат YSQ, прогресс теста, число карт режимов от терапевта и сохранение ручных выборов.
 import { useEffect, useState } from 'react';
 import { api, reportClientError } from '../../api';
-import { MY_SCHEMA_IDS_KEY, MY_MODE_IDS_KEY } from '../../utils/storageKeys';
-import { readLocalIds, type YsqScore } from './schemasModel';
+import type { YsqScore } from './schemasModel';
+import { cacheMySchemaIds, cacheMyModeIds, readMySchemaIds, readMyModeIds } from './myPatternsCache';
 import { useSaveFailure } from '../../hooks/useSaveFailure';
 import { useYsqProgressListener, useYsqResultVersion } from '../../../../shared/src/hooks/ysqProgressStore';
 import { isUnwritableError } from '../../../../shared/src/api/unwritableError';
 
 export function useSchemasData() {
-  const [manualSchemaIds, setManualSchemaIds] = useState<string[]>(() => readLocalIds(localStorage.getItem(MY_SCHEMA_IDS_KEY)));
-  const [myModeIds, setMyModeIds] = useState<string[]>(() => readLocalIds(localStorage.getItem(MY_MODE_IDS_KEY)));
+  const [manualSchemaIds, setManualSchemaIds] = useState<string[]>(readMySchemaIds);
+  const [myModeIds, setMyModeIds] = useState<string[]>(readMyModeIds);
   const [ysqSchemaIds, setYsqSchemaIds] = useState<string[]>([]);
   const [ysqScores, setYsqScores] = useState<Record<string, YsqScore>>({});
   const [ysqProgressAnswered, setYsqProgressAnswered] = useState<number | null>(null);
@@ -37,9 +37,9 @@ export function useSchemasData() {
       const serverSchemas = Array.isArray(p?.mySchemaIds) ? p.mySchemaIds : [];
       const serverModes = Array.isArray(p?.myModeIds) ? p.myModeIds : [];
       setManualSchemaIds(serverSchemas);
-      if (serverSchemas.length > 0) localStorage.setItem(MY_SCHEMA_IDS_KEY, JSON.stringify(serverSchemas));
+      if (serverSchemas.length > 0) cacheMySchemaIds(serverSchemas);
       setMyModeIds(serverModes);
-      if (serverModes.length > 0) localStorage.setItem(MY_MODE_IDS_KEY, JSON.stringify(serverModes));
+      if (serverModes.length > 0) cacheMyModeIds(serverModes);
       setYsqSchemaIds(Array.isArray(p?.ysq?.activeSchemaIds) ? p.ysq.activeSchemaIds : []);
       setYsqCompletedAt(p?.ysq?.completedAt ?? null);
       // Баллы — из последнего прохождения YSQ.
@@ -55,13 +55,13 @@ export function useSchemasData() {
   }, [ysqVersion]);
 
   function saveSchemas(ids: string[]) {
-    localStorage.setItem(MY_SCHEMA_IDS_KEY, JSON.stringify(ids));
+    cacheMySchemaIds(ids);
     setManualSchemaIds(ids);
     save.track(api.updateSettings({ mySchemaIds: ids }), () => reportClientError({ message: 'schemas save mySchemaIds failed', section: 'schemas' }));
   }
 
   function saveModes(ids: string[]) {
-    localStorage.setItem(MY_MODE_IDS_KEY, JSON.stringify(ids));
+    cacheMyModeIds(ids);
     setMyModeIds(ids);
     save.track(api.updateSettings({ myModeIds: ids }), () => reportClientError({ message: 'schemas save myModeIds failed', section: 'schemas' }));
   }

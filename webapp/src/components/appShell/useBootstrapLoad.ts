@@ -4,7 +4,10 @@ import { api, reportClientError, type PracticePlan, type TherapyClientSummary } 
 import type { Need } from '../../types';
 import { cacheClientRelation, cacheTherapistContact } from '../../utils/therapistContact';
 import { humanizeThrown } from '../../../../shared/src/api/humanizeError';
-import { MY_SCHEMA_IDS_KEY, CHILDHOOD_DONE_KEY, YSQ_PROGRESS_KEY, THERAPIST_MODE_KEY } from '../../utils/storageKeys';
+import { CHILDHOOD_DONE_KEY, THERAPIST_MODE_KEY } from '../../utils/storageKeys';
+import { cacheTherapistMode } from './therapistModeCache';
+import { cacheMySchemaIds } from '../../sections/schemas/myPatternsCache';
+import { writeYsqProgress } from '../../../../shared/src/hooks/ysqProgressStore';
 import { useDayRatings } from '../../../../shared/src/today/useDayRatings';
 import { deviceTimeZone } from '../../../../shared/src/utils/deviceTimeZone';
 // Ре-экспорт для AppShell. Это день ЗАГРУЗКИ бандла; живой день, который
@@ -82,7 +85,7 @@ export function useBootstrapLoad({ navigate, initialPathname }: Params) {
 
     const ysqPromise = Promise.all([api.getYsqProgress(), api.getYsqResult()]).then(([prog, result]) => {
       if (prog?.answers && !result?.answers) {
-        localStorage.setItem(YSQ_PROGRESS_KEY, JSON.stringify({ answers: prog.answers, page: prog.page }));
+        writeYsqProgress(prog.answers, prog.page);
       }
     }).catch(() => fail('YSQ'));
 
@@ -113,22 +116,20 @@ export function useBootstrapLoad({ navigate, initialPathname }: Params) {
         const wantsCabinet = pref !== null ? pref !== '0' : serverFlags.therapistMode !== false;
         const onDefaultLanding = initialPathname === '/' || initialPathname === '/today';
         if (wantsCabinet && !initialPathname.startsWith('/cabinet') && onDefaultLanding) {
-          localStorage.setItem(THERAPIST_MODE_KEY, '1');
+          cacheTherapistMode(true);
           navigate('/cabinet');
         } else if (pref === null) {
-          localStorage.setItem(THERAPIST_MODE_KEY, wantsCabinet ? '1' : '0');
+          cacheTherapistMode(wantsCabinet);
         }
       } else {
         // Не терапевт: флаг '1' мог остаться от снятой роли (её сняли на другой площадке) —
         // сбрасываем, иначе «← Назад» с /account ведёт в /cabinet. replace: запись /cabinet
         // не остаётся в истории, и браузерный «Назад» не вернёт клиента в кабинет.
-        if (localStorage.getItem(THERAPIST_MODE_KEY) === '1') localStorage.setItem(THERAPIST_MODE_KEY, '0');
+        if (localStorage.getItem(THERAPIST_MODE_KEY) === '1') cacheTherapistMode(false);
         if (initialPathname.startsWith('/cabinet')) navigate('/today', { replace: true });
       }
       if (p.name) setDisplayName(p.name);
-      if (p.mySchemaIds?.length > 0) {
-        localStorage.setItem(MY_SCHEMA_IDS_KEY, JSON.stringify(p.mySchemaIds));
-      }
+      if (p.mySchemaIds?.length > 0) cacheMySchemaIds(p.mySchemaIds);
       // Дальше — вложенные запросы. Возвращаем их промис из колбэка: иначе
       // profilePromise резолвится раньше, чем клиенты/связь с терапевтом
       // отработают, и их сбой не попадёт во флаш отчёта ниже.

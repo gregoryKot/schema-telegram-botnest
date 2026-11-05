@@ -8,7 +8,8 @@
 import { lazy, Suspense } from 'react';
 import type { NavigateFunction } from 'react-router-dom';
 import { api } from '../../api';
-import { THERAPIST_MODE_KEY } from '../../utils/storageKeys';
+import { cacheTherapistMode } from './therapistModeCache';
+import { markTherapistDisclaimerSeen } from '../therapistDisclaimerSeen';
 import type { useOverlays } from './useOverlays';
 import { NoteSheet } from '../NoteSheet';
 
@@ -52,7 +53,7 @@ export function AppOverlays({
           onResignTherapist={async () => {
             await api.resignTherapist();
             setUserRole('CLIENT');
-            localStorage.setItem(THERAPIST_MODE_KEY, '0');
+            cacheTherapistMode(false);
             ov.setShowSettings(false); navigate('/today');
           }}
         />
@@ -118,8 +119,7 @@ export function AppOverlays({
           // Persist on ANY close path (button OR browser-back), otherwise a
           // back-button dismissal leaves the flag unset and the disclaimer
           // re-shows on every entry into the therapist cabinet.
-          localStorage.setItem('therapist_privacy_disclaimer_seen', '1');
-          ov.setShowTherapistDisclaimer(false);
+          markTherapistDisclaimerSeen(); ov.setShowTherapistDisclaimer(false);
         }} />
       </Suspense>
     )}

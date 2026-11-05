@@ -14,7 +14,7 @@ export const PATTERNS_LAST_TAB_KEY = 'patterns_last_tab';
 // Ручной выбор часового пояса в BookingPicker сайта («не ваш часовой
 // пояс?») — переживает возврат на страницу записи.
 export const BOOKING_TIME_ZONE_KEY = 'booking_time_zone';
-// Флаг стартового режима сайта: '1' — кабинет, '0' — клиент. Пишут AppShell, useBootstrapLoad, AppOverlays; читает AccountPage.
+// Флаг стартового режима сайта: '1' — кабинет, '0' — клиент. Единственный писатель — webapp/src/components/appShell/therapistModeCache.ts; читает AccountPage.
 export const THERAPIST_MODE_KEY = 'therapist_mode';
 export function shouldShowChildhoodWheel(): boolean {
   return !localStorage.getItem(CHILDHOOD_DONE_KEY);

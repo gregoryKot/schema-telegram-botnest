@@ -5,10 +5,12 @@ import { api } from '../api';
 import type { DayHistory } from '../types';
 import { useCabinetLightTheme } from '../utils/useCabinetLightTheme';
 import { syncMotionAttr } from '../utils/reducedMotion';
-import { shouldShowChildhoodWheel, THERAPIST_MODE_KEY } from '../utils/storageKeys';
+import { shouldShowChildhoodWheel } from '../utils/storageKeys';
+import { cacheTherapistMode } from './appShell/therapistModeCache';
+import { isTherapistDisclaimerSeen } from './therapistDisclaimerSeen';
 import { CommandPalette } from './CommandPalette';
 import { useBootstrapLoad } from './appShell/useBootstrapLoad';
-import { celebratedKey } from '../../../shared/src/utils/todayConstants';
+import { isCelebrated, markCelebrated } from '../../../shared/src/utils/todayConstants';
 import { useOverlays } from './appShell/useOverlays';
 import { AppOverlays } from './appShell/AppOverlays';
 import { EntryFlows } from './appShell/EntryFlows';
@@ -69,7 +71,7 @@ export function AppShell() {
   }, [location.pathname, therapistMode]);
 
   const switchTherapistMode = useCallback((on: boolean, persist = true) => {
-    localStorage.setItem(THERAPIST_MODE_KEY, on ? '1' : '0');
+    cacheTherapistMode(on);
     // Запоминаем стартовое предпочтение на сервере (source of truth). Сервер принимает флаг только у THERAPIST — эндпоинт вернёт
     // 403 для клиента, поэтому просто глушим ошибку.
     if (persist) api.setTherapistView(on).catch(() => {});
@@ -113,7 +115,7 @@ export function AppShell() {
   // First entry into the cabinet as a therapist → one-time privacy disclaimer
   useEffect(() => {
     if (therapistMode && userRole === 'THERAPIST'
-        && !localStorage.getItem('therapist_privacy_disclaimer_seen')) {
+        && !isTherapistDisclaimerSeen()) {
       ov.setShowTherapistDisclaimer(true);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- ov.setShowTherapistDisclaimer стабильный сеттер useState (как и остальные поля ov); сам объект ov — новый на каждый рендер, добавление его в deps перезапускало бы эффект от любого несвязанного оверлея
@@ -181,9 +183,8 @@ export function AppShell() {
   const handleSaved = useCallback((needId: string, streak?: StreakData) => {
     setSaved(prev => ({ ...prev, [needId]: true }));
     // День праздника — живой день устройства (todayDate сменяется в полночь), а не день загрузки бандла.
-    const key = celebratedKey(todayDate);
-    if (streak && !localStorage.getItem(key)) {
-      localStorage.setItem(key, '1');
+    if (streak && !isCelebrated(todayDate)) {
+      markCelebrated(todayDate);
       if (streak.currentStreak > 0) setCelebrationStreak(streak.currentStreak);
       else ov.setShowTodayNote(true);
       if (streak.totalDays >= 5 && shouldShowChildhoodWheel()) setChildhoodWheelPending(true);

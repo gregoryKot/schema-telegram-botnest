@@ -41,6 +41,7 @@
 | check-hover-only-reveal.mjs | элемент раскрывается только по :hover, без пути для пальца | — | нет | webapp |
 | check-ignored-tracked.mjs | отслеживаемый git-файл, запрещённый .gitignore | — | нет | checks |
 | check-jscpd-ratchet.mjs | рост копипасты от 70 токенов (jscpd) | `scripts/jscpd-baseline.json` | да | backend |
+| check-local-cache-writers.mjs | второй писатель ключа localStorage, ключ без классификации владельца (mirror/local), протухшая запись | `scripts/local-cache-baseline.json` | нет | checks |
 | check-legacy-name.mjs | возврат старого названия «СхемаЛаб» в текстах | — | нет | checks |
 | check-mutation-ratchet.mjs | падение mutation-score золотых зон (читает отчёт Stryker) | `scripts/mutation-baseline.json`; для nightly-волн через `--baseline=`: `scripts/mutation-golden-auth-baseline.json`, `scripts/mutation-golden-payments-baseline.json`, `scripts/mutation-crisis-baseline.json`, `scripts/mutation-outbox-baseline.json` | да | nightly |
 | check-mutation-zone.mjs | файл, выделенный из мутационной зоны, выпал из неё молча | `scripts/mutation-zone-baseline.json` | нет | checks |
