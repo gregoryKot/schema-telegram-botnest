@@ -1,6 +1,6 @@
 import type { DayHistory } from '../../../../shared/src/types';
 import { NEED_COLOR_ORDER } from '../../../../shared/src/needs/needColors';
-import { trackerSummary } from '../today/todayFeed';
+import { trackerSummary } from '../today/todayFeedModel';
 import { fmtIndex } from '../../../../shared/src/needs/dayIndex';
 
 // Строки трекера для ленты «Записи»: по дню одна — индекс, если оценены все потребности,

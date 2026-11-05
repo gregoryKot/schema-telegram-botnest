@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { YsqHistoryEntry } from '../../../../../shared/src/apiTypes';
-import { crossCheckItems } from './ysqCrossCheck';
+import { crossCheckItems } from './ysqCrossCheckModel';
 
 const SHOWN = 6;
 

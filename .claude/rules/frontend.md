@@ -150,6 +150,17 @@ export function MySheet({ onClose }: { onClose: () => void }) {
 **Важно — не использовать `history.pushState` или `window.addEventListener('popstate')` напрямую.**
 Хук работает через `useNavigate`/`useLocation` из react-router-dom. Прямой вызов `history.pushState` конфликтует с React Router: при нажатии «Назад» срабатывают оба обработчика одновременно — лист закрывается И роутер уходит на предыдущий раздел.
 
+## Имена файлов различаются не только регистром
+
+Два файла в одном каталоге не называются `diagramEdges.ts` и `DiagramEdges.tsx`
+(и `foo.ts` ≈ `Foo.tsx`, и `foo.ts` ≈ `FOO.ts`). На macOS файловая система не
+различает регистр, и Vite разрешает `import … from './DiagramEdges'` в
+`diagramEdges.ts` — «does not provide an export named», кабинет терапевта падал
+в error boundary в локальном dev (2026-11-05). На Linux (CI, прод) всё
+работает, поэтому поломку не видел никто, кроме разработчика на маке. Модель
+рядом с компонентом называем `<имя>Model.ts`. Гейт —
+`scripts/check-filename-case.mjs` (CI, джоба `checks`), без бейслайна.
+
 ## Деплой webapp
 
 `webapp/dist/` **не хранится в git** — Amvera сама собирает webapp из исходников через
