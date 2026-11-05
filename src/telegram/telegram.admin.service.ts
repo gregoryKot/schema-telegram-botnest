@@ -11,7 +11,7 @@ import {
 import { Telegraf, Context } from 'telegraf';
 import { TELEGRAF_BOT } from './telegram.constants';
 import { failCallback } from './callback-failure';
-import { BroadcastRunner } from './telegram.broadcast';
+import { BroadcastRunner } from './telegram.broadcast-runner';
 import { renderTemplate } from '../notification/notification.templates';
 import { BotAdminStatsService } from '../bot/bot.admin-stats.service';
 import { StatsReportService } from '../bot/stats-report.service';
@@ -26,7 +26,7 @@ import { adminIdNum, isAdminSender } from '../utils/admin-alert';
 @Injectable()
 export class TelegramAdminService implements OnModuleInit {
   private readonly logger = new Logger(TelegramAdminService.name);
-  readonly broadcast = new BroadcastRunner(); // фоном: см. telegram.broadcast.ts
+  readonly broadcast = new BroadcastRunner(); // фоном: telegram.broadcast-runner.ts
 
   constructor(
     @Inject(TELEGRAF_BOT)

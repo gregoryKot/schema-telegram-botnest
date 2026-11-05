@@ -102,7 +102,7 @@ describe('onModuleInit — 30с catch-up планировщика', () => {
     const { service } = makeService({ accountService });
     service.onModuleInit();
     await jest.advanceTimersByTimeAsync(30_000);
-    expect(accountService.getAllUsersWithSettings).not.toHaveBeenCalled();
+    expect(accountService.getAllUsersWithSettings.mock.calls).toEqual([]);
   });
 
   // Регрессия флака e2e-джобы `migrations` (щит, волна 6): каждый e2e-boot
@@ -121,7 +121,7 @@ describe('onModuleInit — 30с catch-up планировщика', () => {
     service.onModuleDestroy();
     expect((service as any).catchupTimer.isArmed()).toBe(false);
     await jest.advanceTimersByTimeAsync(30_000);
-    expect(accountService.getAllUsersWithSettings).not.toHaveBeenCalled();
+    expect(accountService.getAllUsersWithSettings.mock.calls).toEqual([]);
   });
 });
 

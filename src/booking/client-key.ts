@@ -1,6 +1,3 @@
-import { createHash } from 'crypto';
-import { keyedDigests } from '../utils/crypto-keys';
-
 // Ключ клиента для ClientMeeting (одна строка = одна постоянная комната).
 //
 // Аудит 2026-10 (docs/open/security.md): ключ был несолёным sha256 контакта,
@@ -11,40 +8,17 @@ import { keyedDigests } from '../utils/crypto-keys';
 // телефонов и ников — база отвечала, записывался ли человек, даже после
 // обезличивания брони. Теперь нормализация зависит от формы контакта, а ключ —
 // HMAC с серверным секретом. Старые строки переводит client-key-rekey.service.ts.
+// Нормальная форма контакта — contact-normal-form.ts.
+
+import { createHash } from 'crypto';
+import { keyedDigests } from '../utils/crypto-keys';
+import { digitsOnlyForm, normalizeContact } from './contact-normal-form';
+
+export { normalizeContact };
 
 const LABEL = 'clientMeeting.clientKey.v1';
-// Форма контакта — по самой строке, а не по clientChannel: канал необязателен,
-// у старых броней его нет, а в канале telegram форма разрешает и ник, и номер.
-const PHONE_RE = /^[\d\s()+\-.]+$/;
-// Ник Telegram начинается с буквы: `@79991234567` — не ник и не телефон, иначе
-// он совпал бы с номером 79991234567 после нормализации.
-const NICK_RE = /^@?[a-z][a-z0-9_]{2,31}$/;
-
 const sha256 = (s: string): string =>
   createHash('sha256').update(s).digest('hex');
-
-/**
- * Одна нормальная форма на одного человека. Телефон — цифры и ведущий `+`
- * (8… и +7… остаются разными: правила замены в коде нигде не принято; без `+`
- * `+49 5123 4567` склеивался с `(495) 123-45-67` — «расклейка безопасна,
- * склейка — нет»); ник — без `@`; всё прочее, включая почту, — регистр и
- * пробелы по краям, `-`, `+` и точки сохраняются: в адресе почты они различают
- * ящики.
- */
-export function normalizeContact(contact: string): string {
-  const s = contact.trim().toLowerCase();
-  if (PHONE_RE.test(s) && /\d/.test(s))
-    return (/^\D*\+/.test(s) ? '+' : '') + s.replace(/\D/g, '');
-  if (NICK_RE.test(s)) return s.replace(/^@/, '');
-  return s.replace(/\s+/g, ' ');
-}
-
-/** Форма телефона до сохранения `+` (только цифры) — источник для перевода
- *  строк; null, если она не отличается от нынешней. */
-function digitsOnlyForm(contact: string): string | null {
-  const norm = normalizeContact(contact);
-  return norm.startsWith('+') ? norm.slice(1) : null;
-}
 
 /**
  * Ключи контакта: под текущим ENCRYPTION_KEY первым (`k1:`), затем под каждым

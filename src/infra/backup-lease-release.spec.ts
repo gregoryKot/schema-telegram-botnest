@@ -108,6 +108,41 @@ describe('backup-lease-release: stop() во время прогона', () => {
     const spawnSync = jest.fn();
     const { res } = start(spawnSync);
     res.stop();
-    expect(spawnSync).not.toHaveBeenCalled();
+    expect(spawnSync.mock.calls).toEqual([]);
+  });
+});
+
+// Сам модуль, напрямую (check-unwatched-code: файл вне src/ читается тестом).
+interface Release {
+  stopRun(ctx: Record<string, unknown>, sql: string, lease: string): boolean;
+  STOP_RELEASE_TIMEOUT_MS: number;
+}
+const release = jest.requireActual<Release>(
+  join(process.cwd(), 'deploy', 'backup-lease-release.cjs'),
+);
+
+describe('deploy/backup-lease-release.cjs: stopRun', () => {
+  const ctx = (over: Record<string, unknown>) => ({
+    state: { child: { kill: jest.fn() } },
+    env: ENV,
+    log: { info: jest.fn(), error: jest.fn() },
+    instanceId: 'pod-B',
+    ...over,
+  });
+
+  it('битый DATABASE_URL — не бросает, false и строка FAILED', () => {
+    const spawnSync = jest.fn();
+    const c = ctx({ env: { ...ENV, DATABASE_URL: '::not a url' }, spawnSync });
+    expect(release.stopRun(c, 'SQL', 'db-backup')).toBe(false);
+    expect(spawnSync.mock.calls).toEqual([]);
+    expect((c.log as { error: jest.Mock }).error.mock.calls[0][0]).toMatch(
+      /^\[backup\] FAILED аренда при остановке не отпущена: /,
+    );
+  });
+
+  it('psql ответил 0 — true; таймаут релиза короче страховки выхода', () => {
+    const spawnSync = jest.fn(() => ({ status: 0 }));
+    expect(release.stopRun(ctx({ spawnSync }), 'SQL', 'db-backup')).toBe(true);
+    expect(release.STOP_RELEASE_TIMEOUT_MS).toBe(5_000);
   });
 });
