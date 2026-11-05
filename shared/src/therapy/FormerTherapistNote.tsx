@@ -3,10 +3,11 @@ import { formerTherapistText, formerTherapistTitle } from './formerTherapist';
 import type { FormerTherapistInfo } from './formerTherapist';
 import { useFormerTherapist } from './useFormerTherapist';
 
-// Сообщение «терапевт больше не работает в приложении» — один компонент на
-// оба фронтенда (правило «одна механика — один компонент»): профиль сайта,
-// «Мой терапевт» в настройках сайта и мини-аппа. Обёртку и отступы задаёт
-// экран (`className`), цвета — токены, общие для обоих фронтендов.
+// Строка о бывшем терапевте (отказ от роли, терапевт убрал клиента, клиент
+// отключился сам — текст по причине, formerTherapist.ts) — один компонент на
+// все места (правило «одна механика — один компонент»): профиль сайта и
+// «Мой терапевт» в настройках. Обёртку и отступы задаёт экран (`className`),
+// цвета — токены.
 export function FormerTherapistNote({
   load,
   enabled,
@@ -22,7 +23,7 @@ export function FormerTherapistNote({
   return (
     <div role="note" className={className}>
       <div style={{ color: 'var(--text)', fontSize: 14, fontWeight: 600 }}>
-        {formerTherapistTitle(info.name)}
+        {formerTherapistTitle(info, tr)}
       </div>
       <div
         style={{
@@ -32,7 +33,7 @@ export function FormerTherapistNote({
           marginTop: 4,
         }}
       >
-        {formerTherapistText(tr)}
+        {formerTherapistText(info, tr)}
       </div>
     </div>
   );
