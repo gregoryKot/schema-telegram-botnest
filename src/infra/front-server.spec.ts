@@ -10,6 +10,7 @@ import { AddressInfo } from 'net';
 import { tmpdir } from 'os';
 import { join } from 'path';
 import { PRACTICE_ALIAS_HOSTS } from '../practice-domain.middleware';
+import { listenWithRetry, reservePort } from '../test-support/ephemeral-port';
 
 const FRONT = join(process.cwd(), 'deploy', 'front-server.mjs');
 const FRONT_STATIC = join(process.cwd(), 'deploy', 'front-static.mjs');
@@ -99,9 +100,10 @@ describe('front-server (публичный порт: техработы ⇄ пр
   }, 10000);
 
   it('старт: сперва техработы, апстрим поднялся позже → далее проброс (окно старта закрыто)', async () => {
-    // Фиксированный локальный порт под будущий апстрим (эфемерный не подойдёт —
-    // front надо стартовать до апстрима, зная его порт заранее).
-    const APP_PORT = 58123;
+    // Порт будущего апстрима нужен до его старта (front стартует первым).
+    // Константа (было 58123) лежала в эфемерном диапазоне и мигала: номер
+    // берётся у ядра, поздний бинд — с ретраями (test-support/ephemeral-port.ts).
+    const APP_PORT = await reservePort();
     const { proc, port } = launchFront(APP_PORT);
     alive.push(proc);
     const frontPort = await port;
@@ -111,11 +113,11 @@ describe('front-server (публичный порт: техработы ⇄ пр
     expect(await before.text()).toContain('технические работы');
 
     // Приложение «поднялось».
-    const upstream = createServer((_req, res) => res.end('APP-UP'));
-    servers.push(upstream);
-    await new Promise<void>((r) =>
-      upstream.listen(APP_PORT, '127.0.0.1', () => r()),
+    const upstream = await listenWithRetry(
+      () => createServer((_req, res) => res.end('APP-UP')),
+      APP_PORT,
     );
+    servers.push(upstream);
 
     // Новое соединение уже проксируется на приложение.
     const after = await fetch(`http://127.0.0.1:${frontPort}/`);
