@@ -1,6 +1,5 @@
 import type { ReactNode } from 'react';
 import { Layers, Pebbles } from '../art/PaperArt';
-export { PaperEmpty } from '../art/PaperEmpty';
 import { Check } from '../art/PaperArtSigns';
 import '../../styles/therapist-tabs.css';
 
@@ -14,7 +13,6 @@ export function TabArt({ motif }: { motif: TabMotif }) {
   return <span className="pp-row-art tb-tab-art"><Art size="row" /></span>;
 }
 
-/** Пустое состояние: чашка слева, текст справа; ничего выдуманного на месте пустоты. */
 // Заголовок вкладки карточки клиента: h2 и подпись. Показывается на компьютере
 // (≥768, как до волн #906); на телефоне h2 прячет CSS (имя вкладки уже наверху).
 // className `tb-tab-title--desk` прячет на телефоне весь блок, если подписи там нет.

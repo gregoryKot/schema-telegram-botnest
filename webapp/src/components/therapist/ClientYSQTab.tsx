@@ -8,7 +8,8 @@ import { isVirtualId } from '../../../../shared/src/utils/sameId';
 import { pluralRu } from '../../../../shared/src/utils/pluralRu';
 import { CONCEPT_EXPORT_EMPTY } from '../../../../shared/src/therapy/conceptExport';
 import { buildYsqRows, YSQ_TOP_N } from './ysqRows';
-import { TabTitle, PaperEmpty } from './TabTitle';
+import { TabTitle } from './TabTitle';
+import { PaperEmpty } from '../art/PaperEmpty';
 import { YSQTable } from './YSQTable';
 import { YSQDynamics } from './YSQDynamics';
 

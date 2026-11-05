@@ -1,5 +1,5 @@
 import { SCHEMA_DOMAINS } from '../../schemaTherapyData';
-import { Cup } from '../../components/art/PaperArt';
+import { PaperEmpty } from '../../components/art/PaperEmpty';
 import { fmtDate, momentDayKey } from '../../utils/format';
 import { useTr } from '../../utils/addressForm';
 import { hueStyle } from '../../lib/tone';
@@ -29,7 +29,7 @@ export function ExpressedCard({ loading, ysqSchemaIds, ysqScores, completedAt, o
           {[0, 1, 2, 3].map(i => <Skeleton key={i} height={22} />)}
         </div>
       ) : items.length === 0 ? (
-        <div className="pp-empty"><Cup /><p className="ds-empty">{tr('Здесь появятся схемы, которые тест покажет самыми выраженными. Пройди его справа.', 'Здесь появятся схемы, которые тест покажет самыми выраженными. Пройдите его справа.')}</p></div>
+        <PaperEmpty>{tr('Здесь появятся схемы, которые тест покажет самыми выраженными. Пройди его справа.', 'Здесь появятся схемы, которые тест покажет самыми выраженными. Пройдите его справа.')}</PaperEmpty>
       ) : (
         <div className="cs-expressed-list">
           {items.map(it => (

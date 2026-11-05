@@ -9,7 +9,7 @@ import { KanbanView } from './KanbanView';
 import { AddClientForm } from './AddClientForm';
 import { PendingInvitesList } from '../../../../shared/src/therapy/PendingInvitesList';
 import { ClientCard } from './ClientCard';
-import { PaperEmpty } from './TabTitle';
+import { PaperEmpty } from '../art/PaperEmpty';
 import { ClientListHero } from './ClientListHero';
 import { filterRoster, sortRoster, type RosterStatus } from './rosterModel';
 import type { useAddClient } from './useAddClient';

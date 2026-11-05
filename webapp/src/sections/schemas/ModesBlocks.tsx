@@ -1,5 +1,5 @@
 import { MODE_GROUPS, ALL_MODES } from '../../schemaTherapyData';
-import { Cup } from '../../components/art/PaperArt';
+import { PaperEmpty } from '../../components/art/PaperEmpty';
 import { useTr } from '../../utils/addressForm';
 import { hueStyle, MODE_GROUP_HUE } from '../../lib/tone';
 import { FreqMark, FreqHint } from './FreqMark';
@@ -31,7 +31,7 @@ export function ModesBlocks({ loading, myModeIds, onAdd, onOpenMode, onOpenPatte
             {[90, 110, 80].map((w, i) => <Skeleton key={i} height={32} width={w} radius={16} />)}
           </div>
         ) : myModes.length === 0 ? (
-          <div className="pp-empty"><Cup /><p className="ds-empty">{tr('Добавь режимы которые узнаёшь у себя', 'Добавьте режимы которые узнаёте у себя')}</p></div>
+          <PaperEmpty>{tr('Добавь режимы, которые узнаёшь у себя', 'Добавьте режимы, которые узнаёте у себя')}</PaperEmpty>
         ) : (
           <>
           {modeFreq && <FreqHint kind="mode" freq={modeFreq} />}

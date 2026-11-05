@@ -1611,7 +1611,7 @@
   "webapp/src/components/therapist/clientSheetTypes.ts": 7,
   "webapp/src/components/therapist/ClientTabs.tsx": 25,
   "webapp/src/components/therapist/ClientTasksTab.tsx": 112,
-  "webapp/src/components/therapist/ClientYSQTab.tsx": 92,
+  "webapp/src/components/therapist/ClientYSQTab.tsx": 93,
   "webapp/src/components/therapist/concept/ConceptFoldouts.tsx": 30,
   "webapp/src/components/therapist/concept/conceptHeadText.ts": 34,
   "webapp/src/components/therapist/concept/ConceptModeCard.tsx": 23,

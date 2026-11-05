@@ -5,7 +5,7 @@ import type { TherapyClientSummary, UserId } from '../api';
 import '../styles/therapist-today.css';
 import { AttentionRow, ActivityRow, SessionRow } from './TherapistTodayLists';
 import { needsAttention, sessionsTodaySorted, todayCounts, trackedClients } from './therapistTodayModel';
-import { PaperEmpty } from '../components/therapist/TabTitle';
+import { PaperEmpty } from '../components/art/PaperEmpty';
 import { TherapistTodayHead } from './TherapistTodayHead';
 
 interface Props {

@@ -2,7 +2,8 @@ import { useState } from 'react';
 import '../../styles/therapist-tabs.css';
 import { buildNoteItems, countByFilter, filterNotes, FILTERS, type DiaryEntry, type ModeNoteData, type NoteFilter, type SchemaNoteData } from './notesModel';
 import { NoteCard } from './NoteCard';
-import { TabTitle, PaperEmpty } from './TabTitle';
+import { TabTitle } from './TabTitle';
+import { PaperEmpty } from '../art/PaperEmpty';
 
 interface Props {
   clientSchemaNotesData: SchemaNoteData[];

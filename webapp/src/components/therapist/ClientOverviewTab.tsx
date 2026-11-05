@@ -4,7 +4,7 @@ import { fmtDate } from '../../utils/format';
 import { hueStyle } from '../../lib/tone';
 import { useIsMobile } from '../useIsMobile';
 import { ClientOverviewSidebar } from './ClientOverviewSidebar';
-import { PaperEmpty } from './TabTitle';
+import { PaperEmpty } from '../art/PaperEmpty';
 import { ClientQuickActions } from './ClientQuickActions';
 import { ToneGroupsCard } from './ClientOverviewGroups';
 import { diaryPreview, groupSchemasByDomain, summarizeModes } from './clientOverviewModel';

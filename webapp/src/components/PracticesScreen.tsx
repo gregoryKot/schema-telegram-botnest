@@ -12,7 +12,7 @@ import { useNeedData } from '../needData';
 import { pressable } from '../utils/a11y';
 import { detectCrisisAny } from '../utils/crisisMarkers';
 import { CrisisCard } from './CrisisCard';
-import { Cup } from './art/PaperArt';
+import { PaperEmpty } from './art/PaperEmpty';
 import { NEED_HUE, hueStyle } from '../lib/tone';
 import type { NeedId } from '../../../shared/src/needs/types';
 import '../styles/sheet-tasks.css';
@@ -144,7 +144,7 @@ export function PracticesScreen({ onClose, onOpenTracker }: Props) {
           ) : !practices ? (
             <Loader minHeight="20vh" />
           ) : practices.length === 0 ? (
-            <div className="pp-empty"><Cup /><p className="ds-empty">{tr('Пока пусто — добавь первую практику ниже.', 'Пока пусто — добавьте первую практику ниже.')}</p></div>
+            <PaperEmpty>{tr('Пока пусто — добавь первую практику ниже.', 'Пока пусто — добавьте первую практику ниже.')}</PaperEmpty>
           ) : (
             <div className="sk-list">
               {practices.map(p => (

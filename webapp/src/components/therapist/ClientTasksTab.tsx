@@ -13,7 +13,8 @@ import { therapistClosesTask, useTherapistTaskActions } from '../../../../shared
 import { hueStyle } from '../../lib/tone';
 import type { ClientDetail } from './clientSheetTypes';
 import { isOpenStatus, orderTasks, taskMeta, taskStatus, templateHue } from './taskModel';
-import { PaperEmpty, TabArt } from './TabTitle';
+import { TabArt } from './TabTitle';
+import { PaperEmpty } from '../art/PaperEmpty';
 import { TaskStatusBadge } from '../TaskStatusBadge';
 import { ASSIGN_TEMPLATES, type AssignPreset } from './assignTemplates';
 
