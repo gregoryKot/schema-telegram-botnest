@@ -86,8 +86,23 @@ export function prefixDirectory(cmd: string): string {
 const ESCAPE =
   /(?:^|[;&|(]\s*)(?:exit|return|exec|trap)\b|\bset\s[^;&|\n]*(?:\+[a-zA-Z]*e|\+o\s+errexit)/;
 
+/**
+ * Ключ YAML в начале строки с отступом `indent`: голый, в кавычках
+ * (`"if":`, `'shell':`) или с пробелом перед двоеточием (`if :`) — js-yaml
+ * и Actions читают их одинаково, а регэксп только на `if:` их пропускал.
+ */
+const yamlKey = (name: string, indent = '\\s*', tail = ''): RegExp =>
+  new RegExp(`^${indent}(?:${name}|"${name}"|'${name}')[ \\t]*:${tail}`, 'm');
+
 /** `continue-on-error` с любым значением, кроме `false`: `${{ true }}` тоже глушит. */
-const SOFT_FAIL = /^\s*continue-on-error:(?!\s*false\s*(?:#.*)?$)/m;
+const SOFT_FAIL = yamlKey(
+  'continue-on-error',
+  '\\s*',
+  '(?!\\s*false\\s*(?:#.*)?$)',
+);
+const SHELL = yamlKey('shell');
+const STEP_IF = yamlKey('if', '(?: {8})?');
+const JOB_IF = yamlKey('if', ' {4}');
 
 /**
  * Команда audit, которой шаг гейтит, или null. Засчитывается обёртка или
@@ -108,12 +123,15 @@ export function gatingAuditCall(step: string): string | null {
     .map((l) => l.trim())
     .filter((l) => l && !l.startsWith('#'));
   if (commands.length !== 1 || ESCAPE.test(commands[0])) return null;
+  // Выражение разворачивается до shell: `${{ format('{0}{0} true', …) }}`
+  // даёт `|| true`, которого в тексте нет. Гейт строже, а не умнее.
+  if (commands[0].includes('${{')) return null;
   const calls = auditCalls(commands[0]);
   if (calls.length !== 1 || !calls[0].sole) return null;
   const level = /--audit-level[ =]["']?(\w+)/.exec(calls[0].call)?.[1];
   if (level !== undefined && !GATING_LEVELS.has(level)) return null;
-  if (SOFT_FAIL.test(step) || /^\s*shell:/m.test(step)) return null;
-  if (/^(?: {8})?if:/m.test(step)) return null;
+  if (SOFT_FAIL.test(step) || SHELL.test(step)) return null;
+  if (STEP_IF.test(step)) return null;
   return calls[0].call;
 }
 
@@ -135,13 +153,13 @@ const steps = (job: string): string[] =>
 export function auditedDirectories(ciText: string): string[] {
   const dirs = new Set<string>();
   // `defaults: run: shell:` воркфлоу — свой shell у каждого шага.
-  if (/^\s+shell:/m.test(ciText.split(/^jobs:/m)[0])) return [];
+  if (SHELL.test(ciText.split(/^jobs:/m)[0])) return [];
   for (const job of Object.values(jobBlocks(ciText))) {
     // Условная, неглушащаяся или со своим shell на уровне джобы — то же,
     // что у шага.
     const header = job.split(/^ {4}steps:/m)[0];
-    if (/^ {4}if:/m.test(header) || SOFT_FAIL.test(header)) continue;
-    if (/^\s+shell:/m.test(header)) continue;
+    if (JOB_IF.test(header) || SOFT_FAIL.test(header)) continue;
+    if (SHELL.test(header)) continue;
     for (const step of steps(job)) {
       const call = gatingAuditCall(step);
       if (call !== null) dirs.add(prefixDirectory(call));
