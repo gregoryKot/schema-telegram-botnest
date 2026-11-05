@@ -186,12 +186,17 @@ export type CustomizeEntryPoint = (typeof CUSTOMIZE_ENTRY_POINTS)[number];
 // Что произошло с предложением «добавить значок на экран» (meta.action) и где
 // оно показывалось (meta.surface). 'added' приходит событием от Telegram —
 // это единственный достоверный признак, что значок реально появился.
+// 'handoff_ok' / 'handoff_failed' — только страница установки /install: браузер
+// забрал сессию по ссылке из мессенджера / код истёк или не принят (страница
+// осталась анонимной).
 export const HOME_SCREEN_ACTIONS = [
   'shown',
   'add',
   'later',
   'never',
   'added',
+  'handoff_ok',
+  'handoff_failed',
 ] as const;
 export type HomeScreenAction = (typeof HOME_SCREEN_ACTIONS)[number];
 
@@ -216,22 +221,30 @@ export type AccountLinkFailReason = (typeof ACCOUNT_LINK_FAIL_REASONS)[number];
 // (webapp/src/pages/landing/AppInstallSection.tsx); с лендинга событие идёт
 // анонимно через POST /api/public-event, и там принимается ТОЛЬКО эта
 // поверхность (см. sanitize в public-events.controller.ts).
+// 'site_install' — страница установки /install (webapp/src/pages/InstallPage.tsx),
+// куда кнопка «Добавить значок» ведёт из Telegram/MAX во внешнем браузере;
+// событие анонимное, как у лендинга, поэтому в публичном пути её тоже принимают.
 export const HOME_SCREEN_SURFACES = [
   'onboarding',
   'today',
   'settings',
   'site_banner',
   'site_landing',
+  'site_install',
 ] as const;
 export type HomeScreenSurface = (typeof HOME_SCREEN_SURFACES)[number];
 
 // Подмножество HOME_SCREEN_SURFACES — поверхности сайта, а не мини-аппа.
 // Используется в двух местах: bot.product-metrics.service.ts фильтрует
 // сайтовые surface из воронки мини-аппа (иначе она пачкается баннером
-// кабинета и лендингом), site-install-metrics.service.ts группирует по этим
+// кабинета, лендингом и страницей установки), site-install-metrics.service.ts группирует по этим
 // же surface для отдельного блока «Установка с сайта». IN-список в обоих
 // $queryRaw собирается из этой константы, а не хардкодится дважды.
-export const SITE_INSTALL_SURFACES = ['site_banner', 'site_landing'] as const;
+export const SITE_INSTALL_SURFACES = [
+  'site_banner',
+  'site_landing',
+  'site_install',
+] as const;
 export type SiteInstallSurface = (typeof SITE_INSTALL_SURFACES)[number];
 
 // ONBOARDING_STEPS/OnboardingStep — вынесены в onboarding-steps.constants.ts

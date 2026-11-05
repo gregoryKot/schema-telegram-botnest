@@ -12,9 +12,8 @@
 // ЗАБИРАЕТ сессию опросом. Куда бы ни ушёл человек, сессия возвращается ровно
 // туда, где вход начался.
 //
-// Выросло из device-link (RFC 8628). Второго механизма рядом не заводим —
-// привязка аккаунта это тот же билет с `intent: 'link'` (CLAUDE.md, «одна
-// механика — один компонент»); тяжёлая часть привязки — в ticket-link.service.
+// Выросло из device-link (RFC 8628). Второго механизма не заводим: привязка и
+// handoff — тот же билет с другим `intent`; привязка — в ticket-link.service.
 import {
   BadRequestException,
   Injectable,
@@ -30,6 +29,7 @@ import { claimApproval, loadForApproval } from './ticket-approval';
 import { assertTicketViewer, claimTicketView } from './ticket-viewer';
 import { LoginTicketReport } from './login-ticket.report';
 import type { StartTicketInput } from './ticket-start.types';
+import { issueHandoff, type HandoffInput } from './ticket-handoff';
 import type {
   TicketForConfirm,
   TicketIntent,
@@ -54,14 +54,13 @@ export class LoginTicketService {
     return createHash('sha256').update(value).digest('hex');
   }
 
-  /** Шаг 1: контейнер просит билет. Длинный секрет наружу больше не выходит. */
+  /** Шаг 1: контейнер просит билет. */
   async start(input: StartTicketInput): Promise<{
     deviceCode: string;
     userCode: string;
     expiresIn: number;
     interval: number;
   }> {
-    // Что подчистить перед выпиской — см. staleTicketsWhere.
     await this.prisma.loginTicket.deleteMany({
       where: staleTicketsWhere(input.requesterUserId),
     });
@@ -80,8 +79,7 @@ export class LoginTicketService {
         expiresAt: new Date(Date.now() + TTL_S * 1000),
       },
     });
-    // Только вход: привязка аккаунтов считается своими событиями
-    // (account_link_*), и мешать их в одну воронку значило бы считать разное.
+    // Только вход: привязка считается своими событиями (account_link_*).
     if (input.intent === 'login') this.report.step('issued', input.hostId);
     return {
       deviceCode,
@@ -89,6 +87,11 @@ export class LoginTicketService {
       expiresIn: TTL_S,
       interval: POLL_INTERVAL_S,
     };
+  }
+
+  /** Сессия уже есть (сайт внутри Telegram/MAX): билет сразу подтверждён. */
+  handoff(input: HandoffInput) {
+    return issueHandoff(this.prisma, input);
   }
 
   /**
@@ -123,15 +126,12 @@ export class LoginTicketService {
         this.logger.error(`ticket lookup failed: ${err.message}`, err.stack);
         return null;
       });
+    // Короткий код handoff не показывают: пришедший с ним — перебор.
+    if (row?.intent === 'handoff') return null;
     if (!row || row.consumedAt || row.deniedAt || row.expiresAt < new Date()) {
-      // Строку нашли, но она мертва — человек открыл ссылку поздно. Это самый
-      // частый «не успел», и считать его надо здесь: до liveByUserCode такой
-      // код не доходит. Несуществующий код не считаем вовсе — иначе перебор
-      // сам себе рисовал бы статистику.
-      //
-      // НО consumedAt — это УСПЕХ (приложение уже забрало сессию опросом), а
-      // не «не успел»: повторный тап диплинка после удачного входа не должен
-      // капать в too_late и портить воронку (разбор 2026-08-31).
+      // Мёртвая строка — «не успел», считаем здесь (до liveByUserCode код не
+      // доходит). Несуществующий код не считаем: перебор рисовал бы статистику.
+      // consumedAt — это УСПЕХ (сессию забрали опросом), не too_late (2026-08-31).
       if (row && row.intent === 'login' && !row.consumedAt)
         this.report.step('too_late', row.hostId);
       return null;
