@@ -32,7 +32,7 @@ describe('cacheControlFor', () => {
     // Словарные хвосты через дефис — не хеш сборки; ошибка здесь означала бы,
     // что правка файла не доедет до людей целый год.
     expect(cacheControlFor('/max-bridge.js')).toBe(REVALIDATE);
-    expect(cacheControlFor('/add-icon.html')).toBe(REVALIDATE);
+    expect(cacheControlFor('/max-probe.html')).toBe(REVALIDATE);
     expect(cacheControlFor('/telegram-web-app.js')).toBe(REVALIDATE);
     expect(cacheControlFor('/icon-192.png')).toBe(REVALIDATE);
     expect(cacheControlFor('/og-cover-v4.jpg')).toBe(REVALIDATE);

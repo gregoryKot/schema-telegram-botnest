@@ -28,6 +28,19 @@ describe('handoff — выписка', () => {
     expect(ttl).toBeLessThanOrEqual(120_000);
   });
 
+  it('живая привязка того же пользователя переживает handoff — её подтверждают в браузере прямо сейчас', async () => {
+    const { tickets, rows } = makeDeps();
+    await tickets.start({
+      intent: 'link',
+      provider: 'telegram',
+      requesterUserId: input.userId,
+      hostId: 'telegram',
+      deviceLabel: '',
+    });
+    await tickets.handoff(input);
+    expect(rows.map((r) => r.intent).sort()).toEqual(['handoff', 'link']);
+  });
+
   it('новый handoff гасит прежний того же пользователя', async () => {
     const { tickets, rows } = makeDeps();
     const a = await tickets.handoff(input);

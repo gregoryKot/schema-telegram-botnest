@@ -1,0 +1,48 @@
+import type { InstallPlatform } from '../../utils/pwaInstall';
+
+const HANDOFF_RE = /(?:^|[#&])h=([0-9a-fA-F]{64})(?:&|$)/;
+
+/**
+ * Код передачи сессии из фрагмента адреса (`#h=<64 hex>`). Код в фрагменте, а
+ * не в query: фрагмент не уходит на сервер. Проверяем целиком, а не по
+ * префиксу, — чужой мусор в адресе кодом не считается.
+ */
+export function readHandoffCode(hash: string): string | null {
+  const m = HANDOFF_RE.exec(hash);
+  return m ? m[1].toLowerCase() : null;
+}
+
+/** Встроенный браузер Android (WebView в мессенджерах): в UA есть `; wv)`. */
+export function isAndroidWebView(ua: string): boolean {
+  return /; wv\)/.test(ua);
+}
+
+export interface LoginNote {
+  ty: string;
+  vy: string;
+}
+
+/**
+ * Что сказать про вход под основным блоком. У приложения с экрана «Домой» на
+ * iPhone своё хранилище: сессия Safari туда не переносится, поэтому после
+ * установки там придётся войти заново — предупреждаем заранее. На Android и
+ * компьютере установленное PWA делит хранилище с браузером.
+ */
+export function loginNote(platform: InstallPlatform, isAuthenticated: boolean): LoginNote {
+  if (platform === 'ios') {
+    return {
+      ty: 'После установки приложение попросит войти ещё раз — так устроен iPhone, записи никуда не денутся. Выбери «Войти через Telegram» — подтверждение придёт в бота.',
+      vy: 'После установки приложение попросит войти ещё раз — так устроен iPhone, записи никуда не денутся. Выберите «Войти через Telegram» — подтверждение придёт в бота.',
+    };
+  }
+  if (isAuthenticated) {
+    return {
+      ty: 'Вход уже выполнен — приложение откроется с твоими данными.',
+      vy: 'Вход уже выполнен — приложение откроется с вашими данными.',
+    };
+  }
+  return {
+    ty: 'Вход — после установки, в самом приложении: Telegram, Google или ВКонтакте.',
+    vy: 'Вход — после установки, в самом приложении: Telegram, Google или ВКонтакте.',
+  };
+}

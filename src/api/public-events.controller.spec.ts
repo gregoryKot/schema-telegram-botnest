@@ -253,11 +253,13 @@ describe('PublicEventsController', () => {
     },
   );
 
-  it('home_screen_offer: handoff_ok с авторизованной поверхности (today) — дроп', async () => {
-    await controller.track({
-      name: 'home_screen_offer',
-      meta: { action: 'handoff_ok', surface: 'today' },
-    });
+  it('home_screen_offer: handoff_ok с авторизованной поверхности (today) — дроп, ответ ok', async () => {
+    await expect(
+      controller.track({
+        name: 'home_screen_offer',
+        meta: { action: 'handoff_ok', surface: 'today' },
+      }),
+    ).resolves.toEqual({ ok: true });
     expect(track).not.toHaveBeenCalled();
   });
 

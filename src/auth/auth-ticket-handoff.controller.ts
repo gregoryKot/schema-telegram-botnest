@@ -23,11 +23,13 @@ import { HandoffTicketDto } from './dto/handoff-ticket.dto';
 import { requireCsrf } from './auth-http.util';
 import { SecurityLogService } from './security-log.service';
 
-/** 5 в минуту и 20 в час: каждый вызов — строка в БД и одноразовая ссылка
- *  входа в аккаунт. Бакет — по проверенной сессии (правило №5). */
+/** 10 в минуту и 60 в час: каждый вызов — строка в БД и одноразовая ссылка
+ *  входа в аккаунт, но просит его не тап, а показ карточки «Установить
+ *  приложение» (с перевыпуском через ~2 мин); фронт держит один код на
+ *  страницу (`useInstallHandoff`). Бакет — по проверенной сессии (№5). */
 export const HANDOFF_THROTTLE = {
-  short: { limit: 5, ttl: 60_000 },
-  long: { limit: 20, ttl: 3_600_000 },
+  short: { limit: 10, ttl: 60_000 },
+  long: { limit: 60, ttl: 3_600_000 },
 } as const;
 
 @Controller('api/auth/ticket')

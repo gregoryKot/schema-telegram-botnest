@@ -36,8 +36,7 @@ const SubscribePage = lazy(() => import('./pages/SubscribePage').then(m => ({ de
 const PrivacyPage = lazy(() => import('./pages/PrivacyPage').then(m => ({ default: m.PrivacyPage }))); // юридические тексты — редкие страницы, ~20 КБ текста
 const OfferPage = lazy(() => import('./pages/OfferPage').then(m => ({ default: m.OfferPage })));
 
-// Apply saved theme before first render
-if (localStorage.getItem('app_theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+if (localStorage.getItem('app_theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark'); // saved theme before first render
 
 // ── Token bridge (inside AuthProvider) ────────────────────────────────────────
 function TokenBridge() {
@@ -121,6 +120,7 @@ const appRoutes = [
   { path: '/auth/2fa',       element: <TwoFactorChallengePage /> },
   { path: '/auth/error',     element: <AuthErrorPage /> },
   { path: '/link',           element: <LinkDevicePage /> },
+  { path: '/install',        lazy: async () => ({ Component: (await import('./pages/InstallPage')).InstallPage }) }, // рекламная посадочная: не в главном чанке
   {
     element: <RequireAuth />,
     children: [

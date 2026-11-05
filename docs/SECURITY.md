@@ -311,6 +311,12 @@ React экранирует вывод по умолчанию, `dangerouslySetIn
 Осознанно не чиним — для текущего масштаба (российский хостинг, один инстанс,
 небольшая аудитория) это accepted risk:
 
+- **Анонимные счётчики страницы установки `/install`** (`home_screen_offer`
+  с surface `site_install`: `shown`, `add`, `added`, `handoff_ok`,
+  `handoff_failed` через POST `/api/public-event`, `src/api/public-home-screen.ts`)
+  накручиваются без входа; держит только лимит по IP. Блок «Страница
+  установки» в `/stats` — оценка воронки рекламы, а не точный счёт людей, как и
+  строка лендинга рядом.
 - **In-memory состояние на одном инстансе:** стор throttler-а для обычных
   маршрутов, `pendingPairCodes`. (PKCE-верификатор VK выводится как
   `HMAC(JWT_SECRET, state)` и в памяти не хранится; денежные, учётные и

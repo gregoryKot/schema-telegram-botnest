@@ -22,8 +22,17 @@ export async function issueHandoff(
   input: HandoffInput,
 ): Promise<{ deviceCode: string; expiresIn: number }> {
   const hash = (v: string) => createHash('sha256').update(v).digest('hex');
+  // Гасим только прежние handoff ЭТОГО аккаунта и протухшие: общий
+  // staleTicketsWhere(userId) снёс бы и его живую привязку (intent 'link'),
+  // которую человек в этот момент подтверждает в браузере, — карточка
+  // «Установить приложение» на «Сегодня» запрашивает код сама, без тапа.
   await prisma.loginTicket.deleteMany({
-    where: staleTicketsWhere(input.userId),
+    where: {
+      OR: [
+        { userId: input.userId, intent: 'handoff' },
+        staleTicketsWhere(null),
+      ],
+    },
   });
   const deviceCode = randomBytes(32).toString('hex');
   const now = new Date();

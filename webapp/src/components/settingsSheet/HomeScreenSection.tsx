@@ -3,6 +3,7 @@ import { getHost } from '../../../../shared/src/host';
 import { buildHomeScreenHint, homeScreenPlatform } from '../../../../shared/src/host/homeScreen';
 import { AddHomeScreenButton } from '../../../../shared/src/host/AddHomeScreenButton';
 import { useTr } from '../../utils/addressForm';
+import { useInstallHandoff } from '../../hooks/useInstallHandoff';
 import { useInstallPrompt } from '../../hooks/useInstallPrompt';
 import { detectInstallPlatform, subscribeAppInstalled } from '../../utils/pwaInstall';
 import { INSTALL_STEPS } from '../installGuide/installSteps';
@@ -10,9 +11,8 @@ import { SSection } from './ui';
 import type { HomeIconMode } from './homeIconMode';
 
 // Раздел «Значок на экране» в настройках — постоянный путь к тому, что на
-// «Сегодня» предлагает карточка (после «Не предлагать» она не возвращается).
-// Паритет с HomeScreenSection мини-аппа. Внутри мессенджера — та же кнопка,
-// что у карточки (shared AddHomeScreenButton); в браузере — установка PWA.
+// «Сегодня» предлагает карточка. В мессенджере — та же кнопка (открывает
+// /install в браузере); в браузере — установка PWA на месте.
 export function HomeScreenSection({ mode }: { mode: Exclude<HomeIconMode, null> }) {
   return (
     <SSection id="s-home" label="Значок на экране">
@@ -24,14 +24,14 @@ export function HomeScreenSection({ mode }: { mode: Exclude<HomeIconMode, null> 
 }
 
 function MessengerBody() {
-  const tr = useTr();
   const platform = homeScreenPlatform(getHost().platform);
+  const { href } = useInstallHandoff();
   return (
     <>
       <div className="st-actions">
-        <AddHomeScreenButton className="ds-btn ds-btn--sm">Добавить значок на экран</AddHomeScreenButton>
+        <AddHomeScreenButton href={href} className="ds-btn ds-btn--sm">Установить приложение</AddHomeScreenButton>
       </div>
-      <p className="st-text st-text--faint">{buildHomeScreenHint(platform, tr)}</p>
+      <p className="st-text st-text--faint">{buildHomeScreenHint(platform)}</p>
     </>
   );
 }

@@ -1,21 +1,13 @@
 import { getHost } from './index';
 
-// Предложение «добавить мини-апп на домашний экран».
-//
-// Картинку с инструкцией рисует САМ Telegram — мы только зовём
-// WebApp.addToHomeScreen(). На iOS их нативный экран показывает
-// Android-инструкцию («нажми три точки»), а открывает системный шит
-// «Поделиться». Сам механизм при этом рабочий — врёт только картинка,
-// поэтому на iOS пишем СВОЮ подводку под то, что человек реально увидит
-// («Поделиться» → «На экран „Домой"»), а не прячем возможность целиком.
+// Предложение «поставить приложение на экран» внутри мессенджера. Ярлык
+// мини-аппа Telegram нам не нужен: он привязан к Telegram. Вместо него кнопка
+// открывает наш сайт (/install) во внешнем браузере, где ставится настоящее
+// PWA. Предложение не зависит от API мессенджера — только от платформы.
 
 // Значения window.Telegram.WebApp.platform: 'android' | 'android_x' | 'ios' |
 // 'macos' | 'tdesktop' | 'weba' | 'webk' | 'unknown'.
 export type HomeScreenPlatform = 'android' | 'ios' | 'other';
-
-// Статус значка Telegram отдаёт сам (Bot API 8.0) — не надо спрашивать
-// человека «ты добавил?»: 'added' значит значок уже на экране.
-export type TgHomeScreenStatus = 'unsupported' | 'unknown' | 'added' | 'missed';
 
 const PLATFORMS: Record<string, HomeScreenPlatform> = {
   android: 'android',
@@ -30,15 +22,27 @@ export function homeScreenPlatform(
 }
 
 export function canOfferHomeScreen(
+  hostId: string,
   platform: string | undefined,
-  hasApi: boolean,
 ): boolean {
-  return hasApi && homeScreenPlatform(platform) !== 'other';
+  return hostId !== 'web' && homeScreenPlatform(platform) !== 'other';
 }
 
 export function canOfferHomeScreenNow(): boolean {
   const host = getHost();
-  return canOfferHomeScreen(host.platform, host.capabilities.homeScreen);
+  return canOfferHomeScreen(host.id, host.platform);
+}
+
+export const INSTALL_PAGE_PATH = '/install';
+
+/**
+ * Адрес страницы установки. Код передачи сессии лежит во ФРАГМЕНТЕ, не в
+ * query: фрагмент не уходит на сервер, поэтому не попадает ни в его логи, ни в
+ * Referer.
+ */
+export function installPageUrl(handoffCode?: string): string {
+  const origin = globalThis.location?.origin || 'https://schemehappens.ru';
+  return `${origin}${INSTALL_PAGE_PATH}${handoffCode ? `#h=${handoffCode}` : ''}`;
 }
 
 // ── Память предложения ──────────────────────────────────────────────────────
@@ -82,7 +86,6 @@ function write(value: string): boolean {
   }
 }
 
-export const markHomeScreenAdded = (): void => void write('added');
 export const markHomeScreenNever = (): void => void write('never');
 export const snoozeHomeScreen = (now: number = Date.now()): void =>
   void write(String(now + SNOOZE_DAYS * DAY_MS));
@@ -98,24 +101,18 @@ export function resetHomeScreenOffer(): void {
 
 /**
  * Чистая логика: показывать ли повторное предложение. Отдельно от React, чтобы
- * вся матрица (отказ, снуз, уже добавлено, чужая платформа) была под тестом —
- * вживую её не прощёлкать: часть веток наступает через неделю.
+ * вся матрица (отказ, снуз, чужая платформа) была под тестом — вживую её не
+ * прощёлкать: часть веток наступает через неделю.
  */
 export function shouldOfferHomeScreen(input: {
+  hostId: string;
   platform: string | undefined;
-  hasApi: boolean;
-  tgStatus?: TgHomeScreenStatus;
   memory: OfferMemory;
   now: number;
 }): boolean {
-  if (!canOfferHomeScreen(input.platform, input.hasApi)) return false;
-  // Слово Telegram важнее нашей памяти: значок мог появиться или пропасть мимо
-  // нас (добавили с другого устройства, снесли с экрана).
-  if (input.tgStatus === 'added') return false;
+  if (!canOfferHomeScreen(input.hostId, input.platform)) return false;
   switch (input.memory.kind) {
     case 'added':
-      // Telegram говорит, что значка нет → наша отметка устарела, предлагаем.
-      return input.tgStatus === 'missed';
     case 'never':
       return false;
     case 'snoozed':
@@ -127,56 +124,12 @@ export function shouldOfferHomeScreen(input: {
 
 /**
  * Подводка под то, что человек реально увидит после нажатия. Один источник
- * текста на оба места (шаг онбординга и карточка-напоминание), иначе
- * формулировки разъедутся.
+ * текста на оба места (карточка-напоминание и настройки), иначе формулировки
+ * разъедутся. Обращения в строках нет — `tr` не нужен.
  */
-export function buildHomeScreenHint(
-  platform: HomeScreenPlatform,
-  tr: (ty: string, vy: string) => string,
-): string {
+export function buildHomeScreenHint(platform: HomeScreenPlatform): string {
   if (platform === 'ios') {
-    return tr(
-      'Откроется страница в браузере — следуй инструкции на ней. Запасной путь: «⋯» справа вверху → «На экран „Домой“».',
-      'Откроется страница в браузере — следуйте инструкции на ней. Запасной путь: «⋯» справа вверху → «На экран „Домой“».',
-    );
+    return 'Откроется сайт в Safari: «Поделиться» → «На экран „Домой“» — и значок встанет рядом с приложениями.';
   }
-  return tr(
-    'Telegram спросит подтверждение — согласись, и значок появится на экране.',
-    'Telegram спросит подтверждение — согласитесь, и значок появится на экране.',
-  );
-}
-
-// Прыжковая страница на НАШЕМ домене (webapp/public/add-icon.html): открывать
-// t.me напрямую через openLink нельзя — на iOS t.me это universal link, вызов
-// молча возвращается в уже открытый Telegram. Наш домен открывается в браузере
-// честно, а страница сама переправляет на t.me-инструкцию (внутри браузера
-// t.me рендерится как обычная веб-страница).
-export const ADD_ICON_HOP_URL = 'https://schemehappens.ru/add-icon.html';
-
-/**
- * Запустить добавление на экран.
- * Android — нативный addToHomeScreen (работает штатно).
- * iOS — нативный вызов сломан на новых iOS: клиент открывает ссылку приватной
- * схемой x-safari-https (WebAppController.swift, ветка iOS 18+), и она молча
- * не срабатывает. Открываем браузер сами через openLink, но через прыжковую
- * страницу нашего домена (см. ADD_ICON_HOP_URL) — прямая t.me-ссылка тоже
- * умирает (universal link обратно в Telegram).
- */
-export function triggerAddToHomeScreen(
-  platform: HomeScreenPlatform = homeScreenPlatform(getHost().platform),
-): void {
-  const host = getHost();
-  if (platform === 'android' && host.capabilities.homeScreen) {
-    host.homeScreen.add();
-    return;
-  }
-  host.openLink(ADD_ICON_HOP_URL);
-}
-
-// Кнопка есть на обеих мобильных платформах: Android — нативный вызов, iOS —
-// открытие страницы-инструкции браузером (см. triggerAddToHomeScreen).
-export function homeScreenButtonWorks(
-  platform: HomeScreenPlatform = homeScreenPlatform(getHost().platform),
-): boolean {
-  return platform === 'android' || platform === 'ios';
+  return 'Откроется сайт в браузере — там кнопка «Установить приложение».';
 }
