@@ -52,6 +52,29 @@ describe('formatTherapyNudge', () => {
     expect(out).not.toContain('home');
   });
 
+  it('новые места: подписи попадают в текст, id не торчат', () => {
+    const counts: Record<string, number> = {
+      home_card: 7,
+      practice: 6,
+      diary: 5,
+      exercise_start: 4,
+      test_start: 3,
+    };
+    const out = formatTherapyNudge(
+      metrics({
+        shownByPlace: THERAPY_NUDGE_PLACES.map((place) => ({
+          place,
+          count: counts[place] ?? 0,
+        })),
+      }),
+    );
+    expect(out).toContain(
+      'карточкой на главной 7, в «Практиках» 6, в «Записях» 5, на входе в упражнение 4, на входе в тест 3',
+    );
+    expect(out).not.toContain('exercise_start');
+    expect(out).not.toContain('test_start');
+  });
+
   it('карточка по сигналу: отдельная строка с разрезом по причинам', () => {
     const out = formatTherapyNudge(
       metrics({

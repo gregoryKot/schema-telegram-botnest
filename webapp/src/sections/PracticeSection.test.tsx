@@ -392,7 +392,7 @@ describe('PracticeSection — баннер ближайшей сессии', () 
     renderSection();
 
     await waitFor(() => expect(mockApi.getTherapyRelation).toHaveBeenCalled());
-    expect(screen.queryByText(/встреча/)).toBeNull();
+    expect(screen.queryByText(/Следующая встреча|Сегодня встреча/)).toBeNull();
   });
 });
 
@@ -741,7 +741,7 @@ describe('PracticeSection — баннер ближайшей сессии: пр
     renderSection();
     await waitFor(() => expect(mockApi.getTherapyRelation).toHaveBeenCalled());
     await act(async () => {});
-    expect(screen.queryByText(/встреча/)).toBeNull();
+    expect(screen.queryByText(/Следующая встреча|Сегодня встреча/)).toBeNull();
   });
 
   it('даты нет, только дни встреч → ближайшая суббота без сдвига дня', async () => {

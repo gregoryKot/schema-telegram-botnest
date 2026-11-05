@@ -130,7 +130,7 @@ export function SafePlaceEx({
 
   return (
     <ExScreen
-      onBack={goBack}
+      onBack={goBack} caution
       eyebrow={exerciseCard('safe').eyebrow}
       title={
         <>

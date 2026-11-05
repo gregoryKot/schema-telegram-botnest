@@ -6,7 +6,9 @@
 // обе стороны: `{}` вместо массива на /api/history ронял «Сегодня» в «Раздел
 // упал», которого в проде нет (ci-alarm #903), а /articles под `{}` рисовал
 // экран падения, и a11y-смок проверял доступность его, а не списка статей.
-// Список потребностей сверяет с сервером src/bot/stub-needs.sync.spec.ts.
+// Каждую ручку сверяет с настоящим сервером test/browser-stub-contract.e2e-spec.ts
+// (статус и тело; живая база, CI-джоба `migrations`): разъехавшаяся фикстура
+// краснит PR, а не ночной смок.
 import { ARTICLE_DIAGRAM_KEYS } from '../../src/articles/article-diagrams';
 import { ARTICLE_SEED } from '../../src/articles/articles.seed';
 
@@ -61,7 +63,7 @@ const PROFILE = {
     enabled: true,
     reminderEnabled: true,
     timezone: 'Europe/Moscow',
-    localHour: 20,
+    localHour: 21,
   },
   streak: 0,
   lastActivity: {
@@ -179,7 +181,7 @@ export const FIXTURES: Record<string, unknown> = {
   'GET /api/ysq-progress': null, // YsqService
   'GET /api/ysq-result': null,
   'POST /api/activity': { ok: true }, // tracker.controller.ts
-  'POST /api/auth/refresh': { accessToken: 'e2e-test-token', expiresIn: 3600 },
+  'POST /api/auth/refresh': { accessToken: 'e2e-test-token', expiresIn: 900 },
   'POST /api/event': { ok: true }, // analytics.controller.ts
   'POST /api/init': { ok: true }, // api.controller.ts
   'POST /api/settings': { ok: true }, // settings.controller.ts
