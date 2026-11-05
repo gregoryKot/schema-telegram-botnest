@@ -1,4 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
+import { subscribe } from '../api/apiCache';
+import type { UserId } from '../userId';
+
+/** Путь списка живых приглашений — ключ кеша GET, по нему же подписка ниже. */
+export const THERAPY_INVITES_PATH = '/api/therapy/invites';
 
 type Tr = (ty: string, vy: string) => string;
 
@@ -17,6 +22,25 @@ export interface TherapyInvite {
   createdAt: string;
   /** Момент, когда код перестанет действовать. */
   expiresAt: string;
+  /**
+   * Id офлайн-карточки (= -telegramId), из которой создано приглашение; null —
+   * обычное. После подключения клиента данные карточки переезжают на его аккаунт.
+   */
+  attachToId: number | null;
+}
+
+/** Живое приглашение этой офлайн-карточки; при нескольких — самое свежее. */
+export function offlineClientInvite(
+  invites: TherapyInvite[] | null | undefined,
+  telegramId: UserId,
+): TherapyInvite | null {
+  const own = (invites ?? []).filter(
+    (i) => i.attachToId === -Number(telegramId),
+  );
+  if (own.length === 0) return null;
+  return own.reduce((a, b) =>
+    Date.parse(b.createdAt) > Date.parse(a.createdAt) ? b : a,
+  );
 }
 
 export interface PendingInvitesApi {
@@ -45,6 +69,15 @@ export function usePendingInvites(api: PendingInvitesApi) {
   }, [api]);
 
   useEffect(reload, [reload]);
+  // Экземпляров хука в кабинете несколько (блок «Ждут подключения» в листе
+  // клиентов и карточка офлайн-клиента, OfflineInviteCard): список,
+  // перечитанный одним, доезжает до остальных через кеш GET — иначе блок в
+  // листе показывал старое, пока терапевт не перезайдёт в кабинет (живой
+  // проход 2026-11-05).
+  useEffect(
+    () => subscribe<TherapyInvite[]>(THERAPY_INVITES_PATH, setInvites),
+    [],
+  );
 
   const revoke = async (id: number) => {
     setRevokeFailed(null);

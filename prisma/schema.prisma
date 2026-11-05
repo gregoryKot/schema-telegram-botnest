@@ -531,12 +531,21 @@ model TherapyRelation {
   // endedAt NULL у связей, завершённых до появления колонки (дата неизвестна).
   endedAt     DateTime?
   endReason   String?  @db.VarChar(32)
+  // Приглашение, созданное из карточки офлайн-клиента, помнит id этой карточки
+  // (src/therapy/therapy-invite-attach.ts): при подключении данные карточки
+  // переезжают на аккаунт; удаление карточки каскадом отзывает её приглашения.
+  attachToId  Int?
 
+  attachTo      TherapyRelation?  @relation("AttachInvite", fields: [attachToId], references: [id], onDelete: Cascade)
+  attachInvites TherapyRelation[] @relation("AttachInvite")
   therapist   User  @relation("TherapistOf", fields: [therapistId], references: [id], onDelete: Cascade)
   client      User? @relation("ClientOf",    fields: [clientId],    references: [id], onDelete: SetNull)
 
   @@index([therapistId, status])
   @@index([clientId, status])
+  // Каскад при удалении офлайн-карточки и поиск её живого приглашения
+  // (therapy-invite-from-card.ts) — без индекса это скан всей таблицы.
+  @@index([attachToId])
 }
 
 model UserTask {

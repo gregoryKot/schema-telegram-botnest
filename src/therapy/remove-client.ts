@@ -35,6 +35,15 @@ export async function removeTherapistClient(
           }),
         ]
       : []),
+    // Приглашения из карточки: на живой БД их снесёт каскад attachToId, у
+    // фейка (без FK) — единственный путь.
+    ...(virtual
+      ? [
+          prisma.therapyRelation.deleteMany({
+            where: { therapistId, attachToId: Number(-cid) },
+          }),
+        ]
+      : []),
     prisma.therapyRelation.deleteMany({
       where: virtual
         ? { id: Number(-cid), therapistId, clientId: null }
