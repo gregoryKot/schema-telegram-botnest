@@ -18,7 +18,7 @@ const iconBox = {
   borderRadius: 'var(--r-10)',
   display: 'flex',
   alignItems: 'center',
-  justifyContent: 'center',
+  justifyContent: 'center', flexShrink: 0, // длинная подпись рядом сжимала плитку до ~19px
 } as const;
 
 export function ProviderRow({
@@ -55,7 +55,7 @@ export function ProviderRow({
         <div className="aa-row-text">
           <div className="aa-row-title">{title}</div>
           {sub && <div className="aa-row-sub">{sub}</div>}
-          {linked && unlinkBlocked && <div className="aa-row-sub">{ONLY_METHOD_NOTE}</div>}
+          {linked && unlinkBlocked && <div className="aa-row-sub aa-row-sub--wrap">{ONLY_METHOD_NOTE}</div>}
         </div>
       </div>
       {linked && onUnlink ? (
