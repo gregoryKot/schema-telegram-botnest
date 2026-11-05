@@ -4,6 +4,7 @@ import { MEETING_DAYS_ORDER, toggleMeetingDay, sortMeetingDays } from '../../../
 import { hueStyle } from '../../lib/tone';
 import { DAY_NAMES } from './clientSheetHelpers';
 import type { ClientDetail } from './clientSheetTypes';
+import { SignHead } from './SignArt';
 import { EditFormActions } from './EditFormActions';
 
 /** «Дни встреч» — еженедельные дни сессий; правка как в мини-аппе (SessionCard). */
@@ -12,10 +13,9 @@ export function MeetingDaysCard({ selectedClient, detail }: { selectedClient: Th
   const [editing, setEditing] = useState(false);
   const [local, setLocal] = useState<number[]>([]);
   const saved = sortMeetingDays(selectedClient.meetingDays ?? []);
-
   return (
     <div className="ds-card ds-card--row">
-      <h2 className="ds-label">Дни встреч</h2>
+      <SignHead kind="talk" className="ds-label">Дни встреч</SignHead>
       {editing ? (
         <div className="tk-edit-form">
           <div className="tk-days" role="group" aria-label="Дни встреч" style={hueStyle(undefined)}>
