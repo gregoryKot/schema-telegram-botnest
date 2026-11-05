@@ -22,8 +22,8 @@ export function SubscribeForm(p: Props) {
   const discount = yearDiscountPercent(p.opts);
   const blocked = p.status === 'loading' || !price || !p.consent;
   return (
-    <div className="light-lock ap-page">
-      <div className="ds-sheet-head"><a href="/" className="ds-back">← На главную</a></div>
+    <div className="light-lock ap-page ap-page--form">
+      <div className="ds-sheet-head ds-sheet-head--page"><a href="/" className="ds-back">← На главную</a></div>
       <div className="ap-split">
         <section className="ap-info">
           <div className="ds-eyebrow">Подписка</div>
@@ -34,7 +34,7 @@ export function SubscribeForm(p: Props) {
             <li><span aria-hidden="true">✓</span>Отписаться можно в любой момент</li>
             <li><span aria-hidden="true">✓</span>Оплата картой через Robokassa, автосписание раз в {periodLabel(p.period)}</li>
             <li><span aria-hidden="true">✓</span>Чек — от «Мой налог»</li>
-          </ul>
+          </ul><a href="/" className="ap-home">← На главную</a>
         </section>
 
         <section className="ap-pay">
@@ -59,7 +59,7 @@ export function SubscribeForm(p: Props) {
             })}
           </div>
 
-          <input type="email" className="ym-disable-keys ds-input ds-input--on-ink" value={p.email} onChange={(e) => p.setEmail(e.target.value)} placeholder="Email для чека (необязательно)" />
+          <input type="email" className="ym-disable-keys ds-input ds-input--on-panel" value={p.email} onChange={(e) => p.setEmail(e.target.value)} placeholder="Email для чека (необязательно)" />
           <input type="text" tabIndex={-1} autoComplete="off" value={p.website} onChange={(e) => p.setWebsite(e.target.value)} aria-hidden="true" className="ap-honey" />
 
           <label className="ap-consent">
@@ -68,7 +68,7 @@ export function SubscribeForm(p: Props) {
             <span>Соглашаюсь на <b>регулярные автосписания</b> раз в {periodLabel(p.period)}. Отменить можно в любой момент.</span>
           </label>
 
-          {p.status === 'error' && <p className="ap-err ap-err--ink" role="alert">Не получилось. Попробовать ещё раз.</p>}
+          {p.status === 'error' && <p className="ap-err ap-err--panel" role="alert">Не получилось. Попробовать ещё раз.</p>}
           <button type="button" onClick={p.onSubmit} disabled={blocked} className="ds-btn ds-btn--accent ds-btn--lg ap-cta">
             {p.status === 'loading' ? 'Перехожу к оплате…' : price ? `Оформить за ${fmt(price)}/${periodLabel(p.period)}` : 'Оформить'}
           </button>

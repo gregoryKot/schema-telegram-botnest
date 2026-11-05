@@ -20,7 +20,7 @@ export function PatternsIntro({ step, testProgress, onAction }: Props) {
     ? (testProgress !== null ? `Продолжить тест (${testProgress} из 116) →` : 'Начать тест →')
     : step === 'modes' ? 'Начать знакомство →' : 'Открыть дневник →';
   return (
-    <div className="ds-card ds-card--ink cs-intro">
+    <div className="ds-card ds-card--panel cs-intro">
       <div>
         <div className="ds-label cs-test-label">{intro ? `${intro.label} · ${intro.chip}` : 'Дневник'}</div>
         <h3 className="cs-intro-title">{title}</h3>

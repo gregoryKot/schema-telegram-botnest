@@ -23,7 +23,7 @@ export function YsqTestCard({ progressAnswered, completedAt, onStart }: Props) {
       ? 'Результаты, история прохождений и «поделиться» – внутри'
       : tr('Определи схемы автоматически – 116 вопросов, 10 минут', 'Определите схемы автоматически – 116 вопросов, 10 минут');
   return (
-    <div className="ds-card ds-card--ink cs-test">
+    <div className="ds-card ds-card--panel cs-test">
       <div>
         <div className="ds-label cs-test-label">Тест на схемы</div>
         <p className="cs-test-text">{text}</p>

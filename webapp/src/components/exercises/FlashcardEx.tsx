@@ -45,7 +45,7 @@ function FlashcardFlow({ questions, hue, onSave, explainer, initial }: { questio
 
   if (done) {
     return (
-      <div className="ds-card ds-card--ink ex2-done animate-slide" style={hueStyle(hue)}>
+      <div className="ds-card ds-card--panel ex2-done animate-slide" style={hueStyle(hue)}>
         <div className="ex2-stamp"><GlyphCheck /> Карточка сохранена · {new Date().toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })}</div>
         {questions.map((qq, i) => data[qq.key].trim() && (
           <div key={qq.key}>

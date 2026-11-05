@@ -1,6 +1,6 @@
 // @vitest-environment node
 // «Сегодня» терапевта (#906): счётчики на бумаге (ds-card--row на --surface), поэтому
-// знаменатель «/ N» красится токеном для бумаги, а не --on-ink-* (токены тёмной подложки).
+// знаменатель «/ N» красится токеном для бумаги, а не --on-panel-* (токены тёмной подложки).
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -14,8 +14,8 @@ const rule = (src: string, sel: string) =>
   src.match(new RegExp(`(?:^|[}\\s])${sel.replace(/[.-]/g, '\\$&')}\\s*\\{([^}]*)\\}`))?.[1] ?? '';
 
 describe('therapist-today.css: контраст на бумаге', () => {
-  it('нет токенов --on-ink-* (их место только на ds-card--ink/--accent)', () => {
-    expect(css).not.toMatch(/--on-ink-/);
+  it('нет токенов --on-panel-* (их место только на ds-card--panel/--accent)', () => {
+    expect(css).not.toMatch(/--on-panel-/);
   });
   it('.tt-denom красится var(--text-faint)', () => {
     const m = css.match(/\.tt-denom\s*\{([^}]*)\}/);
@@ -39,5 +39,18 @@ describe('therapist-today.css: имена в одну строку (QA 2026-11)'
   });
   it('на телефоне спарклайн строки активности — на минимуме 48, имени отдаётся остаток', () => {
     expect(rule(phone, '.tt-act')).toContain('grid-template-columns: 36px minmax(0, 1fr) 48px 44px auto');
+  });
+});
+
+// Компьютер (≥768): переход — акцентная «→» как до волн, не телефонный шеврон «›»;
+// у строки активности стрелки не было. Телефонный блок эти правила не содержит.
+describe('therapist-today.css: стрелка перехода на компьютере', () => {
+  const at = css.indexOf('@media (min-width: 768px) {\n  .tt-session');
+  const deskBlock = at < 0 ? '' : css.slice(at, css.indexOf('\n}', at));
+  it('карточки сессии и внимания — «→» только под min-width: 768px', () => {
+    expect(deskBlock).toMatch(/\.tt-session > \.ds-chev:empty::before, \.tt-attn > \.ds-chev:empty::before \{ content: '→'; \}/);
+    expect(deskBlock).toMatch(/\.tt-attn > \.ds-chev \{ color: var\(--warn-ink\); \}/);
+    expect(deskBlock).toMatch(/\.tt-act > \.ds-chev \{ display: none; \}/);
+    expect(phone).not.toMatch(/ds-chev/);
   });
 });

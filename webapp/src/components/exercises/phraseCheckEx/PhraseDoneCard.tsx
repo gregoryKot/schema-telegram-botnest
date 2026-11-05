@@ -18,7 +18,7 @@ export function PhraseDoneCard({
   const trimmedRewrite = rewrite.trim();
   return (
     <>
-    <div className="ds-card ds-card--ink ex2-done">
+    <div className="ds-card ds-card--panel ex2-done">
       <div className="ex2-dlabel is-tone" style={hueStyle(HUE_STRAIN)}>
         Было
       </div>

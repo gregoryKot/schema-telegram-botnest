@@ -44,11 +44,11 @@ export function ClientOverviewTab({ selectedClient, detail }: Props) {
         )}
 
         {domains.length > 0 && (
-          <ToneGroupsCard label="Активные схемы" sub={`${activeSchemaIds.length} в работе`} groups={domains} />
+          <ToneGroupsCard label="Активные схемы" sub={`${activeSchemaIds.length} в работе`} groups={domains} layout="tiles" />
         )}
 
         {groups.length > 0 && (
-          <ToneGroupsCard label="Карта режимов" groups={groups}
+          <ToneGroupsCard label="Карта режимов" groups={groups} layout="cols"
             action={<button className="ds-link" onClick={() => setClientTab('concept')}>Редактировать →</button>} />
         )}
 

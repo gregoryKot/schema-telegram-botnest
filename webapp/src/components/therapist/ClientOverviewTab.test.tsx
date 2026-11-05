@@ -39,7 +39,10 @@ describe('ClientOverviewTab', () => {
     const col = container.querySelector('.tk-col') as HTMLElement;
     expect(labels(col)).toEqual(['Цель терапии', 'Активные схемы', 'Карта режимов', 'Заметка сессии', 'Последние записи']);
     expect(within(col).getAllByRole('heading', { level: 2 }).map(h => h.textContent)).toEqual(['Цель терапии', 'Активные схемы', 'Карта режимов', 'Заметка сессии', 'Последние записи']);
-    expect(col.querySelector('.tk-tile, .tk-quote, .tk-mode-col, .tone-soft, .tone-border')).toBeNull();
+    expect(col.querySelector('.tk-tile, .tk-quote, .tk-mode-col, .tone-soft, .tone-border, .tone-fill:not(.ds-dot)')).toBeNull();
+    // Раскладка на компьютере — только классами-вариантами (CSS ≥768), разметка общая.
+    expect(col.querySelector('.tk-groups--tiles')).toBeTruthy();
+    expect(col.querySelector('.tk-groups--cols')).toBeTruthy();
     expect(col.querySelectorAll(':scope > .ds-card').length).toBe(5);
     // Цель — обычный текст, без кавычки-глифа.
     const goal = screen.getByText('Меньше самокритики');

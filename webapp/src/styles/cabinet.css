@@ -82,10 +82,10 @@
 .ds-card--flush { padding: 0; overflow: hidden; }
 .ds-card--hover { cursor: pointer; transition: border-color .12s, box-shadow .12s; }
 .ds-card--hover:hover { border-color: var(--line-hover); box-shadow: 0 12px 30px -18px rgba(60, 40, 20, .4); }
-.ds-card--ink { background: var(--ink); border-color: var(--ink); color: var(--on-ink); }
+.ds-card--panel { background: var(--panel); border-color: var(--panel-line); color: var(--on-panel); }
 .ds-card--accent { background: var(--accent); border-color: var(--accent); color: #fff; }
 /* На акцентной заливке подпись, подпись-строка и ссылка — светлые (ниже они красятся для бумаги). */
-.ds-card--accent .ds-label, .ds-card--accent .ds-sub, .ds-card--accent .ds-link { color: var(--on-ink); }
+.ds-card--accent .ds-label, .ds-card--accent .ds-sub, .ds-card--accent .ds-link { color: var(--on-accent); }
 .ds-card--accent .ds-label, .ds-card--accent .ds-sub { opacity: .85; }
 .ds-card--warn { background: var(--warn-bg); border-color: var(--warn-bg); color: var(--warn-ink); }
 /* Кризисный вход: tint D1 (hue 28), без заливки --err. */
@@ -137,16 +137,16 @@ button.ds-list-row, a.ds-list-row { width: 100%; box-sizing: border-box; border:
 /* ── Кнопки ──────────────────────────────────────────────────────────────── */
 .ds-btn {
   height: 44px; padding: 0 20px; border-radius: 22px; border: none;
-  background: var(--ink); color: var(--on-ink);
+  background: var(--accent); color: var(--on-accent);
   font: 600 14px var(--sans); cursor: pointer; white-space: nowrap;
   display: inline-flex; align-items: center; justify-content: center; gap: 6px;
   transition: background .12s, border-color .12s;
 }
-.ds-btn:hover { background: var(--accent); }
+.ds-btn:hover { background: var(--accent-hi); }
 .ds-btn:disabled { opacity: .5; cursor: default; }
-.ds-btn:disabled:hover { background: var(--ink); }
+.ds-btn:disabled:hover { background: var(--accent); }
 .ds-btn--sm { height: 40px; padding: 0 18px; border-radius: 20px; }
-.ds-btn--lg { height: auto; min-height: 48px; width: 100%; border-radius: 24px; font-size: 15px; }
+.ds-btn--lg { height: auto; min-height: 48px; border-radius: 24px; font-size: 15px; } /* на телефоне во всю колонку — в блоке ≤767; на компьютере по тексту */
 .ds-btn--secondary { background: var(--surface); color: var(--text); border: 1px solid var(--line-strong); }
 .ds-btn--secondary:hover { background: var(--surface); border-color: var(--text-faint); }
 .ds-btn--accent { background: var(--accent); color: #fff; }
@@ -191,9 +191,9 @@ button.ds-list-row, a.ds-list-row { width: 100%; box-sizing: border-box; border:
   font: 600 13px var(--sans); cursor: pointer;
   background: transparent; color: var(--text-muted);
 }
-.ds-seg-btn.is-active { background: var(--ink); color: var(--on-ink); }
+.ds-seg-btn.is-active { background: var(--surface); color: var(--text); box-shadow: var(--shadow-1); }
 .ds-seg-btn .ds-count { margin-left: 4px; padding: 0; background: none; color: inherit; font-weight: 400; font-size: 12px; }
-.ds-seg--full { display: flex; width: 100%; box-sizing: border-box; }
+.ds-seg--full { display: flex; box-sizing: border-box; } /* на компьютере — по содержимому (блок ≥768), на телефоне во всю колонку */
 .ds-seg--full > .ds-seg-btn { flex: 1 1 0; min-width: 0; padding-left: 8px; padding-right: 8px; overflow: hidden; text-overflow: ellipsis; }
 .ds-page > .ds-seg { align-self: flex-start; }
 
@@ -238,9 +238,9 @@ button.ds-list-row, a.ds-list-row { width: 100%; box-sizing: border-box; border:
 .ds-input:focus, .ds-textarea:focus { outline: none; border-color: var(--accent); }
 .ds-input::placeholder, .ds-textarea::placeholder { color: var(--text-ghost); }
 /* Поле на тёмной панели (#906, волна 3): после .ds-input:focus, чтобы перекрыть рамку фокуса. */
-.ds-input--on-ink { background: var(--ink-2); border-color: var(--ink-line); color: var(--on-ink); }
-.ds-input--on-ink::placeholder { color: var(--on-ink-faint); }
-.ds-input--on-ink:focus { border-color: var(--on-ink-sub); }
+.ds-input--on-panel { background: var(--surface); border-color: var(--panel-line); color: var(--text); }
+.ds-input--on-panel::placeholder { color: var(--on-panel-faint); }
+.ds-input--on-panel:focus { border-color: var(--accent); }
 
 /* ── Вкладки (шапка карточки клиента) ────────────────────────────────────── */
 .ds-tabs { display: flex; gap: 28px; font-size: 14px; overflow-x: auto; scrollbar-width: none; }
@@ -266,10 +266,12 @@ button.ds-list-row, a.ds-list-row { width: 100%; box-sizing: border-box; border:
 /* ── Адаптив ─────────────────────────────────────────────────────────────── */
 /* Раскладка телефона: отступы, кегли, прокрутка сегмента. */
 @media (max-width: 767px) {
+  .ds-sheet-head { padding: 0 16px; }
+  .ds-btn--lg { width: 100%; }
+  .ds-seg--full { width: 100%; }
   .ds-page { padding: 20px 16px 40px; gap: 24px; }
   .ds-h1 { font-size: 32px; }
   .ds-h2 { font-size: 22px; }
-  .ds-sheet-head { padding: 0 16px; }
   .ds-seg--scroll { display: flex; width: 100%; box-sizing: border-box; }
   .ds-seg--scroll > .ds-seg-btn { flex: 0 0 auto; }
   .ds-seg--scroll::after { content: ''; flex: 0 0 20px; }
@@ -289,4 +291,14 @@ button.ds-list-row, a.ds-list-row { width: 100%; box-sizing: border-box; border:
   .ds-link { min-height: 44px; display: inline-flex; align-items: center; }
   .ds-link--inline { display: inline; min-height: 0; }
   .ds-menu-item { min-height: 44px; }
+}
+/* Компьютер (≥768): телефонные примитивы выше не растягиваются на колонку, шапка страницы — не полоса. */
+:root { --sheet-col: 640px; --sheet-pad: 32px; } /* колонка и боковой отступ шапки-страницы; страница задаёт свои на корне */
+@media (min-width: 768px) {
+  .ds-seg--full { display: inline-flex; }
+  /* Страница (не оверлей): «← Назад» стоит над колонкой контента, без полосы, линии и фона (до #906). */
+  .ds-sheet-head--page {
+    box-sizing: border-box; width: 100%; max-width: var(--sheet-col); min-height: 0; margin: 0 auto;
+    padding: 24px var(--sheet-pad) 0; border-bottom: none; background: none;
+  }
 }

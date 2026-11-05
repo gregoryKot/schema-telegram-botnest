@@ -21,7 +21,7 @@ export function WhySheet({ auto = false, onClose }: Props) {
   const bridge = useTherapyBridgeTexts();
   return (
     <div className="u-sheet cw-sheet" role="dialog" aria-modal="true" aria-label="Зачем это всё">
-      <div className="ds-sheet-head cw-head">
+      <div className="ds-sheet-head ds-sheet-head--page cw-head">
         <button type="button" className="ds-back" onClick={goBack}>← Закрыть</button>
       </div>
       <div className="cw-inner">

@@ -73,6 +73,6 @@ describe('Паттерны', () => {
     expect(hasClass(pattern, cls)).toBe(false));
   it.each(['cpf-delete-link', 'cpf-danger'])('в client-profile.css нет .%s (ds-link--danger, ds-list-row--danger)', (cls) =>
     expect(hasClass(read('client-profile.css'), cls)).toBe(false));
-  it('в auth-pay.css нет .ap-field: поле email — ds-input--on-ink', () =>
+  it('в auth-pay.css нет .ap-field: поле email — ds-input--on-panel', () =>
     expect(hasClass(read('auth-pay.css'), 'ap-field')).toBe(false));
 });
