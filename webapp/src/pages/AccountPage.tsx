@@ -2,6 +2,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../auth/authContext';
 import { useTr } from '../utils/addressForm';
 import { hueStyle, clientHue } from '../lib/tone';
+import { Leaf } from '../components/art/PaperArtSigns';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { TherapistRequestSection } from './account/TherapistRequestSection';
 import { TwoFactorSection } from './account/TwoFactorSection';
@@ -34,16 +35,19 @@ export function AccountPage() {
         <button type="button" className="ds-back" onClick={() => navigate(accountBackPathFromStorage())}>← Назад</button>
       </div>
       <div className="aa-page">
-        <div className="aa-head">
-          {initials && <div className="ds-avatar ds-avatar--serif aa-avatar" style={hueStyle(clientHue(initials))} aria-hidden>{initials}</div>}
-          <div>
-            <div className="ds-eyebrow">Аккаунт</div>
-            <h1 className="ds-h1">Вход и <i>защита</i></h1>
-            <p className="ds-sub aa-lead">
-              {tr('Привязывай несколько способов входа – заходи откуда удобно', 'Привязывайте несколько способов входа – заходите откуда удобно')}
-            </p>
+        <div className="pp-block aa-block"><div className="pp-hero">
+          <div className="aa-head">
+            {initials && <div className="ds-avatar ds-avatar--serif aa-avatar" style={hueStyle(clientHue(initials))} aria-hidden>{initials}</div>}
+            <div>
+              <div className="ds-eyebrow">Аккаунт</div>
+              <h1 className="ds-h1">Вход и <i>защита</i></h1>
+              <p className="ds-sub aa-lead">
+                {tr('Привязывай несколько способов входа – заходи откуда удобно', 'Привязывайте несколько способов входа – заходите откуда удобно')}
+              </p>
+            </div>
           </div>
-        </div>
+          <Leaf size="hero" />
+        </div></div>
 
         {success && <div className="aa-ok"><span>✓</span>{success}</div>}
         {(error ?? emailTaken) && <div className="aa-err">{error ?? emailTaken}</div>}

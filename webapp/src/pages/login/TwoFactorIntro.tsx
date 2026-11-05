@@ -1,10 +1,14 @@
 import { hueStyle } from '../../lib/tone';
+import { Beads } from '../../components/art/PaperArtSigns';
 
 // Шапка экрана 2FA. Показывается до входа: обращения к читателю в тексте нет.
 export function TwoFactorIntro() {
   return (
     <>
-      <div className="al-2fa-mark tone-tint" style={hueStyle(240)}>2</div>
+      <div className="al-2fa-head">
+        <div className="al-2fa-mark tone-tint" style={hueStyle(240)}>2</div>
+        <Beads size="row" />
+      </div>
       <div className="ds-eyebrow">Двухфакторная проверка</div>
       <h1 className="al-2fa-title">Код из приложения-аутентификатора</h1>
       <p className="al-sub">
