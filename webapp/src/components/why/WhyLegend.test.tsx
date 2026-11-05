@@ -2,7 +2,8 @@
 // Легенда знаков: каждый знак из таблицы мотивов назван и объяснён; без обращения.
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import { WhyLegend, LEGEND } from './WhyLegend';
+import { WhyLegend } from './WhyLegend';
+import { LEGEND } from './whyLegend';
 
 describe('WhyLegend', () => {
   it('пять знаков: полоска, лента, камешки, слои, круги — каждый с пояснением', () => {
