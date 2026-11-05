@@ -339,3 +339,18 @@ Ubuntu 26) у трёх PR подряд падали `backend` → `check-coverag
   (~стр. 284): «назначение мини-аппа совпадает с rootPath ServeStaticModule в src/app.module.ts» —
   мини-апп удалён (#917), а скрипт `src/app.module.ts` не читает (`grep app.module
   scripts/check-deploy-paths.mjs` пуст).
+
+**Браузерный смок — находки при починке ci-alarm #903** (2026-11-05, #936):
+- **`e2e-browser/public-pages.spec.ts` отвечает `{}` на весь `/api` и зелёный на экране падения.**
+  Четыре своих перехвата `**/api/**` (у визитки — `[]`) повторяют «пустой успех», который #936
+  убрал из общего стаба. Под ними `/articles` рисует «Что-то пошло не так» (`e.map is not a
+  function`), `/subscribe` — тоже (`reading 'find'` на ответе `/api/subscription/options`), визитка
+  шлёт отчёт «landing: цена сессии не загрузилась». Тест зелёный: у `RouteErrorScreen` есть `<h1>`,
+  а ошибку, пойманную роутером, `pageerror` не видит. Доказано пробой Playwright по 12 маршрутам
+  спека (отчёты `POST /api/client-errors`, 2026-11-05). Чинить: общий стаб в анонимном режиме с
+  фикстурами формы сервера для `articles`, `subscription/options`, `booking/options`,
+  `site-content`, `quizzes`, `auth/refresh` (без сессии), `auth/ticket/start` и `auth/ticket/poll`,
+  плюс `throwOnPageError` в спеке. В #936 не сделано: восемь форм требуют отдельной сверки с
+  контроллерами, а ci-alarm #903 — про трекер. Своя копия `{}` есть и у
+  `asset-recovery.spec.ts`; его `/donate` под ней не падает, но новая ручка там тоже получит
+  выдуманный ответ.
