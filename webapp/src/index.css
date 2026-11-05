@@ -1106,10 +1106,6 @@ html[data-theme="dark"] .sheet-modal-box { box-shadow: 0 24px 64px -16px rgba(0,
 .ex-btn-ghost:hover { background: var(--surface-2); color: var(--text); }
 
 /* Flashcards */
-.tick-strip { display: flex; gap: var(--space-4); margin-bottom: 28px; }
-.tick { flex: 1; height: 3px; border-radius: var(--r-2); background: var(--surface-3); cursor: pointer; transition: background .15s; }
-.tick.filled, .tick.is-filled { background: var(--accent); }
-.tick.active, .tick.is-active { background: var(--accent); }
 .flash { border: 1px solid var(--line); border-radius: var(--r-16); padding: 36px 40px 32px; background: var(--surface); margin-bottom: 28px; }
 .flash-q { font-family: var(--serif); font-size: 32px; line-height: 1.15; letter-spacing: -0.015em; font-weight: 400; color: var(--text); margin-bottom: var(--space-14); }
 
