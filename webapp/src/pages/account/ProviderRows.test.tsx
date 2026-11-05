@@ -30,8 +30,8 @@ describe('ProviderRow — значок и пояснение единствен�
       <ProviderRow icon={<TelegramIcon />} title="Telegram" linked busy={false} onUnlink={() => {}} unlinkBlocked />,
     );
     const note = screen.getByText(ONLY_METHOD_NOTE);
-    expect(note.className).toContain('aa-row-sub--wrap');
-    expect(rule('.aa-row-sub--wrap')).toMatch(/white-space:\s*normal/);
+    expect(note.className).toContain('aa-row-why');
+    expect(rule('.aa-row-why')).toMatch(/white-space:\s*normal/);
   });
 
   it('текстовая колонка забирает свободное место и может сжиматься', () => {

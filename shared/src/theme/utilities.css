@@ -161,6 +161,6 @@
    PatternSheet, FlashcardFrame и ModeExOverlay уходили под статус-бар
    установленного приложения. Мини-апп --safe-top не задаёт: объявление
    недействительно в момент вычисления, и отступ равен 0. */
-@media (max-width: 767px) {
+@media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
   .u-sheet.u-sheet, .u-sheet-grid.u-sheet-grid { padding-top: var(--safe-top); }
 }

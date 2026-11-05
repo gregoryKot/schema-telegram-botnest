@@ -58,6 +58,7 @@ Ubuntu 26) у трёх PR подряд падали `backend` → `check-coverag
   Воспроизводится в тесте при задержке ответа 50 мс.
 
 **Merge-драйверы бейслайнов** (`scripts/merge-drivers-check.mjs`, `scripts/merge-json-ratchet.mjs`, #729):
+- **`scripts/file-size-baseline.json` отстал: 82 файла усохли, бейслайн не зафиксирован** (2026-11-04). `node scripts/check-file-size-ratchet.mjs` это печатает зелёным; `--update` переписывает ~280 строк (в том числе удалённые файлы мини-аппа и усохшие гейты). Не сделано в PR эталона «Сегодня», чтобы не топить дифф; закрывается отдельным PR одним `--update` без кода.
 - **`.gitattributes` сам драйвером не сводится.** `--check` требует строку на
   каждый новый `scripts/*-baseline.json`, поэтому два PR с новыми гейтами
   вставляют строки в соседние места файла и получают текстовый конфликт.
@@ -315,3 +316,25 @@ Ubuntu 26) у трёх PR подряд падали `backend` → `check-coverag
   (на PR этапа 2 смок был красным из-за двух кнопок «Трекер» после первой оценки — поймал только
   ручной локальный прогон). Нужно решение: вынести `tracker-smoke` + `crisis-smoke` отдельной джобой
   `ci.yml` (Chromium из кэша) или принять ночной прогон как осознанный.
+- **Кабинет с настоящим CSS не рендерит ни один тест.** Инцидент 2026-11-05 (текст без явного
+  `color` светлый на светлой бумаге внутри `.light-lock` при `html[data-theme="dark"]`,
+  `docs/INCIDENTS.md`) жил с редизайна 2026-10: vitest/jsdom каскад не считает,
+  `index.css.contrast.test.ts` сверяет токены внутри одного блока темы, а axe-смок
+  `e2e-browser/a11y-smoke.spec.ts` ходит только на `/` и `/articles` (бейслайн `a11y-baseline.json`)
+  и только ночью. Механизм, которого нет: прогон axe (`color-contrast`) по экранам кабинета
+  (`/today`, `/diary` через `stubApi`, как в `tracker-smoke.spec.ts`) с предусловием
+  `localStorage.app_theme = 'dark'` до загрузки (`page.addInitScript`) — именно это состояние
+  создаёт тумблер лендинга и `App.tsx`. Пока держат только `webapp/src/lightLock.test.ts` и тест в
+  `AppShell.render.test.tsx` (атрибут и правило CSS по отдельности, не вычисленный цвет).
+- **На macOS сборка и сьюта `webapp` красные из-за пар файлов, различающихся только регистром.**
+  `webapp/src/sections/today/TodayFeed.tsx` + `todayFeed.ts`, пара у `ExerciseLibrary`,
+  `shared/src/therapy/conceptGraph/ConceptDigest.tsx` + `conceptDigest.ts`: на регистронезависимой
+  ФС импорт `./today/TodayFeed` резолвится в `todayFeed.ts`, где экспорта `TodayFeed` нет.
+  Итог 2026-11-05 в чистом `main`: `vite build` — 5 `Missing export`; `npx vitest run` — 33 файла,
+  228 тестов (`TodaySection.test.tsx`, `PracticeSection.test.tsx`, `ClientConceptTab*.test.tsx`:
+  «`useConceptDigest is not a function`», «Element type is invalid»). Pre-push хук собирает webapp
+  локально и блокирует любой пуш с Mac — PR #929 и #931 ушли с `--no-verify`. На Linux в CI всё
+  проходит, поэтому гейт молчит и класс растёт (три пары к ноябрю). Починка — переименовать один
+  файл каждой пары (`todayFeed.ts` → `todayFeedModel.ts` и т. п.) и гейт на пары имён, равные без
+  учёта регистра в одном каталоге (`scripts/check-case-collisions.mjs` или проверка в
+  `check-dead-files.mjs`), без бейслайна: класс вычищается целиком.

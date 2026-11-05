@@ -12,6 +12,7 @@ import { useNeedData } from '../needData';
 import { pressable } from '../utils/a11y';
 import { detectCrisisAny } from '../utils/crisisMarkers';
 import { CrisisCard } from './CrisisCard';
+import { PaperEmpty } from './art/PaperEmpty';
 import { NEED_HUE, hueStyle } from '../lib/tone';
 import type { NeedId } from '../../../shared/src/needs/types';
 import '../styles/sheet-tasks.css';
@@ -143,15 +144,13 @@ export function PracticesScreen({ onClose, onOpenTracker }: Props) {
           ) : !practices ? (
             <Loader minHeight="20vh" />
           ) : practices.length === 0 ? (
-            <p className="ds-empty">{tr('Пока пусто — добавь первую практику ниже.', 'Пока пусто — добавьте первую практику ниже.')}</p>
+            <PaperEmpty>{tr('Пока пусто — добавь первую практику ниже.', 'Пока пусто — добавьте первую практику ниже.')}</PaperEmpty>
           ) : (
             <div className="sk-list">
               {practices.map(p => (
                 <div key={p.id} className="ds-card ds-card--row sk-practice">
                   <div className="sk-practice-text">{p.text}</div>
-                  <button onClick={() => tapDelete(p.id as number)} className="ds-link ds-link--danger">
-                    {deletePending(p.id as number) ? 'Точно удалить?' : 'удалить'}
-                  </button>
+                  <button onClick={() => tapDelete(p.id as number)} className="ds-link ds-link--danger">{deletePending(p.id as number) ? 'Точно удалить?' : 'удалить'}</button>
                 </div>
               ))}
             </div>

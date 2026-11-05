@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { haptic } from '../../../haptic';
+import { Pebbles } from '../../art/PaperArt';
 import { CrisisCard } from '../../CrisisCard';
 import { detectCrisisAny } from '../../../utils/crisisMarkers';
 import { LimitedTextarea } from '../../../../../shared/src/components/LimitedTextarea';
@@ -34,7 +35,10 @@ export function QuickWriteStep({ text, tag, saving, error, onText, onTag, onSubm
       </div>
       <div className="tq-body">
         <div className="tq-inner">
-          <h1 className="tq-title">Что на уме?</h1>
+          <div className="qe-head">
+            <h1 className="tq-title">Что на уме?</h1>
+            <Pebbles size="row" />
+          </div>
           <LimitedTextarea
             max={DIARY_FIELD_MAX}
             ref={areaRef}
@@ -47,16 +51,9 @@ export function QuickWriteStep({ text, tag, saving, error, onText, onTag, onSubm
           {crisis && <CrisisCard surface="schema" />}
           <div className="qe-tags" role="radiogroup" aria-label="Тег записи">
             {QUICK_TAGS.map((t) => (
-              <button
-                key={t.id}
-                type="button"
-                role="radio"
-                aria-checked={tag === t.id}
+              <button key={t.id} type="button" role="radio" aria-checked={tag === t.id}
                 className={'qe-tag' + (tag === t.id ? ' is-active' : '')}
-                onClick={() => { haptic.select(); onTag(t.id); }}
-              >
-                {t.label}
-              </button>
+                onClick={() => { haptic.select(); onTag(t.id); }}>{t.label}</button>
             ))}
           </div>
           <p className="tq-hint">Тег необязателен. Схему или режим можно уточнить на следующем шаге.</p>

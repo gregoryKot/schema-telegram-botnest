@@ -3,9 +3,13 @@
 // срез как полный список: счётчик и «Сессия N» считались от среза. Теперь
 // счётчик и номера идут от total, а над списком стоит строка о срезе.
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { render, screen, cleanup, fireEvent, waitFor } from '@testing-library/react';
+import { render as rtlRender, screen, cleanup, fireEvent, waitFor } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import { SessionArchive } from './SessionArchive';
 import type { TherapistNote } from '../../api';
+
+// Подтверждение пишет запись в историю (HistoryConfirmDialog) — нужен роутер.
+const render = (ui: React.ReactElement) => rtlRender(<MemoryRouter>{ui}</MemoryRouter>);
 
 afterEach(cleanup);
 

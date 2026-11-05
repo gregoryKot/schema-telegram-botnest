@@ -1,4 +1,5 @@
 import { useHistorySheet } from '../hooks/useHistorySheet';
+import { WhyActions, WhyHero } from './why/WhyActions';
 import { useTherapyBridgeTexts } from './therapy/useTherapyBridgeTexts';
 import '../styles/client-why.css';
 
@@ -7,15 +8,9 @@ interface Props {
   onClose: () => void;
 }
 
-const ACTIONS: [string, string][] = [
-  ['Трекер', 'Пять потребностей, один вопрос за раз. Через 3–5 дней виден паттерн: что питает, что истощает, чего не хватает.'],
-  ['Что случилось', 'Момент, после которого стало не по себе. Приложение подскажет, на какой режим это похоже и что поможет сейчас.'],
-  ['Дневник', 'Одна мысль, схема, режим или спасибо. Записи собираются в одну картину: со временем видно, что повторяется.'],
-];
-
 // «Зачем это всё»: откуда взялись три действия и что даёт каждое — «откуда это и зачем» на пути
 // пользователя (frontend-visual.md). Шапка листа с «← Закрыть» (ds-sheet-head, #906); «Понятно, начнём»
-// идёт сразу после строк — на телефоне 852px видна без прокрутки, оговорка про самопомощь — под ней.
+// идёт после строк; на телефоне прилипает к низу листа: на 390×664 и 360×640 она была за краем (QA мобильной, М4).
 export function WhySheet({ auto = false, onClose }: Props) {
   const goBack = useHistorySheet(onClose);
   const bridge = useTherapyBridgeTexts();
@@ -25,6 +20,7 @@ export function WhySheet({ auto = false, onClose }: Props) {
         <button type="button" className="ds-back" onClick={goBack}>← Закрыть</button>
       </div>
       <div className="cw-inner">
+        <WhyHero />
         <header>
           <div className="ds-eyebrow">{auto ? 'Первый раз здесь' : 'Зачем это всё'}</div>
           <h1 className="ds-h1">Три вещи, которые здесь можно делать</h1>
@@ -33,13 +29,9 @@ export function WhySheet({ auto = false, onClose }: Props) {
           Всё строится на схема-терапии: у человека есть пять базовых потребностей — привязанность, автономия, выражение чувств,
           спонтанность, границы. Когда их долго не хватает, включаются старые паттерны. Приложение помогает это замечать.
         </p>
-        <ul className="ds-card ds-card--flush cw-list">
-          {ACTIONS.map(([title, text]) => (
-            <li key={title} className="ds-list-row cw-item"><span className="ds-list-title">{title}</span><span className="cw-item-text">{text}</span></li>
-          ))}
-        </ul>
+        <WhyActions />
         <p className="cw-tip">Не нужно делать всё. Одно действие в день — уже работа.</p>
-        <button type="button" className="ds-btn ds-btn--lg" onClick={goBack}>Понятно, начнём</button>
+        <div className="cw-sticky"><button type="button" className="ds-btn ds-btn--lg" onClick={goBack}>Понятно, начнём</button></div>
         <p className="ds-sub cw-foot">{bridge.whyNote}</p>
       </div>
     </div>

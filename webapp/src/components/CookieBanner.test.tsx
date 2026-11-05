@@ -38,6 +38,18 @@ function stubHost(hostname: string) {
   });
 }
 
+describe('CookieBanner — не закрывает нижнюю навигацию (C-З1)', () => {
+  it('обёртка баннера — класс cookie-banner-wrap; css поднимает её над .mobile-nav на телефоне', async () => {
+    const { readFileSync } = await import('node:fs');
+    const { join } = await import('node:path');
+    const css = readFileSync(join(__dirname, '..', 'index.css'), 'utf8');
+    render(<CookieBanner />);
+    expect(document.querySelector('.cookie-banner-wrap')).not.toBeNull();
+    expect(css).toMatch(/body:has\(\.mobile-nav\) \.cookie-banner-wrap \{ bottom: calc\(var\(--mobile-nav-h\) \+ var\(--safe-bottom\)\)/);
+    expect(css).toMatch(/\.cookie-banner-wrap \{[^}]*padding: 0 16px calc\(20px \+ var\(--safe-bottom\)\)/);
+  });
+});
+
 describe('CookieBanner — первый визит', () => {
   it('на чистом localStorage баннер показан', () => {
     render(<CookieBanner />);

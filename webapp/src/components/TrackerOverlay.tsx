@@ -137,7 +137,7 @@ export function TrackerOverlay({
         onPick={goTo}
         onSkip={handleSkip}
       />
-      <div className="tq-body">
+      <div className="tq-body" key={idx /* новый вопрос открывается сверху, а не на прокрутке прошлого */}>
         <QuestionScreen
           idx={idx}
           total={needs.length}

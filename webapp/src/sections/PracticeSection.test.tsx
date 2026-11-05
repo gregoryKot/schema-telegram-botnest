@@ -283,7 +283,7 @@ describe('PracticeSection — мои цели', () => {
     await screen.findByText('нет активных');
 
     fireEvent.click(screen.getByText('+ Поставить цель'));
-    await screen.findByText('Новое задание');
+    await screen.findByText('Новая цель');
   });
 
   it('"все цели →" открывает общий список заданий (AllTasksOverlay) с целями и историей', async () => {
@@ -760,18 +760,18 @@ describe('PracticeSection — баннер ближайшей сессии: пр
 describe('PracticeSection — создание цели обновляет список read-after-write, «все цели» открывает выбранную', () => {
   it('после успешного создания цели список задач перезапрашивается', async () => {
     const onTasksChanged = vi.fn();
-    mockApi.getTasks.mockResolvedValueOnce([]).mockResolvedValue([task({ id: 20, text: 'Новая цель' })]);
+    mockApi.getTasks.mockResolvedValueOnce([]).mockResolvedValue([task({ id: 20, text: 'Гулять по вечерам' })]);
     mockApi.createTask.mockResolvedValue(undefined);
     renderSection({ onTasksChanged });
     await screen.findByText('нет активных');
 
     fireEvent.click(screen.getByText('+ Поставить цель'));
-    await screen.findByText('Новое задание');
-    fireEvent.click(screen.getByText('Назначить задание'));
-
-    await waitFor(() => expect(screen.queryByText('Новое задание')).toBeNull());
-    await waitFor(() => expect(onTasksChanged).toHaveBeenCalledTimes(1));
     await screen.findByText('Новая цель');
+    fireEvent.click(screen.getByText('Поставить цель'));
+
+    await waitFor(() => expect(screen.queryByText('Новая цель')).toBeNull());
+    await waitFor(() => expect(onTasksChanged).toHaveBeenCalledTimes(1));
+    await screen.findByText('Гулять по вечерам');
   });
 
   it('открытие цели из «Все цели» закрывает оверлей и открывает нужное упражнение', async () => {
@@ -801,6 +801,6 @@ describe('PracticeSection — создание цели обновляет сп�
 
     fireEvent.click(within(overlay).getByText('+ Поставить цель'));
     await waitFor(() => expect(screen.queryByText('Все цели')).toBeNull());
-    await screen.findByText('Новое задание');
+    await screen.findByText('Новая цель');
   });
 });

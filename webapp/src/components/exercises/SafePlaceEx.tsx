@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { api } from '../../api';
-import { ExScreen, GlyphCheck } from './ExScreen';
+import { ExScreen, ExDone, GlyphCheck } from './ExScreen';
 import { useHistorySheet } from '../../hooks/useHistorySheet';
 import { useSavingAction } from '../../hooks/useSavingAction';
 import { useTr } from '../../utils/addressForm';
@@ -96,9 +96,9 @@ export function SafePlaceEx({
           'Возвращайтесь сюда, когда станет тревожно. Закройте глаза. Прочтите. Побудьте.',
         )}
       >
-        <div className="ds-card ds-card--panel ex2-done ex2-scene">
+        <ExDone className="ex2-scene">
           <div className="ex2-scene-text">«{overview}»</div>
-        </div>
+        </ExDone>
         <div className="ex2-senses">
           {SENSES.map((s) =>
             senses[s.k].trim() ? (

@@ -1,3 +1,4 @@
+import { Pebbles } from '../../art/PaperArt';
 import { CrisisCard } from '../../CrisisCard';
 import { TherapyLine } from '../../therapy/TherapyLine';
 import { useTherapyBridgeTexts } from '../../therapy/useTherapyBridgeTexts';
@@ -7,11 +8,10 @@ export function QuickDone({ crisis, onHome, onAgain }: { crisis: boolean; onHome
   const bridge = useTherapyBridgeTexts();
   return (
     <div className="tq-body">
-      <div className="tq-inner tq-done">
-        <p className="tq-eyebrow">Дневник</p>
+      <div className="tq-inner tq-done tq-done--sand pp-paper">
+        <Pebbles size="square" /><p className="tq-eyebrow">Дневник</p>
         <h1 className="tq-title">Записано</h1>
-        <p className="tq-obs">Теперь это есть в записях</p>
-        {crisis && <CrisisCard surface="schema" />}
+        <p className="tq-obs">Теперь это есть в записях</p>{crisis && <CrisisCard surface="schema" />}
         <div className="tq-acts">
           <button type="button" className="tq-btn tq-btn--main" onClick={onHome}>На главную</button>
           <button type="button" className="tq-btn" onClick={onAgain}>Ещё одну</button>

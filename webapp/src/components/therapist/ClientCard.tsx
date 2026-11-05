@@ -11,10 +11,9 @@ interface Props {
   onOpen: (client: TherapyClientSummary) => void;
 }
 
-// Карточка клиента в сетке «Все клиенты»: полоса доменов схем, аватар, статус,
-// ближайшая встреча (NextSessionLine — та же строка, что в шапке карточки),
-// чипы всех схем. Счётчиков сессий/заданий в сводке клиента нет — футер без
-// них (показываем только реальные данные).
+// Карточка в «Все клиенты»: полоса доменов схем, аватар, статус, встреча (NextSessionLine —
+// как в шапке карточки), чипы схем. Счётчиков сессий/заданий в сводке нет — футер без них;
+// на телефоне вместо футера «Открыть →» — шеврон в строке имени (компактный список).
 export function ClientCard({ client, today, onOpen }: Props) {
   const name = rosterName(client);
   const status = clientStatus(client);
@@ -39,6 +38,7 @@ export function ClientCard({ client, today, onOpen }: Props) {
               {caption && <span>{caption}</span>}
             </div>
           </div>
+          <span className="ds-chev tc-chev" aria-hidden="true" />
         </div>
         <NextSessionLine label={meeting} />
         {client.schemaIds.length > 0 && (

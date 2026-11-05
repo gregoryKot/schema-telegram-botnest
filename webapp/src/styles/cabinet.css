@@ -265,7 +265,7 @@ button.ds-list-row, a.ds-list-row { width: 100%; box-sizing: border-box; border:
 
 /* ── Адаптив ─────────────────────────────────────────────────────────────── */
 /* Раскладка телефона: отступы, кегли, прокрутка сегмента. */
-@media (max-width: 767px) {
+@media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
   .ds-sheet-head { padding: 0 16px; }
   .ds-btn--lg { width: 100%; }
   .ds-seg--full { width: 100%; }
@@ -290,11 +290,14 @@ button.ds-list-row, a.ds-list-row { width: 100%; box-sizing: border-box; border:
   .ds-chip--toggle { min-height: 44px; }
   .ds-link { min-height: 44px; display: inline-flex; align-items: center; }
   .ds-link--inline { display: inline; min-height: 0; }
+  /* Вне примитивов (QA 2026-11): поле имени «Новый клиент» (было 37) и сайдбар
+     кабинета на планшете под пальцем — режим, поиск, строки клиентов (34–38). */
+  .tc-add-name, .sb-mode-btn, .sb-search, .sb-client-item { min-height: 44px; }
   .ds-menu-item { min-height: 44px; }
 }
 /* Компьютер (≥768): телефонные примитивы выше не растягиваются на колонку, шапка страницы — не полоса. */
 :root { --sheet-col: 640px; --sheet-pad: 32px; } /* колонка и боковой отступ шапки-страницы; страница задаёт свои на корне */
-@media (min-width: 768px) {
+@media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) {
   .ds-seg--full { display: inline-flex; }
   /* Страница (не оверлей): «← Назад» стоит над колонкой контента, без полосы, линии и фона (до #906). */
   .ds-sheet-head--page {

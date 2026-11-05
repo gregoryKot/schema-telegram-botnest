@@ -19,7 +19,7 @@
 /* Клиента нет (удалён, чужой, выдуманный id) — ClientCardFallback.tsx. */
 .tk-missing { align-items: flex-start; }
 .tk-missing-text { margin: 0; font-size: 15px; line-height: 1.5; }
-@media (min-width: 768px) {
+@media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) {
   .tk-tabs-body > .tk-ov, .tk-tabs-body > .tk-load, .tk-tabs-body > .ds-page { margin-left: var(--tk-center); padding-inline: var(--tk-gutter); }
   .therapist-scroll--list > .ds-page { margin-left: var(--tk-center); max-width: var(--tk-max); padding-inline: var(--tk-gutter); }
   .tk-tabs-body > .page-inner-wide { margin: 0 0 0 var(--tk-center); max-width: var(--tk-max); padding-inline: var(--tk-gutter); }
@@ -85,7 +85,7 @@
    цель крупным текстом с засечками, схемы плитками до трёх в ряд, режимы
    колонками по группам. Строки в одной карточке — только телефон (ниже).
    Тон — тонкая подложка плитки и верхняя черта колонки, сплошной заливки нет. */
-@media (min-width: 768px) {
+@media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) {
   .tk-goal .tk-text { font: 400 24px/1.4 var(--serif); margin-top: 12px; }
   .tk-groups { display: grid; gap: 12px; }
   .tk-groups--tiles { grid-template-columns: repeat(auto-fill, minmax(min(100%, max(200px, (100% - 24px) / 3)), 1fr)); }
@@ -118,7 +118,7 @@
 .tk-days { display: flex; flex-wrap: wrap; gap: var(--space-6); }
 
 /* ── Мобильный (<768): компактная шапка, «Обзор» в одну колонку ──────────── */
-@media (max-width: 767px) {
+@media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
   .tk-head { padding: 6px 16px 0; gap: 12px; }
   .tk-head .ds-tabs { margin: 0 -16px; padding: 0 16px; gap: 20px; }
   .tk-head > .ds-back { margin-bottom: 0; }

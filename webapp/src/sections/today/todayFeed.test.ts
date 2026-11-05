@@ -142,8 +142,8 @@ describe('мета-строки плиток', () => {
     expect(trackerTileMeta({ filled: 0, total: 0, index: null })).toBe('Ещё не заполнен · ≈1 мин');
   });
   it('что случилось: всегда обещание, без счёта разборов', () => {
-    expect(caseTileMeta()).toBe('≈3 мин · когда что-то зацепило');
-    expect(caseTileMeta(0)).toBe('≈3 мин · когда что-то зацепило');
+    expect(caseTileMeta()).toBe('≈3 мин');
+    expect(caseTileMeta(0)).toBe('≈3 мин');
     expect(caseTileMeta(1)).toBe('Сегодня: 1 разбор');
     expect(caseTileMeta(2)).toBe('Сегодня: 2 разбора');
     expect(caseTileMeta(5)).toBe('Сегодня: 5 разборов');

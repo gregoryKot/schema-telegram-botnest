@@ -5,6 +5,7 @@
 // одного нажатия), блок «Помощь рядом» тот же, что на десктопе.
 import { useState } from 'react';
 import { pressable } from '../../utils/a11y';
+import { Heart } from '../../components/art/PaperArtSigns';
 import { CrisisBlock } from './CrisisBlock';
 import { HELP_BLOCK_ID } from './PracticeTopRow';
 import { FLASHCARD_SUB, FLASHCARD_TITLE } from '../../../../shared/src/flashcard/flashcardNames';
@@ -15,7 +16,7 @@ export function PhoneHelpRows({ onSteps }: { onSteps?: () => void }) {
   return (
     <>
       {onSteps && (
-        <div className="ds-card ds-card--row ds-card--nav ds-card--crisis ds-card--hover cp-task" {...pressable(onSteps)}>
+        <div className="ds-card ds-card--row ds-card--nav ds-card--crisis ds-card--hover cp-task" {...pressable(onSteps)}><span className="pp-row-art"><Heart size="row" /></span>
           <div className="cp-task-body">
             <div className="ds-list-title">{FLASHCARD_TITLE}</div>
             <div className="ds-sub">{FLASHCARD_SUB}</div>
@@ -25,9 +26,8 @@ export function PhoneHelpRows({ onSteps }: { onSteps?: () => void }) {
       )}
       <div
         className="ds-card ds-card--row ds-card--nav ds-card--crisis ds-card--hover cp-task"
-        aria-expanded={crisisOpen}
-        {...pressable(() => setCrisisOpen(v => !v))}
-      >
+        aria-expanded={crisisOpen} {...pressable(() => setCrisisOpen(v => !v))}
+      ><span className="pp-row-art"><Heart size="row" /></span>
         <div className="cp-task-body">
           <div className="ds-list-title">Мне очень плохо</div>
           <div className="ds-sub">контакты помощи прямо сейчас</div>

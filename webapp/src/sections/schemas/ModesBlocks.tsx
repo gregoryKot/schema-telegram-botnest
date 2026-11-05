@@ -1,4 +1,5 @@
 import { MODE_GROUPS, ALL_MODES } from '../../schemaTherapyData';
+import { PaperEmpty } from '../../components/art/PaperEmpty';
 import { useTr } from '../../utils/addressForm';
 import { hueStyle, MODE_GROUP_HUE } from '../../lib/tone';
 import { FreqMark, FreqHint } from './FreqMark';
@@ -12,9 +13,7 @@ interface Props {
   onOpenPattern: (id: string) => void; // чип «Мои режимы» → экран паттерна; плитки карты → onOpenMode
 }
 
-const MODE_HUE: Record<string, number | undefined> = Object.fromEntries(
-  MODE_GROUPS.flatMap(g => g.items.map(m => [m.id, MODE_GROUP_HUE[g.id]])),
-);
+const MODE_HUE: Record<string, number | undefined> = Object.fromEntries(MODE_GROUPS.flatMap(g => g.items.map(m => [m.id, MODE_GROUP_HUE[g.id]])),);
 
 /** Десктоп: «Мои режимы» (чипы) и «Карта режимов» (все режимы по группам); пусто — что такое режим. */
 export function ModesBlocks({ loading, myModeIds, onAdd, onOpenMode, onOpenPattern, modeFreq }: Props) {
@@ -32,7 +31,7 @@ export function ModesBlocks({ loading, myModeIds, onAdd, onOpenMode, onOpenPatte
             {[90, 110, 80].map((w, i) => <Skeleton key={i} height={32} width={w} radius={16} />)}
           </div>
         ) : myModes.length === 0 ? (
-          <p className="ds-empty">{MODE_WHAT} {tr('Добавь режимы, которые узнаёшь у себя.', 'Добавьте режимы, которые узнаёте у себя.')}</p>
+          <PaperEmpty>{MODE_WHAT} {tr('Добавь режимы, которые узнаёшь у себя.', 'Добавьте режимы, которые узнаёте у себя.')}</PaperEmpty>
         ) : (
           <>
           {modeFreq && <FreqHint kind="mode" freq={modeFreq} />}

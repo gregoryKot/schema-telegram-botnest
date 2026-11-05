@@ -8,6 +8,7 @@ import { DIAGRAMS } from './articleDiagrams';
 import { PRACTICE_BOOKING_URL } from './landing/constants';
 import { siteTitleSuffix } from '../utils/domainChrome';
 import { Btn } from '../components/landing-kit';
+import { backLink } from '../legal/legalStyles';
 // ─── Article list page ────────────────────────────────────────────────────────
 export function ArticlesListPage() {
   // Сбой ≠ пусто: раньше `.catch(() => setArticles([]))` рисовал читателю со
@@ -268,6 +269,5 @@ export function ArticlePage() {
   );
 }
 
-const backLink: React.CSSProperties = { fontSize: 13, color: 'var(--text-faint)', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 6, marginBottom: 48 };
 const eyebrow: React.CSSProperties = { fontSize: 12, fontWeight: 600, letterSpacing: '.12em', textTransform: 'uppercase', color: 'var(--text-faint)', margin: '0 0 12px' };
 const h1: React.CSSProperties = { fontFamily: 'var(--serif)', fontSize: 'clamp(32px, 5vw, 52px)', fontWeight: 400, lineHeight: 1.1, margin: '0 0 20px', letterSpacing: '-.01em' };
