@@ -466,14 +466,14 @@ describe('PracticeSection — «Инструменты»: скрытие и по
     expect(screen.queryByText('Каталоги')).toBeNull();
   });
 
-  it('скрытая «Схема включилась» убирает «Мне плохо» на десктопе; контакты помощи остаются', () => {
+  it('скрытая «Мне плохо» в «Инструментах» убирает карточку на десктопе; контакты помощи остаются', () => {
     hide('flashcard');
     renderSection();
     expect(screen.queryByText('Мне плохо')).toBeNull();
     expect(screen.getAllByText('Помощь рядом').length).toBeGreaterThan(0);
   });
 
-  it('скрытая «Схема включилась» убирает строку «Мне плохо» на телефоне, «Мне очень плохо» остаётся', () => {
+  it('скрытая «Мне плохо» в «Инструментах» убирает строку на телефоне, «Мне очень плохо» остаётся', () => {
     setWidth(390);
     hide('flashcard');
     renderSection();
@@ -642,7 +642,7 @@ describe('PracticeSection — задания терапевта: остальн�
     expect(onOpenChildhoodWheel).toHaveBeenCalledTimes(1);
   });
 
-  it('flashcard → открывает SchemaFlashcard («Мне сейчас плохо»)', async () => {
+  it('flashcard → открывает SchemaFlashcard («Мне плохо»)', async () => {
     mockApi.getTasks.mockResolvedValue([task({ id: 11, assignedBy: 9, type: 'flashcard' })]);
     renderSection();
     await screen.findByText('От терапевта');

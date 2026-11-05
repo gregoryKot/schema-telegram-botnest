@@ -23,7 +23,7 @@ export const QUICK_ACTION_LABELS: Record<string, string> = {
   stop: 'Техника «Стоп»',
   belief_check: 'Проверка убеждений',
   phrase_check: 'Критик или забота?',
-  flashcard: 'Схема включилась',
+  flashcard: 'Мне плохо',
   safe_place: 'Безопасное место',
   letter_to_self: 'Письмо себе',
   warm_words: 'Тёплые слова',
