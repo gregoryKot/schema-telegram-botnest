@@ -9,10 +9,8 @@ import { api } from '../api';
 import { getModeById, getSchemaById } from '../schemaTherapyData';
 import { JourneyView } from '../../../shared/src/journey/JourneyView';
 import { useJourneyShare } from '../../../shared/src/journey/journeyShare';
-import {
-  useJourney,
-  makeJourneyProps,
-} from '../../../shared/src/journey/useJourney';
+import { useJourney, makeJourneyProps } from '../../../shared/src/journey/useJourney';
+import { Sheets } from './art/PaperArt';
 import { WEB_JOURNEY_HEROES } from './journey/webJourneyHeroes';
 import { botShortUrl } from '../utils/botConfig';
 import { ShareIcon } from '../../../shared/src/share/ShareIcon';
@@ -50,6 +48,7 @@ export function JourneySheet({ onClose }: { onClose: () => void }) {
           <>
             <div className="ds-head-row sd-journey-head">
               <h1 className="ds-h1 sd-journey-title">Мой путь</h1>
+              <Sheets size="row" />
               {j.total > 0 && (
                 <button onClick={sh.shareSummary} className="ds-btn ds-btn--secondary ds-btn--sm">
                   <ShareIcon size={15} />

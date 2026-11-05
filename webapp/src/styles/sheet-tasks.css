@@ -186,6 +186,8 @@
 .sk-priv-col { max-width: 540px; margin: 0 auto; padding: 56px 24px 40px; display: flex; flex-direction: column; gap: 18px; box-sizing: border-box; }
 .sk-priv-head { text-align: center; margin-bottom: 8px; }
 .sk-priv-title { margin-bottom: 14px; }
+.sk-priv-art { display: flex; justify-content: center; margin-bottom: 18px; }
+.sk-priv-item { padding: 16px 18px; }
 .sk-priv-lead { font-size: 15px; line-height: 1.7; color: var(--text-sub); margin: 0; }
 .sk-priv-p { font-size: 15px; line-height: 1.75; margin: 0; }
 .sk-priv-p--sub { font-size: 14px; color: var(--text-sub); }

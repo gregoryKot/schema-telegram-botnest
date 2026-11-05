@@ -43,12 +43,15 @@
 .aa-secret { margin-top: 6px; padding: 10px; background: var(--paper-sunk); border-radius: 8px; word-break: break-all; font-family: monospace; font-size: 11px; }
 
 /* Роль психолога */
-.aa-role { padding: 20px 22px; display: flex; flex-direction: column; gap: 10px; }
-.aa-role-label { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--on-panel-faint); }
-.aa-role-note { font-size: 13px; line-height: 1.5; color: var(--on-panel-sub); }
+.aa-block { padding: 20px 0 24px; }
+.aa-block .aa-head { min-width: 0; }
+.aa-role { --h: 135; /* шалфей — бумага роли психолога */ padding: 20px 22px; display: flex; flex-direction: column; gap: 10px; }
+.aa-role-label { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--text-sub); }
+.aa-role-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.aa-role-note { font-size: 13px; line-height: 1.5; color: var(--text-sub); }
 .aa-role .ds-btn:not(.ds-btn--secondary) { align-self: flex-start; }
 .aa-role-form { display: flex; flex-direction: column; gap: 8px; }
-.aa-role .aa-fail { color: var(--on-panel-danger); }
+.aa-role .aa-fail { color: var(--err); }
 
 /* Низ: «Выйти» — ds-btn--secondary, «Выйти со всех устройств» — ds-link с тап-целью 44 */
 .aa-foot { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; border-top: 1px solid var(--paper-sunk); padding-top: 20px; }
@@ -64,7 +67,6 @@
   .aa-foot { flex-direction: column; align-items: stretch; border-top: none; padding-top: 0; margin-top: 8px; }
   .aa-foot .ds-link { align-self: center; }
 }
-.aa-role .ds-btn--secondary { background: transparent; color: var(--on-panel); border-color: var(--panel-line); }
 
 /* Компьютер: карточка «Подписка» — «Управлять →» акцентом справа, как до волн (телефон: серый «Управлять» и «›»).
    Правила на прямом ребёнке колонки. */

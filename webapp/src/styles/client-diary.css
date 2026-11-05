@@ -67,3 +67,7 @@
 .cd-entry--tracker { flex-direction: row; align-items: center; font-size: 15px; font-weight: 600; }
 .cd-retry { min-height: 44px; padding: 0 var(--space-8); background: none; border: none; cursor: pointer; font: 600 13px var(--sans); color: var(--accent); }
 .cd-streak { margin: 0; font-size: 13px; line-height: 1.5; color: var(--text-faint); }
+
+/* Пустая лента: карточки «Схема» и «Режим» — цветная бумага с мотивом над текстом */
+.cd-explainer-card { padding: 16px 18px; }
+.cd-explainer-art { display: flex; justify-content: flex-start; width: auto; margin-bottom: 8px; }

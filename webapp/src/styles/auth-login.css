@@ -18,8 +18,7 @@
 .al-slogan { font-family: var(--serif); font-size: 56px; line-height: 1.05; font-weight: 400; margin: 0; }
 .al-slogan i { color: var(--accent); }
 .al-lead { font-size: 16px; line-height: 1.6; color: var(--on-panel-sub); max-width: 440px; margin: 0; }
-.al-strip { display: flex; gap: 6px; margin-top: 40px; }
-.al-strip span { height: 8px; border-radius: 4px; }
+.al-art { display: flex; gap: 16px; margin-top: 40px; }
 
 .al-side { display: flex; align-items: center; justify-content: center; padding: 48px; }
 .al-form { width: 100%; max-width: 400px; display: flex; flex-direction: column; gap: 14px; }
@@ -83,7 +82,9 @@
 @media (max-width: 767px) {
   .al-root { grid-template-columns: 1fr; grid-template-rows: auto 1fr; background: var(--panel); }
   .al-hero { padding: 24px 24px 28px; gap: 14px; }
-  .al-brand-name, .al-lead, .al-strip { display: none; }
+  .al-brand-name, .al-lead { display: none; }
+  .al-art { gap: 12px; margin-top: 4px; }
+  .al-art .pp-art { width: 72px; height: 40px; }
   .al-logo { width: 40px; height: 40px; border-radius: 10px; font-size: 19px; }
   .al-pitch { margin-top: 0; }
   .al-slogan { font-size: 34px; line-height: 1.08; }
