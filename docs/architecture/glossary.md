@@ -39,7 +39,7 @@
 | «Карта себя» | карта режимов из разборов | — | `webapp/src/components/selfMap/SelfMapScreen.tsx` |
 | «Мой путь» | лента активности за период | `src/bot/journey.service.ts`, `src/api/journey.controller.ts` | `shared/src/journey/`, `webapp/src/components/JourneySheet.tsx` |
 | «Мой портрет» | портрет по потребностям | — | `webapp/src/sections/profile/PortraitCard.tsx` |
-| «Мои схемы», «Мои режимы», карточка схемы / режима | заметки по паттерну | `src/bot/notes.service.ts` | `webapp/src/components/exercises/FlashcardEx.tsx`, `webapp/src/components/patternSheet/PatternSheet.tsx` |
+| «Мои схемы», «Мои режимы», карточка схемы / режима | заметки по паттерну | `src/bot/notes.service.ts` | `webapp/src/components/exercises/FlashcardEx.tsx`, `webapp/src/components/patternSheet/PatternSheet.tsx` (под-листы «Дополнить»/«О схеме» — стек держит `scripts/check-overlay-stack.mjs`) |
 | «Тест на схемы», YSQ | опросник из 116 вопросов; «Пройти заново» стирает только итог, кнопка в настройках — всё (строка «Удалить результаты теста») | `src/bot/ysq.service.ts` | `webapp/src/components/YSQTestSheet.tsx` |
 | «Карта режимов» (каталог), справка по схемам и режимам | все режимы по группам; шторка-справочник | — | `webapp/src/sections/schemas/ModeMap.tsx`, `webapp/src/components/SchemaInfoSheet.tsx` |
 | «Проверка убеждения» | «правда ли это?» | `src/bot/exercises.service.ts` | `webapp/src/components/exercises/BeliefCheckEx.tsx` |

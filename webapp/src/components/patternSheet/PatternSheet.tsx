@@ -68,7 +68,7 @@ export function PatternSheet({
 
   return (
     <>
-      <SsSheet onBack={goBack} zIndex={205}>
+      <SsSheet onBack={goBack}>
         <div className="ss-head" style={hue}>
           {meta.subtitle && <span className="ds-chip tone-tint ps-tag">{meta.subtitle}</span>}
           <h1 className="ss-title">{meta.name}</h1>

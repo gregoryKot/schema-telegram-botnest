@@ -18,17 +18,19 @@ vi.mock('../../api', () => ({
     trackEvent: vi.fn(),
   },
 }));
+// Моки под-листов носят классы настоящих оболочек (.ss-sheet, .ex2-screen):
+// тесты стека ниже сверяют порядок в DOM, а не только наличие.
 vi.mock('../SchemaDetailSheet', () => ({
   SchemaDetailSheet: ({ onClose }: { onClose: () => void }) => (
-    <div data-testid="schema-detail"><button onClick={onClose}>close-schema-detail</button></div>
+    <div className="ss-sheet" data-testid="schema-detail"><button onClick={onClose}>close-schema-detail</button></div>
   ),
 }));
 vi.mock('../exercises/FlashcardEx', () => ({
   SchemaEx: ({ initialSchemaId, initialData, onBack, onComplete }: { initialSchemaId?: string; initialData?: Record<string, string>; onBack: () => void; onComplete?: () => void }) => (
-    <div data-testid="schema-ex" data-initial={JSON.stringify(initialData ?? null)}>{initialSchemaId}
+    <div className="ex2-screen" data-testid="schema-ex" data-initial={JSON.stringify(initialData ?? null)}>{initialSchemaId}
       <button onClick={onComplete}>complete</button><button onClick={onBack}>back-ex</button></div>
   ),
-  ModeEx: ({ initialModeId }: { initialModeId?: string }) => <div data-testid="mode-ex">{initialModeId}</div>,
+  ModeEx: ({ initialModeId }: { initialModeId?: string }) => <div className="ex2-screen" data-testid="mode-ex">{initialModeId}</div>,
 }));
 vi.mock('../practice/QuickPracticeSheet', () => ({
   QuickPracticeSheet: ({ id }: { id: string }) => <div data-testid="practice">{id}</div>,
@@ -165,5 +167,60 @@ describe('PatternSheet — справка и «О схеме»', () => {
     const p = renderSheet();
     fireEvent.click(screen.getByText('Назад'));
     await waitFor(() => expect(p.onClose).toHaveBeenCalled());
+  });
+});
+
+// Инцидент 2026-11-05: PatternSheet стоял на zIndex={205}, а опросник
+// «Дополнить» (.ex2-screen, z-index 200) и «О схеме» (SsSheet, 200)
+// рисовались ПОД ним — кнопка «не работала». Листы одного уровня стыкуются
+// порядком в DOM: сиблинг позже при равном z-index лежит выше, поэтому
+// у экрана паттерна нет инлайнового z-index, а под-лист идёт в DOM после него.
+// Гейт класса — scripts/check-overlay-stack.mjs.
+describe('PatternSheet — стек листов (инцидент 2026-11-05)', () => {
+  const patternSheet = () => document.querySelector<HTMLElement>('.ss-sheet')!;
+  const isAfter = (later: Element, earlier: Element) =>
+    Boolean(earlier.compareDocumentPosition(later) & Node.DOCUMENT_POSITION_FOLLOWING);
+
+  it('у экрана паттерна нет инлайнового z-index (иначе он перекроет под-листы на 200)', () => {
+    renderSheet();
+    expect(patternSheet().style.zIndex).toBe('');
+  });
+
+  it('«Дополнить»: опросник идёт в DOM после экрана паттерна', async () => {
+    renderSheet({ items: [FILLED] });
+    const sheet = patternSheet();
+    fireEvent.click(screen.getByText('Дополнить'));
+    const ex = await screen.findByTestId('schema-ex');
+    expect(ex.classList.contains('ex2-screen')).toBe(true);
+    expect(isAfter(ex, sheet)).toBe(true);
+    expect(sheet.style.zIndex).toBe('');
+  });
+
+  it('режим, «Дополнить»: опросник режима после экрана паттерна', async () => {
+    renderSheet({ kind: 'mode', id: 'vulnerable_child', items: [{ ...FILLED, id: 'vulnerable_child' }] });
+    const sheet = patternSheet();
+    fireEvent.click(screen.getByText('Дополнить'));
+    expect(isAfter(await screen.findByTestId('mode-ex'), sheet)).toBe(true);
+    expect(sheet.style.zIndex).toBe('');
+  });
+
+  it('«О схеме»: детальный лист после экрана паттерна, у обоих нет инлайнового z-index', () => {
+    renderSheet();
+    const sheet = patternSheet();
+    fireEvent.click(screen.getByText('О схеме →'));
+    const detail = screen.getByTestId('schema-detail');
+    expect(isAfter(detail, sheet)).toBe(true);
+    expect(sheet.style.zIndex).toBe('');
+  });
+
+  it('«О режиме»: портрет режима (настоящий SsSheet) после экрана паттерна, без своего z-index', () => {
+    renderSheet({ kind: 'mode', id: 'vulnerable_child' });
+    const sheet = patternSheet();
+    fireEvent.click(screen.getByText('О режиме →'));
+    const sheets = document.querySelectorAll<HTMLElement>('.ss-sheet');
+    expect(sheets.length).toBe(2);
+    expect(isAfter(sheets[1], sheet)).toBe(true);
+    expect(sheets[1].style.zIndex).toBe('');
+    expect(sheet.style.zIndex).toBe('');
   });
 });
