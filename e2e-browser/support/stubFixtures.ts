@@ -170,6 +170,7 @@ export const FIXTURES: Record<string, unknown> = {
     weekDots: [false, false, false, false, false, false, false],
   },
   'GET /api/therapy/relation': null, // связи с терапевтом нет
+  'GET /api/therapy/request': null, // therapy-connection.controller.ts: заявки нет
   // src/api/pairs.controller.ts → PairsData (shared/src/apiTypes.ts): пар и приглашения нет.
   'GET /api/pair': { partners: [], pendingCode: null, pendingUrl: null },
   'GET /api/therapy/tasks': [], // therapy-tasks.controller.ts
@@ -181,6 +182,7 @@ export const FIXTURES: Record<string, unknown> = {
   'POST /api/auth/refresh': { accessToken: 'e2e-test-token', expiresIn: 3600 },
   'POST /api/event': { ok: true }, // analytics.controller.ts
   'POST /api/init': { ok: true }, // api.controller.ts
+  'POST /api/settings': { ok: true }, // settings.controller.ts
 };
 
 /** Ручки с `@HttpCode`, у которых статус не умолчание Nest. */
