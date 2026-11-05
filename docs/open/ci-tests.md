@@ -363,3 +363,20 @@ Ubuntu 26) у трёх PR подряд падали `backend` → `check-coverag
   `catchUpClaimWindowMs`) в последний час до полуночи UTC ничего не захватывает — «обход сделает
   тик», `getAllUsersWithSettings` не зовётся. Пойман прогоном в 23:20 UTC 2026-11-03 (QA клиента,
   «сегодня» и пояса), к задаче не относится. Починка — `jest.setSystemTime` на полдень в `beforeEach`.
+- **Кабинет с настоящим CSS не рендерит ни один тест.** Инцидент 2026-11-05 (текст без явного
+  `color` светлый на светлой бумаге внутри `.light-lock` при `html[data-theme="dark"]`,
+  `docs/INCIDENTS.md`) жил с редизайна 2026-10: vitest/jsdom каскад не считает,
+  `index.css.contrast.test.ts` сверяет токены внутри одного блока темы, а axe-смок
+  `e2e-browser/a11y-smoke.spec.ts` ходит только на `/` и `/articles` (бейслайн `a11y-baseline.json`)
+  и только ночью. Механизм, которого нет: прогон axe (`color-contrast`) по экранам кабинета
+  (`/today`, `/diary` через `stubApi`, как в `tracker-smoke.spec.ts`) с предусловием
+  `localStorage.app_theme = 'dark'` до загрузки (`page.addInitScript`) — именно это состояние
+  создаёт тумблер лендинга и `App.tsx`. Пока держат только `webapp/src/lightLock.test.ts` и тест в
+  `AppShell.render.test.tsx` (атрибут и правило CSS по отдельности, не вычисленный цвет).
+- **Локальная сборка `webapp` на macOS красная: `vite build` даёт 5 `Missing export`.** В
+  `webapp/src/sections/today/` лежат `TodayFeed.tsx` и `todayFeed.ts` (и такая же пара у
+  `ExerciseLibrary`): на регистронезависимой ФС импорт `./today/TodayFeed` резолвится в
+  `todayFeed.ts`, где экспорта `TodayFeed` нет. На Linux в CI сборка проходит, поэтому гейт молчит.
+  Проверено 2026-11-05 и в чистом `main`, и в worktree. Починка — переименовать один из файлов
+  пары (например, `todayFeed.ts` → `todayFeedModel.ts`); гейт на пары имён, различающихся
+  только регистром, стоил бы одной проверки в `scripts/check-dead-files.mjs` или отдельного скрипта.

@@ -230,6 +230,15 @@
   --mobile-nav-h: 64px;
 }
 
+/* .light-lock переопределяет токены, но не `color`: цвет, унаследованный от
+   body, вычислен на уровне body, где при тёмной теме на <html> --text
+   светлый, и он проникает внутрь. Инцидент 2026-11-05: в кабинете внутри
+   Telegram текст без явного color был светлым на светлой бумаге. */
+.light-lock {
+  color: var(--text);
+  color-scheme: light;
+}
+
 html[data-theme="dark"] {
   --bg:            #14141a;
   --bg-rail:       #101015;
