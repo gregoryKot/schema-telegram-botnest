@@ -228,13 +228,48 @@ describe('CaseFlowScreen — три шага и итог', () => {
     );
   });
 
-  it('черновик: после закрытия на втором шаге поток открывается на нём же', () => {
+  // Бэклог «Разбор случая, четыре дырки», п. 4: черновик подхватывался молча.
+  function reopenWithDraft() {
     renderFlow();
     typeScene(SCENE);
     click('Дальше');
     cleanup();
-    renderFlow();
+    return renderFlow();
+  }
+
+  it('черновик: при возврате сначала выбор, сцена видна; «Продолжить» — на том же шаге', () => {
+    reopenWithDraft();
+    expect(screen.getByText('Есть начатый разбор')).toBeTruthy();
+    expect(screen.getByText(`«${SCENE}»`)).toBeTruthy();
+    expect(screen.queryByText('Что внутри?')).toBeNull();
+    click('Продолжить');
     expect(screen.getByText('Что внутри?')).toBeTruthy();
+  });
+
+  it('черновик: «Начать заново» стирает его и открывает пустой первый шаг', () => {
+    reopenWithDraft();
+    click('Начать заново');
+    expect(
+      (screen.getByLabelText('Что случилось?') as HTMLTextAreaElement).value,
+    ).toBe('');
+    cleanup();
+    renderFlow();
+    expect(screen.queryByText('Есть начатый разбор')).toBeNull();
+  });
+
+  it('черновик: «Закрыть» с экрана выбора закрывает поток и черновик не трогает', () => {
+    const p = reopenWithDraft();
+    click('Закрыть');
+    expect(p.onClose).toHaveBeenCalled();
+    cleanup();
+    renderFlow();
+    expect(screen.getByText('Есть начатый разбор')).toBeTruthy();
+  });
+
+  it('без черновика экрана выбора нет', () => {
+    renderFlow();
+    expect(screen.queryByText('Есть начатый разбор')).toBeNull();
+    expect(screen.getByLabelText('Что случилось?')).toBeTruthy();
   });
 });
 
