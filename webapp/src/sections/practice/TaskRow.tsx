@@ -7,6 +7,7 @@ import { TaskStatusBadge } from '../../components/TaskStatusBadge';
 import type { TaskStatus } from '../../../../shared/src/tasks/taskStatus';
 import { resolveTaskDisplayText } from '../../../../shared/src/tasks/taskTitle';
 import { taskRowState } from './taskRowState';
+import { TaskSign } from './TaskSign';
 import '../../styles/client-practice.css';
 
 /** Строка задания/цели: название, срок, действие справа; в полном списке — бейдж статуса. */
@@ -17,10 +18,7 @@ export function TaskRow({ task, cta, mark, compact, status, onOpen, onComplete }
 }) {
   const [completing, setCompleting] = useState(false);
   const st = taskRowState(task, !!onComplete);
-  const complete = () => {
-    setCompleting(true);
-    void Promise.resolve(onComplete?.()).finally(() => setCompleting(false));
-  };
+  const complete = () => { setCompleting(true); void Promise.resolve(onComplete?.()).finally(() => setCompleting(false)); };
   return (
     <div
       className={'ds-card ds-card--row ds-card--nav cp-task' + (st.openable ? ' ds-card--hover' : '') + (st.doneToday ? ' cp-task--done' : '')}
@@ -28,6 +26,7 @@ export function TaskRow({ task, cta, mark, compact, status, onOpen, onComplete }
     >
       {mark && !st.doneToday && <span className="cp-task-bar" />}
       {st.doneToday && <span className="cp-task-check" aria-hidden="true">✓</span>}
+      <span className="pp-row-art"><TaskSign task={task} /></span>
       <div className="cp-task-body">
         {mark && !st.doneToday && <div className="ds-label cp-task-from">от терапевта</div>}
         <div className="cp-task-title">{resolveTaskDisplayText(task, 'compact')}</div>

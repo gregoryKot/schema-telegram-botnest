@@ -1,7 +1,9 @@
 // @vitest-environment jsdom
 // «Ещё»: каждая строка ведёт куда обещает; кабинет терапевта — только терапевту.
+// Сюда с главной переехали (владелец 2026-11-05): строка «Задания» → узел заданий,
+// сигнальная карточка моста к терапевту, строка «самопомощь, не замена терапии».
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
-import { render, screen, fireEvent, cleanup } from '@testing-library/react';
+import { render, screen, fireEvent, cleanup, waitFor, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { MoreSection } from './MoreSection';
 
@@ -10,6 +12,19 @@ const trackNudge = vi.hoisted(() => vi.fn());
 vi.mock('../components/therapy/trackTherapyNudge', () => ({ trackTherapyNudge: trackNudge }));
 vi.mock('./today/trackHomeTile', () => ({ trackHomeTile }));
 
+vi.mock('../components/HomeScreenOfferCard', () => ({ HomeScreenOfferCard: () => null }));
+vi.mock('./tasks/TasksHub', () => ({
+  TasksHub: (p: { onClose: () => void }) => <div data-testid="tasks-hub"><button onClick={p.onClose}>закрыть задания</button></div>,
+}));
+vi.mock('../api', () => ({
+  api: {
+    getSchemaDiary: vi.fn().mockResolvedValue([]), getModeDiary: vi.fn().mockResolvedValue([]), getGratitudeDiary: vi.fn().mockResolvedValue([]),
+    history: vi.fn().mockResolvedValue([]), trackEvent: vi.fn(), updateSettings: vi.fn().mockResolvedValue(undefined),
+  },
+  reportClientError: vi.fn(),
+}));
+import { api } from '../api';
+const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
 vi.mock('../components/JourneySheet', () => ({
   JourneySheet: (p: { onClose: () => void }) => <div data-testid="journey"><button onClick={p.onClose}>закрыть путь</button></div>,
 }));
@@ -17,12 +32,13 @@ vi.mock('../components/WhySheet', () => ({
   WhySheet: (p: { onClose: () => void; auto?: boolean }) => <div data-testid="why" data-auto={String(!!p.auto)}><button onClick={p.onClose}>закрыть зачем</button></div>,
 }));
 
-beforeEach(() => { localStorage.clear(); trackNudge.mockClear(); });
+beforeEach(() => { localStorage.clear(); trackNudge.mockClear(); mockApi.history.mockResolvedValue([]); mockApi.getModeDiary.mockResolvedValue([]); });
 afterEach(cleanup);
 
 function setup(userRole: 'CLIENT' | 'THERAPIST' = 'CLIENT') {
   const h = {
     onNavigate: vi.fn(), onOpenSchema: vi.fn(), onOpenAdvanced: vi.fn(), onOpenTherapistCabinet: vi.fn(),
+    onOpenTracker: vi.fn(), onOpenDiaries: vi.fn(), onOpenChildhoodWheel: vi.fn(),
   };
   render(<MemoryRouter><MoreSection {...h} userRole={userRole} /></MemoryRouter>);
   return h;
@@ -33,7 +49,7 @@ describe('MoreSection', () => {
   it('заголовок и все строки списка', () => {
     setup();
     expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Всё остальное');
-    for (const t of ['Зачем это всё', 'Мои паттерны', 'Практики', 'Мой путь', 'Поговорить с кем-то', 'Тест на схемы', 'Настройки', 'Профиль', 'Мне очень плохо']) {
+    for (const t of ['Зачем это всё', 'Задания', 'Мои паттерны', 'Практики', 'Мой путь', 'Поговорить с кем-то', 'Тест на схемы', 'Настройки', 'Профиль', 'Мне очень плохо']) {
       expect(row(t)).toBeTruthy();
     }
   });
@@ -103,7 +119,7 @@ describe('MoreSection', () => {
     localStorage.setItem('therapy_contact_name', 'терапевту');
     setup();
     expect(screen.queryByRole('button', { name: /^Поговорить с кем-то/ })).toBeNull();
-    const link = screen.getByRole('link', { name: /^Написать терапевту/ });
+    const link = within(document.querySelector('.ds-card--flush') as HTMLElement).getByRole('link', { name: /^Написать терапевту/ });
     expect(link.getAttribute('href')).toBe('tg://user?id=42');
     expect(link.textContent).toContain('Связь с терапевтом');
     fireEvent.click(link);
@@ -127,8 +143,50 @@ describe('MoreSection', () => {
   it('телефонный класс (cm-phone-only) только у «Мои паттерны», «Практики», «Профиль»', () => {
     setup();
     const phone = ['Мои паттерны', 'Практики', 'Профиль'];
-    for (const t of ['Зачем это всё', 'Мои паттерны', 'Практики', 'Мой путь', 'Поговорить с кем-то', 'Тест на схемы', 'Настройки', 'Профиль']) {
+    for (const t of ['Зачем это всё', 'Задания', 'Мои паттерны', 'Практики', 'Мой путь', 'Поговорить с кем-то', 'Тест на схемы', 'Настройки', 'Профиль']) {
       expect([t, row(t).className.includes('cm-phone-only')]).toEqual([t, phone.includes(t)]);
     }
+  });
+});
+
+describe('MoreSection — то, что переехало с главной', () => {
+  const lowDays = ['26', '25', '24', '23', '22'].map(d => ({
+    date: `2026-10-${d}`,
+    ratings: { attachment: 3, autonomy: 3, expression: 3, play: 3, limits: 3 },
+  }));
+
+  it('строка «Задания» открывает узел заданий, его закрытие возвращает список', async () => {
+    setup();
+    fireEvent.click(row('Задания'));
+    expect(await screen.findByTestId('tasks-hub')).toBeTruthy();
+    fireEvent.click(screen.getByText('закрыть задания'));
+    await waitFor(() => expect(screen.queryByTestId('tasks-hub')).toBeNull());
+    expect(row('Задания')).toBeTruthy();
+  });
+
+  it('внизу тихая строка «самопомощь, не замена терапии» со ссылкой «Поговорить →»; без сигнала карточки нет', async () => {
+    setup();
+    const line = await screen.findByText(/Приложение — самопомощь, не замена терапии/);
+    expect(line.textContent).toContain('Если нужна терапия, есть с кем поговорить.');
+    expect(screen.getByRole('button', { name: 'Поговорить →' })).toBeTruthy();
+    expect(screen.queryByText('Не сейчас')).toBeNull();
+  });
+
+  it('сигнал по трём низким дням: карточка стоит над списком, «Не сейчас» прячет', async () => {
+    mockApi.history.mockResolvedValue(lowDays);
+    setup();
+    const eyebrow = await screen.findByText('Три последних заполненных дня: индекс не выше 4');
+    const list = document.querySelector('.ds-card--flush')!;
+    expect(eyebrow.compareDocumentPosition(list) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Не сейчас' }));
+    expect(screen.queryByText('Три последних заполненных дня: индекс не выше 4')).toBeNull();
+  });
+
+  it('записи режимов из дневника доходят до сигнала: три раза один режим', async () => {
+    const daysAgoIso = (n: number) => new Date(Date.now() - n * 86_400_000).toISOString();
+    mockApi.history.mockResolvedValue([6, 5, 4, 3, 2].map(i => ({ date: `2026-10-0${i}`, ratings: { attachment: 7, autonomy: 7, expression: 7, play: 7, limits: 7 } })));
+    mockApi.getModeDiary.mockResolvedValue([1, 2, 3].map(i => ({ id: i, modeId: 'punitive_critic', situation: 'x', createdAt: daysAgoIso(i) })));
+    setup();
+    expect(await screen.findByText(/3 раза за две недели/)).toBeTruthy();
   });
 });

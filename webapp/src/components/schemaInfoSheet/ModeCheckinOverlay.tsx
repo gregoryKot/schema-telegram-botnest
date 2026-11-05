@@ -33,7 +33,7 @@ export function ModeCheckinOverlay({ onClose }: { onClose: () => void }) {
   }
   return (
     <SsSheet onBack={goBack} zIndex={400}>
-      <SsHead
+      <SsHead cluster
         eyebrow="Режим прямо сейчас"
         title={<>{tr('Как ты', 'Как вы')}<br /><i>сейчас?</i></>}
         lede={tr('Выбери самое близкое ощущение', 'Выберите самое близкое ощущение')}

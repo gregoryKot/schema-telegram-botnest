@@ -23,6 +23,7 @@ import { ScreenBlock } from '../components/customize/ScreenBlock';
 import { ScreenCustomizeHost } from '../components/customize/ScreenCustomizeHost';
 import { useScreenBlocks } from '../components/customize/useScreenBlocks';
 import { BestDayDialog } from './profile/BestDayDialog';
+import { CardTitle } from './profile/CardTitle';
 import { ACHIEVEMENT_META } from './profile/profileMeta';
 import type { InsightsData, StreakData } from './profile/profileMeta';
 import { buildLevelMap } from './profile/profileModel';
@@ -97,9 +98,7 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
       <ProfileHeader displayName={displayName} totalDays={totalDays} onCustomize={blocks.openByGear} onOpenSettings={onOpenSettings} />
 
       {!ready && (
-        <div className="cpf-skeleton">
-          {[110, 96, 160].map((h, i) => <Skeleton key={i} height={h} radius={20} />)}
-        </div>
+        <div className="cpf-skeleton">{[110, 96, 160].map((h, i) => <Skeleton key={i} height={h} radius={20} />)}</div>
       )}
 
       {ready && loadError && (
@@ -113,7 +112,7 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
           <ScreenBlock id="journey" blocks={blocks} className="cpf-blk">
             <section {...pressable(() => setJourneyOpen(true))} className="ds-card ds-card--hover cpf-card cpf-journey">
               <div className="ds-head-row">
-                <h2 className="ds-h3">Мой путь</h2>
+                <CardTitle sign="journey">Мой путь</CardTitle>
                 <span className="ds-chev" aria-hidden="true" />
               </div>
               <div className="ds-sub">

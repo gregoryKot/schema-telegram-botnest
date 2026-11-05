@@ -5,7 +5,7 @@ interface Props { count: number; formVisible: boolean; onToggle: () => void }
 /** Шапка «Клиенты»: то, что уже собрано (Sheets), и единственная залитая кнопка экрана. */
 export function ClientListHero({ count, formVisible, onToggle }: Props) {
   return (
-    <div className="pp-block tc-hero">
+    <div className="pp-block pp-block--head tc-hero">
       <div className="pp-hero">
         <div className="pp-hero-body">
           <div className="ds-label">Практика</div>

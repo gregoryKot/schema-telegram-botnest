@@ -11,6 +11,7 @@ import { useEntryFlowsDone } from './appShell/entryQueue';
 
 import type { TodaySection as TodaySectionT } from '../sections/TodaySection';
 import type { MoreSection as MoreSectionT } from '../sections/MoreSection';
+import type { DiarySection as DiarySectionT } from '../sections/DiarySection';
 import type { SchemasSection as SchemasSectionT } from '../sections/SchemasSection';
 import type { ProfileSection as ProfileSectionT } from '../sections/ProfileSection';
 import type { PracticeSection as PracticeSectionT } from '../sections/PracticeSection';
@@ -51,12 +52,8 @@ export const mockLogout = vi.fn();
 vi.mock('../sections/TodaySection', () => ({
   TodaySection: (p: ComponentProps<typeof TodaySectionT>) => (
     <Btns testid="today-section" state={{ entryDone: useEntryFlowsDone() }} map={{
-      navigate: () => p.onNavigate('diary'),
       tracker: () => p.onOpenTracker(),
       schema: () => p.onOpenSchema({ startTest: true, tab: 'schemas', highlight: 'abandonment' }),
-      history: () => p.onOpenTrackerHistory?.(),
-      diaries: () => p.onOpenDiaries(),
-      childhood: () => p.onOpenChildhoodWheel(),
     }} />
   ),
 }));
@@ -65,12 +62,16 @@ vi.mock('../sections/MoreSection', () => ({
     <Btns testid="more-section" state={{ userRole: p.userRole ?? null }} map={{
       cabinet: () => p.onOpenTherapistCabinet?.(),
       toPractice: () => p.onNavigate('practice'),
+      navigate: () => p.onNavigate('diary'),
       test: () => p.onOpenSchema({ startTest: true }),
       advanced: () => p.onOpenAdvanced(),
+      tracker: () => p.onOpenTracker(), diaries: () => p.onOpenDiaries(), childhood: () => p.onOpenChildhoodWheel(),
     }} />
   ),
 }));
-vi.mock('../sections/DiarySection', () => ({ DiarySection: () => <div data-testid="diary-section" /> }));
+vi.mock('../sections/DiarySection', () => ({
+  DiarySection: (p: ComponentProps<typeof DiarySectionT>) => <Btns testid="diary-section" map={{ history: () => p?.onOpenTrackerHistory?.() }} />,
+}));
 vi.mock('../sections/SchemasSection', () => ({
   SchemasSection: (p: ComponentProps<typeof SchemasSectionT>) => (
     <Btns testid="schemas-section" map={{

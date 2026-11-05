@@ -8,6 +8,7 @@ import { NEED_ORDER } from '../../../../shared/src/needs/types';
 import { NEED_HUE, hueStyle } from '../../lib/tone';
 import { pressable } from '../../utils/a11y';
 import { PlanSheet } from '../PlanSheet';
+import { NeedArt } from '../art/NeedArt';
 
 export function PlanNeedPicker({ onPlanned }: { onPlanned: () => void }) {
   const NEED_DATA = useNeedData();
@@ -19,9 +20,8 @@ export function PlanNeedPicker({ onPlanned }: { onPlanned: () => void }) {
         {NEED_ORDER.filter(id => NEED_DATA[id]).map(id => (
           <div key={id} className="ds-list-row ds-list-row--nav ds-list-row--hover"
             style={hueStyle(NEED_HUE[id])} {...pressable(() => setNeedId(id))}>
-            <span className="ds-list-body">
-              <span className="ds-list-title"><span className="ds-dot tone-fill" /> {NEED_DATA[id].name}</span>
-            </span>
+            <span className="pp-row-art"><NeedArt id={id} size="row" /></span>
+            <span className="ds-list-body"><span className="ds-list-title">{NEED_DATA[id].name}</span></span>
             <span className="ds-chev" aria-hidden="true" />
           </div>
         ))}

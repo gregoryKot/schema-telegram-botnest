@@ -144,10 +144,10 @@ describe('AppShell — разовый дисклеймер приватност�
 });
 
 describe('AppShell — история: открытие с Today и read-after-write связка колбэков', () => {
-  it('history-кнопка Today открывает HistorySheet, tracker/schemas/childhood переключают оверлеи', async () => {
-    renderAppShell('/today');
-    await waitFor(() => expect(screen.getByTestId('today-section')).toBeTruthy());
-    fireEvent.click(screen.getByTestId('today-section-history'));
+  it('history-кнопка «Записей» открывает HistorySheet, tracker/schemas/childhood переключают оверлеи', async () => {
+    renderAppShell('/diary');
+    await waitFor(() => expect(screen.getByTestId('diary-section')).toBeTruthy());
+    fireEvent.click(screen.getByTestId('diary-section-history'));
     await waitFor(() => expect(screen.getByTestId('history-sheet')).toBeTruthy());
 
     fireEvent.click(screen.getByTestId('history-sheet-tracker'));
@@ -169,9 +169,9 @@ describe('AppShell — история: открытие с Today и read-after-w
       { id: 1, needId: 'safety', practiceText: 'A', scheduledDate: '2026-01-01', reminderUtcHour: null, done: null },
       { id: 2, needId: 'autonomy', practiceText: 'B', scheduledDate: '2026-01-02', reminderUtcHour: null, done: null },
     ]);
-    renderAppShell('/today');
-    await waitFor(() => expect(screen.getByTestId('today-section')).toBeTruthy());
-    fireEvent.click(screen.getByTestId('today-section-history'));
+    renderAppShell('/diary');
+    await waitFor(() => expect(screen.getByTestId('diary-section')).toBeTruthy());
+    fireEvent.click(screen.getByTestId('diary-section-history'));
     await waitFor(() => {
       const state = JSON.parse(screen.getByTestId('history-sheet-state').textContent ?? '{}');
       expect(state.pendingPlanIds).toEqual([1, 2]);
@@ -191,9 +191,9 @@ describe('AppShell — история: открытие с Today и read-after-w
   });
 
   it('закрытие HistorySheet сбрасывает trackerTab на «today» (повторное открытие не залипает на history)', async () => {
-    renderAppShell('/today');
-    await waitFor(() => expect(screen.getByTestId('today-section')).toBeTruthy());
-    fireEvent.click(screen.getByTestId('today-section-history'));
+    renderAppShell('/diary');
+    await waitFor(() => expect(screen.getByTestId('diary-section')).toBeTruthy());
+    fireEvent.click(screen.getByTestId('diary-section-history'));
     await waitFor(() => expect(screen.getByTestId('history-sheet')).toBeTruthy());
     fireEvent.click(screen.getByTestId('history-sheet-close'));
     await waitFor(() => expect(screen.queryByTestId('history-sheet')).toBeNull());
@@ -202,9 +202,9 @@ describe('AppShell — история: открытие с Today и read-after-w
   it('открытие истории сразу выставляет historyLoading=true, до ответа сервера, и снимает его с реальными данными', async () => {
     let resolveHistory: (v: DayHistory[]) => void = () => {};
     mockApi.history.mockImplementationOnce(() => new Promise<DayHistory[]>(res => { resolveHistory = res; }));
-    renderAppShell('/today');
-    await waitFor(() => expect(screen.getByTestId('today-section')).toBeTruthy());
-    fireEvent.click(screen.getByTestId('today-section-history'));
+    renderAppShell('/diary');
+    await waitFor(() => expect(screen.getByTestId('diary-section')).toBeTruthy());
+    fireEvent.click(screen.getByTestId('diary-section-history'));
     await waitFor(() => {
       const state = JSON.parse(screen.getByTestId('history-sheet-state').textContent ?? '{}');
       expect(state.historyLoading).toBe(true);
@@ -272,10 +272,10 @@ describe('AppShell — диалог схемы: три параметра (autoS
 });
 
 describe('AppShell — прямая навигация и точечный трекер из Today/Паттернов/Практики', () => {
-  it('Today «navigate» переключает секцию на «Дневник» напрямую (setSection)', async () => {
-    renderAppShell('/today');
-    await waitFor(() => expect(screen.getByTestId('today-section')).toBeTruthy());
-    fireEvent.click(screen.getByTestId('today-section-navigate'));
+  it('«Ещё» navigate переключает секцию на «Дневник» напрямую (setSection)', async () => {
+    renderAppShell('/more');
+    await waitFor(() => expect(screen.getByTestId('more-section')).toBeTruthy());
+    fireEvent.click(screen.getByTestId('more-section-navigate'));
     await waitFor(() => expect(screen.getByTestId('diary-section')).toBeTruthy());
   });
 
@@ -310,19 +310,19 @@ describe('AppShell — прямая навигация и точечный тр�
 });
 
 describe('AppShell — Дневник напрямую (Today) и Практика открывают дневник-оверлей', () => {
-  it('Today «diaries» открывает DiariesOverlay, закрытие убирает его', async () => {
-    renderAppShell('/today');
-    await waitFor(() => expect(screen.getByTestId('today-section')).toBeTruthy());
-    fireEvent.click(screen.getByTestId('today-section-diaries'));
+  it('«Ещё» diaries открывает DiariesOverlay, закрытие убирает его', async () => {
+    renderAppShell('/more');
+    await waitFor(() => expect(screen.getByTestId('more-section')).toBeTruthy());
+    fireEvent.click(screen.getByTestId('more-section-diaries'));
     await waitFor(() => expect(screen.getByTestId('diaries-overlay')).toBeTruthy());
     fireEvent.click(screen.getByTestId('diaries-overlay-close'));
     await waitFor(() => expect(screen.queryByTestId('diaries-overlay')).toBeNull());
   });
 
-  it('Today «childhood» открывает колесо детства напрямую (без истории), «назад» закрывает', async () => {
-    renderAppShell('/today');
-    await waitFor(() => expect(screen.getByTestId('today-section')).toBeTruthy());
-    fireEvent.click(screen.getByTestId('today-section-childhood'));
+  it('«Ещё» childhood открывает колесо детства напрямую (без истории), «назад» закрывает', async () => {
+    renderAppShell('/more');
+    await waitFor(() => expect(screen.getByTestId('more-section')).toBeTruthy());
+    fireEvent.click(screen.getByTestId('more-section-childhood'));
     await waitFor(() => expect(screen.getByTestId('childhood-wheel')).toBeTruthy());
     fireEvent.click(screen.getByTestId('childhood-wheel-back'));
     await waitFor(() => expect(screen.queryByTestId('childhood-wheel')).toBeNull());
@@ -680,9 +680,9 @@ describe('AppShell — сайдбар: выход из аккаунта и за�
 
 describe('AppShell — колесо детства: сохранение оценок и повтор истории', () => {
   it('saved (onSaved) сохраняет childhoodRatings — они попадают дальше в SchemaInfoSheet при открытии из истории', async () => {
-    renderAppShell('/today');
-    await waitFor(() => expect(screen.getByTestId('today-section')).toBeTruthy());
-    fireEvent.click(screen.getByTestId('today-section-childhood'));
+    renderAppShell('/more');
+    await waitFor(() => expect(screen.getByTestId('more-section')).toBeTruthy());
+    fireEvent.click(screen.getByTestId('more-section-childhood'));
     await waitFor(() => expect(screen.getByTestId('childhood-wheel')).toBeTruthy());
     fireEvent.click(screen.getByTestId('childhood-wheel-saved'));
     // saved не закрывает лист сам по себе — закрываем явно, как в реальном UX.
