@@ -21,7 +21,7 @@ const RAW_OPTIONS: RawOption[] = [
   { type: 'letter_to_self', label: 'Письмо себе',          sub: 'Написать Уязвимому Ребёнку',               time: libTime('letter_to_self') },
   { type: 'safe_place',     label: 'Безопасное место',     sub: 'Описать и перечитывать',                   time: libTime('safe_place') },
   { type: 'diary_streak',   label: 'Дневник',              sub: 'Заполнять N дней подряд',                  hasStreak: true, time: '5–10 мин/день' },
-  { type: 'flashcard',      label: 'Мне сейчас плохо',     sub: 'Разобрать ситуацию – 5 шагов',             time: '10 мин' },
+  { type: 'flashcard',      label: 'Мне плохо',            sub: 'Три вдоха и четыре шага',                  time: '10 мин' },
   { type: 'custom',         label: 'Своё задание',         sub: 'Любой текст в свободной форме',   time: '–' },
 ];
 

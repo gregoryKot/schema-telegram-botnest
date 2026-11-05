@@ -4,6 +4,8 @@
 // ds-h2 без локального кегля, eyebrow и lede на месте, backLabel подменяет подпись.
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { ExScreen } from './ExScreen';
 
 afterEach(cleanup);
@@ -29,5 +31,28 @@ describe('ExScreen — шапка листа (#906)', () => {
     expect(h1.classList.contains('ds-h2')).toBe(true);
     expect(screen.getByText('Разбор').className).toBe('ds-eyebrow');
     expect(screen.getByText('Подсказка').className).toContain('ds-sub');
+  });
+});
+
+// Бэклог «Объяснения упражнений не доезжают до телефона»: старый `.ex-aside`
+// прятался на ≤767px вместе с «откуда и зачем» и кнопками «Сменить схему/режим».
+// Боковая колонка обязана остаться на телефоне — встать под основную.
+describe('ExScreen — aside на телефоне', () => {
+  const css = readFileSync(join(__dirname, '../../styles/sheet-exercises.css'), 'utf8')
+    .replace(/\/\*[\s\S]*?\*\//g, '');
+  const asideRules = [...css.matchAll(/([^{}]+)\{([^{}]*)\}/g)]
+    .filter(m => /\.ex2-aside(?![\w-])/.test(m[1]));
+
+  it('нигде не скрыт: ни display: none, ни visibility: hidden', () => {
+    expect(asideRules.length).toBeGreaterThan(0);
+    for (const [, , body] of asideRules) expect(body).not.toMatch(/display:\s*none|visibility:\s*hidden/);
+  });
+
+  it('рендерится в DOM рядом с основной колонкой: кнопки из aside доступны', () => {
+    const onSwitch = vi.fn();
+    render(<ExScreen onBack={vi.fn()} eyebrow="Схема" title="Покинутость" aside={<button onClick={onSwitch}>Сменить схему</button>}>тело</ExScreen>);
+    fireEvent.click(screen.getByRole('button', { name: 'Сменить схему' }));
+    expect(onSwitch).toHaveBeenCalled();
+    expect(document.querySelector('.ex2-body .ex2-aside')).toBeTruthy();
   });
 });

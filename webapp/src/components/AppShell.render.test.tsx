@@ -30,6 +30,21 @@ beforeEach(() => {
 
 afterEach(() => {
   cleanup();
+  document.documentElement.removeAttribute('data-theme');
+  document.documentElement.style.colorScheme = '';
+});
+
+// Инцидент 2026-11-05: html оставался тёмным (App.tsx ставит data-theme после
+// модульного вызова, тумблер лендинга — при SPA-переходе), и в кабинете текст
+// без явного цвета был светлым на светлой бумаге.
+describe('AppShell — светлая тема при тёмном html', () => {
+  it('html с data-theme="dark" до рендера → после монтирования светлый', () => {
+    document.documentElement.setAttribute('data-theme', 'dark');
+    document.documentElement.style.colorScheme = 'dark';
+    renderAppShell('/today');
+    expect(document.documentElement.getAttribute('data-theme')).toBe('light');
+    expect(document.documentElement.style.colorScheme).toBe('light');
+  });
 });
 
 describe('AppShell — состояние загрузки', () => {
@@ -110,14 +125,14 @@ describe('AppShell — роутинг: URL решает, какая секция
     await waitFor(() => expect(screen.getByTestId('diary-section')).toBeTruthy());
   });
 
-  it('в меню три вкладки — «Сегодня», «Записи», «Ещё»; «Паттерны», «Практика», «Профиль» из меню ушли', async () => {
+  it('нижняя панель телефона — три вкладки; меню слева на компьютере — шесть пунктов (#925)', async () => {
     renderAppShell('/today');
     await waitFor(() => expect(screen.getByTestId('today-section')).toBeTruthy());
     const nav = document.querySelector('.mobile-nav') as HTMLElement;
     expect(Array.from(nav.querySelectorAll('a')).map(a => a.textContent)).toEqual(['Сегодня', 'Записи', 'Ещё']);
     expect(Array.from(nav.querySelectorAll('a')).map(a => a.getAttribute('href'))).toEqual(['/today', '/diary', '/more']);
     const side = document.querySelector('.sb-nav') as HTMLElement;
-    expect(Array.from(side.querySelectorAll('a')).map(a => a.textContent)).toEqual(['Сегодня', 'Записи', 'Ещё']);
+    expect(Array.from(side.querySelectorAll('a')).map(a => a.textContent)).toEqual(['Сегодня', 'Записи', 'Практики', 'Мои паттерны', 'Профиль', 'Ещё']);
   });
 });
 

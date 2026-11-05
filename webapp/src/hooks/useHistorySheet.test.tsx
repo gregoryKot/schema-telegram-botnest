@@ -117,6 +117,35 @@ describe('useHistorySheet — goBack()', () => {
     expect(snap.loc!.pathname).toBe('/target');
     expect(sheetState(snap.loc!)?.__sheetId).toBeUndefined();
   });
+
+  it('два goBack в одном такте (dblclick) снимают одну запись, а не уводят со страницы', () => {
+    const snap = makeSnapshot();
+    const onClose = vi.fn();
+    const { result } = renderHook(() => useHistorySheet(onClose), {
+      wrapper: makeWrapper(snap, ['/hub-1', '/hub-2', '/target'], 2),
+    });
+
+    act(() => { result.current(); result.current(); });
+
+    expect(snap.loc!.pathname).toBe('/target');
+    expect(sheetState(snap.loc!)?.__sheetId).toBeUndefined();
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('goBack, когда запись листа уже снята системной «Назад» (лист не размонтирован), — no-op', () => {
+    const snap = makeSnapshot();
+    const onClose = vi.fn();
+    const { result } = renderHook(() => useHistorySheet(onClose), {
+      wrapper: makeWrapper(snap, ['/hub-1', '/hub-2', '/target'], 2),
+    });
+
+    act(() => { snap.nav!(-1); }); // системная «Назад»: запись листа снята
+    expect(onClose).toHaveBeenCalledTimes(1);
+    act(() => { result.current(); }); // `await save(); goBack()` дождался ответа
+
+    expect(snap.loc!.pathname).toBe('/target');
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
 });
 
 // ── Реалистичный паттерн вызова: родитель убирает лист из дерева по onClose ───

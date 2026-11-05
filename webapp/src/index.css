@@ -231,6 +231,15 @@
   --mobile-nav-h: 64px;
 }
 
+/* .light-lock переопределяет токены, но не `color`: цвет, унаследованный от
+   body, вычислен на уровне body, где при тёмной теме на <html> --text
+   светлый, и он проникает внутрь. Инцидент 2026-11-05: в кабинете внутри
+   Telegram текст без явного color был светлым на светлой бумаге. */
+.light-lock {
+  color: var(--text);
+  color-scheme: light;
+}
+
 html[data-theme="dark"] {
   --bg:            #14141a;
   --bg-rail:       #101015;
@@ -427,8 +436,9 @@ a { color: inherit; text-decoration: none; }
 .sb-item.is-active { background: var(--panel-3); color: var(--on-panel); font-weight: 600; }
 /* Цветной квадрат раздела клиента (оттенок задаёт --h на элементе). */
 .sb-dot { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; background: oklch(0.58 0.12 var(--h)); }
-/* Sidebar items don't need focus ring — active/hover state is sufficient */
-.sb-item:focus-visible, .sb-account:focus-visible { outline: none; }
+/* Фокус с клавиатуры виден (WCAG 2.4.7): фон меняется только по :hover, поэтому кольцо
+   цветом текста панели, внутрь — соседние строки его не перекрывают. */
+.sb-item:focus-visible, .sb-account:focus-visible { outline: 2px solid var(--on-panel); outline-offset: -2px; }
 .sb-item .badge {
   margin-left: auto;
   font-size: 12px; font-weight: 500;
@@ -529,18 +539,17 @@ a { color: inherit; text-decoration: none; }
   grid-template-rows: auto 1fr;
   min-width: 0; min-height: 0;
   overflow: hidden;
+  --tk-max: 1440px; --tk-gutter: clamp(20px, 4vw, 48px);
+  --tk-center: max(0px, (100vw - var(--sidebar-w) - var(--tk-max)) / 2);
 }
 /* Cabinet mode: topbar (search) + canvas, same as client mode.
    Все экраны кабинета («Сегодня», «Все клиенты», карточка клиента) стоят в
    одной колонке --tk-max по центру рабочей области (экран минус сайдбар):
    на широком экране они не прижимаются влево с пустой половиной справа, и
    переход между ними не сдвигает содержимое. --tk-center — отступ колонки
-   слева; уже рабочей области — ноль. */
-.main--cabinet {
-  grid-template-rows: auto 1fr;
-  --tk-max: 1440px; --tk-gutter: clamp(20px, 4vw, 48px);
-  --tk-center: max(0px, (100vw - var(--sidebar-w) - var(--tk-max)) / 2);
-}
+   слева; уже рабочей области — ноль. Те же переменные — у клиентских страниц
+   (styles/client-frame.css), поэтому живут на .main, а не только в кабинете. */
+.main--cabinet { grid-template-rows: auto 1fr; }
 
 .topbar {
   height: 56px;
@@ -1110,10 +1119,6 @@ html[data-theme="dark"] .sheet-modal-box { box-shadow: 0 24px 64px -16px rgba(0,
 .ex-btn-ghost:hover { background: var(--surface-2); color: var(--text); }
 
 /* Flashcards */
-.tick-strip { display: flex; gap: var(--space-4); margin-bottom: 28px; }
-.tick { flex: 1; height: 3px; border-radius: var(--r-2); background: var(--surface-3); cursor: pointer; transition: background .15s; }
-.tick.filled, .tick.is-filled { background: var(--accent); }
-.tick.active, .tick.is-active { background: var(--accent); }
 .flash { border: 1px solid var(--line); border-radius: var(--r-16); padding: 36px 40px 32px; background: var(--surface); margin-bottom: 28px; }
 .flash-q { font-family: var(--serif); font-size: 32px; line-height: 1.15; letter-spacing: -0.015em; font-weight: 400; color: var(--text); margin-bottom: var(--space-14); }
 

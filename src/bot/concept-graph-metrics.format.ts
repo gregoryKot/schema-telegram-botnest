@@ -27,5 +27,8 @@ export function formatConceptGraphMetrics(m: ConceptGraphMetrics): string {
   if (m.saveRetry30 > 0) {
     lines.push(`Повторяли сохранение после ошибки ${m.saveRetry30} раз`);
   }
+  if (m.brief30 > 0) {
+    lines.push(`Открывали «Главное» на одном экране ${m.brief30} раз`);
+  }
   return lines.join('\n');
 }

@@ -16,9 +16,9 @@ vi.mock('../../api', () => ({
   reportClientError: vi.fn(),
 }));
 vi.mock('../../utils/addressForm', () => ({ useTr: () => (ty: string) => ty, useSetAddressForm: () => vi.fn() }));
-vi.mock('../../utils/therapistContact', () => ({ cacheTherapistContact: vi.fn() }));
+vi.mock('../../utils/therapistContact', () => ({ cacheClientRelation: vi.fn() }));
 import { api, reportClientError } from '../../api';
-import { cacheTherapistContact } from '../../utils/therapistContact';
+import { cacheClientRelation } from '../../utils/therapistContact';
 import { EntryFlows } from './EntryFlows';
 
 const m = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
@@ -55,7 +55,7 @@ describe('EntryFlows', () => {
     expect(m.joinTherapy).not.toHaveBeenCalled();
     fireEvent.click(screen.getByText('Присоединиться'));
     await waitFor(() => expect(m.joinTherapy).toHaveBeenCalledWith('ABC'));
-    await waitFor(() => expect(cacheTherapistContact).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(cacheClientRelation).toHaveBeenCalledTimes(1));
     // Инцидент 2026-10-26: окно молча закрывалось — теперь «Доступ открыт»
     // с именем терапевта, закрывается по «Понятно».
     expect(await screen.findByText(/Терапевт Анна видит/)).toBeTruthy();

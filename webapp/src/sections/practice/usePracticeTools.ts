@@ -4,7 +4,7 @@
 // карточки, «Мне плохо», «Мои цели» и каталоги; порядок — на карточки.
 import { useToolsState } from '../../../../shared/src/quickActions/useToolsState';
 import { notifyPrefsChanged } from '../../utils/uiPrefsSync';
-import { EXERCISES } from './exerciseLibrary';
+import { EXERCISES } from './exerciseLibraryModel';
 import { CARD_TOOL_IDS, arrangeExercises } from './toolsLayout';
 import { catalogRowSub, type CatalogCounts } from './catalogCounts';
 import type { CatalogRow } from './CatalogsBlock';

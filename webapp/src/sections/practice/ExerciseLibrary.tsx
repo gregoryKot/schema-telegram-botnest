@@ -2,7 +2,7 @@ import '../../styles/client-practice.css';
 import { pluralRu } from '../../../../shared/src/utils/pluralRu';
 import { pressable } from '../../utils/a11y';
 import { fmtAgo } from '../../utils/format';
-import { EXERCISES, fmtCount, type ExId, type ExStats } from './exerciseLibrary';
+import { EXERCISES, fmtCount, type ExId, type ExStats } from './exerciseLibraryModel';
 
 type Card = (typeof EXERCISES)[number];
 

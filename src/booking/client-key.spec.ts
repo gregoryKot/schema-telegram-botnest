@@ -31,8 +31,9 @@ describe('normalizeContact — форма контакта решает, что 
     expect(normalizeContact('a@my-site.ru')).toBe('a@my-site.ru');
   });
 
-  it('телефон — только цифры, ник — без `@`, прочее — схлопнутые пробелы', () => {
-    expect(normalizeContact('+7 (999) 123-45-67')).toBe('79991234567');
+  it('телефон — цифры и ведущий `+`, ник — без `@`, прочее — схлопнутые пробелы', () => {
+    expect(normalizeContact('+7 (999) 123-45-67')).toBe('+79991234567');
+    expect(normalizeContact('(+7) 999 123-45-67')).toBe('+79991234567');
     expect(normalizeContact('8.999.123.45.67')).toBe('89991234567');
     expect(normalizeContact('@Ivan_P')).toBe('ivan_p');
     expect(normalizeContact('Иван   Петров ')).toBe('иван петров');
@@ -61,10 +62,19 @@ describe('clientKey — HMAC с серверным ключом', () => {
 
   // Контроль (правило №15 п.2): одно и то же лицо в разной записи склеивается.
   it('один человек в разной записи — один ключ', () => {
-    expect(m.clientKey('+7 (999) 123-45-67')).toBe(m.clientKey('79991234567'));
+    expect(m.clientKey('+7 (999) 123-45-67')).toBe(m.clientKey('+79991234567'));
+    expect(m.clientKey('8 (999) 123-45-67')).toBe(m.clientKey('89991234567'));
     expect(m.clientKey('@Ivan_P')).toBe(m.clientKey('ivan_p'));
     expect(m.clientKey(' Ivan-Petrov@X.ru ')).toBe(
       m.clientKey('ivan-petrov@x.ru'),
+    );
+  });
+
+  // Регресс (docs/open/security.md): нормализация стирала `+`, и иностранный
+  // номер с кодом страны получал комнату московского номера без кода.
+  it('телефон с кодом страны и номер без него — разные ключи', () => {
+    expect(m.clientKey('+49 5123 4567')).not.toBe(
+      m.clientKey('(495) 123-45-67'),
     );
   });
 
@@ -105,6 +115,21 @@ describe('ротация ENCRYPTION_KEY: кандидаты и источник�
       `k0:${sha256('ivan_p')}`,
     ]);
     expect(src).not.toContain(rotated.clientKey('@Ivan_P'));
+  });
+
+  it('источники телефона с `+`: ключи формы «только цифры» (до сохранения `+`)', () => {
+    const rotated = load({ key: KEY, old: OLD });
+    const src = rotated.clientKeySources('+7 (999) 123-45-67');
+    expect(src).toEqual(
+      expect.arrayContaining([
+        rotated.clientKey('79991234567'),
+        load({ key: OLD }).clientKey('79991234567'),
+        `k0:${sha256('79991234567')}`,
+      ]),
+    );
+    expect(src).not.toContain(rotated.clientKey('+7 (999) 123-45-67'));
+    // контроль: у номера без `+` прежняя форма совпадает с нынешней — лишних нет
+    expect(rotated.clientKeySources('8 999 123-45-67')).toHaveLength(3);
   });
 
   it('legacyClientKey — прежняя формула без изменений (склейка ящиков в ней сохранена)', () => {

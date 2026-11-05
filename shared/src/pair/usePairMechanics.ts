@@ -38,7 +38,7 @@ export function usePairMechanics(api: PairApi, options: PairOptions = {}) {
   const [joinView, setJoinView] = useState<'main' | 'join'>('main');
   const [joinCode, setJoinCode] = useState('');
   const [joinError, setJoinError] = useState(false);
-  const [leaveError, setLeaveError] = useState(false);
+  const [leaveError, setLeaveError] = useState<string | null>(null); // код несохранённого выхода/отмены
   const [confirmLeaveCode, setConfirmLeaveCode] = useState<string | null>(null);
 
   // Свежие колбэки без перезапуска эффекта загрузки.
@@ -99,13 +99,13 @@ export function usePairMechanics(api: PairApi, options: PairOptions = {}) {
   }
 
   async function handleLeave(code: string) {
-    setLeaveError(false);
+    setLeaveError(null);
     try {
       await apiRef.current.leavePair(code);
       await load();
     } catch {
       opts.current.reportError?.('pair leave failed');
-      setLeaveError(true);
+      setLeaveError(code);
     }
     setConfirmLeaveCode(null);
   }

@@ -11,6 +11,7 @@ import {
   NotificationType,
 } from '../notification/notification.service';
 import { isQuietHours, nextQuietEnd } from '../notification/notification.time';
+import { undeliveredFromOther } from '../notification/notification-channels';
 import { describeUnknownOutcomes, sendBounded } from './telegram.send-bounded';
 import { handleSendError } from './telegram.schedule-queue.errors';
 import { renderForQueue } from './telegram.schedule-queue.render';
@@ -48,6 +49,7 @@ export async function runProcessQueue(deps: QueueDeps): Promise<void> {
     ...new Set(due.map((n) => n.userId)),
   ]);
   const noAddress: string[] = [];
+  const noAddressTypes: string[] = []; // класс 20: notification-channels.ts
   const seen = { unknown: [] as number[], transient: 0 };
   const tick = new QueueTick(deps.pace);
 
@@ -63,6 +65,7 @@ export async function runProcessQueue(deps: QueueDeps): Promise<void> {
       if (!s || s.chatId === null) {
         await notificationService.cancelOne(notif.id);
         noAddress.push(String(notif.userId));
+        noAddressTypes.push(notif.type);
         continue;
       }
       const chatId = s.chatId;
@@ -106,7 +109,8 @@ export async function runProcessQueue(deps: QueueDeps): Promise<void> {
       `Очередь: ${noAddress.length} уведомлений некому доставить — ` +
         `у аккаунта нет входа в Telegram. userId: ` +
         `${noAddress.slice(0, NO_ADDRESS_SAMPLE).join(', ')}` +
-        `${noAddress.length > NO_ADDRESS_SAMPLE ? ' …' : ''}`,
+        `${noAddress.length > NO_ADDRESS_SAMPLE ? ' …' : ''}` +
+        undeliveredFromOther(noAddressTypes),
     );
   }
 }

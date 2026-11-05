@@ -3,7 +3,7 @@
 // ещё левее режимы; справа Здоровый Взрослый. Линии — только из данных: режим
 // ⇄ схема, опыт → схема, ✗ схема → потребность, ✓ здоровый режим → потребность.
 import type { ConceptGraphModel } from '../conceptGraphTypes';
-import { buildEdges } from './diagramEdges';
+import { buildEdges } from './diagramEdgesModel';
 import { layoutNarrow } from './diagramNarrow';
 import { layoutWide } from './diagramWide';
 import { WIDE_MIN, type DiagramLayout } from './diagramTypes';

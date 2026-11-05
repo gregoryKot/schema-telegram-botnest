@@ -12,7 +12,7 @@ import {
   clip,
   type DigestKey,
   type DigestRow,
-} from './conceptDigest';
+} from './conceptDigestModel';
 
 const ty = (a: string) => a;
 
@@ -170,5 +170,52 @@ describe('clip', () => {
     expect(clip('Снизить тревогу — вернуть злость', 18)).toBe(
       'Снизить тревогу…',
     );
+  });
+});
+
+// Плашки строки (2026-11): сущности — чипы в тоне домена / группы, слова-связки —
+// текстом; «Цикл» и «Цель» — свободный текст одной плашкой.
+describe('buildConceptDigest: плашки', () => {
+  const row = (rows: DigestRow[], key: DigestKey) =>
+    rows.find((r) => r.key === key)!;
+
+  it('схемы — чипы в тоне домена; режимы — в тоне группы, «→» — слово между', () => {
+    const rows = digest(RICH, 'Снизить тревогу');
+    expect(row(rows, 'schemas').kind).toBe('chips');
+    expect(row(rows, 'schemas').items).toEqual([
+      { text: 'Покинутость / Нестабильность', hue: 28 },
+      { text: 'Неуспешность', hue: 70 },
+    ]);
+    const modes = row(rows, 'modes').items;
+    expect(modes.map((i) => i.text)).toEqual([
+      'Уязвимый Ребёнок',
+      'Судья (Карающий Критик)',
+      'Отстранённый Защитник',
+      '→',
+      'Здоровый Взрослый',
+    ]);
+    expect(modes.map((i) => i.hue)).toEqual([28, 310, 240, undefined, 145]);
+    expect(modes[3].plain).toBe('arrow');
+  });
+
+  it('потребности: подписи «блокированы» / «есть опора» — слова, сами потребности — чипы в тоне домена', () => {
+    const items = row(digest(RICH), 'needs').items;
+    expect(items.map((i) => [i.text, i.plain ?? null, i.hue])).toEqual([
+      ['✗ блокированы:', 'caption', undefined],
+      ['Привязанность', null, 28],
+      ['Автономия', null, 70],
+      ['✓ есть опора:', 'caption', undefined],
+      ['Привязанность', null, 28],
+      ['Границы', null, 135],
+    ]);
+  });
+
+  it('цикл и цель — текст одной плашкой, kind text', () => {
+    const rows = digest(RICH, 'Снизить тревогу');
+    expect(row(rows, 'cycle')).toMatchObject({
+      kind: 'text',
+      items: [{ text: 'Критика → Судья → уход в себя' }],
+    });
+    expect(row(rows, 'goal').items).toEqual([{ text: 'Снизить тревогу' }]);
   });
 });

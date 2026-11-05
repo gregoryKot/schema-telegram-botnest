@@ -4,7 +4,7 @@ import { ConceptGraph } from '../../../../shared/src/therapy/conceptGraph/Concep
 import type { ClientDetail } from './clientSheetTypes';
 import { useClientConceptGraph } from './useClientConceptGraph';
 import { ConceptGraphToolbar } from './ConceptGraphToolbar';
-import { ConceptGraphFullscreen } from './ConceptGraphFullscreen';
+import { ConceptFullscreenSheet } from './ConceptFullscreenSheet';
 import { ConceptTabHead, type ConceptTabHeadProps } from './concept/ConceptTabHead';
 
 // Вид «Схема»: схема случая в потоке или, по «На весь экран», в листе; данные и правки —
@@ -37,13 +37,12 @@ export function ClientConceptGraph({ detail, onOpenCanvas, head, digest }: {
       {held !== null ? (
         <>
           <div aria-hidden style={{ height: held }} />
-          <ConceptGraphFullscreen
-            onClose={() => setHeld(null)}
-            backRef={backRef}
+          <ConceptFullscreenSheet
+            title="Схема случая" closeLabel="Свернуть" onClose={() => setHeld(null)} backRef={backRef}
             toolbar={<ConceptGraphToolbar image={g.image} canvas={g.canvas} />}
           >
             {graph}
-          </ConceptGraphFullscreen>
+          </ConceptFullscreenSheet>
         </>
       ) : (
         <div ref={flowRef} style={{ minWidth: 0 }}>{graph}</div>

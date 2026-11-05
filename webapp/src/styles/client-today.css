@@ -1,5 +1,5 @@
 /* Клиент · Сегодня (sections/TodaySection.tsx, sections/today/*). Префикс ct-.
-   Одна колонка: шапка, три плитки, задания, лента дня. На десктопе — 600px. */
+   Одна колонка: шапка, три плитки, задания, лента дня. На ≥768 ширину даёт рамка (client-frame.css). */
 .ct-page { max-width: 600px; }
 /* Кнопка «Зачем это?» стоит в строке с датой, а не рядом с h1: иначе она
    отнимает ширину у приветствия и «Привет, Имя» переносится на телефоне. */
@@ -60,4 +60,13 @@
 .ct-feed-text { font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ct-feed-kind { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--text-muted); }
 
-
+/* Компьютер (#925). Две колонки «Задания» | лента дня — .ct-cols/.ct-col; на телефоне обёртки display: contents,
+   порядок и отступы ds-page как раньше. Блок трекера и квадраты — тоже в два столбца с 1024; на 768–1023 всё столбиком: ряд не помещается. */
+.ct-cols, .ct-col { display: contents; }
+@media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) {
+  .ct-cols, .ct-col { display: flex; flex-direction: column; gap: 32px; min-width: 0; }
+}
+@media (min-width: 1024px) and (min-height: 501px), (min-width: 1024px) and (pointer: fine) {
+  .ct-home { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 48px; align-items: stretch; }
+  .ct-cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 48px; align-items: start; }
+}

@@ -3,6 +3,7 @@ import { NEED_ORDER } from '../../needData';
 import { NEED_HUE, hueStyle } from '../../lib/tone';
 import { IdentityDot } from '../../../../shared/src/components/IdentityDot';
 import { buildNeedsData } from './data';
+import { NEEDS_WHAT } from '../../../../shared/src/pattern/patternTerms';
 
 // Вкладка «потребности» справочника схем. Вынесено из SchemaInfoSheet.tsx (правило №10).
 export function NeedsTab() {
@@ -10,9 +11,7 @@ export function NeedsTab() {
   const needs = buildNeedsData(tr);
   return (
     <div className="ss-pane">
-      <p className="ss-body">
-        Схема-терапия строится на идее, что у каждого есть пять базовых эмоциональных потребностей. Когда они систематически не удовлетворялись в детстве – формируются схемы.
-      </p>
+      <p className="ss-body">{NEEDS_WHAT}</p>
       {needs.map((n, i) => (
         <div key={n.title} className="ds-card ss-need" style={hueStyle(NEED_HUE[NEED_ORDER[i]])}>
           <div className="ss-need-head">

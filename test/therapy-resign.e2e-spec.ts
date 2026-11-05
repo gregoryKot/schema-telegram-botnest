@@ -37,7 +37,10 @@ process.env.ADMIN_ID = ADMIN.toString();
 const [T, T2, C, X, D, Z, K, Y] = [1n, 2n, 3n, 4n, 5n, 6n, 7n, 8n].map(
   (n) => 4_400_000_000_000n + n,
 );
-const ALL = [T, T2, C, X, D, Z, K, Y, ADMIN];
+// Цель слияния в последнем спеке: в общем списке, чтобы прерванный прогон на
+// живой базе (строка осталась) не ронял следующий на `User_pkey`.
+const MERGED = 4_400_000_000_100n;
+const ALL = [T, T2, C, X, D, Z, K, Y, ADMIN, MERGED];
 jest.setTimeout(60_000);
 
 describe('e2e: отказ от роли терапевта завершает связи', () => {
@@ -171,7 +174,11 @@ describe('e2e: отказ от роли терапевта завершает с
 
   it('вместо него — сообщение: имя бывшего терапевта и дата окончания', async () => {
     const former = await formerOf(C);
-    expect(former).toEqual({ name: `u${T}`, endedAt: expect.any(String) });
+    expect(former).toEqual({
+      name: `u${T}`,
+      endedAt: expect.any(String),
+      reason: 'therapist_resigned',
+    });
     expect(Number.isNaN(Date.parse(former.endedAt))).toBe(false);
   });
 
@@ -256,17 +263,15 @@ describe('e2e: отказ от роли терапевта завершает с
   liveOnly(
     'слияние аккаунтов бывшего терапевта не стирает концептуализацию офлайн-клиента',
     async () => {
-      const MERGED = 4_400_000_000_100n;
       const where = {
         therapistId: T,
         clientId: BigInt(-(await virtualId())),
       };
       expect(await prisma.clientConceptualization.count({ where })).toBe(1);
-      await prisma.user.create({ data: { id: MERGED } });
-      // T — цель слияния: Step D чистит строки именно цели.
+      // MERGED создан в beforeAll вместе с остальными (он в ALL); T — цель
+      // слияния: Step D чистит строки именно цели.
       await app.get(MergeService).merge(MERGED, T);
       expect(await prisma.clientConceptualization.count({ where })).toBe(1);
-      await cleanupOwnershipFixtures(prisma, [MERGED]);
     },
   );
 
@@ -391,7 +396,11 @@ describe('e2e: отказ от роли терапевта завершает с
       ]);
       expect(await reasons(T2)).toEqual([null]);
       // Клиент K бывшего терапевта Z теперь видит сообщение (даты нет).
-      expect(await formerOf(K)).toEqual({ name: `u${Z}`, endedAt: null });
+      expect(await formerOf(K)).toEqual({
+        name: `u${Z}`,
+        endedAt: null,
+        reason: 'therapist_resigned',
+      });
       // Повторный прогон ничего не меняет.
       await prisma.$executeRawUnsafe(sql);
       expect(await reasons(T2)).toEqual([null]);

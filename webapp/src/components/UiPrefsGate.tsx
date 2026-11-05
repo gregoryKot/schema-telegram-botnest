@@ -8,13 +8,13 @@ import { useUiPrefsStartupSync } from '../utils/useUiPrefsStartupSync';
 
 /**
  * Не пускает экраны кабинета, пока настройки экранов с сервера не применены к
- * localStorage: «Сегодня», «+» и остальные читают его при монтировании, и без
- * этого человек, настроивший экран в мини-аппе, видел бы на сайте дефолт.
- * Заставка та же, что у проверки входа, — один непрерывный экран загрузки.
+ * localStorage (экраны читают его при монтировании). Заставка — как у входа.
  */
+// Стабильная ссылка: новая стрелка на рендер перезапускала синхронизацию (GET + закрытый пуш).
+const loadSettings = () => api.getSettings();
 export function UiPrefsGate({ children }: { children: ReactNode }) {
   const settled = useUiPrefsStartupSync({
-    load: () => api.getSettings(),
+    load: loadSettings,
     sync: syncFromServer,
     reset: resetUiPrefsSync,
   });

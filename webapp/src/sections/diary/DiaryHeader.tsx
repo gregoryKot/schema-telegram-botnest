@@ -1,6 +1,7 @@
 import { Sheets } from '../../components/art/PaperArt';
 
 // Шапка «Записей»: герой-блок и единственная залитая кнопка экрана — «Записать» открывает «Дневник одной страницы».
+// На ≥768 заголовок и «Записать» стоят в одной строке (client-diary.css, #925).
 export function DiaryHeader({ onWrite }: { onWrite: () => void }) {
   return (
     <div className="pp-block cd-head">

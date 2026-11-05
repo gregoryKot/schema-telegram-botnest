@@ -88,6 +88,24 @@ export function contactCta(
   return { isSelf: false, label, url: contact.url };
 }
 
+/**
+ * Кэш клиента по его связи: null — терапевта нет, мост ведёт к автору. Одна
+ * точка для старта, входа по ссылке, подключения кодом и отключения (QA
+ * 2026-11-05: после «Отключиться» в «Ещё» до перезагрузки висело «Написать
+ * терапевту» бывшему терапевту — кэш чистил только следующий старт).
+ */
+export function cacheClientRelation(
+  rel: { partnerId: UserId | null; partnerName?: string | null } | null,
+): void {
+  cacheTherapistContact({
+    role: 'CLIENT',
+    partnerId: rel?.partnerId ?? null,
+    partnerName: rel?.partnerName ?? null,
+    myId: null,
+    myName: null,
+  });
+}
+
 /** Call from App.tsx after profile + relation are loaded. */
 export function cacheTherapistContact(opts: {
   role: 'CLIENT' | 'THERAPIST';

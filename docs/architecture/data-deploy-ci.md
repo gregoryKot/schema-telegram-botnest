@@ -46,7 +46,7 @@
   - `CMD ["node","deploy/entrypoint.mjs"]`.
 
 **`deploy/entrypoint.mjs`** (супервизор, PID 1) по порядку:
-1. `front-server.mjs` сразу занимает публичный порт 3000: это TCP-проброс на `APP_PORT` (3001) или, пока приложение не поднялось или упало, страница `maintenance.html`. Исключение — хост визитки (`kotlarewski.gr`, сюда идёт реклама): ему front отдаёт `webapp/dist` с диска (`front-static.mjs`), техработы видят только продукт, API, `/app` и `/health`.
+1. `front-server.mjs` сразу занимает публичный порт 3000: это TCP-проброс на `APP_PORT` (3001) или, пока приложение не поднялось или упало, ответ с диска (`front-static.mjs`): файлы сборки `webapp/dist` — любому хосту (нет файла — 404 `no-store`, не HTML: при выкладке HTML мог прийти от соседнего контейнера, инцидент 2026-11-04), страницы — только визитке (`kotlarewski.gr`, сюда идёт реклама). Страницы продукта, API, `/app`, `/health`, `robots.txt` и `sitemap.xml` получают `maintenance.html`.
 2. `wait-for-db.mjs` ждёт TCP-порт БД из `DATABASE_URL`, до 120 с.
 3. `RECOVER_CMD`, по умолчанию `npx prisma db execute --file prisma/recover-p3009.sql || true`.
 4. `MIGRATE_CMD`, по умолчанию `npx prisma migrate deploy`, 3 попытки. Если не прошло, остаются техработы навсегда и приложение не стартует.
@@ -63,6 +63,7 @@ SIGTERM/SIGINT пробрасываются приложению.
   - `threads-relay/` — Cloudflare Worker (`worker.js` + README), ретранслятор запросов к `graph.threads.net`;
   - `app-exit.mjs` — решение супервизора по выходу приложения;
   - `pg-url-env.cjs` — `DATABASE_URL` в переменные libpq;
+  - `backup-lease-release.cjs` — при SIGTERM синхронно отпускает аренду бэкапа (иначе следующий процесс ждёт окно);
   - `transfer-db.sh` — разовый перенос БД Amvera→VPS через `RECOVER_CMD`.
 
 ### CI
@@ -106,5 +107,5 @@ SIGTERM/SIGINT пробрасываются приложению.
 - **`test/fixtures/recorded/`**: записанные ответы внешних площадок (iCloud PROPFIND, S3 ListObjectsV2, AWS SigV4, OAuth, VK ID) и соседний `*.meta.json` (`source`, `recordedAt`, `how`, `redacted`). Контролирует `check-recorded-fixtures`.
 - **`test/perf/`**: `seed.ts`, `run-plans.ts`, `scenarios.ts`, `explain.ts`, `record-sql.ts`, `seed-profile.ts` для джобы `perf`. Нужен Postgres после `migrate deploy`: `npx ts-node --compiler-options '{"module":"commonjs"}' test/perf/seed.ts`, затем `.../run-plans.ts`, затем `node scripts/check-query-plans.mjs`.
 - **Фронтенды (vitest):** `*.test.ts(x)` рядом с кодом в `webapp/src`, `shared/src` (1021 файл). jsdom включается pragma `// @vitest-environment jsdom` в самом файле. Запуск: `npm test --prefix webapp` (так же `shared`; везде `vitest run`). Покрытие: `node scripts/check-frontend-coverage-ratchet.mjs --package webapp` (также `shared`). CI второй раз гоняет vitest с `TZ=Australia/Sydney`.
-- **Playwright:** `e2e-browser/` (`a11y-smoke`, `crisis-smoke`, `public-pages`, `tracker-smoke`, `a11y-baseline.json`, `support/stubApi.ts`). Проект `webapp` (`vite preview` на :4173). Локально: `VITE_BOT_USERNAME=SchemeHappensBot npm run build --prefix webapp`, затем `npm run smoke` (= `playwright test`). В CI гоняется только в nightly `browser-smoke`.
+- **Playwright:** `e2e-browser/` (`a11y-smoke`, `asset-recovery`, `crisis-smoke`, `public-pages`, `tracker-smoke`, `a11y-baseline.json`, `support/stubApi.ts` — перехват `/api`, `support/stubFixtures.ts` — ответы формы сервера; в спеках на этом стабе (`tracker-smoke`, `crisis-smoke`, `a11y-smoke`) ручка без фикстуры получает 404, а отчёт клиента о сбое роняет тест через `throwOnPageError`; `public-pages` и `asset-recovery` держат свои перехваты). Проект `webapp` (`vite preview` на :4173). Локально: `VITE_BOT_USERNAME=SchemeHappensBot npm run build --prefix webapp`, затем `npm run smoke` (= `playwright test`). В CI гоняется только в nightly `browser-smoke`.
 - **Mutation (nightly):** `npm run mutation`, `mutation:golden-auth`, `mutation:golden-payments`, `mutation:crisis`, `mutation:outbox`.

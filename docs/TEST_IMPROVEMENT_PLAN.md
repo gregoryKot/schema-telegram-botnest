@@ -195,6 +195,11 @@ bot.analytics.service 41%→70%, therapy-client-data 55%→75%. Floors в
 
 Почему не сделано вместе с #547: правило №20 — один инцидент, один PR.
 
+**Сделано (2026-11-05):** хелпер `src/test-support/ephemeral-port.ts` со своим
+спеком, все три файла на нём, константы 58123 нет; у `maintenance-startup.spec.ts`
+заодно поднят бюджет ожидания (опрос 10 с, front 10 с). Гейт не заведён — открыто
+в `docs/open/ci-tests.md`.
+
 ## Этап 4 — Продвинутое (после 1–3)
 
 **4.1 Mutation testing (Stryker) на золотые зоны:** `src/utils/crypto`,

@@ -1,9 +1,8 @@
-// Ползунок 0–10 «Колеса детства» — один механизм ввода для обеих площадок:
-// указатель (тап и протяжка) и клавиатура, роль slider и aria-value*. Вёрстка
-// трека у каждой своя (мини-апп — Slider, сайт — CWTrack), поведение — отсюда.
-// До QA 2026-11 (З13) клавиатура жила только в мини-аппе: на сайте шкала была
-// div с одними pointer-событиями, без мыши колесо не проходилось.
-import { useRef, type KeyboardEvent, type PointerEvent } from 'react';
+// Ползунок 0–10 «Колеса детства» (вёрстка — CWTrack): указатель и клавиатура,
+// роль slider и aria-value*. Разбор жеста тап/протяжка/прокрутка — sliderGesture.
+// До QA 2026-11 (З13) на сайте шкала была div с одними pointer-событиями.
+import { useRef, type KeyboardEvent } from 'react';
+import { useSliderPointer } from './sliderGesture';
 
 export const RATING_MIN = 0;
 export const RATING_MAX = 10;
@@ -61,6 +60,7 @@ export function useRatingSlider({
     const r = el.getBoundingClientRect();
     onChange(clamp(Math.round(((clientX - r.left) / r.width) * RATING_MAX)));
   };
+  const pointer = useSliderPointer(fromPointer);
   return {
     ref,
     role: 'slider' as const,
@@ -77,14 +77,6 @@ export function useRatingSlider({
       e.preventDefault();
       onChange(next);
     },
-    onPointerDown: (e: PointerEvent<HTMLDivElement>) => {
-      e.preventDefault();
-      e.currentTarget.setPointerCapture(e.pointerId);
-      fromPointer(e.clientX);
-    },
-    onPointerMove: (e: PointerEvent<HTMLDivElement>) => {
-      if (e.buttons === 0) return;
-      fromPointer(e.clientX);
-    },
+    ...pointer,
   };
 }

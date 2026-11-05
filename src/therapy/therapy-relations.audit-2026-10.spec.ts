@@ -28,6 +28,9 @@ const CLIENT = 555n;
 
 function make(rels: Rel[]) {
   const prisma: any = makeRelationPrismaMock(rels);
+  // disconnect — транзакция с заданиями (end-client-relations.ts).
+  prisma.$transaction = (fn: (tx: unknown) => unknown) => fn(prisma);
+  prisma.userTask = { updateMany: async () => ({ count: 0 }) };
   return { service: new TherapyRelationsService(prisma, {} as any), rels };
 }
 
@@ -60,10 +63,11 @@ describe('T2 — disconnect не трогает связи в роли тера�
     const invite = pending({ id: 3, code: 'CCC333' });
     const { service, rels } = make([real, virtual, invite]);
     await service.disconnect(T1);
-    expect(rels).toEqual([real, virtual, invite]);
+    expect(rels.map((r) => r.status)).toEqual(['active', 'active', 'pending']);
   });
 
-  it('клиент disconnect: рвёт все свои связи (с любым терапевтом), чужие не трогает', async () => {
+  // С 2026-11-05 связь не удаляется, а завершается: ended + client_left.
+  it('клиент disconnect: завершает все свои связи (с любым терапевтом), чужие не трогает', async () => {
     const mine1: Rel = {
       id: 1,
       therapistId: T1,
@@ -87,7 +91,9 @@ describe('T2 — disconnect не трогает связи в роли тера�
     };
     const { service, rels } = make([mine1, mine2, other]);
     await service.disconnect(CLIENT);
-    expect(rels).toEqual([other]);
+    expect(
+      rels.map((r: any) => `${r.code}:${r.status}:${r.endReason ?? '-'}`),
+    ).toEqual(['A1:ended:client_left', 'A2:ended:client_left', 'A3:active:-']);
   });
 });
 

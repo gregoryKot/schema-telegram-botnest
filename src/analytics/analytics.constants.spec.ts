@@ -106,6 +106,10 @@ describe('CONCEPT_EVENTS ⊆ ANALYTICS_EVENTS', () => {
   it('повтор сохранения после ошибки — событие реестра (concept_save_retry, #879)', () => {
     expect(CONCEPT_EVENTS).toContain('concept_save_retry');
   });
+
+  it('экран «Главное» — событие реестра (concept_brief_open)', () => {
+    expect(CONCEPT_EVENTS).toContain('concept_brief_open');
+  });
 });
 
 describe('PUBLIC_ANALYTICS_EVENTS ⊆ ANALYTICS_EVENTS', () => {

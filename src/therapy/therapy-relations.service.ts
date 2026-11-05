@@ -13,6 +13,8 @@ import { decryptJson } from '../utils/crypto';
 import { decryptName, encryptName } from './client-name';
 import { randomBytes } from 'crypto';
 import { activeRelationWhere } from './relation-where';
+import { endClientRelations } from './end-client-relations';
+import { CLIENT_LEFT } from './relation-end-reason';
 import { TherapyRelationInfo, TherapyClientSummary } from './therapy.types';
 
 // Связи терапевт↔клиент: приглашения, подключение, список клиентов,
@@ -59,15 +61,13 @@ export class TherapyRelationsService {
     return getRelationInfo(this.prisma, userId);
   }
 
-  // Разрывает живые связи, где userId — КЛИЕНТ; `ended` (терапевт отказался от
-  // роли) остаётся историей (client-map-authors.ts). Связи в роли терапевта не
-  // трогаются: раньше DELETE /api/therapy/relation от терапевта сносил всех его
-  // клиентов и приглашения, а заметки и карты оставались сиротами (аудит
-  // 2026-10, T2). Терапевт убирает клиентов по одному (removeClient).
+  // Завершает живые связи, где userId — КЛИЕНТ (client_left, задания терапевта —
+  // личные цели, end-client-relations.ts). Связи в роли терапевта не трогаются
+  // (аудит 2026-10, T2): терапевт убирает клиентов по одному (removeClient).
   async disconnect(userId: bigint): Promise<void> {
-    await this.prisma.therapyRelation.deleteMany({
-      where: { clientId: userId, status: { in: ['active', 'pending'] } },
-    });
+    await this.prisma.$transaction((tx) =>
+      endClientRelations(tx, { clientId: userId }, CLIENT_LEFT),
+    );
   }
 
   async getClients(therapistId: bigint): Promise<TherapyClientSummary[]> {
