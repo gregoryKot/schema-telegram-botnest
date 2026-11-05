@@ -38,7 +38,7 @@ function Expression({ size }: ArtProps) {
 function Play({ size }: ArtProps) {
   return (
     <Svg size={size} viewBox="0 0 120 64">
-      <path d="M60 32 m-2 0 a2 2 0 1 0 4 0 a8 8 0 1 1 -16 0 a14 14 0 1 0 28 0 a20 20 0 1 1 -40 0 a26 26 0 1 0 52 0" fill="none" stroke={PAPER.amber} strokeWidth="9" strokeLinecap="round" />
+      <path d="M62.0 32.0 L62.2 32.6 L62.2 33.3 L61.9 34.0 L61.3 34.6 L60.5 35.1 L59.4 35.4 L58.2 35.3 L57.1 34.9 L56.0 34.2 L55.2 33.2 L54.7 31.9 L54.7 30.4 L55.2 29.0 L56.1 27.7 L57.5 26.6 L59.3 25.9 L61.3 25.7 L63.3 26.1 L65.3 27.0 L66.9 28.4 L68.0 30.3 L68.5 32.4 L68.3 34.7 L67.4 36.8 L65.8 38.7 L63.5 40.2 L60.8 41.0 L57.8 41.1 L54.9 40.4 L52.3 39.0 L50.1 36.8 L48.7 34.2 L48.2 31.2 L48.7 28.1 L50.1 25.2 L52.5 22.7 L55.7 21.0 L59.3 20.0 L63.2 20.1 L67.0 21.2 L70.3 23.2 L72.9 26.1 L74.6 29.6 L75.0 33.4 L74.2 37.3 L72.2 40.9 L69.1 43.9 L65.0 46.0 L60.4 46.9 L55.6 46.7 L51.0 45.2 L47.0 42.5 L43.9 38.9 L42.1 34.5 L41.8 29.8 L42.9 25.2 L45.6 20.9 L49.5 17.4 L54.4 15.1 L60.0 14.1" fill="none" stroke={PAPER.amber} strokeWidth="8" strokeLinecap="round" strokeLinejoin="round" />
     </Svg>
   );
 }
