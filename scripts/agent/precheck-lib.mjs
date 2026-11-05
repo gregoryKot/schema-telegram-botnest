@@ -21,6 +21,10 @@ export const NEEDS_BUILD = {
     'запускает eslint по всему репозиторию — нужны node_modules всех пакетов и prisma generate; локально: node scripts/check-eslint-ratchet.mjs --changed',
   'check-query-plans.mjs':
     'судит .perf/plans.json, который пишет замер EXPLAIN на живом Postgres (джоба perf)',
+  'check-mutation-ratchet.mjs':
+    'судит отчёт Stryker reports/mutation/*.json — его пишет прогон Stryker (джоба mutation-changed)',
+  'mutation-changed-files.mjs':
+    'сравнивает ветку с origin/main и пишет в $GITHUB_OUTPUT — только в CI',
 };
 
 // Шаг ci.yml вида `- run: node scripts/<имя>.mjs [аргументы]` (или `run:` без

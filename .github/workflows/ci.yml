@@ -956,35 +956,41 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      - name: изменённые файлы золотых зон
-        id: pick
-        run: |
-          git fetch origin main --quiet
-          echo "auth=$(node scripts/mutation-changed-files.mjs --config=stryker.golden-auth.config.json --base=origin/main)" >> "$GITHUB_OUTPUT"
-          echo "payments=$(node scripts/mutation-changed-files.mjs --config=stryker.golden-payments.config.json --base=origin/main)" >> "$GITHUB_OUTPUT"
+      # Каждый вызов `node scripts/…` — отдельный однострочный шаг: так его
+      # разбирает precheck (scripts/agent/precheck-lib.mjs, спек
+      # agent-precheck.spec.ts), а селектор сам пишет в $GITHUB_OUTPUT.
+      - run: git fetch origin main --quiet
+      - name: изменённые файлы волны А (вход, шифрование)
+        id: auth
+        run: node scripts/mutation-changed-files.mjs --config=stryker.golden-auth.config.json --base=origin/main --github-output=files
+      - name: изменённые файлы волны Б (деньги, бронирования)
+        id: payments
+        run: node scripts/mutation-changed-files.mjs --config=stryker.golden-payments.config.json --base=origin/main --github-output=files
       - name: нечего мутировать
-        if: steps.pick.outputs.auth == '' && steps.pick.outputs.payments == ''
+        if: steps.auth.outputs.files == '' && steps.payments.outputs.files == ''
         run: echo "PR не трогает файлы золотых зон (mutate в stryker.golden-*.config.json) — мутации не нужны."
-      - if: steps.pick.outputs.auth != '' || steps.pick.outputs.payments != ''
+      - if: steps.auth.outputs.files != '' || steps.payments.outputs.files != ''
         run: npm ci
-      - if: steps.pick.outputs.auth != '' || steps.pick.outputs.payments != ''
+      - if: steps.auth.outputs.files != '' || steps.payments.outputs.files != ''
         run: npx prisma generate
-      - name: Stryker и храповик — волна А (${{ steps.pick.outputs.auth }})
-        if: steps.pick.outputs.auth != ''
+      - name: Stryker — волна А (${{ steps.auth.outputs.files }})
+        if: steps.auth.outputs.files != ''
         env:
-          FILES: ${{ steps.pick.outputs.auth }}
-        run: |
-          npx stryker run stryker.golden-auth.config.json --mutate "$FILES"
-          node scripts/check-mutation-ratchet.mjs --partial --report=reports/mutation/golden-auth.json --baseline=scripts/mutation-golden-auth-baseline.json
-      - name: Stryker и храповик — волна Б (${{ steps.pick.outputs.payments }})
-        if: steps.pick.outputs.payments != ''
+          FILES: ${{ steps.auth.outputs.files }}
+        run: npx stryker run stryker.golden-auth.config.json --mutate "$FILES"
+      - name: храповик мутаций — волна А, только файлы отчёта
+        if: steps.auth.outputs.files != ''
+        run: node scripts/check-mutation-ratchet.mjs --partial --report=reports/mutation/golden-auth.json --baseline=scripts/mutation-golden-auth-baseline.json
+      - name: Stryker — волна Б (${{ steps.payments.outputs.files }})
+        if: steps.payments.outputs.files != ''
         env:
-          FILES: ${{ steps.pick.outputs.payments }}
-        run: |
-          npx stryker run stryker.golden-payments.config.json --mutate "$FILES"
-          node scripts/check-mutation-ratchet.mjs --partial --report=reports/mutation/golden-payments.json --baseline=scripts/mutation-golden-payments-baseline.json
+          FILES: ${{ steps.payments.outputs.files }}
+        run: npx stryker run stryker.golden-payments.config.json --mutate "$FILES"
+      - name: храповик мутаций — волна Б, только файлы отчёта
+        if: steps.payments.outputs.files != ''
+        run: node scripts/check-mutation-ratchet.mjs --partial --report=reports/mutation/golden-payments.json --baseline=scripts/mutation-golden-payments-baseline.json
       - name: отчёт артефактом
-        if: always() && (steps.pick.outputs.auth != '' || steps.pick.outputs.payments != '')
+        if: always() && (steps.auth.outputs.files != '' || steps.payments.outputs.files != '')
         uses: actions/upload-artifact@v7
         with:
           name: mutation-report-changed

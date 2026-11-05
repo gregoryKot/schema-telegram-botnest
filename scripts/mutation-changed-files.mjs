@@ -7,10 +7,15 @@
 //
 //   node scripts/mutation-changed-files.mjs --config=stryker.golden-auth.config.json --base=origin/main
 //   node scripts/mutation-changed-files.mjs --config=... src/a.ts src/b.ts   # явный список
+//   ... --github-output=files   # ещё и строка `files=<список>` в $GITHUB_OUTPUT
+//
+// В ci.yml селектор зовётся однострочным шагом и сам пишет выход шага: так
+// вызов разбирает precheck (scripts/agent/precheck-lib.mjs), а не теряет его
+// внутри `echo "$(…)" >> "$GITHUB_OUTPUT"`.
 //
 // Удалённые файлы отбрасываются: мутировать нечего. Шаблоны (`*`) в `mutate`
 // не поддержаны намеренно — золотые конфиги перечисляют файлы поимённо.
-import { readFileSync, existsSync } from 'fs';
+import { appendFileSync, readFileSync, existsSync } from 'fs';
 import { execFileSync } from 'child_process';
 import { join, dirname, resolve } from 'path';
 import { fileURLToPath } from 'url';
@@ -47,6 +52,19 @@ function main() {
     existsSync(join(ROOT, f)),
   );
   process.stdout.write(picked.join(','));
+  const output = val('github-output');
+  if (output) {
+    if (!process.env.GITHUB_OUTPUT) {
+      console.error(
+        '--github-output без $GITHUB_OUTPUT: шаг не в GitHub Actions',
+      );
+      process.exit(2);
+    }
+    appendFileSync(
+      process.env.GITHUB_OUTPUT,
+      `${output}=${picked.join(',')}\n`,
+    );
+  }
 }
 
 if (resolve(process.argv[1] ?? '') === fileURLToPath(import.meta.url)) main();
