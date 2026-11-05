@@ -111,10 +111,10 @@ describe('стиль не загрузился', () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it('пять повторов с паузами 1/2/4/8/16 с, после пятого — один отчёт и без перезагрузки', () => {
+  it('семь повторов с паузами 1/2/4/8/16/32/64 с, после седьмого — один отчёт и без перезагрузки', () => {
     openPage('/donate?x=1#access_token=abc');
     let link = addStylesheet(CSS);
-    [1000, 2000, 4000, 8000, 16000].forEach((delay, i) => {
+    [1000, 2000, 4000, 8000, 16000, 32000, 64000].forEach((delay, i) => {
       fail(link);
       vi.advanceTimersByTime(delay - 1);
       expect(link.nextElementSibling).toBeNull();
@@ -125,8 +125,8 @@ describe('стиль не загрузился', () => {
     });
     expect(fetchMock).not.toHaveBeenCalled();
     fail(link);
-    vi.advanceTimersByTime(60_000);
-    expect(link.nextElementSibling).toBeNull(); // шестого повтора нет
+    vi.advanceTimersByTime(120_000);
+    expect(link.nextElementSibling).toBeNull(); // восьмого повтора нет
     expect(fetchMock).toHaveBeenCalledTimes(1);
     const [url, init] = fetchMock.mock.calls[0];
     expect(url).toBe('/api/client-errors');
@@ -142,15 +142,15 @@ describe('стиль не загрузился', () => {
 
   it('отчёт — один на файл за страницу: другой файл и новая загрузка шлют свой', () => {
     const exhausted = (href: string) =>
-      add('link', { rel: 'stylesheet', href, 'data-asset-retry': '5' });
+      add('link', { rel: 'stylesheet', href, 'data-asset-retry': '7' });
     openPage();
-    const last = exhausted(`${CSS}?retry=5`);
+    const last = exhausted(`${CSS}?retry=7`);
     fail(last);
     fail(last);
-    fail(exhausted('/assets/sheet-diary-Qw12Er34.css?retry=5'));
+    fail(exhausted('/assets/sheet-diary-Qw12Er34.css?retry=7'));
     expect(fetchMock).toHaveBeenCalledTimes(2);
     openPage();
-    fail(exhausted(`${CSS}?retry=5`));
+    fail(exhausted(`${CSS}?retry=7`));
     expect(reports()).toEqual([
       report('CSS', CSS),
       report('CSS', '/assets/sheet-diary-Qw12Er34.css'),
