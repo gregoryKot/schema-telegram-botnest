@@ -28,6 +28,7 @@ import { api } from '../../../api';
 import { ClientConceptTab } from '../ClientConceptTab';
 import { useClientDetail } from '../useClientDetail';
 import { BRIEF_BLOCKS_KEY } from '../../../../../shared/src/therapy/conceptBrief/conceptBrief';
+import { CONCEPT_BRIEF_OPEN_EVENT } from '../../../../../shared/src/share/analytics';
 
 const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
 
@@ -95,7 +96,9 @@ describe('ClientConceptTab: экран «Главное»', () => {
     expect(briefBtn().closest('.tcp-head-actions')).toBeTruthy();
     fireEvent.click(briefBtn());
     expect(sheet()).toBeTruthy();
-    expect(mockApi.trackEvent.mock.calls.filter((c) => c[0] === 'concept_brief_open')).toHaveLength(1);
+    // литерал в кнопке (трипваер analytics-sync) совпадает с константой shared
+    expect(CONCEPT_BRIEF_OPEN_EVENT).toBe('concept_brief_open');
+    expect(mockApi.trackEvent.mock.calls.filter((c) => c[0] === CONCEPT_BRIEF_OPEN_EVENT)).toHaveLength(1);
     const names = within(sheet()!).getAllByRole('region').map((r) => r.getAttribute('aria-label'));
     expect(names).toEqual(['Схемы', 'Режимы', 'Потребности', 'Переключение режимов', 'Цели терапии', 'Актуальные проблемы']);
     expect(within(card('Схемы')).getByText('Неуспешность').className).toBe('ds-chip tone-tint');
