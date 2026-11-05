@@ -7,6 +7,15 @@ import type { DayHistory } from '../types';
 /** Ключ «день заполнен, праздник показан» — по нему же сайт узнаёт, что история есть. */
 export const celebratedKey = (day: string) => 'celebrated_' + day;
 
+// Единственный писатель семейства celebrated_<день>.
+export function isCelebrated(day: string): boolean {
+  return !!localStorage.getItem(celebratedKey(day));
+}
+
+export function markCelebrated(day: string): void {
+  localStorage.setItem(celebratedKey(day), '1');
+}
+
 // Константы ниже заморожены при загрузке бандла: для экрана, который живёт
 // через полночь, — useLocalDay (./useLocalDay.ts) и useDayRatings.
 export const TODAY_DATE = todayStr();
