@@ -1,7 +1,7 @@
 // Живой проход связи клиент↔терапевт: настоящий AppModule на живом Postgres
 // (test/e2e-support/live-stand.ts, :3000 + вход :3001) и прод-сборка сайта на
-// :5174 с прокси /api (webapp/vite.live.config.ts). В CI не гоняется — рецепт
-// локального запуска в шапке live-stand.ts; кандидат в nightly (docs/open/ci-tests.md).
+// :5174 с прокси /api (webapp/vite.live.config.ts). Гоняется ночью — джоба
+// `browser-live` в nightly.yml; рецепт локального запуска в шапке live-stand.ts.
 import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({
