@@ -56,6 +56,7 @@ scripts/check-agent-docs.mjs (CI, джоба checks). Новое правило:
 - **Данные пользователя — только реальные:** нет данных → пусто, скелетон или «—».
 - **Загрузка — скелетон по форме контента** (`webapp/src/components/Skeleton.tsx`), спиннер — только у кнопок-действий.
 - **Полноэкранный лист в webapp** (`position: fixed; inset: 0`) → `const goBack = useHistorySheet(onClose)`, все «Назад/Закрыть» — через `goBack()`; без `history.pushState` (`check-history-sheet`).
+- **Под-лист стоит не ниже родителя:** листы одного уровня стыкуются порядком в DOM (поздний сиблинг выше при равном z-index), число — только чтобы встать выше чужого позднего сиблинга; лишний `zIndex` у родителя прячет под-лист (`check-overlay-stack`).
 - **Кэш в localStorage — один ключ, один писатель:** `setItem`/`removeItem` с ключом зовёт только модуль-владелец из `scripts/local-cache-baseline.json` (mirror|local), остальные — его функцию; кэш обновляется там же, где меняется источник (`check-local-cache-writers`).
 - **Сборка:** сайт собирает Docker (dist в git нет). Деплой = push в `main`.
 
