@@ -22,7 +22,7 @@ export function ModeAboutSheet({ modeId, onClose, onFill }: Props) {
   const card = getModeCard(modeId);
   return (
     <SsSheet onBack={goBack}>
-      <SsHead eyebrow={mode.groupName} title={mode.name} lede={card?.about ?? mode.short} />
+      <SsHead cluster eyebrow={mode.groupName} title={mode.name} lede={card?.about ?? mode.short} />
       {card && <ModePortrait card={card} hue={patternHue('mode', modeId) ?? 70} onStart={onFill} ctaLabel="Заполнить карточку →" />}
     </SsSheet>
   );

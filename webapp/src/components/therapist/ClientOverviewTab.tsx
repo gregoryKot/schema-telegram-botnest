@@ -5,6 +5,7 @@ import { hueStyle } from '../../lib/tone';
 import { useIsMobile } from '../useIsMobile';
 import { ClientOverviewSidebar } from './ClientOverviewSidebar';
 import { PaperEmpty } from '../art/PaperEmpty';
+import { SignHead } from './SignArt';
 import { ClientQuickActions } from './ClientQuickActions';
 import { ToneGroupsCard } from './ClientOverviewGroups';
 import { diaryPreview, groupSchemasByDomain, summarizeModes } from './clientOverviewModel';
@@ -38,25 +39,25 @@ export function ClientOverviewTab({ selectedClient, detail }: Props) {
 
         {goals && (
           <section className="ds-card tk-goal">
-            <h2 className="ds-label">Цель терапии</h2>
+            <SignHead kind="layers" className="ds-label">Цель терапии</SignHead>
             <p className="tk-text">{goals}</p>
             <button className="ds-link" onClick={() => setClientTab('concept')}>Открыть концептуализацию →</button>
           </section>
         )}
 
         {domains.length > 0 && (
-          <ToneGroupsCard label="Активные схемы" sub={`${activeSchemaIds.length} в работе`} groups={domains} layout="tiles" />
+          <ToneGroupsCard label="Активные схемы" sign="layers" sub={`${activeSchemaIds.length} в работе`} groups={domains} layout="tiles" />
         )}
 
         {groups.length > 0 && (
-          <ToneGroupsCard label="Карта режимов" groups={groups} layout="cols"
+          <ToneGroupsCard label="Карта режимов" sign="cluster" groups={groups} layout="cols"
             action={<button className="ds-link" onClick={() => setClientTab('concept')}>Редактировать →</button>} />
         )}
 
         {notes.length > 0 && (
           <section className="ds-card">
             <div className="ds-head-row tk-card-head">
-              <h2 className="ds-label">Заметка сессии</h2>
+              <SignHead kind="pebbles" className="ds-label">Заметка сессии</SignHead>
               <button className="ds-link" onClick={() => setClientTab('sessions')}>Все заметки →</button>
             </div>
             <div className="tk-note-text">{notes[0].text}</div>
@@ -67,7 +68,7 @@ export function ClientOverviewTab({ selectedClient, detail }: Props) {
         {entries.length > 0 && (
           <section className="ds-card">
             <div className="ds-head-row tk-card-head">
-              <h2 className="ds-label">Последние записи</h2>
+              <SignHead kind="pebbles" className="ds-label">Последние записи</SignHead>
               <button className="ds-link" onClick={() => setClientTab('client_notes')}>Все записи →</button>
             </div>
             {entries.map((e, i) => (

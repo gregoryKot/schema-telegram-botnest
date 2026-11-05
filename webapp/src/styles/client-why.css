@@ -44,3 +44,10 @@
   .cw-sheet .cw-item-text { font-size: 15px; }
   .cw-inner .ds-btn--lg { width: 100%; }
 }
+
+/* Легенда «Что означают картинки» (WhyLegend): знак — смысл, одной колонкой. */
+.cw-legend { display: flex; flex-direction: column; gap: 10px; }
+.cw-legend-list { margin: 0; display: flex; flex-direction: column; gap: 8px; }
+.cw-legend-row { display: grid; grid-template-columns: 84px minmax(0, 1fr); gap: 10px; font-size: 14px; line-height: 1.5; }
+.cw-legend-row dt { font-weight: 600; color: var(--text); }
+.cw-legend-row dd { margin: 0; color: var(--text-sub); }

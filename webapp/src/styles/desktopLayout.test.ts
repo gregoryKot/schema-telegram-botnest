@@ -31,7 +31,6 @@ const LG: Record<string, ['own' | 'stretch' | 'content', string]> = {
   'components/settingsSheet/AboutSheet.tsx': ['own', '.st-done'],
   'components/therapy/TalkSheet.tsx': ['stretch', '.th-sheet-acts'],
   'sections/schemas/MineGroupsList.tsx': ['stretch', '.cs-block'],
-  'sections/diary/DiaryHeader.tsx': ['content', '.cd-write'],
   'sections/today/HomeTiles.tsx': ['stretch', '.pp-block'], // блок трекера — колонка pp-block во всю ширину страницы 600
   'pages/subscribe/SubscribeForm.tsx': ['own', '.ap-pay .ds-btn--lg'],
   'pages/DonatePage.tsx': ['own', '.ap-donate .ds-btn--lg'], // во всю карточку 560

@@ -1,26 +1,9 @@
 import type { TherapyClientSummary, UserId } from '../api';
 import { clientHue, hueStyle, indexLevel } from '../lib/tone';
 import { clientInitials } from '../../../shared/src/therapy/clientInitials';
-import { activityStatus, clientName, latestIndex, sessionTime, sparkPoints } from './therapistTodayModel';
+import { activityStatus, clientName, latestIndex, sparkPoints } from './therapistTodayModel';
 
 interface RowProps { client: TherapyClientSummary; onOpen: (id: UserId) => void }
-
-export function SessionRow({ client, onOpen }: RowProps) {
-  const time = sessionTime(client);
-  const sub = activityStatus(client).text; // у офлайн-клиента активности не бывает — пусто
-  return (
-    <button type="button" className="ds-card ds-card--row ds-card--hover tt-session tt-reset"
-      onClick={() => onOpen(client.telegramId)}>
-      <span className="tt-time">{time || '—'}</span>
-      <span className="tt-bar tone-fill" style={hueStyle(clientHue(client.telegramId))} />
-      <span className="tt-who">
-        <span className="tt-name" style={{ display: 'block' }}>{clientName(client)}</span>
-        {sub && <span className="tt-row-sub" style={{ display: 'block' }}>{sub}</span>}
-      </span>
-      <span className="ds-chev" aria-hidden="true" />
-    </button>
-  );
-}
 
 export function ActivityRow({ client, onOpen }: RowProps) {
   const name = clientName(client);

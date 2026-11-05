@@ -5,7 +5,7 @@ import { formatGreetingDate } from './today/greetingDate';
 /** Приветствие и дата — те же, что у клиентского «Сегодня» (одна механика); Talk — работа с людьми. */
 export function TherapistTodayHead({ displayName }: { displayName: string | null }) {
   return (
-    <div className="pp-block">
+    <div className="pp-block pp-block--head">
       <div className="pp-hero">
         <div className="pp-hero-body">
           <div className="ds-label">{formatGreetingDate()}</div>

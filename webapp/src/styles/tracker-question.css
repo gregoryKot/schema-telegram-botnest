@@ -99,3 +99,6 @@
   min-height: 44px; padding: 0 var(--space-12); background: none; border: none;
   font: 600 14px var(--sans); color: var(--text-sub); cursor: pointer;
 }
+/* Название потребности и её мотив в одной строке: картинка не уводит ответы за сгиб (390×844). */
+.tq-namerow { display: flex; align-items: center; justify-content: space-between; gap: var(--space-12); }
+.tq-namerow .pp-row-art { width: auto; }

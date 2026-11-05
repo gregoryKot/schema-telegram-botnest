@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
 import { describe, it, expect, afterEach, vi } from 'vitest';
 import { act, render, screen } from '@testing-library/react';
-import { isTextEntry, useTextEntryFocus } from './useTextEntryFocus';
+import { useTextEntryFocus } from './useTextEntryFocus';
+import { isTextEntry } from './textEntryFocus.store';
 
 function setTouch(coarse: boolean) {
   window.matchMedia = vi.fn().mockImplementation((q: string) => ({
@@ -83,6 +84,35 @@ describe('useTextEntryFocus', () => {
     focus(screen.getByLabelText('area'));
     focus(screen.getByLabelText('check'));
     expect(screen.getByTestId('state').textContent).toBe('idle');
+  });
+
+  // Инцидент 2026-11-05: панель возвращалась на focusout, пока окно ещё
+  // укорочено на клавиатуру, и застревала посреди экрана.
+  it('телефон: уход фокуса при открытой клавиатуре — печатает, пока окно не вернулось', () => {
+    setTouch(true);
+    const vv = Object.assign(new EventTarget(), { height: 500 });
+    Object.defineProperty(window, 'innerHeight', { value: 800, configurable: true });
+    Object.defineProperty(window, 'visualViewport', { value: vv, configurable: true });
+    window.scrollTo = vi.fn() as unknown as typeof window.scrollTo;
+    try {
+      render(<Probe />);
+      focus(screen.getByLabelText('area'));
+      blur(screen.getByLabelText('area'));
+      expect(screen.getByTestId('state').textContent).toBe('typing');
+      vv.height = 800;
+      act(() => { vv.dispatchEvent(new Event('resize')); });
+      expect(screen.getByTestId('state').textContent).toBe('idle');
+      // Снова в поле и обратно, пока клавиатура ещё не ушла: старое ожидание не стреляет.
+      focus(screen.getByLabelText('area'));
+      vv.height = 500;
+      blur(screen.getByLabelText('area'));
+      focus(screen.getByLabelText('area'));
+      vv.height = 800;
+      act(() => { vv.dispatchEvent(new Event('resize')); });
+      expect(screen.getByTestId('state').textContent).toBe('typing');
+    } finally {
+      Object.defineProperty(window, 'visualViewport', { value: undefined, configurable: true });
+    }
   });
 
   it('мышь (десктоп): фокус в поле ничего не прячет', () => {

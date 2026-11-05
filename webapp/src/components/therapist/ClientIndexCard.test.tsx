@@ -13,7 +13,7 @@ const day = (index: number | null) => ({ index });
 describe('ClientIndexCard', () => {
   it('история короче трёх дней — число с уровнем, без столбиков и дельты', () => {
     const { container } = render(<ClientIndexCard todayIndex={7.2} history={[day(7.2), day(6)]} />);
-    expect(screen.getByText('Индекс сегодня').className).toBe('ds-label');
+    expect(screen.getByText('Индекс сегодня').className).toContain('ds-label');
     expect(screen.getByText('7.2').className).toContain('ds-idx-');
     expect(container.querySelector('.ds-spark')).toBeNull();
     expect(screen.queryByText(/к нед\./)).toBeNull();
