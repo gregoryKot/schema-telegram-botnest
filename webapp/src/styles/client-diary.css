@@ -84,4 +84,3 @@
 
 /* Пустая лента: карточки «Схема» и «Режим» — цветная бумага с мотивом над текстом */
 .cd-explainer-card { padding: 16px 18px; }
-.cd-explainer-art { display: flex; justify-content: flex-start; width: auto; margin-bottom: 8px; }

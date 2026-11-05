@@ -11,7 +11,6 @@ import { useMoreRows } from './more/useMoreRows';
 import { MoreRows } from './more/MoreRows';
 import { TasksHub } from './tasks/TasksHub';
 import '../styles/client-more.css';
-import { Heart } from '../components/art/PaperArtSigns';
 
 interface Props {
   onNavigate: (s: Section) => void;
@@ -54,7 +53,6 @@ export function MoreSection(p: Props) {
       <MoreRows rows={rows} />
 
       <button type="button" className="ds-card ds-card--row ds-card--nav ds-card--crisis ds-card--hover" onClick={() => p.onNavigate('practice')}>
-        <span className="pp-row-art"><Heart size="row" /></span>
         <span className="ds-list-title">Мне очень плохо</span>
         <span className="ds-chev" aria-hidden="true" />
       </button>

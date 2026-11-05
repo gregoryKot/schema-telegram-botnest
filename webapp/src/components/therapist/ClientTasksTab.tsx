@@ -13,7 +13,6 @@ import { therapistClosesTask, useTherapistTaskActions } from '../../../../shared
 import { hueStyle } from '../../lib/tone';
 import type { ClientDetail } from './clientSheetTypes';
 import { isOpenStatus, orderTasks, taskMeta, taskStatus, templateHue } from './taskModel';
-import { TabArt } from './TabTitle';
 import { PaperEmpty } from '../art/PaperEmpty';
 import { TaskStatusBadge } from '../TaskStatusBadge';
 import { ASSIGN_TEMPLATES, type AssignPreset } from './assignTemplates';
@@ -40,7 +39,7 @@ export function ClientTasksTab({ detail, onAssign, onTasksChanged }: Props) {
   return (
     <div className="ds-page tb-tasks">
       <div className="tb-col">
-        <div className="tb-big"><TabArt motif="check" />
+        <div className="tb-big">
           <span className="ds-num tb-big-num">{activeCount}</span>
           <span className="tb-big-cap">
             {pluralRu(activeCount, 'активное домашнее задание', 'активных домашних задания', 'активных домашних заданий')}

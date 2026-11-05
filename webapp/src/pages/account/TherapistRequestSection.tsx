@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { Talk } from '../../components/art/PaperArtSigns';
 import { API_BASE } from '../../utils/apiBase'; import { useTr } from '../../utils/addressForm';
 import { LimitedTextarea } from '../../../../shared/src/components/LimitedTextarea';
 import * as LIM from '../../../../shared/src/limits/textLimits';
@@ -65,7 +64,7 @@ export function TherapistRequestSection({ accessToken }: { accessToken: string |
 
   return (
     <div className="pp-paper aa-role">
-      <div className="aa-role-head"><div className="aa-role-label">Роль психолога</div><Talk size="row" /></div>
+      <div className="aa-role-label">Роль психолога</div>
       <TherapistRequestRejectedNote request={req} className="aa-role-note" />
       {req?.status === 'pending' ? (
         <div className="aa-role-note">

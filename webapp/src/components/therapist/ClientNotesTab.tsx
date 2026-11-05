@@ -28,7 +28,7 @@ export function ClientNotesTab({ clientSchemaNotesData, clientModeNotesData, cli
   return (
     <div className="ds-page tb-page--narrow">
       <div className="ds-head-row tb-notes-head">
-        <TabTitle title="Записи клиента" motif="pebbles" className="tb-tab-title--desk" />
+        <TabTitle title="Записи клиента" className="tb-tab-title--desk" />
         <div className="ds-seg ds-seg--scroll" role="tablist">
           {FILTERS.map(f => (
             <button key={f.id} role="tab" aria-selected={filter === f.id} className={`ds-seg-btn${filter === f.id ? ' is-active' : ''}`} onClick={() => setFilter(f.id)}>

@@ -12,8 +12,6 @@
 .ss-head { display: flex; flex-direction: column; gap: 8px; }
 .ss-title { margin: 0; font-family: var(--serif); font-weight: 400; font-size: 34px; line-height: 1.15; color: var(--text); }
 .ss-lede { margin: 0; font-size: 15px; line-height: 1.6; color: var(--text-sub); }
-.ss-title-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.ss-title-row .ss-title { min-width: 0; }
 .ss-head--paper { padding: 20px; box-sizing: border-box; }
 .ss-head--center { text-align: center; align-items: center; }
 .ss-stack { display: flex; flex-direction: column; gap: 10px; }
@@ -167,4 +165,3 @@
   .ss-slide-r, .ss-slide-l { animation: none; }
 }
 .ss-mode-share { margin-left: auto; flex-shrink: 0; }
-.ss-head--center .ss-title-row { justify-content: center; }

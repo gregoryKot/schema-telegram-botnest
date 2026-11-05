@@ -6,13 +6,13 @@ const rowClass = (r: Row) => r.phoneOnly ? `${ROW_CLASS} cm-phone-only` : ROW_CL
 function RowBody({ row }: { row: Row }) {
   return (
     <>
-      {row.art && <span className="pp-row-art">{row.art}</span>}<span className="ds-list-body"><span className="ds-list-title">{row.title}</span><span className="ds-list-sub">{row.sub}</span></span>
+      <span className="ds-list-body"><span className="ds-list-title">{row.title}</span><span className="ds-list-sub">{row.sub}</span></span>
       <span className="ds-chev" aria-hidden="true" />
     </>
   );
 }
 
-/** Список строк «Ещё»: ссылка наружу (href) или кнопка; картинка слева по таблице мотивов. */
+/** Список строк «Ещё»: ссылка наружу (href) или кнопка. */
 export function MoreRows({ rows }: { rows: Row[] }) {
   return (
     <div className="ds-card ds-card--flush">

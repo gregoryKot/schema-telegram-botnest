@@ -1,4 +1,3 @@
-import { Layers } from '../../components/art/PaperArt';
 import { useTr } from '../../utils/addressForm';
 import { ysqRowText } from './ysqRowText';
 
@@ -14,7 +13,6 @@ export function YsqTestRow({ progressAnswered, completedAt, onStart }: Props) {
   const t = ysqRowText(progressAnswered, completedAt, tr);
   return (
     <div className="pp-paper cs-testrow">
-      <span className="pp-row-art"><Layers size="row" /></span>
       <div className="cs-testrow-text"><div className="cs-testrow-title">Тест на схемы</div><div className="cs-testrow-sub">{t.sub}</div></div>
       <button className="ds-btn ds-btn--secondary" onClick={onStart}>{t.action}</button>
     </div>

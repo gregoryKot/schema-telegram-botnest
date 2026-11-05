@@ -24,7 +24,7 @@ export function YsqIntro({ tr, hasProgress, progressAnswered, resumeCheckFailed,
   ];
   return (
     <>
-      <SsHead center layers title="Тест на схемы" lede="Паттерны мышления и поведения, сложившиеся в детстве" />
+      <SsHead center title="Тест на схемы" lede="Паттерны мышления и поведения, сложившиеся в детстве" />
 
       <div className="ss-facts">
         {facts.map(([title, desc]) => (

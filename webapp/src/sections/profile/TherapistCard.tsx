@@ -1,4 +1,3 @@
-import { Talk } from '../../components/art/PaperArtSigns';
 import { api, type TherapyRelationInfo } from '../../api';
 import { FormerTherapistNote } from '../../../../shared/src/therapy/FormerTherapistNote';
 import { upcomingSession } from '../../../../shared/src/therapy/upcomingSession';
@@ -17,7 +16,7 @@ export function TherapistCard({ relation }: { relation: TherapyRelationInfo | nu
       <div className="cpf-therapist-body">
         <div className="ds-label cpf-therapist-label">Терапевт</div>
         <div className="cpf-therapist-name">{relation.partnerName}</div>
-      </div><Talk size="row" />
+      </div>
       {next && (
         <div className="cpf-therapist-next">
           <span className="cpf-therapist-label">Следующая сессия</span>

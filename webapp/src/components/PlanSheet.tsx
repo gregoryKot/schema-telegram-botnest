@@ -1,6 +1,5 @@
 import { api } from '../api';
 import { ExScreen, GlyphCheck } from './exercises/ExScreen';
-import { Check } from './art/PaperArtSigns';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { useTr } from '../utils/addressForm';
 import { NEED_HUE, hueStyle } from '../lib/tone';
@@ -54,7 +53,6 @@ export function PlanSheet({ needId, needLabel, onClose, onSaved }: Props) {
       lede={phase === 'pick' ? 'Один маленький конкретный шаг – уже много.' : undefined}
       aside={
         <div className="ds-card sk-aside" style={hueStyle(NEED_HUE[needId as NeedId])}>
-          <Check size="row" />
           <div className="ds-label">Потребность</div>
           <h3 className="ds-h3 sk-aside-title">
             <span className="ds-dot tone-fill" /> {needLabel}

@@ -23,7 +23,6 @@
 .cs-bar-val { text-align: right; font-weight: 700; font-size: 14px; font-variant-numeric: tabular-nums; white-space: nowrap; }
 
 .cs-test { --h: 70; display: flex; flex-direction: column; justify-content: space-between; gap: 12px; padding: 20px; }
-.cs-test-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .cs-test-text { margin: 8px 0 0; font-family: var(--serif); font-size: 22px; line-height: 1.3; }
 .cs-test-btn { align-self: flex-start; }
 
