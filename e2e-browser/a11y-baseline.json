@@ -6,5 +6,8 @@
   "webapp:today:dark-html": 0,
   "webapp:diary": 0,
   "webapp:diary:dark-storage": 0,
-  "webapp:diary:dark-html": 0
+  "webapp:diary:dark-html": 0,
+  "webapp:practice": 0,
+  "webapp:practice:dark-storage": 0,
+  "webapp:practice:dark-html": 0
 }
