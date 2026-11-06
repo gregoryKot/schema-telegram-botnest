@@ -52,6 +52,12 @@ export const WELCOME_TEXT = `Привет!
 
 Дело почти всегда в потребностях. «Всё по схеме» помогает это увидеть — трекер, дневники схема-терапии и тест на схемы в одном месте.`;
 
+// Запасные ответы команд на сбой: без кнопки (её URL Telegram может отклонить)
+// и без формы обращения из БД — то, что могло упасть, в них не участвует.
+const DONATE_FALLBACK = `💛 <b>Поддержать SchemeHappens</b>\n\n${DONATE_URL}`;
+const THERAPIST_FALLBACK =
+  '🩺 Заявка на роль психолога подаётся в приложении «Всё по схеме»: Настройки → «Я психолог — подать заявку».';
+
 @Injectable()
 export class TelegramService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(TelegramService.name);
@@ -197,6 +203,9 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
         await ctx.reply('OK');
       } catch (err) {
         this.logger.error('ping command failed', err);
+        // Весь ответ команды — этот reply; сбой — сеть или Telegram, повтор
+        // доходит чаще, чем молчание, неотличимое от «бот лежит».
+        await ctx.reply('OK').catch(() => null);
       }
     });
 
@@ -217,6 +226,9 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
         );
       } catch (err) {
         this.logger.error('subscribe command failed', err);
+        await ctx
+          .reply(DONATE_FALLBACK, { parse_mode: 'HTML' })
+          .catch(() => null);
       }
     });
 
@@ -243,9 +255,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
         // a working plain-text link instead of failing silently.
         this.logger.error('donate command failed', err);
         await ctx
-          .reply(`💛 <b>Поддержать SchemeHappens</b>\n\n${DONATE_URL}`, {
-            parse_mode: 'HTML',
-          })
+          .reply(DONATE_FALLBACK, { parse_mode: 'HTML' })
           .catch(() => null);
       }
     });
@@ -392,6 +402,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
         );
       } catch (err) {
         this.logger.error('therapist command failed', err);
+        await ctx.reply(THERAPIST_FALLBACK).catch(() => null);
       }
     });
 
