@@ -23,6 +23,8 @@ describe('MoneyMetricsService.getMetrics', () => {
       paidAll = 0,
       afterCancel7 = 0,
       afterCancelAll = 0,
+      slotTaken = 0,
+      created7 = 0,
     } = {},
   ) => {
     // window() запускает три groupBy и count оплаченных параллельно, дважды —
@@ -50,6 +52,8 @@ describe('MoneyMetricsService.getMetrics', () => {
     // where, а не по порядку вызовов.
     const bookingCount = jest.fn(
       async ({ where }: { where: Record<string, unknown> }) => {
+        // Созданные за неделю — знаменатель доли «время уже заняли».
+        if (Object.keys(where).join() === 'createdAt') return created7;
         if (where.status === 'CANCELLED') {
           const paidAt = where.paidAt as Record<string, unknown>;
           return 'gte' in paidAt ? afterCancel7 : afterCancelAll;
@@ -65,6 +69,7 @@ describe('MoneyMetricsService.getMetrics', () => {
       donation: { groupBy: donationGroupBy },
       subscriptionCharge: { groupBy: chargeGroupBy },
       booking: { groupBy: bookingGroupBy, count: bookingCount },
+      analyticsEvent: { count: jest.fn(async () => slotTaken) },
     } as never;
     return {
       service: new MoneyMetricsService(prisma),
@@ -272,6 +277,24 @@ describe('MoneyMetricsService.getMetrics', () => {
     );
   });
 
+  it('render() подклеивает долю «время уже заняли» с подсветкой выше порога', async () => {
+    const { service } = build(
+      {
+        donation7: EMPTY,
+        charge7: EMPTY,
+        booking7: EMPTY,
+        donationAll: EMPTY,
+        chargeAll: EMPTY,
+        bookingAll: EMPTY,
+      },
+      { slotTaken: 3, created7: 7 },
+    );
+
+    await expect(service.render()).resolves.toContain(
+      '⚠️ Записаться пробовали за 7 дней: 10 раз; «время уже заняли» — 3 раза (30%).',
+    );
+  });
+
   it('render() на пустой базе — без строки про отменённые', async () => {
     const { service } = build({
       donation7: EMPTY,
@@ -286,5 +309,6 @@ describe('MoneyMetricsService.getMetrics', () => {
 
     expect(out).toContain('Пока никто не платил.');
     expect(out).not.toContain('отменённую');
+    expect(out).not.toContain('Записаться пробовали');
   });
 });

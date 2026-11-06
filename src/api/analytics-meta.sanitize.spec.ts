@@ -868,4 +868,12 @@ describe('client_booking_*', () => {
       sanitizeMeta('client_booking_opened', { contact: 'me@example.com' }),
     ).toBeUndefined();
   });
+
+  // Серверное событие без meta (booking-events.constants.ts): что бы ни
+  // прислал клиент, в базу meta не уходит.
+  it('booking_slot_taken: meta с клиента отбрасывается целиком', () => {
+    expect(
+      sanitizeMeta('booking_slot_taken', { contact: '@maria', taken: 5 }),
+    ).toBeUndefined();
+  });
 });

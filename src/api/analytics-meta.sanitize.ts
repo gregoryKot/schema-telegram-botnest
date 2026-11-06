@@ -246,7 +246,7 @@ export function sanitizeMeta(
   if (name === 'client_booking_opened' || name === 'client_booking_created')
     return undefined;
   // Без meta: breath_start / stop_start / journey_open / ysq_help_open /
-  // CONCEPT_EVENTS; серверные notify_queue_tick, therapist_resigned (подделке — без чисел).
+  // CONCEPT_EVENTS; серверные notify_queue_tick, therapist_resigned, booking_slot_taken (подделке — без чисел).
   // Главная простого клиента (home_tile, tracker_skip, diary_quick_save) — свой файл.
   return sanitizeHomeMeta(name, meta);
 }

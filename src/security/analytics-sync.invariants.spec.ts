@@ -213,6 +213,11 @@ const BACKEND_ONLY: Record<string, string> = {
     'статус held|confirmed; ветка sanitizeMeta отбрасывает meta с клиента, ' +
     'а /stats считает только строки со статусом из ' +
     'client-booking-events.constants.ts',
+  booking_slot_taken:
+    'серверное событие: пишет только createBookingGuarded ' +
+    '(src/booking/booking.create.ts), когда запись ответила 409 «время уже ' +
+    'заняли», userId = null, без meta. Фронт его не шлёт: отказ — ответ на ' +
+    'HTTP-запрос записи; /stats считает только строки с userId = null',
   home_screen_offer:
     'шлётся не литералом trackEvent(...), а через колбэк track(...) общего ' +
     'хука shared/src/host/useHomeScreenOffer.ts (мини-апп и карточка ' +
@@ -287,6 +292,8 @@ describe('трипваер: имена событий фронта ⊆ allow-lis
     // заход робота — HTTP-запрос к сайту, у фронта такого действия нет.
     // 38 — client_booking_created (2026-11, запись из приложения, #546):
     // серверное — бронь создаёт HTTP-запрос, событие пишет сервис после неё.
-    expect(Object.keys(BACKEND_ONLY).length).toBeLessThanOrEqual(38);
+    // 39 — booking_slot_taken (2026-11, аудит 2026-10 r2-1#2): серверное —
+    // отказ «время уже заняли» есть только в ответе сервера на запись.
+    expect(Object.keys(BACKEND_ONLY).length).toBeLessThanOrEqual(39);
   });
 });
