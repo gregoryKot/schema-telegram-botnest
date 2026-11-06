@@ -361,6 +361,47 @@ describe('BookingSection — записи', () => {
     expect(screen.queryByRole('alert')).toBeNull();
   });
 
+  // Аудит 2026-10: CONFIRMED с пустым confirmEffectsDoneAt (упал Zoom/CalDAV)
+  // доделывался только прямым запросом — тот же adminConfirm по CONFIRMED
+  // доводит эффекты на сервере (rerunEffects), клиенту ничего не шлёт.
+  it('«Доделать» у CONFIRMED без эффектов подтверждения зовёт adminConfirm и объясняет, зачем кнопка', async () => {
+    mockApi.adminListBookings.mockResolvedValue([
+      { id: 8, startsAt: '2099-08-10T10:00:00Z', status: 'CONFIRMED', clientName: 'Дина', clientContact: 'dina@x.ru', message: null, cancelToken: 'tok8', meetingUrl: null, confirmEffectsDoneAt: null },
+    ]);
+    mockApi.adminConfirm.mockResolvedValue({ ok: true });
+    render(<BookingSection adminKey="k" />);
+    await screen.findByText(/Дина/);
+    expect(screen.getByText(/ссылка на встречу и календарь ещё не готовы/)).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Подтвердить' })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Доделать' }));
+    expect(mockApi.adminConfirm).toHaveBeenCalledWith('k', 8);
+    await screen.findByText('Готово ✓');
+  });
+
+  it('«Доделать» нет у доделанной CONFIRMED и у прошедшей встречи', async () => {
+    mockApi.adminListBookings.mockResolvedValue([
+      { id: 9, startsAt: '2099-08-10T10:00:00Z', status: 'CONFIRMED', clientName: 'Ева', clientContact: 'eva@x.ru', message: null, cancelToken: 'tok9', meetingUrl: null, confirmEffectsDoneAt: '2026-08-01T10:00:00Z' },
+      { id: 10, startsAt: '2020-08-10T10:00:00Z', status: 'CONFIRMED', clientName: 'Жанна', clientContact: 'zh@x.ru', message: null, cancelToken: 'tok10', meetingUrl: null, confirmEffectsDoneAt: null },
+    ]);
+    render(<BookingSection adminKey="k" />);
+    await screen.findByText(/Ева/);
+    await screen.findByText(/Жанна/);
+    expect(screen.queryByRole('button', { name: 'Доделать' })).toBeNull();
+    expect(screen.queryByText(/ещё не готовы/)).toBeNull();
+  });
+
+  it('отказ «Доделать» виден текстом с причиной сервера', async () => {
+    mockApi.adminListBookings.mockResolvedValue([
+      { id: 8, startsAt: '2099-08-10T10:00:00Z', status: 'CONFIRMED', clientName: 'Дина', clientContact: 'dina@x.ru', message: null, cancelToken: 'tok8', meetingUrl: null, confirmEffectsDoneAt: null },
+    ]);
+    mockApi.adminConfirm.mockRejectedValue(new Error('Бронь #8 подтверждена, но ссылка на встречу и календарь ещё не готовы (Zoom 500).'));
+    render(<BookingSection adminKey="k" />);
+    await screen.findByText(/Дина/);
+    fireEvent.click(screen.getByRole('button', { name: 'Доделать' }));
+    const alert = await screen.findByRole('alert');
+    expect(alert.textContent).toMatch(/^Не удалось доделать запись: Бронь #8/);
+  });
+
   it('завершённая запись не предлагает «Отменить»', async () => {
     mockApi.adminListBookings.mockResolvedValue([
       { id: 7, startsAt: '2026-08-10T10:00:00Z', status: 'COMPLETED', clientName: 'Глеб', clientContact: 'gleb@x.ru', message: null, cancelToken: 'tok7' },

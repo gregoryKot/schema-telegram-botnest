@@ -3,6 +3,7 @@ import { api } from '../api';
 import '../styles/auth-pay.css';
 import { Cup } from '../components/art/PaperArt';
 import { Leaf } from '../components/art/PaperArtSigns';
+import { CANCEL_SUPPORT_LINK } from '../components/booking/cancelPolicy';
 import { CancelControl } from './subscribe/CancelControl';
 import { SubscribeForm } from './subscribe/SubscribeForm';
 import { periodLabel, type SubscriptionOption as Opt } from './subscribe/subscribeDiscount';
@@ -93,7 +94,9 @@ export function SubscribePage() {
   } else if (ret === 'ok') {
     body = (
       <>
-        <Hero art={<Leaf size="square" />} title="Спасибо за поддержку!" lead="Подписка оформлена. Управлять ею можно по ссылке, которую мы пришлём, или в настройках." />
+        {/* Письма со ссылкой управления нет, а «Подписка» в аккаунте ведёт на форму —
+            обещать ни то, ни другое нельзя (open/backend.md). Безлично, как CancelControl. */}
+        <Hero art={<Leaf size="square" />} title="Спасибо за поддержку!" lead={<>Подписка оформлена. Отменить её можно в любой момент — достаточно написать мне в <a href={CANCEL_SUPPORT_LINK} style={{ color: 'inherit', textDecoration: 'underline' }}>Telegram</a>.</>} />
         <a href="/" className="ds-btn ds-btn--lg">На главную</a>
       </>
     );

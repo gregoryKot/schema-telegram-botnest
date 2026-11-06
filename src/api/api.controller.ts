@@ -8,10 +8,9 @@ import {
   Param,
   Post,
   Req,
-  Res,
   UseGuards,
 } from '@nestjs/common';
-import type { Request, Response } from 'express';
+import type { Request } from 'express';
 import { uid } from './request-utils';
 import { BotService } from '../bot/bot.service';
 import { AccountService } from '../bot/account.service';
@@ -19,7 +18,6 @@ import { ProfileService } from '../bot/profile.service';
 import { TelegramAuthGuard } from './telegram-auth.guard';
 import { PrismaService } from '../prisma/prisma.service';
 import { Prisma } from '@prisma/client';
-import { AuthService } from '../auth/auth.service';
 import { TelegramScheduleService } from '../telegram/telegram.schedule.service';
 import { SaveDraftDto, UpdateNameDto, InitDto } from './dto/misc.dto';
 import { UserFlagsDto } from './dto/user-flags.dto';
@@ -66,35 +64,10 @@ export class ApiController {
     private readonly accountService: AccountService,
     private readonly profileService: ProfileService,
     private readonly prisma: PrismaService,
-    private readonly authService: AuthService,
     private readonly scheduleService: TelegramScheduleService,
   ) {}
 
   private readonly logger = new Logger(ApiController.name);
-
-  // ─── Link token for mini-app users ────────────────────────────────────────
-  //
-  // The mini-app authenticates with `x-telegram-init-data`. To start an
-  // OAuth-style provider link (Google, VK, …) it needs a JWT to pass as
-  // ?link_token=… on the redirect. This endpoint issues one.
-
-  @Get('link-token')
-  issueLinkToken(
-    @Req() req: AuthRequest,
-    @Res({ passthrough: true }) res: Response,
-  ): { linkToken: string; expiresIn: number } {
-    const linkToken = this.authService.buildLinkToken(uid(req));
-    // httpOnly-cookie — основной канал (S-4, токен не в URL); тело ответа —
-    // обратная совместимость со старыми клиентами (?link_token=).
-    res.cookie('link_token', linkToken, {
-      httpOnly: true,
-      secure: true,
-      sameSite: 'lax' as const,
-      maxAge: 60_000,
-      path: '/api/auth',
-    });
-    return { linkToken, expiresIn: 60 };
-  }
 
   // ─── Typed UI flags ────────────────────────────────────────────────────────
 

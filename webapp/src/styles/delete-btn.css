@@ -1,0 +1,6 @@
+/* «Удалить» → «Удалить навсегда» (sections/diary/DeleteBtn.tsx): кнопка живёт
+   в карточках дневника и в карточке прошлого разбора фразы, поэтому стиль
+   подключает сама кнопка, а не CSS дневника. */
+.cd-del { margin-top: 4px; }
+.cd-del-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+.cd-del-err { flex-basis: 100%; margin: 0; font-size: 13px; line-height: 1.5; color: var(--err); }

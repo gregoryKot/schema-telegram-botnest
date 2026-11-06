@@ -3,6 +3,7 @@ import { api } from '../../api';
 import type { AdminBooking } from '../../api';
 import { bookingContactLine } from './bookingContactLine';
 import { BookingMeetingLink } from './BookingMeetingLink';
+import { needsConfirmFinish } from './confirmFinish';
 import { card, btn, btnGhost } from './shared';
 import { useSaveFeedback } from './useSaveFeedback';
 
@@ -16,7 +17,7 @@ const FILTERS: { id: Filter; label: string }[] = [
   { id: 'all', label: 'Все' },
 ];
 
-/** Админка записей: список по фильтру, «Подтвердить» и «Отменить» (в любой срок). */
+/** Админка записей: список по фильтру, «Подтвердить», «Доделать» (confirmFinish.ts) и «Отменить» (в любой срок). */
 export function BookingsManager({ adminKey }: { adminKey: string }) {
   const [filter, setFilter] = useState<Filter>('upcoming');
   const [bookings, setBookings] = useState<AdminBooking[]>([]);
@@ -58,9 +59,11 @@ export function BookingsManager({ adminKey }: { adminKey: string }) {
             <span style={{ fontSize: 12, padding: '2px 8px', borderRadius: 100, background: statusBg(b.status), color: '#fff' }}>{statusLabel(b.status)}</span>
             <span className="u-flex1" />
             {b.status === 'HELD' && <button style={{ ...btn, padding: '5px 12px', fontSize: 13 }} onClick={() => act('Не удалось подтвердить запись', () => api.adminConfirm(adminKey, b.id))}>Подтвердить</button>}
+            {needsConfirmFinish(b) && <button style={{ ...btn, padding: '5px 12px', fontSize: 13 }} onClick={() => act('Не удалось доделать запись', () => api.adminConfirm(adminKey, b.id))}>Доделать</button>}
             {b.status !== 'CANCELLED' && b.status !== 'COMPLETED' && <button style={{ ...btnGhost, padding: '5px 12px', fontSize: 13, color: 'var(--accent-red)' }} onClick={() => act('Не удалось отменить запись', () => api.adminCancel(adminKey, b.id))}>Отменить</button>}
           </div>
           <div style={{ fontSize: 14, color: 'var(--text-sub)', marginTop: 6 }}>{bookingContactLine(b)}</div>
+          {needsConfirmFinish(b) && <div style={{ fontSize: 13, color: 'var(--accent-red)', marginTop: 6 }}>Подтверждена, но ссылка на встречу и календарь ещё не готовы. «Доделать» повторит только то, что не прошло; клиенту ничего не уйдёт.</div>}
           <BookingMeetingLink meetingUrl={b.meetingUrl} />
         </div>
       ))}

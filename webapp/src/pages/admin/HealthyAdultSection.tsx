@@ -4,6 +4,8 @@ import type { HealthyAdultPhrase } from '../../api';
 import { card, btn, btnGhost, input } from './shared';
 import { HealthyAdultImport } from './HealthyAdultImport';
 import { HealthyAdultCheck } from './HealthyAdultCheck';
+import { ConfirmDialog } from '../../components/ConfirmDialog';
+import { useConfirmedAction } from '../../../../shared/src/hooks/useConfirmedAction';
 
 /** Админ-вкладка: управление пулом фраз «Здорового Взрослого» для канала. */
 export function HealthyAdultSection({ adminKey }: { adminKey: string }) {
@@ -152,32 +154,43 @@ function PhraseRow({ adminKey, row, onPatch, onDrop }: {
     });
   const toggle = () =>
     run(async () => onPatch(await api.adminUpdatePhrase(adminKey, row.id, { enabled: !row.enabled })));
-  const remove = () =>
-    run(async () => {
-      if (!confirm('Удалить фразу?')) return;
-      await api.adminDeletePhrase(adminKey, row.id);
-      onDrop(row.id);
-    });
+  // Ж4 (аудит 2026-08): удаление — через общий ConfirmDialog, не confirm().
+  const del = useConfirmedAction(() => api.adminDeletePhrase(adminKey, row.id), () => onDrop(row.id));
 
   return (
-    <section style={{ ...card, marginBottom: 10, opacity: row.enabled ? 1 : 0.55 }}>
-      <textarea
-        style={{ ...input, minHeight: 52, resize: 'vertical', lineHeight: 1.5 }}
-        value={text}
-        onChange={(e) => setText(e.target.value)}
-      />
-      <div style={{ display: 'flex', gap: 'var(--space-8)', marginTop: 10, flexWrap: 'wrap', alignItems: 'center' }}>
-        <button style={btn} onClick={save} disabled={busy || !dirty}>Сохранить</button>
-        <button style={btnGhost} onClick={toggle} disabled={busy}>
-          {row.enabled ? 'Выключить' : 'Включить'}
-        </button>
-        <button style={{ ...btnGhost, color: 'var(--accent-red)' }} onClick={remove} disabled={busy}>
-          Удалить
-        </button>
-        {saved && <span style={{ color: '#4a6335', fontSize: 13 }}>Сохранено ✓</span>}
-        {!row.enabled && <span style={{ color: 'var(--text-sub)', fontSize: 12 }}>выключена</span>}
-        {error && <span style={{ color: 'var(--accent-red)', fontSize: 13 }}>{error}</span>}
-      </div>
-    </section>
+    <>
+      <section style={{ ...card, marginBottom: 10, opacity: row.enabled ? 1 : 0.55 }}>
+        <textarea
+          style={{ ...input, minHeight: 52, resize: 'vertical', lineHeight: 1.5 }}
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+        />
+        <div style={{ display: 'flex', gap: 'var(--space-8)', marginTop: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+          <button style={btn} onClick={save} disabled={busy || !dirty}>Сохранить</button>
+          <button style={btnGhost} onClick={toggle} disabled={busy}>
+            {row.enabled ? 'Выключить' : 'Включить'}
+          </button>
+          <button style={{ ...btnGhost, color: 'var(--accent-red)' }} onClick={del.ask} disabled={busy}>
+            Удалить
+          </button>
+          {saved && <span style={{ color: '#4a6335', fontSize: 13 }}>Сохранено ✓</span>}
+          {!row.enabled && <span style={{ color: 'var(--text-sub)', fontSize: 12 }}>выключена</span>}
+          {error && <span style={{ color: 'var(--accent-red)', fontSize: 13 }}>{error}</span>}
+        </div>
+      </section>
+      {/* Вне section: opacity выключенной фразы иначе легла бы и на диалог. */}
+      {del.confirming && (
+        <ConfirmDialog
+          title="Удалить фразу?"
+          message="Фраза уйдёт из пула канала. Чтобы только приостановить её, есть «Выключить»."
+          confirmLabel="Удалить"
+          busyLabel="Удаляю…"
+          busy={del.busy}
+          error={del.failed ? 'Не удалось удалить — фраза на месте. Возможно, неверный админ-ключ или нет соединения.' : undefined}
+          onConfirm={() => void del.confirm()}
+          onCancel={del.cancel}
+        />
+      )}
+    </>
   );
 }

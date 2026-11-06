@@ -26,7 +26,7 @@
 
 ### `src/api/`
 Пользовательский HTTP-API мини-аппа и сайта (`/api/*`): один гард на все контроллеры, глобальный троттлинг (в т.ч. общий Postgres-счётчик).
-- Контроллеры: api (user-flags, drafts, profile, disclaimer, link-token), ysq, pairs, plans/practices, exercises (healthy-phrase, belief-checks, letters, safe-place, flashcards), notes, tracker (needs, ratings, streak, insights, achievements), diary, phrase-checks, settings, journey, practice-sessions, analytics; без гарда: quiz, public-events, client-errors, health, booking (лид-форма); AccountApiModule — export/delete аккаунта.
+- Контроллеры: api (user-flags, drafts, profile, disclaimer), ysq, pairs, plans/practices, exercises (healthy-phrase, belief-checks, letters, safe-place, flashcards), notes, tracker (needs, ratings, streak, insights, achievements), diary, phrase-checks, settings, journey, practice-sessions, analytics; без гарда: quiz, public-events, client-errors, health, booking (лид-форма); AccountApiModule — export/delete аккаунта.
 - Входы:
   - `src/api/telegram-auth.guard.ts` — единый гард: Bearer JWT / Telegram / MAX initData
   - `src/api/init-data-paths.ts` — тела Telegram- и MAX-веток гарда

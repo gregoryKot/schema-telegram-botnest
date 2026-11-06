@@ -91,12 +91,14 @@ export function PhraseCheckEx({
   function updateHistoryEntry(id: number, newRewrite: string | null) {
     setHistory((prev) => prev.map((h) => (h.id === id ? { ...h, rewrite: newRewrite } : h)));
   }
+  const removeHistoryEntry = (id: number) => setHistory((prev) => prev.filter((h) => h.id !== id));
 
   const historyOverlay = openHistoryEntry && (
     <PhraseHistoryCard
       entry={openHistoryEntry}
       onClose={() => setOpenHistoryId(null)}
       onUpdated={updateHistoryEntry}
+      onDeleted={removeHistoryEntry}
       tr={tr}
     />
   );

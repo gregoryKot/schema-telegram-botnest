@@ -5,6 +5,10 @@
 // security#15): HELD — «оплата принята, подтверждаю», COMPLETED — «встреча прошла»
 // (ссылка управления из .ics живёт и после сессии), остальное — нейтрально.
 
+/** Ссылка управления записью (календарь, .ics, «Отправить себе»), а не возврат с оплаты:
+ *  /booking/manage отдаётся той же страницей, что /booking/paid. */
+export const isManageLink = () => window.location.pathname.startsWith('/booking/manage');
+
 export type PaidPhase = 'confirmed' | 'pending' | 'cancelled' | 'completed' | 'unknown';
 
 /** Статус брони (BookingStatus из Prisma) → что показывать. Незнакомый → unknown. */
