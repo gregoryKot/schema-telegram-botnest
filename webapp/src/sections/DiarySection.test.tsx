@@ -419,7 +419,21 @@ describe('DiarySection — мастера по черновику («Продо�
     fireEvent.click(screen.getByLabelText('Удалить черновик'));
     fireEvent.click(screen.getByText('удалить'));
     await waitFor(() => expect(screen.queryByText('Продолжить →')).toBeNull());
+    expect(document.querySelector('.cd-drafts')).toBeNull();
     clearDraft('schema');
+  });
+
+  // Пустая обёртка в .ds-page — лишний gap: 48px между «Записать» и фильтрами (скрин владельца 2026-11-06).
+  it('без черновиков обёртки .cd-drafts нет; с черновиком — есть', async () => {
+    renderSection();
+    await screen.findByRole('group', { name: 'Тип записей' });
+    expect(document.querySelector('.cd-drafts')).toBeNull();
+    cleanup();
+    saveDraft('mode', { situation: 'Черновик-ситуация' });
+    renderSection();
+    await screen.findByText('Продолжить →');
+    expect(document.querySelector('.cd-drafts')).not.toBeNull();
+    clearDraft('mode');
   });
 });
 

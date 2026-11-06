@@ -41,6 +41,7 @@ export default defineConfig({
       name: 'webapp',
       testMatch: [
         'crisis-smoke.spec.ts',
+        'page-rhythm.spec.ts',
         'tracker-smoke.spec.ts',
         'therapy-smoke.spec.ts',
         'public-pages.spec.ts',
