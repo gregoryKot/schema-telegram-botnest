@@ -107,3 +107,31 @@ describe('образцы: спек вне testMatch', () => {
     ]);
   });
 });
+
+// Спек попадает в CI-прогон `npx playwright test` (джоба browser-smoke) только
+// через ручной список testMatch в playwright.config.ts: файл без строки там
+// лежит зелёным и ничего не гоняет. check-e2e-in-ci смотрит только test/**,
+// поэтому сверка — здесь, в обе стороны (#922).
+describe('testMatch playwright.config.ts ↔ спеки e2e-browser', () => {
+  const config = readFileSync(
+    join(process.cwd(), 'playwright.config.ts'),
+    'utf8',
+  );
+  const listed = [
+    ...(/testMatch:\s*\[([^\]]*)\]/.exec(config)?.[1] ?? '').matchAll(
+      /'([^']+)'/g,
+    ),
+  ].map((m) => m[1]);
+
+  it('список testMatch нашёлся', () => {
+    expect(listed.length).toBeGreaterThanOrEqual(6);
+  });
+
+  it.each(specs)('%s — в testMatch', (f) => {
+    expect(listed).toContain(f);
+  });
+
+  it('в testMatch нет имён без файла', () => {
+    expect(listed.filter((f) => !specs.includes(f))).toEqual([]);
+  });
+});

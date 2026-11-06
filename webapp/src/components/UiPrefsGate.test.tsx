@@ -150,6 +150,36 @@ describe('UiPrefsGate + настройки экранов', () => {
     expect(screen.getByTestId('streak').textContent).toBe('shown');
   });
 
+  // #922: правка за секунду до перезагрузки (пуш ещё ждал окна debounce)
+  // стиралась серверной копией на следующем старте — server wins.
+  it('перезагрузка раньше пуша: правка не стёрта старой серверной копией и досылается', async () => {
+    getSettings.mockResolvedValue({ uiPrefs: { why_seen_v1: '1' } });
+    const first = render(<UiPrefsGate><TodayProbe /></UiPrefsGate>);
+    await waitFor(() => expect(screen.getByTestId('streak').textContent).toBe('hidden'));
+    fireEvent.click(screen.getByText('toggle'));
+    first.unmount(); // «перезагрузка»: сервер правку не видел
+    expect(updateSettings).not.toHaveBeenCalled();
+
+    render(<UiPrefsGate><TodayProbe /></UiPrefsGate>);
+    await waitFor(() =>
+      expect(updateSettings).toHaveBeenCalledWith({
+        uiPrefs: { why_seen_v1: '1', [TOOLS_KEY]: '["tracker"]' },
+      }),
+    );
+    expect(localStorage.getItem(TOOLS_KEY)).toBe('["tracker"]');
+  });
+
+  it('вкладка уходит (pagehide) → ожидающая правка уходит сразу, без окна debounce', async () => {
+    getSettings.mockResolvedValue({ uiPrefs: {} });
+    localStorage.setItem('ui_prefs_migrated', '1');
+    render(<UiPrefsGate><TodayProbe /></UiPrefsGate>);
+    await waitFor(() => expect(screen.getByTestId('streak').textContent).toBe('shown'));
+    fireEvent.click(screen.getByText('toggle'));
+    expect(updateSettings).not.toHaveBeenCalled();
+    window.dispatchEvent(new Event('pagehide'));
+    expect(updateSettings).toHaveBeenCalledWith({ uiPrefs: { [TOOLS_KEY]: '["tracker"]' } });
+  });
+
   it('GET настроек отказал → экран открывается с локальными значениями, на сервер ничего не уходит', async () => {
     const err = vi.spyOn(console, 'error').mockImplementation(() => undefined);
     localStorage.setItem('why_seen_v1', '1');

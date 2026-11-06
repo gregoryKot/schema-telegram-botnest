@@ -13,6 +13,8 @@ const sync = createUiPrefsSync({ api, requireInitialSync: true });
 
 /** Вызывать из ЛЮБОЙ точки записи ключа настройки экрана. */
 export const notifyPrefsChanged: () => void = sync.notifyPrefsChanged;
+/** Страница уходит или прячется: ожидающий пуш — сейчас (UiPrefsGate). */
+export const flushUiPrefs: () => void = sync.flush;
 /** Один раз при старте сессии с uiPrefs из GET /api/settings (UiPrefsGate). */
 export const syncFromServer = sync.syncFromServer;
 /** Новая сессия: снять отложенный пуш и закрыть отправку до ответа сервера. */
