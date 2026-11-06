@@ -207,6 +207,38 @@ describe('merge-json-ratchet: слияние бейслайнов по сема�
     ]);
   });
 
+  // `_` и `-` (и регистр) две сортировки ставят по-разному. Реестр
+  // raw-sql-live сверяет порядок обычным `.sort()` (code point,
+  // check-raw-sql-live.mjs), и драйвер с `localeCompare` ставил `b_c.ts`
+  // перед `b-c.ts` — гейт краснел после автослияния.
+  it('ключ с `_`: порядок по code point, как сверяет check-raw-sql-live', () => {
+    const { status, merged } = mergeJson(
+      'min',
+      { 'src/a/a.ts': 'x' },
+      { 'src/a/a.ts': 'x', 'src/a/b-c.ts': 'наша' },
+      { 'src/a/a.ts': 'x', 'src/a/b_c.ts': 'их' },
+    );
+    expect(status).toBe(0);
+    const keys = Object.keys(merged as object);
+    expect(keys).toEqual(['src/a/a.ts', 'src/a/b-c.ts', 'src/a/b_c.ts']);
+    expect(keys).toEqual([...keys].sort());
+  });
+
+  // Контрольный образец: пофайловые `--update` (file-size, robot-phrases, …)
+  // пишут `localeCompare`, и такой бейслайн драйвер не переставляет в code
+  // point — иначе следующий `--update` дал бы шум в диффе.
+  it('бейслайн, отсортированный localeCompare, остаётся в localeCompare', () => {
+    const { merged } = mergeJson(
+      'min',
+      { 'src/a.ts': 1, 'src/c.ts': 3 },
+      { 'src/a.ts': 1, 'src/c.ts': 2 },
+      { 'src/a.ts': 1, 'src/B.ts': 5, 'src/c.ts': 3 },
+    );
+    const keys = Object.keys(merged as object);
+    expect(keys).toEqual(['src/a.ts', 'src/B.ts', 'src/c.ts']);
+    expect(keys).not.toEqual([...keys].sort());
+  });
+
   it('строка (причина в dead-files): сторона, не трогавшая место, уступает', () => {
     const { status, merged } = mergeJson(
       'min',

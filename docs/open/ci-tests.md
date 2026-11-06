@@ -66,16 +66,6 @@ Ubuntu 26) у трёх PR подряд падали `backend` → `check-coverag
   потеряли при разрешении, `node scripts/setup-merge-drivers.mjs --check`
   (джоба `checks`) краснеет на бейслайне без атрибута. Свой драйвер для
   `.gitattributes` не заведён.
-- **Порядок ключей: драйвер и гейт сортируют по-разному.**
-  `scripts/merge-json-ratchet.mjs:87-94` (`orderKeys`), когда «наша» сторона
-  отсортирована, пересортировывает результат через `localeCompare`, а
-  `scripts/check-raw-sql-live.mjs:140-142` сверяет порядок ключей
-  `scripts/raw-sql-live-baseline.json` обычным `.sort()` (code point). Сегодня
-  порядки совпадают (34 ключа-пути), но ключ с `_` или с заглавной буквой рядом
-  со строчными встанет в них по-разному: `src/a/b_c.ts` до `src/a/b-c.ts` у
-  `localeCompare` и после у `.sort()`. Итог: гейт покраснеет после автослияния
-  (громко, не молча). Лечение: `orderKeys` по code point (или проверка обоих
-  порядков) отдельным PR с тестом на такой ключ.
 - **Бандл: рост двух сторон сводится через `min` и теряется.**
   `scripts/bundle-size-baseline.json` стоит под `merge=ratchet-min`
   (`.gitattributes`); если обе стороны подняли `webapp:total-js`

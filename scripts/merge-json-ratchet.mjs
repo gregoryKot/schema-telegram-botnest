@@ -77,18 +77,18 @@ const same = (x, y) => JSON.stringify(x) === JSON.stringify(y);
 const pick = direction === 'max' ? Math.max : Math.min;
 
 /**
- * Порядок ключей результата. Бейслайны пишутся двумя разными способами:
- * пофайловые (file-size, robot-phrases, …) — отсортированы по пути,
- * составные (mutation.files, coverage.floors) — в порядке появления.
- * Смотрим на «нашу» сторону: была отсортирована — держим сортировку,
- * не была — сохраняем её порядок, дописывая чужие новинки в хвост. Иначе
- * драйвер переупорядочил бы файл и следующий `--update` дал бы шум в диффе.
+ * Порядок ключей результата — как у «нашей» стороны: `--update` пофайловых
+ * (file-size, robot-phrases, …) сортирует `localeCompare`, реестр под гейтом
+ * порядка (raw-sql-live) — по code point, как `.sort()`; составные
+ * (mutation.files, coverage.floors) — в порядке появления, чужие новинки в
+ * хвост. `src/a/b_c.ts` и `b-c.ts` эти сортировки ставят по-разному: подошли
+ * обе — решает «их» сторона, потом code point (его сверяет гейт).
  */
-function orderKeys(keys, aKeys) {
-  const sortedA = [...aKeys].sort((x, y) => x.localeCompare(y));
-  if (aKeys.length > 1 && same(aKeys, sortedA)) {
-    return [...keys].sort((x, y) => x.localeCompare(y));
-  }
+const ORDERS = [(x, y) => (x < y ? -1 : x > y ? 1 : 0), (x, y) => x.localeCompare(y)];
+const sortedBy = (ks, cmp) => ks.length > 1 && same(ks, [...ks].sort(cmp));
+function orderKeys(keys, aKeys, bKeys) {
+  const fit = ORDERS.filter((cmp) => sortedBy(aKeys, cmp));
+  if (fit.length) return [...keys].sort(fit.find((cmp) => sortedBy(bKeys, cmp)) ?? fit[0]);
   const head = aKeys.filter((k) => keys.includes(k));
   return [...head, ...keys.filter((k) => !head.includes(k))];
 }
@@ -109,10 +109,10 @@ function merge3(o, a, b, path) {
 
   if (isPlainObject(a) && isPlainObject(b)) {
     const oo = isPlainObject(o) ? o : {};
-    const aKeys = Object.keys(a);
-    const keys = [...new Set([...aKeys, ...Object.keys(b)])];
+    const [aKeys, bKeys] = [Object.keys(a), Object.keys(b)];
+    const keys = [...new Set([...aKeys, ...bKeys])];
     const out = {};
-    for (const k of orderKeys(keys, aKeys)) {
+    for (const k of orderKeys(keys, aKeys, bKeys)) {
       const v = merge3(oo[k], a[k], b[k], `${path}.${k}`);
       if (v !== undefined) out[k] = v;
     }
