@@ -20,7 +20,7 @@ ChatGPT, Алисы AI, Perplexity, Gemini и AI-блоков Google. Отлич
 | Доступ робота | Поисковые боты нейросетей разрешены явно; обучение и поиск управляются отдельно (`OAI-SearchBot` ≠ `GPTBot`) | ✅ `webapp/public/robots.txt`: добавлены `OAI-SearchBot`, `ChatGPT-User`, `Claude-SearchBot`, `Claude-User`, `Perplexity-User`, `Google-Extended`, `YandexBot`; убран мёртвый токен `anthropic-ai`. Кабинет, вход, админка и `/app/` закрыты в КАЖДОЙ группе: бот со своей группой `*` не читает (RFC 9309). `/api/` открыт намеренно — Googlebot и YandexBot рендерят SPA и соблюдают robots.txt для fetch, статьи и мини-тесты без `/api/articles` и `/api/quizzes` отрендерились бы пустыми; сверка с роутами `App.tsx` и открытость API публичных страниц — `webapp/src/robotsTxt.test.ts` |
 | Доступ робота | Сервер/WAF не режет ботов | ⬜ не проверено: логи приложения на VPS, в Actions их нет намеренно ([README](README.md) → «Что осталось открытым»). Проверка — `docker compose logs` по User-Agent `OAI-SearchBot`, `YandexBot` |
 | Индексация | Страница в индексе, sitemap актуален | ✅ `/sitemap.xml` теперь строится из БД (`src/articles/sitemap.middleware.ts`): статья, опубликованная из админки, попадает в карту сразу, `lastmod` — настоящая дата правки. Статический файл с датами 2025 года удалён |
-| JavaScript | Робот получает текст, а не пустой контейнер SPA | ✅ статьи: `ArticleSeoMiddleware` вкладывает текст статьи в `#root`. ✅ список `/articles`: с этого PR — заголовок и ссылки со описаниями. ⬜ **главная**: текст лендинга (услуги, цены, FAQ, «кому подходит») живёт только в JS и в JSON-LD; робот без JS видит пустой `#root`. Самая большая дыра, см. «Открытое» |
+| JavaScript | Робот получает текст, а не пустой контейнер SPA | ✅ статьи: `ArticleSeoMiddleware` вкладывает текст статьи в `#root`. ✅ список `/articles`: заголовок и ссылки со описаниями. ✅ **главная schemehappens.ru** (2026-11-06): `src/articles/home-seo.middleware.ts` вкладывает в `#root` текст продуктового лендинга — заголовок, «Как это работает», возможности, «бесплатно/зашифровано/уйти легко», FAQ, финальный призыв. Источник один — `src/articles/home-landing.content.ts`, его же рисует `ProductLandingPage`; кэш как у `index.html` (`no-cache` + ETag/304). ⬜ главная визитки `kotlarewski.gr/` — без текста в `#root`, FAQ только в JSON-LD: ждёт решения про «дом» автора, см. «Открытое» |
 | Метатеги | Нет случайного `noindex`/`nosnippet` в общем шаблоне | ✅ `index.html`: `index, follow, max-snippet:-1`; `noindex` ставится только хуком `useNoIndex` на страницах кабинета |
 | Структура текста | Подзаголовок — вопрос, первый абзац — ответ, детали ниже | ✅ статьи уже так построены («Короткий ответ», «Где проходит грань»). Закреплено в чеклисте [ARTICLES.md](ARTICLES.md) |
 | Цифры и источники | Утверждение проверяемо: назван метод или первоисточник | ✅ правило «не выдумывать исследования» в ARTICLES.md; РКИ названы (Giesen-Bloo 2006, Masley 2012). Добавлено: число без метода измерения не ставим |
@@ -49,8 +49,8 @@ curl -s -A "YandexBot" https://schemehappens.ru/articles/chto-takoe-schema-terap
 curl -s https://schemehappens.ru/articles | grep -o '<a href="/articles/[^"]*"' | head
 # карта сайта из БД, с lastmod
 curl -s https://schemehappens.ru/sitemap.xml | head -20
-# главная: пока вернёт пустой контейнер — это и есть открытый пункт
-curl -s https://schemehappens.ru/ | grep -o '<div id="root">[^<]*<'
+# главная: в #root текст лендинга (заголовок h1 и FAQ)
+curl -s -A "YandexBot" https://schemehappens.ru/ | grep -o '<div id="root"><main><h1>[^<]*'
 ```
 
 Кабинеты площадок:
@@ -101,18 +101,11 @@ Gemini, отмечая режим поиска. Один удачный отве
 
 | Дата | Что изменили | PR |
 |---|---|---|
-| 2026-10-11 | robots.txt для поисковых ботов нейросетей, sitemap из БД, список `/articles` в HTML, честный `dateModified` | этот PR |
+| 2026-10-11 | robots.txt для поисковых ботов нейросетей, sitemap из БД, список `/articles` в HTML, честный `dateModified` | #641 |
+| 2026-11-06 | главная schemehappens.ru: текст лендинга в HTML для робота без JS | ветка `feat/geo-robots` |
 
 ## Открытое
 
-- **Главная для робота пуста.** `webapp/index.html` отдаёт `<div id="root"></div>`,
-  весь текст лендинга рендерит React. Яндекс JS почти не исполняет, у поисковых
-  ботов нейросетей бюджет на рендер тоже не гарантирован. Варианты: (а) по
-  образцу `ArticleSeoMiddleware` вкладывать в `#root` серверный HTML из того же
-  источника, что FAQ в JSON-LD и `productContent.tsx`, с тестом-сверкой (правило
-  №4: два места, обязанные совпадать); (б) prerender лендинга на сборке (`vite`
-  + статический рендер `LandingPage`). Решение (а) дешевле и держит один
-  источник правды. Это первое, что стоит сделать после замера.
 - **Сущность автора описана на двух хостах.** В JSON-LD `webapp/index.html`
   `@id`, `url`, `image`, `sameAs` указывают на `kotlarewski.gr`, а `canonical`
   и `og:url` той же страницы — на `schemehappens.ru`; `og:image` тоже с
@@ -122,7 +115,12 @@ Gemini, отмечая режим поиска. Один удачный отве
   `Person`/`ProfessionalService` законно живут там, но тогда `index.html` для
   `schemehappens.ru` должен ссылаться на них через `@id` с хостом визитки и
   описывать себя как `WebSite`/`SoftwareApplication`, а не дублировать. Нужно
-  решение владельца, какой хост — «дом» автора.
+  решение владельца, какой хост — «дом» автора. С 2026-11-06 расхождение видно и
+  внутри одной страницы: на главной schemehappens.ru `<title>`, `description` и
+  `FAQPage` из `index.html` — про практику, а текст в `#root` — про продукт «Всё
+  по схеме» (FAQ продукта другой). После решения: свой `<title>`/JSON-LD
+  продукту, а главной визитки `kotlarewski.gr/` — текст в `#root` тем же
+  приёмом (источник — `webapp/src/pages/landing/constants.ts`, цена — из БД).
 - **Заходы ботов невидимы.** Нет ни счётчика, ни строки в `/stats`, кто из
   краулеров нейросетей приходит и что получает (код ответа). Статья: «проверьте
   логи» — у нас логов в Actions нет намеренно. Минимальный механизм: middleware

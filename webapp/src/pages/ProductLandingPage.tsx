@@ -6,6 +6,8 @@ import { INK, SUB, FAINT, GLASS, GLASS_BORDER, VIOLET, PINK, CYAN, AURORA, glow 
 import { Logo, Cta } from './landing/BrandKit';
 import { STEPS, FEATURES, TRUST, H2, EYEBROW, NAV_LINKS } from './landing/productContent';
 import { GlassCard, ArticleCard, FaqList } from './landing/ProductKit';
+import { Rich } from './landing/Rich';
+import { HOME_HERO, HOME_HEADINGS, HOME_FINAL } from '../../../src/articles/home-landing.content';
 import { AuthorSection } from './landing/AuthorSection';
 import { AppInstallSection } from './landing/AppInstallSection';
 import { AppPreview } from './landing/AppPreview';
@@ -19,8 +21,8 @@ import { entryCta } from './landing/entryCta';
 // Палитра захардкожена (не зависит от app-темы) — это отдельный маркетинговый бренд.
 
 // ─── Страница ─────────────────────────────────────────────────────────────────
-// Данные (STEPS/FEATURES/TRUST/FAQ, H2/EYEBROW) — в landing/productContent.tsx,
-// карточки (GlassCard/ArticleCard/FaqList) — в landing/ProductKit.tsx.
+// Текст — src/articles/home-landing.content.ts (его же сервер вкладывает в #root
+// для робота без JS), вид — landing/productContent.ts, карточки — ProductKit.tsx.
 export function ProductLandingPage() {
   const { isAuthenticated } = useAuth();
   const articles = useRecentArticles(3);
@@ -75,12 +77,10 @@ export function ProductLandingPage() {
                 Схема-терапия · бесплатно · без рекламы
               </div>
               <h1 style={{ fontFamily: 'inherit', fontSize: 'clamp(40px, 5.6vw, 68px)', fontWeight: 800, lineHeight: 1.02, letterSpacing: '-.04em', margin: '0 0 22px', color: INK }}>
-                Почему со мной <span style={{ background: AURORA, WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }}>снова</span> это&nbsp;происходит?
+                {HOME_HERO.title.before}<span style={{ background: AURORA, WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }}>{HOME_HERO.title.accent}</span>{HOME_HERO.title.after}
               </h1>
               <p style={{ fontSize: 17, lineHeight: 1.65, color: SUB, maxWidth: 490, margin: '0 0 34px' }}>
-                Одни и те же ссоры, тревога, самокритика — не «характер», а&nbsp;схемы:
-                выученные паттерны, которые можно заметить и постепенно менять.
-                «Всё по схеме» — бесплатное приложение для самостоятельной работы в подходе схема-терапии.
+                {HOME_HERO.lead}
               </p>
               <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
                 <Cta href={entry.href} size="lg">{entry.main}</Cta>
@@ -96,7 +96,7 @@ export function ProductLandingPage() {
         <section id="how" style={{ padding: '72px 24px', scrollMarginTop: 70 }}>
           <div style={{ maxWidth: 1160, margin: '0 auto' }}>
             <span style={EYEBROW}>Как это работает</span>
-            <h2 style={{ ...H2, margin: '14px 0 48px', maxWidth: 700 }}>От «что со мной не так» к «какая схема включилась»</h2>
+            <h2 style={{ ...H2, margin: '14px 0 48px', maxWidth: 700 }}>{HOME_HEADINGS.how}</h2>
             <div className="pl2-3" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 18 }}>
               {STEPS.map((s) => (
                 <div key={s.num} className="pl2-card" style={{ position: 'relative', background: GLASS, border: `1px solid ${GLASS_BORDER}`, borderRadius: 22, padding: '28px 24px', overflow: 'hidden', transition: 'transform .25s, border-color .25s, box-shadow .25s' }}>
@@ -117,7 +117,7 @@ export function ProductLandingPage() {
         <section id="features" style={{ padding: '72px 24px', scrollMarginTop: 70 }}>
           <div style={{ maxWidth: 1160, margin: '0 auto' }}>
             <span style={EYEBROW}>Возможности</span>
-            <h2 style={{ ...H2, margin: '14px 0 48px', maxWidth: 620 }}>Всё для работы между сессиями — или до них</h2>
+            <h2 style={{ ...H2, margin: '14px 0 48px', maxWidth: 620 }}>{HOME_HEADINGS.features}</h2>
             <div className="pl2-3" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 18 }}>
               {FEATURES.map((f) => <GlassCard key={f.title} emoji={f.emoji} color={f.color} title={f.title} big>{f.text}</GlassCard>)}
             </div>
@@ -130,7 +130,7 @@ export function ProductLandingPage() {
         {/* ── Доверие ── */}
         <section style={{ padding: '20px 24px 72px' }}>
           <div className="pl2-3" style={{ maxWidth: 1160, margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 18 }}>
-            {TRUST.map((t) => <GlassCard key={t.title} emoji={t.icon} color={t.color} title={t.title}>{t.node}</GlassCard>)}
+            {TRUST.map((t) => <GlassCard key={t.title} emoji={t.icon} color={t.color} title={t.title}><Rich parts={t.text} /></GlassCard>)}
           </div>
         </section>
 
@@ -159,7 +159,7 @@ export function ProductLandingPage() {
         <section id="faq" style={{ padding: '72px 24px', scrollMarginTop: 70 }}>
           <div style={{ maxWidth: 760, margin: '0 auto' }}>
             <span style={EYEBROW}>Вопросы</span>
-            <h2 style={{ ...H2, margin: '14px 0 36px' }}>Частые вопросы</h2>
+            <h2 style={{ ...H2, margin: '14px 0 36px' }}>{HOME_HEADINGS.faq}</h2>
             <FaqList />
           </div>
         </section>
@@ -169,8 +169,8 @@ export function ProductLandingPage() {
           <div style={{ position: 'relative', overflow: 'hidden', maxWidth: 1160, margin: '0 auto', background: AURORA, borderRadius: 32, padding: '76px 32px', textAlign: 'center' }}>
             <div aria-hidden style={{ position: 'absolute', inset: 0, background: 'radial-gradient(circle at 50% 0%, rgba(255,255,255,.25), transparent 60%)' }} />
             <div style={{ position: 'relative', maxWidth: 640, margin: '0 auto' }}>
-              <h2 style={{ fontFamily: 'inherit', fontSize: 'clamp(32px, 4.6vw, 52px)', fontWeight: 800, letterSpacing: '-.03em', lineHeight: 1.06, margin: '0 0 18px', color: '#1a0f2e' }}>Первый шаг — просто заметить</h2>
-              <p style={{ fontSize: 16, lineHeight: 1.6, color: 'rgba(26,15,46,.78)', margin: '0 0 34px', fontWeight: 500 }}>Минутный чек-ин в день — и через пару недель паттерны станут видимыми. Бесплатно, бережно, в вашем темпе.</p>
+              <h2 style={{ fontFamily: 'inherit', fontSize: 'clamp(32px, 4.6vw, 52px)', fontWeight: 800, letterSpacing: '-.03em', lineHeight: 1.06, margin: '0 0 18px', color: '#1a0f2e' }}>{HOME_FINAL.title}</h2>
+              <p style={{ fontSize: 16, lineHeight: 1.6, color: 'rgba(26,15,46,.78)', margin: '0 0 34px', fontWeight: 500 }}>{HOME_FINAL.text}</p>
               <a href={entry.href} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '15px 34px', background: '#12091f', color: INK, borderRadius: 14, fontSize: 15, fontWeight: 800, textDecoration: 'none', boxShadow: '0 12px 34px rgba(0,0,0,.3)' }}>{entry.main}</a>
             </div>
           </div>

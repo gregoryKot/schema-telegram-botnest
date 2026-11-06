@@ -186,6 +186,11 @@ export const EXCLUDE = [
   // Статьи сайта — единая форма «вы» (docs/ARTICLES.md), addressForm не
   // читают, как и лендинг.
   /^src\/articles\/articles\.seed\.ts$/,
+  // Текст продуктового лендинга schemehappens.ru — тот же маркетинг, что
+  // webapp/src/pages/landing/ выше: страница публичная, гость формы не
+  // выбирал. В src/ он лежит только затем, чтобы его читал и сервер (HTML для
+  // робота без JS, home-seo.middleware.ts), — бэкенд не импортирует shared/.
+  /^src\/articles\/home-landing\.content\.ts$/,
   // Канал «Здоровый Взрослый» — вещание разом всем подписчикам, у поста нет
   // конкретного userId и его формы; HEALTHY_ADULT.md прямо фиксирует «ты»
   // для всего канала.

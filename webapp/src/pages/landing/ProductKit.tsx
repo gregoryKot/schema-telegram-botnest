@@ -2,10 +2,11 @@ import { useState } from 'react';
 import type { ArticleSummary } from '../../api';
 import { GLASS, GLASS_BORDER, INK, SUB, FAINT, VIOLET, AURORA, glow } from './aurora';
 import { FAQ } from './productContent';
+import { Rich } from './Rich';
 
 // Карточки продуктового лендинга (стекло-карточка, карточка статьи, FAQ).
 // Вынесены из ProductLandingPage при добавлении блока об авторе (файловый
-// храповик). Данные — в productContent.tsx (react-refresh: раздельно).
+// храповик). Данные — в productContent.ts (react-refresh: раздельно).
 
 // ─── Стекло-карточка (иконка + заголовок + текст) ────────────────────────────
 export function GlassCard({ emoji, color, title, children, big }: { emoji: string; color: string; title: string; children: React.ReactNode; big?: boolean }) {
@@ -57,7 +58,7 @@ export function FaqList() {
             </button>
             <div style={{ display: 'grid', gridTemplateRows: isOpen ? '1fr' : '0fr', transition: 'grid-template-rows .3s ease' }}>
               <div style={{ overflow: 'hidden' }}>
-                <p style={{ fontSize: 14.5, lineHeight: 1.75, color: SUB, margin: '0 20px 20px' }}>{item.a}</p>
+                <p style={{ fontSize: 14.5, lineHeight: 1.75, color: SUB, margin: '0 20px 20px' }}><Rich parts={item.a} place="faq" /></p>
               </div>
             </div>
           </div>
