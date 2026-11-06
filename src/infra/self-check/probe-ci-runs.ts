@@ -49,7 +49,6 @@ export function ciRunsProbe(): Probe {
   return {
     id: 'ciRuns',
     title: 'Ночная проверка и смок прода на GitHub',
-    critical: false,
     reportInHealth: false,
     async run() {
       const problems: string[] = [];

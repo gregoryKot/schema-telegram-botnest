@@ -1,21 +1,20 @@
 import { runProbes } from './runner';
 import { Probe } from './types';
 
-function probe(id: string, run: Probe['run'], critical = false): Probe {
-  return { id, title: `Проба ${id}`, critical, run };
+function probe(id: string, run: Probe['run']): Probe {
+  return { id, title: `Проба ${id}`, run };
 }
 
 describe('runProbes', () => {
-  it('агрегирует id/title/critical пробы с её результатом', async () => {
+  it('агрегирует id/title пробы с её результатом', async () => {
     const results = await runProbes([
-      probe('a', async () => ({ ok: true, detail: 'всё хорошо' }), true),
+      probe('a', async () => ({ ok: true, detail: 'всё хорошо' })),
       probe('b', async () => ({ ok: false, detail: 'сломано' })),
     ]);
     expect(results).toEqual([
       {
         id: 'a',
         title: 'Проба a',
-        critical: true,
         ok: true,
         detail: 'всё хорошо',
         reportInHealth: true,
@@ -23,7 +22,6 @@ describe('runProbes', () => {
       {
         id: 'b',
         title: 'Проба b',
-        critical: false,
         ok: false,
         detail: 'сломано',
         reportInHealth: true,
@@ -35,7 +33,6 @@ describe('runProbes', () => {
     const hidden: Probe = {
       id: 'hidden',
       title: 'Проба hidden',
-      critical: false,
       reportInHealth: false,
       run: async () => ({ ok: false, detail: 'скрыто от /health' }),
     };
@@ -44,7 +41,6 @@ describe('runProbes', () => {
       {
         id: 'hidden',
         title: 'Проба hidden',
-        critical: false,
         ok: false,
         detail: 'скрыто от /health',
         reportInHealth: false,
@@ -76,7 +72,6 @@ describe('runProbes', () => {
       {
         id: 'hang',
         title: 'Проба hang',
-        critical: false,
         ok: false,
         detail: 'не ответила за 1 с',
         reportInHealth: true,

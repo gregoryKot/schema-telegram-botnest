@@ -25,7 +25,6 @@ export function caldavProbe(env: NodeJS.ProcessEnv = process.env): Probe {
   return {
     id: 'caldav',
     title: 'Личный календарь (iCloud)',
-    critical: false,
     async run() {
       const id = env.APPLE_ID?.trim();
       const pass = env.APPLE_APP_PASSWORD?.trim();

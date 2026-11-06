@@ -18,7 +18,6 @@ describe('formatSelfCheck', () => {
         {
           id: 'db',
           title: 'База данных',
-          critical: true,
           ok: true,
           detail: 'отвечает',
           reportInHealth: true,
@@ -26,7 +25,6 @@ describe('formatSelfCheck', () => {
         {
           id: 'telegram',
           title: 'Бот Telegram',
-          critical: false,
           ok: true,
           detail: 'выключено',
           reportInHealth: true,
@@ -46,7 +44,6 @@ describe('formatSelfCheck', () => {
         {
           id: 'db',
           title: 'База данных',
-          critical: true,
           ok: true,
           detail: 'отвечает',
           reportInHealth: true,
@@ -54,7 +51,6 @@ describe('formatSelfCheck', () => {
         {
           id: 'caldav',
           title: 'Личный календарь (iCloud)',
-          critical: false,
           ok: false,
           detail: 'обнаружение не нашло ни одного календаря',
           reportInHealth: true,
