@@ -45,18 +45,18 @@
 .ap-plan-top { display: flex; justify-content: space-between; align-items: center; }
 .ap-plan-name { font-size: 16px; font-weight: 700; }
 .ap-radio { width: 22px; height: 22px; border-radius: 50%; box-sizing: border-box; border: 2px solid var(--on-panel-faint); }
-.ap-plan.is-on .ap-radio { border-color: var(--accent-hot); background: var(--accent-hot); box-shadow: inset 0 0 0 4px var(--surface); }
+.ap-plan.is-on .ap-radio { border-color: var(--accent); background: var(--accent); box-shadow: inset 0 0 0 4px var(--surface); }
 .ap-plan-bottom { display: flex; align-items: baseline; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
 .ap-plan-price { font-family: var(--serif); font-size: 44px; line-height: 1; }
 .ap-plan-per { font-size: 14px; opacity: .7; }
-.ap-badge { margin-left: auto; font-size: 12px; font-weight: 700; background: var(--accent-hot); color: #fff; border-radius: 10px; padding: 3px 9px; white-space: nowrap; }
+.ap-badge { margin-left: auto; font-size: 12px; font-weight: 700; background: var(--accent); color: var(--on-accent); border-radius: 10px; padding: 3px 9px; white-space: nowrap; }
 
 .ap-consent { position: relative; display: flex; gap: 10px; align-items: flex-start; font-size: 13px; line-height: 1.5; color: var(--on-panel-sub); cursor: pointer; min-height: 44px; margin-top: 6px; }
 .ap-box {
   width: 22px; height: 22px; border-radius: 6px; flex-shrink: 0; box-sizing: border-box; border: 2px solid var(--on-panel-faint);
-  display: flex; align-items: center; justify-content: center; color: #fff; font-size: 12px;
+  display: flex; align-items: center; justify-content: center; color: var(--on-accent); font-size: 12px;
 }
-.ap-native:checked + .ap-box { background: var(--accent-hot); border-color: var(--accent-hot); }
+.ap-native:checked + .ap-box { background: var(--accent); border-color: var(--accent); }
 .ap-native:focus-visible + .ap-box { outline: 2px solid var(--on-panel-sub); outline-offset: 2px; }
 .ap-err--panel { color: var(--on-panel); background: var(--panel-2); border-radius: 12px; padding: 10px 14px; }
 
