@@ -76,7 +76,7 @@
 | `shared/src/api/` | фабрики api, кеш GET, разбор ответов и ошибок |
 | `shared/src/auth/` | refresh сессии, кросс-табный замок, владелец данных, тикет входа |
 | `shared/src/beliefCheck/` | «Проверка убеждения»: форма мастера с черновиком (`useBeliefCheckForm`) |
-| `shared/src/booking/` | часовой пояс клиента, канал связи, региональная цена |
+| `shared/src/booking/` | часовой пояс клиента, канал связи, региональная цена; `useBookingSlots` — загрузка слотов одна на визитку (`BookingPicker`) и запись клиента из приложения (`webapp/src/components/booking/ClientBookingSheet.tsx`, #546) |
 | `shared/src/build/` | vite-плагин `requireBotUsername` |
 | `shared/src/case/` | поток «Что это было»: типы, состояние, сохранение; `quick/` — три шага сайта |
 | `shared/src/childhoodWheel/` | колесо детства: данные и примеры; `useRatingSlider` — ползунок 0–10 (указатель, клавиатура, aria); `sliderGesture` — значение по тапу или сдвигу вбок, вертикаль — прокрутка |

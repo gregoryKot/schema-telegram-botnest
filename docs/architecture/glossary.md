@@ -75,7 +75,8 @@
 | «Здоровый Взрослый», «ЗВ», канал | пост из пула фраз дважды в день | `src/channel/channel-publisher.service.ts`, `src/bot/healthy-adult.service.ts` | `webapp/src/pages/admin/HealthyAdultSection.tsx` |
 | MAX | второй мессенджер: вход и канал | `src/auth/auth-max.controller.ts` | `shared/src/host/max.ts` |
 | **Запись и деньги** | | | |
-| «Записаться», бронь, слоты | запись на консультацию | `src/booking/booking.service.ts` | `webapp/src/components/BookingPicker.tsx`, `webapp/src/pages/BookingLinkPage.tsx` |
+| «Записаться», бронь, слоты | запись на консультацию; загрузка слотов — общий хук `shared/src/booking/useBookingSlots.ts` | `src/booking/booking.service.ts` | `webapp/src/components/BookingPicker.tsx`, `webapp/src/pages/BookingLinkPage.tsx` |
+| «Записаться на сессию» (клиент из «Мой терапевт»), «Ближайшая сессия», «Управлять записью» | запись клиента владельца практики из приложения без формы, та же цепочка `BookingService.book`; бронь привязана к аккаунту (`Booking.userId`); владелец практики = `ADMIN_ID` | `src/booking/client-booking.service.ts` (`GET /api/client-booking`, `POST /api/client-booking/book`), `src/booking/client-booking.identity.ts` (имя и контакт из аккаунта), `src/utils/practice-owner.ts` | `webapp/src/components/booking/ClientBookingSheet.tsx`, `webapp/src/components/booking/ClientBookingBlock.tsx` (в `webapp/src/sections/profile/TherapistCard.tsx`) |
 | «Знакомство», «Свяжусь с вами» | заявка с лендинга | `src/booking/intro-lead.service.ts` | `webapp/src/pages/landing/BookingForm.tsx` |
 | оплата, Robokassa, страница после оплаты | `/booking/paid`, управление записью | `src/booking/payment.controller.ts`, `src/booking/robokassa.service.ts` | `webapp/src/pages/BookingPaidPage.tsx` |
 | «Расписание», «Цены», iCloud | окна приёма, цена, занятость CalDAV | `src/booking/availability.service.ts`, `src/booking/pricing.service.ts`, `src/booking/caldav.service.ts` | `webapp/src/pages/admin/ScheduleSection.tsx` |

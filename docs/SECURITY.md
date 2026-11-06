@@ -339,6 +339,12 @@ React экранирует вывод по умолчанию, `dangerouslySetIn
   Заявка с простой формы знакомства (`IntroLead`, `POST /api/booking`) подчиняется
   тому же сроку, но отсчёт ведёт от `createdAt` (консультации у неё нет):
   `intro-lead-retention.service.ts` затирает те же три поля.
+  С #546 связь с аккаунтом есть у одного вида броней — записи клиента из
+  приложения (`Booking.userId`, `clientTelegramId` из проверенной подписи, не из
+  тела). Решение то же: удаление аккаунта бронь не удаляет (деньги, календарь),
+  а отвязывает — `userId` и `clientTelegramId` обнуляются (`src/bot/account.delete.ts`),
+  имя и контакт стирает тот же срок; выгрузка данных отдаёт свои брони без
+  `cancelToken` (`src/account/export-policy.booking.ts`).
   Что осознанно НЕ затирается: `Booking.meetingUrl` (ссылка Zoom с `?pwd=` —
   после сессии мёртвая, но формально секрет). `ClientMeeting.clientKey` с
   аудита 2026-10 — HMAC контакта с ключом из `ENCRYPTION_KEY`
