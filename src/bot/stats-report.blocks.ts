@@ -35,6 +35,7 @@ export interface StatsBlockDeps {
   therapyNudge: Renderable;
   therapyInvites: Renderable;
   therapistExit: Renderable;
+  crawlers: Renderable;
 }
 
 export interface StatsBlock {
@@ -71,5 +72,6 @@ export function statsBlocks(d: StatsBlockDeps): StatsBlock[] {
     { name: 'Мост к терапевту', svc: d.therapyNudge },
     { name: 'Приглашения клиентов', svc: d.therapyInvites },
     { name: 'Терапевты уходят', svc: d.therapistExit },
+    { name: 'Роботы нейросетей', svc: d.crawlers },
   ];
 }

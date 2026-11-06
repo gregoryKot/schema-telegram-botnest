@@ -36,6 +36,9 @@
 //                   клиент подключился, отозвал (meta.step + meta.kind, реестр
 //                   и причины — therapy-invite-events.constants.ts). Пишет
 //                   TherapyInviteService; ветки в sanitizeMeta нет.
+//   crawler_visits — заходы роботов нейросетей за час (crawler-hits.ts): пишет
+//                   только крон CrawlerHitsService, userId = null — /stats верит
+//                   лишь таким строкам; sanitizeMeta — закрытые списки.
 export const SERVER_EVENTS = [
   'auth_rejected',
   'auth_success',
@@ -45,4 +48,5 @@ export const SERVER_EVENTS = [
   'notify_queue_tick',
   'therapist_resigned',
   'therapy_invite',
+  'crawler_visits',
 ] as const;
