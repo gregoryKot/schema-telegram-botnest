@@ -3,7 +3,7 @@
 // коллекции (А/Б) — добавить/удалить/переместить/сохранить. Ошибка сохранения
 // обязана быть видна, а не выглядеть как успех.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, cleanup } from '@testing-library/react';
+import { render, screen, fireEvent, cleanup, act } from '@testing-library/react';
 import { MarqueeSection } from './MarqueeSection';
 
 vi.mock('../../api', () => ({
@@ -29,10 +29,16 @@ afterEach(() => {
 
 describe('MarqueeSection — на чистом контенте пусто, не выдумка', () => {
   it('без строк в API — списки пустые, без хардкода', async () => {
-    mockApi.getSiteContent.mockResolvedValue({ marqueeTopicsA: [], marqueeTopicsB: [] });
+    // Начальный state уже пустой: проверка на первом кадре зелёная, что бы
+    // компонент ни сделал с ответом. Ждём сам ответ (как renderSettled в
+    // PhotoSection.test.tsx), потом проверяем.
+    const response = Promise.resolve({ marqueeTopicsA: [], marqueeTopicsB: [] });
+    mockApi.getSiteContent.mockReturnValue(response);
     render(<MarqueeSection adminKey="k" />);
-    await screen.findByText('Бегущая строка А');
-    expect(screen.queryByDisplayValue('Тревога')).toBeNull();
+    await act(async () => { await response; });
+    expect(mockApi.getSiteContent).toHaveBeenCalled();
+    expect(screen.getByText('Бегущая строка А')).toBeTruthy();
+    expect(screen.queryAllByPlaceholderText('Текст')).toHaveLength(0);
   });
 });
 

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { getHost, type HostId } from '../../../shared/src/host';
-import { LATE_HOST_READS_MS } from './initHost';
+import { LATE_HOST_READS_MS } from '../../../shared/src/host/lateHostReads';
 
 /** Площадка, в которой открыт сайт. Пересчитывается, если SDK мессенджера доехал позже. */
 export function useHostId(): HostId {

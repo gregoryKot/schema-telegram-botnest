@@ -7,6 +7,7 @@ import { useAsyncData } from '../hooks/useAsyncData';
 import { Loader } from './Loader';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { useConfirmTap } from '../../../shared/src/hooks/useConfirmTap';
+import { useTimedFlag } from '../../../shared/src/hooks/useTimedFlag';
 import { useTr } from '../utils/addressForm';
 import { useNeedData } from '../needData';
 import { pressable } from '../utils/a11y';
@@ -34,8 +35,9 @@ export function PracticesScreen({ onClose, onOpenTracker }: Props) {
   const [needIdx, setNeedIdx] = useState(0);
   const [input, setInput] = useState('');
   const [saving, setSaving] = useState(false);
-  const [addedToast, setAddedToast] = useState(false);
-  const [errorToast, setErrorToast] = useState(false);
+  // Тосты гаснут сами, таймер чистится на размонтировании (useTimedFlag).
+  const [addedToast, flashAdded] = useTimedFlag(2000);
+  const [errorToast, flashError] = useTimedFlag(2500);
   const [ratings, setRatings] = useState<Record<string, number>>({});
 
   useEffect(() => {
@@ -59,12 +61,10 @@ export function PracticesScreen({ onClose, onOpenTracker }: Props) {
     try {
       await api.addPractice(NEED_IDS[needIdx], text);
       setInput('');
-      setAddedToast(true);
-      setTimeout(() => setAddedToast(false), 2000);
+      flashAdded();
       reloadPractices();
     } catch {
-      setErrorToast(true);
-      setTimeout(() => setErrorToast(false), 2500);
+      flashError();
     } finally {
       setSaving(false);
     }
@@ -75,8 +75,7 @@ export function PracticesScreen({ onClose, onOpenTracker }: Props) {
     // Оптимистичное удаление: сбой возвращает список с сервера (иначе
     // практика «исчезала», оставаясь в БД, и воскресала при следующем заходе).
     api.deletePractice(id).catch(() => {
-      setErrorToast(true);
-      setTimeout(() => setErrorToast(false), 2500);
+      flashError();
       reloadPractices();
     });
   }

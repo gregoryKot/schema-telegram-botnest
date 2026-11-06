@@ -44,7 +44,10 @@ jobs:
       # джобу через actions/cache ниже — прокидывается явным --cacheDirectory
       # в каждый npx jest, потому что jest не читает env-переменную для этого
       # (в конфиге кэш-путь не задан, а package.json трогать нельзя — CI-4.2).
-      JEST_CACHE_DIR: .jest-cache
+      # Путь абсолютный: относительный jest резолвит от rootDir конфига
+      # (src/.jest-cache, test/.jest-cache), а actions/cache — от корня
+      # репозитория, и шаг «Кэш ts-jest» сохранял пустой каталог.
+      JEST_CACHE_DIR: ${{ github.workspace }}/.jest-cache
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -229,6 +232,11 @@ jobs:
       # наоборот: путь в CI без файла — переименованный спек, который jest
       # молча пропускает. Бейслайна нет, флага --update нет.
       - run: node scripts/check-e2e-in-ci.mjs
+      # Тест, поднявший AppModule, гасит настоящие @Cron (stopCronJobs после
+      # app.init(), test/e2e-support/stop-cron-jobs.ts): тик sendReminders
+      # посреди спека слал напоминания по общей БД, шпион видел 4 DM вместо 1
+      # (PR #722). Строители e2e это делают сами; гейт ловит обход. Без бейслайна.
+      - run: node scripts/check-e2e-stop-cron.mjs
       # Документы для агентов не врут: CLAUDE.md в бюджете (он грузится в каждую
       # сессию), у правил .claude/rules есть paths, карта кода называет все
       # каталоги и гейты, пути и ссылки живы. Бейслайна и --update нет.
@@ -292,9 +300,8 @@ jobs:
       # Деплой-шов (правило №14 CLAUDE.md): Dockerfile/.dockerignore/amvera.yml
       # не читает ни tsc, ни jest, ни eslint — они не .ts/.js. Гейт статически
       # проверяет, что то, что Dockerfile копирует (COPY/`cp -r`), существует
-      # в репозитории или производится сборкой, что назначение мини-аппа
-      # совпадает с rootPath ServeStaticModule в src/app.module.ts, что
-      # .dockerignore не исключает то, что COPY тут же копирует, и что
+      # в репозитории или производится сборкой (webapp/dist, game/dist, dist),
+      # что .dockerignore не исключает то, что COPY тут же копирует, и что
       # amvera.yml согласован с deploy/entrypoint.mjs. Это ловит рассинхрон
       # ПУТЕЙ за миллисекунды, но не докажет, что образ вообще собирается —
       # синтаксис Dockerfile, версии пакетов, реестр — за это отвечает джоба
@@ -822,7 +829,8 @@ jobs:
       # 2026-10: чек-ин в ModesTab закрывал справочник целиком). `.tsx` с
       # position: fixed + inset: 0 — инлайном или через CSS-класс — вызывает
       # useHistorySheet либо стоит в scripts/history-sheet-baseline.json с
-      # причиной. Классификация, флага --update нет; мини-апп не покрыт.
+      # причиной. Классификация, флага --update нет; смотрит webapp/src и
+      # shared/src.
       - run: node scripts/check-history-sheet.mjs
       # Вебвизор визитки (аудит 2026-10, security#27): политика обещает «поля
       # ввода не записываются», а Вебвизор пишет клавиши везде, кроме полей с

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { api } from '../../api';
 import type { MarqueeTopic } from '../../api';
 import { card, btn, btnGhost, input } from './shared';
+import { useTimedFlag } from '../../../../shared/src/hooks/useTimedFlag';
 
 /** Marquee admin tab: edit the two scrolling topic strips on the landing page. */
 export function MarqueeSection({ adminKey }: { adminKey: string }) {
@@ -24,7 +25,7 @@ function TopicListEditor({ title, adminKey, group, topics, onChange }: {
   title: string; adminKey: string; group: 'A' | 'B'; topics: MarqueeTopic[]; onChange: (t: MarqueeTopic[]) => void;
 }) {
   const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
+  const [saved, flashSaved] = useTimedFlag(1500);
   const [error, setError] = useState<string | null>(null);
 
   const update = (i: number, patch: Partial<MarqueeTopic>) => {
@@ -45,8 +46,7 @@ function TopicListEditor({ title, adminKey, group, topics, onChange }: {
     setError(null);
     try {
       await api.adminSetMarquee(adminKey, group, topics.filter(t => t.label.trim() && t.href.trim()));
-      setSaved(true);
-      setTimeout(() => setSaved(false), 1500);
+      flashSaved();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Не удалось сохранить');
     } finally {

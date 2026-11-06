@@ -10,6 +10,7 @@ import { Skeleton, SkeletonCard } from '../../components/Skeleton';
 import { INK, SUB, FAINT, GLASS_BORDER, AURORA, glow, VIOLET, PINK, GLASS_CARD } from '../landing/aurora';
 import { AUTHOR_SITE, trackPracticeClick } from '../landing/practiceLink';
 import { TestsFrame, QuizProgress } from './testsKit';
+import { useTimedFlag } from '../../../../shared/src/hooks/useTimedFlag';
 
 const OPTION_STYLE: React.CSSProperties = {
   ...GLASS_CARD,
@@ -32,7 +33,7 @@ export function QuizPage() {
   const quiz = quizzes?.find((q) => q.id === quizId) ?? null;
   const runner = useQuizRunner(quiz);
   const [started, setStarted] = useState(false);
-  const [copied, setCopied] = useState(false);
+  const [copied, flashCopied] = useTimedFlag(2000);
   const completedSent = useRef(false);
 
   useEffect(() => {
@@ -63,8 +64,7 @@ export function QuizPage() {
         await navigator.share({ text });
       } else {
         await navigator.clipboard.writeText(text);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
+        flashCopied();
       }
     } catch { /* юзер закрыл шэр — не ошибка */ }
   };

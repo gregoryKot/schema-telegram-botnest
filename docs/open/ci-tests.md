@@ -41,21 +41,12 @@ Ubuntu 26) у трёх PR подряд падали `backend` → `check-coverag
 сервиса джобы. Переход — отдельный PR: сменить `runs-on`, прочитать логи, починить.
 Плавающую метку держит `src/test-support/gates/runner-pin.spec.ts`.
 
-**Тесты админки, зелёные на первом кадре** (найдено при починке мигающего `PhotoSection.test.tsx`, упавшего в CI на #725):
-- **«Пустое состояние» проверяется до ответа API в четырёх файлах:**
-  `MarqueeSection.test.tsx` («без строк в API»), `HealthyAdultSection.test.tsx`
-  («Активных фраз: 0 / 0»), `BookingSection.test.tsx` и `ArticlesSection.test.tsx`
-  («Записей нет.» / «Пока нет статей.»). Начальный state компонента уже пустой,
-  `findByText` находит его на первом кадре — тест не упадёт, что бы компонент ни
-  сделал с пустым ответом позже. Это не флак, а защита вхолостую (для
-  `PhotoSection` проверено мутацией: при ответе позже 50 мс старый тест её не
-  замечал). Лечится как в `PhotoSection.test.tsx` (`renderSettled`): дождаться
-  самого ответа, потом проверять.
-- **`PhotoSection.tsx`: запоздавший `getSiteContent` затирает только что
-  сохранённое фото** (`useEffect` без отмены, `setCurrent(c.heroPhoto)` приходит
-  после `setCurrent(preview)`). Вживую почти недостижимо — надо выбрать файл,
-  сжать и сохранить раньше ответа GET, — поэтому прод-код в том PR не трогали.
-  Воспроизводится в тесте при задержке ответа 50 мс.
+**Админка: загрузка без отмены** (остаток после закрытия гонки `PhotoSection.tsx`, 2026-11-06):
+`webapp/src/pages/admin/MarqueeSection.tsx:12` (`getSiteContent` → `setA`/`setB`) и
+`HealthyAdultSection.tsx:18` (`adminListPhrases` → `setPhrases`) — тот же `useEffect` без отмены:
+ответ, пришедший после правки (добавил пункт или фразу до конца загрузки), затирает её на экране
+(на сервере правка цела). Вживую почти недостижимо; лечится как в `PhotoSection.tsx` (флаг
+`loadCancelled`) с тестом на поздний ответ.
 
 **Merge-драйверы бейслайнов** (`scripts/merge-drivers-check.mjs`, `scripts/merge-json-ratchet.mjs`, #729):
 - **`scripts/file-size-baseline.json` отстал: 82 файла усохли, бейслайн не зафиксирован** (2026-11-04). `node scripts/check-file-size-ratchet.mjs` это печатает зелёным; `--update` переписывает ~280 строк (в том числе удалённые файлы мини-аппа и усохшие гейты). Не сделано в PR эталона «Сегодня», чтобы не топить дифф; закрывается отдельным PR одним `--update` без кода.
@@ -66,16 +57,6 @@ Ubuntu 26) у трёх PR подряд падали `backend` → `check-coverag
   потеряли при разрешении, `node scripts/setup-merge-drivers.mjs --check`
   (джоба `checks`) краснеет на бейслайне без атрибута. Свой драйвер для
   `.gitattributes` не заведён.
-- **Порядок ключей: драйвер и гейт сортируют по-разному.**
-  `scripts/merge-json-ratchet.mjs:87-94` (`orderKeys`), когда «наша» сторона
-  отсортирована, пересортировывает результат через `localeCompare`, а
-  `scripts/check-raw-sql-live.mjs:140-142` сверяет порядок ключей
-  `scripts/raw-sql-live-baseline.json` обычным `.sort()` (code point). Сегодня
-  порядки совпадают (34 ключа-пути), но ключ с `_` или с заглавной буквой рядом
-  со строчными встанет в них по-разному: `src/a/b_c.ts` до `src/a/b-c.ts` у
-  `localeCompare` и после у `.sort()`. Итог: гейт покраснеет после автослияния
-  (громко, не молча). Лечение: `orderKeys` по code point (или проверка обоих
-  порядков) отдельным PR с тестом на такой ключ.
 - **Бандл: рост двух сторон сводится через `min` и теряется.**
   `scripts/bundle-size-baseline.json` стоит под `merge=ratchet-min`
   (`.gitattributes`); если обе стороны подняли `webapp:total-js`
@@ -88,20 +69,20 @@ Ubuntu 26) у трёх PR подряд падали `backend` → `check-coverag
   (отдельный режим драйвера + тест в `src/test-support/gates/merge-drivers.spec.ts`).
 
 **Тесты и даты — открыто:**
-- **`webapp/src/sections/ProfileSection.customize.test.tsx` мигает под нагрузкой.**
-  Полный `npm test --prefix webapp` 2026-10-22 на общей машине (несколько
-  агентов) дал 1 красный из 3811 именно в нём; отдельно — 5 из 5 зелёных, во
-  втором полном прогоне не воспроизвёлся; 2026-10-27 (66 файлов vitest
-  параллельно) тест «„Настроить“ открывает лист…» не нашёл `role="dialog"`
-  «Настроить экран». Причина не разобрана: вероятно,
-  таймаут ожидания `findBy*`/`waitFor` при медленном рендере. Если повторится
-  в CI — снять лог и разобрать, а не перезапускать (правило «флак — не
-  причина»). Воспроизводится стабильно (2026-11-06, контейнер на 4 ядра):
-  `TZ=Australia/Sydney npx vitest run src/sections/ProfileSection src/sections/profile`
-  с новым `StreakCard.test.tsx` (14 файлов) — 3 из 3 красных на том же
-  `findByRole('dialog')`; без него (13 файлов), с `--maxWorkers=2` и файл
-  отдельно — зелёные. То есть таймаут `findBy*` (1 с по умолчанию) против
-  первой загрузки листа под нагрузкой, а не логика соседних файлов.
+- **vitest `webapp` под нагрузкой машины: остался класс «10 с на весь тест».** Класс «`findBy*`/`waitFor`
+  ждёт 1 с, а холодный `import()` ленивого чанка дольше» (`HistoryView` 1,4 с, `TrackerOverlay` 2,1 с на Mac
+  владельца при load average 55–77 на 8 ядрах; мигали `ProfileSection`/`SchemasSection.customize`,
+  `HistorySheet`, `AppShell.overlays`) закрыт `configure({ asyncUtilTimeout: 5000 })` в
+  `webapp/src/test-support/rtlCleanup.ts`. Замер 2026-11-06 (пять файлов, 5 параллельных `vitest run
+  --pool=threads` × 3 раунда, 4 ядра, load average 16–38): без бюджета 15/15 прогонов красные, 58 тестов,
+  из них 40 «Unable to find»; с бюджетом 13/15, 34 теста, «Unable to find» — 2, остальное `Test timed out in
+  10000ms`. Почти все таймауты — `webapp/src/App.test.tsx` (`/login`, `/`, `/` визитки): каждый тест
+  делает `vi.resetModules()` и холодный `import('./App')` всего графа, потому что домен и роутер
+  `App.tsx` вычисляет при импорте; плюс «Настроить» в `ProfileSection.customize.test.tsx` (рендер профиля
+  и лист больше 10 с). `testTimeout` не поднимали осознанно (задача гигиены: бюджет теста не трогать).
+  Лечение `App.test` — определять домен при рендере, а не при импорте, тогда `resetModules` не нужен. До
+  этого локальный красный vitest при высокой нагрузке — повод перегнать красные файлы в одиночку; CI зелёный
+  (там нагрузки нет), локальный `check-frontend-coverage-ratchet.mjs` под нагрузкой не доказывает ничего.
 - **Файл `src/**` с логикой и 0% строк не краснит ни один гейт.**
   `scripts/check-coverage-ratchet.mjs` проверяет сумму и полы по каталогам, а
   отдельные файлы не смотрит: десять непокрытых строк пол каталога `src/api`
@@ -235,17 +216,15 @@ Ubuntu 26) у трёх PR подряд падали `backend` → `check-coverag
 - Тост-таймер без очистки при размонтировании (`setX(true); setTimeout(() =>
   setX(false), N)`): таймер срабатывает после сноса jsdom и роняет весь прогон
   vitest с `window is not defined` при зелёных тестах (CI main, run
-  36409902702, webapp под `TZ=Australia/Sydney`). Настройки
-  переведены на `shared/src/hooks/useTimedFlag.ts`; класс ещё живёт в
-  `webapp/src/components/PracticesScreen.tsx:62,66,78`,
-  `webapp/src/pages/admin/{PhotoSection,MarqueeSection,HealthyAdultSection}.tsx`,
-  `webapp/src/pages/tests/QuizPage.tsx:67`.
-  Переводить на тот же хук; гейта у класса нет. Подкласс «код чистит таймер корректно, но
+  36409902702, webapp под `TZ=Australia/Sydney`). Тосты сайта переведены на
+  `shared/src/hooks/useTimedFlag.ts` (настройки, `PracticesScreen`, админка, `QuizPage`, 2026-11-06);
+  класс ещё живёт в `shared/src/therapy/useSessionAliasEditing.ts:125` (ошибка гаснет по
+  `setTimeout` без очистки — найдено при переводе). Гейта у класса нет. Подкласс «код чистит таймер корректно, но
   тест не размонтировал компонент» закрыт механизмом: `setupFiles` с
   `afterEach(cleanup)` в каждом из фронтовых пакетов
   (`<пакет>/src/test-support/rtlCleanup.ts`, флак 2026-10-15, run 38707373186,
-  `LazySections.test.tsx` → `useSafeTop`). Перечисленные выше места этим НЕ
-  закрыты: размонтирование не гасит таймер, которого код не чистит. Подкласс
+  `LazySections.test.tsx` → `useSafeTop`). Место выше этим НЕ
+  закрыто: размонтирование не гасит таймер, которого код не чистит. Подкласс
   «размонтирование само ставит короткий таймер» (tiptap `scheduleDestroy`,
   `setTimeout(…, 1)`; CI 2026-10-15, run 38729454493, `ArticleEditor.test.tsx`)
   закрыт `afterAll(settleUnmountTimers)` в тех же `rtlCleanup.ts`: ждёт 10 мс
@@ -259,19 +238,6 @@ Ubuntu 26) у трёх PR подряд падали `backend` → `check-coverag
   но новый спек может снова завести свою. `.listen(<литерал>)` грепается, а список
   законных исключений заранее неясен — гейт с ложным долгом хуже отсутствия
   (правило №15 п.4; [TEST_IMPROVEMENT_PLAN.md](../TEST_IMPROVEMENT_PLAN.md), п. 3.4).
-- Сьюта `webapp` под `--coverage` мигает локально (macOS): падают разные тесты
-  от прогона к прогону — `src/components/AppShell.overlays.test.tsx`, `src/App.test.tsx`, — всегда по
-  таймауту `findByText` (1000 мс) на ленивом чанке или 10 с на весь тест. Что
-  это не регресс ветки, доказано прогоном на чистом `origin/main` в отдельном
-  worktree: та же картина, только другой набор тестов. Без coverage сьюта
-  зелёная всегда (2384 теста), в CI зелёная и с coverage. Итог: локально
-  `check-frontend-coverage-ratchet.mjs` не доказывает ничего, и агент либо
-  ждёт CI, либо поднимает бюджет ожидания у ленивых экранов (по образцу #547).
-- Сьюта webapp без coverage тоже иногда роняет один тест из ленивого чанка
-  (бывший `CaseEntryBlock.test.tsx`, «Разобрать · ≈ 3 мин», таймаут `findByText`
-  1000 мс; файл удалён в #872, поток разбора в новом тесте главной замокан) — 2026-09-22 при полном прогоне; тот же файл отдельно проходит за
-  3 с. Класс тот же, что строкой выше, но без coverage — значит бюджет
-  ожидания мал сам по себе, а не из-за инструментирования.
 - Страница `kotlarewski.gr` дважды подвешивала рендерер при отладке через CDP
   (`Runtime.evaluate` не ответил за 45 с, инъекция скриншота — за 5 с),
   2026-09-22. Виноват ли сайт, НЕ доказано: с той же вероятностью это
@@ -293,19 +259,6 @@ Ubuntu 26) у трёх PR подряд падали `backend` → `check-coverag
   перевод на локальный день сдвинет ключ группировки относительно календарного
   дня благодарности, который приходит с сервера в UTC (правило №25). Решать
   вместе с тем, в какой системе координат живёт лента дневника.
-- **e2e на `AppModule` живут с настоящими `@Cron`** (`ScheduleModule.forRoot()`
-  тикает после `app.init()`). `test/payment-webhooks.e2e-spec.ts` с 2026-10-16
-  гасит их `stopCronJobs(app)` (`test/e2e-support/stop-cron-jobs.ts`): тик
-  `BookingNotifyService.sendReminders` (`*/5`) на границе пятиминутки слал
-  напоминания по броням из общей БД джобы `migrations`, и счётчик
-  `expect(tg).toHaveBeenCalledTimes(1)` видел 4 (CI PR #722, 03:35 UTC).
-  Остальным спекам расписание вредит, только если они считают вызовы шпионов на
-  уведомления админу. Проверено чтением: `notify-address.e2e-spec.ts` безопасен
-  (`ADMIN_EMAIL` в e2e не задан, `sendAdminNotification` выходит до `send`);
-  `body-limit.e2e-spec.ts:115` (`Logger.error` не вызван) упал бы только от
-  тика, завершившегося ошибкой — не воспроизводилось, не трогал. Новый e2e,
-  считающий `notifyAdmin`/почту при живом `AppModule`, обязан звать
-  `stopCronJobs`; механизма принуждения нет, держится ревью.
 
 **Сверка карты инвалидации кеша видит только `shared/src/api/*`** (найдено 2026-10-26 на офлайн-клиентах терапевта):
 - `shared/src/api/apiCacheRules.coverage.test.ts` (`SOURCES`) собирает мутации из `sharedApi.ts`,
@@ -322,42 +275,12 @@ Ubuntu 26) у трёх PR подряд падали `backend` → `check-coverag
   (`node_modules/@nestjs/serve-static/dist/serve-static.providers.js`) — SPA-фолбэк и раздачу
   `webapp/dist` не видит ни один e2e, любой путь вне контроллеров там 404. Шов статики держит
   только `src/infra/site-static.spec.ts` (поднимает через `NestFactory.create`, как `main.ts`).
-- **Комментарий джобы `checks` про `check-deploy-paths.mjs` устарел.** `.github/workflows/ci.yml`
-  (~стр. 284): «назначение мини-аппа совпадает с rootPath ServeStaticModule в src/app.module.ts» —
-  мини-апп удалён (#917), а скрипт `src/app.module.ts` не читает (`grep app.module
-  scripts/check-deploy-paths.mjs` пуст).
-
-**Вторая ОС в nightly — находки при добавлении `macos-build`** (2026-11-05, #938):
-- **Локальный `vitest` в `webapp` на Mac краснеет от нагрузки машины, не от регистра** (проверка
-  критерия #933, 2026-11-05). После #933 `vite build`, `tsc -p webapp/tsconfig.app.json` и
-  `check-filename-case` на macOS зелёные, nightly `macos-build` зелёный дважды за день, а `npx vitest
-  run` в `webapp` на машине владельца при load average 55–77 на 8 ядрах (jest-воркеры другого проекта и
-  `tsc -b` главного дерева) дал 2, 17 и 11 красных тестов в трёх прогонах — каждый раз разные файлы,
-  все красные файлы в одиночку зелёные (10 файлов, 57/57; `shared` — 3 файла, 53/53). Измеренная
-  механика на `HistorySheet.test.tsx`: `waitFor` testing-library ждёт 1 с, а холодный первый импорт
-  ленивого чанка на загруженной машине дольше (`HistoryView` 1,4 с, `TrackerOverlay` 2,1 с; тёплый —
-  1 мс), `testTimeout: 10000` в `vite.config.ts` на это не влияет. Чинить: `asyncUtilTimeout` в
-  `src/test-support/rtlCleanup.ts` (настоящая поломка падает так же, медленный импорт — нет) или прогрев
-  ленивых чанков в setup; до этого локальный красный vitest на Mac — повод перегнать красные файлы в
-  одиночку, а не доказательство поломки. Отдельно: `node_modules` worktree отставали от лок-файла
-  (vitest 4.1 при 5.0 в `package-lock`), `npm ci` в `shared/` и `webapp/` картину не изменил.
-- **Ещё образец того же класса — `webapp/src/sections/SchemasSection.customize.test.tsx`** (найдено в #958,
-  2026-11-05): случай «шестерёнка открывает лист с двумя блоками» падает с `Unable to find role="dialog"
-  and name "Настроить экран"` через ~2,5 с при прогоне каталога `src/sections/schemas` с соседями и на
-  чистом `origin/main` (b5095427c) даже в одиночном прогоне; в ветке в одиночном прогоне зелёный. Тот же
-  холодный импорт ленивого листа `Suspense`; лечится тем же `asyncUtilTimeout` из записи выше.
 
 **Pre-push хук собирает только `webapp`** (2026-11-05, осознанно): `scripts/git-hooks/pre-push`
 гоняет `tsc -b && vite build` сайта — то, что ломалось только на машине владельца (регистр имён,
 #933); `tsc` бэкенда, vitest `webapp`/`shared` и остальные сьюты остаются работой CI — в хуке они
 удвоили бы время каждого пуша, а класс «зелено в CI, красно у владельца» для них не наблюдался.
 Появится — расширять хук, не возвращать `--no-verify`.
-
-**Локальный `npm run smoke` в облачной песочнице агента не находит Chromium** (2026-11-06): в
-`playwright.config.ts` зашит `PREINSTALLED_CHROMIUM = /opt/pw-browsers/chromium-1194/...`, а в песочнице
-сейчас `/opt/pw-browsers/chromium` (ревизия 1243) — без `PW_CHROMIUM_PATH=/opt/pw-browsers/chromium`
-каждый тест падает с «executable doesn't exist». CI не задет (файла нет — Playwright ставит свой). Вариант:
-проверять по очереди `/opt/pw-browsers/chromium` и старый путь, а не одну ревизию.
 
 **Живые спеки `e2e-browser/live/` ловят переезд экрана только ночью** (ci-alarm #965, 2026-11-06). Путь
 клиента к заданиям вынесен в общий `e2e-browser/support/clientTasks.ts` и проверяется смоком PR-CI

@@ -4,7 +4,7 @@
 // своим describe — ошибка сохранения обязана быть видна пользователю, а не
 // выглядеть как успех (класс бага, который в проекте находили трижды).
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, cleanup, within } from '@testing-library/react';
+import { render, screen, fireEvent, cleanup, within, act } from '@testing-library/react';
 import { BookingSection } from './BookingSection';
 
 vi.mock('../../api', () => ({
@@ -258,8 +258,14 @@ describe('BookingSection — цены подписки', () => {
 
 describe('BookingSection — записи', () => {
   it('без записей в выбранном фильтре — явный текст «Записей нет», не пусто', async () => {
+    // Начальный список пуст, «Записей нет.» стоит и до ответа: ждём сам ответ
+    // (как renderSettled в PhotoSection.test.tsx), потом проверяем.
+    const response = Promise.resolve([]);
+    mockApi.adminListBookings.mockReturnValue(response);
     render(<BookingSection adminKey="k" />);
-    await screen.findByText('Записей нет.');
+    await act(async () => { await response; });
+    expect(mockApi.adminListBookings).toHaveBeenCalledWith('k', 'upcoming');
+    expect(screen.getByText('Записей нет.')).toBeTruthy();
   });
 
   // Сбой ≠ пусто: «Записей нет.» на отказе (неверный ключ/сеть) читается как
@@ -277,10 +283,13 @@ describe('BookingSection — записи', () => {
     render(<BookingSection adminKey="k" />);
     await screen.findByRole('alert');
 
-    mockApi.adminListBookings.mockResolvedValueOnce([]);
+    const ok = Promise.resolve([]);
+    mockApi.adminListBookings.mockReturnValueOnce(ok);
     fireEvent.click(screen.getByRole('button', { name: 'Отменённые' }));
 
-    await screen.findByText('Записей нет.');
+    // «Записей нет.» и отсутствие ошибки видны и до ответа — ждём сам ответ.
+    await act(async () => { await ok; });
+    expect(screen.getByText('Записей нет.')).toBeTruthy();
     expect(screen.queryByRole('alert')).toBeNull();
   });
 

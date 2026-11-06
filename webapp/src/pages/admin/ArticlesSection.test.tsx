@@ -3,7 +3,7 @@
 // (ArticleEditor, TipTap) не рендерим здесь — WYSIWYG-редактор не работает в
 // jsdom без отдельной настройки, это осознанная граница теста.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, cleanup, within } from '@testing-library/react';
+import { render, screen, fireEvent, cleanup, within, act } from '@testing-library/react';
 import { ArticlesSection } from './ArticlesSection';
 
 vi.mock('../../api', () => ({
@@ -34,9 +34,14 @@ const dialog = () => screen.getByRole('dialog', { name: 'Удалить стат
 
 describe('ArticlesSection — на чистом контенте пусто, не выдумка', () => {
   it('без статей в API — «Пока нет статей.»', async () => {
-    mockApi.adminListArticles.mockResolvedValue([]);
+    // Начальный список пуст, «Пока нет статей.» стоит и до ответа: ждём сам
+    // ответ (как renderSettled в PhotoSection.test.tsx), потом проверяем.
+    const response = Promise.resolve([]);
+    mockApi.adminListArticles.mockReturnValue(response);
     render(<ArticlesSection adminKey="k" />);
-    await screen.findByText('Пока нет статей.');
+    await act(async () => { await response; });
+    expect(mockApi.adminListArticles).toHaveBeenCalledWith('k');
+    expect(screen.getByText('Пока нет статей.')).toBeTruthy();
   });
 });
 
