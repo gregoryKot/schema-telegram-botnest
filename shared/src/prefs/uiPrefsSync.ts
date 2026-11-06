@@ -1,6 +1,6 @@
-// Межустройственная синхронизация настроек кастомизации экранов (фокус
-// «Сегодня», быстрые действия «+», скрытые/переставленные блоки). Живёт в
-// shared: мини-апп и сайт — тонкие обёртки над createUiPrefsSync (api и
+// Межустройственная синхронизация настроек кастомизации экранов (меню
+// «Инструменты», скрытые/переставленные блоки «Профиля» и «Паттернов»). Живёт в
+// shared: сайт — тонкая обёртка над createUiPrefsSync (api и
 // хранилище приходят снаружи). Бэкенд хранит плоский объект «ключ → строка из
 // localStorage» в User.uiPrefs и заменяет его ЦЕЛИКОМ. Контракт зафиксирован:
 // SYNCED_PREF_KEYS парсит бэкенд-спека fs-ом
@@ -9,20 +9,12 @@
 import { readLocal, removeLocal, writeLocal } from '../utils/safeLocalStorage';
 
 export const SYNCED_PREF_KEYS = [
-  'today_focus_practice',
-  'today_streak_hidden',
-  'today_phrase_hidden',
-  'today_secondary_hidden',
-  'today_therapist_banner_hidden',
-  'quick_actions_hidden_plus',
-  'quick_actions_order_plus',
   'quick_actions_hidden_tools',
   'quick_actions_order_tools',
   'screen_hidden_profile',
   'screen_hidden_patterns',
   'screen_order_profile',
   'screen_order_patterns',
-  'screen_order_today',
   'why_seen_v1',
 ] as const;
 

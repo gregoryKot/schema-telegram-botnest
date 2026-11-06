@@ -14,7 +14,6 @@
 // разделы, к которым возвращаются не в моменте острой необходимости, а
 // спокойно разобраться.
 import type { Tr } from '../practices/quickPractices';
-import type { FocusPractice } from '../today/todayFocus';
 import type { QuickActionId } from './quickActions';
 import type { QuickActionSurface } from './quickActionPrefs';
 import { FLASHCARD_SUB, FLASHCARD_TITLE } from '../flashcard/flashcardNames';
@@ -152,13 +151,3 @@ export function buildPlusActions(tr: Tr): QuickActionGroup[] {
     })),
   })).filter((g) => g.actions.length > 0);
 }
-
-// Явный маппинг «главное дело дня» (todayFocus.ts) → быстрое действие плюса.
-// Оба реестра обязаны совпадать по смыслу (правило №4 CLAUDE.md) — сверка в
-// quickActions.test.ts.
-export const focusToQuickAction: Record<FocusPractice, QuickActionId> = {
-  tracker: 'tracker',
-  schema: 'diary_schema',
-  mode: 'diary_mode',
-  gratitude: 'diary_gratitude',
-};

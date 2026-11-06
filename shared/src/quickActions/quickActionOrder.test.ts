@@ -10,9 +10,11 @@ import {
   applyActionOrder,
   withDragRange,
   applyReorderToIndex,
-  PLUS_ACTIONS_ORDER_KEY,
   TOOLS_ACTIONS_ORDER_KEY,
 } from './quickActionOrder';
+
+// Второй произвольный ключ: механика generic по ключу, «плюса» больше нет.
+const OTHER_ORDER_KEY = 'quick_actions_order_other';
 
 beforeEach(() => {
   const store = new Map<string, string>();
@@ -58,7 +60,7 @@ describe('serializeActionOrder / getActionOrder', () => {
   });
 
   it('пустой localStorage → пустой порядок', () => {
-    expect(getActionOrder(PLUS_ACTIONS_ORDER_KEY)).toEqual([]);
+    expect(getActionOrder(OTHER_ORDER_KEY)).toEqual([]);
   });
 });
 
@@ -130,99 +132,65 @@ describe('withDragRange', () => {
 
 describe('applyReorderToIndex', () => {
   it('перестановка с пустого порядка сохраняет полный список в новом месте', () => {
-    const moved = applyReorderToIndex(
-      PLUS_ACTIONS_ORDER_KEY,
-      ['a', 'b', 'c'],
-      'a',
-      1,
-    );
+    const moved = applyReorderToIndex(OTHER_ORDER_KEY, ['a', 'b', 'c'], 'a', 1);
     expect(moved).toBe(true);
-    expect(getActionOrder(PLUS_ACTIONS_ORDER_KEY)).toEqual(['b', 'a', 'c']);
+    expect(getActionOrder(OTHER_ORDER_KEY)).toEqual(['b', 'a', 'c']);
   });
 
   it('перестановка через несколько позиций разом (не только на соседа)', () => {
-    applyReorderToIndex(PLUS_ACTIONS_ORDER_KEY, ['a', 'b', 'c', 'd'], 'a', 3);
-    expect(getActionOrder(PLUS_ACTIONS_ORDER_KEY)).toEqual([
-      'b',
-      'c',
-      'd',
-      'a',
-    ]);
+    applyReorderToIndex(OTHER_ORDER_KEY, ['a', 'b', 'c', 'd'], 'a', 3);
+    expect(getActionOrder(OTHER_ORDER_KEY)).toEqual(['b', 'c', 'd', 'a']);
   });
 
   it('toIndex === текущий индекс — false, localStorage не тронут', () => {
-    const moved = applyReorderToIndex(
-      PLUS_ACTIONS_ORDER_KEY,
-      ['a', 'b', 'c'],
-      'b',
-      1,
-    );
+    const moved = applyReorderToIndex(OTHER_ORDER_KEY, ['a', 'b', 'c'], 'b', 1);
     expect(moved).toBe(false);
-    expect(getActionOrder(PLUS_ACTIONS_ORDER_KEY)).toEqual([]);
+    expect(getActionOrder(OTHER_ORDER_KEY)).toEqual([]);
   });
 
   it('toIndex вне диапазона клэмпится к границе списка', () => {
     const moved = applyReorderToIndex(
-      PLUS_ACTIONS_ORDER_KEY,
+      OTHER_ORDER_KEY,
       ['a', 'b', 'c'],
       'a',
       999,
     );
     expect(moved).toBe(true);
-    expect(getActionOrder(PLUS_ACTIONS_ORDER_KEY)).toEqual(['b', 'c', 'a']);
+    expect(getActionOrder(OTHER_ORDER_KEY)).toEqual(['b', 'c', 'a']);
   });
 
   it('id не среди siblings — false, no-op', () => {
-    expect(
-      applyReorderToIndex(PLUS_ACTIONS_ORDER_KEY, ['a', 'b'], 'z', 1),
-    ).toBe(false);
+    expect(applyReorderToIndex(OTHER_ORDER_KEY, ['a', 'b'], 'z', 1)).toBe(
+      false,
+    );
   });
 
   it('read-after-write: повторный вызов двигает дальше от уже сохранённого', () => {
-    applyReorderToIndex(PLUS_ACTIONS_ORDER_KEY, ['a', 'b', 'c'], 'c', 0); // c a b
-    applyReorderToIndex(PLUS_ACTIONS_ORDER_KEY, ['c', 'a', 'b'], 'b', 0); // b c a
-    expect(getActionOrder(PLUS_ACTIONS_ORDER_KEY)).toEqual(['b', 'c', 'a']);
+    applyReorderToIndex(OTHER_ORDER_KEY, ['a', 'b', 'c'], 'c', 0); // c a b
+    applyReorderToIndex(OTHER_ORDER_KEY, ['c', 'a', 'b'], 'b', 0); // b c a
+    expect(getActionOrder(OTHER_ORDER_KEY)).toEqual(['b', 'c', 'a']);
   });
 
   it('переставленный блок встаёт на место первого вхождения siblings, остальные id не двигаются', () => {
     localStorage.setItem(
-      PLUS_ACTIONS_ORDER_KEY,
+      OTHER_ORDER_KEY,
       serializeActionOrder(['x', 'a', 'y', 'b', 'z']),
     );
-    applyReorderToIndex(PLUS_ACTIONS_ORDER_KEY, ['a', 'b'], 'a', 1);
-    expect(getActionOrder(PLUS_ACTIONS_ORDER_KEY)).toEqual([
-      'x',
-      'b',
-      'a',
-      'y',
-      'z',
-    ]);
+    applyReorderToIndex(OTHER_ORDER_KEY, ['a', 'b'], 'a', 1);
+    expect(getActionOrder(OTHER_ORDER_KEY)).toEqual(['x', 'b', 'a', 'y', 'z']);
   });
 
   it('siblings, ранее не встречавшиеся в порядке, встают в хвост', () => {
-    localStorage.setItem(
-      PLUS_ACTIONS_ORDER_KEY,
-      serializeActionOrder(['x', 'y']),
-    );
-    const moved = applyReorderToIndex(
-      PLUS_ACTIONS_ORDER_KEY,
-      ['a', 'b'],
-      'b',
-      0,
-    );
+    localStorage.setItem(OTHER_ORDER_KEY, serializeActionOrder(['x', 'y']));
+    const moved = applyReorderToIndex(OTHER_ORDER_KEY, ['a', 'b'], 'b', 0);
     expect(moved).toBe(true);
-    expect(getActionOrder(PLUS_ACTIONS_ORDER_KEY)).toEqual([
-      'x',
-      'y',
-      'b',
-      'a',
-    ]);
+    expect(getActionOrder(OTHER_ORDER_KEY)).toEqual(['x', 'y', 'b', 'a']);
   });
 
   it('два ключа-поверхности не задевают друг друга', () => {
-    applyReorderToIndex(PLUS_ACTIONS_ORDER_KEY, ['a', 'b'], 'b', 0);
+    applyReorderToIndex(OTHER_ORDER_KEY, ['a', 'b'], 'b', 0);
     applyReorderToIndex(TOOLS_ACTIONS_ORDER_KEY, ['p', 'q'], 'q', 0);
-    expect(getActionOrder(PLUS_ACTIONS_ORDER_KEY)).toEqual(['b', 'a']);
+    expect(getActionOrder(OTHER_ORDER_KEY)).toEqual(['b', 'a']);
     expect(getActionOrder(TOOLS_ACTIONS_ORDER_KEY)).toEqual(['q', 'p']);
   });
 });

@@ -144,13 +144,13 @@ describe('BotService.getUserSettings / updateUserSettings â€” read-after-write Ð
     const svc = new BotService(db);
 
     await svc.updateUserSettings(1n, {
-      uiPrefs: { today_streak_hidden: '1', today_focus_practice: 'tracker' },
+      uiPrefs: { why_seen_v1: '1', quick_actions_order_tools: '["tracker"]' },
     });
     const settings = await svc.getUserSettings(1n);
 
     expect(settings?.uiPrefs).toEqual({
-      today_streak_hidden: '1',
-      today_focus_practice: 'tracker',
+      why_seen_v1: '1',
+      quick_actions_order_tools: '["tracker"]',
     });
   });
 });

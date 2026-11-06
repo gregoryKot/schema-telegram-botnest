@@ -1,42 +1,24 @@
-import {
-  QUICK_ACTION_ID_SET,
-  SCREEN_BLOCK_ID_SET,
-  TODAY_FOCUS_PRACTICE_SET,
-} from './dto/analytics.dto';
+import { QUICK_ACTION_ID_SET, SCREEN_BLOCK_ID_SET } from './dto/analytics.dto';
 
-// Реестр ключей кастомизации мини-аппа, синхронизируемых с сервером
+// Реестр ключей кастомизации экранов, синхронизируемых с сервером
 // (User.uiPrefs). Парная константа на фронте — SYNCED_PREF_KEYS в
 // shared/src/prefs/uiPrefsSync.ts (по одному ключу на строку);
 // сверку держит src/security/ui-prefs-sync.invariants.spec.ts (правило №4 —
 // денормализованный/дублированный реестр под тестом-сверкой).
 export const SYNCED_PREF_KEYS = [
-  'today_focus_practice',
-  'today_streak_hidden',
-  'today_phrase_hidden',
-  'today_secondary_hidden',
-  'today_therapist_banner_hidden',
-  'quick_actions_hidden_plus',
-  'quick_actions_order_plus',
   'quick_actions_hidden_tools',
   'quick_actions_order_tools',
   'screen_hidden_profile',
   'screen_hidden_patterns',
   'screen_order_profile',
   'screen_order_patterns',
-  'screen_order_today',
   'why_seen_v1',
 ] as const;
 export type SyncedPrefKey = (typeof SYNCED_PREF_KEYS)[number];
 
 const MAX_VALUE_LEN = 2000;
 
-const BOOLEAN_FLAG_KEYS: ReadonlySet<SyncedPrefKey> = new Set([
-  'today_streak_hidden',
-  'today_phrase_hidden',
-  'today_secondary_hidden',
-  'today_therapist_banner_hidden',
-  'why_seen_v1',
-]);
+const BOOLEAN_FLAG_KEYS: ReadonlySet<SyncedPrefKey> = new Set(['why_seen_v1']);
 
 // mode: 'strict' — весь ключ отбрасывается, если хоть один элемент вне allow
 // (текущее поведение quick actions — их id ничего в этом PR не убирал).
@@ -61,12 +43,7 @@ function arraySpecsFor(
 const ID_ARRAY_KEYS: Partial<Record<SyncedPrefKey, ArraySpec>> =
   Object.fromEntries([
     ...arraySpecsFor(
-      [
-        'quick_actions_hidden_plus',
-        'quick_actions_order_plus',
-        'quick_actions_hidden_tools',
-        'quick_actions_order_tools',
-      ],
+      ['quick_actions_hidden_tools', 'quick_actions_order_tools'],
       QUICK_ACTION_ID_SET,
       32,
       'strict',
@@ -77,7 +54,6 @@ const ID_ARRAY_KEYS: Partial<Record<SyncedPrefKey, ArraySpec>> =
         'screen_hidden_patterns',
         'screen_order_profile',
         'screen_order_patterns',
-        'screen_order_today',
       ],
       SCREEN_BLOCK_ID_SET,
       16,
@@ -125,10 +101,6 @@ export function sanitizeUiPrefs(
   for (const key of SYNCED_PREF_KEYS) {
     const value = input[key];
     if (typeof value !== 'string' || value.length > MAX_VALUE_LEN) continue;
-    if (key === 'today_focus_practice') {
-      if (TODAY_FOCUS_PRACTICE_SET.has(value)) out[key] = value;
-      continue;
-    }
     if (BOOLEAN_FLAG_KEYS.has(key)) {
       if (value === '1' || value === '0') out[key] = value;
       continue;

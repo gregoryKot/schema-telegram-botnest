@@ -116,24 +116,24 @@ describe('SettingsController.getSettings', () => {
     const { controller } = makeController({
       botService: {
         getUserSettings: jest.fn().mockResolvedValue({
-          uiPrefs: { today_streak_hidden: '1' },
+          uiPrefs: { why_seen_v1: '1' },
         }),
       },
     });
     const res = await controller.getSettings(makeReq());
-    expect(res.uiPrefs).toEqual({ today_streak_hidden: '1' });
+    expect(res.uiPrefs).toEqual({ why_seen_v1: '1' });
   });
 
   it('uiPrefs с мусором в БД (устаревший/битый ключ) — отфильтровывается на чтение', async () => {
     const { controller } = makeController({
       botService: {
         getUserSettings: jest.fn().mockResolvedValue({
-          uiPrefs: { today_streak_hidden: '1', stale_key: 'x' },
+          uiPrefs: { why_seen_v1: '1', stale_key: 'x' },
         }),
       },
     });
     const res = await controller.getSettings(makeReq());
-    expect(res.uiPrefs).toEqual({ today_streak_hidden: '1' });
+    expect(res.uiPrefs).toEqual({ why_seen_v1: '1' });
   });
 });
 
@@ -207,22 +207,22 @@ describe('SettingsController.updateSettings — uiPrefs (серверное зе
     const { controller, botService } = makeController();
     await controller.updateSettings(makeReq(11n), {
       uiPrefs: {
-        today_streak_hidden: '1',
-        today_focus_practice: 'tracker',
+        why_seen_v1: '1',
+        quick_actions_order_tools: '["tracker"]',
       },
     });
     expect(botService.updateUserSettings).toHaveBeenCalledWith(11n, {
-      uiPrefs: { today_streak_hidden: '1', today_focus_practice: 'tracker' },
+      uiPrefs: { why_seen_v1: '1', quick_actions_order_tools: '["tracker"]' },
     });
   });
 
   it('невалидное значение внутри uiPrefs отбрасывает только свой ключ (per-key), сохраняет остальное', async () => {
     const { controller, botService } = makeController();
     await controller.updateSettings(makeReq(12n), {
-      uiPrefs: { today_streak_hidden: '1', today_focus_practice: 'garbage' },
+      uiPrefs: { why_seen_v1: '1', quick_actions_order_tools: 'garbage' },
     });
     expect(botService.updateUserSettings).toHaveBeenCalledWith(12n, {
-      uiPrefs: { today_streak_hidden: '1' },
+      uiPrefs: { why_seen_v1: '1' },
     });
   });
 

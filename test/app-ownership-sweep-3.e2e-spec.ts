@@ -160,28 +160,28 @@ describe('e2e smoke: ownership sweep 3 (tracker aggregates + settings)', () => {
   // видит и не может перезаписать настройку A через свой собственный вызов.
   it('/api/settings uiPrefs: сохранил → прочитал; B не видит и не пишет поверх настройки A', async () => {
     const updated = await a.post('/api/settings', {
-      uiPrefs: { today_streak_hidden: '1', today_focus_practice: 'tracker' },
+      uiPrefs: { why_seen_v1: '1', quick_actions_order_tools: '["tracker"]' },
     });
     expect(updated.status).toBeLessThan(300);
     const got = await a.get('/api/settings');
     expect(got.status).toBe(200);
     expect(got.body.uiPrefs).toEqual({
-      today_streak_hidden: '1',
-      today_focus_practice: 'tracker',
+      why_seen_v1: '1',
+      quick_actions_order_tools: '["tracker"]',
     });
 
     const other = await b.get('/api/settings');
     expect(other.status).toBe(200);
     expect(other.body.uiPrefs).not.toEqual({
-      today_streak_hidden: '1',
-      today_focus_practice: 'tracker',
+      why_seen_v1: '1',
+      quick_actions_order_tools: '["tracker"]',
     });
 
-    await b.post('/api/settings', { uiPrefs: { today_streak_hidden: '0' } });
+    await b.post('/api/settings', { uiPrefs: { why_seen_v1: '0' } });
     const aAfterB = await a.get('/api/settings');
     expect(aAfterB.body.uiPrefs).toEqual({
-      today_streak_hidden: '1',
-      today_focus_practice: 'tracker',
+      why_seen_v1: '1',
+      quick_actions_order_tools: '["tracker"]',
     });
   });
 
