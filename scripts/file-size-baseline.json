@@ -643,7 +643,7 @@
   "src/api/analytics-meta.sanitize-therapy-nudge.ts": 24,
   "src/api/analytics-meta.sanitize.ts": 241,
   "src/api/analytics.controller.ts": 35,
-  "src/api/api.controller.ts": 242,
+  "src/api/api.controller.ts": 215,
   "src/api/api.module.ts": 61,
   "src/api/auth-failure.report.ts": 94,
   "src/api/auth-success.report.ts": 49,
