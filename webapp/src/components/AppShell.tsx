@@ -183,13 +183,12 @@ export function AppShell() {
   const handleSaved = useCallback((needId: string, streak?: StreakData) => {
     setSaved(prev => ({ ...prev, [needId]: true }));
     // День праздника — живой день устройства (todayDate сменяется в полночь), а не день загрузки бандла.
+    // Заметка дня сама не открывается — она ссылкой на экране «Готово» трекера (2026-11-06).
     if (streak && !isCelebrated(todayDate)) {
       markCelebrated(todayDate);
       if (streak.currentStreak > 0) setCelebrationStreak(streak.currentStreak);
-      else ov.setShowTodayNote(true);
       if (streak.totalDays >= 5 && shouldShowChildhoodWheel()) setChildhoodWheelPending(true);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- ov.setShowTodayNote стабильный сеттер useState; ov как объект не нужен в deps
   }, [setSaved, todayDate]);
 
   // Сиблинги контейнера секций ниже (Tracker/History/Diaries/Celebration/
@@ -343,14 +342,15 @@ export function AppShell() {
           navigate={navigate}
           ratings={ratings}
           setChildhoodRatings={setChildhoodRatings}
-          childhoodWheelPending={childhoodWheelPending}
-          setChildhoodWheelPending={setChildhoodWheelPending}
           todayDate={todayDate}
         />
 
         {/* ── Celebration ── */}
         {celebrationStreak !== null && (
-          <Celebration streak={celebrationStreak} insight={todayInsightPhrase(ratings)} onDone={() => { setCelebrationStreak(null); ov.setShowTodayNote(true); }} />
+          <Celebration streak={celebrationStreak} insight={todayInsightPhrase(ratings)} onDone={() => {
+            setCelebrationStreak(null);
+            if (childhoodWheelPending) { setChildhoodWheelPending(false); ov.setShowChildhoodWheel(true); }
+          }} />
         )}
 
         </div>{/* end canvas */}

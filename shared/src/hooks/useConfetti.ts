@@ -1,8 +1,8 @@
-// Canvas-конфетти Celebration (вынесено из парных копий обоих фронтендов —
-// правило «одна механика — один компонент»). Возвращает ref для <canvas>;
-// анимация сама останавливается и зовёт onDone.
+// Canvas-конфетти Celebration. Возвращает ref для <canvas>; анимация гаснет и
+// стирает канвас, но окно не закрывает: закрытие по концу (~2 с) уносило
+// «Поделиться» из-под пальца (docs/INCIDENTS.md, 2026-11-06).
 // Нейроинклюзивность: при сниженной анимации (isReducedMotion) конфетти
-// не запускается вовсе — карточка закрывается тапом.
+// не запускается вовсе — окно закрывает человек, как и с анимацией.
 import { useEffect, useRef } from 'react';
 import { isReducedMotion } from '../utils/reducedMotion';
 
@@ -28,7 +28,7 @@ interface Particle {
   opacity: number;
 }
 
-export function useConfetti(onDone: () => void) {
+export function useConfetti() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const rafRef = useRef<number>(0);
 
@@ -75,12 +75,12 @@ export function useConfetti(onDone: () => void) {
       if (alive) {
         rafRef.current = requestAnimationFrame(draw);
       } else {
-        onDone();
+        ctx.clearRect(0, 0, canvas!.width, canvas!.height);
       }
     }
     rafRef.current = requestAnimationFrame(draw);
     return () => cancelAnimationFrame(rafRef.current);
-  }, [onDone]);
+  }, []);
 
   return canvasRef;
 }

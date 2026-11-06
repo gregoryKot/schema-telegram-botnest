@@ -24,8 +24,8 @@ function fakeCtx() {
   };
 }
 
-function TestCanvas({ onDone }: { onDone: () => void }) {
-  const canvasRef = useConfetti(onDone);
+function TestCanvas() {
+  const canvasRef = useConfetti();
   return <canvas ref={canvasRef} data-testid="confetti-canvas" />;
 }
 
@@ -38,23 +38,26 @@ afterEach(() => {
 describe('useConfetti', () => {
   it('возвращает ref для canvas', () => {
     vi.spyOn(reducedMotion, 'isReducedMotion').mockReturnValue(true);
-    const { result } = renderHook(() => useConfetti(vi.fn()));
+    const { result } = renderHook(() => useConfetti());
     expect(result.current).toHaveProperty('current');
   });
 
-  it('при isReducedMotion=true эффект выходит раньше обращения к onDone', () => {
+  it('при isReducedMotion=true анимация не запускается вовсе', () => {
     vi.spyOn(reducedMotion, 'isReducedMotion').mockReturnValue(true);
-    const onDone = vi.fn();
-    renderHook(() => useConfetti(onDone));
-    expect(onDone).not.toHaveBeenCalled();
+    const getContext = vi.spyOn(HTMLCanvasElement.prototype, 'getContext');
+    const raf = vi.fn();
+    vi.stubGlobal('requestAnimationFrame', raf);
+    render(<TestCanvas />);
+    expect(getContext).not.toHaveBeenCalled();
+    expect(raf).not.toHaveBeenCalled();
   });
 
   it('при isReducedMotion=false и canvasRef=null (компонент не смонтирован) эффект не падает', () => {
     vi.spyOn(reducedMotion, 'isReducedMotion').mockReturnValue(false);
-    expect(() => renderHook(() => useConfetti(vi.fn()))).not.toThrow();
+    expect(() => renderHook(() => useConfetti())).not.toThrow();
   });
 
-  it('полный прогон: канвас размечен под окно, кадры очищаются и рисуются, onDone зовётся ровно раз по завершении', () => {
+  it('полный прогон: канвас размечен под окно, кадры очищаются и рисуются, по завершении канвас стёрт и кадры больше не просятся', () => {
     vi.spyOn(reducedMotion, 'isReducedMotion').mockReturnValue(false);
     const ctx = fakeCtx();
     vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(ctx);
@@ -72,10 +75,19 @@ describe('useConfetti', () => {
     );
     vi.stubGlobal('cancelAnimationFrame', vi.fn());
 
-    const onDone = vi.fn();
-    render(<TestCanvas onDone={onDone} />);
+    const { rerender } = render(<TestCanvas />);
+    const rafCalls = frames;
 
-    expect(onDone).toHaveBeenCalledTimes(1);
+    // Анимация завершилась сама (иначе синхронный raf ушёл бы в бесконечность)
+    // и последним действием стёрла канвас — на экране не остаётся застывших
+    // частиц.
+    expect(rafCalls).toBeGreaterThan(60);
+    const last = ctx.clearRect.mock.calls.at(-1)!;
+    expect(last.slice(0, 2)).toEqual([0, 0]);
+    // Ре-рендер родителя (новый колбэк, новые пропсы) не перезапускает
+    // конфетти: эффект завязан только на монтирование.
+    rerender(<TestCanvas />);
+    expect(frames).toBe(rafCalls);
     expect(ctx.clearRect).toHaveBeenCalled();
     // Первый вызов каждого кадра стирает канвас целиком — от нуля до его
     // собственных width/height (не жёстко захардкоженных чисел).
@@ -102,13 +114,11 @@ describe('useConfetti', () => {
     vi.stubGlobal('requestAnimationFrame', raf);
     vi.stubGlobal('cancelAnimationFrame', caf);
 
-    const onDone = vi.fn();
-    const { unmount } = render(<TestCanvas onDone={onDone} />);
+    const { unmount } = render(<TestCanvas />);
     expect(raf).toHaveBeenCalledTimes(1);
 
     unmount();
 
     expect(caf).toHaveBeenCalledWith(42);
-    expect(onDone).not.toHaveBeenCalled();
   });
 });
