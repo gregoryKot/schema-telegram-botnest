@@ -22,7 +22,10 @@
 .sd-day-bar > i.is-warn { background: var(--warn); }
 .sd-day-bar > i.is-err { background: var(--err); }
 .sd-toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: 10px 12px; }
-.sd-toolbar .ds-seg-btn { min-height: 36px; }
+/* Вид и период крупнее сегмента по умолчанию — только у мыши: под пальцем сегмент 44 (блок тап-целей cabinet.css),
+   а этот селектор сильнее и раньше срезал его до 36. Условие — только указатель: ширина 767/768 в @media живёт
+   двумя каноническими строками (utils/phoneLayout.ts), а палец от мыши отличает pointer, не ширина окна. */
+@media (pointer: fine) { .sd-toolbar .ds-seg-btn { min-height: 36px; } }
 .sd-toolbar-hint { font-size: 12px; color: var(--text-faint); font-style: italic; }
 .sd-links { display: flex; justify-content: center; flex-wrap: wrap; gap: 8px 24px; }
 .sd-need-row { grid-template-columns: auto minmax(0, 1fr) auto auto; min-height: 56px; }

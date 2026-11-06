@@ -83,10 +83,10 @@
   display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-12);
 }
 .tq-bars li { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: var(--space-8); min-height: 120px; }
-.tq-bar-col { width: 100%; max-width: 40px; border-radius: 8px 8px 4px 4px; }
-/* Серый только у неоценённого: и .tone-fill (cabinet.css), и этот класс весят одинаково, и тот, что
-   подключён позже, перебивал цвет потребности; тут их разводит :not. */
-.tq-bar-col:not(.tone-fill) { background: var(--line); }
+.tq-bar-col { width: 100%; max-width: 40px; border-radius: 8px; }
+/* Оценённый — бумажная палитра (--bar ставит DayBars из BAR_PAPER), без оценки — серый. */
+.tq-bar-col.is-rated { background: var(--bar); }
+.tq-bar-col:not(.is-rated) { background: var(--line); }
 .tq-bar-cap { font-size: 11px; color: var(--text-faint); }
 .tq-acts { width: 100%; display: flex; flex-direction: column; gap: var(--space-8); }
 .tq-btn {

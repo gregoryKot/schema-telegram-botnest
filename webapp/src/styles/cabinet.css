@@ -285,7 +285,6 @@ button.ds-list-row, a.ds-list-row { width: 100%; box-sizing: border-box; border:
   .ds-seg--scroll { display: flex; width: 100%; box-sizing: border-box; }
   .ds-seg--scroll > .ds-seg-btn { flex: 0 0 auto; }
   .ds-seg--scroll::after { content: ''; flex: 0 0 20px; }
-  .ds-input, .ds-textarea { font-size: 16px; } /* iOS Safari увеличивает экран при фокусе на поле мельче 16px */
 }
 /* Видимая высота: в Safari 100vh выше экрана с открытой адресной строкой. Без dvh остаётся 100vh. */
 @supports (height: 100dvh) { .ds-page--fit { --fit-h: calc(100dvh - var(--safe-top) - var(--safe-bottom) - 640px); } }
@@ -293,12 +292,15 @@ button.ds-list-row, a.ds-list-row { width: 100%; box-sizing: border-box; border:
    pointer: coarse при ширине больше 767). Десктоп с мышью остаётся компактным:
    вкладка ~35, сегмент 30, ссылка 20, малая кнопка 40. */
 @media (pointer: coarse), (max-width: 767px) {
-  .ds-tab { min-height: 44px; }
+  /* «Обзор» был 42 в ширину. flex-shrink: 0 обязателен: явный min-width снимает у flex-ребёнка min-width: auto,
+     и в ленте .ds-tabs вкладки сжимались до 44 и наезжали друг на друга (скриншот 390, 2026-11-06). */
+  .ds-tab { min-height: 44px; min-width: 44px; flex-shrink: 0; justify-content: center; }
   .ds-btn--icon { width: 44px; height: 44px; }
   .ds-seg-btn { min-height: 44px; }
   .ds-btn--sm { height: 44px; }
   .ds-input--search { height: 44px; border-radius: 22px; }
   .ds-input--sm { height: 44px; }
+  .ds-input, .ds-textarea { font-size: 16px; } /* iOS Safari (и на iPad) увеличивает экран при фокусе на поле мельче 16px */
   .ds-chip--toggle { min-height: 44px; }
   .ds-link { min-height: 44px; display: inline-flex; align-items: center; }
   .ds-link--inline { display: inline; min-height: 0; }
@@ -311,6 +313,10 @@ button.ds-list-row, a.ds-list-row { width: 100%; box-sizing: border-box; border:
 :root { --sheet-col: 640px; --sheet-pad: 32px; } /* колонка и боковой отступ шапки-страницы; страница задаёт свои на корне */
 @media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) {
   .ds-seg--full { display: inline-flex; }
+  /* По содержимому — значит, кнопка не уже своей подписи: с flex-basis 0 и min-width: 0 ширина
+     inline-flex делилась поровну, и длинная подпись резалась многоточием («Клиент…», «Нед…»).
+     Растянутый сегмент (донат, .ap-seg) по-прежнему делит место поровну. */
+  .ds-seg--full > .ds-seg-btn { min-width: max-content; }
   /* Страница (не оверлей): «← Назад» стоит над колонкой контента, без полосы, линии и фона (до #906). */
   .ds-sheet-head--page {
     box-sizing: border-box; width: 100%; max-width: var(--sheet-col); min-height: 0; margin: 0 auto;

@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import { api } from '../api';
 import type { PracticePlan } from '../api';
-import { Loader } from './Loader';
+import { Skeleton, SkeletonList } from './Skeleton';
 import { useNeedData } from '../needData';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { useAsyncData } from '../hooks/useAsyncData';
@@ -11,7 +11,7 @@ import '../styles/sheet-tasks.css';
 import { useTr } from '../utils/addressForm';
 import { planDateLabel, plansEmptyText, plansSummary } from '../../../shared/src/practices/plansCopy';
 import { PlanNeedPicker } from './plans/PlanNeedPicker';
-import { Cup } from './art/PaperArt';
+import { PaperEmpty } from './art/PaperEmpty';
 
 interface Props {
   onClose: () => void;
@@ -76,10 +76,10 @@ export function PlansScreen({ onClose, onOpenTracker }: Props) {
             </button>
           </div>
         ) : !plans ? (
-          <Loader minHeight="30vh" />
+          <div className="sk-group" aria-hidden><Skeleton width={150} height={12} /><SkeletonList rows={3} height={112} /></div>
         ) : plans.length === 0 ? (
           <div className="sk-group">
-            <div className="pp-empty"><Cup /><div><p className="ds-empty">Планов пока нет</p><p className="ds-empty">{plansEmptyText(tr)}</p></div></div>
+            <PaperEmpty title="Планов пока нет">{plansEmptyText(tr)}</PaperEmpty>
             <PlanNeedPicker onPlanned={load} />
             {onOpenTracker && (
               <button onClick={() => goBack(onOpenTracker)} className="ds-link sk-self-start">

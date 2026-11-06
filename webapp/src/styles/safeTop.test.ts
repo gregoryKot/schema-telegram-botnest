@@ -6,7 +6,7 @@
 // touch-fixes.css.test.ts): как считается --safe-top, какую переменную пишет
 // хук, и что .app-shell и каждый корень полноэкранного листа отступают на телефоне.
 import { describe, it, expect } from 'vitest';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { PHONE_MEDIA } from '../utils/phoneLayout';
 
@@ -45,8 +45,8 @@ function hasRule(block: string, cls: string, decl: string): boolean {
 
 // Корни полноэкранных листов сайта (position: fixed; inset: 0 — grep по
 // styles/*.css и index.css). Подложки модалок и поповеров (.sheet-modal,
-// .cmd-backdrop, .sk-dialog-backdrop, .ds-backdrop) и спиннер .sk-loader--full
-// сюда не входят: их содержимое не у верхней кромки. У экрана упражнения
+// .cmd-backdrop, .sk-dialog-backdrop, .ds-backdrop) сюда не входят: их
+// содержимое не у верхней кромки. У экрана упражнения
 // отступ стоит на липкой шапке .ex2-top, а не на корне: sticky top: 0
 // считается от края скролл-контейнера, и padding корня уезжает при скролле.
 // Третий элемент: кто несёт отступ вместо корня (липкая шапка).
@@ -108,4 +108,46 @@ describe('безопасная зона сверху (--safe-top)', () => {
       const css = read(file);
       expect(hasRule(css, root, 'padding-top: var(--safe-top)'), `${root} в ${file}`).toBe(true);
     });
+
+  // Инлайн-корни (style={{ position: 'fixed', inset: 0 }} в .tsx) сверка CSS выше не видит:
+  // шапка «На весь экран» схемы и мобильные меню лендингов уходили под статус-бар.
+  // Слой без касаний (pointerEvents: 'none') — декор-подложка, не лист: его не считаем.
+  it('инлайн-корни на весь экран в .tsx отступают на --safe-top', () => {
+    const roots = tsxFiles().flatMap((f) => inlineOverlayRoots(readFileSync(f, 'utf8')).map((o) => ({ f, o })));
+    const sheets = roots.filter(({ o }) => !o.includes("pointerEvents: 'none'"));
+    expect(sheets.length, 'скан нашёл инлайн-листы').toBeGreaterThanOrEqual(3);
+    expect(sheets.filter(({ o }) => !o.includes('--safe-top')).map(({ f }) => f)).toEqual([]);
+  });
+
+  it('контрольный образец: скан видит инлайн-корень без --safe-top', () => {
+    const [o] = inlineOverlayRoots("<div style={{ position: 'fixed', inset: 0, zIndex: 9 }}><i style={{ a: 1 }} /></div>");
+    expect(o).toBe("{ position: 'fixed', inset: 0, zIndex: 9 }");
+    expect(inlineOverlayRoots("<div style={{ position: 'fixed', top: 0 }} />")).toEqual([]);
+  });
 });
+
+/** Исходники .tsx сайта и shared без тестов. */
+function tsxFiles(): string[] {
+  return [SRC, join(SRC, '..', '..', 'shared', 'src')].flatMap((dir) =>
+    (readdirSync(dir, { recursive: true }) as string[])
+      .filter((f) => f.endsWith('.tsx') && !f.includes('.test.'))
+      .map((f) => join(dir, f)));
+}
+
+/** Объекты стиля с `position: 'fixed', inset: 0` — текст от `{` до парной `}`. */
+function inlineOverlayRoots(src: string): string[] {
+  const out: string[] = [];
+  const re = /position:\s*'fixed',\s*inset:\s*0\b/g;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(src))) {
+    const open = src.lastIndexOf('{', m.index);
+    let depth = 0;
+    let i = open;
+    for (; i < src.length; i++) {
+      if (src[i] === '{') depth++;
+      else if (src[i] === '}' && --depth === 0) break;
+    }
+    out.push(src.slice(open, i + 1));
+  }
+  return out;
+}

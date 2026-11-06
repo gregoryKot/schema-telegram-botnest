@@ -94,7 +94,7 @@ async function renderSheet(userRole?: 'CLIENT' | 'THERAPIST') {
     </MemoryRouter>,
   );
   // Дожидаемся загрузки настроек (useEffect -> api.getSettings), иначе
-  // компонент застрял бы на <Loader>.
+  // компонент застрял бы на силуэте (SettingsSkeleton, заголовок — плашка).
   await screen.findByText('Настройки');
   return utils;
 }
@@ -661,7 +661,7 @@ describe('SettingsSheet — сбой начальной загрузки не б
     mockApi.getSettings.mockRejectedValueOnce(new Error('network down'));
     await renderSheet();
     // Дефолт notifyEnabled=false — тумблер «Итоги дня» реально отрисован
-    // и выключен, а не «повис» на Loader.
+    // и выключен, а не «повис» на силуэте загрузки.
     expect(toggleForRow('Итоги дня').getAttribute('aria-checked')).toBe('false');
   });
 
@@ -1218,5 +1218,18 @@ describe('SettingsSheet — шапка листа (#906)', () => {
     expect(head.className).toBe('ds-sheet-head');
     expect(head.querySelector('h2.ds-h2')?.textContent).toBe('Настройки');
     expect(document.querySelector('.st-head, .st-title')).toBeNull();
+  });
+});
+
+// ── Загрузка: силуэт по форме, а не спиннер (правило скелетонов; docs/open/backend.md) ──
+describe('SettingsSheet — пока настройки грузятся', () => {
+  it('силуэт листа без спиннера; «Закрыть» уже работает', async () => {
+    mockApi.getSettings.mockReturnValueOnce(new Promise(() => {}));
+    const onClose = vi.fn();
+    const { container } = render(<MemoryRouter><SettingsSheet onClose={onClose} /></MemoryRouter>);
+    expect(container.querySelector('[data-skeleton="settings"] .skel')).toBeTruthy();
+    expect(container.querySelector('.spinner')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: '← Закрыть' }));
+    await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
   });
 });

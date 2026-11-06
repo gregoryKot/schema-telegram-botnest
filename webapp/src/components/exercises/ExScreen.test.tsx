@@ -6,7 +6,7 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { ExScreen } from './ExScreen';
+import { ExScreen, ExScreenSkeleton } from './ExScreen';
 
 afterEach(cleanup);
 
@@ -64,5 +64,19 @@ describe('ExScreen — предупреждение о самопомощи', ()
     expect(screen.queryByText('Это самопомощь, не замена терапии.')).toBeNull();
     rerender(<ExScreen onBack={() => {}} eyebrow="Упражнение" title="Письмо" lede="Подсказка" caution>тело</ExScreen>);
     expect(screen.getByText('Это самопомощь, не замена терапии.')).toBeTruthy();
+  });
+});
+
+// Пока грузится чанк упражнения (Suspense в TaskExerciseHost) — силуэт той же рамки,
+// а не крутилка на весь экран (бывший Loader 100dvh).
+describe('ExScreenSkeleton', () => {
+  it('рамка упражнения с живым «Назад» хоста, тело — плашки без спиннера', () => {
+    const onBack = vi.fn();
+    const { container } = render(<ExScreenSkeleton onBack={onBack} />);
+    expect(container.querySelector('.ex2-screen .ds-sheet-head.ex2-top')).toBeTruthy();
+    expect(container.querySelector('.ex2-body[aria-hidden] .skel')).toBeTruthy();
+    expect(container.querySelector('.spinner')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Назад к упражнениям' }));
+    expect(onBack).toHaveBeenCalledTimes(1);
   });
 });

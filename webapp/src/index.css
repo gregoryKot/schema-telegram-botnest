@@ -124,7 +124,10 @@
   --accent-line:   rgba(138, 58, 43, 0.24);
   --accent-hi:     #5e2418;
   --accent-on-light: #8a3a2b;
-  --accent-hot:    #c8553d; /* логотип, кавычки, стрик — декор, не текст */
+  /* Декор (полоски стрика и прогресса), не фон текста: белый на нём 4.36:1, чернила
+     4.27:1 — оба ниже AA 4.5:1. Логотип и плашки с текстом — --accent + --on-accent
+     (onAccent.test.ts). */
+  --accent-hot:    #c8553d;
   --font-serif:    'Literata', 'Spectral', Georgia, serif;
 
   /* ── Panel — плотная песочная панель (сайдбар, нижняя навигация, герой
@@ -411,7 +414,7 @@ a { color: inherit; text-decoration: none; }
 }
 .sb-logo {
   width: 32px; height: 32px; border-radius: var(--r-8);
-  background: var(--accent-hot); color: #fff;
+  background: var(--accent); color: var(--on-accent);
   display: grid; place-items: center;
   font-family: var(--serif); font-size: 15px; font-weight: 500;
   flex-shrink: 0;

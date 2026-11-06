@@ -15,6 +15,7 @@ import type { ClientDetail } from './clientSheetTypes';
 import { isOpenStatus, orderTasks, taskMeta, taskStatus, templateHue } from './taskModel';
 import { TabArt, TaskArt } from './TabTitle';
 import { PaperEmpty } from '../art/PaperEmpty';
+import { useIsMobile } from '../useIsMobile';
 import { TaskStatusBadge } from '../TaskStatusBadge';
 import { ASSIGN_TEMPLATES, type AssignPreset } from './assignTemplates';
 
@@ -28,8 +29,9 @@ interface Props {
 export function ClientTasksTab({ detail, onAssign, onTasksChanged }: Props) {
   const { clientTasks, setClientTasks, selectedClient } = detail;
   const today = todayStr();
-  // Удаление и отметка у офлайн-клиента — общая с мини-аппом механика; успех перечитывает доску «Задания».
-  const actions = useTherapistTaskActions(api, setClientTasks, onTasksChanged);
+  const actions = useTherapistTaskActions(api, setClientTasks, onTasksChanged); // успех перечитывает доску «Задания»
+  // Одна залитая кнопка: на компьютере — «+ Задание» в шапке (ClientHeader), на телефоне её там нет.
+  const phone = useIsMobile();
   const [confirmDelete, setConfirmDelete] = useState<UserTask | null>(null);
   // Офлайн-клиенту — только «Своё задание»: упражнения приложения ему не подходят (shared/tasks/assignCopy).
   const offline = !!selectedClient && isVirtualId(selectedClient.telegramId);
@@ -50,7 +52,7 @@ export function ClientTasksTab({ detail, onAssign, onTasksChanged }: Props) {
         {clientTasks.length === 0 ? (
           <div>
             <PaperEmpty>Нет назначенных заданий. Домашние практики помогают закрепить работу между сессиями.</PaperEmpty>
-            <button onClick={() => onAssign()} className="ds-btn tb-mt16">Назначить первое задание</button>
+            <button onClick={() => onAssign()} className={phone ? 'ds-btn tb-mt16' : 'ds-btn ds-btn--secondary tb-mt16'}>Назначить первое задание</button>
           </div>
         ) : (
           <div className="tb-task-list">
@@ -79,9 +81,7 @@ export function ClientTasksTab({ detail, onAssign, onTasksChanged }: Props) {
       </div>
 
       <div className="tb-col tb-col--tight">
-        {offline ? (
-          <div className="tb-meta">{ASSIGN_LEAD_OFFLINE}</div>
-        ) : (
+        {offline ? <div className="tb-meta">{ASSIGN_LEAD_OFFLINE}</div> : (
           <>
             <div className="ds-h3">Назначить из шаблона</div>
             {ASSIGN_TEMPLATES.map(card => (

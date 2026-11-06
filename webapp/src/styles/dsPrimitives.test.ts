@@ -5,7 +5,7 @@
 // поэтому сверяем строки cabinet.css (приём safeTop.test.ts): класс объявлен,
 // ключевые объявления на месте, цвета — только токенами.
 import { describe, it, expect } from 'vitest';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { PHONE_MEDIA, DESKTOP_MEDIA } from '../utils/phoneLayout';
 
@@ -164,6 +164,8 @@ describe('cabinet.css: примитивы листов (#906)', () => {
   // 20/30/40: блок телефона по ширине пальца на планшете не видел.
   it('.ds-tab — 44 на телефоне и под пальцем (pointer: coarse); десктоп с мышью не меняется', () => {
     expect(decls(tap, '.ds-tab')).toContain('min-height: 44px');
+    expect(decls(tap, '.ds-tab')).toContain('min-width: 44px'); // короткая вкладка «Обзор» была 42 в ширину
+    expect(decls(tap, '.ds-tab')).toContain('flex-shrink: 0'); // иначе min-width снимает min-width: auto и лента сжимает вкладки
     expect(decls(top, '.ds-tab')).not.toContain('min-height');
     for (const sel of ['.ds-tab', '.ds-link', '.ds-seg-btn', '.ds-btn--sm']) {
       expect(decls(tap, sel), sel).toMatch(/(min-)?height: 44px/);
@@ -219,6 +221,7 @@ describe('cabinet.css: примитивы волны 2 (#906)', () => {
     expect(decls(top, '.ds-seg--full')).toContain('display: flex');
     expect(decls(phone, '.ds-seg--full')).toContain('width: 100%'); // растяжение — только телефон
     expect(decls(desk, '.ds-seg--full')).toContain('display: inline-flex'); // на компьютере по содержимому
+    expect(decls(desk, '.ds-seg--full > .ds-seg-btn')).toContain('min-width: max-content'); // и не уже подписи: basis 0 резал её многоточием
     expect(decls(top, '.ds-seg--full')).not.toContain('width');
     expect(decls(top, '.ds-seg--full > .ds-seg-btn')).toContain('flex: 1 1 0');
     expect(top).not.toContain('.ds-seg--scroll');
@@ -230,7 +233,26 @@ describe('cabinet.css: примитивы волны 2 (#906)', () => {
     expect(count).toContain('color: inherit');
     expect(decls(top, '.ds-page > .ds-seg')).toContain('align-self: flex-start');
   });
-  it('поля: поиск и компактное, 16px на телефоне, resize: none остаётся', () => {
+  // Голый ds-seg на телефоне стоит по ширине кнопок рядом с растянутыми соседями
+  // («Клиенты/Задания» над фильтром во всю ширину, «День/Неделя» в истории).
+  it('сегмент в разметке всегда с модификатором --full или --scroll', () => {
+    const roots = [join(__dirname, '..'), join(__dirname, '..', '..', '..', 'shared', 'src')];
+    const bare: string[] = [];
+    let seen = 0;
+    for (const root of roots) {
+      for (const f of readdirSync(root, { recursive: true }) as string[]) {
+        if (!f.endsWith('.tsx') || f.includes('.test.')) continue;
+        for (const [, cls] of readFileSync(join(root, f), 'utf8').matchAll(/['"`]([^'"`\n]*)['"`]/g)) {
+          if (!cls.split(/\s+/).includes('ds-seg')) continue;
+          seen++;
+          if (!/\bds-seg--(full|scroll)\b/.test(cls)) bare.push(`${f}: "${cls}"`);
+        }
+      }
+    }
+    expect(seen).toBeGreaterThanOrEqual(10);
+    expect(bare).toEqual([]);
+  });
+  it('поля: поиск и компактное, 16px под пальцем (и на iPad), resize: none остаётся', () => {
     expect(decls(top, '.ds-input--search')).toContain('height: 40px');
     expect(decls(top, '.ds-input--search')).toContain('border-radius: 20px');
     expect(decls(tap, '.ds-input--search')).toContain('height: 44px');
@@ -238,8 +260,8 @@ describe('cabinet.css: примитивы волны 2 (#906)', () => {
     expect(decls(top, '.ds-input--sm')).toContain('width: auto');
     expect(decls(top, '.ds-input--sm')).toContain('height: 40px');
     expect(decls(tap, '.ds-input--sm')).toContain('height: 44px');
-    expect(decls(phone, '.ds-input')).toContain('font-size: 16px');
-    expect(decls(phone, '.ds-textarea')).toContain('font-size: 16px');
+    expect(decls(tap, '.ds-input')).toContain('font-size: 16px');
+    expect(decls(tap, '.ds-textarea')).toContain('font-size: 16px');
     expect(decls(top, '.ds-textarea')).toContain('resize: none');
   });
   it('чип-переключатель: 36 → 44, выбранный — tint по --h без tone-fill', () => {

@@ -37,7 +37,7 @@ export function ConceptFullscreenSheet({ title, closeLabel, onClose, backRef, to
       role="dialog"
       aria-modal="true"
       aria-label={title}
-      style={{ position: 'fixed', inset: 0, zIndex: 250, background: 'var(--bg)', display: 'flex', flexDirection: 'column' }}
+      style={{ position: 'fixed', inset: 0, zIndex: 250, background: 'var(--bg)', display: 'flex', flexDirection: 'column', paddingTop: 'var(--safe-top)' }}
     >
       <div style={{
         display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 'var(--space-12)',
