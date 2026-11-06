@@ -192,7 +192,7 @@ export function BeliefCheckEx({
           </div>
           <EviList
             items={forList}
-            onRemove={(i) => setForList((l) => l.filter((_, j) => j !== i))}
+            setItems={setForList}
             input={forInput}
             onInput={setForInput}
             onAdd={addFor}
@@ -234,7 +234,7 @@ export function BeliefCheckEx({
           </div>
           <EviList
             items={againstList}
-            onRemove={(i) => setAgainstList((l) => l.filter((_, j) => j !== i))}
+            setItems={setAgainstList}
             input={againstInput}
             onInput={setAgainstInput}
             onAdd={addAgainst}
