@@ -6,13 +6,14 @@
 // иначе фон читается сквозь оверлей (аудит 2026-09, находка — постоянный
 // блок «Помощь рядом» в PracticeSection оставался доступным под каталогом
 // практик). Сами оверлеи — вне этого компонента, поэтому inert их не трогает.
-import { lazy, Suspense, type MutableRefObject } from 'react';
+import { lazy, Suspense, useEffect, type MutableRefObject } from 'react';
 import { useLocation, type NavigateFunction } from 'react-router-dom';
 import { ErrorBoundary } from '../ErrorBoundary';
 import { ScreenSkeleton } from '../Skeleton';
 import type { Need } from '../../types';
 import type { TherapyClientSummary, UserId } from '../../api';
 import { leaveClientTarget, openClientRoute, type Section } from './navigation';
+import { canonicalClientPath } from '../../../../shared/src/utils/clientRef';
 import type { useOverlays } from './useOverlays';
 const TodaySection    = lazy(() => import('../../sections/TodaySection').then(m => ({ default: m.TodaySection })));
 const MoreSection    = lazy(() => import('../../sections/MoreSection').then(m => ({ default: m.MoreSection })));
@@ -32,7 +33,8 @@ interface Props {
   ratings: Record<string, number>;
   displayName: string | null;
   navigate: NavigateFunction;
-  openClientId: UserId | null;
+  openClientRef: string | null; // код карточки или старый числовой id из адреса
+  clients: TherapyClientSummary[];
   switchTherapistMode: (on: boolean, persist?: boolean) => void;
   therapistBackHandlerRef: MutableRefObject<() => void>;
   setTherapistClients: (clients: TherapyClientSummary[]) => void;
@@ -48,15 +50,19 @@ interface Props {
 
 export function AppSections({
   inert, therapistMode, pathname, section, needs, ratings,
-  displayName, navigate, openClientId, switchTherapistMode, therapistBackHandlerRef,
+  displayName, navigate, openClientRef, clients, switchTherapistMode, therapistBackHandlerRef,
   setTherapistClients, setSection, ov, todayRefreshKey, userRole, profileRefreshKey,
   childhoodRatings, helpTasksKey, setHelpTasksKey,
 }: Props) {
   const { state: locState } = useLocation();
   const openClient = (id: UserId) => {
-    const r = openClientRoute(pathname, id);
+    const r = openClientRoute(pathname, id, clients);
     if (r) navigate(r.to, { state: r.state });
   };
+  useEffect(() => { // старый числовой адрес карточки → код, без записи в истории; state — для «← Все клиенты»
+    const to = canonicalClientPath(pathname, clients);
+    if (to) navigate(to, { replace: true, state: locState });
+  }, [pathname, clients, navigate, locState]);
   return (
     // display:contents — обёртка не участвует в flex-раскладке canvas
     // (.page/.main--cabinet контент остаётся прямым flex-ребёнком canvas),
@@ -75,8 +81,8 @@ export function AppSections({
     {therapistMode && pathname !== '/cabinet/today' && (
       <ErrorBoundary section="Кабинет" key="cabinet-client-boundary">
         <TherapistClientSheet
-          view={openClientId ? 'client' : 'list'}
-          openClientId={openClientId}
+          view={openClientRef ? 'client' : 'list'}
+          openClientRef={openClientRef}
           onViewChange={(v) => {
             if (v !== 'list') return;
             const to = leaveClientTarget(locState);

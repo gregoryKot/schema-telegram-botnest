@@ -139,6 +139,7 @@ const appRoutes = [
           { path: '/exercises',         element: <Navigate to="/practice" replace /> },
           { path: '/cabinet',           element: null },
           { path: '/cabinet/:clientId', element: null },
+          { path: '/cabinet/:clientId/:tab', element: null }, // вкладка карточки (therapist/clientTabRoute)
           { path: '*',                  element: <Navigate to="/today" replace /> },
         ],
       },

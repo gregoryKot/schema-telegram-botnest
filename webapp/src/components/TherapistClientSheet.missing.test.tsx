@@ -1,15 +1,17 @@
 // @vitest-environment jsdom
-// Карточка по адресу /cabinet/<id>, когда клиента нет (QA 2026-10-26):
+// Карточка по адресу /cabinet/<код>, когда клиента нет (QA 2026-10-26):
 // ссылка на удалённого, чужого или выдуманного клиента давала пустой экран,
 // а удалённый клиент по «Назад» в браузере снова открывался полной карточкой
 // (и «переименовывался» — бэкенд отвечал 201). Обвязка повторяет AppSections:
-// вид и id клиента живут в адресе.
+// вид и код клиента (или старый числовой id) живут в адресе.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup, act } from '@testing-library/react';
 import { MemoryRouter, useLocation, useNavigate } from 'react-router-dom';
+import { useState } from 'react';
 import { TherapistClientSheet } from './TherapistClientSheet';
 import type { TherapyClientSummary } from '../api';
-import { parseRouteUserId } from '../../../shared/src/utils/sameId';
+import { parseClientRef } from '../../../shared/src/utils/clientRef';
+import { openClientRoute } from './appShell/navigation';
 
 vi.mock('../api', () => ({
   api: {
@@ -42,16 +44,18 @@ afterEach(cleanup);
 function RoutedSheet() {
   const { pathname } = useLocation();
   const nav = useNavigate();
-  const openClientId = parseRouteUserId(pathname.match(/^\/cabinet\/([^/]+)$/)?.[1]);
+  const [clients, setClients] = useState<TherapyClientSummary[]>([]);
+  const openClientRef = parseClientRef(pathname.match(/^\/cabinet\/([^/]+)$/)?.[1]);
   return (
     <>
       <span data-testid="path">{pathname}</span>
       <button onClick={() => nav(-1)}>браузер: назад</button>
       <TherapistClientSheet
-        view={openClientId ? 'client' : 'list'}
-        openClientId={openClientId}
+        view={openClientRef ? 'client' : 'list'}
+        openClientRef={openClientRef}
         onViewChange={(v) => { if (v === 'list') nav('/cabinet'); }}
-        onOpenClient={(id) => nav('/cabinet/' + id)}
+        onOpenClient={(id) => { const r = openClientRoute(pathname, id, clients); if (r) nav(r.to); }}
+        onClientsChange={setClients}
         onClose={vi.fn()}
       />
     </>
@@ -101,5 +105,31 @@ describe('карточка клиента, которого нет', () => {
     expect(screen.getByTestId('path').textContent).toBe('/cabinet/-142');
     expect(screen.getByText('Клиент не найден')).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Действия с карточкой' })).toBeNull();
+  });
+});
+
+// Адрес карточки — постоянный код (shared/src/utils/clientRef.ts): у офлайн-клиента
+// id менялся при подключении карточки к аккаунту, и старая ссылка вела в никуда.
+describe('карточка по коду в адресе', () => {
+  const coded = { ...offline, urlCode: 'abcdefgh' } as TherapyClientSummary;
+  const boris = { ...offline, telegramId: 7, name: 'Борис', urlCode: 'qrspnmkj' } as TherapyClientSummary;
+
+  it('адрес с кодом открывает карточку именно этого клиента', async () => {
+    mockApi.getTherapyClients.mockResolvedValue([boris, coded]);
+    renderAt('/cabinet/abcdefgh');
+    expect((await screen.findByRole('heading', { level: 1 })).textContent).toBe('Анна');
+    expect(screen.getByTestId('path').textContent).toBe('/cabinet/abcdefgh');
+  });
+
+  it('старый числовой адрес тоже открывает карточку', async () => {
+    mockApi.getTherapyClients.mockResolvedValue([boris, coded]);
+    renderAt('/cabinet/-142');
+    expect((await screen.findByRole('heading', { level: 1 })).textContent).toBe('Анна');
+  });
+
+  it('чужой код — «Клиент не найден»', async () => {
+    mockApi.getTherapyClients.mockResolvedValue([boris, coded]);
+    renderAt('/cabinet/bbbbbbbb');
+    await screen.findByText('Клиент не найден');
   });
 });

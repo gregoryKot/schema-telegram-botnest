@@ -30,7 +30,7 @@ interface Props {
   loading: boolean;
   loadFailed: boolean;
   listTab: 'clients' | 'kanban';
-  setListTab: React.Dispatch<React.SetStateAction<'clients' | 'kanban'>>;
+  setListTab: (t: 'clients' | 'kanban') => void;
   searchQuery: string;
   setSearchQuery: React.Dispatch<React.SetStateAction<string>>;
   filterStatus: RosterStatus;

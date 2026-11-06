@@ -85,6 +85,13 @@ export async function attachOfflineCard(
     // На живой БД приглашения карточки снесёт каскад; у фейка его нет.
     await tx.therapyRelation.deleteMany({ where: { attachToId: card.id } });
     await tx.therapyRelation.delete({ where: { id: card.id } });
+    // Адрес карточки в кабинете (/cabinet/<urlCode>) переезжает вместе с
+    // данными: сохранённая терапевтом ссылка открывает уже подключённого
+    // клиента. Только после удаления карточки — код уникален.
+    await tx.therapyRelation.update({
+      where: { id: target.id },
+      data: { urlCode: card.urlCode },
+    });
     return true;
   });
 }

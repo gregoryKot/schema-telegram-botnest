@@ -153,6 +153,9 @@ export const FIELD_POLICY: Record<string, Record<string, Policy>> = {
   },
   TherapyRelation: {
     code: TOKEN,
+    urlCode: plain(
+      'случайный код адреса карточки в кабинете (8 букв), PII не содержит',
+    ),
     clientAlias: enc(`${TH}/therapy-relations.service.ts`),
     virtualClientName: enc(`${TH}/therapy-relations.service.ts`),
     therapyStartDate: DATE,

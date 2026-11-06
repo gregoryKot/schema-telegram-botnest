@@ -18,10 +18,11 @@ import { ClientTasksTab } from './therapist/ClientTasksTab';
 import type { AssignPreset } from './therapist/assignTemplates';
 import { ClientCardFallback } from './therapist/ClientCardFallback';
 import { clientCardState } from './therapist/clientCardState';
-import { sameId } from '../../../shared/src/utils/sameId';
+import { useClientTabRoute } from './therapist/useClientTabRoute';
+import { findClientByRef, matchesClientRef } from '../../../shared/src/utils/clientRef';
 interface Props {
   view: 'list' | 'client';
-  openClientId?: UserId | null;
+  openClientRef?: string | null; // код карточки или старый числовой id из адреса
   onViewChange: (v: 'list' | 'client') => void;
   onOpenClient?: (id: UserId) => void;
   onClose: () => void;
@@ -29,14 +30,13 @@ interface Props {
   onClientsChange?: (clients: TherapyClientSummary[]) => void;
 }
 
-export function TherapistClientSheet({ view, openClientId: openClientIdProp, onViewChange, onOpenClient, onClose: _onClose, backHandlerRef, onClientsChange: _onClientsChange }: Props) {
+export function TherapistClientSheet({ view, openClientRef, onViewChange, onOpenClient, onClose: _onClose, backHandlerRef, onClientsChange: _onClientsChange }: Props) {
   // ─── Client list ──────────────────────────────────────────────────────────────
   const [clients, setClients] = useState<TherapyClientSummary[]>([]);
   const [loading, setLoading] = useState(true);
   // Сбой ≠ пусто: терапевт с полным ростером в офлайне не должен видеть
   // онбординг «клиентов нет» (тот же класс, что схемы клиента в ModeMapCanvas).
   const [loadFailed, setLoadFailed] = useState(false);
-  const [listTab, setListTab] = useState<'clients' | 'kanban'>('clients');
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'wait' | 'virtual'>('all');
   // Доска «Задания»: любое изменение заданий в карточке её перечитывает.
@@ -53,16 +53,15 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
   // ─── Hooks ────────────────────────────────────────────────────────────────────
   const detail = useClientDetail({ onOpenClient, switchView, setClients });
   const addClient = useAddClient({ setClients });
+  const { routeTab, listTab, setListTab } = useClientTabRoute({ view, openClientRef, detail, board }); // вкладки в адресе
 
   // ─── Bootstrap ────────────────────────────────────────────────────────────────
   useEffect(() => {
     api.getTherapyClients().then(cl => {
       setClients(cl);
       setLoadFailed(false);
-      if (openClientIdProp) {
-        const c = cl.find(x => sameId(x.telegramId, openClientIdProp));
-        if (c) detail.openClient(c);
-      }
+      const c = findClientByRef(cl, openClientRef);
+      if (c) detail.openClient(c, routeTab ?? 'overview');
     }).catch(() => {
       setLoadFailed(true);
       reportClientError({ message: 'therapy clients load failed', section: 'therapist.clients' });
@@ -77,11 +76,11 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
 
   // ─── React to URL-driven client navigation ────────────────────────────────────
   useEffect(() => {
-    if (!openClientIdProp || loading) return;
-    if (sameId(detail.selectedClient?.telegramId, openClientIdProp)) return;
-    const c = clients.find(x => sameId(x.telegramId, openClientIdProp));
-    if (c) detail.openClient(c);
-  }, [openClientIdProp, loading]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (!openClientRef || loading) return;
+    if (detail.selectedClient && matchesClientRef(detail.selectedClient, openClientRef)) return;
+    const c = findClientByRef(clients, openClientRef);
+    if (c) detail.openClient(c, routeTab ?? 'overview');
+  }, [openClientRef, loading]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ─── Back button handler ──────────────────────────────────────────────────────
   useEffect(() => {
@@ -103,7 +102,7 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
     ysqSchemaIds, selfSchemaIds,
     handleRequestYsq, handleExport,
   } = detail;
-  const cardState = clientCardState({ loading, loadFailed, clients, selected: selectedClient, openClientId: openClientIdProp });
+  const cardState = clientCardState({ loading, loadFailed, clients, selected: selectedClient, openClientRef });
 
   // ─── Render ───────────────────────────────────────────────────────────────────
 

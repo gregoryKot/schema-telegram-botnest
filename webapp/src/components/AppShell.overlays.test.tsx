@@ -511,21 +511,21 @@ describe('AppShell — трекер: изменение оценки реаль�
   });
 });
 
-describe('AppShell — карточка клиента в кабинете: routing-состояние (view/openClientId) и синхронизация списка', () => {
+describe('AppShell — карточка клиента в кабинете: routing-состояние (view/openClientRef) и синхронизация списка', () => {
   it('openClient переключает view на «client» с реальным id, toList возвращает к списку', async () => {
     mockApi.getProfile.mockResolvedValueOnce({ role: 'THERAPIST', name: 'Др. Кто', mySchemaIds: [] });
     renderAppShell('/cabinet');
     await waitFor(() => expect(screen.getByTestId('therapist-client-sheet')).toBeTruthy());
-    expect(JSON.parse(screen.getByTestId('therapist-client-sheet-state').textContent ?? '{}')).toEqual({ view: 'list', openClientId: null });
+    expect(JSON.parse(screen.getByTestId('therapist-client-sheet-state').textContent ?? '{}')).toEqual({ view: 'list', openClientRef: null });
 
     fireEvent.click(screen.getByTestId('therapist-client-sheet-openClient'));
     await waitFor(() => {
-      expect(JSON.parse(screen.getByTestId('therapist-client-sheet-state').textContent ?? '{}')).toEqual({ view: 'client', openClientId: '42' });
+      expect(JSON.parse(screen.getByTestId('therapist-client-sheet-state').textContent ?? '{}')).toEqual({ view: 'client', openClientRef: '42' });
     });
 
     fireEvent.click(screen.getByTestId('therapist-client-sheet-toList'));
     await waitFor(() => {
-      expect(JSON.parse(screen.getByTestId('therapist-client-sheet-state').textContent ?? '{}')).toEqual({ view: 'list', openClientId: null });
+      expect(JSON.parse(screen.getByTestId('therapist-client-sheet-state').textContent ?? '{}')).toEqual({ view: 'list', openClientRef: null });
     });
   });
 
@@ -535,7 +535,15 @@ describe('AppShell — карточка клиента в кабинете: rout
     mockApi.getProfile.mockResolvedValueOnce({ role: 'THERAPIST', name: 'Др. Кто', mySchemaIds: [] });
     renderAppShell('/cabinet/1000000000000000123');
     await waitFor(() => expect(screen.getByTestId('therapist-client-sheet')).toBeTruthy());
-    expect(JSON.parse(screen.getByTestId('therapist-client-sheet-state').textContent ?? '{}')).toEqual({ view: 'client', openClientId: '1000000000000000123' });
+    expect(JSON.parse(screen.getByTestId('therapist-client-sheet-state').textContent ?? '{}')).toEqual({ view: 'client', openClientRef: '1000000000000000123' });
+  });
+
+  // Адрес карточки — постоянный код (shared/src/utils/clientRef.ts): у офлайн-клиента id менялся при подключении.
+  it('адрес /cabinet/<код> открывает карточку и отдаёт в неё код', async () => {
+    mockApi.getProfile.mockResolvedValueOnce({ role: 'THERAPIST', name: 'Др. Кто', mySchemaIds: [] });
+    renderAppShell('/cabinet/abcdefgh');
+    await waitFor(() => expect(screen.getByTestId('therapist-client-sheet')).toBeTruthy());
+    expect(JSON.parse(screen.getByTestId('therapist-client-sheet-state').textContent ?? '{}')).toEqual({ view: 'client', openClientRef: 'abcdefgh' });
   });
 
   it('onClientsChange реально долетает до сайдбара — новый клиент виден в списке', async () => {
