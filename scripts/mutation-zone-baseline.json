@@ -35,9 +35,6 @@
   "src/auth/unlink-provider.ts": {
     "reason": "Вынесен из auth.service.ts (правило №10) до появления гейта мутационной зоны; в `mutate` не включён, мутации отвязки способа входа не измеряются — долг волны, а не решение."
   },
-  "src/auth/user-id-range.ts": {
-    "reason": "Две числовые константы диапазона userId без ветвлений: мутировать нечего, значения пинят auth.service.spec.ts (generateWebUserId) и account.service."
-  },
   "src/auth/user-owned-tables.ts": {
     "reason": "Реестр имён таблиц без логики: сверку со schema.prisma держит table-registry.spec.ts, мутации по строковым литералам списка дали бы шум, а не сигнал."
   },

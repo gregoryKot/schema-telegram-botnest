@@ -96,16 +96,19 @@ export async function deleteAllUserData(
       where: { telegramId: { in: subscriptionIds } },
     }),
     // Записи на консультацию не удаляем — это финансовые и календарные записи
-    // (оплата, встреча в календаре терапевта), но связь с человеком по
-    // Telegram-id рвём: иначе после удаления аккаунта по id по-прежнему можно
-    // найти все его записи (аудит 2026-10, F3). Имя, контакт и текст запроса
-    // удалением аккаунта НЕ затрагиваются — их закрывает ретенция по сроку
-    // (booking-retention.service.ts, решение владельца 2026-10-08 по находке
-    // L3): привязки брони к аккаунту не существует, с C-9 clientTelegramId не
-    // записывается, и этот updateMany достаёт только легаси-строки.
+    // (оплата, встреча в календаре терапевта), но связь с человеком рвём и по
+    // Telegram-id, и по аккаунту: иначе после удаления по id по-прежнему можно
+    // найти все его записи (аудит 2026-10, F3). Связь пишет только запись из
+    // приложения (Booking.userId + clientTelegramId, #546); FK SetNull сделал
+    // бы то же для userId, но удаление не полагается на каскад молча. Имя,
+    // контакт и текст запроса удалением аккаунта НЕ затрагиваются — их
+    // закрывает ретенция по сроку (booking-retention.service.ts, решение
+    // владельца 2026-10-08 по находке L3).
     prisma.booking.updateMany({
-      where: { clientTelegramId: { in: subscriptionIds } },
-      data: { clientTelegramId: null },
+      where: {
+        OR: [{ clientTelegramId: { in: subscriptionIds } }, { userId: uid }],
+      },
+      data: { clientTelegramId: null, userId: null },
     }),
     // И наконец сама строка пользователя.
     prisma.user.delete({ where: { id: uid } }),

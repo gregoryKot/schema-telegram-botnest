@@ -48,10 +48,13 @@ describe('Реестры user-таблиц ↔ schema.prisma', () => {
   it('каждая модель с userId покрыта удалением аккаунта (USER_DATA_TABLES или явный deleteMany)', () => {
     // Обрабатываются отдельными deleteMany в deleteAllUserData, а не через
     // реестр (проверено тестом account.service.spec.ts).
+    // Booking — не удаляется, а отвязывается (updateMany userId: null):
+    // финансовая запись, PII стирает ретенция по сроку (тест ниже).
     const DELETE_HANDLED_SEPARATELY = [
       'AuthProvider',
       'WebSession',
       'TherapistRequest',
+      'Booking',
     ];
     const covered = new Set([
       ...USER_DATA_TABLES.map(capitalize),
@@ -96,6 +99,7 @@ describe('Реестры user-таблиц ↔ schema.prisma', () => {
       'AuthProvider',
       'WebSession',
       'TherapistRequest',
+      'Booking',
     ]);
     const mrg = new Set<string>([
       ...USER_OWNED_TABLES,
@@ -136,12 +140,6 @@ const OTHER_MODELS: Record<string, string> = {
   // формулировкой запрещено (правило №15).
   Donation:
     'ДОЛГ: email плательщика вне контура удаления аккаунта — пожертвование анонимно, связи с User нет, удаление только по запросу вручную',
-  // Решение владельца 2026-10-08 (находка L3 аудита 2026-07-20): не удаление
-  // по аккаунту, а ретенция по сроку. Привязки к аккаунту у брони нет вовсе —
-  // clientTelegramId с C-9 не записывается, форма записи публичная, — поэтому
-  // «удалять вместе с аккаунтом» нечем, а ретенция покрывает ВСЕ брони.
-  Booking:
-    'ретенция по сроку (решение 2026-10-08): имя, контакт и текст запроса затирает крон через 12 месяцев после сессии (booking-retention.service.ts), факт записи — дата, тип, согласие с офертой — остаётся; легаси clientTelegramId при удалении аккаунта обнуляется (account.delete.ts)',
   // Заявка с формы знакомства (POST /api/booking): та же публичная форма без
   // входа, привязки к аккаунту нет, ретенция по сроку — 12 месяцев от createdAt.
   IntroLead:
@@ -216,7 +214,7 @@ describe('Классификация моделей: ни одна не оста
 // удалении и при слиянии. Новая такая колонка роняет тест.
 const PERSON_REF_COLUMNS: Record<string, string> = {
   'Booking.clientTelegramId':
-    'удаление — обнуляется в account.delete.ts; слияние не нужно: с C-9 колонка не записывается вообще, живых значений не появляется',
+    'удаление — обнуляется в account.delete.ts вместе с userId; слияние не нужно: это адрес того же человека в Telegram, пишет его только запись из приложения из проверенной подписи (C-9), анонимная форма — нет',
   'LoginTicket.approvedUserId':
     'удаление — deleteMany по этой оси в account.delete.ts (L3); слияние — remapAssignerRefs переназначает на target',
   'LoginTicket.shownToTelegramId':
@@ -287,6 +285,17 @@ describe('Вторичные ссылки на человека (BigInt мимо
       )
       .map(([c]) => c);
     expect(vague).toEqual([]);
+  });
+
+  // Booking.userId (запись из приложения, #546): бронь — финансовая запись,
+  // удаление аккаунта её ОТВЯЗЫВАЕТ (решение 2026-10-08: имя и контакт стирает
+  // ретенция по сроку, booking-retention.service.ts), а не удаляет.
+  it('бронь при удалении аккаунта отвязывается по userId, а не удаляется', () => {
+    const src = readFileSync(join(ROOT, 'src/bot/account.delete.ts'), 'utf8');
+    expect(src).toMatch(
+      /booking\.updateMany\([\s\S]*?userId: uid[\s\S]*?userId: null/,
+    );
+    expect(src.includes('booking.deleteMany')).toBe(false);
   });
 
   // Трипвайер на сами оси билета входа: причина выше обещает deleteMany в

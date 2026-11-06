@@ -18,3 +18,14 @@ export interface CreateBookingDto {
   /** IANA-пояс посетителя из Intl. Невалидный — игнорируется (не 400). */
   clientTimeZone?: string;
 }
+
+/**
+ * Аккаунт клиента, записавшегося из приложения (client-booking.service.ts).
+ * Отдельно от CreateBookingDto намеренно: DTO собирается и из анонимного
+ * тела, а этот объект — только из проверенной подписи (C-9).
+ */
+export interface BookingAccount {
+  userId: bigint;
+  /** Telegram-адрес аккаунта; null — входа через Telegram нет. */
+  telegramId: bigint | null;
+}

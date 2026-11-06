@@ -2,7 +2,7 @@ import { BookingStatus } from '@prisma/client';
 import { encryptRecord } from '../utils/crypto';
 import { BOOKING_SCHEMA } from './booking.schema';
 import { isValidTimeZone } from './client-timezone';
-import type { CreateBookingDto } from './booking.types';
+import type { BookingAccount, CreateBookingDto } from './booking.types';
 import type { BookingPricePath } from './booking-pricing-path';
 
 /**
@@ -13,6 +13,7 @@ import type { BookingPricePath } from './booking-pricing-path';
 export function buildBookingData(
   dto: CreateBookingDto,
   opts: BookingPricePath & { cancelToken: string },
+  account?: BookingAccount,
 ) {
   return encryptRecord(
     {
@@ -37,6 +38,11 @@ export function buildBookingData(
         dto.clientTimeZone && isValidTimeZone(dto.clientTimeZone)
           ? dto.clientTimeZone
           : null,
+      // Только клиентская запись из приложения; анонимная форма ключей не несёт.
+      ...(account && {
+        userId: account.userId,
+        clientTelegramId: account.telegramId,
+      }),
     },
     BOOKING_SCHEMA,
   );

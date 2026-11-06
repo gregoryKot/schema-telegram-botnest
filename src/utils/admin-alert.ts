@@ -7,11 +7,11 @@ import {
   noteAlertEmailError,
   noteAlertEmailResponse,
 } from './alert-email-health';
+import { practiceOwnerTelegramId } from './practice-owner';
 
-/** Числовой ADMIN_ID из env (null, если не задан/некорректен). */
+/** Числовой ADMIN_ID из env (null, если не задан/некорректен). Разбор — practice-owner.ts. */
 export function adminIdNum(): number | null {
-  const n = Number(process.env.ADMIN_ID);
-  return Number.isFinite(n) && n > 0 ? n : null;
+  return practiceOwnerTelegramId();
 }
 
 /**
@@ -43,8 +43,8 @@ export async function notifyAdminWithFallback(
 
 async function sendTelegram(text: string): Promise<boolean> {
   const token = process.env.BOT_TOKEN;
-  const chatId = process.env.ADMIN_ID;
-  if (!token || !chatId) return false;
+  const chatId = practiceOwnerTelegramId();
+  if (!token || chatId === null) return false;
   try {
     const res = await fetch(
       `https://api.telegram.org/bot${token}/sendMessage`,

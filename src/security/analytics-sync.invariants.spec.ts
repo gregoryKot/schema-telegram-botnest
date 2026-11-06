@@ -207,6 +207,12 @@ const BACKEND_ONLY: Record<string, string> = {
     'нейросетей по User-Agent за час, userId = null. Фронт его не шлёт: ' +
     'заход робота видит только сервер; /stats считает только строки с ' +
     'userId IS NULL, а sanitizeMeta пропускает лишь закрытые списки',
+  client_booking_created:
+    'серверное событие: пишет только ClientBookingService ' +
+    '(src/booking/client-booking.service.ts) после созданной брони, meta — ' +
+    'статус held|confirmed; ветка sanitizeMeta отбрасывает meta с клиента, ' +
+    'а /stats считает только строки со статусом из ' +
+    'client-booking-events.constants.ts',
   home_screen_offer:
     'шлётся не литералом trackEvent(...), а через колбэк track(...) общего ' +
     'хука shared/src/host/useHomeScreenOffer.ts (мини-апп и карточка ' +
@@ -279,6 +285,8 @@ describe('трипваер: имена событий фронта ⊆ allow-lis
     // 36 — therapy_invite (2026-11, воронка приглашения клиента): серверное.
     // 37 — crawler_visits (2026-11, GEO.md: заходы роботов нейросетей): серверное,
     // заход робота — HTTP-запрос к сайту, у фронта такого действия нет.
-    expect(Object.keys(BACKEND_ONLY).length).toBeLessThanOrEqual(37);
+    // 38 — client_booking_created (2026-11, запись из приложения, #546):
+    // серверное — бронь создаёт HTTP-запрос, событие пишет сервис после неё.
+    expect(Object.keys(BACKEND_ONLY).length).toBeLessThanOrEqual(38);
   });
 });
