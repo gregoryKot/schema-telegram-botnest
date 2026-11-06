@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // git merge driver для JSON-бейслайнов храповиков (.gitattributes → merge=ratchet-min
-// / merge=ratchet-max). Ставится в .git/config скриптом scripts/setup-merge-drivers.mjs.
+// / -max / -sum). Ставится в .git/config скриптом scripts/setup-merge-drivers.mjs.
 //
 // Зачем. Бейслайны — самый частый источник конфликтов между параллельными
 // агентами: scripts/file-size-baseline.json меняли 44 раза из последних 300
@@ -17,29 +17,31 @@
 //   ключ изменила одна сторона — берём её значение как есть (вторая это место
 //     не трогала, спорить не о чем; почему это важно — см. merge3);
 //   ключ изменили ОБЕ — вот здесь и работает храповик:
-//     ratchet-min — метрика, где МЕНЬШЕ лучше (строки файлов, робофразы,
-//                   мужской род, дубли, слабые ассерты): берём min;
-//     ratchet-max — метрика, где БОЛЬШЕ лучше (покрытие, mutation score):
-//                   берём max.
+//     ratchet-sum — счётчик, который складывается (строки файлов, байты JS,
+//                   нарушения в файле): база плюс обе дельты;
+//     ratchet-min — меньше лучше, но не складывается (планы запросов, axe);
+//     ratchet-max — больше лучше (покрытие, mutation score).
+// Режимы и исключения по ключам — merge-json-ratchet-rules.mjs.
 // Так слияние сохраняет прогресс обеих сторон, не даёт случайно ослабить
 // планку и не выдаёт за прогресс чужое старое значение.
 //
 // Вызов (git подставляет %O %A %B %P):
-//   node scripts/merge-json-ratchet.mjs min  %O %A %B %P
+//   node scripts/merge-json-ratchet.mjs min|max|sum  %O %A %B %P
 // %O — общий предок, %A — «наша» версия И файл, куда пишется результат,
-// %B — «их» версия, %P — путь файла в рабочем дереве (только для сообщений).
+// %B — «их» версия, %P — путь файла в рабочем дереве (сообщения и ключ KEY_MODES).
 //
 // Выход 0 — слито, git считает конфликт разрешённым; выход 1 — не свелось,
 // git оставляет обычный конфликт человеку. Молча портить бейслайн нельзя:
 // любая неоднозначность — это выход 1, а не догадка.
 import { readFileSync, writeFileSync } from 'fs';
+import { MODES, combineMoved, leafMode } from './merge-json-ratchet-rules.mjs';
 
 const [direction, oPath, aPath, bPath, label = '<baseline>'] =
   process.argv.slice(2);
 
-if (direction !== 'min' && direction !== 'max') {
+if (!MODES.includes(direction)) {
   console.error(
-    `merge-json-ratchet: первым аргументом ожидается min|max, получено «${direction}»`,
+    `merge-json-ratchet: первым аргументом ожидается ${MODES.join('|')}, получено «${direction}»`,
   );
   process.exit(1);
 }
@@ -74,7 +76,6 @@ function load(path, what) {
 const isPlainObject = (v) =>
   typeof v === 'object' && v !== null && !Array.isArray(v);
 const same = (x, y) => JSON.stringify(x) === JSON.stringify(y);
-const pick = direction === 'max' ? Math.max : Math.min;
 
 /**
  * Порядок ключей результата — как у «нашей» стороны: `--update` пофайловых
@@ -134,11 +135,14 @@ function merge3(o, a, b, path) {
   if (same(b, o)) return a;
 
   // Обе стороны сдвинули значение относительно предка — вот теперь работает
-  // храповик: берём лучшее, чтобы сохранить прогресс обеих.
-  if (typeof a === 'number' && typeof b === 'number') return pick(a, b);
+  // храповик: сумма дельт или лучшее из двух, чтобы сохранить прогресс обеих.
+  if (typeof a === 'number' && typeof b === 'number') {
+    const v = combineMoved(leafMode(direction, label, path.slice(2)), o, a, b);
+    if (v !== undefined) return v;
+  }
 
   // Не числа (напр. причина-строка в dead-files-baseline) и обе стороны
-  // написали своё: храповой семантики тут нет, выдумывать нечего.
+  // написали своё — или у суммы нет базы-числа: выдумывать нечего.
   return bail(`несводимое расхождение в ${path}`);
 }
 

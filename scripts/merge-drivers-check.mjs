@@ -86,7 +86,8 @@ export function checkMergeDrivers(root, drivers) {
     if (driver === undefined) {
       problems.push(
         `${file}: нет строки в .gitattributes — слияние пойдёт текстовым и сконфликтует у двух PR. ` +
-          `Добавь «${file}  merge=ratchet-min» (меньше — лучше, реестры со строками-причинами) ` +
+          `Добавь «${file}  merge=ratchet-sum» (счётчик: строки, байты, нарушения в файле), ` +
+          'merge=ratchet-min (меньше — лучше, не складывается; реестры со строками-причинами) ' +
           'или merge=ratchet-max (больше — лучше: покрытие, mutation)',
       );
     } else if (!drivers[driver]) {
