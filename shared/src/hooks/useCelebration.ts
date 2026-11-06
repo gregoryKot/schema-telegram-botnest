@@ -1,8 +1,7 @@
-// Логика оверлея «празднование серии» — общая для обеих вёрсток (мини-апп:
-// shared/src/components/Celebration, сайт: webapp/src/components/Celebration).
-// Разметки у площадок разные (мобильная карточка против editorial-диалога),
-// а поведение — конфетти, отметка вехи, шаринг картинкой с откатом на копирование
-// текста, события аналитики — одно: правка не должна доезжать до одной из двух.
+// Логика оверлея «празднование серии»: конфетти, отметка вехи, шаринг
+// картинкой с откатом на копирование текста, события аналитики. Разметка —
+// webapp/src/components/CelebrationDialog. Закрывает окно только человек
+// (кнопка, фон, Escape) — конфетти по своему концу его не трогает.
 import type { MouseEvent } from 'react';
 import { useConfetti } from './useConfetti';
 import { drawStreakCard, MILESTONES } from '../share/cards/streakCard';
@@ -14,11 +13,10 @@ import { useCopyToClipboard } from '../utils/useCopyToClipboard';
 
 export function useCelebration(
   streak: number,
-  onDone: () => void,
   botShortUrl: string,
   trackEvent: (name: string, meta?: Record<string, unknown>) => void,
 ) {
-  const canvasRef = useConfetti(onDone);
+  const canvasRef = useConfetti();
   const { copied, failed, copy } = useCopyToClipboard();
 
   async function share(e: MouseEvent) {

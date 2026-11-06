@@ -24,9 +24,7 @@ const click = { stopPropagation: vi.fn() } as unknown as MouseEvent;
 
 function setup() {
   const track = vi.fn();
-  const hook = renderHook(() =>
-    useCelebration(7, vi.fn(), 'https://t.me/bot', track),
-  );
+  const hook = renderHook(() => useCelebration(7, 'https://t.me/bot', track));
   return { hook, track };
 }
 

@@ -7,10 +7,28 @@
 // только целое приложение.
 import type { Page } from '@playwright/test';
 import { test, expect } from './support/test';
+import { activeTask, doneTask, openClientTasks } from './support/clientTasks';
 
 const WRITE = 'Написать терапевту';
 const TALK = 'Поговорить с кем-то';
 const CODE_INPUT = 'Код от терапевта';
+
+/** Задание терапевта в форме ответа GET /api/therapy/tasks(/history) — UserTask. */
+const task = (id: number, text: string, done: boolean | null) => ({
+  id,
+  userId: '1',
+  assignedBy: '2',
+  type: 'custom',
+  text,
+  targetDays: null,
+  needId: null,
+  dueDate: null,
+  done,
+  completedAt: done === null ? null : '2026-11-05T10:00:00.000Z',
+  createdAt: '2026-11-04T08:00:00.000Z',
+});
+const OPEN_TASK = task(1, 'Записать три благодарности', null);
+const CLOSED_TASK = task(2, 'Заметить одну потребность за день', true);
 
 async function openMore(page: Page) {
   await page.getByRole('link', { name: 'Ещё', exact: true }).first().click();
@@ -77,6 +95,23 @@ test.describe('браузерный smoke: связь с терапевтом', 
     await openMore(page);
     await expect(page.getByText(TALK).first()).toBeVisible();
     await expect(page.getByText(WRITE)).toHaveCount(0);
+  });
+
+  // Тот же путь, что у живого link2.spec (тест 5): переедет список заданий —
+  // краснеет здесь, в PR, а не ночью (ci-alarm #965).
+  test('задание терапевта — в «Ещё» → «Задания» с пометкой, выполненное — в «Выполнено»', async ({
+    page,
+    api,
+  }) => {
+    api.overrides.set('GET /api/therapy/tasks', [OPEN_TASK]);
+    api.overrides.set('GET /api/therapy/tasks/history', [CLOSED_TASK]);
+    await openClientTasks(page);
+    const open = activeTask(page, OPEN_TASK.text);
+    await expect(open).toBeVisible();
+    await expect(open.getByText('от терапевта')).toBeVisible();
+    await expect(doneTask(page, CLOSED_TASK.text)).toContainText('Выполнено');
+    await expect(activeTask(page, CLOSED_TASK.text)).toHaveCount(0);
+    await expect(doneTask(page, OPEN_TASK.text)).toHaveCount(0);
   });
 
   test('неверный код: ошибка видна, связи нет', async ({ page }) => {

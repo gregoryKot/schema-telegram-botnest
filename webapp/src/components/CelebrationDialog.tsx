@@ -1,8 +1,7 @@
 // Разметка празднования серии на сайте — editorial-диалог (общий Dialog).
-// Мини-апп рисует то же событие своей мобильной карточкой (shared/src/
-// components/Celebration); поведение — конфетти, веха, шаринг, события — одно,
-// в shared/src/hooks/useCelebration. Платформенное (tr, ссылка бота, трекинг)
-// приходит пропсами из тонкой обёртки Celebration.tsx.
+// Поведение — конфетти, веха, шаринг, события — в shared/src/hooks/
+// useCelebration. Платформенное (tr, ссылка бота, трекинг) приходит пропсами
+// из тонкой обёртки Celebration.tsx. onDone зовут только действия человека.
 import { getMilestoneText, pluralDays } from '../../../shared/src/utils/celebrationText';
 import { useCelebration } from '../../../shared/src/hooks/useCelebration';
 import { CopyFailedHint } from '../../../shared/src/components/CopyFailedHint';
@@ -27,7 +26,6 @@ export function CelebrationDialog({
 }: Props) {
   const { canvasRef, copied, failed, share, isMilestone } = useCelebration(
     streak,
-    onDone,
     botShortUrl,
     trackEvent,
   );

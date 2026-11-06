@@ -23,7 +23,7 @@ const TherapistPrivacyDisclaimer = lazy(() => import('../TherapistPrivacyDisclai
 
 export function AppOverlays({
   ov, userRole, setUserRole, displayName, setDisplayName, therapistMode, switchTherapistMode,
-  navigate, ratings, setChildhoodRatings, childhoodWheelPending, setChildhoodWheelPending, todayDate,
+  navigate, ratings, setChildhoodRatings, todayDate,
 }: {
   ov: ReturnType<typeof useOverlays>;
   userRole: 'CLIENT' | 'THERAPIST';
@@ -35,8 +35,6 @@ export function AppOverlays({
   navigate: NavigateFunction;
   ratings: Record<string, number>;
   setChildhoodRatings: (r: Record<string, number>) => void;
-  childhoodWheelPending: boolean;
-  setChildhoodWheelPending: (v: boolean) => void;
   todayDate: string;
 }) {
   return (<>
@@ -98,10 +96,7 @@ export function AppOverlays({
       </div>
     )}
     {ov.showTodayNote && (
-      <NoteSheet date={todayDate} onClose={() => {
-        ov.setShowTodayNote(false);
-        if (childhoodWheelPending) { setChildhoodWheelPending(false); ov.setShowChildhoodWheel(true); }
-      }} />
+      <NoteSheet date={todayDate} onClose={() => ov.setShowTodayNote(false)} />
     )}
     {/* «Мне плохо» открывается поверх раздела, где человек был: «Назад» браузера
         возвращает туда же, а не на /practice (QA 2026-11, A-М10). */}

@@ -1,13 +1,13 @@
 // @vitest-environment jsdom
-// AppShell — оверлеи и их побочные эффекты: цепочка трекер → селебрейшн →
-// заметка дня, командная палитра (⌘K, ⌘1-4), режим терапевта (переключение +
+// AppShell — оверлеи и их побочные эффекты: трекер → селебрейшн (заметка дня
+// сама не открывается), командная палитра (⌘K, ⌘1-4), режим терапевта (переключение +
 // поиск по клиентам), разовый дисклеймер приватности кабинета.
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { screen, waitFor, cleanup, fireEvent } from '@testing-library/react';
 import { renderAppShell, mockLogout } from './AppShell.test-helpers';
 import { api } from '../api';
 import { todayStr } from '../utils/format';
-import { THERAPIST_MODE_KEY } from '../utils/storageKeys';
+import { THERAPIST_MODE_KEY, CHILDHOOD_DONE_KEY } from '../utils/storageKeys';
 import type { DayHistory } from '../types';
 
 const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
@@ -31,6 +31,7 @@ afterEach(() => {
 
 describe('AppShell — трекер: сохранение со стриком запускает селебрейшн, а не молчит', () => {
   it('onSaved(needId, streak>0) → показывает Celebration с реальным стриком', async () => {
+    localStorage.setItem(CHILDHOOD_DONE_KEY, '1'); // колесо пройдено — проверяем только поздравление
     renderAppShell('/today');
     await waitFor(() => expect(screen.getByTestId('today-section')).toBeTruthy());
     fireEvent.click(screen.getByTestId('today-section-tracker'));
@@ -41,19 +42,23 @@ describe('AppShell — трекер: сохранение со стриком з
     // значение, а не захардкоженное «вчерашнее».
     await waitFor(() => expect(screen.getByTestId('celebration-streak-3')).toBeTruthy());
 
-    // Закрытие Celebration ведёт дальше к заметке дня (see handleDone chain).
+    // «Закрыть» закрывает — заметка дня сама не открывается (2026-11-06,
+    // владелец: «само закрылось, там заметки открылись»). Заметка — ссылка
+    // «Заметка» на экране «Готово» трекера, он остаётся под поздравлением.
     fireEvent.click(screen.getByTestId('celebration-streak-3-done'));
-    await waitFor(() => expect(screen.getByTestId('note-sheet')).toBeTruthy());
+    await waitFor(() => expect(screen.queryByTestId('celebration-streak-3')).toBeNull());
+    expect(screen.queryByTestId('note-sheet')).toBeNull();
+    expect(screen.getByTestId('tracker-overlay')).toBeTruthy();
   });
 
-  it('onSaved(needId, streak=0) → сразу заметка дня, без Celebration', async () => {
+  it('onSaved(needId, streak=0) → ни Celebration, ни заметки дня', async () => {
     renderAppShell('/today');
     await waitFor(() => expect(screen.getByTestId('today-section')).toBeTruthy());
     fireEvent.click(screen.getByTestId('today-section-tracker'));
     await waitFor(() => expect(screen.getByTestId('tracker-overlay')).toBeTruthy());
 
     fireEvent.click(screen.getByTestId('tracker-overlay-saveNoStreak'));
-    await waitFor(() => expect(screen.getByTestId('note-sheet')).toBeTruthy());
+    expect(screen.queryByTestId('note-sheet')).toBeNull();
     expect(screen.queryByTestId(/celebration-streak/)).toBeNull();
   });
 
@@ -639,8 +644,8 @@ describe('AppShell — сайдбар: индекс дня и поиск⌘K о�
   });
 });
 
-describe('AppShell — стрик 5+ дней ставит колесо детства «в очередь», заметка дня его открывает', () => {
-  it('после Celebration и заметки дня — колесо детства открывается автоматически (если ещё не пройдено)', async () => {
+describe('AppShell — стрик 5+ дней ставит колесо детства «в очередь», закрытие поздравления его открывает', () => {
+  it('после Celebration — колесо детства (если ещё не пройдено), заметка дня не открывается', async () => {
     renderAppShell('/today');
     await waitFor(() => expect(screen.getByTestId('today-section')).toBeTruthy());
     fireEvent.click(screen.getByTestId('today-section-tracker'));
@@ -649,13 +654,11 @@ describe('AppShell — стрик 5+ дней ставит колесо детс
     fireEvent.click(screen.getByTestId('tracker-overlay-saveWithStreak'));
     await waitFor(() => expect(screen.getByTestId('celebration-streak-3')).toBeTruthy());
     fireEvent.click(screen.getByTestId('celebration-streak-3-done'));
-    await waitFor(() => expect(screen.getByTestId('note-sheet')).toBeTruthy());
-
-    fireEvent.click(screen.getByTestId('note-sheet-close'));
     await waitFor(() => expect(screen.getByTestId('childhood-wheel')).toBeTruthy());
+    expect(screen.queryByTestId('note-sheet')).toBeNull();
   });
 
-  it('заметка дня открыта не через стрик-цепочку (childhoodWheelPending=false) — закрытие не открывает колесо', async () => {
+  it('заметка дня из трекера — закрытие не открывает колесо', async () => {
     renderAppShell('/today');
     await waitFor(() => expect(screen.getByTestId('today-section')).toBeTruthy());
     fireEvent.click(screen.getByTestId('today-section-tracker'));
