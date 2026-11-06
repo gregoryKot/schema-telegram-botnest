@@ -869,7 +869,7 @@
   "src/booking/booking.registry.ts": 51,
   "src/booking/booking.schema.ts": 15,
   "src/booking/booking.service.ts": 267,
-  "src/booking/booking.transitions.ts": 124,
+  "src/booking/booking.transitions.ts": 133,
   "src/booking/booking.types.ts": 31,
   "src/booking/caldav-busy-read.ts": 40,
   "src/booking/caldav-busy.ts": 87,

@@ -108,17 +108,26 @@ export async function claimCancel(
 
 /**
  * Какое событие календаря снять после отмены. Записанный uid — как есть. Нет
- * записи, а до отмены бронь была CONFIRMED: под мог умереть между PUT в CalDAV
- * и записью uid — снимаем по детерминированному. У HELD события не бывает:
+ * записи, а подтверждение успело пройти: под мог умереть между PUT в CalDAV и
+ * записью uid — снимаем по детерминированному. У HELD события не бывает:
  * DELETE по нему — лишний сетевой вызов и ложный алерт при сетевой ошибке.
+ *
+ * «Подтверждение успело» решает свежая строка, а не только снимок: снимок
+ * читается до claimCancel, и оплата, пришедшая между чтением и отменой,
+ * оставила бы в снимке HELD (аудит 2026-10). `paidAt` вебхук пишет тем же CAS,
+ * что CONFIRMED; `meetingUrl` пишет проход подтверждения до PUT — он покрывает
+ * и ручное подтверждение. `confirmEffectsDoneAt` не годится: он ставится после
+ * записи uid, то есть в нужном окне ещё пуст.
  * `before` — снимок до claimCancel, `fresh` — строка после.
  */
 export function cancelEventUid(
   before: Pick<Booking, 'status'>,
-  fresh: Pick<Booking, 'id' | 'calDavUid'>,
+  fresh: Pick<Booking, 'id' | 'calDavUid' | 'paidAt' | 'meetingUrl'>,
 ): string | null {
   if (fresh.calDavUid) return fresh.calDavUid;
-  return before.status === BookingStatus.CONFIRMED
-    ? bookingEventUid(fresh.id)
-    : null;
+  const confirmed =
+    before.status === BookingStatus.CONFIRMED ||
+    fresh.paidAt != null ||
+    !!fresh.meetingUrl;
+  return confirmed ? bookingEventUid(fresh.id) : null;
 }
