@@ -6,8 +6,16 @@ import { useTherapyBridgeTexts } from './useTherapyBridgeTexts';
 import { useTherapyTarget } from './useTherapyTarget';
 import '../../styles/therapy-bridge.css';
 
+interface Props {
+  place: TherapyNudgePlace;
+  /** Строка для клиента без своего терапевта; клиенту с терапевтом — lineTherapist (он уже в терапии). */
+  text: string;
+  /** Дописывается к th-line: место подгоняет строку под свою вёрстку (подпись листа «Зачем это всё»). */
+  className?: string;
+}
+
 // Отличие от shared/src/components/TherapyNote.tsx (старые экраны, карточка-дисклеймер): здесь тихая строка с листом «Поговорить» и событиями аналитики.
-export function TherapyLine({ place, text }: { place: TherapyNudgePlace; text: string }) {
+export function TherapyLine({ place, text, className }: Props) {
   const t = useTherapyBridgeTexts();
   const target = useTherapyTarget(place);
   const { hidden } = target;
@@ -20,8 +28,8 @@ export function TherapyLine({ place, text }: { place: TherapyNudgePlace; text: s
 
   return (
     <>
-      <p className="th-line">
-        {text}{' '}
+      <p className={className ? `th-line ${className}` : 'th-line'}>
+        {target.connected ? t.lineTherapist : text}{' '}
         {target.write ? (
           <ExternalLink className="th-link" href={target.write.url} onClick={target.write.onClick}>
             {t.linkWrite}
