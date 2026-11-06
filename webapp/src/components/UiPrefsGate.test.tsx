@@ -153,7 +153,7 @@ describe('UiPrefsGate + настройки экранов', () => {
   // #922: правка за секунду до перезагрузки (пуш ещё ждал окна debounce)
   // стиралась серверной копией на следующем старте — server wins.
   it('перезагрузка раньше пуша: правка не стёрта старой серверной копией и досылается', async () => {
-    getSettings.mockResolvedValue({ uiPrefs: { today_streak_hidden: '1' } });
+    getSettings.mockResolvedValue({ uiPrefs: { why_seen_v1: '1' } });
     const first = render(<UiPrefsGate><TodayProbe /></UiPrefsGate>);
     await waitFor(() => expect(screen.getByTestId('streak').textContent).toBe('hidden'));
     fireEvent.click(screen.getByText('toggle'));
@@ -163,10 +163,10 @@ describe('UiPrefsGate + настройки экранов', () => {
     render(<UiPrefsGate><TodayProbe /></UiPrefsGate>);
     await waitFor(() =>
       expect(updateSettings).toHaveBeenCalledWith({
-        uiPrefs: { today_streak_hidden: '1', today_secondary_hidden: '0' },
+        uiPrefs: { why_seen_v1: '1', [TOOLS_KEY]: '["tracker"]' },
       }),
     );
-    expect(localStorage.getItem('today_secondary_hidden')).toBe('0');
+    expect(localStorage.getItem(TOOLS_KEY)).toBe('["tracker"]');
   });
 
   it('вкладка уходит (pagehide) → ожидающая правка уходит сразу, без окна debounce', async () => {
@@ -177,7 +177,7 @@ describe('UiPrefsGate + настройки экранов', () => {
     fireEvent.click(screen.getByText('toggle'));
     expect(updateSettings).not.toHaveBeenCalled();
     window.dispatchEvent(new Event('pagehide'));
-    expect(updateSettings).toHaveBeenCalledWith({ uiPrefs: { today_secondary_hidden: '0' } });
+    expect(updateSettings).toHaveBeenCalledWith({ uiPrefs: { [TOOLS_KEY]: '["tracker"]' } });
   });
 
   it('GET настроек отказал → экран открывается с локальными значениями, на сервер ничего не уходит', async () => {
