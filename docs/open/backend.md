@@ -74,12 +74,10 @@ NestJS 12, 2026-10-24): `src/api/memory-throttle-storage.ts` заменял шт
 
 **Даты в DTO, проверенные только регэкспом формы.** С 2026-10-26 есть валидатор
 настоящего календарного дня `IsCalendarDay` (`src/utils/calendar-day.ts`), он
-стоит на сроке задания, дате заметки сессии и `therapyStartDate`. Без него
-остались `AdminCalendarQueryDto.from/to` (`src/booking/booking-calendar-admin.dto.ts`,
-`@Matches(/^\d{4}-\d{2}-\d{2}$/)` пропускает `2026-02-31`) и момент
-`SessionInfoDto.nextSession` (день внутри `DAY_OR_MOMENT_RE` не сверяется). Не
-сделано в починке заданий: ручка админская, `nextSession` — зона другого агента
-(даты встреч), правило №20.
+стоит на сроке задания, дате заметки сессии, `therapyStartDate` и
+`AdminCalendarQueryDto.from/to`. Без него остался момент
+`SessionInfoDto.nextSession` (день внутри `DAY_OR_MOMENT_RE` не сверяется): зона
+другого агента (даты встреч), правило №20.
 
 **Нечитаемые шифрованные данные — остаток после D-8** (проба `encryptionReadable`,
 `src/utils/crypto-record.ts`):
