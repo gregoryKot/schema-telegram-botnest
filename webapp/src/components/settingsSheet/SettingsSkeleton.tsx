@@ -14,7 +14,7 @@ export function SettingsSkeleton({ onClose }: { onClose: () => void }) {
     <>
       <div className="ds-sheet-head">
         <button type="button" className="ds-back" onClick={onClose}>← Закрыть</button>
-        <Skeleton width={150} height={26} />
+        <div className="ds-h2" aria-hidden><Skeleton width={150} height={26} /></div>
       </div>
       <div className="st-body" aria-busy="true" data-skeleton="settings">
         <div className="settings-sidenav" aria-hidden>
