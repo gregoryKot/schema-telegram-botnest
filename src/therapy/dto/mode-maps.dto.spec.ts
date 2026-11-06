@@ -28,6 +28,12 @@ describe('CustomModeDto / CreateModeMapDto — слабые поля-строк�
       errorsFor(CreateModeMapDto, { kind: 'unknown' }),
     ).resolves.toEqual([]);
   });
+
+  it('новые типы карт concept и free проходят (#963)', async () => {
+    for (const kind of ['concept', 'free']) {
+      await expect(errorsFor(CreateModeMapDto, { kind })).resolves.toEqual([]);
+    }
+  });
 });
 
 describe('UpdateModeMapDto', () => {

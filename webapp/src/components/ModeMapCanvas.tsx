@@ -27,6 +27,7 @@ import { Dropdown } from './Dropdown';
 import { DownloadMenu } from './modeMap/DownloadMenu';
 import { useHubDrag } from './modeMap/useHubDrag';
 import { useGenerateFromConcept } from './modeMap/useGenerateFromConcept';
+import { ConceptSyncLine } from './modeMap/ConceptSyncLine';
 import { CanvasEmpty } from './modeMap/CanvasEmpty';
 import { useCanvasSpace } from './modeMap/useCanvasSpace';
 
@@ -67,11 +68,9 @@ export function ModeMapCanvas({ clientId, mapId, kind, nodes, edges, setNodes, s
   const [dlOpen, setDlOpen] = useState(false);
   const [keysOpen, setKeysOpen] = useState(false);
   const [menu, setMenu] = useState<{ x: number; y: number; items: MenuItem[] } | null>(null);
-  const tplWrapRef = useRef<HTMLDivElement>(null);
-  const keysWrapRef = useRef<HTMLDivElement>(null);
+  const tplWrapRef = useRef<HTMLDivElement>(null); const keysWrapRef = useRef<HTMLDivElement>(null);
 
-  // Desktop (fine pointer) — keyboard hints only make sense there
-  const isDesktop = typeof window !== 'undefined' && window.matchMedia('(min-width: 900px) and (pointer: fine)').matches;
+  const isDesktop = typeof window !== 'undefined' && window.matchMedia('(min-width: 900px) and (pointer: fine)').matches; // клавиши — только с мышью
 
   const toggleLegend = useCallback(() => {
     setShowLegend(s => { localStorage.setItem('modemap_legend', s ? '0' : '1'); return !s; });
@@ -291,6 +290,7 @@ export function ModeMapCanvas({ clientId, mapId, kind, nodes, edges, setNodes, s
   return (
     <div className="mm2-canvas" style={{ flex: 1, position: 'relative', background: 'var(--surface)' }}>
       <div className="mm2-status">
+        <ConceptSyncLine onAddToMap={fromConcept.generate} />
         {fromConcept.failed ? <span role="alert" className="is-err">Не получилось собрать схему из концептуализации</span>
           : <SaveStatusLine status={saveStatus} savedAt={savedAt} onRetry={onRetrySave} align="right" />}
       </div>

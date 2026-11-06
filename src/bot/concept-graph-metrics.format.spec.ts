@@ -12,6 +12,8 @@ const base: ConceptGraphMetrics = {
   fullscreen30: 0,
   saveRetry30: 0,
   brief30: 0,
+  syncToMap30: 0,
+  syncFromMap30: 0,
 };
 
 describe('formatConceptGraphMetrics', () => {
@@ -119,5 +121,24 @@ describe('formatConceptGraphMetrics', () => {
     expect(text).not.toContain('Пока никто');
     expect(text).toContain('Повторяли сохранение после ошибки 2 раз');
     expect(text).not.toMatch(/NaN|undefined|null/);
+  });
+
+  it('связь холста с полями (#963): обе строки, только когда было', () => {
+    const text = formatConceptGraphMetrics({
+      ...base,
+      syncToMap30: 3,
+      syncFromMap30: 12,
+    });
+    expect(text).not.toContain('Пока никто');
+    expect(text).toContain('Дописано на карту из полей: 3');
+    expect(text).toContain('Дописано в концептуализацию с холста: 12');
+    const onlyFrom = formatConceptGraphMetrics({ ...base, syncFromMap30: 1 });
+    expect(onlyFrom).toContain('Дописано в концептуализацию с холста: 1');
+    expect(onlyFrom).not.toContain('Дописано на карту');
+    expect(onlyFrom).not.toMatch(/NaN|undefined|null|полей: 0/);
+  });
+
+  it('пустая БД не упоминает дописывание', () => {
+    expect(formatConceptGraphMetrics({ ...base })).not.toContain('Дописано');
   });
 });

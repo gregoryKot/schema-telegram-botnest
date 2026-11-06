@@ -73,11 +73,11 @@ export const getModeMapTips = (form: AddressForm): Tip[] =>
   (_tipsCache[form] ??= buildModeMapTips((ty, vy) => (form === 'vy' ? vy : ty)));
 export const useModeMapTips = (): Tip[] => getModeMapTips(useAddressForm());
 /** Pick `n` random tips relevant to the map kind (Fisher–Yates, no repeats). */
-export function pickTips(tips: Tip[], kind: ModeMapKind, n: number, exclude: string[] = []): string[] {
+export function pickTips(tips: Tip[], mapKind: ModeMapKind, n: number, exclude: string[] = []): string[] {
+  const kind = mapKind === 'concept' || mapKind === 'free' ? 'personality' : mapKind; // портрет режимов целиком — советы карты режимов
   const pool = tips
     .filter(t => !t.kind || t.kind === kind)
-    .map(t => t.text)
-    .filter(t => !exclude.includes(t));
+    .map(t => t.text).filter(t => !exclude.includes(t));
   for (let i = pool.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [pool[i], pool[j]] = [pool[j], pool[i]];

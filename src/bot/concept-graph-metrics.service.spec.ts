@@ -11,6 +11,8 @@ function makeService(opts: {
   fullscreen?: number;
   saveRetry?: number;
   brief?: number;
+  syncToMap?: number;
+  syncFromMap?: number;
   groups?: Array<{ userId: bigint | null }>;
 }) {
   const byName: Record<string, number> = {
@@ -21,6 +23,8 @@ function makeService(opts: {
     concept_graph_fullscreen: opts.fullscreen ?? 0,
     concept_save_retry: opts.saveRetry ?? 0,
     concept_brief_open: opts.brief ?? 0,
+    concept_sync_to_map: opts.syncToMap ?? 0,
+    concept_sync_from_map: opts.syncFromMap ?? 0,
   };
   const count = jest.fn(({ where }: { where: { name: string } }) =>
     Promise.resolve(byName[where.name]),
@@ -58,6 +62,8 @@ describe('ConceptGraphMetricsService', () => {
       fullscreen30: 5,
       saveRetry30: 0,
       brief30: 0,
+      syncToMap30: 0,
+      syncFromMap30: 0,
     });
   });
 
@@ -97,6 +103,8 @@ describe('ConceptGraphMetricsService', () => {
       fullscreen30: 0,
       saveRetry30: 0,
       brief30: 0,
+      syncToMap30: 0,
+      syncFromMap30: 0,
     });
     await expect(service.render()).resolves.toContain(
       'Переносили схему случая на холст 7 раз',
@@ -114,6 +122,8 @@ describe('ConceptGraphMetricsService', () => {
       fullscreen30: 6,
       saveRetry30: 0,
       brief30: 0,
+      syncToMap30: 0,
+      syncFromMap30: 0,
     });
     await expect(service.render()).resolves.toContain(
       'Разворачивали схему на весь экран 6 раз',
@@ -131,10 +141,28 @@ describe('ConceptGraphMetricsService', () => {
       fullscreen30: 0,
       saveRetry30: 3,
       brief30: 0,
+      syncToMap30: 0,
+      syncFromMap30: 0,
     });
     await expect(service.render()).resolves.toContain(
       'Повторяли сохранение после ошибки 3 раз',
     );
+  });
+
+  it('связь холста с полями (#963): оба направления считаются отдельно и видны в /stats', async () => {
+    const { service, count } = makeService({ syncToMap: 4, syncFromMap: 9 });
+    await expect(service.getMetrics()).resolves.toMatchObject({
+      opens30: 0,
+      canvasOpen30: 0,
+      syncToMap30: 4,
+      syncFromMap30: 9,
+    });
+    expect(count).toHaveBeenCalledWith({
+      where: { name: 'concept_sync_from_map', createdAt: { gte: SINCE } },
+    });
+    const text = await service.render();
+    expect(text).toContain('Дописано на карту из полей: 4');
+    expect(text).toContain('Дописано в концептуализацию с холста: 9');
   });
 
   it('терапевты — distinct по userId, анонимная строка (null) не в счёт', async () => {
@@ -166,6 +194,8 @@ describe('ConceptGraphMetricsService', () => {
       fullscreen30: 0,
       saveRetry30: 0,
       brief30: 0,
+      syncToMap30: 0,
+      syncFromMap30: 0,
     });
     const text = await service.render();
     expect(text).toContain('Пока никто из терапевтов не открывал');
