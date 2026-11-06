@@ -230,7 +230,7 @@ describe('cabinet.css: примитивы волны 2 (#906)', () => {
     expect(count).toContain('color: inherit');
     expect(decls(top, '.ds-page > .ds-seg')).toContain('align-self: flex-start');
   });
-  it('поля: поиск и компактное, 16px на телефоне, resize: none остаётся', () => {
+  it('поля: поиск и компактное, 16px под пальцем (и на iPad), resize: none остаётся', () => {
     expect(decls(top, '.ds-input--search')).toContain('height: 40px');
     expect(decls(top, '.ds-input--search')).toContain('border-radius: 20px');
     expect(decls(tap, '.ds-input--search')).toContain('height: 44px');
@@ -238,8 +238,8 @@ describe('cabinet.css: примитивы волны 2 (#906)', () => {
     expect(decls(top, '.ds-input--sm')).toContain('width: auto');
     expect(decls(top, '.ds-input--sm')).toContain('height: 40px');
     expect(decls(tap, '.ds-input--sm')).toContain('height: 44px');
-    expect(decls(phone, '.ds-input')).toContain('font-size: 16px');
-    expect(decls(phone, '.ds-textarea')).toContain('font-size: 16px');
+    expect(decls(tap, '.ds-input')).toContain('font-size: 16px');
+    expect(decls(tap, '.ds-textarea')).toContain('font-size: 16px');
     expect(decls(top, '.ds-textarea')).toContain('resize: none');
   });
   it('чип-переключатель: 36 → 44, выбранный — tint по --h без tone-fill', () => {

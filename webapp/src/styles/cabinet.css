@@ -285,7 +285,6 @@ button.ds-list-row, a.ds-list-row { width: 100%; box-sizing: border-box; border:
   .ds-seg--scroll { display: flex; width: 100%; box-sizing: border-box; }
   .ds-seg--scroll > .ds-seg-btn { flex: 0 0 auto; }
   .ds-seg--scroll::after { content: ''; flex: 0 0 20px; }
-  .ds-input, .ds-textarea { font-size: 16px; } /* iOS Safari увеличивает экран при фокусе на поле мельче 16px */
 }
 /* Видимая высота: в Safari 100vh выше экрана с открытой адресной строкой. Без dvh остаётся 100vh. */
 @supports (height: 100dvh) { .ds-page--fit { --fit-h: calc(100dvh - var(--safe-top) - var(--safe-bottom) - 640px); } }
@@ -299,6 +298,7 @@ button.ds-list-row, a.ds-list-row { width: 100%; box-sizing: border-box; border:
   .ds-btn--sm { height: 44px; }
   .ds-input--search { height: 44px; border-radius: 22px; }
   .ds-input--sm { height: 44px; }
+  .ds-input, .ds-textarea { font-size: 16px; } /* iOS Safari (и на iPad) увеличивает экран при фокусе на поле мельче 16px */
   .ds-chip--toggle { min-height: 44px; }
   .ds-link { min-height: 44px; display: inline-flex; align-items: center; }
   .ds-link--inline { display: inline; min-height: 0; }
