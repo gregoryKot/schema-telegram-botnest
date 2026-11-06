@@ -900,7 +900,7 @@
   "src/bot/booking-retention-metrics.format.ts": 70,
   "src/bot/booking-retention-metrics.service.ts": 53,
   "src/bot/bot.activity-streak.ts": 136,
-  "src/bot/bot.admin-stats.service.ts": 231,
+  "src/bot/bot.admin-stats.service.ts": 217,
   "src/bot/bot.analytics.service.ts": 95,
   "src/bot/bot.client-overview.service.ts": 127,
   "src/bot/bot.insight-metrics.ts": 213,
