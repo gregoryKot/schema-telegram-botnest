@@ -31,6 +31,8 @@ export interface PlainBooking extends PriceFields {
   calDavUid?: string | null;
   /** Эффекты подтверждения доведены до конца — onConfirmed ничего не делает. */
   confirmEffectsDoneAt?: Date | null;
+  /** Ссылку этой брони дала заменённая комната клиента — повтор DM скажет об этом. */
+  roomReplacedAt?: Date | null;
 }
 
 /** All side-effects of the booking lifecycle: Telegram, CalDAV, reminders. */
