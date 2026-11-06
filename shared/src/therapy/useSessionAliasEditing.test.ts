@@ -149,16 +149,26 @@ describe('useSessionAliasEditing — даты сессий', () => {
     const { result, updateSessionInfo } = setup({ fail: true });
     let ok = true;
     await act(async () => {
-      ok = await result.current.edit.saveSessionInfo({ therapyStartDate: '2026-01-01' });
+      ok = await result.current.edit.saveSessionInfo({
+        therapyStartDate: '2026-01-01',
+      });
     });
     expect(ok).toBe(false);
-    expect(result.current.edit.sessionInfoError).toBe('Не удалось сохранить дату');
-    act(() => { vi.advanceTimersByTime(60_000); });
+    expect(result.current.edit.sessionInfoError).toBe(
+      'Не удалось сохранить дату',
+    );
+    act(() => {
+      vi.advanceTimersByTime(60_000);
+    });
     expect(vi.getTimerCount()).toBe(0); // хук не заводит таймеров — гаснуть после размонтирования нечему
-    expect(result.current.edit.sessionInfoError).toBe('Не удалось сохранить дату');
+    expect(result.current.edit.sessionInfoError).toBe(
+      'Не удалось сохранить дату',
+    );
 
     updateSessionInfo.mockResolvedValueOnce(undefined);
-    await act(async () => { await result.current.edit.saveSessionInfo({ therapyStartDate: null }); });
+    await act(async () => {
+      await result.current.edit.saveSessionInfo({ therapyStartDate: null });
+    });
     expect(result.current.edit.sessionInfoError).toBe('');
   });
 

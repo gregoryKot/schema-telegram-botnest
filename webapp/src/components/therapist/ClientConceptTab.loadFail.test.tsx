@@ -36,16 +36,17 @@ const SAVED = {
   updatedAt: new Date().toISOString(),
 };
 
-let detail: ClientDetail;
+// Хук наружу — для правки мимо разметки (поля закрыты, кнопок правки на экране нет).
+const handle: { current: ClientDetail | null } = { current: null };
 function Harness() {
-  detail = useClientDetail({ switchView: () => {}, setClients: () => {} });
+  const detail = useClientDetail({ switchView: () => {}, setClients: () => {} });
   const opened = useRef(false);
+  useEffect(() => { handle.current = detail; });
   useEffect(() => {
     if (opened.current) return;
     opened.current = true;
     void detail.openClient(CLIENT as never);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [detail]);
   if (!detail.selectedClient || detail.tabLoading) return <div>загрузка</div>;
   return <ClientConceptTab detail={detail} />;
 }
@@ -77,10 +78,10 @@ describe('ClientConceptTab: концептуализация не загрузи
     expect(screen.queryByText('Актуальные схемы')).toBeNull();
 
     vi.useFakeTimers();
-    act(() => { detail.patchConcept({ goals: '' }); detail.toggleSchemaId('defectiveness'); });
+    act(() => { handle.current!.patchConcept({ goals: '' }); handle.current!.toggleSchemaId('defectiveness'); });
     await act(async () => { await vi.advanceTimersByTimeAsync(3000); });
     expect(mockApi.saveConceptualization).not.toHaveBeenCalled();
-    expect(detail.saveStatus).toBe('idle');
+    expect(handle.current!.saveStatus).toBe('idle');
   });
 
   it('«Повторить» грузит заново; правка после него несёт сохранённые поля, а не пустые', async () => {
@@ -92,7 +93,7 @@ describe('ClientConceptTab: концептуализация не загрузи
     expect(screen.queryByText(FAILED)).toBeNull();
 
     vi.useFakeTimers();
-    act(() => { detail.patchConcept({ triggers: 'опоздания' }); });
+    act(() => { handle.current!.patchConcept({ triggers: 'опоздания' }); });
     await act(async () => { await vi.advanceTimersByTimeAsync(700); });
     expect(mockApi.saveConceptualization).toHaveBeenCalledTimes(1);
     const body = mockApi.saveConceptualization.mock.calls[0][1] as Record<string, unknown>;

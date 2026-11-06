@@ -142,7 +142,7 @@
   "shared/src/api/apiCacheRules.therapy.ts": 155,
   "shared/src/api/apiCacheRules.ts": 40,
   "shared/src/api/clientErrorReport.ts": 46,
-  "shared/src/api/humanizeError.ts": 55,
+  "shared/src/api/humanizeError.ts": 70,
   "shared/src/api/keepalive.ts": 19,
   "shared/src/api/practiceSessionsApi.ts": 19,
   "shared/src/api/ratingApi.ts": 79,

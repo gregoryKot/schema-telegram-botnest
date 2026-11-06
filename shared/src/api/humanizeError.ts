@@ -9,22 +9,29 @@ import { readErrorBody, type ErrorBodyInfo } from './readErrorBody';
 
 export const NO_CONNECTION_TEXT = 'Нет связи с сервером';
 export const SERVER_DOWN_TEXT = 'Сервер не ответил. Повторить можно чуть позже';
-export const TOO_MANY_TEXT = 'Слишком много попыток подряд. Повторить можно чуть позже';
-// 413 — тело больше потолка сервера (src/infra/body-limit.ts). Сервер пишет
-// «Слишком большой запрос» — по-русски, но не говорит, что делать, поэтому 413
-// разбирается раньше текста: у дневника и письма клиентского лимита нет.
-export const TOO_LARGE_TEXT = 'Текст слишком длинный — сервер его не принял. Сохранится, если сократить';
+export const TOO_MANY_TEXT =
+  'Слишком много попыток подряд. Повторить можно чуть позже';
+// 413 — тело больше потолка сервера (src/infra/body-limit.ts; край — карта
+// режимов и концептуализация на потолке DTO). Сервер пишет «Слишком большой
+// запрос» — по-русски, но не говорит, что делать, поэтому 413 — раньше текста.
+export const TOO_LARGE_TEXT =
+  'Текст слишком длинный — сервер его не принял. Сохранится, если сократить';
 
 export const HUMAN = /[А-Яа-яЁё]/; // есть кириллица — текст писали для человека
 // fetch отклоняется TypeError с текстом движка (Chrome, Safari, Firefox). Любой
 // другой TypeError — ошибка кода, а не сети: «нет связи» на нём было бы неправдой.
-const NETWORK = /failed to fetch|load failed|networkerror|network request failed/i;
+const NETWORK =
+  /failed to fetch|load failed|networkerror|network request failed/i;
 
 export function isNetworkError(err: unknown): boolean {
   return err instanceof TypeError && NETWORK.test(err.message);
 }
 
-export function humanizeResponseError(status: number, message: string | undefined, fallback: string): string {
+export function humanizeResponseError(
+  status: number,
+  message: string | undefined,
+  fallback: string,
+): string {
   if (status === 413) return TOO_LARGE_TEXT;
   if (message && HUMAN.test(message)) return message;
   if (status === 429) return TOO_MANY_TEXT;
@@ -34,8 +41,9 @@ export function humanizeResponseError(status: number, message: string | undefine
 
 // Статус — полем ошибки (`ApiError` сайта, `HttpStatusError` оценки): shared
 // не знает классов клиента, поэтому читает поле, а не instanceof.
-export function errorStatus(err: unknown): number | undefined {
-  const status = err instanceof Error ? (err as { status?: unknown }).status : undefined;
+function errorStatus(err: unknown): number | undefined {
+  const status =
+    err instanceof Error ? (err as { status?: unknown }).status : undefined;
   return typeof status === 'number' ? status : undefined;
 }
 
@@ -43,13 +51,20 @@ export function humanizeThrown(err: unknown, fallback: string): string {
   if (isNetworkError(err)) return NO_CONNECTION_TEXT;
   const message = err instanceof Error ? err.message : '';
   const status = errorStatus(err);
-  if (status !== undefined) return humanizeResponseError(status, message, fallback);
+  if (status !== undefined)
+    return humanizeResponseError(status, message, fallback);
   return HUMAN.test(message) ? message : fallback;
 }
 
 /** Разбор неуспешного ответа (readErrorBody) с текстом, готовым для экрана;
  *  `reason` — машинный код причины, если сервер его прислал. */
-export async function readHumanError(res: Response, fallback: string): Promise<ErrorBodyInfo> {
+export async function readHumanError(
+  res: Response,
+  fallback: string,
+): Promise<ErrorBodyInfo> {
   const body = await readErrorBody(res);
-  return { ...body, message: humanizeResponseError(res.status, body.message, fallback) };
+  return {
+    ...body,
+    message: humanizeResponseError(res.status, body.message, fallback),
+  };
 }

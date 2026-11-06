@@ -119,7 +119,11 @@ describe('createRatingApi.saveRating — границы классификаци
   });
 
   it('контроль: ответ сервера 200 — без пометки queued', async () => {
-    authedFetch.mockResolvedValue({ ok: true, status: 200, json: () => Promise.resolve({ ok: true, allDone: false }) });
+    authedFetch.mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: () => Promise.resolve({ ok: true, allDone: false }),
+    });
     const res = await makeApi().saveRating('safety', 5);
     expect(res.queued).toBeUndefined();
   });

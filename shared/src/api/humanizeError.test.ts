@@ -172,14 +172,24 @@ class StatusError extends Error {
 
 describe('humanizeThrown — ошибка со статусом', () => {
   it('5xx — «сервер не ответил», 429 — лимит, 413 — «текст слишком длинный»', () => {
-    expect(humanizeThrown(new StatusError(502, 'API error: 502'), FALLBACK)).toBe(SERVER_DOWN_TEXT);
-    expect(humanizeThrown(new StatusError(429, 'ThrottlerException'), FALLBACK)).toBe(TOO_MANY_TEXT);
-    expect(humanizeThrown(new StatusError(413, 'Слишком большой запрос'), FALLBACK)).toBe(TOO_LARGE_TEXT);
+    expect(
+      humanizeThrown(new StatusError(502, 'API error: 502'), FALLBACK),
+    ).toBe(SERVER_DOWN_TEXT);
+    expect(
+      humanizeThrown(new StatusError(429, 'ThrottlerException'), FALLBACK),
+    ).toBe(TOO_MANY_TEXT);
+    expect(
+      humanizeThrown(new StatusError(413, 'Слишком большой запрос'), FALLBACK),
+    ).toBe(TOO_LARGE_TEXT);
   });
 
   it('4xx: русский текст сервера — как есть, служебный английский — fallback', () => {
-    expect(humanizeThrown(new StatusError(400, 'Код не найден или истёк'), FALLBACK)).toBe('Код не найден или истёк');
-    expect(humanizeThrown(new StatusError(400, 'text must be a string'), FALLBACK)).toBe(FALLBACK);
+    expect(
+      humanizeThrown(new StatusError(400, 'Код не найден или истёк'), FALLBACK),
+    ).toBe('Код не найден или истёк');
+    expect(
+      humanizeThrown(new StatusError(400, 'text must be a string'), FALLBACK),
+    ).toBe(FALLBACK);
   });
 
   it('контроль: нечисловой status — не статус ответа', () => {
