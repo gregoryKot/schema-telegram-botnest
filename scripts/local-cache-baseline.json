@@ -6,6 +6,7 @@
     "app_theme": { "owner": "webapp/src/utils/theme.ts", "kind": "local" },
     "auth_seen": { "owner": "shared/src/auth/authSeen.ts", "kind": "local" },
     "booking_time_zone": { "owner": "webapp/src/components/booking/useClientTimeZone.ts", "kind": "local" },
+    "cabinet_screen_share": { "owner": "webapp/src/components/appShell/screenShareMode.ts", "kind": "local" },
     "celebrated_*": { "owner": "shared/src/utils/todayConstants.ts", "kind": "local" },
     "childhood_wheel_done": { "owner": "webapp/src/components/appShell/useBootstrapLoad.ts", "kind": "mirror", "source": "ChildhoodRating есть на сервере (api.getChildhoodRatings)" },
     "concept_brief_blocks": { "owner": "webapp/src/components/therapist/concept/useBriefBlocks.ts", "kind": "local" },

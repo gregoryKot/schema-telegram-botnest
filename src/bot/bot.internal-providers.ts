@@ -28,6 +28,7 @@ import { PracticeMetricsService } from './practice-metrics.service';
 import { ProfilePatternMetricsService } from './profile-pattern-metrics.service';
 import { QuizMetricsService } from './quiz-metrics.service';
 import { ScreenMetricsService } from './screen-metrics.service';
+import { ScreenShareMetricsService } from './screen-share-metrics.service';
 import { SessionCurrencyMetricsService } from './session-currency-metrics.service';
 import { SignupSourceMetricsService } from './signup-source-metrics.service';
 import { SiteInstallMetricsService } from './site-install-metrics.service';
@@ -59,6 +60,7 @@ export const INTERNAL_PROVIDERS = [
   ProfilePatternMetricsService,
   QuizMetricsService,
   ScreenMetricsService,
+  ScreenShareMetricsService,
   SessionCurrencyMetricsService,
   SignupSourceMetricsService,
   SiteInstallMetricsService,

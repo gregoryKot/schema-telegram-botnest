@@ -150,6 +150,10 @@ export const CONCEPT_BRIEF_OPEN_EVENT = 'concept_brief_open';
 export const CONCEPT_SYNC_TO_MAP_EVENT = 'concept_sync_to_map';
 export const CONCEPT_SYNC_FROM_MAP_EVENT = 'concept_sync_from_map';
 
+// «Показ экрана» в кабинете терапевта: сайдбар прячет список клиентов на время демонстрации экрана. Только сайт, без меты
+// (правило №7); шлётся при ВКЛЮЧЕНИИ, выключение не шлётся. Allow-list — src/analytics/cabinet-events.constants.ts.
+export const CABINET_SCREEN_SHARE_ON_EVENT = 'cabinet_screen_share_on';
+
 // ── Разбор случая («Что это было») ─────────────────────────────────────────
 // Новая точка входа: человек за три минуты разбирает один случай и получает
 // первую запись дневника, приметы для карточки и метку на карте себя.

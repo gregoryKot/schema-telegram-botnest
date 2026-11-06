@@ -21,6 +21,7 @@ import {
   SIGNUP_SOURCES,
   PROFILE_PATTERN_KINDS,
 } from './analytics.constants';
+import { CABINET_EVENTS } from './cabinet-events.constants';
 import { CONCEPT_EVENTS } from './concept-events.constants';
 import { CRISIS_SURFACES as CRISIS_SURFACES_DIRECT } from './crisis-surfaces.constants';
 import {
@@ -55,6 +56,7 @@ const REGISTRIES: Record<string, readonly string[]> = {
   GAME_CTA_PLACES,
   GAME_ENTRY_SOURCES,
   CONCEPT_EVENTS,
+  CABINET_EVENTS,
 };
 
 describe('реестры analytics.constants: без дублей и пустых значений', () => {
@@ -81,6 +83,16 @@ describe('реестры analytics.constants: без дублей и пусты�
       for (const v of values) expect(v).toMatch(/^[a-z][a-z0-9_]*$/);
     },
   );
+});
+
+describe('CABINET_EVENTS ⊆ ANALYTICS_EVENTS', () => {
+  it('«Показ экрана» есть в allow-list и закрыт для анонимов', () => {
+    expect(CABINET_EVENTS).toContain('cabinet_screen_share_on');
+    for (const name of CABINET_EVENTS) {
+      expect(ANALYTICS_EVENTS).toContain(name);
+      expect(PUBLIC_ANALYTICS_EVENTS).not.toContain(name);
+    }
+  });
 });
 
 describe('CONCEPT_EVENTS ⊆ ANALYTICS_EVENTS', () => {

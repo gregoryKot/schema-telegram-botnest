@@ -22,6 +22,7 @@ import { SiteInstallMetricsService } from '../../src/bot/site-install-metrics.se
 import { ScreenMetricsService } from '../../src/bot/screen-metrics.service';
 import { ProfilePatternMetricsService } from '../../src/bot/profile-pattern-metrics.service';
 import { ConceptGraphMetricsService } from '../../src/bot/concept-graph-metrics.service';
+import { ScreenShareMetricsService } from '../../src/bot/screen-share-metrics.service';
 import { AuthHealthMetricsService } from '../../src/bot/auth-health-metrics.service';
 import { LoginTicketMetricsService } from '../../src/bot/login-ticket-metrics.service';
 import { ClientErrorMetricsService } from '../../src/bot/client-error-metrics.service';
@@ -59,6 +60,7 @@ export function buildStatsReport(prisma: PrismaService): StatsReportService {
     new ScreenMetricsService(prisma),
     new ProfilePatternMetricsService(prisma),
     new ConceptGraphMetricsService(prisma),
+    new ScreenShareMetricsService(prisma),
     new AuthHealthMetricsService(prisma),
     new LoginTicketMetricsService(prisma),
     new ClientErrorMetricsService(prisma),
