@@ -1,47 +1,34 @@
 import type { Dispatch, SetStateAction } from 'react';
 import type { MyCardsKind } from './useMyCards';
 import type { SchemaDiaryEntry, ModeDiaryEntry } from '../types';
+import { deleteDiaryEntry, type DiaryDeleteApi } from '../diary/diaryDelete';
 
-/** Срез api площадки: удаление записей дневника. */
-export interface PatternDiaryDeleteApi {
-  deleteSchemaDiary: (id: number) => Promise<unknown>;
-  deleteModeDiary: (id: number) => Promise<unknown>;
-}
+/** Срез api площадки: удаление записей дневника (тот же, что у «Записей»). */
+export type PatternDiaryDeleteApi = DiaryDeleteApi;
 
-// Удаление записи дневника из PatternSheet — вынесено (правило №10, файл
-// был у потолка). Оптимистично убирает запись, при провале API возвращает
-// обратно: иначе запись молча пропадала из UI навсегда, хотя осталась на
-// сервере (revert для optimistic update).
+// Удаление записи дневника из PatternSheet — та же механика, что в «Записях»
+// (правило №3, shared/src/diary/diaryDelete.ts). Раньше удаление было
+// оптимистичным: запись пропадала, на отказе молча возвращалась, текст сбоя
+// в консоль — человек видел «удалил, а она снова тут» без единого слова, и
+// 404 (записи уже нет) тоже считался сбоем. Теперь запись уходит из списка
+// только после ответа сервера; отказ пробрасывается — кнопка «Удалить
+// навсегда» (DeleteBtn → useDeleteAction) показывает deleteFailedText, запись
+// остаётся на месте.
 export function usePatternEntryDelete({
   api,
   kind,
-  schemaEntries,
   setSchemaEntries,
-  modeEntries,
   setModeEntries,
 }: {
   api: PatternDiaryDeleteApi;
   kind: MyCardsKind;
-  schemaEntries: SchemaDiaryEntry[];
   setSchemaEntries?: Dispatch<SetStateAction<SchemaDiaryEntry[]>>;
-  modeEntries: ModeDiaryEntry[];
   setModeEntries?: Dispatch<SetStateAction<ModeDiaryEntry[]>>;
 }) {
-  return function deleteEntry(entryId: number) {
-    if (kind === 'schema') {
-      const removed = schemaEntries.find((e) => e.id === entryId);
+  return async function deleteEntry(entryId: number): Promise<void> {
+    await deleteDiaryEntry(api, kind, entryId);
+    if (kind === 'schema')
       setSchemaEntries?.((prev) => prev.filter((e) => e.id !== entryId));
-      api.deleteSchemaDiary(entryId).catch((e) => {
-        console.error('deleteSchemaDiary failed', e);
-        if (removed) setSchemaEntries?.((prev) => [removed, ...prev]);
-      });
-    } else {
-      const removed = modeEntries.find((e) => e.id === entryId);
-      setModeEntries?.((prev) => prev.filter((e) => e.id !== entryId));
-      api.deleteModeDiary(entryId).catch((e) => {
-        console.error('deleteModeDiary failed', e);
-        if (removed) setModeEntries?.((prev) => [removed, ...prev]);
-      });
-    }
+    else setModeEntries?.((prev) => prev.filter((e) => e.id !== entryId));
   };
 }

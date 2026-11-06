@@ -318,7 +318,7 @@
   "shared/src/pattern/patternStatus.ts": 31,
   "shared/src/pattern/patternTerms.ts": 14,
   "shared/src/pattern/useMyCards.ts": 105,
-  "shared/src/pattern/usePatternEntryDelete.ts": 47,
+  "shared/src/pattern/usePatternEntryDelete.ts": 34,
   "shared/src/pattern/usePatternStatus.ts": 24,
   "shared/src/pattern/weekPatternText.ts": 95,
   "shared/src/phraseCheck/criteria.ts": 124,
