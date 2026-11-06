@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
 import { BookingConfirmedView } from '../components/booking/BookingConfirmedView';
 import { BookingPaidPending } from '../components/booking/BookingPaidPending';
-import { BookingManageLinkIncomplete, BookingPaidAccepted, BookingPaidLoadFailed, isManageLink } from '../components/booking/BookingPaidOutcomes';
+import { BookingManageLinkIncomplete, BookingPaidAccepted, BookingPaidLoadFailed } from '../components/booking/BookingPaidOutcomes';
 import { BookingPaidSkeleton } from '../components/booking/BookingPaidSkeleton';
 import { BookingCancelledView, BookingCompletedView } from '../components/booking/BookingEndedViews';
 import { useBookingByToken } from '../components/booking/useBookingByToken';
-import { paidPhase } from '../components/booking/paidPageModel';
+import { isManageLink, paidPhase } from '../components/booking/paidPageModel';
 import { page, h1, sub, backLink } from '../components/booking/bookingPageStyles';
 import { icon } from '../components/booking/bookingPaidStyles';
 import { Btn } from '../components/landing-kit';

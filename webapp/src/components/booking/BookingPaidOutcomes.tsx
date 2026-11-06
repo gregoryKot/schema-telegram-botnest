@@ -5,6 +5,7 @@ import { h1, sub } from './bookingPageStyles';
 import { icon, ghostBtn } from './bookingPaidStyles';
 import { Btn } from '../landing-kit';
 import type { BookingLoadError } from './bookingLoadError';
+import { isManageLink } from './paidPageModel';
 /**
  * Оплата принята, но данных о встрече нет: человек пришёл с подписанного
  * редиректа без токена, либо статус брони не знаком странице. Сюда НЕ попадает
@@ -20,9 +21,6 @@ export function BookingPaidAccepted() {
     </>
   );
 }
-
-/** Ссылка управления записью (календарь, .ics, «Отправить себе»), а не возврат с оплаты. */
-export const isManageLink = () => window.location.pathname.startsWith('/booking/manage');
 
 /**
  * /booking/manage без ?token=: ссылку обрезал мессенджер или страницу
