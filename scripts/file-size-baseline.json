@@ -856,7 +856,7 @@
   "src/booking/booking-price.dto.ts": 27,
   "src/booking/booking-pricing-path.ts": 52,
   "src/booking/booking-public-view.ts": 34,
-  "src/booking/booking-reminders.ts": 66,
+  "src/booking/booking-reminders.ts": 69,
   "src/booking/booking-retention.service.ts": 75,
   "src/booking/booking-slot-lock.ts": 25,
   "src/booking/booking.availability.ts": 73,

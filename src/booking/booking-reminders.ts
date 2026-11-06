@@ -57,10 +57,13 @@ export async function remindWindow(
     try {
       await d.sendAdmin(`⏰ <b>Напоминание: сессия ${when}</b>`, b);
     } catch (e) {
-      d.logger.error(`${field} reminder lost for booking ${b.id}: ${String(e)}`);
+      d.logger.error(
+        `${field} reminder lost for booking ${b.id}: ${String(e)}`,
+      );
     }
   }
   // «Захвачено», а не «отправлено»: доставку каналы пишут в лог сами.
-  if (claimedCount) d.logger.log(`Claimed ${claimedCount} ${field} reminder(s)`);
+  if (claimedCount)
+    d.logger.log(`Claimed ${claimedCount} ${field} reminder(s)`);
   return claimedCount;
 }

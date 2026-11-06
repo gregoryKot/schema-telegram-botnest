@@ -94,7 +94,9 @@ describe('remindWindow — не больше одного напоминания
       .mockRejectedValueOnce(new Error('send failed'))
       .mockResolvedValue(undefined);
     const { d } = deps(prisma, failing as never);
-    const error = jest.spyOn(d.logger, 'error').mockImplementation(() => undefined);
+    const error = jest
+      .spyOn(d.logger, 'error')
+      .mockImplementation(() => undefined);
 
     await expect(remindWindow(d, SOON(), FIELD, 'завтра')).resolves.toBe(2);
     expect(failing).toHaveBeenCalledTimes(2); // вторая бронь не застряла за первой
