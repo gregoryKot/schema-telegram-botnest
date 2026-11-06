@@ -18,6 +18,7 @@ function makeDeps(settings: Record<string, unknown> | null, now: number) {
       cancel: jest.fn().mockResolvedValue(undefined),
       schedule: jest.fn().mockResolvedValue(undefined),
     },
+    analytics: { track: jest.fn().mockResolvedValue(undefined) },
     now: () => now,
   };
 }
@@ -32,16 +33,16 @@ function makeCtx() {
 describe('snoozeSendAt', () => {
   it('вне тихих часов — ровно через час', () => {
     const now = Date.parse('2026-10-11T11:30:00Z'); // 14:30 МСК
-    expect(snoozeSendAt(now, 'Europe/Moscow', 22, 8).toISOString()).toBe(
-      '2026-10-11T12:30:00.000Z',
-    );
+    const { at, quietShift } = snoozeSendAt(now, 'Europe/Moscow', 22, 8);
+    expect(at.toISOString()).toBe('2026-10-11T12:30:00.000Z');
+    expect(quietShift).toBe(false);
   });
 
   it('час попал в тишину — к её концу, 08:00 по поясу человека', () => {
     const now = Date.parse('2026-10-11T18:30:00Z'); // 21:30 МСК → 22:30 в тишине
-    expect(snoozeSendAt(now, 'Europe/Moscow', 22, 8).toISOString()).toBe(
-      '2026-10-12T05:00:00.000Z',
-    );
+    const { at, quietShift } = snoozeSendAt(now, 'Europe/Moscow', 22, 8);
+    expect(at.toISOString()).toBe('2026-10-12T05:00:00.000Z');
+    expect(quietShift).toBe(true);
   });
 });
 
@@ -61,6 +62,20 @@ describe('snoozeReminder', () => {
       new Date('2026-10-11T12:30:00Z'),
     );
     expect(ctx.editMessageText).toHaveBeenCalledWith('⏰ Напомню в 18:00');
+  });
+
+  // Правило №8: кнопку видно в /stats (notify-queue-metrics.*) — событие пишет
+  // бот после записи, с quietShift: по нему отчёт отличает строки бота от клиента.
+  it('событие reminder_snoozed — после постановки в очередь, с quietShift', async () => {
+    const deps = makeDeps(null, Date.parse('2026-10-11T18:30:00Z'));
+    await snoozeReminder(deps, makeCtx() as never, 7);
+    expect(deps.analytics.track).toHaveBeenCalledWith(7n, 'reminder_snoozed', {
+      quietShift: true,
+    });
+    const [scheduled] =
+      deps.notificationService.schedule.mock.invocationCallOrder;
+    const [tracked] = deps.analytics.track.mock.invocationCallOrder;
+    expect(scheduled).toBeLessThan(tracked);
   });
 
   it('двойной тап («не изменено») — успех, второго сообщения нет', async () => {
@@ -87,6 +102,8 @@ describe('snoozeReminder', () => {
     expect(err).toBeInstanceOf(SnoozeFailed);
     expect(err).toMatchObject({ form: 'vy', message: 'db down' });
     expect(ctx.editMessageText).not.toHaveBeenCalled();
+    // Не отложили — не считаем: иначе /stats показал бы нажатия без напоминаний.
+    expect(deps.analytics.track).not.toHaveBeenCalled();
   });
 });
 

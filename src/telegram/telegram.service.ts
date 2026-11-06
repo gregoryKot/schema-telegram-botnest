@@ -91,7 +91,8 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
 
   private snoozeDeps() {
     const { accountService, botService, notificationService } = this;
-    return { accountService, botService, notificationService, now: Date.now };
+    const analytics = this.analyticsEvents;
+    return { accountService, botService, notificationService, analytics };
   }
 
   /** Форма обращения по сырому telegramId — привязка общего помощника. */
@@ -203,8 +204,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
         await ctx.reply('OK');
       } catch (err) {
         this.logger.error('ping command failed', err);
-        // Весь ответ команды — этот reply; сбой — сеть или Telegram, повтор
-        // доходит чаще, чем молчание, неотличимое от «бот лежит».
+        // Весь ответ — этот reply: повтор доходит чаще, чем молчание.
         await ctx.reply('OK').catch(() => null);
       }
     });

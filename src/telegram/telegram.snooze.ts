@@ -5,10 +5,14 @@
 // через час» уходил ДО записи: при сбое человек видел обещание, а следом —
 // ошибку. Теперь тост пустой (он только гасит спиннер), а итог «⏰ Напомню в
 // 15:30» — правкой сообщения ПОСЛЕ того, как напоминание встало в очередь.
+//
+// Событие reminder_snoozed — после записи (правило №8): /stats показывает,
+// сколько раз отложили и сколько отложенных пришло (notify-queue-metrics.*).
 import type { Context } from 'telegraf';
 import type { AccountService } from '../bot/account.service';
 import type { BotService } from '../bot/bot.service';
 import type { NotificationService } from '../notification/notification.service';
+import type { AnalyticsService } from '../analytics/analytics.service';
 import {
   normalizeAddressForm,
   t,
@@ -24,7 +28,8 @@ export interface SnoozeDeps {
   accountService: Pick<AccountService, 'canonicalUserId'>;
   botService: Pick<BotService, 'getUserSettings'>;
   notificationService: Pick<NotificationService, 'cancel' | 'schedule'>;
-  now: () => number;
+  analytics: Pick<AnalyticsService, 'track'>;
+  now?: () => number;
 }
 
 /** Через час, а если час попал в тихие часы человека — к их концу. */
@@ -33,10 +38,12 @@ export function snoozeSendAt(
   tz: string,
   quietStart: number,
   quietEnd: number,
-): Date {
+): { at: Date; quietShift: boolean } {
   const at = new Date(nowMs + SNOOZE_MS);
-  if (!isQuietHours(tz, quietStart, quietEnd, at)) return at;
-  return nextQuietEnd(tz, quietEnd, at);
+  if (!isQuietHours(tz, quietStart, quietEnd, at)) {
+    return { at, quietShift: false };
+  }
+  return { at: nextQuietEnd(tz, quietEnd, at), quietShift: true };
 }
 
 /**
@@ -77,8 +84,8 @@ export async function snoozeReminder(
   const userId = await deps.accountService.canonicalUserId(rawId);
   const settings = await deps.botService.getUserSettings(userId);
   const tz = settings?.notifyTimezone ?? 'Europe/Moscow';
-  const sendAt = snoozeSendAt(
-    deps.now(),
+  const { at: sendAt, quietShift } = snoozeSendAt(
+    (deps.now ?? Date.now)(),
     tz,
     settings?.notifyQuietStart ?? 22,
     settings?.notifyQuietEnd ?? 8,
@@ -89,6 +96,7 @@ export async function snoozeReminder(
   } catch (err) {
     throw new SnoozeFailed(normalizeAddressForm(settings?.addressForm), err);
   }
+  void deps.analytics.track(userId, 'reminder_snoozed', { quietShift });
   const done = `⏰ Напомню в ${localTimeLabel(sendAt, tz)}`;
   // Тост пустой — итог обязан дойти: не вышло поправить сообщение (удалено,
   // не редактируется) — новым сообщением. «Не изменено» — двойной тап, успех.
