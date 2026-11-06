@@ -30,6 +30,9 @@ export interface StubApiHandle {
   ratingsByDay: Map<string, Record<string, number>>;
   /** Связь с терапевтом (stubTherapy.ts): состояние «подключён» живёт здесь. */
   therapy: StubTherapyHandle;
+  /** Ответ ручке для одного теста поверх FIXTURES чистого клиента (та же
+   *  форма сервера, данные, которых у чистого аккаунта нет): ключ как в FIXTURES. */
+  overrides: Map<string, unknown>;
 }
 
 /**
@@ -59,28 +62,26 @@ export async function stubApi(
   // чтения: /api/ratings отдаёт день, /api/history — дни с оценками.
   const ratingsByDay = new Map<string, Record<string, number>>();
   const therapy: StubTherapyHandle = { connected: false };
+  const overrides = new Map<string, unknown>();
 
   await page.route('**/api/**', async (route) => {
     const req = route.request();
     const url = new URL(req.url());
     const key = `${req.method()} ${url.pathname}`;
     const reply = (status: number, body: unknown) =>
-      route.fulfill(
-        body === null
-          ? { status }
-          : {
-              status,
-              contentType: 'application/json',
-              body: JSON.stringify(body),
-            },
-      );
+      body === null
+        ? route.fulfill({ status })
+        : route.fulfill({
+            status,
+            contentType: 'application/json',
+            body: JSON.stringify(body),
+          });
+    // Тело ошибки Nest (HttpException): { message, error, statusCode }.
+    const nestError = (statusCode: number, error: string, message: string) =>
+      reply(statusCode, { message, error, statusCode });
 
     if (session === 'anonymous' && key === 'POST /api/auth/refresh')
-      return reply(401, {
-        message: 'No refresh token',
-        error: 'Unauthorized',
-        statusCode: 401,
-      });
+      return nestError(401, 'Unauthorized', 'No refresh token');
     // Связь с терапевтом — состояние в памяти теста (подключился → отключился).
     if (await handleTherapyRoute(route, therapy)) return;
     if (await handlePublicRoute(key, url, reply)) return;
@@ -124,6 +125,7 @@ export async function stubApi(
     if (key === 'POST /api/client-errors')
       return route.fulfill({ status: 204 });
 
+    if (overrides.has(key)) return reply(200, overrides.get(key));
     if (key in FIXTURES) {
       const status = STATUS[key] ?? (req.method() === 'POST' ? 201 : 200);
       return reply(status, FIXTURES[key]);
@@ -131,12 +133,8 @@ export async function stubApi(
     console.warn(
       `stubApi: нет фикстуры для ${key} — ответ 404, как у сервера на неизвестный маршрут`,
     );
-    return reply(404, {
-      message: `Cannot ${key}`,
-      error: 'Not Found',
-      statusCode: 404,
-    });
+    return nestError(404, 'Not Found', `Cannot ${key}`);
   });
 
-  return { ratingsByDay, therapy };
+  return { ratingsByDay, therapy, overrides };
 }
