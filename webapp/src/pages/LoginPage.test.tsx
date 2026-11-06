@@ -362,6 +362,27 @@ describe('LoginPage — «Попробовать снова» в мессенд�
     expect(container.textContent).not.toMatch(/TypeError/);
   });
 
+  // Аудит 2026-10: запасным текстом был сам String(e) — HTML прокси на 200
+  // давал на экране «SyntaxError: Unexpected token '<'…». Имя класса остаётся:
+  // строка уходит и в отчёт useAuthFailureReport.
+  it('200 с HTML вместо JSON — «Не удалось войти», без сырого текста разбора', async () => {
+    fetchMock.mockImplementation(() =>
+      Promise.resolve(new Response('<html><body>Bad Gateway</body></html>', { status: 200 })));
+    const { container } = renderPage();
+    fireEvent.click(screen.getByRole('button', { name: 'Попробовать снова' }));
+    await screen.findByText('Не удалось войти (SyntaxError)');
+    expect(container.textContent).not.toMatch(/Unexpected token|<html|is not valid JSON/);
+    await waitFor(() => expect(reportClientError).toHaveBeenCalledTimes(1));
+    expect(vi.mocked(reportClientError).mock.calls[0][0].message).toContain('SyntaxError');
+  });
+
+  it('контроль: русский текст исключения проходит как есть', async () => {
+    fetchMock.mockImplementation(() => Promise.reject(new Error('Сессия мессенджера устарела')));
+    renderPage();
+    fireEvent.click(screen.getByRole('button', { name: 'Попробовать снова' }));
+    await screen.findByText('Сессия мессенджера устарела');
+  });
+
   it('401 — тело сервера как есть: диагностика отказа подписи (инцидент 2026-08-08)', async () => {
     fetchMock.mockImplementation(() =>
       Promise.resolve(new Response('{"message":"Missing authentication","statusCode":401}', { status: 401 })));
