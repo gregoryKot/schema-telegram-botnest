@@ -12,19 +12,19 @@ import '../../styles/sheet-diary.css';
 
 export function WebJourneyEmptyHero({ tr, explainer }: JourneyEmptyHeroProps) {
   return (
-    <div className="ds-card sd-hero pp-hero">
-      <div className="pp-hero-body">
+    <div className="ds-card sd-hero">
+      {/* Пусто — чашка, как у остальных пустых состояний (PaperEmpty); рядом с заголовком, текст — во всю ширину. */}
+      <div className="pp-hero">
         <h2 className="ds-h2">Путь ещё впереди</h2>
-        <p className="ds-sub sd-hero-text">
-          {explainer}{' '}
-          {tr(
-            'Начни с трекера или любого дневника — первый шаг появится здесь.',
-            'Начните с трекера или любого дневника — первый шаг появится здесь.',
-          )}
-        </p>
+        <Cup />
       </div>
-      {/* Пусто — чашка, как у остальных пустых состояний (PaperEmpty). */}
-      <Cup size="hero" />
+      <p className="ds-sub sd-hero-text">
+        {explainer}{' '}
+        {tr(
+          'Начни с трекера или любого дневника — первый шаг появится здесь.',
+          'Начните с трекера или любого дневника — первый шаг появится здесь.',
+        )}
+      </p>
     </div>
   );
 }
