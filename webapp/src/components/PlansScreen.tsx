@@ -9,7 +9,7 @@ import { NEED_HUE, hueStyle } from '../lib/tone';
 import type { NeedId } from '../../../shared/src/needs/types';
 import '../styles/sheet-tasks.css';
 import { useTr } from '../utils/addressForm';
-import { plansEmptyText, plansSummary } from '../../../shared/src/practices/plansCopy';
+import { planDateLabel, plansEmptyText, plansSummary } from '../../../shared/src/practices/plansCopy';
 import { PlanNeedPicker } from './plans/PlanNeedPicker';
 import { Cup } from './art/PaperArt';
 
@@ -28,15 +28,6 @@ function statusIcon(done: boolean | null) {
   if (done === true)  return '✓';
   if (done === false) return '×';
   return '·';
-}
-
-function formatDate(dateStr: string): string {
-  const today = new Date().toISOString().split('T')[0];
-  const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
-  if (dateStr === today)    return 'Сегодня';
-  if (dateStr === tomorrow) return 'Завтра';
-  const d = new Date(dateStr);
-  return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
 }
 
 export function PlansScreen({ onClose, onOpenTracker }: Props) {
@@ -143,7 +134,7 @@ function PlanCard({ plan, onUpdate }: { plan: PracticePlan; onUpdate: React.Disp
             {needData?.name ?? plan.needId}
           </span>
           <span className="ds-sub">·</span>
-          <span className="ds-sub">{formatDate(plan.scheduledDate)}</span>
+          <span className="ds-sub">{planDateLabel(plan.scheduledDate)}</span>
         </div>
         <span className={statusClass(plan.done)}>{statusIcon(plan.done)}</span>
       </div>

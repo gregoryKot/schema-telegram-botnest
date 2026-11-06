@@ -10,7 +10,7 @@ import type { MyCardsKind } from '../../../../shared/src/pattern/useMyCards';
 interface Props {
   kind: MyCardsKind;
   entries: SchemaDiaryEntry[] | ModeDiaryEntry[];
-  onDeleteEntry: (entryId: number) => void;
+  onDeleteEntry: (entryId: number) => Promise<void>; // отказ — текст сбоя у «Удалить навсегда»
   emptyText: string;
 }
 

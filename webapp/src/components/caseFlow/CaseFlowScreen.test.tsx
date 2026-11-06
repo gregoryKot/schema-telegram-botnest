@@ -6,7 +6,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { CaseFlowScreen } from './CaseFlowScreen';
-import { CRISIS_HOTLINE_DISPLAY } from '../../utils/crisisMarkers';
+import { CRISIS_HOTLINE_DISPLAY, CRISIS_HOTLINES } from '../../utils/crisisMarkers';
 import type { CaseQuickProps } from '../../../../shared/src/case/quick/caseQuick';
 
 const trackEvent = vi.fn();
@@ -330,6 +330,33 @@ describe('CaseFlowScreen — кризис и «Тяжело прямо сейч�
     fireEvent.change(screen.getByPlaceholderText('Например: сжало в груди'), {
       target: { value: 'хочу умереть' },
     });
+    expect(screen.getByText(CRISIS_HOTLINE_DISPLAY)).toBeTruthy();
+  });
+
+  // docs/open/frontend-ux.md: флаг crisis получали все шаги, кроме итога —
+  // после сохранения кризисной сцены карточки на «Записано» не было вовсе.
+  it('кризисная сцена: карточка с обеими линиями остаётся на экране «Записано»', async () => {
+    renderFlow();
+    typeScene('хочу умереть');
+    click('Дальше');
+    click('Страшно, тревожно');
+    click('Дальше');
+    click('Свернуть разговор');
+    click('Что это было?');
+    click('Сохранить');
+    await screen.findByText('Записано');
+    expect(screen.getByText(CRISIS_HOTLINES[0].display)).toBeTruthy();
+    expect(screen.getByText(CRISIS_HOTLINES[1].display)).toBeTruthy();
+    expect(screen.getByText(HARD_NOW)).toBeTruthy();
+  });
+
+  it('без кризисного текста на экране «Записано» карточки нет, «Тяжело прямо сейчас» открывает её', async () => {
+    renderFlow();
+    driveToResult();
+    click('Сохранить');
+    await screen.findByText('Записано');
+    expect(screen.queryByText(CRISIS_HOTLINE_DISPLAY)).toBeNull();
+    click(HARD_NOW);
     expect(screen.getByText(CRISIS_HOTLINE_DISPLAY)).toBeTruthy();
   });
 

@@ -171,8 +171,7 @@ Jitsi раньше вычислялся из контакта (`schemehappens-<s
   «Дамп боевой БД (D-1)».
 - `security.md`: «Владельцу, срочно» (D-1, запрос в поддержку GitHub или приватный
   репозиторий); «Владельцу, до первого `release-hold` на VPS» (бакет R2 и переменные
-  бэкапов); «Владельцу, в env прода» (`ALLOWED_ORIGINS`); «Ссылка «написать в Telegram»»
-  (`tg://user` у веб-партнёра: прятать ли ссылку).
+  бэкапов); «Владельцу, в env прода» (`ALLOWED_ORIGINS`).
 - `frontend-ux.md`: «Вход Telegram OIDC удалён в #725» — запрос
   `SELECT count(*) FROM "AuthProvider" WHERE provider='telegram-oidc'`.
 - `ci-tests.md`: «Мутационный замер волны А уже его реального охвата» (включать ли

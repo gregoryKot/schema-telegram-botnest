@@ -6,7 +6,7 @@
 // карточки для «Поделиться». useHistorySheet — образец теста:
 // useHistorySheet.test.tsx (MemoryRouter обязателен для useNavigate/useLocation).
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, cleanup } from '@testing-library/react';
+import { render, screen, fireEvent, cleanup, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { SchemaDetailSheet } from './SchemaDetailSheet';
 import { MY_SCHEMA_IDS_KEY } from '../utils/storageKeys';
@@ -15,6 +15,7 @@ vi.mock('../api', () => ({
   api: {
     updateSettings: vi.fn().mockResolvedValue(undefined),
   },
+  reportClientError: vi.fn(),
 }));
 import { api } from '../api';
 const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
@@ -99,6 +100,40 @@ describe('SchemaDetailSheet — «в мои схемы» (денормализо
     expect(mockApi.updateSettings).toHaveBeenCalledWith({
       mySchemaIds: ['mistrust'],
     });
+  });
+});
+
+// docs/open/frontend-ux.md: `.catch(() => {})` глушил отказ записи, включая
+// 409 «не читается» — человек не узнавал, что выбор не сохранился на сервере.
+describe('SchemaDetailSheet — отказ записи «в мои схемы» виден', () => {
+  const addSchema = () => fireEvent.click(screen.getAllByText('+ В мои схемы')[0]);
+
+  it('409 unreadable_data: плашка «прежний список не читается», без «проверь связь»', async () => {
+    mockApi.updateSettings.mockRejectedValueOnce(
+      Object.assign(new Error('Conflict'), { status: 409, reason: 'unreadable_data' }),
+    );
+    renderSheet();
+    addSchema();
+    const alert = await screen.findByRole('alert');
+    expect(alert.textContent).toMatch(/прежний список сейчас не читается/);
+    expect(alert.textContent).not.toMatch(/проверь связь/);
+    // Выбор остался на устройстве — экран не врёт про локальное состояние.
+    expect(screen.getAllByText('В моих схемах').length).toBeGreaterThan(0);
+  });
+
+  it('обрыв сети: плашка «сохранён только на этом устройстве»', async () => {
+    mockApi.updateSettings.mockRejectedValueOnce(new TypeError('Failed to fetch'));
+    renderSheet();
+    addSchema();
+    expect((await screen.findByRole('alert')).textContent).toMatch(/только на этом устройстве — проверь связь/);
+  });
+
+  it('успех: плашки нет', async () => {
+    renderSheet();
+    addSchema();
+    await waitFor(() => expect(mockApi.updateSettings).toHaveBeenCalled());
+    await Promise.resolve();
+    expect(screen.queryByRole('alert')).toBeNull();
   });
 });
 

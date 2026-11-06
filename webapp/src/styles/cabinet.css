@@ -71,6 +71,8 @@
 .ds-link--inline { display: inline; }
 /* Пустое состояние списка/карточки: обычный текст, без рамки и курсива. */
 .ds-empty { margin: 0; padding: 0; font: 400 14px/1.5 var(--sans); font-style: normal; color: var(--text-muted); text-align: left; }
+/* «Удалено · Отменить» — окно отмены удаления строки (UndoBar, useUndoRemove). */
+.ds-undo { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 6px 0; padding: 2px 4px 2px 12px; border-radius: 8px; background: var(--paper-sunk); font-size: 14px; color: var(--text-muted); }
 
 /* ── Карточки ────────────────────────────────────────────────────────────── */
 .ds-card {

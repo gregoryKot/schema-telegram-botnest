@@ -1,4 +1,5 @@
-import { DOW_SHORT, TODAY_DOW_IDX } from './streakConst';
+import { DOW_SHORT, mondayIndexOf } from './streakConst';
+import { useLocalDay } from '../../../../shared/src/utils/useLocalDay';
 import { daysWord } from './profileModel';
 import type { StreakData } from './profileMeta';
 
@@ -6,6 +7,7 @@ interface Props { streak: StreakData; onOpenTracker?: () => void }
 
 export function StreakCard({ streak, onOpenTracker }: Props) {
   const { currentStreak, longestStreak, totalDays, todayDone, weekDots } = streak;
+  const todayIdx = mondayIndexOf(useLocalDay()); // местный день; сменится в полночь и у открытой вкладки
   const caption = currentStreak > 0
     ? `${daysWord(currentStreak)}\nподряд`
     : totalDays === 0 ? 'пока\nне начато' : 'серия\nпрервалась';
@@ -30,8 +32,8 @@ export function StreakCard({ streak, onOpenTracker }: Props) {
         <div className="cpf-week">
           {weekDots.map((done, i) => (
             <div key={i} className="cpf-week-day">
-              <div className={`cpf-week-bar${done ? ' is-done' : ''}${i === TODAY_DOW_IDX ? ' is-today' : ''}`} />
-              <div className={`cpf-week-name${i === TODAY_DOW_IDX ? ' is-today' : ''}`}>{DOW_SHORT[i]}</div>
+              <div className={`cpf-week-bar${done ? ' is-done' : ''}${i === todayIdx ? ' is-today' : ''}`} />
+              <div className={`cpf-week-name${i === todayIdx ? ' is-today' : ''}`}>{DOW_SHORT[i]}</div>
             </div>
           ))}
         </div>

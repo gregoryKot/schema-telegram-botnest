@@ -5,6 +5,7 @@ import { SSection } from './ui';
 import { LimitedTextarea } from '../../../../shared/src/components/LimitedTextarea';
 import * as LIM from '../../../../shared/src/limits/textLimits';
 import { TherapistRequestRejectedNote } from '../../../../shared/src/therapy/TherapistRequestRejectedNote';
+import { humanizeThrown } from '../../../../shared/src/api/humanizeError';
 
 // Раздел «Стать специалистом» — вынесен из SettingsSheet.tsx (правило №10,
 // файл-должник, пофайловый храповик размера). Состояние заявки полностью
@@ -42,7 +43,7 @@ export function BecomeTherapistSection() {
       await api.submitTherapistRequest({ fullName: reqFullName.trim(), qualification: reqQual.trim(), contacts: reqContacts.trim(), message: reqMsg.trim() || undefined });
       setTherapistReq({ status: 'pending', rejectReason: null });
       setShowReqForm(false);
-    } catch (e) { setReqError(String(e).replace('Error: ', '')); }
+    } catch (e) { setReqError(humanizeThrown(e, 'Не удалось отправить заявку')); } // не «TypeError: Failed to fetch»
     finally { setReqBusy(false); }
   }
 
