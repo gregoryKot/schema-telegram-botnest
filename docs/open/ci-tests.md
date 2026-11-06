@@ -336,15 +336,6 @@ Ubuntu 26) у трёх PR подряд падали `backend` → `check-coverag
   ленивых чанков в setup; до этого локальный красный vitest на Mac — повод перегнать красные файлы в
   одиночку, а не доказательство поломки. Отдельно: `node_modules` worktree отставали от лок-файла
   (vitest 4.1 при 5.0 в `package-lock`), `npm ci` в `shared/` и `webapp/` картину не изменил.
-- **`precheck` в worktree красный на `check-unwatched-code.mjs` из-за остатка `schema-miniapp/node_modules`**
-  (2026-11-05, при проверке #933). После #917 каталог `schema-miniapp/` удалён из репозитория вместе со
-  строкой в `.gitignore`, но на машине владельца в главном дереве и в worktree остались его
-  `node_modules` (13 099 файлов) — теперь это неотслеживаемые и неигнорируемые файлы. `precheck-tree.mjs`
-  переносит неотслеживаемое в чистое дерево и делает `git add -A`, `git ls-files` там превышает 1 МиБ, и
-  `check-unwatched-code.mjs` (`execFileSync('git', ['ls-files'])` без `maxBuffer`) падает с ENOBUFS
-  вместо внятного сообщения; в рабочем дереве тот же гейт зелёный (125 файлов). Чинить: `maxBuffer`
-  у `git ls-files` в гейте (как в `check-filename-case.mjs`, 64 МиБ) и строка `schema-miniapp/` в
-  `.gitignore` или `rm -rf schema-miniapp` на машине владельца; остальные 51 гейт precheck зелёные.
 - **Ещё образец того же класса — `webapp/src/sections/SchemasSection.customize.test.tsx`** (найдено в #958,
   2026-11-05): случай «шестерёнка открывает лист с двумя блоками» падает с `Unable to find role="dialog"
   and name "Настроить экран"` через ~2,5 с при прогоне каталога `src/sections/schemas` с соседями и на
