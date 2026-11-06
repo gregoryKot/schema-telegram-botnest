@@ -37,7 +37,7 @@ import {
   paymentAfterCancel,
 } from './booking.transitions';
 import { finishConfirmEffects, rerunEffects } from './booking.confirm-effects';
-import type { CreateBookingDto } from './booking.types';
+import type { BookingAccount, CreateBookingDto } from './booking.types';
 
 export type { CreateBookingDto };
 export { PaymentAmountMismatchError } from './booking-amount';
@@ -70,8 +70,9 @@ export class BookingService {
    * SESSION_50 in rubles: HELD for 15 min; with Robokassa configured returns a
    * paymentUrl, the webhook calls confirm(). Without Robokassa: production
    * refuses (503) before the INSERT, dev confirms at once (payment-guard.ts).
+   * `account` — только запись клиента из приложения (client-booking.service.ts).
    */
-  async book(dto: CreateBookingDto) {
+  async book(dto: CreateBookingDto, account?: BookingAccount) {
     if (!dto.clientName || !dto.clientContact) {
       throw new BadRequestException('Name and contact required');
     }
@@ -107,7 +108,7 @@ export class BookingService {
     );
     const cancelToken = randomUUID();
 
-    const data = buildBookingData(dto, { ...price, cancelToken });
+    const data = buildBookingData(dto, { ...price, cancelToken }, account);
 
     // Лок + проверка занятости + INSERT в одной транзакции, с резервом на
     // случай падения (лид уходит админу) — см. booking.create.ts.

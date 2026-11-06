@@ -64,6 +64,7 @@ describe('Реестр экспорта данных ↔ schema.prisma / FIELD_P
       'AuthProvider',
       'WebSession',
       'TherapistRequest',
+      'Booking', // отвязывается при удалении аккаунта, а не удаляется (account.delete.ts)
     ]);
     const expModels = new Set(Object.keys(EXPORT_POLICY));
     const onlyDelete = [...delModels].filter((m) => !expModels.has(m));
@@ -85,6 +86,40 @@ describe('Реестр экспорта данных ↔ schema.prisma / FIELD_P
       })
       .map(([m]) => m);
     expect(vague).toEqual([]);
+  });
+
+  // Модель с явным списком колонок (Booking, #546): каждая колонка схемы либо
+  // уходит в файл, либо названа в omit с причиной — новая колонка не уедет
+  // молча (cancelToken) и не пропадёт молча. Relation-поля — не колонки.
+  it('у export-решения с select каждая колонка — в select или в omit с причиной', () => {
+    const models = new Set(
+      [...schema.matchAll(/model\s+(\w+)\s+\{/g)].map((m) => m[1]),
+    );
+    const problems: string[] = [];
+    for (const [model, d] of Object.entries(EXPORT_POLICY)) {
+      if (d.status !== 'export' || !d.select) continue;
+      const body = new RegExp(
+        `model\\s+${model}\\s+\\{([\\s\\S]*?)\\n\\}`,
+      ).exec(schema)![1];
+      const columns = [
+        ...body.matchAll(/^\s{2}(\w+)\s+(\w+)(\[\])?\??(\s|$)/gm),
+      ]
+        .filter((m) => !m[3] && !models.has(m[2]))
+        .map((m) => m[1]);
+      const omit = d.omit ?? {};
+      for (const c of columns)
+        if (!(c in d.select) && !(c in omit))
+          problems.push(`${model}.${c} не классифицирована`);
+      for (const c of [...Object.keys(d.select), ...Object.keys(omit)])
+        if (!columns.includes(c)) problems.push(`${model}.${c} протухла`);
+      for (const [c, why] of Object.entries(omit))
+        if (why.trim().length < 20)
+          problems.push(`${model}.${c}: причина-отписка`);
+    }
+    expect(problems).toEqual([]);
+    expect(EXPORT_POLICY.Booking).toMatchObject({ status: 'export' });
+    const booking = EXPORT_POLICY.Booking as { select: Record<string, true> };
+    expect(booking.select).not.toHaveProperty('cancelToken');
   });
 
   // ── Сверка со вторым реестром (FIELD_POLICY) — правило №4 ─────────────────

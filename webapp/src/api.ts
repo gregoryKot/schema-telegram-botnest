@@ -54,7 +54,7 @@ async function adminReq<T>(method: string, path: string, key: string, body?: unk
 }
 
 import type {
-  BookingSlot,
+  BookingSlot, ClientBookingOverview, ClientBookResult,
   SessionOption,
   AvailabilityRule,
   NewAvailabilityRule,
@@ -86,7 +86,7 @@ export type {
   UserSettings,
   StreakData,
   Achievement,
-  BookingSlot,
+  BookingSlot, ClientBookingView, ClientBookingOverview, ClientBookResult,
   SessionOption,
   AvailabilityRule,
   NewAvailabilityRule,
@@ -183,6 +183,9 @@ export const api = {
     postJson<{ id: number; cancelToken: string; heldUntil: string | null; status: string; paymentUrl?: string | null }>('/api/booking/book', body),
   getBookingByToken:    (token: string) => get<{ status: string; paid: boolean; type: 'INTRO_15' | 'SESSION_50'; startsAt: string; endsAt: string; durationMin: number }>(`/api/booking/by-token/${token}`),
   cancelBooking:        (token: string) => postJson<{ ok: true }>(`/api/booking/cancel/${token}`, {}),
+  // Запись клиента из приложения (#546): имя, контакт и оферту сервер берёт из аккаунта и действия.
+  getClientBooking:     () => get<ClientBookingOverview>('/api/client-booking'),
+  clientBook:           (body: { startsAt: string; durationMin?: number; clientTimeZone?: string }) => postJson<ClientBookResult>('/api/client-booking/book', body),
   donate:               (body: { amount: number; source?: 'app' | 'game'; email?: string; comment?: string; website?: string }) =>
     postJson<{ id: number; paymentUrl: string | null }>('/api/donation', body),
   // Subscription (recurring support)

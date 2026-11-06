@@ -78,3 +78,28 @@ describe('BookingSlotsSection', () => {
     expect(call?.[1]).toEqual({ tz: 'Asia/Bangkok' });
   });
 });
+
+// Запись клиента из приложения (#546) передаёт форму обращения пользователя;
+// визитка без пропа говорит «вы» всем.
+describe('BookingSlotsSection — форма обращения', () => {
+  const props = {
+    slots, tz: 'Asia/Bangkok', onTzChange: () => {}, day: '2026-09-28',
+    onDayChange: () => {}, slot: null, onSlotChange: () => {},
+  };
+
+  it('без tr — «вы»: «Выберите день», «по вашему», «не ваш часовой пояс?»', () => {
+    render(<BookingSlotsSection {...props} />);
+    expect(screen.getByText('Выберите день')).toBeTruthy();
+    expect(screen.getByText(/по вашему часовому поясу/)).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'не ваш часовой пояс?' })).toBeTruthy();
+    cleanup();
+  });
+
+  it('tr «ты» — «Выбери день», «по твоему», «не твой часовой пояс?»', () => {
+    render(<BookingSlotsSection {...props} tr={(ty) => ty} />);
+    expect(screen.getByText('Выбери день')).toBeTruthy();
+    expect(screen.getByText(/по твоему часовому поясу/)).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'не твой часовой пояс?' })).toBeTruthy();
+    cleanup();
+  });
+});

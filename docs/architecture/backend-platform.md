@@ -87,9 +87,11 @@
   - `src/booking/booking.transitions.ts` — переходы статуса брони (CAS)
   - `src/booking/slot.service.ts` — свободные слоты: правила, брони, override, CalDAV
   - `src/booking/payment.controller.ts` — вебхук Robokassa: брони, донаты, подписки
+  - `src/booking/client-booking.controller.ts` + `client-booking.service.ts` — запись клиента владельца практики из приложения (#546): под `TelegramAuthGuard`, свой префикс `/api/client-booking` (на визитке не открывается), та же цепочка `BookingService.book` с `account` (пишет `Booking.userId` и `clientTelegramId` из подписи); имя и контакт — `client-booking.identity.ts`; владелец практики — `src/utils/practice-owner.ts` (`ADMIN_ID` с учётом слияния)
 - Связи: Prisma (Booking, AvailabilityRule, SlotOverride, BookingSetting, ClientMeeting, IntroLead); `src/booking/booking.registry.ts` собирает BookingModule вместе с `src/donation/` и `src/subscription/`; `src/booking/intro-lead.module.ts` — отдельный модуль (контроллер в `src/api/booking.controller.ts`); `src/booking/admin-key.util.ts` используют admin-контроллеры `src/articles/` и `src/site-content/`.
 - Подводные камни:
-  - Публичные ручки без JWT: доступ к брони — capability-токен (`by-token`, `ics`, `cancel/:token`); админка `/api/booking/admin/*` — заголовок `x-admin-key` = `ADMIN_BOOKING_KEY` (≥32 символов).
+  - Публичные ручки без JWT: доступ к брони — capability-токен (`by-token`, `ics`, `cancel/:token`); админка `/api/booking/admin/*` — заголовок `x-admin-key` = `ADMIN_BOOKING_KEY` (≥32 символов). Страница управления записью `/booking/manage?token=` есть только на визитке — ссылку на неё строит сервер от `SITE_URL`.
+  - Связь брони с аккаунтом — только у записи из приложения (`Booking.userId`): удаление аккаунта отвязывает (`src/bot/account.delete.ts`), слияние переносит (`USER_OWNED_TABLES`), выгрузка — `src/account/export-policy.booking.ts`.
   - Статус (HELD→CONFIRMED→CANCELLED/COMPLETED) меняется только CAS: `updateMany` с текущим статусом в WHERE, эффекты — по `count===1`; создание — под `pg_advisory_xact_lock` (`src/booking/booking-slot-lock.ts`); HELD сгорает по крону раз в минуту под leader-lease.
   - Один вебхук `/api/payment/result` роутит по диапазону InvId (подписки, донаты, брони); без настроенной Robokassa в проде платный путь отдаёт 503 (`src/booking/payment-guard.ts`); PII брони зашифрована (`src/booking/booking.schema.ts`) и затирается через 12 мес.
 

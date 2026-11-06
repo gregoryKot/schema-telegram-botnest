@@ -175,6 +175,7 @@ model User {
   gratitudeDiaries       GratitudeDiaryEntry[]
   appActivities          AppActivity[]
   analyticsEvents        AnalyticsEvent[]
+  bookings               Booking[]
 }
 
 // Email magic-link tokens — вход по ссылке и привязка адреса.
@@ -823,7 +824,15 @@ model Booking {
   clientContact   String        // phone or telegram @handle
   clientChannel   String?       // канал связи: telegram | whatsapp | email — не PII, открыто
   message         String?
-  clientTelegramId BigInt?      // if client came from Telegram
+  // Telegram-адрес клиента. Анонимная форма его не пишет (C-9); пишет только
+  // клиентская запись из приложения — из проверенной подписи, не из тела.
+  clientTelegramId BigInt?
+  // Аккаунт клиента, записавшегося из приложения («Мой терапевт» → «Записаться
+  // на сессию», src/booking/client-booking.service.ts). Публичная форма без
+  // входа его не пишет. Удаление аккаунта отвязывает бронь (SetNull + явный
+  // updateMany в account.delete.ts), слияние переносит (USER_OWNED_TABLES).
+  userId          BigInt?
+  user            User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
   cancelToken     String        @unique  // random UUID for self-cancel link
   meetingUrl      String?       // Zoom/Телемост link, set after confirmation
   // CalDAV sync
@@ -875,6 +884,7 @@ model Booking {
 
   @@index([startsAt, status])
   @@index([heldUntil, status])
+  @@index([userId, startsAt])
 }
 
 // Заявка с простой формы знакомства на визитке (POST /api/booking, без слота).

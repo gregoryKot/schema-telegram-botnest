@@ -105,6 +105,7 @@ jobs:
           test/therapy-relation-end test/notify-from-other
           test/body-limit test/login-csrf test/payment-webhook-practice-host
           test/text-limits test/therapy-ownership.e2e-spec.ts
+          test/client-booking-ownership
           test/booking-admin-cancel test/exercise-delete-ownership test/max-auth
           test/diary-mode-from-case
           test/therapy-task-delete
@@ -589,6 +590,7 @@ jobs:
           test/app-ownership.e2e-spec.ts test/app-ownership-sweep.e2e-spec.ts
           test/app-ownership-sweep-2.e2e-spec.ts test/app-ownership-sweep-3.e2e-spec.ts
           test/therapy-ownership.e2e-spec.ts test/therapy-ownership-2.e2e-spec.ts test/therapy-web-client.e2e-spec.ts
+          test/client-booking-ownership.e2e-spec.ts
           test/app-auth.e2e-spec.ts test/public-quizzes.e2e-spec.ts
           test/phrase-check-ownership.e2e-spec.ts
           test/login-ticket.e2e-spec.ts

@@ -24,6 +24,7 @@ import { DataExportMetricsService } from './data-export-metrics.service';
 import { BookingRetentionMetricsService } from './booking-retention-metrics.service';
 import { IntroLeadMetricsService } from './intro-lead-metrics.service';
 import { TherapyInviteMetricsService } from './therapy-invite-metrics.service';
+import { ClientBookingMetricsService } from './client-booking-metrics.service';
 import { TherapyNudgeMetricsService } from './therapy-nudge-metrics.service';
 import { TherapistExitMetricsService } from './therapist-exit-metrics.service';
 import { CrawlerMetricsService } from './crawler-metrics.service';
@@ -64,6 +65,7 @@ export class StatsReportService {
     readonly introLeads: IntroLeadMetricsService,
     readonly therapyNudge: TherapyNudgeMetricsService,
     readonly therapyInvites: TherapyInviteMetricsService,
+    readonly clientBooking: ClientBookingMetricsService,
     readonly notifyQueue: NotifyQueueMetricsService,
     readonly therapistExit: TherapistExitMetricsService,
     readonly crawlers: CrawlerMetricsService,

@@ -27,7 +27,10 @@ export interface DataExportResult {
 
 type Row = Record<string, unknown>;
 type FindManyDelegate = {
-  findMany(args: { where: { userId: bigint } }): Prisma.PrismaPromise<Row[]>;
+  findMany(args: {
+    where: { userId: bigint };
+    select?: Record<string, true>;
+  }): Prisma.PrismaPromise<Row[]>;
 };
 
 const WITHHELD_USER_SECRETS = {
@@ -41,7 +44,8 @@ const WITHHELD_USER_SECRETS = {
 const WITHHELD_OUT_OF_CONTOUR = {
   table: 'Booking, Donation, ClientMeeting',
   reason:
-    'связи с User нет (формы публичные, без входа) — сопоставление по email/' +
+    'записи без входа (кроме записей на сессию из приложения — они в файле ' +
+    'выше): связи с User нет (формы публичные) — сопоставление по email/' +
     'контакту недостоверно: указавший чужой адрес получил бы чужую запись со ' +
     'свободным текстом. Доступны только ручным запросом администратору. ' +
     'Имя, контакт и текст запроса в записи на консультацию стираются ' +
@@ -105,7 +109,11 @@ export class DataExportService {
       const delegate = (
         this.prisma as unknown as Record<string, FindManyDelegate>
       )[delegateName];
-      const rows = await delegate.findMany({ where: { userId } });
+      // select — у моделей с колонками-секретами (Booking.cancelToken).
+      const rows = await delegate.findMany({
+        where: { userId },
+        ...(decision.select && { select: decision.select }),
+      });
       const schema = decision.schema;
       data[model] = schema ? rows.map((r) => decryptExport(r, schema)) : rows;
     }

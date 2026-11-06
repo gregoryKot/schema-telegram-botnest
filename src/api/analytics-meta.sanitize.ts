@@ -236,6 +236,11 @@ export function sanitizeMeta(
   if (name.startsWith('case_')) {
     return sanitizeCaseMeta(name, meta);
   }
+  // Запись из приложения (client-booking-events.constants.ts): opened — без
+  // meta; created пишет сервер, статус с клиента не принимается — подделка
+  // через POST /api/event в отчёт /stats не попадёт.
+  if (name === 'client_booking_opened' || name === 'client_booking_created')
+    return undefined;
   // Без meta: breath_start / stop_start / journey_open / ysq_help_open /
   // CONCEPT_EVENTS; серверные notify_queue_tick, therapist_resigned (подделке — без чисел).
   // Главная простого клиента (home_tile, tracker_skip, diary_quick_save) — свой файл.

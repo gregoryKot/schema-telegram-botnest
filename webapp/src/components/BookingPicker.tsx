@@ -20,10 +20,9 @@ import { BookingSlotsSection } from './booking/BookingSlotsSection';
 import { AwaitPaymentScreen, PaymentFailScreen, DoneScreen } from './booking/BookingResultScreens';
 import { localDayLabel, localTimeLabel, submitTimeSuffix } from '../../../shared/src/booking/clientTimeZone';
 import { currencyFromTimeZone } from '../../../shared/src/booking/priceRegion';
+import { firstSlotDay, useBookingSlots } from '../../../shared/src/booking/useBookingSlots';
 import { bookingPriceView, doneCostNote, formatPriceSuffix, needsOnlinePayment, submitLabel, submitNote } from './booking/bookingPriceLabels';
 
-const dayKeyFmt = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Moscow', year: 'numeric', month: '2-digit', day: '2-digit' });
-const dayKey = (iso: string) => dayKeyFmt.format(new Date(iso));
 const field: React.CSSProperties = {
   width: '100%', padding: '14px 16px', fontSize: 15, background: 'rgba(var(--fg-rgb),0.04)', border: '1.5px solid var(--line)',
   borderRadius: 'var(--r-12)', color: 'var(--text)', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box',
@@ -37,9 +36,9 @@ export type BookingType = 'INTRO_15' | 'SESSION_50';
 /** Slot-based booking widget. Falls back to `fallback` when no slots are open; `onWriteInstead` — выход «напишите мне» под слотами; `lockedType` — один формат без переключателя; `compact` — без «Запроса» и «повторной встречи» (страница /book: знакомый клиент, только имя, контакт, оферта). */
 export function BookingPicker({ fallback, onWriteInstead, lockedType, compact = false }: { fallback?: React.ReactNode; onWriteInstead?: () => void; lockedType?: BookingType; compact?: boolean }) {
   const [tz, setTz] = useClientTimeZone();
-  const [slots, setSlots] = useState<BookingSlot[] | null>(null);
-  const [loadFailed, setLoadFailed] = useState(false);
-  const [day, setDay] = useState('');
+  const { slots, failed: slotsFailed } = useBookingSlots(api.getSlots); // загрузка и дубли — общий хук (shared, #546)
+  const [optionsFailed, setOptionsFailed] = useState(false);
+  const [pickedDay, setDay] = useState('');
   const [slot, setSlot] = useState<BookingSlot | null>(null);
   const [name, setName] = useState('');
   const [contact, setContact] = useState('');
@@ -79,11 +78,10 @@ export function BookingPicker({ fallback, onWriteInstead, lockedType, compact = 
   }, []);
 
   useEffect(() => {
-    api.getSlots()
-      .then((raw) => { const s = raw.filter((x, i) => raw.findIndex((y) => y.startsAt === x.startsAt) === i); /* дубли startsAt, инцидент 2026-09-29 */ setSlots(s); if (s.length) setDay(dayKey(s[0].startsAt)); })
-      .catch(() => setLoadFailed(true));
-    api.getBookingOptions().then(setOptions).catch(() => setLoadFailed(true)); // сбой ≠ пусто: без опций не собрать цену — та же loadFailed, что у слотов
+    api.getBookingOptions().then(setOptions).catch(() => setOptionsFailed(true)); // сбой ≠ пусто: без опций не собрать цену — тот же исход, что сбой слотов
   }, []);
+  const loadFailed = slotsFailed || optionsFailed;
+  const day = pickedDay || firstSlotDay(slots, tz); // пока день не выбран — день первого слота в зоне посетителя
 
   const chosen = options.find((o) => o.type === sessionType);
   const currency = currencyFromTimeZone(tz); // тот же tz уходит в clientTimeZone — цена совпадёт с серверной

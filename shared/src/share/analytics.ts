@@ -154,6 +154,11 @@ export const CONCEPT_SYNC_FROM_MAP_EVENT = 'concept_sync_from_map';
 // (правило №7); шлётся при ВКЛЮЧЕНИИ, выключение не шлётся. Allow-list — src/analytics/cabinet-events.constants.ts.
 export const CABINET_SCREEN_SHARE_ON_EVENT = 'cabinet_screen_share_on';
 
+// Запись клиента из приложения (#546): открыл лист «Записаться на сессию» из «Мой терапевт», без меты; шлётся
+// литералом из ClientBookingSheet (его видит analytics-sync). Созданную бронь (`client_booking_created`) пишет
+// сервер. Allow-list — src/analytics/client-booking-events.constants.ts.
+export const CLIENT_BOOKING_OPENED_EVENT = 'client_booking_opened';
+
 // ── Разбор случая («Что это было») ─────────────────────────────────────────
 // Новая точка входа: человек за три минуты разбирает один случай и получает
 // первую запись дневника, приметы для карточки и метку на карте себя.

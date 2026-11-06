@@ -843,3 +843,19 @@ describe('account_link_* — площадка «сайт»', () => {
     ).toBeUndefined();
   });
 });
+
+// Запись из приложения (#546): created — серверное событие со статусом, с
+// клиента статус не принимается; opened — без meta.
+describe('client_booking_*', () => {
+  it('created: статус с клиента отбрасывается — подделка не попадёт в /stats', () => {
+    expect(
+      sanitizeMeta('client_booking_created', { status: 'held' }),
+    ).toBeUndefined();
+  });
+
+  it('opened: любая meta отбрасывается целиком', () => {
+    expect(
+      sanitizeMeta('client_booking_opened', { contact: 'me@example.com' }),
+    ).toBeUndefined();
+  });
+});

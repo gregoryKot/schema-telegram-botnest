@@ -12,9 +12,17 @@
 // обязанные совпадать, — под тестом) и data-export.service.ts для decryptRecord.
 import type { EncryptSchema } from '../utils/crypto';
 import { FIELD_POLICY } from '../utils/encryption-policy';
+import { BOOKING_SCHEMA } from '../booking/booking.schema';
+import { BOOKING_EXPORT_COLUMNS } from './export-policy.booking';
 
 export type ExportDecision =
-  | { status: 'export'; schema?: EncryptSchema }
+  | {
+      status: 'export';
+      schema?: EncryptSchema;
+      /** Только эти колонки; остальные — в `omit` с причиной (export-policy.spec.ts). */
+      select?: Record<string, true>;
+      omit?: Record<string, string>;
+    }
   | { status: 'withhold'; reason: string };
 
 export const EXPORT_POLICY: Record<string, ExportDecision> = {
@@ -139,6 +147,14 @@ export const EXPORT_POLICY: Record<string, ExportDecision> = {
     },
   },
 
+  // Записи из приложения (Booking.userId, #546) — своя бронь: время, статус,
+  // оплата, имя и контакт, как их увидел владелец. Брони без входа (форма
+  // /book) с аккаунтом не связаны и сюда не попадают.
+  Booking: {
+    status: 'export',
+    schema: BOOKING_SCHEMA,
+    ...BOOKING_EXPORT_COLUMNS,
+  },
   // ── WITHHOLD: секреты входа — файл выгрузки утекает легче, чем БД ─────────
   EmailToken: {
     status: 'withhold',
@@ -161,7 +177,7 @@ export const EXPORT_POLICY: Record<string, ExportDecision> = {
 };
 
 // Вне EXPORT_POLICY осознанно: User (поля — USER_EXPORT_SELECT ниже), модели без
-// связи с User (Booking/Donation/ClientMeeting — withheld в самом экспорте) и
+// связи с User (брони без входа/Donation/ClientMeeting — withheld в самом экспорте) и
 // модели с ключом clientId — их реестр в export-policy.client.ts.
 
 // ── Поля самого субъекта (модель User) ─────────────────────────────────────

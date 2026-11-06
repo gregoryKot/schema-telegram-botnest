@@ -21,6 +21,8 @@ vi.mock('../api', () => ({
     getTherapyRelation: vi.fn(),
     // Связи нет → карточка спрашивает бывшего терапевта (TherapistCard.test.tsx).
     getFormerTherapist: vi.fn(() => Promise.resolve(null)),
+    // Запись из приложения (#546) — у клиента не владельца раздела нет.
+    getClientBooking: vi.fn(() => Promise.resolve({ eligible: false, upcoming: [] })),
     getSchemaDiary: vi.fn(),
     getModeDiary: vi.fn(),
     getGratitudeDiary: vi.fn(),
